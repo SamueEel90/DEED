@@ -1,0 +1,80 @@
+/* ============================================================
+   DEED Aura — globálny dizajn
+   font Manrope · tmavé dýchajúce pozadie · glass povrchy
+   ============================================================ */
+
+:root {
+  font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+  color-scheme: dark;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: #04060c;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+::selection {
+  background: rgba(116, 166, 255, 0.35);
+}
+
+input, textarea, button {
+  font-family: inherit;
+}
+
+/* jemnejší scrollbar */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.10);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* ---------- animácie ---------- */
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(7px); }
+  to   { opacity: 1; transform: none; }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: .35; }
+}
+
+/* dýchanie gradientových blobov v pozadí */
+@keyframes dych {
+  0%   { transform: scale(1) translate(0, 0); opacity: .55; }
+  100% { transform: scale(1.22) translate(3%, 4%); opacity: .95; }
+}
+
+/* rotácia aura prsteňa */
+@keyframes tocenie {
+  to { transform: rotate(360deg); }
+}
+
+/* jemný shimmer na progres baroch */
+@keyframes lesk {
+  0%   { background-position: -150% 0; }
+  100% { background-position: 250% 0; }
+}
+
+/* vznášanie (hero logo) */
+@keyframes vznasanie {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-5px); }
+}

@@ -1,0 +1,585 @@
+import { useState } from "react";
+import { C, U, inp, GRAD, gradText } from "../theme";
+import { Foto, FotoPrispevku, MiniFotky, Modal, Aura, Video, useGaleria } from "../shared";
+
+/*
+  ============================================================
+  MODUL DOMOV (DEED Good) — port z deed_prototype.html
+  feed skutkov → detail (podpora, QR, overenie komunitou)
+  → overujem/namietam → ＋ pridať skutok (AI náhľad)
+  ============================================================
+*/
+
+// ---- kategórie ----
+const KAT = {
+  Komunita: { c: "#5BA8F0", bg: "#10233a", bg2: "#1d3f63", bd: "#2A5E8E" },
+  Priroda: { c: "#3DD68C", bg: "#0f2417", bg2: "#1c4029", bd: "#2E7D52", label: "Príroda" },
+  Zdravie: { c: "#3DD6CE", bg: "#0d2422", bg2: "#163f3a", bd: "#2E9E9E" },
+  Ucenie: { c: "#A98BF0", bg: "#1a1430", bg2: "#2c2350", bd: "#7A5BD8", label: "Učenie" },
+  Pomoc: { c: "#F2706F", bg: "#2a1414", bg2: "#451f1f", bd: "#7A3030" },
+};
+const katLabel = (k) => KAT[k].label || k;
+
+// ---- mock feed skutkov ----
+const POLOZKY = [
+  { id: 12, typ: "skutok", velkost: "big", kat: "Komunita", media: "video", overene: true,
+    autor: "Mária H.", pfp: "#3A8DD6", ini: "M", karma: "Gold", lok: "Trenčín · Sihoť", cas: "práve teraz", num: 120051,
+    titul: "Spravila som veľký nákup pani Helene (84) — sama už ťažké tašky neunesie.",
+    popis: "Pani Helena z vedľajšieho vchodu je po operácii bedrového kĺbu a do obchodu sa sama nedostane. Spísali sme zoznam, nakúpila som a doniesla jej to až do bytu. Celý nákup je natočený ako dôkaz — pozri video.",
+    emoji: "🛒", suma: 64, lajky: 47, vyznam: "Overený skutok",
+    video: "/video/nakup.mp4",
+    fotky: [U("photo-1542838132-92c53300491e"), U("photo-1556909114-f6e7ad7d3136")] },
+
+  { id: 1, typ: "skutok", velkost: "big", kat: "Komunita", media: "video", overene: true,
+    autor: "Dobrovoľní hasiči TN", pfp: "#3A8DD6", ini: "H", karma: "Gold", lok: "Trenčín · Sihoť", cas: "2 h", num: 120042,
+    titul: "Celú noc sme hľadali nezvestného dôchodcu — našli sme ho.",
+    popis: "O 23:00 nahlásili nezvestného 78-ročného pána. Prehľadávali sme les pri Váhu do rána. Našli sme ho prechladnutého, ale živého.",
+    emoji: "🚒", suma: 177, lajky: 23, vyznam: "Výnimočný skutok",
+    fotky: [U("photo-1519681393784-d120267933ba"), U("photo-1441974231531-c6227db76b6e"), U("photo-1448375240586-882707db888b")] },
+
+  { id: 2, typ: "skutok", velkost: "med", kat: "Priroda", media: "foto",
+    autor: "EkoTím Juh", pfp: "#2E7D52", ini: "E", karma: "Silver", lok: "Trenčín · Juh", cas: "5 h", num: 120038,
+    titul: "Vyčistili sme čiernu skládku pri potoku — 14 vriec odpadu.",
+    popis: "Partia 6 ľudí. Za sobotné dopoludnie sme vyniesli 14 vriec odpadu, ktoré tam roky niekto vyhadzoval.",
+    emoji: "🌿", suma: 84, lajky: 31,
+    fotky: [U("photo-1542601906990-b4d3fb778b09"), U("photo-1470071459604-3b5ec3a7fe05")] },
+
+  { id: 3, typ: "ziadost", velkost: "req", kat: "Pomoc", zdroj: "Help", topovane: true,
+    autor: "Rodina Kováčová", pfp: "#7A3030", ini: "R", lok: "Trenčín · tvoja štvrť", cas: "1 h", num: 120044,
+    titul: "Po povodni nám zatopilo pivnicu — hľadáme pomoc",
+    popis: "Voda nám zničila kotol a nábytok v suteréne. Sami to nezvládneme. Prosíme o pomoc s odpratávaním v sobotu a o príspevok na nový kotol.",
+    ciel: 2400, vyzbierane: 1450, emoji: "⚠", pomocnici: 12,
+    fotky: ["/img/dom.jpg", U("photo-1500382017468-9049fed747ef")] },
+
+  { id: 4, typ: "charita", velkost: "med", kat: "Komunita", zdroj: "Charity", overene: true, charLevel: "Gold",
+    autor: "Detská nemocnica – nadácia", pfp: "#3A8DD6", ini: "D", lok: "Bratislava", cas: "3 h", num: 120031,
+    titul: "Zbierka na nový inkubátor pre novorodenecké oddelenie",
+    popis: "Overená charita. Vyzbierané prostriedky idú výhradne na kúpu inkubátora. Doklady o použití zverejníme na profile.",
+    ciel: 18000, vyzbierane: 11200, emoji: "🏥", suma: 0, lajky: 204,
+    fotky: [U("photo-1584308666744-24d5c474f2ae"), U("photo-1579684385127-1ef15d508118")] },
+
+  { id: 5, typ: "skutok", velkost: "small", kat: "Zdravie", media: "foto",
+    autor: "Martin K.", pfp: "#3DD6CE", ini: "M", karma: "Gold", lok: "Trenčín", cas: "1 d", num: 120020,
+    titul: "Odviezol som suseda na dialýzu", popis: "Sused nemá auto a MHD mu to komplikuje. Vozím ho 3× týždenne.",
+    emoji: "🚗", suma: 30, lajky: 12 },
+
+  { id: 6, typ: "skutok", velkost: "small", kat: "Ucenie", media: "kreslene",
+    autor: "Lucia B.", pfp: "#A98BF0", ini: "L", karma: "Bronze", lok: "Trenčín · Noviny", cas: "1 d", num: 120018,
+    titul: "Doučujem deti angličtinu zadarmo", popis: "Každý štvrtok poobede pre deti z okolia, ktoré si platené doučovanie nemôžu dovoliť.",
+    emoji: "📚", suma: 45, lajky: 28 },
+
+  { id: 7, typ: "charita", velkost: "small", kat: "Komunita", zdroj: "Charity", overene: true, charLevel: "Silver",
+    autor: "Lidl pomáha – nadácia", pfp: "#5BA8F0", ini: "L", lok: "celá SR", cas: "1 d", num: 120015,
+    titul: "Firma zdvojnásobí každý dar zamestnanca", popis: "Daruj €50, Lidl pridá ďalších €50. Matching kampaň na detské ihriská.",
+    emoji: "🤝", suma: 0, lajky: 156 },
+
+  { id: 8, typ: "skutok", velkost: "small", kat: "Zdravie", media: "kreslene",
+    autor: "Anonym", pfp: "#2E9E9E", ini: "A", karma: "Silver", lok: "Trenčín", cas: "2 d", num: 120009,
+    titul: "Daroval krv po výzve nemocnice", popis: "Nemocnica hlásila kritický nedostatok 0-. Išiel som hneď ráno.",
+    emoji: "🩸", suma: 50, lajky: 41 },
+
+  { id: 9, typ: "ziadost", velkost: "small", kat: "Pomoc", zdroj: "Help",
+    autor: "Jozef M.", pfp: "#7A3030", ini: "J", lok: "Trenčín · Zámostie", cas: "2 d", num: 120005,
+    titul: "Po úraze sa neviem dostať na rehabilitácie", popis: "Potrebujem odvoz na rehabilitácie 2× týždenne, kým sa nezotavím.",
+    ciel: 0, vyzbierane: 0, emoji: "🦽", pomocnici: 3, otvorenaPodpora: true },
+
+  { id: 10, typ: "skutok", velkost: "small", kat: "Komunita", media: "foto",
+    autor: "Tomáš R.", pfp: "#5BA8F0", ini: "T", karma: "Gold", lok: "Trenčín · Sihoť", cas: "2 d", num: 119998,
+    titul: "Naučil som babičku volať cez videohovor", popis: "Aby mohla vidieť vnúčatá v zahraničí. Trvalo to hodinu, ale zvládla to.",
+    emoji: "📱", suma: 20, lajky: 18 },
+
+  { id: 11, typ: "skutok", velkost: "med", kat: "Priroda", media: "foto",
+    autor: "Cyklo Trenčín", pfp: "#2E7D52", ini: "C", karma: "Silver", lok: "Trenčín → Nemšová", cas: "3 d", num: 119980,
+    titul: "Mesiac do práce na bicykli namiesto auta — 240 km", popis: "Nahradil som auto bicyklom. Ušetrené CO2 sa pripočítava do eko skutkov.",
+    emoji: "🚲", suma: 62, lajky: 22,
+    fotky: [U("photo-1517649763962-0c623066013b"), U("photo-1476514525535-07fb3b4ae5f1")] },
+];
+
+const heroGrad = (kat) => `linear-gradient(160deg, ${KAT[kat].bg}, ${KAT[kat].bg2})`;
+
+// ===================== MODUL =====================
+export default function ModulGood({ wide, otvorModul }) {
+  const [screen, setScreen] = useState("home"); // home | detail | verify | add
+  const [aktId, setAktId] = useState(null);
+  const [verifyMode, setVerifyMode] = useState("ok");
+  const [hlaska, setHlaska] = useState(null);
+  const [oslava, setOslava] = useState(null); // {suma, komu}
+  const [lajknute, setLajknute] = useState({});
+
+  const toast = (m) => { setHlaska(m); setTimeout(() => setHlaska((x) => (x === m ? null : x)), 2300); };
+  const oslavuj = (suma, komu) => { setOslava({ suma, komu }); setTimeout(() => setOslava(null), 1900); };
+  const obal = (el) => wide ? <div style={{ maxWidth: 620, margin: "0 auto" }}>{el}</div> : el;
+
+  const akt = POLOZKY.find((x) => x.id === aktId);
+
+  return (
+    <div style={{ minHeight: "100%" }}>
+      {screen === "home" && (
+        <Home wide={wide} toast={toast} otvorModul={otvorModul}
+          onDetail={(id) => { setAktId(id); setScreen("detail"); }}
+          onAdd={() => setScreen("add")} />
+      )}
+      {screen === "detail" && akt && obal(
+        <GoodDetail it={akt} toast={toast} oslavuj={oslavuj}
+          lajknute={lajknute} setLajknute={setLajknute}
+          onBack={() => setScreen("home")}
+          onVerify={(mode) => { setVerifyMode(mode); setScreen("verify"); }} />
+      )}
+      {screen === "verify" && akt && obal(
+        <GoodVerify it={akt} mode={verifyMode} toast={toast} onBack={() => setScreen("detail")} />
+      )}
+      {screen === "add" && obal(
+        <GoodAdd toast={toast} oslavuj={oslavuj} onDone={() => setScreen("home")} />
+      )}
+
+      {/* oslava — aura prsteň (podpis značky) */}
+      {oslava && (
+        <div onClick={() => setOslava(null)} style={{ position: "absolute", inset: 0, background: "rgba(4,6,12,.75)", backdropFilter: "blur(14px)", WebkitBackdropFilter: "blur(14px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200, flexDirection: "column", gap: 18, animation: "fadeUp .2s ease" }}>
+          <Aura size={134} hrubka={2}>
+            <span style={{ fontSize: 52 }}>{oslava.suma >= 100 ? "🎊" : oslava.suma >= 50 ? "⭐" : "😊"}</span>
+          </Aura>
+          <div style={{ color: "#fff", fontSize: 20, fontWeight: 800 }}>{oslava.suma >= 100 ? "Skvelé! Veľká podpora!" : "Ďakujeme!"}</div>
+          <div style={{ color: C.textSec, fontSize: 14, textAlign: "center", padding: "0 30px", lineHeight: 1.5 }}>Tvoja podpora <b style={{ color: C.greenL }}>{oslava.suma} DEED</b> letí k {oslava.komu}. Reťaz dobra pokračuje.</div>
+        </div>
+      )}
+
+      {hlaska && (
+        <div style={{ position: "absolute", bottom: 92, left: "50%", transform: "translateX(-50%)", background: "rgba(11,15,26,.72)", backdropFilter: "blur(18px)", WebkitBackdropFilter: "blur(18px)", border: "1px solid rgba(52,211,153,.35)", color: "#C9F2E2", padding: "11px 18px", borderRadius: 30, fontSize: 12.5, fontWeight: 600, zIndex: 100, width: "max-content", maxWidth: "88%", textAlign: "center", animation: "fadeUp .3s ease", boxShadow: "0 10px 34px rgba(0,0,0,.45), 0 0 24px rgba(67,224,200,.12)" }}>
+          {hlaska}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ===================== HOME / FEED =====================
+function Home({ wide, toast, otvorModul, onDetail, onAdd }) {
+  return (
+    <div style={{ paddingBottom: 14 }}>
+      {/* header */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 18px 10px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+          <span onClick={() => toast("☰ Menu: 11 modulov + Mapa + nastavenia")} style={{ fontSize: 22, color: "#C8CCD2", cursor: "pointer", lineHeight: 1 }}>☰</span>
+          <span style={{ fontSize: 20, fontWeight: 800 }}>DEED <span style={gradText}>Good</span></span>
+        </div>
+        <div onClick={() => otvorModul && otvorModul("profil")} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3, cursor: "pointer" }}>
+          {/* avatar so zlatou aurou podľa karmy */}
+          <div style={{ width: 38, height: 38, borderRadius: "50%", background: "#3A8DD6", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 15, boxShadow: "0 0 0 2px rgba(240,199,90,.75), 0 0 16px rgba(240,199,90,.45)" }}>M</div>
+          <div style={{ fontSize: 10, fontWeight: 800, color: C.gold }}>Gold</div>
+        </div>
+      </div>
+
+      {/* sekcie */}
+      <div style={{ display: "flex", gap: 8, padding: "6px 16px 12px" }}>
+        <div onClick={() => toast("Talent — TikTok kanál (demo)")} style={sekciaBtn()}>▶ Talent</div>
+        <div onClick={() => toast("Nástenka — udalosti (demo)")} style={sekciaBtn()}><span style={{ color: "#7E9BF0" }}>▣</span> Nástenka</div>
+        <div onClick={onAdd} style={{ ...sekciaBtn(), background: GRAD, border: "1px solid transparent", color: "#fff", boxShadow: "0 6px 20px rgba(99,134,255,.32)" }}>＋ Pridať</div>
+      </div>
+
+      {/* rebríčky */}
+      <div style={{ display: "flex", gap: 6, padding: "0 16px 12px", overflowX: "auto" }}>
+        {[["▼", "#13344A", "#5BA8F0", "PARTNER", "Kaufland", "Rebríček: Top B2B partner"],
+          ["♛", "#33290F", "#E7C766", "DARCA", "Lukáš H.", "Rebríček: Top darca"],
+          ["★", "#33220F", "#F0A85E", "HRDINA", "Jana N.", "Rebríček: Top hrdina"],
+          ["☺", "#2A1F10", "#E7C766", "FUN", "AI omyly", "Fun zóna — AI omyly (demo)"]].map((l, i) => (
+          <div key={i} onClick={() => toast(l[5])} style={{ minWidth: 72, background: C.surface, border: `1px solid ${C.line}`, borderRadius: 13, padding: "8px 4px", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, cursor: "pointer", flex: "0 0 auto" }}>
+            <div style={{ width: 30, height: 28, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, background: l[1], color: l[2] }}>{l[0]}</div>
+            <div style={{ fontSize: 7, letterSpacing: ".4px", color: C.textTer, fontWeight: 700 }}>{l[3]}</div>
+            <div style={{ fontSize: 9.5, fontWeight: 700 }}>{l[4]}</div>
+          </div>
+        ))}
+        <div style={{ width: 1, background: C.line, margin: "4px 2px", flex: "0 0 auto" }} />
+        {["Mária", "Peter"].map((n) => (
+          <div key={n} style={{ minWidth: 52, display: "flex", flexDirection: "column", alignItems: "center", gap: 3, flex: "0 0 auto" }}>
+            <div style={{ width: 40, height: 40, borderRadius: "50%", background: "#16181D", border: "2px solid #5BA8F0", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, color: "#C8CCD2" }}>{n[0]}</div>
+            <div style={{ fontSize: 9, color: C.textSec }}>{n}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* ticker + rádius */}
+      <div style={{ margin: "0 16px 8px", background: C.surface2, borderRadius: 10, padding: "8px 12px", display: "flex", alignItems: "center", gap: 10, fontSize: 11, color: C.textSec }}>
+        <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#3DD68C", flex: "none", animation: "pulse 1.6s infinite" }} />
+        Dnes 312 skutkov · mesiac 9 480 · pred 1 min
+      </div>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "2px 18px 14px", fontSize: 12, color: C.textTer }}>
+        <span>◉ Moja štvrť · Trenčín · 2 km</span>
+        <a onClick={() => toast("Mapa — nastavenie rádiusu (demo)")} style={{ color: "#5BA8F0", cursor: "pointer" }}>zmeniť</a>
+      </div>
+
+      {/* feed */}
+      <div style={wide
+        ? { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: 12, alignItems: "start", padding: "0 16px" }
+        : { padding: "0 16px" }}>
+        {POLOZKY.map((it) => <GoodKarta key={it.id} it={it} wide={wide} onDetail={() => onDetail(it.id)} />)}
+      </div>
+    </div>
+  );
+}
+
+function sekciaBtn() {
+  return { flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, height: 44, borderRadius: 13, background: C.surface2, border: `1px solid ${C.line}`, fontSize: 13, fontWeight: 600, cursor: "pointer" };
+}
+
+function ZdrojTag({ it }) {
+  if (it.zdroj === "Help") return <span style={{ display: "inline-flex", fontSize: 10, fontWeight: 600, padding: "3px 9px", borderRadius: 7, background: "#2a1414", color: "#F2706F" }}>Help · žiadosť</span>;
+  if (it.zdroj === "Charity") return <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 9, fontWeight: 700, color: "#E7C766", background: "#2A1F10", padding: "2px 7px", borderRadius: 6 }}>✓ Charita {it.charLevel || ""}</span>;
+  return <span style={{ display: "inline-flex", fontSize: 10, fontWeight: 600, padding: "3px 9px", borderRadius: 7, background: KAT[it.kat].bg, color: KAT[it.kat].c }}>{katLabel(it.kat)}</span>;
+}
+
+function GoodKarta({ it, wide, onDetail }) {
+  const mb = wide ? 0 : 12;
+  // VEĽKÁ
+  if (it.velkost === "big") {
+    return (
+      <div onClick={onDetail} style={{ background: C.surface2, border: `1px solid ${C.line}`, borderRadius: 16, marginBottom: mb, overflow: "hidden", cursor: "pointer" }}>
+        <div style={{ height: 148, position: "relative", display: "flex", alignItems: "center", justifyContent: "center", background: heroGrad(it.kat) }}>
+          {it.video
+            ? <Video src={it.video} poster={it.fotky?.[0]} h={148} badge={false} />
+            : it.fotky?.length
+              ? <FotoPrispevku fotky={it.fotky} emoji={it.emoji} h={148} />
+              : <div style={{ fontSize: 44 }}>{it.emoji}</div>}
+          <span style={{ position: "absolute", top: 12, left: 12, fontSize: 10, fontWeight: 700, padding: "4px 9px", borderRadius: 7, background: "rgba(0,0,0,.6)", color: "#E7C766", pointerEvents: "none" }}>★ {it.vyznam}</span>
+          {it.media === "video" && <span style={{ position: "absolute", top: 12, right: 12, fontSize: 10, fontWeight: 700, padding: "4px 9px", borderRadius: 7, background: "rgba(0,0,0,.6)", color: "#fff", pointerEvents: "none" }}>▶ video</span>}
+          <span style={{ position: "absolute", bottom: 12, left: 12, pointerEvents: "none" }}><ZdrojTag it={it} /></span>
+        </div>
+        <div style={{ padding: 14 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
+            <div style={{ width: 32, height: 32, borderRadius: "50%", flex: "none", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 13, color: "#fff", background: it.pfp }}>{it.ini}</div>
+            <div style={{ fontWeight: 700, fontSize: 13.5 }}>{it.autor}</div>
+            {it.overene && <span style={{ fontSize: 9, color: "#3DD68C", background: "#0f2417", padding: "2px 7px", borderRadius: 7 }}>overené</span>}
+            <span style={{ marginLeft: "auto", fontSize: 10, color: C.textTer }}>{it.cas}</span>
+          </div>
+          <div style={{ fontSize: 10.5, color: C.textTer, marginLeft: 42, marginBottom: 8 }}>{it.lok} · skutok č. {it.num.toLocaleString("sk")}</div>
+          <div style={{ fontSize: 13, fontWeight: 700, lineHeight: 1.35 }}>{it.titul}</div>
+        </div>
+      </div>
+    );
+  }
+  // ŽIADOSŤ
+  if (it.velkost === "req") {
+    const pct = it.ciel ? Math.round(it.vyzbierane / it.ciel * 100) : 0;
+    return (
+      <div onClick={onDetail} style={{ background: "rgba(242,112,111,.06)", border: "1px solid rgba(242,112,111,.32)", borderRadius: 17, marginBottom: mb, padding: 14, display: "flex", gap: 12, alignItems: "flex-start", cursor: "pointer" }}>
+        {it.fotky?.length
+          ? <FotoPrispevku fotky={it.fotky} emoji={it.emoji} h={64} w={64} radius={11} />
+          : <div style={{ width: 64, height: 64, borderRadius: 11, background: "#2a1414", border: "1px solid #7A3030", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, fontWeight: 800, color: "#F2706F", flex: "none" }}>{it.emoji}</div>}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <div style={{ fontSize: 12.5, fontWeight: 700, lineHeight: 1.3, color: "#F2706F" }}>{it.titul}</div>
+            {it.topovane && <span style={{ fontSize: 10, fontWeight: 600, padding: "3px 9px", borderRadius: 7, background: "#2a1414", color: "#F2706F", marginLeft: "auto", flex: "none" }}>Topované</span>}
+          </div>
+          <div style={{ fontSize: 10.5, color: "#D6B0B0", marginTop: 6 }}>{it.autor} · {it.lok}</div>
+          {it.ciel ? (
+            <>
+              <div style={{ height: 6, background: "#2a1414", borderRadius: 3, marginTop: 8, overflow: "hidden" }}>
+                <div style={{ height: "100%", width: `${pct}%`, background: "#F2706F" }} />
+              </div>
+              <div style={{ fontSize: 9.5, color: "#C99", marginTop: 4 }}>{it.vyzbierane.toLocaleString("sk")} € z {it.ciel.toLocaleString("sk")} € · {it.pomocnici} pomohlo</div>
+            </>
+          ) : (
+            <div style={{ fontSize: 9.5, color: "#C99", marginTop: 6 }}>{it.pomocnici} ľudí sa zapojilo · otvorená podpora</div>
+          )}
+        </div>
+      </div>
+    );
+  }
+  // STREDNÁ
+  if (it.velkost === "med") {
+    const jeCharita = it.typ === "charita";
+    const pctMini = jeCharita ? Math.round(it.vyzbierane / it.ciel * 100) : 0;
+    return (
+      <div onClick={onDetail} style={{ background: C.surface2, border: `1px solid ${jeCharita ? "#2A5E8E" : C.line}`, borderRadius: 16, marginBottom: mb, padding: 12, display: "flex", gap: 12, alignItems: "flex-start", cursor: "pointer" }}>
+        {it.fotky?.length
+          ? <FotoPrispevku fotky={it.fotky} emoji={it.emoji} h={80} w={96} radius={11} />
+          : <div style={{ width: 96, height: 80, borderRadius: 11, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, background: heroGrad(it.kat) }}>{it.media === "kreslene" ? "✎" : it.emoji}</div>}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 12.5, fontWeight: 700, lineHeight: 1.3 }}>{it.titul}</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
+            <span style={{ fontSize: 10, color: C.textSec }}>{it.autor}</span>
+            <ZdrojTag it={it} />
+          </div>
+          {jeCharita && (
+            <div style={{ marginTop: 6 }}>
+              <div style={{ height: 5, background: "#1F2731", borderRadius: 3, overflow: "hidden" }}>
+                <div style={{ height: "100%", width: `${pctMini}%`, background: KAT[it.kat].c }} />
+              </div>
+              <div style={{ fontSize: 9, color: C.textTer, marginTop: 3 }}>{it.vyzbierane.toLocaleString("sk")} € z {it.ciel.toLocaleString("sk")} € · {pctMini}%</div>
+            </div>
+          )}
+        </div>
+        <span style={{ fontSize: 10, color: C.textTer, flex: "none" }}>{it.cas}</span>
+      </div>
+    );
+  }
+  // MALÝ RIADOK
+  const jeZiadost = it.typ === "ziadost";
+  const jeCharita = it.typ === "charita";
+  const col = jeZiadost ? "#F2706F" : jeCharita ? "#5BA8F0" : KAT[it.kat].c;
+  const bg = jeZiadost ? "#1c1314" : jeCharita ? "#10233a" : KAT[it.kat].bg;
+  const ic = it.media === "kreslene" ? "✎" : jeZiadost ? "!" : jeCharita ? "✓" : "▦";
+  return (
+    <div onClick={onDetail} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 12px", background: "rgba(255,255,255,.035)", border: `1px solid ${jeZiadost ? "rgba(242,112,111,.35)" : C.line2}`, borderRadius: 14, marginBottom: wide ? 0 : 8, cursor: "pointer" }}>
+      <div style={{ width: 38, height: 38, borderRadius: 9, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flex: "none", background: bg, color: col, border: `1px solid ${jeZiadost ? "#7A3030" : KAT[it.kat].bd}` }}>{ic}</div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 11.5, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+          <span style={{ width: 6, height: 6, borderRadius: "50%", display: "inline-block", marginRight: 5, background: col }} />{it.titul}
+        </div>
+        <div style={{ fontSize: 9.5, color: C.textTer, marginTop: 2 }}>{it.autor} · {jeZiadost ? "žiadosť" : jeCharita ? "charita" : katLabel(it.kat)}{it.karma ? " · " + it.karma : ""}</div>
+      </div>
+      <div style={{ textAlign: "right", flex: "none" }}>
+        <div style={{ fontSize: 10, color: C.textTer }}>{it.cas}</div>
+        <div style={{ color: "#4A4F57", fontSize: 14 }}>›</div>
+      </div>
+    </div>
+  );
+}
+
+// ===================== DETAIL =====================
+function GoodDetail({ it, toast, oslavuj, lajknute, setLajknute, onBack, onVerify }) {
+  const [potvrd, setPotvrd] = useState(null); // {kanal, suma}
+  const otvorGaleriu = useGaleria();
+  const jeZiadost = it.typ === "ziadost", jeCharita = it.typ === "charita";
+  const akcent = jeZiadost ? "#F2706F" : jeCharita ? "#5BA8F0" : KAT[it.kat].c;
+  const maProgres = (jeZiadost && it.ciel) || jeCharita;
+  const pct = maProgres ? Math.round(it.vyzbierane / it.ciel * 100) : 0;
+  const lajk = !!lajknute[it.id];
+
+  function podpor(suma) {
+    toast(`Ďakujeme za ${suma} DEED pre ${it.autor}`);
+    oslavuj(suma, it.autor);
+  }
+  function potvrdVlastnu() {
+    toast(`Odoslané ${potvrd.suma} ${potvrd.kanal === "FIAT" ? "€" : "DEED"} · ${it.autor}`);
+    oslavuj(parseInt(potvrd.suma) || 10, it.autor);
+    setPotvrd(null);
+  }
+
+  return (
+    <div style={{ paddingBottom: 24 }}>
+      {/* hero */}
+      <div style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center", background: heroGrad(it.kat), ...(it.video ? {} : { height: 150 }) }}>
+        {it.video
+          ? <Video src={it.video} poster={it.fotky?.[0]} h={220} badge={false} />
+          : it.fotky?.length
+            ? <Foto src={it.fotky[0]} emoji={it.emoji} h={150} style={{ position: "absolute", inset: 0 }} onClick={() => otvorGaleriu(it.fotky, 0)} />
+            : <div style={{ fontSize: 52 }}>{it.media === "kreslene" ? "✎" : it.emoji}</div>}
+        <div onClick={onBack} style={{ position: "absolute", top: 14, left: 14, width: 34, height: 34, borderRadius: "50%", background: "rgba(0,0,0,.55)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 18, cursor: "pointer", zIndex: 2 }}>‹</div>
+        <div onClick={() => toast("⋯ možnosti")} style={{ position: "absolute", top: 14, right: 14, width: 34, height: 34, borderRadius: "50%", background: "rgba(0,0,0,.55)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 18, cursor: "pointer", zIndex: 2 }}>⋯</div>
+        <span style={{ position: "absolute", bottom: 12, left: 14, pointerEvents: "none" }}><ZdrojTag it={it} /></span>
+        {it.fotky?.length > 1 && <span style={{ position: "absolute", bottom: 12, right: 14, background: "rgba(0,0,0,.6)", borderRadius: 12, padding: "3px 9px", fontSize: 10, color: "#fff", pointerEvents: "none" }}>⧉ {it.fotky.length} · klikni na foto</span>}
+      </div>
+      <MiniFotky fotky={it.fotky} />
+
+      <div style={{ padding: "14px 18px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <div style={{ width: 32, height: 32, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 13, color: "#fff", background: it.pfp, flex: "none" }}>{it.ini}</div>
+          <div>
+            <div style={{ fontWeight: 700, fontSize: 13.5 }}>{it.autor}</div>
+            <div style={{ fontSize: 12, color: C.textTer }}>{it.lok} · č. {it.num.toLocaleString("sk")}</div>
+          </div>
+          {it.overene && <span style={{ marginLeft: "auto", fontSize: 9, color: "#3DD68C", background: "#0f2417", padding: "2px 7px", borderRadius: 7 }}>overené</span>}
+        </div>
+        <div style={{ marginTop: 10, fontSize: 14, fontWeight: 700, lineHeight: 1.35 }}>{it.titul}</div>
+        <p style={{ color: C.textSec, fontSize: 12.5, lineHeight: 1.5, marginTop: 8 }}>{it.popis}</p>
+
+        {maProgres && (
+          <div style={{ textAlign: "center", padding: 12, background: C.surface2, border: "1px solid rgba(116,166,255,.35)", borderRadius: 14, marginTop: 6 }}>
+            <b style={{ fontSize: 22, color: "#5BA8F0" }}>{it.vyzbierane.toLocaleString("sk")} €</b> <span style={{ color: C.textSec }}>z {it.ciel.toLocaleString("sk")} € ({pct}%)</span>
+            <div style={{ height: 6, background: "#1F2731", borderRadius: 3, marginTop: 8, overflow: "hidden" }}>
+              <div style={{ height: "100%", width: `${pct}%`, background: akcent }} />
+            </div>
+          </div>
+        )}
+
+        <SekciaLabel>ZADARMO</SekciaLabel>
+        <div style={{ display: "flex", gap: 10 }}>
+          <div onClick={() => setLajknute({ ...lajknute, [it.id]: !lajk })}
+            style={{ flex: 1, height: 44, borderRadius: 11, background: C.surface2, border: `1px solid ${lajk ? "#7A3030" : C.line}`, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, fontWeight: 700, cursor: "pointer", color: lajk ? "#F2706F" : C.text, fontSize: 14 }}>
+            ♥ {(it.lajky || 0) + (lajk ? 1 : 0)}
+          </div>
+          <div onClick={() => toast("👍 Páči sa")} style={{ flex: 1, height: 44, borderRadius: 11, background: C.surface2, border: `1px solid ${C.line}`, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, fontWeight: 700, cursor: "pointer", fontSize: 14 }}>
+            ↑ {Math.floor((it.lajky || 0) / 3)}
+          </div>
+        </div>
+
+        <SekciaLabel>DROBNÁ PODPORA — KLIK A HNEĎ ODÍDE</SekciaLabel>
+        <div style={{ display: "flex", gap: 8, alignItems: "flex-end" }}>
+          <FixBtn w={52} h={48} e="★" v="10" onClick={() => podpor(10)} />
+          <FixBtn w={58} h={56} e="◆" v="50" onClick={() => podpor(50)} />
+          <FixBtn w={64} h={64} e="🔥" v="100" eCol="#F0A85E" onClick={() => podpor(100)} />
+          <div style={{ width: 1, alignSelf: "stretch", borderLeft: "1px dashed #3A3F47", margin: "0 4px" }} />
+          <FixBtn w={62} h={64} e="SMS" v="€" bg="#1A1410" bd="#5A4A2A" col="#E7C766" onClick={() => toast("SMS podpora (euro/operátor)")} />
+        </div>
+
+        <SekciaLabel>VLASTNÁ SUMA — VYBER KANÁL</SekciaLabel>
+        <div style={{ display: "flex", gap: 10 }}>
+          <div onClick={() => setPotvrd({ kanal: "FIAT", suma: "" })} style={{ flex: 1, height: 50, borderRadius: 11, background: C.surface2, border: `1px solid ${C.line}`, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+            <div style={{ fontWeight: 700, fontSize: 13 }}>€ FIAT</div><div style={{ fontSize: 8.5, color: C.textTer, marginTop: 2 }}>euro · procesor</div>
+          </div>
+          <div onClick={() => setPotvrd({ kanal: "DEED", suma: "" })} style={{ flex: 1, height: 50, borderRadius: 11, background: C.surface2, border: `1px solid ${C.line}`, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+            <div style={{ fontWeight: 700, fontSize: 13, color: "#5BA8F0" }}>DEED</div><div style={{ fontSize: 8.5, color: C.textTer, marginTop: 2 }}>wallet → wallet</div>
+          </div>
+        </div>
+
+        {/* QR */}
+        <div style={{ display: "flex", alignItems: "center", gap: 14, background: C.surface2, border: `1px solid ${C.line}`, borderRadius: 14, padding: 12, marginTop: 14 }}>
+          <div style={{ width: 52, height: 52, borderRadius: 8, background: "#fff", flex: "none", display: "grid", gridTemplateColumns: "repeat(5,1fr)", gridTemplateRows: "repeat(5,1fr)", gap: 1, padding: 5 }}>
+            {[...Array(25)].map((_, k) => <i key={k} style={{ background: (k * 7 + 3) % 3 ? "#0B0C0F" : "transparent", borderRadius: 1 }} />)}
+          </div>
+          <div>
+            <div style={{ fontWeight: 700, fontSize: 12.5 }}>QR tohto skutku</div>
+            <div style={{ fontSize: 12, color: C.textTer }}>Zväčšiť a zdieľať na siete</div>
+          </div>
+          <div onClick={() => toast("Zdieľať: YouTube · IG · siete · kopírovať")} style={{ marginLeft: "auto", background: GRAD, color: "#fff", fontWeight: 700, fontSize: 11, padding: "9px 15px", borderRadius: 11, cursor: "pointer", boxShadow: "0 5px 16px rgba(99,134,255,.32)" }}>Zdieľať</div>
+        </div>
+
+        <div style={{ textAlign: "center", fontSize: 10, color: C.textTer, marginTop: 16 }}>Bol si pri tom? Komunita preveruje skutky.</div>
+        <div style={{ display: "flex", gap: 12, marginTop: 14 }}>
+          <VerifyBtn ok onClick={() => onVerify("ok")} />
+          <VerifyBtn onClick={() => onVerify("no")} />
+        </div>
+      </div>
+
+      {/* potvrdenie vlastnej sumy */}
+      {potvrd && (
+        <Modal onClose={() => setPotvrd(null)}>
+          <div style={{ fontSize: 15, fontWeight: "bold", marginBottom: 10 }}>Vlastná suma — {potvrd.kanal}</div>
+          <input autoFocus type="number" placeholder={potvrd.kanal === "FIAT" ? "suma v €" : "počet DEED"} value={potvrd.suma}
+            onChange={(e) => setPotvrd({ ...potvrd, suma: e.target.value })}
+            style={{ width: "100%", padding: "11px 13px", borderRadius: 12, background: "rgba(0,0,0,.3)", border: `1px solid ${C.line}`, color: C.text, fontSize: 16, marginBottom: 12, outline: "none" }} />
+          <div style={{ fontSize: 12, color: C.textTer, marginBottom: 14 }}>Skontroluj sumu pred odoslaním (proti preklepu).</div>
+          <div style={{ display: "flex", gap: 10 }}>
+            <button onClick={() => setPotvrd(null)} style={{ flex: 1, padding: "12px 0", borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: "pointer", background: "transparent", color: C.textSec, border: `1px solid ${C.line}` }}>Späť</button>
+            <button onClick={potvrdVlastnu} disabled={!potvrd.suma} style={{ flex: 1, padding: "12px 0", borderRadius: 14, fontSize: 14, fontWeight: 700, cursor: potvrd.suma ? "pointer" : "not-allowed", background: potvrd.suma ? GRAD : "rgba(255,255,255,.05)", color: potvrd.suma ? "#fff" : C.textTer, border: "none", boxShadow: potvrd.suma ? "0 8px 26px rgba(99,134,255,.32)" : "none" }}>Potvrdiť a odoslať</button>
+          </div>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+function SekciaLabel({ children }) {
+  return <div style={{ fontSize: 10, letterSpacing: ".5px", color: C.textTer, fontWeight: 700, margin: "18px 0 8px" }}>{children}</div>;
+}
+function FixBtn({ w, h, e, v, eCol, bg, bd, col, onClick }) {
+  return (
+    <div onClick={onClick} style={{ width: w, height: h, borderRadius: 10, background: bg || C.surface2, border: `1px solid ${bd || C.line}`, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", cursor: "pointer", color: col || "#5BA8F0", fontWeight: 700 }}>
+      <span style={{ fontSize: 17, color: eCol }}>{e}</span><span style={{ fontSize: 11, marginTop: 3 }}>{v}</span>
+    </div>
+  );
+}
+function VerifyBtn({ ok, onClick }) {
+  return (
+    <div onClick={onClick} style={{ flex: 1, height: 62, borderRadius: 13, display: "flex", alignItems: "center", gap: 10, paddingLeft: 16, cursor: "pointer", background: ok ? "#0f2417" : "#2a1414", border: `1px solid ${ok ? "#2E7D52" : "#7A3030"}` }}>
+      <div style={{ width: 28, height: 28, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 15, background: ok ? "#143D2A" : "#3D1A1A", color: ok ? "#3DD68C" : "#F2706F" }}>{ok ? "✓" : "✕"}</div>
+      <div>
+        <div style={{ fontWeight: 800, fontSize: 13, lineHeight: 1.1, color: ok ? "#3DD68C" : "#F2706F" }}>{ok ? "Overujem" : "Namietam"}</div>
+        <div style={{ fontSize: 9.5, color: C.textTer }}>skutok</div>
+      </div>
+    </div>
+  );
+}
+
+// ===================== OVERENIE / NÁMIETKA =====================
+function GoodVerify({ it, mode, toast, onBack }) {
+  const ok = mode === "ok";
+  return (
+    <div style={{ paddingBottom: 24 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "16px 18px 8px" }}>
+        <div onClick={onBack} style={{ width: 30, height: 30, borderRadius: "50%", background: C.surface2, border: `1px solid ${C.line}`, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: 16 }}>‹</div>
+        <h3 style={{ fontSize: 15, margin: 0, color: ok ? "#3DD68C" : "#F2706F" }}>{ok ? "Overujem skutok" : "Námietka k skutku"}</h3>
+      </div>
+      <div style={{ padding: "4px 18px 14px" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: C.surface, border: `1px solid ${C.line}`, borderRadius: 12, padding: 14, fontSize: 13 }}>
+          <div><b>{it.autor}</b><div style={{ fontSize: 12, color: C.textTer }}>{it.titul.slice(0, 30)}… · č. {it.num.toLocaleString("sk")}</div></div>
+        </div>
+        <div style={{ background: ok ? "#0f2417" : "#2a1414", border: `1px solid ${ok ? "#2E7D52" : "#7A3030"}`, borderRadius: 12, padding: 14, marginTop: 14, fontSize: 12, lineHeight: 1.4, color: ok ? "#C2E6D4" : "#F0B0AC" }}>
+          {ok ? "Potvrdzujem, že som bol pri tom a skutok sa naozaj stal. Nepravdivé overenie môže mať následky." : "Námietka sa preveruje. Falošná námietka v zlej viere = rovnaká sankcia ako podvod."} <span style={{ fontSize: 11, color: C.textTer }}>[právna veta]</span>
+        </div>
+        <SekciaLabel>{ok ? "Doplň (nepovinné)" : "Vysvetli dôvod námietky · povinné"}</SekciaLabel>
+        <textarea rows={3} placeholder={ok ? "Bol som tam, videl som to…" : "Napríklad: bol som tam o hodinu neskôr a…"} style={inp(70)} />
+        <SekciaLabel>Foto/video (nepovinné — zvýši dôveryhodnosť)</SekciaLabel>
+        <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
+          {[0, 1, 2].map((k) => (
+            <div key={k} onClick={() => toast("📷 Pridať")} style={{ width: 64, height: 64, border: `1px dashed ${C.line}`, borderRadius: 11, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, color: "#4A4F57", cursor: "pointer" }}>+</div>
+          ))}
+        </div>
+        <button onClick={() => { toast(ok ? "Ďakujeme — tvoje overenie dvíha dôveryhodnosť skutku" : "Námietka odoslaná — preverí ju AI + overenie"); setTimeout(onBack, 400); }}
+          style={{ width: "100%", height: 50, borderRadius: 12, border: `1px solid ${ok ? "#2E7D52" : "#7A3030"}`, background: ok ? "#0f2417" : "#2a1414", color: ok ? "#cfeede" : "#F0B0AC", fontWeight: 700, fontSize: 15, cursor: "pointer", marginTop: 18 }}>
+          {ok ? "✓ Overujem skutok" : "✕ Podávam námietku"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ===================== PRIDAŤ SKUTOK =====================
+function GoodAdd({ toast, oslavuj, onDone }) {
+  const [krok, setKrok] = useState("vyber"); // vyber | solo | nahlad
+  const [text, setText] = useState("");
+
+  const aiText = () => {
+    const raw = text.trim() || "Pomohol som susede vyniesť nákup do tretieho poschodia.";
+    let s = raw.charAt(0).toUpperCase() + raw.slice(1);
+    if (!/[.!?]$/.test(s)) s += ".";
+    return s;
+  };
+
+  return (
+    <div style={{ paddingBottom: 24 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "16px 18px 8px" }}>
+        <div onClick={() => krok === "vyber" ? onDone() : setKrok(krok === "nahlad" ? "solo" : "vyber")}
+          style={{ width: 30, height: 30, borderRadius: "50%", background: C.surface2, border: `1px solid ${C.line}`, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: 16 }}>‹</div>
+        <h3 style={{ fontSize: 15, margin: 0 }}>{krok === "vyber" ? "Pridať skutok" : krok === "solo" ? "Opíš svoj skutok" : "Skontroluj a potvrď"}</h3>
+      </div>
+
+      <div style={{ padding: 18 }}>
+        {krok === "vyber" && (
+          <>
+            <h2 style={{ fontSize: 18, marginBottom: 6 }}>Ako si pomohol?</h2>
+            <p style={{ color: C.textSec, fontSize: 13 }}>Vyber, či si skutok urobil sám, alebo vo viacerých.</p>
+            <div style={{ display: "flex", gap: 12, marginTop: 16 }}>
+              <div onClick={() => setKrok("solo")} style={{ flex: 1, background: C.surface2, border: `1px solid ${C.line}`, borderRadius: 16, padding: "24px 14px", textAlign: "center", cursor: "pointer" }}>
+                <div style={{ fontSize: 34 }}>🙋</div><div style={{ fontWeight: 700, marginTop: 10 }}>Sólo</div><div style={{ fontSize: 11, color: C.textTer, marginTop: 4 }}>urobil som to sám</div>
+              </div>
+              <div onClick={() => toast("Komunitný — scan QR účastníkov (demo)")} style={{ flex: 1, background: C.surface2, border: `1px solid ${C.line}`, borderRadius: 16, padding: "24px 14px", textAlign: "center", cursor: "pointer" }}>
+                <div style={{ fontSize: 34 }}>👥</div><div style={{ fontWeight: 700, marginTop: 10 }}>Komunitný</div><div style={{ fontSize: 11, color: C.textTer, marginTop: 4 }}>boli sme viacerí</div>
+              </div>
+            </div>
+            <div style={{ padding: "14px 0", fontSize: 11, color: C.textTer, lineHeight: 1.5 }}>Žiadosti o pomoc sa vytvárajú v module Help. Tu pridávaš len skutky, ktoré si vykonal.</div>
+          </>
+        )}
+
+        {krok === "solo" && (
+          <>
+            <p style={{ color: C.textSec, fontSize: 13 }}>Napíš vlastnými slovami, čo si urobil. AI to upraví a navrhne kategóriu.</p>
+            <textarea value={text} onChange={(e) => setText(e.target.value)} rows={4} placeholder="Napr.: pomohol som susede vyniesť nákup do tretieho poschodia…" style={{ ...inp(90), marginTop: 8 }} />
+            <SekciaLabel>Dôkaz — foto/video (ide len do AI overenia)</SekciaLabel>
+            <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
+              {[0, 1].map((k) => (
+                <div key={k} onClick={() => toast("📷 Pridať dôkaz")} style={{ width: 64, height: 64, border: `1px dashed ${C.line}`, borderRadius: 11, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, color: "#4A4F57", cursor: "pointer" }}>+</div>
+              ))}
+            </div>
+            <button onClick={() => setKrok("nahlad")} style={{ width: "100%", height: 50, borderRadius: 14, background: GRAD, border: "none", color: "#fff", fontWeight: 700, fontSize: 15, cursor: "pointer", marginTop: 18, boxShadow: "0 8px 26px rgba(99,134,255,.32)" }}>Pokračovať na náhľad</button>
+          </>
+        )}
+
+        {krok === "nahlad" && (
+          <>
+            <div style={{ background: "#0f2417", border: "1px solid #2E7D52", borderRadius: 12, padding: 14, fontSize: 13, lineHeight: 1.4 }}>
+              <b style={{ color: "#3DD68C" }}>✦ AI návrh textu</b><br /><br />„{aiText()}“<br /><br />
+              <span style={{ fontSize: 11, color: C.textTer }}>Kategória: Komunita · navrhnutá AI</span>
+            </div>
+            <p style={{ fontSize: 11, color: C.textTer, marginTop: 14 }}>Vidíš, ako sa skutok zobrazí. Máš posledné slovo — môžeš upraviť text.</p>
+            <div style={{ background: "#2a1414", border: "1px solid #7A3030", borderRadius: 12, padding: 12, marginTop: 14, fontSize: 12, color: "#F0B0AC" }}>☐ Skutok je pravdivý a súhlasím s náhľadom. Klamstvo = zrušenie + sankcia.</div>
+            <button onClick={() => { toast("Skutok pridaný! +X DEED · karma rastie"); oslavuj(40, "teba"); setTimeout(onDone, 600); }}
+              style={{ width: "100%", height: 50, borderRadius: 12, background: "#0f2417", border: "1px solid #2E7D52", color: "#cfeede", fontWeight: 700, fontSize: 15, cursor: "pointer", marginTop: 18 }}>
+              Súhlasím a pridať skutok
+            </button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
