@@ -4,12 +4,36 @@
    ============================================================ */
 
 :root {
-  font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
-  color-scheme: dark;
+  /* JEDNOTNÝ FONT v celej appke */
+  font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
   font-size: 16px;          /* pohodlný základ — čitateľné pre všetky vekové kategórie */
   line-height: 1.5;
+
+  /* ===== MOTÍV — tmavý (predvolený) ===== */
+  color-scheme: dark;
+  --c-bg: #070A13;
+  --c-bg2: #0B101D;
+  --c-text: #F4F7FB;
+  --c-textSec: #C4CCDB;
+  --c-textTer: #929CB1;
+  --glass-rgb: 255, 255, 255;   /* sklenené povrchy: biele priesvitné na tmavom */
+  --panel-rgb: 11, 15, 26;      /* dock / hlavičky / modaly: tmavý panel */
+  --page-grad: radial-gradient(1300px 700px at 50% -12%, #121A2E 0%, #080B14 52%, #04060C 100%);
+}
+
+/* ===== MOTÍV — svetlý (profesionálny, podľa vzoru) ===== */
+html.light {
+  color-scheme: light;
+  --c-bg: #ECEFF5;
+  --c-bg2: #F6F8FC;
+  --c-text: #1A2230;
+  --c-textSec: #515C72;
+  --c-textTer: #7B8499;
+  --glass-rgb: 36, 48, 74;      /* jemný tmavý povrch na svetlom = svetlosivé karty */
+  --panel-rgb: 255, 255, 255;   /* dock / hlavičky / modaly: svetlý frosted panel */
+  --page-grad: radial-gradient(1200px 720px at 50% -10%, #FFFFFF 0%, #EEF2F8 55%, #E5EAF3 100%);
 }
 
 * {
@@ -18,13 +42,15 @@
 
 body {
   margin: 0;
-  background: #04060c;
+  background: var(--c-bg);
   font-size: 16px;
+  transition: background .35s ease;
 }
 
-/* drobné popisky nech nikdy nie sú menšie ako ~11px (čitateľnosť) */
+/* jednotný font + na mobile zabráni auto-zoomu pri fokuse */
 button, input, textarea {
-  font-size: 16px; /* na mobile zabráni auto-zoomu pri fokuse a zlepší čitateľnosť */
+  font-family: inherit;
+  font-size: 16px;
 }
 
 #root {
@@ -45,7 +71,7 @@ input, textarea, button {
   height: 5px;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.10);
+  background: rgba(var(--glass-rgb), 0.18);
   border-radius: 3px;
 }
 ::-webkit-scrollbar-track {

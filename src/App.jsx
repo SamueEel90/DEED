@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { C } from "./theme";
-import { GaleriaContext, Lightbox, DychajucePozadie } from "./shared";
+import { GaleriaContext, Lightbox, DychajucePozadie, MotivContext } from "./shared";
 import { TabBar, ViacSheet, nacitajTaby, ulozTaby, VSETKY_MODULY } from "./TabBar";
 import ModulGood from "./moduly/Good";
 import ModulHelp from "./moduly/Help";
@@ -43,7 +43,7 @@ export function useSirka() { return useOkno().w; }
 
 const pageBase = {
   position: "fixed", inset: 0, overflow: "hidden", isolation: "isolate",
-  background: "radial-gradient(1300px 700px at 50% -12%, #121A2E 0%, #080B14 52%, #04060C 100%)",
+  background: "var(--page-grad)", transition: "background .35s ease",
   fontFamily: FONT, color: C.text,
 };
 
@@ -54,9 +54,22 @@ export default function App() {
   const wide = w >= 760;
   const [nahlad, setNahlad] = useState("laptop"); // 📱 mobil | 📲 tablet | 💻 laptop (len desktop)
 
+  // motív (svetlý / tmavý) — prepína triedu .light na <html>, ukladá sa
+  const [svetly, setSvetly] = useState(() => {
+    try { return localStorage.getItem("deed.motiv") === "svetly"; } catch { return false; }
+  });
+  useEffect(() => {
+    try {
+      document.documentElement.classList.toggle("light", svetly);
+      localStorage.setItem("deed.motiv", svetly ? "svetly" : "tmavy");
+    } catch { /* private mode */ }
+  }, [svetly]);
+  const motiv = { svetly, prepni: () => setSvetly((s) => !s) };
+
+  let inner;
   // --- reálny mobil / tablet: appka na celú obrazovku, bez prepínača ---
   if (!desktop) {
-    return (
+    inner = (
       <div style={{ ...pageBase, display: "flex", justifyContent: "center", alignItems: "stretch" }}>
         <DychajucePozadie />
         <div style={{ position: "relative", width: "100%", maxWidth: wide ? 1180 : 560, height: "100%", background: C.bg }}>
@@ -64,18 +77,20 @@ export default function App() {
         </div>
       </div>
     );
+  } else {
+    // --- desktop: prepínač náhľadu zariadenia + appka naživo v ráme ---
+    inner = (
+      <div style={{ ...pageBase, display: "flex", flexDirection: "column", alignItems: "center" }}>
+        <DychajucePozadie />
+        <DeviceToggle device={nahlad} onChange={setNahlad} />
+        <div style={{ flex: 1, minHeight: 0, width: "100%", display: "flex", alignItems: "center", justifyContent: "center", padding: "0 16px 18px" }}>
+          <DevicePreview device={nahlad} vyska={h} />
+        </div>
+      </div>
+    );
   }
 
-  // --- desktop: prepínač náhľadu zariadenia + appka naživo v ráme ---
-  return (
-    <div style={{ ...pageBase, display: "flex", flexDirection: "column", alignItems: "center" }}>
-      <DychajucePozadie />
-      <DeviceToggle device={nahlad} onChange={setNahlad} />
-      <div style={{ flex: 1, minHeight: 0, width: "100%", display: "flex", alignItems: "center", justifyContent: "center", padding: "0 16px 18px" }}>
-        <DevicePreview device={nahlad} vyska={h} />
-      </div>
-    </div>
-  );
+  return <MotivContext.Provider value={motiv}>{inner}</MotivContext.Provider>;
 }
 
 // ---- PREPÍNAČ NÁHĽADU (desktop) ----

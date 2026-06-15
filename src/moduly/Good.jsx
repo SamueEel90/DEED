@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { C, U, inp, GRAD, gradText } from "../theme";
-import { Foto, FotoPrispevku, MiniFotky, Modal, Aura, Video, useGaleria } from "../shared";
+import { C, U, inp, GRAD } from "../theme";
+import { Foto, FotoPrispevku, MiniFotky, Modal, Aura, Video, ModulHlavicka, useGaleria } from "../shared";
 
 /*
   ============================================================
@@ -185,18 +185,14 @@ export default function ModulGood({ wide, otvorModul }) {
 function Home({ wide, toast, otvorModul, onDetail, onBoard, onAdd }) {
   return (
     <div style={{ paddingBottom: 14 }}>
-      {/* header */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 18px 10px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-          <span onClick={() => toast("☰ Menu: 11 modulov + Mapa + nastavenia")} style={{ fontSize: 26, color: "#C8CCD2", cursor: "pointer", lineHeight: 1 }}>☰</span>
-          <span style={{ fontSize: 23, fontWeight: 800 }}>DEED <span style={gradText}>Good</span></span>
-        </div>
-        <div onClick={() => otvorModul && otvorModul("profil")} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3, cursor: "pointer" }}>
-          {/* avatar so zlatou aurou podľa karmy */}
-          <div style={{ width: 38, height: 38, borderRadius: "50%", background: "#3A8DD6", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 15, boxShadow: "0 0 0 2px rgba(240,199,90,.75), 0 0 16px rgba(240,199,90,.45)" }}>M</div>
-          <div style={{ fontSize: 10, fontWeight: 800, color: C.gold }}>Gold</div>
-        </div>
-      </div>
+      {/* header — jednotná hlavička (logo D⁺ + názov) */}
+      <ModulHlavicka title="Domov" onMenu={() => toast("☰ Menu: moduly + Mapa + nastavenia")}
+        right={
+          <div onClick={() => otvorModul && otvorModul("profil")} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, cursor: "pointer" }}>
+            <div style={{ width: 34, height: 34, borderRadius: "50%", background: "#3A8DD6", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 14, color: "#fff", boxShadow: "0 0 0 2px rgba(240,199,90,.75), 0 0 14px rgba(240,199,90,.4)" }}>M</div>
+            <div style={{ fontSize: 9.5, fontWeight: 800, color: C.gold }}>Gold</div>
+          </div>
+        } />
 
       {/* sekcie */}
       <div style={{ display: "flex", gap: 8, padding: "6px 16px 12px" }}>
@@ -348,7 +344,7 @@ function GoodKarta({ it, wide, onDetail }) {
   const bg = jeZiadost ? "#1c1314" : jeCharita ? "#10233a" : KAT[it.kat].bg;
   const ic = it.media === "kreslene" ? "✎" : jeZiadost ? "!" : jeCharita ? "✓" : "▦";
   return (
-    <div onClick={onDetail} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 12px", background: "rgba(255,255,255,.035)", border: `1px solid ${jeZiadost ? "rgba(242,112,111,.35)" : C.line2}`, borderRadius: 14, marginBottom: wide ? 0 : 8, cursor: "pointer" }}>
+    <div onClick={onDetail} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 12px", background: "rgba(var(--glass-rgb),.04)", border: `1px solid ${jeZiadost ? "rgba(242,112,111,.35)" : C.line2}`, borderRadius: 14, marginBottom: wide ? 0 : 8, cursor: "pointer" }}>
       <div style={{ width: 38, height: 38, borderRadius: 9, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flex: "none", background: bg, color: col, border: `1px solid ${jeZiadost ? "#7A3030" : KAT[it.kat].bd}` }}>{ic}</div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 14, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
@@ -662,7 +658,7 @@ function GoodBoard({ onBack, onEvent, toast }) {
       </div>
       <div style={{ padding: "0 16px" }}>
         {list.map((e) => (
-          <div key={e.id} onClick={() => onEvent(e.id)} style={{ display: "flex", alignItems: "center", gap: 10, background: "rgba(255,255,255,.035)", border: `1px solid ${C.line2}`, borderRadius: 12, padding: "11px 12px", marginBottom: 8, cursor: "pointer" }}>
+          <div key={e.id} onClick={() => onEvent(e.id)} style={{ display: "flex", alignItems: "center", gap: 10, background: "rgba(var(--glass-rgb),.04)", border: `1px solid ${C.line2}`, borderRadius: 12, padding: "11px 12px", marginBottom: 8, cursor: "pointer" }}>
             <span style={{ width: 8, height: 8, borderRadius: "50%", background: SRC_COL[e.src], flex: "none" }} />
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 14.5, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{e.title}</div>

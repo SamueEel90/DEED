@@ -271,6 +271,28 @@ export function Hlavicka({ title, onBack, step, total }) {
 
 export function Otazka({ children }) { return <div style={{ fontSize: 15, fontWeight: 700, margin: "6px 0 12px" }}>{children}</div>; }
 
+// ---- MOTÍV (svetlý / tmavý režim) ----
+export const MotivContext = createContext({ svetly: false, prepni: () => {} });
+export const useMotiv = () => useContext(MotivContext);
+
+// ---- JEDNOTNÁ HLAVIČKA MODULU: ☰ + logo D⁺ + názov stránky (+ pravý obsah + prepínač režimu) ----
+export function ModulHlavicka({ title, onMenu, right }) {
+  const { svetly, prepni } = useMotiv();
+  return (
+    <div style={{ position: "sticky", top: 0, zIndex: 6, display: "flex", alignItems: "center", gap: 11, padding: "13px 16px", ...glassTmavy(18, .6), borderLeft: "none", borderRight: "none", borderTop: "none" }}>
+      <span onClick={onMenu} style={{ fontSize: 23, color: C.textSec, cursor: onMenu ? "pointer" : "default", lineHeight: 1, flex: "0 0 auto" }}>☰</span>
+      <span style={{ width: 32, height: 32, borderRadius: 10, background: GRAD, color: "#fff", fontWeight: 800, fontSize: 17, display: "flex", alignItems: "center", justifyContent: "center", position: "relative", boxShadow: "0 4px 14px rgba(99,134,255,.4)", flex: "0 0 auto" }}>
+        D<span style={{ position: "absolute", top: 3, right: 4, fontSize: 9 }}>+</span>
+      </span>
+      <span style={{ fontSize: 20, fontWeight: 800 }}>{title}</span>
+      <span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 13 }}>
+        {right}
+        <span onClick={prepni} title="Svetlý / tmavý režim" style={{ cursor: "pointer", fontSize: 16, width: 34, height: 34, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", border: `1px solid ${C.line}`, background: C.surface, flex: "0 0 auto" }}>{svetly ? "🌙" : "☀️"}</span>
+      </span>
+    </div>
+  );
+}
+
 export function vyberBox(active) {
   return {
     border: `1px solid ${active ? "rgba(116,166,255,.55)" : C.line}`,

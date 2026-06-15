@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { ModulHlavicka, useMotiv } from "../shared";
 
 /*
   ============================================================
@@ -14,8 +15,8 @@ import { useState } from "react";
 
 // ---- lokálna paleta (z prototypu) ----
 const A = {
-  surface: "#13151A", surface2: "#15171C", line: "#26282E", line2: "#1F2228",
-  txt: "#F1F3F5", txt2: "#C4CCDB", txt3: "#929CB1",
+  surface: "rgba(var(--glass-rgb),.05)", surface2: "rgba(var(--glass-rgb),.075)", line: "rgba(var(--glass-rgb),.10)", line2: "rgba(var(--glass-rgb),.06)",
+  txt: "var(--c-text)", txt2: "var(--c-textSec)", txt3: "var(--c-textTer)",
   blue: "#5BA8F0", blueBg: "#13243a", blueBd: "#2A5E8E",
   green: "#3DD68C", greenBg: "#0f2417", greenBd: "#2E7D52",
   red: "#F2706F", redBg: "#2a1414", redBd: "#7A3030",
@@ -155,6 +156,7 @@ export default function ModulAktivity({ wide }) {
   const celebrate = (title, text) => { setCeleb({ title, text }); setTimeout(() => setCeleb((c) => (c && c.title === title ? null : c)), 2200); };
   const obal = (el) => (wide ? <div style={{ maxWidth: 620, margin: "0 auto" }}>{el}</div> : el);
 
+  const { svetly } = useMotiv();
   const akt = ITEMS.find((x) => x.id === aktId);
   // aktívny accent: detail → doména položky · add → predvolená · inak vybraná doména
   const accentDom = screen === "detail" && akt ? akt.dom : screen === "add" ? (dom === "mix" ? "sport" : dom) : dom;
@@ -175,9 +177,8 @@ export default function ModulAktivity({ wide }) {
   return (
     <div style={{
       minHeight: "100%", position: "relative", color: A.txt,
-      background: acc.tint, transition: "background .4s ease",
+      background: svetly ? "var(--c-bg)" : acc.tint, transition: "background .4s ease",
       ["--acc"]: acc.c, ["--accBg"]: acc.bg, ["--accBd"]: acc.bd,
-      fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif",
     }}>
       {screen === "home" && <Home {...{ dom, view, pickDom, pickView, toast, open, setScreen, wide }} />}
       {screen === "detail" && akt && obal(<Detail {...{ it: akt, liked, like, support, toast, celebrate, home, setScreen }} />)}
@@ -215,15 +216,9 @@ function Home({ dom, view, pickDom, pickView, toast, open, setScreen }) {
 
   return (
     <div style={{ paddingBottom: 14 }}>
-      {/* header */}
-      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "14px 16px 10px" }}>
-        <span onClick={() => toast("☰ Menu: 12 modulov + Mapa + nastavenia")} style={{ fontSize: 22, color: "#C8CCD2", cursor: "pointer", lineHeight: 1 }}>☰</span>
-        <div style={{ width: 30, height: 30, borderRadius: 8, background: "var(--acc)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, color: "#08131A", fontSize: 15, transition: "background .4s" }}>D<sup style={{ fontSize: 9 }}>+</sup></div>
-        <div style={{ fontWeight: 700, fontSize: 18 }}>DEED <span style={{ color: "var(--acc)", transition: "color .4s" }}>{dom === "mix" ? "Aktivity" : acc.label}</span></div>
-        <div style={{ flex: 1 }} />
-        <span onClick={() => toast("Hľadať aktivity, workshopy, lektorov…")} style={{ color: A.txt2, fontSize: 17, width: 30, textAlign: "center", cursor: "pointer" }}>🔍</span>
-        <span onClick={() => toast("Notifikácie")} style={{ color: A.txt2, fontSize: 17, width: 30, textAlign: "center", cursor: "pointer" }}>🔔</span>
-      </div>
+      {/* header — jednotná hlavička (logo D⁺ + názov) */}
+      <ModulHlavicka title="Aktivity" onMenu={() => toast("☰ Menu: moduly + Mapa + nastavenia")}
+        right={<span style={{ color: A.txt2, fontSize: 19 }} onClick={() => toast("Hľadať aktivity, workshopy, lektorov…")}>🔍&nbsp;&nbsp;🔔</span>} />
 
       {/* live ticker */}
       <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 16px", fontSize: 12, color: A.txt2, borderTop: `.5px solid ${A.line}`, borderBottom: `.5px solid ${A.line}`, background: A.surface2 }}>
@@ -383,7 +378,7 @@ function SmallRow({ it, onOpen }) {
   const a = DOM[it.dom];
   const ic = it.type === "talent" ? "▶" : it.media === "kreslene" ? "✎" : "▦";
   return (
-    <div onClick={() => onOpen(it.id)} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 12px", background: "#13151A", border: `1px solid ${A.line2}`, borderRadius: 12, marginBottom: 8, cursor: "pointer" }}>
+    <div onClick={() => onOpen(it.id)} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 12px", background: A.surface, border: `1px solid ${A.line2}`, borderRadius: 12, marginBottom: 8, cursor: "pointer" }}>
       <div style={{ width: 38, height: 38, borderRadius: 9, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flex: "none", background: a.bg, color: a.c, border: `1px solid ${a.bd}` }}>{ic}</div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 14, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}><span style={{ width: 7, height: 7, borderRadius: "50%", display: "inline-block", marginRight: 6, background: a.c }} />{it.title}</div>

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { U, AV, GRAD, GRAD_ZELENY } from "../theme";
-import { Foto, Avatar, FotoPrispevku, MiniFotky, Modal, useGaleria } from "../shared";
+import { Foto, Avatar, FotoPrispevku, MiniFotky, Modal, ModulHlavicka, useGaleria } from "../shared";
 
 /*
   ============================================================
@@ -13,15 +13,15 @@ import { Foto, Avatar, FotoPrispevku, MiniFotky, Modal, useGaleria } from "../sh
 
 // ---- lokálna paleta modulu (Aura — priesvitné glass tóny) ----
 const K = {
-  bg: "transparent", bg2: "rgba(255,255,255,.03)", card: "rgba(255,255,255,.045)",
+  bg: "transparent", bg2: "rgba(var(--glass-rgb),.03)", card: "rgba(var(--glass-rgb),.045)",
   warmEdge: "rgba(245,158,90,.3)", warmBg: "rgba(245,158,90,.06)",
   blue: "#5B9BFF", blueBg: "rgba(91,155,255,.1)", blueEdge: "rgba(116,166,255,.38)",
   green: "#3DD68C", greenBg: "rgba(52,211,153,.08)", greenEdge: "rgba(52,211,153,.32)",
   gold: "#F0C75A", goldBg: "rgba(240,199,90,.07)",
   diamond: "#74A6FF",
   purple: "#8B7CFF",
-  txt: "#F4F7FB", txt2: "#C4CCDB", txt3: "#929CB1",
-  line: "rgba(255,255,255,.08)",
+  txt: "var(--c-text)", txt2: "var(--c-textSec)", txt3: "var(--c-textTer)",
+  line: "rgba(var(--glass-rgb),.08)",
 };
 
 // ---- hlavná zbierka (detail) ----
@@ -103,13 +103,8 @@ export default function ModulCharita({ wide, otvorModul }) {
 function CharitaFeed({ wide, toast, onDetail, onSheet }) {
   return (
     <div style={{ paddingBottom: 14 }}>
-      {/* header — sticky glass */}
-      <div style={{ position: "sticky", top: 0, zIndex: 5, display: "flex", alignItems: "center", gap: 10, padding: "13px 16px 10px", background: "rgba(11,15,26,.55)", backdropFilter: "blur(18px)", WebkitBackdropFilter: "blur(18px)", borderBottom: `1px solid ${K.line}` }}>
-        <span style={{ fontSize: 20, color: K.txt, cursor: "pointer" }}>☰</span>
-        <span style={{ width: 30, height: 30, borderRadius: 9, background: GRAD, color: "#fff", fontWeight: 800, fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 14px rgba(99,134,255,.4)" }}>D⁺</span>
-        <span style={{ fontSize: 18, fontWeight: 800 }}>Charita</span>
-        <span style={{ marginLeft: "auto", color: K.txt2, fontSize: 17 }}>🔍&nbsp;&nbsp;🔔</span>
-      </div>
+      {/* header — jednotná hlavička (logo D⁺ + názov) */}
+      <ModulHlavicka title="Charita" onMenu={() => toast("☰ Menu")} right={<span style={{ color: K.txt2, fontSize: 19 }}>🔍&nbsp;&nbsp;🔔</span>} />
 
       {/* ticker */}
       <div style={{ display: "flex", alignItems: "center", gap: 7, padding: "9px 16px", fontSize: 13.5, color: K.txt2, borderTop: `1px solid ${K.line}`, borderBottom: `1px solid ${K.line}`, background: K.bg2 }}>
@@ -262,7 +257,7 @@ function CharitaDetail({ toast, onBack, onReg }) {
     <div style={{ paddingBottom: 24 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "14px 16px" }}>
         <span onClick={onBack} style={{ fontSize: 20, color: K.txt2, cursor: "pointer" }}>←</span>
-        <span style={{ fontSize: 12, color: K.diamond, background: K.blueBg, border: `1px solid ${K.blueEdge}`, padding: "3px 9px", borderRadius: 7, fontWeight: 600, fontFamily: "ui-monospace, monospace" }}>12 000 / 47</span>
+        <span style={{ fontSize: 12, color: K.diamond, background: K.blueBg, border: `1px solid ${K.blueEdge}`, padding: "3px 9px", borderRadius: 7, fontWeight: 700, letterSpacing: ".02em" }}>12 000 / 47</span>
         <span style={{ fontSize: 12, color: K.txt2 }}>Liga proti rakovine</span>
         <span style={{ marginLeft: "auto", color: K.txt2 }}>↗&nbsp;&nbsp;🚩</span>
       </div>

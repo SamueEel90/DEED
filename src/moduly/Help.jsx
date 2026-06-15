@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { C, pasmo, U, AV, inp, infoBox, btn, GRAD, GRAD_ZELENY, glassTmavy } from "../theme";
-import { Foto, Avatar, FotoPrispevku, MiniFotky, Hlavicka, Otazka, Vyber, vyberBox, NavBtns, Suhrn, DokladRow, Modal, Toast, useGaleria } from "../shared";
+import { Foto, Avatar, FotoPrispevku, MiniFotky, Hlavicka, ModulHlavicka, Otazka, Vyber, vyberBox, NavBtns, Suhrn, DokladRow, Modal, Toast, useGaleria } from "../shared";
 
 /*
   ============================================================
@@ -79,13 +79,8 @@ function Feed({ wide, onDetail, onAdd }) {
 
   return (
     <div style={{ paddingBottom: 14 }}>
-      {/* header — sticky glass */}
-      <div style={{ position: "sticky", top: 0, zIndex: 5, display: "flex", alignItems: "center", gap: 9, padding: "13px 14px", ...glassTmavy(18, .55), borderLeft: "none", borderRight: "none", borderTop: "none" }}>
-        <span style={{ fontSize: 22, color: C.textSec }}>☰</span>
-        <span style={{ width: 30, height: 30, borderRadius: 9, background: GRAD, color: "#fff", fontWeight: 800, fontSize: 16, display: "flex", alignItems: "center", justifyContent: "center", position: "relative", boxShadow: "0 4px 14px rgba(99,134,255,.4)" }}>D<span style={{ position: "absolute", top: 3, right: 3, fontSize: 8 }}>+</span></span>
-        <span style={{ fontSize: 20, fontWeight: 800 }}>Help</span>
-        <span style={{ marginLeft: "auto", color: C.textSec, fontSize: 19 }}>🔍&nbsp;&nbsp;🔔</span>
-      </div>
+      {/* header — jednotná hlavička (logo D⁺ + názov) */}
+      <ModulHlavicka title="Help" right={<span style={{ color: C.textSec, fontSize: 19 }}>🔍&nbsp;&nbsp;🔔</span>} />
 
       {/* živý ticker */}
       <div key={tick} style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 14px", background: "rgba(29,158,117,.07)", borderBottom: `1px solid ${C.line2}`, fontSize: 13, animation: "fadeUp .45s ease" }}>

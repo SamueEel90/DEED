@@ -7,17 +7,19 @@
   ============================================================
 */
 
-// ---- PALETA (dark, studená polnočná modrá) ----
+// ---- PALETA — štruktúrne farby cez CSS premenné (tmavý/svetlý motív) ----
+// bg/surface/line/text sa prepínajú podľa motívu (--c-*, --glass-rgb v index.css),
+// akcentové farby (blue/green/…) ostávajú rovnaké v oboch režimoch.
 export const C = {
-  bg: "#070A13",
-  bg2: "#0B101D",
-  surface: "rgba(255,255,255,.045)",
-  surface2: "rgba(255,255,255,.07)",
-  line: "rgba(255,255,255,.08)",
-  line2: "rgba(255,255,255,.05)",
-  text: "#F4F7FB",
-  textSec: "#C4CCDB", // svetlejšie pre lepší kontrast (čitateľnosť pre všetky vekové kategórie)
-  textTer: "#929CB1", // bývalo veľmi tmavé — zosvetlené, aby drobné popisky boli čitateľné
+  bg: "var(--c-bg)",
+  bg2: "var(--c-bg2)",
+  surface: "rgba(var(--glass-rgb),.045)",
+  surface2: "rgba(var(--glass-rgb),.07)",
+  line: "rgba(var(--glass-rgb),.085)",
+  line2: "rgba(var(--glass-rgb),.05)",
+  text: "var(--c-text)",
+  textSec: "var(--c-textSec)",
+  textTer: "var(--c-textTer)",
   blue: "#3E7BFA",
   blueL: "#74A6FF",
   green: "#1FBF8F",
@@ -44,21 +46,21 @@ export const gradText = {
   color: "transparent",
 };
 
-// ---- GLASS POVRCH ----
+// ---- GLASS POVRCH (priesvitný; biely na tmavom / jemný tmavý na svetlom) ----
 export function glass(blur = 16, alpha = 0.05) {
   return {
-    background: `rgba(255,255,255,${alpha})`,
-    border: "1px solid rgba(255,255,255,.09)",
+    background: `rgba(var(--glass-rgb),${alpha})`,
+    border: "1px solid rgba(var(--glass-rgb),.09)",
     backdropFilter: `blur(${blur}px)`,
     WebkitBackdropFilter: `blur(${blur}px)`,
   };
 }
 
-// tmavý glass (sheety, dock, modaly — nad obsahom)
+// panelový glass (sheety, dock, modaly, hlavičky — nad obsahom): tmavý panel / svetlý frosted
 export function glassTmavy(blur = 22, alpha = 0.66) {
   return {
-    background: `rgba(11,15,26,${alpha})`,
-    border: "1px solid rgba(255,255,255,.09)",
+    background: `rgba(var(--panel-rgb),${alpha})`,
+    border: "1px solid rgba(var(--glass-rgb),.09)",
     backdropFilter: `blur(${blur}px)`,
     WebkitBackdropFilter: `blur(${blur}px)`,
   };
