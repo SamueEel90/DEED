@@ -8,6 +8,8 @@
   color-scheme: dark;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+  font-size: 16px;          /* pohodlný základ — čitateľné pre všetky vekové kategórie */
+  line-height: 1.5;
 }
 
 * {
@@ -17,6 +19,12 @@
 body {
   margin: 0;
   background: #04060c;
+  font-size: 16px;
+}
+
+/* drobné popisky nech nikdy nie sú menšie ako ~11px (čitateľnosť) */
+button, input, textarea {
+  font-size: 16px; /* na mobile zabráni auto-zoomu pri fokuse a zlepší čitateľnosť */
 }
 
 #root {

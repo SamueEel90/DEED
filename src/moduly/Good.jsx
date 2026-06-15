@@ -188,8 +188,8 @@ function Home({ wide, toast, otvorModul, onDetail, onBoard, onAdd }) {
       {/* header */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 18px 10px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-          <span onClick={() => toast("☰ Menu: 11 modulov + Mapa + nastavenia")} style={{ fontSize: 22, color: "#C8CCD2", cursor: "pointer", lineHeight: 1 }}>☰</span>
-          <span style={{ fontSize: 20, fontWeight: 800 }}>DEED <span style={gradText}>Good</span></span>
+          <span onClick={() => toast("☰ Menu: 11 modulov + Mapa + nastavenia")} style={{ fontSize: 26, color: "#C8CCD2", cursor: "pointer", lineHeight: 1 }}>☰</span>
+          <span style={{ fontSize: 23, fontWeight: 800 }}>DEED <span style={gradText}>Good</span></span>
         </div>
         <div onClick={() => otvorModul && otvorModul("profil")} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3, cursor: "pointer" }}>
           {/* avatar so zlatou aurou podľa karmy */}
@@ -227,13 +227,13 @@ function Home({ wide, toast, otvorModul, onDetail, onBoard, onAdd }) {
       </div>
 
       {/* ticker + rádius */}
-      <div style={{ margin: "0 16px 8px", background: C.surface2, borderRadius: 10, padding: "8px 12px", display: "flex", alignItems: "center", gap: 10, fontSize: 11, color: C.textSec }}>
+      <div style={{ margin: "0 16px 8px", background: C.surface2, borderRadius: 10, padding: "10px 13px", display: "flex", alignItems: "center", gap: 10, fontSize: 13, color: C.textSec }}>
         <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#3DD68C", flex: "none", animation: "pulse 1.6s infinite" }} />
         Dnes 312 skutkov · mesiac 9 480 · pred 1 min
       </div>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "2px 18px 14px", fontSize: 12, color: C.textTer }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "2px 18px 14px", fontSize: 13.5, color: C.textTer }}>
         <span>◉ Moja štvrť · Trenčín · 2 km</span>
-        <a onClick={() => toast("Mapa — nastavenie rádiusu (demo)")} style={{ color: "#5BA8F0", cursor: "pointer" }}>zmeniť</a>
+        <a onClick={() => toast("Mapa — nastavenie rádiusu (demo)")} style={{ color: "#74A6FF", cursor: "pointer", fontWeight: 600 }}>zmeniť</a>
       </div>
 
       {/* feed */}
@@ -247,7 +247,7 @@ function Home({ wide, toast, otvorModul, onDetail, onBoard, onAdd }) {
 }
 
 function sekciaBtn() {
-  return { flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, height: 44, borderRadius: 13, background: C.surface2, border: `1px solid ${C.line}`, fontSize: 13, fontWeight: 600, cursor: "pointer" };
+  return { flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, height: 52, borderRadius: 14, background: C.surface2, border: `1px solid ${C.line}`, fontSize: 15, fontWeight: 600, cursor: "pointer" };
 }
 
 function ZdrojTag({ it }) {
@@ -274,13 +274,13 @@ function GoodKarta({ it, wide, onDetail }) {
         </div>
         <div style={{ padding: 14 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
-            <div style={{ width: 32, height: 32, borderRadius: "50%", flex: "none", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 13, color: "#fff", background: it.pfp }}>{it.ini}</div>
-            <div style={{ fontWeight: 700, fontSize: 13.5 }}>{it.autor}</div>
-            {it.overene && <span style={{ fontSize: 9, color: "#3DD68C", background: "#0f2417", padding: "2px 7px", borderRadius: 7 }}>overené</span>}
-            <span style={{ marginLeft: "auto", fontSize: 10, color: C.textTer }}>{it.cas}</span>
+            <div style={{ width: 36, height: 36, borderRadius: "50%", flex: "none", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 15, color: "#fff", background: it.pfp }}>{it.ini}</div>
+            <div style={{ fontWeight: 700, fontSize: 15.5 }}>{it.autor}</div>
+            {it.overene && <span style={{ fontSize: 11, color: "#5CE6B8", background: "#0f2417", padding: "3px 9px", borderRadius: 8 }}>overené</span>}
+            <span style={{ marginLeft: "auto", fontSize: 12, color: C.textTer }}>{it.cas}</span>
           </div>
-          <div style={{ fontSize: 10.5, color: C.textTer, marginLeft: 42, marginBottom: 8 }}>{it.lok} · skutok č. {it.num.toLocaleString("sk")}</div>
-          <div style={{ fontSize: 13, fontWeight: 700, lineHeight: 1.35 }}>{it.titul}</div>
+          <div style={{ fontSize: 12.5, color: C.textTer, marginLeft: 48, marginBottom: 8 }}>{it.lok} · skutok č. {it.num.toLocaleString("sk")}</div>
+          <div style={{ fontSize: 16.5, fontWeight: 700, lineHeight: 1.4 }}>{it.titul}</div>
         </div>
       </div>
     );
@@ -295,19 +295,19 @@ function GoodKarta({ it, wide, onDetail }) {
           : <div style={{ width: 64, height: 64, borderRadius: 11, background: "#2a1414", border: "1px solid #7A3030", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, fontWeight: 800, color: "#F2706F", flex: "none" }}>{it.emoji}</div>}
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <div style={{ fontSize: 12.5, fontWeight: 700, lineHeight: 1.3, color: "#F2706F" }}>{it.titul}</div>
-            {it.topovane && <span style={{ fontSize: 10, fontWeight: 600, padding: "3px 9px", borderRadius: 7, background: "#2a1414", color: "#F2706F", marginLeft: "auto", flex: "none" }}>Topované</span>}
+            <div style={{ fontSize: 15, fontWeight: 700, lineHeight: 1.35, color: "#F68C8B" }}>{it.titul}</div>
+            {it.topovane && <span style={{ fontSize: 11, fontWeight: 600, padding: "3px 9px", borderRadius: 7, background: "#2a1414", color: "#F68C8B", marginLeft: "auto", flex: "none" }}>Topované</span>}
           </div>
-          <div style={{ fontSize: 10.5, color: "#D6B0B0", marginTop: 6 }}>{it.autor} · {it.lok}</div>
+          <div style={{ fontSize: 12.5, color: "#E0BABA", marginTop: 6 }}>{it.autor} · {it.lok}</div>
           {it.ciel ? (
             <>
-              <div style={{ height: 6, background: "#2a1414", borderRadius: 3, marginTop: 8, overflow: "hidden" }}>
+              <div style={{ height: 7, background: "#2a1414", borderRadius: 4, marginTop: 8, overflow: "hidden" }}>
                 <div style={{ height: "100%", width: `${pct}%`, background: "#F2706F" }} />
               </div>
-              <div style={{ fontSize: 9.5, color: "#C99", marginTop: 4 }}>{it.vyzbierane.toLocaleString("sk")} € z {it.ciel.toLocaleString("sk")} € · {it.pomocnici} pomohlo</div>
+              <div style={{ fontSize: 12, color: "#D8A8A8", marginTop: 5 }}>{it.vyzbierane.toLocaleString("sk")} € z {it.ciel.toLocaleString("sk")} € · {it.pomocnici} pomohlo</div>
             </>
           ) : (
-            <div style={{ fontSize: 9.5, color: "#C99", marginTop: 6 }}>{it.pomocnici} ľudí sa zapojilo · otvorená podpora</div>
+            <div style={{ fontSize: 12, color: "#D8A8A8", marginTop: 6 }}>{it.pomocnici} ľudí sa zapojilo · otvorená podpora</div>
           )}
         </div>
       </div>
@@ -323,9 +323,9 @@ function GoodKarta({ it, wide, onDetail }) {
           ? <FotoPrispevku fotky={it.fotky} emoji={it.emoji} h={80} w={96} radius={11} />
           : <div style={{ width: 96, height: 80, borderRadius: 11, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, background: heroGrad(it.kat) }}>{it.media === "kreslene" ? "✎" : it.emoji}</div>}
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 12.5, fontWeight: 700, lineHeight: 1.3 }}>{it.titul}</div>
+          <div style={{ fontSize: 15.5, fontWeight: 700, lineHeight: 1.35 }}>{it.titul}</div>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
-            <span style={{ fontSize: 10, color: C.textSec }}>{it.autor}</span>
+            <span style={{ fontSize: 12.5, color: C.textSec }}>{it.autor}</span>
             <ZdrojTag it={it} />
           </div>
           {jeCharita && (
@@ -351,14 +351,14 @@ function GoodKarta({ it, wide, onDetail }) {
     <div onClick={onDetail} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 12px", background: "rgba(255,255,255,.035)", border: `1px solid ${jeZiadost ? "rgba(242,112,111,.35)" : C.line2}`, borderRadius: 14, marginBottom: wide ? 0 : 8, cursor: "pointer" }}>
       <div style={{ width: 38, height: 38, borderRadius: 9, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flex: "none", background: bg, color: col, border: `1px solid ${jeZiadost ? "#7A3030" : KAT[it.kat].bd}` }}>{ic}</div>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 11.5, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-          <span style={{ width: 6, height: 6, borderRadius: "50%", display: "inline-block", marginRight: 5, background: col }} />{it.titul}
+        <div style={{ fontSize: 14, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+          <span style={{ width: 7, height: 7, borderRadius: "50%", display: "inline-block", marginRight: 6, background: col }} />{it.titul}
         </div>
-        <div style={{ fontSize: 9.5, color: C.textTer, marginTop: 2 }}>{it.autor} · {jeZiadost ? "žiadosť" : jeCharita ? "charita" : katLabel(it.kat)}{it.karma ? " · " + it.karma : ""}</div>
+        <div style={{ fontSize: 11.5, color: C.textTer, marginTop: 3 }}>{it.autor} · {jeZiadost ? "žiadosť" : jeCharita ? "charita" : katLabel(it.kat)}{it.karma ? " · " + it.karma : ""}</div>
       </div>
       <div style={{ textAlign: "right", flex: "none" }}>
-        <div style={{ fontSize: 10, color: C.textTer }}>{it.cas}</div>
-        <div style={{ color: "#4A4F57", fontSize: 14 }}>›</div>
+        <div style={{ fontSize: 12, color: C.textTer }}>{it.cas}</div>
+        <div style={{ color: "#5A606E", fontSize: 16 }}>›</div>
       </div>
     </div>
   );
@@ -404,13 +404,13 @@ function GoodDetail({ it, toast, oslavuj, lajknute, setLajknute, onBack, onVerif
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <div style={{ width: 32, height: 32, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 13, color: "#fff", background: it.pfp, flex: "none" }}>{it.ini}</div>
           <div>
-            <div style={{ fontWeight: 700, fontSize: 13.5 }}>{it.autor}</div>
-            <div style={{ fontSize: 12, color: C.textTer }}>{it.lok} · č. {it.num.toLocaleString("sk")}</div>
+            <div style={{ fontWeight: 700, fontSize: 15.5 }}>{it.autor}</div>
+            <div style={{ fontSize: 12.5, color: C.textTer }}>{it.lok} · č. {it.num.toLocaleString("sk")}</div>
           </div>
-          {it.overene && <span style={{ marginLeft: "auto", fontSize: 9, color: "#3DD68C", background: "#0f2417", padding: "2px 7px", borderRadius: 7 }}>overené</span>}
+          {it.overene && <span style={{ marginLeft: "auto", fontSize: 11, color: "#5CE6B8", background: "#0f2417", padding: "3px 9px", borderRadius: 8 }}>overené</span>}
         </div>
-        <div style={{ marginTop: 10, fontSize: 14, fontWeight: 700, lineHeight: 1.35 }}>{it.titul}</div>
-        <p style={{ color: C.textSec, fontSize: 12.5, lineHeight: 1.5, marginTop: 8 }}>{it.popis}</p>
+        <div style={{ marginTop: 12, fontSize: 17, fontWeight: 700, lineHeight: 1.4 }}>{it.titul}</div>
+        <p style={{ color: C.textSec, fontSize: 14.5, lineHeight: 1.6, marginTop: 9 }}>{it.popis}</p>
 
         {maProgres && (
           <div style={{ textAlign: "center", padding: 12, background: C.surface2, border: "1px solid rgba(116,166,255,.35)", borderRadius: 14, marginTop: 6 }}>
@@ -489,7 +489,7 @@ function GoodDetail({ it, toast, oslavuj, lajknute, setLajknute, onBack, onVerif
 }
 
 function SekciaLabel({ children }) {
-  return <div style={{ fontSize: 10, letterSpacing: ".5px", color: C.textTer, fontWeight: 700, margin: "18px 0 8px" }}>{children}</div>;
+  return <div style={{ fontSize: 11.5, letterSpacing: ".4px", color: C.textTer, fontWeight: 700, margin: "18px 0 9px" }}>{children}</div>;
 }
 function FixBtn({ w, h, e, v, eCol, bg, bd, col, onClick }) {
   return (
@@ -503,8 +503,8 @@ function VerifyBtn({ ok, onClick }) {
     <div onClick={onClick} style={{ flex: 1, height: 62, borderRadius: 13, display: "flex", alignItems: "center", gap: 10, paddingLeft: 16, cursor: "pointer", background: ok ? "#0f2417" : "#2a1414", border: `1px solid ${ok ? "#2E7D52" : "#7A3030"}` }}>
       <div style={{ width: 28, height: 28, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 15, background: ok ? "#143D2A" : "#3D1A1A", color: ok ? "#3DD68C" : "#F2706F" }}>{ok ? "✓" : "✕"}</div>
       <div>
-        <div style={{ fontWeight: 800, fontSize: 13, lineHeight: 1.1, color: ok ? "#3DD68C" : "#F2706F" }}>{ok ? "Overujem" : "Namietam"}</div>
-        <div style={{ fontSize: 9.5, color: C.textTer }}>skutok</div>
+        <div style={{ fontWeight: 800, fontSize: 14.5, lineHeight: 1.1, color: ok ? "#5CE6B8" : "#F68C8B" }}>{ok ? "Overujem" : "Namietam"}</div>
+        <div style={{ fontSize: 11.5, color: C.textTer }}>skutok</div>
       </div>
     </div>
   );
@@ -663,14 +663,14 @@ function GoodBoard({ onBack, onEvent, toast }) {
       <div style={{ padding: "0 16px" }}>
         {list.map((e) => (
           <div key={e.id} onClick={() => onEvent(e.id)} style={{ display: "flex", alignItems: "center", gap: 10, background: "rgba(255,255,255,.035)", border: `1px solid ${C.line2}`, borderRadius: 12, padding: "11px 12px", marginBottom: 8, cursor: "pointer" }}>
-            <span style={{ width: 7, height: 7, borderRadius: "50%", background: SRC_COL[e.src], flex: "none" }} />
+            <span style={{ width: 8, height: 8, borderRadius: "50%", background: SRC_COL[e.src], flex: "none" }} />
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{e.title}</div>
-              <div style={{ fontSize: 9.5, color: C.textTer, marginTop: 2 }}>{e.who} · {e.src}</div>
+              <div style={{ fontSize: 14.5, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{e.title}</div>
+              <div style={{ fontSize: 12, color: C.textTer, marginTop: 3 }}>{e.who} · {e.src}</div>
             </div>
             <div style={{ textAlign: "right", flex: "none" }}>
-              <div style={{ fontSize: 10, fontWeight: 700, color: SRC_COL[e.src] }}>{e.when}</div>
-              <div style={{ color: "#4A4F57" }}>›</div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: SRC_COL[e.src] }}>{e.when}</div>
+              <div style={{ color: "#5A606E", fontSize: 16 }}>›</div>
             </div>
           </div>
         ))}

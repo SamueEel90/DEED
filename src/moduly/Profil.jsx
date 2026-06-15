@@ -47,7 +47,7 @@ function ProfilHlavny({ toast, naWallet, naSub }) {
   return (
     <div style={{ paddingBottom: 14 }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 18px 10px" }}>
-        <span style={{ fontSize: 16, fontWeight: 800 }}>Môj profil</span>
+        <span style={{ fontSize: 18, fontWeight: 800 }}>Môj profil</span>
         <span onClick={() => naSub("Nastavenia")} style={{ fontSize: 18, color: C.textSec, cursor: "pointer" }}>⚙</span>
       </div>
 
@@ -75,9 +75,9 @@ function ProfilHlavny({ toast, naWallet, naSub }) {
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, padding: 16 }}>
         {dlazdice.map((d, i) => (
           <div key={i} onClick={d[5]} style={{ background: C.surface, border: `1px solid ${C.line}`, borderRadius: 14, padding: 14, cursor: "pointer" }}>
-            <div style={{ width: 34, height: 34, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, fontWeight: 700, background: d[2], color: d[3] }}>{d[4]}</div>
-            <div style={{ fontWeight: 700, fontSize: 12.5, marginTop: 12 }}>{d[0]}</div>
-            <div style={{ fontSize: 9.5, color: C.textTer, marginTop: 2 }}>{d[1]}</div>
+            <div style={{ width: 38, height: 38, borderRadius: 11, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 700, background: d[2], color: d[3] }}>{d[4]}</div>
+            <div style={{ fontWeight: 700, fontSize: 14.5, marginTop: 12 }}>{d[0]}</div>
+            <div style={{ fontSize: 11.5, color: C.textTer, marginTop: 3 }}>{d[1]}</div>
           </div>
         ))}
       </div>
@@ -97,7 +97,7 @@ function Penazenka({ toast, onBack }) {
     <div style={{ paddingBottom: 14 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "16px 18px 8px" }}>
         <div onClick={onBack} style={spatBtn}>‹</div>
-        <h3 style={{ fontSize: 15, margin: 0 }}>Peňaženka</h3>
+        <h3 style={{ fontSize: 17, margin: 0 }}>Peňaženka</h3>
       </div>
       <div style={{ padding: "0 16px" }}>
         <div style={{ position: "relative", overflow: "hidden", background: "linear-gradient(150deg, rgba(91,155,255,.22), rgba(139,124,255,.16) 55%, rgba(67,224,200,.13))", border: "1px solid rgba(116,166,255,.35)", borderRadius: 20, padding: 18, boxShadow: "0 14px 40px rgba(0,0,0,.35), 0 0 36px rgba(91,124,255,.14), inset 0 1px 0 rgba(255,255,255,.12)" }}>
@@ -188,13 +188,13 @@ function SubScreen({ nazov, toast, onBack }) {
     <div style={{ paddingBottom: 14 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "16px 18px 8px" }}>
         <div onClick={onBack} style={spatBtn}>‹</div>
-        <h3 style={{ fontSize: 15, margin: 0 }}>{nazov}</h3>
+        <h3 style={{ fontSize: 17, margin: 0 }}>{nazov}</h3>
       </div>
       <div style={{ padding: "0 16px" }}>{obsah}</div>
     </div>
   );
 }
 
-const spatBtn = { width: 30, height: 30, borderRadius: "50%", background: C.surface2, border: `1px solid ${C.line}`, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: 16 };
-const subItem = { display: "flex", alignItems: "center", justifyContent: "space-between", background: C.surface, border: `1px solid ${C.line}`, borderRadius: 12, padding: 14, marginBottom: 8, fontSize: 13 };
-const sekciaLabel = { fontSize: 10, letterSpacing: ".5px", color: C.textTer, fontWeight: 700, margin: "18px 0 8px" };
+const spatBtn = { width: 34, height: 34, borderRadius: "50%", background: C.surface2, border: `1px solid ${C.line}`, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: 17 };
+const subItem = { display: "flex", alignItems: "center", justifyContent: "space-between", background: C.surface, border: `1px solid ${C.line}`, borderRadius: 12, padding: "15px 14px", marginBottom: 8, fontSize: 14.5 };
+const sekciaLabel = { fontSize: 11.5, letterSpacing: ".4px", color: C.textTer, fontWeight: 700, margin: "18px 0 9px" };

@@ -15,7 +15,7 @@ import { useState } from "react";
 // ---- lokálna paleta (z prototypu) ----
 const A = {
   surface: "#13151A", surface2: "#15171C", line: "#26282E", line2: "#1F2228",
-  txt: "#E9EAEC", txt2: "#9AA0A8", txt3: "#7E848C",
+  txt: "#F1F3F5", txt2: "#C4CCDB", txt3: "#929CB1",
   blue: "#5BA8F0", blueBg: "#13243a", blueBd: "#2A5E8E",
   green: "#3DD68C", greenBg: "#0f2417", greenBd: "#2E7D52",
   red: "#F2706F", redBg: "#2a1414", redBd: "#7A3030",
@@ -114,13 +114,13 @@ const EVENTS = {
 // ---- spoločné štýly ----
 const cardS = { background: A.surface2, border: `1px solid ${A.line}`, borderRadius: 16, marginBottom: 12, overflow: "hidden", cursor: "pointer" };
 const rowTopS = { display: "flex", alignItems: "center", gap: 10, marginBottom: 4 };
-const pfpS = (bg) => ({ width: 32, height: 32, borderRadius: "50%", flex: "none", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 13, color: "#fff", background: bg });
-const nameS = { fontWeight: 700, fontSize: 13.5 };
-const timeS = { marginLeft: "auto", fontSize: 10, color: A.txt3 };
-const titleS = { fontSize: 13, fontWeight: 700, lineHeight: 1.35 };
-const verifS = { fontSize: 9, color: A.green, background: A.greenBg, padding: "2px 7px", borderRadius: 7 };
+const pfpS = (bg) => ({ width: 36, height: 36, borderRadius: "50%", flex: "none", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 15, color: "#fff", background: bg });
+const nameS = { fontWeight: 700, fontSize: 15.5 };
+const timeS = { marginLeft: "auto", fontSize: 12, color: A.txt3 };
+const titleS = { fontSize: 16, fontWeight: 700, lineHeight: 1.4 };
+const verifS = { fontSize: 11, color: A.green, background: A.greenBg, padding: "3px 9px", borderRadius: 8 };
 const heroGrad = (d) => `linear-gradient(160deg, ${DOM[d].bg} 0%, #0a0c11 100%)`;
-const secLbl = { fontSize: 10, letterSpacing: ".5px", color: A.txt3, fontWeight: 700, margin: "18px 0 8px" };
+const secLbl = { fontSize: 11.5, letterSpacing: ".4px", color: A.txt3, fontWeight: 700, margin: "18px 0 9px" };
 
 function Chip({ bg, c, children }) {
   return <span style={{ display: "inline-flex", alignItems: "center", fontSize: 10, fontWeight: 600, padding: "3px 9px", borderRadius: 7, background: bg, color: c }}>{children}</span>;
@@ -321,9 +321,9 @@ function MedCard({ it, onOpen }) {
     <div onClick={() => onOpen(it.id)} style={{ ...cardS, display: "flex", padding: 12, gap: 12, alignItems: "flex-start", border: `1px solid ${isCase ? a.bd : A.line}` }}>
       <div style={{ width: 96, height: 80, borderRadius: 11, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, background: heroGrad(it.dom) }}>{it.media === "kreslene" ? "✎" : it.emoji}</div>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 12.5, fontWeight: 700, lineHeight: 1.3 }}>{it.title}</div>
+        <div style={{ fontSize: 15, fontWeight: 700, lineHeight: 1.35 }}>{it.title}</div>
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
-          <span style={{ fontSize: 10, color: A.txt2 }}>{it.author}</span>
+          <span style={{ fontSize: 12.5, color: A.txt2 }}>{it.author}</span>
           <DomTag it={it} />
           {isCase && <ProgressMini it={it} />}
         </div>
@@ -343,10 +343,10 @@ function WCard({ it, onOpen }) {
           {it.b2b && <Wb bg={A.blueBg} c={A.blue}>B2B · audit</Wb>}
           {it.profi && <Wb bg={A.purpleBg} c={A.purple}>PROFI</Wb>}
         </div>
-        <div style={{ fontSize: 12.5, fontWeight: 700, lineHeight: 1.3, marginTop: 6 }}>{it.title}</div>
+        <div style={{ fontSize: 15, fontWeight: 700, lineHeight: 1.35, marginTop: 6 }}>{it.title}</div>
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
-          <span style={{ fontSize: 10, color: A.txt2 }}>{it.author} · {it.loc}</span>
-          <span style={{ fontSize: 9.5, color: A.txt3 }}>★ {it.rating} · {it.seats} miest</span>
+          <span style={{ fontSize: 12, color: A.txt2 }}>{it.author} · {it.loc}</span>
+          <span style={{ fontSize: 11.5, color: A.txt3 }}>★ {it.rating} · {it.seats} miest</span>
         </div>
       </div>
       <span style={{ ...timeS, fontSize: 9 }}>{it.time}</span>
@@ -371,9 +371,9 @@ function ReqCard({ it, onOpen }) {
       <div style={{ display: "flex", padding: 14, gap: 12, alignItems: "flex-start" }}>
         <div style={{ width: 64, height: 64, borderRadius: 11, background: A.redBg, border: `1px solid ${A.redBd}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, color: "var(--acc)", flex: "none" }}>{it.emoji}</div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 12.5, fontWeight: 700, lineHeight: 1.3, color: "var(--acc)" }}>{it.title}</div>
-          <div style={{ fontSize: 10.5, color: "#C9C2C2", marginTop: 6 }}>{it.author} · {it.loc}</div>
-          <div style={{ fontSize: 9.5, color: A.txt3, marginTop: 6 }}>❓ Hľadám pomoc · {it.helpers} sa zapojilo</div>
+          <div style={{ fontSize: 15, fontWeight: 700, lineHeight: 1.35, color: "var(--acc)" }}>{it.title}</div>
+          <div style={{ fontSize: 12.5, color: "#D2CACA", marginTop: 6 }}>{it.author} · {it.loc}</div>
+          <div style={{ fontSize: 11.5, color: A.txt3, marginTop: 6 }}>❓ Hľadám pomoc · {it.helpers} sa zapojilo</div>
         </div>
       </div>
     </div>
@@ -386,8 +386,8 @@ function SmallRow({ it, onOpen }) {
     <div onClick={() => onOpen(it.id)} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 12px", background: "#13151A", border: `1px solid ${A.line2}`, borderRadius: 12, marginBottom: 8, cursor: "pointer" }}>
       <div style={{ width: 38, height: 38, borderRadius: 9, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flex: "none", background: a.bg, color: a.c, border: `1px solid ${a.bd}` }}>{ic}</div>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 11.5, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}><span style={{ width: 6, height: 6, borderRadius: "50%", display: "inline-block", marginRight: 5, background: a.c }} />{it.title}</div>
-        <div style={{ fontSize: 9.5, color: A.txt3, marginTop: 2 }}>{it.author} · {a.label}{it.karma ? " · " + it.karma : ""}</div>
+        <div style={{ fontSize: 14, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}><span style={{ width: 7, height: 7, borderRadius: "50%", display: "inline-block", marginRight: 6, background: a.c }} />{it.title}</div>
+        <div style={{ fontSize: 11.5, color: A.txt3, marginTop: 3 }}>{it.author} · {a.label}{it.karma ? " · " + it.karma : ""}</div>
       </div>
       <div style={{ textAlign: "right", flex: "none" }}>
         <div style={timeS}>{it.time}</div>
@@ -446,7 +446,7 @@ function DeedDetail({ it, liked, like, support, toast, home }) {
           {it.verified && <span style={{ ...verifS, marginLeft: "auto" }}>overené</span>}
         </div>
         <div style={{ ...titleS, marginTop: 10, fontSize: 14 }}>{it.title}</div>
-        <p style={{ fontSize: 12.5, lineHeight: 1.5, marginTop: 8, color: A.txt2 }}>{it.desc}</p>
+        <p style={{ fontSize: 14.5, lineHeight: 1.6, marginTop: 9, color: A.txt2 }}>{it.desc}</p>
 
         {isCase && (
           <div style={{ textAlign: "center", padding: 12, background: A.surface2, border: `1px solid ${a.bd}`, borderRadius: 12, marginTop: 6 }}>
@@ -507,7 +507,7 @@ function WorkshopDetail({ it, toast, celebrate, home }) {
       </DetailHero>
       <div style={{ padding: "14px 18px" }}>
         <div style={{ ...titleS, fontSize: 15 }}>{it.title}</div>
-        <p style={{ fontSize: 12.5, lineHeight: 1.5, marginTop: 8, color: A.txt2 }}>{it.desc}</p>
+        <p style={{ fontSize: 14.5, lineHeight: 1.6, marginTop: 9, color: A.txt2 }}>{it.desc}</p>
 
         <div onClick={() => toast("Profil lektora (demo)")} style={{ display: "flex", alignItems: "center", gap: 10, background: A.surface2, border: `1px solid ${A.line}`, borderRadius: 13, padding: 12, marginTop: 14, cursor: "pointer" }}>
           <div style={{ width: 44, height: 44, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 16, color: "#fff", flex: "none", background: it.pfp }}>{it.ini}</div>
@@ -552,7 +552,7 @@ function HelpDetail({ it, toast, celebrate, home }) {
           <div><div style={nameS}>{it.author}</div><div style={{ fontSize: 12, color: A.txt3 }}>{it.loc} · č. {it.num.toLocaleString("sk")}</div></div>
         </div>
         <div style={{ ...titleS, marginTop: 10, fontSize: 14 }}>{it.title}</div>
-        <p style={{ fontSize: 12.5, lineHeight: 1.5, marginTop: 8, color: A.txt2 }}>{it.desc}</p>
+        <p style={{ fontSize: 14.5, lineHeight: 1.6, marginTop: 9, color: A.txt2 }}>{it.desc}</p>
         <InfoBox>{it.helpers} ľudí sa už zapojilo. Po prijatí sa otvorí chat, dohodnete sa. Po dokončení: hodnotenie + tip + reťaz dobra.</InfoBox>
         <Btn green onClick={() => { celebrate("Ozval si sa!", `Otvorili sme chat s ${it.author}. Dohodnite si detaily.`); setTimeout(home, 1700); }}>✋ Môžem pomôcť</Btn>
         <div style={{ display: "flex", gap: 10, marginTop: 10 }}>

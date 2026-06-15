@@ -81,23 +81,23 @@ function Feed({ wide, onDetail, onAdd }) {
     <div style={{ paddingBottom: 14 }}>
       {/* header — sticky glass */}
       <div style={{ position: "sticky", top: 0, zIndex: 5, display: "flex", alignItems: "center", gap: 9, padding: "13px 14px", ...glassTmavy(18, .55), borderLeft: "none", borderRight: "none", borderTop: "none" }}>
-        <span style={{ fontSize: 18, color: C.textTer }}>☰</span>
-        <span style={{ width: 28, height: 28, borderRadius: 9, background: GRAD, color: "#fff", fontWeight: 800, fontSize: 15, display: "flex", alignItems: "center", justifyContent: "center", position: "relative", boxShadow: "0 4px 14px rgba(99,134,255,.4)" }}>D<span style={{ position: "absolute", top: 3, right: 3, fontSize: 8 }}>+</span></span>
-        <span style={{ fontSize: 17, fontWeight: 800 }}>Help</span>
-        <span style={{ marginLeft: "auto", color: C.textTer, fontSize: 17 }}>🔍&nbsp;&nbsp;🔔</span>
+        <span style={{ fontSize: 22, color: C.textSec }}>☰</span>
+        <span style={{ width: 30, height: 30, borderRadius: 9, background: GRAD, color: "#fff", fontWeight: 800, fontSize: 16, display: "flex", alignItems: "center", justifyContent: "center", position: "relative", boxShadow: "0 4px 14px rgba(99,134,255,.4)" }}>D<span style={{ position: "absolute", top: 3, right: 3, fontSize: 8 }}>+</span></span>
+        <span style={{ fontSize: 20, fontWeight: 800 }}>Help</span>
+        <span style={{ marginLeft: "auto", color: C.textSec, fontSize: 19 }}>🔍&nbsp;&nbsp;🔔</span>
       </div>
 
       {/* živý ticker */}
-      <div key={tick} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 14px", background: "rgba(29,158,117,.07)", borderBottom: `1px solid ${C.line2}`, fontSize: 11.5, animation: "fadeUp .45s ease" }}>
+      <div key={tick} style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 14px", background: "rgba(29,158,117,.07)", borderBottom: `1px solid ${C.line2}`, fontSize: 13, animation: "fadeUp .45s ease" }}>
         <span style={{ color: C.greenL, animation: "pulse 1.6s infinite" }}>●</span>
         <span style={{ color: C.textSec }}><b style={{ color: C.text }}>{dar.kto}</b> práve poslal <b style={{ color: C.greenL }}>{dar.co}</b> → {dar.komu}</span>
       </div>
 
       {/* 3 sekcie */}
-      <div style={{ display: "flex", borderBottom: `1px solid ${C.line}`, fontSize: 13, textAlign: "center" }}>
-        <div style={{ flex: 1, padding: "11px 0", color: C.textSec }}>▶ Talent</div>
-        <div style={{ flex: 1, padding: "11px 0", color: C.textSec, borderLeft: `1px solid ${C.line}` }}>🏅 Nástenka</div>
-        <div onClick={onAdd} style={{ flex: 1, padding: "11px 0", color: "#fff", fontWeight: 700, background: GRAD, cursor: "pointer" }}>＋ Pridať</div>
+      <div style={{ display: "flex", borderBottom: `1px solid ${C.line}`, fontSize: 14.5, textAlign: "center" }}>
+        <div style={{ flex: 1, padding: "13px 0", color: C.textSec }}>▶ Talent</div>
+        <div style={{ flex: 1, padding: "13px 0", color: C.textSec, borderLeft: `1px solid ${C.line}` }}>🏅 Nástenka</div>
+        <div onClick={onAdd} style={{ flex: 1, padding: "13px 0", color: "#fff", fontWeight: 700, background: GRAD, cursor: "pointer" }}>＋ Pridať</div>
       </div>
 
       {/* ľudia */}
@@ -105,7 +105,7 @@ function Feed({ wide, onDetail, onAdd }) {
         {[["🛡", "Lidl", C.blueL], ["👑", "Eva K.", C.gold], ["⭐", "Ján H.", "#E58A6A"]].map((l, i) => (
           <div key={i} style={{ textAlign: "center", flex: "0 0 auto" }}>
             <div style={{ width: 38, height: 32, lineHeight: "32px", border: `1px solid rgba(255,255,255,.18)`, borderRadius: 8, color: l[2] }}>{l[0]}</div>
-            <div style={{ fontSize: 9, color: C.textTer, marginTop: 3 }}>{l[1]}</div>
+            <div style={{ fontSize: 11, color: C.textTer, marginTop: 3 }}>{l[1]}</div>
           </div>
         ))}
         <div style={{ width: 1, background: C.line, margin: "0 2px" }} />
@@ -116,11 +116,11 @@ function Feed({ wide, onDetail, onAdd }) {
             ) : (
               <Avatar src={p[0]} emoji={p[1]} size={34} />
             )}
-            <div style={{ fontSize: 9, color: C.textTer, marginTop: 3 }}>{p[2]}</div>
+            <div style={{ fontSize: 11, color: C.textTer, marginTop: 3 }}>{p[2]}</div>
           </div>
         ))}
       </div>
-      <div style={{ display: "flex", justifyContent: "space-between", padding: "0 14px 10px", borderBottom: `1px solid ${C.line}`, fontSize: 10, color: C.textTer }}>
+      <div style={{ display: "flex", justifyContent: "space-between", padding: "0 14px 10px", borderBottom: `1px solid ${C.line}`, fontSize: 12, color: C.textTer }}>
         <span>Dnes 247 · Mesiac 8 421</span><span>📍 Sihoť · Trenčín</span>
       </div>
 
@@ -154,12 +154,12 @@ function FeedCard({ z, onClick }) {
         )}
         <div style={{ display: "flex" }}>
           {!velka && <FotoPrispevku fotky={z.fotky} emoji={z.ikona} h={92} w={78} />}
-          <div style={{ padding: "10px 13px 12px", flex: 1 }}>
-            <div style={{ fontSize: 14, fontWeight: "bold" }}>{z.nazov}
-              {z.overeny && <span style={{ fontSize: 9, color: C.greenL, border: `1px solid rgba(127,203,160,.4)`, borderRadius: 20, padding: "1px 6px", marginLeft: 6 }}>overená</span>}
+          <div style={{ padding: "11px 14px 13px", flex: 1 }}>
+            <div style={{ fontSize: 16, fontWeight: "bold" }}>{z.nazov}
+              {z.overeny && <span style={{ fontSize: 11, color: C.greenL, border: `1px solid rgba(127,203,160,.4)`, borderRadius: 20, padding: "2px 8px", marginLeft: 6 }}>overená</span>}
             </div>
-            <div style={{ fontSize: 12, color: "#C9AEB0", margin: "5px 0 8px", lineHeight: 1.4 }}>{z.pribeh.length > 70 ? z.pribeh.slice(0, 70) + "…" : z.pribeh}</div>
-            <div style={{ fontSize: 11, color: C.textSec }}>{z.suma} € <span style={{ color: C.textTer }}>/ {z.ciel} €</span><span style={{ float: "right", color: C.textTer }}>{Math.round(z.suma / z.ciel * 100)} %</span></div>
+            <div style={{ fontSize: 13.5, color: "#D8BCBE", margin: "6px 0 9px", lineHeight: 1.5 }}>{z.pribeh.length > 70 ? z.pribeh.slice(0, 70) + "…" : z.pribeh}</div>
+            <div style={{ fontSize: 12.5, color: C.textSec }}>{z.suma} € <span style={{ color: C.textTer }}>/ {z.ciel} €</span><span style={{ float: "right", color: C.textTer }}>{Math.round(z.suma / z.ciel * 100)} %</span></div>
             <div style={{ height: 5, borderRadius: 3, background: "rgba(255,255,255,.07)", overflow: "hidden", marginTop: 6 }}>
               <div style={{ height: 5, borderRadius: 3, background: GRAD_ZELENY, width: `${Math.round(z.suma / z.ciel * 100)}%` }} />
             </div>
@@ -176,18 +176,18 @@ function FeedCard({ z, onClick }) {
           <>
             <FotoPrispevku fotky={z.fotky} emoji={z.ikona} h={80} w={74} style={{ minHeight: 80, height: "100%" }} />
             <div style={{ padding: "10px 12px" }}>
-              <span style={{ fontSize: 13, fontWeight: "bold" }}>{z.nazov}</span>
-              {z.odbornik && <span style={{ fontSize: 9, color: "#AFA9EC", border: `1px solid rgba(175,169,236,.4)`, borderRadius: 20, padding: "1px 6px", marginLeft: 4 }}>✓ odborník</span>}
-              <div style={{ fontSize: 11.5, color: C.textSec, margin: "4px 0", lineHeight: 1.35 }}>{z.pribeh}</div>
-              <div style={{ fontSize: 10, color: C.textTer }}>{z.lok}</div>
+              <span style={{ fontSize: 15, fontWeight: "bold" }}>{z.nazov}</span>
+              {z.odbornik && <span style={{ fontSize: 11, color: "#BBB4F2", border: `1px solid rgba(175,169,236,.4)`, borderRadius: 20, padding: "2px 8px", marginLeft: 4 }}>✓ odborník</span>}
+              <div style={{ fontSize: 13, color: C.textSec, margin: "5px 0", lineHeight: 1.45 }}>{z.pribeh}</div>
+              <div style={{ fontSize: 11.5, color: C.textTer }}>{z.lok}</div>
             </div>
           </>
         ) : (
           <>
             <div style={{ width: 38, height: 38, lineHeight: "38px", textAlign: "center", borderRadius: 7, background: "#2A2740", color: "#8A84C8", fontSize: 17, flex: "0 0 auto" }}>{z.ikona}</div>
             <div style={{ marginLeft: 10 }}>
-              <div style={{ fontSize: 13 }}><b>{z.nazov}</b> <span style={{ fontSize: 9, color: C.textTer }}>ponuka</span></div>
-              <div style={{ fontSize: 12, color: C.textSec }}>{z.pribeh} · {z.lok}</div>
+              <div style={{ fontSize: 14.5 }}><b>{z.nazov}</b> <span style={{ fontSize: 11, color: C.textTer }}>ponuka</span></div>
+              <div style={{ fontSize: 13, color: C.textSec }}>{z.pribeh} · {z.lok}</div>
             </div>
           </>
         )}
@@ -203,8 +203,8 @@ function FeedCard({ z, onClick }) {
         <div style={{ width: z.sponzor ? 36 : 30, height: z.sponzor ? 36 : 30, lineHeight: z.sponzor ? "36px" : "30px", textAlign: "center", borderRadius: 9, background: z.sponzor ? "#fff" : "rgba(91,155,255,.12)", color: z.sponzor ? C.blue : "#A9C8F0", fontSize: z.sponzor ? 10 : 9, fontWeight: "bold", flex: "0 0 auto" }}>{z.ikona}</div>
       )}
       <div>
-        <div style={{ fontSize: z.sponzor ? 13 : 12 }}><b>{z.nazov}</b> {z.sponzor ? <span style={{ fontSize: 9, color: C.greenL, border: `1px solid rgba(127,203,160,.4)`, borderRadius: 10, padding: "1px 6px" }}>sponzorované</span> : <span style={{ fontSize: 9, color: C.textTer }}>hľadá pomoc</span>}</div>
-        <div style={{ fontSize: 11, color: z.sponzor ? "#9CB6D4" : C.textSec, marginTop: 2 }}>{z.pribeh}</div>
+        <div style={{ fontSize: z.sponzor ? 14.5 : 13.5 }}><b>{z.nazov}</b> {z.sponzor ? <span style={{ fontSize: 11, color: C.greenL, border: `1px solid rgba(127,203,160,.4)`, borderRadius: 10, padding: "2px 8px" }}>sponzorované</span> : <span style={{ fontSize: 11, color: C.textTer }}>hľadá pomoc</span>}</div>
+        <div style={{ fontSize: 12.5, color: z.sponzor ? "#AEC4DC" : C.textSec, marginTop: 3 }}>{z.pribeh}</div>
       </div>
     </div>
   );

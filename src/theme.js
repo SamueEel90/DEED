@@ -15,9 +15,9 @@ export const C = {
   surface2: "rgba(255,255,255,.07)",
   line: "rgba(255,255,255,.08)",
   line2: "rgba(255,255,255,.05)",
-  text: "#F2F5FA",
-  textSec: "#A9B2C6",
-  textTer: "#6F7A93",
+  text: "#F4F7FB",
+  textSec: "#C4CCDB", // svetlejšie pre lepší kontrast (čitateľnosť pre všetky vekové kategórie)
+  textTer: "#929CB1", // bývalo veľmi tmavé — zosvetlené, aby drobné popisky boli čitateľné
   blue: "#3E7BFA",
   blueL: "#74A6FF",
   green: "#1FBF8F",
@@ -83,22 +83,22 @@ export const AV = (n) => `https://i.pravatar.cc/100?img=${n}`;
 // ---- SPOLOČNÉ ŠTÝLY ----
 export function inp(h) {
   return {
-    width: "100%", padding: 13, borderRadius: 13,
+    width: "100%", padding: 15, borderRadius: 13,
     background: "rgba(255,255,255,.04)", border: `1px solid ${C.line}`,
-    color: C.text, fontSize: 14, minHeight: h, fontFamily: "inherit", resize: "vertical",
-    outline: "none",
+    color: C.text, fontSize: 16, minHeight: h, fontFamily: "inherit", resize: "vertical",
+    outline: "none", lineHeight: 1.5,
   };
 }
 
 export const infoBox = {
   background: "rgba(91,155,255,.07)", border: "1px solid rgba(91,155,255,.22)",
-  borderRadius: 13, padding: "11px 13px", fontSize: 12.5, color: "#9FB9E4",
-  lineHeight: 1.45, marginTop: 12,
+  borderRadius: 13, padding: "12px 14px", fontSize: 13.5, color: "#B4C9EA",
+  lineHeight: 1.5, marginTop: 12,
 };
 
 export function btn(kind) {
   const base = {
-    flex: 1, padding: "13px 0", borderRadius: 14, fontSize: 14, fontWeight: 700,
+    flex: 1, padding: "15px 0", borderRadius: 14, fontSize: 15.5, fontWeight: 700,
     cursor: "pointer", border: "none", fontFamily: "inherit",
     transition: "transform .12s ease, box-shadow .25s ease, opacity .2s ease",
   };

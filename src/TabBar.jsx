@@ -47,8 +47,8 @@ export function TabBar({ taby, aktivny, onModul, onViac, wide }) {
   return (
     <div style={{ position: "absolute", left: 0, right: 0, bottom: 10, zIndex: 40, display: "flex", justifyContent: "center", padding: "0 10px" }}>
       <div style={{
-        width: "100%", maxWidth: wide ? 600 : "none",
-        display: "flex", alignItems: "stretch", borderRadius: 24, padding: "7px 5px",
+        width: "100%", maxWidth: wide ? 620 : "none",
+        display: "flex", alignItems: "stretch", borderRadius: 26, padding: "9px 6px",
         ...glassTmavy(24, .62),
         boxShadow: "0 16px 44px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.07)",
       }}>
@@ -61,16 +61,16 @@ export function TabBar({ taby, aktivny, onModul, onViac, wide }) {
 
 function Tab({ m, on, onClick }) {
   return (
-    <div onClick={onClick} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 3, cursor: "pointer", padding: "3px 0 2px" }}>
+    <div onClick={onClick} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4, cursor: "pointer", padding: "4px 0 3px" }}>
       <div style={{
-        width: 44, height: 27, borderRadius: 13, display: "flex", alignItems: "center", justifyContent: "center",
-        fontSize: 16, lineHeight: 1, transition: "all .25s ease",
+        width: 50, height: 32, borderRadius: 14, display: "flex", alignItems: "center", justifyContent: "center",
+        fontSize: 21, lineHeight: 1, transition: "all .25s ease",
         background: on ? "linear-gradient(135deg, rgba(91,155,255,.32), rgba(139,124,255,.26))" : "transparent",
         border: on ? "1px solid rgba(116,166,255,.4)" : "1px solid transparent",
         boxShadow: on ? "0 4px 16px rgba(91,124,255,.35)" : "none",
-        color: on ? "#EAF1FF" : C.textTer,
+        color: on ? "#EAF1FF" : C.textSec,
       }}>{m.ikona}</div>
-      <span style={{ fontSize: 9.5, fontWeight: on ? 800 : 600, color: on ? C.blueL : C.textTer, letterSpacing: ".02em", transition: "color .25s ease" }}>{m.nazov}</span>
+      <span style={{ fontSize: 11.5, fontWeight: on ? 800 : 600, color: on ? C.blueL : C.textSec, letterSpacing: ".01em", transition: "color .25s ease" }}>{m.nazov}</span>
     </div>
   );
 }

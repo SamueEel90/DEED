@@ -20,7 +20,7 @@ const K = {
   gold: "#F0C75A", goldBg: "rgba(240,199,90,.07)",
   diamond: "#74A6FF",
   purple: "#8B7CFF",
-  txt: "#F2F5FA", txt2: "#A9B2C6", txt3: "#6F7A93",
+  txt: "#F4F7FB", txt2: "#C4CCDB", txt3: "#929CB1",
   line: "rgba(255,255,255,.08)",
 };
 
@@ -112,7 +112,7 @@ function CharitaFeed({ wide, toast, onDetail, onSheet }) {
       </div>
 
       {/* ticker */}
-      <div style={{ display: "flex", alignItems: "center", gap: 7, padding: "7px 16px", fontSize: 12, color: K.txt2, borderTop: `1px solid ${K.line}`, borderBottom: `1px solid ${K.line}`, background: K.bg2 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 7, padding: "9px 16px", fontSize: 13.5, color: K.txt2, borderTop: `1px solid ${K.line}`, borderBottom: `1px solid ${K.line}`, background: K.bg2 }}>
         <span style={{ width: 7, height: 7, borderRadius: "50%", background: K.green, flexShrink: 0, animation: "pulse 1.6s infinite" }} />
         Liga proti rakovine <b style={{ color: K.green }}>&nbsp;práve dostala 100 DEED&nbsp;</b> → Marek
       </div>
@@ -146,7 +146,7 @@ function CharitaFeed({ wide, toast, onDetail, onSheet }) {
           </div>
         ))}
       </div>
-      <div style={{ display: "flex", alignItems: "center", padding: "4px 16px 10px", fontSize: 12, color: K.txt2 }}>
+      <div style={{ display: "flex", alignItems: "center", padding: "4px 16px 10px", fontSize: 13, color: K.txt2 }}>
         Dnes 412 · Mesiac 12 840<span style={{ marginLeft: "auto" }}>📍 Sihoť · Trenčín</span>
       </div>
 
@@ -230,8 +230,8 @@ function RiadokKarta({ onClick, ikona, ikonaBg, ikonaCol, ikonaText, nazov, tag,
     <div onClick={onClick} style={{ display: "flex", alignItems: "center", gap: 11, background: K.card, border: `1px solid ${K.line}`, borderRadius: 14, padding: "11px 13px", marginBottom: 10, cursor: "pointer" }}>
       <div style={{ width: 42, height: 42, borderRadius: 10, background: ikonaBg, color: ikonaCol, display: "flex", alignItems: "center", justifyContent: "center", fontSize: ikonaText ? 12 : 18, fontWeight: ikonaText ? 700 : 400, flexShrink: 0 }}>{ikona}</div>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 13.5, fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}>{nazov} <span style={{ fontSize: 9.5, padding: "1px 6px", borderRadius: 5, fontWeight: 600, background: tagBg, color: tagCol }}>{tag}</span></div>
-        <div style={{ fontSize: 11.5, color: K.txt2, marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{popis}</div>
+        <div style={{ fontSize: 15, fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}>{nazov} <span style={{ fontSize: 11, padding: "2px 7px", borderRadius: 5, fontWeight: 600, background: tagBg, color: tagCol }}>{tag}</span></div>
+        <div style={{ fontSize: 13, color: K.txt2, marginTop: 3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{popis}</div>
       </div>
     </div>
   );
@@ -459,12 +459,12 @@ function SheetAdresar({ toast, onClose }) {
             <div key={pi} onClick={() => toast("Profil charity — " + p[1])} style={{ display: "flex", alignItems: "center", gap: 11, padding: "11px 4px", borderBottom: `1px solid ${K.line}`, cursor: "pointer" }}>
               <div style={{ width: 38, height: 38, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, flexShrink: 0, background: SEG_BG[(si + pi) % SEG_BG.length], color: "#cbd5e1" }}>{p[0]}</div>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 13.5, fontWeight: 500 }}>{p[1]}</div>
-                <div style={{ fontSize: 11, color: K.txt2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p[2]}</div>
+                <div style={{ fontSize: 15, fontWeight: 500 }}>{p[1]}</div>
+                <div style={{ fontSize: 12.5, color: K.txt2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p[2]}</div>
               </div>
               <div style={{ textAlign: "right", flexShrink: 0 }}>
-                <div style={{ fontSize: 10, fontWeight: 700, color: lvlFarba(p[3]) }}>⬢ {p[3]}</div>
-                <div style={{ fontSize: 11, color: K.txt3, marginTop: 2 }}>{p[4]}</div>
+                <div style={{ fontSize: 11.5, fontWeight: 700, color: lvlFarba(p[3]) }}>⬢ {p[3]}</div>
+                <div style={{ fontSize: 12, color: K.txt3, marginTop: 2 }}>{p[4]}</div>
               </div>
             </div>
           ))}
