@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { U, AV, GRAD, GRAD_ZELENY } from "../theme";
-import { Foto, Avatar, FotoPrispevku, MiniFotky, Modal, ModulHlavicka, useGaleria } from "../shared";
+import { Foto, Avatar, FotoPrispevku, MiniFotky, Modal, ModulHlavicka, PodporaSekcia, useGaleria } from "../shared";
 
 /*
   ============================================================
@@ -238,6 +238,7 @@ function CharitaDetail({ toast, onBack, onReg }) {
   const [suma, setSuma] = useState(z.suma);
   const [ludia, setLudia] = useState(z.ludia);
   const [potvrd, setPotvrd] = useState(null); // {kanal, suma}
+  const [lajk, setLajk] = useState(false);
   const otvorGaleriu = useGaleria();
   const pct = Math.min(100, Math.round(suma / z.ciel * 100));
 
@@ -299,31 +300,13 @@ function CharitaDetail({ toast, onBack, onReg }) {
           </div>
         </div>
 
-        {/* zadarmo */}
-        <div style={{ display: "flex", gap: 10, marginBottom: 14 }}>
-          <div onClick={() => toast("❤️ Ďakujeme")} style={{ flex: 1, background: K.card, border: `1px solid ${K.line}`, borderRadius: 12, padding: 13, textAlign: "center", fontSize: 14, cursor: "pointer" }}>❤️ 212</div>
-          <div onClick={() => toast("👍 Ďakujeme")} style={{ flex: 1, background: K.card, border: `1px solid ${K.line}`, borderRadius: 12, padding: 13, textAlign: "center", fontSize: 14, cursor: "pointer" }}>👍 140</div>
-        </div>
-
-        {/* drobná podpora */}
-        <div style={{ fontSize: 10.5, color: K.txt2, letterSpacing: ".04em", marginBottom: 8, textTransform: "uppercase" }}>Drobná podpora — klik a hneď odíde</div>
-        <div style={{ display: "flex", gap: 9, marginBottom: 16, alignItems: "stretch" }}>
-          <PayBtn flex={1} bg={K.goldBg} bd="#4a3f15" col={K.gold} e="⭐" v="10" onClick={() => podpor(10, `Ďakujeme za 10 DEED pre ${z.nazov}`)} />
-          <PayBtn flex={1.5} bg="#16233a" bd="#234a6b" col={K.diamond} e="💎" v="50" onClick={() => podpor(50, `Ďakujeme za 50 DEED pre ${z.nazov}`)} />
-          <PayBtn flex={2.2} bg="#2a1810" bd="#5a3015" col="#f97316" e="🔥" v="100" onClick={() => podpor(100, `Ďakujeme za 100 DEED pre ${z.nazov}`)} />
-          <div style={{ width: 1, background: K.line, margin: "3px 0" }} />
-          <PayBtn flex={1.3} bg={K.card} bd={K.line} col={K.txt} e="✉️" v="SMS" onClick={() => podpor(100, "SMS podpora")} />
-        </div>
-
-        {/* vlastná suma */}
-        <div style={{ fontSize: 10.5, color: K.txt2, letterSpacing: ".04em", marginBottom: 8, textTransform: "uppercase" }}>Vlastná suma — vyber kanál</div>
-        <div style={{ display: "flex", gap: 9, marginBottom: 14 }}>
-          <div onClick={() => setPotvrd({ kanal: "FIAT", suma: "" })} style={{ flex: 1, borderRadius: 13, padding: "18px 0", textAlign: "center", cursor: "pointer", background: K.blueBg, border: `1px solid ${K.blueEdge}` }}>
-            <div style={{ fontSize: 18 }}>€</div><div style={{ fontSize: 13, marginTop: 3, fontWeight: 500 }}>FIAT</div>
-          </div>
-          <div onClick={() => setPotvrd({ kanal: "DEED", suma: "" })} style={{ flex: 1, borderRadius: 13, padding: "18px 0", textAlign: "center", cursor: "pointer", background: K.greenBg, border: `1px solid ${K.greenEdge}` }}>
-            <div style={{ fontSize: 18 }}>◎</div><div style={{ fontSize: 13, marginTop: 3, fontWeight: 500 }}>DEED</div>
-          </div>
+        {/* jednotná sekcia podpory */}
+        <div style={{ marginBottom: 14 }}>
+          <PodporaSekcia
+            likes={212} liked={lajk} onLike={() => { setLajk((v) => !v); toast("Páči sa ti to"); }}
+            upvotes={140} onUpvote={() => toast("Palec hore")}
+            onPodpor={(s) => podpor(s, `Ďakujeme za ${s} DEED pre ${z.nazov}`)} onSms={() => podpor(100, "SMS podpora")}
+            onKanal={(k) => setPotvrd({ kanal: k, suma: "" })} />
         </div>
 
         {/* pravidelná podpora */}

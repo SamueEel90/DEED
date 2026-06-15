@@ -372,3 +372,97 @@ export function Toast({ text }) {
   );
 }
 const GRAD_ZELENY_LOKAL = "linear-gradient(90deg, #1FBF8F, #5CE6B8)";
+
+// ============================================================
+// MODERNÉ IKONY — srdce (like) a šípka hore (upvote) — rovnaké všade
+// ============================================================
+export function Srdce({ size = 18, filled, color = "#F2706F" }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" style={{ display: "block", flex: "0 0 auto" }}
+      fill={filled ? color : "none"} stroke={color} strokeWidth={filled ? 0 : 2.1} strokeLinejoin="round" strokeLinecap="round">
+      <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+    </svg>
+  );
+}
+export function SipHore({ size = 18, color = "currentColor" }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" style={{ display: "block", flex: "0 0 auto" }}
+      fill="none" stroke={color} strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 19V6M6.5 11.5L12 6l5.5 5.5" />
+    </svg>
+  );
+}
+
+// ============================================================
+// JEDNOTNÁ SEKCIA PODPORY (ZADARMO · DROBNÁ PODPORA · VLASTNÁ SUMA)
+// rovnaký dizajn naprieč Domov / Help / Charita / Aktivity
+// ============================================================
+function PSLabel({ children }) {
+  return <div style={{ fontSize: 11.5, letterSpacing: ".4px", color: C.textTer, fontWeight: 700, margin: "18px 0 9px" }}>{children}</div>;
+}
+const psPill = (active) => ({
+  flex: 1, height: 48, borderRadius: 14, display: "flex", alignItems: "center", justifyContent: "center", gap: 9,
+  fontWeight: 700, fontSize: 16, cursor: "pointer", fontFamily: "inherit", transition: "all .15s ease",
+  background: active ? "rgba(242,112,111,.10)" : C.surface2,
+  border: `1px solid ${active ? "rgba(242,112,111,.5)" : C.line}`,
+  color: active ? "#F2706F" : C.text,
+});
+const psFix = (emph) => ({
+  flex: 1, minHeight: 62, borderRadius: 14, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+  cursor: "pointer", fontFamily: "inherit", fontWeight: 700, transition: "transform .12s ease",
+  background: emph ? "rgba(240,168,94,.10)" : C.surface2,
+  border: `1px solid ${emph ? "rgba(240,168,94,.4)" : C.line}`, color: C.text,
+});
+const psKanal = {
+  flex: 1, minHeight: 56, borderRadius: 14, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+  cursor: "pointer", fontFamily: "inherit", background: C.surface2, border: `1px solid ${C.line}`, color: C.text,
+};
+
+export function PodporaSekcia({ likes = 0, liked, onLike, upvotes = 0, onUpvote, onPodpor, onSms, onKanal, accent = "#74A6FF", supLabel = "DROBNÁ PODPORA — klik a hneď odíde" }) {
+  const fix = [
+    { e: "★", v: "10", col: accent, a: 10 },
+    { e: "◆", v: "50", col: accent, a: 50 },
+    { e: "🔥", v: "100", col: "#F0A85E", a: 100, emph: true },
+  ];
+  return (
+    <div>
+      <PSLabel>ZADARMO</PSLabel>
+      <div style={{ display: "flex", gap: 10 }}>
+        <button onClick={onLike} style={psPill(liked)}>
+          <Srdce size={19} filled={liked} color={liked ? "#F2706F" : C.textSec} />
+          {(likes || 0) + (liked ? 1 : 0)}
+        </button>
+        <button onClick={onUpvote} style={{ ...psPill(false), color: C.text }}>
+          <SipHore size={18} color={C.textSec} /> {upvotes}
+        </button>
+      </div>
+
+      <PSLabel>{supLabel}</PSLabel>
+      <div style={{ display: "flex", gap: 8, alignItems: "stretch" }}>
+        {fix.map((b) => (
+          <button key={b.v} onClick={() => onPodpor(b.a)} style={psFix(b.emph)}>
+            <span style={{ fontSize: 20, color: b.col, lineHeight: 1 }}>{b.e}</span>
+            <span style={{ fontSize: 13, marginTop: 4 }}>{b.v}</span>
+          </button>
+        ))}
+        <div style={{ width: 1, alignSelf: "stretch", borderLeft: `1px dashed ${C.line}`, margin: "3px 3px" }} />
+        <button onClick={onSms} style={{ ...psFix(false), flex: 0.85, background: "rgba(240,199,90,.08)", borderColor: "rgba(240,199,90,.35)" }}>
+          <span style={{ fontSize: 14, fontWeight: 800, color: C.gold }}>SMS</span>
+          <span style={{ fontSize: 13, marginTop: 3, color: C.gold }}>€</span>
+        </button>
+      </div>
+
+      <PSLabel>VLASTNÁ SUMA — vyber kanál</PSLabel>
+      <div style={{ display: "flex", gap: 10 }}>
+        <button onClick={() => onKanal("FIAT")} style={psKanal}>
+          <span style={{ fontWeight: 800, fontSize: 15 }}>€ FIAT</span>
+          <span style={{ fontSize: 11, color: C.textTer, marginTop: 3 }}>euro · procesor</span>
+        </button>
+        <button onClick={() => onKanal("DEED")} style={psKanal}>
+          <span style={{ fontWeight: 800, fontSize: 15, color: accent }}>DEED</span>
+          <span style={{ fontSize: 11, color: C.textTer, marginTop: 3 }}>wallet → wallet</span>
+        </button>
+      </div>
+    </div>
+  );
+}

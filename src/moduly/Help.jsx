@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { C, pasmo, U, AV, inp, infoBox, btn, GRAD, GRAD_ZELENY, glassTmavy } from "../theme";
-import { Foto, Avatar, FotoPrispevku, MiniFotky, Hlavicka, ModulHlavicka, Otazka, Vyber, vyberBox, NavBtns, Suhrn, DokladRow, Modal, Toast, useGaleria } from "../shared";
+import { Foto, Avatar, FotoPrispevku, MiniFotky, Hlavicka, ModulHlavicka, PodporaSekcia, Otazka, Vyber, vyberBox, NavBtns, Suhrn, DokladRow, Modal, Toast, useGaleria } from "../shared";
 
 /*
   ============================================================
@@ -211,6 +211,7 @@ function Detail({ z, onBack }) {
   const [potvrd, setPotvrd] = useState(null); // {kanal, suma}
   const [suma, setSuma] = useState(z.suma);
   const [ludia, setLudia] = useState(z.ludia);
+  const [lajk, setLajk] = useState(false);
   const otvorGaleriu = useGaleria();
 
   const hash = () => "0x" + Math.random().toString(16).slice(2, 8) + "…" + Math.random().toString(16).slice(2, 6);
@@ -291,31 +292,13 @@ function Detail({ z, onBack }) {
         </div>
       </div>
 
-      {/* zadarmo */}
-      <div style={{ padding: "0 14px 12px", display: "flex", gap: 10 }}>
-        <div onClick={() => setHlaska("❤️ Páči sa ti to")} style={{ flex: 1, textAlign: "center", padding: "9px 0", background: C.surface2, border: `1px solid ${C.line}`, borderRadius: 10, fontSize: 13, cursor: "pointer" }}>❤️ 212</div>
-        <div onClick={() => setHlaska("👍 Palec hore")} style={{ flex: 1, textAlign: "center", padding: "9px 0", background: C.surface2, border: `1px solid ${C.line}`, borderRadius: 10, fontSize: 13, cursor: "pointer" }}>👍 140</div>
-      </div>
-
-      {/* drobné — veľkosť = hodnota */}
-      <div style={{ padding: "0 14px 12px" }}>
-        <div style={{ fontSize: 10, color: C.textTer, textTransform: "uppercase", letterSpacing: ".04em", marginBottom: 8 }}>Drobná podpora — klik a hneď odíde</div>
-        <div style={{ display: "flex", alignItems: "flex-end", gap: 7 }}>
-          <Pevne emoji="⭐" val="10" w={44} bg="rgba(240,199,90,.08)" bd="rgba(240,199,90,.3)" col="#F0DCA0" onClick={() => posliPevne(10, "DEED")} />
-          <Pevne emoji="💎" val="50" w={52} bg="rgba(139,124,255,.09)" bd="rgba(139,124,255,.32)" col="#BCB2F5" onClick={() => posliPevne(50, "DEED")} />
-          <Pevne emoji="🔥" val="100" w={58} bg="rgba(242,112,111,.09)" bd="rgba(242,112,111,.32)" col="#F5A6A6" onClick={() => posliPevne(100, "DEED")} />
-          <div style={{ width: 1, alignSelf: "stretch", background: "rgba(255,255,255,.12)", margin: "4px 4px" }} />
-          <Pevne emoji="✉" val="SMS" w={58} bg="rgba(255,255,255,.05)" bd="rgba(255,255,255,.16)" col="#DADEE6" onClick={() => posliPevne(1, "SMS")} />
-        </div>
-      </div>
-
-      {/* vlastná suma — 2 kanály, potvrdenie pred odoslaním */}
-      <div style={{ padding: "0 14px 18px" }}>
-        <div style={{ fontSize: 10, color: C.textTer, textTransform: "uppercase", letterSpacing: ".04em", marginBottom: 7 }}>Vlastná suma — vyber kanál</div>
-        <div style={{ display: "flex", gap: 10 }}>
-          <div onClick={() => setPotvrd({ kanal: "FIAT", suma: "" })} style={{ flex: 1, textAlign: "center", padding: "15px 0", borderRadius: 15, background: "rgba(91,155,255,.09)", border: `1px solid rgba(116,166,255,.4)`, color: "#A9C8F0", cursor: "pointer", fontWeight: 600 }}><div style={{ fontSize: 22 }}>€</div>FIAT</div>
-          <div onClick={() => setPotvrd({ kanal: "DEED", suma: "" })} style={{ flex: 1, textAlign: "center", padding: "15px 0", borderRadius: 15, background: "rgba(43,212,155,.09)", border: `1px solid rgba(92,230,184,.4)`, color: "#A6E8CE", cursor: "pointer", fontWeight: 600 }}><div style={{ fontSize: 22 }}>◎</div>DEED</div>
-        </div>
+      {/* jednotná sekcia podpory */}
+      <div style={{ padding: "0 14px 14px" }}>
+        <PodporaSekcia
+          likes={212} liked={lajk} onLike={() => { setLajk((v) => !v); setHlaska("Páči sa ti to"); }}
+          upvotes={140} onUpvote={() => setHlaska("Palec hore")}
+          onPodpor={(s) => posliPevne(s, "DEED")} onSms={() => posliPevne(1, "SMS")}
+          onKanal={(k) => setPotvrd({ kanal: k, suma: "" })} />
       </div>
 
       <div style={{ borderTop: `1px solid ${C.line}`, padding: "11px 14px", display: "flex", justifyContent: "space-between", fontSize: 10.5, color: C.textTer }}>

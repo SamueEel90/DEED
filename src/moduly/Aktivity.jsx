@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ModulHlavicka, useMotiv } from "../shared";
+import { ModulHlavicka, PodporaSekcia, useMotiv } from "../shared";
 
 /*
   ============================================================
@@ -452,26 +452,11 @@ function DeedDetail({ it, liked, like, support, toast, home }) {
         )}
         {isTalent && <InfoBox><b style={{ color: A.txt }}>Ocenenie ide priamo tvorcovi</b> — za to, že to natočil a zdieľal. Pri talente niet charity %, je to o ňom. (Video má náš vodoznak + QR, overené.)</InfoBox>}
 
-        <div style={secLbl}>ZADARMO</div>
-        <div style={{ display: "flex", gap: 10 }}>
-          <div onClick={() => like(it.id, it.likes)} style={{ flex: 1, height: 44, borderRadius: 11, background: A.surface2, border: `1px solid ${lk ? A.redBd : A.line}`, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, fontWeight: 700, cursor: "pointer", color: lk ? A.red : A.txt, fontSize: 14 }}>♥ {(it.likes || 0) + (lk ? 1 : 0)}</div>
-          <div onClick={() => toast("👍 Páči sa")} style={{ flex: 1, height: 44, borderRadius: 11, background: A.surface2, border: `1px solid ${A.line}`, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, fontWeight: 700, cursor: "pointer", fontSize: 14 }}>↑ {Math.floor((it.likes || 0) / 3)}</div>
-        </div>
-
-        <div style={secLbl}>{supLabel}</div>
-        <div style={{ display: "flex", gap: 8, alignItems: "flex-end" }}>
-          <Fx w={52} h={48} e="★" v="10" onClick={() => support(10, it.author)} />
-          <Fx w={58} h={56} e="◆" v="50" onClick={() => support(50, it.author)} />
-          <Fx w={64} h={64} e="🔥" v="100" eCol={A.orange} onClick={() => support(100, it.author)} />
-          <div style={{ width: 1, alignSelf: "stretch", borderLeft: "1px dashed #3A3F47", margin: "0 4px" }} />
-          <Fx w={62} h={64} e="SMS" v="€" bg="#1A1410" bd="#5A4A2A" col={A.gold} onClick={() => toast("SMS podpora (euro/operátor)")} />
-        </div>
-
-        <div style={secLbl}>VLASTNÁ SUMA — vyber kanál</div>
-        <div style={{ display: "flex", gap: 10 }}>
-          <Cbtn t="€ FIAT" s="euro · procesor" onClick={() => toast("Vlastná suma — FIAT (demo)")} />
-          <Cbtn t="DEED" s="wallet → wallet" tCol="var(--acc)" onClick={() => toast("Vlastná suma — DEED (demo)")} />
-        </div>
+        <PodporaSekcia
+          likes={it.likes || 0} liked={lk} onLike={() => like(it.id, it.likes)}
+          upvotes={Math.floor((it.likes || 0) / 3)} onUpvote={() => toast("Páči sa ti to")}
+          onPodpor={(s) => support(s, it.author)} onSms={() => toast("SMS podpora (euro/operátor)")}
+          onKanal={(k) => toast(`Vlastná suma — ${k} (demo)`)} supLabel={supLabel} />
 
         <div style={{ display: "flex", alignItems: "center", gap: 14, background: A.surface2, border: `1px solid ${A.line}`, borderRadius: 14, padding: 12, marginTop: 14 }}>
           <div style={{ width: 52, height: 52, borderRadius: 8, background: "#fff", flex: "none", display: "grid", gridTemplateColumns: "repeat(5,1fr)", gridTemplateRows: "repeat(5,1fr)", gap: 1, padding: 5 }}>{qrCells()}</div>

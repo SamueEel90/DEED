@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { C, U, inp, GRAD } from "../theme";
-import { Foto, FotoPrispevku, MiniFotky, Modal, Aura, Video, ModulHlavicka, useGaleria } from "../shared";
+import { Foto, FotoPrispevku, MiniFotky, Modal, Aura, Video, ModulHlavicka, PodporaSekcia, useGaleria } from "../shared";
 
 /*
   ============================================================
@@ -417,35 +417,11 @@ function GoodDetail({ it, toast, oslavuj, lajknute, setLajknute, onBack, onVerif
           </div>
         )}
 
-        <SekciaLabel>ZADARMO</SekciaLabel>
-        <div style={{ display: "flex", gap: 10 }}>
-          <div onClick={() => setLajknute({ ...lajknute, [it.id]: !lajk })}
-            style={{ flex: 1, height: 44, borderRadius: 11, background: C.surface2, border: `1px solid ${lajk ? "#7A3030" : C.line}`, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, fontWeight: 700, cursor: "pointer", color: lajk ? "#F2706F" : C.text, fontSize: 14 }}>
-            ♥ {(it.lajky || 0) + (lajk ? 1 : 0)}
-          </div>
-          <div onClick={() => toast("👍 Páči sa")} style={{ flex: 1, height: 44, borderRadius: 11, background: C.surface2, border: `1px solid ${C.line}`, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, fontWeight: 700, cursor: "pointer", fontSize: 14 }}>
-            ↑ {Math.floor((it.lajky || 0) / 3)}
-          </div>
-        </div>
-
-        <SekciaLabel>DROBNÁ PODPORA — KLIK A HNEĎ ODÍDE</SekciaLabel>
-        <div style={{ display: "flex", gap: 8, alignItems: "flex-end" }}>
-          <FixBtn w={52} h={48} e="★" v="10" onClick={() => podpor(10)} />
-          <FixBtn w={58} h={56} e="◆" v="50" onClick={() => podpor(50)} />
-          <FixBtn w={64} h={64} e="🔥" v="100" eCol="#F0A85E" onClick={() => podpor(100)} />
-          <div style={{ width: 1, alignSelf: "stretch", borderLeft: "1px dashed #3A3F47", margin: "0 4px" }} />
-          <FixBtn w={62} h={64} e="SMS" v="€" bg="#1A1410" bd="#5A4A2A" col="#E7C766" onClick={() => toast("SMS podpora (euro/operátor)")} />
-        </div>
-
-        <SekciaLabel>VLASTNÁ SUMA — VYBER KANÁL</SekciaLabel>
-        <div style={{ display: "flex", gap: 10 }}>
-          <div onClick={() => setPotvrd({ kanal: "FIAT", suma: "" })} style={{ flex: 1, height: 50, borderRadius: 11, background: C.surface2, border: `1px solid ${C.line}`, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-            <div style={{ fontWeight: 700, fontSize: 13 }}>€ FIAT</div><div style={{ fontSize: 8.5, color: C.textTer, marginTop: 2 }}>euro · procesor</div>
-          </div>
-          <div onClick={() => setPotvrd({ kanal: "DEED", suma: "" })} style={{ flex: 1, height: 50, borderRadius: 11, background: C.surface2, border: `1px solid ${C.line}`, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-            <div style={{ fontWeight: 700, fontSize: 13, color: "#5BA8F0" }}>DEED</div><div style={{ fontSize: 8.5, color: C.textTer, marginTop: 2 }}>wallet → wallet</div>
-          </div>
-        </div>
+        <PodporaSekcia
+          likes={it.lajky || 0} liked={lajk} onLike={() => setLajknute({ ...lajknute, [it.id]: !lajk })}
+          upvotes={Math.floor((it.lajky || 0) / 3)} onUpvote={() => toast("Páči sa ti to")}
+          onPodpor={(s) => podpor(s)} onSms={() => toast("SMS podpora (euro/operátor)")}
+          onKanal={(k) => setPotvrd({ kanal: k, suma: "" })} />
 
         {/* QR */}
         <div style={{ display: "flex", alignItems: "center", gap: 14, background: C.surface2, border: `1px solid ${C.line}`, borderRadius: 14, padding: 12, marginTop: 14 }}>
