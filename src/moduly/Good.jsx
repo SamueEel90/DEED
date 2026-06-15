@@ -97,10 +97,32 @@ const POLOZKY = [
 
 const heroGrad = (kat) => `linear-gradient(160deg, ${KAT[kat].bg}, ${KAT[kat].bg2})`;
 
+// ---- NÁSTENKA — udalosti v okolí ----
+const SRC_COL = { Komunita: "#A98BF0", Mesto: "#7FC2EF", Partner: "#C264D8" };
+const EVENTS = [
+  { id: "e1", top: true, when: "ŠTV 18:00", title: "Mentálny tréning — bezplatný stream", who: "Coach Peter", src: "Komunita", kat: "Ucenie",
+    desc: "Online stream o zvládaní stresu a sústredení. Pre všetkých so záujmom o šport a psychiku. Bezplatné, stačí sa prihlásiť.", place: "Online · stream", cap: "neobmedzené" },
+  { id: "e2", top: true, when: "PIA 20:00", title: "Rocková noc v klube", who: "Music Club", src: "Partner", kat: "Komunita",
+    desc: "Živá kapela, lokálni interpreti. B2B partner pozýva členov komunity so záujmom o rock. Vstup so zľavou cez DEED.", place: "Music Club, Trenčín", cap: "120 miest" },
+  { id: "e3", top: true, when: "SO 09:00", title: "Beh pre zdravie", who: "Mesto Trenčín", src: "Mesto", kat: "Zdravie",
+    desc: "Charitatívny beh mestom. Štartovné ide na detské ihriská. Trasy 5 a 10 km.", place: "Mierové námestie", cap: "500 bežcov" },
+  { id: "e4", when: "SO 10:00", title: "Čistenie brehu Váhu", who: "Mesto Trenčín", src: "Mesto", kat: "Priroda",
+    desc: "Dobrovoľnícka akcia — vyzbierame odpad pri rieke. Vrecia a rukavice zabezpečené. Vo tvojej štvrti.", place: "Breh Váhu, Sihoť", cap: "40 ľudí" },
+  { id: "e5", when: "NE 15:00", title: "Joga v parku", who: "Coach Eva", src: "Komunita", kat: "Zdravie",
+    desc: "Otvorená hodina jogy pre začiatočníkov. Prines si podložku. Pri dobrom počasí.", place: "Mestský park", cap: "25 miest" },
+  { id: "e6", when: "UT 17:30", title: "Doučovanie matematiky", who: "Coach Ján", src: "Komunita", kat: "Ucenie",
+    desc: "Doučovanie pre žiakov 2. stupňa. Bezplatné, organizované cez komunitu.", place: "Komunitné centrum", cap: "15 detí" },
+  { id: "e7", when: "ST 19:00", title: "Diskusia o ekológii mesta", who: "Mesto Trenčín", src: "Mesto", kat: "Priroda",
+    desc: "Verejná diskusia o zeleni a triedení odpadu v meste. Príď povedať svoj názor.", place: "Mestský úrad", cap: "80 miest" },
+  { id: "e8", when: "PIA 16:00", title: "Workshop fotografie", who: "Coach Lucia", src: "Komunita", kat: "Zdravie",
+    desc: "Základy mobilnej fotografie. Vezmi si telefón. Platený workshop (cez DEED/FIAT).", place: "Ateliér, centrum", cap: "12 miest" },
+];
+
 // ===================== MODUL =====================
 export default function ModulGood({ wide, otvorModul }) {
-  const [screen, setScreen] = useState("home"); // home | detail | verify | add
+  const [screen, setScreen] = useState("home"); // home | detail | verify | add | board | event
   const [aktId, setAktId] = useState(null);
+  const [aktEvent, setAktEvent] = useState(null);
   const [verifyMode, setVerifyMode] = useState("ok");
   const [hlaska, setHlaska] = useState(null);
   const [oslava, setOslava] = useState(null); // {suma, komu}
@@ -117,7 +139,14 @@ export default function ModulGood({ wide, otvorModul }) {
       {screen === "home" && (
         <Home wide={wide} toast={toast} otvorModul={otvorModul}
           onDetail={(id) => { setAktId(id); setScreen("detail"); }}
+          onBoard={() => setScreen("board")}
           onAdd={() => setScreen("add")} />
+      )}
+      {screen === "board" && obal(
+        <GoodBoard onBack={() => setScreen("home")} onEvent={(id) => { setAktEvent(id); setScreen("event"); }} toast={toast} />
+      )}
+      {screen === "event" && obal(
+        <GoodEvent id={aktEvent} onBack={() => setScreen("board")} toast={toast} oslavuj={oslavuj} />
       )}
       {screen === "detail" && akt && obal(
         <GoodDetail it={akt} toast={toast} oslavuj={oslavuj}
@@ -153,7 +182,7 @@ export default function ModulGood({ wide, otvorModul }) {
 }
 
 // ===================== HOME / FEED =====================
-function Home({ wide, toast, otvorModul, onDetail, onAdd }) {
+function Home({ wide, toast, otvorModul, onDetail, onBoard, onAdd }) {
   return (
     <div style={{ paddingBottom: 14 }}>
       {/* header */}
@@ -172,7 +201,7 @@ function Home({ wide, toast, otvorModul, onDetail, onAdd }) {
       {/* sekcie */}
       <div style={{ display: "flex", gap: 8, padding: "6px 16px 12px" }}>
         <div onClick={() => toast("Talent — TikTok kanál (demo)")} style={sekciaBtn()}>▶ Talent</div>
-        <div onClick={() => toast("Nástenka — udalosti (demo)")} style={sekciaBtn()}><span style={{ color: "#7E9BF0" }}>▣</span> Nástenka</div>
+        <div onClick={onBoard} style={sekciaBtn()}><span style={{ color: "#7E9BF0" }}>▣</span> Nástenka</div>
         <div onClick={onAdd} style={{ ...sekciaBtn(), background: GRAD, border: "1px solid transparent", color: "#fff", boxShadow: "0 6px 20px rgba(99,134,255,.32)" }}>＋ Pridať</div>
       </div>
 
@@ -579,6 +608,109 @@ function GoodAdd({ toast, oslavuj, onDone }) {
             </button>
           </>
         )}
+      </div>
+    </div>
+  );
+}
+
+// ===================== NÁSTENKA (board) =====================
+function GoodBoard({ onBack, onEvent, toast }) {
+  const [filter, setFilter] = useState("Všetko");
+  const tops = EVENTS.filter((e) => e.top);
+  const list = EVENTS.filter((e) => filter === "Všetko" || e.src === filter || (filter === "Šport" && e.kat === "Zdravie"));
+  const chipy = ["Všetko", "Šport", "Komunita", "Mesto", "Partner"];
+
+  return (
+    <div style={{ paddingBottom: 24 }}>
+      {/* header */}
+      <div style={{ display: "flex", alignItems: "center", gap: 11, padding: "16px 18px 8px" }}>
+        <span onClick={onBack} style={{ width: 32, height: 32, borderRadius: "50%", background: "rgba(255,255,255,.06)", border: `1px solid ${C.line}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, color: C.textSec, cursor: "pointer" }}>←</span>
+        <span style={{ fontSize: 18, fontWeight: 800 }}>Nástenka</span>
+        <span style={{ marginLeft: "auto", color: C.textTer, fontSize: 16 }}>▦</span>
+      </div>
+
+      {/* topované */}
+      <SekciaLabel><span style={{ color: C.gold }}>TOPOVANÉ · odporúčané</span></SekciaLabel>
+      <div style={{ display: "flex", gap: 10, padding: "0 16px 8px", overflowX: "auto" }}>
+        {tops.map((e) => (
+          <div key={e.id} onClick={() => onEvent(e.id)} style={{ minWidth: 152, flex: "0 0 auto", background: C.surface2, border: "1px solid #3A3320", borderRadius: 14, overflow: "hidden", cursor: "pointer" }}>
+            <div style={{ height: 64, background: heroGrad(e.kat), display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }}>
+              <span style={{ position: "absolute", top: 8, left: 8, fontSize: 10, color: C.gold }}>★</span>
+              <span style={{ fontSize: 18, color: KAT[e.kat].c }}>▶</span>
+            </div>
+            <div style={{ padding: "8px 10px" }}>
+              <div style={{ fontSize: 9, fontWeight: 700, color: KAT[e.kat].c }}>{e.when}</div>
+              <div style={{ fontSize: 11, fontWeight: 700, marginTop: 3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{e.title}</div>
+              <div style={{ fontSize: 9, color: C.textTer, marginTop: 2 }}>{e.who}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* filtre */}
+      <div style={{ display: "flex", gap: 8, padding: "6px 16px 8px", overflowX: "auto" }}>
+        {chipy.map((f) => {
+          const on = filter === f;
+          return <div key={f} onClick={() => setFilter(f)} style={{ flex: "0 0 auto", padding: "7px 14px", borderRadius: 13, fontSize: 11, cursor: "pointer", whiteSpace: "nowrap", background: on ? "rgba(91,155,255,.12)" : C.surface2, border: `1px solid ${on ? "rgba(116,166,255,.4)" : C.line}`, color: on ? "#7FC2EF" : C.textSec, fontWeight: on ? 700 : 500 }}>{f}</div>;
+        })}
+      </div>
+
+      {/* všetky udalosti */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 18px 0" }}>
+        <SekciaLabel>VŠETKY UDALOSTI</SekciaLabel>
+        <span style={{ fontSize: 11, color: C.textTer }}>{EVENTS.length * 18} v okolí</span>
+      </div>
+      <div style={{ padding: "0 16px" }}>
+        {list.map((e) => (
+          <div key={e.id} onClick={() => onEvent(e.id)} style={{ display: "flex", alignItems: "center", gap: 10, background: "rgba(255,255,255,.035)", border: `1px solid ${C.line2}`, borderRadius: 12, padding: "11px 12px", marginBottom: 8, cursor: "pointer" }}>
+            <span style={{ width: 7, height: 7, borderRadius: "50%", background: SRC_COL[e.src], flex: "none" }} />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{e.title}</div>
+              <div style={{ fontSize: 9.5, color: C.textTer, marginTop: 2 }}>{e.who} · {e.src}</div>
+            </div>
+            <div style={{ textAlign: "right", flex: "none" }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: SRC_COL[e.src] }}>{e.when}</div>
+              <div style={{ color: "#4A4F57" }}>›</div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ===================== DETAIL UDALOSTI =====================
+function GoodEvent({ id, onBack, toast, oslavuj }) {
+  const e = EVENTS.find((x) => x.id === id);
+  if (!e) return null;
+  return (
+    <div style={{ paddingBottom: 24 }}>
+      <div style={{ height: 150, position: "relative", display: "flex", alignItems: "center", justifyContent: "center", background: heroGrad(e.kat) }}>
+        <div onClick={onBack} style={{ position: "absolute", top: 14, left: 14, width: 34, height: 34, borderRadius: "50%", background: "rgba(0,0,0,.55)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 18, cursor: "pointer", zIndex: 2 }}>‹</div>
+        <div style={{ fontSize: 46, color: KAT[e.kat].c }}>▶</div>
+        <span style={{ position: "absolute", bottom: 12, left: 14, fontSize: 10, fontWeight: 600, padding: "3px 9px", borderRadius: 7, background: "rgba(0,0,0,.6)", color: SRC_COL[e.src], pointerEvents: "none" }}>{e.src}</span>
+      </div>
+      <div style={{ padding: "14px 18px" }}>
+        <div style={{ fontSize: 16, fontWeight: 800, lineHeight: 1.3 }}>{e.title}</div>
+        <div style={{ display: "flex", gap: 14, marginTop: 10, flexWrap: "wrap" }}>
+          <span style={{ fontSize: 12, color: C.textSec }}>🗓 {e.when}</span>
+          <span style={{ fontSize: 12, color: C.textSec }}>📍 {e.place}</span>
+          <span style={{ fontSize: 12, color: C.textSec }}>👥 {e.cap}</span>
+        </div>
+        <p style={{ color: C.textSec, fontSize: 13, lineHeight: 1.55, marginTop: 12 }}>{e.desc}</p>
+
+        <div style={{ background: "rgba(91,155,255,.07)", border: "1px solid rgba(91,155,255,.22)", borderRadius: 13, padding: "11px 13px", marginTop: 12, fontSize: 12, color: "#9FB9E4", lineHeight: 1.5 }}>
+          Po prihlásení dostaneš pripomienku a QR vstupenku. Účasť sa pripíše do tvojich aktivít a karmy.
+        </div>
+
+        <button onClick={() => { toast(`Prihlásené na: ${e.title}`); oslavuj(20, "komunitu"); }}
+          style={{ width: "100%", height: 50, borderRadius: 12, background: GRAD, border: "none", color: "#fff", fontWeight: 700, fontSize: 15, cursor: "pointer", marginTop: 18, boxShadow: "0 8px 26px rgba(99,134,255,.32)" }}>
+          Zúčastním sa
+        </button>
+        <div style={{ display: "flex", gap: 10, marginTop: 10 }}>
+          <div onClick={() => toast("Zdieľané")} style={{ flex: 1, height: 46, borderRadius: 11, background: C.surface2, border: `1px solid ${C.line}`, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>↗ Zdieľať</div>
+          <div onClick={() => toast("Uložené na neskôr")} style={{ flex: 1, height: 46, borderRadius: 11, background: C.surface2, border: `1px solid ${C.line}`, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>☆ Uložiť</div>
+        </div>
       </div>
     </div>
   );
