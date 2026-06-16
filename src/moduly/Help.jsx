@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { C, pasmo, U, AV, inp, infoBox, btn, GRAD, GRAD_ZELENY, glassTmavy } from "../theme";
-import { Foto, Avatar, FotoPrispevku, MiniFotky, Hlavicka, ModulHlavicka, PodporaSekcia, Otazka, Vyber, vyberBox, NavBtns, Suhrn, DokladRow, Modal, Toast, useGaleria, Rebricky, StatRiadok, MoniBar, FeedStlpce, SekcieBar, Lupa, Zvon } from "../shared";
+import { Foto, Avatar, FotoPrispevku, MiniFotky, Hlavicka, ModulHlavicka, PodporaSekcia, Otazka, Vyber, vyberBox, NavBtns, Suhrn, DokladRow, Modal, Toast, useGaleria, useScrollHore, Rebricky, StatRiadok, MoniBar, FeedStlpce, SekcieBar, Lupa, Zvon } from "../shared";
 
 /*
   ============================================================
@@ -54,6 +54,10 @@ export default function ModulHelp({ wide }) {
   const [aktDetail, setAktDetail] = useState(null);
   const [hlaska, setHlaska] = useState(null);
   const toast = (m) => { setHlaska(m); setTimeout(() => setHlaska((x) => (x === m ? null : x)), 2300); };
+
+  // pri prepnutí obrazovky (napr. otvorenie detailu) odscrolluj appku hore
+  const scrollHore = useScrollHore();
+  useEffect(() => { scrollHore(); }, [screen]);
 
   // na tablete/desktope sa detailové obrazovky vycentrujú do čitateľnej šírky
   const obal = (el) => wide ? <div style={{ maxWidth: 620, margin: "0 auto" }}>{el}</div> : el;
@@ -208,7 +212,6 @@ function Detail({ z, onBack }) {
   const [potvrd, setPotvrd] = useState(null); // {kanal, suma}
   const [suma, setSuma] = useState(z.suma);
   const [ludia, setLudia] = useState(z.ludia);
-  const [lajk, setLajk] = useState(false);
   const otvorGaleriu = useGaleria();
 
   const hash = () => "0x" + Math.random().toString(16).slice(2, 8) + "…" + Math.random().toString(16).slice(2, 6);
@@ -287,7 +290,7 @@ function Detail({ z, onBack }) {
       {/* jednotná sekcia podpory */}
       <div style={{ padding: "0 14px 14px" }}>
         <PodporaSekcia
-          likes={212} liked={lajk} onLike={() => { setLajk((v) => !v); setHlaska("Páči sa ti to"); }}
+          onShare={() => setHlaska("Zdieľať: odkaz skopírovaný · siete")}
           upvotes={140} onUpvote={() => setHlaska("Palec hore")}
           onPodpor={(s) => posliPevne(s, "DEED")} onSms={() => posliPevne(1, "SMS")}
           onKanal={(k) => setPotvrd({ kanal: k, suma: "" })} />

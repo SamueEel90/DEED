@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { ModulHlavicka, Hlavicka, PodporaSekcia, Toast, Oslava, useMotiv, Rebricky, StatRiadok, FeedStlpce, SekcieBar, Lupa, Zvon } from "../shared";
+import { ModulHlavicka, Hlavicka, PodporaSekcia, Toast, Oslava, useMotiv, useScrollHore, Rebricky, StatRiadok, FeedStlpce, SekcieBar, Lupa, Zvon } from "../shared";
 import { GRAD, GRAD_ZELENY } from "../theme";
 
 /*
@@ -284,9 +284,13 @@ export default function ModulAktivity({ wide }) {
     setView("all");
   }
   function pickView(v) { setView((x) => (x === v ? "all" : v)); }
-  function open(id) { setAktId(id); setScreen("detail"); window.scrollTo?.(0, 0); }
-  function openPerson(name) { if (!name) return; setProfilMeno(name); setScreen("profile"); window.scrollTo?.(0, 0); }
+  function open(id) { setAktId(id); setScreen("detail"); }
+  function openPerson(name) { if (!name) return; setProfilMeno(name); setScreen("profile"); }
   function home() { setScreen("home"); }
+
+  // pri prepnutí obrazovky (napr. otvorenie detailu) odscrolluj appku hore
+  const scrollHore = useScrollHore();
+  useEffect(() => { scrollHore(); }, [screen]);
 
   function like(id) { setLiked((l) => ({ ...l, [id]: !l[id] })); }
   function toggleFollow(name) {
@@ -368,7 +372,7 @@ function Home({ items, dom, view, pickDom, pickView, toast, open, openPerson, se
   return (
     <div style={{ paddingBottom: 14 }}>
       {/* header — jednotná hlavička (logo D⁺ + názov) */}
-      <ModulHlavicka title="Aktivity" onMenu={() => toast("☰ Menu: moduly + Mapa + nastavenia")}
+      <ModulHlavicka title="Aktivity"
         right={
           <>
             <span onClick={() => toast("Hľadať aktivity, workshopy, lektorov…")} style={{ display: "flex", alignItems: "center", cursor: "pointer" }}><Lupa size={20} color={A.txt2} /></span>
@@ -558,11 +562,10 @@ function Detail({ it, liked, like, support, votes, vote, toast, celebrate, home,
   return <DeedDetail it={it} liked={liked} like={like} support={support} votes={votes} vote={vote} toast={toast} home={home} openPerson={openPerson} />;
 }
 
-function DeedDetail({ it, liked, like, support, votes, vote, toast, home, openPerson }) {
+function DeedDetail({ it, support, votes, vote, toast, home, openPerson }) {
   const a = DOM[it.dom];
   const isTalent = it.type === "talent", isCase = it.type === "case";
   const pct = isCase ? Math.min(100, Math.round(it.raised / it.goal * 100)) : 0;
-  const lk = !!liked[it.id];
   const supLabel = isTalent ? "OCEŇ TVORCU — klik a hneď odíde" : isCase ? "PRIDAJ SA K MAREKOVI" : "DROBNÁ PODPORA — klik a hneď odíde";
   // overovanie skutku — základ + tvoj hlas
   const myVote = votes[it.id];
@@ -597,7 +600,7 @@ function DeedDetail({ it, liked, like, support, votes, vote, toast, home, openPe
         )}
 
         <PodporaSekcia
-          likes={it.likes || 0} liked={lk} onLike={() => like(it.id)}
+          onShare={() => toast("Zdieľať: odkaz skopírovaný · siete")}
           upvotes={Math.floor((it.likes || 0) / 3)} onUpvote={() => toast("Páči sa ti to")}
           onPodpor={(s) => support(s, it.author, it)} onSms={() => toast("SMS podpora (euro/operátor)")}
           onKanal={(k) => toast(`Vlastná suma — ${k} (demo)`)} supLabel={supLabel} />

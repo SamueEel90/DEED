@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { C } from "./theme";
-import { GaleriaContext, Lightbox, DychajucePozadie, MotivContext } from "./shared";
+import { GaleriaContext, ScrollContext, ViacContext, Lightbox, DychajucePozadie, MotivContext } from "./shared";
 import { TabBar, ViacSheet, nacitajTaby, ulozTaby, VSETKY_MODULY } from "./TabBar";
 import ModulGood from "./moduly/Good";
 import ModulHelp from "./moduly/Help";
@@ -167,10 +167,13 @@ export function Screens({ wide, preview }) {
   const [taby, setTaby] = useState(nacitajTaby);
   const [viac, setViac] = useState(false);
   const [galeria, setGaleria] = useState(null); // {fotky, index}
+  const scrollRef = useRef(null);
 
   useEffect(() => { if (!preview) ulozTaby(taby); }, [taby, preview]);
 
   const otvorGaleriu = (fotky, index = 0) => setGaleria({ fotky, index });
+  // moduly cez ScrollContext odscrollujú appku hore (napr. pri otvorení detailu)
+  const scrollHore = () => { if (scrollRef.current) scrollRef.current.scrollTop = 0; };
 
   // v náhľade (Admin → ukážka zariadenia) skry samotný Admin, nech sa appka nezacyklí
   const moduly = preview ? VSETKY_MODULY.filter((m) => m.id !== "admin") : VSETKY_MODULY;
@@ -178,12 +181,14 @@ export function Screens({ wide, preview }) {
 
   return (
     <GaleriaContext.Provider value={otvorGaleriu}>
+     <ScrollContext.Provider value={scrollHore}>
+      <ViacContext.Provider value={() => setViac(true)}>
       <div style={{ height: "100%", display: "flex", flexDirection: "column", position: "relative", overflow: "hidden", isolation: "isolate", background: C.bg }}>
         {/* dýchajúce pozadie vnútri appky (z-index -1 = pod obsahom) */}
         <DychajucePozadie silne />
 
         {/* obsah aktívneho modulu — scroll vo vnútri, miesto pre plávajúci dock */}
-        <div style={{ flex: 1, overflowY: "auto", minHeight: 0, paddingBottom: 96 }}>
+        <div ref={scrollRef} style={{ flex: 1, overflowY: "auto", minHeight: 0, paddingBottom: 96 }}>
           {modul === "good" && <ModulGood wide={wide} otvorModul={prepni} />}
           {modul === "help" && <ModulHelp wide={wide} />}
           {modul === "charita" && <ModulCharita wide={wide} otvorModul={prepni} />}
@@ -194,7 +199,7 @@ export function Screens({ wide, preview }) {
         </div>
 
         {/* plávajúci glass dock — na šírke vycentrovaný a zúžený */}
-        <TabBar taby={taby} aktivny={modul} wide={wide} onModul={prepni} onViac={() => setViac(true)} />
+        <TabBar taby={taby} aktivny={modul} wide={wide} onModul={prepni} />
 
         {viac && (
           <ViacSheet taby={taby} setTaby={setTaby} aktivny={modul} moduly={moduly}
@@ -205,6 +210,8 @@ export function Screens({ wide, preview }) {
         {/* fullscreen galéria fotiek so swipovaním */}
         {galeria && <Lightbox fotky={galeria.fotky} index={galeria.index} onClose={() => setGaleria(null)} />}
       </div>
+      </ViacContext.Provider>
+     </ScrollContext.Provider>
     </GaleriaContext.Provider>
   );
 }

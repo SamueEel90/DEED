@@ -42,8 +42,8 @@ export function ulozTaby(taby) {
 const modul = (id) => VSETKY_MODULY.find((m) => m.id === id);
 
 // ---- PLÁVAJÚCI GLASS DOCK ----
-export function TabBar({ taby, aktivny, onModul, onViac, wide }) {
-  const aktivnyVtaboch = taby.includes(aktivny);
+// „Viac" sa presunulo do hamburger menu (☰) vľavo hore v hlavičke modulu
+export function TabBar({ taby, aktivny, onModul, wide }) {
   return (
     <div style={{ position: "absolute", left: 0, right: 0, bottom: 10, zIndex: 40, display: "flex", justifyContent: "center", padding: "0 10px" }}>
       <div style={{
@@ -53,7 +53,6 @@ export function TabBar({ taby, aktivny, onModul, onViac, wide }) {
         boxShadow: "0 16px 44px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.07)",
       }}>
         {taby.map((id) => <Tab key={id} m={modul(id)} on={aktivny === id} onClick={() => onModul(id)} />)}
-        <Tab m={{ ikona: "⊞", nazov: "Viac" }} on={!aktivnyVtaboch} onClick={onViac} />
       </div>
     </div>
   );

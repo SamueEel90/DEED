@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { C, U, inp, GRAD, GRAD_ZELENY } from "../theme";
-import { Foto, FotoPrispevku, MiniFotky, Modal, Video, ModulHlavicka, Hlavicka, PodporaSekcia, Toast, Oslava, useGaleria, Rebricky, StatRiadok, MoniBar, FeedStlpce, SekcieBar, Lupa, Zvon } from "../shared";
+import { Foto, FotoPrispevku, MiniFotky, Modal, Video, ModulHlavicka, Hlavicka, PodporaSekcia, Toast, Oslava, useGaleria, useScrollHore, Rebricky, StatRiadok, MoniBar, FeedStlpce, SekcieBar, Lupa, Zvon } from "../shared";
 
 /*
   ============================================================
@@ -128,7 +128,10 @@ export default function ModulGood({ wide, otvorModul }) {
   const [verifyMode, setVerifyMode] = useState("ok");
   const [hlaska, setHlaska] = useState(null);
   const [oslava, setOslava] = useState(null); // {suma, komu}
-  const [lajknute, setLajknute] = useState({});
+
+  // pri prepnutí obrazovky (napr. otvorenie detailu) odscrolluj appku hore
+  const scrollHore = useScrollHore();
+  useEffect(() => { scrollHore(); }, [screen]);
 
   const toast = (m) => { setHlaska(m); setTimeout(() => setHlaska((x) => (x === m ? null : x)), 2300); };
   const oslavuj = (suma, komu) => { setOslava({ suma, komu }); setTimeout(() => setOslava(null), 1900); };
@@ -152,7 +155,6 @@ export default function ModulGood({ wide, otvorModul }) {
       )}
       {screen === "detail" && akt && obal(
         <GoodDetail it={akt} toast={toast} oslavuj={oslavuj}
-          lajknute={lajknute} setLajknute={setLajknute}
           onBack={() => setScreen("home")}
           onVerify={(mode) => { setVerifyMode(mode); setScreen("verify"); }} />
       )}
@@ -183,7 +185,7 @@ function Home({ wide, toast, otvorModul, onDetail, onBoard, onAdd }) {
   return (
     <div style={{ paddingBottom: 14 }}>
       {/* header — jednotná hlavička (logo D⁺ + názov + hľadanie/upozornenia + profil) */}
-      <ModulHlavicka title="Domov" onMenu={() => toast("☰ Menu: moduly + Mapa + nastavenia")}
+      <ModulHlavicka title="Domov"
         right={
           <>
             <span onClick={() => toast("Vyhľadávanie — skutky, žiadosti, ľudia (demo)")} style={{ display: "flex", alignItems: "center", cursor: "pointer" }}><Lupa size={20} color={C.textSec} /></span>
@@ -324,13 +326,12 @@ function GoodKarta({ it, wide, onDetail }) {
 }
 
 // ===================== DETAIL =====================
-function GoodDetail({ it, toast, oslavuj, lajknute, setLajknute, onBack, onVerify }) {
+function GoodDetail({ it, toast, oslavuj, onBack, onVerify }) {
   const [potvrd, setPotvrd] = useState(null); // {kanal, suma}
   const otvorGaleriu = useGaleria();
   const jeZiadost = it.typ === "ziadost", jeCharita = it.typ === "charita";
   const maProgres = (jeZiadost && it.ciel) || jeCharita;
   const pct = maProgres ? Math.round(it.vyzbierane / it.ciel * 100) : 0;
-  const lajk = !!lajknute[it.id];
 
   function podpor(suma) {
     toast(`Ďakujeme za ${suma} DEED pre ${it.autor}`);
@@ -380,7 +381,7 @@ function GoodDetail({ it, toast, oslavuj, lajknute, setLajknute, onBack, onVerif
         )}
 
         <PodporaSekcia
-          likes={it.lajky || 0} liked={lajk} onLike={() => setLajknute({ ...lajknute, [it.id]: !lajk })}
+          onShare={() => toast("Zdieľať: odkaz skopírovaný · siete")}
           upvotes={Math.floor((it.lajky || 0) / 3)} onUpvote={() => toast("Páči sa ti to")}
           onPodpor={(s) => podpor(s)} onSms={() => toast("SMS podpora (euro/operátor)")}
           onKanal={(k) => setPotvrd({ kanal: k, suma: "" })} />

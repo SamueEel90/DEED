@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { C, GRAD } from "../theme";
-import { Toast } from "../shared";
+import { Toast, useScrollHore, useViac, IkonaMenu } from "../shared";
 
 /*
   ============================================================
@@ -14,6 +14,10 @@ export default function ModulProfil({ wide }) {
   const [screen, setScreen] = useState("profil"); // profil | wallet | sub
   const [subNazov, setSubNazov] = useState(null);
   const [hlaska, setHlaska] = useState(null);
+
+  // pri prepnutí obrazovky odscrolluj appku hore
+  const scrollHore = useScrollHore();
+  useEffect(() => { scrollHore(); }, [screen]);
 
   const toast = (m) => { setHlaska(m); setTimeout(() => setHlaska((x) => (x === m ? null : x)), 2300); };
   const sub = (n) => { setSubNazov(n); setScreen("sub"); };
@@ -32,6 +36,7 @@ export default function ModulProfil({ wide }) {
 
 // ===================== PROFIL =====================
 function ProfilHlavny({ toast, naWallet, naSub }) {
+  const otvorViac = useViac();
   const dlazdice = [
     ["Peňaženka", "1 240 DEED", "rgba(91,168,240,.14)", "#5BA8F0", "€", naWallet],
     ["Karma a úrovne", "7 modulov", "rgba(169,139,240,.15)", "#A98BF0", "★", () => naSub("Karma a úrovne")],
@@ -43,9 +48,10 @@ function ProfilHlavny({ toast, naWallet, naSub }) {
 
   return (
     <div style={{ paddingBottom: 14 }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 18px 10px" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 11, padding: "16px 18px 10px" }}>
+        <span onClick={otvorViac} title="Menu modulov" style={{ display: "flex", alignItems: "center", color: C.textSec, cursor: "pointer", flex: "0 0 auto" }}><IkonaMenu size={22} color={C.textSec} /></span>
         <span style={{ fontSize: 18, fontWeight: 800 }}>Môj profil</span>
-        <span onClick={() => naSub("Nastavenia")} style={{ fontSize: 18, color: C.textSec, cursor: "pointer" }}>⚙</span>
+        <span onClick={() => naSub("Nastavenia")} style={{ marginLeft: "auto", fontSize: 18, color: C.textSec, cursor: "pointer" }}>⚙</span>
       </div>
 
       <div style={{ margin: "8px 16px 0", background: C.surface, border: `1px solid ${C.line}`, borderRadius: 16, padding: 16, display: "flex", gap: 14, alignItems: "center" }}>

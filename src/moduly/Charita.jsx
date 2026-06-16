@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { U, AV, GRAD, GRAD_ZELENY } from "../theme";
-import { Foto, Avatar, FotoPrispevku, MiniFotky, Modal, ModulHlavicka, PodporaSekcia, Toast, useGaleria, Rebricky, StatRiadok, MoniBar, FeedStlpce, SekcieBar, Lupa, Zvon } from "../shared";
+import { Foto, Avatar, FotoPrispevku, MiniFotky, Modal, ModulHlavicka, PodporaSekcia, Toast, useGaleria, useScrollHore, Rebricky, StatRiadok, MoniBar, FeedStlpce, SekcieBar, Lupa, Zvon } from "../shared";
 
 /*
   ============================================================
@@ -78,6 +78,10 @@ export default function ModulCharita({ wide, otvorModul }) {
   const [sheet, setSheet] = useState(null); // add | reg | dir
   const [hlaska, setHlaska] = useState(null);
 
+  // pri prepnutí obrazovky (napr. otvorenie detailu) odscrolluj appku hore
+  const scrollHore = useScrollHore();
+  useEffect(() => { scrollHore(); }, [screen]);
+
   const toast = (m) => { setHlaska(m); setTimeout(() => setHlaska((x) => (x === m ? null : x)), 2300); };
   const obal = (el) => wide ? <div style={{ maxWidth: 620, margin: "0 auto" }}>{el}</div> : el;
 
@@ -100,7 +104,7 @@ function CharitaFeed({ wide, toast, onDetail, onSheet }) {
   return (
     <div style={{ paddingBottom: 14 }}>
       {/* header — jednotná hlavička (logo D⁺ + názov) */}
-      <ModulHlavicka title="Charita" onMenu={() => toast("☰ Menu")} right={
+      <ModulHlavicka title="Charita" right={
         <>
           <span onClick={() => toast("Vyhľadávanie (demo)")} style={{ display: "flex", alignItems: "center", cursor: "pointer" }}><Lupa size={20} color={K.txt2} /></span>
           <span onClick={() => toast("Upozornenia (demo)")} style={{ display: "flex", alignItems: "center", cursor: "pointer" }}><Zvon size={20} color={K.txt2} /></span>
@@ -233,7 +237,6 @@ function CharitaDetail({ toast, onBack, onReg }) {
   const [suma, setSuma] = useState(z.suma);
   const [ludia, setLudia] = useState(z.ludia);
   const [potvrd, setPotvrd] = useState(null); // {kanal, suma}
-  const [lajk, setLajk] = useState(false);
   const otvorGaleriu = useGaleria();
   const pct = Math.min(100, Math.round(suma / z.ciel * 100));
 
@@ -294,7 +297,7 @@ function CharitaDetail({ toast, onBack, onReg }) {
         {/* jednotná sekcia podpory */}
         <div style={{ marginBottom: 14 }}>
           <PodporaSekcia
-            likes={212} liked={lajk} onLike={() => { setLajk((v) => !v); toast("Páči sa ti to"); }}
+            onShare={() => toast("Zdieľať: odkaz skopírovaný · siete")}
             upvotes={140} onUpvote={() => toast("Palec hore")}
             onPodpor={(s) => podpor(s, `Ďakujeme za ${s} DEED pre ${z.nazov}`)} onSms={() => podpor(100, "SMS podpora")}
             onKanal={(k) => setPotvrd({ kanal: k, suma: "" })} />

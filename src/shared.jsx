@@ -86,6 +86,20 @@ export function Avatar({ src, emoji, size, border, aura }) {
 export const GaleriaContext = createContext(() => {});
 export const useGaleria = () => useContext(GaleriaContext);
 
+// ============================================================
+// SCROLL — kontext: ktorýkoľvek modul vie odscrollovať appku hore
+// (scroll-kontajner žije v App; pri prepnutí obrazovky → naň zavoláme scrollHore)
+// ============================================================
+export const ScrollContext = createContext(() => {});
+export const useScrollHore = () => useContext(ScrollContext);
+
+// ============================================================
+// MENU „VIAC" — kontext: hamburger (☰) vľavo hore otvára sheet modulov
+// (predtým bolo „Viac" tlačidlo v spodnom doku)
+// ============================================================
+export const ViacContext = createContext(() => {});
+export const useViac = () => useContext(ViacContext);
+
 // klikateľné foto v príspevku — otvorí galériu, ukáže počet fotiek
 // disableGaleria=true → klik na foto neotvára galériu, ale prebublá na kartu (otvorí detail skutku/žiadosti)
 export function FotoPrispevku({ fotky, emoji, h, w, radius = 0, style, index = 0, disableGaleria }) {
@@ -281,18 +295,19 @@ export const MotivContext = createContext({ svetly: false, prepni: () => {} });
 export const useMotiv = () => useContext(MotivContext);
 
 // ---- JEDNOTNÁ HLAVIČKA MODULU: ☰ + logo D⁺ + názov stránky (+ pravý obsah + prepínač režimu) ----
-export function ModulHlavicka({ title, onMenu, right }) {
+export function ModulHlavicka({ title, right }) {
   const { svetly, prepni } = useMotiv();
+  const otvorViac = useViac();
   return (
     <div style={{ position: "sticky", top: 0, zIndex: 6, display: "flex", alignItems: "center", gap: 11, padding: "13px 16px", ...glassTmavy(18, .6), borderLeft: "none", borderRight: "none", borderTop: "none" }}>
-      <span onClick={onMenu} style={{ display: "flex", alignItems: "center", color: C.textSec, cursor: onMenu ? "pointer" : "default", flex: "0 0 auto" }}><IkonaMenu size={22} color={C.textSec} /></span>
+      <span onClick={otvorViac} title="Menu modulov" style={{ display: "flex", alignItems: "center", color: C.textSec, cursor: "pointer", flex: "0 0 auto" }}><IkonaMenu size={22} color={C.textSec} /></span>
       <span style={{ width: 32, height: 32, borderRadius: 10, background: GRAD, color: "#fff", fontWeight: 800, fontSize: 17, display: "flex", alignItems: "center", justifyContent: "center", position: "relative", boxShadow: "0 4px 14px rgba(99,134,255,.4)", flex: "0 0 auto" }}>
         D<span style={{ position: "absolute", top: 3, right: 4, fontSize: 9 }}>+</span>
       </span>
       <span style={{ fontSize: 20, fontWeight: 800 }}>{title}</span>
       <span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 13 }}>
         {right}
-        <span onClick={prepni} title="Svetlý / tmavý režim" style={{ cursor: "pointer", fontSize: 16, width: 34, height: 34, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", border: `1px solid ${C.line}`, background: C.surface, flex: "0 0 auto" }}>{svetly ? "🌙" : "☀️"}</span>
+        <span onClick={prepni} title="Svetlý / tmavý režim" style={{ cursor: "pointer", width: 34, height: 34, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", border: `1px solid ${C.line}`, background: C.surface, flex: "0 0 auto", color: C.textSec }}>{svetly ? <IkonaMesiac size={17} color={C.textSec} /> : <IkonaSlnko size={17} color={C.textSec} />}</span>
       </span>
     </div>
   );
@@ -453,6 +468,18 @@ export function IkonaPin({ size = 18, color = "currentColor" }) {
 export function IkonaMenu({ size = 22, color = "currentColor" }) {
   return <SvgI size={size} color={color}><path d="M3 6h18M3 12h18M3 18h18" /></SvgI>;
 }
+// zdieľať (tri prepojené uzly)
+export function Zdielanie({ size = 18, color = "currentColor" }) {
+  return <SvgI size={size} color={color}><circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" /><path d="M8.6 13.5l6.8 3.98M15.4 6.5l-6.8 3.98" /></SvgI>;
+}
+// slnko (svetlý režim)
+export function IkonaSlnko({ size = 18, color = "currentColor" }) {
+  return <SvgI size={size} color={color}><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" /></SvgI>;
+}
+// mesiac (tmavý režim)
+export function IkonaMesiac({ size = 18, color = "currentColor" }) {
+  return <SvgI size={size} color={color}><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" /></SvgI>;
+}
 
 // ============================================================
 // JEDNOTNÁ SEKCIA PODPORY (ZADARMO · DROBNÁ PODPORA · VLASTNÁ SUMA)
@@ -468,30 +495,38 @@ const psPill = (active) => ({
   border: `1px solid ${active ? "rgba(242,112,111,.5)" : C.line}`,
   color: active ? "#F2706F" : C.text,
 });
-const psFix = (emph) => ({
-  flex: 1, minHeight: 62, borderRadius: 14, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-  cursor: "pointer", fontFamily: "inherit", fontWeight: 700, transition: "transform .12s ease",
-  background: emph ? "rgba(240,168,94,.10)" : C.surface2,
-  border: `1px solid ${emph ? "rgba(240,168,94,.4)" : C.line}`, color: C.text,
-});
+// 1 DEED ≈ 0,01 € (ilustračne) — zobrazí sa pod hodnotou
+const eurZaDeed = (a) => (a * 0.01).toLocaleString("sk", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €";
+// stupňované zvýraznenie pevných súm: 0 = najjemnejšie (10) · 1 = stredné (50) · 2 = najvýraznejšie (100)
+const psFix = (tier = 0, col = "#74A6FF") => {
+  const t = [
+    { bg: C.surface2, bd: C.line, sh: "none" },
+    { bg: tint(col, .09), bd: tint(col, .4), sh: "none" },
+    { bg: "rgba(240,168,94,.16)", bd: "rgba(240,168,94,.65)", sh: "0 6px 20px rgba(240,168,94,.28)" },
+  ][tier];
+  return {
+    flex: tier === 2 ? 1.18 : 1, minHeight: 64, borderRadius: 14, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+    cursor: "pointer", fontFamily: "inherit", fontWeight: 700, transition: "transform .12s ease",
+    background: t.bg, border: `1px solid ${t.bd}`, boxShadow: t.sh, color: C.text,
+  };
+};
 const psKanal = {
   flex: 1, minHeight: 56, borderRadius: 14, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
   cursor: "pointer", fontFamily: "inherit", background: C.surface2, border: `1px solid ${C.line}`, color: C.text,
 };
 
-export function PodporaSekcia({ likes = 0, liked, onLike, upvotes = 0, onUpvote, onPodpor, onSms, onKanal, accent = "#74A6FF", supLabel = "DROBNÁ PODPORA — klik a hneď odíde" }) {
+export function PodporaSekcia({ onShare, upvotes = 0, onUpvote, onPodpor, onSms, onKanal, accent = "#74A6FF", supLabel = "DROBNÁ PODPORA — klik a hneď odíde" }) {
   const fix = [
-    { e: "★", v: "10", col: accent, a: 10 },
-    { e: "◆", v: "50", col: accent, a: 50 },
-    { e: "🔥", v: "100", col: "#F0A85E", a: 100, emph: true },
+    { e: "★", v: "10", col: accent, a: 10, tier: 0 },
+    { e: "◆", v: "50", col: accent, a: 50, tier: 1 },
+    { e: "🔥", v: "100", col: "#F0A85E", a: 100, tier: 2 },
   ];
   return (
     <div>
       <PSLabel>ZADARMO</PSLabel>
       <div style={{ display: "flex", gap: 10 }}>
-        <button onClick={onLike} style={psPill(liked)}>
-          <Srdce size={19} filled={liked} color={liked ? "#F2706F" : C.textSec} />
-          {(likes || 0) + (liked ? 1 : 0)}
+        <button onClick={onShare} style={{ ...psPill(false), color: C.text }}>
+          <Zdielanie size={18} color={C.textSec} /> Zdieľať
         </button>
         <button onClick={onUpvote} style={{ ...psPill(false), color: C.text }}>
           <Palec size={18} color={C.textSec} /> {upvotes}
@@ -501,13 +536,14 @@ export function PodporaSekcia({ likes = 0, liked, onLike, upvotes = 0, onUpvote,
       <PSLabel>{supLabel}</PSLabel>
       <div style={{ display: "flex", gap: 8, alignItems: "stretch" }}>
         {fix.map((b) => (
-          <button key={b.v} onClick={() => onPodpor(b.a)} style={psFix(b.emph)}>
-            <span style={{ fontSize: 20, color: b.col, lineHeight: 1 }}>{b.e}</span>
-            <span style={{ fontSize: 13, marginTop: 4 }}>{b.v} <span style={{ fontSize: 9, fontWeight: 700, color: C.textTer, letterSpacing: ".3px" }}>DEED</span></span>
+          <button key={b.v} onClick={() => onPodpor(b.a)} style={psFix(b.tier, b.col)}>
+            <span style={{ fontSize: b.tier === 2 ? 22 : 20, color: b.col, lineHeight: 1 }}>{b.e}</span>
+            <span style={{ fontSize: b.tier === 2 ? 14 : 13, marginTop: 4 }}>{b.v} <span style={{ fontSize: 9, fontWeight: 700, color: C.textTer, letterSpacing: ".3px" }}>DEED</span></span>
+            <span style={{ fontSize: 9.5, color: C.textTer, marginTop: 2 }}>≈ {eurZaDeed(b.a)}</span>
           </button>
         ))}
         <div style={{ width: 1, alignSelf: "stretch", borderLeft: `1px dashed ${C.line}`, margin: "3px 3px" }} />
-        <button onClick={onSms} style={{ ...psFix(false), flex: 0.85, background: "rgba(240,199,90,.08)", borderColor: "rgba(240,199,90,.35)" }}>
+        <button onClick={onSms} style={{ ...psFix(0), flex: 0.85, background: "rgba(240,199,90,.08)", borderColor: "rgba(240,199,90,.35)" }}>
           <span style={{ fontSize: 14, fontWeight: 800, color: C.gold }}>SMS</span>
           <span style={{ fontSize: 13, marginTop: 3, color: C.gold }}>€</span>
         </button>
@@ -517,11 +553,9 @@ export function PodporaSekcia({ likes = 0, liked, onLike, upvotes = 0, onUpvote,
       <div style={{ display: "flex", gap: 10 }}>
         <button onClick={() => onKanal("EUR")} style={psKanal}>
           <span style={{ fontWeight: 800, fontSize: 15 }}>€ EUR</span>
-          <span style={{ fontSize: 11, color: C.textTer, marginTop: 3 }}>euro · procesor</span>
         </button>
         <button onClick={() => onKanal("DEED")} style={psKanal}>
           <span style={{ fontWeight: 800, fontSize: 15, color: accent }}>DEED</span>
-          <span style={{ fontSize: 11, color: C.textTer, marginTop: 3 }}>wallet → wallet</span>
         </button>
       </div>
     </div>
