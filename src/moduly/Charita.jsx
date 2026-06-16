@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { U, AV, GRAD, GRAD_ZELENY } from "../theme";
-import { Foto, Avatar, FotoPrispevku, MiniFotky, Modal, ModulHlavicka, PodporaSekcia, useGaleria } from "../shared";
+import { Foto, Avatar, FotoPrispevku, MiniFotky, Modal, ModulHlavicka, PodporaSekcia, Toast, useGaleria, Rebricky, StatRiadok, MoniBar, FeedStlpce } from "../shared";
 
 /*
   ============================================================
@@ -69,7 +69,7 @@ const ADRESAR = [
   ]},
 ];
 
-const SEG_BG = ["#3a1518", "#15263a", "#142a20", "#1a2a14", "#2a1f14", "#16233a", "#1f1530"];
+const SEG_BG = ["rgba(242,112,111,.16)", "rgba(91,155,255,.16)", "rgba(61,214,140,.16)", "rgba(120,200,90,.16)", "rgba(231,199,102,.16)", "rgba(91,140,240,.16)", "rgba(139,124,255,.16)"];
 const lvlFarba = (l) => ({ Legend: "#f5c542", Gold: "#f5c542", Silver: "#94a3b8", Bronze: "#b87333" }[l] || "#94a3b8");
 
 // ===================== MODUL =====================
@@ -90,11 +90,7 @@ export default function ModulCharita({ wide, otvorModul }) {
       {sheet === "reg" && <SheetReg toast={toast} onClose={() => setSheet(null)} />}
       {sheet === "dir" && <SheetAdresar toast={toast} onClose={() => setSheet(null)} />}
 
-      {hlaska && (
-        <div style={{ position: "absolute", left: "50%", bottom: 92, transform: "translateX(-50%)", background: "rgba(11,15,26,.72)", backdropFilter: "blur(18px)", WebkitBackdropFilter: "blur(18px)", border: `1px solid rgba(52,211,153,.35)`, color: "#C9F2E2", padding: "11px 18px", borderRadius: 30, fontSize: 12.5, fontWeight: 600, zIndex: 60, width: "max-content", maxWidth: "85%", textAlign: "center", animation: "fadeUp .3s ease", boxShadow: "0 10px 34px rgba(0,0,0,.45), 0 0 24px rgba(67,224,200,.12)" }}>
-          {hlaska}
-        </div>
-      )}
+      {hlaska && <Toast text={hlaska} />}
     </div>
   );
 }
@@ -114,91 +110,101 @@ function CharitaFeed({ wide, toast, onDetail, onSheet }) {
 
       {/* 3 sekcie */}
       <div style={{ display: "flex", borderBottom: `1px solid ${K.line}`, fontSize: 13, textAlign: "center" }}>
-        <div style={{ flex: 1, padding: "12px 4px", color: K.txt2, cursor: "pointer" }}>▶ Talent</div>
+        <div onClick={() => toast("Ukáž svoj talent (demo)")} style={{ flex: 1, padding: "12px 4px", color: K.txt2, cursor: "pointer" }}>▶ Ukáž svoj talent</div>
         <div style={{ flex: 1, padding: "12px 4px", color: K.txt2, cursor: "pointer" }}>🏅 Nástenka</div>
         <div onClick={() => onSheet("add")} style={{ flex: 1, padding: "12px 4px", background: GRAD, color: "#fff", fontWeight: 700, cursor: "pointer" }}>＋ Pridať</div>
       </div>
 
-      {/* rebríčky + adresár */}
-      <div style={{ display: "flex", alignItems: "center", gap: 9, padding: "11px 16px 6px", overflowX: "auto" }}>
-        <div onClick={() => onSheet("dir")} style={{ textAlign: "center", flex: "0 0 auto", cursor: "pointer" }}>
-          <div style={{ width: 52, height: 40, borderRadius: 11, background: K.blueBg, border: `1px solid ${K.blueEdge}`, color: K.blue, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", lineHeight: 1.1 }}>
-            <span style={{ fontSize: 14 }}>🏛</span><b style={{ fontSize: 8 }}>Charita&amp;OZ</b>
-          </div>
-          <div style={{ fontSize: 10, color: K.txt2, marginTop: 3 }}>Adresár</div>
-        </div>
-        {[["🛡", "Lidl"], ["👑", "Liga"], ["⭐", "Plamienok"]].map((l, i) => (
-          <div key={i} style={{ textAlign: "center", flex: "0 0 auto", cursor: "pointer" }}>
-            <div style={{ width: 46, height: 40, borderRadius: 11, background: K.card, border: `1px solid ${K.line}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>{l[0]}</div>
-            <div style={{ fontSize: 10, color: K.txt2, marginTop: 3, maxWidth: 52, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{l[1]}</div>
-          </div>
-        ))}
-        <div style={{ width: 1, height: 42, background: K.line, flexShrink: 0, margin: "0 2px" }} />
-        {["Ty", "Anna", "Peter"].map((n, i) => (
-          <div key={i} style={{ textAlign: "center", flex: "0 0 auto" }}>
-            <div style={{ width: 40, height: 40, borderRadius: "50%", background: "linear-gradient(135deg,#3a4258,#222937)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, color: K.txt2, border: `1px solid ${K.line}` }}>{n[0]}</div>
-            <div style={{ fontSize: 10, color: K.txt2, marginTop: 3 }}>{n}</div>
-          </div>
-        ))}
-      </div>
-      <div style={{ display: "flex", alignItems: "center", padding: "4px 16px 10px", fontSize: 13, color: K.txt2 }}>
-        Dnes 412 · Mesiac 12 840<span style={{ marginLeft: "auto" }}>📍 Sihoť · Trenčín</span>
+      {/* jednotný rebríček ocenení (s úvodným kachlíkom Adresár) */}
+      <div style={{ paddingTop: 12 }}>
+        <Rebricky
+          pred={
+            <div onClick={() => onSheet("dir")} style={{ minWidth: 84, background: K.blueBg, border: `1px solid ${K.blueEdge}`, borderRadius: 13, padding: "8px 5px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, cursor: "pointer", flex: "0 0 auto", color: K.blue }}>
+              <div style={{ fontSize: 16, lineHeight: 1 }}>🏛</div>
+              <div style={{ fontSize: 7.5, letterSpacing: ".4px", fontWeight: 700 }}>CHARITA & OZ</div>
+              <div style={{ fontSize: 9.5, fontWeight: 700 }}>Adresár</div>
+            </div>
+          }
+          ocenenia={[
+            { ic: "🛡", col: "#74A6FF", label: "PARTNER", name: "Lidl", onClick: () => toast("Rebríček: Top partner") },
+            { ic: "👑", col: "#E7C766", label: "TOP", name: "Liga", onClick: () => toast("Rebríček: Top charita") },
+            { ic: "⭐", col: "#E58A6A", label: "TOP", name: "Plamienok", onClick: () => toast("Rebríček: Top charita") },
+          ]}
+          ludia={[{ ini: "Ty", name: "Ty", col: "#74A6FF" }, { ini: "A", name: "Anna" }, { ini: "P", name: "Peter" }]}
+        />
       </div>
 
-      {/* feed */}
-      <div style={wide
-        ? { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: 12, alignItems: "start", padding: "4px 14px 12px" }
-        : { padding: "4px 14px 12px" }}>
+      {/* jednotný štatistický riadok (dnes + okruh) */}
+      <StatRiadok stat="Dnes 412 · Mesiac 12 840" onOkruh={() => onSheet("dir")} />
 
-        {/* veľká urgentná žiadosť */}
-        <div onClick={onDetail} style={{ background: K.warmBg, border: `1px solid ${K.warmEdge}`, borderRadius: 16, overflow: "hidden", marginBottom: wide ? 0 : 12, cursor: "pointer" }}>
-          <div style={{ position: "relative" }}>
-            <FotoPrispevku fotky={ZBIERKA.fotky} emoji="🔥" h={150} />
-            <span style={badge({ top: 9, left: 9, color: K.gold })}>🔥 URGENTNÉ</span>
-            <span style={badge({ top: 9, right: 9, color: K.diamond, background: "rgba(96,165,250,.18)" })}>🛡 Lidl · 500 €</span>
-          </div>
-          <div style={{ padding: "12px 14px" }}>
-            <div style={{ fontSize: 15, fontWeight: 600, display: "flex", alignItems: "center", gap: 7 }}>Rodina Kováčová <Overena /></div>
-            <div style={{ fontSize: 13, color: K.txt2, lineHeight: 1.5, margin: "5px 0 10px" }}>V noci nám zhorel dom, ostali sme bez strechy s dvomi deťmi. Potrebuje…</div>
-            <Suma am="1 430 € / 2 200 €" pc="65 %" w={65} />
-          </div>
-        </div>
-
-        {/* dobrovoľnícka výzva */}
-        <RiadokKarta onClick={() => toast("Otvorila by sa výzva na dobrovoľníctvo")}
-          ikona="🌳" ikonaBg={K.greenBg} ikonaCol={K.green}
-          nazov="Stromosvet" tag="DOBROVOĽNÍCTVO" tagBg="rgba(52,211,153,.14)" tagCol={K.green}
-          popis="Hľadá 10 dobrovoľníkov · výsadba stromov · sobota, Brezina" />
-
-        {/* topovaná žiadosť */}
-        <div onClick={() => toast("Detail zbierky — Plamienok")} style={{ background: K.card, border: `1px solid ${K.line}`, borderRadius: 16, padding: "13px 14px", marginBottom: wide ? 0 : 12, cursor: "pointer" }}>
-          <div style={{ fontSize: 14, fontWeight: 600, display: "flex", alignItems: "center", gap: 7 }}>Plamienok <span style={{ fontSize: 10, color: K.diamond, border: `1px solid ${K.blueEdge}`, background: "rgba(96,165,250,.08)", padding: "1px 7px", borderRadius: 99, fontWeight: 500 }}>⭐ TOP</span></div>
-          <div style={{ fontSize: 13, color: K.txt2, lineHeight: 1.5, margin: "5px 0 9px" }}>Detský hospic — pomôžte nám zabezpečiť mobilnú paliatívnu starostlivosť pre rodiny.</div>
-          <Suma am="8 200 € / 15 000 €" pc="55 %" w={55} />
-        </div>
-
-        {/* malá žiadosť s foto */}
-        <div onClick={() => toast("Detail zbierky — Žofia K.")} style={{ background: K.warmBg, border: `1px solid ${K.warmEdge}`, borderRadius: 16, overflow: "hidden", marginBottom: wide ? 0 : 12, cursor: "pointer" }}>
-          <div style={{ position: "relative" }}>
-            <FotoPrispevku fotky={ZOFIA_FOTKY} emoji="🩺" h={120} />
-            <span style={badge({ top: 9, right: 9, color: K.green, background: "rgba(52,211,153,.18)" })}>D+</span>
-          </div>
-          <div style={{ padding: "12px 14px" }}>
-            <div style={{ fontSize: 14, fontWeight: 600, display: "flex", alignItems: "center", gap: 7 }}>Žofia K. <Overena /></div>
-            <div style={{ fontSize: 13, color: K.txt2, lineHeight: 1.5, margin: "5px 0 9px" }}>Po úraze tri mesiace bez príjmu, potrebujem na lieky.</div>
-            <Suma am="520 € / 800 €" pc="65 %" w={65} />
-          </div>
-        </div>
-
-        {/* materiál zbierka */}
-        <RiadokKarta onClick={() => toast("Zbierka materiálu — Zelená plus")}
-          ikona="ZP" ikonaBg={K.blueBg} ikonaCol={K.diamond} ikonaText
-          nazov="Zelená plus" tag="MATERIÁL" tagBg="rgba(96,165,250,.14)" tagCol={K.diamond}
-          popis="Triedenie a zber šatstva pre útulok · streda, Juh" />
-      </div>
+      {/* feed — na tablete/PC: zapoj sa vľavo, zbierky vpravo */}
+      <FeedStlpce wide={wide} padding="4px 14px 12px"
+        labelSkutky="Zapoj sa" labelZiadosti="Zbierky"
+        jednoStlpec={[<ZapojSa key="z1" wide={wide} toast={toast} />, <ZbierkyUrgent key="u" wide={wide} onDetail={onDetail} />, <ZbierkyTop key="t" wide={wide} toast={toast} />, <ZbierkyMala key="m" wide={wide} toast={toast} />, <Material key="z2" wide={wide} toast={toast} />]}
+        skutky={[<ZapojSa key="z1" wide={wide} toast={toast} />, <Material key="z2" wide={wide} toast={toast} />]}
+        ziadosti={[<ZbierkyUrgent key="u" wide={wide} onDetail={onDetail} />, <ZbierkyTop key="t" wide={wide} toast={toast} />, <ZbierkyMala key="m" wide={wide} toast={toast} />]}
+      />
 
       <div style={{ fontSize: 10, color: K.txt3, textAlign: "center", padding: 6 }}>↑ feed je pestrý — veľké urgentné, topované, dobrovoľnícke, materiál ↑</div>
     </div>
+  );
+}
+
+// ---- karty feedu (rozdelené do komponentov kvôli dvojstĺpcu skutky/žiadosti) ----
+function ZbierkyUrgent({ wide, onDetail }) {
+  return (
+    <div onClick={onDetail} style={{ background: K.warmBg, border: `1px solid ${K.warmEdge}`, borderRadius: 16, overflow: "hidden", marginBottom: wide ? 0 : 12, cursor: "pointer" }}>
+      <div style={{ position: "relative" }}>
+        <FotoPrispevku fotky={ZBIERKA.fotky} emoji="🔥" h={150} disableGaleria />
+        <span style={badge({ top: 9, left: 9, color: K.gold })}>🔥 URGENTNÉ</span>
+        <span style={badge({ top: 9, right: 9, color: K.diamond, background: "rgba(96,165,250,.18)" })}>🛡 Lidl · 500 €</span>
+      </div>
+      <div style={{ padding: "12px 14px" }}>
+        <div style={{ fontSize: 15, fontWeight: 600, display: "flex", alignItems: "center", gap: 7 }}>Rodina Kováčová <Overena /></div>
+        <div style={{ fontSize: 13, color: K.txt2, lineHeight: 1.5, margin: "5px 0 10px" }}>V noci nám zhorel dom, ostali sme bez strechy s dvomi deťmi. Potrebuje…</div>
+        <MoniBar vyzbierane={1430} ciel={2200} mini />
+      </div>
+    </div>
+  );
+}
+function ZbierkyTop({ wide, toast }) {
+  return (
+    <div onClick={() => toast("Detail zbierky — Plamienok")} style={{ background: K.card, border: `1px solid ${K.line}`, borderRadius: 16, padding: "13px 14px", marginBottom: wide ? 0 : 12, cursor: "pointer" }}>
+      <div style={{ fontSize: 14, fontWeight: 600, display: "flex", alignItems: "center", gap: 7 }}>Plamienok <span style={{ fontSize: 10, color: K.diamond, border: `1px solid ${K.blueEdge}`, background: "rgba(96,165,250,.08)", padding: "1px 7px", borderRadius: 99, fontWeight: 500 }}>⭐ TOP</span></div>
+      <div style={{ fontSize: 13, color: K.txt2, lineHeight: 1.5, margin: "5px 0 9px" }}>Detský hospic — pomôžte nám zabezpečiť mobilnú paliatívnu starostlivosť pre rodiny.</div>
+      <MoniBar vyzbierane={8200} ciel={15000} mini />
+    </div>
+  );
+}
+function ZbierkyMala({ wide, toast }) {
+  return (
+    <div onClick={() => toast("Detail zbierky — Žofia K.")} style={{ background: K.warmBg, border: `1px solid ${K.warmEdge}`, borderRadius: 16, overflow: "hidden", marginBottom: wide ? 0 : 12, cursor: "pointer" }}>
+      <div style={{ position: "relative" }}>
+        <FotoPrispevku fotky={ZOFIA_FOTKY} emoji="🩺" h={120} disableGaleria />
+        <span style={badge({ top: 9, right: 9, color: K.green, background: "rgba(52,211,153,.18)" })}>D+</span>
+      </div>
+      <div style={{ padding: "12px 14px" }}>
+        <div style={{ fontSize: 14, fontWeight: 600, display: "flex", alignItems: "center", gap: 7 }}>Žofia K. <Overena /></div>
+        <div style={{ fontSize: 13, color: K.txt2, lineHeight: 1.5, margin: "5px 0 9px" }}>Po úraze tri mesiace bez príjmu, potrebujem na lieky.</div>
+        <MoniBar vyzbierane={520} ciel={800} mini />
+      </div>
+    </div>
+  );
+}
+function ZapojSa({ wide, toast }) {
+  return (
+    <RiadokKarta wide={wide} onClick={() => toast("Otvorila by sa výzva na dobrovoľníctvo")}
+      ikona="🌳" ikonaBg={K.greenBg} ikonaCol={K.green}
+      nazov="Stromosvet" tag="DOBROVOĽNÍCTVO" tagBg="rgba(52,211,153,.14)" tagCol={K.green}
+      popis="Hľadá 10 dobrovoľníkov · výsadba stromov · sobota, Brezina" />
+  );
+}
+function Material({ wide, toast }) {
+  return (
+    <RiadokKarta wide={wide} onClick={() => toast("Zbierka materiálu — Zelená plus")}
+      ikona="ZP" ikonaBg={K.blueBg} ikonaCol={K.diamond} ikonaText
+      nazov="Zelená plus" tag="MATERIÁL" tagBg="rgba(96,165,250,.14)" tagCol={K.diamond}
+      popis="Triedenie a zber šatstva pre útulok · streda, Juh" />
   );
 }
 
@@ -208,21 +214,9 @@ function badge({ top, left, right, color, background }) {
 function Overena() {
   return <span style={{ fontSize: 10, color: K.green, border: `1px solid ${K.greenEdge}`, padding: "1px 7px", borderRadius: 99, fontWeight: 500 }}>overená</span>;
 }
-function Suma({ am, pc, w }) {
+function RiadokKarta({ wide, onClick, ikona, ikonaBg, ikonaCol, ikonaText, nazov, tag, tagBg, tagCol, popis }) {
   return (
-    <>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", fontSize: 13 }}>
-        <span style={{ fontWeight: 600 }}>{am}</span><span style={{ color: K.txt2 }}>{pc}</span>
-      </div>
-      <div style={{ height: 7, background: "rgba(255,255,255,.07)", borderRadius: 99, overflow: "hidden", marginTop: 6 }}>
-        <div style={{ height: "100%", width: `${w}%`, background: GRAD_ZELENY, borderRadius: 99, boxShadow: "0 0 10px rgba(43,212,155,.45)" }} />
-      </div>
-    </>
-  );
-}
-function RiadokKarta({ onClick, ikona, ikonaBg, ikonaCol, ikonaText, nazov, tag, tagBg, tagCol, popis }) {
-  return (
-    <div onClick={onClick} style={{ display: "flex", alignItems: "center", gap: 11, background: K.card, border: `1px solid ${K.line}`, borderRadius: 14, padding: "11px 13px", marginBottom: 10, cursor: "pointer" }}>
+    <div onClick={onClick} style={{ display: "flex", alignItems: "center", gap: 11, background: K.card, border: `1px solid ${K.line}`, borderRadius: 14, padding: "11px 13px", marginBottom: wide ? 0 : 10, cursor: "pointer" }}>
       <div style={{ width: 42, height: 42, borderRadius: 10, background: ikonaBg, color: ikonaCol, display: "flex", alignItems: "center", justifyContent: "center", fontSize: ikonaText ? 12 : 18, fontWeight: ikonaText ? 700 : 400, flexShrink: 0 }}>{ikona}</div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 15, fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}>{nazov} <span style={{ fontSize: 11, padding: "2px 7px", borderRadius: 5, fontWeight: 600, background: tagBg, color: tagCol }}>{tag}</span></div>
@@ -257,7 +251,7 @@ function CharitaDetail({ toast, onBack, onReg }) {
   return (
     <div style={{ paddingBottom: 24 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "14px 16px" }}>
-        <span onClick={onBack} style={{ fontSize: 20, color: K.txt2, cursor: "pointer" }}>←</span>
+        <span onClick={onBack} style={{ width: 32, height: 32, flex: "0 0 auto", borderRadius: "50%", background: "rgba(var(--glass-rgb),.06)", border: `1px solid ${K.line}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, color: K.txt2, cursor: "pointer" }}>←</span>
         <span style={{ fontSize: 12, color: K.diamond, background: K.blueBg, border: `1px solid ${K.blueEdge}`, padding: "3px 9px", borderRadius: 7, fontWeight: 700, letterSpacing: ".02em" }}>12 000 / 47</span>
         <span style={{ fontSize: 12, color: K.txt2 }}>Liga proti rakovine</span>
         <span style={{ marginLeft: "auto", color: K.txt2 }}>↗&nbsp;&nbsp;🚩</span>
@@ -282,17 +276,13 @@ function CharitaDetail({ toast, onBack, onReg }) {
           </div>
         </div>
 
-        <div style={{ fontSize: 14, lineHeight: 1.55, margin: "10px 0" }}>{z.pribeh}</div>
-
-        <div style={{ background: K.greenBg, border: `1px solid ${K.greenEdge}`, borderRadius: 10, padding: "9px 12px", fontSize: 12, color: K.green, display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
-          🛡 Doklady k príbehu <b>overené systémom</b>. Citlivé doklady nie sú verejné.
-        </div>
+        <div style={{ fontSize: 14, lineHeight: 1.55, margin: "10px 0 14px" }}>{z.pribeh}</div>
 
         {/* progres */}
         <div style={{ background: K.card, border: `1px solid ${K.line}`, borderRadius: 14, padding: "14px 16px", marginBottom: 14 }}>
           <span style={{ fontSize: 18, fontWeight: 700, color: K.green, float: "right" }}>{pct} %</span>
           <div style={{ fontSize: 26, fontWeight: 700 }}>{Math.round(suma)} € <small style={{ fontSize: 13, color: K.txt2, fontWeight: 400 }}>z {z.ciel} €</small></div>
-          <div style={{ height: 9, background: "rgba(255,255,255,.07)", borderRadius: 99, overflow: "hidden", margin: "10px 0 8px" }}>
+          <div style={{ height: 9, background: "rgba(var(--glass-rgb),.1)", borderRadius: 99, overflow: "hidden", margin: "10px 0 8px" }}>
             <div style={{ height: "100%", width: `${pct}%`, background: GRAD_ZELENY, borderRadius: 99, transition: "width .6s ease", boxShadow: "0 0 12px rgba(43,212,155,.5)" }} />
           </div>
           <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11.5, color: K.txt2 }}>
@@ -348,7 +338,7 @@ function PayBtn({ flex, bg, bd, col, e, v, onClick }) {
 // ===================== SHEETY =====================
 function SheetObal({ title, onClose, children }) {
   return (
-    <div style={{ position: "absolute", inset: 0, background: "rgba(7,10,19,.85)", backdropFilter: "blur(26px)", WebkitBackdropFilter: "blur(26px)", zIndex: 50, display: "flex", flexDirection: "column", animation: "fadeUp .2s ease" }}>
+    <div style={{ position: "absolute", inset: 0, background: "rgba(var(--panel-rgb),.92)", backdropFilter: "blur(26px)", WebkitBackdropFilter: "blur(26px)", zIndex: 50, display: "flex", flexDirection: "column", animation: "fadeUp .2s ease" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 12, padding: 16, borderBottom: `1px solid ${K.line}` }}>
         <span onClick={onClose} style={{ fontSize: 22, color: K.txt2, cursor: "pointer" }}>✕</span>
         <span style={{ fontSize: 16, fontWeight: 600 }}>{title}</span>
@@ -390,7 +380,7 @@ function SheetReg({ toast, onClose }) {
         <div style={{ fontSize: 14.5, fontWeight: 600 }}>💶 Túto žiadosť</div>
         <div style={{ fontSize: 12, color: K.txt2, marginTop: 4, lineHeight: 1.45 }}>Pravidelne podporuješ konkrétnu zbierku (Rodina Kováčová). Odhadovaná doba: dlhodobá.</div>
       </div>
-      <div onClick={() => toast("Podporujem segment → frekvencia → suma → potvrď")} style={{ background: K.goldBg, border: `1px solid #4a3f15`, borderRadius: 14, padding: 15, marginBottom: 12, cursor: "pointer" }}>
+      <div onClick={() => toast("Podporujem segment → frekvencia → suma → potvrď")} style={{ background: K.goldBg, border: `1px solid rgba(240,199,90,.4)`, borderRadius: 14, padding: 15, marginBottom: 12, cursor: "pointer" }}>
         <div style={{ fontSize: 14.5, fontWeight: 600 }}>🗂 Segment charity</div>
         <div style={{ fontSize: 12, color: K.txt2, marginTop: 4, lineHeight: 1.45 }}>Podporuješ tému (napr. „onkopacienti“). Charita rozdelí podľa svojho kľúča.</div>
         <div style={{ fontSize: 11, color: K.gold, marginTop: 6 }}>⚠️ Tu nevieme presne deklarovať použitie peňazí.</div>
@@ -435,7 +425,7 @@ function SheetAdresar({ toast, onClose }) {
           <div style={{ fontSize: 11, fontWeight: 700, color: K.blue, textTransform: "uppercase", letterSpacing: ".04em", margin: "14px 0 6px" }}>{s.sekcia}</div>
           {s.polozky.map((p, pi) => (
             <div key={pi} onClick={() => toast("Profil charity — " + p[1])} style={{ display: "flex", alignItems: "center", gap: 11, padding: "11px 4px", borderBottom: `1px solid ${K.line}`, cursor: "pointer" }}>
-              <div style={{ width: 38, height: 38, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, flexShrink: 0, background: SEG_BG[(si + pi) % SEG_BG.length], color: "#cbd5e1" }}>{p[0]}</div>
+              <div style={{ width: 38, height: 38, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, flexShrink: 0, background: SEG_BG[(si + pi) % SEG_BG.length], color: K.txt }}>{p[0]}</div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 15, fontWeight: 500 }}>{p[1]}</div>
                 <div style={{ fontSize: 12.5, color: K.txt2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p[2]}</div>

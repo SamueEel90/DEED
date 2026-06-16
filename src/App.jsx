@@ -103,9 +103,9 @@ function DeviceToggle({ device, onChange }) {
           padding: "9px 20px", borderRadius: 22, fontSize: 13, cursor: "pointer", fontFamily: "inherit",
           fontWeight: device === k ? 800 : 500,
           border: `1px solid ${device === k ? "rgba(116,166,255,.55)" : C.line}`,
-          background: device === k ? "linear-gradient(135deg, rgba(91,155,255,.22), rgba(139,124,255,.16))" : "rgba(255,255,255,.04)",
+          background: device === k ? "linear-gradient(135deg, rgba(91,155,255,.22), rgba(139,124,255,.16))" : "rgba(var(--glass-rgb),.05)",
           boxShadow: device === k ? "0 6px 20px rgba(91,124,255,.25)" : "none",
-          color: device === k ? "#EAF1FF" : C.textSec,
+          color: device === k ? C.text : C.textSec,
           backdropFilter: "blur(10px)", WebkitBackdropFilter: "blur(10px)",
           transition: "all .2s ease",
         }}>{t}</button>
@@ -124,9 +124,9 @@ function DevicePreview({ device, vyska }) {
     return (
       <div style={{ width: "100%", maxWidth: 1180, height: H, display: "flex", flexDirection: "column" }}>
         <div style={{ borderRadius: 16, overflow: "hidden", background: C.bg, boxShadow: ziara, flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 7, padding: "10px 14px", background: "rgba(255,255,255,.04)", borderBottom: `1px solid ${C.line}`, flex: "0 0 auto" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 7, padding: "10px 14px", background: "rgba(var(--glass-rgb),.05)", borderBottom: `1px solid ${C.line}`, flex: "0 0 auto" }}>
             {["#FF5F57", "#FEBC2E", "#28C840"].map((f) => <span key={f} style={{ width: 11, height: 11, borderRadius: "50%", background: f, flex: "0 0 auto" }} />)}
-            <span style={{ flex: 1, maxWidth: 460, margin: "0 auto", background: "rgba(0,0,0,.35)", border: `1px solid ${C.line}`, borderRadius: 9, padding: "5px 14px", fontSize: 12, color: C.textSec, textAlign: "center" }}>🔒 deed-help.vercel.app</span>
+            <span style={{ flex: 1, maxWidth: 460, margin: "0 auto", background: "rgba(var(--glass-rgb),.06)", border: `1px solid ${C.line}`, borderRadius: 9, padding: "5px 14px", fontSize: 12, color: C.textSec, textAlign: "center" }}>🔒 deed-help.vercel.app</span>
             <span style={{ width: 47, flex: "0 0 auto" }} />
           </div>
           <div style={{ flex: 1, position: "relative", minHeight: 0, color: C.text }}>

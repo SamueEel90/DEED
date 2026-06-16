@@ -86,7 +86,7 @@ export const AV = (n) => `https://i.pravatar.cc/100?img=${n}`;
 export function inp(h) {
   return {
     width: "100%", padding: 15, borderRadius: 13,
-    background: "rgba(255,255,255,.04)", border: `1px solid ${C.line}`,
+    background: "rgba(var(--glass-rgb),.05)", border: `1px solid ${C.line}`,
     color: C.text, fontSize: 16, minHeight: h, fontFamily: "inherit", resize: "vertical",
     outline: "none", lineHeight: 1.5,
   };
@@ -94,7 +94,7 @@ export function inp(h) {
 
 export const infoBox = {
   background: "rgba(91,155,255,.07)", border: "1px solid rgba(91,155,255,.22)",
-  borderRadius: 13, padding: "12px 14px", fontSize: 13.5, color: "#B4C9EA",
+  borderRadius: 13, padding: "12px 14px", fontSize: 13.5, color: C.blueL,
   lineHeight: 1.5, marginTop: 12,
 };
 
@@ -105,7 +105,7 @@ export function btn(kind) {
     transition: "transform .12s ease, box-shadow .25s ease, opacity .2s ease",
   };
   if (kind === "primary") return { ...base, background: GRAD, color: "#fff", boxShadow: "0 8px 26px rgba(99,134,255,.32), inset 0 1px 0 rgba(255,255,255,.25)" };
-  if (kind === "ghost") return { ...base, background: "rgba(255,255,255,.04)", color: C.textSec, border: `1px solid ${C.line}` };
-  if (kind === "disabled") return { ...base, background: "rgba(255,255,255,.05)", color: C.textTer, cursor: "not-allowed" };
+  if (kind === "ghost") return { ...base, background: "rgba(var(--glass-rgb),.05)", color: C.textSec, border: `1px solid ${C.line}` };
+  if (kind === "disabled") return { ...base, background: "rgba(var(--glass-rgb),.06)", color: C.textTer, cursor: "not-allowed" };
   return base;
 }

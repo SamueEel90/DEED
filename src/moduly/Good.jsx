@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { C, U, inp, GRAD } from "../theme";
-import { Foto, FotoPrispevku, MiniFotky, Modal, Aura, Video, ModulHlavicka, PodporaSekcia, useGaleria } from "../shared";
+import { C, U, inp, GRAD, GRAD_ZELENY } from "../theme";
+import { Foto, FotoPrispevku, MiniFotky, Modal, Video, ModulHlavicka, Hlavicka, PodporaSekcia, Toast, Oslava, useGaleria, Rebricky, StatRiadok, MoniBar, FeedStlpce } from "../shared";
 
 /*
   ============================================================
@@ -96,6 +96,8 @@ const POLOZKY = [
 ];
 
 const heroGrad = (kat) => `linear-gradient(160deg, ${KAT[kat].bg}, ${KAT[kat].bg2})`;
+// hex → priesvitné rgba (akcentové tinty fungujúce v tmavom aj svetlom režime)
+const tint = (hex, a) => { const n = parseInt(hex.slice(1), 16); return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`; };
 
 // ---- NÁSTENKA — udalosti v okolí ----
 const SRC_COL = { Komunita: "#A98BF0", Mesto: "#7FC2EF", Partner: "#C264D8" };
@@ -161,22 +163,17 @@ export default function ModulGood({ wide, otvorModul }) {
         <GoodAdd toast={toast} oslavuj={oslavuj} onDone={() => setScreen("home")} />
       )}
 
-      {/* oslava — aura prsteň (podpis značky) */}
+      {/* oslava — jednotný celebration overlay (aura prsteň = podpis značky) */}
       {oslava && (
-        <div onClick={() => setOslava(null)} style={{ position: "absolute", inset: 0, background: "rgba(4,6,12,.75)", backdropFilter: "blur(14px)", WebkitBackdropFilter: "blur(14px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200, flexDirection: "column", gap: 18, animation: "fadeUp .2s ease" }}>
-          <Aura size={134} hrubka={2}>
-            <span style={{ fontSize: 52 }}>{oslava.suma >= 100 ? "🎊" : oslava.suma >= 50 ? "⭐" : "😊"}</span>
-          </Aura>
-          <div style={{ color: "#fff", fontSize: 20, fontWeight: 800 }}>{oslava.suma >= 100 ? "Skvelé! Veľká podpora!" : "Ďakujeme!"}</div>
-          <div style={{ color: C.textSec, fontSize: 14, textAlign: "center", padding: "0 30px", lineHeight: 1.5 }}>Tvoja podpora <b style={{ color: C.greenL }}>{oslava.suma} DEED</b> letí k {oslava.komu}. Reťaz dobra pokračuje.</div>
-        </div>
+        <Oslava
+          emoji={oslava.suma >= 100 ? "🎊" : oslava.suma >= 50 ? "⭐" : "😊"}
+          title={oslava.suma >= 100 ? "Skvelé! Veľká podpora!" : "Ďakujeme!"}
+          text={<>Tvoja podpora <b style={{ color: C.greenL }}>{oslava.suma} DEED</b> letí k {oslava.komu}. Reťaz dobra pokračuje.</>}
+          onClose={() => setOslava(null)}
+        />
       )}
 
-      {hlaska && (
-        <div style={{ position: "absolute", bottom: 92, left: "50%", transform: "translateX(-50%)", background: "rgba(11,15,26,.72)", backdropFilter: "blur(18px)", WebkitBackdropFilter: "blur(18px)", border: "1px solid rgba(52,211,153,.35)", color: "#C9F2E2", padding: "11px 18px", borderRadius: 30, fontSize: 12.5, fontWeight: 600, zIndex: 100, width: "max-content", maxWidth: "88%", textAlign: "center", animation: "fadeUp .3s ease", boxShadow: "0 10px 34px rgba(0,0,0,.45), 0 0 24px rgba(67,224,200,.12)" }}>
-          {hlaska}
-        </div>
-      )}
+      {hlaska && <Toast text={hlaska} />}
     </div>
   );
 }
@@ -185,59 +182,47 @@ export default function ModulGood({ wide, otvorModul }) {
 function Home({ wide, toast, otvorModul, onDetail, onBoard, onAdd }) {
   return (
     <div style={{ paddingBottom: 14 }}>
-      {/* header — jednotná hlavička (logo D⁺ + názov) */}
+      {/* header — jednotná hlavička (logo D⁺ + názov + hľadanie/upozornenia + profil) */}
       <ModulHlavicka title="Domov" onMenu={() => toast("☰ Menu: moduly + Mapa + nastavenia")}
         right={
-          <div onClick={() => otvorModul && otvorModul("profil")} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, cursor: "pointer" }}>
-            <div style={{ width: 34, height: 34, borderRadius: "50%", background: "#3A8DD6", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 14, color: "#fff", boxShadow: "0 0 0 2px rgba(240,199,90,.75), 0 0 14px rgba(240,199,90,.4)" }}>M</div>
-            <div style={{ fontSize: 9.5, fontWeight: 800, color: C.gold }}>Gold</div>
-          </div>
+          <>
+            <span onClick={() => toast("Vyhľadávanie — skutky, žiadosti, ľudia (demo)")} style={{ color: C.textSec, fontSize: 19, cursor: "pointer" }}>🔍</span>
+            <span onClick={() => toast("Upozornenia — žiadne nové (demo)")} style={{ color: C.textSec, fontSize: 19, cursor: "pointer" }}>🔔</span>
+            <div onClick={() => otvorModul && otvorModul("profil")} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, cursor: "pointer" }}>
+              <div style={{ width: 34, height: 34, borderRadius: "50%", background: "#3A8DD6", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 14, color: "#fff", boxShadow: "0 0 0 2px rgba(240,199,90,.75), 0 0 14px rgba(240,199,90,.4)" }}>M</div>
+              <div style={{ fontSize: 9.5, fontWeight: 800, color: C.gold }}>Gold</div>
+            </div>
+          </>
         } />
 
       {/* sekcie */}
       <div style={{ display: "flex", gap: 8, padding: "6px 16px 12px" }}>
-        <div onClick={() => toast("Talent — TikTok kanál (demo)")} style={sekciaBtn()}>▶ Talent</div>
+        <div onClick={() => toast("Ukáž svoj talent — TikTok kanál (demo)")} style={sekciaBtn()}>▶ Ukáž svoj talent</div>
         <div onClick={onBoard} style={sekciaBtn()}><span style={{ color: "#7E9BF0" }}>▣</span> Nástenka</div>
         <div onClick={onAdd} style={{ ...sekciaBtn(), background: GRAD, border: "1px solid transparent", color: "#fff", boxShadow: "0 6px 20px rgba(99,134,255,.32)" }}>＋ Pridať</div>
       </div>
 
-      {/* rebríčky */}
-      <div style={{ display: "flex", gap: 6, padding: "0 16px 12px", overflowX: "auto" }}>
-        {[["▼", "#13344A", "#5BA8F0", "PARTNER", "Kaufland", "Rebríček: Top B2B partner"],
-          ["♛", "#33290F", "#E7C766", "DARCA", "Lukáš H.", "Rebríček: Top darca"],
-          ["★", "#33220F", "#F0A85E", "HRDINA", "Jana N.", "Rebríček: Top hrdina"],
-          ["☺", "#2A1F10", "#E7C766", "FUN", "AI omyly", "Fun zóna — AI omyly (demo)"]].map((l, i) => (
-          <div key={i} onClick={() => toast(l[5])} style={{ minWidth: 72, background: C.surface, border: `1px solid ${C.line}`, borderRadius: 13, padding: "8px 4px", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, cursor: "pointer", flex: "0 0 auto" }}>
-            <div style={{ width: 30, height: 28, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, background: l[1], color: l[2] }}>{l[0]}</div>
-            <div style={{ fontSize: 7, letterSpacing: ".4px", color: C.textTer, fontWeight: 700 }}>{l[3]}</div>
-            <div style={{ fontSize: 9.5, fontWeight: 700 }}>{l[4]}</div>
-          </div>
-        ))}
-        <div style={{ width: 1, background: C.line, margin: "4px 2px", flex: "0 0 auto" }} />
-        {["Mária", "Peter"].map((n) => (
-          <div key={n} style={{ minWidth: 52, display: "flex", flexDirection: "column", alignItems: "center", gap: 3, flex: "0 0 auto" }}>
-            <div style={{ width: 40, height: 40, borderRadius: "50%", background: "#16181D", border: "2px solid #5BA8F0", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, color: "#C8CCD2" }}>{n[0]}</div>
-            <div style={{ fontSize: 9, color: C.textSec }}>{n}</div>
-          </div>
-        ))}
-      </div>
+      {/* jednotný rebríček ocenení */}
+      <Rebricky
+        ocenenia={[
+          { ic: "▼", col: "#5BA8F0", label: "PARTNER", name: "Kaufland", onClick: () => toast("Rebríček: Top B2B partner") },
+          { ic: "♛", col: "#E7C766", label: "DARCA", name: "Lukáš H.", onClick: () => toast("Rebríček: Top darca") },
+          { ic: "★", col: "#F0A85E", label: "HRDINA", name: "Jana N.", onClick: () => toast("Rebríček: Top hrdina") },
+          { ic: "☺", col: "#E7C766", label: "FUN", name: "AI omyly", onClick: () => toast("Fun zóna — AI omyly (demo)") },
+        ]}
+        ludia={[{ ini: "M", name: "Mária", col: "#5BA8F0" }, { ini: "P", name: "Peter", col: "#5BA8F0" }]}
+      />
 
-      {/* ticker + rádius */}
-      <div style={{ margin: "0 16px 8px", background: C.surface2, borderRadius: 10, padding: "10px 13px", display: "flex", alignItems: "center", gap: 10, fontSize: 13, color: C.textSec }}>
-        <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#3DD68C", flex: "none", animation: "pulse 1.6s infinite" }} />
-        Dnes 312 skutkov · mesiac 9 480 · pred 1 min
-      </div>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "2px 18px 14px", fontSize: 13.5, color: C.textTer }}>
-        <span>◉ Moja štvrť · Trenčín · 2 km</span>
-        <a onClick={() => toast("Mapa — nastavenie rádiusu (demo)")} style={{ color: "#74A6FF", cursor: "pointer", fontWeight: 600 }}>zmeniť</a>
-      </div>
+      {/* jednotný štatistický riadok (dnes + okruh) — pod rebríčkom */}
+      <StatRiadok stat="Dnes 312 skutkov · Mesiac 9 480" onOkruh={() => toast("Mapa — nastavenie okruhu (demo)")} />
 
-      {/* feed */}
-      <div style={wide
-        ? { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: 12, alignItems: "start", padding: "0 16px" }
-        : { padding: "0 16px" }}>
-        {POLOZKY.map((it) => <GoodKarta key={it.id} it={it} wide={wide} onDetail={() => onDetail(it.id)} />)}
-      </div>
+      {/* feed — na tablete/PC: skutky vľavo, žiadosti vpravo */}
+      <FeedStlpce wide={wide}
+        labelSkutky="Skutky" labelZiadosti="Žiadosti & charita"
+        jednoStlpec={POLOZKY.map((it) => <GoodKarta key={it.id} it={it} wide={wide} onDetail={() => onDetail(it.id)} />)}
+        skutky={POLOZKY.filter((it) => it.typ === "skutok").map((it) => <GoodKarta key={it.id} it={it} wide={wide} onDetail={() => onDetail(it.id)} />)}
+        ziadosti={POLOZKY.filter((it) => it.typ !== "skutok").map((it) => <GoodKarta key={it.id} it={it} wide={wide} onDetail={() => onDetail(it.id)} />)}
+      />
     </div>
   );
 }
@@ -247,9 +232,9 @@ function sekciaBtn() {
 }
 
 function ZdrojTag({ it }) {
-  if (it.zdroj === "Help") return <span style={{ display: "inline-flex", fontSize: 10, fontWeight: 600, padding: "3px 9px", borderRadius: 7, background: "#2a1414", color: "#F2706F" }}>Help · žiadosť</span>;
-  if (it.zdroj === "Charity") return <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 9, fontWeight: 700, color: "#E7C766", background: "#2A1F10", padding: "2px 7px", borderRadius: 6 }}>✓ Charita {it.charLevel || ""}</span>;
-  return <span style={{ display: "inline-flex", fontSize: 10, fontWeight: 600, padding: "3px 9px", borderRadius: 7, background: KAT[it.kat].bg, color: KAT[it.kat].c }}>{katLabel(it.kat)}</span>;
+  if (it.zdroj === "Help") return <span style={{ display: "inline-flex", fontSize: 10, fontWeight: 600, padding: "3px 9px", borderRadius: 7, background: "rgba(242,112,111,.12)", color: "#F2706F" }}>Help · žiadosť</span>;
+  if (it.zdroj === "Charity") return <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 9, fontWeight: 700, color: "#E7C766", background: "rgba(231,199,102,.13)", padding: "2px 7px", borderRadius: 6 }}>✓ Charita {it.charLevel || ""}</span>;
+  return <span style={{ display: "inline-flex", fontSize: 10, fontWeight: 600, padding: "3px 9px", borderRadius: 7, background: tint(KAT[it.kat].c, .14), color: KAT[it.kat].c }}>{katLabel(it.kat)}</span>;
 }
 
 function GoodKarta({ it, wide, onDetail }) {
@@ -262,7 +247,7 @@ function GoodKarta({ it, wide, onDetail }) {
           {it.video
             ? <Video src={it.video} poster={it.fotky?.[0]} h={148} badge={false} />
             : it.fotky?.length
-              ? <FotoPrispevku fotky={it.fotky} emoji={it.emoji} h={148} />
+              ? <FotoPrispevku fotky={it.fotky} emoji={it.emoji} h={148} disableGaleria />
               : <div style={{ fontSize: 44 }}>{it.emoji}</div>}
           <span style={{ position: "absolute", top: 12, left: 12, fontSize: 10, fontWeight: 700, padding: "4px 9px", borderRadius: 7, background: "rgba(0,0,0,.6)", color: "#E7C766", pointerEvents: "none" }}>★ {it.vyznam}</span>
           {it.media === "video" && <span style={{ position: "absolute", top: 12, right: 12, fontSize: 10, fontWeight: 700, padding: "4px 9px", borderRadius: 7, background: "rgba(0,0,0,.6)", color: "#fff", pointerEvents: "none" }}>▶ video</span>}
@@ -272,7 +257,7 @@ function GoodKarta({ it, wide, onDetail }) {
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
             <div style={{ width: 36, height: 36, borderRadius: "50%", flex: "none", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 15, color: "#fff", background: it.pfp }}>{it.ini}</div>
             <div style={{ fontWeight: 700, fontSize: 15.5 }}>{it.autor}</div>
-            {it.overene && <span style={{ fontSize: 11, color: "#5CE6B8", background: "#0f2417", padding: "3px 9px", borderRadius: 8 }}>overené</span>}
+            {it.overene && <span style={{ fontSize: 11, color: "#5CE6B8", background: "rgba(61,214,140,.13)", padding: "3px 9px", borderRadius: 8 }}>overené</span>}
             <span style={{ marginLeft: "auto", fontSize: 12, color: C.textTer }}>{it.cas}</span>
           </div>
           <div style={{ fontSize: 12.5, color: C.textTer, marginLeft: 48, marginBottom: 8 }}>{it.lok} · skutok č. {it.num.toLocaleString("sk")}</div>
@@ -283,27 +268,21 @@ function GoodKarta({ it, wide, onDetail }) {
   }
   // ŽIADOSŤ
   if (it.velkost === "req") {
-    const pct = it.ciel ? Math.round(it.vyzbierane / it.ciel * 100) : 0;
     return (
       <div onClick={onDetail} style={{ background: "rgba(242,112,111,.06)", border: "1px solid rgba(242,112,111,.32)", borderRadius: 17, marginBottom: mb, padding: 14, display: "flex", gap: 12, alignItems: "flex-start", cursor: "pointer" }}>
         {it.fotky?.length
-          ? <FotoPrispevku fotky={it.fotky} emoji={it.emoji} h={64} w={64} radius={11} />
-          : <div style={{ width: 64, height: 64, borderRadius: 11, background: "#2a1414", border: "1px solid #7A3030", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, fontWeight: 800, color: "#F2706F", flex: "none" }}>{it.emoji}</div>}
+          ? <FotoPrispevku fotky={it.fotky} emoji={it.emoji} h={64} w={64} radius={11} disableGaleria />
+          : <div style={{ width: 64, height: 64, borderRadius: 11, background: "rgba(242,112,111,.12)", border: "1px solid #7A3030", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, fontWeight: 800, color: "#F2706F", flex: "none" }}>{it.emoji}</div>}
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <div style={{ fontSize: 15, fontWeight: 700, lineHeight: 1.35, color: "#F68C8B" }}>{it.titul}</div>
-            {it.topovane && <span style={{ fontSize: 11, fontWeight: 600, padding: "3px 9px", borderRadius: 7, background: "#2a1414", color: "#F68C8B", marginLeft: "auto", flex: "none" }}>Topované</span>}
+            <div style={{ fontSize: 15, fontWeight: 700, lineHeight: 1.35, color: C.red }}>{it.titul}</div>
+            {it.topovane && <span style={{ fontSize: 11, fontWeight: 600, padding: "3px 9px", borderRadius: 7, background: "rgba(242,112,111,.12)", color: C.red, marginLeft: "auto", flex: "none" }}>Topované</span>}
           </div>
-          <div style={{ fontSize: 12.5, color: "#E0BABA", marginTop: 6 }}>{it.autor} · {it.lok}</div>
+          <div style={{ fontSize: 12.5, color: C.textSec, marginTop: 6 }}>{it.autor} · {it.lok}</div>
           {it.ciel ? (
-            <>
-              <div style={{ height: 7, background: "#2a1414", borderRadius: 4, marginTop: 8, overflow: "hidden" }}>
-                <div style={{ height: "100%", width: `${pct}%`, background: "#F2706F" }} />
-              </div>
-              <div style={{ fontSize: 12, color: "#D8A8A8", marginTop: 5 }}>{it.vyzbierane.toLocaleString("sk")} € z {it.ciel.toLocaleString("sk")} € · {it.pomocnici} pomohlo</div>
-            </>
+            <div style={{ marginTop: 8 }}><MoniBar vyzbierane={it.vyzbierane} ciel={it.ciel} ludia={it.pomocnici} mini /></div>
           ) : (
-            <div style={{ fontSize: 12, color: "#D8A8A8", marginTop: 6 }}>{it.pomocnici} ľudí sa zapojilo · otvorená podpora</div>
+            <div style={{ fontSize: 12, color: C.textSec, marginTop: 6 }}>{it.pomocnici} ľudí sa zapojilo · otvorená podpora</div>
           )}
         </div>
       </div>
@@ -312,11 +291,10 @@ function GoodKarta({ it, wide, onDetail }) {
   // STREDNÁ
   if (it.velkost === "med") {
     const jeCharita = it.typ === "charita";
-    const pctMini = jeCharita ? Math.round(it.vyzbierane / it.ciel * 100) : 0;
     return (
       <div onClick={onDetail} style={{ background: C.surface2, border: `1px solid ${jeCharita ? "#2A5E8E" : C.line}`, borderRadius: 16, marginBottom: mb, padding: 12, display: "flex", gap: 12, alignItems: "flex-start", cursor: "pointer" }}>
         {it.fotky?.length
-          ? <FotoPrispevku fotky={it.fotky} emoji={it.emoji} h={80} w={96} radius={11} />
+          ? <FotoPrispevku fotky={it.fotky} emoji={it.emoji} h={80} w={96} radius={11} disableGaleria />
           : <div style={{ width: 96, height: 80, borderRadius: 11, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, background: heroGrad(it.kat) }}>{it.media === "kreslene" ? "✎" : it.emoji}</div>}
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 15.5, fontWeight: 700, lineHeight: 1.35 }}>{it.titul}</div>
@@ -324,14 +302,7 @@ function GoodKarta({ it, wide, onDetail }) {
             <span style={{ fontSize: 12.5, color: C.textSec }}>{it.autor}</span>
             <ZdrojTag it={it} />
           </div>
-          {jeCharita && (
-            <div style={{ marginTop: 6 }}>
-              <div style={{ height: 5, background: "#1F2731", borderRadius: 3, overflow: "hidden" }}>
-                <div style={{ height: "100%", width: `${pctMini}%`, background: KAT[it.kat].c }} />
-              </div>
-              <div style={{ fontSize: 9, color: C.textTer, marginTop: 3 }}>{it.vyzbierane.toLocaleString("sk")} € z {it.ciel.toLocaleString("sk")} € · {pctMini}%</div>
-            </div>
-          )}
+          {jeCharita && (<div style={{ marginTop: 6 }}><MoniBar vyzbierane={it.vyzbierane} ciel={it.ciel} mini /></div>)}
         </div>
         <span style={{ fontSize: 10, color: C.textTer, flex: "none" }}>{it.cas}</span>
       </div>
@@ -341,7 +312,7 @@ function GoodKarta({ it, wide, onDetail }) {
   const jeZiadost = it.typ === "ziadost";
   const jeCharita = it.typ === "charita";
   const col = jeZiadost ? "#F2706F" : jeCharita ? "#5BA8F0" : KAT[it.kat].c;
-  const bg = jeZiadost ? "#1c1314" : jeCharita ? "#10233a" : KAT[it.kat].bg;
+  const bg = tint(col, .15);
   const ic = it.media === "kreslene" ? "✎" : jeZiadost ? "!" : jeCharita ? "✓" : "▦";
   return (
     <div onClick={onDetail} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 12px", background: "rgba(var(--glass-rgb),.04)", border: `1px solid ${jeZiadost ? "rgba(242,112,111,.35)" : C.line2}`, borderRadius: 14, marginBottom: wide ? 0 : 8, cursor: "pointer" }}>
@@ -365,7 +336,6 @@ function GoodDetail({ it, toast, oslavuj, lajknute, setLajknute, onBack, onVerif
   const [potvrd, setPotvrd] = useState(null); // {kanal, suma}
   const otvorGaleriu = useGaleria();
   const jeZiadost = it.typ === "ziadost", jeCharita = it.typ === "charita";
-  const akcent = jeZiadost ? "#F2706F" : jeCharita ? "#5BA8F0" : KAT[it.kat].c;
   const maProgres = (jeZiadost && it.ciel) || jeCharita;
   const pct = maProgres ? Math.round(it.vyzbierane / it.ciel * 100) : 0;
   const lajk = !!lajknute[it.id];
@@ -403,7 +373,7 @@ function GoodDetail({ it, toast, oslavuj, lajknute, setLajknute, onBack, onVerif
             <div style={{ fontWeight: 700, fontSize: 15.5 }}>{it.autor}</div>
             <div style={{ fontSize: 12.5, color: C.textTer }}>{it.lok} · č. {it.num.toLocaleString("sk")}</div>
           </div>
-          {it.overene && <span style={{ marginLeft: "auto", fontSize: 11, color: "#5CE6B8", background: "#0f2417", padding: "3px 9px", borderRadius: 8 }}>overené</span>}
+          {it.overene && <span style={{ marginLeft: "auto", fontSize: 11, color: "#5CE6B8", background: "rgba(61,214,140,.13)", padding: "3px 9px", borderRadius: 8 }}>overené</span>}
         </div>
         <div style={{ marginTop: 12, fontSize: 17, fontWeight: 700, lineHeight: 1.4 }}>{it.titul}</div>
         <p style={{ color: C.textSec, fontSize: 14.5, lineHeight: 1.6, marginTop: 9 }}>{it.popis}</p>
@@ -411,8 +381,8 @@ function GoodDetail({ it, toast, oslavuj, lajknute, setLajknute, onBack, onVerif
         {maProgres && (
           <div style={{ textAlign: "center", padding: 12, background: C.surface2, border: "1px solid rgba(116,166,255,.35)", borderRadius: 14, marginTop: 6 }}>
             <b style={{ fontSize: 22, color: "#5BA8F0" }}>{it.vyzbierane.toLocaleString("sk")} €</b> <span style={{ color: C.textSec }}>z {it.ciel.toLocaleString("sk")} € ({pct}%)</span>
-            <div style={{ height: 6, background: "#1F2731", borderRadius: 3, marginTop: 8, overflow: "hidden" }}>
-              <div style={{ height: "100%", width: `${pct}%`, background: akcent }} />
+            <div style={{ height: 6, background: "rgba(var(--glass-rgb),.12)", borderRadius: 99, marginTop: 8, overflow: "hidden" }}>
+              <div style={{ height: "100%", width: `${pct}%`, background: GRAD_ZELENY, borderRadius: 99 }} />
             </div>
           </div>
         )}
@@ -487,10 +457,7 @@ function GoodVerify({ it, mode, toast, onBack }) {
   const ok = mode === "ok";
   return (
     <div style={{ paddingBottom: 24 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "16px 18px 8px" }}>
-        <div onClick={onBack} style={{ width: 30, height: 30, borderRadius: "50%", background: C.surface2, border: `1px solid ${C.line}`, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: 16 }}>‹</div>
-        <h3 style={{ fontSize: 15, margin: 0, color: ok ? "#3DD68C" : "#F2706F" }}>{ok ? "Overujem skutok" : "Námietka k skutku"}</h3>
-      </div>
+      <Hlavicka title={ok ? "Overujem skutok" : "Námietka k skutku"} onBack={onBack} titleColor={ok ? "#3DD68C" : "#F2706F"} />
       <div style={{ padding: "4px 18px 14px" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: C.surface, border: `1px solid ${C.line}`, borderRadius: 12, padding: 14, fontSize: 13 }}>
           <div><b>{it.autor}</b><div style={{ fontSize: 12, color: C.textTer }}>{it.titul.slice(0, 30)}… · č. {it.num.toLocaleString("sk")}</div></div>
@@ -529,11 +496,8 @@ function GoodAdd({ toast, oslavuj, onDone }) {
 
   return (
     <div style={{ paddingBottom: 24 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "16px 18px 8px" }}>
-        <div onClick={() => krok === "vyber" ? onDone() : setKrok(krok === "nahlad" ? "solo" : "vyber")}
-          style={{ width: 30, height: 30, borderRadius: "50%", background: C.surface2, border: `1px solid ${C.line}`, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: 16 }}>‹</div>
-        <h3 style={{ fontSize: 15, margin: 0 }}>{krok === "vyber" ? "Pridať skutok" : krok === "solo" ? "Opíš svoj skutok" : "Skontroluj a potvrď"}</h3>
-      </div>
+      <Hlavicka title={krok === "vyber" ? "Pridať skutok" : krok === "solo" ? "Opíš svoj skutok" : "Skontroluj a potvrď"}
+        onBack={() => krok === "vyber" ? onDone() : setKrok(krok === "nahlad" ? "solo" : "vyber")} />
 
       <div style={{ padding: 18 }}>
         {krok === "vyber" && (
@@ -568,14 +532,14 @@ function GoodAdd({ toast, oslavuj, onDone }) {
 
         {krok === "nahlad" && (
           <>
-            <div style={{ background: "#0f2417", border: "1px solid #2E7D52", borderRadius: 12, padding: 14, fontSize: 13, lineHeight: 1.4 }}>
-              <b style={{ color: "#3DD68C" }}>✦ AI návrh textu</b><br /><br />„{aiText()}“<br /><br />
+            <div style={{ background: "rgba(61,214,140,.12)", border: "1px solid rgba(46,125,82,.45)", borderRadius: 12, padding: 14, fontSize: 13, lineHeight: 1.4, color: C.text }}>
+              <b style={{ color: "#1FBF8F" }}>✦ AI návrh textu</b><br /><br />„{aiText()}“<br /><br />
               <span style={{ fontSize: 11, color: C.textTer }}>Kategória: Komunita · navrhnutá AI</span>
             </div>
             <p style={{ fontSize: 11, color: C.textTer, marginTop: 14 }}>Vidíš, ako sa skutok zobrazí. Máš posledné slovo — môžeš upraviť text.</p>
-            <div style={{ background: "#2a1414", border: "1px solid #7A3030", borderRadius: 12, padding: 12, marginTop: 14, fontSize: 12, color: "#F0B0AC" }}>☐ Skutok je pravdivý a súhlasím s náhľadom. Klamstvo = zrušenie + sankcia.</div>
+            <div style={{ background: "rgba(242,112,111,.1)", border: "1px solid rgba(122,48,48,.4)", borderRadius: 12, padding: 12, marginTop: 14, fontSize: 12, color: C.textSec }}>☐ Skutok je pravdivý a súhlasím s náhľadom. Klamstvo = zrušenie + sankcia.</div>
             <button onClick={() => { toast("Skutok pridaný! +X DEED · karma rastie"); oslavuj(40, "teba"); setTimeout(onDone, 600); }}
-              style={{ width: "100%", height: 50, borderRadius: 12, background: "#0f2417", border: "1px solid #2E7D52", color: "#cfeede", fontWeight: 700, fontSize: 15, cursor: "pointer", marginTop: 18 }}>
+              style={{ width: "100%", height: 50, borderRadius: 14, background: GRAD_ZELENY, border: "none", color: "#fff", fontWeight: 700, fontSize: 15, cursor: "pointer", marginTop: 18, boxShadow: "0 8px 26px rgba(31,191,143,.32)" }}>
               Súhlasím a pridať skutok
             </button>
           </>
@@ -594,18 +558,13 @@ function GoodBoard({ onBack, onEvent, toast }) {
 
   return (
     <div style={{ paddingBottom: 24 }}>
-      {/* header */}
-      <div style={{ display: "flex", alignItems: "center", gap: 11, padding: "16px 18px 8px" }}>
-        <span onClick={onBack} style={{ width: 32, height: 32, borderRadius: "50%", background: "rgba(255,255,255,.06)", border: `1px solid ${C.line}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, color: C.textSec, cursor: "pointer" }}>←</span>
-        <span style={{ fontSize: 18, fontWeight: 800 }}>Nástenka</span>
-        <span style={{ marginLeft: "auto", color: C.textTer, fontSize: 16 }}>▦</span>
-      </div>
+      <Hlavicka title="Nástenka" onBack={onBack} right={<span style={{ color: C.textTer, fontSize: 16 }}>▦</span>} />
 
       {/* topované */}
       <SekciaLabel><span style={{ color: C.gold }}>TOPOVANÉ · odporúčané</span></SekciaLabel>
       <div style={{ display: "flex", gap: 10, padding: "0 16px 8px", overflowX: "auto" }}>
         {tops.map((e) => (
-          <div key={e.id} onClick={() => onEvent(e.id)} style={{ minWidth: 152, flex: "0 0 auto", background: C.surface2, border: "1px solid #3A3320", borderRadius: 14, overflow: "hidden", cursor: "pointer" }}>
+          <div key={e.id} onClick={() => onEvent(e.id)} style={{ minWidth: 152, flex: "0 0 auto", background: C.surface2, border: "1px solid rgba(231,199,102,.3)", borderRadius: 14, overflow: "hidden", cursor: "pointer" }}>
             <div style={{ height: 64, background: heroGrad(e.kat), display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }}>
               <span style={{ position: "absolute", top: 8, left: 8, fontSize: 10, color: C.gold }}>★</span>
               <span style={{ fontSize: 18, color: KAT[e.kat].c }}>▶</span>
@@ -671,7 +630,7 @@ function GoodEvent({ id, onBack, toast, oslavuj }) {
         </div>
         <p style={{ color: C.textSec, fontSize: 13, lineHeight: 1.55, marginTop: 12 }}>{e.desc}</p>
 
-        <div style={{ background: "rgba(91,155,255,.07)", border: "1px solid rgba(91,155,255,.22)", borderRadius: 13, padding: "11px 13px", marginTop: 12, fontSize: 12, color: "#9FB9E4", lineHeight: 1.5 }}>
+        <div style={{ background: "rgba(91,155,255,.07)", border: "1px solid rgba(91,155,255,.22)", borderRadius: 13, padding: "11px 13px", marginTop: 12, fontSize: 12, color: C.blueL, lineHeight: 1.5 }}>
           Po prihlásení dostaneš pripomienku a QR vstupenku. Účasť sa pripíše do tvojich aktivít a karmy.
         </div>
 

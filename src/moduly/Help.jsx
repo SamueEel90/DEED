@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { C, pasmo, U, AV, inp, infoBox, btn, GRAD, GRAD_ZELENY, glassTmavy } from "../theme";
-import { Foto, Avatar, FotoPrispevku, MiniFotky, Hlavicka, ModulHlavicka, PodporaSekcia, Otazka, Vyber, vyberBox, NavBtns, Suhrn, DokladRow, Modal, Toast, useGaleria } from "../shared";
+import { Foto, Avatar, FotoPrispevku, MiniFotky, Hlavicka, ModulHlavicka, PodporaSekcia, Otazka, Vyber, vyberBox, NavBtns, Suhrn, DokladRow, Modal, Toast, useGaleria, Rebricky, StatRiadok, MoniBar, FeedStlpce } from "../shared";
 
 /*
   ============================================================
@@ -52,23 +52,27 @@ const ZIVE_DARY = [
 export default function ModulHelp({ wide }) {
   const [screen, setScreen] = useState("feed"); // feed | detail | add | offer | request
   const [aktDetail, setAktDetail] = useState(null);
+  const [hlaska, setHlaska] = useState(null);
+  const toast = (m) => { setHlaska(m); setTimeout(() => setHlaska((x) => (x === m ? null : x)), 2300); };
 
   // na tablete/desktope sa detailové obrazovky vycentrujú do čitateľnej šírky
   const obal = (el) => wide ? <div style={{ maxWidth: 620, margin: "0 auto" }}>{el}</div> : el;
 
   return (
     <div style={{ minHeight: "100%" }}>
-      {screen === "feed" && <Feed wide={wide} onDetail={(z) => { setAktDetail(z); setScreen("detail"); }} onAdd={() => setScreen("add")} />}
+      {screen === "feed" && <Feed wide={wide} toast={toast} onDetail={(z) => { setAktDetail(z); setScreen("detail"); }} onAdd={() => setScreen("add")} />}
       {screen === "detail" && obal(<Detail z={aktDetail} onBack={() => setScreen("feed")} />)}
       {screen === "add" && obal(<Add onBack={() => setScreen("feed")} onOffer={() => setScreen("offer")} onRequest={() => setScreen("request")} />)}
       {screen === "offer" && obal(<OfferFlow onDone={() => setScreen("feed")} />)}
       {screen === "request" && obal(<RequestFlow onDone={() => setScreen("feed")} />)}
+
+      {hlaska && <Toast text={hlaska} />}
     </div>
   );
 }
 
 // ===================== FEED =====================
-function Feed({ wide, onDetail, onAdd }) {
+function Feed({ wide, toast, onDetail, onAdd }) {
   // živý ticker darov
   const [tick, setTick] = useState(0);
   useEffect(() => {
@@ -77,10 +81,18 @@ function Feed({ wide, onDetail, onAdd }) {
   }, []);
   const dar = ZIVE_DARY[tick % ZIVE_DARY.length];
 
+  const karta = (z) => <FeedCard key={z.id} z={z} wide={wide} onClick={() => z.typ === "ziadost" && onDetail(z)} />;
+  const jeZiadost = (z) => z.typ === "ziadost" || z.typ === "charity";
+
   return (
     <div style={{ paddingBottom: 14 }}>
       {/* header — jednotná hlavička (logo D⁺ + názov) */}
-      <ModulHlavicka title="Help" right={<span style={{ color: C.textSec, fontSize: 19 }}>🔍&nbsp;&nbsp;🔔</span>} />
+      <ModulHlavicka title="Help" right={
+        <>
+          <span onClick={() => toast("Vyhľadávanie (demo)")} style={{ color: C.textSec, fontSize: 19, cursor: "pointer" }}>🔍</span>
+          <span onClick={() => toast("Upozornenia (demo)")} style={{ color: C.textSec, fontSize: 19, cursor: "pointer" }}>🔔</span>
+        </>
+      } />
 
       {/* živý ticker */}
       <div key={tick} style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 14px", background: "rgba(29,158,117,.07)", borderBottom: `1px solid ${C.line2}`, fontSize: 13, animation: "fadeUp .45s ease" }}>
@@ -90,53 +102,45 @@ function Feed({ wide, onDetail, onAdd }) {
 
       {/* 3 sekcie */}
       <div style={{ display: "flex", borderBottom: `1px solid ${C.line}`, fontSize: 14.5, textAlign: "center" }}>
-        <div style={{ flex: 1, padding: "13px 0", color: C.textSec }}>▶ Talent</div>
+        <div onClick={() => toast("Ukáž svoj talent (demo)")} style={{ flex: 1, padding: "13px 0", color: C.textSec, cursor: "pointer" }}>▶ Ukáž svoj talent</div>
         <div style={{ flex: 1, padding: "13px 0", color: C.textSec, borderLeft: `1px solid ${C.line}` }}>🏅 Nástenka</div>
         <div onClick={onAdd} style={{ flex: 1, padding: "13px 0", color: "#fff", fontWeight: 700, background: GRAD, cursor: "pointer" }}>＋ Pridať</div>
       </div>
 
-      {/* ľudia */}
-      <div style={{ display: "flex", gap: 12, padding: "12px 14px 8px", overflowX: "auto" }}>
-        {[["🛡", "Lidl", C.blueL], ["👑", "Eva K.", C.gold], ["⭐", "Ján H.", "#E58A6A"]].map((l, i) => (
-          <div key={i} style={{ textAlign: "center", flex: "0 0 auto" }}>
-            <div style={{ width: 38, height: 32, lineHeight: "32px", border: `1px solid rgba(255,255,255,.18)`, borderRadius: 8, color: l[2] }}>{l[0]}</div>
-            <div style={{ fontSize: 11, color: C.textTer, marginTop: 3 }}>{l[1]}</div>
-          </div>
-        ))}
-        <div style={{ width: 1, background: C.line, margin: "0 2px" }} />
-        {[[null, "＋", "Ty"], [AV(31), "👤", "Anna"], [AV(53), "👤", "Peter"]].map((p, i) => (
-          <div key={i} style={{ textAlign: "center", flex: "0 0 auto" }}>
-            {i === 0 ? (
-              <div style={{ width: 34, height: 34, lineHeight: "34px", borderRadius: "50%", border: "1px dashed rgba(255,255,255,.3)", color: C.blueL }}>＋</div>
-            ) : (
-              <Avatar src={p[0]} emoji={p[1]} size={34} />
-            )}
-            <div style={{ fontSize: 11, color: C.textTer, marginTop: 3 }}>{p[2]}</div>
-          </div>
-        ))}
-      </div>
-      <div style={{ display: "flex", justifyContent: "space-between", padding: "0 14px 10px", borderBottom: `1px solid ${C.line}`, fontSize: 12, color: C.textTer }}>
-        <span>Dnes 247 · Mesiac 8 421</span><span>📍 Sihoť · Trenčín</span>
+      {/* jednotný rebríček ocenení */}
+      <div style={{ paddingTop: 12 }}>
+        <Rebricky
+          ocenenia={[
+            { ic: "🛡", col: "#74A6FF", label: "PARTNER", name: "Lidl", onClick: () => toast("Rebríček: Top partner") },
+            { ic: "👑", col: "#E7C766", label: "DARCA", name: "Eva K.", onClick: () => toast("Rebríček: Top darca") },
+            { ic: "⭐", col: "#E58A6A", label: "HRDINA", name: "Ján H.", onClick: () => toast("Rebríček: Top hrdina") },
+          ]}
+          ludia={[{ ini: "＋", name: "Ty", col: "#74A6FF", onClick: onAdd }, { ini: "A", name: "Anna" }, { ini: "P", name: "Peter" }]}
+        />
       </div>
 
-      {/* karty — na tablete/desktope viac stĺpcov */}
-      <div style={wide
-        ? { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", alignItems: "start", padding: "4px 6px" }
-        : { padding: "4px 0" }}>
-        {MOCK_FEED.map((z) => <FeedCard key={z.id} z={z} onClick={() => z.typ === "ziadost" && onDetail(z)} />)}
-      </div>
+      {/* jednotný štatistický riadok (dnes + okruh) */}
+      <StatRiadok stat="Dnes 247 · Mesiac 8 421" onOkruh={() => toast("Nastavenie okruhu (demo)")} />
+
+      {/* karty — na tablete/PC: ponúkajú vľavo, hľadajú vpravo */}
+      <FeedStlpce wide={wide} padding="4px 8px"
+        labelSkutky="Ponúkajú pomoc" labelZiadosti="Hľadajú pomoc"
+        jednoStlpec={MOCK_FEED.map(karta)}
+        skutky={MOCK_FEED.filter((z) => !jeZiadost(z)).map(karta)}
+        ziadosti={MOCK_FEED.filter(jeZiadost).map(karta)}
+      />
     </div>
   );
 }
 
-function FeedCard({ z, onClick }) {
+function FeedCard({ z, wide, onClick }) {
   if (z.typ === "ziadost") {
     const velka = z.velkost === "velka";
     return (
-      <div onClick={onClick} style={{ margin: "12px 13px", border: `1px solid ${z.sponzor ? "rgba(240,199,90,.32)" : "rgba(242,112,111,.26)"}`, borderRadius: 17, overflow: "hidden", background: z.sponzor ? "rgba(240,199,90,.05)" : "rgba(242,112,111,.05)", cursor: "pointer" }}>
+      <div onClick={onClick} style={{ margin: wide ? 0 : "12px 13px", border: `1px solid ${z.sponzor ? "rgba(240,199,90,.32)" : "rgba(242,112,111,.26)"}`, borderRadius: 17, overflow: "hidden", background: z.sponzor ? "rgba(240,199,90,.05)" : "rgba(242,112,111,.05)", cursor: "pointer" }}>
         {velka && (
           <div style={{ position: "relative" }}>
-            <FotoPrispevku fotky={z.fotky} emoji={z.ikona} h={120} />
+            <FotoPrispevku fotky={z.fotky} emoji={z.ikona} h={120} disableGaleria />
             <span style={{ position: "absolute", top: 8, left: 8, background: z.sponzor ? C.gold : C.red, color: z.sponzor ? "#1A1408" : "#fff", fontSize: 9, fontWeight: "bold", borderRadius: 20, padding: "2px 8px", pointerEvents: "none" }}>
               ŽIADOSŤ · {z.sponzor ? "D++" : "D+"}
             </span>
@@ -148,16 +152,13 @@ function FeedCard({ z, onClick }) {
           </div>
         )}
         <div style={{ display: "flex" }}>
-          {!velka && <FotoPrispevku fotky={z.fotky} emoji={z.ikona} h={92} w={78} />}
-          <div style={{ padding: "11px 14px 13px", flex: 1 }}>
+          {!velka && <FotoPrispevku fotky={z.fotky} emoji={z.ikona} h={92} w={78} disableGaleria />}
+          <div style={{ padding: "11px 14px 13px", flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 16, fontWeight: "bold" }}>{z.nazov}
               {z.overeny && <span style={{ fontSize: 11, color: C.greenL, border: `1px solid rgba(127,203,160,.4)`, borderRadius: 20, padding: "2px 8px", marginLeft: 6 }}>overená</span>}
             </div>
-            <div style={{ fontSize: 13.5, color: "#D8BCBE", margin: "6px 0 9px", lineHeight: 1.5 }}>{z.pribeh.length > 70 ? z.pribeh.slice(0, 70) + "…" : z.pribeh}</div>
-            <div style={{ fontSize: 12.5, color: C.textSec }}>{z.suma} € <span style={{ color: C.textTer }}>/ {z.ciel} €</span><span style={{ float: "right", color: C.textTer }}>{Math.round(z.suma / z.ciel * 100)} %</span></div>
-            <div style={{ height: 5, borderRadius: 3, background: "rgba(255,255,255,.07)", overflow: "hidden", marginTop: 6 }}>
-              <div style={{ height: 5, borderRadius: 3, background: GRAD_ZELENY, width: `${Math.round(z.suma / z.ciel * 100)}%` }} />
-            </div>
+            <div style={{ fontSize: 13.5, color: C.textSec, margin: "6px 0 9px", lineHeight: 1.5 }}>{z.pribeh.length > 70 ? z.pribeh.slice(0, 70) + "…" : z.pribeh}</div>
+            <MoniBar vyzbierane={z.suma} ciel={z.ciel} mini />
           </div>
         </div>
       </div>
@@ -166,20 +167,20 @@ function FeedCard({ z, onClick }) {
   if (z.typ === "ponuka") {
     const velka = z.velkost === "stredna";
     return (
-      <div style={{ margin: "11px 13px", border: `1px solid rgba(139,124,255,.28)`, borderLeft: velka ? `1px solid rgba(139,124,255,.28)` : `3px solid ${C.purple}`, borderRadius: velka ? 17 : 12, background: "rgba(139,124,255,.06)", padding: velka ? 0 : "9px 13px", overflow: "hidden", display: "flex", alignItems: velka ? "stretch" : "center" }}>
+      <div style={{ margin: wide ? 0 : "11px 13px", border: `1px solid rgba(139,124,255,.28)`, borderLeft: velka ? `1px solid rgba(139,124,255,.28)` : `3px solid ${C.purple}`, borderRadius: velka ? 17 : 12, background: "rgba(139,124,255,.06)", padding: velka ? 0 : "9px 13px", overflow: "hidden", display: "flex", alignItems: velka ? "stretch" : "center" }}>
         {velka ? (
           <>
             <FotoPrispevku fotky={z.fotky} emoji={z.ikona} h={80} w={74} style={{ minHeight: 80, height: "100%" }} />
             <div style={{ padding: "10px 12px" }}>
               <span style={{ fontSize: 15, fontWeight: "bold" }}>{z.nazov}</span>
-              {z.odbornik && <span style={{ fontSize: 11, color: "#BBB4F2", border: `1px solid rgba(175,169,236,.4)`, borderRadius: 20, padding: "2px 8px", marginLeft: 4 }}>✓ odborník</span>}
+              {z.odbornik && <span style={{ fontSize: 11, color: C.purple, border: `1px solid rgba(175,169,236,.4)`, borderRadius: 20, padding: "2px 8px", marginLeft: 4 }}>✓ odborník</span>}
               <div style={{ fontSize: 13, color: C.textSec, margin: "5px 0", lineHeight: 1.45 }}>{z.pribeh}</div>
               <div style={{ fontSize: 11.5, color: C.textTer }}>{z.lok}</div>
             </div>
           </>
         ) : (
           <>
-            <div style={{ width: 38, height: 38, lineHeight: "38px", textAlign: "center", borderRadius: 7, background: "#2A2740", color: "#8A84C8", fontSize: 17, flex: "0 0 auto" }}>{z.ikona}</div>
+            <div style={{ width: 38, height: 38, lineHeight: "38px", textAlign: "center", borderRadius: 7, background: "rgba(139,124,255,.16)", color: "#8B7CFF", fontSize: 17, flex: "0 0 auto" }}>{z.ikona}</div>
             <div style={{ marginLeft: 10 }}>
               <div style={{ fontSize: 14.5 }}><b>{z.nazov}</b> <span style={{ fontSize: 11, color: C.textTer }}>ponuka</span></div>
               <div style={{ fontSize: 13, color: C.textSec }}>{z.pribeh} · {z.lok}</div>
@@ -191,7 +192,7 @@ function FeedCard({ z, onClick }) {
   }
   // charity
   return (
-    <div style={{ margin: "11px 13px", border: `1px solid rgba(91,155,255,.28)`, borderRadius: 13, background: z.sponzor ? "rgba(91,155,255,.07)" : "rgba(255,255,255,.04)", padding: "10px 13px", display: "flex", alignItems: "center", gap: 10 }}>
+    <div style={{ margin: wide ? 0 : "11px 13px", border: `1px solid rgba(91,155,255,.28)`, borderRadius: 13, background: z.sponzor ? "rgba(91,155,255,.07)" : "rgba(255,255,255,.04)", padding: "10px 13px", display: "flex", alignItems: "center", gap: 10 }}>
       {z.fotky ? (
         <FotoPrispevku fotky={z.fotky} emoji={z.ikona} h={38} w={38} radius={7} />
       ) : (
@@ -199,7 +200,7 @@ function FeedCard({ z, onClick }) {
       )}
       <div>
         <div style={{ fontSize: z.sponzor ? 14.5 : 13.5 }}><b>{z.nazov}</b> {z.sponzor ? <span style={{ fontSize: 11, color: C.greenL, border: `1px solid rgba(127,203,160,.4)`, borderRadius: 10, padding: "2px 8px" }}>sponzorované</span> : <span style={{ fontSize: 11, color: C.textTer }}>hľadá pomoc</span>}</div>
-        <div style={{ fontSize: 12.5, color: z.sponzor ? "#AEC4DC" : C.textSec, marginTop: 3 }}>{z.pribeh}</div>
+        <div style={{ fontSize: 12.5, color: C.textSec, marginTop: 3 }}>{z.pribeh}</div>
       </div>
     </div>
   );
@@ -235,7 +236,7 @@ function Detail({ z, onBack }) {
   return (
     <div style={{ paddingBottom: 30 }}>
       <div style={{ position: "sticky", top: 0, zIndex: 5, display: "flex", alignItems: "center", gap: 10, padding: "11px 14px", ...glassTmavy(18, .55), borderLeft: "none", borderRight: "none", borderTop: "none" }}>
-        <span onClick={onBack} style={{ width: 32, height: 32, borderRadius: "50%", background: "rgba(255,255,255,.06)", border: `1px solid ${C.line}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, color: C.textSec, cursor: "pointer", flex: "0 0 auto" }}>←</span>
+        <span onClick={onBack} style={{ width: 32, height: 32, borderRadius: "50%", background: "rgba(var(--glass-rgb),.06)", border: `1px solid ${C.line}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, color: C.textSec, cursor: "pointer", flex: "0 0 auto" }}>←</span>
         <span style={{ fontSize: 13, fontWeight: "bold", color: C.blueL, background: "rgba(91,155,255,.12)", border: `1px solid rgba(91,155,255,.3)`, borderRadius: 9, padding: "3px 10px" }}>#47 821</span>
         <span style={{ fontSize: 11, fontWeight: "bold", color: z.sponzor ? C.gold : C.blueL }}>{z.sponzor ? "D++" : "D+"}</span>
         <span style={{ marginLeft: "auto", color: C.textTer }}>↗&nbsp;&nbsp;⚑</span>
@@ -254,23 +255,18 @@ function Detail({ z, onBack }) {
         <Avatar src={z.avatar} emoji="👤" size={46} border={`1px solid rgba(127,203,160,.5)`} />
         <div>
           <div style={{ fontSize: 16, fontWeight: "bold" }}>{z.nazov} {z.overeny && <span style={{ fontSize: 9, color: C.greenL, border: `1px solid rgba(127,203,160,.4)`, borderRadius: 20, padding: "1px 6px" }}>overená</span>}</div>
-          <div style={{ marginTop: 4 }}><span style={{ fontSize: 9, fontWeight: 700, background: "rgba(240,199,90,.12)", border: "1px solid rgba(240,199,90,.3)", color: "#F0DCA0", borderRadius: 10, padding: "2px 7px" }}>⭐ {z.karma}</span> <span style={{ fontSize: 11, color: C.textTer }}>📍 {z.lok} · 1 deň</span></div>
+          <div style={{ marginTop: 4 }}><span style={{ fontSize: 9, fontWeight: 700, background: "rgba(240,199,90,.12)", border: "1px solid rgba(240,199,90,.3)", color: C.gold, borderRadius: 10, padding: "2px 7px" }}>⭐ {z.karma}</span> <span style={{ fontSize: 11, color: C.textTer }}>📍 {z.lok} · 1 deň</span></div>
         </div>
       </div>
 
       {/* pribeh */}
-      <div style={{ padding: "14px 16px 10px", fontSize: 14, lineHeight: 1.5, color: "#DADADE" }}>{z.pribeh}</div>
-
-      {/* overené */}
-      <div style={{ margin: "0 14px 12px", background: "rgba(43,212,155,.07)", border: `1px solid rgba(92,230,184,.25)`, borderRadius: 12, padding: "9px 12px", fontSize: 11.5, color: "#A8E2C8", lineHeight: 1.35 }}>
-        🛡 Doklady k príbehu <b>overené systémom</b>. Citlivé doklady nie sú verejné.
-      </div>
+      <div style={{ padding: "14px 16px 10px", fontSize: 14, lineHeight: 1.5, color: C.text }}>{z.pribeh}</div>
 
       {/* D++ sponzor */}
       {z.sponzor && (
         <div style={{ margin: "0 14px 12px", background: "rgba(224,169,61,.08)", border: `1px solid rgba(224,169,61,.35)`, borderRadius: 10, padding: "10px 12px", display: "flex", alignItems: "center", gap: 10 }}>
           <span style={{ background: "#fff", color: "#0B3D91", fontSize: 10, fontWeight: "bold", borderRadius: 6, padding: "5px 8px" }}>{z.sponzor.meno}</span>
-          <div style={{ fontSize: 11.5, color: "#E0C98A", lineHeight: 1.4 }}>
+          <div style={{ fontSize: 11.5, color: C.textSec, lineHeight: 1.4 }}>
             <b>{z.sponzor.meno} pomohol sumou {z.sponzor.suma} €</b> · D++ sponzor žiadosti<br />
             <span style={{ color: C.textTer }}>transparentná suma · ⛓ blockchain dôkaz · ESG dopad (ESRS S3)</span>
           </div>
@@ -283,7 +279,7 @@ function Detail({ z, onBack }) {
           <div><span style={{ fontSize: 26, fontWeight: "bold" }}>{Math.round(suma)} €</span> <span style={{ fontSize: 13, color: C.textTer }}>z {z.ciel} €</span></div>
           <span style={{ fontSize: 16, fontWeight: "bold", color: C.greenL }}>{pct} %</span>
         </div>
-        <div style={{ position: "relative", height: 12, borderRadius: 7, background: "rgba(255,255,255,.07)", margin: "11px 0 9px", overflow: "hidden" }}>
+        <div style={{ position: "relative", height: 12, borderRadius: 7, background: "rgba(var(--glass-rgb),.1)", margin: "11px 0 9px", overflow: "hidden" }}>
           <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: `${pct}%`, background: GRAD_ZELENY, borderRadius: 7, transition: "width .6s ease", boxShadow: "0 0 14px rgba(43,212,155,.5)" }} />
         </div>
         <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11.5 }}>
@@ -490,7 +486,7 @@ function RequestFlow({ onDone }) {
           <>
             <Otazka>Odhadovaná výška pomoci</Otazka>
             <input type="number" value={suma} onChange={(e) => setSuma(e.target.value)} placeholder="suma v €" style={{ ...inp(0), height: "auto", padding: "12px", fontSize: 18 }} />
-            {p && <div style={{ ...infoBox, borderColor: p.blok ? "rgba(226,87,75,.4)" : "rgba(93,155,232,.4)", background: p.blok ? C.redBg : "rgba(93,155,232,.08)", color: p.blok ? "#E8B0B0" : "#9CC3EC" }}>{p.text}</div>}
+            {p && <div style={{ ...infoBox, borderColor: p.blok ? "rgba(226,87,75,.4)" : "rgba(93,155,232,.4)", background: p.blok ? C.redBg : "rgba(93,155,232,.08)", color: p.blok ? C.red : C.blueL }}>{p.text}</div>}
             <NavBtns onBack={() => setKrok(2)} onNext={() => setKrok(4)} canNext={sumaNum >= 100} />
           </>
         )}

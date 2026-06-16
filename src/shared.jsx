@@ -1,5 +1,8 @@
 import { useState, useEffect, useRef, createContext, useContext } from "react";
-import { C, GRAD, GRAD_KUZEL, glass, glassTmavy, ZRNO } from "./theme";
+import { C, GRAD, GRAD_KUZEL, GRAD_ZELENY, glass, glassTmavy, ZRNO } from "./theme";
+
+// hex → priesvitné rgba (akcentové tinty fungujúce v tmavom aj svetlom režime)
+const tint = (hex, a) => { const n = parseInt(hex.slice(1), 16); return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`; };
 
 /*
   ============================================================
@@ -51,7 +54,7 @@ export function Foto({ src, emoji, h, w, radius = 0, style, onClick }) {
   const [err, setErr] = useState(false);
   if (err || !src) {
     return (
-      <div onClick={onClick} style={{ width: w || "100%", height: h, background: "rgba(255,255,255,.05)", display: "flex", alignItems: "center",
+      <div onClick={onClick} style={{ width: w || "100%", height: h, background: "rgba(var(--glass-rgb),.05)", display: "flex", alignItems: "center",
         justifyContent: "center", fontSize: Math.min((typeof h === "number" ? h : 90) / 3, 30), color: "#4A5066", borderRadius: radius, flex: w ? "0 0 auto" : undefined, cursor: onClick ? "pointer" : undefined, ...style }}>
         {emoji}
       </div>
@@ -84,13 +87,14 @@ export const GaleriaContext = createContext(() => {});
 export const useGaleria = () => useContext(GaleriaContext);
 
 // klikateľné foto v príspevku — otvorí galériu, ukáže počet fotiek
-export function FotoPrispevku({ fotky, emoji, h, w, radius = 0, style, index = 0 }) {
+// disableGaleria=true → klik na foto neotvára galériu, ale prebublá na kartu (otvorí detail skutku/žiadosti)
+export function FotoPrispevku({ fotky, emoji, h, w, radius = 0, style, index = 0, disableGaleria }) {
   const otvor = useGaleria();
   const viac = fotky && fotky.length > 1;
   return (
     <div style={{ position: "relative", width: w || "100%", flex: w ? "0 0 auto" : undefined }}>
       <Foto src={fotky && fotky[index]} emoji={emoji} h={h} w={w} radius={radius} style={style}
-        onClick={(e) => { e.stopPropagation(); if (fotky && fotky.length) otvor(fotky, index); }} />
+        onClick={disableGaleria ? undefined : (e) => { e.stopPropagation(); if (fotky && fotky.length) otvor(fotky, index); }} />
       {viac && (
         <span style={{ position: "absolute", bottom: 7, right: 7, ...glassTmavy(10, .55), color: "#fff",
           fontSize: 10, fontWeight: 600, borderRadius: 12, padding: "3px 9px", pointerEvents: "none" }}>
@@ -256,15 +260,16 @@ function sipka(strana) {
 // ============================================================
 // SPOLOČNÉ UI KOMPONENTY (hlavička, výbery, modaly, toasty)
 // ============================================================
-export function Hlavicka({ title, onBack, step, total }) {
+export function Hlavicka({ title, onBack, step, total, right, titleColor }) {
   return (
     <div style={{ position: "sticky", top: 0, zIndex: 5, ...glassTmavy(18, .6), borderLeft: "none", borderRight: "none", borderTop: "none" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 11, padding: "12px 14px" }}>
-        <span onClick={onBack} style={{ width: 32, height: 32, borderRadius: "50%", background: "rgba(255,255,255,.06)", border: `1px solid ${C.line}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, color: C.textSec, cursor: "pointer" }}>←</span>
-        <span style={{ fontSize: 16, fontWeight: 700 }}>{title}</span>
-        {step && <span style={{ marginLeft: "auto", fontSize: 11.5, fontWeight: 600, color: C.textTer }}>Krok {step}/{total}</span>}
+        <span onClick={onBack} style={{ width: 32, height: 32, borderRadius: "50%", background: "rgba(var(--glass-rgb),.06)", border: `1px solid ${C.line}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, color: C.textSec, cursor: "pointer", flex: "0 0 auto" }}>←</span>
+        <span style={{ fontSize: 16, fontWeight: 700, color: titleColor }}>{title}</span>
+        {right ? <span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 12 }}>{right}</span>
+          : step ? <span style={{ marginLeft: "auto", fontSize: 11.5, fontWeight: 600, color: C.textTer }}>Krok {step}/{total}</span> : null}
       </div>
-      {step && <div style={{ height: 3, background: "rgba(255,255,255,.06)" }}><div style={{ height: 3, background: GRAD, width: `${step / total * 100}%`, transition: "width .35s ease", borderRadius: 2 }} /></div>}
+      {step && <div style={{ height: 3, background: "rgba(var(--glass-rgb),.06)" }}><div style={{ height: 3, background: GRAD, width: `${step / total * 100}%`, transition: "width .35s ease", borderRadius: 2 }} /></div>}
     </div>
   );
 }
@@ -324,14 +329,14 @@ export function NavBtns({ onBack, onNext, canNext }) {
 function btnLokal(kind) {
   const base = { flex: 1, padding: "13px 0", borderRadius: 14, fontSize: 14, fontWeight: 700, cursor: "pointer", border: "none", fontFamily: "inherit" };
   if (kind === "primary") return { ...base, background: GRAD, color: "#fff", boxShadow: "0 8px 26px rgba(99,134,255,.32), inset 0 1px 0 rgba(255,255,255,.25)" };
-  if (kind === "ghost") return { ...base, background: "rgba(255,255,255,.04)", color: C.textSec, border: `1px solid ${C.line}` };
-  if (kind === "disabled") return { ...base, background: "rgba(255,255,255,.05)", color: C.textTer, cursor: "not-allowed" };
+  if (kind === "ghost") return { ...base, background: "rgba(var(--glass-rgb),.05)", color: C.textSec, border: `1px solid ${C.line}` };
+  if (kind === "disabled") return { ...base, background: "rgba(var(--glass-rgb),.06)", color: C.textTer, cursor: "not-allowed" };
   return base;
 }
 
 export function Suhrn({ rows }) {
   return (
-    <div style={{ background: "rgba(255,255,255,.04)", border: `1px solid ${C.line}`, borderRadius: 15, padding: 14 }}>
+    <div style={{ background: "rgba(var(--glass-rgb),.05)", border: `1px solid ${C.line}`, borderRadius: 15, padding: 14 }}>
       {rows.map((r, i) => (
         <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", fontSize: 13, borderBottom: i < rows.length - 1 ? `1px solid ${C.line2}` : "none" }}>
           <span style={{ color: C.textTer }}>{r[0]}</span><span style={{ textAlign: "right", maxWidth: "65%", fontWeight: 600 }}>{r[1]}</span>
@@ -343,7 +348,7 @@ export function Suhrn({ rows }) {
 
 export function DokladRow({ text }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "rgba(255,255,255,.035)", border: `1px solid ${C.line}`, borderRadius: 13, padding: "12px 13px", fontSize: 13 }}>
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "rgba(var(--glass-rgb),.04)", border: `1px solid ${C.line}`, borderRadius: 13, padding: "12px 13px", fontSize: 13 }}>
       <span>{text}</span><span style={{ fontSize: 12, fontWeight: 700, color: C.blueL, cursor: "pointer" }}>＋ doložiť</span>
     </div>
   );
@@ -353,7 +358,7 @@ export function Modal({ children, onClose }) {
   return (
     <div onClick={onClose} style={{ position: "absolute", inset: 0, background: "rgba(4,6,12,.5)", backdropFilter: "blur(5px)", WebkitBackdropFilter: "blur(5px)", display: "flex", alignItems: "flex-end", justifyContent: "center", zIndex: 55, animation: "fadeUp .2s ease" }}>
       <div onClick={(e) => e.stopPropagation()} style={{ width: "100%", ...glassTmavy(26, .8), borderBottom: "none", borderTopLeftRadius: 26, borderTopRightRadius: 26, padding: "10px 20px 22px", boxShadow: "0 -18px 60px rgba(0,0,0,.45)" }}>
-        <div style={{ width: 42, height: 4, borderRadius: 3, background: "rgba(255,255,255,.18)", margin: "4px auto 16px" }} />
+        <div style={{ width: 42, height: 4, borderRadius: 3, background: "rgba(var(--glass-rgb),.22)", margin: "4px auto 16px" }} />
         {children}
       </div>
     </div>
@@ -361,9 +366,11 @@ export function Modal({ children, onClose }) {
 }
 
 export function Toast({ text }) {
+  // snackbar — vždy tmavý (aj vo svetlom režime), aby bol mätový text vždy čitateľný
   return (
-    <div style={{ position: "absolute", bottom: 92, left: "50%", transform: "translateX(-50%)", ...glassTmavy(18, .72),
-      border: "1px solid rgba(92,230,184,.3)", color: "#C9F2E2", padding: "11px 18px", borderRadius: 30, fontSize: 12.5, fontWeight: 600,
+    <div style={{ position: "absolute", bottom: 92, left: "50%", transform: "translateX(-50%)",
+      background: "rgba(12,20,16,.93)", backdropFilter: "blur(18px)", WebkitBackdropFilter: "blur(18px)",
+      border: "1px solid rgba(92,230,184,.35)", color: "#C9F2E2", padding: "11px 18px", borderRadius: 30, fontSize: 12.5, fontWeight: 600,
       zIndex: 60, width: "max-content", maxWidth: "88%", textAlign: "center", animation: "fadeUp .3s ease",
       boxShadow: "0 10px 34px rgba(0,0,0,.45), 0 0 24px rgba(67,224,200,.12)" }}>
       <span style={{ display: "inline-block", width: 7, height: 7, borderRadius: "50%", background: GRAD_ZELENY_LOKAL, marginRight: 8, verticalAlign: "middle" }} />
@@ -372,6 +379,18 @@ export function Toast({ text }) {
   );
 }
 const GRAD_ZELENY_LOKAL = "linear-gradient(90deg, #1FBF8F, #5CE6B8)";
+
+// ---- OSLAVA — jednotný „celebration“ overlay (aura prsteň = podpis značky) ----
+// rovnaký naprieč modulmi: emoji v aura prstenci + titulok + text
+export function Oslava({ emoji = "🎉", title, text, onClose }) {
+  return (
+    <div onClick={onClose} style={{ position: "absolute", inset: 0, background: "rgba(4,6,12,.75)", backdropFilter: "blur(14px)", WebkitBackdropFilter: "blur(14px)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 18, zIndex: 200, animation: "fadeUp .2s ease", padding: 24 }}>
+      <Aura size={134} hrubka={2}><span style={{ fontSize: 52 }}>{emoji}</span></Aura>
+      <div style={{ color: "#fff", fontSize: 20, fontWeight: 800, textAlign: "center" }}>{title}</div>
+      {text && <div style={{ color: C.textSec, fontSize: 14, textAlign: "center", padding: "0 22px", lineHeight: 1.5, maxWidth: 340 }}>{text}</div>}
+    </div>
+  );
+}
 
 // ============================================================
 // MODERNÉ IKONY — srdce (like) a šípka hore (upvote) — rovnaké všade
@@ -442,7 +461,7 @@ export function PodporaSekcia({ likes = 0, liked, onLike, upvotes = 0, onUpvote,
         {fix.map((b) => (
           <button key={b.v} onClick={() => onPodpor(b.a)} style={psFix(b.emph)}>
             <span style={{ fontSize: 20, color: b.col, lineHeight: 1 }}>{b.e}</span>
-            <span style={{ fontSize: 13, marginTop: 4 }}>{b.v}</span>
+            <span style={{ fontSize: 13, marginTop: 4 }}>{b.v} <span style={{ fontSize: 9, fontWeight: 700, color: C.textTer, letterSpacing: ".3px" }}>DEED</span></span>
           </button>
         ))}
         <div style={{ width: 1, alignSelf: "stretch", borderLeft: `1px dashed ${C.line}`, margin: "3px 3px" }} />
@@ -463,6 +482,89 @@ export function PodporaSekcia({ likes = 0, liked, onLike, upvotes = 0, onUpvote,
           <span style={{ fontSize: 11, color: C.textTer, marginTop: 3 }}>wallet → wallet</span>
         </button>
       </div>
+    </div>
+  );
+}
+
+// ============================================================
+// JEDNOTNÝ REBRÍČEK OCENENÍ — rovnaká veľkosť a dizajn naprieč modulmi
+// ocenenia: [{ ic, col, label, name, onClick }] · ludia: [{ ini, name, col, onClick }]
+// pred = voliteľný úvodný kachlík (napr. Adresár v Charite)
+// ============================================================
+export function Rebricky({ ocenenia = [], ludia = [], pred = null }) {
+  return (
+    <div style={{ display: "flex", gap: 8, padding: "0 16px 12px", overflowX: "auto", alignItems: "stretch" }}>
+      {pred}
+      {ocenenia.map((o, i) => (
+        <div key={i} onClick={o.onClick} style={{ minWidth: 84, background: C.surface, border: `1px solid ${C.line}`, borderRadius: 13, padding: "8px 5px", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, cursor: o.onClick ? "pointer" : "default", flex: "0 0 auto" }}>
+          <div style={{ width: 30, height: 28, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, background: tint(o.col, .16), color: o.col }}>{o.ic}</div>
+          <div style={{ fontSize: 7.5, letterSpacing: ".4px", color: C.textTer, fontWeight: 700, textAlign: "center", whiteSpace: "nowrap" }}>{o.label}</div>
+          <div style={{ fontSize: 9.5, fontWeight: 700, textAlign: "center", maxWidth: 76, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{o.name}</div>
+        </div>
+      ))}
+      {ludia.length > 0 && <div style={{ width: 1, background: C.line, margin: "4px 2px", flex: "0 0 auto" }} />}
+      {ludia.map((p, i) => (
+        <div key={"p" + i} onClick={p.onClick} style={{ minWidth: 52, display: "flex", flexDirection: "column", alignItems: "center", gap: 3, flex: "0 0 auto", cursor: p.onClick ? "pointer" : "default" }}>
+          <div style={{ width: 40, height: 40, borderRadius: "50%", background: "rgba(var(--glass-rgb),.06)", border: `2px solid ${p.col || "#5BA8F0"}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700, color: C.text }}>{p.ini}</div>
+          <div style={{ fontSize: 9, color: C.textSec, maxWidth: 52, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.name}</div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ============================================================
+// JEDNOTNÝ ŠTATISTICKÝ RIADOK — „Dnes X · Mesiac Y" + „Moja štvrť" s výberom okruhu
+// rovnaký dizajn aj poloha (hneď pod rebríčkom) vo všetkých moduloch
+// ============================================================
+export function StatRiadok({ stat, miesto = "Trenčín", okruh = "2 km", onOkruh }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10, rowGap: 4, padding: "2px 18px 12px", fontSize: 13, color: C.textTer }}>
+      <span style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+        <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#3DD68C", flex: "none", animation: "pulse 1.6s infinite" }} />
+        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{stat}</span>
+      </span>
+      <span style={{ display: "flex", alignItems: "center", gap: 7, flex: "none" }}>
+        <span style={{ whiteSpace: "nowrap" }}>◉ Moja štvrť · {miesto} · {okruh}</span>
+        <a onClick={onOkruh} style={{ color: "#74A6FF", cursor: "pointer", fontWeight: 600 }}>okruh ▾</a>
+      </span>
+    </div>
+  );
+}
+
+// ============================================================
+// JEDNOTNÝ BAR ZBIERKY — „X € z Y €" + zelený progres (rovnaký všade)
+// mini = kompaktný do kariet · inak väčší do detailov
+// ============================================================
+export function MoniBar({ vyzbierane = 0, ciel = 0, ludia, mini }) {
+  const pct = ciel ? Math.min(100, Math.round((vyzbierane / ciel) * 100)) : 0;
+  const h = mini ? 6 : 9;
+  return (
+    <div>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", fontSize: mini ? 12 : 13 }}>
+        <span style={{ fontWeight: 600 }}>{vyzbierane.toLocaleString("sk")} € <span style={{ color: C.textTer, fontWeight: 400 }}>z {ciel.toLocaleString("sk")} €</span></span>
+        <span style={{ color: C.textTer }}>{pct} %</span>
+      </div>
+      <div style={{ height: h, background: "rgba(var(--glass-rgb),.1)", borderRadius: 99, overflow: "hidden", marginTop: 6 }}>
+        <div style={{ height: "100%", width: `${pct}%`, background: GRAD_ZELENY, borderRadius: 99, boxShadow: "0 0 10px rgba(43,212,155,.45)", transition: "width .6s ease" }} />
+      </div>
+      {ludia != null && <div style={{ fontSize: 11, color: C.textTer, marginTop: 5 }}>👥 {ludia} pomohlo</div>}
+    </div>
+  );
+}
+
+// ============================================================
+// DVOJSTĹPCOVÝ FEED (tablet/PC) — skutky vľavo, žiadosti vpravo
+// na úzkej obrazovke spadne do jedného stĺpca (jednoStlpec v pôvodnom poradí)
+// ============================================================
+export function FeedStlpce({ wide, skutky, ziadosti, jednoStlpec, labelSkutky = "Skutky", labelZiadosti = "Žiadosti", padding = "0 16px" }) {
+  if (!wide) return <div style={{ padding }}>{jednoStlpec}</div>;
+  const Hd = ({ children }) => <div style={{ fontSize: 11.5, letterSpacing: ".4px", color: C.textTer, fontWeight: 700, margin: "0 0 10px", paddingLeft: 2 }}>{children}</div>;
+  const col = { display: "flex", flexDirection: "column", gap: 12, minWidth: 0 };
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, alignItems: "start", padding }}>
+      <div style={{ minWidth: 0 }}><Hd>{labelSkutky}</Hd><div style={col}>{skutky}</div></div>
+      <div style={{ minWidth: 0 }}><Hd>{labelZiadosti}</Hd><div style={col}>{ziadosti}</div></div>
     </div>
   );
 }

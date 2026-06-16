@@ -144,7 +144,7 @@ function InvestorPanel({ horizontal }) {
       {karty.map((k, i) => (
         <div key={i} style={{ ...glass(16, .045), borderRadius: 18, padding: "17px 18px", animation: `fadeUp .5s ease ${i * 0.08}s both` }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <span style={{ width: 38, height: 38, borderRadius: 12, background: "rgba(255,255,255,.05)", border: `1px solid ${C.line2}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 19, flex: "0 0 auto" }}>{k[0]}</span>
+            <span style={{ width: 38, height: 38, borderRadius: 12, background: "rgba(var(--glass-rgb),.06)", border: `1px solid ${C.line2}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 19, flex: "0 0 auto" }}>{k[0]}</span>
             <b style={{ fontSize: 15 }}>{k[1]}</b>
           </div>
           <div style={{ fontSize: 13, color: C.textSec, lineHeight: 1.55, marginTop: 9 }}>{k[2]}</div>
@@ -171,7 +171,7 @@ function DeviceFrame({ device }) {
     return (
       <div style={{ width: "100%", maxWidth: 1040 }}>
         <div style={{ borderRadius: 16, overflow: "hidden", background: C.bg, boxShadow: ziaraRamu }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 7, padding: "10px 14px", background: "rgba(255,255,255,.04)", borderBottom: `1px solid ${C.line}` }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 7, padding: "10px 14px", background: "rgba(var(--glass-rgb),.05)", borderBottom: `1px solid ${C.line}` }}>
             {["#FF5F57", "#FEBC2E", "#28C840"].map((f) => <span key={f} style={{ width: 11, height: 11, borderRadius: "50%", background: f, flex: "0 0 auto" }} />)}
             <span style={{ flex: 1, maxWidth: 420, margin: "0 auto", background: "rgba(0,0,0,.35)", border: `1px solid ${C.line}`, borderRadius: 9, padding: "5px 14px", fontSize: 12, color: C.textSec, textAlign: "center" }}>🔒 deed.app</span>
             <span style={{ width: 47, flex: "0 0 auto" }} />

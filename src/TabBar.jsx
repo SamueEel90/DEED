@@ -68,7 +68,7 @@ function Tab({ m, on, onClick }) {
         background: on ? "linear-gradient(135deg, rgba(91,155,255,.32), rgba(139,124,255,.26))" : "transparent",
         border: on ? "1px solid rgba(116,166,255,.4)" : "1px solid transparent",
         boxShadow: on ? "0 4px 16px rgba(91,124,255,.35)" : "none",
-        color: on ? "#EAF1FF" : C.textSec,
+        color: on ? C.text : C.textSec,
       }}>{m.ikona}</div>
       <span style={{ fontSize: 11.5, fontWeight: on ? 800 : 600, color: on ? C.blueL : C.textSec, letterSpacing: ".01em", transition: "color .25s ease" }}>{m.nazov}</span>
     </div>
@@ -103,7 +103,7 @@ export function ViacSheet({ taby, setTaby, aktivny, onModul, onClose, moduly = V
   return (
     <div onClick={onClose} style={{ position: "absolute", inset: 0, background: "rgba(4,6,12,.55)", backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)", display: "flex", alignItems: "flex-end", zIndex: 70, animation: "fadeUp .2s ease" }}>
       <div onClick={(e) => e.stopPropagation()} style={{ width: "100%", maxHeight: "85%", overflowY: "auto", ...glassTmavy(26, .82), borderBottom: "none", borderTopLeftRadius: 26, borderTopRightRadius: 26, padding: "6px 16px 18px", boxShadow: "0 -18px 60px rgba(0,0,0,.5)" }}>
-        <div style={{ width: 42, height: 4, borderRadius: 3, background: "rgba(255,255,255,.18)", margin: "10px auto 14px" }} />
+        <div style={{ width: 42, height: 4, borderRadius: 3, background: "rgba(var(--glass-rgb),.22)", margin: "10px auto 14px" }} />
         <div style={{ display: "flex", alignItems: "center", marginBottom: 12 }}>
           <span style={{ fontSize: 17, fontWeight: 800 }}>Moduly</span>
           <span onClick={() => setUprava(!uprava)} style={{
@@ -135,7 +135,7 @@ export function ViacSheet({ taby, setTaby, aktivny, onModul, onClose, moduly = V
                 border: `1px solid ${zvyrazneny ? "rgba(116,166,255,.45)" : C.line}`,
                 boxShadow: zvyrazneny ? "0 0 18px rgba(91,155,255,.12)" : "none",
                 borderRadius: 15, padding: "11px 13px", marginBottom: 8, cursor: "pointer" }}>
-              <span style={{ width: 38, height: 38, borderRadius: 12, background: "rgba(255,255,255,.06)", border: `1px solid ${C.line2}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 17, flex: "0 0 auto" }}>{m.ikona}</span>
+              <span style={{ width: 38, height: 38, borderRadius: 12, background: "rgba(var(--glass-rgb),.07)", border: `1px solid ${C.line2}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 17, flex: "0 0 auto" }}>{m.ikona}</span>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 13.5, fontWeight: 700 }}>{m.nazov} {pripnuty && <span style={{ fontSize: 9, fontWeight: 700, color: C.greenL, border: "1px solid rgba(92,230,184,.35)", background: "rgba(92,230,184,.08)", borderRadius: 10, padding: "1px 7px", marginLeft: 4 }}>v menu{uprava ? ` · ${poradie + 1}.` : ""}</span>}</div>
                 <div style={{ fontSize: 11, color: C.textTer, marginTop: 2 }}>{m.popis}</div>
@@ -168,7 +168,7 @@ export function ViacSheet({ taby, setTaby, aktivny, onModul, onClose, moduly = V
 function SipkaBtn({ aktivna, onClick, children }) {
   return (
     <span onClick={aktivna ? onClick : undefined}
-      style={{ width: 28, height: 28, borderRadius: 9, border: `1px solid ${C.line}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, cursor: aktivna ? "pointer" : "default", color: aktivna ? C.text : "#3A4054", background: "rgba(255,255,255,.05)" }}>
+      style={{ width: 28, height: 28, borderRadius: 9, border: `1px solid ${C.line}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, cursor: aktivna ? "pointer" : "default", color: aktivna ? C.text : C.textTer, background: "rgba(var(--glass-rgb),.06)" }}>
       {children}
     </span>
   );

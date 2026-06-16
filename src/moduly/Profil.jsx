@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { C, GRAD } from "../theme";
+import { Toast } from "../shared";
 
 /*
   ============================================================
@@ -24,11 +25,7 @@ export default function ModulProfil({ wide }) {
       {screen === "wallet" && obal(<Penazenka toast={toast} onBack={() => setScreen("profil")} />)}
       {screen === "sub" && obal(<SubScreen nazov={subNazov} toast={toast} onBack={() => setScreen("profil")} />)}
 
-      {hlaska && (
-        <div style={{ position: "absolute", bottom: 92, left: "50%", transform: "translateX(-50%)", background: "rgba(11,15,26,.72)", backdropFilter: "blur(18px)", WebkitBackdropFilter: "blur(18px)", border: "1px solid rgba(52,211,153,.35)", color: "#C9F2E2", padding: "11px 18px", borderRadius: 30, fontSize: 12.5, fontWeight: 600, zIndex: 100, width: "max-content", maxWidth: "88%", textAlign: "center", animation: "fadeUp .3s ease", boxShadow: "0 10px 34px rgba(0,0,0,.45), 0 0 24px rgba(67,224,200,.12)" }}>
-          {hlaska}
-        </div>
-      )}
+      {hlaska && <Toast text={hlaska} />}
     </div>
   );
 }
@@ -36,12 +33,12 @@ export default function ModulProfil({ wide }) {
 // ===================== PROFIL =====================
 function ProfilHlavny({ toast, naWallet, naSub }) {
   const dlazdice = [
-    ["Peňaženka", "1 240 DEED", "#13243a", "#5BA8F0", "€", naWallet],
-    ["Karma a úrovne", "7 modulov", "#1a1430", "#A98BF0", "★", () => naSub("Karma a úrovne")],
-    ["Moje skutky", "48 skutkov", "#0f2417", "#3DD68C", "✓", () => naSub("Moje skutky")],
-    ["Štatistiky", "umiestnenie", "#0d2422", "#3DD6CE", "▦", () => naSub("Štatistiky a umiestnenie")],
-    ["Priatelia", "nájdi známych", "#2a1f10", "#E7C766", "☺", () => naSub("Priatelia")],
-    ["Nastavenia", "vzhľad, jazyk", "#1a1a22", "#9AA0A8", "⚙", () => naSub("Nastavenia")],
+    ["Peňaženka", "1 240 DEED", "rgba(91,168,240,.14)", "#5BA8F0", "€", naWallet],
+    ["Karma a úrovne", "7 modulov", "rgba(169,139,240,.15)", "#A98BF0", "★", () => naSub("Karma a úrovne")],
+    ["Moje skutky", "48 skutkov", "rgba(61,214,140,.13)", "#3DD68C", "✓", () => naSub("Moje skutky")],
+    ["Štatistiky", "umiestnenie", "rgba(61,214,206,.13)", "#3DD6CE", "▦", () => naSub("Štatistiky a umiestnenie")],
+    ["Priatelia", "nájdi známych", "rgba(231,199,102,.14)", "#E7C766", "☺", () => naSub("Priatelia")],
+    ["Nastavenia", "vzhľad, jazyk", "rgba(154,160,168,.16)", "#9AA0A8", "⚙", () => naSub("Nastavenia")],
   ];
 
   return (
@@ -55,9 +52,9 @@ function ProfilHlavny({ toast, naWallet, naSub }) {
         <div style={{ width: 60, height: 60, borderRadius: "50%", background: "#3A8DD6", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, fontWeight: 700, boxShadow: "0 0 0 2.5px rgba(240,199,90,.75), 0 0 22px rgba(240,199,90,.45)" }}>M</div>
         <div>
           <div style={{ fontSize: 17, fontWeight: 700 }}>Martin K.</div>
-          <div style={{ display: "inline-flex", alignItems: "center", gap: 5, background: "#2A1F10", border: "1px solid #C8A23A", color: "#E7C766", fontSize: 10, fontWeight: 700, padding: "4px 9px", borderRadius: 9, marginTop: 6 }}>★ Gold · L7</div>
+          <div style={{ display: "inline-flex", alignItems: "center", gap: 5, background: "rgba(231,199,102,.14)", border: "1px solid rgba(200,162,58,.5)", color: "#C79A1E", fontSize: 10, fontWeight: 700, padding: "4px 9px", borderRadius: 9, marginTop: 6 }}>★ Gold · L7</div>
           <div style={{ marginTop: 6 }}>
-            <span style={{ display: "inline-flex", fontSize: 9.5, color: "#3DD68C", background: "#0f2417", border: "1px solid #2E7D52", padding: "3px 8px", borderRadius: 7, marginRight: 8 }}>verejný</span>
+            <span style={{ display: "inline-flex", fontSize: 9.5, color: "#1FBF8F", background: "rgba(61,214,140,.13)", border: "1px solid rgba(46,125,82,.45)", padding: "3px 8px", borderRadius: 7, marginRight: 8 }}>verejný</span>
             <span onClick={() => toast("Prepnuté na anonym (demo)")} style={{ fontSize: 9.5, color: "#5BA8F0", cursor: "pointer" }}>prepnúť na anonym</span>
           </div>
         </div>
@@ -67,7 +64,7 @@ function ProfilHlavny({ toast, naWallet, naSub }) {
         <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: C.textTer }}>
           <span>Do ďalšej úrovne (Platinum)</span><span style={{ color: "#E7C766" }}>72 %</span>
         </div>
-        <div style={{ height: 8, background: "rgba(255,255,255,.07)", borderRadius: 4, overflow: "hidden", marginTop: 6 }}>
+        <div style={{ height: 8, background: "rgba(var(--glass-rgb),.1)", borderRadius: 4, overflow: "hidden", marginTop: 6 }}>
           <div style={{ height: "100%", width: "72%", background: "linear-gradient(90deg, #F0C75A, #F09A5E)", borderRadius: 4, boxShadow: "0 0 12px rgba(240,199,90,.4)" }} />
         </div>
       </div>
@@ -102,15 +99,15 @@ function Penazenka({ toast, onBack }) {
       <div style={{ padding: "0 16px" }}>
         <div style={{ position: "relative", overflow: "hidden", background: "linear-gradient(150deg, rgba(91,155,255,.22), rgba(139,124,255,.16) 55%, rgba(67,224,200,.13))", border: "1px solid rgba(116,166,255,.35)", borderRadius: 20, padding: 18, boxShadow: "0 14px 40px rgba(0,0,0,.35), 0 0 36px rgba(91,124,255,.14), inset 0 1px 0 rgba(255,255,255,.12)" }}>
           <div style={{ position: "absolute", top: -50, right: -40, width: 160, height: 160, borderRadius: "50%", background: "radial-gradient(circle, rgba(139,124,255,.3), transparent 70%)", filter: "blur(28px)", pointerEvents: "none" }} />
-          <div style={{ fontSize: 12, color: "#A9BEDF" }}>Zostatok</div>
-          <div style={{ marginTop: 4 }}><span style={{ fontSize: 30, fontWeight: 800 }}>1 240</span> <span style={{ color: "#74A6FF", fontWeight: 800 }}>DEED</span></div>
-          <div style={{ fontSize: 10, color: "#8FA6CC", marginTop: 4 }}>≈ 62 € · Base L2 · ERC-4337</div>
+          <div style={{ fontSize: 12, color: C.textSec }}>Zostatok</div>
+          <div style={{ marginTop: 4 }}><span style={{ fontSize: 30, fontWeight: 800 }}>1 240</span> <span style={{ color: "#5B86FF", fontWeight: 800 }}>DEED</span></div>
+          <div style={{ fontSize: 10, color: C.textTer, marginTop: 4 }}>≈ 62 € · Base L2 · ERC-4337</div>
         </div>
 
         <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
-          {[["↑", "Poslať", "#0f2417", "#2E7D52", "#3DD68C", "Poslať DEED (demo)"],
-            ["↓", "Prijať", "#13243a", "#2A5E8E", "#5BA8F0", "Prijať (demo)"],
-            ["＋", "Kúpiť", "#1a1430", "#7A5BD8", "#A98BF0", "Kúpiť DEED (demo)"]].map((b, i) => (
+          {[["↑", "Poslať", "rgba(61,214,140,.13)", "rgba(46,125,82,.5)", "#1FBF8F", "Poslať DEED (demo)"],
+            ["↓", "Prijať", "rgba(91,168,240,.14)", "rgba(42,94,142,.5)", "#5BA8F0", "Prijať (demo)"],
+            ["＋", "Kúpiť", "rgba(169,139,240,.15)", "rgba(122,91,216,.5)", "#8B7CFF", "Kúpiť DEED (demo)"]].map((b, i) => (
             <div key={i} onClick={() => toast(b[5])} style={{ flex: 1, height: 58, borderRadius: 11, background: b[2], border: `1px solid ${b[3]}`, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
               <div style={{ fontWeight: 700, fontSize: 13, color: b[4] }}>{b[0]}</div>
               <div style={{ fontSize: 8.5, color: C.textTer, marginTop: 2 }}>{b[1]}</div>
