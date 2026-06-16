@@ -285,7 +285,7 @@ export function ModulHlavicka({ title, onMenu, right }) {
   const { svetly, prepni } = useMotiv();
   return (
     <div style={{ position: "sticky", top: 0, zIndex: 6, display: "flex", alignItems: "center", gap: 11, padding: "13px 16px", ...glassTmavy(18, .6), borderLeft: "none", borderRight: "none", borderTop: "none" }}>
-      <span onClick={onMenu} style={{ fontSize: 23, color: C.textSec, cursor: onMenu ? "pointer" : "default", lineHeight: 1, flex: "0 0 auto" }}>☰</span>
+      <span onClick={onMenu} style={{ display: "flex", alignItems: "center", color: C.textSec, cursor: onMenu ? "pointer" : "default", flex: "0 0 auto" }}><IkonaMenu size={22} color={C.textSec} /></span>
       <span style={{ width: 32, height: 32, borderRadius: 10, background: GRAD, color: "#fff", fontWeight: 800, fontSize: 17, display: "flex", alignItems: "center", justifyContent: "center", position: "relative", boxShadow: "0 4px 14px rgba(99,134,255,.4)", flex: "0 0 auto" }}>
         D<span style={{ position: "absolute", top: 3, right: 4, fontSize: 9 }}>+</span>
       </span>
@@ -412,6 +412,48 @@ export function SipHore({ size = 18, color = "currentColor" }) {
   );
 }
 
+// ---- jednotná sada moderných line-ikon (24×24, currentColor, okrúhle konce) ----
+function SvgI({ size = 18, color = "currentColor", sw = 2, fill = "none", children }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" style={{ display: "block", flex: "0 0 auto" }}
+      fill={fill} stroke={fill === "none" ? color : "none"} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round">
+      {children}
+    </svg>
+  );
+}
+// palec hore (upvote)
+export function Palec({ size = 18, color = "currentColor" }) {
+  return <SvgI size={size} color={color}><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3" /></SvgI>;
+}
+// lupa (hľadanie)
+export function Lupa({ size = 18, color = "currentColor" }) {
+  return <SvgI size={size} color={color}><circle cx="11" cy="11" r="7.5" /><path d="M21 21l-4.35-4.35" /></SvgI>;
+}
+// zvonček (upozornenia)
+export function Zvon({ size = 18, color = "currentColor" }) {
+  return <SvgI size={size} color={color}><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 0 1-3.46 0" /></SvgI>;
+}
+// prehrať (talent)
+export function IkonaPlay({ size = 18, color = "currentColor" }) {
+  return <SvgI size={size} fill={color}><path d="M7 4.5v15a1 1 0 0 0 1.53.85l12-7.5a1 1 0 0 0 0-1.7l-12-7.5A1 1 0 0 0 7 4.5z" /></SvgI>;
+}
+// nástenka (mriežka)
+export function IkonaDoska({ size = 18, color = "currentColor" }) {
+  return <SvgI size={size} color={color}><rect x="3" y="3" width="7.5" height="7.5" rx="1.6" /><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.6" /><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.6" /><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.6" /></SvgI>;
+}
+// plus (pridať)
+export function IkonaPlus({ size = 18, color = "currentColor" }) {
+  return <SvgI size={size} color={color} sw={2.4}><path d="M12 5v14M5 12h14" /></SvgI>;
+}
+// pin (lokalita)
+export function IkonaPin({ size = 18, color = "currentColor" }) {
+  return <SvgI size={size} color={color}><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z" /><circle cx="12" cy="10" r="2.6" /></SvgI>;
+}
+// menu (hamburger)
+export function IkonaMenu({ size = 22, color = "currentColor" }) {
+  return <SvgI size={size} color={color}><path d="M3 6h18M3 12h18M3 18h18" /></SvgI>;
+}
+
 // ============================================================
 // JEDNOTNÁ SEKCIA PODPORY (ZADARMO · DROBNÁ PODPORA · VLASTNÁ SUMA)
 // rovnaký dizajn naprieč Domov / Help / Charita / Aktivity
@@ -452,7 +494,7 @@ export function PodporaSekcia({ likes = 0, liked, onLike, upvotes = 0, onUpvote,
           {(likes || 0) + (liked ? 1 : 0)}
         </button>
         <button onClick={onUpvote} style={{ ...psPill(false), color: C.text }}>
-          <SipHore size={18} color={C.textSec} /> {upvotes}
+          <Palec size={18} color={C.textSec} /> {upvotes}
         </button>
       </div>
 
@@ -473,8 +515,8 @@ export function PodporaSekcia({ likes = 0, liked, onLike, upvotes = 0, onUpvote,
 
       <PSLabel>VLASTNÁ SUMA — vyber kanál</PSLabel>
       <div style={{ display: "flex", gap: 10 }}>
-        <button onClick={() => onKanal("FIAT")} style={psKanal}>
-          <span style={{ fontWeight: 800, fontSize: 15 }}>€ FIAT</span>
+        <button onClick={() => onKanal("EUR")} style={psKanal}>
+          <span style={{ fontWeight: 800, fontSize: 15 }}>€ EUR</span>
           <span style={{ fontSize: 11, color: C.textTer, marginTop: 3 }}>euro · procesor</span>
         </button>
         <button onClick={() => onKanal("DEED")} style={psKanal}>
@@ -482,6 +524,23 @@ export function PodporaSekcia({ likes = 0, liked, onLike, upvotes = 0, onUpvote,
           <span style={{ fontSize: 11, color: C.textTer, marginTop: 3 }}>wallet → wallet</span>
         </button>
       </div>
+    </div>
+  );
+}
+
+// ============================================================
+// JEDNOTNÁ SEKCIA SKRATIEK — ▶ Ukáž svoj talent · ▣ Nástenka · ＋ Pridať
+// rovnaký dizajn (pilulky) naprieč Domov / Help / Charita / Aktivity
+// ============================================================
+export function SekcieBar({ onTalent, onBoard, onAdd, talentActive }) {
+  const base = { flex: 1, minWidth: 0, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, minHeight: 50, padding: "6px 8px", borderRadius: 14, fontSize: 13.5, fontWeight: 700, lineHeight: 1.15, textAlign: "center", cursor: "pointer", fontFamily: "inherit", transition: "all .15s ease" };
+  const ghost = (active) => ({ ...base, background: active ? "rgba(91,155,255,.12)" : C.surface2, border: `1px solid ${active ? "rgba(116,166,255,.45)" : C.line}`, color: active ? C.blueL : C.text });
+  const primary = { ...base, background: GRAD, border: "1px solid transparent", color: "#fff", boxShadow: "0 6px 20px rgba(99,134,255,.32)" };
+  return (
+    <div style={{ display: "flex", gap: 8, padding: "8px 16px 12px" }}>
+      <div onClick={onTalent} style={ghost(talentActive)}><IkonaPlay size={13} color={talentActive ? C.blueL : C.text} /> Ukáž svoj talent</div>
+      <div onClick={onBoard} style={ghost(false)}><IkonaDoska size={15} color="#7E9BF0" /> Nástenka</div>
+      <div onClick={onAdd} style={primary}><IkonaPlus size={16} color="#fff" /> Pridať</div>
     </div>
   );
 }
@@ -525,8 +584,8 @@ export function StatRiadok({ stat, miesto = "Trenčín", okruh = "2 km", onOkruh
         <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{stat}</span>
       </span>
       <span style={{ display: "flex", alignItems: "center", gap: 7, flex: "none" }}>
-        <span style={{ whiteSpace: "nowrap" }}>◉ Moja štvrť · {miesto} · {okruh}</span>
-        <a onClick={onOkruh} style={{ color: "#74A6FF", cursor: "pointer", fontWeight: 600 }}>okruh ▾</a>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 5, whiteSpace: "nowrap" }}><IkonaPin size={13} color={C.textTer} /> Moja štvrť · {miesto} · {okruh}</span>
+        <a onClick={onOkruh} style={{ color: "#74A6FF", cursor: "pointer", fontWeight: 600 }}>okruh</a>
       </span>
     </div>
   );

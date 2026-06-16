@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { U, AV, GRAD, GRAD_ZELENY } from "../theme";
-import { Foto, Avatar, FotoPrispevku, MiniFotky, Modal, ModulHlavicka, PodporaSekcia, Toast, useGaleria, Rebricky, StatRiadok, MoniBar, FeedStlpce } from "../shared";
+import { Foto, Avatar, FotoPrispevku, MiniFotky, Modal, ModulHlavicka, PodporaSekcia, Toast, useGaleria, Rebricky, StatRiadok, MoniBar, FeedStlpce, SekcieBar, Lupa, Zvon } from "../shared";
 
 /*
   ============================================================
@@ -100,7 +100,12 @@ function CharitaFeed({ wide, toast, onDetail, onSheet }) {
   return (
     <div style={{ paddingBottom: 14 }}>
       {/* header — jednotná hlavička (logo D⁺ + názov) */}
-      <ModulHlavicka title="Charita" onMenu={() => toast("☰ Menu")} right={<span style={{ color: K.txt2, fontSize: 19 }}>🔍&nbsp;&nbsp;🔔</span>} />
+      <ModulHlavicka title="Charita" onMenu={() => toast("☰ Menu")} right={
+        <>
+          <span onClick={() => toast("Vyhľadávanie (demo)")} style={{ display: "flex", alignItems: "center", cursor: "pointer" }}><Lupa size={20} color={K.txt2} /></span>
+          <span onClick={() => toast("Upozornenia (demo)")} style={{ display: "flex", alignItems: "center", cursor: "pointer" }}><Zvon size={20} color={K.txt2} /></span>
+        </>
+      } />
 
       {/* ticker */}
       <div style={{ display: "flex", alignItems: "center", gap: 7, padding: "9px 16px", fontSize: 13.5, color: K.txt2, borderTop: `1px solid ${K.line}`, borderBottom: `1px solid ${K.line}`, background: K.bg2 }}>
@@ -108,15 +113,11 @@ function CharitaFeed({ wide, toast, onDetail, onSheet }) {
         Liga proti rakovine <b style={{ color: K.green }}>&nbsp;práve dostala 100 DEED&nbsp;</b> → Marek
       </div>
 
-      {/* 3 sekcie */}
-      <div style={{ display: "flex", borderBottom: `1px solid ${K.line}`, fontSize: 13, textAlign: "center" }}>
-        <div onClick={() => toast("Ukáž svoj talent (demo)")} style={{ flex: 1, padding: "12px 4px", color: K.txt2, cursor: "pointer" }}>▶ Ukáž svoj talent</div>
-        <div style={{ flex: 1, padding: "12px 4px", color: K.txt2, cursor: "pointer" }}>🏅 Nástenka</div>
-        <div onClick={() => onSheet("add")} style={{ flex: 1, padding: "12px 4px", background: GRAD, color: "#fff", fontWeight: 700, cursor: "pointer" }}>＋ Pridať</div>
-      </div>
+      {/* jednotná sekcia skratiek */}
+      <SekcieBar onTalent={() => toast("Ukáž svoj talent (demo)")} onBoard={() => toast("Nástenka (demo)")} onAdd={() => onSheet("add")} />
 
       {/* jednotný rebríček ocenení (s úvodným kachlíkom Adresár) */}
-      <div style={{ paddingTop: 12 }}>
+      <div>
         <Rebricky
           pred={
             <div onClick={() => onSheet("dir")} style={{ minWidth: 84, background: K.blueBg, border: `1px solid ${K.blueEdge}`, borderRadius: 13, padding: "8px 5px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, cursor: "pointer", flex: "0 0 auto", color: K.blue }}>
@@ -242,9 +243,9 @@ function CharitaDetail({ toast, onBack, onReg }) {
     toast(text);
   }
   function potvrdVlastnu() {
-    setSuma((s) => s + Number(potvrd.suma || 0) * (potvrd.kanal === "FIAT" ? 1 : 0.01));
+    setSuma((s) => s + Number(potvrd.suma || 0) * (potvrd.kanal === "EUR" ? 1 : 0.01));
     setLudia((l) => l + 1);
-    toast(`Odoslané ${potvrd.suma} ${potvrd.kanal === "FIAT" ? "€" : "DEED"} · ${z.nazov}`);
+    toast(`Odoslané ${potvrd.suma} ${potvrd.kanal === "EUR" ? "€" : "DEED"} · ${z.nazov}`);
     setPotvrd(null);
   }
 
@@ -313,7 +314,7 @@ function CharitaDetail({ toast, onBack, onReg }) {
       {potvrd && (
         <Modal onClose={() => setPotvrd(null)}>
           <div style={{ fontSize: 15, fontWeight: "bold", marginBottom: 10 }}>Vlastná suma — {potvrd.kanal}</div>
-          <input autoFocus type="number" placeholder={potvrd.kanal === "FIAT" ? "suma v €" : "počet DEED"} value={potvrd.suma}
+          <input autoFocus type="number" placeholder={potvrd.kanal === "EUR" ? "suma v €" : "počet DEED"} value={potvrd.suma}
             onChange={(e) => setPotvrd({ ...potvrd, suma: e.target.value })}
             style={{ width: "100%", padding: "11px 13px", borderRadius: 12, background: "rgba(0,0,0,.3)", border: `1px solid ${K.line}`, color: K.txt, fontSize: 16, marginBottom: 12, outline: "none" }} />
           <div style={{ fontSize: 12, color: K.txt3, marginBottom: 14 }}>Skontroluj sumu pred odoslaním (proti preklepu).</div>
@@ -376,7 +377,7 @@ function SheetPridat({ toast, otvorModul, onClose }) {
 function SheetReg({ toast, onClose }) {
   return (
     <SheetObal title="Pravidelná podpora" onClose={onClose}>
-      <div onClick={() => toast("Podporujem → frekvencia → suma → FIAT/DEED → potvrď")} style={{ background: K.card, border: `1px solid ${K.line}`, borderRadius: 14, padding: 15, marginBottom: 12, cursor: "pointer" }}>
+      <div onClick={() => toast("Podporujem → frekvencia → suma → EUR/DEED → potvrď")} style={{ background: K.card, border: `1px solid ${K.line}`, borderRadius: 14, padding: 15, marginBottom: 12, cursor: "pointer" }}>
         <div style={{ fontSize: 14.5, fontWeight: 600 }}>💶 Túto žiadosť</div>
         <div style={{ fontSize: 12, color: K.txt2, marginTop: 4, lineHeight: 1.45 }}>Pravidelne podporuješ konkrétnu zbierku (Rodina Kováčová). Odhadovaná doba: dlhodobá.</div>
       </div>

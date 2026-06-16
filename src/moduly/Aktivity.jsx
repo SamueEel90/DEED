@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { ModulHlavicka, Hlavicka, PodporaSekcia, Toast, Oslava, useMotiv, Rebricky, StatRiadok, FeedStlpce } from "../shared";
+import { ModulHlavicka, Hlavicka, PodporaSekcia, Toast, Oslava, useMotiv, Rebricky, StatRiadok, FeedStlpce, SekcieBar, Lupa, Zvon } from "../shared";
 import { GRAD, GRAD_ZELENY } from "../theme";
 
 /*
@@ -353,7 +353,6 @@ function Home({ items, dom, view, pickDom, pickView, toast, open, openPerson, se
     return true;
   });
 
-  const sec = (on) => ({ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 7, height: 44, borderRadius: 13, fontSize: 13, fontWeight: 600, cursor: "pointer", background: on ? "var(--accBg)" : A.surface2, border: `1px solid ${on ? "var(--accBd)" : A.line}`, color: on ? "var(--acc)" : A.txt });
   const sub = (on) => ({ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, height: 38, borderRadius: 11, fontSize: 12, fontWeight: 600, cursor: "pointer", background: on ? "var(--accBg)" : A.surface, border: `1px solid ${on ? "var(--accBd)" : A.line2}`, color: on ? "var(--acc)" : A.txt2 });
 
   // dvojstĺpcový feed (skutky vľavo / žiadosti vpravo) iba v zmiešanom zobrazení na tablete/PC
@@ -370,7 +369,12 @@ function Home({ items, dom, view, pickDom, pickView, toast, open, openPerson, se
     <div style={{ paddingBottom: 14 }}>
       {/* header — jednotná hlavička (logo D⁺ + názov) */}
       <ModulHlavicka title="Aktivity" onMenu={() => toast("☰ Menu: moduly + Mapa + nastavenia")}
-        right={<span style={{ color: A.txt2, fontSize: 19 }} onClick={() => toast("Hľadať aktivity, workshopy, lektorov…")}>🔍&nbsp;&nbsp;🔔</span>} />
+        right={
+          <>
+            <span onClick={() => toast("Hľadať aktivity, workshopy, lektorov…")} style={{ display: "flex", alignItems: "center", cursor: "pointer" }}><Lupa size={20} color={A.txt2} /></span>
+            <span onClick={() => toast("Upozornenia (demo)")} style={{ display: "flex", alignItems: "center", cursor: "pointer" }}><Zvon size={20} color={A.txt2} /></span>
+          </>
+        } />
 
       {/* live ticker — odráža poslednú reálnu akciu */}
       <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 16px", fontSize: 12, color: A.txt2, borderTop: `.5px solid ${A.line}`, borderBottom: `.5px solid ${A.line}`, background: A.surface2 }}>
@@ -380,12 +384,8 @@ function Home({ items, dom, view, pickDom, pickView, toast, open, openPerson, se
           : <span>Cyklo TN <b style={{ color: A.green }}>práve dostal 100 DEED</b> → Marek</span>}
       </div>
 
-      {/* top sekcie */}
-      <div style={{ display: "flex", gap: 8, padding: "8px 16px 10px" }}>
-        <div onClick={() => pickView("talent")} style={sec(view === "talent")}><span style={{ fontSize: 15 }}>▶</span>Ukáž svoj talent</div>
-        <div onClick={() => setScreen("board")} style={sec(false)}><span style={{ fontSize: 15, color: "#7E9BF0" }}>▣</span>Nástenka</div>
-        <div onClick={() => setScreen("add")} style={{ ...sec(false), background: "var(--accBg)", borderColor: "var(--accBd)", color: "var(--acc)" }}><span style={{ fontSize: 15 }}>＋</span>Pridať</div>
-      </div>
+      {/* jednotná sekcia skratiek */}
+      <SekcieBar talentActive={view === "talent"} onTalent={() => pickView("talent")} onBoard={() => setScreen("board")} onAdd={() => setScreen("add")} />
 
       {/* jednotný rebríček ocenení (kontextový podľa domény) */}
       <Rebricky ocenenia={LEADERS[dom].map((l) => ({ ic: l[0], label: l[1], name: l[2], col: l[4], onClick: () => openPerson(l[2]) }))} />
@@ -664,7 +664,7 @@ function WorkshopDetail({ it, toast, celebrate, home, openPerson }) {
           <div onClick={() => toast("Ďalšie workshopy lektora (demo)")} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: A.surface, border: `1px solid ${A.line}`, borderRadius: 12, padding: 14, fontSize: 13, cursor: "pointer" }}><span>📚 Ďalšie 2 workshopy · profil</span><span style={{ color: "#4A4F57" }}>›</span></div></>)}
 
         <Btn onClick={() => { celebrate(free ? "Prihlásené!" : "Prihlásené a zaplatené!", free ? "Uvidíme sa na workshope. Pri štarte naskenuj QR." : "Pri štarte naskenuj QR (3 QR: štart/60%/koniec)."); setTimeout(home, 1700); }}>{free ? "Prihlásiť sa" : "Prihlásiť a zaplatiť · " + it.priceTxt}</Btn>
-        <div style={{ textAlign: "center", padding: "14px 18px 0", fontSize: 11, color: A.txt3 }}>{free ? "Zadarmo · základné prihlásenie." : "Platba cez FIAT/DEED · " + it.priceTxt}</div>
+        <div style={{ textAlign: "center", padding: "14px 18px 0", fontSize: 11, color: A.txt3 }}>{free ? "Zadarmo · základné prihlásenie." : "Platba cez EUR/DEED · " + it.priceTxt}</div>
       </div>
     </div>
   );

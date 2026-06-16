@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { C, pasmo, U, AV, inp, infoBox, btn, GRAD, GRAD_ZELENY, glassTmavy } from "../theme";
-import { Foto, Avatar, FotoPrispevku, MiniFotky, Hlavicka, ModulHlavicka, PodporaSekcia, Otazka, Vyber, vyberBox, NavBtns, Suhrn, DokladRow, Modal, Toast, useGaleria, Rebricky, StatRiadok, MoniBar, FeedStlpce } from "../shared";
+import { Foto, Avatar, FotoPrispevku, MiniFotky, Hlavicka, ModulHlavicka, PodporaSekcia, Otazka, Vyber, vyberBox, NavBtns, Suhrn, DokladRow, Modal, Toast, useGaleria, Rebricky, StatRiadok, MoniBar, FeedStlpce, SekcieBar, Lupa, Zvon } from "../shared";
 
 /*
   ============================================================
@@ -89,8 +89,8 @@ function Feed({ wide, toast, onDetail, onAdd }) {
       {/* header — jednotná hlavička (logo D⁺ + názov) */}
       <ModulHlavicka title="Help" right={
         <>
-          <span onClick={() => toast("Vyhľadávanie (demo)")} style={{ color: C.textSec, fontSize: 19, cursor: "pointer" }}>🔍</span>
-          <span onClick={() => toast("Upozornenia (demo)")} style={{ color: C.textSec, fontSize: 19, cursor: "pointer" }}>🔔</span>
+          <span onClick={() => toast("Vyhľadávanie (demo)")} style={{ display: "flex", alignItems: "center", cursor: "pointer" }}><Lupa size={20} color={C.textSec} /></span>
+          <span onClick={() => toast("Upozornenia (demo)")} style={{ display: "flex", alignItems: "center", cursor: "pointer" }}><Zvon size={20} color={C.textSec} /></span>
         </>
       } />
 
@@ -100,15 +100,11 @@ function Feed({ wide, toast, onDetail, onAdd }) {
         <span style={{ color: C.textSec }}><b style={{ color: C.text }}>{dar.kto}</b> práve poslal <b style={{ color: C.greenL }}>{dar.co}</b> → {dar.komu}</span>
       </div>
 
-      {/* 3 sekcie */}
-      <div style={{ display: "flex", borderBottom: `1px solid ${C.line}`, fontSize: 14.5, textAlign: "center" }}>
-        <div onClick={() => toast("Ukáž svoj talent (demo)")} style={{ flex: 1, padding: "13px 0", color: C.textSec, cursor: "pointer" }}>▶ Ukáž svoj talent</div>
-        <div style={{ flex: 1, padding: "13px 0", color: C.textSec, borderLeft: `1px solid ${C.line}` }}>🏅 Nástenka</div>
-        <div onClick={onAdd} style={{ flex: 1, padding: "13px 0", color: "#fff", fontWeight: 700, background: GRAD, cursor: "pointer" }}>＋ Pridať</div>
-      </div>
+      {/* jednotná sekcia skratiek */}
+      <SekcieBar onTalent={() => toast("Ukáž svoj talent (demo)")} onBoard={() => toast("Nástenka (demo)")} onAdd={onAdd} />
 
       {/* jednotný rebríček ocenení */}
-      <div style={{ paddingTop: 12 }}>
+      <div>
         <Rebricky
           ocenenia={[
             { ic: "🛡", col: "#74A6FF", label: "PARTNER", name: "Lidl", onClick: () => toast("Rebríček: Top partner") },
@@ -224,7 +220,7 @@ function Detail({ z, onBack }) {
     setTimeout(() => setHlaska(null), 2600);
   }
   function potvrdVlastnu() {
-    setSuma((s) => s + Number(potvrd.suma || 0) * (potvrd.kanal === "FIAT" ? 1 : 0.01));
+    setSuma((s) => s + Number(potvrd.suma || 0) * (potvrd.kanal === "EUR" ? 1 : 0.01));
     setLudia((l) => l + 1);
     setHlaska(`Odoslané: ${potvrd.suma} ${potvrd.kanal} · ⛓ ${hash()}`);
     setPotvrd(null);
@@ -306,7 +302,7 @@ function Detail({ z, onBack }) {
       {potvrd && (
         <Modal onClose={() => setPotvrd(null)}>
           <div style={{ fontSize: 15, fontWeight: "bold", marginBottom: 10 }}>Vlastná suma — {potvrd.kanal}</div>
-          <input autoFocus type="number" placeholder={potvrd.kanal === "FIAT" ? "suma v €" : "počet DEED"} value={potvrd.suma}
+          <input autoFocus type="number" placeholder={potvrd.kanal === "EUR" ? "suma v €" : "počet DEED"} value={potvrd.suma}
             onChange={(e) => setPotvrd({ ...potvrd, suma: e.target.value })}
             style={{ width: "100%", padding: "11px 13px", borderRadius: 12, background: "rgba(0,0,0,.3)", border: `1px solid ${C.line}`, color: C.text, fontSize: 16, marginBottom: 12, outline: "none" }} />
           <div style={{ fontSize: 12, color: C.textTer, marginBottom: 14 }}>Skontroluj sumu pred odoslaním (proti preklepu). Poplatok sa zobrazí pred potvrdením.</div>
@@ -515,7 +511,7 @@ function RequestFlow({ onDone }) {
         {krok === 6 && (
           <>
             <Otazka>Ako chceš prijímať podporu?</Otazka>
-            {["DEED (wallet)", "FIAT (euro na účet)", "SMS"].map((k, i) => (
+            {["DEED (wallet)", "EUR (euro na účet)", "SMS"].map((k, i) => (
               <div key={i} style={{ ...vyberBox(false), display: "flex", justifyContent: "space-between" }}>
                 <span>{k}</span><span style={{ fontSize: 11, color: C.textTer }}>poplatok vopred</span>
               </div>

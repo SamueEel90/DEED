@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { C, U, inp, GRAD, GRAD_ZELENY } from "../theme";
-import { Foto, FotoPrispevku, MiniFotky, Modal, Video, ModulHlavicka, Hlavicka, PodporaSekcia, Toast, Oslava, useGaleria, Rebricky, StatRiadok, MoniBar, FeedStlpce } from "../shared";
+import { Foto, FotoPrispevku, MiniFotky, Modal, Video, ModulHlavicka, Hlavicka, PodporaSekcia, Toast, Oslava, useGaleria, Rebricky, StatRiadok, MoniBar, FeedStlpce, SekcieBar, Lupa, Zvon } from "../shared";
 
 /*
   ============================================================
@@ -117,7 +117,7 @@ const EVENTS = [
   { id: "e7", when: "ST 19:00", title: "Diskusia o ekológii mesta", who: "Mesto Trenčín", src: "Mesto", kat: "Priroda",
     desc: "Verejná diskusia o zeleni a triedení odpadu v meste. Príď povedať svoj názor.", place: "Mestský úrad", cap: "80 miest" },
   { id: "e8", when: "PIA 16:00", title: "Workshop fotografie", who: "Coach Lucia", src: "Komunita", kat: "Zdravie",
-    desc: "Základy mobilnej fotografie. Vezmi si telefón. Platený workshop (cez DEED/FIAT).", place: "Ateliér, centrum", cap: "12 miest" },
+    desc: "Základy mobilnej fotografie. Vezmi si telefón. Platený workshop (cez DEED/EUR).", place: "Ateliér, centrum", cap: "12 miest" },
 ];
 
 // ===================== MODUL =====================
@@ -186,8 +186,8 @@ function Home({ wide, toast, otvorModul, onDetail, onBoard, onAdd }) {
       <ModulHlavicka title="Domov" onMenu={() => toast("☰ Menu: moduly + Mapa + nastavenia")}
         right={
           <>
-            <span onClick={() => toast("Vyhľadávanie — skutky, žiadosti, ľudia (demo)")} style={{ color: C.textSec, fontSize: 19, cursor: "pointer" }}>🔍</span>
-            <span onClick={() => toast("Upozornenia — žiadne nové (demo)")} style={{ color: C.textSec, fontSize: 19, cursor: "pointer" }}>🔔</span>
+            <span onClick={() => toast("Vyhľadávanie — skutky, žiadosti, ľudia (demo)")} style={{ display: "flex", alignItems: "center", cursor: "pointer" }}><Lupa size={20} color={C.textSec} /></span>
+            <span onClick={() => toast("Upozornenia — žiadne nové (demo)")} style={{ display: "flex", alignItems: "center", cursor: "pointer" }}><Zvon size={20} color={C.textSec} /></span>
             <div onClick={() => otvorModul && otvorModul("profil")} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, cursor: "pointer" }}>
               <div style={{ width: 34, height: 34, borderRadius: "50%", background: "#3A8DD6", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 14, color: "#fff", boxShadow: "0 0 0 2px rgba(240,199,90,.75), 0 0 14px rgba(240,199,90,.4)" }}>M</div>
               <div style={{ fontSize: 9.5, fontWeight: 800, color: C.gold }}>Gold</div>
@@ -195,12 +195,8 @@ function Home({ wide, toast, otvorModul, onDetail, onBoard, onAdd }) {
           </>
         } />
 
-      {/* sekcie */}
-      <div style={{ display: "flex", gap: 8, padding: "6px 16px 12px" }}>
-        <div onClick={() => toast("Ukáž svoj talent — TikTok kanál (demo)")} style={sekciaBtn()}>▶ Ukáž svoj talent</div>
-        <div onClick={onBoard} style={sekciaBtn()}><span style={{ color: "#7E9BF0" }}>▣</span> Nástenka</div>
-        <div onClick={onAdd} style={{ ...sekciaBtn(), background: GRAD, border: "1px solid transparent", color: "#fff", boxShadow: "0 6px 20px rgba(99,134,255,.32)" }}>＋ Pridať</div>
-      </div>
+      {/* jednotná sekcia skratiek */}
+      <SekcieBar onTalent={() => toast("Ukáž svoj talent — TikTok kanál (demo)")} onBoard={onBoard} onAdd={onAdd} />
 
       {/* jednotný rebríček ocenení */}
       <Rebricky
@@ -225,10 +221,6 @@ function Home({ wide, toast, otvorModul, onDetail, onBoard, onAdd }) {
       />
     </div>
   );
-}
-
-function sekciaBtn() {
-  return { flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, height: 52, borderRadius: 14, background: C.surface2, border: `1px solid ${C.line}`, fontSize: 15, fontWeight: 600, cursor: "pointer" };
 }
 
 function ZdrojTag({ it }) {
@@ -345,7 +337,7 @@ function GoodDetail({ it, toast, oslavuj, lajknute, setLajknute, onBack, onVerif
     oslavuj(suma, it.autor);
   }
   function potvrdVlastnu() {
-    toast(`Odoslané ${potvrd.suma} ${potvrd.kanal === "FIAT" ? "€" : "DEED"} · ${it.autor}`);
+    toast(`Odoslané ${potvrd.suma} ${potvrd.kanal === "EUR" ? "€" : "DEED"} · ${it.autor}`);
     oslavuj(parseInt(potvrd.suma) || 10, it.autor);
     setPotvrd(null);
   }
@@ -416,7 +408,7 @@ function GoodDetail({ it, toast, oslavuj, lajknute, setLajknute, onBack, onVerif
       {potvrd && (
         <Modal onClose={() => setPotvrd(null)}>
           <div style={{ fontSize: 15, fontWeight: "bold", marginBottom: 10 }}>Vlastná suma — {potvrd.kanal}</div>
-          <input autoFocus type="number" placeholder={potvrd.kanal === "FIAT" ? "suma v €" : "počet DEED"} value={potvrd.suma}
+          <input autoFocus type="number" placeholder={potvrd.kanal === "EUR" ? "suma v €" : "počet DEED"} value={potvrd.suma}
             onChange={(e) => setPotvrd({ ...potvrd, suma: e.target.value })}
             style={{ width: "100%", padding: "11px 13px", borderRadius: 12, background: "rgba(0,0,0,.3)", border: `1px solid ${C.line}`, color: C.text, fontSize: 16, marginBottom: 12, outline: "none" }} />
           <div style={{ fontSize: 12, color: C.textTer, marginBottom: 14 }}>Skontroluj sumu pred odoslaním (proti preklepu).</div>
