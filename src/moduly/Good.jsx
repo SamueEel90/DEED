@@ -479,6 +479,25 @@ function GoodVerify({ it, mode, toast, onBack }) {
 function GoodAdd({ toast, oslavuj, onDone }) {
   const [krok, setKrok] = useState("vyber"); // vyber | solo | nahlad
   const [text, setText] = useState("");
+  const [miesto, setMiesto] = useState("");        // kde sa skutok stal — zaradenie do regiónu/feedu (nie dôkaz pravdy)
+  const [kontrola, setKontrola] = useState(false); // medzistav: „AI kontroluje skutok…"
+  const [aiNavrh, setAiNavrh] = useState("");      // editovateľný AI návrh textu (krok náhľad)
+  const [suhlas, setSuhlas] = useState(false);     // povinné potvrdenie pravdivosti skutku
+  const mozePokracovat = miesto.trim().length > 0; // miesto je povinné
+
+  // medzistav po „Pokračovať": krátky loading, neskôr sem príde reálne AI overenie
+  useEffect(() => {
+    if (!kontrola) return;
+    const t = setTimeout(() => { setKontrola(false); setKrok("nahlad"); }, 1500);
+    return () => clearTimeout(t);
+  }, [kontrola]);
+
+  // späť: počas kontroly ju najprv zruš, inak normálna navigácia medzi krokmi
+  const nazad = () => {
+    if (kontrola) return setKontrola(false);
+    if (krok === "vyber") return onDone();
+    setKrok(krok === "nahlad" ? "solo" : "vyber");
+  };
 
   const aiText = () => {
     const raw = text.trim() || "Pomohol som susede vyniesť nákup do tretieho poschodia.";
@@ -490,7 +509,7 @@ function GoodAdd({ toast, oslavuj, onDone }) {
   return (
     <div style={{ paddingBottom: 24 }}>
       <Hlavicka title={krok === "vyber" ? "Pridať skutok" : krok === "solo" ? "Opíš svoj skutok" : "Skontroluj a potvrď"}
-        onBack={() => krok === "vyber" ? onDone() : setKrok(krok === "nahlad" ? "solo" : "vyber")} />
+        onBack={nazad} />
 
       <div style={{ padding: 18 }}>
         {krok === "vyber" && (
@@ -509,30 +528,56 @@ function GoodAdd({ toast, oslavuj, onDone }) {
           </>
         )}
 
-        {krok === "solo" && (
+        {krok === "solo" && !kontrola && (
           <>
             <p style={{ color: C.textSec, fontSize: 13 }}>Napíš vlastnými slovami, čo si urobil. AI to upraví a navrhne kategóriu.</p>
             <textarea value={text} onChange={(e) => setText(e.target.value)} rows={4} placeholder="Napr.: pomohol som susede vyniesť nákup do tretieho poschodia…" style={{ ...inp(90), marginTop: 8 }} />
+
+            {/* kde sa skutok stal — povinné, slúži na zaradenie do regiónu/feedu */}
+            <div style={{ fontSize: 12, color: C.textTer, lineHeight: 1.5, margin: "16px 0 8px" }}>Kde sa skutok stal — pomôže zaradiť ho do správneho okolia.</div>
+            <input value={miesto} onChange={(e) => setMiesto(e.target.value)} placeholder="Mesto / obec / miesto" style={inp(50)} />
+
             <SekciaLabel>Dôkaz — foto/video (ide len do AI overenia)</SekciaLabel>
             <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
               {[0, 1].map((k) => (
                 <div key={k} onClick={() => toast("📷 Pridať dôkaz")} style={{ width: 64, height: 64, border: `1px dashed ${C.line}`, borderRadius: 11, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, color: "#4A4F57", cursor: "pointer" }}>+</div>
               ))}
             </div>
-            <button onClick={() => setKrok("nahlad")} style={{ width: "100%", height: 50, borderRadius: 14, background: GRAD, border: "none", color: "#fff", fontWeight: 700, fontSize: 15, cursor: "pointer", marginTop: 18, boxShadow: "0 8px 26px rgba(99,134,255,.32)" }}>Pokračovať na náhľad</button>
+            <button onClick={() => { if (!mozePokracovat) return; setAiNavrh(aiText()); setSuhlas(false); setKontrola(true); }} disabled={!mozePokracovat}
+              style={{ width: "100%", height: 50, borderRadius: 14, background: GRAD, border: "none", color: "#fff", fontWeight: 700, fontSize: 15, cursor: mozePokracovat ? "pointer" : "not-allowed", marginTop: 18, boxShadow: "0 8px 26px rgba(99,134,255,.32)", opacity: mozePokracovat ? 1 : .5, transition: "opacity .2s ease" }}>
+              Pokračovať
+            </button>
           </>
+        )}
+
+        {krok === "solo" && kontrola && (
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16, padding: "64px 18px", textAlign: "center", animation: "fadeUp .25s ease" }}>
+            <div style={{ width: 40, height: 40, borderRadius: "50%", border: `3px solid ${C.line}`, borderTopColor: "#8B7CFF", animation: "tocenie .8s linear infinite" }} />
+            <div style={{ fontSize: 15, fontWeight: 700, color: C.text }}>AI kontroluje skutok…</div>
+            <div style={{ fontSize: 12.5, color: C.textTer, maxWidth: 250, lineHeight: 1.5 }}>Chvíľu strpenia — overujeme tvoj popis.</div>
+          </div>
         )}
 
         {krok === "nahlad" && (
           <>
-            <div style={{ background: "rgba(61,214,140,.12)", border: "1px solid rgba(46,125,82,.45)", borderRadius: 12, padding: 14, fontSize: 13, lineHeight: 1.4, color: C.text }}>
-              <b style={{ color: "#1FBF8F" }}>✦ AI návrh textu</b><br /><br />„{aiText()}“<br /><br />
-              <span style={{ fontSize: 11, color: C.textTer }}>Kategória: Komunita · navrhnutá AI</span>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <b style={{ color: "#1FBF8F", fontSize: 13 }}>✦ AI návrh textu</b>
+              <span style={{ fontSize: 11, color: C.textTer }}>· môžeš ho upraviť</span>
             </div>
-            <p style={{ fontSize: 11, color: C.textTer, marginTop: 14 }}>Vidíš, ako sa skutok zobrazí. Máš posledné slovo — môžeš upraviť text.</p>
-            <div style={{ background: "rgba(242,112,111,.1)", border: "1px solid rgba(122,48,48,.4)", borderRadius: 12, padding: 12, marginTop: 14, fontSize: 12, color: C.textSec }}>☐ Skutok je pravdivý a súhlasím s náhľadom. Klamstvo = zrušenie + sankcia.</div>
-            <button onClick={() => { toast("Skutok pridaný! +X DEED · karma rastie"); oslavuj(40, "teba"); setTimeout(onDone, 600); }}
-              style={{ width: "100%", height: 50, borderRadius: 14, background: GRAD_ZELENY, border: "none", color: "#fff", fontWeight: 700, fontSize: 15, cursor: "pointer", marginTop: 18, boxShadow: "0 8px 26px rgba(31,191,143,.32)" }}>
+            {/* editovateľný AI návrh — používateľ má posledné slovo */}
+            <textarea value={aiNavrh} onChange={(e) => setAiNavrh(e.target.value)} rows={3}
+              style={{ ...inp(90), marginTop: 8, background: "rgba(61,214,140,.10)", border: "1px solid rgba(46,125,82,.45)" }} />
+            <div style={{ fontSize: 11, color: C.textTer, marginTop: 8 }}>Kategória: Komunita · navrhnutá AI</div>
+            <p style={{ fontSize: 11, color: C.textTer, marginTop: 14 }}>Vidíš, ako sa skutok zobrazí. Máš posledné slovo — text vyššie môžeš upraviť.</p>
+
+            {/* potvrdenie pravdivosti — povinné zaškrtnutie pred pridaním */}
+            <div onClick={() => setSuhlas((s) => !s)} style={{ display: "flex", alignItems: "center", gap: 12, background: "rgba(242,112,111,.1)", border: `1px solid ${suhlas ? "rgba(31,191,143,.55)" : "rgba(122,48,48,.4)"}`, borderRadius: 12, padding: 14, marginTop: 14, fontSize: 12.5, lineHeight: 1.45, color: C.textSec, cursor: "pointer", transition: "border-color .2s ease" }}>
+              <div style={{ width: 26, height: 26, flex: "0 0 auto", borderRadius: 8, border: `2px solid ${suhlas ? "#1FBF8F" : C.textTer}`, background: suhlas ? "#1FBF8F" : "transparent", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 16, fontWeight: 800, transition: "all .15s ease" }}>{suhlas ? "✓" : ""}</div>
+              <span>Skutok je pravdivý a súhlasím s náhľadom. Klamstvo = zrušenie + sankcia.</span>
+            </div>
+
+            <button onClick={() => { if (!suhlas) return; toast("Skutok pridaný! +X DEED · karma rastie"); oslavuj(40, "teba"); setTimeout(onDone, 600); }} disabled={!suhlas}
+              style={{ width: "100%", height: 50, borderRadius: 14, background: GRAD_ZELENY, border: "none", color: "#fff", fontWeight: 700, fontSize: 15, cursor: suhlas ? "pointer" : "not-allowed", marginTop: 18, boxShadow: "0 8px 26px rgba(31,191,143,.32)", opacity: suhlas ? 1 : .5, transition: "opacity .2s ease" }}>
               Súhlasím a pridať skutok
             </button>
           </>
