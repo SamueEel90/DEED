@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, createContext, useContext } from "react";
 import { C, GRAD, GRAD_KUZEL, GRAD_ZELENY, glass, glassTmavy, ZRNO } from "./theme";
+import { FEED_CFG } from "./lib/feed";
 
 // hex → priesvitné rgba (akcentové tinty fungujúce v tmavom aj svetlom režime)
 const tint = (hex, a) => { const n = parseInt(hex.slice(1), 16); return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`; };
@@ -278,7 +279,7 @@ export function Hlavicka({ title, onBack, step, total, right, titleColor }) {
   return (
     <div style={{ position: "sticky", top: 0, zIndex: 5, ...glassTmavy(18, .6), borderLeft: "none", borderRight: "none", borderTop: "none" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 11, padding: "12px 14px" }}>
-        <span onClick={onBack} style={{ width: 32, height: 32, borderRadius: "50%", background: "rgba(var(--glass-rgb),.06)", border: `1px solid ${C.line}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, color: C.textSec, cursor: "pointer", flex: "0 0 auto" }}>←</span>
+        <span onClick={onBack} style={{ width: 32, height: 32, borderRadius: "50%", background: "rgba(var(--glass-rgb),.06)", border: `1px solid ${C.line}`, display: "flex", alignItems: "center", justifyContent: "center", color: C.textSec, cursor: "pointer", flex: "0 0 auto" }}><IkonaSpat size={17} color={C.textSec} /></span>
         <span style={{ fontSize: 16, fontWeight: 700, color: titleColor }}>{title}</span>
         {right ? <span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 12 }}>{right}</span>
           : step ? <span style={{ marginLeft: "auto", fontSize: 11.5, fontWeight: 600, color: C.textTer }}>Krok {step}/{total}</span> : null}
@@ -380,6 +381,52 @@ export function Modal({ children, onClose }) {
   );
 }
 
+// ============================================================
+// VYHĽADÁVANIE — zdieľaný overlay (zhora), živé filtrovanie feedu
+// data: [{ id, titul, podtitul, kat, emoji, tag }] · onPick(id) otvorí detail
+// ============================================================
+export function HladanieModal({ data = [], onPick, onClose, akcent = "#5BA8F0", placeholder = "Hľadať…" }) {
+  const [q, setQ] = useState("");
+  const norm = (s) => (s || "").toString().toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+  const dotaz = norm(q.trim());
+  const vysl = dotaz ? data.filter((x) => norm([x.titul, x.podtitul, x.kat, x.tag].join(" ")).includes(dotaz)) : data;
+  return (
+    <div onClick={onClose} style={{ position: "absolute", inset: 0, background: "rgba(4,6,12,.5)", backdropFilter: "blur(5px)", WebkitBackdropFilter: "blur(5px)", display: "flex", flexDirection: "column", zIndex: 58, animation: "fadeUp .18s ease" }}>
+      <div onClick={(e) => e.stopPropagation()} style={{ ...glassTmavy(26, .92), borderTop: "none", borderLeft: "none", borderRight: "none", borderBottomLeftRadius: 22, borderBottomRightRadius: 22, padding: "12px 14px 14px", boxShadow: "0 18px 50px rgba(0,0,0,.45)", maxHeight: "84%", display: "flex", flexDirection: "column" }}>
+        {/* vyhľadávací riadok */}
+        <div style={{ display: "flex", alignItems: "center", gap: 10, background: C.surface, border: `1px solid ${C.line}`, borderRadius: 14, padding: "10px 13px", flex: "0 0 auto" }}>
+          <Lupa size={18} color={C.textTer} />
+          <input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder={placeholder}
+            style={{ flex: 1, minWidth: 0, background: "transparent", border: "none", outline: "none", color: C.text, fontSize: 15, fontFamily: "inherit" }} />
+          {q
+            ? <span onClick={() => setQ("")} title="Vymazať" style={{ display: "flex", cursor: "pointer" }}><IkonaKriz size={18} color={C.textTer} /></span>
+            : <span onClick={onClose} style={{ fontSize: 13, fontWeight: 600, color: C.textSec, cursor: "pointer", flex: "0 0 auto" }}>Zrušiť</span>}
+        </div>
+        {/* počet */}
+        <div style={{ fontSize: 11.5, color: C.textTer, padding: "10px 4px 6px", flex: "0 0 auto" }}>
+          {dotaz ? `${vysl.length} ${vysl.length === 1 ? "výsledok" : vysl.length < 5 ? "výsledky" : "výsledkov"} · „${q.trim()}"` : `${data.length} položiek · začni písať`}
+        </div>
+        {/* výsledky */}
+        <div style={{ overflowY: "auto", margin: "0 -4px", flex: "1 1 auto" }}>
+          {vysl.length === 0 ? (
+            <div style={{ textAlign: "center", padding: "34px 14px", color: C.textTer, fontSize: 13 }}>Nič sa nenašlo. Skús iné slovo.</div>
+          ) : vysl.map((x) => (
+            <div key={x.id} onClick={() => { onPick && onPick(x.id); onClose(); }}
+              style={{ display: "flex", alignItems: "center", gap: 12, padding: "11px 8px", borderRadius: 12, cursor: "pointer", borderBottom: `1px solid ${C.line2}` }}>
+              <div style={{ width: 40, height: 40, borderRadius: 11, flex: "0 0 auto", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 19, background: tint(akcent, .14) }}>{x.emoji}</div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 13.5, fontWeight: 600, lineHeight: 1.3, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{x.titul}</div>
+                {x.podtitul && <div style={{ fontSize: 11.5, color: C.textTer, marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{x.podtitul}</div>}
+              </div>
+              {x.tag && <span style={{ flex: "0 0 auto", fontSize: 10, fontWeight: 700, padding: "3px 8px", borderRadius: 7, background: tint(akcent, .14), color: akcent }}>{x.tag}</span>}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function Toast({ text }) {
   // snackbar — vždy tmavý (aj vo svetlom režime), aby bol mätový text vždy čitateľný
   return (
@@ -404,6 +451,123 @@ export function Oslava({ emoji = "🎉", title, text, onClose }) {
       <div style={{ color: "#fff", fontSize: 20, fontWeight: 800, textAlign: "center" }}>{title}</div>
       {text && <div style={{ color: C.textSec, fontSize: 14, textAlign: "center", padding: "0 22px", lineHeight: 1.5, maxWidth: 340 }}>{text}</div>}
     </div>
+  );
+}
+
+// ============================================================
+// SIMULÁCIA PLATBY — EUR (karta · platobná brána) / DEED (peňaženka · chain)
+// realistický tok: suma → detaily → spracovanie → potvrdenie (doklad)
+// ============================================================
+const PLATBA_ZOSTATOK = 1240; // DEED zostatok v peňaženke (demo)
+export function PlatbaModal({ kanal, komu, onClose, onDone }) {
+  const jeEur = kanal === "EUR";
+  const [krok, setKrok] = useState("suma"); // suma | detaily | spracovanie | hotovo
+  const [suma, setSuma] = useState("");
+  const [karta, setKarta] = useState({ cislo: "", exp: "", cvc: "" });
+  const [res, setRes] = useState(null);
+  const sumaNum = Number(suma) || 0;
+  const poplatok = jeEur ? Math.round((sumaNum * 0.014 + 0.15) * 100) / 100 : 0;
+  const spolu = Math.round((sumaNum + poplatok) * 100) / 100;
+  const malo = !jeEur && sumaNum > PLATBA_ZOSTATOK;
+
+  const inpS = { width: "100%", padding: "12px 13px", borderRadius: 12, background: "rgba(var(--glass-rgb),.06)", border: `1px solid ${C.line}`, color: C.text, fontSize: 16, outline: "none", fontFamily: "inherit" };
+  const btnP = (ok, grad = GRAD) => ({ width: "100%", padding: "13px 0", borderRadius: 14, border: "none", fontWeight: 700, fontSize: 15, cursor: ok ? "pointer" : "not-allowed", fontFamily: "inherit", background: ok ? grad : "rgba(var(--glass-rgb),.06)", color: ok ? "#fff" : C.textTer, boxShadow: ok ? "0 8px 26px rgba(99,134,255,.32)" : "none", marginTop: 14 });
+  const chips = jeEur ? [5, 10, 20, 50] : [50, 100, 200, 500];
+  const fmtCislo = (v) => v.replace(/\D/g, "").slice(0, 16).replace(/(.{4})(?=.)/g, "$1 ");
+  const fmtExp = (v) => { const d = v.replace(/\D/g, "").slice(0, 4); return d.length > 2 ? d.slice(0, 2) + "/" + d.slice(2) : d; };
+  const kartaOk = karta.cislo.replace(/\s/g, "").length === 16 && karta.exp.length === 5 && karta.cvc.length >= 3;
+
+  function zaplatit() {
+    setKrok("spracovanie");
+    setTimeout(() => {
+      setRes({
+        id: "TX-" + Math.random().toString(36).slice(2, 8).toUpperCase(),
+        hash: "0x" + Math.random().toString(16).slice(2, 10) + "…" + Math.random().toString(16).slice(2, 6),
+        cas: new Date().toLocaleString("sk"),
+      });
+      setKrok("hotovo");
+    }, 1800);
+  }
+
+  const Riadok = ({ k, v, accent }) => (
+    <div style={{ display: "flex", justifyContent: "space-between", gap: 12, padding: "7px 0", fontSize: 12.5, borderBottom: `1px solid ${C.line2}` }}>
+      <span style={{ color: C.textTer, flex: "none" }}>{k}</span>
+      <span style={{ fontWeight: 600, color: accent || C.text, textAlign: "right", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{v}</span>
+    </div>
+  );
+
+  return (
+    <Modal onClose={krok === "spracovanie" ? () => {} : onClose}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
+        <span style={{ width: 38, height: 38, borderRadius: 11, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", background: jeEur ? "rgba(91,155,255,.14)" : "rgba(67,224,200,.14)", color: jeEur ? C.blueL : C.teal, fontWeight: 800, fontSize: 14 }}>{jeEur ? "€" : "D⁺"}</span>
+        <div style={{ minWidth: 0 }}>
+          <div style={{ fontSize: 15, fontWeight: 800 }}>{jeEur ? "Platba kartou" : "Platba z peňaženky"}</div>
+          <div style={{ fontSize: 11.5, color: C.textTer, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{jeEur ? "EUR · platobná brána" : "DEED · wallet → wallet"}{komu ? ` · pre ${komu}` : ""}</div>
+        </div>
+      </div>
+
+      {krok === "suma" && (<>
+        <div style={{ position: "relative", marginBottom: 12 }}>
+          <input autoFocus type="number" inputMode="decimal" placeholder="0" value={suma} onChange={(e) => setSuma(e.target.value)} style={{ ...inpS, fontSize: 26, fontWeight: 800, textAlign: "center", padding: "16px 54px" }} />
+          <span style={{ position: "absolute", right: 18, top: "50%", transform: "translateY(-50%)", fontWeight: 800, color: C.textTer }}>{jeEur ? "€" : "DEED"}</span>
+        </div>
+        <div style={{ display: "flex", gap: 8 }}>
+          {chips.map((c) => <button key={c} onClick={() => setSuma(String(c))} style={{ flex: 1, padding: "9px 0", borderRadius: 11, border: `1px solid ${C.line}`, background: "rgba(var(--glass-rgb),.05)", color: C.text, fontWeight: 700, fontSize: 13, cursor: "pointer", fontFamily: "inherit" }}>{c}</button>)}
+        </div>
+        {!jeEur && <div style={{ fontSize: 11.5, color: C.textTer, marginTop: 10 }}>Zostatok v peňaženke: <b style={{ color: C.text }}>{PLATBA_ZOSTATOK.toLocaleString("sk")} DEED</b></div>}
+        {malo && <div style={{ fontSize: 12, color: C.red, marginTop: 8 }}>Nedostatok DEED v peňaženke.</div>}
+        <button disabled={sumaNum <= 0 || malo} onClick={() => setKrok("detaily")} style={btnP(sumaNum > 0 && !malo)}>Pokračovať</button>
+      </>)}
+
+      {krok === "detaily" && jeEur && (<>
+        <input autoFocus inputMode="numeric" placeholder="Číslo karty" value={karta.cislo} onChange={(e) => setKarta({ ...karta, cislo: fmtCislo(e.target.value) })} style={{ ...inpS, marginBottom: 10, letterSpacing: ".06em" }} />
+        <div style={{ display: "flex", gap: 10, marginBottom: 12 }}>
+          <input inputMode="numeric" placeholder="MM/RR" value={karta.exp} onChange={(e) => setKarta({ ...karta, exp: fmtExp(e.target.value) })} style={{ ...inpS, flex: 1 }} />
+          <input inputMode="numeric" placeholder="CVC" value={karta.cvc} onChange={(e) => setKarta({ ...karta, cvc: e.target.value.replace(/\D/g, "").slice(0, 4) })} style={{ ...inpS, flex: 1 }} />
+        </div>
+        <div style={{ background: "rgba(var(--glass-rgb),.05)", border: `1px solid ${C.line}`, borderRadius: 12, padding: "4px 12px 8px" }}>
+          <Riadok k="Suma" v={`${sumaNum.toFixed(2)} €`} />
+          <Riadok k="Poplatok (1,4 % + 0,15 €)" v={`${poplatok.toFixed(2)} €`} />
+          <div style={{ display: "flex", justifyContent: "space-between", paddingTop: 8, fontSize: 14, fontWeight: 800 }}><span>Spolu</span><span>{spolu.toFixed(2)} €</span></div>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 11, color: C.textTer, marginTop: 10, lineHeight: 1.4 }}><IkonaStit size={13} color={C.green} /> Zabezpečené · 3‑D Secure · test 4242 4242 4242 4242</div>
+        <button disabled={!kartaOk} onClick={zaplatit} style={btnP(kartaOk)}>Zaplatiť {spolu.toFixed(2)} €</button>
+      </>)}
+
+      {krok === "detaily" && !jeEur && (<>
+        <div style={{ background: "rgba(var(--glass-rgb),.05)", border: `1px solid ${C.line}`, borderRadius: 12, padding: "4px 12px 8px" }}>
+          <Riadok k="Suma" v={`${sumaNum.toLocaleString("sk")} DEED`} />
+          <Riadok k="Poplatok" v="0 DEED" accent={C.green} />
+          <div style={{ display: "flex", justifyContent: "space-between", paddingTop: 8, fontSize: 13.5, fontWeight: 700 }}><span>Zostatok po platbe</span><span>{(PLATBA_ZOSTATOK - sumaNum).toLocaleString("sk")} DEED</span></div>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 11, color: C.textTer, marginTop: 10, lineHeight: 1.4 }}><IkonaStit size={13} color={C.teal} /> Wallet → wallet · okamžite · podpis na chaine</div>
+        <button onClick={zaplatit} style={btnP(true, GRAD_ZELENY)}>Potvrdiť platbu</button>
+      </>)}
+
+      {krok === "spracovanie" && (
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 15, padding: "26px 0 30px" }}>
+          <div style={{ width: 46, height: 46, borderRadius: "50%", border: "3px solid rgba(var(--glass-rgb),.14)", borderTopColor: jeEur ? C.blueL : C.teal, animation: "tocenie .8s linear infinite" }} />
+          <div style={{ fontSize: 14, fontWeight: 700 }}>Spracúva sa platba…</div>
+          <div style={{ fontSize: 11.5, color: C.textTer, textAlign: "center" }}>{jeEur ? "Overujem kartu cez platobnú bránu" : "Podpisujem transakciu na chaine"}</div>
+        </div>
+      )}
+
+      {krok === "hotovo" && res && (<>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, padding: "4px 0 14px" }}>
+          <div style={{ width: 54, height: 54, borderRadius: "50%", background: "rgba(46,200,140,.16)", display: "flex", alignItems: "center", justifyContent: "center" }}><IkonaFajka size={28} color="#2BD49B" /></div>
+          <div style={{ fontSize: 17, fontWeight: 800 }}>Platba úspešná</div>
+          <div style={{ fontSize: 12.5, color: C.textSec }}>{jeEur ? `${spolu.toFixed(2)} €` : `${sumaNum.toLocaleString("sk")} DEED`}{komu ? ` → ${komu}` : ""}</div>
+        </div>
+        <div style={{ background: "rgba(var(--glass-rgb),.05)", border: `1px solid ${C.line}`, borderRadius: 12, padding: "4px 12px 8px" }}>
+          <Riadok k="Kanál" v={jeEur ? "Karta (EUR)" : "Peňaženka (DEED)"} />
+          {jeEur && <Riadok k="Poplatok" v={`${poplatok.toFixed(2)} €`} />}
+          <Riadok k="ID transakcie" v={res.id} />
+          <Riadok k="⛓ Hash" v={res.hash} accent={C.blueL} />
+          <Riadok k="Dátum" v={res.cas} />
+        </div>
+        <button onClick={() => { onDone?.(sumaNum); onClose?.(); }} style={btnP(true, GRAD_ZELENY)}>Hotovo</button>
+      </>)}
+    </Modal>
   );
 }
 
@@ -481,6 +645,89 @@ export function IkonaMesiac({ size = 18, color = "currentColor" }) {
   return <SvgI size={size} color={color}><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" /></SvgI>;
 }
 
+// ---- MODULOVÉ (navigačné) IKONY — jednotný line štýl pre dok + sheet ----
+export function IkonaDomov({ size = 22, color = "currentColor" }) {
+  return <SvgI size={size} color={color}><path d="M3 9.5 12 3l9 6.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z" /></SvgI>;
+}
+export function IkonaSrdceLine({ size = 22, color = "currentColor" }) { // Help — srdce (outline)
+  return <SvgI size={size} color={color}><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.29 1.51 4.04 3 5.5l7 7z" /></SvgI>;
+}
+export function IkonaCharita({ size = 22, color = "currentColor" }) { // darček
+  return <SvgI size={size} color={color}><path d="M20 12v8a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-8" /><path d="M2.5 8.5A1.5 1.5 0 0 1 4 7h16a1.5 1.5 0 0 1 1.5 1.5V11a1 1 0 0 1-1 1H3.5a1 1 0 0 1-1-1z" /><path d="M12 7v14" /><path d="M12 7S10.5 3 8 3a2.5 2.5 0 0 0 0 5M12 7s1.5-4 4-4a2.5 2.5 0 0 1 0 5" /></SvgI>;
+}
+export function IkonaKompas({ size = 22, color = "currentColor" }) { // Aktivity — objav
+  return <SvgI size={size} color={color}><circle cx="12" cy="12" r="9.5" /><path d="M15.8 8.2 13.9 13.9 8.2 15.8l1.9-5.7z" /></SvgI>;
+}
+export function IkonaMapa({ size = 22, color = "currentColor" }) {
+  return <SvgI size={size} color={color}><path d="M9 4 3 6.5v13.5L9 17.5l6 2.5 6-2.5V4l-6 2.5z" /><path d="M9 4v13.5M15 6.5V20" /></SvgI>;
+}
+export function IkonaPohar({ size = 22, color = "currentColor" }) { // Top — trofej
+  return <SvgI size={size} color={color}><path d="M6 4h12v5a6 6 0 0 1-12 0z" /><path d="M6 6H3.6A1.6 1.6 0 0 0 2 7.6 3.4 3.4 0 0 0 6 11M18 6h2.4A1.6 1.6 0 0 1 22 7.6 3.4 3.4 0 0 1 18 11" /><path d="M12 15v3M9.5 21h5M10 21c0-1.4.9-3 2-3s2 1.6 2 3" /></SvgI>;
+}
+export function IkonaOsoba({ size = 22, color = "currentColor" }) {
+  return <SvgI size={size} color={color}><circle cx="12" cy="8" r="4" /><path d="M5 20a7 7 0 0 1 14 0" /></SvgI>;
+}
+export function IkonaPanel({ size = 22, color = "currentColor" }) { // Admin — dashboard
+  return <SvgI size={size} color={color}><rect x="3" y="3" width="8" height="9" rx="1.5" /><rect x="13" y="3" width="8" height="5" rx="1.5" /><rect x="13" y="12" width="8" height="9" rx="1.5" /><rect x="3" y="16" width="8" height="5" rx="1.5" /></SvgI>;
+}
+
+// ---- CHROME / AKČNÉ IKONY ----
+export function IkonaSpat({ size = 18, color = "currentColor" }) { // späť (šípka vľavo)
+  return <SvgI size={size} color={color}><path d="M19 12H5M11 18l-6-6 6-6" /></SvgI>;
+}
+export function IkonaSipVlavo({ size = 18, color = "currentColor" }) { // chevron vľavo
+  return <SvgI size={size} color={color} sw={2.2}><path d="M15 18l-6-6 6-6" /></SvgI>;
+}
+export function IkonaSipVpravo({ size = 18, color = "currentColor" }) { // chevron vpravo
+  return <SvgI size={size} color={color} sw={2.2}><path d="M9 18l6-6-6-6" /></SvgI>;
+}
+export function IkonaSipDole({ size = 18, color = "currentColor" }) { // chevron dole
+  return <SvgI size={size} color={color} sw={2.2}><path d="M6 9l6 6 6-6" /></SvgI>;
+}
+export function IkonaKriz({ size = 18, color = "currentColor" }) { // zavrieť
+  return <SvgI size={size} color={color} sw={2.2}><path d="M18 6 6 18M6 6l12 12" /></SvgI>;
+}
+export function IkonaMoznosti({ size = 18, color = "currentColor" }) { // ⋯ možnosti
+  return <SvgI size={size} fill={color}><circle cx="5" cy="12" r="1.6" /><circle cx="12" cy="12" r="1.6" /><circle cx="19" cy="12" r="1.6" /></SvgI>;
+}
+export function IkonaNastavenia({ size = 18, color = "currentColor" }) { // nastavenia
+  return <SvgI size={size} color={color}><path d="M20 7h-9M14 17H5" /><circle cx="17" cy="17" r="3" /><circle cx="7" cy="7" r="3" /></SvgI>;
+}
+export function IkonaVlajka({ size = 18, color = "currentColor" }) { // nahlásiť
+  return <SvgI size={size} color={color}><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" /><path d="M4 22v-7" /></SvgI>;
+}
+export function IkonaUlozit({ size = 18, color = "currentColor" }) { // záložka
+  return <SvgI size={size} color={color}><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" /></SvgI>;
+}
+export function IkonaFajka({ size = 18, color = "currentColor" }) { // ✓
+  return <SvgI size={size} color={color} sw={2.3}><path d="M20 6 9 17l-5-5" /></SvgI>;
+}
+export function IkonaOpakovat({ size = 18, color = "currentColor" }) { // pravidelná podpora
+  return <SvgI size={size} color={color}><path d="M17 2l4 4-4 4" /><path d="M3 11v-1a4 4 0 0 1 4-4h14" /><path d="M7 22l-4-4 4-4" /><path d="M21 13v1a4 4 0 0 1-4 4H3" /></SvgI>;
+}
+export function IkonaFoto({ size = 18, color = "currentColor" }) { // foto z prípadu
+  return <SvgI size={size} color={color}><path d="M3 8.5A1.5 1.5 0 0 1 4.5 7h2L8 5h8l1.5 2h2A1.5 1.5 0 0 1 21 8.5V18a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 18z" /><circle cx="12" cy="12.5" r="3.2" /></SvgI>;
+}
+export function IkonaPenazenka({ size = 18, color = "currentColor" }) { // peňaženka
+  return <SvgI size={size} color={color}><rect x="3" y="6" width="18" height="13" rx="2.5" /><path d="M3 10h18M16 14.5h2" /></SvgI>;
+}
+// ---- REBRÍČKOVÉ (award) IKONY ----
+export function IkonaStit({ size = 18, color = "currentColor" }) { // partner
+  return <SvgI size={size} color={color}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></SvgI>;
+}
+export function IkonaKorunka({ size = 18, color = "currentColor" }) { // darca
+  return <SvgI size={size} color={color}><path d="M3 8l4 5 5-8 5 8 4-5-2 12H5z" /></SvgI>;
+}
+export function IkonaHviezda({ size = 18, color = "currentColor" }) { // hrdina / top
+  return <SvgI size={size} color={color}><path d="M12 3l2.7 5.5 6 .9-4.3 4.2 1 6L12 17.8 6.6 19.6l1-6L3.3 9.4l6-.9z" /></SvgI>;
+}
+export function IkonaUsmev({ size = 18, color = "currentColor" }) { // fun
+  return <SvgI size={size} color={color}><circle cx="12" cy="12" r="9.5" /><path d="M8.5 14a4 4 0 0 0 7 0" /><path d="M9 9.5h.01M15 9.5h.01" /></SvgI>;
+}
+export function IkonaInstitucia({ size = 18, color = "currentColor" }) { // charita & OZ (adresár)
+  return <SvgI size={size} color={color}><path d="M3 10 12 4l9 6" /><path d="M5 10v8M19 10v8M9 10v8M15 10v8M3 20h18" /></SvgI>;
+}
+
 // ============================================================
 // JEDNOTNÁ SEKCIA PODPORY (ZADARMO · DROBNÁ PODPORA · VLASTNÁ SUMA)
 // rovnaký dizajn naprieč Domov / Help / Charita / Aktivity
@@ -516,6 +763,8 @@ const psKanal = {
 };
 
 export function PodporaSekcia({ onShare, upvotes = 0, onUpvote, onPodpor, onSms, onKanal, accent = "#74A6FF", supLabel = "DROBNÁ PODPORA — klik a hneď odíde" }) {
+  const { svetly } = useMotiv();
+  const goldTxt = svetly ? "#8A6B0E" : C.gold; // v svetlom režime tmavšia zlatá (čitateľnosť)
   const fix = [
     { e: "★", v: "10", col: accent, a: 10, tier: 0 },
     { e: "◆", v: "50", col: accent, a: 50, tier: 1 },
@@ -543,9 +792,9 @@ export function PodporaSekcia({ onShare, upvotes = 0, onUpvote, onPodpor, onSms,
           </button>
         ))}
         <div style={{ width: 1, alignSelf: "stretch", borderLeft: `1px dashed ${C.line}`, margin: "3px 3px" }} />
-        <button onClick={onSms} style={{ ...psFix(0), flex: 0.85, background: "rgba(240,199,90,.08)", borderColor: "rgba(240,199,90,.35)" }}>
-          <span style={{ fontSize: 14, fontWeight: 800, color: C.gold }}>SMS</span>
-          <span style={{ fontSize: 13, marginTop: 3, color: C.gold }}>€</span>
+        <button onClick={onSms} style={{ ...psFix(0), flex: 0.85, background: svetly ? "rgba(240,199,90,.16)" : "rgba(240,199,90,.08)", borderColor: svetly ? "rgba(180,140,20,.5)" : "rgba(240,199,90,.35)" }}>
+          <span style={{ fontSize: 14, fontWeight: 800, color: goldTxt }}>SMS</span>
+          <span style={{ fontSize: 13, marginTop: 3, color: goldTxt }}>€</span>
         </button>
       </div>
 
@@ -563,6 +812,20 @@ export function PodporaSekcia({ onShare, upvotes = 0, onUpvote, onPodpor, onSms,
 }
 
 // ============================================================
+// JEDNOTNÝ LIVE TICKER — „● niekto práve poslal X → komu" (Help / Charita / Aktivity)
+// rovnaký pásik: zelená pulzujúca bodka + jeden riadok textu (obsah dodá modul)
+// ============================================================
+export function Ticker({ children }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 9, padding: "9px 16px", fontSize: 13, color: C.textSec,
+      borderTop: `1px solid ${C.line2}`, borderBottom: `1px solid ${C.line2}`, background: "rgba(31,191,143,.06)", animation: "fadeUp .45s ease" }}>
+      <span style={{ width: 8, height: 8, borderRadius: "50%", background: C.greenL, flex: "none", animation: "pulse 1.6s infinite" }} />
+      <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{children}</span>
+    </div>
+  );
+}
+
+// ============================================================
 // JEDNOTNÁ SEKCIA SKRATIEK — ▶ Ukáž svoj talent · ▣ Nástenka · ＋ Pridať
 // rovnaký dizajn (pilulky) naprieč Domov / Help / Charita / Aktivity
 // ============================================================
@@ -571,7 +834,7 @@ export function SekcieBar({ onTalent, onBoard, onAdd, talentActive }) {
   const ghost = (active) => ({ ...base, background: active ? "rgba(91,155,255,.12)" : C.surface2, border: `1px solid ${active ? "rgba(116,166,255,.45)" : C.line}`, color: active ? C.blueL : C.text });
   const primary = { ...base, background: GRAD, border: "1px solid transparent", color: "#fff", boxShadow: "0 6px 20px rgba(99,134,255,.32)" };
   return (
-    <div style={{ display: "flex", gap: 8, padding: "8px 16px 12px" }}>
+    <div style={{ display: "flex", gap: 8, padding: "8px 16px 14px", borderBottom: `1px solid ${C.line}` }}>
       <div onClick={onTalent} style={ghost(talentActive)}><IkonaPlay size={13} color={talentActive ? C.blueL : C.text} /> Ukáž svoj talent</div>
       <div onClick={onBoard} style={ghost(false)}><IkonaDoska size={15} color="#7E9BF0" /> Nástenka</div>
       <div onClick={onAdd} style={primary}><IkonaPlus size={16} color="#fff" /> Pridať</div>
@@ -586,22 +849,29 @@ export function SekcieBar({ onTalent, onBoard, onAdd, talentActive }) {
 // ============================================================
 export function Rebricky({ ocenenia = [], ludia = [], pred = null }) {
   return (
-    <div style={{ display: "flex", gap: 8, padding: "0 16px 12px", overflowX: "auto", alignItems: "stretch" }}>
-      {pred}
-      {ocenenia.map((o, i) => (
-        <div key={i} onClick={o.onClick} style={{ minWidth: 84, background: C.surface, border: `1px solid ${C.line}`, borderRadius: 13, padding: "8px 5px", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, cursor: o.onClick ? "pointer" : "default", flex: "0 0 auto" }}>
-          <div style={{ width: 30, height: 28, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, background: tint(o.col, .16), color: o.col }}>{o.ic}</div>
-          <div style={{ fontSize: 7.5, letterSpacing: ".4px", color: C.textTer, fontWeight: 700, textAlign: "center", whiteSpace: "nowrap" }}>{o.label}</div>
-          <div style={{ fontSize: 9.5, fontWeight: 700, textAlign: "center", maxWidth: 76, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{o.name}</div>
+    <div>
+      {/* ocenenia */}
+      <div style={{ display: "flex", gap: 8, padding: "0 16px 10px", overflowX: "auto", alignItems: "stretch" }}>
+        {pred}
+        {ocenenia.map((o, i) => (
+          <div key={i} onClick={o.onClick} style={{ minWidth: 84, background: C.surface, border: `1px solid ${C.line}`, borderRadius: 13, padding: "8px 5px", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, cursor: o.onClick ? "pointer" : "default", flex: "0 0 auto" }}>
+            <div style={{ width: 30, height: 28, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, background: tint(o.col, .16), color: o.col }}>{o.ic}</div>
+            <div style={{ fontSize: 7.5, letterSpacing: ".4px", color: C.textTer, fontWeight: 700, textAlign: "center", whiteSpace: "nowrap" }}>{o.label}</div>
+            <div style={{ fontSize: 9.5, fontWeight: 700, textAlign: "center", maxWidth: 76, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{o.name}</div>
+          </div>
+        ))}
+      </div>
+      {/* profilové avatary — pod oceneniami */}
+      {ludia.length > 0 && (
+        <div style={{ display: "flex", gap: 14, padding: "0 16px 12px", overflowX: "auto", alignItems: "flex-start" }}>
+          {ludia.map((p, i) => (
+            <div key={"p" + i} onClick={p.onClick} style={{ minWidth: 48, display: "flex", flexDirection: "column", alignItems: "center", gap: 4, flex: "0 0 auto", cursor: p.onClick ? "pointer" : "default" }}>
+              <div style={{ width: 42, height: 42, borderRadius: "50%", background: "rgba(var(--glass-rgb),.06)", border: `2px solid ${p.col || "#5BA8F0"}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, color: C.text }}>{p.ini}</div>
+              <div style={{ fontSize: 9.5, color: C.textSec, maxWidth: 52, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.name}</div>
+            </div>
+          ))}
         </div>
-      ))}
-      {ludia.length > 0 && <div style={{ width: 1, background: C.line, margin: "4px 2px", flex: "0 0 auto" }} />}
-      {ludia.map((p, i) => (
-        <div key={"p" + i} onClick={p.onClick} style={{ minWidth: 52, display: "flex", flexDirection: "column", alignItems: "center", gap: 3, flex: "0 0 auto", cursor: p.onClick ? "pointer" : "default" }}>
-          <div style={{ width: 40, height: 40, borderRadius: "50%", background: "rgba(var(--glass-rgb),.06)", border: `2px solid ${p.col || "#5BA8F0"}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700, color: C.text }}>{p.ini}</div>
-          <div style={{ fontSize: 9, color: C.textSec, maxWidth: 52, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.name}</div>
-        </div>
-      ))}
+      )}
     </div>
   );
 }
@@ -611,15 +881,23 @@ export function Rebricky({ ocenenia = [], ludia = [], pred = null }) {
 // rovnaký dizajn aj poloha (hneď pod rebríčkom) vo všetkých moduloch
 // ============================================================
 export function StatRiadok({ stat, miesto = "Trenčín", okruh = "2 km", onOkruh }) {
+  // čísla v štatistike zvýrazníme (Dnes 312 · Mesiac 9 480)
+  const casti = String(stat).split(/(\d[\d  ]*)/g);
   return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10, rowGap: 4, padding: "2px 18px 12px", fontSize: 13, color: C.textTer }}>
-      <span style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
-        <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#3DD68C", flex: "none", animation: "pulse 1.6s infinite" }} />
-        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{stat}</span>
+    <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 16px 14px", borderBottom: `1px solid ${C.line}` }}>
+      {/* live štatistika — chip s pulzujúcou bodkou */}
+      <span style={{ display: "inline-flex", alignItems: "center", gap: 8, flex: "1 1 auto", minWidth: 0, padding: "6px 13px", borderRadius: 20, background: "rgba(31,191,143,.08)", border: "1px solid rgba(31,191,143,.22)", fontSize: 12.5, color: C.textSec, fontWeight: 600 }}>
+        <span style={{ width: 8, height: 8, borderRadius: "50%", flex: "none", background: "#2BBd8C", boxShadow: "0 0 0 4px rgba(61,214,140,.16)", animation: "pulse 1.6s infinite" }} />
+        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          {casti.map((p, i) => /\d/.test(p) ? <b key={i} style={{ color: C.text, fontWeight: 800 }}>{p}</b> : p)}
+        </span>
       </span>
-      <span style={{ display: "flex", alignItems: "center", gap: 7, flex: "none" }}>
-        <span style={{ display: "inline-flex", alignItems: "center", gap: 5, whiteSpace: "nowrap" }}><IkonaPin size={13} color={C.textTer} /> Moja štvrť · {miesto} · {okruh}</span>
-        <a onClick={onOkruh} style={{ color: "#74A6FF", cursor: "pointer", fontWeight: 600 }}>okruh</a>
+      {/* moja štvrť + okruh — klikateľný chip */}
+      <span onClick={onOkruh} title="Zmeniť okruh" style={{ display: "inline-flex", alignItems: "center", gap: 7, flex: "none", padding: "5px 8px 5px 12px", borderRadius: 20, background: C.surface2, border: `1px solid ${C.line}`, cursor: "pointer", fontSize: 12.5, color: C.textSec, fontWeight: 600, whiteSpace: "nowrap" }}>
+        <IkonaPin size={13} color="#74A6FF" /> Moja štvrť · {miesto}
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 2, padding: "3px 6px 3px 9px", borderRadius: 14, background: "rgba(116,166,255,.14)", color: "#74A6FF", fontSize: 11.5, fontWeight: 700 }}>
+          {okruh} <IkonaSipDole size={12} color="#74A6FF" />
+        </span>
       </span>
     </div>
   );
@@ -659,5 +937,40 @@ export function FeedStlpce({ wide, skutky, ziadosti, jednoStlpec, labelSkutky = 
       <div style={{ minWidth: 0 }}><Hd>{labelSkutky}</Hd><div style={col}>{skutky}</div></div>
       <div style={{ minWidth: 0 }}><Hd>{labelZiadosti}</Hd><div style={col}>{ziadosti}</div></div>
     </div>
+  );
+}
+
+// ============================================================
+// VÝBER OKRUHU — zdieľaný (Feed algoritmus, Časť B): mení rádius feedu.
+// Väčší okruh = vyšší prah významnosti (vidíš len špičku). `akcent` =
+// farba modulu (Good modrá, Help červená, …). Reuse vo všetkých feedoch.
+// ============================================================
+const OKRUH_POPIS = {
+  stvrt: "Aj menšie skutky vo tvojom okolí",
+  mesto: "Významnejšie skutky v meste",
+  okres: "Veľmi významné skutky v okrese",
+  kraj: "Veľmi významné skutky v kraji",
+  krajina: "Len mimoriadne skutky z celej SR",
+};
+export function OkruhVyber({ radius, onPick, onClose, akcent = "#74A6FF" }) {
+  return (
+    <Modal onClose={onClose}>
+      <div style={{ fontSize: 16, fontWeight: 800 }}>Okruh feedu</div>
+      <div style={{ fontSize: 12.5, color: C.textTer, margin: "4px 0 14px" }}>Väčší okruh = vyšší prah významnosti — vidíš len špičku.</div>
+      {Object.entries(FEED_CFG.radiusy).map(([k, r]) => {
+        const on = radius === k;
+        return (
+          <div key={k} onClick={() => onPick(k)} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 13, marginBottom: 8, cursor: "pointer",
+            background: on ? tint(akcent, .12) : C.surface2, border: `1px solid ${on ? tint(akcent, .45) : C.line}` }}>
+            <IkonaPin size={16} color={on ? akcent : C.textTer} />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 14.5, fontWeight: 700, color: on ? akcent : C.text }}>{r.label}</div>
+              <div style={{ fontSize: 11.5, color: C.textTer, marginTop: 2 }}>{OKRUH_POPIS[k]}</div>
+            </div>
+            {on && <IkonaFajka size={16} color={akcent} />}
+          </div>
+        );
+      })}
+    </Modal>
   );
 }

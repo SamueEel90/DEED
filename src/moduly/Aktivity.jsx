@@ -1,6 +1,10 @@
 import { useState, useMemo, useEffect } from "react";
-import { ModulHlavicka, Hlavicka, PodporaSekcia, Toast, Oslava, useMotiv, useScrollHore, Rebricky, StatRiadok, FeedStlpce, SekcieBar, Lupa, Zvon } from "../shared";
-import { GRAD, GRAD_ZELENY } from "../theme";
+import { ModulHlavicka, Hlavicka, PodporaSekcia, PlatbaModal, HladanieModal, Toast, Oslava, useMotiv, useScrollHore, Ticker, Rebricky, StatRiadok, FeedStlpce, SekcieBar, OkruhVyber, Lupa, Zvon, IkonaSipVlavo, IkonaMoznosti, Zdielanie, IkonaUlozit, IkonaFoto, IkonaPlus, IkonaPlay } from "../shared";
+import { C, GRAD, GRAD_ZELENY } from "../theme";
+import { pripravFeed, FEED_CFG } from "../lib/feed";
+
+// poloha usera (MVP mock — Trenčín, rovnaká ako v ostatných feedoch)
+const USER_LOK = { lat: 48.894, lng: 18.044 };
 
 /*
   ============================================================
@@ -35,7 +39,19 @@ const DOM = {
   eko:     { label: "Eko",     ic: "🌳", c: "#5BD06E", bg: "#0f2417", bd: "#2E7D52", tint: "#0a130c" },
   zdravie: { label: "Zdravie", ic: "❤️", c: "#E98AAD", bg: "#2a1620", bd: "#8E4A63", tint: "#150a0f" },
 };
-const ORDER = ["sport", "art", "learn", "eko", "zdravie"]; // mix = automatický režim, bez tlačidla
+const ORDER = ["zdravie", "learn", "sport", "eko", "art"]; // mix = automatický režim, bez tlačidla
+
+// minimalistické doménové ikony (line SVG, jednofarebné — currentColor)
+function DI({ children }) {
+  return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: "block" }}>{children}</svg>;
+}
+const DOM_IKONA = {
+  zdravie: <DI><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.29 1.51 4.04 3 5.5l7 7Z" /></DI>,
+  learn: <DI><path d="M22 10 12 5 2 10l10 5 10-5Z" /><path d="M6 12v5c0 1 2 3 6 3s6-2 6-3v-5" /></DI>,
+  sport: <DI><circle cx="12" cy="8" r="6" /><path d="M15.5 12.9 17 22l-5-3-5 3 1.5-9.1" /></DI>,
+  eko: <DI><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.5 19 2c1 2 2 4.2 2 8 0 5.5-4.8 10-10 10Z" /><path d="M2 21c0-3 1.85-5.36 5.08-6" /></DI>,
+  art: <DI><path d="m9.06 11.9 8.07-8.06a2.85 2.85 0 1 1 4.03 4.03l-8.06 8.08" /><path d="M7.07 14.94c-1.66 0-3 1.35-3 3.02 0 1.33-2.5 1.52-2 2.02 1.08 1.1 2.49 2.02 4 2.02 2.2 0 4-1.8 4-4.04a3.01 3.01 0 0 0-3-3.02z" /></DI>,
+};
 
 // hex → priesvitné rgba (akcentové tinty fungujúce v tmavom aj svetlom režime)
 function tint(hex, a) {
@@ -109,6 +125,42 @@ const SEED_ITEMS = [
     author: "Zelený Trenčín", ini: "Z", pfp: "#2E7D52", karma: "Silver", loc: "Trenčín", time: "3 d", num: 140030, likes: 17,
     title: "Ukáž talent — ako spraviť kompost na balkóne", desc: "Krátke video ako začať kompostovať aj v paneláku." },
 ];
+
+// ---- obohatenie pre Feed algoritmus (Časť B) ----
+// SEED_ITEMS aj používateľské príspevky majú vlastný slovník (type/size/loc/time).
+// Engine potrebuje typ/skore/geo/dni/podpora — odvodíme ich tu (MVP mock; neskôr
+// reálne skóre z AI + GPS). `size`/`type` NEMENÍME, aby ostali pôvodné karty.
+const GEO_LOK = {
+  "Nemšová": { lat: 48.910, lng: 18.078 }, "Juh": { lat: 48.875, lng: 18.030 },
+  "Sihoť": { lat: 48.905, lng: 18.030 }, "Zámostie": { lat: 48.892, lng: 18.020 },
+  "Noviny": { lat: 48.882, lng: 18.060 },
+};
+function geoZLok(loc = "") {
+  for (const k in GEO_LOK) if (loc.includes(k)) return GEO_LOK[k];
+  return { lat: 48.894, lng: 18.044 }; // default — Trenčín centrum
+}
+function dniZCasu(t = "") {
+  const m = String(t).match(/(\d+)\s*d/);
+  return m ? +m[1] : 0; // "1 d" → 1; "2 h"/"teraz"/rozvrhy workshopov ("streda 18:00") → 0
+}
+const SKORE_VELKOST = { big: 7.5, med: 4.5, small: 2.0, req: 4.0 };
+// type → engine typ (skutok/ziadost/charita) + modul (pre frekvenčný strop)
+const TYP_ENGINE = { help: "ziadost", case: "charita" };
+const MODUL_ENGINE = { help: "help", workshop: "workshop", case: "charity" };
+function obohatit(it) {
+  return {
+    ...it,
+    typ: TYP_ENGINE[it.type] || "skutok",
+    modul: MODUL_ENGINE[it.type] || "good",
+    kat: it.dom, typSituacie: "normal",
+    overene: !!it.verified, // engine číta `overene` (hustota B.10); seed má `verified`
+    narodne: /online/i.test(it.loc || ""), // online (workshopy) nie sú viazané na okruh
+    skore: it.skore ?? SKORE_VELKOST[it.size] ?? 3,
+    ...geoZLok(it.loc),
+    dni: dniZCasu(it.time),
+    podpora: it.likes ? Math.round(it.likes / 3) : (it.helpers || 0),
+  };
+}
 
 // ---- NÁSTENKA (udalosti) ----
 const EVENTS = {
@@ -240,6 +292,7 @@ export default function ModulAktivity({ wide }) {
   const [profilMeno, setProfilMeno] = useState(null); // otvorený profil osoby
   const [hlaska, setHlaska] = useState(null);
   const [celeb, setCeleb] = useState(null);
+  const [hladaj, setHladaj] = useState(false);
   const [add, setAdd] = useState(null); // null = menu | { kind, d }
 
   // perzistentný stav (localStorage)
@@ -262,16 +315,17 @@ export default function ModulAktivity({ wide }) {
 
   const { svetly } = useMotiv();
 
-  // odvodený zoznam: používateľské príspevky navrch + seed, s aplikovanými deltami (podpora)
+  // odvodený zoznam: používateľské príspevky navrch + seed, s aplikovanými deltami
+  // (podpora) a obohatené o polia pre Feed algoritmus (typ/skore/geo/dni/podpora).
   const items = useMemo(() => [...posts, ...SEED_ITEMS].map((it) => {
     const d = deltas[it.id];
-    if (!d) return it;
-    return {
+    const sd = d ? {
       ...it,
       raised: (it.raised || 0) + (d.raised || 0),
       helpers: (it.helpers || 0) + (d.helpers || 0),
       supportCount: d.support || 0,
-    };
+    } : it;
+    return obohatit(sd);
   }), [posts, deltas]);
 
   const akt = items.find((x) => x.id === aktId);
@@ -334,11 +388,21 @@ export default function ModulAktivity({ wide }) {
       background: svetly ? "var(--c-bg)" : acc.tint, transition: "background .4s ease",
       ["--acc"]: acc.c, ["--accBg"]: tint(acc.c, .15), ["--accBd"]: tint(acc.c, .5),
     }}>
-      {screen === "home" && <Home {...{ items, dom, view, pickDom, pickView, toast, open, openPerson, setScreen, tick, wide }} />}
+      {screen === "home" && <Home {...{ items, dom, view, pickDom, pickView, toast, open, openPerson, setScreen, tick, wide, onHladaj: () => setHladaj(true) }} />}
       {screen === "detail" && akt && obal(<Detail {...{ it: akt, liked, like, support, votes, vote, toast, celebrate, home, openPerson, setScreen }} />)}
       {screen === "add" && obal(<Add {...{ dom, add, setAdd, toast, celebrate, home, createPost }} />)}
       {screen === "board" && obal(<Board {...{ dom, toast, home }} />)}
       {screen === "profile" && profilMeno && obal(<OsobaProfil {...{ name: profilMeno, items, follows, toggleFollow, onOpen: open, toast, home }} />)}
+
+      {hladaj && (
+        <HladanieModal akcent={acc.c} placeholder="Hľadať aktivity, workshopy, lektorov…"
+          data={items.map((it) => ({
+            id: it.id, titul: it.title, podtitul: `${it.author} · ${it.loc || DOM[it.dom].label}`, kat: DOM[it.dom].label, emoji: it.emoji,
+            tag: it.type === "talent" ? "Talent" : it.type === "workshop" ? "Workshop" : it.type === "help" ? "Žiadosť" : DOM[it.dom].label,
+          }))}
+          onPick={(id) => open(id)}
+          onClose={() => setHladaj(false)} />
+      )}
 
       {hlaska && <Toast text={hlaska} />}
 
@@ -348,7 +412,12 @@ export default function ModulAktivity({ wide }) {
 }
 
 // ===================== HOME =====================
-function Home({ items, dom, view, pickDom, pickView, toast, open, openPerson, setScreen, tick, wide }) {
+function Home({ items, dom, view, pickDom, pickView, toast, open, openPerson, setScreen, tick, wide, onHladaj }) {
+  // zvolený rádius — Feed algoritmus (Časť B)
+  const [radius, setRadius] = useState("stvrt");
+  const [vyberOkruh, setVyberOkruh] = useState(false);
+
+  // 1) UI predfilter (doména + sub-záložka) — to engine nerieši
   const list = items.filter((it) => {
     if (dom !== "mix" && it.dom !== dom) return false;
     if (view === "talent") return it.type === "talent";
@@ -356,6 +425,13 @@ function Home({ items, dom, view, pickDom, pickView, toast, open, openPerson, se
     if (view === "help") return it.type === "help";
     return true;
   });
+
+  // 2) Feed algoritmus na seed obsah; vlastné čerstvé príspevky držíme navrchu
+  //    (optimistické UI — používateľ hneď vidí, čo pridal, mimo prahu okruhu).
+  const feed = [
+    ...list.filter((it) => it.mine),
+    ...pripravFeed(list.filter((it) => !it.mine), { ...USER_LOK, radius }),
+  ];
 
   const sub = (on) => ({ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, height: 38, borderRadius: 11, fontSize: 12, fontWeight: 600, cursor: "pointer", background: on ? "var(--accBg)" : A.surface, border: `1px solid ${on ? "var(--accBd)" : A.line2}`, color: on ? "var(--acc)" : A.txt2 });
 
@@ -375,18 +451,17 @@ function Home({ items, dom, view, pickDom, pickView, toast, open, openPerson, se
       <ModulHlavicka title="Aktivity"
         right={
           <>
-            <span onClick={() => toast("Hľadať aktivity, workshopy, lektorov…")} style={{ display: "flex", alignItems: "center", cursor: "pointer" }}><Lupa size={20} color={A.txt2} /></span>
+            <span onClick={onHladaj} style={{ display: "flex", alignItems: "center", cursor: "pointer" }}><Lupa size={20} color={A.txt2} /></span>
             <span onClick={() => toast("Upozornenia (demo)")} style={{ display: "flex", alignItems: "center", cursor: "pointer" }}><Zvon size={20} color={A.txt2} /></span>
           </>
         } />
 
       {/* live ticker — odráža poslednú reálnu akciu */}
-      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 16px", fontSize: 12, color: A.txt2, borderTop: `.5px solid ${A.line}`, borderBottom: `.5px solid ${A.line}`, background: A.surface2 }}>
-        <span style={{ width: 8, height: 8, borderRadius: "50%", background: A.green, flex: "none", animation: "pulse 1.6s infinite" }} />
+      <Ticker>
         {tick
-          ? <span>{tick.who} <b style={{ color: A.green }}>{tick.what}</b>{tick.to ? ` ${tick.to}` : ""}</span>
-          : <span>Cyklo TN <b style={{ color: A.green }}>práve dostal 100 DEED</b> → Marek</span>}
-      </div>
+          ? <>{tick.who} <b style={{ color: C.greenL }}>{tick.what}</b>{tick.to ? ` ${tick.to}` : ""}</>
+          : <>Cyklo TN <b style={{ color: C.greenL }}>práve dostal 100 DEED</b> → Marek</>}
+      </Ticker>
 
       {/* jednotná sekcia skratiek */}
       <SekcieBar talentActive={view === "talent"} onTalent={() => pickView("talent")} onBoard={() => setScreen("board")} onAdd={() => setScreen("add")} />
@@ -394,8 +469,9 @@ function Home({ items, dom, view, pickDom, pickView, toast, open, openPerson, se
       {/* jednotný rebríček ocenení (kontextový podľa domény) */}
       <Rebricky ocenenia={LEADERS[dom].map((l) => ({ ic: l[0], label: l[1], name: l[2], col: l[4], onClick: () => openPerson(l[2]) }))} />
 
-      {/* jednotný štatistický riadok (dnes + okruh) */}
-      <StatRiadok stat="Dnes 312 aktivít · Mesiac 9 480" onOkruh={() => toast("Nastavenie okruhu (demo)")} />
+      {/* štatistický riadok — počet vo zvolenom okruhu + výber okruhu */}
+      <StatRiadok stat={`V okruhu ${feed.length} aktivít · Mesiac 9 480`}
+        okruh={FEED_CFG.radiusy[radius].krat} onOkruh={() => setVyberOkruh(true)} />
 
       {/* prepínač domén */}
       <div style={{ padding: "2px 12px 8px", overflowX: "auto" }}>
@@ -403,8 +479,8 @@ function Home({ items, dom, view, pickDom, pickView, toast, open, openPerson, se
           {ORDER.map((d) => {
             const a = DOM[d]; const on = dom === d;
             return (
-              <div key={d} onClick={() => pickDom(d)} style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 3, minWidth: 62, height: 54, borderRadius: 14, cursor: "pointer", flex: "none", transition: ".18s", transform: on ? "translateY(-1px)" : "none", background: on ? tint(a.c, .15) : A.surface2, border: `1px solid ${on ? tint(a.c, .5) : A.line}` }}>
-                <div style={{ fontSize: 18, lineHeight: 1 }}>{a.ic}</div>
+              <div key={d} onClick={() => pickDom(d)} style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, minWidth: 62, height: 54, borderRadius: 14, cursor: "pointer", flex: "none", transition: ".18s", transform: on ? "translateY(-1px)" : "none", background: on ? tint(a.c, .15) : A.surface2, border: `1px solid ${on ? tint(a.c, .5) : A.line}` }}>
+                <div style={{ color: on ? a.c : A.txt2, display: "flex" }}>{DOM_IKONA[d]}</div>
                 <div style={{ fontSize: 10, fontWeight: 700, color: on ? a.c : A.txt2 }}>{a.label}</div>
               </div>
             );
@@ -413,22 +489,26 @@ function Home({ items, dom, view, pickDom, pickView, toast, open, openPerson, se
       </div>
 
       {/* sub sekcie */}
-      <div style={{ display: "flex", gap: 8, padding: "2px 16px 10px" }}>
+      <div style={{ display: "flex", gap: 8, padding: "2px 16px 12px", borderBottom: `1px solid ${A.line}`, marginBottom: 4 }}>
         <div onClick={() => pickView("workshop")} style={sub(view === "workshop")}><span style={{ fontSize: 13 }}>🎓</span>Workshopy</div>
         <div onClick={() => pickView("help")} style={sub(view === "help")}><span style={{ fontSize: 13 }}>❓</span>Hľadám pomoc</div>
         <div onClick={() => toast("Market — predaj diel/náradia, fáza 2")} style={sub(false)}><span style={{ fontSize: 13 }}>🛒</span>Market<span style={{ fontSize: 8, background: A.goldBg, color: A.gold, padding: "1px 5px", borderRadius: 5, marginLeft: 2 }}>čoskoro</span></div>
       </div>
 
       {/* feed — na tablete/PC: skutky & aktivity vľavo, žiadosti o pomoc vpravo */}
-      {!list.length ? (
-        <div style={{ textAlign: "center", color: A.txt3, fontSize: 12, padding: "40px 20px", lineHeight: 1.6 }}>Tu zatiaľ nič nie je.<br />Skús inú doménu alebo pridaj prvý príspevok cez ＋ Pridať.</div>
+      {!feed.length ? (
+        <div style={{ textAlign: "center", color: A.txt3, fontSize: 12, padding: "40px 20px", lineHeight: 1.6 }}>V tomto okruhu zatiaľ nič nie je.<br />Skús menší okruh, inú doménu alebo pridaj príspevok cez ＋ Pridať.</div>
       ) : (
         <FeedStlpce wide={dva}
           labelSkutky="Skutky & aktivity" labelZiadosti="Hľadajú pomoc"
-          jednoStlpec={list.map(feedCard)}
-          skutky={list.filter((it) => it.type !== "help").map(feedCard)}
-          ziadosti={list.filter((it) => it.type === "help").map(feedCard)} />
+          jednoStlpec={feed.map(feedCard)}
+          skutky={feed.filter((it) => it.type !== "help").map(feedCard)}
+          ziadosti={feed.filter((it) => it.type === "help").map(feedCard)} />
       )}
+
+      {vyberOkruh && <OkruhVyber radius={radius} akcent={DOM[dom].c}
+        onPick={(r) => { setRadius(r); setVyberOkruh(false); }}
+        onClose={() => setVyberOkruh(false)} />}
     </div>
   );
 }
@@ -437,7 +517,7 @@ function Home({ items, dom, view, pickDom, pickView, toast, open, openPerson, se
 const stop = (fn) => (e) => { e.stopPropagation(); fn(); };
 function BigCard({ it, wide, onOpen, onPerson }) {
   return (
-    <div onClick={() => onOpen(it.id)} style={{ ...cardS, marginBottom: wide ? 0 : 12 }}>
+    <div onClick={() => onOpen(it.id)} className="good-card" style={{ ...cardS, marginBottom: wide ? 0 : 12, ...(wide ? {} : { margin: "0 -16px 12px", borderRadius: 0, border: "none", borderBottom: `1px solid ${A.line2}` }) }}>
       <div style={{ height: 148, position: "relative", display: "flex", alignItems: "center", justifyContent: "center", background: heroGrad(it.dom) }}>
         <span style={badge("l")}>★ {it.importance || DOM[it.dom].label}</span>
         {it.media === "video" && <span style={badge("r")}>▶ video</span>}
@@ -548,8 +628,8 @@ function BackBar({ title, onBack }) {
 function DetailHero({ it, onBack, children }) {
   return (
     <div style={{ height: 150, position: "relative", display: "flex", alignItems: "center", justifyContent: "center", background: heroGrad(it.dom) }}>
-      <div onClick={onBack} style={{ position: "absolute", top: 14, left: 14, width: 34, height: 34, borderRadius: "50%", background: "rgba(0,0,0,.55)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 18, cursor: "pointer", zIndex: 2 }}>‹</div>
-      <div style={{ position: "absolute", top: 14, right: 14, width: 34, height: 34, borderRadius: "50%", background: "rgba(0,0,0,.55)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 18, zIndex: 2 }}>⋯</div>
+      <div onClick={onBack} style={{ position: "absolute", top: 14, left: 14, width: 34, height: 34, borderRadius: "50%", background: "rgba(0,0,0,.55)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", cursor: "pointer", zIndex: 2 }}><IkonaSipVlavo size={20} color="#fff" /></div>
+      <div style={{ position: "absolute", top: 14, right: 14, width: 34, height: 34, borderRadius: "50%", background: "rgba(0,0,0,.55)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", zIndex: 2 }}><IkonaMoznosti size={18} color="#fff" /></div>
       {children}
     </div>
   );
@@ -564,6 +644,7 @@ function Detail({ it, liked, like, support, votes, vote, toast, celebrate, home,
 
 function DeedDetail({ it, support, votes, vote, toast, home, openPerson }) {
   const a = DOM[it.dom];
+  const [platba, setPlatba] = useState(null); // "EUR" | "DEED"
   const isTalent = it.type === "talent", isCase = it.type === "case";
   const pct = isCase ? Math.min(100, Math.round(it.raised / it.goal * 100)) : 0;
   const supLabel = isTalent ? "OCEŇ TVORCU — klik a hneď odíde" : isCase ? "PRIDAJ SA K MAREKOVI" : "DROBNÁ PODPORA — klik a hneď odíde";
@@ -603,7 +684,7 @@ function DeedDetail({ it, support, votes, vote, toast, home, openPerson }) {
           onShare={() => toast("Zdieľať: odkaz skopírovaný · siete")}
           upvotes={Math.floor((it.likes || 0) / 3)} onUpvote={() => toast("Páči sa ti to")}
           onPodpor={(s) => support(s, it.author, it)} onSms={() => toast("SMS podpora (euro/operátor)")}
-          onKanal={(k) => toast(`Vlastná suma — ${k} (demo)`)} supLabel={supLabel} />
+          onKanal={(k) => setPlatba(k)} supLabel={supLabel} />
 
         <div style={{ display: "flex", alignItems: "center", gap: 14, background: A.surface2, border: `1px solid ${A.line}`, borderRadius: 14, padding: 12, marginTop: 14 }}>
           <div style={{ width: 52, height: 52, borderRadius: 8, background: "#fff", flex: "none", display: "grid", gridTemplateColumns: "repeat(5,1fr)", gridTemplateRows: "repeat(5,1fr)", gap: 1, padding: 5 }}>{qrCells()}</div>
@@ -625,6 +706,8 @@ function DeedDetail({ it, support, votes, vote, toast, home, openPerson }) {
           }} />
         </div>
       </div>
+      {platba && <PlatbaModal kanal={platba} komu={it.author} onClose={() => setPlatba(null)}
+        onDone={(s) => support(s, it.author, it)} />}
     </div>
   );
 }
@@ -691,8 +774,8 @@ function HelpDetail({ it, toast, celebrate, home, openPerson }) {
         <InfoBox>{it.helpers} ľudí sa už zapojilo. Po prijatí sa otvorí chat, dohodnete sa. Po dokončení: hodnotenie + tip + reťaz dobra.</InfoBox>
         <Btn green onClick={() => { celebrate("Ozval si sa!", `Otvorili sme chat s ${it.author}. Dohodnite si detaily.`); setTimeout(home, 1700); }}>✋ Môžem pomôcť</Btn>
         <div style={{ display: "flex", gap: 10, marginTop: 10 }}>
-          <Cbtn t="↗ Zdieľať" s="pošli ďalej" onClick={() => toast("Zdieľané")} />
-          <Cbtn t="☆ Uložiť" s="na neskôr" onClick={() => toast("Uložené")} />
+          <Cbtn ic={<Zdielanie size={14} color={A.txt} />} t="Zdieľať" s="pošli ďalej" onClick={() => toast("Zdieľané")} />
+          <Cbtn ic={<IkonaUlozit size={14} color={A.txt} />} t="Uložiť" s="na neskôr" onClick={() => toast("Uložené")} />
         </div>
       </div>
     </div>
@@ -710,10 +793,10 @@ function Fx({ w, h, e, v, eCol, bg, bd, col, onClick }) {
     </div>
   );
 }
-function Cbtn({ t, s, tCol, active, onClick }) {
+function Cbtn({ ic, t, s, tCol, active, onClick }) {
   return (
     <div onClick={onClick} style={{ flex: 1, height: 50, borderRadius: 11, background: active ? "var(--accBg)" : A.surface2, border: `${active ? 2 : 1}px solid ${active ? "var(--accBd)" : A.line}`, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", cursor: "pointer", transition: "all .12s ease" }}>
-      <div style={{ fontWeight: 700, fontSize: 13, color: tCol || A.txt }}>{t}</div><div style={{ fontSize: 8.5, color: A.txt3, marginTop: 2 }}>{s}</div>
+      <div style={{ fontWeight: 700, fontSize: 13, color: tCol || A.txt, display: "flex", alignItems: "center", gap: 6 }}>{ic}{t}</div><div style={{ fontSize: 8.5, color: A.txt3, marginTop: 2 }}>{s}</div>
     </div>
   );
 }
@@ -821,9 +904,9 @@ function AddForm({ kind, d, a, pill, setAdd, toast, celebrate, home, createPost 
 
         <div style={fieldlbl}>Foto / video</div>
         <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
-          <Mslot onClick={() => toast("Nahrať (demo)")}>＋</Mslot>
-          <Mslot onClick={() => toast("Nahrať (demo)")}>📷</Mslot>
-          {isTalentable && talent && <Mslot onClick={() => toast("Video — vodoznak sa pridá automaticky")}>▶</Mslot>}
+          <Mslot onClick={() => toast("Nahrať (demo)")}><IkonaPlus size={22} /></Mslot>
+          <Mslot onClick={() => toast("Nahrať (demo)")}><IkonaFoto size={22} /></Mslot>
+          {isTalentable && talent && <Mslot onClick={() => toast("Video — vodoznak sa pridá automaticky")}><IkonaPlay size={20} /></Mslot>}
         </div>
 
         <div style={{ background: A.greenBg, border: `1px solid ${A.greenBd}`, borderRadius: 12, padding: 14, marginTop: 14, fontSize: 13, lineHeight: 1.4 }}>🤖 <b>AI pomôže</b> — z popisu navrhne kategóriu, dôležitosť a skontroluje obsah. Pri talente: automatický vodoznak + QR, anti-deepfake.</div>

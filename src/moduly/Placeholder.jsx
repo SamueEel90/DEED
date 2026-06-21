@@ -1,5 +1,5 @@
 import { C } from "../theme";
-import { Aura } from "../shared";
+import { Aura, IkonaHviezda, IkonaMapa, IkonaPohar } from "../shared";
 
 /*
   ============================================================
@@ -10,7 +10,7 @@ import { Aura } from "../shared";
 
 const INFO = {
   vyzva: {
-    ikona: "★", nazov: "Výzva", farba: "#F0A85E",
+    ikona: <IkonaHviezda size={34} />, nazov: "Výzva", farba: "#F0A85E",
     popis: "Komunitné výzvy a súťaže v konaní dobra — týždenné misie, tímové výzvy firiem, odmeny v DEED.",
     ukazka: [
       ["🌳", "Výzva týždňa", "Vysaď strom vo svojej štvrti · 240 zapojených"],
@@ -19,7 +19,7 @@ const INFO = {
     ],
   },
   mapa: {
-    ikona: "🗺", nazov: "Mapa", farba: "#5BA8F0",
+    ikona: <IkonaMapa size={34} />, nazov: "Mapa", farba: "#5BA8F0",
     popis: "Pomoc a skutky v okolí na mape — nastavíš si rádius, vidíš kto potrebuje pomoc pár ulíc od teba.",
     ukazka: [
       ["📍", "Sihoť · 400 m", "Žiadosť: odvoz k lekárovi (Jozef M.)"],
@@ -28,7 +28,7 @@ const INFO = {
     ],
   },
   top: {
-    ikona: "🏆", nazov: "Top", farba: "#E7C766",
+    ikona: <IkonaPohar size={34} />, nazov: "Top", farba: "#E7C766",
     popis: "Rebríčky darcov, hrdinov a B2B partnerov — mesto, štvrť, celé Slovensko.",
     ukazka: [
       ["♛", "Lukáš H.", "Top darca · 1 850 DEED tento mesiac"],

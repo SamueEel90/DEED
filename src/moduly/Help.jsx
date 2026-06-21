@@ -1,6 +1,10 @@
 import { useState, useEffect } from "react";
 import { C, pasmo, U, AV, inp, infoBox, btn, GRAD, GRAD_ZELENY, glassTmavy } from "../theme";
-import { Foto, Avatar, FotoPrispevku, MiniFotky, Hlavicka, ModulHlavicka, PodporaSekcia, Otazka, Vyber, vyberBox, NavBtns, Suhrn, DokladRow, Modal, Toast, useGaleria, useScrollHore, Rebricky, StatRiadok, MoniBar, FeedStlpce, SekcieBar, Lupa, Zvon } from "../shared";
+import { Foto, Avatar, FotoPrispevku, MiniFotky, Hlavicka, ModulHlavicka, PodporaSekcia, PlatbaModal, HladanieModal, Otazka, Vyber, vyberBox, NavBtns, Suhrn, DokladRow, Modal, Toast, useGaleria, useScrollHore, Ticker, Rebricky, StatRiadok, MoniBar, FeedStlpce, SekcieBar, OkruhVyber, Lupa, Zvon, Zdielanie, IkonaSpat, IkonaVlajka, IkonaFoto, IkonaStit, IkonaKorunka, IkonaHviezda } from "../shared";
+import { pripravFeed, FEED_CFG } from "../lib/feed";
+
+// poloha usera (MVP mock — Trenčín, rovnaká ako v ostatných feedoch)
+const USER_LOK = { lat: 48.894, lng: 18.044 };
 
 /*
   ============================================================
@@ -12,29 +16,36 @@ import { Foto, Avatar, FotoPrispevku, MiniFotky, Hlavicka, ModulHlavicka, Podpor
 // ---- MOCK FEED ----
 const MOCK_FEED = [
   { id: 7, typ: "ziadost", nazov: "Marek B.", overeny: true, karma: "Gold", lok: "Trenčín · Juh",
+    skore: 8, typSituacie: "normal", modul: "help", kat: "Zdravie", lat: 48.875, lng: 18.030, dni: 0, podpora: 52,
     pribeh: "Po operácii chrbtice potrebujem rehabilitácie, ktoré poisťovňa neprepláca. Chcem sa vrátiť do práce a k deťom.",
     suma: 1250, ciel: 1800, ludia: 52, ikona: "🦴", velkost: "velka",
     fotky: ["/img/chrbtica.jpg", U("photo-1576091160399-112ba8d25d1d"), U("photo-1584308666744-24d5c474f2ae"), U("photo-1579684385127-1ef15d508118")],
     avatar: AV(68),
     sponzor: { meno: "LIDL", suma: 500 } },
   { id: 1, typ: "ziadost", nazov: "Rodina Kováčová", overeny: true, karma: "Silver", lok: "Trenčín · Zámostie",
+    skore: 9, typSituacie: "kriza", modul: "help", kat: "Pomoc", lat: 48.892, lng: 18.020, dni: 0, podpora: 38,
     pribeh: "V noci nám zhorel dom, ostali sme bez strechy s dvomi deťmi. Potrebujeme provizórne bývanie a základné veci.",
     suma: 1430, ciel: 2200, ludia: 38, ikona: "🔥", velkost: "velka",
     fotky: ["/img/dom.jpg", U("photo-1542856391-010fb87dcfed"), U("photo-1500382017468-9049fed747ef")],
     avatar: AV(47) },
   { id: 2, typ: "ponuka", nazov: "Mgr. Lucia D.", odbornik: true, lok: "Centrum · online",
+    skore: 4, typSituacie: "normal", modul: "help", kat: "Ucenie", narodne: true, lat: 48.894, lng: 18.044, dni: 0, podpora: 5,
     pribeh: "Doučím matematiku a fyziku, 8 rokov praxe, certifikát doložený.", ikona: "🎓", velkost: "stredna",
     fotky: [U("photo-1509228468518-180dd4864904")] },
   { id: 3, typ: "charity", nazov: "Charita XY", sponzor: true,
+    skore: 6, typSituacie: "normal", modul: "charity", kat: "Priroda", lat: 48.890, lng: 18.050, dni: 0, podpora: 20,
     pribeh: "Hľadá 10 dobrovoľníkov · výsadba stromov · sobota Brezina", ikona: "XY",
     fotky: [U("photo-1542601906990-b4d3fb778b09"), U("photo-1441974231531-c6227db76b6e")] },
   { id: 4, typ: "ponuka", nazov: "Jozef K.", odbornik: false, lok: "Juh",
+    skore: 2.5, typSituacie: "normal", modul: "help", kat: "Komunita", lat: 48.875, lng: 18.030, dni: 1, podpora: 3,
     pribeh: "Pomôžem so sťahovaním cez víkend.", ikona: "🧰", velkost: "riadok" },
   { id: 5, typ: "ziadost", nazov: "Žofia K.", overeny: true, karma: "Bronze", lok: "Trenčín · Sihoť",
+    skore: 5, typSituacie: "normal", modul: "help", kat: "Zdravie", lat: 48.905, lng: 18.030, dni: 1, podpora: 14,
     pribeh: "Po úraze tri mesiace bez príjmu, potrebujem na nájom a lieky.", suma: 520, ciel: 800, ludia: 14,
     ikona: "🩺", velkost: "stredna",
     fotky: [U("photo-1584308666744-24d5c474f2ae"), U("photo-1471864190281-a93a3070b6de")], avatar: AV(12) },
   { id: 6, typ: "charity", nazov: "Zelená plus", sponzor: false,
+    skore: 4, typSituacie: "normal", modul: "charity", kat: "Komunita", lat: 48.882, lng: 18.060, dni: 2, podpora: 6,
     pribeh: "Triedenie šatstva pre útulok · streda", ikona: "ZP" },
 ];
 
@@ -53,7 +64,9 @@ export default function ModulHelp({ wide }) {
   const [screen, setScreen] = useState("feed"); // feed | detail | add | offer | request
   const [aktDetail, setAktDetail] = useState(null);
   const [hlaska, setHlaska] = useState(null);
+  const [hladaj, setHladaj] = useState(false);
   const toast = (m) => { setHlaska(m); setTimeout(() => setHlaska((x) => (x === m ? null : x)), 2300); };
+  const otvorZ = (z) => { setAktDetail(z); setScreen("detail"); };
 
   // pri prepnutí obrazovky (napr. otvorenie detailu) odscrolluj appku hore
   const scrollHore = useScrollHore();
@@ -64,11 +77,21 @@ export default function ModulHelp({ wide }) {
 
   return (
     <div style={{ minHeight: "100%" }}>
-      {screen === "feed" && <Feed wide={wide} toast={toast} onDetail={(z) => { setAktDetail(z); setScreen("detail"); }} onAdd={() => setScreen("add")} />}
+      {screen === "feed" && <Feed wide={wide} toast={toast} onDetail={otvorZ} onHladaj={() => setHladaj(true)} onAdd={() => setScreen("add")} />}
       {screen === "detail" && obal(<Detail z={aktDetail} onBack={() => setScreen("feed")} />)}
       {screen === "add" && obal(<Add onBack={() => setScreen("feed")} onOffer={() => setScreen("offer")} onRequest={() => setScreen("request")} />)}
       {screen === "offer" && obal(<OfferFlow onDone={() => setScreen("feed")} />)}
       {screen === "request" && obal(<RequestFlow onDone={() => setScreen("feed")} />)}
+
+      {hladaj && (
+        <HladanieModal akcent="#F2706F" placeholder="Hľadať žiadosti, ponuky, ľudí…"
+          data={MOCK_FEED.map((z) => ({
+            id: z.id, titul: z.nazov, podtitul: z.pribeh, kat: z.lok, emoji: z.ikona,
+            tag: z.typ === "ziadost" ? "Žiadosť" : z.typ === "ponuka" ? "Ponuka" : "Charita",
+          }))}
+          onPick={(id) => { const z = MOCK_FEED.find((x) => x.id === id); if (!z) return; z.typ === "ziadost" ? otvorZ(z) : toast(`${z.nazov} — ${z.typ === "ponuka" ? "ponuka pomoci" : "charita"}`); }}
+          onClose={() => setHladaj(false)} />
+      )}
 
       {hlaska && <Toast text={hlaska} />}
     </div>
@@ -76,7 +99,7 @@ export default function ModulHelp({ wide }) {
 }
 
 // ===================== FEED =====================
-function Feed({ wide, toast, onDetail, onAdd }) {
+function Feed({ wide, toast, onDetail, onHladaj, onAdd }) {
   // živý ticker darov
   const [tick, setTick] = useState(0);
   useEffect(() => {
@@ -84,6 +107,13 @@ function Feed({ wide, toast, onDetail, onAdd }) {
     return () => clearInterval(t);
   }, []);
   const dar = ZIVE_DARY[tick % ZIVE_DARY.length];
+
+  // zvolený rádius — Feed algoritmus (Časť B): filter podľa okruhu + adaptívny
+  // prah + zoradenie. Ponuky/žiadosti si nechávajú vlastný `velkost` (iný slovník
+  // než engine), preto NEpremapúvame zobrazVelkost — len filter + poradie.
+  const [radius, setRadius] = useState("stvrt");
+  const [vyberOkruh, setVyberOkruh] = useState(false);
+  const feed = pripravFeed(MOCK_FEED, { ...USER_LOK, radius });
 
   const karta = (z) => <FeedCard key={z.id} z={z} wide={wide} onClick={() => z.typ === "ziadost" && onDetail(z)} />;
   const jeZiadost = (z) => z.typ === "ziadost" || z.typ === "charity";
@@ -93,16 +123,13 @@ function Feed({ wide, toast, onDetail, onAdd }) {
       {/* header — jednotná hlavička (logo D⁺ + názov) */}
       <ModulHlavicka title="Help" right={
         <>
-          <span onClick={() => toast("Vyhľadávanie (demo)")} style={{ display: "flex", alignItems: "center", cursor: "pointer" }}><Lupa size={20} color={C.textSec} /></span>
+          <span onClick={onHladaj} style={{ display: "flex", alignItems: "center", cursor: "pointer" }}><Lupa size={20} color={C.textSec} /></span>
           <span onClick={() => toast("Upozornenia (demo)")} style={{ display: "flex", alignItems: "center", cursor: "pointer" }}><Zvon size={20} color={C.textSec} /></span>
         </>
       } />
 
       {/* živý ticker */}
-      <div key={tick} style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 14px", background: "rgba(29,158,117,.07)", borderBottom: `1px solid ${C.line2}`, fontSize: 13, animation: "fadeUp .45s ease" }}>
-        <span style={{ color: C.greenL, animation: "pulse 1.6s infinite" }}>●</span>
-        <span style={{ color: C.textSec }}><b style={{ color: C.text }}>{dar.kto}</b> práve poslal <b style={{ color: C.greenL }}>{dar.co}</b> → {dar.komu}</span>
-      </div>
+      <Ticker key={tick}><b style={{ color: C.text }}>{dar.kto}</b> práve poslal <b style={{ color: C.greenL }}>{dar.co}</b> → {dar.komu}</Ticker>
 
       {/* jednotná sekcia skratiek */}
       <SekcieBar onTalent={() => toast("Ukáž svoj talent (demo)")} onBoard={() => toast("Nástenka (demo)")} onAdd={onAdd} />
@@ -111,24 +138,35 @@ function Feed({ wide, toast, onDetail, onAdd }) {
       <div>
         <Rebricky
           ocenenia={[
-            { ic: "🛡", col: "#74A6FF", label: "PARTNER", name: "Lidl", onClick: () => toast("Rebríček: Top partner") },
-            { ic: "👑", col: "#E7C766", label: "DARCA", name: "Eva K.", onClick: () => toast("Rebríček: Top darca") },
-            { ic: "⭐", col: "#E58A6A", label: "HRDINA", name: "Ján H.", onClick: () => toast("Rebríček: Top hrdina") },
+            { ic: <IkonaStit />, col: "#74A6FF", label: "PARTNER", name: "Lidl", onClick: () => toast("Rebríček: Top partner") },
+            { ic: <IkonaKorunka />, col: "#E7C766", label: "DARCA", name: "Eva K.", onClick: () => toast("Rebríček: Top darca") },
+            { ic: <IkonaHviezda />, col: "#E58A6A", label: "HRDINA", name: "Ján H.", onClick: () => toast("Rebríček: Top hrdina") },
           ]}
           ludia={[{ ini: "＋", name: "Ty", col: "#74A6FF", onClick: onAdd }, { ini: "A", name: "Anna" }, { ini: "P", name: "Peter" }]}
         />
       </div>
 
-      {/* jednotný štatistický riadok (dnes + okruh) */}
-      <StatRiadok stat="Dnes 247 · Mesiac 8 421" onOkruh={() => toast("Nastavenie okruhu (demo)")} />
+      {/* štatistický riadok — počet vo zvolenom okruhu + výber okruhu */}
+      <StatRiadok stat={`V okruhu ${feed.length} · Mesiac 8 421`}
+        okruh={FEED_CFG.radiusy[radius].krat} onOkruh={() => setVyberOkruh(true)} />
 
-      {/* karty — na tablete/PC: ponúkajú vľavo, hľadajú vpravo */}
-      <FeedStlpce wide={wide} padding="4px 8px"
-        labelSkutky="Ponúkajú pomoc" labelZiadosti="Hľadajú pomoc"
-        jednoStlpec={MOCK_FEED.map(karta)}
-        skutky={MOCK_FEED.filter((z) => !jeZiadost(z)).map(karta)}
-        ziadosti={MOCK_FEED.filter(jeZiadost).map(karta)}
-      />
+      {/* karty — na tablete/PC: ponúkajú vľavo, hľadajú vpravo (zoradené algoritmom) */}
+      {feed.length === 0 ? (
+        <div style={{ padding: "40px 24px", textAlign: "center", color: C.textTer, fontSize: 13 }}>
+          V tomto okruhu zatiaľ nie sú dosť významné žiadosti. Skús menší okruh.
+        </div>
+      ) : (
+        <FeedStlpce wide={wide} padding="4px 8px"
+          labelSkutky="Ponúkajú pomoc" labelZiadosti="Hľadajú pomoc"
+          jednoStlpec={feed.map(karta)}
+          skutky={feed.filter((z) => !jeZiadost(z)).map(karta)}
+          ziadosti={feed.filter(jeZiadost).map(karta)}
+        />
+      )}
+
+      {vyberOkruh && <OkruhVyber radius={radius} akcent="#F2706F"
+        onPick={(r) => { setRadius(r); setVyberOkruh(false); }}
+        onClose={() => setVyberOkruh(false)} />}
     </div>
   );
 }
@@ -136,8 +174,9 @@ function Feed({ wide, toast, onDetail, onAdd }) {
 function FeedCard({ z, wide, onClick }) {
   if (z.typ === "ziadost") {
     const velka = z.velkost === "velka";
+    const bleed = !wide && velka; // hero žiadosť edge-to-edge na mobile
     return (
-      <div onClick={onClick} style={{ margin: wide ? 0 : "12px 13px", border: `1px solid ${z.sponzor ? "rgba(240,199,90,.32)" : "rgba(242,112,111,.26)"}`, borderRadius: 17, overflow: "hidden", background: z.sponzor ? "rgba(240,199,90,.05)" : "rgba(242,112,111,.05)", cursor: "pointer" }}>
+      <div onClick={onClick} className="good-card" style={{ margin: wide ? 0 : (velka ? "0 -8px 12px" : "12px 13px"), border: bleed ? "none" : `1px solid ${z.sponzor ? "rgba(240,199,90,.32)" : "rgba(242,112,111,.26)"}`, borderBottom: bleed ? `1px solid ${C.line2}` : undefined, borderRadius: bleed ? 0 : 17, overflow: "hidden", background: z.sponzor ? "rgba(240,199,90,.05)" : "rgba(242,112,111,.05)", cursor: "pointer" }}>
         {velka && (
           <div style={{ position: "relative" }}>
             <FotoPrispevku fotky={z.fotky} emoji={z.ikona} h={120} disableGaleria />
@@ -209,7 +248,7 @@ function FeedCard({ z, wide, onClick }) {
 // ===================== DETAIL ŽIADOSTI =====================
 function Detail({ z, onBack }) {
   const [hlaska, setHlaska] = useState(null);
-  const [potvrd, setPotvrd] = useState(null); // {kanal, suma}
+  const [platba, setPlatba] = useState(null); // "EUR" | "DEED"
   const [suma, setSuma] = useState(z.suma);
   const [ludia, setLudia] = useState(z.ludia);
   const otvorGaleriu = useGaleria();
@@ -222,11 +261,10 @@ function Detail({ z, onBack }) {
     setHlaska(`Odoslané: ${hodnota} ${kanal} · ⛓ ${hash()}`);
     setTimeout(() => setHlaska(null), 2600);
   }
-  function potvrdVlastnu() {
-    setSuma((s) => s + Number(potvrd.suma || 0) * (potvrd.kanal === "EUR" ? 1 : 0.01));
+  function platbaHotova(s) {
+    setSuma((x) => x + s * (platba === "EUR" ? 1 : 0.01));
     setLudia((l) => l + 1);
-    setHlaska(`Odoslané: ${potvrd.suma} ${potvrd.kanal} · ⛓ ${hash()}`);
-    setPotvrd(null);
+    setHlaska(`Odoslané: ${platba === "EUR" ? s + " €" : s + " DEED"} · ⛓ ${hash()}`);
     setTimeout(() => setHlaska(null), 2600);
   }
 
@@ -235,16 +273,16 @@ function Detail({ z, onBack }) {
   return (
     <div style={{ paddingBottom: 30 }}>
       <div style={{ position: "sticky", top: 0, zIndex: 5, display: "flex", alignItems: "center", gap: 10, padding: "11px 14px", ...glassTmavy(18, .55), borderLeft: "none", borderRight: "none", borderTop: "none" }}>
-        <span onClick={onBack} style={{ width: 32, height: 32, borderRadius: "50%", background: "rgba(var(--glass-rgb),.06)", border: `1px solid ${C.line}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, color: C.textSec, cursor: "pointer", flex: "0 0 auto" }}>←</span>
+        <span onClick={onBack} style={{ width: 32, height: 32, borderRadius: "50%", background: "rgba(var(--glass-rgb),.06)", border: `1px solid ${C.line}`, display: "flex", alignItems: "center", justifyContent: "center", color: C.textSec, cursor: "pointer", flex: "0 0 auto" }}><IkonaSpat size={17} color={C.textSec} /></span>
         <span style={{ fontSize: 13, fontWeight: "bold", color: C.blueL, background: "rgba(91,155,255,.12)", border: `1px solid rgba(91,155,255,.3)`, borderRadius: 9, padding: "3px 10px" }}>#47 821</span>
         <span style={{ fontSize: 11, fontWeight: "bold", color: z.sponzor ? C.gold : C.blueL }}>{z.sponzor ? "D++" : "D+"}</span>
-        <span style={{ marginLeft: "auto", color: C.textTer }}>↗&nbsp;&nbsp;⚑</span>
+        <span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 14, color: C.textTer }}><Zdielanie size={17} color={C.textTer} /><IkonaVlajka size={16} color={C.textTer} /></span>
       </div>
 
       {/* hero foto — klik = celá obrazovka, swipe medzi fotkami */}
       <div style={{ position: "relative" }}>
         <Foto src={z.fotky && z.fotky[0]} emoji="🖼" h={175} onClick={() => z.fotky?.length && otvorGaleriu(z.fotky, 0)} />
-        <span style={{ position: "absolute", top: 10, right: 10, background: "rgba(0,0,0,.55)", borderRadius: 20, padding: "3px 9px", fontSize: 10, color: "#7FE0A0", pointerEvents: "none" }}>📷 foto z prípadu</span>
+        <span style={{ position: "absolute", top: 10, right: 10, background: "rgba(0,0,0,.55)", borderRadius: 20, padding: "4px 10px", fontSize: 10, color: "#7FE0A0", pointerEvents: "none", display: "inline-flex", alignItems: "center", gap: 5 }}><IkonaFoto size={12} color="#7FE0A0" /> foto z prípadu</span>
         {z.fotky?.length > 1 && <span style={{ position: "absolute", bottom: 10, right: 10, background: "rgba(0,0,0,.6)", borderRadius: 12, padding: "3px 9px", fontSize: 10, color: "#fff", pointerEvents: "none" }}>⧉ {z.fotky.length} · klikni na foto</span>}
       </div>
       <MiniFotky fotky={z.fotky} />
@@ -293,28 +331,11 @@ function Detail({ z, onBack }) {
           onShare={() => setHlaska("Zdieľať: odkaz skopírovaný · siete")}
           upvotes={140} onUpvote={() => setHlaska("Palec hore")}
           onPodpor={(s) => posliPevne(s, "DEED")} onSms={() => posliPevne(1, "SMS")}
-          onKanal={(k) => setPotvrd({ kanal: k, suma: "" })} />
+          onKanal={(k) => setPlatba(k)} />
       </div>
 
-      <div style={{ borderTop: `1px solid ${C.line}`, padding: "11px 14px", display: "flex", justifyContent: "space-between", fontSize: 10.5, color: C.textTer }}>
-        <span style={{ color: C.greenL }}>✓ 100 % žiadateľovi · ⛓ blockchain</span>
-        <span>VS 8842 0471 · 28 dní</span>
-      </div>
-
-      {/* potvrdzovacie okno (proti preklepu) */}
-      {potvrd && (
-        <Modal onClose={() => setPotvrd(null)}>
-          <div style={{ fontSize: 15, fontWeight: "bold", marginBottom: 10 }}>Vlastná suma — {potvrd.kanal}</div>
-          <input autoFocus type="number" placeholder={potvrd.kanal === "EUR" ? "suma v €" : "počet DEED"} value={potvrd.suma}
-            onChange={(e) => setPotvrd({ ...potvrd, suma: e.target.value })}
-            style={{ width: "100%", padding: "11px 13px", borderRadius: 12, background: "rgba(0,0,0,.3)", border: `1px solid ${C.line}`, color: C.text, fontSize: 16, marginBottom: 12, outline: "none" }} />
-          <div style={{ fontSize: 12, color: C.textTer, marginBottom: 14 }}>Skontroluj sumu pred odoslaním (proti preklepu). Poplatok sa zobrazí pred potvrdením.</div>
-          <div style={{ display: "flex", gap: 10 }}>
-            <button onClick={() => setPotvrd(null)} style={btn("ghost")}>Späť</button>
-            <button onClick={potvrdVlastnu} disabled={!potvrd.suma} style={btn(potvrd.suma ? "primary" : "disabled")}>Potvrdiť a odoslať</button>
-          </div>
-        </Modal>
-      )}
+      {/* simulácia platby (EUR karta / DEED peňaženka) */}
+      {platba && <PlatbaModal kanal={platba} komu={z.nazov} onClose={() => setPlatba(null)} onDone={platbaHotova} />}
 
       {hlaska && <Toast text={hlaska} />}
     </div>

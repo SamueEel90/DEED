@@ -1,6 +1,10 @@
 import { useState, useEffect } from "react";
-import { U, AV, GRAD, GRAD_ZELENY } from "../theme";
-import { Foto, Avatar, FotoPrispevku, MiniFotky, Modal, ModulHlavicka, PodporaSekcia, Toast, useGaleria, useScrollHore, Rebricky, StatRiadok, MoniBar, FeedStlpce, SekcieBar, Lupa, Zvon } from "../shared";
+import { C, U, AV, GRAD, GRAD_ZELENY } from "../theme";
+import { Foto, Avatar, FotoPrispevku, MiniFotky, Modal, ModulHlavicka, PodporaSekcia, PlatbaModal, HladanieModal, Toast, useGaleria, useScrollHore, Ticker, Rebricky, StatRiadok, MoniBar, FeedStlpce, SekcieBar, OkruhVyber, Lupa, Zvon, Zdielanie, IkonaSpat, IkonaVlajka, IkonaFoto, IkonaOpakovat, IkonaKriz, IkonaStit, IkonaKorunka, IkonaHviezda, IkonaInstitucia } from "../shared";
+import { pripravFeed, FEED_CFG } from "../lib/feed";
+
+// poloha usera (MVP mock — Trenčín, rovnaká ako v ostatných feedoch)
+const USER_LOK = { lat: 48.894, lng: 18.044 };
 
 /*
   ============================================================
@@ -33,6 +37,20 @@ const ZBIERKA = {
 };
 
 const ZOFIA_FOTKY = [U("photo-1471864190281-a93a3070b6de"), U("photo-1584308666744-24d5c474f2ae")];
+
+// ---- feed metadáta pre Feed algoritmus (Časť B) ----
+// Karty feedu sú samostatné komponenty (dizajn ostáva nedotknutý). Tu k nim
+// pripájame len engine polia (skóre/geo/čas/podpora) + `comp` = ktorý komponent
+// vyrenderovať. pripravFeed ich filtruje podľa okruhu a zoradí; `karta()` ich
+// premapuje späť na pôvodné komponenty. Distinct `kat` ⇒ frekvenčný strop ich
+// neposkladá do jednej skupiny.
+const FEED_ITEMS = [
+  { id: "urgent",   comp: "urgent",   typ: "ziadost", modul: "charity", kat: "Pomoc",    skore: 9,   typSituacie: "kriza",  lat: 48.892, lng: 18.020, dni: 0, podpora: 38 },
+  { id: "top",      comp: "top",      typ: "charita", modul: "charity", kat: "Zdravie",  skore: 8,   typSituacie: "normal", narodne: true, lat: 48.700, lng: 19.000, dni: 1, podpora: 30 },
+  { id: "mala",     comp: "mala",     typ: "charita", modul: "charity", kat: "Zdravie2", skore: 6,   typSituacie: "normal", lat: 48.905, lng: 18.030, dni: 1, podpora: 8 },
+  { id: "zapoj",    comp: "zapoj",    typ: "skutok",  modul: "charity", kat: "Priroda",  skore: 5,   typSituacie: "normal", lat: 48.905, lng: 18.030, dni: 0, podpora: 7 },
+  { id: "material", comp: "material", typ: "skutok",  modul: "charity", kat: "Komunita", skore: 4,   typSituacie: "normal", lat: 48.875, lng: 18.030, dni: 2, podpora: 5 },
+];
 
 // ---- adresár charít & OZ (vzorka z 50) ----
 const ADRESAR = [
@@ -72,11 +90,22 @@ const ADRESAR = [
 const SEG_BG = ["rgba(242,112,111,.16)", "rgba(91,155,255,.16)", "rgba(61,214,140,.16)", "rgba(120,200,90,.16)", "rgba(231,199,102,.16)", "rgba(91,140,240,.16)", "rgba(139,124,255,.16)"];
 const lvlFarba = (l) => ({ Legend: "#f5c542", Gold: "#f5c542", Silver: "#94a3b8", Bronze: "#b87333" }[l] || "#94a3b8");
 
+// ---- index pre vyhľadávanie (zbierky vo feede + celý adresár) ----
+const HLADAJ_DATA = [
+  { id: "rodina", titul: "Rodina Kováčová", podtitul: "V noci nám zhorel dom… · Trenčín · Zámostie", kat: "Urgentné", emoji: "🔥", tag: "Urgentné" },
+  { id: "plamienok", titul: "Plamienok", podtitul: "Detský hospic — mobilná paliatívna starostlivosť", kat: "Zdravie", emoji: "⭐", tag: "Zbierka" },
+  { id: "zofia", titul: "Žofia K.", podtitul: "Po úraze tri mesiace bez príjmu, potrebujem na lieky.", kat: "Zdravie", emoji: "🩺", tag: "Zbierka" },
+  { id: "stromosvet", titul: "Stromosvet", podtitul: "Hľadá 10 dobrovoľníkov · výsadba stromov · sobota, Brezina", kat: "Príroda", emoji: "🌳", tag: "Dobrovoľníctvo" },
+  { id: "zelena", titul: "Zelená plus", podtitul: "Triedenie a zber šatstva pre útulok · streda, Juh", kat: "Materiál", emoji: "👕", tag: "Materiál" },
+  ...ADRESAR.flatMap((s) => s.polozky.map((p) => ({ id: "adr-" + p[1], titul: p[1], podtitul: p[2], kat: s.sekcia, emoji: "🏛", tag: p[3] }))),
+];
+
 // ===================== MODUL =====================
 export default function ModulCharita({ wide, otvorModul }) {
   const [screen, setScreen] = useState("feed"); // feed | detail
   const [sheet, setSheet] = useState(null); // add | reg | dir
   const [hlaska, setHlaska] = useState(null);
+  const [hladaj, setHladaj] = useState(false);
 
   // pri prepnutí obrazovky (napr. otvorenie detailu) odscrolluj appku hore
   const scrollHore = useScrollHore();
@@ -87,12 +116,23 @@ export default function ModulCharita({ wide, otvorModul }) {
 
   return (
     <div style={{ minHeight: "100%", color: K.txt }}>
-      {screen === "feed" && <CharitaFeed wide={wide} toast={toast} onDetail={() => setScreen("detail")} onSheet={setSheet} />}
+      {screen === "feed" && <CharitaFeed wide={wide} toast={toast} onDetail={() => setScreen("detail")} onHladaj={() => setHladaj(true)} onSheet={setSheet} />}
       {screen === "detail" && obal(<CharitaDetail toast={toast} onBack={() => setScreen("feed")} onReg={() => setSheet("reg")} />)}
 
       {sheet === "add" && <SheetPridat toast={toast} otvorModul={otvorModul} onClose={() => setSheet(null)} />}
       {sheet === "reg" && <SheetReg toast={toast} onClose={() => setSheet(null)} />}
       {sheet === "dir" && <SheetAdresar toast={toast} onClose={() => setSheet(null)} />}
+
+      {hladaj && (
+        <HladanieModal akcent="#5B9BFF" placeholder="Hľadať zbierky, charity, oblasti…"
+          data={HLADAJ_DATA}
+          onPick={(id) => {
+            if (id === "rodina") setScreen("detail");
+            else if (String(id).startsWith("adr-")) setSheet("dir");
+            else { const d = HLADAJ_DATA.find((x) => x.id === id); toast(`${d?.titul} — ${d?.tag}`); }
+          }}
+          onClose={() => setHladaj(false)} />
+      )}
 
       {hlaska && <Toast text={hlaska} />}
     </div>
@@ -100,22 +140,35 @@ export default function ModulCharita({ wide, otvorModul }) {
 }
 
 // ===================== FEED =====================
-function CharitaFeed({ wide, toast, onDetail, onSheet }) {
+function CharitaFeed({ wide, toast, onDetail, onHladaj, onSheet }) {
+  // zvolený rádius — Feed algoritmus (Časť B): filter podľa okruhu + adaptívny
+  // prah + zoradenie. Karty zostávajú pôvodné komponenty (dizajn nedotknutý),
+  // engine len rozhoduje, KTORÉ a v akom poradí sa zobrazia.
+  const [radius, setRadius] = useState("stvrt");
+  const [vyberOkruh, setVyberOkruh] = useState(false);
+  const feed = pripravFeed(FEED_ITEMS, { ...USER_LOK, radius });
+
+  // mapovanie metadát späť na pôvodné komponenty kariet
+  const karta = (it) => {
+    if (it.comp === "urgent") return <ZbierkyUrgent key={it.id} wide={wide} onDetail={onDetail} />;
+    if (it.comp === "top") return <ZbierkyTop key={it.id} wide={wide} toast={toast} />;
+    if (it.comp === "mala") return <ZbierkyMala key={it.id} wide={wide} toast={toast} />;
+    if (it.comp === "zapoj") return <ZapojSa key={it.id} wide={wide} toast={toast} />;
+    return <Material key={it.id} wide={wide} toast={toast} />;
+  };
+
   return (
     <div style={{ paddingBottom: 14 }}>
       {/* header — jednotná hlavička (logo D⁺ + názov) */}
       <ModulHlavicka title="Charita" right={
         <>
-          <span onClick={() => toast("Vyhľadávanie (demo)")} style={{ display: "flex", alignItems: "center", cursor: "pointer" }}><Lupa size={20} color={K.txt2} /></span>
+          <span onClick={onHladaj} style={{ display: "flex", alignItems: "center", cursor: "pointer" }}><Lupa size={20} color={K.txt2} /></span>
           <span onClick={() => toast("Upozornenia (demo)")} style={{ display: "flex", alignItems: "center", cursor: "pointer" }}><Zvon size={20} color={K.txt2} /></span>
         </>
       } />
 
-      {/* ticker */}
-      <div style={{ display: "flex", alignItems: "center", gap: 7, padding: "9px 16px", fontSize: 13.5, color: K.txt2, borderTop: `1px solid ${K.line}`, borderBottom: `1px solid ${K.line}`, background: K.bg2 }}>
-        <span style={{ width: 7, height: 7, borderRadius: "50%", background: K.green, flexShrink: 0, animation: "pulse 1.6s infinite" }} />
-        Liga proti rakovine <b style={{ color: K.green }}>&nbsp;práve dostala 100 DEED&nbsp;</b> → Marek
-      </div>
+      {/* živý ticker */}
+      <Ticker>Liga proti rakovine <b style={{ color: C.greenL }}>práve dostala 100 DEED</b> → Marek</Ticker>
 
       {/* jednotná sekcia skratiek */}
       <SekcieBar onTalent={() => toast("Ukáž svoj talent (demo)")} onBoard={() => toast("Nástenka (demo)")} onAdd={() => onSheet("add")} />
@@ -125,32 +178,43 @@ function CharitaFeed({ wide, toast, onDetail, onSheet }) {
         <Rebricky
           pred={
             <div onClick={() => onSheet("dir")} style={{ minWidth: 84, background: K.blueBg, border: `1px solid ${K.blueEdge}`, borderRadius: 13, padding: "8px 5px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, cursor: "pointer", flex: "0 0 auto", color: K.blue }}>
-              <div style={{ fontSize: 16, lineHeight: 1 }}>🏛</div>
+              <div style={{ display: "flex", lineHeight: 1 }}><IkonaInstitucia size={18} color={K.blue} /></div>
               <div style={{ fontSize: 7.5, letterSpacing: ".4px", fontWeight: 700 }}>CHARITA & OZ</div>
               <div style={{ fontSize: 9.5, fontWeight: 700 }}>Adresár</div>
             </div>
           }
           ocenenia={[
-            { ic: "🛡", col: "#74A6FF", label: "PARTNER", name: "Lidl", onClick: () => toast("Rebríček: Top partner") },
-            { ic: "👑", col: "#E7C766", label: "TOP", name: "Liga", onClick: () => toast("Rebríček: Top charita") },
-            { ic: "⭐", col: "#E58A6A", label: "TOP", name: "Plamienok", onClick: () => toast("Rebríček: Top charita") },
+            { ic: <IkonaStit />, col: "#74A6FF", label: "PARTNER", name: "Lidl", onClick: () => toast("Rebríček: Top partner") },
+            { ic: <IkonaKorunka />, col: "#E7C766", label: "TOP", name: "Liga", onClick: () => toast("Rebríček: Top charita") },
+            { ic: <IkonaHviezda />, col: "#E58A6A", label: "TOP", name: "Plamienok", onClick: () => toast("Rebríček: Top charita") },
           ]}
           ludia={[{ ini: "Ty", name: "Ty", col: "#74A6FF" }, { ini: "A", name: "Anna" }, { ini: "P", name: "Peter" }]}
         />
       </div>
 
-      {/* jednotný štatistický riadok (dnes + okruh) */}
-      <StatRiadok stat="Dnes 412 · Mesiac 12 840" onOkruh={() => onSheet("dir")} />
+      {/* štatistický riadok — počet vo zvolenom okruhu + výber okruhu */}
+      <StatRiadok stat={`V okruhu ${feed.length} zbierok · Mesiac 12 840`}
+        okruh={FEED_CFG.radiusy[radius].krat} onOkruh={() => setVyberOkruh(true)} />
 
-      {/* feed — na tablete/PC: zapoj sa vľavo, zbierky vpravo */}
-      <FeedStlpce wide={wide} padding="4px 14px 12px"
-        labelSkutky="Zapoj sa" labelZiadosti="Zbierky"
-        jednoStlpec={[<ZapojSa key="z1" wide={wide} toast={toast} />, <ZbierkyUrgent key="u" wide={wide} onDetail={onDetail} />, <ZbierkyTop key="t" wide={wide} toast={toast} />, <ZbierkyMala key="m" wide={wide} toast={toast} />, <Material key="z2" wide={wide} toast={toast} />]}
-        skutky={[<ZapojSa key="z1" wide={wide} toast={toast} />, <Material key="z2" wide={wide} toast={toast} />]}
-        ziadosti={[<ZbierkyUrgent key="u" wide={wide} onDetail={onDetail} />, <ZbierkyTop key="t" wide={wide} toast={toast} />, <ZbierkyMala key="m" wide={wide} toast={toast} />]}
-      />
+      {/* feed — na tablete/PC: zapoj sa vľavo, zbierky vpravo (zoradené algoritmom) */}
+      {feed.length === 0 ? (
+        <div style={{ padding: "40px 24px", textAlign: "center", color: K.txt3, fontSize: 13 }}>
+          V tomto okruhu zatiaľ nie sú dosť významné zbierky. Skús menší okruh.
+        </div>
+      ) : (
+        <FeedStlpce wide={wide} padding="4px 14px 12px"
+          labelSkutky="Zapoj sa" labelZiadosti="Zbierky"
+          jednoStlpec={feed.map(karta)}
+          skutky={feed.filter((it) => it.typ === "skutok").map(karta)}
+          ziadosti={feed.filter((it) => it.typ !== "skutok").map(karta)}
+        />
+      )}
 
       <div style={{ fontSize: 10, color: K.txt3, textAlign: "center", padding: 6 }}>↑ feed je pestrý — veľké urgentné, topované, dobrovoľnícke, materiál ↑</div>
+
+      {vyberOkruh && <OkruhVyber radius={radius} akcent="#5B9BFF"
+        onPick={(r) => { setRadius(r); setVyberOkruh(false); }}
+        onClose={() => setVyberOkruh(false)} />}
     </div>
   );
 }
@@ -158,7 +222,7 @@ function CharitaFeed({ wide, toast, onDetail, onSheet }) {
 // ---- karty feedu (rozdelené do komponentov kvôli dvojstĺpcu skutky/žiadosti) ----
 function ZbierkyUrgent({ wide, onDetail }) {
   return (
-    <div onClick={onDetail} style={{ background: K.warmBg, border: `1px solid ${K.warmEdge}`, borderRadius: 16, overflow: "hidden", marginBottom: wide ? 0 : 12, cursor: "pointer" }}>
+    <div onClick={onDetail} className="good-card" style={{ background: K.warmBg, border: `1px solid ${K.warmEdge}`, borderRadius: 16, overflow: "hidden", marginBottom: wide ? 0 : 12, cursor: "pointer", ...(wide ? {} : { marginLeft: -14, marginRight: -14, borderRadius: 0, border: "none", borderBottom: `1px solid ${K.line}` }) }}>
       <div style={{ position: "relative" }}>
         <FotoPrispevku fotky={ZBIERKA.fotky} emoji="🔥" h={150} disableGaleria />
         <span style={badge({ top: 9, left: 9, color: K.gold })}>🔥 URGENTNÉ</span>
@@ -183,7 +247,7 @@ function ZbierkyTop({ wide, toast }) {
 }
 function ZbierkyMala({ wide, toast }) {
   return (
-    <div onClick={() => toast("Detail zbierky — Žofia K.")} style={{ background: K.warmBg, border: `1px solid ${K.warmEdge}`, borderRadius: 16, overflow: "hidden", marginBottom: wide ? 0 : 12, cursor: "pointer" }}>
+    <div onClick={() => toast("Detail zbierky — Žofia K.")} className="good-card" style={{ background: K.warmBg, border: `1px solid ${K.warmEdge}`, borderRadius: 16, overflow: "hidden", marginBottom: wide ? 0 : 12, cursor: "pointer", ...(wide ? {} : { marginLeft: -14, marginRight: -14, borderRadius: 0, border: "none", borderBottom: `1px solid ${K.line}` }) }}>
       <div style={{ position: "relative" }}>
         <FotoPrispevku fotky={ZOFIA_FOTKY} emoji="🩺" h={120} disableGaleria />
         <span style={badge({ top: 9, right: 9, color: K.green, background: "rgba(52,211,153,.18)" })}>D+</span>
@@ -236,7 +300,7 @@ function CharitaDetail({ toast, onBack, onReg }) {
   const z = ZBIERKA;
   const [suma, setSuma] = useState(z.suma);
   const [ludia, setLudia] = useState(z.ludia);
-  const [potvrd, setPotvrd] = useState(null); // {kanal, suma}
+  const [platba, setPlatba] = useState(null); // "EUR" | "DEED"
   const otvorGaleriu = useGaleria();
   const pct = Math.min(100, Math.round(suma / z.ciel * 100));
 
@@ -245,27 +309,26 @@ function CharitaDetail({ toast, onBack, onReg }) {
     setLudia((l) => l + 1);
     toast(text);
   }
-  function potvrdVlastnu() {
-    setSuma((s) => s + Number(potvrd.suma || 0) * (potvrd.kanal === "EUR" ? 1 : 0.01));
+  function platbaHotova(s) {
+    setSuma((x) => x + s * (platba === "EUR" ? 1 : 0.01));
     setLudia((l) => l + 1);
-    toast(`Odoslané ${potvrd.suma} ${potvrd.kanal === "EUR" ? "€" : "DEED"} · ${z.nazov}`);
-    setPotvrd(null);
+    toast(`Odoslané ${platba === "EUR" ? s + " €" : s + " DEED"} · ${z.nazov}`);
   }
 
   return (
     <div style={{ paddingBottom: 24 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "14px 16px" }}>
-        <span onClick={onBack} style={{ width: 32, height: 32, flex: "0 0 auto", borderRadius: "50%", background: "rgba(var(--glass-rgb),.06)", border: `1px solid ${K.line}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, color: K.txt2, cursor: "pointer" }}>←</span>
+        <span onClick={onBack} style={{ width: 32, height: 32, flex: "0 0 auto", borderRadius: "50%", background: "rgba(var(--glass-rgb),.06)", border: `1px solid ${K.line}`, display: "flex", alignItems: "center", justifyContent: "center", color: K.txt2, cursor: "pointer" }}><IkonaSpat size={17} color={K.txt2} /></span>
         <span style={{ fontSize: 12, color: K.diamond, background: K.blueBg, border: `1px solid ${K.blueEdge}`, padding: "3px 9px", borderRadius: 7, fontWeight: 700, letterSpacing: ".02em" }}>12 000 / 47</span>
         <span style={{ fontSize: 12, color: K.txt2 }}>Liga proti rakovine</span>
-        <span style={{ marginLeft: "auto", color: K.txt2 }}>↗&nbsp;&nbsp;🚩</span>
+        <span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 14, color: K.txt2 }}><Zdielanie size={17} color={K.txt2} /><IkonaVlajka size={16} color={K.txt2} /></span>
       </div>
 
       <div style={{ padding: "0 16px" }}>
         {/* hero foto — klik = celá obrazovka + swipe */}
         <div style={{ position: "relative" }}>
           <Foto src={z.fotky[0]} emoji="🔥" h={200} radius={14} onClick={() => otvorGaleriu(z.fotky, 0)} />
-          <span style={badge({ top: 9, right: 9, color: K.txt })}>📷 foto z prípadu</span>
+          <span style={{ ...badge({ top: 9, right: 9, color: K.txt }), display: "inline-flex", alignItems: "center", gap: 5 }}><IkonaFoto size={12} color={K.txt} /> foto z prípadu</span>
           <span style={{ position: "absolute", bottom: 9, right: 9, background: "rgba(0,0,0,.6)", borderRadius: 12, padding: "3px 9px", fontSize: 10, color: "#fff", pointerEvents: "none" }}>⧉ {z.fotky.length} · klikni na foto</span>
         </div>
       </div>
@@ -300,33 +363,17 @@ function CharitaDetail({ toast, onBack, onReg }) {
             onShare={() => toast("Zdieľať: odkaz skopírovaný · siete")}
             upvotes={140} onUpvote={() => toast("Palec hore")}
             onPodpor={(s) => podpor(s, `Ďakujeme za ${s} DEED pre ${z.nazov}`)} onSms={() => podpor(100, "SMS podpora")}
-            onKanal={(k) => setPotvrd({ kanal: k, suma: "" })} />
+            onKanal={(k) => setPlatba(k)} />
         </div>
 
         {/* pravidelná podpora */}
         <div onClick={onReg} style={{ width: "100%", border: `2px solid ${K.blueEdge}`, background: K.blueBg, borderRadius: 13, padding: 14, textAlign: "center", fontSize: 14, fontWeight: 600, cursor: "pointer", marginBottom: 14, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
-          🔁 Pravidelná podpora
-        </div>
-
-        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: K.txt2, borderTop: `1px solid ${K.line}`, paddingTop: 11 }}>
-          <span>✓ 100 % žiadateľovi · ⛓ blockchain</span><span>VS 8842 0471 · 28 dní</span>
+          <IkonaOpakovat size={17} color={K.blue} /> Pravidelná podpora
         </div>
       </div>
 
-      {/* potvrdenie vlastnej sumy */}
-      {potvrd && (
-        <Modal onClose={() => setPotvrd(null)}>
-          <div style={{ fontSize: 15, fontWeight: "bold", marginBottom: 10 }}>Vlastná suma — {potvrd.kanal}</div>
-          <input autoFocus type="number" placeholder={potvrd.kanal === "EUR" ? "suma v €" : "počet DEED"} value={potvrd.suma}
-            onChange={(e) => setPotvrd({ ...potvrd, suma: e.target.value })}
-            style={{ width: "100%", padding: "11px 13px", borderRadius: 12, background: "rgba(0,0,0,.3)", border: `1px solid ${K.line}`, color: K.txt, fontSize: 16, marginBottom: 12, outline: "none" }} />
-          <div style={{ fontSize: 12, color: K.txt3, marginBottom: 14 }}>Skontroluj sumu pred odoslaním (proti preklepu).</div>
-          <div style={{ display: "flex", gap: 10 }}>
-            <button onClick={() => setPotvrd(null)} style={{ flex: 1, padding: "12px 0", borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: "pointer", background: "transparent", color: K.txt2, border: `1px solid ${K.line}` }}>Späť</button>
-            <button onClick={potvrdVlastnu} disabled={!potvrd.suma} style={{ flex: 1, padding: "12px 0", borderRadius: 14, fontSize: 14, fontWeight: 700, cursor: potvrd.suma ? "pointer" : "not-allowed", background: potvrd.suma ? GRAD : "rgba(255,255,255,.05)", color: potvrd.suma ? "#fff" : K.txt3, border: "none", boxShadow: potvrd.suma ? "0 8px 26px rgba(99,134,255,.32)" : "none" }}>Potvrdiť a odoslať</button>
-          </div>
-        </Modal>
-      )}
+      {/* simulácia platby (EUR karta / DEED peňaženka) */}
+      {platba && <PlatbaModal kanal={platba} komu={z.nazov} onClose={() => setPlatba(null)} onDone={platbaHotova} />}
     </div>
   );
 }
@@ -344,7 +391,7 @@ function SheetObal({ title, onClose, children }) {
   return (
     <div style={{ position: "absolute", inset: 0, background: "rgba(var(--panel-rgb),.92)", backdropFilter: "blur(26px)", WebkitBackdropFilter: "blur(26px)", zIndex: 50, display: "flex", flexDirection: "column", animation: "fadeUp .2s ease" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 12, padding: 16, borderBottom: `1px solid ${K.line}` }}>
-        <span onClick={onClose} style={{ fontSize: 22, color: K.txt2, cursor: "pointer" }}>✕</span>
+        <span onClick={onClose} style={{ display: "flex", color: K.txt2, cursor: "pointer" }}><IkonaKriz size={20} color={K.txt2} /></span>
         <span style={{ fontSize: 16, fontWeight: 600 }}>{title}</span>
       </div>
       <div style={{ flex: 1, overflowY: "auto", padding: 16 }}>{children}</div>
@@ -411,7 +458,7 @@ function SheetAdresar({ toast, onClose }) {
   return (
     <SheetObal title="Charita & OZ" onClose={onClose}>
       <div style={{ display: "flex", alignItems: "center", gap: 9, background: K.card, border: `1px solid ${K.line}`, borderRadius: 11, padding: "4px 13px", marginBottom: 12 }}>
-        <span style={{ color: K.txt3 }}>🔍</span>
+        <span style={{ display: "flex", color: K.txt3 }}><Lupa size={16} color={K.txt3} /></span>
         <input value={hladaj} onChange={(e) => setHladaj(e.target.value)} placeholder="Hľadať charitu, oblasť, mesto…"
           style={{ flex: 1, background: "transparent", border: "none", outline: "none", color: K.txt, fontSize: 13, padding: "8px 0" }} />
       </div>

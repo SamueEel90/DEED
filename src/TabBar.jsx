@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { C, GRAD, glassTmavy } from "./theme";
+import { IkonaDomov, IkonaSrdceLine, IkonaCharita, IkonaKompas, IkonaMapa, IkonaPohar, IkonaOsoba, IkonaPanel } from "./shared";
 
 /*
   ============================================================
@@ -10,14 +11,14 @@ import { C, GRAD, glassTmavy } from "./theme";
 */
 
 export const VSETKY_MODULY = [
-  { id: "good",    nazov: "Domov",   ikona: "⌂",  popis: "Feed skutkov — DEED Good" },
-  { id: "help",    nazov: "Help",    ikona: "♥",  popis: "Crowdfunding pre ľudí v núdzi" },
-  { id: "charita", nazov: "Charita", ikona: "✚",  popis: "Zbierky, dobrovoľníctvo, adresár OZ" },
-  { id: "vyzva",   nazov: "Aktivity", ikona: "◆",  popis: "Skutky, talenty, workshopy a pomoc v okolí" },
-  { id: "mapa",    nazov: "Mapa",    ikona: "🗺", popis: "Pomoc a skutky v okolí" },
-  { id: "top",     nazov: "Top",     ikona: "🏆", popis: "Rebríčky darcov a hrdinov" },
-  { id: "profil",  nazov: "Profil",  ikona: "👤", popis: "Karma, peňaženka, nastavenia" },
-  { id: "admin",   nazov: "Admin",   ikona: "🛠", popis: "Investor demo · kokpit · náhľad zariadení" },
+  { id: "good",    nazov: "Domov",   ikona: <IkonaDomov />,    popis: "Feed skutkov — DEED Good" },
+  { id: "help",    nazov: "Help",    ikona: <IkonaSrdceLine />, popis: "Crowdfunding pre ľudí v núdzi" },
+  { id: "charita", nazov: "Charita", ikona: <IkonaCharita />,  popis: "Zbierky, dobrovoľníctvo, adresár OZ" },
+  { id: "vyzva",   nazov: "Aktivity", ikona: <IkonaKompas />,  popis: "Skutky, talenty, workshopy a pomoc v okolí" },
+  { id: "mapa",    nazov: "Mapa",    ikona: <IkonaMapa />,     popis: "Pomoc a skutky v okolí" },
+  { id: "top",     nazov: "Top",     ikona: <IkonaPohar />,    popis: "Rebríčky darcov a hrdinov" },
+  { id: "profil",  nazov: "Profil",  ikona: <IkonaOsoba />,    popis: "Karma, peňaženka, nastavenia" },
+  { id: "admin",   nazov: "Admin",   ikona: <IkonaPanel />,    popis: "Investor demo · kokpit · náhľad zariadení" },
 ];
 
 const DEFAULT_TABY = ["good", "vyzva", "help", "charita", "profil"];
@@ -60,10 +61,10 @@ export function TabBar({ taby, aktivny, onModul, wide }) {
 
 function Tab({ m, on, onClick }) {
   return (
-    <div onClick={onClick} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4, cursor: "pointer", padding: "4px 0 3px" }}>
-      <div style={{
+    <div onClick={onClick} className="dock-tab" style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4, cursor: "pointer", padding: "4px 0 3px" }}>
+      <div className="dock-icon" style={{
         width: 50, height: 32, borderRadius: 14, display: "flex", alignItems: "center", justifyContent: "center",
-        fontSize: 21, lineHeight: 1, transition: "all .25s ease",
+        fontSize: 21, lineHeight: 1, transition: "transform .25s cubic-bezier(.34,1.56,.64,1), background .25s ease, box-shadow .25s ease, filter .25s ease",
         background: on ? "linear-gradient(135deg, rgba(91,155,255,.32), rgba(139,124,255,.26))" : "transparent",
         border: on ? "1px solid rgba(116,166,255,.4)" : "1px solid transparent",
         boxShadow: on ? "0 4px 16px rgba(91,124,255,.35)" : "none",

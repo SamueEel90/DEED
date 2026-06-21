@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { C, GRAD } from "../theme";
-import { Toast, useScrollHore, useViac, IkonaMenu } from "../shared";
+import { Toast, useScrollHore, useViac, IkonaMenu, IkonaNastavenia, IkonaSipVlavo, IkonaPenazenka, IkonaHviezda, IkonaFajka, IkonaDoska, IkonaUsmev } from "../shared";
+import GlassIcons from "../GlassIcons";
 
 /*
   ============================================================
@@ -38,12 +39,12 @@ export default function ModulProfil({ wide }) {
 function ProfilHlavny({ toast, naWallet, naSub }) {
   const otvorViac = useViac();
   const dlazdice = [
-    ["Peňaženka", "1 240 DEED", "rgba(91,168,240,.14)", "#5BA8F0", "€", naWallet],
-    ["Karma a úrovne", "7 modulov", "rgba(169,139,240,.15)", "#A98BF0", "★", () => naSub("Karma a úrovne")],
-    ["Moje skutky", "48 skutkov", "rgba(61,214,140,.13)", "#3DD68C", "✓", () => naSub("Moje skutky")],
-    ["Štatistiky", "umiestnenie", "rgba(61,214,206,.13)", "#3DD6CE", "▦", () => naSub("Štatistiky a umiestnenie")],
-    ["Priatelia", "nájdi známych", "rgba(231,199,102,.14)", "#E7C766", "☺", () => naSub("Priatelia")],
-    ["Nastavenia", "vzhľad, jazyk", "rgba(154,160,168,.16)", "#9AA0A8", "⚙", () => naSub("Nastavenia")],
+    ["Peňaženka", "1 240 DEED", "rgba(91,168,240,.14)", "#5BA8F0", <IkonaPenazenka size={26} />, naWallet],
+    ["Karma a úrovne", "7 modulov", "rgba(169,139,240,.15)", "#A98BF0", <IkonaHviezda size={26} />, () => naSub("Karma a úrovne")],
+    ["Moje skutky", "48 skutkov", "rgba(61,214,140,.13)", "#3DD68C", <IkonaFajka size={26} />, () => naSub("Moje skutky")],
+    ["Štatistiky", "umiestnenie", "rgba(61,214,206,.13)", "#3DD6CE", <IkonaDoska size={24} />, () => naSub("Štatistiky a umiestnenie")],
+    ["Priatelia", "nájdi známych", "rgba(231,199,102,.14)", "#E7C766", <IkonaUsmev size={26} />, () => naSub("Priatelia")],
+    ["Nastavenia", "vzhľad, jazyk", "rgba(154,160,168,.16)", "#9AA0A8", <IkonaNastavenia size={26} />, () => naSub("Nastavenia")],
   ];
 
   return (
@@ -51,7 +52,7 @@ function ProfilHlavny({ toast, naWallet, naSub }) {
       <div style={{ display: "flex", alignItems: "center", gap: 11, padding: "16px 18px 10px" }}>
         <span onClick={otvorViac} title="Menu modulov" style={{ display: "flex", alignItems: "center", color: C.textSec, cursor: "pointer", flex: "0 0 auto" }}><IkonaMenu size={22} color={C.textSec} /></span>
         <span style={{ fontSize: 18, fontWeight: 800 }}>Môj profil</span>
-        <span onClick={() => naSub("Nastavenia")} style={{ marginLeft: "auto", fontSize: 18, color: C.textSec, cursor: "pointer" }}>⚙</span>
+        <span onClick={() => naSub("Nastavenia")} style={{ marginLeft: "auto", display: "flex", color: C.textSec, cursor: "pointer" }}><IkonaNastavenia size={19} color={C.textSec} /></span>
       </div>
 
       <div style={{ margin: "8px 16px 0", background: C.surface, border: `1px solid ${C.line}`, borderRadius: 16, padding: 16, display: "flex", gap: 14, alignItems: "center" }}>
@@ -75,14 +76,8 @@ function ProfilHlavny({ toast, naWallet, naSub }) {
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, padding: 16 }}>
-        {dlazdice.map((d, i) => (
-          <div key={i} onClick={d[5]} style={{ background: C.surface, border: `1px solid ${C.line}`, borderRadius: 14, padding: 14, cursor: "pointer" }}>
-            <div style={{ width: 38, height: 38, borderRadius: 11, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 700, background: d[2], color: d[3] }}>{d[4]}</div>
-            <div style={{ fontWeight: 700, fontSize: 14.5, marginTop: 12 }}>{d[0]}</div>
-            <div style={{ fontSize: 11.5, color: C.textTer, marginTop: 3 }}>{d[1]}</div>
-          </div>
-        ))}
+      <div style={{ padding: 16 }}>
+        <GlassIcons columns={3} items={dlazdice.map((d) => ({ icon: d[4], color: d[3], label: d[0], sub: d[1], onClick: d[5] }))} />
       </div>
     </div>
   );
@@ -99,7 +94,7 @@ function Penazenka({ toast, onBack }) {
   return (
     <div style={{ paddingBottom: 14 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "16px 18px 8px" }}>
-        <div onClick={onBack} style={spatBtn}>‹</div>
+        <div onClick={onBack} style={spatBtn}><IkonaSipVlavo size={18} color={C.textSec} /></div>
         <h3 style={{ fontSize: 17, margin: 0 }}>Peňaženka</h3>
       </div>
       <div style={{ padding: "0 16px" }}>
@@ -190,7 +185,7 @@ function SubScreen({ nazov, toast, onBack }) {
   return (
     <div style={{ paddingBottom: 14 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "16px 18px 8px" }}>
-        <div onClick={onBack} style={spatBtn}>‹</div>
+        <div onClick={onBack} style={spatBtn}><IkonaSipVlavo size={18} color={C.textSec} /></div>
         <h3 style={{ fontSize: 17, margin: 0 }}>{nazov}</h3>
       </div>
       <div style={{ padding: "0 16px" }}>{obsah}</div>
