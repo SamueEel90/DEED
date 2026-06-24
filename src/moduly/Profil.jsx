@@ -13,7 +13,7 @@ import GlassIcons from "../GlassIcons";
   ============================================================
 */
 
-export default function ModulProfil({ wide }) {
+export default function ModulProfil({ wide, walletReq = 0 }) {
   const [screen, setScreen] = useState("profil"); // profil | wallet | sub | nastavenia | notif
   const [subNazov, setSubNazov] = useState(null);
   const [hlaska, setHlaska] = useState(null);
@@ -21,6 +21,9 @@ export default function ModulProfil({ wide }) {
   // pri prepnutí obrazovky odscrolluj appku hore
   const scrollHore = useScrollHore();
   useEffect(() => { scrollHore(); }, [screen]);
+
+  // ☰ menu → Peňaženka: otvor peňaženku (walletReq sa zvýši pri kliknutí)
+  useEffect(() => { if (walletReq) setScreen("wallet"); }, [walletReq]);
 
   const toast = (m) => { setHlaska(m); setTimeout(() => setHlaska((x) => (x === m ? null : x)), 2300); };
   const sub = (n) => { setSubNazov(n); setScreen("sub"); };

@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { ModulHlavicka, Hlavicka, PodporaSekcia, PlatbaModal, HladanieModal, Toast, Oslava, useMotiv, useScrollHore, Ticker, Rebricky, StatRiadok, FeedStlpce, SekcieBar, OkruhVyber, Lupa, Zvon, IkonaSipVlavo, IkonaMoznosti, Zdielanie, IkonaUlozit, IkonaFoto, IkonaPlus, IkonaPlay } from "../shared";
+import { ModulHlavicka, Hlavicka, PodporaSekcia, PlatbaModal, HladanieModal, Toast, Oslava, useMotiv, useScrollHore, Ticker, StatRiadok, FeedStlpce, SekcieBar, OkruhVyber, Lupa, Zvon, IkonaSipVlavo, IkonaMoznosti, Zdielanie, IkonaUlozit, IkonaFoto, IkonaPlus, IkonaPlay } from "../shared";
 import { C, GRAD, GRAD_ZELENY } from "../theme";
 import { pripravFeed, FEED_CFG } from "../lib/feed";
 import { Zvoncek } from "../Notifikacie";
@@ -61,14 +61,6 @@ function tint(hex, a) {
 }
 
 // ---- kontextové rebríčky domény ----
-const LEADERS = {
-  mix:     [["★", "TOP HRDINA", "Jana N.", "#33220F", A.orange], ["◆", "TOP AKTIVITA", "Cyklo TN", "#0d2422", "#3DD6CE"], ["♛", "TOP DARCA", "Lukáš H.", "#33290F", A.gold]],
-  sport:   [["🚲", "TOP CYKLISTA", "Cyklo TN", "#13243a", A.blue], ["🏃", "TOP BEŽEC", "Peter K.", "#13243a", A.blue], ["🏆", "TOP KLUB", "AŠK Sihoť", "#13243a", A.blue]],
-  art:     [["🎵", "TOP HUDOBNÍK", "Tlupa", "#1a1430", A.purple], ["🎨", "TOP UMELEC", "Eva M.", "#1a1430", A.purple], ["🎭", "TOP TVORCA", "Divadlo", "#1a1430", A.purple]],
-  learn:   [["🎓", "TOP LEKTOR", "Anna K.", "#0d2620", "#46C2A0"], ["📚", "TOP ŠKOLITEĽ", "IT Akad.", "#0d2620", "#46C2A0"], ["🌍", "TOP JAZYKY", "Lingua", "#0d2620", "#46C2A0"]],
-  eko:     [["🌳", "TOP SADIČ", "EkoTím Juh", "#0f2417", A.green], ["♻️", "TOP ZBER", "ČistýVáh", "#0f2417", A.green], ["🐝", "TOP BIODIV.", "Včelári", "#0f2417", A.green]],
-  zdravie: [["🩸", "TOP DARCA KRVI", "Martin K.", "#2a1620", "#E98AAD"], ["🧠", "TOP LEKTOR", "Mgr. Nová", "#2a1620", "#E98AAD"], ["🥗", "TOP VÝŽIVA", "FitPoradca", "#2a1620", "#E98AAD"]],
-};
 
 // ---- DÁTA (type: skutok | talent | workshop | help | case) ----
 const SEED_ITEMS = [
@@ -450,7 +442,7 @@ function Home({ items, dom, view, pickDom, pickView, toast, open, openPerson, se
   return (
     <div style={{ paddingBottom: 14 }}>
       {/* header — jednotná hlavička (logo D⁺ + názov) */}
-      <ModulHlavicka title="Aktivity"
+      <ModulHlavicka title="Aktivity" karma="Aktivity · Silver"
         right={
           <>
             <span onClick={onHladaj} style={{ display: "flex", alignItems: "center", cursor: "pointer" }}><Lupa size={20} color={A.txt2} /></span>
@@ -467,9 +459,6 @@ function Home({ items, dom, view, pickDom, pickView, toast, open, openPerson, se
 
       {/* jednotná sekcia skratiek */}
       <SekcieBar talentActive={view === "talent"} onTalent={() => pickView("talent")} onBoard={() => setScreen("board")} onAdd={() => setScreen("add")} />
-
-      {/* jednotný rebríček ocenení (kontextový podľa domény) */}
-      <Rebricky ocenenia={LEADERS[dom].map((l) => ({ ic: l[0], label: l[1], name: l[2], col: l[4], onClick: () => openPerson(l[2]) }))} />
 
       {/* štatistický riadok — počet vo zvolenom okruhu + výber okruhu */}
       <StatRiadok stat={`V okruhu ${feed.length} aktivít · Mesiac 9 480`}

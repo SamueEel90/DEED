@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { C, U, AV, GRAD, GRAD_ZELENY } from "../theme";
-import { Foto, Avatar, FotoPrispevku, MiniFotky, Modal, ModulHlavicka, PodporaSekcia, PlatbaModal, HladanieModal, Toast, useGaleria, useScrollHore, Ticker, Rebricky, StatRiadok, MoniBar, FeedStlpce, SekcieBar, OkruhVyber, Lupa, Zvon, Zdielanie, IkonaSpat, IkonaVlajka, IkonaFoto, IkonaOpakovat, IkonaKriz, IkonaStit, IkonaKorunka, IkonaHviezda, IkonaInstitucia } from "../shared";
+import { Foto, Avatar, FotoPrispevku, MiniFotky, Modal, ModulHlavicka, PodporaSekcia, PlatbaModal, HladanieModal, Toast, useGaleria, useScrollHore, Ticker, StatRiadok, MoniBar, FeedStlpce, SekcieBar, OkruhVyber, Lupa, Zvon, Zdielanie, IkonaSpat, IkonaVlajka, IkonaFoto, IkonaOpakovat, IkonaKriz, IkonaInstitucia } from "../shared";
 import { pripravFeed, FEED_CFG } from "../lib/feed";
 import { Zvoncek } from "../Notifikacie";
 
@@ -162,7 +162,7 @@ function CharitaFeed({ wide, toast, onDetail, onHladaj, onSheet }) {
   return (
     <div style={{ paddingBottom: 14 }}>
       {/* header — jednotná hlavička (logo D⁺ + názov) */}
-      <ModulHlavicka title="Charita" right={
+      <ModulHlavicka title="Charita" karma="Charita · Gold" right={
         <>
           <span onClick={onHladaj} style={{ display: "flex", alignItems: "center", cursor: "pointer" }}><Lupa size={20} color={K.txt2} /></span>
           <Zvoncek color={K.txt2} toast={toast} />
@@ -175,23 +175,16 @@ function CharitaFeed({ wide, toast, onDetail, onHladaj, onSheet }) {
       {/* jednotná sekcia skratiek */}
       <SekcieBar onTalent={() => toast("Ukáž svoj talent (demo)")} onBoard={() => toast("Nástenka (demo)")} onAdd={() => onSheet("add")} />
 
-      {/* jednotný rebríček ocenení (s úvodným kachlíkom Adresár) */}
-      <div>
-        <Rebricky
-          pred={
-            <div onClick={() => onSheet("dir")} style={{ minWidth: 84, background: K.blueBg, border: `1px solid ${K.blueEdge}`, borderRadius: 13, padding: "8px 5px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, cursor: "pointer", flex: "0 0 auto", color: K.blue }}>
-              <div style={{ display: "flex", lineHeight: 1 }}><IkonaInstitucia size={18} color={K.blue} /></div>
-              <div style={{ fontSize: 7.5, letterSpacing: ".4px", fontWeight: 700 }}>CHARITA & OZ</div>
-              <div style={{ fontSize: 9.5, fontWeight: 700 }}>Adresár</div>
-            </div>
-          }
-          ocenenia={[
-            { ic: <IkonaStit />, col: "#74A6FF", label: "PARTNER", name: "Lidl", onClick: () => toast("Rebríček: Top partner") },
-            { ic: <IkonaKorunka />, col: "#E7C766", label: "TOP", name: "Liga", onClick: () => toast("Rebríček: Top charita") },
-            { ic: <IkonaHviezda />, col: "#E58A6A", label: "TOP", name: "Plamienok", onClick: () => toast("Rebríček: Top charita") },
-          ]}
-          ludia={[{ ini: "Ty", name: "Ty", col: "#74A6FF" }, { ini: "A", name: "Anna" }, { ini: "P", name: "Peter" }]}
-        />
+      {/* skratka na Adresár charít & OZ (rebríčky sú teraz v module Top) */}
+      <div style={{ padding: "0 16px 12px" }}>
+        <div onClick={() => onSheet("dir")} style={{ display: "flex", alignItems: "center", gap: 12, background: K.blueBg, border: `1px solid ${K.blueEdge}`, borderRadius: 14, padding: "12px 14px", cursor: "pointer" }}>
+          <span style={{ width: 38, height: 38, borderRadius: 11, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(91,168,240,.15)", color: K.blue }}><IkonaInstitucia size={20} color={K.blue} /></span>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 14, fontWeight: 700 }}>Adresár charít & OZ</div>
+            <div style={{ fontSize: 11.5, color: C.textTer }}>Overené organizácie na jednom mieste</div>
+          </div>
+          <span style={{ color: C.textTer, fontSize: 16 }}>›</span>
+        </div>
       </div>
 
       {/* štatistický riadok — počet vo zvolenom okruhu + výber okruhu */}

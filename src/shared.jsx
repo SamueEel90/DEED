@@ -296,20 +296,29 @@ export const MotivContext = createContext({ svetly: false, prepni: () => {} });
 export const useMotiv = () => useContext(MotivContext);
 
 // ---- JEDNOTNÁ HLAVIČKA MODULU: ☰ + logo D⁺ + názov stránky (+ pravý obsah + prepínač režimu) ----
-export function ModulHlavicka({ title, right }) {
+// pod horným riadkom: SLOGAN (§14) + voliteľná kontextová karma (§5.3 — karma danej oblasti)
+export function ModulHlavicka({ title, right, karma, slogan = "Miesto, kde nerozhodujú slová, ale skutky" }) {
   const { svetly, prepni } = useMotiv();
   const otvorViac = useViac();
   return (
-    <div style={{ position: "sticky", top: 0, zIndex: 6, display: "flex", alignItems: "center", gap: 11, padding: "13px 16px", ...glassTmavy(18, .6), borderLeft: "none", borderRight: "none", borderTop: "none" }}>
-      <span onClick={otvorViac} title="Menu modulov" style={{ display: "flex", alignItems: "center", color: C.textSec, cursor: "pointer", flex: "0 0 auto" }}><IkonaMenu size={22} color={C.textSec} /></span>
-      <span style={{ width: 32, height: 32, borderRadius: 10, background: GRAD, color: "#fff", fontWeight: 800, fontSize: 17, display: "flex", alignItems: "center", justifyContent: "center", position: "relative", boxShadow: "0 4px 14px rgba(99,134,255,.4)", flex: "0 0 auto" }}>
-        D<span style={{ position: "absolute", top: 3, right: 4, fontSize: 9 }}>+</span>
-      </span>
-      <span style={{ fontSize: 20, fontWeight: 800 }}>{title}</span>
-      <span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 13 }}>
-        {right}
-        <span onClick={prepni} title="Svetlý / tmavý režim" style={{ cursor: "pointer", width: 34, height: 34, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", border: `1px solid ${C.line}`, background: C.surface, flex: "0 0 auto", color: C.textSec }}>{svetly ? <IkonaMesiac size={17} color={C.textSec} /> : <IkonaSlnko size={17} color={C.textSec} />}</span>
-      </span>
+    <div style={{ position: "sticky", top: 0, zIndex: 6, ...glassTmavy(18, .6), borderLeft: "none", borderRight: "none", borderTop: "none" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 11, padding: "13px 16px 7px" }}>
+        <span onClick={otvorViac} title="Menu modulov" style={{ display: "flex", alignItems: "center", color: C.textSec, cursor: "pointer", flex: "0 0 auto" }}><IkonaMenu size={22} color={C.textSec} /></span>
+        <span style={{ width: 32, height: 32, borderRadius: 10, background: GRAD, color: "#fff", fontWeight: 800, fontSize: 17, display: "flex", alignItems: "center", justifyContent: "center", position: "relative", boxShadow: "0 4px 14px rgba(99,134,255,.4)", flex: "0 0 auto" }}>
+          D<span style={{ position: "absolute", top: 3, right: 4, fontSize: 9 }}>+</span>
+        </span>
+        <span style={{ fontSize: 20, fontWeight: 800 }}>{title}</span>
+        <span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 13 }}>
+          {right}
+          <span onClick={prepni} title="Svetlý / tmavý režim" style={{ cursor: "pointer", width: 34, height: 34, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", border: `1px solid ${C.line}`, background: C.surface, flex: "0 0 auto", color: C.textSec }}>{svetly ? <IkonaMesiac size={17} color={C.textSec} /> : <IkonaSlnko size={17} color={C.textSec} />}</span>
+        </span>
+      </div>
+      {(slogan || karma) && (
+        <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "0 16px 9px" }}>
+          {slogan && <span style={{ flex: 1, minWidth: 0, fontSize: 11.5, fontStyle: "italic", color: C.textTer, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>„{slogan}"</span>}
+          {karma && <span style={{ flex: "0 0 auto", display: "inline-flex", alignItems: "center", gap: 4, fontSize: 10.5, fontWeight: 700, color: "#E7C766", background: "rgba(231,199,102,.12)", border: "1px solid rgba(200,162,58,.4)", borderRadius: 9, padding: "3px 9px" }}>★ {karma}</span>}
+        </div>
+      )}
     </div>
   );
 }

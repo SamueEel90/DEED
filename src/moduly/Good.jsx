@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { C, U, inp, GRAD, GRAD_ZELENY } from "../theme";
-import { Foto, FotoPrispevku, MiniFotky, Modal, Video, ModulHlavicka, Hlavicka, PodporaSekcia, PlatbaModal, HladanieModal, Toast, Oslava, useGaleria, useScrollHore, useMotiv, Rebricky, StatRiadok, MoniBar, FeedStlpce, SekcieBar, Lupa, Zvon, Zdielanie, IkonaSipVlavo, IkonaMoznosti, IkonaUlozit, IkonaFajka, IkonaStit, IkonaKorunka, IkonaHviezda, IkonaUsmev, OkruhVyber, QrModal } from "../shared";
+import { Foto, FotoPrispevku, MiniFotky, Modal, Video, ModulHlavicka, Hlavicka, PodporaSekcia, PlatbaModal, HladanieModal, Toast, Oslava, useGaleria, useScrollHore, useMotiv, StatRiadok, MoniBar, FeedStlpce, SekcieBar, Lupa, Zvon, Zdielanie, IkonaSipVlavo, IkonaMoznosti, IkonaUlozit, IkonaFajka, OkruhVyber, QrModal } from "../shared";
 import { pripravFeed, FEED_CFG } from "../lib/feed";
 import { zobrazVelkost } from "../lib/cardSize";
 import { RetazDobraSheet } from "../RetazDobra";
@@ -178,15 +178,10 @@ export default function ModulGood({ wide, otvorModul }) {
           onDetail={(id) => { setAktId(id); setScreen("detail"); }}
           onHladaj={() => setHladaj(true)}
           onBoard={() => setScreen("board")}
-          onProfil={(subjekt) => otvorProfil(subjekt, "home")}
-          onFun={() => setScreen("fun")}
           onAdd={() => setScreen("add")} />
       )}
       {screen === "cudzi" && aktSubjekt && obal(
         <CudziProfil subjekt={aktSubjekt} toast={toast} onBack={() => setScreen(predtym)} />
-      )}
-      {screen === "fun" && obal(
-        <GoodFun onBack={() => setScreen("home")} toast={toast} />
       )}
       {screen === "board" && obal(
         <GoodBoard onBack={() => setScreen("home")} onEvent={(id) => { setAktEvent(id); setScreen("event"); }} toast={toast} />
@@ -234,7 +229,7 @@ export default function ModulGood({ wide, otvorModul }) {
 }
 
 // ===================== HOME / FEED =====================
-function Home({ wide, toast, otvorModul, onDetail, onHladaj, onBoard, onAdd, onProfil, onFun }) {
+function Home({ wide, toast, otvorModul, onDetail, onHladaj, onBoard, onAdd }) {
   // zvolený rádius — Časť B: mení, ČO a v akom poradí sa vo feede zobrazí
   const [radius, setRadius] = useState("stvrt");
   const [vyberOkruh, setVyberOkruh] = useState(false);
@@ -249,7 +244,7 @@ function Home({ wide, toast, otvorModul, onDetail, onHladaj, onBoard, onAdd, onP
   return (
     <div style={{ paddingBottom: 14 }}>
       {/* header — jednotná hlavička (logo D⁺ + názov + hľadanie/upozornenia + profil) */}
-      <ModulHlavicka title="Domov"
+      <ModulHlavicka title="Domov" karma="Gold · L7 · celková"
         right={
           <>
             <span onClick={onHladaj} style={{ display: "flex", alignItems: "center", cursor: "pointer" }}><Lupa size={20} color={C.textSec} /></span>
@@ -260,20 +255,6 @@ function Home({ wide, toast, otvorModul, onDetail, onHladaj, onBoard, onAdd, onP
 
       {/* jednotná sekcia skratiek */}
       <SekcieBar onTalent={() => toast("Ukáž svoj talent — TikTok kanál (demo)")} onBoard={onBoard} onAdd={onAdd} />
-
-      {/* jednotný rebríček ocenení */}
-      <Rebricky
-        ocenenia={[
-          { ic: <IkonaStit />, col: "#5BA8F0", label: "PARTNER", name: "Kaufland", onClick: () => toast("Rebríček: Top B2B partner") },
-          { ic: <IkonaKorunka />, col: "#E7C766", label: "DARCA", name: "Lukáš H.", onClick: () => onProfil({ typ: "osoba", meno: "Lukáš H.", level: "Gold" }) },
-          { ic: <IkonaHviezda />, col: "#F0A85E", label: "HRDINA", name: "Jana N.", onClick: () => onProfil({ typ: "osoba", meno: "Jana N.", level: "Gold", stav: "tvorca" }) },
-          { ic: <IkonaUsmev />, col: "#E7C766", label: "FUN", name: "AI omyly", onClick: onFun },
-        ]}
-        ludia={[
-          { ini: "M", name: "Mária", col: "#5BA8F0", onClick: () => onProfil({ typ: "osoba", meno: "Mária H.", level: "Gold" }) },
-          { ini: "P", name: "Peter", col: "#5BA8F0", onClick: () => onProfil({ typ: "osoba", meno: "Peter K.", level: "Silver", stav: "priatel" }) },
-        ]}
-      />
 
       {/* štatistický riadok — počet vo zvolenom okruhu + klikateľný výber okruhu */}
       <StatRiadok stat={`V okruhu ${feed.length} skutkov · Mesiac 9 480`}
@@ -810,56 +791,3 @@ function GoodEvent({ id, onBack, toast, oslavuj }) {
   );
 }
 
-// ===================== FUN ZÓNA (§13.2) =====================
-const FUN = [
-  { emoji: "🪴", trik: "Polial som jeden kvet na balkóne", verdikt: "VÝNIMOČNÝ EKO HRDINA — záchrana planéty", odmena: "+500 DEED", riadky: 4, fix: "Odmena stiahnutá späť · AI sa učí", lol: 1240 },
-  { emoji: "👋", trik: "Pozdravil som suseda na chodbe", verdikt: "Medzinárodná diplomacia a budovanie mieru", odmena: "+220 DEED", riadky: 3, fix: "Oddelený kôš · neráta sa do karmy", lol: 980 },
-  { emoji: "🍌", trik: "Hodil som banánovú šupku do koša", verdikt: "Zabránenie ekologickej katastrofe storočia", odmena: "+340 DEED", riadky: 4, fix: "Omyl · odmena vrátená", lol: 1560 },
-  { emoji: "🐱", trik: "Nakŕmil som vlastnú mačku", verdikt: "Obetavá záchrana ohrozeného živočíšneho druhu", odmena: "+180 DEED", riadky: 3, fix: "AI sa z tohto učí", lol: 760 },
-];
-
-function GoodFun({ onBack, toast }) {
-  return (
-    <div style={{ paddingBottom: 24 }}>
-      <Hlavicka title="Fun zóna" onBack={onBack} titleColor="#E7C766" />
-      <div style={{ padding: "14px 18px" }}>
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, textAlign: "center" }}>
-          <div style={{ width: 64, height: 64, borderRadius: "50%", background: "linear-gradient(135deg, #F0C75A, #F0A85E)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 32, boxShadow: "0 8px 26px rgba(240,168,94,.35)" }}>😄</div>
-          <div style={{ fontSize: 19, fontWeight: 800 }}>Keď sa AI sekne</div>
-          <div style={{ fontSize: 13, color: C.textSec, lineHeight: 1.5, maxWidth: 340 }}>AI nie je dokonalá. Tu sú jej najväčšie prešľapy v hodnotení. Pobav sa, zdieľaj — a AI sa z toho učí.</div>
-        </div>
-
-        <div style={{ display: "flex", alignItems: "flex-start", gap: 9, fontSize: 11.5, color: "#F4D684", lineHeight: 1.5, margin: "16px 0 6px", padding: "11px 13px", borderRadius: 12, background: "rgba(240,199,90,.08)", border: "1px solid rgba(240,199,90,.28)" }}>
-          ⚠ Oddelený kôš — tieto hodnotenia sa <b>nerátajú</b> do reálnej karmy ani dát. Omylná odmena sa dá kedykoľvek stiahnuť späť.
-        </div>
-
-        {FUN.map((f, i) => (
-          <div key={i} style={{ background: C.surface2, border: `1px solid ${C.line}`, borderRadius: 16, padding: 14, marginTop: 10 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <span style={{ width: 40, height: 40, borderRadius: 11, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, background: "rgba(var(--glass-rgb),.06)" }}>{f.emoji}</span>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 11, color: C.textTer }}>Užívateľ spravil:</div>
-                <div style={{ fontSize: 14, fontWeight: 700 }}>{f.trik}</div>
-              </div>
-            </div>
-            <div style={{ marginTop: 10, padding: "10px 12px", borderRadius: 12, background: "rgba(240,199,90,.08)", border: "1px solid rgba(240,199,90,.25)" }}>
-              <div style={{ fontSize: 10.5, fontWeight: 800, color: "#F4D684", letterSpacing: ".3px" }}>🤖 AI HODNOTENIE</div>
-              <div style={{ fontSize: 13.5, fontWeight: 700, marginTop: 4, lineHeight: 1.35 }}>„{f.verdikt}"</div>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 6 }}>
-                <span style={{ fontSize: 11, fontWeight: 800, color: "#3DD68C" }}>{f.odmena}</span>
-                <span style={{ fontSize: 10, color: C.textTer }}>· {f.riadky} riadky vo feede 😅</span>
-              </div>
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 10 }}>
-              <span style={{ fontSize: 11, color: C.greenL }}>✓ {f.fix}</span>
-              <span onClick={() => toast("😂 +1")} style={{ marginLeft: "auto", fontSize: 12, fontWeight: 700, color: C.textSec, cursor: "pointer" }}>😂 {f.lol.toLocaleString("sk")}</span>
-              <span onClick={() => toast("Zdieľané — virálny efekt 🚀")} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 700, color: "#74A6FF", cursor: "pointer" }}><Zdielanie size={15} color="#74A6FF" /> Zdieľať</span>
-            </div>
-          </div>
-        ))}
-
-        <div style={{ textAlign: "center", fontSize: 11.5, color: C.textTer, lineHeight: 1.5, marginTop: 18 }}>Ojebal si systém? <b style={{ color: "#74A6FF" }}>Zdieľaj svoj úlovok</b> — pobavíš ľudí a AI sa zlepší.</div>
-      </div>
-    </div>
-  );
-}

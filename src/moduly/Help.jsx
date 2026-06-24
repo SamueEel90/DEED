@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { C, pasmo, U, AV, inp, infoBox, btn, GRAD, GRAD_ZELENY, glassTmavy } from "../theme";
-import { Foto, Avatar, FotoPrispevku, MiniFotky, Hlavicka, ModulHlavicka, PodporaSekcia, PlatbaModal, HladanieModal, Otazka, Vyber, vyberBox, NavBtns, Suhrn, DokladRow, Modal, Toast, useGaleria, useScrollHore, Ticker, Rebricky, StatRiadok, MoniBar, FeedStlpce, SekcieBar, OkruhVyber, Lupa, Zvon, Zdielanie, IkonaSpat, IkonaVlajka, IkonaFoto, IkonaStit, IkonaKorunka, IkonaHviezda } from "../shared";
+import { Foto, Avatar, FotoPrispevku, MiniFotky, Hlavicka, ModulHlavicka, PodporaSekcia, PlatbaModal, HladanieModal, Otazka, Vyber, vyberBox, NavBtns, Suhrn, DokladRow, Modal, Toast, useGaleria, useScrollHore, Ticker, StatRiadok, MoniBar, FeedStlpce, SekcieBar, OkruhVyber, Lupa, Zvon, Zdielanie, IkonaSpat, IkonaVlajka, IkonaFoto } from "../shared";
 import { Zvoncek } from "../Notifikacie";
 import { pripravFeed, FEED_CFG } from "../lib/feed";
 
@@ -123,7 +123,7 @@ function Feed({ wide, toast, onDetail, onHladaj, onAdd }) {
   return (
     <div style={{ paddingBottom: 14 }}>
       {/* header — jednotná hlavička (logo D⁺ + názov) */}
-      <ModulHlavicka title="Help" right={
+      <ModulHlavicka title="Help" karma="Pomoc · Silver" right={
         <>
           <span onClick={onHladaj} style={{ display: "flex", alignItems: "center", cursor: "pointer" }}><Lupa size={20} color={C.textSec} /></span>
           <Zvoncek color={C.textSec} toast={toast} />
@@ -135,18 +135,6 @@ function Feed({ wide, toast, onDetail, onHladaj, onAdd }) {
 
       {/* jednotná sekcia skratiek */}
       <SekcieBar onTalent={() => toast("Ukáž svoj talent (demo)")} onBoard={() => toast("Nástenka (demo)")} onAdd={onAdd} />
-
-      {/* jednotný rebríček ocenení */}
-      <div>
-        <Rebricky
-          ocenenia={[
-            { ic: <IkonaStit />, col: "#74A6FF", label: "PARTNER", name: "Lidl", onClick: () => toast("Rebríček: Top partner") },
-            { ic: <IkonaKorunka />, col: "#E7C766", label: "DARCA", name: "Eva K.", onClick: () => toast("Rebríček: Top darca") },
-            { ic: <IkonaHviezda />, col: "#E58A6A", label: "HRDINA", name: "Ján H.", onClick: () => toast("Rebríček: Top hrdina") },
-          ]}
-          ludia={[{ ini: "＋", name: "Ty", col: "#74A6FF", onClick: onAdd }, { ini: "A", name: "Anna" }, { ini: "P", name: "Peter" }]}
-        />
-      </div>
 
       {/* štatistický riadok — počet vo zvolenom okruhu + výber okruhu */}
       <StatRiadok stat={`V okruhu ${feed.length} · Mesiac 8 421`}

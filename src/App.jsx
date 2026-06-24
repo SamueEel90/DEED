@@ -6,10 +6,10 @@ import ModulGood from "./moduly/Good";
 import ModulHelp from "./moduly/Help";
 import ModulCharita from "./moduly/Charita";
 import ModulProfil from "./moduly/Profil";
-import ModulPlaceholder from "./moduly/Placeholder";
 import ModulAktivity from "./moduly/Aktivity";
 import ModulAdmin from "./moduly/Admin";
 import ModulMapa from "./moduly/Mapa";
+import ModulTop from "./moduly/Top";
 
 /*
   ============================================================
@@ -168,6 +168,7 @@ export function Screens({ wide, preview }) {
   const [taby, setTaby] = useState(nacitajTaby);
   const [viac, setViac] = useState(false);
   const [galeria, setGaleria] = useState(null); // {fotky, index}
+  const [walletReq, setWalletReq] = useState(0); // ☰ → Peňaženka: otvor peňaženku v Profile
   const scrollRef = useRef(null);
 
   useEffect(() => { if (!preview) ulozTaby(taby); }, [taby, preview]);
@@ -193,11 +194,11 @@ export function Screens({ wide, preview }) {
           {modul === "good" && <ModulGood wide={wide} otvorModul={prepni} />}
           {modul === "help" && <ModulHelp wide={wide} />}
           {modul === "charita" && <ModulCharita wide={wide} otvorModul={prepni} />}
-          {modul === "profil" && <ModulProfil wide={wide} />}
+          {modul === "profil" && <ModulProfil wide={wide} walletReq={walletReq} />}
           {modul === "vyzva" && <ModulAktivity wide={wide} />}
           {modul === "admin" && <ModulAdmin wide={wide} />}
           {modul === "mapa" && <ModulMapa wide={wide} />}
-          {modul === "top" && <ModulPlaceholder id={modul} />}
+          {modul === "top" && <ModulTop wide={wide} />}
         </div>
 
         {/* plávajúci glass dock — na šírke vycentrovaný a zúžený */}
@@ -206,6 +207,7 @@ export function Screens({ wide, preview }) {
         {viac && (
           <ViacSheet taby={taby} setTaby={setTaby} aktivny={modul} moduly={moduly}
             onModul={(m) => { prepni(m); setViac(false); }}
+            onPenazenka={() => { prepni("profil"); setWalletReq((n) => n + 1); setViac(false); }}
             onClose={() => setViac(false)} />
         )}
 

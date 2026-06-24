@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { C, GRAD, glassTmavy } from "./theme";
-import { IkonaDomov, IkonaSrdceLine, IkonaCharita, IkonaKompas, IkonaMapa, IkonaPohar, IkonaOsoba, IkonaPanel } from "./shared";
+import { IkonaDomov, IkonaSrdceLine, IkonaCharita, IkonaKompas, IkonaMapa, IkonaPohar, IkonaOsoba, IkonaPanel, IkonaPenazenka } from "./shared";
 
 /*
   ============================================================
@@ -76,7 +76,7 @@ function Tab({ m, on, onClick }) {
 }
 
 // ---- SHEET: VŠETKY MODULY + ÚPRAVA MENU ----
-export function ViacSheet({ taby, setTaby, aktivny, onModul, onClose, moduly = VSETKY_MODULY }) {
+export function ViacSheet({ taby, setTaby, aktivny, onModul, onPenazenka, onClose, moduly = VSETKY_MODULY }) {
   const [uprava, setUprava] = useState(false);
   const [hint, setHint] = useState(null);
 
@@ -120,6 +120,18 @@ export function ViacSheet({ taby, setTaby, aktivny, onModul, onClose, moduly = V
         {uprava && (
           <div style={{ fontSize: 11.5, color: C.textSec, lineHeight: 1.45, marginBottom: 12, background: "rgba(91,155,255,.07)", border: "1px solid rgba(91,155,255,.22)", borderRadius: 12, padding: "9px 12px" }}>
             Pripni si do spodného menu max {MAX_TABOV} moduly. Šípkami ⌃⌄ meníš poradie. Ukladá sa automaticky.
+          </div>
+        )}
+
+        {/* Peňaženka — 1. položka v menu (súkromie: cudzí nevidí zostatok na hlavnej obrazovke) */}
+        {!uprava && onPenazenka && (
+          <div onClick={onPenazenka} style={{ display: "flex", alignItems: "center", gap: 12, background: "rgba(91,168,240,.08)", border: "1px solid rgba(91,168,240,.3)", borderRadius: 15, padding: "11px 13px", marginBottom: 8, cursor: "pointer" }}>
+            <span style={{ width: 38, height: 38, borderRadius: 12, background: "rgba(91,168,240,.16)", display: "flex", alignItems: "center", justifyContent: "center", flex: "0 0 auto", color: "#5BA8F0" }}><IkonaPenazenka size={20} color="#5BA8F0" /></span>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 13.5, fontWeight: 700 }}>Peňaženka <span style={{ fontSize: 9, fontWeight: 700, color: "#5BA8F0", border: "1px solid rgba(91,168,240,.4)", background: "rgba(91,168,240,.1)", borderRadius: 10, padding: "1px 7px", marginLeft: 4 }}>súkromné</span></div>
+              <div style={{ fontSize: 11, color: C.textTer, marginTop: 2 }}>Zostatok DEED · poslať / prijať / kúpiť</div>
+            </div>
+            <span style={{ color: C.textTer, fontSize: 15 }}>›</span>
           </div>
         )}
 
