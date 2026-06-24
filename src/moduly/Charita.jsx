@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { C, U, AV, GRAD, GRAD_ZELENY } from "../theme";
 import { Foto, Avatar, FotoPrispevku, MiniFotky, Modal, ModulHlavicka, PodporaSekcia, PlatbaModal, HladanieModal, Toast, useGaleria, useScrollHore, Ticker, Rebricky, StatRiadok, MoniBar, FeedStlpce, SekcieBar, OkruhVyber, Lupa, Zvon, Zdielanie, IkonaSpat, IkonaVlajka, IkonaFoto, IkonaOpakovat, IkonaKriz, IkonaStit, IkonaKorunka, IkonaHviezda, IkonaInstitucia } from "../shared";
 import { pripravFeed, FEED_CFG } from "../lib/feed";
+import { Zvoncek } from "../Notifikacie";
 
 // poloha usera (MVP mock — Trenčín, rovnaká ako v ostatných feedoch)
 const USER_LOK = { lat: 48.894, lng: 18.044 };
@@ -131,6 +132,7 @@ export default function ModulCharita({ wide, otvorModul }) {
             else if (String(id).startsWith("adr-")) setSheet("dir");
             else { const d = HLADAJ_DATA.find((x) => x.id === id); toast(`${d?.titul} — ${d?.tag}`); }
           }}
+          toast={toast} defaultFilter="Charity"
           onClose={() => setHladaj(false)} />
       )}
 
@@ -163,7 +165,7 @@ function CharitaFeed({ wide, toast, onDetail, onHladaj, onSheet }) {
       <ModulHlavicka title="Charita" right={
         <>
           <span onClick={onHladaj} style={{ display: "flex", alignItems: "center", cursor: "pointer" }}><Lupa size={20} color={K.txt2} /></span>
-          <span onClick={() => toast("Upozornenia (demo)")} style={{ display: "flex", alignItems: "center", cursor: "pointer" }}><Zvon size={20} color={K.txt2} /></span>
+          <Zvoncek color={K.txt2} toast={toast} />
         </>
       } />
 

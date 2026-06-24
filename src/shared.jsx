@@ -385,14 +385,66 @@ export function Modal({ children, onClose }) {
 // VYHĽADÁVANIE — zdieľaný overlay (zhora), živé filtrovanie feedu
 // data: [{ id, titul, podtitul, kat, emoji, tag }] · onPick(id) otvorí detail
 // ============================================================
-export function HladanieModal({ data = [], onPick, onClose, akcent = "#5BA8F0", placeholder = "Hľadať…" }) {
+// jeden engine, jeden register filtrov (§11) — moduly ladia len default filter
+export const HL_FILTRE = ["Všetko", "Osoby", "Firmy", "Školitelia", "Charity", "Žiadosti Help", "Žiadosti Charita", "Udalosti"];
+
+// VEREJNÉ subjekty — dohľadateľné z ktoréhokoľvek modulu (jeden engine).
+// SÚKROMNÉ osoby tu zámerne NIE SÚ (ochrana pred lustráciou §11/§13).
+export const SUBJEKTY = [
+  { id: "s-kauf", typ: "Firmy",      titul: "Kaufland — DEED partner",        podtitul: "Firma · ESG report · Trenčín",   emoji: "🏢", tag: "Firma" },
+  { id: "s-lidl", typ: "Firmy",      titul: "Lidl pomáha — nadácia",          podtitul: "Firma · matching kampaň",        emoji: "🏢", tag: "Firma" },
+  { id: "s-pet",  typ: "Školitelia", titul: "Coach Peter — mentálny tréning", podtitul: "Školiteľ · Trenčín",             emoji: "🧠", tag: "Školiteľ" },
+  { id: "s-eva",  typ: "Školitelia", titul: "Coach Eva — joga",               podtitul: "Školiteľ · Mestský park",        emoji: "🧘", tag: "Školiteľ" },
+  { id: "s-nem",  typ: "Charity",    titul: "Detská nemocnica — nadácia",     podtitul: "✓ Overená charita · Gold · BA",  emoji: "🏥", tag: "Charita" },
+  { id: "s-liga", typ: "Charity",    titul: "Liga proti rakovine",            podtitul: "✓ Overená charita · Gold · SR",  emoji: "🎗", tag: "Charita" },
+  { id: "s-jan",  typ: "Osoby",      titul: "Ján Novák — lektor gitary",      podtitul: "Verejný profil · ponúka službu", emoji: "🎸", tag: "Osoba" },
+];
+
+// klasifikácia ľubovoľnej položky do filtra (z existujúcich tagov, bez zásahu do modulov)
+function hlTyp(x) {
+  if (x.typ && HL_FILTRE.includes(x.typ)) return x.typ;
+  const t = (x.tag || "").toString().toLowerCase();
+  if (t.includes("charita")) return "Charity";
+  if (t.includes("žiadosť") || t.includes("ziadost")) return "Žiadosti Help";
+  if (t.includes("workshop") || t.includes("udalos") || t.includes("akcia")) return "Udalosti";
+  if (t.includes("talent") || t.includes("lektor") || t.includes("školit")) return "Školitelia";
+  if (t.includes("ponuka")) return "Osoby";
+  if (t.includes("firma") || t.includes("partner")) return "Firmy";
+  return "Skutky"; // skutky a ostatné → viditeľné len pod „Všetko"
+}
+
+export function HladanieModal({ data = [], onPick, onClose, akcent = "#5BA8F0", placeholder = "Hľadať…",
+  defaultFilter = "Všetko", posledne = ["Detská nemocnica", "Coach gitara", "Povodeň pomoc"], subjekty = SUBJEKTY, toast }) {
   const [q, setQ] = useState("");
+  const [filter, setFilter] = useState(defaultFilter);
   const norm = (s) => (s || "").toString().toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
   const dotaz = norm(q.trim());
-  const vysl = dotaz ? data.filter((x) => norm([x.titul, x.podtitul, x.kat, x.tag].join(" ")).includes(dotaz)) : data;
+
+  // celý vyhľadávací vesmír = obsah modulu + verejné subjekty (jeden engine naprieč)
+  const vesmir = [
+    ...data.map((x) => ({ ...x, _typ: hlTyp(x) })),
+    ...subjekty.map((x) => ({ ...x, _subj: true, _typ: x.typ })),
+  ];
+  const podlaFiltra = vesmir.filter((x) => filter === "Všetko" || x._typ === filter);
+  const vysl = dotaz ? podlaFiltra.filter((x) => norm([x.titul, x.podtitul, x.kat, x.tag].join(" ")).includes(dotaz)) : podlaFiltra;
+  const prazdny = !dotaz && filter === "Všetko"; // história + odporúčané
+  const odporucane = vesmir.slice(0, 3);
+
+  const klik = (x) => { if (x._subj) toast?.(`Otváram profil: ${x.titul} (demo)`); else onPick?.(x.id); onClose(); };
+  const Riadok = (x) => (
+    <div key={x.id} onClick={() => klik(x)} style={{ display: "flex", alignItems: "center", gap: 12, padding: "11px 8px", borderRadius: 12, cursor: "pointer", borderBottom: `1px solid ${C.line2}` }}>
+      <div style={{ width: 40, height: 40, borderRadius: 11, flex: "0 0 auto", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 19, background: tint(akcent, .14) }}>{x.emoji}</div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 13.5, fontWeight: 600, lineHeight: 1.3, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{x.titul}</div>
+        {x.podtitul && <div style={{ fontSize: 11.5, color: C.textTer, marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{x.podtitul}</div>}
+      </div>
+      {x.tag && <span style={{ flex: "0 0 auto", fontSize: 10, fontWeight: 700, padding: "3px 8px", borderRadius: 7, background: tint(akcent, .14), color: akcent }}>{x.tag}</span>}
+    </div>
+  );
+
   return (
     <div onClick={onClose} style={{ position: "absolute", inset: 0, background: "rgba(4,6,12,.5)", backdropFilter: "blur(5px)", WebkitBackdropFilter: "blur(5px)", display: "flex", flexDirection: "column", zIndex: 58, animation: "fadeUp .18s ease" }}>
-      <div onClick={(e) => e.stopPropagation()} style={{ ...glassTmavy(26, .92), borderTop: "none", borderLeft: "none", borderRight: "none", borderBottomLeftRadius: 22, borderBottomRightRadius: 22, padding: "12px 14px 14px", boxShadow: "0 18px 50px rgba(0,0,0,.45)", maxHeight: "84%", display: "flex", flexDirection: "column" }}>
+      <div onClick={(e) => e.stopPropagation()} style={{ ...glassTmavy(26, .92), borderTop: "none", borderLeft: "none", borderRight: "none", borderBottomLeftRadius: 22, borderBottomRightRadius: 22, padding: "12px 14px 14px", boxShadow: "0 18px 50px rgba(0,0,0,.45)", maxHeight: "86%", display: "flex", flexDirection: "column" }}>
         {/* vyhľadávací riadok */}
         <div style={{ display: "flex", alignItems: "center", gap: 10, background: C.surface, border: `1px solid ${C.line}`, borderRadius: 14, padding: "10px 13px", flex: "0 0 auto" }}>
           <Lupa size={18} color={C.textTer} />
@@ -402,25 +454,50 @@ export function HladanieModal({ data = [], onPick, onClose, akcent = "#5BA8F0", 
             ? <span onClick={() => setQ("")} title="Vymazať" style={{ display: "flex", cursor: "pointer" }}><IkonaKriz size={18} color={C.textTer} /></span>
             : <span onClick={onClose} style={{ fontSize: 13, fontWeight: 600, color: C.textSec, cursor: "pointer", flex: "0 0 auto" }}>Zrušiť</span>}
         </div>
-        {/* počet */}
-        <div style={{ fontSize: 11.5, color: C.textTer, padding: "10px 4px 6px", flex: "0 0 auto" }}>
-          {dotaz ? `${vysl.length} ${vysl.length === 1 ? "výsledok" : vysl.length < 5 ? "výsledky" : "výsledkov"} · „${q.trim()}"` : `${data.length} položiek · začni písať`}
+
+        {/* filter-chipy — jeden engine, 8 typov */}
+        <div style={{ display: "flex", gap: 7, padding: "10px 0 2px", overflowX: "auto", flex: "0 0 auto" }}>
+          {HL_FILTRE.map((f) => {
+            const on = filter === f;
+            return <span key={f} onClick={() => setFilter(f)} style={{ flex: "0 0 auto", padding: "6px 12px", borderRadius: 13, fontSize: 11.5, fontWeight: on ? 700 : 500, cursor: "pointer", whiteSpace: "nowrap",
+              background: on ? tint(akcent, .16) : C.surface2, border: `1px solid ${on ? tint(akcent, .5) : C.line}`, color: on ? akcent : C.textSec }}>{f}</span>;
+          })}
         </div>
-        {/* výsledky */}
-        <div style={{ overflowY: "auto", margin: "0 -4px", flex: "1 1 auto" }}>
-          {vysl.length === 0 ? (
-            <div style={{ textAlign: "center", padding: "34px 14px", color: C.textTer, fontSize: 13 }}>Nič sa nenašlo. Skús iné slovo.</div>
-          ) : vysl.map((x) => (
-            <div key={x.id} onClick={() => { onPick && onPick(x.id); onClose(); }}
-              style={{ display: "flex", alignItems: "center", gap: 12, padding: "11px 8px", borderRadius: 12, cursor: "pointer", borderBottom: `1px solid ${C.line2}` }}>
-              <div style={{ width: 40, height: 40, borderRadius: 11, flex: "0 0 auto", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 19, background: tint(akcent, .14) }}>{x.emoji}</div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 13.5, fontWeight: 600, lineHeight: 1.3, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{x.titul}</div>
-                {x.podtitul && <div style={{ fontSize: 11.5, color: C.textTer, marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{x.podtitul}</div>}
+
+        {/* obsah */}
+        <div style={{ overflowY: "auto", margin: "8px -4px 0", flex: "1 1 auto" }}>
+          {prazdny ? (
+            <>
+              {/* POSLEDNÉ HĽADANIA */}
+              <div style={{ display: "flex", alignItems: "center", padding: "6px 8px 4px" }}>
+                <span style={{ fontSize: 10.5, letterSpacing: ".4px", color: C.textTer, fontWeight: 700 }}>POSLEDNÉ HĽADANIA</span>
+                <span onClick={() => setQ("")} style={{ marginLeft: "auto", fontSize: 11, color: C.textTer, cursor: "pointer" }}>vymazať</span>
               </div>
-              {x.tag && <span style={{ flex: "0 0 auto", fontSize: 10, fontWeight: 700, padding: "3px 8px", borderRadius: 7, background: tint(akcent, .14), color: akcent }}>{x.tag}</span>}
-            </div>
-          ))}
+              {posledne.map((p) => (
+                <div key={p} onClick={() => setQ(p)} style={{ display: "flex", alignItems: "center", gap: 11, padding: "10px 8px", borderRadius: 12, cursor: "pointer", borderBottom: `1px solid ${C.line2}` }}>
+                  <IkonaOpakovat size={15} color={C.textTer} />
+                  <span style={{ flex: 1, fontSize: 13.5 }}>{p}</span>
+                  <IkonaKriz size={14} color={C.textTer} />
+                </div>
+              ))}
+              {/* ODPORÚČANÉ V OKOLÍ */}
+              <div style={{ fontSize: 10.5, letterSpacing: ".4px", color: C.textTer, fontWeight: 700, padding: "16px 8px 6px" }}>ODPORÚČANÉ V OKOLÍ</div>
+              {odporucane.map(Riadok)}
+            </>
+          ) : (
+            <>
+              <div style={{ fontSize: 11.5, color: C.textTer, padding: "2px 8px 6px" }}>
+                {`${vysl.length} ${vysl.length === 1 ? "výsledok" : vysl.length < 5 ? "výsledky" : "výsledkov"}`}{dotaz ? ` · „${q.trim()}"` : ""}{filter !== "Všetko" ? ` · ${filter}` : ""}
+              </div>
+              {vysl.length === 0
+                ? <div style={{ textAlign: "center", padding: "30px 14px", color: C.textTer, fontSize: 13 }}>Nič sa nenašlo. Skús iné slovo alebo filter.</div>
+                : vysl.map(Riadok)}
+            </>
+          )}
+          {/* ochrana — súkromné osoby nelustrovateľné */}
+          <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 10.5, color: C.textTer, lineHeight: 1.4, margin: "14px 4px 2px", padding: "9px 11px", borderRadius: 10, background: "rgba(var(--glass-rgb),.04)", border: `1px solid ${C.line}` }}>
+            <IkonaStit size={14} color={C.textTer} /> Súkromné osoby sa nedajú vyhľadať — len verejné profily a tvorcovia (ochrana).
+          </div>
         </div>
       </div>
     </div>
@@ -451,6 +528,130 @@ export function Oslava({ emoji = "🎉", title, text, onClose }) {
       <div style={{ color: "#fff", fontSize: 20, fontWeight: 800, textAlign: "center" }}>{title}</div>
       {text && <div style={{ color: C.textSec, fontSize: 14, textAlign: "center", padding: "0 22px", lineHeight: 1.5, maxWidth: 340 }}>{text}</div>}
     </div>
+  );
+}
+
+// ============================================================
+// QR SYSTÉM (§10) — univerzálny QR naprieč platformou
+// typy: identita (TOTP ~30 s) · platba (statický) · akcia (TOTP ~15 s) ·
+// skutok / D+R (odkaz). UNIVERZÁLNE PRAVIDLO: každý QR má 3 výstupy —
+// Skenovať · Kopírovať odkaz · Zdieľať (rieši „mám len jeden telefón").
+// Rotujúci QR (TOTP) = screenshot neplatný po pár sekundách (anti-relay).
+// ============================================================
+
+// deterministický pattern z reťazca (vyzerá QR-ovo; rovnaký odkaz = rovnaký vzor)
+function qrHash(str) {
+  let h = 2166136261 >>> 0;
+  for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); }
+  return h >>> 0;
+}
+function qrPrng(seed) {
+  let a = seed >>> 0;
+  return () => { a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+}
+// finder (rohové štvorce) klasického QR — 7×7 v troch rohoch mriežky N×N
+function qrFinder(r, c, N) {
+  const rohy = [[0, 0], [0, N - 7], [N - 7, 0]];
+  for (const [or, oc] of rohy) {
+    const rr = r - or, cc = c - oc;
+    if (rr >= 0 && rr < 7 && cc >= 0 && cc < 7) {
+      const ramik = rr === 0 || rr === 6 || cc === 0 || cc === 6;
+      const jadro = rr >= 2 && rr <= 4 && cc >= 2 && cc <= 4;
+      return ramik || jadro ? "dark" : "light";
+    }
+  }
+  return null;
+}
+export function QrVizual({ data = "deed", size = 132, fg = "#0B0C10" }) {
+  const N = 25;
+  const rnd = qrPrng(qrHash(data));
+  const bunky = [];
+  for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {
+    const f = qrFinder(r, c, N);
+    bunky.push(f ? f === "dark" : rnd() > 0.52);
+  }
+  return (
+    <div style={{ width: size, height: size, background: "#fff", borderRadius: 12, padding: size * 0.07, flex: "0 0 auto", boxShadow: "0 6px 18px rgba(0,0,0,.18)" }}>
+      <div style={{ width: "100%", height: "100%", display: "grid", gridTemplateColumns: `repeat(${N},1fr)`, gridTemplateRows: `repeat(${N},1fr)` }}>
+        {bunky.map((on, k) => <i key={k} style={{ background: on ? fg : "transparent" }} />)}
+      </div>
+    </div>
+  );
+}
+
+const QR_TYPY = {
+  identita: { rot: 30, tag: "Identity Card", popis: "Overenie identity člena — rotujúci kód", col: "#8B7CFF" },
+  platba:   { rot: 0,  tag: "Platobný QR",   popis: "Pošli DEED / prepitné — statický kód",  col: "#43E0C8" },
+  akcia:    { rot: 15, tag: "Akčný QR",      popis: "Overenie účasti (proof-of-presence)",    col: "#F0A85E" },
+  skutok:   { rot: 0,  tag: "QR skutku",     popis: "Odkaz na skutok / reťaz dobra",          col: "#5BA8F0" },
+};
+
+export function QrModal({ typ = "skutok", titul, popis, odkaz = "https://deed.app/s/120042", reazPct, prijemca, onClose, toast }) {
+  const meta = QR_TYPY[typ] || QR_TYPY.skutok;
+  const rotujuci = meta.rot > 0;
+  const [zb, setZb] = useState(meta.rot);     // zostávajúce sekundy do rotácie
+  const [krok, setKrok] = useState(0);        // poradie rotácie (mení seed)
+  useEffect(() => {
+    if (!rotujuci) return;
+    const t = setInterval(() => setZb((s) => { if (s <= 1) { setKrok((x) => x + 1); return meta.rot; } return s - 1; }), 1000);
+    return () => clearInterval(t);
+  }, [rotujuci, meta.rot]);
+  const seed = odkaz + (rotujuci ? "·" + krok : "");
+
+  const kopiruj = () => {
+    try { navigator.clipboard?.writeText(odkaz); } catch { /* clipboard nedostupný */ }
+    toast?.("Odkaz skopírovaný do schránky");
+  };
+  const zdielaj = () => {
+    try { if (navigator.share) { navigator.share({ title: titul || "DEED", url: odkaz }); return; } } catch { /* share zrušený */ }
+    kopiruj();
+  };
+
+  const out = (ic, label, sub, onClick) => (
+    <button onClick={onClick} style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: 5, padding: "12px 6px", borderRadius: 13, background: C.surface2, border: `1px solid ${C.line}`, color: C.text, cursor: "pointer", fontFamily: "inherit" }}>
+      <span style={{ color: meta.col }}>{ic}</span>
+      <span style={{ fontSize: 12, fontWeight: 700 }}>{label}</span>
+      <span style={{ fontSize: 9.5, color: C.textTer }}>{sub}</span>
+    </button>
+  );
+
+  return (
+    <Modal onClose={onClose}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
+        <span style={{ width: 36, height: 36, borderRadius: 11, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", background: tint(meta.col, .16), color: meta.col }}><IkonaDoska size={18} color={meta.col} /></span>
+        <div style={{ minWidth: 0 }}>
+          <div style={{ fontSize: 15, fontWeight: 800 }}>{titul || meta.tag}</div>
+          <div style={{ fontSize: 11.5, color: C.textTer, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{popis || meta.popis}</div>
+        </div>
+        <span style={{ marginLeft: "auto", flex: "none", fontSize: 10, fontWeight: 700, padding: "3px 9px", borderRadius: 8, background: tint(meta.col, .14), color: meta.col }}>{meta.tag}</span>
+      </div>
+
+      {/* samotný QR */}
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10, padding: "6px 0 4px" }}>
+        <div style={{ position: "relative" }}>
+          <QrVizual data={seed} size={156} />
+          {reazPct != null && (
+            <span style={{ position: "absolute", top: -8, right: -8, fontSize: 10, fontWeight: 800, padding: "4px 9px", borderRadius: 20, background: GRAD_ZELENY, color: "#06281d", boxShadow: "0 4px 12px rgba(31,191,143,.4)" }}>D+R {reazPct}%</span>
+          )}
+        </div>
+        {prijemca && <div style={{ fontSize: 12, color: C.textSec }}>{reazPct}% ide ďalej → <b style={{ color: C.text }}>{prijemca}</b></div>}
+        {rotujuci ? (
+          <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11.5, color: C.textTer }}>
+            <span style={{ width: 22, height: 22, borderRadius: "50%", border: `2px solid ${tint(meta.col, .3)}`, borderTopColor: meta.col, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 800, color: meta.col, animation: "tocenie 1s linear infinite" }} />
+            obnoví sa o <b style={{ color: meta.col }}>{zb}s</b> · screenshot neplatný (anti-relay)
+          </div>
+        ) : (
+          <div style={{ fontSize: 11, color: C.textTer, fontFamily: "monospace", maxWidth: "92%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{odkaz}</div>
+        )}
+      </div>
+
+      {/* 3 výstupy — univerzálne pravidlo §10 */}
+      <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
+        {out(<Lupa size={18} color={meta.col} />, "Skenovať", "fotoaparát", () => toast?.("Otváram fotoaparát na skenovanie (demo)"))}
+        {out(<IkonaUlozit size={18} color={meta.col} />, "Kopírovať", "odkaz", kopiruj)}
+        {out(<Zdielanie size={18} color={meta.col} />, "Zdieľať", "siete", zdielaj)}
+      </div>
+    </Modal>
   );
 }
 

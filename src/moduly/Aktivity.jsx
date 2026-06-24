@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import { ModulHlavicka, Hlavicka, PodporaSekcia, PlatbaModal, HladanieModal, Toast, Oslava, useMotiv, useScrollHore, Ticker, Rebricky, StatRiadok, FeedStlpce, SekcieBar, OkruhVyber, Lupa, Zvon, IkonaSipVlavo, IkonaMoznosti, Zdielanie, IkonaUlozit, IkonaFoto, IkonaPlus, IkonaPlay } from "../shared";
 import { C, GRAD, GRAD_ZELENY } from "../theme";
 import { pripravFeed, FEED_CFG } from "../lib/feed";
+import { Zvoncek } from "../Notifikacie";
 
 // poloha usera (MVP mock — Trenčín, rovnaká ako v ostatných feedoch)
 const USER_LOK = { lat: 48.894, lng: 18.044 };
@@ -401,6 +402,7 @@ export default function ModulAktivity({ wide }) {
             tag: it.type === "talent" ? "Talent" : it.type === "workshop" ? "Workshop" : it.type === "help" ? "Žiadosť" : DOM[it.dom].label,
           }))}
           onPick={(id) => open(id)}
+          toast={toast} defaultFilter="Udalosti"
           onClose={() => setHladaj(false)} />
       )}
 
@@ -452,7 +454,7 @@ function Home({ items, dom, view, pickDom, pickView, toast, open, openPerson, se
         right={
           <>
             <span onClick={onHladaj} style={{ display: "flex", alignItems: "center", cursor: "pointer" }}><Lupa size={20} color={A.txt2} /></span>
-            <span onClick={() => toast("Upozornenia (demo)")} style={{ display: "flex", alignItems: "center", cursor: "pointer" }}><Zvon size={20} color={A.txt2} /></span>
+            <Zvoncek color={A.txt2} toast={toast} />
           </>
         } />
 

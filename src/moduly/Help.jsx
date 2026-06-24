@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { C, pasmo, U, AV, inp, infoBox, btn, GRAD, GRAD_ZELENY, glassTmavy } from "../theme";
 import { Foto, Avatar, FotoPrispevku, MiniFotky, Hlavicka, ModulHlavicka, PodporaSekcia, PlatbaModal, HladanieModal, Otazka, Vyber, vyberBox, NavBtns, Suhrn, DokladRow, Modal, Toast, useGaleria, useScrollHore, Ticker, Rebricky, StatRiadok, MoniBar, FeedStlpce, SekcieBar, OkruhVyber, Lupa, Zvon, Zdielanie, IkonaSpat, IkonaVlajka, IkonaFoto, IkonaStit, IkonaKorunka, IkonaHviezda } from "../shared";
+import { Zvoncek } from "../Notifikacie";
 import { pripravFeed, FEED_CFG } from "../lib/feed";
 
 // poloha usera (MVP mock — Trenčín, rovnaká ako v ostatných feedoch)
@@ -90,6 +91,7 @@ export default function ModulHelp({ wide }) {
             tag: z.typ === "ziadost" ? "Žiadosť" : z.typ === "ponuka" ? "Ponuka" : "Charita",
           }))}
           onPick={(id) => { const z = MOCK_FEED.find((x) => x.id === id); if (!z) return; z.typ === "ziadost" ? otvorZ(z) : toast(`${z.nazov} — ${z.typ === "ponuka" ? "ponuka pomoci" : "charita"}`); }}
+          toast={toast} defaultFilter="Žiadosti Help"
           onClose={() => setHladaj(false)} />
       )}
 
@@ -124,7 +126,7 @@ function Feed({ wide, toast, onDetail, onHladaj, onAdd }) {
       <ModulHlavicka title="Help" right={
         <>
           <span onClick={onHladaj} style={{ display: "flex", alignItems: "center", cursor: "pointer" }}><Lupa size={20} color={C.textSec} /></span>
-          <span onClick={() => toast("Upozornenia (demo)")} style={{ display: "flex", alignItems: "center", cursor: "pointer" }}><Zvon size={20} color={C.textSec} /></span>
+          <Zvoncek color={C.textSec} toast={toast} />
         </>
       } />
 

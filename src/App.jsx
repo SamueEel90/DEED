@@ -9,6 +9,7 @@ import ModulProfil from "./moduly/Profil";
 import ModulPlaceholder from "./moduly/Placeholder";
 import ModulAktivity from "./moduly/Aktivity";
 import ModulAdmin from "./moduly/Admin";
+import ModulMapa from "./moduly/Mapa";
 
 /*
   ============================================================
@@ -195,7 +196,8 @@ export function Screens({ wide, preview }) {
           {modul === "profil" && <ModulProfil wide={wide} />}
           {modul === "vyzva" && <ModulAktivity wide={wide} />}
           {modul === "admin" && <ModulAdmin wide={wide} />}
-          {["mapa", "top"].includes(modul) && <ModulPlaceholder id={modul} />}
+          {modul === "mapa" && <ModulMapa wide={wide} />}
+          {modul === "top" && <ModulPlaceholder id={modul} />}
         </div>
 
         {/* plávajúci glass dock — na šírke vycentrovaný a zúžený */}
