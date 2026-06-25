@@ -2,6 +2,9 @@ import { useState, useEffect, useRef } from "react";
 import { C } from "./theme";
 import { GaleriaContext, ScrollContext, ViacContext, Lightbox, DychajucePozadie, MotivContext } from "./shared";
 import { TabBar, ViacSheet, nacitajTaby, ulozTaby, VSETKY_MODULY } from "./TabBar";
+import { useSession } from "./lib/session";
+import { PouzivatelProvider } from "./lib/pouzivatel";
+import { Registracia } from "./registracia/Registracia";
 import ModulGood from "./moduly/Good";
 import ModulHelp from "./moduly/Help";
 import ModulCharita from "./moduly/Charita";
@@ -164,6 +167,7 @@ function DevicePreview({ device, vyska }) {
 
 // ===================== MODULÁRNY ROUTER APPKY =====================
 export function Screens({ wide, preview }) {
+  const session = useSession();
   const [modul, setModul] = useState("good");
   const [taby, setTaby] = useState(nacitajTaby);
   const [viac, setViac] = useState(false);
@@ -172,6 +176,12 @@ export function Screens({ wide, preview }) {
   const scrollRef = useRef(null);
 
   useEffect(() => { if (!preview) ulozTaby(taby); }, [taby, preview]);
+
+  // §1 — bez prihlásenia (a mimo Admin náhľadu) zobraz registráciu;
+  // po dokončení flow zavolá setSession → useSession re-renderuje → appka.
+  if (!preview && !session) {
+    return <Registracia onHotovo={() => {}} />;
+  }
 
   const otvorGaleriu = (fotky, index = 0) => setGaleria({ fotky, index });
   // moduly cez ScrollContext odscrollujú appku hore (napr. pri otvorení detailu)
@@ -182,6 +192,7 @@ export function Screens({ wide, preview }) {
   const prepni = (m) => { if (preview && m === "admin") return; setModul(m); };
 
   return (
+   <PouzivatelProvider session={session}>
     <GaleriaContext.Provider value={otvorGaleriu}>
      <ScrollContext.Provider value={scrollHore}>
       <ViacContext.Provider value={() => setViac(true)}>
@@ -217,5 +228,6 @@ export function Screens({ wide, preview }) {
       </ViacContext.Provider>
      </ScrollContext.Provider>
     </GaleriaContext.Provider>
+   </PouzivatelProvider>
   );
 }

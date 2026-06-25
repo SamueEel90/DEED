@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { C, GRAD, GRAD_ZELENY } from "../theme";
 import { Toast, Modal, useScrollHore, useViac, useMotiv, QrModal, IkonaMenu, IkonaNastavenia, IkonaSipVlavo, IkonaPenazenka, IkonaHviezda, IkonaFajka, IkonaDoska, IkonaUsmev, IkonaPin, IkonaSlnko, IkonaMesiac, IkonaStit } from "../shared";
 import { RetazDobraSheet } from "../RetazDobra";
+import { clearSession } from "../lib/session";
+import { usePouzivatel } from "../lib/pouzivatel";
 import { Nastavenia as NotifNastavenia } from "../Notifikacie";
 import GlassIcons from "../GlassIcons";
 
@@ -54,6 +56,7 @@ export default function ModulProfil({ wide, walletReq = 0 }) {
 // ===================== PROFIL =====================
 function ProfilHlavny({ toast, naWallet, naSub, naNastavenia, naPriatelia }) {
   const otvorViac = useViac();
+  const ja = usePouzivatel();
   const dlazdice = [
     ["Peňaženka", "1 240 DEED", "rgba(91,168,240,.14)", "#5BA8F0", <IkonaPenazenka size={26} />, naWallet],
     ["Karma a úrovne", "7 modulov", "rgba(169,139,240,.15)", "#A98BF0", <IkonaHviezda size={26} />, () => naSub("Karma a úrovne")],
@@ -72,25 +75,35 @@ function ProfilHlavny({ toast, naWallet, naSub, naNastavenia, naPriatelia }) {
       </div>
 
       <div style={{ margin: "8px 16px 0", background: C.surface, border: `1px solid ${C.line}`, borderRadius: 16, padding: 16, display: "flex", gap: 14, alignItems: "center" }}>
-        <div style={{ width: 60, height: 60, borderRadius: "50%", background: "#3A8DD6", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, fontWeight: 700, boxShadow: "0 0 0 2.5px rgba(240,199,90,.75), 0 0 22px rgba(240,199,90,.45)" }}>M</div>
-        <div>
-          <div style={{ fontSize: 17, fontWeight: 700 }}>Martin K.</div>
-          <div style={{ display: "inline-flex", alignItems: "center", gap: 5, background: "rgba(231,199,102,.14)", border: "1px solid rgba(200,162,58,.5)", color: "#C79A1E", fontSize: 10, fontWeight: 700, padding: "4px 9px", borderRadius: 9, marginTop: 6 }}>★ Gold · L7</div>
+        <div style={{ width: 60, height: 60, borderRadius: "50%", background: ja.tint, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, fontWeight: 700, color: "#fff", boxShadow: "0 0 0 2.5px rgba(240,199,90,.75), 0 0 22px rgba(240,199,90,.45)" }}>{ja.iniciala}</div>
+        <div style={{ minWidth: 0 }}>
+          <div style={{ fontSize: 17, fontWeight: 700 }}>{ja.celeMeno}</div>
+          {ja.demo ? (
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 5, background: "rgba(231,199,102,.14)", border: "1px solid rgba(200,162,58,.5)", color: "#C79A1E", fontSize: 10, fontWeight: 700, padding: "4px 9px", borderRadius: 9, marginTop: 6 }}>★ Gold · L7</div>
+          ) : (
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 5, background: "rgba(116,166,255,.14)", border: "1px solid rgba(116,166,255,.4)", color: "#74A6FF", fontSize: 10, fontWeight: 700, padding: "4px 9px", borderRadius: 9, marginTop: 6 }}>★ {ja.tier}{ja.poradoveCislo ? ` · člen #${ja.poradoveCislo}` : ""}</div>
+          )}
           <div style={{ marginTop: 6 }}>
-            <span style={{ display: "inline-flex", fontSize: 9.5, color: "#1FBF8F", background: "rgba(61,214,140,.13)", border: "1px solid rgba(46,125,82,.45)", padding: "3px 8px", borderRadius: 7, marginRight: 8 }}>verejný</span>
-            <span onClick={() => toast("Prepnuté na anonym (demo)")} style={{ fontSize: 9.5, color: "#5BA8F0", cursor: "pointer" }}>prepnúť na anonym</span>
+            <span style={{ display: "inline-flex", fontSize: 9.5, color: ja.rezim === "anonym" ? "#9AA0A8" : "#1FBF8F", background: ja.rezim === "anonym" ? "rgba(154,160,168,.14)" : "rgba(61,214,140,.13)", border: `1px solid ${ja.rezim === "anonym" ? "rgba(154,160,168,.4)" : "rgba(46,125,82,.45)"}`, padding: "3px 8px", borderRadius: 7, marginRight: 8 }}>{ja.rezim === "anonym" ? "anonym" : "verejný"}</span>
+            <span onClick={naNastavenia} style={{ fontSize: 9.5, color: "#5BA8F0", cursor: "pointer" }}>zmeniť v nastaveniach</span>
           </div>
         </div>
       </div>
 
-      <div style={{ margin: "14px 16px 0" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: C.textTer }}>
-          <span>Do ďalšej úrovne (Platinum)</span><span style={{ color: "#E7C766" }}>72 %</span>
+      {ja.demo ? (
+        <div style={{ margin: "14px 16px 0" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: C.textTer }}>
+            <span>Do ďalšej úrovne (Platinum)</span><span style={{ color: "#E7C766" }}>72 %</span>
+          </div>
+          <div style={{ height: 8, background: "rgba(var(--glass-rgb),.1)", borderRadius: 4, overflow: "hidden", marginTop: 6 }}>
+            <div style={{ height: "100%", width: "72%", background: "linear-gradient(90deg, #F0C75A, #F09A5E)", borderRadius: 4, boxShadow: "0 0 12px rgba(240,199,90,.4)" }} />
+          </div>
         </div>
-        <div style={{ height: 8, background: "rgba(var(--glass-rgb),.1)", borderRadius: 4, overflow: "hidden", marginTop: 6 }}>
-          <div style={{ height: "100%", width: "72%", background: "linear-gradient(90deg, #F0C75A, #F09A5E)", borderRadius: 4, boxShadow: "0 0 12px rgba(240,199,90,.4)" }} />
+      ) : (
+        <div style={{ margin: "14px 16px 0", fontSize: 12.5, color: C.textTer, lineHeight: 1.5 }}>
+          {ja.mesto && ja.mesto !== "—" ? `${ja.mesto} · ` : ""}Nový účet — karma a úroveň pribúdajú overenými skutkami.
         </div>
-      </div>
+      )}
 
       <div style={{ padding: 16 }}>
         <GlassIcons columns={3} items={dlazdice.map((d) => ({ icon: d[4], color: d[3], label: d[0], sub: d[1], onClick: d[5] }))} />
@@ -383,7 +396,7 @@ function NastaveniaScreen({ toast, onBack, onNotif }) {
         <Riadok onClick={() => toast("Zamestnávateľ (B2B) — odložené do B2B")}><span style={{ flex: 1 }}>Zamestnávateľ (B2B)</span><span style={{ color: C.textTer, fontWeight: 600 }}>Nenastavený ›</span></Riadok>
         <Riadok onClick={() => toast("Peňaženka a bezpečnosť — biometria/KYC až pri výbere hodnoty")}><span style={{ flex: 1 }}>Peňaženka a bezpečnosť</span><span style={{ color: C.textTer, fontSize: 16 }}>›</span></Riadok>
         <Riadok onClick={() => toast("O aplikácii · podpora")}><span style={{ flex: 1 }}>O aplikácii · podpora</span><span style={{ color: C.textTer, fontSize: 16 }}>›</span></Riadok>
-        <button onClick={() => toast("Odhlásené (demo)")} style={{ width: "100%", height: 50, borderRadius: 14, marginTop: 6, border: "1px solid rgba(242,112,111,.4)", background: "rgba(242,112,111,.08)", color: "#F2706F", fontWeight: 700, fontSize: 15, cursor: "pointer", fontFamily: "inherit" }}>Odhlásiť sa</button>
+        <button onClick={() => { toast("Odhlásené"); clearSession(); }} style={{ width: "100%", height: 50, borderRadius: 14, marginTop: 6, border: "1px solid rgba(242,112,111,.4)", background: "rgba(242,112,111,.08)", color: "#F2706F", fontWeight: 700, fontSize: 15, cursor: "pointer", fontFamily: "inherit" }}>Odhlásiť sa</button>
       </div>
 
       {/* §13.1 — Ochrana osoby (anti-sociálny kredit) */}

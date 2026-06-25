@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { C, U, inp, GRAD, GRAD_ZELENY } from "../theme";
 import { Foto, FotoPrispevku, MiniFotky, Modal, Video, ModulHlavicka, Hlavicka, PodporaSekcia, PlatbaModal, HladanieModal, Toast, Oslava, useGaleria, useScrollHore, useMotiv, StatRiadok, MoniBar, FeedStlpce, SekcieBar, Lupa, Zvon, Zdielanie, IkonaSipVlavo, IkonaMoznosti, IkonaUlozit, IkonaFajka, OkruhVyber, QrModal } from "../shared";
 import { pripravFeed, FEED_CFG } from "../lib/feed";
+import { usePouzivatel } from "../lib/pouzivatel";
 import { zobrazVelkost } from "../lib/cardSize";
 import { RetazDobraSheet } from "../RetazDobra";
 import { Zvoncek } from "../Notifikacie";
@@ -233,6 +234,7 @@ function Home({ wide, toast, otvorModul, onDetail, onHladaj, onBoard, onAdd }) {
   // zvolený rádius — Časť B: mení, ČO a v akom poradí sa vo feede zobrazí
   const [radius, setRadius] = useState("stvrt");
   const [vyberOkruh, setVyberOkruh] = useState(false);
+  const ja = usePouzivatel();
   const user = { ...USER_LOK, radius };
 
   // FEED ALGORITMUS (Časť B): životnosť → rádius + adaptívny prah →
@@ -244,12 +246,12 @@ function Home({ wide, toast, otvorModul, onDetail, onHladaj, onBoard, onAdd }) {
   return (
     <div style={{ paddingBottom: 14 }}>
       {/* header — jednotná hlavička (logo D⁺ + názov + hľadanie/upozornenia + profil) */}
-      <ModulHlavicka title="Domov" karma="Gold · L7 · celková"
+      <ModulHlavicka title="Domov" karma={ja.demo ? "Gold · L7 · celková" : `${ja.tier} · celková`}
         right={
           <>
             <span onClick={onHladaj} style={{ display: "flex", alignItems: "center", cursor: "pointer" }}><Lupa size={20} color={C.textSec} /></span>
             <Zvoncek color={C.textSec} toast={toast} />
-            <div onClick={() => otvorModul && otvorModul("profil")} title="Gold · profil" style={{ width: 34, height: 34, borderRadius: "50%", background: "#3A8DD6", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 14, color: "#fff", cursor: "pointer", flex: "0 0 auto", boxShadow: "0 0 0 2px rgba(240,199,90,.8), 0 0 12px rgba(240,199,90,.35)" }}>M</div>
+            <div onClick={() => otvorModul && otvorModul("profil")} title={ja.tier} style={{ width: 34, height: 34, borderRadius: "50%", background: ja.tint, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 14, color: "#fff", cursor: "pointer", flex: "0 0 auto", boxShadow: "0 0 0 2px rgba(240,199,90,.8), 0 0 12px rgba(240,199,90,.35)" }}>{ja.iniciala}</div>
           </>
         } />
 
@@ -257,7 +259,7 @@ function Home({ wide, toast, otvorModul, onDetail, onHladaj, onBoard, onAdd }) {
       <SekcieBar onTalent={() => toast("Ukáž svoj talent — TikTok kanál (demo)")} onBoard={onBoard} onAdd={onAdd} />
 
       {/* štatistický riadok — počet vo zvolenom okruhu + klikateľný výber okruhu */}
-      <StatRiadok stat={`V okruhu ${feed.length} skutkov · Mesiac 9 480`}
+      <StatRiadok stat={`V okruhu ${feed.length} skutkov · Mesiac 9 480`} miesto={ja.mesto}
         okruh={FEED_CFG.radiusy[radius].krat} onOkruh={() => setVyberOkruh(true)} />
 
       {/* feed — na tablete/PC: skutky vľavo, žiadosti vpravo (už zoradené algoritmom) */}

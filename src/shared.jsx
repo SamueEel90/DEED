@@ -314,9 +314,9 @@ export function ModulHlavicka({ title, right, karma, slogan = "Miesto, kde neroz
         </span>
       </div>
       {(slogan || karma) && (
-        <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "0 16px 9px" }}>
-          {slogan && <span style={{ flex: 1, minWidth: 0, fontSize: 11.5, fontStyle: "italic", color: C.textTer, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>„{slogan}"</span>}
-          {karma && <span style={{ flex: "0 0 auto", display: "inline-flex", alignItems: "center", gap: 4, fontSize: 10.5, fontWeight: 700, color: "#E7C766", background: "rgba(231,199,102,.12)", border: "1px solid rgba(200,162,58,.4)", borderRadius: 9, padding: "3px 9px" }}>★ {karma}</span>}
+        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "4px 8px", padding: "0 16px 9px" }}>
+          {slogan && <span style={{ flex: "1 1 320px", minWidth: 0, fontSize: 11.5, fontStyle: "italic", color: C.textTer, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>„{slogan}"</span>}
+          {karma && <span style={{ flex: "0 0 auto", display: "inline-flex", alignItems: "center", gap: 4, fontSize: 10.5, fontWeight: 700, color: "#E7C766", background: "rgba(231,199,102,.12)", border: "1px solid rgba(200,162,58,.4)", borderRadius: 9, padding: "3px 9px", whiteSpace: "nowrap" }}>★ {karma}</span>}
         </div>
       )}
     </div>
@@ -1094,9 +1094,9 @@ export function StatRiadok({ stat, miesto = "Trenčín", okruh = "2 km", onOkruh
   // čísla v štatistike zvýrazníme (Dnes 312 · Mesiac 9 480)
   const casti = String(stat).split(/(\d[\d  ]*)/g);
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 16px 14px", borderBottom: `1px solid ${C.line}` }}>
+    <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8, padding: "4px 16px 14px", borderBottom: `1px solid ${C.line}` }}>
       {/* live štatistika — chip s pulzujúcou bodkou */}
-      <span style={{ display: "inline-flex", alignItems: "center", gap: 8, flex: "1 1 auto", minWidth: 0, padding: "6px 13px", borderRadius: 20, background: "rgba(31,191,143,.08)", border: "1px solid rgba(31,191,143,.22)", fontSize: 12.5, color: C.textSec, fontWeight: 600 }}>
+      <span style={{ display: "inline-flex", alignItems: "center", gap: 8, flex: "1 1 240px", minWidth: 0, padding: "6px 13px", borderRadius: 20, background: "rgba(31,191,143,.08)", border: "1px solid rgba(31,191,143,.22)", fontSize: 12.5, color: C.textSec, fontWeight: 600 }}>
         <span style={{ width: 8, height: 8, borderRadius: "50%", flex: "none", background: "#2BBd8C", boxShadow: "0 0 0 4px rgba(61,214,140,.16)", animation: "pulse 1.6s infinite" }} />
         <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {casti.map((p, i) => /\d/.test(p) ? <b key={i} style={{ color: C.text, fontWeight: 800 }}>{p}</b> : p)}
