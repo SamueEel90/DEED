@@ -197,115 +197,65 @@ function ZdrojTag({ it }: { it: GoodPolozka }) {
   return <span style={{ display: "inline-flex", fontSize: 10, fontWeight: 600, padding: "3px 9px", borderRadius: 7, background: tint(KAT[it.kat].c, .14), color: KAT[it.kat].c }}>{katLabel(it.kat)}</span>;
 }
 
+// JEDNOTNÁ FULL-WIDTH (Instagram) KARTA — všetky príspevky (skutok / charita / žiadosť) rovnako:
+// autor hore · veľké médium · titul · pätička podľa typu (charita/žiadosť = progres / „hľadá pomoc").
 function GoodKarta({ it, wide, onDetail }: { it: GoodPolozka; wide?: boolean; onDetail: () => void }) {
   const { svetly } = useMotiv();
-  const mb = wide ? 0 : 12;
-  // VEĽKÁ — profi karta (autor hore · médium v rámčeku/full-bleed · titul)
-  if (it.velkost === "big") {
-    const kat = KAT[it.kat];
-    const overCol = svetly ? "#0F8A5E" : "var(--a-green)";
-    const mediaH = wide ? 172 : 232;
-    return (
-      <div onClick={onDetail} className="good-card" style={{
-        background: C.surface2,
-        border: wide ? `1px solid ${C.line}` : "none",
-        borderBottom: `1px solid ${wide ? C.line : C.line2}`,
-        borderRadius: wide ? 18 : 0,
-        marginLeft: wide ? 0 : -16, marginRight: wide ? 0 : -16,
-        marginBottom: wide ? 0 : 10,
-        overflow: "hidden", cursor: "pointer",
-      }}>
-        {/* autor */}
-        <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px 10px" }}>
-          <div style={{ width: 38, height: 38, borderRadius: "50%", flex: "none", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 15, color: "#fff", background: it.pfp, boxShadow: `0 3px 10px ${tint(kat.c, .3)}` }}>{it.ini}</div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-              <span style={{ fontWeight: 700, fontSize: 14.5, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it.autor}</span>
-              {it.overene && <span style={{ display: "inline-flex", alignItems: "center", gap: 3, flex: "none", fontSize: 10, fontWeight: 700, color: overCol, background: "rgba(61,214,140,.14)", padding: "2px 7px", borderRadius: 7 }}><IkonaFajka size={11} color={overCol} /> overené</span>}
-            </div>
-            <div style={{ fontSize: 11.5, color: C.textTer, marginTop: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it.lok} · č. {it.num.toLocaleString("sk")}</div>
-          </div>
-          <span style={{ fontSize: 11.5, color: C.textTer, flex: "none" }}>{it.cas}</span>
-        </div>
-        {/* médium */}
-        <div style={{ position: "relative", height: mediaH, margin: wide ? "0 10px" : 0, borderRadius: wide ? 14 : 0, overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", background: heroGrad(it.kat) }}>
-          {it.video
-            ? <Video src={it.video} poster={it.fotky?.[0]} h={mediaH} badge={false} />
-            : it.fotky?.length
-              ? <FotoPrispevku fotky={it.fotky} emoji={it.emoji} h={mediaH} disableGaleria />
-              : <div style={{ fontSize: 46 }}>{it.emoji}</div>}
-          <div style={{ position: "absolute", inset: 0, background: "linear-gradient(0deg, rgba(0,0,0,.34), transparent 42%)", pointerEvents: "none" }} />
-          {it.vyznam && <span style={mediaBadge({ top: 10, left: 10, color: "var(--a-gold)" })}>★ {it.vyznam}</span>}
-          {it.media === "video" && <span style={mediaBadge({ top: 10, right: 10 })}>▶ video</span>}
-          <span style={mediaBadge({ bottom: 10, left: 10, color: kat.c })}><span style={{ width: 6, height: 6, borderRadius: "50%", background: kat.c }} /> {katLabel(it.kat)}</span>
-        </div>
-        {/* titul */}
-        <div style={{ padding: "12px 14px 14px" }}>
-          <div style={{ fontSize: 16, fontWeight: 700, lineHeight: 1.36, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{it.titul}</div>
-        </div>
-      </div>
-    );
-  }
-  // ŽIADOSŤ — neutrálna karta s jemným červeným akcentom (ľavý prúžok + ikona), nie červený blok
-  if (it.velkost === "req") {
-    return (
-      <div onClick={onDetail} style={{ background: C.surface2, border: `1px solid ${C.line}`, borderLeft: `3px solid ${C.red}`, borderRadius: 17, marginBottom: mb, padding: 14, display: "flex", gap: 12, alignItems: "flex-start", cursor: "pointer" }}>
-        {it.fotky?.length
-          ? <FotoPrispevku fotky={it.fotky} emoji={it.emoji} h={64} w={64} radius={11} disableGaleria />
-          : <div style={{ width: 64, height: 64, borderRadius: 11, background: tint(C.red, .12), border: `1px solid ${tint(C.red, .4)}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, fontWeight: 800, color: C.red, flex: "none" }}>{it.emoji}</div>}
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <div style={{ fontSize: 15, fontWeight: 700, lineHeight: 1.35, color: C.text }}>{it.titul}</div>
-            {it.topovane && <span style={{ fontSize: 11, fontWeight: 600, padding: "3px 9px", borderRadius: 7, background: tint(C.red, .12), color: C.red, marginLeft: "auto", flex: "none" }}>Topované</span>}
-          </div>
-          <div style={{ fontSize: 12.5, color: C.textSec, marginTop: 6 }}>{it.autor} · {it.lok}</div>
-          {it.ciel ? (
-            <div style={{ marginTop: 8 }}><MoniBar vyzbierane={it.vyzbierane} ciel={it.ciel} ludia={it.pomocnici} mini /></div>
-          ) : (
-            <div style={{ fontSize: 12, marginTop: 6, fontWeight: 600, color: C.red }}>❓ {it.pomocnici} ľudí sa zapojilo · <span style={{ color: C.textSec, fontWeight: 400 }}>otvorená podpora</span></div>
-          )}
-        </div>
-      </div>
-    );
-  }
-  // STREDNÁ
-  if (it.velkost === "med") {
-    const jeCharita = it.typ === "charita";
-    return (
-      <div onClick={onDetail} style={{ background: C.surface2, border: `1px solid ${jeCharita ? tint(C.gold, .45) : C.line}`, borderRadius: 16, marginBottom: mb, padding: 12, display: "flex", gap: 12, alignItems: "flex-start", cursor: "pointer" }}>
-        {it.fotky?.length
-          ? <FotoPrispevku fotky={it.fotky} emoji={it.emoji} h={80} w={96} radius={11} disableGaleria />
-          : <div style={{ width: 96, height: 80, borderRadius: 11, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, background: heroGrad(it.kat) }}>{it.media === "kreslene" ? "✎" : it.emoji}</div>}
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 15.5, fontWeight: 700, lineHeight: 1.35 }}>{it.titul}</div>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
-            <span style={{ fontSize: 12.5, color: C.textSec }}>{it.autor}</span>
-            <ZdrojTag it={it} />
-          </div>
-          {jeCharita && (<div style={{ marginTop: 6 }}><MoniBar vyzbierane={it.vyzbierane} ciel={it.ciel} mini /></div>)}
-        </div>
-        <span style={{ fontSize: 10, color: C.textTer, flex: "none" }}>{it.cas}</span>
-      </div>
-    );
-  }
-  // MALÝ RIADOK
+  const kat = KAT[it.kat];
   const jeZiadost = it.typ === "ziadost";
   const jeCharita = it.typ === "charita";
-  const col = jeZiadost ? "var(--a-danger)" : jeCharita ? "var(--a-gold)" : KAT[it.kat].c;
-  const bg = tint(col, .15);
-  const ic = it.media === "kreslene" ? "✎" : jeZiadost ? "!" : jeCharita ? "✓" : "▦";
+  const overCol = svetly ? "#0F8A5E" : "var(--a-green)";
+  const accent = jeZiadost ? C.red : jeCharita ? C.gold : kat.c;
+  const maMedia = !!(it.video || it.fotky?.length);
+  // foto/video → veľké Instagram médium; len emoji → kompaktnejší hero (aby drobné skutky neboli prázdne)
+  const mediaH = maMedia ? (wide ? 200 : 280) : (wide ? 132 : 168);
+  const medLabel = jeCharita ? `✓ Charita ${it.charLevel || ""}`.trim() : jeZiadost ? "Žiadosť" : katLabel(it.kat);
   return (
-    <div onClick={onDetail} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 12px", background: "rgba(var(--glass-rgb),.04)", border: `1px solid ${jeZiadost ? tint(C.red, .3) : C.line2}`, borderRadius: 14, marginBottom: wide ? 0 : 8, cursor: "pointer" }}>
-      <div style={{ width: 38, height: 38, borderRadius: 9, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flex: "none", background: bg, color: col, border: `1px solid ${jeZiadost ? tint(C.red, .4) : KAT[it.kat].bd}` }}>{ic}</div>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 14, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-          <span style={{ width: 7, height: 7, borderRadius: "50%", display: "inline-block", marginRight: 6, background: col }} />{it.titul}
+    <div onClick={onDetail} className="good-card" style={{
+      background: C.surface2,
+      border: wide ? `1px solid ${C.line}` : "none",
+      borderBottom: `1px solid ${wide ? C.line : C.line2}`,
+      borderRadius: wide ? 18 : 0,
+      marginLeft: wide ? 0 : -16, marginRight: wide ? 0 : -16,
+      marginBottom: wide ? 0 : 10,
+      borderLeft: jeZiadost ? `3px solid ${C.red}` : undefined,
+      overflow: "hidden", cursor: "pointer",
+    }}>
+      {/* autor */}
+      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px 10px" }}>
+        <div style={{ width: 38, height: 38, borderRadius: "50%", flex: "none", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 15, color: "#fff", background: it.pfp, boxShadow: `0 3px 10px ${tint(accent, .3)}` }}>{it.ini}</div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap" }}>
+            <span style={{ fontWeight: 700, fontSize: 14.5, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it.autor}</span>
+            {it.overene && <span style={{ display: "inline-flex", alignItems: "center", gap: 3, flex: "none", fontSize: 10, fontWeight: 700, color: overCol, background: "rgba(61,214,140,.14)", padding: "2px 7px", borderRadius: 7 }}><IkonaFajka size={11} color={overCol} /> overené</span>}
+            {(jeZiadost || jeCharita) && <ZdrojTag it={it} />}
+          </div>
+          <div style={{ fontSize: 11.5, color: C.textTer, marginTop: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it.lok}{it.num ? ` · č. ${it.num.toLocaleString("sk")}` : ""}{it.karma ? ` · ${it.karma}` : ""}</div>
         </div>
-        <div style={{ fontSize: 11.5, color: C.textTer, marginTop: 3 }}>{it.autor} · {jeZiadost ? "žiadosť" : jeCharita ? "charita" : katLabel(it.kat)}{it.karma ? " · " + it.karma : ""}</div>
+        <span style={{ fontSize: 11.5, color: C.textTer, flex: "none" }}>{it.cas}</span>
       </div>
-      <div style={{ textAlign: "right", flex: "none" }}>
-        <div style={{ fontSize: 12, color: C.textTer }}>{it.cas}</div>
-        <div style={{ color: C.textTer, fontSize: 16 }}>›</div>
+      {/* médium */}
+      <div style={{ position: "relative", height: mediaH, margin: wide ? "0 10px" : 0, borderRadius: wide ? 14 : 0, overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", background: heroGrad(it.kat) }}>
+        {it.video
+          ? <Video src={it.video} poster={it.fotky?.[0]} h={mediaH} badge={false} />
+          : it.fotky?.length
+            ? <FotoPrispevku fotky={it.fotky} emoji={it.emoji} h={mediaH} disableGaleria />
+            : <div style={{ fontSize: maMedia ? 46 : 52 }}>{it.media === "kreslene" ? "✎" : it.emoji}</div>}
+        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(0deg, rgba(0,0,0,.34), transparent 42%)", pointerEvents: "none" }} />
+        {it.vyznam && <span style={mediaBadge({ top: 10, left: 10, color: "var(--a-gold)" })}>★ {it.vyznam}</span>}
+        {it.media === "video" && <span style={mediaBadge({ top: 10, right: 10 })}>▶ video</span>}
+        <span style={mediaBadge({ bottom: 10, left: 10, color: accent })}><span style={{ width: 6, height: 6, borderRadius: "50%", background: accent }} /> {medLabel}</span>
+      </div>
+      {/* titul + pätička podľa typu */}
+      <div style={{ padding: "12px 14px 14px" }}>
+        <div style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
+          <div style={{ flex: 1, minWidth: 0, fontSize: 16, fontWeight: 700, lineHeight: 1.36, color: jeZiadost ? C.text : undefined, display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{it.titul}</div>
+          {it.topovane && <span style={{ fontSize: 11, fontWeight: 600, padding: "3px 9px", borderRadius: 7, background: tint(C.red, .12), color: C.red, flex: "none" }}>Topované</span>}
+        </div>
+        {jeCharita && it.ciel ? <div style={{ marginTop: 10 }}><MoniBar vyzbierane={it.vyzbierane || 0} ciel={it.ciel} mini /></div> : null}
+        {jeZiadost && (it.ciel
+          ? <div style={{ marginTop: 10 }}><MoniBar vyzbierane={it.vyzbierane || 0} ciel={it.ciel} ludia={it.pomocnici} mini /></div>
+          : <div style={{ fontSize: 12.5, marginTop: 8, fontWeight: 600, color: C.red }}>❓ {it.pomocnici} ľudí sa zapojilo · <span style={{ color: C.textSec, fontWeight: 400 }}>otvorená podpora</span></div>)}
       </div>
     </div>
   );

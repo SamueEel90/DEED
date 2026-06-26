@@ -1,6 +1,7 @@
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { C, GRAD, glassTmavy } from "@/theme";
-import { Zvon, IkonaNastavenia, IkonaSipVlavo, IkonaKriz, tint, SkeletonRiadky, EmptyState, ErrorState } from "@/shared";
+import { Zvon, IkonaNastavenia, IkonaSipVlavo, IkonaKriz, tint, usePortalEl, SkeletonRiadky, EmptyState, ErrorState } from "@/shared";
 import type { Notifikacia, VypnuteMapa } from "@/types";
 import { useNotifikacie } from "@/data";
 import { KATEGORIE, VYPNUTE_DEF } from "./mock";
@@ -35,10 +36,25 @@ function Toggle({ on, dim, onClick }: { on?: boolean; dim?: boolean; onClick?: (
 // ============================================================
 export function Zvoncek({ color = "#C4CCDB", toast }: { color?: string; toast?: (msg: string) => void }) {
   const { data: NOTIFY = [] } = useNotifikacie();
+  const portalEl = usePortalEl();
   const [otvor, setOtvor] = useState(false);
   const [view, setView] = useState<"zoznam" | "nastavenia">("zoznam");
   const [precitane, setPrecitane] = useState(false);
   const neprecitane = precitane ? 0 : NOTIFY.filter((n) => n.nove).length;
+
+  // Overlay sa renderuje do vycentrovaného stĺpca appky (portál), nie do hlavičky —
+  // inak by ho „position: sticky" hlavička orezala na svoju výšku (panel sa nerozbalil).
+  const overlay = (
+    <div onClick={() => setOtvor(false)} style={{ position: "absolute", inset: 0, background: "rgba(4,6,12,.5)", backdropFilter: "blur(5px)", WebkitBackdropFilter: "blur(5px)", display: "flex", flexDirection: "column", zIndex: 90, animation: "fadeUp .18s ease" }}>
+      <div onClick={(e) => e.stopPropagation()} style={{ ...glassTmavy(26, .92), borderTop: "none", borderLeft: "none", borderRight: "none", borderBottomLeftRadius: 22, borderBottomRightRadius: 22, padding: "12px 14px 16px", boxShadow: "0 18px 50px rgba(0,0,0,.45)", maxHeight: "88%", display: "flex", flexDirection: "column" }}>
+        {view === "zoznam" ? (
+          <Zoznam onSettings={() => setView("nastavenia")} onClose={() => setOtvor(false)} onPrecitaj={() => setPrecitane(true)} toast={toast} />
+        ) : (
+          <Nastavenia onBack={() => setView("zoznam")} toast={toast} />
+        )}
+      </div>
+    </div>
+  );
 
   return (
     <>
@@ -49,17 +65,7 @@ export function Zvoncek({ color = "#C4CCDB", toast }: { color?: string; toast?: 
         )}
       </span>
 
-      {otvor && (
-        <div onClick={() => setOtvor(false)} style={{ position: "absolute", inset: 0, background: "rgba(4,6,12,.5)", backdropFilter: "blur(5px)", WebkitBackdropFilter: "blur(5px)", display: "flex", flexDirection: "column", zIndex: 80, animation: "fadeUp .18s ease" }}>
-          <div onClick={(e) => e.stopPropagation()} style={{ ...glassTmavy(26, .92), borderTop: "none", borderLeft: "none", borderRight: "none", borderBottomLeftRadius: 22, borderBottomRightRadius: 22, padding: "12px 14px 16px", boxShadow: "0 18px 50px rgba(0,0,0,.45)", maxHeight: "88%", display: "flex", flexDirection: "column" }}>
-            {view === "zoznam" ? (
-              <Zoznam onSettings={() => setView("nastavenia")} onClose={() => setOtvor(false)} onPrecitaj={() => setPrecitane(true)} toast={toast} />
-            ) : (
-              <Nastavenia onBack={() => setView("zoznam")} toast={toast} />
-            )}
-          </div>
-        </div>
-      )}
+      {otvor && (portalEl ? createPortal(overlay, portalEl) : overlay)}
     </>
   );
 }
