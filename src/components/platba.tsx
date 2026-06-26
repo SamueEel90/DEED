@@ -36,6 +36,22 @@ export function PlatbaModal({ kanal, komu, onClose, onDone }: { kanal?: string; 
   const ibanClean = sepa.iban.replace(/\s/g, "");
   const sepaOk = ibanClean.length >= 15 && sepa.meno.trim().length >= 3;
 
+  // vlastná numerická klávesnica — hodnota je VŽDY viditeľná hore, žiadna systémová
+  // klávesnica (na mobile prekrývala spodný sheet a sumu nebolo vidno pri zadávaní).
+  function stlac(key: string) {
+    if (!key) return;
+    setSuma((s) => {
+      if (key === "⌫") return s.slice(0, -1);
+      if (key === ".") return s.includes(".") || s === "" ? s : s + ".";
+      let next = s + key;
+      const [cele, des] = next.split(".");
+      if (des && des.length > 2) return s;                 // max 2 desatinné
+      if ((cele || "").replace(/^0+/, "").length > 6) return s; // rozumný strop
+      if (next.length > 1 && next[0] === "0" && next[1] !== ".") next = next.replace(/^0+/, "");
+      return next;
+    });
+  }
+
   function zaplatit() {
     setKrok("spracovanie");
     setTimeout(() => {
@@ -66,12 +82,19 @@ export function PlatbaModal({ kanal, komu, onClose, onDone }: { kanal?: string; 
       </div>
 
       {krok === "suma" && (<>
-        <div style={{ position: "relative", marginBottom: 12 }}>
-          <input autoFocus type="number" inputMode="decimal" placeholder="0" value={suma} onChange={(e) => setSuma(e.target.value)} style={{ ...inpS, fontSize: 26, fontWeight: 800, textAlign: "center", padding: "16px 54px" }} />
-          <span style={{ position: "absolute", right: 18, top: "50%", transform: "translateY(-50%)", fontWeight: 800, color: C.textTer }}>{jeEur ? "€" : "DEED"}</span>
+        {/* veľký, vždy viditeľný display sumy — žiadna systémová klávesnica (na mobile neprekrýva sheet) */}
+        <div style={{ display: "flex", alignItems: "baseline", justifyContent: "center", gap: 8, padding: "6px 0 14px", minHeight: 50 }}>
+          <span style={{ fontSize: 40, fontWeight: 800, lineHeight: 1, letterSpacing: ".5px", color: suma ? C.text : C.textTer }}>{suma || "0"}</span>
+          <span style={{ fontSize: 18, fontWeight: 800, color: C.textTer }}>{jeEur ? "€" : "DEED"}</span>
         </div>
-        <div style={{ display: "flex", gap: 8 }}>
-          {chips.map((c) => <button key={c} onClick={() => setSuma(String(c))} style={{ flex: 1, padding: "9px 0", borderRadius: 11, border: `1px solid ${C.line}`, background: "rgba(var(--glass-rgb),.05)", color: C.text, fontWeight: 700, fontSize: 13, cursor: "pointer", fontFamily: "inherit" }}>{c}</button>)}
+        <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+          {chips.map((c) => <button key={c} onClick={() => setSuma(String(c))} style={{ flex: 1, padding: "9px 0", borderRadius: 11, border: `1px solid ${sumaNum === c ? C.green : C.line}`, background: sumaNum === c ? tint(C.green, .1) : "rgba(var(--glass-rgb),.05)", color: sumaNum === c ? C.green : C.text, fontWeight: 700, fontSize: 13, cursor: "pointer", fontFamily: "inherit" }}>{c}</button>)}
+        </div>
+        {/* vlastná numerická klávesnica */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
+          {["1", "2", "3", "4", "5", "6", "7", "8", "9", jeEur ? "." : "", "0", "⌫"].map((kk, i) => (
+            <button key={i} disabled={!kk} onClick={() => stlac(kk)} style={{ height: 50, borderRadius: 13, border: `1px solid ${kk ? C.line : "transparent"}`, background: kk ? C.surface2 : "transparent", color: C.text, fontSize: kk === "⌫" ? 19 : 22, fontWeight: 700, cursor: kk ? "pointer" : "default", fontFamily: "inherit", userSelect: "none" }}>{kk}</button>
+          ))}
         </div>
         {!jeEur && <div style={{ fontSize: 11.5, color: C.textTer, marginTop: 10 }}>Zostatok v peňaženke: <b style={{ color: C.text }}>{PLATBA_ZOSTATOK.toLocaleString("sk")} DEED</b></div>}
         {malo && <div style={{ fontSize: 12, color: C.red, marginTop: 8 }}>Nedostatok DEED v peňaženke.</div>}
