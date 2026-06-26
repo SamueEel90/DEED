@@ -63,9 +63,9 @@ export function ModulHlavicka({ title, right, slogan = "Miesto, kde nerozhodujú
         </span>
       </div>
       {slogan && (
-        <div style={{ padding: "0 16px 11px" }}>
-          {/* SLOGAN (§14) — dominantný, na celú šírku */}
-          <div style={{ fontSize: 13.5, fontWeight: 500, fontStyle: "italic", color: C.textSec, lineHeight: 1.4, letterSpacing: ".01em" }}>„{slogan}"</div>
+        <div style={{ padding: "0 14px 12px" }}>
+          {/* SLOGAN (§14) — dominantný, na celú šírku obrazovky (zalamuje sa, neoreže sa) */}
+          <div style={{ width: "100%", fontSize: 14, fontWeight: 500, fontStyle: "italic", color: C.textSec, lineHeight: 1.4, letterSpacing: ".01em", whiteSpace: "normal", overflow: "visible", textOverflow: "clip" }}>„{slogan}"</div>
         </div>
       )}
     </div>

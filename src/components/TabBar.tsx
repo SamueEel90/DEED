@@ -182,9 +182,9 @@ export function ViacSheet({ taby, setTaby, aktivny, onModul, onPenazenka, onClos
   }
 
   return (
-    <div onClick={onClose} style={{ position: "absolute", inset: 0, background: "rgba(4,6,12,.55)", backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)", display: "flex", alignItems: "flex-end", zIndex: 70, animation: "fadeUp .2s ease" }}>
-      <div onClick={(e) => e.stopPropagation()} style={{ width: "100%", maxHeight: "85%", overflowY: "auto", ...glassTmavy(26, .82), borderBottom: "none", borderTopLeftRadius: 26, borderTopRightRadius: 26, padding: "6px 16px 18px", boxShadow: "0 -18px 60px rgba(0,0,0,.5)" }}>
-        <div style={{ width: 42, height: 4, borderRadius: 3, background: "rgba(var(--glass-rgb),.22)", margin: "10px auto 14px" }} />
+    <div onClick={onClose} style={{ position: "absolute", inset: 0, background: "rgba(4,6,12,.55)", backdropFilter: "blur(6px)", WebkitBackdropFilter: "blur(6px)", display: "flex", alignItems: "flex-start", zIndex: 70, animation: "fadeUp .2s ease" }}>
+      {/* TOP sheet — rozbalí sa zhora (zhodne s notifikačným panelom) */}
+      <div onClick={(e) => e.stopPropagation()} style={{ width: "100%", maxHeight: "88%", overflowY: "auto", ...glassTmavy(26, .82), borderTop: "none", borderBottomLeftRadius: 26, borderBottomRightRadius: 26, padding: "14px 16px 18px", boxShadow: "0 18px 60px rgba(0,0,0,.5)" }}>
         <div style={{ display: "flex", alignItems: "center", marginBottom: 12 }}>
           <span style={{ fontSize: 17, fontWeight: 800 }}>Moduly</span>
           <span onClick={() => setUprava(!uprava)} style={{
