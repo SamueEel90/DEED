@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, type CSSProperties } from "react";
+import { LazyMotion, domAnimation, MotionConfig } from "motion/react";
 import { C } from "@/theme";
-import { GaleriaContext, ScrollContext, ViacContext, Lightbox, DychajucePozadie, MotivContext } from "@/shared";
+import { GaleriaContext, ScrollContext, ViacContext, Lightbox, DychajucePozadie, MotivContext, PortalContext, DeedToaster } from "@/shared";
 import { TabBar, ViacSheet, nacitajTaby, ulozTaby, VSETKY_MODULY } from "@/components/TabBar";
 import { useSession } from "@/lib/session";
 import { PouzivatelProvider } from "@/lib/pouzivatel";
@@ -63,6 +64,9 @@ export default function App() {
   const { w } = useOkno();
   const wide = w >= 760; // tablet/desktop → viacstĺpcové feedy
 
+  // portal-host = vycentrovaný stĺpec appky (pre prípadné portály v stĺpci)
+  const [portalEl, setPortalEl] = useState<HTMLElement | null>(null);
+
   // motív (svetlý / tmavý) — prepína triedu .light na <html>, ukladá sa
   const [svetly, setSvetly] = useState<boolean>(() => {
     try { return localStorage.getItem("deed.motiv") === "svetly"; } catch { return false; }
@@ -78,14 +82,21 @@ export default function App() {
   // appka na celú obrazovku — na šírke centrovaný stĺpec do 1180 px
   return (
     <QueryProvider>
-      <MotivContext.Provider value={motiv}>
-        <div style={{ ...pageBase, display: "flex", justifyContent: "center", alignItems: "stretch" }}>
-          <DychajucePozadie />
-          <div style={{ position: "relative", width: "100%", maxWidth: wide ? 1180 : 560, height: "100%", background: C.bg }}>
-            <Screens wide={wide} />
-          </div>
-        </div>
-      </MotivContext.Provider>
+      <LazyMotion features={domAnimation} strict>
+        <MotionConfig reducedMotion="user">
+          <MotivContext.Provider value={motiv}>
+            <PortalContext.Provider value={portalEl}>
+              <div style={{ ...pageBase, display: "flex", justifyContent: "center", alignItems: "stretch" }}>
+                <DychajucePozadie />
+                <div ref={setPortalEl} style={{ position: "relative", width: "100%", maxWidth: wide ? 1180 : 560, height: "100%", background: C.bg }}>
+                  <Screens wide={wide} />
+                </div>
+              </div>
+              <DeedToaster />
+            </PortalContext.Provider>
+          </MotivContext.Provider>
+        </MotionConfig>
+      </LazyMotion>
     </QueryProvider>
   );
 }

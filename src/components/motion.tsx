@@ -1,0 +1,55 @@
+// ============================================================
+// DEED · Motion — Framer Motion (cez `motion/react`).
+// LazyMotion + `m` (nie `motion`) držia bundle malý; `strict` v App
+// spraví z náhodného motion.* build-time chybu.
+// Reduced-motion rieši <MotionConfig reducedMotion="user"> v App
+// (+ CSS @media v index.css) — variants netreba ručne strážiť.
+// ============================================================
+import type { ReactNode } from "react";
+import { m, AnimatePresence } from "motion/react";
+import { DUR, EASE, TAP } from "@/theme";
+
+export { m, AnimatePresence } from "motion/react";
+
+// ---- VARIANTS ----
+
+// prechod medzi obrazovkami modulu (home ↔ detail ↔ add)
+export const pageV = {
+  enter: { opacity: 0, x: 18 },
+  center: { opacity: 1, x: 0, transition: { duration: DUR.base, ease: EASE.out } },
+  exit: { opacity: 0, x: -18, transition: { duration: DUR.fast, ease: EASE.out } },
+};
+
+// generický vstup (náhrada @keyframes fadeUp)
+export const fadeUpV = {
+  hidden: { opacity: 0, y: 7 },
+  show: { opacity: 1, y: 0, transition: { duration: DUR.base, ease: EASE.out } },
+};
+
+// stagger zoznamu — rodič `listV`, položky `itemV`
+export const listV = { show: { transition: { staggerChildren: 0.04 } } };
+export const itemV = { hidden: { opacity: 0, y: 8 }, show: { opacity: 1, y: 0 } };
+
+// micro-interakcia: stlačenie
+export const tapProps = { whileTap: TAP };
+
+// ---- SCREEN SWITCH ----
+// Obalí aktívnu obrazovku modulu; `k` = string zo screen-machine.
+// AnimatePresence `mode="popLayout"` → odchádzajúca a prichádzajúca
+// sa neprekrývajú v layoute (pasuje k useEffect(scrollHore,[screen])).
+export function ScreenSwitch({ k, children }: { k: string; children: ReactNode }) {
+  return (
+    <AnimatePresence mode="popLayout" initial={false}>
+      <m.div
+        key={k}
+        variants={pageV}
+        initial="enter"
+        animate="center"
+        exit="exit"
+        style={{ height: "100%" }}
+      >
+        {children}
+      </m.div>
+    </AnimatePresence>
+  );
+}

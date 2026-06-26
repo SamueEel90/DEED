@@ -23,3 +23,11 @@ export const useViac = () => useContext(ViacContext);
 // ---- MOTÍV (svetlý / tmavý režim) ----
 export const MotivContext = createContext<{ svetly: boolean; prepni: () => void }>({ svetly: false, prepni: () => {} });
 export const useMotiv = () => useContext(MotivContext);
+
+// ============================================================
+// PORTAL — vycentrovaný stĺpec appky (maxWidth 1180/560). Sheety (Vaul)
+// musia portálovať SEM, nie do document.body — inak na desktope „ujdú"
+// cez celý viewport namiesto telefónneho rámca. App naplní ref.
+// ============================================================
+export const PortalContext = createContext<HTMLElement | null>(null);
+export const usePortalEl = () => useContext(PortalContext);

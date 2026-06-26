@@ -8,6 +8,10 @@
 */
 import type { CSSProperties } from "react";
 
+// ---- DIZAJN-TOKENY (škály) — SPACE/RADIUS/TYPE/SHADOW/MOTION ----
+// Oddelené od farieb (C). Import zo `@/theme` funguje pre oboje.
+export * from "./tokens";
+
 // ---- PALETA — štruktúrne farby cez CSS premenné (tmavý/svetlý motív) ----
 // bg/surface/line/text sa prepínajú podľa motívu (--c-*, --glass-rgb v index.css),
 // akcentové farby (blue/green/…) ostávajú rovnaké v oboch režimoch.
