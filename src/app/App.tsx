@@ -1,19 +1,22 @@
-import { useState, useEffect, useRef, type CSSProperties } from "react";
+import { useState, useEffect, useRef, lazy, Suspense, type CSSProperties } from "react";
 import { LazyMotion, domAnimation, MotionConfig } from "motion/react";
 import { C } from "@/theme";
-import { GaleriaContext, ScrollContext, ViacContext, Lightbox, DychajucePozadie, MotivContext, PortalContext, DeedToaster } from "@/shared";
+import { GaleriaContext, ScrollContext, ViacContext, Lightbox, DychajucePozadie, MotivContext, PortalContext, DeedToaster, FeedSkeleton } from "@/shared";
 import { TabBar, ViacSheet, nacitajTaby, ulozTaby, VSETKY_MODULY } from "@/components/TabBar";
 import { useSession } from "@/lib/session";
 import { PouzivatelProvider } from "@/lib/pouzivatel";
 import { QueryProvider } from "@/app/QueryProvider";
 import { Registracia } from "@/features/registracia/Registracia";
-import ModulGood from "@/features/good/Good";
-import ModulHelp from "@/features/help/Help";
-import ModulCharita from "@/features/charita/Charita";
-import ModulProfil from "@/features/profil/Profil";
-import ModulAktivity from "@/features/aktivity/Aktivity";
-import ModulMapa from "@/features/mapa/Mapa";
-import ModulTop from "@/features/top/Top";
+
+// Code-splitting: každý modul = vlastný chunk, načíta sa až pri otvorení
+// (initial load = shell + prvý modul namiesto jedného veľkého bundle).
+const ModulGood = lazy(() => import("@/features/good/Good"));
+const ModulHelp = lazy(() => import("@/features/help/Help"));
+const ModulCharita = lazy(() => import("@/features/charita/Charita"));
+const ModulProfil = lazy(() => import("@/features/profil/Profil"));
+const ModulAktivity = lazy(() => import("@/features/aktivity/Aktivity"));
+const ModulMapa = lazy(() => import("@/features/mapa/Mapa"));
+const ModulTop = lazy(() => import("@/features/top/Top"));
 
 /*
   ============================================================
@@ -137,13 +140,15 @@ export function Screens({ wide }: { wide?: boolean }) {
 
         {/* obsah aktívneho modulu — scroll vo vnútri, miesto pre plávajúci dock */}
         <div ref={scrollRef} style={{ flex: 1, overflowY: "auto", minHeight: 0, paddingBottom: 96 }}>
-          {modul === "good" && <ModulGood wide={wide} otvorModul={prepni} />}
-          {modul === "help" && <ModulHelp wide={wide} />}
-          {modul === "charita" && <ModulCharita wide={wide} otvorModul={prepni} />}
-          {modul === "profil" && <ModulProfil wide={wide} walletReq={walletReq} />}
-          {modul === "vyzva" && <ModulAktivity wide={wide} />}
-          {modul === "mapa" && <ModulMapa wide={wide} />}
-          {modul === "top" && <ModulTop wide={wide} />}
+          <Suspense fallback={<FeedSkeleton count={4} />}>
+            {modul === "good" && <ModulGood wide={wide} otvorModul={prepni} />}
+            {modul === "help" && <ModulHelp wide={wide} />}
+            {modul === "charita" && <ModulCharita wide={wide} otvorModul={prepni} />}
+            {modul === "profil" && <ModulProfil wide={wide} walletReq={walletReq} />}
+            {modul === "vyzva" && <ModulAktivity wide={wide} />}
+            {modul === "mapa" && <ModulMapa wide={wide} />}
+            {modul === "top" && <ModulTop wide={wide} />}
+          </Suspense>
         </div>
 
         {/* plávajúci glass dock — na šírke vycentrovaný a zúžený */}
