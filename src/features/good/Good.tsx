@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { C, inp, GRAD, GRAD_ZELENY } from "@/theme";
-import { Foto, FotoPrispevku, MiniFotky, Video, ModulHlavicka, Hlavicka, PodporaSekcia, PlatbaModal, HladanieModal, Toast, Oslava, useGaleria, useScrollHore, useMotiv, StatRiadok, MoniBar, FeedStlpce, SekcieBar, Lupa, Zdielanie, IkonaSipVlavo, IkonaMoznosti, IkonaUlozit, IkonaFajka, OkruhVyber, QrModal, FeedSkeleton, EmptyState, ErrorState } from "@/shared";
+import { Foto, FotoPrispevku, MiniFotky, Video, ModulHlavicka, Hlavicka, PodporaSekcia, PlatbaModal, HladanieModal, Toast, Oslava, useGaleria, useScrollHore, useMotiv, StatRiadok, MoniBar, FeedStlpce, SekcieBar, Lupa, Zdielanie, IkonaSipVlavo, IkonaMoznosti, IkonaUlozit, IkonaFajka, OkruhVyber, QrModal, FeedSkeleton, EmptyState, ErrorState, ScreenSwitch } from "@/shared";
 import { pripravFeed, FEED_CFG } from "@/lib/feed";
 import { usePouzivatel } from "@/lib/pouzivatel";
 import { zobrazVelkost } from "@/lib/cardSize";
@@ -62,6 +62,7 @@ export default function ModulGood({ wide, otvorModul }: { wide?: boolean; otvorM
 
   return (
     <div style={{ minHeight: "100%" }}>
+      <ScreenSwitch k={screen}>
       {screen === "home" && (
         <Home wide={wide} toast={toast} otvorModul={otvorModul}
           onDetail={(id) => { setAktId(id); setScreen("detail"); }}
@@ -90,6 +91,7 @@ export default function ModulGood({ wide, otvorModul }: { wide?: boolean; otvorM
       {screen === "add" && obal(
         <GoodAdd toast={toast} oslavuj={oslavuj} onDone={() => setScreen("home")} />
       )}
+      </ScreenSwitch>
 
       {/* oslava — jednotný celebration overlay (aura prsteň = podpis značky) */}
       {oslava && (

@@ -33,21 +33,22 @@ export const itemV = { hidden: { opacity: 0, y: 8 }, show: { opacity: 1, y: 0 } 
 // micro-interakcia: stlačenie
 export const tapProps = { whileTap: TAP };
 
+// prechod obrazoviek — IBA opacity (žiadny transform → neláme sticky
+// hlavičky ani containing-block; bezpečné naprieč modulmi)
+export const screenV = {
+  enter: { opacity: 0 },
+  center: { opacity: 1, transition: { duration: DUR.base, ease: EASE.out } },
+  exit: { opacity: 0, transition: { duration: DUR.fast, ease: EASE.out } },
+};
+
 // ---- SCREEN SWITCH ----
-// Obalí aktívnu obrazovku modulu; `k` = string zo screen-machine.
-// AnimatePresence `mode="popLayout"` → odchádzajúca a prichádzajúca
-// sa neprekrývajú v layoute (pasuje k useEffect(scrollHore,[screen])).
+// Obalí skupinu screen-podmienok modulu; `k` = string zo screen-machine.
+// `mode="wait"` → odchádzajúca obrazovka dohrá exit skôr, než sa zobrazí
+// nová (žiadne prekrytie, čistý crossfade, pasuje k scrollHore).
 export function ScreenSwitch({ k, children }: { k: string; children: ReactNode }) {
   return (
-    <AnimatePresence mode="popLayout" initial={false}>
-      <m.div
-        key={k}
-        variants={pageV}
-        initial="enter"
-        animate="center"
-        exit="exit"
-        style={{ height: "100%" }}
-      >
+    <AnimatePresence mode="wait" initial={false}>
+      <m.div key={k} variants={screenV} initial="enter" animate="center" exit="exit">
         {children}
       </m.div>
     </AnimatePresence>

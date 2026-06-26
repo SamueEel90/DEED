@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { C, pasmo, inp, infoBox, btn, GRAD_ZELENY, glassTmavy } from "@/theme";
-import { Foto, Avatar, FotoPrispevku, MiniFotky, Hlavicka, ModulHlavicka, PodporaSekcia, PlatbaModal, HladanieModal, Otazka, Vyber, vyberBox, NavBtns, Suhrn, DokladRow, Toast, useGaleria, useScrollHore, Ticker, StatRiadok, MoniBar, FeedStlpce, SekcieBar, OkruhVyber, Lupa, Zdielanie, IkonaSpat, IkonaVlajka, IkonaFoto, FeedSkeleton, EmptyState, ErrorState } from "@/shared";
+import { Foto, Avatar, FotoPrispevku, MiniFotky, Hlavicka, ModulHlavicka, PodporaSekcia, PlatbaModal, HladanieModal, Otazka, Vyber, vyberBox, NavBtns, Suhrn, DokladRow, Toast, useGaleria, useScrollHore, Ticker, StatRiadok, MoniBar, FeedStlpce, SekcieBar, OkruhVyber, Lupa, Zdielanie, IkonaSpat, IkonaVlajka, IkonaFoto, FeedSkeleton, EmptyState, ErrorState, ScreenSwitch } from "@/shared";
 import { Zvoncek } from "@/features/notifikacie/Notifikacie";
 import { pripravFeed, FEED_CFG } from "@/lib/feed";
 import type { HelpFeedItem } from "@/types";
@@ -33,11 +33,13 @@ export default function ModulHelp({ wide }: { wide?: boolean }) {
 
   return (
     <div style={{ minHeight: "100%" }}>
+      <ScreenSwitch k={screen}>
       {screen === "feed" && <Feed wide={wide} toast={toast} onDetail={otvorZ} onHladaj={() => setHladaj(true)} onAdd={() => setScreen("add")} />}
       {screen === "detail" && obal(<Detail z={aktDetail} onBack={() => setScreen("feed")} />)}
       {screen === "add" && obal(<Add onBack={() => setScreen("feed")} onOffer={() => setScreen("offer")} onRequest={() => setScreen("request")} />)}
       {screen === "offer" && obal(<OfferFlow onDone={() => setScreen("feed")} />)}
       {screen === "request" && obal(<RequestFlow onDone={() => setScreen("feed")} />)}
+      </ScreenSwitch>
 
       {hladaj && (
         <HladanieModal akcent="#F2706F" placeholder="Hľadať žiadosti, ponuky, ľudí…"

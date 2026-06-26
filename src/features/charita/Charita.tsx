@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { C, U, AV, GRAD, GRAD_ZELENY } from "@/theme";
-import { Foto, Avatar, FotoPrispevku, MiniFotky, ModulHlavicka, PodporaSekcia, PlatbaModal, HladanieModal, Toast, useGaleria, useScrollHore, Ticker, StatRiadok, MoniBar, FeedStlpce, SekcieBar, OkruhVyber, Lupa, Zvon, Zdielanie, IkonaSpat, IkonaVlajka, IkonaFoto, IkonaOpakovat, IkonaKriz, IkonaInstitucia, FeedSkeleton, SkeletonRiadky, EmptyState, ErrorState } from "@/shared";
+import { Foto, Avatar, FotoPrispevku, MiniFotky, ModulHlavicka, PodporaSekcia, PlatbaModal, HladanieModal, Toast, useGaleria, useScrollHore, Ticker, StatRiadok, MoniBar, FeedStlpce, SekcieBar, OkruhVyber, Lupa, Zvon, Zdielanie, IkonaSpat, IkonaVlajka, IkonaFoto, IkonaOpakovat, IkonaKriz, IkonaInstitucia, FeedSkeleton, SkeletonRiadky, EmptyState, ErrorState, ScreenSwitch } from "@/shared";
 import { pripravFeed, FEED_CFG } from "@/lib/feed";
 import { Zvoncek } from "@/features/notifikacie/Notifikacie";
 import type { CharitaFeedItem, CharitaLevel, Kanal } from "@/types";
@@ -59,8 +59,10 @@ export default function ModulCharita({ wide, otvorModul }: ModulCharitaProps) {
 
   return (
     <div style={{ minHeight: "100%", color: K.txt }}>
+      <ScreenSwitch k={screen}>
       {screen === "feed" && <CharitaFeed wide={wide} toast={toast} onDetail={() => setScreen("detail")} onHladaj={() => setHladaj(true)} onSheet={setSheet} />}
       {screen === "detail" && obal(<CharitaDetail toast={toast} onBack={() => setScreen("feed")} onReg={() => setSheet("reg")} />)}
+      </ScreenSwitch>
 
       {sheet === "add" && <SheetPridat toast={toast} otvorModul={otvorModul} onClose={() => setSheet(null)} />}
       {sheet === "reg" && <SheetReg toast={toast} onClose={() => setSheet(null)} />}

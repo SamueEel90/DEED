@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { ModulHlavicka, Hlavicka, PodporaSekcia, PlatbaModal, HladanieModal, Toast, Oslava, useMotiv, useScrollHore, Ticker, StatRiadok, FeedStlpce, SekcieBar, OkruhVyber, Lupa, Zvon, IkonaSipVlavo, IkonaMoznosti, Zdielanie, IkonaUlozit, IkonaFoto, IkonaPlus, IkonaPlay, FeedSkeleton, EmptyState, ErrorState } from "@/shared";
+import { ModulHlavicka, Hlavicka, PodporaSekcia, PlatbaModal, HladanieModal, Toast, Oslava, useMotiv, useScrollHore, Ticker, StatRiadok, FeedStlpce, SekcieBar, OkruhVyber, Lupa, Zvon, IkonaSipVlavo, IkonaMoznosti, Zdielanie, IkonaUlozit, IkonaFoto, IkonaPlus, IkonaPlay, FeedSkeleton, EmptyState, ErrorState, ScreenSwitch } from "@/shared";
 import { C, GRAD, GRAD_ZELENY } from "@/theme";
 import { pripravFeed, FEED_CFG } from "@/lib/feed";
 import type { OkruhKod } from "@/types";
@@ -167,11 +167,13 @@ export default function ModulAktivity({ wide }: { wide?: boolean }) {
       background: svetly ? "var(--c-bg)" : acc.tint, transition: "background .4s ease",
       ["--acc"]: acc.c, ["--accBg"]: tint(acc.c, .15), ["--accBd"]: tint(acc.c, .5),
     } as React.CSSProperties}>
+      <ScreenSwitch k={screen}>
       {screen === "home" && <Home {...{ items, dom, view, pickDom, pickView, toast, open, openPerson, setScreen, tick, wide, isLoading, isError, refetch, onHladaj: () => setHladaj(true) }} />}
       {screen === "detail" && akt && obal(<Detail {...{ it: akt, liked, like, support, votes, vote, toast, celebrate, home, openPerson, setScreen }} />)}
       {screen === "add" && obal(<Add {...{ dom, add, setAdd, toast, celebrate, home, createPost }} />)}
       {screen === "board" && obal(<Board {...{ dom, toast, home }} />)}
       {screen === "profile" && profilMeno && obal(<OsobaProfil {...{ name: profilMeno, items, follows, toggleFollow, onOpen: open, toast, home }} />)}
+      </ScreenSwitch>
 
       {hladaj && (
         <HladanieModal akcent={acc.c} placeholder="Hľadať aktivity, workshopy, lektorov…"

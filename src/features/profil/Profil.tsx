@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { C, GRAD, GRAD_ZELENY } from "@/theme";
-import { Toast, Sheet, useScrollHore, useViac, useMotiv, QrModal, IkonaMenu, IkonaNastavenia, IkonaSipVlavo, IkonaPenazenka, IkonaHviezda, IkonaFajka, IkonaDoska, IkonaUsmev, IkonaPin, IkonaSlnko, IkonaMesiac, IkonaStit, SkeletonRiadky, EmptyState, ErrorState } from "@/shared";
+import { Toast, Sheet, useScrollHore, useViac, useMotiv, QrModal, IkonaMenu, IkonaNastavenia, IkonaSipVlavo, IkonaPenazenka, IkonaHviezda, IkonaFajka, IkonaDoska, IkonaUsmev, IkonaPin, IkonaSlnko, IkonaMesiac, IkonaStit, SkeletonRiadky, EmptyState, ErrorState, ScreenSwitch } from "@/shared";
 import { RetazDobraSheet } from "@/features/retaz/RetazDobra";
 import { clearSession } from "@/lib/session";
 import { usePouzivatel } from "@/lib/pouzivatel";
@@ -38,6 +38,7 @@ export default function ModulProfil({ wide, walletReq = 0 }: ProfilProps) {
 
   return (
     <div style={{ minHeight: "100%" }}>
+      <ScreenSwitch k={screen}>
       {screen === "profil" && obal(<ProfilHlavny toast={toast} naWallet={() => setScreen("wallet")} naSub={sub} naNastavenia={() => setScreen("nastavenia")} naPriatelia={() => setScreen("priatelia")} />)}
       {screen === "wallet" && obal(<Penazenka toast={toast} onBack={() => setScreen("profil")} />)}
       {screen === "sub" && obal(<SubScreen nazov={subNazov} toast={toast} onBack={() => setScreen("profil")} />)}
@@ -52,6 +53,7 @@ export default function ModulProfil({ wide, walletReq = 0 }: ProfilProps) {
           <div style={{ padding: "0 16px", display: "flex", flexDirection: "column" }}><NotifNastavenia embedded toast={toast} /></div>
         </div>
       )}
+      </ScreenSwitch>
 
       {hlaska && <Toast text={hlaska} />}
     </div>
