@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { C, inp, GRAD, GRAD_ZELENY } from "@/theme";
 import { Foto, FotoPrispevku, MiniFotky, Video, ModulHlavicka, Hlavicka, AvatarUroven, PodporaSekcia, PlatbaModal, HladanieModal, toast, Oslava, useGaleria, useScrollHore, useMotiv, useStrankaAkcie, StatRiadok, MoniBar, FeedStlpce, Lupa, Zdielanie, IkonaSipVlavo, IkonaMoznosti, IkonaUlozit, IkonaFajka, IkonaPlay, IkonaDoska, OkruhVyber, QrModal, FeedSkeleton, EmptyState, ErrorState, ScreenSwitch } from "@/shared";
 import { pripravFeed, FEED_CFG } from "@/lib/feed";
+import { tint } from "@/lib/ui";
 import { usePouzivatel } from "@/lib/pouzivatel";
 import { zobrazVelkost } from "@/lib/cardSize";
 import { RetazDobraSheet } from "@/features/retaz/RetazDobra";
@@ -30,8 +31,8 @@ const USER_LOK = { lat: 48.894, lng: 18.044 };
 */
 
 const heroGrad = (kat: GoodPolozka["kat"]) => `linear-gradient(160deg, ${KAT[kat].bg}, ${KAT[kat].bg2})`;
-// hex → priesvitné rgba (akcentové tinty fungujúce v tmavom aj svetlom režime)
-const tint = (hex: string, a: number) => { const n = parseInt(hex.slice(1), 16); return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`; };
+// `tint` je teraz var-aware (z @/lib/ui) — zvláda hex aj CSS premenné (var(--a-*) → color-mix).
+// Predtým tu bol lokálny hex-only helper, ktorý z premenných robil takmer čiernu (rozbité tinty).
 // jednotný „glass" odznak na médiu karty
 const mediaBadge = (extra: React.CSSProperties): React.CSSProperties => ({ position: "absolute", zIndex: 1, display: "inline-flex", alignItems: "center", gap: 5, fontSize: 10, fontWeight: 700, padding: "4px 9px", borderRadius: 9, background: "rgba(8,11,18,.5)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)", border: "1px solid rgba(255,255,255,.14)", color: "#fff", pointerEvents: "none", ...extra });
 

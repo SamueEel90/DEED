@@ -44,7 +44,9 @@ export function AvatarUroven({ ini, tint, tier, size = 34, ring = true, onClick,
 
 // ---- JEDNOTNÁ HLAVIČKA MODULU: ☰ + logo D⁺ + názov stránky (+ pravý obsah + prepínač režimu) ----
 // pod horným riadkom: SLOGAN (§14) + voliteľná kontextová karma (§5.3 — karma danej oblasti)
-export function ModulHlavicka({ title, right, karma, slogan = "Miesto, kde nerozhodujú slová, ale skutky" }: { title?: ReactNode; right?: ReactNode; karma?: ReactNode; slogan?: ReactNode }) {
+// `karma` prop sa zámerne UŽ nezobrazuje (chip „★ Gold · celková" skrytý vo všetkých moduloch) —
+// ostáva v type len kvôli spätnej kompatibilite volajúcich. Úroveň je teraz na avatare.
+export function ModulHlavicka({ title, right, slogan = "Miesto, kde nerozhodujú slová, ale skutky" }: { title?: ReactNode; right?: ReactNode; karma?: ReactNode; slogan?: ReactNode }) {
   const { svetly, prepni } = useMotiv();
   const otvorViac = useViac();
   return (
@@ -60,11 +62,10 @@ export function ModulHlavicka({ title, right, karma, slogan = "Miesto, kde neroz
           <span {...pressable(prepni, "Svetlý / tmavý režim")} title="Svetlý / tmavý režim" style={{ cursor: "pointer", width: 34, height: 34, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", border: `1px solid ${C.line}`, background: C.surface, flex: "0 0 auto", color: C.textSec }}>{svetly ? <IkonaMesiac size={17} color={C.textSec} /> : <IkonaSlnko size={17} color={C.textSec} />}</span>
         </span>
       </div>
-      {(slogan || karma) && (
+      {slogan && (
         <div style={{ padding: "0 16px 11px" }}>
           {/* SLOGAN (§14) — dominantný, na celú šírku */}
-          {slogan && <div style={{ fontSize: 13.5, fontWeight: 500, fontStyle: "italic", color: C.textSec, lineHeight: 1.4, letterSpacing: ".01em" }}>„{slogan}"</div>}
-          {karma && <span style={{ display: "inline-flex", alignItems: "center", gap: 4, marginTop: slogan ? 7 : 0, fontSize: 10.5, fontWeight: 700, color: "var(--a-gold)", background: "rgba(231,199,102,.12)", border: "1px solid rgba(200,162,58,.4)", borderRadius: 9, padding: "3px 9px", whiteSpace: "nowrap" }}>★ {karma}</span>}
+          <div style={{ fontSize: 13.5, fontWeight: 500, fontStyle: "italic", color: C.textSec, lineHeight: 1.4, letterSpacing: ".01em" }}>„{slogan}"</div>
         </div>
       )}
     </div>
