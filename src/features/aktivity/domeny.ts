@@ -8,23 +8,25 @@
 export const A = {
   surface: "rgba(var(--glass-rgb),.05)", surface2: "rgba(var(--glass-rgb),.075)", line: "rgba(var(--glass-rgb),.10)", line2: "rgba(var(--glass-rgb),.06)",
   txt: "var(--c-text)", txt2: "var(--c-textSec)", txt3: "var(--c-textTer)",
-  blue: "#5BA8F0", blueBg: "rgba(91,168,240,.14)", blueBd: "rgba(42,94,142,.55)",
-  green: "#3DD68C", greenBg: "rgba(61,214,140,.13)", greenBd: "rgba(46,125,82,.55)",
-  red: "#F2706F", redBg: "rgba(242,112,111,.12)", redBd: "rgba(122,48,48,.6)",
-  purple: "#A98BF0", purpleBg: "rgba(169,139,240,.15)", purpleBd: "rgba(122,91,216,.5)",
-  gold: "#E7C766", goldBg: "rgba(231,199,102,.13)", orange: "#F0A85E",
+  blue: "var(--a-info)", blueBg: "var(--a-info-bg)", blueBd: tint("var(--a-info)", .4),
+  green: "var(--a-green)", greenBg: "var(--a-green-bg)", greenBd: tint("var(--a-green)", .4),
+  red: "var(--a-danger)", redBg: "var(--a-danger-bg)", redBd: tint("var(--a-danger)", .4),
+  purple: "var(--a-plum)", purpleBg: "var(--a-plum-bg)", purpleBd: tint("var(--a-plum)", .4),
+  gold: "var(--a-gold)", goldBg: "var(--a-gold-bg)", orange: "var(--a-clay)",
 };
 
 export interface DomKonfig { label: string; ic: string; c: string; bg: string; bd: string; tint: string; }
 
 // ---- DOMÉNY ----
+// earthy hue + theme-aware tinty (bg/bd/tint odvodené z hue → fungujú v oboch režimoch)
+const dk = (label: string, ic: string, c: string): DomKonfig => ({ label, ic, c, bg: tint(c, .12), bd: tint(c, .34), tint: tint(c, .06) });
 export const DOM: Record<string, DomKonfig> = {
-  mix:     { label: "Mix",     ic: "◆",  c: "#3DD6CE", bg: "#0d2422", bd: "#2E9E9E", tint: "#0B0C0F" },
-  sport:   { label: "Šport",   ic: "🏃", c: "#5BA8F0", bg: "#13243a", bd: "#2A5E8E", tint: "#080d15" },
-  art:     { label: "Art",     ic: "🎨", c: "#A98BF0", bg: "#1a1430", bd: "#7A5BD8", tint: "#0e0a18" },
-  learn:   { label: "Learn",   ic: "📚", c: "#46C2A0", bg: "#0d2620", bd: "#2E8E72", tint: "#081512" },
-  eko:     { label: "Eko",     ic: "🌳", c: "#5BD06E", bg: "#0f2417", bd: "#2E7D52", tint: "#0a130c" },
-  zdravie: { label: "Zdravie", ic: "❤️", c: "#E98AAD", bg: "#2a1620", bd: "#8E4A63", tint: "#150a0f" },
+  mix:     dk("Mix", "◆", "var(--a-green)"),    // olivová (brand)
+  sport:   dk("Šport", "🏃", "var(--a-info)"),  // slate
+  art:     dk("Art", "🎨", "var(--a-plum)"),    // slivka
+  learn:   dk("Learn", "📚", "var(--a-teal)"),  // eukalyptus
+  eko:     dk("Eko", "🌳", "var(--a-green)"),   // listová zelená
+  zdravie: dk("Zdravie", "❤️", "var(--a-clay)"),// terracotta
 };
 export const ORDER = ["zdravie", "learn", "sport", "eko", "art"]; // mix = automatický režim, bez tlačidla
 
@@ -36,8 +38,11 @@ export const MODUL_ENGINE: Record<string, string> = { help: "help", workshop: "w
 
 export const KARMA_ORDER: Record<string, number> = { "Nováčik": 0, Bronze: 1, Silver: 2, Gold: 3 };
 
-// hex → priesvitné rgba (akcentové tinty fungujúce v tmavom aj svetlom režime)
-export function tint(hex: string, a: number) {
-  const n = parseInt(hex.slice(1), 16);
+// farba → priesvitný tint; podporuje hex aj CSS premennú (color-mix → theme-aware)
+export function tint(c: string, a: number) {
+  if (c.startsWith("var(") || c.startsWith("color-mix")) {
+    return `color-mix(in srgb, ${c} ${Math.round(a * 100)}%, transparent)`;
+  }
+  const n = parseInt(c.slice(1), 16);
   return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
 }

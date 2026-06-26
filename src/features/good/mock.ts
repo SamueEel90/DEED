@@ -4,17 +4,19 @@
 // KAT = farby kategórií, POLOZKY = feed skutkov, EVENTS = nástenka.
 // ============================================================
 import { U } from "@/theme";
+import { tint } from "@/lib/ui";
 import type { GoodPolozka, KategoriaKonfig, Kategoria, Udalost, UdalostZdroj } from "@/types";
 
-// ---- kategórie ----
+// ---- kategórie — earthy hue + theme-aware tinty (bg/bg2/bd z hue, fungujú v oboch režimoch) ----
+const kk = (c: string, label?: string): KategoriaKonfig => ({ c, bg: tint(c, .12), bg2: tint(c, .2), bd: tint(c, .34), label });
 export const KAT: Record<Kategoria, KategoriaKonfig> = {
-  Komunita: { c: "#5BA8F0", bg: "#10233a", bg2: "#1d3f63", bd: "#2A5E8E" },
-  Priroda: { c: "#3DD68C", bg: "#0f2417", bg2: "#1c4029", bd: "#2E7D52", label: "Príroda" },
-  Zdravie: { c: "#3DD6CE", bg: "#0d2422", bg2: "#163f3a", bd: "#2E9E9E" },
-  Ucenie: { c: "#A98BF0", bg: "#1a1430", bg2: "#2c2350", bd: "#7A5BD8", label: "Učenie" },
-  Pomoc: { c: "#F2706F", bg: "#2a1414", bg2: "#451f1f", bd: "#7A3030" },
+  Komunita: kk("var(--a-info)"),
+  Priroda: kk("var(--a-green)", "Príroda"),
+  Zdravie: kk("var(--a-teal)"),
+  Ucenie: kk("var(--a-plum)", "Učenie"),
+  Pomoc: kk("var(--a-danger)"),
   // Zdravie2 doplnené v module Charita; v Good sa nepoužíva.
-  Zdravie2: { c: "#3DD6CE", bg: "#0d2422", bg2: "#163f3a", bd: "#2E9E9E" },
+  Zdravie2: kk("var(--a-teal)"),
 };
 
 // ---- mock feed skutkov ----

@@ -33,7 +33,7 @@ const K = {
 };
 
 const SEG_BG = ["rgba(242,112,111,.16)", "rgba(91,155,255,.16)", "rgba(61,214,140,.16)", "rgba(120,200,90,.16)", "rgba(231,199,102,.16)", "rgba(91,140,240,.16)", "rgba(139,124,255,.16)"];
-const lvlFarba = (l: CharitaLevel | string): string => (({ Legend: "#f5c542", Gold: "#f5c542", Silver: "#94a3b8", Bronze: "#b87333" } as Record<string, string>)[l] || "#94a3b8");
+const lvlFarba = (l: CharitaLevel | string): string => (({ Legend: "var(--a-gold)", Gold: "var(--a-gold)", Silver: "var(--c-textTer)", Bronze: "var(--a-clay)" } as Record<string, string>)[l] || "var(--c-textTer)");
 
 // ===================== MODUL =====================
 type ModulCharitaProps = {
