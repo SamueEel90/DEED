@@ -118,6 +118,11 @@ button, a, [role="button"] {
   -webkit-tap-highlight-color: transparent;
 }
 
+/* jemný press feedback — opacity (nie transform) → nemení layout, bezpečné */
+button:active, [role="button"]:active {
+  opacity: 0.82;
+}
+
 /* rešpektuj systémové nastavenie „obmedz pohyb" (vestibulárna citlivosť) */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {

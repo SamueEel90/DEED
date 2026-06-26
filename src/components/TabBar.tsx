@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { C, GRAD, glassTmavy } from "@/theme";
 import { IkonaDomov, IkonaSrdceLine, IkonaCharita, IkonaKompas, IkonaMapa, IkonaPohar, IkonaOsoba, IkonaPenazenka } from "@/shared";
+import { pressable } from "@/components/pressable";
 
 /*
   ============================================================
@@ -72,7 +73,7 @@ export function TabBar({ taby, aktivny, onModul, wide }: {
 
 function Tab({ m, on, onClick }: { m?: Modul; on: boolean; onClick: () => void }) {
   return (
-    <div onClick={onClick} className="dock-tab" style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4, cursor: "pointer", padding: "4px 0 3px" }}>
+    <div {...pressable(onClick, m?.nazov)} aria-current={on ? "page" : undefined} className="dock-tab" style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4, cursor: "pointer", padding: "4px 0 3px" }}>
       <div className="dock-icon" style={{
         width: 50, height: 32, borderRadius: 14, display: "flex", alignItems: "center", justifyContent: "center",
         fontSize: 21, lineHeight: 1, transition: "transform .25s cubic-bezier(.34,1.56,.64,1), background .25s ease, box-shadow .25s ease, filter .25s ease",

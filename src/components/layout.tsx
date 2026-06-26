@@ -3,6 +3,7 @@ import { C, GRAD, GRAD_ZELENY, glassTmavy } from "@/theme";
 import { tint } from "@/lib/ui";
 import { FEED_CFG } from "@/lib/feed";
 import { useMotiv, useViac } from "@/components/context";
+import { pressable } from "@/components/pressable";
 import { Sheet } from "@/components/sheet";
 import { IkonaSpat, IkonaMenu, IkonaMesiac, IkonaSlnko, IkonaPlay, IkonaDoska, IkonaPlus, IkonaPin, IkonaSipDole, IkonaFajka } from "@/components/icons";
 
@@ -13,7 +14,7 @@ export function Hlavicka({ title, onBack, step, total, right, titleColor }: { ti
   return (
     <div style={{ position: "sticky", top: 0, zIndex: 5, ...glassTmavy(18, .6), borderLeft: "none", borderRight: "none", borderTop: "none" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 11, padding: "12px 14px" }}>
-        <span onClick={onBack} style={{ width: 32, height: 32, borderRadius: "50%", background: "rgba(var(--glass-rgb),.06)", border: `1px solid ${C.line}`, display: "flex", alignItems: "center", justifyContent: "center", color: C.textSec, cursor: "pointer", flex: "0 0 auto" }}><IkonaSpat size={17} color={C.textSec} /></span>
+        <span {...pressable(onBack, "Späť")} style={{ width: 32, height: 32, borderRadius: "50%", background: "rgba(var(--glass-rgb),.06)", border: `1px solid ${C.line}`, display: "flex", alignItems: "center", justifyContent: "center", color: C.textSec, cursor: "pointer", flex: "0 0 auto" }}><IkonaSpat size={17} color={C.textSec} /></span>
         <span style={{ fontSize: 16, fontWeight: 700, color: titleColor }}>{title}</span>
         {right ? <span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 12 }}>{right}</span>
           : step ? <span style={{ marginLeft: "auto", fontSize: 11.5, fontWeight: 600, color: C.textTer }}>Krok {step}/{total}</span> : null}
@@ -33,14 +34,14 @@ export function ModulHlavicka({ title, right, karma, slogan = "Miesto, kde neroz
   return (
     <div style={{ position: "sticky", top: 0, zIndex: 6, ...glassTmavy(18, .6), borderLeft: "none", borderRight: "none", borderTop: "none" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 11, padding: "13px 16px 7px" }}>
-        <span onClick={otvorViac} title="Menu modulov" style={{ display: "flex", alignItems: "center", color: C.textSec, cursor: "pointer", flex: "0 0 auto" }}><IkonaMenu size={22} color={C.textSec} /></span>
+        <span {...pressable(otvorViac, "Menu modulov")} title="Menu modulov" style={{ display: "flex", alignItems: "center", color: C.textSec, cursor: "pointer", flex: "0 0 auto" }}><IkonaMenu size={22} color={C.textSec} /></span>
         <span style={{ width: 32, height: 32, borderRadius: 10, background: GRAD, color: "#fff", fontWeight: 800, fontSize: 17, display: "flex", alignItems: "center", justifyContent: "center", position: "relative", boxShadow: "0 4px 14px rgba(99,134,255,.4)", flex: "0 0 auto" }}>
           D<span style={{ position: "absolute", top: 3, right: 4, fontSize: 9 }}>+</span>
         </span>
         <span style={{ fontSize: 20, fontWeight: 800 }}>{title}</span>
         <span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 13 }}>
           {right}
-          <span onClick={prepni} title="Svetlý / tmavý režim" style={{ cursor: "pointer", width: 34, height: 34, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", border: `1px solid ${C.line}`, background: C.surface, flex: "0 0 auto", color: C.textSec }}>{svetly ? <IkonaMesiac size={17} color={C.textSec} /> : <IkonaSlnko size={17} color={C.textSec} />}</span>
+          <span {...pressable(prepni, "Svetlý / tmavý režim")} title="Svetlý / tmavý režim" style={{ cursor: "pointer", width: 34, height: 34, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", border: `1px solid ${C.line}`, background: C.surface, flex: "0 0 auto", color: C.textSec }}>{svetly ? <IkonaMesiac size={17} color={C.textSec} /> : <IkonaSlnko size={17} color={C.textSec} />}</span>
         </span>
       </div>
       {(slogan || karma) && (
@@ -65,7 +66,7 @@ export function vyberBox(active?: boolean): CSSProperties {
 
 export function Vyber({ emoji, title, desc, active, onClick }: { emoji?: ReactNode; title?: ReactNode; desc?: ReactNode; active?: boolean; onClick?: () => void }) {
   return (
-    <div onClick={onClick} style={vyberBox(active)}>
+    <div {...pressable(onClick)} style={vyberBox(active)}>
       <div style={{ fontSize: 14, fontWeight: 700 }}>{emoji} {title}</div>
       {desc && <div style={{ fontSize: 12, color: C.textSec, marginTop: 3, lineHeight: 1.4 }}>{desc}</div>}
     </div>
@@ -133,9 +134,9 @@ export function SekcieBar({ onTalent, onBoard, onAdd, talentActive }: { onTalent
   const primary: CSSProperties = { ...base, background: GRAD, border: "1px solid transparent", color: "#fff", boxShadow: "0 6px 20px rgba(99,134,255,.32)" };
   return (
     <div style={{ display: "flex", gap: 8, padding: "8px 16px 14px", borderBottom: `1px solid ${C.line}` }}>
-      <div onClick={onTalent} style={ghost(talentActive)}><IkonaPlay size={13} color={talentActive ? C.blueL : C.text} /> Ukáž svoj talent</div>
-      <div onClick={onBoard} style={ghost(false)}><IkonaDoska size={15} color="#7E9BF0" /> Nástenka</div>
-      <div onClick={onAdd} style={primary}><IkonaPlus size={16} color="#fff" /> Pridať</div>
+      <div {...pressable(onTalent)} style={ghost(talentActive)}><IkonaPlay size={13} color={talentActive ? C.blueL : C.text} /> Ukáž svoj talent</div>
+      <div {...pressable(onBoard)} style={ghost(false)}><IkonaDoska size={15} color="#7E9BF0" /> Nástenka</div>
+      <div {...pressable(onAdd)} style={primary}><IkonaPlus size={16} color="#fff" /> Pridať</div>
     </div>
   );
 }
@@ -191,7 +192,7 @@ export function StatRiadok({ stat, miesto = "Trenčín", okruh = "2 km", onOkruh
         </span>
       </span>
       {/* moja štvrť + okruh — klikateľný chip */}
-      <span onClick={onOkruh} title="Zmeniť okruh" style={{ display: "inline-flex", alignItems: "center", gap: 7, flex: "none", padding: "5px 8px 5px 12px", borderRadius: 20, background: C.surface2, border: `1px solid ${C.line}`, cursor: "pointer", fontSize: 12.5, color: C.textSec, fontWeight: 600, whiteSpace: "nowrap" }}>
+      <span {...pressable(onOkruh, "Zmeniť okruh")} title="Zmeniť okruh" style={{ display: "inline-flex", alignItems: "center", gap: 7, flex: "none", padding: "5px 8px 5px 12px", borderRadius: 20, background: C.surface2, border: `1px solid ${C.line}`, cursor: "pointer", fontSize: 12.5, color: C.textSec, fontWeight: 600, whiteSpace: "nowrap" }}>
         <IkonaPin size={13} color="#74A6FF" /> Moja štvrť · {miesto}
         <span style={{ display: "inline-flex", alignItems: "center", gap: 2, padding: "3px 6px 3px 9px", borderRadius: 14, background: "rgba(116,166,255,.14)", color: "#74A6FF", fontSize: 11.5, fontWeight: 700 }}>
           {okruh} <IkonaSipDole size={12} color="#74A6FF" />
@@ -258,7 +259,7 @@ export function OkruhVyber({ radius, onPick, onClose, akcent = "#74A6FF" }: { ra
       {Object.entries(FEED_CFG.radiusy).map(([k, r]) => {
         const on = radius === k;
         return (
-          <div key={k} onClick={() => onPick(k)} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 13, marginBottom: 8, cursor: "pointer",
+          <div key={k} {...pressable(() => onPick(k))} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 13, marginBottom: 8, cursor: "pointer",
             background: on ? tint(akcent, .12) : C.surface2, border: `1px solid ${on ? tint(akcent, .45) : C.line}` }}>
             <IkonaPin size={16} color={on ? akcent : C.textTer} />
             <div style={{ flex: 1, minWidth: 0 }}>
