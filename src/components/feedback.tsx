@@ -2,23 +2,8 @@ import type { ReactNode } from "react";
 import { C } from "@/theme";
 import { Aura } from "@/components/visual";
 
-// Pozn.: pôvodný ručný `Modal` nahradený komponentom <Sheet> (Vaul) —
-// drag-to-dismiss + výstupná animácia + a11y. Pozri components/sheet.tsx.
-
-export function Toast({ text }: { text?: ReactNode }) {
-  // snackbar — vždy tmavý (aj vo svetlom režime), aby bol mätový text vždy čitateľný
-  return (
-    <div style={{ position: "absolute", bottom: 92, left: "50%", transform: "translateX(-50%)",
-      background: "rgba(12,20,16,.93)", backdropFilter: "blur(18px)", WebkitBackdropFilter: "blur(18px)",
-      border: "1px solid rgba(92,230,184,.35)", color: "#C9F2E2", padding: "11px 18px", borderRadius: 30, fontSize: 12.5, fontWeight: 600,
-      zIndex: 60, width: "max-content", maxWidth: "88%", textAlign: "center", animation: "fadeUp .3s ease",
-      boxShadow: "0 10px 34px rgba(0,0,0,.45), 0 0 24px rgba(67,224,200,.12)" }}>
-      <span style={{ display: "inline-block", width: 7, height: 7, borderRadius: "50%", background: GRAD_ZELENY_LOKAL, marginRight: 8, verticalAlign: "middle" }} />
-      {text}
-    </div>
-  );
-}
-const GRAD_ZELENY_LOKAL = "linear-gradient(90deg, #1FBF8F, #5CE6B8)";
+// Pozn.: pôvodný ručný `Modal` nahradený komponentom <Sheet> (Vaul);
+// pôvodný `Toast` nahradený globálnym sonner (components/toast.tsx, `toast()`).
 
 // ---- OSLAVA — jednotný „celebration“ overlay (aura prsteň = podpis značky) ----
 // rovnaký naprieč modulmi: emoji v aura prstenci + titulok + text

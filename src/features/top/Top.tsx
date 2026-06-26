@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { C } from "@/theme";
-import { ModulHlavicka, Toast, useScrollHore, IkonaStit, IkonaKorunka, IkonaHviezda, IkonaUsmev, IkonaKompas, IkonaInstitucia } from "@/shared";
+import { ModulHlavicka, toast, useScrollHore, IkonaStit, IkonaKorunka, IkonaHviezda, IkonaUsmev, IkonaKompas, IkonaInstitucia } from "@/shared";
 import { Zvoncek } from "@/features/notifikacie/Notifikacie";
 import { CudziProfil } from "@/features/cudzi-profil/CudziProfil";
 import { FunZona } from "@/features/fun/FunZona";
@@ -61,16 +61,14 @@ const KATEGORIE: RebricekKategoria[] = [
 export default function ModulTop({ wide }: WideProps) {
   const [screen, setScreen] = useState<"top" | "fun" | "profil">("top"); // top | fun | profil
   const [subjekt, setSubjekt] = useState<Subjekt | null>(null);
-  const [hlaska, setHlaska] = useState<string | null>(null);
   const [rozsah, setRozsah] = useState<RebricekRozsah>("Štvrť");
 
   const scrollHore = useScrollHore();
-  const toast = (m: string) => { setHlaska(m); setTimeout(() => setHlaska((x) => (x === m ? null : x)), 2300); };
   const obal = (el: React.ReactNode) => wide ? <div style={{ maxWidth: 620, margin: "0 auto" }}>{el}</div> : el;
   const otvorProfil = (s: Subjekt) => { setSubjekt(s); setScreen("profil"); scrollHore(); };
 
-  if (screen === "fun") return <div style={{ minHeight: "100%" }}>{obal(<FunZona onBack={() => setScreen("top")} toast={toast} />)}{hlaska && <Toast text={hlaska} />}</div>;
-  if (screen === "profil" && subjekt) return <div style={{ minHeight: "100%" }}>{obal(<CudziProfil subjekt={subjekt as any} toast={toast} onBack={() => setScreen("top")} />)}{hlaska && <Toast text={hlaska} />}</div>;
+  if (screen === "fun") return <div style={{ minHeight: "100%" }}>{obal(<FunZona onBack={() => setScreen("top")} toast={toast} />)}</div>;
+  if (screen === "profil" && subjekt) return <div style={{ minHeight: "100%" }}>{obal(<CudziProfil subjekt={subjekt as any} toast={toast} onBack={() => setScreen("top")} />)}</div>;
 
   return (
     <div style={{ minHeight: "100%", paddingBottom: 14 }}>
@@ -120,7 +118,6 @@ export default function ModulTop({ wide }: WideProps) {
           <div style={{ textAlign: "center", fontSize: 11, color: C.textTer, lineHeight: 1.5, marginTop: 18 }}>Karma sa nedá kúpiť — len zaslúžiť konaním. Rebríčky sú verejné; súkromné osoby v nich nefigurujú.</div>
         </div>
       )}
-      {hlaska && <Toast text={hlaska} />}
     </div>
   );
 }

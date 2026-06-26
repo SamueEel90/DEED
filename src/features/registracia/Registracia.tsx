@@ -5,9 +5,9 @@
 // "Preskočiť" → demo session (pozrieť appku bez registrácie).
 // Po dokončení flow zavolá setSession → gate v Screens otvorí appku.
 // ============================================================
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { C, GRAD } from "@/theme";
-import { Vyber, Otazka, Toast } from "@/shared";
+import { Vyber, Otazka, toast } from "@/shared";
 import { setSession } from "@/lib/session";
 import { OsobaFlow } from "./OsobaFlow";
 import { CharitaFlow } from "./CharitaFlow";
@@ -16,14 +16,6 @@ type TypSubjektu = "osoba" | "charita";
 
 export function Registracia({ onHotovo }: { onHotovo?: () => void }) {
   const [typ, setTyp] = useState<TypSubjektu | null>(null); // null | "osoba" | "charita"
-  const [toastText, setToastText] = useState("");
-
-  const zhasni = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const toast = (text: string) => {
-    setToastText(text);
-    if (zhasni.current) clearTimeout(zhasni.current);
-    zhasni.current = setTimeout(() => setToastText(""), 2600);
-  };
 
   const spat = () => setTyp(null);
   const preskoc = () => {
@@ -39,7 +31,6 @@ export function Registracia({ onHotovo }: { onHotovo?: () => void }) {
   return (
     <div style={{ height: "100%", position: "relative" }}>
       {obsah}
-      <Toast text={toastText} />
     </div>
   );
 }

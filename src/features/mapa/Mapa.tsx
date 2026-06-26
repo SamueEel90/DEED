@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { C, GRAD } from "@/theme";
-import { ModulHlavicka, IkonaPin, Toast } from "@/shared";
+import { ModulHlavicka, IkonaPin, toast } from "@/shared";
 import { Zvoncek } from "@/features/notifikacie/Notifikacie";
 import { FEED_CFG } from "@/lib/feed";
 import { UROVNE, POCTY_KM, POCTY_UROVEN } from "./mock";
@@ -17,8 +17,6 @@ import { UROVNE, POCTY_KM, POCTY_UROVEN } from "./mock";
 */
 
 export default function ModulMapa({ wide }: { wide?: boolean }) {
-  const [hlaska, setHlaska] = useState<string | null>(null);
-  const toast = (m: string) => { setHlaska(m); setTimeout(() => setHlaska((x) => (x === m ? null : x)), 2300); };
   const [uroven, setUroven] = useState("stvrt");
   const [km, setKm] = useState(2);
   const [gps, setGps] = useState(false); // demo: GPS vypnuté → banner
@@ -103,8 +101,6 @@ export default function ModulMapa({ wide }: { wide?: boolean }) {
             Použiť rádius
           </button>
         </div>
-      )}
-      {hlaska && <Toast text={hlaska} />}
-    </div>
+      )}    </div>
   );
 }

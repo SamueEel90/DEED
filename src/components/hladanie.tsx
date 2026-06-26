@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useDeferredValue } from "react";
 import { C, glassTmavy } from "@/theme";
 import { tint } from "@/lib/ui";
 import { Lupa, IkonaKriz, IkonaOpakovat, IkonaStit } from "@/components/icons";
@@ -39,8 +39,10 @@ export function HladanieModal({ data = [], onPick, onClose, akcent = "#5BA8F0", 
   defaultFilter = "Všetko", posledne = ["Detská nemocnica", "Coach gitara", "Povodeň pomoc"], subjekty = SUBJEKTY, toast }: { data?: any[]; onPick?: (id: any) => void; onClose: () => void; akcent?: string; placeholder?: string; defaultFilter?: string; posledne?: string[]; subjekty?: any[]; toast?: (t: string) => void }) {
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState(defaultFilter);
+  // input je svižný (q), drahé filtrovanie beží na odloženej hodnote (dq)
+  const dq = useDeferredValue(q);
   const norm = (s: any) => (s || "").toString().toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
-  const dotaz = norm(q.trim());
+  const dotaz = norm(dq.trim());
 
   // celý vyhľadávací vesmír = obsah modulu + verejné subjekty (jeden engine naprieč)
   const vesmir = [

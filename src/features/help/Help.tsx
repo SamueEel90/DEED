@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { C, pasmo, inp, infoBox, btn, GRAD_ZELENY, glassTmavy } from "@/theme";
-import { Foto, Avatar, FotoPrispevku, MiniFotky, Hlavicka, ModulHlavicka, PodporaSekcia, PlatbaModal, HladanieModal, Otazka, Vyber, vyberBox, NavBtns, Suhrn, DokladRow, Toast, useGaleria, useScrollHore, Ticker, StatRiadok, MoniBar, FeedStlpce, SekcieBar, OkruhVyber, Lupa, Zdielanie, IkonaSpat, IkonaVlajka, IkonaFoto, FeedSkeleton, EmptyState, ErrorState, ScreenSwitch } from "@/shared";
+import { Foto, Avatar, FotoPrispevku, MiniFotky, Hlavicka, ModulHlavicka, PodporaSekcia, PlatbaModal, HladanieModal, Otazka, Vyber, vyberBox, NavBtns, Suhrn, DokladRow, toast, useGaleria, useScrollHore, Ticker, StatRiadok, MoniBar, FeedStlpce, SekcieBar, OkruhVyber, Lupa, Zdielanie, IkonaSpat, IkonaVlajka, IkonaFoto, FeedSkeleton, EmptyState, ErrorState, ScreenSwitch } from "@/shared";
 import { Zvoncek } from "@/features/notifikacie/Notifikacie";
 import { pripravFeed, FEED_CFG } from "@/lib/feed";
 import type { HelpFeedItem } from "@/types";
@@ -19,9 +19,7 @@ export default function ModulHelp({ wide }: { wide?: boolean }) {
   const { data: MOCK_FEED = [] } = useHelpFeed();
   const [screen, setScreen] = useState("feed"); // feed | detail | add | offer | request
   const [aktDetail, setAktDetail] = useState<any>(null);
-  const [hlaska, setHlaska] = useState<string | null>(null);
   const [hladaj, setHladaj] = useState(false);
-  const toast = (m: string) => { setHlaska(m); setTimeout(() => setHlaska((x) => (x === m ? null : x)), 2300); };
   const otvorZ = (z: any) => { setAktDetail(z); setScreen("detail"); };
 
   // pri prepnutí obrazovky (napr. otvorenie detailu) odscrolluj appku hore
@@ -51,8 +49,6 @@ export default function ModulHelp({ wide }: { wide?: boolean }) {
           toast={toast} defaultFilter="Žiadosti Help"
           onClose={() => setHladaj(false)} />
       )}
-
-      {hlaska && <Toast text={hlaska} />}
     </div>
   );
 }
@@ -197,7 +193,6 @@ function FeedCard({ z, wide, onClick }: { z: any; wide?: boolean; onClick: () =>
 
 // ===================== DETAIL ŽIADOSTI =====================
 function Detail({ z, onBack }: { z: any; onBack: () => void }) {
-  const [hlaska, setHlaska] = useState<string | null>(null);
   const [platba, setPlatba] = useState<string | null>(null); // "EUR" | "DEED"
   const [suma, setSuma] = useState(z.suma);
   const [ludia, setLudia] = useState(z.ludia);
@@ -208,14 +203,12 @@ function Detail({ z, onBack }: { z: any; onBack: () => void }) {
   function posliPevne(hodnota: number, kanal: string) {
     setSuma((s: number) => s + (kanal === "SMS" ? 1 : hodnota * 0.01)); // DEED ~0,01€ ilustračne
     setLudia((l: number) => l + 1);
-    setHlaska(`Odoslané: ${hodnota} ${kanal} · ⛓ ${hash()}`);
-    setTimeout(() => setHlaska(null), 2600);
+    toast(`Odoslané: ${hodnota} ${kanal} · ⛓ ${hash()}`);
   }
   function platbaHotova(s: number) {
     setSuma((x: number) => x + s * (platba === "EUR" ? 1 : 0.01));
     setLudia((l: number) => l + 1);
-    setHlaska(`Odoslané: ${platba === "EUR" ? s + " €" : s + " DEED"} · ⛓ ${hash()}`);
-    setTimeout(() => setHlaska(null), 2600);
+    toast(`Odoslané: ${platba === "EUR" ? s + " €" : s + " DEED"} · ⛓ ${hash()}`);
   }
 
   const pct = Math.min(100, Math.round(suma / z.ciel * 100));
@@ -278,16 +271,14 @@ function Detail({ z, onBack }: { z: any; onBack: () => void }) {
       {/* jednotná sekcia podpory */}
       <div style={{ padding: "0 14px 14px" }}>
         <PodporaSekcia
-          onShare={() => setHlaska("Zdieľať: odkaz skopírovaný · siete")}
-          upvotes={140} onUpvote={() => setHlaska("Palec hore")}
+          onShare={() => toast("Zdieľať: odkaz skopírovaný · siete")}
+          upvotes={140} onUpvote={() => toast("Palec hore")}
           onPodpor={(s: number) => posliPevne(s, "DEED")} onSms={() => posliPevne(1, "SMS")}
           onKanal={(k: string) => setPlatba(k)} />
       </div>
 
       {/* simulácia platby (EUR karta / DEED peňaženka) */}
       {platba && <PlatbaModal kanal={platba} komu={z.nazov} onClose={() => setPlatba(null)} onDone={platbaHotova} />}
-
-      {hlaska && <Toast text={hlaska} />}
     </div>
   );
 }

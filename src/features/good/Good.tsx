@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { C, inp, GRAD, GRAD_ZELENY } from "@/theme";
-import { Foto, FotoPrispevku, MiniFotky, Video, ModulHlavicka, Hlavicka, PodporaSekcia, PlatbaModal, HladanieModal, Toast, Oslava, useGaleria, useScrollHore, useMotiv, StatRiadok, MoniBar, FeedStlpce, SekcieBar, Lupa, Zdielanie, IkonaSipVlavo, IkonaMoznosti, IkonaUlozit, IkonaFajka, OkruhVyber, QrModal, FeedSkeleton, EmptyState, ErrorState, ScreenSwitch } from "@/shared";
+import { Foto, FotoPrispevku, MiniFotky, Video, ModulHlavicka, Hlavicka, PodporaSekcia, PlatbaModal, HladanieModal, toast, Oslava, useGaleria, useScrollHore, useMotiv, StatRiadok, MoniBar, FeedStlpce, SekcieBar, Lupa, Zdielanie, IkonaSipVlavo, IkonaMoznosti, IkonaUlozit, IkonaFajka, OkruhVyber, QrModal, FeedSkeleton, EmptyState, ErrorState, ScreenSwitch } from "@/shared";
 import { pripravFeed, FEED_CFG } from "@/lib/feed";
 import { usePouzivatel } from "@/lib/pouzivatel";
 import { zobrazVelkost } from "@/lib/cardSize";
@@ -44,7 +44,6 @@ export default function ModulGood({ wide, otvorModul }: { wide?: boolean; otvorM
   const [aktSubjekt, setAktSubjekt] = useState<Subjekt | null>(null); // cudzí profil (§6)
   const [predtym, setPredtym] = useState("home");     // kam sa vrátiť z cudzieho profilu
   const [verifyMode, setVerifyMode] = useState("ok");
-  const [hlaska, setHlaska] = useState<string | null>(null);
   const [oslava, setOslava] = useState<{ suma: number; komu: string } | null>(null); // {suma, komu}
   const [hladaj, setHladaj] = useState(false);
 
@@ -54,7 +53,6 @@ export default function ModulGood({ wide, otvorModul }: { wide?: boolean; otvorM
   const scrollHore = useScrollHore();
   useEffect(() => { scrollHore(); }, [screen]);
 
-  const toast = (m: string) => { setHlaska(m); setTimeout(() => setHlaska((x) => (x === m ? null : x)), 2300); };
   const oslavuj = (suma: number, komu: string) => { setOslava({ suma, komu }); setTimeout(() => setOslava(null), 1900); };
   const obal = (el: React.ReactNode) => wide ? <div style={{ maxWidth: 620, margin: "0 auto" }}>{el}</div> : el;
 
@@ -114,7 +112,6 @@ export default function ModulGood({ wide, otvorModul }: { wide?: boolean; otvorM
           onClose={() => setHladaj(false)} />
       )}
 
-      {hlaska && <Toast text={hlaska} />}
     </div>
   );
 }

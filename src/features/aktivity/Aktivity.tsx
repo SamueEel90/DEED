@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { ModulHlavicka, Hlavicka, PodporaSekcia, PlatbaModal, HladanieModal, Toast, Oslava, useMotiv, useScrollHore, Ticker, StatRiadok, FeedStlpce, SekcieBar, OkruhVyber, Lupa, Zvon, IkonaSipVlavo, IkonaMoznosti, Zdielanie, IkonaUlozit, IkonaFoto, IkonaPlus, IkonaPlay, FeedSkeleton, EmptyState, ErrorState, ScreenSwitch } from "@/shared";
+import { ModulHlavicka, Hlavicka, PodporaSekcia, PlatbaModal, HladanieModal, toast, Oslava, useMotiv, useScrollHore, Ticker, StatRiadok, FeedStlpce, SekcieBar, OkruhVyber, Lupa, Zvon, IkonaSipVlavo, IkonaMoznosti, Zdielanie, IkonaUlozit, IkonaFoto, IkonaPlus, IkonaPlay, FeedSkeleton, EmptyState, ErrorState, ScreenSwitch } from "@/shared";
 import { C, GRAD, GRAD_ZELENY } from "@/theme";
 import { pripravFeed, FEED_CFG } from "@/lib/feed";
 import type { OkruhKod } from "@/types";
@@ -69,7 +69,6 @@ export default function ModulAktivity({ wide }: { wide?: boolean }) {
   const [screen, setScreen] = useState("home"); // home | detail | add | board | profile
   const [aktId, setAktId] = useState<number | null>(null);
   const [profilMeno, setProfilMeno] = useState<string | null>(null); // otvorený profil osoby
-  const [hlaska, setHlaska] = useState<string | null>(null);
   const [celeb, setCeleb] = useState<{ title: string; text: string } | null>(null);
   const [hladaj, setHladaj] = useState(false);
   const [add, setAdd] = useState<{ kind: string; d: string } | null>(null); // null = menu | { kind, d }
@@ -88,7 +87,6 @@ export default function ModulAktivity({ wide }: { wide?: boolean }) {
   useEffect(() => save(LS.deltas, deltas), [deltas]);
   useEffect(() => save(LS.follows, follows), [follows]);
 
-  const toast = (m: string) => { setHlaska(m); setTimeout(() => setHlaska((x) => (x === m ? null : x)), 2200); };
   const celebrate = (title: string, text: string) => { setCeleb({ title, text }); setTimeout(() => setCeleb((c) => (c && c.title === title ? null : c)), 2200); };
   const obal = (el: React.ReactNode) => (wide ? <div style={{ maxWidth: 620, margin: "0 auto" }}>{el}</div> : el);
 
@@ -185,8 +183,6 @@ export default function ModulAktivity({ wide }: { wide?: boolean }) {
           toast={toast} defaultFilter="Udalosti"
           onClose={() => setHladaj(false)} />
       )}
-
-      {hlaska && <Toast text={hlaska} />}
 
       {celeb && <Oslava title={celeb.title} text={celeb.text} onClose={() => setCeleb(null)} />}
     </div>

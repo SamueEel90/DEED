@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { C, U, AV, GRAD, GRAD_ZELENY } from "@/theme";
-import { Foto, Avatar, FotoPrispevku, MiniFotky, ModulHlavicka, PodporaSekcia, PlatbaModal, HladanieModal, Toast, useGaleria, useScrollHore, Ticker, StatRiadok, MoniBar, FeedStlpce, SekcieBar, OkruhVyber, Lupa, Zvon, Zdielanie, IkonaSpat, IkonaVlajka, IkonaFoto, IkonaOpakovat, IkonaKriz, IkonaInstitucia, FeedSkeleton, SkeletonRiadky, EmptyState, ErrorState, ScreenSwitch } from "@/shared";
+import { Foto, Avatar, FotoPrispevku, MiniFotky, ModulHlavicka, PodporaSekcia, PlatbaModal, HladanieModal, toast, useGaleria, useScrollHore, Ticker, StatRiadok, MoniBar, FeedStlpce, SekcieBar, OkruhVyber, Lupa, Zvon, Zdielanie, IkonaSpat, IkonaVlajka, IkonaFoto, IkonaOpakovat, IkonaKriz, IkonaInstitucia, FeedSkeleton, SkeletonRiadky, EmptyState, ErrorState, ScreenSwitch } from "@/shared";
 import { pripravFeed, FEED_CFG } from "@/lib/feed";
 import { Zvoncek } from "@/features/notifikacie/Notifikacie";
 import type { CharitaFeedItem, CharitaLevel, Kanal } from "@/types";
@@ -47,14 +47,12 @@ type Sheet = "add" | "reg" | "dir" | null;
 export default function ModulCharita({ wide, otvorModul }: ModulCharitaProps) {
   const [screen, setScreen] = useState<Screen>("feed"); // feed | detail
   const [sheet, setSheet] = useState<Sheet>(null); // add | reg | dir
-  const [hlaska, setHlaska] = useState<string | null>(null);
   const [hladaj, setHladaj] = useState(false);
 
   // pri prepnutí obrazovky (napr. otvorenie detailu) odscrolluj appku hore
   const scrollHore = useScrollHore();
   useEffect(() => { scrollHore(); }, [screen]);
 
-  const toast = (m: string) => { setHlaska(m); setTimeout(() => setHlaska((x) => (x === m ? null : x)), 2300); };
   const obal = (el: React.ReactNode) => wide ? <div style={{ maxWidth: 620, margin: "0 auto" }}>{el}</div> : el;
 
   return (
@@ -79,8 +77,6 @@ export default function ModulCharita({ wide, otvorModul }: ModulCharitaProps) {
           toast={toast} defaultFilter="Charity"
           onClose={() => setHladaj(false)} />
       )}
-
-      {hlaska && <Toast text={hlaska} />}
     </div>
   );
 }

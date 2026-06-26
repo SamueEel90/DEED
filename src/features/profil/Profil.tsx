@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { C, GRAD, GRAD_ZELENY } from "@/theme";
-import { Toast, Sheet, useScrollHore, useViac, useMotiv, QrModal, IkonaMenu, IkonaNastavenia, IkonaSipVlavo, IkonaPenazenka, IkonaHviezda, IkonaFajka, IkonaDoska, IkonaUsmev, IkonaPin, IkonaSlnko, IkonaMesiac, IkonaStit, SkeletonRiadky, EmptyState, ErrorState, ScreenSwitch } from "@/shared";
+import { toast, Sheet, useScrollHore, useViac, useMotiv, QrModal, IkonaMenu, IkonaNastavenia, IkonaSipVlavo, IkonaPenazenka, IkonaHviezda, IkonaFajka, IkonaDoska, IkonaUsmev, IkonaPin, IkonaSlnko, IkonaMesiac, IkonaStit, SkeletonRiadky, EmptyState, ErrorState, ScreenSwitch } from "@/shared";
 import { RetazDobraSheet } from "@/features/retaz/RetazDobra";
 import { clearSession } from "@/lib/session";
 import { usePouzivatel } from "@/lib/pouzivatel";
@@ -23,7 +23,6 @@ type ProfilProps = WideProps & { walletReq?: number };
 export default function ModulProfil({ wide, walletReq = 0 }: ProfilProps) {
   const [screen, setScreen] = useState("profil"); // profil | wallet | sub | nastavenia | notif
   const [subNazov, setSubNazov] = useState<string | null>(null);
-  const [hlaska, setHlaska] = useState<string | null>(null);
 
   // pri prepnutí obrazovky odscrolluj appku hore
   const scrollHore = useScrollHore();
@@ -32,7 +31,6 @@ export default function ModulProfil({ wide, walletReq = 0 }: ProfilProps) {
   // ☰ menu → Peňaženka: otvor peňaženku (walletReq sa zvýši pri kliknutí)
   useEffect(() => { if (walletReq) setScreen("wallet"); }, [walletReq]);
 
-  const toast: ToastFn = (m) => { setHlaska(m); setTimeout(() => setHlaska((x) => (x === m ? null : x)), 2300); };
   const sub = (n: string) => { setSubNazov(n); setScreen("sub"); };
   const obal = (el: React.ReactNode) => wide ? <div style={{ maxWidth: 620, margin: "0 auto" }}>{el}</div> : el;
 
@@ -54,8 +52,6 @@ export default function ModulProfil({ wide, walletReq = 0 }: ProfilProps) {
         </div>
       )}
       </ScreenSwitch>
-
-      {hlaska && <Toast text={hlaska} />}
     </div>
   );
 }
