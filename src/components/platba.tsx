@@ -13,12 +13,16 @@ import { IkonaStit, IkonaFajka, Zdielanie, Palec } from "@/components/icons";
 const PLATBA_ZOSTATOK = 1240; // DEED zostatok v peňaženke (demo)
 export function PlatbaModal({ kanal, komu, onClose, onDone }: { kanal?: string; komu?: ReactNode; onClose?: () => void; onDone?: (suma: number) => void }) {
   const jeEur = kanal === "EUR";
-  const [krok, setKrok] = useState("suma"); // suma | detaily | spracovanie | hotovo
+  const [krok, setKrok] = useState("suma"); // suma | metoda | detaily | spracovanie | hotovo
+  const [metoda, setMetoda] = useState<"karta" | "sepa">("karta"); // EUR: spôsob platby
   const [suma, setSuma] = useState("");
   const [karta, setKarta] = useState({ cislo: "", exp: "", cvc: "" });
+  const [sepa, setSepa] = useState({ iban: "", meno: "" });
   const [res, setRes] = useState<{ id: string; hash: string; cas: string } | null>(null);
   const sumaNum = Number(suma) || 0;
-  const poplatok = jeEur ? Math.round((sumaNum * 0.014 + 0.15) * 100) / 100 : 0;
+  const jeSepa = jeEur && metoda === "sepa";
+  // karta: 1,4 % + 0,15 € · SEPA prevod: 0,35 € fixne · DEED: 0
+  const poplatok = !jeEur ? 0 : jeSepa ? 0.35 : Math.round((sumaNum * 0.014 + 0.15) * 100) / 100;
   const spolu = Math.round((sumaNum + poplatok) * 100) / 100;
   const malo = !jeEur && sumaNum > PLATBA_ZOSTATOK;
 
@@ -27,7 +31,10 @@ export function PlatbaModal({ kanal, komu, onClose, onDone }: { kanal?: string; 
   const chips = jeEur ? [5, 10, 20, 50] : [50, 100, 200, 500];
   const fmtCislo = (v: string) => v.replace(/\D/g, "").slice(0, 16).replace(/(.{4})(?=.)/g, "$1 ");
   const fmtExp = (v: string) => { const d = v.replace(/\D/g, "").slice(0, 4); return d.length > 2 ? d.slice(0, 2) + "/" + d.slice(2) : d; };
+  const fmtIban = (v: string) => v.replace(/[^a-zA-Z0-9]/g, "").toUpperCase().slice(0, 34).replace(/(.{4})(?=.)/g, "$1 ");
   const kartaOk = karta.cislo.replace(/\s/g, "").length === 16 && karta.exp.length === 5 && karta.cvc.length >= 3;
+  const ibanClean = sepa.iban.replace(/\s/g, "");
+  const sepaOk = ibanClean.length >= 15 && sepa.meno.trim().length >= 3;
 
   function zaplatit() {
     setKrok("spracovanie");
@@ -53,8 +60,8 @@ export function PlatbaModal({ kanal, komu, onClose, onDone }: { kanal?: string; 
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
         <span style={{ width: 38, height: 38, borderRadius: 11, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", background: jeEur ? "rgba(91,155,255,.14)" : "rgba(67,224,200,.14)", color: jeEur ? C.blueL : C.teal, fontWeight: 800, fontSize: 14 }}>{jeEur ? "€" : "D⁺"}</span>
         <div style={{ minWidth: 0 }}>
-          <div style={{ fontSize: 15, fontWeight: 800 }}>{jeEur ? "Platba kartou" : "Platba z peňaženky"}</div>
-          <div style={{ fontSize: 11.5, color: C.textTer, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{jeEur ? "EUR · platobná brána" : "DEED · wallet → wallet"}{komu ? ` · pre ${komu}` : ""}</div>
+          <div style={{ fontSize: 15, fontWeight: 800 }}>{jeEur ? "Platba v eurách" : "Platba z peňaženky"}</div>
+          <div style={{ fontSize: 11.5, color: C.textTer, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{jeEur ? (jeSepa ? "EUR · SEPA prevod" : "EUR · karta / prevod") : "DEED · wallet → wallet"}{komu ? ` · pre ${komu}` : ""}</div>
         </div>
       </div>
 
@@ -68,10 +75,30 @@ export function PlatbaModal({ kanal, komu, onClose, onDone }: { kanal?: string; 
         </div>
         {!jeEur && <div style={{ fontSize: 11.5, color: C.textTer, marginTop: 10 }}>Zostatok v peňaženke: <b style={{ color: C.text }}>{PLATBA_ZOSTATOK.toLocaleString("sk")} DEED</b></div>}
         {malo && <div style={{ fontSize: 12, color: C.red, marginTop: 8 }}>Nedostatok DEED v peňaženke.</div>}
-        <button disabled={sumaNum <= 0 || malo} onClick={() => setKrok("detaily")} style={btnP(sumaNum > 0 && !malo)}>Pokračovať</button>
+        <button disabled={sumaNum <= 0 || malo} onClick={() => setKrok(jeEur ? "metoda" : "detaily")} style={btnP(sumaNum > 0 && !malo)}>Pokračovať</button>
       </>)}
 
-      {krok === "detaily" && jeEur && (<>
+      {/* EUR: výber spôsobu platby — karta alebo SEPA prevod */}
+      {krok === "metoda" && jeEur && (<>
+        <div style={{ fontSize: 12.5, color: C.textTer, margin: "2px 0 12px" }}>Vyber spôsob platby pre {sumaNum.toFixed(2)} €</div>
+        {[
+          { id: "karta" as const, ic: "💳", t: "Platobná karta", d: "Visa · Mastercard · okamžite · 3‑D Secure", fee: `poplatok 1,4 % + 0,15 €` },
+          { id: "sepa" as const, ic: "🏦", t: "Bankový prevod (SEPA)", d: "IBAN · pripísanie do 1 prac. dňa", fee: "poplatok 0,35 €" },
+        ].map((m) => (
+          <button key={m.id} onClick={() => { setMetoda(m.id); setKrok("detaily"); }} style={{ width: "100%", display: "flex", alignItems: "center", gap: 13, textAlign: "left", padding: "13px 14px", marginBottom: 10, borderRadius: 14, cursor: "pointer", fontFamily: "inherit", background: C.surface2, border: `1px solid ${C.line}`, color: C.text }}>
+            <span style={{ fontSize: 22, flex: "none" }}>{m.ic}</span>
+            <span style={{ flex: 1, minWidth: 0 }}>
+              <span style={{ display: "block", fontSize: 14, fontWeight: 700 }}>{m.t}</span>
+              <span style={{ display: "block", fontSize: 11.5, color: C.textTer, marginTop: 2 }}>{m.d} · {m.fee}</span>
+            </span>
+            <span style={{ color: C.textTer, fontSize: 18, flex: "none" }}>›</span>
+          </button>
+        ))}
+        <button onClick={() => setKrok("suma")} style={{ ...btnP(false), background: "rgba(var(--glass-rgb),.06)", color: C.textSec, cursor: "pointer" }}>Späť</button>
+      </>)}
+
+      {/* EUR · KARTA */}
+      {krok === "detaily" && jeEur && !jeSepa && (<>
         <input autoFocus inputMode="numeric" placeholder="Číslo karty" value={karta.cislo} onChange={(e) => setKarta({ ...karta, cislo: fmtCislo(e.target.value) })} style={{ ...inpS, marginBottom: 10, letterSpacing: ".06em" }} />
         <div style={{ display: "flex", gap: 10, marginBottom: 12 }}>
           <input inputMode="numeric" placeholder="MM/RR" value={karta.exp} onChange={(e) => setKarta({ ...karta, exp: fmtExp(e.target.value) })} style={{ ...inpS, flex: 1 }} />
@@ -84,6 +111,19 @@ export function PlatbaModal({ kanal, komu, onClose, onDone }: { kanal?: string; 
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 11, color: C.textTer, marginTop: 10, lineHeight: 1.4 }}><IkonaStit size={13} color={C.green} /> Zabezpečené · 3‑D Secure · test 4242 4242 4242 4242</div>
         <button disabled={!kartaOk} onClick={zaplatit} style={btnP(kartaOk)}>Zaplatiť {spolu.toFixed(2)} €</button>
+      </>)}
+
+      {/* EUR · SEPA prevod */}
+      {krok === "detaily" && jeSepa && (<>
+        <input autoFocus placeholder="IBAN (napr. SK89 0000 0000 0000 0000 0000)" value={sepa.iban} onChange={(e) => setSepa({ ...sepa, iban: fmtIban(e.target.value) })} style={{ ...inpS, marginBottom: 10, letterSpacing: ".04em", fontSize: 15 }} />
+        <input placeholder="Meno majiteľa účtu" value={sepa.meno} onChange={(e) => setSepa({ ...sepa, meno: e.target.value })} style={{ ...inpS, marginBottom: 12 }} />
+        <div style={{ background: "rgba(var(--glass-rgb),.05)", border: `1px solid ${C.line}`, borderRadius: 12, padding: "4px 12px 8px" }}>
+          <Riadok k="Suma" v={`${sumaNum.toFixed(2)} €`} />
+          <Riadok k="Poplatok (SEPA prevod)" v={`${poplatok.toFixed(2)} €`} />
+          <div style={{ display: "flex", justifyContent: "space-between", paddingTop: 8, fontSize: 14, fontWeight: 800 }}><span>Spolu</span><span>{spolu.toFixed(2)} €</span></div>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 11, color: C.textTer, marginTop: 10, lineHeight: 1.4 }}><IkonaStit size={13} color={C.green} /> Bankový prevod · SEPA · pripísanie do 1 pracovného dňa</div>
+        <button disabled={!sepaOk} onClick={zaplatit} style={btnP(sepaOk)}>Odoslať prevod {spolu.toFixed(2)} €</button>
       </>)}
 
       {krok === "detaily" && !jeEur && (<>
@@ -99,22 +139,22 @@ export function PlatbaModal({ kanal, komu, onClose, onDone }: { kanal?: string; 
       {krok === "spracovanie" && (
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 15, padding: "26px 0 30px" }}>
           <div style={{ width: 46, height: 46, borderRadius: "50%", border: "3px solid rgba(var(--glass-rgb),.14)", borderTopColor: jeEur ? C.blueL : C.teal, animation: "tocenie .8s linear infinite" }} />
-          <div style={{ fontSize: 14, fontWeight: 700 }}>Spracúva sa platba…</div>
-          <div style={{ fontSize: 11.5, color: C.textTer, textAlign: "center" }}>{jeEur ? "Overujem kartu cez platobnú bránu" : "Podpisujem transakciu na chaine"}</div>
+          <div style={{ fontSize: 14, fontWeight: 700 }}>{jeSepa ? "Odosiela sa prevod…" : "Spracúva sa platba…"}</div>
+          <div style={{ fontSize: 11.5, color: C.textTer, textAlign: "center" }}>{jeEur ? (jeSepa ? "Pripravujem SEPA prevod" : "Overujem kartu cez platobnú bránu") : "Podpisujem transakciu na chaine"}</div>
         </div>
       )}
 
       {krok === "hotovo" && res && (<>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, padding: "4px 0 14px" }}>
           <div style={{ width: 54, height: 54, borderRadius: "50%", background: "rgba(46,200,140,.16)", display: "flex", alignItems: "center", justifyContent: "center" }}><IkonaFajka size={28} color="var(--a-green)" /></div>
-          <div style={{ fontSize: 17, fontWeight: 800 }}>Platba úspešná</div>
+          <div style={{ fontSize: 17, fontWeight: 800 }}>{jeSepa ? "Prevod odoslaný" : "Platba úspešná"}</div>
           <div style={{ fontSize: 12.5, color: C.textSec }}>{jeEur ? `${spolu.toFixed(2)} €` : `${sumaNum.toLocaleString("sk")} DEED`}{komu ? ` → ${komu}` : ""}</div>
         </div>
         <div style={{ background: "rgba(var(--glass-rgb),.05)", border: `1px solid ${C.line}`, borderRadius: 12, padding: "4px 12px 8px" }}>
-          <Riadok k="Kanál" v={jeEur ? "Karta (EUR)" : "Peňaženka (DEED)"} />
+          <Riadok k="Kanál" v={jeEur ? (jeSepa ? "SEPA prevod (EUR)" : "Karta (EUR)") : "Peňaženka (DEED)"} />
           {jeEur && <Riadok k="Poplatok" v={`${poplatok.toFixed(2)} €`} />}
-          <Riadok k="ID transakcie" v={res.id} />
-          <Riadok k="⛓ Hash" v={res.hash} accent={C.blueL} />
+          <Riadok k={jeSepa ? "Referencia prevodu" : "ID transakcie"} v={res.id} />
+          {!jeSepa && <Riadok k="⛓ Hash" v={res.hash} accent={C.blueL} />}
           <Riadok k="Dátum" v={res.cas} />
         </div>
         <button onClick={() => { onDone?.(sumaNum); onClose?.(); }} style={btnP(true, GRAD_ZELENY)}>Hotovo</button>

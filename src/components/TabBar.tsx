@@ -77,14 +77,14 @@ export function TabBar({ taby, aktivny, onModul, wide }: {
 // (predtým bolo „Pridať" v hornej sekcii skratiek; teraz je dole ako jeden výrazný FAB)
 export function PridatFAB({ akcia, wide }: { akcia: StrankaAkcia; wide?: boolean }) {
   return (
-    <div style={{ position: "absolute", left: 0, right: 0, bottom: 80, zIndex: 41, display: "flex", justifyContent: "center", padding: "0 14px", pointerEvents: "none" }}>
+    <div style={{ position: "absolute", left: 0, right: 0, bottom: 100, zIndex: 41, display: "flex", justifyContent: "center", padding: "0 16px", pointerEvents: "none" }}>
       <div style={{ width: "100%", maxWidth: wide ? 620 : "none", display: "flex", justifyContent: "flex-end" }}>
-        <button onClick={akcia.onClick} aria-label={akcia.label} style={{
-          pointerEvents: "auto", display: "inline-flex", alignItems: "center", gap: 8, height: 50, padding: "0 20px 0 17px",
-          borderRadius: 25, border: "none", cursor: "pointer", fontFamily: "inherit", fontSize: 14.5, fontWeight: 800, color: "#fff",
-          background: GRAD, boxShadow: "0 10px 28px rgba(78,122,62,.5), inset 0 1px 0 rgba(255,255,255,.28)", transition: "transform .15s ease",
+        <button onClick={akcia.onClick} aria-label={akcia.label} title={akcia.label} style={{
+          pointerEvents: "auto", display: "inline-flex", alignItems: "center", justifyContent: "center", width: 58, height: 58,
+          borderRadius: "50%", border: "none", cursor: "pointer", color: "#fff",
+          background: GRAD, boxShadow: "0 12px 30px rgba(78,122,62,.5), inset 0 1px 0 rgba(255,255,255,.28)", transition: "transform .15s ease",
         }}>
-          <IkonaPlus size={18} color="#fff" /> {akcia.label}
+          <IkonaPlus size={26} color="#fff" />
         </button>
       </div>
     </div>

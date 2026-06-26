@@ -142,8 +142,8 @@ export function Screens({ wide }: { wide?: boolean }) {
         {/* dýchajúce pozadie vnútri appky (z-index -1 = pod obsahom) */}
         <DychajucePozadie silne />
 
-        {/* obsah aktívneho modulu — scroll vo vnútri, miesto pre plávajúci dock + „+ Pridať" FAB (vrch ~130px) */}
-        <div ref={scrollRef} style={{ flex: 1, overflowY: "auto", minHeight: 0, paddingBottom: 140 }}>
+        {/* obsah aktívneho modulu — scroll vo vnútri, miesto pre plávajúci dock + okrúhly „+" FAB (vrch ~158px) */}
+        <div ref={scrollRef} style={{ flex: 1, overflowY: "auto", minHeight: 0, paddingBottom: 168 }}>
           <Suspense fallback={<FeedSkeleton count={4} />}>
             {modul === "good" && <ModulGood wide={wide} otvorModul={prepni} />}
             {modul === "help" && <ModulHelp wide={wide} />}
