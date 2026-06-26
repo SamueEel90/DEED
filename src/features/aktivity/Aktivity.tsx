@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { ModulHlavicka, Hlavicka, PodporaSekcia, PlatbaModal, HladanieModal, Toast, Oslava, useMotiv, useScrollHore, Ticker, StatRiadok, FeedStlpce, SekcieBar, OkruhVyber, Lupa, Zvon, IkonaSipVlavo, IkonaMoznosti, Zdielanie, IkonaUlozit, IkonaFoto, IkonaPlus, IkonaPlay } from "@/shared";
+import { ModulHlavicka, Hlavicka, PodporaSekcia, PlatbaModal, HladanieModal, Toast, Oslava, useMotiv, useScrollHore, Ticker, StatRiadok, FeedStlpce, SekcieBar, OkruhVyber, Lupa, Zvon, IkonaSipVlavo, IkonaMoznosti, Zdielanie, IkonaUlozit, IkonaFoto, IkonaPlus, IkonaPlay, FeedSkeleton, EmptyState, ErrorState } from "@/shared";
 import { C, GRAD, GRAD_ZELENY } from "@/theme";
 import { pripravFeed, FEED_CFG } from "@/lib/feed";
 import type { OkruhKod } from "@/types";
@@ -63,7 +63,7 @@ function badge(side: "l" | "r"): React.CSSProperties {
 
 // ===================== MODUL =====================
 export default function ModulAktivity({ wide }: { wide?: boolean }) {
-  const { data: SEED_ITEMS = [] as unknown as AktItem[] } = useAktivityFeed() as { data?: AktItem[] };
+  const { data: SEED_ITEMS = [] as unknown as AktItem[], isLoading, isError, refetch } = useAktivityFeed() as { data?: AktItem[]; isLoading: boolean; isError: boolean; refetch: () => void };
   const [dom, setDom] = useState("mix");
   const [view, setView] = useState("all"); // all | talent | workshop | help
   const [screen, setScreen] = useState("home"); // home | detail | add | board | profile
@@ -167,7 +167,7 @@ export default function ModulAktivity({ wide }: { wide?: boolean }) {
       background: svetly ? "var(--c-bg)" : acc.tint, transition: "background .4s ease",
       ["--acc"]: acc.c, ["--accBg"]: tint(acc.c, .15), ["--accBd"]: tint(acc.c, .5),
     } as React.CSSProperties}>
-      {screen === "home" && <Home {...{ items, dom, view, pickDom, pickView, toast, open, openPerson, setScreen, tick, wide, onHladaj: () => setHladaj(true) }} />}
+      {screen === "home" && <Home {...{ items, dom, view, pickDom, pickView, toast, open, openPerson, setScreen, tick, wide, isLoading, isError, refetch, onHladaj: () => setHladaj(true) }} />}
       {screen === "detail" && akt && obal(<Detail {...{ it: akt, liked, like, support, votes, vote, toast, celebrate, home, openPerson, setScreen }} />)}
       {screen === "add" && obal(<Add {...{ dom, add, setAdd, toast, celebrate, home, createPost }} />)}
       {screen === "board" && obal(<Board {...{ dom, toast, home }} />)}
@@ -192,7 +192,7 @@ export default function ModulAktivity({ wide }: { wide?: boolean }) {
 }
 
 // ===================== HOME =====================
-function Home({ items, dom, view, pickDom, pickView, toast, open, openPerson, setScreen, tick, wide, onHladaj }: any) {
+function Home({ items, dom, view, pickDom, pickView, toast, open, openPerson, setScreen, tick, wide, isLoading, isError, refetch, onHladaj }: any) {
   // zvolený rádius — Feed algoritmus (Časť B)
   const [radius, setRadius] = useState<OkruhKod>("stvrt");
   const [vyberOkruh, setVyberOkruh] = useState(false);
@@ -273,8 +273,12 @@ function Home({ items, dom, view, pickDom, pickView, toast, open, openPerson, se
       </div>
 
       {/* feed — na tablete/PC: skutky & aktivity vľavo, žiadosti o pomoc vpravo */}
-      {!feed.length ? (
-        <div style={{ textAlign: "center", color: A.txt3, fontSize: 12, padding: "40px 20px", lineHeight: 1.6 }}>V tomto okruhu zatiaľ nič nie je.<br />Skús menší okruh, inú doménu alebo pridaj príspevok cez ＋ Pridať.</div>
+      {isError ? (
+        <ErrorState onRetry={() => refetch()} />
+      ) : isLoading ? (
+        <FeedSkeleton count={4} />
+      ) : !feed.length ? (
+        <EmptyState emoji="✨" title="Zatiaľ tu nič nie je" text="V tejto doméne zatiaľ nie sú príspevky." />
       ) : (
         <FeedStlpce wide={dva}
           labelSkutky="Skutky & aktivity" labelZiadosti="Hľadajú pomoc"

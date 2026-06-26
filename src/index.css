@@ -104,6 +104,30 @@ input, textarea, button {
   }
 }
 
+/* ---------- prístupnosť & jemné interakcie ---------- */
+
+/* viditeľný focus IBA pri ovládaní klávesnicou (nie pri kliknutí myšou) */
+:focus { outline: none; }
+:focus-visible {
+  outline: 2px solid #74A6FF;
+  outline-offset: 2px;
+}
+
+/* bez modrého „blesku" pri ťuknutí na dotykových zariadeniach */
+button, a, [role="button"] {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* rešpektuj systémové nastavenie „obmedz pohyb" (vestibulárna citlivosť) */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 /* ---------- animácie ---------- */
 
 @keyframes fadeUp {

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { C, GRAD, GRAD_ZELENY } from "@/theme";
-import { Toast, Modal, useScrollHore, useViac, useMotiv, QrModal, IkonaMenu, IkonaNastavenia, IkonaSipVlavo, IkonaPenazenka, IkonaHviezda, IkonaFajka, IkonaDoska, IkonaUsmev, IkonaPin, IkonaSlnko, IkonaMesiac, IkonaStit } from "@/shared";
+import { Toast, Modal, useScrollHore, useViac, useMotiv, QrModal, IkonaMenu, IkonaNastavenia, IkonaSipVlavo, IkonaPenazenka, IkonaHviezda, IkonaFajka, IkonaDoska, IkonaUsmev, IkonaPin, IkonaSlnko, IkonaMesiac, IkonaStit, SkeletonRiadky, EmptyState, ErrorState } from "@/shared";
 import { RetazDobraSheet } from "@/features/retaz/RetazDobra";
 import { clearSession } from "@/lib/session";
 import { usePouzivatel } from "@/lib/pouzivatel";
@@ -129,7 +129,7 @@ function ProfilHlavny({ toast, naWallet, naSub, naNastavenia, naPriatelia }: Pro
 type PenazenkaProps = { toast: ToastFn; onBack: () => void };
 
 function Penazenka({ toast, onBack }: PenazenkaProps) {
-  const { data: PREVODY = [] } = useProfilPrevody();
+  const { data: PREVODY = [], isLoading, isError, refetch } = useProfilPrevody();
   const [honorar, setHonorar] = useState(false); // Reťaz dobra — Cesta B (honorár tvorcu)
   const prevody: PrevodTuple[] = PREVODY;
   return (
@@ -185,12 +185,20 @@ function Penazenka({ toast, onBack }: PenazenkaProps) {
         <div onClick={() => toast("Platba kartou (demo)")} style={subItem}><span>▢ Platobnou kartou</span><span style={{ color: "#4A4F57" }}>›</span></div>
 
         <div style={sekciaLabel}>POSLEDNÉ PREVODY</div>
-        {prevody.map((r, i) => (
-          <div key={i} style={subItem}>
-            <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}><span style={{ width: 6, height: 6, borderRadius: "50%", display: "inline-block", marginRight: 8, background: r[2] }} />{r[0]}</span>
-            <span style={{ fontWeight: 700, color: r[2], flex: "none", marginLeft: 8 }}>{r[1]} DEED</span>
-          </div>
-        ))}
+        {isError ? (
+          <ErrorState onRetry={() => refetch()} />
+        ) : isLoading ? (
+          <SkeletonRiadky count={4} />
+        ) : prevody.length === 0 ? (
+          <EmptyState emoji="💸" title="Žiadne prevody" text="Tvoje DEED prevody sa zobrazia tu." />
+        ) : (
+          prevody.map((r, i) => (
+            <div key={i} style={subItem}>
+              <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}><span style={{ width: 6, height: 6, borderRadius: "50%", display: "inline-block", marginRight: 8, background: r[2] }} />{r[0]}</span>
+              <span style={{ fontWeight: 700, color: r[2], flex: "none", marginLeft: 8 }}>{r[1]} DEED</span>
+            </div>
+          ))
+        )}
       </div>
 
       {/* Reťaz dobra — Cesta B (§9): honorár tvorcu */}
@@ -209,12 +217,26 @@ function Penazenka({ toast, onBack }: PenazenkaProps) {
 type SubScreenProps = { nazov: string | null; toast: ToastFn; onBack: () => void };
 
 function SubScreen({ nazov, toast, onBack }: SubScreenProps) {
-  const { data: MOJE_SKUTKY = [] } = useProfilMojeSkutky();
-  const { data: KARMA = [] } = useProfilKarma();
-  const { data: STATISTIKY = [] } = useProfilStatistiky();
+  const { data: MOJE_SKUTKY = [], isLoading: skutkyLoad, isError: skutkyErr, refetch: skutkyRefetch } = useProfilMojeSkutky();
+  const { data: KARMA = [], isLoading: karmaLoad, isError: karmaErr, refetch: karmaRefetch } = useProfilKarma();
+  const { data: STATISTIKY = [], isLoading: statLoad, isError: statErr, refetch: statRefetch } = useProfilStatistiky();
   const [retaz, setRetaz] = useState<{ odmena: number } | null>(null); // ručná Reťaz dobra pri menšom skutku {odmena}
+
+  // aktívna sekcia → stavy načítania zoznamu
+  const aktiv = nazov === "Moje skutky"
+    ? { isLoading: skutkyLoad, isError: skutkyErr, refetch: skutkyRefetch, empty: MOJE_SKUTKY.length === 0, emoji: "✅", title: "Žiadne skutky", text: "Tvoje overené skutky sa zobrazia tu." }
+    : nazov === "Karma a úrovne"
+    ? { isLoading: karmaLoad, isError: karmaErr, refetch: karmaRefetch, empty: KARMA.length === 0, emoji: "⭐", title: "Žiadna karma", text: "Karma pribúda overenými skutkami." }
+    : { isLoading: statLoad, isError: statErr, refetch: statRefetch, empty: STATISTIKY.length === 0, emoji: "📊", title: "Žiadne štatistiky", text: "Štatistiky a umiestnenie sa zobrazia tu." };
+
   let obsah: React.ReactNode;
-  if (nazov === "Moje skutky") {
+  if (aktiv.isError) {
+    obsah = <ErrorState onRetry={() => aktiv.refetch()} />;
+  } else if (aktiv.isLoading) {
+    obsah = <SkeletonRiadky count={4} />;
+  } else if (aktiv.empty) {
+    obsah = <EmptyState emoji={aktiv.emoji} title={aktiv.title} text={aktiv.text} />;
+  } else if (nazov === "Moje skutky") {
     obsah = MOJE_SKUTKY.map((r, i) => (
       <div key={i} style={{ ...subItem, gap: 8 }}>
         <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r[0]}</span>

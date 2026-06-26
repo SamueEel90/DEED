@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { C, U, AV, GRAD, GRAD_ZELENY } from "@/theme";
-import { Foto, Avatar, FotoPrispevku, MiniFotky, Modal, ModulHlavicka, PodporaSekcia, PlatbaModal, HladanieModal, Toast, useGaleria, useScrollHore, Ticker, StatRiadok, MoniBar, FeedStlpce, SekcieBar, OkruhVyber, Lupa, Zvon, Zdielanie, IkonaSpat, IkonaVlajka, IkonaFoto, IkonaOpakovat, IkonaKriz, IkonaInstitucia } from "@/shared";
+import { Foto, Avatar, FotoPrispevku, MiniFotky, Modal, ModulHlavicka, PodporaSekcia, PlatbaModal, HladanieModal, Toast, useGaleria, useScrollHore, Ticker, StatRiadok, MoniBar, FeedStlpce, SekcieBar, OkruhVyber, Lupa, Zvon, Zdielanie, IkonaSpat, IkonaVlajka, IkonaFoto, IkonaOpakovat, IkonaKriz, IkonaInstitucia, FeedSkeleton, SkeletonRiadky, EmptyState, ErrorState } from "@/shared";
 import { pripravFeed, FEED_CFG } from "@/lib/feed";
 import { Zvoncek } from "@/features/notifikacie/Notifikacie";
 import type { CharitaFeedItem, CharitaLevel, Kanal } from "@/types";
@@ -93,7 +93,7 @@ type FeedProps = {
 };
 
 function CharitaFeed({ wide, toast, onDetail, onHladaj, onSheet }: FeedProps) {
-  const { data: FEED_ITEMS = [] } = useCharitaFeed();
+  const { data: FEED_ITEMS = [], isLoading, isError, refetch } = useCharitaFeed();
   // zvolený rádius — Feed algoritmus (Časť B): filter podľa okruhu + adaptívny
   // prah + zoradenie. Karty zostávajú pôvodné komponenty (dizajn nedotknutý),
   // engine len rozhoduje, KTORÉ a v akom poradí sa zobrazia.
@@ -143,10 +143,12 @@ function CharitaFeed({ wide, toast, onDetail, onHladaj, onSheet }: FeedProps) {
         okruh={(FEED_CFG.radiusy as any)[radius].krat} onOkruh={() => setVyberOkruh(true)} />
 
       {/* feed — na tablete/PC: zapoj sa vľavo, zbierky vpravo (zoradené algoritmom) */}
-      {feed.length === 0 ? (
-        <div style={{ padding: "40px 24px", textAlign: "center", color: K.txt3, fontSize: 13 }}>
-          V tomto okruhu zatiaľ nie sú dosť významné zbierky. Skús menší okruh.
-        </div>
+      {isError ? (
+        <ErrorState onRetry={() => refetch()} />
+      ) : isLoading ? (
+        <FeedSkeleton count={4} />
+      ) : feed.length === 0 ? (
+        <EmptyState emoji="💛" title="Žiadne zbierky v okruhu" text="Skús väčší okruh." />
       ) : (
         <FeedStlpce wide={wide} padding="4px 14px 12px"
           labelSkutky="Zapoj sa" labelZiadosti="Zbierky"
@@ -411,7 +413,7 @@ function SheetReg({ toast, onClose }: { toast: (m: string) => void; onClose: () 
 }
 
 function SheetAdresar({ toast, onClose }: { toast: (m: string) => void; onClose: () => void }) {
-  const { data: ADRESAR = [] } = useCharitaAdresar();
+  const { data: ADRESAR = [], isLoading, isError, refetch } = useCharitaAdresar();
   const [chip, setChip] = useState("Všetko");
   const [hladaj, setHladaj] = useState("");
   const chipy = ["Všetko", "Zdravie", "Deti", "Zvieratá", "Príroda", "Sociálne", "Humanitárna"];
@@ -437,25 +439,35 @@ function SheetAdresar({ toast, onClose }: { toast: (m: string) => void; onClose:
         <span>📍 Trenčín · 20 km</span><span>⚙ Typ pomoci</span><span style={{ marginLeft: "auto" }}>dôvera + blízkosť</span>
       </div>
 
-      {filtrovane.map((s, si) => (
-        <div key={s.sekcia}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: K.blue, textTransform: "uppercase", letterSpacing: ".04em", margin: "14px 0 6px" }}>{s.sekcia}</div>
-          {s.polozky.map((p, pi) => (
-            <div key={pi} onClick={() => toast("Profil charity — " + p[1])} style={{ display: "flex", alignItems: "center", gap: 11, padding: "11px 4px", borderBottom: `1px solid ${K.line}`, cursor: "pointer" }}>
-              <div style={{ width: 38, height: 38, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, flexShrink: 0, background: SEG_BG[(si + pi) % SEG_BG.length], color: K.txt }}>{p[0]}</div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 15, fontWeight: 500 }}>{p[1]}</div>
-                <div style={{ fontSize: 12.5, color: K.txt2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p[2]}</div>
-              </div>
-              <div style={{ textAlign: "right", flexShrink: 0 }}>
-                <div style={{ fontSize: 11.5, fontWeight: 700, color: lvlFarba(p[3]) }}>⬢ {p[3]}</div>
-                <div style={{ fontSize: 12, color: K.txt3, marginTop: 2 }}>{p[4]}</div>
-              </div>
+      {isError ? (
+        <ErrorState onRetry={() => refetch()} />
+      ) : isLoading ? (
+        <SkeletonRiadky count={6} />
+      ) : ADRESAR.length === 0 ? (
+        <EmptyState emoji="🏛" title="Žiadne organizácie" />
+      ) : (
+        <>
+          {filtrovane.map((s, si) => (
+            <div key={s.sekcia}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: K.blue, textTransform: "uppercase", letterSpacing: ".04em", margin: "14px 0 6px" }}>{s.sekcia}</div>
+              {s.polozky.map((p, pi) => (
+                <div key={pi} onClick={() => toast("Profil charity — " + p[1])} style={{ display: "flex", alignItems: "center", gap: 11, padding: "11px 4px", borderBottom: `1px solid ${K.line}`, cursor: "pointer" }}>
+                  <div style={{ width: 38, height: 38, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, flexShrink: 0, background: SEG_BG[(si + pi) % SEG_BG.length], color: K.txt }}>{p[0]}</div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 15, fontWeight: 500 }}>{p[1]}</div>
+                    <div style={{ fontSize: 12.5, color: K.txt2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p[2]}</div>
+                  </div>
+                  <div style={{ textAlign: "right", flexShrink: 0 }}>
+                    <div style={{ fontSize: 11.5, fontWeight: 700, color: lvlFarba(p[3]) }}>⬢ {p[3]}</div>
+                    <div style={{ fontSize: 12, color: K.txt3, marginTop: 2 }}>{p[4]}</div>
+                  </div>
+                </div>
+              ))}
             </div>
           ))}
-        </div>
-      ))}
-      {!filtrovane.length && <div style={{ textAlign: "center", color: K.txt3, fontSize: 13, padding: 30 }}>Nič sa nenašlo pre „{hladaj}“</div>}
+          {!filtrovane.length && <div style={{ textAlign: "center", color: K.txt3, fontSize: 13, padding: 30 }}>Nič sa nenašlo pre „{hladaj}“</div>}
+        </>
+      )}
     </SheetObal>
   );
 }

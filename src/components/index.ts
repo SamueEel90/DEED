@@ -11,4 +11,5 @@ export * from "@/components/layout";
 export * from "@/components/qr";
 export * from "@/components/platba";
 export * from "@/components/hladanie";
+export * from "@/components/states";
 export { tint } from "@/lib/ui";

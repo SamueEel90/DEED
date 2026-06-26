@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { C, pasmo, inp, infoBox, btn, GRAD_ZELENY, glassTmavy } from "@/theme";
-import { Foto, Avatar, FotoPrispevku, MiniFotky, Hlavicka, ModulHlavicka, PodporaSekcia, PlatbaModal, HladanieModal, Otazka, Vyber, vyberBox, NavBtns, Suhrn, DokladRow, Toast, useGaleria, useScrollHore, Ticker, StatRiadok, MoniBar, FeedStlpce, SekcieBar, OkruhVyber, Lupa, Zdielanie, IkonaSpat, IkonaVlajka, IkonaFoto } from "@/shared";
+import { Foto, Avatar, FotoPrispevku, MiniFotky, Hlavicka, ModulHlavicka, PodporaSekcia, PlatbaModal, HladanieModal, Otazka, Vyber, vyberBox, NavBtns, Suhrn, DokladRow, Toast, useGaleria, useScrollHore, Ticker, StatRiadok, MoniBar, FeedStlpce, SekcieBar, OkruhVyber, Lupa, Zdielanie, IkonaSpat, IkonaVlajka, IkonaFoto, FeedSkeleton, EmptyState, ErrorState } from "@/shared";
 import { Zvoncek } from "@/features/notifikacie/Notifikacie";
 import { pripravFeed, FEED_CFG } from "@/lib/feed";
 import type { HelpFeedItem } from "@/types";
@@ -57,7 +57,7 @@ export default function ModulHelp({ wide }: { wide?: boolean }) {
 
 // ===================== FEED =====================
 function Feed({ wide, toast, onDetail, onHladaj, onAdd }: { wide?: boolean; toast: (m: string) => void; onDetail: (z: any) => void; onHladaj: () => void; onAdd: () => void }) {
-  const { data: MOCK_FEED = [] } = useHelpFeed();
+  const { data: MOCK_FEED = [], isLoading, isError, refetch } = useHelpFeed();
   // živý ticker darov
   const [tick, setTick] = useState(0);
   useEffect(() => {
@@ -97,10 +97,12 @@ function Feed({ wide, toast, onDetail, onHladaj, onAdd }: { wide?: boolean; toas
         okruh={FEED_CFG.radiusy[radius].krat} onOkruh={() => setVyberOkruh(true)} />
 
       {/* karty — na tablete/PC: ponúkajú vľavo, hľadajú vpravo (zoradené algoritmom) */}
-      {feed.length === 0 ? (
-        <div style={{ padding: "40px 24px", textAlign: "center", color: C.textTer, fontSize: 13 }}>
-          V tomto okruhu zatiaľ nie sú dosť významné žiadosti. Skús menší okruh.
-        </div>
+      {isError ? (
+        <ErrorState onRetry={() => refetch()} />
+      ) : isLoading ? (
+        <FeedSkeleton count={4} />
+      ) : feed.length === 0 ? (
+        <EmptyState emoji="🙏" title="Žiadne žiadosti v okruhu" text="V tomto okruhu zatiaľ nie sú dosť významné žiadosti. Skús menší okruh." />
       ) : (
         <FeedStlpce wide={wide} padding="4px 8px"
           labelSkutky="Ponúkajú pomoc" labelZiadosti="Hľadajú pomoc"

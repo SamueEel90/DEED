@@ -60,14 +60,15 @@ Pripraviť čistý švík medzi UI a dátami — bez reálnych volaní, ešte na
 
 > **Pozn.:** loading/error stavy zatiaľ bez UI (mock je instantný, default `= []`/guard). Skeletony a error-handling sú náplň **Fázy 3**.
 
-### Fáza 3 — UI polish & produkčné detaily
+### Fáza 3 — UI polish & produkčné detaily *(prebieha)*
 Doladiť to, čo robí appku „hotovou".
 
-- **Stavy:** skeletony, prázdne stavy, error stavy + retry pre každý zoznam a detail.
-- **Dizajn-systém:** spacing/typografická škála, jednotné radiusy/tiene, motion tokeny; audit konzistencie naprieč modulmi.
-- **Prístupnosť:** focus management, `aria-*`, klávesnica (modály, lightbox), kontrast v svetlom aj tmavom režime.
-- **Mikro-interakcie:** prechody, haptika tlačidiel, plynulé otváranie detailov, lazy-load obrázkov.
-- **Responzivita:** doladiť viacstĺpcové feedy na tablete/desktope.
+- [x] **Stavy:** `components/states.tsx` (Skeleton, FeedSkeleton, SkeletonRiadky, EmptyState, ErrorState + retry, Spinner) zapojené do Good / Help / Charita / Aktivity / Notifikácie / Profil (feed + adresár + peňaženka + sub-obrazovky). Mock latencia 320 ms → skeletony reálne viditeľné.
+- [x] **Prístupnosť (základ):** `:focus-visible` ring iba pre klávesnicu, `prefers-reduced-motion`, odstránený tap-highlight (`index.css`). `aria-busy`/`role="alert"`/`role="status"` v stavových komponentoch.
+- [ ] **Prístupnosť (zvyšok):** focus management + Escape v modáloch/lightboxe, kontrast audit (svetlý aj tmavý).
+- [ ] **Dizajn-systém:** spacing/typografická škála, jednotné radiusy/tiene, motion tokeny; audit konzistencie naprieč modulmi.
+- [ ] **Mikro-interakcie:** prechody, haptika tlačidiel, plynulé otváranie detailov, lazy-load obrázkov.
+- [ ] **Responzivita:** doladiť viacstĺpcové feedy na tablete/desktope.
 - **Hotovo, keď:** klikanie appkou pôsobí ako hotový produkt — žiadne skoky, prázdne biele plochy ani nekonzistentné odsadenia.
 
 ### Fáza 4 — Reálne dáta (Supabase), modul po module

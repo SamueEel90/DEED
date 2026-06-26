@@ -62,8 +62,10 @@ export interface Repo {
   };
 }
 
-// pomocník — okamžite vyrieši (mock). Pri Supabase sa nahradí reálnym dotazom.
-const ok = <T>(v: T): Promise<T> => Promise.resolve(v);
+// Mock latencia (ms) — simuluje sieť, nech sú loading skeletony reálne viditeľné.
+// Pri prepojení na Supabase sem príde reálny dotaz (a táto konštanta zmizne).
+const MOCK_LATENCY = 320;
+const ok = <T>(v: T): Promise<T> => new Promise((r) => setTimeout(() => r(v), MOCK_LATENCY));
 
 /** Mock implementácia — zdroj = statické dáta z features/<x>/mock. */
 export const mockRepo: Repo = {

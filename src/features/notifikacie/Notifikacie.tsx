@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { C, GRAD, glassTmavy } from "@/theme";
-import { Zvon, IkonaNastavenia, IkonaSipVlavo, IkonaKriz, tint } from "@/shared";
+import { Zvon, IkonaNastavenia, IkonaSipVlavo, IkonaKriz, tint, SkeletonRiadky, EmptyState, ErrorState } from "@/shared";
 import type { Notifikacia, VypnuteMapa } from "@/types";
 import { useNotifikacie } from "@/data";
 import { KATEGORIE, VYPNUTE_DEF } from "./mock";
@@ -66,7 +66,7 @@ export function Zvoncek({ color = "#C4CCDB", toast }: { color?: string; toast?: 
 
 // ---- ZOZNAM oznámení ----
 function Zoznam({ onSettings, onClose, onPrecitaj, toast }: { onSettings?: () => void; onClose?: () => void; onPrecitaj?: () => void; toast?: (msg: string) => void }) {
-  const { data: NOTIFY = [] } = useNotifikacie();
+  const { data: NOTIFY = [], isLoading, isError, refetch } = useNotifikacie();
   const neprecitane = NOTIFY.filter((n) => n.nove).length;
   return (
     <>
@@ -78,6 +78,14 @@ function Zoznam({ onSettings, onClose, onPrecitaj, toast }: { onSettings?: () =>
       </div>
       <div style={{ fontSize: 11, color: C.textTer, paddingBottom: 8, flex: "0 0 auto" }}>{neprecitane} neprečítané · mikro-podpory agregované do súhrnu</div>
       <div style={{ overflowY: "auto", margin: "0 -4px", flex: "1 1 auto" }}>
+        {isError ? (
+          <ErrorState onRetry={() => refetch()} />
+        ) : isLoading ? (
+          <SkeletonRiadky count={5} />
+        ) : NOTIFY.length === 0 ? (
+          <EmptyState emoji="🔔" title="Žiadne notifikácie" text="Tu sa zobrazia tvoje oznámenia." />
+        ) : (
+          <>
         {NOTIFY.map((n: Notifikacia) => (
           <div key={n.id} onClick={() => toast?.(n.titul)} style={{ display: "flex", alignItems: "flex-start", gap: 11, padding: "11px 8px", borderRadius: 12, cursor: "pointer", borderBottom: `1px solid ${C.line2}`, background: n.nove ? "rgba(91,168,240,.05)" : "transparent" }}>
             <span style={{ width: 38, height: 38, borderRadius: 11, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 17, background: tint(n.col, .15), color: n.col }}>{n.ic}</span>
@@ -93,6 +101,8 @@ function Zoznam({ onSettings, onClose, onPrecitaj, toast }: { onSettings?: () =>
           </div>
         ))}
         <div style={{ textAlign: "center", fontSize: 11, color: C.textTer, padding: "14px 0 4px" }}>To je všetko · staršie sa archivujú</div>
+          </>
+        )}
       </div>
     </>
   );

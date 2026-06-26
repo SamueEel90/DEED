@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { C, inp, GRAD, GRAD_ZELENY } from "@/theme";
-import { Foto, FotoPrispevku, MiniFotky, Video, ModulHlavicka, Hlavicka, PodporaSekcia, PlatbaModal, HladanieModal, Toast, Oslava, useGaleria, useScrollHore, useMotiv, StatRiadok, MoniBar, FeedStlpce, SekcieBar, Lupa, Zdielanie, IkonaSipVlavo, IkonaMoznosti, IkonaUlozit, IkonaFajka, OkruhVyber, QrModal } from "@/shared";
+import { Foto, FotoPrispevku, MiniFotky, Video, ModulHlavicka, Hlavicka, PodporaSekcia, PlatbaModal, HladanieModal, Toast, Oslava, useGaleria, useScrollHore, useMotiv, StatRiadok, MoniBar, FeedStlpce, SekcieBar, Lupa, Zdielanie, IkonaSipVlavo, IkonaMoznosti, IkonaUlozit, IkonaFajka, OkruhVyber, QrModal, FeedSkeleton, EmptyState, ErrorState } from "@/shared";
 import { pripravFeed, FEED_CFG } from "@/lib/feed";
 import { usePouzivatel } from "@/lib/pouzivatel";
 import { zobrazVelkost } from "@/lib/cardSize";
@@ -129,7 +129,7 @@ type HomeProps = {
 
 // ===================== HOME / FEED =====================
 function Home({ wide, toast, otvorModul, onDetail, onHladaj, onBoard, onAdd }: HomeProps) {
-  const { data: POLOZKY = [] } = useGoodFeed();
+  const { data: POLOZKY = [], isLoading, isError, refetch } = useGoodFeed();
   // zvolený rádius — Časť B: mení, ČO a v akom poradí sa vo feede zobrazí
   const [radius, setRadius] = useState<OkruhKod>("stvrt");
   const [vyberOkruh, setVyberOkruh] = useState(false);
@@ -162,10 +162,12 @@ function Home({ wide, toast, otvorModul, onDetail, onHladaj, onBoard, onAdd }: H
         okruh={FEED_CFG.radiusy[radius].krat} onOkruh={() => setVyberOkruh(true)} />
 
       {/* feed — na tablete/PC: skutky vľavo, žiadosti vpravo (už zoradené algoritmom) */}
-      {feed.length === 0 ? (
-        <div style={{ padding: "40px 24px", textAlign: "center", color: C.textTer, fontSize: 13 }}>
-          V tomto okruhu zatiaľ nie sú dosť významné skutky. Skús menší okruh.
-        </div>
+      {isError ? (
+        <ErrorState onRetry={() => refetch()} />
+      ) : isLoading ? (
+        <FeedSkeleton count={4} />
+      ) : feed.length === 0 ? (
+        <EmptyState emoji="🤝" title="Vo zvolenom okruhu zatiaľ nie sú skutky" text="Skús väčší okruh alebo sa vráť neskôr." />
       ) : (
         <FeedStlpce wide={wide}
           labelSkutky="Skutky" labelZiadosti="Žiadosti & charita"
