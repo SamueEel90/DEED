@@ -2,7 +2,8 @@ import { useState } from "react";
 import { C, GRAD, glassTmavy } from "@/theme";
 import { Zvon, IkonaNastavenia, IkonaSipVlavo, IkonaKriz, tint } from "@/shared";
 import type { Notifikacia, VypnuteMapa } from "@/types";
-import { NOTIFY, KATEGORIE, VYPNUTE_DEF } from "./mock";
+import { useNotifikacie } from "@/data";
+import { KATEGORIE, VYPNUTE_DEF } from "./mock";
 
 /*
   ============================================================
@@ -17,7 +18,7 @@ import { NOTIFY, KATEGORIE, VYPNUTE_DEF } from "./mock";
   ============================================================
 */
 
-export { NOTIFY };
+export { NOTIFY } from "./mock";
 
 // ---- prepínač ----
 function Toggle({ on, dim, onClick }: { on?: boolean; dim?: boolean; onClick?: () => void }) {
@@ -33,6 +34,7 @@ function Toggle({ on, dim, onClick }: { on?: boolean; dim?: boolean; onClick?: (
 // ZVONČEK — tlačidlo s badge + overlay (zoznam / nastavenia)
 // ============================================================
 export function Zvoncek({ color = "#C4CCDB", toast }: { color?: string; toast?: (msg: string) => void }) {
+  const { data: NOTIFY = [] } = useNotifikacie();
   const [otvor, setOtvor] = useState(false);
   const [view, setView] = useState<"zoznam" | "nastavenia">("zoznam");
   const [precitane, setPrecitane] = useState(false);
@@ -64,6 +66,7 @@ export function Zvoncek({ color = "#C4CCDB", toast }: { color?: string; toast?: 
 
 // ---- ZOZNAM oznámení ----
 function Zoznam({ onSettings, onClose, onPrecitaj, toast }: { onSettings?: () => void; onClose?: () => void; onPrecitaj?: () => void; toast?: (msg: string) => void }) {
+  const { data: NOTIFY = [] } = useNotifikacie();
   const neprecitane = NOTIFY.filter((n) => n.nove).length;
   return (
     <>

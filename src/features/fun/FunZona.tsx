@@ -1,6 +1,6 @@
 import { C } from "@/theme";
 import { Hlavicka, Zdielanie } from "@/shared";
-import { FUN } from "./mock";
+import { useFun } from "@/data";
 
 /*
   ============================================================
@@ -18,6 +18,7 @@ interface FunZonaProps {
 }
 
 export function FunZona({ onBack, toast }: FunZonaProps) {
+  const { data: FUN = [] } = useFun();
   return (
     <div style={{ paddingBottom: 24 }}>
       <Hlavicka title="Fun zóna" onBack={onBack} titleColor="#E7C766" />

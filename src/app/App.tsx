@@ -4,6 +4,7 @@ import { GaleriaContext, ScrollContext, ViacContext, Lightbox, DychajucePozadie,
 import { TabBar, ViacSheet, nacitajTaby, ulozTaby, VSETKY_MODULY } from "@/components/TabBar";
 import { useSession } from "@/lib/session";
 import { PouzivatelProvider } from "@/lib/pouzivatel";
+import { QueryProvider } from "@/app/QueryProvider";
 import { Registracia } from "@/features/registracia/Registracia";
 import ModulGood from "@/features/good/Good";
 import ModulHelp from "@/features/help/Help";
@@ -76,14 +77,16 @@ export default function App() {
 
   // appka na celú obrazovku — na šírke centrovaný stĺpec do 1180 px
   return (
-    <MotivContext.Provider value={motiv}>
-      <div style={{ ...pageBase, display: "flex", justifyContent: "center", alignItems: "stretch" }}>
-        <DychajucePozadie />
-        <div style={{ position: "relative", width: "100%", maxWidth: wide ? 1180 : 560, height: "100%", background: C.bg }}>
-          <Screens wide={wide} />
+    <QueryProvider>
+      <MotivContext.Provider value={motiv}>
+        <div style={{ ...pageBase, display: "flex", justifyContent: "center", alignItems: "stretch" }}>
+          <DychajucePozadie />
+          <div style={{ position: "relative", width: "100%", maxWidth: wide ? 1180 : 560, height: "100%", background: C.bg }}>
+            <Screens wide={wide} />
+          </div>
         </div>
-      </div>
-    </MotivContext.Provider>
+      </MotivContext.Provider>
+    </QueryProvider>
   );
 }
 

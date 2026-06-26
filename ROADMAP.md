@@ -49,13 +49,16 @@ Založiť produkčnú kostru, na ktorej stojí všetko ostatné.
 > callback parametrov blokovali štruktúrnu zmenu). `strictNullChecks` je zapnuté. Plný `strict`
 > (re-zapnutie `noImplicitAny` + dotypovanie) je dedikovaná úloha vo **Fáze 5**.
 
-### Fáza 2 — Dátová vrstva (repository pattern)
+### Fáza 2 — Dátová vrstva (repository pattern) ✅ *hotovo*
 Pripraviť čistý švík medzi UI a dátami — bez reálnych volaní, ešte na mocku.
 
-- Definovať repozitár rozhrania: `FeedRepo`, `CharitaRepo`, `ProfilRepo`, `TopRepo`, `NotifRepo`, `AktivityRepo`.
-- Mock implementácie (dnešné dáta) za rozhraním + selektor podľa env (`data/index.ts`).
-- Zaviesť **TanStack Query** (cache, `loading/error/refetch`, optimistic updates) ako jednotný spôsob čítania dát v moduloch.
-- **Hotovo, keď:** žiadny modul neimportuje mock pole priamo; všetko ide cez hook nad repozitárom.
+- [x] Repozitár `src/data/repo.ts` — rozhranie `Repo` (good/help/charita/aktivity/notifikacie/retaz/fun/profil) + `mockRepo` impl + aktívny `repo` (selektor mock|supabase pripravený).
+- [x] **TanStack Query** zavedený: `src/app/QueryProvider.tsx` (staleTime, retry) zapojený v `App`.
+- [x] Dátové hooky `src/data/hooks.ts` + barrel `@/data` (`useGoodFeed`, `useCharitaAdresar`, `useNotifikacie`, `useProfil*`, …).
+- [x] Migrácia 8 modulov na hooky (19 hook-volaní); žiadny modul nečíta dátové mock pole priamo (ostáva len konfigurácia: farby, domény, mapa-štatistiky, formulárové voľby).
+- **Hotovo:** `tsc` + build zelené, dev beží; výmena mocku za Supabase = jeden súbor (`repo.ts`).
+
+> **Pozn.:** loading/error stavy zatiaľ bez UI (mock je instantný, default `= []`/guard). Skeletony a error-handling sú náplň **Fázy 3**.
 
 ### Fáza 3 — UI polish & produkčné detaily
 Doladiť to, čo robí appku „hotovou".

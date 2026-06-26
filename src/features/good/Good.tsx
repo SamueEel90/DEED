@@ -8,7 +8,8 @@ import { RetazDobraSheet } from "@/features/retaz/RetazDobra";
 import { Zvoncek } from "@/features/notifikacie/Notifikacie";
 import { CudziProfil } from "@/features/cudzi-profil/CudziProfil";
 import type { GoodPolozka, Subjekt, Udalost, OkruhKod } from "@/types";
-import { KAT, POLOZKY, EVENTS, SRC_COL } from "./mock";
+import { useGoodFeed, useGoodUdalosti } from "@/data";
+import { KAT, SRC_COL } from "./mock";
 
 const katLabel = (k: GoodPolozka["kat"]) => KAT[k].label || k;
 
@@ -36,6 +37,7 @@ const mediaBadge = (extra: React.CSSProperties): React.CSSProperties => ({ posit
 
 // ===================== MODUL =====================
 export default function ModulGood({ wide, otvorModul }: { wide?: boolean; otvorModul?: (m: string) => void }) {
+  const { data: POLOZKY = [] } = useGoodFeed();
   const [screen, setScreen] = useState("home"); // home | detail | verify | add | board | event | cudzi
   const [aktId, setAktId] = useState<number | null>(null);
   const [aktEvent, setAktEvent] = useState<string | null>(null);
@@ -127,6 +129,7 @@ type HomeProps = {
 
 // ===================== HOME / FEED =====================
 function Home({ wide, toast, otvorModul, onDetail, onHladaj, onBoard, onAdd }: HomeProps) {
+  const { data: POLOZKY = [] } = useGoodFeed();
   // zvolený rádius — Časť B: mení, ČO a v akom poradí sa vo feede zobrazí
   const [radius, setRadius] = useState<OkruhKod>("stvrt");
   const [vyberOkruh, setVyberOkruh] = useState(false);
@@ -596,6 +599,7 @@ function GoodAdd({ toast, oslavuj, onDone }: { toast: (m: string) => void; oslav
 
 // ===================== NÁSTENKA (board) =====================
 function GoodBoard({ onBack, onEvent, toast }: { onBack: () => void; onEvent: (id: string) => void; toast: (m: string) => void }) {
+  const { data: EVENTS = [] } = useGoodUdalosti();
   const [filter, setFilter] = useState("Všetko");
   const tops = EVENTS.filter((e) => e.top);
   const list = EVENTS.filter((e) => filter === "Všetko" || e.src === filter || (filter === "Šport" && e.kat === "Zdravie"));
@@ -657,6 +661,7 @@ function GoodBoard({ onBack, onEvent, toast }: { onBack: () => void; onEvent: (i
 
 // ===================== DETAIL UDALOSTI =====================
 function GoodEvent({ id, onBack, toast, oslavuj }: { id: string | null; onBack: () => void; toast: (m: string) => void; oslavuj: (suma: number, komu: string) => void }) {
+  const { data: EVENTS = [] } = useGoodUdalosti();
   const e: Udalost | undefined = EVENTS.find((x) => x.id === id);
   if (!e) return null;
   return (

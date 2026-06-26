@@ -4,7 +4,8 @@ import { Foto, Avatar, FotoPrispevku, MiniFotky, Modal, ModulHlavicka, PodporaSe
 import { pripravFeed, FEED_CFG } from "@/lib/feed";
 import { Zvoncek } from "@/features/notifikacie/Notifikacie";
 import type { CharitaFeedItem, CharitaLevel, Kanal } from "@/types";
-import { ZBIERKA, ZOFIA_FOTKY, FEED_ITEMS, ADRESAR, HLADAJ_DATA } from "./mock";
+import { useCharitaFeed, useCharitaAdresar, useCharitaZbierka } from "@/data";
+import { ZOFIA_FOTKY, HLADAJ_DATA } from "./mock";
 
 // poloha usera (MVP mock — Trenčín, rovnaká ako v ostatných feedoch)
 const USER_LOK = { lat: 48.894, lng: 18.044 };
@@ -92,6 +93,7 @@ type FeedProps = {
 };
 
 function CharitaFeed({ wide, toast, onDetail, onHladaj, onSheet }: FeedProps) {
+  const { data: FEED_ITEMS = [] } = useCharitaFeed();
   // zvolený rádius — Feed algoritmus (Časť B): filter podľa okruhu + adaptívny
   // prah + zoradenie. Karty zostávajú pôvodné komponenty (dizajn nedotknutý),
   // engine len rozhoduje, KTORÉ a v akom poradí sa zobrazia.
@@ -165,6 +167,8 @@ function CharitaFeed({ wide, toast, onDetail, onHladaj, onSheet }: FeedProps) {
 
 // ---- karty feedu (rozdelené do komponentov kvôli dvojstĺpcu skutky/žiadosti) ----
 function ZbierkyUrgent({ wide, onDetail }: { wide?: boolean; onDetail: () => void }) {
+  const { data: ZBIERKA } = useCharitaZbierka();
+  if (!ZBIERKA) return null;
   return (
     <div onClick={onDetail} className="good-card" style={{ background: K.warmBg, border: `1px solid ${K.warmEdge}`, borderRadius: 16, overflow: "hidden", marginBottom: wide ? 0 : 12, cursor: "pointer", ...(wide ? {} : { marginLeft: -14, marginRight: -14, borderRadius: 0, border: "none", borderBottom: `1px solid ${K.line}` }) }}>
       <div style={{ position: "relative" }}>
@@ -254,11 +258,13 @@ function RiadokKarta({ wide, onClick, ikona, ikonaBg, ikonaCol, ikonaText, nazov
 
 // ===================== DETAIL ZBIERKY =====================
 function CharitaDetail({ toast, onBack, onReg }: { toast: (m: string) => void; onBack: () => void; onReg: () => void }) {
-  const z = ZBIERKA;
-  const [suma, setSuma] = useState(z.suma);
-  const [ludia, setLudia] = useState(z.ludia);
+  const { data: ZBIERKA } = useCharitaZbierka();
+  const [suma, setSuma] = useState(ZBIERKA?.suma ?? 0);
+  const [ludia, setLudia] = useState(ZBIERKA?.ludia ?? 0);
   const [platba, setPlatba] = useState<Kanal | null>(null); // "EUR" | "DEED"
   const otvorGaleriu = useGaleria();
+  if (!ZBIERKA) return null;
+  const z = ZBIERKA;
   const pct = Math.min(100, Math.round(suma / z.ciel * 100));
 
   function podpor(hodnota: number, text: string) {
@@ -405,6 +411,7 @@ function SheetReg({ toast, onClose }: { toast: (m: string) => void; onClose: () 
 }
 
 function SheetAdresar({ toast, onClose }: { toast: (m: string) => void; onClose: () => void }) {
+  const { data: ADRESAR = [] } = useCharitaAdresar();
   const [chip, setChip] = useState("Všetko");
   const [hladaj, setHladaj] = useState("");
   const chipy = ["Všetko", "Zdravie", "Deti", "Zvieratá", "Príroda", "Sociálne", "Humanitárna"];

@@ -7,7 +7,8 @@ import { usePouzivatel } from "@/lib/pouzivatel";
 import { Nastavenia as NotifNastavenia } from "@/features/notifikacie/Notifikacie";
 import GlassIcons from "@/components/GlassIcons";
 import type { Toast as ToastFn, WideProps, PrevodTuple, MojSkutokTuple, ZiadostPriatelstvo, CestaPriatelstva, RezimNastavenia } from "@/types";
-import { PREVODY, MOJE_SKUTKY, KARMA, STATISTIKY, TEMY } from "./mock";
+import { useProfilPrevody, useProfilMojeSkutky, useProfilKarma, useProfilStatistiky } from "@/data";
+import { TEMY } from "./mock";
 
 /*
   ============================================================
@@ -128,6 +129,7 @@ function ProfilHlavny({ toast, naWallet, naSub, naNastavenia, naPriatelia }: Pro
 type PenazenkaProps = { toast: ToastFn; onBack: () => void };
 
 function Penazenka({ toast, onBack }: PenazenkaProps) {
+  const { data: PREVODY = [] } = useProfilPrevody();
   const [honorar, setHonorar] = useState(false); // Reťaz dobra — Cesta B (honorár tvorcu)
   const prevody: PrevodTuple[] = PREVODY;
   return (
@@ -207,6 +209,9 @@ function Penazenka({ toast, onBack }: PenazenkaProps) {
 type SubScreenProps = { nazov: string | null; toast: ToastFn; onBack: () => void };
 
 function SubScreen({ nazov, toast, onBack }: SubScreenProps) {
+  const { data: MOJE_SKUTKY = [] } = useProfilMojeSkutky();
+  const { data: KARMA = [] } = useProfilKarma();
+  const { data: STATISTIKY = [] } = useProfilStatistiky();
   const [retaz, setRetaz] = useState<{ odmena: number } | null>(null); // ručná Reťaz dobra pri menšom skutku {odmena}
   let obsah: React.ReactNode;
   if (nazov === "Moje skutky") {

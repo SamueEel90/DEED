@@ -5,7 +5,8 @@ import { pripravFeed, FEED_CFG } from "@/lib/feed";
 import type { OkruhKod } from "@/types";
 import { Zvoncek } from "@/features/notifikacie/Notifikacie";
 import { A, DOM, ORDER, tint } from "./domeny";
-import { SEED_ITEMS, EVENTS, USER_LOK, type AktItem } from "./mock";
+import { useAktivityFeed } from "@/data";
+import { EVENTS, USER_LOK, type AktItem } from "./mock";
 import { LS, load, save, obohatit, osoba, vytvorPost, type NovyPostSpec } from "./utils";
 
 /*
@@ -62,6 +63,7 @@ function badge(side: "l" | "r"): React.CSSProperties {
 
 // ===================== MODUL =====================
 export default function ModulAktivity({ wide }: { wide?: boolean }) {
+  const { data: SEED_ITEMS = [] as unknown as AktItem[] } = useAktivityFeed() as { data?: AktItem[] };
   const [dom, setDom] = useState("mix");
   const [view, setView] = useState("all"); // all | talent | workshop | help
   const [screen, setScreen] = useState("home"); // home | detail | add | board | profile
@@ -103,7 +105,7 @@ export default function ModulAktivity({ wide }: { wide?: boolean }) {
       supportCount: d.support || 0,
     } : it;
     return obohatit(sd);
-  }), [posts, deltas]);
+  }), [posts, deltas, SEED_ITEMS]);
 
   const akt = items.find((x) => x.id === aktId);
   // aktívny accent: detail → doména položky · add → predvolená · inak vybraná doména

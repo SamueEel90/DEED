@@ -4,7 +4,8 @@ import { Foto, Avatar, FotoPrispevku, MiniFotky, Hlavicka, ModulHlavicka, Podpor
 import { Zvoncek } from "@/features/notifikacie/Notifikacie";
 import { pripravFeed, FEED_CFG } from "@/lib/feed";
 import type { HelpFeedItem } from "@/types";
-import { USER_LOK, MOCK_FEED, ZIVE_DARY } from "./mock";
+import { useHelpFeed } from "@/data";
+import { USER_LOK, ZIVE_DARY } from "./mock";
 
 /*
   ============================================================
@@ -15,6 +16,7 @@ import { USER_LOK, MOCK_FEED, ZIVE_DARY } from "./mock";
 
 // ===================== MODUL =====================
 export default function ModulHelp({ wide }: { wide?: boolean }) {
+  const { data: MOCK_FEED = [] } = useHelpFeed();
   const [screen, setScreen] = useState("feed"); // feed | detail | add | offer | request
   const [aktDetail, setAktDetail] = useState<any>(null);
   const [hlaska, setHlaska] = useState<string | null>(null);
@@ -55,6 +57,7 @@ export default function ModulHelp({ wide }: { wide?: boolean }) {
 
 // ===================== FEED =====================
 function Feed({ wide, toast, onDetail, onHladaj, onAdd }: { wide?: boolean; toast: (m: string) => void; onDetail: (z: any) => void; onHladaj: () => void; onAdd: () => void }) {
+  const { data: MOCK_FEED = [] } = useHelpFeed();
   // živý ticker darov
   const [tick, setTick] = useState(0);
   useEffect(() => {

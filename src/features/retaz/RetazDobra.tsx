@@ -2,7 +2,7 @@ import { useState } from "react";
 import { C, GRAD, GRAD_ZELENY } from "@/theme";
 import { Modal, QrVizual, IkonaFajka, IkonaDoska, Lupa, Zdielanie, tint } from "@/shared";
 import type { RetazMode, RetazKrok, RetazVysledok } from "@/types";
-import { ZIADOSTI } from "./mock";
+import { useRetazZiadosti } from "@/data";
 
 /*
   ============================================================
@@ -40,6 +40,7 @@ interface RetazDobraSheetProps {
 // ---- bottom-sheet tok: nastav % + vyber žiadosť → zverejnené + QR D+R ----
 // mode: "skutok" (Cesta A) | "honorar" (Cesta B)
 export function RetazDobraSheet({ odmena = 130, mode = "skutok", titulOdkaz = "Skutok", odkaz = "https://deed.app/s/120042", onClose, onDone, toast }: RetazDobraSheetProps) {
+  const { data: ZIADOSTI = [] } = useRetazZiadosti();
   const honorar = mode === "honorar";
   const [krok, setKrok] = useState<RetazKrok>("nastav"); // nastav | hotovo
   const [pct, setPct] = useState(30);
