@@ -2,6 +2,7 @@ import { useState } from "react";
 import { C, GRAD, glassTmavy } from "@/theme";
 import { IkonaDomov, IkonaSrdceLine, IkonaCharita, IkonaKompas, IkonaMapa, IkonaPohar, IkonaOsoba, IkonaPenazenka, IkonaPlus } from "@/shared";
 import { pressable } from "@/components/pressable";
+import type { ReactNode } from "react";
 import type { StrankaAkcia } from "@/components/context";
 
 /*
@@ -107,7 +108,7 @@ function Tab({ m, on, onClick }: { m?: Modul; on: boolean; onClick: () => void }
 }
 
 // ---- SHEET: VŠETKY MODULY + ÚPRAVA MENU ----
-export function ViacSheet({ taby, setTaby, aktivny, onModul, onPenazenka, onClose, moduly = VSETKY_MODULY, strankaAkcie }: {
+export function ViacSheet({ taby, setTaby, aktivny, onModul, onPenazenka, onClose, moduly = VSETKY_MODULY, strankaAkcie, strankaFiltre }: {
   taby: string[];
   setTaby: (taby: string[]) => void;
   aktivny: string;
@@ -116,6 +117,7 @@ export function ViacSheet({ taby, setTaby, aktivny, onModul, onPenazenka, onClos
   onClose: () => void;
   moduly?: Modul[];
   strankaAkcie?: StrankaAkcia[];
+  strankaFiltre?: ReactNode;
 }) {
   const [uprava, setUprava] = useState(false);
   const [hint, setHint] = useState<string | null>(null);
@@ -163,11 +165,12 @@ export function ViacSheet({ taby, setTaby, aktivny, onModul, onPenazenka, onClos
           </div>
         )}
 
-        {/* NA TEJTO STRÁNKE — kontextové akcie aktuálneho modulu (Ukáž talent, Nástenka…) */}
-        {!uprava && strankaAkcie && strankaAkcie.length > 0 && (
+        {/* NA TEJTO STRÁNKE — kontextové prepínače (domény, sub-záložky) + akcie (Ukáž talent, Nástenka…) */}
+        {!uprava && (strankaFiltre || (strankaAkcie && strankaAkcie.length > 0)) && (
           <div style={{ marginBottom: 10 }}>
             <div style={{ fontSize: 10.5, letterSpacing: ".5px", color: C.textTer, fontWeight: 700, margin: "2px 2px 8px" }}>NA TEJTO STRÁNKE</div>
-            {strankaAkcie.map((a) => (
+            {strankaFiltre && <div style={{ marginBottom: strankaAkcie && strankaAkcie.length ? 10 : 0 }}>{strankaFiltre}</div>}
+            {(strankaAkcie || []).map((a) => (
               <div key={a.id} onClick={() => { a.onClick(); onClose(); }} style={{ display: "flex", alignItems: "center", gap: 12, background: "rgba(var(--glass-rgb),.05)", border: `1px solid ${C.line}`, borderRadius: 15, padding: "11px 13px", marginBottom: 8, cursor: "pointer" }}>
                 <span style={{ width: 38, height: 38, borderRadius: 12, background: "rgba(78,122,62,.12)", border: `1px solid ${C.line2}`, display: "flex", alignItems: "center", justifyContent: "center", flex: "0 0 auto", color: "var(--a-green)" }}>{a.ikona}</span>
                 <div style={{ flex: 1, minWidth: 0 }}>

@@ -162,7 +162,7 @@ export function Screens({ wide }: { wide?: boolean }) {
         {akcie.pridat && <PridatFAB akcia={akcie.pridat} wide={wide} />}
 
         {viac && (
-          <ViacSheet taby={taby} setTaby={setTaby} aktivny={modul} moduly={moduly} strankaAkcie={akcie.extra}
+          <ViacSheet taby={taby} setTaby={setTaby} aktivny={modul} moduly={moduly} strankaAkcie={akcie.extra} strankaFiltre={akcie.filtre}
             onModul={(m: string) => { prepni(m); setViac(false); }}
             onPenazenka={() => { prepni("profil"); setWalletReq((n) => n + 1); setViac(false); }}
             onClose={() => setViac(false)} />

@@ -211,7 +211,9 @@ function Home({ items, dom, view, pickDom, pickView, toast, open, openPerson, se
     ...pripravFeed(list.filter((it: AktItem) => !it.mine), { ...USER_LOK, radius }),
   ];
 
-  const sub = (on: boolean): React.CSSProperties => ({ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, height: 38, borderRadius: 11, fontSize: 12, fontWeight: 600, cursor: "pointer", background: on ? "var(--accBg)" : A.surface, border: `1px solid ${on ? "var(--accBd)" : A.line2}`, color: on ? "var(--acc)" : A.txt2 });
+  // štýl sub-záložky (Workshopy/Hľadám pomoc/Market) — theme-aware cez DOM[dom].c
+  // (funguje aj v menu mimo Aktivity rootu, kde nie sú definované --acc premenné)
+  const segStyle = (on: boolean): React.CSSProperties => ({ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, height: 38, borderRadius: 11, fontSize: 12, fontWeight: 600, cursor: "pointer", background: on ? tint(DOM[dom].c, .15) : A.surface, border: `1px solid ${on ? tint(DOM[dom].c, .5) : A.line2}`, color: on ? DOM[dom].c : A.txt2 });
 
   // dvojstĺpcový feed (skutky vľavo / žiadosti vpravo) iba v zmiešanom zobrazení na tablete/PC
   const dva = wide && view === "all";
@@ -223,14 +225,40 @@ function Home({ items, dom, view, pickDom, pickView, toast, open, openPerson, se
     return <SmallRow key={it.id} it={it} wide={dva} onOpen={open} onPerson={openPerson} />;
   };
 
-  // kontextové akcie stránky → plávajúce „+ Pridať" dole + sekcia „Na tejto stránke" v menu (☰)
+  // FILTRE PRESUNUTÉ DO MENU (☰): doménový prepínač + sub-záložky (Workshopy/Hľadám pomoc/Market)
+  // sa zobrazia v sekcii „Na tejto stránke" → vrch Aktivít ostáva čistý. Aktívne stavy sledujú [dom, view].
+  const filtreMenu = (
+    <>
+      <div style={{ overflowX: "auto", margin: "0 0 10px" }}>
+        <div style={{ display: "flex", gap: 7, minWidth: "max-content" }}>
+          {ORDER.map((d) => {
+            const a = DOM[d]; const on = dom === d;
+            return (
+              <div key={d} onClick={() => pickDom(d)} style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, minWidth: 60, height: 54, borderRadius: 14, cursor: "pointer", flex: "none", background: on ? tint(a.c, .15) : A.surface2, border: `1px solid ${on ? tint(a.c, .5) : A.line}` }}>
+                <div style={{ color: on ? a.c : A.txt2, display: "flex" }}>{DOM_IKONA[d]}</div>
+                <div style={{ fontSize: 10, fontWeight: 700, color: on ? a.c : A.txt2 }}>{a.label}</div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+      <div style={{ display: "flex", gap: 8 }}>
+        <div onClick={() => pickView("workshop")} style={segStyle(view === "workshop")}><span style={{ fontSize: 13 }}>🎓</span>Workshopy</div>
+        <div onClick={() => pickView("help")} style={segStyle(view === "help")}><span style={{ fontSize: 13 }}>❓</span>Hľadám pomoc</div>
+        <div onClick={() => toast("Market — predaj diel/náradia, fáza 2")} style={segStyle(false)}><span style={{ fontSize: 13 }}>🛒</span>Market<span style={{ fontSize: 10, background: A.goldBg, color: A.gold, padding: "1px 5px", borderRadius: 5, marginLeft: 2 }}>čoskoro</span></div>
+      </div>
+    </>
+  );
+
+  // kontextové akcie stránky → plávajúce „+ Pridať" dole + sekcia „Na tejto stránke" (filtre + akcie) v menu (☰)
   useStrankaAkcie(() => ({
     pridat: { id: "add", label: "Pridať", onClick: () => setScreen("add") },
     extra: [
       { id: "talent", label: "Ukáž svoj talent", popis: "Tvorivé skutky a talenty", ikona: <IkonaPlay size={18} color="var(--a-green)" />, onClick: () => pickView("talent") },
       { id: "board", label: "Nástenka", popis: "Skutky a výzvy v okolí", ikona: <IkonaDoska size={18} color="var(--a-green)" />, onClick: () => setScreen("board") },
     ],
-  }), []);
+    filtre: filtreMenu,
+  }), [dom, view]);
 
   return (
     <div style={{ paddingBottom: 14 }}>
@@ -254,27 +282,19 @@ function Home({ items, dom, view, pickDom, pickView, toast, open, openPerson, se
       <StatRiadok stat={`V okruhu ${feed.length} aktivít · Mesiac 9 480`}
         okruh={FEED_CFG.radiusy[radius].krat} onOkruh={() => setVyberOkruh(true)} />
 
-      {/* prepínač domén */}
-      <div style={{ padding: "2px 12px 8px", overflowX: "auto" }}>
-        <div style={{ display: "flex", gap: 7, minWidth: "max-content", padding: "0 4px" }}>
-          {ORDER.map((d) => {
-            const a = DOM[d]; const on = dom === d;
-            return (
-              <div key={d} onClick={() => pickDom(d)} style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, minWidth: 62, height: 54, borderRadius: 14, cursor: "pointer", flex: "none", transition: ".18s", transform: on ? "translateY(-1px)" : "none", background: on ? tint(a.c, .15) : A.surface2, border: `1px solid ${on ? tint(a.c, .5) : A.line}` }}>
-                <div style={{ color: on ? a.c : A.txt2, display: "flex" }}>{DOM_IKONA[d]}</div>
-                <div style={{ fontSize: 10, fontWeight: 700, color: on ? a.c : A.txt2 }}>{a.label}</div>
-              </div>
-            );
-          })}
+      {/* AKTÍVNY FILTER — viditeľný len keď je iný než predvolený (mix/všetko); prepínanie je v menu (☰).
+          Chip s ✕ filter zruší. Predvolene je tu prázdno → vrch stránky čistý. */}
+      {(dom !== "mix" || view !== "all") && (
+        <div style={{ display: "flex", alignItems: "center", gap: 7, padding: "0 16px 12px", borderBottom: `1px solid ${A.line}`, marginBottom: 4, flexWrap: "wrap" }}>
+          <span style={{ fontSize: 11, color: A.txt3, fontWeight: 600 }}>Filter:</span>
+          {dom !== "mix" && (
+            <span onClick={() => pickDom("mix")} style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11.5, fontWeight: 700, padding: "4px 7px 4px 10px", borderRadius: 14, cursor: "pointer", color: DOM[dom].c, background: tint(DOM[dom].c, .14), border: `1px solid ${tint(DOM[dom].c, .4)}` }}>{DOM[dom].label} <span style={{ opacity: .7, fontSize: 13 }}>✕</span></span>
+          )}
+          {view !== "all" && (
+            <span onClick={() => pickView(view)} style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11.5, fontWeight: 700, padding: "4px 7px 4px 10px", borderRadius: 14, cursor: "pointer", color: DOM[dom].c, background: tint(DOM[dom].c, .14), border: `1px solid ${tint(DOM[dom].c, .4)}` }}>{view === "talent" ? "Talent" : view === "workshop" ? "Workshopy" : "Hľadám pomoc"} <span style={{ opacity: .7, fontSize: 13 }}>✕</span></span>
+          )}
         </div>
-      </div>
-
-      {/* sub sekcie */}
-      <div style={{ display: "flex", gap: 8, padding: "2px 16px 12px", borderBottom: `1px solid ${A.line}`, marginBottom: 4 }}>
-        <div onClick={() => pickView("workshop")} style={sub(view === "workshop")}><span style={{ fontSize: 13 }}>🎓</span>Workshopy</div>
-        <div onClick={() => pickView("help")} style={sub(view === "help")}><span style={{ fontSize: 13 }}>❓</span>Hľadám pomoc</div>
-        <div onClick={() => toast("Market — predaj diel/náradia, fáza 2")} style={sub(false)}><span style={{ fontSize: 13 }}>🛒</span>Market<span style={{ fontSize: 10, background: A.goldBg, color: A.gold, padding: "1px 5px", borderRadius: 5, marginLeft: 2 }}>čoskoro</span></div>
-      </div>
+      )}
 
       {/* feed — na tablete/PC: skutky & aktivity vľavo, žiadosti o pomoc vpravo */}
       {isError ? (
