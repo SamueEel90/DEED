@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { C, GRAD, GRAD_ZELENY } from "@/theme";
-import { Modal, QrVizual, IkonaFajka, IkonaDoska, Lupa, Zdielanie, tint } from "@/shared";
+import { Sheet, QrVizual, IkonaFajka, IkonaDoska, Lupa, Zdielanie, tint } from "@/shared";
 import type { RetazMode, RetazKrok, RetazVysledok } from "@/types";
 import { useRetazZiadosti } from "@/data";
 
@@ -57,7 +57,7 @@ export function RetazDobraSheet({ odmena = 130, mode = "skutok", titulOdkaz = "S
   // ---- KROK 1: nastav % + vyber žiadosť ----
   if (krok === "nastav") {
     return (
-      <Modal onClose={onClose}>
+      <Sheet onClose={onClose}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
           <span style={{ width: 36, height: 36, borderRadius: 11, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", background: tint("#1FBF8F", .16), color: "#2BD49B", fontSize: 18 }}>♻</span>
           <div>
@@ -122,13 +122,13 @@ export function RetazDobraSheet({ odmena = 130, mode = "skutok", titulOdkaz = "S
             boxShadow: ziadost ? "0 8px 26px rgba(31,191,143,.32)" : "none" }}>
           {honorar ? "Vygenerovať QR reťaze · % sa zafixuje" : "Potvrdiť — % sa zafixuje"}
         </button>
-      </Modal>
+      </Sheet>
     );
   }
 
   // ---- KROK 2: zverejnené + QR D+R ----
   return (
-    <Modal onClose={onClose}>
+    <Sheet onClose={onClose}>
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, padding: "2px 0 8px" }}>
         <div style={{ width: 52, height: 52, borderRadius: "50%", background: "rgba(31,191,143,.16)", display: "flex", alignItems: "center", justifyContent: "center" }}><IkonaFajka size={28} color="#2BD49B" /></div>
         <div style={{ fontSize: 17, fontWeight: 800, textAlign: "center" }}>{honorar ? "Reťaz na honorár nastavená" : "Skutok zverejnený s Reťazou dobra"}</div>
@@ -161,7 +161,7 @@ export function RetazDobraSheet({ odmena = 130, mode = "skutok", titulOdkaz = "S
         style={{ width: "100%", height: 50, borderRadius: 14, border: "none", marginTop: 14, fontWeight: 700, fontSize: 15, fontFamily: "inherit", background: GRAD, color: "#fff", cursor: "pointer", boxShadow: "0 8px 26px rgba(99,134,255,.32)", display: "flex", alignItems: "center", justifyContent: "center", gap: 9 }}>
         <Zdielanie size={18} color="#fff" /> {honorar ? "Zdieľať QR reťaze" : "Zdieľať skutok + QR"}
       </button>
-    </Modal>
+    </Sheet>
   );
 }
 

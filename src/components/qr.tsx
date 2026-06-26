@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import { C, GRAD_ZELENY } from "@/theme";
 import { tint } from "@/lib/ui";
 import { qrHash, qrPrng, qrFinder, QR_TYPY } from "@/lib/qr";
-import { Modal } from "@/components/feedback";
+import { Sheet } from "@/components/sheet";
 import { Lupa, IkonaDoska, IkonaUlozit, Zdielanie } from "@/components/icons";
 
 export function QrVizual({ data = "deed", size = 132, fg = "#0B0C10" }: { data?: string; size?: number; fg?: string }) {
@@ -53,7 +53,7 @@ export function QrModal({ typ = "skutok", titul, popis, odkaz = "https://deed.ap
   );
 
   return (
-    <Modal onClose={onClose}>
+    <Sheet onClose={onClose}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
         <span style={{ width: 36, height: 36, borderRadius: 11, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", background: tint(meta.col, .16), color: meta.col }}><IkonaDoska size={18} color={meta.col} /></span>
         <div style={{ minWidth: 0 }}>
@@ -88,6 +88,6 @@ export function QrModal({ typ = "skutok", titul, popis, odkaz = "https://deed.ap
         {out(<IkonaUlozit size={18} color={meta.col} />, "Kopírovať", "odkaz", kopiruj)}
         {out(<Zdielanie size={18} color={meta.col} />, "Zdieľať", "siete", zdielaj)}
       </div>
-    </Modal>
+    </Sheet>
   );
 }

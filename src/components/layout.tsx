@@ -3,7 +3,7 @@ import { C, GRAD, GRAD_ZELENY, glassTmavy } from "@/theme";
 import { tint } from "@/lib/ui";
 import { FEED_CFG } from "@/lib/feed";
 import { useMotiv, useViac } from "@/components/context";
-import { Modal } from "@/components/feedback";
+import { Sheet } from "@/components/sheet";
 import { IkonaSpat, IkonaMenu, IkonaMesiac, IkonaSlnko, IkonaPlay, IkonaDoska, IkonaPlus, IkonaPin, IkonaSipDole, IkonaFajka } from "@/components/icons";
 
 // ============================================================
@@ -252,7 +252,7 @@ const OKRUH_POPIS: Record<string, string> = {
 };
 export function OkruhVyber({ radius, onPick, onClose, akcent = "#74A6FF" }: { radius?: string; onPick: (k: string) => void; onClose?: () => void; akcent?: string }) {
   return (
-    <Modal onClose={onClose}>
+    <Sheet onClose={onClose}>
       <div style={{ fontSize: 16, fontWeight: 800 }}>Okruh feedu</div>
       <div style={{ fontSize: 12.5, color: C.textTer, margin: "4px 0 14px" }}>Väčší okruh = vyšší prah významnosti — vidíš len špičku.</div>
       {Object.entries(FEED_CFG.radiusy).map(([k, r]) => {
@@ -269,6 +269,6 @@ export function OkruhVyber({ radius, onPick, onClose, akcent = "#74A6FF" }: { ra
           </div>
         );
       })}
-    </Modal>
+    </Sheet>
   );
 }

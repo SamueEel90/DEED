@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { C, U, AV, GRAD, GRAD_ZELENY } from "@/theme";
-import { Foto, Avatar, FotoPrispevku, MiniFotky, Modal, ModulHlavicka, PodporaSekcia, PlatbaModal, HladanieModal, Toast, useGaleria, useScrollHore, Ticker, StatRiadok, MoniBar, FeedStlpce, SekcieBar, OkruhVyber, Lupa, Zvon, Zdielanie, IkonaSpat, IkonaVlajka, IkonaFoto, IkonaOpakovat, IkonaKriz, IkonaInstitucia, FeedSkeleton, SkeletonRiadky, EmptyState, ErrorState } from "@/shared";
+import { Foto, Avatar, FotoPrispevku, MiniFotky, ModulHlavicka, PodporaSekcia, PlatbaModal, HladanieModal, Toast, useGaleria, useScrollHore, Ticker, StatRiadok, MoniBar, FeedStlpce, SekcieBar, OkruhVyber, Lupa, Zvon, Zdielanie, IkonaSpat, IkonaVlajka, IkonaFoto, IkonaOpakovat, IkonaKriz, IkonaInstitucia, FeedSkeleton, SkeletonRiadky, EmptyState, ErrorState } from "@/shared";
 import { pripravFeed, FEED_CFG } from "@/lib/feed";
 import { Zvoncek } from "@/features/notifikacie/Notifikacie";
 import type { CharitaFeedItem, CharitaLevel, Kanal } from "@/types";

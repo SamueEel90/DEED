@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { C, GRAD, GRAD_ZELENY } from "@/theme";
-import { Toast, Modal, useScrollHore, useViac, useMotiv, QrModal, IkonaMenu, IkonaNastavenia, IkonaSipVlavo, IkonaPenazenka, IkonaHviezda, IkonaFajka, IkonaDoska, IkonaUsmev, IkonaPin, IkonaSlnko, IkonaMesiac, IkonaStit, SkeletonRiadky, EmptyState, ErrorState } from "@/shared";
+import { Toast, Sheet, useScrollHore, useViac, useMotiv, QrModal, IkonaMenu, IkonaNastavenia, IkonaSipVlavo, IkonaPenazenka, IkonaHviezda, IkonaFajka, IkonaDoska, IkonaUsmev, IkonaPin, IkonaSlnko, IkonaMesiac, IkonaStit, SkeletonRiadky, EmptyState, ErrorState } from "@/shared";
 import { RetazDobraSheet } from "@/features/retaz/RetazDobra";
 import { clearSession } from "@/lib/session";
 import { usePouzivatel } from "@/lib/pouzivatel";
@@ -422,7 +422,7 @@ function NastaveniaScreen({ toast, onBack, onNotif }: NastaveniaScreenProps) {
 
       {/* §13.1 — Ochrana osoby (anti-sociálny kredit) */}
       {ochrana && (
-        <Modal onClose={() => setOchrana(false)}>
+        <Sheet onClose={() => setOchrana(false)}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
             <span style={{ width: 38, height: 38, borderRadius: 11, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(61,214,140,.14)" }}><IkonaStit size={19} color="#3DD68C" /></span>
             <div><div style={{ fontSize: 16, fontWeight: 800 }}>Ochrana osoby</div><div style={{ fontSize: 11.5, color: C.textTer }}>Opak sociálneho kreditu</div></div>
@@ -443,7 +443,7 @@ function NastaveniaScreen({ toast, onBack, onNotif }: NastaveniaScreenProps) {
             Pri kontrole sa karta automaticky vyrovná „jemne nad priemer" — <b>nie je to vypínač</b>, takže sa nedá preukázať nízke skóre proti tebe. Princíp: <b style={{ color: C.text }}>za výšku odmena, za nulu nezničíme.</b>
           </div>
           <button onClick={() => setOchrana(false)} style={{ width: "100%", height: 48, borderRadius: 14, marginTop: 16, border: "none", background: GRAD, color: "#fff", fontWeight: 700, fontSize: 15, cursor: "pointer", fontFamily: "inherit" }}>Rozumiem</button>
-        </Modal>
+        </Sheet>
       )}
     </div>
   );

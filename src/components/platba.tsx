@@ -3,7 +3,7 @@ import type { CSSProperties, ReactNode } from "react";
 import { C, GRAD, GRAD_ZELENY } from "@/theme";
 import { tint } from "@/lib/ui";
 import { useMotiv } from "@/components/context";
-import { Modal } from "@/components/feedback";
+import { Sheet } from "@/components/sheet";
 import { IkonaStit, IkonaFajka, Zdielanie, Palec } from "@/components/icons";
 
 // ============================================================
@@ -49,7 +49,7 @@ export function PlatbaModal({ kanal, komu, onClose, onDone }: { kanal?: string; 
   );
 
   return (
-    <Modal onClose={krok === "spracovanie" ? () => {} : onClose}>
+    <Sheet onClose={onClose} dismissible={krok !== "spracovanie"}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
         <span style={{ width: 38, height: 38, borderRadius: 11, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", background: jeEur ? "rgba(91,155,255,.14)" : "rgba(67,224,200,.14)", color: jeEur ? C.blueL : C.teal, fontWeight: 800, fontSize: 14 }}>{jeEur ? "€" : "D⁺"}</span>
         <div style={{ minWidth: 0 }}>
@@ -119,7 +119,7 @@ export function PlatbaModal({ kanal, komu, onClose, onDone }: { kanal?: string; 
         </div>
         <button onClick={() => { onDone?.(sumaNum); onClose?.(); }} style={btnP(true, GRAD_ZELENY)}>Hotovo</button>
       </>)}
-    </Modal>
+    </Sheet>
   );
 }
 
