@@ -25,22 +25,23 @@ export const C = {
   text: "var(--c-text)",
   textSec: "var(--c-textSec)",
   textTer: "var(--c-textTer)",
-  blue: "#3E7BFA",
-  blueL: "#74A6FF",
-  green: "#1FBF8F",
-  greenL: "#5CE6B8",
-  red: "#F2706F",
-  redBg: "rgba(242,112,111,.08)",
-  purple: "#8B7CFF",
-  gold: "#F0C75A",
-  teal: "#43E0C8",
-  orange: "#F0A85E",
+  // akcenty — theme-aware (warm earthy), čitateľné v oboch režimoch (--a-* v index.css)
+  blue: "var(--a-info)",       // slate (bývalá modrá)
+  blueL: "var(--a-info)",
+  green: "var(--a-green)",     // mach-oliva (brand / eco)
+  greenL: "var(--a-green)",
+  red: "var(--a-danger)",      // brick
+  redBg: "var(--a-danger-bg)",
+  purple: "var(--a-plum)",     // tlmená slivka
+  gold: "var(--a-gold)",       // ochre
+  teal: "var(--a-teal)",       // eukalyptus
+  orange: "var(--a-clay)",     // terracotta
 };
 
-// ---- AURORA GRADIENT — podpis značky ----
-export const GRAD = "linear-gradient(135deg, #5B9BFF 0%, #8B7CFF 52%, #43E0C8 118%)";
-export const GRAD_KUZEL = "conic-gradient(from 0deg, #5B9BFF, #8B7CFF, #43E0C8, #5B9BFF)";
-export const GRAD_ZELENY = "linear-gradient(90deg, #1FBF8F, #5CE6B8)";
+// ---- BRAND GRADIENT (warm earthy · eco) — podpis značky ----
+export const GRAD = "linear-gradient(135deg, #4E7A3E 0%, #74A24A 100%)";
+export const GRAD_KUZEL = "conic-gradient(from 0deg, #4E7A3E, #74A24A, #3E8C7A, #4E7A3E)";
+export const GRAD_ZELENY = "linear-gradient(90deg, #4E7A3E, #8FB36A)";
 
 // gradientový text
 export const gradText: CSSProperties = {
@@ -103,8 +104,8 @@ export function inp(h?: number): CSSProperties {
 }
 
 export const infoBox: CSSProperties = {
-  background: "rgba(91,155,255,.07)", border: "1px solid rgba(91,155,255,.22)",
-  borderRadius: 13, padding: "12px 14px", fontSize: 13.5, color: C.blueL,
+  background: "var(--a-info-bg)", border: `1px solid ${C.line}`,
+  borderRadius: 13, padding: "12px 14px", fontSize: 13.5, color: C.blue,
   lineHeight: 1.5, marginTop: 12,
 };
 
@@ -114,7 +115,7 @@ export function btn(kind?: "primary" | "ghost" | "disabled" | string): CSSProper
     cursor: "pointer", border: "none", fontFamily: "inherit",
     transition: "transform .12s ease, box-shadow .25s ease, opacity .2s ease",
   };
-  if (kind === "primary") return { ...base, background: GRAD, color: "#fff", boxShadow: "0 8px 26px rgba(99,134,255,.32), inset 0 1px 0 rgba(255,255,255,.25)" };
+  if (kind === "primary") return { ...base, background: GRAD, color: "#fff", boxShadow: "0 8px 26px rgba(78,122,62,.30), inset 0 1px 0 rgba(255,255,255,.22)" };
   if (kind === "ghost") return { ...base, background: "rgba(var(--glass-rgb),.05)", color: C.textSec, border: `1px solid ${C.line}` };
   if (kind === "disabled") return { ...base, background: "rgba(var(--glass-rgb),.06)", color: C.textTer, cursor: "not-allowed" };
   return base;

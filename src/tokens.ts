@@ -48,7 +48,7 @@ export const SHADOW = {
   sm: "0 4px 14px rgba(0,0,0,.18)",
   md: "0 8px 26px rgba(0,0,0,.28)",
   lg: "0 18px 60px rgba(0,0,0,.45)", // sheet (= dnešný Modal -18px 60px)
-  glow: "0 8px 26px rgba(99,134,255,.32), inset 0 1px 0 rgba(255,255,255,.25)", // primary btn (= btn())
+  glow: "0 8px 26px rgba(78,122,62,.30), inset 0 1px 0 rgba(255,255,255,.22)", // primary btn (earthy green)
   glowGreen: "0 10px 34px rgba(0,0,0,.45), 0 0 24px rgba(67,224,200,.12)", // toast
 } as const;
 

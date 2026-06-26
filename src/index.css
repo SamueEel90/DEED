@@ -4,36 +4,55 @@
    ============================================================ */
 
 :root {
-  /* JEDNOTNÝ FONT v celej appke */
-  font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+  /* JEDNOTNÝ FONT v celej appke — Plus Jakarta Sans (teplý geometrický grotesk) */
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
   font-size: 16px;          /* pohodlný základ — čitateľné pre všetky vekové kategórie */
   line-height: 1.5;
 
-  /* ===== MOTÍV — tmavý (predvolený) ===== */
-  color-scheme: dark;
-  --c-bg: #070A13;
-  --c-bg2: #0B101D;
-  --c-text: #F4F7FB;
-  --c-textSec: #C4CCDB;
-  --c-textTer: #929CB1;
-  --glass-rgb: 255, 255, 255;   /* sklenené povrchy: biele priesvitné na tmavom */
-  --panel-rgb: 11, 15, 26;      /* dock / hlavičky / modaly: tmavý panel */
-  --page-grad: radial-gradient(1300px 700px at 50% -12%, #121A2E 0%, #080B14 52%, #04060C 100%);
+  /* ===== MOTÍV — SVETLÝ (primárny · warm earthy / natural) ===== */
+  color-scheme: light;
+  --c-bg: #F1ECE1;              /* teplý sand / papier */
+  --c-bg2: #F8F4EB;
+  --c-text: #221F18;           /* espresso near-black */
+  --c-textSec: #5B5346;        /* teplý taupe */
+  --c-textTer: #7C7361;        /* teplý stone (čitateľný ≥4:1) */
+  --glass-rgb: 58, 46, 28;     /* teplá hnedá → béžové karty + teplé hairline borders */
+  --panel-rgb: 255, 253, 247;  /* teplá biela: dock / hlavičky / sheety */
+  --page-grad: radial-gradient(1200px 720px at 50% -8%, #FFFDF7 0%, #F3EEE3 55%, #EBE4D5 100%);
+
+  /* ===== AKCENTY — theme-aware (svetlý) ===== */
+  --a-green: #4E7A3E;  --a-green-bg: rgba(78,122,62,.12);    /* brand / eco (mach-oliva) */
+  --a-clay: #B05E3C;   --a-clay-bg: rgba(176,94,60,.12);     /* terracotta */
+  --a-gold: #94761C;   --a-gold-bg: rgba(160,128,40,.14);    /* ochre */
+  --a-info: #41708C;   --a-info-bg: rgba(65,112,140,.12);    /* slate */
+  --a-danger: #AE423C; --a-danger-bg: rgba(174,66,60,.10);   /* brick */
+  --a-teal: #3E8C7A;   --a-teal-bg: rgba(62,140,122,.12);    /* eukalyptus */
+  --a-plum: #8A5E86;   --a-plum-bg: rgba(138,94,134,.12);    /* tlmená slivka */
+  --a-on: #FBF8F0;     /* text na plnom akcente (teplá biela) */
 }
 
-/* ===== MOTÍV — svetlý (profesionálny, podľa vzoru) ===== */
-html.light {
-  color-scheme: light;
-  --c-bg: #ECEFF5;
-  --c-bg2: #F6F8FC;
-  --c-text: #161E2B;
-  --c-textSec: #3C4559;
-  --c-textTer: #586176;
-  --glass-rgb: 36, 48, 74;      /* jemný tmavý povrch na svetlom = svetlosivé karty */
-  --panel-rgb: 255, 255, 255;   /* dock / hlavičky / modaly: svetlý frosted panel */
-  --page-grad: radial-gradient(1200px 720px at 50% -10%, #FFFFFF 0%, #EEF2F8 55%, #E5EAF3 100%);
+/* ===== MOTÍV — TMAVÝ (sekundárny · warm earthy) ===== */
+html.dark {
+  color-scheme: dark;
+  --c-bg: #14110B;             /* teplá near-black */
+  --c-bg2: #1B170F;
+  --c-text: #F2EDE2;          /* teplá off-white */
+  --c-textSec: #BBB2A1;
+  --c-textTer: #8A8070;
+  --glass-rgb: 244, 238, 226; /* teplá off-white → tmavé teplé karty */
+  --panel-rgb: 28, 24, 17;    /* teplý tmavý panel */
+  --page-grad: radial-gradient(1300px 700px at 50% -12%, #211C12 0%, #15110A 52%, #0D0A06 100%);
+
+  --a-green: #94C46C;  --a-green-bg: rgba(148,196,108,.15);
+  --a-clay: #DD9069;   --a-clay-bg: rgba(221,144,105,.15);
+  --a-gold: #E3BE6E;   --a-gold-bg: rgba(227,190,110,.14);
+  --a-info: #82AAC4;   --a-info-bg: rgba(130,170,196,.15);
+  --a-danger: #E27D74; --a-danger-bg: rgba(226,125,116,.14);
+  --a-teal: #79C2B0;   --a-teal-bg: rgba(121,194,176,.15);
+  --a-plum: #C79AC2;   --a-plum-bg: rgba(199,154,194,.15);
+  --a-on: #FBF8F0;
 }
 
 * {
@@ -58,7 +77,7 @@ button, input, textarea {
 }
 
 ::selection {
-  background: rgba(116, 166, 255, 0.35);
+  background: rgba(120, 162, 74, 0.30);
 }
 
 input, textarea, button {
@@ -109,7 +128,7 @@ input, textarea, button {
 /* viditeľný focus IBA pri ovládaní klávesnicou (nie pri kliknutí myšou) */
 :focus { outline: none; }
 :focus-visible {
-  outline: 2px solid #74A6FF;
+  outline: 2px solid var(--a-green);
   outline-offset: 2px;
 }
 

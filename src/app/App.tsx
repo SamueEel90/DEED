@@ -70,13 +70,14 @@ export default function App() {
   // portal-host = vycentrovaný stĺpec appky (pre prípadné portály v stĺpci)
   const [portalEl, setPortalEl] = useState<HTMLElement | null>(null);
 
-  // motív (svetlý / tmavý) — prepína triedu .light na <html>, ukladá sa
+  // motív — SVETLÝ je primárny (default). Tmavý = trieda .dark na <html>.
+  // :root je svetlý → prvé vykreslenie je svetlé bez dark-flashu.
   const [svetly, setSvetly] = useState<boolean>(() => {
-    try { return localStorage.getItem("deed.motiv") === "svetly"; } catch { return false; }
+    try { return localStorage.getItem("deed.motiv") !== "tmavy"; } catch { return true; }
   });
   useEffect(() => {
     try {
-      document.documentElement.classList.toggle("light", svetly);
+      document.documentElement.classList.toggle("dark", !svetly);
       localStorage.setItem("deed.motiv", svetly ? "svetly" : "tmavy");
     } catch { /* private mode */ }
   }, [svetly]);
