@@ -60,14 +60,19 @@ Pripraviť čistý švík medzi UI a dátami — bez reálnych volaní, ešte na
 
 > **Pozn.:** loading/error stavy zatiaľ bez UI (mock je instantný, default `= []`/guard). Skeletony a error-handling sú náplň **Fázy 3**.
 
-### Fáza 3 — UI polish & produkčné detaily *(prebieha)*
-Doladiť to, čo robí appku „hotovou".
+### Fáza 3 — UI polish & produkčné detaily *(prebieha — senior-level, po vlnách)*
+Doladiť to, čo robí appku „hotovou". Realizované po samostatne nasaditeľných vlnách (každá `tsc`+build zelená → commit → Vercel). Moderné knižnice: **motion** (Framer), **vaul**, **sonner**, **@radix-ui**, **@tanstack/react-virtual** — bespoke vzhľad zachovaný.
 
-- [x] **Stavy:** `components/states.tsx` (Skeleton, FeedSkeleton, SkeletonRiadky, EmptyState, ErrorState + retry, Spinner) zapojené do Good / Help / Charita / Aktivity / Notifikácie / Profil (feed + adresár + peňaženka + sub-obrazovky). Mock latencia 320 ms → skeletony reálne viditeľné.
-- [x] **Prístupnosť (základ):** `:focus-visible` ring iba pre klávesnicu, `prefers-reduced-motion`, odstránený tap-highlight (`index.css`). `aria-busy`/`role="alert"`/`role="status"` v stavových komponentoch.
-- [ ] **Prístupnosť (zvyšok):** focus management + Escape v modáloch/lightboxe, kontrast audit (svetlý aj tmavý).
-- [ ] **Dizajn-systém:** spacing/typografická škála, jednotné radiusy/tiene, motion tokeny; audit konzistencie naprieč modulmi.
-- [ ] **Mikro-interakcie:** prechody, haptika tlačidiel, plynulé otváranie detailov, lazy-load obrázkov.
+- [x] **Stavy:** `components/states.tsx` (Skeleton/FeedSkeleton/SkeletonRiadky/EmptyState/ErrorState+retry/Spinner) v 6 dátových moduloch. Mock latencia 320 ms.
+- [x] **Wave 1 — Foundation:** dizajn-tokeny `src/tokens.ts` (SPACE/RADIUS/TYPE/SHADOW/MOTION); knižnice; nové komponenty `motion`/`sheet`/`pressable`/`toast`; App providers (LazyMotion + MotionConfig reducedMotion + DeedToaster + portal seam).
+- [x] **Wave 2 — Sheety + prechody:** `Modal`→`<Sheet>` (Vaul, drag-to-dismiss + výstupná animácia + focus-trap) na 7 call-sites; `<ScreenSwitch>` crossfade prechody obrazoviek v 5 moduloch.
+- [x] **Wave 3 — Prístupnosť:** `pressable()` (role/tabIndex/Enter+Space/aria) na dock, hlavičky, chipy, OkruhVyber, Vyber; Lightbox focus-restore + aria + klávesnica; press feedback (`:active` opacity).
+- [x] **Wave 4 — Toast + hľadanie:** sonner globálny `toast()` namiesto duplikovaného stavu v 9 súboroch; `useDeferredValue` debounce hľadania.
+- [x] **Wave 5a — Code-splitting:** `React.lazy` 7 modulov + Suspense; vendor chunky (react/motion/tanstack) v `vite.config`. Initial load = shell + prvý modul.
+- [x] **Mikro-interakcie (časť):** lazy-load obrázkov (`loading="lazy"`), výstupné animácie sheetov, `whileTap`.
+- [ ] **Wave 5b — Token sweep (vyžaduje vizuálne QA):** adopcia SPACE/RADIUS/TYPE naprieč legacy modulmi + retire rogue palety `K` (Charita), `A` (Aktivity), `SEG_BG`. Hodnoty sa nudge-ujú na škálu (≤2 px) — treba screenshot-diff.
+- [ ] **Wave 5c — Virtualizácia:** `@tanstack/react-virtual` na ploché zoznamy (hľadanie, notifikácie, „moje skutky", adresár) — pri raste dát.
+- [ ] **A11y zvyšok:** feed-karty klávesnicovo (potrebuje afordanciu „otvoriť", nie nested-button), Radix Tabs pre segment selektory (cudzí profil, charita), kontrast audit.
 - [ ] **Responzivita:** doladiť viacstĺpcové feedy na tablete/desktope.
 - **Hotovo, keď:** klikanie appkou pôsobí ako hotový produkt — žiadne skoky, prázdne biele plochy ani nekonzistentné odsadenia.
 
