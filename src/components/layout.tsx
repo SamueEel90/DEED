@@ -155,7 +155,7 @@ export function Rebricky({ ocenenia = [], ludia = [], pred = null }: { ocenenia?
         {ocenenia.map((o, i) => (
           <div key={i} onClick={o.onClick} style={{ minWidth: 84, background: C.surface, border: `1px solid ${C.line}`, borderRadius: 13, padding: "8px 5px", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, cursor: o.onClick ? "pointer" : "default", flex: "0 0 auto" }}>
             <div style={{ width: 30, height: 28, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, background: tint(o.col, .16), color: o.col }}>{o.ic}</div>
-            <div style={{ fontSize: 7.5, letterSpacing: ".4px", color: C.textTer, fontWeight: 700, textAlign: "center", whiteSpace: "nowrap" }}>{o.label}</div>
+            <div style={{ fontSize: 10, letterSpacing: ".2px", color: C.textTer, fontWeight: 700, textAlign: "center", whiteSpace: "nowrap" }}>{o.label}</div>
             <div style={{ fontSize: 9.5, fontWeight: 700, textAlign: "center", maxWidth: 76, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{o.name}</div>
           </div>
         ))}

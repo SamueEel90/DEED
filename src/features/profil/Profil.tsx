@@ -173,7 +173,7 @@ function Penazenka({ toast, onBack }: PenazenkaProps) {
             ["＋", "Kúpiť", "rgba(169,139,240,.15)", "rgba(122,91,216,.5)", "var(--a-plum)", "Kúpiť DEED (demo)"]].map((b, i) => (
             <div key={i} onClick={() => toast(b[5])} style={{ flex: 1, height: 58, borderRadius: 11, background: b[2], border: `1px solid ${b[3]}`, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
               <div style={{ fontWeight: 700, fontSize: 13, color: b[4] }}>{b[0]}</div>
-              <div style={{ fontSize: 8.5, color: C.textTer, marginTop: 2 }}>{b[1]}</div>
+              <div style={{ fontSize: 10, color: C.textTer, marginTop: 2 }}>{b[1]}</div>
             </div>
           ))}
         </div>

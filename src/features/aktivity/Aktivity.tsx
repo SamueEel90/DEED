@@ -267,7 +267,7 @@ function Home({ items, dom, view, pickDom, pickView, toast, open, openPerson, se
       <div style={{ display: "flex", gap: 8, padding: "2px 16px 12px", borderBottom: `1px solid ${A.line}`, marginBottom: 4 }}>
         <div onClick={() => pickView("workshop")} style={sub(view === "workshop")}><span style={{ fontSize: 13 }}>🎓</span>Workshopy</div>
         <div onClick={() => pickView("help")} style={sub(view === "help")}><span style={{ fontSize: 13 }}>❓</span>Hľadám pomoc</div>
-        <div onClick={() => toast("Market — predaj diel/náradia, fáza 2")} style={sub(false)}><span style={{ fontSize: 13 }}>🛒</span>Market<span style={{ fontSize: 8, background: A.goldBg, color: A.gold, padding: "1px 5px", borderRadius: 5, marginLeft: 2 }}>čoskoro</span></div>
+        <div onClick={() => toast("Market — predaj diel/náradia, fáza 2")} style={sub(false)}><span style={{ fontSize: 13 }}>🛒</span>Market<span style={{ fontSize: 10, background: A.goldBg, color: A.gold, padding: "1px 5px", borderRadius: 5, marginLeft: 2 }}>čoskoro</span></div>
       </div>
 
       {/* feed — na tablete/PC: skutky & aktivity vľavo, žiadosti o pomoc vpravo */}
@@ -575,7 +575,7 @@ function Fx({ w, h, e, v, eCol, bg, bd, col, onClick }: any) {
 function Cbtn({ ic, t, s, tCol, active, onClick }: any) {
   return (
     <div onClick={onClick} style={{ flex: 1, height: 50, borderRadius: 11, background: active ? "var(--accBg)" : A.surface2, border: `${active ? 2 : 1}px solid ${active ? "var(--accBd)" : A.line}`, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", cursor: "pointer", transition: "all .12s ease" }}>
-      <div style={{ fontWeight: 700, fontSize: 13, color: tCol || A.txt, display: "flex", alignItems: "center", gap: 6 }}>{ic}{t}</div><div style={{ fontSize: 8.5, color: A.txt3, marginTop: 2 }}>{s}</div>
+      <div style={{ fontWeight: 700, fontSize: 13, color: tCol || A.txt, display: "flex", alignItems: "center", gap: 6 }}>{ic}{t}</div><div style={{ fontSize: 10, color: A.txt3, marginTop: 2 }}>{s}</div>
     </div>
   );
 }

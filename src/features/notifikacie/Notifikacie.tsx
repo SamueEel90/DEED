@@ -93,7 +93,7 @@ function Zoznam({ onSettings, onClose, onPrecitaj, toast }: { onSettings?: () =>
               <div style={{ fontSize: 13.5, fontWeight: 700, display: "flex", alignItems: "center", gap: 6 }}>
                 {n.nove && <span style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--a-info)", flex: "none" }} />}
                 <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{n.titul}</span>
-                {n.agg && <span style={{ flex: "none", fontSize: 8.5, fontWeight: 800, color: C.textTer, border: `1px solid ${C.line}`, borderRadius: 6, padding: "1px 5px" }}>SÚHRN</span>}
+                {n.agg && <span style={{ flex: "none", fontSize: 10, fontWeight: 800, color: C.textTer, border: `1px solid ${C.line}`, borderRadius: 6, padding: "1px 5px" }}>SÚHRN</span>}
               </div>
               <div style={{ fontSize: 12, color: C.textTer, marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{n.text}</div>
             </div>

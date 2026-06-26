@@ -100,8 +100,8 @@ export function RetazDobraSheet({ odmena = 130, mode = "skutok", titulOdkaz = "S
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 13.5, fontWeight: 700, display: "flex", alignItems: "center", gap: 6 }}>
                     {z.nazov}
-                    {z.odpor && <span style={{ fontSize: 8.5, fontWeight: 800, color: "var(--a-green)", background: "rgba(31,191,143,.14)", borderRadius: 6, padding: "1px 6px" }}>ODPORÚČANÉ</span>}
-                    {z.overena && <span style={{ fontSize: 8.5, fontWeight: 800, color: "var(--a-info)", background: "rgba(91,168,240,.14)", borderRadius: 6, padding: "1px 6px" }}>✓ OVERENÁ</span>}
+                    {z.odpor && <span style={{ fontSize: 10, fontWeight: 800, color: "var(--a-green)", background: "rgba(31,191,143,.14)", borderRadius: 6, padding: "1px 6px" }}>ODPORÚČANÉ</span>}
+                    {z.overena && <span style={{ fontSize: 10, fontWeight: 800, color: "var(--a-info)", background: "rgba(91,168,240,.14)", borderRadius: 6, padding: "1px 6px" }}>✓ OVERENÁ</span>}
                   </div>
                   <div style={{ fontSize: 11, color: C.textTer, marginTop: 2 }}>{z.zdroj} · {z.lok}</div>
                 </div>
