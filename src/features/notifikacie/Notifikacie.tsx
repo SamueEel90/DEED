@@ -45,7 +45,7 @@ export function Zvoncek({ color = "#C4CCDB", toast }: { color?: string; toast?: 
       <span onClick={() => { setOtvor(true); setView("zoznam"); }} style={{ position: "relative", display: "flex", alignItems: "center", cursor: "pointer" }}>
         <Zvon size={20} color={color} />
         {neprecitane > 0 && (
-          <span style={{ position: "absolute", top: -5, right: -6, minWidth: 16, height: 16, padding: "0 4px", borderRadius: 9, background: "#F2706F", color: "#fff", fontSize: 10, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 0 0 2px var(--c-bg)" }}>{neprecitane}</span>
+          <span style={{ position: "absolute", top: -5, right: -6, minWidth: 16, height: 16, padding: "0 4px", borderRadius: 9, background: "var(--a-danger)", color: "#fff", fontSize: 10, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 0 0 2px var(--c-bg)" }}>{neprecitane}</span>
         )}
       </span>
 
@@ -72,7 +72,7 @@ function Zoznam({ onSettings, onClose, onPrecitaj, toast }: { onSettings?: () =>
     <>
       <div style={{ display: "flex", alignItems: "center", gap: 10, flex: "0 0 auto", paddingBottom: 8 }}>
         <span style={{ fontSize: 17, fontWeight: 800 }}>Oznámenia</span>
-        {neprecitane > 0 && <span onClick={onPrecitaj} style={{ fontSize: 11, fontWeight: 700, color: "#5BA8F0", cursor: "pointer" }}>Označiť prečítané</span>}
+        {neprecitane > 0 && <span onClick={onPrecitaj} style={{ fontSize: 11, fontWeight: 700, color: "var(--a-info)", cursor: "pointer" }}>Označiť prečítané</span>}
         <span onClick={onSettings} title="Nastavenia notifikácií" style={{ marginLeft: "auto", display: "flex", cursor: "pointer", color: C.textSec }}><IkonaNastavenia size={19} color={C.textSec} /></span>
         <span onClick={onClose} style={{ display: "flex", cursor: "pointer", color: C.textSec }}><IkonaKriz size={19} color={C.textSec} /></span>
       </div>
@@ -91,7 +91,7 @@ function Zoznam({ onSettings, onClose, onPrecitaj, toast }: { onSettings?: () =>
             <span style={{ width: 38, height: 38, borderRadius: 11, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 17, background: tint(n.col, .15), color: n.col }}>{n.ic}</span>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 13.5, fontWeight: 700, display: "flex", alignItems: "center", gap: 6 }}>
-                {n.nove && <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#5BA8F0", flex: "none" }} />}
+                {n.nove && <span style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--a-info)", flex: "none" }} />}
                 <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{n.titul}</span>
                 {n.agg && <span style={{ flex: "none", fontSize: 8.5, fontWeight: 800, color: C.textTer, border: `1px solid ${C.line}`, borderRadius: 6, padding: "1px 5px" }}>SÚHRN</span>}
               </div>

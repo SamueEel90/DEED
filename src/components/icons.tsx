@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 // ============================================================
 // MODERNÉ IKONY — srdce (like) a šípka hore (upvote) — rovnaké všade
 // ============================================================
-export function Srdce({ size = 18, filled, color = "#F2706F" }: { size?: number; filled?: boolean; color?: string }) {
+export function Srdce({ size = 18, filled, color = "var(--a-danger)" }: { size?: number; filled?: boolean; color?: string }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" style={{ display: "block", flex: "0 0 auto" }}
       fill={filled ? color : "none"} stroke={color} strokeWidth={filled ? 0 : 2.1} strokeLinejoin="round" strokeLinecap="round">

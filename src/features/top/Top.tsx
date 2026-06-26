@@ -22,35 +22,35 @@ const ROZSAHY: RebricekRozsah[] = ["Štvrť", "Mesto", "Celá SR"];
 // kategórie ocenení (konsolidované zo všetkých modulov)
 const KATEGORIE: RebricekKategoria[] = [
   {
-    hl: "B2B PARTNERI", ic: <IkonaStit />, col: "#5BA8F0",
+    hl: "B2B PARTNERI", ic: <IkonaStit />, col: "var(--a-info)",
     polozky: [
       { meno: "Kaufland", info: "12 400 € · ESG report", subjekt: { typ: "org", meno: "Kaufland", emoji: "🏢", lok: "Firma · ESG partner", level: "Gold" } },
       { meno: "Lidl", info: "9 800 € · matching", subjekt: { typ: "org", meno: "Lidl pomáha — nadácia", emoji: "🏢", lok: "Firma · matching kampaň", level: "Gold" } },
     ],
   },
   {
-    hl: "TOP DARCOVIA", ic: <IkonaKorunka />, col: "#E7C766",
+    hl: "TOP DARCOVIA", ic: <IkonaKorunka />, col: "var(--a-gold)",
     polozky: [
       { meno: "Lukáš H.", info: "1 850 DEED tento mesiac", subjekt: { typ: "osoba", meno: "Lukáš H.", level: "Gold" } },
       { meno: "Eva K.", info: "1 420 DEED", subjekt: { typ: "osoba", meno: "Eva K.", level: "Gold" } },
     ],
   },
   {
-    hl: "TOP HRDINOVIA", ic: <IkonaHviezda />, col: "#F0A85E",
+    hl: "TOP HRDINOVIA", ic: <IkonaHviezda />, col: "var(--a-clay)",
     polozky: [
       { meno: "Jana N.", info: "23 overených skutkov", subjekt: { typ: "osoba", meno: "Jana N.", level: "Gold", stav: "tvorca" } },
       { meno: "Ján H.", info: "18 overených skutkov", subjekt: { typ: "osoba", meno: "Ján H.", level: "Silver" } },
     ],
   },
   {
-    hl: "TOP AKTIVITY", ic: <IkonaKompas />, col: "#3DD6CE",
+    hl: "TOP AKTIVITY", ic: <IkonaKompas />, col: "var(--a-teal)",
     polozky: [
       { meno: "Cyklo TN", info: "240 km pre dobro", subjekt: { typ: "osoba", meno: "Cyklo TN", level: "Silver", stav: "tvorca" } },
       { meno: "EkoTím Juh", info: "14 vriec odpadu", subjekt: { typ: "osoba", meno: "EkoTím Juh", level: "Silver", stav: "tvorca" } },
     ],
   },
   {
-    hl: "TOP CHARITY", ic: <IkonaInstitucia />, col: "#A98BF0",
+    hl: "TOP CHARITY", ic: <IkonaInstitucia />, col: "var(--a-plum)",
     polozky: [
       { meno: "Liga proti rakovine", info: "Gold · celá SR", subjekt: { typ: "org", meno: "Liga proti rakovine", emoji: "🎗", lok: "Overená charita · celá SR", level: "Gold" } },
       { meno: "Plamienok", info: "Gold · BA", subjekt: { typ: "org", meno: "Plamienok", emoji: "🕊", lok: "Overená charita · Bratislava", level: "Gold" } },
@@ -80,7 +80,7 @@ export default function ModulTop({ wide }: WideProps) {
             {ROZSAHY.map((r) => {
               const on = rozsah === r;
               return <span key={r} onClick={() => setRozsah(r)} style={{ flex: 1, textAlign: "center", padding: "9px 0", borderRadius: 11, fontSize: 12.5, fontWeight: on ? 700 : 500, cursor: "pointer",
-                background: on ? "rgba(91,155,255,.16)" : C.surface2, border: `1px solid ${on ? "rgba(116,166,255,.5)" : C.line}`, color: on ? "#74A6FF" : C.textSec }}>{r}</span>;
+                background: on ? "rgba(91,155,255,.16)" : C.surface2, border: `1px solid ${on ? "rgba(116,166,255,.5)" : C.line}`, color: on ? "var(--a-info)" : C.textSec }}>{r}</span>;
             })}
           </div>
 

@@ -22,7 +22,7 @@ import {
 import { DOBRO_TYPY, POBOCKA_REZIMY, BALIKY } from "./mock";
 
 // charita akcent (fialová) — odlišuje organizačný tok od osobného
-const AKCENT = "#A98BF0";
+const AKCENT = "var(--a-plum)";
 
 // org účet vytvorený v KROKu 1 (KrokTelefonSms)
 interface OrgUcet {

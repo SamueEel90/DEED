@@ -59,7 +59,7 @@ export function RetazDobraSheet({ odmena = 130, mode = "skutok", titulOdkaz = "S
     return (
       <Sheet onClose={onClose}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
-          <span style={{ width: 36, height: 36, borderRadius: 11, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", background: tint("#1FBF8F", .16), color: "#2BD49B", fontSize: 18 }}>♻</span>
+          <span style={{ width: 36, height: 36, borderRadius: 11, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", background: tint("var(--a-green)", .16), color: "var(--a-green)", fontSize: 18 }}>♻</span>
           <div>
             <div style={{ fontSize: 16, fontWeight: 800 }}>Reťaz dobra</div>
             <div style={{ fontSize: 11.5, color: C.textTer }}>{honorar ? "Nastav reťaz na svoj honorár" : "Podeľ sa o časť odmeny za skutok"}</div>
@@ -71,12 +71,12 @@ export function RetazDobraSheet({ odmena = 130, mode = "skutok", titulOdkaz = "S
           {honorar ? "KOĽKO Z HONORÁRU POSLAŤ ĎALEJ" : "KOĽKO POSLAŤ ĎALEJ"}
         </div>
         <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
-          <span style={{ fontSize: 34, fontWeight: 800, color: "#2BD49B" }}>{pct}%</span>
+          <span style={{ fontSize: 34, fontWeight: 800, color: "var(--a-green)" }}>{pct}%</span>
           {!honorar && <span style={{ fontSize: 12.5, color: C.textSec }}>≈ <b style={{ color: C.text }}>{reazSuma} DEED</b> z {odmena} DEED</span>}
           {honorar && <span style={{ fontSize: 12.5, color: C.textSec }}>z každého budúceho honoráru</span>}
         </div>
         <input type="range" min={5} max={90} step={5} value={pct} onChange={(e) => setPct(+e.target.value)}
-          style={{ width: "100%", marginTop: 10, accentColor: "#1FBF8F" }} />
+          style={{ width: "100%", marginTop: 10, accentColor: "var(--a-green)" }} />
         <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: C.textTer }}>
           <span>5 %</span><span>90 %</span>
         </div>
@@ -100,8 +100,8 @@ export function RetazDobraSheet({ odmena = 130, mode = "skutok", titulOdkaz = "S
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 13.5, fontWeight: 700, display: "flex", alignItems: "center", gap: 6 }}>
                     {z.nazov}
-                    {z.odpor && <span style={{ fontSize: 8.5, fontWeight: 800, color: "#2BD49B", background: "rgba(31,191,143,.14)", borderRadius: 6, padding: "1px 6px" }}>ODPORÚČANÉ</span>}
-                    {z.overena && <span style={{ fontSize: 8.5, fontWeight: 800, color: "#5BA8F0", background: "rgba(91,168,240,.14)", borderRadius: 6, padding: "1px 6px" }}>✓ OVERENÁ</span>}
+                    {z.odpor && <span style={{ fontSize: 8.5, fontWeight: 800, color: "var(--a-green)", background: "rgba(31,191,143,.14)", borderRadius: 6, padding: "1px 6px" }}>ODPORÚČANÉ</span>}
+                    {z.overena && <span style={{ fontSize: 8.5, fontWeight: 800, color: "var(--a-info)", background: "rgba(91,168,240,.14)", borderRadius: 6, padding: "1px 6px" }}>✓ OVERENÁ</span>}
                   </div>
                   <div style={{ fontSize: 11, color: C.textTer, marginTop: 2 }}>{z.zdroj} · {z.lok}</div>
                 </div>
@@ -130,14 +130,14 @@ export function RetazDobraSheet({ odmena = 130, mode = "skutok", titulOdkaz = "S
   return (
     <Sheet onClose={onClose}>
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, padding: "2px 0 8px" }}>
-        <div style={{ width: 52, height: 52, borderRadius: "50%", background: "rgba(31,191,143,.16)", display: "flex", alignItems: "center", justifyContent: "center" }}><IkonaFajka size={28} color="#2BD49B" /></div>
+        <div style={{ width: 52, height: 52, borderRadius: "50%", background: "rgba(31,191,143,.16)", display: "flex", alignItems: "center", justifyContent: "center" }}><IkonaFajka size={28} color="var(--a-green)" /></div>
         <div style={{ fontSize: 17, fontWeight: 800, textAlign: "center" }}>{honorar ? "Reťaz na honorár nastavená" : "Skutok zverejnený s Reťazou dobra"}</div>
       </div>
 
       {/* zhrnutie */}
       <div style={{ background: "rgba(var(--glass-rgb),.05)", border: `1px solid ${C.line}`, borderRadius: 14, padding: "10px 14px", marginTop: 4 }}>
         <Row k={honorar ? "Honorár" : "Tvoja odmena"} v={honorar ? "každý budúci príjem" : `${odmena} DEED`} />
-        <Row k="Ide ďalej (zamknuté)" v={`${pct}%${honorar ? "" : ` · ${reazSuma} DEED`}`} accent="#2BD49B" />
+        <Row k="Ide ďalej (zamknuté)" v={`${pct}%${honorar ? "" : ` · ${reazSuma} DEED`}`} accent="var(--a-green)" />
         <Row k="Príjemca" v={ziadost?.nazov} />
         <div style={{ display: "flex", justifyContent: "space-between", paddingTop: 8, fontSize: 13, fontWeight: 800 }}>
           <span>Generosity Score</span><span style={{ color: C.gold }}>+{gener}</span>

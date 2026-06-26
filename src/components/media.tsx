@@ -10,7 +10,7 @@ export function Foto({ src, emoji, h, w, radius = 0, style, onClick }: { src?: s
   if (err || !src) {
     return (
       <div onClick={onClick} style={{ width: w || "100%", height: h, background: "rgba(var(--glass-rgb),.05)", display: "flex", alignItems: "center",
-        justifyContent: "center", fontSize: Math.min((typeof h === "number" ? h : 90) / 3, 30), color: "#4A5066", borderRadius: radius, flex: w ? "0 0 auto" : undefined, cursor: onClick ? "pointer" : undefined, ...style }}>
+        justifyContent: "center", fontSize: Math.min((typeof h === "number" ? h : 90) / 3, 30), color: C.textTer, borderRadius: radius, flex: w ? "0 0 auto" : undefined, cursor: onClick ? "pointer" : undefined, ...style }}>
         {emoji}
       </div>
     );

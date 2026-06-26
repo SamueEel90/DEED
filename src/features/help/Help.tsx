@@ -40,7 +40,7 @@ export default function ModulHelp({ wide }: { wide?: boolean }) {
       </ScreenSwitch>
 
       {hladaj && (
-        <HladanieModal akcent="#F2706F" placeholder="Hľadať žiadosti, ponuky, ľudí…"
+        <HladanieModal akcent="var(--a-danger)" placeholder="Hľadať žiadosti, ponuky, ľudí…"
           data={MOCK_FEED.map((z) => ({
             id: z.id, titul: z.nazov, podtitul: z.pribeh, kat: z.lok, emoji: z.ikona,
             tag: z.typ === "ziadost" ? "Žiadosť" : z.typ === "ponuka" ? "Ponuka" : "Charita",
@@ -110,7 +110,7 @@ function Feed({ wide, toast, onDetail, onHladaj, onAdd }: { wide?: boolean; toas
         />
       )}
 
-      {vyberOkruh && <OkruhVyber radius={radius} akcent="#F2706F"
+      {vyberOkruh && <OkruhVyber radius={radius} akcent="var(--a-danger)"
         onPick={(r: any) => { setRadius(r); setVyberOkruh(false); }}
         onClose={() => setVyberOkruh(false)} />}
     </div>
@@ -165,7 +165,7 @@ function FeedCard({ z, wide, onClick }: { z: any; wide?: boolean; onClick: () =>
           </>
         ) : (
           <>
-            <div style={{ width: 38, height: 38, lineHeight: "38px", textAlign: "center", borderRadius: 7, background: "rgba(139,124,255,.16)", color: "#8B7CFF", fontSize: 17, flex: "0 0 auto" }}>{z.ikona}</div>
+            <div style={{ width: 38, height: 38, lineHeight: "38px", textAlign: "center", borderRadius: 7, background: "rgba(139,124,255,.16)", color: "var(--a-plum)", fontSize: 17, flex: "0 0 auto" }}>{z.ikona}</div>
             <div style={{ marginLeft: 10 }}>
               <div style={{ fontSize: 14.5 }}><b>{z.nazov}</b> <span style={{ fontSize: 11, color: C.textTer }}>ponuka</span></div>
               <div style={{ fontSize: 13, color: C.textSec }}>{z.pribeh} · {z.lok}</div>
@@ -225,7 +225,7 @@ function Detail({ z, onBack }: { z: any; onBack: () => void }) {
       {/* hero foto — klik = celá obrazovka, swipe medzi fotkami */}
       <div style={{ position: "relative" }}>
         <Foto src={z.fotky && z.fotky[0]} emoji="🖼" h={175} onClick={() => z.fotky?.length && otvorGaleriu(z.fotky, 0)} />
-        <span style={{ position: "absolute", top: 10, right: 10, background: "rgba(0,0,0,.55)", borderRadius: 20, padding: "4px 10px", fontSize: 10, color: "#7FE0A0", pointerEvents: "none", display: "inline-flex", alignItems: "center", gap: 5 }}><IkonaFoto size={12} color="#7FE0A0" /> foto z prípadu</span>
+        <span style={{ position: "absolute", top: 10, right: 10, background: "rgba(0,0,0,.55)", borderRadius: 20, padding: "4px 10px", fontSize: 10, color: "var(--a-green)", pointerEvents: "none", display: "inline-flex", alignItems: "center", gap: 5 }}><IkonaFoto size={12} color="var(--a-green)" /> foto z prípadu</span>
         {z.fotky?.length > 1 && <span style={{ position: "absolute", bottom: 10, right: 10, background: "rgba(0,0,0,.6)", borderRadius: 12, padding: "3px 9px", fontSize: 10, color: "#fff", pointerEvents: "none" }}>⧉ {z.fotky.length} · klikni na foto</span>}
       </div>
       <MiniFotky fotky={z.fotky} />

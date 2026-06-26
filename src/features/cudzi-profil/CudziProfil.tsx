@@ -64,8 +64,8 @@ function OrgProfil({ s, onBack, toast }: { s: CudziSubjektOrg; onBack?: () => vo
             <div style={{ fontSize: 12, color: C.textTer }}>{s.lok || "nadácia · Bratislava"}</div>
           </div>
         </div>
-        <div style={{ display: "inline-flex", alignItems: "center", gap: 6, marginTop: 10, fontSize: 11, fontWeight: 700, color: "#E7C766", background: "rgba(231,199,102,.13)", border: "1px solid rgba(200,162,58,.5)", borderRadius: 9, padding: "4px 10px" }}>
-          <IkonaFajka size={12} color="#E7C766" /> Overená charita · {level}
+        <div style={{ display: "inline-flex", alignItems: "center", gap: 6, marginTop: 10, fontSize: 11, fontWeight: 700, color: "var(--a-gold)", background: "rgba(231,199,102,.13)", border: "1px solid rgba(200,162,58,.5)", borderRadius: 9, padding: "4px 10px" }}>
+          <IkonaFajka size={12} color="var(--a-gold)" /> Overená charita · {level}
         </div>
 
         {/* štatistiky */}
@@ -93,7 +93,7 @@ function OrgProfil({ s, onBack, toast }: { s: CudziSubjektOrg; onBack?: () => vo
           {["Kampane", "Skutky", "Talent"].map((t) => {
             const on = tab === t;
             return <span key={t} onClick={() => setTab(t)} style={{ flex: 1, textAlign: "center", padding: "9px 0", borderRadius: 11, fontSize: 13, fontWeight: on ? 700 : 500, cursor: "pointer",
-              background: on ? "rgba(91,155,255,.14)" : C.surface2, border: `1px solid ${on ? "rgba(116,166,255,.45)" : C.line}`, color: on ? "#74A6FF" : C.textSec }}>{t}</span>;
+              background: on ? "rgba(91,155,255,.14)" : C.surface2, border: `1px solid ${on ? "rgba(116,166,255,.45)" : C.line}`, color: on ? "var(--a-info)" : C.textSec }}>{t}</span>;
           })}
         </div>
 
@@ -112,7 +112,7 @@ function OrgProfil({ s, onBack, toast }: { s: CudziSubjektOrg; onBack?: () => vo
           <div style={{ fontSize: 10.5, letterSpacing: ".4px", color: C.textTer, fontWeight: 700, margin: "14px 0 8px" }}>NADCHÁDZAJÚCE</div>
           {akcie.map((a, i) => (
             <div key={i} onClick={() => toast?.(`Akcia: ${a.nazov}`)} style={{ display: "flex", alignItems: "center", gap: 11, background: "rgba(var(--glass-rgb),.04)", border: `1px solid ${C.line2}`, borderRadius: 12, padding: "11px 12px", marginBottom: 8, cursor: "pointer" }}>
-              <span style={{ flex: "none", fontSize: 11, fontWeight: 800, color: "#74A6FF", background: "rgba(116,166,255,.14)", borderRadius: 8, padding: "6px 8px", textAlign: "center", lineHeight: 1.2 }}>{a.kedy}</span>
+              <span style={{ flex: "none", fontSize: 11, fontWeight: 800, color: "var(--a-info)", background: "rgba(116,166,255,.14)", borderRadius: 8, padding: "6px 8px", textAlign: "center", lineHeight: 1.2 }}>{a.kedy}</span>
               <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontSize: 13.5, fontWeight: 700 }}>{a.nazov}</div><div style={{ fontSize: 11, color: C.textTer, marginTop: 2 }}>{a.kde}</div></div>
             </div>
           ))}
@@ -122,7 +122,7 @@ function OrgProfil({ s, onBack, toast }: { s: CudziSubjektOrg; onBack?: () => vo
 
         {/* badge dôvery DEED */}
         <div style={{ background: "rgba(31,191,143,.07)", border: "1px solid rgba(31,191,143,.25)", borderRadius: 14, padding: "12px 14px", marginTop: 16, display: "flex", gap: 11, alignItems: "center" }}>
-          <span style={{ width: 36, height: 36, borderRadius: 11, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(31,191,143,.14)" }}><IkonaFajka size={18} color="#2BD49B" /></span>
+          <span style={{ width: 36, height: 36, borderRadius: 11, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(31,191,143,.14)" }}><IkonaFajka size={18} color="var(--a-green)" /></span>
           <div style={{ fontSize: 12, color: C.textSec, lineHeight: 1.45 }}><b style={{ color: C.text }}>Badge dôvery {level}</b> = zaslúžený karmou za skutky, nie kúpený. Nahrádza externé pečate.</div>
         </div>
 
@@ -149,7 +149,7 @@ function OsobaProfil({ s, onBack, toast }: { s: CudziSubjektOsoba; onBack?: () =
   const [sleduje, setSleduje] = useState(false);
   const meno = s.meno || "Ján Novák";
   const level = s.level || "Silver";
-  const farba = stav === "tvorca" ? "#8B7CFF" : stav === "priatel" ? "#3DD68C" : "#5BA8F0";
+  const farba = stav === "tvorca" ? "var(--a-plum)" : stav === "priatel" ? "var(--a-green)" : "var(--a-info)";
 
   return (
     <div style={{ paddingBottom: 24 }}>
@@ -194,17 +194,17 @@ function OsobaProfil({ s, onBack, toast }: { s: CudziSubjektOsoba; onBack?: () =
         {/* ---- PRIATEĽ ---- */}
         {stav === "priatel" && (<>
           <div style={{ display: "flex", gap: 10 }}>
-            <div style={{ flex: 1, height: 46, borderRadius: 13, background: "rgba(61,214,140,.1)", border: "1px solid rgba(46,125,82,.5)", display: "flex", alignItems: "center", justifyContent: "center", gap: 7, fontWeight: 700, fontSize: 14, color: "#3DD68C" }}><IkonaFajka size={16} color="#3DD68C" /> Priateľ</div>
+            <div style={{ flex: 1, height: 46, borderRadius: 13, background: "rgba(61,214,140,.1)", border: "1px solid rgba(46,125,82,.5)", display: "flex", alignItems: "center", justifyContent: "center", gap: 7, fontWeight: 700, fontSize: 14, color: "var(--a-green)" }}><IkonaFajka size={16} color="var(--a-green)" /> Priateľ</div>
             <button onClick={() => toast?.("Správa (len medzi priateľmi)")} style={{ flex: 1, height: 46, borderRadius: 13, border: `1px solid ${C.line}`, background: C.surface2, color: C.text, fontWeight: 700, fontSize: 14, cursor: "pointer", fontFamily: "inherit" }}>Správa</button>
           </div>
           <div style={{ fontSize: 10.5, letterSpacing: ".4px", color: C.textTer, fontWeight: 700, margin: "16px 0 8px" }}>SPOLOČNÉ</div>
           <div style={{ display: "flex", alignItems: "center", gap: 10, background: C.surface, border: `1px solid ${C.line}`, borderRadius: 12, padding: "11px 13px" }}>
-            <IkonaUsmev size={18} color="#5BA8F0" /><span style={{ fontSize: 13.5 }}>3 spoloční priatelia</span>
+            <IkonaUsmev size={18} color="var(--a-info)" /><span style={{ fontSize: 13.5 }}>3 spoloční priatelia</span>
           </div>
           <div style={{ fontSize: 10.5, letterSpacing: ".4px", color: C.textTer, fontWeight: 700, margin: "16px 0 8px" }}>NEDÁVNE SKUTKY</div>
           {["Čistenie brehu Váhu", "Odviezol suseda na dialýzu"].map((t, i) => (
             <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, background: "rgba(var(--glass-rgb),.04)", border: `1px solid ${C.line2}`, borderRadius: 12, padding: "11px 13px", marginBottom: 8 }}>
-              <IkonaFajka size={15} color="#3DD68C" /><span style={{ fontSize: 13.5 }}>{t}</span>
+              <IkonaFajka size={15} color="var(--a-green)" /><span style={{ fontSize: 13.5 }}>{t}</span>
             </div>
           ))}
           <div style={{ fontSize: 11, color: C.textTer, textAlign: "center", marginTop: 6 }}>Vidíš, lebo ste priatelia. Priateľstvo neodomyká súkromnú časť — len čo osoba dovolila.</div>

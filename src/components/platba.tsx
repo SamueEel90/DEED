@@ -106,7 +106,7 @@ export function PlatbaModal({ kanal, komu, onClose, onDone }: { kanal?: string; 
 
       {krok === "hotovo" && res && (<>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, padding: "4px 0 14px" }}>
-          <div style={{ width: 54, height: 54, borderRadius: "50%", background: "rgba(46,200,140,.16)", display: "flex", alignItems: "center", justifyContent: "center" }}><IkonaFajka size={28} color="#2BD49B" /></div>
+          <div style={{ width: 54, height: 54, borderRadius: "50%", background: "rgba(46,200,140,.16)", display: "flex", alignItems: "center", justifyContent: "center" }}><IkonaFajka size={28} color="var(--a-green)" /></div>
           <div style={{ fontSize: 17, fontWeight: 800 }}>Platba úspešná</div>
           <div style={{ fontSize: 12.5, color: C.textSec }}>{jeEur ? `${spolu.toFixed(2)} €` : `${sumaNum.toLocaleString("sk")} DEED`}{komu ? ` → ${komu}` : ""}</div>
         </div>
@@ -135,12 +135,12 @@ const psPill = (active?: boolean): CSSProperties => ({
   fontWeight: 700, fontSize: 16, cursor: "pointer", fontFamily: "inherit", transition: "all .15s ease",
   background: active ? "rgba(242,112,111,.10)" : C.surface2,
   border: `1px solid ${active ? "rgba(242,112,111,.5)" : C.line}`,
-  color: active ? "#F2706F" : C.text,
+  color: active ? "var(--a-danger)" : C.text,
 });
 // 1 DEED ≈ 0,01 € (ilustračne) — zobrazí sa pod hodnotou
 const eurZaDeed = (a: number) => (a * 0.01).toLocaleString("sk", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €";
 // stupňované zvýraznenie pevných súm: 0 = najjemnejšie (10) · 1 = stredné (50) · 2 = najvýraznejšie (100)
-const psFix = (tier = 0, col = "#74A6FF"): CSSProperties => {
+const psFix = (tier = 0, col = "var(--a-info)"): CSSProperties => {
   const t = [
     { bg: C.surface2, bd: C.line, sh: "none" },
     { bg: tint(col, .09), bd: tint(col, .4), sh: "none" },
@@ -157,13 +157,13 @@ const psKanal: CSSProperties = {
   cursor: "pointer", fontFamily: "inherit", background: C.surface2, border: `1px solid ${C.line}`, color: C.text,
 };
 
-export function PodporaSekcia({ onShare, upvotes = 0, onUpvote, onPodpor, onSms, onKanal, accent = "#74A6FF", supLabel = "DROBNÁ PODPORA — klik a hneď odíde" }: { onShare?: () => void; upvotes?: number; onUpvote?: () => void; onPodpor: (a: number) => void; onSms?: () => void; onKanal: (k: string) => void; accent?: string; supLabel?: ReactNode }) {
+export function PodporaSekcia({ onShare, upvotes = 0, onUpvote, onPodpor, onSms, onKanal, accent = "var(--a-info)", supLabel = "DROBNÁ PODPORA — klik a hneď odíde" }: { onShare?: () => void; upvotes?: number; onUpvote?: () => void; onPodpor: (a: number) => void; onSms?: () => void; onKanal: (k: string) => void; accent?: string; supLabel?: ReactNode }) {
   const { svetly } = useMotiv();
   const goldTxt = svetly ? "#8A6B0E" : C.gold; // v svetlom režime tmavšia zlatá (čitateľnosť)
   const fix = [
     { e: "★", v: "10", col: accent, a: 10, tier: 0 },
     { e: "◆", v: "50", col: accent, a: 50, tier: 1 },
-    { e: "🔥", v: "100", col: "#F0A85E", a: 100, tier: 2 },
+    { e: "🔥", v: "100", col: "var(--a-clay)", a: 100, tier: 2 },
   ];
   return (
     <div>

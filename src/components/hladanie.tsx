@@ -35,7 +35,7 @@ function hlTyp(x: any) {
   return "Skutky"; // skutky a ostatné → viditeľné len pod „Všetko"
 }
 
-export function HladanieModal({ data = [], onPick, onClose, akcent = "#5BA8F0", placeholder = "Hľadať…",
+export function HladanieModal({ data = [], onPick, onClose, akcent = "var(--a-info)", placeholder = "Hľadať…",
   defaultFilter = "Všetko", posledne = ["Detská nemocnica", "Coach gitara", "Povodeň pomoc"], subjekty = SUBJEKTY, toast }: { data?: any[]; onPick?: (id: any) => void; onClose: () => void; akcent?: string; placeholder?: string; defaultFilter?: string; posledne?: string[]; subjekty?: any[]; toast?: (t: string) => void }) {
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState(defaultFilter);

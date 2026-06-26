@@ -30,7 +30,7 @@ const PouzivatelContext = createContext<Pouzivatel>(DEMO);
 export const usePouzivatel = () => useContext(PouzivatelContext);
 
 // stabilný odtieň avataru z mena
-const TINTY = ["#3A8DD6", "#7C5BD8", "#1FBF8F", "#E7894D", "#D65B8A", "#43B0C8"];
+const TINTY = ["#3A8DD6", "#7C5BD8", "var(--a-green)", "#E7894D", "#D65B8A", "#43B0C8"];
 function tintPre(s: string): string {
   let h = 0;
   for (let i = 0; i < (s || "").length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;

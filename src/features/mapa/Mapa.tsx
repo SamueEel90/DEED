@@ -36,7 +36,7 @@ export default function ModulMapa({ wide }: { wide?: boolean }) {
             <div style={{ display: "flex", alignItems: "center", gap: 10, background: "rgba(240,168,94,.1)", border: "1px solid rgba(240,168,94,.35)", borderRadius: 13, padding: "11px 13px", marginBottom: 12 }}>
               <span style={{ fontSize: 18 }}>⚠</span>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 13, fontWeight: 700, color: "#F0A85E" }}>Poloha (GPS) je vypnutá</div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: "var(--a-clay)" }}>Poloha (GPS) je vypnutá</div>
                 <div style={{ fontSize: 11, color: C.textTer }}>Zapni ju pre presnejší okruh okolo teba</div>
               </div>
               <span onClick={() => { setGps(true); toast("Poloha zapnutá (demo)"); }} style={{ flex: "none", fontSize: 11.5, fontWeight: 700, color: "#fff", background: "rgba(240,168,94,.85)", borderRadius: 10, padding: "7px 12px", cursor: "pointer" }}>Zapnúť</span>
@@ -54,7 +54,7 @@ export default function ModulMapa({ wide }: { wide?: boolean }) {
             {/* pin „Ty" */}
             <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
               <span style={{ fontSize: 10, fontWeight: 800, color: "#fff", background: "rgba(0,0,0,.5)", padding: "2px 8px", borderRadius: 10 }}>Ty</span>
-              <IkonaPin size={26} color="#74A6FF" />
+              <IkonaPin size={26} color="var(--a-info)" />
             </div>
           </div>
 
@@ -63,7 +63,7 @@ export default function ModulMapa({ wide }: { wide?: boolean }) {
             {UROVNE.map(([id, label]) => {
               const on = uroven === id;
               return <span key={id} onClick={() => setUroven(id)} style={{ flex: 1, textAlign: "center", padding: "9px 0", borderRadius: 11, fontSize: 12.5, fontWeight: on ? 700 : 500, cursor: "pointer",
-                background: on ? "rgba(91,155,255,.16)" : C.surface2, border: `1px solid ${on ? "rgba(116,166,255,.5)" : C.line}`, color: on ? "#74A6FF" : C.textSec }}>{label}</span>;
+                background: on ? "rgba(91,155,255,.16)" : C.surface2, border: `1px solid ${on ? "rgba(116,166,255,.5)" : C.line}`, color: on ? "var(--a-info)" : C.textSec }}>{label}</span>;
             })}
           </div>
 
@@ -72,16 +72,16 @@ export default function ModulMapa({ wide }: { wide?: boolean }) {
             <div style={{ marginTop: 16 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
                 <span style={{ fontSize: 12.5, color: C.textSec }}>Veľkosť okruhu (štvrť)</span>
-                <span style={{ fontSize: 16, fontWeight: 800, color: "#74A6FF" }}>{km} km</span>
+                <span style={{ fontSize: 16, fontWeight: 800, color: "var(--a-info)" }}>{km} km</span>
               </div>
-              <input type="range" min={1} max={5} step={1} value={km} onChange={(e) => setKm(+e.target.value)} style={{ width: "100%", marginTop: 8, accentColor: "#5B9BFF" }} />
+              <input type="range" min={1} max={5} step={1} value={km} onChange={(e) => setKm(+e.target.value)} style={{ width: "100%", marginTop: 8, accentColor: "var(--a-info)" }} />
               <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: C.textTer }}>
                 {[1, 2, 3, 4, 5].map((n) => <span key={n}>{n}</span>)}
               </div>
             </div>
           ) : (
             <div style={{ marginTop: 16, display: "flex", alignItems: "center", gap: 10, background: C.surface, border: `1px solid ${C.line}`, borderRadius: 13, padding: "12px 14px" }}>
-              <IkonaPin size={18} color="#74A6FF" />
+              <IkonaPin size={18} color="var(--a-info)" />
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 13.5, fontWeight: 700 }}>{FEED_CFG.radiusy[uroven].label}</div>
                 <div style={{ fontSize: 11, color: C.textTer }}>Administratívna hranica (OSM) · vyšší prah významnosti</div>
@@ -91,7 +91,7 @@ export default function ModulMapa({ wide }: { wide?: boolean }) {
 
           {/* info chip */}
           <div style={{ display: "flex", alignItems: "center", gap: 9, marginTop: 14, padding: "11px 13px", borderRadius: 13, background: "rgba(31,191,143,.08)", border: "1px solid rgba(31,191,143,.22)" }}>
-            <span style={{ width: 9, height: 9, borderRadius: "50%", flex: "none", background: "#2BBd8C", animation: "pulse 1.6s infinite" }} />
+            <span style={{ width: 9, height: 9, borderRadius: "50%", flex: "none", background: "var(--a-green)", animation: "pulse 1.6s infinite" }} />
             <span style={{ fontSize: 12.5, color: C.textSec }}>V tomto okruhu: <b style={{ color: C.text }}>{skutky.toLocaleString("sk")}</b> skutkov · <b style={{ color: C.text }}>{udalosti.toLocaleString("sk")}</b> udalostí</span>
           </div>
           <div style={{ fontSize: 10.5, color: C.textTer, margin: "8px 2px 0", lineHeight: 1.5 }}>Mení len, čo vidíš vo feede a na nástenke — nie karmu ani odmeny. Body skutkov na mape pribudnú neskôr.</div>

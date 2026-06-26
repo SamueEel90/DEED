@@ -23,11 +23,11 @@ const USER_LOK = { lat: 48.894, lng: 18.044 };
 const K = {
   bg: "transparent", bg2: "rgba(var(--glass-rgb),.03)", card: "rgba(var(--glass-rgb),.045)",
   warmEdge: "rgba(245,158,90,.3)", warmBg: "rgba(245,158,90,.06)",
-  blue: "#5B9BFF", blueBg: "rgba(91,155,255,.1)", blueEdge: "rgba(116,166,255,.38)",
-  green: "#3DD68C", greenBg: "rgba(52,211,153,.08)", greenEdge: "rgba(52,211,153,.32)",
-  gold: "#F0C75A", goldBg: "rgba(240,199,90,.07)",
-  diamond: "#74A6FF",
-  purple: "#8B7CFF",
+  blue: "var(--a-info)", blueBg: "rgba(91,155,255,.1)", blueEdge: "rgba(116,166,255,.38)",
+  green: "var(--a-green)", greenBg: "rgba(52,211,153,.08)", greenEdge: "rgba(52,211,153,.32)",
+  gold: "var(--a-gold)", goldBg: "rgba(240,199,90,.07)",
+  diamond: "var(--a-info)",
+  purple: "var(--a-plum)",
   txt: "var(--c-text)", txt2: "var(--c-textSec)", txt3: "var(--c-textTer)",
   line: "rgba(var(--glass-rgb),.08)",
 };
@@ -67,7 +67,7 @@ export default function ModulCharita({ wide, otvorModul }: ModulCharitaProps) {
       {sheet === "dir" && <SheetAdresar toast={toast} onClose={() => setSheet(null)} />}
 
       {hladaj && (
-        <HladanieModal akcent="#5B9BFF" placeholder="Hľadať zbierky, charity, oblasti…"
+        <HladanieModal akcent="var(--a-info)" placeholder="Hľadať zbierky, charity, oblasti…"
           data={HLADAJ_DATA}
           onPick={(id: string) => {
             if (id === "rodina") setScreen("detail");
@@ -158,7 +158,7 @@ function CharitaFeed({ wide, toast, onDetail, onHladaj, onSheet }: FeedProps) {
 
       <div style={{ fontSize: 10, color: K.txt3, textAlign: "center", padding: 6 }}>↑ feed je pestrý — veľké urgentné, topované, dobrovoľnícke, materiál ↑</div>
 
-      {vyberOkruh && <OkruhVyber radius={radius} akcent="#5B9BFF"
+      {vyberOkruh && <OkruhVyber radius={radius} akcent="var(--a-info)"
         onPick={(r: string) => { setRadius(r); setVyberOkruh(false); }}
         onClose={() => setVyberOkruh(false)} />}
     </div>

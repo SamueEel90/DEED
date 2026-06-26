@@ -146,9 +146,9 @@ export function ViacSheet({ taby, setTaby, aktivny, onModul, onPenazenka, onClos
         {/* Peňaženka — 1. položka v menu (súkromie: cudzí nevidí zostatok na hlavnej obrazovke) */}
         {!uprava && onPenazenka && (
           <div onClick={onPenazenka} style={{ display: "flex", alignItems: "center", gap: 12, background: "rgba(91,168,240,.08)", border: "1px solid rgba(91,168,240,.3)", borderRadius: 15, padding: "11px 13px", marginBottom: 8, cursor: "pointer" }}>
-            <span style={{ width: 38, height: 38, borderRadius: 12, background: "rgba(91,168,240,.16)", display: "flex", alignItems: "center", justifyContent: "center", flex: "0 0 auto", color: "#5BA8F0" }}><IkonaPenazenka size={20} color="#5BA8F0" /></span>
+            <span style={{ width: 38, height: 38, borderRadius: 12, background: "rgba(91,168,240,.16)", display: "flex", alignItems: "center", justifyContent: "center", flex: "0 0 auto", color: "var(--a-info)" }}><IkonaPenazenka size={20} color="var(--a-info)" /></span>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 13.5, fontWeight: 700 }}>Peňaženka <span style={{ fontSize: 9, fontWeight: 700, color: "#5BA8F0", border: "1px solid rgba(91,168,240,.4)", background: "rgba(91,168,240,.1)", borderRadius: 10, padding: "1px 7px", marginLeft: 4 }}>súkromné</span></div>
+              <div style={{ fontSize: 13.5, fontWeight: 700 }}>Peňaženka <span style={{ fontSize: 9, fontWeight: 700, color: "var(--a-info)", border: "1px solid rgba(91,168,240,.4)", background: "rgba(91,168,240,.1)", borderRadius: 10, padding: "1px 7px", marginLeft: 4 }}>súkromné</span></div>
               <div style={{ fontSize: 11, color: C.textTer, marginTop: 2 }}>Zostatok DEED · poslať / prijať / kúpiť</div>
             </div>
             <span style={{ color: C.textTer, fontSize: 15 }}>›</span>

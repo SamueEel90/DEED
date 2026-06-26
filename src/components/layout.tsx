@@ -47,7 +47,7 @@ export function ModulHlavicka({ title, right, karma, slogan = "Miesto, kde neroz
       {(slogan || karma) && (
         <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "4px 8px", padding: "0 16px 9px" }}>
           {slogan && <span style={{ flex: "1 1 320px", minWidth: 0, fontSize: 11.5, fontStyle: "italic", color: C.textTer, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>„{slogan}"</span>}
-          {karma && <span style={{ flex: "0 0 auto", display: "inline-flex", alignItems: "center", gap: 4, fontSize: 10.5, fontWeight: 700, color: "#E7C766", background: "rgba(231,199,102,.12)", border: "1px solid rgba(200,162,58,.4)", borderRadius: 9, padding: "3px 9px", whiteSpace: "nowrap" }}>★ {karma}</span>}
+          {karma && <span style={{ flex: "0 0 auto", display: "inline-flex", alignItems: "center", gap: 4, fontSize: 10.5, fontWeight: 700, color: "var(--a-gold)", background: "rgba(231,199,102,.12)", border: "1px solid rgba(200,162,58,.4)", borderRadius: 9, padding: "3px 9px", whiteSpace: "nowrap" }}>★ {karma}</span>}
         </div>
       )}
     </div>
@@ -135,7 +135,7 @@ export function SekcieBar({ onTalent, onBoard, onAdd, talentActive }: { onTalent
   return (
     <div style={{ display: "flex", gap: 8, padding: "8px 16px 14px", borderBottom: `1px solid ${C.line}` }}>
       <div {...pressable(onTalent)} style={ghost(talentActive)}><IkonaPlay size={13} color={talentActive ? C.blueL : C.text} /> Ukáž svoj talent</div>
-      <div {...pressable(onBoard)} style={ghost(false)}><IkonaDoska size={15} color="#7E9BF0" /> Nástenka</div>
+      <div {...pressable(onBoard)} style={ghost(false)}><IkonaDoska size={15} color="var(--a-info)" /> Nástenka</div>
       <div {...pressable(onAdd)} style={primary}><IkonaPlus size={16} color="#fff" /> Pridať</div>
     </div>
   );
@@ -165,7 +165,7 @@ export function Rebricky({ ocenenia = [], ludia = [], pred = null }: { ocenenia?
         <div style={{ display: "flex", gap: 14, padding: "0 16px 12px", overflowX: "auto", alignItems: "flex-start" }}>
           {ludia.map((p, i) => (
             <div key={"p" + i} onClick={p.onClick} style={{ minWidth: 48, display: "flex", flexDirection: "column", alignItems: "center", gap: 4, flex: "0 0 auto", cursor: p.onClick ? "pointer" : "default" }}>
-              <div style={{ width: 42, height: 42, borderRadius: "50%", background: "rgba(var(--glass-rgb),.06)", border: `2px solid ${p.col || "#5BA8F0"}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, color: C.text }}>{p.ini}</div>
+              <div style={{ width: 42, height: 42, borderRadius: "50%", background: "rgba(var(--glass-rgb),.06)", border: `2px solid ${p.col || "var(--a-info)"}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, color: C.text }}>{p.ini}</div>
               <div style={{ fontSize: 9.5, color: C.textSec, maxWidth: 52, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.name}</div>
             </div>
           ))}
@@ -186,16 +186,16 @@ export function StatRiadok({ stat, miesto = "Trenčín", okruh = "2 km", onOkruh
     <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8, padding: "4px 16px 14px", borderBottom: `1px solid ${C.line}` }}>
       {/* live štatistika — chip s pulzujúcou bodkou */}
       <span style={{ display: "inline-flex", alignItems: "center", gap: 8, flex: "1 1 240px", minWidth: 0, padding: "6px 13px", borderRadius: 20, background: "rgba(31,191,143,.08)", border: "1px solid rgba(31,191,143,.22)", fontSize: 12.5, color: C.textSec, fontWeight: 600 }}>
-        <span style={{ width: 8, height: 8, borderRadius: "50%", flex: "none", background: "#2BBd8C", boxShadow: "0 0 0 4px rgba(61,214,140,.16)", animation: "pulse 1.6s infinite" }} />
+        <span style={{ width: 8, height: 8, borderRadius: "50%", flex: "none", background: "var(--a-green)", boxShadow: "0 0 0 4px rgba(61,214,140,.16)", animation: "pulse 1.6s infinite" }} />
         <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {casti.map((p, i) => /\d/.test(p) ? <b key={i} style={{ color: C.text, fontWeight: 800 }}>{p}</b> : p)}
         </span>
       </span>
       {/* moja štvrť + okruh — klikateľný chip */}
       <span {...pressable(onOkruh, "Zmeniť okruh")} title="Zmeniť okruh" style={{ display: "inline-flex", alignItems: "center", gap: 7, flex: "none", padding: "5px 8px 5px 12px", borderRadius: 20, background: C.surface2, border: `1px solid ${C.line}`, cursor: "pointer", fontSize: 12.5, color: C.textSec, fontWeight: 600, whiteSpace: "nowrap" }}>
-        <IkonaPin size={13} color="#74A6FF" /> Moja štvrť · {miesto}
-        <span style={{ display: "inline-flex", alignItems: "center", gap: 2, padding: "3px 6px 3px 9px", borderRadius: 14, background: "rgba(116,166,255,.14)", color: "#74A6FF", fontSize: 11.5, fontWeight: 700 }}>
-          {okruh} <IkonaSipDole size={12} color="#74A6FF" />
+        <IkonaPin size={13} color="var(--a-info)" /> Moja štvrť · {miesto}
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 2, padding: "3px 6px 3px 9px", borderRadius: 14, background: "rgba(116,166,255,.14)", color: "var(--a-info)", fontSize: 11.5, fontWeight: 700 }}>
+          {okruh} <IkonaSipDole size={12} color="var(--a-info)" />
         </span>
       </span>
     </div>
@@ -251,7 +251,7 @@ const OKRUH_POPIS: Record<string, string> = {
   kraj: "Veľmi významné skutky v kraji",
   krajina: "Len mimoriadne skutky z celej SR",
 };
-export function OkruhVyber({ radius, onPick, onClose, akcent = "#74A6FF" }: { radius?: string; onPick: (k: string) => void; onClose?: () => void; akcent?: string }) {
+export function OkruhVyber({ radius, onPick, onClose, akcent = "var(--a-info)" }: { radius?: string; onPick: (k: string) => void; onClose?: () => void; akcent?: string }) {
   return (
     <Sheet onClose={onClose}>
       <div style={{ fontSize: 16, fontWeight: 800 }}>Okruh feedu</div>

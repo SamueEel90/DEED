@@ -393,7 +393,7 @@ function SmallRow({ it, wide, onOpen, onPerson }: any) {
       </div>
       <div style={{ textAlign: "right", flex: "none" }}>
         <div style={timeS}>{it.time}</div>
-        <div style={{ color: "#4A4F57", fontSize: 14 }}>›</div>
+        <div style={{ color: C.textTer, fontSize: 14 }}>›</div>
       </div>
     </div>
   );
@@ -442,7 +442,7 @@ function DeedDetail({ it, support, votes, vote, toast, home, openPerson }: any) 
         <div onClick={() => openPerson(it.author)} style={{ ...rowTopS, cursor: "pointer" }}>
           <div style={pfpS(it.pfp)}>{it.ini}</div>
           <div>
-            <div style={{ ...nameS, display: "flex", alignItems: "center", gap: 6 }}>{it.author} <span style={{ color: "#4A4F57", fontSize: 13 }}>›</span></div>
+            <div style={{ ...nameS, display: "flex", alignItems: "center", gap: 6 }}>{it.author} <span style={{ color: C.textTer, fontSize: 13 }}>›</span></div>
             <div style={{ fontSize: 12, color: A.txt3 }}>{it.loc} · č. {it.num.toLocaleString("sk")}</div>
           </div>
           {it.verified && <span style={{ ...verifS, marginLeft: "auto" }}>overené</span>}
@@ -512,7 +512,7 @@ function WorkshopDetail({ it, toast, celebrate, home, openPerson }: any) {
             <div style={{ fontWeight: 700, fontSize: 13, display: "flex", alignItems: "center", gap: 6 }}>{it.author} {it.profi && <Wb bg={A.purpleBg} c={A.purple}>PROFI</Wb>}</div>
             <div style={{ fontSize: 12, color: A.txt3 }}>{it.karma || "lektor"} · ★ {it.rating} hodnotenie · otvoriť profil</div>
           </div>
-          <span style={{ color: "#4A4F57" }}>›</span>
+          <span style={{ color: C.textTer }}>›</span>
         </div>
 
         <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
@@ -526,7 +526,7 @@ function WorkshopDetail({ it, toast, celebrate, home, openPerson }: any) {
           : "Voľný komunitný workshop — bez 3 QR a bez auditu (obsah/kvalitu nepoznáme). Pozeraj čo ťa zaujíma."}</InfoBox>
 
         {it.profi && (<><div style={secLbl}>ĎALŠIE OD LEKTORA</div>
-          <div onClick={() => toast("Ďalšie workshopy lektora (demo)")} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: A.surface, border: `1px solid ${A.line}`, borderRadius: 12, padding: 14, fontSize: 13, cursor: "pointer" }}><span>📚 Ďalšie 2 workshopy · profil</span><span style={{ color: "#4A4F57" }}>›</span></div></>)}
+          <div onClick={() => toast("Ďalšie workshopy lektora (demo)")} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: A.surface, border: `1px solid ${A.line}`, borderRadius: 12, padding: 14, fontSize: 13, cursor: "pointer" }}><span>📚 Ďalšie 2 workshopy · profil</span><span style={{ color: C.textTer }}>›</span></div></>)}
 
         <Btn onClick={() => { celebrate(free ? "Prihlásené!" : "Prihlásené a zaplatené!", free ? "Uvidíme sa na workshope. Pri štarte naskenuj QR." : "Pri štarte naskenuj QR (3 QR: štart/60%/koniec)."); setTimeout(home, 1700); }}>{free ? "Prihlásiť sa" : "Prihlásiť a zaplatiť · " + it.priceTxt}</Btn>
         <div style={{ textAlign: "center", padding: "14px 18px 0", fontSize: 11, color: A.txt3 }}>{free ? "Zadarmo · základné prihlásenie." : "Platba cez EUR/DEED · " + it.priceTxt}</div>
@@ -546,7 +546,7 @@ function HelpDetail({ it, toast, celebrate, home, openPerson }: any) {
       <div style={{ padding: "14px 18px" }}>
         <div onClick={() => openPerson(it.author)} style={{ ...rowTopS, cursor: "pointer" }}>
           <div style={pfpS(it.pfp)}>{it.ini}</div>
-          <div><div style={{ ...nameS, display: "flex", alignItems: "center", gap: 6 }}>{it.author} <span style={{ color: "#4A4F57", fontSize: 13 }}>›</span></div><div style={{ fontSize: 12, color: A.txt3 }}>{it.loc} · č. {it.num.toLocaleString("sk")}</div></div>
+          <div><div style={{ ...nameS, display: "flex", alignItems: "center", gap: 6 }}>{it.author} <span style={{ color: C.textTer, fontSize: 13 }}>›</span></div><div style={{ fontSize: 12, color: A.txt3 }}>{it.loc} · č. {it.num.toLocaleString("sk")}</div></div>
         </div>
         <div style={{ ...titleS, marginTop: 10, fontSize: 14 }}>{it.title}</div>
         <p style={{ fontSize: 14.5, lineHeight: 1.6, marginTop: 9, color: A.txt2 }}>{it.desc}</p>
@@ -712,7 +712,7 @@ function Ch({ ic, t, s, onClick }: any) {
   );
 }
 function Mslot({ children, onClick }: { children: React.ReactNode; onClick?: () => void }) {
-  return <div onClick={onClick} style={{ width: 64, height: 64, border: `1px dashed ${A.line}`, borderRadius: 11, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, color: "#4A4F57", cursor: "pointer" }}>{children}</div>;
+  return <div onClick={onClick} style={{ width: 64, height: 64, border: `1px dashed ${A.line}`, borderRadius: 11, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, color: C.textTer, cursor: "pointer" }}>{children}</div>;
 }
 function Check({ on, onClick, children }: { on: boolean; onClick?: () => void; children: React.ReactNode }) {
   return (
@@ -740,7 +740,7 @@ function Board({ dom, toast, home }: any) {
             <div style={{ fontSize: 13, fontWeight: 700 }}>{e[2]}</div>
             <div style={{ fontSize: 11, color: A.txt3, marginTop: 2 }}>📍 {e[3]}</div>
           </div>
-          <span style={{ color: "#4A4F57", fontSize: 14 }}>›</span>
+          <span style={{ color: C.textTer, fontSize: 14 }}>›</span>
         </div>
       ))}
       <div style={{ padding: "14px 18px", fontSize: 11, color: A.txt3, lineHeight: 1.5, textAlign: "center" }}>Klikni na doménu na Domove a Nástenka ukáže udalosti danej oblasti.</div>
@@ -830,7 +830,7 @@ function OsobaProfil({ name, items, follows, toggleFollow, onOpen, toast, home }
                 <div style={{ fontSize: 13.5, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{it.title}</div>
                 <div style={{ fontSize: 11, color: A.txt3, marginTop: 2 }}><span style={{ color: a.c, fontWeight: 700 }}>{lbl}</span> · {a.label} · {it.time}</div>
               </div>
-              <span style={{ color: "#4A4F57", fontSize: 14 }}>›</span>
+              <span style={{ color: C.textTer, fontSize: 14 }}>›</span>
             </div>
           );
         })}

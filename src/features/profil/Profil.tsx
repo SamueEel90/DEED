@@ -69,12 +69,12 @@ function ProfilHlavny({ toast, naWallet, naSub, naNastavenia, naPriatelia }: Pro
   const otvorViac = useViac();
   const ja = usePouzivatel();
   const dlazdice: [string, string, string, string, React.ReactNode, () => void][] = [
-    ["Peňaženka", "1 240 DEED", "rgba(91,168,240,.14)", "#5BA8F0", <IkonaPenazenka size={26} />, naWallet],
-    ["Karma a úrovne", "7 modulov", "rgba(169,139,240,.15)", "#A98BF0", <IkonaHviezda size={26} />, () => naSub("Karma a úrovne")],
-    ["Moje skutky", "48 skutkov", "rgba(61,214,140,.13)", "#3DD68C", <IkonaFajka size={26} />, () => naSub("Moje skutky")],
-    ["Štatistiky", "umiestnenie", "rgba(61,214,206,.13)", "#3DD6CE", <IkonaDoska size={24} />, () => naSub("Štatistiky a umiestnenie")],
-    ["Priatelia", "nájdi známych", "rgba(231,199,102,.14)", "#E7C766", <IkonaUsmev size={26} />, naPriatelia],
-    ["Nastavenia", "vzhľad, jazyk", "rgba(154,160,168,.16)", "#9AA0A8", <IkonaNastavenia size={26} />, naNastavenia],
+    ["Peňaženka", "1 240 DEED", "rgba(91,168,240,.14)", "var(--a-info)", <IkonaPenazenka size={26} />, naWallet],
+    ["Karma a úrovne", "7 modulov", "rgba(169,139,240,.15)", "var(--a-plum)", <IkonaHviezda size={26} />, () => naSub("Karma a úrovne")],
+    ["Moje skutky", "48 skutkov", "rgba(61,214,140,.13)", "var(--a-green)", <IkonaFajka size={26} />, () => naSub("Moje skutky")],
+    ["Štatistiky", "umiestnenie", "rgba(61,214,206,.13)", "var(--a-teal)", <IkonaDoska size={24} />, () => naSub("Štatistiky a umiestnenie")],
+    ["Priatelia", "nájdi známych", "rgba(231,199,102,.14)", "var(--a-gold)", <IkonaUsmev size={26} />, naPriatelia],
+    ["Nastavenia", "vzhľad, jazyk", "rgba(154,160,168,.16)", C.textTer, <IkonaNastavenia size={26} />, naNastavenia],
   ];
 
   return (
@@ -90,13 +90,13 @@ function ProfilHlavny({ toast, naWallet, naSub, naNastavenia, naPriatelia }: Pro
         <div style={{ minWidth: 0 }}>
           <div style={{ fontSize: 17, fontWeight: 700 }}>{ja.celeMeno}</div>
           {ja.demo ? (
-            <div style={{ display: "inline-flex", alignItems: "center", gap: 5, background: "rgba(231,199,102,.14)", border: "1px solid rgba(200,162,58,.5)", color: "#C79A1E", fontSize: 10, fontWeight: 700, padding: "4px 9px", borderRadius: 9, marginTop: 6 }}>★ Gold · L7</div>
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 5, background: "rgba(231,199,102,.14)", border: "1px solid rgba(200,162,58,.5)", color: "var(--a-gold)", fontSize: 10, fontWeight: 700, padding: "4px 9px", borderRadius: 9, marginTop: 6 }}>★ Gold · L7</div>
           ) : (
-            <div style={{ display: "inline-flex", alignItems: "center", gap: 5, background: "rgba(116,166,255,.14)", border: "1px solid rgba(116,166,255,.4)", color: "#74A6FF", fontSize: 10, fontWeight: 700, padding: "4px 9px", borderRadius: 9, marginTop: 6 }}>★ {ja.tier}{ja.poradoveCislo ? ` · člen #${ja.poradoveCislo}` : ""}</div>
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 5, background: "rgba(116,166,255,.14)", border: "1px solid rgba(116,166,255,.4)", color: "var(--a-info)", fontSize: 10, fontWeight: 700, padding: "4px 9px", borderRadius: 9, marginTop: 6 }}>★ {ja.tier}{ja.poradoveCislo ? ` · člen #${ja.poradoveCislo}` : ""}</div>
           )}
           <div style={{ marginTop: 6 }}>
-            <span style={{ display: "inline-flex", fontSize: 9.5, color: ja.rezim === "anonym" ? "#9AA0A8" : "#1FBF8F", background: ja.rezim === "anonym" ? "rgba(154,160,168,.14)" : "rgba(61,214,140,.13)", border: `1px solid ${ja.rezim === "anonym" ? "rgba(154,160,168,.4)" : "rgba(46,125,82,.45)"}`, padding: "3px 8px", borderRadius: 7, marginRight: 8 }}>{ja.rezim === "anonym" ? "anonym" : "verejný"}</span>
-            <span onClick={naNastavenia} style={{ fontSize: 9.5, color: "#5BA8F0", cursor: "pointer" }}>zmeniť v nastaveniach</span>
+            <span style={{ display: "inline-flex", fontSize: 9.5, color: ja.rezim === "anonym" ? C.textTer : "var(--a-green)", background: ja.rezim === "anonym" ? "rgba(154,160,168,.14)" : "rgba(61,214,140,.13)", border: `1px solid ${ja.rezim === "anonym" ? "rgba(154,160,168,.4)" : "rgba(46,125,82,.45)"}`, padding: "3px 8px", borderRadius: 7, marginRight: 8 }}>{ja.rezim === "anonym" ? "anonym" : "verejný"}</span>
+            <span onClick={naNastavenia} style={{ fontSize: 9.5, color: "var(--a-info)", cursor: "pointer" }}>zmeniť v nastaveniach</span>
           </div>
         </div>
       </div>
@@ -104,7 +104,7 @@ function ProfilHlavny({ toast, naWallet, naSub, naNastavenia, naPriatelia }: Pro
       {ja.demo ? (
         <div style={{ margin: "14px 16px 0" }}>
           <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: C.textTer }}>
-            <span>Do ďalšej úrovne (Platinum)</span><span style={{ color: "#E7C766" }}>72 %</span>
+            <span>Do ďalšej úrovne (Platinum)</span><span style={{ color: "var(--a-gold)" }}>72 %</span>
           </div>
           <div style={{ height: 8, background: "rgba(var(--glass-rgb),.1)", borderRadius: 4, overflow: "hidden", marginTop: 6 }}>
             <div style={{ height: "100%", width: "72%", background: "linear-gradient(90deg, #F0C75A, #F09A5E)", borderRadius: 4, boxShadow: "0 0 12px rgba(240,199,90,.4)" }} />
@@ -146,9 +146,9 @@ function Penazenka({ toast, onBack }: PenazenkaProps) {
 
         {/* REŤAZOVÁ ČASŤ — akumulovaná oddelene, zamknutá (§5.2, §9) */}
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 12, background: "rgba(31,191,143,.07)", border: "1px solid rgba(31,191,143,.25)", borderRadius: 15, padding: "12px 14px" }}>
-          <span style={{ width: 38, height: 38, borderRadius: 11, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(31,191,143,.14)", color: "#2BD49B", fontSize: 18 }}>♻</span>
+          <span style={{ width: 38, height: 38, borderRadius: 11, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(31,191,143,.14)", color: "var(--a-green)", fontSize: 18 }}>♻</span>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 13, fontWeight: 700 }}>Reťazová časť · <span style={{ color: "#2BD49B" }}>248 DEED</span> <span style={{ fontSize: 10, color: C.gold }}>🔒 zamknutá</span></div>
+            <div style={{ fontSize: 13, fontWeight: 700 }}>Reťazová časť · <span style={{ color: "var(--a-green)" }}>248 DEED</span> <span style={{ fontSize: 10, color: C.gold }}>🔒 zamknutá</span></div>
             <div style={{ fontSize: 11, color: C.textTer, marginTop: 2 }}>Odošle sa pri prahu 1000 DEED alebo o 30 dní</div>
           </div>
           <div style={{ textAlign: "right", flex: "none" }}>
@@ -159,7 +159,7 @@ function Penazenka({ toast, onBack }: PenazenkaProps) {
 
         {/* CESTA B — nastav reťaz na honorár (tvorca) */}
         <div onClick={() => setHonorar(true)} style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 10, background: "rgba(91,155,255,.07)", border: "1px solid rgba(91,155,255,.25)", borderRadius: 15, padding: "12px 14px", cursor: "pointer" }}>
-          <span style={{ width: 38, height: 38, borderRadius: 11, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(91,155,255,.14)", color: "#5BA8F0", fontSize: 17 }}>⛓</span>
+          <span style={{ width: 38, height: 38, borderRadius: 11, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(91,155,255,.14)", color: "var(--a-info)", fontSize: 17 }}>⛓</span>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 13, fontWeight: 700 }}>Nastav reťaz na honorár</div>
             <div style={{ fontSize: 11, color: C.textTer, marginTop: 2 }}>% z honoráru ide ďalej · QR pod video/knihu</div>
@@ -168,9 +168,9 @@ function Penazenka({ toast, onBack }: PenazenkaProps) {
         </div>
 
         <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
-          {[["↑", "Poslať", "rgba(61,214,140,.13)", "rgba(46,125,82,.5)", "#1FBF8F", "Poslať DEED (demo)"],
-            ["↓", "Prijať", "rgba(91,168,240,.14)", "rgba(42,94,142,.5)", "#5BA8F0", "Prijať (demo)"],
-            ["＋", "Kúpiť", "rgba(169,139,240,.15)", "rgba(122,91,216,.5)", "#8B7CFF", "Kúpiť DEED (demo)"]].map((b, i) => (
+          {[["↑", "Poslať", "rgba(61,214,140,.13)", "rgba(46,125,82,.5)", "var(--a-green)", "Poslať DEED (demo)"],
+            ["↓", "Prijať", "rgba(91,168,240,.14)", "rgba(42,94,142,.5)", "var(--a-info)", "Prijať (demo)"],
+            ["＋", "Kúpiť", "rgba(169,139,240,.15)", "rgba(122,91,216,.5)", "var(--a-plum)", "Kúpiť DEED (demo)"]].map((b, i) => (
             <div key={i} onClick={() => toast(b[5])} style={{ flex: 1, height: 58, borderRadius: 11, background: b[2], border: `1px solid ${b[3]}`, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
               <div style={{ fontWeight: 700, fontSize: 13, color: b[4] }}>{b[0]}</div>
               <div style={{ fontSize: 8.5, color: C.textTer, marginTop: 2 }}>{b[1]}</div>
@@ -179,8 +179,8 @@ function Penazenka({ toast, onBack }: PenazenkaProps) {
         </div>
 
         <div style={sekciaLabel}>KÚPIŤ DEED</div>
-        <div onClick={() => toast("Burza DEED/USDC (demo)")} style={subItem}><span>▣ Cez burzu (DEED/USDC)</span><span style={{ color: "#4A4F57" }}>›</span></div>
-        <div onClick={() => toast("Platba kartou (demo)")} style={subItem}><span>▢ Platobnou kartou</span><span style={{ color: "#4A4F57" }}>›</span></div>
+        <div onClick={() => toast("Burza DEED/USDC (demo)")} style={subItem}><span>▣ Cez burzu (DEED/USDC)</span><span style={{ color: C.textTer }}>›</span></div>
+        <div onClick={() => toast("Platba kartou (demo)")} style={subItem}><span>▢ Platobnou kartou</span><span style={{ color: C.textTer }}>›</span></div>
 
         <div style={sekciaLabel}>POSLEDNÉ PREVODY</div>
         {isError ? (
@@ -239,7 +239,7 @@ function SubScreen({ nazov, toast, onBack }: SubScreenProps) {
       <div key={i} style={{ ...subItem, gap: 8 }}>
         <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r[0]}</span>
         <span onClick={() => setRetaz({ odmena: Math.abs(parseInt(r[1], 10)) || 30 })} title="Reťaz dobra — pošli časť ďalej"
-          style={{ flex: "none", fontSize: 11, fontWeight: 700, color: "#2BD49B", border: "1px solid rgba(31,191,143,.4)", background: "rgba(31,191,143,.08)", borderRadius: 9, padding: "4px 8px", cursor: "pointer" }}>♻ Reťaz</span>
+          style={{ flex: "none", fontSize: 11, fontWeight: 700, color: "var(--a-green)", border: "1px solid rgba(31,191,143,.4)", background: "rgba(31,191,143,.08)", borderRadius: 9, padding: "4px 8px", cursor: "pointer" }}>♻ Reťaz</span>
         <span style={{ fontWeight: 700, color: r[2], flex: "none" }}>{r[1]}</span>
       </div>
     ));
@@ -299,7 +299,7 @@ function PriateliaScreen({ toast, onBack }: PriateliaScreenProps) {
           <div style={{ fontSize: 10.5, letterSpacing: ".4px", color: C.textTer, fontWeight: 700, margin: "8px 0 8px" }}>ŽIADOSTI O PRIATEĽSTVO</div>
           {ziadosti.map((z) => (
             <div key={z.id} style={{ display: "flex", alignItems: "center", gap: 11, background: C.surface, border: `1px solid ${C.line}`, borderRadius: 14, padding: "11px 13px", marginBottom: 9 }}>
-              <div style={{ width: 40, height: 40, borderRadius: "50%", flex: "none", background: "#8B7CFF", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, color: "#fff" }}>{z.ini}</div>
+              <div style={{ width: 40, height: 40, borderRadius: "50%", flex: "none", background: "var(--a-plum)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, color: "#fff" }}>{z.ini}</div>
               <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontSize: 14, fontWeight: 700 }}>{z.meno}</div><div style={{ fontSize: 11, color: C.textTer }}>{z.info}</div></div>
               <span onClick={() => vybav(z.id, true)} style={{ flex: "none", fontSize: 12, fontWeight: 700, color: "#fff", background: GRAD, borderRadius: 10, padding: "7px 12px", cursor: "pointer" }}>Prijať</span>
               <span onClick={() => vybav(z.id, false)} style={{ flex: "none", fontSize: 12, fontWeight: 700, color: C.textSec, border: `1px solid ${C.line}`, borderRadius: 10, padding: "7px 10px", cursor: "pointer" }}>✕</span>
@@ -369,7 +369,7 @@ function NastaveniaScreen({ toast, onBack, onNotif }: NastaveniaScreenProps) {
         <Sekcia>VZHĽAD</Sekcia>
         <Riadok onClick={prepni}>
           <span style={{ flex: 1 }}>Téma</span>
-          <span style={{ display: "flex", alignItems: "center", gap: 7, fontWeight: 700, color: "#5BA8F0" }}>{svetly ? <IkonaSlnko size={16} color="#5BA8F0" /> : <IkonaMesiac size={16} color="#5BA8F0" />} {svetly ? "Day" : "Dark"} ▾</span>
+          <span style={{ display: "flex", alignItems: "center", gap: 7, fontWeight: 700, color: "var(--a-info)" }}>{svetly ? <IkonaSlnko size={16} color="var(--a-info)" /> : <IkonaMesiac size={16} color="var(--a-info)" />} {svetly ? "Day" : "Dark"} ▾</span>
         </Riadok>
         <Riadok onClick={() => setJazyk((j) => j === "SK" ? "EN" : j === "EN" ? "Auto" : "SK")}>
           <span style={{ flex: 1 }}>Jazyk</span>
@@ -380,7 +380,7 @@ function NastaveniaScreen({ toast, onBack, onNotif }: NastaveniaScreenProps) {
         <Sekcia>SÚKROMIE A PROFIL</Sekcia>
         <Riadok onClick={() => setRezim((r) => r === "verejny" ? "anonym" : "verejny")}>
           <span style={{ flex: 1 }}>Režim profilu</span>
-          <span style={{ fontWeight: 700, color: rezim === "verejny" ? "#3DD68C" : "#A98BF0" }}>{rezim === "verejny" ? "Verejný" : "Anonym"} ▾</span>
+          <span style={{ fontWeight: 700, color: rezim === "verejny" ? "var(--a-green)" : "var(--a-plum)" }}>{rezim === "verejny" ? "Verejný" : "Anonym"} ▾</span>
         </Riadok>
         <Riadok><span style={{ flex: 1 }}>Zobrazovať moju úroveň</span><Switch on={uroven} onClick={() => setUroven((u) => !u)} /></Riadok>
         <Riadok>
@@ -388,7 +388,7 @@ function NastaveniaScreen({ toast, onBack, onNotif }: NastaveniaScreenProps) {
           <Switch on={gps} onClick={() => setGps((g) => !g)} />
         </Riadok>
         <Riadok onClick={() => setOchrana(true)}>
-          <span style={{ display: "flex", alignItems: "center", gap: 9, flex: 1 }}><IkonaStit size={16} color="#3DD68C" /> Ochrana osoby (anti-sociálny kredit)</span>
+          <span style={{ display: "flex", alignItems: "center", gap: 9, flex: 1 }}><IkonaStit size={16} color="var(--a-green)" /> Ochrana osoby (anti-sociálny kredit)</span>
           <span style={{ color: C.textTer, fontSize: 16 }}>›</span>
         </Riadok>
 
@@ -406,7 +406,7 @@ function NastaveniaScreen({ toast, onBack, onNotif }: NastaveniaScreenProps) {
           {TEMY.map((t) => {
             const on = temy.includes(t);
             return <span key={t} onClick={() => toggleTema(t)} style={{ padding: "8px 14px", borderRadius: 20, fontSize: 13, fontWeight: on ? 700 : 500, cursor: "pointer",
-              background: on ? "rgba(91,155,255,.14)" : C.surface2, border: `1px solid ${on ? "rgba(116,166,255,.5)" : C.line}`, color: on ? "#74A6FF" : C.textSec }}>{on ? "✓ " : ""}{t}</span>;
+              background: on ? "rgba(91,155,255,.14)" : C.surface2, border: `1px solid ${on ? "rgba(116,166,255,.5)" : C.line}`, color: on ? "var(--a-info)" : C.textSec }}>{on ? "✓ " : ""}{t}</span>;
           })}
         </div>
 
@@ -415,14 +415,14 @@ function NastaveniaScreen({ toast, onBack, onNotif }: NastaveniaScreenProps) {
         <Riadok onClick={() => toast("Zamestnávateľ (B2B) — odložené do B2B")}><span style={{ flex: 1 }}>Zamestnávateľ (B2B)</span><span style={{ color: C.textTer, fontWeight: 600 }}>Nenastavený ›</span></Riadok>
         <Riadok onClick={() => toast("Peňaženka a bezpečnosť — biometria/KYC až pri výbere hodnoty")}><span style={{ flex: 1 }}>Peňaženka a bezpečnosť</span><span style={{ color: C.textTer, fontSize: 16 }}>›</span></Riadok>
         <Riadok onClick={() => toast("O aplikácii · podpora")}><span style={{ flex: 1 }}>O aplikácii · podpora</span><span style={{ color: C.textTer, fontSize: 16 }}>›</span></Riadok>
-        <button onClick={() => { toast("Odhlásené"); clearSession(); }} style={{ width: "100%", height: 50, borderRadius: 14, marginTop: 6, border: "1px solid rgba(242,112,111,.4)", background: "rgba(242,112,111,.08)", color: "#F2706F", fontWeight: 700, fontSize: 15, cursor: "pointer", fontFamily: "inherit" }}>Odhlásiť sa</button>
+        <button onClick={() => { toast("Odhlásené"); clearSession(); }} style={{ width: "100%", height: 50, borderRadius: 14, marginTop: 6, border: "1px solid rgba(242,112,111,.4)", background: "rgba(242,112,111,.08)", color: "var(--a-danger)", fontWeight: 700, fontSize: 15, cursor: "pointer", fontFamily: "inherit" }}>Odhlásiť sa</button>
       </div>
 
       {/* §13.1 — Ochrana osoby (anti-sociálny kredit) */}
       {ochrana && (
         <Sheet onClose={() => setOchrana(false)}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-            <span style={{ width: 38, height: 38, borderRadius: 11, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(61,214,140,.14)" }}><IkonaStit size={19} color="#3DD68C" /></span>
+            <span style={{ width: 38, height: 38, borderRadius: 11, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(61,214,140,.14)" }}><IkonaStit size={19} color="var(--a-green)" /></span>
             <div><div style={{ fontSize: 16, fontWeight: 800 }}>Ochrana osoby</div><div style={{ fontSize: 11.5, color: C.textTer }}>Opak sociálneho kreditu</div></div>
           </div>
           <p style={{ fontSize: 13, color: C.textSec, lineHeight: 1.55, margin: "0 0 12px" }}>
@@ -430,10 +430,10 @@ function NastaveniaScreen({ toast, onBack, onNotif }: NastaveniaScreenProps) {
           </p>
           {/* kontrolný náhľad */}
           <div style={{ background: "rgba(91,155,255,.07)", border: "1px solid rgba(91,155,255,.25)", borderRadius: 14, padding: "12px 14px" }}>
-            <div style={{ fontSize: 10.5, fontWeight: 800, color: "#74A6FF", letterSpacing: ".3px" }}>KONTROLNÝ NÁHĽAD (napr. polícia)</div>
+            <div style={{ fontSize: 10.5, fontWeight: 800, color: "var(--a-info)", letterSpacing: ".3px" }}>KONTROLNÝ NÁHĽAD (napr. polícia)</div>
             {[["Karma", "jemne nad priemerom appky"], ["Skutky", "v norme komunity"], ["Dôveryhodnosť", "mierne nad priemerom"]].map((r, i) => (
               <div key={i} style={{ display: "flex", justifyContent: "space-between", gap: 12, padding: "7px 0", fontSize: 12.5, borderBottom: i < 2 ? `1px solid ${C.line2}` : "none" }}>
-                <span style={{ color: C.textTer }}>{r[0]}</span><span style={{ fontWeight: 600, color: "#3DD68C" }}>{r[1]}</span>
+                <span style={{ color: C.textTer }}>{r[0]}</span><span style={{ fontWeight: 600, color: "var(--a-green)" }}>{r[1]}</span>
               </div>
             ))}
           </div>
