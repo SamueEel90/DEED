@@ -14,7 +14,7 @@ export function Foto({ src, emoji, h, w, radius = 0, style, onClick }: { src?: s
       </div>
     );
   }
-  return <img src={src} alt="" onError={() => setErr(true)} onClick={onClick} draggable={false}
+  return <img src={src} alt="" onError={() => setErr(true)} onClick={onClick} draggable={false} loading="lazy" decoding="async"
     style={{ width: w || "100%", height: h, objectFit: "cover", display: "block", borderRadius: radius, flex: w ? "0 0 auto" : undefined, cursor: onClick ? "pointer" : undefined, ...style }} />;
 }
 

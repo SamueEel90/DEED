@@ -1,11 +1,34 @@
 import type { ReactNode } from "react";
+import { useEffect, useRef } from "react";
 import { C, GRAD_ZELENY, glassTmavy } from "@/theme";
 import { Aura } from "@/components/visual";
 
 export function Modal({ children, onClose }: { children?: ReactNode; onClose?: () => void }) {
+  const panel = useRef<HTMLDivElement>(null);
+
+  // a11y: Escape zatvára, focus skočí do panelu a po zatvorení sa vráti späť,
+  // Tab cykluje len v rámci modálu (jednoduchý focus-trap).
+  useEffect(() => {
+    const predtym = document.activeElement as HTMLElement | null;
+    panel.current?.focus();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") { onClose?.(); return; }
+      if (e.key !== "Tab" || !panel.current) return;
+      const f = panel.current.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      );
+      if (!f.length) return;
+      const prvy = f[0], posledny = f[f.length - 1];
+      if (e.shiftKey && document.activeElement === prvy) { e.preventDefault(); posledny.focus(); }
+      else if (!e.shiftKey && document.activeElement === posledny) { e.preventDefault(); prvy.focus(); }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => { document.removeEventListener("keydown", onKey); predtym?.focus?.(); };
+  }, [onClose]);
+
   return (
     <div onClick={onClose} style={{ position: "absolute", inset: 0, background: "rgba(4,6,12,.5)", backdropFilter: "blur(5px)", WebkitBackdropFilter: "blur(5px)", display: "flex", alignItems: "flex-end", justifyContent: "center", zIndex: 55, animation: "fadeUp .2s ease" }}>
-      <div onClick={(e) => e.stopPropagation()} style={{ width: "100%", ...glassTmavy(26, .8), borderBottom: "none", borderTopLeftRadius: 26, borderTopRightRadius: 26, padding: "10px 20px 22px", boxShadow: "0 -18px 60px rgba(0,0,0,.45)" }}>
+      <div ref={panel} role="dialog" aria-modal="true" tabIndex={-1} onClick={(e) => e.stopPropagation()} style={{ width: "100%", outline: "none", ...glassTmavy(26, .8), borderBottom: "none", borderTopLeftRadius: 26, borderTopRightRadius: 26, padding: "10px 20px 22px", boxShadow: "0 -18px 60px rgba(0,0,0,.45)" }}>
         <div style={{ width: 42, height: 4, borderRadius: 3, background: "rgba(var(--glass-rgb),.22)", margin: "4px auto 16px" }} />
         {children}
       </div>
