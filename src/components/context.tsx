@@ -1,4 +1,4 @@
-import { createContext, useContext } from "react";
+import { createContext, useContext, useEffect, type ReactNode } from "react";
 
 // ============================================================
 // GALÉRIA — kontext: ktorýkoľvek modul otvorí fullscreen prezeranie
@@ -31,3 +31,23 @@ export const useMotiv = () => useContext(MotivContext);
 // ============================================================
 export const PortalContext = createContext<HTMLElement | null>(null);
 export const usePortalEl = () => useContext(PortalContext);
+
+// ============================================================
+// AKCIE STRÁNKY — kontextové akcie aktuálneho modulu (Pridať, Ukáž talent, Nástenka…)
+// Modul si ich zaregistruje hookom; App shell ich vykreslí mimo obsahu:
+//   · `pridat` = plávajúce „+ Pridať" tlačidlo (sticky, nad spodným dokom)
+//   · `extra`  = sekcia „Na tejto stránke" v menu (☰)
+// Vďaka tomu sú špeciálne možnosti dole/v menu a vrch stránky ostáva čistý (§14).
+// ============================================================
+export type StrankaAkcia = { id: string; label: string; popis?: string; ikona?: ReactNode; onClick: () => void };
+export type StrankaAkcie = { pridat?: StrankaAkcia; extra?: StrankaAkcia[] };
+export const StrankaAkcieContext = createContext<(a: StrankaAkcie) => void>(() => {});
+/** Modul zaregistruje svoje kontextové akcie (a pri odchode ich vyčistí). Deps drž stabilné (zvyčajne []). */
+export function useStrankaAkcie(builder: () => StrankaAkcie, deps: unknown[] = []) {
+  const set = useContext(StrankaAkcieContext);
+  useEffect(() => {
+    set(builder());
+    return () => set({});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, deps);
+}

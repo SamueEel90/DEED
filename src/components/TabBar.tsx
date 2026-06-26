@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { C, GRAD, glassTmavy } from "@/theme";
-import { IkonaDomov, IkonaSrdceLine, IkonaCharita, IkonaKompas, IkonaMapa, IkonaPohar, IkonaOsoba, IkonaPenazenka } from "@/shared";
+import { IkonaDomov, IkonaSrdceLine, IkonaCharita, IkonaKompas, IkonaMapa, IkonaPohar, IkonaOsoba, IkonaPenazenka, IkonaPlus } from "@/shared";
 import { pressable } from "@/components/pressable";
+import type { StrankaAkcia } from "@/components/context";
 
 /*
   ============================================================
@@ -71,6 +72,24 @@ export function TabBar({ taby, aktivny, onModul, wide }: {
   );
 }
 
+// ---- PLÁVAJÚCE „+ Pridať" — sticky primárna akcia aktuálnej stránky, nad spodným dokom ----
+// (predtým bolo „Pridať" v hornej sekcii skratiek; teraz je dole ako jeden výrazný FAB)
+export function PridatFAB({ akcia, wide }: { akcia: StrankaAkcia; wide?: boolean }) {
+  return (
+    <div style={{ position: "absolute", left: 0, right: 0, bottom: 80, zIndex: 41, display: "flex", justifyContent: "center", padding: "0 14px", pointerEvents: "none" }}>
+      <div style={{ width: "100%", maxWidth: wide ? 620 : "none", display: "flex", justifyContent: "flex-end" }}>
+        <button onClick={akcia.onClick} aria-label={akcia.label} style={{
+          pointerEvents: "auto", display: "inline-flex", alignItems: "center", gap: 8, height: 50, padding: "0 20px 0 17px",
+          borderRadius: 25, border: "none", cursor: "pointer", fontFamily: "inherit", fontSize: 14.5, fontWeight: 800, color: "#fff",
+          background: GRAD, boxShadow: "0 10px 28px rgba(78,122,62,.5), inset 0 1px 0 rgba(255,255,255,.28)", transition: "transform .15s ease",
+        }}>
+          <IkonaPlus size={18} color="#fff" /> {akcia.label}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function Tab({ m, on, onClick }: { m?: Modul; on: boolean; onClick: () => void }) {
   return (
     <div {...pressable(onClick, m?.nazov)} aria-current={on ? "page" : undefined} className="dock-tab" style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4, cursor: "pointer", padding: "4px 0 3px" }}>
@@ -88,7 +107,7 @@ function Tab({ m, on, onClick }: { m?: Modul; on: boolean; onClick: () => void }
 }
 
 // ---- SHEET: VŠETKY MODULY + ÚPRAVA MENU ----
-export function ViacSheet({ taby, setTaby, aktivny, onModul, onPenazenka, onClose, moduly = VSETKY_MODULY }: {
+export function ViacSheet({ taby, setTaby, aktivny, onModul, onPenazenka, onClose, moduly = VSETKY_MODULY, strankaAkcie }: {
   taby: string[];
   setTaby: (taby: string[]) => void;
   aktivny: string;
@@ -96,6 +115,7 @@ export function ViacSheet({ taby, setTaby, aktivny, onModul, onPenazenka, onClos
   onPenazenka?: () => void;
   onClose: () => void;
   moduly?: Modul[];
+  strankaAkcie?: StrankaAkcia[];
 }) {
   const [uprava, setUprava] = useState(false);
   const [hint, setHint] = useState<string | null>(null);
@@ -140,6 +160,23 @@ export function ViacSheet({ taby, setTaby, aktivny, onModul, onPenazenka, onClos
         {uprava && (
           <div style={{ fontSize: 11.5, color: C.textSec, lineHeight: 1.45, marginBottom: 12, background: "rgba(91,155,255,.07)", border: "1px solid rgba(91,155,255,.22)", borderRadius: 12, padding: "9px 12px" }}>
             Pripni si do spodného menu max {MAX_TABOV} moduly. Šípkami ⌃⌄ meníš poradie. Ukladá sa automaticky.
+          </div>
+        )}
+
+        {/* NA TEJTO STRÁNKE — kontextové akcie aktuálneho modulu (Ukáž talent, Nástenka…) */}
+        {!uprava && strankaAkcie && strankaAkcie.length > 0 && (
+          <div style={{ marginBottom: 10 }}>
+            <div style={{ fontSize: 10.5, letterSpacing: ".5px", color: C.textTer, fontWeight: 700, margin: "2px 2px 8px" }}>NA TEJTO STRÁNKE</div>
+            {strankaAkcie.map((a) => (
+              <div key={a.id} onClick={() => { a.onClick(); onClose(); }} style={{ display: "flex", alignItems: "center", gap: 12, background: "rgba(var(--glass-rgb),.05)", border: `1px solid ${C.line}`, borderRadius: 15, padding: "11px 13px", marginBottom: 8, cursor: "pointer" }}>
+                <span style={{ width: 38, height: 38, borderRadius: 12, background: "rgba(78,122,62,.12)", border: `1px solid ${C.line2}`, display: "flex", alignItems: "center", justifyContent: "center", flex: "0 0 auto", color: "var(--a-green)" }}>{a.ikona}</span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 13.5, fontWeight: 700 }}>{a.label}</div>
+                  {a.popis && <div style={{ fontSize: 11, color: C.textTer, marginTop: 2 }}>{a.popis}</div>}
+                </div>
+                <span style={{ color: C.textTer, fontSize: 15 }}>›</span>
+              </div>
+            ))}
           </div>
         )}
 

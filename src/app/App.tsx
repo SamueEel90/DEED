@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef, lazy, Suspense, type CSSProperties } from "react";
 import { LazyMotion, domAnimation, MotionConfig } from "motion/react";
 import { C } from "@/theme";
-import { GaleriaContext, ScrollContext, ViacContext, Lightbox, DychajucePozadie, MotivContext, PortalContext, DeedToaster, FeedSkeleton } from "@/shared";
-import { TabBar, ViacSheet, nacitajTaby, ulozTaby, VSETKY_MODULY } from "@/components/TabBar";
+import { GaleriaContext, ScrollContext, ViacContext, StrankaAkcieContext, Lightbox, DychajucePozadie, MotivContext, PortalContext, DeedToaster, FeedSkeleton } from "@/shared";
+import type { StrankaAkcie } from "@/components/context";
+import { TabBar, ViacSheet, PridatFAB, nacitajTaby, ulozTaby, VSETKY_MODULY } from "@/components/TabBar";
 import { useSession } from "@/lib/session";
 import { PouzivatelProvider } from "@/lib/pouzivatel";
 import { QueryProvider } from "@/app/QueryProvider";
@@ -113,6 +114,7 @@ export function Screens({ wide }: { wide?: boolean }) {
   const [viac, setViac] = useState(false);
   const [galeria, setGaleria] = useState<{ fotky: string[]; index: number } | null>(null);
   const [walletReq, setWalletReq] = useState(0); // ☰ → Peňaženka: otvor peňaženku v Profile
+  const [akcie, setAkcie] = useState<StrankaAkcie>({}); // kontextové akcie aktuálneho modulu (Pridať / Ukáž talent / Nástenka)
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { ulozTaby(taby); }, [taby]);
@@ -135,12 +137,13 @@ export function Screens({ wide }: { wide?: boolean }) {
     <GaleriaContext.Provider value={otvorGaleriu}>
      <ScrollContext.Provider value={scrollHore}>
       <ViacContext.Provider value={() => setViac(true)}>
+      <StrankaAkcieContext.Provider value={setAkcie}>
       <div style={{ height: "100%", display: "flex", flexDirection: "column", position: "relative", overflow: "hidden", isolation: "isolate", background: C.bg }}>
         {/* dýchajúce pozadie vnútri appky (z-index -1 = pod obsahom) */}
         <DychajucePozadie silne />
 
-        {/* obsah aktívneho modulu — scroll vo vnútri, miesto pre plávajúci dock */}
-        <div ref={scrollRef} style={{ flex: 1, overflowY: "auto", minHeight: 0, paddingBottom: 96 }}>
+        {/* obsah aktívneho modulu — scroll vo vnútri, miesto pre plávajúci dock + „+ Pridať" */}
+        <div ref={scrollRef} style={{ flex: 1, overflowY: "auto", minHeight: 0, paddingBottom: 112 }}>
           <Suspense fallback={<FeedSkeleton count={4} />}>
             {modul === "good" && <ModulGood wide={wide} otvorModul={prepni} />}
             {modul === "help" && <ModulHelp wide={wide} />}
@@ -155,8 +158,11 @@ export function Screens({ wide }: { wide?: boolean }) {
         {/* plávajúci glass dock — na šírke vycentrovaný a zúžený */}
         <TabBar taby={taby} aktivny={modul} wide={wide} onModul={prepni} />
 
+        {/* plávajúce „+ Pridať" — primárna akcia stránky, sticky nad dokom */}
+        {akcie.pridat && <PridatFAB akcia={akcie.pridat} wide={wide} />}
+
         {viac && (
-          <ViacSheet taby={taby} setTaby={setTaby} aktivny={modul} moduly={moduly}
+          <ViacSheet taby={taby} setTaby={setTaby} aktivny={modul} moduly={moduly} strankaAkcie={akcie.extra}
             onModul={(m: string) => { prepni(m); setViac(false); }}
             onPenazenka={() => { prepni("profil"); setWalletReq((n) => n + 1); setViac(false); }}
             onClose={() => setViac(false)} />
@@ -165,6 +171,7 @@ export function Screens({ wide }: { wide?: boolean }) {
         {/* fullscreen galéria fotiek so swipovaním */}
         {galeria && <Lightbox fotky={galeria.fotky} index={galeria.index} onClose={() => setGaleria(null)} />}
       </div>
+      </StrankaAkcieContext.Provider>
       </ViacContext.Provider>
      </ScrollContext.Provider>
     </GaleriaContext.Provider>
