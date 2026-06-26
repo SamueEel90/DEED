@@ -123,75 +123,33 @@ function Feed({ wide, toast, onDetail, onHladaj, onAdd }: { wide?: boolean; toas
   );
 }
 
+// JEDNOTNÁ FULL-WIDTH (Instagram) KARTA pre Help — žiadosť / ponuka / charita:
+// veľké médium hore (foto/emoji) · typový odznak · titul + príbeh · pri žiadosti progres.
 function FeedCard({ z, wide, onClick }: { z: any; wide?: boolean; onClick: () => void }) {
-  if (z.typ === "ziadost") {
-    const velka = z.velkost === "velka";
-    const bleed = !wide && velka; // hero žiadosť edge-to-edge na mobile
-    return (
-      <div onClick={onClick} className="good-card" style={{ margin: wide ? 0 : (velka ? "0 -8px 12px" : "12px 13px"), border: bleed ? "none" : `1px solid ${z.sponzor ? "rgba(240,199,90,.32)" : C.line}`, borderLeft: bleed ? undefined : `3px solid ${z.sponzor ? C.gold : C.red}`, borderBottom: bleed ? `1px solid ${C.line2}` : undefined, borderRadius: bleed ? 0 : 17, overflow: "hidden", background: z.sponzor ? "rgba(240,199,90,.05)" : C.surface2, cursor: "pointer" }}>
-        {velka && (
-          <div style={{ position: "relative" }}>
-            <FotoPrispevku fotky={z.fotky} emoji={z.ikona} h={120} disableGaleria />
-            <span style={{ position: "absolute", top: 8, left: 8, background: z.sponzor ? C.gold : C.red, color: z.sponzor ? "#1A1408" : "#fff", fontSize: 9, fontWeight: "bold", borderRadius: 20, padding: "2px 8px", pointerEvents: "none" }}>
-              ŽIADOSŤ · {z.sponzor ? "D++" : "D+"}
-            </span>
-            {z.sponzor && (
-              <span style={{ position: "absolute", top: 8, right: 8, background: "#fff", color: "#0B3D91", fontSize: 9, fontWeight: "bold", borderRadius: 6, padding: "3px 7px", pointerEvents: "none" }}>
-                🛡 {z.sponzor.meno} · {z.sponzor.suma} €
-              </span>
-            )}
-          </div>
-        )}
-        <div style={{ display: "flex" }}>
-          {!velka && <FotoPrispevku fotky={z.fotky} emoji={z.ikona} h={92} w={78} disableGaleria />}
-          <div style={{ padding: "11px 14px 13px", flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 16, fontWeight: "bold" }}>{z.nazov}
-              {z.overeny && <span style={{ fontSize: 11, color: C.greenL, border: `1px solid rgba(127,203,160,.4)`, borderRadius: 20, padding: "2px 8px", marginLeft: 6 }}>overená</span>}
-            </div>
-            <div style={{ fontSize: 13.5, color: C.textSec, margin: "6px 0 9px", lineHeight: 1.5 }}>{z.pribeh.length > 70 ? z.pribeh.slice(0, 70) + "…" : z.pribeh}</div>
-            <MoniBar vyzbierane={z.suma} ciel={z.ciel} mini />
-          </div>
-        </div>
-      </div>
-    );
-  }
-  if (z.typ === "ponuka") {
-    const velka = z.velkost === "stredna";
-    return (
-      <div style={{ margin: wide ? 0 : "11px 13px", border: `1px solid rgba(139,124,255,.28)`, borderLeft: velka ? `1px solid rgba(139,124,255,.28)` : `3px solid ${C.purple}`, borderRadius: velka ? 17 : 12, background: "rgba(139,124,255,.06)", padding: velka ? 0 : "9px 13px", overflow: "hidden", display: "flex", alignItems: velka ? "stretch" : "center" }}>
-        {velka ? (
-          <>
-            <FotoPrispevku fotky={z.fotky} emoji={z.ikona} h={80} w={74} style={{ minHeight: 80, height: "100%" }} />
-            <div style={{ padding: "10px 12px" }}>
-              <span style={{ fontSize: 15, fontWeight: "bold" }}>{z.nazov}</span>
-              {z.odbornik && <span style={{ fontSize: 11, color: C.purple, border: `1px solid rgba(175,169,236,.4)`, borderRadius: 20, padding: "2px 8px", marginLeft: 4 }}>✓ odborník</span>}
-              <div style={{ fontSize: 13, color: C.textSec, margin: "5px 0", lineHeight: 1.45 }}>{z.pribeh}</div>
-              <div style={{ fontSize: 11.5, color: C.textTer }}>{z.lok}</div>
-            </div>
-          </>
-        ) : (
-          <>
-            <div style={{ width: 38, height: 38, lineHeight: "38px", textAlign: "center", borderRadius: 7, background: "rgba(139,124,255,.16)", color: "var(--a-plum)", fontSize: 17, flex: "0 0 auto" }}>{z.ikona}</div>
-            <div style={{ marginLeft: 10 }}>
-              <div style={{ fontSize: 14.5 }}><b>{z.nazov}</b> <span style={{ fontSize: 11, color: C.textTer }}>ponuka</span></div>
-              <div style={{ fontSize: 13, color: C.textSec }}>{z.pribeh} · {z.lok}</div>
-            </div>
-          </>
-        )}
-      </div>
-    );
-  }
-  // charity
+  const jeZiadost = z.typ === "ziadost";
+  const jePonuka = z.typ === "ponuka";
+  const accent = jeZiadost ? (z.sponzor ? C.gold : C.red) : jePonuka ? C.purple : C.gold;
+  const typLabel = jeZiadost ? `ŽIADOSŤ · ${z.sponzor ? "D++" : "D+"}` : jePonuka ? "PONUKA POMOCI" : "CHARITA";
+  const mediaH = wide ? 168 : 230;
   return (
-    <div style={{ margin: wide ? 0 : "11px 13px", border: `1px solid rgba(91,155,255,.28)`, borderRadius: 13, background: z.sponzor ? "rgba(91,155,255,.07)" : "rgba(255,255,255,.04)", padding: "10px 13px", display: "flex", alignItems: "center", gap: 10 }}>
-      {z.fotky ? (
-        <FotoPrispevku fotky={z.fotky} emoji={z.ikona} h={38} w={38} radius={7} />
-      ) : (
-        <div style={{ width: z.sponzor ? 36 : 30, height: z.sponzor ? 36 : 30, lineHeight: z.sponzor ? "36px" : "30px", textAlign: "center", borderRadius: 9, background: z.sponzor ? "#fff" : "rgba(91,155,255,.12)", color: z.sponzor ? C.blue : "#A9C8F0", fontSize: z.sponzor ? 10 : 9, fontWeight: "bold", flex: "0 0 auto" }}>{z.ikona}</div>
-      )}
-      <div>
-        <div style={{ fontSize: z.sponzor ? 14.5 : 13.5 }}><b>{z.nazov}</b> {z.sponzor ? <span style={{ fontSize: 11, color: C.greenL, border: `1px solid rgba(127,203,160,.4)`, borderRadius: 10, padding: "2px 8px" }}>sponzorované</span> : <span style={{ fontSize: 11, color: C.textTer }}>hľadá pomoc</span>}</div>
-        <div style={{ fontSize: 12.5, color: C.textSec, marginTop: 3 }}>{z.pribeh}</div>
+    <div onClick={onClick} className="good-card" style={{ margin: wide ? 0 : "0 -16px 10px", border: wide ? `1px solid ${C.line}` : "none", borderBottom: `1px solid ${wide ? C.line : C.line2}`, borderLeft: `3px solid ${accent}`, borderRadius: wide ? 17 : 0, overflow: "hidden", background: C.surface2, cursor: jeZiadost ? "pointer" : "default" }}>
+      {/* médium */}
+      <div style={{ position: "relative", height: mediaH }}>
+        <FotoPrispevku fotky={z.fotky} emoji={z.ikona} h={mediaH} disableGaleria />
+        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(0deg, rgba(0,0,0,.34), transparent 42%)", pointerEvents: "none" }} />
+        <span style={{ position: "absolute", top: 10, left: 10, background: accent, color: "#fff", fontSize: 9, fontWeight: 800, borderRadius: 20, padding: "3px 10px", pointerEvents: "none" }}>{typLabel}</span>
+        {z.sponzor && <span style={{ position: "absolute", top: 10, right: 10, background: "rgba(8,11,18,.6)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)", color: "#fff", fontSize: 9, fontWeight: 700, borderRadius: 8, padding: "3px 8px", pointerEvents: "none" }}>🛡 {z.sponzor.meno} · {z.sponzor.suma} €</span>}
+      </div>
+      {/* titul + príbeh */}
+      <div style={{ padding: "12px 14px 14px" }}>
+        <div style={{ fontSize: 16, fontWeight: 700, lineHeight: 1.35, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+          <span style={{ flex: "0 1 auto", minWidth: 0 }}>{z.nazov}</span>
+          {z.overeny && <span style={{ fontSize: 10.5, color: C.greenL, border: `1px solid rgba(127,203,160,.4)`, borderRadius: 20, padding: "2px 8px", flex: "none" }}>overená</span>}
+          {z.odbornik && <span style={{ fontSize: 10.5, color: C.purple, border: `1px solid rgba(175,169,236,.4)`, borderRadius: 20, padding: "2px 8px", flex: "none" }}>✓ odborník</span>}
+          {z.typ === "charity" && !z.sponzor && <span style={{ fontSize: 10.5, color: C.textTer, flex: "none" }}>hľadá pomoc</span>}
+        </div>
+        <div style={{ fontSize: 13.5, color: C.textSec, marginTop: 7, lineHeight: 1.5 }}>{z.pribeh}{z.lok ? ` · ${z.lok}` : ""}</div>
+        {jeZiadost && z.ciel ? <div style={{ marginTop: 10 }}><MoniBar vyzbierane={z.suma} ciel={z.ciel} mini /></div> : null}
       </div>
     </div>
   );

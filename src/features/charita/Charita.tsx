@@ -172,63 +172,59 @@ function CharitaFeed({ wide, toast, onDetail, onHladaj, onSheet }: FeedProps) {
 }
 
 // ---- karty feedu (rozdelené do komponentov kvôli dvojstĺpcu skutky/žiadosti) ----
+// JEDNOTNÁ FULL-WIDTH (Instagram) KARTA pre Charitu — médium hore · odznaky · titul · príbeh · progres.
+function CharitaKarta({ wide, onClick, fotky, emoji, accent, badgeL, badgeR, nazov, overena, tag, tagBg, tagCol, popis, vyzbierane, ciel }: any) {
+  const mediaH = wide ? 168 : 235;
+  return (
+    <div onClick={onClick} className="good-card" style={{ background: K.card, border: wide ? `1px solid ${K.line}` : "none", borderBottom: `1px solid ${K.line}`, borderLeft: `3px solid ${accent}`, borderRadius: wide ? 16 : 0, overflow: "hidden", marginBottom: wide ? 0 : 10, cursor: "pointer", ...(wide ? {} : { marginLeft: -14, marginRight: -14 }) }}>
+      <div style={{ position: "relative", height: mediaH }}>
+        <FotoPrispevku fotky={fotky} emoji={emoji} h={mediaH} disableGaleria />
+        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(0deg, rgba(0,0,0,.34), transparent 42%)", pointerEvents: "none" }} />
+        {badgeL && <span style={badge({ top: 10, left: 10, color: badgeL.col, background: badgeL.bg })}>{badgeL.t}</span>}
+        {badgeR && <span style={badge({ top: 10, right: 10, color: badgeR.col, background: badgeR.bg })}>{badgeR.t}</span>}
+      </div>
+      <div style={{ padding: "12px 14px 14px" }}>
+        <div style={{ fontSize: 15.5, fontWeight: 700, display: "flex", alignItems: "center", gap: 7, flexWrap: "wrap" }}>
+          <span>{nazov}</span>
+          {overena && <Overena />}
+          {tag && <span style={{ fontSize: 10.5, padding: "2px 8px", borderRadius: 6, fontWeight: 600, background: tagBg, color: tagCol }}>{tag}</span>}
+        </div>
+        <div style={{ fontSize: 13, color: K.txt2, lineHeight: 1.5, marginTop: 6 }}>{popis}</div>
+        {ciel ? <div style={{ marginTop: 10 }}><MoniBar vyzbierane={vyzbierane} ciel={ciel} mini /></div> : null}
+      </div>
+    </div>
+  );
+}
 function ZbierkyUrgent({ wide, onDetail }: { wide?: boolean; onDetail: () => void }) {
   const { data: ZBIERKA } = useCharitaZbierka();
   if (!ZBIERKA) return null;
-  return (
-    <div onClick={onDetail} className="good-card" style={{ background: K.warmBg, border: `1px solid ${K.warmEdge}`, borderRadius: 16, overflow: "hidden", marginBottom: wide ? 0 : 12, cursor: "pointer", ...(wide ? {} : { marginLeft: -14, marginRight: -14, borderRadius: 0, border: "none", borderBottom: `1px solid ${K.line}` }) }}>
-      <div style={{ position: "relative" }}>
-        <FotoPrispevku fotky={ZBIERKA.fotky} emoji="🔥" h={150} disableGaleria />
-        <span style={badge({ top: 9, left: 9, color: K.gold })}>🔥 URGENTNÉ</span>
-        <span style={badge({ top: 9, right: 9, color: K.diamond, background: "rgba(96,165,250,.18)" })}>🛡 Lidl · 500 €</span>
-      </div>
-      <div style={{ padding: "12px 14px" }}>
-        <div style={{ fontSize: 15, fontWeight: 600, display: "flex", alignItems: "center", gap: 7 }}>Rodina Kováčová <Overena /></div>
-        <div style={{ fontSize: 13, color: K.txt2, lineHeight: 1.5, margin: "5px 0 10px" }}>V noci nám zhorel dom, ostali sme bez strechy s dvomi deťmi. Potrebuje…</div>
-        <MoniBar vyzbierane={1430} ciel={2200} mini />
-      </div>
-    </div>
-  );
+  return <CharitaKarta wide={wide} onClick={onDetail} fotky={ZBIERKA.fotky} emoji="🔥" accent={K.gold}
+    badgeL={{ t: "🔥 URGENTNÉ", col: K.gold }} badgeR={{ t: "🛡 Lidl · 500 €", col: K.diamond, bg: "rgba(96,165,250,.18)" }}
+    nazov="Rodina Kováčová" overena popis="V noci nám zhorel dom, ostali sme bez strechy s dvomi deťmi. Potrebujeme pomoc."
+    vyzbierane={1430} ciel={2200} />;
 }
 function ZbierkyTop({ wide, toast }: { wide?: boolean; toast: (m: string) => void }) {
-  return (
-    <div onClick={() => toast("Detail zbierky — Plamienok")} style={{ background: K.card, border: `1px solid ${K.line}`, borderRadius: 16, padding: "13px 14px", marginBottom: wide ? 0 : 12, cursor: "pointer" }}>
-      <div style={{ fontSize: 14, fontWeight: 600, display: "flex", alignItems: "center", gap: 7 }}>Plamienok <span style={{ fontSize: 10, color: K.diamond, border: `1px solid ${K.blueEdge}`, background: "rgba(96,165,250,.08)", padding: "1px 7px", borderRadius: 99, fontWeight: 500 }}>⭐ TOP</span></div>
-      <div style={{ fontSize: 13, color: K.txt2, lineHeight: 1.5, margin: "5px 0 9px" }}>Detský hospic — pomôžte nám zabezpečiť mobilnú paliatívnu starostlivosť pre rodiny.</div>
-      <MoniBar vyzbierane={8200} ciel={15000} mini />
-    </div>
-  );
+  return <CharitaKarta wide={wide} onClick={() => toast("Detail zbierky — Plamienok")} emoji="⭐" accent={K.blue}
+    badgeL={{ t: "⭐ TOP", col: K.diamond, bg: "rgba(96,165,250,.18)" }}
+    nazov="Plamienok" tag="HOSPIC" tagBg="rgba(96,165,250,.12)" tagCol={K.diamond}
+    popis="Detský hospic — pomôžte nám zabezpečiť mobilnú paliatívnu starostlivosť pre rodiny."
+    vyzbierane={8200} ciel={15000} />;
 }
 function ZbierkyMala({ wide, toast }: { wide?: boolean; toast: (m: string) => void }) {
-  return (
-    <div onClick={() => toast("Detail zbierky — Žofia K.")} className="good-card" style={{ background: K.warmBg, border: `1px solid ${K.warmEdge}`, borderRadius: 16, overflow: "hidden", marginBottom: wide ? 0 : 12, cursor: "pointer", ...(wide ? {} : { marginLeft: -14, marginRight: -14, borderRadius: 0, border: "none", borderBottom: `1px solid ${K.line}` }) }}>
-      <div style={{ position: "relative" }}>
-        <FotoPrispevku fotky={ZOFIA_FOTKY} emoji="🩺" h={120} disableGaleria />
-        <span style={badge({ top: 9, right: 9, color: K.green, background: "rgba(52,211,153,.18)" })}>D+</span>
-      </div>
-      <div style={{ padding: "12px 14px" }}>
-        <div style={{ fontSize: 14, fontWeight: 600, display: "flex", alignItems: "center", gap: 7 }}>Žofia K. <Overena /></div>
-        <div style={{ fontSize: 13, color: K.txt2, lineHeight: 1.5, margin: "5px 0 9px" }}>Po úraze tri mesiace bez príjmu, potrebujem na lieky.</div>
-        <MoniBar vyzbierane={520} ciel={800} mini />
-      </div>
-    </div>
-  );
+  return <CharitaKarta wide={wide} onClick={() => toast("Detail zbierky — Žofia K.")} fotky={ZOFIA_FOTKY} emoji="🩺" accent={K.green}
+    badgeR={{ t: "D+", col: K.green, bg: "rgba(52,211,153,.18)" }}
+    nazov="Žofia K." overena popis="Po úraze tri mesiace bez príjmu, potrebujem na lieky."
+    vyzbierane={520} ciel={800} />;
 }
 function ZapojSa({ wide, toast }: { wide?: boolean; toast: (m: string) => void }) {
-  return (
-    <RiadokKarta wide={wide} onClick={() => toast("Otvorila by sa výzva na dobrovoľníctvo")}
-      ikona="🌳" ikonaBg={K.greenBg} ikonaCol={K.green}
-      nazov="Stromosvet" tag="DOBROVOĽNÍCTVO" tagBg="rgba(52,211,153,.14)" tagCol={K.green}
-      popis="Hľadá 10 dobrovoľníkov · výsadba stromov · sobota, Brezina" />
-  );
+  return <CharitaKarta wide={wide} onClick={() => toast("Otvorila by sa výzva na dobrovoľníctvo")} emoji="🌳" accent={K.green}
+    badgeL={{ t: "DOBROVOĽNÍCTVO", col: K.green, bg: "rgba(52,211,153,.18)" }}
+    nazov="Stromosvet" popis="Hľadá 10 dobrovoľníkov · výsadba stromov · sobota, Brezina" />;
 }
 function Material({ wide, toast }: { wide?: boolean; toast: (m: string) => void }) {
-  return (
-    <RiadokKarta wide={wide} onClick={() => toast("Zbierka materiálu — Zelená plus")}
-      ikona="ZP" ikonaBg={K.blueBg} ikonaCol={K.diamond} ikonaText
-      nazov="Zelená plus" tag="MATERIÁL" tagBg="rgba(96,165,250,.14)" tagCol={K.diamond}
-      popis="Triedenie a zber šatstva pre útulok · streda, Juh" />
-  );
+  return <CharitaKarta wide={wide} onClick={() => toast("Zbierka materiálu — Zelená plus")} emoji="♻" accent={K.blue}
+    badgeL={{ t: "MATERIÁL", col: K.diamond, bg: "rgba(96,165,250,.18)" }}
+    nazov="Zelená plus" popis="Triedenie a zber šatstva pre útulok · streda, Juh" />;
 }
 
 function badge({ top, left, right, color, background }: { top?: number; left?: number; right?: number; color?: string; background?: string }): React.CSSProperties {

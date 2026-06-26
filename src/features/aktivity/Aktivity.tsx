@@ -211,53 +211,29 @@ function Home({ items, dom, view, pickDom, pickView, toast, open, openPerson, se
     ...pripravFeed(list.filter((it: AktItem) => !it.mine), { ...USER_LOK, radius }),
   ];
 
-  // štýl sub-záložky (Workshopy/Hľadám pomoc/Market) — theme-aware cez DOM[dom].c
-  // (funguje aj v menu mimo Aktivity rootu, kde nie sú definované --acc premenné)
-  const segStyle = (on: boolean): React.CSSProperties => ({ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, height: 38, borderRadius: 11, fontSize: 12, fontWeight: 600, cursor: "pointer", background: on ? tint(DOM[dom].c, .15) : A.surface, border: `1px solid ${on ? tint(DOM[dom].c, .5) : A.line2}`, color: on ? DOM[dom].c : A.txt2 });
-
   // dvojstĺpcový feed (skutky vľavo / žiadosti vpravo) iba v zmiešanom zobrazení na tablete/PC
   const dva = wide && view === "all";
-  const feedCard = (it: AktItem) => {
-    if (it.type === "workshop") return <WCard key={it.id} it={it} wide={dva} onOpen={open} onPerson={openPerson} />;
-    if (it.type === "help") return <ReqCard key={it.id} it={it} wide={dva} onOpen={open} onPerson={openPerson} />;
-    if (it.type === "case" || it.size === "med") return <MedCard key={it.id} it={it} wide={dva} onOpen={open} onPerson={openPerson} />;
-    if (it.size === "big") return <BigCard key={it.id} it={it} wide={dva} onOpen={open} onPerson={openPerson} />;
-    return <SmallRow key={it.id} it={it} wide={dva} onOpen={open} onPerson={openPerson} />;
-  };
+  const feedCard = (it: AktItem) => <AktCard key={it.id} it={it} wide={dva} onOpen={open} onPerson={openPerson} />;
 
-  // FILTRE PRESUNUTÉ DO MENU (☰): doménový prepínač + sub-záložky (Workshopy/Hľadám pomoc/Market)
-  // sa zobrazia v sekcii „Na tejto stránke" → vrch Aktivít ostáva čistý. Aktívne stavy sledujú [dom, view].
-  const filtreMenu = (
-    <>
-      <div style={{ overflowX: "auto", margin: "0 0 10px" }}>
-        <div style={{ display: "flex", gap: 7, minWidth: "max-content" }}>
-          {ORDER.map((d) => {
-            const a = DOM[d]; const on = dom === d;
-            return (
-              <div key={d} onClick={() => pickDom(d)} style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, minWidth: 60, height: 54, borderRadius: 14, cursor: "pointer", flex: "none", background: on ? tint(a.c, .15) : A.surface2, border: `1px solid ${on ? tint(a.c, .5) : A.line}` }}>
-                <div style={{ color: on ? a.c : A.txt2, display: "flex" }}>{DOM_IKONA[d]}</div>
-                <div style={{ fontSize: 10, fontWeight: 700, color: on ? a.c : A.txt2 }}>{a.label}</div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-      <div style={{ display: "flex", gap: 8 }}>
-        <div onClick={() => pickView("workshop")} style={segStyle(view === "workshop")}><span style={{ fontSize: 13 }}>🎓</span>Workshopy</div>
-        <div onClick={() => pickView("help")} style={segStyle(view === "help")}><span style={{ fontSize: 13 }}>❓</span>Hľadám pomoc</div>
-        <div onClick={() => toast("Market — predaj diel/náradia, fáza 2")} style={segStyle(false)}><span style={{ fontSize: 13 }}>🛒</span>Market<span style={{ fontSize: 10, background: A.goldBg, color: A.gold, padding: "1px 5px", borderRadius: 5, marginLeft: 2 }}>čoskoro</span></div>
-      </div>
-    </>
-  );
+  // PODSEKCIE STRÁNKY V SPODNOM DOKU — domény (Všetko + 5) aj sub-záložky (Workshopy/Pomoc/Market).
+  // Ľavý slot doku ostáva „Moduly" (App shell). Aktívne stavy sledujú [dom, view].
+  const dokEmoji = (e: string) => <span style={{ fontSize: 15, lineHeight: 1 }}>{e}</span>;
+  const dokPolozky = [
+    { id: "mix", label: "Všetko", col: "var(--a-green)", ikona: dokEmoji("✦"), aktivne: dom === "mix" && view === "all", onClick: () => pickDom("mix") },
+    ...ORDER.map((d) => ({ id: d, label: DOM[d].label, col: DOM[d].c, ikona: DOM_IKONA[d], aktivne: dom === d, onClick: () => pickDom(d) })),
+    { id: "workshop", label: "Workshopy", col: "var(--a-info)", ikona: dokEmoji("🎓"), aktivne: view === "workshop", onClick: () => pickView("workshop") },
+    { id: "help", label: "Pomoc", col: "var(--a-danger)", ikona: dokEmoji("❓"), aktivne: view === "help", onClick: () => pickView("help") },
+    { id: "market", label: "Market", col: "var(--a-gold)", ikona: dokEmoji("🛒"), aktivne: false, onClick: () => toast("Market — predaj diel/náradia, fáza 2") },
+  ];
 
-  // kontextové akcie stránky → plávajúce „+ Pridať" dole + sekcia „Na tejto stránke" (filtre + akcie) v menu (☰)
+  // kontextové akcie stránky → „+ Pridať" FAB · „Na tejto stránke" (Talent/Nástenka) v ☰ · podsekcie v spodnom doku
   useStrankaAkcie(() => ({
     pridat: { id: "add", label: "Pridať", onClick: () => setScreen("add") },
     extra: [
       { id: "talent", label: "Ukáž svoj talent", popis: "Tvorivé skutky a talenty", ikona: <IkonaPlay size={18} color="var(--a-green)" />, onClick: () => pickView("talent") },
       { id: "board", label: "Nástenka", popis: "Skutky a výzvy v okolí", ikona: <IkonaDoska size={18} color="var(--a-green)" />, onClick: () => setScreen("board") },
     ],
-    filtre: filtreMenu,
+    dok: dokPolozky,
   }), [dom, view]);
 
   return (
@@ -281,20 +257,6 @@ function Home({ items, dom, view, pickDom, pickView, toast, open, openPerson, se
       {/* štatistický riadok — počet vo zvolenom okruhu + výber okruhu */}
       <StatRiadok stat={`V okruhu ${feed.length} aktivít · Mesiac 9 480`}
         okruh={FEED_CFG.radiusy[radius].krat} onOkruh={() => setVyberOkruh(true)} />
-
-      {/* AKTÍVNY FILTER — viditeľný len keď je iný než predvolený (mix/všetko); prepínanie je v menu (☰).
-          Chip s ✕ filter zruší. Predvolene je tu prázdno → vrch stránky čistý. */}
-      {(dom !== "mix" || view !== "all") && (
-        <div style={{ display: "flex", alignItems: "center", gap: 7, padding: "0 16px 12px", borderBottom: `1px solid ${A.line}`, marginBottom: 4, flexWrap: "wrap" }}>
-          <span style={{ fontSize: 11, color: A.txt3, fontWeight: 600 }}>Filter:</span>
-          {dom !== "mix" && (
-            <span onClick={() => pickDom("mix")} style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11.5, fontWeight: 700, padding: "4px 7px 4px 10px", borderRadius: 14, cursor: "pointer", color: DOM[dom].c, background: tint(DOM[dom].c, .14), border: `1px solid ${tint(DOM[dom].c, .4)}` }}>{DOM[dom].label} <span style={{ opacity: .7, fontSize: 13 }}>✕</span></span>
-          )}
-          {view !== "all" && (
-            <span onClick={() => pickView(view)} style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11.5, fontWeight: 700, padding: "4px 7px 4px 10px", borderRadius: 14, cursor: "pointer", color: DOM[dom].c, background: tint(DOM[dom].c, .14), border: `1px solid ${tint(DOM[dom].c, .4)}` }}>{view === "talent" ? "Talent" : view === "workshop" ? "Workshopy" : "Hľadám pomoc"} <span style={{ opacity: .7, fontSize: 13 }}>✕</span></span>
-          )}
-        </div>
-      )}
 
       {/* feed — na tablete/PC: skutky & aktivity vľavo, žiadosti o pomoc vpravo */}
       {isError ? (
@@ -320,108 +282,63 @@ function Home({ items, dom, view, pickDom, pickView, toast, open, openPerson, se
 
 // ---- karty ----
 const stop = (fn: () => void) => (e: React.MouseEvent) => { e.stopPropagation(); fn(); };
-function BigCard({ it, wide, onOpen, onPerson }: any) {
-  return (
-    <div onClick={() => onOpen(it.id)} className="good-card" style={{ ...cardS, marginBottom: wide ? 0 : 12, ...(wide ? {} : { margin: "0 -16px 12px", borderRadius: 0, border: "none", borderBottom: `1px solid ${A.line2}` }) }}>
-      <div style={{ height: 148, position: "relative", display: "flex", alignItems: "center", justifyContent: "center", background: heroGrad(it.dom) }}>
-        <span style={badge("l")}>★ {it.importance || DOM[it.dom].label}</span>
-        {it.media === "video" && <span style={badge("r")}>▶ video</span>}
-        {it.media === "video" ? <Play /> : <div style={{ fontSize: 50 }}>{it.emoji}</div>}
-        <div style={{ position: "absolute", bottom: 12, left: 12 }}><DomTag it={it} /></div>
-      </div>
-      <div style={{ padding: 14 }}>
-        <div style={rowTopS}>
-          <div onClick={stop(() => onPerson(it.author))} style={{ ...pfpS(it.pfp), cursor: "pointer" }}>{it.ini}</div>
-          <div onClick={stop(() => onPerson(it.author))} style={{ ...nameS, cursor: "pointer" }}>{it.author}</div>
-          {it.verified && <span style={verifS}>overené</span>}
-          <span style={timeS}>{it.time}</span>
-        </div>
-        <div style={{ fontSize: 10.5, color: A.txt3, marginLeft: 42, marginBottom: 8 }}>{it.loc} · č. {it.num.toLocaleString("sk")}</div>
-        <div style={titleS}>{it.title}</div>
-      </div>
-    </div>
-  );
-}
-function MedCard({ it, wide, onOpen, onPerson }: any) {
-  const a = DOM[it.dom]; const isCase = it.type === "case";
-  return (
-    <div onClick={() => onOpen(it.id)} style={{ ...cardS, marginBottom: wide ? 0 : 12, display: "flex", padding: 12, gap: 12, alignItems: "flex-start", border: `1px solid ${isCase ? a.bd : A.line}` }}>
-      <div style={{ width: 96, height: 80, borderRadius: 11, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, background: heroGrad(it.dom) }}>{it.media === "kreslene" ? "✎" : it.emoji}</div>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 15, fontWeight: 700, lineHeight: 1.35 }}>{it.title}</div>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
-          <span onClick={stop(() => onPerson(it.author))} style={{ fontSize: 12.5, color: A.txt2, cursor: "pointer", fontWeight: 600 }}>{it.author}</span>
-          <DomTag it={it} />
-          {isCase && <ProgressMini it={it} />}
-        </div>
-      </div>
-      <span style={timeS}>{it.time}</span>
-    </div>
-  );
-}
-function WCard({ it, wide, onOpen, onPerson }: any) {
-  const free = it.price === "free";
-  return (
-    <div onClick={() => onOpen(it.id)} style={{ ...cardS, marginBottom: wide ? 0 : 12, display: "flex", padding: 12, gap: 12, alignItems: "flex-start" }}>
-      <div style={{ width: 96, height: 80, borderRadius: 11, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, background: heroGrad(it.dom) }}>{it.emoji}</div>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-          <Wb bg={free ? A.greenBg : A.goldBg} c={free ? A.green : A.gold}>{free ? "ZADARMO" : it.priceTxt}</Wb>
-          {it.b2b && <Wb bg={A.blueBg} c={A.blue}>B2B · audit</Wb>}
-          {it.profi && <Wb bg={A.purpleBg} c={A.purple}>PROFI</Wb>}
-        </div>
-        <div style={{ fontSize: 15, fontWeight: 700, lineHeight: 1.35, marginTop: 6 }}>{it.title}</div>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
-          <span onClick={stop(() => onPerson(it.author))} style={{ fontSize: 12, color: A.txt2, cursor: "pointer", fontWeight: 600 }}>{it.author}</span>
-          <span style={{ fontSize: 12, color: A.txt3 }}>· {it.loc}</span>
-          <span style={{ fontSize: 11.5, color: A.txt3 }}>★ {it.rating} · {it.seats} miest</span>
-        </div>
-      </div>
-      <span style={{ ...timeS, fontSize: 9 }}>{it.time}</span>
-    </div>
-  );
-}
 function Wb({ bg, c, children }: { bg: string; c: string; children: React.ReactNode }) {
   return <span style={{ display: "inline-flex", alignItems: "center", fontSize: 9, fontWeight: 700, padding: "2px 7px", borderRadius: 6, background: bg, color: c }}>{children}</span>;
 }
 function ProgressMini({ it }: { it: AktItem }) {
   const pct = Math.round((it.raised as number) / (it.goal as number) * 100);
   return (
-    <div style={{ width: "100%", marginTop: 6 }}>
+    <div style={{ width: "100%", marginTop: 10 }}>
       <div style={{ height: 6, background: "rgba(var(--glass-rgb),.12)", borderRadius: 99, overflow: "hidden" }}><div style={{ height: "100%", width: `${pct}%`, background: GRAD_ZELENY, borderRadius: 99 }} /></div>
-      <div style={{ fontSize: 9, color: A.txt3, marginTop: 3 }}>{(it.raised as number).toLocaleString("sk")} € z {(it.goal as number).toLocaleString("sk")} € · {pct}% · D++R {it.drr}%</div>
+      <div style={{ fontSize: 10, color: A.txt3, marginTop: 4 }}>{(it.raised as number).toLocaleString("sk")} € z {(it.goal as number).toLocaleString("sk")} € · {pct}% · D++R {it.drr}%</div>
     </div>
   );
 }
-function ReqCard({ it, wide, onOpen, onPerson }: any) {
-  // Neutrálna karta (béžový povrch + tmavý text) s jemným červeným akcentom (ľavý prúžok + ikona),
-  // aby žiadosť o pomoc sadla k zvyšku feedu a nepôsobila ako červený blok.
-  return (
-    <div onClick={() => onOpen(it.id)} style={{ ...cardS, marginBottom: wide ? 0 : 12, borderLeft: `3px solid ${A.red}` }}>
-      <div style={{ display: "flex", padding: 14, gap: 12, alignItems: "flex-start" }}>
-        <div style={{ width: 64, height: 64, borderRadius: 11, background: A.redBg, border: `1px solid ${A.redBd}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, color: A.red, flex: "none" }}>{it.emoji}</div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 15, fontWeight: 700, lineHeight: 1.35, color: A.txt }}>{it.title}</div>
-          <div style={{ fontSize: 12.5, color: A.txt2, marginTop: 6 }}><span onClick={stop(() => onPerson(it.author))} style={{ cursor: "pointer", fontWeight: 600 }}>{it.author}</span> · {it.loc}</div>
-          <div style={{ fontSize: 11.5, marginTop: 6, fontWeight: 600, color: A.red }}>❓ Hľadám pomoc · <span style={{ color: A.txt3, fontWeight: 400 }}>{it.helpers} sa zapojilo</span></div>
-        </div>
-      </div>
-    </div>
-  );
-}
-function SmallRow({ it, wide, onOpen, onPerson }: any) {
+
+// JEDNOTNÁ FULL-WIDTH (Instagram) KARTA pre VŠETKY aktivity (skutok/talent/workshop/žiadosť/charita):
+// autor hore · veľké médium (video/emoji) · titul · pätička podľa typu.
+function AktCard({ it, wide, onOpen, onPerson }: any) {
   const a = DOM[it.dom];
-  const ic = it.type === "talent" ? "▶" : it.media === "kreslene" ? "✎" : "▦";
+  const jeHelp = it.type === "help";
+  const jeCase = it.type === "case";
+  const jeWorkshop = it.type === "workshop";
+  const accent = jeHelp ? A.red : a.c;
+  const mediaH = wide ? 180 : 250;
   return (
-    <div onClick={() => onOpen(it.id)} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 12px", background: A.surface, border: `1px solid ${A.line2}`, borderRadius: 12, marginBottom: wide ? 0 : 8, cursor: "pointer" }}>
-      <div style={{ width: 38, height: 38, borderRadius: 9, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flex: "none", background: a.bg, color: a.c, border: `1px solid ${a.bd}` }}>{ic}</div>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 14, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}><span style={{ width: 7, height: 7, borderRadius: "50%", display: "inline-block", marginRight: 6, background: a.c }} />{it.title}</div>
-        <div style={{ fontSize: 11.5, color: A.txt3, marginTop: 3 }}><span onClick={stop(() => onPerson(it.author))} style={{ cursor: "pointer", fontWeight: 600, color: A.txt2 }}>{it.author}</span> · {a.label}{it.karma ? " · " + it.karma : ""}</div>
+    <div onClick={() => onOpen(it.id)} className="good-card" style={{ ...cardS, marginBottom: wide ? 0 : 10, ...(wide ? {} : { margin: "0 -16px 10px", borderRadius: 0, border: "none", borderBottom: `1px solid ${A.line2}` }), borderLeft: jeHelp ? `3px solid ${A.red}` : undefined }}>
+      {/* autor */}
+      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px 10px" }}>
+        <div onClick={stop(() => onPerson(it.author))} style={{ ...pfpS(it.pfp), width: 38, height: 38, cursor: "pointer", boxShadow: `0 3px 10px ${tint(accent, .3)}` }}>{it.ini}</div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap" }}>
+            <span onClick={stop(() => onPerson(it.author))} style={{ fontWeight: 700, fontSize: 14.5, cursor: "pointer", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it.author}</span>
+            {it.verified && <span style={verifS}>overené</span>}
+          </div>
+          <div style={{ fontSize: 11.5, color: A.txt3, marginTop: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it.loc || a.label}{it.num ? ` · č. ${it.num.toLocaleString("sk")}` : ""}{it.karma ? ` · ${it.karma}` : ""}</div>
+        </div>
+        <span style={timeS}>{it.time}</span>
       </div>
-      <div style={{ textAlign: "right", flex: "none" }}>
-        <div style={timeS}>{it.time}</div>
-        <div style={{ color: C.textTer, fontSize: 14 }}>›</div>
+      {/* médium */}
+      <div style={{ position: "relative", height: mediaH, margin: wide ? "0 10px" : 0, borderRadius: wide ? 14 : 0, overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", background: heroGrad(it.dom) }}>
+        {it.media === "video" ? <Play big /> : <div style={{ fontSize: 56 }}>{it.media === "kreslene" ? "✎" : it.emoji}</div>}
+        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(0deg, rgba(0,0,0,.34), transparent 42%)", pointerEvents: "none" }} />
+        {it.importance && <span style={badge("l")}>★ {it.importance}</span>}
+        {it.media === "video" && <span style={badge("r")}>▶ video</span>}
+        <div style={{ position: "absolute", bottom: 10, left: 10 }}><DomTag it={it} /></div>
+      </div>
+      {/* titul + pätička */}
+      <div style={{ padding: "12px 14px 14px" }}>
+        {jeWorkshop && (
+          <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginBottom: 7 }}>
+            <Wb bg={it.price === "free" ? A.greenBg : A.goldBg} c={it.price === "free" ? A.green : A.gold}>{it.price === "free" ? "ZADARMO" : it.priceTxt}</Wb>
+            {it.b2b && <Wb bg={A.blueBg} c={A.blue}>B2B · audit</Wb>}
+            {it.profi && <Wb bg={A.purpleBg} c={A.purple}>PROFI</Wb>}
+          </div>
+        )}
+        <div style={{ fontSize: 16, fontWeight: 700, lineHeight: 1.36, color: A.txt, display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{it.title}</div>
+        {jeCase && <ProgressMini it={it} />}
+        {jeHelp && <div style={{ fontSize: 12.5, marginTop: 8, fontWeight: 600, color: A.red }}>❓ Hľadám pomoc · <span style={{ color: A.txt3, fontWeight: 400 }}>{it.helpers} sa zapojilo</span></div>}
+        {jeWorkshop && <div style={{ fontSize: 11.5, color: A.txt3, marginTop: 7 }}>★ {it.rating} · {it.seats} miest{it.loc ? ` · ${it.loc}` : ""}</div>}
       </div>
     </div>
   );

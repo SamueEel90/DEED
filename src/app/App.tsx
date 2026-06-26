@@ -155,8 +155,8 @@ export function Screens({ wide }: { wide?: boolean }) {
           </Suspense>
         </div>
 
-        {/* plávajúci glass dock — na šírke vycentrovaný a zúžený */}
-        <TabBar taby={taby} aktivny={modul} wide={wide} onModul={prepni} />
+        {/* plávajúci glass dock — moduly, alebo (ak stránka má podsekcie) kontextový dok: Moduly + podsekcie */}
+        <TabBar taby={taby} aktivny={modul} wide={wide} onModul={prepni} dok={akcie.dok} onModuly={() => setViac(true)} />
 
         {/* plávajúce „+ Pridať" — primárna akcia stránky, sticky nad dokom */}
         {akcie.pridat && <PridatFAB akcia={akcie.pridat} wide={wide} />}
