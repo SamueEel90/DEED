@@ -29,7 +29,7 @@ const ModulTop = lazy(() => import("@/features/top/Top"));
   ============================================================
 */
 
-const FONT = "'Manrope', -apple-system, 'Segoe UI', Arial, sans-serif";
+const FONT = "'Plus Jakarta Sans', -apple-system, 'Segoe UI', Arial, sans-serif";
 
 /** ID modulov, ktoré appka routuje. */
 export type ModulId = "good" | "help" | "charita" | "profil" | "vyzva" | "mapa" | "top";

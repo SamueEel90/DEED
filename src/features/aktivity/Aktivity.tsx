@@ -368,14 +368,16 @@ function ProgressMini({ it }: { it: AktItem }) {
   );
 }
 function ReqCard({ it, wide, onOpen, onPerson }: any) {
+  // Neutrálna karta (béžový povrch + tmavý text) s jemným červeným akcentom (ľavý prúžok + ikona),
+  // aby žiadosť o pomoc sadla k zvyšku feedu a nepôsobila ako červený blok.
   return (
-    <div onClick={() => onOpen(it.id)} style={{ ...cardS, marginBottom: wide ? 0 : 12, border: `1px solid ${A.redBd}`, background: A.redBg }}>
+    <div onClick={() => onOpen(it.id)} style={{ ...cardS, marginBottom: wide ? 0 : 12, borderLeft: `3px solid ${A.red}` }}>
       <div style={{ display: "flex", padding: 14, gap: 12, alignItems: "flex-start" }}>
-        <div style={{ width: 64, height: 64, borderRadius: 11, background: "rgba(242,112,111,.16)", border: `1px solid ${A.redBd}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, color: "var(--acc)", flex: "none" }}>{it.emoji}</div>
+        <div style={{ width: 64, height: 64, borderRadius: 11, background: A.redBg, border: `1px solid ${A.redBd}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, color: A.red, flex: "none" }}>{it.emoji}</div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 15, fontWeight: 700, lineHeight: 1.35, color: "var(--acc)" }}>{it.title}</div>
+          <div style={{ fontSize: 15, fontWeight: 700, lineHeight: 1.35, color: A.txt }}>{it.title}</div>
           <div style={{ fontSize: 12.5, color: A.txt2, marginTop: 6 }}><span onClick={stop(() => onPerson(it.author))} style={{ cursor: "pointer", fontWeight: 600 }}>{it.author}</span> · {it.loc}</div>
-          <div style={{ fontSize: 11.5, color: A.txt3, marginTop: 6 }}>❓ Hľadám pomoc · {it.helpers} sa zapojilo</div>
+          <div style={{ fontSize: 11.5, marginTop: 6, fontWeight: 600, color: A.red }}>❓ Hľadám pomoc · <span style={{ color: A.txt3, fontWeight: 400 }}>{it.helpers} sa zapojilo</span></div>
         </div>
       </div>
     </div>

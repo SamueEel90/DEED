@@ -24,7 +24,7 @@ export { NOTIFY } from "./mock";
 function Toggle({ on, dim, onClick }: { on?: boolean; dim?: boolean; onClick?: () => void }) {
   return (
     <span onClick={onClick} style={{ width: 42, height: 25, borderRadius: 20, flex: "none", cursor: "pointer", padding: 3, opacity: dim ? .4 : 1,
-      background: on ? "linear-gradient(90deg,#1FBF8F,#5CE6B8)" : "rgba(var(--glass-rgb),.14)", transition: "background .2s ease" }}>
+      background: on ? GRAD : "rgba(var(--glass-rgb),.14)", transition: "background .2s ease" }}>
       <span style={{ display: "block", width: 19, height: 19, borderRadius: "50%", background: "#fff", boxShadow: "0 1px 4px rgba(0,0,0,.35)", transform: on ? "translateX(17px)" : "none", transition: "transform .2s ease" }} />
     </span>
   );
@@ -72,7 +72,7 @@ function Zoznam({ onSettings, onClose, onPrecitaj, toast }: { onSettings?: () =>
     <>
       <div style={{ display: "flex", alignItems: "center", gap: 10, flex: "0 0 auto", paddingBottom: 8 }}>
         <span style={{ fontSize: 17, fontWeight: 800 }}>Oznámenia</span>
-        {neprecitane > 0 && <span onClick={onPrecitaj} style={{ fontSize: 11, fontWeight: 700, color: "var(--a-info)", cursor: "pointer" }}>Označiť prečítané</span>}
+        {neprecitane > 0 && <span onClick={onPrecitaj} style={{ fontSize: 11, fontWeight: 700, color: "var(--a-green)", cursor: "pointer" }}>Označiť prečítané</span>}
         <span onClick={onSettings} title="Nastavenia notifikácií" style={{ marginLeft: "auto", display: "flex", cursor: "pointer", color: C.textSec }}><IkonaNastavenia size={19} color={C.textSec} /></span>
         <span onClick={onClose} style={{ display: "flex", cursor: "pointer", color: C.textSec }}><IkonaKriz size={19} color={C.textSec} /></span>
       </div>
@@ -87,11 +87,11 @@ function Zoznam({ onSettings, onClose, onPrecitaj, toast }: { onSettings?: () =>
         ) : (
           <>
         {NOTIFY.map((n: Notifikacia) => (
-          <div key={n.id} onClick={() => toast?.(n.titul)} style={{ display: "flex", alignItems: "flex-start", gap: 11, padding: "11px 8px", borderRadius: 12, cursor: "pointer", borderBottom: `1px solid ${C.line2}`, background: n.nove ? "rgba(91,168,240,.05)" : "transparent" }}>
+          <div key={n.id} onClick={() => toast?.(n.titul)} style={{ display: "flex", alignItems: "flex-start", gap: 11, padding: "11px 8px", borderRadius: 12, cursor: "pointer", borderBottom: `1px solid ${C.line2}`, background: n.nove ? tint("var(--a-green)", .06) : "transparent" }}>
             <span style={{ width: 38, height: 38, borderRadius: 11, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 17, background: tint(n.col, .15), color: n.col }}>{n.ic}</span>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 13.5, fontWeight: 700, display: "flex", alignItems: "center", gap: 6 }}>
-                {n.nove && <span style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--a-info)", flex: "none" }} />}
+                {n.nove && <span style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--a-green)", flex: "none" }} />}
                 <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{n.titul}</span>
                 {n.agg && <span style={{ flex: "none", fontSize: 10, fontWeight: 800, color: C.textTer, border: `1px solid ${C.line}`, borderRadius: 6, padding: "1px 5px" }}>SÚHRN</span>}
               </div>
@@ -125,7 +125,7 @@ export function Nastavenia({ onBack, embedded, toast }: { onBack?: () => void; e
 
       <div style={{ overflowY: "auto", flex: "1 1 auto", margin: "0 -2px", paddingRight: 2 }}>
         {/* MASTER */}
-        <div style={{ display: "flex", alignItems: "center", gap: 12, background: "rgba(91,155,255,.08)", border: "1px solid rgba(91,155,255,.25)", borderRadius: 14, padding: "13px 14px", margin: "8px 0 4px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, background: tint("var(--a-green)", .08), border: `1px solid ${tint("var(--a-green)", .28)}`, borderRadius: 14, padding: "13px 14px", margin: "8px 0 4px" }}>
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 14, fontWeight: 800 }}>Všetky notifikácie</div>
             <div style={{ fontSize: 11, color: C.textTer, marginTop: 1 }}>Hlavný vypínač · prebíja kategórie</div>

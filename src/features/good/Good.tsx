@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { C, inp, GRAD, GRAD_ZELENY } from "@/theme";
-import { Foto, FotoPrispevku, MiniFotky, Video, ModulHlavicka, Hlavicka, PodporaSekcia, PlatbaModal, HladanieModal, toast, Oslava, useGaleria, useScrollHore, useMotiv, StatRiadok, MoniBar, FeedStlpce, SekcieBar, Lupa, Zdielanie, IkonaSipVlavo, IkonaMoznosti, IkonaUlozit, IkonaFajka, OkruhVyber, QrModal, FeedSkeleton, EmptyState, ErrorState, ScreenSwitch } from "@/shared";
+import { Foto, FotoPrispevku, MiniFotky, Video, ModulHlavicka, Hlavicka, AvatarUroven, PodporaSekcia, PlatbaModal, HladanieModal, toast, Oslava, useGaleria, useScrollHore, useMotiv, StatRiadok, MoniBar, FeedStlpce, SekcieBar, Lupa, Zdielanie, IkonaSipVlavo, IkonaMoznosti, IkonaUlozit, IkonaFajka, OkruhVyber, QrModal, FeedSkeleton, EmptyState, ErrorState, ScreenSwitch } from "@/shared";
 import { pripravFeed, FEED_CFG } from "@/lib/feed";
 import { usePouzivatel } from "@/lib/pouzivatel";
 import { zobrazVelkost } from "@/lib/cardSize";
@@ -144,12 +144,12 @@ function Home({ wide, toast, otvorModul, onDetail, onHladaj, onBoard, onAdd }: H
   return (
     <div style={{ paddingBottom: 14 }}>
       {/* header — jednotná hlavička (logo D⁺ + názov + hľadanie/upozornenia + profil) */}
-      <ModulHlavicka title="Domov" karma={ja.demo ? "Gold · L7 · celková" : `${ja.tier} · celková`}
+      <ModulHlavicka title="Domov" karma={ja.demo ? "Gold · celková" : `${String(ja.tier).replace(/\s*·\s*L\d+/, "")} · celková`}
         right={
           <>
             <span onClick={onHladaj} style={{ display: "flex", alignItems: "center", cursor: "pointer" }}><Lupa size={20} color={C.textSec} /></span>
             <Zvoncek color={C.textSec} toast={toast} />
-            <div onClick={() => otvorModul && otvorModul("profil")} title={ja.tier} style={{ width: 34, height: 34, borderRadius: "50%", background: ja.tint, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 14, color: "#fff", cursor: "pointer", flex: "0 0 auto", boxShadow: "0 0 0 2px rgba(240,199,90,.8), 0 0 12px rgba(240,199,90,.35)" }}>{ja.iniciala}</div>
+            <AvatarUroven ini={ja.iniciala} tint={ja.tint} tier={ja.tier} size={34} onClick={() => otvorModul && otvorModul("profil")} title={ja.tier} />
           </>
         } />
 
@@ -239,23 +239,23 @@ function GoodKarta({ it, wide, onDetail }: { it: GoodPolozka; wide?: boolean; on
       </div>
     );
   }
-  // ŽIADOSŤ
+  // ŽIADOSŤ — neutrálna karta s jemným červeným akcentom (ľavý prúžok + ikona), nie červený blok
   if (it.velkost === "req") {
     return (
-      <div onClick={onDetail} style={{ background: "rgba(242,112,111,.06)", border: "1px solid rgba(242,112,111,.32)", borderRadius: 17, marginBottom: mb, padding: 14, display: "flex", gap: 12, alignItems: "flex-start", cursor: "pointer" }}>
+      <div onClick={onDetail} style={{ background: C.surface2, border: `1px solid ${C.line}`, borderLeft: `3px solid ${C.red}`, borderRadius: 17, marginBottom: mb, padding: 14, display: "flex", gap: 12, alignItems: "flex-start", cursor: "pointer" }}>
         {it.fotky?.length
           ? <FotoPrispevku fotky={it.fotky} emoji={it.emoji} h={64} w={64} radius={11} disableGaleria />
-          : <div style={{ width: 64, height: 64, borderRadius: 11, background: "rgba(242,112,111,.12)", border: "1px solid #7A3030", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, fontWeight: 800, color: "var(--a-danger)", flex: "none" }}>{it.emoji}</div>}
+          : <div style={{ width: 64, height: 64, borderRadius: 11, background: tint(C.red, .12), border: `1px solid ${tint(C.red, .4)}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, fontWeight: 800, color: C.red, flex: "none" }}>{it.emoji}</div>}
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <div style={{ fontSize: 15, fontWeight: 700, lineHeight: 1.35, color: C.red }}>{it.titul}</div>
-            {it.topovane && <span style={{ fontSize: 11, fontWeight: 600, padding: "3px 9px", borderRadius: 7, background: "rgba(242,112,111,.12)", color: C.red, marginLeft: "auto", flex: "none" }}>Topované</span>}
+            <div style={{ fontSize: 15, fontWeight: 700, lineHeight: 1.35, color: C.text }}>{it.titul}</div>
+            {it.topovane && <span style={{ fontSize: 11, fontWeight: 600, padding: "3px 9px", borderRadius: 7, background: tint(C.red, .12), color: C.red, marginLeft: "auto", flex: "none" }}>Topované</span>}
           </div>
           <div style={{ fontSize: 12.5, color: C.textSec, marginTop: 6 }}>{it.autor} · {it.lok}</div>
           {it.ciel ? (
             <div style={{ marginTop: 8 }}><MoniBar vyzbierane={it.vyzbierane} ciel={it.ciel} ludia={it.pomocnici} mini /></div>
           ) : (
-            <div style={{ fontSize: 12, color: C.textSec, marginTop: 6 }}>{it.pomocnici} ľudí sa zapojilo · otvorená podpora</div>
+            <div style={{ fontSize: 12, marginTop: 6, fontWeight: 600, color: C.red }}>❓ {it.pomocnici} ľudí sa zapojilo · <span style={{ color: C.textSec, fontWeight: 400 }}>otvorená podpora</span></div>
           )}
         </div>
       </div>
@@ -265,7 +265,7 @@ function GoodKarta({ it, wide, onDetail }: { it: GoodPolozka; wide?: boolean; on
   if (it.velkost === "med") {
     const jeCharita = it.typ === "charita";
     return (
-      <div onClick={onDetail} style={{ background: C.surface2, border: `1px solid ${jeCharita ? "#2A5E8E" : C.line}`, borderRadius: 16, marginBottom: mb, padding: 12, display: "flex", gap: 12, alignItems: "flex-start", cursor: "pointer" }}>
+      <div onClick={onDetail} style={{ background: C.surface2, border: `1px solid ${jeCharita ? tint(C.gold, .45) : C.line}`, borderRadius: 16, marginBottom: mb, padding: 12, display: "flex", gap: 12, alignItems: "flex-start", cursor: "pointer" }}>
         {it.fotky?.length
           ? <FotoPrispevku fotky={it.fotky} emoji={it.emoji} h={80} w={96} radius={11} disableGaleria />
           : <div style={{ width: 96, height: 80, borderRadius: 11, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, background: heroGrad(it.kat) }}>{it.media === "kreslene" ? "✎" : it.emoji}</div>}
@@ -284,12 +284,12 @@ function GoodKarta({ it, wide, onDetail }: { it: GoodPolozka; wide?: boolean; on
   // MALÝ RIADOK
   const jeZiadost = it.typ === "ziadost";
   const jeCharita = it.typ === "charita";
-  const col = jeZiadost ? "var(--a-danger)" : jeCharita ? "var(--a-info)" : KAT[it.kat].c;
+  const col = jeZiadost ? "var(--a-danger)" : jeCharita ? "var(--a-gold)" : KAT[it.kat].c;
   const bg = tint(col, .15);
   const ic = it.media === "kreslene" ? "✎" : jeZiadost ? "!" : jeCharita ? "✓" : "▦";
   return (
-    <div onClick={onDetail} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 12px", background: "rgba(var(--glass-rgb),.04)", border: `1px solid ${jeZiadost ? "rgba(242,112,111,.35)" : C.line2}`, borderRadius: 14, marginBottom: wide ? 0 : 8, cursor: "pointer" }}>
-      <div style={{ width: 38, height: 38, borderRadius: 9, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flex: "none", background: bg, color: col, border: `1px solid ${jeZiadost ? "#7A3030" : KAT[it.kat].bd}` }}>{ic}</div>
+    <div onClick={onDetail} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 12px", background: "rgba(var(--glass-rgb),.04)", border: `1px solid ${jeZiadost ? tint(C.red, .3) : C.line2}`, borderRadius: 14, marginBottom: wide ? 0 : 8, cursor: "pointer" }}>
+      <div style={{ width: 38, height: 38, borderRadius: 9, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flex: "none", background: bg, color: col, border: `1px solid ${jeZiadost ? tint(C.red, .4) : KAT[it.kat].bd}` }}>{ic}</div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 14, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
           <span style={{ width: 7, height: 7, borderRadius: "50%", display: "inline-block", marginRight: 6, background: col }} />{it.titul}

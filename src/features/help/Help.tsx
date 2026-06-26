@@ -122,7 +122,7 @@ function FeedCard({ z, wide, onClick }: { z: any; wide?: boolean; onClick: () =>
     const velka = z.velkost === "velka";
     const bleed = !wide && velka; // hero žiadosť edge-to-edge na mobile
     return (
-      <div onClick={onClick} className="good-card" style={{ margin: wide ? 0 : (velka ? "0 -8px 12px" : "12px 13px"), border: bleed ? "none" : `1px solid ${z.sponzor ? "rgba(240,199,90,.32)" : "rgba(242,112,111,.26)"}`, borderBottom: bleed ? `1px solid ${C.line2}` : undefined, borderRadius: bleed ? 0 : 17, overflow: "hidden", background: z.sponzor ? "rgba(240,199,90,.05)" : "rgba(242,112,111,.05)", cursor: "pointer" }}>
+      <div onClick={onClick} className="good-card" style={{ margin: wide ? 0 : (velka ? "0 -8px 12px" : "12px 13px"), border: bleed ? "none" : `1px solid ${z.sponzor ? "rgba(240,199,90,.32)" : C.line}`, borderLeft: bleed ? undefined : `3px solid ${z.sponzor ? C.gold : C.red}`, borderBottom: bleed ? `1px solid ${C.line2}` : undefined, borderRadius: bleed ? 0 : 17, overflow: "hidden", background: z.sponzor ? "rgba(240,199,90,.05)" : C.surface2, cursor: "pointer" }}>
         {velka && (
           <div style={{ position: "relative" }}>
             <FotoPrispevku fotky={z.fotky} emoji={z.ikona} h={120} disableGaleria />

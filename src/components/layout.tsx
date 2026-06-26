@@ -26,6 +26,22 @@ export function Hlavicka({ title, onBack, step, total, right, titleColor }: { ti
 
 export function Otazka({ children }: { children?: ReactNode }) { return <div style={{ fontSize: 15, fontWeight: 700, margin: "6px 0 12px" }}>{children}</div>; }
 
+// ---- AVATAR S ÚROVŇOU ----
+// Úroveň (napr. „L7") je zakomponovaná priamo do profilového obrázka ako malý zlatý odznak.
+// `tier` môže byť „Gold · L7" / „Nováčik · L1" / „Overená charita" — úroveň sa vyparsuje, ak chýba, odznak sa nezobrazí.
+export function AvatarUroven({ ini, tint, tier, size = 34, ring = true, onClick, title }: { ini?: ReactNode; tint: string; tier?: string; size?: number; ring?: boolean; onClick?: () => void; title?: string }) {
+  const lvl = (String(tier || "").match(/L(\d+)/) || [])[1];
+  const bH = Math.round(size * 0.44);
+  return (
+    <div {...(onClick ? pressable(onClick, title) : {})} title={title} style={{ position: "relative", flex: "0 0 auto", cursor: onClick ? "pointer" : "default" }}>
+      <div style={{ width: size, height: size, borderRadius: "50%", background: tint, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: Math.round(size * 0.41), color: "#fff", boxShadow: ring ? `0 0 0 ${Math.max(2, Math.round(size / 17))}px rgba(240,199,90,.85)` : "none" }}>{ini}</div>
+      {lvl && (
+        <span style={{ position: "absolute", bottom: -Math.round(size * 0.07), right: -Math.round(size * 0.09), height: bH, minWidth: bH, padding: "0 4px", borderRadius: bH / 2, background: "linear-gradient(135deg,#F4CE63,#DE9E36)", color: "#3A2C0E", fontSize: Math.round(size * 0.26), fontWeight: 800, lineHeight: 1, display: "flex", alignItems: "center", justifyContent: "center", letterSpacing: ".02em", boxShadow: "0 1px 4px rgba(0,0,0,.32), 0 0 0 1.6px var(--c-bg)" }}>L{lvl}</span>
+      )}
+    </div>
+  );
+}
+
 // ---- JEDNOTNÁ HLAVIČKA MODULU: ☰ + logo D⁺ + názov stránky (+ pravý obsah + prepínač režimu) ----
 // pod horným riadkom: SLOGAN (§14) + voliteľná kontextová karma (§5.3 — karma danej oblasti)
 export function ModulHlavicka({ title, right, karma, slogan = "Miesto, kde nerozhodujú slová, ale skutky" }: { title?: ReactNode; right?: ReactNode; karma?: ReactNode; slogan?: ReactNode }) {
@@ -45,9 +61,10 @@ export function ModulHlavicka({ title, right, karma, slogan = "Miesto, kde neroz
         </span>
       </div>
       {(slogan || karma) && (
-        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "4px 8px", padding: "0 16px 9px" }}>
-          {slogan && <span style={{ flex: "1 1 320px", minWidth: 0, fontSize: 11.5, fontStyle: "italic", color: C.textTer, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>„{slogan}"</span>}
-          {karma && <span style={{ flex: "0 0 auto", display: "inline-flex", alignItems: "center", gap: 4, fontSize: 10.5, fontWeight: 700, color: "var(--a-gold)", background: "rgba(231,199,102,.12)", border: "1px solid rgba(200,162,58,.4)", borderRadius: 9, padding: "3px 9px", whiteSpace: "nowrap" }}>★ {karma}</span>}
+        <div style={{ padding: "0 16px 11px" }}>
+          {/* SLOGAN (§14) — dominantný, na celú šírku */}
+          {slogan && <div style={{ fontSize: 13.5, fontWeight: 500, fontStyle: "italic", color: C.textSec, lineHeight: 1.4, letterSpacing: ".01em" }}>„{slogan}"</div>}
+          {karma && <span style={{ display: "inline-flex", alignItems: "center", gap: 4, marginTop: slogan ? 7 : 0, fontSize: 10.5, fontWeight: 700, color: "var(--a-gold)", background: "rgba(231,199,102,.12)", border: "1px solid rgba(200,162,58,.4)", borderRadius: 9, padding: "3px 9px", whiteSpace: "nowrap" }}>★ {karma}</span>}
         </div>
       )}
     </div>

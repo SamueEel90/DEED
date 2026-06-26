@@ -72,7 +72,7 @@ export default function ModulTop({ wide }: WideProps) {
 
   return (
     <div style={{ minHeight: "100%", paddingBottom: 14 }}>
-      <ModulHlavicka title="Top" karma="Gold · L7" right={<Zvoncek color={C.textSec} toast={toast} />} />
+      <ModulHlavicka title="Top" karma="Gold" right={<Zvoncek color={C.textSec} toast={toast} />} />
       {obal(
         <div style={{ padding: "12px 16px" }}>
           {/* rozsah rebríčka */}
