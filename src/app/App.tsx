@@ -6,6 +6,7 @@ import type { StrankaAkcie } from "@/components/context";
 import { TabBar, ViacSheet, PridatFAB, nacitajTaby, ulozTaby, VSETKY_MODULY } from "@/components/TabBar";
 import { Sidebar } from "@/components/Sidebar";
 import { useSession } from "@/lib/session";
+import { useNotifikacieRealtime } from "@/data";
 import { PouzivatelProvider } from "@/lib/pouzivatel";
 import { PersonalizaciaProvider } from "@/lib/personalizacia";
 import { QueryProvider } from "@/app/QueryProvider";
@@ -99,7 +100,7 @@ export default function App() {
               <LayoutContext.Provider value={{ w, wide, desktop }}>
                 <div className="deed-app" style={{ ...pageBase, display: "flex", justifyContent: "center", alignItems: "stretch" }}>
                   <DychajucePozadie />
-                  <div ref={setPortalEl} style={{ position: "relative", width: "100%", maxWidth: desktop ? 1680 : wide ? 1180 : 560, height: "100%", background: C.bg }}>
+                  <div ref={setPortalEl} style={{ position: "relative", width: "100%", maxWidth: desktop ? undefined : wide ? 1180 : 560, height: "100%", background: C.bg }}>
                     <Screens wide={wide} desktop={desktop} />
                   </div>
                 </div>
@@ -127,6 +128,7 @@ export function Screens({ wide, desktop }: { wide?: boolean; desktop?: boolean }
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { ulozTaby(taby); }, [taby]);
+  useNotifikacieRealtime(); // Fáza E — live oznámenia (INSERT do notifikacia → obnova zoznamu)
 
   // §1 — bez prihlásenia zobraz registráciu;
   // po dokončení flow zavolá setSession → useSession re-renderuje → appka.

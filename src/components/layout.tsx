@@ -2,10 +2,10 @@ import type { CSSProperties, ReactNode } from "react";
 import { C, GRAD, GRAD_ZELENY, glassTmavy } from "@/theme";
 import { tint } from "@/lib/ui";
 import { FEED_CFG } from "@/lib/feed";
-import { useMotiv, useViac, useLayout } from "@/components/context";
+import { useViac, useLayout } from "@/components/context";
 import { pressable } from "@/components/pressable";
 import { Sheet } from "@/components/sheet";
-import { IkonaSpat, IkonaMenu, IkonaMesiac, IkonaSlnko, IkonaPlay, IkonaDoska, IkonaPlus, IkonaPin, IkonaSipDole, IkonaFajka } from "@/components/icons";
+import { IkonaSpat, IkonaMenu, IkonaPlay, IkonaDoska, IkonaPlus, IkonaPin, IkonaSipDole, IkonaFajka } from "@/components/icons";
 
 // ============================================================
 // SPOLOČNÉ UI KOMPONENTY (hlavička, výbery, modaly, toasty)
@@ -47,7 +47,6 @@ export function AvatarUroven({ ini, tint, tier, size = 34, ring = true, onClick,
 // `karma` prop sa zámerne UŽ nezobrazuje (chip „★ Gold · celková" skrytý vo všetkých moduloch) —
 // ostáva v type len kvôli spätnej kompatibilite volajúcich. Úroveň je teraz na avatare.
 export function ModulHlavicka({ title, right, slogan = "Miesto, kde nerozhodujú slová, ale skutky" }: { title?: ReactNode; right?: ReactNode; karma?: ReactNode; slogan?: ReactNode }) {
-  const { svetly, prepni } = useMotiv();
   const otvorViac = useViac();
   const { desktop } = useLayout();
   return (
@@ -63,7 +62,6 @@ export function ModulHlavicka({ title, right, slogan = "Miesto, kde nerozhodujú
         <span style={{ fontSize: 20, fontWeight: 800 }}>{title}</span>
         <span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 13 }}>
           {right}
-          <span {...pressable(prepni, "Svetlý / tmavý režim")} title="Svetlý / tmavý režim" style={{ cursor: "pointer", width: 34, height: 34, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", border: `1px solid ${C.line}`, background: C.surface, flex: "0 0 auto", color: C.textSec }}>{svetly ? <IkonaMesiac size={17} color={C.textSec} /> : <IkonaSlnko size={17} color={C.textSec} />}</span>
         </span>
       </div>
       {slogan && (
@@ -202,33 +200,37 @@ export function Rebricky({ ocenenia = [], ludia = [], pred = null }: { ocenenia?
 //   [počet v okruhu] · [mesačná štatistika] · [poloha + výber okruhu]
 // rovnaký dizajn aj poloha (hneď pod rebríčkom) vo všetkých moduloch
 // ============================================================
-export function StatRiadok({ pocet, jednotka, mesiac, miesto = "Trenčín", okruh = "2 km", onOkruh }: { pocet?: ReactNode; jednotka?: string; mesiac?: ReactNode; miesto?: ReactNode; okruh?: ReactNode; onOkruh?: () => void }) {
+export function StatRiadok({ pocet, jednotka, mesiac, miesto = "Trenčín", okruh = "2 km", onOkruh, inline }: { pocet?: ReactNode; jednotka?: string; mesiac?: ReactNode; miesto?: ReactNode; okruh?: ReactNode; onOkruh?: () => void; inline?: boolean }) {
   // segmentovaný panel: [počet v okruhu] · [mesačná štatistika] · [poloha + výber okruhu]
   // jednotná výška, vnútorné deliace čiary, jediný interaktívny segment = poloha
-  const cislo: CSSProperties = { fontSize: 17, fontWeight: 800, color: C.text, lineHeight: 1.1, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" };
-  const popis: CSSProperties = { fontSize: 10.5, fontWeight: 600, color: C.textTer, marginTop: 3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", letterSpacing: ".01em" };
+  // na desktope kompaktnejšie (menšie čísla/padding + obmedzená šírka), nech panel nie je „masívny"
+  // inline = na jednom riadku s filtrami (desktop) → bez vlastného paddingu a šírkového capu
+  const { desktop } = useLayout();
+  const cislo: CSSProperties = { fontSize: desktop ? 14.5 : 17, fontWeight: 800, color: C.text, lineHeight: 1.1, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" };
+  const popis: CSSProperties = { fontSize: desktop ? 9.5 : 10.5, fontWeight: 600, color: C.textTer, marginTop: desktop ? 1 : 3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", letterSpacing: ".01em" };
+  const segPad = desktop ? "6px 12px" : "9px 13px";
   return (
-    <div style={{ padding: "4px 14px 14px", borderBottom: `1px solid ${C.line}` }}>
-      <div style={{ display: "flex", alignItems: "stretch", borderRadius: 14, background: C.surface, border: `1px solid ${C.line}`, overflow: "hidden" }}>
+    <div style={{ padding: inline ? 0 : desktop ? "2px 0 10px" : "4px 14px 14px", borderBottom: inline || desktop ? "none" : `1px solid ${C.line}` }}>
+      <div style={{ display: "flex", alignItems: "stretch", borderRadius: desktop ? 11 : 14, background: C.surface, border: `1px solid ${C.line}`, overflow: "hidden", maxWidth: inline ? undefined : desktop ? 520 : undefined }}>
         {/* segment 1 — počet v okruhu (živé, pulzujúca bodka) */}
-        <div title={jednotka ? `${pocet} ${jednotka} v okruhu` : "v okruhu"} style={{ flex: "1 1 0", minWidth: 0, padding: "9px 13px" }}>
+        <div title={jednotka ? `${pocet} ${jednotka} v okruhu` : "v okruhu"} style={{ flex: "1 1 0", minWidth: 0, padding: segPad }}>
           <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
-            <span style={{ width: 7, height: 7, borderRadius: "50%", flex: "none", background: "var(--a-green)", boxShadow: "0 0 0 3px rgba(78,122,62,.18)", animation: "pulse 1.6s infinite" }} />
+            <span style={{ width: desktop ? 6 : 7, height: desktop ? 6 : 7, borderRadius: "50%", flex: "none", background: "var(--a-green)", boxShadow: "0 0 0 3px rgba(78,122,62,.18)", animation: "pulse 1.6s infinite" }} />
             <span style={cislo}>{pocet}</span>
           </div>
           <div style={popis}>v okruhu</div>
         </div>
         {/* segment 2 — mesačná štatistika */}
-        <div style={{ flex: "1 1 0", minWidth: 0, padding: "9px 13px", borderLeft: `1px solid ${C.line}` }}>
+        <div style={{ flex: "1 1 0", minWidth: 0, padding: segPad, borderLeft: `1px solid ${C.line}` }}>
           <div style={cislo}>{mesiac}</div>
           <div style={popis}>tento mesiac</div>
         </div>
         {/* segment 3 — poloha + výber okruhu (jediný interaktívny, akcentové pozadie) */}
-        <div {...pressable(onOkruh, "Zmeniť okruh")} title="Zmeniť okruh" style={{ flex: "1.25 1 0", minWidth: 0, padding: "9px 13px", borderLeft: `1px solid ${C.line}`, background: "var(--a-info-bg)", cursor: "pointer", display: "flex", flexDirection: "column", justifyContent: "center" }}>
+        <div {...pressable(onOkruh, "Zmeniť okruh")} title="Zmeniť okruh" style={{ flex: "1.25 1 0", minWidth: 0, padding: segPad, borderLeft: `1px solid ${C.line}`, background: "var(--a-info-bg)", cursor: "pointer", display: "flex", flexDirection: "column", justifyContent: "center" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 5, minWidth: 0 }}>
-            <IkonaPin size={13} color="var(--a-info)" />
-            <span style={{ flex: 1, minWidth: 0, fontSize: 13.5, fontWeight: 800, color: "var(--a-info)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{okruh}</span>
-            <IkonaSipDole size={13} color="var(--a-info)" />
+            <IkonaPin size={desktop ? 12 : 13} color="var(--a-info)" />
+            <span style={{ flex: 1, minWidth: 0, fontSize: desktop ? 12.5 : 13.5, fontWeight: 800, color: "var(--a-info)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{okruh}</span>
+            <IkonaSipDole size={desktop ? 12 : 13} color="var(--a-info)" />
           </div>
           <div style={{ ...popis, color: C.textSec }}>{miesto}</div>
         </div>
@@ -286,6 +288,37 @@ export function FeedStlpce({ wide, skutky, ziadosti, charita, jednoStlpec, label
       <div style={{ minWidth: 0 }}><Hd>{labelSkutky}</Hd><div style={col}>{skutky}</div></div>
       <div style={{ minWidth: 0 }}><Hd>{labelZiadosti}</Hd><div style={col}>{ziadosti}</div></div>
       {tri && <div style={{ minWidth: 0 }}><Hd>{labelCharita}</Hd><div style={col}>{charita}</div></div>}
+    </div>
+  );
+}
+
+// ============================================================
+// FILTRE + STAT (desktop) — filter-taby a štatistický riadok na JEDNOM riadku
+// (filtre naľavo flex:1, kompaktný StatRiadok napravo). Na mobile/tablete
+// ostávajú pod sebou ako doteraz. `stat` posielaj s `inline` na desktope.
+// ============================================================
+export function FiltreStat({ filtre, stat }: { filtre: ReactNode; stat: ReactNode }) {
+  const { desktop } = useLayout();
+  if (!desktop) return <>{filtre}{stat}</>;
+  return (
+    <div style={{ display: "flex", gap: 12, alignItems: "center", paddingRight: 16, marginBottom: 8 }}>
+      <div style={{ flex: 1, minWidth: 0 }}>{filtre}</div>
+      <div style={{ flex: "0 0 440px", maxWidth: 440 }}>{stat}</div>
+    </div>
+  );
+}
+
+// ============================================================
+// FEED GRID (desktop) — N-stĺpcová masonry pre Instagram karty. Karty majú
+// rôznu výšku → CSS multicol (column-fill: balance) ich poskladá bez medzier.
+// Použité v Help/Charita na plnú šírku (hustejšie než 2-stĺpcový FeedStlpce).
+// ============================================================
+export function FeedGrid({ cards, cols = 3, gap = 16, padding = "4px 16px 14px" }: { cards: ReactNode[]; cols?: number; gap?: number; padding?: string }) {
+  return (
+    <div style={{ columnCount: cols, columnGap: gap, padding }}>
+      {cards.map((c, i) => (
+        <div key={i} style={{ breakInside: "avoid", marginBottom: gap }}>{c}</div>
+      ))}
     </div>
   );
 }

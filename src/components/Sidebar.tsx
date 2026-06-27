@@ -1,8 +1,7 @@
 import type { ReactNode } from "react";
 import { C, GRAD, glassTmavy } from "@/theme";
-import { useMotiv } from "@/components/context";
 import { pressable } from "@/components/pressable";
-import { IkonaMenu, IkonaMesiac, IkonaSlnko, IkonaPenazenka } from "@/components/icons";
+import { IkonaMenu, IkonaPenazenka } from "@/components/icons";
 import type { Modul } from "@/components/TabBar";
 
 // ============================================================
@@ -17,7 +16,6 @@ export function Sidebar({ moduly, aktivny, onModul, onViac, onPenazenka }: {
   onViac: () => void;
   onPenazenka?: () => void;
 }) {
-  const { svetly, prepni } = useMotiv();
   return (
     <div style={{ width: 100, flex: "0 0 auto", height: "100%", display: "flex", flexDirection: "column", alignItems: "stretch", padding: "14px 10px 16px", ...glassTmavy(18, .5), borderRight: `1px solid ${C.line}`, zIndex: 20 }}>
       {/* logo D⁺ — na desktope jediné logo v appke (v hlavičke modulov je skryté) */}
@@ -36,7 +34,6 @@ export function Sidebar({ moduly, aktivny, onModul, onViac, onPenazenka }: {
       <div style={{ display: "flex", flexDirection: "column", gap: 4, marginTop: 8, paddingTop: 8, borderTop: `1px solid ${C.line2}` }}>
         {onPenazenka && <SideBtn icon={<IkonaPenazenka size={20} color={C.textSec} />} label="Peňaženka" onClick={onPenazenka} />}
         <SideBtn icon={<IkonaMenu size={20} color={C.textSec} />} label="Viac" onClick={onViac} />
-        <SideBtn icon={svetly ? <IkonaMesiac size={19} color={C.textSec} /> : <IkonaSlnko size={19} color={C.textSec} />} label="Režim" onClick={prepni} />
       </div>
     </div>
   );

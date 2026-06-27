@@ -1,4 +1,16 @@
 // Demo dáta pre Modul Mapa (§15) — placeholdery, nie reálne dotazy do DB
+import type { MapaBod } from "@/types";
+
+// Fallback body na mape (bez DB) — reálne polohy v Trenčíne, aby mapa nebola
+// prázdna ani v mock režime. So Supabase ich nahradia živé body (mapa.supabase).
+export const MAPA_UDALOSTI: MapaBod[] = [
+  { lat: 48.8945, lng: 18.0445, druh: "udalost" },
+  { lat: 48.8930, lng: 18.0490, druh: "udalost" },
+  { lat: 48.9002, lng: 18.0381, druh: "udalost" },
+  { lat: 48.8862, lng: 18.0533, druh: "udalost" },
+  { lat: 48.8770, lng: 18.0300, druh: "udalost" },
+  { lat: 48.9010, lng: 18.0390, druh: "udalost" },
+];
 
 export const UROVNE: [string, string][] = [
   ["stvrt", "Štvrť"],

@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
 import { C, pasmo, inp, infoBox, btn, GRAD_ZELENY, glassTmavy } from "@/theme";
-import { Foto, Avatar, FotoPrispevku, MiniFotky, Hlavicka, ModulHlavicka, PodporaSekcia, PlatbaModal, HladanieModal, Otazka, Vyber, vyberBox, NavBtns, Suhrn, DokladRow, toast, useGaleria, useLayout, useScrollHore, useStrankaAkcie, useTvorbaGate, Ticker, StatRiadok, MoniBar, FeedStlpce, obalSiroky, OkruhVyber, Lupa, Zdielanie, IkonaSpat, IkonaVlajka, IkonaFoto, IkonaPlay, IkonaDoska, IkonaPin, FeedSkeleton, EmptyState, ErrorState, ScreenSwitch } from "@/shared";
+import { Foto, Avatar, FotoPrispevku, MiniFotky, Hlavicka, ModulHlavicka, PodporaSekcia, PlatbaModal, HladanieModal, Otazka, Vyber, vyberBox, NavBtns, Suhrn, DokladRow, toast, useGaleria, useLayout, useScrollHore, useStrankaAkcie, useTvorbaGate, Ticker, StatRiadok, FiltreStat, MoniBar, FeedStlpce, FeedGrid, obalSiroky, OkruhVyber, Lupa, Zdielanie, IkonaSpat, IkonaVlajka, IkonaFoto, IkonaPlay, IkonaDoska, IkonaPin, FeedSkeleton, EmptyState, ErrorState, ScreenSwitch } from "@/shared";
 import { Zvoncek } from "@/features/notifikacie/Notifikacie";
 import { pripravFeed, FEED_CFG } from "@/lib/feed";
 import { MEDIA_AR } from "@/lib/cardSize";
 import type { HelpFeedItem } from "@/types";
 import { useHelpFeed } from "@/data";
 import { tint, tagChip } from "@/lib/ui";
+import { pressable } from "@/components/pressable";
 import { USER_LOK, ZIVE_DARY } from "./mock";
 
 /*
@@ -104,16 +105,20 @@ function Feed({ wide, toast, onDetail, onHladaj, onAdd }: { wide?: boolean; toas
       {/* živý ticker */}
       <Ticker key={tick}><b style={{ color: C.text }}>{dar.kto}</b> práve poslal <b style={{ color: C.greenL }}>{dar.co}</b> → {dar.komu}</Ticker>
 
-      {/* filter typu pomoci — Všetko / Žiadosti / Ponuky (charita sem nepatrí) */}
-      <div style={{ display: "flex", gap: 8, padding: "0 16px 8px" }}>
-        <Seg on={view === "all"} col="var(--a-info)" label="Všetko" onClick={() => setView("all")} />
-        <Seg on={view === "ziadost"} col="var(--a-danger)" emoji="🙋" label="Žiadosti" onClick={() => setView("ziadost")} />
-        <Seg on={view === "ponuka"} col="var(--a-plum)" emoji="🤝" label="Ponuky" onClick={() => setView("ponuka")} />
-      </div>
-
-      {/* štatistický riadok — počet vo zvolenom okruhu + výber okruhu */}
-      <StatRiadok pocet={feed.length} jednotka={view === "ponuka" ? "ponúk" : view === "ziadost" ? "žiadostí" : "príspevkov"} mesiac="8 421"
-        okruh={FEED_CFG.radiusy[radius].krat} onOkruh={() => setVyberOkruh(true)} />
+      {/* filter typu pomoci + štatistický riadok — na desktope na jednom riadku */}
+      <FiltreStat
+        filtre={
+          <div style={{ display: "flex", gap: 8, padding: "0 16px 8px" }}>
+            <Seg on={view === "all"} col="var(--a-info)" label="Všetko" onClick={() => setView("all")} />
+            <Seg on={view === "ziadost"} col="var(--a-danger)" emoji="🙋" label="Žiadosti" onClick={() => setView("ziadost")} />
+            <Seg on={view === "ponuka"} col="var(--a-plum)" emoji="🤝" label="Ponuky" onClick={() => setView("ponuka")} />
+          </div>
+        }
+        stat={
+          <StatRiadok inline={desktop} pocet={feed.length} jednotka={view === "ponuka" ? "ponúk" : view === "ziadost" ? "žiadostí" : "príspevkov"} mesiac="8 421"
+            okruh={FEED_CFG.radiusy[radius].krat} onOkruh={() => setVyberOkruh(true)} />
+        }
+      />
 
       {/* karty — na tablete/PC: ponúkajú vľavo, hľadajú vpravo (zoradené algoritmom) */}
       {isError ? (
@@ -123,12 +128,7 @@ function Feed({ wide, toast, onDetail, onHladaj, onAdd }: { wide?: boolean; toas
       ) : feed.length === 0 ? (
         <EmptyState emoji="🙏" title="Nič v tomto okruhu" text="V tomto okruhu zatiaľ nič nie je. Skús iný typ alebo menší okruh." />
       ) : desktop ? (
-        <div style={{ maxWidth: 1140, margin: "0 auto" }}>
-          <FeedStlpce wide padding="4px 8px"
-            labelSkutky="Ponúkajú pomoc" labelZiadosti="Hľadajú pomoc"
-            skutky={feed.filter((z) => !jeZiadost(z)).map(karta)}
-            ziadosti={feed.filter(jeZiadost).map(karta)} />
-        </div>
+        <FeedGrid cols={3} cards={feed.map(karta)} />
       ) : (
         <FeedStlpce wide={wide} padding="4px 8px"
           labelSkutky="Ponúkajú pomoc" labelZiadosti="Hľadajú pomoc"
@@ -163,7 +163,7 @@ function FeedCard({ z, wide, onClick }: { z: any; wide?: boolean; onClick: () =>
   const accent = jeZiadost ? (z.sponzor ? C.gold : C.red) : jePonuka ? C.purple : C.gold;
   const typLabel = jeZiadost ? `ŽIADOSŤ · ${z.sponzor ? "D++" : "D+"}` : jePonuka ? "PONUKA POMOCI" : "CHARITA";
   return (
-    <div onClick={onClick} className="good-card" style={{ margin: wide ? 0 : "0 -16px 10px", border: wide ? `1px solid ${C.line}` : "none", borderBottom: `1px solid ${wide ? C.line : C.line2}`, borderLeft: `3px solid ${jeKriza ? C.red : accent}`, borderRadius: wide ? 17 : 0, overflow: "hidden", background: C.surface2, boxShadow: jeKriza && wide ? `0 0 0 1.5px ${tint(C.red, .5)}, 0 8px 24px ${tint(C.red, .14)}` : undefined, cursor: jeZiadost ? "pointer" : "default" }}>
+    <div {...pressable(onClick, z.nazov)} className="good-card" style={{ margin: wide ? 0 : "0 -16px 10px", border: wide ? `1px solid ${C.line}` : "none", borderBottom: `1px solid ${wide ? C.line : C.line2}`, borderLeft: `3px solid ${jeKriza ? C.red : accent}`, borderRadius: wide ? 17 : 0, overflow: "hidden", background: C.surface2, boxShadow: jeKriza && wide ? `0 0 0 1.5px ${tint(C.red, .5)}, 0 8px 24px ${tint(C.red, .14)}` : undefined, cursor: jeZiadost ? "pointer" : "default" }}>
       {/* médium — 16:9 na tablete/desktope; na mobile pôvodná výška 230 px */}
       <div style={{ position: "relative", ...(wide ? { width: "100%", aspectRatio: MEDIA_AR } : { height: 230 }) }}>
         <FotoPrispevku fotky={z.fotky} emoji={z.ikona} h={wide ? "100%" : 230} disableGaleria />

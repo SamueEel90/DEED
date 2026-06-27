@@ -5,6 +5,7 @@
 // existuje v lib/db — výmena = TENTO jeden súbor). Číta usePersonalizacia().
 // ============================================================
 import type { Zaujem, Sledovanie, Podpora, PersonalizaciaStav } from "@/types";
+import { supabase } from "@/lib/supabase";
 
 // ---- localStorage kľúče (namespace deed.me.* — oddelené od deed.aktivity.*) ----
 export const ME = {
@@ -78,6 +79,74 @@ export function importLegacyFollows(): Sledovanie[] {
   return out;
 }
 
+// ============================================================
+// PODPORY — Supabase vrstva (Fáza D). „Čo podporujem" = agregát eventov
+// z tabuľky `podpora` (group by príjemca). Zápis = nový event (in-app dar).
+// Demo (Martin K.) číta podľa `darca_nazov`; reálny účet podľa `ucet_id`.
+// ============================================================
+const KANAL_Z_DB: Record<string, string> = { deed: "DEED", fiat: "EUR", sms: "SMS" };
+const KANAL_DO_DB: Record<string, string> = { DEED: "deed", EUR: "fiat", SMS: "sms" };
+const jeUuid = (v: unknown): v is string =>
+  typeof v === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v);
+
+/** Eventy `podpora` → agregát na položku (kľúč = prispevok_id | príjemca). */
+function agregujPodpory(rows: any[]): Podpora[] {
+  const mapa = new Map<string, Podpora>();
+  for (const r of rows) {
+    const kluc = r.prispevok_id || r.prijemca || String(r.id);
+    const suma = Number(r.suma) || 0;
+    const ex = mapa.get(kluc);
+    if (ex) {
+      ex.suma = (ex.suma || 0) + suma;
+      // snapshot/čas drž najnovší (rows prichádzajú zoradené cas desc)
+    } else {
+      mapa.set(kluc, {
+        refId: r.prispevok_id || r.prijemca || String(r.id),
+        typ: "charita",
+        modul: "charity",
+        suma,
+        kanal: KANAL_Z_DB[r.kanal] || "DEED",
+        komu: r.prijemca || undefined,
+        vyzbierane: r.vyzbierane != null ? Number(r.vyzbierane) : undefined,
+        ciel: r.ciel != null ? Number(r.ciel) : undefined,
+        cas: r.cas || undefined,
+      });
+    }
+  }
+  return [...mapa.values()];
+}
+
+/** Načíta „Čo podporujem" z DB (demo: podľa mena; reálny účet: podľa ucet_id). */
+export async function nacitajPodporyDB(filter: { ucetId?: string | null; darca?: string | null }): Promise<Podpora[]> {
+  if (!supabase) return [];
+  let q = supabase.from("podpora").select("*").order("cas", { ascending: false });
+  if (filter.ucetId) q = q.eq("ucet_id", filter.ucetId);
+  else if (filter.darca) q = q.eq("darca_nazov", filter.darca);
+  else return [];
+  const { data, error } = await q;
+  if (error) throw error;
+  return agregujPodpory(data || []);
+}
+
+/** Zapíše in-app dar ako event do `podpora` (reálny účet — perzistuje). */
+export async function pridajPodporuDB(p: {
+  darca: string; ucetId?: string | null; refId: number | string;
+  prijemca?: string; suma?: number; kanal?: string; vyzbierane?: number; ciel?: number;
+}): Promise<void> {
+  if (!supabase) return;
+  const { error } = await supabase.from("podpora").insert({
+    ucet_id: p.ucetId ?? null,
+    darca_nazov: p.darca,
+    prispevok_id: jeUuid(p.refId) ? p.refId : null,  // uuid položky (detail) alebo NULL
+    prijemca: p.prijemca ?? null,
+    suma: p.suma ?? 0,
+    kanal: KANAL_DO_DB[p.kanal || "DEED"] || "deed",
+    vyzbierane: p.vyzbierane ?? null,
+    ciel: p.ciel ?? null,
+  });
+  if (error) throw error;
+}
+
 /** Demo seed — aby „Môj DEED" nebol prázdny pri prvom otvorení (len demo identita).
  *  Mená/refId zodpovedajú mock feedu Domov (Good/mock.ts), nech sekcie reálne ožijú. */
 export function demoSeed(): Omit<PersonalizaciaStav, "nacitavam"> {
@@ -88,7 +157,7 @@ export function demoSeed(): Omit<PersonalizaciaStav, "nacitavam"> {
       { meno: "EkoTím Juh", typ: "osoba" },
     ],
     podpory: [
-      { refId: 3, typ: "ziadost", modul: "help", suma: 50, komu: "Rodina Kováčová", vyzbierane: 1450, ciel: 2400 },
+      { refId: 3, typ: "ziadost", modul: "help", suma: 50, kanal: "DEED", komu: "Rodina Kováčová", vyzbierane: 1450, ciel: 2400 },
     ],
   };
 }

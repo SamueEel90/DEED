@@ -17,6 +17,8 @@ import type {
   FunItem,
   PrevodTuple,
   MojSkutokTuple,
+  RebricekPolozka,
+  MapaBod,
 } from "@/types";
 
 import { POLOZKY, EVENTS } from "@/features/good/mock";
@@ -27,6 +29,8 @@ import { NOTIFY } from "@/features/notifikacie/mock";
 import { ZIADOSTI } from "@/features/retaz/mock";
 import { FUN } from "@/features/fun/mock";
 import { PREVODY, MOJE_SKUTKY, KARMA, STATISTIKY } from "@/features/profil/mock";
+import { REBRICKY_MOCK, type RebricekKluc } from "@/features/top/mock";
+import { MAPA_UDALOSTI } from "@/features/mapa/mock";
 
 /** Rozhranie dátovej vrstvy — mock aj budúci Supabase ho implementujú rovnako. */
 export interface Repo {
@@ -44,6 +48,12 @@ export interface Repo {
   };
   aktivity: {
     feed(): Promise<AktivitaItem[]>;
+  };
+  mapa: {
+    body(): Promise<MapaBod[]>;
+  };
+  top: {
+    rebricky(): Promise<Record<RebricekKluc, RebricekPolozka[]>>;
   };
   notifikacie: {
     list(): Promise<Notifikacia[]>;
@@ -84,6 +94,17 @@ export const mockRepo: Repo = {
   aktivity: {
     feed: () => ok(SEED_ITEMS as unknown as AktivitaItem[]),
   },
+  mapa: {
+    // body z mocku: skutky odvodené z Domov POLOZKY (majú lat/lng) + statické udalosti
+    body: () => ok([
+      ...POLOZKY.filter((p) => p.lat != null && p.lng != null)
+        .map((p): MapaBod => ({ lat: p.lat!, lng: p.lng!, druh: "skutok", modul: p.modul, typ: p.typ })),
+      ...MAPA_UDALOSTI,
+    ]),
+  },
+  top: {
+    rebricky: () => ok(REBRICKY_MOCK),
+  },
   notifikacie: {
     list: () => ok(NOTIFY),
   },
@@ -101,5 +122,27 @@ export const mockRepo: Repo = {
   },
 };
 
-// Aktívny repozitár. Neskôr: selektor podľa import.meta.env (mock | supabase).
-export const repo: Repo = mockRepo;
+// ---- Aktívny repozitár — postupné prepínanie mock → Supabase, modul po module ----
+// Modul je na Supabase len ak (a) je v NA_SUPABASE a (b) je nakonfigurovaný klient
+// (.env.local). Inak fallback na mock → appka beží aj bez DB.
+import { supabaseReady } from "@/lib/supabase";
+import { goodSupabase } from "./good.supabase";
+import { helpSupabase } from "./help.supabase";
+import { charitaSupabase } from "./charita.supabase";
+import { topSupabase } from "./top.supabase";
+import { notifikacieSupabase } from "./notifikacie.supabase";
+import { aktivitySupabase } from "./aktivity.supabase";
+import { mapaSupabase } from "./mapa.supabase";
+
+const NA_SUPABASE = { good: true, help: true, charita: true, top: true, notifikacie: true, aktivity: true, mapa: true } as const; // ktoré moduly už bežia na reálnych dátach
+
+export const repo: Repo = {
+  ...mockRepo,
+  good: supabaseReady && NA_SUPABASE.good ? goodSupabase : mockRepo.good,
+  help: supabaseReady && NA_SUPABASE.help ? helpSupabase : mockRepo.help,
+  charita: supabaseReady && NA_SUPABASE.charita ? charitaSupabase : mockRepo.charita,
+  aktivity: supabaseReady && NA_SUPABASE.aktivity ? aktivitySupabase : mockRepo.aktivity,
+  mapa: supabaseReady && NA_SUPABASE.mapa ? mapaSupabase : mockRepo.mapa,
+  top: supabaseReady && NA_SUPABASE.top ? topSupabase : mockRepo.top,
+  notifikacie: supabaseReady && NA_SUPABASE.notifikacie ? notifikacieSupabase : mockRepo.notifikacie,
+};
