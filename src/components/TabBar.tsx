@@ -3,6 +3,7 @@ import { C, GRAD, glassTmavy } from "@/theme";
 import { tint } from "@/lib/ui";
 import { IkonaDomov, IkonaSrdceLine, IkonaCharita, IkonaKompas, IkonaMapa, IkonaPohar, IkonaOsoba, IkonaPenazenka, IkonaPlus } from "@/shared";
 import { pressable } from "@/components/pressable";
+import { useTvorbaGate } from "@/components/upgrade";
 import type { ReactNode } from "react";
 import type { StrankaAkcia, DokPolozka } from "@/components/context";
 
@@ -115,10 +116,12 @@ function SubTab({ d }: { d: DokPolozka }) {
 // ---- PLÁVAJÚCE „+ Pridať" — sticky primárna akcia aktuálnej stránky, nad spodným dokom ----
 // (predtým bolo „Pridať" v hornej sekcii skratiek; teraz je dole ako jeden výrazný FAB)
 export function PridatFAB({ akcia, wide }: { akcia: StrankaAkcia; wide?: boolean }) {
+  // pasívny divák-darca nesmie tvoriť → klik otvorí upgrade panel namiesto add-screenu
+  const { gate } = useTvorbaGate();
   return (
     <div style={{ position: "absolute", left: 0, right: 0, bottom: 100, zIndex: 41, display: "flex", justifyContent: "center", padding: "0 16px", pointerEvents: "none" }}>
       <div style={{ width: "100%", maxWidth: wide ? 620 : "none", display: "flex", justifyContent: "flex-end" }}>
-        <button onClick={akcia.onClick} aria-label={akcia.label} title={akcia.label} style={{
+        <button onClick={gate(akcia.onClick)} aria-label={akcia.label} title={akcia.label} style={{
           pointerEvents: "auto", display: "inline-flex", alignItems: "center", justifyContent: "center", width: 58, height: 58,
           borderRadius: "50%", border: "none", cursor: "pointer", color: "#fff",
           background: GRAD, boxShadow: "0 12px 30px rgba(78,122,62,.5), inset 0 1px 0 rgba(255,255,255,.28)", transition: "transform .15s ease",

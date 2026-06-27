@@ -33,6 +33,14 @@ export const PortalContext = createContext<HTMLElement | null>(null);
 export const usePortalEl = () => useContext(PortalContext);
 
 // ============================================================
+// UPGRADE (pasívny → aktívny) — kontext: ktorýkoľvek create vstup vie vyžiadať
+// upgrade panel „Staň sa aktívnym". Hodnotu napĺňa App shell (Screens).
+// Pasívny divák-darca smie prezerať + prispievať, ale NIE vytvárať (mozeTvorit=false).
+// ============================================================
+export const UpgradeContext = createContext<() => void>(() => {});
+export const useUpgrade = () => useContext(UpgradeContext);
+
+// ============================================================
 // AKCIE STRÁNKY — kontextové akcie aktuálneho modulu (Pridať, Ukáž talent, Nástenka…)
 // Modul si ich zaregistruje hookom; App shell ich vykreslí mimo obsahu:
 //   · `pridat` = plávajúce „+ Pridať" tlačidlo (sticky, nad spodným dokom)

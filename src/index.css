@@ -76,6 +76,18 @@ button, input, textarea {
   min-height: 100vh;
 }
 
+/* appka = presná výška VIDITEĽNEJ oblasti (dvh rieši iOS dynamickú lištu);
+   bez toho je spodok kontajnera pod home indicatorom a spodný sheet/CTA spadne mimo. */
+.deed-app {
+  height: 100vh;        /* fallback pre staršie prehliadače */
+  height: 100dvh;
+}
+/* spodný sheet sa nikdy nepretiahne cez viditeľnú oblasť — ak je obsah privysoký, scrolluje */
+.deed-sheet {
+  max-height: 92vh;     /* fallback */
+  max-height: 92dvh;
+}
+
 ::selection {
   background: rgba(120, 162, 74, 0.30);
 }

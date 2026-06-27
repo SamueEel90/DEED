@@ -13,6 +13,8 @@ const DEMO: Pouzivatel = {
   demo: true,
   ucetId: null,
   typ: "demo",
+  mozeTvorit: true, // demo = plný náhľad (admin / „pozrieť appku")
+  mozeDeed: true,
   meno: "Martin",
   priezvisko: "K.",
   celeMeno: "Martin K.",
@@ -47,10 +49,13 @@ function odvod(data: UcetData | null, session: Session): Pouzivatel {
   const priezvisko = jeCharita ? "" : profil?.priezvisko || "";
   const celeMeno = (jeCharita ? meno : `${meno} ${priezvisko}`).trim();
   const mesto = lokalita?.mesto || profil?.mesto || organizacia?.sidlo || "—";
+  const typ = ucet?.typ || ses?.typ || "aktivny";
   return {
     demo: false,
     ucetId: ucet?.id || ses?.ucet_id || null,
-    typ: ucet?.typ || ses?.typ || "aktivny",
+    typ,
+    mozeTvorit: typ !== "pasivny", // pasívny len prezerá + prispieva
+    mozeDeed: typ !== "pasivny", // pasívny prispieva len EUR + SMS (DEED vyžaduje účet)
     meno,
     priezvisko,
     celeMeno: celeMeno || "Člen",
@@ -70,10 +75,13 @@ function seed(session: Session): Pouzivatel {
   const ses = session && !session.demo ? session : null;
   const meno = ses?.meno || "Člen";
   const jeCharita = ses?.typ === "charita";
+  const typ = ses?.typ || "aktivny";
   return {
     demo: false,
     ucetId: ses?.ucet_id || null,
-    typ: ses?.typ || "aktivny",
+    typ,
+    mozeTvorit: typ !== "pasivny", // pasívny len prezerá + prispieva
+    mozeDeed: typ !== "pasivny", // pasívny prispieva len EUR + SMS (DEED vyžaduje účet)
     meno,
     priezvisko: "",
     celeMeno: meno,

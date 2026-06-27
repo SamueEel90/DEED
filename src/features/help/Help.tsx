@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { C, pasmo, inp, infoBox, btn, GRAD_ZELENY, glassTmavy } from "@/theme";
-import { Foto, Avatar, FotoPrispevku, MiniFotky, Hlavicka, ModulHlavicka, PodporaSekcia, PlatbaModal, HladanieModal, Otazka, Vyber, vyberBox, NavBtns, Suhrn, DokladRow, toast, useGaleria, useScrollHore, useStrankaAkcie, Ticker, StatRiadok, MoniBar, FeedStlpce, OkruhVyber, Lupa, Zdielanie, IkonaSpat, IkonaVlajka, IkonaFoto, IkonaPlay, IkonaDoska, FeedSkeleton, EmptyState, ErrorState, ScreenSwitch } from "@/shared";
+import { Foto, Avatar, FotoPrispevku, MiniFotky, Hlavicka, ModulHlavicka, PodporaSekcia, PlatbaModal, HladanieModal, Otazka, Vyber, vyberBox, NavBtns, Suhrn, DokladRow, toast, useGaleria, useScrollHore, useStrankaAkcie, useTvorbaGate, Ticker, StatRiadok, MoniBar, FeedStlpce, OkruhVyber, Lupa, Zdielanie, IkonaSpat, IkonaVlajka, IkonaFoto, IkonaPlay, IkonaDoska, FeedSkeleton, EmptyState, ErrorState, ScreenSwitch } from "@/shared";
 import { Zvoncek } from "@/features/notifikacie/Notifikacie";
 import { pripravFeed, FEED_CFG } from "@/lib/feed";
 import type { HelpFeedItem } from "@/types";
@@ -69,6 +69,7 @@ function Feed({ wide, toast, onDetail, onHladaj, onAdd }: { wide?: boolean; toas
   // než engine), preto NEpremapúvame zobrazVelkost — len filter + poradie.
   const [radius, setRadius] = useState<string>("stvrt");
   const [vyberOkruh, setVyberOkruh] = useState(false);
+  const { gate } = useTvorbaGate(); // pasívny nesmie tvoriť (talent)
   const feed = pripravFeed(MOCK_FEED as any, { ...USER_LOK, radius } as any);
 
   const karta = (z: any) => <FeedCard key={z.id} z={z} wide={wide} onClick={() => z.typ === "ziadost" && onDetail(z)} />;
@@ -78,7 +79,7 @@ function Feed({ wide, toast, onDetail, onHladaj, onAdd }: { wide?: boolean; toas
   useStrankaAkcie(() => ({
     pridat: { id: "add", label: "Pridať", onClick: onAdd },
     extra: [
-      { id: "talent", label: "Ukáž svoj talent", popis: "Tvorivé skutky a talenty", ikona: <IkonaPlay size={18} color="var(--a-green)" />, onClick: () => toast("Ukáž svoj talent (demo)") },
+      { id: "talent", label: "Ukáž svoj talent", popis: "Tvorivé skutky a talenty", ikona: <IkonaPlay size={18} color="var(--a-green)" />, onClick: gate(() => toast("Ukáž svoj talent (demo)")) },
       { id: "board", label: "Nástenka", popis: "Žiadosti a ponuky v okolí", ikona: <IkonaDoska size={18} color="var(--a-green)" />, onClick: () => toast("Nástenka (demo)") },
     ],
   }), []);
@@ -97,7 +98,7 @@ function Feed({ wide, toast, onDetail, onHladaj, onAdd }: { wide?: boolean; toas
       <Ticker key={tick}><b style={{ color: C.text }}>{dar.kto}</b> práve poslal <b style={{ color: C.greenL }}>{dar.co}</b> → {dar.komu}</Ticker>
 
       {/* štatistický riadok — počet vo zvolenom okruhu + výber okruhu */}
-      <StatRiadok stat={`V okruhu ${feed.length} · Mesiac 8 421`}
+      <StatRiadok pocet={feed.length} jednotka="žiadostí" mesiac="8 421"
         okruh={FEED_CFG.radiusy[radius].krat} onOkruh={() => setVyberOkruh(true)} />
 
       {/* karty — na tablete/PC: ponúkajú vľavo, hľadajú vpravo (zoradené algoritmom) */}

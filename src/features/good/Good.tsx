@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { C, inp, GRAD, GRAD_ZELENY } from "@/theme";
-import { Foto, FotoPrispevku, MiniFotky, Video, ModulHlavicka, Hlavicka, AvatarUroven, PodporaSekcia, PlatbaModal, HladanieModal, toast, Oslava, useGaleria, useScrollHore, useMotiv, useStrankaAkcie, StatRiadok, MoniBar, FeedStlpce, Lupa, Zdielanie, IkonaSipVlavo, IkonaMoznosti, IkonaUlozit, IkonaFajka, IkonaPlay, IkonaDoska, OkruhVyber, QrModal, FeedSkeleton, EmptyState, ErrorState, ScreenSwitch } from "@/shared";
+import { Foto, FotoPrispevku, MiniFotky, Video, ModulHlavicka, Hlavicka, AvatarUroven, PodporaSekcia, PlatbaModal, HladanieModal, toast, Oslava, useGaleria, useScrollHore, useMotiv, useStrankaAkcie, useTvorbaGate, StatRiadok, MoniBar, FeedStlpce, Lupa, Zdielanie, IkonaSipVlavo, IkonaMoznosti, IkonaUlozit, IkonaFajka, IkonaPlay, IkonaDoska, OkruhVyber, QrModal, FeedSkeleton, EmptyState, ErrorState, ScreenSwitch } from "@/shared";
 import { pripravFeed, FEED_CFG } from "@/lib/feed";
 import { tint } from "@/lib/ui";
 import { usePouzivatel } from "@/lib/pouzivatel";
@@ -39,6 +39,7 @@ const mediaBadge = (extra: React.CSSProperties): React.CSSProperties => ({ posit
 // ===================== MODUL =====================
 export default function ModulGood({ wide, otvorModul }: { wide?: boolean; otvorModul?: (m: string) => void }) {
   const { data: POLOZKY = [] } = useGoodFeed();
+  const { gate } = useTvorbaGate(); // pasívny nesmie tvoriť (overovanie skutku = create)
   const [screen, setScreen] = useState("home"); // home | detail | verify | add | board | event | cudzi
   const [aktId, setAktId] = useState<number | null>(null);
   const [aktEvent, setAktEvent] = useState<string | null>(null);
@@ -82,7 +83,7 @@ export default function ModulGood({ wide, otvorModul }: { wide?: boolean; otvorM
         <GoodDetail it={akt} toast={toast} oslavuj={oslavuj}
           onBack={() => setScreen("home")}
           onAutor={() => otvorProfil(autorSubjekt(akt), "detail")}
-          onVerify={(mode) => { setVerifyMode(mode); setScreen("verify"); }} />
+          onVerify={(mode) => gate(() => { setVerifyMode(mode); setScreen("verify"); })()} />
       )}
       {screen === "verify" && akt && obal(
         <GoodVerify it={akt} mode={verifyMode} toast={toast} onBack={() => setScreen("detail")} />
@@ -134,6 +135,7 @@ function Home({ wide, toast, otvorModul, onDetail, onHladaj, onBoard, onAdd }: H
   const [radius, setRadius] = useState<OkruhKod>("stvrt");
   const [vyberOkruh, setVyberOkruh] = useState(false);
   const ja = usePouzivatel();
+  const { gate } = useTvorbaGate();
   const user = { ...USER_LOK, radius };
 
   // FEED ALGORITMUS (Časť B): životnosť → rádius + adaptívny prah →
@@ -146,7 +148,7 @@ function Home({ wide, toast, otvorModul, onDetail, onHladaj, onBoard, onAdd }: H
   useStrankaAkcie(() => ({
     pridat: { id: "add", label: "Pridať", onClick: onAdd },
     extra: [
-      { id: "talent", label: "Ukáž svoj talent", popis: "TikTok kanál skutkov", ikona: <IkonaPlay size={18} color="var(--a-green)" />, onClick: () => toast("Ukáž svoj talent — TikTok kanál (demo)") },
+      { id: "talent", label: "Ukáž svoj talent", popis: "TikTok kanál skutkov", ikona: <IkonaPlay size={18} color="var(--a-green)" />, onClick: gate(() => toast("Ukáž svoj talent — TikTok kanál (demo)")) },
       { id: "board", label: "Nástenka", popis: "Skutky a výzvy v okolí", ikona: <IkonaDoska size={18} color="var(--a-green)" />, onClick: onBoard },
     ],
   }), []);
@@ -164,7 +166,7 @@ function Home({ wide, toast, otvorModul, onDetail, onHladaj, onBoard, onAdd }: H
         } />
 
       {/* štatistický riadok — počet vo zvolenom okruhu + klikateľný výber okruhu */}
-      <StatRiadok stat={`V okruhu ${feed.length} skutkov · Mesiac 9 480`} miesto={ja.mesto}
+      <StatRiadok pocet={feed.length} jednotka="skutkov" mesiac="9 480" miesto={ja.mesto}
         okruh={FEED_CFG.radiusy[radius].krat} onOkruh={() => setVyberOkruh(true)} />
 
       {/* feed — na tablete/PC: skutky vľavo, žiadosti vpravo (už zoradené algoritmom) */}

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { C, GRAD, GRAD_ZELENY } from "@/theme";
-import { toast, Sheet, AvatarUroven, useScrollHore, useViac, useMotiv, QrModal, IkonaMenu, IkonaNastavenia, IkonaSipVlavo, IkonaPenazenka, IkonaHviezda, IkonaFajka, IkonaDoska, IkonaUsmev, IkonaPin, IkonaSlnko, IkonaMesiac, IkonaStit, SkeletonRiadky, EmptyState, ErrorState, ScreenSwitch } from "@/shared";
+import { toast, Sheet, AvatarUroven, useScrollHore, useViac, useMotiv, useTvorbaGate, QrModal, IkonaMenu, IkonaNastavenia, IkonaSipVlavo, IkonaPenazenka, IkonaHviezda, IkonaFajka, IkonaDoska, IkonaUsmev, IkonaPin, IkonaSlnko, IkonaMesiac, IkonaStit, SkeletonRiadky, EmptyState, ErrorState, ScreenSwitch } from "@/shared";
 import { RetazDobraSheet } from "@/features/retaz/RetazDobra";
 import { clearSession } from "@/lib/session";
 import { usePouzivatel } from "@/lib/pouzivatel";
@@ -276,6 +276,7 @@ function SubScreen({ nazov, toast, onBack }: SubScreenProps) {
 type PriateliaScreenProps = { toast: ToastFn; onBack: () => void };
 
 function PriateliaScreen({ toast, onBack }: PriateliaScreenProps) {
+  const { gate } = useTvorbaGate(); // pridávanie priateľa = iniciovanie vzťahu (create)
   const [qr, setQr] = useState<"pozvanka" | "osobny" | null>(null);
   const [ziadosti, setZiadosti] = useState<ZiadostPriatelstvo[]>([{ id: "p1", meno: "Peter K.", ini: "P", info: "3 spoloční priatelia" }]);
   const vybav = (id: string, ok: boolean) => { setZiadosti((z) => z.filter((x) => x.id !== id)); toast(ok ? "Priateľstvo prijaté — vzájomný súhlas" : "Žiadosť odmietnutá"); };
@@ -310,7 +311,7 @@ function PriateliaScreen({ toast, onBack }: PriateliaScreenProps) {
         {/* cesty pridania */}
         <div style={{ fontSize: 10.5, letterSpacing: ".4px", color: C.textTer, fontWeight: 700, margin: "16px 0 8px" }}>AKO PRIDAŤ PRIATEĽA</div>
         {cesty.map((c, i) => (
-          <div key={i} onClick={c[4]} style={{ display: "flex", alignItems: "center", gap: 13, background: C.surface, border: `1px solid ${C.line}`, borderRadius: 14, padding: "13px 14px", marginBottom: 9, cursor: "pointer" }}>
+          <div key={i} onClick={gate(c[4])} style={{ display: "flex", alignItems: "center", gap: 13, background: C.surface, border: `1px solid ${C.line}`, borderRadius: 14, padding: "13px 14px", marginBottom: 9, cursor: "pointer" }}>
             <span style={{ width: 42, height: 42, borderRadius: 12, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, background: "rgba(var(--glass-rgb),.06)" }}>{c[0]}</span>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 14.5, fontWeight: 700 }}>{c[1]}</div>

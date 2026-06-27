@@ -194,28 +194,41 @@ export function Rebricky({ ocenenia = [], ludia = [], pred = null }: { ocenenia?
 }
 
 // ============================================================
-// JEDNOTNÝ ŠTATISTICKÝ RIADOK — „Dnes X · Mesiac Y" + „Moja štvrť" s výberom okruhu
+// JEDNOTNÝ ŠTATISTICKÝ RIADOK — segmentovaný panel:
+//   [počet v okruhu] · [mesačná štatistika] · [poloha + výber okruhu]
 // rovnaký dizajn aj poloha (hneď pod rebríčkom) vo všetkých moduloch
 // ============================================================
-export function StatRiadok({ stat, miesto = "Trenčín", okruh = "2 km", onOkruh }: { stat?: any; miesto?: ReactNode; okruh?: ReactNode; onOkruh?: () => void }) {
-  // čísla v štatistike zvýrazníme (Dnes 312 · Mesiac 9 480)
-  const casti = String(stat).split(/(\d[\d  ]*)/g);
+export function StatRiadok({ pocet, jednotka, mesiac, miesto = "Trenčín", okruh = "2 km", onOkruh }: { pocet?: ReactNode; jednotka?: string; mesiac?: ReactNode; miesto?: ReactNode; okruh?: ReactNode; onOkruh?: () => void }) {
+  // segmentovaný panel: [počet v okruhu] · [mesačná štatistika] · [poloha + výber okruhu]
+  // jednotná výška, vnútorné deliace čiary, jediný interaktívny segment = poloha
+  const cislo: CSSProperties = { fontSize: 17, fontWeight: 800, color: C.text, lineHeight: 1.1, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" };
+  const popis: CSSProperties = { fontSize: 10.5, fontWeight: 600, color: C.textTer, marginTop: 3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", letterSpacing: ".01em" };
   return (
-    <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8, padding: "4px 16px 14px", borderBottom: `1px solid ${C.line}` }}>
-      {/* live štatistika — chip s pulzujúcou bodkou */}
-      <span style={{ display: "inline-flex", alignItems: "center", gap: 8, flex: "1 1 240px", minWidth: 0, padding: "6px 13px", borderRadius: 20, background: "rgba(31,191,143,.08)", border: "1px solid rgba(31,191,143,.22)", fontSize: 12.5, color: C.textSec, fontWeight: 600 }}>
-        <span style={{ width: 8, height: 8, borderRadius: "50%", flex: "none", background: "var(--a-green)", boxShadow: "0 0 0 4px rgba(61,214,140,.16)", animation: "pulse 1.6s infinite" }} />
-        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-          {casti.map((p, i) => /\d/.test(p) ? <b key={i} style={{ color: C.text, fontWeight: 800 }}>{p}</b> : p)}
-        </span>
-      </span>
-      {/* moja štvrť + okruh — klikateľný chip */}
-      <span {...pressable(onOkruh, "Zmeniť okruh")} title="Zmeniť okruh" style={{ display: "inline-flex", alignItems: "center", gap: 7, flex: "none", padding: "5px 8px 5px 12px", borderRadius: 20, background: C.surface2, border: `1px solid ${C.line}`, cursor: "pointer", fontSize: 12.5, color: C.textSec, fontWeight: 600, whiteSpace: "nowrap" }}>
-        <IkonaPin size={13} color="var(--a-info)" /> Moja štvrť · {miesto}
-        <span style={{ display: "inline-flex", alignItems: "center", gap: 2, padding: "3px 6px 3px 9px", borderRadius: 14, background: "rgba(116,166,255,.14)", color: "var(--a-info)", fontSize: 11.5, fontWeight: 700 }}>
-          {okruh} <IkonaSipDole size={12} color="var(--a-info)" />
-        </span>
-      </span>
+    <div style={{ padding: "4px 14px 14px", borderBottom: `1px solid ${C.line}` }}>
+      <div style={{ display: "flex", alignItems: "stretch", borderRadius: 14, background: C.surface, border: `1px solid ${C.line}`, overflow: "hidden" }}>
+        {/* segment 1 — počet v okruhu (živé, pulzujúca bodka) */}
+        <div title={jednotka ? `${pocet} ${jednotka} v okruhu` : "v okruhu"} style={{ flex: "1 1 0", minWidth: 0, padding: "9px 13px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
+            <span style={{ width: 7, height: 7, borderRadius: "50%", flex: "none", background: "var(--a-green)", boxShadow: "0 0 0 3px rgba(78,122,62,.18)", animation: "pulse 1.6s infinite" }} />
+            <span style={cislo}>{pocet}</span>
+          </div>
+          <div style={popis}>v okruhu</div>
+        </div>
+        {/* segment 2 — mesačná štatistika */}
+        <div style={{ flex: "1 1 0", minWidth: 0, padding: "9px 13px", borderLeft: `1px solid ${C.line}` }}>
+          <div style={cislo}>{mesiac}</div>
+          <div style={popis}>tento mesiac</div>
+        </div>
+        {/* segment 3 — poloha + výber okruhu (jediný interaktívny, akcentové pozadie) */}
+        <div {...pressable(onOkruh, "Zmeniť okruh")} title="Zmeniť okruh" style={{ flex: "1.25 1 0", minWidth: 0, padding: "9px 13px", borderLeft: `1px solid ${C.line}`, background: "var(--a-info-bg)", cursor: "pointer", display: "flex", flexDirection: "column", justifyContent: "center" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 5, minWidth: 0 }}>
+            <IkonaPin size={13} color="var(--a-info)" />
+            <span style={{ flex: 1, minWidth: 0, fontSize: 13.5, fontWeight: 800, color: "var(--a-info)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{okruh}</span>
+            <IkonaSipDole size={13} color="var(--a-info)" />
+          </div>
+          <div style={{ ...popis, color: C.textSec }}>{miesto}</div>
+        </div>
+      </div>
     </div>
   );
 }

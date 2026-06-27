@@ -14,6 +14,7 @@ export * from "@/components/hladanie";
 export * from "@/components/states";
 export * from "@/components/motion";
 export * from "@/components/sheet";
+export * from "@/components/upgrade";
 export * from "@/components/pressable";
 export * from "@/components/toast";
 export { tint } from "@/lib/ui";

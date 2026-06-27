@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { ModulHlavicka, Hlavicka, PodporaSekcia, PlatbaModal, HladanieModal, toast, Oslava, useMotiv, useScrollHore, useStrankaAkcie, Ticker, StatRiadok, FeedStlpce, OkruhVyber, Lupa, Zvon, IkonaSipVlavo, IkonaMoznosti, Zdielanie, IkonaUlozit, IkonaFoto, IkonaPlus, IkonaPlay, IkonaDoska, FeedSkeleton, EmptyState, ErrorState, ScreenSwitch } from "@/shared";
+import { ModulHlavicka, Hlavicka, PodporaSekcia, PlatbaModal, HladanieModal, toast, Oslava, useMotiv, useScrollHore, useStrankaAkcie, useTvorbaGate, Ticker, StatRiadok, FeedStlpce, OkruhVyber, Lupa, Zvon, IkonaSipVlavo, IkonaMoznosti, Zdielanie, IkonaUlozit, IkonaFoto, IkonaPlus, IkonaPlay, IkonaDoska, FeedSkeleton, EmptyState, ErrorState, ScreenSwitch } from "@/shared";
 import { C, GRAD, GRAD_ZELENY } from "@/theme";
 import { pripravFeed, FEED_CFG } from "@/lib/feed";
 import type { OkruhKod } from "@/types";
@@ -255,7 +255,7 @@ function Home({ items, dom, view, pickDom, pickView, toast, open, openPerson, se
       </Ticker>
 
       {/* štatistický riadok — počet vo zvolenom okruhu + výber okruhu */}
-      <StatRiadok stat={`V okruhu ${feed.length} aktivít · Mesiac 9 480`}
+      <StatRiadok pocet={feed.length} jednotka="aktivít" mesiac="9 480"
         okruh={FEED_CFG.radiusy[radius].krat} onOkruh={() => setVyberOkruh(true)} />
 
       {/* feed — na tablete/PC: skutky & aktivity vľavo, žiadosti o pomoc vpravo */}
@@ -482,6 +482,7 @@ function WorkshopDetail({ it, toast, celebrate, home, openPerson }: any) {
 
 function HelpDetail({ it, toast, celebrate, home, openPerson }: any) {
   const a = DOM[it.dom];
+  const { gate } = useTvorbaGate(); // „Môžem pomôcť" otvára chat = create
   return (
     <div style={{ paddingBottom: 24 }}>
       <DetailHero it={it} onBack={home}>
@@ -496,7 +497,7 @@ function HelpDetail({ it, toast, celebrate, home, openPerson }: any) {
         <div style={{ ...titleS, marginTop: 10, fontSize: 14 }}>{it.title}</div>
         <p style={{ fontSize: 14.5, lineHeight: 1.6, marginTop: 9, color: A.txt2 }}>{it.desc}</p>
         <InfoBox>{it.helpers} ľudí sa už zapojilo. Po prijatí sa otvorí chat, dohodnete sa. Po dokončení: hodnotenie + tip + reťaz dobra.</InfoBox>
-        <Btn green onClick={() => { celebrate("Ozval si sa!", `Otvorili sme chat s ${it.author}. Dohodnite si detaily.`); setTimeout(home, 1700); }}>✋ Môžem pomôcť</Btn>
+        <Btn green onClick={gate(() => { celebrate("Ozval si sa!", `Otvorili sme chat s ${it.author}. Dohodnite si detaily.`); setTimeout(home, 1700); })}>✋ Môžem pomôcť</Btn>
         <div style={{ display: "flex", gap: 10, marginTop: 10 }}>
           <Cbtn ic={<Zdielanie size={14} color={A.txt} />} t="Zdieľať" s="pošli ďalej" onClick={() => toast("Zdieľané")} />
           <Cbtn ic={<IkonaUlozit size={14} color={A.txt} />} t="Uložiť" s="na neskôr" onClick={() => toast("Uložené")} />
@@ -696,6 +697,7 @@ function Board({ dom, toast, home }: any) {
 // ===================== PROFIL OSOBY =====================
 function OsobaProfil({ name, items, follows, toggleFollow, onOpen, toast, home }: any) {
   const p = osoba(name, items);
+  const { gate } = useTvorbaGate(); // „Správa" iniciuje chat = create
   const sledujem = !!follows[name];
   const acc = p.domains[0] ? DOM[p.domains[0]] : DOM.mix;
   const followers = p.followers + (sledujem ? 1 : 0);
@@ -739,7 +741,7 @@ function OsobaProfil({ name, items, follows, toggleFollow, onOpen, toast, home }
             {sledujem ? "✓ Sledujem" : "+ Sledovať"}
           </button>
         )}
-        <button onClick={() => toast(p.isMe ? "Tvoj profil" : `Správa pre ${p.name} (demo)`)} style={{ flex: 1, height: 46, borderRadius: 12, fontWeight: 700, fontSize: 14, cursor: "pointer", fontFamily: "inherit", background: A.surface2, border: `1px solid ${A.line}`, color: A.txt }}>✉ Správa</button>
+        <button onClick={p.isMe ? () => toast("Tvoj profil") : gate(() => toast(`Správa pre ${p.name} (demo)`))} style={{ flex: 1, height: 46, borderRadius: 12, fontWeight: 700, fontSize: 14, cursor: "pointer", fontFamily: "inherit", background: A.surface2, border: `1px solid ${A.line}`, color: A.txt }}>✉ Správa</button>
       </div>
 
       {/* štatistiky */}

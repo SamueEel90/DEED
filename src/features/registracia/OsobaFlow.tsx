@@ -23,7 +23,6 @@ import { ZOBRAZENIE_VOLBY, type ZobrazenieRezim } from "./mock";
 // ---- stavový automat ----
 type Krok =
   | "vidlicka"
-  | "pasivny"
   | "a1"
   | "a2"
   | "a3"
@@ -48,6 +47,8 @@ interface OsobaFlowProps {
   onHotovo?: () => void;
   onSpat?: () => void;
   toast?: ToastFn;
+  /** Kde tok začať. „a1" = rovno aktívny tok (upgrade pasívny → aktívny). */
+  startKrok?: Krok;
 }
 
 // best-effort priebežné ukladanie stavu — nikdy neblokuje navigáciu
@@ -59,12 +60,11 @@ async function ulozStavTicho(ucetId: string, stav: string) {
   }
 }
 
-export function OsobaFlow({ onHotovo, onSpat, toast }: OsobaFlowProps) {
+export function OsobaFlow({ onHotovo, onSpat, toast, startKrok = "vidlicka" }: OsobaFlowProps) {
   // ---- stavový automat ----
   //  "vidlicka"  — pasívny / aktívny rozcestník (NEčíslované)
-  //  "pasivny"   — pasívny dar (jedna obrazovka, NEčíslované)
   //  "a1".."a8"  — aktívny tok (číslované 1..8)
-  const [krok, setKrok] = useState<Krok>("vidlicka");
+  const [krok, setKrok] = useState<Krok>(startKrok);
   const [ucet, setUcet] = useState<Ucet | null>(null); // { id, typ, poradove_cislo, stav_registracie }
 
   // profil meno si držíme pre záverečnú session
@@ -72,48 +72,38 @@ export function OsobaFlow({ onHotovo, onSpat, toast }: OsobaFlowProps) {
 
   const goto = (k: Krok) => setKrok(k);
 
+  // pasívny divák-darca → rovno do appky: prezerá a prispieva (FIAT/karta/SMS)
+  // všade, ale nič nevytvára (gating cez Pouzivatel.mozeTvorit / upgrade panel).
+  const vstupPasivne = () => {
+    setSession({ typ: "pasivny", meno: "Hosť" });
+    onHotovo?.();
+  };
+
   // ---------------------------------------------------------
   // SCREEN 0 — Vidlička Pasívny / Aktívny (NEčíslované)
   // ---------------------------------------------------------
   if (krok === "vidlicka") {
     return (
-      <Shell title="Vitaj v DEED" onBack={onSpat}>
-        <Otazka>Ako chceš začať?</Otazka>
+      <Shell title="Fyzická osoba" onBack={onSpat}>
+        <Otazka>Ako chceš DEED používať?</Otazka>
         <Vyber
           emoji="💛"
-          title="Pasívny"
-          desc="Len prispievam (FIAT/SMS). Bez registrácie, anonym."
+          title="Pasívny — len prispievam"
+          desc="Prezeraj a prispievaj (FIAT/karta/SMS) všade. Bez vytvárania obsahu."
           active={false}
-          onClick={() => goto("pasivny")}
+          onClick={vstupPasivne}
         />
         <Vyber
           emoji="🚀"
-          title="Aktívny"
-          desc="Chcem využívať všetky funkcie naplno."
+          title="Aktívny — plný účet"
+          desc="Tvor skutky, žiadosti a zbierky, získavaj karmu a odmeny."
           active={false}
           onClick={() => goto("a1")}
         />
         <div style={infoBox}>
-          Pasívny nedostane karmu ani odmeny. Upgrade kedykoľvek, bez straty doterajšieho.
+          Pasívny vojde do appky hneď a môže komukoľvek prispieť. Na vytváranie obsahu sa staneš aktívnym kedykoľvek — bez straty doterajšieho.
         </div>
       </Shell>
-    );
-  }
-
-  // ---------------------------------------------------------
-  // PASÍVNY DAR (jedna obrazovka, NEčíslované)
-  // ---------------------------------------------------------
-  if (krok === "pasivny") {
-    return (
-      <PasivnyDar
-        toast={toast}
-        onBack={() => goto("vidlicka")}
-        onAktivny={() => goto("a1")}
-        onZatvor={() => {
-          setSession({ demo: true });
-          onHotovo?.();
-        }}
-      />
     );
   }
 
@@ -128,7 +118,7 @@ export function OsobaFlow({ onHotovo, onSpat, toast }: OsobaFlowProps) {
         step={1}
         total={8}
         typ="aktivny"
-        onBack={() => goto("vidlicka")}
+        onBack={startKrok === "a1" ? onSpat : () => goto("vidlicka")}
         onHotovo={(u: Ucet) => {
           setUcet(u);
           ulozStavTicho(u.id, "zabezpecenie");
@@ -245,151 +235,6 @@ export function OsobaFlow({ onHotovo, onSpat, toast }: OsobaFlowProps) {
   }
 
   return null;
-}
-
-// ============================================================
-// PASÍVNY DAR — anonym, bez účtu (§2)
-// ============================================================
-interface PasivnyDarProps {
-  toast?: ToastFn;
-  onBack: () => void;
-  onAktivny: () => void;
-  onZatvor: () => void;
-}
-
-type Kanal = "fiat" | "sms";
-
-function PasivnyDar({ toast, onBack, onAktivny, onZatvor }: PasivnyDarProps) {
-  const [suma, setSuma] = useState("");
-  const [kanal, setKanal] = useState<Kanal | null>(null); // "fiat" | "sms"
-  const [meno, setMeno] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [hotovo, setHotovo] = useState(false); // po Oslave → 2 tlačidlá
-
-  const sumaNum = Number(suma);
-  const canNext = sumaNum > 0 && !!kanal;
-
-  const posli = async () => {
-    setLoading(true);
-    try {
-      await db.pridajDar({
-        ucetId: null,
-        sumaEur: sumaNum,
-        kanal: kanal ?? "", // "fiat" | "sms"
-        prijemca: null,
-        zobrazenie: meno.trim() || "anonym",
-      });
-      setHotovo(true);
-    } catch (e: any) {
-      toast?.("Chyba: " + e.message);
-      setLoading(false);
-    }
-  };
-
-  // po dokončení daru: Oslava → po zatvorení dve voľby
-  const [oslavaZatvorena, setOslavaZatvorena] = useState(false);
-
-  if (hotovo) {
-    if (!oslavaZatvorena) {
-      return (
-        <Oslava
-          emoji="💛"
-          title="Ďakujeme"
-          text="Tvoj anonymný príspevok je na ceste. Aj malý dar spúšťa reťaz dobra."
-          onClose={() => setOslavaZatvorena(true)}
-        />
-      );
-    }
-    return (
-      <Shell title="Ďakujeme">
-        <div style={{ textAlign: "center", padding: "10px 6px 18px" }}>
-          <div style={{ fontSize: 40 }}>💛</div>
-          <div style={{ fontSize: 16, fontWeight: 700, marginTop: 8 }}>Dar odoslaný anonymne</div>
-          <div style={{ fontSize: 13.5, color: C.textSec, marginTop: 6, lineHeight: 1.5 }}>
-            Chceš z toho viac? Ako aktívny člen získavaš karmu, odmeny a všetky funkcie.
-          </div>
-        </div>
-        <button
-          onClick={onAktivny}
-          style={{
-            width: "100%",
-            padding: "15px 0",
-            borderRadius: 14,
-            border: "none",
-            background: GRAD,
-            color: "#fff",
-            fontWeight: 700,
-            fontSize: 15.5,
-            cursor: "pointer",
-            fontFamily: "inherit",
-            boxShadow: "0 8px 26px rgba(99,134,255,.32), inset 0 1px 0 rgba(255,255,255,.25)",
-            marginBottom: 10,
-          }}
-        >
-          Stať sa aktívnym
-        </button>
-        <button
-          onClick={onZatvor}
-          style={{
-            width: "100%",
-            padding: "15px 0",
-            borderRadius: 14,
-            background: "rgba(var(--glass-rgb),.05)",
-            color: C.textSec,
-            border: `1px solid ${C.line}`,
-            fontWeight: 700,
-            fontSize: 15.5,
-            cursor: "pointer",
-            fontFamily: "inherit",
-          }}
-        >
-          Zatvoriť
-        </button>
-      </Shell>
-    );
-  }
-
-  return (
-    <Shell
-      title="Pasívny dar"
-      onBack={onBack}
-      footer={<Patka onNext={posli} canNext={canNext} loading={loading} next="Poslať" />}
-    >
-      <Otazka>Prispej anonymne — bez registrácie</Otazka>
-      <TextPole
-        label="Suma (€)"
-        value={suma}
-        onChange={(v: string) => setSuma(v.replace(/[^\d.]/g, ""))}
-        placeholder="napr. 10"
-        inputMode="decimal"
-      />
-      <div style={{ fontSize: 12.5, fontWeight: 600, color: C.textTer, margin: "6px 0 8px" }}>Ako pošleš?</div>
-      <Vyber
-        emoji="💳"
-        title="Poslať cez kartu (FIAT)"
-        desc="Bežná platba kartou."
-        active={kanal === "fiat"}
-        onClick={() => setKanal("fiat")}
-      />
-      <Vyber
-        emoji="📱"
-        title="Poslať cez SMS"
-        desc="Darcovská SMS od operátora."
-        active={kanal === "sms"}
-        onClick={() => setKanal("sms")}
-      />
-      <TextPole
-        label="Zobrazené meno (nepovinné)"
-        hint="Prázdne = anonym."
-        value={meno}
-        onChange={setMeno}
-        placeholder="Martin S., Trenčín / nick / anonym"
-      />
-      <div style={infoBox}>
-        Pasívny dar je anonymný — nezískavaš karmu ani odmeny. Aktívnym sa môžeš stať kedykoľvek.
-      </div>
-    </Shell>
-  );
 }
 
 // ============================================================

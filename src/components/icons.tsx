@@ -140,6 +140,20 @@ export function IkonaFoto({ size = 18, color = "currentColor" }: { size?: number
 export function IkonaPenazenka({ size = 18, color = "currentColor" }: { size?: number; color?: string }) { // peňaženka
   return <SvgI size={size} color={color}><rect x="3" y="6" width="18" height="13" rx="2.5" /><path d="M3 10h18M16 14.5h2" /></SvgI>;
 }
+// ---- AUTH / FORMULÁROVÉ IKONY ----
+export function IkonaObalka({ size = 18, color = "currentColor" }: { size?: number; color?: string }) { // email
+  return <SvgI size={size} color={color}><rect x="3" y="5" width="18" height="14" rx="2.5" /><path d="m3.5 7 8.5 6 8.5-6" /></SvgI>;
+}
+export function IkonaZamok({ size = 18, color = "currentColor" }: { size?: number; color?: string }) { // heslo
+  return <SvgI size={size} color={color}><rect x="4" y="10.5" width="16" height="10.5" rx="2.4" /><path d="M7.5 10.5V7.5a4.5 4.5 0 0 1 9 0v3" /><circle cx="12" cy="15.5" r="1.4" fill={color} stroke="none" /></SvgI>;
+}
+export function IkonaOko({ size = 18, color = "currentColor" }: { size?: number; color?: string }) { // ukáž heslo
+  return <SvgI size={size} color={color}><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z" /><circle cx="12" cy="12" r="3" /></SvgI>;
+}
+export function IkonaOkoOff({ size = 18, color = "currentColor" }: { size?: number; color?: string }) { // skry heslo
+  return <SvgI size={size} color={color}><path d="M10.6 6.2A9.7 9.7 0 0 1 12 6c6.4 0 10 6 10 6a17 17 0 0 1-3.3 3.9M6.1 7.8A17 17 0 0 0 2 12s3.6 6 10 6a9.6 9.6 0 0 0 3.9-.8" /><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2" /><path d="M3 3l18 18" /></SvgI>;
+}
+
 // ---- REBRÍČKOVÉ (award) IKONY ----
 export function IkonaStit({ size = 18, color = "currentColor" }: { size?: number; color?: string }) { // partner
   return <SvgI size={size} color={color}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></SvgI>;

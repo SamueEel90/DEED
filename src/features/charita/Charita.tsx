@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { C, U, AV, GRAD, GRAD_ZELENY } from "@/theme";
-import { Foto, Avatar, FotoPrispevku, MiniFotky, ModulHlavicka, PodporaSekcia, PlatbaModal, HladanieModal, toast, useGaleria, useScrollHore, useStrankaAkcie, Ticker, StatRiadok, MoniBar, FeedStlpce, OkruhVyber, Lupa, Zvon, Zdielanie, IkonaSpat, IkonaVlajka, IkonaFoto, IkonaPlay, IkonaDoska, IkonaOpakovat, IkonaKriz, IkonaInstitucia, FeedSkeleton, SkeletonRiadky, EmptyState, ErrorState, ScreenSwitch } from "@/shared";
+import { Foto, Avatar, FotoPrispevku, MiniFotky, ModulHlavicka, PodporaSekcia, PlatbaModal, HladanieModal, toast, useGaleria, useScrollHore, useStrankaAkcie, useTvorbaGate, Ticker, StatRiadok, MoniBar, FeedStlpce, OkruhVyber, Lupa, Zvon, Zdielanie, IkonaSpat, IkonaVlajka, IkonaFoto, IkonaPlay, IkonaDoska, IkonaOpakovat, IkonaKriz, IkonaInstitucia, FeedSkeleton, SkeletonRiadky, EmptyState, ErrorState, ScreenSwitch } from "@/shared";
 import { pripravFeed, FEED_CFG } from "@/lib/feed";
 import { Zvoncek } from "@/features/notifikacie/Notifikacie";
 import type { CharitaFeedItem, CharitaLevel, Kanal } from "@/types";
@@ -97,6 +97,7 @@ function CharitaFeed({ wide, toast, onDetail, onHladaj, onSheet }: FeedProps) {
   // engine len rozhoduje, KTORÉ a v akom poradí sa zobrazia.
   const [radius, setRadius] = useState("stvrt");
   const [vyberOkruh, setVyberOkruh] = useState(false);
+  const { gate } = useTvorbaGate(); // pasívny nesmie tvoriť (talent)
   const feed = pripravFeed(FEED_ITEMS as any, { ...USER_LOK, radius } as any) as unknown as (CharitaFeedItem & { _poradie: number; _kriza: boolean; _riadky: number })[];
 
   // mapovanie metadát späť na pôvodné komponenty kariet
@@ -112,7 +113,7 @@ function CharitaFeed({ wide, toast, onDetail, onHladaj, onSheet }: FeedProps) {
   useStrankaAkcie(() => ({
     pridat: { id: "add", label: "Pridať", onClick: () => onSheet("add") },
     extra: [
-      { id: "talent", label: "Ukáž svoj talent", popis: "Tvorivé skutky a talenty", ikona: <IkonaPlay size={18} color="var(--a-green)" />, onClick: () => toast("Ukáž svoj talent (demo)") },
+      { id: "talent", label: "Ukáž svoj talent", popis: "Tvorivé skutky a talenty", ikona: <IkonaPlay size={18} color="var(--a-green)" />, onClick: gate(() => toast("Ukáž svoj talent (demo)")) },
       { id: "board", label: "Nástenka", popis: "Zbierky a výzvy v okolí", ikona: <IkonaDoska size={18} color="var(--a-green)" />, onClick: () => toast("Nástenka (demo)") },
     ],
   }), []);
@@ -143,7 +144,7 @@ function CharitaFeed({ wide, toast, onDetail, onHladaj, onSheet }: FeedProps) {
       </div>
 
       {/* štatistický riadok — počet vo zvolenom okruhu + výber okruhu */}
-      <StatRiadok stat={`V okruhu ${feed.length} zbierok · Mesiac 12 840`}
+      <StatRiadok pocet={feed.length} jednotka="zbierok" mesiac="12 840"
         okruh={(FEED_CFG.radiusy as any)[radius].krat} onOkruh={() => setVyberOkruh(true)} />
 
       {/* feed — na tablete/PC: zapoj sa vľavo, zbierky vpravo (zoradené algoritmom) */}

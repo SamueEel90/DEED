@@ -2,7 +2,8 @@ import { useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
 import { C, GRAD, GRAD_ZELENY } from "@/theme";
 import { tint } from "@/lib/ui";
-import { useMotiv } from "@/components/context";
+import { useMotiv, useUpgrade } from "@/components/context";
+import { usePouzivatel } from "@/lib/pouzivatel";
 import { Sheet } from "@/components/sheet";
 import { IkonaStit, IkonaFajka, Zdielanie, Palec } from "@/components/icons";
 
@@ -222,6 +223,10 @@ const psKanal: CSSProperties = {
 
 export function PodporaSekcia({ onShare, upvotes = 0, onUpvote, onPodpor, onSms, onKanal, accent = "var(--a-info)", supLabel = "DROBNÁ PODPORA — klik a hneď odíde" }: { onShare?: () => void; upvotes?: number; onUpvote?: () => void; onPodpor: (a: number) => void; onSms?: () => void; onKanal: (k: string) => void; accent?: string; supLabel?: ReactNode }) {
   const { svetly } = useMotiv();
+  // pasívny prispieva len EUR + SMS; DEED (peňaženka) vyžaduje účet → výzva na registráciu
+  const { mozeDeed } = usePouzivatel();
+  const upgrade = useUpgrade();
+  const deedAkcia = (akcia: () => void) => () => (mozeDeed ? akcia() : upgrade());
   const goldTxt = svetly ? "#8A6B0E" : C.gold; // v svetlom režime tmavšia zlatá (čitateľnosť)
   const fix = [
     { e: "★", v: "10", col: accent, a: 10, tier: 0 },
@@ -243,7 +248,7 @@ export function PodporaSekcia({ onShare, upvotes = 0, onUpvote, onPodpor, onSms,
       <PSLabel>{supLabel}</PSLabel>
       <div style={{ display: "flex", gap: 8, alignItems: "stretch" }}>
         {fix.map((b) => (
-          <button key={b.v} onClick={() => onPodpor(b.a)} style={psFix(b.tier, b.col)}>
+          <button key={b.v} onClick={deedAkcia(() => onPodpor(b.a))} style={psFix(b.tier, b.col)}>
             <span style={{ fontSize: b.tier === 2 ? 22 : 20, color: b.col, lineHeight: 1 }}>{b.e}</span>
             <span style={{ fontSize: b.tier === 2 ? 14 : 13, marginTop: 4 }}>{b.v} <span style={{ fontSize: 9, fontWeight: 700, color: C.textTer, letterSpacing: ".3px" }}>DEED</span></span>
             <span style={{ fontSize: 9.5, color: C.textTer, marginTop: 2 }}>≈ {eurZaDeed(b.a)}</span>
@@ -261,7 +266,7 @@ export function PodporaSekcia({ onShare, upvotes = 0, onUpvote, onPodpor, onSms,
         <button onClick={() => onKanal("EUR")} style={psKanal}>
           <span style={{ fontWeight: 800, fontSize: 15 }}>€ EUR</span>
         </button>
-        <button onClick={() => onKanal("DEED")} style={psKanal}>
+        <button onClick={deedAkcia(() => onKanal("DEED"))} style={psKanal}>
           <span style={{ fontWeight: 800, fontSize: 15, color: accent }}>DEED</span>
         </button>
       </div>

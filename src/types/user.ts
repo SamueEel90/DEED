@@ -10,8 +10,10 @@ export type IsoDateTime = string; // "2026-06-25T10:00:00.000Z"
 export type IsoDate = string; // "2015-03-12"
 export type HexFarba = string; // "#3A8DD6"
 
-/** Typ účtu/subjektu (DB ucet.typ + demo identita). */
-export type TypUctu = "aktivny" | "charita" | "demo";
+/** Typ účtu/subjektu (DB ucet.typ + demo identita).
+ *  „pasivny" = prihlásený divák-darca: prezerá a prispieva (FIAT/karta/SMS)
+ *  všade, ale NEsmie nič vytvárať/pridávať (gating cez Pouzivatel.mozeTvorit). */
+export type TypUctu = "aktivny" | "pasivny" | "charita" | "demo";
 
 /** Stav registrácie (§11 priebežné ukladanie). */
 export type StavRegistracie = "zabezpecenie" | "udaje" | "hotovo" | string;
@@ -202,7 +204,7 @@ export interface UcetData {
 /* SESSION — lib/session (localStorage "deed.session") */
 
 export interface SessionRegistrovany {
-  ucet_id: Uuid;
+  ucet_id?: Uuid; // pasívny divák-darca nemusí mať DB účet (anonym)
   typ: TypUctu;
   poradove_cislo?: number | null;
   meno?: string;
@@ -222,6 +224,10 @@ export interface Pouzivatel {
   demo: boolean;
   ucetId: Uuid | null;
   typ: TypUctu;
+  /** Smie vytvárať/pridávať obsah? Pasívny divák-darca = false (len prezerá + prispieva). */
+  mozeTvorit: boolean;
+  /** Smie platiť/prispievať v DEED (peňaženka)? Pasívny = false (len EUR + SMS; DEED vyžaduje účet). */
+  mozeDeed: boolean;
   meno: string;
   priezvisko: string;
   celeMeno: string;

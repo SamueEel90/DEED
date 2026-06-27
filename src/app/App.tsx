@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, lazy, Suspense, type CSSProperties } from "react";
 import { LazyMotion, domAnimation, MotionConfig } from "motion/react";
 import { C } from "@/theme";
-import { GaleriaContext, ScrollContext, ViacContext, StrankaAkcieContext, Lightbox, DychajucePozadie, MotivContext, PortalContext, DeedToaster, FeedSkeleton } from "@/shared";
+import { GaleriaContext, ScrollContext, ViacContext, StrankaAkcieContext, UpgradeContext, UpgradePanel, Lightbox, DychajucePozadie, MotivContext, PortalContext, DeedToaster, FeedSkeleton } from "@/shared";
 import type { StrankaAkcie } from "@/components/context";
 import { TabBar, ViacSheet, PridatFAB, nacitajTaby, ulozTaby, VSETKY_MODULY } from "@/components/TabBar";
 import { useSession } from "@/lib/session";
@@ -58,7 +58,9 @@ export function useSirka(): number {
 }
 
 const pageBase: CSSProperties = {
-  position: "fixed", inset: 0, overflow: "hidden", isolation: "isolate",
+  // výšku rieši trieda .deed-app (100dvh + vh fallback) — nie inset:0, aby spodok
+  // sadol na VIDITEĽNÝ okraj (iOS: inset:0 siaha pod home indicator → sheet/CTA spadne mimo)
+  position: "fixed", top: 0, left: 0, right: 0, overflow: "hidden", isolation: "isolate",
   background: "var(--page-grad)", transition: "background .35s ease",
   fontFamily: FONT, color: C.text,
 };
@@ -91,7 +93,7 @@ export default function App() {
         <MotionConfig reducedMotion="user">
           <MotivContext.Provider value={motiv}>
             <PortalContext.Provider value={portalEl}>
-              <div style={{ ...pageBase, display: "flex", justifyContent: "center", alignItems: "stretch" }}>
+              <div className="deed-app" style={{ ...pageBase, display: "flex", justifyContent: "center", alignItems: "stretch" }}>
                 <DychajucePozadie />
                 <div ref={setPortalEl} style={{ position: "relative", width: "100%", maxWidth: wide ? 1180 : 560, height: "100%", background: C.bg }}>
                   <Screens wide={wide} />
@@ -115,6 +117,8 @@ export function Screens({ wide }: { wide?: boolean }) {
   const [galeria, setGaleria] = useState<{ fotky: string[]; index: number } | null>(null);
   const [walletReq, setWalletReq] = useState(0); // ☰ → Peňaženka: otvor peňaženku v Profile
   const [akcie, setAkcie] = useState<StrankaAkcie>({}); // kontextové akcie aktuálneho modulu (Pridať / Ukáž talent / Nástenka)
+  const [upgradeOpen, setUpgradeOpen] = useState(false); // pasívny → „Staň sa aktívnym" panel
+  const [aktivacia, setAktivacia] = useState(false); // overlay aktívnej registrácie (upgrade)
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { ulozTaby(taby); }, [taby]);
@@ -137,6 +141,7 @@ export function Screens({ wide }: { wide?: boolean }) {
     <GaleriaContext.Provider value={otvorGaleriu}>
      <ScrollContext.Provider value={scrollHore}>
       <ViacContext.Provider value={() => setViac(true)}>
+      <UpgradeContext.Provider value={() => setUpgradeOpen(true)}>
       <StrankaAkcieContext.Provider value={setAkcie}>
       <div style={{ height: "100%", display: "flex", flexDirection: "column", position: "relative", overflow: "hidden", isolation: "isolate", background: C.bg }}>
         {/* dýchajúce pozadie vnútri appky (z-index -1 = pod obsahom) */}
@@ -170,8 +175,24 @@ export function Screens({ wide }: { wide?: boolean }) {
 
         {/* fullscreen galéria fotiek so swipovaním */}
         {galeria && <Lightbox fotky={galeria.fotky} index={galeria.index} onClose={() => setGaleria(null)} />}
+
+        {/* pasívny → upgrade panel „Staň sa aktívnym" */}
+        {upgradeOpen && (
+          <UpgradePanel
+            onClose={() => setUpgradeOpen(false)}
+            onAktivovat={() => { setUpgradeOpen(false); setAktivacia(true); }}
+          />
+        )}
+
+        {/* overlay aktívnej registrácie (po kliku „Stať sa aktívnym") */}
+        {aktivacia && (
+          <div style={{ position: "absolute", inset: 0, zIndex: 80, background: C.bg }}>
+            <Registracia start="aktivny" onHotovo={() => setAktivacia(false)} />
+          </div>
+        )}
       </div>
       </StrankaAkcieContext.Provider>
+      </UpgradeContext.Provider>
       </ViacContext.Provider>
      </ScrollContext.Provider>
     </GaleriaContext.Provider>
