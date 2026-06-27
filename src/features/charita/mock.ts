@@ -41,20 +41,27 @@ export const ADRESAR: AdresarSekcia[] = [
     ["PL", "Plamienok", "Detský hospic · SR", "Gold", "💶"],
     ["DA", "Dobrý anjel", "Rodiny s vážnou chorobou · SR", "Gold", "💶"],
     ["SP", "Svetielko pomoci", "Deti s rakovinou · Košice", "Silver", "💶 📦"],
+    ["LDZ", "Liga za duševné zdravie", "Psychické zdravie · SR", "Silver", "💶 🙋"],
+    ["NOÚ", "Nadácia NOÚ", "Onkológia · Bratislava", "Gold", "💶"],
   ]},
   { sekcia: "Deti & mládež", chipy: ["Deti"], polozky: [
     ["ÚD", "Úsmev ako dar", "Deti v náhradnej starostlivosti · SR", "Gold", "💶 🙋"],
     ["SOS", "SOS detské dedinky", "Opustené deti · SR", "Gold", "💶 🙋"],
     ["DM", "Divé maky", "Talentované rómske deti · SR", "Silver", "💶"],
+    ["LDI", "Linka detskej istoty", "Krízová linka pre deti · SR", "Gold", "💶 🙋"],
+    ["DF", "Detský fond SR", "Ohrozené deti · SR", "Silver", "💶"],
   ]},
   { sekcia: "Zvieratá", chipy: ["Zvieratá"], polozky: [
     ["SZ", "Sloboda zvierat", "Útulky · SR", "Gold", "💶 🙋 📦"],
     ["TL", "OZ Túlavá labka", "Záchrana psov a mačiek · Trenčín", "Silver", "💶 📦"],
     ["DŠ", "OZ Druhá šanca", "Týrané zvieratá · Bardejov", "Bronze", "💶 📦"],
+    ["ZH", "Zvierací ombudsman", "Práva zvierat · SR", "Silver", "💶 🙋"],
   ]},
   { sekcia: "Príroda & ekológia", chipy: ["Príroda"], polozky: [
     ["GP", "Greenpeace Slovensko", "Klíma, lesy · SR", "Silver", "💶 🙋"],
     ["ST", "Stromosvet", "Výsadba stromov · SR", "Bronze", "💶 🙋"],
+    ["WWF", "WWF Slovensko", "Ochrana prírody · SR", "Silver", "💶"],
+    ["DPH", "DAPHNE", "Ochrana biotopov · SR", "Bronze", "💶 🙋"],
   ]},
   { sekcia: "Sociálne & humanitárna", chipy: ["Sociálne", "Humanitárna"], polozky: [
     ["DP", "Depaul Slovensko", "Ľudia bez domova · Bratislava", "Silver", "💶 📦 🙋"],
@@ -62,10 +69,18 @@ export const ADRESAR: AdresarSekcia[] = [
     ["SKCH", "Slovenská katolícka charita", "Núdza, humanitárna · SR", "Gold", "💶 📦 🙋"],
     ["ČvO", "Človek v ohrození", "Humanitárna a rozvojová · SR", "Gold", "💶"],
     ["SČK", "Slovenský Červený kríž", "Humanitárna, krv · SR", "Gold", "💶 🙋"],
+    ["PP", "Proti prúdu (Nota bene)", "Ľudia bez domova · BA", "Silver", "💶 📦"],
+    ["UNI", "UNICEF Slovensko", "Deti vo svete · SR", "Gold", "💶"],
   ]},
   { sekcia: "Nevidiaci & hendikep", chipy: ["Sociálne"], polozky: [
     ["ÚN", "Únia nevidiacich a slabozrakých", "Zrakovo postihnutí · SR", "Gold", "💶 🙋"],
     ["MJ", "Maják n.o.", "Hluchoslepí · Bratislava", "Bronze", "💶 🙋"],
+    ["OMD", "Org. muskulárnych dystrofikov", "Telesne postihnutí · SR", "Silver", "💶 🙋"],
+  ]},
+  { sekcia: "Seniori & rodina", chipy: ["Sociálne", "Seniori"], polozky: [
+    ["KS", "Klub seniorov Sihoť", "Aktivity pre osamelých seniorov · Trenčín", "Silver", "🙋 📦"],
+    ["RD", "OZ Rodinka", "Pomoc rodinám v núdzi · Trenčín", "Bronze", "💶 📦"],
+    ["BR", "Brána do života", "Týrané ženy a deti · BA", "Silver", "💶 🙋"],
   ]},
 ];
 

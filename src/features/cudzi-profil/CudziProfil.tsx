@@ -2,6 +2,7 @@ import { useState } from "react";
 import { C, GRAD, GRAD_ZELENY } from "@/theme";
 import { Aura, MoniBar, QrModal, IkonaSipVlavo, IkonaFajka, IkonaStit, IkonaPlay, IkonaPin, Zdielanie, IkonaUsmev } from "@/shared";
 import type { CudziSubjekt, CudziSubjektOrg, CudziSubjektOsoba } from "@/types";
+import { usePersonalizacia } from "@/lib/personalizacia";
 import { KAMPANE_FALLBACK, AKCIE_FALLBACK, STAVY } from "./mock";
 
 /*
@@ -43,9 +44,10 @@ function BackBtn({ onBack }: { onBack?: () => void }) {
 // ============================================================
 function OrgProfil({ s, onBack, toast }: { s: CudziSubjektOrg; onBack?: () => void; toast?: Toast }) {
   const [tab, setTab] = useState("Kampane");
-  const [sleduje, setSleduje] = useState(false);
+  const { sledujem, toggleSledovanie } = usePersonalizacia(); // sledovanie = zdieľaný store (Môj DEED)
   const [qr, setQr] = useState(false);
   const meno = s.meno || "Detská nemocnica — nadácia";
+  const sleduje = sledujem(meno);
   const level = s.level || "Gold";
   const kampane = s.kampane || KAMPANE_FALLBACK;
   const akcie = s.akcie || AKCIE_FALLBACK;
@@ -80,7 +82,7 @@ function OrgProfil({ s, onBack, toast }: { s: CudziSubjektOrg; onBack?: () => vo
 
         {/* sledovať + upozornenia */}
         <div style={{ display: "flex", gap: 10, marginTop: 12 }}>
-          <button onClick={() => { setSleduje((v) => !v); toast?.(sleduje ? "Prestal si sledovať" : "Sleduješ — dostaneš upozornenia na kampane"); }}
+          <button onClick={() => { toggleSledovanie({ meno, typ: "org", emoji: s.emoji }); toast?.(sleduje ? "Prestal si sledovať" : "Sleduješ — dostaneš upozornenia na kampane"); }}
             style={{ flex: 1, height: 46, borderRadius: 13, border: "none", fontWeight: 700, fontSize: 14, cursor: "pointer", fontFamily: "inherit",
               background: sleduje ? "rgba(var(--glass-rgb),.06)" : GRAD, color: sleduje ? C.text : "#fff", boxShadow: sleduje ? "none" : "0 8px 24px rgba(99,134,255,.3)" }}>
             {sleduje ? "✓ Sledované" : "Sledovať"}
@@ -146,8 +148,9 @@ function OsobaProfil({ s, onBack, toast }: { s: CudziSubjektOsoba; onBack?: () =
   // demo: prepínač stavu (v reále stav určuje vzťah + súhlas)
   const [stav, setStav] = useState<string>(s.stav || "bezna");
   const [pridane, setPridane] = useState(false);
-  const [sleduje, setSleduje] = useState(false);
+  const { sledujem, toggleSledovanie } = usePersonalizacia(); // sledovanie = zdieľaný store (Môj DEED)
   const meno = s.meno || "Ján Novák";
+  const sleduje = sledujem(meno);
   const level = s.level || "Silver";
   const farba = stav === "tvorca" ? "var(--a-plum)" : stav === "priatel" ? "var(--a-green)" : "var(--a-info)";
 
@@ -161,7 +164,7 @@ function OsobaProfil({ s, onBack, toast }: { s: CudziSubjektOsoba; onBack?: () =
       <div style={{ display: "flex", gap: 6, justifyContent: "center", margin: "10px 16px 0" }}>
         {STAVY.map(([k, l]) => {
           const on = stav === k;
-          return <span key={k} onClick={() => { setStav(k); setPridane(false); setSleduje(false); }} style={{ flex: 1, textAlign: "center", padding: "6px 0", borderRadius: 10, fontSize: 11, fontWeight: on ? 700 : 500, cursor: "pointer",
+          return <span key={k} onClick={() => { setStav(k); setPridane(false); }} style={{ flex: 1, textAlign: "center", padding: "6px 0", borderRadius: 10, fontSize: 11, fontWeight: on ? 700 : 500, cursor: "pointer",
             background: on ? tint(farba, .16) : C.surface2, border: `1px solid ${on ? tint(farba, .5) : C.line}`, color: on ? farba : C.textTer }}>{l}</span>;
         })}
       </div>
@@ -212,7 +215,7 @@ function OsobaProfil({ s, onBack, toast }: { s: CudziSubjektOsoba; onBack?: () =
 
         {/* ---- TVORCA ---- */}
         {stav === "tvorca" && (<>
-          <button onClick={() => { setSleduje((v) => !v); toast?.(sleduje ? "Prestal si sledovať" : "Sleduješ tvorcu"); }}
+          <button onClick={() => { toggleSledovanie({ meno, typ: "osoba" }); toast?.(sleduje ? "Prestal si sledovať" : "Sleduješ tvorcu"); }}
             style={{ width: "100%", height: 50, borderRadius: 14, border: "none", fontWeight: 700, fontSize: 15, fontFamily: "inherit", cursor: "pointer",
               background: sleduje ? "rgba(var(--glass-rgb),.06)" : GRAD, color: sleduje ? C.text : "#fff", boxShadow: sleduje ? "none" : "0 8px 24px rgba(99,134,255,.3)" }}>
             {sleduje ? "✓ Sledované" : "Sledovať"}

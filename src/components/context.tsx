@@ -48,10 +48,8 @@ export const useUpgrade = () => useContext(UpgradeContext);
 // Vďaka tomu sú špeciálne možnosti dole/v menu a vrch stránky ostáva čistý (§14).
 // ============================================================
 export type StrankaAkcia = { id: string; label: string; popis?: string; ikona?: ReactNode; onClick: () => void };
-// `dok` = kontextové podsekcie stránky zobrazené priamo v spodnom doku (namiesto modulov);
-//         ľavý slot doku ostáva „Moduly" (otvorí prepínač modulov). `filtre` = staršie JSX do ☰ (nepoužité).
-export type DokPolozka = { id: string; label: string; ikona?: ReactNode; col?: string; aktivne?: boolean; onClick: () => void };
-export type StrankaAkcie = { pridat?: StrankaAkcia; extra?: StrankaAkcia[]; filtre?: ReactNode; dok?: DokPolozka[] };
+// `filtre` = voliteľné JSX filtre stránky vykreslené v ☰ menu (sekcia „Na tejto stránke").
+export type StrankaAkcie = { pridat?: StrankaAkcia; extra?: StrankaAkcia[]; filtre?: ReactNode };
 export const StrankaAkcieContext = createContext<(a: StrankaAkcie) => void>(() => {});
 /** Modul zaregistruje svoje kontextové akcie (a pri odchode ich vyčistí). Deps drž stabilné (zvyčajne []). */
 export function useStrankaAkcie(builder: () => StrankaAkcie, deps: unknown[] = []) {

@@ -155,6 +155,39 @@ export interface Zaujem {
   vlastny?: boolean;
 }
 
+/* PERSONALIZÁCIA — osobné signály (záujmy + sledovanie + podpora).
+   Jeden zdroj pravdy pre prehľad „Môj DEED" a pre feed afinitu (lib/feed).
+   Dnes localStorage (deed.me.*), neskôr Supabase (tabuľka "zaujmy" už existuje). */
+
+/** Sledovaný subjekt. `meno` = stabilný kľúč (zhoduje sa s `autor` položiek feedu). */
+export interface Sledovanie {
+  meno: string;
+  typ: "osoba" | "org";
+  emoji?: string;
+  tint?: string;
+  od?: IsoDateTime;
+}
+
+/** Záznam podpory — snapshot progresu k momentu podpory (pre sekciu „Čo podporujem"). */
+export interface Podpora {
+  refId: number | string;
+  typ: string;   // engine typ (skutok/ziadost/charita/udalost…)
+  modul: string; // good/help/charity/workshop
+  suma?: number; // kumulovaná podpora (DEED/EUR)
+  komu?: string;
+  vyzbierane?: number;
+  ciel?: number;
+  cas?: IsoDateTime;
+}
+
+/** Stav personalizačného store (usePersonalizacia). */
+export interface PersonalizaciaStav {
+  zaujmy: Zaujem[];
+  sledovani: Sledovanie[];
+  podpory: Podpora[];
+  nacitavam: boolean;
+}
+
 /** Položka segmentu charity (tabuľka "segmenty"). */
 export interface Segment {
   org_ucet_id?: Uuid;

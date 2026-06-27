@@ -75,9 +75,13 @@ export interface GeoBod {
   lng: number;
 }
 
-/** Používateľ pre feed algoritmus — poloha + zvolený rádius. */
+/** Používateľ pre feed algoritmus — poloha + zvolený rádius (+ voliteľná personalizácia). */
 export interface FeedPouzivatel extends GeoBod {
   radius: OkruhKod;
+  /** kľúče záujmov (Good `kat` + Aktivity `dom`) — afinitná váha. */
+  zaujmy?: Set<string>;
+  /** mená sledovaných autorov — afinitná váha. */
+  sledovani?: Set<string>;
 }
 
 /** Minimálne polia, ktoré feed algoritmus (pripravFeed) od každej položky očakáva. */
@@ -130,6 +134,8 @@ export interface FeedVahy {
   cerstvost: number;
   blizkost: number;
   podpora: number;
+  /** personalizácia — afinita k záujmom/sledovaným (<< skore; len re-rank). */
+  afinita?: number;
 }
 
 /** Celá konfigurácia feed algoritmu (FEED_CFG). */

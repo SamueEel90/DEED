@@ -4,11 +4,12 @@ import { toast, Sheet, AvatarUroven, useScrollHore, useViac, useMotiv, useTvorba
 import { RetazDobraSheet } from "@/features/retaz/RetazDobra";
 import { clearSession } from "@/lib/session";
 import { usePouzivatel } from "@/lib/pouzivatel";
+import { usePersonalizacia } from "@/lib/personalizacia";
+import { ZAUJMY_KATALOG } from "@/lib/personalizaciaStore";
 import { Nastavenia as NotifNastavenia } from "@/features/notifikacie/Notifikacie";
 import GlassIcons from "@/components/GlassIcons";
 import type { Toast as ToastFn, WideProps, PrevodTuple, MojSkutokTuple, ZiadostPriatelstvo, CestaPriatelstva, RezimNastavenia } from "@/types";
 import { useProfilPrevody, useProfilMojeSkutky, useProfilKarma, useProfilStatistiky } from "@/data";
-import { TEMY } from "./mock";
 
 /*
   ============================================================
@@ -68,6 +69,7 @@ type ProfilHlavnyProps = {
 function ProfilHlavny({ toast, naWallet, naSub, naNastavenia, naPriatelia }: ProfilHlavnyProps) {
   const otvorViac = useViac();
   const ja = usePouzivatel();
+  const { maZaujem, toggleZaujem, sledovani, podpory, zaujmy } = usePersonalizacia(); // záujmy + prehľad = identita (rovnaký store ako Môj DEED + afinita feedu)
   const dlazdice: [string, string, string, string, React.ReactNode, () => void][] = [
     ["Peňaženka", "1 240 DEED", "rgba(91,168,240,.14)", "var(--a-info)", <IkonaPenazenka size={26} />, naWallet],
     ["Karma a úrovne", "7 modulov", "rgba(169,139,240,.15)", "var(--a-plum)", <IkonaHviezda size={26} />, () => naSub("Karma a úrovne")],
@@ -115,6 +117,29 @@ function ProfilHlavny({ toast, naWallet, naSub, naNastavenia, naPriatelia }: Pro
           {ja.mesto && ja.mesto !== "—" ? `${ja.mesto} · ` : ""}Nový účet — karma a úroveň pribúdajú overenými skutkami.
         </div>
       )}
+
+      {/* PREHĽAD — koho sledujem · čo podporujem · záujmy (osobný súhrn; obsah žije v „Môj DEED") */}
+      <div style={{ display: "flex", gap: 8, padding: "14px 16px 0" }}>
+        {[[String(sledovani.length), "sledujem"], [String(podpory.length), "podporujem"], [String(zaujmy.length), "záujmy"]].map((x, i) => (
+          <div key={i} style={{ flex: 1, textAlign: "center", background: C.surface, border: `1px solid ${C.line}`, borderRadius: 13, padding: "11px 4px" }}>
+            <div style={{ fontSize: 17, fontWeight: 800 }}>{x[0]}</div>
+            <div style={{ fontSize: 10, color: C.textTer, marginTop: 2 }}>{x[1]}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* TVOJE ZÁUJMY — identita; ladia „Okolie" a napĺňajú „Môj DEED" (jeden zdroj pravdy) */}
+      <div style={{ padding: "16px 16px 0", textAlign: "center" }}>
+        <div style={{ fontSize: 10.5, letterSpacing: ".5px", color: C.textTer, fontWeight: 700, margin: "0 0 9px" }}>TVOJE ZÁUJMY</div>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, justifyContent: "center" }}>
+          {ZAUJMY_KATALOG.map((z) => {
+            const on = maZaujem(z.oblast);
+            return <span key={z.oblast} onClick={() => toggleZaujem(z.oblast)} style={{ padding: "8px 13px", borderRadius: 20, fontSize: 13, fontWeight: on ? 700 : 500, cursor: "pointer",
+              background: on ? "rgba(91,155,255,.14)" : C.surface2, border: `1px solid ${on ? "rgba(116,166,255,.5)" : C.line}`, color: on ? "var(--a-info)" : C.textSec }}>{on ? "✓ " : `${z.emoji} `}{z.label}</span>;
+          })}
+        </div>
+        <div style={{ fontSize: 11, color: C.textTer, lineHeight: 1.5, marginTop: 8 }}>Ladia odporúčania v „Okolí" a napĺňajú „Môj DEED". Vyňaté z filtra feedu — feed ostáva pestrý.</div>
+      </div>
 
       <div style={{ padding: 16 }}>
         <GlassIcons columns={3} items={dlazdice.map((d) => ({ icon: d[4], color: d[3], label: d[0], sub: d[1], onClick: d[5] }))} />
@@ -353,8 +378,6 @@ function NastaveniaScreen({ toast, onBack, onNotif }: NastaveniaScreenProps) {
   const [uroven, setUroven] = useState(true);             // zobrazovať moju úroveň (dá sa skryť)
   const [gps, setGps] = useState(true);
   const [ochrana, setOchrana] = useState(false);          // §13.1 anti-sociálny kredit (modal)
-  const [temy, setTemy] = useState<string[]>(["Šport", "Eko", "Zdravie", "Art"]);
-  const toggleTema = (t: string) => setTemy((s) => s.includes(t) ? s.filter((x) => x !== t) : [...s, t]);
 
   const Sekcia = ({ children }: { children: React.ReactNode }) => <div style={{ fontSize: 10.5, letterSpacing: ".5px", color: C.textTer, fontWeight: 700, margin: "18px 0 8px" }}>{children}</div>;
   const Riadok = ({ children, onClick }: { children: React.ReactNode; onClick?: () => void }) => <div onClick={onClick} style={{ display: "flex", alignItems: "center", gap: 12, background: C.surface, border: `1px solid ${C.line}`, borderRadius: 12, padding: "13px 14px", marginBottom: 8, fontSize: 14.5, cursor: onClick ? "pointer" : "default" }}>{children}</div>;
@@ -399,17 +422,6 @@ function NastaveniaScreen({ toast, onBack, onNotif }: NastaveniaScreenProps) {
           <span style={{ display: "flex", alignItems: "center", gap: 9, flex: 1 }}><IkonaNastavenia size={16} color={C.textTer} /> Nastavenie oznámení</span>
           <span style={{ color: C.textTer, fontSize: 16 }}>›</span>
         </Riadok>
-
-        {/* MOJE TÉMY (vyňaté z filtra feedu) */}
-        <Sekcia>MOJE TÉMY (ZÁUJMY)</Sekcia>
-        <div style={{ fontSize: 11.5, color: C.textTer, lineHeight: 1.5, marginBottom: 10 }}>Záujmy ladia odporúčania — sú vyňaté z filtra feedu (feed ostáva pestrý mix).</div>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-          {TEMY.map((t) => {
-            const on = temy.includes(t);
-            return <span key={t} onClick={() => toggleTema(t)} style={{ padding: "8px 14px", borderRadius: 20, fontSize: 13, fontWeight: on ? 700 : 500, cursor: "pointer",
-              background: on ? "rgba(91,155,255,.14)" : C.surface2, border: `1px solid ${on ? "rgba(116,166,255,.5)" : C.line}`, color: on ? "var(--a-info)" : C.textSec }}>{on ? "✓ " : ""}{t}</span>;
-          })}
-        </div>
 
         {/* ÚČET */}
         <Sekcia>ÚČET</Sekcia>

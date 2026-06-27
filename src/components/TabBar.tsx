@@ -1,11 +1,10 @@
 import { useState } from "react";
 import { C, GRAD, glassTmavy } from "@/theme";
-import { tint } from "@/lib/ui";
 import { IkonaDomov, IkonaSrdceLine, IkonaCharita, IkonaKompas, IkonaMapa, IkonaPohar, IkonaOsoba, IkonaPenazenka, IkonaPlus } from "@/shared";
 import { pressable } from "@/components/pressable";
 import { useTvorbaGate } from "@/components/upgrade";
 import type { ReactNode } from "react";
-import type { StrankaAkcia, DokPolozka } from "@/components/context";
+import type { StrankaAkcia } from "@/components/context";
 
 /*
   ============================================================
@@ -55,15 +54,12 @@ const modul = (id: string) => VSETKY_MODULY.find((m) => m.id === id);
 
 // ---- PLÁVAJÚCI GLASS DOCK ----
 // „Viac" sa presunulo do hamburger menu (☰) vľavo hore v hlavičke modulu
-export function TabBar({ taby, aktivny, onModul, wide, dok, onModuly }: {
+export function TabBar({ taby, aktivny, onModul, wide }: {
   taby: string[];
   aktivny: string;
   onModul: (id: string) => void;
   wide?: boolean;
-  dok?: DokPolozka[];
-  onModuly?: () => void;
 }) {
-  const kontext = !!(dok && dok.length); // stránka má vlastné podsekcie → dok sa prepne
   return (
     <div style={{ position: "absolute", left: 0, right: 0, bottom: 10, zIndex: 40, display: "flex", justifyContent: "center", padding: "0 10px" }}>
       <div style={{
@@ -72,43 +68,8 @@ export function TabBar({ taby, aktivny, onModul, wide, dok, onModuly }: {
         ...glassTmavy(24, .62),
         boxShadow: "0 16px 44px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.07)",
       }}>
-        {kontext ? (
-          <>
-            <ModulyTab onClick={onModuly} />
-            <span style={{ width: 1, alignSelf: "stretch", background: "rgba(var(--glass-rgb),.16)", margin: "6px 5px" }} />
-            <div className="dok-scroll" style={{ flex: 1, minWidth: 0, display: "flex", gap: 2, overflowX: "auto" }}>
-              {dok!.map((d) => <SubTab key={d.id} d={d} />)}
-            </div>
-          </>
-        ) : (
-          taby.map((id) => <Tab key={id} m={modul(id)} on={aktivny === id} onClick={() => onModul(id)} />)
-        )}
+        {taby.map((id) => <Tab key={id} m={modul(id)} on={aktivny === id} onClick={() => onModul(id)} />)}
       </div>
-    </div>
-  );
-}
-
-// ľavý pinned slot kontextového doku — skok na prepínač modulov (☰ sheet)
-function ModulyTab({ onClick }: { onClick?: () => void }) {
-  return (
-    <div {...pressable(onClick, "Moduly")} className="dock-tab" style={{ flex: "0 0 auto", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, cursor: "pointer", padding: "4px 11px 3px" }}>
-      <div style={{ width: 40, height: 32, borderRadius: 14, display: "flex", alignItems: "center", justifyContent: "center", color: C.textSec }}>
-        <div style={{ display: "grid", gridTemplateColumns: "7px 7px", gap: 3 }}>
-          {[0, 1, 2, 3].map((k) => <span key={k} style={{ width: 7, height: 7, borderRadius: 2, background: "currentColor" }} />)}
-        </div>
-      </div>
-      <span style={{ fontSize: 11.5, fontWeight: 700, color: C.textSec }}>Moduly</span>
-    </div>
-  );
-}
-
-// kontextová podsekcia v doku (doména / sub-záložka) — aktívna zvýraznená farbou
-function SubTab({ d }: { d: DokPolozka }) {
-  const col = d.col || "var(--a-green)";
-  return (
-    <div {...pressable(d.onClick, d.label)} aria-current={d.aktivne ? "page" : undefined} className="dock-tab" style={{ flex: "0 0 auto", minWidth: 50, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 3, cursor: "pointer", padding: "5px 9px", borderRadius: 14, background: d.aktivne ? tint(col, .16) : "transparent", color: d.aktivne ? col : C.textSec }}>
-      <div style={{ display: "flex" }}>{d.ikona}</div>
-      <span style={{ fontSize: 10, fontWeight: d.aktivne ? 800 : 600, whiteSpace: "nowrap" }}>{d.label}</span>
     </div>
   );
 }

@@ -37,7 +37,9 @@ export const FEED_CFG: FeedKonfig = {
   },
 
   // váhy zoradenia (B.5) — SKÓRE musí DOMINOVAŤ (B.10)
-  vahy: { skore: 1.4, cerstvost: 0.25, blizkost: 0.35, podpora: 0.18 },
+  // `afinita` (personalizácia) je zámerne << skore: len PRERAĎUJE už významné
+  // položky vyššie, NIKDY nepúšťa cez prah (anti-gaming + anti-bublina).
+  vahy: { skore: 1.4, cerstvost: 0.25, blizkost: 0.35, podpora: 0.18, afinita: 0.30 },
   podporaStrop: 50, // strop podpory proti manipulácii (B.10)
 
   zivotnostDni: 30, // B.7 — po 30 dňoch skutok zmizne zo ZOBRAZENIA
@@ -65,11 +67,15 @@ export interface FeedItem {
   [extra: string]: unknown;
 }
 
-/** Používateľ pre feed — poloha + zvolený rádius. */
+/** Používateľ pre feed — poloha + zvolený rádius (+ voliteľná personalizácia). */
 export interface FeedUser {
   lat?: number;
   lng?: number;
   radius: OkruhKod;
+  /** kľúče záujmov (Good `kat` + Aktivity `dom`) — afinitná váha. Bez nich = identické poradie. */
+  zaujmy?: Set<string>;
+  /** mená sledovaných autorov — afinitná váha. Bez nich = identické poradie. */
+  sledovani?: Set<string>;
 }
 
 type Bod = { lat?: number; lng?: number } | null | undefined;
@@ -150,11 +156,18 @@ export function zoradFeed<T extends FeedItem>(skutky: T[], user: FeedUser, cfg: 
     const cerstvost = 1 - norm(s.dni ?? 0, cfg.zivotnostDni); // novšie vyššie
     const blizkost = 1 - norm(vzdialenostKm(user, s), maxKm); // bližšie vyššie
     const podpora = norm(Math.min(s.podpora ?? 0, cfg.podporaStrop), cfg.podporaStrop);
+    // afinita (personalizácia) 0..1 — sledovaný autor 0.6 + záujmová kategória 0.4.
+    // Keď user nemá sety, je 0 pre všetko → byte-identické poradie (spätná kompatibilita).
+    const autor = (s.author ?? s.autor) as string | undefined;
+    const afin =
+      (user.sledovani && autor && user.sledovani.has(autor) ? 0.6 : 0) +
+      (user.zaujmy && s.kat && user.zaujmy.has(String(s.kat)) ? 0.4 : 0);
     const poradie =
       w.skore * norm(s.skore ?? 0, skoreMax) +
       w.cerstvost * cerstvost +
       w.blizkost * blizkost +
-      w.podpora * podpora;
+      w.podpora * podpora +
+      (w.afinita ?? 0) * afin;
     return { ...s, _poradie: poradie, _kriza: s.typSituacie === "kriza" };
   });
 

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { C, inp, GRAD, GRAD_ZELENY } from "@/theme";
 import { Foto, FotoPrispevku, MiniFotky, Video, ModulHlavicka, Hlavicka, AvatarUroven, PodporaSekcia, PlatbaModal, HladanieModal, toast, Oslava, useGaleria, useScrollHore, useMotiv, useStrankaAkcie, useTvorbaGate, StatRiadok, MoniBar, FeedStlpce, Lupa, Zdielanie, IkonaSipVlavo, IkonaMoznosti, IkonaUlozit, IkonaFajka, IkonaPlay, IkonaDoska, OkruhVyber, QrModal, FeedSkeleton, EmptyState, ErrorState, ScreenSwitch } from "@/shared";
-import { pripravFeed, FEED_CFG } from "@/lib/feed";
+import { pripravFeed, FEED_CFG, type FeedUser } from "@/lib/feed";
 import { tint } from "@/lib/ui";
 import { usePouzivatel } from "@/lib/pouzivatel";
 import { zobrazVelkost } from "@/lib/cardSize";
@@ -10,6 +10,7 @@ import { Zvoncek } from "@/features/notifikacie/Notifikacie";
 import { CudziProfil } from "@/features/cudzi-profil/CudziProfil";
 import type { GoodPolozka, Subjekt, Udalost, OkruhKod } from "@/types";
 import { useGoodFeed, useGoodUdalosti } from "@/data";
+import { usePersonalizacia } from "@/lib/personalizacia";
 import { KAT, SRC_COL } from "./mock";
 
 const katLabel = (k: GoodPolozka["kat"]) => KAT[k].label || k;
@@ -41,6 +42,8 @@ export default function ModulGood({ wide, otvorModul }: { wide?: boolean; otvorM
   const { data: POLOZKY = [] } = useGoodFeed();
   const { gate } = useTvorbaGate(); // pasívny nesmie tvoriť (overovanie skutku = create)
   const [screen, setScreen] = useState("home"); // home | detail | verify | add | board | event | cudzi
+  const [pohlad, setPohlad] = useState<"okolie" | "mojdeed">("okolie"); // prežije návrat z detailu (ScreenSwitch remountuje Home)
+  const [radius, setRadius] = useState<OkruhKod>("stvrt");
   const [aktId, setAktId] = useState<number | null>(null);
   const [aktEvent, setAktEvent] = useState<string | null>(null);
   const [aktSubjekt, setAktSubjekt] = useState<Subjekt | null>(null); // cudzí profil (§6)
@@ -65,6 +68,7 @@ export default function ModulGood({ wide, otvorModul }: { wide?: boolean; otvorM
       <ScreenSwitch k={screen}>
       {screen === "home" && (
         <Home wide={wide} toast={toast} otvorModul={otvorModul}
+          pohlad={pohlad} setPohlad={setPohlad} radius={radius} setRadius={setRadius}
           onDetail={(id) => { setAktId(id); setScreen("detail"); }}
           onHladaj={() => setHladaj(true)}
           onBoard={() => setScreen("board")}
@@ -122,6 +126,10 @@ type HomeProps = {
   wide?: boolean;
   toast: (m: string) => void;
   otvorModul?: (m: string) => void;
+  pohlad: "okolie" | "mojdeed";
+  setPohlad: (p: "okolie" | "mojdeed") => void;
+  radius: OkruhKod;
+  setRadius: (r: OkruhKod) => void;
   onDetail: (id: number) => void;
   onHladaj: () => void;
   onBoard: () => void;
@@ -129,19 +137,20 @@ type HomeProps = {
 };
 
 // ===================== HOME / FEED =====================
-function Home({ wide, toast, otvorModul, onDetail, onHladaj, onBoard, onAdd }: HomeProps) {
+function Home({ wide, toast, otvorModul, pohlad, setPohlad, radius, setRadius, onDetail, onHladaj, onBoard, onAdd }: HomeProps) {
   const { data: POLOZKY = [], isLoading, isError, refetch } = useGoodFeed();
-  // zvolený rádius — Časť B: mení, ČO a v akom poradí sa vo feede zobrazí
-  const [radius, setRadius] = useState<OkruhKod>("stvrt");
+  // `radius` aj `pohlad` žijú v ModulGood (prežijú návrat z detailu) — sem prichádzajú cez props
   const [vyberOkruh, setVyberOkruh] = useState(false);
   const ja = usePouzivatel();
   const { gate } = useTvorbaGate();
-  const user = { ...USER_LOK, radius };
+  const { zaujmyKluce, sledovaniMena } = usePersonalizacia();
+  // personalizácia: záujmy + sledovaní vstupujú do afinitnej váhy (re-rank, NIE filter)
+  const user: FeedUser = { ...USER_LOK, radius, zaujmy: zaujmyKluce, sledovani: sledovaniMena };
 
   // FEED ALGORITMUS (Časť B): životnosť → rádius + adaptívny prah →
   // frekvenčný strop → zoradenie. Veľkosť karty (Časť A) cez zobrazVelkost.
   // Lacné: pracuje len s uloženým skóre, žiadne AI. (Neskôr: GET /feed na backende.)
-  const feed = pripravFeed(POLOZKY as any, user as any).map((it: any) => ({ ...it, velkost: zobrazVelkost(it) })) as GoodPolozka[];
+  const feed = pripravFeed(POLOZKY as any, user).map((it: any) => ({ ...it, velkost: zobrazVelkost(it) })) as GoodPolozka[];
   const karta = (it: GoodPolozka) => <GoodKarta key={it.id} it={it} wide={wide} onDetail={() => onDetail(it.id)} />;
 
   // kontextové akcie stránky → plávajúce „+ Pridať" dole + sekcia „Na tejto stránke" v menu (☰)
@@ -165,29 +174,183 @@ function Home({ wide, toast, otvorModul, onDetail, onHladaj, onBoard, onAdd }: H
           </>
         } />
 
-      {/* štatistický riadok — počet vo zvolenom okruhu + klikateľný výber okruhu */}
-      <StatRiadok pocet={feed.length} jednotka="skutkov" mesiac="9 480" miesto={ja.mesto}
-        okruh={FEED_CFG.radiusy[radius].krat} onOkruh={() => setVyberOkruh(true)} />
+      {/* prepínač Okolie (algoritmický feed v okruhu) | Môj DEED (osobný prehľad) */}
+      <PohladSwitch pohlad={pohlad} setPohlad={setPohlad} />
 
-      {/* feed — na tablete/PC: skutky vľavo, žiadosti vpravo (už zoradené algoritmom) */}
-      {isError ? (
-        <ErrorState onRetry={() => refetch()} />
-      ) : isLoading ? (
-        <FeedSkeleton count={4} />
-      ) : feed.length === 0 ? (
-        <EmptyState emoji="🤝" title="Vo zvolenom okruhu zatiaľ nie sú skutky" text="Skús väčší okruh alebo sa vráť neskôr." />
+      {pohlad === "mojdeed" ? (
+        <MojDeed wide={wide} onDetail={onDetail} onBoard={onBoard} toast={toast} />
       ) : (
-        <FeedStlpce wide={wide}
-          labelSkutky="Skutky" labelZiadosti="Žiadosti & charita"
-          jednoStlpec={feed.map(karta)}
-          skutky={feed.filter((it) => it.typ === "skutok").map(karta)}
-          ziadosti={feed.filter((it) => it.typ !== "skutok").map(karta)}
-        />
-      )}
+        <>
+          {/* štatistický riadok — počet vo zvolenom okruhu + klikateľný výber okruhu */}
+          <StatRiadok pocet={feed.length} jednotka="skutkov" mesiac="9 480" miesto={ja.mesto}
+            okruh={FEED_CFG.radiusy[radius].krat} onOkruh={() => setVyberOkruh(true)} />
 
-      {vyberOkruh && <OkruhVyber radius={radius}
-        onPick={(r: string) => { setRadius(r as OkruhKod); setVyberOkruh(false); }}
-        onClose={() => setVyberOkruh(false)} />}
+          {/* feed — na tablete/PC: skutky vľavo, žiadosti vpravo (už zoradené algoritmom) */}
+          {isError ? (
+            <ErrorState onRetry={() => refetch()} />
+          ) : isLoading ? (
+            <FeedSkeleton count={4} />
+          ) : feed.length === 0 ? (
+            <EmptyState emoji="🤝" title="Vo zvolenom okruhu zatiaľ nie sú skutky" text="Skús väčší okruh alebo sa vráť neskôr." />
+          ) : (
+            <FeedStlpce wide={wide}
+              labelSkutky="Skutky" labelZiadosti="Žiadosti & charita"
+              jednoStlpec={feed.map(karta)}
+              skutky={feed.filter((it) => it.typ === "skutok").map(karta)}
+              ziadosti={feed.filter((it) => it.typ !== "skutok").map(karta)}
+            />
+          )}
+
+          {vyberOkruh && <OkruhVyber radius={radius}
+            onPick={(r: string) => { setRadius(r as OkruhKod); setVyberOkruh(false); }}
+            onClose={() => setVyberOkruh(false)} />}
+        </>
+      )}
+    </div>
+  );
+}
+
+// ===================== PREPÍNAČ POHĽADU (Okolie | Môj DEED) =====================
+function PohladSwitch({ pohlad, setPohlad }: { pohlad: string; setPohlad: (p: "okolie" | "mojdeed") => void }) {
+  const tab = (key: "okolie" | "mojdeed", label: string) => {
+    const on = pohlad === key;
+    return (
+      <button onClick={() => setPohlad(key)} aria-current={on ? "page" : undefined} style={{
+        flex: 1, height: 38, borderRadius: 11, fontFamily: "inherit", cursor: "pointer",
+        border: `1px solid ${on ? "rgba(116,166,255,.45)" : "transparent"}`,
+        background: on ? "rgba(91,155,255,.14)" : "transparent",
+        color: on ? "var(--a-info)" : C.textSec, fontWeight: on ? 800 : 600, fontSize: 13.5,
+        transition: "all .15s ease",
+      }}>{label}</button>
+    );
+  };
+  return (
+    <div style={{ display: "flex", gap: 4, padding: 4, margin: "0 16px 8px", borderRadius: 14, background: C.surface2, border: `1px solid ${C.line}` }}>
+      {tab("okolie", "Okolie")}
+      {tab("mojdeed", "Môj DEED")}
+    </div>
+  );
+}
+
+// ===================== MÔJ DEED — osobný prehľad =====================
+// Záujmy (editor) · ľudia, ktorých sledujem + ich najnovšie · čo podporujem ·
+// Nástenka filtrovaná záujmami. Číta zo zdieľaného personalizačného store.
+const stopProp = (fn: () => void) => (e: React.MouseEvent) => { e.stopPropagation(); fn(); };
+
+function MojDeed({ wide, onDetail, onBoard, toast }: { wide?: boolean; onDetail: (id: number) => void; onBoard: () => void; toast: (m: string) => void }) {
+  const { data: POLOZKY = [] } = useGoodFeed();
+  const { data: EVENTS = [] } = useGoodUdalosti();
+  const { zaujmy, zaujmyKluce, sledovani, toggleSledovanie, podpory } = usePersonalizacia();
+
+  const maZaujmy = zaujmy.length > 0;
+
+  // ľudia + ich najnovší príspevok (z feedu Domov)
+  const ludia = sledovani.map((s) => ({ s, last: POLOZKY.find((p) => p.autor === s.meno) }));
+
+  // podpory — kde sa dá, dotiahni živý progres z feedu (inak snapshot „k momentu podpory")
+  const podporyRows = podpory.map((p) => {
+    const live = POLOZKY.find((x) => String(x.id) === String(p.refId));
+    return {
+      p,
+      id: live?.id,
+      titul: live?.titul || p.komu || "Podpora",
+      vyzbierane: live?.vyzbierane ?? p.vyzbierane,
+      ciel: live?.ciel ?? p.ciel,
+    };
+  });
+
+  // Nástenka filtrovaná záujmami (bez záujmov ukáž všetko)
+  const mojeUdalosti = maZaujmy ? EVENTS.filter((e) => zaujmyKluce.has(e.kat)) : EVENTS;
+  const tops = mojeUdalosti.filter((e) => e.top);
+
+  const obal: React.CSSProperties | undefined = wide ? { maxWidth: 620, margin: "0 auto" } : undefined;
+
+  return (
+    <div style={obal}>
+      {/* čo podporujem — navrchu (hlavný obsah Môj DEED) */}
+      <div style={{ padding: "4px 16px 0" }}>
+        <SekciaLabel>ČO PODPORUJEM ({podpory.length})</SekciaLabel>
+        {podpory.length === 0 ? (
+          <PrazdnyTip emoji="💚" text="Keď niekoho podporíš (skutok, žiadosť, charita), uvidíš tu jeho progres a svoju stopu." />
+        ) : podporyRows.map(({ p, id, titul, vyzbierane, ciel }) => (
+          <div key={String(p.refId)} onClick={() => id && onDetail(id)} style={{ background: C.surface2, border: `1px solid ${C.line}`, borderRadius: 13, padding: 12, marginBottom: 8, cursor: id ? "pointer" : "default" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ fontSize: 14, fontWeight: 700, flex: 1, minWidth: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{titul}</span>
+              {p.suma ? <span style={{ flex: "none", fontSize: 11, fontWeight: 700, color: "var(--a-green)", background: "rgba(31,191,143,.12)", borderRadius: 8, padding: "2px 8px" }}>tvojich {p.suma} {p.modul === "good" ? "DEED" : "€"}</span> : null}
+            </div>
+            {ciel ? <div style={{ marginTop: 9 }}><MoniBar vyzbierane={vyzbierane || 0} ciel={ciel} mini /></div>
+              : <div style={{ fontSize: 11.5, color: C.textTer, marginTop: 6 }}>otvorená podpora · ďakujeme</div>}
+          </div>
+        ))}
+      </div>
+
+      {/* koho sledujem — hneď pod podporou */}
+      <div style={{ padding: "0 16px" }}>
+        <SekciaLabel>KOHO SLEDUJEM ({sledovani.length})</SekciaLabel>
+        {sledovani.length === 0 ? (
+          <PrazdnyTip emoji="👋" text={'Zatiaľ nikoho nesleduješ. V „Okolí" alebo na profile niekoho klikni „Sledovať" — objaví sa tu aj s najnovšími skutkami.'} />
+        ) : ludia.map(({ s, last }) => (
+          <div key={s.meno} onClick={() => last && onDetail(last.id)} style={{ display: "flex", alignItems: "center", gap: 11, background: "rgba(var(--glass-rgb),.04)", border: `1px solid ${C.line2}`, borderRadius: 13, padding: "10px 12px", marginBottom: 8, cursor: last ? "pointer" : "default" }}>
+            <div style={{ width: 40, height: 40, borderRadius: "50%", flex: "none", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 15, color: "#fff", background: last?.pfp || s.tint || "var(--a-info)" }}>{last?.ini || s.meno[0]}</div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 14, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{s.meno}</div>
+              <div style={{ fontSize: 11.5, color: C.textTer, marginTop: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{last ? last.titul : "zatiaľ žiadny nový skutok v okolí"}</div>
+            </div>
+            <span onClick={stopProp(() => { toggleSledovanie({ meno: s.meno, typ: s.typ }); toast(`Prestal si sledovať ${s.meno}`); })}
+              title="Prestať sledovať" style={{ flex: "none", fontSize: 12, fontWeight: 800, color: "var(--a-green)", border: `1px solid ${C.line}`, borderRadius: 12, padding: "5px 11px", cursor: "pointer" }}>✓</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Nástenka filtrovaná záujmami */}
+      <div style={{ padding: "0 16px" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <SekciaLabel>NÁSTENKA{maZaujmy ? " · podľa záujmov" : ""}</SekciaLabel>
+          <span onClick={onBoard} style={{ fontSize: 11.5, color: "var(--a-info)", fontWeight: 700, cursor: "pointer" }}>Celá Nástenka ›</span>
+        </div>
+        {mojeUdalosti.length === 0 ? (
+          <PrazdnyTip emoji="📅" text="Pre tvoje záujmy teraz nie sú udalosti. Skús pridať záujem alebo otvor celú Nástenku." />
+        ) : (
+          <>
+            {tops.length > 0 && (
+              <div style={{ display: "flex", gap: 10, overflowX: "auto", paddingBottom: 8 }}>
+                {tops.map((e) => (
+                  <div key={e.id} onClick={onBoard} style={{ minWidth: 150, flex: "0 0 auto", background: C.surface2, border: "1px solid rgba(231,199,102,.3)", borderRadius: 14, overflow: "hidden", cursor: "pointer" }}>
+                    <div style={{ height: 60, background: heroGrad(e.kat), display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }}>
+                      <span style={{ position: "absolute", top: 8, left: 8, fontSize: 10, color: C.gold }}>★</span>
+                      <span style={{ fontSize: 18, color: KAT[e.kat].c }}>▶</span>
+                    </div>
+                    <div style={{ padding: "8px 10px" }}>
+                      <div style={{ fontSize: 9, fontWeight: 700, color: KAT[e.kat].c }}>{e.when}</div>
+                      <div style={{ fontSize: 11, fontWeight: 700, marginTop: 3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{e.title}</div>
+                      <div style={{ fontSize: 9, color: C.textTer, marginTop: 2 }}>{e.who}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            {mojeUdalosti.map((e) => (
+              <div key={e.id} onClick={onBoard} style={{ display: "flex", alignItems: "center", gap: 10, background: "rgba(var(--glass-rgb),.04)", border: `1px solid ${C.line2}`, borderRadius: 12, padding: "11px 12px", marginBottom: 8, cursor: "pointer" }}>
+                <span style={{ width: 8, height: 8, borderRadius: "50%", background: SRC_COL[e.src], flex: "none" }} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 14, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{e.title}</div>
+                  <div style={{ fontSize: 11.5, color: C.textTer, marginTop: 3 }}>{e.who} · {e.src}</div>
+                </div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: SRC_COL[e.src], flex: "none" }}>{e.when}</div>
+              </div>
+            ))}
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function PrazdnyTip({ emoji, text }: { emoji: string; text: string }) {
+  return (
+    <div style={{ display: "flex", gap: 11, alignItems: "center", background: "rgba(var(--glass-rgb),.04)", border: `1px dashed ${C.line}`, borderRadius: 13, padding: "14px 14px", marginBottom: 8 }}>
+      <span style={{ fontSize: 22, flex: "none" }}>{emoji}</span>
+      <span style={{ fontSize: 12.5, color: C.textSec, lineHeight: 1.5 }}>{text}</span>
     </div>
   );
 }
@@ -277,11 +440,17 @@ function GoodDetail({ it, toast, oslavuj, onBack, onVerify, onAutor }: GoodDetai
   const [platba, setPlatba] = useState<string | null>(null); // "EUR" | "DEED"
   const [qr, setQr] = useState(false);        // QR skutku (§10) — 3 výstupy
   const otvorGaleriu = useGaleria();
+  const { pridajPodporu } = usePersonalizacia(); // podpora → „Čo podporujem" v Môj DEED
   const jeZiadost = it.typ === "ziadost", jeCharita = it.typ === "charita";
   const maProgres = (jeZiadost && it.ciel) || jeCharita;
   const pct = maProgres && it.ciel ? Math.round((it.vyzbierane ?? 0) / it.ciel * 100) : 0;
 
+  // zaznamenaj podporu do zdieľaného store (snapshot progresu k momentu podpory)
+  const zaznamenajPodporu = (suma: number) =>
+    pridajPodporu({ refId: it.id, typ: it.typ, modul: it.modul || "good", suma, komu: it.autor, vyzbierane: it.vyzbierane, ciel: it.ciel });
+
   function podpor(suma: number) {
+    zaznamenajPodporu(suma);
     toast(`Ďakujeme za ${suma} DEED pre ${it.autor}`);
     oslavuj(suma, it.autor);
   }
@@ -350,7 +519,7 @@ function GoodDetail({ it, toast, oslavuj, onBack, onVerify, onAutor }: GoodDetai
 
       {/* simulácia platby (EUR karta / DEED peňaženka) */}
       {platba && <PlatbaModal kanal={platba} komu={it.autor} onClose={() => setPlatba(null)}
-        onDone={(s: number) => { toast(`Odoslané ${platba === "EUR" ? s + " €" : s + " DEED"} · ${it.autor}`); oslavuj(s, it.autor); }} />}
+        onDone={(s: number) => { zaznamenajPodporu(s); toast(`Odoslané ${platba === "EUR" ? s + " €" : s + " DEED"} · ${it.autor}`); oslavuj(s, it.autor); }} />}
 
       {/* univerzálny QR skutku (§10) — typ „skutok", 3 výstupy */}
       {qr && <QrModal typ="skutok" titul={`QR skutku č. ${it.num.toLocaleString("sk")}`} popis={it.titul.slice(0, 38) + "…"}

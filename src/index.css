@@ -108,15 +108,6 @@ input, textarea, button {
 ::-webkit-scrollbar-track {
   background: transparent;
 }
-/* kontextový dok — vodorovný scroll podsekcií bez viditeľného scrollbaru */
-.dok-scroll {
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-}
-.dok-scroll::-webkit-scrollbar {
-  display: none;
-}
-
 /* ---------- hover na ikonách spodného doku ---------- */
 .dock-tab .dock-icon {
   will-change: transform;

@@ -5,6 +5,7 @@ import { Zvoncek } from "@/features/notifikacie/Notifikacie";
 import { pripravFeed, FEED_CFG } from "@/lib/feed";
 import type { HelpFeedItem } from "@/types";
 import { useHelpFeed } from "@/data";
+import { tint } from "@/lib/ui";
 import { USER_LOK, ZIVE_DARY } from "./mock";
 
 /*
@@ -41,9 +42,9 @@ export default function ModulHelp({ wide }: { wide?: boolean }) {
 
       {hladaj && (
         <HladanieModal akcent="var(--a-danger)" placeholder="Hľadať žiadosti, ponuky, ľudí…"
-          data={MOCK_FEED.map((z) => ({
+          data={MOCK_FEED.filter((z) => z.typ !== "charity").map((z) => ({
             id: z.id, titul: z.nazov, podtitul: z.pribeh, kat: z.lok, emoji: z.ikona,
-            tag: z.typ === "ziadost" ? "Žiadosť" : z.typ === "ponuka" ? "Ponuka" : "Charita",
+            tag: z.typ === "ziadost" ? "Žiadosť" : "Ponuka",
           }))}
           onPick={(id: number | string) => { const z = MOCK_FEED.find((x) => x.id === id); if (!z) return; z.typ === "ziadost" ? otvorZ(z) : toast(`${z.nazov} — ${z.typ === "ponuka" ? "ponuka pomoci" : "charita"}`); }}
           toast={toast} defaultFilter="Žiadosti Help"
@@ -68,12 +69,15 @@ function Feed({ wide, toast, onDetail, onHladaj, onAdd }: { wide?: boolean; toas
   // prah + zoradenie. Ponuky/žiadosti si nechávajú vlastný `velkost` (iný slovník
   // než engine), preto NEpremapúvame zobrazVelkost — len filter + poradie.
   const [radius, setRadius] = useState<string>("stvrt");
+  const [view, setView] = useState<"all" | "ziadost" | "ponuka">("all"); // typ pomoci (charita do Help nepatrí)
   const [vyberOkruh, setVyberOkruh] = useState(false);
   const { gate } = useTvorbaGate(); // pasívny nesmie tvoriť (talent)
-  const feed = pripravFeed(MOCK_FEED as any, { ...USER_LOK, radius } as any);
+  // charitu z Help vynechávame; potom filter podľa zvoleného typu (žiadosť / ponuka)
+  const zaklad = MOCK_FEED.filter((z) => z.typ !== "charity" && (view === "all" || z.typ === view));
+  const feed = pripravFeed(zaklad as any, { ...USER_LOK, radius } as any);
 
   const karta = (z: any) => <FeedCard key={z.id} z={z} wide={wide} onClick={() => z.typ === "ziadost" && onDetail(z)} />;
-  const jeZiadost = (z: any) => z.typ === "ziadost" || z.typ === "charity";
+  const jeZiadost = (z: any) => z.typ === "ziadost";
 
   // kontextové akcie stránky → plávajúce „+ Pridať" dole + sekcia „Na tejto stránke" v menu (☰)
   useStrankaAkcie(() => ({
@@ -97,8 +101,15 @@ function Feed({ wide, toast, onDetail, onHladaj, onAdd }: { wide?: boolean; toas
       {/* živý ticker */}
       <Ticker key={tick}><b style={{ color: C.text }}>{dar.kto}</b> práve poslal <b style={{ color: C.greenL }}>{dar.co}</b> → {dar.komu}</Ticker>
 
+      {/* filter typu pomoci — Všetko / Žiadosti / Ponuky (charita sem nepatrí) */}
+      <div style={{ display: "flex", gap: 8, padding: "0 16px 8px" }}>
+        <Seg on={view === "all"} col="var(--a-info)" label="Všetko" onClick={() => setView("all")} />
+        <Seg on={view === "ziadost"} col="var(--a-danger)" emoji="🙋" label="Žiadosti" onClick={() => setView("ziadost")} />
+        <Seg on={view === "ponuka"} col="var(--a-plum)" emoji="🤝" label="Ponuky" onClick={() => setView("ponuka")} />
+      </div>
+
       {/* štatistický riadok — počet vo zvolenom okruhu + výber okruhu */}
-      <StatRiadok pocet={feed.length} jednotka="žiadostí" mesiac="8 421"
+      <StatRiadok pocet={feed.length} jednotka={view === "ponuka" ? "ponúk" : view === "ziadost" ? "žiadostí" : "príspevkov"} mesiac="8 421"
         okruh={FEED_CFG.radiusy[radius].krat} onOkruh={() => setVyberOkruh(true)} />
 
       {/* karty — na tablete/PC: ponúkajú vľavo, hľadajú vpravo (zoradené algoritmom) */}
@@ -107,7 +118,7 @@ function Feed({ wide, toast, onDetail, onHladaj, onAdd }: { wide?: boolean; toas
       ) : isLoading ? (
         <FeedSkeleton count={4} />
       ) : feed.length === 0 ? (
-        <EmptyState emoji="🙏" title="Žiadne žiadosti v okruhu" text="V tomto okruhu zatiaľ nie sú dosť významné žiadosti. Skús menší okruh." />
+        <EmptyState emoji="🙏" title="Nič v tomto okruhu" text="V tomto okruhu zatiaľ nič nie je. Skús iný typ alebo menší okruh." />
       ) : (
         <FeedStlpce wide={wide} padding="4px 8px"
           labelSkutky="Ponúkajú pomoc" labelZiadosti="Hľadajú pomoc"
@@ -120,6 +131,15 @@ function Feed({ wide, toast, onDetail, onHladaj, onAdd }: { wide?: boolean; toas
       {vyberOkruh && <OkruhVyber radius={radius} akcent="var(--a-danger)"
         onPick={(r: any) => { setRadius(r); setVyberOkruh(false); }}
         onClose={() => setVyberOkruh(false)} />}
+    </div>
+  );
+}
+
+// segment filtra typu pomoci (Všetko / Žiadosti / Ponuky) — theme-aware cez tint(col)
+function Seg({ on, col, label, emoji, onClick }: { on: boolean; col: string; label: string; emoji?: string; onClick: () => void }) {
+  return (
+    <div onClick={onClick} aria-current={on ? "page" : undefined} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, height: 38, borderRadius: 11, fontSize: 12.5, fontWeight: on ? 700 : 600, cursor: "pointer", whiteSpace: "nowrap", background: on ? tint(col, .15) : C.surface2, border: `1px solid ${on ? tint(col, .5) : C.line2}`, color: on ? col : C.textSec }}>
+      {emoji && <span style={{ fontSize: 13 }}>{emoji}</span>}{label}
     </div>
   );
 }

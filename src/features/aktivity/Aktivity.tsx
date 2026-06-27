@@ -6,6 +6,7 @@ import type { OkruhKod } from "@/types";
 import { Zvoncek } from "@/features/notifikacie/Notifikacie";
 import { A, DOM, ORDER, tint } from "./domeny";
 import { useAktivityFeed } from "@/data";
+import { usePersonalizacia } from "@/lib/personalizacia";
 import { EVENTS, USER_LOK, type AktItem } from "./mock";
 import { LS, load, save, obohatit, osoba, vytvorPost, type NovyPostSpec } from "./utils";
 
@@ -194,6 +195,7 @@ function Home({ items, dom, view, pickDom, pickView, toast, open, openPerson, se
   // zvolený rádius — Feed algoritmus (Časť B)
   const [radius, setRadius] = useState<OkruhKod>("stvrt");
   const [vyberOkruh, setVyberOkruh] = useState(false);
+  const { zaujmyKluce, sledovaniMena } = usePersonalizacia(); // afinita: záujmy/sledovaní → re-rank
 
   // 1) UI predfilter (doména + sub-záložka) — to engine nerieši
   const list = items.filter((it: AktItem) => {
@@ -208,32 +210,48 @@ function Home({ items, dom, view, pickDom, pickView, toast, open, openPerson, se
   //    (optimistické UI — používateľ hneď vidí, čo pridal, mimo prahu okruhu).
   const feed = [
     ...list.filter((it: AktItem) => it.mine),
-    ...pripravFeed(list.filter((it: AktItem) => !it.mine), { ...USER_LOK, radius }),
+    ...pripravFeed(list.filter((it: AktItem) => !it.mine), { ...USER_LOK, radius, zaujmy: zaujmyKluce, sledovani: sledovaniMena }),
   ];
 
   // dvojstĺpcový feed (skutky vľavo / žiadosti vpravo) iba v zmiešanom zobrazení na tablete/PC
   const dva = wide && view === "all";
   const feedCard = (it: AktItem) => <AktCard key={it.id} it={it} wide={dva} onOpen={open} onPerson={openPerson} />;
 
-  // PODSEKCIE STRÁNKY V SPODNOM DOKU — domény (Všetko + 5) aj sub-záložky (Workshopy/Pomoc/Market).
-  // Ľavý slot doku ostáva „Moduly" (App shell). Aktívne stavy sledujú [dom, view].
-  const dokEmoji = (e: string) => <span style={{ fontSize: 15, lineHeight: 1 }}>{e}</span>;
-  const dokPolozky = [
-    { id: "mix", label: "Všetko", col: "var(--a-green)", ikona: dokEmoji("✦"), aktivne: dom === "mix" && view === "all", onClick: () => pickDom("mix") },
-    ...ORDER.map((d) => ({ id: d, label: DOM[d].label, col: DOM[d].c, ikona: DOM_IKONA[d], aktivne: dom === d, onClick: () => pickDom(d) })),
-    { id: "workshop", label: "Workshopy", col: "var(--a-info)", ikona: dokEmoji("🎓"), aktivne: view === "workshop", onClick: () => pickView("workshop") },
-    { id: "help", label: "Pomoc", col: "var(--a-danger)", ikona: dokEmoji("❓"), aktivne: view === "help", onClick: () => pickView("help") },
-    { id: "market", label: "Market", col: "var(--a-gold)", ikona: dokEmoji("🛒"), aktivne: false, onClick: () => toast("Market — predaj diel/náradia, fáza 2") },
-  ];
+  // štýl sub-záložky (Workshopy/Hľadám pomoc/Market) — theme-aware cez DOM[dom].c
+  const segStyle = (on: boolean): React.CSSProperties => ({ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, height: 38, borderRadius: 11, fontSize: 12, fontWeight: 600, cursor: "pointer", background: on ? tint(DOM[dom].c, .15) : A.surface, border: `1px solid ${on ? tint(DOM[dom].c, .5) : A.line2}`, color: on ? DOM[dom].c : A.txt2 });
 
-  // kontextové akcie stránky → „+ Pridať" FAB · „Na tejto stránke" (Talent/Nástenka) v ☰ · podsekcie v spodnom doku
+  // FILTER HORE NA STRÁNKE — doménový prepínač (Šport/Art/Learn/Eko/Zdravie) + sub-záložky
+  // (Workshopy/Hľadám pomoc/Market). Klik na aktívnu doménu/sekciu = späť na „všetko". Stavy [dom, view].
+  const filterBar = (
+    <div style={{ padding: "0 16px 6px" }}>
+      <div style={{ overflowX: "auto", margin: "0 0 10px" }}>
+        <div style={{ display: "flex", gap: 7, width: "max-content", margin: "0 auto" }}>
+          {ORDER.map((d) => {
+            const a = DOM[d]; const on = dom === d;
+            return (
+              <div key={d} onClick={() => pickDom(d)} style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, minWidth: 60, height: 54, borderRadius: 14, cursor: "pointer", flex: "none", background: on ? tint(a.c, .15) : A.surface2, border: `1px solid ${on ? tint(a.c, .5) : A.line}` }}>
+                <div style={{ color: on ? a.c : A.txt2, display: "flex" }}>{DOM_IKONA[d]}</div>
+                <div style={{ fontSize: 10, fontWeight: 700, color: on ? a.c : A.txt2 }}>{a.label}</div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+      <div style={{ display: "flex", gap: 8 }}>
+        <div onClick={() => pickView("workshop")} style={segStyle(view === "workshop")}><span style={{ fontSize: 13 }}>🎓</span>Workshopy</div>
+        <div onClick={() => pickView("help")} style={segStyle(view === "help")}><span style={{ fontSize: 13 }}>❓</span>Hľadám pomoc</div>
+        <div onClick={() => toast("Market — predaj diel/náradia, fáza 2")} style={segStyle(false)}><span style={{ fontSize: 13 }}>🛒</span>Market<span style={{ fontSize: 10, background: A.goldBg, color: A.gold, padding: "1px 5px", borderRadius: 5, marginLeft: 2 }}>čoskoro</span></div>
+      </div>
+    </div>
+  );
+
+  // kontextové akcie stránky → plávajúce „+ Pridať" dole + sekcia „Na tejto stránke" (Talent/Nástenka) v ☰
   useStrankaAkcie(() => ({
     pridat: { id: "add", label: "Pridať", onClick: () => setScreen("add") },
     extra: [
       { id: "talent", label: "Ukáž svoj talent", popis: "Tvorivé skutky a talenty", ikona: <IkonaPlay size={18} color="var(--a-green)" />, onClick: () => pickView("talent") },
       { id: "board", label: "Nástenka", popis: "Skutky a výzvy v okolí", ikona: <IkonaDoska size={18} color="var(--a-green)" />, onClick: () => setScreen("board") },
     ],
-    dok: dokPolozky,
   }), [dom, view]);
 
   return (
@@ -253,6 +271,9 @@ function Home({ items, dom, view, pickDom, pickView, toast, open, openPerson, se
           ? <>{tick.who} <b style={{ color: C.greenL }}>{tick.what}</b>{tick.to ? ` ${tick.to}` : ""}</>
           : <>Cyklo TN <b style={{ color: C.greenL }}>práve dostal 100 DEED</b> → Marek</>}
       </Ticker>
+
+      {/* filter hore na stránke — domény + sub-záložky (predtým bol v spodnom „kontextovom doku") */}
+      {filterBar}
 
       {/* štatistický riadok — počet vo zvolenom okruhu + výber okruhu */}
       <StatRiadok pocet={feed.length} jednotka="aktivít" mesiac="9 480"

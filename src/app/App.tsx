@@ -6,6 +6,7 @@ import type { StrankaAkcie } from "@/components/context";
 import { TabBar, ViacSheet, PridatFAB, nacitajTaby, ulozTaby, VSETKY_MODULY } from "@/components/TabBar";
 import { useSession } from "@/lib/session";
 import { PouzivatelProvider } from "@/lib/pouzivatel";
+import { PersonalizaciaProvider } from "@/lib/personalizacia";
 import { QueryProvider } from "@/app/QueryProvider";
 import { Registracia } from "@/features/registracia/Registracia";
 
@@ -138,6 +139,7 @@ export function Screens({ wide }: { wide?: boolean }) {
 
   return (
    <PouzivatelProvider session={session}>
+    <PersonalizaciaProvider>
     <GaleriaContext.Provider value={otvorGaleriu}>
      <ScrollContext.Provider value={scrollHore}>
       <ViacContext.Provider value={() => setViac(true)}>
@@ -160,8 +162,8 @@ export function Screens({ wide }: { wide?: boolean }) {
           </Suspense>
         </div>
 
-        {/* plávajúci glass dock — moduly, alebo (ak stránka má podsekcie) kontextový dok: Moduly + podsekcie */}
-        <TabBar taby={taby} aktivny={modul} wide={wide} onModul={prepni} dok={akcie.dok} onModuly={() => setViac(true)} />
+        {/* plávajúci glass dock — moduly (prepínanie obrazoviek) */}
+        <TabBar taby={taby} aktivny={modul} wide={wide} onModul={prepni} />
 
         {/* plávajúce „+ Pridať" — primárna akcia stránky, sticky nad dokom */}
         {akcie.pridat && <PridatFAB akcia={akcie.pridat} wide={wide} />}
@@ -196,6 +198,7 @@ export function Screens({ wide }: { wide?: boolean }) {
       </ViacContext.Provider>
      </ScrollContext.Provider>
     </GaleriaContext.Provider>
+    </PersonalizaciaProvider>
    </PouzivatelProvider>
   );
 }
