@@ -2,7 +2,7 @@ import type { CSSProperties, ReactNode } from "react";
 import { C, GRAD, GRAD_ZELENY, glassTmavy } from "@/theme";
 import { tint } from "@/lib/ui";
 import { FEED_CFG } from "@/lib/feed";
-import { useMotiv, useViac } from "@/components/context";
+import { useMotiv, useViac, useLayout } from "@/components/context";
 import { pressable } from "@/components/pressable";
 import { Sheet } from "@/components/sheet";
 import { IkonaSpat, IkonaMenu, IkonaMesiac, IkonaSlnko, IkonaPlay, IkonaDoska, IkonaPlus, IkonaPin, IkonaSipDole, IkonaFajka } from "@/components/icons";
@@ -49,13 +49,17 @@ export function AvatarUroven({ ini, tint, tier, size = 34, ring = true, onClick,
 export function ModulHlavicka({ title, right, slogan = "Miesto, kde nerozhodujú slová, ale skutky" }: { title?: ReactNode; right?: ReactNode; karma?: ReactNode; slogan?: ReactNode }) {
   const { svetly, prepni } = useMotiv();
   const otvorViac = useViac();
+  const { desktop } = useLayout();
   return (
     <div style={{ position: "sticky", top: 0, zIndex: 6, ...glassTmavy(18, .6), borderLeft: "none", borderRight: "none", borderTop: "none" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 11, padding: "13px 16px 7px" }}>
-        <span {...pressable(otvorViac, "Menu modulov")} title="Menu modulov" style={{ display: "flex", alignItems: "center", color: C.textSec, cursor: "pointer", flex: "0 0 auto" }}><IkonaMenu size={22} color={C.textSec} /></span>
-        <span style={{ width: 32, height: 32, borderRadius: 10, background: GRAD, color: "#fff", fontWeight: 800, fontSize: 17, display: "flex", alignItems: "center", justifyContent: "center", position: "relative", boxShadow: "0 4px 14px rgba(99,134,255,.4)", flex: "0 0 auto" }}>
-          D<span style={{ position: "absolute", top: 3, right: 4, fontSize: 9 }}>+</span>
-        </span>
+        {/* na desktope navigáciu + logo nesie bočný panel → tu ☰ aj logo skryjeme (žiadny duplikát) */}
+        {!desktop && <span {...pressable(otvorViac, "Menu modulov")} title="Menu modulov" style={{ display: "flex", alignItems: "center", color: C.textSec, cursor: "pointer", flex: "0 0 auto" }}><IkonaMenu size={22} color={C.textSec} /></span>}
+        {!desktop && (
+          <span style={{ width: 32, height: 32, borderRadius: 10, background: GRAD, color: "#fff", fontWeight: 800, fontSize: 17, display: "flex", alignItems: "center", justifyContent: "center", position: "relative", boxShadow: "0 4px 14px rgba(99,134,255,.4)", flex: "0 0 auto" }}>
+            D<span style={{ position: "absolute", top: 3, right: 4, fontSize: 9 }}>+</span>
+          </span>
+        )}
         <span style={{ fontSize: 20, fontWeight: 800 }}>{title}</span>
         <span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 13 }}>
           {right}
@@ -255,17 +259,33 @@ export function MoniBar({ vyzbierane = 0, ciel = 0, ludia, mini }: { vyzbierane?
 }
 
 // ============================================================
-// DVOJSTĹPCOVÝ FEED (tablet/PC) — skutky vľavo, žiadosti vpravo
-// na úzkej obrazovke spadne do jedného stĺpca (jednoStlpec v pôvodnom poradí)
+// ŠIROKOOBSAHOVÝ WRAPPER — jednotné riadenie šírky obsahu:
+//   · desktop (≥1180) → plná šírka (node bez capu), alebo `maxDesktop` cap pre čítacie obrazovky
+//   · wide (tablet)    → centrovaný stĺpec do `max` (default 620) ako doteraz
+//   · mobil            → bez wrappera (full-bleed)
+// Nahrádza lokálne `const obal = wide ? <div maxWidth:620>…</div> : el` v moduloch.
 // ============================================================
-export function FeedStlpce({ wide, skutky, ziadosti, jednoStlpec, labelSkutky = "Skutky", labelZiadosti = "Žiadosti", padding = "0 16px" }: { wide?: boolean; skutky?: ReactNode; ziadosti?: ReactNode; jednoStlpec?: ReactNode; labelSkutky?: ReactNode; labelZiadosti?: ReactNode; padding?: string }) {
+export function obalSiroky(node: ReactNode, { wide, desktop, max = 620, maxDesktop }: { wide?: boolean; desktop?: boolean; max?: number; maxDesktop?: number }): ReactNode {
+  if (desktop) return maxDesktop ? <div style={{ maxWidth: maxDesktop, margin: "0 auto", width: "100%" }}>{node}</div> : node;
+  if (wide) return <div style={{ maxWidth: max, margin: "0 auto" }}>{node}</div>;
+  return node;
+}
+
+// ============================================================
+// VIACSTĹPCOVÝ FEED (tablet/PC) — skutky vľavo, žiadosti vpravo
+// (voliteľne 3. stĺpec `charita` na desktope). Na úzkej obrazovke spadne
+// do jedného stĺpca (jednoStlpec v pôvodnom poradí).
+// ============================================================
+export function FeedStlpce({ wide, skutky, ziadosti, charita, jednoStlpec, labelSkutky = "Skutky", labelZiadosti = "Žiadosti", labelCharita = "Charita", padding = "0 16px" }: { wide?: boolean; skutky?: ReactNode; ziadosti?: ReactNode; charita?: ReactNode; jednoStlpec?: ReactNode; labelSkutky?: ReactNode; labelZiadosti?: ReactNode; labelCharita?: ReactNode; padding?: string }) {
   if (!wide) return <div style={{ padding }}>{jednoStlpec}</div>;
   const Hd = ({ children }: { children?: ReactNode }) => <div style={{ fontSize: 11.5, letterSpacing: ".4px", color: C.textTer, fontWeight: 700, margin: "0 0 10px", paddingLeft: 2 }}>{children}</div>;
   const col: CSSProperties = { display: "flex", flexDirection: "column", gap: 12, minWidth: 0 };
+  const tri = charita !== undefined; // 3. stĺpec = desktop „Charita"
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, alignItems: "start", padding }}>
+    <div style={{ display: "grid", gridTemplateColumns: tri ? "1fr 1fr 1fr" : "1fr 1fr", gap: 14, alignItems: "start", padding }}>
       <div style={{ minWidth: 0 }}><Hd>{labelSkutky}</Hd><div style={col}>{skutky}</div></div>
       <div style={{ minWidth: 0 }}><Hd>{labelZiadosti}</Hd><div style={col}>{ziadosti}</div></div>
+      {tri && <div style={{ minWidth: 0 }}><Hd>{labelCharita}</Hd><div style={col}>{charita}</div></div>}
     </div>
   );
 }

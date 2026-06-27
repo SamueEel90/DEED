@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { C, GRAD } from "@/theme";
-import { ModulHlavicka, IkonaPin, toast } from "@/shared";
+import { ModulHlavicka, IkonaPin, toast, useLayout, obalSiroky } from "@/shared";
 import { Zvoncek } from "@/features/notifikacie/Notifikacie";
 import { FEED_CFG } from "@/lib/feed";
 import { UROVNE, POCTY_KM, POCTY_UROVEN } from "./mock";
@@ -17,6 +17,7 @@ import { UROVNE, POCTY_KM, POCTY_UROVEN } from "./mock";
 */
 
 export default function ModulMapa({ wide }: { wide?: boolean }) {
+  const { desktop } = useLayout();
   const [uroven, setUroven] = useState("stvrt");
   const [km, setKm] = useState(2);
   const [gps, setGps] = useState(false); // demo: GPS vypnuté → banner
@@ -24,7 +25,7 @@ export default function ModulMapa({ wide }: { wide?: boolean }) {
   const jeStvrt = uroven === "stvrt";
   const [skutky, udalosti] = jeStvrt ? POCTY_KM[km] : POCTY_UROVEN[uroven];
   const kruh = jeStvrt ? 64 + km * 26 : ({ mesto: 150, okres: 188, kraj: 216, krajina: 248 } as Record<string, number>)[uroven];
-  const obal = (el: React.ReactNode) => wide ? <div style={{ maxWidth: 620, margin: "0 auto" }}>{el}</div> : el;
+  const obal = (el: React.ReactNode) => obalSiroky(el, { wide, desktop, max: 620, maxDesktop: 860 });
 
   return (
     <div style={{ minHeight: "100%", paddingBottom: 14 }}>
@@ -44,7 +45,7 @@ export default function ModulMapa({ wide }: { wide?: boolean }) {
           )}
 
           {/* mapový podklad + kruh rádiusu */}
-          <div style={{ position: "relative", height: 280, borderRadius: 18, overflow: "hidden", background: "linear-gradient(160deg, #0f1626, #0a0f1c)", border: `1px solid ${C.line}` }}>
+          <div style={{ position: "relative", height: desktop ? 400 : 280, borderRadius: 18, overflow: "hidden", background: "linear-gradient(160deg, #0f1626, #0a0f1c)", border: `1px solid ${C.line}` }}>
             {/* faux ulice */}
             {[18, 42, 70, 88].map((t, i) => <div key={"h" + i} style={{ position: "absolute", left: 0, right: 0, top: `${t}%`, height: 1, background: "rgba(255,255,255,.05)" }} />)}
             {[24, 55, 78].map((l, i) => <div key={"v" + i} style={{ position: "absolute", top: 0, bottom: 0, left: `${l}%`, width: 1, background: "rgba(255,255,255,.05)" }} />)}

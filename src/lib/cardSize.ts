@@ -58,3 +58,9 @@ export function zobrazVelkost(it: KartaVstup, config: CardSizeKonfig = FEED_CONF
   if (it.typ === "charita") return it.velkost ?? "med"; // charita — kurátorský rozmer (MoniBar)
   return RIADKY_NA_VELKOST[velkostKarty(it, config)] ?? "small";
 }
+
+// ---- POMER STRÁN MÉDIÍ (karty + hero) na TABLETE/DESKTOPE (wide) ----
+// Na tablete/desktope dostane kontajner média `aspectRatio: MEDIA_AR` (16:9).
+// Na MOBILE ostávajú pôvodné fixné px výšky (bez zmeny) — preto sa MEDIA_AR
+// používa iba vo `wide` vetve.
+export const MEDIA_AR = "16 / 9";

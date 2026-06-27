@@ -82,6 +82,16 @@ export const ADRESAR: AdresarSekcia[] = [
     ["RD", "OZ Rodinka", "Pomoc rodinám v núdzi · Trenčín", "Bronze", "💶 📦"],
     ["BR", "Brána do života", "Týrané ženy a deti · BA", "Silver", "💶 🙋"],
   ]},
+  { sekcia: "Trenčín a okolie", chipy: ["Trenčín", "Sociálne"], polozky: [
+    ["HMS", "Hospic Milosrdných sestier", "Paliatívna starostlivosť · Trenčín", "Gold", "💶 🙋"],
+    ["SČK-TN", "Červený kríž — ÚS Trenčín", "Prvá pomoc, humanitárna · Trenčín", "Gold", "💶 🙋 📦"],
+    ["CHT", "Charita Trenčín", "Núdza, jedáleň, nocľaháreň · Trenčín", "Gold", "💶 📦 🙋"],
+    ["MÚT", "Mestský útulok Trenčín", "Opustené zvieratá · Trenčín", "Silver", "💶 📦"],
+    ["MCS", "Materské centrum Srdiečko", "Rodiny s deťmi · Trenčín", "Silver", "🙋 📦"],
+    ["ÚNS-TN", "Únia nevidiacich — Trenčín", "Zrakovo postihnutí · Trenčín", "Silver", "💶 🙋"],
+    ["VAZ", "OZ Vážka", "Onkologickí pacienti · Trenčín", "Bronze", "💶 🙋"],
+    ["HOB", "Hospic Bánovce", "Paliatívna starostlivosť · Bánovce n. B.", "Silver", "💶 🙋"],
+  ]},
 ];
 
 // ---- index pre vyhľadávanie (zbierky vo feede + celý adresár) ----

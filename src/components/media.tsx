@@ -41,7 +41,7 @@ export function FotoPrispevku({ fotky, emoji, h, w, radius = 0, style, index = 0
   const otvor = useGaleria();
   const viac = fotky && fotky.length > 1;
   return (
-    <div style={{ position: "relative", width: w || "100%", flex: w ? "0 0 auto" : undefined }}>
+    <div style={{ position: "relative", width: w || "100%", height: h, flex: w ? "0 0 auto" : undefined }}>
       <Foto src={fotky && fotky[index]} emoji={emoji} h={h} w={w} radius={radius} style={style}
         onClick={disableGaleria ? undefined : (e) => { e.stopPropagation(); if (fotky && fotky.length) otvor(fotky, index); }} />
       {viac && (

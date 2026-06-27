@@ -212,6 +212,132 @@ export const POLOZKY: GoodPolozka[] = [
     titul: "Mentorujem stredoškolákov pri výbere povolania.", popis: "Pomáham im spísať životopis a pripraviť sa na pohovor. Prvá práca vie naštartovať celý život.",
     emoji: "🎯", suma: 22, lajky: 18,
     fotky: [U("photo-1509228468518-180dd4864904")] },
+
+  // ============================================================
+  // REÁLNE INŠTITÚCIE & GEO-ROZPTYL (štvrť → mesto → okres → kraj → SR)
+  // Vzdialenejšie skutky majú vyššie skóre, aby prešli prahom väčšieho okruhu.
+  // ============================================================
+
+  // --- štvrť / mesto Trenčín: reálne inštitúcie (zvyšujú hustotu „v okolí") ---
+  { id: 29, typ: "skutok", velkost: "med", kat: "Zdravie", media: "foto", overene: true,
+    skore: 6, typSituacie: "normal", modul: "good", lat: 48.897, lng: 18.050, dni: 0, podpora: 22,
+    autor: "Fakultná nemocnica Trenčín", pfp: "#3DD6CE", ini: "F", karma: "Gold", lok: "Trenčín · Legionárska", cas: "4 h", num: 120049,
+    titul: "Mobilný odber krvi pred nemocnicou — prišlo 70 darcov.",
+    popis: "Vyhlásili sme výzvu pre 0− a A−. Za jedno dopoludnie prišlo 70 ľudí, naplnili sme zásoby na dva týždne. Ďakujeme každému, kto vyhrnul rukáv.",
+    emoji: "🏥", suma: 90, lajky: 58,
+    fotky: [U("photo-1579684385127-1ef15d508118"), U("photo-1584308666744-24d5c474f2ae")] },
+
+  { id: 30, typ: "skutok", velkost: "small", kat: "Ucenie", media: "foto", overene: true,
+    skore: 4, typSituacie: "normal", modul: "good", lat: 48.894, lng: 18.046, dni: 1, podpora: 9,
+    autor: "Verejná knižnica M. Rešetku", pfp: "#A98BF0", ini: "K", karma: "Silver", lok: "Trenčín · Hasičská", cas: "1 d", num: 120028,
+    titul: "Spustili sme bezplatné čitateľské popoludnia pre deti.",
+    popis: "Každú stredu predčítame a tvoríme s deťmi, ktoré nemajú doma veľa kníh. Knižnica patrí všetkým.",
+    emoji: "📚", suma: 24, lajky: 26,
+    fotky: [U("photo-1507842217343-583bb7270b66")] },
+
+  { id: 31, typ: "skutok", velkost: "med", kat: "Komunita", media: "foto", overene: true,
+    skore: 4.5, typSituacie: "normal", modul: "good", lat: 48.870, lng: 18.062, dni: 1, podpora: 14,
+    autor: "Mestský útulok Trenčín", pfp: "#5BA8F0", ini: "Ú", karma: "Silver", lok: "Trenčín · Zlatovce", cas: "1 d", num: 120026,
+    titul: "Cez víkend si našlo nový domov 9 psíkov.",
+    popis: "Deň otvorených dverí v útulku. Prišli desiatky rodín, 9 psíkov odišlo do nového domova. Ostatným stále hľadáme.",
+    emoji: "🐶", suma: 32, lajky: 47,
+    fotky: [U("photo-1450778869180-41d0601e046e")] },
+
+  { id: 32, typ: "skutok", velkost: "small", kat: "Zdravie", media: "kreslene",
+    skore: 4, typSituacie: "normal", modul: "good", lat: 48.893, lng: 18.043, dni: 2, podpora: 11,
+    autor: "Slovenský Červený kríž — TN", pfp: "#7A3030", ini: "Č", karma: "Gold", lok: "Trenčín · centrum", cas: "2 d", num: 120016,
+    titul: "Kurz prvej pomoci zadarmo pre 30 mamičiek.",
+    popis: "Naučili sme ich, čo robiť pri dusení a horúčke u detí. Pokoj v kríze sa dá natrénovať.",
+    emoji: "➕", suma: 28, lajky: 24 },
+
+  { id: 33, typ: "skutok", velkost: "small", kat: "Komunita", media: "foto",
+    skore: 3.5, typSituacie: "normal", modul: "good", lat: 48.906, lng: 18.031, dni: 3, podpora: 8,
+    autor: "Materské centrum Srdiečko", pfp: "#3A8DD6", ini: "S", karma: "Silver", lok: "Trenčín · Sihoť", cas: "3 d", num: 119982,
+    titul: "Otvorili sme herňu pre rodiny v núdzi — vstup zadarmo.",
+    popis: "Teplo, hračky a káva pre mamy, ktoré inak celý deň ostávajú samy doma s deťmi. Príď, keď máš ťažký deň.",
+    emoji: "🧸", suma: 20, lajky: 22,
+    fotky: [U("photo-1556909114-f6e7ad7d3136")] },
+
+  // --- mesto (~6–13 km): okolité obce ---
+  { id: 34, typ: "skutok", velkost: "med", kat: "Priroda", media: "foto", overene: true,
+    skore: 4.5, typSituacie: "normal", modul: "good", lat: 48.967, lng: 18.118, dni: 1, podpora: 12,
+    autor: "Mesto Nemšová", pfp: "#2E7D52", ini: "N", karma: "Silver", lok: "Nemšová", cas: "1 d", num: 120029,
+    titul: "Dobrovoľníci vyčistili breh Vláry — 26 vriec odpadu.",
+    popis: "Spojili sa školy, hasiči aj rybári. Za sobotu sme spravili z brehu opäť miesto na prechádzku.",
+    emoji: "🌊", suma: 40, lajky: 33,
+    fotky: [U("photo-1470071459604-3b5ec3a7fe05"), U("photo-1542601906990-b4d3fb778b09")] },
+
+  { id: 35, typ: "skutok", velkost: "small", kat: "Zdravie", media: "foto",
+    skore: 5, typSituacie: "normal", modul: "good", lat: 48.905, lng: 18.165, dni: 2, podpora: 16,
+    autor: "Kúpele Trenčianske Teplice", pfp: "#3DD6CE", ini: "K", karma: "Silver", lok: "Trenčianske Teplice", cas: "2 d", num: 120014,
+    titul: "Kúpeľný deň zadarmo pre opatrovateľov seniorov.",
+    popis: "Pozvali sme 40 ľudí, ktorí sa doma starajú o blízkych. Zaslúžia si oddych viac než ktokoľvek.",
+    emoji: "💧", suma: 36, lajky: 29,
+    fotky: [U("photo-1506126613408-eca07ce68773")] },
+
+  // --- okres (~15–30 km): skóre ≥ 6 ---
+  { id: 36, typ: "skutok", velkost: "med", kat: "Ucenie", media: "foto", overene: true,
+    skore: 6.5, typSituacie: "normal", modul: "good", lat: 48.757, lng: 17.832, dni: 1, podpora: 19,
+    autor: "Mestská knižnica Nové Mesto", pfp: "#A98BF0", ini: "K", karma: "Gold", lok: "Nové Mesto n. Váhom", cas: "1 d", num: 120013,
+    titul: "Doučovacie centrum pre deti z marginalizovaných rodín.",
+    popis: "Dobrovoľníci-učitelia každý deň pomáhajú s úlohami 25 deťom. Po pol roku majú o stupeň lepšie známky.",
+    emoji: "✏️", suma: 44, lajky: 38,
+    fotky: [U("photo-1509228468518-180dd4864904")] },
+
+  { id: 37, typ: "ziadost", velkost: "req", kat: "Pomoc", zdroj: "Help",
+    skore: 6.5, typSituacie: "normal", modul: "help", lat: 48.720, lng: 18.258, dni: 0, podpora: 12,
+    autor: "Hospic Bánovce", pfp: "#7A3030", ini: "H", lok: "Bánovce n. Bebravou", cas: "5 h", num: 120041,
+    titul: "Hľadáme dobrovoľníkov a príspevok na polohovacie lôžka",
+    popis: "Staráme sa o nevyliečiteľne chorých. Chýbajú nám dve polohovacie lôžka a ruky dobrovoľníkov, ktorí prídu posedieť k pacientom.",
+    ciel: 4000, vyzbierane: 1650, emoji: "🕯", pomocnici: 12,
+    fotky: [U("photo-1576091160399-112ba8d25d1d")] },
+
+  { id: 38, typ: "skutok", velkost: "small", kat: "Priroda", media: "foto", overene: true,
+    skore: 6, typSituacie: "normal", modul: "good", lat: 48.997, lng: 18.234, dni: 2, podpora: 13,
+    autor: "Dobrovoľníci Ilava", pfp: "#2E7D52", ini: "I", karma: "Silver", lok: "Ilava", cas: "2 d", num: 119998,
+    titul: "Vysadili sme 120 stromčekov nad mestom.",
+    popis: "Po veternej kalamite sme zalesnili holý svah. O desať rokov tam bude zase les, ktorý zadrží vodu.",
+    emoji: "🌲", suma: 34, lajky: 31,
+    fotky: [U("photo-1441974231531-c6227db76b6e"), U("photo-1448375240586-882707db888b")] },
+
+  // --- kraj (~40–65 km): skóre ≥ 6.5 ---
+  { id: 39, typ: "charita", velkost: "med", kat: "Komunita", zdroj: "Charity", overene: true, charLevel: "Silver",
+    skore: 7, typSituacie: "normal", modul: "charity", lat: 49.118, lng: 18.428, dni: 1, podpora: 48,
+    autor: "Mestský útulok Považská Bystrica", pfp: "#5BA8F0", ini: "Ú", lok: "Považská Bystrica", cas: "1 d", num: 120008,
+    titul: "Zbierka na zateplenie kotercov pred zimou", popis: "Overená zbierka. 60 psov a mačiek čaká zima v nezateplených kotercoch. Doklady o nákupe materiálu zverejníme.",
+    ciel: 3000, vyzbierane: 1240, emoji: "🐕", suma: 0, lajky: 96,
+    fotky: [U("photo-1450778869180-41d0601e046e")] },
+
+  { id: 40, typ: "skutok", velkost: "med", kat: "Zdravie", media: "foto", overene: true,
+    skore: 7, typSituacie: "normal", modul: "good", lat: 48.774, lng: 18.627, dni: 2, podpora: 21,
+    autor: "Detský domov Prievidza", pfp: "#3DD6CE", ini: "D", karma: "Gold", lok: "Prievidza", cas: "2 d", num: 119990,
+    titul: "Plavecký výcvik pre deti z detského domova.",
+    popis: "Vďaka dobrovoľníkom sa 18 detí naučilo plávať. Pre niektoré to bol prvý raz, čo ich niekto vzal na výlet.",
+    emoji: "🏊", suma: 48, lajky: 44,
+    fotky: [U("photo-1500382017468-9049fed747ef")] },
+
+  // --- celá SR (národné kampane): skóre ≥ 9 alebo narodne ---
+  { id: 41, typ: "charita", velkost: "med", kat: "Zdravie", zdroj: "Charity", overene: true, charLevel: "Gold",
+    skore: 9, typSituacie: "normal", modul: "charity", narodne: true, lat: 48.146, lng: 17.107, dni: 0, podpora: 80,
+    autor: "Dobrý anjel", pfp: "#C264D8", ini: "D", lok: "celá SR", cas: "6 h", num: 120046,
+    titul: "Pravidelná pomoc rodinám, kde rakovina zobrala príjem", popis: "Overená nadácia. 100 % z tvojho príspevku ide rodinám s vážnou chorobou. Staň sa Dobrým anjelom aj ty.",
+    ciel: 80000, vyzbierane: 52400, emoji: "😇", suma: 0, lajky: 410 },
+
+  // --- LOKÁLNE charity v Trenčíne (≤ 5 km) — aby kategória „Charita" žila aj v štvrti ---
+  { id: 42, typ: "charita", velkost: "med", kat: "Zdravie", zdroj: "Charity", overene: true, charLevel: "Gold",
+    skore: 6, typSituacie: "normal", modul: "charity", lat: 48.895, lng: 18.047, dni: 0, podpora: 34,
+    autor: "Hospic Milosrdných sestier", pfp: "#C264D8", ini: "H", lok: "Trenčín · centrum", cas: "5 h", num: 120045,
+    titul: "Zbierka na polohovacie lôžka pre paliatívne oddelenie",
+    popis: "Overená miestna zbierka. Dve polohovacie lôžka uľahčia posledné dni nevyliečiteľne chorým. Doklady o nákupe zverejníme.",
+    ciel: 6000, vyzbierane: 2380, emoji: "🕊", suma: 0, lajky: 142,
+    fotky: [U("photo-1576091160399-112ba8d25d1d")] },
+
+  { id: 43, typ: "charita", velkost: "small", kat: "Komunita", zdroj: "Charity", overene: true, charLevel: "Silver",
+    skore: 5, typSituacie: "normal", modul: "charity", lat: 48.870, lng: 18.062, dni: 1, podpora: 28,
+    autor: "OZ Túlavá labka", pfp: "#5BA8F0", ini: "T", lok: "Trenčín · okraj", cas: "1 d", num: 120017,
+    titul: "Krmivo a deky pre útulok na zimu", popis: "Overená miestna zbierka. 40 psov a mačiek čaká zima. Pomôže aj materiálny dar — krmivo, deky, vodítka.",
+    ciel: 1200, vyzbierane: 540, emoji: "🐾", suma: 0, lajky: 88,
+    fotky: [U("photo-1450778869180-41d0601e046e")] },
 ];
 
 // ---- NÁSTENKA — udalosti v okolí ----

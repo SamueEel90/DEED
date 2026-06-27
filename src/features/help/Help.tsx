@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
 import { C, pasmo, inp, infoBox, btn, GRAD_ZELENY, glassTmavy } from "@/theme";
-import { Foto, Avatar, FotoPrispevku, MiniFotky, Hlavicka, ModulHlavicka, PodporaSekcia, PlatbaModal, HladanieModal, Otazka, Vyber, vyberBox, NavBtns, Suhrn, DokladRow, toast, useGaleria, useScrollHore, useStrankaAkcie, useTvorbaGate, Ticker, StatRiadok, MoniBar, FeedStlpce, OkruhVyber, Lupa, Zdielanie, IkonaSpat, IkonaVlajka, IkonaFoto, IkonaPlay, IkonaDoska, FeedSkeleton, EmptyState, ErrorState, ScreenSwitch } from "@/shared";
+import { Foto, Avatar, FotoPrispevku, MiniFotky, Hlavicka, ModulHlavicka, PodporaSekcia, PlatbaModal, HladanieModal, Otazka, Vyber, vyberBox, NavBtns, Suhrn, DokladRow, toast, useGaleria, useLayout, useScrollHore, useStrankaAkcie, useTvorbaGate, Ticker, StatRiadok, MoniBar, FeedStlpce, obalSiroky, OkruhVyber, Lupa, Zdielanie, IkonaSpat, IkonaVlajka, IkonaFoto, IkonaPlay, IkonaDoska, IkonaPin, FeedSkeleton, EmptyState, ErrorState, ScreenSwitch } from "@/shared";
 import { Zvoncek } from "@/features/notifikacie/Notifikacie";
 import { pripravFeed, FEED_CFG } from "@/lib/feed";
+import { MEDIA_AR } from "@/lib/cardSize";
 import type { HelpFeedItem } from "@/types";
 import { useHelpFeed } from "@/data";
-import { tint } from "@/lib/ui";
+import { tint, tagChip } from "@/lib/ui";
 import { USER_LOK, ZIVE_DARY } from "./mock";
 
 /*
@@ -17,6 +18,7 @@ import { USER_LOK, ZIVE_DARY } from "./mock";
 
 // ===================== MODUL =====================
 export default function ModulHelp({ wide }: { wide?: boolean }) {
+  const { desktop } = useLayout();
   const { data: MOCK_FEED = [] } = useHelpFeed();
   const [screen, setScreen] = useState("feed"); // feed | detail | add | offer | request
   const [aktDetail, setAktDetail] = useState<any>(null);
@@ -28,7 +30,7 @@ export default function ModulHelp({ wide }: { wide?: boolean }) {
   useEffect(() => { scrollHore(); }, [screen]);
 
   // na tablete/desktope sa detailové obrazovky vycentrujú do čitateľnej šírky
-  const obal = (el: React.ReactNode) => wide ? <div style={{ maxWidth: 620, margin: "0 auto" }}>{el}</div> : el;
+  const obal = (el: React.ReactNode) => obalSiroky(el, { wide, desktop, max: 620, maxDesktop: 920 });
 
   return (
     <div style={{ minHeight: "100%" }}>
@@ -56,6 +58,7 @@ export default function ModulHelp({ wide }: { wide?: boolean }) {
 
 // ===================== FEED =====================
 function Feed({ wide, toast, onDetail, onHladaj, onAdd }: { wide?: boolean; toast: (m: string) => void; onDetail: (z: any) => void; onHladaj: () => void; onAdd: () => void }) {
+  const { desktop } = useLayout();
   const { data: MOCK_FEED = [], isLoading, isError, refetch } = useHelpFeed();
   // živý ticker darov
   const [tick, setTick] = useState(0);
@@ -119,6 +122,13 @@ function Feed({ wide, toast, onDetail, onHladaj, onAdd }: { wide?: boolean; toas
         <FeedSkeleton count={4} />
       ) : feed.length === 0 ? (
         <EmptyState emoji="🙏" title="Nič v tomto okruhu" text="V tomto okruhu zatiaľ nič nie je. Skús iný typ alebo menší okruh." />
+      ) : desktop ? (
+        <div style={{ maxWidth: 1140, margin: "0 auto" }}>
+          <FeedStlpce wide padding="4px 8px"
+            labelSkutky="Ponúkajú pomoc" labelZiadosti="Hľadajú pomoc"
+            skutky={feed.filter((z) => !jeZiadost(z)).map(karta)}
+            ziadosti={feed.filter(jeZiadost).map(karta)} />
+        </div>
       ) : (
         <FeedStlpce wide={wide} padding="4px 8px"
           labelSkutky="Ponúkajú pomoc" labelZiadosti="Hľadajú pomoc"
@@ -149,27 +159,29 @@ function Seg({ on, col, label, emoji, onClick }: { on: boolean; col: string; lab
 function FeedCard({ z, wide, onClick }: { z: any; wide?: boolean; onClick: () => void }) {
   const jeZiadost = z.typ === "ziadost";
   const jePonuka = z.typ === "ponuka";
+  const jeKriza = z.typSituacie === "kriza";
   const accent = jeZiadost ? (z.sponzor ? C.gold : C.red) : jePonuka ? C.purple : C.gold;
   const typLabel = jeZiadost ? `ŽIADOSŤ · ${z.sponzor ? "D++" : "D+"}` : jePonuka ? "PONUKA POMOCI" : "CHARITA";
-  const mediaH = wide ? 168 : 230;
   return (
-    <div onClick={onClick} className="good-card" style={{ margin: wide ? 0 : "0 -16px 10px", border: wide ? `1px solid ${C.line}` : "none", borderBottom: `1px solid ${wide ? C.line : C.line2}`, borderLeft: `3px solid ${accent}`, borderRadius: wide ? 17 : 0, overflow: "hidden", background: C.surface2, cursor: jeZiadost ? "pointer" : "default" }}>
-      {/* médium */}
-      <div style={{ position: "relative", height: mediaH }}>
-        <FotoPrispevku fotky={z.fotky} emoji={z.ikona} h={mediaH} disableGaleria />
+    <div onClick={onClick} className="good-card" style={{ margin: wide ? 0 : "0 -16px 10px", border: wide ? `1px solid ${C.line}` : "none", borderBottom: `1px solid ${wide ? C.line : C.line2}`, borderLeft: `3px solid ${jeKriza ? C.red : accent}`, borderRadius: wide ? 17 : 0, overflow: "hidden", background: C.surface2, boxShadow: jeKriza && wide ? `0 0 0 1.5px ${tint(C.red, .5)}, 0 8px 24px ${tint(C.red, .14)}` : undefined, cursor: jeZiadost ? "pointer" : "default" }}>
+      {/* médium — 16:9 na tablete/desktope; na mobile pôvodná výška 230 px */}
+      <div style={{ position: "relative", ...(wide ? { width: "100%", aspectRatio: MEDIA_AR } : { height: 230 }) }}>
+        <FotoPrispevku fotky={z.fotky} emoji={z.ikona} h={wide ? "100%" : 230} disableGaleria />
         <div style={{ position: "absolute", inset: 0, background: "linear-gradient(0deg, rgba(0,0,0,.34), transparent 42%)", pointerEvents: "none" }} />
-        <span style={{ position: "absolute", top: 10, left: 10, background: accent, color: "#fff", fontSize: 9, fontWeight: 800, borderRadius: 20, padding: "3px 10px", pointerEvents: "none" }}>{typLabel}</span>
-        {z.sponzor && <span style={{ position: "absolute", top: 10, right: 10, background: "rgba(8,11,18,.6)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)", color: "#fff", fontSize: 9, fontWeight: 700, borderRadius: 8, padding: "3px 8px", pointerEvents: "none" }}>🛡 {z.sponzor.meno} · {z.sponzor.suma} €</span>}
+        {jeKriza && <span style={{ position: "absolute", top: 10, left: 10, background: C.red, color: "#fff", fontSize: 11, fontWeight: 800, borderRadius: 9, padding: "5px 11px", pointerEvents: "none", boxShadow: "0 2px 10px rgba(0,0,0,.3)" }}>🔴 URGENTNÉ</span>}
+        <span style={{ position: "absolute", top: 10, ...(jeKriza ? { right: 10 } : { left: 10 }), background: accent, color: "#fff", fontSize: 9.5, fontWeight: 800, borderRadius: 20, padding: "3px 10px", pointerEvents: "none" }}>{typLabel}</span>
+        {z.sponzor && !jeKriza && <span style={{ position: "absolute", top: 10, right: 10, background: "rgba(8,11,18,.62)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)", color: "#fff", fontSize: 9.5, fontWeight: 700, borderRadius: 8, padding: "3px 8px", pointerEvents: "none" }}>🛡 {z.sponzor.meno} · {z.sponzor.suma} €</span>}
       </div>
       {/* titul + príbeh */}
       <div style={{ padding: "12px 14px 14px" }}>
         <div style={{ fontSize: 16, fontWeight: 700, lineHeight: 1.35, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
           <span style={{ flex: "0 1 auto", minWidth: 0 }}>{z.nazov}</span>
-          {z.overeny && <span style={{ fontSize: 10.5, color: C.greenL, border: `1px solid rgba(127,203,160,.4)`, borderRadius: 20, padding: "2px 8px", flex: "none" }}>overená</span>}
-          {z.odbornik && <span style={{ fontSize: 10.5, color: C.purple, border: `1px solid rgba(175,169,236,.4)`, borderRadius: 20, padding: "2px 8px", flex: "none" }}>✓ odborník</span>}
-          {z.typ === "charity" && !z.sponzor && <span style={{ fontSize: 10.5, color: C.textTer, flex: "none" }}>hľadá pomoc</span>}
+          {z.overeny && <span style={tagChip(C.greenL)}>✓ overená</span>}
+          {z.odbornik && <span style={tagChip(C.purple)}>✓ odborník</span>}
+          {z.typ === "charity" && !z.sponzor && <span style={tagChip(C.gold)}>hľadá pomoc</span>}
         </div>
-        <div style={{ fontSize: 13.5, color: C.textSec, marginTop: 7, lineHeight: 1.5 }}>{z.pribeh}{z.lok ? ` · ${z.lok}` : ""}</div>
+        {z.lok && <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 6, fontSize: 12, color: C.textSec, fontWeight: 600 }}><IkonaPin size={12} color={C.textSec} />{z.lok}{z.karma ? ` · ${z.karma}` : ""}</div>}
+        <div style={{ fontSize: 13.5, color: C.textSec, marginTop: 7, lineHeight: 1.5 }}>{z.pribeh}</div>
         {jeZiadost && z.ciel ? <div style={{ marginTop: 10 }}><MoniBar vyzbierane={z.suma} ciel={z.ciel} mini /></div> : null}
       </div>
     </div>
@@ -182,6 +194,7 @@ function Detail({ z, onBack }: { z: any; onBack: () => void }) {
   const [suma, setSuma] = useState(z.suma);
   const [ludia, setLudia] = useState(z.ludia);
   const otvorGaleriu = useGaleria();
+  const { wide } = useLayout();
 
   const hash = () => "0x" + Math.random().toString(16).slice(2, 8) + "…" + Math.random().toString(16).slice(2, 6);
 
@@ -207,9 +220,9 @@ function Detail({ z, onBack }: { z: any; onBack: () => void }) {
         <span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 14, color: C.textTer }}><Zdielanie size={17} color={C.textTer} /><IkonaVlajka size={16} color={C.textTer} /></span>
       </div>
 
-      {/* hero foto — klik = celá obrazovka, swipe medzi fotkami */}
-      <div style={{ position: "relative" }}>
-        <Foto src={z.fotky && z.fotky[0]} emoji="🖼" h={175} onClick={() => z.fotky?.length && otvorGaleriu(z.fotky, 0)} />
+      {/* hero foto — klik = celá obrazovka, swipe medzi fotkami (16:9 na desktope) */}
+      <div style={{ position: "relative", ...(wide ? { width: "100%", aspectRatio: MEDIA_AR } : {}) }}>
+        <Foto src={z.fotky && z.fotky[0]} emoji="🖼" h={wide ? "100%" : 175} w={wide ? "100%" : undefined} onClick={() => z.fotky?.length && otvorGaleriu(z.fotky, 0)} />
         <span style={{ position: "absolute", top: 10, right: 10, background: "rgba(0,0,0,.55)", borderRadius: 20, padding: "4px 10px", fontSize: 10, color: "var(--a-green)", pointerEvents: "none", display: "inline-flex", alignItems: "center", gap: 5 }}><IkonaFoto size={12} color="var(--a-green)" /> foto z prípadu</span>
         {z.fotky?.length > 1 && <span style={{ position: "absolute", bottom: 10, right: 10, background: "rgba(0,0,0,.6)", borderRadius: 12, padding: "3px 9px", fontSize: 10, color: "#fff", pointerEvents: "none" }}>⧉ {z.fotky.length} · klikni na foto</span>}
       </div>

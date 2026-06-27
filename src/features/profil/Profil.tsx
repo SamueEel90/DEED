@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { C, GRAD, GRAD_ZELENY } from "@/theme";
-import { toast, Sheet, AvatarUroven, useScrollHore, useViac, useMotiv, useTvorbaGate, QrModal, IkonaMenu, IkonaNastavenia, IkonaSipVlavo, IkonaPenazenka, IkonaHviezda, IkonaFajka, IkonaDoska, IkonaUsmev, IkonaPin, IkonaSlnko, IkonaMesiac, IkonaStit, SkeletonRiadky, EmptyState, ErrorState, ScreenSwitch } from "@/shared";
+import { toast, Sheet, AvatarUroven, useScrollHore, useViac, useMotiv, useLayout, useTvorbaGate, obalSiroky, QrModal, IkonaMenu, IkonaNastavenia, IkonaSipVlavo, IkonaPenazenka, IkonaHviezda, IkonaFajka, IkonaDoska, IkonaUsmev, IkonaPin, IkonaSlnko, IkonaMesiac, IkonaStit, SkeletonRiadky, EmptyState, ErrorState, ScreenSwitch } from "@/shared";
 import { RetazDobraSheet } from "@/features/retaz/RetazDobra";
 import { clearSession } from "@/lib/session";
 import { usePouzivatel } from "@/lib/pouzivatel";
@@ -22,6 +22,7 @@ import { useProfilPrevody, useProfilMojeSkutky, useProfilKarma, useProfilStatist
 type ProfilProps = WideProps & { walletReq?: number };
 
 export default function ModulProfil({ wide, walletReq = 0 }: ProfilProps) {
+  const { desktop } = useLayout();
   const [screen, setScreen] = useState("profil"); // profil | wallet | sub | nastavenia | notif
   const [subNazov, setSubNazov] = useState<string | null>(null);
 
@@ -33,7 +34,7 @@ export default function ModulProfil({ wide, walletReq = 0 }: ProfilProps) {
   useEffect(() => { if (walletReq) setScreen("wallet"); }, [walletReq]);
 
   const sub = (n: string) => { setSubNazov(n); setScreen("sub"); };
-  const obal = (el: React.ReactNode) => wide ? <div style={{ maxWidth: 620, margin: "0 auto" }}>{el}</div> : el;
+  const obal = (el: React.ReactNode) => obalSiroky(el, { wide, desktop, max: 620, maxDesktop: screen === "profil" ? 1040 : 760 });
 
   return (
     <div style={{ minHeight: "100%" }}>
@@ -68,6 +69,7 @@ type ProfilHlavnyProps = {
 
 function ProfilHlavny({ toast, naWallet, naSub, naNastavenia, naPriatelia }: ProfilHlavnyProps) {
   const otvorViac = useViac();
+  const { desktop } = useLayout();
   const ja = usePouzivatel();
   const { maZaujem, toggleZaujem, sledovani, podpory, zaujmy } = usePersonalizacia(); // záujmy + prehľad = identita (rovnaký store ako Môj DEED + afinita feedu)
   const dlazdice: [string, string, string, string, React.ReactNode, () => void][] = [
@@ -79,14 +81,8 @@ function ProfilHlavny({ toast, naWallet, naSub, naNastavenia, naPriatelia }: Pro
     ["Nastavenia", "vzhľad, jazyk", "rgba(154,160,168,.16)", C.textTer, <IkonaNastavenia size={26} />, naNastavenia],
   ];
 
-  return (
-    <div style={{ paddingBottom: 14 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 11, padding: "16px 18px 10px" }}>
-        <span onClick={otvorViac} title="Menu modulov" style={{ display: "flex", alignItems: "center", color: C.textSec, cursor: "pointer", flex: "0 0 auto" }}><IkonaMenu size={22} color={C.textSec} /></span>
-        <span style={{ fontSize: 18, fontWeight: 800 }}>Môj profil</span>
-        <span onClick={naNastavenia} style={{ marginLeft: "auto", display: "flex", color: C.textSec, cursor: "pointer" }}><IkonaNastavenia size={19} color={C.textSec} /></span>
-      </div>
-
+  const identita = (
+    <>
       <div style={{ margin: "8px 16px 0", background: C.surface, border: `1px solid ${C.line}`, borderRadius: 16, padding: 16, display: "flex", gap: 14, alignItems: "center" }}>
         <AvatarUroven ini={ja.iniciala} tint={ja.tint} tier={ja.tier} size={60} />
         <div style={{ minWidth: 0 }}>
@@ -140,10 +136,30 @@ function ProfilHlavny({ toast, naWallet, naSub, naNastavenia, naPriatelia }: Pro
         </div>
         <div style={{ fontSize: 11, color: C.textTer, lineHeight: 1.5, marginTop: 8 }}>Ladia odporúčania v „Okolí" a napĺňajú „Môj DEED". Vyňaté z filtra feedu — feed ostáva pestrý.</div>
       </div>
+    </>
+  );
 
-      <div style={{ padding: 16 }}>
-        <GlassIcons columns={3} items={dlazdice.map((d) => ({ icon: d[4], color: d[3], label: d[0], sub: d[1], onClick: d[5] }))} />
+  const tiles = (
+    <div style={{ padding: 16 }}>
+      <GlassIcons columns={3} items={dlazdice.map((d) => ({ icon: d[4], color: d[3], label: d[0], sub: d[1], onClick: d[5] }))} />
+    </div>
+  );
+
+  return (
+    <div style={{ paddingBottom: 14 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 11, padding: "16px 18px 10px" }}>
+        <span onClick={otvorViac} title="Menu modulov" style={{ display: "flex", alignItems: "center", color: C.textSec, cursor: "pointer", flex: "0 0 auto" }}><IkonaMenu size={22} color={C.textSec} /></span>
+        <span style={{ fontSize: 18, fontWeight: 800 }}>Môj profil</span>
+        <span onClick={naNastavenia} style={{ marginLeft: "auto", display: "flex", color: C.textSec, cursor: "pointer" }}><IkonaNastavenia size={19} color={C.textSec} /></span>
       </div>
+      {desktop ? (
+        <div style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
+          <aside style={{ width: 380, flex: "0 0 380px", minWidth: 0 }}>{identita}</aside>
+          <div style={{ flex: 1, minWidth: 0 }}>{tiles}</div>
+        </div>
+      ) : (
+        <>{identita}{tiles}</>
+      )}
     </div>
   );
 }

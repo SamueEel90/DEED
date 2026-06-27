@@ -95,6 +95,56 @@ export const MOCK_FEED: HelpFeedItem[] = [
     skore: 5, typSituacie: "normal", modul: "help", kat: "Zdravie", narodne: true, lat: 48.894, lng: 18.044, dni: 0, podpora: 9,
     pribeh: "Bezplatné krízové konzultácie pre mladých v ťažkej situácii. Diskrétne, online, bez čakačky. Niekedy stačí, že vás niekto vypočuje.",
     ikona: "🧠", velkost: "stredna" },
+
+  // ---- REÁLNE ORGANIZÁCIE & GEO-ROZPTYL ----
+  { id: 19, typ: "ziadost", nazov: "Charita Trenčín", overeny: true, karma: "Gold", lok: "Trenčín · centrum",
+    skore: 6, typSituacie: "normal", modul: "help", kat: "Pomoc", lat: 48.894, lng: 18.046, dni: 0, podpora: 41,
+    pribeh: "Naša nízkoprahová jedáleň vydáva denne 120 teplých obedov ľuďom bez domova. Pred zimou nám dochádzajú zásoby a teplé oblečenie.",
+    suma: 940, ciel: 2500, ludia: 41, ikona: "🍲", velkost: "velka",
+    fotky: [U("photo-1542838132-92c53300491e"), U("photo-1556909114-f6e7ad7d3136")], avatar: AV(13) },
+
+  { id: 20, typ: "ponuka", nazov: "Stolárstvo Hôrka", odbornik: true, lok: "Trenčín · Juh",
+    skore: 3, typSituacie: "normal", modul: "help", kat: "Komunita", lat: 48.875, lng: 18.030, dni: 1, podpora: 5,
+    pribeh: "Seniorom a samoživiteľom opravím nábytok zadarmo — vypadnuté dvierka, rozheganú stoličku, poličku. Materiál po dohode.",
+    ikona: "🪚", velkost: "riadok" },
+
+  { id: 21, typ: "ziadost", nazov: "Útulok Túlavá labka", overeny: true, karma: "Silver", lok: "Trenčín · okraj",
+    skore: 5, typSituacie: "normal", modul: "help", kat: "Komunita", lat: 48.870, lng: 18.062, dni: 1, podpora: 26,
+    pribeh: "Cez zimu kŕmime 40 psov a mačiek. Chýba krmivo, deky a venčiari. Aj hodina týždenne s vodítkom pomôže.",
+    suma: 220, ciel: 700, ludia: 26, ikona: "🐾", velkost: "stredna",
+    fotky: [U("photo-1450778869180-41d0601e046e")], avatar: AV(15) },
+
+  // mesto (~6–13 km)
+  { id: 22, typ: "ziadost", nazov: "Rodina Bieliková", overeny: true, karma: "Bronze", lok: "Trenčianske Teplice",
+    skore: 4.5, typSituacie: "normal", modul: "help", kat: "Zdravie", lat: 48.905, lng: 18.165, dni: 1, podpora: 13,
+    pribeh: "Synovi (6) diagnostikovali autizmus. Potrebujeme na špeciálnu terapiu, ktorú poisťovňa nehradí. Každé euro nás posúva.",
+    suma: 480, ciel: 1500, ludia: 13, ikona: "🧩", velkost: "stredna",
+    fotky: [U("photo-1576091160399-112ba8d25d1d")], avatar: AV(26) },
+
+  // okres (~15–30 km): skóre ≥ 6
+  { id: 23, typ: "ziadost", nazov: "Klub mnohodetných rodín", overeny: true, karma: "Silver", lok: "Nové Mesto n. Váhom",
+    skore: 6.5, typSituacie: "normal", modul: "help", kat: "Pomoc", lat: 48.757, lng: 17.832, dni: 0, podpora: 29,
+    pribeh: "Pred školským rokom zbierame pomôcky, tašky a topánky pre 18 detí z piatich rodín v núdzi. Pomôže aj materiál.",
+    suma: 610, ciel: 1400, ludia: 29, ikona: "🎒", velkost: "velka",
+    fotky: [U("photo-1509228468518-180dd4864904")], avatar: AV(33) },
+
+  { id: 24, typ: "ponuka", nazov: "Ing. Daniela K. — sociálna poradkyňa", odbornik: true, lok: "Dubnica n. Váhom",
+    skore: 6, typSituacie: "normal", modul: "help", kat: "Komunita", lat: 48.961, lng: 18.190, dni: 1, podpora: 7,
+    pribeh: "Pomôžem zorientovať sa v dávkach, príspevkoch a žiadostiach pre ZŤP. Sprevádzanie na úrady. Zadarmo pre seniorov a rodiny v núdzi.",
+    ikona: "📋", velkost: "stredna" },
+
+  // kraj (~40–65 km): skóre ≥ 6.5
+  { id: 25, typ: "ziadost", nazov: "Detský domov Prievidza", overeny: true, karma: "Gold", lok: "Prievidza",
+    skore: 7, typSituacie: "normal", modul: "help", kat: "Zdravie", lat: 48.774, lng: 18.627, dni: 0, podpora: 34,
+    pribeh: "Pre 24 detí zháňame príspevok na letný tábor a plavecký výcvik. Pre mnohé z nich je to prvý výlet mimo domova.",
+    suma: 1280, ciel: 3200, ludia: 34, ikona: "⛺", velkost: "velka",
+    fotky: [U("photo-1500382017468-9049fed747ef")], avatar: AV(51) },
+
+  // národná linka pomoci
+  { id: 26, typ: "ponuka", nazov: "IPčko — krízová linka", odbornik: true, lok: "online · 24/7",
+    skore: 6, typSituacie: "normal", modul: "help", kat: "Zdravie", narodne: true, lat: 48.894, lng: 18.044, dni: 0, podpora: 18,
+    pribeh: "Bezplatná internetová poradňa pre mladých v kríze. Anonymne, nonstop. Ak je ti ťažko, ozvi sa — sme tu pre teba.",
+    ikona: "💬", velkost: "stredna" },
 ];
 
 // ---- ŽIVÝ TICKER DAROV (mock) ----
