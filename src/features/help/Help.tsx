@@ -7,6 +7,7 @@ import { MEDIA_AR } from "@/lib/cardSize";
 import type { HelpFeedItem } from "@/types";
 import { useHelpFeed } from "@/data";
 import { tint, tagChip } from "@/lib/ui";
+import { pressable } from "@/components/pressable";
 import { USER_LOK, ZIVE_DARY } from "./mock";
 
 /*
@@ -163,7 +164,7 @@ function FeedCard({ z, wide, onClick }: { z: any; wide?: boolean; onClick: () =>
   const accent = jeZiadost ? (z.sponzor ? C.gold : C.red) : jePonuka ? C.purple : C.gold;
   const typLabel = jeZiadost ? `ŽIADOSŤ · ${z.sponzor ? "D++" : "D+"}` : jePonuka ? "PONUKA POMOCI" : "CHARITA";
   return (
-    <div onClick={onClick} className="good-card" style={{ margin: wide ? 0 : "0 -16px 10px", border: wide ? `1px solid ${C.line}` : "none", borderBottom: `1px solid ${wide ? C.line : C.line2}`, borderLeft: `3px solid ${jeKriza ? C.red : accent}`, borderRadius: wide ? 17 : 0, overflow: "hidden", background: C.surface2, boxShadow: jeKriza && wide ? `0 0 0 1.5px ${tint(C.red, .5)}, 0 8px 24px ${tint(C.red, .14)}` : undefined, cursor: jeZiadost ? "pointer" : "default" }}>
+    <div {...pressable(onClick, z.nazov)} className="good-card" style={{ margin: wide ? 0 : "0 -16px 10px", border: wide ? `1px solid ${C.line}` : "none", borderBottom: `1px solid ${wide ? C.line : C.line2}`, borderLeft: `3px solid ${jeKriza ? C.red : accent}`, borderRadius: wide ? 17 : 0, overflow: "hidden", background: C.surface2, boxShadow: jeKriza && wide ? `0 0 0 1.5px ${tint(C.red, .5)}, 0 8px 24px ${tint(C.red, .14)}` : undefined, cursor: jeZiadost ? "pointer" : "default" }}>
       {/* médium — 16:9 na tablete/desktope; na mobile pôvodná výška 230 px */}
       <div style={{ position: "relative", ...(wide ? { width: "100%", aspectRatio: MEDIA_AR } : { height: 230 }) }}>
         <FotoPrispevku fotky={z.fotky} emoji={z.ikona} h={wide ? "100%" : 230} disableGaleria />

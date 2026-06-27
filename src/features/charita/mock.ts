@@ -32,6 +32,20 @@ export const FEED_ITEMS: CharitaFeedItem[] = [
   { id: "mala",     comp: "mala",     typ: "charita", modul: "charity", kat: "Zdravie2", skore: 6,   typSituacie: "normal", lat: 48.905, lng: 18.030, dni: 1, podpora: 8 },
   { id: "zapoj",    comp: "zapoj",    typ: "skutok",  modul: "charity", kat: "Priroda",  skore: 5,   typSituacie: "normal", lat: 48.905, lng: 18.030, dni: 0, podpora: 7 },
   { id: "material", comp: "material", typ: "skutok",  modul: "charity", kat: "Komunita", skore: 4,   typSituacie: "normal", lat: 48.875, lng: 18.030, dni: 2, podpora: 5 },
+
+  // dátovo riadené karty (comp: "data") — reálne lokálne charity z okolia Trenčína
+  { id: "hospic", comp: "data", typ: "charita", modul: "charity", kat: "Zdravie", skore: 6.5, typSituacie: "normal", lat: 48.895, lng: 18.047, dni: 0, podpora: 34,
+    nazov: "Hospic Milosrdných sestier", lok: "Trenčín · centrum", overena: true, badgeL: "🕊 PALIATÍVA", tag: "Zdravie",
+    popis: "Zbierka na polohovacie lôžka pre paliatívne oddelenie. Dôstojnosť do poslednej chvíle.",
+    vyzbierane: 2380, ciel: 6000, fotky: [U("photo-1576091160399-112ba8d25d1d")] },
+  { id: "labka", comp: "data", typ: "charita", modul: "charity", kat: "Komunita", skore: 5.5, typSituacie: "normal", lat: 48.870, lng: 18.062, dni: 1, podpora: 28,
+    nazov: "OZ Túlavá labka", lok: "Trenčín · okraj", overena: true, badgeL: "🐾 ÚTULOK", tag: "Zvieratá",
+    popis: "Krmivo a deky pre 40 psov a mačiek na zimu. Pomôže aj materiálny dar.",
+    vyzbierane: 540, ciel: 1200, fotky: [U("photo-1450778869180-41d0601e046e")] },
+  { id: "charitatn", comp: "data", typ: "charita", modul: "charity", kat: "Pomoc", skore: 6, typSituacie: "normal", lat: 48.894, lng: 18.046, dni: 0, podpora: 41,
+    nazov: "Charita Trenčín", lok: "Trenčín · centrum", overena: true, badgeL: "🍲 NÚDZA", tag: "Sociálne",
+    popis: "Nízkoprahová jedáleň vydáva denne 120 teplých obedov ľuďom bez domova. Pred zimou chýbajú zásoby.",
+    vyzbierane: 940, ciel: 2500, fotky: [U("photo-1542838132-92c53300491e")] },
 ];
 
 // ---- adresár charít & OZ (vzorka z 50) ----

@@ -6,6 +6,7 @@ import { MEDIA_AR } from "@/lib/cardSize";
 import type { OkruhKod } from "@/types";
 import { Zvoncek } from "@/features/notifikacie/Notifikacie";
 import { A, DOM, ORDER, tint } from "./domeny";
+import { pressable } from "@/components/pressable";
 import { useAktivityFeed } from "@/data";
 import { usePersonalizacia } from "@/lib/personalizacia";
 import { EVENTS, USER_LOK, type AktItem } from "./mock";
@@ -358,7 +359,7 @@ function AktCard({ it, wide, onOpen, onPerson }: any) {
   const jeWorkshop = it.type === "workshop";
   const accent = jeHelp ? A.red : a.c;
   return (
-    <div onClick={() => onOpen(it.id)} className="good-card" style={{ ...cardS, marginBottom: wide ? 0 : 10, ...(wide ? {} : { margin: "0 -16px 10px", borderRadius: 0, border: "none", borderBottom: `1px solid ${A.line2}` }), borderLeft: jeHelp ? `3px solid ${A.red}` : undefined }}>
+    <div {...pressable(() => onOpen(it.id), it.title)} className="good-card" style={{ ...cardS, marginBottom: wide ? 0 : 10, ...(wide ? {} : { margin: "0 -16px 10px", borderRadius: 0, border: "none", borderBottom: `1px solid ${A.line2}` }), borderLeft: jeHelp ? `3px solid ${A.red}` : undefined }}>
       {/* autor */}
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px 10px" }}>
         <div onClick={stop(() => onPerson(it.author))} style={{ ...pfpS(it.pfp), width: 38, height: 38, cursor: "pointer", boxShadow: `0 3px 10px ${tint(accent, .3)}` }}>{it.ini}</div>

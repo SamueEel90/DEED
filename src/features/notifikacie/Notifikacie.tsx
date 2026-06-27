@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { createPortal } from "react-dom";
 import { C, GRAD, glassTmavy } from "@/theme";
-import { Zvon, IkonaNastavenia, IkonaSipVlavo, IkonaKriz, tint, usePortalEl, SkeletonRiadky, EmptyState, ErrorState } from "@/shared";
+import { Zvon, IkonaNastavenia, IkonaSipVlavo, IkonaKriz, tint, usePortalEl, useLayout, SkeletonRiadky, EmptyState, ErrorState } from "@/shared";
 import type { Notifikacia, VypnuteMapa } from "@/types";
 import { useNotifikacie } from "@/data";
 import { KATEGORIE, VYPNUTE_DEF } from "./mock";
@@ -37,6 +37,7 @@ function Toggle({ on, dim, onClick }: { on?: boolean; dim?: boolean; onClick?: (
 export function Zvoncek({ color = "#C4CCDB", toast }: { color?: string; toast?: (msg: string) => void }) {
   const { data: NOTIFY = [] } = useNotifikacie();
   const portalEl = usePortalEl();
+  const { desktop } = useLayout();
   const [otvor, setOtvor] = useState(false);
   const [view, setView] = useState<"zoznam" | "nastavenia">("zoznam");
   const [precitane, setPrecitane] = useState(false);
@@ -44,10 +45,20 @@ export function Zvoncek({ color = "#C4CCDB", toast }: { color?: string; toast?: 
 
   // Overlay sa renderuje do vycentrovaného stĺpca appky (portál), nie do hlavičky —
   // inak by ho „position: sticky" hlavička orezala na svoju výšku (panel sa nerozbalil).
+  // Na desktope: 2 stĺpce naraz (zoznam | nastavenia), bez prepínania.
   const overlay = (
     <div onClick={() => setOtvor(false)} style={{ position: "absolute", inset: 0, background: "rgba(4,6,12,.5)", backdropFilter: "blur(5px)", WebkitBackdropFilter: "blur(5px)", display: "flex", flexDirection: "column", zIndex: 90, animation: "fadeUp .18s ease" }}>
-      <div onClick={(e) => e.stopPropagation()} style={{ ...glassTmavy(26, .92), borderTop: "none", borderLeft: "none", borderRight: "none", borderBottomLeftRadius: 22, borderBottomRightRadius: 22, padding: "12px 14px 16px", boxShadow: "0 18px 50px rgba(0,0,0,.45)", maxHeight: "88%", display: "flex", flexDirection: "column" }}>
-        {view === "zoznam" ? (
+      <div onClick={(e) => e.stopPropagation()} style={{ ...glassTmavy(26, .92), borderTop: "none", borderLeft: "none", borderRight: "none", borderBottomLeftRadius: 22, borderBottomRightRadius: 22, padding: "12px 14px 16px", boxShadow: "0 18px 50px rgba(0,0,0,.45)", maxHeight: "88%", display: "flex", flexDirection: "column", width: "100%", maxWidth: desktop ? 900 : undefined, margin: desktop ? "0 auto" : undefined }}>
+        {desktop ? (
+          <div style={{ display: "flex", gap: 18, flex: "1 1 auto", minHeight: 0 }}>
+            <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", minHeight: 0 }}>
+              <Zoznam onClose={() => setOtvor(false)} onPrecitaj={() => setPrecitane(true)} toast={toast} hideSettings />
+            </div>
+            <div style={{ width: 330, flex: "0 0 330px", borderLeft: `1px solid ${C.line}`, paddingLeft: 18, display: "flex", flexDirection: "column", minHeight: 0 }}>
+              <Nastavenia embedded toast={toast} />
+            </div>
+          </div>
+        ) : view === "zoznam" ? (
           <Zoznam onSettings={() => setView("nastavenia")} onClose={() => setOtvor(false)} onPrecitaj={() => setPrecitane(true)} toast={toast} />
         ) : (
           <Nastavenia onBack={() => setView("zoznam")} toast={toast} />
@@ -71,7 +82,7 @@ export function Zvoncek({ color = "#C4CCDB", toast }: { color?: string; toast?: 
 }
 
 // ---- ZOZNAM oznámení ----
-function Zoznam({ onSettings, onClose, onPrecitaj, toast }: { onSettings?: () => void; onClose?: () => void; onPrecitaj?: () => void; toast?: (msg: string) => void }) {
+function Zoznam({ onSettings, onClose, onPrecitaj, toast, hideSettings }: { onSettings?: () => void; onClose?: () => void; onPrecitaj?: () => void; toast?: (msg: string) => void; hideSettings?: boolean }) {
   const { data: NOTIFY = [], isLoading, isError, refetch } = useNotifikacie();
   const neprecitane = NOTIFY.filter((n) => n.nove).length;
   return (
@@ -79,8 +90,8 @@ function Zoznam({ onSettings, onClose, onPrecitaj, toast }: { onSettings?: () =>
       <div style={{ display: "flex", alignItems: "center", gap: 10, flex: "0 0 auto", paddingBottom: 8 }}>
         <span style={{ fontSize: 17, fontWeight: 800 }}>Oznámenia</span>
         {neprecitane > 0 && <span onClick={onPrecitaj} style={{ fontSize: 11, fontWeight: 700, color: "var(--a-green)", cursor: "pointer" }}>Označiť prečítané</span>}
-        <span onClick={onSettings} title="Nastavenia notifikácií" style={{ marginLeft: "auto", display: "flex", cursor: "pointer", color: C.textSec }}><IkonaNastavenia size={19} color={C.textSec} /></span>
-        <span onClick={onClose} style={{ display: "flex", cursor: "pointer", color: C.textSec }}><IkonaKriz size={19} color={C.textSec} /></span>
+        {!hideSettings && <span onClick={onSettings} title="Nastavenia notifikácií" style={{ marginLeft: "auto", display: "flex", cursor: "pointer", color: C.textSec }}><IkonaNastavenia size={19} color={C.textSec} /></span>}
+        <span onClick={onClose} style={{ marginLeft: hideSettings ? "auto" : undefined, display: "flex", cursor: "pointer", color: C.textSec }}><IkonaKriz size={19} color={C.textSec} /></span>
       </div>
       <div style={{ fontSize: 11, color: C.textTer, paddingBottom: 8, flex: "0 0 auto" }}>{neprecitane} neprečítané · mikro-podpory agregované do súhrnu</div>
       <div style={{ overflowY: "auto", margin: "0 -4px", flex: "1 1 auto" }}>

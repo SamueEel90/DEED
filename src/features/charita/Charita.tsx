@@ -8,6 +8,7 @@ import type { CharitaFeedItem, CharitaLevel, Kanal } from "@/types";
 import { useCharitaFeed, useCharitaAdresar, useCharitaZbierka } from "@/data";
 import { ZOFIA_FOTKY, HLADAJ_DATA } from "./mock";
 import { tagChip } from "@/lib/ui";
+import { pressable } from "@/components/pressable";
 
 // poloha usera (MVP mock — Trenčín, rovnaká ako v ostatných feedoch)
 const USER_LOK = { lat: 48.894, lng: 18.044 };
@@ -110,6 +111,13 @@ function CharitaFeed({ wide, toast, onDetail, onHladaj, onSheet }: FeedProps) {
     if (it.comp === "top") return <ZbierkyTop key={it.id} wide={wide} toast={toast} />;
     if (it.comp === "mala") return <ZbierkyMala key={it.id} wide={wide} toast={toast} />;
     if (it.comp === "zapoj") return <ZapojSa key={it.id} wide={wide} toast={toast} />;
+    if (it.comp === "data") return (
+      <CharitaKarta key={it.id} wide={wide} onClick={() => toast(`Detail zbierky — ${it.nazov}`)}
+        fotky={it.fotky} emoji="💛" accent={K.gold}
+        badgeL={it.badgeL ? { t: it.badgeL, col: K.gold } : undefined}
+        nazov={it.nazov} overena={it.overena} tag={it.tag} tagCol={K.gold}
+        popis={it.popis} vyzbierane={it.vyzbierane} ciel={it.ciel} />
+    );
     return <Material key={it.id} wide={wide} toast={toast} />;
   };
 
@@ -187,7 +195,7 @@ function CharitaFeed({ wide, toast, onDetail, onHladaj, onSheet }: FeedProps) {
 // JEDNOTNÁ FULL-WIDTH (Instagram) KARTA pre Charitu — médium hore · odznaky · titul · príbeh · progres.
 function CharitaKarta({ wide, onClick, fotky, emoji, accent, badgeL, badgeR, nazov, overena, tag, tagBg, tagCol, popis, vyzbierane, ciel }: any) {
   return (
-    <div onClick={onClick} className="good-card" style={{ background: K.card, border: wide ? `1px solid ${K.line}` : "none", borderBottom: `1px solid ${K.line}`, borderLeft: `3px solid ${accent}`, borderRadius: wide ? 16 : 0, overflow: "hidden", marginBottom: wide ? 0 : 10, cursor: "pointer", ...(wide ? {} : { marginLeft: -14, marginRight: -14 }) }}>
+    <div {...pressable(onClick, nazov)} className="good-card" style={{ background: K.card, border: wide ? `1px solid ${K.line}` : "none", borderBottom: `1px solid ${K.line}`, borderLeft: `3px solid ${accent}`, borderRadius: wide ? 16 : 0, overflow: "hidden", marginBottom: wide ? 0 : 10, cursor: "pointer", ...(wide ? {} : { marginLeft: -14, marginRight: -14 }) }}>
       {/* médium — 16:9 na tablete/desktope; na mobile pôvodná výška 235 px */}
       <div style={{ position: "relative", ...(wide ? { width: "100%", aspectRatio: MEDIA_AR } : { height: 235 }) }}>
         <FotoPrispevku fotky={fotky} emoji={emoji} h={wide ? "100%" : 235} disableGaleria />

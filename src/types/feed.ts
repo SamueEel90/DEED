@@ -276,8 +276,8 @@ export interface Zbierka {
   fotky: string[];
 }
 
-/** Ktorý komponent karty sa má vyrenderovať (FEED_ITEMS[*].comp). */
-export type CharitaComp = "urgent" | "top" | "mala" | "zapoj" | "material";
+/** Ktorý komponent karty sa má vyrenderovať (FEED_ITEMS[*].comp). `data` = dátovo riadená karta. */
+export type CharitaComp = "urgent" | "top" | "mala" | "zapoj" | "material" | "data";
 
 /** Metadáta karty Charita feedu (FEED_ITEMS). */
 export interface CharitaFeedItem extends FeedEngineMeta, Partial<GeoBod> {
@@ -286,6 +286,17 @@ export interface CharitaFeedItem extends FeedEngineMeta, Partial<GeoBod> {
   typ: EngineTyp;
   modul: Modul;
   kat: Kategoria;
+  // voliteľný obsah pre dátovo riadenú kartu (comp: "data") — bez vlastného komponentu
+  nazov?: string;
+  popis?: string;
+  emoji?: string;
+  fotky?: string[];
+  vyzbierane?: number;
+  ciel?: number;
+  overena?: boolean;
+  tag?: string;
+  badgeL?: string;
+  lok?: string;
 }
 
 /** Položka adresára charít & OZ ako tuple: [skratka, názov, popis, level, ponuky]. */

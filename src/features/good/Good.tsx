@@ -3,6 +3,7 @@ import { C, inp, GRAD, GRAD_ZELENY } from "@/theme";
 import { Foto, FotoPrispevku, MiniFotky, Video, ModulHlavicka, Hlavicka, AvatarUroven, PodporaSekcia, PlatbaModal, HladanieModal, toast, Oslava, useGaleria, useScrollHore, useMotiv, useLayout, useStrankaAkcie, useTvorbaGate, StatRiadok, MoniBar, FeedStlpce, obalSiroky, Lupa, Zdielanie, IkonaSipVlavo, IkonaMoznosti, IkonaUlozit, IkonaFajka, IkonaPlay, IkonaDoska, IkonaPin, OkruhVyber, QrModal, FeedSkeleton, EmptyState, ErrorState, ScreenSwitch } from "@/shared";
 import { pripravFeed, FEED_CFG, type FeedUser } from "@/lib/feed";
 import { tint, tagChip } from "@/lib/ui";
+import { pressable } from "@/components/pressable";
 import { usePouzivatel } from "@/lib/pouzivatel";
 import { zobrazVelkost, MEDIA_AR } from "@/lib/cardSize";
 import { RetazDobraSheet } from "@/features/retaz/RetazDobra";
@@ -409,7 +410,7 @@ function GoodKarta({ it, wide, onDetail }: { it: GoodPolozka; wide?: boolean; on
   const emojiH = wide ? 132 : 168;
   const medLabel = jeCharita ? `✓ Charita ${it.charLevel || ""}`.trim() : jeZiadost ? "Žiadosť" : katLabel(it.kat);
   return (
-    <div onClick={onDetail} className="good-card" style={{
+    <div {...pressable(onDetail, `Otvoriť: ${it.titul}`)} className="good-card" style={{
       background: C.surface2,
       border: wide ? `1px solid ${C.line}` : "none",
       borderBottom: `1px solid ${wide ? C.line : C.line2}`,
