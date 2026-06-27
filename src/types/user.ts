@@ -173,7 +173,8 @@ export interface Podpora {
   refId: number | string;
   typ: string;   // engine typ (skutok/ziadost/charita/udalost…)
   modul: string; // good/help/charity/workshop
-  suma?: number; // kumulovaná podpora (DEED/EUR)
+  suma?: number; // kumulovaná podpora (v jednotke `kanal`)
+  kanal?: string; // "DEED" | "EUR" — jednotka sumy (bez neho sa zobrazí ako DEED)
   komu?: string;
   vyzbierane?: number;
   ciel?: number;

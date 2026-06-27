@@ -88,7 +88,7 @@ export function demoSeed(): Omit<PersonalizaciaStav, "nacitavam"> {
       { meno: "EkoTím Juh", typ: "osoba" },
     ],
     podpory: [
-      { refId: 3, typ: "ziadost", modul: "help", suma: 50, komu: "Rodina Kováčová", vyzbierane: 1450, ciel: 2400 },
+      { refId: 3, typ: "ziadost", modul: "help", suma: 50, kanal: "DEED", komu: "Rodina Kováčová", vyzbierane: 1450, ciel: 2400 },
     ],
   };
 }

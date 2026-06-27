@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { C, GRAD, glassTmavy } from "@/theme";
-import { IkonaDomov, IkonaSrdceLine, IkonaCharita, IkonaKompas, IkonaMapa, IkonaPohar, IkonaOsoba, IkonaPenazenka, IkonaPlus } from "@/shared";
+import { IkonaDomov, IkonaSrdceLine, IkonaCharita, IkonaKompas, IkonaMapa, IkonaPohar, IkonaOsoba, IkonaPenazenka, IkonaPlus, IkonaSlnko, IkonaMesiac } from "@/shared";
 import { pressable } from "@/components/pressable";
 import { useTvorbaGate } from "@/components/upgrade";
+import { useMotiv } from "@/components/context";
 import type { ReactNode } from "react";
 import type { StrankaAkcia } from "@/components/context";
 
@@ -124,6 +125,7 @@ export function ViacSheet({ taby, setTaby, aktivny, onModul, onPenazenka, onClos
 }) {
   const [uprava, setUprava] = useState(false);
   const [hint, setHint] = useState<string | null>(null);
+  const { svetly, prepni: prepniRezim } = useMotiv();
 
   function prepni(id: string) {
     if (taby.includes(id)) {
@@ -233,6 +235,21 @@ export function ViacSheet({ taby, setTaby, aktivny, onModul, onPenazenka, onClos
             </div>
           );
         })}
+
+        {/* VZHĽAD — prepínač svetlého/tmavého režimu (presunutý sem z hlavičky/sidebaru) */}
+        {!uprava && (
+          <>
+            <div style={{ fontSize: 10.5, letterSpacing: ".5px", color: C.textTer, fontWeight: 700, margin: "14px 2px 8px" }}>VZHĽAD</div>
+            <div onClick={prepniRezim} style={{ display: "flex", alignItems: "center", gap: 12, background: "rgba(var(--glass-rgb),.05)", border: `1px solid ${C.line}`, borderRadius: 15, padding: "11px 13px", cursor: "pointer" }}>
+              <span style={{ width: 38, height: 38, borderRadius: 12, background: "rgba(var(--glass-rgb),.07)", border: `1px solid ${C.line2}`, display: "flex", alignItems: "center", justifyContent: "center", flex: "0 0 auto", color: C.textSec }}>{svetly ? <IkonaMesiac size={19} color={C.textSec} /> : <IkonaSlnko size={19} color={C.textSec} />}</span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 13.5, fontWeight: 700 }}>Režim zobrazenia</div>
+                <div style={{ fontSize: 11, color: C.textTer, marginTop: 2 }}>{svetly ? "Svetlý — ťukni pre tmavý" : "Tmavý — ťukni pre svetlý"}</div>
+              </div>
+              <span style={{ flex: "0 0 auto", fontSize: 11.5, fontWeight: 700, color: C.blueL, border: "1px solid rgba(116,166,255,.45)", background: "rgba(91,155,255,.08)", borderRadius: 14, padding: "6px 12px" }}>{svetly ? "Tmavý" : "Svetlý"}</span>
+            </div>
+          </>
+        )}
 
         {hint && <div style={{ fontSize: 11.5, color: "#F2A2A2", textAlign: "center", marginTop: 4 }}>{hint}</div>}
       </div>

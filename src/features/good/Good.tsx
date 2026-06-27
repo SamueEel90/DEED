@@ -309,7 +309,7 @@ function MojDeedObsah({ onDetail, onBoard, toast }: { onDetail: (id: number) => 
           <div key={String(p.refId)} onClick={() => id && onDetail(id)} style={{ background: C.surface2, border: `1px solid ${C.line}`, borderRadius: 13, padding: 12, marginBottom: 8, cursor: id ? "pointer" : "default" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <span style={{ fontSize: 14, fontWeight: 700, flex: 1, minWidth: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{titul}</span>
-              {p.suma ? <span style={{ flex: "none", fontSize: 11, fontWeight: 700, color: "var(--a-green)", background: "rgba(31,191,143,.12)", borderRadius: 8, padding: "2px 8px" }}>tvojich {p.suma} {p.modul === "good" ? "DEED" : "€"}</span> : null}
+              {p.suma ? <span style={{ flex: "none", fontSize: 11, fontWeight: 700, color: "var(--a-green)", background: "rgba(31,191,143,.12)", borderRadius: 8, padding: "2px 8px" }}>tvojich {p.suma} {p.kanal === "EUR" ? "€" : "DEED"}</span> : null}
             </div>
             {ciel ? <div style={{ marginTop: 9 }}><MoniBar vyzbierane={vyzbierane || 0} ciel={ciel} mini /></div>
               : <div style={{ fontSize: 11.5, color: C.textTer, marginTop: 6 }}>otvorená podpora · ďakujeme</div>}
@@ -488,8 +488,8 @@ function GoodDetail({ it, toast, oslavuj, onBack, onVerify, onAutor }: GoodDetai
   const pct = maProgres && it.ciel ? Math.round((it.vyzbierane ?? 0) / it.ciel * 100) : 0;
 
   // zaznamenaj podporu do zdieľaného store (snapshot progresu k momentu podpory)
-  const zaznamenajPodporu = (suma: number) =>
-    pridajPodporu({ refId: it.id, typ: it.typ, modul: it.modul || "good", suma, komu: it.autor, vyzbierane: it.vyzbierane, ciel: it.ciel });
+  const zaznamenajPodporu = (suma: number, kanal: string = "DEED") =>
+    pridajPodporu({ refId: it.id, typ: it.typ, modul: it.modul || "good", suma, kanal, komu: it.autor, vyzbierane: it.vyzbierane, ciel: it.ciel });
 
   function podpor(suma: number) {
     zaznamenajPodporu(suma);
@@ -561,7 +561,7 @@ function GoodDetail({ it, toast, oslavuj, onBack, onVerify, onAutor }: GoodDetai
 
       {/* simulácia platby (EUR karta / DEED peňaženka) */}
       {platba && <PlatbaModal kanal={platba} komu={it.autor} onClose={() => setPlatba(null)}
-        onDone={(s: number) => { zaznamenajPodporu(s); toast(`Odoslané ${platba === "EUR" ? s + " €" : s + " DEED"} · ${it.autor}`); oslavuj(s, it.autor); }} />}
+        onDone={(s: number) => { zaznamenajPodporu(s, platba); toast(`Odoslané ${platba === "EUR" ? s + " €" : s + " DEED"} · ${it.autor}`); oslavuj(s, it.autor); }} />}
 
       {/* univerzálny QR skutku (§10) — typ „skutok", 3 výstupy */}
       {qr && <QrModal typ="skutok" titul={`QR skutku č. ${it.num.toLocaleString("sk")}`} popis={it.titul.slice(0, 38) + "…"}
