@@ -20,12 +20,15 @@ import type { FeedKonfig, OkruhKod } from "@/types";
 // Neskôr pôjde na server (ladenie bez deploymentu + skrytá = anti-gaming).
 export const FEED_CFG: FeedKonfig = {
   // rádius → dosah v km + ZÁKLADNÝ prah významnosti (B.3):
+  // Prah jemne rastie s okruhom (väčšia oblasť = vyšší prah významnosti, nech sa pri
+  // celej SR nezobrazujú triviálne lokálne skutky), ale dosť nízko, aby rozšírenie okruhu
+  // REÁLNE odhalilo viac obsahu z regiónu — nie aby ho prah „zožral". Geo robí výber oblasti.
   radiusy: {
     stvrt: { km: 5, prah: 1, label: "Moja štvrť", krat: "5 km" },
-    mesto: { km: 15, prah: 3, label: "Mesto", krat: "mesto" },
-    okres: { km: 40, prah: 6, label: "Okres", krat: "okres" },
-    kraj: { km: 90, prah: 6, label: "Kraj", krat: "kraj" },
-    krajina: { km: 9000, prah: 9, label: "Celá SR", krat: "SR" },
+    mesto: { km: 15, prah: 2, label: "Mesto", krat: "mesto" },
+    okres: { km: 40, prah: 3, label: "Okres", krat: "okres" },
+    kraj: { km: 90, prah: 3, label: "Kraj", krat: "kraj" },
+    krajina: { km: 9000, prah: 4, label: "Celá SR", krat: "SR" },
   },
 
   // adaptívny prah podľa hustoty (B.4) — mení len ZOBRAZENIE, nie skóre
@@ -115,16 +118,22 @@ export function odfiltrujStare<T extends FeedItem>(skutky: T[], cfg: FeedKonfig 
 export function filtrujPodlaRadiusu<T extends FeedItem>(skutky: T[], user: FeedUser, cfg: FeedKonfig = FEED_CFG): T[] {
   const r = cfg.radiusy[user.radius] || cfg.radiusy.stvrt;
 
-  // 1) v okruhu (geo). Národné kampane nie sú viazané na lokalitu.
-  const vOkruhu = skutky.filter((s) => s.narodne || vzdialenostKm(user, s) <= r.km);
+  // 1) v okruhu (GEO pre všetkých — vrátane národných kampaní).
+  //    Predtým `s.narodne` obchádzalo geo a „presakovalo" celoslovenské zbierky aj do okruhu 5 km.
+  //    Teraz rozhoduje reálna vzdialenosť: národné kampane majú vzdialené súradnice (napr. Bratislava
+  //    ~120 km) → zobrazia sa až pri okruhu „celá SR"; online položky majú súradnice centra (vzdialenosť
+  //    ~0) → ostávajú dostupné v každom okruhu. Tým filter podľa okruhu reálne funguje.
+  const vOkruhu = skutky.filter((s) => vzdialenostKm(user, s) <= r.km);
 
   // 2) hustota = počet LOKÁLNYCH OVERENÝCH skutkov (B.10)
   const lokalne = vOkruhu.filter((s) => !s.narodne && s.typ === "skutok");
   const hustota = lokalne.filter((s) => s.overene).length;
   const prah = vypocitajPrah(hustota, user.radius, cfg);
 
-  // 3) nad prahom významnosti. Kríza (SOS) prah PREBÍJA — vždy prejde.
-  return vOkruhu.filter((s) => s.typSituacie === "kriza" || (s.skore ?? 0) >= prah);
+  // 3) nad prahom významnosti. Kríza (SOS) aj národné kampane prah PREBÍJAJÚ —
+  //    národné už prešli geo filtrom (sú v okruhu „celá SR"), takže ich nesmie zhltnúť
+  //    adaptívny prah pri širokom okruhu (kde je hustota vysoká → prah až ~10).
+  return vOkruhu.filter((s) => s.typSituacie === "kriza" || s.narodne || (s.skore ?? 0) >= prah);
 }
 
 // ---- B.6 Frekvenčný strop (anti-šum) ----

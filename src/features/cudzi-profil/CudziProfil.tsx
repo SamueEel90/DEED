@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { C, GRAD, GRAD_ZELENY } from "@/theme";
-import { Aura, MoniBar, QrModal, IkonaSipVlavo, IkonaFajka, IkonaStit, IkonaPlay, IkonaPin, Zdielanie, IkonaUsmev } from "@/shared";
+import { Aura, MoniBar, QrModal, useLayout, IkonaSipVlavo, IkonaFajka, IkonaStit, IkonaPlay, IkonaPin, Zdielanie, IkonaUsmev } from "@/shared";
 import type { CudziSubjekt, CudziSubjektOrg, CudziSubjektOsoba } from "@/types";
 import { usePersonalizacia } from "@/lib/personalizacia";
 import { KAMPANE_FALLBACK, AKCIE_FALLBACK, STAVY } from "./mock";
@@ -31,8 +31,12 @@ interface CudziProfilProps {
 }
 
 export function CudziProfil({ subjekt = {} as CudziSubjekt, onBack, toast }: CudziProfilProps) {
-  if (subjekt.typ === "org") return <OrgProfil s={subjekt} onBack={onBack} toast={toast} />;
-  return <OsobaProfil s={subjekt as CudziSubjektOsoba} onBack={onBack} toast={toast} />;
+  const { wide } = useLayout();
+  const inner = subjekt.typ === "org"
+    ? <OrgProfil s={subjekt} onBack={onBack} toast={toast} />
+    : <OsobaProfil s={subjekt as CudziSubjektOsoba} onBack={onBack} toast={toast} />;
+  // na tablete/desktope drž profil v čitateľnej šírke (rodič môže byť oveľa širší)
+  return wide ? <div style={{ maxWidth: 680, margin: "0 auto" }}>{inner}</div> : inner;
 }
 
 function BackBtn({ onBack }: { onBack?: () => void }) {

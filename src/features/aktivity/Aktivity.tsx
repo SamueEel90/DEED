@@ -1,7 +1,8 @@
 import { useState, useMemo, useEffect } from "react";
-import { ModulHlavicka, Hlavicka, PodporaSekcia, PlatbaModal, HladanieModal, toast, Oslava, useMotiv, useScrollHore, useStrankaAkcie, useTvorbaGate, Ticker, StatRiadok, FeedStlpce, OkruhVyber, Lupa, Zvon, IkonaSipVlavo, IkonaMoznosti, Zdielanie, IkonaUlozit, IkonaFoto, IkonaPlus, IkonaPlay, IkonaDoska, FeedSkeleton, EmptyState, ErrorState, ScreenSwitch } from "@/shared";
+import { ModulHlavicka, Hlavicka, PodporaSekcia, PlatbaModal, HladanieModal, toast, Oslava, useMotiv, useLayout, useScrollHore, useStrankaAkcie, useTvorbaGate, Ticker, StatRiadok, FeedStlpce, obalSiroky, OkruhVyber, Lupa, Zvon, IkonaSipVlavo, IkonaMoznosti, Zdielanie, IkonaUlozit, IkonaFoto, IkonaPlus, IkonaPlay, IkonaDoska, IkonaPin, FotoPrispevku, FeedSkeleton, EmptyState, ErrorState, ScreenSwitch } from "@/shared";
 import { C, GRAD, GRAD_ZELENY } from "@/theme";
 import { pripravFeed, FEED_CFG } from "@/lib/feed";
+import { MEDIA_AR } from "@/lib/cardSize";
 import type { OkruhKod } from "@/types";
 import { Zvoncek } from "@/features/notifikacie/Notifikacie";
 import { A, DOM, ORDER, tint } from "./domeny";
@@ -39,9 +40,9 @@ const cardS: React.CSSProperties = { background: A.surface2, border: `1px solid 
 const rowTopS: React.CSSProperties = { display: "flex", alignItems: "center", gap: 10, marginBottom: 4 };
 const pfpS = (bg: string): React.CSSProperties => ({ width: 36, height: 36, borderRadius: "50%", flex: "none", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 15, color: "#fff", background: bg });
 const nameS: React.CSSProperties = { fontWeight: 700, fontSize: 15.5 };
-const timeS: React.CSSProperties = { marginLeft: "auto", fontSize: 12, color: A.txt3 };
+const timeS: React.CSSProperties = { marginLeft: "auto", fontSize: 12, color: A.txt2 };
 const titleS: React.CSSProperties = { fontSize: 16, fontWeight: 700, lineHeight: 1.4 };
-const verifS: React.CSSProperties = { fontSize: 11, color: A.green, background: A.greenBg, padding: "3px 9px", borderRadius: 8 };
+const verifS: React.CSSProperties = { display: "inline-flex", alignItems: "center", gap: 3, fontSize: 10.5, fontWeight: 800, color: A.green, background: tint("var(--a-green)", .2), border: `1px solid ${tint("var(--a-green)", .4)}`, padding: "3px 8px", borderRadius: 8, lineHeight: 1.2 };
 const heroGrad = (d: string) => `linear-gradient(160deg, ${DOM[d].bg} 0%, #0a0c11 100%)`;
 const secLbl: React.CSSProperties = { fontSize: 11.5, letterSpacing: ".4px", color: A.txt3, fontWeight: 700, margin: "18px 0 9px" };
 
@@ -89,7 +90,8 @@ export default function ModulAktivity({ wide }: { wide?: boolean }) {
   useEffect(() => save(LS.follows, follows), [follows]);
 
   const celebrate = (title: string, text: string) => { setCeleb({ title, text }); setTimeout(() => setCeleb((c) => (c && c.title === title ? null : c)), 2200); };
-  const obal = (el: React.ReactNode) => (wide ? <div style={{ maxWidth: 620, margin: "0 auto" }}>{el}</div> : el);
+  const { desktop } = useLayout();
+  const obal = (el: React.ReactNode) => obalSiroky(el, { wide, desktop, max: 620, maxDesktop: 920 });
 
   const { svetly } = useMotiv();
 
@@ -195,6 +197,7 @@ function Home({ items, dom, view, pickDom, pickView, toast, open, openPerson, se
   // zvolený rádius — Feed algoritmus (Časť B)
   const [radius, setRadius] = useState<OkruhKod>("stvrt");
   const [vyberOkruh, setVyberOkruh] = useState(false);
+  const { desktop } = useLayout();
   const { zaujmyKluce, sledovaniMena } = usePersonalizacia(); // afinita: záujmy/sledovaní → re-rank
 
   // 1) UI predfilter (doména + sub-záložka) — to engine nerieši
@@ -217,6 +220,14 @@ function Home({ items, dom, view, pickDom, pickView, toast, open, openPerson, se
   const dva = wide && view === "all";
   const feedCard = (it: AktItem) => <AktCard key={it.id} it={it} wide={dva} onOpen={open} onPerson={openPerson} />;
 
+  // DESKTOP — stĺpec na doménu: per-doménový feed (mine navrchu + algoritmus), karty v 16:9
+  const viewOk = (it: AktItem) => view === "all" || (view === "talent" && it.type === "talent") || (view === "workshop" && it.type === "workshop") || (view === "help" && it.type === "help");
+  const domenaFeed = (d: string) => {
+    const dl = items.filter((it: AktItem) => it.dom === d && viewOk(it));
+    return [...dl.filter((it: AktItem) => it.mine), ...pripravFeed(dl.filter((it: AktItem) => !it.mine), { ...USER_LOK, radius, zaujmy: zaujmyKluce, sledovani: sledovaniMena })];
+  };
+  const boardCard = (it: AktItem) => <AktCard key={it.id} it={it} wide onOpen={open} onPerson={openPerson} />;
+
   // štýl sub-záložky (Workshopy/Hľadám pomoc/Market) — theme-aware cez DOM[dom].c
   const segStyle = (on: boolean): React.CSSProperties => ({ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, height: 38, borderRadius: 11, fontSize: 12, fontWeight: 600, cursor: "pointer", background: on ? tint(DOM[dom].c, .15) : A.surface, border: `1px solid ${on ? tint(DOM[dom].c, .5) : A.line2}`, color: on ? DOM[dom].c : A.txt2 });
 
@@ -224,6 +235,8 @@ function Home({ items, dom, view, pickDom, pickView, toast, open, openPerson, se
   // (Workshopy/Hľadám pomoc/Market). Klik na aktívnu doménu/sekciu = späť na „všetko". Stavy [dom, view].
   const filterBar = (
     <div style={{ padding: "0 16px 6px" }}>
+      {/* doménové pilulky — na desktope skryté (každá doména má vlastný stĺpec) */}
+      {!desktop && (
       <div style={{ overflowX: "auto", margin: "0 0 10px" }}>
         <div style={{ display: "flex", gap: 7, width: "max-content", margin: "0 auto" }}>
           {ORDER.map((d) => {
@@ -237,6 +250,7 @@ function Home({ items, dom, view, pickDom, pickView, toast, open, openPerson, se
           })}
         </div>
       </div>
+      )}
       <div style={{ display: "flex", gap: 8 }}>
         <div onClick={() => pickView("workshop")} style={segStyle(view === "workshop")}><span style={{ fontSize: 13 }}>🎓</span>Workshopy</div>
         <div onClick={() => pickView("help")} style={segStyle(view === "help")}><span style={{ fontSize: 13 }}>❓</span>Hľadám pomoc</div>
@@ -279,13 +293,31 @@ function Home({ items, dom, view, pickDom, pickView, toast, open, openPerson, se
       <StatRiadok pocet={feed.length} jednotka="aktivít" mesiac="9 480"
         okruh={FEED_CFG.radiusy[radius].krat} onOkruh={() => setVyberOkruh(true)} />
 
-      {/* feed — na tablete/PC: skutky & aktivity vľavo, žiadosti o pomoc vpravo */}
+      {/* feed — desktop: stĺpec na doménu (všetky naraz); tablet/PC úzky: 2 stĺpce; mobil: 1 stĺpec */}
       {isError ? (
         <ErrorState onRetry={() => refetch()} />
       ) : isLoading ? (
         <FeedSkeleton count={4} />
       ) : !feed.length ? (
         <EmptyState emoji="✨" title="Zatiaľ tu nič nie je" text="V tejto doméne zatiaľ nie sú príspevky." />
+      ) : desktop ? (
+        <div style={{ display: "grid", gridTemplateColumns: `repeat(${ORDER.length}, minmax(0, 1fr))`, gap: 14, alignItems: "start", padding: "4px 20px 0" }}>
+          {ORDER.map((d) => {
+            const a = DOM[d];
+            const df = domenaFeed(d);
+            return (
+              <div key={d} style={{ minWidth: 0 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 6, margin: "0 0 10px", paddingLeft: 2 }}>
+                  <span style={{ color: a.c, display: "flex" }}>{DOM_IKONA[d]}</span>
+                  <span style={{ fontSize: 11.5, letterSpacing: ".4px", color: a.c, fontWeight: 800 }}>{a.label}</span>
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                  {df.length ? df.map(boardCard) : <div style={{ fontSize: 11.5, color: A.txt3, padding: "6px 2px" }}>Zatiaľ tu nič nie je.</div>}
+                </div>
+              </div>
+            );
+          })}
+        </div>
       ) : (
         <FeedStlpce wide={dva}
           labelSkutky="Skutky & aktivity" labelZiadosti="Hľadajú pomoc"
@@ -320,11 +352,11 @@ function ProgressMini({ it }: { it: AktItem }) {
 // autor hore · veľké médium (video/emoji) · titul · pätička podľa typu.
 function AktCard({ it, wide, onOpen, onPerson }: any) {
   const a = DOM[it.dom];
+  const { wide: ar } = useLayout(); // médiá: 16:9 na tablete/desktope (≥760), pôvodná výška na mobile
   const jeHelp = it.type === "help";
   const jeCase = it.type === "case";
   const jeWorkshop = it.type === "workshop";
   const accent = jeHelp ? A.red : a.c;
-  const mediaH = wide ? 180 : 250;
   return (
     <div onClick={() => onOpen(it.id)} className="good-card" style={{ ...cardS, marginBottom: wide ? 0 : 10, ...(wide ? {} : { margin: "0 -16px 10px", borderRadius: 0, border: "none", borderBottom: `1px solid ${A.line2}` }), borderLeft: jeHelp ? `3px solid ${A.red}` : undefined }}>
       {/* autor */}
@@ -333,15 +365,22 @@ function AktCard({ it, wide, onOpen, onPerson }: any) {
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap" }}>
             <span onClick={stop(() => onPerson(it.author))} style={{ fontWeight: 700, fontSize: 14.5, cursor: "pointer", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it.author}</span>
-            {it.verified && <span style={verifS}>overené</span>}
+            {it.verified && <span style={verifS}>✓ overené</span>}
           </div>
-          <div style={{ fontSize: 11.5, color: A.txt3, marginTop: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it.loc || a.label}{it.num ? ` · č. ${it.num.toLocaleString("sk")}` : ""}{it.karma ? ` · ${it.karma}` : ""}</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11.5, color: A.txt2, marginTop: 2, minWidth: 0 }}>
+            <IkonaPin size={12} color={A.txt2} />
+            <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontWeight: 600 }}>{it.loc || a.label}</span>
+            {it.karma && <span style={{ flex: "none", color: A.txt3 }}>· {it.karma}</span>}
+          </div>
         </div>
         <span style={timeS}>{it.time}</span>
       </div>
-      {/* médium */}
-      <div style={{ position: "relative", height: mediaH, margin: wide ? "0 10px" : 0, borderRadius: wide ? 14 : 0, overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", background: heroGrad(it.dom) }}>
-        {it.media === "video" ? <Play big /> : <div style={{ fontSize: 56 }}>{it.media === "kreslene" ? "✎" : it.emoji}</div>}
+      {/* médium — 16:9 na tablete/desktope; na mobile pôvodná výška 250 px */}
+      <div style={{ position: "relative", ...(ar ? { width: "100%", aspectRatio: MEDIA_AR } : { height: 250 }), margin: wide ? "0 10px" : 0, borderRadius: wide ? 14 : 0, overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", background: heroGrad(it.dom) }}>
+        {it.fotky && it.fotky.length > 0
+          ? <div style={{ position: "absolute", inset: 0 }}><FotoPrispevku fotky={it.fotky} h="100%" disableGaleria /></div>
+          : (it.media === "video" ? <Play big /> : <div style={{ fontSize: 56 }}>{it.media === "kreslene" ? "✎" : it.emoji}</div>)}
+        {it.fotky && it.fotky.length > 0 && it.media === "video" && <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1 }}><Play big /></div>}
         <div style={{ position: "absolute", inset: 0, background: "linear-gradient(0deg, rgba(0,0,0,.34), transparent 42%)", pointerEvents: "none" }} />
         {it.importance && <span style={badge("l")}>★ {it.importance}</span>}
         {it.media === "video" && <span style={badge("r")}>▶ video</span>}
@@ -371,8 +410,12 @@ function BackBar({ title, onBack }: { title: string; onBack: () => void }) {
   return <Hlavicka title={title} onBack={onBack} />;
 }
 function DetailHero({ it, onBack, children }: { it: AktItem; onBack: () => void; children?: React.ReactNode }) {
+  const { wide } = useLayout();
   return (
-    <div style={{ height: 150, position: "relative", display: "flex", alignItems: "center", justifyContent: "center", background: heroGrad(it.dom) }}>
+    <div style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center", background: heroGrad(it.dom), ...(wide ? { width: "100%", aspectRatio: MEDIA_AR } : { height: 150 }) }}>
+      {it.fotky && it.fotky.length > 0 && <div style={{ position: "absolute", inset: 0 }}><FotoPrispevku fotky={it.fotky} h="100%" disableGaleria /></div>}
+      {it.fotky && it.fotky.length > 0 && <div style={{ position: "absolute", inset: 0, background: "linear-gradient(0deg, rgba(0,0,0,.42), transparent 46%)", pointerEvents: "none" }} />}
+      {it.fotky && it.fotky.length > 0 && it.media === "video" && <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1 }}><Play big /></div>}
       <div onClick={onBack} style={{ position: "absolute", top: 14, left: 14, width: 34, height: 34, borderRadius: "50%", background: "rgba(0,0,0,.55)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", cursor: "pointer", zIndex: 2 }}><IkonaSipVlavo size={20} color="#fff" /></div>
       <div style={{ position: "absolute", top: 14, right: 14, width: 34, height: 34, borderRadius: "50%", background: "rgba(0,0,0,.55)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", zIndex: 2 }}><IkonaMoznosti size={18} color="#fff" /></div>
       {children}
@@ -401,15 +444,15 @@ function DeedDetail({ it, support, votes, vote, toast, home, openPerson }: any) 
   return (
     <div style={{ paddingBottom: 24 }}>
       <DetailHero it={it} onBack={home}>
-        {it.media === "video" ? <Play big /> : <div style={{ fontSize: 52 }}>{it.emoji}</div>}
-        <div style={{ position: "absolute", bottom: 12, left: 14 }}><DomTag it={it} /></div>
+        {(!it.fotky || !it.fotky.length) && (it.media === "video" ? <Play big /> : <div style={{ fontSize: 52 }}>{it.emoji}</div>)}
+        <div style={{ position: "absolute", bottom: 12, left: 14, zIndex: 1 }}><DomTag it={it} /></div>
       </DetailHero>
       <div style={{ padding: "14px 18px" }}>
         <div onClick={() => openPerson(it.author)} style={{ ...rowTopS, cursor: "pointer" }}>
           <div style={pfpS(it.pfp)}>{it.ini}</div>
           <div>
             <div style={{ ...nameS, display: "flex", alignItems: "center", gap: 6 }}>{it.author} <span style={{ color: C.textTer, fontSize: 13 }}>›</span></div>
-            <div style={{ fontSize: 12, color: A.txt3 }}>{it.loc} · č. {it.num.toLocaleString("sk")}</div>
+            <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: A.txt2, marginTop: 1 }}><IkonaPin size={12} color={A.txt2} />{it.loc}</div>
           </div>
           {it.verified && <span style={{ ...verifS, marginLeft: "auto" }}>overené</span>}
         </div>

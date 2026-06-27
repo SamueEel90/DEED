@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { C } from "@/theme";
-import { ModulHlavicka, toast, useScrollHore, IkonaStit, IkonaKorunka, IkonaHviezda, IkonaUsmev, IkonaKompas, IkonaInstitucia } from "@/shared";
+import { ModulHlavicka, toast, useScrollHore, useLayout, obalSiroky, IkonaStit, IkonaKorunka, IkonaHviezda, IkonaUsmev, IkonaKompas, IkonaInstitucia } from "@/shared";
 import { Zvoncek } from "@/features/notifikacie/Notifikacie";
 import { CudziProfil } from "@/features/cudzi-profil/CudziProfil";
 import { FunZona } from "@/features/fun/FunZona";
@@ -28,6 +28,8 @@ const KATEGORIE: RebricekKategoria[] = [
       { meno: "Lidl", info: "9 800 € · matching", subjekt: { typ: "org", meno: "Lidl pomáha — nadácia", emoji: "🏢", lok: "Firma · matching kampaň", level: "Gold" } },
       { meno: "Tesco", info: "7 200 € · grantový program", subjekt: { typ: "org", meno: "Tesco", emoji: "🏢", lok: "Firma · grantový program", level: "Gold" } },
       { meno: "O2 Slovensko", info: "5 400 € · zamestnanecká zbierka", subjekt: { typ: "org", meno: "O2 Slovensko", emoji: "🏢", lok: "Firma · zamestnanecké 2 %", level: "Silver" } },
+      { meno: "Leoni Slovakia", info: "4 600 € · firemné dobrovoľníctvo", subjekt: { typ: "org", meno: "Leoni Slovakia", emoji: "🏭", lok: "Zamestnávateľ · Trenčín", level: "Silver" } },
+      { meno: "Vetropack Nemšová", info: "materiál a sklo pre projekty", subjekt: { typ: "org", meno: "Vetropack Nemšová", emoji: "🏭", lok: "Sklárne · Nemšová", level: "Silver" } },
       { meno: "Pekáreň U Janka", info: "denne pečivo do útulku", subjekt: { typ: "org", meno: "Pekáreň U Janka", emoji: "🥨", lok: "Lokálny partner · Trenčín", level: "Silver" } },
       { meno: "Slovnaft", info: "3 100 € · doprava pomoci", subjekt: { typ: "org", meno: "Slovnaft", emoji: "🏢", lok: "Firma · logistika pomoci", level: "Bronze" } },
     ],
@@ -84,7 +86,8 @@ export default function ModulTop({ wide }: WideProps) {
   const [rozsah, setRozsah] = useState<RebricekRozsah>("Štvrť");
 
   const scrollHore = useScrollHore();
-  const obal = (el: React.ReactNode) => wide ? <div style={{ maxWidth: 620, margin: "0 auto" }}>{el}</div> : el;
+  const { desktop } = useLayout();
+  const obal = (el: React.ReactNode) => obalSiroky(el, { wide, desktop, max: 620, maxDesktop: 1320 });
   const otvorProfil = (s: Subjekt) => { setSubjekt(s); setScreen("profil"); scrollHore(); };
 
   if (screen === "fun") return <div style={{ minHeight: "100%" }}>{obal(<FunZona onBack={() => setScreen("top")} toast={toast} />)}</div>;
@@ -114,7 +117,8 @@ export default function ModulTop({ wide }: WideProps) {
             <span style={{ color: C.textTer, fontSize: 16 }}>›</span>
           </div>
 
-          {/* rebríčky po kategóriách */}
+          {/* rebríčky po kategóriách — na desktope mriežka (všetkých 5 naraz) */}
+          <div style={desktop ? { display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: "0 22px", alignItems: "start" } : undefined}>
           {KATEGORIE.map((kat) => (
             <div key={kat.hl}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "18px 0 8px" }}>
@@ -134,6 +138,7 @@ export default function ModulTop({ wide }: WideProps) {
               ))}
             </div>
           ))}
+          </div>
 
           <div style={{ textAlign: "center", fontSize: 11, color: C.textTer, lineHeight: 1.5, marginTop: 18 }}>Karma sa nedá kúpiť — len zaslúžiť konaním. Rebríčky sú verejné; súkromné osoby v nich nefigurujú.</div>
         </div>

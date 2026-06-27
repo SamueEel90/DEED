@@ -13,13 +13,36 @@ export const HL_FILTRE = ["Všetko", "Osoby", "Firmy", "Školitelia", "Charity",
 // VEREJNÉ subjekty — dohľadateľné z ktoréhokoľvek modulu (jeden engine).
 // SÚKROMNÉ osoby tu zámerne NIE SÚ (ochrana pred lustráciou §11/§13).
 export const SUBJEKTY = [
-  { id: "s-kauf", typ: "Firmy",      titul: "Kaufland — DEED partner",        podtitul: "Firma · ESG report · Trenčín",   emoji: "🏢", tag: "Firma" },
-  { id: "s-lidl", typ: "Firmy",      titul: "Lidl pomáha — nadácia",          podtitul: "Firma · matching kampaň",        emoji: "🏢", tag: "Firma" },
-  { id: "s-pet",  typ: "Školitelia", titul: "Coach Peter — mentálny tréning", podtitul: "Školiteľ · Trenčín",             emoji: "🧠", tag: "Školiteľ" },
-  { id: "s-eva",  typ: "Školitelia", titul: "Coach Eva — joga",               podtitul: "Školiteľ · Mestský park",        emoji: "🧘", tag: "Školiteľ" },
-  { id: "s-nem",  typ: "Charity",    titul: "Detská nemocnica — nadácia",     podtitul: "✓ Overená charita · Gold · BA",  emoji: "🏥", tag: "Charita" },
-  { id: "s-liga", typ: "Charity",    titul: "Liga proti rakovine",            podtitul: "✓ Overená charita · Gold · SR",  emoji: "🎗", tag: "Charita" },
-  { id: "s-jan",  typ: "Osoby",      titul: "Ján Novák — lektor gitary",      podtitul: "Verejný profil · ponúka službu", emoji: "🎸", tag: "Osoba" },
+  // firmy & partneri (reálne podniky / zamestnávatelia z regiónu)
+  { id: "s-kauf",  typ: "Firmy",      titul: "Kaufland — DEED partner",        podtitul: "Firma · ESG report · Trenčín",        emoji: "🏢", tag: "Firma" },
+  { id: "s-lidl",  typ: "Firmy",      titul: "Lidl pomáha — nadácia",          podtitul: "Firma · matching kampaň",             emoji: "🏢", tag: "Firma" },
+  { id: "s-leoni", typ: "Firmy",      titul: "Leoni Slovakia",                 podtitul: "Zamestnávateľ · firemné dobrovoľníctvo · Trenčín", emoji: "🏭", tag: "Firma" },
+  { id: "s-vetro", typ: "Firmy",      titul: "Vetropack Nemšová",              podtitul: "Sklárne · podpora komunity · Nemšová", emoji: "🏭", tag: "Firma" },
+  { id: "s-janko", typ: "Firmy",      titul: "Pekáreň U Janka",                podtitul: "Lokálny partner · pečivo do útulku",  emoji: "🥨", tag: "Partner" },
+  { id: "s-laug",  typ: "Firmy",      titul: "OC Laugaricio",                  podtitul: "Nákupné centrum · charitatívne akcie · Trenčín", emoji: "🛍", tag: "Partner" },
+  // verejné inštitúcie (organizácie)
+  { id: "s-mesto", typ: "Firmy",      titul: "Mesto Trenčín",                  podtitul: "Inštitúcia · verejné akcie a zbierky", emoji: "🏛", tag: "Mesto" },
+  { id: "s-tsk",   typ: "Firmy",      titul: "Trenčiansky samosprávny kraj",   podtitul: "Inštitúcia · regionálne projekty",     emoji: "🏛", tag: "Kraj" },
+  { id: "s-fntn",  typ: "Firmy",      titul: "Fakultná nemocnica Trenčín",     podtitul: "Inštitúcia · darcovstvo krvi · Trenčín", emoji: "🏥", tag: "Nemocnica" },
+  { id: "s-kniz",  typ: "Firmy",      titul: "Verejná knižnica M. Rešetku",    podtitul: "Inštitúcia · vzdelávanie · Trenčín",   emoji: "📚", tag: "Knižnica" },
+  { id: "s-muz",   typ: "Firmy",      titul: "Trenčianske múzeum",             podtitul: "Inštitúcia · kultúra · Trenčín",       emoji: "🏰", tag: "Kultúra" },
+  // školitelia / lektori / školy
+  { id: "s-tnuad", typ: "Školitelia", titul: "Trenčianska univerzita A. Dubčeka", podtitul: "Škola · prednášky a workshopy · Trenčín", emoji: "🎓", tag: "Škola" },
+  { id: "s-pet",   typ: "Školitelia", titul: "Coach Peter — mentálny tréning", podtitul: "Školiteľ · Trenčín",                  emoji: "🧠", tag: "Školiteľ" },
+  { id: "s-evac",  typ: "Školitelia", titul: "Coach Eva — joga",               podtitul: "Školiteľ · Mestský park",             emoji: "🧘", tag: "Školiteľ" },
+  { id: "s-anna",  typ: "Školitelia", titul: "Anna K. — Python lektorka",      podtitul: "Školiteľ · online · ★ 4.9",           emoji: "🐍", tag: "Školiteľ" },
+  { id: "s-hra",   typ: "Školitelia", titul: "MUDr. Hraško — prvá pomoc",      podtitul: "Školiteľ · BOZP · Trenčín",           emoji: "🚑", tag: "Školiteľ" },
+  // charity (overené)
+  { id: "s-nem",   typ: "Charity",    titul: "Detská nemocnica — nadácia",     podtitul: "✓ Overená charita · Gold · BA",       emoji: "🏥", tag: "Charita" },
+  { id: "s-liga",  typ: "Charity",    titul: "Liga proti rakovine",            podtitul: "✓ Overená charita · Gold · SR",       emoji: "🎗", tag: "Charita" },
+  { id: "s-cht",   typ: "Charity",    titul: "Charita Trenčín",                podtitul: "✓ Overená · jedáleň a nocľaháreň · Trenčín", emoji: "🍲", tag: "Charita" },
+  { id: "s-hms",   typ: "Charity",    titul: "Hospic Milosrdných sestier",     podtitul: "✓ Overená · paliatíva · Trenčín",     emoji: "🕊", tag: "Charita" },
+  { id: "s-tul",   typ: "Charity",    titul: "OZ Túlavá labka",                podtitul: "✓ Overená · útulok · Trenčín",        emoji: "🐾", tag: "Charita" },
+  // osoby & tvorcovia (verejné profily)
+  { id: "s-jan",   typ: "Osoby",      titul: "Ján Novák — lektor gitary",      podtitul: "Verejný profil · ponúka službu",      emoji: "🎸", tag: "Osoba" },
+  { id: "s-tlupa", typ: "Osoby",      titul: "Tlupa — kapela",                 podtitul: "Verejný profil · benefičné koncerty", emoji: "🎵", tag: "Osoba" },
+  { id: "s-cyklo", typ: "Osoby",      titul: "Cyklo Trenčín",                  podtitul: "Verejný profil · komunita cyklistov", emoji: "🚲", tag: "Osoba" },
+  { id: "s-ekot",  typ: "Osoby",      titul: "EkoTím Juh",                     podtitul: "Verejný profil · dobrovoľnícky eko tím", emoji: "🌿", tag: "Osoba" },
 ];
 
 // klasifikácia ľubovoľnej položky do filtra (z existujúcich tagov, bez zásahu do modulov)

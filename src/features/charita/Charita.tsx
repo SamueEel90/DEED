@@ -1,11 +1,13 @@
 import { useState, useEffect } from "react";
 import { C, U, AV, GRAD, GRAD_ZELENY } from "@/theme";
-import { Foto, Avatar, FotoPrispevku, MiniFotky, ModulHlavicka, PodporaSekcia, PlatbaModal, HladanieModal, toast, useGaleria, useScrollHore, useStrankaAkcie, useTvorbaGate, Ticker, StatRiadok, MoniBar, FeedStlpce, OkruhVyber, Lupa, Zvon, Zdielanie, IkonaSpat, IkonaVlajka, IkonaFoto, IkonaPlay, IkonaDoska, IkonaOpakovat, IkonaKriz, IkonaInstitucia, FeedSkeleton, SkeletonRiadky, EmptyState, ErrorState, ScreenSwitch } from "@/shared";
+import { Foto, Avatar, FotoPrispevku, MiniFotky, ModulHlavicka, PodporaSekcia, PlatbaModal, HladanieModal, toast, useGaleria, useLayout, useScrollHore, useStrankaAkcie, useTvorbaGate, Ticker, StatRiadok, MoniBar, FeedStlpce, obalSiroky, OkruhVyber, Lupa, Zvon, Zdielanie, IkonaSpat, IkonaVlajka, IkonaFoto, IkonaPlay, IkonaDoska, IkonaOpakovat, IkonaKriz, IkonaInstitucia, FeedSkeleton, SkeletonRiadky, EmptyState, ErrorState, ScreenSwitch } from "@/shared";
 import { pripravFeed, FEED_CFG } from "@/lib/feed";
+import { MEDIA_AR } from "@/lib/cardSize";
 import { Zvoncek } from "@/features/notifikacie/Notifikacie";
 import type { CharitaFeedItem, CharitaLevel, Kanal } from "@/types";
 import { useCharitaFeed, useCharitaAdresar, useCharitaZbierka } from "@/data";
 import { ZOFIA_FOTKY, HLADAJ_DATA } from "./mock";
+import { tagChip } from "@/lib/ui";
 
 // poloha usera (MVP mock — Trenčín, rovnaká ako v ostatných feedoch)
 const USER_LOK = { lat: 48.894, lng: 18.044 };
@@ -45,6 +47,7 @@ type Screen = "feed" | "detail";
 type Sheet = "add" | "reg" | "dir" | null;
 
 export default function ModulCharita({ wide, otvorModul }: ModulCharitaProps) {
+  const { desktop } = useLayout();
   const [screen, setScreen] = useState<Screen>("feed"); // feed | detail
   const [sheet, setSheet] = useState<Sheet>(null); // add | reg | dir
   const [hladaj, setHladaj] = useState(false);
@@ -53,7 +56,7 @@ export default function ModulCharita({ wide, otvorModul }: ModulCharitaProps) {
   const scrollHore = useScrollHore();
   useEffect(() => { scrollHore(); }, [screen]);
 
-  const obal = (el: React.ReactNode) => wide ? <div style={{ maxWidth: 620, margin: "0 auto" }}>{el}</div> : el;
+  const obal = (el: React.ReactNode) => obalSiroky(el, { wide, desktop, max: 620, maxDesktop: 920 });
 
   return (
     <div style={{ minHeight: "100%", color: K.txt }}>
@@ -91,6 +94,7 @@ type FeedProps = {
 };
 
 function CharitaFeed({ wide, toast, onDetail, onHladaj, onSheet }: FeedProps) {
+  const { desktop } = useLayout();
   const { data: FEED_ITEMS = [], isLoading, isError, refetch } = useCharitaFeed();
   // zvolený rádius — Feed algoritmus (Časť B): filter podľa okruhu + adaptívny
   // prah + zoradenie. Karty zostávajú pôvodné komponenty (dizajn nedotknutý),
@@ -154,6 +158,13 @@ function CharitaFeed({ wide, toast, onDetail, onHladaj, onSheet }: FeedProps) {
         <FeedSkeleton count={4} />
       ) : feed.length === 0 ? (
         <EmptyState emoji="💛" title="Žiadne zbierky v okruhu" text="Skús väčší okruh." />
+      ) : desktop ? (
+        <div style={{ maxWidth: 1140, margin: "0 auto" }}>
+          <FeedStlpce wide padding="4px 14px 12px"
+            labelSkutky="Zapoj sa" labelZiadosti="Zbierky"
+            skutky={feed.filter((it) => it.typ === "skutok").map(karta)}
+            ziadosti={feed.filter((it) => it.typ !== "skutok").map(karta)} />
+        </div>
       ) : (
         <FeedStlpce wide={wide} padding="4px 14px 12px"
           labelSkutky="Zapoj sa" labelZiadosti="Zbierky"
@@ -175,11 +186,11 @@ function CharitaFeed({ wide, toast, onDetail, onHladaj, onSheet }: FeedProps) {
 // ---- karty feedu (rozdelené do komponentov kvôli dvojstĺpcu skutky/žiadosti) ----
 // JEDNOTNÁ FULL-WIDTH (Instagram) KARTA pre Charitu — médium hore · odznaky · titul · príbeh · progres.
 function CharitaKarta({ wide, onClick, fotky, emoji, accent, badgeL, badgeR, nazov, overena, tag, tagBg, tagCol, popis, vyzbierane, ciel }: any) {
-  const mediaH = wide ? 168 : 235;
   return (
     <div onClick={onClick} className="good-card" style={{ background: K.card, border: wide ? `1px solid ${K.line}` : "none", borderBottom: `1px solid ${K.line}`, borderLeft: `3px solid ${accent}`, borderRadius: wide ? 16 : 0, overflow: "hidden", marginBottom: wide ? 0 : 10, cursor: "pointer", ...(wide ? {} : { marginLeft: -14, marginRight: -14 }) }}>
-      <div style={{ position: "relative", height: mediaH }}>
-        <FotoPrispevku fotky={fotky} emoji={emoji} h={mediaH} disableGaleria />
+      {/* médium — 16:9 na tablete/desktope; na mobile pôvodná výška 235 px */}
+      <div style={{ position: "relative", ...(wide ? { width: "100%", aspectRatio: MEDIA_AR } : { height: 235 }) }}>
+        <FotoPrispevku fotky={fotky} emoji={emoji} h={wide ? "100%" : 235} disableGaleria />
         <div style={{ position: "absolute", inset: 0, background: "linear-gradient(0deg, rgba(0,0,0,.34), transparent 42%)", pointerEvents: "none" }} />
         {badgeL && <span style={badge({ top: 10, left: 10, color: badgeL.col, background: badgeL.bg })}>{badgeL.t}</span>}
         {badgeR && <span style={badge({ top: 10, right: 10, color: badgeR.col, background: badgeR.bg })}>{badgeR.t}</span>}
@@ -188,7 +199,7 @@ function CharitaKarta({ wide, onClick, fotky, emoji, accent, badgeL, badgeR, naz
         <div style={{ fontSize: 15.5, fontWeight: 700, display: "flex", alignItems: "center", gap: 7, flexWrap: "wrap" }}>
           <span>{nazov}</span>
           {overena && <Overena />}
-          {tag && <span style={{ fontSize: 10.5, padding: "2px 8px", borderRadius: 6, fontWeight: 600, background: tagBg, color: tagCol }}>{tag}</span>}
+          {tag && <span style={tagChip(tagCol)}>{tag}</span>}
         </div>
         <div style={{ fontSize: 13, color: K.txt2, lineHeight: 1.5, marginTop: 6 }}>{popis}</div>
         {ciel ? <div style={{ marginTop: 10 }}><MoniBar vyzbierane={vyzbierane} ciel={ciel} mini /></div> : null}
@@ -229,10 +240,10 @@ function Material({ wide, toast }: { wide?: boolean; toast: (m: string) => void 
 }
 
 function badge({ top, left, right, color, background }: { top?: number; left?: number; right?: number; color?: string; background?: string }): React.CSSProperties {
-  return { position: "absolute", top, left, right, fontSize: 10, padding: "3px 8px", borderRadius: 7, fontWeight: 600, color, background: background || "rgba(10,13,20,.78)", pointerEvents: "none" };
+  return { position: "absolute", top, left, right, fontSize: 10.5, padding: "4px 10px", borderRadius: 9, fontWeight: 800, color: color || "#fff", background: background || "rgba(8,11,18,.62)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)", border: "1px solid rgba(255,255,255,.16)", boxShadow: "0 2px 8px rgba(0,0,0,.25)", pointerEvents: "none" };
 }
 function Overena() {
-  return <span style={{ fontSize: 10, color: K.green, border: `1px solid ${K.greenEdge}`, padding: "1px 7px", borderRadius: 99, fontWeight: 500 }}>overená</span>;
+  return <span style={tagChip(K.green)}>✓ overená</span>;
 }
 type RiadokKartaProps = {
   wide?: boolean;
@@ -266,6 +277,7 @@ function CharitaDetail({ toast, onBack, onReg }: { toast: (m: string) => void; o
   const [ludia, setLudia] = useState(ZBIERKA?.ludia ?? 0);
   const [platba, setPlatba] = useState<Kanal | null>(null); // "EUR" | "DEED"
   const otvorGaleriu = useGaleria();
+  const { wide } = useLayout();
   if (!ZBIERKA) return null;
   const z = ZBIERKA;
   const pct = Math.min(100, Math.round(suma / z.ciel * 100));
@@ -291,9 +303,9 @@ function CharitaDetail({ toast, onBack, onReg }: { toast: (m: string) => void; o
       </div>
 
       <div style={{ padding: "0 16px" }}>
-        {/* hero foto — klik = celá obrazovka + swipe */}
-        <div style={{ position: "relative" }}>
-          <Foto src={z.fotky[0]} emoji="🔥" h={200} radius={14} onClick={() => otvorGaleriu(z.fotky, 0)} />
+        {/* hero foto — klik = celá obrazovka + swipe (16:9 na desktope) */}
+        <div style={{ position: "relative", ...(wide ? { width: "100%", aspectRatio: MEDIA_AR } : {}) }}>
+          <Foto src={z.fotky[0]} emoji="🔥" h={wide ? "100%" : 200} w={wide ? "100%" : undefined} radius={14} onClick={() => otvorGaleriu(z.fotky, 0)} />
           <span style={{ ...badge({ top: 9, right: 9, color: K.txt }), display: "inline-flex", alignItems: "center", gap: 5 }}><IkonaFoto size={12} color={K.txt} /> foto z prípadu</span>
           <span style={{ position: "absolute", bottom: 9, right: 9, background: "rgba(0,0,0,.6)", borderRadius: 12, padding: "3px 9px", fontSize: 10, color: "#fff", pointerEvents: "none" }}>⧉ {z.fotky.length} · klikni na foto</span>
         </div>

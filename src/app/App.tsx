@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef, lazy, Suspense, type CSSProperties } from "react";
 import { LazyMotion, domAnimation, MotionConfig } from "motion/react";
 import { C } from "@/theme";
-import { GaleriaContext, ScrollContext, ViacContext, StrankaAkcieContext, UpgradeContext, UpgradePanel, Lightbox, DychajucePozadie, MotivContext, PortalContext, DeedToaster, FeedSkeleton } from "@/shared";
+import { GaleriaContext, ScrollContext, ViacContext, StrankaAkcieContext, UpgradeContext, UpgradePanel, Lightbox, DychajucePozadie, MotivContext, PortalContext, LayoutContext, DeedToaster, FeedSkeleton } from "@/shared";
 import type { StrankaAkcie } from "@/components/context";
 import { TabBar, ViacSheet, PridatFAB, nacitajTaby, ulozTaby, VSETKY_MODULY } from "@/components/TabBar";
+import { Sidebar } from "@/components/Sidebar";
 import { useSession } from "@/lib/session";
 import { PouzivatelProvider } from "@/lib/pouzivatel";
 import { PersonalizaciaProvider } from "@/lib/personalizacia";
@@ -70,6 +71,7 @@ const pageBase: CSSProperties = {
 export default function App() {
   const { w } = useOkno();
   const wide = w >= 760; // tablet/desktop → viacstĺpcové feedy
+  const desktop = w >= 1180; // plný „dashboard" — bočná navigácia + plná šírka
 
   // portal-host = vycentrovaný stĺpec appky (pre prípadné portály v stĺpci)
   const [portalEl, setPortalEl] = useState<HTMLElement | null>(null);
@@ -94,13 +96,15 @@ export default function App() {
         <MotionConfig reducedMotion="user">
           <MotivContext.Provider value={motiv}>
             <PortalContext.Provider value={portalEl}>
-              <div className="deed-app" style={{ ...pageBase, display: "flex", justifyContent: "center", alignItems: "stretch" }}>
-                <DychajucePozadie />
-                <div ref={setPortalEl} style={{ position: "relative", width: "100%", maxWidth: wide ? 1180 : 560, height: "100%", background: C.bg }}>
-                  <Screens wide={wide} />
+              <LayoutContext.Provider value={{ w, wide, desktop }}>
+                <div className="deed-app" style={{ ...pageBase, display: "flex", justifyContent: "center", alignItems: "stretch" }}>
+                  <DychajucePozadie />
+                  <div ref={setPortalEl} style={{ position: "relative", width: "100%", maxWidth: desktop ? 1680 : wide ? 1180 : 560, height: "100%", background: C.bg }}>
+                    <Screens wide={wide} desktop={desktop} />
+                  </div>
                 </div>
-              </div>
-              <DeedToaster />
+                <DeedToaster />
+              </LayoutContext.Provider>
             </PortalContext.Provider>
           </MotivContext.Provider>
         </MotionConfig>
@@ -110,7 +114,7 @@ export default function App() {
 }
 
 // ===================== MODULÁRNY ROUTER APPKY =====================
-export function Screens({ wide }: { wide?: boolean }) {
+export function Screens({ wide, desktop }: { wide?: boolean; desktop?: boolean }) {
   const session = useSession();
   const [modul, setModul] = useState<ModulId>("good");
   const [taby, setTaby] = useState<string[]>(nacitajTaby);
@@ -145,12 +149,15 @@ export function Screens({ wide }: { wide?: boolean }) {
       <ViacContext.Provider value={() => setViac(true)}>
       <UpgradeContext.Provider value={() => setUpgradeOpen(true)}>
       <StrankaAkcieContext.Provider value={setAkcie}>
-      <div style={{ height: "100%", display: "flex", flexDirection: "column", position: "relative", overflow: "hidden", isolation: "isolate", background: C.bg }}>
+      <div style={{ height: "100%", display: "flex", flexDirection: desktop ? "row" : "column", position: "relative", overflow: "hidden", isolation: "isolate", background: C.bg }}>
         {/* dýchajúce pozadie vnútri appky (z-index -1 = pod obsahom) */}
         <DychajucePozadie silne />
 
-        {/* obsah aktívneho modulu — scroll vo vnútri, miesto pre plávajúci dock + okrúhly „+" FAB (vrch ~158px) */}
-        <div ref={scrollRef} style={{ flex: 1, overflowY: "auto", minHeight: 0, paddingBottom: 168 }}>
+        {/* desktop: ľavá bočná navigácia (nahrádza spodný dok) */}
+        {desktop && <Sidebar moduly={moduly} aktivny={modul} onModul={prepni} onViac={() => setViac(true)} onPenazenka={() => { prepni("profil"); setWalletReq((n) => n + 1); }} />}
+
+        {/* obsah aktívneho modulu — scroll vo vnútri. Mobil/tablet: miesto pre dok + FAB (~168px); desktop: len odsadenie pre FAB */}
+        <div ref={scrollRef} style={{ flex: 1, minWidth: 0, overflowY: "auto", minHeight: 0, paddingBottom: desktop ? 40 : 168 }}>
           <Suspense fallback={<FeedSkeleton count={4} />}>
             {modul === "good" && <ModulGood wide={wide} otvorModul={prepni} />}
             {modul === "help" && <ModulHelp wide={wide} />}
@@ -162,11 +169,11 @@ export function Screens({ wide }: { wide?: boolean }) {
           </Suspense>
         </div>
 
-        {/* plávajúci glass dock — moduly (prepínanie obrazoviek) */}
-        <TabBar taby={taby} aktivny={modul} wide={wide} onModul={prepni} />
+        {/* plávajúci glass dock — moduly (len mobil/tablet; desktop má bočný panel) */}
+        {!desktop && <TabBar taby={taby} aktivny={modul} wide={wide} onModul={prepni} />}
 
-        {/* plávajúce „+ Pridať" — primárna akcia stránky, sticky nad dokom */}
-        {akcie.pridat && <PridatFAB akcia={akcie.pridat} wide={wide} />}
+        {/* plávajúce „+ Pridať" — primárna akcia stránky (ostáva aj na desktope, vpravo dole) */}
+        {akcie.pridat && <PridatFAB akcia={akcie.pridat} wide={wide} desktop={desktop} />}
 
         {viac && (
           <ViacSheet taby={taby} setTaby={setTaby} aktivny={modul} moduly={moduly} strankaAkcie={akcie.extra} strankaFiltre={akcie.filtre}

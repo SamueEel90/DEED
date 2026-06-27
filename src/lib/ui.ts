@@ -1,3 +1,5 @@
+import type { CSSProperties } from "react";
+
 // farba → priesvitný tint. Funguje pre hex ("#RRGGBB") aj CSS premennú
 // ("var(--a-green)"). Pre premennú použije color-mix → tint je theme-aware
 // (rozlíši sa podľa režimu rovnako ako samotná premenná).
@@ -8,3 +10,11 @@ export const tint = (c: string, a: number) => {
   const n = parseInt(c.slice(1), 16);
   return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
 };
+
+// Jednotná „pill" pre tagy na kartách (overené / žiadosť / kategória / TOP…).
+// Výrazný kontrast: tint pozadie + farebný okraj + tučné písmo. Theme-aware (cez tint).
+export const tagChip = (c: string): CSSProperties => ({
+  display: "inline-flex", alignItems: "center", gap: 4, flex: "none",
+  fontSize: 10.5, fontWeight: 800, padding: "3px 8px", borderRadius: 8, lineHeight: 1.2,
+  background: tint(c, .2), color: c, border: `1px solid ${tint(c, .4)}`, whiteSpace: "nowrap",
+});

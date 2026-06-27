@@ -25,6 +25,17 @@ export const MotivContext = createContext<{ svetly: boolean; prepni: () => void 
 export const useMotiv = () => useContext(MotivContext);
 
 // ============================================================
+// LAYOUT — responzívne stupne (jeden resize listener v App):
+//   · wide    ≥ 760  → tablet/desktop (viacstĺpcové feedy, 16:9 médiá)
+//   · desktop ≥ 1180 → plný „dashboard" (bočná navigácia, plná šírka,
+//                       bočné panely, stĺpce na doménu)
+// Moduly čítajú cez useLayout() namiesto pretláčania ďalšieho propu.
+// ============================================================
+export interface LayoutInfo { w: number; wide: boolean; desktop: boolean; }
+export const LayoutContext = createContext<LayoutInfo>({ w: 1024, wide: true, desktop: false });
+export const useLayout = () => useContext(LayoutContext);
+
+// ============================================================
 // PORTAL — vycentrovaný stĺpec appky (maxWidth 1180/560). Sheety (Vaul)
 // musia portálovať SEM, nie do document.body — inak na desktope „ujdú"
 // cez celý viewport namiesto telefónneho rámca. App naplní ref.
