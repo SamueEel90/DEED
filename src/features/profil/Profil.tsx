@@ -169,8 +169,13 @@ type PenazenkaProps = { toast: ToastFn; onBack: () => void };
 
 function Penazenka({ toast, onBack }: PenazenkaProps) {
   const { data: PREVODY = [], isLoading, isError, refetch } = useProfilPrevody();
+  const { podpory } = usePersonalizacia();
   const [honorar, setHonorar] = useState(false); // Reťaz dobra — Cesta B (honorár tvorcu)
   const prevody: PrevodTuple[] = PREVODY;
+  // reálne odvodené z DB (Fáza D) — agregát „Čo podporujem". Zostatok peňaženky
+  // (dole) je zatiaľ placeholder do event-sourced wallet/karma modelu.
+  const darovaneDeed = podpory.filter((p) => (p.kanal || "DEED") !== "EUR").reduce((s, p) => s + (p.suma || 0), 0);
+  const darovaneEur = podpory.filter((p) => p.kanal === "EUR").reduce((s, p) => s + (p.suma || 0), 0);
   return (
     <div style={{ paddingBottom: 14 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "16px 18px 8px" }}>
@@ -183,6 +188,15 @@ function Penazenka({ toast, onBack }: PenazenkaProps) {
           <div style={{ fontSize: 12, color: C.textSec }}>Zostatok</div>
           <div style={{ marginTop: 4 }}><span style={{ fontSize: 30, fontWeight: 800 }}>1 240</span> <span style={{ color: "#5B86FF", fontWeight: 800 }}>DEED</span></div>
           <div style={{ fontSize: 10, color: C.textTer, marginTop: 4 }}>≈ 62 € · Base L2 · ERC-4337</div>
+        </div>
+
+        {/* DAROVANÉ SPOLU — reálne z DB (agregát podpôr „Čo podporujem") */}
+        <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 12, background: "rgba(91,168,240,.07)", border: "1px solid rgba(91,168,240,.22)", borderRadius: 15, padding: "12px 14px" }}>
+          <span style={{ width: 38, height: 38, borderRadius: 11, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(91,168,240,.14)", color: "var(--a-info)", fontSize: 18 }}>💚</span>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 13, fontWeight: 700 }}>Darované spolu · <span style={{ color: "var(--a-info)" }}>{darovaneDeed} DEED{darovaneEur ? ` · ${darovaneEur} €` : ""}</span></div>
+            <div style={{ fontSize: 11, color: C.textTer, marginTop: 2 }}>{podpory.length} {podpory.length === 1 ? "podporená zbierka" : "podporených zbierok"} · z tvojej stopy</div>
+          </div>
         </div>
 
         {/* REŤAZOVÁ ČASŤ — akumulovaná oddelene, zamknutá (§5.2, §9) */}

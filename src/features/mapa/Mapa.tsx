@@ -1,30 +1,129 @@
-import { useState } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
 import { C, GRAD } from "@/theme";
-import { ModulHlavicka, IkonaPin, toast, useLayout, obalSiroky } from "@/shared";
+import { ModulHlavicka, IkonaPin, toast, useLayout, useMotiv, obalSiroky } from "@/shared";
 import { Zvoncek } from "@/features/notifikacie/Notifikacie";
 import { FEED_CFG } from "@/lib/feed";
-import { UROVNE, POCTY_KM, POCTY_UROVEN } from "./mock";
+import { useMapaBody } from "@/data";
+import type { MapaBod } from "@/types";
+import { UROVNE } from "./mock";
 
 /*
   ============================================================
-  MODUL MAPA (§15) — primárne nastavovač rádiusu pre feed
+  MODUL MAPA (§15) — reálna mapa (OpenStreetMap/Leaflet, bez API kľúča)
   ============================================================
-  Štvrť = posuvník 1–5 km (default 2). Mesto/okres/kraj/krajina =
-  admin hranice (OSM). GPS banner len keď je poloha vypnutá.
-  Mení LEN zobrazenie (čo vidíš vo feede / na nástenke) — nie
-  karmu/odmenu. Body skutkov na mape = budúcnosť.
+  Štvrť = posuvník 1–5 km (default 2). Mesto/okres/kraj/krajina = väčší
+  okruh (FEED_CFG.radiusy.km). Na mape sú reálne body z DB (skutky z
+  `prispevok`, udalosti z `udalost`) a počty v okruhu sa rátajú z ich
+  súradníc (haversine) — žiadne platené API. Mení LEN zobrazenie feedu,
+  nie karmu/odmenu.
   ============================================================
 */
 
+// stred mapy = Trenčín (rovnaké ako USER_LOK vo feeduoch)
+const STRED = { lat: 48.894, lng: 18.044 };
+
+// farba bodu podľa pôvodu (skutky podľa modulu, udalosti modro)
+const FARBA_MODUL: Record<string, string> = {
+  good: "#2bd49b", help: "#e2574b", charity: "#e0a93d", workshop: "#9b7cf0",
+};
+const farbaBodu = (b: MapaBod) => (b.druh === "udalost" ? "#5b9bff" : FARBA_MODUL[b.modul || "good"] || "#2bd49b");
+
+// Carto tiles (zadarmo, bez kľúča) — svetlá/tmavá podľa motívu
+const DLAZDICE = {
+  svetla: "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
+  tmava: "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+};
+const ATRIB = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>';
+
+// vzdialenosť dvoch bodov v km (haversine)
+function vzdialenostKm(a: { lat: number; lng: number }, b: { lat: number; lng: number }): number {
+  const R = 6371;
+  const dLat = ((b.lat - a.lat) * Math.PI) / 180;
+  const dLng = ((b.lng - a.lng) * Math.PI) / 180;
+  const la1 = (a.lat * Math.PI) / 180;
+  const la2 = (b.lat * Math.PI) / 180;
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(la1) * Math.cos(la2) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(h));
+}
+
 export default function ModulMapa({ wide }: { wide?: boolean }) {
   const { desktop } = useLayout();
+  const { svetly } = useMotiv();
+  const { data: body = [] } = useMapaBody();
   const [uroven, setUroven] = useState("stvrt");
   const [km, setKm] = useState(2);
   const [gps, setGps] = useState(false); // demo: GPS vypnuté → banner
 
   const jeStvrt = uroven === "stvrt";
-  const [skutky, udalosti] = jeStvrt ? POCTY_KM[km] : POCTY_UROVEN[uroven];
-  const kruh = jeStvrt ? 64 + km * 26 : ({ mesto: 150, okres: 188, kraj: 216, krajina: 248 } as Record<string, number>)[uroven];
+  // okruh v km: štvrť = posuvník; ostatné = admin okruh z FEED_CFG
+  const radiusKm = jeStvrt ? km : FEED_CFG.radiusy[uroven]?.km ?? 15;
+  const krajina = uroven === "krajina"; // príliš veľký okruh → bez kruhu, oddialiť
+
+  // reálne počty v okruhu (z bodov v DB)
+  const { skutky, udalosti } = useMemo(() => {
+    let s = 0, u = 0;
+    for (const b of body) {
+      if (vzdialenostKm(STRED, b) > radiusKm) continue;
+      if (b.druh === "udalost") u++; else s++;
+    }
+    return { skutky: s, udalosti: u };
+  }, [body, radiusKm]);
+
+  // ---- Leaflet refs ----
+  const elRef = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<L.Map | null>(null);
+  const tileRef = useRef<L.TileLayer | null>(null);
+  const kruhRef = useRef<L.Circle | null>(null);
+  const bodyVrstvaRef = useRef<L.LayerGroup | null>(null);
+
+  // init mapy (raz; StrictMode-safe cez cleanup)
+  useEffect(() => {
+    if (mapRef.current || !elRef.current) return;
+    const map = L.map(elRef.current, { center: [STRED.lat, STRED.lng], zoom: 13, zoomControl: true, attributionControl: true });
+    mapRef.current = map;
+    tileRef.current = L.tileLayer(svetly ? DLAZDICE.svetla : DLAZDICE.tmava, { attribution: ATRIB, subdomains: "abcd", maxZoom: 19 }).addTo(map);
+    kruhRef.current = L.circle([STRED.lat, STRED.lng], { radius: radiusKm * 1000, color: "#5b9bff", weight: 2, fillColor: "#5b9bff", fillOpacity: 0.1 }).addTo(map);
+    bodyVrstvaRef.current = L.layerGroup().addTo(map);
+    // marker „Ty"
+    L.circleMarker([STRED.lat, STRED.lng], { radius: 8, color: "#fff", weight: 3, fillColor: "#3b6fe0", fillOpacity: 1 })
+      .addTo(map).bindTooltip("Ty", { permanent: true, direction: "top", offset: [0, -6] });
+    setTimeout(() => map.invalidateSize(), 0);
+    return () => { map.remove(); mapRef.current = null; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // prepínanie dlaždíc podľa motívu
+  useEffect(() => {
+    if (tileRef.current) tileRef.current.setUrl(svetly ? DLAZDICE.svetla : DLAZDICE.tmava);
+  }, [svetly]);
+
+  // body na mape (z DB) — prekresli pri zmene
+  useEffect(() => {
+    const vrstva = bodyVrstvaRef.current;
+    if (!vrstva) return;
+    vrstva.clearLayers();
+    for (const b of body) {
+      L.circleMarker([b.lat, b.lng], { radius: 5, weight: 1, color: "rgba(0,0,0,.25)", fillColor: farbaBodu(b), fillOpacity: 0.85 }).addTo(vrstva);
+    }
+  }, [body]);
+
+  // okruh + výrez podľa zvolenej úrovne
+  useEffect(() => {
+    const map = mapRef.current, kruh = kruhRef.current;
+    if (!map || !kruh) return;
+    if (krajina) {
+      map.removeLayer(kruh);
+      map.setView([48.7, 19.5], 7); // celé Slovensko
+    } else {
+      if (!map.hasLayer(kruh)) kruh.addTo(map);
+      kruh.setLatLng([STRED.lat, STRED.lng]).setRadius(radiusKm * 1000);
+      map.fitBounds(kruh.getBounds(), { padding: [24, 24] });
+    }
+    setTimeout(() => map.invalidateSize(), 0);
+  }, [uroven, km, radiusKm, krajina]);
+
   const obal = (el: React.ReactNode) => obalSiroky(el, { wide, desktop, max: 620, maxDesktop: 860 });
 
   return (
@@ -44,19 +143,16 @@ export default function ModulMapa({ wide }: { wide?: boolean }) {
             </div>
           )}
 
-          {/* mapový podklad + kruh rádiusu */}
-          <div style={{ position: "relative", height: desktop ? 400 : 280, borderRadius: 18, overflow: "hidden", background: "linear-gradient(160deg, #0f1626, #0a0f1c)", border: `1px solid ${C.line}` }}>
-            {/* faux ulice */}
-            {[18, 42, 70, 88].map((t, i) => <div key={"h" + i} style={{ position: "absolute", left: 0, right: 0, top: `${t}%`, height: 1, background: "rgba(255,255,255,.05)" }} />)}
-            {[24, 55, 78].map((l, i) => <div key={"v" + i} style={{ position: "absolute", top: 0, bottom: 0, left: `${l}%`, width: 1, background: "rgba(255,255,255,.05)" }} />)}
-            <div style={{ position: "absolute", top: "30%", left: "-5%", width: "120%", height: 2, background: "rgba(91,155,255,.18)", transform: "rotate(-18deg)" }} />
-            {/* kruh rádiusu */}
-            <div style={{ position: "absolute", top: "50%", left: "50%", width: kruh, height: kruh, transform: "translate(-50%,-50%)", borderRadius: "50%", border: "2px solid rgba(91,155,255,.7)", background: "radial-gradient(circle, rgba(91,155,255,.16), rgba(91,155,255,.04) 70%)", boxShadow: "0 0 40px rgba(91,124,255,.25)", transition: "width .35s ease, height .35s ease" }} />
-            {/* pin „Ty" */}
-            <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-              <span style={{ fontSize: 10, fontWeight: 800, color: "#fff", background: "rgba(0,0,0,.5)", padding: "2px 8px", borderRadius: 10 }}>Ty</span>
-              <IkonaPin size={26} color="var(--a-info)" />
-            </div>
+          {/* reálna mapa (Leaflet + OpenStreetMap) */}
+          <div ref={elRef} style={{ height: desktop ? 460 : 300, borderRadius: 18, overflow: "hidden", border: `1px solid ${C.line}`, zIndex: 0 }} />
+
+          {/* legenda bodov */}
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 14px", marginTop: 10, fontSize: 11, color: C.textSec }}>
+            {[["Skutky", FARBA_MODUL.good], ["Pomoc", FARBA_MODUL.help], ["Charita", FARBA_MODUL.charity], ["Workshopy", FARBA_MODUL.workshop], ["Udalosti", "#5b9bff"]].map(([lbl, col]) => (
+              <span key={lbl} style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
+                <span style={{ width: 9, height: 9, borderRadius: "50%", background: col as string, flex: "none" }} />{lbl}
+              </span>
+            ))}
           </div>
 
           {/* úrovne okruhu */}
@@ -85,17 +181,17 @@ export default function ModulMapa({ wide }: { wide?: boolean }) {
               <IkonaPin size={18} color="var(--a-info)" />
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 13.5, fontWeight: 700 }}>{FEED_CFG.radiusy[uroven].label}</div>
-                <div style={{ fontSize: 11, color: C.textTer }}>Administratívna hranica (OSM) · vyšší prah významnosti</div>
+                <div style={{ fontSize: 11, color: C.textTer }}>{krajina ? "Celé Slovensko" : `Okruh ~${radiusKm} km`} · vyšší prah významnosti</div>
               </div>
             </div>
           )}
 
-          {/* info chip */}
+          {/* info chip — reálne počty v okruhu */}
           <div style={{ display: "flex", alignItems: "center", gap: 9, marginTop: 14, padding: "11px 13px", borderRadius: 13, background: "rgba(31,191,143,.08)", border: "1px solid rgba(31,191,143,.22)" }}>
             <span style={{ width: 9, height: 9, borderRadius: "50%", flex: "none", background: "var(--a-green)", animation: "pulse 1.6s infinite" }} />
             <span style={{ fontSize: 12.5, color: C.textSec }}>V tomto okruhu: <b style={{ color: C.text }}>{skutky.toLocaleString("sk")}</b> skutkov · <b style={{ color: C.text }}>{udalosti.toLocaleString("sk")}</b> udalostí</span>
           </div>
-          <div style={{ fontSize: 10.5, color: C.textTer, margin: "8px 2px 0", lineHeight: 1.5 }}>Mení len, čo vidíš vo feede a na nástenke — nie karmu ani odmeny. Body skutkov na mape pribudnú neskôr.</div>
+          <div style={{ fontSize: 10.5, color: C.textTer, margin: "8px 2px 0", lineHeight: 1.5 }}>Reálne body z DB v okolí Trenčína. Mení len, čo vidíš vo feede a na nástenke — nie karmu ani odmeny.</div>
 
           <button onClick={() => toast(`Rádius nastavený: ${jeStvrt ? km + " km · štvrť" : FEED_CFG.radiusy[uroven].label}`)}
             style={{ width: "100%", height: 50, borderRadius: 14, marginTop: 14, border: "none", background: GRAD, color: "#fff", fontWeight: 700, fontSize: 15, cursor: "pointer", fontFamily: "inherit", boxShadow: "0 8px 26px rgba(99,134,255,.32)" }}>

@@ -6,9 +6,11 @@
 // ============================================================
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { usePouzivatel } from "./pouzivatel";
+import { supabaseReady } from "./supabase";
 import {
   nacitajLokalne, ulozZaujmy, ulozSledovani, ulozPodpory,
   importLegacyFollows, legacyNaImport, demoSeed, zaujmyNaKluce, zaujemZOblasti,
+  nacitajPodporyDB, pridajPodporuDB,
 } from "./personalizaciaStore";
 import type { Zaujem, Sledovanie, Podpora } from "@/types";
 
@@ -41,7 +43,7 @@ const PersonalizaciaContext = createContext<PersonalizaciaApi>(prazdny);
 export const usePersonalizacia = () => useContext(PersonalizaciaContext);
 
 export function PersonalizaciaProvider({ children }: { children: ReactNode }) {
-  const { demo } = usePouzivatel();
+  const { demo, celeMeno, ucetId } = usePouzivatel();
   const [zaujmy, setZaujmyStav] = useState<Zaujem[]>([]);
   const [sledovani, setSledovani] = useState<Sledovanie[]>([]);
   const [podpory, setPodpory] = useState<Podpora[]>([]);
@@ -62,17 +64,32 @@ export function PersonalizaciaProvider({ children }: { children: ReactNode }) {
       if (legacy.length) s = legacy;
     }
     // DEMO identita s prázdnym store-om → realistický seed (len v pamäti, NEpersistuje sa).
+    // Podpory: keď je DB k dispozícii, nechaj ich dotiahnuť z `podpora` (efekt nižšie) —
+    // inak (offline) použi demo seed / lokálny stav.
     if (demo && prazdnyStore) {
       const seed = demoSeed();
       z = seed.zaujmy; s = seed.sledovani;
-      setPodpory(seed.podpory);
+      setPodpory(supabaseReady ? [] : seed.podpory);
     } else {
-      setPodpory(p);
+      setPodpory(supabaseReady ? [] : p);
     }
     setZaujmyStav(z);
     setSledovani(s);
     setHydratovane(true);
   }, [demo]);
+
+  // Fáza D — „Čo podporujem" zo Supabase (agregát `podpora`). Overlay nad lokálny/seed
+  // stav: demo číta podľa mena (Martin K.), reálny účet podľa ucet_id. Bez DB → no-op.
+  useEffect(() => {
+    if (!supabaseReady) return;
+    const filter = demo ? { darca: celeMeno } : { ucetId };
+    if (!filter.darca && !filter.ucetId) return;
+    let zrusene = false;
+    nacitajPodporyDB(filter)
+      .then((rows) => { if (!zrusene) setPodpory(rows); })
+      .catch(() => { /* DB nedostupná → ostáva lokálny stav */ });
+    return () => { zrusene = true; };
+  }, [demo, celeMeno, ucetId]);
 
   // perzistencia — len REÁLNY účet a až po hydratácii. `!demo` → demo seed sa nikdy neuloží
   // (nepresiakne do reálneho účtu); `hydratovane` (state, nie ref) → prvý beh s [] sa preskočí.
@@ -95,17 +112,27 @@ export function PersonalizaciaProvider({ children }: { children: ReactNode }) {
       : [s, ...xs]),
     sledovaniMena: new Set(sledovani.map((s) => s.meno)),
     podpory,
-    pridajPodporu: (p) => setPodpory((ps) => {
-      const i = ps.findIndex((x) => String(x.refId) === String(p.refId));
-      if (i === -1) return [p, ...ps];
-      const cur = ps[i];
-      const copy = [...ps];
-      copy[i] = { ...cur, ...p, suma: (cur.suma || 0) + (p.suma || 0) };
-      return copy;
-    }),
+    pridajPodporu: (p) => {
+      // okamžitá UI reakcia — akumuluj v pamäti (na položku podľa refId)
+      setPodpory((ps) => {
+        const i = ps.findIndex((x) => String(x.refId) === String(p.refId));
+        if (i === -1) return [p, ...ps];
+        const cur = ps[i];
+        const copy = [...ps];
+        copy[i] = { ...cur, ...p, suma: (cur.suma || 0) + (p.suma || 0) };
+        return copy;
+      });
+      // reálny účet → perzistuj ako event do `podpora` (demo ostáva ephemerálne)
+      if (supabaseReady && !demo && ucetId) {
+        pridajPodporuDB({
+          darca: celeMeno, ucetId, refId: p.refId, prijemca: p.komu,
+          suma: p.suma, kanal: p.kanal, vyzbierane: p.vyzbierane, ciel: p.ciel,
+        }).catch(() => { /* sieťová chyba — UI stav ostáva */ });
+      }
+    },
     podporujem: (refId) => podpory.some((x) => String(x.refId) === String(refId)),
     nacitavam: !hydratovane,
-  }), [zaujmy, sledovani, podpory, hydratovane]);
+  }), [zaujmy, sledovani, podpory, hydratovane, demo, celeMeno, ucetId]);
 
   return <PersonalizaciaContext.Provider value={api}>{children}</PersonalizaciaContext.Provider>;
 }

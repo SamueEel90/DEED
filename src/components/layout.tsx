@@ -200,17 +200,18 @@ export function Rebricky({ ocenenia = [], ludia = [], pred = null }: { ocenenia?
 //   [počet v okruhu] · [mesačná štatistika] · [poloha + výber okruhu]
 // rovnaký dizajn aj poloha (hneď pod rebríčkom) vo všetkých moduloch
 // ============================================================
-export function StatRiadok({ pocet, jednotka, mesiac, miesto = "Trenčín", okruh = "2 km", onOkruh }: { pocet?: ReactNode; jednotka?: string; mesiac?: ReactNode; miesto?: ReactNode; okruh?: ReactNode; onOkruh?: () => void }) {
+export function StatRiadok({ pocet, jednotka, mesiac, miesto = "Trenčín", okruh = "2 km", onOkruh, inline }: { pocet?: ReactNode; jednotka?: string; mesiac?: ReactNode; miesto?: ReactNode; okruh?: ReactNode; onOkruh?: () => void; inline?: boolean }) {
   // segmentovaný panel: [počet v okruhu] · [mesačná štatistika] · [poloha + výber okruhu]
   // jednotná výška, vnútorné deliace čiary, jediný interaktívny segment = poloha
   // na desktope kompaktnejšie (menšie čísla/padding + obmedzená šírka), nech panel nie je „masívny"
+  // inline = na jednom riadku s filtrami (desktop) → bez vlastného paddingu a šírkového capu
   const { desktop } = useLayout();
   const cislo: CSSProperties = { fontSize: desktop ? 14.5 : 17, fontWeight: 800, color: C.text, lineHeight: 1.1, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" };
   const popis: CSSProperties = { fontSize: desktop ? 9.5 : 10.5, fontWeight: 600, color: C.textTer, marginTop: desktop ? 1 : 3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", letterSpacing: ".01em" };
   const segPad = desktop ? "6px 12px" : "9px 13px";
   return (
-    <div style={{ padding: desktop ? "2px 0 10px" : "4px 14px 14px", borderBottom: desktop ? "none" : `1px solid ${C.line}` }}>
-      <div style={{ display: "flex", alignItems: "stretch", borderRadius: desktop ? 11 : 14, background: C.surface, border: `1px solid ${C.line}`, overflow: "hidden", maxWidth: desktop ? 520 : undefined }}>
+    <div style={{ padding: inline ? 0 : desktop ? "2px 0 10px" : "4px 14px 14px", borderBottom: inline || desktop ? "none" : `1px solid ${C.line}` }}>
+      <div style={{ display: "flex", alignItems: "stretch", borderRadius: desktop ? 11 : 14, background: C.surface, border: `1px solid ${C.line}`, overflow: "hidden", maxWidth: inline ? undefined : desktop ? 520 : undefined }}>
         {/* segment 1 — počet v okruhu (živé, pulzujúca bodka) */}
         <div title={jednotka ? `${pocet} ${jednotka} v okruhu` : "v okruhu"} style={{ flex: "1 1 0", minWidth: 0, padding: segPad }}>
           <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
@@ -287,6 +288,37 @@ export function FeedStlpce({ wide, skutky, ziadosti, charita, jednoStlpec, label
       <div style={{ minWidth: 0 }}><Hd>{labelSkutky}</Hd><div style={col}>{skutky}</div></div>
       <div style={{ minWidth: 0 }}><Hd>{labelZiadosti}</Hd><div style={col}>{ziadosti}</div></div>
       {tri && <div style={{ minWidth: 0 }}><Hd>{labelCharita}</Hd><div style={col}>{charita}</div></div>}
+    </div>
+  );
+}
+
+// ============================================================
+// FILTRE + STAT (desktop) — filter-taby a štatistický riadok na JEDNOM riadku
+// (filtre naľavo flex:1, kompaktný StatRiadok napravo). Na mobile/tablete
+// ostávajú pod sebou ako doteraz. `stat` posielaj s `inline` na desktope.
+// ============================================================
+export function FiltreStat({ filtre, stat }: { filtre: ReactNode; stat: ReactNode }) {
+  const { desktop } = useLayout();
+  if (!desktop) return <>{filtre}{stat}</>;
+  return (
+    <div style={{ display: "flex", gap: 12, alignItems: "center", paddingRight: 16, marginBottom: 8 }}>
+      <div style={{ flex: 1, minWidth: 0 }}>{filtre}</div>
+      <div style={{ flex: "0 0 440px", maxWidth: 440 }}>{stat}</div>
+    </div>
+  );
+}
+
+// ============================================================
+// FEED GRID (desktop) — N-stĺpcová masonry pre Instagram karty. Karty majú
+// rôznu výšku → CSS multicol (column-fill: balance) ich poskladá bez medzier.
+// Použité v Help/Charita na plnú šírku (hustejšie než 2-stĺpcový FeedStlpce).
+// ============================================================
+export function FeedGrid({ cards, cols = 3, gap = 16, padding = "4px 16px 14px" }: { cards: ReactNode[]; cols?: number; gap?: number; padding?: string }) {
+  return (
+    <div style={{ columnCount: cols, columnGap: gap, padding }}>
+      {cards.map((c, i) => (
+        <div key={i} style={{ breakInside: "avoid", marginBottom: gap }}>{c}</div>
+      ))}
     </div>
   );
 }

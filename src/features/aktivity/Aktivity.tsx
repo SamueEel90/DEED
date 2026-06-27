@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { ModulHlavicka, Hlavicka, PodporaSekcia, PlatbaModal, HladanieModal, toast, Oslava, useMotiv, useLayout, useScrollHore, useStrankaAkcie, useTvorbaGate, Ticker, StatRiadok, FeedStlpce, obalSiroky, OkruhVyber, Lupa, Zvon, IkonaSipVlavo, IkonaMoznosti, Zdielanie, IkonaUlozit, IkonaFoto, IkonaPlus, IkonaPlay, IkonaDoska, IkonaPin, FotoPrispevku, FeedSkeleton, EmptyState, ErrorState, ScreenSwitch } from "@/shared";
+import { ModulHlavicka, Hlavicka, PodporaSekcia, PlatbaModal, HladanieModal, toast, Oslava, useMotiv, useLayout, useScrollHore, useStrankaAkcie, useTvorbaGate, Ticker, StatRiadok, FiltreStat, FeedStlpce, obalSiroky, OkruhVyber, Lupa, Zvon, IkonaSipVlavo, IkonaMoznosti, Zdielanie, IkonaUlozit, IkonaFoto, IkonaPlus, IkonaPlay, IkonaDoska, IkonaPin, FotoPrispevku, FeedSkeleton, EmptyState, ErrorState, ScreenSwitch } from "@/shared";
 import { C, GRAD, GRAD_ZELENY } from "@/theme";
 import { pripravFeed, FEED_CFG } from "@/lib/feed";
 import { MEDIA_AR } from "@/lib/cardSize";
@@ -287,12 +287,13 @@ function Home({ items, dom, view, pickDom, pickView, toast, open, openPerson, se
           : <>Cyklo TN <b style={{ color: C.greenL }}>práve dostal 100 DEED</b> → Marek</>}
       </Ticker>
 
-      {/* filter hore na stránke — domény + sub-záložky (predtým bol v spodnom „kontextovom doku") */}
-      {filterBar}
-
-      {/* štatistický riadok — počet vo zvolenom okruhu + výber okruhu */}
-      <StatRiadok pocet={feed.length} jednotka="aktivít" mesiac="9 480"
-        okruh={FEED_CFG.radiusy[radius].krat} onOkruh={() => setVyberOkruh(true)} />
+      {/* filter hore na stránke + štatistický riadok — na desktope na jednom riadku */}
+      <FiltreStat filtre={filterBar}
+        stat={
+          <StatRiadok inline={desktop} pocet={feed.length} jednotka="aktivít" mesiac="9 480"
+            okruh={FEED_CFG.radiusy[radius].krat} onOkruh={() => setVyberOkruh(true)} />
+        }
+      />
 
       {/* feed — desktop: stĺpec na doménu (všetky naraz); tablet/PC úzky: 2 stĺpce; mobil: 1 stĺpec */}
       {isError ? (

@@ -181,7 +181,7 @@ export interface KategoriaKonfig {
 
 /** Položka feedu v module Good (POLOZKY). */
 export interface GoodPolozka extends FeedKartaZaklad {
-  id: number;
+  id: number | string;   // mock = number; Supabase = uuid
   typ: GoodTyp;
   velkost: Velkost;
   kat: Kategoria;
@@ -433,6 +433,13 @@ export interface RebricekKategoria {
 export type RebricekRozsah = "Štvrť" | "Mesto" | "Celá SR";
 
 /* 8) MODUL MAPA (UROVNE, POCTY_KM, POCTY_UROVEN) */
+
+/** Bod na mape — skutok (príspevok) alebo udalosť s reálnym geo. Fáza H. */
+export interface MapaBod extends GeoBod {
+  druh: "skutok" | "udalost";
+  modul?: Modul;
+  typ?: string;
+}
 
 export type UrovenTuple = [kod: MapaUroven, label: string];
 export type Pocty = [skutky: number, udalosti: number];

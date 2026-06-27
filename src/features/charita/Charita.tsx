@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { C, U, AV, GRAD, GRAD_ZELENY } from "@/theme";
-import { Foto, Avatar, FotoPrispevku, MiniFotky, ModulHlavicka, PodporaSekcia, PlatbaModal, HladanieModal, toast, useGaleria, useLayout, useScrollHore, useStrankaAkcie, useTvorbaGate, Ticker, StatRiadok, MoniBar, FeedStlpce, obalSiroky, OkruhVyber, Lupa, Zvon, Zdielanie, IkonaSpat, IkonaVlajka, IkonaFoto, IkonaPlay, IkonaDoska, IkonaOpakovat, IkonaKriz, IkonaInstitucia, FeedSkeleton, SkeletonRiadky, EmptyState, ErrorState, ScreenSwitch } from "@/shared";
+import { Foto, Avatar, FotoPrispevku, MiniFotky, ModulHlavicka, PodporaSekcia, PlatbaModal, HladanieModal, toast, useGaleria, useLayout, useScrollHore, useStrankaAkcie, useTvorbaGate, Ticker, StatRiadok, FiltreStat, MoniBar, FeedStlpce, FeedGrid, obalSiroky, OkruhVyber, Lupa, Zvon, Zdielanie, IkonaSpat, IkonaVlajka, IkonaFoto, IkonaPlay, IkonaDoska, IkonaOpakovat, IkonaKriz, IkonaInstitucia, FeedSkeleton, SkeletonRiadky, EmptyState, ErrorState, ScreenSwitch } from "@/shared";
 import { pripravFeed, FEED_CFG } from "@/lib/feed";
 import { MEDIA_AR } from "@/lib/cardSize";
 import { Zvoncek } from "@/features/notifikacie/Notifikacie";
@@ -143,21 +143,25 @@ function CharitaFeed({ wide, toast, onDetail, onHladaj, onSheet }: FeedProps) {
       {/* živý ticker */}
       <Ticker>Liga proti rakovine <b style={{ color: C.greenL }}>práve dostala 100 DEED</b> → Marek</Ticker>
 
-      {/* skratka na Adresár charít & OZ (rebríčky sú teraz v module Top) */}
-      <div style={{ padding: "0 16px 12px" }}>
-        <div onClick={() => onSheet("dir")} style={{ display: "flex", alignItems: "center", gap: 12, background: K.blueBg, border: `1px solid ${K.blueEdge}`, borderRadius: 14, padding: "12px 14px", cursor: "pointer" }}>
-          <span style={{ width: 38, height: 38, borderRadius: 11, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(91,168,240,.15)", color: K.blue }}><IkonaInstitucia size={20} color={K.blue} /></span>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 14, fontWeight: 700 }}>Adresár charít & OZ</div>
-            <div style={{ fontSize: 11.5, color: C.textTer }}>Overené organizácie na jednom mieste</div>
+      {/* skratka na Adresár charít & OZ + štatistický riadok — na desktope na jednom riadku */}
+      <FiltreStat
+        filtre={
+          <div style={{ padding: "0 16px 12px" }}>
+            <div onClick={() => onSheet("dir")} style={{ display: "flex", alignItems: "center", gap: 12, background: K.blueBg, border: `1px solid ${K.blueEdge}`, borderRadius: 14, padding: "12px 14px", cursor: "pointer" }}>
+              <span style={{ width: 38, height: 38, borderRadius: 11, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(91,168,240,.15)", color: K.blue }}><IkonaInstitucia size={20} color={K.blue} /></span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 14, fontWeight: 700 }}>Adresár charít & OZ</div>
+                <div style={{ fontSize: 11.5, color: C.textTer }}>Overené organizácie na jednom mieste</div>
+              </div>
+              <span style={{ color: C.textTer, fontSize: 16 }}>›</span>
+            </div>
           </div>
-          <span style={{ color: C.textTer, fontSize: 16 }}>›</span>
-        </div>
-      </div>
-
-      {/* štatistický riadok — počet vo zvolenom okruhu + výber okruhu */}
-      <StatRiadok pocet={feed.length} jednotka="zbierok" mesiac="12 840"
-        okruh={(FEED_CFG.radiusy as any)[radius].krat} onOkruh={() => setVyberOkruh(true)} />
+        }
+        stat={
+          <StatRiadok inline={desktop} pocet={feed.length} jednotka="zbierok" mesiac="12 840"
+            okruh={(FEED_CFG.radiusy as any)[radius].krat} onOkruh={() => setVyberOkruh(true)} />
+        }
+      />
 
       {/* feed — na tablete/PC: zapoj sa vľavo, zbierky vpravo (zoradené algoritmom) */}
       {isError ? (
@@ -167,12 +171,7 @@ function CharitaFeed({ wide, toast, onDetail, onHladaj, onSheet }: FeedProps) {
       ) : feed.length === 0 ? (
         <EmptyState emoji="💛" title="Žiadne zbierky v okruhu" text="Skús väčší okruh." />
       ) : desktop ? (
-        <div style={{ maxWidth: 1140, margin: "0 auto" }}>
-          <FeedStlpce wide padding="4px 14px 12px"
-            labelSkutky="Zapoj sa" labelZiadosti="Zbierky"
-            skutky={feed.filter((it) => it.typ === "skutok").map(karta)}
-            ziadosti={feed.filter((it) => it.typ !== "skutok").map(karta)} />
-        </div>
+        <FeedGrid cols={3} cards={feed.map(karta)} />
       ) : (
         <FeedStlpce wide={wide} padding="4px 14px 12px"
           labelSkutky="Zapoj sa" labelZiadosti="Zbierky"
