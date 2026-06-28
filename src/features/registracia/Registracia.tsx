@@ -9,21 +9,27 @@
 // Po dokončení flow zavolá setSession → gate v Screens otvorí appku.
 // ============================================================
 import { useState } from "react";
-import { C, GRAD } from "@/theme";
+import { C, GRAD, SPACE, RADIUS } from "@/theme";
 import { Otazka, toast, m, tint, IkonaOsoba, IkonaCharita, IkonaStit, IkonaInstitucia, IkonaSipVpravo } from "@/shared";
 import { pressable } from "@/components/pressable";
 import { setSession } from "@/lib/session";
+import type { TypUctu } from "@/types";
 import { AuthPage } from "./AuthPage";
 import { OsobaFlow } from "./OsobaFlow";
 import { CharitaFlow } from "./CharitaFlow";
 
 type TypSubjektu = "osoba" | "charita";
 
-export function Registracia({ onHotovo, start }: { onHotovo?: () => void; start?: "aktivny" }) {
-  const [auth, setAuth] = useState(false); // prešiel cez login/register?
-  const [typ, setTyp] = useState<TypSubjektu | null>(null); // null | "osoba" | "charita"
+// resume = boot zistil prihláseného usera bez dokončeného účtu → skoč do flow.
+export function Registracia({ onHotovo, start, resume }: { onHotovo?: () => void; start?: "aktivny"; resume?: { authId: string; typ?: TypUctu; stav?: string } }) {
+  // auth identita (Supabase Auth) — z resume pri boote, alebo po signup/login
+  const [authId, setAuthId] = useState<string | null>(resume?.authId ?? null);
+  const [email, setEmail] = useState<string>("");
+  const [typ, setTyp] = useState<TypSubjektu | null>(
+    resume?.typ === "charita" ? "charita" : (resume?.typ === "aktivny" || resume?.typ === "pasivny") ? "osoba" : null
+  );
 
-  // upgrade overlay (pasívny → aktívny) — rovno do aktívneho osoba toku
+  // upgrade overlay (pasívny → aktívny) — legacy telefón tok (samostatný follow-up na auth)
   if (start === "aktivny") {
     return (
       <div style={{ height: "100%", position: "relative", background: C.bg }}>
@@ -32,21 +38,30 @@ export function Registracia({ onHotovo, start }: { onHotovo?: () => void; start?
     );
   }
 
-  // prihlásenie / hosť → do appky ako demo náhľad (mock — bez reálneho backendu)
+  // hosť → demo náhľad (bez Supabase Auth — pre vývoj)
   const doApp = () => {
     setSession({ demo: true });
     onHotovo?.();
   };
 
+  // po úspešnej registrácii / logine-ktorý-potrebuje-onboarding
+  const onAuthed = (id: string, em: string, t?: TypUctu) => {
+    setAuthId(id);
+    setEmail(em);
+    if (t === "charita") setTyp("charita");
+    else if (t === "aktivny" || t === "pasivny") setTyp("osoba");
+    // inak ostane null → „Kto si?"
+  };
+
   let obsah;
-  if (!auth) {
-    obsah = <AuthPage onSignIn={doApp} onSignUp={() => setAuth(true)} onGuest={doApp} />;
+  if (!authId) {
+    obsah = <AuthPage onAuthed={onAuthed} onGuest={doApp} />;
   } else if (typ === "osoba") {
-    obsah = <OsobaFlow onHotovo={onHotovo} onSpat={() => setTyp(null)} toast={toast} />;
+    obsah = <OsobaFlow authId={authId} email={email} resume={!!resume} onHotovo={onHotovo} onSpat={() => setTyp(null)} toast={toast} />;
   } else if (typ === "charita") {
-    obsah = <CharitaFlow onHotovo={onHotovo} onSpat={() => setTyp(null)} toast={toast} />;
+    obsah = <CharitaFlow authId={authId} email={email} resume={!!resume} onHotovo={onHotovo} onSpat={() => setTyp(null)} toast={toast} />;
   } else {
-    obsah = <VidlickaTyp onPick={setTyp} onSpat={() => setAuth(false)} toast={toast} />;
+    obsah = <VidlickaTyp onPick={setTyp} onSpat={() => setAuthId(null)} toast={toast} />;
   }
 
   return (
@@ -78,8 +93,8 @@ function VidlickaTyp({
     <div style={{ height: "100%", display: "flex", flexDirection: "column", background: C.bg }}>
       <div style={{ flex: 1, overflowY: "auto", padding: "34px 18px 18px" }}>
         {/* brand */}
-        <div style={{ display: "flex", alignItems: "center", gap: 13, marginBottom: 22 }}>
-          <span style={{ width: 46, height: 46, borderRadius: 14, background: GRAD, color: "#fff", fontWeight: 800, fontSize: 23, display: "flex", alignItems: "center", justifyContent: "center", position: "relative", boxShadow: "0 6px 18px rgba(78,122,62,.42)", flex: "0 0 auto" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm, marginBottom: SPACE.lg }}>
+          <span style={{ width: 46, height: 46, borderRadius: RADIUS.md, background: GRAD, color: "#fff", fontWeight: 800, fontSize: 23, display: "flex", alignItems: "center", justifyContent: "center", position: "relative", boxShadow: "0 6px 18px rgba(78,122,62,.42)", flex: "0 0 auto" }}>
             D<span style={{ position: "absolute", top: 6, right: 7, fontSize: 11 }}>+</span>
           </span>
           <div style={{ minWidth: 0 }}>
@@ -98,26 +113,26 @@ function VidlickaTyp({
             transition={{ delay: 0.06 + i * 0.1, duration: 0.55, ease: "easeOut" }}
             whileHover={{ y: -3, rotate: [0, -1.3, 1.3, 0], boxShadow: `0 14px 30px ${tint(o.col, 0.28)}`, transition: { rotate: { duration: 0.4 }, default: { type: "spring", stiffness: 380, damping: 18 } } }}
             whileTap={{ scale: 0.985 }}
-            style={{ display: "flex", alignItems: "center", gap: 14, padding: 15, borderRadius: 18, marginBottom: 12, cursor: "pointer", background: C.surface, border: `1px solid ${C.line}` }}
+            style={{ display: "flex", alignItems: "center", gap: SPACE.gutter, padding: SPACE.md, borderRadius: RADIUS.md, marginBottom: SPACE.sm, cursor: "pointer", background: C.surface, border: `1px solid ${C.line}` }}
           >
-            <span style={{ width: 46, height: 46, borderRadius: 14, flex: "0 0 auto", display: "flex", alignItems: "center", justifyContent: "center", background: tint(o.col, 0.14), border: `1px solid ${tint(o.col, 0.28)}` }}>
+            <span style={{ width: 46, height: 46, borderRadius: RADIUS.md, flex: "0 0 auto", display: "flex", alignItems: "center", justifyContent: "center", background: tint(o.col, 0.14), border: `1px solid ${tint(o.col, 0.28)}` }}>
               <o.Ikona size={23} color={o.col} />
             </span>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: SPACE.xs, flexWrap: "wrap" }}>
                 <span style={{ fontSize: 17, fontWeight: 800, letterSpacing: "-.01em" }}>{o.title}</span>
                 {o.soon && (
-                  <span style={{ fontSize: 9.5, fontWeight: 800, letterSpacing: ".04em", textTransform: "uppercase", color: C.textTer, background: "rgba(var(--glass-rgb),.07)", border: `1px solid ${C.line}`, borderRadius: 8, padding: "2px 7px" }}>čoskoro</span>
+                  <span style={{ fontSize: 9.5, fontWeight: 800, letterSpacing: ".04em", textTransform: "uppercase", color: C.textTer, background: "rgba(var(--glass-rgb),.07)", border: `1px solid ${C.line}`, borderRadius: RADIUS.xs, padding: `${SPACE.xxs}px ${SPACE.xs}px` }}>čoskoro</span>
                 )}
               </div>
-              <div style={{ fontSize: 12.5, color: C.textSec, marginTop: 3, lineHeight: 1.45 }}>{o.desc}</div>
+              <div style={{ fontSize: 12.5, color: C.textSec, marginTop: SPACE.xxs, lineHeight: 1.45 }}>{o.desc}</div>
             </div>
             {!o.soon && <IkonaSipVpravo size={18} color={C.textTer} />}
           </m.div>
         ))}
       </div>
 
-      <div style={{ padding: "12px 18px 18px", textAlign: "center", flex: "0 0 auto" }}>
+      <div style={{ padding: `${SPACE.sm}px ${SPACE.md}px ${SPACE.md}px`, textAlign: "center", flex: "0 0 auto" }}>
         <span onClick={onSpat} style={{ fontSize: 13, color: C.textTer, cursor: "pointer" }}>
           ← Späť na prihlásenie
         </span>

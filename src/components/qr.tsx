@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import type { ReactNode } from "react";
-import { C, GRAD_ZELENY } from "@/theme";
+import { C, GRAD_ZELENY, SPACE, RADIUS } from "@/theme";
 import { tint } from "@/lib/ui";
 import { qrHash, qrPrng, qrFinder, QR_TYPY } from "@/lib/qr";
 import { Sheet } from "@/components/sheet";
@@ -15,7 +15,7 @@ export function QrVizual({ data = "deed", size = 132, fg = "#0B0C10" }: { data?:
     bunky.push(f ? f === "dark" : rnd() > 0.52);
   }
   return (
-    <div style={{ width: size, height: size, background: "#fff", borderRadius: 12, padding: size * 0.07, flex: "0 0 auto", boxShadow: "0 6px 18px rgba(0,0,0,.18)" }}>
+    <div style={{ width: size, height: size, background: "#fff", borderRadius: RADIUS.sm, padding: size * 0.07, flex: "0 0 auto", boxShadow: "0 6px 18px rgba(0,0,0,.18)" }}>
       <div style={{ width: "100%", height: "100%", display: "grid", gridTemplateColumns: `repeat(${N},1fr)`, gridTemplateRows: `repeat(${N},1fr)` }}>
         {bunky.map((on, k) => <i key={k} style={{ background: on ? fg : "transparent" }} />)}
       </div>
@@ -45,7 +45,7 @@ export function QrModal({ typ = "skutok", titul, popis, odkaz = "https://deed.ap
   };
 
   const out = (ic: ReactNode, label: ReactNode, sub: ReactNode, onClick?: () => void) => (
-    <button onClick={onClick} style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: 5, padding: "12px 6px", borderRadius: 13, background: C.surface2, border: `1px solid ${C.line}`, color: C.text, cursor: "pointer", fontFamily: "inherit" }}>
+    <button onClick={onClick} style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: SPACE.xxs, padding: `${SPACE.sm}px ${SPACE.xs}px`, borderRadius: RADIUS.sm, background: C.surface2, border: `1px solid ${C.line}`, color: C.text, cursor: "pointer", fontFamily: "inherit" }}>
       <span style={{ color: meta.col }}>{ic}</span>
       <span style={{ fontSize: 12, fontWeight: 700 }}>{label}</span>
       <span style={{ fontSize: 9.5, color: C.textTer }}>{sub}</span>
@@ -54,27 +54,27 @@ export function QrModal({ typ = "skutok", titul, popis, odkaz = "https://deed.ap
 
   return (
     <Sheet onClose={onClose}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
-        <span style={{ width: 36, height: 36, borderRadius: 11, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", background: tint(meta.col, .16), color: meta.col }}><IkonaDoska size={18} color={meta.col} /></span>
+      <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm, marginBottom: SPACE.gutter }}>
+        <span style={{ width: 36, height: 36, borderRadius: RADIUS.sm, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", background: tint(meta.col, .16), color: meta.col }}><IkonaDoska size={18} color={meta.col} /></span>
         <div style={{ minWidth: 0 }}>
           <div style={{ fontSize: 15, fontWeight: 800 }}>{titul || meta.tag}</div>
           <div style={{ fontSize: 11.5, color: C.textTer, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{popis || meta.popis}</div>
         </div>
-        <span style={{ marginLeft: "auto", flex: "none", fontSize: 10, fontWeight: 700, padding: "3px 9px", borderRadius: 8, background: tint(meta.col, .14), color: meta.col }}>{meta.tag}</span>
+        <span style={{ marginLeft: "auto", flex: "none", fontSize: 10, fontWeight: 700, padding: `${SPACE.xxs}px ${SPACE.xs}px`, borderRadius: RADIUS.xs, background: tint(meta.col, .14), color: meta.col }}>{meta.tag}</span>
       </div>
 
       {/* samotný QR */}
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10, padding: "6px 0 4px" }}>
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: SPACE.sm, padding: `${SPACE.xs}px 0 ${SPACE.xxs}px` }}>
         <div style={{ position: "relative" }}>
           <QrVizual data={seed} size={156} />
           {reazPct != null && (
-            <span style={{ position: "absolute", top: -8, right: -8, fontSize: 10, fontWeight: 800, padding: "4px 9px", borderRadius: 20, background: GRAD_ZELENY, color: "#06281d", boxShadow: "0 4px 12px rgba(31,191,143,.4)" }}>D+R {reazPct}%</span>
+            <span style={{ position: "absolute", top: -8, right: -8, fontSize: 10, fontWeight: 800, padding: `${SPACE.xxs}px ${SPACE.xs}px`, borderRadius: RADIUS.lg, background: GRAD_ZELENY, color: "#06281d", boxShadow: "0 4px 12px rgba(31,191,143,.4)" }}>D+R {reazPct}%</span>
           )}
         </div>
         {prijemca && <div style={{ fontSize: 12, color: C.textSec }}>{reazPct}% ide ďalej → <b style={{ color: C.text }}>{prijemca}</b></div>}
         {rotujuci ? (
-          <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11.5, color: C.textTer }}>
-            <span style={{ width: 22, height: 22, borderRadius: "50%", border: `2px solid ${tint(meta.col, .3)}`, borderTopColor: meta.col, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 800, color: meta.col, animation: "tocenie 1s linear infinite" }} />
+          <div style={{ display: "flex", alignItems: "center", gap: SPACE.xs, fontSize: 11.5, color: C.textTer }}>
+            <span style={{ width: 22, height: 22, borderRadius: RADIUS.round, border: `2px solid ${tint(meta.col, .3)}`, borderTopColor: meta.col, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 800, color: meta.col, animation: "tocenie 1s linear infinite" }} />
             obnoví sa o <b style={{ color: meta.col }}>{zb}s</b> · screenshot neplatný (anti-relay)
           </div>
         ) : (
@@ -83,7 +83,7 @@ export function QrModal({ typ = "skutok", titul, popis, odkaz = "https://deed.ap
       </div>
 
       {/* 3 výstupy — univerzálne pravidlo §10 */}
-      <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
+      <div style={{ display: "flex", gap: SPACE.xs, marginTop: SPACE.gutter }}>
         {out(<Lupa size={18} color={meta.col} />, "Skenovať", "fotoaparát", () => toast?.("Otváram fotoaparát na skenovanie (demo)"))}
         {out(<IkonaUlozit size={18} color={meta.col} />, "Kopírovať", "odkaz", kopiruj)}
         {out(<Zdielanie size={18} color={meta.col} />, "Zdieľať", "siete", zdielaj)}

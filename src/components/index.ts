@@ -16,5 +16,7 @@ export * from "@/components/motion";
 export * from "@/components/sheet";
 export * from "@/components/upgrade";
 export * from "@/components/pressable";
+export * from "@/components/segtabs";
+export * from "@/components/virtuallist";
 export * from "@/components/toast";
 export { tint } from "@/lib/ui";

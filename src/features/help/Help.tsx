@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { C, pasmo, inp, infoBox, btn, GRAD_ZELENY, glassTmavy } from "@/theme";
+import { C, pasmo, inp, infoBox, btn, GRAD_ZELENY, glassTmavy, SPACE, RADIUS } from "@/theme";
 import { Foto, Avatar, FotoPrispevku, MiniFotky, Hlavicka, ModulHlavicka, PodporaSekcia, PlatbaModal, HladanieModal, Otazka, Vyber, vyberBox, NavBtns, Suhrn, DokladRow, toast, useGaleria, useLayout, useScrollHore, useStrankaAkcie, useTvorbaGate, Ticker, StatRiadok, FiltreStat, MoniBar, FeedStlpce, FeedGrid, obalSiroky, OkruhVyber, Lupa, Zdielanie, IkonaSpat, IkonaVlajka, IkonaFoto, IkonaPlay, IkonaDoska, IkonaPin, FeedSkeleton, EmptyState, ErrorState, ScreenSwitch } from "@/shared";
 import { Zvoncek } from "@/features/notifikacie/Notifikacie";
 import { pripravFeed, FEED_CFG } from "@/lib/feed";
@@ -93,11 +93,11 @@ function Feed({ wide, toast, onDetail, onHladaj, onAdd }: { wide?: boolean; toas
   }), []);
 
   return (
-    <div style={{ paddingBottom: 14 }}>
+    <div style={{ paddingBottom: SPACE.gutter }}>
       {/* header — jednotná hlavička (logo D⁺ + názov) */}
       <ModulHlavicka title="Help" karma="Pomoc · Silver" right={
         <>
-          <span onClick={onHladaj} style={{ display: "flex", alignItems: "center", cursor: "pointer" }}><Lupa size={20} color={C.textSec} /></span>
+          <span {...pressable(onHladaj, "Hľadať")} style={{ display: "flex", alignItems: "center", cursor: "pointer" }}><Lupa size={20} color={C.textSec} /></span>
           <Zvoncek color={C.textSec} toast={toast} />
         </>
       } />
@@ -108,7 +108,7 @@ function Feed({ wide, toast, onDetail, onHladaj, onAdd }: { wide?: boolean; toas
       {/* filter typu pomoci + štatistický riadok — na desktope na jednom riadku */}
       <FiltreStat
         filtre={
-          <div style={{ display: "flex", gap: 8, padding: "0 16px 8px" }}>
+          <div style={{ display: "flex", gap: SPACE.xs, padding: `0 ${SPACE.md}px ${SPACE.xs}px` }}>
             <Seg on={view === "all"} col="var(--a-info)" label="Všetko" onClick={() => setView("all")} />
             <Seg on={view === "ziadost"} col="var(--a-danger)" emoji="🙋" label="Žiadosti" onClick={() => setView("ziadost")} />
             <Seg on={view === "ponuka"} col="var(--a-plum)" emoji="🤝" label="Ponuky" onClick={() => setView("ponuka")} />
@@ -148,7 +148,7 @@ function Feed({ wide, toast, onDetail, onHladaj, onAdd }: { wide?: boolean; toas
 // segment filtra typu pomoci (Všetko / Žiadosti / Ponuky) — theme-aware cez tint(col)
 function Seg({ on, col, label, emoji, onClick }: { on: boolean; col: string; label: string; emoji?: string; onClick: () => void }) {
   return (
-    <div onClick={onClick} aria-current={on ? "page" : undefined} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, height: 38, borderRadius: 11, fontSize: 12.5, fontWeight: on ? 700 : 600, cursor: "pointer", whiteSpace: "nowrap", background: on ? tint(col, .15) : C.surface2, border: `1px solid ${on ? tint(col, .5) : C.line2}`, color: on ? col : C.textSec }}>
+    <div {...pressable(onClick, label)} aria-current={on ? "page" : undefined} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: SPACE.xs, height: 38, borderRadius: RADIUS.sm, fontSize: 12.5, fontWeight: on ? 700 : 600, cursor: "pointer", whiteSpace: "nowrap", background: on ? tint(col, .15) : C.surface2, border: `1px solid ${on ? tint(col, .5) : C.line2}`, color: on ? col : C.textSec }}>
       {emoji && <span style={{ fontSize: 13 }}>{emoji}</span>}{label}
     </div>
   );
@@ -163,26 +163,26 @@ function FeedCard({ z, wide, onClick }: { z: any; wide?: boolean; onClick: () =>
   const accent = jeZiadost ? (z.sponzor ? C.gold : C.red) : jePonuka ? C.purple : C.gold;
   const typLabel = jeZiadost ? `ŽIADOSŤ · ${z.sponzor ? "D++" : "D+"}` : jePonuka ? "PONUKA POMOCI" : "CHARITA";
   return (
-    <div {...pressable(onClick, z.nazov)} className="good-card" style={{ margin: wide ? 0 : "0 -16px 10px", border: wide ? `1px solid ${C.line}` : "none", borderBottom: `1px solid ${wide ? C.line : C.line2}`, borderLeft: `3px solid ${jeKriza ? C.red : accent}`, borderRadius: wide ? 17 : 0, overflow: "hidden", background: C.surface2, boxShadow: jeKriza && wide ? `0 0 0 1.5px ${tint(C.red, .5)}, 0 8px 24px ${tint(C.red, .14)}` : undefined, cursor: jeZiadost ? "pointer" : "default" }}>
+    <div {...pressable(onClick, z.nazov)} className="good-card" style={{ margin: wide ? 0 : `0 ${-SPACE.md}px ${SPACE.sm}px`, border: wide ? `1px solid ${C.line}` : "none", borderBottom: `1px solid ${wide ? C.line : C.line2}`, borderLeft: `3px solid ${jeKriza ? C.red : accent}`, borderRadius: wide ? RADIUS.md : 0, overflow: "hidden", background: C.surface2, boxShadow: jeKriza && wide ? `0 0 0 1.5px ${tint(C.red, .5)}, 0 8px 24px ${tint(C.red, .14)}` : undefined, cursor: jeZiadost ? "pointer" : "default" }}>
       {/* médium — 16:9 na tablete/desktope; na mobile pôvodná výška 230 px */}
       <div style={{ position: "relative", ...(wide ? { width: "100%", aspectRatio: MEDIA_AR } : { height: 230 }) }}>
         <FotoPrispevku fotky={z.fotky} emoji={z.ikona} h={wide ? "100%" : 230} disableGaleria />
         <div style={{ position: "absolute", inset: 0, background: "linear-gradient(0deg, rgba(0,0,0,.34), transparent 42%)", pointerEvents: "none" }} />
-        {jeKriza && <span style={{ position: "absolute", top: 10, left: 10, background: C.red, color: "#fff", fontSize: 11, fontWeight: 800, borderRadius: 9, padding: "5px 11px", pointerEvents: "none", boxShadow: "0 2px 10px rgba(0,0,0,.3)" }}>🔴 URGENTNÉ</span>}
-        <span style={{ position: "absolute", top: 10, ...(jeKriza ? { right: 10 } : { left: 10 }), background: accent, color: "#fff", fontSize: 9.5, fontWeight: 800, borderRadius: 20, padding: "3px 10px", pointerEvents: "none" }}>{typLabel}</span>
-        {z.sponzor && !jeKriza && <span style={{ position: "absolute", top: 10, right: 10, background: "rgba(8,11,18,.62)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)", color: "#fff", fontSize: 9.5, fontWeight: 700, borderRadius: 8, padding: "3px 8px", pointerEvents: "none" }}>🛡 {z.sponzor.meno} · {z.sponzor.suma} €</span>}
+        {jeKriza && <span style={{ position: "absolute", top: 10, left: 10, background: C.red, color: "#fff", fontSize: 11, fontWeight: 800, borderRadius: RADIUS.xs, padding: `${SPACE.xxs}px ${SPACE.sm}px`, pointerEvents: "none", boxShadow: "0 2px 10px rgba(0,0,0,.3)" }}>🔴 URGENTNÉ</span>}
+        <span style={{ position: "absolute", top: 10, ...(jeKriza ? { right: 10 } : { left: 10 }), background: accent, color: "#fff", fontSize: 9.5, fontWeight: 800, borderRadius: RADIUS.lg, padding: `${SPACE.xxs}px ${SPACE.sm}px`, pointerEvents: "none" }}>{typLabel}</span>
+        {z.sponzor && !jeKriza && <span style={{ position: "absolute", top: 10, right: 10, background: "rgba(8,11,18,.62)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)", color: "#fff", fontSize: 9.5, fontWeight: 700, borderRadius: RADIUS.xs, padding: `${SPACE.xxs}px ${SPACE.xs}px`, pointerEvents: "none" }}>🛡 {z.sponzor.meno} · {z.sponzor.suma} €</span>}
       </div>
       {/* titul + príbeh */}
-      <div style={{ padding: "12px 14px 14px" }}>
-        <div style={{ fontSize: 16, fontWeight: 700, lineHeight: 1.35, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+      <div style={{ padding: `${SPACE.sm}px ${SPACE.gutter}px ${SPACE.gutter}px` }}>
+        <div style={{ fontSize: 16, fontWeight: 700, lineHeight: 1.35, display: "flex", alignItems: "center", gap: SPACE.xs, flexWrap: "wrap" }}>
           <span style={{ flex: "0 1 auto", minWidth: 0 }}>{z.nazov}</span>
           {z.overeny && <span style={tagChip(C.greenL)}>✓ overená</span>}
           {z.odbornik && <span style={tagChip(C.purple)}>✓ odborník</span>}
           {z.typ === "charity" && !z.sponzor && <span style={tagChip(C.gold)}>hľadá pomoc</span>}
         </div>
-        {z.lok && <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 6, fontSize: 12, color: C.textSec, fontWeight: 600 }}><IkonaPin size={12} color={C.textSec} />{z.lok}{z.karma ? ` · ${z.karma}` : ""}</div>}
-        <div style={{ fontSize: 13.5, color: C.textSec, marginTop: 7, lineHeight: 1.5 }}>{z.pribeh}</div>
-        {jeZiadost && z.ciel ? <div style={{ marginTop: 10 }}><MoniBar vyzbierane={z.suma} ciel={z.ciel} mini /></div> : null}
+        {z.lok && <div style={{ display: "flex", alignItems: "center", gap: SPACE.xxs, marginTop: SPACE.xs, fontSize: 12, color: C.textSec, fontWeight: 600 }}><IkonaPin size={12} color={C.textSec} />{z.lok}{z.karma ? ` · ${z.karma}` : ""}</div>}
+        <div style={{ fontSize: 13.5, color: C.textSec, marginTop: SPACE.xs, lineHeight: 1.5 }}>{z.pribeh}</div>
+        {jeZiadost && z.ciel ? <div style={{ marginTop: SPACE.sm }}><MoniBar vyzbierane={z.suma} ciel={z.ciel} mini /></div> : null}
       </div>
     </div>
   );
@@ -212,38 +212,38 @@ function Detail({ z, onBack }: { z: any; onBack: () => void }) {
   const pct = Math.min(100, Math.round(suma / z.ciel * 100));
 
   return (
-    <div style={{ paddingBottom: 30 }}>
-      <div style={{ position: "sticky", top: 0, zIndex: 5, display: "flex", alignItems: "center", gap: 10, padding: "11px 14px", ...glassTmavy(18, .55), borderLeft: "none", borderRight: "none", borderTop: "none" }}>
-        <span onClick={onBack} style={{ width: 32, height: 32, borderRadius: "50%", background: "rgba(var(--glass-rgb),.06)", border: `1px solid ${C.line}`, display: "flex", alignItems: "center", justifyContent: "center", color: C.textSec, cursor: "pointer", flex: "0 0 auto" }}><IkonaSpat size={17} color={C.textSec} /></span>
-        <span style={{ fontSize: 13, fontWeight: "bold", color: C.blueL, background: "rgba(91,155,255,.12)", border: `1px solid rgba(91,155,255,.3)`, borderRadius: 9, padding: "3px 10px" }}>#47 821</span>
+    <div style={{ paddingBottom: SPACE.xl }}>
+      <div style={{ position: "sticky", top: 0, zIndex: 5, display: "flex", alignItems: "center", gap: SPACE.sm, padding: `${SPACE.sm}px ${SPACE.gutter}px`, ...glassTmavy(18, .55), borderLeft: "none", borderRight: "none", borderTop: "none" }}>
+        <span onClick={onBack} style={{ width: 32, height: 32, borderRadius: RADIUS.round, background: "rgba(var(--glass-rgb),.06)", border: `1px solid ${C.line}`, display: "flex", alignItems: "center", justifyContent: "center", color: C.textSec, cursor: "pointer", flex: "0 0 auto" }}><IkonaSpat size={17} color={C.textSec} /></span>
+        <span style={{ fontSize: 13, fontWeight: "bold", color: C.blueL, background: "rgba(91,155,255,.12)", border: `1px solid rgba(91,155,255,.3)`, borderRadius: RADIUS.xs, padding: `${SPACE.xxs}px ${SPACE.sm}px` }}>#47 821</span>
         <span style={{ fontSize: 11, fontWeight: "bold", color: z.sponzor ? C.gold : C.blueL }}>{z.sponzor ? "D++" : "D+"}</span>
-        <span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 14, color: C.textTer }}><Zdielanie size={17} color={C.textTer} /><IkonaVlajka size={16} color={C.textTer} /></span>
+        <span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: SPACE.gutter, color: C.textTer }}><Zdielanie size={17} color={C.textTer} /><IkonaVlajka size={16} color={C.textTer} /></span>
       </div>
 
       {/* hero foto — klik = celá obrazovka, swipe medzi fotkami (16:9 na desktope) */}
       <div style={{ position: "relative", ...(wide ? { width: "100%", aspectRatio: MEDIA_AR } : {}) }}>
         <Foto src={z.fotky && z.fotky[0]} emoji="🖼" h={wide ? "100%" : 175} w={wide ? "100%" : undefined} onClick={() => z.fotky?.length && otvorGaleriu(z.fotky, 0)} />
-        <span style={{ position: "absolute", top: 10, right: 10, background: "rgba(0,0,0,.55)", borderRadius: 20, padding: "4px 10px", fontSize: 10, color: "var(--a-green)", pointerEvents: "none", display: "inline-flex", alignItems: "center", gap: 5 }}><IkonaFoto size={12} color="var(--a-green)" /> foto z prípadu</span>
-        {z.fotky?.length > 1 && <span style={{ position: "absolute", bottom: 10, right: 10, background: "rgba(0,0,0,.6)", borderRadius: 12, padding: "3px 9px", fontSize: 10, color: "#fff", pointerEvents: "none" }}>⧉ {z.fotky.length} · klikni na foto</span>}
+        <span style={{ position: "absolute", top: 10, right: 10, background: "rgba(0,0,0,.55)", borderRadius: RADIUS.lg, padding: `${SPACE.xxs}px ${SPACE.sm}px`, fontSize: 10, color: "var(--a-green)", pointerEvents: "none", display: "inline-flex", alignItems: "center", gap: SPACE.xxs }}><IkonaFoto size={12} color="var(--a-green)" /> foto z prípadu</span>
+        {z.fotky?.length > 1 && <span style={{ position: "absolute", bottom: 10, right: 10, background: "rgba(0,0,0,.6)", borderRadius: RADIUS.sm, padding: `${SPACE.xxs}px ${SPACE.xs}px`, fontSize: 10, color: "#fff", pointerEvents: "none" }}>⧉ {z.fotky.length} · klikni na foto</span>}
       </div>
       <MiniFotky fotky={z.fotky} />
 
       {/* meta */}
-      <div style={{ padding: "13px 14px", borderBottom: `1px solid ${C.line2}`, display: "flex", gap: 11, alignItems: "center" }}>
+      <div style={{ padding: `${SPACE.sm}px ${SPACE.gutter}px`, borderBottom: `1px solid ${C.line2}`, display: "flex", gap: SPACE.sm, alignItems: "center" }}>
         <Avatar src={z.avatar} emoji="👤" size={46} border={`1px solid rgba(127,203,160,.5)`} />
         <div>
-          <div style={{ fontSize: 16, fontWeight: "bold" }}>{z.nazov} {z.overeny && <span style={{ fontSize: 9, color: C.greenL, border: `1px solid rgba(127,203,160,.4)`, borderRadius: 20, padding: "1px 6px" }}>overená</span>}</div>
-          <div style={{ marginTop: 4 }}><span style={{ fontSize: 9, fontWeight: 700, background: "rgba(240,199,90,.12)", border: "1px solid rgba(240,199,90,.3)", color: C.gold, borderRadius: 10, padding: "2px 7px" }}>⭐ {z.karma}</span> <span style={{ fontSize: 11, color: C.textTer }}>📍 {z.lok} · 1 deň</span></div>
+          <div style={{ fontSize: 16, fontWeight: "bold" }}>{z.nazov} {z.overeny && <span style={{ fontSize: 9, color: C.greenL, border: `1px solid rgba(127,203,160,.4)`, borderRadius: RADIUS.lg, padding: "1px 6px" }}>overená</span>}</div>
+          <div style={{ marginTop: SPACE.xxs }}><span style={{ fontSize: 9, fontWeight: 700, background: "rgba(240,199,90,.12)", border: "1px solid rgba(240,199,90,.3)", color: C.gold, borderRadius: RADIUS.sm, padding: `${SPACE.xxs}px ${SPACE.xs}px` }}>⭐ {z.karma}</span> <span style={{ fontSize: 11, color: C.textTer }}>📍 {z.lok} · 1 deň</span></div>
         </div>
       </div>
 
       {/* pribeh */}
-      <div style={{ padding: "14px 16px 10px", fontSize: 14, lineHeight: 1.5, color: C.text }}>{z.pribeh}</div>
+      <div style={{ padding: `${SPACE.gutter}px ${SPACE.md}px ${SPACE.sm}px`, fontSize: 14, lineHeight: 1.5, color: C.text }}>{z.pribeh}</div>
 
       {/* D++ sponzor */}
       {z.sponzor && (
-        <div style={{ margin: "0 14px 12px", background: "rgba(224,169,61,.08)", border: `1px solid rgba(224,169,61,.35)`, borderRadius: 10, padding: "10px 12px", display: "flex", alignItems: "center", gap: 10 }}>
-          <span style={{ background: "#fff", color: "#0B3D91", fontSize: 10, fontWeight: "bold", borderRadius: 6, padding: "5px 8px" }}>{z.sponzor.meno}</span>
+        <div style={{ margin: `0 ${SPACE.gutter}px ${SPACE.sm}px`, background: "rgba(224,169,61,.08)", border: `1px solid rgba(224,169,61,.35)`, borderRadius: RADIUS.sm, padding: `${SPACE.sm}px ${SPACE.sm}px`, display: "flex", alignItems: "center", gap: SPACE.sm }}>
+          <span style={{ background: "#fff", color: "#0B3D91", fontSize: 10, fontWeight: "bold", borderRadius: RADIUS.xs, padding: `${SPACE.xxs}px ${SPACE.xs}px` }}>{z.sponzor.meno}</span>
           <div style={{ fontSize: 11.5, color: C.textSec, lineHeight: 1.4 }}>
             <b>{z.sponzor.meno} pomohol sumou {z.sponzor.suma} €</b> · D++ sponzor žiadosti<br />
             <span style={{ color: C.textTer }}>transparentná suma · ⛓ blockchain dôkaz · ESG dopad (ESRS S3)</span>
@@ -252,13 +252,13 @@ function Detail({ z, onBack }: { z: any; onBack: () => void }) {
       )}
 
       {/* progres */}
-      <div style={{ margin: "0 14px 16px", background: C.surface2, border: `1px solid ${C.line}`, borderRadius: 12, padding: 14 }}>
+      <div style={{ margin: `0 ${SPACE.gutter}px ${SPACE.md}px`, background: C.surface2, border: `1px solid ${C.line}`, borderRadius: RADIUS.sm, padding: SPACE.gutter }}>
         <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
           <div><span style={{ fontSize: 26, fontWeight: "bold" }}>{Math.round(suma)} €</span> <span style={{ fontSize: 13, color: C.textTer }}>z {z.ciel} €</span></div>
           <span style={{ fontSize: 16, fontWeight: "bold", color: C.greenL }}>{pct} %</span>
         </div>
-        <div style={{ position: "relative", height: 12, borderRadius: 7, background: "rgba(var(--glass-rgb),.1)", margin: "11px 0 9px", overflow: "hidden" }}>
-          <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: `${pct}%`, background: GRAD_ZELENY, borderRadius: 7, transition: "width .6s ease", boxShadow: "0 0 14px rgba(43,212,155,.5)" }} />
+        <div style={{ position: "relative", height: 12, borderRadius: RADIUS.xs, background: "rgba(var(--glass-rgb),.1)", margin: `${SPACE.sm}px 0 ${SPACE.xs}px`, overflow: "hidden" }}>
+          <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: `${pct}%`, background: GRAD_ZELENY, borderRadius: RADIUS.xs, transition: "width .6s ease", boxShadow: "0 0 14px rgba(43,212,155,.5)" }} />
         </div>
         <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11.5 }}>
           <span style={{ color: C.textSec }}>👥 {ludia} ľudí pomohlo</span>
@@ -267,7 +267,7 @@ function Detail({ z, onBack }: { z: any; onBack: () => void }) {
       </div>
 
       {/* jednotná sekcia podpory */}
-      <div style={{ padding: "0 14px 14px" }}>
+      <div style={{ padding: `0 ${SPACE.gutter}px ${SPACE.gutter}px` }}>
         <PodporaSekcia
           onShare={() => toast("Zdieľať: odkaz skopírovaný · siete")}
           upvotes={140} onUpvote={() => toast("Palec hore")}
@@ -283,7 +283,7 @@ function Detail({ z, onBack }: { z: any; onBack: () => void }) {
 
 function Pevne({ emoji, val, w, bg, bd, col, onClick }: { emoji: string; val: string; w: number; bg: string; bd: string; col: string; onClick?: () => void }) {
   return (
-    <div onClick={onClick} style={{ width: w, textAlign: "center", borderRadius: 9, background: bg, border: `1px solid ${bd}`, padding: "9px 0", cursor: "pointer" }}>
+    <div onClick={onClick} style={{ width: w, textAlign: "center", borderRadius: RADIUS.xs, background: bg, border: `1px solid ${bd}`, padding: `${SPACE.xs}px 0`, cursor: "pointer" }}>
       <div style={{ fontSize: 15 }}>{emoji}</div>
       <div style={{ fontSize: 11, fontWeight: "bold", color: col }}>{val}</div>
     </div>
@@ -295,8 +295,8 @@ function Add({ onBack, onOffer, onRequest }: { onBack: () => void; onOffer: () =
   return (
     <div>
       <Hlavicka title="Pridať" onBack={onBack} />
-      <div style={{ padding: 20 }}>
-        <div style={{ fontSize: 15, color: C.textSec, marginBottom: 18 }}>Čo chceš spraviť?</div>
+      <div style={{ padding: SPACE.lg }}>
+        <div style={{ fontSize: 15, color: C.textSec, marginBottom: SPACE.md }}>Čo chceš spraviť?</div>
         <BigChoice emoji="🤝" title="PONÚKAM" desc="Dám svoj čas, schopnosť alebo vec — pomôžem niekomu." col={C.purple} onClick={onOffer} />
         <BigChoice emoji="🙋" title="DOPYTUJEM" desc="Niečo potrebujem — ľudskú pomoc alebo finančnú podporu." col={C.blueL} onClick={onRequest} />
       </div>
@@ -306,10 +306,10 @@ function Add({ onBack, onOffer, onRequest }: { onBack: () => void; onOffer: () =
 
 function BigChoice({ emoji, title, desc, col, onClick }: { emoji: string; title: string; desc: string; col: string; onClick: () => void }) {
   return (
-    <div onClick={onClick} style={{ border: `1px solid ${col}55`, background: `${col}14`, borderRadius: 16, padding: 18, marginBottom: 14, cursor: "pointer" }}>
+    <div onClick={onClick} style={{ border: `1px solid ${col}55`, background: `${col}14`, borderRadius: RADIUS.md, padding: SPACE.md, marginBottom: SPACE.gutter, cursor: "pointer" }}>
       <div style={{ fontSize: 30 }}>{emoji}</div>
-      <div style={{ fontSize: 18, fontWeight: "bold", color: col, marginTop: 6 }}>{title}</div>
-      <div style={{ fontSize: 13, color: C.textSec, marginTop: 4, lineHeight: 1.4 }}>{desc}</div>
+      <div style={{ fontSize: 18, fontWeight: "bold", color: col, marginTop: SPACE.xs }}>{title}</div>
+      <div style={{ fontSize: 13, color: C.textSec, marginTop: SPACE.xxs, lineHeight: 1.4 }}>{desc}</div>
     </div>
   );
 }
@@ -324,7 +324,7 @@ function OfferFlow({ onDone }: { onDone: () => void }) {
   return (
     <div>
       <Hlavicka title="Ponúkam pomoc" onBack={onDone} step={krok} total={3} />
-      <div style={{ padding: 18 }}>
+      <div style={{ padding: SPACE.md }}>
         {krok === 1 && (
           <>
             <Otazka>Čo ponúkaš?</Otazka>
@@ -349,7 +349,7 @@ function OfferFlow({ onDone }: { onDone: () => void }) {
             <Otazka>Zhrnutie</Otazka>
             <Suhrn rows={[["Typ", typ], ["Úroveň", uroven === "odbornik" ? "Odborník (doloží podklady)" : "Amatér"], ["Popis", popis]]} />
             {uroven === "odbornik" && <div style={infoBox}>Odborník: pred zverejnením doložíš podklady. AI z nich určí vstupný status karmy v odbore.</div>}
-            <button onClick={onDone} style={{ ...btn("primary"), width: "100%", marginTop: 14 }}>Zverejniť ponuku</button>
+            <button onClick={onDone} style={{ ...btn("primary"), width: "100%", marginTop: SPACE.gutter }}>Zverejniť ponuku</button>
           </>
         )}
       </div>
@@ -375,7 +375,7 @@ function RequestFlow({ onDone }: { onDone: () => void }) {
     return (
       <div>
         <Hlavicka title="Dopytujem" onBack={onDone} />
-        <div style={{ padding: 18 }}>
+        <div style={{ padding: SPACE.md }}>
           <Otazka>Akú pomoc potrebuješ?</Otazka>
           <Vyber emoji="🧑‍🤝‍🧑" title="Ľudská pomoc" desc="Odvoz, sťahovanie, doučovanie, spoločníčka… (nefinančné)" onClick={() => { setVetva("ludska"); setKrok(1); }} />
           <Vyber emoji="💶" title="Finančná pomoc" desc="Potrebujem peniaze v núdzi." onClick={() => { setVetva("peniaze"); setKrok(0); }} />
@@ -389,11 +389,11 @@ function RequestFlow({ onDone }: { onDone: () => void }) {
     return (
       <div>
         <Hlavicka title="Ľudská pomoc" onBack={() => setVetva(null)} />
-        <div style={{ padding: 18 }}>
+        <div style={{ padding: SPACE.md }}>
           <Otazka>Opíš, s čím potrebuješ pomôcť</Otazka>
           <textarea value={popis} onChange={(e) => setPopis(e.target.value)} placeholder="Napr. „Potrebujem odviezť k lekárovi v stredu ráno, Sihoť → nemocnica.“" style={inp(100)} />
           <div style={infoBox}>AI posúdi relevanciu (či to nevyrieši bežná cesta) a navrhne kategóriu. Po zverejnení sa ti ozve niekto z okolia → chat → dohoda → QR na mieste.</div>
-          <button onClick={onDone} disabled={!popis} style={{ ...btn(popis ? "primary" : "disabled"), width: "100%", marginTop: 14 }}>Zverejniť dopyt</button>
+          <button onClick={onDone} disabled={!popis} style={{ ...btn(popis ? "primary" : "disabled"), width: "100%", marginTop: SPACE.gutter }}>Zverejniť dopyt</button>
         </div>
       </div>
     );
@@ -404,7 +404,7 @@ function RequestFlow({ onDone }: { onDone: () => void }) {
   return (
     <div>
       <Hlavicka title="Finančná pomoc" onBack={() => krok === 0 ? setVetva(null) : setKrok(krok - 1)} step={krok + 1} total={steps.length} />
-      <div style={{ padding: 18 }}>
+      <div style={{ padding: SPACE.md }}>
 
         {krok === 0 && (
           <>
@@ -415,11 +415,11 @@ function RequestFlow({ onDone }: { onDone: () => void }) {
               • Žiadosť po vyhodnotení <b>nemusí byť schválená</b> (nemáš na zverejnenie nárok).<br /><br />
               • Posúdenie do <b>48 h</b>; pri pochybnosti môžeme žiadať ďalšie doklady.
             </div>
-            <label style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 14, cursor: "pointer" }}>
+            <label style={{ display: "flex", alignItems: "center", gap: SPACE.sm, marginTop: SPACE.gutter, cursor: "pointer" }}>
               <input type="checkbox" checked={suhlas} onChange={(e) => setSuhlas(e.target.checked)} style={{ width: 18, height: 18 }} />
               <span style={{ fontSize: 13 }}>Rozumiem a súhlasím so všetkými podmienkami.</span>
             </label>
-            <button onClick={() => setKrok(1)} disabled={!suhlas} style={{ ...btn(suhlas ? "primary" : "disabled"), width: "100%", marginTop: 16 }}>Pokračovať</button>
+            <button onClick={() => setKrok(1)} disabled={!suhlas} style={{ ...btn(suhlas ? "primary" : "disabled"), width: "100%", marginTop: SPACE.md }}>Pokračovať</button>
           </>
         )}
 
@@ -444,7 +444,7 @@ function RequestFlow({ onDone }: { onDone: () => void }) {
         {krok === 3 && (
           <>
             <Otazka>Odhadovaná výška pomoci</Otazka>
-            <input type="number" value={suma} onChange={(e) => setSuma(e.target.value)} placeholder="suma v €" style={{ ...inp(0), height: "auto", padding: "12px", fontSize: 18 }} />
+            <input type="number" value={suma} onChange={(e) => setSuma(e.target.value)} placeholder="suma v €" style={{ ...inp(0), height: "auto", padding: `${SPACE.sm}px`, fontSize: 18 }} />
             {p && <div style={{ ...infoBox, borderColor: p.blok ? "rgba(226,87,75,.4)" : "rgba(93,155,232,.4)", background: p.blok ? C.redBg : "rgba(93,155,232,.08)", color: p.blok ? C.red : C.blueL }}>{p.text}</div>}
             <NavBtns onBack={() => setKrok(2)} onNext={() => setKrok(4)} canNext={sumaNum >= 100} />
           </>
@@ -454,7 +454,7 @@ function RequestFlow({ onDone }: { onDone: () => void }) {
           <>
             <Otazka>Doklady k tvrdeniam</Otazka>
             <div style={infoBox}>AI rozloží tvoj príbeh na tvrdenia a požiada doklad ku každému (napr. úmrtný list, lekárska správa, exekučný príkaz). <b>Citlivé doklady idú len do overenia — nikdy do feedu.</b></div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 12 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: SPACE.xs, marginTop: SPACE.sm }}>
               <DokladRow text="Lekárska správa" />
               <DokladRow text="Doklad o príjme / nájme" />
             </div>
@@ -465,7 +465,7 @@ function RequestFlow({ onDone }: { onDone: () => void }) {
         {krok === 5 && (
           <>
             <Otazka>Foto / video k prípadu (verejné)</Otazka>
-            <div style={{ height: 120, border: `1px dashed ${C.line}`, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", color: C.textTer, fontSize: 13, cursor: "pointer" }}>＋ Pridať foto alebo video</div>
+            <div style={{ height: 120, border: `1px dashed ${C.line}`, borderRadius: RADIUS.sm, display: "flex", alignItems: "center", justifyContent: "center", color: C.textTer, fontSize: 13, cursor: "pointer" }}>＋ Pridať foto alebo video</div>
             <div style={infoBox}>Foto prípadu = vyššia dôvera a väčší dosah. Bez fota = nižšia dôvera, lokálny dosah. Osobné foto (tvár) = najvyššia dôvera. Oddelené od dokladov.</div>
             <NavBtns onBack={() => setKrok(4)} onNext={() => setKrok(6)} canNext={true} />
           </>
@@ -499,9 +499,9 @@ function RequestFlow({ onDone }: { onDone: () => void }) {
               ["Suma", `${sumaNum} € (pásmo ${p?.kod})`],
               ["Opis", popis.slice(0, 60) + (popis.length > 60 ? "…" : "")],
             ]} />
-            <div style={{ ...infoBox, marginTop: 10 }}>Potvrdzujem, že informácie sú pravdivé a doklady pravé. Rozumiem dôsledkom klamstva.</div>
-            <button onClick={onDone} style={{ ...btn("primary"), width: "100%", marginTop: 14 }}>Vytvoriť žiadosť</button>
-            <div style={{ textAlign: "center", fontSize: 11, color: C.textTer, marginTop: 8 }}>Po vytvorení: posúdenie do 48 h → schválené → live.</div>
+            <div style={{ ...infoBox, marginTop: SPACE.sm }}>Potvrdzujem, že informácie sú pravdivé a doklady pravé. Rozumiem dôsledkom klamstva.</div>
+            <button onClick={onDone} style={{ ...btn("primary"), width: "100%", marginTop: SPACE.gutter }}>Vytvoriť žiadosť</button>
+            <div style={{ textAlign: "center", fontSize: 11, color: C.textTer, marginTop: SPACE.xs }}>Po vytvorení: posúdenie do 48 h → schválené → live.</div>
           </>
         )}
       </div>

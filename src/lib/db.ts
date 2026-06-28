@@ -108,6 +108,38 @@ export async function vytvorUcet({ typ = "aktivny", telefon, email = null }: { t
   return data;
 }
 
+// Auth-first vytvorenie účtu (Fáza 5) — identitu rieši Supabase Auth, telefón-OTP
+// a PIN sa preskakujú. Idempotentné na auth_id (resume po refreshi/abandonovaní).
+// `poradove_cislo` je GENERATED ALWAYS — NIKDY ho neuvádzať v inserte.
+export async function vytvorUcetAuth({ authId, typ = "aktivny", email = null, stav = "udaje" }: { authId: string; typ?: string; email?: string | null; stav?: string }) {
+  const c = db();
+  const { data: ex } = await c
+    .from("ucet")
+    .select("id, typ, poradove_cislo, stav_registracie")
+    .eq("auth_id", authId)
+    .maybeSingle();
+  if (ex) return { ...ex, obnovene: true };
+
+  const { data, error } = await c
+    .from("ucet")
+    .insert({ auth_id: authId, typ, email, email_overeny: true, telefon_overeny: false, stav_registracie: stav })
+    .select("id, typ, poradove_cislo, stav_registracie")
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+// Načíta účet podľa Supabase auth usera (pri prihlásení / boot reconciliation).
+export async function najdiUcetPodlaAuth(authId: string): Promise<{ id: string; typ: string; poradove_cislo: number | null; stav_registracie: string; email: string | null } | null> {
+  const { data, error } = await db()
+    .from("ucet")
+    .select("id, typ, poradove_cislo, stav_registracie, email")
+    .eq("auth_id", authId)
+    .maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
 // Priebežné ukladanie kroku (§11)
 export async function ulozStav(ucetId: string, stav: string) {
   const { error } = await db().from("ucet").update({ stav_registracie: stav, aktualizovane: teraz() }).eq("id", ucetId);

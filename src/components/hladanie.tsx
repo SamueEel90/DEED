@@ -1,7 +1,10 @@
-import { useState, useDeferredValue } from "react";
-import { C, glassTmavy } from "@/theme";
+import { useState, useDeferredValue, useEffect, useRef } from "react";
+import { C, glassTmavy, SPACE, RADIUS } from "@/theme";
 import { tint } from "@/lib/ui";
 import { Lupa, IkonaKriz, IkonaOpakovat, IkonaStit } from "@/components/icons";
+import { pressable } from "@/components/pressable";
+import { SegTabs } from "@/components/segtabs";
+import { VirtualList } from "@/components/virtuallist";
 
 // ============================================================
 // VYHĽADÁVANIE — zdieľaný overlay (zhora), živé filtrovanie feedu
@@ -64,6 +67,14 @@ export function HladanieModal({ data = [], onPick, onClose, akcent = "var(--a-in
   const [filter, setFilter] = useState(defaultFilter);
   // input je svižný (q), drahé filtrovanie beží na odloženej hodnote (dq)
   const dq = useDeferredValue(q);
+  const resultsRef = useRef<HTMLDivElement>(null); // scroll kontajner výsledkov (virtualizácia pri raste)
+
+  // Escape zatvorí overlay (klávesnica)
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
   const norm = (s: any) => (s || "").toString().toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
   const dotaz = norm(dq.trim());
 
@@ -79,70 +90,74 @@ export function HladanieModal({ data = [], onPick, onClose, akcent = "var(--a-in
 
   const klik = (x: any) => { if (x._subj) toast?.(`Otváram profil: ${x.titul} (demo)`); else onPick?.(x.id); onClose(); };
   const Riadok = (x: any) => (
-    <div key={x.id} onClick={() => klik(x)} style={{ display: "flex", alignItems: "center", gap: 12, padding: "11px 8px", borderRadius: 12, cursor: "pointer", borderBottom: `1px solid ${C.line2}` }}>
-      <div style={{ width: 40, height: 40, borderRadius: 11, flex: "0 0 auto", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 19, background: tint(akcent, .14) }}>{x.emoji}</div>
+    <div key={x.id} {...pressable(() => klik(x), x.titul)} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, padding: `${SPACE.sm}px ${SPACE.xs}px`, borderRadius: RADIUS.sm, cursor: "pointer", borderBottom: `1px solid ${C.line2}` }}>
+      <div style={{ width: 40, height: 40, borderRadius: RADIUS.sm, flex: "0 0 auto", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 19, background: tint(akcent, .14) }}>{x.emoji}</div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 13.5, fontWeight: 600, lineHeight: 1.3, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{x.titul}</div>
-        {x.podtitul && <div style={{ fontSize: 11.5, color: C.textTer, marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{x.podtitul}</div>}
+        {x.podtitul && <div style={{ fontSize: 11.5, color: C.textTer, marginTop: SPACE.xxs, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{x.podtitul}</div>}
       </div>
-      {x.tag && <span style={{ flex: "0 0 auto", fontSize: 10, fontWeight: 700, padding: "3px 8px", borderRadius: 7, background: tint(akcent, .14), color: akcent }}>{x.tag}</span>}
+      {x.tag && <span style={{ flex: "0 0 auto", fontSize: 10, fontWeight: 700, padding: `${SPACE.xxs}px ${SPACE.xs}px`, borderRadius: RADIUS.xs, background: tint(akcent, .14), color: akcent }}>{x.tag}</span>}
     </div>
   );
 
   return (
     <div onClick={onClose} style={{ position: "absolute", inset: 0, background: "rgba(4,6,12,.5)", backdropFilter: "blur(5px)", WebkitBackdropFilter: "blur(5px)", display: "flex", flexDirection: "column", zIndex: 58, animation: "fadeUp .18s ease" }}>
-      <div onClick={(e) => e.stopPropagation()} style={{ ...glassTmavy(26, .92), borderTop: "none", borderLeft: "none", borderRight: "none", borderBottomLeftRadius: 22, borderBottomRightRadius: 22, padding: "12px 14px 14px", boxShadow: "0 18px 50px rgba(0,0,0,.45)", maxHeight: "86%", display: "flex", flexDirection: "column" }}>
+      <div onClick={(e) => e.stopPropagation()} style={{ ...glassTmavy(26, .92), borderTop: "none", borderLeft: "none", borderRight: "none", borderBottomLeftRadius: RADIUS.lg, borderBottomRightRadius: RADIUS.lg, padding: `${SPACE.sm}px ${SPACE.gutter}px ${SPACE.gutter}px`, boxShadow: "0 18px 50px rgba(0,0,0,.45)", maxHeight: "86%", display: "flex", flexDirection: "column" }}>
         {/* vyhľadávací riadok */}
-        <div style={{ display: "flex", alignItems: "center", gap: 10, background: C.surface, border: `1px solid ${C.line}`, borderRadius: 14, padding: "10px 13px", flex: "0 0 auto" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm, background: C.surface, border: `1px solid ${C.line}`, borderRadius: RADIUS.sm, padding: `${SPACE.sm}px ${SPACE.sm}px`, flex: "0 0 auto" }}>
           <Lupa size={18} color={C.textTer} />
           <input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder={placeholder}
             style={{ flex: 1, minWidth: 0, background: "transparent", border: "none", outline: "none", color: C.text, fontSize: 15, fontFamily: "inherit" }} />
           {q
-            ? <span onClick={() => setQ("")} title="Vymazať" style={{ display: "flex", cursor: "pointer" }}><IkonaKriz size={18} color={C.textTer} /></span>
-            : <span onClick={onClose} style={{ fontSize: 13, fontWeight: 600, color: C.textSec, cursor: "pointer", flex: "0 0 auto" }}>Zrušiť</span>}
+            ? <span {...pressable(() => setQ(""), "Vymazať hľadanie")} title="Vymazať" style={{ display: "flex", cursor: "pointer" }}><IkonaKriz size={18} color={C.textTer} /></span>
+            : <span {...pressable(onClose, "Zrušiť hľadanie")} style={{ fontSize: 13, fontWeight: 600, color: C.textSec, cursor: "pointer", flex: "0 0 auto" }}>Zrušiť</span>}
         </div>
 
         {/* filter-chipy — jeden engine, 8 typov */}
-        <div style={{ display: "flex", gap: 7, padding: "10px 0 2px", overflowX: "auto", flex: "0 0 auto" }}>
-          {HL_FILTRE.map((f) => {
-            const on = filter === f;
-            return <span key={f} onClick={() => setFilter(f)} style={{ flex: "0 0 auto", padding: "6px 12px", borderRadius: 13, fontSize: 11.5, fontWeight: on ? 700 : 500, cursor: "pointer", whiteSpace: "nowrap",
-              background: on ? tint(akcent, .16) : C.surface2, border: `1px solid ${on ? tint(akcent, .5) : C.line}`, color: on ? akcent : C.textSec }}>{f}</span>;
-          })}
-        </div>
+        <SegTabs
+          options={HL_FILTRE}
+          value={filter}
+          onChange={setFilter}
+          ariaLabel="Filter výsledkov hľadania"
+          style={{ display: "flex", gap: SPACE.xs, padding: `${SPACE.sm}px 0 ${SPACE.xxs}px`, overflowX: "auto", flex: "0 0 auto" }}
+          render={(f, on) => (
+            <span style={{ flex: "0 0 auto", padding: `${SPACE.xs}px ${SPACE.sm}px`, borderRadius: RADIUS.sm, fontSize: 11.5, fontWeight: on ? 700 : 500, cursor: "pointer", whiteSpace: "nowrap",
+              background: on ? tint(akcent, .16) : C.surface2, border: `1px solid ${on ? tint(akcent, .5) : C.line}`, color: on ? akcent : C.textSec }}>{f}</span>
+          )}
+        />
 
         {/* obsah */}
-        <div style={{ overflowY: "auto", margin: "8px -4px 0", flex: "1 1 auto" }}>
+        <div ref={resultsRef} style={{ overflowY: "auto", margin: `${SPACE.xs}px ${-SPACE.xxs}px 0`, flex: "1 1 auto" }}>
           {prazdny ? (
             <>
               {/* POSLEDNÉ HĽADANIA */}
-              <div style={{ display: "flex", alignItems: "center", padding: "6px 8px 4px" }}>
+              <div style={{ display: "flex", alignItems: "center", padding: `${SPACE.xs}px ${SPACE.xs}px ${SPACE.xxs}px` }}>
                 <span style={{ fontSize: 10.5, letterSpacing: ".4px", color: C.textTer, fontWeight: 700 }}>POSLEDNÉ HĽADANIA</span>
-                <span onClick={() => setQ("")} style={{ marginLeft: "auto", fontSize: 11, color: C.textTer, cursor: "pointer" }}>vymazať</span>
+                <span {...pressable(() => setQ(""), "Vymazať históriu hľadania")} style={{ marginLeft: "auto", fontSize: 11, color: C.textTer, cursor: "pointer" }}>vymazať</span>
               </div>
               {posledne.map((p) => (
-                <div key={p} onClick={() => setQ(p)} style={{ display: "flex", alignItems: "center", gap: 11, padding: "10px 8px", borderRadius: 12, cursor: "pointer", borderBottom: `1px solid ${C.line2}` }}>
+                <div key={p} {...pressable(() => setQ(p), `Hľadať: ${p}`)} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, padding: `${SPACE.sm}px ${SPACE.xs}px`, borderRadius: RADIUS.sm, cursor: "pointer", borderBottom: `1px solid ${C.line2}` }}>
                   <IkonaOpakovat size={15} color={C.textTer} />
                   <span style={{ flex: 1, fontSize: 13.5 }}>{p}</span>
                   <IkonaKriz size={14} color={C.textTer} />
                 </div>
               ))}
               {/* ODPORÚČANÉ V OKOLÍ */}
-              <div style={{ fontSize: 10.5, letterSpacing: ".4px", color: C.textTer, fontWeight: 700, padding: "16px 8px 6px" }}>ODPORÚČANÉ V OKOLÍ</div>
+              <div style={{ fontSize: 10.5, letterSpacing: ".4px", color: C.textTer, fontWeight: 700, padding: `${SPACE.md}px ${SPACE.xs}px ${SPACE.xs}px` }}>ODPORÚČANÉ V OKOLÍ</div>
               {odporucane.map(Riadok)}
             </>
           ) : (
             <>
-              <div style={{ fontSize: 11.5, color: C.textTer, padding: "2px 8px 6px" }}>
+              <div style={{ fontSize: 11.5, color: C.textTer, padding: `${SPACE.xxs}px ${SPACE.xs}px ${SPACE.xs}px` }}>
                 {`${vysl.length} ${vysl.length === 1 ? "výsledok" : vysl.length < 5 ? "výsledky" : "výsledkov"}`}{dotaz ? ` · „${q.trim()}"` : ""}{filter !== "Všetko" ? ` · ${filter}` : ""}
               </div>
               {vysl.length === 0
-                ? <div style={{ textAlign: "center", padding: "30px 14px", color: C.textTer, fontSize: 13 }}>Nič sa nenašlo. Skús iné slovo alebo filter.</div>
-                : vysl.map(Riadok)}
+                ? <div style={{ textAlign: "center", padding: `${SPACE.xl}px ${SPACE.gutter}px`, color: C.textTer, fontSize: 13 }}>Nič sa nenašlo. Skús iné slovo alebo filter.</div>
+                : <VirtualList items={vysl} scrollRef={resultsRef} renderItem={Riadok} getKey={(x: any) => x.id} estimateSize={64} />}
             </>
           )}
           {/* ochrana — súkromné osoby nelustrovateľné */}
-          <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 10.5, color: C.textTer, lineHeight: 1.4, margin: "14px 4px 2px", padding: "9px 11px", borderRadius: 10, background: "rgba(var(--glass-rgb),.04)", border: `1px solid ${C.line}` }}>
+          <div style={{ display: "flex", alignItems: "center", gap: SPACE.xs, fontSize: 10.5, color: C.textTer, lineHeight: 1.4, margin: `${SPACE.gutter}px ${SPACE.xxs}px ${SPACE.xxs}px`, padding: `${SPACE.xs}px ${SPACE.sm}px`, borderRadius: RADIUS.sm, background: "rgba(var(--glass-rgb),.04)", border: `1px solid ${C.line}` }}>
             <IkonaStit size={14} color={C.textTer} /> Súkromné osoby sa nedajú vyhľadať — len verejné profily a tvorcovia (ochrana).
           </div>
         </div>

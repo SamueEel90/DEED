@@ -6,6 +6,9 @@ import type { StrankaAkcie } from "@/components/context";
 import { TabBar, ViacSheet, PridatFAB, nacitajTaby, ulozTaby, VSETKY_MODULY } from "@/components/TabBar";
 import { Sidebar } from "@/components/Sidebar";
 import { useSession } from "@/lib/session";
+import { resolveSession, subscribeAuth } from "@/lib/auth";
+import { supabaseReady } from "@/lib/supabase";
+import type { TypUctu } from "@/types";
 import { useNotifikacieRealtime } from "@/data";
 import { PouzivatelProvider } from "@/lib/pouzivatel";
 import { PersonalizaciaProvider } from "@/lib/personalizacia";
@@ -126,14 +129,47 @@ export function Screens({ wide, desktop }: { wide?: boolean; desktop?: boolean }
   const [upgradeOpen, setUpgradeOpen] = useState(false); // pasívny → „Staň sa aktívnym" panel
   const [aktivacia, setAktivacia] = useState(false); // overlay aktívnej registrácie (upgrade)
   const scrollRef = useRef<HTMLDivElement>(null);
+  // auth-boot: kým sa Supabase Auth ↔ app-session zladí, drž splash (žiadny flash zlej session)
+  const [booting, setBooting] = useState<boolean>(supabaseReady);
+  const [resumeInfo, setResumeInfo] = useState<{ authId: string; typ?: TypUctu; stav?: string } | null>(null);
 
   useEffect(() => { ulozTaby(taby); }, [taby]);
   useNotifikacieRealtime(); // Fáza E — live oznámenia (INSERT do notifikacia → obnova zoznamu)
 
-  // §1 — bez prihlásenia zobraz registráciu;
+  // §1 (Fáza 5) — pri štarte zladiť reálny Supabase Auth s localStorage app-session:
+  //  · authed + ucet 'hotovo' → resolveSession setSession → appka
+  //  · authed bez dokončeného účtu → resume onboarding
+  //  · stale real session bez Supabase auth → vyčistí sa
+  // Demo session sa nediera. Bez Supabase (supabaseReady=false) sa celé preskočí.
+  useEffect(() => {
+    if (!supabaseReady) { setBooting(false); return; }
+    let alive = true;
+    resolveSession()
+      .then((r) => {
+        if (!alive) return;
+        setResumeInfo(r.kind === "resume" ? { authId: r.authId, typ: r.typ, stav: r.stav } : null);
+        setBooting(false);
+      })
+      .catch(() => { if (alive) setBooting(false); });
+    const unsub = subscribeAuth(() => { if (alive) setResumeInfo(null); }); // SIGNED_OUT → clearSession už emitol
+    return () => { alive = false; unsub(); };
+  }, []);
+
+  // splash počas auth-boot reconciliation
+  if (booting) {
+    return (
+      <div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center", background: C.bg }}>
+        <span style={{ width: 52, height: 52, borderRadius: 16, background: "var(--page-grad)", border: `1px solid ${C.line}`, color: C.textSec, fontWeight: 800, fontSize: 24, display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }}>
+          D<span style={{ position: "absolute", top: 8, right: 11, fontSize: 11 }}>+</span>
+        </span>
+      </div>
+    );
+  }
+
+  // §1 — bez prihlásenia zobraz registráciu (príp. resume rozrobeného onboardingu);
   // po dokončení flow zavolá setSession → useSession re-renderuje → appka.
   if (!session) {
-    return <Registracia onHotovo={() => {}} />;
+    return <Registracia onHotovo={() => {}} resume={resumeInfo ?? undefined} />;
   }
 
   const otvorGaleriu = (fotky: string[], index = 0) => setGaleria({ fotky, index });
