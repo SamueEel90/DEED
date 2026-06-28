@@ -71,11 +71,13 @@ Doladiť to, čo robí appku „hotovou". Realizované po samostatne nasaditeľn
 - [x] **Wave 5a — Code-splitting:** `React.lazy` 7 modulov + Suspense; vendor chunky (react/motion/tanstack) v `vite.config`. Initial load = shell + prvý modul.
 - [x] **Mikro-interakcie (časť):** lazy-load obrázkov (`loading="lazy"`), výstupné animácie sheetov, `whileTap`.
 - [x] **Wave 6 — A11y segmenty & klávesnica:** zdieľaný `SegTabs` (radiogroup + roving tabindex + šípky/Home/End, bespoke vzhľad cez render-prop) nasadený na single-select selektory (Charita filter, cudzí profil sekcie+stav, Good nástenka filter). Toggle-off selektory (Aktivity doména/sub-taby) + header search + Notifikácie (riadky, prepínače `role="switch"`, zvonček) sprístupnené cez `pressable`. Feed-karty už klávesnicovo (Good/Charita `pressable`).
-- [ ] **Wave 5b — Token sweep (vyžaduje vizuálne QA):** adopcia SPACE/RADIUS/TYPE naprieč legacy modulmi + retire rogue palety `K` (Charita), `A` (Aktivity), `SEG_BG`. Hodnoty sa nudge-ujú na škálu (≤2 px) — treba screenshot-diff.
-- [ ] **Wave 5c — Virtualizácia:** `@tanstack/react-virtual` na ploché zoznamy (hľadanie, notifikácie, „moje skutky", adresár) — pri raste dát.
-- [ ] **A11y zvyšok:** kontrast audit (WCAG AA na text/akcenty), fokus-viditeľnosť (`:focus-visible` prstenec), `aria-live` na tickery/toasty.
-- [ ] **Responzivita:** doladiť viacstĺpcové feedy na tablete/desktope.
-- **Hotovo, keď:** klikanie appkou pôsobí ako hotový produkt — žiadne skoky, prázdne biele plochy ani nekonzistentné odsadenia.
+- [x] **Wave 7 — Responzivita + a11y dotiahnutie:** FunZona na tablete/PC centrovaný čitateľný stĺpec (`obalSiroky` 560/640) namiesto full-bleed; akcie FunZona/RetazDobra (výber žiadosti `aria-pressed`, QR-scan) klávesnicovo; Notifikácie overlay `Escape`-to-close. (Profil/Top/CudziProfil už capujú šírku na desktope; feedy Good/Help/Charita/Aktivity sú viacstĺpcové cez `FeedStlpce`/`FeedGrid` — responzivita hotová.)
+- [x] **Wave 8 — HladanieModal a11y:** filter-chipy (8 typov) → `SegTabs`; výsledky, posledné hľadania a akcie (zrušiť/vymazať) cez `pressable`; `Escape`-to-close.
+- [x] **Wave 9 — Kontrast audit (WCAG AA):** vypočítané pomery zo všetkých text/akcent tokenov (light+dark). Tmavý celý prechádza; svetlý opravený — `textTer` #7C7361→#716959 (4.6:1) + akcenty green/clay/gold/teal/plum stmavené hue-zachovávajúco na ≥4.55:1 ako text (info/danger už prešli). Gradienty/brand fill bez zmeny (biely text prechádza).
+- **Fokus-viditeľnosť** (`:focus-visible` prstenec `var(--a-green)` + `prefers-reduced-motion` + press feedback) je v `index.css` od skôr; toast a11y rieši **sonner** (aria-live region). Tickery zámerne nie sú live (ambient — `aria-live` by bol rušivý).
+- [ ] **Wave 5b — Token sweep — ODLOŽENÉ:** vyžaduje screenshot-diff (nudge hodnôt ≤2 px nie je verifikovateľný bez vizuálu). Palety `K` (Charita) / `A` (Aktivity) sa **PONECHÁVAJÚ** (rozhodnutie: sú theme-aware, viď pamäť) — pôvodný zámer „retire" je neaktuálny. Robiť až s vizuálnym QA naživo.
+- [ ] **Wave 5c — Virtualizácia — ODLOŽENÉ:** zoznamy sú dnes malé (hľadanie ≤~70, adresár grouped ~20, notifikácie ~10) + premenlivá výška / preplietané sekcie → virtualizácia by pridala krehkosť bez benefitu. Spraviť „pri raste dát" (Fáza 4 s reálnym objemom).
+- **Hotovo:** klikanie appkou pôsobí ako hotový produkt — viacstĺpcové feedy, capnuté čítacie obrazovky, klávesnica naprieč selektormi/overlaymi, WCAG AA kontrast. Zvyšok (5b/5c) odložený s odôvodnením vyššie.
 
 ### Fáza 4 — Reálne dáta (Supabase), modul po module
 Vymeniť mock repozitáre za Supabase — bez zásahu do UI.
