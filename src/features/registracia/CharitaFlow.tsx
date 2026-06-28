@@ -45,6 +45,11 @@ interface CharitaFlowProps {
   onHotovo?: () => void;
   onSpat: () => void;
   toast?: (text: string) => void;
+  /** Supabase Auth identita (auth-first) — preskočí telefón-OTP (k1) + PIN (k2), rovno KYB (k3). */
+  authId?: string;
+  email?: string | null;
+  /** auth resume — pre charitu rovnaký auth-first tok (org ucet je idempotentný na auth_id). */
+  resume?: boolean;
 }
 
 // best-effort priebežné ukladanie stavu — nikdy neblokuje navigáciu
@@ -56,14 +61,37 @@ async function ulozStavTicho(ucetId: string, stav: string) {
   }
 }
 
-export function CharitaFlow({ onHotovo, onSpat, toast }: CharitaFlowProps) {
+export function CharitaFlow({ onHotovo, onSpat, toast, authId, email }: CharitaFlowProps) {
   // ---- stavový automat ----
-  //  "k1".."k8" — číslované 1..8
-  const [krok, setKrok] = useState("k1");
+  //  "k1".."k8" — číslované 1..8 (auth-first: k1/k2 preskočené → štart k3)
+  const [krok, setKrok] = useState(authId ? "k3" : "k1");
   const [org, setOrg] = useState<OrgUcet | null>(null); // { id, typ, poradove_cislo, stav_registracie }
   const [nazov, setNazov] = useState(""); // názov organizácie z registra (KYB) — pre session
 
   const goto = (k: string) => setKrok(k);
+
+  // auth-first: vytvor/načítaj org účet naviazaný na auth usera (idempotentné na auth_id)
+  useEffect(() => {
+    if (!authId || org) return;
+    (async () => {
+      try {
+        const u = await db.vytvorUcetAuth({ authId, typ: "charita", email, stav: "kyb" });
+        setOrg(u);
+      } catch (e: any) {
+        toast?.("Chyba: " + (e?.message || e));
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authId]);
+
+  // auth-first: kým sa org účet nevytvorí, drž jemný loader (k3 číta org!.id)
+  if (authId && !org) {
+    return (
+      <Shell title="Charita / OZ">
+        <div style={{ padding: "40px 0", textAlign: "center", color: C.textTer, fontSize: 14 }}>Pripravujem registráciu…</div>
+      </Shell>
+    );
+  }
 
   // KROK 1 — Kontaktné kanály (telefón + SMS + email) — univerzálny, vytvorí org účet
   if (krok === "k1") {
@@ -107,7 +135,7 @@ export function CharitaFlow({ onHotovo, onSpat, toast }: CharitaFlowProps) {
       <KrokKyb
         org={org!}
         toast={toast}
-        onBack={() => goto("k2")}
+        onBack={authId ? onSpat : () => goto("k2")}
         onNext={(menoOrg) => {
           setNazov(menoOrg);
           ulozStavTicho(org!.id, "profil");

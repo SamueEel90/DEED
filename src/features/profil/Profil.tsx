@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { C, GRAD, GRAD_ZELENY, SPACE, RADIUS } from "@/theme";
 import { toast, Sheet, AvatarUroven, useScrollHore, useViac, useMotiv, useLayout, useTvorbaGate, obalSiroky, QrModal, IkonaMenu, IkonaNastavenia, IkonaSipVlavo, IkonaPenazenka, IkonaHviezda, IkonaFajka, IkonaDoska, IkonaUsmev, IkonaPin, IkonaSlnko, IkonaMesiac, IkonaStit, SkeletonRiadky, EmptyState, ErrorState, ScreenSwitch } from "@/shared";
 import { RetazDobraSheet } from "@/features/retaz/RetazDobra";
-import { clearSession } from "@/lib/session";
+import { signOut } from "@/lib/auth";
 import { usePouzivatel } from "@/lib/pouzivatel";
 import { usePersonalizacia } from "@/lib/personalizacia";
 import { ZAUJMY_KATALOG } from "@/lib/personalizaciaStore";
@@ -458,7 +458,7 @@ function NastaveniaScreen({ toast, onBack, onNotif }: NastaveniaScreenProps) {
         <Riadok onClick={() => toast("Zamestnávateľ (B2B) — odložené do B2B")}><span style={{ flex: 1 }}>Zamestnávateľ (B2B)</span><span style={{ color: C.textTer, fontWeight: 600 }}>Nenastavený ›</span></Riadok>
         <Riadok onClick={() => toast("Peňaženka a bezpečnosť — biometria/KYC až pri výbere hodnoty")}><span style={{ flex: 1 }}>Peňaženka a bezpečnosť</span><span style={{ color: C.textTer, fontSize: 16 }}>›</span></Riadok>
         <Riadok onClick={() => toast("O aplikácii · podpora")}><span style={{ flex: 1 }}>O aplikácii · podpora</span><span style={{ color: C.textTer, fontSize: 16 }}>›</span></Riadok>
-        <button onClick={() => { toast("Odhlásené"); clearSession(); }} style={{ width: "100%", height: 50, borderRadius: RADIUS.md, marginTop: SPACE.xs, border: "1px solid rgba(242,112,111,.4)", background: "rgba(242,112,111,.08)", color: "var(--a-danger)", fontWeight: 700, fontSize: 15, cursor: "pointer", fontFamily: "inherit" }}>Odhlásiť sa</button>
+        <button onClick={() => { toast("Odhlásené"); void signOut(); }} style={{ width: "100%", height: 50, borderRadius: RADIUS.md, marginTop: SPACE.xs, border: "1px solid rgba(242,112,111,.4)", background: "rgba(242,112,111,.08)", color: "var(--a-danger)", fontWeight: 700, fontSize: 15, cursor: "pointer", fontFamily: "inherit" }}>Odhlásiť sa</button>
       </div>
 
       {/* §13.1 — Ochrana osoby (anti-sociálny kredit) */}

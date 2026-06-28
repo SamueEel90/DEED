@@ -30,6 +30,7 @@ export type PlanBalika = "free" | string;
 export interface Ucet {
   id: Uuid;
   typ: TypUctu;
+  auth_id?: Uuid | null; // väzba na Supabase Auth (auth.users.id); null pre staré telefón-účty
   telefon?: string;
   telefon_overeny?: boolean;
   email?: string | null;

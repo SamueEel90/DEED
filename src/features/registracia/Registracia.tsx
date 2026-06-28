@@ -13,17 +13,23 @@ import { C, GRAD, SPACE, RADIUS } from "@/theme";
 import { Otazka, toast, m, tint, IkonaOsoba, IkonaCharita, IkonaStit, IkonaInstitucia, IkonaSipVpravo } from "@/shared";
 import { pressable } from "@/components/pressable";
 import { setSession } from "@/lib/session";
+import type { TypUctu } from "@/types";
 import { AuthPage } from "./AuthPage";
 import { OsobaFlow } from "./OsobaFlow";
 import { CharitaFlow } from "./CharitaFlow";
 
 type TypSubjektu = "osoba" | "charita";
 
-export function Registracia({ onHotovo, start }: { onHotovo?: () => void; start?: "aktivny" }) {
-  const [auth, setAuth] = useState(false); // prešiel cez login/register?
-  const [typ, setTyp] = useState<TypSubjektu | null>(null); // null | "osoba" | "charita"
+// resume = boot zistil prihláseného usera bez dokončeného účtu → skoč do flow.
+export function Registracia({ onHotovo, start, resume }: { onHotovo?: () => void; start?: "aktivny"; resume?: { authId: string; typ?: TypUctu; stav?: string } }) {
+  // auth identita (Supabase Auth) — z resume pri boote, alebo po signup/login
+  const [authId, setAuthId] = useState<string | null>(resume?.authId ?? null);
+  const [email, setEmail] = useState<string>("");
+  const [typ, setTyp] = useState<TypSubjektu | null>(
+    resume?.typ === "charita" ? "charita" : (resume?.typ === "aktivny" || resume?.typ === "pasivny") ? "osoba" : null
+  );
 
-  // upgrade overlay (pasívny → aktívny) — rovno do aktívneho osoba toku
+  // upgrade overlay (pasívny → aktívny) — legacy telefón tok (samostatný follow-up na auth)
   if (start === "aktivny") {
     return (
       <div style={{ height: "100%", position: "relative", background: C.bg }}>
@@ -32,21 +38,30 @@ export function Registracia({ onHotovo, start }: { onHotovo?: () => void; start?
     );
   }
 
-  // prihlásenie / hosť → do appky ako demo náhľad (mock — bez reálneho backendu)
+  // hosť → demo náhľad (bez Supabase Auth — pre vývoj)
   const doApp = () => {
     setSession({ demo: true });
     onHotovo?.();
   };
 
+  // po úspešnej registrácii / logine-ktorý-potrebuje-onboarding
+  const onAuthed = (id: string, em: string, t?: TypUctu) => {
+    setAuthId(id);
+    setEmail(em);
+    if (t === "charita") setTyp("charita");
+    else if (t === "aktivny" || t === "pasivny") setTyp("osoba");
+    // inak ostane null → „Kto si?"
+  };
+
   let obsah;
-  if (!auth) {
-    obsah = <AuthPage onSignIn={doApp} onSignUp={() => setAuth(true)} onGuest={doApp} />;
+  if (!authId) {
+    obsah = <AuthPage onAuthed={onAuthed} onGuest={doApp} />;
   } else if (typ === "osoba") {
-    obsah = <OsobaFlow onHotovo={onHotovo} onSpat={() => setTyp(null)} toast={toast} />;
+    obsah = <OsobaFlow authId={authId} email={email} resume={!!resume} onHotovo={onHotovo} onSpat={() => setTyp(null)} toast={toast} />;
   } else if (typ === "charita") {
-    obsah = <CharitaFlow onHotovo={onHotovo} onSpat={() => setTyp(null)} toast={toast} />;
+    obsah = <CharitaFlow authId={authId} email={email} resume={!!resume} onHotovo={onHotovo} onSpat={() => setTyp(null)} toast={toast} />;
   } else {
-    obsah = <VidlickaTyp onPick={setTyp} onSpat={() => setAuth(false)} toast={toast} />;
+    obsah = <VidlickaTyp onPick={setTyp} onSpat={() => setAuthId(null)} toast={toast} />;
   }
 
   return (

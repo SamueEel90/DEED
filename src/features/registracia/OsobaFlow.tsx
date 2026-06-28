@@ -47,8 +47,13 @@ interface OsobaFlowProps {
   onHotovo?: () => void;
   onSpat?: () => void;
   toast?: ToastFn;
-  /** Kde tok začať. „a1" = rovno aktívny tok (upgrade pasívny → aktívny). */
+  /** Kde tok začať. „a1" = rovno aktívny tok (legacy upgrade pasívny → aktívny). */
   startKrok?: Krok;
+  /** Supabase Auth identita (auth-first) — preskočí telefón-OTP (a1) + PIN (a2). */
+  authId?: string;
+  email?: string | null;
+  /** auth resume (rozrobený účet) — preskočí vidličku, rovno aktívny tok od a3. */
+  resume?: boolean;
 }
 
 // best-effort priebežné ukladanie stavu — nikdy neblokuje navigáciu
@@ -60,24 +65,69 @@ async function ulozStavTicho(ucetId: string, stav: string) {
   }
 }
 
-export function OsobaFlow({ onHotovo, onSpat, toast, startKrok = "vidlicka" }: OsobaFlowProps) {
+export function OsobaFlow({ onHotovo, onSpat, toast, startKrok = "vidlicka", authId, email, resume }: OsobaFlowProps) {
   // ---- stavový automat ----
   //  "vidlicka"  — pasívny / aktívny rozcestník (NEčíslované)
   //  "a1".."a8"  — aktívny tok (číslované 1..8)
   const [krok, setKrok] = useState<Krok>(startKrok);
   const [ucet, setUcet] = useState<Ucet | null>(null); // { id, typ, poradove_cislo, stav_registracie }
+  const [robim, setRobim] = useState(false); // ochrana proti dvojkliku pri tvorbe účtu
 
   // profil meno si držíme pre záverečnú session
   const [profilMeno, setProfilMeno] = useState("");
 
   const goto = (k: Krok) => setKrok(k);
 
+  // auth-first: vytvor/načítaj ucet naviazaný na auth usera (idempotentné) a choď na a3
+  const zacniAktivnyAuth = async () => {
+    if (!authId || robim) return;
+    setRobim(true);
+    try {
+      const u = await db.vytvorUcetAuth({ authId, typ: "aktivny", email });
+      setUcet(u);
+      goto("a3");
+    } catch (e: any) {
+      toast?.("Chyba: " + (e?.message || e));
+    } finally {
+      setRobim(false);
+    }
+  };
+
+  // auth resume (rozrobený účet po refreshi/abandonovaní) → vytvor/načítaj ucet a skoč na a3
+  useEffect(() => {
+    if (authId && resume && !ucet && !robim) zacniAktivnyAuth();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authId, resume]);
+
   // pasívny divák-darca → rovno do appky: prezerá a prispieva (FIAT/karta/SMS)
   // všade, ale nič nevytvára (gating cez Pouzivatel.mozeTvorit / upgrade panel).
-  const vstupPasivne = () => {
-    setSession({ typ: "pasivny", meno: "Hosť" });
+  // Auth-first: pasívny dostane reálny auth-naviazaný ucet ('hotovo') — invariant 1 auth↔1 ucet.
+  const vstupPasivne = async () => {
+    if (authId) {
+      if (robim) return;
+      setRobim(true);
+      try {
+        const u = await db.vytvorUcetAuth({ authId, typ: "pasivny", email, stav: "hotovo" });
+        setSession({ ucet_id: u.id, typ: "pasivny", poradove_cislo: (u.poradove_cislo as number) ?? null, meno: "Hosť" });
+      } catch (e: any) {
+        toast?.("Chyba: " + (e?.message || e));
+        setRobim(false);
+        return;
+      }
+    } else {
+      setSession({ typ: "pasivny", meno: "Hosť" });
+    }
     onHotovo?.();
   };
+
+  // auth resume: kým sa ucet nevytvorí, drž jemný loader (žiadny flash vidličky)
+  if (authId && resume && !ucet) {
+    return (
+      <Shell title="Fyzická osoba">
+        <div style={{ padding: "40px 0", textAlign: "center", color: C.textTer, fontSize: 14 }}>Načítavam tvoj účet…</div>
+      </Shell>
+    );
+  }
 
   // ---------------------------------------------------------
   // SCREEN 0 — Vidlička Pasívny / Aktívny (NEčíslované)
@@ -98,7 +148,7 @@ export function OsobaFlow({ onHotovo, onSpat, toast, startKrok = "vidlicka" }: O
           title="Aktívny — plný účet"
           desc="Tvor skutky, žiadosti a zbierky, získavaj karmu a odmeny."
           active={false}
-          onClick={() => goto("a1")}
+          onClick={authId ? zacniAktivnyAuth : () => goto("a1")}
         />
         <div style={infoBox}>
           Pasívny vojde do appky hneď a môže komukoľvek prispieť. Na vytváranie obsahu sa staneš aktívnym kedykoľvek — bez straty doterajšieho.
@@ -152,7 +202,7 @@ export function OsobaFlow({ onHotovo, onSpat, toast, startKrok = "vidlicka" }: O
       <KrokUdaje
         ucet={ucet}
         toast={toast}
-        onBack={() => goto("a2")}
+        onBack={authId ? () => goto("vidlicka") : () => goto("a2")}
         onNext={(meno) => {
           setProfilMeno(meno);
           if (ucet) ulozStavTicho(ucet.id, "zaujmy");

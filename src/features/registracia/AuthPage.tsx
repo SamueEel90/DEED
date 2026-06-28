@@ -11,15 +11,22 @@
 import { useState, type CSSProperties, type ReactNode } from "react";
 import { C, GRAD, gradText, SPACE, RADIUS } from "@/theme";
 import { toast, IkonaObalka, IkonaZamok, IkonaOko, IkonaOkoOff, IkonaSipVpravo } from "@/shared";
+import { signIn, signUp, resolveSession } from "@/lib/auth";
+import type { TypUctu } from "@/types";
 
 type Rezim = "login" | "register";
 
-export function AuthPage({ onSignIn, onSignUp, onGuest }: { onSignIn?: () => void; onSignUp?: () => void; onGuest?: () => void }) {
+// onAuthed — po úspešnom logine (ktorý potrebuje onboarding) alebo registrácii:
+// pokračuje na „Kto si?" / do rozrobeného flow. Login onboardnutého usera
+// nastaví session priamo (resolveSession) a appka sa zobrazí reaktívne.
+export function AuthPage({ onAuthed, onGuest }: { onAuthed: (authId: string, email: string, typ?: TypUctu) => void; onGuest?: () => void }) {
   const [rezim, setRezim] = useState<Rezim>("login");
   const [email, setEmail] = useState("");
   const [heslo, setHeslo] = useState("");
   const [heslo2, setHeslo2] = useState("");
   const [ukazHeslo, setUkazHeslo] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [chyba, setChyba] = useState<string | null>(null);
 
   const emailOk = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.trim());
   const hesloOk = heslo.length >= 6;
@@ -27,10 +34,30 @@ export function AuthPage({ onSignIn, onSignUp, onGuest }: { onSignIn?: () => voi
   const jeLogin = rezim === "login";
   const canSubmit = emailOk && hesloOk && (jeLogin || (heslo2.length > 0 && zhoda));
 
-  const submit = () => {
-    if (!canSubmit) return;
-    if (jeLogin) onSignIn?.();
-    else onSignUp?.();
+  const prepniRezim = (r: Rezim) => { setRezim(r); setChyba(null); };
+
+  const submit = async () => {
+    if (!canSubmit || busy) return;
+    setBusy(true);
+    setChyba(null);
+    try {
+      if (jeLogin) {
+        const r = await signIn(email, heslo);
+        if (!r.ok) { setChyba(r.chyba ?? "Prihlásenie zlyhalo."); return; }
+        const res = await resolveSession();
+        if (res.kind === "app") return; // setSession → appka sa zobrazí reaktívne
+        if (res.kind === "resume") { onAuthed(res.authId, email.trim(), res.typ); return; }
+        setChyba("Účet sa nepodarilo načítať. Skús znova.");
+      } else {
+        const r = await signUp(email, heslo);
+        if (!r.ok || !r.authId) { setChyba(r.chyba ?? "Registrácia zlyhala."); return; }
+        onAuthed(r.authId, email.trim());
+      }
+    } catch {
+      setChyba("Niečo sa pokazilo. Skús znova.");
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
@@ -55,7 +82,7 @@ export function AuthPage({ onSignIn, onSignUp, onGuest }: { onSignIn?: () => voi
           {([["login", "Prihlásenie"], ["register", "Registrácia"]] as const).map(([r, label]) => {
             const on = rezim === r;
             return (
-              <button key={r} onClick={() => setRezim(r)} style={{
+              <button key={r} onClick={() => prepniRezim(r)} style={{
                 flex: 1, padding: `${SPACE.sm}px 0`, borderRadius: RADIUS.sm, border: "none", cursor: "pointer", fontFamily: "inherit",
                 fontSize: 13.5, fontWeight: 700, transition: "all .2s ease",
                 background: on ? GRAD : "transparent", color: on ? "#fff" : C.textSec,
@@ -103,22 +130,27 @@ export function AuthPage({ onSignIn, onSignUp, onGuest }: { onSignIn?: () => voi
           </div>
         )}
 
+        {/* chyba */}
+        {chyba && (
+          <div role="alert" style={{ fontSize: 12.5, color: C.red, fontWeight: 600, textAlign: "center", marginTop: SPACE.sm, lineHeight: 1.45 }}>{chyba}</div>
+        )}
+
         {/* primárna akcia */}
-        <button onClick={submit} disabled={!canSubmit} style={{
+        <button onClick={submit} disabled={!canSubmit || busy} style={{
           width: "100%", padding: `${SPACE.md}px 0`, marginTop: SPACE.sm, borderRadius: RADIUS.md, border: "none", fontFamily: "inherit",
-          fontSize: 15.5, fontWeight: 700, cursor: canSubmit ? "pointer" : "not-allowed",
+          fontSize: 15.5, fontWeight: 700, cursor: (!canSubmit || busy) ? "not-allowed" : "pointer",
           display: "inline-flex", alignItems: "center", justifyContent: "center", gap: SPACE.xs,
-          background: canSubmit ? GRAD : "rgba(var(--glass-rgb),.06)", color: canSubmit ? "#fff" : C.textTer,
-          boxShadow: canSubmit ? "0 8px 26px rgba(78,122,62,.3), inset 0 1px 0 rgba(255,255,255,.22)" : "none",
+          background: canSubmit && !busy ? GRAD : "rgba(var(--glass-rgb),.06)", color: canSubmit && !busy ? "#fff" : C.textTer,
+          boxShadow: canSubmit && !busy ? "0 8px 26px rgba(78,122,62,.3), inset 0 1px 0 rgba(255,255,255,.22)" : "none",
           transition: "background .2s ease, box-shadow .2s ease",
         }}>
-          {jeLogin ? "Prihlásiť sa" : "Vytvoriť účet"} <IkonaSipVpravo size={18} color="#fff" />
+          {busy ? "Moment…" : <>{jeLogin ? "Prihlásiť sa" : "Vytvoriť účet"} <IkonaSipVpravo size={18} color="#fff" /></>}
         </button>
 
         {/* prepnutie režimu + hosť */}
         <div style={{ textAlign: "center", marginTop: SPACE.lg, fontSize: 13, color: C.textSec }}>
           {jeLogin ? "Nemáš účet? " : "Už máš účet? "}
-          <span onClick={() => setRezim(jeLogin ? "register" : "login")} style={{ fontWeight: 800, color: C.green, cursor: "pointer" }}>
+          <span onClick={() => prepniRezim(jeLogin ? "register" : "login")} style={{ fontWeight: 800, color: C.green, cursor: "pointer" }}>
             {jeLogin ? "Zaregistruj sa" : "Prihlás sa"}
           </span>
         </div>
