@@ -9,7 +9,7 @@
 //  • <UpgradePanel> — spodný sheet s CTA „Stať sa aktívnym".
 // ============================================================
 import { useCallback } from "react";
-import { C, GRAD } from "@/theme";
+import { C, GRAD, SPACE, RADIUS } from "@/theme";
 import { tint } from "@/lib/ui";
 import { usePouzivatel } from "@/lib/pouzivatel";
 import { useUpgrade } from "@/components/context";
@@ -31,7 +31,7 @@ export function useTvorbaGate() {
 }
 
 const btnPrimary = {
-  width: "100%", padding: "15px 0", borderRadius: 14, border: "none",
+  width: "100%", padding: `${SPACE.md}px 0`, borderRadius: RADIUS.md, border: "none",
   background: GRAD, color: "#fff", fontWeight: 700, fontSize: 15.5,
   cursor: "pointer", fontFamily: "inherit",
   boxShadow: "0 8px 26px rgba(78,122,62,.3), inset 0 1px 0 rgba(255,255,255,.22)",
@@ -48,19 +48,19 @@ export function UpgradePanel({ onClose, onAktivovat }: { onClose?: () => void; o
   return (
     <Sheet onClose={onClose}>
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", padding: "2px 2px 6px" }}>
-        <div style={{ width: 60, height: 60, borderRadius: 18, background: GRAD, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 10px 28px rgba(78,122,62,.35)" }}>
+        <div style={{ width: 60, height: 60, borderRadius: RADIUS.md, background: GRAD, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 10px 28px rgba(78,122,62,.35)" }}>
           <SipHore size={28} color="#fff" />
         </div>
-        <div style={{ fontSize: 18, fontWeight: 800, marginTop: 14 }}>Toto je pre aktívnych členov</div>
-        <div style={{ fontSize: 13.5, color: C.textSec, marginTop: 7, lineHeight: 1.55, maxWidth: 320 }}>
+        <div style={{ fontSize: 18, fontWeight: 800, marginTop: SPACE.gutter }}>Toto je pre aktívnych členov</div>
+        <div style={{ fontSize: 13.5, color: C.textSec, marginTop: SPACE.xs, lineHeight: 1.55, maxWidth: 320 }}>
           Ako pasívny môžeš všetko prezerať a prispieť v EUR či SMS. Na DEED a vytváranie obsahu sa staň aktívnym — zadarmo a kedykoľvek, bez straty doterajšieho.
         </div>
       </div>
 
-      <div style={{ margin: "16px 0 18px", display: "flex", flexDirection: "column", gap: 10 }}>
+      <div style={{ margin: `${SPACE.md}px 0 ${SPACE.md}px`, display: "flex", flexDirection: "column", gap: SPACE.sm }}>
         {vyhody.map((v) => (
-          <div key={v.t} style={{ display: "flex", alignItems: "center", gap: 12, padding: "11px 13px", borderRadius: 13, background: "rgba(var(--glass-rgb),.05)", border: `1px solid ${C.line}` }}>
-            <span style={{ width: 34, height: 34, borderRadius: 10, flex: "0 0 auto", display: "flex", alignItems: "center", justifyContent: "center", background: tint(v.col, 0.14), border: `1px solid ${tint(v.col, 0.26)}` }}>
+          <div key={v.t} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, padding: `${SPACE.sm}px ${SPACE.sm}px`, borderRadius: RADIUS.sm, background: "rgba(var(--glass-rgb),.05)", border: `1px solid ${C.line}` }}>
+            <span style={{ width: 34, height: 34, borderRadius: RADIUS.sm, flex: "0 0 auto", display: "flex", alignItems: "center", justifyContent: "center", background: tint(v.col, 0.14), border: `1px solid ${tint(v.col, 0.26)}` }}>
               <v.Ikona size={18} color={v.col} />
             </span>
             <span style={{ fontSize: 13.5, fontWeight: 600, color: C.text, textAlign: "left" }}>{v.t}</span>
@@ -69,7 +69,7 @@ export function UpgradePanel({ onClose, onAktivovat }: { onClose?: () => void; o
       </div>
 
       <button onClick={onAktivovat} style={btnPrimary}>Stať sa aktívnym</button>
-      <button onClick={onClose} style={{ width: "100%", padding: "13px 0", marginTop: 10, borderRadius: 14, background: "transparent", color: C.textSec, border: "none", fontWeight: 700, fontSize: 14.5, cursor: "pointer", fontFamily: "inherit" }}>
+      <button onClick={onClose} style={{ width: "100%", padding: `${SPACE.sm}px 0`, marginTop: SPACE.sm, borderRadius: RADIUS.md, background: "transparent", color: C.textSec, border: "none", fontWeight: 700, fontSize: 14.5, cursor: "pointer", fontFamily: "inherit" }}>
         Teraz nie
       </button>
     </Sheet>

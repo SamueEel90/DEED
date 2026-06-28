@@ -6,7 +6,7 @@
 // Štatutár sa overuje ako osoba (KYC) — closed loop; org cez KYB (Didit).
 // ============================================================
 import { useEffect, useState } from "react";
-import { C, GRAD, infoBox } from "@/theme";
+import { C, GRAD, infoBox, SPACE, RADIUS } from "@/theme";
 import { Vyber, Otazka, Oslava, Suhrn } from "@/shared";
 import { setSession } from "@/lib/session";
 import * as db from "@/lib/db";
@@ -279,7 +279,7 @@ function KrokKyb({ org, toast, onBack, onNext }: KrokKybProps) {
       />
 
       {reg && (
-        <div style={{ marginTop: 6 }}>
+        <div style={{ marginTop: SPACE.xs }}>
           <Suhrn
             rows={[
               ["Názov", reg.nazov],
@@ -288,12 +288,12 @@ function KrokKyb({ org, toast, onBack, onNext }: KrokKybProps) {
               ["Právna forma", reg.pravna_forma],
             ]}
           />
-          <div style={{ fontSize: 11.5, color: C.textTer, marginTop: 7, lineHeight: 1.4 }}>
+          <div style={{ fontSize: 11.5, color: C.textTer, marginTop: SPACE.xs, lineHeight: 1.4 }}>
             Údaje z registra sa nedajú ručne meniť.
           </div>
 
           {/* doklad — stanovy (mock upload) */}
-          <div style={{ marginTop: 12 }}>
+          <div style={{ marginTop: SPACE.sm }}>
             <div
               onClick={nahrajStanovy}
               style={{
@@ -302,8 +302,8 @@ function KrokKyb({ org, toast, onBack, onNext }: KrokKybProps) {
                 justifyContent: "space-between",
                 background: stanovyNahrate ? "rgba(31,191,143,.1)" : "rgba(var(--glass-rgb),.04)",
                 border: `1px solid ${stanovyNahrate ? "rgba(31,191,143,.4)" : C.line}`,
-                borderRadius: 13,
-                padding: "12px 13px",
+                borderRadius: RADIUS.sm,
+                padding: `${SPACE.sm}px ${SPACE.sm}px`,
                 fontSize: 13,
                 cursor: "pointer",
               }}
@@ -320,12 +320,12 @@ function KrokKyb({ org, toast, onBack, onNext }: KrokKybProps) {
       {overene && (
         <div
           style={{
-            marginTop: 14,
+            marginTop: SPACE.gutter,
             display: "flex",
             alignItems: "center",
-            gap: 11,
-            padding: "13px 14px",
-            borderRadius: 13,
+            gap: SPACE.sm,
+            padding: `${SPACE.sm}px ${SPACE.gutter}px`,
+            borderRadius: RADIUS.sm,
             background: "rgba(31,191,143,.1)",
             border: "1px solid rgba(31,191,143,.4)",
           }}
@@ -334,7 +334,7 @@ function KrokKyb({ org, toast, onBack, onNext }: KrokKybProps) {
             style={{
               width: 28,
               height: 28,
-              borderRadius: "50%",
+              borderRadius: RADIUS.round,
               flex: "0 0 auto",
               background: C.green,
               color: "#fff",
@@ -408,15 +408,15 @@ function KrokProfil({ org, nazov, toast, onBack, onNext }: KrokProfilProps) {
       <Otazka>Predstav sa adresáru</Otazka>
 
       {/* uzamknutý názov z registra */}
-      <div style={{ marginBottom: 14 }}>
-        <div style={{ fontSize: 12.5, fontWeight: 600, color: C.textTer, marginBottom: 6 }}>
+      <div style={{ marginBottom: SPACE.gutter }}>
+        <div style={{ fontSize: 12.5, fontWeight: 600, color: C.textTer, marginBottom: SPACE.xs }}>
           Názov (z registra)
         </div>
         <div
           style={{
             width: "100%",
-            padding: 15,
-            borderRadius: 13,
+            padding: SPACE.md,
+            borderRadius: RADIUS.sm,
             background: "rgba(var(--glass-rgb),.03)",
             border: `1px solid ${C.line}`,
             color: C.textSec,
@@ -424,7 +424,7 @@ function KrokProfil({ org, nazov, toast, onBack, onNext }: KrokProfilProps) {
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
-            gap: 10,
+            gap: SPACE.sm,
           }}
         >
           <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
@@ -454,8 +454,8 @@ function KrokProfil({ org, nazov, toast, onBack, onNext }: KrokProfilProps) {
       />
 
       {/* úplnosť profilu */}
-      <div style={{ marginTop: 4, marginBottom: 4 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: C.textTer, marginBottom: 6 }}>
+      <div style={{ marginTop: SPACE.xxs, marginBottom: SPACE.xxs }}>
+        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: C.textTer, marginBottom: SPACE.xs }}>
           <span>Úplnosť profilu</span>
           <span style={{ fontWeight: 700, color: AKCENT }}>{uplnost} %</span>
         </div>
@@ -517,7 +517,7 @@ function KrokDobrovolnictvo({ org, toast, onBack, onNext }: KrokDobrovolnictvoPr
       />
 
       {zaujem && (
-        <div style={{ marginTop: 4 }}>
+        <div style={{ marginTop: SPACE.xxs }}>
           <div style={{ fontSize: 12.5, fontWeight: 600, color: C.textTer, margin: "6px 0 8px" }}>
             Aký typ dobrovoľníctva?
           </div>
@@ -689,13 +689,13 @@ function KrokPobocky({ org, toast, onBack, onNext }: KrokPobockyProps) {
       total={8}
       onBack={onBack}
       footer={
-        <div style={{ display: "flex", gap: 10 }}>
+        <div style={{ display: "flex", gap: SPACE.sm }}>
           <button
             onClick={loading ? undefined : dalej}
             disabled={loading}
             style={{
               flex: "0 0 auto",
-              padding: "15px 22px",
+              padding: `${SPACE.md}px ${SPACE.lg}px`,
               borderRadius: 14,
               background: "rgba(var(--glass-rgb),.05)",
               color: C.textSec,
@@ -715,7 +715,7 @@ function KrokPobocky({ org, toast, onBack, onNext }: KrokPobockyProps) {
       <Otazka>Máte pobočky? (voliteľné)</Otazka>
       <div style={infoBox}>Pobočky pridáva len overená centrála (od PRO).</div>
 
-      <div style={{ marginTop: 14 }}>
+      <div style={{ marginTop: SPACE.gutter }}>
         <TextPole label="Mesto pobočky" value={mesto} onChange={setMesto} placeholder="napr. Žilina" />
         <div style={{ fontSize: 12.5, fontWeight: 600, color: C.textTer, margin: "4px 0 8px" }}>Režim</div>
         {POBOCKA_REZIMY.map((r) => (
@@ -732,8 +732,8 @@ function KrokPobocky({ org, toast, onBack, onNext }: KrokPobockyProps) {
           onClick={pridaj}
           style={{
             width: "100%",
-            padding: "13px 0",
-            borderRadius: 13,
+            padding: `${SPACE.sm}px 0`,
+            borderRadius: RADIUS.sm,
             border: `1px solid ${AKCENT}`,
             background: "transparent",
             color: AKCENT,
@@ -741,7 +741,7 @@ function KrokPobocky({ org, toast, onBack, onNext }: KrokPobockyProps) {
             fontSize: 14,
             cursor: "pointer",
             fontFamily: "inherit",
-            marginTop: 4,
+            marginTop: SPACE.xxs,
           }}
         >
           ＋ Pridať pobočku
@@ -749,8 +749,8 @@ function KrokPobocky({ org, toast, onBack, onNext }: KrokPobockyProps) {
       </div>
 
       {zoznam.length > 0 && (
-        <div style={{ marginTop: 16 }}>
-          <div style={{ fontSize: 12.5, fontWeight: 600, color: C.textTer, marginBottom: 8 }}>
+        <div style={{ marginTop: SPACE.md }}>
+          <div style={{ fontSize: 12.5, fontWeight: 600, color: C.textTer, marginBottom: SPACE.xs }}>
             Pridané pobočky ({zoznam.length})
           </div>
           {zoznam.map((p, i) => (
@@ -759,12 +759,12 @@ function KrokPobocky({ org, toast, onBack, onNext }: KrokPobockyProps) {
               style={{
                 display: "flex",
                 alignItems: "center",
-                gap: 10,
-                padding: "11px 13px",
-                borderRadius: 13,
+                gap: SPACE.sm,
+                padding: `${SPACE.sm}px ${SPACE.sm}px`,
+                borderRadius: RADIUS.sm,
                 background: "rgba(var(--glass-rgb),.04)",
                 border: `1px solid ${C.line}`,
-                marginBottom: 8,
+                marginBottom: SPACE.xs,
               }}
             >
               <div style={{ flex: 1, minWidth: 0 }}>

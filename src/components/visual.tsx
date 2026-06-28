@@ -1,5 +1,5 @@
 import type { CSSProperties, ReactNode } from "react";
-import { GRAD_KUZEL, ZRNO } from "@/theme";
+import { GRAD_KUZEL, ZRNO, RADIUS } from "@/theme";
 
 // ============================================================
 // DÝCHAJÚCE POZADIE — tmavý subtle gradient, jemne dýcha + zrno
@@ -7,7 +7,7 @@ import { GRAD_KUZEL, ZRNO } from "@/theme";
 export function DychajucePozadie({ silne }: { silne?: boolean }) {
   const k = silne ? 1.5 : 1;
   const blob = (style: CSSProperties, anim: string) => (
-    <div style={{ position: "absolute", borderRadius: "50%", filter: "blur(70px)", willChange: "transform, opacity", ...style, animation: anim }} />
+    <div style={{ position: "absolute", borderRadius: RADIUS.round, filter: "blur(70px)", willChange: "transform, opacity", ...style, animation: anim }} />
   );
   return (
     <div aria-hidden style={{ position: "absolute", inset: 0, overflow: "hidden", zIndex: -1, pointerEvents: "none" }}>
@@ -24,7 +24,7 @@ export function DychajucePozadie({ silne }: { silne?: boolean }) {
 // AURA PRSTEŇ — podpis značky (rotujúci aurora kruh so žiarou)
 // ============================================================
 export function Aura({ size = 110, hrubka = 2, children }: { size?: number; hrubka?: number; children?: ReactNode }) {
-  const prsten: CSSProperties = { position: "absolute", inset: 0, borderRadius: "50%", background: GRAD_KUZEL, animation: "tocenie 7s linear infinite" };
+  const prsten: CSSProperties = { position: "absolute", inset: 0, borderRadius: RADIUS.round, background: GRAD_KUZEL, animation: "tocenie 7s linear infinite" };
   return (
     <div style={{ position: "relative", width: size, height: size, flex: "0 0 auto" }}>
       {/* žiara */}
@@ -32,7 +32,7 @@ export function Aura({ size = 110, hrubka = 2, children }: { size?: number; hrub
       {/* samotný prsteň (maskou orezaný na obrys) */}
       <div style={{ ...prsten, padding: hrubka, WebkitMask: "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)", WebkitMaskComposite: "xor", maskComposite: "exclude" }} />
       {/* obsah */}
-      <div style={{ position: "absolute", inset: hrubka + 5, borderRadius: "50%", background: "#0A0F1C", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
+      <div style={{ position: "absolute", inset: hrubka + 5, borderRadius: RADIUS.round, background: "#0A0F1C", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
         {children}
       </div>
     </div>

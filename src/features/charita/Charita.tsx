@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { C, U, AV, GRAD, GRAD_ZELENY } from "@/theme";
+import { C, U, AV, GRAD, GRAD_ZELENY, SPACE, RADIUS } from "@/theme";
 import { Foto, Avatar, FotoPrispevku, MiniFotky, ModulHlavicka, PodporaSekcia, PlatbaModal, HladanieModal, toast, useGaleria, useLayout, useScrollHore, useStrankaAkcie, useTvorbaGate, Ticker, StatRiadok, FiltreStat, MoniBar, FeedStlpce, FeedGrid, obalSiroky, OkruhVyber, SegTabs, tint, Lupa, Zvon, Zdielanie, IkonaSpat, IkonaVlajka, IkonaFoto, IkonaPlay, IkonaDoska, IkonaOpakovat, IkonaKriz, IkonaInstitucia, FeedSkeleton, SkeletonRiadky, EmptyState, ErrorState, ScreenSwitch } from "@/shared";
 import { pripravFeed, FEED_CFG } from "@/lib/feed";
 import { MEDIA_AR } from "@/lib/cardSize";
@@ -136,7 +136,7 @@ function CharitaFeed({ wide, toast, onDetail, onHladaj, onSheet }: FeedProps) {
   }), []);
 
   return (
-    <div style={{ paddingBottom: 14 }}>
+    <div style={{ paddingBottom: SPACE.gutter }}>
       {/* header — jednotná hlavička (logo D⁺ + názov) */}
       <ModulHlavicka title="Charita" karma="Charita · Gold" right={
         <>
@@ -151,9 +151,9 @@ function CharitaFeed({ wide, toast, onDetail, onHladaj, onSheet }: FeedProps) {
       {/* skratka na Adresár charít & OZ + štatistický riadok — na desktope na jednom riadku */}
       <FiltreStat
         filtre={
-          <div style={{ padding: "0 16px 12px" }}>
-            <div onClick={() => onSheet("dir")} style={{ display: "flex", alignItems: "center", gap: 12, background: K.blueBg, border: `1px solid ${K.blueEdge}`, borderRadius: 14, padding: "12px 14px", cursor: "pointer" }}>
-              <span style={{ width: 38, height: 38, borderRadius: 11, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(91,168,240,.15)", color: K.blue }}><IkonaInstitucia size={20} color={K.blue} /></span>
+          <div style={{ padding: `0 ${SPACE.md}px ${SPACE.sm}px` }}>
+            <div onClick={() => onSheet("dir")} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, background: K.blueBg, border: `1px solid ${K.blueEdge}`, borderRadius: RADIUS.sm, padding: `${SPACE.sm}px ${SPACE.gutter}px`, cursor: "pointer" }}>
+              <span style={{ width: 38, height: 38, borderRadius: RADIUS.sm, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(91,168,240,.15)", color: K.blue }}><IkonaInstitucia size={20} color={K.blue} /></span>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 14, fontWeight: 700 }}>Adresár charít & OZ</div>
                 <div style={{ fontSize: 11.5, color: C.textTer }}>Overené organizácie na jednom mieste</div>
@@ -186,7 +186,7 @@ function CharitaFeed({ wide, toast, onDetail, onHladaj, onSheet }: FeedProps) {
         />
       )}
 
-      <div style={{ fontSize: 10, color: K.txt3, textAlign: "center", padding: 6 }}>↑ feed je pestrý — veľké urgentné, topované, dobrovoľnícke, materiál ↑</div>
+      <div style={{ fontSize: 10, color: K.txt3, textAlign: "center", padding: SPACE.xxs }}>↑ feed je pestrý — veľké urgentné, topované, dobrovoľnícke, materiál ↑</div>
 
       {vyberOkruh && <OkruhVyber radius={radius} akcent="var(--a-info)"
         onPick={(r: string) => { setRadius(r); setVyberOkruh(false); }}
@@ -199,7 +199,7 @@ function CharitaFeed({ wide, toast, onDetail, onHladaj, onSheet }: FeedProps) {
 // JEDNOTNÁ FULL-WIDTH (Instagram) KARTA pre Charitu — médium hore · odznaky · titul · príbeh · progres.
 function CharitaKarta({ wide, onClick, fotky, emoji, accent, badgeL, badgeR, nazov, overena, tag, tagBg, tagCol, popis, vyzbierane, ciel }: any) {
   return (
-    <div {...pressable(onClick, nazov)} className="good-card" style={{ background: K.card, border: wide ? `1px solid ${K.line}` : "none", borderBottom: `1px solid ${K.line}`, borderLeft: `3px solid ${accent}`, borderRadius: wide ? 16 : 0, overflow: "hidden", marginBottom: wide ? 0 : 10, cursor: "pointer", ...(wide ? {} : { marginLeft: -14, marginRight: -14 }) }}>
+    <div {...pressable(onClick, nazov)} className="good-card" style={{ background: K.card, border: wide ? `1px solid ${K.line}` : "none", borderBottom: `1px solid ${K.line}`, borderLeft: `3px solid ${accent}`, borderRadius: wide ? RADIUS.md : 0, overflow: "hidden", marginBottom: wide ? 0 : SPACE.sm, cursor: "pointer", ...(wide ? {} : { marginLeft: -SPACE.gutter, marginRight: -SPACE.gutter }) }}>
       {/* médium — 16:9 na tablete/desktope; na mobile pôvodná výška 235 px */}
       <div style={{ position: "relative", ...(wide ? { width: "100%", aspectRatio: MEDIA_AR } : { height: 235 }) }}>
         <FotoPrispevku fotky={fotky} emoji={emoji} h={wide ? "100%" : 235} disableGaleria />
@@ -207,14 +207,14 @@ function CharitaKarta({ wide, onClick, fotky, emoji, accent, badgeL, badgeR, naz
         {badgeL && <span style={badge({ top: 10, left: 10, color: badgeL.col, background: badgeL.bg })}>{badgeL.t}</span>}
         {badgeR && <span style={badge({ top: 10, right: 10, color: badgeR.col, background: badgeR.bg })}>{badgeR.t}</span>}
       </div>
-      <div style={{ padding: "12px 14px 14px" }}>
-        <div style={{ fontSize: 15.5, fontWeight: 700, display: "flex", alignItems: "center", gap: 7, flexWrap: "wrap" }}>
+      <div style={{ padding: `${SPACE.sm}px ${SPACE.gutter}px ${SPACE.gutter}px` }}>
+        <div style={{ fontSize: 15.5, fontWeight: 700, display: "flex", alignItems: "center", gap: SPACE.xs, flexWrap: "wrap" }}>
           <span>{nazov}</span>
           {overena && <Overena />}
           {tag && <span style={tagChip(tagCol)}>{tag}</span>}
         </div>
-        <div style={{ fontSize: 13, color: K.txt2, lineHeight: 1.5, marginTop: 6 }}>{popis}</div>
-        {ciel ? <div style={{ marginTop: 10 }}><MoniBar vyzbierane={vyzbierane} ciel={ciel} mini /></div> : null}
+        <div style={{ fontSize: 13, color: K.txt2, lineHeight: 1.5, marginTop: SPACE.xxs }}>{popis}</div>
+        {ciel ? <div style={{ marginTop: SPACE.sm }}><MoniBar vyzbierane={vyzbierane} ciel={ciel} mini /></div> : null}
       </div>
     </div>
   );
@@ -252,7 +252,7 @@ function Material({ wide, toast }: { wide?: boolean; toast: (m: string) => void 
 }
 
 function badge({ top, left, right, color, background }: { top?: number; left?: number; right?: number; color?: string; background?: string }): React.CSSProperties {
-  return { position: "absolute", top, left, right, fontSize: 10.5, padding: "4px 10px", borderRadius: 9, fontWeight: 800, color: color || "#fff", background: background || "rgba(8,11,18,.62)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)", border: "1px solid rgba(255,255,255,.16)", boxShadow: "0 2px 8px rgba(0,0,0,.25)", pointerEvents: "none" };
+  return { position: "absolute", top, left, right, fontSize: 10.5, padding: `${SPACE.xxs}px ${SPACE.sm}px`, borderRadius: RADIUS.xs, fontWeight: 800, color: color || "#fff", background: background || "rgba(8,11,18,.62)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)", border: "1px solid rgba(255,255,255,.16)", boxShadow: "0 2px 8px rgba(0,0,0,.25)", pointerEvents: "none" };
 }
 function Overena() {
   return <span style={tagChip(K.green)}>✓ overená</span>;
@@ -272,11 +272,11 @@ type RiadokKartaProps = {
 };
 function RiadokKarta({ wide, onClick, ikona, ikonaBg, ikonaCol, ikonaText, nazov, tag, tagBg, tagCol, popis }: RiadokKartaProps) {
   return (
-    <div onClick={onClick} style={{ display: "flex", alignItems: "center", gap: 11, background: K.card, border: `1px solid ${K.line}`, borderRadius: 14, padding: "11px 13px", marginBottom: wide ? 0 : 10, cursor: "pointer" }}>
-      <div style={{ width: 42, height: 42, borderRadius: 10, background: ikonaBg, color: ikonaCol, display: "flex", alignItems: "center", justifyContent: "center", fontSize: ikonaText ? 12 : 18, fontWeight: ikonaText ? 700 : 400, flexShrink: 0 }}>{ikona}</div>
+    <div onClick={onClick} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, background: K.card, border: `1px solid ${K.line}`, borderRadius: RADIUS.sm, padding: `${SPACE.sm}px ${SPACE.sm}px`, marginBottom: wide ? 0 : SPACE.sm, cursor: "pointer" }}>
+      <div style={{ width: 42, height: 42, borderRadius: RADIUS.xs, background: ikonaBg, color: ikonaCol, display: "flex", alignItems: "center", justifyContent: "center", fontSize: ikonaText ? 12 : 18, fontWeight: ikonaText ? 700 : 400, flexShrink: 0 }}>{ikona}</div>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 15, fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}>{nazov} <span style={{ fontSize: 11, padding: "2px 7px", borderRadius: 5, fontWeight: 600, background: tagBg, color: tagCol }}>{tag}</span></div>
-        <div style={{ fontSize: 13, color: K.txt2, marginTop: 3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{popis}</div>
+        <div style={{ fontSize: 15, fontWeight: 600, display: "flex", alignItems: "center", gap: SPACE.xxs }}>{nazov} <span style={{ fontSize: 11, padding: `${SPACE.xxs}px ${SPACE.xs}px`, borderRadius: 5, fontWeight: 600, background: tagBg, color: tagCol }}>{tag}</span></div>
+        <div style={{ fontSize: 13, color: K.txt2, marginTop: SPACE.xxs, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{popis}</div>
       </div>
     </div>
   );
@@ -306,40 +306,40 @@ function CharitaDetail({ toast, onBack, onReg }: { toast: (m: string) => void; o
   }
 
   return (
-    <div style={{ paddingBottom: 24 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "14px 16px" }}>
-        <span onClick={onBack} style={{ width: 32, height: 32, flex: "0 0 auto", borderRadius: "50%", background: "rgba(var(--glass-rgb),.06)", border: `1px solid ${K.line}`, display: "flex", alignItems: "center", justifyContent: "center", color: K.txt2, cursor: "pointer" }}><IkonaSpat size={17} color={K.txt2} /></span>
-        <span style={{ fontSize: 12, color: K.diamond, background: K.blueBg, border: `1px solid ${K.blueEdge}`, padding: "3px 9px", borderRadius: 7, fontWeight: 700, letterSpacing: ".02em" }}>12 000 / 47</span>
+    <div style={{ paddingBottom: SPACE.lg }}>
+      <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm, padding: `${SPACE.gutter}px ${SPACE.md}px` }}>
+        <span onClick={onBack} style={{ width: 32, height: 32, flex: "0 0 auto", borderRadius: RADIUS.round, background: "rgba(var(--glass-rgb),.06)", border: `1px solid ${K.line}`, display: "flex", alignItems: "center", justifyContent: "center", color: K.txt2, cursor: "pointer" }}><IkonaSpat size={17} color={K.txt2} /></span>
+        <span style={{ fontSize: 12, color: K.diamond, background: K.blueBg, border: `1px solid ${K.blueEdge}`, padding: `${SPACE.xxs}px ${SPACE.xs}px`, borderRadius: RADIUS.xs, fontWeight: 700, letterSpacing: ".02em" }}>12 000 / 47</span>
         <span style={{ fontSize: 12, color: K.txt2 }}>Liga proti rakovine</span>
-        <span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 14, color: K.txt2 }}><Zdielanie size={17} color={K.txt2} /><IkonaVlajka size={16} color={K.txt2} /></span>
+        <span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: SPACE.gutter, color: K.txt2 }}><Zdielanie size={17} color={K.txt2} /><IkonaVlajka size={16} color={K.txt2} /></span>
       </div>
 
-      <div style={{ padding: "0 16px" }}>
+      <div style={{ padding: `0 ${SPACE.md}px` }}>
         {/* hero foto — klik = celá obrazovka + swipe (16:9 na desktope) */}
         <div style={{ position: "relative", ...(wide ? { width: "100%", aspectRatio: MEDIA_AR } : {}) }}>
           <Foto src={z.fotky[0]} emoji="🔥" h={wide ? "100%" : 200} w={wide ? "100%" : undefined} radius={14} onClick={() => otvorGaleriu(z.fotky, 0)} />
-          <span style={{ ...badge({ top: 9, right: 9, color: K.txt }), display: "inline-flex", alignItems: "center", gap: 5 }}><IkonaFoto size={12} color={K.txt} /> foto z prípadu</span>
-          <span style={{ position: "absolute", bottom: 9, right: 9, background: "rgba(0,0,0,.6)", borderRadius: 12, padding: "3px 9px", fontSize: 10, color: "#fff", pointerEvents: "none" }}>⧉ {z.fotky.length} · klikni na foto</span>
+          <span style={{ ...badge({ top: 9, right: 9, color: K.txt }), display: "inline-flex", alignItems: "center", gap: SPACE.xxs }}><IkonaFoto size={12} color={K.txt} /> foto z prípadu</span>
+          <span style={{ position: "absolute", bottom: 9, right: 9, background: "rgba(0,0,0,.6)", borderRadius: RADIUS.sm, padding: `${SPACE.xxs}px ${SPACE.xs}px`, fontSize: 10, color: "#fff", pointerEvents: "none" }}>⧉ {z.fotky.length} · klikni na foto</span>
         </div>
       </div>
       <MiniFotky fotky={z.fotky} />
 
-      <div style={{ padding: "14px 16px 0" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+      <div style={{ padding: `${SPACE.gutter}px ${SPACE.md}px 0` }}>
+        <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm, marginBottom: SPACE.xs }}>
           <Avatar src={z.avatar} emoji="RK" size={38} />
           <div>
-            <div style={{ fontSize: 15, fontWeight: 600, display: "flex", alignItems: "center", gap: 7 }}>{z.nazov} <Overena /></div>
-            <div style={{ fontSize: 11.5, color: K.txt2, marginTop: 2 }}><span style={{ color: K.gold }}>⭐ {z.karma}</span> · 📍 {z.lok} · 1 deň</div>
+            <div style={{ fontSize: 15, fontWeight: 600, display: "flex", alignItems: "center", gap: SPACE.xs }}>{z.nazov} <Overena /></div>
+            <div style={{ fontSize: 11.5, color: K.txt2, marginTop: SPACE.xxs }}><span style={{ color: K.gold }}>⭐ {z.karma}</span> · 📍 {z.lok} · 1 deň</div>
           </div>
         </div>
 
-        <div style={{ fontSize: 14, lineHeight: 1.55, margin: "10px 0 14px" }}>{z.pribeh}</div>
+        <div style={{ fontSize: 14, lineHeight: 1.55, margin: `${SPACE.sm}px 0 ${SPACE.gutter}px` }}>{z.pribeh}</div>
 
         {/* progres */}
-        <div style={{ background: K.card, border: `1px solid ${K.line}`, borderRadius: 14, padding: "14px 16px", marginBottom: 14 }}>
+        <div style={{ background: K.card, border: `1px solid ${K.line}`, borderRadius: RADIUS.sm, padding: `${SPACE.gutter}px ${SPACE.md}px`, marginBottom: SPACE.gutter }}>
           <span style={{ fontSize: 18, fontWeight: 700, color: K.green, float: "right" }}>{pct} %</span>
           <div style={{ fontSize: 26, fontWeight: 700 }}>{Math.round(suma)} € <small style={{ fontSize: 13, color: K.txt2, fontWeight: 400 }}>z {z.ciel} €</small></div>
-          <div style={{ height: 9, background: "rgba(var(--glass-rgb),.1)", borderRadius: 99, overflow: "hidden", margin: "10px 0 8px" }}>
+          <div style={{ height: 9, background: "rgba(var(--glass-rgb),.1)", borderRadius: 99, overflow: "hidden", margin: `${SPACE.sm}px 0 ${SPACE.xs}px` }}>
             <div style={{ height: "100%", width: `${pct}%`, background: GRAD_ZELENY, borderRadius: 99, transition: "width .6s ease", boxShadow: "0 0 12px rgba(43,212,155,.5)" }} />
           </div>
           <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11.5, color: K.txt2 }}>
@@ -348,7 +348,7 @@ function CharitaDetail({ toast, onBack, onReg }: { toast: (m: string) => void; o
         </div>
 
         {/* jednotná sekcia podpory */}
-        <div style={{ marginBottom: 14 }}>
+        <div style={{ marginBottom: SPACE.gutter }}>
           <PodporaSekcia
             onShare={() => toast("Zdieľať: odkaz skopírovaný · siete")}
             upvotes={140} onUpvote={() => toast("Palec hore")}
@@ -357,7 +357,7 @@ function CharitaDetail({ toast, onBack, onReg }: { toast: (m: string) => void; o
         </div>
 
         {/* pravidelná podpora */}
-        <div onClick={onReg} style={{ width: "100%", border: `2px solid ${K.blueEdge}`, background: K.blueBg, borderRadius: 13, padding: 14, textAlign: "center", fontSize: 14, fontWeight: 600, cursor: "pointer", marginBottom: 14, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+        <div onClick={onReg} style={{ width: "100%", border: `2px solid ${K.blueEdge}`, background: K.blueBg, borderRadius: RADIUS.sm, padding: SPACE.gutter, textAlign: "center", fontSize: 14, fontWeight: 600, cursor: "pointer", marginBottom: SPACE.gutter, display: "flex", alignItems: "center", justifyContent: "center", gap: SPACE.xs }}>
           <IkonaOpakovat size={17} color={K.blue} /> Pravidelná podpora
         </div>
       </div>
@@ -370,7 +370,7 @@ function CharitaDetail({ toast, onBack, onReg }: { toast: (m: string) => void; o
 
 function PayBtn({ flex, bg, bd, col, e, v, onClick }: { flex?: number | string; bg?: string; bd?: string; col?: string; e?: React.ReactNode; v?: React.ReactNode; onClick?: () => void }) {
   return (
-    <div onClick={onClick} style={{ flex, background: bg, border: `1px solid ${bd}`, borderRadius: 12, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "9px 0", cursor: "pointer", gap: 2 }}>
+    <div onClick={onClick} style={{ flex, background: bg, border: `1px solid ${bd}`, borderRadius: RADIUS.sm, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: `${SPACE.xs}px 0`, cursor: "pointer", gap: SPACE.xxs }}>
       <span style={{ fontSize: 18, color: col }}>{e}</span><span style={{ fontSize: 11, fontWeight: 600, color: col }}>{v}</span>
     </div>
   );
@@ -380,11 +380,11 @@ function PayBtn({ flex, bg, bd, col, e, v, onClick }: { flex?: number | string; 
 function SheetObal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
   return (
     <div style={{ position: "absolute", inset: 0, background: "rgba(var(--panel-rgb),.92)", backdropFilter: "blur(26px)", WebkitBackdropFilter: "blur(26px)", zIndex: 50, display: "flex", flexDirection: "column", animation: "fadeUp .2s ease" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 12, padding: 16, borderBottom: `1px solid ${K.line}` }}>
+      <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm, padding: SPACE.md, borderBottom: `1px solid ${K.line}` }}>
         <span onClick={onClose} style={{ display: "flex", color: K.txt2, cursor: "pointer" }}><IkonaKriz size={20} color={K.txt2} /></span>
         <span style={{ fontSize: 16, fontWeight: 600 }}>{title}</span>
       </div>
-      <div style={{ flex: 1, overflowY: "auto", padding: 16 }}>{children}</div>
+      <div style={{ flex: 1, overflowY: "auto", padding: SPACE.md }}>{children}</div>
     </div>
   );
 }
@@ -402,16 +402,16 @@ function SheetPridat({ toast, otvorModul, onClose }: { toast: (m: string) => voi
   return (
     <SheetObal title="Pridať" onClose={onClose}>
       {moznosti.map((m, i) => (
-        <div key={i} onClick={m[3]} style={{ display: "flex", alignItems: "center", gap: 13, background: K.card, border: `1px solid ${K.line}`, borderRadius: 14, padding: 15, marginBottom: 11, cursor: "pointer" }}>
-          <div style={{ width: 42, height: 42, borderRadius: 11, background: K.blueBg, color: K.blue, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 19, flexShrink: 0 }}>{m[0]}</div>
+        <div key={i} onClick={m[3]} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, background: K.card, border: `1px solid ${K.line}`, borderRadius: RADIUS.sm, padding: SPACE.md, marginBottom: SPACE.sm, cursor: "pointer" }}>
+          <div style={{ width: 42, height: 42, borderRadius: RADIUS.sm, background: K.blueBg, color: K.blue, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 19, flexShrink: 0 }}>{m[0]}</div>
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 14, fontWeight: 600 }}>{m[1]}</div>
-            <div style={{ fontSize: 11.5, color: K.txt2, marginTop: 2 }}>{m[2]}</div>
+            <div style={{ fontSize: 11.5, color: K.txt2, marginTop: SPACE.xxs }}>{m[2]}</div>
           </div>
           <span style={{ color: K.txt3, fontSize: 16 }}>›</span>
         </div>
       ))}
-      <div style={{ fontSize: 10, color: K.txt3, textAlign: "center", padding: 6 }}>finančná žiadosť otvorí sprievodcu v module Help</div>
+      <div style={{ fontSize: 10, color: K.txt3, textAlign: "center", padding: SPACE.xxs }}>finančná žiadosť otvorí sprievodcu v module Help</div>
     </SheetObal>
   );
 }
@@ -419,20 +419,20 @@ function SheetPridat({ toast, otvorModul, onClose }: { toast: (m: string) => voi
 function SheetReg({ toast, onClose }: { toast: (m: string) => void; onClose: () => void }) {
   return (
     <SheetObal title="Pravidelná podpora" onClose={onClose}>
-      <div onClick={() => toast("Podporujem → frekvencia → suma → EUR/DEED → potvrď")} style={{ background: K.card, border: `1px solid ${K.line}`, borderRadius: 14, padding: 15, marginBottom: 12, cursor: "pointer" }}>
+      <div onClick={() => toast("Podporujem → frekvencia → suma → EUR/DEED → potvrď")} style={{ background: K.card, border: `1px solid ${K.line}`, borderRadius: RADIUS.sm, padding: SPACE.md, marginBottom: SPACE.sm, cursor: "pointer" }}>
         <div style={{ fontSize: 14.5, fontWeight: 600 }}>💶 Túto žiadosť</div>
-        <div style={{ fontSize: 12, color: K.txt2, marginTop: 4, lineHeight: 1.45 }}>Pravidelne podporuješ konkrétnu zbierku (Rodina Kováčová). Odhadovaná doba: dlhodobá.</div>
+        <div style={{ fontSize: 12, color: K.txt2, marginTop: SPACE.xxs, lineHeight: 1.45 }}>Pravidelne podporuješ konkrétnu zbierku (Rodina Kováčová). Odhadovaná doba: dlhodobá.</div>
       </div>
-      <div onClick={() => toast("Podporujem segment → frekvencia → suma → potvrď")} style={{ background: K.goldBg, border: `1px solid rgba(240,199,90,.4)`, borderRadius: 14, padding: 15, marginBottom: 12, cursor: "pointer" }}>
+      <div onClick={() => toast("Podporujem segment → frekvencia → suma → potvrď")} style={{ background: K.goldBg, border: `1px solid rgba(240,199,90,.4)`, borderRadius: RADIUS.sm, padding: SPACE.md, marginBottom: SPACE.sm, cursor: "pointer" }}>
         <div style={{ fontSize: 14.5, fontWeight: 600 }}>🗂 Segment charity</div>
-        <div style={{ fontSize: 12, color: K.txt2, marginTop: 4, lineHeight: 1.45 }}>Podporuješ tému (napr. „onkopacienti“). Charita rozdelí podľa svojho kľúča.</div>
-        <div style={{ fontSize: 11, color: K.gold, marginTop: 6 }}>⚠️ Tu nevieme presne deklarovať použitie peňazí.</div>
+        <div style={{ fontSize: 12, color: K.txt2, marginTop: SPACE.xxs, lineHeight: 1.45 }}>Podporuješ tému (napr. „onkopacienti“). Charita rozdelí podľa svojho kľúča.</div>
+        <div style={{ fontSize: 11, color: K.gold, marginTop: SPACE.xxs }}>⚠️ Tu nevieme presne deklarovať použitie peňazí.</div>
       </div>
-      <div onClick={() => toast("Podporujem charitu → frekvencia → suma → potvrď")} style={{ background: K.card, border: `1px solid ${K.line}`, borderRadius: 14, padding: 15, marginBottom: 12, cursor: "pointer" }}>
+      <div onClick={() => toast("Podporujem charitu → frekvencia → suma → potvrď")} style={{ background: K.card, border: `1px solid ${K.line}`, borderRadius: RADIUS.sm, padding: SPACE.md, marginBottom: SPACE.sm, cursor: "pointer" }}>
         <div style={{ fontSize: 14.5, fontWeight: 600 }}>🏛 Celá charita</div>
-        <div style={{ fontSize: 12, color: K.txt2, marginTop: 4, lineHeight: 1.45 }}>Paušálna podpora charity — ona sa stará. Sleduješ jej dôveryhodnosť (badge/karma).</div>
+        <div style={{ fontSize: 12, color: K.txt2, marginTop: SPACE.xxs, lineHeight: 1.45 }}>Paušálna podpora charity — ona sa stará. Sleduješ jej dôveryhodnosť (badge/karma).</div>
       </div>
-      <div style={{ fontSize: 10, color: K.txt3, textAlign: "center", padding: 6 }}>na pozadí má každá voľba svoj QR/ID · pri výzve sa nastaví prechod 1→2</div>
+      <div style={{ fontSize: 10, color: K.txt3, textAlign: "center", padding: SPACE.xxs }}>na pozadí má každá voľba svoj QR/ID · pri výzve sa nastaví prechod 1→2</div>
     </SheetObal>
   );
 }
@@ -450,22 +450,22 @@ function SheetAdresar({ toast, onClose }: { toast: (m: string) => void; onClose:
 
   return (
     <SheetObal title="Charita & OZ" onClose={onClose}>
-      <div style={{ display: "flex", alignItems: "center", gap: 9, background: K.card, border: `1px solid ${K.line}`, borderRadius: 11, padding: "4px 13px", marginBottom: 12 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: SPACE.xs, background: K.card, border: `1px solid ${K.line}`, borderRadius: RADIUS.sm, padding: `${SPACE.xxs}px ${SPACE.sm}px`, marginBottom: SPACE.sm }}>
         <span style={{ display: "flex", color: K.txt3 }}><Lupa size={16} color={K.txt3} /></span>
         <input value={hladaj} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setHladaj(e.target.value)} placeholder="Hľadať charitu, oblasť, mesto…"
-          style={{ flex: 1, background: "transparent", border: "none", outline: "none", color: K.txt, fontSize: 13, padding: "8px 0" }} />
+          style={{ flex: 1, background: "transparent", border: "none", outline: "none", color: K.txt, fontSize: 13, padding: `${SPACE.xs}px 0` }} />
       </div>
       <SegTabs
         options={chipy}
         value={chip}
         onChange={setChip}
         ariaLabel="Filter charít podľa oblasti"
-        style={{ display: "flex", gap: 7, overflowX: "auto", paddingBottom: 8, marginBottom: 6 }}
+        style={{ display: "flex", gap: SPACE.xs, overflowX: "auto", paddingBottom: SPACE.xs, marginBottom: SPACE.xxs }}
         render={(c, on) => (
-          <span style={{ whiteSpace: "nowrap", fontSize: 12, padding: "5px 13px", borderRadius: 99, cursor: "pointer", background: on ? K.txt : K.card, color: on ? K.bg : K.txt2, fontWeight: on ? 600 : 400, border: `1px solid ${on ? K.txt : K.line}` }}>{c}</span>
+          <span style={{ whiteSpace: "nowrap", fontSize: 12, padding: `${SPACE.xxs}px ${SPACE.sm}px`, borderRadius: 99, cursor: "pointer", background: on ? K.txt : K.card, color: on ? K.bg : K.txt2, fontWeight: on ? 600 : 400, border: `1px solid ${on ? K.txt : K.line}` }}>{c}</span>
         )}
       />
-      <div style={{ fontSize: 11, color: K.txt3, marginBottom: 10, display: "flex", gap: 12 }}>
+      <div style={{ fontSize: 11, color: K.txt3, marginBottom: SPACE.sm, display: "flex", gap: SPACE.sm }}>
         <span>📍 Trenčín · 20 km</span><span>⚙ Typ pomoci</span><span style={{ marginLeft: "auto" }}>dôvera + blízkosť</span>
       </div>
 
@@ -479,23 +479,23 @@ function SheetAdresar({ toast, onClose }: { toast: (m: string) => void; onClose:
         <>
           {filtrovane.map((s, si) => (
             <div key={s.sekcia}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: K.blue, textTransform: "uppercase", letterSpacing: ".04em", margin: "14px 0 6px" }}>{s.sekcia}</div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: K.blue, textTransform: "uppercase", letterSpacing: ".04em", margin: `${SPACE.gutter}px 0 ${SPACE.xxs}px` }}>{s.sekcia}</div>
               {s.polozky.map((p, pi) => (
-                <div key={pi} onClick={() => toast("Profil charity — " + p[1])} style={{ display: "flex", alignItems: "center", gap: 11, padding: "11px 4px", borderBottom: `1px solid ${K.line}`, cursor: "pointer" }}>
-                  <div style={{ width: 38, height: 38, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, flexShrink: 0, background: SEG_BG[(si + pi) % SEG_BG.length], color: K.txt }}>{p[0]}</div>
+                <div key={pi} onClick={() => toast("Profil charity — " + p[1])} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, padding: `${SPACE.sm}px ${SPACE.xxs}px`, borderBottom: `1px solid ${K.line}`, cursor: "pointer" }}>
+                  <div style={{ width: 38, height: 38, borderRadius: RADIUS.xs, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, flexShrink: 0, background: SEG_BG[(si + pi) % SEG_BG.length], color: K.txt }}>{p[0]}</div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 15, fontWeight: 500 }}>{p[1]}</div>
                     <div style={{ fontSize: 12.5, color: K.txt2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p[2]}</div>
                   </div>
                   <div style={{ textAlign: "right", flexShrink: 0 }}>
                     <div style={{ fontSize: 11.5, fontWeight: 700, color: lvlFarba(p[3]) }}>⬢ {p[3]}</div>
-                    <div style={{ fontSize: 12, color: K.txt3, marginTop: 2 }}>{p[4]}</div>
+                    <div style={{ fontSize: 12, color: K.txt3, marginTop: SPACE.xxs }}>{p[4]}</div>
                   </div>
                 </div>
               ))}
             </div>
           ))}
-          {!filtrovane.length && <div style={{ textAlign: "center", color: K.txt3, fontSize: 13, padding: 30 }}>Nič sa nenašlo pre „{hladaj}“</div>}
+          {!filtrovane.length && <div style={{ textAlign: "center", color: K.txt3, fontSize: 13, padding: SPACE.xl }}>Nič sa nenašlo pre „{hladaj}“</div>}
         </>
       )}
     </SheetObal>

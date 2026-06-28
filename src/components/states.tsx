@@ -3,7 +3,7 @@
 // Jednotný vzhľad naprieč modulmi. Shimmer využíva @keyframes lesk (index.css).
 // ============================================================
 import type { CSSProperties, ReactNode } from "react";
-import { C, GRAD } from "@/theme";
+import { C, GRAD, SPACE, RADIUS } from "@/theme";
 
 // ---- SKELETON (shimmer blok) ----
 export function Skeleton({
@@ -39,23 +39,23 @@ export function SkeletonKarta() {
   return (
     <div
       style={{
-        margin: "12px 13px",
+        margin: `${SPACE.sm}px ${SPACE.sm}px`,
         border: `1px solid ${C.line}`,
-        borderRadius: 17,
+        borderRadius: RADIUS.md,
         overflow: "hidden",
         background: "rgba(var(--glass-rgb),.03)",
       }}
     >
       <Skeleton h={140} radius={0} />
-      <div style={{ padding: "12px 14px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+      <div style={{ padding: `${SPACE.sm}px ${SPACE.gutter}px` }}>
+        <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm, marginBottom: SPACE.sm }}>
           <Skeleton w={34} h={34} radius="50%" />
           <div style={{ flex: 1 }}>
-            <Skeleton w="55%" h={12} style={{ marginBottom: 6 }} />
+            <Skeleton w="55%" h={12} style={{ marginBottom: SPACE.xs }} />
             <Skeleton w="35%" h={10} />
           </div>
         </div>
-        <Skeleton w="92%" h={13} style={{ marginBottom: 7 }} />
+        <Skeleton w="92%" h={13} style={{ marginBottom: SPACE.xs }} />
         <Skeleton w="74%" h={13} />
       </div>
     </div>
@@ -76,12 +76,12 @@ export function FeedSkeleton({ count = 3 }: { count?: number }) {
 // ---- RIADKOVÝ SKELETON (zoznamy — notifikácie, prevody) ----
 export function SkeletonRiadky({ count = 4 }: { count?: number }) {
   return (
-    <div aria-busy="true" aria-label="Načítavam…" style={{ padding: "4px 14px" }}>
+    <div aria-busy="true" aria-label="Načítavam…" style={{ padding: `${SPACE.xxs}px ${SPACE.gutter}px` }}>
       {Array.from({ length: count }, (_, i) => (
-        <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 0", borderBottom: `1px solid ${C.line2}` }}>
+        <div key={i} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, padding: `${SPACE.sm}px 0`, borderBottom: `1px solid ${C.line2}` }}>
           <Skeleton w={38} h={38} radius={11} />
           <div style={{ flex: 1 }}>
-            <Skeleton w="60%" h={12} style={{ marginBottom: 7 }} />
+            <Skeleton w="60%" h={12} style={{ marginBottom: SPACE.xs }} />
             <Skeleton w="40%" h={10} />
           </div>
         </div>
@@ -111,13 +111,13 @@ export function EmptyState({
         justifyContent: "center",
         textAlign: "center",
         padding: "44px 28px",
-        gap: 8,
+        gap: SPACE.xs,
       }}
     >
-      <div style={{ fontSize: 38, opacity: 0.9, marginBottom: 2 }}>{emoji}</div>
+      <div style={{ fontSize: 38, opacity: 0.9, marginBottom: SPACE.xxs }}>{emoji}</div>
       <div style={{ fontSize: 15, fontWeight: 700, color: C.text }}>{title}</div>
       {text && <div style={{ fontSize: 13, color: C.textTer, lineHeight: 1.5, maxWidth: 320 }}>{text}</div>}
-      {action && <div style={{ marginTop: 10 }}>{action}</div>}
+      {action && <div style={{ marginTop: SPACE.sm }}>{action}</div>}
     </div>
   );
 }
@@ -142,19 +142,19 @@ export function ErrorState({
         justifyContent: "center",
         textAlign: "center",
         padding: "44px 28px",
-        gap: 10,
+        gap: SPACE.sm,
       }}
     >
-      <div style={{ fontSize: 38, marginBottom: 2 }}>⚠️</div>
+      <div style={{ fontSize: 38, marginBottom: SPACE.xxs }}>⚠️</div>
       <div style={{ fontSize: 15, fontWeight: 700, color: C.text }}>{title}</div>
       <div style={{ fontSize: 13, color: C.textTer, lineHeight: 1.5, maxWidth: 320 }}>{text}</div>
       {onRetry && (
         <button
           onClick={onRetry}
           style={{
-            marginTop: 6,
-            padding: "10px 22px",
-            borderRadius: 13,
+            marginTop: SPACE.xs,
+            padding: `${SPACE.sm}px ${SPACE.lg}px`,
+            borderRadius: RADIUS.sm,
             border: "none",
             cursor: "pointer",
             fontFamily: "inherit",

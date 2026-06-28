@@ -5,7 +5,7 @@
 // stavajú RAZ a používa ich osoba aj charita (§4).
 // ============================================================
 import { useState, type ReactNode, type CSSProperties } from "react";
-import { C, GRAD, btn, inp, infoBox, glassTmavy } from "@/theme";
+import { C, GRAD, btn, inp, infoBox, glassTmavy, SPACE, RADIUS } from "@/theme";
 import { Hlavicka, Otazka, IkonaFajka, IkonaSipDole } from "@/shared";
 import { vytvorUcet, nastavZabezpecenie, posliOtp } from "@/lib/db";
 
@@ -28,9 +28,9 @@ export function Shell({
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column", background: C.bg }}>
       <Hlavicka title={title} step={step} total={total} onBack={onBack} />
-      <div style={{ flex: 1, overflowY: "auto", minHeight: 0, padding: "18px 16px 22px" }}>{children}</div>
+      <div style={{ flex: 1, overflowY: "auto", minHeight: 0, padding: `${SPACE.md}px ${SPACE.md}px ${SPACE.lg}px` }}>{children}</div>
       {footer && (
-        <div style={{ padding: "10px 16px 16px", ...glassTmavy(18, 0.6), borderLeft: "none", borderRight: "none", borderBottom: "none" }}>
+        <div style={{ padding: `${SPACE.sm}px ${SPACE.md}px ${SPACE.md}px`, ...glassTmavy(18, 0.6), borderLeft: "none", borderRight: "none", borderBottom: "none" }}>
           {footer}
         </div>
       )}
@@ -53,8 +53,8 @@ export function Patka({
   loading?: boolean;
 }) {
   return (
-    <div style={{ display: "flex", gap: 10 }}>
-      {onBack && <button onClick={onBack} style={{ ...btn("ghost"), flex: "0 0 auto", padding: "15px 22px" }}>Späť</button>}
+    <div style={{ display: "flex", gap: SPACE.sm }}>
+      {onBack && <button onClick={onBack} style={{ ...btn("ghost"), flex: "0 0 auto", padding: `${SPACE.md}px ${SPACE.lg}px` }}>Späť</button>}
       <button
         onClick={canNext && !loading ? onNext : undefined}
         disabled={!canNext || loading}
@@ -69,10 +69,10 @@ export function Patka({
 // ---- popisok poľa ----
 export function Pole({ label, hint, children }: { label?: ReactNode; hint?: ReactNode; children?: ReactNode }) {
   return (
-    <div style={{ marginBottom: 14 }}>
+    <div style={{ marginBottom: SPACE.gutter }}>
       {label && <div style={{ fontSize: 12.5, fontWeight: 600, color: C.textTer, marginBottom: 6 }}>{label}</div>}
       {children}
-      {hint && <div style={{ fontSize: 11.5, color: C.textTer, marginTop: 5, lineHeight: 1.4 }}>{hint}</div>}
+      {hint && <div style={{ fontSize: 11.5, color: C.textTer, marginTop: SPACE.xxs, lineHeight: 1.4 }}>{hint}</div>}
     </div>
   );
 }
@@ -116,14 +116,14 @@ export function Prepinac({ on, onToggle, title, desc }: { on?: boolean; onToggle
   return (
     <div
       onClick={onToggle}
-      style={{ display: "flex", alignItems: "center", gap: 12, padding: "13px 14px", borderRadius: 13, border: `1px solid ${C.line}`, background: "rgba(var(--glass-rgb),.04)", cursor: "pointer", marginBottom: 10 }}
+      style={{ display: "flex", alignItems: "center", gap: SPACE.sm, padding: `${SPACE.sm}px ${SPACE.gutter}px`, borderRadius: RADIUS.sm, border: `1px solid ${C.line}`, background: "rgba(var(--glass-rgb),.04)", cursor: "pointer", marginBottom: SPACE.sm }}
     >
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 14, fontWeight: 600 }}>{title}</div>
-        {desc && <div style={{ fontSize: 12, color: C.textSec, marginTop: 2, lineHeight: 1.4 }}>{desc}</div>}
+        {desc && <div style={{ fontSize: 12, color: C.textSec, marginTop: SPACE.xxs, lineHeight: 1.4 }}>{desc}</div>}
       </div>
       <div style={{ width: 44, height: 26, borderRadius: 14, flex: "0 0 auto", background: on ? GRAD : "rgba(var(--glass-rgb),.14)", position: "relative", transition: "background .2s ease" }}>
-        <div style={{ position: "absolute", top: 3, left: on ? 21 : 3, width: 20, height: 20, borderRadius: "50%", background: "#fff", transition: "left .2s ease", boxShadow: "0 1px 4px rgba(0,0,0,.3)" }} />
+        <div style={{ position: "absolute", top: 3, left: on ? 21 : 3, width: 20, height: 20, borderRadius: RADIUS.round, background: "#fff", transition: "left .2s ease", boxShadow: "0 1px 4px rgba(0,0,0,.3)" }} />
       </div>
     </div>
   );
@@ -132,8 +132,8 @@ export function Prepinac({ on, onToggle, title, desc }: { on?: boolean; onToggle
 // ---- výberová položka (zaškrtnutie) ----
 function CheckRiadok({ label, on, onClick, akcent }: { label?: ReactNode; on?: boolean; onClick?: () => void; akcent: string }) {
   return (
-    <div onClick={onClick} style={{ display: "flex", alignItems: "center", gap: 11, padding: "10px 4px", cursor: "pointer" }}>
-      <span style={{ width: 21, height: 21, borderRadius: 6, flex: "0 0 auto", border: `1.5px solid ${on ? akcent : "rgba(var(--glass-rgb),.22)"}`, background: on ? akcent : "transparent", display: "flex", alignItems: "center", justifyContent: "center" }}>
+    <div onClick={onClick} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, padding: `${SPACE.sm}px ${SPACE.xxs}px`, cursor: "pointer" }}>
+      <span style={{ width: 21, height: 21, borderRadius: RADIUS.xs, flex: "0 0 auto", border: `1.5px solid ${on ? akcent : "rgba(var(--glass-rgb),.22)"}`, background: on ? akcent : "transparent", display: "flex", alignItems: "center", justifyContent: "center" }}>
         {on && <IkonaFajka size={13} color="#fff" />}
       </span>
       <span style={{ fontSize: 14, color: on ? C.text : C.textSec }}>{label}</span>
@@ -169,21 +169,21 @@ export function Accordion({
         const open = otvorene === s.nazov;
         const pocet = s.polozky.filter((p) => jeVybrane(s.nazov, p.hodnota)).length;
         return (
-          <div key={s.nazov} style={{ border: `1px solid ${C.line}`, borderRadius: 14, marginBottom: 9, overflow: "hidden", background: "rgba(var(--glass-rgb),.03)" }}>
+          <div key={s.nazov} style={{ border: `1px solid ${C.line}`, borderRadius: RADIUS.md, marginBottom: SPACE.xs, overflow: "hidden", background: "rgba(var(--glass-rgb),.03)" }}>
             <div
               onClick={() => setOtvorene(open ? null : s.nazov)}
-              style={{ display: "flex", alignItems: "center", gap: 10, padding: "13px 14px", cursor: "pointer" }}
+              style={{ display: "flex", alignItems: "center", gap: SPACE.sm, padding: `${SPACE.sm}px ${SPACE.gutter}px`, cursor: "pointer" }}
             >
               <span style={{ flex: 1, fontSize: 14.5, fontWeight: 700 }}>{s.nazov}</span>
               {pocet > 0 && (
-                <span style={{ fontSize: 11.5, fontWeight: 700, color: akcent, background: "rgba(116,166,255,.14)", borderRadius: 9, padding: "2px 8px" }}>{pocet}</span>
+                <span style={{ fontSize: 11.5, fontWeight: 700, color: akcent, background: "rgba(116,166,255,.14)", borderRadius: RADIUS.xs, padding: `${SPACE.xxs}px ${SPACE.xs}px` }}>{pocet}</span>
               )}
               <span style={{ transform: open ? "rotate(180deg)" : "none", transition: "transform .2s ease", display: "flex", color: C.textTer }}>
                 <IkonaSipDole size={16} color={C.textTer} />
               </span>
             </div>
             {open && (
-              <div style={{ padding: "2px 12px 12px", borderTop: `1px solid ${C.line2}` }}>
+              <div style={{ padding: `${SPACE.xxs}px ${SPACE.sm}px ${SPACE.sm}px`, borderTop: `1px solid ${C.line2}` }}>
                 {s.polozky.map((p) => (
                   <CheckRiadok key={p.hodnota} label={p.hodnota} on={jeVybrane(s.nazov, p.hodnota)} onClick={() => onToggle(s.nazov, p.hodnota)} akcent={akcent} />
                 ))}
@@ -206,15 +206,15 @@ function VlastnaPolozka({ onAdd, akcent }: { onAdd: (text: string) => void; akce
     setT("");
   };
   return (
-    <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+    <div style={{ display: "flex", gap: SPACE.xs, marginTop: SPACE.xs }}>
       <input
         value={t}
         onChange={(e) => setT(e.target.value)}
         onKeyDown={(e) => e.key === "Enter" && pridaj()}
         placeholder="dopísať vlastný…"
-        style={{ ...inp(), minHeight: 0, padding: "10px 12px", fontSize: 13.5 }}
+        style={{ ...inp(), minHeight: 0, padding: `${SPACE.sm}px ${SPACE.sm}px`, fontSize: 13.5 }}
       />
-      <button onClick={pridaj} style={{ flex: "0 0 auto", padding: "0 16px", borderRadius: 11, border: `1px solid ${akcent}`, background: "transparent", color: akcent, fontWeight: 700, fontSize: 13.5, cursor: "pointer", fontFamily: "inherit" }}>
+      <button onClick={pridaj} style={{ flex: "0 0 auto", padding: `0 ${SPACE.md}px`, borderRadius: RADIUS.sm, border: `1px solid ${akcent}`, background: "transparent", color: akcent, fontWeight: 700, fontSize: 13.5, cursor: "pointer", fontFamily: "inherit" }}>
         Pridať
       </button>
     </div>
@@ -365,7 +365,7 @@ export function KrokZabezpecenie({
       <Otazka>Nastav si zámok, ktorým sa do účtu vraciaš</Otazka>
       <TextPole label="PIN / heslo (min. 4 znaky)" value={pin} onChange={setPin} placeholder="••••" type="password" inputMode="numeric" />
       <TextPole label="Zopakuj pre potvrdenie" value={pin2} onChange={setPin2} placeholder="••••" type="password" inputMode="numeric" />
-      {pin2 && pin !== pin2 && <div style={{ fontSize: 12.5, color: C.red, marginTop: -6, marginBottom: 10 }}>PIN sa nezhoduje.</div>}
+      {pin2 && pin !== pin2 && <div style={{ fontSize: 12.5, color: C.red, marginTop: -6, marginBottom: SPACE.sm }}>PIN sa nezhoduje.</div>}
       <Prepinac on={bio} onToggle={() => setBio((b) => !b)} title="Biometria (odtlačok / Face ID)" desc="Voliteľné — rýchly návrat do účtu na tomto zariadení." />
       <div style={infoBox}>Karma je viazaná na overenie (KYC), nie na mobil. Pri citlivých akciách (výber, zmena účtu) sa pýta heslo znova + 2FA.</div>
     </Shell>

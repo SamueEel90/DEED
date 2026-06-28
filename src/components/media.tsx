@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import type { CSSProperties } from "react";
-import { C, GRAD, glass, glassTmavy } from "@/theme";
+import { C, GRAD, glass, glassTmavy, SPACE, RADIUS } from "@/theme";
 import { useGaleria } from "@/components/context";
 import { pressable } from "@/components/pressable";
 
@@ -29,7 +29,7 @@ export function Avatar({ src, emoji, size, border, aura }: { src?: string; emoji
     : GRAD;
   const ziara = aura === "gold" ? "0 0 16px rgba(240,199,90,.45)" : "0 0 16px rgba(120,140,255,.45)";
   return (
-    <div style={{ width: (size || 0) + 6, height: (size || 0) + 6, borderRadius: "50%", padding: 3, background: pozadie, boxShadow: ziara, flex: "0 0 auto" }}>
+    <div style={{ width: (size || 0) + 6, height: (size || 0) + 6, borderRadius: RADIUS.round, padding: SPACE.xxs, background: pozadie, boxShadow: ziara, flex: "0 0 auto" }}>
       <Foto src={src} emoji={emoji} h={size} w={size} radius="50%" />
     </div>
   );
@@ -46,7 +46,7 @@ export function FotoPrispevku({ fotky, emoji, h, w, radius = 0, style, index = 0
         onClick={disableGaleria ? undefined : (e) => { e.stopPropagation(); if (fotky && fotky.length) otvor(fotky, index); }} />
       {viac && (
         <span style={{ position: "absolute", bottom: 7, right: 7, ...glassTmavy(10, .55), color: "#fff",
-          fontSize: 10, fontWeight: 600, borderRadius: 12, padding: "3px 9px", pointerEvents: "none" }}>
+          fontSize: 10, fontWeight: 600, borderRadius: RADIUS.sm, padding: `${SPACE.xxs}px ${SPACE.xs}px`, pointerEvents: "none" }}>
           ⧉ {fotky!.length}
         </span>
       )}
@@ -79,7 +79,7 @@ export function Video({ src, poster, h = 200, radius = 0, style, badge = true }:
         </div>
       )}
       {badge && !start && (
-        <span style={{ position: "absolute", top: 10, right: 10, ...glassTmavy(10, .55), color: "#fff", fontSize: 10, fontWeight: 700, borderRadius: 7, padding: "4px 9px", pointerEvents: "none" }}>▶ video</span>
+        <span style={{ position: "absolute", top: 10, right: 10, ...glassTmavy(10, .55), color: "#fff", fontSize: 10, fontWeight: 700, borderRadius: RADIUS.xs, padding: `${SPACE.xxs}px ${SPACE.xs}px`, pointerEvents: "none" }}>▶ video</span>
       )}
     </div>
   );
@@ -90,7 +90,7 @@ export function MiniFotky({ fotky }: { fotky?: string[] }) {
   const otvor = useGaleria();
   if (!fotky || fotky.length < 2) return null;
   return (
-    <div style={{ display: "flex", gap: 6, padding: "9px 14px 0", overflowX: "auto" }}>
+    <div style={{ display: "flex", gap: SPACE.xs, padding: `${SPACE.xs}px ${SPACE.gutter}px 0`, overflowX: "auto" }}>
       {fotky.map((f, i) => (
         <Foto key={i} src={f} emoji="🖼" h={46} w={62} radius={10}
           onClick={() => otvor(fotky, i)} style={{ border: `1px solid ${C.line}` }} />
@@ -156,10 +156,10 @@ export function Lightbox({ fotky, index = 0, onClose }: { fotky: string[]; index
       onTouchEnd={koniec}
     >
       {/* horná lišta */}
-      <div style={{ display: "flex", alignItems: "center", padding: "16px 18px" }}>
-        <span role="status" aria-live="polite" style={{ ...glass(12, .07), fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,.85)", borderRadius: 20, padding: "5px 13px" }}>{i + 1} / {fotky.length}</span>
+      <div style={{ display: "flex", alignItems: "center", padding: `${SPACE.md}px 18px` }}>
+        <span role="status" aria-live="polite" style={{ ...glass(12, .07), fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,.85)", borderRadius: RADIUS.lg, padding: `${SPACE.xxs}px ${SPACE.sm}px` }}>{i + 1} / {fotky.length}</span>
         <span {...pressable(onClose, "Zavrieť galériu")} onMouseDown={(e) => e.stopPropagation()} onTouchStart={(e) => e.stopPropagation()}
-          style={{ ...glass(12, .07), marginLeft: "auto", width: 36, height: 36, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, cursor: "pointer", color: "rgba(255,255,255,.9)" }}>✕</span>
+          style={{ ...glass(12, .07), marginLeft: "auto", width: 36, height: 36, borderRadius: RADIUS.round, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, cursor: "pointer", color: "rgba(255,255,255,.9)" }}>✕</span>
       </div>
 
       {/* pás fotiek */}
@@ -172,9 +172,9 @@ export function Lightbox({ fotky, index = 0, onClose }: { fotky: string[]; index
           {fotky.map((f, k) => (
             <div key={k}
               onClick={(e) => { if (!boloPotiahnute.current && e.target === e.currentTarget) onClose(); }}
-              style={{ flex: "0 0 100%", display: "flex", alignItems: "center", justifyContent: "center", padding: "0 10px" }}>
+              style={{ flex: "0 0 100%", display: "flex", alignItems: "center", justifyContent: "center", padding: `0 ${SPACE.sm}px` }}>
               <Foto src={f} emoji="🖼" h="auto"
-                style={{ maxWidth: "100%", maxHeight: "100%", width: "auto", objectFit: "contain", pointerEvents: "none", borderRadius: 14, boxShadow: "0 24px 80px rgba(0,0,0,.55)" }} />
+                style={{ maxWidth: "100%", maxHeight: "100%", width: "auto", objectFit: "contain", pointerEvents: "none", borderRadius: RADIUS.md, boxShadow: "0 24px 80px rgba(0,0,0,.55)" }} />
             </div>
           ))}
         </div>
@@ -191,14 +191,14 @@ export function Lightbox({ fotky, index = 0, onClose }: { fotky: string[]; index
       </div>
 
       {/* bodky */}
-      <div style={{ display: "flex", justifyContent: "center", gap: 7, padding: "16px 0 20px" }}>
+      <div style={{ display: "flex", justifyContent: "center", gap: SPACE.xs, padding: `${SPACE.md}px 0 ${SPACE.lg}px` }}>
         {fotky.map((_, k) => (
           <span key={k} {...pressable(() => setI(k), `Fotka ${k + 1}`)} aria-current={k === i ? "true" : undefined} onMouseDown={(e) => e.stopPropagation()} onTouchStart={(e) => e.stopPropagation()}
             style={{ width: k === i ? 22 : 7, height: 7, borderRadius: 4, cursor: "pointer", transition: "all .25s ease",
               background: k === i ? GRAD : "rgba(255,255,255,.25)" }} />
         ))}
       </div>
-      <div style={{ textAlign: "center", fontSize: 11, color: "rgba(255,255,255,.35)", paddingBottom: 14, marginTop: -8 }}>
+      <div style={{ textAlign: "center", fontSize: 11, color: "rgba(255,255,255,.35)", paddingBottom: SPACE.gutter, marginTop: -SPACE.xs }}>
         ← swipni alebo potiahni myšou →
       </div>
     </div>
@@ -208,9 +208,9 @@ export function Lightbox({ fotky, index = 0, onClose }: { fotky: string[]; index
 function sipka(strana: "left" | "right"): CSSProperties {
   return {
     position: "absolute", top: "50%", [strana]: 14, transform: "translateY(-50%)",
-    width: 42, height: 42, borderRadius: "50%",
+    width: 42, height: 42, borderRadius: RADIUS.round,
     background: "rgba(255,255,255,.07)", backdropFilter: "blur(10px)", WebkitBackdropFilter: "blur(10px)",
     border: "1px solid rgba(255,255,255,.16)", color: "#fff", fontSize: 26,
-    display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", lineHeight: 1, paddingBottom: 3,
+    display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", lineHeight: 1, paddingBottom: SPACE.xxs,
   } as CSSProperties;
 }

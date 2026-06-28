@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { C, GRAD } from "@/theme";
+import { C, GRAD, SPACE, RADIUS } from "@/theme";
 import { ModulHlavicka, IkonaPin, toast, useLayout, useMotiv, obalSiroky } from "@/shared";
 import { Zvoncek } from "@/features/notifikacie/Notifikacie";
 import { FEED_CFG } from "@/lib/feed";
@@ -127,57 +127,57 @@ export default function ModulMapa({ wide }: { wide?: boolean }) {
   const obal = (el: React.ReactNode) => obalSiroky(el, { wide, desktop, max: 620, maxDesktop: 860 });
 
   return (
-    <div style={{ minHeight: "100%", paddingBottom: 14 }}>
+    <div style={{ minHeight: "100%", paddingBottom: SPACE.gutter }}>
       <ModulHlavicka title="Mapa" right={<Zvoncek color={C.textSec} toast={toast} />} />
       {obal(
-        <div style={{ padding: "12px 16px" }}>
+        <div style={{ padding: `${SPACE.sm}px ${SPACE.md}px` }}>
           {/* GPS banner — len keď je poloha vypnutá */}
           {!gps && (
-            <div style={{ display: "flex", alignItems: "center", gap: 10, background: "rgba(240,168,94,.1)", border: "1px solid rgba(240,168,94,.35)", borderRadius: 13, padding: "11px 13px", marginBottom: 12 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm, background: "rgba(240,168,94,.1)", border: "1px solid rgba(240,168,94,.35)", borderRadius: RADIUS.sm, padding: `${SPACE.sm}px ${SPACE.sm}px`, marginBottom: SPACE.sm }}>
               <span style={{ fontSize: 18 }}>⚠</span>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 13, fontWeight: 700, color: "var(--a-clay)" }}>Poloha (GPS) je vypnutá</div>
                 <div style={{ fontSize: 11, color: C.textTer }}>Zapni ju pre presnejší okruh okolo teba</div>
               </div>
-              <span onClick={() => { setGps(true); toast("Poloha zapnutá (demo)"); }} style={{ flex: "none", fontSize: 11.5, fontWeight: 700, color: "#fff", background: "rgba(240,168,94,.85)", borderRadius: 10, padding: "7px 12px", cursor: "pointer" }}>Zapnúť</span>
+              <span onClick={() => { setGps(true); toast("Poloha zapnutá (demo)"); }} style={{ flex: "none", fontSize: 11.5, fontWeight: 700, color: "#fff", background: "rgba(240,168,94,.85)", borderRadius: RADIUS.sm, padding: `${SPACE.xs}px ${SPACE.sm}px`, cursor: "pointer" }}>Zapnúť</span>
             </div>
           )}
 
           {/* reálna mapa (Leaflet + OpenStreetMap) */}
-          <div ref={elRef} style={{ height: desktop ? 460 : 300, borderRadius: 18, overflow: "hidden", border: `1px solid ${C.line}`, zIndex: 0 }} />
+          <div ref={elRef} style={{ height: desktop ? 460 : 300, borderRadius: RADIUS.md, overflow: "hidden", border: `1px solid ${C.line}`, zIndex: 0 }} />
 
           {/* legenda bodov */}
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 14px", marginTop: 10, fontSize: 11, color: C.textSec }}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: `${SPACE.xs}px ${SPACE.gutter}px`, marginTop: SPACE.sm, fontSize: 11, color: C.textSec }}>
             {[["Skutky", FARBA_MODUL.good], ["Pomoc", FARBA_MODUL.help], ["Charita", FARBA_MODUL.charity], ["Workshopy", FARBA_MODUL.workshop], ["Udalosti", "#5b9bff"]].map(([lbl, col]) => (
               <span key={lbl} style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
-                <span style={{ width: 9, height: 9, borderRadius: "50%", background: col as string, flex: "none" }} />{lbl}
+                <span style={{ width: 9, height: 9, borderRadius: RADIUS.round, background: col as string, flex: "none" }} />{lbl}
               </span>
             ))}
           </div>
 
           {/* úrovne okruhu */}
-          <div style={{ display: "flex", gap: 6, marginTop: 14 }}>
+          <div style={{ display: "flex", gap: SPACE.xs, marginTop: SPACE.gutter }}>
             {UROVNE.map(([id, label]) => {
               const on = uroven === id;
-              return <span key={id} onClick={() => setUroven(id)} style={{ flex: 1, textAlign: "center", padding: "9px 0", borderRadius: 11, fontSize: 12.5, fontWeight: on ? 700 : 500, cursor: "pointer",
+              return <span key={id} onClick={() => setUroven(id)} style={{ flex: 1, textAlign: "center", padding: `${SPACE.xs}px 0`, borderRadius: RADIUS.sm, fontSize: 12.5, fontWeight: on ? 700 : 500, cursor: "pointer",
                 background: on ? "rgba(91,155,255,.16)" : C.surface2, border: `1px solid ${on ? "rgba(116,166,255,.5)" : C.line}`, color: on ? "var(--a-info)" : C.textSec }}>{label}</span>;
             })}
           </div>
 
           {/* posuvník (len štvrť) alebo popis admin hranice */}
           {jeStvrt ? (
-            <div style={{ marginTop: 16 }}>
+            <div style={{ marginTop: SPACE.md }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
                 <span style={{ fontSize: 12.5, color: C.textSec }}>Veľkosť okruhu (štvrť)</span>
                 <span style={{ fontSize: 16, fontWeight: 800, color: "var(--a-info)" }}>{km} km</span>
               </div>
-              <input type="range" min={1} max={5} step={1} value={km} onChange={(e) => setKm(+e.target.value)} style={{ width: "100%", marginTop: 8, accentColor: "var(--a-info)" }} />
+              <input type="range" min={1} max={5} step={1} value={km} onChange={(e) => setKm(+e.target.value)} style={{ width: "100%", marginTop: SPACE.xs, accentColor: "var(--a-info)" }} />
               <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: C.textTer }}>
                 {[1, 2, 3, 4, 5].map((n) => <span key={n}>{n}</span>)}
               </div>
             </div>
           ) : (
-            <div style={{ marginTop: 16, display: "flex", alignItems: "center", gap: 10, background: C.surface, border: `1px solid ${C.line}`, borderRadius: 13, padding: "12px 14px" }}>
+            <div style={{ marginTop: SPACE.md, display: "flex", alignItems: "center", gap: SPACE.sm, background: C.surface, border: `1px solid ${C.line}`, borderRadius: RADIUS.sm, padding: `${SPACE.sm}px ${SPACE.gutter}px` }}>
               <IkonaPin size={18} color="var(--a-info)" />
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 13.5, fontWeight: 700 }}>{FEED_CFG.radiusy[uroven].label}</div>
@@ -187,14 +187,14 @@ export default function ModulMapa({ wide }: { wide?: boolean }) {
           )}
 
           {/* info chip — reálne počty v okruhu */}
-          <div style={{ display: "flex", alignItems: "center", gap: 9, marginTop: 14, padding: "11px 13px", borderRadius: 13, background: "rgba(31,191,143,.08)", border: "1px solid rgba(31,191,143,.22)" }}>
-            <span style={{ width: 9, height: 9, borderRadius: "50%", flex: "none", background: "var(--a-green)", animation: "pulse 1.6s infinite" }} />
+          <div style={{ display: "flex", alignItems: "center", gap: SPACE.xs, marginTop: SPACE.gutter, padding: `${SPACE.sm}px ${SPACE.sm}px`, borderRadius: RADIUS.sm, background: "rgba(31,191,143,.08)", border: "1px solid rgba(31,191,143,.22)" }}>
+            <span style={{ width: 9, height: 9, borderRadius: RADIUS.round, flex: "none", background: "var(--a-green)", animation: "pulse 1.6s infinite" }} />
             <span style={{ fontSize: 12.5, color: C.textSec }}>V tomto okruhu: <b style={{ color: C.text }}>{skutky.toLocaleString("sk")}</b> skutkov · <b style={{ color: C.text }}>{udalosti.toLocaleString("sk")}</b> udalostí</span>
           </div>
           <div style={{ fontSize: 10.5, color: C.textTer, margin: "8px 2px 0", lineHeight: 1.5 }}>Reálne body z DB v okolí Trenčína. Mení len, čo vidíš vo feede a na nástenke — nie karmu ani odmeny.</div>
 
           <button onClick={() => toast(`Rádius nastavený: ${jeStvrt ? km + " km · štvrť" : FEED_CFG.radiusy[uroven].label}`)}
-            style={{ width: "100%", height: 50, borderRadius: 14, marginTop: 14, border: "none", background: GRAD, color: "#fff", fontWeight: 700, fontSize: 15, cursor: "pointer", fontFamily: "inherit", boxShadow: "0 8px 26px rgba(99,134,255,.32)" }}>
+            style={{ width: "100%", height: 50, borderRadius: RADIUS.md, marginTop: SPACE.gutter, border: "none", background: GRAD, color: "#fff", fontWeight: 700, fontSize: 15, cursor: "pointer", fontFamily: "inherit", boxShadow: "0 8px 26px rgba(99,134,255,.32)" }}>
             Použiť rádius
           </button>
         </div>

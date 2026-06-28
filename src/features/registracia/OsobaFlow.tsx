@@ -5,7 +5,7 @@
 // (telefón+SMS, zabezpečenie) sa preberajú z RegKit.
 // ============================================================
 import { useEffect, useState } from "react";
-import { C, GRAD, infoBox } from "@/theme";
+import { C, GRAD, infoBox, SPACE, RADIUS } from "@/theme";
 import { Vyber, Otazka, Oslava, Suhrn } from "@/shared";
 import { setSession } from "@/lib/session";
 import * as db from "@/lib/db";
@@ -403,11 +403,11 @@ function KrokZaujmy({ ucet, toast, onBack, onNext }: KrokZaujmyProps) {
     >
       <Otazka>Čo ťa baví? (nepovinné — pomôže nám naladiť feed)</Otazka>
       {skupiny === null ? (
-        <div style={{ textAlign: "center", padding: "30px 14px", color: C.textTer, fontSize: 13.5 }}>
+        <div style={{ textAlign: "center", padding: `${SPACE.xl}px ${SPACE.gutter}px`, color: C.textTer, fontSize: 13.5 }}>
           Načítavam záujmy…
         </div>
       ) : skupiny.length === 0 ? (
-        <div style={{ textAlign: "center", padding: "30px 14px", color: C.textTer, fontSize: 13.5 }}>
+        <div style={{ textAlign: "center", padding: `${SPACE.xl}px ${SPACE.gutter}px`, color: C.textTer, fontSize: 13.5 }}>
           Číselník je zatiaľ prázdny — môžeš preskočiť.
         </div>
       ) : (
@@ -502,13 +502,13 @@ function KrokFoto({ meno, onBack, onNext }: KrokFotoProps) {
       total={8}
       onBack={onBack}
       footer={
-        <div style={{ display: "flex", gap: 10 }}>
+        <div style={{ display: "flex", gap: SPACE.sm }}>
           <button
             onClick={onNext}
             style={{
               flex: "0 0 auto",
-              padding: "15px 22px",
-              borderRadius: 14,
+              padding: `${SPACE.md}px ${SPACE.lg}px`,
+              borderRadius: RADIUS.md,
               background: "rgba(var(--glass-rgb),.05)",
               color: C.textSec,
               border: `1px solid ${C.line}`,
@@ -524,8 +524,8 @@ function KrokFoto({ meno, onBack, onNext }: KrokFotoProps) {
             onClick={onNext}
             style={{
               flex: 1,
-              padding: "15px 0",
-              borderRadius: 14,
+              padding: `${SPACE.md}px 0`,
+              borderRadius: RADIUS.md,
               background: GRAD,
               color: "#fff",
               border: "none",
@@ -542,12 +542,12 @@ function KrokFoto({ meno, onBack, onNext }: KrokFotoProps) {
       }
     >
       <Otazka>Pridaj si tvár (nepovinné)</Otazka>
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 14, padding: "18px 0 8px" }}>
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: SPACE.gutter, padding: `${SPACE.md}px 0 ${SPACE.xs}px` }}>
         <div
           style={{
             width: 110,
             height: 110,
-            borderRadius: "50%",
+            borderRadius: RADIUS.round,
             background: GRAD,
             display: "flex",
             alignItems: "center",
@@ -632,7 +632,7 @@ function KrokKyc({ ucet, toast, onBack, onNext }: KrokKycProps) {
       />
 
       {!overene && sposob === "nove" && (
-        <div style={{ marginTop: 12 }}>
+        <div style={{ marginTop: SPACE.sm }}>
           <Suhrn rows={[["1 · Odfoť doklad", "OP / pas"], ["2 · Selfie", "otoč hlavu"]]} />
         </div>
       )}
@@ -640,12 +640,12 @@ function KrokKyc({ ucet, toast, onBack, onNext }: KrokKycProps) {
       {overene && (
         <div
           style={{
-            marginTop: 14,
+            marginTop: SPACE.gutter,
             display: "flex",
             alignItems: "center",
-            gap: 11,
-            padding: "13px 14px",
-            borderRadius: 13,
+            gap: SPACE.sm,
+            padding: `${SPACE.sm}px ${SPACE.gutter}px`,
+            borderRadius: RADIUS.sm,
             background: "rgba(31,191,143,.1)",
             border: "1px solid rgba(31,191,143,.4)",
           }}
@@ -654,7 +654,7 @@ function KrokKyc({ ucet, toast, onBack, onNext }: KrokKycProps) {
             style={{
               width: 28,
               height: 28,
-              borderRadius: "50%",
+              borderRadius: RADIUS.round,
               flex: "0 0 auto",
               background: C.green,
               color: "#fff",
