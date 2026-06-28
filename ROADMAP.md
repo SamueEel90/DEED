@@ -70,9 +70,10 @@ Doladiť to, čo robí appku „hotovou". Realizované po samostatne nasaditeľn
 - [x] **Wave 4 — Toast + hľadanie:** sonner globálny `toast()` namiesto duplikovaného stavu v 9 súboroch; `useDeferredValue` debounce hľadania.
 - [x] **Wave 5a — Code-splitting:** `React.lazy` 7 modulov + Suspense; vendor chunky (react/motion/tanstack) v `vite.config`. Initial load = shell + prvý modul.
 - [x] **Mikro-interakcie (časť):** lazy-load obrázkov (`loading="lazy"`), výstupné animácie sheetov, `whileTap`.
+- [x] **Wave 6 — A11y segmenty & klávesnica:** zdieľaný `SegTabs` (radiogroup + roving tabindex + šípky/Home/End, bespoke vzhľad cez render-prop) nasadený na single-select selektory (Charita filter, cudzí profil sekcie+stav, Good nástenka filter). Toggle-off selektory (Aktivity doména/sub-taby) + header search + Notifikácie (riadky, prepínače `role="switch"`, zvonček) sprístupnené cez `pressable`. Feed-karty už klávesnicovo (Good/Charita `pressable`).
 - [ ] **Wave 5b — Token sweep (vyžaduje vizuálne QA):** adopcia SPACE/RADIUS/TYPE naprieč legacy modulmi + retire rogue palety `K` (Charita), `A` (Aktivity), `SEG_BG`. Hodnoty sa nudge-ujú na škálu (≤2 px) — treba screenshot-diff.
 - [ ] **Wave 5c — Virtualizácia:** `@tanstack/react-virtual` na ploché zoznamy (hľadanie, notifikácie, „moje skutky", adresár) — pri raste dát.
-- [ ] **A11y zvyšok:** feed-karty klávesnicovo (potrebuje afordanciu „otvoriť", nie nested-button), Radix Tabs pre segment selektory (cudzí profil, charita), kontrast audit.
+- [ ] **A11y zvyšok:** kontrast audit (WCAG AA na text/akcenty), fokus-viditeľnosť (`:focus-visible` prstenec), `aria-live` na tickery/toasty.
 - [ ] **Responzivita:** doladiť viacstĺpcové feedy na tablete/desktope.
 - **Hotovo, keď:** klikanie appkou pôsobí ako hotový produkt — žiadne skoky, prázdne biele plochy ani nekonzistentné odsadenia.
 

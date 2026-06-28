@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { C, inp, GRAD, GRAD_ZELENY } from "@/theme";
-import { Foto, FotoPrispevku, MiniFotky, Video, ModulHlavicka, Hlavicka, AvatarUroven, PodporaSekcia, PlatbaModal, HladanieModal, toast, Oslava, useGaleria, useScrollHore, useMotiv, useLayout, useStrankaAkcie, useTvorbaGate, StatRiadok, MoniBar, FeedStlpce, FeedGrid, obalSiroky, Lupa, Zdielanie, IkonaSipVlavo, IkonaMoznosti, IkonaUlozit, IkonaFajka, IkonaPlay, IkonaDoska, IkonaPin, OkruhVyber, QrModal, FeedSkeleton, EmptyState, ErrorState, ScreenSwitch } from "@/shared";
+import { Foto, FotoPrispevku, MiniFotky, Video, ModulHlavicka, Hlavicka, AvatarUroven, PodporaSekcia, PlatbaModal, HladanieModal, toast, Oslava, useGaleria, useScrollHore, useMotiv, useLayout, useStrankaAkcie, useTvorbaGate, StatRiadok, MoniBar, FeedStlpce, FeedGrid, obalSiroky, SegTabs, Lupa, Zdielanie, IkonaSipVlavo, IkonaMoznosti, IkonaUlozit, IkonaFajka, IkonaPlay, IkonaDoska, IkonaPin, OkruhVyber, QrModal, FeedSkeleton, EmptyState, ErrorState, ScreenSwitch } from "@/shared";
 import { pripravFeed, FEED_CFG, type FeedUser } from "@/lib/feed";
 import { tint, tagChip } from "@/lib/ui";
 import { pressable } from "@/components/pressable";
@@ -195,7 +195,7 @@ function Home({ wide, toast, otvorModul, pohlad, setPohlad, radius, setRadius, o
       <ModulHlavicka title="Domov" karma={ja.demo ? "Gold · celková" : `${String(ja.tier).replace(/\s*·\s*L\d+/, "")} · celková`}
         right={
           <>
-            <span onClick={onHladaj} style={{ display: "flex", alignItems: "center", cursor: "pointer" }}><Lupa size={20} color={C.textSec} /></span>
+            <span {...pressable(onHladaj, "Hľadať")} style={{ display: "flex", alignItems: "center", cursor: "pointer" }}><Lupa size={20} color={C.textSec} /></span>
             <Zvoncek color={C.textSec} toast={toast} />
             <AvatarUroven ini={ja.iniciala} tint={ja.tint} tier={ja.tier} size={34} onClick={() => otvorModul && otvorModul("profil")} title={ja.tier} />
           </>
@@ -795,12 +795,16 @@ function GoodBoard({ onBack, onEvent, toast }: { onBack: () => void; onEvent: (i
       </div>
 
       {/* filtre */}
-      <div style={{ display: "flex", gap: 8, padding: "6px 16px 8px", overflowX: "auto" }}>
-        {chipy.map((f) => {
-          const on = filter === f;
-          return <div key={f} onClick={() => setFilter(f)} style={{ flex: "0 0 auto", padding: "7px 14px", borderRadius: 13, fontSize: 11, cursor: "pointer", whiteSpace: "nowrap", background: on ? "rgba(91,155,255,.12)" : C.surface2, border: `1px solid ${on ? "rgba(116,166,255,.4)" : C.line}`, color: on ? "#7FC2EF" : C.textSec, fontWeight: on ? 700 : 500 }}>{f}</div>;
-        })}
-      </div>
+      <SegTabs
+        options={chipy}
+        value={filter}
+        onChange={setFilter}
+        ariaLabel="Filter udalostí na nástenke"
+        style={{ display: "flex", gap: 8, padding: "6px 16px 8px", overflowX: "auto" }}
+        render={(f, on) => (
+          <div style={{ flex: "0 0 auto", padding: "7px 14px", borderRadius: 13, fontSize: 11, cursor: "pointer", whiteSpace: "nowrap", background: on ? "rgba(91,155,255,.12)" : C.surface2, border: `1px solid ${on ? "rgba(116,166,255,.4)" : C.line}`, color: on ? "#7FC2EF" : C.textSec, fontWeight: on ? 700 : 500 }}>{f}</div>
+        )}
+      />
 
       {/* všetky udalosti */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 18px 0" }}>

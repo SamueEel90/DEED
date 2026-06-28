@@ -243,7 +243,7 @@ function Home({ items, dom, view, pickDom, pickView, toast, open, openPerson, se
           {ORDER.map((d) => {
             const a = DOM[d]; const on = dom === d;
             return (
-              <div key={d} onClick={() => pickDom(d)} style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, minWidth: 60, height: 54, borderRadius: 14, cursor: "pointer", flex: "none", background: on ? tint(a.c, .15) : A.surface2, border: `1px solid ${on ? tint(a.c, .5) : A.line}` }}>
+              <div key={d} {...pressable(() => pickDom(d), `Doména ${a.label}`)} aria-pressed={on} style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, minWidth: 60, height: 54, borderRadius: 14, cursor: "pointer", flex: "none", background: on ? tint(a.c, .15) : A.surface2, border: `1px solid ${on ? tint(a.c, .5) : A.line}` }}>
                 <div style={{ color: on ? a.c : A.txt2, display: "flex" }}>{DOM_IKONA[d]}</div>
                 <div style={{ fontSize: 10, fontWeight: 700, color: on ? a.c : A.txt2 }}>{a.label}</div>
               </div>
@@ -253,9 +253,9 @@ function Home({ items, dom, view, pickDom, pickView, toast, open, openPerson, se
       </div>
       )}
       <div style={{ display: "flex", gap: 8 }}>
-        <div onClick={() => pickView("workshop")} style={segStyle(view === "workshop")}><span style={{ fontSize: 13 }}>🎓</span>Workshopy</div>
-        <div onClick={() => pickView("help")} style={segStyle(view === "help")}><span style={{ fontSize: 13 }}>❓</span>Hľadám pomoc</div>
-        <div onClick={() => toast("Market — predaj diel/náradia, fáza 2")} style={segStyle(false)}><span style={{ fontSize: 13 }}>🛒</span>Market<span style={{ fontSize: 10, background: A.goldBg, color: A.gold, padding: "1px 5px", borderRadius: 5, marginLeft: 2 }}>čoskoro</span></div>
+        <div {...pressable(() => pickView("workshop"), "Workshopy")} aria-pressed={view === "workshop"} style={segStyle(view === "workshop")}><span style={{ fontSize: 13 }}>🎓</span>Workshopy</div>
+        <div {...pressable(() => pickView("help"), "Hľadám pomoc")} aria-pressed={view === "help"} style={segStyle(view === "help")}><span style={{ fontSize: 13 }}>❓</span>Hľadám pomoc</div>
+        <div {...pressable(() => toast("Market — predaj diel/náradia, fáza 2"), "Market — čoskoro")} style={segStyle(false)}><span style={{ fontSize: 13 }}>🛒</span>Market<span style={{ fontSize: 10, background: A.goldBg, color: A.gold, padding: "1px 5px", borderRadius: 5, marginLeft: 2 }}>čoskoro</span></div>
       </div>
     </div>
   );
@@ -275,7 +275,7 @@ function Home({ items, dom, view, pickDom, pickView, toast, open, openPerson, se
       <ModulHlavicka title="Aktivity" karma="Aktivity · Silver"
         right={
           <>
-            <span onClick={onHladaj} style={{ display: "flex", alignItems: "center", cursor: "pointer" }}><Lupa size={20} color={A.txt2} /></span>
+            <span {...pressable(onHladaj, "Hľadať")} style={{ display: "flex", alignItems: "center", cursor: "pointer" }}><Lupa size={20} color={A.txt2} /></span>
             <Zvoncek color={A.txt2} toast={toast} />
           </>
         } />

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { createPortal } from "react-dom";
 import { C, GRAD, glassTmavy } from "@/theme";
-import { Zvon, IkonaNastavenia, IkonaSipVlavo, IkonaKriz, tint, usePortalEl, useLayout, SkeletonRiadky, EmptyState, ErrorState } from "@/shared";
+import { Zvon, IkonaNastavenia, IkonaSipVlavo, IkonaKriz, tint, usePortalEl, useLayout, pressable, SkeletonRiadky, EmptyState, ErrorState } from "@/shared";
 import type { Notifikacia, VypnuteMapa } from "@/types";
 import { useNotifikacie } from "@/data";
 import { KATEGORIE, VYPNUTE_DEF } from "./mock";
@@ -21,10 +21,13 @@ import { KATEGORIE, VYPNUTE_DEF } from "./mock";
 
 export { NOTIFY } from "./mock";
 
-// ---- prepínač ----
-function Toggle({ on, dim, onClick }: { on?: boolean; dim?: boolean; onClick?: () => void }) {
+// ---- prepínač (prístupný: role="switch" + klávesnica) ----
+function Toggle({ on, dim, onClick, label }: { on?: boolean; dim?: boolean; onClick?: () => void; label?: string }) {
   return (
-    <span onClick={onClick} style={{ width: 42, height: 25, borderRadius: 20, flex: "none", cursor: "pointer", padding: 3, opacity: dim ? .4 : 1,
+    <span role="switch" aria-checked={!!on} aria-label={label} aria-disabled={dim || undefined} tabIndex={0}
+      onClick={onClick}
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick?.(); } }}
+      style={{ width: 42, height: 25, borderRadius: 20, flex: "none", cursor: "pointer", padding: 3, opacity: dim ? .4 : 1,
       background: on ? GRAD : "rgba(var(--glass-rgb),.14)", transition: "background .2s ease" }}>
       <span style={{ display: "block", width: 19, height: 19, borderRadius: "50%", background: "#fff", boxShadow: "0 1px 4px rgba(0,0,0,.35)", transform: on ? "translateX(17px)" : "none", transition: "transform .2s ease" }} />
     </span>
@@ -69,7 +72,7 @@ export function Zvoncek({ color = "#C4CCDB", toast }: { color?: string; toast?: 
 
   return (
     <>
-      <span onClick={() => { setOtvor(true); setView("zoznam"); }} style={{ position: "relative", display: "flex", alignItems: "center", cursor: "pointer" }}>
+      <span {...pressable(() => { setOtvor(true); setView("zoznam"); }, neprecitane > 0 ? `Oznámenia — ${neprecitane} neprečítané` : "Oznámenia")} style={{ position: "relative", display: "flex", alignItems: "center", cursor: "pointer" }}>
         <Zvon size={20} color={color} />
         {neprecitane > 0 && (
           <span style={{ position: "absolute", top: -5, right: -6, minWidth: 16, height: 16, padding: "0 4px", borderRadius: 9, background: "var(--a-danger)", color: "#fff", fontSize: 10, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 0 0 2px var(--c-bg)" }}>{neprecitane}</span>
@@ -89,9 +92,9 @@ function Zoznam({ onSettings, onClose, onPrecitaj, toast, hideSettings }: { onSe
     <>
       <div style={{ display: "flex", alignItems: "center", gap: 10, flex: "0 0 auto", paddingBottom: 8 }}>
         <span style={{ fontSize: 17, fontWeight: 800 }}>Oznámenia</span>
-        {neprecitane > 0 && <span onClick={onPrecitaj} style={{ fontSize: 11, fontWeight: 700, color: "var(--a-green)", cursor: "pointer" }}>Označiť prečítané</span>}
-        {!hideSettings && <span onClick={onSettings} title="Nastavenia notifikácií" style={{ marginLeft: "auto", display: "flex", cursor: "pointer", color: C.textSec }}><IkonaNastavenia size={19} color={C.textSec} /></span>}
-        <span onClick={onClose} style={{ marginLeft: hideSettings ? "auto" : undefined, display: "flex", cursor: "pointer", color: C.textSec }}><IkonaKriz size={19} color={C.textSec} /></span>
+        {neprecitane > 0 && <span {...pressable(onPrecitaj, "Označiť všetky prečítané")} style={{ fontSize: 11, fontWeight: 700, color: "var(--a-green)", cursor: "pointer" }}>Označiť prečítané</span>}
+        {!hideSettings && <span {...pressable(onSettings, "Nastavenia notifikácií")} title="Nastavenia notifikácií" style={{ marginLeft: "auto", display: "flex", cursor: "pointer", color: C.textSec }}><IkonaNastavenia size={19} color={C.textSec} /></span>}
+        <span {...pressable(onClose, "Zavrieť oznámenia")} style={{ marginLeft: hideSettings ? "auto" : undefined, display: "flex", cursor: "pointer", color: C.textSec }}><IkonaKriz size={19} color={C.textSec} /></span>
       </div>
       <div style={{ fontSize: 11, color: C.textTer, paddingBottom: 8, flex: "0 0 auto" }}>{neprecitane} neprečítané · mikro-podpory agregované do súhrnu</div>
       <div style={{ overflowY: "auto", margin: "0 -4px", flex: "1 1 auto" }}>
@@ -104,7 +107,7 @@ function Zoznam({ onSettings, onClose, onPrecitaj, toast, hideSettings }: { onSe
         ) : (
           <>
         {NOTIFY.map((n: Notifikacia) => (
-          <div key={n.id} onClick={() => toast?.(n.titul)} style={{ display: "flex", alignItems: "flex-start", gap: 11, padding: "11px 8px", borderRadius: 12, cursor: "pointer", borderBottom: `1px solid ${C.line2}`, background: n.nove ? tint("var(--a-green)", .06) : "transparent" }}>
+          <div key={n.id} {...pressable(() => toast?.(n.titul), n.titul)} style={{ display: "flex", alignItems: "flex-start", gap: 11, padding: "11px 8px", borderRadius: 12, cursor: "pointer", borderBottom: `1px solid ${C.line2}`, background: n.nove ? tint("var(--a-green)", .06) : "transparent" }}>
             <span style={{ width: 38, height: 38, borderRadius: 11, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 17, background: tint(n.col, .15), color: n.col }}>{n.ic}</span>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 13.5, fontWeight: 700, display: "flex", alignItems: "center", gap: 6 }}>
@@ -136,7 +139,7 @@ export function Nastavenia({ onBack, embedded, toast }: { onBack?: () => void; e
   return (
     <>
       <div style={{ display: "flex", alignItems: "center", gap: 10, flex: "0 0 auto", paddingBottom: 4 }}>
-        {!embedded && <span onClick={onBack} style={{ display: "flex", cursor: "pointer", color: C.textSec }}><IkonaSipVlavo size={20} color={C.textSec} /></span>}
+        {!embedded && <span {...pressable(onBack, "Späť na zoznam")} style={{ display: "flex", cursor: "pointer", color: C.textSec }}><IkonaSipVlavo size={20} color={C.textSec} /></span>}
         <span style={{ fontSize: 16, fontWeight: 800 }}>Notifikácie</span>
       </div>
 
@@ -147,7 +150,7 @@ export function Nastavenia({ onBack, embedded, toast }: { onBack?: () => void; e
             <div style={{ fontSize: 14, fontWeight: 800 }}>Všetky notifikácie</div>
             <div style={{ fontSize: 11, color: C.textTer, marginTop: 1 }}>Hlavný vypínač · prebíja kategórie</div>
           </div>
-          <Toggle on={master} onClick={() => setMaster((m) => !m)} />
+          <Toggle on={master} onClick={() => setMaster((m) => !m)} label="Všetky notifikácie" />
         </div>
 
         {/* kategórie */}
@@ -157,7 +160,7 @@ export function Nastavenia({ onBack, embedded, toast }: { onBack?: () => void; e
             {kat.polozky.map((p) => (
               <div key={p} style={{ display: "flex", alignItems: "center", gap: 12, background: C.surface, border: `1px solid ${C.line}`, borderRadius: 12, padding: "12px 14px", marginBottom: 7 }}>
                 <span style={{ flex: 1, fontSize: 13.5 }}>{p}</span>
-                <Toggle on={master && je(p)} dim={!master} onClick={() => master && prepni(p)} />
+                <Toggle on={master && je(p)} dim={!master} onClick={() => master && prepni(p)} label={p} />
               </div>
             ))}
           </div>
@@ -170,7 +173,7 @@ export function Nastavenia({ onBack, embedded, toast }: { onBack?: () => void; e
             <div style={{ fontSize: 13.5 }}>Nočný pokoj</div>
             <div style={{ fontSize: 11, color: C.textTer, marginTop: 1 }}>22:00 – 7:00 · push vždy ticho</div>
           </div>
-          <Toggle on={tiche} onClick={() => setTiche((t) => !t)} />
+          <Toggle on={tiche} onClick={() => setTiche((t) => !t)} label="Nočný pokoj" />
         </div>
 
         {/* push default vysvetlenie */}

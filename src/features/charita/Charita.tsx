@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { C, U, AV, GRAD, GRAD_ZELENY } from "@/theme";
-import { Foto, Avatar, FotoPrispevku, MiniFotky, ModulHlavicka, PodporaSekcia, PlatbaModal, HladanieModal, toast, useGaleria, useLayout, useScrollHore, useStrankaAkcie, useTvorbaGate, Ticker, StatRiadok, FiltreStat, MoniBar, FeedStlpce, FeedGrid, obalSiroky, OkruhVyber, Lupa, Zvon, Zdielanie, IkonaSpat, IkonaVlajka, IkonaFoto, IkonaPlay, IkonaDoska, IkonaOpakovat, IkonaKriz, IkonaInstitucia, FeedSkeleton, SkeletonRiadky, EmptyState, ErrorState, ScreenSwitch } from "@/shared";
+import { Foto, Avatar, FotoPrispevku, MiniFotky, ModulHlavicka, PodporaSekcia, PlatbaModal, HladanieModal, toast, useGaleria, useLayout, useScrollHore, useStrankaAkcie, useTvorbaGate, Ticker, StatRiadok, FiltreStat, MoniBar, FeedStlpce, FeedGrid, obalSiroky, OkruhVyber, SegTabs, Lupa, Zvon, Zdielanie, IkonaSpat, IkonaVlajka, IkonaFoto, IkonaPlay, IkonaDoska, IkonaOpakovat, IkonaKriz, IkonaInstitucia, FeedSkeleton, SkeletonRiadky, EmptyState, ErrorState, ScreenSwitch } from "@/shared";
 import { pripravFeed, FEED_CFG } from "@/lib/feed";
 import { MEDIA_AR } from "@/lib/cardSize";
 import { Zvoncek } from "@/features/notifikacie/Notifikacie";
@@ -135,7 +135,7 @@ function CharitaFeed({ wide, toast, onDetail, onHladaj, onSheet }: FeedProps) {
       {/* header — jednotná hlavička (logo D⁺ + názov) */}
       <ModulHlavicka title="Charita" karma="Charita · Gold" right={
         <>
-          <span onClick={onHladaj} style={{ display: "flex", alignItems: "center", cursor: "pointer" }}><Lupa size={20} color={K.txt2} /></span>
+          <span {...pressable(onHladaj, "Hľadať")} style={{ display: "flex", alignItems: "center", cursor: "pointer" }}><Lupa size={20} color={K.txt2} /></span>
           <Zvoncek color={K.txt2} toast={toast} />
         </>
       } />
@@ -450,11 +450,16 @@ function SheetAdresar({ toast, onClose }: { toast: (m: string) => void; onClose:
         <input value={hladaj} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setHladaj(e.target.value)} placeholder="Hľadať charitu, oblasť, mesto…"
           style={{ flex: 1, background: "transparent", border: "none", outline: "none", color: K.txt, fontSize: 13, padding: "8px 0" }} />
       </div>
-      <div style={{ display: "flex", gap: 7, overflowX: "auto", paddingBottom: 8, marginBottom: 6 }}>
-        {chipy.map((c) => (
-          <span key={c} onClick={() => setChip(c)} style={{ whiteSpace: "nowrap", fontSize: 12, padding: "5px 13px", borderRadius: 99, cursor: "pointer", background: chip === c ? K.txt : K.card, color: chip === c ? K.bg : K.txt2, fontWeight: chip === c ? 600 : 400, border: `1px solid ${chip === c ? K.txt : K.line}` }}>{c}</span>
-        ))}
-      </div>
+      <SegTabs
+        options={chipy}
+        value={chip}
+        onChange={setChip}
+        ariaLabel="Filter charít podľa oblasti"
+        style={{ display: "flex", gap: 7, overflowX: "auto", paddingBottom: 8, marginBottom: 6 }}
+        render={(c, on) => (
+          <span style={{ whiteSpace: "nowrap", fontSize: 12, padding: "5px 13px", borderRadius: 99, cursor: "pointer", background: on ? K.txt : K.card, color: on ? K.bg : K.txt2, fontWeight: on ? 600 : 400, border: `1px solid ${on ? K.txt : K.line}` }}>{c}</span>
+        )}
+      />
       <div style={{ fontSize: 11, color: K.txt3, marginBottom: 10, display: "flex", gap: 12 }}>
         <span>📍 Trenčín · 20 km</span><span>⚙ Typ pomoci</span><span style={{ marginLeft: "auto" }}>dôvera + blízkosť</span>
       </div>

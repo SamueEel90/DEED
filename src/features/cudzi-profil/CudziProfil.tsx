@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { C, GRAD, GRAD_ZELENY } from "@/theme";
-import { Aura, MoniBar, QrModal, useLayout, IkonaSipVlavo, IkonaFajka, IkonaStit, IkonaPlay, IkonaPin, Zdielanie, IkonaUsmev } from "@/shared";
+import { Aura, MoniBar, QrModal, SegTabs, useLayout, IkonaSipVlavo, IkonaFajka, IkonaStit, IkonaPlay, IkonaPin, Zdielanie, IkonaUsmev } from "@/shared";
 import type { CudziSubjekt, CudziSubjektOrg, CudziSubjektOsoba } from "@/types";
 import { usePersonalizacia } from "@/lib/personalizacia";
 import { KAMPANE_FALLBACK, AKCIE_FALLBACK, STAVY } from "./mock";
@@ -95,13 +95,17 @@ function OrgProfil({ s, onBack, toast }: { s: CudziSubjektOrg; onBack?: () => vo
         </div>
 
         {/* taby */}
-        <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
-          {["Kampane", "Skutky", "Talent"].map((t) => {
-            const on = tab === t;
-            return <span key={t} onClick={() => setTab(t)} style={{ flex: 1, textAlign: "center", padding: "9px 0", borderRadius: 11, fontSize: 13, fontWeight: on ? 700 : 500, cursor: "pointer",
-              background: on ? "rgba(91,155,255,.14)" : C.surface2, border: `1px solid ${on ? "rgba(116,166,255,.45)" : C.line}`, color: on ? "var(--a-info)" : C.textSec }}>{t}</span>;
-          })}
-        </div>
+        <SegTabs
+          options={["Kampane", "Skutky", "Talent"] as const}
+          value={tab}
+          onChange={setTab}
+          ariaLabel="Sekcie profilu organizácie"
+          style={{ display: "flex", gap: 8, marginTop: 16 }}
+          render={(t, on) => (
+            <span style={{ flex: 1, textAlign: "center", padding: "9px 0", borderRadius: 11, fontSize: 13, fontWeight: on ? 700 : 500, cursor: "pointer",
+              background: on ? "rgba(91,155,255,.14)" : C.surface2, border: `1px solid ${on ? "rgba(116,166,255,.45)" : C.line}`, color: on ? "var(--a-info)" : C.textSec }}>{t}</span>
+          )}
+        />
 
         {/* O nás */}
         <div style={{ fontSize: 10.5, letterSpacing: ".4px", color: C.textTer, fontWeight: 700, margin: "16px 0 6px" }}>O NÁS</div>
@@ -165,13 +169,18 @@ function OsobaProfil({ s, onBack, toast }: { s: CudziSubjektOsoba; onBack?: () =
       </div>
 
       {/* demo prepínač stavu */}
-      <div style={{ display: "flex", gap: 6, justifyContent: "center", margin: "10px 16px 0" }}>
-        {STAVY.map(([k, l]) => {
-          const on = stav === k;
-          return <span key={k} onClick={() => { setStav(k); setPridane(false); }} style={{ flex: 1, textAlign: "center", padding: "6px 0", borderRadius: 10, fontSize: 11, fontWeight: on ? 700 : 500, cursor: "pointer",
+      <SegTabs
+        options={STAVY.map(([k]) => k)}
+        value={stav}
+        onChange={(k) => { setStav(k); setPridane(false); }}
+        ariaLabel="Náhľad stavu profilu"
+        style={{ display: "flex", gap: 6, justifyContent: "center", margin: "10px 16px 0" }}
+        render={(k, on) => {
+          const l = (STAVY.find(([sk]) => sk === k) || [k, k])[1];
+          return <span style={{ flex: 1, textAlign: "center", padding: "6px 0", borderRadius: 10, fontSize: 11, fontWeight: on ? 700 : 500, cursor: "pointer",
             background: on ? tint(farba, .16) : C.surface2, border: `1px solid ${on ? tint(farba, .5) : C.line}`, color: on ? farba : C.textTer }}>{l}</span>;
-        })}
-      </div>
+        }}
+      />
       <div style={{ textAlign: "center", fontSize: 10, color: C.textTer, marginTop: 6 }}>Náhľad stavu profilu (v reále určuje vzťah a súhlas)</div>
 
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: 8 }}>

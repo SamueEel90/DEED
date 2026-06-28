@@ -97,7 +97,7 @@ function Feed({ wide, toast, onDetail, onHladaj, onAdd }: { wide?: boolean; toas
       {/* header — jednotná hlavička (logo D⁺ + názov) */}
       <ModulHlavicka title="Help" karma="Pomoc · Silver" right={
         <>
-          <span onClick={onHladaj} style={{ display: "flex", alignItems: "center", cursor: "pointer" }}><Lupa size={20} color={C.textSec} /></span>
+          <span {...pressable(onHladaj, "Hľadať")} style={{ display: "flex", alignItems: "center", cursor: "pointer" }}><Lupa size={20} color={C.textSec} /></span>
           <Zvoncek color={C.textSec} toast={toast} />
         </>
       } />
@@ -148,7 +148,7 @@ function Feed({ wide, toast, onDetail, onHladaj, onAdd }: { wide?: boolean; toas
 // segment filtra typu pomoci (Všetko / Žiadosti / Ponuky) — theme-aware cez tint(col)
 function Seg({ on, col, label, emoji, onClick }: { on: boolean; col: string; label: string; emoji?: string; onClick: () => void }) {
   return (
-    <div onClick={onClick} aria-current={on ? "page" : undefined} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, height: 38, borderRadius: 11, fontSize: 12.5, fontWeight: on ? 700 : 600, cursor: "pointer", whiteSpace: "nowrap", background: on ? tint(col, .15) : C.surface2, border: `1px solid ${on ? tint(col, .5) : C.line2}`, color: on ? col : C.textSec }}>
+    <div {...pressable(onClick, label)} aria-current={on ? "page" : undefined} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, height: 38, borderRadius: 11, fontSize: 12.5, fontWeight: on ? 700 : 600, cursor: "pointer", whiteSpace: "nowrap", background: on ? tint(col, .15) : C.surface2, border: `1px solid ${on ? tint(col, .5) : C.line2}`, color: on ? col : C.textSec }}>
       {emoji && <span style={{ fontSize: 13 }}>{emoji}</span>}{label}
     </div>
   );
