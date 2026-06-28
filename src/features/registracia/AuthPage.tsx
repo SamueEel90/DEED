@@ -5,7 +5,8 @@
 // (warm earthy, light primary) — žiadne natvrdo zadané akcenty.
 //   · onSignIn() — existujúci člen → rovno do appky
 //   · onSignUp() — nový účet → pokračuje na výber typu subjektu
-//   · onGuest()  — pozrieť demo bez registrácie
+//   · onGuest()  — „Admin prihlásenie" (demo náhľad bez registrácie)
+//   · onPasivny()— „Pokračovať bez prihlásenia" → pasívny vstup (bez účtu)
 // Auth je zatiaľ mock (bez reálneho backendu) — overuje len formát polí.
 // ============================================================
 import { useState, type CSSProperties, type ReactNode } from "react";
@@ -19,7 +20,7 @@ type Rezim = "login" | "register";
 // onAuthed — po úspešnom logine (ktorý potrebuje onboarding) alebo registrácii:
 // pokračuje na „Kto si?" / do rozrobeného flow. Login onboardnutého usera
 // nastaví session priamo (resolveSession) a appka sa zobrazí reaktívne.
-export function AuthPage({ onAuthed, onGuest }: { onAuthed: (authId: string, email: string, typ?: TypUctu) => void; onGuest?: () => void }) {
+export function AuthPage({ onAuthed, onGuest, onPasivny }: { onAuthed: (authId: string, email: string, typ?: TypUctu) => void; onGuest?: () => void; onPasivny?: () => void }) {
   const [rezim, setRezim] = useState<Rezim>("login");
   const [email, setEmail] = useState("");
   const [heslo, setHeslo] = useState("");
@@ -147,6 +148,15 @@ export function AuthPage({ onAuthed, onGuest }: { onAuthed: (authId: string, ema
           {busy ? "Moment…" : <>{jeLogin ? "Prihlásiť sa" : "Vytvoriť účet"} <IkonaSipVpravo size={18} color="#fff" /></>}
         </button>
 
+        {/* sekundárna akcia — vstup bez prihlásenia (pasívny režim, bez účtu) */}
+        <button onClick={onPasivny} style={{
+          width: "100%", padding: `${SPACE.md}px 0`, marginTop: SPACE.sm, borderRadius: RADIUS.md, fontFamily: "inherit",
+          fontSize: 14.5, fontWeight: 700, cursor: "pointer", transition: "background .2s ease",
+          background: "rgba(var(--glass-rgb),.05)", color: C.textSec, border: `1px solid ${C.line}`,
+        }}>
+          Pokračovať bez prihlásenia
+        </button>
+
         {/* prepnutie režimu + hosť */}
         <div style={{ textAlign: "center", marginTop: SPACE.lg, fontSize: 13, color: C.textSec }}>
           {jeLogin ? "Nemáš účet? " : "Už máš účet? "}
@@ -156,7 +166,7 @@ export function AuthPage({ onAuthed, onGuest }: { onAuthed: (authId: string, ema
         </div>
         <div style={{ textAlign: "center", marginTop: SPACE.gutter }}>
           <span onClick={onGuest} style={{ fontSize: 12.5, color: C.textTer, cursor: "pointer", textDecoration: "underline" }}>
-            Pokračovať ako hosť — pozrieť demo
+            Admin prihlásenie
           </span>
         </div>
       </div>

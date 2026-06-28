@@ -1,6 +1,7 @@
 // ============================================================
 // DEED · Registrácia — Fyzická osoba (§13)
-// Pasívny (anonym, bez účtu) / Aktívny (8 krokov, plný účet).
+// Aktívny tok (8 krokov, plný účet) — auth-first. Pasívny režim už nie je
+// voľbou v registrácii (ideme rovno aktívnym tokom).
 // Stavový automat (krok) v tomto súbore; univerzálne kroky
 // (telefón+SMS, zabezpečenie) sa preberajú z RegKit.
 // ============================================================
@@ -52,8 +53,6 @@ interface OsobaFlowProps {
   /** Supabase Auth identita (auth-first) — preskočí telefón-OTP (a1) + PIN (a2). */
   authId?: string;
   email?: string | null;
-  /** auth resume (rozrobený účet) — preskočí vidličku, rovno aktívny tok od a3. */
-  resume?: boolean;
 }
 
 // best-effort priebežné ukladanie stavu — nikdy neblokuje navigáciu
@@ -65,9 +64,9 @@ async function ulozStavTicho(ucetId: string, stav: string) {
   }
 }
 
-export function OsobaFlow({ onHotovo, onSpat, toast, startKrok = "vidlicka", authId, email, resume }: OsobaFlowProps) {
+export function OsobaFlow({ onHotovo, onSpat, toast, startKrok = "vidlicka", authId, email }: OsobaFlowProps) {
   // ---- stavový automat ----
-  //  "vidlicka"  — pasívny / aktívny rozcestník (NEčíslované)
+  //  "vidlicka"  — prechodný štart (auth-first auto-skip do aktívneho toku)
   //  "a1".."a8"  — aktívny tok (číslované 1..8)
   const [krok, setKrok] = useState<Krok>(startKrok);
   const [ucet, setUcet] = useState<Ucet | null>(null); // { id, typ, poradove_cislo, stav_registracie }
@@ -93,66 +92,19 @@ export function OsobaFlow({ onHotovo, onSpat, toast, startKrok = "vidlicka", aut
     }
   };
 
-  // auth resume (rozrobený účet po refreshi/abandonovaní) → vytvor/načítaj ucet a skoč na a3
+  // auth-first: hneď ako máme auth identitu, vytvor/načítaj ucet a skoč do aktívneho
+  // toku (a3). Pokrýva čerstvú registráciu aj resume (rozrobený účet po refreshi).
+  // Rozcestník pasívny/aktívny je z registrácie odstránený — vždy ideme aktívnym tokom.
   useEffect(() => {
-    if (authId && resume && !ucet && !robim) zacniAktivnyAuth();
+    if (authId && !ucet && !robim) zacniAktivnyAuth();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authId, resume]);
+  }, [authId]);
 
-  // pasívny divák-darca → rovno do appky: prezerá a prispieva (FIAT/karta/SMS)
-  // všade, ale nič nevytvára (gating cez Pouzivatel.mozeTvorit / upgrade panel).
-  // Auth-first: pasívny dostane reálny auth-naviazaný ucet ('hotovo') — invariant 1 auth↔1 ucet.
-  const vstupPasivne = async () => {
-    if (authId) {
-      if (robim) return;
-      setRobim(true);
-      try {
-        const u = await db.vytvorUcetAuth({ authId, typ: "pasivny", email, stav: "hotovo" });
-        setSession({ ucet_id: u.id, typ: "pasivny", poradove_cislo: (u.poradove_cislo as number) ?? null, meno: "Hosť" });
-      } catch (e: any) {
-        toast?.("Chyba: " + (e?.message || e));
-        setRobim(false);
-        return;
-      }
-    } else {
-      setSession({ typ: "pasivny", meno: "Hosť" });
-    }
-    onHotovo?.();
-  };
-
-  // auth resume: kým sa ucet nevytvorí, drž jemný loader (žiadny flash vidličky)
-  if (authId && resume && !ucet) {
+  // kým sa ucet nevytvorí (a neskočíme na a3), drž jemný loader — žiadny flash medzikroku
+  if (authId && (!ucet || krok === "vidlicka")) {
     return (
       <Shell title="Fyzická osoba">
         <div style={{ padding: "40px 0", textAlign: "center", color: C.textTer, fontSize: 14 }}>Načítavam tvoj účet…</div>
-      </Shell>
-    );
-  }
-
-  // ---------------------------------------------------------
-  // SCREEN 0 — Vidlička Pasívny / Aktívny (NEčíslované)
-  // ---------------------------------------------------------
-  if (krok === "vidlicka") {
-    return (
-      <Shell title="Fyzická osoba" onBack={onSpat}>
-        <Otazka>Ako chceš DEED používať?</Otazka>
-        <Vyber
-          emoji="💛"
-          title="Pasívny — len prispievam"
-          desc="Prezeraj a prispievaj (FIAT/karta/SMS) všade. Bez vytvárania obsahu."
-          active={false}
-          onClick={vstupPasivne}
-        />
-        <Vyber
-          emoji="🚀"
-          title="Aktívny — plný účet"
-          desc="Tvor skutky, žiadosti a zbierky, získavaj karmu a odmeny."
-          active={false}
-          onClick={authId ? zacniAktivnyAuth : () => goto("a1")}
-        />
-        <div style={infoBox}>
-          Pasívny vojde do appky hneď a môže komukoľvek prispieť. Na vytváranie obsahu sa staneš aktívnym kedykoľvek — bez straty doterajšieho.
-        </div>
       </Shell>
     );
   }
@@ -168,7 +120,7 @@ export function OsobaFlow({ onHotovo, onSpat, toast, startKrok = "vidlicka", aut
         step={1}
         total={8}
         typ="aktivny"
-        onBack={startKrok === "a1" ? onSpat : () => goto("vidlicka")}
+        onBack={onSpat}
         onHotovo={(u: Ucet) => {
           setUcet(u);
           ulozStavTicho(u.id, "zabezpecenie");
@@ -202,7 +154,7 @@ export function OsobaFlow({ onHotovo, onSpat, toast, startKrok = "vidlicka", aut
       <KrokUdaje
         ucet={ucet}
         toast={toast}
-        onBack={authId ? () => goto("vidlicka") : () => goto("a2")}
+        onBack={authId ? () => onSpat?.() : () => goto("a2")}
         onNext={(meno) => {
           setProfilMeno(meno);
           if (ucet) ulozStavTicho(ucet.id, "zaujmy");
