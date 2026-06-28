@@ -1,7 +1,9 @@
-import { useState, useDeferredValue } from "react";
+import { useState, useDeferredValue, useEffect } from "react";
 import { C, glassTmavy } from "@/theme";
 import { tint } from "@/lib/ui";
 import { Lupa, IkonaKriz, IkonaOpakovat, IkonaStit } from "@/components/icons";
+import { pressable } from "@/components/pressable";
+import { SegTabs } from "@/components/segtabs";
 
 // ============================================================
 // VYHĽADÁVANIE — zdieľaný overlay (zhora), živé filtrovanie feedu
@@ -64,6 +66,13 @@ export function HladanieModal({ data = [], onPick, onClose, akcent = "var(--a-in
   const [filter, setFilter] = useState(defaultFilter);
   // input je svižný (q), drahé filtrovanie beží na odloženej hodnote (dq)
   const dq = useDeferredValue(q);
+
+  // Escape zatvorí overlay (klávesnica)
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
   const norm = (s: any) => (s || "").toString().toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
   const dotaz = norm(dq.trim());
 
@@ -79,7 +88,7 @@ export function HladanieModal({ data = [], onPick, onClose, akcent = "var(--a-in
 
   const klik = (x: any) => { if (x._subj) toast?.(`Otváram profil: ${x.titul} (demo)`); else onPick?.(x.id); onClose(); };
   const Riadok = (x: any) => (
-    <div key={x.id} onClick={() => klik(x)} style={{ display: "flex", alignItems: "center", gap: 12, padding: "11px 8px", borderRadius: 12, cursor: "pointer", borderBottom: `1px solid ${C.line2}` }}>
+    <div key={x.id} {...pressable(() => klik(x), x.titul)} style={{ display: "flex", alignItems: "center", gap: 12, padding: "11px 8px", borderRadius: 12, cursor: "pointer", borderBottom: `1px solid ${C.line2}` }}>
       <div style={{ width: 40, height: 40, borderRadius: 11, flex: "0 0 auto", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 19, background: tint(akcent, .14) }}>{x.emoji}</div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 13.5, fontWeight: 600, lineHeight: 1.3, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{x.titul}</div>
@@ -98,18 +107,22 @@ export function HladanieModal({ data = [], onPick, onClose, akcent = "var(--a-in
           <input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder={placeholder}
             style={{ flex: 1, minWidth: 0, background: "transparent", border: "none", outline: "none", color: C.text, fontSize: 15, fontFamily: "inherit" }} />
           {q
-            ? <span onClick={() => setQ("")} title="Vymazať" style={{ display: "flex", cursor: "pointer" }}><IkonaKriz size={18} color={C.textTer} /></span>
-            : <span onClick={onClose} style={{ fontSize: 13, fontWeight: 600, color: C.textSec, cursor: "pointer", flex: "0 0 auto" }}>Zrušiť</span>}
+            ? <span {...pressable(() => setQ(""), "Vymazať hľadanie")} title="Vymazať" style={{ display: "flex", cursor: "pointer" }}><IkonaKriz size={18} color={C.textTer} /></span>
+            : <span {...pressable(onClose, "Zrušiť hľadanie")} style={{ fontSize: 13, fontWeight: 600, color: C.textSec, cursor: "pointer", flex: "0 0 auto" }}>Zrušiť</span>}
         </div>
 
         {/* filter-chipy — jeden engine, 8 typov */}
-        <div style={{ display: "flex", gap: 7, padding: "10px 0 2px", overflowX: "auto", flex: "0 0 auto" }}>
-          {HL_FILTRE.map((f) => {
-            const on = filter === f;
-            return <span key={f} onClick={() => setFilter(f)} style={{ flex: "0 0 auto", padding: "6px 12px", borderRadius: 13, fontSize: 11.5, fontWeight: on ? 700 : 500, cursor: "pointer", whiteSpace: "nowrap",
-              background: on ? tint(akcent, .16) : C.surface2, border: `1px solid ${on ? tint(akcent, .5) : C.line}`, color: on ? akcent : C.textSec }}>{f}</span>;
-          })}
-        </div>
+        <SegTabs
+          options={HL_FILTRE}
+          value={filter}
+          onChange={setFilter}
+          ariaLabel="Filter výsledkov hľadania"
+          style={{ display: "flex", gap: 7, padding: "10px 0 2px", overflowX: "auto", flex: "0 0 auto" }}
+          render={(f, on) => (
+            <span style={{ flex: "0 0 auto", padding: "6px 12px", borderRadius: 13, fontSize: 11.5, fontWeight: on ? 700 : 500, cursor: "pointer", whiteSpace: "nowrap",
+              background: on ? tint(akcent, .16) : C.surface2, border: `1px solid ${on ? tint(akcent, .5) : C.line}`, color: on ? akcent : C.textSec }}>{f}</span>
+          )}
+        />
 
         {/* obsah */}
         <div style={{ overflowY: "auto", margin: "8px -4px 0", flex: "1 1 auto" }}>
@@ -118,10 +131,10 @@ export function HladanieModal({ data = [], onPick, onClose, akcent = "var(--a-in
               {/* POSLEDNÉ HĽADANIA */}
               <div style={{ display: "flex", alignItems: "center", padding: "6px 8px 4px" }}>
                 <span style={{ fontSize: 10.5, letterSpacing: ".4px", color: C.textTer, fontWeight: 700 }}>POSLEDNÉ HĽADANIA</span>
-                <span onClick={() => setQ("")} style={{ marginLeft: "auto", fontSize: 11, color: C.textTer, cursor: "pointer" }}>vymazať</span>
+                <span {...pressable(() => setQ(""), "Vymazať históriu hľadania")} style={{ marginLeft: "auto", fontSize: 11, color: C.textTer, cursor: "pointer" }}>vymazať</span>
               </div>
               {posledne.map((p) => (
-                <div key={p} onClick={() => setQ(p)} style={{ display: "flex", alignItems: "center", gap: 11, padding: "10px 8px", borderRadius: 12, cursor: "pointer", borderBottom: `1px solid ${C.line2}` }}>
+                <div key={p} {...pressable(() => setQ(p), `Hľadať: ${p}`)} style={{ display: "flex", alignItems: "center", gap: 11, padding: "10px 8px", borderRadius: 12, cursor: "pointer", borderBottom: `1px solid ${C.line2}` }}>
                   <IkonaOpakovat size={15} color={C.textTer} />
                   <span style={{ flex: 1, fontSize: 13.5 }}>{p}</span>
                   <IkonaKriz size={14} color={C.textTer} />
