@@ -17,14 +17,19 @@ export interface AuthVysledok {
   chyba?: string;
 }
 
-// preklad Supabase auth chýb na slovenské hlášky pre používateľa
+// preklad Supabase auth chýb na slovenské hlášky pre používateľa.
+// POZOR: špecifické prípady MUSIA byť pred generickým "email" catchom
+// (napr. "email rate limit exceeded" obsahuje "email" — netreba ho hlásiť ako neplatný).
 function prelozChybu(message?: string): string {
   const m = (message || "").toLowerCase();
-  if (m.includes("invalid login")) return "Nesprávny email alebo heslo.";
-  if (m.includes("already registered") || m.includes("already been registered")) return "Tento email už je zaregistrovaný — prihlás sa.";
+  if (m.includes("invalid login") || m.includes("invalid credentials")) return "Nesprávny email alebo heslo.";
+  if (m.includes("already registered") || m.includes("already been registered") || m.includes("user already")) return "Tento email už je zaregistrovaný — prihlás sa.";
+  if (m.includes("rate limit") || m.includes("over_email_send") || m.includes("too many")) return "Priveľa emailových pokusov — počkaj chvíľu. (Tip: v Supabase vypni Confirm email pre vývoj.)";
+  if (m.includes("not confirmed")) return "Email ešte nie je potvrdený — skontroluj schránku alebo vypni Confirm email v Supabase.";
+  if (m.includes("signups not allowed") || m.includes("signup is disabled") || m.includes("signups are disabled") || m.includes("logins are disabled")) return "Registrácia emailom je vypnutá v Supabase.";
   if (m.includes("password")) return "Heslo musí mať aspoň 6 znakov.";
-  if (m.includes("email")) return "Neplatný email.";
-  if (m.includes("rate limit") || m.includes("too many")) return "Priveľa pokusov — skús o chvíľu.";
+  if (m.includes("is invalid") || (m.includes("email") && m.includes("invalid"))) return "Neplatný email.";
+  if (m.includes("email")) return "Problém s emailom. Skús znova o chvíľu.";
   return "Niečo sa pokazilo. Skús znova.";
 }
 
