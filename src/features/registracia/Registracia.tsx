@@ -9,14 +9,15 @@
 // Po dokončení flow zavolá setSession → gate v Screens otvorí appku.
 // ============================================================
 import { useState } from "react";
-import { C, GRAD, SPACE, RADIUS } from "@/theme";
-import { Otazka, toast, m, tint, IkonaOsoba, IkonaCharita, IkonaStit, IkonaInstitucia, IkonaSipVpravo } from "@/shared";
+import { C, GRAD, SPACE, RADIUS, infoBox } from "@/theme";
+import { Otazka, Vyber, toast, m, tint, IkonaOsoba, IkonaCharita, IkonaStit, IkonaInstitucia, IkonaSipVpravo } from "@/shared";
 import { pressable } from "@/components/pressable";
 import { setSession } from "@/lib/session";
 import type { TypUctu } from "@/types";
 import { AuthPage } from "./AuthPage";
 import { OsobaFlow } from "./OsobaFlow";
 import { CharitaFlow } from "./CharitaFlow";
+import { Shell } from "./RegKit";
 
 type TypSubjektu = "osoba" | "charita";
 
@@ -28,6 +29,8 @@ export function Registracia({ onHotovo, start, resume }: { onHotovo?: () => void
   const [typ, setTyp] = useState<TypSubjektu | null>(
     resume?.typ === "charita" ? "charita" : (resume?.typ === "aktivny" || resume?.typ === "pasivny") ? "osoba" : null
   );
+  // „Pokračovať bez prihlásenia" → medziobrazovka s pasívnym vstupom (bez Supabase Auth)
+  const [pasivny, setPasivny] = useState(false);
 
   // upgrade overlay (pasívny → aktívny) — legacy telefón tok (samostatný follow-up na auth)
   if (start === "aktivny") {
@@ -44,6 +47,13 @@ export function Registracia({ onHotovo, start, resume }: { onHotovo?: () => void
     onHotovo?.();
   };
 
+  // pasívny vstup bez prihlásenia (anonym, bez DB účtu) → ephemeral session → appka.
+  // Pasívny len prezerá a prispieva (EUR/SMS); na tvorbu sa kedykoľvek zaregistruje.
+  const vstupPasivne = () => {
+    setSession({ typ: "pasivny", meno: "Hosť" });
+    onHotovo?.();
+  };
+
   // po úspešnej registrácii / logine-ktorý-potrebuje-onboarding
   const onAuthed = (id: string, em: string, t?: TypUctu) => {
     setAuthId(id);
@@ -55,9 +65,11 @@ export function Registracia({ onHotovo, start, resume }: { onHotovo?: () => void
 
   let obsah;
   if (!authId) {
-    obsah = <AuthPage onAuthed={onAuthed} onGuest={doApp} />;
+    obsah = pasivny
+      ? <PasivnyVstup onConfirm={vstupPasivne} onSpat={() => setPasivny(false)} />
+      : <AuthPage onAuthed={onAuthed} onGuest={doApp} onPasivny={() => setPasivny(true)} />;
   } else if (typ === "osoba") {
-    obsah = <OsobaFlow authId={authId} email={email} resume={!!resume} onHotovo={onHotovo} onSpat={() => setTyp(null)} toast={toast} />;
+    obsah = <OsobaFlow authId={authId} email={email} onHotovo={onHotovo} onSpat={() => setTyp(null)} toast={toast} />;
   } else if (typ === "charita") {
     obsah = <CharitaFlow authId={authId} email={email} resume={!!resume} onHotovo={onHotovo} onSpat={() => setTyp(null)} toast={toast} />;
   } else {
@@ -138,5 +150,24 @@ function VidlickaTyp({
         </span>
       </div>
     </div>
+  );
+}
+
+// ---- „Pokračovať bez prihlásenia" → pasívny vstup (anonym, bez účtu) ----
+function PasivnyVstup({ onConfirm, onSpat }: { onConfirm: () => void; onSpat: () => void }) {
+  return (
+    <Shell title="Bez prihlásenia" onBack={onSpat}>
+      <Otazka>Pokračuj ako pasívny</Otazka>
+      <Vyber
+        emoji="💛"
+        title="Pasívny — len prispievam"
+        desc="Prezeraj a prispievaj (FIAT/karta/SMS) všade. Bez vytvárania obsahu."
+        active={false}
+        onClick={onConfirm}
+      />
+      <div style={infoBox}>
+        Pasívny vojde do appky hneď a môže komukoľvek prispieť. Na vytváranie obsahu sa kedykoľvek zaregistruješ — bez straty doterajšieho.
+      </div>
+    </Shell>
   );
 }
