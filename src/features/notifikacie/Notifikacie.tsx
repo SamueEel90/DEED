@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { C, GRAD, glassTmavy } from "@/theme";
-import { Zvon, IkonaNastavenia, IkonaSipVlavo, IkonaKriz, tint, usePortalEl, useLayout, pressable, SkeletonRiadky, EmptyState, ErrorState } from "@/shared";
+import { Zvon, IkonaNastavenia, IkonaSipVlavo, IkonaKriz, tint, usePortalEl, useLayout, pressable, VirtualList, SkeletonRiadky, EmptyState, ErrorState } from "@/shared";
 import type { Notifikacia, VypnuteMapa } from "@/types";
 import { useNotifikacie } from "@/data";
 import { KATEGORIE, VYPNUTE_DEF } from "./mock";
@@ -96,6 +96,7 @@ export function Zvoncek({ color = "#C4CCDB", toast }: { color?: string; toast?: 
 function Zoznam({ onSettings, onClose, onPrecitaj, toast, hideSettings }: { onSettings?: () => void; onClose?: () => void; onPrecitaj?: () => void; toast?: (msg: string) => void; hideSettings?: boolean }) {
   const { data: NOTIFY = [], isLoading, isError, refetch } = useNotifikacie();
   const neprecitane = NOTIFY.filter((n) => n.nove).length;
+  const listRef = useRef<HTMLDivElement>(null); // scroll kontajner pre virtualizáciu (rastúce dáta)
   return (
     <>
       <div style={{ display: "flex", alignItems: "center", gap: 10, flex: "0 0 auto", paddingBottom: 8 }}>
@@ -105,7 +106,7 @@ function Zoznam({ onSettings, onClose, onPrecitaj, toast, hideSettings }: { onSe
         <span {...pressable(onClose, "Zavrieť oznámenia")} style={{ marginLeft: hideSettings ? "auto" : undefined, display: "flex", cursor: "pointer", color: C.textSec }}><IkonaKriz size={19} color={C.textSec} /></span>
       </div>
       <div style={{ fontSize: 11, color: C.textTer, paddingBottom: 8, flex: "0 0 auto" }}>{neprecitane} neprečítané · mikro-podpory agregované do súhrnu</div>
-      <div style={{ overflowY: "auto", margin: "0 -4px", flex: "1 1 auto" }}>
+      <div ref={listRef} style={{ overflowY: "auto", margin: "0 -4px", flex: "1 1 auto" }}>
         {isError ? (
           <ErrorState onRetry={() => refetch()} />
         ) : isLoading ? (
@@ -114,7 +115,8 @@ function Zoznam({ onSettings, onClose, onPrecitaj, toast, hideSettings }: { onSe
           <EmptyState emoji="🔔" title="Žiadne notifikácie" text="Tu sa zobrazia tvoje oznámenia." />
         ) : (
           <>
-        {NOTIFY.map((n: Notifikacia) => (
+        <VirtualList items={NOTIFY} scrollRef={listRef} estimateSize={64} getKey={(n: Notifikacia) => n.id}
+          renderItem={(n: Notifikacia) => (
           <div key={n.id} {...pressable(() => toast?.(n.titul), n.titul)} style={{ display: "flex", alignItems: "flex-start", gap: 11, padding: "11px 8px", borderRadius: 12, cursor: "pointer", borderBottom: `1px solid ${C.line2}`, background: n.nove ? tint("var(--a-green)", .06) : "transparent" }}>
             <span style={{ width: 38, height: 38, borderRadius: 11, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 17, background: tint(n.col, .15), color: n.col }}>{n.ic}</span>
             <div style={{ flex: 1, minWidth: 0 }}>
@@ -127,7 +129,7 @@ function Zoznam({ onSettings, onClose, onPrecitaj, toast, hideSettings }: { onSe
             </div>
             <span style={{ fontSize: 11, color: C.textTer, flex: "none" }}>{n.cas}</span>
           </div>
-        ))}
+          )} />
         <div style={{ textAlign: "center", fontSize: 11, color: C.textTer, padding: "14px 0 4px" }}>To je všetko · staršie sa archivujú</div>
           </>
         )}

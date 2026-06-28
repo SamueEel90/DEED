@@ -1,9 +1,10 @@
-import { useState, useDeferredValue, useEffect } from "react";
+import { useState, useDeferredValue, useEffect, useRef } from "react";
 import { C, glassTmavy } from "@/theme";
 import { tint } from "@/lib/ui";
 import { Lupa, IkonaKriz, IkonaOpakovat, IkonaStit } from "@/components/icons";
 import { pressable } from "@/components/pressable";
 import { SegTabs } from "@/components/segtabs";
+import { VirtualList } from "@/components/virtuallist";
 
 // ============================================================
 // VYHĽADÁVANIE — zdieľaný overlay (zhora), živé filtrovanie feedu
@@ -66,6 +67,7 @@ export function HladanieModal({ data = [], onPick, onClose, akcent = "var(--a-in
   const [filter, setFilter] = useState(defaultFilter);
   // input je svižný (q), drahé filtrovanie beží na odloženej hodnote (dq)
   const dq = useDeferredValue(q);
+  const resultsRef = useRef<HTMLDivElement>(null); // scroll kontajner výsledkov (virtualizácia pri raste)
 
   // Escape zatvorí overlay (klávesnica)
   useEffect(() => {
@@ -125,7 +127,7 @@ export function HladanieModal({ data = [], onPick, onClose, akcent = "var(--a-in
         />
 
         {/* obsah */}
-        <div style={{ overflowY: "auto", margin: "8px -4px 0", flex: "1 1 auto" }}>
+        <div ref={resultsRef} style={{ overflowY: "auto", margin: "8px -4px 0", flex: "1 1 auto" }}>
           {prazdny ? (
             <>
               {/* POSLEDNÉ HĽADANIA */}
@@ -151,7 +153,7 @@ export function HladanieModal({ data = [], onPick, onClose, akcent = "var(--a-in
               </div>
               {vysl.length === 0
                 ? <div style={{ textAlign: "center", padding: "30px 14px", color: C.textTer, fontSize: 13 }}>Nič sa nenašlo. Skús iné slovo alebo filter.</div>
-                : vysl.map(Riadok)}
+                : <VirtualList items={vysl} scrollRef={resultsRef} renderItem={Riadok} getKey={(x: any) => x.id} estimateSize={64} />}
             </>
           )}
           {/* ochrana — súkromné osoby nelustrovateľné */}
