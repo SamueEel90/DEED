@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { C, GRAD, GRAD_ZELENY } from "@/theme";
-import { Sheet, QrVizual, IkonaFajka, IkonaDoska, Lupa, Zdielanie, tint } from "@/shared";
+import { Sheet, QrVizual, IkonaFajka, IkonaDoska, Lupa, Zdielanie, tint, pressable } from "@/shared";
 import type { RetazMode, RetazKrok, RetazVysledok } from "@/types";
 import { useRetazZiadosti } from "@/data";
 
@@ -94,7 +94,7 @@ export function RetazDobraSheet({ odmena = 130, mode = "skutok", titulOdkaz = "S
           {zoznam.map((z) => {
             const on = zid === z.id;
             return (
-              <div key={z.id} onClick={() => setZid(z.id)} style={{ display: "flex", alignItems: "center", gap: 11, padding: "10px 11px", borderRadius: 12, marginBottom: 7, cursor: "pointer",
+              <div key={z.id} {...pressable(() => setZid(z.id), `Žiadosť: ${z.nazov}`)} aria-pressed={on} style={{ display: "flex", alignItems: "center", gap: 11, padding: "10px 11px", borderRadius: 12, marginBottom: 7, cursor: "pointer",
                 background: on ? tint(z.col, .12) : "rgba(var(--glass-rgb),.04)", border: `1px solid ${on ? tint(z.col, .5) : C.line}` }}>
                 <span style={{ width: 34, height: 34, borderRadius: 9, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, background: tint(z.col, .15) }}>{z.emoji}</span>
                 <div style={{ flex: 1, minWidth: 0 }}>
@@ -110,7 +110,7 @@ export function RetazDobraSheet({ odmena = 130, mode = "skutok", titulOdkaz = "S
             );
           })}
           {/* naskenovať QR žiadosti */}
-          <div onClick={() => toast?.("Naskenuj QR žiadosti (demo)")} style={{ display: "flex", alignItems: "center", gap: 11, padding: "10px 11px", borderRadius: 12, cursor: "pointer", border: `1px dashed ${C.line}`, color: C.textSec }}>
+          <div {...pressable(() => toast?.("Naskenuj QR žiadosti (demo)"), "Naskenovať QR žiadosti")} style={{ display: "flex", alignItems: "center", gap: 11, padding: "10px 11px", borderRadius: 12, cursor: "pointer", border: `1px dashed ${C.line}`, color: C.textSec }}>
             <span style={{ width: 34, height: 34, borderRadius: 9, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(var(--glass-rgb),.05)" }}><IkonaDoska size={16} color={C.textTer} /></span>
             <div style={{ fontSize: 13, fontWeight: 600 }}>Naskenovať QR žiadosti</div>
           </div>

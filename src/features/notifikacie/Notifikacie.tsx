@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { C, GRAD, glassTmavy } from "@/theme";
 import { Zvon, IkonaNastavenia, IkonaSipVlavo, IkonaKriz, tint, usePortalEl, useLayout, pressable, SkeletonRiadky, EmptyState, ErrorState } from "@/shared";
@@ -45,6 +45,14 @@ export function Zvoncek({ color = "#C4CCDB", toast }: { color?: string; toast?: 
   const [view, setView] = useState<"zoznam" | "nastavenia">("zoznam");
   const [precitane, setPrecitane] = useState(false);
   const neprecitane = precitane ? 0 : NOTIFY.filter((n) => n.nove).length;
+
+  // Escape zatvorí overlay (klávesnica) — custom overlay nemá Vaul focus-trap
+  useEffect(() => {
+    if (!otvor) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setOtvor(false); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [otvor]);
 
   // Overlay sa renderuje do vycentrovaného stĺpca appky (portál), nie do hlavičky —
   // inak by ho „position: sticky" hlavička orezala na svoju výšku (panel sa nerozbalil).

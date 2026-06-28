@@ -1,5 +1,5 @@
 import { C } from "@/theme";
-import { Hlavicka, Zdielanie } from "@/shared";
+import { Hlavicka, Zdielanie, obalSiroky, useLayout, pressable } from "@/shared";
 import { useFun } from "@/data";
 
 /*
@@ -19,9 +19,11 @@ interface FunZonaProps {
 
 export function FunZona({ onBack, toast }: FunZonaProps) {
   const { data: FUN = [] } = useFun();
+  const { wide, desktop } = useLayout();
   return (
     <div style={{ paddingBottom: 24 }}>
       <Hlavicka title="Fun zóna" onBack={onBack} titleColor="var(--a-gold)" />
+      {obalSiroky(
       <div style={{ padding: "14px 18px" }}>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, textAlign: "center" }}>
           <div style={{ width: 64, height: 64, borderRadius: "50%", background: "linear-gradient(135deg, #F0C75A, #F0A85E)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 32, boxShadow: "0 8px 26px rgba(240,168,94,.35)" }}>😄</div>
@@ -52,14 +54,15 @@ export function FunZona({ onBack, toast }: FunZonaProps) {
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 10 }}>
               <span style={{ fontSize: 11, color: C.greenL }}>✓ {f.fix}</span>
-              <span onClick={() => toast?.("😂 +1")} style={{ marginLeft: "auto", fontSize: 12, fontWeight: 700, color: C.textSec, cursor: "pointer" }}>😂 {f.lol.toLocaleString("sk")}</span>
-              <span onClick={() => toast?.("Zdieľané — virálny efekt 🚀")} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 700, color: "var(--a-info)", cursor: "pointer" }}><Zdielanie size={15} color="var(--a-info)" /> Zdieľať</span>
+              <span {...pressable(() => toast?.("😂 +1"), "Pobavilo ma")} style={{ marginLeft: "auto", fontSize: 12, fontWeight: 700, color: C.textSec, cursor: "pointer" }}>😂 {f.lol.toLocaleString("sk")}</span>
+              <span {...pressable(() => toast?.("Zdieľané — virálny efekt 🚀"), "Zdieľať úlovok")} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, fontWeight: 700, color: "var(--a-info)", cursor: "pointer" }}><Zdielanie size={15} color="var(--a-info)" /> Zdieľať</span>
             </div>
           </div>
         ))}
 
         <div style={{ textAlign: "center", fontSize: 11.5, color: C.textTer, lineHeight: 1.5, marginTop: 18 }}>Ojebal si systém? <b style={{ color: "var(--a-info)" }}>Zdieľaj svoj úlovok</b> — pobavíš ľudí a AI sa zlepší.</div>
-      </div>
+      </div>,
+      { wide, desktop, max: 560, maxDesktop: 640 })}
     </div>
   );
 }
