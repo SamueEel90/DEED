@@ -6,10 +6,28 @@
 // Vo Fáze C sa `darcovia`/`hrdinovia`/`charity` nahradia ŽIVÝM agregátom z DB;
 // `aktivity`/`b2b` ostávajú kurátorské do Fázy F (Aktivity) / dát o firmách.
 // ============================================================
-import type { RebricekPolozka } from "@/types";
+import type { RebricekPolozka, GoodPolozka } from "@/types";
+import { POLOZKY } from "@/features/good/mock";
 
 /** Kľúče kategórií rebríčka (poradie zobrazenia rieši CATS v Top.tsx). */
 export type RebricekKluc = "b2b" | "darcovia" | "hrdinovia" | "aktivity" | "charity";
+
+/**
+ * MOCK „Top príspevky" — najvýznamnejšie SKUTKY (nie ľudia) z Domov feedu.
+ * Zoradené podľa skóre významnosti (tie-break: topované → podpora) — presne
+ * to, čo `topSupabase.prispevky()` robí nad DB. Slúži ako fallback, keď nie je
+ * Supabase (alebo DB vráti prázdno), aby sekcia v Top nikdy nebola prázdna.
+ */
+export const topPrispevky = (limit = 12): GoodPolozka[] =>
+  [...POLOZKY]
+    .filter((p) => p.typ === "skutok")
+    .sort(
+      (a, b) =>
+        (b.skore ?? 0) - (a.skore ?? 0) ||
+        Number(!!b.topovane) - Number(!!a.topovane) ||
+        (b.podpora ?? 0) - (a.podpora ?? 0),
+    )
+    .slice(0, limit);
 
 export const REBRICKY_MOCK: Record<RebricekKluc, RebricekPolozka[]> = {
   b2b: [
