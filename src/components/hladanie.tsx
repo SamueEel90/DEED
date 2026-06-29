@@ -5,6 +5,7 @@ import { Lupa, IkonaKriz, IkonaOpakovat, IkonaStit } from "@/components/icons";
 import { pressable } from "@/components/pressable";
 import { SegTabs } from "@/components/segtabs";
 import { VirtualList } from "@/components/virtuallist";
+import type { Subjekt } from "@/types";
 
 // ============================================================
 // VYHĽADÁVANIE — zdieľaný overlay (zhora), živé filtrovanie feedu
@@ -61,8 +62,17 @@ function hlTyp(x: any) {
   return "Skutky"; // skutky a ostatné → viditeľné len pod „Všetko"
 }
 
-export function HladanieModal({ data = [], onPick, onClose, akcent = "var(--a-info)", placeholder = "Hľadať…",
-  defaultFilter = "Všetko", posledne = ["Detská nemocnica", "Coach gitara", "Povodeň pomoc"], subjekty = SUBJEKTY, toast }: { data?: any[]; onPick?: (id: any) => void; onClose: () => void; akcent?: string; placeholder?: string; defaultFilter?: string; posledne?: string[]; subjekty?: any[]; toast?: (t: string) => void }) {
+// verejný subjekt z hľadania → tvar pre cudzí profil (§6). „Osoby"/„Školitelia"
+// sú verejní tvorcovia (osoba + stav tvorca); firmy/charity/inštitúcie = org.
+export function subjektZHladania(x: any): Subjekt {
+  const org = x.typ === "Firmy" || x.typ === "Charity" || /škol|univerz|mesto|kraj|nemocnic|knižnic|múze|inštitúc/i.test(x.podtitul || "");
+  return org
+    ? { typ: "org", meno: x.titul, emoji: x.emoji, lok: x.podtitul, level: "Gold" }
+    : { typ: "osoba", meno: x.titul, level: "Silver", stav: "tvorca", emoji: x.emoji, lok: x.podtitul };
+}
+
+export function HladanieModal({ data = [], onPick, onSubjekt, onClose, akcent = "var(--a-info)", placeholder = "Hľadať…",
+  defaultFilter = "Všetko", posledne = ["Detská nemocnica", "Coach gitara", "Povodeň pomoc"], subjekty = SUBJEKTY, toast }: { data?: any[]; onPick?: (id: any) => void; onSubjekt?: (s: Subjekt) => void; onClose: () => void; akcent?: string; placeholder?: string; defaultFilter?: string; posledne?: string[]; subjekty?: any[]; toast?: (t: string) => void }) {
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState(defaultFilter);
   // input je svižný (q), drahé filtrovanie beží na odloženej hodnote (dq)
@@ -88,7 +98,11 @@ export function HladanieModal({ data = [], onPick, onClose, akcent = "var(--a-in
   const prazdny = !dotaz && filter === "Všetko"; // história + odporúčané
   const odporucane = vesmir.slice(0, 3);
 
-  const klik = (x: any) => { if (x._subj) toast?.(`Otváram profil: ${x.titul} (demo)`); else onPick?.(x.id); onClose(); };
+  const klik = (x: any) => {
+    if (x._subj) { onSubjekt ? onSubjekt(subjektZHladania(x)) : toast?.(`Otváram profil: ${x.titul} (demo)`); }
+    else onPick?.(x.id);
+    onClose();
+  };
   const Riadok = (x: any) => (
     <div key={x.id} {...pressable(() => klik(x), x.titul)} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, padding: `${SPACE.sm}px ${SPACE.xs}px`, borderRadius: RADIUS.sm, cursor: "pointer", borderBottom: `1px solid ${C.line2}` }}>
       <div style={{ width: 40, height: 40, borderRadius: RADIUS.sm, flex: "0 0 auto", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 19, background: tint(akcent, .14) }}>{x.emoji}</div>

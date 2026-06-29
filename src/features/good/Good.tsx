@@ -118,6 +118,7 @@ export default function ModulGood({ wide, otvorModul }: { wide?: boolean; otvorM
             tag: it.typ === "ziadost" ? "Žiadosť" : it.typ === "charita" ? "Charita" : katLabel(it.kat),
           }))}
           onPick={(id) => { setAktId(id as number); setScreen("detail"); }}
+          onSubjekt={(s) => otvorProfil(s, "home")}
           toast={toast} defaultFilter="Všetko"
           onClose={() => setHladaj(false)} />
       )}
@@ -838,7 +839,8 @@ function GoodAdd({ toast, oslavuj, onDone }: { toast: (m: string) => void; oslav
 }
 
 // ===================== NÁSTENKA (board) =====================
-function GoodBoard({ onBack, onEvent, toast }: { onBack: () => void; onEvent: (id: string) => void; toast: (m: string) => void }) {
+// Exportovaná — komunitná nástenka (udalosti/akcie v okolí) je zdieľaná aj do Help/Charita.
+export function GoodBoard({ onBack, onEvent, toast }: { onBack: () => void; onEvent: (id: string) => void; toast: (m: string) => void }) {
   const { data: EVENTS = [] } = useGoodUdalosti();
   const [filter, setFilter] = useState("Všetko");
   const tops = EVENTS.filter((e) => e.top);
@@ -904,7 +906,8 @@ function GoodBoard({ onBack, onEvent, toast }: { onBack: () => void; onEvent: (i
 }
 
 // ===================== DETAIL UDALOSTI =====================
-function GoodEvent({ id, onBack, toast, oslavuj }: { id: string | null; onBack: () => void; toast: (m: string) => void; oslavuj: (suma: number, komu: string) => void }) {
+// Exportovaný — detail udalosti z komunitnej nástenky (zdieľaný do Help/Charita).
+export function GoodEvent({ id, onBack, toast, oslavuj }: { id: string | null; onBack: () => void; toast: (m: string) => void; oslavuj: (suma: number, komu: string) => void }) {
   const { data: EVENTS = [] } = useGoodUdalosti();
   const e: Udalost | undefined = EVENTS.find((x) => x.id === id);
   if (!e) return null;

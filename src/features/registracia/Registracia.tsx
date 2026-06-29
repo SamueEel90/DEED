@@ -27,19 +27,17 @@ export function Registracia({ onHotovo, start, resume }: { onHotovo?: () => void
   const [authId, setAuthId] = useState<string | null>(resume?.authId ?? null);
   const [email, setEmail] = useState<string>("");
   const [typ, setTyp] = useState<TypSubjektu | null>(
-    resume?.typ === "charita" ? "charita" : (resume?.typ === "aktivny" || resume?.typ === "pasivny") ? "osoba" : null
+    start === "aktivny" ? "osoba"                              // upgrade → vždy osoba (skip „Kto si?")
+      : resume?.typ === "charita" ? "charita"
+      : (resume?.typ === "aktivny" || resume?.typ === "pasivny") ? "osoba" : null
   );
   // „Pokračovať bez prihlásenia" → medziobrazovka s pasívnym vstupom (bez Supabase Auth)
   const [pasivny, setPasivny] = useState(false);
 
-  // upgrade overlay (pasívny → aktívny) — legacy telefón tok (samostatný follow-up na auth)
-  if (start === "aktivny") {
-    return (
-      <div style={{ height: "100%", position: "relative", background: C.bg }}>
-        <OsobaFlow startKrok="a1" onHotovo={onHotovo} onSpat={onHotovo} toast={toast} />
-      </div>
-    );
-  }
+  // upgrade overlay (pasívny → aktívny) je teraz AUTH-FIRST: beží rovnaký tok ako
+  // bežná registrácia (AuthPage → OsobaFlow s auth_id, bez telefón-OTP), len vynútene
+  // typ „osoba" a bez „hosť/pasívny" volieb (v upgrade nedávajú zmysel).
+  const jeUpgrade = start === "aktivny";
 
   // hosť → demo náhľad (bez Supabase Auth — pre vývoj)
   const doApp = () => {
@@ -67,9 +65,12 @@ export function Registracia({ onHotovo, start, resume }: { onHotovo?: () => void
   if (!authId) {
     obsah = pasivny
       ? <PasivnyVstup onConfirm={vstupPasivne} onSpat={() => setPasivny(false)} />
-      : <AuthPage onAuthed={onAuthed} onGuest={doApp} onPasivny={() => setPasivny(true)} />;
+      : <AuthPage onAuthed={onAuthed}
+          onGuest={jeUpgrade ? undefined : doApp}
+          onPasivny={jeUpgrade ? undefined : () => setPasivny(true)}
+          uvodnyRezim={jeUpgrade ? "register" : "login"} />;
   } else if (typ === "osoba") {
-    obsah = <OsobaFlow authId={authId} email={email} onHotovo={onHotovo} onSpat={() => setTyp(null)} toast={toast} />;
+    obsah = <OsobaFlow authId={authId} email={email} onHotovo={onHotovo} onSpat={jeUpgrade && onHotovo ? onHotovo : () => setTyp(null)} toast={toast} />;
   } else if (typ === "charita") {
     obsah = <CharitaFlow authId={authId} email={email} resume={!!resume} onHotovo={onHotovo} onSpat={() => setTyp(null)} toast={toast} />;
   } else {
