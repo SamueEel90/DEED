@@ -1,7 +1,8 @@
-import type { CSSProperties, ReactNode } from "react";
+import { useState, type CSSProperties, type ReactNode } from "react";
 import { C, GRAD, GRAD_ZELENY, glassTmavy, SPACE, RADIUS } from "@/theme";
 import { tint } from "@/lib/ui";
 import { FEED_CFG } from "@/lib/feed";
+import { useLokalita, hladajMesta } from "@/lib/lokalita";
 import { useViac, useLayout } from "@/components/context";
 import { pressable } from "@/components/pressable";
 import { Sheet } from "@/components/sheet";
@@ -200,12 +201,14 @@ export function Rebricky({ ocenenia = [], ludia = [], pred = null }: { ocenenia?
 //   [počet v okruhu] · [mesačná štatistika] · [poloha + výber okruhu]
 // rovnaký dizajn aj poloha (hneď pod rebríčkom) vo všetkých moduloch
 // ============================================================
-export function StatRiadok({ pocet, jednotka, mesiac, miesto = "Trenčín", okruh = "2 km", onOkruh, inline }: { pocet?: ReactNode; jednotka?: string; mesiac?: ReactNode; miesto?: ReactNode; okruh?: ReactNode; onOkruh?: () => void; inline?: boolean }) {
+export function StatRiadok({ pocet, jednotka, mesiac, miesto, okruh = "2 km", onOkruh, inline }: { pocet?: ReactNode; jednotka?: string; mesiac?: ReactNode; miesto?: ReactNode; okruh?: ReactNode; onOkruh?: () => void; inline?: boolean }) {
   // segmentovaný panel: [počet v okruhu] · [mesačná štatistika] · [poloha + výber okruhu]
   // jednotná výška, vnútorné deliace čiary, jediný interaktívny segment = poloha
   // na desktope kompaktnejšie (menšie čísla/padding + obmedzená šírka), nech panel nie je „masívny"
   // inline = na jednom riadku s filtrami (desktop) → bez vlastného paddingu a šírkového capu
   const { desktop } = useLayout();
+  const { mesto: aktMesto } = useLokalita();
+  const mestoLabel = miesto ?? aktMesto; // aktívne mesto (prepínateľné v OkruhVyber)
   const cislo: CSSProperties = { fontSize: desktop ? 14.5 : 17, fontWeight: 800, color: C.text, lineHeight: 1.1, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" };
   const popis: CSSProperties = { fontSize: desktop ? 9.5 : 10.5, fontWeight: 600, color: C.textTer, marginTop: desktop ? 1 : 3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", letterSpacing: ".01em" };
   const segPad = desktop ? `${SPACE.xs}px ${SPACE.sm}px` : `${SPACE.xs}px ${SPACE.sm}px`;
@@ -232,7 +235,7 @@ export function StatRiadok({ pocet, jednotka, mesiac, miesto = "Trenčín", okru
             <span style={{ flex: 1, minWidth: 0, fontSize: desktop ? 12.5 : 13.5, fontWeight: 800, color: "var(--a-info)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{okruh}</span>
             <IkonaSipDole size={desktop ? 12 : 13} color="var(--a-info)" />
           </div>
-          <div style={{ ...popis, color: C.textSec }}>{miesto}</div>
+          <div style={{ ...popis, color: C.textSec }}>{mestoLabel}</div>
         </div>
       </div>
     </div>
@@ -336,8 +339,36 @@ const OKRUH_POPIS: Record<string, string> = {
   krajina: "Len mimoriadne skutky z celej SR",
 };
 export function OkruhVyber({ radius, onPick, onClose, akcent = "var(--a-info)" }: { radius?: string; onPick: (k: string) => void; onClose?: () => void; akcent?: string }) {
+  const { mesto, nastavMesto } = useLokalita();
+  const [q, setQ] = useState("");
+  const najdene = hladajMesta(q);
+  const inpCity: CSSProperties = { width: "100%", padding: `${SPACE.sm}px ${SPACE.gutter}px`, borderRadius: RADIUS.sm, background: C.surface2, border: `1px solid ${C.line}`, color: C.text, fontSize: 14, outline: "none", fontFamily: "inherit", marginBottom: SPACE.xs };
   return (
     <Sheet onClose={onClose}>
+      {/* ── MESTO — vyhľadaj a prepni (stred feedu/mapy) ── */}
+      <div style={{ fontSize: 16, fontWeight: 800 }}>Mesto</div>
+      <div style={{ fontSize: 12.5, color: C.textTer, margin: `${SPACE.xxs}px 0 ${SPACE.sm}px` }}>Vyhľadaj a prepni mesto — feed aj mapa sa prepočítajú okolo neho.</div>
+      <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Hľadať mesto…" style={inpCity} />
+      <div style={{ maxHeight: 200, overflowY: "auto", marginBottom: SPACE.gutter }}>
+        {najdene.map((m) => {
+          const on = m.nazov === mesto;
+          return (
+            <div key={m.nazov} {...pressable(() => nastavMesto(m.nazov))} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, padding: `${SPACE.sm}px ${SPACE.gutter}px`, borderRadius: RADIUS.sm, marginBottom: SPACE.xxs, cursor: "pointer",
+              background: on ? tint(akcent, .12) : C.surface2, border: `1px solid ${on ? tint(akcent, .45) : C.line}` }}>
+              <IkonaPin size={15} color={on ? akcent : C.textTer} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: on ? akcent : C.text }}>{m.nazov}</div>
+                <div style={{ fontSize: 11, color: C.textTer, marginTop: SPACE.xxs }}>{m.kraj} kraj</div>
+              </div>
+              {on && <IkonaFajka size={15} color={akcent} />}
+            </div>
+          );
+        })}
+        {najdene.length === 0 && <div style={{ fontSize: 12.5, color: C.textTer, padding: `${SPACE.sm}px ${SPACE.gutter}px` }}>Žiadne mesto pre „{q}“.</div>}
+      </div>
+
+      <div style={{ borderTop: `1px solid ${C.line}`, margin: `0 0 ${SPACE.gutter}px` }} />
+
       <div style={{ fontSize: 16, fontWeight: 800 }}>Okruh feedu</div>
       <div style={{ fontSize: 12.5, color: C.textTer, margin: `${SPACE.xxs}px 0 ${SPACE.gutter}px` }}>Väčší okruh = vyšší prah významnosti — vidíš len špičku.</div>
       {Object.entries(FEED_CFG.radiusy).map(([k, r]) => {

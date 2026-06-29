@@ -8,12 +8,10 @@ import type { CharitaFeedItem, CharitaLevel, Kanal, Subjekt } from "@/types";
 import { CudziProfil } from "@/features/cudzi-profil/CudziProfil";
 import { GoodBoard, GoodEvent } from "@/features/good/Good";
 import { useCharitaFeed, useCharitaAdresar, useCharitaZbierka } from "@/data";
+import { useLokalita } from "@/lib/lokalita";
 import { ZOFIA_FOTKY, HLADAJ_DATA } from "./mock";
 import { tagChip } from "@/lib/ui";
 import { pressable } from "@/components/pressable";
-
-// poloha usera (MVP mock — Trenčín, rovnaká ako v ostatných feedoch)
-const USER_LOK = { lat: 48.894, lng: 18.044 };
 
 /*
   ============================================================
@@ -117,7 +115,8 @@ function CharitaFeed({ wide, toast, onDetail, onHladaj, onSheet, onBoard }: Feed
   const [radius, setRadius] = useState("stvrt");
   const [vyberOkruh, setVyberOkruh] = useState(false);
   const { gate } = useTvorbaGate(); // pasívny nesmie tvoriť (talent)
-  const feed = pripravFeed(FEED_ITEMS as any, { ...USER_LOK, radius } as any) as unknown as (CharitaFeedItem & { _poradie: number; _kriza: boolean; _riadky: number })[];
+  const lok = useLokalita(); // stred feedu = aktívne mesto
+  const feed = pripravFeed(FEED_ITEMS as any, { lat: lok.lat, lng: lok.lng, radius } as any) as unknown as (CharitaFeedItem & { _poradie: number; _kriza: boolean; _riadky: number })[];
 
   // mapovanie metadát späť na pôvodné komponenty kariet
   const karta = (it: CharitaFeedItem) => {

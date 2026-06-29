@@ -9,7 +9,8 @@ import { A, DOM, ORDER, tint } from "./domeny";
 import { pressable } from "@/components/pressable";
 import { useAktivityFeed } from "@/data";
 import { usePersonalizacia } from "@/lib/personalizacia";
-import { EVENTS, USER_LOK, type AktItem } from "./mock";
+import { useLokalita } from "@/lib/lokalita";
+import { EVENTS, type AktItem } from "./mock";
 import { LS, load, save, obohatit, osoba, vytvorPost, type NovyPostSpec } from "./utils";
 
 /*
@@ -200,6 +201,7 @@ function Home({ items, dom, view, pickDom, pickView, toast, open, openPerson, se
   const [vyberOkruh, setVyberOkruh] = useState(false);
   const { desktop } = useLayout();
   const { zaujmyKluce, sledovaniMena } = usePersonalizacia(); // afinita: záujmy/sledovaní → re-rank
+  const lok = useLokalita(); // stred feedu = aktívne mesto
 
   // 1) UI predfilter (doména + sub-záložka) — to engine nerieši
   const list = items.filter((it: AktItem) => {
@@ -214,7 +216,7 @@ function Home({ items, dom, view, pickDom, pickView, toast, open, openPerson, se
   //    (optimistické UI — používateľ hneď vidí, čo pridal, mimo prahu okruhu).
   const feed = [
     ...list.filter((it: AktItem) => it.mine),
-    ...pripravFeed(list.filter((it: AktItem) => !it.mine), { ...USER_LOK, radius, zaujmy: zaujmyKluce, sledovani: sledovaniMena }),
+    ...pripravFeed(list.filter((it: AktItem) => !it.mine), { lat: lok.lat, lng: lok.lng, radius, zaujmy: zaujmyKluce, sledovani: sledovaniMena }),
   ];
 
   // dvojstĺpcový feed (skutky vľavo / žiadosti vpravo) iba v zmiešanom zobrazení na tablete/PC
@@ -225,7 +227,7 @@ function Home({ items, dom, view, pickDom, pickView, toast, open, openPerson, se
   const viewOk = (it: AktItem) => view === "all" || (view === "talent" && it.type === "talent") || (view === "workshop" && it.type === "workshop") || (view === "help" && it.type === "help");
   const domenaFeed = (d: string) => {
     const dl = items.filter((it: AktItem) => it.dom === d && viewOk(it));
-    return [...dl.filter((it: AktItem) => it.mine), ...pripravFeed(dl.filter((it: AktItem) => !it.mine), { ...USER_LOK, radius, zaujmy: zaujmyKluce, sledovani: sledovaniMena })];
+    return [...dl.filter((it: AktItem) => it.mine), ...pripravFeed(dl.filter((it: AktItem) => !it.mine), { lat: lok.lat, lng: lok.lng, radius, zaujmy: zaujmyKluce, sledovani: sledovaniMena })];
   };
   const boardCard = (it: AktItem) => <AktCard key={it.id} it={it} wide onOpen={open} onPerson={openPerson} />;
 

@@ -226,6 +226,10 @@ export function PodporaSekcia({ onShare, upvotes = 0, onUpvote, onPodpor, onSms,
   // pasívny prispieva len EUR + SMS; DEED (peňaženka) vyžaduje účet → výzva na registráciu
   const { mozeDeed } = usePouzivatel();
   const upgrade = useUpgrade();
+  // lajk: lokálny toggle + počítadlo (onUpvote = side-effect len pri lajknutí)
+  const [liked, setLiked] = useState(false);
+  const lajkov = upvotes + (liked ? 1 : 0);
+  const toggleLike = () => setLiked((v) => { const n = !v; if (n) onUpvote?.(); return n; });
   const deedAkcia = (akcia: () => void) => () => (mozeDeed ? akcia() : upgrade());
   const goldTxt = svetly ? "#8A6B0E" : C.gold; // v svetlom režime tmavšia zlatá (čitateľnosť)
   const fix = [
@@ -240,8 +244,8 @@ export function PodporaSekcia({ onShare, upvotes = 0, onUpvote, onPodpor, onSms,
         <button onClick={onShare} style={{ ...psPill(false), color: C.text }}>
           <Zdielanie size={18} color={C.textSec} /> Zdieľať
         </button>
-        <button onClick={onUpvote} style={{ ...psPill(false), color: C.text }}>
-          <Palec size={18} color={C.textSec} /> {upvotes}
+        <button onClick={toggleLike} aria-pressed={liked} style={{ ...psPill(liked), color: liked ? "var(--a-danger)" : C.text }}>
+          <Palec size={18} color={liked ? "var(--a-danger)" : C.textSec} /> {lajkov}
         </button>
       </div>
 

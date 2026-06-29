@@ -10,6 +10,7 @@ import { CudziProfil } from "@/features/cudzi-profil/CudziProfil";
 import { GoodBoard, GoodEvent } from "@/features/good/Good";
 import { useHelpFeed, qk, repo } from "@/data";
 import { usePouzivatel } from "@/lib/pouzivatel";
+import { useLokalita } from "@/lib/lokalita";
 import { tint, tagChip } from "@/lib/ui";
 import { pressable } from "@/components/pressable";
 import { USER_LOK, ZIVE_DARY } from "./mock";
@@ -37,8 +38,10 @@ export default function ModulHelp({ wide }: { wide?: boolean }) {
   // Bez DB (mock) ostane len optimistický záznam.
   const qc = useQueryClient();
   const ja = usePouzivatel();
+  const lok = useLokalita();
   const [oslava, setOslava] = useState<{ emoji: string; titul: string; text: ReactNode } | null>(null);
-  const zverejni = (item: HelpFeedItem, osl: { emoji: string; titul: string; text: ReactNode }) => {
+  const zverejni = (vstup: HelpFeedItem, osl: { emoji: string; titul: string; text: ReactNode }) => {
+    const item = { ...vstup, lat: lok.lat, lng: lok.lng, lok: lok.mesto }; // geo = aktívne mesto
     qc.setQueryData<HelpFeedItem[]>(qk.help.feed, (old = []) => [item, ...old]);
     repo.help.vytvor(item, ja.ucetId)
       .then((ulozene) => { if (ulozene) qc.invalidateQueries({ queryKey: qk.help.feed }); })
@@ -89,6 +92,7 @@ export default function ModulHelp({ wide }: { wide?: boolean }) {
 function Feed({ wide, toast, onDetail, onHladaj, onAdd, onBoard }: { wide?: boolean; toast: (m: string) => void; onDetail: (z: any) => void; onHladaj: () => void; onAdd: () => void; onBoard: () => void }) {
   const { desktop } = useLayout();
   const { data: MOCK_FEED = [], isLoading, isError, refetch } = useHelpFeed();
+  const lok = useLokalita(); // stred feedu = aktívne mesto
   // živý ticker darov
   const [tick, setTick] = useState(0);
   useEffect(() => {
@@ -106,7 +110,7 @@ function Feed({ wide, toast, onDetail, onHladaj, onAdd, onBoard }: { wide?: bool
   const { gate } = useTvorbaGate(); // pasívny nesmie tvoriť (talent)
   // charitu z Help vynechávame; potom filter podľa zvoleného typu (žiadosť / ponuka)
   const zaklad = MOCK_FEED.filter((z) => z.typ !== "charity" && (view === "all" || z.typ === view));
-  const feed = pripravFeed(zaklad as any, { ...USER_LOK, radius } as any);
+  const feed = pripravFeed(zaklad as any, { lat: lok.lat, lng: lok.lng, radius } as any);
 
   const karta = (z: any) => <FeedCard key={z.id} z={z} wide={wide} onClick={() => z.typ === "ziadost" && onDetail(z)} />;
   const jeZiadost = (z: any) => z.typ === "ziadost";

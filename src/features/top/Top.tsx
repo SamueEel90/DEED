@@ -4,7 +4,8 @@ import { ModulHlavicka, toast, useScrollHore, useLayout, useTvorbaGate, obalSiro
 import { Zvoncek } from "@/features/notifikacie/Notifikacie";
 import { CudziProfil } from "@/features/cudzi-profil/CudziProfil";
 import { FunZona } from "@/features/fun/FunZona";
-import { GoodKarta, GoodDetail, GoodVerify, autorSubjekt, USER_LOK } from "@/features/good/Good";
+import { GoodKarta, GoodDetail, GoodVerify, autorSubjekt } from "@/features/good/Good";
+import { useLokalita } from "@/lib/lokalita";
 import { vzdialenostKm, FEED_CFG } from "@/lib/feed";
 import { tagChip } from "@/lib/ui";
 import { useTopRebricky, useTopPrispevky } from "@/data";
@@ -64,8 +65,9 @@ export default function ModulTop({ wide }: WideProps) {
   // národné/bez-geo položky prah okruhu PREBÍJAJÚ (celoslovenské rebríčky — darcovia,
   // charity, B2B…), geo-tagované (príspevky + hrdinovia) sa filtrujú vzdialenosťou.
   const km = ROZSAH_KM[rozsah];
+  const lok = useLokalita(); // stred rebríčkov = aktívne mesto
   const vOkruhu = <T extends { lat?: number; lng?: number; narodne?: boolean }>(items: T[]): T[] =>
-    items.filter((x) => x.narodne || x.lat == null || vzdialenostKm(USER_LOK, x) <= km);
+    items.filter((x) => x.narodne || x.lat == null || vzdialenostKm(lok, x) <= km);
   const prispevkyOkruh = vOkruhu(prispevky);
 
   if (screen === "fun") return <div style={{ minHeight: "100%" }}>{obal(<FunZona onBack={() => setScreen("top")} toast={toast} />)}</div>;

@@ -12,6 +12,7 @@ import type { TypUctu } from "@/types";
 import { useNotifikacieRealtime } from "@/data";
 import { PouzivatelProvider } from "@/lib/pouzivatel";
 import { PersonalizaciaProvider } from "@/lib/personalizacia";
+import { LokalitaProvider } from "@/lib/lokalita";
 import { QueryProvider } from "@/app/QueryProvider";
 import { Registracia } from "@/features/registracia/Registracia";
 
@@ -182,6 +183,7 @@ export function Screens({ wide, desktop }: { wide?: boolean; desktop?: boolean }
   return (
    <PouzivatelProvider session={session}>
     <PersonalizaciaProvider>
+    <LokalitaProvider>
     <GaleriaContext.Provider value={otvorGaleriu}>
      <ScrollContext.Provider value={scrollHore}>
       <ViacContext.Provider value={() => setViac(true)}>
@@ -243,6 +245,7 @@ export function Screens({ wide, desktop }: { wide?: boolean; desktop?: boolean }
       </ViacContext.Provider>
      </ScrollContext.Provider>
     </GaleriaContext.Provider>
+    </LokalitaProvider>
     </PersonalizaciaProvider>
    </PouzivatelProvider>
   );

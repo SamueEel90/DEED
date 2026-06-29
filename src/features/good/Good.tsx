@@ -6,6 +6,7 @@ import { pripravFeed, vzdialenostKm, FEED_CFG, type FeedUser } from "@/lib/feed"
 import { tint, tagChip, jeHrdina, HRDINA_COL } from "@/lib/ui";
 import { pressable } from "@/components/pressable";
 import { usePouzivatel } from "@/lib/pouzivatel";
+import { useLokalita } from "@/lib/lokalita";
 import { zobrazVelkost, MEDIA_AR } from "@/lib/cardSize";
 import { RetazDobraSheet } from "@/features/retaz/RetazDobra";
 import { Zvoncek } from "@/features/notifikacie/Notifikacie";
@@ -163,8 +164,9 @@ function Home({ wide, toast, otvorModul, pohlad, setPohlad, radius, setRadius, o
   const { desktop } = useLayout();
   const { gate } = useTvorbaGate();
   const { zaujmyKluce, sledovaniMena } = usePersonalizacia();
+  const lok = useLokalita(); // aktívne mesto = stred feedu (prepínateľné)
   // personalizácia: záujmy + sledovaní vstupujú do afinitnej váhy (re-rank, NIE filter)
-  const user: FeedUser = { ...USER_LOK, radius, zaujmy: zaujmyKluce, sledovani: sledovaniMena };
+  const user: FeedUser = { lat: lok.lat, lng: lok.lng, radius, zaujmy: zaujmyKluce, sledovani: sledovaniMena };
 
   // FEED ALGORITMUS (Časť B): životnosť → rádius + adaptívny prah →
   // frekvenčný strop → zoradenie. Veľkosť karty (Časť A) cez zobrazVelkost.
@@ -419,9 +421,10 @@ function ZdrojTag({ it }: { it: GoodPolozka }) {
 function TopPruh({ radius, onDetail }: { radius: OkruhKod; onDetail: (id: string | number) => void }) {
   const { wide } = useLayout();
   const { data: top = [], isLoading } = useTopPrispevky();
+  const lok = useLokalita();
   // rovnaké pravidlo ako modul Top: haversine ≤ dosah okruhu; národné/bez-geo prebíjajú prah.
   const km = FEED_CFG.radiusy[radius].km;
-  const vidno = top.filter((x) => x.narodne || x.lat == null || vzdialenostKm(USER_LOK, x) <= km);
+  const vidno = top.filter((x) => x.narodne || x.lat == null || vzdialenostKm(lok, x) <= km);
   if (isLoading || vidno.length === 0) return null; // bez dát / nič v okruhu → pruh sa nezobrazí
   const inset = `0 ${SPACE.gutter}px`;
   return (
@@ -643,7 +646,7 @@ export function GoodDetail({ it, toast, oslavuj, onBack, onVerify, onAutor }: Go
 
       {/* simulácia platby (EUR karta / DEED peňaženka) */}
       {platba && <PlatbaModal kanal={platba} komu={it.autor} onClose={() => setPlatba(null)}
-        onDone={(s: number) => { zaznamenajPodporu(s, platba); toast(`Odoslané ${platba === "EUR" ? s + " €" : s + " DEED"} · ${it.autor}`); oslavuj(s, it.autor); }} />}
+        onDone={(s: number) => { zaznamenajPodporu(s, platba); toast(`Odoslané ${platba === "EUR" ? s + " €" : s + " DEED"} · ${it.autor}`); oslavuj(platba === "EUR" ? Math.round(s * 100) : s, it.autor); }} />}
 
       {/* univerzálny QR skutku (§10) — typ „skutok", 3 výstupy */}
       {qr && <QrModal typ="skutok" titul={`QR skutku č. ${it.num.toLocaleString("sk")}`} popis={it.titul.slice(0, 38) + "…"}
@@ -706,6 +709,7 @@ export function GoodVerify({ it, mode, toast, onBack }: { it: GoodPolozka; mode:
 // ===================== PRIDAŤ SKUTOK =====================
 function GoodAdd({ toast, oslavuj, onPridaj, onDone }: { toast: (m: string) => void; oslavuj: (suma: number, komu: string) => void; onPridaj: (it: GoodPolozka) => void; onDone: () => void }) {
   const ja = usePouzivatel();
+  const lok = useLokalita(); // skutok dostane geo aktívneho mesta → zobrazí sa v jeho okolí
   const [krok, setKrok] = useState("vyber"); // vyber | solo | nahlad | vyhodnotene
   const [text, setText] = useState("");
   const [miesto, setMiesto] = useState("");        // kde sa skutok stal — zaradenie do regiónu/feedu (nie dôkaz pravdy)
@@ -759,15 +763,15 @@ function GoodAdd({ toast, oslavuj, onPridaj, onDone }: { toast: (m: string) => v
     fotky: fotky.filter(Boolean),
     titul: aiNavrh.replace(/[.!?]+$/, ""),
     popis: aiNavrh,
-    lok: miesto.trim() || ja.mesto,
+    lok: miesto.trim() || lok.mesto,
     overene: true,
     skore: 8,
     typSituacie: "normal",
     modul: "good",
     dni: 0,
     podpora: 0,
-    lat: USER_LOK.lat,
-    lng: USER_LOK.lng,
+    lat: lok.lat,
+    lng: lok.lng,
   });
 
   return (
