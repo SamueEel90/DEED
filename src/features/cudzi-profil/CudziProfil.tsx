@@ -3,6 +3,7 @@ import { C, GRAD, GRAD_ZELENY, SPACE, RADIUS } from "@/theme";
 import { Aura, MoniBar, QrModal, SegTabs, useLayout, IkonaSipVlavo, IkonaFajka, IkonaStit, IkonaPlay, IkonaPin, Zdielanie, IkonaUsmev } from "@/shared";
 import type { CudziSubjekt, CudziSubjektOrg, CudziSubjektOsoba } from "@/types";
 import { usePersonalizacia } from "@/lib/personalizacia";
+import { tagChip, jeHrdina, HRDINA_COL } from "@/lib/ui";
 import { KAMPANE_FALLBACK, AKCIE_FALLBACK, STAVY } from "./mock";
 
 /*
@@ -185,7 +186,10 @@ function OsobaProfil({ s, onBack, toast }: { s: CudziSubjektOsoba; onBack?: () =
 
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: SPACE.xs }}>
         <Aura size={84} hrubka={2}><span style={{ fontSize: 30, fontWeight: 800, color: "#fff" }}>{meno[0]}</span></Aura>
-        <div style={{ fontSize: 18, fontWeight: 800, marginTop: SPACE.sm }}>{meno}</div>
+        <div style={{ display: "flex", alignItems: "center", gap: SPACE.xs, marginTop: SPACE.sm }}>
+          <span style={{ fontSize: 18, fontWeight: 800 }}>{meno}</span>
+          {jeHrdina(level) && <span style={tagChip(HRDINA_COL)}>Hrdina</span>}
+        </div>
         <div style={{ display: "inline-flex", alignItems: "center", gap: SPACE.xxs, marginTop: SPACE.xs, fontSize: 11, fontWeight: 700, color: farba, background: tint(farba, .12), border: `1px solid ${tint(farba, .4)}`, borderRadius: RADIUS.xs, padding: `${SPACE.xxs}px ${SPACE.sm}px` }}>
           {stav === "tvorca" ? "✓ Lektor · gitara" : stav === "priatel" ? "✓ Priateľ · " + level : level}
         </div>

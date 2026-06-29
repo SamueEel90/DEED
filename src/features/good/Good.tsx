@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import { C, inp, GRAD, GRAD_ZELENY, SPACE, RADIUS } from "@/theme";
 import { Foto, FotoPrispevku, MiniFotky, Video, ModulHlavicka, Hlavicka, AvatarUroven, PodporaSekcia, PlatbaModal, HladanieModal, toast, Oslava, useGaleria, useScrollHore, useMotiv, useLayout, useStrankaAkcie, useTvorbaGate, StatRiadok, MoniBar, FeedStlpce, FeedGrid, obalSiroky, SegTabs, Lupa, Zdielanie, IkonaSipVlavo, IkonaMoznosti, IkonaUlozit, IkonaFajka, IkonaPlay, IkonaDoska, IkonaPin, OkruhVyber, QrModal, FeedSkeleton, EmptyState, ErrorState, ScreenSwitch } from "@/shared";
-import { pripravFeed, FEED_CFG, type FeedUser } from "@/lib/feed";
-import { tint, tagChip } from "@/lib/ui";
+import { pripravFeed, vzdialenostKm, FEED_CFG, type FeedUser } from "@/lib/feed";
+import { tint, tagChip, jeHrdina, HRDINA_COL } from "@/lib/ui";
 import { pressable } from "@/components/pressable";
 import { usePouzivatel } from "@/lib/pouzivatel";
 import { zobrazVelkost, MEDIA_AR } from "@/lib/cardSize";
@@ -23,7 +23,8 @@ export const autorSubjekt = (it: GoodPolozka): Subjekt => it.zdroj === "Charity"
   : { typ: "osoba", meno: it.autor, level: it.karma || "Silver" };
 
 // poloha usera (MVP mock — Trenčín, Sihoť). Neskôr z GPS/profilu.
-const USER_LOK = { lat: 48.894, lng: 18.044 };
+// exportované — Top filtruje rebríčky/príspevky podľa okruhu z rovnakej polohy.
+export const USER_LOK = { lat: 48.894, lng: 18.044 };
 
 /*
   ============================================================
@@ -174,7 +175,7 @@ function Home({ wide, toast, otvorModul, pohlad, setPohlad, radius, setRadius, o
 
   // „TOP DNES" — vodorovný pruh najvýznamnejších skutkov (rovnaký zdroj ako modul Top).
   // Highlight nad feedom; klik → detail. Skryje sa, kým nie sú dáta (žiadny prázdny flash).
-  const topPruh = <TopPruh onDetail={onDetail} />;
+  const topPruh = <TopPruh radius={radius} onDetail={onDetail} />;
 
   // telo Okolia — desktop: jednotný 3-stĺpcový grid (masonry); mobil/tablet: 1–2 stĺpce
   const okolieFeed = isError ? (
@@ -401,18 +402,37 @@ function ZdrojTag({ it }: { it: GoodPolozka }) {
 // ===================== TOP DNES — pruh najvýznamnejších skutkov =====================
 // Vodorovný carousel nad feedom Domov. Zdroj = `useTopPrispevky` (rovnaké skutky ako
 // modul Top, zoradené podľa skóre). Highlight, ktorý ťahá pozornosť na špičku; klik → detail.
-function TopPruh({ onDetail }: { onDetail: (id: string | number) => void }) {
+function TopPruh({ radius, onDetail }: { radius: OkruhKod; onDetail: (id: string | number) => void }) {
+  const { wide } = useLayout();
   const { data: top = [], isLoading } = useTopPrispevky();
-  if (isLoading || top.length === 0) return null; // bez dát sa pruh nezobrazí (žiadny prázdny flash)
+  // rovnaké pravidlo ako modul Top: haversine ≤ dosah okruhu; národné/bez-geo prebíjajú prah.
+  const km = FEED_CFG.radiusy[radius].km;
+  const vidno = top.filter((x) => x.narodne || x.lat == null || vzdialenostKm(USER_LOK, x) <= km);
+  if (isLoading || vidno.length === 0) return null; // bez dát / nič v okruhu → pruh sa nezobrazí
+  const inset = `0 ${SPACE.gutter}px`;
   return (
-    <div style={{ padding: `0 ${SPACE.gutter}px`, marginBottom: SPACE.sm }}>
-      <div style={{ display: "flex", alignItems: "center", gap: SPACE.xs, margin: `${SPACE.xs}px 0` }}>
+    <div style={{ marginBottom: SPACE.sm }}>
+      <div style={{ display: "flex", alignItems: "center", gap: SPACE.xs, margin: `${SPACE.xs}px 0`, padding: inset }}>
         <span style={{ fontSize: 14, lineHeight: 1 }}>🔥</span>
         <span style={{ fontSize: 11, letterSpacing: ".4px", color: C.textTer, fontWeight: 800 }}>TOP DNES · NAJVÄČŠIE SKUTKY</span>
+        {!wide && <span style={{ marginLeft: "auto", fontSize: 10.5, color: C.textTer, fontWeight: 700 }}>potiahni ›</span>}
       </div>
-      <div style={{ display: "flex", gap: SPACE.sm, overflowX: "auto", paddingBottom: SPACE.xs }}>
-        {top.map((it, i) => <TopPruhKarta key={it.id} it={it} rank={i + 1} onClick={() => onDetail(it.id)} />)}
-      </div>
+      {wide ? (
+        /* tablet/desktop: kompaktné mini-karty */
+        <div style={{ display: "flex", gap: SPACE.sm, overflowX: "auto", padding: `0 ${SPACE.gutter}px ${SPACE.xs}px` }}>
+          {vidno.map((it, i) => <TopPruhKarta key={it.id} it={it} rank={i + 1} onClick={() => onDetail(it.id)} />)}
+        </div>
+      ) : (
+        /* mobil: dominantné karty (veľké ako bežné príspevky) v horizontálnom snap-carousele.
+           Šírka 88 % → ďalšia karta vždy „vykúka" (jasný signál, že sa dá skrolovať). */
+        <div style={{ display: "flex", gap: SPACE.sm, overflowX: "auto", scrollSnapType: "x mandatory", WebkitOverflowScrolling: "touch", padding: `0 ${SPACE.gutter}px ${SPACE.xs}px` }}>
+          {vidno.map((it) => (
+            <div key={it.id} style={{ flex: "0 0 88%", scrollSnapAlign: "start", minWidth: 0 }}>
+              <GoodKarta it={it} wide onDetail={() => onDetail(it.id)} />
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -472,6 +492,7 @@ export function GoodKarta({ it, wide, onDetail }: { it: GoodPolozka; wide?: bool
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: SPACE.xxs, flexWrap: "wrap" }}>
             <span style={{ fontWeight: 700, fontSize: 14.5, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it.autor}</span>
+            {it.typ === "skutok" && jeHrdina(it.karma) && <span style={tagChip(HRDINA_COL)}>Hrdina</span>}
             {it.overene && <span style={tagChip(overCol)}><IkonaFajka size={11} color={overCol} /> overené</span>}
             {(jeZiadost || jeCharita) && <ZdrojTag it={it} />}
           </div>

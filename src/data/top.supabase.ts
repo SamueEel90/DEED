@@ -46,20 +46,22 @@ async function darcoviaLive(): Promise<RebricekPolozka[]> {
 async function hrdinoviaLive(): Promise<RebricekPolozka[]> {
   const { data, error } = await supabase!
     .from("prispevok")
-    .select("autor_nazov, autor_karma, podpora_count, overene, typ")
+    .select("autor_nazov, autor_karma, podpora_count, overene, typ, lat, lng")
     .is("data->>comp", null)
     .is("data->>akt", null)   // len Domov skutky (Aktivity majú vlastný rebríček)
     .is("data->>help", null)  // vylúč Help (Fáza G) — typ=skutok ich aj tak nezahŕňa, ale buď explicitný
     .eq("typ", "skutok")
     .not("autor_nazov", "is", null);
   if (error) throw error;
-  const agg = new Map<string, { podpora: number; pocet: number; overene: number; karma?: string }>();
+  type Agg = { podpora: number; pocet: number; overene: number; karma?: string; lat?: number; lng?: number };
+  const agg = new Map<string, Agg>();
   for (const r of data || []) {
-    const a = agg.get(r.autor_nazov) || { podpora: 0, pocet: 0, overene: 0, karma: r.autor_karma || undefined };
+    const a: Agg = agg.get(r.autor_nazov) || { podpora: 0, pocet: 0, overene: 0, karma: r.autor_karma || undefined };
     a.podpora += Number(r.podpora_count || 0);
     a.pocet += 1;
     a.overene += r.overene ? 1 : 0;
     if (!a.karma && r.autor_karma) a.karma = r.autor_karma;
+    if (a.lat == null && r.lat != null) { a.lat = r.lat; a.lng = r.lng ?? undefined; } // reprezentatívna poloha (okruh)
     agg.set(r.autor_nazov, a);
   }
   return [...agg.entries()]
@@ -78,6 +80,8 @@ async function hrdinoviaLive(): Promise<RebricekPolozka[]> {
           stav: "tvorca",
           ...(org ? { emoji: "🏛" } : {}),
         },
+        lat: a.lat,
+        lng: a.lng,
       };
     });
 }

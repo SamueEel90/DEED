@@ -18,3 +18,8 @@ export const tagChip = (c: string): CSSProperties => ({
   fontSize: 10.5, fontWeight: 800, padding: "3px 8px", borderRadius: 8, lineHeight: 1.2,
   background: tint(c, .2), color: c, border: `1px solid ${tint(c, .4)}`, whiteSpace: "nowrap",
 });
+
+// „Hrdina" = zaslúžená top úroveň karmy (Gold/Legend). Jeden zdroj pravdy pre odznak
+// hrdinu naprieč modulmi (Top rebríček, karty príspevkov, cudzí profil).
+export const HRDINA_COL = "var(--a-clay)";
+export const jeHrdina = (karma?: string | null): boolean => karma === "Gold" || karma === "Legend";

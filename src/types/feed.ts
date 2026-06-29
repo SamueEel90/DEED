@@ -419,6 +419,9 @@ export interface RebricekPolozka {
   meno: string;
   info: string;
   subjekt: Subjekt;
+  /** voliteľné geo pre filter podľa okruhu (Top). Bez neho = celoslovenské (vždy v rebríčku). */
+  lat?: number;
+  lng?: number;
 }
 
 /** Kategória rebríčka (KATEGORIE v Top). */
