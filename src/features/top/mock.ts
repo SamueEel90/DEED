@@ -48,13 +48,15 @@ export const REBRICKY_MOCK: Record<RebricekKluc, RebricekPolozka[]> = {
     { meno: "Tomáš R.", info: "640 DEED", subjekt: { typ: "osoba", meno: "Tomáš R.", level: "Gold" } },
     { meno: "Anonym", info: "510 DEED · potichu", subjekt: { typ: "osoba", meno: "Anonym", level: "Silver" } },
   ],
+  // geo (lat/lng) = reprezentatívna poloha pre filter podľa okruhu (Štvrť ~5 km / Mesto ~15 km).
+  // Bez geo (MUDr. Hraško) = celoslovenský → vždy v rebríčku. Anker = USER_LOK (48.894, 18.044).
   hrdinovia: [
-    { meno: "Jana N.", info: "23 overených skutkov", subjekt: { typ: "osoba", meno: "Jana N.", level: "Gold", stav: "tvorca" } },
-    { meno: "Ján H.", info: "18 overených skutkov", subjekt: { typ: "osoba", meno: "Ján H.", level: "Silver" } },
-    { meno: "Mária H.", info: "16 overených skutkov", subjekt: { typ: "osoba", meno: "Mária H.", level: "Gold", stav: "tvorca" } },
-    { meno: "Dobrovoľní hasiči TN", info: "12 zásahov pre komunitu", subjekt: { typ: "org", meno: "Dobrovoľní hasiči TN", emoji: "🚒", lok: "Komunita · Trenčín", level: "Gold", stav: "tvorca" } },
+    { meno: "Jana N.", info: "23 overených skutkov", subjekt: { typ: "osoba", meno: "Jana N.", level: "Gold", stav: "tvorca" }, lat: 48.905, lng: 18.030 },
+    { meno: "Ján H.", info: "18 overených skutkov", subjekt: { typ: "osoba", meno: "Ján H.", level: "Silver" }, lat: 48.850, lng: 18.100 },
+    { meno: "Mária H.", info: "16 overených skutkov", subjekt: { typ: "osoba", meno: "Mária H.", level: "Gold", stav: "tvorca" }, lat: 48.900, lng: 18.040 },
+    { meno: "Dobrovoľní hasiči TN", info: "12 zásahov pre komunitu", subjekt: { typ: "org", meno: "Dobrovoľní hasiči TN", emoji: "🚒", lok: "Komunita · Trenčín", level: "Gold", stav: "tvorca" }, lat: 48.894, lng: 18.044 },
     { meno: "MUDr. Hraško", info: "9 bezplatných poradní", subjekt: { typ: "osoba", meno: "MUDr. Hraško", level: "Gold", stav: "tvorca" } },
-    { meno: "Klub seniorov Sihoť", info: "10 akcií pre seniorov", subjekt: { typ: "org", meno: "Klub seniorov Sihoť", emoji: "☕", lok: "Komunita · Sihoť", level: "Silver", stav: "tvorca" } },
+    { meno: "Klub seniorov Sihoť", info: "10 akcií pre seniorov", subjekt: { typ: "org", meno: "Klub seniorov Sihoť", emoji: "☕", lok: "Komunita · Sihoť", level: "Silver", stav: "tvorca" }, lat: 48.906, lng: 18.028 },
   ],
   aktivity: [
     { meno: "Cyklo TN", info: "240 km pre dobro", subjekt: { typ: "osoba", meno: "Cyklo TN", level: "Silver", stav: "tvorca" } },

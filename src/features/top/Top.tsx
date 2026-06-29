@@ -4,7 +4,9 @@ import { ModulHlavicka, toast, useScrollHore, useLayout, useTvorbaGate, obalSiro
 import { Zvoncek } from "@/features/notifikacie/Notifikacie";
 import { CudziProfil } from "@/features/cudzi-profil/CudziProfil";
 import { FunZona } from "@/features/fun/FunZona";
-import { GoodKarta, GoodDetail, GoodVerify, autorSubjekt } from "@/features/good/Good";
+import { GoodKarta, GoodDetail, GoodVerify, autorSubjekt, USER_LOK } from "@/features/good/Good";
+import { vzdialenostKm, FEED_CFG } from "@/lib/feed";
+import { tagChip } from "@/lib/ui";
 import { useTopRebricky, useTopPrispevky } from "@/data";
 import type { RebricekKluc } from "@/features/top/mock";
 import type { GoodPolozka, RebricekRozsah, Subjekt, WideProps } from "@/types";
@@ -19,8 +21,13 @@ import type { GoodPolozka, RebricekRozsah, Subjekt, WideProps } from "@/types";
   ============================================================
 */
 
-// rozsahy rebríčka
+// rozsahy rebríčka + ich dosah v km (z FEED_CFG — jednotný so feedom/Mapou)
 const ROZSAHY: RebricekRozsah[] = ["Štvrť", "Mesto", "Celá SR"];
+const ROZSAH_KM: Record<RebricekRozsah, number> = {
+  "Štvrť": FEED_CFG.radiusy.stvrt.km,    // ~5 km
+  "Mesto": FEED_CFG.radiusy.mesto.km,    // ~15 km
+  "Celá SR": FEED_CFG.radiusy.krajina.km, // ~9000 km (prakticky celé SR)
+};
 
 // kategórie ocenení (chrome) — `polozky` prichádzajú z repo (mock | Supabase) cez useTopRebricky.
 // Vo Fáze C sú darcovia/hrdinovia/charity ŽIVÝ agregát z DB; aktivity/b2b kurátorské.
@@ -52,6 +59,14 @@ export default function ModulTop({ wide }: WideProps) {
   const otvorProfil = (s: Subjekt, back: "top" | "detail" = "top") => { setSubjekt(s); setProfilBack(back); setScreen("profil"); scrollHore(); };
   const otvorPrispevok = (it: GoodPolozka) => { setAktPost(it); setScreen("detail"); scrollHore(); };
   const oslavuj = (suma: number, komu: string) => { setOslava({ suma, komu }); setTimeout(() => setOslava(null), 1900); };
+
+  // FILTER PODĽA OKRUHU (haversine ako feed/Mapa). Pravidlo zhodné s feedom:
+  // národné/bez-geo položky prah okruhu PREBÍJAJÚ (celoslovenské rebríčky — darcovia,
+  // charity, B2B…), geo-tagované (príspevky + hrdinovia) sa filtrujú vzdialenosťou.
+  const km = ROZSAH_KM[rozsah];
+  const vOkruhu = <T extends { lat?: number; lng?: number; narodne?: boolean }>(items: T[]): T[] =>
+    items.filter((x) => x.narodne || x.lat == null || vzdialenostKm(USER_LOK, x) <= km);
+  const prispevkyOkruh = vOkruhu(prispevky);
 
   if (screen === "fun") return <div style={{ minHeight: "100%" }}>{obal(<FunZona onBack={() => setScreen("top")} toast={toast} />)}</div>;
   if (screen === "profil" && subjekt) return <div style={{ minHeight: "100%" }}>{obal(<CudziProfil subjekt={subjekt as any} toast={toast} onBack={() => setScreen(profilBack)} />)}</div>;
@@ -105,12 +120,12 @@ export default function ModulTop({ wide }: WideProps) {
             <ErrorState onRetry={() => postyRefetch()} />
           ) : postyLoading ? (
             <FeedSkeleton count={3} />
-          ) : prispevky.length === 0 ? (
-            <EmptyState emoji="🏆" title="Zatiaľ žiadne príspevky" text="Keď pribudnú významné skutky, objavia sa tu." />
+          ) : prispevkyOkruh.length === 0 ? (
+            <EmptyState emoji="🏆" title={prispevky.length ? "V tomto okruhu zatiaľ nič" : "Zatiaľ žiadne príspevky"} text={prispevky.length ? "Skús väčší okruh (Mesto / Celá SR)." : "Keď pribudnú významné skutky, objavia sa tu."} />
           ) : wide ? (
-            <FeedGrid cols={desktop ? 3 : 2} cards={prispevky.map((it) => <GoodKarta key={it.id} it={it} wide={wide} onDetail={() => otvorPrispevok(it)} />)} />
+            <FeedGrid cols={desktop ? 3 : 2} cards={prispevkyOkruh.map((it) => <GoodKarta key={it.id} it={it} wide={wide} onDetail={() => otvorPrispevok(it)} />)} />
           ) : (
-            <div>{prispevky.map((it) => <GoodKarta key={it.id} it={it} wide={wide} onDetail={() => otvorPrispevok(it)} />)}</div>
+            <div>{prispevkyOkruh.map((it) => <GoodKarta key={it.id} it={it} wide={wide} onDetail={() => otvorPrispevok(it)} />)}</div>
           )}
 
           {/* rebríčky po kategóriách — na desktope mriežka (všetkých 5 naraz) */}
@@ -126,12 +141,15 @@ export default function ModulTop({ wide }: WideProps) {
                 <span style={{ display: "flex", color: kat.col }}>{kat.ic}</span>
                 <span style={{ fontSize: 11, letterSpacing: ".4px", color: C.textTer, fontWeight: 700 }}>{kat.hl}</span>
               </div>
-              {(rebricky[kat.key] || []).map((p, i) => (
+              {vOkruhu(rebricky[kat.key] || []).map((p, i) => (
                 <div key={p.meno} onClick={() => otvorProfil(p.subjekt)} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, background: C.surface, border: `1px solid ${C.line}`, borderRadius: RADIUS.sm, padding: `${SPACE.sm}px ${SPACE.sm}px`, marginBottom: SPACE.xs, cursor: "pointer" }}>
                   <span style={{ width: 26, fontSize: 14, fontWeight: 800, color: i === 0 ? kat.col : C.textTer, textAlign: "center", flex: "none" }}>{i + 1}.</span>
                   <div style={{ width: 36, height: 36, borderRadius: RADIUS.round, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 14, color: "#fff", background: kat.col }}>{p.subjekt.emoji || p.meno[0]}</div>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 14, fontWeight: 700 }}>{p.meno}</div>
+                    <div style={{ display: "flex", alignItems: "center", gap: SPACE.xxs, minWidth: 0 }}>
+                      <span style={{ fontSize: 14, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>{p.meno}</span>
+                      {kat.key === "hrdinovia" && <span style={tagChip(kat.col)}>Hrdina</span>}
+                    </div>
                     <div style={{ fontSize: 11.5, color: C.textTer }}>{p.info}</div>
                   </div>
                   {i === 0 && <span style={{ flex: "none", fontSize: 16 }}>🏆</span>}
