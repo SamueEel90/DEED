@@ -25,8 +25,9 @@ function casZ(ts?: string): string {
   return `${Math.floor(h / 24)} d`;
 }
 
-/** riadok `prispevok` → GoodPolozka (engine polia zo stĺpcov, extra z `data`/`media`). */
-function naGoodPolozka(r: any): GoodPolozka {
+/** riadok `prispevok` → GoodPolozka (engine polia zo stĺpcov, extra z `data`/`media`).
+ *  Exportované, aby ho vedel znovapoužiť aj `top.supabase.ts` (Top príspevky). */
+export function naGoodPolozka(r: any): GoodPolozka {
   const d = r.data || {};
   const m = r.media || {};
   const fotky: string[] | undefined = Array.isArray(m.fotky) && m.fotky.length ? m.fotky : undefined;

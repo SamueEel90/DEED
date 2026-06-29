@@ -15,7 +15,7 @@ export const qk = {
   charita: { feed: ["charita", "feed"] as const, adresar: ["charita", "adresar"] as const, zbierka: ["charita", "zbierka"] as const },
   aktivity: { feed: ["aktivity", "feed"] as const },
   mapa: { body: ["mapa", "body"] as const },
-  top: { rebricky: ["top", "rebricky"] as const },
+  top: { rebricky: ["top", "rebricky"] as const, prispevky: ["top", "prispevky"] as const },
   notifikacie: { list: ["notifikacie", "list"] as const },
   retaz: { ziadosti: ["retaz", "ziadosti"] as const },
   fun: { list: ["fun", "list"] as const },
@@ -45,8 +45,9 @@ export const useAktivityFeed = () => useQuery({ queryKey: qk.aktivity.feed, quer
 // ---- Mapa (body + počty v okruhu) ----
 export const useMapaBody = () => useQuery({ queryKey: qk.mapa.body, queryFn: () => repo.mapa.body() });
 
-// ---- Top (rebríčky) ----
+// ---- Top (rebríčky + najvýznamnejšie príspevky) ----
 export const useTopRebricky = () => useQuery({ queryKey: qk.top.rebricky, queryFn: () => repo.top.rebricky() });
+export const useTopPrispevky = () => useQuery({ queryKey: qk.top.prispevky, queryFn: () => repo.top.prispevky() });
 
 // ---- Notifikácie ----
 export const useNotifikacie = () => useQuery({ queryKey: qk.notifikacie.list, queryFn: () => repo.notifikacie.list() });

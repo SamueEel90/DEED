@@ -10,8 +10,9 @@
 // UI (Top.tsx) sa nemení — dostane rovnaký tvar RebricekPolozka[] ako mock.
 // ============================================================
 import { supabase } from "@/lib/supabase";
-import type { RebricekPolozka, Karma } from "@/types";
-import { REBRICKY_MOCK, type RebricekKluc } from "@/features/top/mock";
+import { naGoodPolozka } from "./good.supabase";
+import type { RebricekPolozka, Karma, GoodPolozka } from "@/types";
+import { REBRICKY_MOCK, topPrispevky, type RebricekKluc } from "@/features/top/mock";
 
 // "1850" → "1 850" (tisícky medzerou, SK formát)
 const sk = (n: number): string => Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
@@ -104,6 +105,26 @@ async function charityLive(): Promise<RebricekPolozka[]> {
   }));
 }
 
+/** Top príspevky — najvýznamnejšie SKUTKY podľa skóre (živé z `prispevok`).
+ *  Len Domov skutky (rovnaký rozsah ako Hrdinovia): vylúč Charita-karty (`comp`),
+ *  Aktivity (`akt`) a Help (`help`). „Najväčšie" = najvyššie skóre; tie-break
+ *  topované → počet podpôr. Mapované cez `naGoodPolozka` → identická karta ako Domov. */
+async function prispevkyLive(): Promise<GoodPolozka[]> {
+  const { data, error } = await supabase!
+    .from("prispevok")
+    .select("*")
+    .eq("typ", "skutok")
+    .is("data->>comp", null)
+    .is("data->>akt", null)
+    .is("data->>help", null)
+    .order("skore", { ascending: false })
+    .order("topovane", { ascending: false })
+    .order("podpora_count", { ascending: false })
+    .limit(12);
+  if (error) throw error;
+  return (data || []).map(naGoodPolozka);
+}
+
 // živá kategória s fallbackom na kurátorský mock (Top sa nikdy nerozbije)
 async function zivaAleboMock(kluc: RebricekKluc, fn: () => Promise<RebricekPolozka[]>): Promise<RebricekPolozka[]> {
   try {
@@ -129,5 +150,16 @@ export const topSupabase = {
       aktivity: REBRICKY_MOCK.aktivity,  // kurátorské — oživne vo Fáze F
       charity,
     };
+  },
+
+  /** Top príspevky (najvýznamnejšie skutky) — živé z DB, fallback na mock. */
+  async prispevky(): Promise<GoodPolozka[]> {
+    if (!supabase) return topPrispevky();
+    try {
+      const r = await prispevkyLive();
+      return r.length ? r : topPrispevky();
+    } catch {
+      return topPrispevky();
+    }
   },
 };

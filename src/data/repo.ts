@@ -29,7 +29,7 @@ import { NOTIFY } from "@/features/notifikacie/mock";
 import { ZIADOSTI } from "@/features/retaz/mock";
 import { FUN } from "@/features/fun/mock";
 import { PREVODY, MOJE_SKUTKY, KARMA, STATISTIKY } from "@/features/profil/mock";
-import { REBRICKY_MOCK, type RebricekKluc } from "@/features/top/mock";
+import { REBRICKY_MOCK, topPrispevky, type RebricekKluc } from "@/features/top/mock";
 import { MAPA_UDALOSTI } from "@/features/mapa/mock";
 
 /** Rozhranie dátovej vrstvy — mock aj budúci Supabase ho implementujú rovnako. */
@@ -54,6 +54,7 @@ export interface Repo {
   };
   top: {
     rebricky(): Promise<Record<RebricekKluc, RebricekPolozka[]>>;
+    prispevky(): Promise<GoodPolozka[]>;
   };
   notifikacie: {
     list(): Promise<Notifikacia[]>;
@@ -104,6 +105,7 @@ export const mockRepo: Repo = {
   },
   top: {
     rebricky: () => ok(REBRICKY_MOCK),
+    prispevky: () => ok(topPrispevky()),
   },
   notifikacie: {
     list: () => ok(NOTIFY),

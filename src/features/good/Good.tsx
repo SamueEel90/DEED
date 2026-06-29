@@ -10,14 +10,15 @@ import { RetazDobraSheet } from "@/features/retaz/RetazDobra";
 import { Zvoncek } from "@/features/notifikacie/Notifikacie";
 import { CudziProfil } from "@/features/cudzi-profil/CudziProfil";
 import type { GoodPolozka, Subjekt, Udalost, OkruhKod } from "@/types";
-import { useGoodFeed, useGoodUdalosti } from "@/data";
+import { useGoodFeed, useGoodUdalosti, useTopPrispevky } from "@/data";
 import { usePersonalizacia } from "@/lib/personalizacia";
 import { KAT, SRC_COL } from "./mock";
 
 const katLabel = (k: GoodPolozka["kat"]) => KAT[k].label || k;
 
 // zostav subjekt cudzieho profilu z položky feedu (autor → org/charita alebo osoba)
-const autorSubjekt = (it: GoodPolozka): Subjekt => it.zdroj === "Charity"
+// exportované — Top (najvýznamnejšie príspevky) otvára rovnaký cudzí profil
+export const autorSubjekt = (it: GoodPolozka): Subjekt => it.zdroj === "Charity"
   ? { typ: "org", meno: it.autor, emoji: it.emoji, lok: it.lok, level: it.charLevel || "Gold" }
   : { typ: "osoba", meno: it.autor, level: it.karma || "Silver" };
 
@@ -171,6 +172,10 @@ function Home({ wide, toast, otvorModul, pohlad, setPohlad, radius, setRadius, o
       okruh={FEED_CFG.radiusy[radius].krat} onOkruh={() => setVyberOkruh(true)} />
   );
 
+  // „TOP DNES" — vodorovný pruh najvýznamnejších skutkov (rovnaký zdroj ako modul Top).
+  // Highlight nad feedom; klik → detail. Skryje sa, kým nie sú dáta (žiadny prázdny flash).
+  const topPruh = <TopPruh onDetail={onDetail} />;
+
   // telo Okolia — desktop: jednotný 3-stĺpcový grid (masonry); mobil/tablet: 1–2 stĺpce
   const okolieFeed = isError ? (
     <ErrorState onRetry={() => refetch()} />
@@ -205,6 +210,7 @@ function Home({ wide, toast, otvorModul, pohlad, setPohlad, radius, setRadius, o
         /* DESKTOP — Okolie (3 kategórie) + Môj DEED bočný panel naraz, bez prepínania */
         <div style={{ display: "flex", gap: SPACE.md, alignItems: "flex-start", padding: `0 ${SPACE.lg}px` }}>
           <div style={{ flex: 1, minWidth: 0 }}>
+            {topPruh}
             {statRiadok}
             {okolieFeed}
           </div>
@@ -221,6 +227,7 @@ function Home({ wide, toast, otvorModul, pohlad, setPohlad, radius, setRadius, o
             <MojDeed wide={wide} onDetail={onDetail} onBoard={onBoard} toast={toast} />
           ) : (
             <>
+              {topPruh}
               {statRiadok}
               {okolieFeed}
             </>
@@ -391,9 +398,52 @@ function ZdrojTag({ it }: { it: GoodPolozka }) {
   return <span style={tagChip(KAT[it.kat].c)}>{katLabel(it.kat)}</span>;
 }
 
+// ===================== TOP DNES — pruh najvýznamnejších skutkov =====================
+// Vodorovný carousel nad feedom Domov. Zdroj = `useTopPrispevky` (rovnaké skutky ako
+// modul Top, zoradené podľa skóre). Highlight, ktorý ťahá pozornosť na špičku; klik → detail.
+function TopPruh({ onDetail }: { onDetail: (id: string | number) => void }) {
+  const { data: top = [], isLoading } = useTopPrispevky();
+  if (isLoading || top.length === 0) return null; // bez dát sa pruh nezobrazí (žiadny prázdny flash)
+  return (
+    <div style={{ padding: `0 ${SPACE.gutter}px`, marginBottom: SPACE.sm }}>
+      <div style={{ display: "flex", alignItems: "center", gap: SPACE.xs, margin: `${SPACE.xs}px 0` }}>
+        <span style={{ fontSize: 14, lineHeight: 1 }}>🔥</span>
+        <span style={{ fontSize: 11, letterSpacing: ".4px", color: C.textTer, fontWeight: 800 }}>TOP DNES · NAJVÄČŠIE SKUTKY</span>
+      </div>
+      <div style={{ display: "flex", gap: SPACE.sm, overflowX: "auto", paddingBottom: SPACE.xs }}>
+        {top.map((it, i) => <TopPruhKarta key={it.id} it={it} rank={i + 1} onClick={() => onDetail(it.id)} />)}
+      </div>
+    </div>
+  );
+}
+
+function TopPruhKarta({ it, rank, onClick }: { it: GoodPolozka; rank: number; onClick: () => void }) {
+  const thumb = it.fotky?.[0];
+  const prvy = rank === 1;
+  return (
+    <div {...pressable(onClick, `Otvoriť: ${it.titul}`)} style={{ width: 172, flex: "0 0 auto", background: C.surface2, border: `1px solid ${prvy ? tint(C.gold, .5) : C.line}`, borderRadius: RADIUS.md, overflow: "hidden", cursor: "pointer", boxShadow: prvy ? `0 4px 16px ${tint(C.gold, .14)}` : undefined }}>
+      <div style={{ position: "relative", height: 96, background: thumb ? `center/cover no-repeat url("${thumb}")` : heroGrad(it.kat), display: "flex", alignItems: "center", justifyContent: "center" }}>
+        {!thumb && <span style={{ fontSize: 32 }}>{it.media === "kreslene" ? "✎" : it.emoji}</span>}
+        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(0deg, rgba(0,0,0,.42), transparent 55%)", pointerEvents: "none" }} />
+        <span style={{ position: "absolute", top: 7, left: 7, fontSize: 10.5, fontWeight: 800, color: prvy ? "#1b1407" : "#fff", background: prvy ? "var(--a-gold)" : "rgba(8,11,18,.62)", borderRadius: RADIUS.xs, padding: `1px ${SPACE.xs}px`, border: prvy ? "none" : "1px solid rgba(255,255,255,.22)" }}>{prvy ? "🏆 1" : `#${rank}`}</span>
+        {it.media === "video" && <span style={{ position: "absolute", top: 7, right: 7, fontSize: 9, fontWeight: 700, color: "#fff", background: "rgba(8,11,18,.62)", borderRadius: RADIUS.xs, padding: `1px ${SPACE.xs}px` }}>▶</span>}
+        {it.overene && <span style={{ position: "absolute", bottom: 7, left: 7, fontSize: 9, fontWeight: 800, color: "#fff", background: "rgba(46,125,82,.85)", borderRadius: RADIUS.xs, padding: `1px ${SPACE.xs}px` }}>✓ overené</span>}
+      </div>
+      <div style={{ padding: `${SPACE.xs}px ${SPACE.sm}px ${SPACE.sm}px` }}>
+        <div style={{ fontSize: 12, fontWeight: 700, lineHeight: 1.3, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", minHeight: 31 }}>{it.titul}</div>
+        <div style={{ display: "flex", alignItems: "center", gap: SPACE.xxs, marginTop: 4, minWidth: 0 }}>
+          <span style={{ width: 16, height: 16, borderRadius: "50%", flex: "none", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 8.5, fontWeight: 700, color: "#fff", background: it.pfp || "var(--a-info)" }}>{it.ini || it.autor?.[0]}</span>
+          <span style={{ fontSize: 10.5, color: C.textTer, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{it.autor}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // JEDNOTNÁ FULL-WIDTH (Instagram) KARTA — všetky príspevky (skutok / charita / žiadosť) rovnako:
 // autor hore · veľké médium · titul · pätička podľa typu (charita/žiadosť = progres / „hľadá pomoc").
-function GoodKarta({ it, wide, onDetail }: { it: GoodPolozka; wide?: boolean; onDetail: () => void }) {
+// Exportovaná — Top „Najvýznamnejšie príspevky" renderuje identickú kartu ako Domov.
+export function GoodKarta({ it, wide, onDetail }: { it: GoodPolozka; wide?: boolean; onDetail: () => void }) {
   const { svetly } = useMotiv();
   const kat = KAT[it.kat];
   const jeZiadost = it.typ === "ziadost";
@@ -472,7 +522,8 @@ type GoodDetailProps = {
 };
 
 // ===================== DETAIL =====================
-function GoodDetail({ it, toast, oslavuj, onBack, onVerify, onAutor }: GoodDetailProps) {
+// Exportovaný — Top „Najvýznamnejšie príspevky" otvára rovnaký detail (podpora/QR/overenie).
+export function GoodDetail({ it, toast, oslavuj, onBack, onVerify, onAutor }: GoodDetailProps) {
   const [platba, setPlatba] = useState<string | null>(null); // "EUR" | "DEED"
   const [qr, setQr] = useState(false);        // QR skutku (§10) — 3 výstupy
   const otvorGaleriu = useGaleria();
@@ -587,7 +638,8 @@ function VerifyBtn({ ok, onClick }: { ok?: boolean; onClick: () => void }) {
 }
 
 // ===================== OVERENIE / NÁMIETKA =====================
-function GoodVerify({ it, mode, toast, onBack }: { it: GoodPolozka; mode: string; toast: (m: string) => void; onBack: () => void }) {
+// Exportované — Top „Najvýznamnejšie príspevky" zdieľa rovnaký flow overenia/námietky.
+export function GoodVerify({ it, mode, toast, onBack }: { it: GoodPolozka; mode: string; toast: (m: string) => void; onBack: () => void }) {
   const ok = mode === "ok";
   return (
     <div style={{ paddingBottom: SPACE.lg }}>
