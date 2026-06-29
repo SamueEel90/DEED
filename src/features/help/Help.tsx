@@ -46,7 +46,7 @@ export default function ModulHelp({ wide }: { wide?: boolean }) {
       {screen === "offer" && obal(<OfferFlow onDone={() => setScreen("feed")} />)}
       {screen === "request" && obal(<RequestFlow onDone={() => setScreen("feed")} />)}
       {screen === "cudzi" && aktSubjekt && obal(<CudziProfil subjekt={aktSubjekt as any} toast={toast} onBack={() => setScreen("feed")} />)}
-      {screen === "board" && obal(<GoodBoard onBack={() => setScreen("feed")} onEvent={(id) => { setAktEvent(id); setScreen("event"); }} toast={toast} />)}
+      {screen === "board" && <GoodBoard onBack={() => setScreen("feed")} onEvent={(id) => { setAktEvent(id); setScreen("event"); }} toast={toast} />}
       {screen === "event" && obal(<GoodEvent id={aktEvent} onBack={() => setScreen("board")} toast={toast} oslavuj={(s, komu) => toast(`Ďakujeme za ${s} pre ${komu}`)} />)}
       </ScreenSwitch>
 
