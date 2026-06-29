@@ -81,7 +81,7 @@ export default function ModulGood({ wide, otvorModul }: { wide?: boolean; otvorM
       {screen === "cudzi" && aktSubjekt && obal(
         <CudziProfil subjekt={aktSubjekt as any} toast={toast} onBack={() => setScreen(predtym)} />
       )}
-      {screen === "board" && obal(
+      {screen === "board" && (
         <GoodBoard onBack={() => setScreen("home")} onEvent={(id) => { setAktEvent(id); setScreen("event"); }} toast={toast} />
       )}
       {screen === "event" && obal(
@@ -118,6 +118,7 @@ export default function ModulGood({ wide, otvorModul }: { wide?: boolean; otvorM
             tag: it.typ === "ziadost" ? "Žiadosť" : it.typ === "charita" ? "Charita" : katLabel(it.kat),
           }))}
           onPick={(id) => { setAktId(id as number); setScreen("detail"); }}
+          onSubjekt={(s) => otvorProfil(s, "home")}
           toast={toast} defaultFilter="Všetko"
           onClose={() => setHladaj(false)} />
       )}
@@ -838,15 +839,18 @@ function GoodAdd({ toast, oslavuj, onDone }: { toast: (m: string) => void; oslav
 }
 
 // ===================== NÁSTENKA (board) =====================
-function GoodBoard({ onBack, onEvent, toast }: { onBack: () => void; onEvent: (id: string) => void; toast: (m: string) => void }) {
+// Exportovaná — komunitná nástenka (udalosti/akcie v okolí) je zdieľaná aj do Help/Charita.
+export function GoodBoard({ onBack, onEvent, toast }: { onBack: () => void; onEvent: (id: string) => void; toast: (m: string) => void }) {
   const { data: EVENTS = [] } = useGoodUdalosti();
+  const { wide, desktop } = useLayout();
   const [filter, setFilter] = useState("Všetko");
   const tops = EVENTS.filter((e) => e.top);
   const list = EVENTS.filter((e) => filter === "Všetko" || e.src === filter || (filter === "Šport" && e.kat === "Zdravie"));
   const chipy = ["Všetko", "Šport", "Komunita", "Mesto", "Partner"];
 
+  // desktop/tablet: čitateľná centrovaná šírka (nie roztiahnuté na celú obrazovku)
   return (
-    <div style={{ paddingBottom: SPACE.lg }}>
+    <div style={{ paddingBottom: SPACE.lg, maxWidth: desktop ? 1180 : wide ? 640 : undefined, marginLeft: "auto", marginRight: "auto" }}>
       <Hlavicka title="Nástenka" onBack={onBack} right={<span style={{ color: C.textTer, fontSize: 16 }}>▦</span>} />
 
       {/* topované */}
@@ -884,9 +888,9 @@ function GoodBoard({ onBack, onEvent, toast }: { onBack: () => void; onEvent: (i
         <SekciaLabel>VŠETKY UDALOSTI</SekciaLabel>
         <span style={{ fontSize: 11, color: C.textTer }}>{EVENTS.length * 18} v okolí</span>
       </div>
-      <div style={{ padding: `0 ${SPACE.md}px` }}>
+      <div style={{ padding: `0 ${SPACE.md}px`, ...(desktop ? { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(360px, 1fr))", gap: SPACE.sm, alignItems: "start" } : {}) }}>
         {list.map((e) => (
-          <div key={e.id} onClick={() => onEvent(e.id)} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, background: "rgba(var(--glass-rgb),.04)", border: `1px solid ${C.line2}`, borderRadius: RADIUS.sm, padding: `${SPACE.sm}px ${SPACE.sm}px`, marginBottom: SPACE.xs, cursor: "pointer" }}>
+          <div key={e.id} onClick={() => onEvent(e.id)} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, background: "rgba(var(--glass-rgb),.04)", border: `1px solid ${C.line2}`, borderRadius: RADIUS.sm, padding: `${SPACE.sm}px ${SPACE.sm}px`, marginBottom: desktop ? 0 : SPACE.xs, cursor: "pointer" }}>
             <span style={{ width: 8, height: 8, borderRadius: "50%", background: SRC_COL[e.src], flex: "none" }} />
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 14.5, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{e.title}</div>
@@ -904,7 +908,8 @@ function GoodBoard({ onBack, onEvent, toast }: { onBack: () => void; onEvent: (i
 }
 
 // ===================== DETAIL UDALOSTI =====================
-function GoodEvent({ id, onBack, toast, oslavuj }: { id: string | null; onBack: () => void; toast: (m: string) => void; oslavuj: (suma: number, komu: string) => void }) {
+// Exportovaný — detail udalosti z komunitnej nástenky (zdieľaný do Help/Charita).
+export function GoodEvent({ id, onBack, toast, oslavuj }: { id: string | null; onBack: () => void; toast: (m: string) => void; oslavuj: (suma: number, komu: string) => void }) {
   const { data: EVENTS = [] } = useGoodUdalosti();
   const e: Udalost | undefined = EVENTS.find((x) => x.id === id);
   if (!e) return null;

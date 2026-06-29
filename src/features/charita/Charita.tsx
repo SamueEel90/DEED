@@ -4,7 +4,9 @@ import { Foto, Avatar, FotoPrispevku, MiniFotky, ModulHlavicka, PodporaSekcia, P
 import { pripravFeed, FEED_CFG } from "@/lib/feed";
 import { MEDIA_AR } from "@/lib/cardSize";
 import { Zvoncek } from "@/features/notifikacie/Notifikacie";
-import type { CharitaFeedItem, CharitaLevel, Kanal } from "@/types";
+import type { CharitaFeedItem, CharitaLevel, Kanal, Subjekt } from "@/types";
+import { CudziProfil } from "@/features/cudzi-profil/CudziProfil";
+import { GoodBoard, GoodEvent } from "@/features/good/Good";
 import { useCharitaFeed, useCharitaAdresar, useCharitaZbierka } from "@/data";
 import { ZOFIA_FOTKY, HLADAJ_DATA } from "./mock";
 import { tagChip } from "@/lib/ui";
@@ -49,7 +51,7 @@ type ModulCharitaProps = {
   otvorModul?: (m: string) => void;
 };
 
-type Screen = "feed" | "detail";
+type Screen = "feed" | "detail" | "cudzi" | "board" | "event";
 type Sheet = "add" | "reg" | "dir" | null;
 
 export default function ModulCharita({ wide, otvorModul }: ModulCharitaProps) {
@@ -57,6 +59,8 @@ export default function ModulCharita({ wide, otvorModul }: ModulCharitaProps) {
   const [screen, setScreen] = useState<Screen>("feed"); // feed | detail
   const [sheet, setSheet] = useState<Sheet>(null); // add | reg | dir
   const [hladaj, setHladaj] = useState(false);
+  const [aktSubjekt, setAktSubjekt] = useState<Subjekt | null>(null);
+  const [aktEvent, setAktEvent] = useState<string | null>(null);
 
   // pri prepnutí obrazovky (napr. otvorenie detailu) odscrolluj appku hore
   const scrollHore = useScrollHore();
@@ -67,8 +71,11 @@ export default function ModulCharita({ wide, otvorModul }: ModulCharitaProps) {
   return (
     <div style={{ minHeight: "100%", color: K.txt }}>
       <ScreenSwitch k={screen}>
-      {screen === "feed" && <CharitaFeed wide={wide} toast={toast} onDetail={() => setScreen("detail")} onHladaj={() => setHladaj(true)} onSheet={setSheet} />}
+      {screen === "feed" && <CharitaFeed wide={wide} toast={toast} onDetail={() => setScreen("detail")} onHladaj={() => setHladaj(true)} onSheet={setSheet} onBoard={() => setScreen("board")} />}
       {screen === "detail" && obal(<CharitaDetail toast={toast} onBack={() => setScreen("feed")} onReg={() => setSheet("reg")} />)}
+      {screen === "cudzi" && aktSubjekt && obal(<CudziProfil subjekt={aktSubjekt as any} toast={toast} onBack={() => setScreen("feed")} />)}
+      {screen === "board" && <GoodBoard onBack={() => setScreen("feed")} onEvent={(id) => { setAktEvent(id); setScreen("event"); }} toast={toast} />}
+      {screen === "event" && obal(<GoodEvent id={aktEvent} onBack={() => setScreen("board")} toast={toast} oslavuj={(s, komu) => toast(`Ďakujeme za ${s} pre ${komu}`)} />)}
       </ScreenSwitch>
 
       {sheet === "add" && <SheetPridat toast={toast} otvorModul={otvorModul} onClose={() => setSheet(null)} />}
@@ -83,6 +90,7 @@ export default function ModulCharita({ wide, otvorModul }: ModulCharitaProps) {
             else if (String(id).startsWith("adr-")) setSheet("dir");
             else { const d = HLADAJ_DATA.find((x) => x.id === id); toast(`${d?.titul} — ${d?.tag}`); }
           }}
+          onSubjekt={(s) => { setAktSubjekt(s); setScreen("cudzi"); }}
           toast={toast} defaultFilter="Charity"
           onClose={() => setHladaj(false)} />
       )}
@@ -97,9 +105,10 @@ type FeedProps = {
   onDetail: () => void;
   onHladaj: () => void;
   onSheet: (s: Sheet) => void;
+  onBoard: () => void;
 };
 
-function CharitaFeed({ wide, toast, onDetail, onHladaj, onSheet }: FeedProps) {
+function CharitaFeed({ wide, toast, onDetail, onHladaj, onSheet, onBoard }: FeedProps) {
   const { desktop } = useLayout();
   const { data: FEED_ITEMS = [], isLoading, isError, refetch } = useCharitaFeed();
   // zvolený rádius — Feed algoritmus (Časť B): filter podľa okruhu + adaptívny
@@ -131,7 +140,7 @@ function CharitaFeed({ wide, toast, onDetail, onHladaj, onSheet }: FeedProps) {
     pridat: { id: "add", label: "Pridať", onClick: () => onSheet("add") },
     extra: [
       { id: "talent", label: "Ukáž svoj talent", popis: "Tvorivé skutky a talenty", ikona: <IkonaPlay size={18} color="var(--a-green)" />, onClick: gate(() => toast("Ukáž svoj talent (demo)")) },
-      { id: "board", label: "Nástenka", popis: "Zbierky a výzvy v okolí", ikona: <IkonaDoska size={18} color="var(--a-green)" />, onClick: () => toast("Nástenka (demo)") },
+      { id: "board", label: "Nástenka", popis: "Akcie a udalosti v okolí", ikona: <IkonaDoska size={18} color="var(--a-green)" />, onClick: onBoard },
     ],
   }), []);
 

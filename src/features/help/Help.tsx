@@ -4,7 +4,9 @@ import { Foto, Avatar, FotoPrispevku, MiniFotky, Hlavicka, ModulHlavicka, Podpor
 import { Zvoncek } from "@/features/notifikacie/Notifikacie";
 import { pripravFeed, FEED_CFG } from "@/lib/feed";
 import { MEDIA_AR } from "@/lib/cardSize";
-import type { HelpFeedItem } from "@/types";
+import type { HelpFeedItem, Subjekt } from "@/types";
+import { CudziProfil } from "@/features/cudzi-profil/CudziProfil";
+import { GoodBoard, GoodEvent } from "@/features/good/Good";
 import { useHelpFeed } from "@/data";
 import { tint, tagChip } from "@/lib/ui";
 import { pressable } from "@/components/pressable";
@@ -23,6 +25,8 @@ export default function ModulHelp({ wide }: { wide?: boolean }) {
   const { data: MOCK_FEED = [] } = useHelpFeed();
   const [screen, setScreen] = useState("feed"); // feed | detail | add | offer | request
   const [aktDetail, setAktDetail] = useState<any>(null);
+  const [aktSubjekt, setAktSubjekt] = useState<Subjekt | null>(null);
+  const [aktEvent, setAktEvent] = useState<string | null>(null);
   const [hladaj, setHladaj] = useState(false);
   const otvorZ = (z: any) => { setAktDetail(z); setScreen("detail"); };
 
@@ -36,11 +40,14 @@ export default function ModulHelp({ wide }: { wide?: boolean }) {
   return (
     <div style={{ minHeight: "100%" }}>
       <ScreenSwitch k={screen}>
-      {screen === "feed" && <Feed wide={wide} toast={toast} onDetail={otvorZ} onHladaj={() => setHladaj(true)} onAdd={() => setScreen("add")} />}
-      {screen === "detail" && obal(<Detail z={aktDetail} onBack={() => setScreen("feed")} />)}
+      {screen === "feed" && <Feed wide={wide} toast={toast} onDetail={otvorZ} onHladaj={() => setHladaj(true)} onAdd={() => setScreen("add")} onBoard={() => setScreen("board")} />}
+      {screen === "detail" && obal(<Detail z={aktDetail} onBack={() => setScreen("feed")} onAutor={(s) => { setAktSubjekt(s); setScreen("cudzi"); }} />)}
       {screen === "add" && obal(<Add onBack={() => setScreen("feed")} onOffer={() => setScreen("offer")} onRequest={() => setScreen("request")} />)}
       {screen === "offer" && obal(<OfferFlow onDone={() => setScreen("feed")} />)}
       {screen === "request" && obal(<RequestFlow onDone={() => setScreen("feed")} />)}
+      {screen === "cudzi" && aktSubjekt && obal(<CudziProfil subjekt={aktSubjekt as any} toast={toast} onBack={() => setScreen("feed")} />)}
+      {screen === "board" && <GoodBoard onBack={() => setScreen("feed")} onEvent={(id) => { setAktEvent(id); setScreen("event"); }} toast={toast} />}
+      {screen === "event" && obal(<GoodEvent id={aktEvent} onBack={() => setScreen("board")} toast={toast} oslavuj={(s, komu) => toast(`Ďakujeme za ${s} pre ${komu}`)} />)}
       </ScreenSwitch>
 
       {hladaj && (
@@ -50,6 +57,7 @@ export default function ModulHelp({ wide }: { wide?: boolean }) {
             tag: z.typ === "ziadost" ? "Žiadosť" : "Ponuka",
           }))}
           onPick={(id: number | string) => { const z = MOCK_FEED.find((x) => x.id === id); if (!z) return; z.typ === "ziadost" ? otvorZ(z) : toast(`${z.nazov} — ${z.typ === "ponuka" ? "ponuka pomoci" : "charita"}`); }}
+          onSubjekt={(s) => { setAktSubjekt(s); setScreen("cudzi"); }}
           toast={toast} defaultFilter="Žiadosti Help"
           onClose={() => setHladaj(false)} />
       )}
@@ -58,7 +66,7 @@ export default function ModulHelp({ wide }: { wide?: boolean }) {
 }
 
 // ===================== FEED =====================
-function Feed({ wide, toast, onDetail, onHladaj, onAdd }: { wide?: boolean; toast: (m: string) => void; onDetail: (z: any) => void; onHladaj: () => void; onAdd: () => void }) {
+function Feed({ wide, toast, onDetail, onHladaj, onAdd, onBoard }: { wide?: boolean; toast: (m: string) => void; onDetail: (z: any) => void; onHladaj: () => void; onAdd: () => void; onBoard: () => void }) {
   const { desktop } = useLayout();
   const { data: MOCK_FEED = [], isLoading, isError, refetch } = useHelpFeed();
   // živý ticker darov
@@ -88,7 +96,7 @@ function Feed({ wide, toast, onDetail, onHladaj, onAdd }: { wide?: boolean; toas
     pridat: { id: "add", label: "Pridať", onClick: onAdd },
     extra: [
       { id: "talent", label: "Ukáž svoj talent", popis: "Tvorivé skutky a talenty", ikona: <IkonaPlay size={18} color="var(--a-green)" />, onClick: gate(() => toast("Ukáž svoj talent (demo)")) },
-      { id: "board", label: "Nástenka", popis: "Žiadosti a ponuky v okolí", ikona: <IkonaDoska size={18} color="var(--a-green)" />, onClick: () => toast("Nástenka (demo)") },
+      { id: "board", label: "Nástenka", popis: "Akcie a udalosti v okolí", ikona: <IkonaDoska size={18} color="var(--a-green)" />, onClick: onBoard },
     ],
   }), []);
 
@@ -189,7 +197,7 @@ function FeedCard({ z, wide, onClick }: { z: any; wide?: boolean; onClick: () =>
 }
 
 // ===================== DETAIL ŽIADOSTI =====================
-function Detail({ z, onBack }: { z: any; onBack: () => void }) {
+function Detail({ z, onBack, onAutor }: { z: any; onBack: () => void; onAutor: (s: Subjekt) => void }) {
   const [platba, setPlatba] = useState<string | null>(null); // "EUR" | "DEED"
   const [suma, setSuma] = useState(z.suma);
   const [ludia, setLudia] = useState(z.ludia);
@@ -228,13 +236,14 @@ function Detail({ z, onBack }: { z: any; onBack: () => void }) {
       </div>
       <MiniFotky fotky={z.fotky} />
 
-      {/* meta */}
-      <div style={{ padding: `${SPACE.sm}px ${SPACE.gutter}px`, borderBottom: `1px solid ${C.line2}`, display: "flex", gap: SPACE.sm, alignItems: "center" }}>
+      {/* meta — klik otvorí cudzí profil (§6) */}
+      <div onClick={() => onAutor({ typ: "osoba", meno: z.nazov, level: z.karma || "Silver", lok: z.lok })} style={{ padding: `${SPACE.sm}px ${SPACE.gutter}px`, borderBottom: `1px solid ${C.line2}`, display: "flex", gap: SPACE.sm, alignItems: "center", cursor: "pointer" }}>
         <Avatar src={z.avatar} emoji="👤" size={46} border={`1px solid rgba(127,203,160,.5)`} />
-        <div>
+        <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 16, fontWeight: "bold" }}>{z.nazov} {z.overeny && <span style={{ fontSize: 9, color: C.greenL, border: `1px solid rgba(127,203,160,.4)`, borderRadius: RADIUS.lg, padding: "1px 6px" }}>overená</span>}</div>
           <div style={{ marginTop: SPACE.xxs }}><span style={{ fontSize: 9, fontWeight: 700, background: "rgba(240,199,90,.12)", border: "1px solid rgba(240,199,90,.3)", color: C.gold, borderRadius: RADIUS.sm, padding: `${SPACE.xxs}px ${SPACE.xs}px` }}>⭐ {z.karma}</span> <span style={{ fontSize: 11, color: C.textTer }}>📍 {z.lok} · 1 deň</span></div>
         </div>
+        <span style={{ color: C.textTer, fontSize: 18, flex: "none" }}>›</span>
       </div>
 
       {/* pribeh */}

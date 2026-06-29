@@ -20,8 +20,8 @@ type Rezim = "login" | "register";
 // onAuthed — po úspešnom logine (ktorý potrebuje onboarding) alebo registrácii:
 // pokračuje na „Kto si?" / do rozrobeného flow. Login onboardnutého usera
 // nastaví session priamo (resolveSession) a appka sa zobrazí reaktívne.
-export function AuthPage({ onAuthed, onGuest, onPasivny }: { onAuthed: (authId: string, email: string, typ?: TypUctu) => void; onGuest?: () => void; onPasivny?: () => void }) {
-  const [rezim, setRezim] = useState<Rezim>("login");
+export function AuthPage({ onAuthed, onGuest, onPasivny, uvodnyRezim = "login" }: { onAuthed: (authId: string, email: string, typ?: TypUctu) => void; onGuest?: () => void; onPasivny?: () => void; uvodnyRezim?: Rezim }) {
+  const [rezim, setRezim] = useState<Rezim>(uvodnyRezim);
   const [email, setEmail] = useState("");
   const [heslo, setHeslo] = useState("");
   const [heslo2, setHeslo2] = useState("");
@@ -148,14 +148,17 @@ export function AuthPage({ onAuthed, onGuest, onPasivny }: { onAuthed: (authId: 
           {busy ? "Moment…" : <>{jeLogin ? "Prihlásiť sa" : "Vytvoriť účet"} <IkonaSipVpravo size={18} color="#fff" /></>}
         </button>
 
-        {/* sekundárna akcia — vstup bez prihlásenia (pasívny režim, bez účtu) */}
-        <button onClick={onPasivny} style={{
-          width: "100%", padding: `${SPACE.md}px 0`, marginTop: SPACE.sm, borderRadius: RADIUS.md, fontFamily: "inherit",
-          fontSize: 14.5, fontWeight: 700, cursor: "pointer", transition: "background .2s ease",
-          background: "rgba(var(--glass-rgb),.05)", color: C.textSec, border: `1px solid ${C.line}`,
-        }}>
-          Pokračovať bez prihlásenia
-        </button>
+        {/* sekundárna akcia — vstup bez prihlásenia (pasívny režim, bez účtu).
+            V upgrade kontexte (pasívny → aktívny) sa nezobrazuje — handler nie je odovzdaný. */}
+        {onPasivny && (
+          <button onClick={onPasivny} style={{
+            width: "100%", padding: `${SPACE.md}px 0`, marginTop: SPACE.sm, borderRadius: RADIUS.md, fontFamily: "inherit",
+            fontSize: 14.5, fontWeight: 700, cursor: "pointer", transition: "background .2s ease",
+            background: "rgba(var(--glass-rgb),.05)", color: C.textSec, border: `1px solid ${C.line}`,
+          }}>
+            Pokračovať bez prihlásenia
+          </button>
+        )}
 
         {/* prepnutie režimu + hosť */}
         <div style={{ textAlign: "center", marginTop: SPACE.lg, fontSize: 13, color: C.textSec }}>
@@ -164,11 +167,13 @@ export function AuthPage({ onAuthed, onGuest, onPasivny }: { onAuthed: (authId: 
             {jeLogin ? "Zaregistruj sa" : "Prihlás sa"}
           </span>
         </div>
-        <div style={{ textAlign: "center", marginTop: SPACE.gutter }}>
-          <span onClick={onGuest} style={{ fontSize: 12.5, color: C.textTer, cursor: "pointer", textDecoration: "underline" }}>
-            Admin prihlásenie
-          </span>
-        </div>
+        {onGuest && (
+          <div style={{ textAlign: "center", marginTop: SPACE.gutter }}>
+            <span onClick={onGuest} style={{ fontSize: 12.5, color: C.textTer, cursor: "pointer", textDecoration: "underline" }}>
+              Admin prihlásenie
+            </span>
+          </div>
+        )}
       </div>
     </div>
   );
