@@ -54,6 +54,35 @@ function naHelpItem(r: any): HelpFeedItem {
 }
 
 export const helpSupabase = {
+  async vytvor(it: HelpFeedItem, autorUcetId?: string | null): Promise<boolean> {
+    if (!supabase) return false;
+    // Help-specifické polia idú do `data` (diskriminátor help:true); engine polia do stĺpcov.
+    // autor_nazov = titul žiadosti (denormalizácia podľa naHelpItem), suma→vyzbierane, ludia→pomocnici.
+    const { error } = await supabase.from("prispevok").insert({
+      autor_ucet_id: autorUcetId ?? null,
+      autor_nazov: it.nazov,
+      autor_karma: it.karma ?? null,
+      modul: it.modul ?? "help",
+      typ: it.typ,                  // 'ponuka' | 'ziadost' (CHECK ich pozná)
+      kat: it.kat ?? null,
+      popis: it.pribeh,
+      emoji: it.ikona,
+      media: it.fotky?.length ? { fotky: it.fotky } : {},
+      lat: it.lat ?? null,
+      lng: it.lng ?? null,
+      lok: it.lok ?? null,
+      narodne: !!it.narodne,
+      typ_situacie: it.typSituacie ?? "normal",
+      skore: it.skore ?? 0,
+      overene: !!it.overeny,
+      ciel: it.ciel ?? null,
+      vyzbierane: it.suma ?? null,
+      pomocnici: it.ludia ?? null,
+      data: { help: true, id: it.id, typ: it.typ, velkost: it.velkost, odbornik: it.odbornik ?? false, sponzor: it.sponzor ?? false, avatar: it.avatar ?? null },
+    });
+    if (error) throw error;
+    return true;
+  },
   async feed(): Promise<HelpFeedItem[]> {
     if (!supabase) return [];
     // len Help riadky (data.help=true). Okruh/prah/zoradenie rieši klient (pripravFeed);

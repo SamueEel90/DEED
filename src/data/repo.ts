@@ -37,9 +37,13 @@ export interface Repo {
   good: {
     feed(): Promise<GoodPolozka[]>;
     udalosti(): Promise<Udalost[]>;
+    /** Vytvor nový skutok (zápis do DB). Vráti true ak sa reálne uložil (Supabase), false pri mocku. */
+    vytvor(it: GoodPolozka, autorUcetId?: string | null): Promise<boolean>;
   };
   help: {
     feed(): Promise<HelpFeedItem[]>;
+    /** Vytvor novú ponuku/žiadosť (zápis do DB). Vráti true ak sa reálne uložila. */
+    vytvor(it: HelpFeedItem, autorUcetId?: string | null): Promise<boolean>;
   };
   charita: {
     feed(): Promise<CharitaFeedItem[]>;
@@ -83,9 +87,11 @@ export const mockRepo: Repo = {
   good: {
     feed: () => ok(POLOZKY),
     udalosti: () => ok(EVENTS),
+    vytvor: () => Promise.resolve(false), // mock: bez DB → false (komponent ponechá optimistický záznam)
   },
   help: {
     feed: () => ok(MOCK_FEED),
+    vytvor: () => Promise.resolve(false),
   },
   charita: {
     feed: () => ok(FEED_ITEMS),

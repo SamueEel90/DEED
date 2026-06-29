@@ -1,13 +1,15 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, type ReactNode } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { C, pasmo, inp, infoBox, btn, GRAD_ZELENY, glassTmavy, SPACE, RADIUS } from "@/theme";
-import { Foto, Avatar, FotoPrispevku, MiniFotky, Hlavicka, ModulHlavicka, PodporaSekcia, PlatbaModal, HladanieModal, Otazka, Vyber, vyberBox, NavBtns, Suhrn, DokladRow, toast, useGaleria, useLayout, useScrollHore, useStrankaAkcie, useTvorbaGate, Ticker, StatRiadok, FiltreStat, MoniBar, FeedStlpce, FeedGrid, obalSiroky, OkruhVyber, Lupa, Zdielanie, IkonaSpat, IkonaVlajka, IkonaFoto, IkonaPlay, IkonaDoska, IkonaPin, FeedSkeleton, EmptyState, ErrorState, ScreenSwitch } from "@/shared";
+import { Foto, Avatar, FotoPrispevku, MiniFotky, Hlavicka, ModulHlavicka, PodporaSekcia, PlatbaModal, HladanieModal, Otazka, Vyber, vyberBox, NavBtns, Suhrn, DokladRow, toast, Oslava, useGaleria, useLayout, useScrollHore, useStrankaAkcie, useTvorbaGate, Ticker, StatRiadok, FiltreStat, MoniBar, FeedStlpce, FeedGrid, obalSiroky, OkruhVyber, Lupa, Zdielanie, IkonaSpat, IkonaVlajka, IkonaFoto, IkonaPlay, IkonaDoska, IkonaPin, FeedSkeleton, EmptyState, ErrorState, ScreenSwitch } from "@/shared";
 import { Zvoncek } from "@/features/notifikacie/Notifikacie";
 import { pripravFeed, FEED_CFG } from "@/lib/feed";
 import { MEDIA_AR } from "@/lib/cardSize";
 import type { HelpFeedItem, Subjekt } from "@/types";
 import { CudziProfil } from "@/features/cudzi-profil/CudziProfil";
 import { GoodBoard, GoodEvent } from "@/features/good/Good";
-import { useHelpFeed } from "@/data";
+import { useHelpFeed, qk, repo } from "@/data";
+import { usePouzivatel } from "@/lib/pouzivatel";
 import { tint, tagChip } from "@/lib/ui";
 import { pressable } from "@/components/pressable";
 import { USER_LOK, ZIVE_DARY } from "./mock";
@@ -30,6 +32,22 @@ export default function ModulHelp({ wide }: { wide?: boolean }) {
   const [hladaj, setHladaj] = useState(false);
   const otvorZ = (z: any) => { setAktDetail(z); setScreen("detail"); };
 
+  // tvorba: (1) OPTIMISTICKY vlož navrch feedu (okamžitý výsledok) a (2) zapíš do DB
+  // (prispevok, data.help). Po úspešnom zápise invaliduj feed → refetch z DB (uvidia aj ostatní).
+  // Bez DB (mock) ostane len optimistický záznam.
+  const qc = useQueryClient();
+  const ja = usePouzivatel();
+  const [oslava, setOslava] = useState<{ emoji: string; titul: string; text: ReactNode } | null>(null);
+  const zverejni = (item: HelpFeedItem, osl: { emoji: string; titul: string; text: ReactNode }) => {
+    qc.setQueryData<HelpFeedItem[]>(qk.help.feed, (old = []) => [item, ...old]);
+    repo.help.vytvor(item, ja.ucetId)
+      .then((ulozene) => { if (ulozene) qc.invalidateQueries({ queryKey: qk.help.feed }); })
+      .catch(() => {});
+    setScreen("feed");
+    setOslava(osl);
+    setTimeout(() => setOslava(null), 2200);
+  };
+
   // pri prepnutí obrazovky (napr. otvorenie detailu) odscrolluj appku hore
   const scrollHore = useScrollHore();
   useEffect(() => { scrollHore(); }, [screen]);
@@ -43,8 +61,8 @@ export default function ModulHelp({ wide }: { wide?: boolean }) {
       {screen === "feed" && <Feed wide={wide} toast={toast} onDetail={otvorZ} onHladaj={() => setHladaj(true)} onAdd={() => setScreen("add")} onBoard={() => setScreen("board")} />}
       {screen === "detail" && obal(<Detail z={aktDetail} onBack={() => setScreen("feed")} onAutor={(s) => { setAktSubjekt(s); setScreen("cudzi"); }} />)}
       {screen === "add" && obal(<Add onBack={() => setScreen("feed")} onOffer={() => setScreen("offer")} onRequest={() => setScreen("request")} />)}
-      {screen === "offer" && obal(<OfferFlow onDone={() => setScreen("feed")} />)}
-      {screen === "request" && obal(<RequestFlow onDone={() => setScreen("feed")} />)}
+      {screen === "offer" && obal(<OfferFlow onBack={() => setScreen("feed")} onZverejni={zverejni} />)}
+      {screen === "request" && obal(<RequestFlow onBack={() => setScreen("feed")} onZverejni={zverejni} />)}
       {screen === "cudzi" && aktSubjekt && obal(<CudziProfil subjekt={aktSubjekt as any} toast={toast} onBack={() => setScreen("feed")} />)}
       {screen === "board" && <GoodBoard onBack={() => setScreen("feed")} onEvent={(id) => { setAktEvent(id); setScreen("event"); }} toast={toast} />}
       {screen === "event" && obal(<GoodEvent id={aktEvent} onBack={() => setScreen("board")} toast={toast} oslavuj={(s, komu) => toast(`Ďakujeme za ${s} pre ${komu}`)} />)}
@@ -61,6 +79,8 @@ export default function ModulHelp({ wide }: { wide?: boolean }) {
           toast={toast} defaultFilter="Žiadosti Help"
           onClose={() => setHladaj(false)} />
       )}
+
+      {oslava && <Oslava emoji={oslava.emoji} title={oslava.titul} text={oslava.text} onClose={() => setOslava(null)} />}
     </div>
   );
 }
@@ -199,8 +219,8 @@ function FeedCard({ z, wide, onClick }: { z: any; wide?: boolean; onClick: () =>
 // ===================== DETAIL ŽIADOSTI =====================
 function Detail({ z, onBack, onAutor }: { z: any; onBack: () => void; onAutor: (s: Subjekt) => void }) {
   const [platba, setPlatba] = useState<string | null>(null); // "EUR" | "DEED"
-  const [suma, setSuma] = useState(z.suma);
-  const [ludia, setLudia] = useState(z.ludia);
+  const [suma, setSuma] = useState(z.suma ?? 0);
+  const [ludia, setLudia] = useState(z.ludia ?? 0);
   const otvorGaleriu = useGaleria();
   const { wide } = useLayout();
 
@@ -217,7 +237,7 @@ function Detail({ z, onBack, onAutor }: { z: any; onBack: () => void; onAutor: (
     toast(`Odoslané: ${platba === "EUR" ? s + " €" : s + " DEED"} · ⛓ ${hash()}`);
   }
 
-  const pct = Math.min(100, Math.round(suma / z.ciel * 100));
+  const pct = z.ciel ? Math.min(100, Math.round(suma / z.ciel * 100)) : 0;
 
   return (
     <div style={{ paddingBottom: SPACE.xl }}>
@@ -260,8 +280,8 @@ function Detail({ z, onBack, onAutor }: { z: any; onBack: () => void; onAutor: (
         </div>
       )}
 
-      {/* progres */}
-      <div style={{ margin: `0 ${SPACE.gutter}px ${SPACE.md}px`, background: C.surface2, border: `1px solid ${C.line}`, borderRadius: RADIUS.sm, padding: SPACE.gutter }}>
+      {/* progres — len finančná žiadosť (má cieľovú sumu) */}
+      {z.ciel != null && (<div style={{ margin: `0 ${SPACE.gutter}px ${SPACE.md}px`, background: C.surface2, border: `1px solid ${C.line}`, borderRadius: RADIUS.sm, padding: SPACE.gutter }}>
         <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
           <div><span style={{ fontSize: 26, fontWeight: "bold" }}>{Math.round(suma)} €</span> <span style={{ fontSize: 13, color: C.textTer }}>z {z.ciel} €</span></div>
           <span style={{ fontSize: 16, fontWeight: "bold", color: C.greenL }}>{pct} %</span>
@@ -273,7 +293,7 @@ function Detail({ z, onBack, onAutor }: { z: any; onBack: () => void; onAutor: (
           <span style={{ color: C.textSec }}>👥 {ludia} ľudí pomohlo</span>
           <span style={{ color: C.greenL }}>● rastie live</span>
         </div>
-      </div>
+      </div>)}
 
       {/* jednotná sekcia podpory */}
       <div style={{ padding: `0 ${SPACE.gutter}px ${SPACE.gutter}px` }}>
@@ -324,15 +344,32 @@ function BigChoice({ emoji, title, desc, col, onClick }: { emoji: string; title:
 }
 
 // ===================== PONÚKAM — flow =====================
-function OfferFlow({ onDone }: { onDone: () => void }) {
+function OfferFlow({ onBack, onZverejni }: { onBack: () => void; onZverejni: (item: HelpFeedItem, osl: { emoji: string; titul: string; text: ReactNode }) => void }) {
   const [krok, setKrok] = useState(1);
   const [typ, setTyp] = useState<string | null>(null);
   const [uroven, setUroven] = useState<string | null>(null);
   const [popis, setPopis] = useState("");
 
+  const zverejniPonuku = () => {
+    const novaPonuka: HelpFeedItem = {
+      id: Date.now(),
+      typ: "ponuka",
+      nazov: `Ponúkam: ${typ}`,
+      pribeh: popis,
+      ikona: typ === "Vec" ? "📦" : typ === "Čas / ruky" ? "⏱" : "🎓",
+      velkost: "stredna",
+      lok: "Tvoje okolie",
+      karma: uroven === "odbornik" ? "Gold" : "Silver",
+      odbornik: uroven === "odbornik",
+      skore: 9, typSituacie: "normal", modul: "help", dni: 0,
+      lat: USER_LOK.lat, lng: USER_LOK.lng,
+    };
+    onZverejni(novaPonuka, { emoji: "🤝", titul: "Ponuka zverejnená!", text: "Tvoja ponuka je teraz vo feede medzi „Ponúkajú pomoc“. Ľudia z okolia sa ti môžu ozvať." });
+  };
+
   return (
     <div>
-      <Hlavicka title="Ponúkam pomoc" onBack={onDone} step={krok} total={3} />
+      <Hlavicka title="Ponúkam pomoc" onBack={onBack} step={krok} total={3} />
       <div style={{ padding: SPACE.md }}>
         {krok === 1 && (
           <>
@@ -358,7 +395,7 @@ function OfferFlow({ onDone }: { onDone: () => void }) {
             <Otazka>Zhrnutie</Otazka>
             <Suhrn rows={[["Typ", typ], ["Úroveň", uroven === "odbornik" ? "Odborník (doloží podklady)" : "Amatér"], ["Popis", popis]]} />
             {uroven === "odbornik" && <div style={infoBox}>Odborník: pred zverejnením doložíš podklady. AI z nich určí vstupný status karmy v odbore.</div>}
-            <button onClick={onDone} style={{ ...btn("primary"), width: "100%", marginTop: SPACE.gutter }}>Zverejniť ponuku</button>
+            <button onClick={zverejniPonuku} style={{ ...btn("primary"), width: "100%", marginTop: SPACE.gutter }}>Zverejniť ponuku</button>
           </>
         )}
       </div>
@@ -367,7 +404,7 @@ function OfferFlow({ onDone }: { onDone: () => void }) {
 }
 
 // ===================== DOPYTUJEM — flow =====================
-function RequestFlow({ onDone }: { onDone: () => void }) {
+function RequestFlow({ onBack, onZverejni }: { onBack: () => void; onZverejni: (item: HelpFeedItem, osl: { emoji: string; titul: string; text: ReactNode }) => void }) {
   const [vetva, setVetva] = useState<string | null>(null); // 'ludska' | 'peniaze'
   const [krok, setKrok] = useState(0);
   const [preKoho, setPreKoho] = useState<string | null>(null);
@@ -379,11 +416,50 @@ function RequestFlow({ onDone }: { onDone: () => void }) {
   const sumaNum = Number(suma || 0);
   const p = sumaNum ? pasmo(sumaNum) : null;
 
+  const skratka = (t: string) => (t.length > 42 ? t.slice(0, 42).trim() + "…" : t);
+
+  // ľudská (nefinančná) pomoc → žiadosť bez cieľovej sumy
+  const zverejniDopyt = () => {
+    const novyDopyt: HelpFeedItem = {
+      id: Date.now(),
+      typ: "ziadost",
+      nazov: skratka(popis),
+      pribeh: popis,
+      ikona: "🧑‍🤝‍🧑",
+      velkost: "stredna",
+      lok: "Tvoje okolie",
+      karma: "Silver",
+      skore: 9, typSituacie: "normal", modul: "help", dni: 0,
+      lat: USER_LOK.lat, lng: USER_LOK.lng,
+    };
+    onZverejni(novyDopyt, { emoji: "🙋", titul: "Dopyt zverejnený!", text: "Tvoja prosba je vo feede medzi „Hľadajú pomoc“. Keď sa niekto ozve, dohodnete sa cez chat." });
+  };
+
+  // finančná pomoc → žiadosť s cieľovou sumou (progres 0 %)
+  const zverejniZiadost = () => {
+    const novaZiadost: HelpFeedItem = {
+      id: Date.now(),
+      typ: "ziadost",
+      nazov: skratka(popis || "Žiadosť o pomoc"),
+      pribeh: popis,
+      ikona: "🙏",
+      velkost: "velka",
+      lok: "Tvoje okolie",
+      karma: "Silver",
+      suma: 0,
+      ciel: sumaNum,
+      ludia: 0,
+      skore: 10, typSituacie: "normal", modul: "help", dni: 0,
+      lat: USER_LOK.lat, lng: USER_LOK.lng,
+    };
+    onZverejni(novaZiadost, { emoji: "🙏", titul: "Žiadosť vytvorená!", text: <>Tvoja žiadosť na <b>{sumaNum} €</b> je vo feede. Po posúdení (do 48 h) sa spustí naživo a ľudia môžu prispievať.</> });
+  };
+
   // VÝBER VETVY
   if (!vetva) {
     return (
       <div>
-        <Hlavicka title="Dopytujem" onBack={onDone} />
+        <Hlavicka title="Dopytujem" onBack={onBack} />
         <div style={{ padding: SPACE.md }}>
           <Otazka>Akú pomoc potrebuješ?</Otazka>
           <Vyber emoji="🧑‍🤝‍🧑" title="Ľudská pomoc" desc="Odvoz, sťahovanie, doučovanie, spoločníčka… (nefinančné)" onClick={() => { setVetva("ludska"); setKrok(1); }} />
@@ -402,7 +478,7 @@ function RequestFlow({ onDone }: { onDone: () => void }) {
           <Otazka>Opíš, s čím potrebuješ pomôcť</Otazka>
           <textarea value={popis} onChange={(e) => setPopis(e.target.value)} placeholder="Napr. „Potrebujem odviezť k lekárovi v stredu ráno, Sihoť → nemocnica.“" style={inp(100)} />
           <div style={infoBox}>AI posúdi relevanciu (či to nevyrieši bežná cesta) a navrhne kategóriu. Po zverejnení sa ti ozve niekto z okolia → chat → dohoda → QR na mieste.</div>
-          <button onClick={onDone} disabled={!popis} style={{ ...btn(popis ? "primary" : "disabled"), width: "100%", marginTop: SPACE.gutter }}>Zverejniť dopyt</button>
+          <button onClick={zverejniDopyt} disabled={!popis} style={{ ...btn(popis ? "primary" : "disabled"), width: "100%", marginTop: SPACE.gutter }}>Zverejniť dopyt</button>
         </div>
       </div>
     );
@@ -509,7 +585,7 @@ function RequestFlow({ onDone }: { onDone: () => void }) {
               ["Opis", popis.slice(0, 60) + (popis.length > 60 ? "…" : "")],
             ]} />
             <div style={{ ...infoBox, marginTop: SPACE.sm }}>Potvrdzujem, že informácie sú pravdivé a doklady pravé. Rozumiem dôsledkom klamstva.</div>
-            <button onClick={onDone} style={{ ...btn("primary"), width: "100%", marginTop: SPACE.gutter }}>Vytvoriť žiadosť</button>
+            <button onClick={zverejniZiadost} style={{ ...btn("primary"), width: "100%", marginTop: SPACE.gutter }}>Vytvoriť žiadosť</button>
             <div style={{ textAlign: "center", fontSize: 11, color: C.textTer, marginTop: SPACE.xs }}>Po vytvorení: posúdenie do 48 h → schválené → live.</div>
           </>
         )}

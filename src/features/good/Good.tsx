@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { C, inp, GRAD, GRAD_ZELENY, SPACE, RADIUS } from "@/theme";
 import { Foto, FotoPrispevku, MiniFotky, Video, ModulHlavicka, Hlavicka, AvatarUroven, PodporaSekcia, PlatbaModal, HladanieModal, toast, Oslava, useGaleria, useScrollHore, useMotiv, useLayout, useStrankaAkcie, useTvorbaGate, StatRiadok, MoniBar, FeedStlpce, FeedGrid, obalSiroky, SegTabs, Lupa, Zdielanie, IkonaSipVlavo, IkonaMoznosti, IkonaUlozit, IkonaFajka, IkonaPlay, IkonaDoska, IkonaPin, OkruhVyber, QrModal, FeedSkeleton, EmptyState, ErrorState, ScreenSwitch } from "@/shared";
 import { pripravFeed, vzdialenostKm, FEED_CFG, type FeedUser } from "@/lib/feed";
@@ -10,7 +11,7 @@ import { RetazDobraSheet } from "@/features/retaz/RetazDobra";
 import { Zvoncek } from "@/features/notifikacie/Notifikacie";
 import { CudziProfil } from "@/features/cudzi-profil/CudziProfil";
 import type { GoodPolozka, Subjekt, Udalost, OkruhKod } from "@/types";
-import { useGoodFeed, useGoodUdalosti, useTopPrispevky } from "@/data";
+import { useGoodFeed, useGoodUdalosti, useTopPrispevky, qk, repo } from "@/data";
 import { usePersonalizacia } from "@/lib/personalizacia";
 import { KAT, SRC_COL } from "./mock";
 
@@ -65,6 +66,18 @@ export default function ModulGood({ wide, otvorModul }: { wide?: boolean; otvorM
   const oslavuj = (suma: number, komu: string) => { setOslava({ suma, komu }); setTimeout(() => setOslava(null), 1900); };
   const obal = (el: React.ReactNode) => obalSiroky(el, { wide, desktop, max: 620, maxDesktop: 920 });
 
+  // tvorba: nový skutok sa (1) OPTIMISTICKY vloží navrch feedu (okamžitý výsledok) a
+  // (2) zapíše do DB (prispevok). Po úspešnom zápise invaliduj feed → refetch z DB,
+  // takže príspevok uvidia aj ostatní. Bez DB (mock) ostane len optimistický záznam.
+  const qc = useQueryClient();
+  const ja = usePouzivatel();
+  const pridajSkutok = (it: GoodPolozka) => {
+    qc.setQueryData<GoodPolozka[]>(qk.good.feed, (old = []) => [it, ...old]);
+    repo.good.vytvor(it, ja.ucetId)
+      .then((ulozene) => { if (ulozene) qc.invalidateQueries({ queryKey: qk.good.feed }); })
+      .catch(() => {});
+  };
+
   const akt = POLOZKY.find((x) => x.id === aktId);
 
   return (
@@ -97,7 +110,7 @@ export default function ModulGood({ wide, otvorModul }: { wide?: boolean; otvorM
         <GoodVerify it={akt} mode={verifyMode} toast={toast} onBack={() => setScreen("detail")} />
       )}
       {screen === "add" && obal(
-        <GoodAdd toast={toast} oslavuj={oslavuj} onDone={() => setScreen("home")} />
+        <GoodAdd toast={toast} oslavuj={oslavuj} onPridaj={pridajSkutok} onDone={() => setScreen("home")} />
       )}
       </ScreenSwitch>
 
@@ -691,7 +704,8 @@ export function GoodVerify({ it, mode, toast, onBack }: { it: GoodPolozka; mode:
 }
 
 // ===================== PRIDAŤ SKUTOK =====================
-function GoodAdd({ toast, oslavuj, onDone }: { toast: (m: string) => void; oslavuj: (suma: number, komu: string) => void; onDone: () => void }) {
+function GoodAdd({ toast, oslavuj, onPridaj, onDone }: { toast: (m: string) => void; oslavuj: (suma: number, komu: string) => void; onPridaj: (it: GoodPolozka) => void; onDone: () => void }) {
+  const ja = usePouzivatel();
   const [krok, setKrok] = useState("vyber"); // vyber | solo | nahlad | vyhodnotene
   const [text, setText] = useState("");
   const [miesto, setMiesto] = useState("");        // kde sa skutok stal — zaradenie do regiónu/feedu (nie dôkaz pravdy)
@@ -699,6 +713,15 @@ function GoodAdd({ toast, oslavuj, onDone }: { toast: (m: string) => void; oslav
   const [aiNavrh, setAiNavrh] = useState("");      // editovateľný AI návrh textu (krok náhľad)
   const [suhlas, setSuhlas] = useState(false);     // povinné potvrdenie pravdivosti skutku
   const [retaz, setRetaz] = useState(false);       // Reťaz dobra — Cesta A (po vyhodnotení významného)
+  const [fotky, setFotky] = useState<string[]>([]); // nahraté foto (data URL) — náhľad + zobrazí sa na karte
+
+  // načítaj vybraný obrázok z disku ako data URL (bez uploadu — žije v session)
+  const nacitajFoto = (k: number, file?: File | null) => {
+    if (!file) return;
+    const r = new FileReader();
+    r.onload = () => setFotky((f) => { const n = [...f]; n[k] = String(r.result); return n; });
+    r.readAsDataURL(file);
+  };
   const ODMENA = 130;                              // DEED odmena za významný skutok (placeholder)
   const mozePokracovat = miesto.trim().length > 0; // miesto je povinné
 
@@ -723,6 +746,29 @@ function GoodAdd({ toast, oslavuj, onDone }: { toast: (m: string) => void; oslav
     if (!/[.!?]$/.test(s)) s += ".";
     return s;
   };
+
+  // zostav nový skutok do feedu: geo = moje okolie (USER_LOK) + vysoké skóre → veľká karta navrchu.
+  const vytvorSkutok = (): GoodPolozka => ({
+    id: Date.now(),
+    typ: "skutok",
+    velkost: "big",
+    kat: "Komunita",
+    autor: ja.celeMeno || "Ty",
+    num: 0,
+    emoji: "🤝",
+    fotky: fotky.filter(Boolean),
+    titul: aiNavrh.replace(/[.!?]+$/, ""),
+    popis: aiNavrh,
+    lok: miesto.trim() || ja.mesto,
+    overene: true,
+    skore: 8,
+    typSituacie: "normal",
+    modul: "good",
+    dni: 0,
+    podpora: 0,
+    lat: USER_LOK.lat,
+    lng: USER_LOK.lng,
+  });
 
   return (
     <div style={{ paddingBottom: SPACE.lg }}>
@@ -755,10 +801,14 @@ function GoodAdd({ toast, oslavuj, onDone }: { toast: (m: string) => void; oslav
             <div style={{ fontSize: 12, color: C.textTer, lineHeight: 1.5, margin: `${SPACE.md}px 0 ${SPACE.xs}px` }}>Kde sa skutok stal — pomôže zaradiť ho do správneho okolia.</div>
             <input value={miesto} onChange={(e) => setMiesto(e.target.value)} placeholder="Mesto / obec / miesto" style={inp(50)} />
 
-            <SekciaLabel>Dôkaz — foto/video (ide len do AI overenia)</SekciaLabel>
+            <SekciaLabel>Foto / video k skutku</SekciaLabel>
             <div style={{ display: "flex", gap: SPACE.sm, marginTop: SPACE.xs }}>
               {[0, 1].map((k) => (
-                <div key={k} onClick={() => toast("📷 Pridať dôkaz")} style={{ width: 64, height: 64, border: `1px dashed ${C.line}`, borderRadius: RADIUS.sm, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, color: C.textTer, cursor: "pointer" }}>+</div>
+                <label key={k} title="Pridať foto" style={{ width: 64, height: 64, border: `1px dashed ${fotky[k] ? "transparent" : C.line}`, borderRadius: RADIUS.sm, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, color: C.textTer, cursor: "pointer", overflow: "hidden", position: "relative", backgroundImage: fotky[k] ? `url(${fotky[k]})` : undefined, backgroundSize: "cover", backgroundPosition: "center" }}>
+                  {!fotky[k] && "+"}
+                  {fotky[k] && <span style={{ position: "absolute", bottom: 2, right: 4, fontSize: 11, color: "#fff", textShadow: "0 1px 3px rgba(0,0,0,.8)" }}>✎</span>}
+                  <input type="file" accept="image/*" onChange={(e) => nacitajFoto(k, e.target.files?.[0])} style={{ display: "none" }} />
+                </label>
               ))}
             </div>
             <button onClick={() => { if (!mozePokracovat) return; setAiNavrh(aiText()); setSuhlas(false); setKontrola(true); }} disabled={!mozePokracovat}
@@ -817,7 +867,7 @@ function GoodAdd({ toast, oslavuj, onDone }: { toast: (m: string) => void; oslav
 
             <p style={{ textAlign: "center", fontSize: 13.5, color: C.textSec, lineHeight: 1.5, marginTop: SPACE.md }}>Chceš celú odmenu sebe, alebo sa <b style={{ color: "var(--a-green)" }}>podeliť</b> v Reťazi dobra?</p>
             <div style={{ display: "flex", gap: SPACE.sm, marginTop: SPACE.sm }}>
-              <button onClick={() => { toast(`Skutok pridaný! +${ODMENA} DEED — celé tebe`); oslavuj(ODMENA, "teba"); setTimeout(onDone, 700); }}
+              <button onClick={() => { onPridaj(vytvorSkutok()); toast(`Skutok pridaný! +${ODMENA} DEED — celé tebe`); oslavuj(ODMENA, "teba"); setTimeout(onDone, 700); }}
                 style={{ flex: 1, height: 50, borderRadius: RADIUS.md, border: `1px solid ${C.line}`, background: "rgba(var(--glass-rgb),.05)", color: C.text, fontWeight: 700, fontSize: 14.5, cursor: "pointer", fontFamily: "inherit" }}>Celé mne</button>
               <button onClick={() => setRetaz(true)}
                 style={{ flex: 1.2, height: 50, borderRadius: RADIUS.md, border: "none", background: GRAD_ZELENY, color: "#fff", fontWeight: 700, fontSize: 14.5, cursor: "pointer", fontFamily: "inherit", boxShadow: "0 8px 26px rgba(31,191,143,.32)" }}>♻ Podeliť sa</button>
@@ -831,7 +881,7 @@ function GoodAdd({ toast, oslavuj, onDone }: { toast: (m: string) => void; oslav
       {retaz && (
         <RetazDobraSheet odmena={ODMENA} mode="skutok" titulOdkaz="Tvoj skutok"
           onClose={() => setRetaz(false)}
-          onDone={({ pct, ziadost }: { pct: number; ziadost?: { nazov?: string } }) => { oslavuj(ODMENA, ziadost?.nazov || "reťaz dobra"); setTimeout(onDone, 700); }}
+          onDone={({ pct, ziadost }: { pct: number; ziadost?: { nazov?: string } }) => { onPridaj(vytvorSkutok()); oslavuj(ODMENA, ziadost?.nazov || "reťaz dobra"); setTimeout(onDone, 700); }}
           toast={toast} />
       )}
     </div>
