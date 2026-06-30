@@ -4,9 +4,12 @@
 // Moduly volajú tieto hooky namiesto priameho importu mock polí.
 // ============================================================
 import { useEffect } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { repo } from "./repo";
+import type { QrCiel } from "@/lib/qr";
+import type { PlatbaVstup } from "./platby.supabase";
+import type { ScanVstup } from "./qr.supabase";
 
 /** Stabilné query kľúče (cache + invalidácia). */
 export const qk = {
@@ -24,6 +27,15 @@ export const qk = {
     mojeSkutky: ["profil", "mojeSkutky"] as const,
     karma: ["profil", "karma"] as const,
     statistiky: ["profil", "statistiky"] as const,
+  },
+  qr: {
+    static: (druh: string, ref: string) => ["qr", "static", druh, ref] as const,
+    resolve: (slug: string) => ["qr", "resolve", slug] as const,
+    token: (eventId: string) => ["qr", "token", eventId] as const,
+  },
+  platby: {
+    vypis: (ucetId: string, smer?: string) => ["platby", "vypis", ucetId, smer ?? "vsetko"] as const,
+    zostatok: (ucetId: string) => ["platby", "zostatok", ucetId] as const,
   },
 };
 
@@ -79,3 +91,63 @@ export const useProfilPrevody = () => useQuery({ queryKey: qk.profil.prevody, qu
 export const useProfilMojeSkutky = () => useQuery({ queryKey: qk.profil.mojeSkutky, queryFn: () => repo.profil.mojeSkutky() });
 export const useProfilKarma = () => useQuery({ queryKey: qk.profil.karma, queryFn: () => repo.profil.karma() });
 export const useProfilStatistiky = () => useQuery({ queryKey: qk.profil.statistiky, queryFn: () => repo.profil.statistiky() });
+
+// ---- QR (Fáza 1) — odkazové QR: zaistenie statického kódu + resolver ----
+/** Zaistí/získa kanonické odkazové QR pre objekt (slug+URL). `enabled` až keď je `ref`. */
+export const useQrStatic = (ciel: QrCiel | null) =>
+  useQuery({
+    queryKey: qk.qr.static(ciel?.druh ?? "", ciel?.ref ?? ""),
+    queryFn: () => repo.qr.staticPre(ciel as QrCiel),
+    enabled: !!ciel?.ref,
+    staleTime: Infinity, // kanonické QR sa nemení → cachuj natrvalo
+  });
+/** Resolvne slug → interný objekt (deep-link). */
+export const useQrResolve = (slug: string | null) =>
+  useQuery({
+    queryKey: qk.qr.resolve(slug ?? ""),
+    queryFn: () => repo.qr.resolve(slug as string),
+    enabled: !!slug,
+  });
+
+// ---- TOTP proof-of-presence (Fáza 3) ----
+/** Polluje čerstvý rotujúci token každých `step` s (organizátorov displej). */
+export const useEventToken = (eventId: string | null, step = 15, mod = "threshold", nazov?: string) =>
+  useQuery({
+    queryKey: qk.qr.token(eventId ?? ""),
+    queryFn: () => repo.qr.eventToken(eventId as string, step, mod, nazov),
+    enabled: !!eventId,
+    refetchInterval: Math.max(step, 5) * 1000,
+    staleTime: 0,
+  });
+/** Validuj sken rotujúceho QR (proof-of-presence). */
+export const useScan = () => useMutation({ mutationFn: (v: ScanVstup) => repo.qr.scan(v) });
+
+// ---- Payment Engine (Fáza 2) — poslať platbu, výpis, zostatok ----
+/** Pošli platbu cez engine (idempotentne) → invaliduje výpis/zostatok/„Čo podporujem". */
+export function usePoslatPlatbu() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (v: PlatbaVstup) => repo.platby.poslat(v),
+    onSuccess: (_r, v) => {
+      if (v.odosielatel) {
+        qc.invalidateQueries({ queryKey: qk.platby.vypis(v.odosielatel) });
+        qc.invalidateQueries({ queryKey: qk.platby.zostatok(v.odosielatel) });
+      }
+      qc.invalidateQueries({ queryKey: qk.charita.feed });
+    },
+  });
+}
+/** Jednotný výpis (dal/dostal) pre účet. */
+export const useVypis = (ucetId: string | null, smer?: "dal" | "dostal") =>
+  useQuery({
+    queryKey: qk.platby.vypis(ucetId ?? "", smer),
+    queryFn: () => repo.platby.vypis({ ucetId: ucetId as string, smer }),
+    enabled: !!ucetId,
+  });
+/** Reálny DEED zostatok peňaženky. */
+export const useZostatok = (ucetId: string | null) =>
+  useQuery({
+    queryKey: qk.platby.zostatok(ucetId ?? ""),
+    queryFn: () => repo.platby.zostatok(ucetId as string),
+    enabled: !!ucetId,
+  });

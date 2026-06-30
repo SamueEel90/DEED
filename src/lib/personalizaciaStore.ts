@@ -128,21 +128,28 @@ export async function nacitajPodporyDB(filter: { ucetId?: string | null; darca?:
   return agregujPodpory(data || []);
 }
 
-/** Zapíše in-app dar ako event do `podpora` (reálny účet — perzistuje). */
+/** Zapíše in-app dar cez Payment Engine (RPC platba_create). `platba` je
+ *  system-of-record; AFTER INSERT trigger zrkadlí riadok do `podpora`, takže
+ *  `nacitajPodporyDB`/charita mappery čítajú ďalej bez zmeny. (Fáza 2.) */
 export async function pridajPodporuDB(p: {
   darca: string; ucetId?: string | null; refId: number | string;
   prijemca?: string; suma?: number; kanal?: string; vyzbierane?: number; ciel?: number;
 }): Promise<void> {
   if (!supabase) return;
-  const { error } = await supabase.from("podpora").insert({
-    ucet_id: p.ucetId ?? null,
-    darca_nazov: p.darca,
-    prispevok_id: jeUuid(p.refId) ? p.refId : null,  // uuid položky (detail) alebo NULL
-    prijemca: p.prijemca ?? null,
-    suma: p.suma ?? 0,
-    kanal: KANAL_DO_DB[p.kanal || "DEED"] || "deed",
-    vyzbierane: p.vyzbierane ?? null,
-    ciel: p.ciel ?? null,
+  const kanal = KANAL_DO_DB[p.kanal || "DEED"] || "deed";        // DEED→deed, EUR→fiat, SMS→sms
+  const mena = kanal === "deed" ? "DEED" : "EUR";
+  let idemKluc: string;
+  try { idemKluc = crypto.randomUUID(); } catch { idemKluc = `dar-${Date.now()}-${Math.round(Math.random() * 1e9)}`; }
+  const { error } = await supabase.rpc("platba_create", {
+    p_idem_kluc: idemKluc,
+    p_suma: p.suma ?? 0,
+    p_mena: mena,
+    p_kanal: kanal,
+    p_case_id: jeUuid(p.refId) ? p.refId : null,                 // uuid prípadu alebo NULL
+    p_odosielatel: p.ucetId ?? null,
+    p_odosielatel_text: p.darca,
+    p_prijemca_text: p.prijemca ?? null,
+    p_meta: { vyzbierane: p.vyzbierane ?? null, ciel: p.ciel ?? null },
   });
   if (error) throw error;
 }

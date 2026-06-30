@@ -648,9 +648,9 @@ export function GoodDetail({ it, toast, oslavuj, onBack, onVerify, onAutor }: Go
       {platba && <PlatbaModal kanal={platba} komu={it.autor} onClose={() => setPlatba(null)}
         onDone={(s: number) => { zaznamenajPodporu(s, platba); toast(`Odoslané ${platba === "EUR" ? s + " €" : s + " DEED"} · ${it.autor}`); oslavuj(platba === "EUR" ? Math.round(s * 100) : s, it.autor); }} />}
 
-      {/* univerzálny QR skutku (§10) — typ „skutok", 3 výstupy */}
+      {/* univerzálny QR skutku (§10) — reálne skenovateľný odkaz na živé interné ID */}
       {qr && <QrModal typ="skutok" titul={`QR skutku č. ${it.num.toLocaleString("sk")}`} popis={it.titul.slice(0, 38) + "…"}
-        odkaz={`https://deed.app/s/${it.num}`} onClose={() => setQr(false)} toast={toast} />}
+        qrCiel={{ druh: "case", ref: String(it.id), modul: "good" }} onClose={() => setQr(false)} toast={toast} />}
     </div>
   );
 }

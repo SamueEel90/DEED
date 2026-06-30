@@ -3,6 +3,7 @@ import { C, GRAD, GRAD_ZELENY, SPACE, RADIUS } from "@/theme";
 import { toast, Sheet, AvatarUroven, useScrollHore, useViac, useMotiv, useLayout, useTvorbaGate, obalSiroky, QrModal, IkonaMenu, IkonaNastavenia, IkonaSipVlavo, IkonaPenazenka, IkonaHviezda, IkonaFajka, IkonaDoska, IkonaUsmev, IkonaPin, IkonaSlnko, IkonaMesiac, IkonaStit, SkeletonRiadky, EmptyState, ErrorState, ScreenSwitch } from "@/shared";
 import { RetazDobraSheet } from "@/features/retaz/RetazDobra";
 import { signOut } from "@/lib/auth";
+import { qrUrl } from "@/lib/qr";
 import { usePouzivatel } from "@/lib/pouzivatel";
 import { usePersonalizacia } from "@/lib/personalizacia";
 import { ZAUJMY_KATALOG } from "@/lib/personalizaciaStore";
@@ -332,6 +333,7 @@ type PriateliaScreenProps = { toast: ToastFn; onBack: () => void };
 
 function PriateliaScreen({ toast, onBack }: PriateliaScreenProps) {
   const { gate } = useTvorbaGate(); // pridávanie priateľa = iniciovanie vzťahu (create)
+  const ja = usePouzivatel();        // ucetId → reálny rotujúci token Identity Card (Fáza 3)
   const [qr, setQr] = useState<"pozvanka" | "osobny" | null>(null);
   const [ziadosti, setZiadosti] = useState<ZiadostPriatelstvo[]>([{ id: "p1", meno: "Peter K.", ini: "P", info: "3 spoloční priatelia" }]);
   const vybav = (id: string, ok: boolean) => { setZiadosti((z) => z.filter((x) => x.id !== id)); toast(ok ? "Priateľstvo prijaté — vzájomný súhlas" : "Žiadosť odmietnutá"); };
@@ -383,8 +385,8 @@ function PriateliaScreen({ toast, onBack }: PriateliaScreenProps) {
         </div>
       </div>
 
-      {qr === "pozvanka" && <QrModal typ="skutok" titul="Pozvánka do DEED" popis="Vedie len na žiadosť o priateľstvo" odkaz="https://deed.app/pozvanka/martin-k" onClose={() => setQr(null)} toast={toast} />}
-      {qr === "osobny" && <QrModal typ="identita" titul="Môj osobný QR" popis="Naživo · rotujúci · žiadosť o priateľstvo" odkaz="https://deed.app/u/martin-k" onClose={() => setQr(null)} toast={toast} />}
+      {qr === "pozvanka" && <QrModal typ="skutok" titul="Pozvánka do DEED" popis="Vedie len na žiadosť o priateľstvo" odkaz={qrUrl("handle", "martin-k")} onClose={() => setQr(null)} toast={toast} />}
+      {qr === "osobny" && <QrModal typ="identita" titul="Môj osobný QR" popis="Naživo · rotujúci · žiadosť o priateľstvo" odkaz={qrUrl("handle", "martin-k")} eventId={ja.ucetId ?? undefined} onClose={() => setQr(null)} toast={toast} />}
     </div>
   );
 }

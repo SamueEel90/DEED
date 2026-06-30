@@ -9,6 +9,8 @@ export * from "@/components/feedback";
 export * from "@/components/media";
 export * from "@/components/layout";
 export * from "@/components/qr";
+// qrskener (@zxing/browser, ~200kB) sa NEexportuje eagerly — QrModal ho lazy-loaduje
+// až pri otvorení skenera (drží initial bundle malý, viď ROADMAP code-splitting).
 export * from "@/components/platba";
 export * from "@/components/hladanie";
 export * from "@/components/states";

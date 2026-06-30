@@ -9,7 +9,9 @@ import { useSession } from "@/lib/session";
 import { resolveSession, subscribeAuth } from "@/lib/auth";
 import { supabaseReady } from "@/lib/supabase";
 import type { TypUctu } from "@/types";
-import { useNotifikacieRealtime } from "@/data";
+import { useNotifikacieRealtime, repo } from "@/data";
+import { precitajDeepLink, druhNaModul, vycistiDeepLinkUrl } from "@/lib/deeplink";
+import { toast } from "@/shared";
 import { PouzivatelProvider } from "@/lib/pouzivatel";
 import { PersonalizaciaProvider } from "@/lib/personalizacia";
 import { LokalitaProvider } from "@/lib/lokalita";
@@ -133,9 +135,29 @@ export function Screens({ wide, desktop }: { wide?: boolean; desktop?: boolean }
   // auth-boot: kým sa Supabase Auth ↔ app-session zladí, drž splash (žiadny flash zlej session)
   const [booting, setBooting] = useState<boolean>(supabaseReady);
   const [resumeInfo, setResumeInfo] = useState<{ authId: string; typ?: TypUctu; stav?: string } | null>(null);
+  const [dlHotovo, setDlHotovo] = useState(false); // deep-link už spracovaný?
 
   useEffect(() => { ulozTaby(taby); }, [taby]);
   useNotifikacieRealtime(); // Fáza E — live oznámenia (INSERT do notifikacia → obnova zoznamu)
+
+  // Deep-link (Fáza 1): naskenovaný QR otvoril appku na /c|/@|/o|/r/... → resolvni slug
+  // a skoč na správny modul. Spracuj až keď je session (inak počkaj na prihlásenie,
+  // nech sa slug nestratí pred registráciou).
+  useEffect(() => {
+    if (dlHotovo || !session) return;
+    const dl = precitajDeepLink();
+    if (!dl) { setDlHotovo(true); return; }
+    let alive = true;
+    repo.qr.resolve(dl.slug)
+      .then((ciel) => {
+        if (!alive) return;
+        if (ciel) { setModul(druhNaModul(ciel.objekt_druh)); toast(`Otváram odkaz · ${ciel.objekt_druh}`); }
+        vycistiDeepLinkUrl();
+        setDlHotovo(true);
+      })
+      .catch(() => { if (alive) { vycistiDeepLinkUrl(); setDlHotovo(true); } });
+    return () => { alive = false; };
+  }, [dlHotovo, session]);
 
   // §1 (Fáza 5) — pri štarte zladiť reálny Supabase Auth s localStorage app-session:
   //  · authed + ucet 'hotovo' → resolveSession setSession → appka

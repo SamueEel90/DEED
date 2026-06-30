@@ -31,6 +31,9 @@ import { FUN } from "@/features/fun/mock";
 import { PREVODY, MOJE_SKUTKY, KARMA, STATISTIKY } from "@/features/profil/mock";
 import { REBRICKY_MOCK, topPrispevky, type RebricekKluc } from "@/features/top/mock";
 import { MAPA_UDALOSTI } from "@/features/mapa/mock";
+import { qrUrl, type QrCiel, type QrStatic, type QrResolved } from "@/lib/qr";
+import type { PlatbaVstup, PlatbaRiadok, VypisRiadok, BatchVysledok } from "./platby.supabase";
+import type { ScanVstup, ScanVysledok } from "./qr.supabase";
 
 /** Rozhranie dátovej vrstvy — mock aj budúci Supabase ho implementujú rovnako. */
 export interface Repo {
@@ -74,6 +77,26 @@ export interface Repo {
     mojeSkutky(): Promise<MojSkutokTuple[]>;
     karma(): Promise<MojSkutokTuple[]>;
     statistiky(): Promise<MojSkutokTuple[]>;
+  };
+  qr: {
+    /** Zaistí/získa kanonické odkazové QR pre objekt → { slug, url }. */
+    staticPre(ciel: QrCiel): Promise<QrStatic>;
+    /** Resolvne slug → interný objekt (deep-link). Null ak neexistuje. */
+    resolve(slug: string): Promise<QrResolved | null>;
+    /** Zaisti event-secret + vráť rotujúci TOTP token (proof-of-presence). */
+    eventToken(eventId: string, step?: number, mod?: string, nazov?: string): Promise<string | null>;
+    /** Validuj sken rotujúceho QR + zapíš dochádzku. */
+    scan(v: ScanVstup): Promise<ScanVysledok>;
+  };
+  platby: {
+    /** Pošli platbu cez engine (idempotentne). Vráti `platba` riadok (null pri mocku). */
+    poslat(v: PlatbaVstup): Promise<PlatbaRiadok | null>;
+    /** Jednotný výpis (dal/dostal) pre účet. */
+    vypis(filter: { ucetId: string; smer?: "dal" | "dostal" }): Promise<VypisRiadok[]>;
+    /** Reálny DEED zostatok peňaženky. */
+    zostatok(ucetId: string): Promise<number>;
+    /** Demo trigger: zúčtuj 24h batch teraz. */
+    batchClose(): Promise<BatchVysledok | null>;
   };
 }
 
@@ -128,6 +151,20 @@ export const mockRepo: Repo = {
     karma: () => ok(KARMA),
     statistiky: () => ok(STATISTIKY),
   },
+  qr: {
+    // mock/offline: slug = ref (deterministicky), žiadny resolver (null)
+    staticPre: (ciel) => Promise.resolve({ slug: ciel.ref, url: qrUrl(ciel.druh, ciel.ref) }),
+    resolve: () => Promise.resolve(null),
+    eventToken: () => Promise.resolve(null),          // offline → vizuálny reseed fallback (QrModal)
+    scan: () => Promise.resolve({ vysledok: "ok" as const }),
+  },
+  platby: {
+    // mock/offline: bez DB → engine no-op (UI drží lokálny stav, ako dnes)
+    poslat: () => Promise.resolve(null),
+    vypis: () => Promise.resolve([]),
+    zostatok: () => Promise.resolve(0),
+    batchClose: () => Promise.resolve(null),
+  },
 };
 
 // ---- Aktívny repozitár — postupné prepínanie mock → Supabase, modul po module ----
@@ -141,8 +178,10 @@ import { topSupabase } from "./top.supabase";
 import { notifikacieSupabase } from "./notifikacie.supabase";
 import { aktivitySupabase } from "./aktivity.supabase";
 import { mapaSupabase } from "./mapa.supabase";
+import { qrSupabase } from "./qr.supabase";
+import { platbySupabase } from "./platby.supabase";
 
-const NA_SUPABASE = { good: true, help: true, charita: true, top: true, notifikacie: true, aktivity: true, mapa: true } as const; // ktoré moduly už bežia na reálnych dátach
+const NA_SUPABASE = { good: true, help: true, charita: true, top: true, notifikacie: true, aktivity: true, mapa: true, qr: true, platby: true } as const; // ktoré moduly už bežia na reálnych dátach
 
 export const repo: Repo = {
   ...mockRepo,
@@ -153,4 +192,6 @@ export const repo: Repo = {
   mapa: supabaseReady && NA_SUPABASE.mapa ? mapaSupabase : mockRepo.mapa,
   top: supabaseReady && NA_SUPABASE.top ? topSupabase : mockRepo.top,
   notifikacie: supabaseReady && NA_SUPABASE.notifikacie ? notifikacieSupabase : mockRepo.notifikacie,
+  qr: supabaseReady && NA_SUPABASE.qr ? qrSupabase : mockRepo.qr,
+  platby: supabaseReady && NA_SUPABASE.platby ? platbySupabase : mockRepo.platby,
 };

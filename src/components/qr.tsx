@@ -1,46 +1,65 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import type { ReactNode } from "react";
+import QRCode from "qrcode";
 import { C, GRAD_ZELENY, SPACE, RADIUS } from "@/theme";
 import { tint } from "@/lib/ui";
-import { qrHash, qrPrng, qrFinder, QR_TYPY } from "@/lib/qr";
+import { QR_TYPY, type QrCiel } from "@/lib/qr";
+import { useQrStatic, useEventToken } from "@/data";
 import { Sheet } from "@/components/sheet";
 import { Lupa, IkonaDoska, IkonaUlozit, Zdielanie } from "@/components/icons";
 
+// skener (@zxing/browser) = vlastný chunk, načíta sa až pri otvorení kamery
+const QrSkener = lazy(() => import("@/components/qrskener").then((m) => ({ default: m.QrSkener })));
+
+// REÁLNY skenovateľný QR (lib `qrcode`, SVG). Zachováva bespoke biely rámik.
+// Vykreslí SVG cez 100 % šírku/výšku kontajnera (priehľadná „quiet zone“).
 export function QrVizual({ data = "deed", size = 132, fg = "#0B0C10" }: { data?: string; size?: number; fg?: string }) {
-  const N = 25;
-  const rnd = qrPrng(qrHash(data));
-  const bunky: boolean[] = [];
-  for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {
-    const f = qrFinder(r, c, N);
-    bunky.push(f ? f === "dark" : rnd() > 0.52);
-  }
+  const [svg, setSvg] = useState<string>("");
+  useEffect(() => {
+    let alive = true;
+    QRCode.toString(data, { type: "svg", margin: 0, errorCorrectionLevel: "M", color: { dark: fg, light: "#00000000" } })
+      .then((s) => {
+        // vynúť 100 % rozmer (nech sa škáluje do rámika), zachovaj viewBox
+        const out = s.replace(/<svg([^>]*?)>/, (_m, attrs) =>
+          `<svg${String(attrs).replace(/\s(width|height)="[^"]*"/g, "")} width="100%" height="100%" preserveAspectRatio="xMidYMid meet">`);
+        if (alive) setSvg(out);
+      })
+      .catch(() => { if (alive) setSvg(""); });
+    return () => { alive = false; };
+  }, [data, fg]);
   return (
     <div style={{ width: size, height: size, background: "#fff", borderRadius: RADIUS.sm, padding: size * 0.07, flex: "0 0 auto", boxShadow: "0 6px 18px rgba(0,0,0,.18)" }}>
-      <div style={{ width: "100%", height: "100%", display: "grid", gridTemplateColumns: `repeat(${N},1fr)`, gridTemplateRows: `repeat(${N},1fr)` }}>
-        {bunky.map((on, k) => <i key={k} style={{ background: on ? fg : "transparent" }} />)}
-      </div>
+      <div style={{ width: "100%", height: "100%", display: "block" }} dangerouslySetInnerHTML={{ __html: svg }} />
     </div>
   );
 }
 
-export function QrModal({ typ = "skutok", titul, popis, odkaz = "https://deed.app/s/120042", reazPct, prijemca, onClose, toast }: { typ?: string; titul?: ReactNode; popis?: ReactNode; odkaz?: string; reazPct?: number | null; prijemca?: ReactNode; onClose?: () => void; toast?: (t: string) => void }) {
+export function QrModal({ typ = "skutok", titul, popis, odkaz = "https://deed.app/s/120042", qrCiel, eventId, reazPct, prijemca, onClose, toast }: { typ?: string; titul?: ReactNode; popis?: ReactNode; odkaz?: string; qrCiel?: QrCiel | null; eventId?: string | null; reazPct?: number | null; prijemca?: ReactNode; onClose?: () => void; toast?: (t: string) => void }) {
   const meta = QR_TYPY[typ] || QR_TYPY.skutok;
   const rotujuci = meta.rot > 0;
   const [zb, setZb] = useState(meta.rot);     // zostávajúce sekundy do rotácie
-  const [krok, setKrok] = useState(0);        // poradie rotácie (mení seed)
+  const [krok, setKrok] = useState(0);        // poradie rotácie (mení seed — len vizuálny fallback)
+  const [skener, setSkener] = useState(false);
+  // odkazové QR: ak je `qrCiel`, vyrieš kanonický slug/URL (inak fallback `odkaz`)
+  const stat = useQrStatic(qrCiel ?? null);
+  const odkazReal = stat.data?.url ?? odkaz;
+  // rotujúce QR: ak je `eventId`, použi REÁLNY TOTP token (RFC 6238) zo servera
+  // (secret ostáva na serveri); inak ostáva vizuálny reseed (back-compat / offline).
+  const realnyRot = rotujuci && !!eventId;
+  const { data: token } = useEventToken(realnyRot ? eventId! : null, meta.rot || 15, "threshold", typeof titul === "string" ? titul : typ);
   useEffect(() => {
     if (!rotujuci) return;
     const t = setInterval(() => setZb((s) => { if (s <= 1) { setKrok((x) => x + 1); return meta.rot; } return s - 1; }), 1000);
     return () => clearInterval(t);
   }, [rotujuci, meta.rot]);
-  const seed = odkaz + (rotujuci ? "·" + krok : "");
+  const seed = realnyRot ? (token ?? odkazReal) : odkazReal + (rotujuci ? "·" + krok : "");
 
   const kopiruj = () => {
-    try { navigator.clipboard?.writeText(odkaz); } catch { /* clipboard nedostupný */ }
+    try { navigator.clipboard?.writeText(odkazReal); } catch { /* clipboard nedostupný */ }
     toast?.("Odkaz skopírovaný do schránky");
   };
   const zdielaj = () => {
-    try { if (navigator.share) { navigator.share({ title: (titul as string) || "DEED", url: odkaz }); return; } } catch { /* share zrušený */ }
+    try { if (navigator.share) { navigator.share({ title: (titul as string) || "DEED", url: odkazReal }); return; } } catch { /* share zrušený */ }
     kopiruj();
   };
 
@@ -53,6 +72,7 @@ export function QrModal({ typ = "skutok", titul, popis, odkaz = "https://deed.ap
   );
 
   return (
+    <>
     <Sheet onClose={onClose}>
       <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm, marginBottom: SPACE.gutter }}>
         <span style={{ width: 36, height: 36, borderRadius: RADIUS.sm, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", background: tint(meta.col, .16), color: meta.col }}><IkonaDoska size={18} color={meta.col} /></span>
@@ -78,16 +98,18 @@ export function QrModal({ typ = "skutok", titul, popis, odkaz = "https://deed.ap
             obnoví sa o <b style={{ color: meta.col }}>{zb}s</b> · screenshot neplatný (anti-relay)
           </div>
         ) : (
-          <div style={{ fontSize: 11, color: C.textTer, fontFamily: "monospace", maxWidth: "92%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{odkaz}</div>
+          <div style={{ fontSize: 11, color: C.textTer, fontFamily: "monospace", maxWidth: "92%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{odkazReal}</div>
         )}
       </div>
 
       {/* 3 výstupy — univerzálne pravidlo §10 */}
       <div style={{ display: "flex", gap: SPACE.xs, marginTop: SPACE.gutter }}>
-        {out(<Lupa size={18} color={meta.col} />, "Skenovať", "fotoaparát", () => toast?.("Otváram fotoaparát na skenovanie (demo)"))}
+        {out(<Lupa size={18} color={meta.col} />, "Skenovať", "fotoaparát", () => setSkener(true))}
         {out(<IkonaUlozit size={18} color={meta.col} />, "Kopírovať", "odkaz", kopiruj)}
         {out(<Zdielanie size={18} color={meta.col} />, "Zdieľať", "siete", zdielaj)}
       </div>
     </Sheet>
+    {skener && <Suspense fallback={null}><QrSkener onClose={() => setSkener(false)} toast={toast} /></Suspense>}
+    </>
   );
 }

@@ -4,6 +4,7 @@ import { Aura, MoniBar, QrModal, SegTabs, useLayout, IkonaSipVlavo, IkonaFajka, 
 import type { CudziSubjekt, CudziSubjektOrg, CudziSubjektOsoba } from "@/types";
 import { usePersonalizacia } from "@/lib/personalizacia";
 import { tagChip, jeHrdina, HRDINA_COL } from "@/lib/ui";
+import { qrUrl } from "@/lib/qr";
 import { KAMPANE_FALLBACK, AKCIE_FALLBACK, STAVY } from "./mock";
 
 /*
@@ -145,7 +146,7 @@ function OrgProfil({ s, onBack, toast }: { s: CudziSubjektOrg; onBack?: () => vo
         </div>
       </div>
 
-      {qr && <QrModal typ="skutok" titul={`QR profilu · ${meno}`} popis="Embed badge dôvery na web charity" odkaz="https://deed.app/o/detska-nemocnica" onClose={() => setQr(false)} toast={toast} />}
+      {qr && <QrModal typ="skutok" titul={`QR profilu · ${meno}`} popis="Embed badge dôvery na web charity" odkaz={qrUrl("org", "detska-nemocnica")} onClose={() => setQr(false)} toast={toast} />}
     </div>
   );
 }
