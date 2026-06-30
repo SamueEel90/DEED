@@ -9,7 +9,7 @@ import { supabase } from "@/lib/supabase";
 import { repo } from "./repo";
 import type { QrCiel } from "@/lib/qr";
 import type { PlatbaVstup, RecurringVstup } from "./platby.supabase";
-import type { ScanVstup } from "./qr.supabase";
+import type { ScanVstup, ChainVstup } from "./qr.supabase";
 
 /** Stabilné query kľúče (cache + invalidácia). */
 export const qk = {
@@ -121,6 +121,16 @@ export const useEventToken = (eventId: string | null, step = 15, mod = "threshol
   });
 /** Validuj sken rotujúceho QR (proof-of-presence). */
 export const useScan = () => useMutation({ mutationFn: (v: ScanVstup) => repo.qr.scan(v) });
+
+// ---- Reťaz dobra + Odznak (Fáza 5) ----
+/** Vytvor reťaz dobra (% zafixované) → { chain_id, slug }. */
+export const useChainCreate = () => useMutation({ mutationFn: (v: ChainVstup) => repo.qr.chainCreate(v) });
+/** Odznak: prihlásenie zamestnanca na zmenu. */
+export const useBadgeBind = () => useMutation({ mutationFn: (v: { badgeId: string; employeeId: string; hodiny?: number }) => repo.qr.badgeBind(v.badgeId, v.employeeId, v.hodiny) });
+/** Odznak: odhlásenie zo zmeny. */
+export const useBadgeUnbind = () => useMutation({ mutationFn: (badgeId: string) => repo.qr.badgeUnbind(badgeId) });
+/** Odznak: zákaznícky sken → pochvala/dar (NULL → pobočka). */
+export const useBadgeScan = () => useMutation({ mutationFn: (v: { badgeId: string; zakaznik?: string | null; suma?: number }) => repo.qr.badgeScan(v.badgeId, v.zakaznik, v.suma) });
 
 // ---- Payment Engine (Fáza 2) — poslať platbu, výpis, zostatok ----
 /** Pošli platbu cez engine (idempotentne) → invaliduje výpis/zostatok/„Čo podporujem". */

@@ -11,7 +11,7 @@ import { supabaseReady } from "@/lib/supabase";
 import type { TypUctu } from "@/types";
 import { useNotifikacieRealtime, repo } from "@/data";
 import { precitajDeepLink, druhNaModul, vycistiDeepLinkUrl } from "@/lib/deeplink";
-import { toast } from "@/shared";
+import { toast, BadgeSheet } from "@/shared";
 import { PouzivatelProvider } from "@/lib/pouzivatel";
 import { PersonalizaciaProvider } from "@/lib/personalizacia";
 import { LokalitaProvider } from "@/lib/lokalita";
@@ -136,6 +136,7 @@ export function Screens({ wide, desktop }: { wide?: boolean; desktop?: boolean }
   const [booting, setBooting] = useState<boolean>(supabaseReady);
   const [resumeInfo, setResumeInfo] = useState<{ authId: string; typ?: TypUctu; stav?: string } | null>(null);
   const [dlHotovo, setDlHotovo] = useState(false); // deep-link už spracovaný?
+  const [badgeSheet, setBadgeSheet] = useState<string | null>(null); // odznak z deep-linku (/badge)
 
   useEffect(() => { ulozTaby(taby); }, [taby]);
   useNotifikacieRealtime(); // Fáza E — live oznámenia (INSERT do notifikacia → obnova zoznamu)
@@ -151,7 +152,11 @@ export function Screens({ wide, desktop }: { wide?: boolean; desktop?: boolean }
     repo.qr.resolve(dl.slug)
       .then((ciel) => {
         if (!alive) return;
-        if (ciel) { setModul(druhNaModul(ciel.objekt_druh)); toast(`Otváram odkaz · ${ciel.objekt_druh}`); }
+        if (ciel) {
+          if (ciel.objekt_druh === "badge") setBadgeSheet(ciel.objekt_ref);   // odznak → shift-binding sheet
+          else setModul(druhNaModul(ciel.objekt_druh));
+          toast(`Otváram odkaz · ${ciel.objekt_druh}`);
+        }
         vycistiDeepLinkUrl();
         setDlHotovo(true);
       })
@@ -246,6 +251,9 @@ export function Screens({ wide, desktop }: { wide?: boolean; desktop?: boolean }
 
         {/* fullscreen galéria fotiek so swipovaním */}
         {galeria && <Lightbox fotky={galeria.fotky} index={galeria.index} onClose={() => setGaleria(null)} />}
+
+        {/* odznak (shift-binding) — otvorené po naskenovaní /badge/{slug} */}
+        {badgeSheet && <BadgeSheet badgeId={badgeSheet} onClose={() => setBadgeSheet(null)} toast={toast} />}
 
         {/* pasívny → upgrade panel „Staň sa aktívnym" */}
         {upgradeOpen && (

@@ -2,7 +2,9 @@ import { useState } from "react";
 import { C, GRAD, GRAD_ZELENY, SPACE, RADIUS } from "@/theme";
 import { Sheet, QrVizual, IkonaFajka, IkonaDoska, Lupa, Zdielanie, tint, pressable } from "@/shared";
 import type { RetazMode, RetazKrok, RetazVysledok } from "@/types";
-import { useRetazZiadosti } from "@/data";
+import { useRetazZiadosti, useChainCreate } from "@/data";
+import { usePouzivatel } from "@/lib/pouzivatel";
+import { qrUrl } from "@/lib/qr";
 
 /*
   ============================================================
@@ -41,16 +43,32 @@ interface RetazDobraSheetProps {
 // mode: "skutok" (Cesta A) | "honorar" (Cesta B)
 export function RetazDobraSheet({ odmena = 130, mode = "skutok", titulOdkaz = "Skutok", odkaz = "https://deed.app/s/120042", onClose, onDone, toast }: RetazDobraSheetProps) {
   const { data: ZIADOSTI = [] } = useRetazZiadosti();
+  const { ucetId } = usePouzivatel();
+  const chain = useChainCreate();
   const honorar = mode === "honorar";
   const [krok, setKrok] = useState<RetazKrok>("nastav"); // nastav | hotovo
   const [pct, setPct] = useState(30);
   const [zid, setZid] = useState<string | null>(null);
   const [q, setQ] = useState("");
+  const [slug, setSlug] = useState<string | null>(null); // reálny slug reťaze (/chain/{slug})
+  const [vyrabam, setVyrabam] = useState(false);
 
   const reazSuma = Math.round((odmena * pct) / 100);
   const ziadost = ZIADOSTI.find((z) => z.id === zid);
   const zoznam = q ? ZIADOSTI.filter((z) => norm(z.nazov + " " + z.lok).includes(norm(q))) : ZIADOSTI;
   const gener = reazSuma > 0 ? Math.round(reazSuma / 2) + 5 : pct + 5; // Generosity Score (placeholder; NIE nové DEED)
+
+  // potvrdenie → vytvor REÁLNU reťaz (% sa zafixuje pri vzniku) + dostaň slug pre /chain/{slug}
+  async function potvrd() {
+    if (!ziadost) return;
+    setVyrabam(true);
+    try {
+      const r = await chain.mutateAsync({ caseId: null, darca: ucetId ?? null, pct, ciel: ziadost.nazov, sumaZaklad: odmena, mena: "DEED" });
+      setSlug(r?.slug ?? null);
+    } catch { /* offline/mock → fallback vizuál QR */ }
+    setVyrabam(false);
+    setKrok("hotovo");
+  }
 
   const inpS: React.CSSProperties = { width: "100%", padding: `${SPACE.sm}px ${SPACE.sm}px ${SPACE.sm}px ${SPACE.xxl}px`, borderRadius: RADIUS.sm, background: "rgba(var(--glass-rgb),.06)", border: `1px solid ${C.line}`, color: C.text, fontSize: 14, outline: "none", fontFamily: "inherit" };
 
@@ -116,11 +134,11 @@ export function RetazDobraSheet({ odmena = 130, mode = "skutok", titulOdkaz = "S
           </div>
         </div>
 
-        <button onClick={() => ziadost && setKrok("hotovo")} disabled={!ziadost}
+        <button onClick={potvrd} disabled={!ziadost || vyrabam}
           style={{ width: "100%", height: 50, borderRadius: RADIUS.md, border: "none", marginTop: SPACE.gutter, fontWeight: 700, fontSize: 15, fontFamily: "inherit",
-            background: ziadost ? GRAD_ZELENY : "rgba(var(--glass-rgb),.06)", color: ziadost ? "#fff" : C.textTer, cursor: ziadost ? "pointer" : "not-allowed",
-            boxShadow: ziadost ? "0 8px 26px rgba(31,191,143,.32)" : "none" }}>
-          {honorar ? "Vygenerovať QR reťaze · % sa zafixuje" : "Potvrdiť — % sa zafixuje"}
+            background: ziadost && !vyrabam ? GRAD_ZELENY : "rgba(var(--glass-rgb),.06)", color: ziadost && !vyrabam ? "#fff" : C.textTer, cursor: ziadost && !vyrabam ? "pointer" : "not-allowed",
+            boxShadow: ziadost && !vyrabam ? "0 8px 26px rgba(31,191,143,.32)" : "none" }}>
+          {vyrabam ? "Vyrábam reťaz…" : honorar ? "Vygenerovať QR reťaze · % sa zafixuje" : "Potvrdiť — % sa zafixuje"}
         </button>
       </Sheet>
     );
@@ -147,7 +165,7 @@ export function RetazDobraSheet({ odmena = 130, mode = "skutok", titulOdkaz = "S
       {/* QR D+R */}
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: SPACE.xs, marginTop: SPACE.gutter }}>
         <div style={{ position: "relative" }}>
-          <QrVizual data={odkaz + "·dr" + pct} size={150} />
+          <QrVizual data={slug ? qrUrl("chain", slug) : odkaz + "·dr" + pct} size={150} />
           <span style={{ position: "absolute", top: -8, right: -8, fontSize: 10, fontWeight: 800, padding: `${SPACE.xxs}px ${SPACE.xs}px`, borderRadius: RADIUS.lg, background: GRAD_ZELENY, color: "#06281d", boxShadow: "0 4px 12px rgba(31,191,143,.4)" }}>D+R {pct}%</span>
         </div>
         <div style={{ fontSize: 12, color: C.textSec, textAlign: "center" }}>{pct}% ide ďalej → <b style={{ color: C.text }}>{ziadost?.nazov}</b><br /><span style={{ fontSize: 10.5, color: C.textTer }}>skén → vidíš príjemcu · QR = odkaz na skutok</span></div>

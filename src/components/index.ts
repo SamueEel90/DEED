@@ -13,6 +13,7 @@ export * from "@/components/qr";
 // až pri otvorení skenera (drží initial bundle malý, viď ROADMAP code-splitting).
 export * from "@/components/platba";
 export * from "@/components/recurring";
+export * from "@/components/badge";
 export * from "@/components/hladanie";
 export * from "@/components/states";
 export * from "@/components/motion";

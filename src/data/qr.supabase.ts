@@ -21,6 +21,20 @@ export interface ScanVstup {
   lng?: number | null;
 }
 
+// ---- Reťaz dobra (chain QR) ----
+export interface ChainVstup {
+  caseId?: string | null;
+  darca?: string | null;
+  pct: number;             // % ZAFIXOVANÉ pri vzniku
+  ciel: string;            // cieľová žiadosť (názov)
+  sumaZaklad?: number | null;
+  mena?: "DEED" | "EUR";
+}
+export interface ChainVysledok { chain_id: string; slug: string }
+
+// ---- Odznak (shift-binding) ----
+export interface BadgeScanVysledok { prijemca: "employee" | "pobocka"; employee: string | null }
+
 /** Slug pre objekt: handle/org/branch nesú vlastný identifikátor; ostatné = náhodný slug. */
 function slugPre(ciel: QrCiel): string {
   return ciel.druh === "handle" || ciel.druh === "org" || ciel.druh === "branch"
@@ -98,5 +112,37 @@ export const qrSupabase = {
     });
     if (error) throw error;
     return (data as ScanVysledok) ?? { vysledok: "fake" };
+  },
+
+  // ---- Reťaz dobra (Fáza 5) — % zafixované pri vzniku ----
+  async chainCreate(v: ChainVstup): Promise<ChainVysledok | null> {
+    if (!supabase) return null;
+    const { data, error } = await supabase.rpc("chain_create", {
+      p_case: v.caseId ?? null, p_darca: v.darca ?? null, p_pct: v.pct,
+      p_ciel: v.ciel, p_suma_zaklad: v.sumaZaklad ?? null, p_mena: v.mena ?? "DEED",
+    });
+    if (error) throw error;
+    return (data as ChainVysledok) ?? null;
+  },
+
+  // ---- Odznak (Fáza 5) — shift-binding ----
+  /** Zamestnanec sa prihlási na zmenu. */
+  async badgeBind(badgeId: string, employeeId: string, hodiny = 12): Promise<void> {
+    if (!supabase) return;
+    const { error } = await supabase.rpc("badge_bind", { p_badge: badgeId, p_employee: employeeId, p_hodiny: hodiny });
+    if (error) throw error;
+  },
+  /** Zamestnanec sa odhlási (koniec zmeny). */
+  async badgeUnbind(badgeId: string): Promise<void> {
+    if (!supabase) return;
+    const { error } = await supabase.rpc("badge_unbind", { p_badge: badgeId });
+    if (error) throw error;
+  },
+  /** Zákazník naskenuje odznak → pochvala/dar aktuálne prihlásenému (NULL → pobočka). */
+  async badgeScan(badgeId: string, zakaznik?: string | null, suma = 0): Promise<BadgeScanVysledok> {
+    if (!supabase) return { prijemca: "pobocka", employee: null };
+    const { data, error } = await supabase.rpc("badge_scan", { p_badge: badgeId, p_zakaznik: zakaznik ?? null, p_suma: suma });
+    if (error) throw error;
+    return (data as BadgeScanVysledok) ?? { prijemca: "pobocka", employee: null };
   },
 };
