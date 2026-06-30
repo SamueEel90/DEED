@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { C, U, AV, GRAD, GRAD_ZELENY, SPACE, RADIUS } from "@/theme";
-import { Foto, Avatar, FotoPrispevku, MiniFotky, ModulHlavicka, PodporaSekcia, PlatbaModal, HladanieModal, toast, useGaleria, useLayout, useScrollHore, useStrankaAkcie, useTvorbaGate, Ticker, StatRiadok, FiltreStat, MoniBar, FeedStlpce, FeedGrid, obalSiroky, OkruhVyber, SegTabs, tint, Lupa, Zvon, Zdielanie, IkonaSpat, IkonaVlajka, IkonaFoto, IkonaPlay, IkonaDoska, IkonaOpakovat, IkonaKriz, IkonaInstitucia, FeedSkeleton, SkeletonRiadky, EmptyState, ErrorState, ScreenSwitch } from "@/shared";
+import { Foto, Avatar, FotoPrispevku, MiniFotky, ModulHlavicka, PodporaSekcia, PlatbaModal, RecurringSheet, HladanieModal, toast, useGaleria, useLayout, useScrollHore, useStrankaAkcie, useTvorbaGate, Ticker, StatRiadok, FiltreStat, MoniBar, FeedStlpce, FeedGrid, obalSiroky, OkruhVyber, SegTabs, tint, Lupa, Zvon, Zdielanie, IkonaSpat, IkonaVlajka, IkonaFoto, IkonaPlay, IkonaDoska, IkonaOpakovat, IkonaKriz, IkonaInstitucia, FeedSkeleton, SkeletonRiadky, EmptyState, ErrorState, ScreenSwitch } from "@/shared";
 import { pripravFeed, FEED_CFG } from "@/lib/feed";
 import { MEDIA_AR } from "@/lib/cardSize";
 import { Zvoncek } from "@/features/notifikacie/Notifikacie";
@@ -296,6 +296,7 @@ function CharitaDetail({ toast, onBack, onReg }: { toast: (m: string) => void; o
   const [suma, setSuma] = useState(ZBIERKA?.suma ?? 0);
   const [ludia, setLudia] = useState(ZBIERKA?.ludia ?? 0);
   const [platba, setPlatba] = useState<Kanal | null>(null); // "EUR" | "DEED"
+  const [recur, setRecur] = useState(false);                // pravidelná podpora (LEN charita)
   const otvorGaleriu = useGaleria();
   const { wide } = useLayout();
   if (!ZBIERKA) return null;
@@ -365,13 +366,16 @@ function CharitaDetail({ toast, onBack, onReg }: { toast: (m: string) => void; o
         </div>
 
         {/* pravidelná podpora */}
-        <div onClick={onReg} style={{ width: "100%", border: `2px solid ${K.blueEdge}`, background: K.blueBg, borderRadius: RADIUS.sm, padding: SPACE.gutter, textAlign: "center", fontSize: 14, fontWeight: 600, cursor: "pointer", marginBottom: SPACE.gutter, display: "flex", alignItems: "center", justifyContent: "center", gap: SPACE.xs }}>
+        <div onClick={() => setRecur(true)} style={{ width: "100%", border: `2px solid ${K.blueEdge}`, background: K.blueBg, borderRadius: RADIUS.sm, padding: SPACE.gutter, textAlign: "center", fontSize: 14, fontWeight: 600, cursor: "pointer", marginBottom: SPACE.gutter, display: "flex", alignItems: "center", justifyContent: "center", gap: SPACE.xs }}>
           <IkonaOpakovat size={17} color={K.blue} /> Pravidelná podpora
         </div>
       </div>
 
       {/* simulácia platby (EUR karta / DEED peňaženka) */}
       {platba && <PlatbaModal kanal={platba} komu={z.nazov} onClose={() => setPlatba(null)} onDone={platbaHotova} />}
+
+      {/* pravidelná podpora — LEN charita (3 voľby + dvojité potvrdenie) */}
+      {recur && <RecurringSheet nazov={z.nazov} onClose={() => setRecur(false)} toast={toast} />}
     </div>
   );
 }

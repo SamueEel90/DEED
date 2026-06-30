@@ -6,6 +6,13 @@
 // ============================================================
 import { supabase } from "@/lib/supabase";
 
+export interface SplitPolozka {
+  prijemcaUcet?: string | null;
+  prijemcaText?: string | null;
+  podiel: number;        // 0..1 (Σ = 1.0)
+  fixny?: boolean;
+}
+
 export interface PlatbaVstup {
   idemKluc?: string;
   suma: number;
@@ -19,6 +26,18 @@ export interface PlatbaVstup {
   obeRegistrovane?: boolean;
   tip?: number;
   meta?: Record<string, unknown>;
+  split?: SplitPolozka[];          // rozdelenie na N príjemcov (reťaz / honorár)
+}
+
+export interface RecurringVstup {
+  rozsah: "request" | "segment" | "charita";  // táto žiadosť / segment / celá charita
+  darca: string;
+  suma: number;
+  mena: "DEED" | "EUR";
+  perioda: "tyzdenne" | "mesacne" | "rocne";
+  caseId?: string | null;
+  charitaUcet?: string | null;
+  viazaneNaZbierku?: boolean;
 }
 
 export interface PlatbaRiadok {
@@ -86,9 +105,24 @@ export const platbySupabase = {
       p_obe_registrovane: v.obeRegistrovane ?? false,
       p_tip: v.tip ?? 0,
       p_meta: v.meta ?? {},
+      p_split: v.split?.length
+        ? v.split.map((s) => ({ prijemca_ucet: s.prijemcaUcet ?? null, prijemca_text: s.prijemcaText ?? null, podiel: s.podiel, fixny: s.fixny ?? false }))
+        : null,
     });
     if (error) throw error;
     return (data as PlatbaRiadok) ?? null;
+  },
+
+  /** Vytvor pravidelnú (opakovanú) podporu — LEN charita. Vráti riadok. */
+  async recurringCreate(v: RecurringVstup): Promise<{ id: string; dalsia_platba: string } | null> {
+    if (!supabase) return null;
+    const { data, error } = await supabase.rpc("recurring_create", {
+      p_rozsah: v.rozsah, p_darca: v.darca, p_suma: v.suma, p_mena: v.mena, p_perioda: v.perioda,
+      p_case: v.caseId ?? null, p_charita: v.charitaUcet ?? null, p_segment: null,
+      p_viazane: v.viazaneNaZbierku ?? v.rozsah === "request",
+    });
+    if (error) throw error;
+    return (data as { id: string; dalsia_platba: string }) ?? null;
   },
 
   /** Jednotný výpis (dal/dostal) pre účet. */

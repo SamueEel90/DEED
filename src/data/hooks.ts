@@ -8,7 +8,7 @@ import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { repo } from "./repo";
 import type { QrCiel } from "@/lib/qr";
-import type { PlatbaVstup } from "./platby.supabase";
+import type { PlatbaVstup, RecurringVstup } from "./platby.supabase";
 import type { ScanVstup } from "./qr.supabase";
 
 /** Stabilné query kľúče (cache + invalidácia). */
@@ -151,3 +151,11 @@ export const useZostatok = (ucetId: string | null) =>
     queryFn: () => repo.platby.zostatok(ucetId as string),
     enabled: !!ucetId,
   });
+/** Vytvor pravidelnú podporu (LEN charita). */
+export function useRecurringCreate() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (v: RecurringVstup) => repo.platby.recurringCreate(v),
+    onSuccess: (_r, v) => { qc.invalidateQueries({ queryKey: qk.platby.vypis(v.darca) }); },
+  });
+}

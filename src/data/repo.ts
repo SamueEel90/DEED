@@ -32,7 +32,7 @@ import { PREVODY, MOJE_SKUTKY, KARMA, STATISTIKY } from "@/features/profil/mock"
 import { REBRICKY_MOCK, topPrispevky, type RebricekKluc } from "@/features/top/mock";
 import { MAPA_UDALOSTI } from "@/features/mapa/mock";
 import { qrUrl, type QrCiel, type QrStatic, type QrResolved } from "@/lib/qr";
-import type { PlatbaVstup, PlatbaRiadok, VypisRiadok, BatchVysledok } from "./platby.supabase";
+import type { PlatbaVstup, PlatbaRiadok, VypisRiadok, BatchVysledok, RecurringVstup } from "./platby.supabase";
 import type { ScanVstup, ScanVysledok } from "./qr.supabase";
 
 /** Rozhranie dátovej vrstvy — mock aj budúci Supabase ho implementujú rovnako. */
@@ -89,8 +89,10 @@ export interface Repo {
     scan(v: ScanVstup): Promise<ScanVysledok>;
   };
   platby: {
-    /** Pošli platbu cez engine (idempotentne). Vráti `platba` riadok (null pri mocku). */
+    /** Pošli platbu cez engine (idempotentne, split-aware). Vráti `platba` riadok (null pri mocku). */
     poslat(v: PlatbaVstup): Promise<PlatbaRiadok | null>;
+    /** Vytvor pravidelnú podporu (LEN charita). */
+    recurringCreate(v: RecurringVstup): Promise<{ id: string; dalsia_platba: string } | null>;
     /** Jednotný výpis (dal/dostal) pre účet. */
     vypis(filter: { ucetId: string; smer?: "dal" | "dostal" }): Promise<VypisRiadok[]>;
     /** Reálny DEED zostatok peňaženky. */
@@ -161,6 +163,7 @@ export const mockRepo: Repo = {
   platby: {
     // mock/offline: bez DB → engine no-op (UI drží lokálny stav, ako dnes)
     poslat: () => Promise.resolve(null),
+    recurringCreate: () => Promise.resolve(null),
     vypis: () => Promise.resolve([]),
     zostatok: () => Promise.resolve(0),
     batchClose: () => Promise.resolve(null),

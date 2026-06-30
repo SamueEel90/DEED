@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
 import { C, GRAD, GRAD_ZELENY, SPACE, RADIUS } from "@/theme";
 import { tint } from "@/lib/ui";
+import { navrhniTip } from "@/lib/poplatky";
 import { useMotiv, useUpgrade } from "@/components/context";
 import { usePouzivatel } from "@/lib/pouzivatel";
 import { Sheet } from "@/components/sheet";
@@ -20,11 +21,14 @@ export function PlatbaModal({ kanal, komu, onClose, onDone }: { kanal?: string; 
   const [karta, setKarta] = useState({ cislo: "", exp: "", cvc: "" });
   const [sepa, setSepa] = useState({ iban: "", meno: "" });
   const [res, setRes] = useState<{ id: string; hash: string; cas: string } | null>(null);
+  const [tip, setTip] = useState(false);           // SEPA dobrovoľný tip — NIKDY predzaškrtnutý
   const sumaNum = Number(suma) || 0;
   const jeSepa = jeEur && metoda === "sepa";
-  // karta: 1,4 % + 0,15 € · SEPA prevod: 0,35 € fixne · DEED: 0
-  const poplatok = !jeEur ? 0 : jeSepa ? 0.35 : Math.round((sumaNum * 0.014 + 0.15) * 100) / 100;
-  const spolu = Math.round((sumaNum + poplatok) * 100) / 100;
+  // SEPA = 0 % marža (Zeffy model) + voliteľný tip · karta: 1,4 % + 0,15 € · DEED: 0
+  const tipSuma = jeSepa ? navrhniTip(sumaNum) : 0;
+  const poplatok = !jeEur ? 0 : jeSepa ? 0 : Math.round((sumaNum * 0.014 + 0.15) * 100) / 100;
+  const tipAplik = jeSepa && tip ? tipSuma : 0;
+  const spolu = Math.round((sumaNum + poplatok + tipAplik) * 100) / 100;
   const malo = !jeEur && sumaNum > PLATBA_ZOSTATOK;
 
   const inpS: CSSProperties = { width: "100%", padding: `${SPACE.sm}px ${SPACE.sm}px`, borderRadius: RADIUS.sm, background: "rgba(var(--glass-rgb),.06)", border: `1px solid ${C.line}`, color: C.text, fontSize: 16, outline: "none", fontFamily: "inherit" };
@@ -142,11 +146,22 @@ export function PlatbaModal({ kanal, komu, onClose, onDone }: { kanal?: string; 
         <input autoFocus placeholder="IBAN (napr. SK89 0000 0000 0000 0000 0000)" value={sepa.iban} onChange={(e) => setSepa({ ...sepa, iban: fmtIban(e.target.value) })} style={{ ...inpS, marginBottom: SPACE.sm, letterSpacing: ".04em", fontSize: 15 }} />
         <input placeholder="Meno majiteľa účtu" value={sepa.meno} onChange={(e) => setSepa({ ...sepa, meno: e.target.value })} style={{ ...inpS, marginBottom: SPACE.sm }} />
         <div style={{ background: "rgba(var(--glass-rgb),.05)", border: `1px solid ${C.line}`, borderRadius: RADIUS.sm, padding: `${SPACE.xxs}px ${SPACE.sm}px ${SPACE.xs}px` }}>
-          <Riadok k="Suma" v={`${sumaNum.toFixed(2)} €`} />
-          <Riadok k="Poplatok (SEPA prevod)" v={`${poplatok.toFixed(2)} €`} />
+          <Riadok k="Dar charite" v={`${sumaNum.toFixed(2)} €`} />
+          <Riadok k="Marža DEED" v="0 € · neberieme nič" accent={C.green} />
+          {tipAplik > 0 && <Riadok k="Dobrovoľný tip (chod DEED)" v={`${tipSuma.toFixed(2)} €`} />}
           <div style={{ display: "flex", justifyContent: "space-between", paddingTop: SPACE.xs, fontSize: 14, fontWeight: 800 }}><span>Spolu</span><span>{spolu.toFixed(2)} €</span></div>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: SPACE.xs, fontSize: 11, color: C.textTer, marginTop: SPACE.sm, lineHeight: 1.4 }}><IkonaStit size={13} color={C.green} /> Bankový prevod · SEPA · pripísanie do 1 pracovného dňa</div>
+        {/* dobrovoľný tip — Zeffy model: NIKDY predzaškrtnutý, navrhneme sumu, neaktivujeme za usera */}
+        {tipSuma > 0 && (
+          <button onClick={() => setTip((v) => !v)} aria-pressed={tip} style={{ width: "100%", display: "flex", alignItems: "center", gap: SPACE.sm, textAlign: "left", marginTop: SPACE.sm, padding: `${SPACE.sm}px ${SPACE.gutter}px`, borderRadius: RADIUS.sm, cursor: "pointer", fontFamily: "inherit", background: tip ? tint(C.green, .08) : C.surface2, border: `1px solid ${tip ? C.green : C.line}`, color: C.text }}>
+            <span style={{ width: 20, height: 20, flex: "none", borderRadius: RADIUS.xs, border: `2px solid ${tip ? C.green : C.line}`, background: tip ? C.green : "transparent", display: "flex", alignItems: "center", justifyContent: "center" }}>{tip && <IkonaFajka size={12} color="#fff" />}</span>
+            <span style={{ flex: 1, minWidth: 0 }}>
+              <span style={{ display: "block", fontSize: 13, fontWeight: 700 }}>Prispieť na chod DEED — {tipSuma.toFixed(2)} €</span>
+              <span style={{ display: "block", fontSize: 11, color: C.textTer, marginTop: 1 }}>Dobrovoľné · ide platforme, nie charite · môžeš zrušiť</span>
+            </span>
+          </button>
+        )}
+        <div style={{ display: "flex", alignItems: "center", gap: SPACE.xs, fontSize: 11, color: C.textTer, marginTop: SPACE.sm, lineHeight: 1.4 }}><IkonaStit size={13} color={C.green} /> Bankový prevod · SEPA · charita dostane celý dar · pripísanie do 1 prac. dňa</div>
         <button disabled={!sepaOk} onClick={zaplatit} style={btnP(sepaOk)}>Odoslať prevod {spolu.toFixed(2)} €</button>
       </>)}
 
@@ -177,6 +192,7 @@ export function PlatbaModal({ kanal, komu, onClose, onDone }: { kanal?: string; 
         <div style={{ background: "rgba(var(--glass-rgb),.05)", border: `1px solid ${C.line}`, borderRadius: RADIUS.sm, padding: `${SPACE.xxs}px ${SPACE.sm}px ${SPACE.xs}px` }}>
           <Riadok k="Kanál" v={jeEur ? (jeSepa ? "SEPA prevod (EUR)" : "Karta (EUR)") : "Peňaženka (DEED)"} />
           {jeEur && <Riadok k="Poplatok" v={`${poplatok.toFixed(2)} €`} />}
+          {tipAplik > 0 && <Riadok k="Tip platforme" v={`${tipSuma.toFixed(2)} €`} accent={C.green} />}
           <Riadok k={jeSepa ? "Referencia prevodu" : "ID transakcie"} v={res.id} />
           {!jeSepa && <Riadok k="⛓ Hash" v={res.hash} accent={C.blueL} />}
           <Riadok k="Dátum" v={res.cas} />
