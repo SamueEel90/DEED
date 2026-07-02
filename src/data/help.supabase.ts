@@ -54,11 +54,11 @@ function naHelpItem(r: any): HelpFeedItem {
 }
 
 export const helpSupabase = {
-  async vytvor(it: HelpFeedItem, autorUcetId?: string | null): Promise<boolean> {
-    if (!supabase) return false;
+  async vytvor(it: HelpFeedItem, autorUcetId?: string | null): Promise<string | null> {
+    if (!supabase) return null;
     // Help-specifické polia idú do `data` (diskriminátor help:true); engine polia do stĺpcov.
     // autor_nazov = titul žiadosti (denormalizácia podľa naHelpItem), suma→vyzbierane, ludia→pomocnici.
-    const { error } = await supabase.from("prispevok").insert({
+    const { data, error } = await supabase.from("prispevok").insert({
       autor_ucet_id: autorUcetId ?? null,
       autor_nazov: it.nazov,
       autor_karma: it.karma ?? null,
@@ -79,9 +79,9 @@ export const helpSupabase = {
       vyzbierane: it.suma ?? null,
       pomocnici: it.ludia ?? null,
       data: { help: true, id: it.id, typ: it.typ, velkost: it.velkost, odbornik: it.odbornik ?? false, sponzor: it.sponzor ?? false, avatar: it.avatar ?? null },
-    });
+    }).select("id").single();
     if (error) throw error;
-    return true;
+    return (data?.id as string) ?? null;
   },
   async feed(): Promise<HelpFeedItem[]> {
     if (!supabase) return [];

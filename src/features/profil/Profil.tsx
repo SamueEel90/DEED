@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { C, GRAD, GRAD_ZELENY, SPACE, RADIUS } from "@/theme";
 import { toast, Sheet, AvatarUroven, useScrollHore, useViac, useMotiv, useLayout, useTvorbaGate, obalSiroky, QrModal, IkonaMenu, IkonaNastavenia, IkonaSipVlavo, IkonaPenazenka, IkonaHviezda, IkonaFajka, IkonaDoska, IkonaUsmev, IkonaPin, IkonaSlnko, IkonaMesiac, IkonaStit, SkeletonRiadky, EmptyState, ErrorState, ScreenSwitch } from "@/shared";
 import { RetazDobraSheet } from "@/features/retaz/RetazDobra";
+import { MojeQrKody } from "@/features/retaz/MojeQrKody";
 import { signOut } from "@/lib/auth";
 import { qrUrl } from "@/lib/qr";
 import { usePouzivatel } from "@/lib/pouzivatel";
@@ -213,12 +214,12 @@ function Penazenka({ toast, onBack }: PenazenkaProps) {
           </div>
         </div>
 
-        {/* CESTA B — nastav reťaz na honorár (tvorca) */}
+        {/* CESTA B — moje QR kódy (rozdelenie honoráru, správca) */}
         <div onClick={() => setHonorar(true)} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, marginTop: SPACE.sm, background: "rgba(91,155,255,.07)", border: "1px solid rgba(91,155,255,.25)", borderRadius: RADIUS.md, padding: `${SPACE.sm}px ${SPACE.gutter}px`, cursor: "pointer" }}>
           <span style={{ width: 38, height: 38, borderRadius: RADIUS.sm, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(91,155,255,.14)", color: "var(--a-info)", fontSize: 17 }}>⛓</span>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 13, fontWeight: 700 }}>Nastav reťaz na honorár</div>
-            <div style={{ fontSize: 11, color: C.textTer, marginTop: SPACE.xxs }}>% z honoráru ide ďalej · QR pod video/knihu</div>
+            <div style={{ fontSize: 13, fontWeight: 700 }}>Moje QR kódy · reťaz honoráru</div>
+            <div style={{ fontSize: 11, color: C.textTer, marginTop: SPACE.xxs }}>Zoznam QR + pomer · vytvor nový · koľko išlo organizáciám</div>
           </div>
           <span style={{ color: C.textTer, fontSize: 16 }}>›</span>
         </div>
@@ -255,14 +256,8 @@ function Penazenka({ toast, onBack }: PenazenkaProps) {
         )}
       </div>
 
-      {/* Reťaz dobra — Cesta B (§9): honorár tvorcu */}
-      {honorar && (
-        <RetazDobraSheet mode="honorar" odmena={0} titulOdkaz="Honorár"
-          odkaz="https://deed.app/h/martin-k"
-          onClose={() => setHonorar(false)}
-          onDone={() => toast("Reťaz na honorár aktívna · QR pripravený")}
-          toast={toast} />
-      )}
+      {/* Moje QR kódy — správca (prerobené „Nastav reťaz na honorár") */}
+      {honorar && <MojeQrKody onClose={() => setHonorar(false)} toast={toast} />}
     </div>
   );
 }

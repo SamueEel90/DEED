@@ -104,9 +104,9 @@ export const goodSupabase = {
     if (error) throw error;
     return (data || []).map(naGoodPolozka);
   },
-  async vytvor(it: GoodPolozka, autorUcetId?: string | null): Promise<boolean> {
-    if (!supabase) return false;
-    const { error } = await supabase.from("prispevok").insert({
+  async vytvor(it: GoodPolozka, autorUcetId?: string | null): Promise<string | null> {
+    if (!supabase) return null;
+    const { data, error } = await supabase.from("prispevok").insert({
       autor_ucet_id: autorUcetId ?? null,   // NULL = demo/seed; inak link na účet
       autor_nazov: it.autor,
       autor_karma: it.karma ?? null,
@@ -126,9 +126,9 @@ export const goodSupabase = {
       overene: !!it.overene,
       ciel: it.ciel ?? null,
       vyzbierane: it.vyzbierane ?? null,
-    });
+    }).select("id").single();
     if (error) throw error;
-    return true;
+    return (data?.id as string) ?? null;
   },
   async udalosti(): Promise<Udalost[]> {
     if (!supabase) return [];

@@ -4,7 +4,7 @@
 // Dnes localStorage (deed.me.*); zajtra Supabase (tabuľka "zaujmy" už
 // existuje v lib/db — výmena = TENTO jeden súbor). Číta usePersonalizacia().
 // ============================================================
-import type { Zaujem, Sledovanie, Podpora, PersonalizaciaStav } from "@/types";
+import type { Zaujem, Sledovanie, Podpora, Oblubeny, PersonalizaciaStav } from "@/types";
 import { supabase } from "@/lib/supabase";
 
 // ---- localStorage kľúče (namespace deed.me.* — oddelené od deed.aktivity.*) ----
@@ -12,6 +12,7 @@ export const ME = {
   zaujmy: "deed.me.zaujmy.v1",
   sledovani: "deed.me.sledovani.v1",
   podpory: "deed.me.podpory.v1",
+  oblubene: "deed.me.oblubene.v1",
 };
 const LEGACY_FOLLOWS = "deed.aktivity.follows.v1"; // { [meno]: true } — staré sledovanie z Aktivít
 const LEGACY_MIGROVANE = "deed.me.sledovani.migrated.v1"; // flag: legacy import už prebehol (jednorazový)
@@ -57,11 +58,13 @@ export function nacitajLokalne(): Omit<PersonalizaciaStav, "nacitavam"> {
     zaujmy: load<Zaujem[]>(ME.zaujmy, []),
     sledovani: load<Sledovanie[]>(ME.sledovani, []),
     podpory: load<Podpora[]>(ME.podpory, []),
+    oblubene: load<Oblubeny[]>(ME.oblubene, []),
   };
 }
 export const ulozZaujmy = (z: Zaujem[]) => save(ME.zaujmy, z);
 export const ulozSledovani = (s: Sledovanie[]) => save(ME.sledovani, s);
 export const ulozPodpory = (p: Podpora[]) => save(ME.podpory, p);
+export const ulozOblubene = (o: Oblubeny[]) => save(ME.oblubene, o);
 
 /** Má legacy import ešte prebehnúť? Len kým nie je nastavený flag a legacy kľúč existuje. */
 export function legacyNaImport(): boolean {
@@ -166,5 +169,6 @@ export function demoSeed(): Omit<PersonalizaciaStav, "nacitavam"> {
     podpory: [
       { refId: 3, typ: "ziadost", modul: "help", suma: 50, kanal: "DEED", komu: "Rodina Kováčová", vyzbierane: 1450, ciel: 2400 },
     ],
+    oblubene: [],
   };
 }

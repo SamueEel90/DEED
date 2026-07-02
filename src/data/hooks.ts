@@ -9,7 +9,7 @@ import { supabase } from "@/lib/supabase";
 import { repo } from "./repo";
 import type { QrCiel } from "@/lib/qr";
 import type { PlatbaVstup, RecurringVstup } from "./platby.supabase";
-import type { ScanVstup, ChainVstup } from "./qr.supabase";
+import type { ScanVstup, ChainVstup, QrSplitCreateVstup, QrSplitPayVstup } from "./qr.supabase";
 
 /** Stabilné query kľúče (cache + invalidácia). */
 export const qk = {
@@ -32,6 +32,8 @@ export const qk = {
     static: (druh: string, ref: string) => ["qr", "static", druh, ref] as const,
     resolve: (slug: string) => ["qr", "resolve", slug] as const,
     token: (eventId: string) => ["qr", "token", eventId] as const,
+    splitList: (owner: string) => ["qr", "split", "list", owner] as const,
+    splitGet: (id: string) => ["qr", "split", "get", id] as const,
   },
   platby: {
     vypis: (ucetId: string, smer?: string) => ["platby", "vypis", ucetId, smer ?? "vsetko"] as const,
@@ -131,6 +133,34 @@ export const useBadgeBind = () => useMutation({ mutationFn: (v: { badgeId: strin
 export const useBadgeUnbind = () => useMutation({ mutationFn: (badgeId: string) => repo.qr.badgeUnbind(badgeId) });
 /** Odznak: zákaznícky sken → pochvala/dar (NULL → pobočka). */
 export const useBadgeScan = () => useMutation({ mutationFn: (v: { badgeId: string; zakaznik?: string | null; suma?: number }) => repo.qr.badgeScan(v.badgeId, v.zakaznik, v.suma) });
+
+// ---- QR Split (Fáza 6) — produkčný QR systém ----
+/** Zoznam mojich QR (správca QR). Reálny účet → ucetId; demo → meno. */
+export const useQrSplitList = (owner: string | null, ownerText?: string | null) =>
+  useQuery({
+    queryKey: qk.qr.splitList(owner ?? ownerText ?? ""),
+    queryFn: () => repo.qr.qrSplitList(owner ?? null, ownerText ?? null),
+    enabled: !!(owner || ownerText),
+  });
+/** Landing: detail QR (príspevok + pomer + súčty). */
+export const useQrSplitGet = (id: string | null) =>
+  useQuery({ queryKey: qk.qr.splitGet(id ?? ""), queryFn: () => repo.qr.qrSplitGet(id as string), enabled: !!id });
+/** Vytvor QR split (autorský alebo osobný). */
+export const useQrSplitCreate = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (v: QrSplitCreateVstup) => repo.qr.qrSplitCreate(v),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["qr", "split"] }); },
+  });
+};
+/** Platba cez QR split → invaliduje súčty + zoznam. */
+export const useQrSplitPay = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (v: QrSplitPayVstup) => repo.qr.qrSplitPay(v),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["qr", "split"] }); qc.invalidateQueries({ queryKey: qk.good.feed }); qc.invalidateQueries({ queryKey: qk.charita.feed }); },
+  });
+};
 
 // ---- Payment Engine (Fáza 2) — poslať platbu, výpis, zostatok ----
 /** Pošli platbu cez engine (idempotentne) → invaliduje výpis/zostatok/„Čo podporujem". */

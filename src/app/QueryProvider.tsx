@@ -13,7 +13,10 @@ export function QueryProvider({ children }: { children: ReactNode }) {
           queries: {
             staleTime: 60_000, // mock dáta sa nemenia — necache-uj zbytočne refetchom
             refetchOnWindowFocus: false,
-            retry: 1,
+            // Supabase (free tier) compute sa občas reštartuje → prechodné timeouty.
+            // Viac pokusov s exponenciálnym backoffom, aby krátky výpadok nezhodil obrazovku.
+            retry: 3,
+            retryDelay: (pokus) => Math.min(1000 * 2 ** pokus, 8000),
           },
         },
       })

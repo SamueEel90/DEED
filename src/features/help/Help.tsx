@@ -1,14 +1,15 @@
 import { useState, useEffect, type ReactNode } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { C, pasmo, inp, infoBox, btn, GRAD_ZELENY, glassTmavy, SPACE, RADIUS } from "@/theme";
-import { Foto, Avatar, FotoPrispevku, MiniFotky, Hlavicka, ModulHlavicka, PodporaSekcia, PlatbaModal, HladanieModal, Otazka, Vyber, vyberBox, NavBtns, Suhrn, DokladRow, toast, Oslava, useGaleria, useLayout, useScrollHore, useStrankaAkcie, useTvorbaGate, Ticker, StatRiadok, FiltreStat, MoniBar, FeedStlpce, FeedGrid, obalSiroky, OkruhVyber, Lupa, Zdielanie, IkonaSpat, IkonaVlajka, IkonaFoto, IkonaPlay, IkonaDoska, IkonaPin, FeedSkeleton, EmptyState, ErrorState, ScreenSwitch } from "@/shared";
+import { Foto, Avatar, FotoPrispevku, MiniFotky, Hlavicka, ModulHlavicka, PodporaSekcia, PlatbaModal, HladanieModal, OblubeneHviezda, OblubeneBtn, Otazka, Vyber, vyberBox, NavBtns, Suhrn, DokladRow, toast, Oslava, useGaleria, useLayout, useScrollHore, useStrankaAkcie, useTvorbaGate, Ticker, StatRiadok, FiltreStat, MoniBar, FeedStlpce, FeedGrid, obalSiroky, OkruhVyber, Lupa, Zdielanie, IkonaSpat, IkonaVlajka, IkonaFoto, IkonaPlay, IkonaDoska, IkonaPin, FeedSkeleton, EmptyState, ErrorState, ScreenSwitch } from "@/shared";
 import { Zvoncek } from "@/features/notifikacie/Notifikacie";
 import { pripravFeed, FEED_CFG } from "@/lib/feed";
 import { MEDIA_AR } from "@/lib/cardSize";
-import type { HelpFeedItem, Subjekt } from "@/types";
+import type { HelpFeedItem, Subjekt, Oblubeny } from "@/types";
 import { CudziProfil } from "@/features/cudzi-profil/CudziProfil";
 import { GoodBoard, GoodEvent } from "@/features/good/Good";
-import { useHelpFeed, qk, repo } from "@/data";
+import { useHelpFeed, useQrSplitCreate, qk, repo } from "@/data";
+import { SplitConfigStep, splitOwnerPct, splitCielePayload, splitValid, type SplitCiel } from "@/shared";
 import { usePouzivatel } from "@/lib/pouzivatel";
 import { useLokalita } from "@/lib/lokalita";
 import { tint, tagChip } from "@/lib/ui";
@@ -21,6 +22,12 @@ import { USER_LOK, ZIVE_DARY } from "./mock";
   feed → detail → podpora · ＋ Pridať → Ponúkam / Dopytujem
   ============================================================
 */
+
+// príspevok Help → záznam obľúbených (bookmark)
+const oblubenyZHelp = (z: any): Oblubeny => ({
+  refId: z.id, typ: z.typ, modul: z.modul || "help",
+  nazov: z.nazov, emoji: z.ikona, lok: z.lok, vyzbierane: z.suma, ciel: z.ciel,
+});
 
 // ===================== MODUL =====================
 export default function ModulHelp({ wide }: { wide?: boolean }) {
@@ -39,12 +46,23 @@ export default function ModulHelp({ wide }: { wide?: boolean }) {
   const qc = useQueryClient();
   const ja = usePouzivatel();
   const lok = useLokalita();
+  const createSplit = useQrSplitCreate();
   const [oslava, setOslava] = useState<{ emoji: string; titul: string; text: ReactNode } | null>(null);
-  const zverejni = (vstup: HelpFeedItem, osl: { emoji: string; titul: string; text: ReactNode }) => {
+  const zverejni = (vstup: HelpFeedItem, osl: { emoji: string; titul: string; text: ReactNode }, split?: SplitCiel[]) => {
     const item = { ...vstup, lat: lok.lat, lng: lok.lng, lok: lok.mesto }; // geo = aktívne mesto
     qc.setQueryData<HelpFeedItem[]>(qk.help.feed, (old = []) => [item, ...old]);
     repo.help.vytvor(item, ja.ucetId)
-      .then((ulozene) => { if (ulozene) qc.invalidateQueries({ queryKey: qk.help.feed }); })
+      .then((novyId) => {
+        if (novyId) qc.invalidateQueries({ queryKey: qk.help.feed });
+        // autorský QR split (ak autor nastavil rozdelenie pri tvorbe)
+        if (novyId && split && split.length) {
+          createSplit.mutate({
+            caseId: novyId, owner: ja.ucetId, ownerText: ja.celeMeno,
+            ownerPodiel: +(splitOwnerPct(split) / 100).toFixed(5),
+            ciele: splitCielePayload(split), zdroj: "autor", mena: "DEED",
+          });
+        }
+      })
       .catch(() => {});
     setScreen("feed");
     setOslava(osl);
@@ -77,7 +95,7 @@ export default function ModulHelp({ wide }: { wide?: boolean }) {
             id: z.id, titul: z.nazov, podtitul: z.pribeh, kat: z.lok, emoji: z.ikona,
             tag: z.typ === "ziadost" ? "Žiadosť" : "Ponuka",
           }))}
-          onPick={(id: number | string) => { const z = MOCK_FEED.find((x) => x.id === id); if (!z) return; z.typ === "ziadost" ? otvorZ(z) : toast(`${z.nazov} — ${z.typ === "ponuka" ? "ponuka pomoci" : "charita"}`); }}
+          onPick={(id: number | string) => { const z = MOCK_FEED.find((x) => x.id === id); if (z) otvorZ(z); }}
           onSubjekt={(s) => { setAktSubjekt(s); setScreen("cudzi"); }}
           toast={toast} defaultFilter="Žiadosti Help"
           onClose={() => setHladaj(false)} />
@@ -112,7 +130,7 @@ function Feed({ wide, toast, onDetail, onHladaj, onAdd, onBoard }: { wide?: bool
   const zaklad = MOCK_FEED.filter((z) => z.typ !== "charity" && (view === "all" || z.typ === view));
   const feed = pripravFeed(zaklad as any, { lat: lok.lat, lng: lok.lng, radius } as any);
 
-  const karta = (z: any) => <FeedCard key={z.id} z={z} wide={wide} onClick={() => z.typ === "ziadost" && onDetail(z)} />;
+  const karta = (z: any) => <FeedCard key={z.id} z={z} wide={wide} onClick={() => onDetail(z)} />;
   const jeZiadost = (z: any) => z.typ === "ziadost";
 
   // kontextové akcie stránky → plávajúce „+ Pridať" dole + sekcia „Na tejto stránke" v menu (☰)
@@ -195,7 +213,7 @@ function FeedCard({ z, wide, onClick }: { z: any; wide?: boolean; onClick: () =>
   const accent = jeZiadost ? (z.sponzor ? C.gold : C.red) : jePonuka ? C.purple : C.gold;
   const typLabel = jeZiadost ? `ŽIADOSŤ · ${z.sponzor ? "D++" : "D+"}` : jePonuka ? "PONUKA POMOCI" : "CHARITA";
   return (
-    <div {...pressable(onClick, z.nazov)} className="good-card" style={{ margin: wide ? 0 : `0 ${-SPACE.md}px ${SPACE.sm}px`, border: wide ? `1px solid ${C.line}` : "none", borderBottom: `1px solid ${wide ? C.line : C.line2}`, borderLeft: `3px solid ${jeKriza ? C.red : accent}`, borderRadius: wide ? RADIUS.md : 0, overflow: "hidden", background: C.surface2, boxShadow: jeKriza && wide ? `0 0 0 1.5px ${tint(C.red, .5)}, 0 8px 24px ${tint(C.red, .14)}` : undefined, cursor: jeZiadost ? "pointer" : "default" }}>
+    <div {...pressable(onClick, z.nazov)} className="good-card" style={{ margin: wide ? 0 : `0 ${-SPACE.md}px ${SPACE.sm}px`, border: wide ? `1px solid ${C.line}` : "none", borderBottom: `1px solid ${wide ? C.line : C.line2}`, borderLeft: `3px solid ${jeKriza ? C.red : accent}`, borderRadius: wide ? RADIUS.md : 0, overflow: "hidden", background: C.surface2, boxShadow: jeKriza && wide ? `0 0 0 1.5px ${tint(C.red, .5)}, 0 8px 24px ${tint(C.red, .14)}` : undefined, cursor: "pointer" }}>
       {/* médium — 16:9 na tablete/desktope; na mobile pôvodná výška 230 px */}
       <div style={{ position: "relative", ...(wide ? { width: "100%", aspectRatio: MEDIA_AR } : { height: 230 }) }}>
         <FotoPrispevku fotky={z.fotky} emoji={z.ikona} h={wide ? "100%" : 230} disableGaleria />
@@ -203,6 +221,7 @@ function FeedCard({ z, wide, onClick }: { z: any; wide?: boolean; onClick: () =>
         {jeKriza && <span style={{ position: "absolute", top: 10, left: 10, background: C.red, color: "#fff", fontSize: 11, fontWeight: 800, borderRadius: RADIUS.xs, padding: `${SPACE.xxs}px ${SPACE.sm}px`, pointerEvents: "none", boxShadow: "0 2px 10px rgba(0,0,0,.3)" }}>🔴 URGENTNÉ</span>}
         <span style={{ position: "absolute", top: 10, ...(jeKriza ? { right: 10 } : { left: 10 }), background: accent, color: "#fff", fontSize: 9.5, fontWeight: 800, borderRadius: RADIUS.lg, padding: `${SPACE.xxs}px ${SPACE.sm}px`, pointerEvents: "none" }}>{typLabel}</span>
         {z.sponzor && !jeKriza && <span style={{ position: "absolute", top: 10, right: 10, background: "rgba(8,11,18,.62)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)", color: "#fff", fontSize: 9.5, fontWeight: 700, borderRadius: RADIUS.xs, padding: `${SPACE.xxs}px ${SPACE.xs}px`, pointerEvents: "none" }}>🛡 {z.sponzor.meno} · {z.sponzor.suma} €</span>}
+        <OblubeneHviezda polozka={oblubenyZHelp(z)} style={{ top: "auto", bottom: 10 }} />
       </div>
       {/* titul + príbeh */}
       <div style={{ padding: `${SPACE.sm}px ${SPACE.gutter}px ${SPACE.gutter}px` }}>
@@ -242,6 +261,7 @@ function Detail({ z, onBack, onAutor }: { z: any; onBack: () => void; onAutor: (
   }
 
   const pct = z.ciel ? Math.min(100, Math.round(suma / z.ciel * 100)) : 0;
+  const jePonuka = z.typ === "ponuka"; // ponuka pomoci → kontakt, nie darovanie
 
   return (
     <div style={{ paddingBottom: SPACE.xl }}>
@@ -273,6 +293,11 @@ function Detail({ z, onBack, onAutor }: { z: any; onBack: () => void; onAutor: (
       {/* pribeh */}
       <div style={{ padding: `${SPACE.gutter}px ${SPACE.md}px ${SPACE.sm}px`, fontSize: 14, lineHeight: 1.5, color: C.text }}>{z.pribeh}</div>
 
+      {/* uložiť do obľúbených */}
+      <div style={{ padding: `0 ${SPACE.md}px ${SPACE.sm}px` }}>
+        <OblubeneBtn polozka={oblubenyZHelp(z)} toast={toast} style={{ width: "100%" }} />
+      </div>
+
       {/* D++ sponzor */}
       {z.sponzor && (
         <div style={{ margin: `0 ${SPACE.gutter}px ${SPACE.sm}px`, background: "rgba(224,169,61,.08)", border: `1px solid rgba(224,169,61,.35)`, borderRadius: RADIUS.sm, padding: `${SPACE.sm}px ${SPACE.sm}px`, display: "flex", alignItems: "center", gap: SPACE.sm }}>
@@ -299,14 +324,25 @@ function Detail({ z, onBack, onAutor }: { z: any; onBack: () => void; onAutor: (
         </div>
       </div>)}
 
-      {/* jednotná sekcia podpory */}
-      <div style={{ padding: `0 ${SPACE.gutter}px ${SPACE.gutter}px` }}>
-        <PodporaSekcia
-          onShare={() => toast("Zdieľať: odkaz skopírovaný · siete")}
-          upvotes={140} onUpvote={() => toast("Palec hore")}
-          onPodpor={(s: number) => posliPevne(s, "DEED")} onSms={() => posliPevne(1, "SMS")}
-          onKanal={(k: string) => setPlatba(k)} />
-      </div>
+      {/* ponuka pomoci = kontakt; žiadosť = darovanie */}
+      {jePonuka ? (
+        <div style={{ padding: `0 ${SPACE.gutter}px ${SPACE.gutter}px` }}>
+          <button onClick={() => toast(`Ozvali sme sa: ${z.nazov} · dohodnite sa cez chat`)} style={{ ...btn("primary"), width: "100%" }}>✍️ Mám záujem — ozvať sa</button>
+          <div style={{ display: "flex", gap: SPACE.sm, marginTop: SPACE.sm }}>
+            <button onClick={() => toast("Zdieľať: odkaz skopírovaný · siete")} style={{ ...btn("ghost"), flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: SPACE.xs }}><Zdielanie size={16} color={C.textSec} /> Zdieľať</button>
+            <button onClick={() => toast("Palec hore")} style={{ ...btn("ghost"), flex: 1 }}>👍 Páči sa mi</button>
+          </div>
+          <div style={{ textAlign: "center", fontSize: 11, color: C.textTer, marginTop: SPACE.sm }}>Po ozvaní sa dohodnete na detailoch cez chat → prípadne QR na mieste.</div>
+        </div>
+      ) : (
+        <div style={{ padding: `0 ${SPACE.gutter}px ${SPACE.gutter}px` }}>
+          <PodporaSekcia
+            onShare={() => toast("Zdieľať: odkaz skopírovaný · siete")}
+            upvotes={140} onUpvote={() => toast("Palec hore")}
+            onPodpor={(s: number) => posliPevne(s, "DEED")} onSms={() => posliPevne(1, "SMS")}
+            onKanal={(k: string) => setPlatba(k)} />
+        </div>
+      )}
 
       {/* simulácia platby (EUR karta / DEED peňaženka) */}
       {platba && <PlatbaModal kanal={platba} komu={z.nazov} onClose={() => setPlatba(null)} onDone={platbaHotova} />}
@@ -348,11 +384,13 @@ function BigChoice({ emoji, title, desc, col, onClick }: { emoji: string; title:
 }
 
 // ===================== PONÚKAM — flow =====================
-function OfferFlow({ onBack, onZverejni }: { onBack: () => void; onZverejni: (item: HelpFeedItem, osl: { emoji: string; titul: string; text: ReactNode }) => void }) {
+function OfferFlow({ onBack, onZverejni }: { onBack: () => void; onZverejni: (item: HelpFeedItem, osl: { emoji: string; titul: string; text: ReactNode }, split?: SplitCiel[]) => void }) {
   const [krok, setKrok] = useState(1);
   const [typ, setTyp] = useState<string | null>(null);
   const [uroven, setUroven] = useState<string | null>(null);
   const [popis, setPopis] = useState("");
+  const [rozdel, setRozdel] = useState(false);
+  const [ciele, setCiele] = useState<SplitCiel[]>([]);
 
   const zverejniPonuku = () => {
     const novaPonuka: HelpFeedItem = {
@@ -368,7 +406,7 @@ function OfferFlow({ onBack, onZverejni }: { onBack: () => void; onZverejni: (it
       skore: 9, typSituacie: "normal", modul: "help", dni: 0,
       lat: USER_LOK.lat, lng: USER_LOK.lng,
     };
-    onZverejni(novaPonuka, { emoji: "🤝", titul: "Ponuka zverejnená!", text: "Tvoja ponuka je teraz vo feede medzi „Ponúkajú pomoc“. Ľudia z okolia sa ti môžu ozvať." });
+    onZverejni(novaPonuka, { emoji: "🤝", titul: "Ponuka zverejnená!", text: "Tvoja ponuka je teraz vo feede medzi „Ponúkajú pomoc“. Ľudia z okolia sa ti môžu ozvať." }, rozdel ? ciele : undefined);
   };
 
   return (
@@ -399,7 +437,16 @@ function OfferFlow({ onBack, onZverejni }: { onBack: () => void; onZverejni: (it
             <Otazka>Zhrnutie</Otazka>
             <Suhrn rows={[["Typ", typ], ["Úroveň", uroven === "odbornik" ? "Odborník (doloží podklady)" : "Amatér"], ["Popis", popis]]} />
             {uroven === "odbornik" && <div style={infoBox}>Odborník: pred zverejnením doložíš podklady. AI z nich určí vstupný status karmy v odbore.</div>}
-            <button onClick={zverejniPonuku} style={{ ...btn("primary"), width: "100%", marginTop: SPACE.gutter }}>Zverejniť ponuku</button>
+
+            {/* autorský split — koľko z platieb cez QR ide tebe a koľko organizáciám */}
+            <button onClick={() => setRozdel((v) => !v)} style={{ ...btn(rozdel ? "primary" : "ghost"), width: "100%", marginTop: SPACE.gutter }}>🎬 Rozdeliť medzi organizácie (QR) {rozdel ? "▲" : "▼"}</button>
+            {rozdel && (
+              <div style={{ marginTop: SPACE.sm, border: `1px solid ${C.line}`, borderRadius: RADIUS.md, padding: SPACE.gutter }}>
+                <SplitConfigStep ownerLabel="Tebe (autor)" ciele={ciele} onCiele={setCiele} />
+              </div>
+            )}
+
+            <button onClick={zverejniPonuku} disabled={rozdel && !splitValid(ciele)} style={{ ...btn(rozdel && !splitValid(ciele) ? "disabled" : "primary"), width: "100%", marginTop: SPACE.gutter }}>{rozdel ? "Zverejniť + vytvoriť QR" : "Zverejniť ponuku"}</button>
           </>
         )}
       </div>
@@ -408,7 +455,7 @@ function OfferFlow({ onBack, onZverejni }: { onBack: () => void; onZverejni: (it
 }
 
 // ===================== DOPYTUJEM — flow =====================
-function RequestFlow({ onBack, onZverejni }: { onBack: () => void; onZverejni: (item: HelpFeedItem, osl: { emoji: string; titul: string; text: ReactNode }) => void }) {
+function RequestFlow({ onBack, onZverejni }: { onBack: () => void; onZverejni: (item: HelpFeedItem, osl: { emoji: string; titul: string; text: ReactNode }, split?: SplitCiel[]) => void }) {
   const [vetva, setVetva] = useState<string | null>(null); // 'ludska' | 'peniaze'
   const [krok, setKrok] = useState(0);
   const [preKoho, setPreKoho] = useState<string | null>(null);
@@ -416,6 +463,8 @@ function RequestFlow({ onBack, onZverejni }: { onBack: () => void; onZverejni: (
   const [suma, setSuma] = useState("");
   const [suhlas, setSuhlas] = useState(false);
   const [retaz, setRetaz] = useState("necham");
+  const [rozdel, setRozdel] = useState(false);
+  const [ciele, setCiele] = useState<SplitCiel[]>([]);
 
   const sumaNum = Number(suma || 0);
   const p = sumaNum ? pasmo(sumaNum) : null;
@@ -456,7 +505,7 @@ function RequestFlow({ onBack, onZverejni }: { onBack: () => void; onZverejni: (
       skore: 10, typSituacie: "normal", modul: "help", dni: 0,
       lat: USER_LOK.lat, lng: USER_LOK.lng,
     };
-    onZverejni(novaZiadost, { emoji: "🙏", titul: "Žiadosť vytvorená!", text: <>Tvoja žiadosť na <b>{sumaNum} €</b> je vo feede. Po posúdení (do 48 h) sa spustí naživo a ľudia môžu prispievať.</> });
+    onZverejni(novaZiadost, { emoji: "🙏", titul: "Žiadosť vytvorená!", text: <>Tvoja žiadosť na <b>{sumaNum} €</b> je vo feede. Po posúdení (do 48 h) sa spustí naživo a ľudia môžu prispievať.</> }, rozdel ? ciele : undefined);
   };
 
   // VÝBER VETVY
@@ -589,7 +638,16 @@ function RequestFlow({ onBack, onZverejni }: { onBack: () => void; onZverejni: (
               ["Opis", popis.slice(0, 60) + (popis.length > 60 ? "…" : "")],
             ]} />
             <div style={{ ...infoBox, marginTop: SPACE.sm }}>Potvrdzujem, že informácie sú pravdivé a doklady pravé. Rozumiem dôsledkom klamstva.</div>
-            <button onClick={zverejniZiadost} style={{ ...btn("primary"), width: "100%", marginTop: SPACE.gutter }}>Vytvoriť žiadosť</button>
+
+            {/* autorský split — koľko z platieb cez QR ide tebe/organizáciám */}
+            <button onClick={() => setRozdel((v) => !v)} style={{ ...btn(rozdel ? "primary" : "ghost"), width: "100%", marginTop: SPACE.gutter }}>🎬 Rozdeliť medzi organizácie (QR) {rozdel ? "▲" : "▼"}</button>
+            {rozdel && (
+              <div style={{ marginTop: SPACE.sm, border: `1px solid ${C.line}`, borderRadius: RADIUS.md, padding: SPACE.gutter }}>
+                <SplitConfigStep ownerLabel="Tebe (autor)" ciele={ciele} onCiele={setCiele} />
+              </div>
+            )}
+
+            <button onClick={zverejniZiadost} disabled={rozdel && !splitValid(ciele)} style={{ ...btn(rozdel && !splitValid(ciele) ? "disabled" : "primary"), width: "100%", marginTop: SPACE.gutter }}>{rozdel ? "Vytvoriť žiadosť + QR" : "Vytvoriť žiadosť"}</button>
             <div style={{ textAlign: "center", fontSize: 11, color: C.textTer, marginTop: SPACE.xs }}>Po vytvorení: posúdenie do 48 h → schválené → live.</div>
           </>
         )}

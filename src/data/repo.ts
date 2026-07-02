@@ -33,20 +33,21 @@ import { REBRICKY_MOCK, topPrispevky, type RebricekKluc } from "@/features/top/m
 import { MAPA_UDALOSTI } from "@/features/mapa/mock";
 import { qrUrl, type QrCiel, type QrStatic, type QrResolved } from "@/lib/qr";
 import type { PlatbaVstup, PlatbaRiadok, VypisRiadok, BatchVysledok, RecurringVstup } from "./platby.supabase";
-import type { ScanVstup, ScanVysledok, ChainVstup, ChainVysledok, BadgeScanVysledok } from "./qr.supabase";
+import type { ScanVstup, ScanVysledok, ChainVstup, ChainVysledok, BadgeScanVysledok, QrSplitCreateVstup, QrSplitPayVstup, QrSplitPayVysledok } from "./qr.supabase";
+import type { QrSplitRow, QrSplitDetail, QrSplitListItem } from "@/types";
 
 /** Rozhranie dátovej vrstvy — mock aj budúci Supabase ho implementujú rovnako. */
 export interface Repo {
   good: {
     feed(): Promise<GoodPolozka[]>;
     udalosti(): Promise<Udalost[]>;
-    /** Vytvor nový skutok (zápis do DB). Vráti true ak sa reálne uložil (Supabase), false pri mocku. */
-    vytvor(it: GoodPolozka, autorUcetId?: string | null): Promise<boolean>;
+    /** Vytvor nový skutok (zápis do DB). Vráti `id` nového príspevku (Supabase), null pri mocku. */
+    vytvor(it: GoodPolozka, autorUcetId?: string | null): Promise<string | null>;
   };
   help: {
     feed(): Promise<HelpFeedItem[]>;
-    /** Vytvor novú ponuku/žiadosť (zápis do DB). Vráti true ak sa reálne uložila. */
-    vytvor(it: HelpFeedItem, autorUcetId?: string | null): Promise<boolean>;
+    /** Vytvor novú ponuku/žiadosť (zápis do DB). Vráti `id` nového príspevku, null pri mocku. */
+    vytvor(it: HelpFeedItem, autorUcetId?: string | null): Promise<string | null>;
   };
   charita: {
     feed(): Promise<CharitaFeedItem[]>;
@@ -95,6 +96,14 @@ export interface Repo {
     badgeUnbind(badgeId: string): Promise<void>;
     /** Odznak: zákazník naskenuje → pochvala/dar (NULL → pobočka). */
     badgeScan(badgeId: string, zakaznik?: string | null, suma?: number): Promise<BadgeScanVysledok>;
+    /** QR Split: vytvor QR (vlastník + N organizácií, % zafixované). */
+    qrSplitCreate(v: QrSplitCreateVstup): Promise<QrSplitRow | null>;
+    /** QR Split: platba cez QR → rozdelí podľa pomeru. */
+    qrSplitPay(v: QrSplitPayVstup): Promise<QrSplitPayVysledok | null>;
+    /** QR Split: landing (príspevok + pomer + súčty). */
+    qrSplitGet(id: string): Promise<QrSplitDetail | null>;
+    /** QR Split: zoznam mojich QR (správca). Demo → podľa mena (ownerText). */
+    qrSplitList(owner: string | null, ownerText?: string | null): Promise<QrSplitListItem[]>;
   };
   platby: {
     /** Pošli platbu cez engine (idempotentne, split-aware). Vráti `platba` riadok (null pri mocku). */
@@ -120,11 +129,11 @@ export const mockRepo: Repo = {
   good: {
     feed: () => ok(POLOZKY),
     udalosti: () => ok(EVENTS),
-    vytvor: () => Promise.resolve(false), // mock: bez DB → false (komponent ponechá optimistický záznam)
+    vytvor: () => Promise.resolve(null), // mock: bez DB → null (komponent ponechá optimistický záznam)
   },
   help: {
     feed: () => ok(MOCK_FEED),
-    vytvor: () => Promise.resolve(false),
+    vytvor: () => Promise.resolve(null),
   },
   charita: {
     feed: () => ok(FEED_ITEMS),
@@ -171,6 +180,10 @@ export const mockRepo: Repo = {
     badgeBind: () => Promise.resolve(),
     badgeUnbind: () => Promise.resolve(),
     badgeScan: () => Promise.resolve({ prijemca: "pobocka" as const, employee: null }),
+    qrSplitCreate: () => Promise.resolve(null),
+    qrSplitPay: () => Promise.resolve(null),
+    qrSplitGet: () => Promise.resolve(null),
+    qrSplitList: () => Promise.resolve([]),
   },
   platby: {
     // mock/offline: bez DB → engine no-op (UI drží lokálny stav, ako dnes)

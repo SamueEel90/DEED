@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { C, inp, GRAD, GRAD_ZELENY, SPACE, RADIUS } from "@/theme";
-import { Foto, FotoPrispevku, MiniFotky, Video, ModulHlavicka, Hlavicka, AvatarUroven, PodporaSekcia, PlatbaModal, HladanieModal, toast, Oslava, useGaleria, useScrollHore, useMotiv, useLayout, useStrankaAkcie, useTvorbaGate, StatRiadok, MoniBar, FeedStlpce, FeedGrid, obalSiroky, SegTabs, Lupa, Zdielanie, IkonaSipVlavo, IkonaMoznosti, IkonaUlozit, IkonaFajka, IkonaPlay, IkonaDoska, IkonaPin, OkruhVyber, QrModal, FeedSkeleton, EmptyState, ErrorState, ScreenSwitch } from "@/shared";
+import { Foto, FotoPrispevku, MiniFotky, Video, ModulHlavicka, Hlavicka, AvatarUroven, PodporaSekcia, PlatbaModal, HladanieModal, OblubeneHviezda, OblubeneBtn, toast, Oslava, useGaleria, useScrollHore, useMotiv, useLayout, useStrankaAkcie, useTvorbaGate, StatRiadok, MoniBar, FeedStlpce, FeedGrid, obalSiroky, SegTabs, Lupa, Zdielanie, IkonaSipVlavo, IkonaMoznosti, IkonaUlozit, IkonaFajka, IkonaPlay, IkonaDoska, IkonaPin, OkruhVyber, QrModal, SplitQrSheet, FeedSkeleton, EmptyState, ErrorState, ScreenSwitch } from "@/shared";
 import { pripravFeed, vzdialenostKm, FEED_CFG, type FeedUser } from "@/lib/feed";
 import { tint, tagChip, jeHrdina, HRDINA_COL } from "@/lib/ui";
 import { pressable } from "@/components/pressable";
@@ -11,8 +11,9 @@ import { zobrazVelkost, MEDIA_AR } from "@/lib/cardSize";
 import { RetazDobraSheet } from "@/features/retaz/RetazDobra";
 import { Zvoncek } from "@/features/notifikacie/Notifikacie";
 import { CudziProfil } from "@/features/cudzi-profil/CudziProfil";
-import type { GoodPolozka, Subjekt, Udalost, OkruhKod } from "@/types";
-import { useGoodFeed, useGoodUdalosti, useTopPrispevky, qk, repo } from "@/data";
+import type { GoodPolozka, Subjekt, Udalost, OkruhKod, Oblubeny } from "@/types";
+import { useGoodFeed, useGoodUdalosti, useTopPrispevky, useQrSplitCreate, qk, repo } from "@/data";
+import { SplitConfigStep, splitOwnerPct, splitCielePayload, splitValid, type SplitCiel } from "@/shared";
 import { usePersonalizacia } from "@/lib/personalizacia";
 import { KAT, SRC_COL } from "./mock";
 
@@ -23,6 +24,12 @@ const katLabel = (k: GoodPolozka["kat"]) => KAT[k].label || k;
 export const autorSubjekt = (it: GoodPolozka): Subjekt => it.zdroj === "Charity"
   ? { typ: "org", meno: it.autor, emoji: it.emoji, lok: it.lok, level: it.charLevel || "Gold" }
   : { typ: "osoba", meno: it.autor, level: it.karma || "Silver" };
+
+// položka feedu → záznam obľúbených (bookmark)
+const oblubenyZGood = (it: GoodPolozka): Oblubeny => ({
+  refId: it.id, typ: it.typ, modul: it.modul || "good",
+  nazov: it.titul, emoji: it.emoji, lok: it.lok, vyzbierane: it.vyzbierane, ciel: it.ciel,
+});
 
 // poloha usera (MVP mock — Trenčín, Sihoť). Neskôr z GPS/profilu.
 // exportované — Top filtruje rebríčky/príspevky podľa okruhu z rovnakej polohy.
@@ -72,10 +79,21 @@ export default function ModulGood({ wide, otvorModul }: { wide?: boolean; otvorM
   // takže príspevok uvidia aj ostatní. Bez DB (mock) ostane len optimistický záznam.
   const qc = useQueryClient();
   const ja = usePouzivatel();
-  const pridajSkutok = (it: GoodPolozka) => {
+  const createSplit = useQrSplitCreate();
+  const pridajSkutok = (it: GoodPolozka, split?: SplitCiel[]) => {
     qc.setQueryData<GoodPolozka[]>(qk.good.feed, (old = []) => [it, ...old]);
     repo.good.vytvor(it, ja.ucetId)
-      .then((ulozene) => { if (ulozene) qc.invalidateQueries({ queryKey: qk.good.feed }); })
+      .then((novyId) => {
+        if (novyId) qc.invalidateQueries({ queryKey: qk.good.feed });
+        // autorský QR split (ak autor nastavil rozdelenie pri tvorbe) — viazaný na nový príspevok
+        if (novyId && split && split.length) {
+          createSplit.mutate({
+            caseId: novyId, owner: ja.ucetId, ownerText: ja.celeMeno,
+            ownerPodiel: +(splitOwnerPct(split) / 100).toFixed(5),
+            ciele: splitCielePayload(split), zdroj: "autor", mena: "DEED",
+          });
+        }
+      })
       .catch(() => {});
   };
 
@@ -295,7 +313,8 @@ function MojDeed({ wide, onDetail, onBoard, toast }: { wide?: boolean; onDetail:
 function MojDeedObsah({ onDetail, onBoard, toast }: { onDetail: (id: string | number) => void; onBoard: () => void; toast: (m: string) => void }) {
   const { data: POLOZKY = [] } = useGoodFeed();
   const { data: EVENTS = [] } = useGoodUdalosti();
-  const { zaujmy, zaujmyKluce, sledovani, toggleSledovanie, podpory } = usePersonalizacia();
+  const { zaujmy, zaujmyKluce, sledovani, toggleSledovanie, podpory, oblubene } = usePersonalizacia();
+  const modulLabel: Record<string, string> = { help: "Help", charity: "Charita", good: "Domov", workshop: "Talent" };
 
   const maZaujmy = zaujmy.length > 0;
 
@@ -335,6 +354,27 @@ function MojDeedObsah({ onDetail, onBoard, toast }: { onDetail: (id: string | nu
               : <div style={{ fontSize: 11.5, color: C.textTer, marginTop: SPACE.xs }}>otvorená podpora · ďakujeme</div>}
           </div>
         ))}
+      </div>
+
+      {/* obľúbené — uložené príspevky (bookmark) */}
+      <div style={{ padding: `0 ${SPACE.md}px` }}>
+        <SekciaLabel>OBĽÚBENÉ ({oblubene.length})</SekciaLabel>
+        {oblubene.length === 0 ? (
+          <PrazdnyTip emoji="★" text="Ťukni na hviezdičku pri príspevku (Domov, Help, Charita) a uloží sa sem — rýchly prístup k tomu, čo ťa zaujalo." />
+        ) : oblubene.map((o) => {
+          const jeGood = o.modul === "good";
+          return (
+            <div key={String(o.refId)} onClick={() => jeGood ? onDetail(o.refId) : toast(`${o.nazov} — otvor v module ${modulLabel[o.modul] || o.modul}`)}
+              style={{ display: "flex", alignItems: "center", gap: SPACE.sm, background: C.surface2, border: `1px solid ${C.line}`, borderRadius: RADIUS.sm, padding: SPACE.sm, marginBottom: SPACE.xs, cursor: "pointer" }}>
+              <span style={{ width: 34, height: 34, borderRadius: RADIUS.xs, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 17, background: "rgba(var(--glass-rgb),.06)" }}>{o.emoji || "★"}</span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 14, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{o.nazov}</div>
+                <div style={{ fontSize: 11.5, color: C.textTer, marginTop: 2 }}>{modulLabel[o.modul] || o.modul}{o.lok ? ` · ${o.lok}` : ""}</div>
+              </div>
+              {o.ciel ? <div style={{ width: 84, flex: "none" }}><MoniBar vyzbierane={o.vyzbierane || 0} ciel={o.ciel} mini /></div> : <span style={{ color: C.textTer, fontSize: 16, flex: "none" }}>›</span>}
+            </div>
+          );
+        })}
       </div>
 
       {/* koho sledujem — hneď pod podporou */}
@@ -534,6 +574,7 @@ export function GoodKarta({ it, wide, onDetail }: { it: GoodPolozka; wide?: bool
           : it.vyznam && <span style={mediaBadge({ top: 10, left: 10, color: "var(--a-gold)" })}>★ {it.vyznam}</span>}
         {it.media === "video" && <span style={mediaBadge({ top: 10, right: 10 })}>▶ video</span>}
         <span style={mediaBadge({ bottom: 10, left: 10, color: accent, fontSize: 10.5, fontWeight: 800 })}><span style={{ width: 6, height: 6, borderRadius: "50%", background: accent }} /> {medLabel}</span>
+        <OblubeneHviezda polozka={oblubenyZGood(it)} />
       </div>
       {/* titul + pätička podľa typu */}
       <div style={{ padding: `${SPACE.sm}px ${SPACE.gutter}px ${SPACE.gutter}px` }}>
@@ -564,6 +605,7 @@ type GoodDetailProps = {
 export function GoodDetail({ it, toast, oslavuj, onBack, onVerify, onAutor }: GoodDetailProps) {
   const [platba, setPlatba] = useState<string | null>(null); // "EUR" | "DEED"
   const [qr, setQr] = useState(false);        // QR skutku (§10) — 3 výstupy
+  const [split, setSplit] = useState(false);  // split QR (influencer) — §10 × §9
   const otvorGaleriu = useGaleria();
   const { wide } = useLayout();
   const { pridajPodporu } = usePersonalizacia(); // podpora → „Čo podporujem" v Môj DEED
@@ -625,6 +667,11 @@ export function GoodDetail({ it, toast, oslavuj, onBack, onVerify, onAutor }: Go
           onPodpor={(s: number) => podpor(s)} onSms={() => toast("SMS podpora (euro/operátor)")}
           onKanal={(k: string) => setPlatba(k)} />
 
+        {/* uložiť do obľúbených */}
+        <div style={{ marginTop: SPACE.gutter }}>
+          <OblubeneBtn polozka={oblubenyZGood(it)} toast={toast} style={{ width: "100%" }} />
+        </div>
+
         {/* QR skutku (§10) — klik otvorí univerzálny QR s 3 výstupmi */}
         <div onClick={() => setQr(true)} style={{ display: "flex", alignItems: "center", gap: SPACE.gutter, background: C.surface2, border: `1px solid ${C.line}`, borderRadius: RADIUS.md, padding: SPACE.sm, marginTop: SPACE.gutter, cursor: "pointer" }}>
           <div style={{ width: 52, height: 52, borderRadius: RADIUS.xs, background: "#fff", flex: "none", display: "grid", gridTemplateColumns: "repeat(5,1fr)", gridTemplateRows: "repeat(5,1fr)", gap: 1, padding: SPACE.xxs }}>
@@ -635,6 +682,16 @@ export function GoodDetail({ it, toast, oslavuj, onBack, onVerify, onAutor }: Go
             <div style={{ fontSize: 12, color: C.textTer }}>Skenovať · kopírovať · zdieľať</div>
           </div>
           <div style={{ marginLeft: "auto", background: GRAD, color: "#fff", fontWeight: 700, fontSize: 11, padding: `${SPACE.xs}px ${SPACE.md}px`, borderRadius: RADIUS.sm, cursor: "pointer", boxShadow: "0 5px 16px rgba(99,134,255,.32)" }}>Otvoriť QR</div>
+        </div>
+
+        {/* Split QR (influencer) — nastav, aká časť platby ide komu (§10 × Reťaz dobra §9) */}
+        <div onClick={() => setSplit(true)} style={{ display: "flex", alignItems: "center", gap: SPACE.gutter, background: "rgba(31,191,143,.06)", border: "1px solid rgba(31,191,143,.25)", borderRadius: RADIUS.md, padding: SPACE.sm, marginTop: SPACE.sm, cursor: "pointer" }}>
+          <div style={{ width: 52, height: 52, borderRadius: RADIUS.xs, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, background: "rgba(31,191,143,.12)" }}>🎬</div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontWeight: 700, fontSize: 12.5 }}>Influencer: rozdeliť platbu</div>
+            <div style={{ fontSize: 12, color: C.textTer }}>Nastav v QR, aká časť ide komu (tebe + charitám)</div>
+          </div>
+          <div style={{ marginLeft: "auto", background: GRAD_ZELENY, color: "#06281d", fontWeight: 800, fontSize: 11, padding: `${SPACE.xs}px ${SPACE.md}px`, borderRadius: RADIUS.sm, boxShadow: "0 5px 16px rgba(31,191,143,.3)" }}>Split QR</div>
         </div>
 
         <div style={{ textAlign: "center", fontSize: 10, color: C.textTer, marginTop: SPACE.md }}>Bol si pri tom? Komunita preveruje skutky.</div>
@@ -651,6 +708,9 @@ export function GoodDetail({ it, toast, oslavuj, onBack, onVerify, onAutor }: Go
       {/* univerzálny QR skutku (§10) — reálne skenovateľný odkaz na živé interné ID */}
       {qr && <QrModal typ="skutok" titul={`QR skutku č. ${it.num.toLocaleString("sk")}`} popis={it.titul.slice(0, 38) + "…"}
         qrCiel={{ druh: "case", ref: String(it.id), modul: "good" }} onClose={() => setQr(false)} toast={toast} />}
+
+      {/* split QR (influencer) — rozdelenie platby medzi príjemcov */}
+      {split && <SplitQrSheet titul={it.titul.slice(0, 40)} caseId={String(it.id)} onClose={() => setSplit(false)} toast={toast} />}
     </div>
   );
 }
@@ -707,7 +767,7 @@ export function GoodVerify({ it, mode, toast, onBack }: { it: GoodPolozka; mode:
 }
 
 // ===================== PRIDAŤ SKUTOK =====================
-function GoodAdd({ toast, oslavuj, onPridaj, onDone }: { toast: (m: string) => void; oslavuj: (suma: number, komu: string) => void; onPridaj: (it: GoodPolozka) => void; onDone: () => void }) {
+function GoodAdd({ toast, oslavuj, onPridaj, onDone }: { toast: (m: string) => void; oslavuj: (suma: number, komu: string) => void; onPridaj: (it: GoodPolozka, split?: SplitCiel[]) => void; onDone: () => void }) {
   const ja = usePouzivatel();
   const lok = useLokalita(); // skutok dostane geo aktívneho mesta → zobrazí sa v jeho okolí
   const [krok, setKrok] = useState("vyber"); // vyber | solo | nahlad | vyhodnotene
@@ -717,6 +777,8 @@ function GoodAdd({ toast, oslavuj, onPridaj, onDone }: { toast: (m: string) => v
   const [aiNavrh, setAiNavrh] = useState("");      // editovateľný AI návrh textu (krok náhľad)
   const [suhlas, setSuhlas] = useState(false);     // povinné potvrdenie pravdivosti skutku
   const [retaz, setRetaz] = useState(false);       // Reťaz dobra — Cesta A (po vyhodnotení významného)
+  const [rozdel, setRozdel] = useState(false);     // autorský QR split — rozdelenie odmeny medzi organizácie
+  const [ciele, setCiele] = useState<SplitCiel[]>([]); // organizácie autorského splitu
   const [fotky, setFotky] = useState<string[]>([]); // nahraté foto (data URL) — náhľad + zobrazí sa na karte
 
   // načítaj vybraný obrázok z disku ako data URL (bez uploadu — žije v session)
@@ -869,14 +931,30 @@ function GoodAdd({ toast, oslavuj, onPridaj, onDone }: { toast: (m: string) => v
               <div style={{ fontSize: 28, fontWeight: 800, color: "var(--a-info)", marginTop: 2 }}>+{ODMENA} <span style={{ fontSize: 15 }}>DEED</span></div>
             </div>
 
-            <p style={{ textAlign: "center", fontSize: 13.5, color: C.textSec, lineHeight: 1.5, marginTop: SPACE.md }}>Chceš celú odmenu sebe, alebo sa <b style={{ color: "var(--a-green)" }}>podeliť</b> v Reťazi dobra?</p>
+            <p style={{ textAlign: "center", fontSize: 13.5, color: C.textSec, lineHeight: 1.5, marginTop: SPACE.md }}>Chceš celú odmenu sebe, podeliť sa v Reťazi dobra, alebo <b style={{ color: "var(--a-green)" }}>nastaviť rozdelenie</b> pre svoj QR?</p>
             <div style={{ display: "flex", gap: SPACE.sm, marginTop: SPACE.sm }}>
               <button onClick={() => { onPridaj(vytvorSkutok()); toast(`Skutok pridaný! +${ODMENA} DEED — celé tebe`); oslavuj(ODMENA, "teba"); setTimeout(onDone, 700); }}
                 style={{ flex: 1, height: 50, borderRadius: RADIUS.md, border: `1px solid ${C.line}`, background: "rgba(var(--glass-rgb),.05)", color: C.text, fontWeight: 700, fontSize: 14.5, cursor: "pointer", fontFamily: "inherit" }}>Celé mne</button>
               <button onClick={() => setRetaz(true)}
                 style={{ flex: 1.2, height: 50, borderRadius: RADIUS.md, border: "none", background: GRAD_ZELENY, color: "#fff", fontWeight: 700, fontSize: 14.5, cursor: "pointer", fontFamily: "inherit", boxShadow: "0 8px 26px rgba(31,191,143,.32)" }}>♻ Podeliť sa</button>
             </div>
-            <div style={{ fontSize: 11, color: C.textTer, lineHeight: 1.5, marginTop: SPACE.gutter, textAlign: "center" }}>Ponuka Reťaze sa zobrazí len pri významných skutkoch (3–4 riadky). Pri menších ju spustíš ručne v <b>Profil → Moje skutky</b>.</div>
+
+            {/* autorský split — nastav pri tvorbe, koľko % ide tebe a koľko organizáciám (→ QR príspevku) */}
+            <button onClick={() => setRozdel((v) => !v)}
+              style={{ width: "100%", height: 46, marginTop: SPACE.sm, borderRadius: RADIUS.md, border: `1px solid ${rozdel ? "rgba(31,191,143,.5)" : C.line}`, background: rozdel ? "rgba(31,191,143,.08)" : "rgba(var(--glass-rgb),.05)", color: rozdel ? "var(--a-green)" : C.text, fontWeight: 700, fontSize: 14, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: SPACE.xs }}>
+              🎬 Rozdeliť medzi organizácie (QR) {rozdel ? "▲" : "▼"}
+            </button>
+            {rozdel && (
+              <div style={{ marginTop: SPACE.sm, background: "rgba(var(--glass-rgb),.03)", border: `1px solid ${C.line}`, borderRadius: RADIUS.md, padding: SPACE.gutter }}>
+                <div style={{ fontSize: 12, color: C.textSec, lineHeight: 1.5, marginBottom: SPACE.xs }}>Nastav pomer teraz — príspevok dostane vlastný QR, cez ktorý ide časť platieb tebe a časť organizáciám. % sa zafixujú.</div>
+                <SplitConfigStep ownerLabel="Tebe (autor)" ciele={ciele} onCiele={setCiele} />
+                <button onClick={() => { onPridaj(vytvorSkutok(), ciele); toast("Skutok + autorský QR vytvorený"); oslavuj(ODMENA, "teba"); setTimeout(onDone, 700); }} disabled={!splitValid(ciele)}
+                  style={{ width: "100%", height: 48, marginTop: SPACE.gutter, borderRadius: RADIUS.md, border: "none", background: splitValid(ciele) ? GRAD_ZELENY : "rgba(var(--glass-rgb),.06)", color: splitValid(ciele) ? "#fff" : C.textTer, fontWeight: 700, fontSize: 14.5, cursor: splitValid(ciele) ? "pointer" : "not-allowed", fontFamily: "inherit" }}>
+                  Zverejniť + vytvoriť QR
+                </button>
+              </div>
+            )}
+            <div style={{ fontSize: 11, color: C.textTer, lineHeight: 1.5, marginTop: SPACE.gutter, textAlign: "center" }}>Ponuka Reťaze sa zobrazí len pri významných skutkoch. Rozdelenie (QR) vieš neskôr spravovať v <b>Profil / Reťaz → Moje QR</b>.</div>
           </>
         )}
       </div>

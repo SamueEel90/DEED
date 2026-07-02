@@ -93,10 +93,10 @@ export function RetazDobraSheet({ odmena = 130, mode = "skutok", titulOdkaz = "S
           {!honorar && <span style={{ fontSize: 12.5, color: C.textSec }}>≈ <b style={{ color: C.text }}>{reazSuma} DEED</b> z {odmena} DEED</span>}
           {honorar && <span style={{ fontSize: 12.5, color: C.textSec }}>z každého budúceho honoráru</span>}
         </div>
-        <input type="range" min={5} max={90} step={5} value={pct} onChange={(e) => setPct(+e.target.value)}
+        <input type="range" min={3} max={100} step={1} value={pct} onChange={(e) => setPct(+e.target.value)}
           style={{ width: "100%", marginTop: SPACE.sm, accentColor: "var(--a-green)" }} />
         <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: C.textTer }}>
-          <span>5 %</span><span>90 %</span>
+          <span>3 %</span><span>100 %</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: SPACE.xs, fontSize: 11, color: C.gold, marginTop: SPACE.xs, lineHeight: 1.4 }}>
           🔒 % sa po potvrdení <b>zamkne</b> — je to záväzok, nedá sa znížiť.

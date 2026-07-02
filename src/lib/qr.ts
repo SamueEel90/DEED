@@ -28,11 +28,16 @@ export function qrFinder(r: number, c: number, N: number): "dark" | "light" | nu
   return null;
 }
 
+// QR SYSTÉM — typy kódov (§10). „rozdelenie" = split QR: influencer nastaví, aká
+// časť platby ide komu (jemu + charitám/žiadostiam). Rozšírenie Reťaze dobra (§9)
+// z jedného príjemcu (D+R %) na viacero — % sa zafixujú pri vzniku, skén ukáže
+// komu koľko ide. Beží nad platba_split (Σ=1.0, Fáza 4) — dnes namockované.
 export const QR_TYPY: Record<string, { rot: number; tag: string; popis: string; col: string }> = {
-  identita: { rot: 30, tag: "Identity Card", popis: "Overenie identity člena — rotujúci kód", col: "#8B7CFF" },
-  platba:   { rot: 0,  tag: "Platobný QR",   popis: "Pošli DEED / prepitné — statický kód",  col: "#43E0C8" },
-  akcia:    { rot: 15, tag: "Akčný QR",      popis: "Overenie účasti (proof-of-presence)",    col: "#F0A85E" },
-  skutok:   { rot: 0,  tag: "QR skutku",     popis: "Odkaz na skutok / reťaz dobra",          col: "#5BA8F0" },
+  identita:   { rot: 30, tag: "Identity Card", popis: "Overenie identity člena — rotujúci kód", col: "#8B7CFF" },
+  platba:     { rot: 0,  tag: "Platobný QR",   popis: "Pošli DEED / prepitné — statický kód",  col: "#43E0C8" },
+  akcia:      { rot: 15, tag: "Akčný QR",      popis: "Overenie účasti (proof-of-presence)",    col: "#F0A85E" },
+  skutok:     { rot: 0,  tag: "QR skutku",     popis: "Odkaz na skutok / reťaz dobra",          col: "#5BA8F0" },
+  rozdelenie: { rot: 0,  tag: "Split QR",      popis: "Rozdelenie platby — % pre viacerých príjemcov (influencer)", col: "#2BD49B" },
 };
 
 // ============================================================
@@ -41,7 +46,7 @@ export const QR_TYPY: Record<string, { rot: number; tag: string; popis: string; 
 // ============================================================
 
 /** Druh odkazového objektu — určuje cestu v URL. */
-export type QrDruh = "case" | "handle" | "org" | "branch" | "chain" | "badge" | "event";
+export type QrDruh = "case" | "handle" | "org" | "branch" | "chain" | "badge" | "event" | "split";
 
 /** Cieľ pre vytvorenie/získanie statického QR. */
 export interface QrCiel {
@@ -79,6 +84,7 @@ const DRUH_CESTA: Record<QrDruh, (token: string) => string> = {
   chain:  (t) => `/chain/${t}`,
   badge:  (t) => `/badge/${t}`,
   event:  (t) => `/e/${t}`,
+  split:  (t) => `/split/${t}`,
 };
 
 /** Kanonická URL pre druh + slug/token. */
@@ -109,7 +115,7 @@ export function parseDeepLink(pathname: string): { slug: string } | null {
   const at = p.match(/\/@([^/]+)$/);
   if (at) return { slug: at[1] };
   // /<prefix>/<token>  (posledný segment = slug)
-  const m = p.match(/\/(r|c|o|chain|badge|e)\/([^/]+)$/);
+  const m = p.match(/\/(r|c|o|chain|badge|e|split)\/([^/]+)$/);
   if (m) return { slug: m[2] };
   return null;
 }

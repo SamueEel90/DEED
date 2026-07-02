@@ -493,5 +493,86 @@ export interface QrTypKonfig {
   col: string;
 }
 
+/* QR SPLIT (produkčný QR systém — 0018_qr_split) */
+
+/** Riadok príjemcu (organizácie/žiadosti) v QR splite. */
+export interface QrSplitCiel {
+  prijemca_ucet?: string | null;
+  prijemca_text?: string | null;
+  podiel: number;   // 0..1
+  fixny?: boolean;
+}
+
+/** Hlavička QR splitu (návrat z qr_split_create). */
+export interface QrSplitRow {
+  id: string;
+  case_id: string | null;
+  owner_ucet_id: string | null;
+  owner_text?: string | null;
+  owner_podiel: number;
+  zdroj: "autor" | "osobny";
+  mena: "DEED" | "EUR";
+  slug: string;
+  aktivny?: boolean;
+  vytvorene?: string;
+}
+
+/** Súčty po jednotlivom QR (v_qr_split_totals). */
+export interface QrSplitTotals {
+  org_total: number;
+  owner_total: number;
+  spolu: number;
+  pocet: number;
+}
+
+/** Snapshot zdrojového príspevku pre landing. */
+export interface QrSplitPrispevok {
+  id: string;
+  titul?: string | null;
+  autor_nazov?: string | null;
+  autor_ini?: string | null;
+  autor_pfp?: string | null;
+  emoji?: string | null;
+  lok?: string | null;
+  popis?: string | null;
+  vyzbierane?: number | null;
+  ciel?: number | null;
+  modul?: string;
+  typ?: string;
+  fotky?: string[] | null;
+}
+
+/** Detail QR splitu pre landing (qr_split_get). */
+export interface QrSplitDetail {
+  id: string;
+  slug: string;
+  zdroj: string;
+  mena: string;
+  owner_ucet_id: string | null;
+  owner_text?: string | null;
+  owner_podiel: number;
+  case_id: string | null;
+  prispevok?: QrSplitPrispevok | null;
+  ciele: QrSplitCiel[];
+  totals: QrSplitTotals | null;
+}
+
+/** Položka v zozname mojich QR (qr_split_list — správca QR). */
+export interface QrSplitListItem {
+  id: string;
+  slug: string;
+  zdroj: string;
+  mena: string;
+  owner_podiel: number;
+  case_id: string | null;
+  vytvorene?: string;
+  titul?: string;
+  emoji?: string | null;
+  org_odoslane: number;
+  owner_odoslane: number;
+  pocet: number;
+  ciele: { prijemca_text?: string | null; podiel: number }[];
+}
+
 /** Popisy okruhov pre OkruhVyber (OKRUH_POPIS v shared). */
 export type OkruhPopis = Record<OkruhKod, string>;

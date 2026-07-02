@@ -8,11 +8,11 @@ import { createContext, useContext, useEffect, useMemo, useState, type ReactNode
 import { usePouzivatel } from "./pouzivatel";
 import { supabaseReady } from "./supabase";
 import {
-  nacitajLokalne, ulozZaujmy, ulozSledovani, ulozPodpory,
+  nacitajLokalne, ulozZaujmy, ulozSledovani, ulozPodpory, ulozOblubene,
   importLegacyFollows, legacyNaImport, demoSeed, zaujmyNaKluce, zaujemZOblasti,
   nacitajPodporyDB, pridajPodporuDB,
 } from "./personalizaciaStore";
-import type { Zaujem, Sledovanie, Podpora } from "@/types";
+import type { Zaujem, Sledovanie, Podpora, Oblubeny } from "@/types";
 
 export interface PersonalizaciaApi {
   // záujmy
@@ -30,13 +30,18 @@ export interface PersonalizaciaApi {
   podpory: Podpora[];
   pridajPodporu: (p: Podpora) => void;
   podporujem: (refId: number | string) => boolean;
+  // obľúbené (bookmark)
+  oblubene: Oblubeny[];
+  jeOblubene: (refId: number | string) => boolean;
+  toggleOblubene: (o: Oblubeny) => void;
   nacitavam: boolean;
 }
 
 const prazdny: PersonalizaciaApi = {
   zaujmy: [], setZaujmy: () => {}, toggleZaujem: () => {}, maZaujem: () => false, zaujmyKluce: new Set(),
   sledovani: [], sledujem: () => false, toggleSledovanie: () => {}, sledovaniMena: new Set(),
-  podpory: [], pridajPodporu: () => {}, podporujem: () => false, nacitavam: false,
+  podpory: [], pridajPodporu: () => {}, podporujem: () => false,
+  oblubene: [], jeOblubene: () => false, toggleOblubene: () => {}, nacitavam: false,
 };
 
 const PersonalizaciaContext = createContext<PersonalizaciaApi>(prazdny);
@@ -47,6 +52,7 @@ export function PersonalizaciaProvider({ children }: { children: ReactNode }) {
   const [zaujmy, setZaujmyStav] = useState<Zaujem[]>([]);
   const [sledovani, setSledovani] = useState<Sledovanie[]>([]);
   const [podpory, setPodpory] = useState<Podpora[]>([]);
+  const [oblubene, setOblubene] = useState<Oblubeny[]>([]);
   const [hydratovane, setHydratovane] = useState(false); // perzistuj až po inicializácii
 
   // inicializácia: localStorage (+ jednorazový legacy import); demo bez dát → realistický seed
@@ -54,6 +60,7 @@ export function PersonalizaciaProvider({ children }: { children: ReactNode }) {
     const ulozene = nacitajLokalne();
     let { zaujmy: z, sledovani: s } = ulozene;
     const { podpory: p } = ulozene;
+    setOblubene(ulozene.oblubene); // obľúbené nemajú seed — vždy z localStorage
     // seed guard sa vyhodnocuje voči PÔVODNÉMU stavu store-u (PRED legacy importom) —
     // inak by legacy follow naplnil `s` a demo seed (záujmy + podpory) by sa preskočil.
     const prazdnyStore = z.length === 0 && s.length === 0 && p.length === 0;
@@ -96,6 +103,7 @@ export function PersonalizaciaProvider({ children }: { children: ReactNode }) {
   useEffect(() => { if (hydratovane && !demo) ulozZaujmy(zaujmy); }, [zaujmy, hydratovane, demo]);
   useEffect(() => { if (hydratovane && !demo) ulozSledovani(sledovani); }, [sledovani, hydratovane, demo]);
   useEffect(() => { if (hydratovane && !demo) ulozPodpory(podpory); }, [podpory, hydratovane, demo]);
+  useEffect(() => { if (hydratovane && !demo) ulozOblubene(oblubene); }, [oblubene, hydratovane, demo]);
 
   const api = useMemo<PersonalizaciaApi>(() => ({
     zaujmy,
@@ -131,8 +139,13 @@ export function PersonalizaciaProvider({ children }: { children: ReactNode }) {
       }
     },
     podporujem: (refId) => podpory.some((x) => String(x.refId) === String(refId)),
+    oblubene,
+    jeOblubene: (refId) => oblubene.some((x) => String(x.refId) === String(refId)),
+    toggleOblubene: (o) => setOblubene((xs) => xs.some((x) => String(x.refId) === String(o.refId))
+      ? xs.filter((x) => String(x.refId) !== String(o.refId))
+      : [o, ...xs]),
     nacitavam: !hydratovane,
-  }), [zaujmy, sledovani, podpory, hydratovane, demo, celeMeno, ucetId]);
+  }), [zaujmy, sledovani, podpory, oblubene, hydratovane, demo, celeMeno, ucetId]);
 
   return <PersonalizaciaContext.Provider value={api}>{children}</PersonalizaciaContext.Provider>;
 }

@@ -34,7 +34,7 @@ export function QrVizual({ data = "deed", size = 132, fg = "#0B0C10" }: { data?:
   );
 }
 
-export function QrModal({ typ = "skutok", titul, popis, odkaz = "https://deed.app/s/120042", qrCiel, eventId, reazPct, prijemca, onClose, toast }: { typ?: string; titul?: ReactNode; popis?: ReactNode; odkaz?: string; qrCiel?: QrCiel | null; eventId?: string | null; reazPct?: number | null; prijemca?: ReactNode; onClose?: () => void; toast?: (t: string) => void }) {
+export function QrModal({ typ = "skutok", titul, popis, odkaz = "https://deed.app/s/120042", qrCiel, eventId, reazPct, prijemca, split, onClose, toast }: { typ?: string; titul?: ReactNode; popis?: ReactNode; odkaz?: string; qrCiel?: QrCiel | null; eventId?: string | null; reazPct?: number | null; prijemca?: ReactNode; split?: { komu: string; pct: number }[]; onClose?: () => void; toast?: (t: string) => void }) {
   const meta = QR_TYPY[typ] || QR_TYPY.skutok;
   const rotujuci = meta.rot > 0;
   const [zb, setZb] = useState(meta.rot);     // zostávajúce sekundy do rotácie
@@ -90,6 +90,9 @@ export function QrModal({ typ = "skutok", titul, popis, odkaz = "https://deed.ap
           {reazPct != null && (
             <span style={{ position: "absolute", top: -8, right: -8, fontSize: 10, fontWeight: 800, padding: `${SPACE.xxs}px ${SPACE.xs}px`, borderRadius: RADIUS.lg, background: GRAD_ZELENY, color: "#06281d", boxShadow: "0 4px 12px rgba(31,191,143,.4)" }}>D+R {reazPct}%</span>
           )}
+          {reazPct == null && split && split.length > 0 && (
+            <span style={{ position: "absolute", top: -8, right: -8, fontSize: 10, fontWeight: 800, padding: `${SPACE.xxs}px ${SPACE.xs}px`, borderRadius: RADIUS.lg, background: GRAD_ZELENY, color: "#06281d", boxShadow: "0 4px 12px rgba(31,191,143,.4)" }}>SPLIT</span>
+          )}
         </div>
         {prijemca && <div style={{ fontSize: 12, color: C.textSec }}>{reazPct}% ide ďalej → <b style={{ color: C.text }}>{prijemca}</b></div>}
         {rotujuci ? (
@@ -101,6 +104,20 @@ export function QrModal({ typ = "skutok", titul, popis, odkaz = "https://deed.ap
           <div style={{ fontSize: 11, color: C.textTer, fontFamily: "monospace", maxWidth: "92%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{odkazReal}</div>
         )}
       </div>
+
+      {/* rozdelenie platby (split QR) — komu ide aká časť */}
+      {split && split.length > 0 && (
+        <div style={{ marginTop: SPACE.gutter, background: "rgba(31,191,143,.06)", border: "1px solid rgba(31,191,143,.2)", borderRadius: RADIUS.md, padding: `${SPACE.sm}px ${SPACE.gutter}px` }}>
+          <div style={{ fontSize: 10.5, letterSpacing: ".4px", color: C.textTer, fontWeight: 700, marginBottom: SPACE.xs }}>ROZDELENIE PLATBY</div>
+          {split.map((s, i) => (
+            <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: SPACE.sm, padding: `${SPACE.xxs}px 0`, fontSize: 12.5 }}>
+              <span style={{ color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{i === 0 ? "🎬 " : "→ "}{s.komu}</span>
+              <span style={{ flex: "none", fontWeight: 800, color: "var(--a-green)" }}>{s.pct}%</span>
+            </div>
+          ))}
+          <div style={{ fontSize: 10, color: C.textTer, marginTop: SPACE.xxs, lineHeight: 1.4 }}>% sa pri vzniku zafixujú · skén ukáže rozdelenie · beží nad platba_split</div>
+        </div>
+      )}
 
       {/* 3 výstupy — univerzálne pravidlo §10 */}
       <div style={{ display: "flex", gap: SPACE.xs, marginTop: SPACE.gutter }}>

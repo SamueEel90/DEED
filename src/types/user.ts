@@ -182,11 +182,25 @@ export interface Podpora {
   cas?: IsoDateTime;
 }
 
+/** Obľúbený príspevok (bookmark). Uložený lokálne (deed.me.oblubene) —
+ *  zobrazí sa v „Môj DEED → Obľúbené"; klik otvorí detail príslušného modulu. */
+export interface Oblubeny {
+  refId: number | string;
+  typ: string;   // engine typ (skutok/ziadost/charita/ponuka/udalost…)
+  modul: string; // good/help/charity/workshop
+  nazov: string;
+  emoji?: string;
+  lok?: string;
+  vyzbierane?: number;
+  ciel?: number;
+}
+
 /** Stav personalizačného store (usePersonalizacia). */
 export interface PersonalizaciaStav {
   zaujmy: Zaujem[];
   sledovani: Sledovanie[];
   podpory: Podpora[];
+  oblubene: Oblubeny[];
   nacitavam: boolean;
 }
 

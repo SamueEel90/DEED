@@ -6,6 +6,28 @@
 // ============================================================
 import { supabase } from "@/lib/supabase";
 import { qrUrl, vyrobSlug, type QrCiel, type QrStatic, type QrResolved } from "@/lib/qr";
+import type { QrSplitRow, QrSplitDetail, QrSplitListItem, QrSplitCiel } from "@/types";
+
+// ---- QR Split (produkčný QR systém, 0018) ----
+export interface QrSplitCreateVstup {
+  caseId?: string | null;
+  owner?: string | null;         // owner ucet id (NULL = demo/seed)
+  ownerText?: string | null;     // denorm. meno vlastníka
+  ownerPodiel: number;           // % vlastníkovi (0..1), zafixované
+  ciele: QrSplitCiel[];          // organizácie/žiadosti
+  zdroj?: "autor" | "osobny";
+  mena?: "DEED" | "EUR";
+}
+export interface QrSplitPayVstup {
+  slug: string;
+  idem: string;
+  suma: number;
+  mena?: "DEED" | "EUR";
+  kanal?: string;                // 'deed' | 'fiat' | 'sms' | 'sepa'
+  odosielatel?: string | null;
+  odosielatelText?: string | null;
+}
+export interface QrSplitPayVysledok { platba_id: string; qr_split_id: string; stav: string; suma: number }
 
 /** Výsledok skenu rotujúceho QR (proof-of-presence). */
 export interface ScanVysledok {
@@ -144,5 +166,41 @@ export const qrSupabase = {
     const { data, error } = await supabase.rpc("badge_scan", { p_badge: badgeId, p_zakaznik: zakaznik ?? null, p_suma: suma });
     if (error) throw error;
     return (data as BadgeScanVysledok) ?? { prijemca: "pobocka", employee: null };
+  },
+
+  // ---- QR Split (Fáza 6) — % zafixované pri vzniku, agregácia po QR ----
+  /** Vytvor QR split (vlastník + N organizácií, Σ=1.0) → hlavička so slugom. */
+  async qrSplitCreate(v: QrSplitCreateVstup): Promise<QrSplitRow | null> {
+    if (!supabase) return null;
+    const { data, error } = await supabase.rpc("qr_split_create", {
+      p_case: v.caseId ?? null, p_owner: v.owner ?? null, p_owner_text: v.ownerText ?? null,
+      p_owner_podiel: v.ownerPodiel, p_ciele: v.ciele, p_zdroj: v.zdroj ?? "osobny", p_mena: v.mena ?? "DEED",
+    });
+    if (error) throw error;
+    return (data as QrSplitRow) ?? null;
+  },
+  /** Platba cez QR split → rozdelí podľa zafixovaného pomeru (platba_create + split). */
+  async qrSplitPay(v: QrSplitPayVstup): Promise<QrSplitPayVysledok | null> {
+    if (!supabase) return null;
+    const { data, error } = await supabase.rpc("qr_split_pay", {
+      p_slug: v.slug, p_idem: v.idem, p_suma: v.suma, p_mena: v.mena ?? "DEED", p_kanal: v.kanal ?? "deed",
+      p_odosielatel: v.odosielatel ?? null, p_odosielatel_text: v.odosielatelText ?? null,
+    });
+    if (error) throw error;
+    return (data as QrSplitPayVysledok) ?? null;
+  },
+  /** Landing: príspevok + pomer + ciele + súčty (koľko išlo organizáciám). */
+  async qrSplitGet(id: string): Promise<QrSplitDetail | null> {
+    if (!supabase) return null;
+    const { data, error } = await supabase.rpc("qr_split_get", { p_id: id });
+    if (error) throw error;
+    return (data as QrSplitDetail) ?? null;
+  },
+  /** Správca QR: zoznam mojich QR + pomer + koľko organizáciám. Demo → podľa mena. */
+  async qrSplitList(owner: string | null, ownerText?: string | null): Promise<QrSplitListItem[]> {
+    if (!supabase) return [];
+    const { data, error } = await supabase.rpc("qr_split_list", { p_owner: owner ?? null, p_owner_text: ownerText ?? null });
+    if (error) throw error;
+    return (data as QrSplitListItem[]) ?? [];
   },
 };

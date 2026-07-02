@@ -11,7 +11,7 @@ import { supabaseReady } from "@/lib/supabase";
 import type { TypUctu } from "@/types";
 import { useNotifikacieRealtime, repo } from "@/data";
 import { precitajDeepLink, druhNaModul, vycistiDeepLinkUrl } from "@/lib/deeplink";
-import { toast, BadgeSheet } from "@/shared";
+import { toast, BadgeSheet, SplitLanding } from "@/shared";
 import { PouzivatelProvider } from "@/lib/pouzivatel";
 import { PersonalizaciaProvider } from "@/lib/personalizacia";
 import { LokalitaProvider } from "@/lib/lokalita";
@@ -137,6 +137,7 @@ export function Screens({ wide, desktop }: { wide?: boolean; desktop?: boolean }
   const [resumeInfo, setResumeInfo] = useState<{ authId: string; typ?: TypUctu; stav?: string } | null>(null);
   const [dlHotovo, setDlHotovo] = useState(false); // deep-link už spracovaný?
   const [badgeSheet, setBadgeSheet] = useState<string | null>(null); // odznak z deep-linku (/badge)
+  const [splitSheet, setSplitSheet] = useState<string | null>(null); // split QR z deep-linku (/split) → živá kópia príspevku
 
   useEffect(() => { ulozTaby(taby); }, [taby]);
   useNotifikacieRealtime(); // Fáza E — live oznámenia (INSERT do notifikacia → obnova zoznamu)
@@ -154,6 +155,7 @@ export function Screens({ wide, desktop }: { wide?: boolean; desktop?: boolean }
         if (!alive) return;
         if (ciel) {
           if (ciel.objekt_druh === "badge") setBadgeSheet(ciel.objekt_ref);   // odznak → shift-binding sheet
+          else if (ciel.objekt_druh === "split") setSplitSheet(ciel.objekt_ref); // split QR → živá kópia príspevku
           else setModul(druhNaModul(ciel.objekt_druh));
           toast(`Otváram odkaz · ${ciel.objekt_druh}`);
         }
@@ -254,6 +256,9 @@ export function Screens({ wide, desktop }: { wide?: boolean; desktop?: boolean }
 
         {/* odznak (shift-binding) — otvorené po naskenovaní /badge/{slug} */}
         {badgeSheet && <BadgeSheet badgeId={badgeSheet} onClose={() => setBadgeSheet(null)} toast={toast} />}
+
+        {/* split QR — živá „kópia príspevku" po naskenovaní /split/{slug} */}
+        {splitSheet && <SplitLanding splitId={splitSheet} onClose={() => setSplitSheet(null)} toast={toast} />}
 
         {/* pasívny → upgrade panel „Staň sa aktívnym" */}
         {upgradeOpen && (
