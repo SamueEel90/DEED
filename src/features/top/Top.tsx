@@ -1,16 +1,15 @@
 import { useState } from "react";
 import { C, SPACE, RADIUS } from "@/theme";
-import { ModulHlavicka, toast, useScrollHore, useLayout, useTvorbaGate, obalSiroky, SkeletonRiadky, FeedSkeleton, FeedGrid, Oslava, EmptyState, ErrorState, IkonaStit, IkonaKorunka, IkonaHviezda, IkonaUsmev, IkonaKompas, IkonaInstitucia } from "@/shared";
+import { ModulHlavicka, toast, useScrollHore, useLayout, useTvorbaGate, obalSiroky, SkeletonRiadky, ErrorState, IkonaStit, IkonaKorunka, IkonaHviezda, IkonaUsmev, IkonaKompas, IkonaInstitucia } from "@/shared";
 import { Zvoncek } from "@/features/notifikacie/Notifikacie";
 import { CudziProfil } from "@/features/cudzi-profil/CudziProfil";
 import { FunZona } from "@/features/fun/FunZona";
-import { GoodKarta, GoodDetail, GoodVerify, autorSubjekt } from "@/features/good/Good";
 import { useLokalita } from "@/lib/lokalita";
 import { vzdialenostKm, FEED_CFG } from "@/lib/feed";
 import { tagChip } from "@/lib/ui";
-import { useTopRebricky, useTopPrispevky } from "@/data";
+import { useTopRebricky } from "@/data";
 import type { RebricekKluc } from "@/features/top/mock";
-import type { GoodPolozka, RebricekRozsah, Subjekt, WideProps } from "@/types";
+import type { RebricekRozsah, Subjekt, WideProps } from "@/types";
 
 /*
   ============================================================
@@ -42,51 +41,28 @@ const CATS: CatMeta[] = [
 ];
 
 export default function ModulTop({ wide }: WideProps) {
-  const [screen, setScreen] = useState<"top" | "fun" | "profil" | "detail" | "verify">("top");
+  const [screen, setScreen] = useState<"top" | "fun" | "profil">("top");
   const [subjekt, setSubjekt] = useState<Subjekt | null>(null);
-  const [profilBack, setProfilBack] = useState<"top" | "detail">("top"); // kam sa vráti cudzí profil
-  const [aktPost, setAktPost] = useState<GoodPolozka | null>(null);      // otvorený príspevok (detail/overenie)
-  const [verifyMode, setVerifyMode] = useState("ok");
-  const [oslava, setOslava] = useState<{ suma: number; komu: string } | null>(null);
   const [rozsah, setRozsah] = useState<RebricekRozsah>("Štvrť");
 
   const { data: rebricky, isLoading, isError, refetch } = useTopRebricky();
-  const { data: prispevky = [], isLoading: postyLoading, isError: postyError, refetch: postyRefetch } = useTopPrispevky();
-  const { gate } = useTvorbaGate(); // pasívny nesmie tvoriť (overovanie skutku = create)
+  useTvorbaGate(); // pasívny nesmie tvoriť (overovanie skutku = create)
   const scrollHore = useScrollHore();
   const { desktop } = useLayout();
   const obal = (el: React.ReactNode) => obalSiroky(el, { wide, desktop, max: 620, maxDesktop: 1320 });
 
-  const otvorProfil = (s: Subjekt, back: "top" | "detail" = "top") => { setSubjekt(s); setProfilBack(back); setScreen("profil"); scrollHore(); };
-  const otvorPrispevok = (it: GoodPolozka) => { setAktPost(it); setScreen("detail"); scrollHore(); };
-  const oslavuj = (suma: number, komu: string) => { setOslava({ suma, komu }); setTimeout(() => setOslava(null), 1900); };
+  const otvorProfil = (s: Subjekt) => { setSubjekt(s); setScreen("profil"); scrollHore(); };
 
   // FILTER PODĽA OKRUHU (haversine ako feed/Mapa). Pravidlo zhodné s feedom:
   // národné/bez-geo položky prah okruhu PREBÍJAJÚ (celoslovenské rebríčky — darcovia,
-  // charity, B2B…), geo-tagované (príspevky + hrdinovia) sa filtrujú vzdialenosťou.
+  // charity, B2B…), geo-tagované (hrdinovia) sa filtrujú vzdialenosťou.
   const km = ROZSAH_KM[rozsah];
   const lok = useLokalita(); // stred rebríčkov = aktívne mesto
   const vOkruhu = <T extends { lat?: number; lng?: number; narodne?: boolean }>(items: T[]): T[] =>
     items.filter((x) => x.narodne || x.lat == null || vzdialenostKm(lok, x) <= km);
-  const prispevkyOkruh = vOkruhu(prispevky);
 
   if (screen === "fun") return <div style={{ minHeight: "100%" }}>{obal(<FunZona onBack={() => setScreen("top")} toast={toast} />)}</div>;
-  if (screen === "profil" && subjekt) return <div style={{ minHeight: "100%" }}>{obal(<CudziProfil subjekt={subjekt as any} toast={toast} onBack={() => setScreen(profilBack)} />)}</div>;
-  if (screen === "detail" && aktPost) return (
-    <div style={{ minHeight: "100%" }}>
-      {obal(
-        <GoodDetail it={aktPost} toast={toast} oslavuj={oslavuj}
-          onBack={() => { setScreen("top"); scrollHore(); }}
-          onAutor={() => otvorProfil(autorSubjekt(aktPost), "detail")}
-          onVerify={(mode) => gate(() => { setVerifyMode(mode); setScreen("verify"); scrollHore(); })()} />
-      )}
-      {oslava && <Oslava emoji={oslava.suma >= 100 ? "🎊" : oslava.suma >= 50 ? "⭐" : "😊"}
-        title={oslava.suma >= 100 ? "Skvelé! Veľká podpora!" : "Ďakujeme!"}
-        text={<>Tvoja podpora <b style={{ color: C.greenL }}>{oslava.suma} DEED</b> letí k {oslava.komu}. Reťaz dobra pokračuje.</>}
-        onClose={() => setOslava(null)} />}
-    </div>
-  );
-  if (screen === "verify" && aktPost) return <div style={{ minHeight: "100%" }}>{obal(<GoodVerify it={aktPost} mode={verifyMode} toast={toast} onBack={() => { setScreen("detail"); scrollHore(); }} />)}</div>;
+  if (screen === "profil" && subjekt) return <div style={{ minHeight: "100%" }}>{obal(<CudziProfil subjekt={subjekt as any} toast={toast} onBack={() => setScreen("top")} />)}</div>;
 
   return (
     <div style={{ minHeight: "100%", paddingBottom: SPACE.gutter }}>
@@ -111,24 +87,6 @@ export default function ModulTop({ wide }: WideProps) {
             </div>
             <span style={{ color: C.textTer, fontSize: 16 }}>›</span>
           </div>
-
-          {/* TOP PRÍSPEVKY — najvýznamnejšie SKUTKY (zoradené podľa skóre). Plné karty
-              ako na Domove; klik → rovnaký detail (podpora/QR/overenie). */}
-          <div style={{ display: "flex", alignItems: "center", gap: SPACE.xs, margin: `${SPACE.md}px 0 ${SPACE.xs}px` }}>
-            <span style={{ fontSize: 15, lineHeight: 1 }}>🔥</span>
-            <span style={{ fontSize: 11, letterSpacing: ".4px", color: C.textTer, fontWeight: 700 }}>TOP PRÍSPEVKY · NAJVÝZNAMNEJŠIE</span>
-          </div>
-          {postyError ? (
-            <ErrorState onRetry={() => postyRefetch()} />
-          ) : postyLoading ? (
-            <FeedSkeleton count={3} />
-          ) : prispevkyOkruh.length === 0 ? (
-            <EmptyState emoji="🏆" title={prispevky.length ? "V tomto okruhu zatiaľ nič" : "Zatiaľ žiadne príspevky"} text={prispevky.length ? "Skús väčší okruh (Mesto / Celá SR)." : "Keď pribudnú významné skutky, objavia sa tu."} />
-          ) : wide ? (
-            <FeedGrid cols={desktop ? 3 : 2} cards={prispevkyOkruh.map((it) => <GoodKarta key={it.id} it={it} wide={wide} onDetail={() => otvorPrispevok(it)} />)} />
-          ) : (
-            <div>{prispevkyOkruh.map((it) => <GoodKarta key={it.id} it={it} wide={wide} onDetail={() => otvorPrispevok(it)} />)}</div>
-          )}
 
           {/* rebríčky po kategóriách — na desktope mriežka (všetkých 5 naraz) */}
           {isError ? (
