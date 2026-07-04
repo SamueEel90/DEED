@@ -1,6 +1,8 @@
 import { useState, useEffect, type ReactNode } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { C, pasmo, inp, infoBox, btn, GRAD_ZELENY, glassTmavy, SPACE, RADIUS } from "@/theme";
+import { C, inp, infoBox, btn, GRAD_ZELENY, glassTmavy, SPACE, RADIUS } from "@/theme";
+import { pasmo, POZNAMKA_DAVKY, tagLabels, CHARITA_SEGMENTY, segmentLabel, OVERENIA_POTREBNE, ESCROW } from "./konstanty";
+import { TagTemy, prepniTag, ZranitelniBlok, PrisnyBadge, AiPoznamka, GuardFuzzy } from "./HelpKit";
 import { Foto, Avatar, FotoPrispevku, MiniFotky, Hlavicka, ModulHlavicka, PodporaSekcia, PlatbaModal, HladanieModal, OblubeneHviezda, OblubeneBtn, Otazka, Vyber, vyberBox, NavBtns, Suhrn, DokladRow, toast, Oslava, useGaleria, useLayout, useScrollHore, useStrankaAkcie, useTvorbaGate, Ticker, StatRiadok, FiltreStat, MoniBar, FeedStlpce, FeedGrid, obalSiroky, OkruhVyber, Lupa, Zdielanie, IkonaSpat, IkonaVlajka, IkonaFoto, IkonaPlay, IkonaDoska, IkonaPin, FeedSkeleton, EmptyState, ErrorState, ScreenSwitch } from "@/shared";
 import { Zvoncek } from "@/features/notifikacie/Notifikacie";
 import { pripravFeed, FEED_CFG } from "@/lib/feed";
@@ -14,7 +16,7 @@ import { usePouzivatel } from "@/lib/pouzivatel";
 import { useLokalita } from "@/lib/lokalita";
 import { tint, tagChip } from "@/lib/ui";
 import { pressable } from "@/components/pressable";
-import { USER_LOK, ZIVE_DARY } from "./mock";
+import { USER_LOK, ZIVE_DARY, CHARITY_FISKALNE } from "./mock";
 
 /*
   ============================================================
@@ -229,6 +231,7 @@ function FeedCard({ z, wide, onClick }: { z: any; wide?: boolean; onClick: () =>
           <span style={{ flex: "0 1 auto", minWidth: 0 }}>{z.nazov}</span>
           {z.overeny && <span style={tagChip(C.greenL)}>✓ overená</span>}
           {z.odbornik && <span style={tagChip(C.purple)}>✓ odborník</span>}
+          {z.prisny && <span style={tagChip(C.red)}>🛡 zraniteľní</span>}
           {z.typ === "charity" && !z.sponzor && <span style={tagChip(C.gold)}>hľadá pomoc</span>}
         </div>
         {z.lok && <div style={{ display: "flex", alignItems: "center", gap: SPACE.xxs, marginTop: SPACE.xs, fontSize: 12, color: C.textSec, fontWeight: 600 }}><IkonaPin size={12} color={C.textSec} />{z.lok}{z.karma ? ` · ${z.karma}` : ""}</div>}
@@ -389,8 +392,11 @@ function OfferFlow({ onBack, onZverejni }: { onBack: () => void; onZverejni: (it
   const [typ, setTyp] = useState<string | null>(null);
   const [uroven, setUroven] = useState<string | null>(null);
   const [popis, setPopis] = useState("");
+  const [zranitelni, setZranitelni] = useState<boolean | null>(null); // 2b — kontakt so zraniteľnými
+  const [tagy, setTagy] = useState<string[]>([]);
   const [rozdel, setRozdel] = useState(false);
   const [ciele, setCiele] = useState<SplitCiel[]>([]);
+  const TOTAL = 4;
 
   const zverejniPonuku = () => {
     const novaPonuka: HelpFeedItem = {
@@ -398,11 +404,12 @@ function OfferFlow({ onBack, onZverejni }: { onBack: () => void; onZverejni: (it
       typ: "ponuka",
       nazov: `Ponúkam: ${typ}`,
       pribeh: popis,
-      ikona: typ === "Vec" ? "📦" : typ === "Čas / ruky" ? "⏱" : "🎓",
+      ikona: typ === "Čas / ruky" ? "⏱" : "🎓",
       velkost: "stredna",
       lok: "Tvoje okolie",
       karma: uroven === "odbornik" ? "Gold" : "Silver",
       odbornik: uroven === "odbornik",
+      tagy, prisny: !!zranitelni,
       skore: 9, typSituacie: "normal", modul: "help", dni: 0,
       lat: USER_LOK.lat, lng: USER_LOK.lng,
     };
@@ -411,14 +418,21 @@ function OfferFlow({ onBack, onZverejni }: { onBack: () => void; onZverejni: (it
 
   return (
     <div>
-      <Hlavicka title="Ponúkam pomoc" onBack={onBack} step={krok} total={3} />
+      <Hlavicka title="Ponúkam pomoc" onBack={onBack} step={krok} total={TOTAL} />
       <div style={{ padding: SPACE.md }}>
         {krok === 1 && (
           <>
             <Otazka>Čo ponúkaš?</Otazka>
-            {[["🎓", "Schopnosť / znalosť", "doučím, naučím, poradím, opravím"], ["⏱", "Čas / ruky", "sťahovanie, výpomoc, postrážim"], ["📦", "Vec", "darujem nábytok, oblečenie, náradie"]].map((t, i) => (
-              <Vyber key={i} emoji={t[0]} title={t[1]} desc={t[2]} active={typ === t[1]} onClick={() => { setTyp(t[1]); setKrok(2); }} />
-            ))}
+            <Vyber emoji="🎓" title="Schopnosť / znalosť" desc="doučím, naučím, poradím, opravím" active={typ === "Schopnosť / znalosť"} onClick={() => { setTyp("Schopnosť / znalosť"); setKrok(2); }} />
+            <Vyber emoji="⏱" title="Čas / ruky" desc="sťahovanie, výpomoc, postrážim" active={typ === "Čas / ruky"} onClick={() => { setTyp("Čas / ruky"); setKrok(2); }} />
+            {/* Vec — FÁZA 2 (v MVP disabled) */}
+            <div aria-disabled style={{ display: "flex", alignItems: "center", gap: SPACE.sm, padding: SPACE.md, marginTop: SPACE.xs, borderRadius: RADIUS.md, border: `1px dashed ${C.line}`, background: C.surface2, opacity: .55, cursor: "not-allowed" }}>
+              <span style={{ fontSize: 24 }}>📦</span>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 700, fontSize: 15 }}>Vec <span style={{ ...tagChip(C.textTer), marginLeft: 4 }}>čoskoro</span></div>
+                <div style={{ fontSize: 12.5, color: C.textTer }}>darujem nábytok, oblečenie, náradie — pridáme vo Fáze 2</div>
+              </div>
+            </div>
           </>
         )}
         {krok === 2 && (
@@ -427,16 +441,27 @@ function OfferFlow({ onBack, onZverejni }: { onBack: () => void; onZverejni: (it
             <textarea value={popis} onChange={(e) => setPopis(e.target.value)} placeholder="Čo presne ponúkaš, kde a kedy? Napr. „Doučím matematiku ZŠ/SŠ, víkendy, online alebo u mňa.“"
               style={inp(90)} />
             <Otazka>Si v tom amatér alebo odborník?</Otazka>
-            <Vyber emoji="🙂" title="Amatér" desc="Pomôžem ako viem — ide live takmer hneď." active={uroven === "amater"} onClick={() => setUroven("amater")} />
+            <Vyber emoji="🙂" title="Amatér" desc="Pomôžem ako viem — ide live takmer hneď (AI text-moderácia beží aj tak)." active={uroven === "amater"} onClick={() => setUroven("amater")} />
             <Vyber emoji="🎖" title="Odborník" desc="Doložím podklady (certifikát, web, prax) → vyšší vstupný status, zvyšok dvíha komunita." active={uroven === "odbornik"} onClick={() => setUroven("odbornik")} />
-            <NavBtns onBack={() => setKrok(1)} onNext={() => setKrok(3)} canNext={!!(popis && uroven)} />
+            {/* 2b — zraniteľní → prísny režim */}
+            <ZranitelniBlok hodnota={zranitelni} onZmena={setZranitelni} />
+            <NavBtns onBack={() => setKrok(1)} onNext={() => setKrok(3)} canNext={!!(popis && uroven && zranitelni !== null)} />
           </>
         )}
         {krok === 3 && (
           <>
+            <Otazka>Označ tému ponuky</Otazka>
+            <div style={{ fontSize: 13, color: C.textSec, lineHeight: 1.5 }}>Tag zobrazí ponuku aj v príslušnej doméne Aktivity → cielené publikum (napr. „doučím" = Vzdelávanie).</div>
+            <TagTemy vybrane={tagy} onToggle={(id) => setTagy((t) => prepniTag(t, id))} akcent="var(--a-plum)" />
+            <NavBtns onBack={() => setKrok(2)} onNext={() => setKrok(4)} canNext={tagy.length > 0} />
+          </>
+        )}
+        {krok === 4 && (
+          <>
             <Otazka>Zhrnutie</Otazka>
-            <Suhrn rows={[["Typ", typ], ["Úroveň", uroven === "odbornik" ? "Odborník (doloží podklady)" : "Amatér"], ["Popis", popis]]} />
-            {uroven === "odbornik" && <div style={infoBox}>Odborník: pred zverejnením doložíš podklady. AI z nich určí vstupný status karmy v odbore.</div>}
+            <Suhrn rows={[["Typ", typ], ["Úroveň", uroven === "odbornik" ? "Odborník (doloží podklady)" : "Amatér"], ["Témy", tagLabels(tagy)], ["Popis", popis]]} />
+            {zranitelni && <div style={{ marginTop: SPACE.sm }}><PrisnyBadge /></div>}
+            {uroven === "odbornik" && <AiPoznamka text="Odborník: pred zverejnením doložíš podklady, AI z nich určí vstupný status karmy v odbore." />}
 
             {/* autorský split — koľko z platieb cez QR ide tebe a koľko organizáciám */}
             <button onClick={() => setRozdel((v) => !v)} style={{ ...btn(rozdel ? "primary" : "ghost"), width: "100%", marginTop: SPACE.gutter }}>🎬 Rozdeliť medzi organizácie (QR) {rozdel ? "▲" : "▼"}</button>
@@ -458,11 +483,25 @@ function OfferFlow({ onBack, onZverejni }: { onBack: () => void; onZverejni: (it
 function RequestFlow({ onBack, onZverejni }: { onBack: () => void; onZverejni: (item: HelpFeedItem, osl: { emoji: string; titul: string; text: ReactNode }, split?: SplitCiel[]) => void }) {
   const [vetva, setVetva] = useState<string | null>(null); // 'ludska' | 'peniaze'
   const [krok, setKrok] = useState(0);
-  const [preKoho, setPreKoho] = useState<string | null>(null);
+  // finančná sub-state-machine: guard → prekoho → (prijemca A/B/C) → proxy → charita | wizard
+  const [fin, setFin] = useState<"guard" | "prekoho" | "prijemca" | "proxy" | "charita" | "wizard">("guard");
+  const [preKoho, setPreKoho] = useState<string | null>(null); // 'seba' | 'zastupeni'
+  const [prijemcaTyp, setPrijemcaTyp] = useState<"A" | "B" | null>(null);
+  // V zastúpení — údaje PRÍJEMCU (proxy nevypĺňa svoje, je zodpovedná tvár)
+  const [proxyMeno, setProxyMeno] = useState("");
+  const [proxyAdresa, setProxyAdresa] = useState("");
+  const [ibanCesta, setIbanCesta] = useState<"A" | "B" | null>(null); // A: poznám IBAN · B: nemám
+  const [iban, setIban] = useState("");
+  const [ibanOvereny, setIbanOvereny] = useState(false); // micro-deposit (mock)
+  // Cez Charitu — segment potreby + zobrazenie matchov
+  const [charitaSegmenty, setCharitaSegmenty] = useState<string[]>([]);
+  const [charitaHladane, setCharitaHladane] = useState(false);
   const [popis, setPopis] = useState("");
   const [suma, setSuma] = useState("");
   const [suhlas, setSuhlas] = useState(false);
   const [retaz, setRetaz] = useState("necham");
+  const [zranitelni, setZranitelni] = useState<boolean | null>(null); // 2b
+  const [tagy, setTagy] = useState<string[]>([]);
   const [rozdel, setRozdel] = useState(false);
   const [ciele, setCiele] = useState<SplitCiel[]>([]);
 
@@ -482,6 +521,7 @@ function RequestFlow({ onBack, onZverejni }: { onBack: () => void; onZverejni: (
       velkost: "stredna",
       lok: "Tvoje okolie",
       karma: "Silver",
+      tagy, prisny: !!zranitelni,
       skore: 9, typSituacie: "normal", modul: "help", dni: 0,
       lat: USER_LOK.lat, lng: USER_LOK.lng,
     };
@@ -502,6 +542,7 @@ function RequestFlow({ onBack, onZverejni }: { onBack: () => void; onZverejni: (
       suma: 0,
       ciel: sumaNum,
       ludia: 0,
+      tagy,
       skore: 10, typSituacie: "normal", modul: "help", dni: 0,
       lat: USER_LOK.lat, lng: USER_LOK.lng,
     };
@@ -515,38 +556,183 @@ function RequestFlow({ onBack, onZverejni }: { onBack: () => void; onZverejni: (
         <Hlavicka title="Dopytujem" onBack={onBack} />
         <div style={{ padding: SPACE.md }}>
           <Otazka>Akú pomoc potrebuješ?</Otazka>
-          <Vyber emoji="🧑‍🤝‍🧑" title="Ľudská pomoc" desc="Odvoz, sťahovanie, doučovanie, spoločníčka… (nefinančné)" onClick={() => { setVetva("ludska"); setKrok(1); }} />
-          <Vyber emoji="💶" title="Finančná pomoc" desc="Potrebujem peniaze v núdzi." onClick={() => { setVetva("peniaze"); setKrok(0); }} />
+          <Vyber emoji="🧑‍🤝‍🧑" title="Ľudská pomoc" desc="Odvoz, sťahovanie, doučovanie, spoločníčka… (nefinančné)" onClick={() => { setVetva("ludska"); setKrok(1); setZranitelni(null); setTagy([]); }} />
+          <Vyber emoji="💶" title="Finančná pomoc" desc="Potrebujem peniaze v núdzi." onClick={() => { setVetva("peniaze"); setFin("guard"); setKrok(0); setPreKoho(null); setPrijemcaTyp(null); setTagy([]); }} />
         </div>
       </div>
     );
   }
 
-  // ĽUDSKÁ POMOC (zjednodušený tok – zrkadlo ponuky)
+  // ĽUDSKÁ POMOC (zrkadlo ponuky — nefinančné, bez pásiem/escrow)
   if (vetva === "ludska") {
+    const ludskaOk = !!popis && zranitelni !== null && tagy.length > 0;
     return (
       <div>
         <Hlavicka title="Ľudská pomoc" onBack={() => setVetva(null)} />
         <div style={{ padding: SPACE.md }}>
           <Otazka>Opíš, s čím potrebuješ pomôcť</Otazka>
           <textarea value={popis} onChange={(e) => setPopis(e.target.value)} placeholder="Napr. „Potrebujem odviezť k lekárovi v stredu ráno, Sihoť → nemocnica.“" style={inp(100)} />
-          <div style={infoBox}>AI posúdi relevanciu (či to nevyrieši bežná cesta) a navrhne kategóriu. Po zverejnení sa ti ozve niekto z okolia → chat → dohoda → QR na mieste.</div>
-          <button onClick={zverejniDopyt} disabled={!popis} style={{ ...btn(popis ? "primary" : "disabled"), width: "100%", marginTop: SPACE.gutter }}>Zverejniť dopyt</button>
+          <AiPoznamka text="AI sito relevancie: či to nevyrieši bežná cesta (odvoz k lekárovi = MHD vs. reálna núdza). Jasný balast odmietne, jasnú núdzu pustí." />
+          {/* zraniteľní — pri dopyte prísny režim platí pre toho, kto sa PRIHLÁSI */}
+          <ZranitelniBlok hodnota={zranitelni} onZmena={setZranitelni} pomahajuci />
+          <Otazka>Označ tému</Otazka>
+          <div style={{ fontSize: 13, color: C.textSec, lineHeight: 1.5 }}>Tag zobrazí dopyt aj v doméne Aktivity → nájde ho cielené publikum.</div>
+          <TagTemy vybrane={tagy} onToggle={(id) => setTagy((t) => prepniTag(t, id))} />
+          <button onClick={zverejniDopyt} disabled={!ludskaOk} style={{ ...btn(ludskaOk ? "primary" : "disabled"), width: "100%", marginTop: SPACE.gutter }}>Zverejniť dopyt</button>
+          <div style={{ textAlign: "center", fontSize: 11, color: C.textTer, marginTop: SPACE.sm }}>Po zverejnení sa ozve niekto z okolia → chat po akceptácii → dohoda → QR na mieste.</div>
         </div>
       </div>
     );
   }
 
-  // FINANČNÁ POMOC — wizard
-  const steps = ["Podmienky", "Pre koho", "Opis", "Suma", "Doklady", "Foto", "Kanál", "Potvrdenie"];
+  // FINANČNÁ POMOC — sub-state-machine (guard → prekoho → prijemca → charita/wizard)
+  const preKohoLabel = preKoho === "seba"
+    ? "Pre seba"
+    : `V zastúpení (${prijemcaTyp === "A" ? "vie mať účet" : prijemcaTyp === "B" ? "nemôže konať" : "?"})`;
+
+  const finBack = () => {
+    if (fin === "guard") { setVetva(null); return; }
+    if (fin === "prekoho") { setFin("guard"); return; }
+    if (fin === "prijemca") { setFin("prekoho"); return; }
+    if (fin === "proxy") { setFin("prijemca"); return; }
+    if (fin === "charita") { setFin("prijemca"); return; }
+    // wizard
+    if (krok === 0) { setFin(preKoho === "seba" ? "prekoho" : "proxy"); return; }
+    setKrok(krok - 1);
+  };
+
+  // GUARD 0.1 (anti-fraud brána; fuzzy match = mock, viď HelpKit)
+  if (fin === "guard") {
+    return (
+      <div>
+        <Hlavicka title="Finančná pomoc" onBack={finBack} />
+        <div style={{ padding: SPACE.md }}>
+          <GuardFuzzy onOk={() => setFin("prekoho")} />
+        </div>
+      </div>
+    );
+  }
+
+  // PRE KOHO? — seba / v zastúpení
+  if (fin === "prekoho") {
+    return (
+      <div>
+        <Hlavicka title="Pre koho je žiadosť?" onBack={finBack} />
+        <div style={{ padding: SPACE.md }}>
+          <Otazka>Kto je zodpovedná (zverejnená) tvár?</Otazka>
+          <Vyber emoji="🙋" title="Pre seba" desc="Ja som zodpovedná tvár — celé meno + priezvisko + skutočná foto. KYC, peniaze na môj účet." active={preKoho === "seba"} onClick={() => { setPreKoho("seba"); setPrijemcaTyp(null); setKrok(0); setFin("wizard"); }} />
+          <Vyber emoji="👥" title="V zastúpení" desc="Ja som zodpovedná tvár, ale peniaze idú na účet PRÍJEMCU (nie môj)." active={preKoho === "zastupeni"} onClick={() => { setPreKoho("zastupeni"); setFin("prijemca"); }} />
+          <div style={{ ...infoBox, fontSize: 12.5 }}>Help žiadosti = žiadna anonymita ani avatar (okrem „Cez Charitu"). Verejná tvár = dôvera + sociálna kontrola.</div>
+        </div>
+      </div>
+    );
+  }
+
+  // AKÝ PRÍJEMCA? — A / B / C(Cez Charitu)
+  if (fin === "prijemca") {
+    return (
+      <div>
+        <Hlavicka title="Aký príjemca?" onBack={finBack} />
+        <div style={{ padding: SPACE.md }}>
+          <Otazka>Aká je situácia príjemcu?</Otazka>
+          <Vyber emoji="🅰️" title="Vie mať účet" desc="Dospelý s dokladmi. Peniaze zamknuté v escrow do prevzatia (claim = KYC + účet)." active={prijemcaTyp === "A"} onClick={() => { setPrijemcaTyp("A"); setFin("proxy"); }} />
+          <Vyber emoji="🅱️" title="Nemôže konať" desc="Dieťa / koma / opatera → zákonný zástupca s dokladom, alebo platba priamo poskytovateľovi (faktúra)." active={prijemcaTyp === "B"} onClick={() => { setPrijemcaTyp("B"); setFin("proxy"); }} />
+          <Vyber emoji="🏛" title="Cez Charitu" desc="Bez dokladov / vysoká suma → zbierku zastreší partnerská charita (núdzny anonymizovaný)." onClick={() => { setPrijemcaTyp(null); setFin("charita"); }} />
+        </div>
+      </div>
+    );
+  }
+
+  // V ZASTÚPENÍ — údaje PRÍJEMCU + IBAN (micro-deposit A/B, mock)
+  if (fin === "proxy") {
+    const proxyOk = !!proxyMeno.trim() && !!proxyAdresa.trim() && (ibanCesta === "B" || (ibanCesta === "A" && ibanOvereny));
+    return (
+      <div>
+        <Hlavicka title="Údaje príjemcu" onBack={finBack} />
+        <div style={{ padding: SPACE.md }}>
+          <div style={{ ...infoBox, fontSize: 12.5 }}>Svoje údaje nevypĺňaš — si zodpovedná tvár. Vypĺňaš údaje <b>príjemcu</b>. Peniaze idú na jeho účet, nie tvoj.</div>
+          {prijemcaTyp === "B" && <div style={{ ...infoBox, marginTop: SPACE.sm, background: tint(C.purple, .1), borderColor: tint(C.purple, .35), color: C.purple, fontSize: 12.5 }}>Príjemca nemôže konať → doložíš doklad zákonného zástupcu (rodný list / súd) <b>(mock)</b>, alebo zvolíš platbu priamo poskytovateľovi (faktúra).</div>}
+
+          <Otazka>Meno a priezvisko príjemcu</Otazka>
+          <input value={proxyMeno} onChange={(e) => setProxyMeno(e.target.value)} placeholder="napr. Anna Kováčová" style={{ ...inp(0), height: "auto", padding: SPACE.sm, fontSize: 15 }} />
+          <Otazka>Adresa príjemcu</Otazka>
+          <input value={proxyAdresa} onChange={(e) => setProxyAdresa(e.target.value)} placeholder="ulica, mesto" style={{ ...inp(0), height: "auto", padding: SPACE.sm, fontSize: 15 }} />
+
+          <Otazka>IBAN príjemcu (pre FIAT)</Otazka>
+          <Vyber emoji="✅" title="IBAN poznám" desc="Zadám a overím micro-depositom, že účet patrí príjemcovi." active={ibanCesta === "A"} onClick={() => { setIbanCesta("A"); setIbanOvereny(false); }} />
+          <Vyber emoji="⏳" title="IBAN nemám" desc="Doplním neskôr cez doplnenie žiadosti. Dovtedy beží len DEED, FIAT nepôjde." active={ibanCesta === "B"} onClick={() => { setIbanCesta("B"); setIban(""); setIbanOvereny(false); }} />
+
+          {ibanCesta === "A" && (
+            <div style={{ marginTop: SPACE.sm }}>
+              <input value={iban} onChange={(e) => { setIban(e.target.value); setIbanOvereny(false); }} placeholder="SK.. IBAN príjemcu" style={{ ...inp(0), height: "auto", padding: SPACE.sm, fontSize: 15 }} />
+              {ibanOvereny ? (
+                <div style={{ ...infoBox, background: tint("var(--a-green)", .1), borderColor: tint("var(--a-green)", .35), color: "var(--a-green)", fontSize: 12.5 }}>✓ Účet overený micro-depositom — patrí príjemcovi <b>(mock)</b>.</div>
+              ) : (
+                <button onClick={() => setIbanOvereny(true)} disabled={iban.trim().length < 8} style={{ ...btn(iban.trim().length < 8 ? "disabled" : "ghost"), width: "100%", marginTop: SPACE.sm }}>Overiť účet (micro-deposit)</button>
+              )}
+              <div style={{ fontSize: 11, color: C.textTer, marginTop: SPACE.xs }}>Micro-deposit iniciuje procesor/banka, nie platforma (non-custody). Mock v prototype.</div>
+            </div>
+          )}
+          {ibanCesta === "B" && <div style={{ ...infoBox, marginTop: SPACE.sm, background: tint(C.gold, .1), borderColor: tint(C.gold, .35), color: C.gold, fontSize: 12.5 }}>⏳ Kým sa nedoplní účet príjemcu, FIAT nepôjde — beží len DEED.</div>}
+
+          <button onClick={() => { setKrok(0); setFin("wizard"); }} disabled={!proxyOk} style={{ ...btn(proxyOk ? "primary" : "disabled"), width: "100%", marginTop: SPACE.gutter }}>Pokračovať na žiadosť</button>
+        </div>
+      </div>
+    );
+  }
+
+  // CEZ CHARITU (odbočka C) — NIE wizard: appka ukáže dvere, núdzny osloví sám
+  if (fin === "charita") {
+    const matchujuce = CHARITY_FISKALNE.filter((c) => c.segmenty.some((s) => charitaSegmenty.includes(s)));
+    return (
+      <div>
+        <Hlavicka title="Cez Charitu" onBack={finBack} />
+        <div style={{ padding: SPACE.md }}>
+          <div style={infoBox}>Núdzny nemá KYC / doklady / účet — <b>za identitu a overenie ručí charita</b>. Appka len ukáže dvere: nesprostredkúva, nezmluvňuje, neručí. Charitu oslovíš <b>sám</b> (mimo appky). Zverejnenie bude anonymizované (dôstojnosť).</div>
+
+          <Otazka>Opíš, s čím treba pomôcť</Otazka>
+          <textarea value={popis} onChange={(e) => setPopis(e.target.value)} placeholder="Krátko situácia núdzneho a čo potrebuje." style={inp(90)} />
+
+          <Otazka>Segment potreby</Otazka>
+          <TagTemy vybrane={charitaSegmenty} onToggle={(id) => { setCharitaSegmenty((s) => prepniTag(s, id)); setCharitaHladane(false); }} polozky={CHARITA_SEGMENTY} akcent="var(--a-teal)" varovanie={false} />
+
+          <button onClick={() => setCharitaHladane(true)} disabled={!popis.trim() || charitaSegmenty.length === 0} style={{ ...btn(!popis.trim() || charitaSegmenty.length === 0 ? "disabled" : "primary"), width: "100%", marginTop: SPACE.gutter }}>Nájsť vhodné charity</button>
+
+          {charitaHladane && (
+            <div style={{ marginTop: SPACE.md }}>
+              {matchujuce.length === 0 ? (
+                <div style={{ ...infoBox, background: tint(C.gold, .1), borderColor: tint(C.gold, .35), color: C.gold }}>Žiadna vhodná charita v okolí pre segment <b>{charitaSegmenty.map(segmentLabel).join(", ")}</b>. Skús rozšíriť rádius — stav prípadu: „hľadá zastrešenie".</div>
+              ) : (
+                <>
+                  <div style={{ fontSize: 13, fontWeight: 700, marginBottom: SPACE.sm }}>Vhodné charity ({matchujuce.length}) — oslov ich priamo:</div>
+                  {matchujuce.map((c) => (
+                    <div key={c.id} style={{ border: `1px solid ${C.line}`, borderRadius: RADIUS.md, padding: SPACE.md, marginBottom: SPACE.sm, background: C.surface2 }}>
+                      <div style={{ fontSize: 15, fontWeight: 700 }}>{c.nazov}</div>
+                      <div style={{ fontSize: 12, color: C.textSec, marginTop: 2 }}>📍 {c.lok} · {c.segmenty.map(segmentLabel).join(" · ")}</div>
+                      <div style={{ fontSize: 12.5, color: C.blueL, marginTop: SPACE.xs }}>✉️ {c.kontakt}</div>
+                      <button onClick={() => toast(`Kontakt na ${c.nazov} skopírovaný — oslov ich priamo.`)} style={{ ...btn("ghost"), width: "100%", marginTop: SPACE.sm }}>Kontaktovať charitu</button>
+                    </div>
+                  ))}
+                </>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // SPOLOČNÝ SPRIEVODCA (self + proxy A + proxy B) — 8 krokov
+  const steps = ["Podmienky", "Opis", "Téma", "Suma", "Overenie", "Foto", "Kanál", "Potvrdenie"];
   return (
     <div>
-      <Hlavicka title="Finančná pomoc" onBack={() => krok === 0 ? setVetva(null) : setKrok(krok - 1)} step={krok + 1} total={steps.length} />
+      <Hlavicka title="Finančná pomoc" onBack={finBack} step={krok + 1} total={steps.length} />
       <div style={{ padding: SPACE.md }}>
 
         {krok === 0 && (
           <>
             <Otazka>Podmienky — prečítaj a potvrď</Otazka>
+            <div style={{ fontSize: 12.5, color: C.textSec, marginBottom: SPACE.xs }}>Vytváraš žiadosť: <b>{preKohoLabel}</b></div>
             <div style={{ ...infoBox, lineHeight: 1.5 }}>
               • Uvedené informácie musia byť <b>pravdivé</b>. Klamstvo = ban (10 rokov / doživotne) a možné právne kroky.<br /><br />
               • <b>Nepreplácame</b> žiadne náklady (notár, doklady atď.).<br /><br />
@@ -563,19 +749,19 @@ function RequestFlow({ onBack, onZverejni }: { onBack: () => void; onZverejni: (
 
         {krok === 1 && (
           <>
-            <Otazka>Pre koho je žiadosť?</Otazka>
-            <Vyber emoji="🙋" title="Pre seba" desc="KYC + môj účet." active={preKoho === "seba"} onClick={() => { setPreKoho("seba"); setKrok(2); }} />
-            <Vyber emoji="👥" title="Pre iného" desc="Príjemca má účet u nás (alebo prijmem za neho, verejne uvedené)." active={preKoho === "iny"} onClick={() => { setPreKoho("iny"); setKrok(2); }} />
-            <Vyber emoji="🏛" title="Cez Charitu" desc="Vysoká suma / príjemca bez účtu → zastreší partnerská charita." active={preKoho === "charita"} onClick={() => { setPreKoho("charita"); setKrok(2); }} />
+            <Otazka>Opíš svoj problém vlastnými slovami</Otazka>
+            <textarea value={popis} onChange={(e) => setPopis(e.target.value)} placeholder="Prečo si sa do situácie dostal, čo presne vyrieši požadovaná suma, prečo to nezvládneš inak." style={inp(130)} />
+            <AiPoznamka text="AI z opisu odporučí kategóriu a pomôže s formuláciou. Pri nezmysle alebo vnútornom rozpore požiada o doplnenie." />
+            <NavBtns onBack={() => setKrok(0)} onNext={() => setKrok(2)} canNext={popis.length > 15} />
           </>
         )}
 
         {krok === 2 && (
           <>
-            <Otazka>Opíš svoj problém vlastnými slovami</Otazka>
-            <textarea value={popis} onChange={(e) => setPopis(e.target.value)} placeholder="Prečo si sa do situácie dostal, čo presne vyrieši požadovaná suma, prečo to nezvládneš inak." style={inp(130)} />
-            <div style={infoBox}>AI z opisu odporučí kategóriu a pomôže s formuláciou. Pri nezmysle alebo vnútornom rozpore požiada o doplnenie.</div>
-            <NavBtns onBack={() => setKrok(1)} onNext={() => setKrok(3)} canNext={popis.length > 15} />
+            <Otazka>Označ tému žiadosti</Otazka>
+            <div style={{ fontSize: 13, color: C.textSec, lineHeight: 1.5 }}>Tag zobrazí žiadosť aj v príslušnej doméne Aktivity → cielené publikum (vyššia konverzia daru).</div>
+            <TagTemy vybrane={tagy} onToggle={(id) => setTagy((t) => prepniTag(t, id))} />
+            <NavBtns onBack={() => setKrok(1)} onNext={() => setKrok(3)} canNext={tagy.length > 0} />
           </>
         )}
 
@@ -584,18 +770,30 @@ function RequestFlow({ onBack, onZverejni }: { onBack: () => void; onZverejni: (
             <Otazka>Odhadovaná výška pomoci</Otazka>
             <input type="number" value={suma} onChange={(e) => setSuma(e.target.value)} placeholder="suma v €" style={{ ...inp(0), height: "auto", padding: `${SPACE.sm}px`, fontSize: 18 }} />
             {p && <div style={{ ...infoBox, borderColor: p.blok ? "rgba(226,87,75,.4)" : "rgba(93,155,232,.4)", background: p.blok ? C.redBg : "rgba(93,155,232,.08)", color: p.blok ? C.red : C.blueL }}>{p.text}</div>}
+            {p && !p.blok && <div style={{ ...infoBox, background: tint(C.gold, .1), borderColor: tint(C.gold, .35), color: C.gold }}>{POZNAMKA_DAVKY}</div>}
             <NavBtns onBack={() => setKrok(2)} onNext={() => setKrok(4)} canNext={sumaNum >= 100} />
           </>
         )}
 
         {krok === 4 && (
           <>
-            <Otazka>Doklady k tvrdeniam</Otazka>
-            <div style={infoBox}>AI rozloží tvoj príbeh na tvrdenia a požiada doklad ku každému (napr. úmrtný list, lekárska správa, exekučný príkaz). <b>Citlivé doklady idú len do overenia — nikdy do feedu.</b></div>
+            <Otazka>Overenie — doklady ALEBO komunita</Otazka>
+            <div style={infoBox}>AI rozloží tvoj príbeh na tvrdenia a požiada doklad ku každému. <b>Citlivé doklady idú len do overenia — nikdy do feedu.</b> Do nižšieho pásma stačia namiesto dokladov <b>{OVERENIA_POTREBNE} nezávislé overenia komunity</b>.</div>
             <div style={{ display: "flex", flexDirection: "column", gap: SPACE.xs, marginTop: SPACE.sm }}>
               <DokladRow text="Lekárska správa" />
               <DokladRow text="Doklad o príjme / nájme" />
             </div>
+            {/* stav „čaká na overenie" — BEZ počítadla (podvodník nevie, koľko chýba) */}
+            <div style={{ ...infoBox, marginTop: SPACE.sm, background: tint(C.blueL, .08), borderColor: tint(C.blueL, .3), color: C.blueL, fontSize: 12.5 }}>
+              Žiadosť ide do feedu v stave <b>„čaká na overenie"</b> — bez počítadla. {OVERENIA_POTREBNE} nezávislé overenia do 48 h a žiadna potvrdená námietka → výplata odomknutá.
+            </div>
+            {/* escrow — dary počas overenia (3 stavy, mock) */}
+            <div style={{ display: "flex", gap: SPACE.xs, marginTop: SPACE.sm, flexWrap: "wrap" }}>
+              {(Object.keys(ESCROW) as Array<keyof typeof ESCROW>).map((k) => (
+                <span key={k} title={ESCROW[k].popis} style={{ ...tagChip(C.textSec), display: "inline-flex", gap: 4 }}>{ESCROW[k].emoji} {ESCROW[k].label}</span>
+              ))}
+            </div>
+            <div style={{ fontSize: 11, color: C.textTer, marginTop: SPACE.xs }}>Dary počas overenia idú do escrow. Neprejde → refund darcom. Mock v prototype.</div>
             <NavBtns onBack={() => setKrok(3)} onNext={() => setKrok(5)} canNext={true} />
           </>
         )}
@@ -604,7 +802,7 @@ function RequestFlow({ onBack, onZverejni }: { onBack: () => void; onZverejni: (
           <>
             <Otazka>Foto / video k prípadu (verejné)</Otazka>
             <div style={{ height: 120, border: `1px dashed ${C.line}`, borderRadius: RADIUS.sm, display: "flex", alignItems: "center", justifyContent: "center", color: C.textTer, fontSize: 13, cursor: "pointer" }}>＋ Pridať foto alebo video</div>
-            <div style={infoBox}>Foto prípadu = vyššia dôvera a väčší dosah. Bez fota = nižšia dôvera, lokálny dosah. Osobné foto (tvár) = najvyššia dôvera. Oddelené od dokladov.</div>
+            <div style={infoBox}>Foto ide najprv do AI na kontrolu (pôvodné foto vs. kreslená náhrada), nie automaticky na zverejnenie. Foto prípadu ≠ doklady. Osobné foto (tvár) = najvyššia dôvera.</div>
             <NavBtns onBack={() => setKrok(4)} onNext={() => setKrok(6)} canNext={true} />
           </>
         )}
@@ -617,14 +815,12 @@ function RequestFlow({ onBack, onZverejni }: { onBack: () => void; onZverejni: (
                 <span>{k}</span><span style={{ fontSize: 11, color: C.textTer }}>poplatok vopred</span>
               </div>
             ))}
-            {sumaNum > 2400 && (
-              <>
-                <Otazka>Nad 2400 € — reťaz dobra</Otazka>
-                <div style={infoBox}>Suma nad 2400 €/rok podlieha dani z príjmu. Môžeš ju zdaniť, alebo prebytok poslať ďalšiemu.</div>
-                <Vyber emoji="🧾" title="Zdaním sám" desc="Prebytok si nechám, zdaním v priznaní." active={retaz === "zdanim"} onClick={() => setRetaz("zdanim")} />
-                <Vyber emoji="🔗" title="Reťaz dobra" desc="Prebytok nad 2400 € pošlem ďalšiemu (sektor vyberiem teraz alebo pri naplnení)." active={retaz === "retaz"} onClick={() => setRetaz("retaz")} />
-              </>
-            )}
+            {/* Reťaz prebytku — pri dosiahnutí cieľa (žiadna hranica 2400 €). */}
+            <Otazka>Keď sa cieľ naplní</Otazka>
+            <div style={infoBox}>Dar medzi fyzickými osobami sa v SR nedaní. Ak sa vyzbiera viac, než treba, prebytok môžeš nechať alebo poslať ďalšiemu prípadu (reťaz dobra).</div>
+            <Vyber emoji="🙋" title="Nechám si prebytok" desc="Prebytok zostane mne." active={retaz === "necham"} onClick={() => setRetaz("necham")} />
+            <Vyber emoji="🔗" title="Reťaz dobra" desc="Prebytok pošlem ďalšiemu (sektor vyberiem teraz alebo pri naplnení)." active={retaz === "retaz"} onClick={() => setRetaz("retaz")} />
+            <div style={{ ...infoBox, marginTop: SPACE.sm, fontSize: 12.5, color: C.textSec }}>Darca pri príspevku dostane voľbu: „ak sa pomoc neprevezme, poslať ďalej" — inak refund. (Zobrazí sa v darcovom toku.)</div>
             <NavBtns onBack={() => setKrok(5)} onNext={() => setKrok(7)} canNext={true} />
           </>
         )}
@@ -633,7 +829,9 @@ function RequestFlow({ onBack, onZverejni }: { onBack: () => void; onZverejni: (
           <>
             <Otazka>Potvrdenie</Otazka>
             <Suhrn rows={[
-              ["Pre koho", preKoho === "seba" ? "Pre seba" : preKoho === "iny" ? "Pre iného" : "Cez Charitu"],
+              ["Pre koho", preKohoLabel],
+              ...(preKoho === "zastupeni" ? [["Príjemca", `${proxyMeno || "—"}${ibanCesta === "B" ? " · IBAN neskôr (len DEED)" : ""}`] as [string, string]] : []),
+              ["Témy", tagLabels(tagy)],
               ["Suma", `${sumaNum} € (pásmo ${p?.kod})`],
               ["Opis", popis.slice(0, 60) + (popis.length > 60 ? "…" : "")],
             ]} />

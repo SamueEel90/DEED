@@ -4,6 +4,16 @@ import type { HelpFeedItem, ZivyDar } from "@/types";
 // poloha usera (MVP mock — Trenčín, rovnaká ako v ostatných feedoch)
 export const USER_LOK = { lat: 48.894, lng: 18.044 };
 
+// ---- CHARITY s fiškálnym sponzorstvom (Cez Charitu — mock matching) --------
+// „zastrešenie zbierky charitou" = flag z REGISTRÁCIE charity; Help ho len číta.
+export interface CharitaSponzor { id: string; nazov: string; segmenty: string[]; lok: string; kontakt: string; }
+export const CHARITY_FISKALNE: CharitaSponzor[] = [
+  { id: "c1", nazov: "Charita Trenčín", segmenty: ["byvanie", "jedlo", "hygiena"], lok: "Trenčín", kontakt: "trencin@charita.sk · 032/…" },
+  { id: "c2", nazov: "Depaul Slovensko", segmenty: ["byvanie", "jedlo"], lok: "Trenčín · okolie", kontakt: "info@depaul.sk" },
+  { id: "c3", nazov: "Liga proti rakovine", segmenty: ["lieky", "ine"], lok: "SK", kontakt: "pomoc@lpr.sk" },
+  { id: "c4", nazov: "Červený kríž — Trenčín", segmenty: ["osatenie", "hygiena", "jedlo"], lok: "Trenčín", kontakt: "tn@redcross.sk" },
+];
+
 // ---- MOCK FEED ----
 export const MOCK_FEED: HelpFeedItem[] = [
   { id: 7, typ: "ziadost", nazov: "Marek B.", overeny: true, karma: "Gold", lok: "Trenčín · Juh",

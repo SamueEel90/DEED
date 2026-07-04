@@ -75,19 +75,8 @@ export function glassTmavy(blur = 22, alpha = 0.66): CSSProperties {
 // ---- ZRNO (filmový noise cez SVG turbulenciu) ----
 export const ZRNO = `url("data:image/svg+xml,%3Csvg viewBox='0 0 240 240' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`;
 
-// ---- PÁSMA SUMY (prvý nástrel, doladí sa) ----
-export interface Pasmo {
-  kod: string;
-  text: string;
-  blok: boolean;
-}
-export function pasmo(suma: number): Pasmo {
-  if (suma < 100) return { kod: "pod100", text: "Pod 100 € sa finančná žiadosť nepublikuje — skús Ľudskú pomoc alebo priamy dar.", blok: true };
-  if (suma <= 500) return { kod: "100-500", text: "KYC + telefón. Dôkaz účelu voliteľný. Štart vo štvrti, dosah rastie s podporou.", blok: false };
-  if (suma <= 1000) return { kod: "500-1000", text: "KYC + povinný dôkaz k účelu. Dosah mesto po doložení.", blok: false };
-  if (suma <= 2400) return { kod: "1000-2400", text: "KYC + dôkaz + položkový rozpočet. Dosah región po overení.", blok: false };
-  return { kod: "nad2400", text: "Prijatá suma nad 2400 €/rok podlieha dani z príjmu. Máš voľbu: zdaniť, alebo prebytok poslať ďalšiemu (reťaz dobra). Odporúčané cez Charitu.", blok: false };
-}
+// PÁSMA SUMY sa presunuli do features/help/konstanty.ts (Help-špecifické,
+// anti-fraud stupne — NIE daňové; míľnik 2400 € ako daň bol chybný, v3 ho ruší).
 
 // ---- FOTKY (Unsplash CDN + pravatar; všade fallback na emoji) ----
 export const U = (id: string) => `https://images.unsplash.com/${id}?auto=format&fit=crop&w=800&q=60`;

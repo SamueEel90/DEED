@@ -252,6 +252,10 @@ export interface HelpFeedItem extends FeedEngineMeta, Partial<GeoBod> {
   ludia?: number;
   fotky?: string[];
   avatar?: string;
+  /** Help v3: otagované sektory (cross-modulové zobrazenie + cielené publikum) */
+  tagy?: string[];
+  /** Help v3: prísny režim — kontakt so zraniteľnými (deti/senior/vstup domov) */
+  prisny?: boolean;
 }
 
 /** Riadok živého tickera darov (ZIVE_DARY v Help). */
