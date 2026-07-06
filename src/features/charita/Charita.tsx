@@ -474,14 +474,16 @@ function CharitaDetail({ z: zProp, toast, onBack, onReg, onAutor }: { z?: Zbierk
             </div>
           </>
         ) : (
-          /* dobrovoľníctvo / materiál — bez peňazí, CTA na zapojenie + zdieľanie */
+          /* dobrovoľníctvo / materiál — primárne zapojenie, no podporiť sa dá aj peniazmi (karta / SEPA prevod / peňaženka) */
           <div style={{ marginBottom: SPACE.gutter }}>
             <div onClick={() => toast(`Ozvali sme sa organizácii ${z.nazov} — čoskoro ťa budú kontaktovať`)} style={{ width: "100%", border: `2px solid ${K.greenEdge}`, background: K.greenBg, borderRadius: RADIUS.sm, padding: SPACE.gutter, textAlign: "center", fontSize: 15, fontWeight: 700, color: K.green, cursor: "pointer", marginBottom: SPACE.sm }}>
               🙌 Zapojiť sa
             </div>
-            <div onClick={() => toast("Zdieľať: odkaz skopírovaný · siete")} style={{ width: "100%", border: `1px solid ${K.line}`, background: K.card, borderRadius: RADIUS.sm, padding: SPACE.sm, textAlign: "center", fontSize: 13, fontWeight: 600, color: K.txt2, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: SPACE.xs }}>
-              <Zdielanie size={16} color={K.txt2} /> Zdieľať výzvu
-            </div>
+            <PodporaSekcia
+              onShare={() => toast("Zdieľať: odkaz skopírovaný · siete")}
+              upvotes={140} onUpvote={() => toast("Palec hore")}
+              onPodpor={(s: number) => podpor(s, `Ďakujeme za ${s} DEED pre ${z.nazov}`)} onSms={() => podpor(100, "SMS podpora")}
+              onKanal={(k: string) => setPlatba(k as Kanal)} supLabel="PODPORIŤ — klik a hneď odíde" />
           </div>
         )}
       </div>

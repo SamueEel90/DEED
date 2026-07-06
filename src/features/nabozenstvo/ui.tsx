@@ -1,0 +1,90 @@
+// ============================================================
+// MODUL NÁBOŽENSTVO — lokálna paleta + drobné zdieľané kúsky.
+// Paleta N (pokojné indigo/slivka + zlatá + zelená) — theme-aware tinty,
+// žiadne hardcoded rgba (viď pamäť svetlého motívu). Zdieľané naprieč
+// Nabozenstvo / FarskyProfil / Kalendar / Pridat.
+// ============================================================
+import { useState, type ReactNode } from "react";
+import { SPACE, RADIUS } from "@/theme";
+import { tint, IkonaKriz } from "@/shared";
+import { pressable } from "@/components/pressable";
+
+export const N = {
+  card: "rgba(var(--glass-rgb),.045)", line: "rgba(var(--glass-rgb),.08)",
+  ind: "var(--a-plum)", indBg: tint("var(--a-plum)", .1), indEdge: tint("var(--a-plum)", .38),
+  gold: "var(--a-gold)", goldBg: tint("var(--a-gold)", .1), goldEdge: tint("var(--a-gold)", .34),
+  green: "var(--a-green)", greenBg: tint("var(--a-green)", .1), greenEdge: tint("var(--a-green)", .34),
+  clay: "var(--a-clay)", clayBg: tint("var(--a-clay)", .1), clayEdge: tint("var(--a-clay)", .34),
+  info: "var(--a-info)", infoBg: tint("var(--a-info)", .1),
+  txt: "var(--c-text)", txt2: "var(--c-textSec)", txt3: "var(--c-textTer)",
+};
+
+// badge „overená" — jediný odznak cirkevných subjektov (ŽIADNA karma/levely §2/§J)
+export function Overena() {
+  return (
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 10.5, fontWeight: 800, color: N.green, background: N.greenBg, border: `1px solid ${N.greenEdge}`, padding: `${SPACE.xxs}px ${SPACE.xs}px`, borderRadius: RADIUS.xs, lineHeight: 1.2 }}>
+      ✓ overená
+    </span>
+  );
+}
+
+// jednoduchá „chip" pilulka (typ obsahu / stav)
+export function Chip({ children, color = N.ind, on }: { children: ReactNode; color?: string; on?: boolean }) {
+  return (
+    <span style={{ whiteSpace: "nowrap", fontSize: 12, padding: `${SPACE.xxs}px ${SPACE.sm}px`, borderRadius: 99, background: on ? color : N.card, color: on ? "#fff" : N.txt2, fontWeight: on ? 700 : 400, border: `1px solid ${on ? color : N.line}` }}>
+      {children}
+    </span>
+  );
+}
+
+// ============================================================
+// OVERUJEM / NAMIETAM — komunitné overenie pravosti (reuse z Help/Core §78).
+// Pravosť prípadu (pohreb, svadba, zbierka pre iného) NErieši záruka cirkvi,
+// ale komunita. Farnosť nanajvýš „potvrdzuje, že prípad pozná", bez záruky.
+// ============================================================
+export function OverujemNamietam({ overeni = 0, namietky = 0, subjekt = "prípad", toast }: {
+  overeni?: number; namietky?: number; subjekt?: string; toast?: (m: string) => void;
+}) {
+  const [stav, setStav] = useState<null | "ok" | "nie">(null);
+  const [ov, setOv] = useState(overeni);
+  const [na, setNa] = useState(namietky);
+  const daj = (m: "ok" | "nie") => {
+    if (stav === m) return;
+    if (m === "ok") { setOv((x) => x + (stav === null ? 1 : 0)); if (stav === "nie") setNa((x) => Math.max(0, x - 1)); toast?.(`Ďakujeme — potvrdil si, že ${subjekt} poznáš. Dvíha to dôveryhodnosť.`); }
+    else { setNa((x) => x + (stav === null ? 1 : 0)); if (stav === "ok") setOv((x) => Math.max(0, x - 1)); toast?.("Námietka odoslaná — preverí ju komunita. Falošná námietka v zlej viere = sankcia."); }
+    setStav(m);
+  };
+  const red = "var(--a-danger)";
+  return (
+    <div style={{ background: N.card, border: `1px solid ${N.line}`, borderRadius: RADIUS.md, padding: SPACE.gutter }}>
+      <div style={{ fontSize: 10.5, fontWeight: 800, color: N.txt3, letterSpacing: ".04em" }}>PRAVOSŤ OVERUJE KOMUNITA</div>
+      <div style={{ fontSize: 11, color: N.txt3, margin: `2px 0 ${SPACE.sm}px`, lineHeight: 1.45 }}>Nie záruka cirkvi — farnosť prípad nanajvýš pozná. Rozhoduje komunitné Overujem/Namietam.</div>
+      <div style={{ display: "flex", gap: SPACE.sm }}>
+        <span {...pressable(() => daj("ok"), "Overujem")} style={ovBtn(stav === "ok", N.green, N.greenBg, N.greenEdge)}>
+          <span style={{ fontSize: 15 }}>✓</span> Overujem <b style={{ opacity: .8 }}>{ov}</b>
+        </span>
+        <span {...pressable(() => daj("nie"), "Namietam")} style={ovBtn(stav === "nie", red, tint(red, .1), tint(red, .34))}>
+          <span style={{ fontSize: 15 }}>✕</span> Namietam <b style={{ opacity: .8 }}>{na}</b>
+        </span>
+      </div>
+    </div>
+  );
+}
+function ovBtn(on: boolean, col: string, bg: string, edge: string): React.CSSProperties {
+  return { flex: 1, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: SPACE.xs, cursor: "pointer",
+    border: `1.5px solid ${on ? col : edge}`, background: on ? bg : "transparent", color: col, fontWeight: 700, fontSize: 13.5,
+    borderRadius: RADIUS.sm, padding: `${SPACE.sm}px 0` };
+}
+
+// jednotný obal pre modálne sheety modulu (adresár, „+", split…)
+export function SheetPanel({ title, onClose, children }: { title: string; onClose: () => void; children: ReactNode }) {
+  return (
+    <div style={{ position: "absolute", inset: 0, background: "rgba(var(--panel-rgb),.92)", backdropFilter: "blur(26px)", WebkitBackdropFilter: "blur(26px)", zIndex: 50, display: "flex", flexDirection: "column", animation: "fadeUp .2s ease" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm, padding: SPACE.md, borderBottom: `1px solid ${N.line}` }}>
+        <span onClick={onClose} style={{ display: "flex", color: N.txt2, cursor: "pointer" }}><IkonaKriz size={20} color={N.txt2} /></span>
+        <span style={{ fontSize: 16, fontWeight: 600 }}>{title}</span>
+      </div>
+      <div style={{ flex: 1, overflowY: "auto", padding: SPACE.md }}>{children}</div>
+    </div>
+  );
+}

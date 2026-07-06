@@ -328,11 +328,13 @@ function Detail({ z, onBack, onAutor }: { z: any; onBack: () => void; onAutor: (
       {jePonuka ? (
         <div style={{ padding: `0 ${SPACE.gutter}px ${SPACE.gutter}px` }}>
           <button onClick={() => toast(`Ozvali sme sa: ${z.nazov} · dohodnite sa cez chat`)} style={{ ...btn("primary"), width: "100%" }}>✍️ Mám záujem — ozvať sa</button>
-          <div style={{ display: "flex", gap: SPACE.sm, marginTop: SPACE.sm }}>
-            <button onClick={() => toast("Zdieľať: odkaz skopírovaný · siete")} style={{ ...btn("ghost"), flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: SPACE.xs }}><Zdielanie size={16} color={C.textSec} /> Zdieľať</button>
-            <button onClick={() => toast("Palec hore")} style={{ ...btn("ghost"), flex: 1 }}>👍 Páči sa mi</button>
-          </div>
-          <div style={{ textAlign: "center", fontSize: 11, color: C.textTer, marginTop: SPACE.sm }}>Po ozvaní sa dohodnete na detailoch cez chat → prípadne QR na mieste.</div>
+          <div style={{ textAlign: "center", fontSize: 11, color: C.textTer, margin: `${SPACE.sm}px 0` }}>Po ozvaní sa dohodnete na detailoch cez chat → prípadne QR na mieste.</div>
+          {/* podporiť sa dá aj peniazmi (karta / SEPA prevod / peňaženka), nielen ozvaním */}
+          <PodporaSekcia
+            onShare={() => toast("Zdieľať: odkaz skopírovaný · siete")}
+            upvotes={140} onUpvote={() => toast("Palec hore")}
+            onPodpor={(s: number) => posliPevne(s, "DEED")} onSms={() => posliPevne(1, "SMS")}
+            onKanal={(k: string) => setPlatba(k)} supLabel="PODPORIŤ — klik a hneď odíde" />
         </div>
       ) : (
         <div style={{ padding: `0 ${SPACE.gutter}px ${SPACE.gutter}px` }}>

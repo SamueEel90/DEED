@@ -467,6 +467,10 @@ function DeedDetail({ it, support, votes, vote, toast, home, openPerson }: any) 
 
 function WorkshopDetail({ it, toast, celebrate, home, openPerson }: any) {
   const free = it.price === "free";
+  const [platba, setPlatba] = useState<string | null>(null); // "EUR" | "DEED"
+  // cena zo štítku: "25 €" → 25; "firemné"/"zdarma" → 0. €-cena = individuálna platba (karta / SEPA).
+  const cenaEur = free ? 0 : Number(String(it.priceTxt || "").replace(/[^\d.,]/g, "").replace(",", ".")) || 0;
+  const platena = cenaEur > 0;
   return (
     <div style={{ paddingBottom: SPACE.lg }}>
       <DetailHero it={it} onBack={home}>
@@ -502,9 +506,15 @@ function WorkshopDetail({ it, toast, celebrate, home, openPerson }: any) {
         {it.profi && (<><div style={secLbl}>ĎALŠIE OD LEKTORA</div>
           <div onClick={() => toast("Ďalšie workshopy lektora (demo)")} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: A.surface, border: `1px solid ${A.line}`, borderRadius: RADIUS.sm, padding: SPACE.gutter, fontSize: 13, cursor: "pointer" }}><span>📚 Ďalšie 2 workshopy · profil</span><span style={{ color: C.textTer }}>›</span></div></>)}
 
-        <Btn onClick={() => { celebrate(free ? "Prihlásené!" : "Prihlásené a zaplatené!", free ? "Uvidíme sa na workshope. Pri štarte naskenuj QR." : "Pri štarte naskenuj QR (3 QR: štart/60%/koniec)."); setTimeout(home, 1700); }}>{free ? "Prihlásiť sa" : "Prihlásiť a zaplatiť · " + it.priceTxt}</Btn>
-        <div style={{ textAlign: "center", padding: `${SPACE.gutter}px ${SPACE.md}px 0`, fontSize: 11, color: A.txt3 }}>{free ? "Zadarmo · základné prihlásenie." : "Platba cez EUR/DEED · " + it.priceTxt}</div>
+        <Btn onClick={() => {
+          if (platena) { setPlatba("EUR"); return; } // platený workshop → reálna platba (karta / SEPA prevod)
+          celebrate("Prihlásené!", free ? "Uvidíme sa na workshope. Pri štarte naskenuj QR." : "Pri štarte naskenuj QR (3 QR: štart / 60 % / koniec)."); setTimeout(home, 1700);
+        }}>{free ? "Prihlásiť sa" : platena ? "Prihlásiť a zaplatiť · " + it.priceTxt : "Prihlásiť · " + it.priceTxt}</Btn>
+        <div style={{ textAlign: "center", padding: `${SPACE.gutter}px ${SPACE.md}px 0`, fontSize: 11, color: A.txt3 }}>{free ? "Zadarmo · základné prihlásenie." : platena ? "Platba kartou alebo SEPA prevodom · " + it.priceTxt : "Fakturácia firme · " + it.priceTxt}</div>
       </div>
+      {/* platený workshop → simulácia platby (EUR karta / SEPA prevod), suma predvyplnená cenou */}
+      {platba && <PlatbaModal kanal={platba} komu={it.author} suma={cenaEur} onClose={() => setPlatba(null)}
+        onDone={() => { setPlatba(null); celebrate("Prihlásené a zaplatené!", "Pri štarte naskenuj QR (3 QR: štart / 60 % / koniec)."); setTimeout(home, 1700); }} />}
     </div>
   );
 }
@@ -512,6 +522,7 @@ function WorkshopDetail({ it, toast, celebrate, home, openPerson }: any) {
 function HelpDetail({ it, toast, celebrate, home, openPerson }: any) {
   const a = DOM[it.dom];
   const { gate } = useTvorbaGate(); // „Môžem pomôcť" otvára chat = create
+  const [platba, setPlatba] = useState<string | null>(null); // "EUR" | "DEED" — pomôcť sa dá aj peniazmi (karta / SEPA / peňaženka)
   return (
     <div style={{ paddingBottom: SPACE.lg }}>
       <DetailHero it={it} onBack={home}>
@@ -527,11 +538,16 @@ function HelpDetail({ it, toast, celebrate, home, openPerson }: any) {
         <p style={{ fontSize: 14.5, lineHeight: 1.6, marginTop: SPACE.xs, color: A.txt2 }}>{it.desc}</p>
         <InfoBox>{it.helpers} ľudí sa už zapojilo. Po prijatí sa otvorí chat, dohodnete sa. Po dokončení: hodnotenie + tip + reťaz dobra.</InfoBox>
         <Btn green onClick={gate(() => { celebrate("Ozval si sa!", `Otvorili sme chat s ${it.author}. Dohodnite si detaily.`); setTimeout(home, 1700); })}>✋ Môžem pomôcť</Btn>
-        <div style={{ display: "flex", gap: SPACE.sm, marginTop: SPACE.sm }}>
-          <Cbtn ic={<Zdielanie size={14} color={A.txt} />} t="Zdieľať" s="pošli ďalej" onClick={() => toast("Zdieľané")} />
-          <Cbtn ic={<IkonaUlozit size={14} color={A.txt} />} t="Uložiť" s="na neskôr" onClick={() => toast("Uložené")} />
-        </div>
+        {/* podpora — pomôcť sa dá aj peniazmi (karta / SEPA prevod / peňaženka), nielen časom */}
+        <PodporaSekcia
+          onShare={() => toast("Zdieľať: odkaz skopírovaný · siete")}
+          upvotes={it.helpers || 0} onUpvote={() => toast("Páči sa ti to")}
+          onPodpor={(s: number) => toast(`Ďakujeme za ${s} DEED pre ${it.author}`)} onSms={() => toast("SMS podpora (euro/operátor)")}
+          onKanal={(k: string) => setPlatba(k)} supLabel="PODPORIŤ — klik a hneď odíde" />
       </div>
+      {/* simulácia platby (EUR karta / SEPA prevod / DEED peňaženka) */}
+      {platba && <PlatbaModal kanal={platba} komu={it.author} onClose={() => setPlatba(null)}
+        onDone={(s: number) => { setPlatba(null); toast(`Odoslané ${platba === "EUR" ? s + " €" : s + " DEED"} · ${it.author}`); }} />}
     </div>
   );
 }

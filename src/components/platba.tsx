@@ -13,11 +13,11 @@ import { IkonaStit, IkonaFajka, Zdielanie, Palec } from "@/components/icons";
 // realistický tok: suma → detaily → spracovanie → potvrdenie (doklad)
 // ============================================================
 const PLATBA_ZOSTATOK = 1240; // DEED zostatok v peňaženke (demo)
-export function PlatbaModal({ kanal, komu, onClose, onDone }: { kanal?: string; komu?: ReactNode; onClose?: () => void; onDone?: (suma: number) => void }) {
+export function PlatbaModal({ kanal, komu, suma: sumaInit, onClose, onDone }: { kanal?: string; komu?: ReactNode; suma?: number; onClose?: () => void; onDone?: (suma: number) => void }) {
   const jeEur = kanal === "EUR";
   const [krok, setKrok] = useState("suma"); // suma | metoda | detaily | spracovanie | hotovo
   const [metoda, setMetoda] = useState<"karta" | "sepa">("karta"); // EUR: spôsob platby
-  const [suma, setSuma] = useState("");
+  const [suma, setSuma] = useState(sumaInit && sumaInit > 0 ? String(sumaInit) : ""); // predvyplnená (napr. cena workshopu)
   const [karta, setKarta] = useState({ cislo: "", exp: "", cvc: "" });
   const [sepa, setSepa] = useState({ iban: "", meno: "" });
   const [res, setRes] = useState<{ id: string; hash: string; cas: string } | null>(null);
