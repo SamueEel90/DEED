@@ -4,7 +4,7 @@
 // žiadne hardcoded rgba (viď pamäť svetlého motívu). Zdieľané naprieč
 // Nabozenstvo / FarskyProfil / Kalendar / Pridat.
 // ============================================================
-import { useState, type ReactNode } from "react";
+import { useState, forwardRef, type ReactNode, type HTMLAttributes } from "react";
 import { SPACE, RADIUS } from "@/theme";
 import { tint, IkonaKriz } from "@/shared";
 import { pressable } from "@/components/pressable";
@@ -28,14 +28,17 @@ export function Overena() {
   );
 }
 
-// jednoduchá „chip" pilulka (typ obsahu / stav)
-export function Chip({ children, color = N.ind, on }: { children: ReactNode; color?: string; on?: boolean }) {
+// jednoduchá „chip" pilulka (typ obsahu / stav).
+// forwardRef + spread injektovaných props — aby SegTabs (cez cloneElement)
+// dokázal na DOM span dodať onClick/role/tabIndex/ref (inak by chip nebol klikateľný).
+type ChipProps = { children: ReactNode; color?: string; on?: boolean } & HTMLAttributes<HTMLSpanElement>;
+export const Chip = forwardRef<HTMLSpanElement, ChipProps>(function Chip({ children, color = N.ind, on, style, ...rest }, ref) {
   return (
-    <span style={{ whiteSpace: "nowrap", fontSize: 12, padding: `${SPACE.xxs}px ${SPACE.sm}px`, borderRadius: 99, background: on ? color : N.card, color: on ? "#fff" : N.txt2, fontWeight: on ? 700 : 400, border: `1px solid ${on ? color : N.line}` }}>
+    <span ref={ref} {...rest} style={{ whiteSpace: "nowrap", fontSize: 12, padding: `${SPACE.xxs}px ${SPACE.sm}px`, borderRadius: 99, cursor: "pointer", background: on ? color : N.card, color: on ? "#fff" : N.txt2, fontWeight: on ? 700 : 400, border: `1px solid ${on ? color : N.line}`, ...style }}>
       {children}
     </span>
   );
-}
+});
 
 // ============================================================
 // OVERUJEM / NAMIETAM — komunitné overenie pravosti (reuse z Help/Core §78).

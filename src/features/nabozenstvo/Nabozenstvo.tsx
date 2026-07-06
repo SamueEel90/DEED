@@ -199,7 +199,7 @@ function NabozFeed({ wide, domFarnost, oblubene, farar, onFarar, onDir, onAdd, o
           style={{ display: "flex", gap: SPACE.xs, overflowX: "auto", paddingBottom: SPACE.xs }}
           render={(id: string, on: boolean) => {
             const f = FARNOST_PODLA_ID(id);
-            const label = id === "Všetky" ? "Všetky" : `${f?.obec ?? id}${id === domFarnost.id ? " ★" : ""}`;
+            const label = id === "Všetky" ? "Všetky" : id === domFarnost.id ? `${f?.obec ?? id} ★` : `${f?.obec ?? id} · ${f?.skratka ?? ""}`;
             return <Chip on={on}>{label}</Chip>;
           }} />
       </div>
