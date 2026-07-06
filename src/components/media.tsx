@@ -5,8 +5,17 @@ import { useGaleria } from "@/components/context";
 import { pressable } from "@/components/pressable";
 
 // ---- FOTO s fallbackom na emoji ----
-export function Foto({ src, emoji, h, w, radius = 0, style, onClick }: { src?: string; emoji?: any; h?: number | string; w?: number | string; radius?: number | string; style?: CSSProperties; onClick?: (e: React.MouseEvent) => void }) {
+// Pipeline: Unsplash URL → srcset 400/800/1200 (mobil neťahá veľký asset) +
+// jemný fade-in po načítaní (pozadie kontajnera funguje ako placeholder).
+const jeUnsplash = (src?: string) => !!src && src.includes("images.unsplash.com") && /[?&]w=\d+/.test(src);
+const unsplashW = (src: string, w: number) => src.replace(/([?&]w=)\d+/, `$1${w}`);
+
+export function Foto({ src, emoji, h, w, radius = 0, style, onClick, sizes }: { src?: string; emoji?: any; h?: number | string; w?: number | string; radius?: number | string; style?: CSSProperties; onClick?: (e: React.MouseEvent) => void; sizes?: string }) {
   const [err, setErr] = useState(false);
+  const [nacitane, setNacitane] = useState(false);
+  const ref = useRef<HTMLImageElement>(null);
+  // obrázok z cache je hotový skôr než príde onLoad — nedrž ho neviditeľný
+  useEffect(() => { setNacitane(false); if (ref.current?.complete) setNacitane(true); }, [src]);
   if (err || !src) {
     return (
       <div onClick={onClick} style={{ width: w || "100%", height: h, background: "rgba(var(--glass-rgb),.05)", display: "flex", alignItems: "center",
@@ -15,8 +24,13 @@ export function Foto({ src, emoji, h, w, radius = 0, style, onClick }: { src?: s
       </div>
     );
   }
-  return <img src={src} alt="" onError={() => setErr(true)} onClick={onClick} draggable={false} loading="lazy" decoding="async"
-    style={{ width: w || "100%", height: h, objectFit: "cover", display: "block", borderRadius: radius, flex: w ? "0 0 auto" : undefined, cursor: onClick ? "pointer" : undefined, ...style }} />;
+  const responzivne = jeUnsplash(src);
+  return <img ref={ref} src={src} alt="" onError={() => setErr(true)} onClick={onClick} draggable={false} loading="lazy" decoding="async"
+    srcSet={responzivne ? `${unsplashW(src, 400)} 400w, ${unsplashW(src, 800)} 800w, ${unsplashW(src, 1200)} 1200w` : undefined}
+    sizes={responzivne ? (sizes ?? "(max-width: 760px) 100vw, 620px") : undefined}
+    onLoad={() => setNacitane(true)}
+    style={{ width: w || "100%", height: h, objectFit: "cover", display: "block", borderRadius: radius, flex: w ? "0 0 auto" : undefined, cursor: onClick ? "pointer" : undefined,
+      opacity: nacitane ? 1 : 0.001, transition: "opacity .3s ease", ...style }} />;
 }
 
 export function Avatar({ src, emoji, size, border, aura }: { src?: string; emoji?: any; size?: number; border?: string; aura?: string }) {
@@ -27,7 +41,7 @@ export function Avatar({ src, emoji, size, border, aura }: { src?: string; emoji
   const pozadie = aura === "gold"
     ? "conic-gradient(from 210deg, #F0C75A, #F09A5E, #F5DD9A, #F0C75A)"
     : GRAD;
-  const ziara = aura === "gold" ? "0 0 16px rgba(240,199,90,.45)" : "0 0 16px rgba(120,140,255,.45)";
+  const ziara = aura === "gold" ? "0 0 16px rgba(240,199,90,.45)" : "0 0 16px color-mix(in srgb, var(--a-green) 45%, transparent)";
   return (
     <div style={{ width: (size || 0) + 6, height: (size || 0) + 6, borderRadius: RADIUS.round, padding: SPACE.xxs, background: pozadie, boxShadow: ziara, flex: "0 0 auto" }}>
       <Foto src={src} emoji={emoji} h={size} w={size} radius="50%" />

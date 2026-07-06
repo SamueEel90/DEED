@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, type ReactNode } from "react";
+import { createContext, useContext, useEffect, type ReactNode, type RefObject } from "react";
 
 // ============================================================
 // GALÉRIA — kontext: ktorýkoľvek modul otvorí fullscreen prezeranie
@@ -12,6 +12,11 @@ export const useGaleria = () => useContext(GaleriaContext);
 // ============================================================
 export const ScrollContext = createContext<() => void>(() => {});
 export const useScrollHore = () => useContext(ScrollContext);
+
+// ref na samotný scroll ELEMENT (App ho napĺňa) — pre virtualizáciu feedov
+// (VirtualList potrebuje scroll kontajner) a pull-to-refresh.
+export const ScrollElContext = createContext<RefObject<HTMLDivElement | null> | null>(null);
+export const useScrollEl = () => useContext(ScrollElContext);
 
 // ============================================================
 // MENU „VIAC" — kontext: hamburger (☰) vľavo hore otvára sheet modulov

@@ -20,7 +20,7 @@ export function Sidebar({ moduly, aktivny, onModul, onViac, onPenazenka }: {
     <div style={{ width: 100, flex: "0 0 auto", height: "100%", display: "flex", flexDirection: "column", alignItems: "stretch", padding: `${SPACE.gutter}px ${SPACE.sm}px ${SPACE.md}px`, ...glassTmavy(18, .5), borderRight: `1px solid ${C.line}`, zIndex: 20 }}>
       {/* logo D⁺ — na desktope jediné logo v appke (v hlavičke modulov je skryté) */}
       <div style={{ display: "flex", justifyContent: "center", marginBottom: SPACE.md }}>
-        <span style={{ width: 52, height: 52, borderRadius: RADIUS.md, background: GRAD, color: "#fff", fontWeight: 800, fontSize: 27, display: "flex", alignItems: "center", justifyContent: "center", position: "relative", boxShadow: "0 6px 18px rgba(99,134,255,.42)" }}>
+        <span style={{ width: 52, height: 52, borderRadius: RADIUS.md, background: GRAD, color: "#fff", fontWeight: 800, fontSize: 27, display: "flex", alignItems: "center", justifyContent: "center", position: "relative", boxShadow: "0 6px 18px color-mix(in srgb, var(--a-green) 42%, transparent)" }}>
           D<span style={{ position: "absolute", top: 6, right: 8, fontSize: 13 }}>+</span>
         </span>
       </div>
@@ -43,9 +43,9 @@ function SideTab({ m, on, onClick }: { m: Modul; on: boolean; onClick: () => voi
   return (
     <div {...pressable(onClick, m.nazov)} aria-current={on ? "page" : undefined} style={{
       display: "flex", flexDirection: "column", alignItems: "center", gap: SPACE.xxs, cursor: "pointer", padding: `${SPACE.xs}px ${SPACE.xxs}px`, borderRadius: RADIUS.md,
-      background: on ? "linear-gradient(135deg, rgba(91,155,255,.30), rgba(139,124,255,.24))" : "transparent",
-      border: on ? "1px solid rgba(116,166,255,.4)" : "1px solid transparent",
-      boxShadow: on ? "0 4px 16px rgba(91,124,255,.30)" : "none",
+      background: on ? "linear-gradient(135deg, color-mix(in srgb, var(--a-green) 30%, transparent), color-mix(in srgb, var(--a-teal) 24%, transparent))" : "transparent",
+      border: on ? "1px solid color-mix(in srgb, var(--a-green) 40%, transparent)" : "1px solid transparent",
+      boxShadow: on ? "0 4px 16px color-mix(in srgb, var(--a-green) 30%, transparent)" : "none",
       transition: "background .2s ease, box-shadow .2s ease",
     }}>
       <span style={{ fontSize: 21, lineHeight: 1, display: "flex", color: on ? C.text : C.textSec }}>{m.ikona}</span>

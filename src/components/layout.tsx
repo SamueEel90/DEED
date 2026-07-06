@@ -1,9 +1,11 @@
-import { useState, type CSSProperties, type ReactNode } from "react";
-import { C, GRAD, GRAD_ZELENY, glassTmavy, SPACE, RADIUS } from "@/theme";
+import { useState, Children, type CSSProperties, type ReactNode, type ReactElement } from "react";
+import { C, GRAD, GRAD_ZELENY, glassTmavy, btn, SPACE, RADIUS } from "@/theme";
 import { tint } from "@/lib/ui";
 import { FEED_CFG } from "@/lib/feed";
 import { useLokalita, hladajMesta } from "@/lib/lokalita";
-import { useViac, useLayout } from "@/components/context";
+import { useViac, useLayout, useScrollEl } from "@/components/context";
+import { useDavkovanie } from "@/components/obnova";
+import { VirtualList } from "@/components/virtuallist";
 import { pressable } from "@/components/pressable";
 import { Sheet } from "@/components/sheet";
 import { IkonaSpat, IkonaMenu, IkonaPlay, IkonaDoska, IkonaPlus, IkonaPin, IkonaSipDole, IkonaFajka } from "@/components/icons";
@@ -56,7 +58,7 @@ export function ModulHlavicka({ title, right, slogan = "Miesto, kde nerozhodujú
         {/* na desktope navigáciu + logo nesie bočný panel → tu ☰ aj logo skryjeme (žiadny duplikát) */}
         {!desktop && <span {...pressable(otvorViac, "Menu modulov")} title="Menu modulov" style={{ display: "flex", alignItems: "center", color: C.textSec, cursor: "pointer", flex: "0 0 auto" }}><IkonaMenu size={22} color={C.textSec} /></span>}
         {!desktop && (
-          <span style={{ width: 32, height: 32, borderRadius: RADIUS.sm, background: GRAD, color: "#fff", fontWeight: 800, fontSize: 17, display: "flex", alignItems: "center", justifyContent: "center", position: "relative", boxShadow: "0 4px 14px rgba(99,134,255,.4)", flex: "0 0 auto" }}>
+          <span style={{ width: 32, height: 32, borderRadius: RADIUS.sm, background: GRAD, color: "#fff", fontWeight: 800, fontSize: 17, display: "flex", alignItems: "center", justifyContent: "center", position: "relative", boxShadow: "0 4px 14px color-mix(in srgb, var(--a-green) 40%, transparent)", flex: "0 0 auto" }}>
             D<span style={{ position: "absolute", top: 3, right: 4, fontSize: 9 }}>+</span>
           </span>
         )}
@@ -77,9 +79,9 @@ export function ModulHlavicka({ title, right, slogan = "Miesto, kde nerozhodujú
 
 export function vyberBox(active?: boolean): CSSProperties {
   return {
-    border: `1px solid ${active ? "rgba(116,166,255,.55)" : C.line}`,
-    background: active ? "rgba(91,155,255,.09)" : "rgba(255,255,255,.04)",
-    boxShadow: active ? "0 0 18px rgba(91,155,255,.14)" : "none",
+    border: `1px solid ${active ? "color-mix(in srgb, var(--a-info) 55%, transparent)" : C.line}`,
+    background: active ? "color-mix(in srgb, var(--a-info) 9%, transparent)" : "rgba(var(--glass-rgb),.04)",
+    boxShadow: active ? "0 0 18px color-mix(in srgb, var(--a-info) 14%, transparent)" : "none",
     borderRadius: RADIUS.md, padding: `${SPACE.sm}px ${SPACE.gutter}px`, marginBottom: SPACE.sm, cursor: "pointer",
     transition: "border-color .2s ease, background .2s ease, box-shadow .2s ease",
   };
@@ -103,12 +105,9 @@ export function NavBtns({ onBack, onNext, canNext }: { onBack?: () => void; onNe
   );
 }
 
+// lokálny variant zdieľaného btn() — len kompaktnejší padding/písmo (JEDNA definícia štýlu v theme)
 function btnLokal(kind: string): CSSProperties {
-  const base: CSSProperties = { flex: 1, padding: `${SPACE.sm}px 0`, borderRadius: RADIUS.md, fontSize: 14, fontWeight: 700, cursor: "pointer", border: "none", fontFamily: "inherit" };
-  if (kind === "primary") return { ...base, background: GRAD, color: "#fff", boxShadow: "0 8px 26px rgba(99,134,255,.32), inset 0 1px 0 rgba(255,255,255,.25)" };
-  if (kind === "ghost") return { ...base, background: "rgba(var(--glass-rgb),.05)", color: C.textSec, border: `1px solid ${C.line}` };
-  if (kind === "disabled") return { ...base, background: "rgba(var(--glass-rgb),.06)", color: C.textTer, cursor: "not-allowed" };
-  return base;
+  return { ...btn(kind), padding: `${SPACE.sm}px 0`, borderRadius: RADIUS.md, fontSize: 14 };
 }
 
 export function Suhrn({ rows }: { rows: any[] }) {
@@ -151,8 +150,8 @@ export function Ticker({ children }: { children?: ReactNode }) {
 // ============================================================
 export function SekcieBar({ onTalent, onBoard, onAdd, talentActive }: { onTalent?: () => void; onBoard?: () => void; onAdd?: () => void; talentActive?: boolean }) {
   const base: CSSProperties = { flex: 1, minWidth: 0, display: "flex", alignItems: "center", justifyContent: "center", gap: SPACE.xs, minHeight: 50, padding: `${SPACE.xs}px ${SPACE.xs}px`, borderRadius: RADIUS.md, fontSize: 13.5, fontWeight: 700, lineHeight: 1.15, textAlign: "center", cursor: "pointer", fontFamily: "inherit", transition: "all .15s ease" };
-  const ghost = (active?: boolean): CSSProperties => ({ ...base, background: active ? "rgba(91,155,255,.12)" : C.surface2, border: `1px solid ${active ? "rgba(116,166,255,.45)" : C.line}`, color: active ? C.blueL : C.text });
-  const primary: CSSProperties = { ...base, background: GRAD, border: "1px solid transparent", color: "#fff", boxShadow: "0 6px 20px rgba(99,134,255,.32)" };
+  const ghost = (active?: boolean): CSSProperties => ({ ...base, background: active ? "color-mix(in srgb, var(--a-info) 12%, transparent)" : C.surface2, border: `1px solid ${active ? "color-mix(in srgb, var(--a-info) 45%, transparent)" : C.line}`, color: active ? C.blueL : C.text });
+  const primary: CSSProperties = { ...base, background: GRAD, border: "1px solid transparent", color: "#fff", boxShadow: "0 6px 20px color-mix(in srgb, var(--a-green) 32%, transparent)" };
   return (
     <div style={{ display: "flex", gap: SPACE.xs, padding: `${SPACE.xs}px ${SPACE.md}px ${SPACE.gutter}px`, borderBottom: `1px solid ${C.line}` }}>
       <div {...pressable(onTalent)} style={ghost(talentActive)}><IkonaPlay size={13} color={talentActive ? C.blueL : C.text} /> Ukáž svoj talent</div>
@@ -280,17 +279,36 @@ export function obalSiroky(node: ReactNode, { wide, desktop, max = 620, maxDeskt
 // VIACSTĹPCOVÝ FEED (tablet/PC) — skutky vľavo, žiadosti vpravo
 // (voliteľne 3. stĺpec `charita` na desktope). Na úzkej obrazovke spadne
 // do jedného stĺpca (jednoStlpec v pôvodnom poradí).
+// Infinite scroll: karty sa renderujú po dávkach (useDavkovanie) —
+// jednostĺpcová verzia navyše virtualizuje nad prahom (VirtualList).
 // ============================================================
 export function FeedStlpce({ wide, skutky, ziadosti, charita, jednoStlpec, labelSkutky = "Skutky", labelZiadosti = "Žiadosti", labelCharita = "Charita", padding = "0 16px" }: { wide?: boolean; skutky?: ReactNode; ziadosti?: ReactNode; charita?: ReactNode; jednoStlpec?: ReactNode; labelSkutky?: ReactNode; labelZiadosti?: ReactNode; labelCharita?: ReactNode; padding?: string }) {
-  if (!wide) return <div style={{ padding }}>{jednoStlpec}</div>;
+  const scrollRef = useScrollEl();
+  // normalizuj sloty na polia s kľúčmi (hooky musia bežať bez podmienok)
+  const jeden = Children.toArray(jednoStlpec);
+  const dJeden = useDavkovanie(jeden);
+  const dLave = useDavkovanie(Children.toArray(skutky));
+  const dPrave = useDavkovanie(Children.toArray(ziadosti));
+  const dTretie = useDavkovanie(Children.toArray(charita));
+
+  if (!wide) {
+    return (
+      <div style={{ padding }}>
+        {scrollRef
+          ? <VirtualList items={dJeden.zobraz} renderItem={(n) => n as ReactElement} scrollRef={scrollRef} estimateSize={430} getKey={(_n, i) => i} />
+          : dJeden.zobraz}
+        {dJeden.sentinel}
+      </div>
+    );
+  }
   const Hd = ({ children }: { children?: ReactNode }) => <div style={{ fontSize: 11.5, letterSpacing: ".4px", color: C.textTer, fontWeight: 700, margin: `0 0 ${SPACE.sm}px`, paddingLeft: SPACE.xxs }}>{children}</div>;
   const col: CSSProperties = { display: "flex", flexDirection: "column", gap: SPACE.sm, minWidth: 0 };
   const tri = charita !== undefined; // 3. stĺpec = desktop „Charita"
   return (
     <div style={{ display: "grid", gridTemplateColumns: tri ? "1fr 1fr 1fr" : "1fr 1fr", gap: SPACE.gutter, alignItems: "start", padding }}>
-      <div style={{ minWidth: 0 }}><Hd>{labelSkutky}</Hd><div style={col}>{skutky}</div></div>
-      <div style={{ minWidth: 0 }}><Hd>{labelZiadosti}</Hd><div style={col}>{ziadosti}</div></div>
-      {tri && <div style={{ minWidth: 0 }}><Hd>{labelCharita}</Hd><div style={col}>{charita}</div></div>}
+      <div style={{ minWidth: 0 }}><Hd>{labelSkutky}</Hd><div style={col}>{dLave.zobraz}</div>{dLave.sentinel}</div>
+      <div style={{ minWidth: 0 }}><Hd>{labelZiadosti}</Hd><div style={col}>{dPrave.zobraz}</div>{dPrave.sentinel}</div>
+      {tri && <div style={{ minWidth: 0 }}><Hd>{labelCharita}</Hd><div style={col}>{dTretie.zobraz}</div>{dTretie.sentinel}</div>}
     </div>
   );
 }
@@ -317,12 +335,17 @@ export function FiltreStat({ filtre, stat }: { filtre: ReactNode; stat: ReactNod
 // Použité v Help/Charita na plnú šírku (hustejšie než 2-stĺpcový FeedStlpce).
 // ============================================================
 export function FeedGrid({ cards, cols = 3, gap = 16, padding = "4px 16px 14px" }: { cards: ReactNode[]; cols?: number; gap?: number; padding?: string }) {
+  // infinite scroll — masonry renderuje po dávkach (cols × 6), zvyšok po dojazde
+  const { zobraz, sentinel } = useDavkovanie(cards, cols * 6);
   return (
-    <div style={{ columnCount: cols, columnGap: gap, padding }}>
-      {cards.map((c, i) => (
-        <div key={i} style={{ breakInside: "avoid", marginBottom: gap }}>{c}</div>
-      ))}
-    </div>
+    <>
+      <div style={{ columnCount: cols, columnGap: gap, padding }}>
+        {zobraz.map((c, i) => (
+          <div key={i} style={{ breakInside: "avoid", marginBottom: gap }}>{c}</div>
+        ))}
+      </div>
+      {sentinel}
+    </>
   );
 }
 

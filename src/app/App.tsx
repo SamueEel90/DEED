@@ -1,13 +1,13 @@
 import { useState, useEffect, useRef, lazy, Suspense, type CSSProperties } from "react";
 import { LazyMotion, domAnimation, MotionConfig } from "motion/react";
 import { C } from "@/theme";
-import { GaleriaContext, ScrollContext, ViacContext, StrankaAkcieContext, UpgradeContext, UpgradePanel, Lightbox, DychajucePozadie, MotivContext, PortalContext, LayoutContext, DeedToaster, FeedSkeleton } from "@/shared";
+import { GaleriaContext, ScrollContext, ScrollElContext, ViacContext, StrankaAkcieContext, UpgradeContext, UpgradePanel, Lightbox, DychajucePozadie, MotivContext, PortalContext, LayoutContext, DeedToaster, FeedSkeleton, PullToRefresh } from "@/shared";
 import type { StrankaAkcie } from "@/components/context";
 import { TabBar, ViacSheet, PridatFAB, nacitajTaby, ulozTaby, VSETKY_MODULY } from "@/components/TabBar";
 import { Sidebar } from "@/components/Sidebar";
 import { useSession } from "@/lib/session";
 import { resolveSession, subscribeAuth } from "@/lib/auth";
-import { supabaseReady } from "@/lib/supabase";
+import { USE_SUPABASE } from "@/lib/supabase";
 import type { TypUctu } from "@/types";
 import { useNotifikacieRealtime, repo } from "@/data";
 import { precitajDeepLink, druhNaModul, vycistiDeepLinkUrl } from "@/lib/deeplink";
@@ -23,6 +23,7 @@ import { Registracia } from "@/features/registracia/Registracia";
 const ModulGood = lazy(() => import("@/features/good/Good"));
 const ModulHelp = lazy(() => import("@/features/help/Help"));
 const ModulCharita = lazy(() => import("@/features/charita/Charita"));
+const ModulNabozenstvo = lazy(() => import("@/features/nabozenstvo/Nabozenstvo"));
 const ModulProfil = lazy(() => import("@/features/profil/Profil"));
 const ModulAktivity = lazy(() => import("@/features/aktivity/Aktivity"));
 const ModulMapa = lazy(() => import("@/features/mapa/Mapa"));
@@ -42,7 +43,7 @@ const ModulTop = lazy(() => import("@/features/top/Top"));
 const FONT = "'Plus Jakarta Sans', -apple-system, 'Segoe UI', Arial, sans-serif";
 
 /** ID modulov, ktoré appka routuje. */
-export type ModulId = "good" | "help" | "charita" | "profil" | "vyzva" | "mapa" | "top";
+export type ModulId = "good" | "help" | "charita" | "nabozenstvo" | "profil" | "vyzva" | "mapa" | "top";
 
 interface RozmeryOkna {
   w: number;
@@ -104,8 +105,8 @@ export default function App() {
           <MotivContext.Provider value={motiv}>
             <PortalContext.Provider value={portalEl}>
               <LayoutContext.Provider value={{ w, wide, desktop }}>
+                {/* pozadie sa montuje RAZ vnútri appky (Screens) — druhá kópia tu bola len duplicitná GPU záťaž */}
                 <div className="deed-app" style={{ ...pageBase, display: "flex", justifyContent: "center", alignItems: "stretch" }}>
-                  <DychajucePozadie />
                   <div ref={setPortalEl} style={{ position: "relative", width: "100%", maxWidth: desktop ? undefined : wide ? 1180 : 560, height: "100%", background: C.bg }}>
                     <Screens wide={wide} desktop={desktop} />
                   </div>
@@ -133,7 +134,7 @@ export function Screens({ wide, desktop }: { wide?: boolean; desktop?: boolean }
   const [aktivacia, setAktivacia] = useState(false); // overlay aktívnej registrácie (upgrade)
   const scrollRef = useRef<HTMLDivElement>(null);
   // auth-boot: kým sa Supabase Auth ↔ app-session zladí, drž splash (žiadny flash zlej session)
-  const [booting, setBooting] = useState<boolean>(supabaseReady);
+  const [booting, setBooting] = useState<boolean>(USE_SUPABASE);
   const [resumeInfo, setResumeInfo] = useState<{ authId: string; typ?: TypUctu; stav?: string } | null>(null);
   const [dlHotovo, setDlHotovo] = useState(false); // deep-link už spracovaný?
   const [badgeSheet, setBadgeSheet] = useState<string | null>(null); // odznak z deep-linku (/badge)
@@ -170,9 +171,9 @@ export function Screens({ wide, desktop }: { wide?: boolean; desktop?: boolean }
   //  · authed + ucet 'hotovo' → resolveSession setSession → appka
   //  · authed bez dokončeného účtu → resume onboarding
   //  · stale real session bez Supabase auth → vyčistí sa
-  // Demo session sa nediera. Bez Supabase (supabaseReady=false) sa celé preskočí.
+  // Demo session sa nediera. Bez Supabase (USE_SUPABASE=false) sa celé preskočí.
   useEffect(() => {
-    if (!supabaseReady) { setBooting(false); return; }
+    if (!USE_SUPABASE) { setBooting(false); return; }
     let alive = true;
     resolveSession()
       .then((r) => {
@@ -215,12 +216,16 @@ export function Screens({ wide, desktop }: { wide?: boolean; desktop?: boolean }
     <LokalitaProvider>
     <GaleriaContext.Provider value={otvorGaleriu}>
      <ScrollContext.Provider value={scrollHore}>
+     <ScrollElContext.Provider value={scrollRef}>
       <ViacContext.Provider value={() => setViac(true)}>
       <UpgradeContext.Provider value={() => setUpgradeOpen(true)}>
       <StrankaAkcieContext.Provider value={setAkcie}>
       <div style={{ height: "100%", display: "flex", flexDirection: desktop ? "row" : "column", position: "relative", overflow: "hidden", isolation: "isolate", background: C.bg }}>
         {/* dýchajúce pozadie vnútri appky (z-index -1 = pod obsahom) */}
         <DychajucePozadie silne />
+
+        {/* pull-to-refresh — potiahnutie nadol na vrchu feedu obnoví aktívne dopyty (mobil, dotyk) */}
+        <PullToRefresh scrollRef={scrollRef} />
 
         {/* desktop: ľavá bočná navigácia (nahrádza spodný dok) */}
         {desktop && <Sidebar moduly={moduly} aktivny={modul} onModul={prepni} onViac={() => setViac(true)} onPenazenka={() => { prepni("profil"); setWalletReq((n) => n + 1); }} />}
@@ -231,6 +236,7 @@ export function Screens({ wide, desktop }: { wide?: boolean; desktop?: boolean }
             {modul === "good" && <ModulGood wide={wide} otvorModul={prepni} />}
             {modul === "help" && <ModulHelp wide={wide} />}
             {modul === "charita" && <ModulCharita wide={wide} otvorModul={prepni} />}
+            {modul === "nabozenstvo" && <ModulNabozenstvo wide={wide} otvorModul={prepni} />}
             {modul === "profil" && <ModulProfil wide={wide} walletReq={walletReq} />}
             {modul === "vyzva" && <ModulAktivity wide={wide} />}
             {modul === "mapa" && <ModulMapa wide={wide} />}
@@ -278,6 +284,7 @@ export function Screens({ wide, desktop }: { wide?: boolean; desktop?: boolean }
       </StrankaAkcieContext.Provider>
       </UpgradeContext.Provider>
       </ViacContext.Provider>
+     </ScrollElContext.Provider>
      </ScrollContext.Provider>
     </GaleriaContext.Provider>
     </LokalitaProvider>

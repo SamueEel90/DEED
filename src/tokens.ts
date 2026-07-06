@@ -52,6 +52,10 @@ export const SHADOW = {
   glowGreen: "0 10px 34px rgba(0,0,0,.45), 0 0 24px rgba(67,224,200,.12)", // toast
 } as const;
 
+// ---- ŠÍRKY OBSAHU — jednotné capy naprieč modulmi (koniec 680/760/860/900/1040/1320 ad-hoc hodnôt).
+// stlpec = mobilný/čitateľský stĺpec · citanie = detail/subscreen na desktope · plocha = plnoplošný feed
+export const SIRKA = { stlpec: 620, citanie: 920, plocha: 1180 } as const;
+
 // ---- MOTION — durations (s, pre Framer) + easings + tap ----
 export const DUR = { fast: 0.14, base: 0.22, slow: 0.32, slower: 0.45 } as const;
 export const EASE = {

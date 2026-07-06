@@ -341,7 +341,7 @@ export const POLOZKY: GoodPolozka[] = [
 ];
 
 // ---- NÁSTENKA — udalosti v okolí ----
-export const SRC_COL: Record<UdalostZdroj, string> = { Komunita: "#A98BF0", Mesto: "#7FC2EF", Partner: "#C264D8" };
+export const SRC_COL: Record<UdalostZdroj, string> = { Komunita: "#A98BF0", Mesto: "var(--a-info)", Partner: "#C264D8" };
 
 export const EVENTS: Udalost[] = [
   { id: "e1", top: true, when: "ŠTV 18:00", title: "Mentálny tréning — bezplatný stream", who: "Coach Peter", src: "Komunita", kat: "Ucenie",

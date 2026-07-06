@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { C, SPACE, RADIUS } from "@/theme";
+import { SIRKA, C, SPACE, RADIUS } from "@/theme";
 import { ModulHlavicka, toast, useScrollHore, useLayout, useTvorbaGate, obalSiroky, SkeletonRiadky, ErrorState, IkonaStit, IkonaKorunka, IkonaHviezda, IkonaUsmev, IkonaKompas, IkonaInstitucia } from "@/shared";
 import { Zvoncek } from "@/features/notifikacie/Notifikacie";
 import { CudziProfil } from "@/features/cudzi-profil/CudziProfil";
@@ -49,7 +49,7 @@ export default function ModulTop({ wide }: WideProps) {
   useTvorbaGate(); // pasívny nesmie tvoriť (overovanie skutku = create)
   const scrollHore = useScrollHore();
   const { desktop } = useLayout();
-  const obal = (el: React.ReactNode) => obalSiroky(el, { wide, desktop, max: 620, maxDesktop: 1320 });
+  const obal = (el: React.ReactNode) => obalSiroky(el, { wide, desktop, max: SIRKA.stlpec, maxDesktop: SIRKA.plocha });
 
   const otvorProfil = (s: Subjekt) => { setSubjekt(s); setScreen("profil"); scrollHore(); };
 
@@ -74,7 +74,7 @@ export default function ModulTop({ wide }: WideProps) {
             {ROZSAHY.map((r) => {
               const on = rozsah === r;
               return <span key={r} onClick={() => setRozsah(r)} style={{ flex: 1, textAlign: "center", padding: `${SPACE.xs}px 0`, borderRadius: RADIUS.sm, fontSize: 12.5, fontWeight: on ? 700 : 500, cursor: "pointer",
-                background: on ? "rgba(91,155,255,.16)" : C.surface2, border: `1px solid ${on ? "rgba(116,166,255,.5)" : C.line}`, color: on ? "var(--a-info)" : C.textSec }}>{r}</span>;
+                background: on ? "color-mix(in srgb, var(--a-info) 16%, transparent)" : C.surface2, border: `1px solid ${on ? "color-mix(in srgb, var(--a-info) 50%, transparent)" : C.line}`, color: on ? "var(--a-info)" : C.textSec }}>{r}</span>;
             })}
           </div>
 

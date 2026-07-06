@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { C, GRAD, GRAD_ZELENY, SPACE, RADIUS } from "@/theme";
-import { toast, Sheet, AvatarUroven, useScrollHore, useViac, useMotiv, useLayout, useTvorbaGate, obalSiroky, QrModal, IkonaMenu, IkonaNastavenia, IkonaSipVlavo, IkonaPenazenka, IkonaHviezda, IkonaFajka, IkonaDoska, IkonaUsmev, IkonaPin, IkonaSlnko, IkonaMesiac, IkonaStit, SkeletonRiadky, EmptyState, ErrorState, ScreenSwitch } from "@/shared";
+import { SIRKA, C, GRAD, GRAD_ZELENY, SPACE, RADIUS } from "@/theme";
+import { toast, Sheet, AvatarUroven, useScrollHore, useViac, useMotiv, useLayout, useTvorbaGate, obalSiroky, QrModal, pressable, IkonaMenu, IkonaNastavenia, IkonaSipVlavo, IkonaSipDole, IkonaPenazenka, IkonaHviezda, IkonaFajka, IkonaDoska, IkonaUsmev, IkonaPin, IkonaSlnko, IkonaMesiac, IkonaStit, SkeletonRiadky, EmptyState, ErrorState, ScreenSwitch } from "@/shared";
 import { RetazDobraSheet } from "@/features/retaz/RetazDobra";
 import { MojeQrKody } from "@/features/retaz/MojeQrKody";
 import { signOut } from "@/lib/auth";
@@ -36,7 +36,7 @@ export default function ModulProfil({ wide, walletReq = 0 }: ProfilProps) {
   useEffect(() => { if (walletReq) setScreen("wallet"); }, [walletReq]);
 
   const sub = (n: string) => { setSubNazov(n); setScreen("sub"); };
-  const obal = (el: React.ReactNode) => obalSiroky(el, { wide, desktop, max: 620, maxDesktop: screen === "profil" ? 1040 : 760 });
+  const obal = (el: React.ReactNode) => obalSiroky(el, { wide, desktop, max: SIRKA.stlpec, maxDesktop: SIRKA.citanie });
 
   return (
     <div style={{ minHeight: "100%" }}>
@@ -74,8 +74,9 @@ function ProfilHlavny({ toast, naWallet, naSub, naNastavenia, naPriatelia }: Pro
   const { desktop } = useLayout();
   const ja = usePouzivatel();
   const { maZaujem, toggleZaujem, sledovani, podpory, zaujmy } = usePersonalizacia(); // záujmy + prehľad = identita (rovnaký store ako Môj DEED + afinita feedu)
+  const [otvorenaOblast, setOtvorenaOblast] = useState<string | null>(null); // rozbalený dropdown kategórie záujmov
   const dlazdice: [string, string, string, string, React.ReactNode, () => void][] = [
-    ["Peňaženka", "1 240 DEED", "rgba(91,168,240,.14)", "var(--a-info)", <IkonaPenazenka size={26} />, naWallet],
+    ["Peňaženka", "1 240 DEED", "color-mix(in srgb, var(--a-info) 14%, transparent)", "var(--a-info)", <IkonaPenazenka size={26} />, naWallet],
     ["Karma a úrovne", "7 modulov", "rgba(169,139,240,.15)", "var(--a-plum)", <IkonaHviezda size={26} />, () => naSub("Karma a úrovne")],
     ["Moje skutky", "48 skutkov", "rgba(61,214,140,.13)", "var(--a-green)", <IkonaFajka size={26} />, () => naSub("Moje skutky")],
     ["Štatistiky", "umiestnenie", "rgba(61,214,206,.13)", "var(--a-teal)", <IkonaDoska size={24} />, () => naSub("Štatistiky a umiestnenie")],
@@ -126,17 +127,40 @@ function ProfilHlavny({ toast, naWallet, naSub, naNastavenia, naPriatelia }: Pro
         ))}
       </div>
 
-      {/* TVOJE ZÁUJMY — identita; ladia „Okolie" a napĺňajú „Môj DEED" (jeden zdroj pravdy) */}
-      <div style={{ padding: "16px 16px 0", textAlign: "center" }}>
-        <div style={{ fontSize: 10.5, letterSpacing: ".5px", color: C.textTer, fontWeight: 700, margin: "0 0 9px" }}>TVOJE ZÁUJMY</div>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: SPACE.xs, justifyContent: "center" }}>
+      {/* TVOJE ZÁUJMY — accordion: kategória → detailné pod-položky (číselník z registrácie §6.2).
+          Klik na hlavičku rozbalí dropdown; „Celá oblasť" alebo jednotlivé pod-položky ladia feed. */}
+      <div style={{ padding: "16px 16px 0" }}>
+        <div style={{ fontSize: 10.5, letterSpacing: ".5px", color: C.textTer, fontWeight: 700, margin: "0 0 9px", textAlign: "center" }}>TVOJE ZÁUJMY</div>
+        <div style={{ display: "flex", flexDirection: "column", gap: SPACE.xs }}>
           {ZAUJMY_KATALOG.map((z) => {
-            const on = maZaujem(z.oblast);
-            return <span key={z.oblast} onClick={() => toggleZaujem(z.oblast)} style={{ padding: `${SPACE.xs}px ${SPACE.sm}px`, borderRadius: RADIUS.lg, fontSize: 13, fontWeight: on ? 700 : 500, cursor: "pointer",
-              background: on ? "rgba(91,155,255,.14)" : C.surface2, border: `1px solid ${on ? "rgba(116,166,255,.5)" : C.line}`, color: on ? "var(--a-info)" : C.textSec }}>{on ? "✓ " : `${z.emoji} `}{z.label}</span>;
+            const otvor = otvorenaOblast === z.oblast;
+            const vybrane = zaujmy.filter((x) => x.oblast === z.oblast);
+            const celaOblast = vybrane.some((x) => x.pod_polozka === "*");
+            const pocetPod = vybrane.filter((x) => x.pod_polozka !== "*").length;
+            const aktiv = vybrane.length > 0;
+            return (
+              <div key={z.oblast} style={{ border: `1px solid ${aktiv ? "color-mix(in srgb, var(--a-info) 45%, transparent)" : C.line}`, borderRadius: RADIUS.md, overflow: "hidden", background: aktiv ? "color-mix(in srgb, var(--a-info) 7%, transparent)" : C.surface2, transition: "background .2s ease, border-color .2s ease" }}>
+                <div {...pressable(() => setOtvorenaOblast(otvor ? null : z.oblast), `${z.label} — detail`)} aria-expanded={otvor} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, padding: `${SPACE.sm}px ${SPACE.gutter}px`, cursor: "pointer" }}>
+                  <span style={{ fontSize: 16 }}>{z.emoji}</span>
+                  <span style={{ fontSize: 14, fontWeight: 700, color: aktiv ? "var(--a-info)" : C.text }}>{z.label}</span>
+                  {(celaOblast || pocetPod > 0) && (
+                    <span style={{ fontSize: 10.5, fontWeight: 800, color: "var(--a-info)", background: "color-mix(in srgb, var(--a-info) 15%, transparent)", borderRadius: RADIUS.pill, padding: `1px ${SPACE.xs}px` }}>{celaOblast ? "✓ celé" : `${pocetPod}`}</span>
+                  )}
+                  <span style={{ marginLeft: "auto", display: "flex", transform: otvor ? "rotate(180deg)" : "none", transition: "transform .2s ease" }}><IkonaSipDole size={16} color={C.textTer} /></span>
+                </div>
+                {otvor && (
+                  <div style={{ padding: `0 ${SPACE.gutter}px ${SPACE.sm}px`, display: "flex", flexWrap: "wrap", gap: SPACE.xxs }}>
+                    <PodChip label="Celá oblasť" on={celaOblast} onClick={() => toggleZaujem(z.oblast)} />
+                    {z.podpolozky.map((p) => (
+                      <PodChip key={p} label={p} on={maZaujem(z.oblast, p)} onClick={() => toggleZaujem(z.oblast, p)} />
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
           })}
         </div>
-        <div style={{ fontSize: 11, color: C.textTer, lineHeight: 1.5, marginTop: SPACE.xs }}>Ladia odporúčania v „Okolí" a napĺňajú „Môj DEED". Vyňaté z filtra feedu — feed ostáva pestrý.</div>
+        <div style={{ fontSize: 11, color: C.textTer, lineHeight: 1.5, marginTop: SPACE.sm, textAlign: "center" }}>Ladia odporúčania v „Okolí" a napĺňajú „Môj DEED". Vyňaté z filtra feedu — feed ostáva pestrý.</div>
       </div>
     </>
   );
@@ -166,6 +190,16 @@ function ProfilHlavny({ toast, naWallet, naSub, naNastavenia, naPriatelia }: Pro
   );
 }
 
+// pod-chip v dropdowne záujmov — jedna pod-položka (výber = ladí feed + „Môj DEED")
+function PodChip({ label, on, onClick }: { label: string; on: boolean; onClick: () => void }) {
+  return (
+    <span {...pressable(onClick, label)} aria-pressed={on} style={{
+      padding: `${SPACE.xxs}px ${SPACE.sm}px`, borderRadius: RADIUS.pill, fontSize: 12, fontWeight: on ? 700 : 500, cursor: "pointer", whiteSpace: "nowrap",
+      background: on ? "color-mix(in srgb, var(--a-info) 16%, transparent)" : C.surface, border: `1px solid ${on ? "color-mix(in srgb, var(--a-info) 50%, transparent)" : C.line}`, color: on ? "var(--a-info)" : C.textSec,
+    }}>{on ? "✓ " : ""}{label}</span>
+  );
+}
+
 // ===================== PEŇAŽENKA =====================
 type PenazenkaProps = { toast: ToastFn; onBack: () => void };
 
@@ -185,16 +219,16 @@ function Penazenka({ toast, onBack }: PenazenkaProps) {
         <h3 style={{ fontSize: 17, margin: 0 }}>Peňaženka</h3>
       </div>
       <div style={{ padding: "0 16px" }}>
-        <div style={{ position: "relative", overflow: "hidden", background: "linear-gradient(150deg, rgba(91,155,255,.22), rgba(139,124,255,.16) 55%, rgba(67,224,200,.13))", border: "1px solid rgba(116,166,255,.35)", borderRadius: RADIUS.lg, padding: SPACE.md, boxShadow: "0 14px 40px rgba(0,0,0,.35), 0 0 36px rgba(91,124,255,.14), inset 0 1px 0 rgba(255,255,255,.12)" }}>
-          <div style={{ position: "absolute", top: -50, right: -40, width: 160, height: 160, borderRadius: RADIUS.round, background: "radial-gradient(circle, rgba(139,124,255,.3), transparent 70%)", filter: "blur(28px)", pointerEvents: "none" }} />
+        <div style={{ position: "relative", overflow: "hidden", background: "linear-gradient(150deg, color-mix(in srgb, var(--a-info) 22%, transparent), color-mix(in srgb, var(--a-plum) 16%, transparent) 55%, color-mix(in srgb, var(--a-teal) 13%, transparent))", border: "1px solid color-mix(in srgb, var(--a-info) 35%, transparent)", borderRadius: RADIUS.lg, padding: SPACE.md, boxShadow: "0 14px 40px rgba(0,0,0,.35), 0 0 36px color-mix(in srgb, var(--a-green) 14%, transparent), inset 0 1px 0 rgba(255,255,255,.12)" }}>
+          <div style={{ position: "absolute", top: -50, right: -40, width: 160, height: 160, borderRadius: RADIUS.round, background: "radial-gradient(circle, color-mix(in srgb, var(--a-plum) 30%, transparent), transparent 70%)", filter: "blur(28px)", pointerEvents: "none" }} />
           <div style={{ fontSize: 12, color: C.textSec }}>Zostatok</div>
           <div style={{ marginTop: SPACE.xxs }}><span style={{ fontSize: 30, fontWeight: 800 }}>1 240</span> <span style={{ color: "#5B86FF", fontWeight: 800 }}>DEED</span></div>
           <div style={{ fontSize: 10, color: C.textTer, marginTop: SPACE.xxs }}>≈ 62 € · Base L2 · ERC-4337</div>
         </div>
 
         {/* DAROVANÉ SPOLU — reálne z DB (agregát podpôr „Čo podporujem") */}
-        <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm, marginTop: SPACE.sm, background: "rgba(91,168,240,.07)", border: "1px solid rgba(91,168,240,.22)", borderRadius: RADIUS.md, padding: `${SPACE.sm}px ${SPACE.gutter}px` }}>
-          <span style={{ width: 38, height: 38, borderRadius: RADIUS.sm, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(91,168,240,.14)", color: "var(--a-info)", fontSize: 18 }}>💚</span>
+        <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm, marginTop: SPACE.sm, background: "color-mix(in srgb, var(--a-info) 7%, transparent)", border: "1px solid color-mix(in srgb, var(--a-info) 22%, transparent)", borderRadius: RADIUS.md, padding: `${SPACE.sm}px ${SPACE.gutter}px` }}>
+          <span style={{ width: 38, height: 38, borderRadius: RADIUS.sm, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", background: "color-mix(in srgb, var(--a-info) 14%, transparent)", color: "var(--a-info)", fontSize: 18 }}>💚</span>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 13, fontWeight: 700 }}>Darované spolu · <span style={{ color: "var(--a-info)" }}>{darovaneDeed} DEED{darovaneEur ? ` · ${darovaneEur} €` : ""}</span></div>
             <div style={{ fontSize: 11, color: C.textTer, marginTop: SPACE.xxs }}>{podpory.length} {podpory.length === 1 ? "podporená zbierka" : "podporených zbierok"} · z tvojej stopy</div>
@@ -215,8 +249,8 @@ function Penazenka({ toast, onBack }: PenazenkaProps) {
         </div>
 
         {/* CESTA B — moje QR kódy (rozdelenie honoráru, správca) */}
-        <div onClick={() => setHonorar(true)} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, marginTop: SPACE.sm, background: "rgba(91,155,255,.07)", border: "1px solid rgba(91,155,255,.25)", borderRadius: RADIUS.md, padding: `${SPACE.sm}px ${SPACE.gutter}px`, cursor: "pointer" }}>
-          <span style={{ width: 38, height: 38, borderRadius: RADIUS.sm, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(91,155,255,.14)", color: "var(--a-info)", fontSize: 17 }}>⛓</span>
+        <div onClick={() => setHonorar(true)} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, marginTop: SPACE.sm, background: "color-mix(in srgb, var(--a-info) 7%, transparent)", border: "1px solid color-mix(in srgb, var(--a-info) 25%, transparent)", borderRadius: RADIUS.md, padding: `${SPACE.sm}px ${SPACE.gutter}px`, cursor: "pointer" }}>
+          <span style={{ width: 38, height: 38, borderRadius: RADIUS.sm, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", background: "color-mix(in srgb, var(--a-info) 14%, transparent)", color: "var(--a-info)", fontSize: 17 }}>⛓</span>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 13, fontWeight: 700 }}>Moje QR kódy · reťaz honoráru</div>
             <div style={{ fontSize: 11, color: C.textTer, marginTop: SPACE.xxs }}>Zoznam QR + pomer · vytvor nový · koľko išlo organizáciám</div>
@@ -226,7 +260,7 @@ function Penazenka({ toast, onBack }: PenazenkaProps) {
 
         <div style={{ display: "flex", gap: SPACE.xs, marginTop: SPACE.gutter }}>
           {[["↑", "Poslať", "rgba(61,214,140,.13)", "rgba(46,125,82,.5)", "var(--a-green)", "Poslať DEED (demo)"],
-            ["↓", "Prijať", "rgba(91,168,240,.14)", "rgba(42,94,142,.5)", "var(--a-info)", "Prijať (demo)"],
+            ["↓", "Prijať", "color-mix(in srgb, var(--a-info) 14%, transparent)", "rgba(42,94,142,.5)", "var(--a-info)", "Prijať (demo)"],
             ["＋", "Kúpiť", "rgba(169,139,240,.15)", "rgba(122,91,216,.5)", "var(--a-plum)", "Kúpiť DEED (demo)"]].map((b, i) => (
             <div key={i} onClick={() => toast(b[5])} style={{ flex: 1, height: 58, borderRadius: RADIUS.sm, background: b[2], border: `1px solid ${b[3]}`, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
               <div style={{ fontWeight: 700, fontSize: 13, color: b[4] }}>{b[0]}</div>
@@ -375,7 +409,7 @@ function PriateliaScreen({ toast, onBack }: PriateliaScreenProps) {
         ))}
 
         {/* ochrana */}
-        <div style={{ display: "flex", alignItems: "flex-start", gap: SPACE.xs, fontSize: 11, color: C.textTer, lineHeight: 1.5, marginTop: SPACE.xs, padding: `${SPACE.sm}px ${SPACE.sm}px`, borderRadius: RADIUS.sm, background: "rgba(91,155,255,.06)", border: "1px solid rgba(91,155,255,.2)" }}>
+        <div style={{ display: "flex", alignItems: "flex-start", gap: SPACE.xs, fontSize: 11, color: C.textTer, lineHeight: 1.5, marginTop: SPACE.xs, padding: `${SPACE.sm}px ${SPACE.sm}px`, borderRadius: RADIUS.sm, background: "color-mix(in srgb, var(--a-info) 6%, transparent)", border: "1px solid color-mix(in srgb, var(--a-info) 20%, transparent)" }}>
           🛡 QR/odkaz vedie <b>len na žiadosť o priateľstvo</b> — nie na otvorený profil ani skutky. Priateľstvo je vždy vzájomné (so súhlasom) a <b>neodomyká</b> súkromnú časť.
         </div>
       </div>
@@ -469,7 +503,7 @@ function NastaveniaScreen({ toast, onBack, onNotif }: NastaveniaScreenProps) {
             Si vidieť len tak, ako chceš. Systém o tebe vie (aby si dostal odmeny), ale navonok ťa nikto nevie lustrovať. Voľba <b>verejný / anonym</b> je v sekcii vyššie.
           </p>
           {/* kontrolný náhľad */}
-          <div style={{ background: "rgba(91,155,255,.07)", border: "1px solid rgba(91,155,255,.25)", borderRadius: RADIUS.md, padding: `${SPACE.sm}px ${SPACE.gutter}px` }}>
+          <div style={{ background: "color-mix(in srgb, var(--a-info) 7%, transparent)", border: "1px solid color-mix(in srgb, var(--a-info) 25%, transparent)", borderRadius: RADIUS.md, padding: `${SPACE.sm}px ${SPACE.gutter}px` }}>
             <div style={{ fontSize: 10.5, fontWeight: 800, color: "var(--a-info)", letterSpacing: ".3px" }}>KONTROLNÝ NÁHĽAD (napr. polícia)</div>
             {[["Karma", "jemne nad priemerom appky"], ["Skutky", "v norme komunity"], ["Dôveryhodnosť", "mierne nad priemerom"]].map((r, i) => (
               <div key={i} style={{ display: "flex", justifyContent: "space-between", gap: SPACE.sm, padding: `${SPACE.xs}px 0`, fontSize: 12.5, borderBottom: i < 2 ? `1px solid ${C.line2}` : "none" }}>

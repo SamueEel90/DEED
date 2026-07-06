@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
-import { C, GRAD, glassTmavy, SPACE, RADIUS } from "@/theme";
+import { SIRKA, C, GRAD, glassTmavy, SPACE, RADIUS } from "@/theme";
 import { Zvon, IkonaNastavenia, IkonaSipVlavo, IkonaKriz, tint, usePortalEl, useLayout, pressable, VirtualList, SkeletonRiadky, EmptyState, ErrorState } from "@/shared";
 import type { Notifikacia, VypnuteMapa } from "@/types";
 import { useNotifikacie } from "@/data";
@@ -59,7 +59,7 @@ export function Zvoncek({ color = "#C4CCDB", toast }: { color?: string; toast?: 
   // Na desktope: 2 stĺpce naraz (zoznam | nastavenia), bez prepínania.
   const overlay = (
     <div onClick={() => setOtvor(false)} style={{ position: "absolute", inset: 0, background: "rgba(4,6,12,.5)", backdropFilter: "blur(5px)", WebkitBackdropFilter: "blur(5px)", display: "flex", flexDirection: "column", zIndex: 90, animation: "fadeUp .18s ease" }}>
-      <div onClick={(e) => e.stopPropagation()} style={{ ...glassTmavy(26, .92), borderTop: "none", borderLeft: "none", borderRight: "none", borderBottomLeftRadius: RADIUS.lg, borderBottomRightRadius: RADIUS.lg, padding: `${SPACE.sm}px ${SPACE.gutter}px ${SPACE.md}px`, boxShadow: "0 18px 50px rgba(0,0,0,.45)", maxHeight: "88%", display: "flex", flexDirection: "column", width: "100%", maxWidth: desktop ? 900 : undefined, margin: desktop ? "0 auto" : undefined }}>
+      <div onClick={(e) => e.stopPropagation()} style={{ ...glassTmavy(26, .92), borderTop: "none", borderLeft: "none", borderRight: "none", borderBottomLeftRadius: RADIUS.lg, borderBottomRightRadius: RADIUS.lg, padding: `${SPACE.sm}px ${SPACE.gutter}px ${SPACE.md}px`, boxShadow: "0 18px 50px rgba(0,0,0,.45)", maxHeight: "88%", display: "flex", flexDirection: "column", width: "100%", maxWidth: desktop ? SIRKA.citanie : undefined, margin: desktop ? "0 auto" : undefined }}>
         {desktop ? (
           <div style={{ display: "flex", gap: SPACE.md, flex: "1 1 auto", minHeight: 0 }}>
             <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", minHeight: 0 }}>

@@ -6,7 +6,7 @@
 // ============================================================
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { usePouzivatel } from "./pouzivatel";
-import { supabaseReady } from "./supabase";
+import { USE_SUPABASE } from "./supabase";
 import {
   nacitajLokalne, ulozZaujmy, ulozSledovani, ulozPodpory, ulozOblubene,
   importLegacyFollows, legacyNaImport, demoSeed, zaujmyNaKluce, zaujemZOblasti,
@@ -15,11 +15,12 @@ import {
 import type { Zaujem, Sledovanie, Podpora, Oblubeny } from "@/types";
 
 export interface PersonalizaciaApi {
-  // záujmy
+  // záujmy — `pod` = detailná pod-položka (Zaujem.pod_polozka); bez neho = celá oblasť ("*")
   zaujmy: Zaujem[];
   setZaujmy: (z: Zaujem[]) => void;
-  toggleZaujem: (oblast: string) => void;
-  maZaujem: (oblast: string) => boolean;
+  toggleZaujem: (oblast: string, pod?: string) => void;
+  /** `pod` daný → konkrétna pod-položka; inak akýkoľvek záujem v oblasti (aktívna kategória). */
+  maZaujem: (oblast: string, pod?: string) => boolean;
   zaujmyKluce: Set<string>;
   // sledovanie
   sledovani: Sledovanie[];
@@ -76,9 +77,9 @@ export function PersonalizaciaProvider({ children }: { children: ReactNode }) {
     if (demo && prazdnyStore) {
       const seed = demoSeed();
       z = seed.zaujmy; s = seed.sledovani;
-      setPodpory(supabaseReady ? [] : seed.podpory);
+      setPodpory(USE_SUPABASE ? [] : seed.podpory);
     } else {
-      setPodpory(supabaseReady ? [] : p);
+      setPodpory(USE_SUPABASE ? [] : p);
     }
     setZaujmyStav(z);
     setSledovani(s);
@@ -88,7 +89,7 @@ export function PersonalizaciaProvider({ children }: { children: ReactNode }) {
   // Fáza D — „Čo podporujem" zo Supabase (agregát `podpora`). Overlay nad lokálny/seed
   // stav: demo číta podľa mena (Martin K.), reálny účet podľa ucet_id. Bez DB → no-op.
   useEffect(() => {
-    if (!supabaseReady) return;
+    if (!USE_SUPABASE) return;
     const filter = demo ? { darca: celeMeno } : { ucetId };
     if (!filter.darca && !filter.ucetId) return;
     let zrusene = false;
@@ -108,10 +109,16 @@ export function PersonalizaciaProvider({ children }: { children: ReactNode }) {
   const api = useMemo<PersonalizaciaApi>(() => ({
     zaujmy,
     setZaujmy: setZaujmyStav,
-    toggleZaujem: (oblast) => setZaujmyStav((zs) => zs.some((z) => z.oblast === oblast)
-      ? zs.filter((z) => z.oblast !== oblast)
-      : [...zs, zaujemZOblasti(oblast)]),
-    maZaujem: (oblast) => zaujmy.some((z) => z.oblast === oblast),
+    // pod daný → toggle konkrétnej pod-položky; inak toggle celej oblasti ("*")
+    toggleZaujem: (oblast, pod) => {
+      const cielPod = pod ?? "*";
+      setZaujmyStav((zs) => zs.some((z) => z.oblast === oblast && z.pod_polozka === cielPod)
+        ? zs.filter((z) => !(z.oblast === oblast && z.pod_polozka === cielPod))
+        : [...zs, pod ? { oblast, pod_polozka: pod, vlastny: false } : zaujemZOblasti(oblast)]);
+    },
+    maZaujem: (oblast, pod) => pod != null
+      ? zaujmy.some((z) => z.oblast === oblast && z.pod_polozka === pod)
+      : zaujmy.some((z) => z.oblast === oblast),
     zaujmyKluce: zaujmyNaKluce(zaujmy),
     sledovani,
     sledujem: (meno) => sledovani.some((s) => s.meno === meno),
@@ -131,7 +138,7 @@ export function PersonalizaciaProvider({ children }: { children: ReactNode }) {
         return copy;
       });
       // reálny účet → perzistuj ako event do `podpora` (demo ostáva ephemerálne)
-      if (supabaseReady && !demo && ucetId) {
+      if (USE_SUPABASE && !demo && ucetId) {
         pridajPodporuDB({
           darca: celeMeno, ucetId, refId: p.refId, prijemca: p.komu,
           suma: p.suma, kanal: p.kanal, vyzbierane: p.vyzbierane, ciel: p.ciel,

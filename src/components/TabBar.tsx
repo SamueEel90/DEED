@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { C, GRAD, glassTmavy, SPACE, RADIUS } from "@/theme";
-import { IkonaDomov, IkonaSrdceLine, IkonaCharita, IkonaKompas, IkonaMapa, IkonaPohar, IkonaOsoba, IkonaPenazenka, IkonaPlus, IkonaSlnko, IkonaMesiac } from "@/shared";
+import { IkonaDomov, IkonaSrdceLine, IkonaCharita, IkonaKompas, IkonaMapa, IkonaPohar, IkonaOsoba, IkonaPenazenka, IkonaPlus, IkonaSlnko, IkonaMesiac, IkonaInstitucia } from "@/shared";
 import { pressable } from "@/components/pressable";
 import { useTvorbaGate } from "@/components/upgrade";
 import { useMotiv } from "@/components/context";
@@ -26,6 +26,7 @@ export const VSETKY_MODULY: Modul[] = [
   { id: "good",    nazov: "Domov",   ikona: <IkonaDomov />,    popis: "Feed skutkov — DEED Good" },
   { id: "help",    nazov: "Help",    ikona: <IkonaSrdceLine />, popis: "Crowdfunding pre ľudí v núdzi" },
   { id: "charita", nazov: "Charita", ikona: <IkonaCharita />,  popis: "Zbierky, dobrovoľníctvo, adresár OZ" },
+  { id: "nabozenstvo", nazov: "Náboženstvo", ikona: <IkonaInstitucia />, popis: "Komunity registrovaných cirkví SR (opt-in)" },
   { id: "vyzva",   nazov: "Aktivity", ikona: <IkonaKompas />,  popis: "Skutky, talenty, workshopy a pomoc v okolí" },
   { id: "mapa",    nazov: "Mapa",    ikona: <IkonaMapa />,     popis: "Pomoc a skutky v okolí" },
   { id: "top",     nazov: "Top",     ikona: <IkonaPohar />,    popis: "Rebríčky darcov a hrdinov" },
@@ -101,12 +102,12 @@ function Tab({ m, on, onClick }: { m?: Modul; on: boolean; onClick: () => void }
       <div className="dock-icon" style={{
         width: 50, height: 32, borderRadius: RADIUS.md, display: "flex", alignItems: "center", justifyContent: "center",
         fontSize: 21, lineHeight: 1, transition: "transform .25s cubic-bezier(.34,1.56,.64,1), background .25s ease, box-shadow .25s ease, filter .25s ease",
-        background: on ? "linear-gradient(135deg, rgba(91,155,255,.32), rgba(139,124,255,.26))" : "transparent",
-        border: on ? "1px solid rgba(116,166,255,.4)" : "1px solid transparent",
-        boxShadow: on ? "0 4px 16px rgba(91,124,255,.35)" : "none",
+        background: on ? "linear-gradient(135deg, color-mix(in srgb, var(--a-green) 30%, transparent), color-mix(in srgb, var(--a-teal) 24%, transparent))" : "transparent",
+        border: on ? "1px solid color-mix(in srgb, var(--a-green) 40%, transparent)" : "1px solid transparent",
+        boxShadow: on ? "0 4px 16px color-mix(in srgb, var(--a-green) 35%, transparent)" : "none",
         color: on ? C.text : C.textSec,
       }}>{m?.ikona}</div>
-      <span style={{ fontSize: 11.5, fontWeight: on ? 800 : 600, color: on ? C.blueL : C.textSec, letterSpacing: ".01em", transition: "color .25s ease" }}>{m?.nazov}</span>
+      <span style={{ fontSize: 11.5, fontWeight: on ? 800 : 600, color: on ? C.greenL : C.textSec, letterSpacing: ".01em", transition: "color .25s ease" }}>{m?.nazov}</span>
     </div>
   );
 }
@@ -155,17 +156,17 @@ export function ViacSheet({ taby, setTaby, aktivny, onModul, onPenazenka, onClos
           <span style={{ fontSize: 17, fontWeight: 800 }}>Moduly</span>
           <span onClick={() => setUprava(!uprava)} style={{
             marginLeft: "auto", fontSize: 12, fontWeight: 700, cursor: "pointer", borderRadius: RADIUS.md, padding: `${SPACE.xxs}px ${SPACE.gutter}px`,
-            background: uprava ? GRAD : "rgba(255,255,255,.05)",
-            border: uprava ? "1px solid transparent" : "1px solid rgba(116,166,255,.4)",
+            background: uprava ? GRAD : "rgba(var(--glass-rgb),.05)",
+            border: uprava ? "1px solid transparent" : "1px solid color-mix(in srgb, var(--a-info) 40%, transparent)",
             color: uprava ? "#fff" : C.blueL,
-            boxShadow: uprava ? "0 6px 18px rgba(99,134,255,.35)" : "none",
+            boxShadow: uprava ? "0 6px 18px color-mix(in srgb, var(--a-green) 35%, transparent)" : "none",
           }}>
             {uprava ? "✓ Hotovo" : "✎ Upraviť menu"}
           </span>
         </div>
 
         {uprava && (
-          <div style={{ fontSize: 11.5, color: C.textSec, lineHeight: 1.45, marginBottom: SPACE.sm, background: "rgba(91,155,255,.07)", border: "1px solid rgba(91,155,255,.22)", borderRadius: RADIUS.sm, padding: `${SPACE.xs}px ${SPACE.sm}px` }}>
+          <div style={{ fontSize: 11.5, color: C.textSec, lineHeight: 1.45, marginBottom: SPACE.sm, background: "color-mix(in srgb, var(--a-info) 7%, transparent)", border: "1px solid color-mix(in srgb, var(--a-info) 22%, transparent)", borderRadius: RADIUS.sm, padding: `${SPACE.xs}px ${SPACE.sm}px` }}>
             Pripni si do spodného menu max {MAX_TABOV} moduly. Šípkami ⌃⌄ meníš poradie. Ukladá sa automaticky.
           </div>
         )}
@@ -190,10 +191,10 @@ export function ViacSheet({ taby, setTaby, aktivny, onModul, onPenazenka, onClos
 
         {/* Peňaženka — 1. položka v menu (súkromie: cudzí nevidí zostatok na hlavnej obrazovke) */}
         {!uprava && onPenazenka && (
-          <div onClick={onPenazenka} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, background: "rgba(91,168,240,.08)", border: "1px solid rgba(91,168,240,.3)", borderRadius: RADIUS.md, padding: `${SPACE.sm}px ${SPACE.sm}px`, marginBottom: SPACE.xs, cursor: "pointer" }}>
-            <span style={{ width: 38, height: 38, borderRadius: RADIUS.sm, background: "rgba(91,168,240,.16)", display: "flex", alignItems: "center", justifyContent: "center", flex: "0 0 auto", color: "var(--a-info)" }}><IkonaPenazenka size={20} color="var(--a-info)" /></span>
+          <div onClick={onPenazenka} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, background: "color-mix(in srgb, var(--a-info) 8%, transparent)", border: "1px solid color-mix(in srgb, var(--a-info) 30%, transparent)", borderRadius: RADIUS.md, padding: `${SPACE.sm}px ${SPACE.sm}px`, marginBottom: SPACE.xs, cursor: "pointer" }}>
+            <span style={{ width: 38, height: 38, borderRadius: RADIUS.sm, background: "color-mix(in srgb, var(--a-info) 16%, transparent)", display: "flex", alignItems: "center", justifyContent: "center", flex: "0 0 auto", color: "var(--a-info)" }}><IkonaPenazenka size={20} color="var(--a-info)" /></span>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 13.5, fontWeight: 700 }}>Peňaženka <span style={{ fontSize: 9, fontWeight: 700, color: "var(--a-info)", border: "1px solid rgba(91,168,240,.4)", background: "rgba(91,168,240,.1)", borderRadius: RADIUS.sm, padding: "1px 7px", marginLeft: SPACE.xxs }}>súkromné</span></div>
+              <div style={{ fontSize: 13.5, fontWeight: 700 }}>Peňaženka <span style={{ fontSize: 9, fontWeight: 700, color: "var(--a-info)", border: "1px solid color-mix(in srgb, var(--a-info) 40%, transparent)", background: "color-mix(in srgb, var(--a-info) 10%, transparent)", borderRadius: RADIUS.sm, padding: "1px 7px", marginLeft: SPACE.xxs }}>súkromné</span></div>
               <div style={{ fontSize: 11, color: C.textTer, marginTop: SPACE.xxs }}>Zostatok DEED · poslať / prijať / kúpiť</div>
             </div>
             <span style={{ color: C.textTer, fontSize: 15 }}>›</span>
@@ -208,9 +209,9 @@ export function ViacSheet({ taby, setTaby, aktivny, onModul, onPenazenka, onClos
             <div key={m.id}
               onClick={() => !uprava && onModul(m.id)}
               style={{ display: "flex", alignItems: "center", gap: SPACE.sm,
-                background: zvyrazneny ? "rgba(91,155,255,.1)" : "rgba(255,255,255,.04)",
-                border: `1px solid ${zvyrazneny ? "rgba(116,166,255,.45)" : C.line}`,
-                boxShadow: zvyrazneny ? "0 0 18px rgba(91,155,255,.12)" : "none",
+                background: zvyrazneny ? "color-mix(in srgb, var(--a-info) 10%, transparent)" : "rgba(var(--glass-rgb),.04)",
+                border: `1px solid ${zvyrazneny ? "color-mix(in srgb, var(--a-info) 45%, transparent)" : C.line}`,
+                boxShadow: zvyrazneny ? "0 0 18px color-mix(in srgb, var(--a-info) 12%, transparent)" : "none",
                 borderRadius: RADIUS.md, padding: `${SPACE.sm}px ${SPACE.sm}px`, marginBottom: SPACE.xs, cursor: "pointer" }}>
               <span style={{ width: 38, height: 38, borderRadius: RADIUS.sm, background: "rgba(var(--glass-rgb),.07)", border: `1px solid ${C.line2}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 17, flex: "0 0 auto" }}>{m.ikona}</span>
               <div style={{ flex: 1, minWidth: 0 }}>
@@ -225,7 +226,7 @@ export function ViacSheet({ taby, setTaby, aktivny, onModul, onPenazenka, onClos
                       <SipkaBtn aktivna={poradie < taby.length - 1} onClick={() => posun(m.id, 1)}>⌄</SipkaBtn>
                     </>
                   )}
-                  <span onClick={() => prepni(m.id)} style={{ fontSize: 11, fontWeight: 700, cursor: "pointer", borderRadius: RADIUS.md, padding: `${SPACE.xxs}px ${SPACE.sm}px`, border: `1px solid ${pripnuty ? "rgba(242,112,111,.45)" : "rgba(116,166,255,.45)"}`, color: pripnuty ? "#F2A2A2" : C.blueL, background: pripnuty ? "rgba(242,112,111,.08)" : "rgba(91,155,255,.08)" }}>
+                  <span onClick={() => prepni(m.id)} style={{ fontSize: 11, fontWeight: 700, cursor: "pointer", borderRadius: RADIUS.md, padding: `${SPACE.xxs}px ${SPACE.sm}px`, border: `1px solid ${pripnuty ? "rgba(242,112,111,.45)" : "color-mix(in srgb, var(--a-info) 45%, transparent)"}`, color: pripnuty ? "#F2A2A2" : C.blueL, background: pripnuty ? "rgba(242,112,111,.08)" : "color-mix(in srgb, var(--a-info) 8%, transparent)" }}>
                     {pripnuty ? "odopnúť" : "＋ pripnúť"}
                   </span>
                 </div>
@@ -246,7 +247,7 @@ export function ViacSheet({ taby, setTaby, aktivny, onModul, onPenazenka, onClos
                 <div style={{ fontSize: 13.5, fontWeight: 700 }}>Režim zobrazenia</div>
                 <div style={{ fontSize: 11, color: C.textTer, marginTop: SPACE.xxs }}>{svetly ? "Svetlý — ťukni pre tmavý" : "Tmavý — ťukni pre svetlý"}</div>
               </div>
-              <span style={{ flex: "0 0 auto", fontSize: 11.5, fontWeight: 700, color: C.blueL, border: "1px solid rgba(116,166,255,.45)", background: "rgba(91,155,255,.08)", borderRadius: RADIUS.md, padding: `${SPACE.xxs}px ${SPACE.sm}px` }}>{svetly ? "Tmavý" : "Svetlý"}</span>
+              <span style={{ flex: "0 0 auto", fontSize: 11.5, fontWeight: 700, color: C.blueL, border: "1px solid color-mix(in srgb, var(--a-info) 45%, transparent)", background: "color-mix(in srgb, var(--a-info) 8%, transparent)", borderRadius: RADIUS.md, padding: `${SPACE.xxs}px ${SPACE.sm}px` }}>{svetly ? "Tmavý" : "Svetlý"}</span>
             </div>
           </>
         )}

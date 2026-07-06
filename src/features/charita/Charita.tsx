@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { C, U, AV, GRAD, GRAD_ZELENY, SPACE, RADIUS } from "@/theme";
-import { Foto, Avatar, FotoPrispevku, MiniFotky, ModulHlavicka, PodporaSekcia, PlatbaModal, RecurringSheet, SplitQrSheet, HladanieModal, OblubeneHviezda, OblubeneBtn, toast, useGaleria, useLayout, useScrollHore, useStrankaAkcie, useTvorbaGate, Ticker, StatRiadok, FiltreStat, MoniBar, FeedStlpce, FeedGrid, obalSiroky, OkruhVyber, SegTabs, tint, Lupa, Zvon, Zdielanie, IkonaSpat, IkonaVlajka, IkonaFoto, IkonaPlay, IkonaDoska, IkonaOpakovat, IkonaKriz, IkonaInstitucia, FeedSkeleton, SkeletonRiadky, EmptyState, ErrorState, ScreenSwitch } from "@/shared";
+import { SIRKA, C, U, AV, GRAD, GRAD_ZELENY, SPACE, RADIUS } from "@/theme";
+import { Foto, Avatar, MiniFotky, ModulHlavicka, PodporaSekcia, PlatbaModal, RecurringSheet, SplitQrSheet, HladanieModal, OblubeneHviezda, OblubeneBtn, toast, useGaleria, useLayout, useScrollHore, useStrankaAkcie, useTvorbaGate, Ticker, StatRiadok, FiltreStat, FeedStlpce, FeedGrid, FeedCard, KartaBadge, BackHeader, ProgresBox, obalSiroky, OkruhVyber, SegTabs, tint, Lupa, Zvon, Zdielanie, IkonaVlajka, IkonaFoto, IkonaPlay, IkonaDoska, IkonaOpakovat, IkonaKriz, IkonaInstitucia, FeedSkeleton, SkeletonRiadky, EmptyState, ErrorState, ScreenSwitch, SwipeBack } from "@/shared";
 import { pripravFeed, FEED_CFG } from "@/lib/feed";
 import { MEDIA_AR } from "@/lib/cardSize";
 import { Zvoncek } from "@/features/notifikacie/Notifikacie";
@@ -22,13 +22,14 @@ import { pressable } from "@/components/pressable";
   ============================================================
 */
 
-// ---- lokálna paleta modulu (Aura — priesvitné glass tóny) ----
+// ---- lokálna paleta modulu — theme-aware tinty (žiadne hardcoded rgba,
+// ktoré lámu svetlý motív / nesú starú „aurora" modrú) ----
 const K = {
   bg: "transparent", bg2: "rgba(var(--glass-rgb),.03)", card: "rgba(var(--glass-rgb),.045)",
-  warmEdge: "rgba(245,158,90,.3)", warmBg: "rgba(245,158,90,.06)",
-  blue: "var(--a-info)", blueBg: "rgba(91,155,255,.1)", blueEdge: "rgba(116,166,255,.38)",
-  green: "var(--a-green)", greenBg: "rgba(52,211,153,.08)", greenEdge: "rgba(52,211,153,.32)",
-  gold: "var(--a-gold)", goldBg: "rgba(240,199,90,.07)",
+  warmEdge: tint("var(--a-clay)", .3), warmBg: tint("var(--a-clay)", .06),
+  blue: "var(--a-info)", blueBg: tint("var(--a-info)", .1), blueEdge: tint("var(--a-info)", .38),
+  green: "var(--a-green)", greenBg: tint("var(--a-green)", .08), greenEdge: tint("var(--a-green)", .32),
+  gold: "var(--a-gold)", goldBg: tint("var(--a-gold)", .07),
   diamond: "var(--a-info)",
   purple: "var(--a-plum)",
   txt: "var(--c-text)", txt2: "var(--c-textSec)", txt3: "var(--c-textTer)",
@@ -133,13 +134,13 @@ export default function ModulCharita({ wide, otvorModul }: ModulCharitaProps) {
   const scrollHore = useScrollHore();
   useEffect(() => { scrollHore(); }, [screen]);
 
-  const obal = (el: React.ReactNode) => obalSiroky(el, { wide, desktop, max: 620, maxDesktop: 920 });
+  const obal = (el: React.ReactNode) => obalSiroky(el, { wide, desktop, max: SIRKA.stlpec, maxDesktop: SIRKA.citanie });
 
   return (
     <div style={{ minHeight: "100%", color: K.txt }}>
       <ScreenSwitch k={screen}>
       {screen === "feed" && <CharitaFeed wide={wide} toast={toast} onDetail={(z) => { setAktZ(z ?? null); setScreen("detail"); }} onHladaj={() => setHladaj(true)} onSheet={setSheet} onBoard={() => setScreen("board")} />}
-      {screen === "detail" && obal(<CharitaDetail z={aktZ} toast={toast} onBack={() => setScreen("feed")} onReg={() => setSheet("reg")} onAutor={(s) => { setAktSubjekt(s); setScreen("cudzi"); }} />)}
+      {screen === "detail" && obal(<SwipeBack onBack={() => setScreen("feed")}><CharitaDetail z={aktZ} toast={toast} onBack={() => setScreen("feed")} onReg={() => setSheet("reg")} onAutor={(s) => { setAktSubjekt(s); setScreen("cudzi"); }} /></SwipeBack>)}
       {screen === "cudzi" && aktSubjekt && obal(<CudziProfil subjekt={aktSubjekt as any} toast={toast} onBack={() => setScreen("feed")} />)}
       {screen === "board" && <GoodBoard onBack={() => setScreen("feed")} onEvent={(id) => { setAktEvent(id); setScreen("event"); }} toast={toast} />}
       {screen === "event" && obal(<GoodEvent id={aktEvent} onBack={() => setScreen("board")} toast={toast} oslavuj={(s, komu) => toast(`Ďakujeme za ${s} pre ${komu}`)} />)}
@@ -234,7 +235,7 @@ function CharitaFeed({ wide, toast, onDetail, onHladaj, onSheet, onBoard }: Feed
         filtre={
           <div style={{ padding: `0 ${SPACE.md}px ${SPACE.sm}px` }}>
             <div onClick={() => onSheet("dir")} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, background: K.blueBg, border: `1px solid ${K.blueEdge}`, borderRadius: RADIUS.sm, padding: `${SPACE.sm}px ${SPACE.gutter}px`, cursor: "pointer" }}>
-              <span style={{ width: 38, height: 38, borderRadius: RADIUS.sm, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(91,168,240,.15)", color: K.blue }}><IkonaInstitucia size={20} color={K.blue} /></span>
+              <span style={{ width: 38, height: 38, borderRadius: RADIUS.sm, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", background: tint("var(--a-info)", .15), color: K.blue }}><IkonaInstitucia size={20} color={K.blue} /></span>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 14, fontWeight: 700 }}>Adresár charít & OZ</div>
                 <div style={{ fontSize: 11.5, color: C.textTer }}>Overené organizácie na jednom mieste</div>
@@ -259,7 +260,7 @@ function CharitaFeed({ wide, toast, onDetail, onHladaj, onSheet, onBoard }: Feed
       ) : desktop ? (
         <FeedGrid cols={3} cards={feed.map(karta)} />
       ) : (
-        <FeedStlpce wide={wide} padding="4px 14px 12px"
+        <FeedStlpce wide={wide} padding={`4px ${SPACE.md}px 12px`}
           labelSkutky="Zapoj sa" labelZiadosti="Zbierky"
           jednoStlpec={feed.map(karta)}
           skutky={feed.filter((it) => it.typ === "skutok").map(karta)}
@@ -277,28 +278,26 @@ function CharitaFeed({ wide, toast, onDetail, onHladaj, onSheet, onBoard }: Feed
 }
 
 // ---- karty feedu (rozdelené do komponentov kvôli dvojstĺpcu skutky/žiadosti) ----
-// JEDNOTNÁ FULL-WIDTH (Instagram) KARTA pre Charitu — médium hore · odznaky · titul · príbeh · progres.
-function CharitaKarta({ wide, onClick, fotky, emoji, accent, badgeL, badgeR, nazov, overena, tag, tagBg, tagCol, popis, vyzbierane, ciel, oblubena }: any) {
+// JEDNOTNÁ karta = zdieľaná FeedCard (rovnaká anatómia ako Domov/Help/Aktivity);
+// tu len mapujeme obsah Charity do slotov.
+function CharitaKarta({ wide, onClick, fotky, emoji, accent, badgeL, badgeR, nazov, overena, tag, tagCol, popis, vyzbierane, ciel, oblubena }: any) {
   return (
-    <div {...pressable(onClick, nazov)} className="good-card" style={{ background: K.card, border: wide ? `1px solid ${K.line}` : "none", borderBottom: `1px solid ${K.line}`, borderLeft: `3px solid ${accent}`, borderRadius: wide ? RADIUS.md : 0, overflow: "hidden", marginBottom: wide ? 0 : SPACE.sm, cursor: "pointer", ...(wide ? {} : { marginLeft: -SPACE.gutter, marginRight: -SPACE.gutter }) }}>
-      {/* médium — 16:9 na tablete/desktope; na mobile pôvodná výška 235 px */}
-      <div style={{ position: "relative", ...(wide ? { width: "100%", aspectRatio: MEDIA_AR } : { height: 235 }) }}>
-        <FotoPrispevku fotky={fotky} emoji={emoji} h={wide ? "100%" : 235} disableGaleria />
-        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(0deg, rgba(0,0,0,.34), transparent 42%)", pointerEvents: "none" }} />
-        {badgeL && <span style={badge({ top: 10, left: 10, color: badgeL.col, background: badgeL.bg })}>{badgeL.t}</span>}
-        {badgeR && <span style={badge({ top: 10, right: 10, color: badgeR.col, background: badgeR.bg })}>{badgeR.t}</span>}
-        {oblubena && <OblubeneHviezda polozka={oblubena} style={{ top: "auto", bottom: 10 }} />}
-      </div>
-      <div style={{ padding: `${SPACE.sm}px ${SPACE.gutter}px ${SPACE.gutter}px` }}>
-        <div style={{ fontSize: 15.5, fontWeight: 700, display: "flex", alignItems: "center", gap: SPACE.xs, flexWrap: "wrap" }}>
-          <span>{nazov}</span>
-          {overena && <Overena />}
-          {tag && <span style={tagChip(tagCol)}>{tag}</span>}
-        </div>
-        <div style={{ fontSize: 13, color: K.txt2, lineHeight: 1.5, marginTop: SPACE.xxs }}>{popis}</div>
-        {ciel ? <div style={{ marginTop: SPACE.sm }}><MoniBar vyzbierane={vyzbierane} ciel={ciel} mini /></div> : null}
-      </div>
-    </div>
+    <FeedCard wide={wide} onClick={onClick} label={nazov} accent={accent}
+      media={{
+        fotky, emoji,
+        overlay: (
+          <>
+            {badgeL && <KartaBadge pos={{ top: 10, left: 10 }} strong color={badgeL.col} style={badgeL.bg ? { background: badgeL.bg } : undefined}>{badgeL.t}</KartaBadge>}
+            {badgeR && <KartaBadge pos={{ top: 10, right: 10 }} color={badgeR.col} style={badgeR.bg ? { background: badgeR.bg } : undefined}>{badgeR.t}</KartaBadge>}
+            {oblubena && <OblubeneHviezda polozka={oblubena} style={{ top: "auto", bottom: 10 }} />}
+          </>
+        ),
+      }}
+      title={nazov}
+      titleChips={<>{overena && <Overena />}{tag && <span style={tagChip(tagCol)}>{tag}</span>}</>}
+      text={popis}
+      progress={ciel ? { vyzbierane, ciel } : undefined}
+    />
   );
 }
 function ZbierkyUrgent({ wide, onDetail }: { wide?: boolean; onDetail: (z?: ZbierkaDetail) => void }) {
@@ -312,31 +311,31 @@ function ZbierkyUrgent({ wide, onDetail }: { wide?: boolean; onDetail: (z?: Zbie
     vyzbierane: ZBIERKA.suma, ciel: ZBIERKA.ciel, ludia: ZBIERKA.ludia,
   };
   return <CharitaKarta wide={wide} onClick={() => onDetail(detail)} fotky={ZBIERKA.fotky} emoji="🔥" accent={K.gold}
-    badgeL={{ t: "🔥 URGENTNÉ", col: K.gold }} badgeR={{ t: "🛡 Lidl · 500 €", col: K.diamond, bg: "rgba(96,165,250,.18)" }}
+    badgeL={{ t: "🔥 URGENTNÉ", col: K.gold }} badgeR={{ t: "🛡 Lidl · 500 €", col: K.diamond, bg: tint("var(--a-info)", .18) }}
     nazov="Rodina Kováčová" overena popis="V noci nám zhorel dom, ostali sme bez strechy s dvomi deťmi. Potrebujeme pomoc."
     vyzbierane={1430} ciel={2200} oblubena={oblubenyZo(detail)} />;
 }
 function ZbierkyTop({ wide, onDetail }: { wide?: boolean; onDetail: (z?: ZbierkaDetail) => void }) {
   return <CharitaKarta wide={wide} onClick={() => onDetail(D_PLAMIENOK)} emoji="⭐" accent={K.blue}
-    badgeL={{ t: "⭐ TOP", col: K.diamond, bg: "rgba(96,165,250,.18)" }}
-    nazov="Plamienok" tag="HOSPIC" tagBg="rgba(96,165,250,.12)" tagCol={K.diamond}
+    badgeL={{ t: "⭐ TOP", col: K.diamond, bg: tint("var(--a-info)", .18) }}
+    nazov="Plamienok" tag="HOSPIC" tagBg={tint("var(--a-info)", .12)} tagCol={K.diamond}
     popis="Detský hospic — pomôžte nám zabezpečiť mobilnú paliatívnu starostlivosť pre rodiny."
     vyzbierane={8200} ciel={15000} oblubena={oblubenyZo(D_PLAMIENOK)} />;
 }
 function ZbierkyMala({ wide, onDetail }: { wide?: boolean; onDetail: (z?: ZbierkaDetail) => void }) {
   return <CharitaKarta wide={wide} onClick={() => onDetail(D_ZOFIA)} fotky={ZOFIA_FOTKY} emoji="🩺" accent={K.green}
-    badgeR={{ t: "D+", col: K.green, bg: "rgba(52,211,153,.18)" }}
+    badgeR={{ t: "D+", col: K.green, bg: tint("var(--a-green)", .18) }}
     nazov="Žofia K." overena popis="Po úraze tri mesiace bez príjmu, potrebujem na lieky."
     vyzbierane={520} ciel={800} oblubena={oblubenyZo(D_ZOFIA)} />;
 }
 function ZapojSa({ wide, onDetail }: { wide?: boolean; onDetail: (z?: ZbierkaDetail) => void }) {
   return <CharitaKarta wide={wide} onClick={() => onDetail(D_STROMOSVET)} emoji="🌳" accent={K.green}
-    badgeL={{ t: "DOBROVOĽNÍCTVO", col: K.green, bg: "rgba(52,211,153,.18)" }}
+    badgeL={{ t: "DOBROVOĽNÍCTVO", col: K.green, bg: tint("var(--a-green)", .18) }}
     nazov="Stromosvet" popis="Hľadá 10 dobrovoľníkov · výsadba stromov · sobota, Brezina" oblubena={oblubenyZo(D_STROMOSVET)} />;
 }
 function Material({ wide, onDetail }: { wide?: boolean; onDetail: (z?: ZbierkaDetail) => void }) {
   return <CharitaKarta wide={wide} onClick={() => onDetail(D_ZELENA)} emoji="♻" accent={K.blue}
-    badgeL={{ t: "MATERIÁL", col: K.diamond, bg: "rgba(96,165,250,.18)" }}
+    badgeL={{ t: "MATERIÁL", col: K.diamond, bg: tint("var(--a-info)", .18) }}
     nazov="Zelená plus" popis="Triedenie a zber šatstva pre útulok · streda, Juh" oblubena={oblubenyZo(D_ZELENA)} />;
 }
 
@@ -413,12 +412,11 @@ function CharitaDetail({ z: zProp, toast, onBack, onReg, onAutor }: { z?: Zbierk
 
   return (
     <div style={{ paddingBottom: SPACE.lg }}>
-      <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm, padding: `${SPACE.gutter}px ${SPACE.md}px` }}>
-        <span onClick={onBack} style={{ width: 32, height: 32, flex: "0 0 auto", borderRadius: RADIUS.round, background: "rgba(var(--glass-rgb),.06)", border: `1px solid ${K.line}`, display: "flex", alignItems: "center", justifyContent: "center", color: K.txt2, cursor: "pointer" }}><IkonaSpat size={17} color={K.txt2} /></span>
+      <BackHeader onBack={onBack} right={<><Zdielanie size={17} color={K.txt2} /><IkonaVlajka size={16} color={K.txt2} /></>}>
         {z.badge && <span style={{ fontSize: 12, color: K.diamond, background: K.blueBg, border: `1px solid ${K.blueEdge}`, padding: `${SPACE.xxs}px ${SPACE.xs}px`, borderRadius: RADIUS.xs, fontWeight: 700, letterSpacing: ".02em" }}>{z.badge}</span>}
         {z.lok && <span style={{ fontSize: 12, color: K.txt2 }}>📍 {z.lok}</span>}
-        <span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: SPACE.gutter, color: K.txt2 }}><Zdielanie size={17} color={K.txt2} /><IkonaVlajka size={16} color={K.txt2} /></span>
-      </div>
+      </BackHeader>
+      <div style={{ height: SPACE.sm }} />
 
       <div style={{ padding: `0 ${SPACE.md}px` }}>
         {/* hero foto — klik = celá obrazovka + swipe (16:9 na desktope) */}
@@ -447,17 +445,10 @@ function CharitaDetail({ z: zProp, toast, onBack, onReg, onAutor }: { z?: Zbierk
           <OblubeneBtn polozka={oblubenyZo(z)} toast={toast} style={{ width: "100%" }} />
         </div>
 
-        {/* progres — len zbierky s finančným cieľom */}
-        {jeZbierka && (
-          <div style={{ background: K.card, border: `1px solid ${K.line}`, borderRadius: RADIUS.sm, padding: `${SPACE.gutter}px ${SPACE.md}px`, marginBottom: SPACE.gutter }}>
-            <span style={{ fontSize: 18, fontWeight: 700, color: K.green, float: "right" }}>{pct} %</span>
-            <div style={{ fontSize: 26, fontWeight: 700 }}>{Math.round(suma)} € <small style={{ fontSize: 13, color: K.txt2, fontWeight: 400 }}>z {ciel} €</small></div>
-            <div style={{ height: 9, background: "rgba(var(--glass-rgb),.1)", borderRadius: 99, overflow: "hidden", margin: `${SPACE.sm}px 0 ${SPACE.xs}px` }}>
-              <div style={{ height: "100%", width: `${pct}%`, background: GRAD_ZELENY, borderRadius: 99, transition: "width .6s ease", boxShadow: "0 0 12px rgba(43,212,155,.5)" }} />
-            </div>
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11.5, color: K.txt2 }}>
-              <span>👥 {ludia} ľudí pomohlo</span><span style={{ color: K.green }}>● rastie live</span>
-            </div>
+        {/* progres — len zbierky s finančným cieľom (jednotný ProgresBox) */}
+        {jeZbierka && ciel != null && (
+          <div style={{ marginBottom: SPACE.gutter }}>
+            <ProgresBox suma={suma} ciel={ciel} ludia={ludia} />
           </div>
         )}
 
@@ -562,7 +553,7 @@ function SheetReg({ toast, onClose }: { toast: (m: string) => void; onClose: () 
         <div style={{ fontSize: 14.5, fontWeight: 600 }}>💶 Túto žiadosť</div>
         <div style={{ fontSize: 12, color: K.txt2, marginTop: SPACE.xxs, lineHeight: 1.45 }}>Pravidelne podporuješ konkrétnu zbierku (Rodina Kováčová). Odhadovaná doba: dlhodobá.</div>
       </div>
-      <div onClick={() => toast("Podporujem segment → frekvencia → suma → potvrď")} style={{ background: K.goldBg, border: `1px solid rgba(240,199,90,.4)`, borderRadius: RADIUS.sm, padding: SPACE.md, marginBottom: SPACE.sm, cursor: "pointer" }}>
+      <div onClick={() => toast("Podporujem segment → frekvencia → suma → potvrď")} style={{ background: K.goldBg, border: `1px solid ${tint("var(--a-gold)", .4)}`, borderRadius: RADIUS.sm, padding: SPACE.md, marginBottom: SPACE.sm, cursor: "pointer" }}>
         <div style={{ fontSize: 14.5, fontWeight: 600 }}>🗂 Segment charity</div>
         <div style={{ fontSize: 12, color: K.txt2, marginTop: SPACE.xxs, lineHeight: 1.45 }}>Podporuješ tému (napr. „onkopacienti“). Charita rozdelí podľa svojho kľúča.</div>
         <div style={{ fontSize: 11, color: K.gold, marginTop: SPACE.xxs }}>⚠️ Tu nevieme presne deklarovať použitie peňazí.</div>

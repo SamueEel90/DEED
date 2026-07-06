@@ -1,9 +1,9 @@
 import { useState, useEffect, type ReactNode } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { C, inp, infoBox, btn, GRAD_ZELENY, glassTmavy, SPACE, RADIUS } from "@/theme";
+import { SIRKA, C, inp, infoBox, btn, GRAD_ZELENY, glassTmavy, SPACE, RADIUS } from "@/theme";
 import { pasmo, POZNAMKA_DAVKY, tagLabels, CHARITA_SEGMENTY, segmentLabel, OVERENIA_POTREBNE, ESCROW } from "./konstanty";
 import { TagTemy, prepniTag, ZranitelniBlok, PrisnyBadge, AiPoznamka, GuardFuzzy } from "./HelpKit";
-import { Foto, Avatar, FotoPrispevku, MiniFotky, Hlavicka, ModulHlavicka, PodporaSekcia, PlatbaModal, HladanieModal, OblubeneHviezda, OblubeneBtn, Otazka, Vyber, vyberBox, NavBtns, Suhrn, DokladRow, toast, Oslava, useGaleria, useLayout, useScrollHore, useStrankaAkcie, useTvorbaGate, Ticker, StatRiadok, FiltreStat, MoniBar, FeedStlpce, FeedGrid, obalSiroky, OkruhVyber, Lupa, Zdielanie, IkonaSpat, IkonaVlajka, IkonaFoto, IkonaPlay, IkonaDoska, IkonaPin, FeedSkeleton, EmptyState, ErrorState, ScreenSwitch } from "@/shared";
+import { Foto, Avatar, MiniFotky, Hlavicka, ModulHlavicka, PodporaSekcia, PlatbaModal, HladanieModal, OblubeneHviezda, OblubeneBtn, Otazka, Vyber, vyberBox, NavBtns, Suhrn, DokladRow, toast, Oslava, useGaleria, useLayout, useScrollHore, useStrankaAkcie, useTvorbaGate, Ticker, StatRiadok, FiltreStat, FeedStlpce, FeedGrid, FeedCard, KartaBadge, BackHeader, ProgresBox, obalSiroky, OkruhVyber, Lupa, Zdielanie, IkonaVlajka, IkonaFoto, IkonaPlay, IkonaDoska, IkonaPin, FeedSkeleton, EmptyState, ErrorState, ScreenSwitch, SwipeBack } from "@/shared";
 import { Zvoncek } from "@/features/notifikacie/Notifikacie";
 import { pripravFeed, FEED_CFG } from "@/lib/feed";
 import { MEDIA_AR } from "@/lib/cardSize";
@@ -40,6 +40,9 @@ export default function ModulHelp({ wide }: { wide?: boolean }) {
   const [aktSubjekt, setAktSubjekt] = useState<Subjekt | null>(null);
   const [aktEvent, setAktEvent] = useState<string | null>(null);
   const [hladaj, setHladaj] = useState(false);
+  // filter feedu žije TU (nie vo Feed) — prežije návrat z detailu (rovnaké správanie ako Domov)
+  const [radius, setRadius] = useState<string>("stvrt");
+  const [view, setView] = useState<"all" | "ziadost" | "ponuka">("all");
   const otvorZ = (z: any) => { setAktDetail(z); setScreen("detail"); };
 
   // tvorba: (1) OPTIMISTICKY vlož navrch feedu (okamžitý výsledok) a (2) zapíš do DB
@@ -76,13 +79,14 @@ export default function ModulHelp({ wide }: { wide?: boolean }) {
   useEffect(() => { scrollHore(); }, [screen]);
 
   // na tablete/desktope sa detailové obrazovky vycentrujú do čitateľnej šírky
-  const obal = (el: React.ReactNode) => obalSiroky(el, { wide, desktop, max: 620, maxDesktop: 920 });
+  const obal = (el: React.ReactNode) => obalSiroky(el, { wide, desktop, max: SIRKA.stlpec, maxDesktop: SIRKA.citanie });
 
   return (
     <div style={{ minHeight: "100%" }}>
       <ScreenSwitch k={screen}>
-      {screen === "feed" && <Feed wide={wide} toast={toast} onDetail={otvorZ} onHladaj={() => setHladaj(true)} onAdd={() => setScreen("add")} onBoard={() => setScreen("board")} />}
-      {screen === "detail" && obal(<Detail z={aktDetail} onBack={() => setScreen("feed")} onAutor={(s) => { setAktSubjekt(s); setScreen("cudzi"); }} />)}
+      {screen === "feed" && <Feed wide={wide} toast={toast} onDetail={otvorZ} onHladaj={() => setHladaj(true)} onAdd={() => setScreen("add")} onBoard={() => setScreen("board")}
+        radius={radius} setRadius={setRadius} view={view} setView={setView} />}
+      {screen === "detail" && obal(<SwipeBack onBack={() => setScreen("feed")}><Detail z={aktDetail} onBack={() => setScreen("feed")} onAutor={(s) => { setAktSubjekt(s); setScreen("cudzi"); }} /></SwipeBack>)}
       {screen === "add" && obal(<Add onBack={() => setScreen("feed")} onOffer={() => setScreen("offer")} onRequest={() => setScreen("request")} />)}
       {screen === "offer" && obal(<OfferFlow onBack={() => setScreen("feed")} onZverejni={zverejni} />)}
       {screen === "request" && obal(<RequestFlow onBack={() => setScreen("feed")} onZverejni={zverejni} />)}
@@ -109,7 +113,11 @@ export default function ModulHelp({ wide }: { wide?: boolean }) {
 }
 
 // ===================== FEED =====================
-function Feed({ wide, toast, onDetail, onHladaj, onAdd, onBoard }: { wide?: boolean; toast: (m: string) => void; onDetail: (z: any) => void; onHladaj: () => void; onAdd: () => void; onBoard: () => void }) {
+type HelpFeedProps = {
+  wide?: boolean; toast: (m: string) => void; onDetail: (z: any) => void; onHladaj: () => void; onAdd: () => void; onBoard: () => void;
+  radius: string; setRadius: (r: string) => void; view: "all" | "ziadost" | "ponuka"; setView: (v: "all" | "ziadost" | "ponuka") => void;
+};
+function Feed({ wide, toast, onDetail, onHladaj, onAdd, onBoard, radius, setRadius, view, setView }: HelpFeedProps) {
   const { desktop } = useLayout();
   const { data: MOCK_FEED = [], isLoading, isError, refetch } = useHelpFeed();
   const lok = useLokalita(); // stred feedu = aktívne mesto
@@ -121,18 +129,16 @@ function Feed({ wide, toast, onDetail, onHladaj, onAdd, onBoard }: { wide?: bool
   }, []);
   const dar = ZIVE_DARY[tick % ZIVE_DARY.length];
 
-  // zvolený rádius — Feed algoritmus (Časť B): filter podľa okruhu + adaptívny
-  // prah + zoradenie. Ponuky/žiadosti si nechávajú vlastný `velkost` (iný slovník
-  // než engine), preto NEpremapúvame zobrazVelkost — len filter + poradie.
-  const [radius, setRadius] = useState<string>("stvrt");
-  const [view, setView] = useState<"all" | "ziadost" | "ponuka">("all"); // typ pomoci (charita do Help nepatrí)
+  // rádius + typ pomoci prichádzajú z ModulHelp (prežijú návrat z detailu).
+  // Feed algoritmus (Časť B): filter podľa okruhu + adaptívny prah + zoradenie.
+  // Ponuky/žiadosti si nechávajú vlastný `velkost` — len filter + poradie.
   const [vyberOkruh, setVyberOkruh] = useState(false);
   const { gate } = useTvorbaGate(); // pasívny nesmie tvoriť (talent)
   // charitu z Help vynechávame; potom filter podľa zvoleného typu (žiadosť / ponuka)
   const zaklad = MOCK_FEED.filter((z) => z.typ !== "charity" && (view === "all" || z.typ === view));
   const feed = pripravFeed(zaklad as any, { lat: lok.lat, lng: lok.lng, radius } as any);
 
-  const karta = (z: any) => <FeedCard key={z.id} z={z} wide={wide} onClick={() => onDetail(z)} />;
+  const karta = (z: any) => <HelpKarta key={z.id} z={z} wide={wide} onClick={() => onDetail(z)} />;
   const jeZiadost = (z: any) => z.typ === "ziadost";
 
   // kontextové akcie stránky → plávajúce „+ Pridať" dole + sekcia „Na tejto stránke" v menu (☰)
@@ -182,7 +188,7 @@ function Feed({ wide, toast, onDetail, onHladaj, onAdd, onBoard }: { wide?: bool
       ) : desktop ? (
         <FeedGrid cols={3} cards={feed.map(karta)} />
       ) : (
-        <FeedStlpce wide={wide} padding="4px 8px"
+        <FeedStlpce wide={wide} padding={`4px ${SPACE.md}px`}
           labelSkutky="Ponúkajú pomoc" labelZiadosti="Hľadajú pomoc"
           jednoStlpec={feed.map(karta)}
           skutky={feed.filter((z) => !jeZiadost(z)).map(karta)}
@@ -206,39 +212,40 @@ function Seg({ on, col, label, emoji, onClick }: { on: boolean; col: string; lab
   );
 }
 
-// JEDNOTNÁ FULL-WIDTH (Instagram) KARTA pre Help — žiadosť / ponuka / charita:
-// veľké médium hore (foto/emoji) · typový odznak · titul + príbeh · pri žiadosti progres.
-function FeedCard({ z, wide, onClick }: { z: any; wide?: boolean; onClick: () => void }) {
+// JEDNOTNÁ karta = zdieľaná FeedCard (rovnaká anatómia ako Domov/Charita/Aktivity);
+// Help mapuje žiadosť/ponuku/charitu do slotov (typový odznak, sponzor, progres).
+function HelpKarta({ z, wide, onClick }: { z: any; wide?: boolean; onClick: () => void }) {
   const jeZiadost = z.typ === "ziadost";
   const jePonuka = z.typ === "ponuka";
   const jeKriza = z.typSituacie === "kriza";
   const accent = jeZiadost ? (z.sponzor ? C.gold : C.red) : jePonuka ? C.purple : C.gold;
   const typLabel = jeZiadost ? `ŽIADOSŤ · ${z.sponzor ? "D++" : "D+"}` : jePonuka ? "PONUKA POMOCI" : "CHARITA";
   return (
-    <div {...pressable(onClick, z.nazov)} className="good-card" style={{ margin: wide ? 0 : `0 ${-SPACE.md}px ${SPACE.sm}px`, border: wide ? `1px solid ${C.line}` : "none", borderBottom: `1px solid ${wide ? C.line : C.line2}`, borderLeft: `3px solid ${jeKriza ? C.red : accent}`, borderRadius: wide ? RADIUS.md : 0, overflow: "hidden", background: C.surface2, boxShadow: jeKriza && wide ? `0 0 0 1.5px ${tint(C.red, .5)}, 0 8px 24px ${tint(C.red, .14)}` : undefined, cursor: "pointer" }}>
-      {/* médium — 16:9 na tablete/desktope; na mobile pôvodná výška 230 px */}
-      <div style={{ position: "relative", ...(wide ? { width: "100%", aspectRatio: MEDIA_AR } : { height: 230 }) }}>
-        <FotoPrispevku fotky={z.fotky} emoji={z.ikona} h={wide ? "100%" : 230} disableGaleria />
-        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(0deg, rgba(0,0,0,.34), transparent 42%)", pointerEvents: "none" }} />
-        {jeKriza && <span style={{ position: "absolute", top: 10, left: 10, background: C.red, color: "#fff", fontSize: 11, fontWeight: 800, borderRadius: RADIUS.xs, padding: `${SPACE.xxs}px ${SPACE.sm}px`, pointerEvents: "none", boxShadow: "0 2px 10px rgba(0,0,0,.3)" }}>🔴 URGENTNÉ</span>}
-        <span style={{ position: "absolute", top: 10, ...(jeKriza ? { right: 10 } : { left: 10 }), background: accent, color: "#fff", fontSize: 9.5, fontWeight: 800, borderRadius: RADIUS.lg, padding: `${SPACE.xxs}px ${SPACE.sm}px`, pointerEvents: "none" }}>{typLabel}</span>
-        {z.sponzor && !jeKriza && <span style={{ position: "absolute", top: 10, right: 10, background: "rgba(8,11,18,.62)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)", color: "#fff", fontSize: 9.5, fontWeight: 700, borderRadius: RADIUS.xs, padding: `${SPACE.xxs}px ${SPACE.xs}px`, pointerEvents: "none" }}>🛡 {z.sponzor.meno} · {z.sponzor.suma} €</span>}
-        <OblubeneHviezda polozka={oblubenyZHelp(z)} style={{ top: "auto", bottom: 10 }} />
-      </div>
-      {/* titul + príbeh */}
-      <div style={{ padding: `${SPACE.sm}px ${SPACE.gutter}px ${SPACE.gutter}px` }}>
-        <div style={{ fontSize: 16, fontWeight: 700, lineHeight: 1.35, display: "flex", alignItems: "center", gap: SPACE.xs, flexWrap: "wrap" }}>
-          <span style={{ flex: "0 1 auto", minWidth: 0 }}>{z.nazov}</span>
+    <FeedCard wide={wide} onClick={onClick} label={z.nazov} accent={jeKriza ? C.red : accent} ring={jeKriza ? C.red : undefined}
+      media={{
+        fotky: z.fotky, emoji: z.ikona, h: 230,
+        overlay: (
+          <>
+            {jeKriza && <KartaBadge pos={{ top: 10, left: 10 }} strong color="#fff" style={{ background: C.red, border: "none", boxShadow: "0 2px 10px rgba(0,0,0,.3)" }}>🔴 URGENTNÉ</KartaBadge>}
+            <KartaBadge pos={{ top: 10, ...(jeKriza ? { right: 10 } : { left: 10 }) }} color="#fff" style={{ background: accent, border: "none", borderRadius: RADIUS.lg, fontSize: 9.5, fontWeight: 800 }}>{typLabel}</KartaBadge>
+            {z.sponzor && !jeKriza && <KartaBadge pos={{ top: 10, right: 10 }}>🛡 {z.sponzor.meno} · {z.sponzor.suma} €</KartaBadge>}
+            <OblubeneHviezda polozka={oblubenyZHelp(z)} style={{ top: "auto", bottom: 10 }} />
+          </>
+        ),
+      }}
+      title={z.nazov}
+      titleChips={
+        <>
           {z.overeny && <span style={tagChip(C.greenL)}>✓ overená</span>}
           {z.odbornik && <span style={tagChip(C.purple)}>✓ odborník</span>}
           {z.prisny && <span style={tagChip(C.red)}>🛡 zraniteľní</span>}
           {z.typ === "charity" && !z.sponzor && <span style={tagChip(C.gold)}>hľadá pomoc</span>}
-        </div>
-        {z.lok && <div style={{ display: "flex", alignItems: "center", gap: SPACE.xxs, marginTop: SPACE.xs, fontSize: 12, color: C.textSec, fontWeight: 600 }}><IkonaPin size={12} color={C.textSec} />{z.lok}{z.karma ? ` · ${z.karma}` : ""}</div>}
-        <div style={{ fontSize: 13.5, color: C.textSec, marginTop: SPACE.xs, lineHeight: 1.5 }}>{z.pribeh}</div>
-        {jeZiadost && z.ciel ? <div style={{ marginTop: SPACE.sm }}><MoniBar vyzbierane={z.suma} ciel={z.ciel} mini /></div> : null}
-      </div>
-    </div>
+        </>
+      }
+      subtitle={z.lok ? <span style={{ display: "inline-flex", alignItems: "center", gap: SPACE.xxs, fontSize: 12, color: C.textSec, fontWeight: 600 }}><IkonaPin size={12} color={C.textSec} />{z.lok}{z.karma ? ` · ${z.karma}` : ""}</span> : undefined}
+      text={z.pribeh}
+      progress={jeZiadost && z.ciel ? { vyzbierane: z.suma, ciel: z.ciel } : undefined}
+    />
   );
 }
 
@@ -268,12 +275,10 @@ function Detail({ z, onBack, onAutor }: { z: any; onBack: () => void; onAutor: (
 
   return (
     <div style={{ paddingBottom: SPACE.xl }}>
-      <div style={{ position: "sticky", top: 0, zIndex: 5, display: "flex", alignItems: "center", gap: SPACE.sm, padding: `${SPACE.sm}px ${SPACE.gutter}px`, ...glassTmavy(18, .55), borderLeft: "none", borderRight: "none", borderTop: "none" }}>
-        <span onClick={onBack} style={{ width: 32, height: 32, borderRadius: RADIUS.round, background: "rgba(var(--glass-rgb),.06)", border: `1px solid ${C.line}`, display: "flex", alignItems: "center", justifyContent: "center", color: C.textSec, cursor: "pointer", flex: "0 0 auto" }}><IkonaSpat size={17} color={C.textSec} /></span>
-        <span style={{ fontSize: 13, fontWeight: "bold", color: C.blueL, background: "rgba(91,155,255,.12)", border: `1px solid rgba(91,155,255,.3)`, borderRadius: RADIUS.xs, padding: `${SPACE.xxs}px ${SPACE.sm}px` }}>#47 821</span>
+      <BackHeader onBack={onBack} right={<><Zdielanie size={17} color={C.textTer} /><IkonaVlajka size={16} color={C.textTer} /></>}>
+        <span style={{ fontSize: 13, fontWeight: "bold", color: C.blueL, background: tint("var(--a-info)", .12), border: `1px solid ${tint("var(--a-info)", .3)}`, borderRadius: RADIUS.xs, padding: `${SPACE.xxs}px ${SPACE.sm}px` }}>#47 821</span>
         <span style={{ fontSize: 11, fontWeight: "bold", color: z.sponzor ? C.gold : C.blueL }}>{z.sponzor ? "D++" : "D+"}</span>
-        <span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: SPACE.gutter, color: C.textTer }}><Zdielanie size={17} color={C.textTer} /><IkonaVlajka size={16} color={C.textTer} /></span>
-      </div>
+      </BackHeader>
 
       {/* hero foto — klik = celá obrazovka, swipe medzi fotkami (16:9 na desktope) */}
       <div style={{ position: "relative", ...(wide ? { width: "100%", aspectRatio: MEDIA_AR } : {}) }}>
@@ -312,20 +317,12 @@ function Detail({ z, onBack, onAutor }: { z: any; onBack: () => void; onAutor: (
         </div>
       )}
 
-      {/* progres — len finančná žiadosť (má cieľovú sumu) */}
-      {z.ciel != null && (<div style={{ margin: `0 ${SPACE.gutter}px ${SPACE.md}px`, background: C.surface2, border: `1px solid ${C.line}`, borderRadius: RADIUS.sm, padding: SPACE.gutter }}>
-        <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
-          <div><span style={{ fontSize: 26, fontWeight: "bold" }}>{Math.round(suma)} €</span> <span style={{ fontSize: 13, color: C.textTer }}>z {z.ciel} €</span></div>
-          <span style={{ fontSize: 16, fontWeight: "bold", color: C.greenL }}>{pct} %</span>
+      {/* progres — len finančná žiadosť (má cieľovú sumu) — jednotný ProgresBox */}
+      {z.ciel != null && (
+        <div style={{ margin: `0 ${SPACE.gutter}px ${SPACE.md}px` }}>
+          <ProgresBox suma={suma} ciel={z.ciel} ludia={ludia} />
         </div>
-        <div style={{ position: "relative", height: 12, borderRadius: RADIUS.xs, background: "rgba(var(--glass-rgb),.1)", margin: `${SPACE.sm}px 0 ${SPACE.xs}px`, overflow: "hidden" }}>
-          <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: `${pct}%`, background: GRAD_ZELENY, borderRadius: RADIUS.xs, transition: "width .6s ease", boxShadow: "0 0 14px rgba(43,212,155,.5)" }} />
-        </div>
-        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11.5 }}>
-          <span style={{ color: C.textSec }}>👥 {ludia} ľudí pomohlo</span>
-          <span style={{ color: C.greenL }}>● rastie live</span>
-        </div>
-      </div>)}
+      )}
 
       {/* ponuka pomoci = kontakt; žiadosť = darovanie */}
       {jePonuka ? (

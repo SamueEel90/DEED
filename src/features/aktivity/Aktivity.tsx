@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
-import { ModulHlavicka, Hlavicka, PodporaSekcia, PlatbaModal, HladanieModal, toast, Oslava, useMotiv, useLayout, useScrollHore, useStrankaAkcie, useTvorbaGate, Ticker, StatRiadok, FiltreStat, FeedStlpce, obalSiroky, OkruhVyber, Lupa, Zvon, IkonaSipVlavo, IkonaMoznosti, Zdielanie, IkonaUlozit, IkonaFoto, IkonaPlus, IkonaPlay, IkonaDoska, IkonaPin, FotoPrispevku, FeedSkeleton, EmptyState, ErrorState, ScreenSwitch } from "@/shared";
-import { C, GRAD, GRAD_ZELENY, SPACE, RADIUS } from "@/theme";
+import { ModulHlavicka, Hlavicka, PodporaSekcia, PlatbaModal, HladanieModal, toast, Oslava, useMotiv, useLayout, useScrollHore, useStrankaAkcie, useTvorbaGate, Ticker, StatRiadok, FiltreStat, FeedStlpce, FeedGrid, FeedCard, KartaBadge, BackChip, SwipeBack, obalSiroky, OkruhVyber, Lupa, Zvon, IkonaSipVlavo, IkonaMoznosti, Zdielanie, IkonaUlozit, IkonaFoto, IkonaPlus, IkonaPlay, IkonaDoska, IkonaPin, FotoPrispevku, FeedSkeleton, EmptyState, ErrorState, ScreenSwitch } from "@/shared";
+import { SIRKA, C, GRAD, GRAD_ZELENY, SPACE, RADIUS } from "@/theme";
 import { pripravFeed, FEED_CFG } from "@/lib/feed";
 import { MEDIA_AR } from "@/lib/cardSize";
 import type { OkruhKod } from "@/types";
@@ -68,7 +68,7 @@ function badge(side: "l" | "r"): React.CSSProperties {
 // ===================== MODUL =====================
 export default function ModulAktivity({ wide }: { wide?: boolean }) {
   const { data: SEED_ITEMS = [] as unknown as AktItem[], isLoading, isError, refetch } = useAktivityFeed() as { data?: AktItem[]; isLoading: boolean; isError: boolean; refetch: () => void };
-  const [dom, setDom] = useState("mix");
+  const [dom, setDom] = useState(ORDER[0]); // predvolená kategória (Mix zrušený)
   const [view, setView] = useState("all"); // all | talent | workshop | help
   const [screen, setScreen] = useState("home"); // home | detail | add | board | profile
   const [aktId, setAktId] = useState<number | null>(null);
@@ -93,7 +93,7 @@ export default function ModulAktivity({ wide }: { wide?: boolean }) {
 
   const celebrate = (title: string, text: string) => { setCeleb({ title, text }); setTimeout(() => setCeleb((c) => (c && c.title === title ? null : c)), 2200); };
   const { desktop } = useLayout();
-  const obal = (el: React.ReactNode) => obalSiroky(el, { wide, desktop, max: 620, maxDesktop: 920 });
+  const obal = (el: React.ReactNode) => obalSiroky(el, { wide, desktop, max: SIRKA.stlpec, maxDesktop: SIRKA.citanie });
 
   const { svetly } = useMotiv();
 
@@ -116,7 +116,7 @@ export default function ModulAktivity({ wide }: { wide?: boolean }) {
   const acc = DOM[accentDom];
 
   function pickDom(d: string) {
-    setDom((c) => (c === d ? "mix" : d)); // klik na aktívnu doménu = späť na Mix
+    setDom(d); // vždy jedna aktívna kategória (bez Mix)
     setView("all");
   }
   function pickView(v: string) { setView((x) => (x === v ? "all" : v)); }
@@ -172,7 +172,7 @@ export default function ModulAktivity({ wide }: { wide?: boolean }) {
     } as React.CSSProperties}>
       <ScreenSwitch k={screen}>
       {screen === "home" && <Home {...{ items, dom, view, pickDom, pickView, toast, open, openPerson, setScreen, tick, wide, isLoading, isError, refetch, onHladaj: () => setHladaj(true) }} />}
-      {screen === "detail" && akt && obal(<Detail {...{ it: akt, liked, like, support, votes, vote, toast, celebrate, home, openPerson, setScreen }} />)}
+      {screen === "detail" && akt && obal(<SwipeBack onBack={home}><Detail {...{ it: akt, liked, like, support, votes, vote, toast, celebrate, home, openPerson, setScreen }} /></SwipeBack>)}
       {screen === "add" && obal(<Add {...{ dom, add, setAdd, toast, celebrate, home, createPost }} />)}
       {screen === "board" && obal(<Board {...{ dom, toast, home }} />)}
       {screen === "profile" && profilMeno && obal(<OsobaProfil {...{ name: profilMeno, items, follows, toggleFollow, onOpen: open, toast, home }} />)}
@@ -205,7 +205,7 @@ function Home({ items, dom, view, pickDom, pickView, toast, open, openPerson, se
 
   // 1) UI predfilter (doména + sub-záložka) — to engine nerieši
   const list = items.filter((it: AktItem) => {
-    if (dom !== "mix" && it.dom !== dom) return false;
+    if (it.dom !== dom) return false;
     if (view === "talent") return it.type === "talent";
     if (view === "workshop") return it.type === "workshop";
     if (view === "help") return it.type === "help";
@@ -223,41 +223,26 @@ function Home({ items, dom, view, pickDom, pickView, toast, open, openPerson, se
   const dva = wide && view === "all";
   const feedCard = (it: AktItem) => <AktCard key={it.id} it={it} wide={dva} onOpen={open} onPerson={openPerson} />;
 
-  // DESKTOP — stĺpec na doménu: per-doménový feed (mine navrchu + algoritmus), karty v 16:9
-  const viewOk = (it: AktItem) => view === "all" || (view === "talent" && it.type === "talent") || (view === "workshop" && it.type === "workshop") || (view === "help" && it.type === "help");
-  const domenaFeed = (d: string) => {
-    const dl = items.filter((it: AktItem) => it.dom === d && viewOk(it));
-    return [...dl.filter((it: AktItem) => it.mine), ...pripravFeed(dl.filter((it: AktItem) => !it.mine), { lat: lok.lat, lng: lok.lng, radius, zaujmy: zaujmyKluce, sledovani: sledovaniMena })];
-  };
+  // karta feedu na desktope/tablete — bordered 16:9 (do masonry mriežky / stĺpcov)
   const boardCard = (it: AktItem) => <AktCard key={it.id} it={it} wide onOpen={open} onPerson={openPerson} />;
 
-  // štýl sub-záložky (Workshopy/Hľadám pomoc/Market) — theme-aware cez DOM[dom].c
-  const segStyle = (on: boolean): React.CSSProperties => ({ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: SPACE.xs, height: 38, borderRadius: RADIUS.sm, fontSize: 12, fontWeight: 600, cursor: "pointer", background: on ? tint(DOM[dom].c, .15) : A.surface, border: `1px solid ${on ? tint(DOM[dom].c, .5) : A.line2}`, color: on ? DOM[dom].c : A.txt2 });
+  // štýl položky menu — kategória (Zdravie/Learn/Šport/Eko/Art), theme-aware cez DOM[d].c
+  const menuStyle = (d: string, on: boolean): React.CSSProperties => ({ flex: "1 1 0", minWidth: 72, display: "flex", alignItems: "center", justifyContent: "center", gap: SPACE.xs, height: 40, borderRadius: RADIUS.sm, fontSize: 12.5, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap", background: on ? tint(DOM[d].c, .15) : A.surface, border: `1px solid ${on ? tint(DOM[d].c, .5) : A.line2}`, color: on ? DOM[d].c : A.txt2 });
 
-  // FILTER HORE NA STRÁNKE — doménový prepínač (Šport/Art/Learn/Eko/Zdravie) + sub-záložky
-  // (Workshopy/Hľadám pomoc/Market). Klik na aktívnu doménu/sekciu = späť na „všetko". Stavy [dom, view].
+  // HLAVNÉ MENU STRÁNKY — kategórie (Zdravie/Learn/Šport/Eko/Art).
+  // Vždy je aktívna práve jedna kategória; jej obsah sa zobrazí vo feede.
   const filterBar = (
     <div style={{ padding: `0 ${SPACE.md}px ${SPACE.xs}px` }}>
-      {/* doménové pilulky — na desktope skryté (každá doména má vlastný stĺpec) */}
-      {!desktop && (
-      <div style={{ overflowX: "auto", margin: `0 0 ${SPACE.sm}px` }}>
-        <div style={{ display: "flex", gap: SPACE.xs, width: "max-content", margin: "0 auto" }}>
-          {ORDER.map((d) => {
-            const a = DOM[d]; const on = dom === d;
-            return (
-              <div key={d} {...pressable(() => pickDom(d), `Doména ${a.label}`)} aria-pressed={on} style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: SPACE.xxs, minWidth: 60, height: 54, borderRadius: RADIUS.md, cursor: "pointer", flex: "none", background: on ? tint(a.c, .15) : A.surface2, border: `1px solid ${on ? tint(a.c, .5) : A.line}` }}>
-                <div style={{ color: on ? a.c : A.txt2, display: "flex" }}>{DOM_IKONA[d]}</div>
-                <div style={{ fontSize: 10, fontWeight: 700, color: on ? a.c : A.txt2 }}>{a.label}</div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-      )}
-      <div style={{ display: "flex", gap: SPACE.xs }}>
-        <div {...pressable(() => pickView("workshop"), "Workshopy")} aria-pressed={view === "workshop"} style={segStyle(view === "workshop")}><span style={{ fontSize: 13 }}>🎓</span>Workshopy</div>
-        <div {...pressable(() => pickView("help"), "Hľadám pomoc")} aria-pressed={view === "help"} style={segStyle(view === "help")}><span style={{ fontSize: 13 }}>❓</span>Hľadám pomoc</div>
-        <div {...pressable(() => toast("Market — predaj diel/náradia, fáza 2"), "Market — čoskoro")} style={segStyle(false)}><span style={{ fontSize: 13 }}>🛒</span>Market<span style={{ fontSize: 10, background: A.goldBg, color: A.gold, padding: "1px 5px", borderRadius: 5, marginLeft: SPACE.xxs }}>čoskoro</span></div>
+      <div style={{ display: "flex", gap: SPACE.xs, overflowX: "auto" }}>
+        {ORDER.map((d) => {
+          const on = dom === d;
+          return (
+            <div key={d} {...pressable(() => pickDom(d), `Kategória ${DOM[d].label}`)} aria-pressed={on} style={menuStyle(d, on)}>
+              <span style={{ display: "flex", color: on ? DOM[d].c : A.txt2 }}>{DOM_IKONA[d]}</span>
+              {DOM[d].label}
+            </div>
+          );
+        })}
       </div>
     </div>
   );
@@ -297,31 +282,15 @@ function Home({ items, dom, view, pickDom, pickView, toast, open, openPerson, se
         }
       />
 
-      {/* feed — desktop: stĺpec na doménu (všetky naraz); tablet/PC úzky: 2 stĺpce; mobil: 1 stĺpec */}
+      {/* feed — vybraná kategória z menu. Desktop: masonry mriežka zľava (ako Domov/Charita) · mobil: 1/2 stĺpce */}
       {isError ? (
         <ErrorState onRetry={() => refetch()} />
       ) : isLoading ? (
         <FeedSkeleton count={4} />
       ) : !feed.length ? (
-        <EmptyState emoji="✨" title="Zatiaľ tu nič nie je" text="V tejto doméne zatiaľ nie sú príspevky." />
+        <EmptyState emoji="✨" title="Zatiaľ tu nič nie je" text="V tejto kategórii zatiaľ nie sú príspevky." />
       ) : desktop ? (
-        <div style={{ display: "grid", gridTemplateColumns: `repeat(${ORDER.length}, minmax(0, 1fr))`, gap: SPACE.gutter, alignItems: "start", padding: `${SPACE.xxs}px ${SPACE.lg}px 0` }}>
-          {ORDER.map((d) => {
-            const a = DOM[d];
-            const df = domenaFeed(d);
-            return (
-              <div key={d} style={{ minWidth: 0 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: SPACE.xs, margin: `0 0 ${SPACE.sm}px`, paddingLeft: SPACE.xxs }}>
-                  <span style={{ color: a.c, display: "flex" }}>{DOM_IKONA[d]}</span>
-                  <span style={{ fontSize: 11.5, letterSpacing: ".4px", color: a.c, fontWeight: 800 }}>{a.label}</span>
-                </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: SPACE.sm }}>
-                  {df.length ? df.map(boardCard) : <div style={{ fontSize: 11.5, color: A.txt3, padding: `${SPACE.xs}px ${SPACE.xxs}px` }}>Zatiaľ tu nič nie je.</div>}
-                </div>
-              </div>
-            );
-          })}
-        </div>
+        <FeedGrid cols={3} cards={feed.map(boardCard)} />
       ) : (
         <FeedStlpce wide={dva}
           labelSkutky="Skutky & aktivity" labelZiadosti="Hľadajú pomoc"
@@ -352,59 +321,51 @@ function ProgressMini({ it }: { it: AktItem }) {
   );
 }
 
-// JEDNOTNÁ FULL-WIDTH (Instagram) KARTA pre VŠETKY aktivity (skutok/talent/workshop/žiadosť/charita):
-// autor hore · veľké médium (video/emoji) · titul · pätička podľa typu.
+// JEDNOTNÁ karta = zdieľaná FeedCard (rovnaká anatómia ako Domov/Help/Charita);
+// Aktivity mapujú skutok/talent/workshop/žiadosť/charitu do slotov.
 function AktCard({ it, wide, onOpen, onPerson }: any) {
   const a = DOM[it.dom];
-  const { wide: ar } = useLayout(); // médiá: 16:9 na tablete/desktope (≥760), pôvodná výška na mobile
   const jeHelp = it.type === "help";
   const jeCase = it.type === "case";
   const jeWorkshop = it.type === "workshop";
   const accent = jeHelp ? A.red : a.c;
   return (
-    <div {...pressable(() => onOpen(it.id), it.title)} className="good-card" style={{ ...cardS, marginBottom: wide ? 0 : SPACE.sm, ...(wide ? {} : { margin: `0 ${-SPACE.md}px ${SPACE.sm}px`, borderRadius: 0, border: "none", borderBottom: `1px solid ${A.line2}` }), borderLeft: jeHelp ? `3px solid ${A.red}` : undefined }}>
-      {/* autor */}
-      <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm, padding: `${SPACE.sm}px ${SPACE.gutter}px ${SPACE.sm}px` }}>
-        <div onClick={stop(() => onPerson(it.author))} style={{ ...pfpS(it.pfp), width: 38, height: 38, cursor: "pointer", boxShadow: `0 3px 10px ${tint(accent, .3)}` }}>{it.ini}</div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: SPACE.xxs, flexWrap: "wrap" }}>
-            <span onClick={stop(() => onPerson(it.author))} style={{ fontWeight: 700, fontSize: 14.5, cursor: "pointer", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it.author}</span>
-            {it.verified && <span style={verifS}>✓ overené</span>}
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: SPACE.xxs, fontSize: 11.5, color: A.txt2, marginTop: SPACE.xxs, minWidth: 0 }}>
-            <IkonaPin size={12} color={A.txt2} />
-            <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontWeight: 600 }}>{it.loc || a.label}</span>
-            {it.karma && <span style={{ flex: "none", color: A.txt3 }}>· {it.karma}</span>}
-          </div>
+    <FeedCard wide={wide} onClick={() => onOpen(it.id)} label={it.title}
+      accent={jeHelp ? A.red : undefined}
+      autor={{
+        meno: it.author, pfp: it.pfp, ini: it.ini, lok: it.loc || a.label, karma: it.karma, cas: it.time, glow: accent,
+        onClick: () => onPerson(it.author),
+        chips: it.verified ? <span style={verifS}>✓ overené</span> : undefined,
+      }}
+      media={{
+        fotky: it.fotky?.length ? it.fotky : undefined,
+        play: it.media === "video",
+        emoji: it.media === "kreslene" ? "✎" : it.emoji,
+        grad: heroGrad(it.dom), h: 250,
+        overlay: (
+          <>
+            {it.importance && <KartaBadge pos={{ top: 12, left: 12 }} color={A.gold}>★ {it.importance}</KartaBadge>}
+            <div style={{ position: "absolute", bottom: 10, left: 10 }}><DomTag it={it} /></div>
+          </>
+        ),
+      }}
+      predTitulom={jeWorkshop ? (
+        <div style={{ display: "flex", alignItems: "center", gap: SPACE.xs, flexWrap: "wrap", marginBottom: SPACE.xs }}>
+          <Wb bg={it.price === "free" ? A.greenBg : A.goldBg} c={it.price === "free" ? A.green : A.gold}>{it.price === "free" ? "ZADARMO" : it.priceTxt}</Wb>
+          {it.b2b && <Wb bg={A.blueBg} c={A.blue}>B2B · audit</Wb>}
+          {it.profi && <Wb bg={A.purpleBg} c={A.purple}>PROFI</Wb>}
         </div>
-        <span style={timeS}>{it.time}</span>
-      </div>
-      {/* médium — 16:9 na tablete/desktope; na mobile pôvodná výška 250 px */}
-      <div style={{ position: "relative", ...(ar ? { width: "100%", aspectRatio: MEDIA_AR } : { height: 250 }), margin: wide ? `0 ${SPACE.sm}px` : 0, borderRadius: wide ? RADIUS.md : 0, overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", background: heroGrad(it.dom) }}>
-        {it.fotky && it.fotky.length > 0
-          ? <div style={{ position: "absolute", inset: 0 }}><FotoPrispevku fotky={it.fotky} h="100%" disableGaleria /></div>
-          : (it.media === "video" ? <Play big /> : <div style={{ fontSize: 56 }}>{it.media === "kreslene" ? "✎" : it.emoji}</div>)}
-        {it.fotky && it.fotky.length > 0 && it.media === "video" && <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1 }}><Play big /></div>}
-        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(0deg, rgba(0,0,0,.34), transparent 42%)", pointerEvents: "none" }} />
-        {it.importance && <span style={badge("l")}>★ {it.importance}</span>}
-        {it.media === "video" && <span style={badge("r")}>▶ video</span>}
-        <div style={{ position: "absolute", bottom: 10, left: 10 }}><DomTag it={it} /></div>
-      </div>
-      {/* titul + pätička */}
-      <div style={{ padding: `${SPACE.sm}px ${SPACE.gutter}px ${SPACE.gutter}px` }}>
-        {jeWorkshop && (
-          <div style={{ display: "flex", alignItems: "center", gap: SPACE.xs, flexWrap: "wrap", marginBottom: SPACE.xs }}>
-            <Wb bg={it.price === "free" ? A.greenBg : A.goldBg} c={it.price === "free" ? A.green : A.gold}>{it.price === "free" ? "ZADARMO" : it.priceTxt}</Wb>
-            {it.b2b && <Wb bg={A.blueBg} c={A.blue}>B2B · audit</Wb>}
-            {it.profi && <Wb bg={A.purpleBg} c={A.purple}>PROFI</Wb>}
-          </div>
-        )}
-        <div style={{ fontSize: 16, fontWeight: 700, lineHeight: 1.36, color: A.txt, display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{it.title}</div>
-        {jeCase && <ProgressMini it={it} />}
-        {jeHelp && <div style={{ fontSize: 12.5, marginTop: SPACE.xs, fontWeight: 600, color: A.red }}>❓ Hľadám pomoc · <span style={{ color: A.txt3, fontWeight: 400 }}>{it.helpers} sa zapojilo</span></div>}
-        {jeWorkshop && <div style={{ fontSize: 11.5, color: A.txt3, marginTop: SPACE.xs }}>★ {it.rating} · {it.seats} miest{it.loc ? ` · ${it.loc}` : ""}</div>}
-      </div>
-    </div>
+      ) : undefined}
+      title={it.title}
+      progress={jeCase ? { vyzbierane: it.raised, ciel: it.goal } : undefined}
+      footer={
+        <>
+          {jeCase && <div style={{ fontSize: 10, color: A.txt3, marginTop: SPACE.xxs }}>D++R {it.drr}% ide priamo príjemcovi</div>}
+          {jeHelp && <div style={{ fontSize: 12.5, marginTop: SPACE.xs, fontWeight: 600, color: A.red }}>❓ Hľadám pomoc · <span style={{ color: A.txt3, fontWeight: 400 }}>{it.helpers} sa zapojilo</span></div>}
+          {jeWorkshop && <div style={{ fontSize: 11.5, color: A.txt3, marginTop: SPACE.xs }}>★ {it.rating} · {it.seats} miest{it.loc ? ` · ${it.loc}` : ""}</div>}
+        </>
+      }
+    />
   );
 }
 
@@ -420,7 +381,7 @@ function DetailHero({ it, onBack, children }: { it: AktItem; onBack: () => void;
       {it.fotky && it.fotky.length > 0 && <div style={{ position: "absolute", inset: 0 }}><FotoPrispevku fotky={it.fotky} h="100%" disableGaleria /></div>}
       {it.fotky && it.fotky.length > 0 && <div style={{ position: "absolute", inset: 0, background: "linear-gradient(0deg, rgba(0,0,0,.42), transparent 46%)", pointerEvents: "none" }} />}
       {it.fotky && it.fotky.length > 0 && it.media === "video" && <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1 }}><Play big /></div>}
-      <div onClick={onBack} style={{ position: "absolute", top: 14, left: 14, width: 34, height: 34, borderRadius: "50%", background: "rgba(0,0,0,.55)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", cursor: "pointer", zIndex: 2 }}><IkonaSipVlavo size={20} color="#fff" /></div>
+      <div style={{ position: "absolute", top: 14, left: 14, zIndex: 2 }}><BackChip hero onBack={onBack} /></div>
       <div style={{ position: "absolute", top: 14, right: 14, width: 34, height: 34, borderRadius: "50%", background: "rgba(0,0,0,.55)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", zIndex: 2 }}><IkonaMoznosti size={18} color="#fff" /></div>
       {children}
     </div>
@@ -481,7 +442,7 @@ function DeedDetail({ it, support, votes, vote, toast, home, openPerson }: any) 
         <div style={{ display: "flex", alignItems: "center", gap: SPACE.gutter, background: A.surface2, border: `1px solid ${A.line}`, borderRadius: RADIUS.md, padding: SPACE.sm, marginTop: SPACE.gutter }}>
           <div style={{ width: 52, height: 52, borderRadius: RADIUS.xs, background: "#fff", flex: "none", display: "grid", gridTemplateColumns: "repeat(5,1fr)", gridTemplateRows: "repeat(5,1fr)", gap: 1, padding: SPACE.xxs }}>{qrCells()}</div>
           <div><div style={{ fontWeight: 700, fontSize: 12.5 }}>QR {isCase ? "tejto akcie" : isTalent ? "tohto talentu" : "tohto skutku"}</div><div style={{ fontSize: 12, color: A.txt3 }}>Zväčšiť a zdieľať na siete</div></div>
-          <div onClick={() => toast("Zdieľať: YouTube · IG · TikTok · kopírovať")} style={{ marginLeft: "auto", background: GRAD, color: "#fff", fontWeight: 700, fontSize: 11, padding: `${SPACE.xs}px ${SPACE.md}px`, borderRadius: RADIUS.sm, cursor: "pointer", boxShadow: "0 5px 16px rgba(99,134,255,.32)" }}>Zdieľať</div>
+          <div onClick={() => toast("Zdieľať: YouTube · IG · TikTok · kopírovať")} style={{ marginLeft: "auto", background: GRAD, color: "#fff", fontWeight: 700, fontSize: 11, padding: `${SPACE.xs}px ${SPACE.md}px`, borderRadius: RADIUS.sm, cursor: "pointer", boxShadow: "0 5px 16px color-mix(in srgb, var(--a-green) 32%, transparent)" }}>Zdieľať</div>
         </div>
 
         <div style={{ textAlign: "center", fontSize: 10, color: A.txt3, marginTop: SPACE.md }}>
@@ -612,7 +573,7 @@ function Btn({ children, green, onClick }: { children: React.ReactNode; green?: 
   const base: React.CSSProperties = { width: "100%", height: 50, borderRadius: RADIUS.md, color: "#fff", fontWeight: 700, fontSize: 15.5, cursor: "pointer", marginTop: SPACE.md, fontFamily: "inherit", border: "none", transition: "transform .12s ease, box-shadow .25s ease" };
   const styl = green
     ? { ...base, background: GRAD_ZELENY, boxShadow: "0 8px 26px rgba(31,191,143,.32), inset 0 1px 0 rgba(255,255,255,.25)" }
-    : { ...base, background: GRAD, boxShadow: "0 8px 26px rgba(99,134,255,.32), inset 0 1px 0 rgba(255,255,255,.25)" };
+    : { ...base, background: GRAD, boxShadow: "0 8px 26px color-mix(in srgb, var(--a-green) 32%, transparent), inset 0 1px 0 rgba(255,255,255,.25)" };
   return <button onClick={onClick} style={styl}>{children}</button>;
 }
 

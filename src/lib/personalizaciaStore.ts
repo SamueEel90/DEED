@@ -25,20 +25,29 @@ function save(key: string, val: unknown) {
   try { localStorage.setItem(key, JSON.stringify(val)); } catch { /* napr. private mode */ }
 }
 
-// ---- KATALÓG ZÁUJMOV — jediná „vocabulary" (label + emoji + kľúče do feedu) ----
-// `oblast` = kanonický kľúč ukladaný do Zaujem.oblast.
-//   (Pozn.: DB číselník `cis_zaujmy` má diakritiku „Šport/Eko…"; zjednotenie slovníka
-//    a DB↔store most pre reálne účty je úloha Fázy 4 — dnes beží na mock/demo.)
-// `kluce`  = hodnoty, ktoré nesú položky feedu (Good `kat` + Aktivity `dom`) → afinita.
-export interface ZaujemKategoria { oblast: string; label: string; emoji: string; kluce: string[]; }
+// ---- KATALÓG ZÁUJMOV — jediná „vocabulary" (label + emoji + kľúče do feedu + pod-položky) ----
+// `oblast`     = kanonický kľúč ukladaný do Zaujem.oblast.
+// `kluce`      = hodnoty, ktoré nesú položky feedu (Good `kat` + Aktivity `dom`) → afinita.
+// `podpolozky` = detailný číselník z registrácie (`cis_zaujmy`, §6.2) → profil dropdown.
+//   Šport/Umenie(+Hudba)/Učenie/Zdravie/Príroda(Eko) sú 1:1 z registračného číselníka;
+//   Komunita/Pomoc sú profilové kategórie navyše (číselník ich nemá) → doplnené z domén
+//   Help/Charita. Zjednotenie slovníka + DB↔store most pre reálne účty ostáva Fáza 4.
+export interface ZaujemKategoria { oblast: string; label: string; emoji: string; kluce: string[]; podpolozky: string[]; }
 export const ZAUJMY_KATALOG: ZaujemKategoria[] = [
-  { oblast: "Priroda",  label: "Príroda",  emoji: "🌿", kluce: ["Priroda", "eko"] },
-  { oblast: "Komunita", label: "Komunita", emoji: "🤝", kluce: ["Komunita"] },
-  { oblast: "Zdravie",  label: "Zdravie",  emoji: "❤️", kluce: ["Zdravie", "zdravie"] },
-  { oblast: "Ucenie",   label: "Učenie",   emoji: "📚", kluce: ["Ucenie", "learn"] },
-  { oblast: "Sport",    label: "Šport",    emoji: "🏃", kluce: ["sport"] },
-  { oblast: "Art",      label: "Umenie",   emoji: "🎨", kluce: ["art"] },
-  { oblast: "Pomoc",    label: "Pomoc",    emoji: "🆘", kluce: ["Pomoc"] },
+  { oblast: "Priroda",  label: "Príroda",  emoji: "🌿", kluce: ["Priroda", "eko"],
+    podpolozky: ["Akcie", "Životný štýl", "Zvieratá/príroda", "Udržateľnosť", "Eko pestovanie/záhrada"] },
+  { oblast: "Komunita", label: "Komunita", emoji: "🤝", kluce: ["Komunita"],
+    podpolozky: ["Dobrovoľníctvo", "Susedská výpomoc", "Komunitné podujatia", "Seniori", "Deti a mládež", "Zbierky a dary"] },
+  { oblast: "Zdravie",  label: "Zdravie",  emoji: "❤️", kluce: ["Zdravie", "zdravie"],
+    podpolozky: ["Výživa/strava", "Pohyb/telo", "Duševné zdravie", "Prevencia", "Závislosti", "Skupiny"] },
+  { oblast: "Ucenie",   label: "Učenie",   emoji: "📚", kluce: ["Ucenie", "learn"],
+    podpolozky: ["Jazyky", "IT/tech", "Financie/právo", "Remeslá/praktické", "Soft skills", "Veda", "Doučovanie", "Technické hobby"] },
+  { oblast: "Sport",    label: "Šport",    emoji: "🏃", kluce: ["sport"],
+    podpolozky: ["Tímové/loptové", "Raketové", "Beh a vytrvalosť", "Cyklistika", "Vodné športy", "Zimné športy", "Sila/fitness", "Bojové športy", "Outdoor/hory", "Precízne/mentálne", "Pohyb/tanec", "Iné"] },
+  { oblast: "Art",      label: "Umenie",   emoji: "🎨", kluce: ["art"],
+    podpolozky: ["Výtvarné", "Priestorové", "Fotografia", "Film/video", "Scénické", "Literatúra", "Dizajn/remeslá", "Digitálne", "Hudba – rock", "Hudba – pop", "Hudba – rap/hip-hop", "Hudba – elektronická", "Hudba – klasická", "Hudba – jazz/blues"] },
+  { oblast: "Pomoc",    label: "Pomoc",    emoji: "🆘", kluce: ["Pomoc"],
+    podpolozky: ["Finančná pomoc", "Materiálna pomoc", "Doučovanie/mentoring", "Sprevádzanie/asistencia", "Krízová pomoc", "Psychická podpora"] },
 ];
 const KLUCE_OBLASTI: Record<string, string[]> = Object.fromEntries(ZAUJMY_KATALOG.map((z) => [z.oblast, z.kluce]));
 

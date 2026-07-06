@@ -79,7 +79,8 @@ export const ZRNO = `url("data:image/svg+xml,%3Csvg viewBox='0 0 240 240' xmlns=
 // anti-fraud stupne — NIE daňové; míľnik 2400 € ako daň bol chybný, v3 ho ruší).
 
 // ---- FOTKY (Unsplash CDN + pravatar; všade fallback na emoji) ----
-export const U = (id: string) => `https://images.unsplash.com/${id}?auto=format&fit=crop&w=800&q=60`;
+// `w` = šírka assetu — Foto z toho generuje srcset (400/800/1200), mobil neťahá 800px do avatara
+export const U = (id: string, w = 800) => `https://images.unsplash.com/${id}?auto=format&fit=crop&w=${w}&q=60`;
 export const AV = (n: number | string) => `https://i.pravatar.cc/100?img=${n}`;
 
 // ---- SPOLOČNÉ ŠTÝLY ----

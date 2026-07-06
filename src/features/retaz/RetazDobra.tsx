@@ -119,7 +119,7 @@ export function RetazDobraSheet({ odmena = 130, mode = "skutok", titulOdkaz = "S
                   <div style={{ fontSize: 13.5, fontWeight: 700, display: "flex", alignItems: "center", gap: SPACE.xs }}>
                     {z.nazov}
                     {z.odpor && <span style={{ fontSize: 10, fontWeight: 800, color: "var(--a-green)", background: "rgba(31,191,143,.14)", borderRadius: RADIUS.xs, padding: "1px 6px" }}>ODPORÚČANÉ</span>}
-                    {z.overena && <span style={{ fontSize: 10, fontWeight: 800, color: "var(--a-info)", background: "rgba(91,168,240,.14)", borderRadius: RADIUS.xs, padding: "1px 6px" }}>✓ OVERENÁ</span>}
+                    {z.overena && <span style={{ fontSize: 10, fontWeight: 800, color: "var(--a-info)", background: "color-mix(in srgb, var(--a-info) 14%, transparent)", borderRadius: RADIUS.xs, padding: "1px 6px" }}>✓ OVERENÁ</span>}
                   </div>
                   <div style={{ fontSize: 11, color: C.textTer, marginTop: SPACE.xxs }}>{z.zdroj} · {z.lok}</div>
                 </div>
@@ -176,7 +176,7 @@ export function RetazDobraSheet({ odmena = 130, mode = "skutok", titulOdkaz = "S
       </div>
 
       <button onClick={() => { toast?.(honorar ? "Reťaz na honorár aktívna — QR pripravený na zdieľanie" : "Skutok + reťaz zverejnené · QR zdieľané"); onDone?.({ pct, reazSuma, ziadost, gener }); onClose?.(); }}
-        style={{ width: "100%", height: 50, borderRadius: RADIUS.md, border: "none", marginTop: SPACE.gutter, fontWeight: 700, fontSize: 15, fontFamily: "inherit", background: GRAD, color: "#fff", cursor: "pointer", boxShadow: "0 8px 26px rgba(99,134,255,.32)", display: "flex", alignItems: "center", justifyContent: "center", gap: SPACE.xs }}>
+        style={{ width: "100%", height: 50, borderRadius: RADIUS.md, border: "none", marginTop: SPACE.gutter, fontWeight: 700, fontSize: 15, fontFamily: "inherit", background: GRAD, color: "#fff", cursor: "pointer", boxShadow: "0 8px 26px color-mix(in srgb, var(--a-green) 32%, transparent)", display: "flex", alignItems: "center", justifyContent: "center", gap: SPACE.xs }}>
         <Zdielanie size={18} color="#fff" /> {honorar ? "Zdieľať QR reťaze" : "Zdieľať skutok + QR"}
       </button>
     </Sheet>

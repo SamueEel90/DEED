@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { C, GRAD, GRAD_ZELENY, SPACE, RADIUS } from "@/theme";
+import { SIRKA, C, GRAD, GRAD_ZELENY, SPACE, RADIUS } from "@/theme";
 import { Aura, MoniBar, QrModal, SegTabs, useLayout, IkonaSipVlavo, IkonaFajka, IkonaStit, IkonaPlay, IkonaPin, Zdielanie, IkonaUsmev } from "@/shared";
 import type { CudziSubjekt, CudziSubjektOrg, CudziSubjektOsoba } from "@/types";
 import { usePersonalizacia } from "@/lib/personalizacia";
@@ -38,7 +38,7 @@ export function CudziProfil({ subjekt = {} as CudziSubjekt, onBack, toast }: Cud
     ? <OrgProfil s={subjekt} onBack={onBack} toast={toast} />
     : <OsobaProfil s={subjekt as CudziSubjektOsoba} onBack={onBack} toast={toast} />;
   // na tablete/desktope drž profil v čitateľnej šírke (rodič môže byť oveľa širší)
-  return wide ? <div style={{ maxWidth: 680, margin: "0 auto" }}>{inner}</div> : inner;
+  return wide ? <div style={{ maxWidth: SIRKA.stlpec, margin: "0 auto" }}>{inner}</div> : inner;
 }
 
 function BackBtn({ onBack }: { onBack?: () => void }) {
@@ -90,7 +90,7 @@ function OrgProfil({ s, onBack, toast }: { s: CudziSubjektOrg; onBack?: () => vo
         <div style={{ display: "flex", gap: SPACE.sm, marginTop: SPACE.sm }}>
           <button onClick={() => { toggleSledovanie({ meno, typ: "org", emoji: s.emoji }); toast?.(sleduje ? "Prestal si sledovať" : "Sleduješ — dostaneš upozornenia na kampane"); }}
             style={{ flex: 1, height: 46, borderRadius: RADIUS.sm, border: "none", fontWeight: 700, fontSize: 14, cursor: "pointer", fontFamily: "inherit",
-              background: sleduje ? "rgba(var(--glass-rgb),.06)" : GRAD, color: sleduje ? C.text : "#fff", boxShadow: sleduje ? "none" : "0 8px 24px rgba(99,134,255,.3)" }}>
+              background: sleduje ? "rgba(var(--glass-rgb),.06)" : GRAD, color: sleduje ? C.text : "#fff", boxShadow: sleduje ? "none" : "0 8px 24px color-mix(in srgb, var(--a-green) 30%, transparent)" }}>
             {sleduje ? "✓ Sledované" : "Sledovať"}
           </button>
           <button onClick={() => toast?.("Upozornenia na novú kampaň/akciu zapnuté")} style={{ width: 52, height: 46, borderRadius: RADIUS.sm, border: `1px solid ${C.line}`, background: C.surface2, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>🔔</button>
@@ -105,7 +105,7 @@ function OrgProfil({ s, onBack, toast }: { s: CudziSubjektOrg; onBack?: () => vo
           style={{ display: "flex", gap: SPACE.xs, marginTop: SPACE.md }}
           render={(t, on) => (
             <span style={{ flex: 1, textAlign: "center", padding: `${SPACE.xs}px 0`, borderRadius: RADIUS.sm, fontSize: 13, fontWeight: on ? 700 : 500, cursor: "pointer",
-              background: on ? "rgba(91,155,255,.14)" : C.surface2, border: `1px solid ${on ? "rgba(116,166,255,.45)" : C.line}`, color: on ? "var(--a-info)" : C.textSec }}>{t}</span>
+              background: on ? "color-mix(in srgb, var(--a-info) 14%, transparent)" : C.surface2, border: `1px solid ${on ? "color-mix(in srgb, var(--a-info) 45%, transparent)" : C.line}`, color: on ? "var(--a-info)" : C.textSec }}>{t}</span>
           )}
         />
 
@@ -124,7 +124,7 @@ function OrgProfil({ s, onBack, toast }: { s: CudziSubjektOrg; onBack?: () => vo
           <div style={{ fontSize: 10.5, letterSpacing: ".4px", color: C.textTer, fontWeight: 700, margin: `${SPACE.gutter}px 0 ${SPACE.xs}px` }}>NADCHÁDZAJÚCE</div>
           {akcie.map((a, i) => (
             <div key={i} onClick={() => toast?.(`Akcia: ${a.nazov}`)} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, background: "rgba(var(--glass-rgb),.04)", border: `1px solid ${C.line2}`, borderRadius: RADIUS.sm, padding: `${SPACE.sm}px ${SPACE.sm}px`, marginBottom: SPACE.xs, cursor: "pointer" }}>
-              <span style={{ flex: "none", fontSize: 11, fontWeight: 800, color: "var(--a-info)", background: "rgba(116,166,255,.14)", borderRadius: RADIUS.xs, padding: `${SPACE.xs}px ${SPACE.xs}px`, textAlign: "center", lineHeight: 1.2 }}>{a.kedy}</span>
+              <span style={{ flex: "none", fontSize: 11, fontWeight: 800, color: "var(--a-info)", background: "color-mix(in srgb, var(--a-info) 14%, transparent)", borderRadius: RADIUS.xs, padding: `${SPACE.xs}px ${SPACE.xs}px`, textAlign: "center", lineHeight: 1.2 }}>{a.kedy}</span>
               <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontSize: 13.5, fontWeight: 700 }}>{a.nazov}</div><div style={{ fontSize: 11, color: C.textTer, marginTop: SPACE.xxs }}>{a.kde}</div></div>
             </div>
           ))}
@@ -201,7 +201,7 @@ function OsobaProfil({ s, onBack, toast }: { s: CudziSubjektOsoba; onBack?: () =
         {stav === "bezna" && (<>
           <button onClick={() => { setPridane(true); toast?.("Žiadosť o priateľstvo odoslaná — čaká na súhlas"); }} disabled={pridane}
             style={{ width: "100%", height: 50, borderRadius: RADIUS.md, border: "none", fontWeight: 700, fontSize: 15, fontFamily: "inherit", cursor: pridane ? "default" : "pointer",
-              background: pridane ? "rgba(var(--glass-rgb),.06)" : GRAD, color: pridane ? C.textTer : "#fff", boxShadow: pridane ? "none" : "0 8px 24px rgba(99,134,255,.3)" }}>
+              background: pridane ? "rgba(var(--glass-rgb),.06)" : GRAD, color: pridane ? C.textTer : "#fff", boxShadow: pridane ? "none" : "0 8px 24px color-mix(in srgb, var(--a-green) 30%, transparent)" }}>
             {pridane ? "Žiadosť odoslaná ✓" : "Pridať priateľa"}
           </button>
           <div style={{ background: C.surface, border: `1px solid ${C.line}`, borderRadius: RADIUS.md, padding: `${SPACE.xl}px ${SPACE.md}px`, marginTop: SPACE.md, textAlign: "center" }}>
@@ -235,7 +235,7 @@ function OsobaProfil({ s, onBack, toast }: { s: CudziSubjektOsoba; onBack?: () =
         {stav === "tvorca" && (<>
           <button onClick={() => { toggleSledovanie({ meno, typ: "osoba" }); toast?.(sleduje ? "Prestal si sledovať" : "Sleduješ tvorcu"); }}
             style={{ width: "100%", height: 50, borderRadius: RADIUS.md, border: "none", fontWeight: 700, fontSize: 15, fontFamily: "inherit", cursor: "pointer",
-              background: sleduje ? "rgba(var(--glass-rgb),.06)" : GRAD, color: sleduje ? C.text : "#fff", boxShadow: sleduje ? "none" : "0 8px 24px rgba(99,134,255,.3)" }}>
+              background: sleduje ? "rgba(var(--glass-rgb),.06)" : GRAD, color: sleduje ? C.text : "#fff", boxShadow: sleduje ? "none" : "0 8px 24px color-mix(in srgb, var(--a-green) 30%, transparent)" }}>
             {sleduje ? "✓ Sledované" : "Sledovať"}
           </button>
           <div style={{ fontSize: 10.5, letterSpacing: ".4px", color: C.textTer, fontWeight: 700, margin: `${SPACE.md}px 0 ${SPACE.xs}px` }}>PONUKA</div>

@@ -162,7 +162,7 @@ export function ErrorState({
             fontWeight: 700,
             color: "#fff",
             background: GRAD,
-            boxShadow: "0 8px 22px rgba(99,134,255,.3)",
+            boxShadow: "0 8px 22px color-mix(in srgb, var(--a-green) 30%, transparent)",
           }}
         >
           Skúsiť znova

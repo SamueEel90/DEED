@@ -198,7 +198,7 @@ export const mockRepo: Repo = {
 // ---- Aktívny repozitár — postupné prepínanie mock → Supabase, modul po module ----
 // Modul je na Supabase len ak (a) je v NA_SUPABASE a (b) je nakonfigurovaný klient
 // (.env.local). Inak fallback na mock → appka beží aj bez DB.
-import { supabaseReady } from "@/lib/supabase";
+import { USE_SUPABASE } from "@/lib/supabase";
 import { goodSupabase } from "./good.supabase";
 import { helpSupabase } from "./help.supabase";
 import { charitaSupabase } from "./charita.supabase";
@@ -213,13 +213,13 @@ const NA_SUPABASE = { good: true, help: true, charita: true, top: true, notifika
 
 export const repo: Repo = {
   ...mockRepo,
-  good: supabaseReady && NA_SUPABASE.good ? goodSupabase : mockRepo.good,
-  help: supabaseReady && NA_SUPABASE.help ? helpSupabase : mockRepo.help,
-  charita: supabaseReady && NA_SUPABASE.charita ? charitaSupabase : mockRepo.charita,
-  aktivity: supabaseReady && NA_SUPABASE.aktivity ? aktivitySupabase : mockRepo.aktivity,
-  mapa: supabaseReady && NA_SUPABASE.mapa ? mapaSupabase : mockRepo.mapa,
-  top: supabaseReady && NA_SUPABASE.top ? topSupabase : mockRepo.top,
-  notifikacie: supabaseReady && NA_SUPABASE.notifikacie ? notifikacieSupabase : mockRepo.notifikacie,
-  qr: supabaseReady && NA_SUPABASE.qr ? qrSupabase : mockRepo.qr,
-  platby: supabaseReady && NA_SUPABASE.platby ? platbySupabase : mockRepo.platby,
+  good: USE_SUPABASE && NA_SUPABASE.good ? goodSupabase : mockRepo.good,
+  help: USE_SUPABASE && NA_SUPABASE.help ? helpSupabase : mockRepo.help,
+  charita: USE_SUPABASE && NA_SUPABASE.charita ? charitaSupabase : mockRepo.charita,
+  aktivity: USE_SUPABASE && NA_SUPABASE.aktivity ? aktivitySupabase : mockRepo.aktivity,
+  mapa: USE_SUPABASE && NA_SUPABASE.mapa ? mapaSupabase : mockRepo.mapa,
+  top: USE_SUPABASE && NA_SUPABASE.top ? topSupabase : mockRepo.top,
+  notifikacie: USE_SUPABASE && NA_SUPABASE.notifikacie ? notifikacieSupabase : mockRepo.notifikacie,
+  qr: USE_SUPABASE && NA_SUPABASE.qr ? qrSupabase : mockRepo.qr,
+  platby: USE_SUPABASE && NA_SUPABASE.platby ? platbySupabase : mockRepo.platby,
 };

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { C, GRAD, SPACE, RADIUS } from "@/theme";
+import { SIRKA, C, GRAD, SPACE, RADIUS } from "@/theme";
 import { ModulHlavicka, IkonaPin, toast, useLayout, useMotiv, obalSiroky } from "@/shared";
 import { Zvoncek } from "@/features/notifikacie/Notifikacie";
 import { FEED_CFG } from "@/lib/feed";
@@ -126,7 +126,7 @@ export default function ModulMapa({ wide }: { wide?: boolean }) {
     setTimeout(() => map.invalidateSize(), 0);
   }, [uroven, km, radiusKm, krajina, STRED.lat, STRED.lng]);
 
-  const obal = (el: React.ReactNode) => obalSiroky(el, { wide, desktop, max: 620, maxDesktop: 860 });
+  const obal = (el: React.ReactNode) => obalSiroky(el, { wide, desktop, max: SIRKA.stlpec, maxDesktop: SIRKA.citanie });
 
   return (
     <div style={{ minHeight: "100%", paddingBottom: SPACE.gutter }}>
@@ -162,7 +162,7 @@ export default function ModulMapa({ wide }: { wide?: boolean }) {
             {UROVNE.map(([id, label]) => {
               const on = uroven === id;
               return <span key={id} onClick={() => setUroven(id)} style={{ flex: 1, textAlign: "center", padding: `${SPACE.xs}px 0`, borderRadius: RADIUS.sm, fontSize: 12.5, fontWeight: on ? 700 : 500, cursor: "pointer",
-                background: on ? "rgba(91,155,255,.16)" : C.surface2, border: `1px solid ${on ? "rgba(116,166,255,.5)" : C.line}`, color: on ? "var(--a-info)" : C.textSec }}>{label}</span>;
+                background: on ? "color-mix(in srgb, var(--a-info) 16%, transparent)" : C.surface2, border: `1px solid ${on ? "color-mix(in srgb, var(--a-info) 50%, transparent)" : C.line}`, color: on ? "var(--a-info)" : C.textSec }}>{label}</span>;
             })}
           </div>
 
@@ -196,7 +196,7 @@ export default function ModulMapa({ wide }: { wide?: boolean }) {
           <div style={{ fontSize: 10.5, color: C.textTer, margin: "8px 2px 0", lineHeight: 1.5 }}>Reálne body z DB v okolí mesta {lok.mesto}. Mení len, čo vidíš vo feede a na nástenke — nie karmu ani odmeny.</div>
 
           <button onClick={() => toast(`Rádius nastavený: ${jeStvrt ? km + " km · štvrť" : FEED_CFG.radiusy[uroven].label}`)}
-            style={{ width: "100%", height: 50, borderRadius: RADIUS.md, marginTop: SPACE.gutter, border: "none", background: GRAD, color: "#fff", fontWeight: 700, fontSize: 15, cursor: "pointer", fontFamily: "inherit", boxShadow: "0 8px 26px rgba(99,134,255,.32)" }}>
+            style={{ width: "100%", height: 50, borderRadius: RADIUS.md, marginTop: SPACE.gutter, border: "none", background: GRAD, color: "#fff", fontWeight: 700, fontSize: 15, cursor: "pointer", fontFamily: "inherit", boxShadow: "0 8px 26px color-mix(in srgb, var(--a-green) 32%, transparent)" }}>
             Použiť rádius
           </button>
         </div>

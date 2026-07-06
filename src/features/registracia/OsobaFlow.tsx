@@ -535,7 +535,7 @@ function KrokFoto({ meno, onBack, onNext }: KrokFotoProps) {
               fontSize: 15.5,
               cursor: "pointer",
               fontFamily: "inherit",
-              boxShadow: "0 8px 26px rgba(99,134,255,.32), inset 0 1px 0 rgba(255,255,255,.25)",
+              boxShadow: "0 8px 26px color-mix(in srgb, var(--a-green) 32%, transparent), inset 0 1px 0 rgba(255,255,255,.25)",
             }}
           >
             Pokračovať
@@ -557,7 +557,7 @@ function KrokFoto({ meno, onBack, onNext }: KrokFotoProps) {
             fontSize: 44,
             fontWeight: 800,
             color: "#fff",
-            boxShadow: "0 10px 30px rgba(99,134,255,.32), inset 0 1px 0 rgba(255,255,255,.25)",
+            boxShadow: "0 10px 30px color-mix(in srgb, var(--a-green) 32%, transparent), inset 0 1px 0 rgba(255,255,255,.25)",
           }}
         >
           {iniciala}

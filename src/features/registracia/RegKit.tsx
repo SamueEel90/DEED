@@ -176,7 +176,7 @@ export function Accordion({
             >
               <span style={{ flex: 1, fontSize: 14.5, fontWeight: 700 }}>{s.nazov}</span>
               {pocet > 0 && (
-                <span style={{ fontSize: 11.5, fontWeight: 700, color: akcent, background: "rgba(116,166,255,.14)", borderRadius: RADIUS.xs, padding: `${SPACE.xxs}px ${SPACE.xs}px` }}>{pocet}</span>
+                <span style={{ fontSize: 11.5, fontWeight: 700, color: akcent, background: "color-mix(in srgb, var(--a-info) 14%, transparent)", borderRadius: RADIUS.xs, padding: `${SPACE.xxs}px ${SPACE.xs}px` }}>{pocet}</span>
               )}
               <span style={{ transform: open ? "rotate(180deg)" : "none", transition: "transform .2s ease", display: "flex", color: C.textTer }}>
                 <IkonaSipDole size={16} color={C.textTer} />
