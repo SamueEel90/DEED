@@ -138,20 +138,21 @@ export function FeedCard({ wide, onClick, label, accent, ring, autor, media = {}
         </div>
       )}
 
-      {/* médium + odznaky */}
-      <div style={{ position: "relative", ...mediaBox, overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", background: media.grad }}>
-        {media.video
-          ? <Video src={media.video} poster={media.fotky?.[0]} h={wide ? "100%" : mobileH} badge={false} />
-          : media.fotky?.length
-            ? <div style={{ position: "absolute", inset: 0 }}><FotoPrispevku fotky={media.fotky} emoji={media.emoji} h="100%" disableGaleria /></div>
-            : media.play
-              ? null
-              : <div style={{ fontSize: maMedia ? 46 : 52 }}>{media.emoji}</div>}
-        {media.play && <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1 }}><PlayKruh big /></div>}
-        {!media.video && <div style={{ position: "absolute", inset: 0, background: "linear-gradient(0deg, rgba(0,0,0,.34), transparent 42%)", pointerEvents: "none" }} />}
-        {media.play && <KartaBadge pos={{ top: 10, right: 10 }}>▶ video</KartaBadge>}
-        {media.overlay}
-      </div>
+      {/* médium + odznaky — vykreslíme LEN keď je reálne médium (foto/video).
+          Bez fotky/videa žiadny placeholder (emoji/gradient) — príspevok je čisto textový. */}
+      {maMedia && (
+        <div style={{ position: "relative", ...mediaBox, overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", background: media.grad }}>
+          {media.video
+            ? <Video src={media.video} poster={media.fotky?.[0]} h={wide ? "100%" : mobileH} badge={false} />
+            : media.fotky?.length
+              ? <div style={{ position: "absolute", inset: 0 }}><FotoPrispevku fotky={media.fotky} emoji={media.emoji} h="100%" disableGaleria /></div>
+              : null}
+          {media.play && <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1 }}><PlayKruh big /></div>}
+          {!media.video && <div style={{ position: "absolute", inset: 0, background: "linear-gradient(0deg, rgba(0,0,0,.34), transparent 42%)", pointerEvents: "none" }} />}
+          {media.play && <KartaBadge pos={{ top: 10, right: 10 }}>▶ video</KartaBadge>}
+          {media.overlay}
+        </div>
+      )}
 
       {/* titul + text + progres + pätička */}
       <div style={{ padding: `${SPACE.sm}px ${SPACE.gutter}px ${SPACE.gutter}px` }}>

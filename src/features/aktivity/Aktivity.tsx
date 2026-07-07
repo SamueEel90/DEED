@@ -374,16 +374,30 @@ function AktCard({ it, wide, onOpen, onPerson }: any) {
 function BackBar({ title, onBack }: { title: string; onBack: () => void }) {
   return <Hlavicka title={title} onBack={onBack} />;
 }
+// `children` = len TAGY (doména/cena/„hľadám pomoc"). Placeholder (emoji/gradient) sa
+// pri chýbajúcej fotke NEzobrazuje — príspevok je čisto textový (tenká lišta + tagy v toku).
 function DetailHero({ it, onBack, children }: { it: AktItem; onBack: () => void; children?: React.ReactNode }) {
   const { wide } = useLayout();
+  const maFoto = !!(it.fotky && it.fotky.length);
+  if (!maFoto) {
+    return (
+      <>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: `${SPACE.sm}px ${SPACE.gutter}px` }}>
+          <BackChip onBack={onBack} />
+          <div style={{ width: 34, height: 34, borderRadius: "50%", background: "rgba(var(--glass-rgb),.06)", border: `1px solid ${A.line}`, display: "flex", alignItems: "center", justifyContent: "center", color: A.txt2 }}><IkonaMoznosti size={18} color={A.txt2} /></div>
+        </div>
+        {children && <div style={{ display: "flex", flexWrap: "wrap", gap: SPACE.xs, padding: `0 ${SPACE.md}px ${SPACE.xs}px` }}>{children}</div>}
+      </>
+    );
+  }
   return (
     <div style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center", background: heroGrad(it.dom), ...(wide ? { width: "100%", aspectRatio: MEDIA_AR } : { height: 150 }) }}>
-      {it.fotky && it.fotky.length > 0 && <div style={{ position: "absolute", inset: 0 }}><FotoPrispevku fotky={it.fotky} h="100%" disableGaleria /></div>}
-      {it.fotky && it.fotky.length > 0 && <div style={{ position: "absolute", inset: 0, background: "linear-gradient(0deg, rgba(0,0,0,.42), transparent 46%)", pointerEvents: "none" }} />}
-      {it.fotky && it.fotky.length > 0 && it.media === "video" && <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1 }}><Play big /></div>}
+      <div style={{ position: "absolute", inset: 0 }}><FotoPrispevku fotky={it.fotky} h="100%" disableGaleria /></div>
+      <div style={{ position: "absolute", inset: 0, background: "linear-gradient(0deg, rgba(0,0,0,.42), transparent 46%)", pointerEvents: "none" }} />
+      {it.media === "video" && <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1 }}><Play big /></div>}
       <div style={{ position: "absolute", top: 14, left: 14, zIndex: 2 }}><BackChip hero onBack={onBack} /></div>
       <div style={{ position: "absolute", top: 14, right: 14, width: 34, height: 34, borderRadius: "50%", background: "rgba(0,0,0,.55)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", zIndex: 2 }}><IkonaMoznosti size={18} color="#fff" /></div>
-      {children}
+      {children && <div style={{ position: "absolute", bottom: 12, left: 14, right: 14, zIndex: 2, display: "flex", flexWrap: "wrap", gap: SPACE.xs }}>{children}</div>}
     </div>
   );
 }
@@ -409,8 +423,7 @@ function DeedDetail({ it, support, votes, vote, toast, home, openPerson }: any) 
   return (
     <div style={{ paddingBottom: SPACE.lg }}>
       <DetailHero it={it} onBack={home}>
-        {(!it.fotky || !it.fotky.length) && (it.media === "video" ? <Play big /> : <div style={{ fontSize: 52 }}>{it.emoji}</div>)}
-        <div style={{ position: "absolute", bottom: 12, left: 14, zIndex: 1 }}><DomTag it={it} /></div>
+        <DomTag it={it} />
       </DetailHero>
       <div style={{ padding: `${SPACE.gutter}px ${SPACE.md}px` }}>
         <div onClick={() => openPerson(it.author)} style={{ ...rowTopS, cursor: "pointer" }}>
@@ -474,11 +487,8 @@ function WorkshopDetail({ it, toast, celebrate, home, openPerson }: any) {
   return (
     <div style={{ paddingBottom: SPACE.lg }}>
       <DetailHero it={it} onBack={home}>
-        <div style={{ fontSize: 52 }}>{it.emoji}</div>
-        <div style={{ position: "absolute", bottom: 12, left: 14, display: "flex", gap: SPACE.xs }}>
-          <Wb bg={free ? A.greenBg : A.goldBg} c={free ? A.green : A.gold}>{free ? "ZADARMO" : it.priceTxt}</Wb>
-          {it.b2b && <Wb bg={A.blueBg} c={A.blue}>B2B · audit S1</Wb>}
-        </div>
+        <Wb bg={free ? A.greenBg : A.goldBg} c={free ? A.green : A.gold}>{free ? "ZADARMO" : it.priceTxt}</Wb>
+        {it.b2b && <Wb bg={A.blueBg} c={A.blue}>B2B · audit S1</Wb>}
       </DetailHero>
       <div style={{ padding: `${SPACE.gutter}px ${SPACE.md}px` }}>
         <div style={{ ...titleS, fontSize: 15 }}>{it.title}</div>
@@ -526,8 +536,7 @@ function HelpDetail({ it, toast, celebrate, home, openPerson }: any) {
   return (
     <div style={{ paddingBottom: SPACE.lg }}>
       <DetailHero it={it} onBack={home}>
-        <div style={{ fontSize: 52 }}>{it.emoji}</div>
-        <div style={{ position: "absolute", bottom: 12, left: 14 }}><Chip bg={tint(a.c, .14)} c={a.c}>❓ Hľadám pomoc · {a.label}</Chip></div>
+        <Chip bg={tint(a.c, .14)} c={a.c}>❓ Hľadám pomoc · {a.label}</Chip>
       </DetailHero>
       <div style={{ padding: `${SPACE.gutter}px ${SPACE.md}px` }}>
         <div onClick={() => openPerson(it.author)} style={{ ...rowTopS, cursor: "pointer" }}>

@@ -418,14 +418,16 @@ function CharitaDetail({ z: zProp, toast, onBack, onReg, onAutor }: { z?: Zbierk
       </BackHeader>
       <div style={{ height: SPACE.sm }} />
 
-      <div style={{ padding: `0 ${SPACE.md}px` }}>
-        {/* hero foto — klik = celá obrazovka + swipe (16:9 na desktope) */}
-        <div style={{ position: "relative", ...(wide ? { width: "100%", aspectRatio: MEDIA_AR } : {}) }}>
-          <Foto src={maFoto ? fotky[0] : undefined} emoji={z.emoji || "💛"} h={wide ? "100%" : 200} w={wide ? "100%" : undefined} radius={14} onClick={() => maFoto && otvorGaleriu(fotky, 0)} />
-          {maFoto && <span style={{ ...badge({ top: 9, right: 9, color: K.txt }), display: "inline-flex", alignItems: "center", gap: SPACE.xxs }}><IkonaFoto size={12} color={K.txt} /> foto z prípadu</span>}
-          {fotky.length > 1 && <span style={{ position: "absolute", bottom: 9, right: 9, background: "rgba(0,0,0,.6)", borderRadius: RADIUS.sm, padding: `${SPACE.xxs}px ${SPACE.xs}px`, fontSize: 10, color: "#fff", pointerEvents: "none" }}>⧉ {fotky.length} · klikni na foto</span>}
+      {/* hero foto — LEN ak prípad má fotku (bez placeholdera; inak čisto textový detail) */}
+      {maFoto && (
+        <div style={{ padding: `0 ${SPACE.md}px` }}>
+          <div style={{ position: "relative", ...(wide ? { width: "100%", aspectRatio: MEDIA_AR } : {}) }}>
+            <Foto src={fotky[0]} emoji={z.emoji || "💛"} h={wide ? "100%" : 200} w={wide ? "100%" : undefined} radius={14} onClick={() => otvorGaleriu(fotky, 0)} />
+            <span style={{ ...badge({ top: 9, right: 9, color: K.txt }), display: "inline-flex", alignItems: "center", gap: SPACE.xxs }}><IkonaFoto size={12} color={K.txt} /> foto z prípadu</span>
+            {fotky.length > 1 && <span style={{ position: "absolute", bottom: 9, right: 9, background: "rgba(0,0,0,.6)", borderRadius: RADIUS.sm, padding: `${SPACE.xxs}px ${SPACE.xs}px`, fontSize: 10, color: "#fff", pointerEvents: "none" }}>⧉ {fotky.length} · klikni na foto</span>}
+          </div>
         </div>
-      </div>
+      )}
       <MiniFotky fotky={fotky} />
 
       <div style={{ padding: `${SPACE.gutter}px ${SPACE.md}px 0` }}>

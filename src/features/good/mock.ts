@@ -28,7 +28,7 @@ export const POLOZKY: GoodPolozka[] = [
     popis: "Pani Helena z vedľajšieho vchodu je po operácii bedrového kĺbu a do obchodu sa sama nedostane. Spísali sme zoznam, nakúpila som a doniesla jej to až do bytu. Celý nákup je natočený ako dôkaz — pozri video.",
     emoji: "🛒", suma: 64, lajky: 47, vyznam: "Overený skutok",
     video: "/video/nakup.mp4",
-    fotky: [U("photo-1542838132-92c53300491e"), U("photo-1556909114-f6e7ad7d3136")] },
+    fotky: [U("photo-1542838132-92c53300491e")] },
 
   { id: 1, typ: "skutok", velkost: "big", kat: "Komunita", media: "video", overene: true,
     skore: 8.5, typSituacie: "normal", modul: "good", lat: 48.905, lng: 18.030, dni: 0, podpora: 14,
@@ -36,7 +36,7 @@ export const POLOZKY: GoodPolozka[] = [
     titul: "Celú noc sme hľadali nezvestného dôchodcu — našli sme ho.",
     popis: "O 23:00 nahlásili nezvestného 78-ročného pána. Prehľadávali sme les pri Váhu do rána. Našli sme ho prechladnutého, ale živého.",
     emoji: "🚒", suma: 177, lajky: 23, vyznam: "Výnimočný skutok",
-    fotky: [U("photo-1519681393784-d120267933ba"), U("photo-1441974231531-c6227db76b6e"), U("photo-1448375240586-882707db888b")] },
+    fotky: [U("photo-1448375240586-882707db888b")] },
 
   { id: 2, typ: "skutok", velkost: "med", kat: "Priroda", media: "foto",
     skore: 4.5, typSituacie: "normal", modul: "good", lat: 48.875, lng: 18.030, dni: 0, podpora: 11,
@@ -44,7 +44,7 @@ export const POLOZKY: GoodPolozka[] = [
     titul: "Vyčistili sme čiernu skládku pri potoku — 14 vriec odpadu.",
     popis: "Partia 6 ľudí. Za sobotné dopoludnie sme vyniesli 14 vriec odpadu, ktoré tam roky niekto vyhadzoval.",
     emoji: "🌿", suma: 84, lajky: 31,
-    fotky: [U("photo-1542601906990-b4d3fb778b09"), U("photo-1470071459604-3b5ec3a7fe05")] },
+    fotky: [U("photo-1565803974275-dccd2f933cbb"), U("photo-1616680214084-22670de1bc82")] },
 
   { id: 3, typ: "ziadost", velkost: "req", kat: "Pomoc", zdroj: "Help", topovane: true,
     skore: 9, typSituacie: "normal", modul: "help", lat: 48.903, lng: 18.033, dni: 0, podpora: 12,
@@ -52,7 +52,7 @@ export const POLOZKY: GoodPolozka[] = [
     titul: "Po povodni nám zatopilo pivnicu — hľadáme pomoc",
     popis: "Voda nám zničila kotol a nábytok v suteréne. Sami to nezvládneme. Prosíme o pomoc s odpratávaním v sobotu a o príspevok na nový kotol.",
     ciel: 2400, vyzbierane: 1450, emoji: "⚠", pomocnici: 12,
-    fotky: ["/img/dom.jpg", U("photo-1500382017468-9049fed747ef")] },
+    fotky: ["/img/dom.jpg", U("photo-1604276661516-9c26d19251a1")] },
 
   { id: 4, typ: "charita", velkost: "med", kat: "Komunita", zdroj: "Charity", overene: true, charLevel: "Gold",
     skore: 8, typSituacie: "normal", modul: "charity", narodne: true, lat: 48.146, lng: 17.107, dni: 0, podpora: 40,
@@ -60,7 +60,7 @@ export const POLOZKY: GoodPolozka[] = [
     titul: "Zbierka na nový inkubátor pre novorodenecké oddelenie",
     popis: "Overená charita. Vyzbierané prostriedky idú výhradne na kúpu inkubátora. Doklady o použití zverejníme na profile.",
     ciel: 18000, vyzbierane: 11200, emoji: "🏥", suma: 0, lajky: 204,
-    fotky: [U("photo-1584308666744-24d5c474f2ae"), U("photo-1579684385127-1ef15d508118")] },
+    fotky: [U("photo-1560306580-9e204fe45f3e")] },
 
   { id: 5, typ: "skutok", velkost: "small", kat: "Zdravie", media: "foto",
     skore: 2.5, typSituacie: "normal", modul: "good", lat: 48.894, lng: 18.044, dni: 1, podpora: 4,
@@ -103,7 +103,7 @@ export const POLOZKY: GoodPolozka[] = [
     autor: "Cyklo Trenčín", pfp: "#2E7D52", ini: "C", karma: "Silver", lok: "Trenčín → Nemšová", cas: "3 d", num: 119980,
     titul: "Mesiac do práce na bicykli namiesto auta — 240 km", popis: "Nahradil som auto bicyklom. Ušetrené CO2 sa pripočítava do eko skutkov.",
     emoji: "🚲", suma: 62, lajky: 22,
-    fotky: [U("photo-1517649763962-0c623066013b"), U("photo-1476514525535-07fb3b4ae5f1")] },
+    fotky: [U("photo-1517649763962-0c623066013b"), U("photo-1534787238916-9ba6764efd4f")] },
 
   { id: 13, typ: "skutok", velkost: "med", kat: "Komunita", media: "foto", overene: true,
     skore: 5.5, typSituacie: "normal", modul: "good", lat: 48.905, lng: 18.030, dni: 0, podpora: 16,
@@ -111,14 +111,14 @@ export const POLOZKY: GoodPolozka[] = [
     titul: "Zorganizovali sme popoludnie pre osamelých seniorov — prišlo 40 ľudí.",
     popis: "Káva, harmonika a spoločnosť. Mnohí z nich nemajú s kým prehodiť slovo aj týždne. Najbližšie sa stretneme o dva týždne, pridať sa môže ktokoľvek.",
     emoji: "☕", suma: 38, lajky: 33,
-    fotky: [U("photo-1542838132-92c53300491e"), U("photo-1556909114-f6e7ad7d3136")] },
+    fotky: [U("photo-1603129473525-4cd6f36fe057")] },
 
   { id: 14, typ: "skutok", velkost: "small", kat: "Priroda", media: "foto",
     skore: 4.0, typSituacie: "normal", modul: "good", lat: 48.902, lng: 18.038, dni: 1, podpora: 9,
     autor: "Skauti Trenčín", pfp: "#2E7D52", ini: "S", karma: "Silver", lok: "Trenčín · Pod Sokolicami", cas: "1 d", num: 120036,
     titul: "Postavili sme hmyzí hotel a vtáčie búdky v parku.", popis: "Oddiel 12 detí. Učíme sa, že o prírodu sa treba starať, nielen ju obdivovať.",
     emoji: "🐝", suma: 28, lajky: 24,
-    fotky: [U("photo-1470071459604-3b5ec3a7fe05")] },
+    fotky: [U("photo-1601305044331-ee8d0c106675")] },
 
   { id: 15, typ: "skutok", velkost: "small", kat: "Zdravie", media: "kreslene",
     skore: 3.0, typSituacie: "normal", modul: "good", lat: 48.882, lng: 18.060, dni: 1, podpora: 7,
@@ -138,7 +138,7 @@ export const POLOZKY: GoodPolozka[] = [
     autor: "Materské centrum Lienka", pfp: "#5BA8F0", ini: "M", karma: "Silver", lok: "Trenčín · centrum", cas: "6 h", num: 120040,
     titul: "Burza detského oblečenia — všetko zadarmo pre rodiny v núdzi.", popis: "Mamičky doniesli, čo deti prerástli. Za sobotu si odnieslo veci 60 rodín. Čo zostalo, ide do útulku.",
     emoji: "🧸", suma: 30, lajky: 41,
-    fotky: [U("photo-1556909114-f6e7ad7d3136")] },
+    fotky: [U("photo-1520923179278-ee25e25e09e4")] },
 
   { id: 18, typ: "ziadost", velkost: "small", kat: "Pomoc", zdroj: "Help",
     skore: 5, typSituacie: "normal", modul: "help", lat: 48.892, lng: 18.020, dni: 1, podpora: 8,
@@ -164,7 +164,7 @@ export const POLOZKY: GoodPolozka[] = [
     autor: "Ondrej V.", pfp: "#5BA8F0", ini: "O", karma: "Bronze", lok: "Trenčín · Dlhé Hony", cas: "4 d", num: 119975,
     titul: "Opravil som rozbité lavičky a hojdačku na ihrisku.", popis: "Nikto to neriešil mesiace. Materiál ma stál pár eur, deti majú zase kde sa hrať.",
     emoji: "🔧", suma: 20, lajky: 16,
-    fotky: [U("photo-1448375240586-882707db888b")] },
+    fotky: [U("photo-1460788150444-d9dc07fa9dba")] },
 
   { id: 22, typ: "skutok", velkost: "small", kat: "Ucenie", media: "kreslene",
     skore: 3.5, typSituacie: "normal", modul: "good", lat: 48.882, lng: 18.060, dni: 3, podpora: 8,
@@ -178,14 +178,14 @@ export const POLOZKY: GoodPolozka[] = [
     titul: "Po smrti manžela sama — neviem zaplatiť kúrenie na zimu",
     popis: "Z dôchodku mi po liekoch nezostáva na drevo a uhlie. Bojím sa zimy. Privítam pomoc či dobrú radu, kam sa obrátiť.",
     ciel: 500, vyzbierane: 180, emoji: "🔥", pomocnici: 9,
-    fotky: [U("photo-1500382017468-9049fed747ef")] },
+    fotky: [U("photo-1576414159823-79511363daf9")] },
 
   { id: 24, typ: "skutok", velkost: "small", kat: "Priroda", media: "foto",
     skore: 4.0, typSituacie: "normal", modul: "good", lat: 48.875, lng: 18.030, dni: 5, podpora: 7,
     autor: "Včelári Trenčín", pfp: "#2E7D52", ini: "V", karma: "Silver", lok: "Trenčín · Juh", cas: "5 d", num: 119968,
     titul: "Osadili sme úle na komunitnej záhrade — med pôjde seniorom.", popis: "Opeľovače pomôžu celej štvrti a med z prvého vytočenia rozdáme klubu dôchodcov.",
     emoji: "🍯", suma: 30, lajky: 21,
-    fotky: [U("photo-1441974231531-c6227db76b6e")] },
+    fotky: [U("photo-1586779161164-d89795b07b71")] },
 
   { id: 25, typ: "skutok", velkost: "small", kat: "Zdravie", media: "kreslene",
     skore: 3.5, typSituacie: "normal", modul: "good", lat: 48.892, lng: 18.020, dni: 6, podpora: 12,
@@ -198,7 +198,7 @@ export const POLOZKY: GoodPolozka[] = [
     autor: "Jana N.", pfp: "#3A8DD6", ini: "J", karma: "Gold", lok: "Trenčín · centrum", cas: "1 h", num: 120050,
     titul: "Uvarili sme teplé obedy pre ľudí bez domova — 120 porcií.", popis: "S partiou dobrovoľníkov každý piatok. Teplé jedlo a chvíľa, keď sa na nich niekto pozrie ako na človeka.",
     emoji: "🍲", suma: 52, lajky: 64,
-    fotky: [U("photo-1542838132-92c53300491e"), U("photo-1556909114-f6e7ad7d3136")] },
+    fotky: [U("photo-1628428799437-d886d7d2e9b2"), U("photo-1518737003272-dac7c4760d5e")] },
 
   { id: 27, typ: "charita", velkost: "med", kat: "Zdravie", zdroj: "Charity", overene: true, charLevel: "Gold",
     skore: 7, typSituacie: "normal", modul: "charity", narodne: true, lat: 48.146, lng: 17.107, dni: 1, podpora: 60,
@@ -225,7 +225,7 @@ export const POLOZKY: GoodPolozka[] = [
     titul: "Mobilný odber krvi pred nemocnicou — prišlo 70 darcov.",
     popis: "Vyhlásili sme výzvu pre 0− a A−. Za jedno dopoludnie prišlo 70 ľudí, naplnili sme zásoby na dva týždne. Ďakujeme každému, kto vyhrnul rukáv.",
     emoji: "🏥", suma: 90, lajky: 58,
-    fotky: [U("photo-1579684385127-1ef15d508118"), U("photo-1584308666744-24d5c474f2ae")] },
+    fotky: [U("photo-1615461065624-21b562ee5566")] },
 
   { id: 30, typ: "skutok", velkost: "small", kat: "Ucenie", media: "foto", overene: true,
     skore: 4, typSituacie: "normal", modul: "good", lat: 48.894, lng: 18.046, dni: 1, podpora: 9,
@@ -256,7 +256,7 @@ export const POLOZKY: GoodPolozka[] = [
     titul: "Otvorili sme herňu pre rodiny v núdzi — vstup zadarmo.",
     popis: "Teplo, hračky a káva pre mamy, ktoré inak celý deň ostávajú samy doma s deťmi. Príď, keď máš ťažký deň.",
     emoji: "🧸", suma: 20, lajky: 22,
-    fotky: [U("photo-1556909114-f6e7ad7d3136")] },
+    fotky: [U("photo-1589169011402-8b2cbd1ee593")] },
 
   // --- mesto (~6–13 km): okolité obce ---
   { id: 34, typ: "skutok", velkost: "med", kat: "Priroda", media: "foto", overene: true,
@@ -265,7 +265,7 @@ export const POLOZKY: GoodPolozka[] = [
     titul: "Dobrovoľníci vyčistili breh Vláry — 26 vriec odpadu.",
     popis: "Spojili sa školy, hasiči aj rybári. Za sobotu sme spravili z brehu opäť miesto na prechádzku.",
     emoji: "🌊", suma: 40, lajky: 33,
-    fotky: [U("photo-1470071459604-3b5ec3a7fe05"), U("photo-1542601906990-b4d3fb778b09")] },
+    fotky: [U("photo-1616680214084-22670de1bc82"), U("photo-1565803974275-dccd2f933cbb")] },
 
   { id: 35, typ: "skutok", velkost: "small", kat: "Zdravie", media: "foto",
     skore: 5, typSituacie: "normal", modul: "good", lat: 48.905, lng: 18.165, dni: 2, podpora: 16,
@@ -273,7 +273,7 @@ export const POLOZKY: GoodPolozka[] = [
     titul: "Kúpeľný deň zadarmo pre opatrovateľov seniorov.",
     popis: "Pozvali sme 40 ľudí, ktorí sa doma starajú o blízkych. Zaslúžia si oddych viac než ktokoľvek.",
     emoji: "💧", suma: 36, lajky: 29,
-    fotky: [U("photo-1506126613408-eca07ce68773")] },
+    fotky: [U("photo-1544843776-7c98a52e08a4")] },
 
   // --- okres (~15–30 km): skóre ≥ 6 ---
   { id: 36, typ: "skutok", velkost: "med", kat: "Ucenie", media: "foto", overene: true,
@@ -314,7 +314,7 @@ export const POLOZKY: GoodPolozka[] = [
     titul: "Plavecký výcvik pre deti z detského domova.",
     popis: "Vďaka dobrovoľníkom sa 18 detí naučilo plávať. Pre niektoré to bol prvý raz, čo ich niekto vzal na výlet.",
     emoji: "🏊", suma: 48, lajky: 44,
-    fotky: [U("photo-1500382017468-9049fed747ef")] },
+    fotky: [U("photo-1535444914790-6a5cc2b40201")] },
 
   // --- celá SR (národné kampane): skóre ≥ 9 alebo narodne ---
   { id: 41, typ: "charita", velkost: "med", kat: "Zdravie", zdroj: "Charity", overene: true, charLevel: "Gold",

@@ -280,12 +280,14 @@ function Detail({ z, onBack, onAutor }: { z: any; onBack: () => void; onAutor: (
         <span style={{ fontSize: 11, fontWeight: "bold", color: z.sponzor ? C.gold : C.blueL }}>{z.sponzor ? "D++" : "D+"}</span>
       </BackHeader>
 
-      {/* hero foto — klik = celá obrazovka, swipe medzi fotkami (16:9 na desktope) */}
-      <div style={{ position: "relative", ...(wide ? { width: "100%", aspectRatio: MEDIA_AR } : {}) }}>
-        <Foto src={z.fotky && z.fotky[0]} emoji="🖼" h={wide ? "100%" : 175} w={wide ? "100%" : undefined} onClick={() => z.fotky?.length && otvorGaleriu(z.fotky, 0)} />
-        <span style={{ position: "absolute", top: 10, right: 10, background: "rgba(0,0,0,.55)", borderRadius: RADIUS.lg, padding: `${SPACE.xxs}px ${SPACE.sm}px`, fontSize: 10, color: "var(--a-green)", pointerEvents: "none", display: "inline-flex", alignItems: "center", gap: SPACE.xxs }}><IkonaFoto size={12} color="var(--a-green)" /> foto z prípadu</span>
-        {z.fotky?.length > 1 && <span style={{ position: "absolute", bottom: 10, right: 10, background: "rgba(0,0,0,.6)", borderRadius: RADIUS.sm, padding: `${SPACE.xxs}px ${SPACE.xs}px`, fontSize: 10, color: "#fff", pointerEvents: "none" }}>⧉ {z.fotky.length} · klikni na foto</span>}
-      </div>
+      {/* hero foto — LEN ak prípad má fotku (bez placeholdera; inak čisto textový detail) */}
+      {z.fotky?.length ? (
+        <div style={{ position: "relative", ...(wide ? { width: "100%", aspectRatio: MEDIA_AR } : {}) }}>
+          <Foto src={z.fotky[0]} emoji="🖼" h={wide ? "100%" : 175} w={wide ? "100%" : undefined} onClick={() => otvorGaleriu(z.fotky!, 0)} />
+          <span style={{ position: "absolute", top: 10, right: 10, background: "rgba(0,0,0,.55)", borderRadius: RADIUS.lg, padding: `${SPACE.xxs}px ${SPACE.sm}px`, fontSize: 10, color: "var(--a-green)", pointerEvents: "none", display: "inline-flex", alignItems: "center", gap: SPACE.xxs }}><IkonaFoto size={12} color="var(--a-green)" /> foto z prípadu</span>
+          {z.fotky.length > 1 && <span style={{ position: "absolute", bottom: 10, right: 10, background: "rgba(0,0,0,.6)", borderRadius: RADIUS.sm, padding: `${SPACE.xxs}px ${SPACE.xs}px`, fontSize: 10, color: "#fff", pointerEvents: "none" }}>⧉ {z.fotky.length} · klikni na foto</span>}
+        </div>
+      ) : null}
       <MiniFotky fotky={z.fotky} />
 
       {/* meta — klik otvorí cudzí profil (§6) */}

@@ -10,17 +10,17 @@ export const USER_LOK = { lat: 48.894, lng: 18.044 };
 
 // ---- foto paleta (overené Unsplash ID; fallback na emoji je automatický) ----
 const PH = {
-  cyklo: [U("photo-1517649763962-0c623066013b"), U("photo-1476514525535-07fb3b4ae5f1")],
+  cyklo: [U("photo-1517649763962-0c623066013b"), U("photo-1534787238916-9ba6764efd4f")],
   eko: [U("photo-1542601906990-b4d3fb778b09"), U("photo-1470071459604-3b5ec3a7fe05")],
   les: [U("photo-1441974231531-c6227db76b6e"), U("photo-1448375240586-882707db888b")],
   med: [U("photo-1576091160399-112ba8d25d1d"), U("photo-1584308666744-24d5c474f2ae")],
-  senior: [U("photo-1542838132-92c53300491e"), U("photo-1556909114-f6e7ad7d3136")],
+  senior: [U("photo-1603129473525-4cd6f36fe057"), U("photo-1551559347-b2df2a690bd5")],
   ucenie: [U("photo-1509228468518-180dd4864904")],
   zviera: [U("photo-1450778869180-41d0601e046e")],
   hudba: [U("photo-1501386761578-eac5c94b800a")],
   joga: [U("photo-1506126613408-eca07ce68773")],
   kniha: [U("photo-1507842217343-583bb7270b66")],
-  voda: [U("photo-1500382017468-9049fed747ef")],
+  voda: [U("photo-1688799401080-a4e6fe51a861")],
 };
 
 // jedna položka feedu (skutok | talent | workshop | help | case).

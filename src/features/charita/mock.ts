@@ -15,7 +15,7 @@ export const ZBIERKA: Zbierka = {
   nazov: "Rodina Kováčová", lok: "Trenčín · Zámostie", karma: "Silver",
   pribeh: "V noci nám zhorel dom, ostali sme bez strechy s dvomi deťmi. Potrebujeme provizórne bývanie a základné veci.",
   suma: 1430, ciel: 2200, ludia: 38, avatar: AV(47),
-  fotky: [U("photo-1542856391-010fb87dcfed"), "/img/dom.jpg", U("photo-1500382017468-9049fed747ef")],
+  fotky: ["/img/dom.jpg", U("photo-1516567832553-66232148f74c")],
 };
 
 export const ZOFIA_FOTKY: string[] = [U("photo-1471864190281-a93a3070b6de"), U("photo-1584308666744-24d5c474f2ae")];
@@ -45,7 +45,7 @@ export const FEED_ITEMS: CharitaFeedItem[] = [
   { id: "charitatn", comp: "data", typ: "charita", modul: "charity", kat: "Pomoc", skore: 6, typSituacie: "normal", lat: 48.894, lng: 18.046, dni: 0, podpora: 41,
     nazov: "Charita Trenčín", lok: "Trenčín · centrum", overena: true, badgeL: "🍲 NÚDZA", tag: "Sociálne",
     popis: "Nízkoprahová jedáleň vydáva denne 120 teplých obedov ľuďom bez domova. Pred zimou chýbajú zásoby.",
-    vyzbierane: 940, ciel: 2500, fotky: [U("photo-1542838132-92c53300491e")] },
+    vyzbierane: 940, ciel: 2500, fotky: [U("photo-1628428799437-d886d7d2e9b2")] },
 ];
 
 // ---- adresár charít & OZ (vzorka z 50) ----

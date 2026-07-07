@@ -27,7 +27,7 @@ export const MOCK_FEED: HelpFeedItem[] = [
     skore: 9, typSituacie: "kriza", modul: "help", kat: "Pomoc", lat: 48.892, lng: 18.020, dni: 0, podpora: 38,
     pribeh: "V noci nám zhorel dom, ostali sme bez strechy s dvomi deťmi. Potrebujeme provizórne bývanie a základné veci.",
     suma: 1430, ciel: 2200, ludia: 38, ikona: "🔥", velkost: "velka",
-    fotky: ["/img/dom.jpg", U("photo-1542856391-010fb87dcfed"), U("photo-1500382017468-9049fed747ef")],
+    fotky: ["/img/dom.jpg", U("photo-1516567832553-66232148f74c")],
     avatar: AV(47) },
   { id: 2, typ: "ponuka", nazov: "Mgr. Lucia D.", odbornik: true, lok: "Centrum · online",
     skore: 4, typSituacie: "normal", modul: "help", kat: "Ucenie", narodne: true, lat: 48.894, lng: 18.044, dni: 0, podpora: 5,
@@ -73,7 +73,7 @@ export const MOCK_FEED: HelpFeedItem[] = [
     skore: 7, typSituacie: "normal", modul: "help", kat: "Zdravie", lat: 48.882, lng: 18.060, dni: 0, podpora: 27,
     pribeh: "Dvojičky sa nám narodili predčasne. Potrebujeme špeciálne zdravotnícke pomôcky a monitor dychu, ktoré poisťovňa nehradí.",
     suma: 760, ciel: 2000, ludia: 27, ikona: "👶", velkost: "velka", avatar: AV(45),
-    fotky: [U("photo-1584308666744-24d5c474f2ae"), U("photo-1579684385127-1ef15d508118")] },
+    fotky: [U("photo-1560306580-9e204fe45f3e")] },
 
   { id: 13, typ: "ponuka", nazov: "Lucia — kaderníčka", odbornik: true, lok: "Dlhé Hony",
     skore: 3, typSituacie: "normal", modul: "help", kat: "Zdravie", lat: 48.888, lng: 18.052, dni: 1, podpora: 5,
@@ -111,7 +111,7 @@ export const MOCK_FEED: HelpFeedItem[] = [
     skore: 6, typSituacie: "normal", modul: "help", kat: "Pomoc", lat: 48.894, lng: 18.046, dni: 0, podpora: 41,
     pribeh: "Naša nízkoprahová jedáleň vydáva denne 120 teplých obedov ľuďom bez domova. Pred zimou nám dochádzajú zásoby a teplé oblečenie.",
     suma: 940, ciel: 2500, ludia: 41, ikona: "🍲", velkost: "velka",
-    fotky: [U("photo-1542838132-92c53300491e"), U("photo-1556909114-f6e7ad7d3136")], avatar: AV(13) },
+    fotky: [U("photo-1628428799437-d886d7d2e9b2"), U("photo-1518737003272-dac7c4760d5e")], avatar: AV(13) },
 
   { id: 20, typ: "ponuka", nazov: "Stolárstvo Hôrka", odbornik: true, lok: "Trenčín · Juh",
     skore: 3, typSituacie: "normal", modul: "help", kat: "Komunita", lat: 48.875, lng: 18.030, dni: 1, podpora: 5,
@@ -148,7 +148,7 @@ export const MOCK_FEED: HelpFeedItem[] = [
     skore: 7, typSituacie: "normal", modul: "help", kat: "Zdravie", lat: 48.774, lng: 18.627, dni: 0, podpora: 34,
     pribeh: "Pre 24 detí zháňame príspevok na letný tábor a plavecký výcvik. Pre mnohé z nich je to prvý výlet mimo domova.",
     suma: 1280, ciel: 3200, ludia: 34, ikona: "⛺", velkost: "velka",
-    fotky: [U("photo-1500382017468-9049fed747ef")], avatar: AV(51) },
+    fotky: [U("photo-1535444914790-6a5cc2b40201")], avatar: AV(51) },
 
   // národná linka pomoci
   { id: 26, typ: "ponuka", nazov: "IPčko — krízová linka", odbornik: true, lok: "online · 24/7",
