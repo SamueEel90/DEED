@@ -15,7 +15,7 @@ import { QrModal } from "@/components/qr";
 import { Foto } from "@/components/media";
 import { PodporaSekcia, PlatbaModal } from "@/components/platba";
 import { IkonaFajka } from "@/components/icons";
-import { SplitConfigStep, splitValid, splitOwnerPct, splitCielePayload, splitPreQrModal, type SplitCiel } from "@/components/splitconfig";
+import { SplitConfigStep, splitValid, splitOwnerPct, splitCielePayload, splitPreQrModal, type SplitCiel, type SplitLabely } from "@/components/splitconfig";
 import { useQrSplitCreate, useQrSplitGet, useQrSplitPay } from "@/data";
 import { usePouzivatel } from "@/lib/pouzivatel";
 import type { QrSplitRow } from "@/types";
@@ -28,24 +28,39 @@ const jeUuid = (v?: string | null): v is string => !!v && /^[0-9a-f]{8}-[0-9a-f]
 // ============================================================
 // SplitQrSheet — vytvorenie QR (autorský alebo osobný)
 // ============================================================
+// variant = prekryv pre nešpecifické split (farársky „Rozdeliť dar": Rodine ↔ Kostolu).
+// Bez variantu = pôvodné influencer správanie (owner drží zvyšok, príspevok pripnutý 70 %).
+export type SplitVariant = {
+  nadpis: string;          // titulok sheetu (napr. „Rozdeliť dar")
+  emoji?: string;          // ikona sheetu (napr. 🕯)
+  podnadpis?: string;      // riadok pod titulkom
+  ownerLabel: string;      // vlastník = príjemca zvyšku (napr. „Rodine (pozostalí)")
+  preset: SplitCiel[];     // predvyplnení príjemcovia (napr. kostol 3 %, odstrániteľný)
+  qrPopis?: string;        // popis v QrModal
+  labely?: SplitLabely;    // texty/ikony do SplitConfigStep
+};
+
 interface SplitQrSheetProps {
   titul?: string;                    // čo sa rozdeľuje (skutok / charita / event)
   caseId?: string | null;            // zdrojový príspevok (landing odkazuje naň)
   zdroj?: "autor" | "osobny";
   odkaz?: string;                    // fallback do QR (mock)
+  variant?: SplitVariant;            // farársky variant (Rozdeliť dar) — inak influencer
   onClose?: () => void;
   toast?: (m: string) => void;
 }
 
-export function SplitQrSheet({ titul = "Skutok", caseId = null, zdroj = "osobny", odkaz = "https://deed.good/split/demo", onClose, toast }: SplitQrSheetProps) {
+export function SplitQrSheet({ titul = "Skutok", caseId = null, zdroj = "osobny", odkaz = "https://deed.good/split/demo", variant, onClose, toast }: SplitQrSheetProps) {
   const { ucetId, celeMeno } = usePouzivatel();
   const influencer = celeMeno && celeMeno.trim() ? celeMeno : "Ty (influencer)";
+  const owner = variant?.ownerLabel ?? influencer;
   const create = useQrSplitCreate();
   const [krok, setKrok] = useState<"nastav" | "hotovo">("nastav");
-  // tento príspevok je predvyplnený ako prvý príjemca (komu to ide) — influencer
-  // k nemu pridáva ďalších; owner (ja) si drží zvyšok. („ja + tento príspevok + …“)
+  // influencer: tento príspevok je predvyplnený ako prvý príjemca (owner drží zvyšok).
+  // variant (farársky): predvyplnení príjemcovia z variant.preset (napr. kostol 3 %).
   const [ciele, setCiele] = useState<SplitCiel[]>(() =>
-    titul && titul.trim() ? [{ id: caseId ?? "__case__", komu: titul, pct: 70, pinned: true }] : []
+    variant ? variant.preset
+      : titul && titul.trim() ? [{ id: caseId ?? "__case__", komu: titul, pct: 70, pinned: true }] : []
   );
   const [vytvoreny, setVytvoreny] = useState<QrSplitRow | null>(null);
   const [vyrabam, setVyrabam] = useState(false);
@@ -55,7 +70,7 @@ export function SplitQrSheet({ titul = "Skutok", caseId = null, zdroj = "osobny"
     setVyrabam(true);
     try {
       const row = await create.mutateAsync({
-        caseId: jeUuid(caseId) ? caseId : null, owner: ucetId, ownerText: influencer,
+        caseId: jeUuid(caseId) ? caseId : null, owner: ucetId, ownerText: owner,
         ownerPodiel: +(splitOwnerPct(ciele) / 100).toFixed(5),
         ciele: splitCielePayload(ciele), zdroj, mena: "DEED",
       });
@@ -69,9 +84,9 @@ export function SplitQrSheet({ titul = "Skutok", caseId = null, zdroj = "osobny"
   // ---- KROK 2: hotový split QR ----
   if (krok === "hotovo") {
     return (
-      <QrModal typ="rozdelenie" titul={`Split QR · ${titul}`} popis="Rozdelenie platby medzi príjemcov (influencer)"
+      <QrModal typ="rozdelenie" titul={`Split QR · ${titul}`} popis={variant?.qrPopis ?? "Rozdelenie platby medzi príjemcov (influencer)"}
         odkaz={vytvoreny?.slug ? qrUrl("split", vytvoreny.slug) : odkaz}
-        split={splitPreQrModal(influencer, ciele)} onClose={onClose} toast={toast} />
+        split={splitPreQrModal(owner, ciele)} onClose={onClose} toast={toast} />
     );
   }
 
@@ -79,14 +94,14 @@ export function SplitQrSheet({ titul = "Skutok", caseId = null, zdroj = "osobny"
   return (
     <Sheet onClose={onClose}>
       <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm, marginBottom: SPACE.xxs }}>
-        <span style={{ width: 36, height: 36, borderRadius: RADIUS.sm, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", background: tint(GREEN, .16), color: GREEN, fontSize: 18 }}>🎬</span>
+        <span style={{ width: 36, height: 36, borderRadius: RADIUS.sm, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", background: tint(GREEN, .16), color: GREEN, fontSize: 18 }}>{variant?.emoji ?? "🎬"}</span>
         <div style={{ minWidth: 0 }}>
-          <div style={{ fontSize: 16, fontWeight: 800 }}>Rozdeliť platbu (influencer)</div>
-          <div style={{ fontSize: 11.5, color: C.textTer, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{titul} · nastav aká časť ide komu</div>
+          <div style={{ fontSize: 16, fontWeight: 800 }}>{variant?.nadpis ?? "Rozdeliť platbu (influencer)"}</div>
+          <div style={{ fontSize: 11.5, color: C.textTer, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{variant?.podnadpis ?? `${titul} · nastav aká časť ide komu`}</div>
         </div>
       </div>
 
-      <SplitConfigStep ownerLabel={influencer} ciele={ciele} onCiele={setCiele} ownerColor={GREEN} />
+      <SplitConfigStep ownerLabel={owner} ciele={ciele} onCiele={setCiele} ownerColor={GREEN} labely={variant?.labely} />
 
       <button onClick={vytvor} disabled={!validne || vyrabam}
         style={{ width: "100%", height: 50, borderRadius: RADIUS.md, border: "none", marginTop: SPACE.gutter, fontWeight: 700, fontSize: 15, fontFamily: "inherit",

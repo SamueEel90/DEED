@@ -91,3 +91,34 @@ export function SheetPanel({ title, onClose, children }: { title: string; onClos
     </div>
   );
 }
+
+// ============================================================
+// A9 POTVRDENIE — nastavenie domovskej cirkvi = súhlas o vierovyznaní (A9).
+// Zdieľané: adresárová karta, farský profil, sprievodca výberom.
+// ============================================================
+export function A9Potvrdenie({ nazov, onConfirm, onCancel }: { nazov: string; onConfirm: () => void; onCancel: () => void }) {
+  return (
+    <div style={{ background: N.goldBg, border: `1px solid ${N.goldEdge}`, borderRadius: RADIUS.sm, padding: SPACE.gutter }}>
+      <div style={{ fontSize: 12, color: N.txt2, marginBottom: SPACE.sm, lineHeight: 1.5 }}>
+        Nastaviť <b style={{ color: N.txt }}>{nazov}</b> ako domovskú cirkev? Je to <b>súhlas o tvojom vierovyznaní (A9)</b> — riadi mäkkú stenu feedu. Dá sa kedykoľvek zmeniť.
+      </div>
+      <div style={{ display: "flex", gap: SPACE.sm }}>
+        <button onClick={onConfirm} style={{ ...a9Btn(N.ind, true), flex: 1 }}>Áno, potvrdiť</button>
+        <button onClick={onCancel} style={{ ...a9Btn(N.txt3, false), flex: "none", padding: `0 ${SPACE.gutter}px` }}>Zrušiť</button>
+      </div>
+    </div>
+  );
+}
+function a9Btn(col: string, primary: boolean): React.CSSProperties {
+  return { height: 40, border: `1px solid ${primary ? col : N.line}`, background: primary ? tint(col, .12) : N.card, color: col, borderRadius: RADIUS.sm, fontWeight: 700, fontSize: 12.5, fontFamily: "inherit", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: SPACE.xs };
+}
+
+// malá dlaždica pre správcovský prehľad (dashboard) + kompaktné štatistiky
+export function PrehladTile({ ikona, hodnota, label, color = N.ind }: { ikona?: ReactNode; hodnota: ReactNode; label: string; color?: string }) {
+  return (
+    <div style={{ flex: 1, minWidth: 0, background: N.card, border: `1px solid ${N.line}`, borderRadius: RADIUS.sm, padding: `${SPACE.sm}px ${SPACE.xs}px`, textAlign: "center" }}>
+      <div style={{ fontSize: 17, fontWeight: 800, color, lineHeight: 1.1 }}>{hodnota}</div>
+      <div style={{ fontSize: 10, color: N.txt3, marginTop: 3, display: "flex", alignItems: "center", justifyContent: "center", gap: 3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{ikona}{label}</div>
+    </div>
+  );
+}

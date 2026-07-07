@@ -6,7 +6,7 @@ import { navrhniTip } from "@/lib/poplatky";
 import { useMotiv, useUpgrade } from "@/components/context";
 import { usePouzivatel } from "@/lib/pouzivatel";
 import { Sheet } from "@/components/sheet";
-import { IkonaStit, IkonaFajka, Zdielanie, Palec } from "@/components/icons";
+import { IkonaStit, IkonaFajka, Zdielanie, Palec, Srdce } from "@/components/icons";
 
 // ============================================================
 // SIMULÁCIA PLATBY — EUR (karta · platobná brána) / DEED (peňaženka · chain)
@@ -237,7 +237,7 @@ const psKanal: CSSProperties = {
   cursor: "pointer", fontFamily: "inherit", background: C.surface2, border: `1px solid ${C.line}`, color: C.text,
 };
 
-export function PodporaSekcia({ onShare, upvotes = 0, onUpvote, onPodpor, onSms, onKanal, accent = "var(--a-info)", supLabel = "DROBNÁ PODPORA — klik a hneď odíde" }: { onShare?: () => void; upvotes?: number; onUpvote?: () => void; onPodpor: (a: number) => void; onSms?: () => void; onKanal: (k: string) => void; accent?: string; supLabel?: ReactNode }) {
+export function PodporaSekcia({ onShare, upvotes = 0, onUpvote, onPodpor, onSms, onKanal, accent = "var(--a-info)", supLabel = "DROBNÁ PODPORA — klik a hneď odíde", reakcia = "palec", bezDaru = false }: { onShare?: () => void; upvotes?: number; onUpvote?: () => void; onPodpor: (a: number) => void; onSms?: () => void; onKanal: (k: string) => void; accent?: string; supLabel?: ReactNode; reakcia?: "palec" | "srdce"; bezDaru?: boolean }) {
   const { svetly } = useMotiv();
   // pasívny prispieva len EUR + SMS; DEED (peňaženka) vyžaduje účet → výzva na registráciu
   const { mozeDeed } = usePouzivatel();
@@ -261,10 +261,13 @@ export function PodporaSekcia({ onShare, upvotes = 0, onUpvote, onPodpor, onSms,
           <Zdielanie size={18} color={C.textSec} /> Zdieľať
         </button>
         <button onClick={toggleLike} aria-pressed={liked} style={{ ...psPill(liked), color: liked ? "var(--a-danger)" : C.text }}>
-          <Palec size={18} color={liked ? "var(--a-danger)" : C.textSec} /> {lajkov}
+          {reakcia === "srdce"
+            ? <Srdce size={18} filled={liked} color={liked ? "var(--a-danger)" : C.textSec} />
+            : <Palec size={18} color={liked ? "var(--a-danger)" : C.textSec} />} {lajkov}
         </button>
       </div>
 
+      {bezDaru ? null : (<>
       <PSLabel>{supLabel}</PSLabel>
       <div style={{ display: "flex", gap: SPACE.xs, alignItems: "stretch" }}>
         {fix.map((b) => (
@@ -290,6 +293,7 @@ export function PodporaSekcia({ onShare, upvotes = 0, onUpvote, onPodpor, onSms,
           <span style={{ fontWeight: 800, fontSize: 15, color: accent }}>DEED</span>
         </button>
       </div>
+      </>)}
     </div>
   );
 }

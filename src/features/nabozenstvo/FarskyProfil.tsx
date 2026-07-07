@@ -3,20 +3,22 @@ import { SPACE, RADIUS } from "@/theme";
 import { MEDIA_AR } from "@/lib/cardSize";
 import {
   Foto, BackHeader, ProgresBox, PodporaSekcia, PlatbaModal, RecurringSheet, SplitQrSheet, QrModal,
-  OblubeneBtn, MoniBar, SegTabs, Zdielanie, IkonaVlajka, IkonaOpakovat, IkonaDoska, useGaleria, useLayout,
+  MoniBar, SegTabs, Switch, Input, EmptyState, useStrankaAkcie,
+  Zdielanie, IkonaVlajka, IkonaOpakovat, IkonaDoska, IkonaFoto, Srdce, useGaleria, useLayout,
 } from "@/shared";
 import { pressable } from "@/components/pressable";
-import type { Kanal, Oblubeny } from "@/types";
-import { N, Overena, Chip } from "./ui";
-import { obsahFarnosti, KAT_FARBA, type Farnost, type NabozFeedItem, type NabozTyp } from "./mock";
+import type { Kanal } from "@/types";
+import { N, Overena, Chip, SheetPanel, PrehladTile } from "./ui";
+import { obsahFarnosti, farnostStat, farskySplitVariant, KAT_FARBA, type Farnost, type NabozFeedItem, type NabozTyp } from "./mock";
 
 /*
   ============================================================
-  FARSKÝ PROFIL — donation-first (§L). Štýl Charita profilu, role-aware.
-  Poradie zhora: foto → popis → platobný modul (všeobecná podpora + QR) →
-  aktuálne kampane → nadchádzajúce udalosti → taby obsahu → doklady o použití.
-  · USER = foto + popis + dar + prezeranie kampaní/udalostí
-  · FARÁR = navyše Split QR · generovať QR na tlač · pridať/upraviť kampaň · kalendár · moderácia
+  FARSKÝ PROFIL — plnohodnotné rozhranie cirkvi (donation-first §L, role-aware).
+  Poradie: foto → identita + stat hlavička → (domovská) prepínač správy → sledovať →
+  [SPRÁVCA] prehľad (dashboard) + panel + editácia profilu →
+  všeobecná podpora + QR → kampane → udalosti → kontakt → taby obsahu → doklady.
+  · USER = prezeranie + dar + sledovať
+  · SPRÁVCA (farár, len na mojej domovskej) = prehľad, editácia profilu, kalendár, „+", Split QR…
   Farnosť je MIMO karmy — len badge „overená". Každá kampaň má vlastné darovanie (§57).
   ============================================================
 */
@@ -25,10 +27,17 @@ const TABY: { key: NabozTyp; label: string }[] = [
   { key: "zbierka", label: "Zbierky" }, { key: "udalost", label: "Udalosti" },
   { key: "oznam", label: "Oznamy" }, { key: "dobrovolnictvo", label: "Dobrovoľníctvo" },
 ];
+const TAB_PRAZDNE: Record<NabozTyp, string> = {
+  zbierka: "Zatiaľ žiadne zbierky", udalost: "Zatiaľ žiadne udalosti",
+  oznam: "Zatiaľ žiadne oznamy", dobrovolnictvo: "Zatiaľ žiadne výzvy o dobrovoľníkov",
+};
 
-export function FarskyProfil({ farnost, farar, onBack, onDetail, onKalendar, onPridat, toast }: {
-  farnost: Farnost; farar: boolean; onBack: () => void; onDetail: (it: NabozFeedItem) => void;
-  onKalendar: () => void; onPridat: () => void; toast: (m: string) => void;
+const eur = (n: number) => Math.round(n).toLocaleString("sk-SK");
+
+export function FarskyProfil({ farnost, farar, jeDomovska, following, onToggleFollow, onToggleSpravca, onBack, onDetail, onKalendar, onPridat, toast }: {
+  farnost: Farnost; farar: boolean; jeDomovska?: boolean; following?: boolean;
+  onToggleFollow?: () => void; onToggleSpravca?: () => void;
+  onBack: () => void; onDetail: (it: NabozFeedItem) => void; onKalendar: () => void; onPridat: () => void; toast: (m: string) => void;
 }) {
   const { wide } = useLayout();
   const otvorGaleriu = useGaleria();
@@ -39,13 +48,25 @@ export function FarskyProfil({ farnost, farar, onBack, onDetail, onKalendar, onP
   const [split, setSplit] = useState(false);
   const [qr, setQr] = useState<"donacny" | "zdielat" | null>(null);
   const [tab, setTab] = useState<NabozTyp>("zbierka");
+  const [sprava, setSprava] = useState(false); // editácia profilu (sheet)
+  // editovateľný pohľad profilu (mock — seedovaný z farnosti; komponent je keyed podľa farnost.id)
+  const [view, setView] = useState<ProfilView>({
+    foto: farnost.foto, popis: farnost.popis, omseSuhrn: farnost.omseSuhrn ?? "",
+    adresa: farnost.kontakt?.adresa ?? "", tel: farnost.kontakt?.tel ?? "", email: farnost.kontakt?.email ?? "", web: farnost.kontakt?.web ?? "",
+  });
 
   const obsah = obsahFarnosti(farnost.id);
+  const stat = farnostStat(farnost.id);
   const kampane = obsah.filter((it) => it.ntyp === "zbierka");
   const udalosti = obsah.filter((it) => it.ntyp === "udalost");
   const vTabe = obsah.filter((it) => it.ntyp === tab);
+  const maKontakt = !!(view.adresa || view.tel || view.email || view.web || view.omseSuhrn);
 
-  const oblubeny: Oblubeny = { refId: "farnost-" + farnost.id, typ: "charita", modul: "charity", nazov: farnost.nazov, emoji: "⛪", lok: farnost.obec, vyzbierane: suma, ciel: farnost.ciel };
+  // vlastný FAB profilu (parish-scoped) — deps [farnost.id, farar] (profil→profil sa neremountuje bez key)
+  useStrankaAkcie(() => ({
+    pridat: { id: "add", label: farar ? "Pridať do farnosti" : "Pridať oznam", onClick: onPridat },
+    extra: farar ? [{ id: "kal", label: "Kalendár & rozvrh", popis: "Omše, sviatky, udalosti", ikona: <IkonaDoska size={18} color={N.ind} />, onClick: onKalendar }] : [],
+  }), [farnost.id, farar]);
 
   function podpor(hodnota: number, text: string) { setSuma((s) => s + hodnota * 0.01); setLudia((l) => l + 1); toast(text); }
   function platbaHotova(s: number) { setSuma((x) => x + s * (platba === "EUR" ? 1 : 0.01)); setLudia((l) => l + 1); toast(`Odoslané ${platba === "EUR" ? s + " €" : s + " DEED"} · ${farnost.nazov}`); }
@@ -60,10 +81,15 @@ export function FarskyProfil({ farnost, farar, onBack, onDetail, onKalendar, onP
       </BackHeader>
       <div style={{ height: SPACE.sm }} />
 
-      {/* hero foto */}
+      {/* hero foto (+ správca: zmeniť foto) */}
       <div style={{ padding: `0 ${SPACE.md}px` }}>
         <div style={{ position: "relative", ...(wide ? { width: "100%", aspectRatio: MEDIA_AR } : {}) }}>
-          <Foto src={farnost.foto} emoji="⛪" h={wide ? "100%" : 210} w={wide ? "100%" : undefined} radius={14} onClick={() => otvorGaleriu([farnost.foto], 0)} />
+          <Foto src={view.foto} emoji="⛪" h={wide ? "100%" : 210} w={wide ? "100%" : undefined} radius={14} onClick={() => otvorGaleriu([view.foto], 0)} />
+          {farar && (
+            <span {...pressable(() => setSprava(true), "Zmeniť foto")} style={{ position: "absolute", bottom: 10, right: 10, display: "inline-flex", alignItems: "center", gap: SPACE.xxs, fontSize: 11.5, fontWeight: 700, color: "#fff", background: "rgba(8,11,18,.6)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)", border: "1px solid rgba(255,255,255,.18)", padding: `${SPACE.xxs}px ${SPACE.sm}px`, borderRadius: RADIUS.xs, cursor: "pointer" }}>
+              <IkonaFoto size={13} color="#fff" /> Upraviť
+            </span>
+          )}
         </div>
       </div>
 
@@ -77,15 +103,47 @@ export function FarskyProfil({ farnost, farar, onBack, onDetail, onKalendar, onP
           </div>
         </div>
 
-        {/* popis (história, založenie, výnimočnosti) */}
-        <div style={{ fontSize: 14, lineHeight: 1.55, color: N.txt2, margin: `${SPACE.sm}px 0 ${SPACE.gutter}px` }}>
-          {farnost.zalozena && <b style={{ color: N.gold }}>Založená {farnost.zalozena} · </b>}{farnost.popis}
+        {/* stat hlavička (bez karmy — len fakty) */}
+        <div style={{ fontSize: 11.5, color: N.txt3, marginBottom: SPACE.sm }}>
+          👥 {(farnost.sledovatelia ?? 0).toLocaleString("sk-SK")} sledujúcich · {stat.zbierky} {stat.zbierky === 1 ? "zbierka" : "zbierok"}{farnost.zalozena ? ` · Založená ${farnost.zalozena}` : ""}
         </div>
 
-        {/* Sledovať / Pridať k obľúbeným */}
-        <div style={{ marginBottom: SPACE.gutter }}>
-          <OblubeneBtn polozka={oblubeny} toast={toast} style={{ width: "100%" }} />
+        {/* popis (história, založenie, výnimočnosti) */}
+        <div style={{ fontSize: 14, lineHeight: 1.55, color: N.txt2, margin: `${SPACE.xs}px 0 ${SPACE.gutter}px` }}>
+          {farnost.zalozena && <b style={{ color: N.gold }}>Založená {farnost.zalozena} · </b>}{view.popis}
         </div>
+
+        {/* kontextový prepínač správy — LEN na profile mojej domovskej cirkvi */}
+        {jeDomovska && onToggleSpravca && (
+          <label style={{ display: "flex", alignItems: "center", gap: SPACE.sm, background: farar ? N.goldBg : N.card, border: `1px solid ${farar ? N.goldEdge : N.line}`, borderRadius: RADIUS.sm, padding: `${SPACE.sm}px ${SPACE.gutter}px`, marginBottom: SPACE.sm, cursor: "pointer" }}>
+            <span style={{ fontSize: 16 }}>🛠</span>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: farar ? N.gold : N.txt }}>Spravovať farnosť</div>
+              <div style={{ fontSize: 10.5, color: N.txt3 }}>Som správca tejto cirkvi (demo) — zapne prehľad, editáciu a nástroje</div>
+            </div>
+            <Switch on={farar} onChange={onToggleSpravca} ariaLabel="Spravovať farnosť" />
+          </label>
+        )}
+
+        {/* Sledovať (jeden zdroj pravdy = modulový oblubene) */}
+        {onToggleFollow && (
+          <button onClick={onToggleFollow} style={{ width: "100%", height: 44, border: `1px solid ${following ? N.greenEdge : N.indEdge}`, background: following ? N.greenBg : N.indBg, color: following ? N.green : N.ind, borderRadius: RADIUS.sm, fontWeight: 700, fontSize: 14, fontFamily: "inherit", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: SPACE.xs, marginBottom: SPACE.gutter }}>
+            <Srdce size={16} filled={following} color={following ? N.green : N.ind} /> {following ? "Sledované" : "Sledovať"}
+          </button>
+        )}
+
+        {/* ===== [SPRÁVCA] PREHĽAD (dashboard) ===== */}
+        {farar && (
+          <>
+            <SekciaNadpis>PREHĽAD FARNOSTI</SekciaNadpis>
+            <div style={{ display: "flex", gap: SPACE.sm, marginBottom: SPACE.gutter }}>
+              <PrehladTile hodnota={(farnost.sledovatelia ?? 0).toLocaleString("sk-SK")} label="sledujúcich" />
+              <PrehladTile hodnota={`${eur(suma)} €`} label="darov spolu" color={N.green} />
+              <PrehladTile hodnota={stat.zbierky} label="aktívnych zbierok" color={N.gold} />
+              <PrehladTile hodnota={ludia} label="podporovateľov" />
+            </div>
+          </>
+        )}
 
         {/* ===== PLATOBNÝ MODUL — VŠEOBECNÁ PODPORA FARNOSTI ===== */}
         <div style={{ fontSize: 11, fontWeight: 800, color: N.txt3, letterSpacing: ".04em", marginBottom: SPACE.xs }}>VŠEOBECNÁ PODPORA FARNOSTI</div>
@@ -93,7 +151,7 @@ export function FarskyProfil({ farnost, farar, onBack, onDetail, onKalendar, onP
         <div style={{ marginBottom: SPACE.sm }}>
           <PodporaSekcia
             onShare={() => setQr("zdielat")}
-            upvotes={ludia} onUpvote={() => toast("❤")}
+            upvotes={ludia} onUpvote={() => toast("❤")} reakcia="srdce"
             onPodpor={(s: number) => podpor(s, `Ďakujeme za ${s} DEED pre ${farnost.nazov}`)} onSms={() => podpor(100, "SMS podpora")}
             onKanal={(k: string) => setPlatba(k as Kanal)} accent={N.ind} supLabel="RÝCHLY DAR — klik a hneď odíde" />
         </div>
@@ -109,11 +167,12 @@ export function FarskyProfil({ farnost, farar, onBack, onDetail, onKalendar, onP
           Farnosť dostane vždy € (off-ramp) — donor platí DEED aj €. „Terminál netreba" — QR nahrádza platobný terminál.
         </div>
 
-        {/* ===== FARÁROV PANEL (role-aware) ===== */}
+        {/* ===== [SPRÁVCA] PANEL (role-aware) ===== */}
         {farar && (
           <div style={{ background: N.goldBg, border: `1px solid ${N.goldEdge}`, borderRadius: RADIUS.md, padding: SPACE.gutter, marginBottom: SPACE.gutter }}>
             <div style={{ fontSize: 11, fontWeight: 800, color: N.gold, letterSpacing: ".04em", marginBottom: SPACE.sm }}>🛠 SPRÁVA FARNOSTI (Môj DEED)</div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: SPACE.sm }}>
+              <FararBtn ikona={<IkonaFoto size={16} color={N.ind} />} label="Upraviť profil farnosti" onClick={() => setSprava(true)} />
               <FararBtn ikona={<IkonaDoska size={16} color={N.ind} />} label="Kalendár & rozvrh" onClick={onKalendar} />
               <FararBtn ikona={<span>＋</span>} label="Pridať kampaň/udalosť" onClick={onPridat} />
               <FararBtn ikona={<span>⚖</span>} label="Split QR (pohreb/svadba)" onClick={() => setSplit(true)} />
@@ -141,14 +200,32 @@ export function FarskyProfil({ farnost, farar, onBack, onDetail, onKalendar, onP
           </>
         )}
 
-        {/* ===== TABY OBSAHU (Zbierky / Udalosti / Oznamy / Dobrovoľníctvo) ===== */}
+        {/* ===== KONTAKT + ČASY OMŠÍ ===== */}
+        {maKontakt && (
+          <>
+            <SekciaNadpis>KONTAKT</SekciaNadpis>
+            <div style={{ background: N.card, border: `1px solid ${N.line}`, borderRadius: RADIUS.sm, padding: SPACE.gutter, display: "grid", gap: SPACE.xs }}>
+              {view.omseSuhrn && <KontaktRiadok ikona="🕑" label="Časy omší" hodnota={view.omseSuhrn} />}
+              {view.adresa && <KontaktRiadok ikona="📍" label="Adresa" hodnota={view.adresa} />}
+              {view.tel && <KontaktRiadok ikona="📞" label="Telefón" hodnota={view.tel} />}
+              {view.email && <KontaktRiadok ikona="✉" label="E-mail" hodnota={view.email} />}
+              {view.web && <KontaktRiadok ikona="🌐" label="Web" hodnota={view.web} />}
+            </div>
+          </>
+        )}
+
+        {/* ===== TABY OBSAHU (Zbierky / Udalosti / Oznamy / Dobrovoľníctvo) s počtami ===== */}
         <SekciaNadpis>OBSAH FARNOSTI</SekciaNadpis>
         <SegTabs options={TABY.map((t) => t.label)} value={TABY.find((t) => t.key === tab)!.label}
           onChange={(l: string) => setTab(TABY.find((t) => t.label === l)!.key)} ariaLabel="Taby profilu farnosti"
           style={{ display: "flex", gap: SPACE.xs, overflowX: "auto", paddingBottom: SPACE.xs, marginBottom: SPACE.sm }}
-          render={(c: string, on: boolean) => <Chip on={on}>{c}</Chip>} />
+          render={(c: string, on: boolean) => {
+            const key = TABY.find((t) => t.label === c)!.key;
+            const n = key === "zbierka" ? stat.zbierky : key === "udalost" ? stat.udalosti : key === "oznam" ? stat.oznamy : stat.dobro;
+            return <Chip on={on}>{c}{n ? ` · ${n}` : ""}</Chip>;
+          }} />
         {vTabe.length === 0 ? (
-          <div style={{ fontSize: 12.5, color: N.txt3, textAlign: "center", padding: SPACE.lg }}>V tejto sekcii zatiaľ nič nie je.</div>
+          <EmptyState emoji="⛪" title={TAB_PRAZDNE[tab]} text="Táto farnosť tu ešte nič nezverejnila." />
         ) : tab === "zbierka" ? (
           vTabe.map((it) => <KampanRiadok key={it.id} it={it} onClick={() => onDetail(it)} />)
         ) : (
@@ -163,19 +240,74 @@ export function FarskyProfil({ farnost, farar, onBack, onDetail, onKalendar, onP
 
       {platba && <PlatbaModal kanal={platba} komu={farnost.nazov} onClose={() => setPlatba(null)} onDone={platbaHotova} />}
       {recur && <RecurringSheet nazov={farnost.nazov} onClose={() => setRecur(false)} toast={toast} />}
-      {split && <SplitQrSheet titul={`Pohrebná/svadobná zbierka · ${farnost.nazov}`} caseId={null} zdroj="autor" onClose={() => setSplit(false)} toast={toast} />}
+      {split && <SplitQrSheet titul={`Pohrebná/svadobná zbierka · ${farnost.nazov}`} caseId={null} zdroj="autor"
+        variant={farskySplitVariant("pohreb")} onClose={() => setSplit(false)} toast={toast} />}
       {qr && (
         <QrModal typ={qr === "donacny" ? "platba" : "skutok"}
           titul={qr === "donacny" ? `Donačný QR · ${farnost.nazov}` : `Zdieľať profil · ${farnost.nazov}`}
           popis={qr === "donacny" ? "Nalep na kostol/pokladničku/nástenku → sken → dar za 2 kliky (farár generuje)" : "QR na šírenie profilu farnosti (user)"}
           onClose={() => setQr(null)} toast={toast} />
       )}
+      {sprava && (
+        <SpravaFarnosti farnost={farnost} view={view}
+          onSave={(v) => { setView(v); setSprava(false); toast("Profil farnosti uložený (demo)"); }}
+          onClose={() => setSprava(false)} />
+      )}
     </div>
+  );
+}
+
+// ---- editovateľný pohľad + sheet editácie profilu (správca, mock) ----
+type ProfilView = { foto: string; popis: string; omseSuhrn: string; adresa: string; tel: string; email: string; web: string };
+
+function SpravaFarnosti({ farnost, view, onSave, onClose }: { farnost: Farnost; view: ProfilView; onSave: (v: ProfilView) => void; onClose: () => void }) {
+  const [v, setV] = useState<ProfilView>(view);
+  const set = (k: keyof ProfilView) => (val: string) => setV((s) => ({ ...s, [k]: val }));
+  return (
+    <SheetPanel title={`Upraviť profil · ${farnost.skratka}`} onClose={onClose}>
+      <div style={{ fontSize: 12, color: N.txt3, marginBottom: SPACE.md, lineHeight: 1.5 }}>Správca cirkvi upravuje verejný profil. Zmeny sa v tomto deme uložia lokálne (bez backendu).</div>
+
+      <PoleLabel>FOTO (URL)</PoleLabel>
+      <Input value={v.foto} onChange={set("foto")} placeholder="https://…" />
+      <div style={{ marginTop: SPACE.xs, borderRadius: RADIUS.sm, overflow: "hidden", border: `1px solid ${N.line}` }}>
+        <Foto src={v.foto} emoji="⛪" h={120} radius={0} />
+      </div>
+
+      <PoleLabel>POPIS (história, výnimočnosti)</PoleLabel>
+      <Input multiline minH={90} value={v.popis} onChange={set("popis")} placeholder="Napíš popis farnosti…" />
+
+      <PoleLabel>ČASY OMŠÍ (súhrn)</PoleLabel>
+      <Input value={v.omseSuhrn} onChange={set("omseSuhrn")} placeholder="Ne 7:30 · 10:30 · Št 18:00" />
+      <div style={{ fontSize: 10.5, color: N.txt3, marginTop: SPACE.xxs, marginBottom: SPACE.xs }}>Podrobný rozvrh omší sa nastavuje v <b>Kalendár &amp; rozvrh</b>. Toto je len súhrn pre profil.</div>
+
+      <PoleLabel>KONTAKT</PoleLabel>
+      <div style={{ display: "grid", gap: SPACE.xs }}>
+        <Input value={v.adresa} onChange={set("adresa")} placeholder="Adresa" />
+        <Input value={v.tel} onChange={set("tel")} placeholder="Telefón" />
+        <Input value={v.email} onChange={set("email")} placeholder="E-mail" />
+        <Input value={v.web} onChange={set("web")} placeholder="Web" />
+      </div>
+
+      <button onClick={() => onSave(v)} style={{ width: "100%", marginTop: SPACE.md, height: 48, border: "none", borderRadius: RADIUS.md, background: N.green, color: "#fff", fontWeight: 700, fontSize: 15, fontFamily: "inherit", cursor: "pointer" }}>Uložiť zmeny</button>
+      <div style={{ fontSize: 10, color: N.txt3, textAlign: "center", padding: `${SPACE.sm}px 0` }}>Farnosť je overená inštitúcia — bez karmy/levelov. Editovať smie len správca (farár alebo delegovaná rada).</div>
+    </SheetPanel>
   );
 }
 
 function SekciaNadpis({ children }: { children: React.ReactNode }) {
   return <div style={{ fontSize: 11, fontWeight: 800, color: N.txt3, letterSpacing: ".04em", margin: `${SPACE.gutter}px 0 ${SPACE.sm}px` }}>{children}</div>;
+}
+function PoleLabel({ children }: { children: React.ReactNode }) {
+  return <div style={{ fontSize: 11, fontWeight: 700, color: N.txt3, letterSpacing: ".03em", margin: `${SPACE.md}px 0 ${SPACE.xxs}px` }}>{children}</div>;
+}
+function KontaktRiadok({ ikona, label, hodnota }: { ikona: string; label: string; hodnota: string }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm }}>
+      <span style={{ fontSize: 15, flex: "none", width: 20, textAlign: "center" }}>{ikona}</span>
+      <span style={{ fontSize: 11, color: N.txt3, flex: "none", width: 66 }}>{label}</span>
+      <span style={{ fontSize: 12.5, color: N.txt, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{hodnota}</span>
+    </div>
+  );
 }
 function FararBtn({ ikona, label, onClick }: { ikona: React.ReactNode; label: string; onClick: () => void }) {
   return (

@@ -3,7 +3,7 @@ import { SPACE, RADIUS } from "@/theme";
 import { Input, Switch, SplitQrSheet, tint } from "@/shared";
 import { pressable } from "@/components/pressable";
 import { N, SheetPanel } from "./ui";
-import { SPLIT_LABELY, type Farnost } from "./mock";
+import { SPLIT_LABELY, farskySplitVariant, type Farnost } from "./mock";
 
 /*
   ============================================================
@@ -109,7 +109,7 @@ export function PridatSheet({ farar, farnost, onClose, toast }: {
             toast={toast} />
         </SheetPanel>
         {split && <SplitQrSheet titul={uzol.titul}
-          caseId={null} zdroj="autor"
+          caseId={null} zdroj="autor" variant={farskySplitVariant(split)}
           onClose={() => setSplit(null)} toast={toast} />}
       </>
     );

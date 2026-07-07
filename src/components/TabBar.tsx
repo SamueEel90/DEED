@@ -26,7 +26,7 @@ export const VSETKY_MODULY: Modul[] = [
   { id: "good",    nazov: "Domov",   ikona: <IkonaDomov />,    popis: "Feed skutkov — DEED Good" },
   { id: "help",    nazov: "Help",    ikona: <IkonaSrdceLine />, popis: "Crowdfunding pre ľudí v núdzi" },
   { id: "charita", nazov: "Charita", ikona: <IkonaCharita />,  popis: "Zbierky, dobrovoľníctvo, adresár OZ" },
-  { id: "nabozenstvo", nazov: "Náboženstvo", ikona: <IkonaInstitucia />, popis: "Komunity registrovaných cirkví SR (opt-in)" },
+  { id: "nabozenstvo", nazov: "Náboženstvo", ikona: <IkonaInstitucia />, popis: "Adresár kostolov a farností · registrované cirkvi SR (opt-in)" },
   { id: "vyzva",   nazov: "Aktivity", ikona: <IkonaKompas />,  popis: "Skutky, talenty, workshopy a pomoc v okolí" },
   { id: "mapa",    nazov: "Mapa",    ikona: <IkonaMapa />,     popis: "Pomoc a skutky v okolí" },
   { id: "top",     nazov: "Top",     ikona: <IkonaPohar />,    popis: "Rebríčky darcov a hrdinov" },
