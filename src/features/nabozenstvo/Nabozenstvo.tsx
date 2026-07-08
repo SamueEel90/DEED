@@ -166,6 +166,60 @@ function NabozDomov({ wide, domFarnost, oblubene, rodina, onRodina, onProfil, on
     ? [...zoznam].sort((a, b) => kmNum(a.vzdial) - kmNum(b.vzdial))
     : [...zoznam].sort((a, b) => a.nazov.localeCompare(b.nazov, "sk"));
 
+  const adrPadX = desktop ? 0 : SPACE.md;
+
+  // panel „Moja cirkev" — na mobile stohovaný hore, na desktope bočný (ako „Môj DEED" v Domove)
+  const mojaCirkev = (
+    <>
+      <SekciaLabel>MOJA CIRKEV</SekciaLabel>
+      {domFarnost ? (
+        <>
+          <KostolKarta wide={wide} f={domFarnost} home following={oblubene.has(domFarnost.id)}
+            onClick={() => onProfil(domFarnost)} onFollow={() => onToggleFollow(domFarnost.id)} />
+          <MojaCirkevPrehlad f={domFarnost} onPrispevok={onPrispevok} onProfil={() => onProfil(domFarnost)} />
+        </>
+      ) : (
+        <div {...pressable(onSprievodca, "Nastav si domovskú cirkev")} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, background: N.indBg, border: `1px solid ${N.indEdge}`, borderRadius: RADIUS.md, padding: SPACE.gutter, cursor: "pointer" }}>
+          <IkonaInstitucia size={22} color={N.ind} />
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 13.5, fontWeight: 700, color: N.ind }}>Nastav si domovskú cirkev ›</div>
+            <div style={{ fontSize: 11, color: N.txt2 }}>Otvor adresár alebo profil kostola → „Nastaviť ako moju cirkev". Zobrazí sa navrchu.</div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+
+  // adresár kostolov — faseta + radenie + mriežka (hlavný obsah)
+  const adresar = (
+    <>
+      <div style={{ padding: `${SPACE.xs}px ${adrPadX}px 0` }}>
+        <SegTabs options={FASETY} value={rodina} onChange={onRodina} ariaLabel="Filter podľa vyznania"
+          style={{ display: "flex", gap: SPACE.xs, overflowX: "auto", paddingBottom: SPACE.xs }}
+          render={(c: string, on: boolean) => <Chip on={on}>{c === "Všetky" ? "Všetky cirkvi" : c}</Chip>} />
+      </div>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: SPACE.sm, padding: `0 ${adrPadX}px ${SPACE.sm}px` }}>
+        <SekciaLabel>{domFarnost ? "ĎALŠIE KOSTOLY" : "KOSTOLY"}{rodina !== "Všetky" ? ` · ${rodina}` : ""}</SekciaLabel>
+        <SegTabs options={["Najbližšie", "Abecedne"]} value={sort === "najblizsie" ? "Najbližšie" : "Abecedne"}
+          onChange={(l: string) => setSort(l === "Abecedne" ? "abecedne" : "najblizsie")} ariaLabel="Zoradenie adresára"
+          style={{ display: "flex", gap: SPACE.xs, flex: "none" }} render={(c: string, on: boolean) => <Chip on={on}>{c}</Chip>} />
+      </div>
+      {zoradene.length === 0 ? (
+        <EmptyState emoji="⛪" title="Žiadny kostol v tomto okruhu"
+          text="Skús väčší okruh alebo inú fasetu vyznania."
+          action={<span {...pressable(() => setVyberOkruh(true), "Zväčšiť okruh")} style={{ display: "inline-block", fontSize: 13, fontWeight: 700, color: N.ind, background: N.indBg, border: `1px solid ${N.indEdge}`, borderRadius: RADIUS.sm, padding: `${SPACE.sm}px ${SPACE.gutter}px`, cursor: "pointer" }}>Zväčšiť okruh</span>} />
+      ) : (
+        <FeedGrid cols={desktop ? 2 : wide ? 2 : 1} padding={`4px ${adrPadX}px 14px`} cards={zoradene.map((f) => (
+          <KostolKarta key={f.id} wide={wide} f={f} following={oblubene.has(f.id)}
+            onClick={() => onProfil(f)} onFollow={() => onToggleFollow(f.id)} />
+        ))} />
+      )}
+      <div style={{ fontSize: 10, color: N.txt3, textAlign: "center", padding: SPACE.sm, lineHeight: 1.5 }}>
+        Register MK SR · 18 registrovaných cirkví SR · adresár sa <b>nerebríčkuje</b> (triedenie, nie poradie)
+      </div>
+    </>
+  );
+
   return (
     <div style={{ paddingBottom: SPACE.gutter }}>
       <ModulHlavicka title="Náboženstvo" right={
@@ -195,55 +249,17 @@ function NabozDomov({ wide, domFarnost, oblubene, rodina, onRodina, onProfil, on
         }
       />
 
-      {/* MOJA CIRKEV — rýchly prehľad + info oznamy (alebo nudge na výber domovskej) */}
-      <div style={{ padding: `${SPACE.xs}px ${SPACE.md}px ${SPACE.sm}px` }}>
-        <SekciaLabel>MOJA CIRKEV</SekciaLabel>
-        {domFarnost ? (
-          <>
-            <KostolKarta wide={wide} f={domFarnost} home following={oblubene.has(domFarnost.id)}
-              onClick={() => onProfil(domFarnost)} onFollow={() => onToggleFollow(domFarnost.id)} />
-            <MojaCirkevPrehlad f={domFarnost} onPrispevok={onPrispevok} onProfil={() => onProfil(domFarnost)} />
-          </>
-        ) : (
-          <div {...pressable(onSprievodca, "Nastav si domovskú cirkev")} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, background: N.indBg, border: `1px solid ${N.indEdge}`, borderRadius: RADIUS.md, padding: SPACE.gutter, cursor: "pointer" }}>
-            <IkonaInstitucia size={22} color={N.ind} />
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 13.5, fontWeight: 700, color: N.ind }}>Nastav si domovskú cirkev ›</div>
-              <div style={{ fontSize: 11, color: N.txt2 }}>Otvor adresár alebo profil kostola → „Nastaviť ako moju cirkev". Zobrazí sa navrchu.</div>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* filter faseta vyznaní */}
-      <div style={{ padding: `${SPACE.xs}px ${SPACE.md}px 0` }}>
-        <SegTabs options={FASETY} value={rodina} onChange={onRodina} ariaLabel="Filter podľa vyznania"
-          style={{ display: "flex", gap: SPACE.xs, overflowX: "auto", paddingBottom: SPACE.xs }}
-          render={(c: string, on: boolean) => <Chip on={on}>{c === "Všetky" ? "Všetky cirkvi" : c}</Chip>} />
-      </div>
-
-      {/* nadpis adresára + radenie (adresár sa nerebríčkuje) */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: SPACE.sm, padding: `0 ${SPACE.md}px ${SPACE.sm}px` }}>
-        <SekciaLabel>{domFarnost ? "ĎALŠIE KOSTOLY" : "KOSTOLY"}{rodina !== "Všetky" ? ` · ${rodina}` : ""}</SekciaLabel>
-        <SegTabs options={["Najbližšie", "Abecedne"]} value={sort === "najblizsie" ? "Najbližšie" : "Abecedne"}
-          onChange={(l: string) => setSort(l === "Abecedne" ? "abecedne" : "najblizsie")} ariaLabel="Zoradenie adresára"
-          style={{ display: "flex", gap: SPACE.xs, flex: "none" }} render={(c: string, on: boolean) => <Chip on={on}>{c}</Chip>} />
-      </div>
-
-      {zoradene.length === 0 ? (
-        <EmptyState emoji="⛪" title="Žiadny kostol v tomto okruhu"
-          text="Skús väčší okruh alebo inú fasetu vyznania."
-          action={<span {...pressable(() => setVyberOkruh(true), "Zväčšiť okruh")} style={{ display: "inline-block", fontSize: 13, fontWeight: 700, color: N.ind, background: N.indBg, border: `1px solid ${N.indEdge}`, borderRadius: RADIUS.sm, padding: `${SPACE.sm}px ${SPACE.gutter}px`, cursor: "pointer" }}>Zväčšiť okruh</span>} />
+      {desktop ? (
+        <div style={{ display: "flex", gap: SPACE.lg, alignItems: "flex-start", padding: `${SPACE.xs}px ${SPACE.md}px 0` }}>
+          <div style={{ flex: 1, minWidth: 0 }}>{adresar}</div>
+          <aside style={{ width: 340, flex: "0 0 340px", minWidth: 0, position: "sticky", top: SPACE.sm }}>{mojaCirkev}</aside>
+        </div>
       ) : (
-        <FeedGrid cols={desktop ? 3 : wide ? 2 : 1} cards={zoradene.map((f) => (
-          <KostolKarta key={f.id} wide={wide} f={f} following={oblubene.has(f.id)}
-            onClick={() => onProfil(f)} onFollow={() => onToggleFollow(f.id)} />
-        ))} />
+        <>
+          <div style={{ padding: `${SPACE.xs}px ${SPACE.md}px ${SPACE.sm}px` }}>{mojaCirkev}</div>
+          {adresar}
+        </>
       )}
-
-      <div style={{ fontSize: 10, color: N.txt3, textAlign: "center", padding: SPACE.sm, lineHeight: 1.5 }}>
-        Register MK SR · 18 registrovaných cirkví SR · adresár sa <b>nerebríčkuje</b> (triedenie, nie poradie)
-      </div>
 
       {vyberOkruh && <OkruhVyber radius={radius} akcent={N.ind}
         onPick={(r: string) => { setRadius(r); setVyberOkruh(false); }}
