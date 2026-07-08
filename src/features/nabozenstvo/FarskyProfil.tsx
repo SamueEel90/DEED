@@ -8,7 +8,7 @@ import {
 } from "@/shared";
 import { pressable } from "@/components/pressable";
 import type { Kanal } from "@/types";
-import { N, Overena, Chip, SheetPanel, PrehladTile } from "./ui";
+import { N, Overena, Chip, SheetPanel, PrehladTile, A9Potvrdenie } from "./ui";
 import { obsahFarnosti, farnostStat, farskySplitVariant, KAT_FARBA, type Farnost, type NabozFeedItem, type NabozTyp } from "./mock";
 
 /*
@@ -34,9 +34,9 @@ const TAB_PRAZDNE: Record<NabozTyp, string> = {
 
 const eur = (n: number) => Math.round(n).toLocaleString("sk-SK");
 
-export function FarskyProfil({ farnost, farar, jeDomovska, following, onToggleFollow, onToggleSpravca, onBack, onDetail, onKalendar, onPridat, toast }: {
+export function FarskyProfil({ farnost, farar, jeDomovska, following, onToggleFollow, onToggleSpravca, onSetHome, onBack, onDetail, onKalendar, onPridat, toast }: {
   farnost: Farnost; farar: boolean; jeDomovska?: boolean; following?: boolean;
-  onToggleFollow?: () => void; onToggleSpravca?: () => void;
+  onToggleFollow?: () => void; onToggleSpravca?: () => void; onSetHome?: () => void;
   onBack: () => void; onDetail: (it: NabozFeedItem) => void; onKalendar: () => void; onPridat: () => void; toast: (m: string) => void;
 }) {
   const { wide } = useLayout();
@@ -49,6 +49,7 @@ export function FarskyProfil({ farnost, farar, jeDomovska, following, onToggleFo
   const [qr, setQr] = useState<"donacny" | "zdielat" | null>(null);
   const [tab, setTab] = useState<NabozTyp>("zbierka");
   const [sprava, setSprava] = useState(false); // editácia profilu (sheet)
+  const [potvrdHome, setPotvrdHome] = useState(false); // A9 potvrdenie „nastaviť ako moju cirkev"
   // editovateľný pohľad profilu (mock — seedovaný z farnosti; komponent je keyed podľa farnost.id)
   const [view, setView] = useState<ProfilView>({
     foto: farnost.foto, popis: farnost.popis, omseSuhrn: farnost.omseSuhrn ?? "",
@@ -63,8 +64,9 @@ export function FarskyProfil({ farnost, farar, jeDomovska, following, onToggleFo
   const maKontakt = !!(view.adresa || view.tel || view.email || view.web || view.omseSuhrn);
 
   // vlastný FAB profilu (parish-scoped) — deps [farnost.id, farar] (profil→profil sa neremountuje bez key)
+  // verejné pridávanie príspevku je zrušené — pridáva LEN správca (farár) cez svoje rozhranie
   useStrankaAkcie(() => ({
-    pridat: { id: "add", label: farar ? "Pridať do farnosti" : "Pridať oznam", onClick: onPridat },
+    pridat: farar ? { id: "add", label: "Pridať do farnosti", onClick: onPridat } : undefined,
     extra: farar ? [{ id: "kal", label: "Kalendár & rozvrh", popis: "Omše, sviatky, udalosti", ikona: <IkonaDoska size={18} color={N.ind} />, onClick: onKalendar }] : [],
   }), [farnost.id, farar]);
 
@@ -112,6 +114,20 @@ export function FarskyProfil({ farnost, farar, jeDomovska, following, onToggleFo
         <div style={{ fontSize: 14, lineHeight: 1.55, color: N.txt2, margin: `${SPACE.xs}px 0 ${SPACE.gutter}px` }}>
           {farnost.zalozena && <b style={{ color: N.gold }}>Založená {farnost.zalozena} · </b>}{view.popis}
         </div>
+
+        {/* nastaviť túto cirkev ako moju domovskú (zobrazí sa navrchu Náboženstva) */}
+        {!jeDomovska && onSetHome && (
+          potvrdHome ? (
+            <div style={{ marginBottom: SPACE.sm }}>
+              <A9Potvrdenie nazov={farnost.nazov} onConfirm={() => { onSetHome(); setPotvrdHome(false); }} onCancel={() => setPotvrdHome(false)} />
+            </div>
+          ) : (
+            <button onClick={() => setPotvrdHome(true)} style={{ width: "100%", height: 44, border: `1px solid ${N.goldEdge}`, background: N.goldBg, color: N.gold, borderRadius: RADIUS.sm, fontWeight: 700, fontSize: 14, fontFamily: "inherit", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: SPACE.xs, marginBottom: SPACE.sm }}>★ Nastaviť ako moju cirkev</button>
+          )
+        )}
+        {jeDomovska && (
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: SPACE.xs, fontSize: 12.5, fontWeight: 700, color: N.gold, background: N.goldBg, border: `1px solid ${N.goldEdge}`, borderRadius: RADIUS.sm, padding: `${SPACE.sm}px ${SPACE.gutter}px`, marginBottom: SPACE.sm }}>★ Toto je tvoja domovská cirkev</div>
+        )}
 
         {/* kontextový prepínač správy — LEN na profile mojej domovskej cirkvi */}
         {jeDomovska && onToggleSpravca && (

@@ -208,9 +208,10 @@ function CharitaFeed({ wide, toast, onDetail, onHladaj, onSheet, onBoard }: Feed
     return <Material key={it.id} wide={wide} onDetail={onDetail} />;
   };
 
-  // kontextové akcie stránky → plávajúce „+ Pridať" dole + sekcia „Na tejto stránke" v menu (☰)
+  // verejné pridávanie príspevku je zrušené — zbierky/kampane pridávajú len firmy (charity) cez svoje rozhranie.
+  // V ☰ ostávajú kontextové akcie „Na tejto stránke" (talent, nástenka).
   useStrankaAkcie(() => ({
-    pridat: { id: "add", label: "Pridať", onClick: () => onSheet("add") },
+    pridat: undefined,
     extra: [
       { id: "talent", label: "Ukáž svoj talent", popis: "Tvorivé skutky a talenty", ikona: <IkonaPlay size={18} color="var(--a-green)" />, onClick: gate(() => toast("Ukáž svoj talent (demo)")) },
       { id: "board", label: "Nástenka", popis: "Akcie a udalosti v okolí", ikona: <IkonaDoska size={18} color="var(--a-green)" />, onClick: onBoard },

@@ -1,17 +1,18 @@
 import { useState, useEffect } from "react";
 import { SIRKA, SPACE, RADIUS } from "@/theme";
-import { Foto, MiniFotky, ModulHlavicka, PodporaSekcia, PlatbaModal, SplitQrSheet, HladanieModal, toast, useGaleria, useLayout, useScrollHore, useStrankaAkcie, FeedGrid, ProgresBox, BackHeader, obalSiroky, SegTabs, tint, Lupa, Zdielanie, IkonaVlajka, IkonaFoto, IkonaInstitucia, Srdce, EmptyState, ScreenSwitch, SwipeBack } from "@/shared";
+import { Foto, MiniFotky, ModulHlavicka, PodporaSekcia, PlatbaModal, SplitQrSheet, HladanieModal, toast, useGaleria, useLayout, useScrollHore, useStrankaAkcie, FeedGrid, StatRiadok, FiltreStat, OkruhVyber, MoniBar, ProgresBox, BackHeader, obalSiroky, SegTabs, tint, Lupa, Zdielanie, IkonaVlajka, IkonaFoto, IkonaInstitucia, Srdce, EmptyState, ScreenSwitch, SwipeBack } from "@/shared";
 import { MEDIA_AR } from "@/lib/cardSize";
+import { FEED_CFG } from "@/lib/feed";
 import { Zvoncek } from "@/features/notifikacie/Notifikacie";
 import type { Kanal } from "@/types";
 import { pressable } from "@/components/pressable";
-import { N, Overena, Chip, SheetPanel, OverujemNamietam, A9Potvrdenie } from "./ui";
+import { N, Overena, Chip, SheetPanel, OverujemNamietam, A9Potvrdenie, PrehladTile } from "./ui";
 import { FarskyProfil } from "./FarskyProfil";
 import { Kalendar } from "./Kalendar";
 import { PridatSheet } from "./Pridat";
 import {
   FEED_ITEMS, CIRKVI, CIRKVI_FLAT, HLADAJ_DATA, FARNOSTI, FARNOST_PODLA_ID, farnostIdOf, farnostiCirkvi,
-  farskySplitVariant, farnostStat, kmNum, rodinaCirkvi, rodinaZoSkratky, KAT_FARBA,
+  farskySplitVariant, farnostStat, obsahFarnosti, kmNum, rodinaCirkvi, rodinaZoSkratky, KAT_FARBA,
   type NabozFeedItem, type Farnost, type CirkevPolozka,
 } from "./mock";
 
@@ -61,13 +62,14 @@ export default function ModulNabozenstvo({ wide }: { wide?: boolean; otvorModul?
         {screen === "domov" && (
           <NabozDomov wide={wide} domFarnost={domFarnost} oblubene={oblubene} rodina={rodina} onRodina={setRodina}
             onProfil={otvorProfil} onHladaj={() => setHladaj(true)} onSprievodca={() => setSheet("dir")}
-            onAdd={() => setSheet("add")} onToggleFollow={toggleFollow} />
+            onToggleFollow={toggleFollow}
+            onPrispevok={(z) => { const f = FARNOST_PODLA_ID(farnostIdOf(z)); if (f) setAktFarnost(f); setAkt(z); setScreen("detail"); }} />
         )}
         {screen === "profil" && aktFarnost && obal(
           <SwipeBack onBack={() => setScreen("domov")}>
             <FarskyProfil key={aktFarnost.id} farnost={aktFarnost} farar={spravovana === aktFarnost.id} jeDomovska={domovska === aktFarnost.id}
               following={oblubene.has(aktFarnost.id)} onToggleFollow={() => toggleFollow(aktFarnost.id)}
-              onToggleSpravca={() => toggleSpravca(aktFarnost.id)} toast={toast}
+              onToggleSpravca={() => toggleSpravca(aktFarnost.id)} onSetHome={() => { setDomovska(aktFarnost.id); toast(`Domovská cirkev nastavená · ${aktFarnost.skratka} (súhlas A9)`); }} toast={toast}
               onBack={() => setScreen("domov")} onDetail={(z) => { setAkt(z); setScreen("detail"); }}
               onKalendar={() => setScreen("kalendar")} onPridat={() => setSheet("add")} />
           </SwipeBack>
@@ -135,28 +137,34 @@ type DomovProps = {
   onProfil: (f: Farnost) => void;
   onHladaj: () => void;
   onSprievodca: () => void;
-  onAdd: () => void;
   onToggleFollow: (id: string) => void;
+  onPrispevok: (z: NabozFeedItem) => void;
 };
 
-function NabozDomov({ wide, domFarnost, oblubene, rodina, onRodina, onProfil, onHladaj, onSprievodca, onAdd, onToggleFollow }: DomovProps) {
+function NabozDomov({ wide, domFarnost, oblubene, rodina, onRodina, onProfil, onHladaj, onSprievodca, onToggleFollow, onPrispevok }: DomovProps) {
   const { desktop } = useLayout();
   const [sort, setSort] = useState<"najblizsie" | "abecedne">("najblizsie");
+  const [radius, setRadius] = useState<string>("mesto");
+  const [vyberOkruh, setVyberOkruh] = useState(false);
+  const radiusy = FEED_CFG.radiusy as Record<string, { km: number; krat: string }>;
+  const radiusKm = radiusy[radius]?.km ?? 15;
 
-  // FAB kontextovo: „+" len ak mám domovskú (obsah patrí do farnosti); sprievodca vždy v ☰
+  // Žiadny verejný „+": oznamy/zbierky tvorí len správca cirkvi (farnosť) cez svoje rozhranie.
+  // V ☰ ostáva adresár cirkví (sprievodca výberom + nastavenie domovskej).
   useStrankaAkcie(() => ({
-    pridat: domFarnost ? { id: "add", label: "Pridať oznam", onClick: onAdd } : undefined,
-    extra: [{ id: "dir", label: "Sprievodca výberom", popis: "Nastav domovskú · poloha → vyznanie → farnosť", ikona: <IkonaInstitucia size={18} color={N.ind} />, onClick: onSprievodca }],
-  }), [!!domFarnost]);
+    pridat: undefined,
+    extra: [{ id: "dir", label: "Adresár cirkví SR", popis: "18 registrovaných cirkví · nájdi a nastav domovskú", ikona: <IkonaInstitucia size={18} color={N.ind} />, onClick: onSprievodca }],
+  }), []);
 
-  // adresár = FARNOSTI bez domovskej (tá je v hero), filter faseta + explicitné radenie (NIKDY rebríček)
-  const zoznam = FARNOSTI
+  // okruh filtruje kostoly podľa vzdialenosti (adresár sa NIKDY nerebríčkuje — len filter + radenie)
+  const vOkruhu = FARNOSTI.filter((f) => kmNum(f.vzdial) <= radiusKm);
+  const udalostiMesiac = vOkruhu.reduce((s, f) => s + farnostStat(f.id).udalosti, 0);
+  const zoznam = vOkruhu
     .filter((f) => f.id !== domFarnost?.id)
     .filter((f) => rodina === "Všetky" || rodinaCirkvi(f.cirkev) === rodina);
   const zoradene = sort === "najblizsie"
     ? [...zoznam].sort((a, b) => kmNum(a.vzdial) - kmNum(b.vzdial))
     : [...zoznam].sort((a, b) => a.nazov.localeCompare(b.nazov, "sk"));
-  const pocet = zoradene.length + (domFarnost ? 1 : 0);
 
   return (
     <div style={{ paddingBottom: SPACE.gutter }}>
@@ -167,48 +175,65 @@ function NabozDomov({ wide, domFarnost, oblubene, rodina, onRodina, onProfil, on
         </>
       } />
 
-      {/* JEDEN filter riadok — fasety vyznaní (register MK SR) */}
+      {/* adresár cirkví (sekčný sprievodca) + lokalita/okruh — na desktope na jednom riadku */}
+      <FiltreStat
+        filtre={
+          <div style={{ padding: `0 ${SPACE.md}px ${SPACE.sm}px` }}>
+            <div {...pressable(onSprievodca, "Adresár cirkví SR")} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, background: N.indBg, border: `1px solid ${N.indEdge}`, borderRadius: RADIUS.sm, padding: `${SPACE.sm}px ${SPACE.gutter}px`, cursor: "pointer" }}>
+              <span style={{ width: 38, height: 38, borderRadius: RADIUS.sm, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", background: tint(N.ind, .15) }}><IkonaInstitucia size={20} color={N.ind} /></span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 14, fontWeight: 700 }}>Adresár cirkví SR</div>
+                <div style={{ fontSize: 11.5, color: N.txt3 }}>18 registrovaných cirkví · nájdi a nastav domovskú</div>
+              </div>
+              <span style={{ color: N.txt3, fontSize: 16 }}>›</span>
+            </div>
+          </div>
+        }
+        stat={
+          <StatRiadok inline={desktop} pocet={vOkruhu.length} jednotka="kostolov" mesiac={udalostiMesiac}
+            okruh={radiusy[radius]?.krat ?? "okruh"} onOkruh={() => setVyberOkruh(true)} />
+        }
+      />
+
+      {/* MOJA CIRKEV — rýchly prehľad + info oznamy (alebo nudge na výber domovskej) */}
+      <div style={{ padding: `${SPACE.xs}px ${SPACE.md}px ${SPACE.sm}px` }}>
+        <SekciaLabel>MOJA CIRKEV</SekciaLabel>
+        {domFarnost ? (
+          <>
+            <KostolKarta wide={wide} f={domFarnost} home following={oblubene.has(domFarnost.id)}
+              onClick={() => onProfil(domFarnost)} onFollow={() => onToggleFollow(domFarnost.id)} />
+            <MojaCirkevPrehlad f={domFarnost} onPrispevok={onPrispevok} onProfil={() => onProfil(domFarnost)} />
+          </>
+        ) : (
+          <div {...pressable(onSprievodca, "Nastav si domovskú cirkev")} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, background: N.indBg, border: `1px solid ${N.indEdge}`, borderRadius: RADIUS.md, padding: SPACE.gutter, cursor: "pointer" }}>
+            <IkonaInstitucia size={22} color={N.ind} />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 13.5, fontWeight: 700, color: N.ind }}>Nastav si domovskú cirkev ›</div>
+              <div style={{ fontSize: 11, color: N.txt2 }}>Otvor adresár alebo profil kostola → „Nastaviť ako moju cirkev". Zobrazí sa navrchu.</div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* filter faseta vyznaní */}
       <div style={{ padding: `${SPACE.xs}px ${SPACE.md}px 0` }}>
         <SegTabs options={FASETY} value={rodina} onChange={onRodina} ariaLabel="Filter podľa vyznania"
           style={{ display: "flex", gap: SPACE.xs, overflowX: "auto", paddingBottom: SPACE.xs }}
           render={(c: string, on: boolean) => <Chip on={on}>{c === "Všetky" ? "Všetky cirkvi" : c}</Chip>} />
       </div>
 
-      {/* počet + radenie (adresár sa nerebríčkuje) */}
+      {/* nadpis adresára + radenie (adresár sa nerebríčkuje) */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: SPACE.sm, padding: `0 ${SPACE.md}px ${SPACE.sm}px` }}>
-        <span style={{ fontSize: 11.5, color: N.txt3, fontWeight: 600, whiteSpace: "nowrap" }}>{pocet} {sklon(pocet, "kostol", "kostoly", "kostolov")}</span>
+        <SekciaLabel>{domFarnost ? "ĎALŠIE KOSTOLY" : "KOSTOLY"}{rodina !== "Všetky" ? ` · ${rodina}` : ""}</SekciaLabel>
         <SegTabs options={["Najbližšie", "Abecedne"]} value={sort === "najblizsie" ? "Najbližšie" : "Abecedne"}
           onChange={(l: string) => setSort(l === "Abecedne" ? "abecedne" : "najblizsie")} ariaLabel="Zoradenie adresára"
-          style={{ display: "flex", gap: SPACE.xs }} render={(c: string, on: boolean) => <Chip on={on}>{c}</Chip>} />
+          style={{ display: "flex", gap: SPACE.xs, flex: "none" }} render={(c: string, on: boolean) => <Chip on={on}>{c}</Chip>} />
       </div>
 
-      {/* „Moja cirkev" hero — alebo nudge na sprievodcu (ak nemám domovskú) */}
-      <div style={{ padding: `0 ${SPACE.md}px ${SPACE.sm}px` }}>
-        {domFarnost ? (
-          <>
-            <SekciaLabel>MOJA CIRKEV</SekciaLabel>
-            <KostolKarta wide={wide} f={domFarnost} home following={oblubene.has(domFarnost.id)}
-              onClick={() => onProfil(domFarnost)} onFollow={() => onToggleFollow(domFarnost.id)} />
-          </>
-        ) : (
-          <div {...pressable(onSprievodca, "Vyber si domovskú cirkev")} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, background: N.indBg, border: `1px solid ${N.indEdge}`, borderRadius: RADIUS.md, padding: SPACE.gutter, cursor: "pointer" }}>
-            <IkonaInstitucia size={22} color={N.ind} />
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 13.5, fontWeight: 700, color: N.ind }}>Vyber si domovskú cirkev ›</div>
-              <div style={{ fontSize: 11, color: N.txt2 }}>Sprievodca: poloha → vyznanie → farnosť (súhlas A9)</div>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* ADRESÁR — len kostoly, mriežka (desktop/tablet) / zoznam (mobil) */}
-      {domFarnost && zoradene.length > 0 && (
-        <div style={{ padding: `0 ${SPACE.md}px` }}><SekciaLabel>ĎALŠIE KOSTOLY{rodina !== "Všetky" ? ` · ${rodina}` : ""}</SekciaLabel></div>
-      )}
       {zoradene.length === 0 ? (
-        <EmptyState emoji="⛪" title="Žiadny kostol v tomto vyznaní"
-          text="V tejto rodine cirkví zatiaľ nemáme farnosť. Skús inú fasetu alebo „Všetky cirkvi“."
-          action={<span {...pressable(() => onRodina("Všetky"), "Zrušiť filter")} style={{ display: "inline-block", fontSize: 13, fontWeight: 700, color: N.ind, background: N.indBg, border: `1px solid ${N.indEdge}`, borderRadius: RADIUS.sm, padding: `${SPACE.sm}px ${SPACE.gutter}px`, cursor: "pointer" }}>Zrušiť filter</span>} />
+        <EmptyState emoji="⛪" title="Žiadny kostol v tomto okruhu"
+          text="Skús väčší okruh alebo inú fasetu vyznania."
+          action={<span {...pressable(() => setVyberOkruh(true), "Zväčšiť okruh")} style={{ display: "inline-block", fontSize: 13, fontWeight: 700, color: N.ind, background: N.indBg, border: `1px solid ${N.indEdge}`, borderRadius: RADIUS.sm, padding: `${SPACE.sm}px ${SPACE.gutter}px`, cursor: "pointer" }}>Zväčšiť okruh</span>} />
       ) : (
         <FeedGrid cols={desktop ? 3 : wide ? 2 : 1} cards={zoradene.map((f) => (
           <KostolKarta key={f.id} wide={wide} f={f} following={oblubene.has(f.id)}
@@ -219,6 +244,49 @@ function NabozDomov({ wide, domFarnost, oblubene, rodina, onRodina, onProfil, on
       <div style={{ fontSize: 10, color: N.txt3, textAlign: "center", padding: SPACE.sm, lineHeight: 1.5 }}>
         Register MK SR · 18 registrovaných cirkví SR · adresár sa <b>nerebríčkuje</b> (triedenie, nie poradie)
       </div>
+
+      {vyberOkruh && <OkruhVyber radius={radius} akcent={N.ind}
+        onPick={(r: string) => { setRadius(r); setVyberOkruh(false); }}
+        onClose={() => setVyberOkruh(false)} />}
+    </div>
+  );
+}
+
+// rýchly prehľad mojej cirkvi (à la „Môj DEED"): dlaždice + aktívne zbierky + info oznamy/udalosti
+function MojaCirkevPrehlad({ f, onPrispevok, onProfil }: { f: Farnost; onPrispevok: (z: NabozFeedItem) => void; onProfil: () => void }) {
+  const obsah = obsahFarnosti(f.id);
+  const zbierky = obsah.filter((it) => it.ntyp === "zbierka").slice(0, 2);
+  const oznamy = obsah.filter((it) => it.ntyp === "oznam" || it.ntyp === "udalost").slice(0, 3);
+  const st = farnostStat(f.id);
+  return (
+    <div style={{ marginTop: SPACE.sm }}>
+      <div style={{ display: "flex", gap: SPACE.xs, marginBottom: SPACE.sm }}>
+        <PrehladTile ikona="👥 " hodnota={(f.sledovatelia ?? 0).toLocaleString("sk-SK")} label="sledujúcich" color={N.ind} />
+        <PrehladTile ikona="💶 " hodnota={`${Math.round(f.vyzbierane ?? 0).toLocaleString("sk-SK")} €`} label="vyzbierané" color={N.green} />
+        <PrehladTile ikona="🕊 " hodnota={String(st.zbierky)} label="zbierok" color={N.gold} />
+      </div>
+
+      {zbierky.map((z) => (
+        <div key={z.id} {...pressable(() => onPrispevok(z), z.nazov)} style={{ background: N.indBg, border: `1px solid ${N.line}`, borderRadius: RADIUS.sm, padding: SPACE.sm, marginBottom: SPACE.xs, cursor: "pointer" }}>
+          <div style={{ fontSize: 13, fontWeight: 700, marginBottom: SPACE.xxs, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{z.emoji ? `${z.emoji} ` : ""}{z.nazov}</div>
+          {z.ciel != null && <MoniBar vyzbierane={z.vyzbierane ?? 0} ciel={z.ciel} mini />}
+        </div>
+      ))}
+
+      {oznamy.length > 0 && <SekciaLabel>OZNAMY &amp; UDALOSTI</SekciaLabel>}
+      {oznamy.map((o) => (
+        <div key={o.id} {...pressable(() => onPrispevok(o), o.nazov)} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, padding: `${SPACE.xs}px 0`, borderTop: `1px solid ${N.line}`, cursor: "pointer" }}>
+          <span style={{ width: 30, height: 30, borderRadius: RADIUS.xs, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, background: tint(N.ind, .12) }}>{o.emoji ?? "📢"}</span>
+          <div style={{ flex: 1, minWidth: 0, fontSize: 12.5, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{o.nazov}</div>
+          <span style={{ color: N.txt3, fontSize: 14, flex: "none" }}>›</span>
+        </div>
+      ))}
+
+      {zbierky.length === 0 && oznamy.length === 0 && (
+        <div style={{ fontSize: 11.5, color: N.txt3, padding: `${SPACE.xs}px 0` }}>Táto cirkev zatiaľ nemá zbierky ani oznamy.</div>
+      )}
+
+      <button onClick={onProfil} style={{ width: "100%", marginTop: SPACE.sm, height: 40, border: `1px solid ${N.indEdge}`, background: N.indBg, color: N.ind, borderRadius: RADIUS.sm, fontWeight: 700, fontSize: 13, fontFamily: "inherit", cursor: "pointer" }}>Otvoriť profil cirkvi ›</button>
     </div>
   );
 }
@@ -241,7 +309,7 @@ function KostolKarta({ wide, f, home, following, onClick, onFollow }: {
   return (
     <div {...pressable(onClick, f.nazov)} style={{ background: N.card, border: `1px solid ${home ? N.indEdge : N.line}`, borderRadius: RADIUS.md, overflow: "hidden", cursor: "pointer", boxShadow: home ? `0 0 20px ${tint(N.ind, .1)}` : "none" }}>
       <div style={{ position: "relative" }}>
-        <Foto src={f.foto} emoji="⛪" h={150} radius={0} />
+        <Foto src={f.foto} emoji="⛪" h={180} radius={0} />
         <span style={fotoBadge(10, "left")}>{f.skratka}</span>
         {home && <span style={{ ...fotoBadge(10, "right"), display: "inline-flex", alignItems: "center", gap: 3 }}><span style={{ color: "#F4CE63" }}>★</span> moja</span>}
         {onFollow && (
