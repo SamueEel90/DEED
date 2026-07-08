@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { SIRKA, C, GRAD, GRAD_ZELENY, SPACE, RADIUS } from "@/theme";
-import { toast, Sheet, AvatarUroven, useScrollHore, useViac, useMotiv, useLayout, useTvorbaGate, obalSiroky, QrModal, pressable, IkonaMenu, IkonaNastavenia, IkonaSipVlavo, IkonaSipDole, IkonaPenazenka, IkonaHviezda, IkonaFajka, IkonaDoska, IkonaUsmev, IkonaPin, IkonaSlnko, IkonaMesiac, IkonaStit, SkeletonRiadky, EmptyState, ErrorState, ScreenSwitch } from "@/shared";
+import { toast, Sheet, AvatarUroven, useScrollHore, useViac, useMotiv, useLayout, useTvorbaGate, obalSiroky, QrModal, pressable, IkonaMenu, IkonaNastavenia, IkonaSipVlavo, IkonaSipDole, IkonaPenazenka, IkonaHviezda, IkonaFajka, IkonaDoska, IkonaUsmev, IkonaOsoba, IkonaPin, IkonaSlnko, IkonaMesiac, IkonaStit, SkeletonRiadky, EmptyState, ErrorState, ScreenSwitch } from "@/shared";
 import { RetazDobraSheet } from "@/features/retaz/RetazDobra";
 import { MojeQrKody } from "@/features/retaz/MojeQrKody";
 import { signOut } from "@/lib/auth";
@@ -38,6 +38,10 @@ export default function ModulProfil({ wide, walletReq = 0 }: ProfilProps) {
   const sub = (n: string) => { setSubNazov(n); setScreen("sub"); };
   const obal = (el: React.ReactNode) => obalSiroky(el, { wide, desktop, max: SIRKA.stlpec, maxDesktop: SIRKA.citanie });
 
+  // DESKTOP — profesionálny 2-panel layout: bočná navigácia (identita + sekcie) + obsahový panel
+  if (desktop) return <ProfilDesktop screen={screen} subNazov={subNazov} setScreen={setScreen} onSub={sub} />;
+
+  // MOBIL — pôvodný tok (dlaždice → pod-obrazovky cez ScreenSwitch)
   return (
     <div style={{ minHeight: "100%" }}>
       <ScreenSwitch k={screen}>
@@ -46,16 +50,79 @@ export default function ModulProfil({ wide, walletReq = 0 }: ProfilProps) {
       {screen === "sub" && obal(<SubScreen nazov={subNazov} toast={toast} onBack={() => setScreen("profil")} />)}
       {screen === "priatelia" && obal(<PriateliaScreen toast={toast} onBack={() => setScreen("profil")} />)}
       {screen === "nastavenia" && obal(<NastaveniaScreen toast={toast} onBack={() => setScreen("profil")} onNotif={() => setScreen("notif")} />)}
-      {screen === "notif" && obal(
-        <div style={{ paddingBottom: SPACE.gutter }}>
-          <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm, padding: "16px 18px 8px" }}>
-            <div onClick={() => setScreen("nastavenia")} style={spatBtn}><IkonaSipVlavo size={18} color={C.textSec} /></div>
-            <h3 style={{ fontSize: 17, margin: 0 }}>Notifikácie</h3>
-          </div>
-          <div style={{ padding: "0 16px", display: "flex", flexDirection: "column" }}><NotifNastavenia embedded toast={toast} /></div>
-        </div>
-      )}
+      {screen === "notif" && obal(<NotifObrazovka onBack={() => setScreen("nastavenia")} />)}
       </ScreenSwitch>
+    </div>
+  );
+}
+
+// ===================== DESKTOP — bočná navigácia + obsahový panel =====================
+const PROFIL_NAV: { key: string; nazov?: string; label: string; ikona: React.ReactNode }[] = [
+  { key: "profil", label: "Prehľad", ikona: <IkonaOsoba size={18} /> },
+  { key: "wallet", label: "Peňaženka", ikona: <IkonaPenazenka size={18} /> },
+  { key: "sub", nazov: "Karma a úrovne", label: "Karma a úrovne", ikona: <IkonaHviezda size={18} /> },
+  { key: "sub", nazov: "Moje skutky", label: "Moje skutky", ikona: <IkonaFajka size={18} /> },
+  { key: "sub", nazov: "Štatistiky a umiestnenie", label: "Štatistiky", ikona: <IkonaDoska size={18} /> },
+  { key: "priatelia", label: "Priatelia", ikona: <IkonaUsmev size={18} /> },
+  { key: "nastavenia", label: "Nastavenia", ikona: <IkonaNastavenia size={18} /> },
+];
+
+function ProfilDesktop({ screen, subNazov, setScreen, onSub }: { screen: string; subNazov: string | null; setScreen: (s: string) => void; onSub: (n: string) => void }) {
+  const naNastavenia = () => setScreen("nastavenia");
+  const jeAktivny = (it: (typeof PROFIL_NAV)[number]) => screen === it.key && (it.key !== "sub" || subNazov === it.nazov);
+
+  let obsah: React.ReactNode;
+  if (screen === "wallet") obsah = <Penazenka toast={toast} desktop onBack={() => setScreen("profil")} />;
+  else if (screen === "sub") obsah = <SubScreen nazov={subNazov} toast={toast} desktop onBack={() => setScreen("profil")} />;
+  else if (screen === "priatelia") obsah = <PriateliaScreen toast={toast} desktop onBack={() => setScreen("profil")} />;
+  else if (screen === "nastavenia") obsah = <NastaveniaScreen toast={toast} desktop onBack={() => setScreen("profil")} onNotif={() => setScreen("notif")} />;
+  else if (screen === "notif") obsah = <NotifObrazovka desktop onBack={() => setScreen("nastavenia")} />;
+  else obsah = (
+    <div style={{ padding: `${SPACE.md}px ${SPACE.md}px ${SPACE.lg}px` }}>
+      <h3 style={{ fontSize: 18, margin: `0 0 ${SPACE.gutter}px` }}>Prehľad</h3>
+      <PrehladZaujmy />
+    </div>
+  );
+
+  return (
+    <div style={{ maxWidth: SIRKA.plocha, margin: "0 auto", padding: `${SPACE.md}px ${SPACE.md}px ${SPACE.lg}px` }}>
+      <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm, padding: `0 ${SPACE.xxs}px ${SPACE.gutter}px` }}>
+        <span style={{ fontSize: 20, fontWeight: 800 }}>Môj profil</span>
+      </div>
+      <div style={{ display: "flex", gap: SPACE.lg, alignItems: "flex-start" }}>
+        <aside style={{ width: 300, flex: "0 0 300px", minWidth: 0, position: "sticky", top: SPACE.md, display: "flex", flexDirection: "column", gap: SPACE.sm }}>
+          <IdentitaKarta naNastavenia={naNastavenia} />
+          <nav style={{ display: "flex", flexDirection: "column", gap: SPACE.xxs, background: C.surface, border: `1px solid ${C.line}`, borderRadius: RADIUS.md, padding: SPACE.xs }}>
+            {PROFIL_NAV.map((it) => {
+              const on = jeAktivny(it);
+              return (
+                <button key={it.label} onClick={() => (it.key === "sub" ? onSub(it.nazov!) : setScreen(it.key))}
+                  style={{ display: "flex", alignItems: "center", gap: SPACE.sm, width: "100%", textAlign: "left", border: "none", cursor: "pointer", fontFamily: "inherit",
+                    borderRadius: RADIUS.sm, padding: `${SPACE.sm}px ${SPACE.gutter}px`, fontSize: 14, fontWeight: on ? 800 : 600,
+                    background: on ? "color-mix(in srgb, var(--a-green) 16%, transparent)" : "transparent", color: on ? C.text : C.textSec, transition: "background .15s ease" }}>
+                  <span style={{ display: "flex", color: on ? "var(--a-green)" : C.textTer }}>{it.ikona}</span>
+                  {it.label}
+                </button>
+              );
+            })}
+          </nav>
+        </aside>
+        <main style={{ flex: 1, minWidth: 0, background: C.surface, border: `1px solid ${C.line}`, borderRadius: RADIUS.lg, overflow: "hidden", minHeight: 420 }}>
+          {obsah}
+        </main>
+      </div>
+    </div>
+  );
+}
+
+function NotifObrazovka({ onBack, desktop }: { onBack: () => void; desktop?: boolean }) {
+  return (
+    <div style={{ paddingBottom: SPACE.gutter }}>
+      <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm, padding: "16px 18px 8px" }}>
+        {!desktop && <div onClick={onBack} style={spatBtn}><IkonaSipVlavo size={18} color={C.textSec} /></div>}
+        <h3 style={{ fontSize: 17, margin: 0 }}>Notifikácie</h3>
+      </div>
+      <div style={{ padding: "0 16px", display: "flex", flexDirection: "column" }}><NotifNastavenia embedded toast={toast} /></div>
     </div>
   );
 }
@@ -71,10 +138,6 @@ type ProfilHlavnyProps = {
 
 function ProfilHlavny({ toast, naWallet, naSub, naNastavenia, naPriatelia }: ProfilHlavnyProps) {
   const otvorViac = useViac();
-  const { desktop } = useLayout();
-  const ja = usePouzivatel();
-  const { maZaujem, toggleZaujem, sledovani, podpory, zaujmy } = usePersonalizacia(); // záujmy + prehľad = identita (rovnaký store ako Môj DEED + afinita feedu)
-  const [otvorenaOblast, setOtvorenaOblast] = useState<string | null>(null); // rozbalený dropdown kategórie záujmov
   const dlazdice: [string, string, string, string, React.ReactNode, () => void][] = [
     ["Peňaženka", "1 240 DEED", "color-mix(in srgb, var(--a-info) 14%, transparent)", "var(--a-info)", <IkonaPenazenka size={26} />, naWallet],
     ["Karma a úrovne", "7 modulov", "rgba(169,139,240,.15)", "var(--a-plum)", <IkonaHviezda size={26} />, () => naSub("Karma a úrovne")],
@@ -84,9 +147,30 @@ function ProfilHlavny({ toast, naWallet, naSub, naNastavenia, naPriatelia }: Pro
     ["Nastavenia", "vzhľad, jazyk", "rgba(154,160,168,.16)", C.textTer, <IkonaNastavenia size={26} />, naNastavenia],
   ];
 
-  const identita = (
-    <>
-      <div style={{ margin: "8px 16px 0", background: C.surface, border: `1px solid ${C.line}`, borderRadius: RADIUS.md, padding: SPACE.md, display: "flex", gap: SPACE.gutter, alignItems: "center" }}>
+  return (
+    <div style={{ paddingBottom: SPACE.gutter }}>
+      <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm, padding: "16px 18px 10px" }}>
+        <span onClick={otvorViac} title="Menu modulov" style={{ display: "flex", alignItems: "center", color: C.textSec, cursor: "pointer", flex: "0 0 auto" }}><IkonaMenu size={22} color={C.textSec} /></span>
+        <span style={{ fontSize: 18, fontWeight: 800 }}>Môj profil</span>
+        <span onClick={naNastavenia} style={{ marginLeft: "auto", display: "flex", color: C.textSec, cursor: "pointer" }}><IkonaNastavenia size={19} color={C.textSec} /></span>
+      </div>
+      <div style={{ padding: `0 ${SPACE.md}px` }}>
+        <div style={{ marginTop: SPACE.sm }}><IdentitaKarta naNastavenia={naNastavenia} /></div>
+        <div style={{ marginTop: SPACE.md }}><PrehladZaujmy /></div>
+      </div>
+      <div style={{ padding: SPACE.md }}>
+        <GlassIcons columns={3} items={dlazdice.map((d) => ({ icon: d[4], color: d[3], label: d[0], sub: d[1], onClick: d[5] }))} />
+      </div>
+    </div>
+  );
+}
+
+// identita (avatar, úroveň, režim, progres) — zdieľaná mobilom (ProfilHlavny) aj desktopom (bočný panel)
+function IdentitaKarta({ naNastavenia }: { naNastavenia: () => void }) {
+  const ja = usePouzivatel();
+  return (
+    <div>
+      <div style={{ background: C.surface, border: `1px solid ${C.line}`, borderRadius: RADIUS.md, padding: SPACE.md, display: "flex", gap: SPACE.gutter, alignItems: "center" }}>
         <AvatarUroven ini={ja.iniciala} tint={ja.tint} tier={ja.tier} size={60} />
         <div style={{ minWidth: 0 }}>
           <div style={{ fontSize: 17, fontWeight: 700 }}>{ja.celeMeno}</div>
@@ -103,7 +187,7 @@ function ProfilHlavny({ toast, naWallet, naSub, naNastavenia, naPriatelia }: Pro
       </div>
 
       {ja.demo ? (
-        <div style={{ margin: "14px 16px 0" }}>
+        <div style={{ marginTop: SPACE.gutter }}>
           <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: C.textTer }}>
             <span>Do ďalšej úrovne (Platinum)</span><span style={{ color: "var(--a-gold)" }}>72 %</span>
           </div>
@@ -112,13 +196,21 @@ function ProfilHlavny({ toast, naWallet, naSub, naNastavenia, naPriatelia }: Pro
           </div>
         </div>
       ) : (
-        <div style={{ margin: "14px 16px 0", fontSize: 12.5, color: C.textTer, lineHeight: 1.5 }}>
+        <div style={{ marginTop: SPACE.gutter, fontSize: 12.5, color: C.textTer, lineHeight: 1.5 }}>
           {ja.mesto && ja.mesto !== "—" ? `${ja.mesto} · ` : ""}Nový účet — karma a úroveň pribúdajú overenými skutkami.
         </div>
       )}
+    </div>
+  );
+}
 
-      {/* PREHĽAD — koho sledujem · čo podporujem · záujmy (osobný súhrn; obsah žije v „Môj DEED") */}
-      <div style={{ display: "flex", gap: SPACE.xs, padding: "14px 16px 0" }}>
+// prehľad (sledujem / podporujem / záujmy) + accordion záujmov — zdieľaný mobilom aj desktopom
+function PrehladZaujmy() {
+  const { maZaujem, toggleZaujem, sledovani, podpory, zaujmy } = usePersonalizacia();
+  const [otvorenaOblast, setOtvorenaOblast] = useState<string | null>(null);
+  return (
+    <>
+      <div style={{ display: "flex", gap: SPACE.xs }}>
         {[[String(sledovani.length), "sledujem"], [String(podpory.length), "podporujem"], [String(zaujmy.length), "záujmy"]].map((x, i) => (
           <div key={i} style={{ flex: 1, textAlign: "center", background: C.surface, border: `1px solid ${C.line}`, borderRadius: RADIUS.sm, padding: `${SPACE.sm}px ${SPACE.xxs}px` }}>
             <div style={{ fontSize: 17, fontWeight: 800 }}>{x[0]}</div>
@@ -127,9 +219,8 @@ function ProfilHlavny({ toast, naWallet, naSub, naNastavenia, naPriatelia }: Pro
         ))}
       </div>
 
-      {/* TVOJE ZÁUJMY — accordion: kategória → detailné pod-položky (číselník z registrácie §6.2).
-          Klik na hlavičku rozbalí dropdown; „Celá oblasť" alebo jednotlivé pod-položky ladia feed. */}
-      <div style={{ padding: "16px 16px 0" }}>
+      {/* TVOJE ZÁUJMY — accordion: kategória → detailné pod-položky (číselník z registrácie §6.2). */}
+      <div style={{ marginTop: SPACE.md }}>
         <div style={{ fontSize: 10.5, letterSpacing: ".5px", color: C.textTer, fontWeight: 700, margin: "0 0 9px", textAlign: "center" }}>TVOJE ZÁUJMY</div>
         <div style={{ display: "flex", flexDirection: "column", gap: SPACE.xs }}>
           {ZAUJMY_KATALOG.map((z) => {
@@ -164,30 +255,6 @@ function ProfilHlavny({ toast, naWallet, naSub, naNastavenia, naPriatelia }: Pro
       </div>
     </>
   );
-
-  const tiles = (
-    <div style={{ padding: SPACE.md }}>
-      <GlassIcons columns={3} items={dlazdice.map((d) => ({ icon: d[4], color: d[3], label: d[0], sub: d[1], onClick: d[5] }))} />
-    </div>
-  );
-
-  return (
-    <div style={{ paddingBottom: SPACE.gutter }}>
-      <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm, padding: "16px 18px 10px" }}>
-        <span onClick={otvorViac} title="Menu modulov" style={{ display: "flex", alignItems: "center", color: C.textSec, cursor: "pointer", flex: "0 0 auto" }}><IkonaMenu size={22} color={C.textSec} /></span>
-        <span style={{ fontSize: 18, fontWeight: 800 }}>Môj profil</span>
-        <span onClick={naNastavenia} style={{ marginLeft: "auto", display: "flex", color: C.textSec, cursor: "pointer" }}><IkonaNastavenia size={19} color={C.textSec} /></span>
-      </div>
-      {desktop ? (
-        <div style={{ display: "flex", gap: SPACE.md, alignItems: "flex-start" }}>
-          <aside style={{ width: 380, flex: "0 0 380px", minWidth: 0 }}>{identita}</aside>
-          <div style={{ flex: 1, minWidth: 0 }}>{tiles}</div>
-        </div>
-      ) : (
-        <>{identita}{tiles}</>
-      )}
-    </div>
-  );
 }
 
 // pod-chip v dropdowne záujmov — jedna pod-položka (výber = ladí feed + „Môj DEED")
@@ -201,9 +268,9 @@ function PodChip({ label, on, onClick }: { label: string; on: boolean; onClick: 
 }
 
 // ===================== PEŇAŽENKA =====================
-type PenazenkaProps = { toast: ToastFn; onBack: () => void };
+type PenazenkaProps = { toast: ToastFn; onBack: () => void; desktop?: boolean };
 
-function Penazenka({ toast, onBack }: PenazenkaProps) {
+function Penazenka({ toast, onBack, desktop }: PenazenkaProps) {
   const { data: PREVODY = [], isLoading, isError, refetch } = useProfilPrevody();
   const { podpory } = usePersonalizacia();
   const [honorar, setHonorar] = useState(false); // Reťaz dobra — Cesta B (honorár tvorcu)
@@ -215,7 +282,7 @@ function Penazenka({ toast, onBack }: PenazenkaProps) {
   return (
     <div style={{ paddingBottom: SPACE.gutter }}>
       <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm, padding: "16px 18px 8px" }}>
-        <div onClick={onBack} style={spatBtn}><IkonaSipVlavo size={18} color={C.textSec} /></div>
+        {!desktop && <div onClick={onBack} style={spatBtn}><IkonaSipVlavo size={18} color={C.textSec} /></div>}
         <h3 style={{ fontSize: 17, margin: 0 }}>Peňaženka</h3>
       </div>
       <div style={{ padding: "0 16px" }}>
@@ -297,9 +364,9 @@ function Penazenka({ toast, onBack }: PenazenkaProps) {
 }
 
 // ===================== PODSTRÁNKY =====================
-type SubScreenProps = { nazov: string | null; toast: ToastFn; onBack: () => void };
+type SubScreenProps = { nazov: string | null; toast: ToastFn; onBack: () => void; desktop?: boolean };
 
-function SubScreen({ nazov, toast, onBack }: SubScreenProps) {
+function SubScreen({ nazov, toast, onBack, desktop }: SubScreenProps) {
   const { data: MOJE_SKUTKY = [], isLoading: skutkyLoad, isError: skutkyErr, refetch: skutkyRefetch } = useProfilMojeSkutky();
   const { data: KARMA = [], isLoading: karmaLoad, isError: karmaErr, refetch: karmaRefetch } = useProfilKarma();
   const { data: STATISTIKY = [], isLoading: statLoad, isError: statErr, refetch: statRefetch } = useProfilStatistiky();
@@ -341,7 +408,7 @@ function SubScreen({ nazov, toast, onBack }: SubScreenProps) {
   return (
     <div style={{ paddingBottom: SPACE.gutter }}>
       <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm, padding: "16px 18px 8px" }}>
-        <div onClick={onBack} style={spatBtn}><IkonaSipVlavo size={18} color={C.textSec} /></div>
+        {!desktop && <div onClick={onBack} style={spatBtn}><IkonaSipVlavo size={18} color={C.textSec} /></div>}
         <h3 style={{ fontSize: 17, margin: 0 }}>{nazov}</h3>
       </div>
       <div style={{ padding: "0 16px" }}>{obsah}</div>
@@ -358,9 +425,9 @@ function SubScreen({ nazov, toast, onBack }: SubScreenProps) {
 }
 
 // ===================== PRIDÁVANIE PRIATEĽA (§7) =====================
-type PriateliaScreenProps = { toast: ToastFn; onBack: () => void };
+type PriateliaScreenProps = { toast: ToastFn; onBack: () => void; desktop?: boolean };
 
-function PriateliaScreen({ toast, onBack }: PriateliaScreenProps) {
+function PriateliaScreen({ toast, onBack, desktop }: PriateliaScreenProps) {
   const { gate } = useTvorbaGate(); // pridávanie priateľa = iniciovanie vzťahu (create)
   const ja = usePouzivatel();        // ucetId → reálny rotujúci token Identity Card (Fáza 3)
   const [qr, setQr] = useState<"pozvanka" | "osobny" | null>(null);
@@ -377,7 +444,7 @@ function PriateliaScreen({ toast, onBack }: PriateliaScreenProps) {
   return (
     <div style={{ paddingBottom: SPACE.lg }}>
       <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm, padding: "16px 18px 8px" }}>
-        <div onClick={onBack} style={spatBtn}><IkonaSipVlavo size={18} color={C.textSec} /></div>
+        {!desktop && <div onClick={onBack} style={spatBtn}><IkonaSipVlavo size={18} color={C.textSec} /></div>}
         <h3 style={{ fontSize: 17, margin: 0 }}>Priatelia</h3>
       </div>
       <div style={{ padding: "0 16px" }}>
@@ -430,9 +497,9 @@ function Switch({ on, onClick }: { on: boolean; onClick: () => void }) {
   );
 }
 
-type NastaveniaScreenProps = { toast: ToastFn; onBack: () => void; onNotif: () => void };
+type NastaveniaScreenProps = { toast: ToastFn; onBack: () => void; onNotif: () => void; desktop?: boolean };
 
-function NastaveniaScreen({ toast, onBack, onNotif }: NastaveniaScreenProps) {
+function NastaveniaScreen({ toast, onBack, onNotif, desktop }: NastaveniaScreenProps) {
   const { svetly, prepni } = useMotiv();
   const [jazyk, setJazyk] = useState("SK");
   const [rezim, setRezim] = useState<RezimNastavenia>("verejny");  // verejný / anonym (§13.1 ochrana)
@@ -446,7 +513,7 @@ function NastaveniaScreen({ toast, onBack, onNotif }: NastaveniaScreenProps) {
   return (
     <div style={{ paddingBottom: SPACE.lg }}>
       <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm, padding: "16px 18px 8px" }}>
-        <div onClick={onBack} style={spatBtn}><IkonaSipVlavo size={18} color={C.textSec} /></div>
+        {!desktop && <div onClick={onBack} style={spatBtn}><IkonaSipVlavo size={18} color={C.textSec} /></div>}
         <h3 style={{ fontSize: 17, margin: 0 }}>Nastavenia</h3>
       </div>
       <div style={{ padding: "0 16px" }}>
