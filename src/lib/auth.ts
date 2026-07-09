@@ -54,6 +54,52 @@ export async function signOut(): Promise<void> {
   clearSession();
 }
 
+// „Zabudnuté heslo" — pošle email s odkazom na obnovu. Odkaz vedie späť do appky
+// (detectSessionInUrl spracuje recovery hash → PASSWORD_RECOVERY → subscribeRecovery).
+export async function resetHeslo(email: string): Promise<AuthVysledok> {
+  if (!supabase) return { ok: false, chyba: "Obnova hesla nie je v demo režime dostupná." };
+  const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+    redirectTo: typeof window !== "undefined" ? window.location.origin + "/" : undefined,
+  });
+  if (error) return { ok: false, chyba: prelozChybu(error.message) };
+  return { ok: true };
+}
+
+/** Nastaví nové heslo prihlásenému (recovery) userovi. */
+export async function zmenHeslo(nove: string): Promise<AuthVysledok> {
+  if (!supabase) return { ok: false, chyba: "Zmena hesla nie je v demo režime dostupná." };
+  const { error } = await supabase.auth.updateUser({ password: nove });
+  if (error) return { ok: false, chyba: prelozChybu(error.message) };
+  return { ok: true };
+}
+
+/** PASSWORD_RECOVERY (klik na odkaz z emailu) → callback. Vracia unsubscribe. */
+export function subscribeRecovery(onRecovery: () => void): () => void {
+  if (!supabase) return () => {};
+  const { data } = supabase.auth.onAuthStateChange((event) => {
+    if (event === "PASSWORD_RECOVERY") onRecovery();
+  });
+  return () => data.subscription.unsubscribe();
+}
+
+/** Zaistí aspoň ANONYMNÉ auth session — aby osobné DB funkcie (obľúbené, RSVP,
+ *  správy, nahlásenia, peňaženka) mali `auth.uid()` aj pre hosťa bez registrácie.
+ *  Ak už session existuje (reálna alebo anonymná) → no-op. Bez Supabase alebo pri
+ *  chybe (napr. anonymné prihlásenie nie je v projekte povolené) ticho pokračuje —
+ *  DB vrstva (lib/osobne) potom padne na localStorage. Vracia auth id (alebo null). */
+export async function zaistiSession(): Promise<string | null> {
+  if (!supabase) return null;
+  try {
+    const { data } = await supabase.auth.getSession();
+    if (data.session?.user) return data.session.user.id;
+    const { data: anon, error } = await supabase.auth.signInAnonymously();
+    if (error) return null;
+    return anon.user?.id ?? null;
+  } catch {
+    return null;
+  }
+}
+
 // Výsledok reconciliation — App podľa neho zobrazí appku / resume onboarding / login.
 export type ResolveVysledok =
   | { kind: "app" }
@@ -89,6 +135,9 @@ export async function resolveSession(): Promise<ResolveVysledok> {
     if (ses && !ses.demo && ses.ucet_id) clearSession();
     return { kind: "none" };
   }
+  // ANONYMNÉ konto (osobné DB funkcie pre hosťa) = NIE je registrácia → hosť, nie resume.
+  // Bez tohto by sa anon user (bez `ucet`) tváril ako rozrobený onboarding.
+  if (user.is_anonymous) return { kind: "none" };
 
   const ucet = await najdiUcetPodlaAuth(user.id);
   if (!ucet) return { kind: "resume", authId: user.id };

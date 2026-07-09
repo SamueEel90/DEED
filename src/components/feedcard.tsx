@@ -115,14 +115,15 @@ export function FeedCard({ wide, onClick, label, accent, ring, autor, media = {}
       boxShadow: ring && wide ? `0 0 0 1.5px ${tint(ring, .5)}, 0 8px 24px ${tint(ring, .14)}` : undefined,
       overflow: "hidden", cursor: onClick ? "pointer" : undefined,
     }}>
-      {/* autor hore (IG anatómia) */}
+      {/* autor hore (IG anatómia) — klik/Enter na avatare či mene otvorí profil autora,
+          stopPropagation drží kartu zavretú (karta samotná ostáva klikacia/fokusovateľná) */}
       {autor && (
         <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm, padding: `${SPACE.sm}px ${SPACE.gutter}px ${SPACE.sm}px` }}>
-          <div onClick={autor.onClick ? (e) => { e.stopPropagation(); autor.onClick!(); } : undefined}
+          <div {...(autor.onClick ? pressable((e) => { e.stopPropagation(); autor.onClick!(); }, typeof autor.meno === "string" ? `Profil: ${autor.meno}` : "Profil autora") : {})}
             style={{ width: 38, height: 38, borderRadius: RADIUS.round, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: FW.bold, fontSize: 15, color: "#fff", background: autor.pfp, cursor: autor.onClick ? "pointer" : undefined, boxShadow: (autor.glow ?? accent) ? `0 3px 10px ${tint((autor.glow ?? accent)!, .3)}` : undefined }}>{autor.ini}</div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ display: "flex", alignItems: "center", gap: SPACE.xxs, flexWrap: "wrap" }}>
-              <span onClick={autor.onClick ? (e) => { e.stopPropagation(); autor.onClick!(); } : undefined}
+              <span {...(autor.onClick ? pressable((e) => { e.stopPropagation(); autor.onClick!(); }) : {})}
                 style={{ fontWeight: FW.bold, fontSize: 14.5, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", cursor: autor.onClick ? "pointer" : undefined }}>{autor.meno}</span>
               {autor.chips}
             </div>
@@ -145,7 +146,7 @@ export function FeedCard({ wide, onClick, label, accent, ring, autor, media = {}
           {media.video
             ? <Video src={media.video} poster={media.fotky?.[0]} h={wide ? "100%" : mobileH} badge={false} />
             : media.fotky?.length
-              ? <div style={{ position: "absolute", inset: 0 }}><FotoPrispevku fotky={media.fotky} emoji={media.emoji} h="100%" disableGaleria /></div>
+              ? <div style={{ position: "absolute", inset: 0 }}><FotoPrispevku fotky={media.fotky} emoji={media.emoji} h="100%" disableGaleria alt={typeof title === "string" ? title : label} /></div>
               : null}
           {media.play && <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1 }}><PlayKruh big /></div>}
           {!media.video && <div style={{ position: "absolute", inset: 0, background: "linear-gradient(0deg, rgba(0,0,0,.34), transparent 42%)", pointerEvents: "none" }} />}

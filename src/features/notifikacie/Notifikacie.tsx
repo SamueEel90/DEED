@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { SIRKA, C, GRAD, glassTmavy, SPACE, RADIUS } from "@/theme";
-import { Zvon, IkonaNastavenia, IkonaSipVlavo, IkonaKriz, tint, usePortalEl, useLayout, pressable, VirtualList, SkeletonRiadky, EmptyState, ErrorState } from "@/shared";
+import { Zvon, IkonaNastavenia, IkonaSipVlavo, IkonaKriz, tint, usePortalEl, useLayout, pressable, VirtualList, SkeletonRiadky, EmptyState, ErrorState, Hmat } from "@/shared";
 import type { Notifikacia, VypnuteMapa } from "@/types";
 import { useNotifikacie } from "@/data";
+import { useVrstva } from "@/lib/urlnav";
 import { KATEGORIE, VYPNUTE_DEF } from "./mock";
 
 /*
@@ -27,8 +28,9 @@ function Toggle({ on, dim, onClick, label }: { on?: boolean; dim?: boolean; onCl
     <span role="switch" aria-checked={!!on} aria-label={label} aria-disabled={dim || undefined} tabIndex={0}
       onClick={onClick}
       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick?.(); } }}
-      style={{ width: 42, height: 25, borderRadius: RADIUS.lg, flex: "none", cursor: "pointer", padding: SPACE.xxs, opacity: dim ? .4 : 1,
+      style={{ position: "relative", width: 42, height: 25, borderRadius: RADIUS.lg, flex: "none", cursor: "pointer", padding: SPACE.xxs, opacity: dim ? .4 : 1,
       background: on ? GRAD : "rgba(var(--glass-rgb),.14)", transition: "background .2s ease" }}>
+      <Hmat o={10} />
       <span style={{ display: "block", width: 19, height: 19, borderRadius: RADIUS.round, background: "#fff", boxShadow: "0 1px 4px rgba(0,0,0,.35)", transform: on ? "translateX(17px)" : "none", transition: "transform .2s ease" }} />
     </span>
   );
@@ -54,12 +56,35 @@ export function Zvoncek({ color = "#C4CCDB", toast }: { color?: string; toast?: 
     return () => window.removeEventListener("keydown", onKey);
   }, [otvor]);
 
+  // overlay = vrstva histórie → browser Back ho zatvorí (nie opustenie appky)
+  useVrstva(otvor, () => setOtvor(false));
+
+  // a11y dialóg: focus skočí do panelu a po zatvorení sa vráti na zvonček; Tab ostáva v paneli
+  const panelRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!otvor) return;
+    const predtym = document.activeElement as HTMLElement | null;
+    panelRef.current?.focus();
+    return () => predtym?.focus?.();
+  }, [otvor]);
+  const trapTab = (e: React.KeyboardEvent) => {
+    if (e.key !== "Tab") return;
+    const el = panelRef.current;
+    if (!el) return;
+    const foc = el.querySelectorAll<HTMLElement>('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+    if (!foc.length) return;
+    const prvy = foc[0], posledny = foc[foc.length - 1];
+    if (e.shiftKey && document.activeElement === prvy) { e.preventDefault(); posledny.focus(); }
+    else if (!e.shiftKey && document.activeElement === posledny) { e.preventDefault(); prvy.focus(); }
+  };
+
   // Overlay sa renderuje do vycentrovaného stĺpca appky (portál), nie do hlavičky —
   // inak by ho „position: sticky" hlavička orezala na svoju výšku (panel sa nerozbalil).
   // Na desktope: 2 stĺpce naraz (zoznam | nastavenia), bez prepínania.
   const overlay = (
     <div onClick={() => setOtvor(false)} style={{ position: "absolute", inset: 0, background: "rgba(4,6,12,.5)", backdropFilter: "blur(5px)", WebkitBackdropFilter: "blur(5px)", display: "flex", flexDirection: "column", zIndex: 90, animation: "fadeUp .18s ease" }}>
-      <div onClick={(e) => e.stopPropagation()} style={{ ...glassTmavy(26, .92), borderTop: "none", borderLeft: "none", borderRight: "none", borderBottomLeftRadius: RADIUS.lg, borderBottomRightRadius: RADIUS.lg, padding: `${SPACE.sm}px ${SPACE.gutter}px ${SPACE.md}px`, boxShadow: "0 18px 50px rgba(0,0,0,.45)", maxHeight: "88%", display: "flex", flexDirection: "column", width: "100%", maxWidth: desktop ? SIRKA.citanie : undefined, margin: desktop ? "0 auto" : undefined }}>
+      <div ref={panelRef} role="dialog" aria-modal="true" aria-label="Oznámenia" tabIndex={-1} onKeyDown={trapTab}
+        onClick={(e) => e.stopPropagation()} style={{ ...glassTmavy(26, .92), borderTop: "none", borderLeft: "none", borderRight: "none", borderBottomLeftRadius: RADIUS.lg, borderBottomRightRadius: RADIUS.lg, padding: `${SPACE.sm}px ${SPACE.gutter}px ${SPACE.md}px`, boxShadow: "0 18px 50px rgba(0,0,0,.45)", maxHeight: "88%", display: "flex", flexDirection: "column", width: "100%", maxWidth: desktop ? SIRKA.citanie : undefined, margin: desktop ? "0 auto" : undefined, outline: "none" }}>
         {desktop ? (
           <div style={{ display: "flex", gap: SPACE.md, flex: "1 1 auto", minHeight: 0 }}>
             <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", minHeight: 0 }}>

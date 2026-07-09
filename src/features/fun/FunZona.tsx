@@ -1,5 +1,6 @@
 import { C, SPACE, RADIUS } from "@/theme";
 import { Hlavicka, Zdielanie, obalSiroky, useLayout, pressable } from "@/shared";
+import { zdielaj, aktualnaUrl } from "@/lib/zdielanie";
 import { useFun } from "@/data";
 
 /*
@@ -55,7 +56,7 @@ export function FunZona({ onBack, toast }: FunZonaProps) {
             <div style={{ display: "flex", alignItems: "center", gap: SPACE.xs, marginTop: SPACE.sm }}>
               <span style={{ fontSize: 11, color: C.greenL }}>✓ {f.fix}</span>
               <span {...pressable(() => toast?.("😂 +1"), "Pobavilo ma")} style={{ marginLeft: "auto", fontSize: 12, fontWeight: 700, color: C.textSec, cursor: "pointer" }}>😂 {f.lol.toLocaleString("sk")}</span>
-              <span {...pressable(() => toast?.("Zdieľané — virálny efekt 🚀"), "Zdieľať úlovok")} style={{ display: "flex", alignItems: "center", gap: SPACE.xs, fontSize: 12, fontWeight: 700, color: "var(--a-info)", cursor: "pointer" }}><Zdielanie size={15} color="var(--a-info)" /> Zdieľať</span>
+              <span {...pressable(() => zdielaj({ titul: "DEED Fun zóna", text: `${f.trik} — AI: „${f.verdikt}" 😂`, url: aktualnaUrl() }, toast), "Zdieľať úlovok")} style={{ display: "flex", alignItems: "center", gap: SPACE.xs, fontSize: 12, fontWeight: 700, color: "var(--a-info)", cursor: "pointer" }}><Zdielanie size={15} color="var(--a-info)" /> Zdieľať</span>
             </div>
           </div>
         ))}

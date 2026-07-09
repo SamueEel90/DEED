@@ -1,5 +1,5 @@
-import { useState, useMemo, useEffect } from "react";
-import { ModulHlavicka, Hlavicka, PodporaSekcia, PlatbaModal, HladanieModal, toast, Oslava, useMotiv, useLayout, useScrollHore, useStrankaAkcie, useTvorbaGate, Ticker, StatRiadok, FiltreStat, FeedStlpce, FeedGrid, FeedCard, KartaBadge, BackChip, SwipeBack, obalSiroky, OkruhVyber, Lupa, Zvon, IkonaSipVlavo, IkonaMoznosti, Zdielanie, IkonaUlozit, IkonaFoto, IkonaPlus, IkonaPlay, IkonaDoska, IkonaPin, FotoPrispevku, FeedSkeleton, EmptyState, ErrorState, ScreenSwitch } from "@/shared";
+import { useState, useMemo, useEffect, memo } from "react";
+import { ModulHlavicka, Hlavicka, PodporaSekcia, PlatbaModal, HladanieModal, toast, Oslava, useMotiv, useLayout, useScrollHore, useStrankaAkcie, useTvorbaGate, Ticker, StatRiadok, FiltreStat, FeedStlpce, FeedGrid, FeedCard, KartaBadge, BackChip, SwipeBack, obalSiroky, OkruhVyber, Lupa, Zvon, IkonaSipVlavo, IkonaMoznosti, Zdielanie, IkonaUlozit, IkonaPlay, IkonaDoska, IkonaPin, FotoPrispevku, FotoVyber, FeedSkeleton, EmptyState, ErrorState, ScreenSwitch } from "@/shared";
 import { SIRKA, C, GRAD, GRAD_ZELENY, SPACE, RADIUS } from "@/theme";
 import { pripravFeed, FEED_CFG } from "@/lib/feed";
 import { MEDIA_AR } from "@/lib/cardSize";
@@ -7,6 +7,9 @@ import type { OkruhKod } from "@/types";
 import { Zvoncek } from "@/features/notifikacie/Notifikacie";
 import { A, DOM, ORDER, tint } from "./domeny";
 import { pressable } from "@/components/pressable";
+import { useVrstva } from "@/lib/urlnav";
+import { zdielaj, aktualnaUrl } from "@/lib/zdielanie";
+import { rovnakeOkremFunkcii } from "@/lib/ui";
 import { useAktivityFeed } from "@/data";
 import { usePersonalizacia } from "@/lib/personalizacia";
 import { useLokalita } from "@/lib/lokalita";
@@ -76,6 +79,9 @@ export default function ModulAktivity({ wide }: { wide?: boolean }) {
   const [celeb, setCeleb] = useState<{ title: string; text: string } | null>(null);
   const [hladaj, setHladaj] = useState(false);
   const [add, setAdd] = useState<{ kind: string; d: string } | null>(null); // null = menu | { kind, d }
+
+  // pod-obrazovka = vrstva histórie → browser Back sa vráti na feed (nie von z appky)
+  useVrstva(screen !== "home", () => setScreen("home"), screen);
 
   // perzistentný stav (localStorage)
   const [posts, setPosts] = useState<AktItem[]>(() => load(LS.posts, [] as AktItem[]));   // používateľské príspevky
@@ -323,7 +329,9 @@ function ProgressMini({ it }: { it: AktItem }) {
 
 // JEDNOTNÁ karta = zdieľaná FeedCard (rovnaká anatómia ako Domov/Help/Charita);
 // Aktivity mapujú skutok/talent/workshop/žiadosť/charitu do slotov.
-function AktCard({ it, wide, onOpen, onPerson }: any) {
+// memo: re-render len pri zmene položky/wide (inline onOpen/onPerson sa ignorujú)
+const AktCard = memo(AktCardBase, rovnakeOkremFunkcii);
+function AktCardBase({ it, wide, onOpen, onPerson }: any) {
   const a = DOM[it.dom];
   const jeHelp = it.type === "help";
   const jeCase = it.type === "case";
@@ -392,7 +400,7 @@ function DetailHero({ it, onBack, children }: { it: AktItem; onBack: () => void;
   }
   return (
     <div style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center", background: heroGrad(it.dom), ...(wide ? { width: "100%", aspectRatio: MEDIA_AR } : { height: 150 }) }}>
-      <div style={{ position: "absolute", inset: 0 }}><FotoPrispevku fotky={it.fotky} h="100%" disableGaleria /></div>
+      <div style={{ position: "absolute", inset: 0 }}><FotoPrispevku fotky={it.fotky} h="100%" disableGaleria prednost alt={it.title} /></div>
       <div style={{ position: "absolute", inset: 0, background: "linear-gradient(0deg, rgba(0,0,0,.42), transparent 46%)", pointerEvents: "none" }} />
       {it.media === "video" && <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1 }}><Play big /></div>}
       <div style={{ position: "absolute", top: 14, left: 14, zIndex: 2 }}><BackChip hero onBack={onBack} /></div>
@@ -447,7 +455,7 @@ function DeedDetail({ it, support, votes, vote, toast, home, openPerson }: any) 
         )}
 
         <PodporaSekcia
-          onShare={() => toast("Zdieľať: odkaz skopírovaný · siete")}
+          onShare={() => zdielaj({ titul: it.title, text: it.title, url: aktualnaUrl() }, toast)}
           upvotes={Math.floor((it.likes || 0) / 3)} onUpvote={() => toast("Páči sa ti to")}
           onPodpor={(s: number) => support(s, it.author, it)} onSms={() => toast("SMS podpora (euro/operátor)")}
           onKanal={(k: string) => setPlatba(k)} supLabel={supLabel} />
@@ -455,7 +463,7 @@ function DeedDetail({ it, support, votes, vote, toast, home, openPerson }: any) 
         <div style={{ display: "flex", alignItems: "center", gap: SPACE.gutter, background: A.surface2, border: `1px solid ${A.line}`, borderRadius: RADIUS.md, padding: SPACE.sm, marginTop: SPACE.gutter }}>
           <div style={{ width: 52, height: 52, borderRadius: RADIUS.xs, background: "#fff", flex: "none", display: "grid", gridTemplateColumns: "repeat(5,1fr)", gridTemplateRows: "repeat(5,1fr)", gap: 1, padding: SPACE.xxs }}>{qrCells()}</div>
           <div><div style={{ fontWeight: 700, fontSize: 12.5 }}>QR {isCase ? "tejto akcie" : isTalent ? "tohto talentu" : "tohto skutku"}</div><div style={{ fontSize: 12, color: A.txt3 }}>Zväčšiť a zdieľať na siete</div></div>
-          <div onClick={() => toast("Zdieľať: YouTube · IG · TikTok · kopírovať")} style={{ marginLeft: "auto", background: GRAD, color: "#fff", fontWeight: 700, fontSize: 11, padding: `${SPACE.xs}px ${SPACE.md}px`, borderRadius: RADIUS.sm, cursor: "pointer", boxShadow: "0 5px 16px color-mix(in srgb, var(--a-green) 32%, transparent)" }}>Zdieľať</div>
+          <div onClick={() => zdielaj({ titul: it.title, text: it.title, url: aktualnaUrl() }, toast)} style={{ marginLeft: "auto", background: GRAD, color: "#fff", fontWeight: 700, fontSize: 11, padding: `${SPACE.xs}px ${SPACE.md}px`, borderRadius: RADIUS.sm, cursor: "pointer", boxShadow: "0 5px 16px color-mix(in srgb, var(--a-green) 32%, transparent)" }}>Zdieľať</div>
         </div>
 
         <div style={{ textAlign: "center", fontSize: 10, color: A.txt3, marginTop: SPACE.md }}>
@@ -549,7 +557,7 @@ function HelpDetail({ it, toast, celebrate, home, openPerson }: any) {
         <Btn green onClick={gate(() => { celebrate("Ozval si sa!", `Otvorili sme chat s ${it.author}. Dohodnite si detaily.`); setTimeout(home, 1700); })}>✋ Môžem pomôcť</Btn>
         {/* podpora — pomôcť sa dá aj peniazmi (karta / SEPA prevod / peňaženka), nielen časom */}
         <PodporaSekcia
-          onShare={() => toast("Zdieľať: odkaz skopírovaný · siete")}
+          onShare={() => zdielaj({ titul: it.title, text: it.title, url: aktualnaUrl() }, toast)}
           upvotes={it.helpers || 0} onUpvote={() => toast("Páči sa ti to")}
           onPodpor={(s: number) => toast(`Ďakujeme za ${s} DEED pre ${it.author}`)} onSms={() => toast("SMS podpora (euro/operátor)")}
           onKanal={(k: string) => setPlatba(k)} supLabel="PODPORIŤ — klik a hneď odíde" />
@@ -631,6 +639,7 @@ function Add({ dom, add, setAdd, toast, celebrate, home, createPost }: any) {
 function AddForm({ kind, d, a, pill, setAdd, toast, celebrate, home, createPost }: any) {
   const isTalentable = kind === "skutok", isSkol = kind === "skolenie";
   const [text, setText] = useState("");
+  const [fotky, setFotky] = useState<string[]>([]); // vybrané foto (data URL, náhľad) → na kartu príspevku
   const [talent, setTalent] = useState(false); // skutok: false = skutok, true = talent
   const [free, setFree] = useState(true);      // školenie: true = zadarmo
   const [checks, setChecks] = useState<{ a: boolean; b: boolean }>({ a: false, b: false });
@@ -646,7 +655,7 @@ function AddForm({ kind, d, a, pill, setAdd, toast, celebrate, home, createPost 
     if (isTalentable && talent && !checks.b) return toast("Pri talente potvrď súhlas s vodoznakom");
     if (isSkol && (!checks.a || !checks.b)) return toast("Potvrď obe vyhlásenia (zodpovednosť + oprávnenie školiť)");
 
-    createPost({ kind, d, text, talent: isTalentable && talent, free: isSkol && free });
+    createPost({ kind, d, text, talent: isTalentable && talent, free: isSkol && free, fotky });
     const ttl = kind === "skutok" ? (talent ? "Talent pridaný!" : "Skutok pridaný!") : isSkol ? "Workshop vytvorený!" : "Žiadosť zverejnená!";
     const body = kind === "help" ? "Tvoja žiadosť je navrchu feedu. Keď sa niekto ozve, otvorí sa chat."
       : isSkol ? "Workshop sa práve zobrazil vo feede aj na Nástenke."
@@ -681,10 +690,9 @@ function AddForm({ kind, d, a, pill, setAdd, toast, celebrate, home, createPost 
           </div>
         </>)}
 
-        <div style={fieldlbl}>Foto / video</div>
-        <div style={{ display: "flex", gap: SPACE.sm, marginTop: SPACE.xs }}>
-          <Mslot onClick={() => toast("Nahrať (demo)")}><IkonaPlus size={22} /></Mslot>
-          <Mslot onClick={() => toast("Nahrať (demo)")}><IkonaFoto size={22} /></Mslot>
+        <div style={fieldlbl}>Foto{isTalentable && talent ? " / video" : ""}</div>
+        <div style={{ display: "flex", gap: SPACE.sm, marginTop: SPACE.xs, alignItems: "center" }}>
+          <FotoVyber fotky={fotky} onZmena={setFotky} max={4} />
           {isTalentable && talent && <Mslot onClick={() => toast("Video — vodoznak sa pridá automaticky")}><IkonaPlay size={20} /></Mslot>}
         </div>
 

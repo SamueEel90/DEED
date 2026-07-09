@@ -35,9 +35,11 @@ export const useMotiv = () => useContext(MotivContext);
 //   · desktop ≥ 1180 → plný „dashboard" (bočná navigácia, plná šírka,
 //                       bočné panely, stĺpce na doménu)
 // Moduly čítajú cez useLayout() namiesto pretláčania ďalšieho propu.
+// Hodnota sa mení LEN pri preklopení stupňa (nie pri každom px resize) —
+// surové rozmery okna (w/h) čítaj cez useOkno()/useSirka() v App.tsx.
 // ============================================================
-export interface LayoutInfo { w: number; wide: boolean; desktop: boolean; }
-export const LayoutContext = createContext<LayoutInfo>({ w: 1024, wide: true, desktop: false });
+export interface LayoutInfo { wide: boolean; desktop: boolean; }
+export const LayoutContext = createContext<LayoutInfo>({ wide: true, desktop: false });
 export const useLayout = () => useContext(LayoutContext);
 
 // ============================================================

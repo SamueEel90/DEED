@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, memo } from "react";
 import { SIRKA, C, U, AV, GRAD, GRAD_ZELENY, SPACE, RADIUS } from "@/theme";
 import { Foto, Avatar, MiniFotky, ModulHlavicka, PodporaSekcia, PlatbaModal, RecurringSheet, SplitQrSheet, HladanieModal, OblubeneHviezda, OblubeneBtn, toast, useGaleria, useLayout, useScrollHore, useStrankaAkcie, useTvorbaGate, Ticker, StatRiadok, FiltreStat, FeedStlpce, FeedGrid, FeedCard, KartaBadge, BackHeader, ProgresBox, obalSiroky, OkruhVyber, SegTabs, tint, Lupa, Zvon, Zdielanie, IkonaVlajka, IkonaFoto, IkonaPlay, IkonaDoska, IkonaOpakovat, IkonaKriz, IkonaInstitucia, FeedSkeleton, SkeletonRiadky, EmptyState, ErrorState, ScreenSwitch, SwipeBack } from "@/shared";
 import { pripravFeed, FEED_CFG } from "@/lib/feed";
@@ -10,8 +10,12 @@ import { GoodBoard, GoodEvent } from "@/features/good/Good";
 import { useCharitaFeed, useCharitaAdresar, useCharitaZbierka } from "@/data";
 import { useLokalita } from "@/lib/lokalita";
 import { ZOFIA_FOTKY, HLADAJ_DATA } from "./mock";
-import { tagChip } from "@/lib/ui";
+import { tagChip, rovnakeOkremFunkcii } from "@/lib/ui";
 import { pressable } from "@/components/pressable";
+import { useVrstva } from "@/lib/urlnav";
+import { zdielaj, aktualnaUrl } from "@/lib/zdielanie";
+import { OzvatSaSheet } from "@/components/ozvatsa";
+import { NahlasitSheet } from "@/components/nahlasit";
 
 /*
   ============================================================
@@ -134,6 +138,9 @@ export default function ModulCharita({ wide, otvorModul }: ModulCharitaProps) {
   const scrollHore = useScrollHore();
   useEffect(() => { scrollHore(); }, [screen]);
 
+  // pod-obrazovka = vrstva histórie → browser Back sa vráti na feed (nie von z appky)
+  useVrstva(screen !== "feed", () => setScreen("feed"), screen);
+
   const obal = (el: React.ReactNode) => obalSiroky(el, { wide, desktop, max: SIRKA.stlpec, maxDesktop: SIRKA.citanie });
 
   return (
@@ -147,7 +154,7 @@ export default function ModulCharita({ wide, otvorModul }: ModulCharitaProps) {
       </ScreenSwitch>
 
       {sheet === "add" && <SheetPridat toast={toast} otvorModul={otvorModul} onClose={() => setSheet(null)} />}
-      {sheet === "reg" && <SheetReg toast={toast} onClose={() => setSheet(null)} />}
+      {sheet === "reg" && <RecurringSheet onClose={() => setSheet(null)} toast={toast} />}
       {sheet === "dir" && <SheetAdresar toast={toast} onClose={() => setSheet(null)} onSubjekt={(s) => { setSheet(null); setAktSubjekt(s); setScreen("cudzi"); }} />}
 
       {hladaj && (
@@ -281,7 +288,9 @@ function CharitaFeed({ wide, toast, onDetail, onHladaj, onSheet, onBoard }: Feed
 // ---- karty feedu (rozdelené do komponentov kvôli dvojstĺpcu skutky/žiadosti) ----
 // JEDNOTNÁ karta = zdieľaná FeedCard (rovnaká anatómia ako Domov/Help/Aktivity);
 // tu len mapujeme obsah Charity do slotov.
-function CharitaKarta({ wide, onClick, fotky, emoji, accent, badgeL, badgeR, nazov, overena, tag, tagCol, popis, vyzbierane, ciel, oblubena }: any) {
+// memo: re-render len pri zmene dát karty (oblubena/vyzbierane/…); inline onClick sa ignoruje
+const CharitaKarta = memo(CharitaKartaBase, rovnakeOkremFunkcii);
+function CharitaKartaBase({ wide, onClick, fotky, emoji, accent, badgeL, badgeR, nazov, overena, tag, tagCol, popis, vyzbierane, ciel, oblubena }: any) {
   return (
     <FeedCard wide={wide} onClick={onClick} label={nazov} accent={accent}
       media={{
@@ -388,6 +397,8 @@ function CharitaDetail({ z: zProp, toast, onBack, onReg, onAutor }: { z?: Zbierk
   const [platba, setPlatba] = useState<Kanal | null>(null); // "EUR" | "DEED"
   const [recur, setRecur] = useState(false);                // pravidelná podpora (LEN charita)
   const [split, setSplit] = useState(false);                // split QR (influencer)
+  const [ozvat, setOzvat] = useState(false);                // „Zapojiť sa" → správa organizácii
+  const [nahlasit, setNahlasit] = useState(false);          // vlajka → nahlásenie obsahu
   const otvorGaleriu = useGaleria();
   const { wide } = useLayout();
   if (!zRaw) return null;
@@ -413,7 +424,7 @@ function CharitaDetail({ z: zProp, toast, onBack, onReg, onAutor }: { z?: Zbierk
 
   return (
     <div style={{ paddingBottom: SPACE.lg }}>
-      <BackHeader onBack={onBack} right={<><Zdielanie size={17} color={K.txt2} /><IkonaVlajka size={16} color={K.txt2} /></>}>
+      <BackHeader onBack={onBack} right={<><span {...pressable(() => void zdielaj({ titul: z.nazov, text: z.nazov, url: aktualnaUrl() }, toast), "Zdieľať zbierku")} style={{ display: "flex", cursor: "pointer", position: "relative" }}><Zdielanie size={17} color={K.txt2} /></span><span {...pressable(() => setNahlasit(true), "Nahlásiť obsah")} style={{ display: "flex", cursor: "pointer", position: "relative" }}><IkonaVlajka size={16} color={K.txt2} /></span></>}>
         {z.badge && <span style={{ fontSize: 12, color: K.diamond, background: K.blueBg, border: `1px solid ${K.blueEdge}`, padding: `${SPACE.xxs}px ${SPACE.xs}px`, borderRadius: RADIUS.xs, fontWeight: 700, letterSpacing: ".02em" }}>{z.badge}</span>}
         {z.lok && <span style={{ fontSize: 12, color: K.txt2 }}>📍 {z.lok}</span>}
       </BackHeader>
@@ -423,7 +434,7 @@ function CharitaDetail({ z: zProp, toast, onBack, onReg, onAutor }: { z?: Zbierk
       {maFoto && (
         <div style={{ padding: `0 ${SPACE.md}px` }}>
           <div style={{ position: "relative", ...(wide ? { width: "100%", aspectRatio: MEDIA_AR } : {}) }}>
-            <Foto src={fotky[0]} emoji={z.emoji || "💛"} h={wide ? "100%" : 200} w={wide ? "100%" : undefined} radius={14} onClick={() => otvorGaleriu(fotky, 0)} />
+            <Foto src={fotky[0]} emoji={z.emoji || "💛"} h={wide ? "100%" : 200} w={wide ? "100%" : undefined} radius={14} onClick={() => otvorGaleriu(fotky, 0)} prednost alt={z.nazov} />
             <span style={{ ...badge({ top: 9, right: 9, color: K.txt }), display: "inline-flex", alignItems: "center", gap: SPACE.xxs }}><IkonaFoto size={12} color={K.txt} /> foto z prípadu</span>
             {fotky.length > 1 && <span style={{ position: "absolute", bottom: 9, right: 9, background: "rgba(0,0,0,.6)", borderRadius: RADIUS.sm, padding: `${SPACE.xxs}px ${SPACE.xs}px`, fontSize: 10, color: "#fff", pointerEvents: "none" }}>⧉ {fotky.length} · klikni na foto</span>}
           </div>
@@ -460,7 +471,7 @@ function CharitaDetail({ z: zProp, toast, onBack, onReg, onAutor }: { z?: Zbierk
             {/* jednotná sekcia podpory */}
             <div style={{ marginBottom: SPACE.gutter }}>
               <PodporaSekcia
-                onShare={() => toast("Zdieľať: odkaz skopírovaný · siete")}
+                onShare={() => zdielaj({ titul: z.nazov, text: z.nazov, url: aktualnaUrl() }, toast)}
                 upvotes={140} onUpvote={() => toast("Palec hore")}
                 onPodpor={(s: number) => podpor(s, `Ďakujeme za ${s} DEED pre ${z.nazov}`)} onSms={() => podpor(100, "SMS podpora")}
                 onKanal={(k: string) => setPlatba(k as Kanal)} />
@@ -479,11 +490,11 @@ function CharitaDetail({ z: zProp, toast, onBack, onReg, onAutor }: { z?: Zbierk
         ) : (
           /* dobrovoľníctvo / materiál — primárne zapojenie, no podporiť sa dá aj peniazmi (karta / SEPA prevod / peňaženka) */
           <div style={{ marginBottom: SPACE.gutter }}>
-            <div onClick={() => toast(`Ozvali sme sa organizácii ${z.nazov} — čoskoro ťa budú kontaktovať`)} style={{ width: "100%", border: `2px solid ${K.greenEdge}`, background: K.greenBg, borderRadius: RADIUS.sm, padding: SPACE.gutter, textAlign: "center", fontSize: 15, fontWeight: 700, color: K.green, cursor: "pointer", marginBottom: SPACE.sm }}>
+            <div {...pressable(() => setOzvat(true), "Zapojiť sa — napísať organizácii")} style={{ width: "100%", border: `2px solid ${K.greenEdge}`, background: K.greenBg, borderRadius: RADIUS.sm, padding: SPACE.gutter, textAlign: "center", fontSize: 15, fontWeight: 700, color: K.green, cursor: "pointer", marginBottom: SPACE.sm, boxSizing: "border-box" }}>
               🙌 Zapojiť sa
             </div>
             <PodporaSekcia
-              onShare={() => toast("Zdieľať: odkaz skopírovaný · siete")}
+              onShare={() => zdielaj({ titul: z.nazov, text: z.nazov, url: aktualnaUrl() }, toast)}
               upvotes={140} onUpvote={() => toast("Palec hore")}
               onPodpor={(s: number) => podpor(s, `Ďakujeme za ${s} DEED pre ${z.nazov}`)} onSms={() => podpor(100, "SMS podpora")}
               onKanal={(k: string) => setPlatba(k as Kanal)} supLabel="PODPORIŤ — klik a hneď odíde" />
@@ -499,6 +510,12 @@ function CharitaDetail({ z: zProp, toast, onBack, onReg, onAutor }: { z?: Zbierk
 
       {/* split QR (influencer) — rozdelenie platby medzi príjemcov */}
       {split && <SplitQrSheet titul={z.nazov} caseId={z.id ?? null} onClose={() => setSplit(false)} toast={toast} />}
+
+      {/* „Zapojiť sa" — súkromná správa organizácii (mock uloženie) */}
+      {ozvat && <OzvatSaSheet komu={z.nazov} refId={z.id} modul="charity" onClose={() => setOzvat(false)} toast={toast} />}
+
+      {/* vlajka — nahlásenie obsahu */}
+      {nahlasit && <NahlasitSheet co={z.nazov} refId={z.id} modul="charity" onClose={() => setNahlasit(false)} toast={toast} />}
     </div>
   );
 }
@@ -547,27 +564,6 @@ function SheetPridat({ toast, otvorModul, onClose }: { toast: (m: string) => voi
         </div>
       ))}
       <div style={{ fontSize: 10, color: K.txt3, textAlign: "center", padding: SPACE.xxs }}>finančná žiadosť otvorí sprievodcu v module Help</div>
-    </SheetObal>
-  );
-}
-
-function SheetReg({ toast, onClose }: { toast: (m: string) => void; onClose: () => void }) {
-  return (
-    <SheetObal title="Pravidelná podpora" onClose={onClose}>
-      <div onClick={() => toast("Podporujem → frekvencia → suma → EUR/DEED → potvrď")} style={{ background: K.card, border: `1px solid ${K.line}`, borderRadius: RADIUS.sm, padding: SPACE.md, marginBottom: SPACE.sm, cursor: "pointer" }}>
-        <div style={{ fontSize: 14.5, fontWeight: 600 }}>💶 Túto žiadosť</div>
-        <div style={{ fontSize: 12, color: K.txt2, marginTop: SPACE.xxs, lineHeight: 1.45 }}>Pravidelne podporuješ konkrétnu zbierku (Rodina Kováčová). Odhadovaná doba: dlhodobá.</div>
-      </div>
-      <div onClick={() => toast("Podporujem segment → frekvencia → suma → potvrď")} style={{ background: K.goldBg, border: `1px solid ${tint("var(--a-gold)", .4)}`, borderRadius: RADIUS.sm, padding: SPACE.md, marginBottom: SPACE.sm, cursor: "pointer" }}>
-        <div style={{ fontSize: 14.5, fontWeight: 600 }}>🗂 Segment charity</div>
-        <div style={{ fontSize: 12, color: K.txt2, marginTop: SPACE.xxs, lineHeight: 1.45 }}>Podporuješ tému (napr. „onkopacienti“). Charita rozdelí podľa svojho kľúča.</div>
-        <div style={{ fontSize: 11, color: K.gold, marginTop: SPACE.xxs }}>⚠️ Tu nevieme presne deklarovať použitie peňazí.</div>
-      </div>
-      <div onClick={() => toast("Podporujem charitu → frekvencia → suma → potvrď")} style={{ background: K.card, border: `1px solid ${K.line}`, borderRadius: RADIUS.sm, padding: SPACE.md, marginBottom: SPACE.sm, cursor: "pointer" }}>
-        <div style={{ fontSize: 14.5, fontWeight: 600 }}>🏛 Celá charita</div>
-        <div style={{ fontSize: 12, color: K.txt2, marginTop: SPACE.xxs, lineHeight: 1.45 }}>Paušálna podpora charity — ona sa stará. Sleduješ jej dôveryhodnosť (badge/karma).</div>
-      </div>
-      <div style={{ fontSize: 10, color: K.txt3, textAlign: "center", padding: SPACE.xxs }}>na pozadí má každá voľba svoj QR/ID · pri výzve sa nastaví prechod 1→2</div>
     </SheetObal>
   );
 }

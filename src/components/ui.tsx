@@ -10,6 +10,13 @@ import { tint } from "@/lib/ui";
 import { pressable } from "@/components/pressable";
 import { IkonaSpat } from "@/components/icons";
 
+// ---- HMAT — neviditeľné zväčšenie dotykovej plochy malých ovládačov (WCAG 2.5.5 ≥44px) ----
+// Rodič MUSÍ mať position:relative; klik na rozšírenú plochu prebublá rodičovi.
+// `o` = presah v px na každú stranu (napr. 28px ovládač + o=8 → 44px cieľ).
+export function Hmat({ o = 8 }: { o?: number }) {
+  return <span aria-hidden style={{ position: "absolute", inset: -o }} />;
+}
+
 // ---- BUTTON — primárne CTA / zelené CTA / ghost / danger ----
 export type ButtonVariant = "primary" | "green" | "ghost" | "danger";
 export function Button({ variant = "primary", full, disabled, onClick, children, style, ariaLabel }: {
@@ -64,6 +71,7 @@ export function Switch({ on, onChange, ariaLabel, disabled }: { on: boolean; onC
       style={{ width: 40, height: 23, borderRadius: RADIUS.pill, flex: "0 0 auto", position: "relative", cursor: disabled ? "not-allowed" : "pointer",
         background: on ? GRAD : "rgba(var(--glass-rgb),.15)", opacity: disabled ? .5 : 1, transition: "background .2s ease", display: "inline-block" }}
     >
+      <Hmat o={11} />
       <span style={{ position: "absolute", top: 3, left: on ? 20 : 3, width: 17, height: 17, borderRadius: RADIUS.round, background: "#fff", boxShadow: "0 1px 4px rgba(0,0,0,.3)", transition: "left .2s ease" }} />
     </span>
   );
@@ -72,9 +80,9 @@ export function Switch({ on, onChange, ariaLabel, disabled }: { on: boolean; onC
 // ---- BACK CHIP — jednotné „späť" koliesko (glass rad / hero overlay) ----
 export function BackChip({ onBack, hero, label = "Späť" }: { onBack?: () => void; hero?: boolean; label?: string }) {
   const styl: CSSProperties = hero
-    ? { width: 34, height: 34, borderRadius: RADIUS.round, background: "rgba(0,0,0,.55)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flex: "0 0 auto", zIndex: 2 }
-    : { width: 32, height: 32, borderRadius: RADIUS.round, background: "rgba(var(--glass-rgb),.06)", border: `1px solid ${C.line}`, color: C.textSec, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flex: "0 0 auto" };
-  return <span {...pressable(onBack, label)} style={styl}><IkonaSpat size={17} color={hero ? "#fff" : C.textSec} /></span>;
+    ? { position: "relative", width: 34, height: 34, borderRadius: RADIUS.round, background: "rgba(0,0,0,.55)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flex: "0 0 auto", zIndex: 2 }
+    : { position: "relative", width: 32, height: 32, borderRadius: RADIUS.round, background: "rgba(var(--glass-rgb),.06)", border: `1px solid ${C.line}`, color: C.textSec, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flex: "0 0 auto" };
+  return <span {...pressable(onBack, label)} style={styl}><Hmat o={6} /><IkonaSpat size={17} color={hero ? "#fff" : C.textSec} /></span>;
 }
 
 // ---- BACK HEADER — JEDNOTNÁ hlavička pod-obrazovky (detail/sheet) ----

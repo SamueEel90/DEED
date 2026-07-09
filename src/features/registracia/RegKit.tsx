@@ -4,7 +4,7 @@
 // Univerzálne kroky (telefón+SMS, zámok) sa podľa špecifikácie
 // stavajú RAZ a používa ich osoba aj charita (§4).
 // ============================================================
-import { useState, type ReactNode, type CSSProperties } from "react";
+import { useState, useId, type ReactNode, type CSSProperties } from "react";
 import { C, GRAD, btn, inp, infoBox, glassTmavy, SPACE, RADIUS } from "@/theme";
 import { Hlavicka, Otazka, IkonaFajka, IkonaSipDole } from "@/shared";
 import { vytvorUcet, nastavZabezpecenie, posliOtp } from "@/lib/db";
@@ -67,10 +67,10 @@ export function Patka({
 }
 
 // ---- popisok poľa ----
-export function Pole({ label, hint, children }: { label?: ReactNode; hint?: ReactNode; children?: ReactNode }) {
+export function Pole({ label, hint, htmlFor, children }: { label?: ReactNode; hint?: ReactNode; htmlFor?: string; children?: ReactNode }) {
   return (
     <div style={{ marginBottom: SPACE.gutter }}>
-      {label && <div style={{ fontSize: 12.5, fontWeight: 600, color: C.textTer, marginBottom: 6 }}>{label}</div>}
+      {label && <label htmlFor={htmlFor} style={{ display: "block", fontSize: 12.5, fontWeight: 600, color: C.textTer, marginBottom: 6 }}>{label}</label>}
       {children}
       {hint && <div style={{ fontSize: 11.5, color: C.textTer, marginTop: SPACE.xxs, lineHeight: 1.4 }}>{hint}</div>}
     </div>
@@ -86,6 +86,7 @@ export function TextPole({
   type = "text",
   inputMode,
   maxLength,
+  autoComplete,
 }: {
   label?: ReactNode;
   hint?: ReactNode;
@@ -95,16 +96,20 @@ export function TextPole({
   type?: string;
   inputMode?: React.HTMLAttributes<HTMLInputElement>["inputMode"];
   maxLength?: number;
+  autoComplete?: string;
 }) {
+  const id = useId(); // label ↔ input asociácia (čítačka číta popisok, nie placeholder)
   return (
-    <Pole label={label} hint={hint}>
+    <Pole label={label} hint={hint} htmlFor={id}>
       <input
+        id={id}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         type={type}
         inputMode={inputMode}
         maxLength={maxLength}
+        autoComplete={autoComplete}
         style={{ ...inp(), minHeight: 0 }}
       />
     </Pole>
@@ -297,16 +302,16 @@ export function KrokTelefonSms({
       {faza === "zadanie" ? (
         <>
           <Otazka>Telefón je kľúč k tvojmu účtu</Otazka>
-          <TextPole label="Telefónne číslo" value={tel} onChange={setTel} placeholder="+421 9XX XXX XXX" inputMode="tel" />
+          <TextPole label="Telefónne číslo" value={tel} onChange={setTel} placeholder="+421 9XX XXX XXX" inputMode="tel" type="tel" autoComplete="tel" />
           {vyzadujEmail && (
-            <TextPole label="Oficiálny email organizácie (overený)" value={email} onChange={setEmail} placeholder="info@charita.sk" inputMode="email" />
+            <TextPole label="Oficiálny email organizácie (overený)" value={email} onChange={setEmail} placeholder="info@charita.sk" inputMode="email" type="email" autoComplete="email" />
           )}
           <div style={infoBox}>Účet vznikne hneď po overení čísla — ak appka spadne, pokračuješ tam, kde si skončil (priebežné ukladanie).</div>
         </>
       ) : (
         <>
           <Otazka>Zadaj kód z SMS</Otazka>
-          <TextPole label={"Kód poslaný na " + tel} value={kod} onChange={(v) => setKod(v.replace(/\D/g, "").slice(0, 6))} placeholder="••••••" inputMode="numeric" maxLength={6} />
+          <TextPole label={"Kód poslaný na " + tel} value={kod} onChange={(v) => setKod(v.replace(/\D/g, "").slice(0, 6))} placeholder="••••••" inputMode="numeric" maxLength={6} autoComplete="one-time-code" />
           {demoKod && (
             <div style={{ ...infoBox, background: "rgba(240,199,90,.08)", border: "1px solid rgba(240,199,90,.3)", color: C.gold } as CSSProperties}>
               DEMO režim — žiadna reálna SMS sa neposiela. Tvoj kód je <b>{demoKod}</b>.

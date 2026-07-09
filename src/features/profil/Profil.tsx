@@ -2,10 +2,13 @@ import { useState, useEffect } from "react";
 import { SIRKA, C, GRAD, GRAD_ZELENY, SPACE, RADIUS } from "@/theme";
 import { toast, Sheet, AvatarUroven, useScrollHore, useViac, useMotiv, useLayout, useTvorbaGate, obalSiroky, QrModal, pressable, IkonaMenu, IkonaNastavenia, IkonaSipVlavo, IkonaSipDole, IkonaPenazenka, IkonaHviezda, IkonaFajka, IkonaDoska, IkonaUsmev, IkonaOsoba, IkonaPin, IkonaSlnko, IkonaMesiac, IkonaStit, SkeletonRiadky, EmptyState, ErrorState, ScreenSwitch } from "@/shared";
 import { RetazDobraSheet } from "@/features/retaz/RetazDobra";
+import { IntroPruvodca } from "@/components/intro";
+import { nacitajZostatok as nacitajZostatokDB, dobitPenazenku as dobitPenazenkuDB } from "@/lib/osobne";
 import { MojeQrKody } from "@/features/retaz/MojeQrKody";
 import { signOut } from "@/lib/auth";
 import { qrUrl } from "@/lib/qr";
 import { usePouzivatel } from "@/lib/pouzivatel";
+import { useVrstva } from "@/lib/urlnav";
 import { usePersonalizacia } from "@/lib/personalizacia";
 import { ZAUJMY_KATALOG } from "@/lib/personalizaciaStore";
 import { Nastavenia as NotifNastavenia } from "@/features/notifikacie/Notifikacie";
@@ -27,6 +30,8 @@ export default function ModulProfil({ wide, walletReq = 0 }: ProfilProps) {
   const { desktop } = useLayout();
   const [screen, setScreen] = useState("profil"); // profil | wallet | sub | nastavenia | notif
   const [subNazov, setSubNazov] = useState<string | null>(null);
+  // pod-obrazovka = vrstva histórie → browser Back sa vráti na profil (nie von z appky)
+  useVrstva(screen !== "profil", () => setScreen("profil"), screen);
 
   // pri prepnutí obrazovky odscrolluj appku hore
   const scrollHore = useScrollHore();
@@ -274,6 +279,17 @@ function Penazenka({ toast, onBack, desktop }: PenazenkaProps) {
   const { data: PREVODY = [], isLoading, isError, refetch } = useProfilPrevody();
   const { podpory } = usePersonalizacia();
   const [honorar, setHonorar] = useState(false); // Reťaz dobra — Cesta B (honorár tvorcu)
+  const [zostatok, setZostatok] = useState<number>(1240); // DEED zostatok (DB/localStorage) — načíta sa async
+  const [dobit, setDobit] = useState(false);   // kúpiť DEED kartou (mock top-up)
+  const [prijat, setPrijat] = useState(false); // prijať DEED = ukáž svoj QR
+  useEffect(() => { let z = false; nacitajZostatokDB().then((v) => { if (!z) setZostatok(v); }); return () => { z = true; }; }, []);
+  async function dobite(eur: number) {
+    const deed = eur * 20;
+    setDobit(false);
+    const nove = await dobitPenazenkuDB(deed);   // kurz 1 € ≈ 20 DEED
+    setZostatok(nove);
+    toast(`Dobité +${deed.toLocaleString("sk")} DEED (${eur} € kartou) · demo bez reálnej platby`);
+  }
   const prevody: PrevodTuple[] = PREVODY;
   // reálne odvodené z DB (Fáza D) — agregát „Čo podporujem". Zostatok peňaženky
   // (dole) je zatiaľ placeholder do event-sourced wallet/karma modelu.
@@ -289,8 +305,8 @@ function Penazenka({ toast, onBack, desktop }: PenazenkaProps) {
         <div style={{ position: "relative", overflow: "hidden", background: "linear-gradient(150deg, color-mix(in srgb, var(--a-info) 22%, transparent), color-mix(in srgb, var(--a-plum) 16%, transparent) 55%, color-mix(in srgb, var(--a-teal) 13%, transparent))", border: "1px solid color-mix(in srgb, var(--a-info) 35%, transparent)", borderRadius: RADIUS.lg, padding: SPACE.md, boxShadow: "0 14px 40px rgba(0,0,0,.35), 0 0 36px color-mix(in srgb, var(--a-green) 14%, transparent), inset 0 1px 0 rgba(255,255,255,.12)" }}>
           <div style={{ position: "absolute", top: -50, right: -40, width: 160, height: 160, borderRadius: RADIUS.round, background: "radial-gradient(circle, color-mix(in srgb, var(--a-plum) 30%, transparent), transparent 70%)", filter: "blur(28px)", pointerEvents: "none" }} />
           <div style={{ fontSize: 12, color: C.textSec }}>Zostatok</div>
-          <div style={{ marginTop: SPACE.xxs }}><span style={{ fontSize: 30, fontWeight: 800 }}>1 240</span> <span style={{ color: "#5B86FF", fontWeight: 800 }}>DEED</span></div>
-          <div style={{ fontSize: 10, color: C.textTer, marginTop: SPACE.xxs }}>≈ 62 € · Base L2 · ERC-4337</div>
+          <div style={{ marginTop: SPACE.xxs }}><span style={{ fontSize: 30, fontWeight: 800 }}>{zostatok.toLocaleString("sk")}</span> <span style={{ color: "#5B86FF", fontWeight: 800 }}>DEED</span></div>
+          <div style={{ fontSize: 10, color: C.textTer, marginTop: SPACE.xxs }}>≈ {Math.round(zostatok / 20).toLocaleString("sk")} € · Base L2 · ERC-4337</div>
         </div>
 
         {/* DAROVANÉ SPOLU — reálne z DB (agregát podpôr „Čo podporujem") */}
@@ -326,10 +342,10 @@ function Penazenka({ toast, onBack, desktop }: PenazenkaProps) {
         </div>
 
         <div style={{ display: "flex", gap: SPACE.xs, marginTop: SPACE.gutter }}>
-          {[["↑", "Poslať", "rgba(61,214,140,.13)", "rgba(46,125,82,.5)", "var(--a-green)", "Poslať DEED (demo)"],
-            ["↓", "Prijať", "color-mix(in srgb, var(--a-info) 14%, transparent)", "rgba(42,94,142,.5)", "var(--a-info)", "Prijať (demo)"],
-            ["＋", "Kúpiť", "rgba(169,139,240,.15)", "rgba(122,91,216,.5)", "var(--a-plum)", "Kúpiť DEED (demo)"]].map((b, i) => (
-            <div key={i} onClick={() => toast(b[5])} style={{ flex: 1, height: 58, borderRadius: RADIUS.sm, background: b[2], border: `1px solid ${b[3]}`, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+          {([["↑", "Poslať", "rgba(61,214,140,.13)", "rgba(46,125,82,.5)", "var(--a-green)", () => toast("Poslať DEED — naskenuj QR príjemcu (podpora priamo z detailu príspevku)")],
+            ["↓", "Prijať", "color-mix(in srgb, var(--a-info) 14%, transparent)", "rgba(42,94,142,.5)", "var(--a-info)", () => setPrijat(true)],
+            ["＋", "Kúpiť", "rgba(169,139,240,.15)", "rgba(122,91,216,.5)", "var(--a-plum)", () => setDobit(true)]] as [string, string, string, string, string, () => void][]).map((b, i) => (
+            <div key={i} {...pressable(b[5], b[1])} style={{ flex: 1, height: 58, borderRadius: RADIUS.sm, background: b[2], border: `1px solid ${b[3]}`, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
               <div style={{ fontWeight: 700, fontSize: 13, color: b[4] }}>{b[0]}</div>
               <div style={{ fontSize: 10, color: C.textTer, marginTop: SPACE.xxs }}>{b[1]}</div>
             </div>
@@ -337,8 +353,8 @@ function Penazenka({ toast, onBack, desktop }: PenazenkaProps) {
         </div>
 
         <div style={sekciaLabel}>KÚPIŤ DEED</div>
-        <div onClick={() => toast("Burza DEED/USDC (demo)")} style={subItem}><span>▣ Cez burzu (DEED/USDC)</span><span style={{ color: C.textTer }}>›</span></div>
-        <div onClick={() => toast("Platba kartou (demo)")} style={subItem}><span>▢ Platobnou kartou</span><span style={{ color: C.textTer }}>›</span></div>
+        <div onClick={() => toast("Burza DEED/USDC — príde s reálnym walletom (Fáza 5)")} style={subItem}><span>▣ Cez burzu (DEED/USDC)</span><span style={{ color: C.textTer }}>›</span></div>
+        <div {...pressable(() => setDobit(true), "Kúpiť DEED platobnou kartou")} style={{ ...subItem, cursor: "pointer" }}><span>▢ Platobnou kartou</span><span style={{ color: C.textTer }}>›</span></div>
 
         <div style={sekciaLabel}>POSLEDNÉ PREVODY</div>
         {isError ? (
@@ -359,7 +375,32 @@ function Penazenka({ toast, onBack, desktop }: PenazenkaProps) {
 
       {/* Moje QR kódy — správca (prerobené „Nastav reťaz na honorár") */}
       {honorar && <MojeQrKody onClose={() => setHonorar(false)} toast={toast} />}
+
+      {/* dobitie kartou — mock top-up (reálna platba príde s walletom) */}
+      {dobit && <DobitSheet onDobit={dobite} onClose={() => setDobit(false)} />}
+
+      {/* prijať DEED = ukáž svoj osobný QR */}
+      {prijat && <QrModal typ="identita" titul="Prijať DEED" popis="Ukáž QR — druhá strana ho naskenuje a pošle ti DEED"
+        odkaz={qrUrl("handle", "martin-k")} onClose={() => setPrijat(false)} toast={toast} />}
     </div>
+  );
+}
+
+// mock top-up sheet — výber sumy v €, pripíše DEED (kurz 1 € ≈ 20 DEED)
+function DobitSheet({ onDobit, onClose }: { onDobit: (eur: number) => void; onClose: () => void }) {
+  const [eur, setEur] = useState(20);
+  return (
+    <Sheet onClose={onClose} label="Kúpiť DEED kartou">
+      <div style={{ fontSize: 15, fontWeight: 800 }}>▢ Kúpiť DEED kartou</div>
+      <div style={{ fontSize: 12, color: C.textTer, marginTop: SPACE.xxs, marginBottom: SPACE.sm }}>Kurz 1 € ≈ 20 DEED · demo — karta sa nezaťaží</div>
+      <div style={{ display: "flex", gap: SPACE.xs }}>
+        {[10, 20, 50, 100].map((s) => (
+          <button key={s} onClick={() => setEur(s)} style={{ flex: 1, padding: `${SPACE.sm}px 0`, borderRadius: RADIUS.sm, cursor: "pointer", fontFamily: "inherit", fontWeight: 700, fontSize: 14, border: `1px solid ${eur === s ? "var(--a-green)" : C.line}`, background: eur === s ? "rgba(61,214,140,.12)" : C.surface, color: eur === s ? "var(--a-green)" : C.text }}>{s} €</button>
+        ))}
+      </div>
+      <div style={{ textAlign: "center", fontSize: 13, color: C.textSec, marginTop: SPACE.sm }}>Dostaneš <b style={{ color: C.text }}>{(eur * 20).toLocaleString("sk")} DEED</b></div>
+      <button onClick={() => onDobit(eur)} style={{ width: "100%", height: 48, marginTop: SPACE.sm, borderRadius: RADIUS.sm, border: "none", cursor: "pointer", fontFamily: "inherit", fontWeight: 700, fontSize: 15, background: GRAD_ZELENY, color: "#06281d" }}>Zaplatiť {eur} € kartou</button>
+    </Sheet>
   );
 }
 
@@ -506,6 +547,8 @@ function NastaveniaScreen({ toast, onBack, onNotif, desktop }: NastaveniaScreenP
   const [uroven, setUroven] = useState(true);             // zobrazovať moju úroveň (dá sa skryť)
   const [gps, setGps] = useState(true);
   const [ochrana, setOchrana] = useState(false);          // §13.1 anti-sociálny kredit (modal)
+  const [oAppke, setOAppke] = useState(false);            // O aplikácii · podpora
+  const [ako, setAko] = useState(false);                  // sprievodca „Ako DEED funguje"
 
   const Sekcia = ({ children }: { children: React.ReactNode }) => <div style={{ fontSize: 10.5, letterSpacing: ".5px", color: C.textTer, fontWeight: 700, margin: "18px 0 8px" }}>{children}</div>;
   const Riadok = ({ children, onClick }: { children: React.ReactNode; onClick?: () => void }) => <div onClick={onClick} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, background: C.surface, border: `1px solid ${C.line}`, borderRadius: RADIUS.sm, padding: `${SPACE.sm}px ${SPACE.gutter}px`, marginBottom: SPACE.xs, fontSize: 14.5, cursor: onClick ? "pointer" : "default" }}>{children}</div>;
@@ -555,7 +598,7 @@ function NastaveniaScreen({ toast, onBack, onNotif, desktop }: NastaveniaScreenP
         <Sekcia>ÚČET</Sekcia>
         <Riadok onClick={() => toast("Zamestnávateľ (B2B) — odložené do B2B")}><span style={{ flex: 1 }}>Zamestnávateľ (B2B)</span><span style={{ color: C.textTer, fontWeight: 600 }}>Nenastavený ›</span></Riadok>
         <Riadok onClick={() => toast("Peňaženka a bezpečnosť — biometria/KYC až pri výbere hodnoty")}><span style={{ flex: 1 }}>Peňaženka a bezpečnosť</span><span style={{ color: C.textTer, fontSize: 16 }}>›</span></Riadok>
-        <Riadok onClick={() => toast("O aplikácii · podpora")}><span style={{ flex: 1 }}>O aplikácii · podpora</span><span style={{ color: C.textTer, fontSize: 16 }}>›</span></Riadok>
+        <Riadok onClick={() => setOAppke(true)}><span style={{ flex: 1 }}>O aplikácii · podpora</span><span style={{ color: C.textTer, fontSize: 16 }}>›</span></Riadok>
         <button onClick={() => { toast("Odhlásené"); void signOut(); }} style={{ width: "100%", height: 50, borderRadius: RADIUS.md, marginTop: SPACE.xs, border: "1px solid rgba(242,112,111,.4)", background: "rgba(242,112,111,.08)", color: "var(--a-danger)", fontWeight: 700, fontSize: 15, cursor: "pointer", fontFamily: "inherit" }}>Odhlásiť sa</button>
       </div>
 
@@ -584,6 +627,26 @@ function NastaveniaScreen({ toast, onBack, onNotif, desktop }: NastaveniaScreenP
           <button onClick={() => setOchrana(false)} style={{ width: "100%", height: 48, borderRadius: RADIUS.md, marginTop: SPACE.md, border: "none", background: GRAD, color: "#fff", fontWeight: 700, fontSize: 15, cursor: "pointer", fontFamily: "inherit" }}>Rozumiem</button>
         </Sheet>
       )}
+
+      {/* O aplikácii · podpora */}
+      {oAppke && (
+        <Sheet onClose={() => setOAppke(false)} label="O aplikácii">
+          <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm, marginBottom: SPACE.sm }}>
+            <span style={{ width: 44, height: 44, borderRadius: RADIUS.sm, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", background: GRAD, color: "#fff", fontWeight: 800, fontSize: 20 }}>D⁺</span>
+            <div><div style={{ fontSize: 16, fontWeight: 800 }}>DEED — platforma dobra</div><div style={{ fontSize: 11.5, color: C.textTer }}>Skutky, nie reči.</div></div>
+          </div>
+          {([["Verzia", "pilot (pred-produkčná)"], ["Platby", "demo — žiadne reálne peniaze"], ["Komentáre", "nikdy (železné pravidlo)"]] as [string, string][]).map((r, i) => (
+            <div key={i} style={{ display: "flex", justifyContent: "space-between", gap: SPACE.sm, padding: `${SPACE.xs}px 0`, fontSize: 12.5, borderBottom: `1px solid ${C.line2}` }}>
+              <span style={{ color: C.textTer }}>{r[0]}</span><span style={{ fontWeight: 600 }}>{r[1]}</span>
+            </div>
+          ))}
+          <button onClick={() => { setOAppke(false); setAko(true); }} style={{ width: "100%", height: 48, borderRadius: RADIUS.md, marginTop: SPACE.md, border: "none", background: GRAD, color: "#fff", fontWeight: 700, fontSize: 15, cursor: "pointer", fontFamily: "inherit" }}>Ako DEED funguje — sprievodca</button>
+          <div style={{ fontSize: 11, color: C.textTer, textAlign: "center", marginTop: SPACE.sm, lineHeight: 1.5 }}>Spätnú väzbu a problémy nahlás cez vlajku 🚩 pri obsahu alebo autorovi projektu.</div>
+        </Sheet>
+      )}
+
+      {/* sprievodca „Ako DEED funguje" (rovnaký ako pri prvom spustení) */}
+      {ako && <IntroPruvodca onClose={() => setAko(false)} />}
     </div>
   );
 }

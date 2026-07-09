@@ -166,6 +166,45 @@ export async function pridajPodporuDB(p: {
   if (error) throw error;
 }
 
+// ---- OBĽÚBENÉ v DB (tabuľka `oblubene`, owner-only cez auth.uid — anon session) ----
+// Kľúčované na auth.uid(), takže žiaden ucetId filter — RLS vráti len moje riadky.
+
+/** Načíta obľúbené prihláseného/anon používateľa z DB. */
+export async function nacitajOblubeneDB(): Promise<Oblubeny[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase.from("oblubene").select("*").order("vytvorene", { ascending: false });
+  if (error) throw error;
+  return (data || []).map((r): Oblubeny => ({
+    refId: r.ref_id,
+    typ: r.typ,
+    modul: r.modul,
+    nazov: r.nazov,
+    emoji: r.emoji ?? undefined,
+    lok: r.lok ?? undefined,
+    vyzbierane: r.data?.vyzbierane ?? undefined,
+    ciel: r.data?.ciel ?? undefined,
+  }));
+}
+
+/** Pridá obľúbené do DB (owner = auth.uid() cez default). Duplikát ignoruj (unique). */
+export async function pridajOblubeneDB(o: Oblubeny): Promise<void> {
+  if (!supabase) return;
+  const { error } = await supabase.from("oblubene").insert({
+    ref_id: String(o.refId), typ: o.typ, modul: o.modul, nazov: o.nazov,
+    emoji: o.emoji ?? null, lok: o.lok ?? null,
+    data: { vyzbierane: o.vyzbierane ?? null, ciel: o.ciel ?? null },
+  });
+  // 23505 = unique violation (už je obľúbené) → nie je chyba
+  if (error && error.code !== "23505") throw error;
+}
+
+/** Odoberie obľúbené z DB podľa ref_id (owner-only). */
+export async function odoberOblubeneDB(refId: number | string): Promise<void> {
+  if (!supabase) return;
+  const { error } = await supabase.from("oblubene").delete().eq("ref_id", String(refId));
+  if (error) throw error;
+}
+
 /** Demo seed — aby „Môj DEED" nebol prázdny pri prvom otvorení (len demo identita).
  *  Mená/refId zodpovedajú mock feedu Domov (Good/mock.ts), nech sekcie reálne ožijú. */
 export function demoSeed(): Omit<PersonalizaciaStav, "nacitavam"> {

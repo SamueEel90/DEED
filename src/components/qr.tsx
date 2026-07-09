@@ -4,6 +4,7 @@ import QRCode from "qrcode";
 import { C, GRAD_ZELENY, SPACE, RADIUS } from "@/theme";
 import { tint } from "@/lib/ui";
 import { QR_TYPY, type QrCiel } from "@/lib/qr";
+import { zdielaj as zdielajLib, kopiruj as kopirujLib } from "@/lib/zdielanie";
 import { useQrStatic, useEventToken } from "@/data";
 import { Sheet } from "@/components/sheet";
 import { Lupa, IkonaDoska, IkonaUlozit, Zdielanie } from "@/components/icons";
@@ -54,14 +55,8 @@ export function QrModal({ typ = "skutok", titul, popis, odkaz = "https://deed.ap
   }, [rotujuci, meta.rot]);
   const seed = realnyRot ? (token ?? odkazReal) : odkazReal + (rotujuci ? "·" + krok : "");
 
-  const kopiruj = () => {
-    try { navigator.clipboard?.writeText(odkazReal); } catch { /* clipboard nedostupný */ }
-    toast?.("Odkaz skopírovaný do schránky");
-  };
-  const zdielaj = () => {
-    try { if (navigator.share) { navigator.share({ title: (titul as string) || "DEED", url: odkazReal }); return; } } catch { /* share zrušený */ }
-    kopiruj();
-  };
+  const kopiruj = () => { void kopirujLib(odkazReal, toast); };
+  const zdielaj = () => { void zdielajLib({ titul: (titul as string) || "DEED", url: odkazReal }, toast); };
 
   const out = (ic: ReactNode, label: ReactNode, sub: ReactNode, onClick?: () => void) => (
     <button onClick={onClick} style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: SPACE.xxs, padding: `${SPACE.sm}px ${SPACE.xs}px`, borderRadius: RADIUS.sm, background: C.surface2, border: `1px solid ${C.line}`, color: C.text, cursor: "pointer", fontFamily: "inherit" }}>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, memo } from "react";
 import { SIRKA, SPACE, RADIUS } from "@/theme";
 import { Foto, MiniFotky, ModulHlavicka, PodporaSekcia, PlatbaModal, SplitQrSheet, HladanieModal, toast, useGaleria, useLayout, useScrollHore, useStrankaAkcie, FeedGrid, StatRiadok, FiltreStat, OkruhVyber, MoniBar, ProgresBox, BackHeader, obalSiroky, SegTabs, tint, Lupa, Zdielanie, IkonaVlajka, IkonaFoto, IkonaInstitucia, Srdce, EmptyState, ScreenSwitch, SwipeBack } from "@/shared";
 import { MEDIA_AR } from "@/lib/cardSize";
@@ -6,6 +6,14 @@ import { FEED_CFG } from "@/lib/feed";
 import { Zvoncek } from "@/features/notifikacie/Notifikacie";
 import type { Kanal } from "@/types";
 import { pressable } from "@/components/pressable";
+import { useVrstva } from "@/lib/urlnav";
+import { rovnakeOkremFunkcii } from "@/lib/ui";
+import { zdielaj, aktualnaUrl } from "@/lib/zdielanie";
+import { stiahniIcs } from "@/lib/kalendar";
+import { maPripomienku, zapniPripomienku, vypniPripomienku } from "@/lib/pripomienky";
+import { OzvatSaSheet } from "@/components/ozvatsa";
+import { NahlasitSheet } from "@/components/nahlasit";
+import { nacitajRsvp as nacitajRsvpDB, prepniRsvp as prepniRsvpDB } from "@/lib/osobne";
 import { N, Overena, Chip, SheetPanel, OverujemNamietam, A9Potvrdenie, PrehladTile } from "./ui";
 import { FarskyProfil } from "./FarskyProfil";
 import { Kalendar } from "./Kalendar";
@@ -36,6 +44,8 @@ export default function ModulNabozenstvo({ wide }: { wide?: boolean; otvorModul?
   const { desktop } = useLayout();
   const [screen, setScreen] = useState<Screen>("domov");
   const [sheet, setSheet] = useState<Sheet>(null);
+  // pod-obrazovka = vrstva histórie → browser Back sa vráti na adresár (nie von z appky)
+  useVrstva(screen !== "domov", () => setScreen("domov"), screen);
   const [hladaj, setHladaj] = useState(false);
   const [akt, setAkt] = useState<NabozFeedItem | null>(null);
   const [aktFarnost, setAktFarnost] = useState<Farnost | null>(null);
@@ -63,6 +73,8 @@ export default function ModulNabozenstvo({ wide }: { wide?: boolean; otvorModul?
           <NabozDomov wide={wide} domFarnost={domFarnost} oblubene={oblubene} rodina={rodina} onRodina={setRodina}
             onProfil={otvorProfil} onHladaj={() => setHladaj(true)} onSprievodca={() => setSheet("dir")}
             onToggleFollow={toggleFollow}
+            spravujeDomov={domovska != null && spravovana === domovska}
+            onToggleSpravca={() => domovska && toggleSpravca(domovska)}
             onPrispevok={(z) => { const f = FARNOST_PODLA_ID(farnostIdOf(z)); if (f) setAktFarnost(f); setAkt(z); setScreen("detail"); }} />
         )}
         {screen === "profil" && aktFarnost && obal(
@@ -139,9 +151,11 @@ type DomovProps = {
   onSprievodca: () => void;
   onToggleFollow: (id: string) => void;
   onPrispevok: (z: NabozFeedItem) => void;
+  spravujeDomov: boolean;       // farár režim pre domovskú farnosť (label + toggle)
+  onToggleSpravca: () => void;  // prepni účet farára pre domovskú farnosť
 };
 
-function NabozDomov({ wide, domFarnost, oblubene, rodina, onRodina, onProfil, onHladaj, onSprievodca, onToggleFollow, onPrispevok }: DomovProps) {
+function NabozDomov({ wide, domFarnost, oblubene, rodina, onRodina, onProfil, onHladaj, onSprievodca, onToggleFollow, onPrispevok, spravujeDomov, onToggleSpravca }: DomovProps) {
   const { desktop } = useLayout();
   const [sort, setSort] = useState<"najblizsie" | "abecedne">("najblizsie");
   const [radius, setRadius] = useState<string>("mesto");
@@ -168,27 +182,44 @@ function NabozDomov({ wide, domFarnost, oblubene, rodina, onRodina, onProfil, on
 
   const adrPadX = desktop ? 0 : SPACE.md;
 
-  // panel „Moja cirkev" — na mobile stohovaný hore, na desktope bočný (ako „Môj DEED" v Domove)
+  // panel „Moja cirkev/farnosť" — na mobile stohovaný hore, na desktope bočný (ako „Môj DEED" v Domove).
+  // Príspevky domovskej sa už zobrazujú ako HLAVNÝ obsah (farnostFeed) — panel drží kartu, štatistiku,
+  // toggle účtu farára a vstup na profil. Nadpis sa mení podľa režimu (člen = cirkev, správca = farnosť).
   const mojaCirkev = (
     <>
-      <SekciaLabel>MOJA CIRKEV</SekciaLabel>
+      <SekciaLabel>{spravujeDomov ? "MOJA FARNOSŤ" : "MOJA CIRKEV"}</SekciaLabel>
       {domFarnost ? (
         <>
           <KostolKarta wide={wide} f={domFarnost} home following={oblubene.has(domFarnost.id)}
             onClick={() => onProfil(domFarnost)} onFollow={() => onToggleFollow(domFarnost.id)} />
-          <MojaCirkevPrehlad f={domFarnost} onPrispevok={onPrispevok} onProfil={() => onProfil(domFarnost)} />
+          <div style={{ display: "flex", gap: SPACE.xs, marginTop: SPACE.sm }}>
+            <PrehladTile ikona="👥 " hodnota={(domFarnost.sledovatelia ?? 0).toLocaleString("sk-SK")} label="sledujúcich" color={N.ind} />
+            <PrehladTile ikona="💶 " hodnota={`${Math.round(domFarnost.vyzbierane ?? 0).toLocaleString("sk-SK")} €`} label="vyzbierané" color={N.green} />
+            <PrehladTile ikona="🕊 " hodnota={String(farnostStat(domFarnost.id).zbierky)} label="zbierok" color={N.gold} />
+          </div>
+          <FararToggle on={spravujeDomov} onToggle={onToggleSpravca} />
+          <button onClick={() => onProfil(domFarnost)} style={{ width: "100%", marginTop: SPACE.sm, height: 40, border: `1px solid ${N.indEdge}`, background: N.indBg, color: N.ind, borderRadius: RADIUS.sm, fontWeight: 700, fontSize: 13, fontFamily: "inherit", cursor: "pointer" }}>Otvoriť profil farnosti ›</button>
         </>
       ) : (
         <div {...pressable(onSprievodca, "Nastav si domovskú cirkev")} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, background: N.indBg, border: `1px solid ${N.indEdge}`, borderRadius: RADIUS.md, padding: SPACE.gutter, cursor: "pointer" }}>
           <IkonaInstitucia size={22} color={N.ind} />
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 13.5, fontWeight: 700, color: N.ind }}>Nastav si domovskú cirkev ›</div>
-            <div style={{ fontSize: 11, color: N.txt2 }}>Otvor adresár alebo profil kostola → „Nastaviť ako moju cirkev". Zobrazí sa navrchu.</div>
+            <div style={{ fontSize: 11, color: N.txt2 }}>Otvor adresár alebo profil kostola → „Nastaviť ako moju cirkev". Potom tu uvidíš jej príspevky.</div>
           </div>
         </div>
       )}
     </>
   );
+
+  // HLAVNÝ obsah domovskej farnosti = jej príspevky (nie mriežka kostolov).
+  // Kostoly ostávajú v Adresári cirkví (karta hore + ☰ Sprievodca výberom).
+  const farnostFeed = domFarnost ? (
+    <div style={{ padding: `${SPACE.xs}px ${adrPadX}px 0` }}>
+      <SekciaLabel>PRÍSPEVKY · {domFarnost.skratka ?? domFarnost.nazov}</SekciaLabel>
+      <FarnostFeed f={domFarnost} onPrispevok={onPrispevok} />
+    </div>
+  ) : null;
 
   // adresár kostolov — faseta + radenie + mriežka (hlavný obsah)
   const adresar = (
@@ -251,13 +282,13 @@ function NabozDomov({ wide, domFarnost, oblubene, rodina, onRodina, onProfil, on
 
       {desktop ? (
         <div style={{ display: "flex", gap: SPACE.lg, alignItems: "flex-start", padding: `${SPACE.xs}px ${SPACE.md}px 0` }}>
-          <div style={{ flex: 1, minWidth: 0 }}>{adresar}</div>
+          <div style={{ flex: 1, minWidth: 0 }}>{domFarnost ? farnostFeed : adresar}</div>
           <aside style={{ width: 340, flex: "0 0 340px", minWidth: 0, position: "sticky", top: SPACE.sm }}>{mojaCirkev}</aside>
         </div>
       ) : (
         <>
           <div style={{ padding: `${SPACE.xs}px ${SPACE.md}px ${SPACE.sm}px` }}>{mojaCirkev}</div>
-          {adresar}
+          {domFarnost ? farnostFeed : adresar}
         </>
       )}
 
@@ -268,41 +299,54 @@ function NabozDomov({ wide, domFarnost, oblubene, rodina, onRodina, onProfil, on
   );
 }
 
-// rýchly prehľad mojej cirkvi (à la „Môj DEED"): dlaždice + aktívne zbierky + info oznamy/udalosti
-function MojaCirkevPrehlad({ f, onPrispevok, onProfil }: { f: Farnost; onPrispevok: (z: NabozFeedItem) => void; onProfil: () => void }) {
+// HLAVNÝ feed domovskej farnosti — JEJ príspevky (zbierky s progresom + oznamy/udalosti).
+// Nahrádza mriežku kostolov, keď má user nastavenú domovskú (kostoly ostávajú v Adresári cirkví).
+function FarnostFeed({ f, onPrispevok }: { f: Farnost; onPrispevok: (z: NabozFeedItem) => void }) {
   const obsah = obsahFarnosti(f.id);
-  const zbierky = obsah.filter((it) => it.ntyp === "zbierka").slice(0, 2);
-  const oznamy = obsah.filter((it) => it.ntyp === "oznam" || it.ntyp === "udalost").slice(0, 3);
-  const st = farnostStat(f.id);
+  const zbierky = obsah.filter((it) => it.ntyp === "zbierka" || it.ciel != null);
+  const ostatne = obsah.filter((it) => !(it.ntyp === "zbierka" || it.ciel != null));
+  if (obsah.length === 0) {
+    return <div style={{ fontSize: 12, color: N.txt3, padding: `${SPACE.sm}px 0`, lineHeight: 1.5 }}>Tvoja farnosť zatiaľ nepridala oznamy ani zbierky. Nové príspevky sa objavia tu.</div>;
+  }
   return (
-    <div style={{ marginTop: SPACE.sm }}>
-      <div style={{ display: "flex", gap: SPACE.xs, marginBottom: SPACE.sm }}>
-        <PrehladTile ikona="👥 " hodnota={(f.sledovatelia ?? 0).toLocaleString("sk-SK")} label="sledujúcich" color={N.ind} />
-        <PrehladTile ikona="💶 " hodnota={`${Math.round(f.vyzbierane ?? 0).toLocaleString("sk-SK")} €`} label="vyzbierané" color={N.green} />
-        <PrehladTile ikona="🕊 " hodnota={String(st.zbierky)} label="zbierok" color={N.gold} />
-      </div>
-
+    <div>
+      {zbierky.length > 0 && <SekciaLabel>ZBIERKY</SekciaLabel>}
       {zbierky.map((z) => (
         <div key={z.id} {...pressable(() => onPrispevok(z), z.nazov)} style={{ background: N.indBg, border: `1px solid ${N.line}`, borderRadius: RADIUS.sm, padding: SPACE.sm, marginBottom: SPACE.xs, cursor: "pointer" }}>
-          <div style={{ fontSize: 13, fontWeight: 700, marginBottom: SPACE.xxs, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{z.emoji ? `${z.emoji} ` : ""}{z.nazov}</div>
+          <div style={{ fontSize: 13.5, fontWeight: 700, marginBottom: SPACE.xxs, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{z.emoji ? `${z.emoji} ` : ""}{z.nazov}</div>
           {z.ciel != null && <MoniBar vyzbierane={z.vyzbierane ?? 0} ciel={z.ciel} mini />}
         </div>
       ))}
 
-      {oznamy.length > 0 && <SekciaLabel>OZNAMY &amp; UDALOSTI</SekciaLabel>}
-      {oznamy.map((o) => (
-        <div key={o.id} {...pressable(() => onPrispevok(o), o.nazov)} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, padding: `${SPACE.xs}px 0`, borderTop: `1px solid ${N.line}`, cursor: "pointer" }}>
-          <span style={{ width: 30, height: 30, borderRadius: RADIUS.xs, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, background: tint(N.ind, .12) }}>{o.emoji ?? "📢"}</span>
-          <div style={{ flex: 1, minWidth: 0, fontSize: 12.5, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{o.nazov}</div>
+      {ostatne.length > 0 && <SekciaLabel>OZNAMY &amp; UDALOSTI</SekciaLabel>}
+      {ostatne.map((o) => (
+        <div key={o.id} {...pressable(() => onPrispevok(o), o.nazov)} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, padding: `${SPACE.sm}px 0`, borderTop: `1px solid ${N.line}`, cursor: "pointer" }}>
+          <span style={{ width: 34, height: 34, borderRadius: RADIUS.xs, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, background: tint(N.ind, .12) }}>{o.emoji ?? "📢"}</span>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{o.nazov}</div>
+            {o.lok && <div style={{ fontSize: 11, color: N.txt3, marginTop: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>📍 {o.lok}</div>}
+          </div>
           <span style={{ color: N.txt3, fontSize: 14, flex: "none" }}>›</span>
         </div>
       ))}
+    </div>
+  );
+}
 
-      {zbierky.length === 0 && oznamy.length === 0 && (
-        <div style={{ fontSize: 11.5, color: N.txt3, padding: `${SPACE.xs}px 0` }}>Táto cirkev zatiaľ nemá zbierky ani oznamy.</div>
-      )}
-
-      <button onClick={onProfil} style={{ width: "100%", marginTop: SPACE.sm, height: 40, border: `1px solid ${N.indEdge}`, background: N.indBg, color: N.ind, borderRadius: RADIUS.sm, fontWeight: 700, fontSize: 13, fontFamily: "inherit", cursor: "pointer" }}>Otvoriť profil cirkvi ›</button>
+// Toggle účtu farára (správcovský režim) pre domovskú farnosť. Zapnutý → panel „MOJA FARNOSŤ",
+// v profile/pridávaní sa odomkne správcovské rozhranie (spravovana === domovska v rodičovi).
+function FararToggle({ on, onToggle }: { on: boolean; onToggle: () => void }) {
+  return (
+    <div {...pressable(onToggle, on ? "Vypnúť správcovský režim farára" : "Zapnúť účet farára")} aria-pressed={on}
+      style={{ display: "flex", alignItems: "center", gap: SPACE.sm, marginTop: SPACE.sm, background: on ? tint(N.ind, .12) : N.card, border: `1px solid ${on ? N.indEdge : N.line}`, borderRadius: RADIUS.sm, padding: `${SPACE.sm}px ${SPACE.gutter}px`, cursor: "pointer" }}>
+      <span style={{ fontSize: 17, flex: "none" }}>🛡</span>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 13, fontWeight: 700, color: on ? N.ind : N.txt }}>Účet farára (správca)</div>
+        <div style={{ fontSize: 11, color: N.txt3, lineHeight: 1.4 }}>{on ? "Spravuješ farnosť — pridávaj oznamy a zbierky." : "Prepni na správu tvojej farnosti."}</div>
+      </div>
+      <span style={{ width: 42, height: 24, borderRadius: 99, flex: "none", background: on ? N.ind : tint(N.txt3, .4), position: "relative", transition: "background .15s" }}>
+        <span style={{ position: "absolute", top: 2, left: on ? 20 : 2, width: 20, height: 20, borderRadius: "50%", background: "#fff", transition: "left .15s" }} />
+      </span>
     </div>
   );
 }
@@ -312,7 +356,9 @@ function SekciaLabel({ children }: { children: React.ReactNode }) {
 }
 
 // ---- karta kostola (adresárová entita — NIE post karta) ----
-function KostolKarta({ wide, f, home, following, onClick, onFollow }: {
+// memo: re-render len pri zmene farnosti/home/following (inline handlery sa ignorujú)
+const KostolKarta = memo(KostolKartaBase, rovnakeOkremFunkcii);
+function KostolKartaBase({ wide, f, home, following, onClick, onFollow }: {
   wide?: boolean; f: Farnost; home?: boolean; following?: boolean; onClick: () => void; onFollow?: () => void;
 }) {
   const st = farnostStat(f.id);
@@ -365,6 +411,30 @@ function NabozDetail({ z, farar, onBack, onProfil }: { z: NabozFeedItem; farar: 
   const f = FARNOST_PODLA_ID(farnostIdOf(z));
   const jeUdalost = z.ntyp === "udalost";
   const maRsvp = !!z.rsvp; // púť/akcia/brigáda (omša RSVP nemá)
+  const [idem, setIdem] = useState(false); // RSVP účasť (DB/localStorage) — načíta sa async
+  useEffect(() => { let z0 = false; nacitajRsvpDB().then((s) => { if (!z0) setIdem(s.has(z.id)); }); return () => { z0 = true; }; }, [z.id]);
+  async function prepniRsvp() {
+    const nove = await prepniRsvpDB(z.id);
+    setIdem(nove);
+    toast(nove ? `Zapísané — ${z.nazov}. Tešíme sa!` : "Účasť zrušená");
+  }
+  // 🔔 Pripomeň = reálna pripomienka (Web Notifications): povolenie + uloženie +
+  // okamžité potvrdenie + naplánovanie na čas udalosti. Toggle (zapnúť/zrušiť).
+  const [pripomenute, setPripomenute] = useState(false);
+  useEffect(() => { setPripomenute(maPripomienku(z.id)); }, [z.id]);
+  async function prepniPripomen() {
+    if (pripomenute) { vypniPripomienku(z.id); setPripomenute(false); toast("Pripomienka zrušená"); return; }
+    const ok = await zapniPripomienku({ refId: z.id, modul: "nabozenstvo", nazov: z.nazov ?? "Udalosť", datum: z.datum });
+    setPripomenute(true);
+    toast(ok
+      ? (z.datum ? "Pripomenieme ti deň udalosti 🔔" : "Pripomienka pridaná 🔔")
+      : "Zapni upozornenia v prehliadači, nech ti to pripomenieme");
+  }
+  // sekundárne: pridať do systémového kalendára (.ics) — spoľahlivé aj pri zavretej appke
+  const doKalendara = () => { if (z.datum) stiahniIcs({ id: z.id, nazov: z.nazov ?? "Udalosť", datum: z.datum, miesto: z.lok, popis: (z.pribeh ?? z.popis ?? "").slice(0, 200) }, toast); };
+  const zdielajDetail = () => void zdielaj({ titul: z.nazov ?? "DEED", text: `${z.nazov ?? ""} — ${z.komunita || z.cirkev}`, url: aktualnaUrl() }, toast);
+  const [ozvat, setOzvat] = useState(false); // „Zapojiť sa" → správa farnosti
+  const [nahlasit, setNahlasit] = useState(false); // vlajka → nahlásenie obsahu
   const jeSplit = !!z.split; // pohreb/svadba
   // §11: Overujem/Namietam LEN na Help prípadoch jednotlivcov (núdza + riziko podvodu).
   const overitelne = !!z.overitelne;
@@ -376,7 +446,7 @@ function NabozDetail({ z, farar, onBack, onProfil }: { z: NabozFeedItem; farar: 
 
   return (
     <div style={{ paddingBottom: SPACE.lg }}>
-      <BackHeader onBack={onBack} right={<><Zdielanie size={17} color={N.txt2} /><IkonaVlajka size={16} color={N.txt2} /></>}>
+      <BackHeader onBack={onBack} right={<><span {...pressable(zdielajDetail, "Zdieľať príspevok")} style={{ display: "flex", cursor: "pointer", position: "relative" }}><Zdielanie size={17} color={N.txt2} /></span><span {...pressable(() => setNahlasit(true), "Nahlásiť obsah")} style={{ display: "flex", cursor: "pointer", position: "relative" }}><IkonaVlajka size={16} color={N.txt2} /></span></>}>
         {z.badgeL && <span style={{ fontSize: 12, color: badgeCol, background: tint(badgeCol, .12), border: `1px solid ${tint(badgeCol, .38)}`, padding: `${SPACE.xxs}px ${SPACE.xs}px`, borderRadius: RADIUS.xs, fontWeight: 700 }}>{z.badgeL}</span>}
         {z.lok && <span style={{ fontSize: 12, color: N.txt2 }}>📍 {z.lok}</span>}
       </BackHeader>
@@ -386,7 +456,7 @@ function NabozDetail({ z, farar, onBack, onProfil }: { z: NabozFeedItem; farar: 
       {maFoto && (
         <div style={{ padding: `0 ${SPACE.md}px` }}>
           <div style={{ position: "relative", ...(wide ? { width: "100%", aspectRatio: MEDIA_AR } : {}) }}>
-            <Foto src={fotky[0]} emoji={z.emoji || "⛪"} h={wide ? "100%" : 200} w={wide ? "100%" : undefined} radius={14} onClick={() => otvorGaleriu(fotky, 0)} />
+            <Foto src={fotky[0]} emoji={z.emoji || "⛪"} h={wide ? "100%" : 200} w={wide ? "100%" : undefined} radius={14} onClick={() => otvorGaleriu(fotky, 0)} prednost alt={z.nazov} />
             <span style={{ ...badge({ top: 9, left: 9, color: "#fff" }), display: "inline-flex", alignItems: "center", gap: SPACE.xxs }}><IkonaFoto size={12} color="#fff" /> foto komunity</span>
           </div>
         </div>
@@ -423,11 +493,18 @@ function NabozDetail({ z, farar, onBack, onProfil }: { z: NabozFeedItem; farar: 
 
         {/* udalosť s dátumom → RSVP (nie omša) + pripomienka */}
         {jeUdalost && (
-          <div style={{ display: "flex", gap: SPACE.sm, marginBottom: SPACE.gutter }}>
-            {maRsvp && (
-              <div onClick={() => toast(`Zapísané — ${z.nazov} · X pôjde`)} style={{ flex: 1, border: `2px solid ${N.greenEdge}`, background: N.greenBg, borderRadius: RADIUS.sm, padding: SPACE.gutter, textAlign: "center", fontSize: 14, fontWeight: 700, color: N.green, cursor: "pointer" }}>🗓 Zúčastním sa</div>
+          <div style={{ marginBottom: SPACE.gutter }}>
+            <div style={{ display: "flex", gap: SPACE.sm }}>
+              {maRsvp && (
+                <div {...pressable(prepniRsvp, idem ? "Zrušiť účasť" : "Zúčastniť sa")} style={{ flex: 1, border: `2px solid ${N.greenEdge}`, background: idem ? tint("var(--a-green)", .18) : N.greenBg, borderRadius: RADIUS.sm, padding: SPACE.gutter, textAlign: "center", fontSize: 14, fontWeight: 700, color: N.green, cursor: "pointer" }}>{idem ? "✓ Idem — zrušiť účasť" : "🗓 Zúčastním sa"}</div>
+              )}
+              <div {...pressable(prepniPripomen, pripomenute ? "Zrušiť pripomienku" : "Pripomenúť")} aria-pressed={pripomenute} style={{ flex: maRsvp ? "none" : 1, minWidth: 120, border: `1px solid ${N.indEdge}`, background: pripomenute ? tint(N.ind, .2) : N.indBg, borderRadius: RADIUS.sm, padding: SPACE.gutter, textAlign: "center", fontSize: 14, fontWeight: 700, color: N.ind, cursor: "pointer" }}>{pripomenute ? "🔔 Pripomenieme ti ✓" : "🔔 Pripomeň"}</div>
+            </div>
+            {z.datum && (
+              <div style={{ textAlign: "center", marginTop: SPACE.xs }}>
+                <span {...pressable(doKalendara, "Pridať do systémového kalendára")} style={{ fontSize: 11.5, fontWeight: 700, color: N.txt3, cursor: "pointer" }}>📅 pridať aj do kalendára (.ics)</span>
+              </div>
             )}
-            <div onClick={() => toast("Pripomeniem ti · pridané do kalendára")} style={{ flex: maRsvp ? "none" : 1, minWidth: 120, border: `1px solid ${N.indEdge}`, background: N.indBg, borderRadius: RADIUS.sm, padding: SPACE.gutter, textAlign: "center", fontSize: 14, fontWeight: 700, color: N.ind, cursor: "pointer" }}>🔔 Pripomeň</div>
           </div>
         )}
 
@@ -439,7 +516,7 @@ function NabozDetail({ z, farar, onBack, onProfil }: { z: NabozFeedItem; farar: 
 
             <div style={{ marginBottom: SPACE.gutter }}>
               <PodporaSekcia
-                onShare={() => toast("Zdieľať: odkaz skopírovaný · siete")}
+                onShare={zdielajDetail}
                 upvotes={ludia} onUpvote={() => toast(reakcia)} reakcia="srdce"
                 onPodpor={(s: number) => podpor(s, `Ďakujeme za ${s} DEED pre ${z.nazov}`)} onSms={() => podpor(100, "SMS podpora")}
                 onKanal={(k: string) => setPlatba(k as Kanal)} accent={N.ind}
@@ -460,13 +537,13 @@ function NabozDetail({ z, farar, onBack, onProfil }: { z: NabozFeedItem; farar: 
         ) : (
           <div style={{ marginBottom: SPACE.gutter }}>
             {z.ntyp === "dobrovolnictvo" && (
-              <div onClick={() => toast(`Zapojiť sa — ${z.nazov} · event QR = karma za účasť`)} style={{ width: "100%", border: `2px solid ${N.greenEdge}`, background: N.greenBg, borderRadius: RADIUS.sm, padding: SPACE.gutter, textAlign: "center", fontSize: 15, fontWeight: 700, color: N.green, cursor: "pointer", marginBottom: SPACE.sm }}>
+              <div {...pressable(() => setOzvat(true), "Zapojiť sa — napísať farnosti")} style={{ width: "100%", border: `2px solid ${N.greenEdge}`, background: N.greenBg, borderRadius: RADIUS.sm, padding: SPACE.gutter, textAlign: "center", fontSize: 15, fontWeight: 700, color: N.green, cursor: "pointer", marginBottom: SPACE.sm, boxSizing: "border-box" }}>
                 🙌 Zapojiť sa
               </div>
             )}
             {/* §12: oznam/dobrovoľníctvo bez napojenej zbierky → LEN srdiečko + zdieľať. */}
             <PodporaSekcia
-              onShare={() => toast("Zdieľať: odkaz skopírovaný · siete")}
+              onShare={zdielajDetail}
               upvotes={ludia} onUpvote={() => toast(reakcia)} reakcia="srdce" bezDaru
               onPodpor={() => {}} onKanal={() => {}} accent={N.ind} />
             {z.ntyp === "oznam" && <div style={{ fontSize: 10.5, color: N.txt3, textAlign: "center", marginTop: SPACE.sm }}>Bez zbierky — len srdiečko a zdieľať. „Prispieť" sa objaví len ak je oznam napojený na zbierku (napr. úmrtie → pohrebná zbierka). Žiadne komentáre (železné pravidlo).</div>}
@@ -478,6 +555,12 @@ function NabozDetail({ z, farar, onBack, onProfil }: { z: NabozFeedItem; farar: 
       {split && <SplitQrSheet titul={z.nazov || "Zbierka"} caseId={null} zdroj="autor"
         variant={farskySplitVariant(z.ukat === "svadba" ? "svadba" : "pohreb")}
         onClose={() => setSplit(false)} toast={toast} />}
+
+      {/* „Zapojiť sa" — súkromná správa farnosti (mock uloženie) */}
+      {ozvat && <OzvatSaSheet komu={z.komunita || z.cirkev} refId={z.id} modul="nabozenstvo" onClose={() => setOzvat(false)} toast={toast} />}
+
+      {/* vlajka — nahlásenie obsahu (§11: nahlásiť, nie hlasovať) */}
+      {nahlasit && <NahlasitSheet co={z.nazov ?? "Príspevok"} refId={z.id} modul="nabozenstvo" onClose={() => setNahlasit(false)} toast={toast} />}
     </div>
   );
 }

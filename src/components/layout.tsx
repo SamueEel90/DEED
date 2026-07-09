@@ -9,6 +9,8 @@ import { VirtualList } from "@/components/virtuallist";
 import { pressable } from "@/components/pressable";
 import { Sheet } from "@/components/sheet";
 import { IkonaSpat, IkonaMenu, IkonaPlay, IkonaDoska, IkonaPlus, IkonaPin, IkonaSipDole, IkonaFajka } from "@/components/icons";
+import { Hmat } from "@/components/ui";
+import { Tip } from "@/components/tooltip";
 
 // ============================================================
 // SPOLOČNÉ UI KOMPONENTY (hlavička, výbery, modaly, toasty)
@@ -39,7 +41,9 @@ export function AvatarUroven({ ini, tint, tier, size = 34, ring = true, onClick,
     <div {...(onClick ? pressable(onClick, title) : {})} title={title} style={{ position: "relative", flex: "0 0 auto", cursor: onClick ? "pointer" : "default" }}>
       <div style={{ width: size, height: size, borderRadius: RADIUS.round, background: tint, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: Math.round(size * 0.41), color: "#fff", boxShadow: ring ? `0 0 0 ${Math.max(2, Math.round(size / 17))}px rgba(240,199,90,.85)` : "none" }}>{ini}</div>
       {lvl && (
-        <span style={{ position: "absolute", bottom: -Math.round(size * 0.07), right: -Math.round(size * 0.09), height: bH, minWidth: bH, padding: `0 ${SPACE.xxs}px`, borderRadius: bH / 2, background: "linear-gradient(135deg,#F4CE63,#DE9E36)", color: "#3A2C0E", fontSize: Math.round(size * 0.26), fontWeight: 800, lineHeight: 1, display: "flex", alignItems: "center", justifyContent: "center", letterSpacing: ".02em", boxShadow: "0 1px 4px rgba(0,0,0,.32), 0 0 0 1.6px var(--c-bg)" }}>L{lvl}</span>
+        <Tip label={`Úroveň karmy L${lvl} — rastie za overené dobré skutky a podporu (Bronze → Legend). Karma patrí ľuďom, nie číslam.`}>
+          <span style={{ position: "absolute", bottom: -Math.round(size * 0.07), right: -Math.round(size * 0.09), height: bH, minWidth: bH, padding: `0 ${SPACE.xxs}px`, borderRadius: bH / 2, background: "linear-gradient(135deg,#F4CE63,#DE9E36)", color: "#3A2C0E", fontSize: Math.round(size * 0.26), fontWeight: 800, lineHeight: 1, display: "flex", alignItems: "center", justifyContent: "center", letterSpacing: ".02em", boxShadow: "0 1px 4px rgba(0,0,0,.32), 0 0 0 1.6px var(--c-bg)" }}>L{lvl}</span>
+        </Tip>
       )}
     </div>
   );
@@ -52,17 +56,33 @@ export function AvatarUroven({ ini, tint, tier, size = 34, ring = true, onClick,
 export function ModulHlavicka({ title, right, slogan = "Miesto, kde nerozhodujú slová, ale skutky" }: { title?: ReactNode; right?: ReactNode; karma?: ReactNode; slogan?: ReactNode }) {
   const otvorViac = useViac();
   const { desktop } = useLayout();
+  // objaviteľnosť: zelená bodka na ☰, kým user menu Viac prvýkrát neotvorí
+  // (3 z 8 modulov žijú len tam — nový user o nich inak nevie)
+  const [viacHint, setViacHint] = useState<boolean>(() => {
+    try { return !localStorage.getItem("deed.viac.videne"); } catch { return false; }
+  });
+  const klikViac = () => {
+    if (viacHint) { try { localStorage.setItem("deed.viac.videne", "1"); } catch { /* private mode */ } setViacHint(false); }
+    otvorViac();
+  };
   return (
-    <div style={{ position: "sticky", top: 0, zIndex: 6, ...glassTmavy(18, .6), borderLeft: "none", borderRight: "none", borderTop: "none" }}>
+    <header style={{ position: "sticky", top: 0, zIndex: 6, ...glassTmavy(18, .6), borderLeft: "none", borderRight: "none", borderTop: "none" }}>
       <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm, padding: `${SPACE.sm}px ${SPACE.md}px ${SPACE.xs}px` }}>
         {/* na desktope navigáciu + logo nesie bočný panel → tu ☰ aj logo skryjeme (žiadny duplikát) */}
-        {!desktop && <span {...pressable(otvorViac, "Menu modulov")} title="Menu modulov" style={{ display: "flex", alignItems: "center", color: C.textSec, cursor: "pointer", flex: "0 0 auto" }}><IkonaMenu size={22} color={C.textSec} /></span>}
         {!desktop && (
-          <span style={{ width: 32, height: 32, borderRadius: RADIUS.sm, background: GRAD, color: "#fff", fontWeight: 800, fontSize: 17, display: "flex", alignItems: "center", justifyContent: "center", position: "relative", boxShadow: "0 4px 14px color-mix(in srgb, var(--a-green) 40%, transparent)", flex: "0 0 auto" }}>
+          <span {...pressable(klikViac, viacHint ? "Menu modulov — nájdeš tu ďalšie moduly" : "Menu modulov")} title="Menu modulov" style={{ position: "relative", display: "flex", alignItems: "center", color: C.textSec, cursor: "pointer", flex: "0 0 auto" }}>
+            <Hmat o={11} />
+            <IkonaMenu size={22} color={C.textSec} />
+            {viacHint && <span aria-hidden style={{ position: "absolute", top: -2, right: -4, width: 8, height: 8, borderRadius: RADIUS.round, background: "var(--a-green)", boxShadow: "0 0 0 2px var(--c-bg)" }} />}
+          </span>
+        )}
+        {!desktop && (
+          <span style={{ width: 32, height: 32, borderRadius: RADIUS.sm, background: GRAD, color: "#fff", fontWeight: 800, fontSize: 17, display: "flex", alignItems: "center", justifyContent: "center", position: "relative", boxShadow: "0 4px 14px color-mix(in srgb, var(--a-green) 40%, transparent)", flex: "0 0 auto" }} aria-hidden>
             D<span style={{ position: "absolute", top: 3, right: 4, fontSize: 9 }}>+</span>
           </span>
         )}
-        <span style={{ fontSize: 20, fontWeight: 800 }}>{title}</span>
+        {/* h1 = názov modulu (SR navigácia po nadpisoch) — vizuál nezmenený */}
+        <h1 style={{ fontSize: 20, fontWeight: 800, margin: 0, lineHeight: "inherit" }}>{title}</h1>
         <span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: SPACE.sm }}>
           {right}
         </span>
@@ -73,7 +93,7 @@ export function ModulHlavicka({ title, right, slogan = "Miesto, kde nerozhodujú
           <div style={{ width: "100%", fontSize: 16.5, fontWeight: 600, fontStyle: "italic", color: C.textSec, lineHeight: 1.35, letterSpacing: ".005em", whiteSpace: "normal", overflow: "visible", textOverflow: "clip" }}>„{slogan}"</div>
         </div>
       )}
-    </div>
+    </header>
   );
 }
 
@@ -304,11 +324,25 @@ export function FeedStlpce({ wide, skutky, ziadosti, charita, jednoStlpec, label
   const Hd = ({ children }: { children?: ReactNode }) => <div style={{ fontSize: 11.5, letterSpacing: ".4px", color: C.textTer, fontWeight: 700, margin: `0 0 ${SPACE.sm}px`, paddingLeft: SPACE.xxs }}>{children}</div>;
   const col: CSSProperties = { display: "flex", flexDirection: "column", gap: SPACE.sm, minWidth: 0 };
   const tri = charita !== undefined; // 3. stĺpec = desktop „Charita"
+  // stĺpec: pod prahom bežný flex render (1:1 ako doteraz), nad prahom per-stĺpec
+  // virtualizácia (VirtualList v spoločnom scrolleri; medzeru rieši paddingBottom
+  // obalu — flex gap sa vo virtualizovanom absolútnom layoute neuplatní)
+  const PRAH = 60;
+  const Stlpec = ({ d, label }: { d: { zobraz: ReactNode[]; sentinel: ReactNode }; label?: ReactNode }) => (
+    <div style={{ minWidth: 0 }}>
+      <Hd>{label}</Hd>
+      {scrollRef && d.zobraz.length >= PRAH
+        ? <VirtualList items={d.zobraz} threshold={0} estimateSize={430} scrollRef={scrollRef} getKey={(_n, i) => i}
+            renderItem={(n, i) => <div key={i} style={{ paddingBottom: SPACE.sm }}>{n}</div>} />
+        : <div style={col}>{d.zobraz}</div>}
+      {d.sentinel}
+    </div>
+  );
   return (
     <div style={{ display: "grid", gridTemplateColumns: tri ? "1fr 1fr 1fr" : "1fr 1fr", gap: SPACE.gutter, alignItems: "start", padding }}>
-      <div style={{ minWidth: 0 }}><Hd>{labelSkutky}</Hd><div style={col}>{dLave.zobraz}</div>{dLave.sentinel}</div>
-      <div style={{ minWidth: 0 }}><Hd>{labelZiadosti}</Hd><div style={col}>{dPrave.zobraz}</div>{dPrave.sentinel}</div>
-      {tri && <div style={{ minWidth: 0 }}><Hd>{labelCharita}</Hd><div style={col}>{dTretie.zobraz}</div>{dTretie.sentinel}</div>}
+      <Stlpec d={dLave} label={labelSkutky} />
+      <Stlpec d={dPrave} label={labelZiadosti} />
+      {tri && <Stlpec d={dTretie} label={labelCharita} />}
     </div>
   );
 }
@@ -335,13 +369,16 @@ export function FiltreStat({ filtre, stat }: { filtre: ReactNode; stat: ReactNod
 // Použité v Help/Charita na plnú šírku (hustejšie než 2-stĺpcový FeedStlpce).
 // ============================================================
 export function FeedGrid({ cards, cols = 3, gap = 16, padding = "4px 16px 14px" }: { cards: ReactNode[]; cols?: number; gap?: number; padding?: string }) {
-  // infinite scroll — masonry renderuje po dávkach (cols × 6), zvyšok po dojazde
+  // infinite scroll — masonry renderuje po dávkach (cols × 6), zvyšok po dojazde.
+  // CSS multicol sa nedá okienkovať (poradie riadi prehliadač) → mimoobrazovkové
+  // karty preskakuje content-visibility:auto (render cost ~0, layout drží
+  // contain-intrinsic-size). DOM rastie len so scrollom (dávky), nie s dátami.
   const { zobraz, sentinel } = useDavkovanie(cards, cols * 6);
   return (
     <>
       <div style={{ columnCount: cols, columnGap: gap, padding }}>
         {zobraz.map((c, i) => (
-          <div key={i} style={{ breakInside: "avoid", marginBottom: gap }}>{c}</div>
+          <div key={i} style={{ breakInside: "avoid", marginBottom: gap, contentVisibility: "auto", containIntrinsicSize: "auto 420px" }}>{c}</div>
         ))}
       </div>
       {sentinel}

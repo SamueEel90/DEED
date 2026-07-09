@@ -51,14 +51,16 @@ export function obohatit(it: AktItem): AktItem {
 
 // ---- vytvorenie nového príspevku zo sprievodcu ＋ Pridať ----
 let _seq = 0;
-export interface NovyPostSpec { kind: string; d: string; text?: string; talent?: boolean; free?: boolean; }
-export function vytvorPost({ kind, d, text, talent, free }: NovyPostSpec): AktItem {
+export interface NovyPostSpec { kind: string; d: string; text?: string; talent?: boolean; free?: boolean; fotky?: string[]; }
+export function vytvorPost({ kind, d, text, talent, free, fotky }: NovyPostSpec): AktItem {
   const a = DOM[d];
   const id = 90000 + Date.now() % 100000 + (_seq++); // stabilne unikátne v rámci sedenia
   const t = (text || "").trim();
+  const fot = fotky?.filter(Boolean);
   const base = {
     id, dom: d, author: "Ty", ini: "TY", pfp: a.c, karma: "Nováčik",
     loc: "Trenčín · tu", time: "teraz", num: 140211 + (id % 1000), mine: true,
+    ...(fot?.length ? { fotky: fot } : {}),
   };
   if (kind === "skolenie") {
     return { ...base, type: "workshop", size: "med", price: free ? "free" : "paid",

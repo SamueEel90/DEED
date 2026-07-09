@@ -12,7 +12,7 @@
 import { useState, type CSSProperties, type ReactNode } from "react";
 import { C, GRAD, gradText, SPACE, RADIUS } from "@/theme";
 import { toast, IkonaObalka, IkonaZamok, IkonaOko, IkonaOkoOff, IkonaSipVpravo } from "@/shared";
-import { signIn, signUp, resolveSession } from "@/lib/auth";
+import { signIn, signUp, resolveSession, resetHeslo, zmenHeslo } from "@/lib/auth";
 import type { TypUctu } from "@/types";
 
 type Rezim = "login" | "register";
@@ -36,6 +36,21 @@ export function AuthPage({ onAuthed, onGuest, onPasivny, uvodnyRezim = "login" }
   const canSubmit = emailOk && hesloOk && (jeLogin || (heslo2.length > 0 && zhoda));
 
   const prepniRezim = (r: Rezim) => { setRezim(r); setChyba(null); };
+
+  // „Zabudnuté heslo" — pošle obnovovací email na adresu z poľa vyššie
+  const [resetBusy, setResetBusy] = useState(false);
+  const posliReset = async () => {
+    if (!emailOk) { setChyba("Napíš svoj email do poľa vyššie a potom klikni na obnovu hesla znova."); return; }
+    setResetBusy(true);
+    setChyba(null);
+    try {
+      const r = await resetHeslo(email);
+      if (r.ok) toast("Poslali sme ti email s odkazom na obnovu hesla.");
+      else setChyba(r.chyba ?? "Email sa nepodarilo odoslať.");
+    } finally {
+      setResetBusy(false);
+    }
+  };
 
   const submit = async () => {
     if (!canSubmit || busy) return;
@@ -93,22 +108,24 @@ export function AuthPage({ onAuthed, onGuest, onPasivny, uvodnyRezim = "login" }
           })}
         </div>
 
+        {/* formulár — Enter v ľubovoľnom poli odošle (submit) */}
+        <form onSubmit={(e) => { e.preventDefault(); submit(); }} noValidate>
         {/* email */}
-        <Pole label="Email">
+        <Pole label="Email" htmlFor="auth-email">
           <PoleVstup icon={<IkonaObalka size={18} color={C.textTer} />}>
-            <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" inputMode="email" autoComplete="email"
+            <input id="auth-email" name="email" value={email} onChange={(e) => setEmail(e.target.value)} type="email" inputMode="email" autoComplete="email"
               placeholder="tvoj@email.sk" style={vstupStyl} />
           </PoleVstup>
         </Pole>
 
         {/* heslo */}
-        <Pole label="Heslo">
+        <Pole label="Heslo" htmlFor="auth-heslo">
           <PoleVstup icon={<IkonaZamok size={18} color={C.textTer} />} right={
-            <button onClick={() => setUkazHeslo((v) => !v)} aria-label={ukazHeslo ? "Skryť heslo" : "Zobraziť heslo"} style={ocBtn}>
+            <button type="button" onClick={() => setUkazHeslo((v) => !v)} aria-label={ukazHeslo ? "Skryť heslo" : "Zobraziť heslo"} style={ocBtn}>
               {ukazHeslo ? <IkonaOkoOff size={18} color={C.textTer} /> : <IkonaOko size={18} color={C.textTer} />}
             </button>
           }>
-            <input value={heslo} onChange={(e) => setHeslo(e.target.value)} type={ukazHeslo ? "text" : "password"}
+            <input id="auth-heslo" name="password" value={heslo} onChange={(e) => setHeslo(e.target.value)} type={ukazHeslo ? "text" : "password"}
               autoComplete={jeLogin ? "current-password" : "new-password"}
               placeholder={jeLogin ? "Tvoje heslo" : "Aspoň 6 znakov"} style={vstupStyl} />
           </PoleVstup>
@@ -116,9 +133,9 @@ export function AuthPage({ onAuthed, onGuest, onPasivny, uvodnyRezim = "login" }
 
         {/* heslo znova (registrácia) */}
         {!jeLogin && (
-          <Pole label="Heslo znova">
+          <Pole label="Heslo znova" htmlFor="auth-heslo2">
             <PoleVstup icon={<IkonaZamok size={18} color={C.textTer} />} chyba={heslo2.length > 0 && !zhoda}>
-              <input value={heslo2} onChange={(e) => setHeslo2(e.target.value)} type={ukazHeslo ? "text" : "password"}
+              <input id="auth-heslo2" name="password2" value={heslo2} onChange={(e) => setHeslo2(e.target.value)} type={ukazHeslo ? "text" : "password"}
                 autoComplete="new-password" placeholder="Zopakuj heslo" style={vstupStyl} />
             </PoleVstup>
             {heslo2.length > 0 && !zhoda && <div style={{ fontSize: 12, color: C.red, marginTop: SPACE.xxs, fontWeight: 600 }}>Heslá sa nezhodujú.</div>}
@@ -127,7 +144,9 @@ export function AuthPage({ onAuthed, onGuest, onPasivny, uvodnyRezim = "login" }
 
         {jeLogin && (
           <div style={{ textAlign: "right", marginTop: -SPACE.xxs, marginBottom: SPACE.xxs }}>
-            <span onClick={() => toast("Obnova hesla — pripravujeme.")} style={{ fontSize: 12.5, color: C.textTer, cursor: "pointer" }}>Zabudnuté heslo?</span>
+            <button type="button" disabled={resetBusy} onClick={posliReset} style={linkBtn}>
+              {resetBusy ? "Posielam…" : "Zabudnuté heslo?"}
+            </button>
           </div>
         )}
 
@@ -137,7 +156,7 @@ export function AuthPage({ onAuthed, onGuest, onPasivny, uvodnyRezim = "login" }
         )}
 
         {/* primárna akcia */}
-        <button onClick={submit} disabled={!canSubmit || busy} style={{
+        <button type="submit" disabled={!canSubmit || busy} style={{
           width: "100%", padding: `${SPACE.md}px 0`, marginTop: SPACE.sm, borderRadius: RADIUS.md, border: "none", fontFamily: "inherit",
           fontSize: 15.5, fontWeight: 700, cursor: (!canSubmit || busy) ? "not-allowed" : "pointer",
           display: "inline-flex", alignItems: "center", justifyContent: "center", gap: SPACE.xs,
@@ -147,6 +166,7 @@ export function AuthPage({ onAuthed, onGuest, onPasivny, uvodnyRezim = "login" }
         }}>
           {busy ? "Moment…" : <>{jeLogin ? "Prihlásiť sa" : "Vytvoriť účet"} <IkonaSipVpravo size={18} color="#fff" /></>}
         </button>
+        </form>
 
         {/* sekundárna akcia — vstup bez prihlásenia (pasívny režim, bez účtu).
             V upgrade kontexte (pasívny → aktívny) sa nezobrazuje — handler nie je odovzdaný. */}
@@ -163,15 +183,15 @@ export function AuthPage({ onAuthed, onGuest, onPasivny, uvodnyRezim = "login" }
         {/* prepnutie režimu + hosť */}
         <div style={{ textAlign: "center", marginTop: SPACE.lg, fontSize: 13, color: C.textSec }}>
           {jeLogin ? "Nemáš účet? " : "Už máš účet? "}
-          <span onClick={() => prepniRezim(jeLogin ? "register" : "login")} style={{ fontWeight: 800, color: C.green, cursor: "pointer" }}>
+          <button type="button" onClick={() => prepniRezim(jeLogin ? "register" : "login")} style={{ ...linkBtn, fontSize: 13, fontWeight: 800, color: C.green }}>
             {jeLogin ? "Zaregistruj sa" : "Prihlás sa"}
-          </span>
+          </button>
         </div>
         {onGuest && (
           <div style={{ textAlign: "center", marginTop: SPACE.gutter }}>
-            <span onClick={onGuest} style={{ fontSize: 12.5, color: C.textTer, cursor: "pointer", textDecoration: "underline" }}>
+            <button type="button" onClick={onGuest} style={{ ...linkBtn, textDecoration: "underline" }}>
               Admin prihlásenie
-            </span>
+            </button>
           </div>
         )}
       </div>
@@ -185,11 +205,13 @@ const vstupStyl: CSSProperties = {
   color: C.text, fontSize: 15.5, fontFamily: "inherit",
 };
 const ocBtn: CSSProperties = { background: "transparent", border: "none", cursor: "pointer", padding: SPACE.xxs, display: "flex", alignItems: "center", flex: "0 0 auto" };
+// textové „link" tlačidlo — skutočný <button> (klávesnica/SR), vizuál textového odkazu
+const linkBtn: CSSProperties = { background: "transparent", border: "none", padding: 0, cursor: "pointer", fontFamily: "inherit", fontSize: 12.5, color: C.textTer };
 
-function Pole({ label, children }: { label?: ReactNode; children?: ReactNode }) {
+function Pole({ label, htmlFor, children }: { label?: ReactNode; htmlFor?: string; children?: ReactNode }) {
   return (
     <div style={{ marginBottom: SPACE.gutter }}>
-      <div style={{ fontSize: 12.5, fontWeight: 700, color: C.textSec, marginBottom: SPACE.xs }}>{label}</div>
+      <label htmlFor={htmlFor} style={{ display: "block", fontSize: 12.5, fontWeight: 700, color: C.textSec, marginBottom: SPACE.xs }}>{label}</label>
       {children}
     </div>
   );
@@ -201,6 +223,69 @@ function PoleVstup({ icon, right, chyba, children }: { icon?: ReactNode; right?:
       {icon && <span style={{ flex: "0 0 auto", display: "flex" }}>{icon}</span>}
       {children}
       {right}
+    </div>
+  );
+}
+
+// ============================================================
+// NOVÉ HESLO — obrazovka po kliknutí na obnovovací odkaz z emailu
+// (Supabase PASSWORD_RECOVERY). Nastaví heslo a vráti do appky.
+// ============================================================
+export function NoveHeslo({ onDone }: { onDone: () => void }) {
+  const [heslo, setHeslo] = useState("");
+  const [heslo2, setHeslo2] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [chyba, setChyba] = useState<string | null>(null);
+  const zhoda = heslo === heslo2;
+  const canSubmit = heslo.length >= 6 && heslo2.length > 0 && zhoda;
+
+  const submit = async () => {
+    if (!canSubmit || busy) return;
+    setBusy(true);
+    setChyba(null);
+    try {
+      const r = await zmenHeslo(heslo);
+      if (!r.ok) { setChyba(r.chyba ?? "Heslo sa nepodarilo zmeniť."); return; }
+      await resolveSession(); // recovery session → app session (ak je účet dokončený)
+      toast("Heslo zmenené — vitaj späť.");
+      onDone();
+    } catch {
+      setChyba("Niečo sa pokazilo. Skús znova.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div style={{ height: "100%", overflowY: "auto", background: "transparent" }}>
+      <div style={{ minHeight: "100%", display: "flex", flexDirection: "column", justifyContent: "center", padding: "36px 22px 26px", maxWidth: 440, margin: "0 auto", boxSizing: "border-box" }}>
+        <div style={{ textAlign: "center", marginBottom: SPACE.lg }}>
+          <div style={{ fontSize: 24, fontWeight: 800 }}>Nastav si nové heslo</div>
+          <div style={{ fontSize: 13.5, color: C.textSec, marginTop: SPACE.xxs }}>Prišiel si z obnovovacieho odkazu — zvoľ si nové heslo (min. 6 znakov).</div>
+        </div>
+        <form onSubmit={(e) => { e.preventDefault(); submit(); }} noValidate>
+          <Pole label="Nové heslo" htmlFor="nh-heslo">
+            <PoleVstup icon={<IkonaZamok size={18} color={C.textTer} />}>
+              <input id="nh-heslo" value={heslo} onChange={(e) => setHeslo(e.target.value)} type="password" autoComplete="new-password" placeholder="Aspoň 6 znakov" style={vstupStyl} />
+            </PoleVstup>
+          </Pole>
+          <Pole label="Heslo znova" htmlFor="nh-heslo2">
+            <PoleVstup icon={<IkonaZamok size={18} color={C.textTer} />} chyba={heslo2.length > 0 && !zhoda}>
+              <input id="nh-heslo2" value={heslo2} onChange={(e) => setHeslo2(e.target.value)} type="password" autoComplete="new-password" placeholder="Zopakuj heslo" style={vstupStyl} />
+            </PoleVstup>
+            {heslo2.length > 0 && !zhoda && <div style={{ fontSize: 12, color: C.red, marginTop: SPACE.xxs, fontWeight: 600 }}>Heslá sa nezhodujú.</div>}
+          </Pole>
+          {chyba && <div role="alert" style={{ fontSize: 12.5, color: C.red, fontWeight: 600, textAlign: "center", marginTop: SPACE.sm, lineHeight: 1.45 }}>{chyba}</div>}
+          <button type="submit" disabled={!canSubmit || busy} style={{
+            width: "100%", padding: `${SPACE.md}px 0`, marginTop: SPACE.sm, borderRadius: RADIUS.md, border: "none", fontFamily: "inherit",
+            fontSize: 15.5, fontWeight: 700, cursor: (!canSubmit || busy) ? "not-allowed" : "pointer",
+            display: "inline-flex", alignItems: "center", justifyContent: "center", gap: SPACE.xs,
+            background: canSubmit && !busy ? GRAD : "rgba(var(--glass-rgb),.06)", color: canSubmit && !busy ? "#fff" : C.textTer,
+          }}>
+            {busy ? "Moment…" : "Uložiť nové heslo"}
+          </button>
+        </form>
+      </div>
     </div>
   );
 }

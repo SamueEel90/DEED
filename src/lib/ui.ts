@@ -23,3 +23,20 @@ export const tagChip = (c: string): CSSProperties => ({
 // hrdinu naprieč modulmi (Top rebríček, karty príspevkov, cudzí profil).
 export const HRDINA_COL = "var(--a-clay)";
 export const jeHrdina = (karma?: string | null): boolean => karma === "Gold" || karma === "Legend";
+
+// Komparátor pre React.memo feed kariet: shallow porovnanie VŠETKÝCH props
+// OKREM funkcií (onClick/onDetail… sa vytvárajú inline pri každom renderi rodiča —
+// ich identitu ignorujeme). Bezpečné, lebo closures kariet zachytávajú stabilné
+// state settery a samotnú položku (`it`) — stará closure sa správa rovnako.
+// Dátové objekty (it/z/f) sa porovnávajú identitou → react-query structural
+// sharing drží referencie, karta sa re-renderuje len keď sa JEJ dáta zmenia.
+export const rovnakeOkremFunkcii = (a: Record<string, unknown>, b: Record<string, unknown>): boolean => {
+  const ka = Object.keys(a), kb = Object.keys(b);
+  if (ka.length !== kb.length) return false;
+  for (const k of ka) {
+    const v = a[k];
+    if (typeof v === "function" && typeof b[k] === "function") continue;
+    if (v !== b[k]) return false;
+  }
+  return true;
+};

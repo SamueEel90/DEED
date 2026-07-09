@@ -3,6 +3,7 @@ import type { CSSProperties } from "react";
 import { C, GRAD, glass, glassTmavy, SPACE, RADIUS } from "@/theme";
 import { useGaleria } from "@/components/context";
 import { pressable } from "@/components/pressable";
+import { Hmat } from "@/components/ui";
 
 // ---- FOTO s fallbackom na emoji ----
 // Pipeline: Unsplash URL → srcset 400/800/1200 (mobil neťahá veľký asset) +
@@ -10,7 +11,7 @@ import { pressable } from "@/components/pressable";
 const jeUnsplash = (src?: string) => !!src && src.includes("images.unsplash.com") && /[?&]w=\d+/.test(src);
 const unsplashW = (src: string, w: number) => src.replace(/([?&]w=)\d+/, `$1${w}`);
 
-export function Foto({ src, emoji, h, w, radius = 0, style, onClick, sizes }: { src?: string; emoji?: any; h?: number | string; w?: number | string; radius?: number | string; style?: CSSProperties; onClick?: (e: React.MouseEvent) => void; sizes?: string }) {
+export function Foto({ src, emoji, h, w, radius = 0, style, onClick, sizes, alt, prednost }: { src?: string; emoji?: any; h?: number | string; w?: number | string; radius?: number | string; style?: CSSProperties; onClick?: (e: React.MouseEvent) => void; sizes?: string; alt?: string; prednost?: boolean }) {
   const [err, setErr] = useState(false);
   const [nacitane, setNacitane] = useState(false);
   const ref = useRef<HTMLImageElement>(null);
@@ -25,12 +26,20 @@ export function Foto({ src, emoji, h, w, radius = 0, style, onClick, sizes }: { 
     );
   }
   const responzivne = jeUnsplash(src);
-  return <img ref={ref} src={src} alt="" onError={() => setErr(true)} onClick={onClick} draggable={false} loading="lazy" decoding="async"
+  // alt: obsahové fotky posielajú názov príspevku; bez altu = dekoratívne (alt="")
+  // prednost (hero v detaile): eager + fetchpriority=high (lepšie LCP) a namiesto
+  // fade-in drží plochu rozmazaný LQIP (32px blur verzia) — žiadny biely flash
+  return <img ref={ref} src={src} alt={alt ?? ""} onError={() => setErr(true)} onClick={onClick} draggable={false}
+    loading={prednost ? "eager" : "lazy"} decoding="async"
+    {...(prednost ? ({ fetchpriority: "high" } as Record<string, string>) : {})}
     srcSet={responzivne ? `${unsplashW(src, 400)} 400w, ${unsplashW(src, 800)} 800w, ${unsplashW(src, 1200)} 1200w` : undefined}
     sizes={responzivne ? (sizes ?? "(max-width: 760px) 100vw, 620px") : undefined}
     onLoad={() => setNacitane(true)}
     style={{ width: w || "100%", height: h, objectFit: "cover", display: "block", borderRadius: radius, flex: w ? "0 0 auto" : undefined, cursor: onClick ? "pointer" : undefined,
-      opacity: nacitane ? 1 : 0.001, transition: "opacity .3s ease", ...style }} />;
+      ...(prednost && responzivne
+        ? { backgroundImage: `url(${unsplashW(src, 32)}&blur=100)`, backgroundSize: "cover", backgroundPosition: "center", opacity: 1 }
+        : { opacity: nacitane ? 1 : 0.001, transition: "opacity .3s ease" }),
+      ...style }} />;
 }
 
 export function Avatar({ src, emoji, size, border, aura }: { src?: string; emoji?: any; size?: number; border?: string; aura?: string }) {
@@ -51,12 +60,12 @@ export function Avatar({ src, emoji, size, border, aura }: { src?: string; emoji
 
 // klikateľné foto v príspevku — otvorí galériu, ukáže počet fotiek
 // disableGaleria=true → klik na foto neotvára galériu, ale prebublá na kartu (otvorí detail skutku/žiadosti)
-export function FotoPrispevku({ fotky, emoji, h, w, radius = 0, style, index = 0, disableGaleria }: { fotky?: string[]; emoji?: any; h?: number | string; w?: number | string; radius?: number | string; style?: CSSProperties; index?: number; disableGaleria?: boolean }) {
+export function FotoPrispevku({ fotky, emoji, h, w, radius = 0, style, index = 0, disableGaleria, alt, prednost }: { fotky?: string[]; emoji?: any; h?: number | string; w?: number | string; radius?: number | string; style?: CSSProperties; index?: number; disableGaleria?: boolean; alt?: string; prednost?: boolean }) {
   const otvor = useGaleria();
   const viac = fotky && fotky.length > 1;
   return (
     <div style={{ position: "relative", width: w || "100%", height: h, flex: w ? "0 0 auto" : undefined }}>
-      <Foto src={fotky && fotky[index]} emoji={emoji} h={h} w={w} radius={radius} style={style}
+      <Foto src={fotky && fotky[index]} emoji={emoji} h={h} w={w} radius={radius} style={style} alt={alt} prednost={prednost}
         onClick={disableGaleria ? undefined : (e) => { e.stopPropagation(); if (fotky && fotky.length) otvor(fotky, index); }} />
       {viac && (
         <span style={{ position: "absolute", bottom: 7, right: 7, ...glassTmavy(10, .55), color: "#fff",
@@ -88,7 +97,7 @@ export function Video({ src, poster, h = 200, radius = 0, style, badge = true }:
         style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", background: "#05070d" }}
       />
       {!start && (
-        <div onClick={spusti} style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", background: "linear-gradient(0deg, rgba(0,0,0,.42), rgba(0,0,0,.05) 55%)" }}>
+        <div {...pressable(spusti as (e: React.MouseEvent | React.KeyboardEvent) => void, "Prehrať video")} style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", background: "linear-gradient(0deg, rgba(0,0,0,.42), rgba(0,0,0,.05) 55%)" }}>
           <span style={{ width: 62, height: 62, borderRadius: "50%", background: "rgba(255,255,255,.16)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)", border: "1px solid rgba(255,255,255,.45)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, color: "#fff", paddingLeft: 5, boxShadow: "0 10px 34px rgba(0,0,0,.45)" }}>▶</span>
         </div>
       )}
@@ -173,7 +182,7 @@ export function Lightbox({ fotky, index = 0, onClose }: { fotky: string[]; index
       <div style={{ display: "flex", alignItems: "center", padding: `${SPACE.md}px 18px` }}>
         <span role="status" aria-live="polite" style={{ ...glass(12, .07), fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,.85)", borderRadius: RADIUS.lg, padding: `${SPACE.xxs}px ${SPACE.sm}px` }}>{i + 1} / {fotky.length}</span>
         <span {...pressable(onClose, "Zavrieť galériu")} onMouseDown={(e) => e.stopPropagation()} onTouchStart={(e) => e.stopPropagation()}
-          style={{ ...glass(12, .07), marginLeft: "auto", width: 36, height: 36, borderRadius: RADIUS.round, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, cursor: "pointer", color: "rgba(255,255,255,.9)" }}>✕</span>
+          style={{ ...glass(12, .07), position: "relative", marginLeft: "auto", width: 36, height: 36, borderRadius: RADIUS.round, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, cursor: "pointer", color: "rgba(255,255,255,.9)" }}><Hmat o={4} />✕</span>
       </div>
 
       {/* pás fotiek */}
@@ -208,8 +217,8 @@ export function Lightbox({ fotky, index = 0, onClose }: { fotky: string[]; index
       <div style={{ display: "flex", justifyContent: "center", gap: SPACE.xs, padding: `${SPACE.md}px 0 ${SPACE.lg}px` }}>
         {fotky.map((_, k) => (
           <span key={k} {...pressable(() => setI(k), `Fotka ${k + 1}`)} aria-current={k === i ? "true" : undefined} onMouseDown={(e) => e.stopPropagation()} onTouchStart={(e) => e.stopPropagation()}
-            style={{ width: k === i ? 22 : 7, height: 7, borderRadius: 4, cursor: "pointer", transition: "all .25s ease",
-              background: k === i ? GRAD : "rgba(255,255,255,.25)" }} />
+            style={{ position: "relative", width: k === i ? 22 : 7, height: 7, borderRadius: 4, cursor: "pointer", transition: "all .25s ease",
+              background: k === i ? GRAD : "rgba(255,255,255,.25)" }}><Hmat o={5} /></span>
         ))}
       </div>
       <div style={{ textAlign: "center", fontSize: 11, color: "rgba(255,255,255,.35)", paddingBottom: SPACE.gutter, marginTop: -SPACE.xs }}>

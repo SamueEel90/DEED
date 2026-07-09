@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, lazy, Suspense, type CSSProperties } from "react";
+import { useState, useEffect, useMemo, useRef, lazy, Suspense, type CSSProperties } from "react";
 import { LazyMotion, domAnimation, MotionConfig } from "motion/react";
 import { C } from "@/theme";
 import { GaleriaContext, ScrollContext, ScrollElContext, ViacContext, StrankaAkcieContext, UpgradeContext, UpgradePanel, Lightbox, DychajucePozadie, MotivContext, PortalContext, LayoutContext, DeedToaster, FeedSkeleton, PullToRefresh } from "@/shared";
@@ -6,12 +6,17 @@ import type { StrankaAkcie } from "@/components/context";
 import { TabBar, ViacSheet, PridatFAB, nacitajTaby, ulozTaby, VSETKY_MODULY } from "@/components/TabBar";
 import { Sidebar } from "@/components/Sidebar";
 import { useSession } from "@/lib/session";
-import { resolveSession, subscribeAuth } from "@/lib/auth";
+import { resolveSession, subscribeAuth, zaistiSession } from "@/lib/auth";
 import { USE_SUPABASE } from "@/lib/supabase";
 import type { TypUctu } from "@/types";
 import { useNotifikacieRealtime, repo } from "@/data";
-import { precitajDeepLink, druhNaModul, vycistiDeepLinkUrl } from "@/lib/deeplink";
+import { precitajDeepLink, druhNaModul } from "@/lib/deeplink";
+import { modulZCesty, pushModul, replaceModul, sledujModulZUrl, useVrstva } from "@/lib/urlnav";
 import { toast, BadgeSheet, SplitLanding } from "@/shared";
+import { IntroPruvodca } from "@/components/intro";
+import { TipProvider } from "@/components/tooltip";
+import { NoveHeslo } from "@/features/registracia/AuthPage";
+import { subscribeRecovery } from "@/lib/auth";
 import { PouzivatelProvider } from "@/lib/pouzivatel";
 import { PersonalizaciaProvider } from "@/lib/personalizacia";
 import { LokalitaProvider } from "@/lib/lokalita";
@@ -57,9 +62,18 @@ export function useOkno(): RozmeryOkna {
     h: typeof window !== "undefined" ? window.innerHeight : 768,
   }));
   useEffect(() => {
-    const onR = () => setS({ w: window.innerWidth, h: window.innerHeight });
+    // rAF-throttle: pri ťahaní okna max 1 setState na frame (bez neho re-renderuje
+    // App + všetkých ~30 konzumentov useLayout() na KAŽDÝ resize event)
+    let raf = 0;
+    const onR = () => {
+      if (raf) return;
+      raf = requestAnimationFrame(() => {
+        raf = 0;
+        setS({ w: window.innerWidth, h: window.innerHeight });
+      });
+    };
     window.addEventListener("resize", onR);
-    return () => window.removeEventListener("resize", onR);
+    return () => { window.removeEventListener("resize", onR); if (raf) cancelAnimationFrame(raf); };
   }, []);
   return s;
 }
@@ -80,6 +94,9 @@ export default function App() {
   const { w } = useOkno();
   const wide = w >= 760; // tablet/desktop → viacstĺpcové feedy
   const desktop = w >= 1180; // plný „dashboard" — bočná navigácia + plná šírka
+  // context hodnota sa mení LEN pri preklopení stupňa — resize medzi breakpointami
+  // nere-renderuje ~30 konzumentov useLayout() (w v kontexte nikto nečítal)
+  const layout = useMemo(() => ({ wide, desktop }), [wide, desktop]);
 
   // portal-host = vycentrovaný stĺpec appky (pre prípadné portály v stĺpci)
   const [portalEl, setPortalEl] = useState<HTMLElement | null>(null);
@@ -93,6 +110,8 @@ export default function App() {
     try {
       document.documentElement.classList.toggle("dark", !svetly);
       localStorage.setItem("deed.motiv", svetly ? "svetly" : "tmavy");
+      // PWA: systémová lišta (theme-color) sleduje motív appky (--c-bg svetlý/tmavý)
+      document.querySelector('meta[name="theme-color"]')?.setAttribute("content", svetly ? "#F1ECE1" : "#14110B");
     } catch { /* private mode */ }
   }, [svetly]);
   const motiv = { svetly, prepni: () => setSvetly((s) => !s) };
@@ -104,7 +123,8 @@ export default function App() {
         <MotionConfig reducedMotion="user">
           <MotivContext.Provider value={motiv}>
             <PortalContext.Provider value={portalEl}>
-              <LayoutContext.Provider value={{ w, wide, desktop }}>
+              <TipProvider>
+              <LayoutContext.Provider value={layout}>
                 {/* pozadie sa montuje RAZ vnútri appky (Screens) — druhá kópia tu bola len duplicitná GPU záťaž */}
                 <div className="deed-app" style={{ ...pageBase, display: "flex", justifyContent: "center", alignItems: "stretch" }}>
                   <div ref={setPortalEl} style={{ position: "relative", width: "100%", maxWidth: desktop ? undefined : wide ? 1180 : 560, height: "100%", background: C.bg }}>
@@ -113,6 +133,7 @@ export default function App() {
                 </div>
                 <DeedToaster />
               </LayoutContext.Provider>
+              </TipProvider>
             </PortalContext.Provider>
           </MotivContext.Provider>
         </MotionConfig>
@@ -124,7 +145,13 @@ export default function App() {
 // ===================== MODULÁRNY ROUTER APPKY =====================
 export function Screens({ wide, desktop }: { wide?: boolean; desktop?: boolean }) {
   const session = useSession();
-  const [modul, setModul] = useState<ModulId>("good");
+  // deep-link zachyť SYNCHRÓNNE pri prvom renderi — URL normalizácia (nižšie) by ho prepísala
+  const [dl] = useState(() => precitajDeepLink());
+  // modul z URL (/m/{id}) → refresh/priamy link drží obrazovku; inak Domov
+  const [modul, setModul] = useState<ModulId>(() => {
+    const m = typeof window !== "undefined" ? modulZCesty(window.location.pathname) : null;
+    return m && VSETKY_MODULY.some((x) => x.id === m) ? (m as ModulId) : "good";
+  });
   const [taby, setTaby] = useState<string[]>(nacitajTaby);
   const [viac, setViac] = useState(false);
   const [galeria, setGaleria] = useState<{ fotky: string[]; index: number } | null>(null);
@@ -132,6 +159,9 @@ export function Screens({ wide, desktop }: { wide?: boolean; desktop?: boolean }
   const [akcie, setAkcie] = useState<StrankaAkcie>({}); // kontextové akcie aktuálneho modulu (Pridať / Ukáž talent / Nástenka)
   const [upgradeOpen, setUpgradeOpen] = useState(false); // pasívny → „Staň sa aktívnym" panel
   const [aktivacia, setAktivacia] = useState(false); // overlay aktívnej registrácie (upgrade)
+  const [intro, setIntro] = useState(false); // prvé spustenie — 3-kartový sprievodca
+  const [akoFunguje, setAkoFunguje] = useState(false); // „Ako DEED funguje" z menu Viac
+  const [obnovaHesla, setObnovaHesla] = useState(false); // PASSWORD_RECOVERY z emailového odkazu
   const scrollRef = useRef<HTMLDivElement>(null);
   // auth-boot: kým sa Supabase Auth ↔ app-session zladí, drž splash (žiadny flash zlej session)
   const [booting, setBooting] = useState<boolean>(USE_SUPABASE);
@@ -139,32 +169,67 @@ export function Screens({ wide, desktop }: { wide?: boolean; desktop?: boolean }
   const [dlHotovo, setDlHotovo] = useState(false); // deep-link už spracovaný?
   const [badgeSheet, setBadgeSheet] = useState<string | null>(null); // odznak z deep-linku (/badge)
   const [splitSheet, setSplitSheet] = useState<string | null>(null); // split QR z deep-linku (/split) → živá kópia príspevku
+  const [dlDetail, setDlDetail] = useState<{ modul: ModulId; ref: string } | null>(null); // deep-link → presný detail
 
   useEffect(() => { ulozTaby(taby); }, [taby]);
   useNotifikacieRealtime(); // Fáza E — live oznámenia (INSERT do notifikacia → obnova zoznamu)
+
+  // URL ↔ modul: boot normalizácia (/ → /m/good) + popstate (Back/Forward prepína moduly).
+  // Ak čaká deep-link, normalizáciu odloží deep-link effect (inak by slug prepísala).
+  useEffect(() => {
+    if (!dl) replaceModul(modul);
+    return sledujModulZUrl((m) => {
+      if (m && VSETKY_MODULY.some((x) => x.id === m)) setModul(m as ModulId);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // overlaye Screens = vrstvy histórie (Back ich zatvára namiesto opustenia appky)
+  useVrstva(viac, () => setViac(false));
+  useVrstva(!!galeria, () => setGaleria(null));
+  useVrstva(upgradeOpen, () => setUpgradeOpen(false));
+  useVrstva(aktivacia, () => setAktivacia(false));
+  useVrstva(!!badgeSheet, () => setBadgeSheet(null));
+  useVrstva(!!splitSheet, () => setSplitSheet(null));
+  useVrstva(intro || akoFunguje, () => { setIntro(false); setAkoFunguje(false); });
+
+  // prvé spustenie: po prihlásení/registrácii ukáž intro sprievodcu (raz)
+  useEffect(() => {
+    if (!session) return;
+    try { if (!localStorage.getItem("deed.intro.v1")) setIntro(true); } catch { /* private mode */ }
+  }, [session]);
+
+  // obnova hesla: klik na odkaz z emailu → Supabase PASSWORD_RECOVERY → obrazovka nového hesla
+  useEffect(() => subscribeRecovery(() => setObnovaHesla(true)), []);
 
   // Deep-link (Fáza 1): naskenovaný QR otvoril appku na /c|/@|/o|/r/... → resolvni slug
   // a skoč na správny modul. Spracuj až keď je session (inak počkaj na prihlásenie,
   // nech sa slug nestratí pred registráciou).
   useEffect(() => {
     if (dlHotovo || !session) return;
-    const dl = precitajDeepLink();
     if (!dl) { setDlHotovo(true); return; }
     let alive = true;
     repo.qr.resolve(dl.slug)
       .then((ciel) => {
         if (!alive) return;
+        let cielModul: ModulId = modul;
         if (ciel) {
           if (ciel.objekt_druh === "badge") setBadgeSheet(ciel.objekt_ref);   // odznak → shift-binding sheet
           else if (ciel.objekt_druh === "split") setSplitSheet(ciel.objekt_ref); // split QR → živá kópia príspevku
-          else setModul(druhNaModul(ciel.objekt_druh));
+          else {
+            cielModul = druhNaModul(ciel.objekt_druh);
+            setModul(cielModul);
+            // skutok/žiadosť → otvor rovno detail položky (nie len modul)
+            if (ciel.objekt_druh === "case") setDlDetail({ modul: cielModul, ref: ciel.objekt_ref });
+          }
           toast(`Otváram odkaz · ${ciel.objekt_druh}`);
         }
-        vycistiDeepLinkUrl();
+        replaceModul(cielModul); // slug z URL preč, história normalizovaná na /m/{modul}
         setDlHotovo(true);
       })
-      .catch(() => { if (alive) { vycistiDeepLinkUrl(); setDlHotovo(true); } });
+      .catch(() => { if (alive) { replaceModul(modul); setDlHotovo(true); } });
     return () => { alive = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dlHotovo, session]);
 
   // §1 (Fáza 5) — pri štarte zladiť reálny Supabase Auth s localStorage app-session:
@@ -180,6 +245,9 @@ export function Screens({ wide, desktop }: { wide?: boolean; desktop?: boolean }
         if (!alive) return;
         setResumeInfo(r.kind === "resume" ? { authId: r.authId, typ: r.typ, stav: r.stav } : null);
         setBooting(false);
+        // po reconciliation zaisti aspoň anon session pre osobné DB funkcie
+        // (obľúbené/RSVP/správy/peňaženka) — no-op ak už reálna session je.
+        void zaistiSession();
       })
       .catch(() => { if (alive) setBooting(false); });
     const unsub = subscribeAuth(() => { if (alive) setResumeInfo(null); }); // SIGNED_OUT → clearSession už emitol
@@ -197,6 +265,11 @@ export function Screens({ wide, desktop }: { wide?: boolean; desktop?: boolean }
     );
   }
 
+  // obnova hesla z emailového odkazu — má prednosť (funguje aj bez app-session)
+  if (obnovaHesla) {
+    return <NoveHeslo onDone={() => setObnovaHesla(false)} />;
+  }
+
   // §1 — bez prihlásenia zobraz registráciu (príp. resume rozrobeného onboardingu);
   // po dokončení flow zavolá setSession → useSession re-renderuje → appka.
   if (!session) {
@@ -208,7 +281,12 @@ export function Screens({ wide, desktop }: { wide?: boolean; desktop?: boolean }
   const scrollHore = () => { if (scrollRef.current) scrollRef.current.scrollTop = 0; };
 
   const moduly = VSETKY_MODULY;
-  const prepni = (m: string) => setModul(m as ModulId);
+  // prepnutie modulu = nový záznam v histórii (Back/Forward prepína moduly, URL zdieľateľná)
+  const prepni = (m: string) => { if (m !== modul) pushModul(m); setModul(m as ModulId); };
+  const zavriIntro = () => {
+    try { localStorage.setItem("deed.intro.v1", "1"); } catch { /* private mode */ }
+    setIntro(false); setAkoFunguje(false);
+  };
 
   return (
    <PouzivatelProvider session={session}>
@@ -230,10 +308,11 @@ export function Screens({ wide, desktop }: { wide?: boolean; desktop?: boolean }
         {/* desktop: ľavá bočná navigácia (nahrádza spodný dok) */}
         {desktop && <Sidebar moduly={moduly} aktivny={modul} onModul={prepni} onViac={() => setViac(true)} onPenazenka={() => { prepni("profil"); setWalletReq((n) => n + 1); }} />}
 
-        {/* obsah aktívneho modulu — scroll vo vnútri. Mobil/tablet: miesto pre dok + FAB (~168px); desktop: len odsadenie pre FAB */}
-        <div ref={scrollRef} style={{ flex: 1, minWidth: 0, overflowY: "auto", minHeight: 0, paddingBottom: desktop ? 40 : 168 }}>
+        {/* obsah aktívneho modulu — scroll vo vnútri. Mobil/tablet: miesto pre dok + FAB (~168px); desktop: len odsadenie pre FAB.
+            role="main" (nie <main>) — ref je zdieľaný ako HTMLDivElement (ScrollEl/PullToRefresh) */}
+        <div role="main" ref={scrollRef} style={{ flex: 1, minWidth: 0, overflowY: "auto", minHeight: 0, paddingBottom: desktop ? 40 : 168 }}>
           <Suspense fallback={<FeedSkeleton count={4} />}>
-            {modul === "good" && <ModulGood wide={wide} otvorModul={prepni} />}
+            {modul === "good" && <ModulGood wide={wide} otvorModul={prepni} otvorId={dlDetail?.modul === "good" ? dlDetail.ref : undefined} onOtvorene={() => setDlDetail(null)} />}
             {modul === "help" && <ModulHelp wide={wide} />}
             {modul === "charita" && <ModulCharita wide={wide} otvorModul={prepni} />}
             {modul === "nabozenstvo" && <ModulNabozenstvo wide={wide} otvorModul={prepni} />}
@@ -254,8 +333,12 @@ export function Screens({ wide, desktop }: { wide?: boolean; desktop?: boolean }
           <ViacSheet taby={taby} setTaby={setTaby} aktivny={modul} moduly={moduly} strankaAkcie={akcie.extra} strankaFiltre={akcie.filtre}
             onModul={(m: string) => { prepni(m); setViac(false); }}
             onPenazenka={() => { prepni("profil"); setWalletReq((n) => n + 1); setViac(false); }}
+            onAko={() => { setViac(false); setAkoFunguje(true); }}
             onClose={() => setViac(false)} />
         )}
+
+        {/* intro sprievodca — prvé spustenie (raz) alebo „Ako DEED funguje" z menu */}
+        {(intro || akoFunguje) && <IntroPruvodca onClose={zavriIntro} />}
 
         {/* fullscreen galéria fotiek so swipovaním */}
         {galeria && <Lightbox fotky={galeria.fotky} index={galeria.index} onClose={() => setGaleria(null)} />}

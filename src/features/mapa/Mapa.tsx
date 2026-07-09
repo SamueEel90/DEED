@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { SIRKA, C, GRAD, SPACE, RADIUS } from "@/theme";
-import { ModulHlavicka, IkonaPin, toast, useLayout, useMotiv, obalSiroky } from "@/shared";
+import { ModulHlavicka, IkonaPin, toast, useLayout, useMotiv, obalSiroky, pressable, SegTabs, Spinner, ErrorState } from "@/shared";
 import { Zvoncek } from "@/features/notifikacie/Notifikacie";
 import { FEED_CFG } from "@/lib/feed";
 import { useMapaBody } from "@/data";
@@ -49,7 +49,7 @@ function vzdialenostKm(a: { lat: number; lng: number }, b: { lat: number; lng: n
 export default function ModulMapa({ wide }: { wide?: boolean }) {
   const { desktop } = useLayout();
   const { svetly } = useMotiv();
-  const { data: body = [] } = useMapaBody();
+  const { data: body = [], isLoading, isError, refetch } = useMapaBody();
   const lok = useLokalita(); // stred mapy = aktívne mesto (prepínateľné)
   const STRED = { lat: lok.lat, lng: lok.lng };
   const [uroven, setUroven] = useState("stvrt");
@@ -141,7 +141,7 @@ export default function ModulMapa({ wide }: { wide?: boolean }) {
                 <div style={{ fontSize: 13, fontWeight: 700, color: "var(--a-clay)" }}>Poloha (GPS) je vypnutá</div>
                 <div style={{ fontSize: 11, color: C.textTer }}>Zapni ju pre presnejší okruh okolo teba</div>
               </div>
-              <span onClick={() => { setGps(true); toast("Poloha zapnutá (demo)"); }} style={{ flex: "none", fontSize: 11.5, fontWeight: 700, color: "#fff", background: "rgba(240,168,94,.85)", borderRadius: RADIUS.sm, padding: `${SPACE.xs}px ${SPACE.sm}px`, cursor: "pointer" }}>Zapnúť</span>
+              <span {...pressable(() => { setGps(true); toast("Poloha zapnutá (demo)"); }, "Zapnúť polohu")} style={{ flex: "none", fontSize: 11.5, fontWeight: 700, color: "#fff", background: "rgba(240,168,94,.85)", borderRadius: RADIUS.sm, padding: `${SPACE.xs}px ${SPACE.sm}px`, cursor: "pointer" }}>Zapnúť</span>
             </div>
           )}
 
@@ -157,14 +157,13 @@ export default function ModulMapa({ wide }: { wide?: boolean }) {
             ))}
           </div>
 
-          {/* úrovne okruhu */}
-          <div style={{ display: "flex", gap: SPACE.xs, marginTop: SPACE.gutter }}>
-            {UROVNE.map(([id, label]) => {
-              const on = uroven === id;
-              return <span key={id} onClick={() => setUroven(id)} style={{ flex: 1, textAlign: "center", padding: `${SPACE.xs}px 0`, borderRadius: RADIUS.sm, fontSize: 12.5, fontWeight: on ? 700 : 500, cursor: "pointer",
-                background: on ? "color-mix(in srgb, var(--a-info) 16%, transparent)" : C.surface2, border: `1px solid ${on ? "color-mix(in srgb, var(--a-info) 50%, transparent)" : C.line}`, color: on ? "var(--a-info)" : C.textSec }}>{label}</span>;
-            })}
-          </div>
+          {/* úrovne okruhu — SegTabs (radiogroup + šípky), vzhľad pôvodný */}
+          <SegTabs options={UROVNE.map(([id]) => id)} value={uroven} onChange={setUroven} ariaLabel="Úroveň okruhu"
+            style={{ display: "flex", gap: SPACE.xs, marginTop: SPACE.gutter }}
+            render={(id, on) => (
+              <span style={{ flex: 1, textAlign: "center", padding: `${SPACE.xs}px 0`, borderRadius: RADIUS.sm, fontSize: 12.5, fontWeight: on ? 700 : 500, cursor: "pointer",
+                background: on ? "color-mix(in srgb, var(--a-info) 16%, transparent)" : C.surface2, border: `1px solid ${on ? "color-mix(in srgb, var(--a-info) 50%, transparent)" : C.line}`, color: on ? "var(--a-info)" : C.textSec }}>{UROVNE.find(([u]) => u === id)?.[1]}</span>
+            )} />
 
           {/* posuvník (len štvrť) alebo popis admin hranice */}
           {jeStvrt ? (
@@ -173,7 +172,7 @@ export default function ModulMapa({ wide }: { wide?: boolean }) {
                 <span style={{ fontSize: 12.5, color: C.textSec }}>Veľkosť okruhu (štvrť)</span>
                 <span style={{ fontSize: 16, fontWeight: 800, color: "var(--a-info)" }}>{km} km</span>
               </div>
-              <input type="range" min={1} max={5} step={1} value={km} onChange={(e) => setKm(+e.target.value)} style={{ width: "100%", marginTop: SPACE.xs, accentColor: "var(--a-info)" }} />
+              <input type="range" min={1} max={5} step={1} value={km} onChange={(e) => setKm(+e.target.value)} aria-label="Veľkosť okruhu v kilometroch" style={{ width: "100%", marginTop: SPACE.xs, accentColor: "var(--a-info)" }} />
               <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: C.textTer }}>
                 {[1, 2, 3, 4, 5].map((n) => <span key={n}>{n}</span>)}
               </div>
@@ -188,11 +187,19 @@ export default function ModulMapa({ wide }: { wide?: boolean }) {
             </div>
           )}
 
-          {/* info chip — reálne počty v okruhu */}
-          <div style={{ display: "flex", alignItems: "center", gap: SPACE.xs, marginTop: SPACE.gutter, padding: `${SPACE.sm}px ${SPACE.sm}px`, borderRadius: RADIUS.sm, background: "rgba(31,191,143,.08)", border: "1px solid rgba(31,191,143,.22)" }}>
-            <span style={{ width: 9, height: 9, borderRadius: RADIUS.round, flex: "none", background: "var(--a-green)", animation: "pulse 1.6s infinite" }} />
-            <span style={{ fontSize: 12.5, color: C.textSec }}>V tomto okruhu: <b style={{ color: C.text }}>{skutky.toLocaleString("sk")}</b> skutkov · <b style={{ color: C.text }}>{udalosti.toLocaleString("sk")}</b> udalostí</span>
-          </div>
+          {/* info chip — reálne počty v okruhu (loading/error stav namiesto tichých núl) */}
+          {isError ? (
+            <ErrorState title="Body na mape sa nepodarilo načítať" text="Skutky a udalosti v okruhu sa nedajú spočítať." onRetry={() => refetch()} />
+          ) : (
+            <div style={{ display: "flex", alignItems: "center", gap: SPACE.xs, marginTop: SPACE.gutter, padding: `${SPACE.sm}px ${SPACE.sm}px`, borderRadius: RADIUS.sm, background: "rgba(31,191,143,.08)", border: "1px solid rgba(31,191,143,.22)" }}>
+              {isLoading
+                ? <><Spinner size={14} /><span style={{ fontSize: 12.5, color: C.textSec }}>Načítavam body v okolí…</span></>
+                : <>
+                    <span style={{ width: 9, height: 9, borderRadius: RADIUS.round, flex: "none", background: "var(--a-green)", animation: "pulse 1.6s infinite" }} />
+                    <span style={{ fontSize: 12.5, color: C.textSec }}>V tomto okruhu: <b style={{ color: C.text }}>{skutky.toLocaleString("sk")}</b> skutkov · <b style={{ color: C.text }}>{udalosti.toLocaleString("sk")}</b> udalostí</span>
+                  </>}
+            </div>
+          )}
           <div style={{ fontSize: 10.5, color: C.textTer, margin: "8px 2px 0", lineHeight: 1.5 }}>Reálne body z DB v okolí mesta {lok.mesto}. Mení len, čo vidíš vo feede a na nástenke — nie karmu ani odmeny.</div>
 
           <button onClick={() => toast(`Rádius nastavený: ${jeStvrt ? km + " km · štvrť" : FEED_CFG.radiusy[uroven].label}`)}

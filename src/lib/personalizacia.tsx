@@ -11,6 +11,7 @@ import {
   nacitajLokalne, ulozZaujmy, ulozSledovani, ulozPodpory, ulozOblubene,
   importLegacyFollows, legacyNaImport, demoSeed, zaujmyNaKluce, zaujemZOblasti,
   nacitajPodporyDB, pridajPodporuDB,
+  nacitajOblubeneDB, pridajOblubeneDB, odoberOblubeneDB,
 } from "./personalizaciaStore";
 import type { Zaujem, Sledovanie, Podpora, Oblubeny } from "@/types";
 
@@ -61,7 +62,8 @@ export function PersonalizaciaProvider({ children }: { children: ReactNode }) {
     const ulozene = nacitajLokalne();
     let { zaujmy: z, sledovani: s } = ulozene;
     const { podpory: p } = ulozene;
-    setOblubene(ulozene.oblubene); // obľúbené nemajú seed — vždy z localStorage
+    // obľúbené: pri živej DB je autoritatívna DB (efekt nižšie), inak localStorage
+    setOblubene(USE_SUPABASE ? [] : ulozene.oblubene);
     // seed guard sa vyhodnocuje voči PÔVODNÉMU stavu store-u (PRED legacy importom) —
     // inak by legacy follow naplnil `s` a demo seed (záujmy + podpory) by sa preskočil.
     const prazdnyStore = z.length === 0 && s.length === 0 && p.length === 0;
@@ -98,6 +100,18 @@ export function PersonalizaciaProvider({ children }: { children: ReactNode }) {
       .catch(() => { /* DB nedostupná → ostáva lokálny stav */ });
     return () => { zrusene = true; };
   }, [demo, celeMeno, ucetId]);
+
+  // Obľúbené zo Supabase (owner-only cez auth.uid — anon session). Bez DB → no-op.
+  // Session sa po prvej návšteve cachuje (supabase-js localStorage), takže race
+  // je len pri úplne prvom otvorení; write-through v toggleOblubene to dorovná.
+  useEffect(() => {
+    if (!USE_SUPABASE) return;
+    let zrusene = false;
+    nacitajOblubeneDB()
+      .then((rows) => { if (!zrusene) setOblubene(rows); })
+      .catch(() => { /* DB nedostupná / bez session → ostáva lokálny stav */ });
+    return () => { zrusene = true; };
+  }, [demo, ucetId]);
 
   // perzistencia — len REÁLNY účet a až po hydratácii. `!demo` → demo seed sa nikdy neuloží
   // (nepresiakne do reálneho účtu); `hydratovane` (state, nie ref) → prvý beh s [] sa preskočí.
@@ -148,9 +162,12 @@ export function PersonalizaciaProvider({ children }: { children: ReactNode }) {
     podporujem: (refId) => podpory.some((x) => String(x.refId) === String(refId)),
     oblubene,
     jeOblubene: (refId) => oblubene.some((x) => String(x.refId) === String(refId)),
-    toggleOblubene: (o) => setOblubene((xs) => xs.some((x) => String(x.refId) === String(o.refId))
-      ? xs.filter((x) => String(x.refId) !== String(o.refId))
-      : [o, ...xs]),
+    toggleOblubene: (o) => {
+      const je = oblubene.some((x) => String(x.refId) === String(o.refId));
+      // write-through do DB (fire-and-forget); bez DB → len lokálny stav + localStorage efekt
+      if (USE_SUPABASE) (je ? odoberOblubeneDB(o.refId) : pridajOblubeneDB(o)).catch(() => { /* sieť — UI stav ostáva */ });
+      setOblubene((xs) => je ? xs.filter((x) => String(x.refId) !== String(o.refId)) : [o, ...xs]);
+    },
     nacitavam: !hydratovane,
   }), [zaujmy, sledovani, podpory, oblubene, hydratovane, demo, celeMeno, ucetId]);
 

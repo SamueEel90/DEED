@@ -17,7 +17,7 @@ export function Sidebar({ moduly, aktivny, onModul, onViac, onPenazenka }: {
   onPenazenka?: () => void;
 }) {
   return (
-    <div style={{ width: 100, flex: "0 0 auto", height: "100%", display: "flex", flexDirection: "column", alignItems: "stretch", padding: `${SPACE.gutter}px ${SPACE.sm}px ${SPACE.md}px`, ...glassTmavy(18, .5), borderRight: `1px solid ${C.line}`, zIndex: 20 }}>
+    <nav aria-label="Hlavné moduly" style={{ width: 100, flex: "0 0 auto", height: "100%", display: "flex", flexDirection: "column", alignItems: "stretch", padding: `${SPACE.gutter}px ${SPACE.sm}px ${SPACE.md}px`, ...glassTmavy(18, .5), borderRight: `1px solid ${C.line}`, zIndex: 20 }}>
       {/* logo D⁺ — na desktope jediné logo v appke (v hlavičke modulov je skryté) */}
       <div style={{ display: "flex", justifyContent: "center", marginBottom: SPACE.md }}>
         <span style={{ width: 52, height: 52, borderRadius: RADIUS.md, background: GRAD, color: "#fff", fontWeight: 800, fontSize: 27, display: "flex", alignItems: "center", justifyContent: "center", position: "relative", boxShadow: "0 6px 18px color-mix(in srgb, var(--a-green) 42%, transparent)" }}>
@@ -35,7 +35,7 @@ export function Sidebar({ moduly, aktivny, onModul, onViac, onPenazenka }: {
         {onPenazenka && <SideBtn icon={<IkonaPenazenka size={20} color={C.textSec} />} label="Peňaženka" onClick={onPenazenka} />}
         <SideBtn icon={<IkonaMenu size={20} color={C.textSec} />} label="Viac" onClick={onViac} />
       </div>
-    </div>
+    </nav>
   );
 }
 

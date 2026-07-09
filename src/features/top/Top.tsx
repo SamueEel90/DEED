@@ -8,6 +8,7 @@ import { useLokalita } from "@/lib/lokalita";
 import { vzdialenostKm, FEED_CFG } from "@/lib/feed";
 import { tagChip } from "@/lib/ui";
 import { useTopRebricky } from "@/data";
+import { useVrstva } from "@/lib/urlnav";
 import type { RebricekKluc } from "@/features/top/mock";
 import type { RebricekRozsah, Subjekt, WideProps } from "@/types";
 
@@ -43,6 +44,8 @@ const CATS: CatMeta[] = [
 export default function ModulTop({ wide }: WideProps) {
   const [screen, setScreen] = useState<"top" | "fun" | "profil">("top");
   const [subjekt, setSubjekt] = useState<Subjekt | null>(null);
+  // pod-obrazovka = vrstva histórie → browser Back sa vráti na rebríčky (nie von z appky)
+  useVrstva(screen !== "top", () => setScreen("top"), screen);
   const [rozsah, setRozsah] = useState<RebricekRozsah>("Štvrť");
 
   const { data: rebricky, isLoading, isError, refetch } = useTopRebricky();

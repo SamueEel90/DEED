@@ -1,4 +1,4 @@
-import { useState, useEffect, type ReactNode } from "react";
+import { useState, useEffect, memo, type ReactNode } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { SIRKA, C, inp, infoBox, btn, GRAD_ZELENY, glassTmavy, SPACE, RADIUS } from "@/theme";
 import { pasmo, POZNAMKA_DAVKY, tagLabels, CHARITA_SEGMENTY, segmentLabel, OVERENIA_POTREBNE, ESCROW } from "./konstanty";
@@ -14,8 +14,12 @@ import { useHelpFeed, useQrSplitCreate, qk, repo } from "@/data";
 import { SplitConfigStep, splitOwnerPct, splitCielePayload, splitValid, type SplitCiel } from "@/shared";
 import { usePouzivatel } from "@/lib/pouzivatel";
 import { useLokalita } from "@/lib/lokalita";
-import { tint, tagChip } from "@/lib/ui";
+import { tint, tagChip, rovnakeOkremFunkcii } from "@/lib/ui";
 import { pressable } from "@/components/pressable";
+import { useVrstva } from "@/lib/urlnav";
+import { kopiruj, zdielaj, aktualnaUrl } from "@/lib/zdielanie";
+import { OzvatSaSheet } from "@/components/ozvatsa";
+import { NahlasitSheet } from "@/components/nahlasit";
 import { USER_LOK, ZIVE_DARY, CHARITY_FISKALNE } from "./mock";
 
 /*
@@ -44,6 +48,9 @@ export default function ModulHelp({ wide }: { wide?: boolean }) {
   const [radius, setRadius] = useState<string>("stvrt");
   const [view, setView] = useState<"all" | "ziadost" | "ponuka">("all");
   const otvorZ = (z: any) => { setAktDetail(z); setScreen("detail"); };
+
+  // pod-obrazovka = vrstva histórie → browser Back sa vráti na feed (nie von z appky)
+  useVrstva(screen !== "feed", () => setScreen("feed"), screen);
 
   // tvorba: (1) OPTIMISTICKY vlož navrch feedu (okamžitý výsledok) a (2) zapíš do DB
   // (prispevok, data.help). Po úspešnom zápise invaliduj feed → refetch z DB (uvidia aj ostatní).
@@ -214,7 +221,9 @@ function Seg({ on, col, label, emoji, onClick }: { on: boolean; col: string; lab
 
 // JEDNOTNÁ karta = zdieľaná FeedCard (rovnaká anatómia ako Domov/Charita/Aktivity);
 // Help mapuje žiadosť/ponuku/charitu do slotov (typový odznak, sponzor, progres).
-function HelpKarta({ z, wide, onClick }: { z: any; wide?: boolean; onClick: () => void }) {
+// memo: re-render len pri zmene položky/wide (inline onClick sa ignoruje)
+const HelpKarta = memo(HelpKartaBase, rovnakeOkremFunkcii);
+function HelpKartaBase({ z, wide, onClick }: { z: any; wide?: boolean; onClick: () => void }) {
   const jeZiadost = z.typ === "ziadost";
   const jePonuka = z.typ === "ponuka";
   const jeKriza = z.typSituacie === "kriza";
@@ -254,6 +263,8 @@ function Detail({ z, onBack, onAutor }: { z: any; onBack: () => void; onAutor: (
   const [platba, setPlatba] = useState<string | null>(null); // "EUR" | "DEED"
   const [suma, setSuma] = useState(z.suma ?? 0);
   const [ludia, setLudia] = useState(z.ludia ?? 0);
+  const [ozvat, setOzvat] = useState(false); // „Mám záujem" → mini formulár so správou
+  const [nahlasit, setNahlasit] = useState(false); // vlajka → nahlásenie obsahu
   const otvorGaleriu = useGaleria();
   const { wide } = useLayout();
 
@@ -275,7 +286,7 @@ function Detail({ z, onBack, onAutor }: { z: any; onBack: () => void; onAutor: (
 
   return (
     <div style={{ paddingBottom: SPACE.xl }}>
-      <BackHeader onBack={onBack} right={<><Zdielanie size={17} color={C.textTer} /><IkonaVlajka size={16} color={C.textTer} /></>}>
+      <BackHeader onBack={onBack} right={<><span {...pressable(() => void zdielaj({ titul: z.nazov, text: z.nazov, url: aktualnaUrl() }, toast), "Zdieľať žiadosť")} style={{ display: "flex", cursor: "pointer", position: "relative" }}><Zdielanie size={17} color={C.textTer} /></span><span {...pressable(() => setNahlasit(true), "Nahlásiť obsah")} style={{ display: "flex", cursor: "pointer", position: "relative" }}><IkonaVlajka size={16} color={C.textTer} /></span></>}>
         <span style={{ fontSize: 13, fontWeight: "bold", color: C.blueL, background: tint("var(--a-info)", .12), border: `1px solid ${tint("var(--a-info)", .3)}`, borderRadius: RADIUS.xs, padding: `${SPACE.xxs}px ${SPACE.sm}px` }}>#47 821</span>
         <span style={{ fontSize: 11, fontWeight: "bold", color: z.sponzor ? C.gold : C.blueL }}>{z.sponzor ? "D++" : "D+"}</span>
       </BackHeader>
@@ -283,7 +294,7 @@ function Detail({ z, onBack, onAutor }: { z: any; onBack: () => void; onAutor: (
       {/* hero foto — LEN ak prípad má fotku (bez placeholdera; inak čisto textový detail) */}
       {z.fotky?.length ? (
         <div style={{ position: "relative", ...(wide ? { width: "100%", aspectRatio: MEDIA_AR } : {}) }}>
-          <Foto src={z.fotky[0]} emoji="🖼" h={wide ? "100%" : 175} w={wide ? "100%" : undefined} onClick={() => otvorGaleriu(z.fotky!, 0)} />
+          <Foto src={z.fotky[0]} emoji="🖼" h={wide ? "100%" : 175} w={wide ? "100%" : undefined} onClick={() => otvorGaleriu(z.fotky!, 0)} prednost alt={z.nazov} />
           <span style={{ position: "absolute", top: 10, right: 10, background: "rgba(0,0,0,.55)", borderRadius: RADIUS.lg, padding: `${SPACE.xxs}px ${SPACE.sm}px`, fontSize: 10, color: "var(--a-green)", pointerEvents: "none", display: "inline-flex", alignItems: "center", gap: SPACE.xxs }}><IkonaFoto size={12} color="var(--a-green)" /> foto z prípadu</span>
           {z.fotky.length > 1 && <span style={{ position: "absolute", bottom: 10, right: 10, background: "rgba(0,0,0,.6)", borderRadius: RADIUS.sm, padding: `${SPACE.xxs}px ${SPACE.xs}px`, fontSize: 10, color: "#fff", pointerEvents: "none" }}>⧉ {z.fotky.length} · klikni na foto</span>}
         </div>
@@ -329,11 +340,11 @@ function Detail({ z, onBack, onAutor }: { z: any; onBack: () => void; onAutor: (
       {/* ponuka pomoci = kontakt; žiadosť = darovanie */}
       {jePonuka ? (
         <div style={{ padding: `0 ${SPACE.gutter}px ${SPACE.gutter}px` }}>
-          <button onClick={() => toast(`Ozvali sme sa: ${z.nazov} · dohodnite sa cez chat`)} style={{ ...btn("primary"), width: "100%" }}>✍️ Mám záujem — ozvať sa</button>
+          <button onClick={() => setOzvat(true)} style={{ ...btn("primary"), width: "100%" }}>✍️ Mám záujem — ozvať sa</button>
           <div style={{ textAlign: "center", fontSize: 11, color: C.textTer, margin: `${SPACE.sm}px 0` }}>Po ozvaní sa dohodnete na detailoch cez chat → prípadne QR na mieste.</div>
           {/* podporiť sa dá aj peniazmi (karta / SEPA prevod / peňaženka), nielen ozvaním */}
           <PodporaSekcia
-            onShare={() => toast("Zdieľať: odkaz skopírovaný · siete")}
+            onShare={() => zdielaj({ titul: z.nazov, text: z.nazov, url: aktualnaUrl() }, toast)}
             upvotes={140} onUpvote={() => toast("Palec hore")}
             onPodpor={(s: number) => posliPevne(s, "DEED")} onSms={() => posliPevne(1, "SMS")}
             onKanal={(k: string) => setPlatba(k)} supLabel="PODPORIŤ — klik a hneď odíde" />
@@ -341,7 +352,7 @@ function Detail({ z, onBack, onAutor }: { z: any; onBack: () => void; onAutor: (
       ) : (
         <div style={{ padding: `0 ${SPACE.gutter}px ${SPACE.gutter}px` }}>
           <PodporaSekcia
-            onShare={() => toast("Zdieľať: odkaz skopírovaný · siete")}
+            onShare={() => zdielaj({ titul: z.nazov, text: z.nazov, url: aktualnaUrl() }, toast)}
             upvotes={140} onUpvote={() => toast("Palec hore")}
             onPodpor={(s: number) => posliPevne(s, "DEED")} onSms={() => posliPevne(1, "SMS")}
             onKanal={(k: string) => setPlatba(k)} />
@@ -350,6 +361,12 @@ function Detail({ z, onBack, onAutor }: { z: any; onBack: () => void; onAutor: (
 
       {/* simulácia platby (EUR karta / DEED peňaženka) */}
       {platba && <PlatbaModal kanal={platba} komu={z.nazov} onClose={() => setPlatba(null)} onDone={platbaHotova} />}
+
+      {/* „Mám záujem" — súkromná správa ponúkajúcemu (mock uloženie) */}
+      {ozvat && <OzvatSaSheet komu={z.nazov} refId={z.id} modul="help" onClose={() => setOzvat(false)} toast={toast} />}
+
+      {/* vlajka — nahlásenie obsahu */}
+      {nahlasit && <NahlasitSheet co={z.nazov} refId={z.id} modul="help" onClose={() => setNahlasit(false)} toast={toast} />}
     </div>
   );
 }
@@ -711,7 +728,7 @@ function RequestFlow({ onBack, onZverejni }: { onBack: () => void; onZverejni: (
                       <div style={{ fontSize: 15, fontWeight: 700 }}>{c.nazov}</div>
                       <div style={{ fontSize: 12, color: C.textSec, marginTop: 2 }}>📍 {c.lok} · {c.segmenty.map(segmentLabel).join(" · ")}</div>
                       <div style={{ fontSize: 12.5, color: C.blueL, marginTop: SPACE.xs }}>✉️ {c.kontakt}</div>
-                      <button onClick={() => toast(`Kontakt na ${c.nazov} skopírovaný — oslov ich priamo.`)} style={{ ...btn("ghost"), width: "100%", marginTop: SPACE.sm }}>Kontaktovať charitu</button>
+                      <button onClick={() => kopiruj(c.kontakt, toast, `Kontakt na ${c.nazov} skopírovaný — oslov ich priamo.`)} style={{ ...btn("ghost"), width: "100%", marginTop: SPACE.sm }}>Kontaktovať charitu</button>
                     </div>
                   ))}
                 </>
