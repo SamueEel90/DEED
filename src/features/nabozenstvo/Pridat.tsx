@@ -208,7 +208,11 @@ function UzolForm({ uzol, farar, farnost, onSplit, onPublish, onHelp, toast }: {
   const [text, setText] = useState("");
   const [notif, setNotif] = useState(uzol.id === "o-zmena");
   const [preview, setPreview] = useState(false);
+  const [polia, setPolia] = useState<Record<string, string>>({});
+  const setPole = (k: string, v: string) => setPolia((s) => ({ ...s, [k]: v }));
   const lab = uzol.split ? SPLIT_LABELY[uzol.split] : null;
+  // hlavné textové pole (POPIS/TEXT OZNAMU) už rieši voľný text → nezobrazuj ho druhýkrát v poliach
+  const viditelnePolia = uzol.polia.filter((p) => { const l = p.toLowerCase(); return !(l === "popis" || l === "opis" || l.startsWith("text")); });
 
   return (
     <div>
@@ -228,16 +232,17 @@ function UzolForm({ uzol, farar, farnost, onSplit, onPublish, onHelp, toast }: {
       <Input multiline minH={90} value={text} onChange={setText}
         placeholder={uzol.id === "o-modlitba" ? "Za koho / za čo sa modlíme…" : "Napíš text…"} />
 
-      {/* ostatné polia (mock — len naznačené inputy/labely) */}
-      <div style={{ fontSize: 11, fontWeight: 700, color: N.txt3, letterSpacing: ".03em", margin: `${SPACE.md}px 0 ${SPACE.xs}px` }}>POLIA</div>
-      <div style={{ display: "grid", gap: SPACE.xs }}>
-        {uzol.polia.map((p) => (
-          <div key={p} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, background: N.card, border: `1px solid ${N.line}`, borderRadius: RADIUS.sm, padding: `${SPACE.sm}px ${SPACE.gutter}px` }}>
-            <span style={{ width: 6, height: 6, borderRadius: "50%", background: N.ind, flex: "none" }} />
-            <span style={{ fontSize: 13, color: N.txt2 }}>{p}</span>
+      {/* ostatné polia — reálne typované inputy (číslo/dátum/foto/QR/text) */}
+      {viditelnePolia.length > 0 && (
+        <>
+          <div style={{ fontSize: 11, fontWeight: 700, color: N.txt3, letterSpacing: ".03em", margin: `${SPACE.md}px 0 ${SPACE.xs}px` }}>POLIA</div>
+          <div style={{ display: "grid", gap: SPACE.sm }}>
+            {viditelnePolia.map((p) => (
+              <PoleInput key={p} label={p} value={polia[p] ?? ""} onChange={(v) => setPole(p, v)} toast={toast} />
+            ))}
           </div>
-        ))}
-      </div>
+        </>
+      )}
 
       {/* zmenové oznamy → notifikácia default ON */}
       {uzol.id === "o-zmena" && (
@@ -294,6 +299,56 @@ function UzolForm({ uzol, farar, farnost, onSplit, onPublish, onHelp, toast }: {
 }
 function MetaChip({ children }: { children: React.ReactNode }) {
   return <span style={{ fontSize: 11, color: N.txt2, background: N.card, border: `1px solid ${N.line}`, borderRadius: 99, padding: `${SPACE.xxs}px ${SPACE.sm}px` }}>{children}</span>;
+}
+
+// odvodenie typu poľa z jeho názvu → reálny input namiesto „bullet" labelu
+type TypPola = "cislo" | "datum" | "foto" | "qr" | "split" | "iban" | "text";
+function typPola(label: string): TypPola {
+  const l = label.toLowerCase();
+  if (l.includes("scan qr") || l.includes("event qr")) return "qr";
+  if (l.includes("split")) return "split";
+  if (l.includes("iban")) return "iban";
+  if (l.includes("dátum") || l.includes("datum")) return "datum";
+  if (l.includes("suma") || l.includes("kapacita") || l.includes("koľko rúk") || l.includes("€")) return "cislo";
+  if (l.includes("foto") || l.includes("video") || l.includes("doklad") || l.includes("escrow")) return "foto";
+  return "text";
+}
+function placeholderPola(label: string, t: TypPola): string {
+  if (t === "cislo") return label.includes("€") || label.toLowerCase().includes("suma") ? "napr. 2000" : "napr. 10";
+  if (t === "iban") return "SK00 0000 0000 0000 0000 0000";
+  if (t === "text" && label.toLowerCase().includes("mená")) return "Zadaj mená (so súhlasom)…";
+  return `Zadaj: ${label.replace(/\s*\(.*\)/, "").toLowerCase()}…`;
+}
+function PoleInput({ label, value, onChange, toast }: { label: string; value: string; onChange: (v: string) => void; toast: (m: string) => void }) {
+  const t = typPola(label);
+  const lab = <div style={{ fontSize: 11, fontWeight: 700, color: N.txt3, letterSpacing: ".02em", marginBottom: SPACE.xxs }}>{label.toUpperCase()}</div>;
+
+  // foto/QR → mock priloženie (attach) tlačidlom
+  if (t === "foto" || t === "qr") {
+    const priloz = () => { onChange(value ? "" : "✓"); toast(value ? "Odobraté" : t === "qr" ? "QR naskenované (demo)" : "Príloha nahraná (demo)"); };
+    return (
+      <div>{lab}
+        <button type="button" onClick={priloz}
+          style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: SPACE.xs, height: 44, borderRadius: RADIUS.sm, fontFamily: "inherit", fontSize: 13, fontWeight: 700, cursor: "pointer",
+            border: `1px ${value ? "solid" : "dashed"} ${value ? N.greenEdge : N.line}`, background: value ? N.greenBg : N.card, color: value ? N.green : N.txt2 }}>
+          {value ? "✓ " : t === "qr" ? "▦ " : "📎 "}{value ? "Priložené — klikni pre zmenu" : t === "qr" ? "Skenovať QR" : "Priložiť foto/video"}
+        </button>
+      </div>
+    );
+  }
+  // split → nastavuje sa dole cez „Rozdeliť dar (Split QR)"
+  if (t === "split") {
+    return (
+      <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm, background: N.greenBg, border: `1px solid ${N.greenEdge}`, borderRadius: RADIUS.sm, padding: `${SPACE.sm}px ${SPACE.gutter}px`, fontSize: 12, color: N.txt2 }}>
+        <span>⚖</span><span>{label} — nastav nižšie cez <b style={{ color: N.green }}>Rozdeliť dar (Split QR)</b></span>
+      </div>
+    );
+  }
+  return (
+    <div>{lab}
+      <Input value={value} onChange={onChange} type={t === "cislo" ? "number" : t === "datum" ? "date" : "text"} placeholder={placeholderPola(label, t)} />
+    </div>
+  );
 }
 function ctaStyle(bg: string): React.CSSProperties {
   return { width: "100%", marginTop: SPACE.md, height: 48, border: "none", borderRadius: RADIUS.md, background: bg, color: "#fff", fontWeight: 700, fontSize: 15, fontFamily: "inherit", cursor: "pointer" };

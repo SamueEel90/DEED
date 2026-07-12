@@ -3,6 +3,7 @@ import { SPACE, RADIUS, SIRKA } from "@/theme";
 import { BackHeader, Switch, SegTabs, useLayout } from "@/shared";
 import { pressable } from "@/components/pressable";
 import { N, Chip } from "./ui";
+import { nacitajStav, ulozStav } from "./stav";
 import {
   generujOmse, isoDatum, CASY, OMSA_LABEL, KAT_FARBA, KAT_LABEL, KAL_UDALOSTI,
   PREDVYPLNENY_ROZVRH, PRAZDNY_ROZVRH,
@@ -28,15 +29,16 @@ type Vyhlad = "kalendar" | "rozvrh";
 export function Kalendar({ farnost, onBack, onPridat, toast }: { farnost: Farnost; onBack: () => void; onPridat?: () => void; toast: (m: string) => void }) {
   const dnes = useMemo(() => new Date(), []);
   const [vyhlad, setVyhlad] = useState<Vyhlad>("kalendar");
-  const [rozvrh, setRozvrh] = useState<RozvrhOmsi>(PREDVYPLNENY_ROZVRH);
+  // rozvrh + override vrstva sú perzistované per farnost.id (mock, localStorage)
+  const [rozvrh, setRozvrh] = useState<RozvrhOmsi>(() => nacitajStav("rozvrh", farnost.id, PREDVYPLNENY_ROZVRH));
   const [rok, setRok] = useState(dnes.getFullYear());
   const [mesiac, setMesiac] = useState(dnes.getMonth());
   const [vybranyDen, setVybranyDen] = useState<string | null>(null);
 
   // override vrstva (výnimky) — vzor ostáva nedotknutý pre ostatné týždne
-  const [zrusene, setZrusene] = useState<Set<string>>(() => new Set());
-  const [casy, setCasy] = useState<Record<string, string>>({});
-  const [pridane, setPridane] = useState<Record<string, DennaOmsa[]>>({});
+  const [zrusene, setZrusene] = useState<Set<string>>(() => new Set(nacitajStav<string[]>("zrusene", farnost.id, [])));
+  const [casy, setCasy] = useState<Record<string, string>>(() => nacitajStav("casy", farnost.id, {}));
+  const [pridane, setPridane] = useState<Record<string, DennaOmsa[]>>(() => nacitajStav("pridane", farnost.id, {}));
 
   const generovane = useMemo(() => generujOmse(rok, mesiac, rozvrh), [rok, mesiac, rozvrh]);
 
@@ -74,7 +76,7 @@ export function Kalendar({ farnost, onBack, onPridat, toast }: { farnost: Farnos
 
       {vyhlad === "rozvrh" ? (
         <RozvrhSetup rozvrh={rozvrh} onRozvrh={setRozvrh}
-          onUlozit={() => { toast("Rozvrh uložený — omše a zbierky vygenerované na mesiac dopredu"); setVyhlad("kalendar"); }}
+          onUlozit={() => { ulozStav("rozvrh", farnost.id, rozvrh); toast("Rozvrh uložený — omše a zbierky vygenerované na mesiac dopredu"); setVyhlad("kalendar"); }}
           toast={toast} />
       ) : (
         <div style={{ padding: `0 ${SPACE.md}px` }}>
@@ -134,10 +136,10 @@ export function Kalendar({ farnost, onBack, onPridat, toast }: { farnost: Farnos
       {vybranyDen && (
         <DenDetail iso={vybranyDen} omse={omseDna(vybranyDen)} udalosti={udalostiDna(vybranyDen)}
           perMass={rozvrh.generateCollectionPerMass}
-          onZrus={(id) => setZrusene((s) => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; })}
+          onZrus={(id) => setZrusene((s) => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); ulozStav("zrusene", farnost.id, [...n]); return n; })}
           zrusene={zrusene}
-          onCas={(id, t) => setCasy((c) => ({ ...c, [id]: t }))}
-          onPridaj={(o) => setPridane((p) => ({ ...p, [vybranyDen]: [...(p[vybranyDen] ?? []), o] }))}
+          onCas={(id, t) => setCasy((c) => { const n = { ...c, [id]: t }; ulozStav("casy", farnost.id, n); return n; })}
+          onPridaj={(o) => setPridane((p) => { const n = { ...p, [vybranyDen]: [...(p[vybranyDen] ?? []), o] }; ulozStav("pridane", farnost.id, n); return n; })}
           onInaUdalost={onPridat ? () => { setVybranyDen(null); onPridat(); } : undefined}
           onZatvor={() => setVybranyDen(null)} toast={toast} />
       )}

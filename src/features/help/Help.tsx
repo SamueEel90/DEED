@@ -7,11 +7,12 @@ import { Foto, Avatar, MiniFotky, Hlavicka, ModulHlavicka, PodporaSekcia, Platba
 import { Zvoncek } from "@/features/notifikacie/Notifikacie";
 import { pripravFeed, FEED_CFG } from "@/lib/feed";
 import { MEDIA_AR } from "@/lib/cardSize";
-import type { HelpFeedItem, Subjekt, Oblubeny } from "@/types";
+import type { HelpFeedItem, Subjekt, Oblubeny, QrSplitRow } from "@/types";
 import { CudziProfil } from "@/features/cudzi-profil/CudziProfil";
 import { GoodBoard, GoodEvent } from "@/features/good/Good";
 import { useHelpFeed, useQrSplitCreate, qk, repo } from "@/data";
-import { SplitConfigStep, splitOwnerPct, splitCielePayload, splitValid, type SplitCiel } from "@/shared";
+import { SplitConfigStep, splitOwnerPct, splitCielePayload, splitValid, splitPreQrModal, QrModal, SplitQrSheet, type SplitCiel } from "@/shared";
+import { qrUrl } from "@/lib/qr";
 import { usePouzivatel } from "@/lib/pouzivatel";
 import { usePersonalizacia } from "@/lib/personalizacia";
 import { useLokalita } from "@/lib/lokalita";
@@ -62,6 +63,8 @@ export default function ModulHelp({ wide }: { wide?: boolean }) {
   const { pridajZbierku } = usePersonalizacia(); // finančná žiadosť → „Moje zbierky" v Môj DEED
   const createSplit = useQrSplitCreate();
   const [oslava, setOslava] = useState<{ emoji: string; titul: string; text: ReactNode } | null>(null);
+  // hotový autorský Split QR po zverejnení — UKÁŽE sa (zdieľanie/tlač), nezapíše sa len potichu
+  const [hotovyQr, setHotovyQr] = useState<{ titul: string; odkaz?: string; split: { komu: string; pct: number }[] } | null>(null);
   const zverejni = (vstup: HelpFeedItem, osl: { emoji: string; titul: string; text: ReactNode }, split?: SplitCiel[]) => {
     const item = { ...vstup, lat: lok.lat, lng: lok.lng, lok: lok.mesto }; // geo = aktívne mesto
     qc.setQueryData<HelpFeedItem[]>(qk.help.feed, (old = []) => [item, ...old]);
@@ -73,6 +76,15 @@ export default function ModulHelp({ wide }: { wide?: boolean }) {
         vytvorene: new Date().toISOString(), stav: "aktivna", doklady: [],
       });
     }
+    // ak autor nastavil rozdelenie → po vytvorení QR aj zobraz (real slug z DB, mock = placeholder)
+    const ukazQr = (row?: QrSplitRow | null) => {
+      if (!split || !split.length) return;
+      setHotovyQr({
+        titul: item.nazov,
+        odkaz: row?.slug ? qrUrl("split", row.slug) : undefined,
+        split: splitPreQrModal(ja.celeMeno && ja.celeMeno.trim() ? ja.celeMeno : "Ty (autor)", split),
+      });
+    };
     repo.help.vytvor(item, ja.ucetId)
       .then((novyId) => {
         if (novyId) qc.invalidateQueries({ queryKey: qk.help.feed });
@@ -82,10 +94,10 @@ export default function ModulHelp({ wide }: { wide?: boolean }) {
             caseId: novyId, owner: ja.ucetId, ownerText: ja.celeMeno,
             ownerPodiel: +(splitOwnerPct(split) / 100).toFixed(5),
             ciele: splitCielePayload(split), zdroj: "autor", mena: "DEED",
-          });
-        }
+          }, { onSuccess: (row) => ukazQr(row), onError: () => ukazQr() });
+        } else ukazQr(); // mock bez DB → placeholder QR (funkčne rovnaké UI)
       })
-      .catch(() => {});
+      .catch(() => ukazQr());
     setScreen("feed");
     setOslava(osl);
     setTimeout(() => setOslava(null), 2200);
@@ -124,6 +136,14 @@ export default function ModulHelp({ wide }: { wide?: boolean }) {
       )}
 
       {oslava && <Oslava emoji={oslava.emoji} title={oslava.titul} text={oslava.text} onClose={() => setOslava(null)} />}
+
+      {/* autorský Split QR po zverejnení — zdieľaj / vytlač / skenuj (§10 tri výstupy) */}
+      {hotovyQr && (
+        <QrModal typ="rozdelenie" titul={`Split QR · ${hotovyQr.titul}`}
+          popis="Tvoj autorský QR — platby sa rozdelia podľa zafixovaných %. Zdieľaj alebo vytlač."
+          odkaz={hotovyQr.odkaz ?? "https://deed.good/split/demo"} split={hotovyQr.split}
+          onClose={() => setHotovyQr(null)} toast={toast} />
+      )}
     </div>
   );
 }
@@ -275,6 +295,8 @@ function Detail({ z, onBack, onAutor }: { z: any; onBack: () => void; onAutor: (
   const [ludia, setLudia] = useState(z.ludia ?? 0);
   const [ozvat, setOzvat] = useState(false); // „Mám záujem" → mini formulár so správou
   const [nahlasit, setNahlasit] = useState(false); // vlajka → nahlásenie obsahu
+  const [qr, setQr] = useState(false); // žiadosť: donačný QR · ponuka: QR na mieste
+  const [splitQr, setSplitQr] = useState(false); // influencer: rozdeliť platbu (Split QR)
   const otvorGaleriu = useGaleria();
   const { wide } = useLayout();
 
@@ -352,6 +374,7 @@ function Detail({ z, onBack, onAutor }: { z: any; onBack: () => void; onAutor: (
         <div style={{ padding: `0 ${SPACE.gutter}px ${SPACE.gutter}px` }}>
           <button onClick={() => setOzvat(true)} style={{ ...btn("primary"), width: "100%" }}>✍️ Mám záujem — ozvať sa</button>
           <div style={{ textAlign: "center", fontSize: 11, color: C.textTer, margin: `${SPACE.sm}px 0` }}>Po ozvaní sa dohodnete na detailoch cez chat → prípadne QR na mieste.</div>
+          <button onClick={() => setQr(true)} style={{ ...btn("ghost"), width: "100%", marginBottom: SPACE.sm }}>▦ QR na mieste (potvrdenie skutku)</button>
           {/* PONUKA = niekto ponúka pomoc/službu → NEdáva sa mu dar (len zdieľať + reakcia). Prispievať sa dá len na žiadosti/zbierky. */}
           <PodporaSekcia bezDaru
             onShare={() => zdielaj({ titul: z.nazov, text: z.nazov, url: aktualnaUrl() }, toast)}
@@ -365,6 +388,12 @@ function Detail({ z, onBack, onAutor }: { z: any; onBack: () => void; onAutor: (
             upvotes={140} onUpvote={() => toast("Palec hore")}
             onPodpor={(s: number) => posliPevne(s, "DEED")} onSms={() => posliPevne(1, "SMS")}
             onKanal={(k: string) => setPlatba(k)} />
+          {/* QR výstupy — donačný QR žiadosti + influencer split (rovnaký vzor ako Charita/Good) */}
+          <div style={{ display: "flex", gap: SPACE.sm, marginTop: SPACE.sm }}>
+            <button onClick={() => setQr(true)} style={{ ...btn("ghost"), flex: 1 }}>▦ QR na dar</button>
+            <button onClick={() => setSplitQr(true)} style={{ ...btn("ghost"), flex: 1 }}>🎬 Rozdeliť (Split QR)</button>
+          </div>
+          <div style={{ textAlign: "center", fontSize: 10.5, color: C.textTer, marginTop: SPACE.xs }}>QR na dar = sken → prispetie za 2 kliky (tlač/zdieľanie) · Split = influencer rozdelí platby</div>
         </div>
       )}
 
@@ -376,6 +405,18 @@ function Detail({ z, onBack, onAutor }: { z: any; onBack: () => void; onAutor: (
 
       {/* vlajka — nahlásenie obsahu */}
       {nahlasit && <NahlasitSheet co={z.nazov} refId={z.id} modul="help" onClose={() => setNahlasit(false)} toast={toast} />}
+
+      {/* QR prípadu — žiadosť: donačný (sken → dar) · ponuka: QR na mieste (potvrdenie skutku) */}
+      {qr && (
+        <QrModal typ={jePonuka ? "skutok" : "platba"}
+          titul={`${jePonuka ? "QR na mieste" : "Donačný QR"} · ${z.nazov}`}
+          popis={jePonuka ? "Ukáž pri odovzdaní pomoci — sken potvrdí skutok na mieste (proof-of-deed)" : "Sken → dar za 2 kliky · vytlač na leták alebo zdieľaj"}
+          qrCiel={{ druh: "case", ref: String(z.id), modul: "help" }}
+          onClose={() => setQr(false)} toast={toast} />
+      )}
+
+      {/* influencer: rozdelenie platby medzi žiadosť a organizácie */}
+      {splitQr && <SplitQrSheet titul={z.nazov} caseId={String(z.id)} onClose={() => setSplitQr(false)} toast={toast} />}
     </div>
   );
 }

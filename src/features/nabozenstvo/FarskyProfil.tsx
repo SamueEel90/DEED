@@ -7,9 +7,14 @@ import {
   Zdielanie, IkonaVlajka, IkonaOpakovat, IkonaDoska, IkonaFoto, Srdce, useGaleria, useLayout,
 } from "@/shared";
 import { pressable } from "@/components/pressable";
+import { NahlasitSheet } from "@/components/nahlasit";
 import type { Kanal } from "@/types";
 import { N, Overena, Chip, SheetPanel, PrehladTile, A9Potvrdenie } from "./ui";
+import { nacitajStav, ulozStav } from "./stav";
 import { obsahFarnosti, farnostStat, farskySplitVariant, KAT_FARBA, type Farnost, type NabozFeedItem, type NabozTyp } from "./mock";
+
+type ViditSum = "zobrazit" | "skryt" | "len-farar";
+const VIDIT_LABEL: Record<ViditSum, string> = { zobrazit: "zobraziť", skryt: "skryť", "len-farar": "len farár" };
 
 /*
   ============================================================
@@ -50,11 +55,15 @@ export function FarskyProfil({ farnost, farar, jeDomovska, following, onToggleFo
   const [tab, setTab] = useState<NabozTyp>("zbierka");
   const [sprava, setSprava] = useState(false); // editácia profilu (sheet)
   const [potvrdHome, setPotvrdHome] = useState(false); // A9 potvrdenie „nastaviť ako moju cirkev"
-  // editovateľný pohľad profilu (mock — seedovaný z farnosti; komponent je keyed podľa farnost.id)
-  const [view, setView] = useState<ProfilView>({
+  const [nahlasit, setNahlasit] = useState(false); // vlajka → nahlásenie profilu
+  const [moderacia, setModeracia] = useState(false); // správca: moderácia oznamov farníkov
+  const [viditOpen, setViditOpen] = useState(false); // správca: viditeľnosť súm (§72)
+  const [viditSum, setViditSum] = useState<ViditSum>(() => nacitajStav<ViditSum>("viditelnost", farnost.id, "zobrazit"));
+  // editovateľný pohľad profilu (mock — perzistovaný do localStorage per farnost.id)
+  const [view, setView] = useState<ProfilView>(() => nacitajStav<ProfilView>("profil", farnost.id, {
     foto: farnost.foto, popis: farnost.popis, omseSuhrn: farnost.omseSuhrn ?? "",
     adresa: farnost.kontakt?.adresa ?? "", tel: farnost.kontakt?.tel ?? "", email: farnost.kontakt?.email ?? "", web: farnost.kontakt?.web ?? "",
-  });
+  }));
 
   const obsah = obsahFarnosti(farnost.id);
   const stat = farnostStat(farnost.id);
@@ -77,7 +86,7 @@ export function FarskyProfil({ farnost, farar, jeDomovska, following, onToggleFo
     <div style={{ paddingBottom: SPACE.lg }}>
       <BackHeader onBack={onBack} right={<>
         <span {...pressable(() => setQr("zdielat"), "Zdieľať profil")} style={{ display: "flex", cursor: "pointer" }}><Zdielanie size={17} color={N.txt2} /></span>
-        <IkonaVlajka size={16} color={N.txt2} />
+        <span {...pressable(() => setNahlasit(true), "Nahlásiť profil")} style={{ display: "flex", cursor: "pointer" }}><IkonaVlajka size={16} color={N.txt2} /></span>
       </>}>
         <span style={{ fontSize: 12, color: N.txt2 }}>⛪ {farnost.skratka}</span>
       </BackHeader>
@@ -193,8 +202,8 @@ export function FarskyProfil({ farnost, farar, jeDomovska, following, onToggleFo
               <FararBtn ikona={<span>＋</span>} label="Pridať kampaň/udalosť" onClick={onPridat} />
               <FararBtn ikona={<span>⚖</span>} label="Split QR (pohreb/svadba)" onClick={() => setSplit(true)} />
               <FararBtn ikona={<span>🖨</span>} label="QR na tlač do kostola" onClick={() => setQr("donacny")} />
-              <FararBtn ikona={<span>🛡</span>} label="Moderácia príspevkov" onClick={() => toast("Moderácia — farár môže zmazať oznam usera (demo)")} />
-              <FararBtn ikona={<span>👁</span>} label="Viditeľnosť súm zbierok" onClick={() => toast("Prepínač na farnosť: zobraziť / skryť / len farár (§72)")} />
+              <FararBtn ikona={<span>🛡</span>} label="Moderácia príspevkov" onClick={() => setModeracia(true)} />
+              <FararBtn ikona={<span>👁</span>} label={`Viditeľnosť súm · ${VIDIT_LABEL[viditSum]}`} onClick={() => setViditOpen(true)} />
             </div>
             <div style={{ fontSize: 10, color: N.txt3, marginTop: SPACE.sm }}>Split QR = len farár (organizátorský nástroj, nie darcov). Osobné účty + roly — farár môže delegovať kaplána/radu.</div>
           </div>
@@ -266,10 +275,74 @@ export function FarskyProfil({ farnost, farar, jeDomovska, following, onToggleFo
       )}
       {sprava && (
         <SpravaFarnosti farnost={farnost} view={view}
-          onSave={(v) => { setView(v); setSprava(false); toast("Profil farnosti uložený (demo)"); }}
+          onSave={(v) => { setView(v); ulozStav("profil", farnost.id, v); setSprava(false); toast("Profil farnosti uložený"); }}
           onClose={() => setSprava(false)} />
       )}
+      {moderacia && <ModeraciaSheet polozky={obsah.filter((it) => it.ntyp === "oznam")} onClose={() => setModeracia(false)} toast={toast} />}
+      {viditOpen && (
+        <ViditelnostSheet hodnota={viditSum}
+          onSet={(v) => { setViditSum(v); ulozStav("viditelnost", farnost.id, v); toast(`Viditeľnosť súm: ${VIDIT_LABEL[v]} (§72)`); }}
+          onClose={() => setViditOpen(false)} />
+      )}
+      {nahlasit && <NahlasitSheet co={`Profil · ${farnost.nazov}`} refId={farnost.id} modul="nabozenstvo" onClose={() => setNahlasit(false)} toast={toast} />}
     </div>
+  );
+}
+
+// ---- SPRÁVCA: moderácia oznamov farníkov (mock — zmazať/obnoviť) ----
+function ModeraciaSheet({ polozky, onClose, toast }: { polozky: NabozFeedItem[]; onClose: () => void; toast: (m: string) => void }) {
+  const [zmazane, setZmazane] = useState<Set<string>>(() => new Set());
+  const prepni = (id: string) => {
+    setZmazane((s) => { const n = new Set(s); const bol = n.has(id); bol ? n.delete(id) : n.add(id); toast(bol ? "Oznam obnovený" : "Oznam zmazaný — farník dostane upozornenie"); return n; });
+  };
+  return (
+    <SheetPanel title="Moderácia príspevkov" onClose={onClose}>
+      <div style={{ fontSize: 12, color: N.txt3, marginBottom: SPACE.md, lineHeight: 1.5 }}>Farár môže zmazať nevhodný oznam farníka. Zbierky a udalosti farnosti sa overujú v Charita engine — tu ich nemažeš.</div>
+      {polozky.length === 0 ? (
+        <EmptyState emoji="🛡" title="Žiadne oznamy na moderáciu" text="Keď farníci pridajú oznamy, objavia sa tu." />
+      ) : polozky.map((it) => {
+        const del = zmazane.has(it.id);
+        return (
+          <div key={it.id} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, background: N.card, border: `1px solid ${N.line}`, borderRadius: RADIUS.sm, padding: `${SPACE.sm}px ${SPACE.gutter}px`, marginBottom: SPACE.xs, opacity: del ? .5 : 1 }}>
+            <span style={{ fontSize: 17, flex: "none" }}>{it.emoji ?? "📢"}</span>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 13.5, fontWeight: 700, textDecoration: del ? "line-through" : "none", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it.nazov}</div>
+              <div style={{ fontSize: 11, color: N.txt3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it.popis}</div>
+            </div>
+            <button onClick={() => prepni(it.id)} style={{ flex: "none", height: 32, padding: `0 ${SPACE.gutter}px`, borderRadius: RADIUS.sm, fontFamily: "inherit", fontSize: 12, fontWeight: 700, cursor: "pointer", border: `1px solid ${del ? N.indEdge : "var(--a-danger)"}`, background: del ? N.indBg : "transparent", color: del ? N.ind : "var(--a-danger)" }}>{del ? "Obnoviť" : "Zmazať"}</button>
+          </div>
+        );
+      })}
+    </SheetPanel>
+  );
+}
+
+// ---- SPRÁVCA: viditeľnosť súm zbierok na celú farnosť (§72, perzistované) ----
+function ViditelnostSheet({ hodnota, onSet, onClose }: { hodnota: ViditSum; onSet: (v: ViditSum) => void; onClose: () => void }) {
+  const OPT: { key: ViditSum; label: string; popis: string }[] = [
+    { key: "zobrazit", label: "Zobraziť", popis: "Vyzbieraná suma a počet darcov sú verejné." },
+    { key: "skryt", label: "Skryť", popis: "Návštevníci vidia len progres, nie konkrétnu sumu." },
+    { key: "len-farar", label: "Len farár", popis: "Sumy vidí iba správca farnosti." },
+  ];
+  return (
+    <SheetPanel title="Viditeľnosť súm zbierok" onClose={onClose}>
+      <div style={{ fontSize: 12, color: N.txt3, marginBottom: SPACE.md, lineHeight: 1.5 }}>Platí na všetky zbierky farnosti (§72). Evidencia beží vždy — mení sa len to, čo vidia návštevníci.</div>
+      <div style={{ display: "grid", gap: SPACE.sm }}>
+        {OPT.map((o) => {
+          const on = o.key === hodnota;
+          return (
+            <div key={o.key} {...pressable(() => onSet(o.key), o.label)} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, background: on ? N.indBg : N.card, border: `1px solid ${on ? N.indEdge : N.line}`, borderRadius: RADIUS.sm, padding: SPACE.gutter, cursor: "pointer" }}>
+              <span style={{ width: 20, height: 20, flex: "none", borderRadius: "50%", border: `2px solid ${on ? N.ind : N.txt3}`, background: on ? N.ind : "transparent", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 11 }}>{on ? "✓" : ""}</span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: on ? N.ind : N.txt }}>{o.label}</div>
+                <div style={{ fontSize: 11.5, color: N.txt2, marginTop: SPACE.xxs }}>{o.popis}</div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      <button onClick={onClose} style={{ width: "100%", marginTop: SPACE.md, height: 48, border: "none", borderRadius: RADIUS.md, background: N.green, color: "#fff", fontWeight: 700, fontSize: 15, fontFamily: "inherit", cursor: "pointer" }}>Hotovo</button>
+    </SheetPanel>
   );
 }
 

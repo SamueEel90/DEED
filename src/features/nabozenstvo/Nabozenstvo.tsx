@@ -585,6 +585,19 @@ function SheetAdresar({ domovska, oblubene, onDomov, onFollow, onProfil, onClose
   const [radenF, setRadenF] = useState<"najblizsie" | "abecedne">("najblizsie");
   const [vybrana, setVybrana] = useState<string | null>(null); // rozbalené akcie riadku
   const [potvrdDom, setPotvrdDom] = useState<string | null>(null); // A9 potvrdenie domovskej
+  const [gpsHlada, setGpsHlada] = useState(false);
+
+  // reálne GPS (prehliadač) — vyžiada povolenie polohy; bez reverse-geokódu
+  // ukážeme demo-obec (Trenčín) ako najbližší uzol. Starší človek bez GPS zadá obec ručne.
+  const zapniGps = () => {
+    if (!("geolocation" in navigator)) { toast("GPS nie je dostupné — zadaj obec ručne"); return; }
+    setGpsHlada(true);
+    navigator.geolocation.getCurrentPosition(
+      () => { setGpsHlada(false); setObec("Trenčín"); toast("📍 Poloha zistená — najbližšie farnosti (demo: Trenčín)"); },
+      () => { setGpsHlada(false); toast("Prístup k polohe zamietnutý — zadaj obec ručne"); },
+      { timeout: 8000, maximumAge: 60000 },
+    );
+  };
 
   // 18 cirkví — radenie abecedne (default) / rodiny; nikdy sa nerebríčkujú
   const cirkviF = CIRKVI
@@ -622,8 +635,8 @@ function SheetAdresar({ domovska, oblubene, onDomov, onFollow, onProfil, onClose
             <input value={obec} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setObec(e.target.value)} placeholder="Zadaj obec / mesto…"
               style={{ flex: 1, background: "transparent", border: "none", outline: "none", color: N.txt, fontSize: 14, padding: `${SPACE.sm}px 0` }} />
           </div>
-          <div {...pressable(() => setObec("Trenčín"), "Zapnúť GPS")} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: SPACE.xs, border: `1px solid ${N.indEdge}`, background: N.indBg, borderRadius: RADIUS.sm, padding: SPACE.gutter, cursor: "pointer", color: N.ind, fontWeight: 700, fontSize: 13, marginBottom: SPACE.md }}>
-            📍 Zapnúť GPS (nájsť moju polohu)
+          <div {...pressable(zapniGps, "Zapnúť GPS")} aria-busy={gpsHlada} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: SPACE.xs, border: `1px solid ${N.indEdge}`, background: N.indBg, borderRadius: RADIUS.sm, padding: SPACE.gutter, cursor: gpsHlada ? "progress" : "pointer", color: N.ind, fontWeight: 700, fontSize: 13, marginBottom: SPACE.md, opacity: gpsHlada ? .7 : 1 }}>
+            {gpsHlada ? "📍 Zisťujem polohu…" : "📍 Zapnúť GPS (nájsť moju polohu)"}
           </div>
           <button onClick={() => setKrok("vyznanie")} style={ctaAdr(obec ? N.ind : N.txt3)}>
             {obec ? `Pokračovať · ${obec}` : "Pokračovať bez polohy"}
