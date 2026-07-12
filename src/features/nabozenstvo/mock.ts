@@ -105,7 +105,8 @@ export const FEED_ITEMS: NabozFeedItem[] = [
     nazov: "Adventný koncert v kostole", lok: "Trenčín · ev. kostol", overena: true,
     badgeL: "🎶 UDALOSŤ", tag: "Udalosť", emoji: "🎶",
     popis: "Nedeľa 18:00 · spevokol a komorný orchester. Vstup voľný, dobrovoľný dar.",
-    pribeh: "Adventný koncert spevokolu a komorného orchestra. Vstup voľný, dobrovoľný dar podporí opravu organu." },
+    pribeh: "Adventný koncert spevokolu a komorného orchestra. Vstup voľný, dobrovoľný dar podporí opravu organu.",
+    fotky: [U("photo-1465847899084-d164df4dedc6")] },
 
   { id: "mladez", comp: "data", typ: "skutok", modul: "charity", kat: "Komunita", ntyp: "udalost",
     skore: 5.2, typSituacie: "normal", lat: 48.876, lng: 18.041, dni: 1, podpora: 18,
@@ -113,7 +114,8 @@ export const FEED_ITEMS: NabozFeedItem[] = [
     nazov: "Stretnutie mládeže zboru", lok: "Trenčín · zborový dom", overena: true,
     badgeL: "🎪 UDALOSŤ", tag: "Udalosť", emoji: "🎪",
     popis: "Piatok 18:30 · téma, hudba, spoločenstvo. Príď medzi nás.",
-    pribeh: "Týždenné stretnutie mládeže — téma, chvály a spoločenstvo. Otvorené pre nových." },
+    pribeh: "Týždenné stretnutie mládeže — téma, chvály a spoločenstvo. Otvorené pre nových.",
+    fotky: [U("photo-1529156069898-49953e39b3ac")] },
 
   { id: "bohosluzby", comp: "data", typ: "skutok", modul: "charity", kat: "Komunita", ntyp: "oznam",
     skore: 4.5, typSituacie: "normal", lat: 48.894, lng: 18.046, dni: 0, podpora: 0,
@@ -121,7 +123,8 @@ export const FEED_ITEMS: NabozFeedItem[] = [
     nazov: "Zmena času bohoslužieb (advent)", lok: "Trenčín · centrum", overena: true,
     badgeL: "📢 OZNAM", tag: "Oznam", emoji: "📢",
     popis: "Počas adventu sú ranné sväté omše o 6:00. Rorátne omne pri sviecach.",
-    pribeh: "Oznam farnosti: počas adventu sú ranné sväté omše (roráty) o 6:00 pri sviecach. Ostatné časy zostávajú." },
+    pribeh: "Oznam farnosti: počas adventu sú ranné sväté omše (roráty) o 6:00 pri sviecach. Ostatné časy zostávajú.",
+    fotky: [U("photo-1705864821171-63fc75ee6c0e")] },
 
   { id: "slovo", comp: "data", typ: "skutok", modul: "charity", kat: "Komunita", ntyp: "oznam",
     skore: 4.2, typSituacie: "normal", narodne: true, lat: 48.720, lng: 21.258, dni: 1, podpora: 0,
@@ -129,7 +132,8 @@ export const FEED_ITEMS: NabozFeedItem[] = [
     nazov: "Duchovné slovo na týždeň", lok: "celé SR", overena: true,
     badgeL: "📖 OZNAM", tag: "Oznam", emoji: "📖",
     popis: "Krátke zamyslenie k nedeľnému čítaniu pre komunitu.",
-    pribeh: "Týždenné duchovné zamyslenie k nedeľnému evanjeliu — obsah patrí do modulu, nie do verejného feedu (§3 obsahová hranica)." },
+    pribeh: "Týždenné duchovné zamyslenie k nedeľnému evanjeliu — obsah patrí do modulu, nie do verejného feedu (§3 obsahová hranica).",
+    fotky: [U("photo-1504052434569-70ad5836ab65")] },
 
   { id: "cintorin", comp: "data", typ: "skutok", modul: "charity", kat: "Priroda", ntyp: "dobrovolnictvo",
     skore: 5, typSituacie: "normal", lat: 48.900, lng: 18.028, dni: 0, podpora: 12,
@@ -137,7 +141,8 @@ export const FEED_ITEMS: NabozFeedItem[] = [
     nazov: "Brigáda na cintoríne", lok: "Trenčín · starý cintorín", overena: true,
     badgeL: "🙌 DOBROVOĽNÍCTVO", tag: "Dobrovoľníctvo", emoji: "🍂",
     popis: "Sobota 9:00 · hrabanie lístia a údržba. Náradie zabezpečíme.",
-    pribeh: "Jesenná brigáda — hrabanie lístia a drobná údržba historického cintorína. Náradie a občerstvenie zabezpečíme." },
+    pribeh: "Jesenná brigáda — hrabanie lístia a drobná údržba historického cintorína. Náradie a občerstvenie zabezpečíme.",
+    fotky: [U("photo-1729105427057-b999db728bab")] },
 
   { id: "obed", comp: "data", typ: "skutok", modul: "charity", kat: "Pomoc", ntyp: "dobrovolnictvo",
     skore: 5.5, typSituacie: "normal", narodne: true, lat: 48.150, lng: 17.110, dni: 0, podpora: 24,
@@ -145,7 +150,8 @@ export const FEED_ITEMS: NabozFeedItem[] = [
     nazov: "Pomoc pri charitatívnom obede", lok: "Bratislava · celé SR", overena: true,
     badgeL: "🍲 DOBROVOĽNÍCTVO", tag: "Dobrovoľníctvo", emoji: "🍲",
     popis: "Hľadáme dobrovoľníkov na výdaj teplých obedov ľuďom bez domova.",
-    pribeh: "Nábor dobrovoľníkov na výdaj teplých obedov. Praktická pomoc — presne to, čo patrí aj do verejného feedu (§3)." },
+    pribeh: "Nábor dobrovoľníkov na výdaj teplých obedov. Praktická pomoc — presne to, čo patrí aj do verejného feedu (§3).",
+    fotky: [U("photo-1593113598332-cd288d649433")] },
 
   // ---- bohatší obsah demo farnosti (Farnosť Trenčín — mesto) pre taby profilu ----
   { id: "kurenie", comp: "data", typ: "charita", modul: "charity", kat: "Pomoc", ntyp: "zbierka",
@@ -163,7 +169,8 @@ export const FEED_ITEMS: NabozFeedItem[] = [
     nazov: "Nedeľná svätá omša 10:30", lok: "Trenčín · farský kostol", overena: true,
     badgeL: "⛪ OMŠA", tag: "Udalosť", emoji: "⛪",
     popis: "Nedeľa 10:30 · veľká omša. Dobrovoľná omšová zbierka.",
-    pribeh: "Pravidelná nedeľná veľká omša z rozvrhu. K omši sa automaticky generuje omšová zbierka (settlement € na farský účet, close 23:59). Omša nemá RSVP — chodí sa bez prihlásenia, má len pripomienku (§8)." },
+    pribeh: "Pravidelná nedeľná veľká omša z rozvrhu. K omši sa automaticky generuje omšová zbierka (settlement € na farský účet, close 23:59). Omša nemá RSVP — chodí sa bez prihlásenia, má len pripomienku (§8).",
+    fotky: [U("photo-1438032005730-c779502df39b")] },
 
   { id: "put-levoca", comp: "data", typ: "skutok", modul: "charity", kat: "Komunita", ntyp: "udalost",
     skore: 6.5, typSituacie: "normal", lat: 48.894, lng: 18.046, dni: 5, podpora: 41, farnostId: "tn-mesto",
@@ -172,7 +179,7 @@ export const FEED_ITEMS: NabozFeedItem[] = [
     badgeL: "🚌 PÚŤ", tag: "Udalosť", emoji: "⛰",
     popis: "Sobota · spoločná púť autobusom. Prihlás sa a rezervuj miesto.",
     pribeh: "Spoločná púť do Levoče. Voliteľná zbierka na dopravu, kapacita autobusu obmedzená → prihlás sa (RSVP + počet).",
-    vyzbierane: 480, ciel: 1200 },
+    vyzbierane: 480, ciel: 1200, fotky: [U("photo-1551632811-561732d1e306")] },
 
   { id: "ohlasky", comp: "data", typ: "skutok", modul: "charity", kat: "Komunita", ntyp: "oznam",
     skore: 4.4, typSituacie: "normal", lat: 48.894, lng: 18.046, dni: 1, podpora: 0, farnostId: "tn-mesto",
@@ -180,7 +187,8 @@ export const FEED_ITEMS: NabozFeedItem[] = [
     nazov: "Ohlášky — Peter a Mária", lok: "Trenčín · centrum", overena: true,
     badgeL: "💍 OHLÁŠKY", tag: "Oznam", emoji: "💍",
     popis: "Sviatosť manželstva si vyslúžia Peter N. a Mária K. dňa 2. augusta.",
-    pribeh: "Ohlášky pred sobášom — mená snúbencov a dátum sobáša. Bez zbierky, len oznam (Like + Zdieľať)." },
+    pribeh: "Ohlášky pred sobášom — mená snúbencov a dátum sobáša. Bez zbierky, len oznam (Like + Zdieľať).",
+    fotky: [U("photo-1606800052052-a08af7148866")] },
 
   { id: "jubileum", comp: "data", typ: "skutok", modul: "charity", kat: "Komunita", ntyp: "oznam",
     skore: 4.1, typSituacie: "normal", lat: 48.894, lng: 18.046, dni: 0, podpora: 0, farnostId: "tn-mesto",
@@ -188,7 +196,8 @@ export const FEED_ITEMS: NabozFeedItem[] = [
     nazov: "90 rokov pani Heleny", lok: "Trenčín · centrum", overena: true,
     badgeL: "🎂 JUBILEUM", tag: "Oznam", emoji: "🎂",
     popis: "Naša farníčka Helena sa dožíva 90 rokov. Vyprosujeme jej hojnosť Božích milostí.",
-    pribeh: "Jubilejný oznam — tvorí ho user (auto-publish, hlavička = meno usera z registrácie). Farár môže zmazať." },
+    pribeh: "Jubilejný oznam — tvorí ho user (auto-publish, hlavička = meno usera z registrácie). Farár môže zmazať.",
+    fotky: [U("photo-1551559347-b2df2a690bd5")] },
 
   { id: "modlitba", comp: "data", typ: "skutok", modul: "charity", kat: "Komunita", ntyp: "oznam",
     skore: 4.0, typSituacie: "normal", lat: 48.894, lng: 18.046, dni: 0, podpora: 0, farnostId: "tn-mesto",
@@ -196,7 +205,8 @@ export const FEED_ITEMS: NabozFeedItem[] = [
     nazov: "Prosba o modlitbu za chorých", lok: "Trenčín · centrum", overena: true,
     badgeL: "🕊 PROSBA O MODLITBU", tag: "Oznam", emoji: "🕊",
     popis: "Prosíme o modlitbu za našich chorých a trpiacich vo farnosti.",
-    pribeh: "Prosba o modlitbu — tvorí ju user (auto-publish, hlavička = meno usera). Bez zbierky, len srdiečko a zdieľať. Reakcia = modlím sa (nie palec, nie Prispieť)." },
+    pribeh: "Prosba o modlitbu — tvorí ju user (auto-publish, hlavička = meno usera). Bez zbierky, len srdiečko a zdieľať. Reakcia = modlím sa (nie palec, nie Prispieť).",
+    fotky: [U("photo-1478476868527-002ae3f3e159")] },
 
   { id: "pohreb", comp: "data", typ: "charita", modul: "charity", kat: "Pomoc", ntyp: "udalost",
     skore: 6.0, typSituacie: "normal", lat: 48.894, lng: 18.046, dni: 2, podpora: 27, farnostId: "tn-mesto",
@@ -205,7 +215,7 @@ export const FEED_ITEMS: NabozFeedItem[] = [
     badgeL: "🕯 POHREB", tag: "Udalosť", emoji: "🕯",
     popis: "S vďakou za jeho život. Pohrebná zbierka pre pozostalú rodinu.",
     pribeh: "Meno zosnulého + súhlas rodiny (nie zoznam účastníkov). Pohrebná zbierka so Split QR: väčšina rodine (pozostalí), malý dobrovoľný dar kostolu na sviečky a výzdobu. Predĺžené okno ~týždeň. Reakcia = kondolencia.",
-    vyzbierane: 1340, ciel: 2500 },
+    vyzbierane: 1340, ciel: 2500, fotky: [U("photo-1476900164809-ff19b8ae5968")] },
 
   { id: "brigada-fara", comp: "data", typ: "skutok", modul: "charity", kat: "Priroda", ntyp: "dobrovolnictvo",
     skore: 5.3, typSituacie: "normal", lat: 48.894, lng: 18.046, dni: 3, podpora: 9, farnostId: "tn-mesto",
@@ -213,7 +223,8 @@ export const FEED_ITEMS: NabozFeedItem[] = [
     nazov: "Brigáda okolo fary", lok: "Trenčín · farská záhrada", overena: true,
     badgeL: "🙌 BRIGÁDA", tag: "Dobrovoľníctvo", emoji: "🧹",
     popis: "Sobota 9:00 · hľadáme 8 rúk na úpravu záhrady. Event QR = karma za účasť.",
-    pribeh: "Organizované dobrovoľníctvo — event QR (proof-of-presence) → účastník dostane karmu za účasť. Karma ide človeku, nie farnosti (tá je mimo karmy)." },
+    pribeh: "Organizované dobrovoľníctvo — event QR (proof-of-presence) → účastník dostane karmu za účasť. Karma ide človeku, nie farnosti (tá je mimo karmy).",
+    fotky: [U("photo-1416879595882-3373a0480b5b")] },
 
   // ---- obsah ďalších farností (aby viac profilov malo reálne príspevky) ----
   { id: "organ-blumental", comp: "data", typ: "charita", modul: "charity", kat: "Komunita", ntyp: "zbierka",
@@ -232,7 +243,7 @@ export const FEED_ITEMS: NabozFeedItem[] = [
     badgeL: "🎶 UDALOSŤ", tag: "Udalosť", emoji: "🎶",
     popis: "Nedeľa 19:00 · koncert na obnovenom organe. Vstup voľný, dobrovoľný dar na obnovu.",
     pribeh: "Adventný koncert na historickom organe. Vstup voľný, dobrovoľný dar podporí reštaurovanie. Kapacita obmedzená — prihlás sa.",
-    vyzbierane: 320, ciel: 1500 },
+    vyzbierane: 320, ciel: 1500, fotky: [U("photo-1673372316742-57c84d7e63c4")] },
 
   { id: "veza-zilina", comp: "data", typ: "charita", modul: "charity", kat: "Pomoc", ntyp: "zbierka",
     skore: 6.9, typSituacie: "normal", lat: 49.223, lng: 18.740, dni: 0, podpora: 98, farnostId: "za-mesto",
@@ -249,7 +260,8 @@ export const FEED_ITEMS: NabozFeedItem[] = [
     nazov: "Zmena času večerných omší", lok: "Žilina · centrum", overena: true,
     badgeL: "📢 OZNAM", tag: "Oznam", emoji: "📢",
     popis: "Od pondelka sú večerné sväté omše o 18:00 (predtým 17:30).",
-    pribeh: "Oznam farnosti: od pondelka sa večerné sväté omše presúvajú na 18:00. Ranné a nedeľné časy zostávajú bez zmeny." },
+    pribeh: "Oznam farnosti: od pondelka sa večerné sväté omše presúvajú na 18:00. Ranné a nedeľné časy zostávajú bez zmeny.",
+    fotky: [U("photo-1477672680933-0287a151330e")] },
 
   { id: "koncert-dom", comp: "data", typ: "skutok", modul: "charity", kat: "Komunita", ntyp: "udalost",
     skore: 6.4, typSituacie: "normal", lat: 48.720, lng: 21.258, dni: 6, podpora: 73, farnostId: "ke-dom",
@@ -258,7 +270,7 @@ export const FEED_ITEMS: NabozFeedItem[] = [
     badgeL: "🕯 UDALOSŤ", tag: "Udalosť", emoji: "🕯",
     popis: "Sobota 20:00 · komentovaná prehliadka katedrály pri sviečkach.",
     pribeh: "Komentovaná večerná prehliadka najväčšieho chrámu na Slovensku — krypta, kráľovské oratórium, oltár sv. Alžbety. Dobrovoľný dar na údržbu. Kapacita obmedzená.",
-    vyzbierane: 610, ciel: 2000 },
+    vyzbierane: 610, ciel: 2000, fotky: [U("photo-1705686824412-af5d904d4d96")] },
 
   { id: "restaur-dom", comp: "data", typ: "charita", modul: "charity", kat: "Komunita", ntyp: "zbierka",
     skore: 7.4, typSituacie: "normal", narodne: true, lat: 48.720, lng: 21.258, dni: 0, podpora: 289, farnostId: "ke-dom",
