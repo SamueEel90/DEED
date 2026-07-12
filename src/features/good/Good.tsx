@@ -1,13 +1,14 @@
-import { useState, useEffect, memo } from "react";
+import { useState, useEffect, useRef, memo } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { SIRKA, C, inp, GRAD, GRAD_ZELENY, SPACE, RADIUS } from "@/theme";
-import { Foto, FotoPrispevku, MiniFotky, Video, ModulHlavicka, Hlavicka, AvatarUroven, PodporaSekcia, PlatbaModal, HladanieModal, OblubeneHviezda, OblubeneBtn, toast, Oslava, useGaleria, useScrollHore, useMotiv, useLayout, useStrankaAkcie, useTvorbaGate, StatRiadok, MoniBar, FeedStlpce, FeedGrid, FeedCard, KartaBadge, BackChip, ProgresBox, SwipeBack, obalSiroky, SegTabs, Lupa, Zdielanie, IkonaSipVlavo, IkonaMoznosti, IkonaUlozit, IkonaFajka, IkonaPlay, IkonaDoska, IkonaPin, OkruhVyber, QrModal, SplitQrSheet, FotoVyber, FeedSkeleton, EmptyState, ErrorState, ScreenSwitch } from "@/shared";
+import { SIRKA, C, inp, btn, GRAD, GRAD_ZELENY, SPACE, RADIUS } from "@/theme";
+import { Foto, FotoPrispevku, MiniFotky, Video, ModulHlavicka, Hlavicka, AvatarUroven, PodporaSekcia, PlatbaModal, HladanieModal, OblubeneHviezda, OblubeneBtn, toast, Oslava, useGaleria, useScrollPamat, useMotiv, useLayout, useStrankaAkcie, useTvorbaGate, StatRiadok, MoniBar, FeedStlpce, FeedGrid, FeedCard, KartaBadge, typKluc, BackChip, ProgresBox, SwipeBack, obalSiroky, SegTabs, Lupa, Zdielanie, IkonaSipVlavo, IkonaMoznosti, IkonaUlozit, IkonaFajka, IkonaPlay, IkonaDoska, IkonaPin, OkruhVyber, QrModal, SplitQrSheet, FotoVyber, FeedSkeleton, EmptyState, ErrorState, ScreenSwitch } from "@/shared";
 import { pripravFeed, vzdialenostKm, FEED_CFG, type FeedUser } from "@/lib/feed";
 import { tint, tagChip, jeHrdina, HRDINA_COL, rovnakeOkremFunkcii } from "@/lib/ui";
 import { pressable } from "@/components/pressable";
 import { useVrstva } from "@/lib/urlnav";
 import { zdielaj, kopiruj, aktualnaUrl } from "@/lib/zdielanie";
 import { Sheet } from "@/components/sheet";
+import { nahrajSubory } from "@/lib/uploadFoto";
 import { Tip } from "@/components/tooltip";
 import { usePouzivatel } from "@/lib/pouzivatel";
 import { useLokalita } from "@/lib/lokalita";
@@ -15,7 +16,7 @@ import { zobrazVelkost, MEDIA_AR } from "@/lib/cardSize";
 import { RetazDobraSheet } from "@/features/retaz/RetazDobra";
 import { Zvoncek } from "@/features/notifikacie/Notifikacie";
 import { CudziProfil } from "@/features/cudzi-profil/CudziProfil";
-import type { GoodPolozka, Subjekt, Udalost, OkruhKod, Oblubeny } from "@/types";
+import type { GoodPolozka, Subjekt, Udalost, OkruhKod, Oblubeny, MojaZbierka, MojDoklad } from "@/types";
 import { useGoodFeed, useGoodUdalosti, useTopPrispevky, useQrSplitCreate, qk, repo } from "@/data";
 import { SplitConfigStep, splitOwnerPct, splitCielePayload, splitValid, type SplitCiel } from "@/shared";
 import { usePersonalizacia } from "@/lib/personalizacia";
@@ -71,9 +72,8 @@ export default function ModulGood({ wide, otvorModul, otvorId, onOtvorene }: { w
 
   const otvorProfil = (subjekt: Subjekt, odkial = "home") => { setAktSubjekt(subjekt); setPredtym(odkial); setScreen("cudzi"); };
 
-  // pri prepnutí obrazovky (napr. otvorenie detailu) odscrolluj appku hore
-  const scrollHore = useScrollHore();
-  useEffect(() => { scrollHore(); }, [screen]);
+  // pamäť scrollu: „Späť" z detailu vráti feed tam, kde používateľ skončil (nie skok hore)
+  useScrollPamat(screen);
 
   // pod-obrazovka = vrstva histórie → browser Back sa vráti na feed (nie von z appky)
   useVrstva(screen !== "home", () => setScreen("home"), screen);
@@ -330,8 +330,10 @@ function MojDeed({ wide, onDetail, onBoard, toast }: { wide?: boolean; onDetail:
 function MojDeedObsah({ onDetail, onBoard, toast }: { onDetail: (id: string | number) => void; onBoard: () => void; toast: (m: string) => void }) {
   const { data: POLOZKY = [] } = useGoodFeed();
   const { data: EVENTS = [] } = useGoodUdalosti();
-  const { zaujmy, zaujmyKluce, sledovani, toggleSledovanie, podpory, oblubene } = usePersonalizacia();
-  const modulLabel: Record<string, string> = { help: "Help", charity: "Charita", good: "Domov", workshop: "Talent" };
+  const { zaujmy, zaujmyKluce, sledovani, toggleSledovanie, podpory, oblubene, mojeZbierky, upravZbierku } = usePersonalizacia();
+  const [spravovana, setSpravovana] = useState<string | null>(null); // id zbierky v správe
+  const zbierkaVSprave = mojeZbierky.find((z) => z.id === spravovana) || null;
+  const modulLabel: Record<string, string> = { help: "Help", charity: "Charita", good: "Domov", workshop: "Talent", nabozenstvo: "Nábož." };
 
   const maZaujmy = zaujmy.length > 0;
 
@@ -356,8 +358,38 @@ function MojDeedObsah({ onDetail, onBoard, toast }: { onDetail: (id: string | nu
 
   return (
     <>
-      {/* čo podporujem — navrchu (hlavný obsah Môj DEED) */}
+      {/* moje zbierky — čo som vytvoril (spravovanie: ukončiť, vyúčtovať, poďakovať) */}
       <div style={{ padding: `${SPACE.xxs}px ${SPACE.md}px 0` }}>
+        <SekciaLabel>MOJE ZBIERKY ({mojeZbierky.length})</SekciaLabel>
+        {mojeZbierky.length === 0 ? (
+          <PrazdnyTip emoji="🎯" text="Keď vytvoríš zbierku alebo žiadosť (Domov, Help, Charita), objaví sa tu — vieš ju spravovať: ukončiť, podať vyúčtovacie doklady a poslať darcom poďakovanie." />
+        ) : mojeZbierky.map((z) => {
+          const st = STAV_ZBIERKY[z.stav];
+          return (
+            <div key={z.id} onClick={() => setSpravovana(z.id)}
+              style={{ background: C.surface2, border: `1px solid ${C.line}`, borderRadius: RADIUS.sm, padding: SPACE.sm, marginBottom: SPACE.xs, cursor: "pointer" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm }}>
+                <span style={{ width: 34, height: 34, borderRadius: RADIUS.xs, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 17, background: "rgba(var(--glass-rgb),.06)" }}>{z.emoji || "🎯"}</span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 14, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{z.nazov}</div>
+                  <div style={{ fontSize: 11.5, color: C.textTer, marginTop: 2 }}>{modulLabel[z.modul] || z.modul}{z.lok ? ` · ${z.lok}` : ""}</div>
+                </div>
+                <span style={{ flex: "none", fontSize: 10.5, fontWeight: 800, color: st.col, background: tint(st.col, .14), borderRadius: RADIUS.xs, padding: `${SPACE.xxs}px ${SPACE.xs}px` }}>{st.label}</span>
+              </div>
+              {z.ciel ? <div style={{ marginTop: SPACE.xs }}><MoniBar vyzbierane={z.vyzbierane || 0} ciel={z.ciel} mini /></div> : null}
+              <div style={{ display: "flex", gap: SPACE.xs, marginTop: SPACE.xs, flexWrap: "wrap" }}>
+                {z.doklady?.length ? <ZbierkaStopa ic="🧾" t={`${z.doklady.length} dokladov`} /> : null}
+                {z.dakovnaSprava ? <ZbierkaStopa ic="💌" t="poďakovanie" /> : null}
+                {z.dakovneVideo ? <ZbierkaStopa ic="🎬" t="video" /> : null}
+                <span style={{ marginLeft: "auto", fontSize: 11.5, fontWeight: 700, color: "var(--a-info)" }}>Spravovať ›</span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* čo podporujem — hlavný obsah Môj DEED */}
+      <div style={{ padding: `0 ${SPACE.md}px` }}>
         <SekciaLabel>ČO PODPORUJEM ({podpory.length})</SekciaLabel>
         {podpory.length === 0 ? (
           <PrazdnyTip emoji="💚" text="Keď niekoho podporíš (skutok, žiadosť, charita), uvidíš tu jeho progres a svoju stopu." />
@@ -452,7 +484,133 @@ function MojDeedObsah({ onDetail, onBoard, toast }: { onDetail: (id: string | nu
           </>
         )}
       </div>
+
+      {/* správa mojej zbierky — bottom-sheet (ukončiť · vyúčtovanie · poďakovanie) */}
+      {zbierkaVSprave && (
+        <SpravaZbierky z={zbierkaVSprave} upravZbierku={upravZbierku} toast={toast} onClose={() => setSpravovana(null)} />
+      )}
     </>
+  );
+}
+
+// stav zbierky → štítok (farba + label)
+const STAV_ZBIERKY: Record<string, { label: string; col: string }> = {
+  aktivna: { label: "Aktívna", col: "var(--a-green)" },
+  ukoncena: { label: "Ukončená", col: "var(--a-info)" },
+  vyuctovana: { label: "Vyúčtovaná", col: "var(--a-gold)" },
+};
+function ZbierkaStopa({ ic, t }: { ic: string; t: string }) {
+  return <span style={{ fontSize: 10.5, fontWeight: 700, color: C.textTer, background: "rgba(var(--glass-rgb),.06)", borderRadius: RADIUS.xs, padding: `${SPACE.xxs}px ${SPACE.xs}px` }}>{ic} {t}</span>;
+}
+
+// ===================== SPRÁVA MOJEJ ZBIERKY (bottom-sheet) =====================
+// Vlastník zbierky ju tu ukončí, priloží vyúčtovacie doklady a pošle darcom
+// ďakovnú správu / ďakovné video. Mock — mení lokálny stav cez upravZbierku.
+function SpravaZbierky({ z, upravZbierku, toast, onClose }: {
+  z: MojaZbierka; upravZbierku: (id: string, patch: Partial<MojaZbierka>) => void; toast: (m: string) => void; onClose: () => void;
+}) {
+  const [panel, setPanel] = useState<"" | "doklady" | "sprava" | "video">("");
+  const [text, setText] = useState(z.dakovnaSprava || "");
+  const dokladInput = useRef<HTMLInputElement>(null);
+  const videoInput = useRef<HTMLInputElement>(null);
+  const doklady = z.doklady || [];
+  const st = STAV_ZBIERKY[z.stav];
+
+  const pridajDoklady = async (files: FileList | null) => {
+    if (!files || !files.length) return;
+    const nahrane = await nahrajSubory(Array.from(files), "doklady"); // Storage (alebo len názov v mocku)
+    const cas = new Date().toISOString();
+    const nove: MojDoklad[] = nahrane.map((n) => ({ nazov: n.nazov, url: n.url, cas }));
+    upravZbierku(z.id, { doklady: [...doklady, ...nove] });
+    toast(`Priložené doklady: ${nove.length}`);
+  };
+  const ukonci = () => { upravZbierku(z.id, { stav: "ukoncena" }); toast("Zbierka ukončená — už neprijíma príspevky"); };
+  const podajVyuctovanie = () => {
+    if (!doklady.length) { toast("Najprv prilož aspoň jeden doklad"); return; }
+    upravZbierku(z.id, { stav: "vyuctovana" }); toast("Vyúčtovanie podané — doklady odoslané na kontrolu"); setPanel("");
+  };
+  const odosliSpravu = () => {
+    if (!text.trim()) { toast("Napíš text poďakovania"); return; }
+    upravZbierku(z.id, { dakovnaSprava: text.trim() }); toast("Ďakovná správa odoslaná darcom 💌"); setPanel("");
+  };
+  const priloziVideo = async (files: FileList | null) => {
+    if (!files || !files.length) return;
+    const [v] = await nahrajSubory(Array.from(files), "video"); // Storage (alebo len názov v mocku)
+    upravZbierku(z.id, { dakovneVideo: true, dakovneVideoUrl: v?.url });
+    toast("Ďakovné video priložené 🎬 — darcovia dostanú notifikáciu"); setPanel("");
+  };
+
+  const akcia = (ic: string, titul: string, popis: string, on: boolean, onClick: () => void, hotovo?: boolean) => (
+    <div {...pressable(onClick, titul)}
+      style={{ display: "flex", alignItems: "center", gap: SPACE.sm, background: on ? tint("var(--a-info)", .1) : C.surface2, border: `1px solid ${on ? tint("var(--a-info)", .4) : C.line}`, borderRadius: RADIUS.sm, padding: SPACE.sm, marginBottom: SPACE.xs, cursor: "pointer" }}>
+      <span style={{ width: 36, height: 36, borderRadius: RADIUS.xs, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, background: "rgba(var(--glass-rgb),.06)" }}>{ic}</span>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 14, fontWeight: 700 }}>{titul}{hotovo ? " ✓" : ""}</div>
+        <div style={{ fontSize: 11.5, color: C.textTer, marginTop: 2 }}>{popis}</div>
+      </div>
+      <span style={{ color: C.textTer, fontSize: 16 }}>{on ? "▾" : "›"}</span>
+    </div>
+  );
+  const cta = (label: string, onClick: () => void, kind: "primary" | "ghost" = "primary"): React.ReactNode => (
+    <button onClick={onClick} style={{ ...btn(kind), width: "100%", marginTop: SPACE.sm }}>{label}</button>
+  );
+
+  return (
+    <Sheet onClose={onClose} label="Správa zbierky">
+      {/* hlavička */}
+      <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm, marginBottom: SPACE.sm }}>
+        <span style={{ width: 40, height: 40, borderRadius: RADIUS.sm, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, background: "rgba(var(--glass-rgb),.06)" }}>{z.emoji || "🎯"}</span>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 16, fontWeight: 800, lineHeight: 1.25 }}>{z.nazov}</div>
+          <div style={{ fontSize: 11.5, color: C.textTer, marginTop: 2 }}>Moja zbierka · spravovanie</div>
+        </div>
+        <span style={{ flex: "none", fontSize: 11, fontWeight: 800, color: st.col, background: tint(st.col, .14), borderRadius: RADIUS.xs, padding: `${SPACE.xxs}px ${SPACE.xs}px` }}>{st.label}</span>
+      </div>
+      {z.ciel ? <div style={{ marginBottom: SPACE.md }}><MoniBar vyzbierane={z.vyzbierane || 0} ciel={z.ciel} /></div> : null}
+
+      {/* 1 — ukončiť */}
+      {z.stav === "aktivna"
+        ? akcia("■", "Ukončiť zbierku", "Zastaví príjem príspevkov. Potom môžeš vyúčtovať.", false, ukonci)
+        : akcia("✔", "Zbierka ukončená", "Príjem príspevkov je zastavený.", false, () => {}, true)}
+
+      {/* 2 — vyúčtovacie doklady */}
+      {akcia("🧾", "Vyúčtovacie doklady", doklady.length ? `${doklady.length} priložených${z.stav === "vyuctovana" ? " · podané" : ""}` : "Prilož bločky/faktúry o použití", panel === "doklady", () => setPanel(panel === "doklady" ? "" : "doklady"), z.stav === "vyuctovana")}
+      {panel === "doklady" && (
+        <div style={{ padding: `0 ${SPACE.xs}px ${SPACE.sm}px` }}>
+          {doklady.map((d, i) => (
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, fontSize: 12.5, color: C.textSec, padding: `${SPACE.xs}px 0`, borderBottom: `1px solid ${C.line2}` }}>
+              <span>📄</span><span style={{ flex: 1, minWidth: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{d.nazov}</span>
+            </div>
+          ))}
+          {doklady.length === 0 && <div style={{ fontSize: 12, color: C.textTer, padding: `${SPACE.xs}px 0` }}>Zatiaľ žiadne doklady.</div>}
+          <input ref={dokladInput} type="file" multiple accept="image/*,application/pdf" style={{ display: "none" }} onChange={(e) => pridajDoklady(e.target.files)} />
+          {cta("＋ Priložiť doklad", () => dokladInput.current?.click(), "ghost")}
+          {z.stav !== "vyuctovana" && cta("Podať vyúčtovanie", podajVyuctovanie)}
+        </div>
+      )}
+
+      {/* 3 — ďakovná správa */}
+      {akcia("💌", "Ďakovná správa", z.dakovnaSprava ? "Odoslaná darcom" : "Napíš poďakovanie darcom", panel === "sprava", () => setPanel(panel === "sprava" ? "" : "sprava"), !!z.dakovnaSprava)}
+      {panel === "sprava" && (
+        <div style={{ padding: `0 ${SPACE.xs}px ${SPACE.sm}px` }}>
+          <textarea value={text} onChange={(e) => setText(e.target.value)} rows={4} placeholder="Ďakujeme, vďaka vám sme…"
+            style={{ ...inp(), width: "100%", resize: "vertical", fontFamily: "inherit", lineHeight: 1.5 }} />
+          {cta("Odoslať darcom", odosliSpravu)}
+        </div>
+      )}
+
+      {/* 4 — ďakovné video */}
+      {akcia("🎬", "Ďakovné video", z.dakovneVideo ? "Priložené" : "Nahraj krátke video pre darcov", panel === "video", () => setPanel(panel === "video" ? "" : "video"), !!z.dakovneVideo)}
+      {panel === "video" && (
+        <div style={{ padding: `0 ${SPACE.xs}px ${SPACE.sm}px` }}>
+          <input ref={videoInput} type="file" accept="video/*" capture="environment" style={{ display: "none" }} onChange={(e) => priloziVideo(e.target.files)} />
+          <div style={{ fontSize: 12, color: C.textTer, marginBottom: SPACE.xs, lineHeight: 1.5 }}>Krátke poďakovanie (do ~60 s) sa pošle darcom ako notifikácia a zobrazí sa pri zbierke.</div>
+          {cta("🎬 Nahrať / priložiť video", () => videoInput.current?.click())}
+        </div>
+      )}
+
+      <div style={{ fontSize: 10.5, color: C.textTer, textAlign: "center", padding: `${SPACE.sm}px 0 ${SPACE.xs}px` }}>Ukončenie a vyúčtovanie sú evidované — doklady aj poďakovanie vidia darcovia pri zbierke.</div>
+    </Sheet>
   );
 }
 
@@ -469,7 +627,8 @@ function PrazdnyTip({ emoji, text }: { emoji: string; text: string }) {
 function ZdrojTag({ it }: { it: GoodPolozka }) {
   if (it.zdroj === "Help") return <span style={tagChip(C.red)}>Help · žiadosť</span>;
   if (it.zdroj === "Charity") return <span style={tagChip(C.gold)}>✓ Charita {it.charLevel || ""}</span>;
-  return <span style={tagChip(KAT[it.kat].c)}>{katLabel(it.kat)}</span>;
+  // plain skutok: ukáž TYP (Skutok), nie kategóriu (Komunita/Zdravie…) — jednotné rozdelenie
+  return <span style={tagChip("var(--a-green)")}>Skutok</span>;
 }
 
 // ===================== TOP DNES — pruh najvýznamnejších skutkov =====================
@@ -547,7 +706,7 @@ function GoodKartaBase({ it, wide, onDetail }: { it: GoodPolozka; wide?: boolean
   const accent = jeZiadost ? C.red : jeCharita ? C.gold : kat.c;
   const medLabel = jeCharita ? `✓ Charita ${it.charLevel || ""}`.trim() : jeZiadost ? "Žiadosť" : katLabel(it.kat);
   return (
-    <FeedCard wide={wide} onClick={onDetail} label={`Otvoriť: ${it.titul}`}
+    <FeedCard wide={wide} onClick={onDetail} label={`Otvoriť: ${it.titul}`} typ={typKluc(it.typ)}
       accent={jeZiadost ? C.red : undefined} ring={it.topovane ? C.gold : undefined}
       autor={{
         meno: it.autor, pfp: it.pfp, ini: it.ini, lok: it.lok, karma: it.karma, cas: it.cas, glow: accent,
@@ -564,11 +723,8 @@ function GoodKartaBase({ it, wide, onDetail }: { it: GoodPolozka; wide?: boolean
         grad: heroGrad(it.kat), h: 280, emojiH: it.video || it.fotky?.length ? undefined : (wide ? 132 : 168),
         overlay: (
           <>
-            {it.topovane
-              ? <KartaBadge pos={{ top: 10, left: 10 }} strong color="var(--a-gold)" style={{ border: `1px solid ${tint("var(--a-gold)", .6)}` }}>★ TOP · prioritné</KartaBadge>
-              : it.vyznam && <KartaBadge pos={{ top: 10, left: 10 }} color="var(--a-gold)">★ {it.vyznam}</KartaBadge>}
+            {/* typ (Skutok/Žiadosť/Charita) rieši FeedCard vľavo hore; kategória (Komunita/Zdravie…) a „★ TOP/Výnimočný" štítok odstránené */}
             {it.media === "video" && <KartaBadge pos={{ top: 10, right: 10 }}>▶ video</KartaBadge>}
-            <KartaBadge pos={{ bottom: 10, left: 10 }} color={accent} style={{ fontSize: 10.5, fontWeight: 800 }}><span style={{ width: 6, height: 6, borderRadius: "50%", background: accent }} /> {medLabel}</KartaBadge>
             <OblubeneHviezda polozka={oblubenyZGood(it)} />
           </>
         ),

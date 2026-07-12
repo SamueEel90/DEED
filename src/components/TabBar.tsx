@@ -5,6 +5,7 @@ import { pressable } from "@/components/pressable";
 import { Sheet } from "@/components/sheet";
 import { Hmat } from "@/components/ui";
 import { toast } from "@/components/toast";
+import { signOut } from "@/lib/auth";
 import { useInstall } from "@/lib/pwa";
 import { useTvorbaGate } from "@/components/upgrade";
 import { useMotiv } from "@/components/context";
@@ -271,6 +272,16 @@ export function ViacSheet({ taby, setTaby, aktivny, onModul, onPenazenka, onAko,
               </div>
               <span style={{ flex: "0 0 auto", fontSize: 11.5, fontWeight: 700, color: C.blueL, border: "1px solid color-mix(in srgb, var(--a-info) 45%, transparent)", background: "color-mix(in srgb, var(--a-info) 8%, transparent)", borderRadius: RADIUS.md, padding: `${SPACE.xxs}px ${SPACE.sm}px` }}>{svetly ? "Tmavý" : "Svetlý"}</span>
             </div>
+          </>
+        )}
+
+        {/* ÚČET — odhlásenie (úplne dole v menu) */}
+        {!uprava && (
+          <>
+            <div style={{ fontSize: 10.5, letterSpacing: ".5px", color: C.textTer, fontWeight: 700, margin: `${SPACE.gutter}px ${SPACE.xxs}px ${SPACE.xs}px` }}>ÚČET</div>
+            <button onClick={() => { toast("Odhlásené"); onClose(); void signOut(); }} style={{ width: "100%", height: 46, borderRadius: RADIUS.md, border: "1px solid rgba(242,112,111,.4)", background: "rgba(242,112,111,.08)", color: "var(--a-danger)", fontWeight: 700, fontSize: 14, cursor: "pointer", fontFamily: "inherit" }}>
+              Odhlásiť sa
+            </button>
           </>
         )}
 

@@ -1,7 +1,8 @@
 import type { ReactNode } from "react";
-import { C, GRAD, glassTmavy, SPACE, RADIUS } from "@/theme";
+import { C, glassTmavy, SPACE, RADIUS } from "@/theme";
 import { pressable } from "@/components/pressable";
 import { IkonaMenu, IkonaPenazenka } from "@/components/icons";
+import { Znacka } from "@/components/znacka";
 import type { Modul } from "@/components/TabBar";
 
 // ============================================================
@@ -18,11 +19,9 @@ export function Sidebar({ moduly, aktivny, onModul, onViac, onPenazenka }: {
 }) {
   return (
     <nav aria-label="Hlavné moduly" style={{ width: 100, flex: "0 0 auto", height: "100%", display: "flex", flexDirection: "column", alignItems: "stretch", padding: `${SPACE.gutter}px ${SPACE.sm}px ${SPACE.md}px`, ...glassTmavy(18, .5), borderRight: `1px solid ${C.line}`, zIndex: 20 }}>
-      {/* logo D⁺ — na desktope jediné logo v appke (v hlavičke modulov je skryté) */}
+      {/* logo — na desktope QR logo (klik → QR na celú obrazovku); jediné logo v appke */}
       <div style={{ display: "flex", justifyContent: "center", marginBottom: SPACE.md }}>
-        <span style={{ width: 52, height: 52, borderRadius: RADIUS.md, background: GRAD, color: "#fff", fontWeight: 800, fontSize: 27, display: "flex", alignItems: "center", justifyContent: "center", position: "relative", boxShadow: "0 6px 18px color-mix(in srgb, var(--a-green) 42%, transparent)" }}>
-          D<span style={{ position: "absolute", top: 6, right: 8, fontSize: 13 }}>+</span>
-        </span>
+        <Znacka size={56} />
       </div>
 
       {/* navigácia modulov */}

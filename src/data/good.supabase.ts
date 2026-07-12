@@ -4,6 +4,7 @@
 // (GoodPolozka/Udalost). UI/hooky/feed.ts sa nemenia. Fáza 4 — krok A.
 // ============================================================
 import { supabase } from "@/lib/supabase";
+import { nahrajFotky } from "@/lib/uploadFoto";
 import type { GoodPolozka, Udalost } from "@/types";
 
 const DEN = 86_400_000;
@@ -106,6 +107,7 @@ export const goodSupabase = {
   },
   async vytvor(it: GoodPolozka, autorUcetId?: string | null): Promise<string | null> {
     if (!supabase) return null;
+    const fotky = await nahrajFotky(it.fotky ?? []); // data URL → Storage (passthrough ak zlyhá)
     const { data, error } = await supabase.from("prispevok").insert({
       autor_ucet_id: autorUcetId ?? null,   // NULL = demo/seed; inak link na účet
       autor_nazov: it.autor,
@@ -116,7 +118,7 @@ export const goodSupabase = {
       titul: it.titul,
       popis: it.popis,
       emoji: it.emoji,
-      media: it.fotky?.length ? { fotky: it.fotky } : {},
+      media: fotky.length ? { fotky } : {},
       lat: it.lat ?? null,
       lng: it.lng ?? null,
       lok: it.lok ?? null,

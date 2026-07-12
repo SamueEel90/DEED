@@ -8,12 +8,13 @@ import { createContext, useContext, useEffect, useMemo, useState, type ReactNode
 import { usePouzivatel } from "./pouzivatel";
 import { USE_SUPABASE } from "./supabase";
 import {
-  nacitajLokalne, ulozZaujmy, ulozSledovani, ulozPodpory, ulozOblubene,
+  nacitajLokalne, ulozZaujmy, ulozSledovani, ulozPodpory, ulozOblubene, ulozZbierky,
   importLegacyFollows, legacyNaImport, demoSeed, zaujmyNaKluce, zaujemZOblasti,
   nacitajPodporyDB, pridajPodporuDB,
   nacitajOblubeneDB, pridajOblubeneDB, odoberOblubeneDB,
+  nacitajZbierkyDB, vytvorZbierkuDB, upravZbierkuDB,
 } from "./personalizaciaStore";
-import type { Zaujem, Sledovanie, Podpora, Oblubeny } from "@/types";
+import type { Zaujem, Sledovanie, Podpora, Oblubeny, MojaZbierka } from "@/types";
 
 export interface PersonalizaciaApi {
   // záujmy — `pod` = detailná pod-položka (Zaujem.pod_polozka); bez neho = celá oblasť ("*")
@@ -36,6 +37,10 @@ export interface PersonalizaciaApi {
   oblubene: Oblubeny[];
   jeOblubene: (refId: number | string) => boolean;
   toggleOblubene: (o: Oblubeny) => void;
+  // moje zbierky (ktoré som vytvoril) — spravujem v „Môj DEED"
+  mojeZbierky: MojaZbierka[];
+  pridajZbierku: (z: MojaZbierka) => void;
+  upravZbierku: (id: string, patch: Partial<MojaZbierka>) => void;
   nacitavam: boolean;
 }
 
@@ -43,7 +48,8 @@ const prazdny: PersonalizaciaApi = {
   zaujmy: [], setZaujmy: () => {}, toggleZaujem: () => {}, maZaujem: () => false, zaujmyKluce: new Set(),
   sledovani: [], sledujem: () => false, toggleSledovanie: () => {}, sledovaniMena: new Set(),
   podpory: [], pridajPodporu: () => {}, podporujem: () => false,
-  oblubene: [], jeOblubene: () => false, toggleOblubene: () => {}, nacitavam: false,
+  oblubene: [], jeOblubene: () => false, toggleOblubene: () => {},
+  mojeZbierky: [], pridajZbierku: () => {}, upravZbierku: () => {}, nacitavam: false,
 };
 
 const PersonalizaciaContext = createContext<PersonalizaciaApi>(prazdny);
@@ -55,6 +61,7 @@ export function PersonalizaciaProvider({ children }: { children: ReactNode }) {
   const [sledovani, setSledovani] = useState<Sledovanie[]>([]);
   const [podpory, setPodpory] = useState<Podpora[]>([]);
   const [oblubene, setOblubene] = useState<Oblubeny[]>([]);
+  const [mojeZbierky, setMojeZbierky] = useState<MojaZbierka[]>([]);
   const [hydratovane, setHydratovane] = useState(false); // perzistuj až po inicializácii
 
   // inicializácia: localStorage (+ jednorazový legacy import); demo bez dát → realistický seed
@@ -80,8 +87,10 @@ export function PersonalizaciaProvider({ children }: { children: ReactNode }) {
       const seed = demoSeed();
       z = seed.zaujmy; s = seed.sledovani;
       setPodpory(USE_SUPABASE ? [] : seed.podpory);
+      setMojeZbierky(USE_SUPABASE ? [] : seed.mojeZbierky); // DB je autoritatívna (efekt nižšie)
     } else {
       setPodpory(USE_SUPABASE ? [] : p);
+      setMojeZbierky(USE_SUPABASE ? [] : ulozene.mojeZbierky);
     }
     setZaujmyStav(z);
     setSledovani(s);
@@ -113,12 +122,23 @@ export function PersonalizaciaProvider({ children }: { children: ReactNode }) {
     return () => { zrusene = true; };
   }, [demo, ucetId]);
 
+  // Moje zbierky zo Supabase (owner-only cez auth.uid() — anon session). Bez DB → no-op.
+  useEffect(() => {
+    if (!USE_SUPABASE) return;
+    let zrusene = false;
+    nacitajZbierkyDB()
+      .then((rows) => { if (!zrusene) setMojeZbierky(rows); })
+      .catch(() => { /* DB nedostupná / bez session → ostáva lokálny stav */ });
+    return () => { zrusene = true; };
+  }, [demo, ucetId]);
+
   // perzistencia — len REÁLNY účet a až po hydratácii. `!demo` → demo seed sa nikdy neuloží
   // (nepresiakne do reálneho účtu); `hydratovane` (state, nie ref) → prvý beh s [] sa preskočí.
   useEffect(() => { if (hydratovane && !demo) ulozZaujmy(zaujmy); }, [zaujmy, hydratovane, demo]);
   useEffect(() => { if (hydratovane && !demo) ulozSledovani(sledovani); }, [sledovani, hydratovane, demo]);
   useEffect(() => { if (hydratovane && !demo) ulozPodpory(podpory); }, [podpory, hydratovane, demo]);
   useEffect(() => { if (hydratovane && !demo) ulozOblubene(oblubene); }, [oblubene, hydratovane, demo]);
+  useEffect(() => { if (hydratovane && !demo) ulozZbierky(mojeZbierky); }, [mojeZbierky, hydratovane, demo]);
 
   const api = useMemo<PersonalizaciaApi>(() => ({
     zaujmy,
@@ -168,8 +188,17 @@ export function PersonalizaciaProvider({ children }: { children: ReactNode }) {
       if (USE_SUPABASE) (je ? odoberOblubeneDB(o.refId) : pridajOblubeneDB(o)).catch(() => { /* sieť — UI stav ostáva */ });
       setOblubene((xs) => je ? xs.filter((x) => String(x.refId) !== String(o.refId)) : [o, ...xs]);
     },
+    mojeZbierky,
+    pridajZbierku: (z) => {
+      setMojeZbierky((xs) => xs.some((x) => x.id === z.id) ? xs : [z, ...xs]);
+      if (USE_SUPABASE) vytvorZbierkuDB(z).catch(() => { /* sieť — UI stav ostáva */ });
+    },
+    upravZbierku: (id, patch) => {
+      setMojeZbierky((xs) => xs.map((x) => x.id === id ? { ...x, ...patch } : x));
+      if (USE_SUPABASE) upravZbierkuDB(id, patch).catch(() => { /* sieť — UI stav ostáva */ });
+    },
     nacitavam: !hydratovane,
-  }), [zaujmy, sledovani, podpory, oblubene, hydratovane, demo, celeMeno, ucetId]);
+  }), [zaujmy, sledovani, podpory, oblubene, mojeZbierky, hydratovane, demo, celeMeno, ucetId]);
 
   return <PersonalizaciaContext.Provider value={api}>{children}</PersonalizaciaContext.Provider>;
 }

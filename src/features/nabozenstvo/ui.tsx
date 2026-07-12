@@ -5,8 +5,8 @@
 // Nabozenstvo / FarskyProfil / Kalendar / Pridat.
 // ============================================================
 import { useState, forwardRef, type ReactNode, type HTMLAttributes } from "react";
-import { SPACE, RADIUS } from "@/theme";
-import { tint, IkonaKriz } from "@/shared";
+import { SPACE, RADIUS, SIRKA } from "@/theme";
+import { tint, IkonaKriz, useLayout } from "@/shared";
 import { pressable } from "@/components/pressable";
 
 export const N = {
@@ -81,13 +81,17 @@ function ovBtn(on: boolean, col: string, bg: string, edge: string): React.CSSPro
 
 // jednotný obal pre modálne sheety modulu (adresár, „+", split…)
 export function SheetPanel({ title, onClose, children }: { title: string; onClose: () => void; children: ReactNode }) {
+  const { desktop } = useLayout();
+  const cap: React.CSSProperties = desktop ? { maxWidth: SIRKA.citanie, margin: "0 auto", width: "100%" } : {};
   return (
     <div style={{ position: "absolute", inset: 0, background: "rgba(var(--panel-rgb),.92)", backdropFilter: "blur(26px)", WebkitBackdropFilter: "blur(26px)", zIndex: 50, display: "flex", flexDirection: "column", animation: "fadeUp .2s ease" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm, padding: SPACE.md, borderBottom: `1px solid ${N.line}` }}>
-        <span onClick={onClose} style={{ display: "flex", color: N.txt2, cursor: "pointer" }}><IkonaKriz size={20} color={N.txt2} /></span>
-        <span style={{ fontSize: 16, fontWeight: 600 }}>{title}</span>
+      <div style={{ padding: SPACE.md, borderBottom: `1px solid ${N.line}` }}>
+        <div style={{ ...cap, display: "flex", alignItems: "center", gap: SPACE.sm }}>
+          <span onClick={onClose} style={{ display: "flex", color: N.txt2, cursor: "pointer" }}><IkonaKriz size={20} color={N.txt2} /></span>
+          <span style={{ fontSize: 16, fontWeight: 600 }}>{title}</span>
+        </div>
       </div>
-      <div style={{ flex: 1, overflowY: "auto", padding: SPACE.md }}>{children}</div>
+      <div style={{ flex: 1, overflowY: "auto", padding: SPACE.md }}><div style={cap}>{children}</div></div>
     </div>
   );
 }

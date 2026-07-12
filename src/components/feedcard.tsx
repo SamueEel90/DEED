@@ -30,6 +30,46 @@ export function KartaBadge({ pos, color = "#fff", strong, children, style }: {
   );
 }
 
+// ============================================================
+// TYP PRÍSPEVKU — jednotné, jasne viditeľné rozdelenie naprieč CELOU appkou:
+//   Skutok · Žiadosť · Ponuka · Charita
+// Nahrádza roztrúsené kategórie (Komunita/Zdravie/Príroda…) a tag vľavo hore.
+// ============================================================
+export type TypKluc = "skutok" | "ziadost" | "ponuka" | "charita";
+export const TYP_PRISPEVKU: Record<TypKluc, { label: string; bg: string; fg: string }> = {
+  skutok:  { label: "Skutok",  bg: "var(--a-green)",  fg: "#fff" },     // dobrý skutok
+  ziadost: { label: "Žiadosť", bg: "var(--a-danger)", fg: "#fff" },     // prosba o pomoc
+  ponuka:  { label: "Ponuka",  bg: "var(--a-info)",   fg: "#fff" },     // ponuka pomoci/služby
+  charita: { label: "Charita", bg: "var(--a-gold)",   fg: "#2a1e00" },  // zbierka / charitatívna kampaň
+};
+
+// normalizuje rôzne modulové „typ" hodnoty na 4 kľúče (skutok/žiadosť/ponuka/charita)
+export function typKluc(typ?: string): TypKluc | undefined {
+  switch (typ) {
+    case "skutok": return "skutok";
+    case "ziadost": return "ziadost";
+    case "ponuka": return "ponuka";
+    case "charita":
+    case "charity": return "charita";
+    default: return undefined;
+  }
+}
+
+// jasný farebný štítok typu — plný (nie glass), aby bol čitateľný na hocijakej fotke
+export function TypBadge({ typ, pos, inline }: {
+  typ: TypKluc; pos?: Partial<Record<"top" | "left" | "right" | "bottom", number>>; inline?: boolean;
+}) {
+  const t = TYP_PRISPEVKU[typ];
+  return (
+    <span style={{
+      ...(inline ? { display: "inline-flex" } : { position: "absolute", zIndex: 2, ...(pos ?? { top: 10, left: 10 }) }),
+      alignItems: "center", gap: SPACE.xxs, fontSize: 11, fontWeight: FW.black, letterSpacing: ".02em",
+      padding: `${SPACE.xxs}px ${SPACE.sm}px`, borderRadius: RADIUS.xs, background: t.bg, color: t.fg,
+      boxShadow: inline ? "none" : "0 2px 8px rgba(0,0,0,.3)", border: "1px solid rgba(255,255,255,.28)", whiteSpace: "nowrap",
+    }}>{t.label}</span>
+  );
+}
+
 // ---- ▶ kruh pre mock-video (bez reálneho src) ----
 export function PlayKruh({ big }: { big?: boolean }) {
   const s = big ? 58 : 54;
@@ -74,6 +114,8 @@ export type FeedCardProps = {
   onClick?: () => void;
   /** aria label karty (default: string titul) */
   label?: string;
+  /** typ príspevku → jasný štítok (Skutok/Žiadosť/Ponuka/Charita) vľavo hore (alebo inline bez fotky) */
+  typ?: TypKluc;
   /** ľavý accent pás (žiadosť=červená, doména…) */
   accent?: string;
   /** zvýrazňujúci prstenec (TOP/URGENT) — farba ringu */
@@ -95,7 +137,7 @@ export type FeedCardProps = {
   footer?: ReactNode;
 };
 
-export function FeedCard({ wide, onClick, label, accent, ring, autor, media = {}, predTitulom, title, titleChips, subtitle, text, progress, footer }: FeedCardProps) {
+export function FeedCard({ wide, onClick, label, typ, accent, ring, autor, media = {}, predTitulom, title, titleChips, subtitle, text, progress, footer }: FeedCardProps) {
   const maMedia = !!(media.video || media.play || (media.fotky && media.fotky.length));
   const mobileH = media.h ?? 235;
   // médium: foto/video → 16:9 na tablete/PC, fixná výška na mobile; len-emoji → kompaktná výška ak je daná
@@ -151,12 +193,16 @@ export function FeedCard({ wide, onClick, label, accent, ring, autor, media = {}
           {media.play && <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1 }}><PlayKruh big /></div>}
           {!media.video && <div style={{ position: "absolute", inset: 0, background: "linear-gradient(0deg, rgba(0,0,0,.34), transparent 42%)", pointerEvents: "none" }} />}
           {media.play && <KartaBadge pos={{ top: 10, right: 10 }}>▶ video</KartaBadge>}
+          {/* typ príspevku vľavo hore — jednotné rozdelenie naprieč appkou */}
+          {typ && <TypBadge typ={typ} />}
           {media.overlay}
         </div>
       )}
 
       {/* titul + text + progres + pätička */}
       <div style={{ padding: `${SPACE.sm}px ${SPACE.gutter}px ${SPACE.gutter}px` }}>
+        {/* bez fotky niet kam dať štítok na médium → ukáž typ inline nad titulom */}
+        {typ && !maMedia && <div style={{ marginBottom: SPACE.xs }}><TypBadge typ={typ} inline /></div>}
         {predTitulom}
         {(title != null || titleChips != null) && (
           <div style={{ fontSize: 16, fontWeight: FW.bold, lineHeight: 1.36, display: "flex", alignItems: "flex-start", gap: SPACE.xs, flexWrap: "wrap" }}>

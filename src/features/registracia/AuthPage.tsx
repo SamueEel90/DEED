@@ -11,7 +11,7 @@
 // ============================================================
 import { useState, type CSSProperties, type ReactNode } from "react";
 import { C, GRAD, gradText, SPACE, RADIUS } from "@/theme";
-import { toast, IkonaObalka, IkonaZamok, IkonaOko, IkonaOkoOff, IkonaSipVpravo } from "@/shared";
+import { toast, Znacka, IkonaObalka, IkonaZamok, IkonaOko, IkonaOkoOff, IkonaSipVpravo } from "@/shared";
 import { signIn, signUp, resolveSession, resetHeslo, zmenHeslo } from "@/lib/auth";
 import type { TypUctu } from "@/types";
 
@@ -82,9 +82,8 @@ export function AuthPage({ onAuthed, onGuest, onPasivny, uvodnyRezim = "login" }
 
         {/* brand */}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", marginBottom: SPACE.lg }}>
-          <span style={{ width: 64, height: 64, borderRadius: RADIUS.lg, background: GRAD, color: "#fff", fontWeight: 800, fontSize: 30, display: "flex", alignItems: "center", justifyContent: "center", position: "relative", boxShadow: "0 12px 30px rgba(78,122,62,.4), inset 0 1px 0 rgba(255,255,255,.25)" }}>
-            D<span style={{ position: "absolute", top: 9, right: 11, fontSize: 14 }}>+</span>
-          </span>
+          {/* QR logo na login/register (mobil aj desktop) — klik zväčší na celú obrazovku */}
+          <Znacka force="qr" size={116} />
           <div style={{ fontSize: 27, fontWeight: 800, marginTop: SPACE.md, letterSpacing: "-.01em" }}>
             {jeLogin ? "Vitaj späť" : <>Vitaj v <span style={gradText}>DEED</span></>}
           </div>

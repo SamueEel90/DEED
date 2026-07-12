@@ -1,6 +1,6 @@
 import { useState, useEffect, memo } from "react";
 import { SIRKA, C, U, AV, GRAD, GRAD_ZELENY, SPACE, RADIUS } from "@/theme";
-import { Foto, Avatar, MiniFotky, ModulHlavicka, PodporaSekcia, PlatbaModal, RecurringSheet, SplitQrSheet, HladanieModal, OblubeneHviezda, OblubeneBtn, toast, useGaleria, useLayout, useScrollHore, useStrankaAkcie, useTvorbaGate, Ticker, StatRiadok, FiltreStat, FeedStlpce, FeedGrid, FeedCard, KartaBadge, BackHeader, ProgresBox, obalSiroky, OkruhVyber, SegTabs, tint, Lupa, Zvon, Zdielanie, IkonaVlajka, IkonaFoto, IkonaPlay, IkonaDoska, IkonaOpakovat, IkonaKriz, IkonaInstitucia, FeedSkeleton, SkeletonRiadky, EmptyState, ErrorState, ScreenSwitch, SwipeBack } from "@/shared";
+import { Foto, Avatar, MiniFotky, ModulHlavicka, PodporaSekcia, PlatbaModal, RecurringSheet, SplitQrSheet, HladanieModal, OblubeneHviezda, OblubeneBtn, toast, useGaleria, useLayout, useScrollPamat, useStrankaAkcie, useTvorbaGate, Ticker, StatRiadok, FiltreStat, FeedStlpce, FeedGrid, FeedCard, KartaBadge, BackHeader, ProgresBox, obalSiroky, OkruhVyber, SegTabs, tint, Lupa, Zvon, Zdielanie, IkonaVlajka, IkonaFoto, IkonaPlay, IkonaDoska, IkonaOpakovat, IkonaKriz, IkonaInstitucia, FeedSkeleton, SkeletonRiadky, EmptyState, ErrorState, ScreenSwitch, SwipeBack } from "@/shared";
 import { pripravFeed, FEED_CFG } from "@/lib/feed";
 import { MEDIA_AR } from "@/lib/cardSize";
 import { Zvoncek } from "@/features/notifikacie/Notifikacie";
@@ -135,8 +135,7 @@ export default function ModulCharita({ wide, otvorModul }: ModulCharitaProps) {
   const [aktEvent, setAktEvent] = useState<string | null>(null);
 
   // pri prepnutí obrazovky (napr. otvorenie detailu) odscrolluj appku hore
-  const scrollHore = useScrollHore();
-  useEffect(() => { scrollHore(); }, [screen]);
+  useScrollPamat(screen); // pamäť scrollu — „Späť" obnoví pozíciu feedu (nie skok hore)
 
   // pod-obrazovka = vrstva histórie → browser Back sa vráti na feed (nie von z appky)
   useVrstva(screen !== "feed", () => setScreen("feed"), screen);
@@ -530,13 +529,19 @@ function PayBtn({ flex, bg, bd, col, e, v, onClick }: { flex?: number | string; 
 
 // ===================== SHEETY =====================
 function SheetObal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
+  const { desktop } = useLayout();
+  // desktop: obsah na čitateľnú šírku a vycentrovaný (inak by sa riadky roztiahli
+  // cez celú plochu — šípka/level by odleteli k pravému okraju)
+  const cap: React.CSSProperties = desktop ? { maxWidth: SIRKA.citanie, margin: "0 auto", width: "100%" } : {};
   return (
     <div style={{ position: "absolute", inset: 0, background: "rgba(var(--panel-rgb),.92)", backdropFilter: "blur(26px)", WebkitBackdropFilter: "blur(26px)", zIndex: 50, display: "flex", flexDirection: "column", animation: "fadeUp .2s ease" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm, padding: SPACE.md, borderBottom: `1px solid ${K.line}` }}>
-        <span onClick={onClose} style={{ display: "flex", color: K.txt2, cursor: "pointer" }}><IkonaKriz size={20} color={K.txt2} /></span>
-        <span style={{ fontSize: 16, fontWeight: 600 }}>{title}</span>
+      <div style={{ padding: SPACE.md, borderBottom: `1px solid ${K.line}` }}>
+        <div style={{ ...cap, display: "flex", alignItems: "center", gap: SPACE.sm }}>
+          <span onClick={onClose} style={{ display: "flex", color: K.txt2, cursor: "pointer" }}><IkonaKriz size={20} color={K.txt2} /></span>
+          <span style={{ fontSize: 16, fontWeight: 600 }}>{title}</span>
+        </div>
       </div>
-      <div style={{ flex: 1, overflowY: "auto", padding: SPACE.md }}>{children}</div>
+      <div style={{ flex: 1, overflowY: "auto", padding: SPACE.md }}><div style={cap}>{children}</div></div>
     </div>
   );
 }

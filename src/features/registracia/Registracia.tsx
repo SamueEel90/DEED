@@ -10,7 +10,7 @@
 // ============================================================
 import { useState } from "react";
 import { C, GRAD, SPACE, RADIUS, infoBox } from "@/theme";
-import { Otazka, Vyber, toast, m, tint, IkonaOsoba, IkonaCharita, IkonaStit, IkonaInstitucia, IkonaSipVpravo } from "@/shared";
+import { Otazka, Vyber, toast, m, tint, useLayout, IkonaOsoba, IkonaCharita, IkonaStit, IkonaInstitucia, IkonaSipVpravo } from "@/shared";
 import { pressable } from "@/components/pressable";
 import { setSession } from "@/lib/session";
 import type { TypUctu } from "@/types";
@@ -102,9 +102,12 @@ function VidlickaTyp({
     { id: "klub", Ikona: IkonaInstitucia, col: "var(--a-gold)", title: "Klub · Zoskupenie · Cirkev", desc: "Registrácie ďalších entít.", soon: true, onClick: () => toast("Ďalšie typy subjektov — pripravujeme (fáza 2).") },
   ];
 
+  const { desktop } = useLayout();
+  const cap: React.CSSProperties = desktop ? { maxWidth: 560, margin: "0 auto", width: "100%" } : {};
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column", background: C.bg }}>
       <div style={{ flex: 1, overflowY: "auto", padding: "34px 18px 18px" }}>
+       <div style={cap}>
         {/* brand */}
         <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm, marginBottom: SPACE.lg }}>
           <span style={{ width: 46, height: 46, borderRadius: RADIUS.md, background: GRAD, color: "#fff", fontWeight: 800, fontSize: 23, display: "flex", alignItems: "center", justifyContent: "center", position: "relative", boxShadow: "0 6px 18px rgba(78,122,62,.42)", flex: "0 0 auto" }}>
@@ -143,6 +146,7 @@ function VidlickaTyp({
             {!o.soon && <IkonaSipVpravo size={18} color={C.textTer} />}
           </m.div>
         ))}
+       </div>
       </div>
 
       <div style={{ padding: `${SPACE.sm}px ${SPACE.md}px ${SPACE.md}px`, textAlign: "center", flex: "0 0 auto" }}>

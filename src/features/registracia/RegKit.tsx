@@ -6,7 +6,7 @@
 // ============================================================
 import { useState, useId, type ReactNode, type CSSProperties } from "react";
 import { C, GRAD, btn, inp, infoBox, glassTmavy, SPACE, RADIUS } from "@/theme";
-import { Hlavicka, Otazka, IkonaFajka, IkonaSipDole } from "@/shared";
+import { Hlavicka, Otazka, IkonaFajka, IkonaSipDole, useLayout } from "@/shared";
 import { vytvorUcet, nastavZabezpecenie, posliOtp } from "@/lib/db";
 
 // ---- škrupina kroku: hlavička + scroll obsah + sticky pätička ----
@@ -25,13 +25,17 @@ export function Shell({
   children?: ReactNode;
   footer?: ReactNode;
 }) {
+  const { desktop } = useLayout();
+  // desktop: registračný formulár držíme v centrovanom stĺpci (full-screen flow bez
+  // sidebaru → inak by polia/tlačidlá boli roztiahnuté cez celý viewport)
+  const cap: React.CSSProperties = desktop ? { maxWidth: 560, margin: "0 auto", width: "100%" } : {};
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column", background: C.bg }}>
       <Hlavicka title={title} step={step} total={total} onBack={onBack} />
-      <div style={{ flex: 1, overflowY: "auto", minHeight: 0, padding: `${SPACE.md}px ${SPACE.md}px ${SPACE.lg}px` }}>{children}</div>
+      <div style={{ flex: 1, overflowY: "auto", minHeight: 0, padding: `${SPACE.md}px ${SPACE.md}px ${SPACE.lg}px` }}><div style={cap}>{children}</div></div>
       {footer && (
         <div style={{ padding: `${SPACE.sm}px ${SPACE.md}px ${SPACE.md}px`, ...glassTmavy(18, 0.6), borderLeft: "none", borderRight: "none", borderBottom: "none" }}>
-          {footer}
+          <div style={cap}>{footer}</div>
         </div>
       )}
     </div>

@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, memo } from "react";
-import { ModulHlavicka, Hlavicka, PodporaSekcia, PlatbaModal, HladanieModal, toast, Oslava, useMotiv, useLayout, useScrollHore, useStrankaAkcie, useTvorbaGate, Ticker, StatRiadok, FiltreStat, FeedStlpce, FeedGrid, FeedCard, KartaBadge, BackChip, SwipeBack, obalSiroky, OkruhVyber, Lupa, Zvon, IkonaSipVlavo, IkonaMoznosti, Zdielanie, IkonaUlozit, IkonaPlay, IkonaDoska, IkonaPin, FotoPrispevku, FotoVyber, FeedSkeleton, EmptyState, ErrorState, ScreenSwitch } from "@/shared";
+import { ModulHlavicka, Hlavicka, PodporaSekcia, PlatbaModal, HladanieModal, toast, Oslava, useMotiv, useLayout, useScrollPamat, useStrankaAkcie, useTvorbaGate, Ticker, StatRiadok, FiltreStat, FeedStlpce, FeedGrid, FeedCard, KartaBadge, TypBadge, BackChip, SwipeBack, obalSiroky, OkruhVyber, Lupa, Zvon, IkonaSipVlavo, IkonaMoznosti, Zdielanie, IkonaUlozit, IkonaPlay, IkonaDoska, IkonaPin, FotoPrispevku, FotoVyber, FeedSkeleton, EmptyState, ErrorState, ScreenSwitch } from "@/shared";
 import { SIRKA, C, GRAD, GRAD_ZELENY, SPACE, RADIUS } from "@/theme";
 import { pripravFeed, FEED_CFG } from "@/lib/feed";
 import { MEDIA_AR } from "@/lib/cardSize";
@@ -131,8 +131,7 @@ export default function ModulAktivity({ wide }: { wide?: boolean }) {
   function home() { setScreen("home"); }
 
   // pri prepnutí obrazovky (napr. otvorenie detailu) odscrolluj appku hore
-  const scrollHore = useScrollHore();
-  useEffect(() => { scrollHore(); }, [screen]);
+  useScrollPamat(screen); // pamäť scrollu — „Späť" obnoví pozíciu feedu (nie skok hore)
 
   function like(id: number) { setLiked((l) => ({ ...l, [id]: !l[id] })); }
   function toggleFollow(name: string) {
@@ -330,6 +329,9 @@ function ProgressMini({ it }: { it: AktItem }) {
 // JEDNOTNÁ karta = zdieľaná FeedCard (rovnaká anatómia ako Domov/Help/Charita);
 // Aktivity mapujú skutok/talent/workshop/žiadosť/charitu do slotov.
 // memo: re-render len pri zmene položky/wide (inline onOpen/onPerson sa ignorujú)
+// Aktivity typ → jednotné rozdelenie appky (Skutok/Žiadosť/Ponuka/Charita)
+const AKT_TYP = { skutok: "skutok", talent: "skutok", workshop: "ponuka", help: "ziadost", case: "charita" } as const;
+
 const AktCard = memo(AktCardBase, rovnakeOkremFunkcii);
 function AktCardBase({ it, wide, onOpen, onPerson }: any) {
   const a = DOM[it.dom];
@@ -338,7 +340,7 @@ function AktCardBase({ it, wide, onOpen, onPerson }: any) {
   const jeWorkshop = it.type === "workshop";
   const accent = jeHelp ? A.red : a.c;
   return (
-    <FeedCard wide={wide} onClick={() => onOpen(it.id)} label={it.title}
+    <FeedCard wide={wide} onClick={() => onOpen(it.id)} label={it.title} typ={AKT_TYP[it.type as keyof typeof AKT_TYP]}
       accent={jeHelp ? A.red : undefined}
       autor={{
         meno: it.author, pfp: it.pfp, ini: it.ini, lok: it.loc || a.label, karma: it.karma, cas: it.time, glow: accent,
@@ -351,10 +353,9 @@ function AktCardBase({ it, wide, onOpen, onPerson }: any) {
         emoji: it.media === "kreslene" ? "✎" : it.emoji,
         grad: heroGrad(it.dom), h: 250,
         overlay: (
-          <>
-            {it.importance && <KartaBadge pos={{ top: 12, left: 12 }} color={A.gold}>★ {it.importance}</KartaBadge>}
-            <div style={{ position: "absolute", bottom: 10, left: 10 }}><DomTag it={it} /></div>
-          </>
+          // typ (Skutok/Ponuka/Žiadosť/Charita) rieši FeedCard vľavo hore;
+          // doménový štítok (Šport/Umenie/…) aj „★ importance" odstránené
+          undefined
         ),
       }}
       predTitulom={jeWorkshop ? (
@@ -431,7 +432,7 @@ function DeedDetail({ it, support, votes, vote, toast, home, openPerson }: any) 
   return (
     <div style={{ paddingBottom: SPACE.lg }}>
       <DetailHero it={it} onBack={home}>
-        <DomTag it={it} />
+        <TypBadge typ={AKT_TYP[it.type as keyof typeof AKT_TYP]} inline />
       </DetailHero>
       <div style={{ padding: `${SPACE.gutter}px ${SPACE.md}px` }}>
         <div onClick={() => openPerson(it.author)} style={{ ...rowTopS, cursor: "pointer" }}>
@@ -544,7 +545,7 @@ function HelpDetail({ it, toast, celebrate, home, openPerson }: any) {
   return (
     <div style={{ paddingBottom: SPACE.lg }}>
       <DetailHero it={it} onBack={home}>
-        <Chip bg={tint(a.c, .14)} c={a.c}>❓ Hľadám pomoc · {a.label}</Chip>
+        <TypBadge typ="ziadost" inline />
       </DetailHero>
       <div style={{ padding: `${SPACE.gutter}px ${SPACE.md}px` }}>
         <div onClick={() => openPerson(it.author)} style={{ ...rowTopS, cursor: "pointer" }}>

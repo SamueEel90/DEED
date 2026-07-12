@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
-import { SPACE, RADIUS } from "@/theme";
-import { BackHeader, Switch, SegTabs } from "@/shared";
+import { SPACE, RADIUS, SIRKA } from "@/theme";
+import { BackHeader, Switch, SegTabs, useLayout } from "@/shared";
 import { pressable } from "@/components/pressable";
 import { N, Chip } from "./ui";
 import {
@@ -25,7 +25,7 @@ const OMSA_TYPY: OmsaTyp[] = ["ranna", "vecerna", "velka"];
 
 type Vyhlad = "kalendar" | "rozvrh";
 
-export function Kalendar({ farnost, onBack, toast }: { farnost: Farnost; onBack: () => void; toast: (m: string) => void }) {
+export function Kalendar({ farnost, onBack, onPridat, toast }: { farnost: Farnost; onBack: () => void; onPridat?: () => void; toast: (m: string) => void }) {
   const dnes = useMemo(() => new Date(), []);
   const [vyhlad, setVyhlad] = useState<Vyhlad>("kalendar");
   const [rozvrh, setRozvrh] = useState<RozvrhOmsi>(PREDVYPLNENY_ROZVRH);
@@ -138,6 +138,7 @@ export function Kalendar({ farnost, onBack, toast }: { farnost: Farnost; onBack:
           zrusene={zrusene}
           onCas={(id, t) => setCasy((c) => ({ ...c, [id]: t }))}
           onPridaj={(o) => setPridane((p) => ({ ...p, [vybranyDen]: [...(p[vybranyDen] ?? []), o] }))}
+          onInaUdalost={onPridat ? () => { setVybranyDen(null); onPridat(); } : undefined}
           onZatvor={() => setVybranyDen(null)} toast={toast} />
       )}
     </div>
@@ -234,11 +235,15 @@ function SekNadpis({ children, noMargin }: { children: React.ReactNode; noMargin
 }
 
 // ===================== DEŇ — DETAIL (zaškrtávacie polia) =====================
-function DenDetail({ iso, omse, udalosti, perMass, onZrus, zrusene, onCas, onPridaj, onZatvor, toast }: {
+function DenDetail({ iso, omse, udalosti, perMass, onZrus, zrusene, onCas, onPridaj, onInaUdalost, onZatvor, toast }: {
   iso: string; omse: MassInstance[]; udalosti: { kat: any; nazov: string; cas?: string }[]; perMass: boolean;
   zrusene: Set<string>; onZrus: (id: string) => void; onCas: (id: string, t: string) => void;
-  onPridaj: (o: DennaOmsa) => void; onZatvor: () => void; toast: (m: string) => void;
+  onPridaj: (o: DennaOmsa) => void; onInaUdalost?: () => void; onZatvor: () => void; toast: (m: string) => void;
 }) {
+  const { desktop } = useLayout();
+  // desktop: obsah necháme na čitateľnú šírku a vycentrujeme (inak by sa riadky
+  // roztiahli cez celú plochu — čas by odletel k pravému okraju, tlačidlá by boli obrie)
+  const cap: React.CSSProperties = desktop ? { maxWidth: SIRKA.citanie, margin: "0 auto", width: "100%" } : {};
   const d = new Date(iso + "T00:00:00");
   const nadpis = `${d.getDate()}. ${MESIACE[d.getMonth()]} ${d.getFullYear()}`;
   const denNazov = DNI[(d.getDay() + 6) % 7];
@@ -246,15 +251,18 @@ function DenDetail({ iso, omse, udalosti, perMass, onZrus, zrusene, onCas, onPri
 
   return (
     <div style={{ position: "absolute", inset: 0, background: "rgba(var(--panel-rgb),.94)", backdropFilter: "blur(26px)", WebkitBackdropFilter: "blur(26px)", zIndex: 50, display: "flex", flexDirection: "column", animation: "fadeUp .2s ease" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm, padding: SPACE.md, borderBottom: `1px solid ${N.line}` }}>
-        <span onClick={onZatvor} style={{ display: "flex", color: N.txt2, cursor: "pointer", fontSize: 20 }}>✕</span>
-        <div>
-          <div style={{ fontSize: 16, fontWeight: 700 }}>{denNazov} · {nadpis}</div>
-          {sviatok && <div style={{ fontSize: 11.5, color: N.gold, fontWeight: 700 }}>✦ {sviatok}</div>}
+      <div style={{ padding: SPACE.md, borderBottom: `1px solid ${N.line}` }}>
+        <div style={{ ...cap, display: "flex", alignItems: "center", gap: SPACE.sm }}>
+          <span onClick={onZatvor} style={{ display: "flex", color: N.txt2, cursor: "pointer", fontSize: 20 }}>✕</span>
+          <div>
+            <div style={{ fontSize: 16, fontWeight: 700 }}>{denNazov} · {nadpis}</div>
+            {sviatok && <div style={{ fontSize: 11.5, color: N.gold, fontWeight: 700 }}>✦ {sviatok}</div>}
+          </div>
         </div>
       </div>
 
       <div style={{ flex: 1, overflowY: "auto", padding: SPACE.md }}>
+       <div style={cap}>
         <div style={{ fontSize: 11, fontWeight: 800, color: N.txt3, letterSpacing: ".04em", marginBottom: SPACE.sm }}>OMŠE ({perMass ? "zbierka ku každej" : "spoločná denná zbierka"})</div>
         {omse.length === 0 && <div style={{ fontSize: 12.5, color: N.txt3, padding: `${SPACE.sm}px 0` }}>V tento deň nie je z rozvrhu žiadna omša.</div>}
         {omse.map((m) => {
@@ -291,10 +299,11 @@ function DenDetail({ iso, omse, udalosti, perMass, onZrus, zrusene, onCas, onPri
         <div style={{ display: "flex", gap: SPACE.sm, marginTop: SPACE.gutter }}>
           <button onClick={() => { onPridaj({ type: "mimoriadna", time: "18:00" }); toast("Mimoriadna omša pridaná · 18:00 (uprav čas)"); }}
             style={{ flex: 1, height: 44, border: `1px dashed ${N.greenEdge}`, background: N.greenBg, color: N.green, borderRadius: RADIUS.sm, fontWeight: 700, fontSize: 13, fontFamily: "inherit", cursor: "pointer" }}>+ mimoriadna omša</button>
-          <button onClick={() => toast("Iná udalosť → strom pridania (Sviatok · Púť · Akcia · Svadba · Pohreb · Brigáda · Oznam)")}
+          <button onClick={onInaUdalost ?? (() => toast("Iná udalosť → strom pridania (Sviatok · Púť · Akcia · Svadba · Pohreb · Brigáda · Oznam)"))}
             style={{ flex: 1, height: 44, border: `1px dashed ${N.indEdge}`, background: N.indBg, color: N.ind, borderRadius: RADIUS.sm, fontWeight: 700, fontSize: 13, fontFamily: "inherit", cursor: "pointer" }}>+ iná udalosť</button>
         </div>
         <div style={{ fontSize: 10, color: N.txt3, textAlign: "center", padding: `${SPACE.sm}px 0` }}>Odškrtnutie zruší omšu len pre tento deň (override) — vzor pre ostatné týždne ostáva.</div>
+       </div>
       </div>
     </div>
   );

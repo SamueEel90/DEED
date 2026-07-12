@@ -10,8 +10,9 @@
 // ============================================================
 import type { ReactNode } from "react";
 import { Drawer } from "vaul";
-import { glassTmavy } from "@/theme";
+import { glassTmavy, SIRKA } from "@/theme";
 import { RADIUS, SHADOW } from "@/tokens";
+import { useLayout } from "@/components/context";
 
 export function Sheet({
   children,
@@ -30,6 +31,10 @@ export function Sheet({
   label?: string;
 }) {
   const zhora = direction === "top";
+  const { desktop } = useLayout();
+  // desktop: sheet nedržíme na celú šírku plochy (roztiahnutý panel pôsobí lacno) —
+  // capneme na čitateľnú šírku a vycentrujeme (left:0/right:0 + auto marginy = stred)
+  const cap = desktop ? { maxWidth: SIRKA.citanie, marginLeft: "auto", marginRight: "auto" } : {};
   const grabber = (
     <div
       aria-hidden
@@ -70,6 +75,7 @@ export function Sheet({
           position: "absolute",
           left: 0,
           right: 0,
+          ...cap,
           ...(zhora ? { top: 0, maxHeight: "88%" } : { bottom: 0 }),
           zIndex: 56,
           outline: "none",
@@ -88,8 +94,11 @@ export function Sheet({
         <Drawer.Title style={{ position: "absolute", width: 1, height: 1, padding: 0, margin: -1, overflow: "hidden", clip: "rect(0 0 0 0)", whiteSpace: "nowrap", border: 0 }}>
           {label}
         </Drawer.Title>
-        {/* obsah — scrolluje, ak je privysoký; spodok rešpektuje home indicator (safe-area) */}
-        <div style={{ flex: "1 1 auto", minHeight: 0, overflowY: "auto", overflowX: "hidden", padding: zhora ? "14px 20px 4px" : "0 20px calc(22px + env(safe-area-inset-bottom, 0px))" }}>
+        {/* obsah — scrolluje, ak je privysoký; spodok rešpektuje home indicator (safe-area).
+            TOP sheet (menu „Viac"/notifikácie): scroll obsahom = ťah prstom NAHOR, čo Vaul
+            u top-drawera číta ako drag-to-dismiss → zavrelo by sa pri scrollovaní. `data-vaul-no-drag`
+            vypne drag z obsahu (zatvorí sa len grabberom/tapom mimo), takže sa dá pokojne scrollovať. */}
+        <div {...(zhora ? { "data-vaul-no-drag": true } : {})} style={{ flex: "1 1 auto", minHeight: 0, overflowY: "auto", overflowX: "hidden", padding: zhora ? "14px 20px 4px" : "0 20px calc(22px + env(safe-area-inset-bottom, 0px))" }}>
           {children}
         </div>
         {zhora && grabber}

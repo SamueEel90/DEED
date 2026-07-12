@@ -8,6 +8,7 @@
 // suma←vyzbierane, ciel←ciel, ludia←pomocnici, overeny←overene.
 // ============================================================
 import { supabase } from "@/lib/supabase";
+import { nahrajFotky } from "@/lib/uploadFoto";
 import type { HelpFeedItem } from "@/types";
 
 const DEN = 86_400_000;
@@ -56,6 +57,7 @@ function naHelpItem(r: any): HelpFeedItem {
 export const helpSupabase = {
   async vytvor(it: HelpFeedItem, autorUcetId?: string | null): Promise<string | null> {
     if (!supabase) return null;
+    const fotky = await nahrajFotky(it.fotky ?? []); // data URL → Storage (passthrough ak zlyhá)
     // Help-specifické polia idú do `data` (diskriminátor help:true); engine polia do stĺpcov.
     // autor_nazov = titul žiadosti (denormalizácia podľa naHelpItem), suma→vyzbierane, ludia→pomocnici.
     const { data, error } = await supabase.from("prispevok").insert({
@@ -67,7 +69,7 @@ export const helpSupabase = {
       kat: it.kat ?? null,
       popis: it.pribeh,
       emoji: it.ikona,
-      media: it.fotky?.length ? { fotky: it.fotky } : {},
+      media: fotky.length ? { fotky } : {},
       lat: it.lat ?? null,
       lng: it.lng ?? null,
       lok: it.lok ?? null,

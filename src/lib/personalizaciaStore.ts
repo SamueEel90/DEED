@@ -4,7 +4,7 @@
 // Dnes localStorage (deed.me.*); zajtra Supabase (tabuľka "zaujmy" už
 // existuje v lib/db — výmena = TENTO jeden súbor). Číta usePersonalizacia().
 // ============================================================
-import type { Zaujem, Sledovanie, Podpora, Oblubeny, PersonalizaciaStav } from "@/types";
+import type { Zaujem, Sledovanie, Podpora, Oblubeny, MojaZbierka, PersonalizaciaStav } from "@/types";
 import { supabase } from "@/lib/supabase";
 
 // ---- localStorage kľúče (namespace deed.me.* — oddelené od deed.aktivity.*) ----
@@ -13,6 +13,7 @@ export const ME = {
   sledovani: "deed.me.sledovani.v1",
   podpory: "deed.me.podpory.v1",
   oblubene: "deed.me.oblubene.v1",
+  zbierky: "deed.me.zbierky.v1",
 };
 const LEGACY_FOLLOWS = "deed.aktivity.follows.v1"; // { [meno]: true } — staré sledovanie z Aktivít
 const LEGACY_MIGROVANE = "deed.me.sledovani.migrated.v1"; // flag: legacy import už prebehol (jednorazový)
@@ -68,12 +69,14 @@ export function nacitajLokalne(): Omit<PersonalizaciaStav, "nacitavam"> {
     sledovani: load<Sledovanie[]>(ME.sledovani, []),
     podpory: load<Podpora[]>(ME.podpory, []),
     oblubene: load<Oblubeny[]>(ME.oblubene, []),
+    mojeZbierky: load<MojaZbierka[]>(ME.zbierky, []),
   };
 }
 export const ulozZaujmy = (z: Zaujem[]) => save(ME.zaujmy, z);
 export const ulozSledovani = (s: Sledovanie[]) => save(ME.sledovani, s);
 export const ulozPodpory = (p: Podpora[]) => save(ME.podpory, p);
 export const ulozOblubene = (o: Oblubeny[]) => save(ME.oblubene, o);
+export const ulozZbierky = (z: MojaZbierka[]) => save(ME.zbierky, z);
 
 /** Má legacy import ešte prebehnúť? Len kým nie je nastavený flag a legacy kľúč existuje. */
 export function legacyNaImport(): boolean {
@@ -205,6 +208,55 @@ export async function odoberOblubeneDB(refId: number | string): Promise<void> {
   if (error) throw error;
 }
 
+// ---- MOJE ZBIERKY v DB (tabuľka `zbierka`, owner-only cez auth.uid() — migrácia 0021) ----
+// Klientom generované `id` (text). Doklady = jsonb pole na riadku. Bez DB → no-op.
+function riadokNaZbierka(r: any): MojaZbierka {
+  return {
+    id: r.id, nazov: r.nazov, modul: r.modul, typ: r.typ ?? undefined, emoji: r.emoji ?? undefined,
+    lok: r.lok ?? undefined, ciel: r.ciel != null ? Number(r.ciel) : undefined,
+    vyzbierane: r.vyzbierane != null ? Number(r.vyzbierane) : undefined,
+    vytvorene: r.vytvorene, stav: r.stav,
+    doklady: Array.isArray(r.doklady) ? r.doklady : [],
+    dakovnaSprava: r.dakovna_sprava ?? undefined,
+    dakovneVideo: !!r.dakovne_video, dakovneVideoUrl: r.dakovne_video ?? undefined,
+  };
+}
+
+/** Načíta moje zbierky z DB (owner = auth.uid() cez RLS). */
+export async function nacitajZbierkyDB(): Promise<MojaZbierka[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase.from("zbierka").select("*").order("vytvorene", { ascending: false });
+  if (error) throw error;
+  return (data || []).map(riadokNaZbierka);
+}
+
+/** Vloží novú zbierku (pouzivatel = auth.uid() cez default). Duplikát id ignoruj. */
+export async function vytvorZbierkuDB(z: MojaZbierka): Promise<void> {
+  if (!supabase) return;
+  const { error } = await supabase.from("zbierka").insert({
+    id: z.id, nazov: z.nazov, modul: z.modul, typ: z.typ ?? null, emoji: z.emoji ?? null,
+    lok: z.lok ?? null, ciel: z.ciel ?? null, vyzbierane: z.vyzbierane ?? 0, stav: z.stav,
+    dakovna_sprava: z.dakovnaSprava ?? null,
+    dakovne_video: z.dakovneVideoUrl ?? (z.dakovneVideo ? "ano" : null),
+    doklady: z.doklady ?? [],
+  });
+  if (error && error.code !== "23505") throw error; // 23505 = duplikát → nie chyba
+}
+
+/** Upraví zbierku (ukončiť / doklady / poďakovanie) — owner-only. */
+export async function upravZbierkuDB(id: string, patch: Partial<MojaZbierka>): Promise<void> {
+  if (!supabase) return;
+  const row: Record<string, unknown> = { upravene: new Date().toISOString() };
+  if (patch.stav !== undefined) row.stav = patch.stav;
+  if (patch.doklady !== undefined) row.doklady = patch.doklady;
+  if (patch.dakovnaSprava !== undefined) row.dakovna_sprava = patch.dakovnaSprava;
+  if (patch.vyzbierane !== undefined) row.vyzbierane = patch.vyzbierane;
+  if (patch.dakovneVideoUrl !== undefined) row.dakovne_video = patch.dakovneVideoUrl;
+  else if (patch.dakovneVideo !== undefined) row.dakovne_video = patch.dakovneVideo ? "ano" : null;
+  const { error } = await supabase.from("zbierka").update(row).eq("id", id);
+  if (error) throw error;
+}
+
 /** Demo seed — aby „Môj DEED" nebol prázdny pri prvom otvorení (len demo identita).
  *  Mená/refId zodpovedajú mock feedu Domov (Good/mock.ts), nech sekcie reálne ožijú. */
 export function demoSeed(): Omit<PersonalizaciaStav, "nacitavam"> {
@@ -218,5 +270,11 @@ export function demoSeed(): Omit<PersonalizaciaStav, "nacitavam"> {
       { refId: 3, typ: "ziadost", modul: "help", suma: 50, kanal: "DEED", komu: "Rodina Kováčová", vyzbierane: 1450, ciel: 2400 },
     ],
     oblubene: [],
+    mojeZbierky: [
+      { id: "z-demo-1", nazov: "Nové kreslá do čitárne", modul: "help", typ: "ziadost", emoji: "📚", lok: "Košice",
+        ciel: 800, vyzbierane: 640, vytvorene: "2026-06-20T10:00:00.000Z", stav: "aktivna", doklady: [] },
+      { id: "z-demo-2", nazov: "Zbierka pre útulok Nádej", modul: "charity", typ: "charita", emoji: "🐾", lok: "Košice",
+        ciel: 1500, vyzbierane: 1500, vytvorene: "2026-05-02T09:00:00.000Z", stav: "ukoncena", doklady: [] },
+    ],
   };
 }

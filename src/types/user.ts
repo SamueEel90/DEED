@@ -195,12 +195,41 @@ export interface Oblubeny {
   ciel?: number;
 }
 
+/** Vyúčtovací doklad priložený k mojej zbierke. `url` = verejná Storage URL
+ *  (keď je nahraný do bucketu `prispevky`); bez DB ostáva len názov súboru. */
+export interface MojDoklad {
+  nazov: string;
+  url?: string;
+  suma?: number;
+  cas: IsoDateTime;
+}
+
+/** Zbierka, ktorú SOM vytvoril — spravuje sa v „Môj DEED" (ukončiť, vyúčtovať,
+ *  poďakovať). Mock: žije lokálne (deed.me.zbierky). */
+export interface MojaZbierka {
+  id: string;
+  nazov: string;
+  modul: "good" | "help" | "charity" | "nabozenstvo";
+  typ?: string;        // ziadost | charita | zbierka
+  emoji?: string;
+  lok?: string;
+  ciel?: number;
+  vyzbierane?: number;
+  vytvorene: IsoDateTime;
+  stav: "aktivna" | "ukoncena" | "vyuctovana";
+  doklady?: MojDoklad[];
+  dakovnaSprava?: string;
+  dakovneVideo?: boolean;     // flag: video priložené
+  dakovneVideoUrl?: string;   // verejná Storage URL videa (keď je DB)
+}
+
 /** Stav personalizačného store (usePersonalizacia). */
 export interface PersonalizaciaStav {
   zaujmy: Zaujem[];
   sledovani: Sledovanie[];
   podpory: Podpora[];
   oblubene: Oblubeny[];
+  mojeZbierky: MojaZbierka[];
   nacitavam: boolean;
 }
 

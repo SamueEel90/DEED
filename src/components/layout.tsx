@@ -8,6 +8,7 @@ import { useDavkovanie } from "@/components/obnova";
 import { VirtualList } from "@/components/virtuallist";
 import { pressable } from "@/components/pressable";
 import { Sheet } from "@/components/sheet";
+import { Znacka } from "@/components/znacka";
 import { IkonaSpat, IkonaMenu, IkonaPlay, IkonaDoska, IkonaPlus, IkonaPin, IkonaSipDole, IkonaFajka } from "@/components/icons";
 import { Hmat } from "@/components/ui";
 import { Tip } from "@/components/tooltip";
@@ -76,11 +77,8 @@ export function ModulHlavicka({ title, right, slogan = "Miesto, kde nerozhodujú
             {viacHint && <span aria-hidden style={{ position: "absolute", top: -2, right: -4, width: 8, height: 8, borderRadius: RADIUS.round, background: "var(--a-green)", boxShadow: "0 0 0 2px var(--c-bg)" }} />}
           </span>
         )}
-        {!desktop && (
-          <span style={{ width: 32, height: 32, borderRadius: RADIUS.sm, background: GRAD, color: "#fff", fontWeight: 800, fontSize: 17, display: "flex", alignItems: "center", justifyContent: "center", position: "relative", boxShadow: "0 4px 14px color-mix(in srgb, var(--a-green) 40%, transparent)", flex: "0 0 auto" }} aria-hidden>
-            D<span style={{ position: "absolute", top: 3, right: 4, fontSize: 9 }}>+</span>
-          </span>
-        )}
+        {/* logo = App ikona (D⁺); klik → QR logo na celú obrazovku (§ prianie vlastníka) */}
+        {!desktop && <Znacka size={34} />}
         {/* h1 = názov modulu (SR navigácia po nadpisoch) — vizuál nezmenený */}
         <h1 style={{ fontSize: 20, fontWeight: 800, margin: 0, lineHeight: "inherit" }}>{title}</h1>
         <span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: SPACE.sm }}>

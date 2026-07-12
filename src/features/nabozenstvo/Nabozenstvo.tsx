@@ -1,6 +1,6 @@
 import { useState, useEffect, memo } from "react";
 import { SIRKA, SPACE, RADIUS } from "@/theme";
-import { Foto, MiniFotky, ModulHlavicka, PodporaSekcia, PlatbaModal, SplitQrSheet, HladanieModal, toast, useGaleria, useLayout, useScrollHore, useStrankaAkcie, FeedGrid, StatRiadok, FiltreStat, OkruhVyber, MoniBar, ProgresBox, BackHeader, obalSiroky, SegTabs, tint, Lupa, Zdielanie, IkonaVlajka, IkonaFoto, IkonaInstitucia, Srdce, EmptyState, ScreenSwitch, SwipeBack } from "@/shared";
+import { Foto, MiniFotky, ModulHlavicka, PodporaSekcia, PlatbaModal, SplitQrSheet, HladanieModal, toast, useGaleria, useLayout, useScrollPamat, useStrankaAkcie, FeedGrid, StatRiadok, FiltreStat, OkruhVyber, MoniBar, ProgresBox, BackHeader, obalSiroky, SegTabs, tint, Lupa, Zdielanie, IkonaVlajka, IkonaFoto, IkonaInstitucia, Srdce, EmptyState, ScreenSwitch, SwipeBack } from "@/shared";
 import { MEDIA_AR } from "@/lib/cardSize";
 import { FEED_CFG } from "@/lib/feed";
 import { Zvoncek } from "@/features/notifikacie/Notifikacie";
@@ -20,7 +20,7 @@ import { Kalendar } from "./Kalendar";
 import { PridatSheet } from "./Pridat";
 import {
   FEED_ITEMS, CIRKVI, CIRKVI_FLAT, HLADAJ_DATA, FARNOSTI, FARNOST_PODLA_ID, farnostIdOf, farnostiCirkvi,
-  farskySplitVariant, farnostStat, obsahFarnosti, kmNum, rodinaCirkvi, rodinaZoSkratky, KAT_FARBA,
+  farskySplitVariant, farnostStat, obsahFarnosti, kmNum, rodinaCirkvi, rodinaZoSkratky, KAT_FARBA, reakciaToast,
   type NabozFeedItem, type Farnost, type CirkevPolozka,
 } from "./mock";
 
@@ -57,8 +57,7 @@ export default function ModulNabozenstvo({ wide }: { wide?: boolean; otvorModul?
   const [rodina, setRodina] = useState("Všetky"); // faseta vyznania (aj cieľ routingu z vyhľadávania)
   const domFarnost = domovska ? FARNOST_PODLA_ID(domovska) : undefined;
 
-  const scrollHore = useScrollHore();
-  useEffect(() => { scrollHore(); }, [screen]);
+  useScrollPamat(screen); // pamäť scrollu — „Späť" z príspevku obnoví pozíciu (nie skok hore)
   const obal = (el: React.ReactNode) => obalSiroky(el, { wide, desktop, max: SIRKA.stlpec, maxDesktop: SIRKA.citanie });
 
   const otvorProfil = (f: Farnost) => { setAktFarnost(f); setScreen("profil"); };
@@ -88,7 +87,7 @@ export default function ModulNabozenstvo({ wide }: { wide?: boolean; otvorModul?
         )}
         {screen === "kalendar" && obal(
           <SwipeBack onBack={() => setScreen(aktFarnost ? "profil" : "domov")}>
-            <Kalendar farnost={aktFarnost ?? domFarnost ?? FARNOSTI[0]} toast={toast} onBack={() => setScreen(aktFarnost ? "profil" : "domov")} />
+            <Kalendar farnost={aktFarnost ?? domFarnost ?? FARNOSTI[0]} toast={toast} onBack={() => setScreen(aktFarnost ? "profil" : "domov")} onPridat={() => setSheet("add")} />
           </SwipeBack>
         )}
         {screen === "detail" && akt && obal(
@@ -442,7 +441,8 @@ function NabozDetail({ z, farar, onBack, onProfil }: { z: NabozFeedItem; farar: 
 
   function podpor(hodnota: number, text: string) { setSuma((s) => s + hodnota * 0.01); setLudia((l) => l + 1); toast(text); }
   function platbaHotova(s: number) { setSuma((x) => x + s * (platba === "EUR" ? 1 : 0.01)); setLudia((l) => l + 1); toast(`Odoslané ${platba === "EUR" ? s + " €" : s + " DEED"} · ${z.nazov}`); }
-  const reakcia = z.ukat === "pohreb" || (z.ukat === "oznam" && z.emoji === "🤍") ? "Kondolencia odoslaná" : z.id === "jubileum" ? "❤ Blahoželáme" : "❤";
+  // §delta bod 2: kontextová reakcia-srdiečko (kondolencia / modlím sa / blahoželáme) — odvodené z typu
+  const reakcia = reakciaToast(z);
 
   return (
     <div style={{ paddingBottom: SPACE.lg }}>

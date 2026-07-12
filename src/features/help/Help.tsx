@@ -3,7 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { SIRKA, C, inp, infoBox, btn, GRAD_ZELENY, glassTmavy, SPACE, RADIUS } from "@/theme";
 import { pasmo, POZNAMKA_DAVKY, tagLabels, CHARITA_SEGMENTY, segmentLabel, OVERENIA_POTREBNE, ESCROW } from "./konstanty";
 import { TagTemy, prepniTag, ZranitelniBlok, PrisnyBadge, AiPoznamka, GuardFuzzy } from "./HelpKit";
-import { Foto, Avatar, MiniFotky, Hlavicka, ModulHlavicka, PodporaSekcia, PlatbaModal, HladanieModal, OblubeneHviezda, OblubeneBtn, Otazka, Vyber, vyberBox, NavBtns, Suhrn, DokladRow, toast, Oslava, useGaleria, useLayout, useScrollHore, useStrankaAkcie, useTvorbaGate, Ticker, StatRiadok, FiltreStat, FeedStlpce, FeedGrid, FeedCard, KartaBadge, BackHeader, ProgresBox, obalSiroky, OkruhVyber, Lupa, Zdielanie, IkonaVlajka, IkonaFoto, IkonaPlay, IkonaDoska, IkonaPin, FeedSkeleton, EmptyState, ErrorState, ScreenSwitch, SwipeBack } from "@/shared";
+import { Foto, Avatar, MiniFotky, Hlavicka, ModulHlavicka, PodporaSekcia, PlatbaModal, HladanieModal, OblubeneHviezda, OblubeneBtn, Otazka, Vyber, vyberBox, NavBtns, Suhrn, DokladRow, toast, Oslava, useGaleria, useLayout, useScrollPamat, useStrankaAkcie, useTvorbaGate, Ticker, StatRiadok, FiltreStat, FeedStlpce, FeedGrid, FeedCard, KartaBadge, typKluc, BackHeader, ProgresBox, obalSiroky, OkruhVyber, Lupa, Zdielanie, IkonaVlajka, IkonaFoto, IkonaPlay, IkonaDoska, IkonaPin, IkonaOsoba, IkonaCharita, FeedSkeleton, EmptyState, ErrorState, ScreenSwitch, SwipeBack } from "@/shared";
 import { Zvoncek } from "@/features/notifikacie/Notifikacie";
 import { pripravFeed, FEED_CFG } from "@/lib/feed";
 import { MEDIA_AR } from "@/lib/cardSize";
@@ -13,6 +13,7 @@ import { GoodBoard, GoodEvent } from "@/features/good/Good";
 import { useHelpFeed, useQrSplitCreate, qk, repo } from "@/data";
 import { SplitConfigStep, splitOwnerPct, splitCielePayload, splitValid, type SplitCiel } from "@/shared";
 import { usePouzivatel } from "@/lib/pouzivatel";
+import { usePersonalizacia } from "@/lib/personalizacia";
 import { useLokalita } from "@/lib/lokalita";
 import { tint, tagChip, rovnakeOkremFunkcii } from "@/lib/ui";
 import { pressable } from "@/components/pressable";
@@ -58,11 +59,20 @@ export default function ModulHelp({ wide }: { wide?: boolean }) {
   const qc = useQueryClient();
   const ja = usePouzivatel();
   const lok = useLokalita();
+  const { pridajZbierku } = usePersonalizacia(); // finančná žiadosť → „Moje zbierky" v Môj DEED
   const createSplit = useQrSplitCreate();
   const [oslava, setOslava] = useState<{ emoji: string; titul: string; text: ReactNode } | null>(null);
   const zverejni = (vstup: HelpFeedItem, osl: { emoji: string; titul: string; text: ReactNode }, split?: SplitCiel[]) => {
     const item = { ...vstup, lat: lok.lat, lng: lok.lng, lok: lok.mesto }; // geo = aktívne mesto
     qc.setQueryData<HelpFeedItem[]>(qk.help.feed, (old = []) => [item, ...old]);
+    // finančná zbierka (má cieľ) → zaregistruj medzi „Moje zbierky" (spravovanie v Môj DEED)
+    if (item.ciel) {
+      pridajZbierku({
+        id: String(item.id), nazov: item.nazov, modul: "help", typ: item.typ, emoji: item.ikona,
+        lok: lok.mesto, ciel: item.ciel, vyzbierane: item.suma || 0,
+        vytvorene: new Date().toISOString(), stav: "aktivna", doklady: [],
+      });
+    }
     repo.help.vytvor(item, ja.ucetId)
       .then((novyId) => {
         if (novyId) qc.invalidateQueries({ queryKey: qk.help.feed });
@@ -82,8 +92,7 @@ export default function ModulHelp({ wide }: { wide?: boolean }) {
   };
 
   // pri prepnutí obrazovky (napr. otvorenie detailu) odscrolluj appku hore
-  const scrollHore = useScrollHore();
-  useEffect(() => { scrollHore(); }, [screen]);
+  useScrollPamat(screen); // pamäť scrollu — „Späť" obnoví pozíciu feedu (nie skok hore)
 
   // na tablete/desktope sa detailové obrazovky vycentrujú do čitateľnej šírky
   const obal = (el: React.ReactNode) => obalSiroky(el, { wide, desktop, max: SIRKA.stlpec, maxDesktop: SIRKA.citanie });
@@ -175,8 +184,8 @@ function Feed({ wide, toast, onDetail, onHladaj, onAdd, onBoard, radius, setRadi
         filtre={
           <div style={{ display: "flex", gap: SPACE.xs, padding: `0 ${SPACE.md}px ${SPACE.xs}px` }}>
             <Seg on={view === "all"} col="var(--a-info)" label="Všetko" onClick={() => setView("all")} />
-            <Seg on={view === "ziadost"} col="var(--a-danger)" emoji="🙋" label="Žiadosti" onClick={() => setView("ziadost")} />
-            <Seg on={view === "ponuka"} col="var(--a-plum)" emoji="🤝" label="Ponuky" onClick={() => setView("ponuka")} />
+            <Seg on={view === "ziadost"} col="var(--a-danger)" Ikona={IkonaOsoba} label="Žiadosti" onClick={() => setView("ziadost")} />
+            <Seg on={view === "ponuka"} col="var(--a-plum)" Ikona={IkonaCharita} label="Ponuky" onClick={() => setView("ponuka")} />
           </div>
         }
         stat={
@@ -211,10 +220,11 @@ function Feed({ wide, toast, onDetail, onHladaj, onAdd, onBoard, radius, setRadi
 }
 
 // segment filtra typu pomoci (Všetko / Žiadosti / Ponuky) — theme-aware cez tint(col)
-function Seg({ on, col, label, emoji, onClick }: { on: boolean; col: string; label: string; emoji?: string; onClick: () => void }) {
+// ikona = minimalistická line-ikona (ako v zvyšku appky), farbí sa podľa stavu
+function Seg({ on, col, label, Ikona, onClick }: { on: boolean; col: string; label: string; Ikona?: (p: { size?: number; color?: string }) => React.ReactElement; onClick: () => void }) {
   return (
     <div {...pressable(onClick, label)} aria-current={on ? "page" : undefined} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: SPACE.xs, height: 38, borderRadius: RADIUS.sm, fontSize: 12.5, fontWeight: on ? 700 : 600, cursor: "pointer", whiteSpace: "nowrap", background: on ? tint(col, .15) : C.surface2, border: `1px solid ${on ? tint(col, .5) : C.line2}`, color: on ? col : C.textSec }}>
-      {emoji && <span style={{ fontSize: 13 }}>{emoji}</span>}{label}
+      {Ikona && <Ikona size={15} color={on ? col : C.textTer} />}{label}
     </div>
   );
 }
@@ -230,13 +240,13 @@ function HelpKartaBase({ z, wide, onClick }: { z: any; wide?: boolean; onClick: 
   const accent = jeZiadost ? (z.sponzor ? C.gold : C.red) : jePonuka ? C.purple : C.gold;
   const typLabel = jeZiadost ? `ŽIADOSŤ · ${z.sponzor ? "D++" : "D+"}` : jePonuka ? "PONUKA POMOCI" : "CHARITA";
   return (
-    <FeedCard wide={wide} onClick={onClick} label={z.nazov} accent={jeKriza ? C.red : accent} ring={jeKriza ? C.red : undefined}
+    <FeedCard wide={wide} onClick={onClick} label={z.nazov} typ={typKluc(z.typ)} accent={jeKriza ? C.red : accent} ring={jeKriza ? C.red : undefined}
       media={{
         fotky: z.fotky, emoji: z.ikona, h: 230,
         overlay: (
           <>
-            {jeKriza && <KartaBadge pos={{ top: 10, left: 10 }} strong color="#fff" style={{ background: C.red, border: "none", boxShadow: "0 2px 10px rgba(0,0,0,.3)" }}>🔴 URGENTNÉ</KartaBadge>}
-            <KartaBadge pos={{ top: 10, ...(jeKriza ? { right: 10 } : { left: 10 }) }} color="#fff" style={{ background: accent, border: "none", borderRadius: RADIUS.lg, fontSize: 9.5, fontWeight: 800 }}>{typLabel}</KartaBadge>
+            {/* typ (Žiadosť/Ponuka/Charita) rieši FeedCard vľavo hore; tu ostáva len urgentnosť + sponzor (vpravo) */}
+            {jeKriza && <KartaBadge pos={{ top: 10, right: 10 }} strong color="#fff" style={{ background: C.red, border: "none", boxShadow: "0 2px 10px rgba(0,0,0,.3)" }}>🔴 URGENTNÉ</KartaBadge>}
             {z.sponzor && !jeKriza && <KartaBadge pos={{ top: 10, right: 10 }}>🛡 {z.sponzor.meno} · {z.sponzor.suma} €</KartaBadge>}
             <OblubeneHviezda polozka={oblubenyZHelp(z)} style={{ top: "auto", bottom: 10 }} />
           </>
@@ -342,12 +352,11 @@ function Detail({ z, onBack, onAutor }: { z: any; onBack: () => void; onAutor: (
         <div style={{ padding: `0 ${SPACE.gutter}px ${SPACE.gutter}px` }}>
           <button onClick={() => setOzvat(true)} style={{ ...btn("primary"), width: "100%" }}>✍️ Mám záujem — ozvať sa</button>
           <div style={{ textAlign: "center", fontSize: 11, color: C.textTer, margin: `${SPACE.sm}px 0` }}>Po ozvaní sa dohodnete na detailoch cez chat → prípadne QR na mieste.</div>
-          {/* podporiť sa dá aj peniazmi (karta / SEPA prevod / peňaženka), nielen ozvaním */}
-          <PodporaSekcia
+          {/* PONUKA = niekto ponúka pomoc/službu → NEdáva sa mu dar (len zdieľať + reakcia). Prispievať sa dá len na žiadosti/zbierky. */}
+          <PodporaSekcia bezDaru
             onShare={() => zdielaj({ titul: z.nazov, text: z.nazov, url: aktualnaUrl() }, toast)}
             upvotes={140} onUpvote={() => toast("Palec hore")}
-            onPodpor={(s: number) => posliPevne(s, "DEED")} onSms={() => posliPevne(1, "SMS")}
-            onKanal={(k: string) => setPlatba(k)} supLabel="PODPORIŤ — klik a hneď odíde" />
+            onPodpor={() => {}} onKanal={() => {}} />
         </div>
       ) : (
         <div style={{ padding: `0 ${SPACE.gutter}px ${SPACE.gutter}px` }}>

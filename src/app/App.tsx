@@ -22,6 +22,7 @@ import { PersonalizaciaProvider } from "@/lib/personalizacia";
 import { LokalitaProvider } from "@/lib/lokalita";
 import { QueryProvider } from "@/app/QueryProvider";
 import { Registracia } from "@/features/registracia/Registracia";
+import { RetazPodstranka } from "@/features/retaz/RetazPodstranka";
 
 // Code-splitting: každý modul = vlastný chunk, načíta sa až pri otvorení
 // (initial load = shell + prvý modul namiesto jedného veľkého bundle).
@@ -169,6 +170,7 @@ export function Screens({ wide, desktop }: { wide?: boolean; desktop?: boolean }
   const [dlHotovo, setDlHotovo] = useState(false); // deep-link už spracovaný?
   const [badgeSheet, setBadgeSheet] = useState<string | null>(null); // odznak z deep-linku (/badge)
   const [splitSheet, setSplitSheet] = useState<string | null>(null); // split QR z deep-linku (/split) → živá kópia príspevku
+  const [chainSheet, setChainSheet] = useState<string | null>(null); // reťaz tvorcu z deep-linku (/chain) → verejná podstránka (§5.3)
   const [dlDetail, setDlDetail] = useState<{ modul: ModulId; ref: string } | null>(null); // deep-link → presný detail
 
   useEffect(() => { ulozTaby(taby); }, [taby]);
@@ -191,6 +193,7 @@ export function Screens({ wide, desktop }: { wide?: boolean; desktop?: boolean }
   useVrstva(aktivacia, () => setAktivacia(false));
   useVrstva(!!badgeSheet, () => setBadgeSheet(null));
   useVrstva(!!splitSheet, () => setSplitSheet(null));
+  useVrstva(!!chainSheet, () => setChainSheet(null));
   useVrstva(intro || akoFunguje, () => { setIntro(false); setAkoFunguje(false); });
 
   // prvé spustenie: po prihlásení/registrácii ukáž intro sprievodcu (raz)
@@ -216,6 +219,7 @@ export function Screens({ wide, desktop }: { wide?: boolean; desktop?: boolean }
         if (ciel) {
           if (ciel.objekt_druh === "badge") setBadgeSheet(ciel.objekt_ref);   // odznak → shift-binding sheet
           else if (ciel.objekt_druh === "split") setSplitSheet(ciel.objekt_ref); // split QR → živá kópia príspevku
+          else if (ciel.objekt_druh === "chain") setChainSheet(ciel.objekt_ref); // reťaz tvorcu → verejná podstránka (§5.3)
           else {
             cielModul = druhNaModul(ciel.objekt_druh);
             setModul(cielModul);
@@ -348,6 +352,9 @@ export function Screens({ wide, desktop }: { wide?: boolean; desktop?: boolean }
 
         {/* split QR — živá „kópia príspevku" po naskenovaní /split/{slug} */}
         {splitSheet && <SplitLanding splitId={splitSheet} onClose={() => setSplitSheet(null)} toast={toast} />}
+
+        {/* reťaz tvorcu — verejná podstránka (jedna aktívna zbierka) po naskenovaní /chain/{slug} */}
+        {chainSheet && <RetazPodstranka onClose={() => setChainSheet(null)} toast={toast} />}
 
         {/* pasívny → upgrade panel „Staň sa aktívnym" */}
         {upgradeOpen && (

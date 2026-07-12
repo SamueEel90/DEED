@@ -1,8 +1,9 @@
 import { useState, useDeferredValue, useEffect, useRef } from "react";
-import { C, glassTmavy, SPACE, RADIUS } from "@/theme";
+import { C, glassTmavy, SPACE, RADIUS, SIRKA } from "@/theme";
 import { tint } from "@/lib/ui";
 import { Lupa, IkonaKriz, IkonaOpakovat, IkonaStit } from "@/components/icons";
 import { pressable } from "@/components/pressable";
+import { useLayout } from "@/components/context";
 import { SegTabs } from "@/components/segtabs";
 import { VirtualList } from "@/components/virtuallist";
 import type { Subjekt } from "@/types";
@@ -73,6 +74,7 @@ export function subjektZHladania(x: any): Subjekt {
 
 export function HladanieModal({ data = [], onPick, onSubjekt, onClose, akcent = "var(--a-info)", placeholder = "Hľadať…",
   defaultFilter = "Všetko", posledne = ["Detská nemocnica", "Coach gitara", "Povodeň pomoc"], subjekty = SUBJEKTY, toast }: { data?: any[]; onPick?: (id: any) => void; onSubjekt?: (s: Subjekt) => void; onClose: () => void; akcent?: string; placeholder?: string; defaultFilter?: string; posledne?: string[]; subjekty?: any[]; toast?: (t: string) => void }) {
+  const { desktop } = useLayout();
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState(defaultFilter);
   // input je svižný (q), drahé filtrovanie beží na odloženej hodnote (dq)
@@ -116,7 +118,7 @@ export function HladanieModal({ data = [], onPick, onSubjekt, onClose, akcent = 
 
   return (
     <div onClick={onClose} style={{ position: "absolute", inset: 0, background: "rgba(4,6,12,.5)", backdropFilter: "blur(5px)", WebkitBackdropFilter: "blur(5px)", display: "flex", flexDirection: "column", zIndex: 58, animation: "fadeUp .18s ease" }}>
-      <div onClick={(e) => e.stopPropagation()} style={{ ...glassTmavy(26, .92), borderTop: "none", borderLeft: "none", borderRight: "none", borderBottomLeftRadius: RADIUS.lg, borderBottomRightRadius: RADIUS.lg, padding: `${SPACE.sm}px ${SPACE.gutter}px ${SPACE.gutter}px`, boxShadow: "0 18px 50px rgba(0,0,0,.45)", maxHeight: "86%", display: "flex", flexDirection: "column" }}>
+      <div onClick={(e) => e.stopPropagation()} style={{ ...glassTmavy(26, .92), borderTop: "none", borderLeft: "none", borderRight: "none", borderBottomLeftRadius: RADIUS.lg, borderBottomRightRadius: RADIUS.lg, padding: `${SPACE.sm}px ${SPACE.gutter}px ${SPACE.gutter}px`, boxShadow: "0 18px 50px rgba(0,0,0,.45)", maxHeight: "86%", display: "flex", flexDirection: "column", width: "100%", maxWidth: desktop ? SIRKA.citanie : undefined, margin: desktop ? "0 auto" : undefined }}>
         {/* vyhľadávací riadok */}
         <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm, background: C.surface, border: `1px solid ${C.line}`, borderRadius: RADIUS.sm, padding: `${SPACE.sm}px ${SPACE.sm}px`, flex: "0 0 auto" }}>
           <Lupa size={18} color={C.textTer} />

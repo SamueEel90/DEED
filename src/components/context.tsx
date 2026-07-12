@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, type ReactNode, type RefObject } from "react";
+import { createContext, useContext, useEffect, useRef, type ReactNode, type RefObject } from "react";
 
 // ============================================================
 // GALÉRIA — kontext: ktorýkoľvek modul otvorí fullscreen prezeranie
@@ -17,6 +17,50 @@ export const useScrollHore = () => useContext(ScrollContext);
 // (VirtualList potrebuje scroll kontajner) a pull-to-refresh.
 export const ScrollElContext = createContext<RefObject<HTMLDivElement | null> | null>(null);
 export const useScrollEl = () => useContext(ScrollElContext);
+
+// ============================================================
+// PAMÄŤ SCROLLU — drop-in náhrada za `useEffect(() => scrollHore(), [screen])`.
+// Zapamätá si scroll pozíciu KAŽDEJ obrazovky (feed / detail / …) a pri návrate
+// ju obnoví — takže „Späť" z príspevku vráti používateľa presne tam, kde skončil,
+// nie hore. Nová obrazovka bez uloženej pozície = hore (0), ako doteraz.
+//   · jeden trvalý scroll listener ukladá pozíciu pod PRÁVE aktívnu obrazovku (cez ref,
+//     aby closure nezostarol a neprepísal cudziu obrazovku),
+//   · pri zmene obrazovky obnoví cieľ cez rAF-retry (~600 ms), lebo ScreenSwitch
+//     má `mode="wait"` crossfade → obsah sa mountne až po dohraní exitu (inak by sa
+//     scrollTop orezal na 0, kým je kontajner ešte prázdny/nízky).
+export function useScrollPamat(screen: string) {
+  const scrollEl = useScrollEl();
+  const pozicie = useRef<Record<string, number>>({});
+  const screenRef = useRef(screen);
+  const predch = useRef<string | null>(null);
+  screenRef.current = screen; // vždy aktuálna obrazovka pre listener nižšie
+
+  // jeden trvalý listener — priebežne ukladá scrollTop pod aktuálnu obrazovku
+  useEffect(() => {
+    const el = scrollEl?.current;
+    if (!el) return;
+    const onScroll = () => { pozicie.current[screenRef.current] = el.scrollTop; };
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => el.removeEventListener("scroll", onScroll);
+  }, [scrollEl]);
+
+  // pri zmene obrazovky obnov uloženú pozíciu (default 0 = hore)
+  useEffect(() => {
+    const el = scrollEl?.current;
+    if (!el || predch.current === screen) return;
+    predch.current = screen;
+    const ciel = pozicie.current[screen] ?? 0;
+    let raf = 0;
+    const start = performance.now();
+    const uprav = () => {
+      el.scrollTop = ciel;
+      // obsah novej obrazovky sa ešte dopĺňa (crossfade/mount) → skúšaj, kým „nesadne"
+      if (Math.abs(el.scrollTop - ciel) > 2 && performance.now() - start < 600) raf = requestAnimationFrame(uprav);
+    };
+    uprav();
+    return () => cancelAnimationFrame(raf);
+  }, [screen, scrollEl]);
+}
 
 // ============================================================
 // MENU „VIAC" — kontext: hamburger (☰) vľavo hore otvára sheet modulov

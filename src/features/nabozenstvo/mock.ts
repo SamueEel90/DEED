@@ -24,7 +24,12 @@ export type NabozFeedItem = CharitaFeedItem & {
   ntyp: NabozTyp; cirkev: string; komunita?: string; pribeh?: string;
   farnostId?: string; ukat?: UdalostKat; datum?: string; rsvp?: boolean; split?: boolean;
   overitelne?: boolean; // pravosť rieši komunitné Overujem/Namietam (§78) — zbierka pre iného/pohreb/svadba
+  reakciaTyp?: ReakciaTyp; // kontext srdiečka (§ delta bod 2): kondolencia / modlím sa / blahoželáme
 };
+
+// kontext reakcie-srdiečka (§ delta bod 2 · matica Univerzálne pravidlá): srdiečko má
+// kontextový význam — pri úmrtí/pohrebe „kondolencia", pri prosbe o modlitbu „modlím sa".
+export type ReakciaTyp = "kondolencia" | "modlitba" | "blahozelanie" | "srdce";
 
 // ---- ADRESÁR: všetkých 18 registrovaných cirkví SR (abecedne v rámci rodín) ----
 // Kritérium = registrácia štátom (register MK SR). Radenie podľa rodín, badge „overená" pre všetky.
@@ -179,11 +184,19 @@ export const FEED_ITEMS: NabozFeedItem[] = [
 
   { id: "jubileum", comp: "data", typ: "skutok", modul: "charity", kat: "Komunita", ntyp: "oznam",
     skore: 4.1, typSituacie: "normal", lat: 48.894, lng: 18.046, dni: 0, podpora: 0, farnostId: "tn-mesto",
-    ukat: "oznam", cirkev: "Rímskokatolícka cirkev v SR", komunita: "Farnosť Trenčín — mesto",
+    ukat: "oznam", reakciaTyp: "blahozelanie", cirkev: "Rímskokatolícka cirkev v SR", komunita: "Farnosť Trenčín — mesto",
     nazov: "90 rokov pani Heleny", lok: "Trenčín · centrum", overena: true,
     badgeL: "🎂 JUBILEUM", tag: "Oznam", emoji: "🎂",
     popis: "Naša farníčka Helena sa dožíva 90 rokov. Vyprosujeme jej hojnosť Božích milostí.",
     pribeh: "Jubilejný oznam — tvorí ho user (auto-publish, hlavička = meno usera z registrácie). Farár môže zmazať." },
+
+  { id: "modlitba", comp: "data", typ: "skutok", modul: "charity", kat: "Komunita", ntyp: "oznam",
+    skore: 4.0, typSituacie: "normal", lat: 48.894, lng: 18.046, dni: 0, podpora: 0, farnostId: "tn-mesto",
+    ukat: "oznam", reakciaTyp: "modlitba", cirkev: "Rímskokatolícka cirkev v SR", komunita: "Farnosť Trenčín — mesto",
+    nazov: "Prosba o modlitbu za chorých", lok: "Trenčín · centrum", overena: true,
+    badgeL: "🕊 PROSBA O MODLITBU", tag: "Oznam", emoji: "🕊",
+    popis: "Prosíme o modlitbu za našich chorých a trpiacich vo farnosti.",
+    pribeh: "Prosba o modlitbu — tvorí ju user (auto-publish, hlavička = meno usera). Bez zbierky, len srdiečko a zdieľať. Reakcia = modlím sa (nie palec, nie Prispieť)." },
 
   { id: "pohreb", comp: "data", typ: "charita", modul: "charity", kat: "Pomoc", ntyp: "udalost",
     skore: 6.0, typSituacie: "normal", lat: 48.894, lng: 18.046, dni: 2, podpora: 27, farnostId: "tn-mesto",
@@ -561,7 +574,8 @@ export function farskySplitVariant(kind: "pohreb" | "svadba" = "pohreb"): SplitV
     preset: [{ id: "kostol", komu: lab.kostol, pct: 3 }], // odstrániteľný (bez pinned)
     qrPopis: "Rozdelenie daru medzi príjemcov (farársky Split QR)",
     labely: {
-      ownerHead: `${lab.rodina.toUpperCase()} — DOSTANE ZVYŠOK`,
+      // §delta bod 1: preč „cico / zvyšok / ide ďalej" — rodina je hlavný príjemca, nie „zvyšok"
+      ownerHead: `${lab.rodina.toUpperCase()} — HLAVNÝ PRÍJEMCA`,
       ownerIcon: kind === "pohreb" ? "🕯" : "💍",
       targetHead: "KOSTOLU / ĎALŠÍ PRÍJEMCA — KOMU KOĽKO",
       emptyText: "Rodina nechce dať kostolu — v poriadku, kostol nepridá. Prípadne pridaj charitu/žiadosť nižšie.",
@@ -569,4 +583,17 @@ export function farskySplitVariant(kind: "pohreb" | "svadba" = "pohreb"): SplitV
       pinnedBadge: "KOSTOL",
     },
   };
+}
+
+// ---- kontextový text reakcie-srdiečka (§ delta bod 2) ----
+// Srdiečko je jediná reakcia modulu (NIE palec — ten ostáva v Core). Význam sa mení
+// podľa typu príspevku: pohreb/úmrtie/smútočné = kondolencia, prosba o modlitbu = „modlím sa".
+export function reakciaToast(z: NabozFeedItem): string {
+  const typ: ReakciaTyp = z.reakciaTyp ?? (z.ukat === "pohreb" ? "kondolencia" : "srdce");
+  switch (typ) {
+    case "kondolencia": return "🕯 Kondolencia odoslaná";
+    case "modlitba": return "🙏 Modlím sa";
+    case "blahozelanie": return "❤ Blahoželáme";
+    default: return "❤";
+  }
 }

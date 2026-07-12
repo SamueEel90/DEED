@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
 import { SIRKA, C, GRAD, GRAD_ZELENY, SPACE, RADIUS } from "@/theme";
-import { toast, Sheet, AvatarUroven, useScrollHore, useViac, useMotiv, useLayout, useTvorbaGate, obalSiroky, QrModal, pressable, IkonaMenu, IkonaNastavenia, IkonaSipVlavo, IkonaSipDole, IkonaPenazenka, IkonaHviezda, IkonaFajka, IkonaDoska, IkonaUsmev, IkonaOsoba, IkonaPin, IkonaSlnko, IkonaMesiac, IkonaStit, SkeletonRiadky, EmptyState, ErrorState, ScreenSwitch } from "@/shared";
+import { toast, Sheet, AvatarUroven, useScrollPamat, useViac, useMotiv, useLayout, useTvorbaGate, obalSiroky, QrModal, pressable, IkonaMenu, IkonaNastavenia, IkonaSipVlavo, IkonaSipDole, IkonaPenazenka, IkonaHviezda, IkonaFajka, IkonaDoska, IkonaUsmev, IkonaOsoba, IkonaPin, IkonaSlnko, IkonaMesiac, IkonaStit, SkeletonRiadky, EmptyState, ErrorState, ScreenSwitch } from "@/shared";
 import { RetazDobraSheet } from "@/features/retaz/RetazDobra";
 import { IntroPruvodca } from "@/components/intro";
 import { nacitajZostatok as nacitajZostatokDB, dobitPenazenku as dobitPenazenkuDB } from "@/lib/osobne";
-import { MojeQrKody } from "@/features/retaz/MojeQrKody";
+import { MojaRetaz } from "@/features/retaz/MojaRetaz";
 import { signOut } from "@/lib/auth";
 import { qrUrl } from "@/lib/qr";
 import { usePouzivatel } from "@/lib/pouzivatel";
@@ -34,8 +34,7 @@ export default function ModulProfil({ wide, walletReq = 0 }: ProfilProps) {
   useVrstva(screen !== "profil", () => setScreen("profil"), screen);
 
   // pri prepnutí obrazovky odscrolluj appku hore
-  const scrollHore = useScrollHore();
-  useEffect(() => { scrollHore(); }, [screen]);
+  useScrollPamat(screen); // pamäť scrollu — „Späť" obnoví pozíciu (nie skok hore)
 
   // ☰ menu → Peňaženka: otvor peňaženku (walletReq sa zvýši pri kliknutí)
   useEffect(() => { if (walletReq) setScreen("wallet"); }, [walletReq]);
@@ -331,12 +330,12 @@ function Penazenka({ toast, onBack, desktop }: PenazenkaProps) {
           </div>
         </div>
 
-        {/* CESTA B — moje QR kódy (rozdelenie honoráru, správca) */}
+        {/* CESTA B — Moja reťaz (FRONTA honoráru, správca) */}
         <div onClick={() => setHonorar(true)} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, marginTop: SPACE.sm, background: "color-mix(in srgb, var(--a-info) 7%, transparent)", border: "1px solid color-mix(in srgb, var(--a-info) 25%, transparent)", borderRadius: RADIUS.md, padding: `${SPACE.sm}px ${SPACE.gutter}px`, cursor: "pointer" }}>
           <span style={{ width: 38, height: 38, borderRadius: RADIUS.sm, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", background: "color-mix(in srgb, var(--a-info) 14%, transparent)", color: "var(--a-info)", fontSize: 17 }}>⛓</span>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 13, fontWeight: 700 }}>Moje QR kódy · reťaz honoráru</div>
-            <div style={{ fontSize: 11, color: C.textTer, marginTop: SPACE.xxs }}>Zoznam QR + pomer · vytvor nový · koľko išlo organizáciám</div>
+            <div style={{ fontSize: 13, fontWeight: 700 }}>Moja reťaz · fronta honoráru</div>
+            <div style={{ fontSize: 11, color: C.textTer, marginTop: SPACE.xxs }}>Zoradené zbierky · % ku každej · po naplnení sa QR prehodí ďalej</div>
           </div>
           <span style={{ color: C.textTer, fontSize: 16 }}>›</span>
         </div>
@@ -373,8 +372,8 @@ function Penazenka({ toast, onBack, desktop }: PenazenkaProps) {
         )}
       </div>
 
-      {/* Moje QR kódy — správca (prerobené „Nastav reťaz na honorár") */}
-      {honorar && <MojeQrKody onClose={() => setHonorar(false)} toast={toast} />}
+      {/* Moja reťaz — FRONTA (§5.1) — nahrádza paralelný split viacerých zbierok pre tvorcu */}
+      {honorar && <MojaRetaz onClose={() => setHonorar(false)} toast={toast} />}
 
       {/* dobitie kartou — mock top-up (reálna platba príde s walletom) */}
       {dobit && <DobitSheet onDobit={dobite} onClose={() => setDobit(false)} />}
