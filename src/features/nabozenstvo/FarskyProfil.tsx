@@ -407,10 +407,12 @@ function FararBtn({ ikona, label, onClick }: { ikona: React.ReactNode; label: st
   );
 }
 function KampanRiadok({ it, onClick }: { it: NabozFeedItem; onClick: () => void }) {
+  const { desktop } = useLayout();
+  const k = desktop ? 2 : 1; // desktop → 2× väčšia miniatúra
   return (
     <div {...pressable(onClick, it.nazov || "")} style={{ background: N.card, border: `1px solid ${N.line}`, borderRadius: RADIUS.sm, padding: SPACE.gutter, marginBottom: SPACE.sm, cursor: "pointer" }}>
       <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm, marginBottom: it.ciel ? SPACE.sm : 0 }}>
-        <Foto src={it.fotky?.[0]} emoji={it.emoji || "💛"} w={46} h={46} radius={RADIUS.xs} sizes="46px" alt={it.nazov} />
+        <Foto src={it.fotky?.[0]} emoji={it.emoji || "💛"} w={46 * k} h={46 * k} radius={RADIUS.xs} sizes={`${46 * k}px`} alt={it.nazov} />
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 14, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it.nazov}</div>
           <div style={{ fontSize: 11.5, color: N.txt2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it.popis}</div>
@@ -422,10 +424,12 @@ function KampanRiadok({ it, onClick }: { it: NabozFeedItem; onClick: () => void 
   );
 }
 function UdalostRiadok({ it, onClick }: { it: NabozFeedItem; onClick: () => void }) {
+  const { desktop } = useLayout();
+  const k = desktop ? 2 : 1; // desktop → 2× väčšia miniatúra
   const col = it.ukat ? KAT_FARBA[it.ukat] : N.ind;
   return (
     <div {...pressable(onClick, it.nazov || "")} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, background: N.card, border: `1px solid ${N.line}`, borderLeft: `3px solid ${col}`, borderRadius: RADIUS.sm, padding: `${SPACE.sm}px ${SPACE.gutter}px`, marginBottom: SPACE.sm, cursor: "pointer" }}>
-      <Foto src={it.fotky?.[0]} emoji={it.emoji || "🗓"} w={52} h={40} radius={RADIUS.xs} sizes="52px" alt={it.nazov} />
+      <Foto src={it.fotky?.[0]} emoji={it.emoji || "🗓"} w={52 * k} h={40 * k} radius={RADIUS.xs} sizes={`${52 * k}px`} alt={it.nazov} />
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 13.5, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it.nazov}</div>
         <div style={{ fontSize: 11, color: N.txt2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it.popis}</div>

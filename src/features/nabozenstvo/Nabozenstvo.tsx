@@ -301,6 +301,8 @@ function NabozDomov({ wide, domFarnost, oblubene, rodina, onRodina, onProfil, on
 // HLAVNÝ feed domovskej farnosti — JEJ príspevky (zbierky s progresom + oznamy/udalosti).
 // Nahrádza mriežku kostolov, keď má user nastavenú domovskú (kostoly ostávajú v Adresári cirkví).
 function FarnostFeed({ f, onPrispevok }: { f: Farnost; onPrispevok: (z: NabozFeedItem) => void }) {
+  const { desktop } = useLayout(); // desktop → 2× väčšie miniatúry (viac plochy)
+  const k = desktop ? 2 : 1;
   const obsah = obsahFarnosti(f.id);
   const zbierky = obsah.filter((it) => it.ntyp === "zbierka" || it.ciel != null);
   const ostatne = obsah.filter((it) => !(it.ntyp === "zbierka" || it.ciel != null));
@@ -312,7 +314,7 @@ function FarnostFeed({ f, onPrispevok }: { f: Farnost; onPrispevok: (z: NabozFee
       {zbierky.length > 0 && <SekciaLabel>ZBIERKY</SekciaLabel>}
       {zbierky.map((z) => (
         <div key={z.id} {...pressable(() => onPrispevok(z), z.nazov)} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, background: N.indBg, border: `1px solid ${N.line}`, borderRadius: RADIUS.sm, padding: SPACE.sm, marginBottom: SPACE.xs, cursor: "pointer" }}>
-          <Foto src={z.fotky?.[0]} emoji={z.emoji ?? "💛"} w={46} h={46} radius={RADIUS.xs} sizes="46px" alt={z.nazov} />
+          <Foto src={z.fotky?.[0]} emoji={z.emoji ?? "💛"} w={46 * k} h={46 * k} radius={RADIUS.xs} sizes={`${46 * k}px`} alt={z.nazov} />
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 13.5, fontWeight: 700, marginBottom: SPACE.xxs, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{z.nazov}</div>
             {z.ciel != null && <MoniBar vyzbierane={z.vyzbierane ?? 0} ciel={z.ciel} mini />}
@@ -325,9 +327,9 @@ function FarnostFeed({ f, onPrispevok }: { f: Farnost; onPrispevok: (z: NabozFee
         <div key={o.id} {...pressable(() => onPrispevok(o), o.nazov)} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, padding: `${SPACE.sm}px 0`, borderTop: `1px solid ${N.line}`, cursor: "pointer" }}>
           {/* miniatúra fotky príspevku (à la spravodajský zoznam) — bez fotky emoji dlaždica */}
           <div style={{ position: "relative", flex: "none" }}>
-            <Foto src={o.fotky?.[0]} emoji={o.emoji ?? "📢"} w={58} h={44} radius={RADIUS.xs} sizes="58px" alt={o.nazov} />
+            <Foto src={o.fotky?.[0]} emoji={o.emoji ?? "📢"} w={58 * k} h={44 * k} radius={RADIUS.xs} sizes={`${58 * k}px`} alt={o.nazov} />
             {o.fotky?.length && o.emoji ? (
-              <span style={{ position: "absolute", bottom: -4, right: -4, fontSize: 12, lineHeight: 1, filter: "drop-shadow(0 1px 2px rgba(0,0,0,.5))" }}>{o.emoji}</span>
+              <span style={{ position: "absolute", bottom: -4, right: -4, fontSize: 12 * k, lineHeight: 1, filter: "drop-shadow(0 1px 2px rgba(0,0,0,.5))" }}>{o.emoji}</span>
             ) : null}
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
