@@ -311,16 +311,25 @@ function FarnostFeed({ f, onPrispevok }: { f: Farnost; onPrispevok: (z: NabozFee
     <div>
       {zbierky.length > 0 && <SekciaLabel>ZBIERKY</SekciaLabel>}
       {zbierky.map((z) => (
-        <div key={z.id} {...pressable(() => onPrispevok(z), z.nazov)} style={{ background: N.indBg, border: `1px solid ${N.line}`, borderRadius: RADIUS.sm, padding: SPACE.sm, marginBottom: SPACE.xs, cursor: "pointer" }}>
-          <div style={{ fontSize: 13.5, fontWeight: 700, marginBottom: SPACE.xxs, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{z.emoji ? `${z.emoji} ` : ""}{z.nazov}</div>
-          {z.ciel != null && <MoniBar vyzbierane={z.vyzbierane ?? 0} ciel={z.ciel} mini />}
+        <div key={z.id} {...pressable(() => onPrispevok(z), z.nazov)} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, background: N.indBg, border: `1px solid ${N.line}`, borderRadius: RADIUS.sm, padding: SPACE.sm, marginBottom: SPACE.xs, cursor: "pointer" }}>
+          <Foto src={z.fotky?.[0]} emoji={z.emoji ?? "💛"} w={46} h={46} radius={RADIUS.xs} sizes="46px" alt={z.nazov} />
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 13.5, fontWeight: 700, marginBottom: SPACE.xxs, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{z.nazov}</div>
+            {z.ciel != null && <MoniBar vyzbierane={z.vyzbierane ?? 0} ciel={z.ciel} mini />}
+          </div>
         </div>
       ))}
 
       {ostatne.length > 0 && <SekciaLabel>OZNAMY &amp; UDALOSTI</SekciaLabel>}
       {ostatne.map((o) => (
         <div key={o.id} {...pressable(() => onPrispevok(o), o.nazov)} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, padding: `${SPACE.sm}px 0`, borderTop: `1px solid ${N.line}`, cursor: "pointer" }}>
-          <span style={{ width: 34, height: 34, borderRadius: RADIUS.xs, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, background: tint(N.ind, .12) }}>{o.emoji ?? "📢"}</span>
+          {/* miniatúra fotky príspevku (à la spravodajský zoznam) — bez fotky emoji dlaždica */}
+          <div style={{ position: "relative", flex: "none" }}>
+            <Foto src={o.fotky?.[0]} emoji={o.emoji ?? "📢"} w={58} h={44} radius={RADIUS.xs} sizes="58px" alt={o.nazov} />
+            {o.fotky?.length && o.emoji ? (
+              <span style={{ position: "absolute", bottom: -4, right: -4, fontSize: 12, lineHeight: 1, filter: "drop-shadow(0 1px 2px rgba(0,0,0,.5))" }}>{o.emoji}</span>
+            ) : null}
+          </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 13, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{o.nazov}</div>
             {o.lok && <div style={{ fontSize: 11, color: N.txt3, marginTop: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>📍 {o.lok}</div>}

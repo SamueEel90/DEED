@@ -410,7 +410,7 @@ function KampanRiadok({ it, onClick }: { it: NabozFeedItem; onClick: () => void 
   return (
     <div {...pressable(onClick, it.nazov || "")} style={{ background: N.card, border: `1px solid ${N.line}`, borderRadius: RADIUS.sm, padding: SPACE.gutter, marginBottom: SPACE.sm, cursor: "pointer" }}>
       <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm, marginBottom: it.ciel ? SPACE.sm : 0 }}>
-        <span style={{ fontSize: 18, flex: "none" }}>{it.emoji || "💛"}</span>
+        <Foto src={it.fotky?.[0]} emoji={it.emoji || "💛"} w={46} h={46} radius={RADIUS.xs} sizes="46px" alt={it.nazov} />
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 14, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it.nazov}</div>
           <div style={{ fontSize: 11.5, color: N.txt2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it.popis}</div>
@@ -425,7 +425,7 @@ function UdalostRiadok({ it, onClick }: { it: NabozFeedItem; onClick: () => void
   const col = it.ukat ? KAT_FARBA[it.ukat] : N.ind;
   return (
     <div {...pressable(onClick, it.nazov || "")} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, background: N.card, border: `1px solid ${N.line}`, borderLeft: `3px solid ${col}`, borderRadius: RADIUS.sm, padding: `${SPACE.sm}px ${SPACE.gutter}px`, marginBottom: SPACE.sm, cursor: "pointer" }}>
-      <span style={{ fontSize: 17, flex: "none" }}>{it.emoji || "🗓"}</span>
+      <Foto src={it.fotky?.[0]} emoji={it.emoji || "🗓"} w={52} h={40} radius={RADIUS.xs} sizes="52px" alt={it.nazov} />
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 13.5, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it.nazov}</div>
         <div style={{ fontSize: 11, color: N.txt2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it.popis}</div>
