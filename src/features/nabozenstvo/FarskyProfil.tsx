@@ -67,15 +67,14 @@ export function FarskyProfil({ farnost, farar, jeDomovska, following, onToggleFo
 
   const obsah = obsahFarnosti(farnost.id);
   const stat = farnostStat(farnost.id);
-  const kampane = obsah.filter((it) => it.ntyp === "zbierka");
   const udalosti = obsah.filter((it) => it.ntyp === "udalost");
   const vTabe = obsah.filter((it) => it.ntyp === tab);
   const maKontakt = !!(view.adresa || view.tel || view.email || view.web || view.omseSuhrn);
 
   // vlastný FAB profilu (parish-scoped) — deps [farnost.id, farar] (profil→profil sa neremountuje bez key)
-  // verejné pridávanie príspevku je zrušené — pridáva LEN správca (farár) cez svoje rozhranie
+  // farár = celý strom pridania; USER = len oznam (PridatSheet ponuku zúži podľa roly)
   useStrankaAkcie(() => ({
-    pridat: farar ? { id: "add", label: "Pridať do farnosti", onClick: onPridat } : undefined,
+    pridat: { id: "add", label: farar ? "Pridať do farnosti" : "Pridať oznam", onClick: onPridat },
     extra: farar ? [{ id: "kal", label: "Kalendár & rozvrh", popis: "Omše, sviatky, udalosti", ikona: <IkonaDoska size={18} color={N.ind} />, onClick: onKalendar }] : [],
   }), [farnost.id, farar]);
 
@@ -152,8 +151,15 @@ export function FarskyProfil({ farnost, farar, jeDomovska, following, onToggleFo
 
         {/* Sledovať (jeden zdroj pravdy = modulový oblubene) */}
         {onToggleFollow && (
-          <button onClick={onToggleFollow} style={{ width: "100%", height: 44, border: `1px solid ${following ? N.greenEdge : N.indEdge}`, background: following ? N.greenBg : N.indBg, color: following ? N.green : N.ind, borderRadius: RADIUS.sm, fontWeight: 700, fontSize: 14, fontFamily: "inherit", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: SPACE.xs, marginBottom: SPACE.gutter }}>
+          <button onClick={onToggleFollow} style={{ width: "100%", height: 44, border: `1px solid ${following ? N.greenEdge : N.indEdge}`, background: following ? N.greenBg : N.indBg, color: following ? N.green : N.ind, borderRadius: RADIUS.sm, fontWeight: 700, fontSize: 14, fontFamily: "inherit", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: SPACE.xs, marginBottom: farar ? SPACE.gutter : SPACE.sm }}>
             <Srdce size={16} filled={following} color={following ? N.green : N.ind} /> {following ? "Sledované" : "Sledovať"}
+          </button>
+        )}
+
+        {/* USER: pridať oznam priamo z profilu farnosti (smútočný/jubilejný/poďakovanie/modlitba) */}
+        {!farar && (
+          <button onClick={onPridat} style={{ width: "100%", height: 44, border: `1px solid ${N.line}`, background: N.card, color: N.txt, borderRadius: RADIUS.sm, fontWeight: 700, fontSize: 14, fontFamily: "inherit", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: SPACE.xs, marginBottom: SPACE.gutter }}>
+            ＋ Pridať oznam
           </button>
         )}
 
@@ -209,37 +215,7 @@ export function FarskyProfil({ farnost, farar, jeDomovska, following, onToggleFo
           </div>
         )}
 
-        {/* ===== AKTUÁLNE KAMPANE ===== */}
-        {kampane.length > 0 && (
-          <>
-            <SekciaNadpis>AKTUÁLNE KAMPANE</SekciaNadpis>
-            {kampane.map((it) => <KampanRiadok key={it.id} it={it} onClick={() => onDetail(it)} />)}
-          </>
-        )}
-
-        {/* ===== NADCHÁDZAJÚCE UDALOSTI ===== */}
-        {udalosti.length > 0 && (
-          <>
-            <SekciaNadpis>NADCHÁDZAJÚCE UDALOSTI</SekciaNadpis>
-            {udalosti.map((it) => <UdalostRiadok key={it.id} it={it} onClick={() => onDetail(it)} />)}
-          </>
-        )}
-
-        {/* ===== KONTAKT + ČASY OMŠÍ ===== */}
-        {maKontakt && (
-          <>
-            <SekciaNadpis>KONTAKT</SekciaNadpis>
-            <div style={{ background: N.card, border: `1px solid ${N.line}`, borderRadius: RADIUS.sm, padding: SPACE.gutter, display: "grid", gap: SPACE.xs }}>
-              {view.omseSuhrn && <KontaktRiadok ikona="🕑" label="Časy omší" hodnota={view.omseSuhrn} />}
-              {view.adresa && <KontaktRiadok ikona="📍" label="Adresa" hodnota={view.adresa} />}
-              {view.tel && <KontaktRiadok ikona="📞" label="Telefón" hodnota={view.tel} />}
-              {view.email && <KontaktRiadok ikona="✉" label="E-mail" hodnota={view.email} />}
-              {view.web && <KontaktRiadok ikona="🌐" label="Web" hodnota={view.web} />}
-            </div>
-          </>
-        )}
-
-        {/* ===== TABY OBSAHU (Zbierky / Udalosti / Oznamy / Dobrovoľníctvo) s počtami ===== */}
+        {/* ===== OBSAH FARNOSTI — taby (Zbierky / Udalosti / Oznamy / Dobrovoľníctvo), hneď pod platobným modulom ===== */}
         <SekciaNadpis>OBSAH FARNOSTI</SekciaNadpis>
         <SegTabs options={TABY.map((t) => t.label)} value={TABY.find((t) => t.key === tab)!.label}
           onChange={(l: string) => setTab(TABY.find((t) => t.label === l)!.key)} ariaLabel="Taby profilu farnosti"
@@ -255,6 +231,28 @@ export function FarskyProfil({ farnost, farar, jeDomovska, following, onToggleFo
           vTabe.map((it) => <KampanRiadok key={it.id} it={it} onClick={() => onDetail(it)} />)
         ) : (
           vTabe.map((it) => <UdalostRiadok key={it.id} it={it} onClick={() => onDetail(it)} />)
+        )}
+
+        {/* ===== NADCHÁDZAJÚCE UDALOSTI — pod obsahom farnosti ===== */}
+        {udalosti.length > 0 && (
+          <>
+            <SekciaNadpis>NADCHÁDZAJÚCE UDALOSTI</SekciaNadpis>
+            {udalosti.map((it) => <UdalostRiadok key={it.id} it={it} onClick={() => onDetail(it)} />)}
+          </>
+        )}
+
+        {/* ===== KONTAKT + ČASY OMŠÍ — na spodku profilu ===== */}
+        {maKontakt && (
+          <>
+            <SekciaNadpis>KONTAKT</SekciaNadpis>
+            <div style={{ background: N.card, border: `1px solid ${N.line}`, borderRadius: RADIUS.sm, padding: SPACE.gutter, display: "grid", gap: SPACE.xs }}>
+              {view.omseSuhrn && <KontaktRiadok ikona="🕑" label="Časy omší" hodnota={view.omseSuhrn} />}
+              {view.adresa && <KontaktRiadok ikona="📍" label="Adresa" hodnota={view.adresa} />}
+              {view.tel && <KontaktRiadok ikona="📞" label="Telefón" hodnota={view.tel} />}
+              {view.email && <KontaktRiadok ikona="✉" label="E-mail" hodnota={view.email} />}
+              {view.web && <KontaktRiadok ikona="🌐" label="Web" hodnota={view.web} />}
+            </div>
+          </>
         )}
 
         {/* ===== DOKLADY O POUŽITÍ ===== */}

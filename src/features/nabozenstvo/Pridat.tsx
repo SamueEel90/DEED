@@ -1,16 +1,19 @@
 import { useState } from "react";
 import { SPACE, RADIUS } from "@/theme";
-import { Input, Switch, SplitQrSheet, tint } from "@/shared";
+import { Input, Switch, SplitQrSheet, FotoVyber, tint } from "@/shared";
 import { pressable } from "@/components/pressable";
+import { usePouzivatel } from "@/lib/pouzivatel";
 import { N, SheetPanel } from "./ui";
-import { SPLIT_LABELY, farskySplitVariant, type Farnost } from "./mock";
+import { SPLIT_LABELY, farskySplitVariant, pridajPrispevok, type Farnost, type NabozFeedItem, type NabozTyp, type UdalostKat, type ReakciaTyp } from "./mock";
 
 /*
   ============================================================
   STROM PRIDANIA „+" (matica: uzly · polia · akcie) — role-aware.
   · USER → len jeho možnosti: Oznam (smútočný · jubilejný · poďakovanie · prosba o modlitbu)
   · FARÁR (kontext Farnosť) → celý strom: Zbierka · Udalosť · Oznam · Dobrovoľníctvo
-  To isté tlačidlo, ponuka sa mení podľa roly (§ Vstupné body). Mock — publish = toast.
+  To isté tlačidlo, ponuka sa mení podľa roly (§ Vstupné body).
+  Publish = REÁLNY príspevok (pridajPrispevok → localStorage) — objaví sa vo
+  feede farnosti, v taboch profilu aj v počtoch. Fotky cez FotoVyber (data URL).
   ============================================================
 */
 
@@ -53,7 +56,7 @@ const UDALOST: Kat = {
     { id: "u-akcia", emoji: "🎶", titul: "Akcia (koncert, ples, farský deň)", popis: "Vstupné / zbierka voliteľné", kto: "F", datum: true,
       polia: ["Názov", "Dátum", "Popis", "Foto", "Vstupné/zbierka (voliteľné)"], akcie: ["Zúčastním sa", "Prispieť", "Pripomeň"], feed: "farský" },
     { id: "u-svadba", emoji: "💍", titul: "Svadba", popis: "Mená snúbencov + foto len s ich súhlasom · QR-merge split", kto: "R→F", datum: true, split: "svadba",
-      polia: ["Mená snúbencov (+ súhlas)", "Dátum", "Zbierka: QR-merge split", "Text"], akcie: ["Prispieť"], feed: "iba farský" },
+      polia: ["Mená snúbencov (+ súhlas)", "Dátum", "Foto/video (so súhlasom)", "Zbierka: QR-merge split", "Text"], akcie: ["Prispieť"], feed: "iba farský" },
     { id: "u-pohreb", emoji: "🕯", titul: "Pohreb", popis: "Meno zosnulého + súhlas rodiny · Split QR · predĺžené okno ~týždeň", kto: "R→F", datum: true, split: "pohreb",
       polia: ["Meno zosnulého (+ súhlas rodiny)", "Foto (voliteľné)", "Dátum", "Zbierka QR-merge split", "Text"], akcie: ["Prispieť"], feed: "iba farský" },
   ],
@@ -104,7 +107,7 @@ export function PridatSheet({ farar, farnost, onClose, toast }: {
           <BackRiadok onBack={() => setUzol(null)} label={farar ? (kat?.titul ?? "Späť") : "Pridať oznam"} />
           <UzolForm uzol={uzol} farar={farar} farnost={farnost}
             onSplit={uzol.split ? () => setSplit(uzol.split!) : undefined}
-            onPublish={() => { toast(publishText(uzol, farar)); onClose(); }}
+            onPublish={(it) => { if (farnost) pridajPrispevok(farnost.id, it); toast(publishText(uzol, farar)); onClose(); }}
             onHelp={uzol.helpWizard ? () => { toast("Otváram Help sprievodcu (8 krokov) — escrow/IBAN overenie (demo)"); onClose(); } : undefined}
             toast={toast} />
         </SheetPanel>
@@ -201,18 +204,62 @@ function publishText(u: Uzol, farar: boolean): string {
   return `„${u.titul}" zverejnené do farnosti · feed: ${u.feed}`;
 }
 
-// ---- FORM uzla — mock polia + akcie preview + ukážka/publikovať ----
+// ---- zostavenie REÁLNEHO príspevku z formulára (ntyp/ukat/reakcia z uzla) ----
+const UKAT_UZLA: Record<string, UdalostKat> = {
+  "u-omsa": "omsa", "u-sviatok": "sviatok", "u-put": "put", "u-akcia": "akcia",
+  "u-svadba": "svadba", "u-pohreb": "pohreb", "d-brigada": "brigada", "o-umrtie": "pohreb",
+};
+const REAKCIA_UZLA: Record<string, ReakciaTyp> = {
+  "o-smutocny": "kondolencia", "o-umrtie": "kondolencia", "o-modlitba": "modlitba", "o-jubilejny": "blahozelanie",
+};
+const NTYP_META: Record<NabozTyp, { tag: string; badge: string }> = {
+  zbierka: { tag: "Zbierka", badge: "ZBIERKA" }, udalost: { tag: "Udalosť", badge: "UDALOSŤ" },
+  oznam: { tag: "Oznam", badge: "OZNAM" }, dobrovolnictvo: { tag: "Dobrovoľníctvo", badge: "VÝZVA" },
+};
+
+function postavPrispevok(uzol: Uzol, opts: {
+  farar: boolean; farnost?: Farnost; autor: string; text: string; polia: Record<string, string>; fotky: string[];
+}): NabozFeedItem {
+  const { farar, farnost, autor, text, polia, fotky } = opts;
+  const pole = (test: (l: string) => boolean) => { const p = uzol.polia.find((x) => test(x.toLowerCase())); return p ? polia[p] : undefined; };
+  const ntyp: NabozTyp = uzol.id.startsWith("z-") ? "zbierka" : uzol.id.startsWith("u-") ? "udalost" : uzol.id.startsWith("d-") ? "dobrovolnictvo" : "oznam";
+  const meta = NTYP_META[ntyp];
+  const nazovPola = pole((l) => l.startsWith("názov"));
+  const meno = pole((l) => l.includes("meno") || l.includes("mená"));
+  const nazov = (nazovPola || (meno ? `${uzol.titul} — ${meno}` : "") || text.slice(0, 60) || uzol.titul).trim();
+  const suma = pole((l) => l.includes("suma") || l.includes("€"));
+  const ciel = suma ? +suma || undefined : undefined;
+  const datum = pole((l) => l.includes("dátum") || l.includes("datum"));
+  return {
+    id: `naboz-${Date.now()}`, comp: "data", typ: ntyp === "zbierka" ? "charita" : "skutok", modul: "charity", kat: "Komunita",
+    ntyp, skore: 6, typSituacie: "normal", dni: 0, podpora: 0,
+    lat: farnost?.lat, lng: farnost?.lng, lok: farnost?.obec,
+    farnostId: farnost?.id, cirkev: farnost?.cirkev ?? "", komunita: farar ? farnost?.nazov : autor,
+    nazov, overena: farar, badgeL: `${uzol.emoji} ${meta.badge}`, tag: meta.tag, emoji: uzol.emoji,
+    popis: text || uzol.popis, pribeh: text || undefined,
+    datum: datum || undefined, ukat: UKAT_UZLA[uzol.id], reakciaTyp: REAKCIA_UZLA[uzol.id],
+    rsvp: uzol.akcie?.includes("Zúčastním sa") || undefined, split: uzol.split ? true : undefined,
+    ciel, vyzbierane: ciel != null ? 0 : undefined,
+    fotky: fotky.length ? fotky : undefined,
+  };
+}
+
+// ---- FORM uzla — polia + akcie preview + ukážka/publikovať (reálny príspevok) ----
 function UzolForm({ uzol, farar, farnost, onSplit, onPublish, onHelp, toast }: {
-  uzol: Uzol; farar: boolean; farnost?: Farnost; onSplit?: () => void; onPublish: () => void; onHelp?: () => void; toast: (m: string) => void;
+  uzol: Uzol; farar: boolean; farnost?: Farnost; onSplit?: () => void; onPublish: (it: NabozFeedItem) => void; onHelp?: () => void; toast: (m: string) => void;
 }) {
+  const { celeMeno } = usePouzivatel();
   const [text, setText] = useState("");
   const [notif, setNotif] = useState(uzol.id === "o-zmena");
   const [preview, setPreview] = useState(false);
   const [polia, setPolia] = useState<Record<string, string>>({});
+  const [fotky, setFotky] = useState<string[]>([]); // reálne fotky/video (FotoVyber → data URL)
   const setPole = (k: string, v: string) => setPolia((s) => ({ ...s, [k]: v }));
   const lab = uzol.split ? SPLIT_LABELY[uzol.split] : null;
-  // hlavné textové pole (POPIS/TEXT OZNAMU) už rieši voľný text → nezobrazuj ho druhýkrát v poliach
-  const viditelnePolia = uzol.polia.filter((p) => { const l = p.toLowerCase(); return !(l === "popis" || l === "opis" || l.startsWith("text")); });
+  // NÁZOV sa renderuje ako PRVÉ pole (pred popisom); hlavné textové pole (POPIS/TEXT
+  // OZNAMU) rieši voľný text → obe vynechaj zo zoznamu POLIA
+  const nazovPole = uzol.polia.find((p) => p.toLowerCase().startsWith("názov"));
+  const viditelnePolia = uzol.polia.filter((p) => { const l = p.toLowerCase(); return !(l === "popis" || l === "opis" || l.startsWith("text") || p === nazovPole); });
 
   return (
     <div>
@@ -225,7 +272,16 @@ function UzolForm({ uzol, farar, farnost, onSplit, onPublish, onHelp, toast }: {
         {uzol.datum && <MetaChip>🗓 kalendár + pripomienka</MetaChip>}
       </div>
 
-      {/* hlavné textové pole (mock) */}
+      {/* NÁZOV — vždy prvé pole (pred popisom) */}
+      {nazovPole && (
+        <>
+          <div style={{ fontSize: 11, fontWeight: 700, color: N.txt3, letterSpacing: ".03em", marginBottom: SPACE.xxs }}>NÁZOV</div>
+          <Input value={polia[nazovPole] ?? ""} onChange={(v) => setPole(nazovPole, v)} placeholder="Názov príspevku…" />
+          <div style={{ height: SPACE.sm }} />
+        </>
+      )}
+
+      {/* hlavné textové pole */}
       <div style={{ fontSize: 11, fontWeight: 700, color: N.txt3, letterSpacing: ".03em", marginBottom: SPACE.xxs }}>
         {uzol.id.startsWith("o-") ? "TEXT OZNAMU" : "POPIS"}
       </div>
@@ -237,9 +293,19 @@ function UzolForm({ uzol, farar, farnost, onSplit, onPublish, onHelp, toast }: {
         <>
           <div style={{ fontSize: 11, fontWeight: 700, color: N.txt3, letterSpacing: ".03em", margin: `${SPACE.md}px 0 ${SPACE.xs}px` }}>POLIA</div>
           <div style={{ display: "grid", gap: SPACE.sm }}>
-            {viditelnePolia.map((p) => (
-              <PoleInput key={p} label={p} value={polia[p] ?? ""} onChange={(v) => setPole(p, v)} toast={toast} />
-            ))}
+            {viditelnePolia.map((p) => {
+              // foto/video → REÁLNY výber z disku s náhľadom (nie mock attach)
+              const l = p.toLowerCase();
+              if (typPola(p) === "foto" && !l.includes("doklad") && !l.includes("escrow")) {
+                return (
+                  <div key={p}>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: N.txt3, letterSpacing: ".02em", marginBottom: SPACE.xxs }}>{p.toUpperCase()}</div>
+                    <FotoVyber fotky={fotky} onZmena={setFotky} max={3} video={l.includes("video")} />
+                  </div>
+                );
+              }
+              return <PoleInput key={p} label={p} value={polia[p] ?? ""} onChange={(v) => setPole(p, v)} toast={toast} />;
+            })}
           </div>
         </>
       )}
@@ -263,7 +329,7 @@ function UzolForm({ uzol, farar, farnost, onSplit, onPublish, onHelp, toast }: {
       {farar && onSplit && (
         <div onClick={onSplit} style={{ marginTop: SPACE.md, border: `1px solid ${N.greenEdge}`, background: N.greenBg, borderRadius: RADIUS.sm, padding: SPACE.gutter, cursor: "pointer" }}>
           <div style={{ fontSize: 13.5, fontWeight: 700, color: N.green }}>⚖ Rozdeliť dar (Split QR)</div>
-          {lab && <div style={{ fontSize: 11.5, color: N.txt2, marginTop: SPACE.xxs }}>{lab.rodina} ↔ {lab.kostol} · min 3 % · % sa po vytvorení zafixujú</div>}
+          {lab && <div style={{ fontSize: 11.5, color: N.txt2, marginTop: SPACE.xxs }}>{lab.rodina} ↔ {lab.kostol} · krok 5 % · 0 % ok (dobrovoľné) · % sa po vytvorení zafixujú</div>}
         </div>
       )}
 
@@ -285,10 +351,11 @@ function UzolForm({ uzol, farar, farnost, onSplit, onPublish, onHelp, toast }: {
             <>
               <div style={{ marginTop: SPACE.md, background: N.card, border: `1px solid ${N.line}`, borderRadius: RADIUS.md, padding: SPACE.gutter }}>
                 <div style={{ fontSize: 10.5, color: N.txt3, fontWeight: 700 }}>UKÁŽKA · hlavička</div>
-                <div style={{ fontSize: 13.5, fontWeight: 700, marginTop: SPACE.xxs }}>{farar ? (farnost?.nazov ?? "Farský úrad") : "Tvoje meno"} · ✓ overená</div>
+                <div style={{ fontSize: 13.5, fontWeight: 700, marginTop: SPACE.xxs }}>{farar ? `${farnost?.nazov ?? "Farský úrad"} · ✓ overená` : (celeMeno || "Tvoje meno")}</div>
+                {fotky.length > 0 && <div style={{ fontSize: 11, color: N.txt3, marginTop: SPACE.xxs }}>📎 {fotky.length} {fotky.length === 1 ? "príloha" : "prílohy"}</div>}
                 <div style={{ fontSize: 13, color: N.txt2, marginTop: SPACE.xs, lineHeight: 1.5 }}>{text || <span style={{ color: N.txt3 }}>(text oznamu)</span>}</div>
               </div>
-              <button onClick={onPublish} style={ctaStyle(N.green)}>Publikovať</button>
+              <button onClick={() => onPublish(postavPrispevok(uzol, { farar, farnost, autor: celeMeno || "Farník", text, polia, fotky }))} style={ctaStyle(N.green)}>Publikovať</button>
             </>
           )}
         </>

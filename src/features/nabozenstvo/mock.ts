@@ -9,6 +9,7 @@
 import { U } from "@/theme";
 import type { CharitaFeedItem, HladanieZaznam } from "@/types";
 import type { SplitVariant } from "@/shared";
+import { nacitajStav, ulozStav } from "./stav";
 
 // ---- typ obsahu (chips = TYP obsahu, NIE porovnávanie cirkví) ----
 export type NabozTyp = "zbierka" | "udalost" | "oznam" | "dobrovolnictvo";
@@ -415,7 +416,14 @@ export const KOMUNITA_FARNOST: Record<string, string> = {
   "Židovská obec Bratislava": "zob-ba",
 };
 export const farnostIdOf = (it: NabozFeedItem): string => it.farnostId ?? KOMUNITA_FARNOST[it.komunita ?? ""] ?? "";
-export const obsahFarnosti = (fid: string): NabozFeedItem[] => FEED_ITEMS.filter((it) => farnostIdOf(it) === fid);
+
+// ---- vlastné (publikované) príspevky — perzistované v localStorage per farnosť ----
+// PridatSheet po „Publikovať" uloží reálnu položku; feedy/taby/kalendár ju čítajú
+// cez obsahFarnosti (vlastné navrchu — najnovšie prvé). Mock bez backendu.
+export const vlastnePrispevky = (fid: string): NabozFeedItem[] => nacitajStav<NabozFeedItem[]>("prispevky", fid, []);
+export function pridajPrispevok(fid: string, it: NabozFeedItem) { ulozStav("prispevky", fid, [it, ...vlastnePrispevky(fid)]); }
+export const obsahFarnosti = (fid: string): NabozFeedItem[] =>
+  [...vlastnePrispevky(fid), ...FEED_ITEMS.filter((it) => farnostIdOf(it) === fid)];
 
 // odvodené počty obsahu farnosti — stat riadok karty · počty v taboch profilu · správcovský prehľad
 export interface FarnostStat { zbierky: number; udalosti: number; oznamy: number; dobro: number; spolu: number; }
@@ -573,17 +581,19 @@ export const SPLIT_LABELY = {
   svadba: { rodina: "Novomanželom", kostol: "Kostolu — dar (dobrovoľné)" },
 };
 
-// farársky variant pre zdieľaný SplitQrSheet (§ delta bod 1): nadpis „Rozdeliť dar",
-// vlastník = rodina (dostane zvyšok), predvyplnený kostol na 3 % (odstrániteľný — ak
-// rodina nechce dať, kostol nepridá; nie ťahanie na 0). Min 3 %, % sa po vytvorení zafixujú.
+// farársky variant pre zdieľaný SplitQrSheet (Split bežec, 6.7.2026): nadpis „Rozdeliť dar",
+// vlastník = rodina (dostane zvyšok), predvyplnený kostol na 5 % (odstrániteľný). V Náboženstve
+// minPct=0 → 0 % povolené (kostolný podiel je dobrovoľný dar — 0 % = nepridá sa, žiadna hláška).
+// Žiadna fronta — delí sa výnos JEDNEJ zbierky. Krok 5 %, % sa po vytvorení zafixujú.
 export function farskySplitVariant(kind: "pohreb" | "svadba" = "pohreb"): SplitVariant {
   const lab = SPLIT_LABELY[kind];
   return {
     nadpis: "Rozdeliť dar",
     emoji: kind === "pohreb" ? "🕯" : "💍",
-    podnadpis: "Rodina nastaví lištou · kostolný podiel je dobrovoľný dar",
+    podnadpis: "Rodina nastaví lištou · kostolný podiel je dobrovoľný dar (0 % ok)",
     ownerLabel: lab.rodina,
-    preset: [{ id: "kostol", komu: lab.kostol, pct: 3 }], // odstrániteľný (bez pinned)
+    minPct: 0, // Náboženstvo: 0 % povolené, žiadna hláška o minime
+    preset: [{ id: "kostol", komu: lab.kostol, pct: 5 }], // odstrániteľný (bez pinned)
     qrPopis: "Rozdelenie daru medzi príjemcov (farársky Split QR)",
     labely: {
       // §delta bod 1: preč „cico / zvyšok / ide ďalej" — rodina je hlavný príjemca, nie „zvyšok"

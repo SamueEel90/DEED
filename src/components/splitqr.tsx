@@ -15,7 +15,7 @@ import { QrModal } from "@/components/qr";
 import { Foto } from "@/components/media";
 import { PodporaSekcia, PlatbaModal } from "@/components/platba";
 import { IkonaFajka } from "@/components/icons";
-import { SplitConfigStep, splitValid, splitOwnerPct, splitCielePayload, splitPreQrModal, type SplitCiel, type SplitLabely } from "@/components/splitconfig";
+import { SplitConfigStep, splitValid, splitOwnerPct, splitCielePayload, splitPreQrModal, SPLIT_MIN, type SplitCiel, type SplitLabely } from "@/components/splitconfig";
 import { useQrSplitCreate, useQrSplitGet, useQrSplitPay } from "@/data";
 import { usePouzivatel } from "@/lib/pouzivatel";
 import type { QrSplitRow } from "@/types";
@@ -35,9 +35,10 @@ export type SplitVariant = {
   emoji?: string;          // ikona sheetu (napr. 🕯)
   podnadpis?: string;      // riadok pod titulkom
   ownerLabel: string;      // vlastník = príjemca zvyšku (napr. „Rodine (pozostalí)")
-  preset: SplitCiel[];     // predvyplnení príjemcovia (napr. kostol 3 %, odstrániteľný)
+  preset: SplitCiel[];     // predvyplnení príjemcovia (napr. kostol 5 %, odstrániteľný)
   qrPopis?: string;        // popis v QrModal
   labely?: SplitLabely;    // texty/ikony do SplitConfigStep
+  minPct?: number;         // minimálny podiel — Náboženstvo dáva 0 (0 % povolené, bez fronty)
 };
 
 interface SplitQrSheetProps {
@@ -64,7 +65,8 @@ export function SplitQrSheet({ titul = "Skutok", caseId = null, zdroj = "osobny"
   );
   const [vytvoreny, setVytvoreny] = useState<QrSplitRow | null>(null);
   const [vyrabam, setVyrabam] = useState(false);
-  const validne = splitValid(ciele);
+  const minPct = variant?.minPct ?? SPLIT_MIN;
+  const validne = splitValid(ciele, minPct);
 
   async function vytvor() {
     setVyrabam(true);
@@ -101,7 +103,7 @@ export function SplitQrSheet({ titul = "Skutok", caseId = null, zdroj = "osobny"
         </div>
       </div>
 
-      <SplitConfigStep ownerLabel={owner} ciele={ciele} onCiele={setCiele} ownerColor={GREEN} labely={variant?.labely} />
+      <SplitConfigStep ownerLabel={owner} ciele={ciele} onCiele={setCiele} ownerColor={GREEN} labely={variant?.labely} minPct={minPct} />
 
       <button onClick={vytvor} disabled={!validne || vyrabam}
         style={{ width: "100%", height: 50, borderRadius: RADIUS.md, border: "none", marginTop: SPACE.gutter, fontWeight: 700, fontSize: 15, fontFamily: "inherit",

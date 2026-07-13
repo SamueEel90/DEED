@@ -71,6 +71,7 @@ export default function ModulNabozenstvo({ wide }: { wide?: boolean; otvorModul?
         {screen === "domov" && (
           <NabozDomov wide={wide} domFarnost={domFarnost} oblubene={oblubene} rodina={rodina} onRodina={setRodina}
             onProfil={otvorProfil} onHladaj={() => setHladaj(true)} onSprievodca={() => setSheet("dir")}
+            onPridat={() => setSheet("add")}
             onToggleFollow={toggleFollow}
             spravujeDomov={domovska != null && spravovana === domovska}
             onToggleSpravca={() => domovska && toggleSpravca(domovska)}
@@ -148,13 +149,14 @@ type DomovProps = {
   onProfil: (f: Farnost) => void;
   onHladaj: () => void;
   onSprievodca: () => void;
+  onPridat: () => void;         // otvor PridatSheet (user = len oznam, farár = celý strom)
   onToggleFollow: (id: string) => void;
   onPrispevok: (z: NabozFeedItem) => void;
   spravujeDomov: boolean;       // farár režim pre domovskú farnosť (label + toggle)
   onToggleSpravca: () => void;  // prepni účet farára pre domovskú farnosť
 };
 
-function NabozDomov({ wide, domFarnost, oblubene, rodina, onRodina, onProfil, onHladaj, onSprievodca, onToggleFollow, onPrispevok, spravujeDomov, onToggleSpravca }: DomovProps) {
+function NabozDomov({ wide, domFarnost, oblubene, rodina, onRodina, onProfil, onHladaj, onSprievodca, onPridat, onToggleFollow, onPrispevok, spravujeDomov, onToggleSpravca }: DomovProps) {
   const { desktop } = useLayout();
   const [sort, setSort] = useState<"najblizsie" | "abecedne">("najblizsie");
   const [radius, setRadius] = useState<string>("mesto");
@@ -162,12 +164,12 @@ function NabozDomov({ wide, domFarnost, oblubene, rodina, onRodina, onProfil, on
   const radiusy = FEED_CFG.radiusy as Record<string, { km: number; krat: string }>;
   const radiusKm = radiusy[radius]?.km ?? 15;
 
-  // Žiadny verejný „+": oznamy/zbierky tvorí len správca cirkvi (farnosť) cez svoje rozhranie.
-  // V ☰ ostáva adresár cirkví (sprievodca výberom + nastavenie domovskej).
+  // „+" na domove: user s domovskou farnosťou pridá OZNAM, farár celý strom (PridatSheet
+  // ponuku zúži podľa roly). V ☰ ostáva adresár cirkví (sprievodca výberom + domovská).
   useStrankaAkcie(() => ({
-    pridat: undefined,
+    pridat: domFarnost ? { id: "add", label: spravujeDomov ? "Pridať do farnosti" : "Pridať oznam", onClick: onPridat } : undefined,
     extra: [{ id: "dir", label: "Adresár cirkví SR", popis: "18 registrovaných cirkví · nájdi a nastav domovskú", ikona: <IkonaInstitucia size={18} color={N.ind} />, onClick: onSprievodca }],
-  }), []);
+  }), [domFarnost?.id, spravujeDomov]);
 
   // okruh filtruje kostoly podľa vzdialenosti (adresár sa NIKDY nerebríčkuje — len filter + radenie)
   const vOkruhu = FARNOSTI.filter((f) => kmNum(f.vzdial) <= radiusKm);
@@ -181,12 +183,12 @@ function NabozDomov({ wide, domFarnost, oblubene, rodina, onRodina, onProfil, on
 
   const adrPadX = desktop ? 0 : SPACE.md;
 
-  // panel „Moja cirkev/farnosť" — na mobile stohovaný hore, na desktope bočný (ako „Môj DEED" v Domove).
+  // panel „Moja farnosť" — na mobile stohovaný hore, na desktope bočný (ako „Môj DEED" v Domove).
   // Príspevky domovskej sa už zobrazujú ako HLAVNÝ obsah (farnostFeed) — panel drží kartu, štatistiku,
-  // toggle účtu farára a vstup na profil. Nadpis sa mení podľa režimu (člen = cirkev, správca = farnosť).
+  // toggle účtu farára; user pridáva oznam priamo tu, farár má vstup na profil (správa farnosti).
   const mojaCirkev = (
     <>
-      <SekciaLabel>{spravujeDomov ? "MOJA FARNOSŤ" : "MOJA CIRKEV"}</SekciaLabel>
+      <SekciaLabel>MOJA FARNOSŤ</SekciaLabel>
       {domFarnost ? (
         <>
           <KostolKarta wide={wide} f={domFarnost} home following={oblubene.has(domFarnost.id)}
@@ -197,7 +199,12 @@ function NabozDomov({ wide, domFarnost, oblubene, rodina, onRodina, onProfil, on
             <PrehladTile ikona="🕊 " hodnota={String(farnostStat(domFarnost.id).zbierky)} label="zbierok" color={N.gold} />
           </div>
           <FararToggle on={spravujeDomov} onToggle={onToggleSpravca} />
-          <button onClick={() => onProfil(domFarnost)} style={{ width: "100%", marginTop: SPACE.sm, height: 40, border: `1px solid ${N.indEdge}`, background: N.indBg, color: N.ind, borderRadius: RADIUS.sm, fontWeight: 700, fontSize: 13, fontFamily: "inherit", cursor: "pointer" }}>Otvoriť profil farnosti ›</button>
+          {/* user pridáva oznam priamo z hlavnej stránky farnosti; „Otvoriť profil" ostáva
+              len farárovi (tam si robí správu) — bežný user otvorí profil klikom na kartu */}
+          <button onClick={onPridat} style={{ width: "100%", marginTop: SPACE.sm, height: 40, border: `1px solid ${N.indEdge}`, background: N.indBg, color: N.ind, borderRadius: RADIUS.sm, fontWeight: 700, fontSize: 13, fontFamily: "inherit", cursor: "pointer" }}>＋ {spravujeDomov ? "Pridať do farnosti" : "Pridať oznam"}</button>
+          {spravujeDomov && (
+            <button onClick={() => onProfil(domFarnost)} style={{ width: "100%", marginTop: SPACE.sm, height: 40, border: `1px solid ${N.line}`, background: N.card, color: N.txt, borderRadius: RADIUS.sm, fontWeight: 700, fontSize: 13, fontFamily: "inherit", cursor: "pointer" }}>Otvoriť profil farnosti ›</button>
+          )}
         </>
       ) : (
         <div {...pressable(onSprievodca, "Nastav si domovskú cirkev")} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, background: N.indBg, border: `1px solid ${N.indEdge}`, borderRadius: RADIUS.md, padding: SPACE.gutter, cursor: "pointer" }}>
@@ -215,7 +222,11 @@ function NabozDomov({ wide, domFarnost, oblubene, rodina, onRodina, onProfil, on
   // Kostoly ostávajú v Adresári cirkví (karta hore + ☰ Sprievodca výberom).
   const farnostFeed = domFarnost ? (
     <div style={{ padding: `${SPACE.xs}px ${adrPadX}px 0` }}>
-      <SekciaLabel>PRÍSPEVKY · {domFarnost.skratka ?? domFarnost.nazov}</SekciaLabel>
+      {/* nadpis = vstup do profilu farnosti (nie „príspevky RKC") */}
+      <div {...pressable(() => onProfil(domFarnost), `Profil farnosti ${domFarnost.obec}`)} style={{ display: "flex", alignItems: "center", gap: SPACE.xs, cursor: "pointer" }}>
+        <SekciaLabel>PROFIL FARNOSTI · {domFarnost.obec}</SekciaLabel>
+        <span style={{ color: N.txt3, fontSize: 12, marginBottom: SPACE.xs }}>›</span>
+      </div>
       <FarnostFeed f={domFarnost} onPrispevok={onPrispevok} />
     </div>
   ) : null;

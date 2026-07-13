@@ -15,11 +15,12 @@ function citajAkoDataUrl(file: File): Promise<string> {
   });
 }
 
-export function FotoVyber({ fotky, onZmena, max = 3, velkost = 64 }: {
+export function FotoVyber({ fotky, onZmena, max = 3, velkost = 64, video = false }: {
   fotky: string[];
   onZmena: (f: string[]) => void;
   max?: number;
   velkost?: number;
+  video?: boolean; // povoliť aj video (napr. svadba) — náhľad cez <video>
 }) {
   async function pridaj(file?: File | null) {
     if (!file || fotky.length >= max) return;
@@ -29,16 +30,17 @@ export function FotoVyber({ fotky, onZmena, max = 3, velkost = 64 }: {
   return (
     <div style={{ display: "flex", gap: SPACE.sm, flexWrap: "wrap" }}>
       {fotky.map((f, i) => (
-        <div key={i} style={{ position: "relative", width: s, height: s, borderRadius: RADIUS.sm, overflow: "hidden", border: `1px solid ${C.line}`, backgroundImage: `url(${f})`, backgroundSize: "cover", backgroundPosition: "center" }}>
+        <div key={i} style={{ position: "relative", width: s, height: s, borderRadius: RADIUS.sm, overflow: "hidden", border: `1px solid ${C.line}`, ...(f.startsWith("data:video") ? {} : { backgroundImage: `url(${f})`, backgroundSize: "cover", backgroundPosition: "center" }) }}>
+          {f.startsWith("data:video") && <video src={f} muted playsInline style={{ width: "100%", height: "100%", objectFit: "cover" }} />}
           <button onClick={() => onZmena(fotky.filter((_, k) => k !== i))} aria-label="Odobrať foto"
             style={{ position: "absolute", top: 2, right: 2, width: 20, height: 20, borderRadius: "50%", border: "none", background: "rgba(0,0,0,.62)", color: "#fff", fontSize: 11, lineHeight: 1, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", padding: 0 }}>✕</button>
         </div>
       ))}
       {fotky.length < max && (
-        <label title="Pridať foto" style={{ width: s, height: s, border: `1px dashed ${C.line}`, borderRadius: RADIUS.sm, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", fontSize: 20, color: C.textTer, cursor: "pointer", gap: 2 }}>
+        <label title={video ? "Pridať foto/video" : "Pridať foto"} style={{ width: s, height: s, border: `1px dashed ${C.line}`, borderRadius: RADIUS.sm, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", fontSize: 20, color: C.textTer, cursor: "pointer", gap: 2 }}>
           <span style={{ fontSize: 20, lineHeight: 1 }}>＋</span>
-          <span style={{ fontSize: 8.5, fontWeight: 700 }}>FOTO</span>
-          <input type="file" accept="image/*" onChange={(e) => { const f = e.target.files?.[0]; e.currentTarget.value = ""; void pridaj(f); }} style={{ display: "none" }} />
+          <span style={{ fontSize: 8.5, fontWeight: 700 }}>{video ? "FOTO/VIDEO" : "FOTO"}</span>
+          <input type="file" accept={video ? "image/*,video/*" : "image/*"} onChange={(e) => { const f = e.target.files?.[0]; e.currentTarget.value = ""; void pridaj(f); }} style={{ display: "none" }} />
         </label>
       )}
     </div>
