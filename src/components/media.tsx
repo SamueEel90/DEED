@@ -108,6 +108,31 @@ export function Video({ src, poster, h = 200, radius = 0, style, badge = true }:
   );
 }
 
+// ---- VIDEO EMBED — YouTube/Vimeo odkazom (spec Formatovanie §9) ----
+// Fáza 1: LEN embed — farnosti už YT kanály majú, nič nehostujeme.
+// Vloží sa bežný odkaz, appka ukáže prehrávateľné video (nocookie doména).
+export function vlozenieVidea(url?: string | null): { embed: string } | null {
+  if (!url) return null;
+  const u = url.trim();
+  const yt = u.match(/(?:youtube\.com\/(?:watch\?(?:.*&)?v=|shorts\/|embed\/|live\/)|youtu\.be\/)([\w-]{6,})/i);
+  if (yt) return { embed: `https://www.youtube-nocookie.com/embed/${yt[1]}` };
+  const vim = u.match(/vimeo\.com\/(?:video\/)?(\d{6,})/i);
+  if (vim) return { embed: `https://player.vimeo.com/video/${vim[1]}` };
+  return null;
+}
+
+export function VideoEmbed({ url, radius = 12, style }: { url: string; radius?: number | string; style?: CSSProperties }) {
+  const v = vlozenieVidea(url);
+  if (!v) return null;
+  return (
+    <div style={{ position: "relative", width: "100%", aspectRatio: "16 / 9", borderRadius: radius, overflow: "hidden", background: "#05070d", ...style }}>
+      <iframe src={v.embed} title="Video" loading="lazy" allowFullScreen
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        style={{ position: "absolute", inset: 0, width: "100%", height: "100%", border: "none" }} />
+    </div>
+  );
+}
+
 // pásik miniatúr pod hlavnou fotkou (detail príspevku)
 export function MiniFotky({ fotky }: { fotky?: string[] }) {
   const otvor = useGaleria();

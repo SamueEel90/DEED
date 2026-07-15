@@ -1,44 +1,40 @@
 // ============================================================
-// DEED · Značka (logo) — dve podoby jednej značky:
-//   · QR logo (štvorcový skenovateľný QR, biele pozadie) = /brand/deed-qr.png
-//   · App ikona (zelený D⁺ odznak)                        = /brand/deed-appicon.svg
-//   (verziu „QR vnorený do D" zámerne NEpoužívame — prianie vlastníka.)
+// DEED · Značka (logo) — hlavná podoba = „D⁺ QR vlajka" (DEED_QR_Web_Dplus):
+//   · D s QR vnútri + D+ pilulka (biele pozadie) = /brand/deed-qr-dplus.png
+//   · App ikona (zelený D⁺ odznak — launcher)    = /brand/deed-appicon.svg
 //
-// Zobrazenie podľa priania vlastníka:
-//   · DESKTOP → všade QR logo (v bočnej navigácii, na logine).
-//   · MOBIL   → App ikona; klik NA ŇU zobrazí QR logo na CELÚ obrazovku.
-// `force` prekryje auto-voľbu (login = vždy QR). Klik na značku vždy otvorí
-// QR na celú obrazovku (na bielej karte → QR ostáva skenovateľný aj na tmavom pozadí).
+// Rozhodnutie vlastníka (2026-07-15): D⁺ QR vlajka VŠADE — desktop,
+// mobil aj login. `force="app"` ostáva pre prípadné launcher-kontexty.
+// Klik na značku vždy otvorí QR na celú obrazovku (na bielej karte →
+// QR ostáva skenovateľný aj na tmavom pozadí).
 // ============================================================
 import { useState } from "react";
 import { createPortal } from "react-dom";
-import { C, RADIUS, SPACE } from "@/theme";
-import { useLayout } from "@/components/context";
+import { RADIUS, SPACE } from "@/theme";
 import { pressable } from "@/components/pressable";
 import { IkonaKriz } from "@/components/icons";
 
-const QR_SRC = "/brand/deed-qr.png";
+const QR_SRC = "/brand/deed-qr-dplus.png";
 const APP_SRC = "/brand/deed-appicon.svg";
 // cieľ v QR (viď brand kit README) — len informatívny podtitul pod QR
 const QR_CIEL = "deed-help.vercel.app";
 
 export function Znacka({ size = 40, force, style }: {
   size?: number;
-  /** "qr" = vždy QR logo · "app" = vždy App ikona (inak auto: desktop→qr, mobil→app) */
+  /** "qr" = QR vlajka (default všade) · "app" = App ikona (launcher-kontexty) */
   force?: "qr" | "app";
   style?: React.CSSProperties;
 }) {
-  const { desktop } = useLayout();
   const [full, setFull] = useState(false);
-  const mode = force ?? (desktop ? "qr" : "app");
+  const mode = force ?? "qr"; // vlastník: QR vlajka všade (desktop aj mobil)
   const src = mode === "qr" ? QR_SRC : APP_SRC;
 
   return (
     <>
       <span {...pressable(() => setFull(true), "Logo DEED — zobraziť QR kód na celú obrazovku")}
         style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flex: "0 0 auto", ...style }}>
+        {/* D⁺ QR vlajka = biely štvorec → jemne zaoblené rohy */}
         <img src={src} alt="DEED" draggable={false}
-          // štvorcový QR (biele pozadie) aj App ikona = štvorec; QR s jemne zaoblenými rohmi
           style={{ width: size, height: size, display: "block", borderRadius: mode === "qr" ? Math.round(size * 0.16) : undefined }} />
       </span>
       {/* portál do document.body — inak `position:fixed` uviazne v glass predku

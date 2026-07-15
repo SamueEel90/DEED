@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { SPACE, RADIUS } from "@/theme";
-import { Input, Switch, SplitQrSheet, FotoVyber, tint } from "@/shared";
+import { Input, Switch, SplitQrSheet, FotoVyber, RichTextInput, tint } from "@/shared";
+import { cistyText } from "@/lib/richtext";
 import { pressable } from "@/components/pressable";
 import { usePouzivatel } from "@/lib/pouzivatel";
 import { N, SheetPanel } from "./ui";
@@ -226,7 +227,7 @@ function postavPrispevok(uzol: Uzol, opts: {
   const meta = NTYP_META[ntyp];
   const nazovPola = pole((l) => l.startsWith("názov"));
   const meno = pole((l) => l.includes("meno") || l.includes("mená"));
-  const nazov = (nazovPola || (meno ? `${uzol.titul} — ${meno}` : "") || text.slice(0, 60) || uzol.titul).trim();
+  const nazov = (nazovPola || (meno ? `${uzol.titul} — ${meno}` : "") || cistyText(text).slice(0, 60) || uzol.titul).trim();
   const suma = pole((l) => l.includes("suma") || l.includes("€"));
   const ciel = suma ? +suma || undefined : undefined;
   const datum = pole((l) => l.includes("dátum") || l.includes("datum"));
@@ -236,7 +237,8 @@ function postavPrispevok(uzol: Uzol, opts: {
     lat: farnost?.lat, lng: farnost?.lng, lok: farnost?.obec,
     farnostId: farnost?.id, cirkev: farnost?.cirkev ?? "", komunita: farar ? farnost?.nazov : autor,
     nazov, overena: farar, badgeL: `${uzol.emoji} ${meta.badge}`, tag: meta.tag, emoji: uzol.emoji,
-    popis: text || uzol.popis, pribeh: text || undefined,
+    // popis = krátky ČISTÝ text do kariet/riadkov · pribeh = formátovaný obsah do detailu
+    popis: cistyText(text) || uzol.popis, pribeh: text || undefined,
     datum: datum || undefined, ukat: UKAT_UZLA[uzol.id], reakciaTyp: REAKCIA_UZLA[uzol.id],
     rsvp: uzol.akcie?.includes("Zúčastním sa") || undefined, split: uzol.split ? true : undefined,
     ciel, vyzbierane: ciel != null ? 0 : undefined,
@@ -285,8 +287,8 @@ function UzolForm({ uzol, farar, farnost, onSplit, onPublish, onHelp, toast }: {
       <div style={{ fontSize: 11, fontWeight: 700, color: N.txt3, letterSpacing: ".03em", marginBottom: SPACE.xxs }}>
         {uzol.id.startsWith("o-") ? "TEXT OZNAMU" : "POPIS"}
       </div>
-      <Input multiline minH={90} value={text} onChange={setText}
-        placeholder={uzol.id === "o-modlitba" ? "Za koho / za čo sa modlíme…" : "Napíš text…"} />
+      <RichTextInput minH={90} value={text} onChange={setText}
+        placeholder={uzol.id === "o-modlitba" ? "Za koho / za čo sa modlíme…" : "Napíš text… Odseky aj vloženie z Wordu prežijú."} />
 
       {/* ostatné polia — reálne typované inputy (číslo/dátum/foto/QR/text) */}
       {viditelnePolia.length > 0 && (

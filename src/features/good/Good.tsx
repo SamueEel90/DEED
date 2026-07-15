@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, memo } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { SIRKA, C, inp, btn, GRAD, GRAD_ZELENY, SPACE, RADIUS } from "@/theme";
-import { Foto, FotoPrispevku, MiniFotky, Video, ModulHlavicka, Hlavicka, AvatarUroven, PodporaSekcia, PlatbaModal, HladanieModal, OblubeneHviezda, OblubeneBtn, toast, Oslava, useGaleria, useScrollPamat, useMotiv, useLayout, useStrankaAkcie, useTvorbaGate, StatRiadok, MoniBar, FeedStlpce, FeedGrid, FeedCard, KartaBadge, typKluc, BackChip, ProgresBox, SwipeBack, obalSiroky, SegTabs, Lupa, Zdielanie, IkonaSipVlavo, IkonaMoznosti, IkonaUlozit, IkonaFajka, IkonaPlay, IkonaDoska, IkonaPin, OkruhVyber, QrModal, SplitQrSheet, FotoVyber, FeedSkeleton, EmptyState, ErrorState, ScreenSwitch } from "@/shared";
+import { Foto, FotoPrispevku, MiniFotky, Video, ModulHlavicka, Hlavicka, AvatarUroven, PodporaSekcia, PlatbaModal, HladanieModal, OblubeneHviezda, OblubeneBtn, toast, Oslava, useGaleria, useScrollPamat, useMotiv, useLayout, useStrankaAkcie, useTvorbaGate, StatRiadok, MoniBar, FeedStlpce, FeedGrid, FeedCard, KartaBadge, typKluc, BackChip, ProgresBox, SwipeBack, obalSiroky, SegTabs, Lupa, Zdielanie, IkonaSipVlavo, IkonaMoznosti, IkonaUlozit, IkonaFajka, IkonaPlay, IkonaDoska, IkonaPin, OkruhVyber, QrModal, SplitQrSheet, FotoVyber, FeedSkeleton, EmptyState, ErrorState, ScreenSwitch, FormatovanyText } from "@/shared";
 import { pripravFeed, vzdialenostKm, FEED_CFG, type FeedUser } from "@/lib/feed";
 import { tint, tagChip, jeHrdina, HRDINA_COL, rovnakeOkremFunkcii } from "@/lib/ui";
 import { pressable } from "@/components/pressable";
@@ -262,8 +262,8 @@ function Home({ wide, toast, otvorModul, pohlad, setPohlad, radius, setRadius, o
         /* DESKTOP — Okolie (3 kategórie) + Môj DEED bočný panel naraz, bez prepínania */
         <div style={{ display: "flex", gap: SPACE.md, alignItems: "flex-start", padding: `0 ${SPACE.lg}px` }}>
           <div style={{ flex: 1, minWidth: 0 }}>
-            {topPruh}
             {statRiadok}
+            {topPruh}
             {okolieFeed}
           </div>
           <aside style={{ width: 408, flex: "0 0 408px", minWidth: 0 }}>
@@ -279,8 +279,8 @@ function Home({ wide, toast, otvorModul, pohlad, setPohlad, radius, setRadius, o
             <MojDeed wide={wide} onDetail={onDetail} onBoard={onBoard} toast={toast} />
           ) : (
             <>
-              {topPruh}
               {statRiadok}
+              {topPruh}
               {okolieFeed}
             </>
           )}
@@ -803,7 +803,7 @@ export function GoodDetail({ it, toast, oslavuj, onBack, onVerify, onAutor }: Go
           {it.overene && <span style={{ marginLeft: "auto", fontSize: 11, color: "var(--a-green)", background: "rgba(61,214,140,.13)", padding: `${SPACE.xxs}px ${SPACE.xs}px`, borderRadius: RADIUS.xs }}>overené</span>}
         </div>
         <div style={{ marginTop: SPACE.sm, fontSize: 17, fontWeight: 700, lineHeight: 1.4 }}>{it.titul}</div>
-        <p style={{ color: C.textSec, fontSize: 14.5, lineHeight: 1.6, marginTop: SPACE.xs }}>{it.popis}</p>
+        <FormatovanyText text={it.popis} style={{ color: C.textSec, fontSize: 14.5, lineHeight: 1.6, marginTop: SPACE.xs }} />
 
         {maProgres && it.ciel && (
           <div style={{ marginTop: SPACE.xs }}>

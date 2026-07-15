@@ -3,7 +3,9 @@ import { useQueryClient } from "@tanstack/react-query";
 import { SIRKA, C, inp, infoBox, btn, GRAD_ZELENY, glassTmavy, SPACE, RADIUS } from "@/theme";
 import { pasmo, POZNAMKA_DAVKY, tagLabels, CHARITA_SEGMENTY, segmentLabel, OVERENIA_POTREBNE, ESCROW } from "./konstanty";
 import { TagTemy, prepniTag, ZranitelniBlok, PrisnyBadge, AiPoznamka, GuardFuzzy } from "./HelpKit";
-import { Foto, Avatar, MiniFotky, Hlavicka, ModulHlavicka, PodporaSekcia, PlatbaModal, HladanieModal, OblubeneHviezda, OblubeneBtn, Otazka, Vyber, vyberBox, NavBtns, Suhrn, DokladRow, toast, Oslava, useGaleria, useLayout, useScrollPamat, useStrankaAkcie, useTvorbaGate, Ticker, StatRiadok, FiltreStat, FeedStlpce, FeedGrid, FeedCard, KartaBadge, typKluc, BackHeader, ProgresBox, obalSiroky, OkruhVyber, Lupa, Zdielanie, IkonaVlajka, IkonaFoto, IkonaPlay, IkonaDoska, IkonaPin, IkonaOsoba, IkonaCharita, FeedSkeleton, EmptyState, ErrorState, ScreenSwitch, SwipeBack } from "@/shared";
+import { Foto, Avatar, MiniFotky, Hlavicka, ModulHlavicka, PodporaSekcia, PlatbaModal, HladanieModal, OblubeneHviezda, OblubeneBtn, Otazka, Vyber, vyberBox, NavBtns, Suhrn, DokladRow, toast, Oslava, useGaleria, useLayout, useScrollPamat, useStrankaAkcie, useTvorbaGate, Ticker, StatRiadok, FiltreStat, FeedStlpce, FeedGrid, FeedCard, KartaBadge, typKluc, BackHeader, ProgresBox, obalSiroky, OkruhVyber, Lupa, Zdielanie, IkonaVlajka, IkonaFoto, IkonaPlay, IkonaDoska, IkonaPin, IkonaOsoba, IkonaCharita, FeedSkeleton, EmptyState, ErrorState, ScreenSwitch, SwipeBack, ZoznamDarcov, FormatovanyText, RichTextInput } from "@/shared";
+import { pridajDar, type VolbaDaru } from "@/lib/darcovia";
+import { cistyText } from "@/lib/richtext";
 import { Zvoncek } from "@/features/notifikacie/Notifikacie";
 import { pripravFeed, FEED_CFG } from "@/lib/feed";
 import { MEDIA_AR } from "@/lib/cardSize";
@@ -282,7 +284,7 @@ function HelpKartaBase({ z, wide, onClick }: { z: any; wide?: boolean; onClick: 
         </>
       }
       subtitle={z.lok ? <span style={{ display: "inline-flex", alignItems: "center", gap: SPACE.xxs, fontSize: 12, color: C.textSec, fontWeight: 600 }}><IkonaPin size={12} color={C.textSec} />{z.lok}{z.karma ? ` · ${z.karma}` : ""}</span> : undefined}
-      text={z.pribeh}
+      text={z.pribeh ? cistyText(z.pribeh) : undefined /* karta = čistý text, HTML patrí len do detailu */}
       progress={jeZiadost && z.ciel ? { vyzbierane: z.suma, ciel: z.ciel } : undefined}
     />
   );
@@ -299,17 +301,23 @@ function Detail({ z, onBack, onAutor }: { z: any; onBack: () => void; onAutor: (
   const [splitQr, setSplitQr] = useState(false); // influencer: rozdeliť platbu (Split QR)
   const otvorGaleriu = useGaleria();
   const { wide } = useLayout();
+  const ja = usePouzivatel(); // registrovaný vs pasívny — určuje zápis do zoznamu darcov
+  const darRef = `help-${z.id ?? z.nazov}`; // kľúč žiadosti v zozname darcov
 
   const hash = () => "0x" + Math.random().toString(16).slice(2, 8) + "…" + Math.random().toString(16).slice(2, 6);
 
+  // počítadlo aj zoznam darcov rastú z JEDNÉHO miesta (konzistentné čísla)
   function posliPevne(hodnota: number, kanal: string) {
     setSuma((s: number) => s + (kanal === "SMS" ? 1 : hodnota * 0.01)); // DEED ~0,01€ ilustračne
     setLudia((l: number) => l + 1);
+    // SMS = kanál bez účtu → vždy anonymný darca (spec §4)
+    pridajDar({ refId: darRef, suma: kanal === "SMS" ? 1 : hodnota * 0.01, kanal: kanal === "SMS" ? "sms" : "deed", registrovany: kanal !== "SMS" && ja.typ !== "pasivny" });
     toast(`Odoslané: ${hodnota} ${kanal} · ⛓ ${hash()}`);
   }
-  function platbaHotova(s: number) {
+  function platbaHotova(s: number, volba?: VolbaDaru) {
     setSuma((x: number) => x + s * (platba === "EUR" ? 1 : 0.01));
     setLudia((l: number) => l + 1);
+    pridajDar({ refId: darRef, suma: s * (platba === "EUR" ? 1 : 0.01), kanal: platba === "EUR" ? "psp" : "deed", registrovany: ja.typ !== "pasivny", volba });
     toast(`Odoslané: ${platba === "EUR" ? s + " €" : s + " DEED"} · ⛓ ${hash()}`);
   }
 
@@ -343,8 +351,8 @@ function Detail({ z, onBack, onAutor }: { z: any; onBack: () => void; onAutor: (
         <span style={{ color: C.textTer, fontSize: 18, flex: "none" }}>›</span>
       </div>
 
-      {/* pribeh */}
-      <div style={{ padding: `${SPACE.gutter}px ${SPACE.md}px ${SPACE.sm}px`, fontSize: 14, lineHeight: 1.5, color: C.text }}>{z.pribeh}</div>
+      {/* pribeh — FormatovanyText: odseky/formátovanie prežijú (staré texty = pre-wrap) */}
+      <FormatovanyText text={z.pribeh} style={{ padding: `${SPACE.gutter}px ${SPACE.md}px ${SPACE.sm}px`, fontSize: 14, lineHeight: 1.5, color: C.text }} />
 
       {/* uložiť do obľúbených */}
       <div style={{ padding: `0 ${SPACE.md}px ${SPACE.sm}px` }}>
@@ -388,6 +396,10 @@ function Detail({ z, onBack, onAutor }: { z: any; onBack: () => void; onAutor: (
             upvotes={140} onUpvote={() => toast("Palec hore")}
             onPodpor={(s: number) => posliPevne(s, "DEED")} onSms={() => posliPevne(1, "SMS")}
             onKanal={(k: string) => setPlatba(k)} />
+          {/* zoznam darcov — pod platobným modulom, rovnaké číslo ako počítadlo */}
+          <div style={{ marginTop: SPACE.gutter }}>
+            <ZoznamDarcov refId={darRef} celkom={ludia} />
+          </div>
           {/* QR výstupy — donačný QR žiadosti + influencer split (rovnaký vzor ako Charita/Good) */}
           <div style={{ display: "flex", gap: SPACE.sm, marginTop: SPACE.sm }}>
             <button onClick={() => setQr(true)} style={{ ...btn("ghost"), flex: 1 }}>▦ QR na dar</button>
@@ -506,8 +518,7 @@ function OfferFlow({ onBack, onZverejni }: { onBack: () => void; onZverejni: (it
         {krok === 2 && (
           <>
             <Otazka>Detail ponuky</Otazka>
-            <textarea value={popis} onChange={(e) => setPopis(e.target.value)} placeholder="Čo presne ponúkaš, kde a kedy? Napr. „Doučím matematiku ZŠ/SŠ, víkendy, online alebo u mňa.“"
-              style={inp(90)} />
+            <RichTextInput value={popis} onChange={setPopis} minH={90} placeholder="Čo presne ponúkaš, kde a kedy? Napr. „Doučím matematiku ZŠ/SŠ, víkendy, online alebo u mňa.“" />
             <Otazka>Si v tom amatér alebo odborník?</Otazka>
             <Vyber emoji="🙂" title="Amatér" desc="Pomôžem ako viem — ide live takmer hneď (AI text-moderácia beží aj tak)." active={uroven === "amater"} onClick={() => setUroven("amater")} />
             <Vyber emoji="🎖" title="Odborník" desc="Doložím podklady (certifikát, web, prax) → vyšší vstupný status, zvyšok dvíha komunita." active={uroven === "odbornik"} onClick={() => setUroven("odbornik")} />
@@ -576,7 +587,8 @@ function RequestFlow({ onBack, onZverejni }: { onBack: () => void; onZverejni: (
   const sumaNum = Number(suma || 0);
   const p = sumaNum ? pasmo(sumaNum) : null;
 
-  const skratka = (t: string) => (t.length > 42 ? t.slice(0, 42).trim() + "…" : t);
+  // nadpis z opisu — vždy z ČISTÉHO textu (opis môže byť formátované HTML z editora)
+  const skratka = (t: string) => { const c = cistyText(t); return c.length > 42 ? c.slice(0, 42).trim() + "…" : c; };
 
   // ľudská (nefinančná) pomoc → žiadosť bez cieľovej sumy
   const zverejniDopyt = () => {
@@ -639,7 +651,7 @@ function RequestFlow({ onBack, onZverejni }: { onBack: () => void; onZverejni: (
         <Hlavicka title="Ľudská pomoc" onBack={() => setVetva(null)} />
         <div style={{ padding: SPACE.md }}>
           <Otazka>Opíš, s čím potrebuješ pomôcť</Otazka>
-          <textarea value={popis} onChange={(e) => setPopis(e.target.value)} placeholder="Napr. „Potrebujem odviezť k lekárovi v stredu ráno, Sihoť → nemocnica.“" style={inp(100)} />
+          <RichTextInput value={popis} onChange={setPopis} minH={100} placeholder="Napr. „Potrebujem odviezť k lekárovi v stredu ráno, Sihoť → nemocnica.“" />
           <AiPoznamka text="AI sito relevancie: či to nevyrieši bežná cesta (odvoz k lekárovi = MHD vs. reálna núdza). Jasný balast odmietne, jasnú núdzu pustí." />
           {/* zraniteľní — pri dopyte prísny režim platí pre toho, kto sa PRIHLÁSI */}
           <ZranitelniBlok hodnota={zranitelni} onZmena={setZranitelni} pomahajuci />
@@ -759,7 +771,7 @@ function RequestFlow({ onBack, onZverejni }: { onBack: () => void; onZverejni: (
           <div style={infoBox}>Núdzny nemá KYC / doklady / účet — <b>za identitu a overenie ručí charita</b>. Appka len ukáže dvere: nesprostredkúva, nezmluvňuje, neručí. Charitu oslovíš <b>sám</b> (mimo appky). Zverejnenie bude anonymizované (dôstojnosť).</div>
 
           <Otazka>Opíš, s čím treba pomôcť</Otazka>
-          <textarea value={popis} onChange={(e) => setPopis(e.target.value)} placeholder="Krátko situácia núdzneho a čo potrebuje." style={inp(90)} />
+          <RichTextInput value={popis} onChange={setPopis} minH={90} placeholder="Krátko situácia núdzneho a čo potrebuje." />
 
           <Otazka>Segment potreby</Otazka>
           <TagTemy vybrane={charitaSegmenty} onToggle={(id) => { setCharitaSegmenty((s) => prepniTag(s, id)); setCharitaHladane(false); }} polozky={CHARITA_SEGMENTY} akcent="var(--a-teal)" varovanie={false} />
@@ -818,9 +830,9 @@ function RequestFlow({ onBack, onZverejni }: { onBack: () => void; onZverejni: (
         {krok === 1 && (
           <>
             <Otazka>Opíš svoj problém vlastnými slovami</Otazka>
-            <textarea value={popis} onChange={(e) => setPopis(e.target.value)} placeholder="Prečo si sa do situácie dostal, čo presne vyrieši požadovaná suma, prečo to nezvládneš inak." style={inp(130)} />
+            <RichTextInput value={popis} onChange={setPopis} minH={130} placeholder="Prečo si sa do situácie dostal, čo presne vyrieši požadovaná suma, prečo to nezvládneš inak." />
             <AiPoznamka text="AI z opisu odporučí kategóriu a pomôže s formuláciou. Pri nezmysle alebo vnútornom rozpore požiada o doplnenie." />
-            <NavBtns onBack={() => setKrok(0)} onNext={() => setKrok(2)} canNext={popis.length > 15} />
+            <NavBtns onBack={() => setKrok(0)} onNext={() => setKrok(2)} canNext={cistyText(popis).length > 15} />
           </>
         )}
 

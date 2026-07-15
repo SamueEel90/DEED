@@ -7,15 +7,19 @@ import { useMotiv, useUpgrade } from "@/components/context";
 import { usePouzivatel } from "@/lib/pouzivatel";
 import { Sheet } from "@/components/sheet";
 import { IkonaStit, IkonaFajka, Zdielanie, Palec, Srdce } from "@/components/icons";
+import { VolbaDarcovstva } from "@/components/zoznamdarcov";
+import { nacitajPredvolbu, ulozPredvolbu, type VolbaDaru } from "@/lib/darcovia";
 
 // ============================================================
 // SIMULÁCIA PLATBY — EUR (karta · platobná brána) / DEED (peňaženka · chain)
 // realistický tok: suma → detaily → spracovanie → potvrdenie (doklad)
 // ============================================================
 const PLATBA_ZOSTATOK = 1240; // DEED zostatok v peňaženke (demo)
-export function PlatbaModal({ kanal, komu, suma: sumaInit, onClose, onDone }: { kanal?: string; komu?: ReactNode; suma?: number; onClose?: () => void; onDone?: (suma: number) => void }) {
+export function PlatbaModal({ kanal, komu, suma: sumaInit, onClose, onDone }: { kanal?: string; komu?: ReactNode; suma?: number; onClose?: () => void; onDone?: (suma: number, volba?: VolbaDaru) => void }) {
   const jeEur = kanal === "EUR";
   const [krok, setKrok] = useState("suma"); // suma | metoda | detaily | spracovanie | hotovo
+  // zoznam darcov: voľba identity per dar — posledná voľba je predvoľba (spec §2)
+  const [volba, setVolba] = useState<VolbaDaru>(nacitajPredvolbu);
   const [metoda, setMetoda] = useState<"karta" | "sepa">("karta"); // EUR: spôsob platby
   const [suma, setSuma] = useState(sumaInit && sumaInit > 0 ? String(sumaInit) : ""); // predvyplnená (napr. cena workshopu)
   const [karta, setKarta] = useState({ cislo: "", exp: "", cvc: "" });
@@ -58,6 +62,7 @@ export function PlatbaModal({ kanal, komu, suma: sumaInit, onClose, onDone }: { 
   }
 
   function zaplatit() {
+    ulozPredvolbu(volba); // posledná voľba identity sa pamätá ako predvoľba
     setKrok("spracovanie");
     setTimeout(() => {
       setRes({
@@ -124,6 +129,9 @@ export function PlatbaModal({ kanal, komu, suma: sumaInit, onClose, onDone }: { 
         ))}
         <button onClick={() => setKrok("suma")} style={{ ...btnP(false), background: "rgba(var(--glass-rgb),.06)", color: C.textSec, cursor: "pointer" }}>Späť</button>
       </>)}
+
+      {/* zoznam darcov — ako sa darca ukáže (jedným klikom, pamätá sa) */}
+      {krok === "detaily" && <VolbaDarcovstva volba={volba} onZmena={setVolba} sumaEur={jeEur ? sumaNum : sumaNum * 0.01} />}
 
       {/* EUR · KARTA */}
       {krok === "detaily" && jeEur && !jeSepa && (<>
@@ -197,7 +205,7 @@ export function PlatbaModal({ kanal, komu, suma: sumaInit, onClose, onDone }: { 
           {!jeSepa && <Riadok k="⛓ Hash" v={res.hash} accent={C.blueL} />}
           <Riadok k="Dátum" v={res.cas} />
         </div>
-        <button onClick={() => { onDone?.(sumaNum); onClose?.(); }} style={btnP(true, GRAD_ZELENY)}>Hotovo</button>
+        <button onClick={() => { onDone?.(sumaNum, volba); onClose?.(); }} style={btnP(true, GRAD_ZELENY)}>Hotovo</button>
       </>)}
     </Sheet>
   );

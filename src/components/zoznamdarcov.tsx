@@ -1,0 +1,146 @@
+// ============================================================
+// DEED · ZOZNAM DARCOV pri zbierke (DEED_Zoznam_Darcov_DEV.md)
+// Kompakt pod platobným modulom: posledných ~5 riadkov + „Zobraziť
+// všetkých (N)" (N = počítadlo „X ľudí pomohlo" — jeden zdroj čísel).
+// Riadok: [identita] daroval [suma?] · relatívny čas. Len zobrazenie —
+// pravidlá (prah, anonymita, verzie) rieši lib/darcovia.ts.
+// + VolbaDarcovstva — voľba identity darcu v platobnom kroku (PlatbaModal).
+// ============================================================
+import { useState } from "react";
+import type { CSSProperties } from "react";
+import { C, SPACE, RADIUS } from "@/theme";
+import { tint } from "@/lib/ui";
+import { usePouzivatel } from "@/lib/pouzivatel";
+import { pressable } from "@/components/pressable";
+import { Sheet } from "@/components/sheet";
+import { Switch } from "@/components/ui";
+import {
+  DARCOVIA_CFG, useDarcovia, identitaDarcu, zobrazenaSuma, relCas, prepniNaAnonym,
+  nacitajMestoVerejne, ulozMestoVerejne,
+  type DarRiadok, type VolbaDaru, type VerziaIdentity,
+} from "@/lib/darcovia";
+
+// ---- jeden riadok zoznamu ----
+function Riadok({ r, refId, prvy }: { r: DarRiadok; refId: string; prvy?: boolean }) {
+  const ja = usePouzivatel();
+  const suma = zobrazenaSuma(r);
+  const mozeAnonym = !!r.moj && r.registrovany && r.verzia !== 4; // jednosmerné: len K anonymite
+  return (
+    <div style={{ display: "flex", alignItems: "baseline", gap: SPACE.xs, padding: `${SPACE.xs}px 0`, borderBottom: `1px solid ${C.line2}`, fontSize: 12.5, ...(prvy ? { animation: "fadeUp .3s ease" } : {}) }}>
+      <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+        <b style={{ fontWeight: 600, color: r.moj ? C.greenL : C.text }}>{identitaDarcu(r, ja)}</b>
+        <span style={{ color: C.textSec }}> daroval{suma ? " " : ""}</span>
+        {suma && <b style={{ fontWeight: 700, color: C.greenL }}>{suma}</b>}
+      </span>
+      <span style={{ marginLeft: "auto", flex: "none", color: C.textTer, fontSize: 11 }}>{relCas(r.cas)}</span>
+      {mozeAnonym && (
+        <span {...pressable(() => prepniNaAnonym(refId, r.id), "Prepnúť môj dar na Anonym")}
+          title="Spätne skryť identitu (nedá sa vrátiť)"
+          style={{ flex: "none", fontSize: 10, fontWeight: 700, color: C.textTer, border: `1px solid ${C.line}`, borderRadius: RADIUS.pill, padding: `1px ${SPACE.xs}px`, cursor: "pointer", position: "relative" }}>
+          → Anonym
+        </span>
+      )}
+    </div>
+  );
+}
+
+export function ZoznamDarcov({ refId, celkom, style }: {
+  refId: string;
+  /** počítadlo „X ľudí pomohlo" — rovnaké číslo ako ProgresBox (jeden zdroj, spec §0.3) */
+  celkom?: number;
+  style?: CSSProperties;
+}) {
+  const riadky = useDarcovia(refId);
+  const [vsetci, setVsetci] = useState(false);
+  if (!riadky.length) return null;
+  const kompakt = riadky.slice(0, DARCOVIA_CFG.pocetRiadkovKompakt);
+  const n = Math.max(celkom ?? 0, riadky.length);
+  return (
+    <div style={{ background: C.surface2, border: `1px solid ${C.line}`, borderRadius: RADIUS.md, padding: `${SPACE.sm}px ${SPACE.md}px`, ...style }}>
+      <div style={{ display: "flex", alignItems: "center", fontSize: 11, fontWeight: 700, letterSpacing: ".4px", color: C.textTer, marginBottom: SPACE.xxs }}>
+        DARCOVIA
+        <span style={{ marginLeft: "auto", color: C.greenL, fontWeight: 700, fontSize: 10.5 }}>● rastie live</span>
+      </div>
+      {kompakt.map((r, i) => <Riadok key={r.id} r={r} refId={refId} prvy={i === 0 && !r.id.includes("-seed-")} />)}
+      <div {...pressable(() => setVsetci(true), "Zobraziť všetkých darcov")}
+        style={{ position: "relative", textAlign: "center", fontSize: 12, fontWeight: 700, color: C.textSec, padding: `${SPACE.sm}px 0 ${SPACE.xxs}px`, cursor: "pointer" }}>
+        Zobraziť všetkých ({n.toLocaleString("sk")})
+      </div>
+
+      {vsetci && (
+        <Sheet onClose={() => setVsetci(false)} label="Všetci darcovia">
+          <div style={{ fontSize: 15, fontWeight: 800, marginBottom: SPACE.xxs }}>Darcovia ({n.toLocaleString("sk")})</div>
+          <div style={{ fontSize: 11, color: C.textTer, marginBottom: SPACE.sm }}>Chronologicky, najnovší hore. Identita aj suma sú voľbou darcu — default je Anonym.</div>
+          <div style={{ maxHeight: "55vh", overflowY: "auto" }}>
+            {riadky.map((r) => <Riadok key={r.id} r={r} refId={refId} />)}
+          </div>
+        </Sheet>
+      )}
+    </div>
+  );
+}
+
+// ============================================================
+// VOĽBA DARCOVSTVA — v platobnom kroku (spec §2): 4 verzie jedným klikom,
+// prepínač „zobraziť sumu" (len nad prahom) + „zobraziť mesto" (profilová
+// predvoľba, opt-in). Pasívny/neregistrovaný nevolí nič — vždy Anonymný darca.
+// ============================================================
+export function VolbaDarcovstva({ volba, onZmena, sumaEur }: {
+  volba: VolbaDaru; onZmena: (v: VolbaDaru) => void; sumaEur: number;
+}) {
+  const ja = usePouzivatel();
+  const [mesto, setMesto] = useState(nacitajMestoVerejne);
+  const registrovany = ja.typ !== "pasivny";
+
+  if (!registrovany) {
+    // akvizičný háčik bez vnucovania: chce viac → registrácia
+    return (
+      <div style={{ background: "rgba(var(--glass-rgb),.05)", border: `1px solid ${C.line}`, borderRadius: RADIUS.sm, padding: `${SPACE.sm}px ${SPACE.gutter}px`, marginBottom: SPACE.sm, fontSize: 11.5, color: C.textSec, lineHeight: 1.45 }}>
+        V zozname darcov sa zobrazíš ako <b>Anonymný darca</b>. Chceš darovať pod menom či prezývkou? Stačí bezplatná registrácia.
+      </div>
+    );
+  }
+
+  const inicialovo = `${ja.meno} ${(ja.priezvisko || "")[0]?.toUpperCase() ?? ""}${(ja.priezvisko || "")[0] ? "." : ""}`.trim();
+  const mestoSuffix = mesto && ja.mesto && ja.mesto !== "—" ? ` · ${ja.mesto}` : "";
+  const moznosti: Array<{ v: VerziaIdentity; label: string }> = [
+    { v: 1, label: ja.celeMeno + mestoSuffix },
+    { v: 2, label: inicialovo + mestoSuffix },
+    ...(ja.nick ? [{ v: 3 as VerziaIdentity, label: ja.nick + mestoSuffix }] : []),
+    { v: 4, label: "Anonym" + mestoSuffix },
+  ];
+  const podPrahom = sumaEur > 0 && sumaEur < DARCOVIA_CFG.prahSumy;
+
+  return (
+    <div style={{ marginBottom: SPACE.sm }}>
+      <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".3px", color: C.textTer, marginBottom: SPACE.xs }}>V ZOZNAME DARCOV SA UKÁŽEŠ AKO</div>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: SPACE.xs }}>
+        {moznosti.map((m) => {
+          const on = volba.verzia === m.v;
+          return (
+            <button key={m.v} onClick={() => onZmena({ ...volba, verzia: m.v })} aria-pressed={on}
+              style={{ padding: `${SPACE.xs}px ${SPACE.sm}px`, borderRadius: RADIUS.pill, fontFamily: "inherit", fontSize: 12, fontWeight: 700, cursor: "pointer", border: `1px solid ${on ? C.green : C.line}`, background: on ? tint(C.green, .12) : "rgba(var(--glass-rgb),.05)", color: on ? C.green : C.textSec }}>
+              {m.label}
+            </button>
+          );
+        })}
+      </div>
+      <div style={{ display: "grid", gap: SPACE.xs, marginTop: SPACE.xs }}>
+        {volba.verzia !== 4 && (
+          <label style={{ display: "flex", alignItems: "center", gap: SPACE.sm, fontSize: 11.5, color: C.textSec, cursor: "pointer" }}>
+            <Switch on={mesto} onChange={(v) => { setMesto(v); ulozMestoVerejne(v); }} ariaLabel="Zobraziť mesto" />
+            Zobraziť mesto{ja.mesto && ja.mesto !== "—" ? ` (${ja.mesto})` : ""}
+          </label>
+        )}
+        {sumaEur >= DARCOVIA_CFG.prahSumy ? (
+          <label style={{ display: "flex", alignItems: "center", gap: SPACE.sm, fontSize: 11.5, color: C.textSec, cursor: "pointer" }}>
+            <Switch on={volba.zobrazSumu} onChange={(v) => onZmena({ ...volba, zobrazSumu: v })} ariaLabel="Zobraziť sumu" />
+            Zobraziť aj sumu daru
+          </label>
+        ) : podPrahom ? (
+          <div style={{ fontSize: 10.5, color: C.textTer }}>Dar pod {DARCOVIA_CFG.prahSumy} € sa zobrazuje bez sumy — vždy len „daroval".</div>
+        ) : null}
+      </div>
+    </div>
+  );
+}

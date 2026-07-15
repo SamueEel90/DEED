@@ -1,6 +1,8 @@
 import { useState, useEffect, memo } from "react";
 import { SIRKA, C, U, AV, GRAD, GRAD_ZELENY, SPACE, RADIUS } from "@/theme";
-import { Foto, Avatar, MiniFotky, ModulHlavicka, PodporaSekcia, PlatbaModal, RecurringSheet, SplitQrSheet, HladanieModal, OblubeneHviezda, OblubeneBtn, toast, useGaleria, useLayout, useScrollPamat, useStrankaAkcie, useTvorbaGate, Ticker, StatRiadok, FiltreStat, FeedStlpce, FeedGrid, FeedCard, KartaBadge, BackHeader, ProgresBox, obalSiroky, OkruhVyber, SegTabs, tint, Lupa, Zvon, Zdielanie, IkonaVlajka, IkonaFoto, IkonaPlay, IkonaDoska, IkonaOpakovat, IkonaKriz, IkonaInstitucia, FeedSkeleton, SkeletonRiadky, EmptyState, ErrorState, ScreenSwitch, SwipeBack } from "@/shared";
+import { Foto, Avatar, MiniFotky, ModulHlavicka, PodporaSekcia, PlatbaModal, RecurringSheet, SplitQrSheet, HladanieModal, OblubeneHviezda, OblubeneBtn, toast, useGaleria, useLayout, useScrollPamat, useStrankaAkcie, useTvorbaGate, Ticker, StatRiadok, FiltreStat, FeedStlpce, FeedGrid, FeedCard, KartaBadge, BackHeader, ProgresBox, obalSiroky, OkruhVyber, SegTabs, tint, Lupa, Zvon, Zdielanie, IkonaVlajka, IkonaFoto, IkonaPlay, IkonaDoska, IkonaOpakovat, IkonaKriz, IkonaInstitucia, FeedSkeleton, SkeletonRiadky, EmptyState, ErrorState, ScreenSwitch, SwipeBack, ZoznamDarcov, FormatovanyText } from "@/shared";
+import { pridajDar, type VolbaDaru } from "@/lib/darcovia";
+import { usePouzivatel } from "@/lib/pouzivatel";
 import { pripravFeed, FEED_CFG } from "@/lib/feed";
 import { MEDIA_AR } from "@/lib/cardSize";
 import { Zvoncek } from "@/features/notifikacie/Notifikacie";
@@ -400,8 +402,10 @@ function CharitaDetail({ z: zProp, toast, onBack, onReg, onAutor }: { z?: Zbierk
   const [nahlasit, setNahlasit] = useState(false);          // vlajka → nahlásenie obsahu
   const otvorGaleriu = useGaleria();
   const { wide } = useLayout();
+  const ja = usePouzivatel(); // registrovaný vs pasívny — určuje zápis do zoznamu darcov
   if (!zRaw) return null;
   const z = zRaw; // zúžené na non-null (bezpečné aj v closure onDone/onPodpor)
+  const darRef = `charita-${z.id ?? z.nazov}`; // kľúč zbierky v zozname darcov
 
   const ciel = z.ciel;
   const jeZbierka = ciel != null && !z.volunteer; // má finančný cieľ → progres + podpora
@@ -410,14 +414,18 @@ function CharitaDetail({ z: zProp, toast, onBack, onReg, onAutor }: { z?: Zbierk
   const pribeh = z.pribeh ?? z.popis;
   const pct = ciel ? Math.min(100, Math.round(suma / ciel * 100)) : 0;
 
-  function podpor(hodnota: number, text: string) {
+  // počítadlo „ľudí pomohlo" aj zoznam darcov rastú z JEDNÉHO miesta (konzistentné čísla)
+  function podpor(hodnota: number, text: string, kanal: "deed" | "sms" = "deed") {
     setSuma((s) => s + hodnota * 0.01);
     setLudia((l) => l + 1);
+    // SMS = kanál bez účtu → vždy anonymný darca; drobná DEED podpora je pod prahom (suma sa neukáže)
+    pridajDar({ refId: darRef, suma: hodnota * 0.01, kanal, registrovany: kanal !== "sms" && ja.typ !== "pasivny" });
     toast(text);
   }
-  function platbaHotova(s: number) {
+  function platbaHotova(s: number, volba?: VolbaDaru) {
     setSuma((x) => x + s * (platba === "EUR" ? 1 : 0.01));
     setLudia((l) => l + 1);
+    pridajDar({ refId: darRef, suma: s * (platba === "EUR" ? 1 : 0.01), kanal: platba === "EUR" ? "psp" : "deed", registrovany: ja.typ !== "pasivny", volba });
     toast(`Odoslané ${platba === "EUR" ? s + " €" : s + " DEED"} · ${z.nazov}`);
   }
 
@@ -451,7 +459,7 @@ function CharitaDetail({ z: zProp, toast, onBack, onReg, onAutor }: { z?: Zbierk
           {onAutor && <span style={{ color: K.txt3, fontSize: 18, flex: "none" }}>›</span>}
         </div>
 
-        <div style={{ fontSize: 14, lineHeight: 1.55, margin: `${SPACE.sm}px 0 ${SPACE.sm}px` }}>{pribeh}</div>
+        <FormatovanyText text={pribeh} style={{ fontSize: 14, lineHeight: 1.55, margin: `${SPACE.sm}px 0 ${SPACE.sm}px` }} />
 
         {/* uložiť do obľúbených */}
         <div style={{ marginBottom: SPACE.gutter }}>
@@ -472,8 +480,13 @@ function CharitaDetail({ z: zProp, toast, onBack, onReg, onAutor }: { z?: Zbierk
               <PodporaSekcia
                 onShare={() => zdielaj({ titul: z.nazov, text: z.nazov, url: aktualnaUrl() }, toast)}
                 upvotes={140} onUpvote={() => toast("Palec hore")}
-                onPodpor={(s: number) => podpor(s, `Ďakujeme za ${s} DEED pre ${z.nazov}`)} onSms={() => podpor(100, "SMS podpora")}
+                onPodpor={(s: number) => podpor(s, `Ďakujeme za ${s} DEED pre ${z.nazov}`)} onSms={() => podpor(100, "SMS podpora", "sms")}
                 onKanal={(k: string) => setPlatba(k as Kanal)} />
+            </div>
+
+            {/* zoznam darcov — pod platobným modulom, rovnaké číslo ako počítadlo */}
+            <div style={{ marginBottom: SPACE.gutter }}>
+              <ZoznamDarcov refId={darRef} celkom={ludia} />
             </div>
 
             {/* pravidelná podpora */}
@@ -495,8 +508,11 @@ function CharitaDetail({ z: zProp, toast, onBack, onReg, onAutor }: { z?: Zbierk
             <PodporaSekcia
               onShare={() => zdielaj({ titul: z.nazov, text: z.nazov, url: aktualnaUrl() }, toast)}
               upvotes={140} onUpvote={() => toast("Palec hore")}
-              onPodpor={(s: number) => podpor(s, `Ďakujeme za ${s} DEED pre ${z.nazov}`)} onSms={() => podpor(100, "SMS podpora")}
+              onPodpor={(s: number) => podpor(s, `Ďakujeme za ${s} DEED pre ${z.nazov}`)} onSms={() => podpor(100, "SMS podpora", "sms")}
               onKanal={(k: string) => setPlatba(k as Kanal)} supLabel="PODPORIŤ — klik a hneď odíde" />
+            <div style={{ marginTop: SPACE.gutter }}>
+              <ZoznamDarcov refId={darRef} celkom={ludia} />
+            </div>
           </div>
         )}
       </div>

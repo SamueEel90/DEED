@@ -36,4 +36,8 @@ export * from "@/components/intro";
 export * from "@/components/ozvatsa";
 export * from "@/components/nahlasit";
 export * from "@/components/fotovyber";
+export * from "@/components/zoznamdarcov";
+export * from "@/components/formattext";
+export * from "@/components/richtext";
+export * from "@/components/fotoupload";
 export { tint } from "@/lib/ui";

@@ -1,6 +1,9 @@
 import { useState, useEffect, memo } from "react";
 import { SIRKA, SPACE, RADIUS } from "@/theme";
-import { Foto, MiniFotky, ModulHlavicka, PodporaSekcia, PlatbaModal, SplitQrSheet, HladanieModal, toast, useGaleria, useLayout, useScrollPamat, useStrankaAkcie, FeedGrid, StatRiadok, FiltreStat, OkruhVyber, MoniBar, ProgresBox, BackHeader, obalSiroky, SegTabs, tint, Lupa, Zdielanie, IkonaVlajka, IkonaFoto, IkonaInstitucia, Srdce, EmptyState, ScreenSwitch, SwipeBack } from "@/shared";
+import { Foto, MiniFotky, ModulHlavicka, PodporaSekcia, PlatbaModal, SplitQrSheet, HladanieModal, toast, useGaleria, useLayout, useScrollPamat, useStrankaAkcie, FeedGrid, StatRiadok, FiltreStat, OkruhVyber, MoniBar, ProgresBox, BackHeader, obalSiroky, SegTabs, tint, Lupa, Zdielanie, IkonaVlajka, IkonaFoto, IkonaInstitucia, Srdce, EmptyState, ScreenSwitch, SwipeBack, ZoznamDarcov, FormatovanyText } from "@/shared";
+import { pridajDar, type VolbaDaru } from "@/lib/darcovia";
+import { usePouzivatel } from "@/lib/pouzivatel";
+import { cistyText } from "@/lib/richtext";
 import { MEDIA_AR } from "@/lib/cardSize";
 import { FEED_CFG } from "@/lib/feed";
 import { Zvoncek } from "@/features/notifikacie/Notifikacie";
@@ -15,7 +18,8 @@ import { OzvatSaSheet } from "@/components/ozvatsa";
 import { NahlasitSheet } from "@/components/nahlasit";
 import { nacitajRsvp as nacitajRsvpDB, prepniRsvp as prepniRsvpDB } from "@/lib/osobne";
 import { N, Overena, Chip, SheetPanel, OverujemNamietam, A9Potvrdenie, PrehladTile } from "./ui";
-import { FarskyProfil } from "./FarskyProfil";
+import { nacitajStav } from "./stav";
+import { FarskyProfil, KontaktRiadok } from "./FarskyProfil";
 import { Kalendar } from "./Kalendar";
 import { PridatSheet } from "./Pridat";
 import {
@@ -183,6 +187,9 @@ function NabozDomov({ wide, domFarnost, oblubene, rodina, onRodina, onProfil, on
 
   const adrPadX = desktop ? 0 : SPACE.md;
 
+  // sledované farnosti (bez domovskej) — rýchle prepínanie pod panelom „Moja farnosť"
+  const sledovane = FARNOSTI.filter((f) => oblubene.has(f.id) && f.id !== domFarnost?.id);
+
   // panel „Moja farnosť" — na mobile stohovaný hore, na desktope bočný (ako „Môj DEED" v Domove).
   // Príspevky domovskej sa už zobrazujú ako HLAVNÝ obsah (farnostFeed) — panel drží kartu, štatistiku,
   // toggle účtu farára; user pridáva oznam priamo tu, farár má vstup na profil (správa farnosti).
@@ -204,6 +211,24 @@ function NabozDomov({ wide, domFarnost, oblubene, rodina, onRodina, onProfil, on
           <button onClick={onPridat} style={{ width: "100%", marginTop: SPACE.sm, height: 40, border: `1px solid ${N.indEdge}`, background: N.indBg, color: N.ind, borderRadius: RADIUS.sm, fontWeight: 700, fontSize: 13, fontFamily: "inherit", cursor: "pointer" }}>＋ {spravujeDomov ? "Pridať do farnosti" : "Pridať oznam"}</button>
           {spravujeDomov && (
             <button onClick={() => onProfil(domFarnost)} style={{ width: "100%", marginTop: SPACE.sm, height: 40, border: `1px solid ${N.line}`, background: N.card, color: N.txt, borderRadius: RADIUS.sm, fontWeight: 700, fontSize: 13, fontFamily: "inherit", cursor: "pointer" }}>Otvoriť profil farnosti ›</button>
+          )}
+          {/* ďalšie sledované farnosti — rýchle prepnutie na ich obrazovky */}
+          {sledovane.length > 0 && (
+            <div style={{ marginTop: SPACE.gutter }}>
+              <SekciaLabel>SLEDOVANÉ FARNOSTI</SekciaLabel>
+              <div style={{ background: N.card, border: `1px solid ${N.line}`, borderRadius: RADIUS.sm, overflow: "hidden" }}>
+                {sledovane.map((f, i) => (
+                  <div key={f.id} {...pressable(() => onProfil(f), `Otvoriť ${f.nazov}`)} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, padding: `${SPACE.sm}px ${SPACE.gutter}px`, borderBottom: i < sledovane.length - 1 ? `1px solid ${N.line}` : "none", cursor: "pointer" }}>
+                    <Foto src={f.foto} emoji="⛪" w={38} h={38} radius={RADIUS.xs} sizes="38px" alt={f.nazov} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 13, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.nazov}</div>
+                      <div style={{ fontSize: 10.5, color: N.txt3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.skratka} · {f.obec} · {f.vzdial}</div>
+                    </div>
+                    <span style={{ color: N.txt3, fontSize: 15, flex: "none" }}>›</span>
+                  </div>
+                ))}
+              </div>
+            </div>
           )}
         </>
       ) : (
@@ -309,47 +334,75 @@ function NabozDomov({ wide, domFarnost, oblubene, rodina, onRodina, onProfil, on
   );
 }
 
-// HLAVNÝ feed domovskej farnosti — JEJ príspevky (zbierky s progresom + oznamy/udalosti).
-// Nahrádza mriežku kostolov, keď má user nastavenú domovskú (kostoly ostávajú v Adresári cirkví).
+// HLAVNÝ feed domovskej farnosti — CELÝ jej obsah pod sebou (ako profil: zbierky /
+// udalosti / oznamy / dobrovoľníctvo) + kontakt na konci. Nahrádza mriežku kostolov.
+const OBSAH_SKUPINY: { key: NabozFeedItem["ntyp"]; label: string }[] = [
+  { key: "zbierka", label: "Zbierky" }, { key: "udalost", label: "Udalosti" },
+  { key: "oznam", label: "Oznamy" }, { key: "dobrovolnictvo", label: "Dobrovoľníctvo" },
+];
+
 function FarnostFeed({ f, onPrispevok }: { f: Farnost; onPrispevok: (z: NabozFeedItem) => void }) {
   const { desktop } = useLayout(); // desktop → 2× väčšie miniatúry (viac plochy)
   const k = desktop ? 2 : 1;
   const obsah = obsahFarnosti(f.id);
-  const zbierky = obsah.filter((it) => it.ntyp === "zbierka" || it.ciel != null);
-  const ostatne = obsah.filter((it) => !(it.ntyp === "zbierka" || it.ciel != null));
-  if (obsah.length === 0) {
-    return <div style={{ fontSize: 12, color: N.txt3, padding: `${SPACE.sm}px 0`, lineHeight: 1.5 }}>Tvoja farnosť zatiaľ nepridala oznamy ani zbierky. Nové príspevky sa objavia tu.</div>;
-  }
+  // kontakt číta perzistovaný profil (edituje ho farár v správe) s fallbackom na mock
+  const view = nacitajStav("profil", f.id, {
+    omseSuhrn: f.omseSuhrn ?? "", adresa: f.kontakt?.adresa ?? "", tel: f.kontakt?.tel ?? "",
+    email: f.kontakt?.email ?? "", web: f.kontakt?.web ?? "",
+  });
+  const maKontakt = !!(view.omseSuhrn || view.adresa || view.tel || view.email || view.web);
+
   return (
     <div>
-      {zbierky.length > 0 && <SekciaLabel>ZBIERKY</SekciaLabel>}
-      {zbierky.map((z) => (
-        <div key={z.id} {...pressable(() => onPrispevok(z), z.nazov)} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, background: N.indBg, border: `1px solid ${N.line}`, borderRadius: RADIUS.sm, padding: SPACE.sm, marginBottom: SPACE.xs, cursor: "pointer" }}>
-          <Foto src={z.fotky?.[0]} emoji={z.emoji ?? "💛"} w={46 * k} h={46 * k} radius={RADIUS.xs} sizes={`${46 * k}px`} alt={z.nazov} />
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 13.5, fontWeight: 700, marginBottom: SPACE.xxs, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{z.nazov}</div>
-            {z.ciel != null && <MoniBar vyzbierane={z.vyzbierane ?? 0} ciel={z.ciel} mini />}
+      {obsah.length === 0 && (
+        <div style={{ fontSize: 12, color: N.txt3, padding: `${SPACE.sm}px 0`, lineHeight: 1.5 }}>Tvoja farnosť zatiaľ nepridala oznamy ani zbierky. Nové príspevky sa objavia tu.</div>
+      )}
+      {OBSAH_SKUPINY.map(({ key, label }) => {
+        const polozky = obsah.filter((it) => it.ntyp === key);
+        if (polozky.length === 0) return null;
+        return (
+          <div key={key} style={{ marginBottom: SPACE.sm }}>
+            <SekciaLabel>{label.toUpperCase()} · {polozky.length}</SekciaLabel>
+            {key === "zbierka" ? polozky.map((z) => (
+              <div key={z.id} {...pressable(() => onPrispevok(z), z.nazov)} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, background: N.indBg, border: `1px solid ${N.line}`, borderRadius: RADIUS.sm, padding: SPACE.sm, marginBottom: SPACE.xs, cursor: "pointer" }}>
+                <Foto src={z.fotky?.[0]} emoji={z.emoji ?? "💛"} w={46 * k} h={46 * k} radius={RADIUS.xs} sizes={`${46 * k}px`} alt={z.nazov} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 13.5, fontWeight: 700, marginBottom: SPACE.xxs, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{z.nazov}</div>
+                  {z.ciel != null && <MoniBar vyzbierane={z.vyzbierane ?? 0} ciel={z.ciel} mini />}
+                </div>
+              </div>
+            )) : polozky.map((o) => (
+              <div key={o.id} {...pressable(() => onPrispevok(o), o.nazov)} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, padding: `${SPACE.sm}px 0`, borderTop: `1px solid ${N.line}`, cursor: "pointer" }}>
+                {/* miniatúra fotky príspevku (à la spravodajský zoznam) — bez fotky emoji dlaždica */}
+                <div style={{ position: "relative", flex: "none" }}>
+                  <Foto src={o.fotky?.[0]} emoji={o.emoji ?? "📢"} w={58 * k} h={44 * k} radius={RADIUS.xs} sizes={`${58 * k}px`} alt={o.nazov} />
+                  {o.fotky?.length && o.emoji ? (
+                    <span style={{ position: "absolute", bottom: -4, right: -4, fontSize: 12 * k, lineHeight: 1, filter: "drop-shadow(0 1px 2px rgba(0,0,0,.5))" }}>{o.emoji}</span>
+                  ) : null}
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{o.nazov}</div>
+                  {o.lok && <div style={{ fontSize: 11, color: N.txt3, marginTop: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>📍 {o.lok}</div>}
+                </div>
+                <span style={{ color: N.txt3, fontSize: 14, flex: "none" }}>›</span>
+              </div>
+            ))}
           </div>
-        </div>
-      ))}
+        );
+      })}
 
-      {ostatne.length > 0 && <SekciaLabel>OZNAMY &amp; UDALOSTI</SekciaLabel>}
-      {ostatne.map((o) => (
-        <div key={o.id} {...pressable(() => onPrispevok(o), o.nazov)} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, padding: `${SPACE.sm}px 0`, borderTop: `1px solid ${N.line}`, cursor: "pointer" }}>
-          {/* miniatúra fotky príspevku (à la spravodajský zoznam) — bez fotky emoji dlaždica */}
-          <div style={{ position: "relative", flex: "none" }}>
-            <Foto src={o.fotky?.[0]} emoji={o.emoji ?? "📢"} w={58 * k} h={44 * k} radius={RADIUS.xs} sizes={`${58 * k}px`} alt={o.nazov} />
-            {o.fotky?.length && o.emoji ? (
-              <span style={{ position: "absolute", bottom: -4, right: -4, fontSize: 12 * k, lineHeight: 1, filter: "drop-shadow(0 1px 2px rgba(0,0,0,.5))" }}>{o.emoji}</span>
-            ) : null}
+      {maKontakt && (
+        <div style={{ marginTop: SPACE.sm }}>
+          <SekciaLabel>KONTAKT</SekciaLabel>
+          <div style={{ background: N.card, border: `1px solid ${N.line}`, borderRadius: RADIUS.sm, padding: SPACE.gutter, display: "grid", gap: SPACE.xs }}>
+            {view.omseSuhrn && <KontaktRiadok ikona="🕑" label="Časy omší" hodnota={view.omseSuhrn} />}
+            {view.adresa && <KontaktRiadok ikona="📍" label="Adresa" hodnota={view.adresa} />}
+            {view.tel && <KontaktRiadok ikona="📞" label="Telefón" hodnota={view.tel} />}
+            {view.email && <KontaktRiadok ikona="✉" label="E-mail" hodnota={view.email} />}
+            {view.web && <KontaktRiadok ikona="🌐" label="Web" hodnota={view.web} />}
           </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 13, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{o.nazov}</div>
-            {o.lok && <div style={{ fontSize: 11, color: N.txt3, marginTop: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>📍 {o.lok}</div>}
-          </div>
-          <span style={{ color: N.txt3, fontSize: 14, flex: "none" }}>›</span>
         </div>
-      ))}
+      )}
     </div>
   );
 }
@@ -452,7 +505,7 @@ function NabozDetail({ z, farar, onBack, onProfil }: { z: NabozFeedItem; farar: 
       : "Zapni upozornenia v prehliadači, nech ti to pripomenieme");
   }
   // sekundárne: pridať do systémového kalendára (.ics) — spoľahlivé aj pri zavretej appke
-  const doKalendara = () => { if (z.datum) stiahniIcs({ id: z.id, nazov: z.nazov ?? "Udalosť", datum: z.datum, miesto: z.lok, popis: (z.pribeh ?? z.popis ?? "").slice(0, 200) }, toast); };
+  const doKalendara = () => { if (z.datum) stiahniIcs({ id: z.id, nazov: z.nazov ?? "Udalosť", datum: z.datum, miesto: z.lok, popis: cistyText(z.pribeh ?? z.popis ?? "").slice(0, 200) }, toast); };
   const zdielajDetail = () => void zdielaj({ titul: z.nazov ?? "DEED", text: `${z.nazov ?? ""} — ${z.komunita || z.cirkev}`, url: aktualnaUrl() }, toast);
   const [ozvat, setOzvat] = useState(false); // „Zapojiť sa" → správa farnosti
   const [nahlasit, setNahlasit] = useState(false); // vlajka → nahlásenie obsahu
@@ -461,8 +514,11 @@ function NabozDetail({ z, farar, onBack, onProfil }: { z: NabozFeedItem; farar: 
   const overitelne = !!z.overitelne;
   const badgeCol = z.ukat ? KAT_FARBA[z.ukat] : N.ind;
 
-  function podpor(hodnota: number, text: string) { setSuma((s) => s + hodnota * 0.01); setLudia((l) => l + 1); toast(text); }
-  function platbaHotova(s: number) { setSuma((x) => x + s * (platba === "EUR" ? 1 : 0.01)); setLudia((l) => l + 1); toast(`Odoslané ${platba === "EUR" ? s + " €" : s + " DEED"} · ${z.nazov}`); }
+  // počítadlo aj zoznam darcov rastú z JEDNÉHO miesta (konzistentné čísla)
+  const ja = usePouzivatel();
+  const darRef = `naboz-${z.id}`;
+  function podpor(hodnota: number, text: string, kanal: "deed" | "sms" = "deed") { setSuma((s) => s + hodnota * 0.01); setLudia((l) => l + 1); pridajDar({ refId: darRef, suma: hodnota * 0.01, kanal, registrovany: kanal !== "sms" && ja.typ !== "pasivny" }); toast(text); }
+  function platbaHotova(s: number, volba?: VolbaDaru) { setSuma((x) => x + s * (platba === "EUR" ? 1 : 0.01)); setLudia((l) => l + 1); pridajDar({ refId: darRef, suma: s * (platba === "EUR" ? 1 : 0.01), kanal: platba === "EUR" ? "psp" : "deed", registrovany: ja.typ !== "pasivny", volba }); toast(`Odoslané ${platba === "EUR" ? s + " €" : s + " DEED"} · ${z.nazov}`); }
   // §delta bod 2: kontextová reakcia-srdiečko (kondolencia / modlím sa / blahoželáme) — odvodené z typu
   const reakcia = reakciaToast(z);
 
@@ -497,7 +553,7 @@ function NabozDetail({ z, farar, onBack, onProfil }: { z: NabozFeedItem; farar: 
         </div>
 
         <div style={{ fontSize: 17, fontWeight: 700, margin: `${SPACE.sm}px 0` }}>{z.nazov}</div>
-        <div style={{ fontSize: 14, lineHeight: 1.55, marginBottom: SPACE.gutter, color: N.txt2 }}>{pribeh}</div>
+        <FormatovanyText text={pribeh} style={{ fontSize: 14, lineHeight: 1.55, marginBottom: SPACE.gutter, color: N.txt2 }} />
 
         {/* §11: Overujem/Namietam LEN na Help prípadoch jednotlivcov (núdza + riziko podvodu) */}
         {overitelne && (
@@ -540,9 +596,14 @@ function NabozDetail({ z, farar, onBack, onProfil }: { z: NabozFeedItem; farar: 
               <PodporaSekcia
                 onShare={zdielajDetail}
                 upvotes={ludia} onUpvote={() => toast(reakcia)} reakcia="srdce"
-                onPodpor={(s: number) => podpor(s, `Ďakujeme za ${s} DEED pre ${z.nazov}`)} onSms={() => podpor(100, "SMS podpora")}
+                onPodpor={(s: number) => podpor(s, `Ďakujeme za ${s} DEED pre ${z.nazov}`)} onSms={() => podpor(100, "SMS podpora", "sms")}
                 onKanal={(k: string) => setPlatba(k as Kanal)} accent={N.ind}
                 supLabel={z.ukat === "pohreb" ? "PRISPIEŤ — pohrebná zbierka (predĺžené okno ~týždeň)" : "PRISPIEŤ — klik a hneď odíde"} />
+            </div>
+
+            {/* zoznam darcov — pod platobným modulom, rovnaké číslo ako počítadlo */}
+            <div style={{ marginBottom: SPACE.gutter }}>
+              <ZoznamDarcov refId={darRef} celkom={ludia} />
             </div>
 
             {/* pohreb/svadba — Split QR (len farár: rodine ↔ kostolu) */}
