@@ -5,7 +5,7 @@
 // ============================================================
 import { U } from "@/theme";
 import { tint } from "@/lib/ui";
-import type { GoodPolozka, KategoriaKonfig, Kategoria, Udalost, UdalostZdroj } from "@/types";
+import type { GoodPolozka, KategoriaKonfig, Kategoria, Udalost, UdalostZdroj, Domena } from "@/types";
 
 // ---- kategórie — earthy hue + theme-aware tinty (bg/bg2/bd z hue, fungujú v oboch režimoch) ----
 const kk = (c: string, label?: string): KategoriaKonfig => ({ c, bg: tint(c, .12), bg2: tint(c, .2), bd: tint(c, .34), label });
@@ -343,37 +343,63 @@ export const POLOZKY: GoodPolozka[] = [
 // ---- NÁSTENKA — udalosti v okolí ----
 export const SRC_COL: Record<UdalostZdroj, string> = { Komunita: "#A98BF0", Mesto: "var(--a-info)", Partner: "#C264D8" };
 
+// témy nástenky — presne 5 domén + Všetko, poradie PEVNÉ (spec Nástenka v1 §1.3);
+// farba chipu = farba bodky udalosti (jeden farebný jazyk)
+export const NASTENKA_TEMY: { kod: Domena; label: string; c: string }[] = [
+  { kod: "sport", label: "Šport", c: "var(--a-info)" },
+  { kod: "zdravie", label: "Zdravie", c: "var(--a-clay)" },
+  { kod: "learn", label: "Učenie", c: "var(--a-teal)" },
+  { kod: "art", label: "Umenie", c: "var(--a-plum)" },
+  { kod: "eko", label: "Eko", c: "var(--a-green)" },
+];
+export const TEMA_FARBA: Record<string, string> = Object.fromEntries(NASTENKA_TEMY.map((t) => [t.kod, t.c]));
+
+// reálny dátum konania (mock): najbližší budúci výskyt dňa v týždni (0=NE…6=SO)
+// o danej hodine, voliteľne +N týždňov — nástenka aj kalendár tak žijú vždy „teraz"
+const oDen = (den: number, hod: number, min = 0, tyzdnov = 0): string => {
+  const d = new Date();
+  d.setDate(d.getDate() + ((den - d.getDay() + 7) % 7) + tyzdnov * 7);
+  d.setHours(hod, min, 0, 0);
+  if (d.getTime() < Date.now()) d.setDate(d.getDate() + 7);
+  return d.toISOString();
+};
+
 export const EVENTS: Udalost[] = [
-  { id: "e1", top: true, when: "ŠTV 18:00", title: "Mentálny tréning — bezplatný stream", who: "Coach Peter", src: "Komunita", kat: "Ucenie",
+  { id: "e1", top: true, when: "ŠTV 18:00", datum: oDen(4, 18), dom: "learn", km: 0, title: "Mentálny tréning — bezplatný stream", who: "Coach Peter", src: "Komunita", kat: "Ucenie",
     desc: "Online stream o zvládaní stresu a sústredení. Pre všetkých so záujmom o šport a psychiku. Bezplatné, stačí sa prihlásiť.", place: "Online · stream", cap: "neobmedzené" },
-  { id: "e2", top: true, when: "PIA 20:00", title: "Rocková noc v klube", who: "Music Club", src: "Partner", kat: "Komunita",
+  { id: "e2", top: true, when: "PIA 20:00", datum: oDen(5, 20), dom: "art", km: 1.8, title: "Rocková noc v klube", who: "Music Club", src: "Partner", kat: "Komunita",
     desc: "Živá kapela, lokálni interpreti. B2B partner pozýva členov komunity so záujmom o rock. Vstup so zľavou cez DEED.", place: "Music Club, Trenčín", cap: "120 miest" },
-  { id: "e3", top: true, when: "SO 09:00", title: "Beh pre zdravie", who: "Mesto Trenčín", src: "Mesto", kat: "Zdravie",
+  { id: "e3", top: true, when: "SO 09:00", datum: oDen(6, 9), dom: "sport", km: 0.9, title: "Beh pre zdravie", who: "Mesto Trenčín", src: "Mesto", kat: "Zdravie",
     desc: "Charitatívny beh mestom. Štartovné ide na detské ihriská. Trasy 5 a 10 km.", place: "Mierové námestie", cap: "500 bežcov" },
-  { id: "e4", when: "SO 10:00", title: "Čistenie brehu Váhu", who: "Mesto Trenčín", src: "Mesto", kat: "Priroda",
+  { id: "e4", when: "SO 10:00", datum: oDen(6, 10), dom: "eko", km: 1.2, title: "Čistenie brehu Váhu", who: "Mesto Trenčín", src: "Mesto", kat: "Priroda",
     desc: "Dobrovoľnícka akcia — vyzbierame odpad pri rieke. Vrecia a rukavice zabezpečené. Vo tvojej štvrti.", place: "Breh Váhu, Sihoť", cap: "40 ľudí" },
-  { id: "e5", when: "NE 15:00", title: "Joga v parku", who: "Coach Eva", src: "Komunita", kat: "Zdravie",
+  { id: "e5", when: "NE 15:00", datum: oDen(0, 15), dom: "sport", km: 1.5, title: "Joga v parku", who: "Coach Eva", src: "Komunita", kat: "Zdravie",
     desc: "Otvorená hodina jogy pre začiatočníkov. Prines si podložku. Pri dobrom počasí.", place: "Mestský park", cap: "25 miest" },
-  { id: "e6", when: "UT 17:30", title: "Doučovanie matematiky", who: "Coach Ján", src: "Komunita", kat: "Ucenie",
+  { id: "e6", when: "UT 17:30", datum: oDen(2, 17, 30), dom: "learn", km: 2.1, title: "Doučovanie matematiky", who: "Coach Ján", src: "Komunita", kat: "Ucenie",
     desc: "Doučovanie pre žiakov 2. stupňa. Bezplatné, organizované cez komunitu.", place: "Komunitné centrum", cap: "15 detí" },
-  { id: "e7", when: "ST 19:00", title: "Diskusia o ekológii mesta", who: "Mesto Trenčín", src: "Mesto", kat: "Priroda",
+  { id: "e7", when: "ST 19:00", datum: oDen(3, 19), dom: "eko", km: 0.8, title: "Diskusia o ekológii mesta", who: "Mesto Trenčín", src: "Mesto", kat: "Priroda",
     desc: "Verejná diskusia o zeleni a triedení odpadu v meste. Príď povedať svoj názor.", place: "Mestský úrad", cap: "80 miest" },
-  { id: "e8", when: "PIA 16:00", title: "Workshop fotografie", who: "Coach Lucia", src: "Komunita", kat: "Zdravie",
+  { id: "e8", when: "PIA 16:00", datum: oDen(5, 16), dom: "art", km: 1.1, title: "Workshop fotografie", who: "Coach Lucia", src: "Komunita", kat: "Zdravie",
     desc: "Základy mobilnej fotografie. Vezmi si telefón. Platený workshop (cez DEED/EUR).", place: "Ateliér, centrum", cap: "12 miest" },
-  { id: "e9", when: "ŠTV 17:00", title: "Burza detského oblečenia — zadarmo", who: "MC Lienka", src: "Komunita", kat: "Komunita",
+  { id: "e9", when: "ŠTV 17:00", datum: oDen(4, 17), dom: "mix", km: 1.4, title: "Burza detského oblečenia — zadarmo", who: "MC Lienka", src: "Komunita", kat: "Komunita",
     desc: "Prines, čo deti prerástli, a vyber si, čo potrebuješ. Všetko zadarmo. Rodiny v núdzi prednostne.", place: "Materské centrum, centrum", cap: "otvorené" },
-  { id: "e10", top: true, when: "SO 14:00", title: "Deň narcisov — verejná zbierka", who: "Liga proti rakovine", src: "Partner", kat: "Zdravie",
+  { id: "e10", top: true, when: "SO 14:00", datum: oDen(6, 14), dom: "zdravie", km: 0.6, title: "Deň narcisov — verejná zbierka", who: "Liga proti rakovine", src: "Partner", kat: "Zdravie",
     desc: "Pripni si narcis a podpor onkologických pacientov. Dobrovoľníci v uliciach celého mesta.", place: "Mierové námestie a okolie", cap: "celé mesto" },
-  { id: "e11", when: "NE 10:00", title: "Predčítanie deťom v nemocnici", who: "Čitateľský klub", src: "Komunita", kat: "Ucenie",
+  { id: "e11", when: "NE 10:00", datum: oDen(0, 10), dom: "learn", km: 2.4, title: "Predčítanie deťom v nemocnici", who: "Čitateľský klub", src: "Komunita", kat: "Ucenie",
     desc: "Hľadáme dobrovoľníkov, ktorí prídu predčítať deťom na detskom oddelení. Stačí dobrý hlas a trpezlivosť.", place: "Nemocnica, detské oddelenie", cap: "8 dobrovoľníkov" },
-  { id: "e12", when: "UT 16:00", title: "Krúžok robotiky pre deti", who: "Veronika S.", src: "Komunita", kat: "Ucenie",
+  { id: "e12", when: "UT 16:00", datum: oDen(2, 16), dom: "learn", km: 3.1, title: "Krúžok robotiky pre deti", who: "Veronika S.", src: "Komunita", kat: "Ucenie",
     desc: "Bezplatný krúžok pre deti z Juhu. Stavebnice zabezpečené. Vhodné pre 8–13 rokov.", place: "KC Juh", cap: "12 detí" },
-  { id: "e13", when: "ST 18:00", title: "Darovanie krvi — mobilný odber", who: "NTS Trenčín", src: "Mesto", kat: "Zdravie",
+  { id: "e13", when: "ST 18:00", datum: oDen(3, 18), dom: "zdravie", km: 0.8, title: "Darovanie krvi — mobilný odber", who: "NTS Trenčín", src: "Mesto", kat: "Zdravie",
     desc: "Mobilná transfúzna stanica. Kritický nedostatok 0−. Prvodarcovia vítaní, stačí občiansky.", place: "Mestský úrad", cap: "bez objednania" },
-  { id: "e14", when: "SO 08:00", title: "Komunitná záhrada — sadíme spolu", who: "EkoTím Juh", src: "Komunita", kat: "Priroda",
+  { id: "e14", when: "SO 08:00", datum: oDen(6, 8), dom: "eko", km: 3.4, title: "Komunitná záhrada — sadíme spolu", who: "EkoTím Juh", src: "Komunita", kat: "Priroda",
     desc: "Spoločná výsadba zeleniny a byliniek. Úroda sa rozdelí medzi seniorov zo štvrte. Náradie máme.", place: "Komunitná záhrada, Juh", cap: "30 ľudí" },
-  { id: "e15", when: "PIA 18:30", title: "Spoločenský večer klubu seniorov", who: "Klub seniorov Sihoť", src: "Komunita", kat: "Komunita",
+  { id: "e15", when: "PIA 18:30", datum: oDen(5, 18, 30), dom: "mix", km: 1.9, title: "Spoločenský večer klubu seniorov", who: "Klub seniorov Sihoť", src: "Komunita", kat: "Komunita",
     desc: "Káva, harmonika a spoločnosť pre osamelých seniorov. Odvoz pre menej pohyblivých zabezpečíme.", place: "KC Sihoť", cap: "50 miest" },
-  { id: "e16", top: true, when: "NE 16:00", title: "Benefičný koncert za rodinu Kováčovú", who: "Tlupa", src: "Partner", kat: "Komunita",
+  { id: "e16", top: true, when: "NE 16:00", datum: oDen(0, 16), dom: "art", km: 2.2, title: "Benefičný koncert za rodinu Kováčovú", who: "Tlupa", src: "Partner", kat: "Komunita",
     desc: "Lokálne kapely hrajú pre rodinu, ktorej zhorel dom. Celý výťažok ide priamo im.", place: "KC Aktivity", cap: "200 miest" },
+  // ďalšie týždne — nech má kalendár čo ukázať aj pri listovaní mesiacom
+  { id: "e17", when: "SO +7 dní · 09:00", datum: oDen(6, 9, 0, 1), dom: "sport", km: 1.0, title: "Nočný beh mestom — tréning", who: "Mesto Trenčín", src: "Mesto", kat: "Zdravie",
+    desc: "Spoločný prípravný tréning na nočný beh. Tempo pre každého, čelovky so sebou.", place: "Mierové námestie", cap: "200 bežcov" },
+  { id: "e18", when: "ST +2 týž. · 17:00", datum: oDen(3, 17, 0, 2), dom: "art", km: 2.0, title: "Otvorený ateliér — maľovanie pre verejnosť", who: "Ateliér Farbička", src: "Komunita", kat: "Komunita",
+    desc: "Príď si namaľovať vlastný obraz — plátno a farby zabezpečené, odborné vedenie. Vhodné aj pre deti.", place: "Ateliér, centrum", cap: "16 miest" },
 ];

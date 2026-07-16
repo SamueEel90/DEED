@@ -484,19 +484,19 @@ function CharitaDetail({ z: zProp, toast, onBack, onReg, onAutor }: { z?: Zbierk
                 onKanal={(k: string) => setPlatba(k as Kanal)} />
             </div>
 
-            {/* zoznam darcov — pod platobným modulom, rovnaké číslo ako počítadlo */}
-            <div style={{ marginBottom: SPACE.gutter }}>
-              <ZoznamDarcov refId={darRef} celkom={ludia} />
-            </div>
-
             {/* pravidelná podpora */}
             <div onClick={() => setRecur(true)} style={{ width: "100%", border: `2px solid ${K.blueEdge}`, background: K.blueBg, borderRadius: RADIUS.sm, padding: SPACE.gutter, textAlign: "center", fontSize: 14, fontWeight: 600, cursor: "pointer", marginBottom: SPACE.sm, display: "flex", alignItems: "center", justifyContent: "center", gap: SPACE.xs }}>
               <IkonaOpakovat size={17} color={K.blue} /> Pravidelná podpora
             </div>
 
-            {/* split QR (influencer) — aká časť platby ide komu */}
-            <div onClick={() => setSplit(true)} style={{ width: "100%", border: `1px solid ${K.greenEdge}`, background: K.greenBg, borderRadius: RADIUS.sm, padding: SPACE.gutter, textAlign: "center", fontSize: 14, fontWeight: 600, color: K.green, cursor: "pointer", marginBottom: SPACE.gutter, display: "flex", alignItems: "center", justifyContent: "center", gap: SPACE.xs }}>
-              🎬 Influencer: rozdeliť platbu (Split QR)
+            {/* reťaz dobra (split QR) — aká časť platby ide komu */}
+            <div onClick={() => setSplit(true)} style={{ width: "100%", border: `1px solid ${K.greenEdge}`, background: K.greenBg, borderRadius: RADIUS.sm, padding: SPACE.gutter, textAlign: "center", fontSize: 14, fontWeight: 600, color: K.green, cursor: "pointer", marginBottom: SPACE.sm, display: "flex", alignItems: "center", justifyContent: "center", gap: SPACE.xs }}>
+              🔗 Reťaz dobra — rozdeliť platbu
+            </div>
+
+            {/* zoznam darcov — až pod pravidelnou podporou a reťazou dobra */}
+            <div style={{ marginBottom: SPACE.gutter }}>
+              <ZoznamDarcov refId={darRef} celkom={ludia} />
             </div>
           </>
         ) : (

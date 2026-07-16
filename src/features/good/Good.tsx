@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef, memo } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { SIRKA, C, inp, btn, GRAD, GRAD_ZELENY, SPACE, RADIUS } from "@/theme";
-import { Foto, FotoPrispevku, MiniFotky, Video, ModulHlavicka, Hlavicka, AvatarUroven, PodporaSekcia, PlatbaModal, HladanieModal, OblubeneHviezda, OblubeneBtn, toast, Oslava, useGaleria, useScrollPamat, useMotiv, useLayout, useStrankaAkcie, useTvorbaGate, StatRiadok, MoniBar, FeedStlpce, FeedGrid, FeedCard, KartaBadge, typKluc, BackChip, ProgresBox, SwipeBack, obalSiroky, SegTabs, Lupa, Zdielanie, IkonaSipVlavo, IkonaMoznosti, IkonaUlozit, IkonaFajka, IkonaPlay, IkonaDoska, IkonaPin, OkruhVyber, QrModal, SplitQrSheet, FotoVyber, FeedSkeleton, EmptyState, ErrorState, ScreenSwitch, FormatovanyText } from "@/shared";
+import { Foto, FotoPrispevku, MiniFotky, Video, ModulHlavicka, Hlavicka, AvatarUroven, PodporaSekcia, PlatbaModal, HladanieModal, OblubeneHviezda, OblubeneBtn, toast, Oslava, useGaleria, useScrollPamat, useMotiv, useLayout, useStrankaAkcie, useTvorbaGate, StatRiadok, MoniBar, FeedStlpce, FeedGrid, FeedCard, KartaBadge, typKluc, BackChip, ProgresBox, SwipeBack, obalSiroky, SegTabs, Lupa, Zdielanie, IkonaSipVlavo, IkonaMoznosti, IkonaUlozit, IkonaFajka, IkonaPlay, IkonaDoska, IkonaPin, OkruhVyber, QrModal, SplitQrSheet, FotoVyber, FeedSkeleton, EmptyState, ErrorState, ScreenSwitch, FormatovanyText, ZoznamDarcov } from "@/shared";
+import { pridajDar, type VolbaDaru } from "@/lib/darcovia";
 import { pripravFeed, vzdialenostKm, FEED_CFG, type FeedUser } from "@/lib/feed";
 import { tint, tagChip, jeHrdina, HRDINA_COL, rovnakeOkremFunkcii } from "@/lib/ui";
 import { pressable } from "@/components/pressable";
@@ -20,7 +21,7 @@ import type { GoodPolozka, Subjekt, Udalost, OkruhKod, Oblubeny, MojaZbierka, Mo
 import { useGoodFeed, useGoodUdalosti, useTopPrispevky, useQrSplitCreate, qk, repo } from "@/data";
 import { SplitConfigStep, splitOwnerPct, splitCielePayload, splitValid, type SplitCiel } from "@/shared";
 import { usePersonalizacia } from "@/lib/personalizacia";
-import { KAT, SRC_COL } from "./mock";
+import { KAT, SRC_COL, NASTENKA_TEMY, TEMA_FARBA } from "./mock";
 
 const katLabel = (k: GoodPolozka["kat"]) => KAT[k].label || k;
 
@@ -61,7 +62,8 @@ export default function ModulGood({ wide, otvorModul, otvorId, onOtvorene }: { w
   const { gate } = useTvorbaGate(); // pasívny nesmie tvoriť (overovanie skutku = create)
   const [screen, setScreen] = useState("home"); // home | detail | verify | add | board | event | cudzi
   const [pohlad, setPohlad] = useState<"okolie" | "mojdeed">("okolie"); // prežije návrat z detailu (ScreenSwitch remountuje Home)
-  const [radius, setRadius] = useState<OkruhKod>("stvrt");
+  // okruh = JEDNO nastavenie okolia pre celú appku (Domov ↔ nástenka ↔ push) — spec Nástenka v1 §1.1
+  const { okruh: radius, nastavOkruh: setRadius } = useLokalita();
   const [aktId, setAktId] = useState<string | number | null>(null);
   const [aktEvent, setAktEvent] = useState<string | null>(null);
   const [aktSubjekt, setAktSubjekt] = useState<Subjekt | null>(null); // cudzí profil (§6)
@@ -751,11 +753,13 @@ type GoodDetailProps = {
 export function GoodDetail({ it, toast, oslavuj, onBack, onVerify, onAutor }: GoodDetailProps) {
   const [platba, setPlatba] = useState<string | null>(null); // "EUR" | "DEED"
   const [qr, setQr] = useState(false);        // QR skutku (§10) — 3 výstupy
-  const [split, setSplit] = useState(false);  // split QR (influencer) — §10 × §9
+  const [split, setSplit] = useState(false);  // split QR — reťaz dobra §10 × §9
   const [moznosti, setMoznosti] = useState(false); // „⋯" menu — zdieľať/kopírovať/uložiť/QR
   const otvorGaleriu = useGaleria();
   const { wide } = useLayout();
+  const ja = usePouzivatel();
   const { pridajPodporu, jeOblubene, toggleOblubene } = usePersonalizacia(); // podpora → „Čo podporujem" v Môj DEED
+  const darRef = `good-${it.id}`; // kľúč skutku v zozname darcov
   const maHero = !!(it.video || it.fotky?.length);
   const jeZiadost = it.typ === "ziadost", jeCharita = it.typ === "charita";
   const maProgres = (jeZiadost && it.ciel) || jeCharita;
@@ -767,6 +771,7 @@ export function GoodDetail({ it, toast, oslavuj, onBack, onVerify, onAutor }: Go
 
   function podpor(suma: number) {
     zaznamenajPodporu(suma);
+    pridajDar({ refId: darRef, suma: suma * 0.01, kanal: "deed", registrovany: ja.typ !== "pasivny" });
     toast(`Ďakujeme za ${suma} DEED pre ${it.autor}`);
     oslavuj(suma, it.autor);
   }
@@ -834,11 +839,11 @@ export function GoodDetail({ it, toast, oslavuj, onBack, onVerify, onAutor }: Go
           <div style={{ marginLeft: "auto", background: GRAD, color: "#fff", fontWeight: 700, fontSize: 11, padding: `${SPACE.xs}px ${SPACE.md}px`, borderRadius: RADIUS.sm, cursor: "pointer", boxShadow: "0 5px 16px color-mix(in srgb, var(--a-green) 32%, transparent)" }}>Otvoriť QR</div>
         </div>
 
-        {/* Split QR (influencer) — nastav, aká časť platby ide komu (§10 × Reťaz dobra §9) */}
+        {/* Reťaz dobra (split QR) — nastav, aká časť platby ide komu (§10 × §9) */}
         <div onClick={() => setSplit(true)} style={{ display: "flex", alignItems: "center", gap: SPACE.gutter, background: "rgba(31,191,143,.06)", border: "1px solid rgba(31,191,143,.25)", borderRadius: RADIUS.md, padding: SPACE.sm, marginTop: SPACE.sm, cursor: "pointer" }}>
-          <div style={{ width: 52, height: 52, borderRadius: RADIUS.xs, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, background: "rgba(31,191,143,.12)" }}>🎬</div>
+          <div style={{ width: 52, height: 52, borderRadius: RADIUS.xs, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, background: "rgba(31,191,143,.12)" }}>🔗</div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontWeight: 700, fontSize: 12.5 }}>Influencer: rozdeliť platbu</div>
+            <div style={{ fontWeight: 700, fontSize: 12.5 }}>Reťaz dobra — rozdeliť platbu</div>
             <div style={{ fontSize: 12, color: C.textTer }}>Nastav v QR, aká časť ide komu (tebe + charitám)</div>
           </div>
           <div style={{ marginLeft: "auto", background: GRAD_ZELENY, color: "#06281d", fontWeight: 800, fontSize: 11, padding: `${SPACE.xs}px ${SPACE.md}px`, borderRadius: RADIUS.sm, boxShadow: "0 5px 16px rgba(31,191,143,.3)" }}>Split QR</div>
@@ -849,11 +854,16 @@ export function GoodDetail({ it, toast, oslavuj, onBack, onVerify, onAutor }: Go
           <VerifyBtn ok onClick={() => onVerify("ok")} />
           <VerifyBtn onClick={() => onVerify("no")} />
         </div>
+
+        {/* zoznam darcov — pri skutkoch až pod Overujem/Namietam */}
+        <div style={{ marginTop: SPACE.gutter }}>
+          <ZoznamDarcov refId={darRef} celkom={it.podpora} />
+        </div>
       </div>
 
       {/* simulácia platby (EUR karta / DEED peňaženka) */}
       {platba && <PlatbaModal kanal={platba} komu={it.autor} onClose={() => setPlatba(null)}
-        onDone={(s: number) => { zaznamenajPodporu(s, platba); toast(`Odoslané ${platba === "EUR" ? s + " €" : s + " DEED"} · ${it.autor}`); oslavuj(platba === "EUR" ? Math.round(s * 100) : s, it.autor); }} />}
+        onDone={(s: number, volba?: VolbaDaru) => { zaznamenajPodporu(s, platba); pridajDar({ refId: darRef, suma: s * (platba === "EUR" ? 1 : 0.01), kanal: platba === "EUR" ? "psp" : "deed", registrovany: ja.typ !== "pasivny", volba }); toast(`Odoslané ${platba === "EUR" ? s + " €" : s + " DEED"} · ${it.autor}`); oslavuj(platba === "EUR" ? Math.round(s * 100) : s, it.autor); }} />}
 
       {/* univerzálny QR skutku (§10) — reálne skenovateľný odkaz na živé interné ID */}
       {qr && <QrModal typ="skutok" titul={`QR skutku č. ${it.num.toLocaleString("sk")}`} popis={it.titul.slice(0, 38) + "…"}
@@ -891,8 +901,8 @@ function MoznostRiadok({ ikona, label, onClick }: { ikona: React.ReactNode; labe
   );
 }
 
-function SekciaLabel({ children }: { children: React.ReactNode }) {
-  return <div style={{ fontSize: 11.5, letterSpacing: ".4px", color: C.textTer, fontWeight: 700, margin: `${SPACE.md}px 0 ${SPACE.xs}px` }}>{children}</div>;
+function SekciaLabel({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
+  return <div style={{ fontSize: 11.5, letterSpacing: ".4px", color: C.textTer, fontWeight: 700, margin: `${SPACE.md}px 0 ${SPACE.xs}px`, ...style }}>{children}</div>;
 }
 
 function VerifyBtn({ ok, onClick }: { ok?: boolean; onClick: () => void }) {
@@ -1151,21 +1161,129 @@ function GoodAdd({ toast, oslavuj, onPridaj, onDone }: { toast: (m: string) => v
 
 // ===================== NÁSTENKA (board) =====================
 // Exportovaná — komunitná nástenka (udalosti/akcie v okolí) je zdieľaná aj do Help/Charita.
+// Filtre Kde·Kedy·témy + druhý pohľad kalendár (DEED_Nastenka_Filtre_Kalendar_DEV_v1.md).
+// Kde = JEDNO nastavenie okolia pre celú appku (useLokalita().okruh — Domov ↔ nástenka).
+type KedyKod = "dnes" | "vikend" | "tyzden" | "mesiac";
+const KEDY_LABEL: Record<KedyKod, string> = { dnes: "Dnes", vikend: "Víkend", tyzden: "Tento týždeň", mesiac: "Mesiac" };
+const DEN_MS = 86400000;
+// časové okno voľby Kedy (spec §1.2) — Víkend = najbližšia SO+NE VRÁTANE dneška
+// (v utorok = táto SO+NE; v sobotu = dnes + zajtra; v nedeľu = dnes)
+function kedyOkno(k: KedyKod): [number, number] {
+  const d = new Date(); d.setHours(0, 0, 0, 0);
+  const d0 = d.getTime(), dow = d.getDay(); // 0 = NE … 6 = SO
+  if (k === "dnes") return [d0, d0 + DEN_MS];
+  if (k === "vikend") {
+    if (dow === 6) return [d0, d0 + 2 * DEN_MS];
+    if (dow === 0) return [d0, d0 + DEN_MS];
+    return [d0 + (6 - dow) * DEN_MS, d0 + (8 - dow) * DEN_MS];
+  }
+  if (k === "tyzden") return [d0, d0 + (dow === 0 ? 1 : 8 - dow) * DEN_MS]; // dnes až nedeľa
+  return [d0, d0 + 30 * DEN_MS]; // mesiac = najbližších 30 dní
+}
+const denKluc = (t: number) => { const d = new Date(t); return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`; };
+const casUdalosti = (e: Udalost) => (e.datum ? Date.parse(e.datum) : Infinity); // bez dátumu → koniec zoznamu, Kedy ju nefiltruje
+// radenie: čas konania (najbližšie hore), pri zhode vzdialenosť (spec §1.4)
+const zoradUdalosti = (a: Udalost, b: Udalost) => casUdalosti(a) - casUdalosti(b) || (a.km ?? 0) - (b.km ?? 0);
+
+// jeden riadok udalosti — bodka = farba TÉMY (jeden farebný jazyk s chipmi, spec §1.3);
+// organizátor ostáva viditeľný v riadku (typ organizátora z chipov VON). Reuse aj v kalendári.
+function UdalostRiadok({ e, onClick, desktop }: { e: Udalost; onClick: () => void; desktop?: boolean }) {
+  const c = TEMA_FARBA[e.dom ?? ""] ?? C.textTer;
+  return (
+    <div onClick={onClick} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, background: "rgba(var(--glass-rgb),.04)", border: `1px solid ${C.line2}`, borderRadius: RADIUS.sm, padding: `${SPACE.sm}px ${SPACE.sm}px`, marginBottom: desktop ? 0 : SPACE.xs, cursor: "pointer" }}>
+      <span style={{ width: 8, height: 8, borderRadius: "50%", background: c, flex: "none" }} />
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 14.5, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{e.title}</div>
+        <div style={{ fontSize: 12, color: C.textTer, marginTop: 3 }}>{e.who} · {e.src}</div>
+      </div>
+      <div style={{ textAlign: "right", flex: "none" }}>
+        <div style={{ fontSize: 12, fontWeight: 700, color: c }}>{e.when}</div>
+        <div style={{ color: C.textTer, fontSize: 16 }}>›</div>
+      </div>
+    </div>
+  );
+}
+
+// kalendár — druhý pohľad nástenky (spec §2): mesačná mriežka, deň s akciami má bodku
+// s počtom, ťuk na deň vysype zoznam dňa (rovnaké riadky). Číta TIE ISTÉ dáta ako zoznam.
+function BoardKalendar({ events, den, setDen, onEvent, desktop }: { events: Udalost[]; den: number; setDen: (t: number) => void; onEvent: (id: string) => void; desktop?: boolean }) {
+  const [mesiac, setMesiac] = useState(() => { const d = new Date(den); d.setDate(1); d.setHours(0, 0, 0, 0); return d; });
+  const poDnoch: Record<string, Udalost[]> = {};
+  events.forEach((e) => { if (!e.datum) return; const k = denKluc(Date.parse(e.datum)); (poDnoch[k] ||= []).push(e); });
+  const y = mesiac.getFullYear(), m = mesiac.getMonth();
+  const ofs = (new Date(y, m, 1).getDay() + 6) % 7; // pondelkový začiatok týždňa
+  const dniVMes = new Date(y, m + 1, 0).getDate();
+  const dnesKluc = denKluc(Date.now());
+  const denAkcie = (poDnoch[denKluc(den)] ?? []).slice().sort(zoradUdalosti);
+  const posun = (o: number) => setMesiac((x) => new Date(x.getFullYear(), x.getMonth() + o, 1));
+  return (
+    <div style={{ padding: `0 ${SPACE.md}px` }}>
+      {/* hlavička mesiaca — listovanie šípkami */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: `${SPACE.xs}px 0 ${SPACE.sm}px` }}>
+        <span {...pressable(() => posun(-1), "Predchádzajúci mesiac")} style={{ width: 34, height: 34, borderRadius: RADIUS.sm, display: "flex", alignItems: "center", justifyContent: "center", background: C.surface2, border: `1px solid ${C.line}`, cursor: "pointer", fontSize: 16, color: C.textSec }}>‹</span>
+        <b style={{ fontSize: 14.5, textTransform: "capitalize" }}>{mesiac.toLocaleDateString("sk", { month: "long", year: "numeric" })}</b>
+        <span {...pressable(() => posun(1), "Nasledujúci mesiac")} style={{ width: 34, height: 34, borderRadius: RADIUS.sm, display: "flex", alignItems: "center", justifyContent: "center", background: C.surface2, border: `1px solid ${C.line}`, cursor: "pointer", fontSize: 16, color: C.textSec }}>›</span>
+      </div>
+      {/* mriežka */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4 }}>
+        {["Po", "Ut", "St", "Št", "Pi", "So", "Ne"].map((h) => <div key={h} style={{ textAlign: "center", fontSize: 10, color: C.textTer, fontWeight: 700, padding: `${SPACE.xxs}px 0` }}>{h}</div>)}
+        {Array.from({ length: ofs }).map((_, i) => <div key={"x" + i} />)}
+        {Array.from({ length: dniVMes }).map((_, i) => {
+          const t = new Date(y, m, i + 1).getTime();
+          const k = denKluc(t), n = poDnoch[k]?.length ?? 0;
+          const on = denKluc(den) === k, dnes = dnesKluc === k;
+          return (
+            <div key={i} {...pressable(() => setDen(t), `${i + 1}. ${m + 1}. — ${n} akcií`)} style={{ minHeight: 44, borderRadius: RADIUS.xs, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 1, cursor: "pointer",
+              background: on ? tint("var(--a-info)", .14) : C.surface2, border: `1px solid ${on ? tint("var(--a-info)", .5) : dnes ? tint("var(--a-info)", .35) : C.line2}` }}>
+              <span style={{ fontSize: 12.5, fontWeight: on || dnes ? 800 : 600, color: on ? "var(--a-info)" : C.text }}>{i + 1}</span>
+              <span style={{ fontSize: 9, fontWeight: 800, color: n > 0 ? "var(--a-info)" : "transparent" }}>•{n > 0 ? n : 0}</span>
+            </div>
+          );
+        })}
+      </div>
+      {/* zoznam vybraného dňa — rovnaké riadky ako zoznam nástenky */}
+      <SekciaLabel style={{ padding: `${SPACE.md}px 0 ${SPACE.xs}px` }}>AKCIE · {new Date(den).toLocaleDateString("sk", { weekday: "long", day: "numeric", month: "numeric" })}</SekciaLabel>
+      <div style={desktop ? { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(360px, 1fr))", gap: SPACE.sm, alignItems: "start" } : undefined}>
+        {denAkcie.map((e) => <UdalostRiadok key={e.id} e={e} onClick={() => onEvent(e.id)} desktop={desktop} />)}
+      </div>
+      {denAkcie.length === 0 && <div style={{ fontSize: 12.5, color: C.textTer, textAlign: "center", padding: `${SPACE.md}px 0` }}>Žiadne akcie v tento deň.</div>}
+    </div>
+  );
+}
+
 export function GoodBoard({ onBack, onEvent, toast }: { onBack: () => void; onEvent: (id: string) => void; toast: (m: string) => void }) {
   const { data: EVENTS = [] } = useGoodUdalosti();
   const { wide, desktop } = useLayout();
-  const [filter, setFilter] = useState("Všetko");
-  const tops = EVENTS.filter((e) => e.top);
-  const list = EVENTS.filter((e) => filter === "Všetko" || e.src === filter || (filter === "Šport" && e.kat === "Zdravie"));
-  const chipy = ["Všetko", "Šport", "Komunita", "Mesto", "Partner"];
+  const { mesto, okruh, nastavOkruh } = useLokalita(); // Kde = jedno nastavenie s Domovom (spec §1.1)
+  const [tema, setTema] = useState<string>("all");                 // témy: single-select, Všetko = default
+  const [kedy, setKedy] = useState<KedyKod>("tyzden");             // default: Tento týždeň (spec §1.2)
+  const [pohlad, setPohlad] = useState<"zoznam" | "kalendar">("zoznam"); // default ZOZNAM; prepnutie nestráca filtre
+  const [den, setDen] = useState<number>(() => { const d = new Date(); d.setHours(0, 0, 0, 0); return d.getTime(); });
+  const [vyberKde, setVyberKde] = useState(false);
+  const [vyberKedy, setVyberKedy] = useState(false);
+
+  // Kde + téma platia pre zoznam, TOPOVANÉ pás aj kalendár súčasne (spec §1.3, §2)
+  const kmMax = FEED_CFG.radiusy[okruh].km;
+  const zaklad = EVENTS.filter((e) => (e.km ?? 0) <= kmMax && (tema === "all" || e.dom === tema));
+  const [od, doKedy] = kedyOkno(kedy);
+  const list = zaklad.filter((e) => !e.datum || (casUdalosti(e) >= od && casUdalosti(e) < doKedy)).sort(zoradUdalosti);
+  const tops = zaklad.filter((e) => e.top);
+  // na chipe svieti aktuálna voľba („Trenčín", „5 km"), nie slovo „Kde"
+  const kdeLabel = okruh === "mesto" ? mesto : okruh === "stvrt" ? "5 km" : FEED_CFG.radiusy[okruh].label;
+  const kedyLabel = pohlad === "kalendar" ? new Date(den).toLocaleDateString("sk", { day: "numeric", month: "numeric" }) : KEDY_LABEL[kedy];
+
+  const chip = (on: boolean, c = "var(--a-info)") => ({ flex: "0 0 auto" as const, display: "inline-flex" as const, alignItems: "center" as const, gap: 4, padding: `${SPACE.xs}px ${SPACE.gutter}px`, borderRadius: RADIUS.sm, fontSize: 11, cursor: "pointer" as const, whiteSpace: "nowrap" as const, background: on ? tint(c, .12) : C.surface2, border: `1px solid ${on ? tint(c, .4) : C.line}`, color: on ? c : C.textSec, fontWeight: on ? 700 : 500 });
+  const volba = (on: boolean) => ({ display: "flex" as const, alignItems: "center" as const, gap: SPACE.sm, padding: `${SPACE.sm}px ${SPACE.gutter}px`, borderRadius: RADIUS.sm, marginBottom: SPACE.xs, cursor: "pointer" as const, background: on ? tint("var(--a-info)", .12) : C.surface2, border: `1px solid ${on ? tint("var(--a-info)", .45) : C.line}`, fontSize: 14, fontWeight: 700, color: on ? "var(--a-info)" : C.text });
 
   // desktop/tablet: čitateľná centrovaná šírka (nie roztiahnuté na celú obrazovku)
   return (
     <div style={{ paddingBottom: SPACE.lg, maxWidth: desktop ? SIRKA.plocha : wide ? SIRKA.stlpec : undefined, marginLeft: "auto", marginRight: "auto" }}>
-      <Hlavicka title="Nástenka" onBack={onBack} right={<span style={{ color: C.textTer, fontSize: 16 }}>▦</span>} />
+      <Hlavicka title="Nástenka" onBack={onBack}
+        right={<span {...pressable(() => setPohlad((p) => (p === "zoznam" ? "kalendar" : "zoznam")), "Prepnúť zoznam / kalendár")} style={{ color: pohlad === "kalendar" ? "var(--a-info)" : C.textTer, fontSize: 16, cursor: "pointer" }}>{pohlad === "zoznam" ? "🗓" : "▤"}</span>} />
 
-      {/* topované */}
-      <SekciaLabel><span style={{ color: C.gold }}>TOPOVANÉ · odporúčané</span></SekciaLabel>
+      {/* topované — filtruje ho téma aj Kde (spec akceptácia 4) */}
+      {tops.length > 0 && (<>
+      <SekciaLabel><span style={{ color: C.gold }}>TOPOVANÉ</span></SekciaLabel>
       <div style={{ display: "flex", gap: SPACE.sm, padding: `0 ${SPACE.md}px ${SPACE.xs}px`, overflowX: "auto" }}>
         {tops.map((e) => (
           <div key={e.id} onClick={() => onEvent(e.id)} style={{ minWidth: 152, flex: "0 0 auto", background: C.surface2, border: "1px solid rgba(231,199,102,.3)", borderRadius: RADIUS.md, overflow: "hidden", cursor: "pointer" }}>
@@ -1174,46 +1292,62 @@ export function GoodBoard({ onBack, onEvent, toast }: { onBack: () => void; onEv
               <span style={{ fontSize: 18, color: KAT[e.kat].c }}>▶</span>
             </div>
             <div style={{ padding: `${SPACE.xs}px ${SPACE.sm}px` }}>
-              <div style={{ fontSize: 9, fontWeight: 700, color: KAT[e.kat].c }}>{e.when}</div>
+              <div style={{ fontSize: 9, fontWeight: 700, color: TEMA_FARBA[e.dom ?? ""] ?? KAT[e.kat].c }}>{e.when}</div>
               <div style={{ fontSize: 11, fontWeight: 700, marginTop: 3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{e.title}</div>
               <div style={{ fontSize: 9, color: C.textTer, marginTop: 2 }}>{e.who}</div>
             </div>
           </div>
         ))}
       </div>
+      </>)}
 
-      {/* filtre */}
-      <SegTabs
-        options={chipy}
-        value={filter}
-        onChange={setFilter}
-        ariaLabel="Filter udalostí na nástenke"
-        style={{ display: "flex", gap: SPACE.xs, padding: `${SPACE.xs}px ${SPACE.md}px ${SPACE.xs}px`, overflowX: "auto" }}
-        render={(f, on) => (
-          <div style={{ flex: "0 0 auto", padding: `${SPACE.xs}px ${SPACE.gutter}px`, borderRadius: RADIUS.sm, fontSize: 11, cursor: "pointer", whiteSpace: "nowrap", background: on ? "color-mix(in srgb, var(--a-info) 12%, transparent)" : C.surface2, border: `1px solid ${on ? "color-mix(in srgb, var(--a-info) 40%, transparent)" : C.line}`, color: on ? "var(--a-info)" : C.textSec, fontWeight: on ? 700 : 500 }}>{f}</div>
-        )}
-      />
-
-      {/* všetky udalosti */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: `${SPACE.xs}px ${SPACE.md}px 0` }}>
-        <SekciaLabel>VŠETKY UDALOSTI</SekciaLabel>
-        <span style={{ fontSize: 11, color: C.textTer }}>{EVENTS.length * 18} v okolí</span>
+      {/* filtrovací riadok — [Kde ▾][Kedy ▾] pripnuté │ témy posuvné (spec §1) */}
+      <div style={{ display: "flex", alignItems: "center", gap: SPACE.xs, padding: `${SPACE.xs}px ${SPACE.md}px` }}>
+        <div {...pressable(() => setVyberKde(true), "Kde — zmeniť okolie (platí pre celú appku)")} style={chip(true)}>📍 {kdeLabel} ▾</div>
+        <div {...pressable(() => setVyberKedy(true), "Kedy — zmeniť obdobie")} style={chip(true)}>{kedyLabel} ▾</div>
+        <div style={{ width: 1, alignSelf: "stretch", borderLeft: `1px dashed ${C.line}`, flex: "none" }} />
+        <div style={{ display: "flex", gap: SPACE.xs, overflowX: "auto", minWidth: 0 }}>
+          <div {...pressable(() => setTema("all"), "Téma: všetko")} style={chip(tema === "all")}>Všetko</div>
+          {NASTENKA_TEMY.map((t) => (
+            <div key={t.kod} {...pressable(() => setTema(t.kod), `Téma: ${t.label}`)} style={chip(tema === t.kod, t.c)}>{t.label}</div>
+          ))}
+        </div>
       </div>
-      <div style={{ padding: `0 ${SPACE.md}px`, ...(desktop ? { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(360px, 1fr))", gap: SPACE.sm, alignItems: "start" } : {}) }}>
-        {list.map((e) => (
-          <div key={e.id} onClick={() => onEvent(e.id)} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, background: "rgba(var(--glass-rgb),.04)", border: `1px solid ${C.line2}`, borderRadius: RADIUS.sm, padding: `${SPACE.sm}px ${SPACE.sm}px`, marginBottom: desktop ? 0 : SPACE.xs, cursor: "pointer" }}>
-            <span style={{ width: 8, height: 8, borderRadius: "50%", background: SRC_COL[e.src], flex: "none" }} />
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 14.5, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{e.title}</div>
-              <div style={{ fontSize: 12, color: C.textTer, marginTop: 3 }}>{e.who} · {e.src}</div>
+
+      {pohlad === "zoznam" ? (<>
+        {/* všetky udalosti — radené podľa času konania, pri zhode podľa vzdialenosti */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: `${SPACE.xs}px ${SPACE.md}px 0` }}>
+          <SekciaLabel>VŠETKY UDALOSTI</SekciaLabel>
+          <span style={{ fontSize: 11, color: C.textTer }}>{list.length} · {KEDY_LABEL[kedy].toLowerCase()}</span>
+        </div>
+        <div style={{ padding: `0 ${SPACE.md}px`, ...(desktop ? { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(360px, 1fr))", gap: SPACE.sm, alignItems: "start" } : {}) }}>
+          {list.map((e) => <UdalostRiadok key={e.id} e={e} onClick={() => onEvent(e.id)} desktop={desktop} />)}
+        </div>
+        {list.length === 0 && <div style={{ fontSize: 12.5, color: C.textTer, textAlign: "center", padding: `${SPACE.md}px 0` }}>Nič v tomto období — skús iný filter alebo väčší okruh.</div>}
+      </>) : (
+        <BoardKalendar events={zaklad} den={den} setDen={setDen} onEvent={onEvent} desktop={desktop} />
+      )}
+
+      {/* Kde — rovnaký výber okruhu/mesta ako Domov (jeden zdroj pravdy) */}
+      {vyberKde && <OkruhVyber radius={okruh}
+        onPick={(r: string) => { nastavOkruh(r as OkruhKod); setVyberKde(false); }}
+        onClose={() => setVyberKde(false)} />}
+
+      {/* Kedy — Dnes / Víkend / Tento týždeň / Mesiac / Vyber deň (kalendár) */}
+      {vyberKedy && (
+        <Sheet onClose={() => setVyberKedy(false)} label="Kedy">
+          <div style={{ fontSize: 15, fontWeight: 800, marginBottom: SPACE.sm }}>Kedy</div>
+          {(Object.keys(KEDY_LABEL) as KedyKod[]).map((k) => (
+            <div key={k} {...pressable(() => { setKedy(k); setPohlad("zoznam"); setVyberKedy(false); }, KEDY_LABEL[k])} style={volba(kedy === k && pohlad === "zoznam")}>
+              {KEDY_LABEL[k]}
+              {k === "vikend" && <span style={{ marginLeft: "auto", fontSize: 10.5, fontWeight: 500, color: C.textTer }}>najbližšia SO + NE, vrátane dneška</span>}
             </div>
-            <div style={{ textAlign: "right", flex: "none" }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: SRC_COL[e.src] }}>{e.when}</div>
-              <div style={{ color: C.textTer, fontSize: 16 }}>›</div>
-            </div>
+          ))}
+          <div {...pressable(() => { setPohlad("kalendar"); setVyberKedy(false); }, "Vyber deň — kalendár")} style={volba(pohlad === "kalendar")}>
+            📅 Vyber deň <span style={{ marginLeft: "auto", fontSize: 10.5, fontWeight: 500, color: C.textTer }}>otvorí kalendár</span>
           </div>
-        ))}
-      </div>
+        </Sheet>
+      )}
     </div>
   );
 }

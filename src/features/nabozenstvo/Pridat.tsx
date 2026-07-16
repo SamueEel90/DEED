@@ -5,6 +5,8 @@ import { cistyText } from "@/lib/richtext";
 import { pressable } from "@/components/pressable";
 import { usePouzivatel } from "@/lib/pouzivatel";
 import { N, SheetPanel } from "./ui";
+import { SmutocnyForm } from "./SmutocnyOznam";
+import { UserOznamForm, nacitajSelfAdd, type UserOznamTyp } from "./UserOznamy";
 import { SPLIT_LABELY, farskySplitVariant, pridajPrispevok, type Farnost, type NabozFeedItem, type NabozTyp, type UdalostKat, type ReakciaTyp } from "./mock";
 
 /*
@@ -71,14 +73,14 @@ const OZNAM: Kat = {
       polia: ["Meno zosnulého (+ súhlas)", "Foto (voliteľné)", "Odkaz na pohreb"], akcie: ["Prispieť"], feed: "iba farský" },
     { id: "o-ohlasky", emoji: "💍", titul: "Ohlášky", popis: "Mená snúbencov + dátum sobáša", kto: "F",
       polia: ["Mená snúbencov", "Dátum sobáša", "Odkaz na svadbu (voliteľné)"], feed: "farský" },
-    { id: "o-smutocny", emoji: "🤍", titul: "Smútočný (spomienka)", popis: "Reakcia = kondolencia", kto: "U",
-      polia: ["Text", "Meno (koho spomíname)", "Foto (voliteľné)"], feed: "farský" },
-    { id: "o-jubilejny", emoji: "🎂", titul: "Jubilejný", popis: "Blahoželanie jubilantovi", kto: "U",
-      polia: ["Text", "Meno jubilanta", "Dátum", "Foto (voliteľné)"], feed: "farský" },
-    { id: "o-podakovanie", emoji: "🙏", titul: "Poďakovanie", popis: "Verejné poďakovanie", kto: "U",
-      polia: ["Text", "Komu (voliteľné)"], feed: "farský" },
-    { id: "o-modlitba", emoji: "🕊", titul: "Prosba o modlitbu", popis: "Reakcia = „modlím sa“", kto: "U",
-      polia: ["Text (za koho/čo)"], feed: "farský" },
+    { id: "o-smutocny", emoji: "🤍", titul: "Smútočný oznam (úmrtie)", popis: "Šablóna alebo vlastné parte · polia pod oznamom · reakcia = kondolencia", kto: "U",
+      polia: ["Meno", "Dátumy + vek", "Verš", "Rozlúčka (kde + kedy)", "Foto", "Šablóna"], feed: "farský" },
+    { id: "o-jubilejny", emoji: "🎂", titul: "Jubilejný", popis: "Blahoželanie jubilantovi · karta alebo vlastný obrázok", kto: "U",
+      polia: ["Meno jubilanta", "Dôvod/jubileum", "Dátum", "Text", "Foto"], feed: "farský" },
+    { id: "o-podakovanie", emoji: "🙏", titul: "Poďakovanie", popis: "Verejné poďakovanie · karta alebo vlastný obrázok", kto: "U",
+      polia: ["Za čo", "Komu (voliteľné)", "Text", "Foto"], feed: "farský" },
+    { id: "o-modlitba", emoji: "🕊", titul: "Prosba o modlitbu", popis: "Reakcia = „modlím sa“ · vždy zadarmo · môže byť bez mena", kto: "U",
+      polia: ["Úmysel (za koho/čo)", "Text", "Bez mena", "Obrázok (predvolené/vlastné/bez)"], feed: "farský" },
   ],
 };
 const DOBRO: Kat = {
@@ -96,21 +98,36 @@ const USER_UZLY = OZNAM.uzly.filter((u) => u.kto === "U");
 export function PridatSheet({ farar, farnost, onClose, toast }: {
   farar: boolean; farnost?: Farnost; onClose: () => void; toast: (m: string) => void;
 }) {
+  const { celeMeno } = usePouzivatel();
   const [kat, setKat] = useState<Kat | null>(null);
   const [uzol, setUzol] = useState<Uzol | null>(null);
   const [split, setSplit] = useState<"pohreb" | "svadba" | null>(null);
+  // self-add nastavenie farnosti (DEED_User_Oznamy_DEV.md §2) — ON/OFF + voliteľný poplatok
+  const selfAdd = farnost ? nacitajSelfAdd(farnost.id) : { on: true, poplatok: 0 };
+  const USER_TYP: Record<string, UserOznamTyp> = { "o-jubilejny": "jubilejny", "o-podakovanie": "podakovanie", "o-modlitba": "modlitba" };
 
   // FORM (level 2) — mock polia + ukážka → publikovať
   if (uzol) {
+    const userTyp = USER_TYP[uzol.id];
     return (
       <>
         <SheetPanel title={uzol.titul} onClose={onClose}>
           <BackRiadok onBack={() => setUzol(null)} label={farar ? (kat?.titul ?? "Späť") : "Pridať oznam"} />
+          {uzol.id === "o-smutocny" ? (
+            /* dedikovaný formulár (DEED_Smutocny_Oznam_DEV.md) — šablóna/parte, povinné polia, TTL */
+            <SmutocnyForm farnost={farnost} autor={celeMeno || "Farník"}
+              onPublish={(it) => { if (farnost) pridajPrispevok(farnost.id, it); toast("Smútočný oznam zverejnený (auto-publish · farár môže zmazať) 🕯"); onClose(); }} />
+          ) : userTyp ? (
+            /* user oznamy (DEED_User_Oznamy_DEV.md) — jubilejný/poďakovanie/prosba, 2 režimy + obrázok */
+            <UserOznamForm typ={userTyp} farnost={farnost} autor={celeMeno || "Farník"} poplatok={selfAdd.poplatok}
+              onPublish={(it) => { if (farnost) pridajPrispevok(farnost.id, it); toast(`Oznam zverejnený (auto-publish · farár môže zmazať)${it.spoplatnene ? ` · zaplatené ${selfAdd.poplatok.toFixed(2)} €` : ""}`); onClose(); }} />
+          ) : (
           <UzolForm uzol={uzol} farar={farar} farnost={farnost}
             onSplit={uzol.split ? () => setSplit(uzol.split!) : undefined}
             onPublish={(it) => { if (farnost) pridajPrispevok(farnost.id, it); toast(publishText(uzol, farar)); onClose(); }}
             onHelp={uzol.helpWizard ? () => { toast("Otváram Help sprievodcu (8 krokov) — escrow/IBAN overenie (demo)"); onClose(); } : undefined}
             toast={toast} />
+          )}
         </SheetPanel>
         {split && <SplitQrSheet titul={uzol.titul}
           caseId={null} zdroj="autor" variant={farskySplitVariant(split)}
@@ -150,10 +167,18 @@ export function PridatSheet({ farar, farnost, onClose, toast }: {
             Aj cez „+" na ploche aj cez Môj DEED (správcovský panel). User nikdy nevidí farárove možnosti a naopak.
           </div>
         </>
+      ) : !selfAdd.on ? (
+        /* farnosť má self-add vypnutý (§2) — feed tvorí farár, oznam vybaví osobne */
+        <div style={{ fontSize: 12.5, color: N.txt2, background: N.card, border: `1px solid ${N.line}`, borderRadius: RADIUS.sm, padding: SPACE.md, lineHeight: 1.55, textAlign: "center" }}>
+          <div style={{ fontSize: 26, marginBottom: SPACE.xs }}>🔕</div>
+          <b>Farnosť má pridávanie oznamov farníkmi vypnuté.</b><br />
+          Feed tvorí farár — ozvi sa mu a oznam (jubileum, poďakovanie, prosbu o modlitbu) pridá za teba.
+        </div>
       ) : (
         <>
           <div style={{ fontSize: 12, color: N.txt2, background: N.card, border: `1px solid ${N.line}`, borderRadius: RADIUS.sm, padding: SPACE.sm, marginBottom: SPACE.sm }}>
             Hlavička oznamu = <b>tvoje meno z registrácie</b> (jasné, kto napísal). Auto-publish — farár môže zmazať.
+            {selfAdd.poplatok > 0 && <> · Farnosť má oznamy spoplatnené <b>{selfAdd.poplatok.toFixed(2)} €</b> — prosba o modlitbu a smútočné sú vždy zadarmo.</>}
           </div>
           {USER_UZLY.map((u) => <UzolTile key={u.id} u={u} onClick={() => setUzol(u)} />)}
         </>

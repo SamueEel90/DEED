@@ -224,6 +224,12 @@ export interface Udalost {
   desc: string;
   place: string;
   cap: string;
+  /** téma (5 domén nástenky) — "mix" = mimo domén, zobrazí sa len pod Všetko */
+  dom?: Domena;
+  /** ISO dátum+čas konania — filter Kedy + kalendár (jedna tabuľka, žiadne nové dáta) */
+  datum?: string;
+  /** vzdialenosť od centra v km (mock) — filter Kde + tie-break radenia */
+  km?: number;
 }
 
 /* 4) MODUL HELP (MOCK_FEED, ZIVE_DARY) */

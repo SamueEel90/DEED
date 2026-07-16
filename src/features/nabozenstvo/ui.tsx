@@ -45,8 +45,8 @@ export const Chip = forwardRef<HTMLSpanElement, ChipProps>(function Chip({ child
 // Pravosť prípadu (pohreb, svadba, zbierka pre iného) NErieši záruka cirkvi,
 // ale komunita. Farnosť nanajvýš „potvrdzuje, že prípad pozná", bez záruky.
 // ============================================================
-export function OverujemNamietam({ overeni = 0, namietky = 0, subjekt = "prípad", toast }: {
-  overeni?: number; namietky?: number; subjekt?: string; toast?: (m: string) => void;
+export function OverujemNamietam({ overeni = 0, namietky = 0, subjekt = "prípad", popis, toast }: {
+  overeni?: number; namietky?: number; subjekt?: string; popis?: ReactNode; toast?: (m: string) => void;
 }) {
   const [stav, setStav] = useState<null | "ok" | "nie">(null);
   const [ov, setOv] = useState(overeni);
@@ -61,7 +61,7 @@ export function OverujemNamietam({ overeni = 0, namietky = 0, subjekt = "prípad
   return (
     <div style={{ background: N.card, border: `1px solid ${N.line}`, borderRadius: RADIUS.md, padding: SPACE.gutter }}>
       <div style={{ fontSize: 10.5, fontWeight: 800, color: N.txt3, letterSpacing: ".04em" }}>PRAVOSŤ OVERUJE KOMUNITA</div>
-      <div style={{ fontSize: 11, color: N.txt3, margin: `2px 0 ${SPACE.sm}px`, lineHeight: 1.45 }}>Nie záruka cirkvi — farnosť prípad nanajvýš pozná. Rozhoduje komunitné Overujem/Namietam.</div>
+      <div style={{ fontSize: 11, color: N.txt3, margin: `2px 0 ${SPACE.sm}px`, lineHeight: 1.45 }}>{popis ?? "Nie záruka cirkvi — farnosť prípad nanajvýš pozná. Rozhoduje komunitné Overujem/Namietam."}</div>
       <div style={{ display: "flex", gap: SPACE.sm }}>
         <span {...pressable(() => daj("ok"), "Overujem")} style={ovBtn(stav === "ok", N.green, N.greenBg, N.greenEdge)}>
           <span style={{ fontSize: 15 }}>✓</span> Overujem <b style={{ opacity: .8 }}>{ov}</b>

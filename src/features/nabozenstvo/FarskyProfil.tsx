@@ -13,6 +13,7 @@ import { pressable } from "@/components/pressable";
 import { NahlasitSheet } from "@/components/nahlasit";
 import type { Kanal } from "@/types";
 import { N, Overena, SheetPanel, PrehladTile, A9Potvrdenie } from "./ui";
+import { SelfAddSheet, nacitajSelfAdd } from "./UserOznamy";
 import { nacitajStav, ulozStav } from "./stav";
 import { obsahFarnosti, farnostStat, farskySplitVariant, KAT_FARBA, type Farnost, type NabozFeedItem, type NabozTyp } from "./mock";
 
@@ -57,6 +58,7 @@ export function FarskyProfil({ farnost, farar, jeDomovska, following, onToggleFo
   const [moderacia, setModeracia] = useState(false); // správca: moderácia oznamov farníkov
   const [viditOpen, setViditOpen] = useState(false); // správca: viditeľnosť súm (§72)
   const [viditSum, setViditSum] = useState<ViditSum>(() => nacitajStav<ViditSum>("viditelnost", farnost.id, "zobrazit"));
+  const [selfAddOpen, setSelfAddOpen] = useState(false); // správca: oznamy od farníkov ON/OFF + poplatok
   // editovateľný pohľad profilu (mock — perzistovaný do localStorage per farnost.id)
   const [view, setView] = useState<ProfilView>(() => nacitajStav<ProfilView>("profil", farnost.id, {
     foto: farnost.foto, popis: farnost.popis, omseSuhrn: farnost.omseSuhrn ?? "", video: "",
@@ -196,10 +198,6 @@ export function FarskyProfil({ farnost, farar, jeDomovska, following, onToggleFo
               onKanal={(k: string) => setPlatba(k as Kanal)} accent={N.ind} supLabel="RÝCHLY DAR — klik a hneď odíde" />
           </div>
         )}
-        {/* zoznam darcov — pod platobným modulom, rovnaké číslo ako počítadlo */}
-        <div style={{ marginBottom: SPACE.sm }}>
-          <ZoznamDarcov refId={darRef} celkom={ludia} />
-        </div>
         <div style={{ display: "flex", gap: SPACE.sm, marginBottom: SPACE.xs }}>
           <div onClick={() => setRecur(true)} style={{ flex: 1, border: `1px solid ${N.indEdge}`, background: N.indBg, borderRadius: RADIUS.sm, padding: SPACE.sm, textAlign: "center", fontSize: 13, fontWeight: 700, color: N.ind, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: SPACE.xs }}>
             <IkonaOpakovat size={16} color={N.ind} /> Opakovaný dar
@@ -208,8 +206,12 @@ export function FarskyProfil({ farnost, farar, jeDomovska, following, onToggleFo
             ▦ {farar ? "QR na tlač" : "QR na dar"}
           </div>
         </div>
-        <div style={{ fontSize: 10.5, color: N.txt3, textAlign: "center", marginBottom: SPACE.gutter }}>
+        <div style={{ fontSize: 10.5, color: N.txt3, textAlign: "center", marginBottom: SPACE.sm }}>
           Farnosť dostane vždy € (off-ramp) — donor platí DEED aj €. „Terminál netreba" — QR nahrádza platobný terminál.
+        </div>
+        {/* zoznam darcov — až pod opakovaným darom / QR, rovnaké číslo ako počítadlo */}
+        <div style={{ marginBottom: SPACE.gutter }}>
+          <ZoznamDarcov refId={darRef} celkom={ludia} />
         </div>
 
         {/* ===== [SPRÁVCA] PANEL — nástroje správcu ako settings list ===== */}
@@ -228,6 +230,7 @@ export function FarskyProfil({ farnost, farar, jeDomovska, following, onToggleFo
             <SpravaRiadok ikona={<span style={{ fontSize: 15 }}>⚖</span>} farba={N.clay} label="Split QR — pohreb / svadba" popis="Organizátorský nástroj, nie pre darcov" onClick={() => setSplit(true)} />
             <SpravaRiadok ikona={<span style={{ fontSize: 14, fontWeight: 800, color: N.gold }}>▦</span>} farba={N.gold} label="QR na tlač do kostola" popis="Pokladnička, nástenka, lavice — sken → dar" onClick={() => setQr("donacny")} />
             <SpravaRiadok ikona={<IkonaVlajka size={15} color={N.clay} />} farba={N.clay} label="Moderácia príspevkov" popis="Oznamy farníkov — zmazať / obnoviť" onClick={() => setModeracia(true)} />
+            <SpravaRiadok ikona={<span style={{ fontSize: 15 }}>📢</span>} farba={N.green} label="Oznamy od farníkov" hodnota={selfAddLabel(farnost.id)} popis="Self-add ON/OFF + voliteľný poplatok (prosba/smútočné vždy zadarmo)" onClick={() => setSelfAddOpen(true)} />
             <SpravaRiadok ikona={<IkonaOko size={16} color={N.ind} />} farba={N.ind} label="Viditeľnosť súm zbierok" hodnota={VIDIT_LABEL[viditSum]} popis="Čo vidia návštevníci profilu (§72)" onClick={() => setViditOpen(true)} posledny />
           </div>
         )}
@@ -284,6 +287,7 @@ export function FarskyProfil({ farnost, farar, jeDomovska, following, onToggleFo
           onSave={(v) => { setView(v); ulozStav("profil", farnost.id, v); setSprava(false); toast("Profil farnosti uložený"); }}
           onClose={() => setSprava(false)} />
       )}
+      {selfAddOpen && <SelfAddSheet farnost={farnost} onClose={() => setSelfAddOpen(false)} toast={toast} />}
       {moderacia && <ModeraciaSheet polozky={obsah.filter((it) => it.ntyp === "oznam")} onClose={() => setModeracia(false)} toast={toast} />}
       {viditOpen && (
         <ViditelnostSheet hodnota={viditSum}
@@ -296,6 +300,12 @@ export function FarskyProfil({ farnost, farar, jeDomovska, following, onToggleFo
 }
 
 // ---- SPRÁVCA: moderácia oznamov farníkov (mock — zmazať/obnoviť) ----
+// label pre správcovský riadok „Oznamy od farníkov" — číta LS pri každom renderi (aktualizuje sa po zavretí sheetu)
+function selfAddLabel(fid: string): string {
+  const v = nacitajSelfAdd(fid);
+  return !v.on ? "Vypnuté" : v.poplatok > 0 ? `Zapnuté · ${v.poplatok.toFixed(2)} €` : "Zapnuté";
+}
+
 function ModeraciaSheet({ polozky, onClose, toast }: { polozky: NabozFeedItem[]; onClose: () => void; toast: (m: string) => void }) {
   const [zmazane, setZmazane] = useState<Set<string>>(() => new Set());
   const prepni = (id: string) => {

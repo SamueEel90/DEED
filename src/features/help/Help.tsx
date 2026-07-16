@@ -24,6 +24,7 @@ import { useVrstva } from "@/lib/urlnav";
 import { kopiruj, zdielaj, aktualnaUrl } from "@/lib/zdielanie";
 import { OzvatSaSheet } from "@/components/ozvatsa";
 import { NahlasitSheet } from "@/components/nahlasit";
+import { OverujemNamietam } from "@/features/nabozenstvo/ui";
 import { USER_LOK, ZIVE_DARY, CHARITY_FISKALNE } from "./mock";
 
 /*
@@ -396,16 +397,21 @@ function Detail({ z, onBack, onAutor }: { z: any; onBack: () => void; onAutor: (
             upvotes={140} onUpvote={() => toast("Palec hore")}
             onPodpor={(s: number) => posliPevne(s, "DEED")} onSms={() => posliPevne(1, "SMS")}
             onKanal={(k: string) => setPlatba(k)} />
-          {/* zoznam darcov — pod platobným modulom, rovnaké číslo ako počítadlo */}
+          {/* §11: komunitné Overujem/Namietam — pravosť prípadov jednotlivcov (núdza + riziko podvodu) */}
+          <div style={{ marginTop: SPACE.gutter }}>
+            <OverujemNamietam overeni={ludia > 3 ? Math.round(ludia / 3) : 2} namietky={0} subjekt={z.nazov || "prípad"}
+              popis="Bol si pri tom? Poznáš prípad? Komunitné Overujem/Namietam dvíha (alebo zráža) dôveryhodnosť žiadosti." toast={toast} />
+          </div>
+          {/* zoznam darcov — až pod Overujem/Namietam, rovnaké číslo ako počítadlo */}
           <div style={{ marginTop: SPACE.gutter }}>
             <ZoznamDarcov refId={darRef} celkom={ludia} />
           </div>
-          {/* QR výstupy — donačný QR žiadosti + influencer split (rovnaký vzor ako Charita/Good) */}
+          {/* QR výstupy — donačný QR žiadosti + reťaz dobra (rovnaký vzor ako Charita/Good) */}
           <div style={{ display: "flex", gap: SPACE.sm, marginTop: SPACE.sm }}>
             <button onClick={() => setQr(true)} style={{ ...btn("ghost"), flex: 1 }}>▦ QR na dar</button>
-            <button onClick={() => setSplitQr(true)} style={{ ...btn("ghost"), flex: 1 }}>🎬 Rozdeliť (Split QR)</button>
+            <button onClick={() => setSplitQr(true)} style={{ ...btn("ghost"), flex: 1 }}>🔗 Reťaz dobra — rozdeliť</button>
           </div>
-          <div style={{ textAlign: "center", fontSize: 10.5, color: C.textTer, marginTop: SPACE.xs }}>QR na dar = sken → prispetie za 2 kliky (tlač/zdieľanie) · Split = influencer rozdelí platby</div>
+          <div style={{ textAlign: "center", fontSize: 10.5, color: C.textTer, marginTop: SPACE.xs }}>QR na dar = sken → prispetie za 2 kliky (tlač/zdieľanie) · Reťaz dobra = tvorca rozdelí platby</div>
         </div>
       )}
 

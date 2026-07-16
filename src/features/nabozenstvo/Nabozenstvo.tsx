@@ -18,6 +18,7 @@ import { OzvatSaSheet } from "@/components/ozvatsa";
 import { NahlasitSheet } from "@/components/nahlasit";
 import { nacitajRsvp as nacitajRsvpDB, prepniRsvp as prepniRsvpDB } from "@/lib/osobne";
 import { N, Overena, Chip, SheetPanel, OverujemNamietam, A9Potvrdenie, PrehladTile } from "./ui";
+import { SmutocnyOznamBlok } from "./SmutocnyOznam";
 import { nacitajStav } from "./stav";
 import { FarskyProfil, KontaktRiadok } from "./FarskyProfil";
 import { Kalendar } from "./Kalendar";
@@ -553,7 +554,14 @@ function NabozDetail({ z, farar, onBack, onProfil }: { z: NabozFeedItem; farar: 
         </div>
 
         <div style={{ fontSize: 17, fontWeight: 700, margin: `${SPACE.sm}px 0` }}>{z.nazov}</div>
-        <FormatovanyText text={pribeh} style={{ fontSize: 14, lineHeight: 1.55, marginBottom: SPACE.gutter, color: N.txt2 }} />
+        {z.smutocny ? (
+          /* smútočný oznam — šablóna/parte + povinné polia POD oznamom (DEV podklad §3) */
+          <div style={{ marginBottom: SPACE.gutter }}>
+            <SmutocnyOznamBlok s={z.smutocny} onKondolencia={() => toast(reakcia)} />
+          </div>
+        ) : (
+          <FormatovanyText text={pribeh} style={{ fontSize: 14, lineHeight: 1.55, marginBottom: SPACE.gutter, color: N.txt2 }} />
+        )}
 
         {/* §11: Overujem/Namietam LEN na Help prípadoch jednotlivcov (núdza + riziko podvodu) */}
         {overitelne && (
@@ -601,17 +609,17 @@ function NabozDetail({ z, farar, onBack, onProfil }: { z: NabozFeedItem; farar: 
                 supLabel={z.ukat === "pohreb" ? "PRISPIEŤ — pohrebná zbierka (predĺžené okno ~týždeň)" : "PRISPIEŤ — klik a hneď odíde"} />
             </div>
 
-            {/* zoznam darcov — pod platobným modulom, rovnaké číslo ako počítadlo */}
-            <div style={{ marginBottom: SPACE.gutter }}>
-              <ZoznamDarcov refId={darRef} celkom={ludia} />
-            </div>
-
             {/* pohreb/svadba — Split QR (len farár: rodine ↔ kostolu) */}
             {jeSplit && farar && (
               <div onClick={() => setSplit(true)} style={{ border: `1px solid ${N.greenEdge}`, background: N.greenBg, borderRadius: RADIUS.sm, padding: SPACE.gutter, textAlign: "center", fontSize: 14, fontWeight: 700, color: N.green, cursor: "pointer", marginBottom: SPACE.gutter }}>
                 ⚖ Rozdeliť dar (Split QR) — rodine ↔ kostolu
               </div>
             )}
+
+            {/* zoznam darcov — až pod pravidelnou podporou / reťazou dobra */}
+            <div style={{ marginBottom: SPACE.gutter }}>
+              <ZoznamDarcov refId={darRef} celkom={ludia} />
+            </div>
 
             <div style={{ fontSize: 11, color: N.txt3, textAlign: "center", background: N.goldBg, border: `1px solid ${N.goldEdge}`, borderRadius: RADIUS.sm, padding: SPACE.sm }}>
               🏛 Zbierka žije v engine Charita — platby, overenie a transparentnosť. Farnosť dostane vždy € (off-ramp). Pravosť rieši komunitné Overujem/Namietam, nie záruka cirkvi.

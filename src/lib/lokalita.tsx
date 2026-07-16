@@ -5,6 +5,7 @@
 // Žiadne GPS — kurátorský zoznam SK miest so súradnicami (stred mesta).
 // ============================================================
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
+import type { OkruhKod } from "@/types";
 
 export interface Mesto {
   nazov: string;
@@ -48,6 +49,12 @@ export const MESTA: Mesto[] = [
 const DEFAULT = MESTA[0]; // Trenčín
 const KEY = "deed:mesto";
 
+// JEDNO nastavenie okolia (okruh) pre celú appku — Domov, nástenka, push oznamy
+// čítajú ten istý údaj (spec Nástenka v1 §1.1). Default: Mesto. Perzistuje.
+const OKRUH_KEY = "deed:okruh";
+const OKRUHY: OkruhKod[] = ["stvrt", "mesto", "okres", "kraj", "krajina"];
+const OKRUH_DEFAULT: OkruhKod = "mesto";
+
 // jednoduché hľadanie (bez diakritiky, case-insensitive)
 const bezDiakritiky = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 export function hladajMesta(q: string): Mesto[] {
@@ -62,10 +69,14 @@ export interface LokalitaStav {
   lng: number;
   kraj: string;
   nastavMesto: (nazov: string) => void;
+  /** okruh feedu — jedno nastavenie pre celú appku (Domov ↔ nástenka) */
+  okruh: OkruhKod;
+  nastavOkruh: (k: OkruhKod) => void;
 }
 
 const Ctx = createContext<LokalitaStav>({
   mesto: DEFAULT.nazov, lat: DEFAULT.lat, lng: DEFAULT.lng, kraj: DEFAULT.kraj, nastavMesto: () => {},
+  okruh: OKRUH_DEFAULT, nastavOkruh: () => {},
 });
 
 export const useLokalita = () => useContext(Ctx);
@@ -79,16 +90,30 @@ export function LokalitaProvider({ children }: { children: ReactNode }) {
     return DEFAULT.nazov;
   });
 
+  const [okruh, setOkruh] = useState<OkruhKod>(() => {
+    try {
+      const v = localStorage.getItem(OKRUH_KEY) as OkruhKod | null;
+      if (v && OKRUHY.includes(v)) return v;
+    } catch { /* SSR / private mode */ }
+    return OKRUH_DEFAULT;
+  });
+
   const nastavMesto = useCallback((meno: string) => {
     if (!MESTA.some((m) => m.nazov === meno)) return;
     setNazov(meno);
     try { localStorage.setItem(KEY, meno); } catch { /* ignore */ }
   }, []);
 
+  const nastavOkruh = useCallback((k: OkruhKod) => {
+    if (!OKRUHY.includes(k)) return;
+    setOkruh(k);
+    try { localStorage.setItem(OKRUH_KEY, k); } catch { /* ignore */ }
+  }, []);
+
   const m = MESTA.find((x) => x.nazov === nazov) || DEFAULT;
   const value = useMemo<LokalitaStav>(
-    () => ({ mesto: m.nazov, lat: m.lat, lng: m.lng, kraj: m.kraj, nastavMesto }),
-    [m, nastavMesto]
+    () => ({ mesto: m.nazov, lat: m.lat, lng: m.lng, kraj: m.kraj, nastavMesto, okruh, nastavOkruh }),
+    [m, nastavMesto, okruh, nastavOkruh]
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

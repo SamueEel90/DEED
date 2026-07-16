@@ -53,7 +53,7 @@ interface SplitQrSheetProps {
 
 export function SplitQrSheet({ titul = "Skutok", caseId = null, zdroj = "osobny", odkaz = "https://deed.good/split/demo", variant, onClose, toast }: SplitQrSheetProps) {
   const { ucetId, celeMeno } = usePouzivatel();
-  const influencer = celeMeno && celeMeno.trim() ? celeMeno : "Ty (influencer)";
+  const influencer = celeMeno && celeMeno.trim() ? celeMeno : "Ty (tvorca)";
   const owner = variant?.ownerLabel ?? influencer;
   const create = useQrSplitCreate();
   const [krok, setKrok] = useState<"nastav" | "hotovo">("nastav");
@@ -86,7 +86,7 @@ export function SplitQrSheet({ titul = "Skutok", caseId = null, zdroj = "osobny"
   // ---- KROK 2: hotový split QR ----
   if (krok === "hotovo") {
     return (
-      <QrModal typ="rozdelenie" titul={`Split QR · ${titul}`} popis={variant?.qrPopis ?? "Rozdelenie platby medzi príjemcov (influencer)"}
+      <QrModal typ="rozdelenie" titul={`Split QR · ${titul}`} popis={variant?.qrPopis ?? "Reťaz dobra — rozdelenie platby medzi príjemcov"}
         odkaz={vytvoreny?.slug ? qrUrl("split", vytvoreny.slug) : odkaz}
         split={splitPreQrModal(owner, ciele)} onClose={onClose} toast={toast} />
     );
@@ -98,7 +98,7 @@ export function SplitQrSheet({ titul = "Skutok", caseId = null, zdroj = "osobny"
       <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm, marginBottom: SPACE.xxs }}>
         <span style={{ width: 36, height: 36, borderRadius: RADIUS.sm, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", background: tint(GREEN, .16), color: GREEN, fontSize: 18 }}>{variant?.emoji ?? "🎬"}</span>
         <div style={{ minWidth: 0 }}>
-          <div style={{ fontSize: 16, fontWeight: 800 }}>{variant?.nadpis ?? "Rozdeliť platbu (influencer)"}</div>
+          <div style={{ fontSize: 16, fontWeight: 800 }}>{variant?.nadpis ?? "Reťaz dobra — rozdeliť platbu"}</div>
           <div style={{ fontSize: 11.5, color: C.textTer, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{variant?.podnadpis ?? `${titul} · nastav aká časť ide komu`}</div>
         </div>
       </div>

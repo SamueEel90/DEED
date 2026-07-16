@@ -26,7 +26,50 @@ export type NabozFeedItem = CharitaFeedItem & {
   farnostId?: string; ukat?: UdalostKat; datum?: string; rsvp?: boolean; split?: boolean;
   overitelne?: boolean; // pravosť rieši komunitné Overujem/Namietam (§78) — zbierka pre iného/pohreb/svadba
   reakciaTyp?: ReakciaTyp; // kontext srdiečka (§ delta bod 2): kondolencia / modlím sa / blahoželáme
+  smutocny?: SmutocnyData; // smútočný oznam (úmrtie) — šablóna/parte + štruktúrované polia (DEV podklad)
+  vytvorene?: number;      // timestamp publikovania (TTL oznamov §8b)
+  platnostDni?: number;    // TTL — default 7 dní, nastaviteľné; pri úmrtí min. do rozlúčky + 3 dni
+  spoplatnene?: boolean;   // user oznam v platenom self-add režime (nikdy prosba/smútočné — simónia)
 };
+
+// ============================================================
+// SMÚTOČNÝ OZNAM (úmrtie) — DEED_Smutocny_Oznam_DEV.md
+// Režim A = šablóna (1/2/3) · režim B = vlastné parte (obrázok).
+// V OBOCH režimoch povinné štruktúrované polia — zobrazené POD oznamom
+// (obrázok je pre oko, polia pre systém: kalendár, notifikácie, hľadanie).
+// ============================================================
+export interface SmutocnyData {
+  mode: "template" | "image";
+  templateId?: 1 | 2 | 3;        // A klasická · B teplá (sviečka) · C minimalistická
+  imageUrl?: string;             // režim B — nahrané parte
+  meno: string;                  // koho spomíname (povinné)
+  datumNar: string;              // ISO (povinné)
+  datumUmr: string;              // ISO (povinné)
+  vers?: string;                 // výber z prednastavených alebo vlastný
+  rozluckaMiesto: string;        // povinné
+  rozluckaDatum: string;         // ISO deň (povinné)
+  rozluckaCas: string;           // HH:MM (povinné)
+  foto?: string;                 // režim A — voliteľná fotka do šablóny
+}
+
+// vek sa dopočíta z dátumov (spec §4.2)
+export function vekZDatumov(nar: string, umr: string): number | null {
+  const n = new Date(nar), u = new Date(umr);
+  if (isNaN(n.getTime()) || isNaN(u.getTime())) return null;
+  let v = u.getFullYear() - n.getFullYear();
+  if (u.getMonth() < n.getMonth() || (u.getMonth() === n.getMonth() && u.getDate() < n.getDate())) v--;
+  return v >= 0 ? v : null;
+}
+
+// TTL oznamu (§8b): default 7 dní; pri úmrtí platí min. do rozlúčky + 3 dni — čo je neskôr.
+// „Preč z feedu" ≠ hard delete — expirovaný sa len nefiltruje do feedu (záznam ostáva v localStorage).
+const DEN_MS = 86400000;
+export function oznamAktivny(it: NabozFeedItem): boolean {
+  if (it.ntyp !== "oznam" || !it.vytvorene) return true; // TTL zatiaľ len pre oznamy s časom vzniku
+  const zaklad = it.vytvorene + (it.platnostDni ?? 7) * DEN_MS;
+  const rozlucka = it.smutocny?.rozluckaDatum ? Date.parse(it.smutocny.rozluckaDatum) + 3 * DEN_MS : 0;
+  return Date.now() < Math.max(zaklad, rozlucka); // nikdy nezmizne pred udalosťou, ktorú ohlasuje
+}
 
 // kontext reakcie-srdiečka (§ delta bod 2 · matica Univerzálne pravidlá): srdiečko má
 // kontextový význam — pri úmrtí/pohrebe „kondolencia", pri prosbe o modlitbu „modlím sa".
@@ -472,8 +515,9 @@ export const farnostIdOf = (it: NabozFeedItem): string => it.farnostId ?? KOMUNI
 // ---- vlastné (publikované) príspevky — perzistované v localStorage per farnosť ----
 // PridatSheet po „Publikovať" uloží reálnu položku; feedy/taby/kalendár ju čítajú
 // cez obsahFarnosti (vlastné navrchu — najnovšie prvé). Mock bez backendu.
-export const vlastnePrispevky = (fid: string): NabozFeedItem[] => nacitajStav<NabozFeedItem[]>("prispevky", fid, []);
-export function pridajPrispevok(fid: string, it: NabozFeedItem) { ulozStav("prispevky", fid, [it, ...vlastnePrispevky(fid)]); }
+export const vlastnePrispevky = (fid: string): NabozFeedItem[] =>
+  nacitajStav<NabozFeedItem[]>("prispevky", fid, []).filter(oznamAktivny); // TTL §8b — expirované z feedu von, záznam ostáva
+export function pridajPrispevok(fid: string, it: NabozFeedItem) { ulozStav("prispevky", fid, [it, ...nacitajStav<NabozFeedItem[]>("prispevky", fid, [])]); }
 export const obsahFarnosti = (fid: string): NabozFeedItem[] =>
   [...vlastnePrispevky(fid), ...FEED_ITEMS.filter((it) => farnostIdOf(it) === fid)];
 

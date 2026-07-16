@@ -85,6 +85,10 @@ function naUdalost(r: any): Udalost {
     desc: r.popis,
     place: r.miesto,
     cap: r.kapacita,
+    // filtre/kalendár nástenky — stĺpce zatiaľ nemusia existovať (bez nich sa udalosť správa ako doteraz)
+    dom: r.dom ?? undefined,
+    datum: r.datum ?? undefined,
+    km: r.km ?? undefined,
   };
 }
 
