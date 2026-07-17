@@ -1230,13 +1230,27 @@ function BoardKalendar({ events, den, setDen, onEvent, desktop }: { events: Udal
         {Array.from({ length: ofs }).map((_, i) => <div key={"x" + i} />)}
         {Array.from({ length: dniVMes }).map((_, i) => {
           const t = new Date(y, m, i + 1).getTime();
-          const k = denKluc(t), n = poDnoch[k]?.length ?? 0;
+          const k = denKluc(t), akcie = poDnoch[k] ?? [], n = akcie.length;
           const on = denKluc(den) === k, dnes = dnesKluc === k;
+          // čitateľnosť dňa (oprava 17. 7.): desktop/tablet = 2–3 skrátené názvy s bodkou
+          // témy (+X ďalšie); mobil = väčšia bodka s počtom, názvy až po ťuku na deň
           return (
-            <div key={i} {...pressable(() => setDen(t), `${i + 1}. ${m + 1}. — ${n} akcií`)} style={{ minHeight: 44, borderRadius: RADIUS.xs, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 1, cursor: "pointer",
+            <div key={i} {...pressable(() => setDen(t), `${i + 1}. ${m + 1}. — ${n} akcií`)} style={{ minHeight: desktop ? 72 : 48, borderRadius: RADIUS.xs, display: "flex", flexDirection: "column", alignItems: desktop ? "stretch" : "center", justifyContent: desktop ? "flex-start" : "center", gap: desktop ? 2 : 2, cursor: "pointer", padding: desktop ? "4px 5px" : undefined, overflow: "hidden",
               background: on ? tint("var(--a-info)", .14) : C.surface2, border: `1px solid ${on ? tint("var(--a-info)", .5) : dnes ? tint("var(--a-info)", .35) : C.line2}` }}>
-              <span style={{ fontSize: 12.5, fontWeight: on || dnes ? 800 : 600, color: on ? "var(--a-info)" : C.text }}>{i + 1}</span>
-              <span style={{ fontSize: 9, fontWeight: 800, color: n > 0 ? "var(--a-info)" : "transparent" }}>•{n > 0 ? n : 0}</span>
+              <span style={{ fontSize: 12.5, fontWeight: on || dnes ? 800 : 600, color: on ? "var(--a-info)" : C.text, textAlign: desktop ? "left" : "center" }}>{i + 1}</span>
+              {desktop ? (<>
+                {akcie.slice(0, 2).map((e) => (
+                  <span key={e.id} style={{ display: "flex", alignItems: "center", gap: 3, minWidth: 0 }}>
+                    <span style={{ width: 6, height: 6, borderRadius: "50%", flex: "none", background: TEMA_FARBA[e.dom ?? ""] ?? C.textTer }} />
+                    <span style={{ fontSize: 9.5, fontWeight: 600, color: C.textSec, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{e.title}</span>
+                  </span>
+                ))}
+                {n > 2 && <span style={{ fontSize: 9, fontWeight: 700, color: C.textTer }}>+{n - 2} ďalšie</span>}
+              </>) : (
+                n > 0
+                  ? <span style={{ fontSize: 10.5, fontWeight: 800, lineHeight: 1, color: "var(--a-info)", background: tint("var(--a-info)", .14), borderRadius: RADIUS.pill, padding: "2px 6px" }}>●{n}</span>
+                  : <span style={{ fontSize: 10.5, lineHeight: 1, padding: "2px 6px", color: "transparent" }}>●</span>
+              )}
             </div>
           );
         })}
@@ -1278,8 +1292,8 @@ export function GoodBoard({ onBack, onEvent, toast }: { onBack: () => void; onEv
   // desktop/tablet: čitateľná centrovaná šírka (nie roztiahnuté na celú obrazovku)
   return (
     <div style={{ paddingBottom: SPACE.lg, maxWidth: desktop ? SIRKA.plocha : wide ? SIRKA.stlpec : undefined, marginLeft: "auto", marginRight: "auto" }}>
-      <Hlavicka title="Nástenka" onBack={onBack}
-        right={<span {...pressable(() => setPohlad((p) => (p === "zoznam" ? "kalendar" : "zoznam")), "Prepnúť zoznam / kalendár")} style={{ color: pohlad === "kalendar" ? "var(--a-info)" : C.textTer, fontSize: 16, cursor: "pointer" }}>{pohlad === "zoznam" ? "🗓" : "▤"}</span>} />
+      {/* prepínač kalendára = pripnutý chip 📅 vedľa Kedy (oprava 17. 7.) — ikonka vpravo hore sa ruší */}
+      <Hlavicka title="Nástenka" onBack={onBack} />
 
       {/* topované — filtruje ho téma aj Kde (spec akceptácia 4) */}
       {tops.length > 0 && (<>
@@ -1308,6 +1322,8 @@ export function GoodBoard({ onBack, onEvent, toast }: { onBack: () => void; onEv
         <div style={{ display: "flex", gap: SPACE.xs, flex: "none" }}>
           <div {...pressable(() => setVyberKde(true), "Kde — zmeniť okolie (platí pre celú appku)")} style={chip(true)}>📍 {kdeLabel} ▾</div>
           <div {...pressable(() => setVyberKedy(true), "Kedy — zmeniť obdobie")} style={chip(true)}>{kedyLabel} ▾</div>
+          {/* tretí pripnutý chip 📅 = prepínač zoznam ↔ kalendár; keď je kalendár zapnutý, svieti */}
+          <div {...pressable(() => setPohlad((p) => (p === "zoznam" ? "kalendar" : "zoznam")), "Prepnúť zoznam / kalendár")} style={chip(pohlad === "kalendar")}>📅</div>
         </div>
         {wide && <div style={{ width: 1, alignSelf: "stretch", borderLeft: `1px dashed ${C.line}`, flex: "none" }} />}
         <div style={{ display: "flex", gap: SPACE.xs, overflowX: "auto", minWidth: 0 }}>

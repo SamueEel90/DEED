@@ -34,17 +34,20 @@ type Uzol = {
 };
 type Kat = { id: string; emoji: string; titul: string; popis: string; uzly: Uzol[] };
 
+// Deliaca čiara (delta bod 27): JEDEN príjemca = samostatná zbierka, 100 % jemu,
+// žiadny bežec. DVAJA+ = split (bežec sa objaví). „Pre nás" preto BEZ splitu aj
+// BEZ tagov (bod 29 — feed je scopovaný na farnosť, typ je známy).
 const ZBIERKA: Kat = {
-  id: "zbierka", emoji: "💶", titul: "Zbierka", popis: "Finančná / ľudská — podľa príjemcu",
+  id: "zbierka", emoji: "💶", titul: "Zbierka", popis: "Jeden príjemca → celé jemu · dvaja a viac → bežec rozdelí",
   uzly: [
-    { id: "z-farska", emoji: "🏛", titul: "Pre nás (farnosť)", popis: "Ľahká vetva — farnosť je overená inštitúcia (KYB)", kto: "F",
-      polia: ["Popis", "Tagy", "Cieľová suma €", "Foto/video", "Split (voliteľné)", "Dĺžka"], akcie: ["Prispieť"], feed: "farský (+ Charita) · settlement € na farský účet" },
-    { id: "z-akcia", emoji: "🎪", titul: "Na akciu", popis: "Zbierka viazaná na udalosť (koncert, farský deň…)", kto: "F",
-      polia: ["Väzba na udalosť", "Popis", "Cieľová suma €", "Foto"], akcie: ["Prispieť"], feed: "farský" },
-    { id: "z-registrovany", emoji: "🔗", titul: "Pre iného — registrovaný", popis: "QR-merge: scan QR príjemcu = overenie + súhlas + prepojenie", kto: "F", qrMerge: true, split: "svadba",
-      polia: ["Scan QR príjemcu", "Split (napr. 3/97)", "Text (kto)", "Foto"], akcie: ["Prispieť"], feed: "iba farský" },
+    { id: "z-farska", emoji: "🏛", titul: "Pre nás (farnosť)", popis: "Ľahká vetva (KYB) · 1 príjemca = 100 % — bez tagov, bez splitu", kto: "F",
+      polia: ["Názov", "Popis", "Cieľová suma €", "Foto/video", "Dĺžka"], akcie: ["Prispieť"], feed: "farský (+ Charita) · settlement € na farský účet" },
+    { id: "z-akcia", emoji: "🎪", titul: "Na akciu", popis: "Viazaná na udalosť (koncert, farský deň…) · 1 príjemca = farnosť", kto: "F",
+      polia: ["Názov", "Väzba na udalosť", "Popis", "Cieľová suma €", "Foto", "Dĺžka"], akcie: ["Prispieť"], feed: "farský" },
+    { id: "z-registrovany", emoji: "🔗", titul: "Pre iného — registrovaný", popis: "Jednorazový 6-miestny kód od príjemcu (PC-friendly, bez kamery) · obojstranné potvrdenie", kto: "F", qrMerge: true, split: "svadba",
+      polia: ["Názov", "Kód príjemcu (6-miestny)", "Split (rodina/kostol)", "Text (kto)", "Foto"], akcie: ["Prispieť"], feed: "iba farský" },
     { id: "z-neregistrovany", emoji: "🧾", titul: "Pre iného — neregistrovaný", popis: "Plný Help sprievodca (8 krokov) — escrow/IBAN overenie", kto: "F", helpWizard: true,
-      polia: ["Podmienky", "Opis", "IBAN overenie", "Téma", "Suma", "Doklady/escrow", "Foto", "Kanál"], akcie: ["Prispieť"], feed: "Help + zrkadlí do farského" },
+      polia: ["Názov", "Podmienky", "Opis", "IBAN overenie", "Téma", "Suma", "Doklady/escrow", "Foto", "Kanál"], akcie: ["Prispieť"], feed: "Help + zrkadlí do farského" },
   ],
 };
 const UDALOST: Kat = {
@@ -58,21 +61,22 @@ const UDALOST: Kat = {
       polia: ["Názov", "Dátum", "Popis", "Foto", "Zbierka na dopravu (voliteľné)", "Kapacita"], akcie: ["Zúčastním sa", "Prispieť", "Pripomeň"], feed: "farský" },
     { id: "u-akcia", emoji: "🎶", titul: "Akcia (koncert, ples, farský deň)", popis: "Vstupné / zbierka voliteľné", kto: "F", datum: true,
       polia: ["Názov", "Dátum", "Popis", "Foto", "Vstupné/zbierka (voliteľné)"], akcie: ["Zúčastním sa", "Prispieť", "Pripomeň"], feed: "farský" },
-    { id: "u-svadba", emoji: "💍", titul: "Svadba", popis: "Mená snúbencov + foto len s ich súhlasom · QR-merge split", kto: "R→F", datum: true, split: "svadba",
-      polia: ["Mená snúbencov (+ súhlas)", "Dátum", "Foto/video (so súhlasom)", "Zbierka: QR-merge split", "Text"], akcie: ["Prispieť"], feed: "iba farský" },
-    { id: "u-pohreb", emoji: "🕯", titul: "Pohreb", popis: "Meno zosnulého + súhlas rodiny · Split QR · predĺžené okno ~týždeň", kto: "R→F", datum: true, split: "pohreb",
-      polia: ["Meno zosnulého (+ súhlas rodiny)", "Foto (voliteľné)", "Dátum", "Zbierka QR-merge split", "Text"], akcie: ["Prispieť"], feed: "iba farský" },
+    // Pohreb a Svadba už NIE sú Udalosti (Delta 2 bod 2 — duplicita): žijú ako Oznam
+    // (úmrtie/parte, ohlášky) — nesú dátum → kalendár + pripomienka; peniaze =
+    // samostatná zbierka napojená cez „Pridať zbierku" na ozname.
   ],
 };
 const OZNAM: Kat = {
   id: "oznam", emoji: "📢", titul: "Oznam", popis: "Dátum nemusí — objaví sa vo feede",
   uzly: [
-    { id: "o-zmena", emoji: "🔔", titul: "Zmenové (omša nebude / zmena programu)", popis: "Notifikácia default zapnutá", kto: "F",
-      polia: ["Text", "Platnosť od–do (voliteľné)"], feed: "farský · notif default ON" },
-    { id: "o-umrtie", emoji: "🕯", titul: "Oznámenie o úmrtí (parte)", popis: "Šablóna alebo vlastné parte · LEN oznam — bez zbierky (zbierku vytvor v Zbierkach)", kto: "F",
+    { id: "o-zmena", emoji: "🔔", titul: "Zmenové (omša nebude / zmena programu)", popis: "Notifikácia default zapnutá · názov povinný (headline)", kto: "F",
+      polia: ["Názov", "Text", "Platnosť od–do (voliteľné)"], feed: "farský · notif default ON" },
+    { id: "o-umrtie", emoji: "🕯", titul: "Oznámenie o úmrtí (parte)", popis: "Šablóna alebo vlastné parte · čistý oznam — zbierka sa pripája až na zverejnenom ozname cez Pridať zbierku", kto: "F",
       polia: ["Meno", "Dátumy + vek", "Verš", "Rozlúčka (kde + kedy)", "Foto", "Šablóna"], feed: "farský" },
-    { id: "o-ohlasky", emoji: "💍", titul: "Ohlášky", popis: "Mená snúbencov + dátum sobáša", kto: "F",
-      polia: ["Mená snúbencov", "Dátum sobáša", "Odkaz na svadbu (voliteľné)"], feed: "farský" },
+    { id: "o-ohlasky", emoji: "💍", titul: "Ohlášky", popis: "Mená snúbencov · termín je priamo v ohláškach (žiadny odkaz na svadbu)", kto: "F",
+      polia: ["Mená snúbencov", "Dátum + čas sobáša", "Miesto"], feed: "farský" },
+    { id: "o-vlastny", emoji: "📣", titul: "Vlastný oznam", popis: "Čokoľvek — zatvorený kostol, ples, zbierka šatstva… (catch-all)", kto: "F",
+      polia: ["Názov", "Text", "Foto (voliteľné)", "Platnosť (dní)"], feed: "farský" },
     { id: "o-smutocny", emoji: "🤍", titul: "Oznámenie o úmrtí (parte)", popis: "Šablóna alebo vlastné parte · polia pod oznamom · reakcia = kondolencia · bez zbierky", kto: "U",
       polia: ["Meno", "Dátumy + vek", "Verš", "Rozlúčka (kde + kedy)", "Foto", "Šablóna"], feed: "farský" },
     { id: "o-spomienkovy", emoji: "🕯", titul: "Spomienkový oznam", popis: "Pamiatka — výročie úmrtia, nedožité jubileum · reakcia = kondolencia · vždy zadarmo", kto: "U",
@@ -210,10 +214,12 @@ function UzolTile({ u, onClick }: { u: Uzol; onClick: () => void }) {
     </div>
   );
 }
+// „Späť" (delta bod 21) — viditeľné TLAČIDLO, nie schovaný odkaz: tučné, väčšie,
+// vždy „‹ Späť" (Späť = o krok späť na výber typu; X hore = zavrieť celé)
 function BackRiadok({ onBack, label }: { onBack: () => void; label: string }) {
   return (
-    <div {...pressable(onBack, "Späť")} style={{ display: "inline-flex", alignItems: "center", gap: SPACE.xs, fontSize: 12.5, color: N.ind, fontWeight: 700, cursor: "pointer", marginBottom: SPACE.sm }}>
-      ‹ {label}
+    <div {...pressable(onBack, "Späť")} style={{ display: "inline-flex", alignItems: "center", gap: SPACE.xs, fontSize: 14.5, color: N.ind, fontWeight: 800, cursor: "pointer", marginBottom: SPACE.sm, background: N.indBg, border: `1px solid ${N.indEdge}`, borderRadius: RADIUS.sm, padding: `${SPACE.xs}px ${SPACE.gutter}px` }} title={label}>
+      ‹ Späť
     </div>
   );
 }
@@ -246,9 +252,9 @@ const NTYP_META: Record<NabozTyp, { tag: string; badge: string }> = {
 };
 
 function postavPrispevok(uzol: Uzol, opts: {
-  farar: boolean; farnost?: Farnost; autor: string; text: string; polia: Record<string, string>; fotky: string[];
+  farar: boolean; farnost?: Farnost; autor: string; text: string; polia: Record<string, string>; fotky: string[]; autorTvar?: boolean;
 }): NabozFeedItem {
-  const { farar, farnost, autor, text, polia, fotky } = opts;
+  const { farar, farnost, autor, text, polia, fotky, autorTvar } = opts;
   const pole = (test: (l: string) => boolean) => { const p = uzol.polia.find((x) => test(x.toLowerCase())); return p ? polia[p] : undefined; };
   const ntyp: NabozTyp = uzol.id.startsWith("z-") ? "zbierka" : uzol.id.startsWith("u-") ? "udalost" : uzol.id.startsWith("d-") ? "dobrovolnictvo" : "oznam";
   const meta = NTYP_META[ntyp];
@@ -258,6 +264,7 @@ function postavPrispevok(uzol: Uzol, opts: {
   const suma = pole((l) => l.includes("suma") || l.includes("€"));
   const ciel = suma ? +suma || undefined : undefined;
   const datum = pole((l) => l.includes("dátum") || l.includes("datum"));
+  const plat = pole((l) => l.includes("platnosť (dní)")); // vlastný oznam — voliteľná TTL
   return {
     id: `naboz-${Date.now()}`, comp: "data", typ: ntyp === "zbierka" ? "charita" : "skutok", modul: "charity", kat: "Komunita",
     ntyp, skore: 6, typSituacie: "normal", dni: 0, podpora: 0,
@@ -270,6 +277,8 @@ function postavPrispevok(uzol: Uzol, opts: {
     rsvp: uzol.akcie?.includes("Zúčastním sa") || undefined, split: uzol.split ? true : undefined,
     ciel, vyzbierane: ciel != null ? 0 : undefined,
     fotky: fotky.length ? fotky : undefined,
+    autorTvar: autorTvar || undefined, // farárova tvár v hlavičke (bod 20)
+    ...(plat ? { vytvorene: Date.now(), platnostDni: Math.max(1, +plat || 7) } : {}),
   };
 }
 
@@ -280,6 +289,7 @@ function UzolForm({ uzol, farar, farnost, onSplit, onPublish, onHelp, toast }: {
   const { celeMeno } = usePouzivatel();
   const [text, setText] = useState("");
   const [notif, setNotif] = useState(uzol.id === "o-zmena");
+  const [tvar, setTvar] = useState(false); // bod 20 — farárova tvár v hlavičke (voliteľné)
   const [preview, setPreview] = useState(false);
   const [polia, setPolia] = useState<Record<string, string>>({});
   const [fotky, setFotky] = useState<string[]>([]); // reálne fotky/video (FotoVyber → data URL)
@@ -339,6 +349,14 @@ function UzolForm({ uzol, farar, farnost, onSplit, onPublish, onHelp, toast }: {
         </>
       )}
 
+      {/* bod 20: farár si môže dať vlastnú tvár do hlavičky — „farár hovorí osobne" */}
+      {farar && uzol.id.startsWith("o-") && (
+        <label style={{ display: "flex", alignItems: "center", gap: SPACE.sm, marginTop: SPACE.md, fontSize: 13, color: N.txt2 }}>
+          <Switch on={tvar} onChange={setTvar} ariaLabel="Moja tvár v hlavičke" />
+          <span><b>Moja tvár v hlavičke</b> — osobný, teplý dotyk („farár hovorí…"), voliteľné</span>
+        </label>
+      )}
+
       {/* zmenové oznamy → notifikácia default ON */}
       {uzol.id === "o-zmena" && (
         <label style={{ display: "flex", alignItems: "center", gap: SPACE.sm, marginTop: SPACE.md, fontSize: 13, color: N.txt2 }}>
@@ -362,10 +380,10 @@ function UzolForm({ uzol, farar, farnost, onSplit, onPublish, onHelp, toast }: {
         </div>
       )}
 
-      {/* QR-merge poznámka (registrovaný príjemca) */}
+      {/* prepojenie príjemcu (bod 30) — čerstvé, jednorazové, na jednu zbierku */}
       {uzol.qrMerge && (
         <div style={{ marginTop: SPACE.sm, fontSize: 11.5, color: N.txt3, background: N.infoBg, border: `1px solid ${tint(N.info, .3)}`, borderRadius: RADIUS.sm, padding: SPACE.sm }}>
-          🔗 QR scan = overenie + súhlas + prepojenie účtu naraz. Príjemca musí byť registrovaný a merge potvrdí v appke (nie verejný „share" QR).
+          🔗 Prepojenie je vždy čerstvé a jednorazové — 6-miestny kód od príjemcu (registrovaný, KYC), obojstranné potvrdenie v appke. Farár NIKDY nevyberá z uloženého zoznamu QR.
         </div>
       )}
 
@@ -384,7 +402,7 @@ function UzolForm({ uzol, farar, farnost, onSplit, onPublish, onHelp, toast }: {
                 {fotky.length > 0 && <div style={{ fontSize: 11, color: N.txt3, marginTop: SPACE.xxs }}>📎 {fotky.length} {fotky.length === 1 ? "príloha" : "prílohy"}</div>}
                 <div style={{ fontSize: 13, color: N.txt2, marginTop: SPACE.xs, lineHeight: 1.5 }}>{text || <span style={{ color: N.txt3 }}>(text oznamu)</span>}</div>
               </div>
-              <button onClick={() => onPublish(postavPrispevok(uzol, { farar, farnost, autor: celeMeno || "Farník", text, polia, fotky }))} style={ctaStyle(N.green)}>Publikovať</button>
+              <button onClick={() => onPublish(postavPrispevok(uzol, { farar, farnost, autor: celeMeno || "Farník", text, polia, fotky, autorTvar: tvar }))} style={ctaStyle(N.green)}>Publikovať</button>
             </>
           )}
         </>
@@ -398,14 +416,15 @@ function MetaChip({ children }: { children: React.ReactNode }) {
 }
 
 // odvodenie typu poľa z jeho názvu → reálny input namiesto „bullet" labelu
-type TypPola = "cislo" | "datum" | "foto" | "qr" | "split" | "iban" | "text";
+type TypPola = "cislo" | "datum" | "foto" | "qr" | "kod" | "split" | "iban" | "text";
 function typPola(label: string): TypPola {
   const l = label.toLowerCase();
+  if (l.includes("kód")) return "kod"; // jednorazový 6-miestny kód príjemcu (delta bod 30)
   if (l.includes("scan qr") || l.includes("event qr")) return "qr";
   if (l.includes("split")) return "split";
   if (l.includes("iban")) return "iban";
   if (l.includes("dátum") || l.includes("datum")) return "datum";
-  if (l.includes("suma") || l.includes("kapacita") || l.includes("koľko rúk") || l.includes("€")) return "cislo";
+  if (l.includes("suma") || l.includes("kapacita") || l.includes("koľko rúk") || l.includes("€") || l.includes("platnosť (dní)")) return "cislo";
   if (l.includes("foto") || l.includes("video") || l.includes("doklad") || l.includes("escrow")) return "foto";
   return "text";
 }
@@ -429,6 +448,23 @@ function PoleInput({ label, value, onChange, toast }: { label: string; value: st
             border: `1px ${value ? "solid" : "dashed"} ${value ? N.greenEdge : N.line}`, background: value ? N.greenBg : N.card, color: value ? N.green : N.txt2 }}>
           {value ? "✓ " : t === "qr" ? "▦ " : "📎 "}{value ? "Priložené — klikni pre zmenu" : t === "qr" ? "Skenovať QR" : "Priložiť foto/video"}
         </button>
+      </div>
+    );
+  }
+  // jednorazový 6-miestny kód príjemcu (bod 30) — PC-friendly, bez kamery;
+  // po zadaní ukáže JEDNÉHO kandidáta (meno + KYC ✓) na potvrdenie
+  if (t === "kod") {
+    const cislice = value.replace(/\D/g, "");
+    return (
+      <div>{lab}
+        <Input value={value} onChange={(v: string) => onChange(v.replace(/\D/g, "").slice(0, 6))} placeholder="napr. 482 913 · platí ~15 min" />
+        <div style={{ fontSize: 10.5, color: N.txt3, lineHeight: 1.4, marginTop: SPACE.xxs }}>Príjemca si kód vygeneruje v appke („Pripojiť ma k zbierke"). Napíš ho — sken QR je len voliteľná skratka. Žiadna knižnica uložených QR.</div>
+        {cislice.length === 6 && (
+          <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm, background: N.greenBg, border: `1px solid ${N.greenEdge}`, borderRadius: RADIUS.sm, padding: `${SPACE.xs}px ${SPACE.sm}px`, marginTop: SPACE.xs, fontSize: 12 }}>
+            <span style={{ fontSize: 15 }}>👤</span>
+            <span style={{ color: N.txt }}><b>Mária Kováčová</b> · KYC ✓ — potvrdíš jedného kandidáta; jej padne notifikácia (obojstranný handshake)</span>
+          </div>
+        )}
       </div>
     );
   }

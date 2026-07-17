@@ -1,6 +1,6 @@
 import { useState, useEffect, memo } from "react";
 import { SIRKA, SPACE, RADIUS } from "@/theme";
-import { Foto, MiniFotky, ModulHlavicka, PodporaSekcia, PlatbaModal, SplitQrSheet, HladanieModal, toast, useGaleria, useLayout, useScrollPamat, useStrankaAkcie, FeedGrid, StatRiadok, FiltreStat, OkruhVyber, MoniBar, ProgresBox, BackHeader, obalSiroky, SegTabs, tint, Lupa, Zdielanie, IkonaVlajka, IkonaFoto, IkonaInstitucia, Srdce, EmptyState, ScreenSwitch, SwipeBack, ZoznamDarcov, FormatovanyText } from "@/shared";
+import { Foto, MiniFotky, ModulHlavicka, PodporaSekcia, PlatbaModal, SplitQrSheet, HladanieModal, toast, useGaleria, useLayout, useScrollPamat, useStrankaAkcie, FeedGrid, StatRiadok, FiltreStat, OkruhVyber, MoniBar, ProgresBox, BackHeader, obalSiroky, SegTabs, tint, Lupa, Zdielanie, IkonaVlajka, IkonaFoto, IkonaInstitucia, Srdce, EmptyState, ScreenSwitch, SwipeBack, ZoznamDarcov, FormatovanyText, Input } from "@/shared";
 import { pridajDar, type VolbaDaru } from "@/lib/darcovia";
 import { usePouzivatel } from "@/lib/pouzivatel";
 import { cistyText } from "@/lib/richtext";
@@ -18,7 +18,7 @@ import { OzvatSaSheet } from "@/components/ozvatsa";
 import { NahlasitSheet } from "@/components/nahlasit";
 import { nacitajRsvp as nacitajRsvpDB, prepniRsvp as prepniRsvpDB } from "@/lib/osobne";
 import { N, Overena, Chip, SheetPanel, OverujemNamietam, A9Potvrdenie, PrehladTile } from "./ui";
-import { SmutocnyOznamBlok } from "./SmutocnyOznam";
+import { SmutocnyOznamBlok, ParteMiniatura } from "./SmutocnyOznam";
 import { nacitajStav } from "./stav";
 import { FarskyProfil, KontaktRiadok } from "./FarskyProfil";
 import { Kalendar } from "./Kalendar";
@@ -26,7 +26,7 @@ import { PridatSheet } from "./Pridat";
 import {
   FEED_ITEMS, CIRKVI, CIRKVI_FLAT, HLADAJ_DATA, FARNOSTI, FARNOST_PODLA_ID, farnostIdOf, farnostiCirkvi,
   farskySplitVariant, farnostStat, obsahFarnosti, kmNum, rodinaCirkvi, rodinaZoSkratky, KAT_FARBA, reakciaToast,
-  jeVlastnyPrispevok, zmazPrispevok,
+  jeVlastnyPrispevok, zmazPrispevok, upravPrispevok,
   type NabozFeedItem, type Farnost, type CirkevPolozka,
 } from "./mock";
 
@@ -375,12 +375,17 @@ function FarnostFeed({ f, onPrispevok }: { f: Farnost; onPrispevok: (z: NabozFee
               </div>
             )) : polozky.map((o) => (
               <div key={o.id} {...pressable(() => onPrispevok(o), o.nazov)} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, padding: `${SPACE.sm}px 0`, borderTop: `1px solid ${N.line}`, cursor: "pointer" }}>
-                {/* miniatúra fotky príspevku (à la spravodajský zoznam) — bez fotky emoji dlaždica */}
+                {/* miniatúra fotky príspevku (à la spravodajský zoznam) — bez fotky emoji dlaždica.
+                    Úmrtie/parte = vyrenderovaná parte kartička (bod 23), NIE surová fotka tváre. */}
                 <div style={{ position: "relative", flex: "none" }}>
-                  <Foto src={o.fotky?.[0]} emoji={o.emoji ?? "📢"} w={58 * k} h={44 * k} radius={RADIUS.xs} sizes={`${58 * k}px`} alt={o.nazov} />
-                  {o.fotky?.length && o.emoji ? (
-                    <span style={{ position: "absolute", bottom: -4, right: -4, fontSize: 12 * k, lineHeight: 1, filter: "drop-shadow(0 1px 2px rgba(0,0,0,.5))" }}>{o.emoji}</span>
-                  ) : null}
+                  {o.smutocny ? (
+                    <ParteMiniatura s={o.smutocny} w={52 * k} h={64 * k} />
+                  ) : (<>
+                    <Foto src={o.fotky?.[0]} emoji={o.emoji ?? "📢"} w={58 * k} h={44 * k} radius={RADIUS.xs} sizes={`${58 * k}px`} alt={o.nazov} />
+                    {o.fotky?.length && o.emoji ? (
+                      <span style={{ position: "absolute", bottom: -4, right: -4, fontSize: 12 * k, lineHeight: 1, filter: "drop-shadow(0 1px 2px rgba(0,0,0,.5))" }}>{o.emoji}</span>
+                    ) : null}
+                  </>)}
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 13, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{o.nazov}</div>
@@ -476,13 +481,16 @@ function fotoBadge(pos: number, side: "left" | "right"): React.CSSProperties {
 function NabozDetail({ z, farar, onBack, onProfil }: { z: NabozFeedItem; farar: boolean; onBack: () => void; onProfil: (f: Farnost) => void }) {
   const { wide } = useLayout();
   const otvorGaleriu = useGaleria();
-  const maCiel = z.ciel != null; // aj udalosti s voliteľnou zbierkou (púť/pohreb)
+  // parte režim 2: „Pridať zbierku" nastaví cieľ aj lokálne (z je snapshot z feedu)
+  const [cielLocal, setCielLocal] = useState<number | null>(z.ciel ?? null);
+  const maCiel = cielLocal != null; // aj udalosti s voliteľnou zbierkou (púť/pohreb)
   const [suma, setSuma] = useState(z.vyzbierane ?? 0);
   const [ludia, setLudia] = useState(z.podpora ?? 0);
   const [platba, setPlatba] = useState<Kanal | null>(null);
   const [split, setSplit] = useState(false);
   const fotky = z.fotky ?? [];
-  const maFoto = fotky.length > 0;
+  // bod 23: pri parte ŽIADNY surový banner navrchu — parte je obsah (foto už obsahuje)
+  const maFoto = fotky.length > 0 && !z.smutocny;
   const pribeh = z.pribeh ?? z.popis ?? "";
   const f = FARNOST_PODLA_ID(farnostIdOf(z));
   const jeUdalost = z.ntyp === "udalost";
@@ -512,6 +520,7 @@ function NabozDetail({ z, farar, onBack, onProfil }: { z: NabozFeedItem; farar: 
   const [ozvat, setOzvat] = useState(false); // „Zapojiť sa" → správa farnosti
   const [nahlasit, setNahlasit] = useState(false); // vlajka → nahlásenie obsahu
   const [mazem, setMazem] = useState(false); // farárske mazanie — 2. ťuk potvrdí
+  const [pridatZbierku, setPridatZbierku] = useState(false); // parte režim 2 — pripojenie pohrebnej zbierky
   const jeSplit = !!z.split; // pohreb/svadba
   // §11: Overujem/Namietam LEN na Help prípadoch jednotlivcov (núdza + riziko podvodu).
   const overitelne = !!z.overitelne;
@@ -533,33 +542,48 @@ function NabozDetail({ z, farar, onBack, onProfil }: { z: NabozFeedItem; farar: 
       </BackHeader>
       <div style={{ height: SPACE.sm }} />
 
-      {/* hero foto — LEN ak príspevok má fotku (bez placeholdera; inak čisto textový detail) */}
+      {/* hero foto — LEN ak príspevok má fotku (bez placeholdera; inak čisto textový detail).
+          Oznamy (bod 25): portrét aj landscape — obrázok CELÝ (contain), neoreže sa do pruhu. */}
       {maFoto && (
         <div style={{ padding: `0 ${SPACE.md}px` }}>
-          <div style={{ position: "relative", ...(wide ? { width: "100%", aspectRatio: MEDIA_AR } : {}) }}>
-            <Foto src={fotky[0]} emoji={z.emoji || "⛪"} h={wide ? "100%" : 200} w={wide ? "100%" : undefined} radius={14} onClick={() => otvorGaleriu(fotky, 0)} prednost alt={z.nazov} />
-            <span style={{ ...badge({ top: 9, left: 9, color: "#fff" }), display: "inline-flex", alignItems: "center", gap: SPACE.xxs }}><IkonaFoto size={12} color="#fff" /> foto komunity</span>
-          </div>
+          {z.ntyp === "oznam" ? (
+            <img src={fotky[0]} alt={z.nazov} onClick={() => otvorGaleriu(fotky, 0)}
+              style={{ display: "block", width: "100%", height: "auto", maxHeight: 420, objectFit: "contain", background: "#111", borderRadius: 14, cursor: "zoom-in" }} />
+          ) : (
+            <div style={{ position: "relative", ...(wide ? { width: "100%", aspectRatio: MEDIA_AR } : {}) }}>
+              <Foto src={fotky[0]} emoji={z.emoji || "⛪"} h={wide ? "100%" : 200} w={wide ? "100%" : undefined} radius={14} onClick={() => otvorGaleriu(fotky, 0)} prednost alt={z.nazov} />
+              <span style={{ ...badge({ top: 9, left: 9, color: "#fff" }), display: "inline-flex", alignItems: "center", gap: SPACE.xxs }}><IkonaFoto size={12} color="#fff" /> foto komunity</span>
+            </div>
+          )}
         </div>
       )}
-      <MiniFotky fotky={fotky} />
+      {!z.smutocny && <MiniFotky fotky={fotky} />}
 
       <div style={{ padding: `${SPACE.gutter}px ${SPACE.md}px 0` }}>
         {/* hlavička = vydavateľ (farnosť) + overená → klik otvorí profil */}
         <div {...(f ? pressable(() => onProfil(f), "Otvoriť farnosť") : {})} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, marginBottom: SPACE.xs, cursor: f ? "pointer" : "default" }}>
-          <span style={{ width: 40, height: 40, borderRadius: RADIUS.sm, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, background: tint(N.ind, .14) }}>{z.emoji || "⛪"}</span>
+          {/* bod 20: farárova tvár v hlavičke (voliteľné) — osobný odkaz namiesto loga farnosti */}
+          <span style={{ width: 40, height: 40, borderRadius: z.autorTvar ? "50%" : RADIUS.sm, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, background: tint(N.ind, .14), border: z.autorTvar ? `1px solid ${N.indEdge}` : "none" }}>{z.autorTvar ? "👤" : (z.emoji || "⛪")}</span>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 15, fontWeight: 700, display: "flex", alignItems: "center", gap: SPACE.xs }}>{z.komunita || z.cirkev} {z.overena && <Overena />}</div>
-            <div style={{ fontSize: 11.5, color: N.txt2, marginTop: SPACE.xxs }}>📍 {z.lok || "Slovensko"} · registrovaná (MK SR)</div>
+            <div style={{ fontSize: 11.5, color: N.txt2, marginTop: SPACE.xxs }}>📍 {z.lok || "Slovensko"} · registrovaná (MK SR){z.autorTvar ? " · hovorí farár osobne" : ""}</div>
           </div>
           {f && <span style={{ color: N.txt3, fontSize: 18, flex: "none" }}>›</span>}
         </div>
 
         <div style={{ fontSize: 17, fontWeight: 700, margin: `${SPACE.sm}px 0` }}>{z.nazov}</div>
         {z.smutocny ? (
-          /* smútočný oznam — šablóna/parte + povinné polia POD oznamom (DEV podklad §3) */
+          /* parte — šablóna zobrazuje všetko sama / obrázok celý na výšku (bez duplicitného panelu) */
           <div style={{ marginBottom: SPACE.gutter }}>
-            <SmutocnyOznamBlok s={z.smutocny} onKondolencia={() => toast(reakcia)} />
+            <SmutocnyOznamBlok s={z.smutocny} onKondolencia={() => toast(reakcia)}
+              onZvacsit={z.smutocny.imageUrl ? () => otvorGaleriu([z.smutocny!.imageUrl!], 0) : undefined} />
+            {/* režim 2 (§0): farár pripojí pohrebnú zbierku AŽ na zverejnenom ozname */}
+            {farar && !maCiel && jeVlastnyPrispevok(farnostIdOf(z), z.id) && (
+              <div {...pressable(() => setPridatZbierku(true), "Pridať pohrebnú zbierku")}
+                style={{ marginTop: SPACE.sm, border: `1px dashed ${N.greenEdge}`, background: N.greenBg, borderRadius: RADIUS.sm, padding: SPACE.gutter, textAlign: "center", fontSize: 13.5, fontWeight: 700, color: N.green, cursor: "pointer" }}>
+                ➕ Pridať zbierku — pohrebná (samostatná entita, prepojí sa s oznamom)
+              </div>
+            )}
           </div>
         ) : (
           <FormatovanyText text={pribeh} style={{ fontSize: 14, lineHeight: 1.55, marginBottom: SPACE.gutter, color: N.txt2 }} />
@@ -599,7 +623,7 @@ function NabozDetail({ z, farar, onBack, onProfil }: { z: NabozFeedItem; farar: 
         {maCiel ? (
           <>
             <div style={{ marginBottom: SPACE.gutter }}>
-              <ProgresBox suma={suma} ciel={z.ciel!} ludia={ludia} />
+              <ProgresBox suma={suma} ciel={cielLocal!} ludia={ludia} />
             </div>
 
             <div style={{ marginBottom: SPACE.gutter }}>
@@ -668,7 +692,72 @@ function NabozDetail({ z, farar, onBack, onProfil }: { z: NabozFeedItem; farar: 
 
       {/* vlajka — nahlásenie obsahu (§11: nahlásiť, nie hlasovať) */}
       {nahlasit && <NahlasitSheet co={z.nazov ?? "Príspevok"} refId={z.id} modul="nabozenstvo" onClose={() => setNahlasit(false)} toast={toast} />}
+
+      {/* parte režim 2 — pripojenie pohrebnej zbierky (samostatná entita, linkuje sa) */}
+      {pridatZbierku && (
+        <PridatZbierkuSheet tvorca={z.overena ? null : z.komunita || null}
+          onClose={() => setPridatZbierku(false)}
+          onHotovo={(ciel) => {
+            upravPrispevok(farnostIdOf(z), z.id, { ciel, vyzbierane: 0, linkedZbierka: true });
+            setCielLocal(ciel);
+            setPridatZbierku(false);
+            toast("Pohrebná zbierka pripojená — na ozname pribudlo Prispieť 🕯");
+          }} />
+      )}
     </div>
+  );
+}
+
+// ============================================================
+// PRIDAŤ ZBIERKU na parte (režim 2, §0): zbierka = samostatná entita, s oznamom
+// sa len prepojí. Príjemca: user-parte → predvyplnený tvorca oznamu (KYC ✓);
+// farárske parte → jednorazový 6-miestny kód od príjemcu (delta bod 30 —
+// PC-friendly, bez kamery; žiadna knižnica QR).
+// ============================================================
+function PridatZbierkuSheet({ tvorca, onClose, onHotovo }: { tvorca: string | null; onClose: () => void; onHotovo: (ciel: number) => void }) {
+  const [ciel, setCiel] = useState("500");
+  const [kod, setKod] = useState("");
+  const kodOk = tvorca != null || kod.replace(/\D/g, "").length === 6;
+  const cielNum = Math.max(1, +ciel || 0);
+  return (
+    <SheetPanel title="Pridať zbierku — pohrebná" onClose={onClose}>
+      <div style={{ fontSize: 12, color: N.txt3, lineHeight: 1.5, marginBottom: SPACE.md }}>
+        Zbierka je <b>samostatná entita</b> v sekcii Zbierky (vlastný QR, vlastný TTL) — s oznamom sa len prepojí a zobrazí spolu. Peniaze idú <b>registrovanému príjemcovi</b> po obojstrannom potvrdení.
+      </div>
+      <div style={{ fontSize: 11, fontWeight: 700, color: N.txt3, letterSpacing: ".03em", margin: `0 0 ${SPACE.xxs}px` }}>PRÍJEMCA</div>
+      {tvorca ? (
+        <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm, background: N.card, border: `1px solid ${N.greenEdge}`, borderRadius: RADIUS.sm, padding: `${SPACE.sm}px ${SPACE.gutter}px` }}>
+          <span style={{ width: 34, height: 34, borderRadius: "50%", background: N.greenBg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, flex: "none" }}>👤</span>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 13.5, fontWeight: 700 }}>{tvorca}</div>
+            <div style={{ fontSize: 11, color: N.green, fontWeight: 700 }}>tvorca oznamu · KYC ✓ · predvyplnené</div>
+          </div>
+        </div>
+      ) : (<>
+        <Input value={kod} onChange={(v: string) => setKod(v.replace(/\D/g, "").slice(0, 6))} placeholder="6-miestny kód od príjemcu (napr. 482 913)" />
+        <div style={{ fontSize: 11, color: N.txt3, lineHeight: 1.45, marginTop: SPACE.xxs }}>
+          Príjemca si v appke vygeneruje jednorazový kód („Pripojiť ma k zbierke", platí ~15 min). Napíš ho — bez kamery; sken QR je len skratka. Potvrdíš jedného kandidáta (meno + foto + KYC ✓), jemu padne notifikácia — bez potvrdenia oboch strán zbierka nebeží.
+        </div>
+        {kodOk && (
+          <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm, background: N.card, border: `1px solid ${N.greenEdge}`, borderRadius: RADIUS.sm, padding: `${SPACE.sm}px ${SPACE.gutter}px`, marginTop: SPACE.sm }}>
+            <span style={{ width: 34, height: 34, borderRadius: "50%", background: N.greenBg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, flex: "none" }}>👤</span>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 13.5, fontWeight: 700 }}>Mária Kováčová</div>
+              <div style={{ fontSize: 11, color: N.green, fontWeight: 700 }}>kandidát podľa kódu · KYC ✓ (demo)</div>
+            </div>
+          </div>
+        )}
+      </>)}
+      <div style={{ fontSize: 11, fontWeight: 700, color: N.txt3, letterSpacing: ".03em", margin: `${SPACE.md}px 0 ${SPACE.xxs}px` }}>CIEĽ ZBIERKY (€)</div>
+      <div style={{ width: 130 }}><Input value={ciel} onChange={setCiel} type="number" placeholder="500" /></div>
+      <div style={{ fontSize: 11, color: N.txt3, lineHeight: 1.45, marginTop: SPACE.xs }}>
+        Jeden príjemca → celé jemu (bez bežca). Kostolný podiel = dobrovoľný dar rodiny — bežec sa objaví až pridaním 2. príjemcu.
+      </div>
+      <button onClick={() => kodOk && onHotovo(cielNum)} disabled={!kodOk}
+        style={{ width: "100%", marginTop: SPACE.md, height: 48, border: "none", borderRadius: RADIUS.md, background: kodOk ? N.green : N.card, color: kodOk ? "#fff" : N.txt3, fontWeight: 700, fontSize: 15, fontFamily: "inherit", cursor: kodOk ? "pointer" : "not-allowed" }}>
+        Prepojiť a spustiť zbierku
+      </button>
+    </SheetPanel>
   );
 }
 function badge({ top, left, color }: { top?: number; left?: number; color?: string }): React.CSSProperties {

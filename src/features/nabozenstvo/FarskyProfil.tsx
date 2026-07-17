@@ -14,8 +14,10 @@ import { NahlasitSheet } from "@/components/nahlasit";
 import type { Kanal } from "@/types";
 import { N, Overena, SheetPanel, PrehladTile, A9Potvrdenie } from "./ui";
 import { SelfAddSheet, nacitajSelfAdd } from "./UserOznamy";
+import { ParteMiniatura } from "./SmutocnyOznam";
 import { nacitajStav, ulozStav } from "./stav";
-import { obsahFarnosti, farnostStat, farskySplitVariant, KAT_FARBA, vlastnePrispevkyVsetky, zmazPrispevok, pridajPrispevok, type Farnost, type NabozFeedItem, type NabozTyp } from "./mock";
+import { cistyText } from "@/lib/richtext";
+import { obsahFarnosti, farnostStat, farskySplitVariant, KAT_FARBA, vlastnePrispevkyVsetky, zmazPrispevok, pridajPrispevok, upravPrispevok, type Farnost, type NabozFeedItem, type NabozTyp } from "./mock";
 
 type ViditSum = "zobrazit" | "skryt" | "len-farar";
 const VIDIT_LABEL: Record<ViditSum, string> = { zobrazit: "zobraziť", skryt: "skryť", "len-farar": "len farár" };
@@ -307,37 +309,79 @@ function selfAddLabel(fid: string): string {
 }
 
 function ModeraciaSheet({ fid, onClose, toast }: { fid: string; onClose: () => void; toast: (m: string) => void }) {
-  // publikované oznamy farníkov z úložiska (raw, bez TTL filtra — mazať sa dá aj expirovaný);
+  // publikované oznamy z úložiska (raw, bez TTL filtra — mazať sa dá aj expirovaný);
   // zoznam držíme lokálne, nech „Obnoviť" funguje kým je sheet otvorený
-  const [polozky] = useState<NabozFeedItem[]>(() => vlastnePrispevkyVsetky(fid).filter((it) => it.ntyp === "oznam"));
+  const [polozky, setPolozky] = useState<NabozFeedItem[]>(() => vlastnePrispevkyVsetky(fid).filter((it) => it.ntyp === "oznam"));
   const [zmazane, setZmazane] = useState<Set<string>>(() => new Set());
+  const [potvrd, setPotvrd] = useState<string | null>(null);   // „naozaj zmazať?" (bod 26)
+  const [editujem, setEditujem] = useState<NabozFeedItem | null>(null); // „Upraviť" (bod 26)
   const prepni = (it: NabozFeedItem) => {
-    setZmazane((s) => {
-      const n = new Set(s);
-      const bol = n.has(it.id);
-      if (bol) { n.delete(it.id); pridajPrispevok(fid, it); toast("Oznam obnovený"); }
-      else { n.add(it.id); zmazPrispevok(fid, it.id); toast("Oznam zmazaný — farník dostane upozornenie"); }
-      return n;
-    });
+    if (zmazane.has(it.id)) {
+      setZmazane((s) => { const n = new Set(s); n.delete(it.id); return n; });
+      pridajPrispevok(fid, it); toast("Oznam obnovený");
+      return;
+    }
+    if (potvrd !== it.id) { setPotvrd(it.id); return; } // 1. ťuk = potvrdenie
+    setPotvrd(null);
+    setZmazane((s) => new Set(s).add(it.id));
+    zmazPrispevok(fid, it.id);
+    toast("Oznam zmazaný — farník dostane upozornenie");
   };
   return (
     <SheetPanel title="Moderácia príspevkov" onClose={onClose}>
-      <div style={{ fontSize: 12, color: N.txt3, marginBottom: SPACE.md, lineHeight: 1.5 }}>Farár môže zmazať nevhodný oznam farníka (odstráni sa z feedu aj profilu). Zbierky a udalosti farnosti sa overujú v Charita engine — tu ich nemažeš.</div>
+      <div style={{ fontSize: 12, color: N.txt3, marginBottom: SPACE.md, lineHeight: 1.5 }}>Farár môže oznam <b>upraviť</b> (preklep, zlý čas) alebo <b>zmazať</b> (odstráni sa z feedu aj profilu). Zbierky a udalosti farnosti sa overujú v Charita engine — tu ich nemažeš.</div>
       {polozky.length === 0 ? (
         <EmptyState emoji="🛡" title="Žiadne oznamy na moderáciu" text="Keď farníci pridajú oznamy, objavia sa tu." />
       ) : polozky.map((it) => {
         const del = zmazane.has(it.id);
+        const pyta = potvrd === it.id;
         return (
-          <div key={it.id} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, background: N.card, border: `1px solid ${N.line}`, borderRadius: RADIUS.sm, padding: `${SPACE.sm}px ${SPACE.gutter}px`, marginBottom: SPACE.xs, opacity: del ? .5 : 1 }}>
+          <div key={it.id} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, background: N.card, border: `1px solid ${pyta ? "var(--a-danger)" : N.line}`, borderRadius: RADIUS.sm, padding: `${SPACE.sm}px ${SPACE.gutter}px`, marginBottom: SPACE.xs, opacity: del ? .5 : 1 }}>
             <span style={{ fontSize: 17, flex: "none" }}>{it.emoji ?? "📢"}</span>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 13.5, fontWeight: 700, textDecoration: del ? "line-through" : "none", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it.nazov}</div>
-              <div style={{ fontSize: 11, color: N.txt3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it.popis}</div>
+              <div style={{ fontSize: 11, color: N.txt3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{pyta ? "⚠ Naozaj zmazať? Ťukni ešte raz na Zmazať" : it.popis}</div>
             </div>
-            <button onClick={() => prepni(it)} style={{ flex: "none", height: 32, padding: `0 ${SPACE.gutter}px`, borderRadius: RADIUS.sm, fontFamily: "inherit", fontSize: 12, fontWeight: 700, cursor: "pointer", border: `1px solid ${del ? N.indEdge : "var(--a-danger)"}`, background: del ? N.indBg : "transparent", color: del ? N.ind : "var(--a-danger)" }}>{del ? "Obnoviť" : "Zmazať"}</button>
+            {!del && (
+              <button onClick={() => { setPotvrd(null); setEditujem(it); }} style={{ flex: "none", height: 32, padding: `0 ${SPACE.sm}px`, borderRadius: RADIUS.sm, fontFamily: "inherit", fontSize: 12, fontWeight: 700, cursor: "pointer", border: `1px solid ${N.indEdge}`, background: N.indBg, color: N.ind }}>Upraviť</button>
+            )}
+            <button onClick={() => prepni(it)} style={{ flex: "none", height: 32, padding: `0 ${SPACE.gutter}px`, borderRadius: RADIUS.sm, fontFamily: "inherit", fontSize: 12, fontWeight: 700, cursor: "pointer", border: `1px solid ${del ? N.indEdge : "var(--a-danger)"}`, background: del ? N.indBg : pyta ? "color-mix(in srgb, var(--a-danger) 14%, transparent)" : "transparent", color: del ? N.ind : "var(--a-danger)" }}>{del ? "Obnoviť" : pyta ? "Naozaj?" : "Zmazať"}</button>
           </div>
         );
       })}
+      {editujem && (
+        <UpravOznamSheet it={editujem} onClose={() => setEditujem(null)}
+          onUloz={(patch) => {
+            upravPrispevok(fid, editujem.id, patch);
+            setPolozky((p) => p.map((x) => (x.id === editujem.id ? { ...x, ...patch } : x)));
+            setEditujem(null);
+            toast("Oznam upravený ✓");
+          }} />
+      )}
+    </SheetPanel>
+  );
+}
+
+// „Upraviť oznam" (bod 26) — predvyplnená rýchla editácia (názov · text · dátum);
+// plný re-render formulára per typ = ďalšia fáza, toto rieši preklep/zlý čas.
+function UpravOznamSheet({ it, onUloz, onClose }: { it: NabozFeedItem; onUloz: (patch: Partial<NabozFeedItem>) => void; onClose: () => void }) {
+  const [nazov, setNazov] = useState(it.nazov ?? "");
+  const [text, setText] = useState(it.pribeh ?? it.popis ?? "");
+  const [datum, setDatum] = useState(it.datum ?? "");
+  return (
+    <SheetPanel title="Upraviť oznam" onClose={onClose}>
+      <div style={{ fontSize: 11, fontWeight: 700, color: N.txt3, letterSpacing: ".03em", marginBottom: SPACE.xxs }}>NÁZOV</div>
+      <Input value={nazov} onChange={setNazov} placeholder="Názov oznamu…" />
+      <div style={{ fontSize: 11, fontWeight: 700, color: N.txt3, letterSpacing: ".03em", margin: `${SPACE.md}px 0 ${SPACE.xxs}px` }}>TEXT</div>
+      <RichTextInput minH={90} value={text} onChange={setText} placeholder="Text oznamu… Odseky aj vloženie z Wordu prežijú." />
+      {it.datum != null && (<>
+        <div style={{ fontSize: 11, fontWeight: 700, color: N.txt3, letterSpacing: ".03em", margin: `${SPACE.md}px 0 ${SPACE.xxs}px` }}>DÁTUM</div>
+        <Input value={datum} onChange={setDatum} type="date" />
+      </>)}
+      <button onClick={() => onUloz({ nazov: nazov.trim() || it.nazov, pribeh: text || undefined, popis: cistyText(text) || it.popis, datum: datum || it.datum })}
+        style={{ width: "100%", marginTop: SPACE.md, height: 48, border: "none", borderRadius: RADIUS.md, background: N.green, color: "#fff", fontWeight: 700, fontSize: 15, fontFamily: "inherit", cursor: "pointer" }}>
+        Uložiť zmeny
+      </button>
     </SheetPanel>
   );
 }
@@ -472,7 +516,8 @@ function UdalostRiadok({ it, onClick }: { it: NabozFeedItem; onClick: () => void
   const col = it.ukat ? KAT_FARBA[it.ukat] : N.ind;
   return (
     <div {...pressable(onClick, it.nazov || "")} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, background: N.card, border: `1px solid ${N.line}`, borderLeft: `3px solid ${col}`, borderRadius: RADIUS.sm, padding: `${SPACE.sm}px ${SPACE.gutter}px`, marginBottom: SPACE.sm, cursor: "pointer" }}>
-      <Foto src={it.fotky?.[0]} emoji={it.emoji || "🗓"} w={52 * k} h={40 * k} radius={RADIUS.xs} sizes={`${52 * k}px`} alt={it.nazov} />
+      {/* úmrtie/parte = mini parte kartička (bod 23), nie surová fotka tváre */}
+      {it.smutocny ? <ParteMiniatura s={it.smutocny} w={40 * k} h={52 * k} /> : <Foto src={it.fotky?.[0]} emoji={it.emoji || "🗓"} w={52 * k} h={40 * k} radius={RADIUS.xs} sizes={`${52 * k}px`} alt={it.nazov} />}
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 13.5, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it.nazov}</div>
         <div style={{ fontSize: 11, color: N.txt2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it.popis}</div>

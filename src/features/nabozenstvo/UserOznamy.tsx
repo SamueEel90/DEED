@@ -34,27 +34,34 @@ export const ulozSelfAdd = (fid: string, v: SelfAddNastavenie) => ulozStav("self
 
 // ---- prednastavené obrázky (§5) — Unsplash mock; Foto má emoji fallback ----
 type Preset = { id: string; label: string; url: string; emoji: string };
+// bohatšia, tematizovaná knižnica (delta bod 25) — kvalitné, dôstojné, nie náhodné
+// stocky; portréty aj landscape (karta zobrazí oba pomery, contain)
 const PRESETY: Record<UserOznamTyp, Preset[]> = {
   modlitba: [
     { id: "ruky", label: "Spojené ruky", url: U("photo-1545231027-637d2f6210f8"), emoji: "🙏" },
     { id: "svieca", label: "Horiaca sviečka", url: U("photo-1514302240736-b1fee5985889"), emoji: "🕯" },
     { id: "utecha", label: "Utešujúce ruky", url: U("photo-1516585427167-9f4af9627e6c"), emoji: "🤝" },
     { id: "kriz", label: "Kríž / ruženec", url: U("photo-1507692049790-de58290a4334"), emoji: "✝️" },
+    { id: "vitraz", label: "Vitráž", url: U("photo-1548625149-fc4a29cf7092"), emoji: "⛪" },
   ],
   jubilejny: [
     { id: "torta", label: "Torta", url: U("photo-1578985545062-69928b1d9587"), emoji: "🎂" },
     { id: "kvety", label: "Kvety", url: U("photo-1490750967868-88aa4486c946"), emoji: "💐" },
     { id: "balony", label: "Balóny", url: U("photo-1530103862676-de8c9debad1d"), emoji: "🎈" },
+    { id: "pripitok", label: "Prípitok", url: U("photo-1510812431401-41d2bd2722f3"), emoji: "🥂" },
+    { id: "sviatocne", label: "Sviatočné", url: U("photo-1513151233558-d860c5398176"), emoji: "🎉" },
   ],
   podakovanie: [
     { id: "srdce", label: "Srdce", url: U("photo-1518199266791-5375a83190b7"), emoji: "❤️" },
     { id: "kvety", label: "Kvety", url: U("photo-1490750967868-88aa4486c946"), emoji: "💐" },
     { id: "ruky", label: "Spojené ruky", url: U("photo-1545231027-637d2f6210f8"), emoji: "🙏" },
+    { id: "vdaka", label: "Ďakujem", url: U("photo-1499744937866-d7e566a20a61"), emoji: "🌷" },
   ],
   // spomienkový (§4.4): foto / preset sviečka · kríž / bez
   spomienkovy: [
     { id: "svieca", label: "Sviečka", url: U("photo-1514302240736-b1fee5985889"), emoji: "🕯" },
     { id: "kriz", label: "Kríž", url: U("photo-1507692049790-de58290a4334"), emoji: "✝️" },
+    { id: "kvety", label: "Kvety", url: U("photo-1455659817273-f96807779a8a"), emoji: "🌹" },
   ],
 };
 
@@ -85,7 +92,7 @@ function ObrazokVyber({ typ, imageMode, setImageMode, presetId, setPresetId, fot
         <div {...pressable(() => setImageMode("upload"), "Vlastné foto")} style={seg(imageMode === "upload")}>Vlastné foto</div>
       </div>
       {imageMode === "preset" && (
-        <div style={{ display: "grid", gridTemplateColumns: `repeat(${PRESETY[typ].length}, 1fr)`, gap: SPACE.xs, marginTop: SPACE.sm }}>
+        <div style={{ display: "grid", gridTemplateColumns: `repeat(${Math.min(PRESETY[typ].length, 4)}, 1fr)`, gap: SPACE.xs, marginTop: SPACE.sm }}>
           {PRESETY[typ].map((p) => {
             const on = presetId === p.id;
             return (
@@ -121,6 +128,7 @@ export function UserOznamForm({ typ, farnost, autor, poplatok = 0, onPublish }: 
   const [text, setText] = useState("");        // formátovateľný text (rich) — NEZABIŤ formát (§6)
   const [bezMena, setBezMena] = useState(false); // modlitba: obsah anonymný, KYC autor v pozadí
   const [imageMode, setImageMode] = useState<ImageMode>("none");
+  const [nazovEdit, setNazovEdit] = useState(""); // headline override (bod 18)
   const [presetId, setPresetId] = useState<string | null>(null);
   const [fotky, setFotky] = useState<string[]>([]);   // vlastné foto (režim A) / vlastný obrázok (režim B)
   const [platnost, setPlatnost] = useState(String(m.ttl)); // TTL §8
@@ -162,7 +170,7 @@ export function UserOznamForm({ typ, farnost, autor, poplatok = 0, onPublish }: 
       farnostId: farnost?.id, cirkev: farnost?.cirkev ?? "",
       // hlavička = meno usera z registrácie (§2); „bez mena" = obsah anonymný, KYC v pozadí (§4.3)
       komunita: typ === "modlitba" && bezMena ? "Farník — bez mena" : autor,
-      nazov, overena: false, badgeL: `${m.emoji} OZNAM`, tag: "Oznam", emoji: m.emoji,
+      nazov: nazovEdit.trim() || nazov, overena: false, badgeL: `${m.emoji} OZNAM`, tag: "Oznam", emoji: m.emoji,
       popis: cistyText(text) || popisKratky, pribeh: text || undefined,
       datum: datum || undefined, reakciaTyp: m.reakcia,
       fotky: obrazok ? [obrazok] : undefined,
@@ -253,6 +261,10 @@ export function UserOznamForm({ typ, farnost, autor, poplatok = 0, onPublish }: 
           presetId={presetId} setPresetId={setPresetId} fotky={fotky} setFotky={setFotky} />
       </>)}
 
+      {/* NÁZOV (delta bod 18) — headline; predvyplní sa z mena/subjektu, upraviteľný */}
+      {lab("NÁZOV OZNAMU — PREDVYPLNENÝ, UPRAVITEĽNÝ")}
+      <Input value={nazovEdit} onChange={setNazovEdit} placeholder={nazov} />
+
       {/* TTL (§8) */}
       {lab("PLATNOSŤ VO FEEDE (DNÍ)")}
       <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm }}>
@@ -278,9 +290,10 @@ export function UserOznamForm({ typ, farnost, autor, poplatok = 0, onPublish }: 
               <div style={{ fontSize: 10.5, color: N.txt3, fontWeight: 700 }}>UKÁŽKA · hlavička</div>
               <div style={{ fontSize: 13.5, fontWeight: 700, marginTop: SPACE.xxs }}>{typ === "modlitba" && bezMena ? "Farník — bez mena 🔒" : autor}</div>
             </div>
-            {obrazok && <Foto src={obrazok} emoji={m.emoji} h={140} alt={nazov} />}
+            {/* bod 25: portrét aj landscape — obrázok sa zobrazí celý (contain), neoreže sa do pruhu */}
+            {obrazok && <img src={obrazok} alt={nazov} style={{ display: "block", width: "100%", height: "auto", maxHeight: 260, objectFit: "contain", background: "#111" }} />}
             <div style={{ padding: `${SPACE.sm}px ${SPACE.gutter}px ${SPACE.gutter}px` }}>
-              <div style={{ fontSize: 14.5, fontWeight: 700 }}>{m.emoji} {nazov}</div>
+              <div style={{ fontSize: 14.5, fontWeight: 700 }}>{m.emoji} {nazovEdit.trim() || nazov}</div>
               <div style={{ fontSize: 12.5, color: N.txt2, marginTop: SPACE.xxs, lineHeight: 1.5 }}>{cistyText(text) || popisKratky}</div>
             </div>
           </div>

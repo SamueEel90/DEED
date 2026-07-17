@@ -1,15 +1,20 @@
 // ============================================================
-// OZNÁMENIE O ÚMRTÍ (parte) — DEED_Oznamenie_o_Umrti_DEV.md (Martin + Fero, 6. 7. 2026;
-// nahrádza predošlý „Smútočný oznam").
-// · §0 ŽELEZNÉ: je to LEN OZNAM — žiadne peniaze, žiadna zbierka, žiadny odkaz na
-//   zbierku. Zbierky spravuje farár vo svojej samostatnej sekcii zbierok.
-// · Režim A = šablóna (1 klasická · 2 teplá so sviečkou · 3 minimalistická)
-// · Režim B = vlastné parte ako obrázok
-// · V OBOCH režimoch povinné štruktúrované polia POD oznamom (obrázok je pre
-//   oko, polia pre systém — kalendár, notifikácie, hľadanie).
+// OZNÁMENIE O ÚMRTÍ (parte) — DEED_Oznamenie_o_Umrti_DEV (Martin + Fero, 6. 7.;
+// aktualizácia 17. 7. — režim 1/2 + zobrazenie).
+// · §0: vytvára sa VŽDY ako čistý oznam (režim 1 — žiadne peniaze). Pohrebná
+//   zbierka sa dá pripojiť AŽ POTOM tlačidlom „Pridať zbierku" priamo na ozname
+//   (režim 2) — zbierka je SAMOSTATNÁ entita, formulár úmrtia jej polia nemá.
+// · Režim A = šablóna (1 klasická · 2 teplá so sviečkou · 3 minimalistická) —
+//   VŠETKY tri zobrazujú meno · dátumy+vek · verš · ROZLÚČKU (miesto+dátum+čas).
+// · Režim B = vlastné parte ako obrázok — zobrazuje sa CELÉ na výšku (portrét,
+//   neorezané), tap = zväčšiť; feed thumbnail = zmenšené celé parte.
+// · Povinné polia sa ukladajú ako DÁTA (kalendár/notifikácie/hľadanie) — ŽIADNY
+//   duplicitný panel pod oznamom (šablóna ich zobrazuje sama; pri obrázku len
+//   minimálny systémový riadok nenápadne). Delta 1 bod 24 + Delta 2 bod 4.
 // · Tvorí user (KYC, auto-publish — farár môže zmazať) ALEBO farár.
 // · TEXT formátovateľný (RichTextInput — paste z Wordu prežije, delta bod 14).
-// · Reakcia = srdiečko-kondolencia · Zdieľať · žiadne komentáre.
+// · Reakcia = srdiečko-kondolencia · Zdieľať · žiadne komentáre. Prispieť LEN
+//   v režime 2 (napojená zbierka).
 // · TTL §8: default 7 dní, nastaviteľné; nikdy neexpiruje pred rozlúčkou (+3 dni).
 // ============================================================
 import { useState } from "react";
@@ -37,20 +42,25 @@ const SABLONY: { id: 1 | 2 | 3; nazov: string; popis: string }[] = [
 const fmtDatum = (iso?: string) => (iso ? new Date(iso).toLocaleDateString("sk") : "");
 
 // ============================================================
-// RENDER OZNAMU — šablóna / obrázok + ŠTRUKTÚROVANÉ POLIA POD NÍM (spec §3)
+// RENDER OZNAMU — šablóna / obrázok. ŽIADNY duplicitný panel polí pod oznamom
+// (šablóna zobrazuje všetko sama; obrázok má len minimálny systémový riadok).
 // Pevné „papierové" farby sú zámer (parte vyzerá rovnako v oboch motívoch).
 // ============================================================
-export function SmutocnyOznamBlok({ s, onKondolencia }: { s: SmutocnyData; onKondolencia?: () => void }) {
+export function SmutocnyOznamBlok({ s, onKondolencia, onZvacsit }: { s: SmutocnyData; onKondolencia?: () => void; onZvacsit?: () => void }) {
   const vek = vekZDatumov(s.datumNar, s.datumUmr);
   const datumy = `${fmtDatum(s.datumNar)} — ${fmtDatum(s.datumUmr)}`;
+  const rozlucka = `Posledná rozlúčka ${fmtDatum(s.rozluckaDatum)} o ${s.rozluckaCas} · ${s.rozluckaMiesto}`;
   return (
     <div>
       {/* — oznam (pre oko) — */}
-      {s.mode === "image" && s.imageUrl ? (
-        <div style={{ borderRadius: RADIUS.md, overflow: "hidden", border: `1px solid ${N.line}` }}>
-          <Foto src={s.imageUrl} h={320} alt={`Smútočné parte — ${s.meno}`} />
-        </div>
-      ) : s.templateId === 2 ? (
+      {s.mode === "image" && s.imageUrl ? (<>
+        {/* bod 24: parte je dokument na výšku — zobraz CELÉ v pôvodnom pomere, tap = zväčšiť */}
+        <img src={s.imageUrl} alt={`Smútočné parte — ${s.meno}`}
+          onClick={onZvacsit}
+          style={{ display: "block", width: "100%", height: "auto", maxHeight: 560, objectFit: "contain", borderRadius: RADIUS.md, border: `1px solid ${N.line}`, background: "#111", cursor: onZvacsit ? "zoom-in" : undefined }} />
+        {/* minimálne systémové polia — nenápadne (pre kalendár/hľadanie), žiadny veľký duplicitný blok */}
+        <div style={{ fontSize: 11, color: N.txt3, textAlign: "center", marginTop: SPACE.xxs }}>{s.meno} · †{fmtDatum(s.datumUmr)} · {rozlucka}</div>
+      </>) : s.templateId === 2 ? (
         /* B — teplá: tmavá, zlaté akcenty, sviečka + „Zapáliť sviečku" (= kondolencia) */
         <div style={{ borderRadius: RADIUS.md, background: "#171412", border: "1px solid #3A3226", padding: `${SPACE.lg}px ${SPACE.md}px`, textAlign: "center", color: "#EFE6D5" }}>
           <div style={{ fontSize: 30 }}>🕯</div>
@@ -59,6 +69,9 @@ export function SmutocnyOznamBlok({ s, onKondolencia }: { s: SmutocnyData; onKon
           <div style={{ fontSize: 13, color: "#C9BBA2", marginTop: SPACE.xxs }}>{datumy}{vek != null ? ` · ${vek} rokov` : ""}</div>
           {s.foto && <div style={{ margin: `${SPACE.md}px auto 0`, width: 110, height: 110, borderRadius: "50%", overflow: "hidden", border: "2px solid #D9B36A" }}><Foto src={s.foto} h={110} w={110} alt={s.meno} /></div>}
           {s.vers && <div style={{ fontStyle: "italic", fontSize: 13.5, lineHeight: 1.6, color: "#D9CBB0", marginTop: SPACE.md, fontFamily: "Georgia, serif" }}>„{s.vers}"</div>}
+          {/* §6: aj Teplá MUSÍ zobraziť rozlúčku (bez nej stráca parte najdôležitejší praktický údaj) */}
+          <div style={{ width: 46, borderTop: "1px solid #3A3226", margin: `${SPACE.md}px auto 0` }} />
+          <div style={{ fontSize: 12.5, color: "#C9BBA2", marginTop: SPACE.sm }}>Posledná rozlúčka {fmtDatum(s.rozluckaDatum)} o {s.rozluckaCas}<br />{s.rozluckaMiesto}</div>
           {onKondolencia && (
             <button onClick={onKondolencia} style={{ marginTop: SPACE.md, padding: `${SPACE.sm}px ${SPACE.lg}px`, borderRadius: RADIUS.pill, border: "1px solid #D9B36A", background: "transparent", color: "#D9B36A", fontWeight: 700, fontSize: 13, cursor: "pointer", fontFamily: "inherit" }}>
               🕯 Zapáliť sviečku
@@ -73,6 +86,8 @@ export function SmutocnyOznamBlok({ s, onKondolencia }: { s: SmutocnyData; onKon
             <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: ".01em" }}>{s.meno}</div>
             <div style={{ fontSize: 13, color: "#6B6459", marginTop: SPACE.xxs }}>{datumy}{vek != null ? ` · ${vek} rokov` : ""}</div>
             {s.vers && <div style={{ fontStyle: "italic", fontSize: 13, color: "#6B6459", marginTop: SPACE.sm, lineHeight: 1.55 }}>„{s.vers}"</div>}
+            {/* §6: aj minimalistická zobrazuje rozlúčku */}
+            <div style={{ fontSize: 12, color: "#4C4437", marginTop: SPACE.sm }}>Posledná rozlúčka {fmtDatum(s.rozluckaDatum)} o {s.rozluckaCas} · {s.rozluckaMiesto}</div>
           </div>
         </div>
       ) : (
@@ -93,22 +108,27 @@ export function SmutocnyOznamBlok({ s, onKondolencia }: { s: SmutocnyData; onKon
       {s.text && cistyText(s.text) && (
         <FormatovanyText text={s.text} style={{ fontSize: 13.5, lineHeight: 1.55, color: N.txt2, marginTop: SPACE.sm, padding: `0 ${SPACE.xs}px` }} />
       )}
-
-      {/* — štruktúrované polia POD oznamom (povinné v OBOCH režimoch, spec §3) — */}
-      <div style={{ marginTop: SPACE.sm, background: N.card, border: `1px solid ${N.line}`, borderRadius: RADIUS.md, padding: `${SPACE.sm}px ${SPACE.gutter}px` }}>
-        <PoleRiadok k="Spomíname" v={s.meno} />
-        <PoleRiadok k="Dátumy" v={`${datumy}${vek != null ? ` · ${vek} rokov` : ""}`} />
-        {s.vers && <PoleRiadok k="Verš" v={`„${s.vers}"`} />}
-        <PoleRiadok k="Rozlúčka" v={`${s.rozluckaMiesto} · ${fmtDatum(s.rozluckaDatum)} o ${s.rozluckaCas}`} posledny />
-      </div>
+      {/* ŽIADNY duplicitný panel polí pod oznamom — šablóna ich zobrazuje sama;
+          pri obrázku je minimálny systémový riadok priamo pod parte (bod 24). */}
     </div>
   );
 }
-function PoleRiadok({ k, v, posledny }: { k: string; v: string; posledny?: boolean }) {
+
+// ============================================================
+// MINI PARTE — feed thumbnail (bod 23): do feedu ide vyrenderovaná dôstojná
+// parte kartička, NIE surová osobná fotka tváre. Obrázkový režim = zmenšené
+// celé parte (portrét, contain), šablóna = mini dlaždica s † a menom.
+// ============================================================
+export function ParteMiniatura({ s, w = 52, h = 64 }: { s: SmutocnyData; w?: number; h?: number }) {
+  if (s.mode === "image" && s.imageUrl) {
+    return <img src={s.imageUrl} alt={`Parte — ${s.meno}`} style={{ width: w, height: h, objectFit: "contain", background: "#111", borderRadius: RADIUS.xs, border: `1px solid ${N.line}`, flex: "none", display: "block" }} />;
+  }
+  const tepla = s.templateId === 2;
   return (
-    <div style={{ display: "flex", gap: SPACE.sm, padding: `${SPACE.xs}px 0`, borderBottom: posledny ? "none" : `1px solid ${N.line}`, fontSize: 12.5 }}>
-      <span style={{ flex: "none", width: 86, color: N.txt3, fontWeight: 700 }}>{k}</span>
-      <span style={{ color: N.txt, minWidth: 0 }}>{v}</span>
+    <div style={{ width: w, height: h, flex: "none", borderRadius: RADIUS.xs, overflow: "hidden", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 2, textAlign: "center", padding: 3, boxSizing: "border-box",
+      background: tepla ? "#171412" : "#F6F1E7", border: `1px solid ${tepla ? "#3A3226" : "#D8CDB8"}`, color: tepla ? "#EFE6D5" : "#2A2620", fontFamily: "Georgia, serif" }}>
+      <span style={{ fontSize: 13, lineHeight: 1, color: tepla ? "#D9B36A" : "#6B6151" }}>{tepla ? "🕯" : "†"}</span>
+      <span style={{ fontSize: 7.5, fontWeight: 700, lineHeight: 1.15, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>{s.meno}</span>
     </div>
   );
 }
@@ -133,6 +153,7 @@ export function SmutocnyForm({ farnost, autor, farar, onPublish }: {
   const [rozCas, setRozCas] = useState("");
   const [fotky, setFotky] = useState<string[]>([]);   // A: voliteľná fotka · B: samotné parte (povinné)
   const [sablona, setSablona] = useState<1 | 2 | 3>(1);
+  const [nazov, setNazov] = useState("");             // headline (bod 18) — prefill z mena, upraviteľný
   const [platnost, setPlatnost] = useState("7");      // TTL §8 — default 7 dní, nastaviteľné
   const [preview, setPreview] = useState(false);
 
@@ -159,7 +180,7 @@ export function SmutocnyForm({ farnost, autor, farar, onPublish }: {
       lat: farnost?.lat, lng: farnost?.lng, lok: farnost?.obec,
       farnostId: farnost?.id, cirkev: farnost?.cirkev ?? "",
       komunita: farar ? farnost?.nazov ?? autor : autor, overena: !!farar,
-      nazov: `Oznámenie o úmrtí — ${meno.trim()}`, badgeL: "🕯 OZNAM", tag: "Oznam", emoji: "🕯",
+      nazov: nazov.trim() || `Oznámenie o úmrtí — ${meno.trim()}`, badgeL: "🕯 OZNAM", tag: "Oznam", emoji: "🕯",
       popis: `V spomienke na ${meno.trim()}${vek != null ? ` (†${vek})` : ""} · rozlúčka ${fmtDatum(rozDatum)} o ${rozCas}, ${miesto.trim()}`,
       datum: rozDatum, ukat: "pohreb", reakciaTyp: "kondolencia",
       fotky: fotky.length ? fotky : undefined, smutocny: data,
@@ -175,9 +196,9 @@ export function SmutocnyForm({ farnost, autor, farar, onPublish }: {
       <div style={{ fontSize: 12, color: N.txt2, marginBottom: SPACE.sm, lineHeight: 1.5 }}>
         Dôstojné oznámenie úmrtia do šablóny alebo z vlastného parte. <b>Auto-publish</b> (farár/nahlásenie môže zmazať) · poistka = KYC + 10-ročný ban za falošný oznam.
       </div>
-      {/* §0 — železné pravidlo: oznam bez peňazí */}
+      {/* §0 — dva režimy: vytvára sa VŽDY ako čistý oznam; zbierka sa pripája až potom */}
       <div style={{ fontSize: 11.5, color: N.txt2, background: N.goldBg, border: `1px solid ${N.goldEdge}`, borderRadius: RADIUS.sm, padding: `${SPACE.xs}px ${SPACE.sm}px`, marginBottom: SPACE.sm, lineHeight: 1.45 }}>
-        ⚠️ <b>Je to len oznam</b> — žiadne peniaze, žiadna zbierka, žiadny odkaz na zbierku. Pohrebnú zbierku vytvára farár samostatne vo svojej sekcii zbierok.
+        ⚠️ <b>Vytvára sa ako čistý oznam</b> — formulár nemá žiadne polia zbierky. Pohrebná zbierka sa dá pripojiť <b>až na zverejnenom ozname</b> tlačidlom „Pridať zbierku" (zbierka = samostatná entita v sekcii Zbierky).
       </div>
 
       {/* režim A / B (spec §3) */}
@@ -223,9 +244,9 @@ export function SmutocnyForm({ farnost, autor, farar, onPublish }: {
       </div>
 
       {/* 5 · foto — A voliteľné · B povinný obrázok parte */}
-      {lab(mode === "image" ? "OBRÁZOK PARTE" : "FOTO — VOLITEĽNÉ", mode === "image")}
-      <FotoVyber fotky={fotky} onZmena={setFotky} max={1} />
-      {mode === "image" && <div style={{ fontSize: 11, color: N.txt3, marginTop: SPACE.xxs }}>Obrázok je pre oko — polia vyššie sú pre systém (kalendár, notifikácie, hľadanie) a zobrazia sa pod oznamom.</div>}
+      {lab(mode === "image" ? "OBRÁZOK PARTE (portrét — zobrazí sa celý, neorezaný)" : "FOTO — VOLITEĽNÉ", mode === "image")}
+      <FotoVyber fotky={fotky} onZmena={setFotky} max={1} cele={mode === "image"} />
+      {mode === "image" && <div style={{ fontSize: 11, color: N.txt3, marginTop: SPACE.xxs }}>Obrázok je pre oko — polia vyššie sú pre systém (kalendár, notifikácie, hľadanie); pod oznamom sa NEduplikujú.</div>}
 
       {/* 6 · šablóna (režim A) */}
       {mode === "template" && (<>
@@ -239,6 +260,10 @@ export function SmutocnyForm({ farnost, autor, farar, onPublish }: {
           ))}
         </div>
       </>)}
+
+      {/* NÁZOV (delta bod 18) — headline karty; predvyplní sa z mena, upraviteľný */}
+      {lab("NÁZOV OZNAMU — PREDVYPLNENÝ, UPRAVITEĽNÝ")}
+      <Input value={nazov} onChange={setNazov} placeholder={meno.trim() ? `Oznámenie o úmrtí — ${meno.trim()}` : "Oznámenie o úmrtí — …"} />
 
       {/* platnosť (TTL §8b) — default 7 dní, nastaviteľné; pri úmrtí nikdy pred rozlúčkou */}
       {lab("PLATNOSŤ VO FEEDE (DNÍ)")}
@@ -266,7 +291,7 @@ export function SmutocnyForm({ farnost, autor, farar, onPublish }: {
         </>
       )}
       {!validne && <div style={{ fontSize: 11, color: N.clay, textAlign: "center", marginTop: SPACE.xs }}>Povinné: meno · dátumy · miesto + dátum + čas rozlúčky{mode === "image" ? " · obrázok parte" : ""}.</div>}
-      <div style={{ fontSize: 10, color: N.txt3, textAlign: "center", padding: `${SPACE.sm}px 0` }}>Srdiečko = kondolencia · Zdieľať · žiadne komentáre (železné pravidlo) · žiadna zbierka ani Prispieť.</div>
+      <div style={{ fontSize: 10, color: N.txt3, textAlign: "center", padding: `${SPACE.sm}px 0` }}>Srdiečko = kondolencia · Zdieľať · žiadne komentáre (železné pravidlo) · Prispieť len s napojenou zbierkou (režim 2).</div>
     </div>
   );
 }

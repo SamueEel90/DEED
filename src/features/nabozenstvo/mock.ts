@@ -30,6 +30,8 @@ export type NabozFeedItem = CharitaFeedItem & {
   vytvorene?: number;      // timestamp publikovania (TTL oznamov §8b)
   platnostDni?: number;    // TTL — default 7 dní, nastaviteľné; pri úmrtí min. do rozlúčky + 3 dni
   spoplatnene?: boolean;   // user oznam v platenom self-add režime (nikdy prosba/smútočné — simónia)
+  autorTvar?: boolean;     // farárov oznam s tvárou v hlavičke (delta bod 20 — „akože hovorí on")
+  linkedZbierka?: boolean; // parte režim 2 — pripojená pohrebná zbierka (samostatná entita; tu len flag + ciel)
 };
 
 // ============================================================
@@ -527,6 +529,10 @@ export const vlastnePrispevkyVsetky = (fid: string): NabozFeedItem[] =>
   nacitajStav<NabozFeedItem[]>("prispevky", fid, []);
 export function zmazPrispevok(fid: string, id: string) {
   ulozStav("prispevky", fid, vlastnePrispevkyVsetky(fid).filter((it) => it.id !== id));
+}
+// úprava publikovaného príspevku (farár: „Upraviť" v moderácii · „Pridať zbierku" na parte)
+export function upravPrispevok(fid: string, id: string, patch: Partial<NabozFeedItem>) {
+  ulozStav("prispevky", fid, vlastnePrispevkyVsetky(fid).map((it) => (it.id === id ? { ...it, ...patch } : it)));
 }
 /** Vlastný (publikovaný cez appku) príspevok = jediný, ktorý sa dá reálne zmazať — demo obsah z mocku nie. */
 export const jeVlastnyPrispevok = (fid: string, id: string): boolean =>
