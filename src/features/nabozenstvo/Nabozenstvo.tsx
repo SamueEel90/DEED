@@ -26,6 +26,7 @@ import { PridatSheet } from "./Pridat";
 import {
   FEED_ITEMS, CIRKVI, CIRKVI_FLAT, HLADAJ_DATA, FARNOSTI, FARNOST_PODLA_ID, farnostIdOf, farnostiCirkvi,
   farskySplitVariant, farnostStat, obsahFarnosti, kmNum, rodinaCirkvi, rodinaZoSkratky, KAT_FARBA, reakciaToast,
+  jeVlastnyPrispevok, zmazPrispevok,
   type NabozFeedItem, type Farnost, type CirkevPolozka,
 } from "./mock";
 
@@ -510,6 +511,7 @@ function NabozDetail({ z, farar, onBack, onProfil }: { z: NabozFeedItem; farar: 
   const zdielajDetail = () => void zdielaj({ titul: z.nazov ?? "DEED", text: `${z.nazov ?? ""} — ${z.komunita || z.cirkev}`, url: aktualnaUrl() }, toast);
   const [ozvat, setOzvat] = useState(false); // „Zapojiť sa" → správa farnosti
   const [nahlasit, setNahlasit] = useState(false); // vlajka → nahlásenie obsahu
+  const [mazem, setMazem] = useState(false); // farárske mazanie — 2. ťuk potvrdí
   const jeSplit = !!z.split; // pohreb/svadba
   // §11: Overujem/Namietam LEN na Help prípadoch jednotlivcov (núdza + riziko podvodu).
   const overitelne = !!z.overitelne;
@@ -638,6 +640,20 @@ function NabozDetail({ z, farar, onBack, onProfil }: { z: NabozFeedItem; farar: 
               upvotes={ludia} onUpvote={() => toast(reakcia)} reakcia="srdce" bezDaru
               onPodpor={() => {}} onKanal={() => {}} accent={N.ind} />
             {z.ntyp === "oznam" && <div style={{ fontSize: 10.5, color: N.txt3, textAlign: "center", marginTop: SPACE.sm }}>Bez zbierky — len srdiečko a zdieľať. „Prispieť" sa objaví len ak je oznam napojený na zbierku (napr. úmrtie → pohrebná zbierka). Žiadne komentáre (železné pravidlo).</div>}
+          </div>
+        )}
+
+        {/* mazanie cez farára — auto-publish poistka („farár môže zmazať"); len na
+            publikované príspevky farníkov/farára (demo obsah z mocku sa mazať nedá) */}
+        {farar && jeVlastnyPrispevok(farnostIdOf(z), z.id) && (
+          <div {...pressable(() => {
+            if (!mazem) { setMazem(true); return; }
+            zmazPrispevok(farnostIdOf(z), z.id);
+            toast("Oznam zmazaný — farník dostane upozornenie");
+            onBack();
+          }, mazem ? "Naozaj zmazať" : "Zmazať príspevok (farár)")}
+            style={{ marginTop: SPACE.gutter, border: "1px solid color-mix(in srgb, var(--a-danger) 45%, transparent)", background: mazem ? "color-mix(in srgb, var(--a-danger) 14%, transparent)" : "transparent", borderRadius: RADIUS.sm, padding: SPACE.gutter, textAlign: "center", fontSize: 14, fontWeight: 700, color: "var(--a-danger)", cursor: "pointer" }}>
+            {mazem ? "⚠ Naozaj zmazať? Ťukni ešte raz" : "🗑 Zmazať príspevok (farár)"}
           </div>
         )}
       </div>

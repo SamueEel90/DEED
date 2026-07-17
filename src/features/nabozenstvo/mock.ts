@@ -521,6 +521,16 @@ export const farnostIdOf = (it: NabozFeedItem): string => it.farnostId ?? KOMUNI
 export const vlastnePrispevky = (fid: string): NabozFeedItem[] =>
   nacitajStav<NabozFeedItem[]>("prispevky", fid, []).filter(oznamAktivny); // TTL §8b — expirované z feedu von, záznam ostáva
 export function pridajPrispevok(fid: string, it: NabozFeedItem) { ulozStav("prispevky", fid, [it, ...nacitajStav<NabozFeedItem[]>("prispevky", fid, [])]); }
+// mazanie cez farára („farár môže zmazať" — auto-publish poistka): REÁLNE odstráni
+// záznam z úložiska (aj expirovaný — preto raw zoznam bez TTL filtra).
+export const vlastnePrispevkyVsetky = (fid: string): NabozFeedItem[] =>
+  nacitajStav<NabozFeedItem[]>("prispevky", fid, []);
+export function zmazPrispevok(fid: string, id: string) {
+  ulozStav("prispevky", fid, vlastnePrispevkyVsetky(fid).filter((it) => it.id !== id));
+}
+/** Vlastný (publikovaný cez appku) príspevok = jediný, ktorý sa dá reálne zmazať — demo obsah z mocku nie. */
+export const jeVlastnyPrispevok = (fid: string, id: string): boolean =>
+  vlastnePrispevkyVsetky(fid).some((it) => it.id === id);
 export const obsahFarnosti = (fid: string): NabozFeedItem[] =>
   [...vlastnePrispevky(fid), ...FEED_ITEMS.filter((it) => farnostIdOf(it) === fid)];
 

@@ -15,7 +15,7 @@ import type { Kanal } from "@/types";
 import { N, Overena, SheetPanel, PrehladTile, A9Potvrdenie } from "./ui";
 import { SelfAddSheet, nacitajSelfAdd } from "./UserOznamy";
 import { nacitajStav, ulozStav } from "./stav";
-import { obsahFarnosti, farnostStat, farskySplitVariant, KAT_FARBA, type Farnost, type NabozFeedItem, type NabozTyp } from "./mock";
+import { obsahFarnosti, farnostStat, farskySplitVariant, KAT_FARBA, vlastnePrispevkyVsetky, zmazPrispevok, pridajPrispevok, type Farnost, type NabozFeedItem, type NabozTyp } from "./mock";
 
 type ViditSum = "zobrazit" | "skryt" | "len-farar";
 const VIDIT_LABEL: Record<ViditSum, string> = { zobrazit: "zobraziť", skryt: "skryť", "len-farar": "len farár" };
@@ -288,7 +288,7 @@ export function FarskyProfil({ farnost, farar, jeDomovska, following, onToggleFo
           onClose={() => setSprava(false)} />
       )}
       {selfAddOpen && <SelfAddSheet farnost={farnost} onClose={() => setSelfAddOpen(false)} toast={toast} />}
-      {moderacia && <ModeraciaSheet polozky={obsah.filter((it) => it.ntyp === "oznam")} onClose={() => setModeracia(false)} toast={toast} />}
+      {moderacia && <ModeraciaSheet fid={farnost.id} onClose={() => setModeracia(false)} toast={toast} />}
       {viditOpen && (
         <ViditelnostSheet hodnota={viditSum}
           onSet={(v) => { setViditSum(v); ulozStav("viditelnost", farnost.id, v); toast(`Viditeľnosť súm: ${VIDIT_LABEL[v]} (§72)`); }}
@@ -299,21 +299,30 @@ export function FarskyProfil({ farnost, farar, jeDomovska, following, onToggleFo
   );
 }
 
-// ---- SPRÁVCA: moderácia oznamov farníkov (mock — zmazať/obnoviť) ----
+// ---- SPRÁVCA: moderácia oznamov farníkov (REÁLNE zmazať/obnoviť — localStorage) ----
 // label pre správcovský riadok „Oznamy od farníkov" — číta LS pri každom renderi (aktualizuje sa po zavretí sheetu)
 function selfAddLabel(fid: string): string {
   const v = nacitajSelfAdd(fid);
   return !v.on ? "Vypnuté" : v.poplatok > 0 ? `Zapnuté · ${v.poplatok.toFixed(2)} €` : "Zapnuté";
 }
 
-function ModeraciaSheet({ polozky, onClose, toast }: { polozky: NabozFeedItem[]; onClose: () => void; toast: (m: string) => void }) {
+function ModeraciaSheet({ fid, onClose, toast }: { fid: string; onClose: () => void; toast: (m: string) => void }) {
+  // publikované oznamy farníkov z úložiska (raw, bez TTL filtra — mazať sa dá aj expirovaný);
+  // zoznam držíme lokálne, nech „Obnoviť" funguje kým je sheet otvorený
+  const [polozky] = useState<NabozFeedItem[]>(() => vlastnePrispevkyVsetky(fid).filter((it) => it.ntyp === "oznam"));
   const [zmazane, setZmazane] = useState<Set<string>>(() => new Set());
-  const prepni = (id: string) => {
-    setZmazane((s) => { const n = new Set(s); const bol = n.has(id); bol ? n.delete(id) : n.add(id); toast(bol ? "Oznam obnovený" : "Oznam zmazaný — farník dostane upozornenie"); return n; });
+  const prepni = (it: NabozFeedItem) => {
+    setZmazane((s) => {
+      const n = new Set(s);
+      const bol = n.has(it.id);
+      if (bol) { n.delete(it.id); pridajPrispevok(fid, it); toast("Oznam obnovený"); }
+      else { n.add(it.id); zmazPrispevok(fid, it.id); toast("Oznam zmazaný — farník dostane upozornenie"); }
+      return n;
+    });
   };
   return (
     <SheetPanel title="Moderácia príspevkov" onClose={onClose}>
-      <div style={{ fontSize: 12, color: N.txt3, marginBottom: SPACE.md, lineHeight: 1.5 }}>Farár môže zmazať nevhodný oznam farníka. Zbierky a udalosti farnosti sa overujú v Charita engine — tu ich nemažeš.</div>
+      <div style={{ fontSize: 12, color: N.txt3, marginBottom: SPACE.md, lineHeight: 1.5 }}>Farár môže zmazať nevhodný oznam farníka (odstráni sa z feedu aj profilu). Zbierky a udalosti farnosti sa overujú v Charita engine — tu ich nemažeš.</div>
       {polozky.length === 0 ? (
         <EmptyState emoji="🛡" title="Žiadne oznamy na moderáciu" text="Keď farníci pridajú oznamy, objavia sa tu." />
       ) : polozky.map((it) => {
@@ -325,7 +334,7 @@ function ModeraciaSheet({ polozky, onClose, toast }: { polozky: NabozFeedItem[];
               <div style={{ fontSize: 13.5, fontWeight: 700, textDecoration: del ? "line-through" : "none", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it.nazov}</div>
               <div style={{ fontSize: 11, color: N.txt3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it.popis}</div>
             </div>
-            <button onClick={() => prepni(it.id)} style={{ flex: "none", height: 32, padding: `0 ${SPACE.gutter}px`, borderRadius: RADIUS.sm, fontFamily: "inherit", fontSize: 12, fontWeight: 700, cursor: "pointer", border: `1px solid ${del ? N.indEdge : "var(--a-danger)"}`, background: del ? N.indBg : "transparent", color: del ? N.ind : "var(--a-danger)" }}>{del ? "Obnoviť" : "Zmazať"}</button>
+            <button onClick={() => prepni(it)} style={{ flex: "none", height: 32, padding: `0 ${SPACE.gutter}px`, borderRadius: RADIUS.sm, fontFamily: "inherit", fontSize: 12, fontWeight: 700, cursor: "pointer", border: `1px solid ${del ? N.indEdge : "var(--a-danger)"}`, background: del ? N.indBg : "transparent", color: del ? N.ind : "var(--a-danger)" }}>{del ? "Obnoviť" : "Zmazať"}</button>
           </div>
         );
       })}
