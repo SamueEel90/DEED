@@ -75,6 +75,8 @@ const OZNAM: Kat = {
       polia: ["Mená snúbencov", "Dátum sobáša", "Odkaz na svadbu (voliteľné)"], feed: "farský" },
     { id: "o-smutocny", emoji: "🤍", titul: "Oznámenie o úmrtí (parte)", popis: "Šablóna alebo vlastné parte · polia pod oznamom · reakcia = kondolencia · bez zbierky", kto: "U",
       polia: ["Meno", "Dátumy + vek", "Verš", "Rozlúčka (kde + kedy)", "Foto", "Šablóna"], feed: "farský" },
+    { id: "o-spomienkovy", emoji: "🕯", titul: "Spomienkový oznam", popis: "Pamiatka — výročie úmrtia, nedožité jubileum · reakcia = kondolencia · vždy zadarmo", kto: "U",
+      polia: ["Meno zosnulého", "Príležitosť", "Dátumy nar.–zom. (voliteľné)", "Text spomienky", "Obrázok (foto/sviečka/kríž/bez)"], feed: "farský" },
     { id: "o-jubilejny", emoji: "🎂", titul: "Jubilejný", popis: "Blahoželanie jubilantovi · karta alebo vlastný obrázok", kto: "U",
       polia: ["Meno jubilanta", "Dôvod/jubileum", "Dátum", "Text", "Foto"], feed: "farský" },
     { id: "o-podakovanie", emoji: "🙏", titul: "Poďakovanie", popis: "Verejné poďakovanie · karta alebo vlastný obrázok", kto: "U",
@@ -104,7 +106,7 @@ export function PridatSheet({ farar, farnost, onClose, toast }: {
   const [split, setSplit] = useState<"pohreb" | "svadba" | null>(null);
   // self-add nastavenie farnosti (DEED_User_Oznamy_DEV.md §2) — ON/OFF + voliteľný poplatok
   const selfAdd = farnost ? nacitajSelfAdd(farnost.id) : { on: true, poplatok: 0 };
-  const USER_TYP: Record<string, UserOznamTyp> = { "o-jubilejny": "jubilejny", "o-podakovanie": "podakovanie", "o-modlitba": "modlitba" };
+  const USER_TYP: Record<string, UserOznamTyp> = { "o-jubilejny": "jubilejny", "o-podakovanie": "podakovanie", "o-modlitba": "modlitba", "o-spomienkovy": "spomienkovy" };
 
   // FORM (level 2) — mock polia + ukážka → publikovať
   if (uzol) {
@@ -236,7 +238,7 @@ const UKAT_UZLA: Record<string, UdalostKat> = {
   "u-svadba": "svadba", "u-pohreb": "pohreb", "d-brigada": "brigada", "o-umrtie": "pohreb",
 };
 const REAKCIA_UZLA: Record<string, ReakciaTyp> = {
-  "o-smutocny": "kondolencia", "o-umrtie": "kondolencia", "o-modlitba": "modlitba", "o-jubilejny": "blahozelanie",
+  "o-smutocny": "kondolencia", "o-umrtie": "kondolencia", "o-spomienkovy": "kondolencia", "o-modlitba": "modlitba", "o-jubilejny": "blahozelanie",
 };
 const NTYP_META: Record<NabozTyp, { tag: string; badge: string }> = {
   zbierka: { tag: "Zbierka", badge: "ZBIERKA" }, udalost: { tag: "Udalosť", badge: "UDALOSŤ" },

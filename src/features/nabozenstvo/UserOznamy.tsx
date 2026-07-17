@@ -1,14 +1,18 @@
 // ============================================================
-// USER OZNAMY (Jubilejný · Poďakovanie · Prosba o modlitbu)
-// DEED_User_Oznamy_DEV.md (Martin + Fero, 6. 7. 2026)
+// USER OZNAMY (Spomienkový · Jubilejný · Poďakovanie · Prosba o modlitbu)
+// DEED_User_Oznamy_DEV (Martin + Fero, 6. 7. 2026; aktualizácia 17. 7. —
+// pribudol SPOMIENKOVÝ oznam, premenovaný zo „smútočný": NIE JE to oznámenie
+// o smrti (to je samostatné parte), ale neskoršia pamiatka — výročie úmrtia,
+// nedožité jubileum, „spomíname na X". Žiadny pohreb, žiadna zbierka.)
 // · Filozofia: feed tvorí primárne farár — self-add = ODBREMENENIE farára,
 //   voliteľné (farnosť si ho zapne/vypne, prípadne spoplatní = self-funding).
-// · VŽDY ZADARMO: prosba o modlitbu + smútočné (simónia) — poplatok max
-//   pri jubileu/poďakovaní.
+// · VŽDY ZADARMO: prosba o modlitbu + spomienkový/smútočné (simónia) —
+//   poplatok max pri jubileu/poďakovaní.
 // · Režim A = jednoduchá karta (polia) · režim B = vlastný obrázok.
 //   Obrázok: prednastavené (picker §5) / vlastné foto / bez fota.
 // · TEXT formátovateľný (RichTextInput — paste z Wordu prežije, delta bod 14).
-// · Reakcia kontextová (srdiečko / „modlím sa") · žiadne komentáre · bez zbierky.
+// · Reakcia kontextová (srdiečko / „modlím sa" / kondolencia) · žiadne
+//   komentáre · bez zbierky.
 // · TTL default 7 dní (prosba dlhšie, default 9) — oznamAktivny v mock.ts.
 // ============================================================
 import { useState } from "react";
@@ -20,7 +24,7 @@ import { N, SheetPanel } from "./ui";
 import { nacitajStav, ulozStav } from "./stav";
 import type { Farnost, NabozFeedItem, ReakciaTyp } from "./mock";
 
-export type UserOznamTyp = "jubilejny" | "podakovanie" | "modlitba";
+export type UserOznamTyp = "jubilejny" | "podakovanie" | "modlitba" | "spomienkovy";
 
 // ---- nastavenie farnosti: „useri pridávajú sami" ON/OFF + voliteľný poplatok (€) ----
 export interface SelfAddNastavenie { on: boolean; poplatok: number; }
@@ -47,12 +51,18 @@ const PRESETY: Record<UserOznamTyp, Preset[]> = {
     { id: "kvety", label: "Kvety", url: U("photo-1490750967868-88aa4486c946"), emoji: "💐" },
     { id: "ruky", label: "Spojené ruky", url: U("photo-1545231027-637d2f6210f8"), emoji: "🙏" },
   ],
+  // spomienkový (§4.4): foto / preset sviečka · kríž / bez
+  spomienkovy: [
+    { id: "svieca", label: "Sviečka", url: U("photo-1514302240736-b1fee5985889"), emoji: "🕯" },
+    { id: "kriz", label: "Kríž", url: U("photo-1507692049790-de58290a4334"), emoji: "✝️" },
+  ],
 };
 
 const META: Record<UserOznamTyp, { emoji: string; titul: string; reakcia: ReakciaTyp; reakciaLabel: string; ttl: number }> = {
   jubilejny: { emoji: "🎂", titul: "Jubilejný oznam", reakcia: "blahozelanie", reakciaLabel: "❤ Srdiečko", ttl: 7 },
   podakovanie: { emoji: "🙏", titul: "Poďakovanie", reakcia: "srdce", reakciaLabel: "❤ Srdiečko", ttl: 7 },
   modlitba: { emoji: "🕊", titul: "Prosba o modlitbu", reakcia: "modlitba", reakciaLabel: "🙏 Modlím sa", ttl: 9 }, // modlitby bežia dlhšie (§8)
+  spomienkovy: { emoji: "🕯", titul: "Spomienkový oznam", reakcia: "kondolencia", reakciaLabel: "🕯 Kondolencia", ttl: 7 }, // pamiatka/výročie (§4.4)
 };
 
 const lab = (t: string, povinne?: boolean) => (
@@ -101,11 +111,13 @@ export function UserOznamForm({ typ, farnost, autor, poplatok = 0, onPublish }: 
   const m = META[typ];
   const [mode, setMode] = useState<"card" | "image">("card");
   // polia (per typ — nepoužité ostanú prázdne)
-  const [meno, setMeno] = useState("");        // jubilejný: meno jubilanta
-  const [dovod, setDovod] = useState("");      // jubilejný: dôvod/jubileum · poďakovanie: za čo
+  const [meno, setMeno] = useState("");        // jubilejný: meno jubilanta · spomienkový: meno zosnulého
+  const [dovod, setDovod] = useState("");      // jubilejný: dôvod/jubileum · poďakovanie: za čo · spomienkový: príležitosť
   const [komu, setKomu] = useState("");        // poďakovanie: komu (volit.)
   const [umysel, setUmysel] = useState("");    // modlitba: úmysel (môže byť bez mena)
   const [datum, setDatum] = useState("");      // jubilejný: dátum (volit.)
+  const [datumNar, setDatumNar] = useState(""); // spomienkový: dátumy nar.–zom. (volit.)
+  const [datumZom, setDatumZom] = useState("");
   const [text, setText] = useState("");        // formátovateľný text (rich) — NEZABIŤ formát (§6)
   const [bezMena, setBezMena] = useState(false); // modlitba: obsah anonymný, KYC autor v pozadí
   const [imageMode, setImageMode] = useState<ImageMode>("none");
@@ -114,11 +126,13 @@ export function UserOznamForm({ typ, farnost, autor, poplatok = 0, onPublish }: 
   const [platnost, setPlatnost] = useState(String(m.ttl)); // TTL §8
   const [preview, setPreview] = useState(false);
 
-  const zadarmo = typ === "modlitba"; // + smútočné (rieši SmutocnyForm) — simónia (§2)
+  const zadarmo = typ === "modlitba" || typ === "spomienkovy"; // + parte (rieši SmutocnyForm) — simónia (§2)
   const jePoplatok = !zadarmo && poplatok > 0;
 
-  // povinné podľa §4: jubilejný = meno + dôvod · poďakovanie = za čo · modlitba = úmysel; režim B navyše obrázok
-  const poviaOk = typ === "jubilejny" ? !!(meno.trim() && dovod.trim()) : typ === "podakovanie" ? !!dovod.trim() : !!umysel.trim();
+  // povinné podľa §4: jubilejný = meno + dôvod · poďakovanie = za čo · modlitba = úmysel
+  // · spomienkový = meno zosnulého + príležitosť; režim B navyše obrázok
+  const poviaOk = typ === "jubilejny" || typ === "spomienkovy" ? !!(meno.trim() && dovod.trim())
+    : typ === "podakovanie" ? !!dovod.trim() : !!umysel.trim();
   const validne = poviaOk && (mode === "card" || fotky.length > 0);
 
   const obrazok = mode === "image" ? fotky[0]
@@ -126,10 +140,18 @@ export function UserOznamForm({ typ, farnost, autor, poplatok = 0, onPublish }: 
     : imageMode === "preset" && presetId ? PRESETY[typ].find((p) => p.id === presetId)?.url
     : undefined;
 
+  // spomienkový: dátumy nar.–zom. sú voliteľné, zobrazia sa v popise (★ – ✝)
+  const fmtD = (d: string) => (d ? new Date(d).toLocaleDateString("sk") : "");
+  const rokyZivota = datumNar || datumZom ? `★ ${fmtD(datumNar) || "…"} – ✝ ${fmtD(datumZom) || "…"}` : "";
+
   const nazov = typ === "jubilejny" ? `${dovod.trim()} — ${meno.trim()}`
+    : typ === "spomienkovy" ? `Spomíname — ${meno.trim()}`
     : typ === "podakovanie" ? `Poďakovanie${komu.trim() ? ` — ${komu.trim()}` : ""}`
     : "Prosba o modlitbu";
-  const popisKratky = typ === "podakovanie" ? `Za: ${dovod.trim()}` : typ === "modlitba" ? umysel.trim() : (cistyText(text) || m.titul);
+  const popisKratky = typ === "podakovanie" ? `Za: ${dovod.trim()}`
+    : typ === "modlitba" ? umysel.trim()
+    : typ === "spomienkovy" ? [dovod.trim(), rokyZivota].filter(Boolean).join(" · ")
+    : (cistyText(text) || m.titul);
 
   function publikuj() {
     if (!validne) return;
@@ -160,7 +182,7 @@ export function UserOznamForm({ typ, farnost, autor, poplatok = 0, onPublish }: 
       {/* poplatok / zadarmo (§2 — self-funding vs simónia) */}
       {zadarmo ? (
         <div style={{ fontSize: 11.5, fontWeight: 700, color: N.green, background: N.greenBg, border: `1px solid ${N.greenEdge}`, borderRadius: RADIUS.sm, padding: `${SPACE.xs}px ${SPACE.sm}px`, marginBottom: SPACE.sm }}>
-          🕊 VŽDY ZADARMO — prosba o modlitbu sa nikdy nespoplatňuje (ani v platenom režime).
+          🕊 VŽDY ZADARMO — {typ === "spomienkovy" ? "spomienkový oznam sa nikdy nespoplatňuje (ako smútočné)" : "prosba o modlitbu sa nikdy nespoplatňuje"} (ani v platenom režime).
         </div>
       ) : jePoplatok ? (
         <div style={{ fontSize: 11.5, color: N.txt2, background: N.goldBg, border: `1px solid ${N.goldEdge}`, borderRadius: RADIUS.sm, padding: `${SPACE.xs}px ${SPACE.sm}px`, marginBottom: SPACE.sm }}>
@@ -192,6 +214,23 @@ export function UserOznamForm({ typ, farnost, autor, poplatok = 0, onPublish }: 
         <Input value={komu} onChange={setKomu} placeholder="napr. dobrovoľníkom z farnosti" />
         {lab("TEXT — VOLITEĽNÉ")}
         <RichTextInput minH={80} value={text} onChange={setText} placeholder="Napíš poďakovanie… Formát aj vloženie z Wordu prežijú." />
+      </>)}
+      {typ === "spomienkovy" && (<>
+        {/* §4.4 — pamiatka/výročie: NIE JE oznámenie o smrti (to je samostatné parte) */}
+        <div style={{ fontSize: 11.5, color: N.txt3, background: N.card, border: `1px solid ${N.line}`, borderRadius: RADIUS.sm, padding: `${SPACE.xs}px ${SPACE.sm}px`, marginBottom: SPACE.xxs, lineHeight: 1.45 }}>
+          Spomienka na zosnulého — výročie úmrtia, nedožité jubileum. Oznámenie o úmrtí (parte) je samostatný typ oznamu.
+        </div>
+        {lab("MENO ZOSNULÉHO", true)}
+        <Input value={meno} onChange={setMeno} placeholder="napr. Jozef Novák" />
+        {lab("PRÍLEŽITOSŤ", true)}
+        <Input value={dovod} onChange={setDovod} placeholder="napr. 1. výročie úmrtia · nedožitých 80 rokov" />
+        {lab("DÁTUMY NAR. – ZOM. — VOLITEĽNÉ")}
+        <div style={{ display: "flex", gap: SPACE.xs }}>
+          <div style={{ flex: 1 }}><Input value={datumNar} onChange={setDatumNar} type="date" /></div>
+          <div style={{ flex: 1 }}><Input value={datumZom} onChange={setDatumZom} type="date" /></div>
+        </div>
+        {lab("TEXT SPOMIENKY — VOLITEĽNÉ")}
+        <RichTextInput minH={80} value={text} onChange={setText} placeholder="Spomíname… Formát aj vloženie z Wordu prežijú." />
       </>)}
       {typ === "modlitba" && (<>
         {lab("ÚMYSEL — ZA KOHO / ZA ČO", true)}
@@ -253,7 +292,7 @@ export function UserOznamForm({ typ, farnost, autor, poplatok = 0, onPublish }: 
       )}
       {!validne && (
         <div style={{ fontSize: 11, color: N.clay, textAlign: "center", marginTop: SPACE.xs }}>
-          Povinné: {typ === "jubilejny" ? "meno jubilanta · dôvod" : typ === "podakovanie" ? "za čo" : "úmysel"}{mode === "image" ? " · vlastný obrázok" : ""}.
+          Povinné: {typ === "jubilejny" ? "meno jubilanta · dôvod" : typ === "spomienkovy" ? "meno zosnulého · príležitosť" : typ === "podakovanie" ? "za čo" : "úmysel"}{mode === "image" ? " · vlastný obrázok" : ""}.
         </div>
       )}
       <div style={{ fontSize: 10, color: N.txt3, textAlign: "center", padding: `${SPACE.sm}px 0` }}>Žiadne komentáre — železné pravidlo platformy. Feed tvorí primárne farár; self-add ho odbremeňuje.</div>
