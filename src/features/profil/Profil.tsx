@@ -225,7 +225,7 @@ function PrehladZaujmy() {
 
       {/* TVOJE ZÁUJMY — accordion: kategória → detailné pod-položky (číselník z registrácie §6.2). */}
       <div style={{ marginTop: SPACE.md }}>
-        <div style={{ fontSize: 10.5, letterSpacing: ".5px", color: C.textTer, fontWeight: 700, margin: "0 0 9px", textAlign: "center" }}>TVOJE ZÁUJMY</div>
+        <div style={{ fontSize: 10.5, letterSpacing: ".5px", color: C.textTer, fontWeight: 700, margin: "0 0 9px", textAlign: "center" }}>BODY ZÁUJMU — POZVÁNKY Z OKOLIA</div>
         <div style={{ display: "flex", flexDirection: "column", gap: SPACE.xs }}>
           {ZAUJMY_KATALOG.map((z) => {
             const otvor = otvorenaOblast === z.oblast;
@@ -255,7 +255,7 @@ function PrehladZaujmy() {
             );
           })}
         </div>
-        <div style={{ fontSize: 11, color: C.textTer, lineHeight: 1.5, marginTop: SPACE.sm, textAlign: "center" }}>Ladia odporúčania v „Okolí" a napĺňajú „Môj DEED". Vyňaté z filtra feedu — feed ostáva pestrý.</div>
+        <div style={{ fontSize: 11, color: C.textTer, lineHeight: 1.5, marginTop: SPACE.sm, textAlign: "center" }}>Nevyberáš si, čo budeš pozerať — vyberáš si, kam ťa smú pozvať. Témy ladia nástenku a oznamy; feed skutkov ich nečíta.</div>
       </div>
     </>
   );

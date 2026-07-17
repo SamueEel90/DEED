@@ -33,7 +33,9 @@ export type NabozFeedItem = CharitaFeedItem & {
 };
 
 // ============================================================
-// SMÚTOČNÝ OZNAM (úmrtie) — DEED_Smutocny_Oznam_DEV.md
+// OZNÁMENIE O ÚMRTÍ (parte) — DEED_Oznamenie_o_Umrti_DEV.md
+// (nahrádza predošlý „Smútočný oznam"). Je to LEN OZNAM — žiadne pole
+// zbierky (§0); zbierka je samostatná entita v sekcii zbierok farára.
 // Režim A = šablóna (1/2/3) · režim B = vlastné parte (obrázok).
 // V OBOCH režimoch povinné štruktúrované polia — zobrazené POD oznamom
 // (obrázok je pre oko, polia pre systém: kalendár, notifikácie, hľadanie).
@@ -50,6 +52,7 @@ export interface SmutocnyData {
   rozluckaDatum: string;         // ISO deň (povinné)
   rozluckaCas: string;           // HH:MM (povinné)
   foto?: string;                 // režim A — voliteľná fotka do šablóny
+  text?: string;                 // voliteľný formátovateľný text (rich — §5, zachovať formát)
 }
 
 // vek sa dopočíta z dátumov (spec §4.2)

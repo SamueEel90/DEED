@@ -14,6 +14,7 @@ export const ME = {
   podpory: "deed.me.podpory.v1",
   oblubene: "deed.me.oblubene.v1",
   zbierky: "deed.me.zbierky.v1",
+  sekcie: "deed.me.sekcie.v1",
 };
 const LEGACY_FOLLOWS = "deed.aktivity.follows.v1"; // { [meno]: true } — staré sledovanie z Aktivít
 const LEGACY_MIGROVANE = "deed.me.sledovani.migrated.v1"; // flag: legacy import už prebehol (jednorazový)
@@ -73,6 +74,10 @@ export function nacitajLokalne(): Omit<PersonalizaciaStav, "nacitavam"> {
   };
 }
 export const ulozZaujmy = (z: Zaujem[]) => save(ME.zaujmy, z);
+// SEKCIE (Pozvánky/Záujmy v1.1 §1 krok A) — prepínače modulov appky.
+// Default všetko zapnuté: modul, ktorý v mape chýba, sa berie ako zapnutý.
+export const ulozSekcie = (s: Record<string, boolean>) => save(ME.sekcie, s);
+export const nacitajSekcie = (): Record<string, boolean> => load(ME.sekcie, {});
 export const ulozSledovani = (s: Sledovanie[]) => save(ME.sledovani, s);
 export const ulozPodpory = (p: Podpora[]) => save(ME.podpory, p);
 export const ulozOblubene = (o: Oblubeny[]) => save(ME.oblubene, o);

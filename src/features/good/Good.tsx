@@ -200,10 +200,10 @@ function Home({ wide, toast, otvorModul, pohlad, setPohlad, radius, setRadius, o
   const ja = usePouzivatel();
   const { desktop } = useLayout();
   const { gate } = useTvorbaGate();
-  const { zaujmyKluce, sledovaniMena } = usePersonalizacia();
+  const { sledovaniMena } = usePersonalizacia();
   const lok = useLokalita(); // aktívne mesto = stred feedu (prepínateľné)
-  // personalizácia: záujmy + sledovaní vstupujú do afinitnej váhy (re-rank, NIE filter)
-  const user: FeedUser = { lat: lok.lat, lng: lok.lng, radius, zaujmy: zaujmyKluce, sledovani: sledovaniMena };
+  // afinita = LEN sledovaní (re-rank, NIE filter) — témy feed nečíta (v1.1 kánon)
+  const user: FeedUser = { lat: lok.lat, lng: lok.lng, radius, sledovani: sledovaniMena };
 
   // FEED ALGORITMUS (Časť B): životnosť → rádius + adaptívny prah →
   // frekvenčný strop → zoradenie. Veľkosť karty (Časť A) cez zobrazVelkost.
@@ -1301,11 +1301,15 @@ export function GoodBoard({ onBack, onEvent, toast }: { onBack: () => void; onEv
       </div>
       </>)}
 
-      {/* filtrovací riadok — [Kde ▾][Kedy ▾] pripnuté │ témy posuvné (spec §1) */}
-      <div style={{ display: "flex", alignItems: "center", gap: SPACE.xs, padding: `${SPACE.xs}px ${SPACE.md}px` }}>
-        <div {...pressable(() => setVyberKde(true), "Kde — zmeniť okolie (platí pre celú appku)")} style={chip(true)}>📍 {kdeLabel} ▾</div>
-        <div {...pressable(() => setVyberKedy(true), "Kedy — zmeniť obdobie")} style={chip(true)}>{kedyLabel} ▾</div>
-        <div style={{ width: 1, alignSelf: "stretch", borderLeft: `1px dashed ${C.line}`, flex: "none" }} />
+      {/* filtrovací riadok — [Kde ▾][Kedy ▾] pripnuté │ témy posuvné (spec §1).
+          Desktop = jeden riadok; mobil = DVA riadky (oprava 17. 7. — pevné chipy zaberú
+          šírku a témy nevidno; takto vidno bez posúvania aspoň 4 tematické chipy). */}
+      <div style={{ display: "flex", flexDirection: wide ? "row" : "column", alignItems: wide ? "center" : "stretch", gap: SPACE.xs, padding: `${SPACE.xs}px ${SPACE.md}px` }}>
+        <div style={{ display: "flex", gap: SPACE.xs, flex: "none" }}>
+          <div {...pressable(() => setVyberKde(true), "Kde — zmeniť okolie (platí pre celú appku)")} style={chip(true)}>📍 {kdeLabel} ▾</div>
+          <div {...pressable(() => setVyberKedy(true), "Kedy — zmeniť obdobie")} style={chip(true)}>{kedyLabel} ▾</div>
+        </div>
+        {wide && <div style={{ width: 1, alignSelf: "stretch", borderLeft: `1px dashed ${C.line}`, flex: "none" }} />}
         <div style={{ display: "flex", gap: SPACE.xs, overflowX: "auto", minWidth: 0 }}>
           <div {...pressable(() => setTema("all"), "Téma: všetko")} style={chip(tema === "all")}>Všetko</div>
           {NASTENKA_TEMY.map((t) => (
@@ -1354,7 +1358,7 @@ export function GoodBoard({ onBack, onEvent, toast }: { onBack: () => void; onEv
 
 // ===================== DETAIL UDALOSTI =====================
 // Exportovaný — detail udalosti z komunitnej nástenky (zdieľaný do Help/Charita).
-export function GoodEvent({ id, onBack, toast, oslavuj }: { id: string | null; onBack: () => void; toast: (m: string) => void; oslavuj: (suma: number, komu: string) => void }) {
+export function GoodEvent({ id, onBack, toast }: { id: string | null; onBack: () => void; toast: (m: string) => void; oslavuj?: (suma: number, komu: string) => void }) {
   const { data: EVENTS = [] } = useGoodUdalosti();
   const e: Udalost | undefined = EVENTS.find((x) => x.id === id);
   if (!e) return null;
@@ -1374,11 +1378,12 @@ export function GoodEvent({ id, onBack, toast, oslavuj }: { id: string | null; o
         </div>
         <p style={{ color: C.textSec, fontSize: 13, lineHeight: 1.55, marginTop: SPACE.sm }}>{e.desc}</p>
 
+        {/* karma sa NEpripisuje za prihlásenie — len z overenej QR dochádzky (schválená oprava 16. 7.) */}
         <div style={{ background: "color-mix(in srgb, var(--a-info) 7%, transparent)", border: "1px solid color-mix(in srgb, var(--a-info) 22%, transparent)", borderRadius: RADIUS.sm, padding: `${SPACE.sm}px ${SPACE.sm}px`, marginTop: SPACE.sm, fontSize: 12, color: C.blueL, lineHeight: 1.5 }}>
-          Po prihlásení dostaneš pripomienku a QR vstupenku. Účasť sa pripíše do tvojich aktivít a karmy.
+          Po prihlásení dostaneš pripomienku a QR vstupenku.
         </div>
 
-        <button onClick={() => { toast(`Prihlásené na: ${e.title}`); oslavuj(20, "komunitu"); }}
+        <button onClick={() => toast(`Prihlásené na: ${e.title}`)}
           style={{ width: "100%", height: 50, borderRadius: RADIUS.sm, background: GRAD, border: "none", color: "#fff", fontWeight: 700, fontSize: 15, cursor: "pointer", marginTop: SPACE.md, boxShadow: "0 8px 26px color-mix(in srgb, var(--a-green) 32%, transparent)" }}>
           Zúčastním sa
         </button>

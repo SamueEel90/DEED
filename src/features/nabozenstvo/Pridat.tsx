@@ -69,11 +69,11 @@ const OZNAM: Kat = {
   uzly: [
     { id: "o-zmena", emoji: "🔔", titul: "Zmenové (omša nebude / zmena programu)", popis: "Notifikácia default zapnutá", kto: "F",
       polia: ["Text", "Platnosť od–do (voliteľné)"], feed: "farský · notif default ON" },
-    { id: "o-umrtie", emoji: "🕯", titul: "Úmrtie", popis: "Odkaz na pohrebnú zbierku", kto: "R→F",
-      polia: ["Meno zosnulého (+ súhlas)", "Foto (voliteľné)", "Odkaz na pohreb"], akcie: ["Prispieť"], feed: "iba farský" },
+    { id: "o-umrtie", emoji: "🕯", titul: "Oznámenie o úmrtí (parte)", popis: "Šablóna alebo vlastné parte · LEN oznam — bez zbierky (zbierku vytvor v Zbierkach)", kto: "F",
+      polia: ["Meno", "Dátumy + vek", "Verš", "Rozlúčka (kde + kedy)", "Foto", "Šablóna"], feed: "farský" },
     { id: "o-ohlasky", emoji: "💍", titul: "Ohlášky", popis: "Mená snúbencov + dátum sobáša", kto: "F",
       polia: ["Mená snúbencov", "Dátum sobáša", "Odkaz na svadbu (voliteľné)"], feed: "farský" },
-    { id: "o-smutocny", emoji: "🤍", titul: "Smútočný oznam (úmrtie)", popis: "Šablóna alebo vlastné parte · polia pod oznamom · reakcia = kondolencia", kto: "U",
+    { id: "o-smutocny", emoji: "🤍", titul: "Oznámenie o úmrtí (parte)", popis: "Šablóna alebo vlastné parte · polia pod oznamom · reakcia = kondolencia · bez zbierky", kto: "U",
       polia: ["Meno", "Dátumy + vek", "Verš", "Rozlúčka (kde + kedy)", "Foto", "Šablóna"], feed: "farský" },
     { id: "o-jubilejny", emoji: "🎂", titul: "Jubilejný", popis: "Blahoželanie jubilantovi · karta alebo vlastný obrázok", kto: "U",
       polia: ["Meno jubilanta", "Dôvod/jubileum", "Dátum", "Text", "Foto"], feed: "farský" },
@@ -113,10 +113,10 @@ export function PridatSheet({ farar, farnost, onClose, toast }: {
       <>
         <SheetPanel title={uzol.titul} onClose={onClose}>
           <BackRiadok onBack={() => setUzol(null)} label={farar ? (kat?.titul ?? "Späť") : "Pridať oznam"} />
-          {uzol.id === "o-smutocny" ? (
-            /* dedikovaný formulár (DEED_Smutocny_Oznam_DEV.md) — šablóna/parte, povinné polia, TTL */
-            <SmutocnyForm farnost={farnost} autor={celeMeno || "Farník"}
-              onPublish={(it) => { if (farnost) pridajPrispevok(farnost.id, it); toast("Smútočný oznam zverejnený (auto-publish · farár môže zmazať) 🕯"); onClose(); }} />
+          {uzol.id === "o-smutocny" || uzol.id === "o-umrtie" ? (
+            /* dedikované parte (DEED_Oznamenie_o_Umrti_DEV.md) — šablóna/obrázok, povinné polia, TTL, BEZ zbierky (§0) */
+            <SmutocnyForm farnost={farnost} autor={celeMeno || "Farník"} farar={farar}
+              onPublish={(it) => { if (farnost) pridajPrispevok(farnost.id, it); toast(farar ? "Oznámenie o úmrtí zverejnené 🕯" : "Oznámenie o úmrtí zverejnené (auto-publish · farár môže zmazať) 🕯"); onClose(); }} />
           ) : userTyp ? (
             /* user oznamy (DEED_User_Oznamy_DEV.md) — jubilejný/poďakovanie/prosba, 2 režimy + obrázok */
             <UserOznamForm typ={userTyp} farnost={farnost} autor={celeMeno || "Farník"} poplatok={selfAdd.poplatok}

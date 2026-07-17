@@ -1,7 +1,9 @@
 // ============================================================
 // DEED · Registrácia — Fyzická osoba (§13)
-// Aktívny tok (8 krokov, plný účet) — auth-first. Pasívny režim už nie je
+// Aktívny tok (9 krokov, plný účet) — auth-first. Pasívny režim už nie je
 // voľbou v registrácii (ideme rovno aktívnym tokom).
+// Pôvodný krok „záujmy" SA RUŠÍ (Pozvánky/Záujmy v1.1 §1) — nahradili ho
+// dva kroky: Sekcie (moduly appky) + Pozvánky z okolia (body záujmu).
 // Stavový automat (krok) v tomto súbore; univerzálne kroky
 // (telefón+SMS, zabezpečenie) sa preberajú z RegKit.
 // ============================================================
@@ -20,6 +22,8 @@ import {
   KrokZabezpecenie,
 } from "./RegKit";
 import { ZOBRAZENIE_VOLBY, type ZobrazenieRezim } from "./mock";
+import { CISELNIK_V2, UKAZKA_OZNAMU, UKAZKA_OZNAMU_FALLBACK, SEKCIE_MODULY } from "./ciselnikV2";
+import { ulozSekcie } from "@/lib/personalizaciaStore";
 
 // ---- stavový automat ----
 type Krok =
@@ -31,7 +35,8 @@ type Krok =
   | "a5"
   | "a6"
   | "a7"
-  | "a8";
+  | "a8"
+  | "a9";
 
 // účet po vytvorení (RegKit → KrokTelefonSms)
 interface Ucet {
@@ -118,7 +123,7 @@ export function OsobaFlow({ onHotovo, onSpat, toast, startKrok = "vidlicka", aut
     return (
       <KrokTelefonSms
         step={1}
-        total={8}
+        total={9}
         typ="aktivny"
         onBack={onSpat}
         onHotovo={(u: Ucet) => {
@@ -136,7 +141,7 @@ export function OsobaFlow({ onHotovo, onSpat, toast, startKrok = "vidlicka", aut
     return (
       <KrokZabezpecenie
         step={2}
-        total={8}
+        total={9}
         ucetId={ucet?.id ?? ""}
         onBack={() => goto("a1")}
         onHotovo={() => {
@@ -164,73 +169,86 @@ export function OsobaFlow({ onHotovo, onSpat, toast, startKrok = "vidlicka", aut
     );
   }
 
-  // KROK 4 — Záujmy
+  // KROK 4 — Sekcie (Pozvánky/Záujmy v1.1 §1 krok A)
   if (krok === "a4") {
     return (
-      <KrokZaujmy
-        ucet={ucet}
-        toast={toast}
+      <KrokSekcie
         onBack={() => goto("a3")}
         onNext={() => {
-          if (ucet) ulozStavTicho(ucet.id, "zobrazenie");
+          if (ucet) ulozStavTicho(ucet.id, "zaujmy");
           goto("a5");
         }}
       />
     );
   }
 
-  // KROK 5 — Zobrazenie
+  // KROK 5 — Pozvánky z okolia (v1.1 §1 krok B, nepovinný)
   if (krok === "a5") {
     return (
-      <KrokZobrazenie
+      <KrokPozvanky
         ucet={ucet}
         toast={toast}
         onBack={() => goto("a4")}
         onNext={() => {
-          if (ucet) ulozStavTicho(ucet.id, "foto");
+          if (ucet) ulozStavTicho(ucet.id, "zobrazenie");
           goto("a6");
         }}
       />
     );
   }
 
-  // KROK 6 — Foto (nepovinné)
+  // KROK 6 — Zobrazenie
   if (krok === "a6") {
     return (
-      <KrokFoto
-        meno={profilMeno}
+      <KrokZobrazenie
+        ucet={ucet}
+        toast={toast}
         onBack={() => goto("a5")}
         onNext={() => {
-          if (ucet) ulozStavTicho(ucet.id, "kyc");
+          if (ucet) ulozStavTicho(ucet.id, "foto");
           goto("a7");
         }}
       />
     );
   }
 
-  // KROK 7 — KYC
+  // KROK 7 — Foto (nepovinné)
   if (krok === "a7") {
     return (
-      <KrokKyc
-        ucet={ucet}
-        toast={toast}
+      <KrokFoto
+        meno={profilMeno}
         onBack={() => goto("a6")}
         onNext={() => {
-          if (ucet) ulozStavTicho(ucet.id, "vyhlasenie");
+          if (ucet) ulozStavTicho(ucet.id, "kyc");
           goto("a8");
         }}
       />
     );
   }
 
-  // KROK 8 — Čestné vyhlásenie + briefing
+  // KROK 8 — KYC
   if (krok === "a8") {
+    return (
+      <KrokKyc
+        ucet={ucet}
+        toast={toast}
+        onBack={() => goto("a7")}
+        onNext={() => {
+          if (ucet) ulozStavTicho(ucet.id, "vyhlasenie");
+          goto("a9");
+        }}
+      />
+    );
+  }
+
+  // KROK 9 — Čestné vyhlásenie + briefing
+  if (krok === "a9") {
     return (
       <KrokVyhlasenie
         ucet={ucet}
         meno={profilMeno}
         toast={toast}
-        onBack={() => goto("a7")}
+        onBack={() => goto("a8")}
         onHotovo={onHotovo}
       />
     );
@@ -329,7 +347,45 @@ function KrokUdaje({ ucet, toast, onBack, onNext }: KrokUdajeProps) {
 }
 
 // ============================================================
-// KROK 4 — Záujmy (accordion z číselníka)
+// KROK 4 — Sekcie (Pozvánky/Záujmy v1.1 §1 krok A)
+// Prepínače modulov — čo chceš v appke vidieť. Default všetko zapnuté,
+// meniteľné v profile. Mock: localStorage (deed.me.sekcie.v1).
+// ============================================================
+function KrokSekcie({ onBack, onNext }: { onBack: () => void; onNext: () => void }) {
+  const [sekcie, setSekcie] = useState<Record<string, boolean>>(() =>
+    Object.fromEntries(SEKCIE_MODULY.map((m) => [m.id, true]))
+  );
+  const toggle = (id: string) => setSekcie((s) => ({ ...s, [id]: !s[id] }));
+
+  return (
+    <Shell
+      title="Sekcie"
+      step={4}
+      total={9}
+      onBack={onBack}
+      footer={<Patka onBack={onBack} onNext={() => { ulozSekcie(sekcie); onNext(); }} canNext />}
+    >
+      <Otazka>Čo chceš v appke vidieť?</Otazka>
+      {SEKCIE_MODULY.map((m) => (
+        <Prepinac
+          key={m.id}
+          on={!!sekcie[m.id]}
+          onToggle={() => toggle(m.id)}
+          title={`${m.emoji} ${m.label}`}
+          desc={m.desc}
+        />
+      ))}
+      <div style={infoBox}>Všetko je predvolene zapnuté — kedykoľvek to zmeníš v profile.</div>
+    </Shell>
+  );
+}
+
+// ============================================================
+// KROK 5 — Pozvánky z okolia (v1.1 §1 krok B, nepovinný)
+// „Nevyberáš si, čo budeš pozerať — vyberáš si, kam ťa smú pozvať."
+// Číselník v2 (vetva appka + pozvánková), ukážka oznamu pri prvom
+// zakliknutí (raz za session), vlastný tag = SÚKROMNÝ, Preskočiť viditeľné.
+// Témy ovplyvňujú VÝHRADNE nástenku a oznamy — feed skutkov ich nečíta.
 // ============================================================
 interface ZaujemVyber {
   oblast: string;
@@ -337,42 +393,39 @@ interface ZaujemVyber {
   vlastny: boolean;
 }
 
-interface KrokZaujmyProps {
+const UKAZKA_SESSION_KLUC = "deed.reg.ukazkaOznamu.v1"; // raz za session
+
+interface KrokPozvankyProps {
   ucet: Ucet | null;
   toast?: ToastFn;
   onBack: () => void;
   onNext: () => void;
 }
 
-function KrokZaujmy({ ucet, toast, onBack, onNext }: KrokZaujmyProps) {
-  const [skupiny, setSkupiny] = useState<any[] | null>(null); // null = načítava sa
+function KrokPozvanky({ ucet, toast, onBack, onNext }: KrokPozvankyProps) {
   const [vyber, setVyber] = useState<ZaujemVyber[]>([]); // [{oblast, pod_polozka, vlastny}]
+  const [ukazka, setUkazka] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    let zive = true;
-    (async () => {
-      try {
-        const data = await db.nacitajCiselnikZaujmov();
-        if (zive) setSkupiny(data || []);
-      } catch (e: any) {
-        toast?.("Chyba: " + e.message);
-        if (zive) setSkupiny([]);
-      }
-    })();
-    return () => {
-      zive = false;
-    };
-  }, []);
+  // ukážka oznamu pri prvom zakliknutí témy — mock podľa zakliknutej témy, raz za session
+  const ukazUkazku = (oblast: string) => {
+    try {
+      if (sessionStorage.getItem(UKAZKA_SESSION_KLUC)) return;
+      sessionStorage.setItem(UKAZKA_SESSION_KLUC, "1");
+    } catch { /* private mode — ukážku len zobrazíme */ }
+    setUkazka(UKAZKA_OZNAMU[oblast] ?? UKAZKA_OZNAMU_FALLBACK);
+  };
 
   const jeVybrane = (o: string, h: string) =>
     vyber.some((x) => x.oblast === o && x.pod_polozka === h);
   const onToggle = (o: string, h: string) =>
-    setVyber((s) =>
-      s.some((x) => x.oblast === o && x.pod_polozka === h)
+    setVyber((s) => {
+      const uz = s.some((x) => x.oblast === o && x.pod_polozka === h);
+      if (!uz) ukazUkazku(o);
+      return uz
         ? s.filter((x) => !(x.oblast === o && x.pod_polozka === h))
-        : [...s, { oblast: o, pod_polozka: h, vlastny: false }]
-    );
+        : [...s, { oblast: o, pod_polozka: h, vlastny: false }];
+    });
   const onVlastny = (o: string, t: string) => {
     const v = t.trim();
     if (!v) return;
@@ -384,7 +437,7 @@ function KrokZaujmy({ ucet, toast, onBack, onNext }: KrokZaujmyProps) {
   };
 
   const uloz = async () => {
-    if (!ucet) return;
+    if (!ucet || vyber.length === 0) return onNext(); // nič nevybraté = preskočenie
     setLoading(true);
     try {
       await db.ulozZaujmy(ucet.id, vyber);
@@ -397,30 +450,62 @@ function KrokZaujmy({ ucet, toast, onBack, onNext }: KrokZaujmyProps) {
 
   return (
     <Shell
-      title="Tvoje záujmy"
-      step={4}
-      total={8}
+      title="Pozvánky z okolia"
+      step={5}
+      total={9}
       onBack={onBack}
-      footer={<Patka onBack={onBack} onNext={uloz} canNext loading={loading} />}
+      footer={
+        <div style={{ display: "flex", gap: SPACE.sm }}>
+          {/* Preskočiť — viditeľné, bez guilt-tripu (spec §1 krok B) */}
+          <button
+            onClick={onNext}
+            disabled={loading}
+            style={{ flex: "0 0 auto", padding: `${SPACE.md}px ${SPACE.lg}px`, borderRadius: RADIUS.md, background: "rgba(var(--glass-rgb),.05)", color: C.textSec, border: `1px solid ${C.line}`, fontWeight: 700, fontSize: 15.5, cursor: "pointer", fontFamily: "inherit" }}
+          >
+            Preskočiť
+          </button>
+          <button
+            onClick={uloz}
+            disabled={loading}
+            style={{ flex: 1, padding: `${SPACE.md}px 0`, borderRadius: RADIUS.md, background: GRAD, color: "#fff", border: "none", fontWeight: 700, fontSize: 15.5, cursor: "pointer", fontFamily: "inherit", opacity: loading ? 0.6 : 1, boxShadow: "0 8px 26px color-mix(in srgb, var(--a-green) 32%, transparent), inset 0 1px 0 rgba(255,255,255,.25)" }}
+          >
+            {loading ? "Ukladám…" : "Pokračovať"}
+          </button>
+        </div>
+      }
     >
-      <Otazka>Čo ťa baví? (nepovinné — pomôže nám naladiť feed)</Otazka>
-      {skupiny === null ? (
-        <div style={{ textAlign: "center", padding: `${SPACE.xl}px ${SPACE.gutter}px`, color: C.textTer, fontSize: 13.5 }}>
-          Načítavam záujmy…
+      {/* úvodný text — kánon, presné znenie (spec §1 krok B) */}
+      <Otazka>Chceš dostávať oznámenia o akciách a podujatiach z tvojho okolia? Ak áno, vyber si svoje body záujmu.</Otazka>
+      <div style={{ fontSize: 13, color: C.textTer, lineHeight: 1.5, margin: `-4px 0 ${SPACE.gutter}px` }}>
+        Nepovinné — kedykoľvek sa k tomu vrátiš vo svojom profile.
+      </div>
+
+      {/* ukážka oznamu — mock notifikácia podľa prvej zakliknutej témy */}
+      {ukazka && (
+        <div style={{ display: "flex", gap: SPACE.sm, alignItems: "flex-start", background: "color-mix(in srgb, var(--a-info) 9%, transparent)", border: "1px solid color-mix(in srgb, var(--a-info) 28%, transparent)", borderRadius: RADIUS.md, padding: `${SPACE.sm}px ${SPACE.gutter}px`, marginBottom: SPACE.gutter }}>
+          <span style={{ fontSize: 16, flex: "none" }}>🔔</span>
+          <div>
+            <div style={{ fontSize: 10.5, fontWeight: 800, color: C.blueL, letterSpacing: ".4px", marginBottom: 2 }}>TAKTO BUDE VYZERAŤ OZNAM</div>
+            <div style={{ fontSize: 12.5, color: C.text, lineHeight: 1.45 }}>{ukazka}</div>
+          </div>
         </div>
-      ) : skupiny.length === 0 ? (
-        <div style={{ textAlign: "center", padding: `${SPACE.xl}px ${SPACE.gutter}px`, color: C.textTer, fontSize: 13.5 }}>
-          Číselník je zatiaľ prázdny — môžeš preskočiť.
-        </div>
-      ) : (
-        <Accordion skupiny={skupiny} jeVybrane={jeVybrane} onToggle={onToggle} onVlastny={onVlastny} />
       )}
+
+      <Accordion skupiny={CISELNIK_V2} jeVybrane={jeVybrane} onToggle={onToggle} onVlastny={onVlastny} />
+
+      {/* vlastný tag je SÚKROMNÝ + dôveryhodnostná veta (spec §1 krok B) */}
+      <div style={{ fontSize: 12, color: C.textTer, lineHeight: 1.5, marginTop: SPACE.sm }}>
+        Chýba ti niečo? Dopíš si vlastné — dáme ti vedieť, keď sa k tomu v okolí bude niečo konať. Vlastné tagy sú súkromné, nikto ich nevidí.
+      </div>
+      <div style={infoBox}>
+        Pozvánky posielajú organizátori podujatí, nie my. Vždy z tvojho okolia, vypneš jedným ťukom.
+      </div>
     </Shell>
   );
 }
 
 // ============================================================
-// KROK 5 — Zobrazenie (ako ťa vidí komunita)
+// KROK 6 — Zobrazenie (ako ťa vidí komunita)
 // ============================================================
 interface KrokZobrazenieProps {
   ucet: Ucet | null;
@@ -451,8 +536,8 @@ function KrokZobrazenie({ ucet, toast, onBack, onNext }: KrokZobrazenieProps) {
   return (
     <Shell
       title="Ako ťa vidia"
-      step={5}
-      total={8}
+      step={6}
+      total={9}
       onBack={onBack}
       footer={<Patka onBack={onBack} onNext={uloz} canNext={canNext} loading={loading} />}
     >
@@ -487,7 +572,7 @@ function KrokZobrazenie({ ucet, toast, onBack, onNext }: KrokZobrazenieProps) {
 }
 
 // ============================================================
-// KROK 6 — Foto (nepovinné, bez uploadu)
+// KROK 7 — Foto (nepovinné, bez uploadu)
 // ============================================================
 interface KrokFotoProps {
   meno: string;
@@ -500,8 +585,8 @@ function KrokFoto({ meno, onBack, onNext }: KrokFotoProps) {
   return (
     <Shell
       title="Profilová fotka"
-      step={6}
-      total={8}
+      step={7}
+      total={9}
       onBack={onBack}
       footer={
         <div style={{ display: "flex", gap: SPACE.sm }}>
@@ -571,7 +656,7 @@ function KrokFoto({ meno, onBack, onNext }: KrokFotoProps) {
 }
 
 // ============================================================
-// KROK 7 — KYC (Didit, mock)
+// KROK 8 — KYC (Didit, mock)
 // ============================================================
 type KycSposob = "nove" | "reusable";
 
@@ -606,8 +691,8 @@ function KrokKyc({ ucet, toast, onBack, onNext }: KrokKycProps) {
   return (
     <Shell
       title="Overenie identity"
-      step={7}
-      total={8}
+      step={8}
+      total={9}
       onBack={onBack}
       footer={
         overene ? (
@@ -681,7 +766,7 @@ function KrokKyc({ ucet, toast, onBack, onNext }: KrokKycProps) {
 }
 
 // ============================================================
-// KROK 8 — Čestné vyhlásenie + bezpečnostný briefing
+// KROK 9 — Čestné vyhlásenie + bezpečnostný briefing
 // ============================================================
 interface KrokVyhlasenieProps {
   ucet: Ucet | null;
@@ -737,8 +822,8 @@ function KrokVyhlasenie({ ucet, meno, toast, onBack, onHotovo }: KrokVyhlasenieP
   return (
     <Shell
       title="Posledný krok"
-      step={8}
-      total={8}
+      step={9}
+      total={9}
       onBack={onBack}
       footer={<Patka onBack={onBack} onNext={dokonci} canNext={canNext} loading={loading} next="Vitaj v DEED →" />}
     >

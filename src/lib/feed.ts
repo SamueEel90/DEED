@@ -70,13 +70,14 @@ export interface FeedItem {
   [extra: string]: unknown;
 }
 
-/** Používateľ pre feed — poloha + zvolený rádius (+ voliteľná personalizácia). */
+/** Používateľ pre feed — poloha + zvolený rádius (+ voliteľný follow).
+ *  Témy/záujmy tu ZÁMERNE nie sú (Pozvánky/Záujmy v1.1 kánon): skutkový feed
+ *  sa NEpersonalizuje témami — je bitovo rovnaký pre usera s 0 aj 50 témami.
+ *  Témy ovplyvňujú výhradne nástenku a oznamy. */
 export interface FeedUser {
   lat?: number;
   lng?: number;
   radius: OkruhKod;
-  /** kľúče záujmov (Good `kat` + Aktivity `dom`) — afinitná váha. Bez nich = identické poradie. */
-  zaujmy?: Set<string>;
   /** mená sledovaných autorov — afinitná váha. Bez nich = identické poradie. */
   sledovani?: Set<string>;
 }
@@ -165,12 +166,10 @@ export function zoradFeed<T extends FeedItem>(skutky: T[], user: FeedUser, cfg: 
     const cerstvost = 1 - norm(s.dni ?? 0, cfg.zivotnostDni); // novšie vyššie
     const blizkost = 1 - norm(vzdialenostKm(user, s), maxKm); // bližšie vyššie
     const podpora = norm(Math.min(s.podpora ?? 0, cfg.podporaStrop), cfg.podporaStrop);
-    // afinita (personalizácia) 0..1 — sledovaný autor 0.6 + záujmová kategória 0.4.
-    // Keď user nemá sety, je 0 pre všetko → byte-identické poradie (spätná kompatibilita).
+    // afinita 0..1 — LEN sledovaný autor (follow je vedomé rozhodnutie usera).
+    // Záujmové témy feed nikdy nečíta (v1.1 kánon — témy len nástenka + oznamy).
     const autor = (s.author ?? s.autor) as string | undefined;
-    const afin =
-      (user.sledovani && autor && user.sledovani.has(autor) ? 0.6 : 0) +
-      (user.zaujmy && s.kat && user.zaujmy.has(String(s.kat)) ? 0.4 : 0);
+    const afin = user.sledovani && autor && user.sledovani.has(autor) ? 0.6 : 0;
     const poradie =
       w.skore * norm(s.skore ?? 0, skoreMax) +
       w.cerstvost * cerstvost +

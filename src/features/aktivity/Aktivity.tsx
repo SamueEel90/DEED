@@ -205,7 +205,7 @@ function Home({ items, dom, view, pickDom, pickView, toast, open, openPerson, se
   const [radius, setRadius] = useState<OkruhKod>("stvrt");
   const [vyberOkruh, setVyberOkruh] = useState(false);
   const { desktop } = useLayout();
-  const { zaujmyKluce, sledovaniMena } = usePersonalizacia(); // afinita: záujmy/sledovaní → re-rank
+  const { sledovaniMena } = usePersonalizacia(); // afinita: LEN sledovaní → re-rank (témy feed nečíta, v1.1 kánon)
   const lok = useLokalita(); // stred feedu = aktívne mesto
 
   // 1) UI predfilter (doména + sub-záložka) — to engine nerieši
@@ -221,7 +221,7 @@ function Home({ items, dom, view, pickDom, pickView, toast, open, openPerson, se
   //    (optimistické UI — používateľ hneď vidí, čo pridal, mimo prahu okruhu).
   const feed = [
     ...list.filter((it: AktItem) => it.mine),
-    ...pripravFeed(list.filter((it: AktItem) => !it.mine), { lat: lok.lat, lng: lok.lng, radius, zaujmy: zaujmyKluce, sledovani: sledovaniMena }),
+    ...pripravFeed(list.filter((it: AktItem) => !it.mine), { lat: lok.lat, lng: lok.lng, radius, sledovani: sledovaniMena }),
   ];
 
   // dvojstĺpcový feed (skutky vľavo / žiadosti vpravo) iba v zmiešanom zobrazení na tablete/PC

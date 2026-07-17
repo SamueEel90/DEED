@@ -1,16 +1,21 @@
 // ============================================================
-// SMÚTOČNÝ OZNAM (úmrtie) — DEED_Smutocny_Oznam_DEV.md (Martin + Fero, 6. 7. 2026)
+// OZNÁMENIE O ÚMRTÍ (parte) — DEED_Oznamenie_o_Umrti_DEV.md (Martin + Fero, 6. 7. 2026;
+// nahrádza predošlý „Smútočný oznam").
+// · §0 ŽELEZNÉ: je to LEN OZNAM — žiadne peniaze, žiadna zbierka, žiadny odkaz na
+//   zbierku. Zbierky spravuje farár vo svojej samostatnej sekcii zbierok.
 // · Režim A = šablóna (1 klasická · 2 teplá so sviečkou · 3 minimalistická)
 // · Režim B = vlastné parte ako obrázok
 // · V OBOCH režimoch povinné štruktúrované polia POD oznamom (obrázok je pre
-//   oko, polia pre systém — kalendár, notifikácie, hľadanie, odkaz na zbierku).
-// · Auto-publish (user KYC) · reakcia = srdiečko-kondolencia · žiadne komentáre.
-// · Pohrebnú zbierku pripája LEN farár (strom „+" → Pohreb) — tu sa netvorí.
-// · TTL §8b: default 7 dní, nastaviteľné; nikdy neexpiruje pred rozlúčkou + 3 dni.
+//   oko, polia pre systém — kalendár, notifikácie, hľadanie).
+// · Tvorí user (KYC, auto-publish — farár môže zmazať) ALEBO farár.
+// · TEXT formátovateľný (RichTextInput — paste z Wordu prežije, delta bod 14).
+// · Reakcia = srdiečko-kondolencia · Zdieľať · žiadne komentáre.
+// · TTL §8: default 7 dní, nastaviteľné; nikdy neexpiruje pred rozlúčkou (+3 dni).
 // ============================================================
 import { useState } from "react";
 import { SPACE, RADIUS } from "@/theme";
-import { Input, FotoVyber, Foto } from "@/shared";
+import { Input, FotoVyber, Foto, RichTextInput, FormatovanyText } from "@/shared";
+import { cistyText } from "@/lib/richtext";
 import { pressable } from "@/components/pressable";
 import { N } from "./ui";
 import { vekZDatumov, type SmutocnyData, type Farnost, type NabozFeedItem } from "./mock";
@@ -84,6 +89,11 @@ export function SmutocnyOznamBlok({ s, onKondolencia }: { s: SmutocnyData; onKon
         </div>
       )}
 
+      {/* — voliteľný formátovateľný text (§5 — rich, odseky aj Word paste prežijú) — */}
+      {s.text && cistyText(s.text) && (
+        <FormatovanyText text={s.text} style={{ fontSize: 13.5, lineHeight: 1.55, color: N.txt2, marginTop: SPACE.sm, padding: `0 ${SPACE.xs}px` }} />
+      )}
+
       {/* — štruktúrované polia POD oznamom (povinné v OBOCH režimoch, spec §3) — */}
       <div style={{ marginTop: SPACE.sm, background: N.card, border: `1px solid ${N.line}`, borderRadius: RADIUS.md, padding: `${SPACE.sm}px ${SPACE.gutter}px` }}>
         <PoleRiadok k="Spomíname" v={s.meno} />
@@ -106,9 +116,10 @@ function PoleRiadok({ k, v, posledny }: { k: string; v: string; posledny?: boole
 // ============================================================
 // FORMULÁR — poradie polí presne podľa spec §4:
 // meno → dátumy + vek → verš → rozlúčka (kde + kedy) → foto → šablóna → ukážka → potvrdiť
+// (+ voliteľný formátovateľný TEXT podľa §5 — zaradený za veršom)
 // ============================================================
-export function SmutocnyForm({ farnost, autor, onPublish }: {
-  farnost?: Farnost; autor: string; onPublish: (it: NabozFeedItem) => void;
+export function SmutocnyForm({ farnost, autor, farar, onPublish }: {
+  farnost?: Farnost; autor: string; farar?: boolean; onPublish: (it: NabozFeedItem) => void;
 }) {
   const [mode, setMode] = useState<"template" | "image">("template");
   const [meno, setMeno] = useState("");
@@ -116,12 +127,13 @@ export function SmutocnyForm({ farnost, autor, onPublish }: {
   const [datumUmr, setDatumUmr] = useState("");
   const [versIdx, setVersIdx] = useState<number | "vlastny" | null>(null);
   const [versVlastny, setVersVlastny] = useState("");
+  const [text, setText] = useState("");               // voliteľný rich text (§5 — Word paste prežije)
   const [miesto, setMiesto] = useState("");
   const [rozDatum, setRozDatum] = useState("");
   const [rozCas, setRozCas] = useState("");
   const [fotky, setFotky] = useState<string[]>([]);   // A: voliteľná fotka · B: samotné parte (povinné)
   const [sablona, setSablona] = useState<1 | 2 | 3>(1);
-  const [platnost, setPlatnost] = useState("7");      // TTL §8b — default 7 dní, nastaviteľné
+  const [platnost, setPlatnost] = useState("7");      // TTL §8 — default 7 dní, nastaviteľné
   const [preview, setPreview] = useState(false);
 
   const vek = vekZDatumov(datumNar, datumUmr);
@@ -135,16 +147,19 @@ export function SmutocnyForm({ farnost, autor, onPublish }: {
     meno: meno.trim(), datumNar, datumUmr, vers: vers || undefined,
     rozluckaMiesto: miesto.trim(), rozluckaDatum: rozDatum, rozluckaCas: rozCas,
     foto: mode === "template" ? fotky[0] : undefined,
+    text: text || undefined,
   };
 
   function publikuj() {
     if (!validne) return;
+    // §0: LEN OZNAM — žiadne pole zbierky, žiadny odkaz na zbierku (ciel/split sa nenastavujú)
     onPublish({
       id: `naboz-${Date.now()}`, comp: "data", typ: "skutok", modul: "charity", kat: "Komunita",
       ntyp: "oznam", skore: 6, typSituacie: "normal", dni: 0, podpora: 0,
       lat: farnost?.lat, lng: farnost?.lng, lok: farnost?.obec,
-      farnostId: farnost?.id, cirkev: farnost?.cirkev ?? "", komunita: autor,
-      nazov: `Smútočný oznam — ${meno.trim()}`, overena: false, badgeL: "🕯 OZNAM", tag: "Oznam", emoji: "🕯",
+      farnostId: farnost?.id, cirkev: farnost?.cirkev ?? "",
+      komunita: farar ? farnost?.nazov ?? autor : autor, overena: !!farar,
+      nazov: `Oznámenie o úmrtí — ${meno.trim()}`, badgeL: "🕯 OZNAM", tag: "Oznam", emoji: "🕯",
       popis: `V spomienke na ${meno.trim()}${vek != null ? ` (†${vek})` : ""} · rozlúčka ${fmtDatum(rozDatum)} o ${rozCas}, ${miesto.trim()}`,
       datum: rozDatum, ukat: "pohreb", reakciaTyp: "kondolencia",
       fotky: fotky.length ? fotky : undefined, smutocny: data,
@@ -158,7 +173,11 @@ export function SmutocnyForm({ farnost, autor, onPublish }: {
   return (
     <div>
       <div style={{ fontSize: 12, color: N.txt2, marginBottom: SPACE.sm, lineHeight: 1.5 }}>
-        Dôstojný oznam do šablóny alebo z vlastného parte. <b>Auto-publish</b> (farár/nahlásenie môže zmazať) · poistka = KYC + 10-ročný ban za falošný oznam. Pohrebnú zbierku môže pripojiť <b>len farár</b>.
+        Dôstojné oznámenie úmrtia do šablóny alebo z vlastného parte. <b>Auto-publish</b> (farár/nahlásenie môže zmazať) · poistka = KYC + 10-ročný ban za falošný oznam.
+      </div>
+      {/* §0 — železné pravidlo: oznam bez peňazí */}
+      <div style={{ fontSize: 11.5, color: N.txt2, background: N.goldBg, border: `1px solid ${N.goldEdge}`, borderRadius: RADIUS.sm, padding: `${SPACE.xs}px ${SPACE.sm}px`, marginBottom: SPACE.sm, lineHeight: 1.45 }}>
+        ⚠️ <b>Je to len oznam</b> — žiadne peniaze, žiadna zbierka, žiadny odkaz na zbierku. Pohrebnú zbierku vytvára farár samostatne vo svojej sekcii zbierok.
       </div>
 
       {/* režim A / B (spec §3) */}
@@ -188,6 +207,10 @@ export function SmutocnyForm({ farnost, autor, onPublish }: {
         <div {...pressable(() => setVersIdx(versIdx === "vlastny" ? null : "vlastny"), "Vlastný verš")} style={{ fontSize: 12, fontWeight: 700, padding: `${SPACE.xs}px ${SPACE.sm}px`, borderRadius: RADIUS.sm, cursor: "pointer", background: versIdx === "vlastny" ? N.indBg : N.card, border: `1px dashed ${versIdx === "vlastny" ? N.indEdge : N.line}`, color: versIdx === "vlastny" ? N.ind : N.txt2 }}>✍️ Vlastný verš…</div>
         {versIdx === "vlastny" && <Input value={versVlastny} onChange={setVersVlastny} placeholder="Napíš vlastný verš…" />}
       </div>
+
+      {/* voliteľný text (§5) — rich, odseky aj vloženie z Wordu prežijú */}
+      {lab("TEXT — VOLITEĽNÉ")}
+      <RichTextInput minH={80} value={text} onChange={setText} placeholder="Napíš spomienku alebo doplňujúce slová… Odseky aj vloženie z Wordu prežijú." />
 
       {/* 4 · rozlúčka — kde + kedy */}
       {lab("ROZLÚČKA — KDE + KEDY", true)}
@@ -233,7 +256,7 @@ export function SmutocnyForm({ farnost, autor, onPublish }: {
       ) : (
         <>
           <div style={{ marginTop: SPACE.md }}>
-            <div style={{ fontSize: 10.5, color: N.txt3, fontWeight: 700, marginBottom: SPACE.xs }}>UKÁŽKA · takto to uvidí komunita ({autor})</div>
+            <div style={{ fontSize: 10.5, color: N.txt3, fontWeight: 700, marginBottom: SPACE.xs }}>UKÁŽKA · takto to uvidí komunita · hlavička: {farar ? farnost?.nazov ?? "farnosť" : autor}</div>
             <SmutocnyOznamBlok s={data} />
           </div>
           <button onClick={publikuj} disabled={!validne}
@@ -243,7 +266,7 @@ export function SmutocnyForm({ farnost, autor, onPublish }: {
         </>
       )}
       {!validne && <div style={{ fontSize: 11, color: N.clay, textAlign: "center", marginTop: SPACE.xs }}>Povinné: meno · dátumy · miesto + dátum + čas rozlúčky{mode === "image" ? " · obrázok parte" : ""}.</div>}
-      <div style={{ fontSize: 10, color: N.txt3, textAlign: "center", padding: `${SPACE.sm}px 0` }}>Srdiečko = kondolencia · žiadne komentáre (železné pravidlo). Oznam patrí komunite, zbierka farnosti.</div>
+      <div style={{ fontSize: 10, color: N.txt3, textAlign: "center", padding: `${SPACE.sm}px 0` }}>Srdiečko = kondolencia · Zdieľať · žiadne komentáre (železné pravidlo) · žiadna zbierka ani Prispieť.</div>
     </div>
   );
 }
