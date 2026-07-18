@@ -257,7 +257,7 @@ function PickerPrijemcov({ voFronte, onVyber, onClose, toast }: {
           <button key={t.id} onClick={() => setTab(t.id)} style={{ flex: "none", padding: `${SPACE.xs}px ${SPACE.gutter}px`, borderRadius: 999, fontFamily: "inherit", fontWeight: 700, fontSize: 12, cursor: "pointer",
             border: `1px solid ${tab === t.id ? tint(GREEN, .5) : C.line}`, background: tab === t.id ? tint(GREEN, .12) : "transparent", color: tab === t.id ? GREEN : C.textSec, whiteSpace: "nowrap" }}>{t.label}</button>
         ))}
-        <button onClick={() => toast?.("Sken QR zbierky z plagátu (demo)")} style={{ flex: "none", padding: `${SPACE.xs}px ${SPACE.gutter}px`, borderRadius: 999, fontFamily: "inherit", fontWeight: 700, fontSize: 12, cursor: "pointer", border: `1px dashed ${C.line}`, background: "transparent", color: C.textSec, whiteSpace: "nowrap" }}>⛶ Sken QR</button>
+        <button onClick={() => toast?.("Sken QR zbierky z plagátu")} style={{ flex: "none", padding: `${SPACE.xs}px ${SPACE.gutter}px`, borderRadius: 999, fontFamily: "inherit", fontWeight: 700, fontSize: 12, cursor: "pointer", border: `1px dashed ${C.line}`, background: "transparent", color: C.textSec, whiteSpace: "nowrap" }}>⛶ Sken QR</button>
       </div>
 
       {/* vyhľadávanie */}

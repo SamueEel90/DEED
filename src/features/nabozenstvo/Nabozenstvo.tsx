@@ -648,7 +648,7 @@ function NabozDetail({ z, farar, onBack, onProfil }: { z: NabozFeedItem; farar: 
             </div>
 
             <div style={{ fontSize: 11, color: N.txt3, textAlign: "center", background: N.goldBg, border: `1px solid ${N.goldEdge}`, borderRadius: RADIUS.sm, padding: SPACE.sm }}>
-              🏛 Zbierka žije v engine Charita — platby, overenie a transparentnosť. Farnosť dostane vždy € (off-ramp). Pravosť rieši komunitné Overujem/Namietam, nie záruka cirkvi.
+              🏛 Platby, overenie a transparentnosť zabezpečuje modul Charita. Pravosť prípadu potvrdzuje komunita.
             </div>
           </>
         ) : (
@@ -743,7 +743,7 @@ function PridatZbierkuSheet({ tvorca, onClose, onHotovo }: { tvorca: string | nu
             <span style={{ width: 34, height: 34, borderRadius: "50%", background: N.greenBg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, flex: "none" }}>👤</span>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 13.5, fontWeight: 700 }}>Mária Kováčová</div>
-              <div style={{ fontSize: 11, color: N.green, fontWeight: 700 }}>kandidát podľa kódu · KYC ✓ (demo)</div>
+              <div style={{ fontSize: 11, color: N.green, fontWeight: 700 }}>kandidát podľa kódu · KYC ✓</div>
             </div>
           </div>
         )}
@@ -789,7 +789,7 @@ function SheetAdresar({ domovska, oblubene, onDomov, onFollow, onProfil, onClose
     if (!("geolocation" in navigator)) { toast("GPS nie je dostupné — zadaj obec ručne"); return; }
     setGpsHlada(true);
     navigator.geolocation.getCurrentPosition(
-      () => { setGpsHlada(false); setObec("Trenčín"); toast("📍 Poloha zistená — najbližšie farnosti (demo: Trenčín)"); },
+      () => { setGpsHlada(false); setObec("Trenčín"); toast("📍 Poloha zistená — najbližšie farnosti — Trenčín"); },
       () => { setGpsHlada(false); toast("Prístup k polohe zamietnutý — zadaj obec ručne"); },
       { timeout: 8000, maximumAge: 60000 },
     );

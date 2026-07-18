@@ -170,3 +170,68 @@ export function IkonaUsmev({ size = 18, color = "currentColor" }: { size?: numbe
 export function IkonaInstitucia({ size = 18, color = "currentColor" }: { size?: number; color?: string }) { // charita & OZ (adresár)
   return <SvgI size={size} color={color}><path d="M3 10 12 4l9 6" /><path d="M5 10v8M19 10v8M9 10v8M15 10v8M3 20h18" /></SvgI>;
 }
+
+// ---- ENTITY / SPRÁVA (profily subjektov, správcovské panely) ----
+export function IkonaKalendar({ size = 18, color = "currentColor" }: { size?: number; color?: string }) { // kalendár & rozvrh
+  return <SvgI size={size} color={color}><rect x="3" y="5" width="18" height="16" rx="2.5" /><path d="M3 10h18M8 3v4M16 3v4" /></SvgI>;
+}
+export function IkonaQr({ size = 18, color = "currentColor" }: { size?: number; color?: string }) { // QR kód
+  return <SvgI size={size} color={color}><rect x="3" y="3" width="7" height="7" rx="1.2" /><rect x="14" y="3" width="7" height="7" rx="1.2" /><rect x="3" y="14" width="7" height="7" rx="1.2" /><path d="M14 14h3v3h-3zM21 14v.01M14 21h.01M18 18h3v3" /></SvgI>;
+}
+export function IkonaGraf({ size = 18, color = "currentColor" }: { size?: number; color?: string }) { // štatistiky / reporty
+  return <SvgI size={size} color={color}><path d="M4 20V10M10 20V4M16 20v-7M21 20H3" /></SvgI>;
+}
+export function IkonaLudia({ size = 18, color = "currentColor" }: { size?: number; color?: string }) { // skupina ľudí
+  return <SvgI size={size} color={color}><circle cx="9" cy="8" r="3.4" /><path d="M2.8 20a6.2 6.2 0 0 1 12.4 0" /><path d="M16.2 5.2a3.4 3.4 0 0 1 0 5.9" /><path d="M17.6 14.4a6.2 6.2 0 0 1 3.9 5.6" /></SvgI>;
+}
+export function IkonaMegafon({ size = 18, color = "currentColor" }: { size?: number; color?: string }) { // oznamy
+  return <SvgI size={size} color={color}><path d="M3 11v3a1.5 1.5 0 0 0 1.5 1.5H6l4.5 4V6.5L6 10.5H4.5A1.5 1.5 0 0 0 3 12z" /><path d="M14 8.5a5 5 0 0 1 0 7M17 5.5a9 9 0 0 1 0 13" /></SvgI>;
+}
+export function IkonaDokument({ size = 18, color = "currentColor" }: { size?: number; color?: string }) { // doklady / dokumenty
+  return <SvgI size={size} color={color}><path d="M14 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7z" /><path d="M14 2v5h5M9 13h6M9 17h6M9 9h2" /></SvgI>;
+}
+export function IkonaRetaz({ size = 18, color = "currentColor" }: { size?: number; color?: string }) { // reťaz tvorcu
+  return <SvgI size={size} color={color}><path d="M10 13a5 5 0 0 0 7.5.5l2-2a5 5 0 0 0-7-7l-1.2 1.1" /><path d="M14 11a5 5 0 0 0-7.5-.5l-2 2a5 5 0 0 0 7 7l1.2-1.1" /></SvgI>;
+}
+export function IkonaTerc({ size = 18, color = "currentColor" }: { size?: number; color?: string }) { // zbierky / ciele
+  return <SvgI size={size} color={color}><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="5" /><circle cx="12" cy="12" r="1.4" fill={color} stroke="none" /></SvgI>;
+}
+export function IkonaEuro({ size = 18, color = "currentColor" }: { size?: number; color?: string }) { // financie / dary
+  return <SvgI size={size} color={color}><path d="M17.5 5.5A7.5 7.5 0 0 0 6.8 8.4a7.6 7.6 0 0 0 0 7.2 7.5 7.5 0 0 0 10.7 2.9" /><path d="M3.5 10.5h9M3.5 13.5h8" /></SvgI>;
+}
+export function IkonaOdkaz({ size = 18, color = "currentColor" }: { size?: number; color?: string }) { // kopírovať odkaz
+  return <SvgI size={size} color={color}><path d="M10.5 13.5a4 4 0 0 0 6 .4l2.3-2.3a4 4 0 1 0-5.7-5.7l-1.3 1.3" /><path d="M13.5 10.5a4 4 0 0 0-6-.4l-2.3 2.3a4 4 0 1 0 5.7 5.7l1.3-1.3" /></SvgI>;
+}
+export function IkonaHodiny({ size = 18, color = "currentColor" }: { size?: number; color?: string }) { // čas / smeny
+  return <SvgI size={size} color={color}><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3.2 1.8" /></SvgI>;
+}
+export function IkonaDarcek({ size = 18, color = "currentColor" }: { size?: number; color?: string }) { // odmeny / benefity
+  return <SvgI size={size} color={color}><rect x="3" y="8" width="18" height="4" rx="1" /><path d="M5 12v8a1.5 1.5 0 0 0 1.5 1.5h11A1.5 1.5 0 0 0 19 20v-8M12 8v13.5" /><path d="M12 8s-4.5.2-4.5-2.5C7.5 3.6 10.5 3.4 12 8zM12 8s4.5.2 4.5-2.5C16.5 3.6 13.5 3.4 12 8z" /></SvgI>;
+}
+export function IkonaCeruzka({ size = 18, color = "currentColor" }: { size?: number; color?: string }) { // upraviť
+  return <SvgI size={size} color={color}><path d="M17 3a2.8 2.8 0 0 1 4 4L7.5 20.5 2 22l1.5-5.5z" /></SvgI>;
+}
+// ---- OBLASTI ZÁUJMOV (profil, pozvánky) ----
+export function IkonaList({ size = 18, color = "currentColor" }: { size?: number; color?: string }) { // príroda (lístok)
+  return <SvgI size={size} color={color}><path d="M5 20c0-8 5-14 14-15-1 9-7 14-14 15z" /><path d="M5 20c3-6 7-10 11-12" /></SvgI>;
+}
+export function IkonaKniha({ size = 18, color = "currentColor" }: { size?: number; color?: string }) { // učenie
+  return <SvgI size={size} color={color}><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15.5H6.5A2.5 2.5 0 0 0 4 21z" /><path d="M4 18.5A2.5 2.5 0 0 1 6.5 16H20" /></SvgI>;
+}
+export function IkonaSport({ size = 18, color = "currentColor" }: { size?: number; color?: string }) { // šport (činka)
+  return <SvgI size={size} color={color}><path d="M7.5 7.5v9M16.5 7.5v9M4 9.5v5M20 9.5v5M7.5 12h9M2 12h2M20 12h2" /></SvgI>;
+}
+export function IkonaPaleta({ size = 18, color = "currentColor" }: { size?: number; color?: string }) { // umenie
+  return <SvgI size={size} color={color}><path d="M12 3a9 9 0 1 0 0 18h1.5a2 2 0 0 0 1.4-3.4c-.8-.8-.3-2.1.8-2.1H18a4 4 0 0 0 4-4c0-4.7-4.5-8.5-10-8.5z" /><circle cx="7.5" cy="10.5" r="1" fill={color} stroke="none" /><circle cx="12" cy="7.5" r="1" fill={color} stroke="none" /><circle cx="16.5" cy="10" r="1" fill={color} stroke="none" /></SvgI>;
+}
+export function IkonaZachrana({ size = 18, color = "currentColor" }: { size?: number; color?: string }) { // pomoc (záchranné koleso)
+  return <SvgI size={size} color={color}><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="3.6" /><path d="M5.7 5.7l3.7 3.7M18.3 5.7l-3.7 3.7M18.3 18.3l-3.7-3.7M5.7 18.3l3.7-3.7" /></SvgI>;
+}
+export function IkonaOdznakOver({ size = 18, color = "var(--a-info)" }: { size?: number; color?: string }) { // overený subjekt (seal + fajka)
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" style={{ display: "block", flex: "0 0 auto" }} aria-hidden>
+      <path d="M12 1.8l2.4 1.9 3-.4 1.2 2.8 2.8 1.2-.4 3 1.9 2.4-1.9 2.4.4 3-2.8 1.2-1.2 2.8-3-.4-2.4 1.9-2.4-1.9-3 .4-1.2-2.8-2.8-1.2.4-3L1 12.7l1.9-2.4-.4-3 2.8-1.2 1.2-2.8 3 .4z" fill={color} />
+      <path d="M8.4 12.3l2.5 2.5 4.7-5" fill="none" stroke="#fff" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}

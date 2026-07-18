@@ -1,6 +1,6 @@
 import { useState, useEffect, memo } from "react";
 import { SIRKA, C, U, AV, GRAD, GRAD_ZELENY, SPACE, RADIUS } from "@/theme";
-import { Foto, Avatar, MiniFotky, ModulHlavicka, PodporaSekcia, PlatbaModal, RecurringSheet, SplitQrSheet, HladanieModal, OblubeneHviezda, OblubeneBtn, toast, useGaleria, useLayout, useScrollPamat, useStrankaAkcie, useTvorbaGate, Ticker, StatRiadok, FiltreStat, FeedStlpce, FeedGrid, FeedCard, KartaBadge, BackHeader, ProgresBox, obalSiroky, OkruhVyber, SegTabs, tint, Lupa, Zvon, Zdielanie, IkonaVlajka, IkonaFoto, IkonaPlay, IkonaDoska, IkonaOpakovat, IkonaKriz, IkonaInstitucia, FeedSkeleton, SkeletonRiadky, EmptyState, ErrorState, ScreenSwitch, SwipeBack, ZoznamDarcov, FormatovanyText } from "@/shared";
+import { Foto, Avatar, MiniFotky, ModulHlavicka, PodporaSekcia, PlatbaModal, RecurringSheet, SplitQrSheet, HladanieModal, OblubeneHviezda, OblubeneBtn, toast, useGaleria, useLayout, useScrollPamat, useStrankaAkcie, useTvorbaGate, Ticker, StatRiadok, FiltreStat, FeedStlpce, FeedGrid, FeedCard, KartaBadge, BackHeader, ProgresBox, obalSiroky, OkruhVyber, SegTabs, tint, Lupa, Zvon, Zdielanie, IkonaVlajka, IkonaFoto, IkonaPlay, IkonaDoska, IkonaOpakovat, IkonaKriz, IkonaInstitucia, IkonaMoznosti, IkonaOdkaz, IkonaRetaz, KontextMenu, DvaStlpce, Overene, PodporitDeed, FeedSkeleton, SkeletonRiadky, EmptyState, ErrorState, ScreenSwitch, SwipeBack, ZoznamDarcov, FormatovanyText } from "@/shared";
 import { pridajDar, type VolbaDaru } from "@/lib/darcovia";
 import { usePouzivatel } from "@/lib/pouzivatel";
 import { pripravFeed, FEED_CFG } from "@/lib/feed";
@@ -8,6 +8,7 @@ import { MEDIA_AR } from "@/lib/cardSize";
 import { Zvoncek } from "@/features/notifikacie/Notifikacie";
 import type { CharitaFeedItem, CharitaLevel, Kanal, Subjekt, Oblubeny } from "@/types";
 import { CudziProfil } from "@/features/cudzi-profil/CudziProfil";
+import { najdiOrg, type OrgKampan } from "@/features/cudzi-profil/orgy";
 import { GoodBoard, GoodEvent } from "@/features/good/Good";
 import { useCharitaFeed, useCharitaAdresar, useCharitaZbierka } from "@/data";
 import { useLokalita } from "@/lib/lokalita";
@@ -151,7 +152,8 @@ export default function ModulCharita({ wide, otvorModul }: ModulCharitaProps) {
       {screen === "feed" && <CharitaFeed wide={wide} toast={toast} onDetail={(z) => { setAktZ(z ?? null); setScreen("detail"); }} onHladaj={() => setHladaj(true)} onSheet={setSheet} onBoard={() => setScreen("board")} onFiremny={() => setScreen("firemny")} />}
       {screen === "firemny" && obal(<SwipeBack onBack={() => setScreen("feed")}><MojDeedFiremny onBack={() => setScreen("feed")} toast={toast} /></SwipeBack>)}
       {screen === "detail" && obal(<SwipeBack onBack={() => setScreen("feed")}><CharitaDetail z={aktZ} toast={toast} onBack={() => setScreen("feed")} onReg={() => setSheet("reg")} onAutor={(s) => { setAktSubjekt(s); setScreen("cudzi"); }} /></SwipeBack>)}
-      {screen === "cudzi" && aktSubjekt && obal(<CudziProfil subjekt={aktSubjekt as any} toast={toast} onBack={() => setScreen("feed")} />)}
+      {screen === "cudzi" && aktSubjekt && obal(<CudziProfil subjekt={aktSubjekt as any} toast={toast} onBack={() => setScreen("feed")}
+        onKampan={(k: OrgKampan) => { setAktZ({ id: k.id, nazov: k.nazov, emoji: k.emoji, overena: true, orgProfil: true, avatar: najdiOrg((aktSubjekt as { meno?: string } | null)?.meno).logo, lok: k.lok, fotky: [k.foto], popis: k.popis, pribeh: k.popis, vyzbierane: k.vyzbierane, ciel: k.ciel, ludia: k.ludia }); setScreen("detail"); }} />)}
       {screen === "board" && <GoodBoard onBack={() => setScreen("feed")} onEvent={(id) => { setAktEvent(id); setScreen("event"); }} toast={toast} />}
       {screen === "event" && obal(<GoodEvent id={aktEvent} onBack={() => setScreen("board")} toast={toast} oslavuj={(s, komu) => toast(`Ďakujeme za ${s} pre ${komu}`)} />)}
       </ScreenSwitch>
@@ -224,7 +226,7 @@ function CharitaFeed({ wide, toast, onDetail, onHladaj, onSheet, onBoard, onFire
   useStrankaAkcie(() => ({
     pridat: undefined,
     extra: [
-      { id: "talent", label: "Ukáž svoj talent", popis: "Tvorivé skutky a talenty", ikona: <IkonaPlay size={18} color="var(--a-green)" />, onClick: gate(() => toast("Ukáž svoj talent (demo)")) },
+      { id: "talent", label: "Ukáž svoj talent", popis: "Tvorivé skutky a talenty", ikona: <IkonaPlay size={18} color="var(--a-green)" />, onClick: gate(() => toast("Ukáž svoj talent")) },
       { id: "board", label: "Nástenka", popis: "Akcie a udalosti v okolí", ikona: <IkonaDoska size={18} color="var(--a-green)" />, onClick: onBoard },
       { id: "firemny", label: "Môj DEED firemný", popis: "Rolové panely a správa — Charita · Tvorca · B2B", ikona: <IkonaInstitucia size={18} color="var(--a-green)" />, onClick: onFiremny },
     ],
@@ -367,7 +369,7 @@ function badge({ top, left, right, color, background }: { top?: number; left?: n
   return { position: "absolute", top, left, right, fontSize: 10.5, padding: `${SPACE.xxs}px ${SPACE.sm}px`, borderRadius: RADIUS.xs, fontWeight: 800, color: color || "#fff", background: background || "rgba(8,11,18,.62)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)", border: "1px solid rgba(255,255,255,.16)", boxShadow: "0 2px 8px rgba(0,0,0,.25)", pointerEvents: "none" };
 }
 function Overena() {
-  return <span style={tagChip(K.green)}>✓ overená</span>;
+  return <Overene size={15} label="Overená zbierka" />;
 }
 type RiadokKartaProps = {
   wide?: boolean;
@@ -412,9 +414,10 @@ function CharitaDetail({ z: zProp, toast, onBack, onReg, onAutor }: { z?: Zbierk
   const [recur, setRecur] = useState(false);                // pravidelná podpora (LEN charita)
   const [split, setSplit] = useState(false);                // split QR (influencer)
   const [ozvat, setOzvat] = useState(false);                // „Zapojiť sa" → správa organizácii
-  const [nahlasit, setNahlasit] = useState(false);          // vlajka → nahlásenie obsahu
+  const [nahlasit, setNahlasit] = useState(false);          // nahlásenie obsahu (z ⋯ menu)
+  const [menu, setMenu] = useState(false);                  // ⋯ kontextové menu
   const otvorGaleriu = useGaleria();
-  const { wide } = useLayout();
+  const { wide, desktop } = useLayout();
   const ja = usePouzivatel(); // registrovaný vs pasívny — určuje zápis do zoznamu darcov
   if (!zRaw) return null;
   const z = zRaw; // zúžené na non-null (bezpečné aj v closure onDone/onPodpor)
@@ -442,93 +445,113 @@ function CharitaDetail({ z: zProp, toast, onBack, onReg, onAutor }: { z?: Zbierk
     toast(`Odoslané ${platba === "EUR" ? s + " €" : s + " DEED"} · ${z.nazov}`);
   }
 
+  // hero foto — LEN ak prípad má fotku (bez placeholdera; inak čisto textový detail)
+  const fotoBlok = maFoto && (
+    <div style={{ position: "relative", ...(wide ? { width: "100%", aspectRatio: MEDIA_AR } : {}) }}>
+      <Foto src={fotky[0]} emoji={z.emoji || "💛"} h={wide ? "100%" : 200} w={wide ? "100%" : undefined} radius={14} onClick={() => otvorGaleriu(fotky, 0)} prednost alt={z.nazov} />
+      <span style={{ ...badge({ top: 9, right: 9, color: K.txt }), display: "inline-flex", alignItems: "center", gap: SPACE.xxs }}><IkonaFoto size={12} color={K.txt} /> foto z prípadu</span>
+      {fotky.length > 1 && <span style={{ position: "absolute", bottom: 9, right: 9, background: "rgba(0,0,0,.6)", borderRadius: RADIUS.sm, padding: `${SPACE.xxs}px ${SPACE.xs}px`, fontSize: 10, color: "#fff", pointerEvents: "none" }}>⧉ {fotky.length}</span>}
+    </div>
+  );
+
+  const autorBlok = (
+    <div onClick={() => onAutor?.(subjektZo(z))} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, marginBottom: SPACE.xs, cursor: onAutor ? "pointer" : "default" }}>
+      <Avatar src={z.avatar ?? (z.orgProfil ? najdiOrg(z.nazov).logo : undefined)} emoji={z.emoji || "💛"} size={38} />
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 15, fontWeight: 600, display: "flex", alignItems: "center", gap: SPACE.xs }}>{z.nazov} {z.overena && <Overena />}{z.tag && <span style={tagChip(z.tagCol || K.gold)}>{z.tag}</span>}</div>
+        <div style={{ fontSize: 11.5, color: K.txt2, marginTop: SPACE.xxs }}>{z.karma && <><span style={{ color: K.gold }}>⭐ {z.karma}</span> · </>}📍 {z.lok || "Slovensko"} · 1 deň</div>
+      </div>
+      {onAutor && <span style={{ color: K.txt3, fontSize: 18, flex: "none" }}>›</span>}
+    </div>
+  );
+
+  const podporaBlok = jeZbierka ? (
+    <>
+      {jeZbierka && ciel != null && (
+        <div style={{ marginBottom: SPACE.gutter }}>
+          <ProgresBox suma={suma} ciel={ciel} ludia={ludia} />
+        </div>
+      )}
+      <div style={{ marginBottom: SPACE.gutter }}>
+        <PodporaSekcia
+          onShare={() => zdielaj({ titul: z.nazov, text: z.nazov, url: aktualnaUrl() }, toast)}
+          upvotes={140} onUpvote={() => toast("Palec hore")}
+          onPodpor={(s: number) => podpor(s, `Ďakujeme za ${s} DEED pre ${z.nazov}`)} onSms={() => podpor(100, "SMS podpora", "sms")}
+          onKanal={(k: string) => setPlatba(k as Kanal)} />
+      </div>
+      <div onClick={() => setRecur(true)} style={{ width: "100%", border: `1px solid ${K.blueEdge}`, background: K.blueBg, borderRadius: RADIUS.sm, padding: SPACE.sm, textAlign: "center", fontSize: 13.5, fontWeight: 700, color: K.blue, cursor: "pointer", marginBottom: SPACE.xs, display: "flex", alignItems: "center", justifyContent: "center", gap: SPACE.xs, boxSizing: "border-box" }}>
+        <IkonaOpakovat size={16} color={K.blue} /> Pravidelná podpora
+      </div>
+      <div onClick={() => setSplit(true)} style={{ width: "100%", border: `1px solid ${K.greenEdge}`, background: K.greenBg, borderRadius: RADIUS.sm, padding: SPACE.sm, textAlign: "center", fontSize: 13.5, fontWeight: 700, color: K.green, cursor: "pointer", marginBottom: SPACE.sm, display: "flex", alignItems: "center", justifyContent: "center", gap: SPACE.xs, boxSizing: "border-box" }}>
+        <IkonaRetaz size={15} color={K.green} /> Reťaz dobra — rozdeliť platbu
+      </div>
+    </>
+  ) : (
+    <>
+      <div {...pressable(() => setOzvat(true), "Zapojiť sa — napísať organizácii")} style={{ width: "100%", border: `2px solid ${K.greenEdge}`, background: K.greenBg, borderRadius: RADIUS.sm, padding: SPACE.gutter, textAlign: "center", fontSize: 15, fontWeight: 700, color: K.green, cursor: "pointer", marginBottom: SPACE.sm, boxSizing: "border-box" }}>
+        🙌 Zapojiť sa
+      </div>
+      <PodporaSekcia
+        onShare={() => zdielaj({ titul: z.nazov, text: z.nazov, url: aktualnaUrl() }, toast)}
+        upvotes={140} onUpvote={() => toast("Palec hore")}
+        onPodpor={(s: number) => podpor(s, `Ďakujeme za ${s} DEED pre ${z.nazov}`)} onSms={() => podpor(100, "SMS podpora", "sms")}
+        onKanal={(k: string) => setPlatba(k as Kanal)} supLabel="PODPORIŤ — klik a hneď odíde" />
+    </>
+  );
+
+  const pribehBlok = (
+    <>
+      {autorBlok}
+      <FormatovanyText text={pribeh} style={{ fontSize: 14, lineHeight: 1.55, margin: `${SPACE.sm}px 0 ${SPACE.sm}px` }} />
+      <div style={{ display: "flex", gap: SPACE.xs, marginBottom: SPACE.gutter }}>
+        <OblubeneBtn polozka={oblubenyZo(z)} toast={toast} style={{ flex: 1, minWidth: 0 }} />
+        <PodporitDeed toast={toast} style={{ flex: 1, minWidth: 0 }} />
+      </div>
+    </>
+  );
+
+  const darcoviaBlok = (
+    <div style={{ marginBottom: SPACE.gutter }}>
+      <ZoznamDarcov refId={darRef} celkom={ludia} />
+    </div>
+  );
+
   return (
     <div style={{ paddingBottom: SPACE.lg }}>
-      <BackHeader onBack={onBack} right={<><span {...pressable(() => void zdielaj({ titul: z.nazov, text: z.nazov, url: aktualnaUrl() }, toast), "Zdieľať zbierku")} style={{ display: "flex", cursor: "pointer", position: "relative" }}><Zdielanie size={17} color={K.txt2} /></span><span {...pressable(() => setNahlasit(true), "Nahlásiť obsah")} style={{ display: "flex", cursor: "pointer", position: "relative" }}><IkonaVlajka size={16} color={K.txt2} /></span></>}>
+      <BackHeader onBack={onBack} right={
+        <span {...pressable(() => setMenu(true), "Ďalšie možnosti")} style={{ display: "flex", cursor: "pointer" }}><IkonaMoznosti size={18} color={K.txt2} /></span>
+      }>
         {z.badge && <span style={{ fontSize: 12, color: K.diamond, background: K.blueBg, border: `1px solid ${K.blueEdge}`, padding: `${SPACE.xxs}px ${SPACE.xs}px`, borderRadius: RADIUS.xs, fontWeight: 700, letterSpacing: ".02em" }}>{z.badge}</span>}
         {z.lok && <span style={{ fontSize: 12, color: K.txt2 }}>📍 {z.lok}</span>}
       </BackHeader>
       <div style={{ height: SPACE.sm }} />
 
-      {/* hero foto — LEN ak prípad má fotku (bez placeholdera; inak čisto textový detail) */}
-      {maFoto && (
+      {desktop ? (
         <div style={{ padding: `0 ${SPACE.md}px` }}>
-          <div style={{ position: "relative", ...(wide ? { width: "100%", aspectRatio: MEDIA_AR } : {}) }}>
-            <Foto src={fotky[0]} emoji={z.emoji || "💛"} h={wide ? "100%" : 200} w={wide ? "100%" : undefined} radius={14} onClick={() => otvorGaleriu(fotky, 0)} prednost alt={z.nazov} />
-            <span style={{ ...badge({ top: 9, right: 9, color: K.txt }), display: "inline-flex", alignItems: "center", gap: SPACE.xxs }}><IkonaFoto size={12} color={K.txt} /> foto z prípadu</span>
-            {fotky.length > 1 && <span style={{ position: "absolute", bottom: 9, right: 9, background: "rgba(0,0,0,.6)", borderRadius: RADIUS.sm, padding: `${SPACE.xxs}px ${SPACE.xs}px`, fontSize: 10, color: "#fff", pointerEvents: "none" }}>⧉ {fotky.length} · klikni na foto</span>}
-          </div>
+          <DvaStlpce sirkaBoku={380}
+            hlavny={<>{fotoBlok}<MiniFotky fotky={fotky} /><div style={{ height: SPACE.gutter }} />{pribehBlok}{darcoviaBlok}</>}
+            bok={podporaBlok}
+          />
         </div>
+      ) : (
+        <>
+          {fotoBlok && <div style={{ padding: `0 ${SPACE.md}px` }}>{fotoBlok}</div>}
+          <MiniFotky fotky={fotky} />
+          <div style={{ padding: `${SPACE.gutter}px ${SPACE.md}px 0` }}>
+            {pribehBlok}
+            {podporaBlok}
+            {darcoviaBlok}
+          </div>
+        </>
       )}
-      <MiniFotky fotky={fotky} />
 
-      <div style={{ padding: `${SPACE.gutter}px ${SPACE.md}px 0` }}>
-        <div onClick={() => onAutor?.(subjektZo(z))} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, marginBottom: SPACE.xs, cursor: onAutor ? "pointer" : "default" }}>
-          <Avatar src={z.avatar} emoji={z.emoji || "💛"} size={38} />
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 15, fontWeight: 600, display: "flex", alignItems: "center", gap: SPACE.xs }}>{z.nazov} {z.overena && <Overena />}{z.tag && <span style={tagChip(z.tagCol || K.gold)}>{z.tag}</span>}</div>
-            <div style={{ fontSize: 11.5, color: K.txt2, marginTop: SPACE.xxs }}>{z.karma && <><span style={{ color: K.gold }}>⭐ {z.karma}</span> · </>}📍 {z.lok || "Slovensko"} · 1 deň</div>
-          </div>
-          {onAutor && <span style={{ color: K.txt3, fontSize: 18, flex: "none" }}>›</span>}
-        </div>
-
-        <FormatovanyText text={pribeh} style={{ fontSize: 14, lineHeight: 1.55, margin: `${SPACE.sm}px 0 ${SPACE.sm}px` }} />
-
-        {/* uložiť do obľúbených */}
-        <div style={{ marginBottom: SPACE.gutter }}>
-          <OblubeneBtn polozka={oblubenyZo(z)} toast={toast} style={{ width: "100%" }} />
-        </div>
-
-        {/* progres — len zbierky s finančným cieľom (jednotný ProgresBox) */}
-        {jeZbierka && ciel != null && (
-          <div style={{ marginBottom: SPACE.gutter }}>
-            <ProgresBox suma={suma} ciel={ciel} ludia={ludia} />
-          </div>
-        )}
-
-        {jeZbierka ? (
-          <>
-            {/* jednotná sekcia podpory */}
-            <div style={{ marginBottom: SPACE.gutter }}>
-              <PodporaSekcia
-                onShare={() => zdielaj({ titul: z.nazov, text: z.nazov, url: aktualnaUrl() }, toast)}
-                upvotes={140} onUpvote={() => toast("Palec hore")}
-                onPodpor={(s: number) => podpor(s, `Ďakujeme za ${s} DEED pre ${z.nazov}`)} onSms={() => podpor(100, "SMS podpora", "sms")}
-                onKanal={(k: string) => setPlatba(k as Kanal)} />
-            </div>
-
-            {/* pravidelná podpora */}
-            <div onClick={() => setRecur(true)} style={{ width: "100%", border: `2px solid ${K.blueEdge}`, background: K.blueBg, borderRadius: RADIUS.sm, padding: SPACE.gutter, textAlign: "center", fontSize: 14, fontWeight: 600, cursor: "pointer", marginBottom: SPACE.sm, display: "flex", alignItems: "center", justifyContent: "center", gap: SPACE.xs }}>
-              <IkonaOpakovat size={17} color={K.blue} /> Pravidelná podpora
-            </div>
-
-            {/* reťaz dobra (split QR) — aká časť platby ide komu */}
-            <div onClick={() => setSplit(true)} style={{ width: "100%", border: `1px solid ${K.greenEdge}`, background: K.greenBg, borderRadius: RADIUS.sm, padding: SPACE.gutter, textAlign: "center", fontSize: 14, fontWeight: 600, color: K.green, cursor: "pointer", marginBottom: SPACE.sm, display: "flex", alignItems: "center", justifyContent: "center", gap: SPACE.xs }}>
-              🔗 Reťaz dobra — rozdeliť platbu
-            </div>
-
-            {/* zoznam darcov — až pod pravidelnou podporou a reťazou dobra */}
-            <div style={{ marginBottom: SPACE.gutter }}>
-              <ZoznamDarcov refId={darRef} celkom={ludia} />
-            </div>
-          </>
-        ) : (
-          /* dobrovoľníctvo / materiál — primárne zapojenie, no podporiť sa dá aj peniazmi (karta / SEPA prevod / peňaženka) */
-          <div style={{ marginBottom: SPACE.gutter }}>
-            <div {...pressable(() => setOzvat(true), "Zapojiť sa — napísať organizácii")} style={{ width: "100%", border: `2px solid ${K.greenEdge}`, background: K.greenBg, borderRadius: RADIUS.sm, padding: SPACE.gutter, textAlign: "center", fontSize: 15, fontWeight: 700, color: K.green, cursor: "pointer", marginBottom: SPACE.sm, boxSizing: "border-box" }}>
-              🙌 Zapojiť sa
-            </div>
-            <PodporaSekcia
-              onShare={() => zdielaj({ titul: z.nazov, text: z.nazov, url: aktualnaUrl() }, toast)}
-              upvotes={140} onUpvote={() => toast("Palec hore")}
-              onPodpor={(s: number) => podpor(s, `Ďakujeme za ${s} DEED pre ${z.nazov}`)} onSms={() => podpor(100, "SMS podpora", "sms")}
-              onKanal={(k: string) => setPlatba(k as Kanal)} supLabel="PODPORIŤ — klik a hneď odíde" />
-            <div style={{ marginTop: SPACE.gutter }}>
-              <ZoznamDarcov refId={darRef} celkom={ludia} />
-            </div>
-          </div>
-        )}
-      </div>
+      {menu && (
+        <KontextMenu onClose={() => setMenu(false)} polozky={[
+          { ikona: <Zdielanie size={17} />, label: "Zdieľať zbierku", onClick: () => void zdielaj({ titul: z.nazov, text: z.nazov, url: aktualnaUrl() }, toast) },
+          { ikona: <IkonaOdkaz size={17} />, label: "Kopírovať odkaz", onClick: async () => { try { await navigator.clipboard.writeText(aktualnaUrl()); toast("Odkaz skopírovaný"); } catch { void zdielaj({ titul: z.nazov, text: z.nazov, url: aktualnaUrl() }, toast); } } },
+          { ikona: <IkonaVlajka size={16} />, label: "Nahlásiť obsah", danger: true, onClick: () => setNahlasit(true) },
+        ]} />
+      )}
 
       {/* simulácia platby (EUR karta / DEED peňaženka) */}
       {platba && <PlatbaModal kanal={platba} komu={z.nazov} onClose={() => setPlatba(null)} onDone={platbaHotova} />}
@@ -647,7 +670,9 @@ function SheetAdresar({ toast, onClose, onSubjekt }: { toast: (m: string) => voi
               <div style={{ fontSize: 11, fontWeight: 700, color: K.blue, textTransform: "uppercase", letterSpacing: ".04em", margin: `${SPACE.gutter}px 0 ${SPACE.xxs}px` }}>{s.sekcia}</div>
               {s.polozky.map((p, pi) => (
                 <div key={pi} onClick={() => onSubjekt ? onSubjekt({ typ: "org", meno: p[1], lok: p[2], level: p[3] as any }) : toast("Profil charity — " + p[1])} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, padding: `${SPACE.sm}px ${SPACE.xxs}px`, borderBottom: `1px solid ${K.line}`, cursor: "pointer" }}>
-                  <div style={{ width: 38, height: 38, borderRadius: RADIUS.xs, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, flexShrink: 0, background: SEG_BG[(si + pi) % SEG_BG.length], color: K.txt }}>{p[0]}</div>
+                  <span style={{ width: 38, height: 38, borderRadius: RADIUS.round, overflow: "hidden", flexShrink: 0, border: `1px solid ${K.line}`, background: SEG_BG[(si + pi) % SEG_BG.length] }}>
+                    <img src={najdiOrg(p[1]).logo} alt={p[1]} loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                  </span>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 15, fontWeight: 500 }}>{p[1]}</div>
                     <div style={{ fontSize: 12.5, color: K.txt2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p[2]}</div>

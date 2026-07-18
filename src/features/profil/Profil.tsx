@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { SIRKA, C, GRAD, GRAD_ZELENY, SPACE, RADIUS } from "@/theme";
-import { toast, Sheet, AvatarUroven, Stit, STIT_POPIS, useScrollPamat, useViac, useMotiv, useLayout, useTvorbaGate, obalSiroky, QrModal, pressable, IkonaMenu, IkonaNastavenia, IkonaSipVlavo, IkonaSipDole, IkonaPenazenka, IkonaHviezda, IkonaFajka, IkonaDoska, IkonaUsmev, IkonaOsoba, IkonaPin, IkonaSlnko, IkonaMesiac, IkonaStit, IkonaInstitucia, SkeletonRiadky, EmptyState, ErrorState, ScreenSwitch } from "@/shared";
+import { toast, Sheet, AvatarUroven, Stit, STIT_POPIS, useScrollPamat, useViac, useMotiv, useLayout, useTvorbaGate, obalSiroky, QrModal, pressable, IkonaMenu, IkonaNastavenia, IkonaSipVlavo, IkonaSipDole, IkonaPenazenka, IkonaHviezda, IkonaFajka, IkonaDoska, IkonaUsmev, IkonaOsoba, IkonaPin, IkonaSlnko, IkonaMesiac, IkonaStit, IkonaInstitucia, IkonaCeruzka, IkonaQr, IkonaObalka, IkonaList, IkonaKniha, IkonaSport, IkonaPaleta, IkonaZachrana, IkonaLudia, IkonaSrdceLine, BtnAkcia, MenuSkupina, MenuPolozka, MenuPrepinac, SkeletonRiadky, EmptyState, ErrorState, ScreenSwitch } from "@/shared";
 import { MojDeedFiremny } from "@/features/rola/MojDeedFiremny";
 import { RetazDobraSheet } from "@/features/retaz/RetazDobra";
 import { IntroPruvodca } from "@/components/intro";
@@ -177,29 +177,39 @@ function ProfilHlavny({ toast, naWallet, naSub, naNastavenia, naPriatelia, naFir
   );
 }
 
-// identita (avatar, úroveň, režim, progres) — zdieľaná mobilom (ProfilHlavny) aj desktopom (bočný panel)
+// identita (avatar, úroveň, režim, štít) — zdieľaná mobilom (ProfilHlavny) aj desktopom (bočný panel)
 function IdentitaKarta({ naNastavenia }: { naNastavenia: () => void }) {
   const ja = usePouzivatel();
+  const [qr, setQr] = useState(false);
   return (
     <div>
-      <div style={{ background: C.surface, border: `1px solid ${C.line}`, borderRadius: RADIUS.md, padding: SPACE.md, display: "flex", gap: SPACE.gutter, alignItems: "center" }}>
-        <AvatarUroven ini={ja.iniciala} tint={ja.tint} tier={ja.tier} size={60} />
-        <div style={{ minWidth: 0 }}>
-          <div style={{ fontSize: 17, fontWeight: 700 }}>{ja.celeMeno}</div>
-          {ja.demo ? (
-            <div style={{ display: "inline-flex", alignItems: "center", gap: SPACE.xxs, background: "rgba(231,199,102,.14)", border: "1px solid rgba(200,162,58,.5)", color: "var(--a-gold)", fontSize: 10, fontWeight: 700, padding: `${SPACE.xxs}px ${SPACE.xs}px`, borderRadius: RADIUS.xs, marginTop: SPACE.xs }}>★ Gold</div>
-          ) : (
-            <div style={{ display: "inline-flex", alignItems: "center", gap: SPACE.xxs, background: "rgba(231,199,102,.14)", border: "1px solid rgba(200,162,58,.5)", color: "var(--a-gold)", fontSize: 10, fontWeight: 700, padding: `${SPACE.xxs}px ${SPACE.xs}px`, borderRadius: RADIUS.xs, marginTop: SPACE.xs }}>★ {String(ja.tier).replace(/\s*·\s*L\d+/, "")}{ja.poradoveCislo ? ` · člen #${ja.poradoveCislo}` : ""}</div>
-          )}
-          <div style={{ marginTop: SPACE.xs }}>
-            <span style={{ display: "inline-flex", fontSize: 9.5, color: ja.rezim === "anonym" ? C.textTer : "var(--a-green)", background: ja.rezim === "anonym" ? "rgba(154,160,168,.14)" : "rgba(61,214,140,.13)", border: `1px solid ${ja.rezim === "anonym" ? "rgba(154,160,168,.4)" : "rgba(46,125,82,.45)"}`, padding: `${SPACE.xxs}px ${SPACE.xs}px`, borderRadius: RADIUS.xs, marginRight: SPACE.xs }}>{ja.rezim === "anonym" ? "anonym" : "verejný"}</span>
-            <span onClick={naNastavenia} style={{ fontSize: 9.5, color: "var(--a-info)", cursor: "pointer" }}>zmeniť v nastaveniach</span>
+      <div style={{ background: C.surface, border: `1px solid ${C.line}`, borderRadius: RADIUS.md, overflow: "hidden" }}>
+        {/* cover pásik — jemný brand gradient (vzor business profilov) */}
+        <div style={{ height: 56, background: "linear-gradient(135deg, color-mix(in srgb, var(--a-green) 22%, transparent), color-mix(in srgb, var(--a-info) 16%, transparent) 60%, color-mix(in srgb, var(--a-gold) 18%, transparent))" }} />
+        <div style={{ padding: `0 ${SPACE.md}px ${SPACE.md}px` }}>
+          <div style={{ display: "flex", alignItems: "flex-end", gap: SPACE.gutter, marginTop: -24 }}>
+            <span style={{ flex: "none", borderRadius: RADIUS.round, border: `3px solid var(--c-bg)`, background: "var(--c-bg)" }}>
+              <AvatarUroven ini={ja.iniciala} tint={ja.tint} tier={ja.tier} size={60} />
+            </span>
+            <div style={{ minWidth: 0, paddingBottom: 2 }}>
+              <div style={{ fontSize: 17, fontWeight: 800, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ja.celeMeno}</div>
+              <div style={{ display: "flex", alignItems: "center", gap: SPACE.xs, marginTop: 3, flexWrap: "wrap" }}>
+                <span style={{ display: "inline-flex", alignItems: "center", gap: SPACE.xxs, background: "rgba(231,199,102,.14)", border: "1px solid rgba(200,162,58,.5)", color: "var(--a-gold)", fontSize: 10, fontWeight: 700, padding: `1px ${SPACE.xs}px`, borderRadius: RADIUS.xs }}>
+                  ★ {ja.demo ? "Gold" : String(ja.tier).replace(/\s*·\s*L\d+/, "")}{!ja.demo && ja.poradoveCislo ? ` · člen #${ja.poradoveCislo}` : ""}
+                </span>
+                <span style={{ display: "inline-flex", fontSize: 9.5, color: ja.rezim === "anonym" ? C.textTer : "var(--a-green)", background: ja.rezim === "anonym" ? "rgba(154,160,168,.14)" : "rgba(61,214,140,.13)", border: `1px solid ${ja.rezim === "anonym" ? "rgba(154,160,168,.4)" : "rgba(46,125,82,.45)"}`, padding: `1px ${SPACE.xs}px`, borderRadius: RADIUS.xs }}>{ja.rezim === "anonym" ? "anonym" : "verejný"}</span>
+              </div>
+            </div>
+          </div>
+          {/* akčný rad profilu (vzor IG: Upraviť · Zdieľať) */}
+          <div style={{ display: "flex", gap: SPACE.xs, marginTop: SPACE.sm }}>
+            <BtnAkcia variant="secondary" onClick={naNastavenia}><IkonaCeruzka size={14} /> Upraviť profil</BtnAkcia>
+            <BtnAkcia variant="secondary" onClick={() => setQr(true)}><IkonaQr size={14} /> Môj QR</BtnAkcia>
           </div>
         </div>
       </div>
 
-      {/* ŠTÍT + text — NIKDY progress bar/percentá (DEED_Stity §1: level-up je
-          prekvapenie, postup sa nezobrazuje; všetci začínajú Bronze) */}
+      {/* ŠTÍT + text — NIKDY progress bar/percentá (level-up je prekvapenie; všetci začínajú Bronze) */}
       <div style={{ marginTop: SPACE.gutter, display: "flex", alignItems: "center", gap: SPACE.sm }}>
         <Stit level={ja.demo ? "Gold" : "Bronze"} size={36} />
         <div style={{ minWidth: 0, fontSize: 12, color: C.textTer, lineHeight: 1.45 }}>
@@ -207,9 +217,22 @@ function IdentitaKarta({ naNastavenia }: { naNastavenia: () => void }) {
           {!ja.demo && <><br />{ja.mesto && ja.mesto !== "—" ? `${ja.mesto} · ` : ""}Karma rastie overenými skutkami.</>}
         </div>
       </div>
+
+      {qr && <QrModal typ="identita" titul="Môj QR" popis="Ukáž QR — druhá strana ťa pridá alebo ti pošle DEED" odkaz={qrUrl("handle", "martin-k")} onClose={() => setQr(false)} toast={toast} />}
     </div>
   );
 }
+
+// SVG ikony oblastí záujmov — minimalistické line ikony (žiadne emoji)
+const IKONA_OBLASTI: Record<string, React.ReactNode> = {
+  Priroda: <IkonaList size={17} />,
+  Komunita: <IkonaLudia size={17} />,
+  Zdravie: <IkonaSrdceLine size={17} />,
+  Ucenie: <IkonaKniha size={17} />,
+  Sport: <IkonaSport size={17} />,
+  Art: <IkonaPaleta size={17} />,
+  Pomoc: <IkonaZachrana size={17} />,
+};
 
 // prehľad (sledujem / podporujem / záujmy) + accordion záujmov — zdieľaný mobilom aj desktopom
 function PrehladZaujmy() {
@@ -239,7 +262,7 @@ function PrehladZaujmy() {
             return (
               <div key={z.oblast} style={{ border: `1px solid ${aktiv ? "color-mix(in srgb, var(--a-info) 45%, transparent)" : C.line}`, borderRadius: RADIUS.md, overflow: "hidden", background: aktiv ? "color-mix(in srgb, var(--a-info) 7%, transparent)" : C.surface2, transition: "background .2s ease, border-color .2s ease" }}>
                 <div {...pressable(() => setOtvorenaOblast(otvor ? null : z.oblast), `${z.label} — detail`)} aria-expanded={otvor} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, padding: `${SPACE.sm}px ${SPACE.gutter}px`, cursor: "pointer" }}>
-                  <span style={{ fontSize: 16 }}>{z.emoji}</span>
+                  <span style={{ width: 30, height: 30, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: RADIUS.xs, background: aktiv ? "color-mix(in srgb, var(--a-info) 14%, transparent)" : "rgba(var(--glass-rgb),.06)", color: aktiv ? "var(--a-info)" : C.textSec }}>{IKONA_OBLASTI[z.oblast] ?? <span style={{ fontSize: 15 }}>{z.emoji}</span>}</span>
                   <span style={{ fontSize: 14, fontWeight: 700, color: aktiv ? "var(--a-info)" : C.text }}>{z.label}</span>
                   {(celaOblast || pocetPod > 0) && (
                     <span style={{ fontSize: 10.5, fontWeight: 800, color: "var(--a-info)", background: "color-mix(in srgb, var(--a-info) 15%, transparent)", borderRadius: RADIUS.pill, padding: `1px ${SPACE.xs}px` }}>{celaOblast ? "✓ celé" : `${pocetPod}`}</span>
@@ -354,9 +377,10 @@ function Penazenka({ toast, onBack, desktop }: PenazenkaProps) {
           ))}
         </div>
 
-        <div style={sekciaLabel}>KÚPIŤ DEED</div>
-        <div onClick={() => toast("Burza DEED/USDC — príde s reálnym walletom (Fáza 5)")} style={subItem}><span>▣ Cez burzu (DEED/USDC)</span><span style={{ color: C.textTer }}>›</span></div>
-        <div {...pressable(() => setDobit(true), "Kúpiť DEED platobnou kartou")} style={{ ...subItem, cursor: "pointer" }}><span>▢ Platobnou kartou</span><span style={{ color: C.textTer }}>›</span></div>
+        <MenuSkupina nadpis="KÚPIŤ DEED" style={{ marginTop: SPACE.md }}>
+          <MenuPolozka ikona={<IkonaQr size={16} />} farba="var(--a-plum)" label="Cez burzu" popis="DEED/USDC — príde s reálnym walletom" onClick={() => toast("Burza DEED/USDC — príde s reálnym walletom")} />
+          <MenuPolozka ikona={<IkonaPenazenka size={16} />} farba="var(--a-green)" label="Platobnou kartou" popis="Okamžité dobitie" onClick={() => setDobit(true)} posledna />
+        </MenuSkupina>
 
         <div style={sekciaLabel}>POSLEDNÉ PREVODY</div>
         {isError ? (
@@ -530,16 +554,7 @@ function PriateliaScreen({ toast, onBack, desktop }: PriateliaScreenProps) {
   );
 }
 
-// ===================== NASTAVENIA (§12) =====================
-function Switch({ on, onClick }: { on: boolean; onClick: () => void }) {
-  return (
-    <span onClick={onClick} style={{ width: 42, height: 25, borderRadius: RADIUS.lg, flex: "none", cursor: "pointer", padding: 3,
-      background: on ? "linear-gradient(90deg,#1FBF8F,#5CE6B8)" : "rgba(var(--glass-rgb),.14)", transition: "background .2s ease" }}>
-      <span style={{ display: "block", width: 19, height: 19, borderRadius: RADIUS.round, background: "#fff", boxShadow: "0 1px 4px rgba(0,0,0,.35)", transform: on ? "translateX(17px)" : "none", transition: "transform .2s ease" }} />
-    </span>
-  );
-}
-
+// ===================== NASTAVENIA =====================
 type NastaveniaScreenProps = { toast: ToastFn; onBack: () => void; onNotif: () => void; desktop?: boolean };
 
 function NastaveniaScreen({ toast, onBack, onNotif, desktop }: NastaveniaScreenProps) {
@@ -552,9 +567,6 @@ function NastaveniaScreen({ toast, onBack, onNotif, desktop }: NastaveniaScreenP
   const [oAppke, setOAppke] = useState(false);            // O aplikácii · podpora
   const [ako, setAko] = useState(false);                  // sprievodca „Ako DEED funguje"
 
-  const Sekcia = ({ children }: { children: React.ReactNode }) => <div style={{ fontSize: 10.5, letterSpacing: ".5px", color: C.textTer, fontWeight: 700, margin: "18px 0 8px" }}>{children}</div>;
-  const Riadok = ({ children, onClick }: { children: React.ReactNode; onClick?: () => void }) => <div onClick={onClick} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, background: C.surface, border: `1px solid ${C.line}`, borderRadius: RADIUS.sm, padding: `${SPACE.sm}px ${SPACE.gutter}px`, marginBottom: SPACE.xs, fontSize: 14.5, cursor: onClick ? "pointer" : "default" }}>{children}</div>;
-
   return (
     <div style={{ paddingBottom: SPACE.lg }}>
       <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm, padding: "16px 18px 8px" }}>
@@ -562,45 +574,33 @@ function NastaveniaScreen({ toast, onBack, onNotif, desktop }: NastaveniaScreenP
         <h3 style={{ fontSize: 17, margin: 0 }}>Nastavenia</h3>
       </div>
       <div style={{ padding: "0 16px" }}>
-        {/* VZHĽAD */}
-        <Sekcia>VZHĽAD</Sekcia>
-        <Riadok onClick={prepni}>
-          <span style={{ flex: 1 }}>Téma</span>
-          <span style={{ display: "flex", alignItems: "center", gap: SPACE.xs, fontWeight: 700, color: "var(--a-info)" }}>{svetly ? <IkonaSlnko size={16} color="var(--a-info)" /> : <IkonaMesiac size={16} color="var(--a-info)" />} {svetly ? "Day" : "Dark"} ▾</span>
-        </Riadok>
-        <Riadok onClick={() => setJazyk((j) => j === "SK" ? "EN" : j === "EN" ? "Auto" : "SK")}>
-          <span style={{ flex: 1 }}>Jazyk</span>
-          <span style={{ fontWeight: 700 }}>{jazyk === "Auto" ? "Auto (podľa krajiny)" : jazyk} ▾</span>
-        </Riadok>
+        <MenuSkupina nadpis="VZHĽAD" style={{ marginTop: SPACE.xs }}>
+          <MenuPolozka ikona={svetly ? <IkonaSlnko size={16} /> : <IkonaMesiac size={16} />} farba="var(--a-info)"
+            label="Téma" hodnota={svetly ? "Svetlá" : "Tmavá"} onClick={prepni} />
+          <MenuPolozka ikona={<span style={{ fontSize: 13, fontWeight: 800 }}>SK</span>} farba="var(--a-plum)"
+            label="Jazyk" hodnota={jazyk === "Auto" ? "Auto (podľa krajiny)" : jazyk}
+            onClick={() => setJazyk((j) => j === "SK" ? "EN" : j === "EN" ? "Auto" : "SK")} posledna />
+        </MenuSkupina>
 
-        {/* SÚKROMIE A PROFIL */}
-        <Sekcia>SÚKROMIE A PROFIL</Sekcia>
-        <Riadok onClick={() => setRezim((r) => r === "verejny" ? "anonym" : "verejny")}>
-          <span style={{ flex: 1 }}>Režim profilu</span>
-          <span style={{ fontWeight: 700, color: rezim === "verejny" ? "var(--a-green)" : "var(--a-plum)" }}>{rezim === "verejny" ? "Verejný" : "Anonym"} ▾</span>
-        </Riadok>
-        <Riadok><span style={{ flex: 1 }}>Zobrazovať moju úroveň</span><Switch on={uroven} onClick={() => setUroven((u) => !u)} /></Riadok>
-        <Riadok>
-          <span style={{ display: "flex", alignItems: "center", gap: SPACE.xs, flex: 1 }}><IkonaPin size={16} color={C.textTer} /> Poloha (GPS)</span>
-          <Switch on={gps} onClick={() => setGps((g) => !g)} />
-        </Riadok>
-        <Riadok onClick={() => setOchrana(true)}>
-          <span style={{ display: "flex", alignItems: "center", gap: SPACE.xs, flex: 1 }}><IkonaStit size={16} color="var(--a-green)" /> Ochrana osoby (anti-sociálny kredit)</span>
-          <span style={{ color: C.textTer, fontSize: 16 }}>›</span>
-        </Riadok>
+        <MenuSkupina nadpis="SÚKROMIE A PROFIL">
+          <MenuPolozka ikona={<IkonaOsoba size={16} />} farba={rezim === "verejny" ? "var(--a-green)" : "var(--a-plum)"}
+            label="Režim profilu" hodnota={rezim === "verejny" ? "Verejný" : "Anonym"}
+            onClick={() => setRezim((r) => r === "verejny" ? "anonym" : "verejny")} />
+          <MenuPrepinac ikona={<IkonaHviezda size={16} />} farba="var(--a-gold)" label="Zobrazovať moju úroveň" on={uroven} onChange={() => setUroven((u) => !u)} />
+          <MenuPrepinac ikona={<IkonaPin size={16} />} farba="var(--a-info)" label="Poloha (GPS)" on={gps} onChange={() => setGps((g) => !g)} />
+          <MenuPolozka ikona={<IkonaStit size={16} />} farba="var(--a-green)" label="Ochrana osoby" popis="Si vidieť len tak, ako chceš" onClick={() => setOchrana(true)} posledna />
+        </MenuSkupina>
 
-        {/* NOTIFIKÁCIE → podobrazovka (§8.1) */}
-        <Sekcia>NOTIFIKÁCIE</Sekcia>
-        <Riadok onClick={onNotif}>
-          <span style={{ display: "flex", alignItems: "center", gap: SPACE.xs, flex: 1 }}><IkonaNastavenia size={16} color={C.textTer} /> Nastavenie oznámení</span>
-          <span style={{ color: C.textTer, fontSize: 16 }}>›</span>
-        </Riadok>
+        <MenuSkupina nadpis="NOTIFIKÁCIE">
+          <MenuPolozka ikona={<IkonaNastavenia size={16} />} farba="var(--a-info)" label="Nastavenie oznámení" popis="Ktoré upozornenia chceš dostávať" onClick={onNotif} posledna />
+        </MenuSkupina>
 
-        {/* ÚČET */}
-        <Sekcia>ÚČET</Sekcia>
-        <Riadok onClick={() => toast("Zamestnávateľ (B2B) — odložené do B2B")}><span style={{ flex: 1 }}>Zamestnávateľ (B2B)</span><span style={{ color: C.textTer, fontWeight: 600 }}>Nenastavený ›</span></Riadok>
-        <Riadok onClick={() => toast("Peňaženka a bezpečnosť — biometria/KYC až pri výbere hodnoty")}><span style={{ flex: 1 }}>Peňaženka a bezpečnosť</span><span style={{ color: C.textTer, fontSize: 16 }}>›</span></Riadok>
-        <Riadok onClick={() => setOAppke(true)}><span style={{ flex: 1 }}>O aplikácii · podpora</span><span style={{ color: C.textTer, fontSize: 16 }}>›</span></Riadok>
+        <MenuSkupina nadpis="ÚČET">
+          <MenuPolozka ikona={<IkonaInstitucia size={16} />} farba="var(--a-gold)" label="Zamestnávateľ (B2B)" hodnota="Nenastavený" onClick={() => toast("Zamestnávateľ — príde s firemnými profilmi")} />
+          <MenuPolozka ikona={<IkonaPenazenka size={16} />} farba="var(--a-info)" label="Peňaženka a bezpečnosť" popis="Biometria a overenie pri výbere hodnoty" onClick={() => toast("Peňaženka a bezpečnosť — čoskoro")} />
+          <MenuPolozka ikona={<IkonaObalka size={16} />} farba="var(--a-plum)" label="O aplikácii · podpora" onClick={() => setOAppke(true)} posledna />
+        </MenuSkupina>
+
         <button onClick={() => { toast("Odhlásené"); void signOut(); }} style={{ width: "100%", height: 50, borderRadius: RADIUS.md, marginTop: SPACE.xs, border: "1px solid rgba(242,112,111,.4)", background: "rgba(242,112,111,.08)", color: "var(--a-danger)", fontWeight: 700, fontSize: 15, cursor: "pointer", fontFamily: "inherit" }}>Odhlásiť sa</button>
       </div>
 

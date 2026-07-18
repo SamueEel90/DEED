@@ -141,7 +141,7 @@ export default function ModulMapa({ wide }: { wide?: boolean }) {
                 <div style={{ fontSize: 13, fontWeight: 700, color: "var(--a-clay)" }}>Poloha (GPS) je vypnutá</div>
                 <div style={{ fontSize: 11, color: C.textTer }}>Zapni ju pre presnejší okruh okolo teba</div>
               </div>
-              <span {...pressable(() => { setGps(true); toast("Poloha zapnutá (demo)"); }, "Zapnúť polohu")} style={{ flex: "none", fontSize: 11.5, fontWeight: 700, color: "#fff", background: "rgba(240,168,94,.85)", borderRadius: RADIUS.sm, padding: `${SPACE.xs}px ${SPACE.sm}px`, cursor: "pointer" }}>Zapnúť</span>
+              <span {...pressable(() => { setGps(true); toast("Poloha zapnutá"); }, "Zapnúť polohu")} style={{ flex: "none", fontSize: 11.5, fontWeight: 700, color: "#fff", background: "rgba(240,168,94,.85)", borderRadius: RADIUS.sm, padding: `${SPACE.xs}px ${SPACE.sm}px`, cursor: "pointer" }}>Zapnúť</span>
             </div>
           )}
 

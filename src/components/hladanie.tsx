@@ -101,7 +101,7 @@ export function HladanieModal({ data = [], onPick, onSubjekt, onClose, akcent = 
   const odporucane = vesmir.slice(0, 3);
 
   const klik = (x: any) => {
-    if (x._subj) { onSubjekt ? onSubjekt(subjektZHladania(x)) : toast?.(`Otváram profil: ${x.titul} (demo)`); }
+    if (x._subj) { onSubjekt ? onSubjekt(subjektZHladania(x)) : toast?.(`Otváram profil: ${x.titul}`); }
     else onPick?.(x.id);
     onClose();
   };

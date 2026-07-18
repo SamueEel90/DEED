@@ -136,7 +136,7 @@ export const FEED_ITEMS: NabozFeedItem[] = [
     nazov: "Pomoc rodine po požiari", lok: "Trenčín · Sihoť", overena: true,
     badgeL: "💶 ZBIERKA", tag: "Zbierka", emoji: "🤍",
     popis: "Rodine z našej farnosti zhorel byt. Skladáme sa na najnutnejšie veci.",
-    pribeh: "Rodina z farnosti prišla pri požiari o bývanie. Zbierka je zrkadlená z Charity — transparentný účet a overenie zabezpečuje charitatívny engine.",
+    pribeh: "Rodina z farnosti prišla pri požiari o bývanie. Transparentný účet a overenie zabezpečuje modul Charita.",
     vyzbierane: 1830, ciel: 3000, fotky: [U("photo-1516567832553-66232148f74c")] },
 
   { id: "synagoga", comp: "data", typ: "charita", modul: "charity", kat: "Komunita", ntyp: "zbierka",
@@ -181,7 +181,7 @@ export const FEED_ITEMS: NabozFeedItem[] = [
     nazov: "Duchovné slovo na týždeň", lok: "celé SR", overena: true,
     badgeL: "📖 OZNAM", tag: "Oznam", emoji: "📖",
     popis: "Krátke zamyslenie k nedeľnému čítaniu pre komunitu.",
-    pribeh: "Týždenné duchovné zamyslenie k nedeľnému evanjeliu — obsah patrí do modulu, nie do verejného feedu (§3 obsahová hranica).",
+    pribeh: "Týždenné duchovné zamyslenie k nedeľnému evanjeliu.",
     fotky: [U("photo-1504052434569-70ad5836ab65")] },
 
   { id: "cintorin", comp: "data", typ: "skutok", modul: "charity", kat: "Priroda", ntyp: "dobrovolnictvo",
@@ -199,7 +199,7 @@ export const FEED_ITEMS: NabozFeedItem[] = [
     nazov: "Pomoc pri charitatívnom obede", lok: "Bratislava · celé SR", overena: true,
     badgeL: "🍲 DOBROVOĽNÍCTVO", tag: "Dobrovoľníctvo", emoji: "🍲",
     popis: "Hľadáme dobrovoľníkov na výdaj teplých obedov ľuďom bez domova.",
-    pribeh: "Nábor dobrovoľníkov na výdaj teplých obedov. Praktická pomoc — presne to, čo patrí aj do verejného feedu (§3).",
+    pribeh: "Nábor dobrovoľníkov na výdaj teplých obedov v teréne.",
     fotky: [U("photo-1593113598332-cd288d649433")] },
 
   // ---- bohatší obsah demo farnosti (Farnosť Trenčín — mesto) pre taby profilu ----
@@ -209,7 +209,7 @@ export const FEED_ITEMS: NabozFeedItem[] = [
     nazov: "Nové kúrenie do kostola", lok: "Trenčín · centrum", overena: true,
     badgeL: "🔥 ZBIERKA", tag: "Zbierka", emoji: "🔥",
     popis: "Staré kúrenie dosluhuje. Zbierame na tepelné čerpadlo pred zimou.",
-    pribeh: "Samostatná kampaň popri streche — teplo v kostole cez zimu. Každá kampaň má vlastné darovanie, nech darca vie, kam dar padol (§57).",
+    pribeh: "Samostatná kampaň popri streche — teplo v kostole cez zimu.",
     vyzbierane: 2600, ciel: 9000, fotky: [U("photo-1608569569089-5d2e3e644ea6")] },
 
   { id: "omsa-ne", comp: "data", typ: "skutok", modul: "charity", kat: "Komunita", ntyp: "udalost",
@@ -218,7 +218,7 @@ export const FEED_ITEMS: NabozFeedItem[] = [
     nazov: "Nedeľná svätá omša 10:30", lok: "Trenčín · farský kostol", overena: true,
     badgeL: "⛪ OMŠA", tag: "Udalosť", emoji: "⛪",
     popis: "Nedeľa 10:30 · veľká omša. Dobrovoľná omšová zbierka.",
-    pribeh: "Pravidelná nedeľná veľká omša z rozvrhu. K omši sa automaticky generuje omšová zbierka (settlement € na farský účet, close 23:59). Omša nemá RSVP — chodí sa bez prihlásenia, má len pripomienku (§8).",
+    pribeh: "Pravidelná nedeľná veľká omša z rozvrhu. K omši patrí aj omšová zbierka. Na omšu sa netreba prihlasovať — môžeš si nastaviť pripomienku.",
     fotky: [U("photo-1438032005730-c779502df39b")] },
 
   { id: "put-levoca", comp: "data", typ: "skutok", modul: "charity", kat: "Komunita", ntyp: "udalost",
@@ -282,7 +282,7 @@ export const FEED_ITEMS: NabozFeedItem[] = [
     nazov: "Obnova historického organu", lok: "Bratislava · Blumentál", overena: true,
     badgeL: "🎹 ZBIERKA", tag: "Zbierka", emoji: "🎹",
     popis: "Náš organ z roku 1890 potrebuje generálnu opravu. Zbierame na reštaurovanie píšťal.",
-    pribeh: "Historický organ je srdcom liturgickej hudby v Blumentáli. Reštaurovanie zahŕňa čistenie a ladenie píšťal, opravu mechaniky a mecha. Zbierka žije v engine Charita — transparentný účet, settlement € na farský účet.",
+    pribeh: "Historický organ je srdcom liturgickej hudby v Blumentáli. Reštaurovanie zahŕňa čistenie a ladenie píšťal, opravu mechaniky a mecha. Zbierka má transparentný účet a výnos ide priamo na farský účet.",
     vyzbierane: 7300, ciel: 24000, fotky: [U("photo-1673372316742-57c84d7e63c4")] },
 
   { id: "advent-blumental", comp: "data", typ: "skutok", modul: "charity", kat: "Komunita", ntyp: "udalost",

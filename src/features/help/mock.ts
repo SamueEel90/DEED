@@ -161,7 +161,7 @@ export const MOCK_FEED: HelpFeedItem[] = [
 export const ZIVE_DARY: ZivyDar[] = [
   { kto: "Anna M.", co: "5 €", komu: "Rodina Kováčová" },
   { kto: "Peter V.", co: "💎 50 DEED", komu: "Marek B." },
-  { kto: "LIDL", co: "500 € · D++", komu: "Marek B." },
+  { kto: "LIDL", co: "500 €", komu: "Marek B." },
   { kto: "Ján H.", co: "10 €", komu: "Žofia K." },
   { kto: "Eva K.", co: "🔥 100 DEED", komu: "Rodina Kováčová" },
   { kto: "Mária T.", co: "SMS dar 2 €", komu: "Žofia K." },

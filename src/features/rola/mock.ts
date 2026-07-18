@@ -4,6 +4,7 @@
 // panelov („Môj DEED" navrch userovho základu) a položiek SPRÁVY pre
 // Charita · Tvorca · B2B per DEED_Role_Panely_Sprava_v0_1 §1–§3.
 // ============================================================
+import { U, AV } from "@/theme";
 import type { Pozicia, Tier } from "./stav";
 
 // blok rolového panela — rovnaká anatómia ako karty userovho „Môj DEED"
@@ -59,6 +60,10 @@ export interface SubjektMeta {
   nazov: string;
   emoji: string;          // fallback identity bez loga
   iniciacky: string;      // fallback do krúžku (adresár, avatar)
+  /** titulná (cover) fotka profilu */
+  cover?: string;
+  /** profilová fotka / logo subjektu (užívateľské logo z nastavení má prednosť) */
+  foto?: string;
   lok: string;
   overena: boolean;
   /** 3 čísla — charita: vyzbierané/podporovatelia/úroveň · tvorca: mobilizované/prípady/úroveň · firma: podporené €/prípady/úroveň */
@@ -72,6 +77,7 @@ export interface SubjektMeta {
 export const SUBJEKTY: Record<Pozicia, SubjektMeta> = {
   charita: {
     nazov: "Svetlo pomoci o.z.", emoji: "💛", iniciacky: "SP", lok: "Trenčín", overena: true,
+    cover: U("photo-1416879595882-3373a0480b5b"), foto: U("photo-1518199266791-5375a83190b7"),
     cisla: [["24 600 €", "vyzbierané"], ["1 204", "podporovateľov"], ["Gold", "úroveň"]],
     onas: "Občianske združenie Svetlo pomoci pomáha rodinám v núdzi v Trenčianskom kraji od roku 2014. Každé euro dokladujeme — transparentnosť per prípad je naša podstata.",
     kontakt: { adresa: "Mierové námestie 4, Trenčín", email: "info@svetlopomoci.sk", tel: "+421 901 234 567", web: "svetlopomoci.sk" },
@@ -91,6 +97,7 @@ export const SUBJEKTY: Record<Pozicia, SubjektMeta> = {
   },
   tvorca: {
     nazov: "Marek Tvorí", emoji: "🎬", iniciacky: "MT", lok: "Bratislava", overena: true,
+    cover: U("photo-1513364776144-60967b0f800f"), foto: AV(33),
     cisla: [["4 320 €", "mobilizované"], ["6", "uzavretých prípadov"], ["Silver", "úroveň"]],
     onas: "Točím videá o ľuďoch, ktorí pomáhajú. Cez moju reťaz ide časť z každého honoráru na zbierku, ktorú práve podporujem.",
     kontakt: { adresa: "Bratislava", email: "marek@marektvori.sk", tel: "+421 902 111 222", web: "marektvori.sk" },
@@ -111,12 +118,13 @@ export const SUBJEKTY: Record<Pozicia, SubjektMeta> = {
   },
   b2b: {
     nazov: "Pekáreň Dobrota s.r.o.", emoji: "🥖", iniciacky: "PD", lok: "Trenčín", overena: true,
+    cover: U("photo-1578985545062-69928b1d9587"), foto: U("photo-1628428799437-d886d7d2e9b2"),
     cisla: [["2 400 €", "podporené"], ["3", "prípady"], ["Bronze", "úroveň"]],
-    onas: "Rodinná pekáreň z Trenčína. Podporujeme miestne zbierky a naši ľudia chodia na dobrovoľnícke akcie — každé euro je dohľadateľné (D++ stopa).",
+    onas: "Rodinná pekáreň z Trenčína. Podporujeme miestne zbierky a naši ľudia chodia na dobrovoľnícke akcie — každé euro je dohľadateľné.",
     kontakt: { adresa: "Bratislavská 12, Trenčín", email: "dobrota@pekaren.sk", tel: "+421 903 333 444", web: "pekarendobrota.sk" },
     taby: [
       { key: "podporujeme", label: "Podporujeme", polozky: [
-        { emoji: "🔥", titul: "Rodina Kováčová", popis: "500 € · záruka Lidl · D++ stopa" },
+        { emoji: "🔥", titul: "Rodina Kováčová", popis: "500 € · overená podpora" },
         { emoji: "⭐", titul: "Plamienok", popis: "pravidelná mesačná podpora" },
       ] },
       { key: "skutky", label: "Skutky", polozky: [
@@ -148,65 +156,65 @@ export const ORG_ZBIERKY: OrgZbierka[] = [
 ];
 
 export const PANEL_CHARITA: PanelBlok[] = [
-  { id: "zbierky", emoji: "🎯", nazov: "Moje zbierky (org)", popis: "1 aktívna · 1 ukončená · stav dokladovania", tierMin: 0 },
-  { id: "dnes", emoji: "💶", nazov: "Dnes prišlo", popis: "live tok darov · noví darcovia", tierMin: 0 },
-  { id: "dobrovolnici", emoji: "🙋", nazov: "Moji dobrovoľníci", popis: "12 prihlásených na sobotňajšiu brigádu · dochádzka po akcii", tierMin: 2, akcia: "Otvoriť" },
-  { id: "sledujuci", emoji: "👥", nazov: "Sledujúci", popis: "za posledný mesiac +38", hodnota: "1 204", tierMin: 0, akcia: "Detail" },
+  { id: "zbierky", emoji: "🎯", nazov: "Moje zbierky (org)", popis: "1 aktívna · 1 ukončená", tierMin: 0 },
+  { id: "dnes", emoji: "💶", nazov: "Dnes prišlo", popis: "Živý prehľad dnešných darov", tierMin: 0 },
+  { id: "dobrovolnici", emoji: "🙋", nazov: "Moji dobrovoľníci", popis: "12 prihlásených na sobotňajšiu brigádu", tierMin: 2, akcia: "Otvoriť" },
+  { id: "sledujuci", emoji: "👥", nazov: "Sledujúci", popis: "+38 za posledný mesiac", hodnota: "1 204", tierMin: 0, akcia: "Detail" },
   { id: "nastenka", emoji: "📅", nazov: "Moja nástenka", popis: "2 zverejnené udalosti · 1 koncept", tierMin: 0, akcia: "Otvoriť" },
 ];
 
 export const SPRAVA_CHARITA: SpravaItem[] = [
-  { id: "profil", emoji: "✏️", nazov: "Upraviť profil", popis: "Foto, popis, video, kontakt, web, IBAN (VoP)", tierMin: 0 },
-  { id: "zbierky", emoji: "🎯", nazov: "Zbierky — vytvoriť a spravovať", popis: "Limit súbežných zbierok podľa tieru", tierMin: 0, tierPozn: "T0: 1 zbierka · T1/T2: viac (placeholder)" },
-  { id: "dokladovanie", emoji: "🧾", nazov: "Správa zbierky vrátane DOKLADOVANIA", popis: "Doklady použitia financií — priebežne aj po ukončení", tierMin: 0, povinne: true },
-  { id: "darcovia", emoji: "💌", nazov: "Zoznam darcov + poďakovanie", popis: "Zoznam per zbierka (4 režimy — rozhoduje darca) · hromadné poďakovanie", tierMin: 0 },
-  { id: "kalendar", emoji: "📅", nazov: "Kalendár & udalosti", popis: "Dobrovoľnícke akcie, brigády, termíny", tierMin: 1, tierPozn: "tvorba od T1" },
-  { id: "qr", emoji: "▦", nazov: "QR nástroje", popis: "Statický QR na tlač (plagát, pokladnička)", tierMin: 0, tierPozn: "T0: statický QR · T2: event QR + rotujúca TOTP dochádzka" },
-  { id: "qr2", emoji: "🔄", nazov: "Event QR + TOTP dochádzka", popis: "Rotujúci QR pre dochádzku dobrovoľníkov na akciách", tierMin: 2 },
-  { id: "dobrovolnici", emoji: "🙋", nazov: "Dobrovoľníci — správa", popis: "Prihlášky, dochádzka (QR), symetrické hodnotenie 6★", tierMin: 2, tierPozn: "default 5★ · ≤3 = povinný dôvod" },
-  { id: "firmy", emoji: "🤝", nazov: "Spolupráca s firmami", popis: "Strana charity pre VTO / sponzoring (viditeľnosť pre B2B)", tierMin: 2 },
-  { id: "embed", emoji: "🔗", nazov: "Badge embed", popis: "HTML embed badge na vlastný web (klik → DEED profil, backlink)", tierMin: 0 },
-  { id: "sumy", emoji: "👁", nazov: "Viditeľnosť súm", popis: "Čo vidia návštevníci profilu (per zbierka)", tierMin: 0 },
-  { id: "reporty", emoji: "📊", nazov: "Reporty / exporty", popis: "Prehľad pre výročnú správu, export dát", tierMin: 2 },
+  { id: "profil", emoji: "✏️", nazov: "Upraviť profil", popis: "Foto, popis, video, kontakt, web, IBAN", tierMin: 0 },
+  { id: "zbierky", emoji: "🎯", nazov: "Zbierky — vytvoriť a spravovať", popis: "Nová zbierka, úpravy a stav priebehu", tierMin: 0 },
+  { id: "dokladovanie", emoji: "🧾", nazov: "Dokladovanie zbierok", popis: "Doklady použitia financií — priebežne aj po ukončení", tierMin: 0, povinne: true },
+  { id: "darcovia", emoji: "💌", nazov: "Zoznam darcov + poďakovanie", popis: "Zoznam darcov a hromadné poďakovanie", tierMin: 0 },
+  { id: "kalendar", emoji: "📅", nazov: "Kalendár & udalosti", popis: "Dobrovoľnícke akcie, brigády, termíny", tierMin: 1 },
+  { id: "qr", emoji: "▦", nazov: "QR nástroje", popis: "QR na tlač — plagát, pokladnička, nástenka", tierMin: 0 },
+  { id: "qr2", emoji: "🔄", nazov: "QR dochádzka na akciách", popis: "Rotujúci QR pre dochádzku dobrovoľníkov", tierMin: 2 },
+  { id: "dobrovolnici", emoji: "🙋", nazov: "Dobrovoľníci — správa", popis: "Prihlášky, dochádzka a vzájomné hodnotenie", tierMin: 2 },
+  { id: "firmy", emoji: "🤝", nazov: "Spolupráca s firmami", popis: "Sponzoring a firemné dobrovoľníctvo", tierMin: 2 },
+  { id: "embed", emoji: "🔗", nazov: "Badge embed", popis: "Odznak s odkazom na profil pre vlastný web", tierMin: 0 },
+  { id: "sumy", emoji: "👁", nazov: "Viditeľnosť súm", popis: "Čo vidia návštevníci profilu", tierMin: 0 },
+  { id: "reporty", emoji: "📊", nazov: "Reporty / exporty", popis: "Podklady pre výročnú správu a export dát", tierMin: 2 },
 ];
 
 // ---- TVORCA (§2) ----
 export const PANEL_TVORCA: PanelBlok[] = [
-  { id: "retaz", emoji: "⛓", nazov: "Moja reťaz", popis: "Aktívna zbierka vo fronte · moje fixné 5 % · 2 ďalšie v poradí", tierMin: 0, akcia: "Detail" },
-  { id: "vplyv", emoji: "🌊", nazov: "Môj vplyv", popis: "6 uzavretých prípadov · mostová váha 1,8×", hodnota: "4 320 €", tierMin: 0, akcia: "Detail" },
-  { id: "podporovatelia", emoji: "💚", nazov: "Podporovatelia", popis: "Príspevky cez môj terminál (podstránka)", tierMin: 1, akcia: "Otvoriť" },
-  { id: "akcie", emoji: "🎟", nazov: "Moje akcie", popis: "Workshop „Kamera v teréne“ · so 14. 8. · 12/20 prihlásených", tierMin: 2, akcia: "Otvoriť" },
+  { id: "retaz", emoji: "⛓", nazov: "Moja reťaz", popis: "Aktívna zbierka · moje fixné 5 % · 2 vo fronte", tierMin: 0, akcia: "Detail" },
+  { id: "vplyv", emoji: "🌊", nazov: "Môj vplyv", popis: "6 uzavretých prípadov", hodnota: "4 320 €", tierMin: 0, akcia: "Detail" },
+  { id: "podporovatelia", emoji: "💚", nazov: "Podporovatelia", popis: "Priame príspevky cez môj profil", tierMin: 1, akcia: "Otvoriť" },
+  { id: "akcie", emoji: "🎟", nazov: "Moje akcie", popis: "Workshop Kamera v teréne · so 14. 8. · 12/20 prihlásených", tierMin: 2, akcia: "Otvoriť" },
   { id: "oznamy", emoji: "📣", nazov: "Moje oznamy", popis: "3 zverejnené · 1 koncept", tierMin: 1, akcia: "Otvoriť" },
 ];
 
 export const SPRAVA_TVORCA: SpravaItem[] = [
-  { id: "podstranka", emoji: "✏️", nazov: "Upraviť podstránku", popis: "Bio, portfólio, odkazy · poradie: skutky+reťaze hore · oznamy stred · terminál dole", tierMin: 0, tierPozn: "T0: základ · T1: plná podstránka" },
-  { id: "terminal", emoji: "💳", nazov: "Terminál (Transak)", popis: "Priame príspevky tvorcovi — DEED je prostredie, nie strana transakcie", tierMin: 1 },
+  { id: "podstranka", emoji: "✏️", nazov: "Upraviť podstránku", popis: "Bio, portfólio a odkazy na verejnom profile", tierMin: 0 },
+  { id: "terminal", emoji: "💳", nazov: "Príspevky od podporovateľov", popis: "Priame príspevky na tvojom verejnom profile", tierMin: 1 },
   { id: "oznamy", emoji: "📣", nazov: "Oznamy", popis: "Publikovanie oznamov komunite", tierMin: 1 },
-  { id: "akcie", emoji: "🎟", nazov: "Akcie", popis: "Vytvoriť workshop/školenie — kapacita, vstupný QR, prihlášky", tierMin: 2 },
-  { id: "smena", emoji: "⏱", nazov: "Overená smena", popis: "Check-in/out inštitúcie, live počítadlo (verejný link)", tierMin: 2, tierPozn: "per DEED_Tvorcovia v0.1 §3" },
-  { id: "statistiky", emoji: "📊", nazov: "Štatistiky", popis: "Návštevy podstránky, konverzia klik→dar", tierMin: 1, tierPozn: "T1: základ · T2: plné" },
+  { id: "akcie", emoji: "🎟", nazov: "Akcie", popis: "Workshopy a školenia — kapacita, vstupné QR, prihlášky", tierMin: 2 },
+  { id: "smena", emoji: "⏱", nazov: "Overená smena", popis: "Overené dobrovoľnícke hodiny so živým počítadlom", tierMin: 2 },
+  { id: "statistiky", emoji: "📊", nazov: "Štatistiky", popis: "Návštevy profilu a konverzie na dary", tierMin: 1 },
 ];
 
 // ---- B2B FIRMA (§3) ----
 export const PANEL_B2B: PanelBlok[] = [
   // PATCH 1: karta badge/karma preč (štít žije na karte subjektu); rebríček
   // odvetvia ZOSTÁVA — porovnanie s inými = súťaž, nie postup
-  { id: "rebricek", emoji: "🏆", nazov: "Rebríček odvetvia", popis: "#3 v odvetví Gastro · Trenčín — súťažná vrstva", tierMin: 0, akcia: "Detail" },
-  { id: "ludia", emoji: "👥", nazov: "Naši ľudia", popis: "AGREGÁTY: 46 zapojených (opt-in) · 312 h · k-anonymita, žiadny detail osôb", tierMin: 1, akcia: "Otvoriť" },
-  { id: "sponzoring", emoji: "🛡", nazov: "Sponzorujeme", popis: "3 podporené prípady · každé euro dohľadateľné (D++ stopa)", hodnota: "2 400 €", tierMin: 0, akcia: "Detail" },
-  { id: "ucet", emoji: "🏅", nazov: "Stav účtu", popis: "Founding Member badge · trial Premium — odpočet 21 dní", tierMin: 0, akcia: "Detail" },
+  { id: "rebricek", emoji: "🏆", nazov: "Rebríček odvetvia", popis: "#3 v odvetví Gastro · Trenčín", tierMin: 0, akcia: "Detail" },
+  { id: "ludia", emoji: "👥", nazov: "Naši ľudia", popis: "46 zapojených · 312 dobrovoľníckych hodín", tierMin: 1, akcia: "Otvoriť" },
+  { id: "sponzoring", emoji: "🛡", nazov: "Sponzorujeme", popis: "3 podporené prípady · každé euro dohľadateľné", hodnota: "2 400 €", tierMin: 0, akcia: "Detail" },
+  { id: "ucet", emoji: "🏅", nazov: "Stav účtu", popis: "Founding Member · skúšobné Premium ešte 21 dní", tierMin: 0, akcia: "Detail" },
   { id: "nastenka", emoji: "📅", nazov: "Firemná nástenka", popis: "1 zverejnená akcia · 2 koncepty", tierMin: 0, akcia: "Otvoriť" },
 ];
 
 export const SPRAVA_B2B: SpravaItem[] = [
-  { id: "profil", emoji: "✏️", nazov: "Profil firmy", popis: "Vizitka podľa tieru (Free → Premium per Profi vizitka doc)", tierMin: 0 },
-  { id: "sponzoring", emoji: "🛡", nazov: "Sponzoring", popis: "Overený prípad/charita · príspevok pod menom firmy · logo pri kampani (D++)", tierMin: 0, tierPozn: "prispieť: Free · kampane: Premium verifikácia" },
-  { id: "zamestnanci", emoji: "👥", nazov: "Zamestnanci", popis: "Pripojenie QR/invite kód — VŽDY opt-in · tri stavy súkromia (Core v3 §15)", tierMin: 1 },
-  { id: "akcia", emoji: "🎟", nazov: "Firemná akcia", popis: "Vytvoriť akciu (event engine)", tierMin: 2 },
-  { id: "vto", emoji: "⏱", nazov: "VTO", popis: "QR proof-of-presence dochádzka, audit-grade hodiny", tierMin: 2 },
-  { id: "esg", emoji: "📊", nazov: "ESG dashboard + export", popis: "Agregované S1+S3, k-anonymita, PDF + dáta pre audítora", tierMin: 2 },
-  { id: "odmeny", emoji: "🎁", nazov: "Odmeňovací program", popis: "Režim A (gaming DEED, default) / B (reálny token)", tierMin: 1, tierPozn: "per Gaming DEED Benefit v0.1" },
+  { id: "profil", emoji: "✏️", nazov: "Profil firmy", popis: "Vizitka, logo a popis firmy", tierMin: 0 },
+  { id: "sponzoring", emoji: "🛡", nazov: "Sponzoring", popis: "Podpora overených prípadov pod menom firmy", tierMin: 0 },
+  { id: "zamestnanci", emoji: "👥", nazov: "Zamestnanci", popis: "Pripojenie cez QR alebo pozvánku — vždy dobrovoľné", tierMin: 1 },
+  { id: "akcia", emoji: "🎟", nazov: "Firemná akcia", popis: "Firemné dobrovoľnícke akcie a udalosti", tierMin: 2 },
+  { id: "vto", emoji: "⏱", nazov: "Firemné dobrovoľníctvo", popis: "Dochádzka cez QR a overené hodiny", tierMin: 2 },
+  { id: "esg", emoji: "📊", nazov: "ESG prehľad + export", popis: "Agregované reporty a podklady pre audit", tierMin: 2 },
+  { id: "odmeny", emoji: "🎁", nazov: "Odmeňovací program", popis: "Benefity za zapojenie zamestnancov", tierMin: 1 },
 ];
 
 export const PANELY: Record<Pozicia, PanelBlok[]> = { charita: PANEL_CHARITA, tvorca: PANEL_TVORCA, b2b: PANEL_B2B };

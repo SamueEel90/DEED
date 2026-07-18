@@ -112,7 +112,7 @@ export function GuardFuzzy({ onOk }: { onOk: () => void }) {
   return (
     <>
       <Otazka>Než začneme — rýchla kontrola</Otazka>
-      <div style={infoBox}>Finančná žiadosť má zámerné trenie (anti-fraud). Než ju vytvoríš, systém spraví pár kontrol.</div>
+      <div style={infoBox}>Finančné žiadosti podliehajú dodatočným kontrolám. Než ju vytvoríš, systém spraví pár overení.</div>
       <div style={{ display: "flex", flexDirection: "column", gap: SPACE.xs, marginTop: SPACE.md }}>
         {checks.map(([e, t, d], i) => (
           <div key={i} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, padding: SPACE.sm, borderRadius: RADIUS.sm, background: C.surface2, border: `1px solid ${C.line2}` }}>

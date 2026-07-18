@@ -256,7 +256,7 @@ function KrokKyb({ org, toast, onBack, onNext }: KrokKybProps) {
 
   const nahrajStanovy = () => {
     setStanovyNahrate(true);
-    toast?.("Stanovy nahrané (demo)");
+    toast?.("Stanovy nahrané");
   };
 
   const over = async () => {
@@ -380,7 +380,7 @@ function KrokKyb({ org, toast, onBack, onNext }: KrokKybProps) {
       )}
 
       <div style={infoBox}>
-        Štatutár sa overuje ako osoba (KYC) — closed loop. Vendor Didit KYB (demo).
+        Štatutár sa overuje ako osoba (KYC).
       </div>
     </Shell>
   );

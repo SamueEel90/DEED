@@ -136,7 +136,7 @@ function agregujPodpory(rows: any[]): Podpora[] {
   return [...mapa.values()];
 }
 
-/** Načíta „Čo podporujem" z DB (demo: podľa mena; reálny účet: podľa ucet_id). */
+/** Načíta „Čo podporujem" z DB — podľa mena; reálny účet: podľa ucet_id. */
 export async function nacitajPodporyDB(filter: { ucetId?: string | null; darca?: string | null }): Promise<Podpora[]> {
   if (!supabase) return [];
   let q = supabase.from("podpora").select("*").order("cas", { ascending: false });

@@ -6,7 +6,7 @@
 // ============================================================
 import { useState, forwardRef, type ReactNode, type HTMLAttributes } from "react";
 import { SPACE, RADIUS, SIRKA } from "@/theme";
-import { tint, IkonaKriz, useLayout } from "@/shared";
+import { tint, IkonaKriz, useLayout, Overene } from "@/shared";
 import { pressable } from "@/components/pressable";
 
 export const N = {
@@ -19,13 +19,10 @@ export const N = {
   txt: "var(--c-text)", txt2: "var(--c-textSec)", txt3: "var(--c-textTer)",
 };
 
-// badge „overená" — jediný odznak cirkevných subjektov (ŽIADNA karma/levely §2/§J)
+// badge „overená" — jediný odznak cirkevných subjektov (žiadna karma/levely);
+// jednotný SVG odznak overenia (vzor veľkých sietí) namiesto textovej pilulky
 export function Overena() {
-  return (
-    <span style={{ display: "inline-flex", alignItems: "center", gap: 3, fontSize: 10.5, fontWeight: 800, color: N.green, background: N.greenBg, border: `1px solid ${N.greenEdge}`, padding: `${SPACE.xxs}px ${SPACE.xs}px`, borderRadius: RADIUS.xs, lineHeight: 1.2 }}>
-      ✓ overená
-    </span>
-  );
+  return <Overene size={16} label="Overená farnosť" />;
 }
 
 // jednoduchá „chip" pilulka (typ obsahu / stav).

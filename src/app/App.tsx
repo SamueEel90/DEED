@@ -226,7 +226,7 @@ export function Screens({ wide, desktop }: { wide?: boolean; desktop?: boolean }
             // skutok/žiadosť → otvor rovno detail položky (nie len modul)
             if (ciel.objekt_druh === "case") setDlDetail({ modul: cielModul, ref: ciel.objekt_ref });
           }
-          toast(`Otváram odkaz · ${ciel.objekt_druh}`);
+          toast("Otváram odkaz");
         }
         replaceModul(cielModul); // slug z URL preč, história normalizovaná na /m/{modul}
         setDlHotovo(true);

@@ -1,28 +1,36 @@
 import { useState } from "react";
-import { SIRKA, C, GRAD, GRAD_ZELENY, SPACE, RADIUS } from "@/theme";
-import { Aura, MoniBar, QrModal, SegTabs, useLayout, IkonaSipVlavo, IkonaFajka, IkonaStit, IkonaPlay, IkonaPin, Zdielanie, IkonaUsmev } from "@/shared";
+import { SIRKA, C, GRAD, SPACE, RADIUS } from "@/theme";
+import {
+  Aura, MoniBar, QrModal, SegTabs, useLayout, obalSiroky, BackHeader, IkonaFajka, IkonaPlay, Zdielanie, IkonaUsmev,
+  EntityHero, BtnAkcia, BtnIkonka, KontextMenu, TabyProfil, MenuSkupina, MenuPolozka, DvaStlpce,
+  IkonaMoznosti, IkonaQr, IkonaVlajka, IkonaOdkaz, Zvon, tint as tintVar,
+  Foto, Sheet, ProgresBox, PodporaSekcia, PlatbaModal, ZoznamDarcov,
+} from "@/shared";
+import { pressable } from "@/components/pressable";
+import { NahlasitSheet } from "@/components/nahlasit";
 import type { CudziSubjekt, CudziSubjektOrg, CudziSubjektOsoba } from "@/types";
 import { usePersonalizacia } from "@/lib/personalizacia";
 import { tagChip, jeHrdina, HRDINA_COL } from "@/lib/ui";
 import { qrUrl } from "@/lib/qr";
-import { KAMPANE_FALLBACK, AKCIE_FALLBACK, STAVY } from "./mock";
+import { zdielaj, aktualnaUrl } from "@/lib/zdielanie";
+import { STAVY } from "./mock";
+import { najdiOrg, type OrgKampan } from "./orgy";
+import { pridajDar, type VolbaDaru } from "@/lib/darcovia";
+import { usePouzivatel } from "@/lib/pouzivatel";
+import type { Kanal } from "@/types";
 
 /*
   ============================================================
-  CUDZÍ PROFIL (§6)
-  ============================================================
-  §6.1 Organizácia / charita — plne verejná vizitka (cover, badge
-       dôvery zaslúžený karmou, štatistiky, kampane, QR + embed).
-  §6.2 Osoba — 3 stavy (viditeľnosť rastie len so súhlasom):
-       • BEŽNÁ — navonok len meno + úroveň · len „Pridať priateľa"
-         · súkromný profil zamknutý · nesledovateľná
-       • PRIATEĽ — spoloční priatelia + nedávne skutky (čo dovolil) + Správa
-       • TVORCA — dobrovoľne verejný · Sledovať + ponuka služby + Talent
+  CUDZÍ PROFIL — jednotný entity systém (vzor business profilov).
+  · Organizácia / charita — plne verejná vizitka: hero (cover→avatar→
+    meno+odznak→štatistiky→akcie) → podčiarknuté taby → obsah;
+    sekundárne akcie v ⋯ menu; desktop = obsah + sticky rail.
+  · Osoba — 3 stavy (viditeľnosť rastie len so súhlasom):
+    BEŽNÁ (len meno+úroveň, žiadosť o priateľstvo) · PRIATEĽ (spoločné
+    + dovolené skutky + správa) · TVORCA (verejný, sledovateľný).
   Priateľstvo NEODOMYKÁ súkromnú časť automaticky.
   ============================================================
 */
-
-const tint = (hex: string, a: number): string => { const n = parseInt(hex.slice(1), 16); return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`; };
 
 type Toast = (m: string) => void;
 
@@ -30,129 +38,199 @@ interface CudziProfilProps {
   subjekt?: CudziSubjekt;
   onBack?: () => void;
   toast?: Toast;
+  /** klik na kampaň — modul môže otvoriť natívny detail zbierky; bez neho sa otvorí vstavaný detail s darovaním */
+  onKampan?: (k: OrgKampan) => void;
 }
 
-export function CudziProfil({ subjekt = {} as CudziSubjekt, onBack, toast }: CudziProfilProps) {
-  const { wide } = useLayout();
+export function CudziProfil({ subjekt = {} as CudziSubjekt, onBack, toast, onKampan }: CudziProfilProps) {
+  const { wide, desktop } = useLayout();
   const inner = subjekt.typ === "org"
-    ? <OrgProfil s={subjekt} onBack={onBack} toast={toast} />
+    ? <OrgProfil s={subjekt} onBack={onBack} toast={toast} onKampan={onKampan} />
     : <OsobaProfil s={subjekt as CudziSubjektOsoba} onBack={onBack} toast={toast} />;
-  // na tablete/desktope drž profil v čitateľnej šírke (rodič môže byť oveľa širší)
+  // org profil má na desktope dvojstĺpec → širší cap; osoba ostáva v čitateľskom stĺpci
+  if (subjekt.typ === "org") return obalSiroky(inner, { wide, desktop, max: SIRKA.stlpec, maxDesktop: SIRKA.citanie }) as React.ReactElement;
   return wide ? <div style={{ maxWidth: SIRKA.stlpec, margin: "0 auto" }}>{inner}</div> : inner;
 }
 
-function BackBtn({ onBack }: { onBack?: () => void }) {
-  return <div onClick={onBack} style={{ position: "absolute", top: 14, left: 14, width: 34, height: 34, borderRadius: RADIUS.round, background: "rgba(0,0,0,.5)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", zIndex: 3 }}><IkonaSipVlavo size={20} color="#fff" /></div>;
-}
-
 // ============================================================
-// §6.1 — PROFIL ORGANIZÁCIE / CHARITY
+// PROFIL ORGANIZÁCIE / CHARITY
 // ============================================================
-function OrgProfil({ s, onBack, toast }: { s: CudziSubjektOrg; onBack?: () => void; toast?: Toast }) {
-  const [tab, setTab] = useState("Kampane");
+function OrgProfil({ s, onBack, toast, onKampan }: { s: CudziSubjektOrg; onBack?: () => void; toast?: Toast; onKampan?: (k: OrgKampan) => void }) {
+  const { desktop } = useLayout();
+  const [tab, setTab] = useState("kampane");
   const { sledujem, toggleSledovanie } = usePersonalizacia(); // sledovanie = zdieľaný store (Môj DEED)
   const [qr, setQr] = useState(false);
+  const [menu, setMenu] = useState(false);
+  const [zvoncek, setZvoncek] = useState(false);
+  const [nahlasit, setNahlasit] = useState(false);
+  const [kampanDetail, setKampanDetail] = useState<OrgKampan | null>(null); // vstavaný detail zbierky
   const meno = s.meno || "Detská nemocnica — nadácia";
+  const org = najdiOrg(meno); // register: cover, logo, o nás, štatistiky, kampane s fotkami
   const sleduje = sledujem(meno);
-  const level = s.level || "Gold";
-  const kampane = s.kampane || KAMPANE_FALLBACK;
-  const akcie = s.akcie || AKCIE_FALLBACK;
+  const level = s.level || org.level;
+  const kampane = org.kampane;
+  const akcie = org.akcie;
+  const otvorKampan = (k: OrgKampan) => { if (onKampan) onKampan(k); else setKampanDetail(k); };
+
+  const zdielajProfil = () => void zdielaj({ titul: meno, text: meno, url: aktualnaUrl() }, toast ?? (() => {}));
+  const skopirujOdkaz = async () => {
+    try { await navigator.clipboard.writeText(aktualnaUrl()); toast?.("Odkaz skopírovaný"); } catch { zdielajProfil(); }
+  };
+
+  const obsahBlok = (
+    <>
+      <TabyProfil
+        options={["kampane", "skutky", "talent"] as const}
+        labels={{ kampane: "Kampane", skutky: "Skutky", talent: "Talent" }}
+        badges={{ kampane: kampane.length }}
+        value={tab} onChange={setTab} ariaLabel="Sekcie profilu organizácie"
+      />
+      {tab === "kampane" && (<>
+        {kampane.map((k) => (
+          <div key={k.id} {...pressable(() => otvorKampan(k), k.nazov)} style={{ background: C.surface, border: `1px solid ${C.line}`, borderRadius: RADIUS.sm, padding: SPACE.sm, marginBottom: SPACE.xs, cursor: "pointer" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm }}>
+              <Foto src={k.foto} emoji={k.emoji} w={52} h={44} radius={RADIUS.xs} sizes="52px" alt={k.nazov} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 14, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{k.nazov}</div>
+                <div style={{ fontSize: 11, color: C.textTer, marginTop: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{k.lok}{k.ludia ? ` · ${k.ludia} darcov` : ""}</div>
+              </div>
+              <span style={{ color: C.textTer, fontSize: 15, flex: "none" }}>›</span>
+            </div>
+            <div style={{ marginTop: SPACE.xs }}><MoniBar vyzbierane={k.vyzbierane} ciel={k.ciel} mini /></div>
+          </div>
+        ))}
+        <div style={{ fontSize: 11, letterSpacing: ".05em", color: C.textTer, fontWeight: 800, margin: `${SPACE.gutter}px 0 ${SPACE.xs}px` }}>NADCHÁDZAJÚCE</div>
+        {akcie.map((a, i) => (
+          <div key={i} {...pressable(() => toast?.(`Akcia: ${a.nazov}`), a.nazov)} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, background: C.surface, border: `1px solid ${C.line2}`, borderRadius: RADIUS.sm, padding: `${SPACE.sm}px ${SPACE.sm}px`, marginBottom: SPACE.xs, cursor: "pointer" }}>
+          <span style={{ flex: "none", fontSize: 11, fontWeight: 800, color: "var(--a-info)", background: tintVar("var(--a-info)", .12), borderRadius: RADIUS.xs, padding: `${SPACE.xs}px ${SPACE.xs}px`, textAlign: "center", lineHeight: 1.2 }}>{a.kedy}</span>
+            <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontSize: 13.5, fontWeight: 700 }}>{a.nazov}</div><div style={{ fontSize: 11, color: C.textTer, marginTop: SPACE.xxs }}>{a.kde}</div></div>
+            <span style={{ color: C.textTer, fontSize: 15, flex: "none" }}>›</span>
+          </div>
+        ))}
+      </>)}
+      {tab === "skutky" && <div style={{ padding: `${SPACE.lg}px 0`, textAlign: "center", color: C.textTer, fontSize: 13 }}>Skutky a vďakypočiny organizácie.</div>}
+      {tab === "talent" && <div style={{ padding: `${SPACE.lg}px 0`, textAlign: "center", color: C.textTer, fontSize: 13 }}>Videá a tematický Talent kanál.</div>}
+    </>
+  );
+
+  const oNasBlok = (
+    <MenuSkupina nadpis="O NÁS">
+      <div style={{ padding: SPACE.gutter, fontSize: 13, lineHeight: 1.55, color: C.textSec }}>{org.onas}</div>
+    </MenuSkupina>
+  );
+
+  const doveraBlok = (
+    <>
+      <MenuSkupina nadpis="DÔVERA">
+        <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm, padding: SPACE.gutter }}>
+          <span style={{ width: 38, height: 38, borderRadius: RADIUS.sm, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", background: tintVar("var(--a-green)", .12) }}><IkonaFajka size={18} color="var(--a-green)" /></span>
+          <div style={{ fontSize: 12, color: C.textSec, lineHeight: 1.45 }}><b style={{ color: C.text }}>Odznak dôvery {level}</b> — zaslúžený za overené skutky, nedá sa kúpiť.</div>
+        </div>
+        <MenuPolozka ikona={<IkonaQr size={16} />} farba="var(--a-info)" label="QR profilu charity" popis="Zdieľanie a odznak na vlastný web" onClick={() => setQr(true)} posledna />
+      </MenuSkupina>
+    </>
+  );
 
   return (
     <div style={{ paddingBottom: SPACE.lg }}>
-      {/* cover + logo */}
-      <div style={{ position: "relative", height: 120, background: "linear-gradient(160deg, #10233a, #1d3f63)" }}>
-        <BackBtn onBack={onBack} />
-      </div>
+      <BackHeader onBack={onBack} right={
+        <span {...pressable(() => setMenu(true), "Ďalšie možnosti")} style={{ display: "flex", cursor: "pointer" }}><IkonaMoznosti size={18} color={C.textSec} /></span>
+      }>
+        <span style={{ fontSize: 12, color: C.textSec }}>{meno}</span>
+      </BackHeader>
+      <div style={{ height: SPACE.sm }} />
+
       <div style={{ padding: `0 ${SPACE.md}px` }}>
-        <div style={{ display: "flex", alignItems: "flex-end", gap: SPACE.gutter, marginTop: -34 }}>
-          <div style={{ width: 72, height: 72, borderRadius: RADIUS.lg, flex: "none", background: GRAD, border: "3px solid var(--c-bg)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 30, boxShadow: "0 8px 24px rgba(0,0,0,.4)" }}>{s.emoji || "🏥"}</div>
-          <div style={{ paddingBottom: SPACE.xxs }}>
-            <div style={{ fontSize: 18, fontWeight: 800 }}>{meno}</div>
-            <div style={{ fontSize: 12, color: C.textTer }}>{s.lok || "nadácia · Bratislava"}</div>
-          </div>
-        </div>
-        <div style={{ display: "inline-flex", alignItems: "center", gap: SPACE.xs, marginTop: SPACE.sm, fontSize: 11, fontWeight: 700, color: "var(--a-gold)", background: "rgba(231,199,102,.13)", border: "1px solid rgba(200,162,58,.5)", borderRadius: RADIUS.xs, padding: `${SPACE.xxs}px ${SPACE.sm}px` }}>
-          <IkonaFajka size={12} color="var(--a-gold)" /> Overená charita · {level}
-        </div>
-
-        {/* štatistiky */}
-        <div style={{ display: "flex", gap: SPACE.xs, marginTop: SPACE.gutter }}>
-          {[["11 200 €", "vyzbierané"], ["1 240", "podporovateľov"], [level, "úroveň"]].map((x, i) => (
-            <div key={i} style={{ flex: 1, textAlign: "center", background: C.surface, border: `1px solid ${C.line}`, borderRadius: RADIUS.sm, padding: `${SPACE.sm}px ${SPACE.xxs}px` }}>
-              <div style={{ fontSize: 15, fontWeight: 800 }}>{x[0]}</div>
-              <div style={{ fontSize: 10, color: C.textTer, marginTop: SPACE.xxs }}>{x[1]}</div>
-            </div>
-          ))}
-        </div>
-
-        {/* sledovať + upozornenia */}
-        <div style={{ display: "flex", gap: SPACE.sm, marginTop: SPACE.sm }}>
-          <button onClick={() => { toggleSledovanie({ meno, typ: "org", emoji: s.emoji }); toast?.(sleduje ? "Prestal si sledovať" : "Sleduješ — dostaneš upozornenia na kampane"); }}
-            style={{ flex: 1, height: 46, borderRadius: RADIUS.sm, border: "none", fontWeight: 700, fontSize: 14, cursor: "pointer", fontFamily: "inherit",
-              background: sleduje ? "rgba(var(--glass-rgb),.06)" : GRAD, color: sleduje ? C.text : "#fff", boxShadow: sleduje ? "none" : "0 8px 24px color-mix(in srgb, var(--a-green) 30%, transparent)" }}>
-            {sleduje ? "✓ Sledované" : "Sledovať"}
-          </button>
-          <button onClick={() => toast?.("Upozornenia na novú kampaň/akciu zapnuté")} style={{ width: 52, height: 46, borderRadius: RADIUS.sm, border: `1px solid ${C.line}`, background: C.surface2, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>🔔</button>
-        </div>
-
-        {/* taby */}
-        <SegTabs
-          options={["Kampane", "Skutky", "Talent"] as const}
-          value={tab}
-          onChange={setTab}
-          ariaLabel="Sekcie profilu organizácie"
-          style={{ display: "flex", gap: SPACE.xs, marginTop: SPACE.md }}
-          render={(t, on) => (
-            <span style={{ flex: 1, textAlign: "center", padding: `${SPACE.xs}px 0`, borderRadius: RADIUS.sm, fontSize: 13, fontWeight: on ? 700 : 500, cursor: "pointer",
-              background: on ? "color-mix(in srgb, var(--a-info) 14%, transparent)" : C.surface2, border: `1px solid ${on ? "color-mix(in srgb, var(--a-info) 45%, transparent)" : C.line}`, color: on ? "var(--a-info)" : C.textSec }}>{t}</span>
-          )}
+        <EntityHero
+          avatar={<img src={org.logo} alt={meno} style={{ width: "100%", height: "100%", objectFit: "cover" }} />}
+          cover={org.cover}
+          meno={meno} overene overeneLabel={`Overená charita · ${level}`}
+          podtitul={s.lok || org.lok}
+          stats={[
+            { hodnota: org.stat.vyzbierane, label: "vyzbierané" },
+            { hodnota: org.stat.podporovatelia, label: "podporovateľov" },
+            { hodnota: level, label: "úroveň", farba: "var(--a-gold)" },
+          ]}
+          akcie={<>
+            <BtnAkcia variant={sleduje ? "secondary" : "primary"} ariaPressed={sleduje}
+              onClick={() => { toggleSledovanie({ meno, typ: "org", emoji: s.emoji }); toast?.(sleduje ? "Prestal si sledovať" : "Sleduješ — dostaneš upozornenia na kampane"); }}>
+              {sleduje ? "✓ Sledované" : "Sledovať"}
+            </BtnAkcia>
+            <BtnAkcia variant="secondary" onClick={zdielajProfil}><Zdielanie size={14} /> Zdieľať</BtnAkcia>
+            <BtnIkonka label={zvoncek ? "Vypnúť upozornenia" : "Zapnúť upozornenia"} aktivne={zvoncek} farba="var(--a-gold)"
+              onClick={() => { setZvoncek((v) => !v); toast?.(zvoncek ? "Upozornenia vypnuté" : "Upozornenia na kampane a akcie zapnuté"); }}>
+              <Zvon size={16} />
+            </BtnIkonka>
+            <BtnIkonka label="Ďalšie možnosti" onClick={() => setMenu(true)}><IkonaMoznosti size={16} /></BtnIkonka>
+          </>}
         />
-
-        {/* O nás */}
-        <div style={{ fontSize: 10.5, letterSpacing: ".4px", color: C.textTer, fontWeight: 700, margin: `${SPACE.md}px 0 ${SPACE.xs}px` }}>O NÁS</div>
-        <p style={{ fontSize: 13, color: C.textSec, lineHeight: 1.55, margin: 0 }}>Pomáhame detským oddeleniam nemocníc na Slovensku. Overená nezisková organizácia. Doklady o použití prostriedkov zverejňujeme.</p>
-
-        {tab === "Kampane" && (<>
-          <div style={{ fontSize: 10.5, letterSpacing: ".4px", color: C.textTer, fontWeight: 700, margin: `${SPACE.md}px 0 ${SPACE.xs}px` }}>AKTÍVNE KAMPANE</div>
-          {kampane.map((k, i) => (
-            <div key={i} onClick={() => toast?.(`Kampaň: ${k.nazov}`)} style={{ background: C.surface2, border: `1px solid ${C.line}`, borderRadius: RADIUS.md, padding: SPACE.sm, marginBottom: SPACE.xs, cursor: "pointer" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: SPACE.xs }}><span style={{ fontSize: 18 }}>{k.emoji}</span><span style={{ fontSize: 14, fontWeight: 700 }}>{k.nazov}</span></div>
-              <div style={{ marginTop: SPACE.xs }}><MoniBar vyzbierane={k.vyzbierane} ciel={k.ciel} mini /></div>
-            </div>
-          ))}
-          <div style={{ fontSize: 10.5, letterSpacing: ".4px", color: C.textTer, fontWeight: 700, margin: `${SPACE.gutter}px 0 ${SPACE.xs}px` }}>NADCHÁDZAJÚCE</div>
-          {akcie.map((a, i) => (
-            <div key={i} onClick={() => toast?.(`Akcia: ${a.nazov}`)} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, background: "rgba(var(--glass-rgb),.04)", border: `1px solid ${C.line2}`, borderRadius: RADIUS.sm, padding: `${SPACE.sm}px ${SPACE.sm}px`, marginBottom: SPACE.xs, cursor: "pointer" }}>
-              <span style={{ flex: "none", fontSize: 11, fontWeight: 800, color: "var(--a-info)", background: "color-mix(in srgb, var(--a-info) 14%, transparent)", borderRadius: RADIUS.xs, padding: `${SPACE.xs}px ${SPACE.xs}px`, textAlign: "center", lineHeight: 1.2 }}>{a.kedy}</span>
-              <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontSize: 13.5, fontWeight: 700 }}>{a.nazov}</div><div style={{ fontSize: 11, color: C.textTer, marginTop: SPACE.xxs }}>{a.kde}</div></div>
-            </div>
-          ))}
-        </>)}
-        {tab === "Skutky" && <div style={{ padding: `${SPACE.lg}px 0`, textAlign: "center", color: C.textTer, fontSize: 13 }}>Skutky a vďakypočiny organizácie.</div>}
-        {tab === "Talent" && <div style={{ padding: `${SPACE.lg}px 0`, textAlign: "center", color: C.textTer, fontSize: 13 }}>Videá a tematický Talent kanál.</div>}
-
-        {/* badge dôvery DEED */}
-        <div style={{ background: "rgba(31,191,143,.07)", border: "1px solid rgba(31,191,143,.25)", borderRadius: RADIUS.md, padding: `${SPACE.sm}px ${SPACE.gutter}px`, marginTop: SPACE.md, display: "flex", gap: SPACE.sm, alignItems: "center" }}>
-          <span style={{ width: 36, height: 36, borderRadius: RADIUS.sm, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(31,191,143,.14)" }}><IkonaFajka size={18} color="var(--a-green)" /></span>
-          <div style={{ fontSize: 12, color: C.textSec, lineHeight: 1.45 }}><b style={{ color: C.text }}>Badge dôvery {level}</b> = zaslúžený karmou za skutky, nie kúpený. Nahrádza externé pečate.</div>
-        </div>
-
-        {/* QR profilu + embed */}
-        <div onClick={() => setQr(true)} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, background: C.surface2, border: `1px solid ${C.line}`, borderRadius: RADIUS.md, padding: SPACE.sm, marginTop: SPACE.sm, cursor: "pointer" }}>
-          <span style={{ width: 40, height: 40, borderRadius: RADIUS.sm, flex: "none", background: "#fff", display: "grid", gridTemplateColumns: "repeat(4,1fr)", gridTemplateRows: "repeat(4,1fr)", gap: 1, padding: SPACE.xxs }}>{[...Array(16)].map((_, k) => <i key={k} style={{ background: (k * 5 + 2) % 3 ? "#0B0C0F" : "transparent" }} />)}</span>
-          <div style={{ flex: 1 }}><div style={{ fontSize: 13, fontWeight: 700 }}>QR profilu charity</div><div style={{ fontSize: 11, color: C.textTer }}>Zdieľať · embed badge na web (backlink)</div></div>
-          <span style={{ color: C.textTer, fontSize: 16 }}>›</span>
-        </div>
+        <div style={{ height: SPACE.gutter }} />
+        {desktop
+          ? <DvaStlpce hlavny={obsahBlok} bok={<>{oNasBlok}{doveraBlok}</>} />
+          : <>{oNasBlok}{obsahBlok}<div style={{ height: SPACE.gutter }} />{doveraBlok}</>}
       </div>
 
-      {qr && <QrModal typ="skutok" titul={`QR profilu · ${meno}`} popis="Embed badge dôvery na web charity" odkaz={qrUrl("org", "detska-nemocnica")} onClose={() => setQr(false)} toast={toast} />}
+      {menu && (
+        <KontextMenu onClose={() => setMenu(false)} polozky={[
+          { ikona: <Zdielanie size={17} />, label: "Zdieľať profil", onClick: zdielajProfil },
+          { ikona: <IkonaOdkaz size={17} />, label: "Kopírovať odkaz", onClick: () => void skopirujOdkaz() },
+          { ikona: <IkonaQr size={17} />, label: "QR kód a embed", popis: "Na tlač alebo vlastný web", onClick: () => setQr(true) },
+          { ikona: <IkonaVlajka size={16} />, label: "Nahlásiť profil", danger: true, onClick: () => setNahlasit(true) },
+        ]} />
+      )}
+      {nahlasit && <NahlasitSheet co={`Profil · ${meno}`} refId={meno} modul="charity" onClose={() => setNahlasit(false)} toast={toast ?? (() => {})} />}
+      {qr && <QrModal typ="skutok" titul={`QR profilu · ${meno}`} popis="Odznak dôvery s odkazom na profil" odkaz={qrUrl("org", "detska-nemocnica")} onClose={() => setQr(false)} toast={toast} />}
+      {kampanDetail && <KampanSheet k={kampanDetail} org={meno} toast={toast} onClose={() => setKampanDetail(null)} />}
     </div>
   );
 }
 
+// ---- vstavaný detail kampane — reálne darovanie (foto, progres, podpora, darcovia) ----
+// Používa sa tam, kde modul nedodá vlastný natívny detail (Top, Help, Good).
+function KampanSheet({ k, org, toast, onClose }: { k: OrgKampan; org: string; toast?: Toast; onClose: () => void }) {
+  const [suma, setSuma] = useState(k.vyzbierane);
+  const [ludia, setLudia] = useState(k.ludia ?? 0);
+  const [platba, setPlatba] = useState<Kanal | null>(null);
+  const ja = usePouzivatel();
+  const darRef = `org-kampan-${k.id}`;
+
+  const podpor = (hodnota: number, kanal: "deed" | "sms" = "deed") => {
+    setSuma((s) => s + hodnota * 0.01);
+    setLudia((l) => l + 1);
+    pridajDar({ refId: darRef, suma: hodnota * 0.01, kanal, registrovany: kanal !== "sms" && ja.typ !== "pasivny" });
+    toast?.(`Ďakujeme za ${hodnota} DEED · ${k.nazov}`);
+  };
+
+  return (
+    <>
+      <Sheet onClose={onClose} label={k.nazov}>
+        <Foto src={k.foto} emoji={k.emoji} h={150} radius={RADIUS.md} alt={k.nazov} />
+        <div style={{ fontSize: 16.5, fontWeight: 800, margin: `${SPACE.sm}px 0 2px` }}>{k.nazov}</div>
+        <div style={{ fontSize: 11.5, color: C.textTer, marginBottom: SPACE.sm }}>{org}{k.lok ? ` · ${k.lok}` : ""}</div>
+        <div style={{ fontSize: 13.5, lineHeight: 1.55, color: C.textSec, marginBottom: SPACE.sm }}>{k.popis}</div>
+        <div style={{ marginBottom: SPACE.sm }}><ProgresBox suma={suma} ciel={k.ciel} ludia={ludia} /></div>
+        <PodporaSekcia
+          onShare={() => void zdielaj({ titul: k.nazov, text: k.nazov, url: aktualnaUrl() }, toast ?? (() => {}))}
+          upvotes={ludia} onUpvote={() => toast?.("❤")}
+          onPodpor={(d: number) => podpor(d)} onSms={() => podpor(100, "sms")}
+          onKanal={(kanal: string) => setPlatba(kanal as Kanal)} />
+        <div style={{ marginTop: SPACE.gutter }}>
+          <ZoznamDarcov refId={darRef} celkom={ludia} />
+        </div>
+      </Sheet>
+      {platba && <PlatbaModal kanal={platba} komu={k.nazov} onClose={() => setPlatba(null)}
+        onDone={(s: number, volba?: VolbaDaru) => {
+          setSuma((x) => x + s * (platba === "EUR" ? 1 : 0.01));
+          setLudia((l) => l + 1);
+          pridajDar({ refId: darRef, suma: s * (platba === "EUR" ? 1 : 0.01), kanal: platba === "EUR" ? "psp" : "deed", registrovany: ja.typ !== "pasivny", volba });
+          toast?.(`Odoslané ${platba === "EUR" ? s + " €" : s + " DEED"} · ${k.nazov}`);
+        }} />}
+    </>
+  );
+}
+
 // ============================================================
-// §6.2 — PROFIL OSOBY (3 stavy)
+// PROFIL OSOBY (3 stavy)
 // ============================================================
 function OsobaProfil({ s, onBack, toast }: { s: CudziSubjektOsoba; onBack?: () => void; toast?: Toast }) {
   // demo: prepínač stavu (v reále stav určuje vzťah + súhlas)
@@ -166,88 +244,105 @@ function OsobaProfil({ s, onBack, toast }: { s: CudziSubjektOsoba; onBack?: () =
 
   return (
     <div style={{ paddingBottom: SPACE.lg }}>
-      <div style={{ position: "relative", height: 96, background: `linear-gradient(160deg, ${tint(farba, .35)}, ${tint(farba, .12)})`, transition: "background .3s ease" }}>
-        <BackBtn onBack={onBack} />
+      <BackHeader onBack={onBack}>
+        <span style={{ fontSize: 12, color: C.textSec }}>{meno}</span>
+      </BackHeader>
+      <div style={{ height: SPACE.sm }} />
+
+      {/* náhľad stavu (DEV) — v reále určuje vzťah a súhlas */}
+      <div style={{ margin: `0 ${SPACE.md}px ${SPACE.sm}px`, border: `1px dashed ${tintVar("var(--a-plum)", .4)}`, borderRadius: RADIUS.sm, padding: SPACE.xs }}>
+        <SegTabs
+          options={STAVY.map(([k]) => k)}
+          value={stav}
+          onChange={(k) => { setStav(k); setPridane(false); }}
+          ariaLabel="Náhľad stavu profilu"
+          style={{ display: "flex", gap: SPACE.xs }}
+          render={(k, on) => {
+            const l = (STAVY.find(([sk]) => sk === k) || [k, k])[1];
+            return <span style={{ flex: 1, textAlign: "center", padding: `${SPACE.xs}px 0`, borderRadius: RADIUS.xs, fontSize: 11, fontWeight: on ? 800 : 600, cursor: "pointer",
+              background: on ? tintVar(farba, .12) : "transparent", border: `1px solid ${on ? tintVar(farba, .45) : "transparent"}`, color: on ? farba : C.textTer }}>{l}</span>;
+          }}
+        />
       </div>
 
-      {/* demo prepínač stavu */}
-      <SegTabs
-        options={STAVY.map(([k]) => k)}
-        value={stav}
-        onChange={(k) => { setStav(k); setPridane(false); }}
-        ariaLabel="Náhľad stavu profilu"
-        style={{ display: "flex", gap: SPACE.xs, justifyContent: "center", margin: `${SPACE.sm}px ${SPACE.md}px 0` }}
-        render={(k, on) => {
-          const l = (STAVY.find(([sk]) => sk === k) || [k, k])[1];
-          return <span style={{ flex: 1, textAlign: "center", padding: `${SPACE.xs}px 0`, borderRadius: RADIUS.sm, fontSize: 11, fontWeight: on ? 700 : 500, cursor: "pointer",
-            background: on ? tint(farba, .16) : C.surface2, border: `1px solid ${on ? tint(farba, .5) : C.line}`, color: on ? farba : C.textTer }}>{l}</span>;
-        }}
-      />
-      <div style={{ textAlign: "center", fontSize: 10, color: C.textTer, marginTop: SPACE.xs }}>Náhľad stavu profilu (v reále určuje vzťah a súhlas)</div>
-
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: SPACE.xs }}>
-        <Aura size={84} hrubka={2}><span style={{ fontSize: 30, fontWeight: 800, color: "#fff" }}>{meno[0]}</span></Aura>
-        <div style={{ display: "flex", alignItems: "center", gap: SPACE.xs, marginTop: SPACE.sm }}>
-          <span style={{ fontSize: 18, fontWeight: 800 }}>{meno}</span>
-          {jeHrdina(level) && <span style={tagChip(HRDINA_COL)}>Hrdina</span>}
+      <div style={{ padding: `0 ${SPACE.md}px` }}>
+        {/* hero osoby — cover podľa stavu, avatar, meno + stavový chip */}
+        <div style={{ height: 96, borderRadius: RADIUS.md, background: `linear-gradient(160deg, ${tintVar(farba, .3)}, ${tintVar(farba, .08)})`, transition: "background .3s ease" }} />
+        <div style={{ display: "flex", alignItems: "flex-end", gap: SPACE.sm, marginTop: -30, padding: `0 ${SPACE.sm}px` }}>
+          <span style={{ flex: "none", borderRadius: RADIUS.round, border: `3px solid var(--c-bg)`, boxShadow: "0 2px 10px rgba(0,0,0,.18)" }}>
+            <Aura size={68} hrubka={2}><span style={{ fontSize: 26, fontWeight: 800, color: "#fff" }}>{meno[0]}</span></Aura>
+          </span>
+          <div style={{ flex: 1, minWidth: 0, paddingBottom: 2 }}>
+            <div style={{ fontSize: 16.5, fontWeight: 800, display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
+              <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{meno}</span>
+              {jeHrdina(level) && <span style={tagChip(HRDINA_COL)}>Hrdina</span>}
+            </div>
+            <div style={{ fontSize: 11.5, color: farba, fontWeight: 700, marginTop: 2 }}>
+              {stav === "tvorca" ? "Lektor · gitara" : stav === "priatel" ? `Priateľ · ${level}` : level}
+            </div>
+          </div>
         </div>
-        <div style={{ display: "inline-flex", alignItems: "center", gap: SPACE.xxs, marginTop: SPACE.xs, fontSize: 11, fontWeight: 700, color: farba, background: tint(farba, .12), border: `1px solid ${tint(farba, .4)}`, borderRadius: RADIUS.xs, padding: `${SPACE.xxs}px ${SPACE.sm}px` }}>
-          {stav === "tvorca" ? "✓ Lektor · gitara" : stav === "priatel" ? "✓ Priateľ · " + level : level}
-        </div>
-      </div>
+        <div style={{ height: SPACE.gutter }} />
 
-      <div style={{ padding: `${SPACE.md}px ${SPACE.md}px 0` }}>
         {/* ---- BEŽNÁ ---- */}
         {stav === "bezna" && (<>
-          <button onClick={() => { setPridane(true); toast?.("Žiadosť o priateľstvo odoslaná — čaká na súhlas"); }} disabled={pridane}
-            style={{ width: "100%", height: 50, borderRadius: RADIUS.md, border: "none", fontWeight: 700, fontSize: 15, fontFamily: "inherit", cursor: pridane ? "default" : "pointer",
-              background: pridane ? "rgba(var(--glass-rgb),.06)" : GRAD, color: pridane ? C.textTer : "#fff", boxShadow: pridane ? "none" : "0 8px 24px color-mix(in srgb, var(--a-green) 30%, transparent)" }}>
-            {pridane ? "Žiadosť odoslaná ✓" : "Pridať priateľa"}
-          </button>
-          <div style={{ background: C.surface, border: `1px solid ${C.line}`, borderRadius: RADIUS.md, padding: `${SPACE.xl}px ${SPACE.md}px`, marginTop: SPACE.md, textAlign: "center" }}>
-            <div style={{ fontSize: 30 }}>🔒</div>
-            <div style={{ fontSize: 15, fontWeight: 700, marginTop: SPACE.xs }}>Súkromný profil</div>
-            <div style={{ fontSize: 12.5, color: C.textTer, marginTop: SPACE.xs, lineHeight: 1.5 }}>Skutky a aktivita sú súkromné. Po prijatí priateľstva uvidíš o tejto osobe viac. Súkromné nevidí nikto.</div>
+          <div style={{ display: "flex", gap: SPACE.xs, marginBottom: SPACE.gutter }}>
+            <BtnAkcia variant={pridane ? "secondary" : "primary"} onClick={() => { if (!pridane) { setPridane(true); toast?.("Žiadosť o priateľstvo odoslaná — čaká na súhlas"); } }}>
+              {pridane ? "Žiadosť odoslaná ✓" : "Pridať priateľa"}
+            </BtnAkcia>
           </div>
-          <div style={{ fontSize: 11, color: C.textTer, textAlign: "center", marginTop: SPACE.sm, lineHeight: 1.5 }}>Bežnú osobu nemožno jednostranne „sledovať" — len priateľstvo so vzájomným súhlasom.</div>
+          <MenuSkupina>
+            <div style={{ padding: `${SPACE.xl}px ${SPACE.md}px`, textAlign: "center" }}>
+              <div style={{ fontSize: 30 }}>🔒</div>
+              <div style={{ fontSize: 15, fontWeight: 700, marginTop: SPACE.xs }}>Súkromný profil</div>
+              <div style={{ fontSize: 12.5, color: C.textTer, marginTop: SPACE.xs, lineHeight: 1.5 }}>Skutky a aktivita sú súkromné. Po prijatí priateľstva uvidíš o tejto osobe viac.</div>
+            </div>
+          </MenuSkupina>
+          <div style={{ fontSize: 11, color: C.textTer, textAlign: "center", lineHeight: 1.5 }}>Bežnú osobu nemožno jednostranne sledovať — len priateľstvo so vzájomným súhlasom.</div>
         </>)}
 
         {/* ---- PRIATEĽ ---- */}
         {stav === "priatel" && (<>
-          <div style={{ display: "flex", gap: SPACE.sm }}>
-            <div style={{ flex: 1, height: 46, borderRadius: RADIUS.sm, background: "rgba(61,214,140,.1)", border: "1px solid rgba(46,125,82,.5)", display: "flex", alignItems: "center", justifyContent: "center", gap: SPACE.xs, fontWeight: 700, fontSize: 14, color: "var(--a-green)" }}><IkonaFajka size={16} color="var(--a-green)" /> Priateľ</div>
-            <button onClick={() => toast?.("Správa (len medzi priateľmi)")} style={{ flex: 1, height: 46, borderRadius: RADIUS.sm, border: `1px solid ${C.line}`, background: C.surface2, color: C.text, fontWeight: 700, fontSize: 14, cursor: "pointer", fontFamily: "inherit" }}>Správa</button>
+          <div style={{ display: "flex", gap: SPACE.xs, marginBottom: SPACE.gutter }}>
+            <BtnAkcia variant="secondary" ariaPressed><IkonaFajka size={15} color="var(--a-green)" /> Priateľ</BtnAkcia>
+            <BtnAkcia variant="primary" onClick={() => toast?.("Správa (len medzi priateľmi)")}>Správa</BtnAkcia>
           </div>
-          <div style={{ fontSize: 10.5, letterSpacing: ".4px", color: C.textTer, fontWeight: 700, margin: `${SPACE.md}px 0 ${SPACE.xs}px` }}>SPOLOČNÉ</div>
-          <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm, background: C.surface, border: `1px solid ${C.line}`, borderRadius: RADIUS.sm, padding: `${SPACE.sm}px ${SPACE.sm}px` }}>
-            <IkonaUsmev size={18} color="var(--a-info)" /><span style={{ fontSize: 13.5 }}>3 spoloční priatelia</span>
-          </div>
-          <div style={{ fontSize: 10.5, letterSpacing: ".4px", color: C.textTer, fontWeight: 700, margin: `${SPACE.md}px 0 ${SPACE.xs}px` }}>NEDÁVNE SKUTKY</div>
-          {["Čistenie brehu Váhu", "Odviezol suseda na dialýzu"].map((t, i) => (
-            <div key={i} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, background: "rgba(var(--glass-rgb),.04)", border: `1px solid ${C.line2}`, borderRadius: RADIUS.sm, padding: `${SPACE.sm}px ${SPACE.sm}px`, marginBottom: SPACE.xs }}>
-              <IkonaFajka size={15} color="var(--a-green)" /><span style={{ fontSize: 13.5 }}>{t}</span>
+          <MenuSkupina nadpis="SPOLOČNÉ">
+            <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm, padding: `${SPACE.sm}px ${SPACE.gutter}px` }}>
+              <IkonaUsmev size={18} color="var(--a-info)" /><span style={{ fontSize: 13.5 }}>3 spoloční priatelia</span>
             </div>
-          ))}
-          <div style={{ fontSize: 11, color: C.textTer, textAlign: "center", marginTop: SPACE.xs }}>Vidíš, lebo ste priatelia. Priateľstvo neodomyká súkromnú časť — len čo osoba dovolila.</div>
+          </MenuSkupina>
+          <MenuSkupina nadpis="NEDÁVNE SKUTKY">
+            {["Čistenie brehu Váhu", "Odviezol suseda na dialýzu"].map((t, i, arr) => (
+              <div key={i} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, padding: `${SPACE.sm}px ${SPACE.gutter}px`, borderBottom: i < arr.length - 1 ? `1px solid ${C.line2}` : "none" }}>
+                <IkonaFajka size={15} color="var(--a-green)" /><span style={{ fontSize: 13.5 }}>{t}</span>
+              </div>
+            ))}
+          </MenuSkupina>
+          <div style={{ fontSize: 11, color: C.textTer, textAlign: "center" }}>Vidíš, lebo ste priatelia — a len to, čo osoba dovolila.</div>
         </>)}
 
         {/* ---- TVORCA ---- */}
         {stav === "tvorca" && (<>
-          <button onClick={() => { toggleSledovanie({ meno, typ: "osoba" }); toast?.(sleduje ? "Prestal si sledovať" : "Sleduješ tvorcu"); }}
-            style={{ width: "100%", height: 50, borderRadius: RADIUS.md, border: "none", fontWeight: 700, fontSize: 15, fontFamily: "inherit", cursor: "pointer",
-              background: sleduje ? "rgba(var(--glass-rgb),.06)" : GRAD, color: sleduje ? C.text : "#fff", boxShadow: sleduje ? "none" : "0 8px 24px color-mix(in srgb, var(--a-green) 30%, transparent)" }}>
-            {sleduje ? "✓ Sledované" : "Sledovať"}
-          </button>
-          <div style={{ fontSize: 10.5, letterSpacing: ".4px", color: C.textTer, fontWeight: 700, margin: `${SPACE.md}px 0 ${SPACE.xs}px` }}>PONUKA</div>
-          <div onClick={() => toast?.("Rezervácia výučby (demo)")} style={{ background: C.surface2, border: `1px solid ${C.line}`, borderRadius: RADIUS.md, padding: SPACE.gutter, cursor: "pointer" }}>
-            <div style={{ fontSize: 14.5, fontWeight: 700 }}>Výučba gitary pre začiatočníkov</div>
-            <div style={{ fontSize: 12, color: C.textTer, marginTop: SPACE.xxs }}>8 rokov praxe · od 15 €/h</div>
+          <div style={{ display: "flex", gap: SPACE.xs, marginBottom: SPACE.gutter }}>
+            <BtnAkcia variant={sleduje ? "secondary" : "primary"} ariaPressed={sleduje}
+              onClick={() => { toggleSledovanie({ meno, typ: "osoba" }); toast?.(sleduje ? "Prestal si sledovať" : "Sleduješ tvorcu"); }}>
+              {sleduje ? "✓ Sledované" : "Sledovať"}
+            </BtnAkcia>
+            <BtnIkonka label="Zdieľať profil" onClick={() => void zdielaj({ titul: meno, text: meno, url: aktualnaUrl() }, toast ?? (() => {}))}><Zdielanie size={16} /></BtnIkonka>
           </div>
-          <div style={{ fontSize: 10.5, letterSpacing: ".4px", color: C.textTer, fontWeight: 700, margin: `${SPACE.md}px 0 ${SPACE.xs}px` }}>TALENT</div>
-          <div onClick={() => toast?.("Talent kanál (demo)")} style={{ height: 120, borderRadius: RADIUS.md, background: "linear-gradient(160deg, #1a1430, #2c2350)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-            <span style={{ width: 54, height: 54, borderRadius: RADIUS.round, background: "rgba(255,255,255,.14)", border: "1px solid rgba(255,255,255,.4)", display: "flex", alignItems: "center", justifyContent: "center" }}><IkonaPlay size={22} color="#fff" /></span>
-          </div>
-          <div style={{ fontSize: 11, color: C.textTer, textAlign: "center", marginTop: SPACE.sm }}>Verejný, lebo dobrovoľne ponúka službu.</div>
+          <MenuSkupina nadpis="PONUKA">
+            <div {...pressable(() => toast?.("Rezervácia výučby"), "Rezervácia výučby")} style={{ padding: SPACE.gutter, cursor: "pointer" }}>
+              <div style={{ fontSize: 14.5, fontWeight: 700 }}>Výučba gitary pre začiatočníkov</div>
+              <div style={{ fontSize: 12, color: C.textTer, marginTop: SPACE.xxs }}>8 rokov praxe · od 15 €/h</div>
+            </div>
+          </MenuSkupina>
+          <MenuSkupina nadpis="TALENT">
+            <div {...pressable(() => toast?.("Talent kanál"), "Talent kanál")} style={{ height: 120, background: "linear-gradient(160deg, #1a1430, #2c2350)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+              <span style={{ width: 54, height: 54, borderRadius: RADIUS.round, background: "rgba(255,255,255,.14)", border: "1px solid rgba(255,255,255,.4)", display: "flex", alignItems: "center", justifyContent: "center" }}><IkonaPlay size={22} color="#fff" /></span>
+            </div>
+          </MenuSkupina>
+          <div style={{ fontSize: 11, color: C.textTer, textAlign: "center" }}>Profil je verejný, lebo osoba dobrovoľne ponúka službu.</div>
         </>)}
       </div>
     </div>

@@ -44,7 +44,7 @@ export function MojeQrKody({ onClose, toast }: { onClose?: () => void; toast?: (
       });
       toast?.("QR vytvorený · % zafixované");
       setKrok("list"); setPost(null); setCiele([]); setQ("");
-    } catch { toast?.("Nepodarilo sa (demo/offline)"); }
+    } catch { toast?.("Nepodarilo sa — skús znova"); }
     setVyrabam(false);
   }
 

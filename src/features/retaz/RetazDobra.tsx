@@ -129,7 +129,7 @@ export function RetazDobraSheet({ odmena = 130, mode = "skutok", titulOdkaz = "S
             );
           })}
           {/* naskenovať QR žiadosti */}
-          <div {...pressable(() => toast?.("Naskenuj QR žiadosti (demo)"), "Naskenovať QR žiadosti")} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, padding: `${SPACE.sm}px ${SPACE.sm}px`, borderRadius: RADIUS.sm, cursor: "pointer", border: `1px dashed ${C.line}`, color: C.textSec }}>
+          <div {...pressable(() => toast?.("Naskenuj QR žiadosti"), "Naskenovať QR žiadosti")} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, padding: `${SPACE.sm}px ${SPACE.sm}px`, borderRadius: RADIUS.sm, cursor: "pointer", border: `1px dashed ${C.line}`, color: C.textSec }}>
             <span style={{ width: 34, height: 34, borderRadius: RADIUS.xs, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(var(--glass-rgb),.05)" }}><IkonaDoska size={16} color={C.textTer} /></span>
             <div style={{ fontSize: 13, fontWeight: 600 }}>Naskenovať QR žiadosti</div>
           </div>

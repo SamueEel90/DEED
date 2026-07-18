@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, memo } from "react";
-import { ModulHlavicka, Hlavicka, PodporaSekcia, PlatbaModal, HladanieModal, toast, Oslava, useMotiv, useLayout, useScrollPamat, useStrankaAkcie, useTvorbaGate, Ticker, StatRiadok, FiltreStat, FeedStlpce, FeedGrid, FeedCard, KartaBadge, TypBadge, BackChip, SwipeBack, obalSiroky, OkruhVyber, Lupa, Zvon, IkonaSipVlavo, IkonaMoznosti, Zdielanie, IkonaUlozit, IkonaPlay, IkonaDoska, IkonaPin, FotoPrispevku, FotoVyber, FeedSkeleton, EmptyState, ErrorState, ScreenSwitch } from "@/shared";
+import { ModulHlavicka, Hlavicka, PodporaSekcia, PlatbaModal, HladanieModal, toast, Oslava, useMotiv, useLayout, useScrollPamat, useStrankaAkcie, useTvorbaGate, Ticker, StatRiadok, FiltreStat, FeedStlpce, FeedGrid, FeedCard, KartaBadge, TypBadge, BackChip, SwipeBack, obalSiroky, OkruhVyber, Lupa, Zvon, IkonaSipVlavo, IkonaMoznosti, Zdielanie, IkonaUlozit, IkonaPlay, IkonaDoska, IkonaPin, IkonaObalka, FotoPrispevku, FotoVyber, FeedSkeleton, EmptyState, ErrorState, ScreenSwitch, EntityHero, BtnAkcia, Overene, KontextMenu, IkonaOdkaz, IkonaVlajka } from "@/shared";
 import { SIRKA, C, GRAD, GRAD_ZELENY, SPACE, RADIUS } from "@/theme";
 import { pripravFeed, FEED_CFG } from "@/lib/feed";
 import { MEDIA_AR } from "@/lib/cardSize";
@@ -7,6 +7,7 @@ import type { OkruhKod } from "@/types";
 import { Zvoncek } from "@/features/notifikacie/Notifikacie";
 import { A, DOM, ORDER, tint } from "./domeny";
 import { pressable } from "@/components/pressable";
+import { NahlasitSheet } from "@/components/nahlasit";
 import { useVrstva } from "@/lib/urlnav";
 import { zdielaj, aktualnaUrl } from "@/lib/zdielanie";
 import { rovnakeOkremFunkcii } from "@/lib/ui";
@@ -47,7 +48,6 @@ const pfpS = (bg: string): React.CSSProperties => ({ width: 36, height: 36, bord
 const nameS: React.CSSProperties = { fontWeight: 700, fontSize: 15.5 };
 const timeS: React.CSSProperties = { marginLeft: "auto", fontSize: 12, color: A.txt2 };
 const titleS: React.CSSProperties = { fontSize: 16, fontWeight: 700, lineHeight: 1.4 };
-const verifS: React.CSSProperties = { display: "inline-flex", alignItems: "center", gap: SPACE.xxs, fontSize: 10.5, fontWeight: 800, color: A.green, background: tint("var(--a-green)", .2), border: `1px solid ${tint("var(--a-green)", .4)}`, padding: `${SPACE.xxs}px ${SPACE.xs}px`, borderRadius: RADIUS.xs, lineHeight: 1.2 };
 const heroGrad = (d: string) => `linear-gradient(160deg, ${DOM[d].bg} 0%, #0a0c11 100%)`;
 const secLbl: React.CSSProperties = { fontSize: 11.5, letterSpacing: ".4px", color: A.txt3, fontWeight: 700, margin: `${SPACE.md}px 0 ${SPACE.xs}px` };
 
@@ -345,7 +345,7 @@ function AktCardBase({ it, wide, onOpen, onPerson }: any) {
       autor={{
         meno: it.author, pfp: it.pfp, ini: it.ini, lok: it.loc || a.label, karma: it.karma, cas: it.time, glow: accent,
         onClick: () => onPerson(it.author),
-        chips: it.verified ? <span style={verifS}>✓ overené</span> : undefined,
+        chips: it.verified ? <Overene size={15} label="Overené komunitou" /> : undefined,
       }}
       media={{
         fotky: it.fotky?.length ? it.fotky : undefined,
@@ -369,7 +369,7 @@ function AktCardBase({ it, wide, onOpen, onPerson }: any) {
       progress={jeCase ? { vyzbierane: it.raised, ciel: it.goal } : undefined}
       footer={
         <>
-          {jeCase && <div style={{ fontSize: 10, color: A.txt3, marginTop: SPACE.xxs }}>D++R {it.drr}% ide priamo príjemcovi</div>}
+          {jeCase && <div style={{ fontSize: 10, color: A.txt3, marginTop: SPACE.xxs }}>{it.drr} % ide priamo príjemcovi</div>}
           {jeHelp && <div style={{ fontSize: 12.5, marginTop: SPACE.xs, fontWeight: 600, color: A.red }}>❓ Hľadám pomoc · <span style={{ color: A.txt3, fontWeight: 400 }}>{it.helpers} sa zapojilo</span></div>}
           {jeWorkshop && <div style={{ fontSize: 11.5, color: A.txt3, marginTop: SPACE.xs }}>★ {it.rating} · {it.seats} miest{it.loc ? ` · ${it.loc}` : ""}</div>}
         </>
@@ -385,29 +385,55 @@ function BackBar({ title, onBack }: { title: string; onBack: () => void }) {
 }
 // `children` = len TAGY (doména/cena/„hľadám pomoc"). Placeholder (emoji/gradient) sa
 // pri chýbajúcej fotke NEzobrazuje — príspevok je čisto textový (tenká lišta + tagy v toku).
+// ⋯ = kontextové menu príspevku (zdieľať / kopírovať odkaz / nahlásiť) — jednotné v celej appke.
 function DetailHero({ it, onBack, children }: { it: AktItem; onBack: () => void; children?: React.ReactNode }) {
   const { wide } = useLayout();
+  const [menu, setMenu] = useState(false);
+  const [nahlasit, setNahlasit] = useState(false);
   const maFoto = !!(it.fotky && it.fotky.length);
+  const menuBtn = (hero: boolean) => (
+    <div {...pressable(() => setMenu(true), "Ďalšie možnosti")} style={{ width: 34, height: 34, borderRadius: "50%", cursor: "pointer",
+      background: hero ? "rgba(0,0,0,.55)" : "rgba(var(--glass-rgb),.06)", border: hero ? "none" : `1px solid ${A.line}`,
+      display: "flex", alignItems: "center", justifyContent: "center", color: hero ? "#fff" : A.txt2 }}>
+      <IkonaMoznosti size={18} color={hero ? "#fff" : A.txt2} />
+    </div>
+  );
+  const overlaye = (
+    <>
+      {menu && (
+        <KontextMenu onClose={() => setMenu(false)} polozky={[
+          { ikona: <Zdielanie size={17} />, label: "Zdieľať príspevok", onClick: () => void zdielaj({ titul: it.title, text: it.title, url: aktualnaUrl() }, toast) },
+          { ikona: <IkonaOdkaz size={17} />, label: "Kopírovať odkaz", onClick: async () => { try { await navigator.clipboard.writeText(aktualnaUrl()); toast("Odkaz skopírovaný"); } catch { void zdielaj({ titul: it.title, text: it.title, url: aktualnaUrl() }, toast); } } },
+          { ikona: <IkonaVlajka size={16} />, label: "Nahlásiť obsah", danger: true, onClick: () => setNahlasit(true) },
+        ]} />
+      )}
+      {nahlasit && <NahlasitSheet co={it.title} refId={String(it.id)} modul="aktivity" onClose={() => setNahlasit(false)} toast={toast} />}
+    </>
+  );
   if (!maFoto) {
     return (
       <>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: `${SPACE.sm}px ${SPACE.gutter}px` }}>
           <BackChip onBack={onBack} />
-          <div style={{ width: 34, height: 34, borderRadius: "50%", background: "rgba(var(--glass-rgb),.06)", border: `1px solid ${A.line}`, display: "flex", alignItems: "center", justifyContent: "center", color: A.txt2 }}><IkonaMoznosti size={18} color={A.txt2} /></div>
+          {menuBtn(false)}
         </div>
         {children && <div style={{ display: "flex", flexWrap: "wrap", gap: SPACE.xs, padding: `0 ${SPACE.md}px ${SPACE.xs}px` }}>{children}</div>}
+        {overlaye}
       </>
     );
   }
   return (
-    <div style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center", background: heroGrad(it.dom), ...(wide ? { width: "100%", aspectRatio: MEDIA_AR } : { height: 150 }) }}>
-      <div style={{ position: "absolute", inset: 0 }}><FotoPrispevku fotky={it.fotky} h="100%" disableGaleria prednost alt={it.title} /></div>
-      <div style={{ position: "absolute", inset: 0, background: "linear-gradient(0deg, rgba(0,0,0,.42), transparent 46%)", pointerEvents: "none" }} />
-      {it.media === "video" && <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1 }}><Play big /></div>}
-      <div style={{ position: "absolute", top: 14, left: 14, zIndex: 2 }}><BackChip hero onBack={onBack} /></div>
-      <div style={{ position: "absolute", top: 14, right: 14, width: 34, height: 34, borderRadius: "50%", background: "rgba(0,0,0,.55)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", zIndex: 2 }}><IkonaMoznosti size={18} color="#fff" /></div>
-      {children && <div style={{ position: "absolute", bottom: 12, left: 14, right: 14, zIndex: 2, display: "flex", flexWrap: "wrap", gap: SPACE.xs }}>{children}</div>}
-    </div>
+    <>
+      <div style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center", background: heroGrad(it.dom), ...(wide ? { width: "100%", aspectRatio: MEDIA_AR } : { height: 150 }) }}>
+        <div style={{ position: "absolute", inset: 0 }}><FotoPrispevku fotky={it.fotky} h="100%" disableGaleria prednost alt={it.title} /></div>
+        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(0deg, rgba(0,0,0,.42), transparent 46%)", pointerEvents: "none" }} />
+        {it.media === "video" && <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1 }}><Play big /></div>}
+        <div style={{ position: "absolute", top: 14, left: 14, zIndex: 2 }}><BackChip hero onBack={onBack} /></div>
+        <div style={{ position: "absolute", top: 14, right: 14, zIndex: 2 }}>{menuBtn(true)}</div>
+        {children && <div style={{ position: "absolute", bottom: 12, left: 14, right: 14, zIndex: 2, display: "flex", flexWrap: "wrap", gap: SPACE.xs }}>{children}</div>}
+      </div>
+      {overlaye}
+    </>
   );
 }
 const qrCells = () => [...Array(25)].map((_, k) => <i key={k} style={{ background: (k * 7 + 3) % 3 ? "#0B0C0F" : "transparent", borderRadius: 1 }} />);
@@ -441,7 +467,7 @@ function DeedDetail({ it, support, votes, vote, toast, home, openPerson }: any) 
             <div style={{ ...nameS, display: "flex", alignItems: "center", gap: SPACE.xs }}>{it.author} <span style={{ color: C.textTer, fontSize: 13 }}>›</span></div>
             <div style={{ display: "flex", alignItems: "center", gap: SPACE.xxs, fontSize: 12, color: A.txt2, marginTop: 1 }}><IkonaPin size={12} color={A.txt2} />{it.loc}</div>
           </div>
-          {it.verified && <span style={{ ...verifS, marginLeft: "auto" }}>overené</span>}
+          {it.verified && <span style={{ marginLeft: "auto", display: "inline-flex" }}><Overene size={15} label="Overené komunitou" /></span>}
         </div>
         <div style={{ ...titleS, marginTop: SPACE.sm, fontSize: 14 }}>{it.title}</div>
         <p style={{ fontSize: 14.5, lineHeight: 1.6, marginTop: SPACE.xs, color: A.txt2 }}>{it.desc}</p>
@@ -450,7 +476,7 @@ function DeedDetail({ it, support, votes, vote, toast, home, openPerson }: any) 
           <div style={{ textAlign: "center", padding: SPACE.sm, background: A.surface2, border: `1px solid ${a.bd}`, borderRadius: RADIUS.sm, marginTop: SPACE.xs }}>
             <b style={{ fontSize: 22, color: a.c }}>{it.raised.toLocaleString("sk")} €</b> <span style={{ color: A.txt2 }}>z {it.goal.toLocaleString("sk")} € ({pct}%)</span>
             <div style={{ height: 6, background: "rgba(var(--glass-rgb),.12)", borderRadius: 99, marginTop: SPACE.xs, overflow: "hidden" }}><div style={{ height: "100%", width: `${pct}%`, background: GRAD_ZELENY, borderRadius: 99, transition: "width .4s ease" }} /></div>
-            <div style={{ fontSize: 10, color: A.gold, marginTop: SPACE.xs, fontWeight: 700 }}>D++R · {it.drr}% z tvojho daru ide Marekovi · overené</div>
+            <div style={{ fontSize: 10, color: A.gold, marginTop: SPACE.xs, fontWeight: 700 }}>{it.drr} % z tvojho daru ide Marekovi · overené</div>
             {it.supportCount > 0 && <div style={{ fontSize: 10.5, color: A.green, marginTop: SPACE.xs, fontWeight: 700 }}>✓ Ty si prispel(a) {it.supportCount}× · ďakujeme</div>}
           </div>
         )}
@@ -523,7 +549,7 @@ function WorkshopDetail({ it, toast, celebrate, home, openPerson }: any) {
           : "Voľný komunitný workshop — bez 3 QR a bez auditu (obsah/kvalitu nepoznáme). Pozeraj čo ťa zaujíma."}</InfoBox>
 
         {it.profi && (<><div style={secLbl}>ĎALŠIE OD LEKTORA</div>
-          <div onClick={() => toast("Ďalšie workshopy lektora (demo)")} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: A.surface, border: `1px solid ${A.line}`, borderRadius: RADIUS.sm, padding: SPACE.gutter, fontSize: 13, cursor: "pointer" }}><span>📚 Ďalšie 2 workshopy · profil</span><span style={{ color: C.textTer }}>›</span></div></>)}
+          <div onClick={() => toast("Ďalšie workshopy lektora")} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: A.surface, border: `1px solid ${A.line}`, borderRadius: RADIUS.sm, padding: SPACE.gutter, fontSize: 13, cursor: "pointer" }}><span>📚 Ďalšie 2 workshopy · profil</span><span style={{ color: C.textTer }}>›</span></div></>)}
 
         <Btn onClick={() => {
           if (platena) { setPlatba("EUR"); return; } // platený workshop → reálna platba (karta / SEPA prevod)
@@ -765,55 +791,39 @@ function OsobaProfil({ name, items, follows, toggleFollow, onOpen, toast, home }
   const acc = p.domains[0] ? DOM[p.domains[0]] : DOM.mix;
   const followers = p.followers + (sledujem ? 1 : 0);
 
-  const stat = (b: React.ReactNode, t: string) => (
-    <div style={{ flex: 1, textAlign: "center", background: A.surface, border: `1px solid ${A.line}`, borderRadius: RADIUS.sm, padding: `${SPACE.sm}px ${SPACE.xxs}px` }}>
-      <b style={{ fontSize: 16 }}>{b}</b><div style={{ fontSize: 9.5, color: A.txt3, marginTop: SPACE.xxs }}>{t}</div>
-    </div>
-  );
   const karmaCol = ({ Gold: A.gold, Silver: "#C9D2DE", Bronze: "#CD8B5E", "Nováčik": A.txt3 } as Record<string, string>)[p.karma] || A.txt3;
 
   return (
     <div style={{ paddingBottom: SPACE.lg }}>
       <BackBar title="Profil" onBack={home} />
 
-      {/* hero */}
-      <div style={{ padding: `${SPACE.xxs}px ${SPACE.md}px 0`, display: "flex", gap: SPACE.gutter, alignItems: "center" }}>
-        <div style={{ width: 72, height: 72, borderRadius: "50%", flex: "none", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 28, color: "#fff", background: p.pfp, border: `2px solid ${acc.c}` }}>{p.ini}</div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: SPACE.xs, flexWrap: "wrap" }}>
-            <span style={{ fontSize: 19, fontWeight: 800 }}>{p.name}</span>
-            {p.verified && <span style={verifS}>overené</span>}
-            {p.profi && <Wb bg={A.purpleBg} c={A.purple}>PROFI</Wb>}
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: SPACE.xs, marginTop: SPACE.xxs, fontSize: 12.5, color: A.txt3 }}>
-            <span style={{ color: karmaCol, fontWeight: 700 }}>◆ {p.karma}</span>
-            <span>· 📍 {p.loc}</span>
-          </div>
-        </div>
+      {/* hero — jednotný entity vzor (cover→avatar→meno+odznak→štatistiky→akcie) */}
+      <div style={{ padding: `${SPACE.xxs}px ${SPACE.md}px 0` }}>
+        <EntityHero
+          avatar={<span style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 26, color: "#fff", background: p.pfp }}>{p.ini}</span>}
+          coverEl={<span style={{ position: "absolute", inset: 0, background: `linear-gradient(160deg, ${tint(acc.c, .3)}, ${tint(acc.c, .06)})` }} />}
+          meno={<>{p.name}{p.profi && <Wb bg={A.purpleBg} c={A.purple}>PROFI</Wb>}</>}
+          overene={p.verified} overeneLabel="Overený člen — potvrdené komunitou"
+          podtitul={<><span style={{ color: karmaCol, fontWeight: 700 }}>◆ {p.karma}</span> · 📍 {p.loc}</>}
+          stats={[
+            { hodnota: p.skutky, label: "skutkov" },
+            { hodnota: followers.toLocaleString("sk"), label: "sledovateľov" },
+            { hodnota: p.following, label: "sleduje" },
+            { hodnota: p.domains.length, label: "oblastí" },
+          ]}
+          akcie={p.isMe ? (
+            <BtnAkcia variant="secondary" onClick={() => toast("Toto je tvoj profil — uprav ho v záložke Profil")}>To si ty ✦</BtnAkcia>
+          ) : (<>
+            <BtnAkcia variant={sledujem ? "secondary" : "primary"} ariaPressed={sledujem} onClick={() => toggleFollow(name)}>
+              {sledujem ? "✓ Sledujem" : "+ Sledovať"}
+            </BtnAkcia>
+            <BtnAkcia variant="secondary" onClick={gate(() => toast(`Správa pre ${p.name}`))}><IkonaObalka size={14} /> Správa</BtnAkcia>
+          </>)}
+        />
       </div>
 
       {/* bio */}
       <p style={{ padding: `${SPACE.sm}px ${SPACE.md}px 0`, margin: 0, fontSize: 14, lineHeight: 1.55, color: A.txt2 }}>{p.bio}</p>
-
-      {/* akcie */}
-      <div style={{ display: "flex", gap: SPACE.sm, padding: `${SPACE.gutter}px ${SPACE.md}px 0` }}>
-        {p.isMe ? (
-          <button onClick={() => toast("Toto je tvoj profil — uprav ho v záložke Profil")} style={{ flex: 1, height: 46, borderRadius: RADIUS.sm, fontWeight: 700, fontSize: 14, cursor: "pointer", fontFamily: "inherit", background: A.surface2, border: `1px solid ${A.line}`, color: A.txt }}>To si ty ✦</button>
-        ) : (
-          <button onClick={() => toggleFollow(name)} style={{ flex: 1, height: 46, borderRadius: RADIUS.sm, fontWeight: 800, fontSize: 14.5, cursor: "pointer", fontFamily: "inherit", transition: "all .15s ease", background: sledujem ? A.surface2 : acc.c, border: `1px solid ${sledujem ? A.line : acc.c}`, color: sledujem ? A.txt : "#08131A" }}>
-            {sledujem ? "✓ Sledujem" : "+ Sledovať"}
-          </button>
-        )}
-        <button onClick={p.isMe ? () => toast("Tvoj profil") : gate(() => toast(`Správa pre ${p.name} (demo)`))} style={{ flex: 1, height: 46, borderRadius: RADIUS.sm, fontWeight: 700, fontSize: 14, cursor: "pointer", fontFamily: "inherit", background: A.surface2, border: `1px solid ${A.line}`, color: A.txt }}>✉ Správa</button>
-      </div>
-
-      {/* štatistiky */}
-      <div style={{ display: "flex", gap: SPACE.xs, padding: `${SPACE.gutter}px ${SPACE.md}px 0` }}>
-        {stat(p.skutky, "skutkov")}
-        {stat(followers.toLocaleString("sk"), "sledovateľov")}
-        {stat(p.following, "sleduje")}
-        {stat(p.domains.length, "oblastí")}
-      </div>
 
       {/* domény */}
       {p.domains.length > 0 && (

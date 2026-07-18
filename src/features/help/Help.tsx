@@ -3,7 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { SIRKA, C, inp, infoBox, btn, GRAD_ZELENY, glassTmavy, SPACE, RADIUS } from "@/theme";
 import { pasmo, POZNAMKA_DAVKY, tagLabels, CHARITA_SEGMENTY, segmentLabel, OVERENIA_POTREBNE, ESCROW } from "./konstanty";
 import { TagTemy, prepniTag, ZranitelniBlok, PrisnyBadge, AiPoznamka, GuardFuzzy } from "./HelpKit";
-import { Foto, Avatar, MiniFotky, Hlavicka, ModulHlavicka, PodporaSekcia, PlatbaModal, HladanieModal, OblubeneHviezda, OblubeneBtn, Otazka, Vyber, vyberBox, NavBtns, Suhrn, DokladRow, toast, Oslava, useGaleria, useLayout, useScrollPamat, useStrankaAkcie, useTvorbaGate, Ticker, StatRiadok, FiltreStat, FeedStlpce, FeedGrid, FeedCard, KartaBadge, typKluc, BackHeader, ProgresBox, obalSiroky, OkruhVyber, Lupa, Zdielanie, IkonaVlajka, IkonaFoto, IkonaPlay, IkonaDoska, IkonaPin, IkonaOsoba, IkonaCharita, FeedSkeleton, EmptyState, ErrorState, ScreenSwitch, SwipeBack, ZoznamDarcov, FormatovanyText, RichTextInput } from "@/shared";
+import { Foto, Avatar, MiniFotky, Hlavicka, ModulHlavicka, PodporaSekcia, PlatbaModal, HladanieModal, OblubeneHviezda, OblubeneBtn, Otazka, Vyber, vyberBox, NavBtns, Suhrn, DokladRow, toast, Oslava, useGaleria, useLayout, useScrollPamat, useStrankaAkcie, useTvorbaGate, Ticker, StatRiadok, FiltreStat, FeedStlpce, FeedGrid, FeedCard, KartaBadge, typKluc, BackHeader, ProgresBox, obalSiroky, OkruhVyber, Lupa, Zdielanie, IkonaVlajka, IkonaFoto, IkonaPlay, IkonaDoska, IkonaPin, IkonaOsoba, IkonaCharita, FeedSkeleton, EmptyState, ErrorState, ScreenSwitch, KontextMenu, Overene, IkonaMoznosti, IkonaOdkaz, PodporitDeed, SwipeBack, ZoznamDarcov, FormatovanyText, RichTextInput } from "@/shared";
 import { pridajDar, type VolbaDaru } from "@/lib/darcovia";
 import { cistyText } from "@/lib/richtext";
 import { Zvoncek } from "@/features/notifikacie/Notifikacie";
@@ -184,7 +184,7 @@ function Feed({ wide, toast, onDetail, onHladaj, onAdd, onBoard, radius, setRadi
   useStrankaAkcie(() => ({
     pridat: { id: "add", label: "Pridať", onClick: onAdd },
     extra: [
-      { id: "talent", label: "Ukáž svoj talent", popis: "Tvorivé skutky a talenty", ikona: <IkonaPlay size={18} color="var(--a-green)" />, onClick: gate(() => toast("Ukáž svoj talent (demo)")) },
+      { id: "talent", label: "Ukáž svoj talent", popis: "Tvorivé skutky a talenty", ikona: <IkonaPlay size={18} color="var(--a-green)" />, onClick: gate(() => toast("Ukáž svoj talent")) },
       { id: "board", label: "Nástenka", popis: "Akcie a udalosti v okolí", ikona: <IkonaDoska size={18} color="var(--a-green)" />, onClick: onBoard },
     ],
   }), []);
@@ -261,7 +261,7 @@ function HelpKartaBase({ z, wide, onClick }: { z: any; wide?: boolean; onClick: 
   const jePonuka = z.typ === "ponuka";
   const jeKriza = z.typSituacie === "kriza";
   const accent = jeZiadost ? (z.sponzor ? C.gold : C.red) : jePonuka ? C.purple : C.gold;
-  const typLabel = jeZiadost ? `ŽIADOSŤ · ${z.sponzor ? "D++" : "D+"}` : jePonuka ? "PONUKA POMOCI" : "CHARITA";
+  const typLabel = jeZiadost ? (z.sponzor ? "ŽIADOSŤ · SO SPONZOROM" : "ŽIADOSŤ") : jePonuka ? "PONUKA POMOCI" : "CHARITA";
   return (
     <FeedCard wide={wide} onClick={onClick} label={z.nazov} typ={typKluc(z.typ)} accent={jeKriza ? C.red : accent} ring={jeKriza ? C.red : undefined}
       media={{
@@ -278,7 +278,7 @@ function HelpKartaBase({ z, wide, onClick }: { z: any; wide?: boolean; onClick: 
       title={z.nazov}
       titleChips={
         <>
-          {z.overeny && <span style={tagChip(C.greenL)}>✓ overená</span>}
+          {z.overeny && <Overene size={15} label="Overená žiadosť" />}
           {z.odbornik && <span style={tagChip(C.purple)}>✓ odborník</span>}
           {z.prisny && <span style={tagChip(C.red)}>🛡 zraniteľní</span>}
           {z.typ === "charity" && !z.sponzor && <span style={tagChip(C.gold)}>hľadá pomoc</span>}
@@ -297,7 +297,8 @@ function Detail({ z, onBack, onAutor }: { z: any; onBack: () => void; onAutor: (
   const [suma, setSuma] = useState(z.suma ?? 0);
   const [ludia, setLudia] = useState(z.ludia ?? 0);
   const [ozvat, setOzvat] = useState(false); // „Mám záujem" → mini formulár so správou
-  const [nahlasit, setNahlasit] = useState(false); // vlajka → nahlásenie obsahu
+  const [nahlasit, setNahlasit] = useState(false); // nahlásenie obsahu (z ⋯ menu)
+  const [menu, setMenu] = useState(false); // ⋯ kontextové menu
   const [qr, setQr] = useState(false); // žiadosť: donačný QR · ponuka: QR na mieste
   const [splitQr, setSplitQr] = useState(false); // influencer: rozdeliť platbu (Split QR)
   const otvorGaleriu = useGaleria();
@@ -327,9 +328,9 @@ function Detail({ z, onBack, onAutor }: { z: any; onBack: () => void; onAutor: (
 
   return (
     <div style={{ paddingBottom: SPACE.xl }}>
-      <BackHeader onBack={onBack} right={<><span {...pressable(() => void zdielaj({ titul: z.nazov, text: z.nazov, url: aktualnaUrl() }, toast), "Zdieľať žiadosť")} style={{ display: "flex", cursor: "pointer", position: "relative" }}><Zdielanie size={17} color={C.textTer} /></span><span {...pressable(() => setNahlasit(true), "Nahlásiť obsah")} style={{ display: "flex", cursor: "pointer", position: "relative" }}><IkonaVlajka size={16} color={C.textTer} /></span></>}>
+      <BackHeader onBack={onBack} right={<span {...pressable(() => setMenu(true), "Ďalšie možnosti")} style={{ display: "flex", cursor: "pointer" }}><IkonaMoznosti size={18} color={C.textTer} /></span>}>
         <span style={{ fontSize: 13, fontWeight: "bold", color: C.blueL, background: tint("var(--a-info)", .12), border: `1px solid ${tint("var(--a-info)", .3)}`, borderRadius: RADIUS.xs, padding: `${SPACE.xxs}px ${SPACE.sm}px` }}>#47 821</span>
-        <span style={{ fontSize: 11, fontWeight: "bold", color: z.sponzor ? C.gold : C.blueL }}>{z.sponzor ? "D++" : "D+"}</span>
+        <span style={{ fontSize: 11, fontWeight: "bold", color: z.sponzor ? C.gold : C.blueL }}>{z.sponzor ? "Sponzorovaná" : "Overená"}</span>
       </BackHeader>
 
       {/* hero foto — LEN ak prípad má fotku (bez placeholdera; inak čisto textový detail) */}
@@ -346,7 +347,7 @@ function Detail({ z, onBack, onAutor }: { z: any; onBack: () => void; onAutor: (
       <div onClick={() => onAutor({ typ: "osoba", meno: z.nazov, level: z.karma || "Silver", lok: z.lok })} style={{ padding: `${SPACE.sm}px ${SPACE.gutter}px`, borderBottom: `1px solid ${C.line2}`, display: "flex", gap: SPACE.sm, alignItems: "center", cursor: "pointer" }}>
         <Avatar src={z.avatar} emoji="👤" size={46} border={`1px solid rgba(127,203,160,.5)`} />
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 16, fontWeight: "bold" }}>{z.nazov} {z.overeny && <span style={{ fontSize: 9, color: C.greenL, border: `1px solid rgba(127,203,160,.4)`, borderRadius: RADIUS.lg, padding: "1px 6px" }}>overená</span>}</div>
+          <div style={{ fontSize: 16, fontWeight: "bold", display: "flex", alignItems: "center", gap: 6 }}>{z.nazov} {z.overeny && <Overene size={15} label="Overená žiadosť" />}</div>
           <div style={{ marginTop: SPACE.xxs }}><span style={{ fontSize: 9, fontWeight: 700, background: "rgba(240,199,90,.12)", border: "1px solid rgba(240,199,90,.3)", color: C.gold, borderRadius: RADIUS.sm, padding: `${SPACE.xxs}px ${SPACE.xs}px` }}>⭐ {z.karma}</span> <span style={{ fontSize: 11, color: C.textTer }}>📍 {z.lok} · 1 deň</span></div>
         </div>
         <span style={{ color: C.textTer, fontSize: 18, flex: "none" }}>›</span>
@@ -356,8 +357,9 @@ function Detail({ z, onBack, onAutor }: { z: any; onBack: () => void; onAutor: (
       <FormatovanyText text={z.pribeh} style={{ padding: `${SPACE.gutter}px ${SPACE.md}px ${SPACE.sm}px`, fontSize: 14, lineHeight: 1.5, color: C.text }} />
 
       {/* uložiť do obľúbených */}
-      <div style={{ padding: `0 ${SPACE.md}px ${SPACE.sm}px` }}>
-        <OblubeneBtn polozka={oblubenyZHelp(z)} toast={toast} style={{ width: "100%" }} />
+      <div style={{ padding: `0 ${SPACE.md}px ${SPACE.sm}px`, display: "flex", gap: SPACE.xs }}>
+        <OblubeneBtn polozka={oblubenyZHelp(z)} toast={toast} style={{ flex: 1, minWidth: 0 }} />
+        <PodporitDeed toast={toast} style={{ flex: 1, minWidth: 0 }} />
       </div>
 
       {/* D++ sponzor */}
@@ -365,7 +367,7 @@ function Detail({ z, onBack, onAutor }: { z: any; onBack: () => void; onAutor: (
         <div style={{ margin: `0 ${SPACE.gutter}px ${SPACE.sm}px`, background: "rgba(224,169,61,.08)", border: `1px solid rgba(224,169,61,.35)`, borderRadius: RADIUS.sm, padding: `${SPACE.sm}px ${SPACE.sm}px`, display: "flex", alignItems: "center", gap: SPACE.sm }}>
           <span style={{ background: "#fff", color: "#0B3D91", fontSize: 10, fontWeight: "bold", borderRadius: RADIUS.xs, padding: `${SPACE.xxs}px ${SPACE.xs}px` }}>{z.sponzor.meno}</span>
           <div style={{ fontSize: 11.5, color: C.textSec, lineHeight: 1.4 }}>
-            <b>{z.sponzor.meno} pomohol sumou {z.sponzor.suma} €</b> · D++ sponzor žiadosti<br />
+            <b>{z.sponzor.meno} pomohol sumou {z.sponzor.suma} €</b> · sponzor žiadosti<br />
             <span style={{ color: C.textTer }}>transparentná suma · ⛓ blockchain dôkaz · ESG dopad (ESRS S3)</span>
           </div>
         </div>
@@ -421,7 +423,14 @@ function Detail({ z, onBack, onAutor }: { z: any; onBack: () => void; onAutor: (
       {/* „Mám záujem" — súkromná správa ponúkajúcemu (mock uloženie) */}
       {ozvat && <OzvatSaSheet komu={z.nazov} refId={z.id} modul="help" onClose={() => setOzvat(false)} toast={toast} />}
 
-      {/* vlajka — nahlásenie obsahu */}
+      {/* ⋯ kontextové menu — zdieľať / kopírovať odkaz / nahlásiť */}
+      {menu && (
+        <KontextMenu onClose={() => setMenu(false)} polozky={[
+          { ikona: <Zdielanie size={17} />, label: "Zdieľať žiadosť", onClick: () => void zdielaj({ titul: z.nazov, text: z.nazov, url: aktualnaUrl() }, toast) },
+          { ikona: <IkonaOdkaz size={17} />, label: "Kopírovať odkaz", onClick: async () => { try { await navigator.clipboard.writeText(aktualnaUrl()); toast("Odkaz skopírovaný"); } catch { void zdielaj({ titul: z.nazov, text: z.nazov, url: aktualnaUrl() }, toast); } } },
+          { ikona: <IkonaVlajka size={16} />, label: "Nahlásiť obsah", danger: true, onClick: () => setNahlasit(true) },
+        ]} />
+      )}
       {nahlasit && <NahlasitSheet co={z.nazov} refId={z.id} modul="help" onClose={() => setNahlasit(false)} toast={toast} />}
 
       {/* QR prípadu — žiadosť: donačný (sken → dar) · ponuka: QR na mieste (potvrdenie skutku) */}
@@ -721,7 +730,7 @@ function RequestFlow({ onBack, onZverejni }: { onBack: () => void; onZverejni: (
         <Hlavicka title="Aký príjemca?" onBack={finBack} />
         <div style={{ padding: SPACE.md }}>
           <Otazka>Aká je situácia príjemcu?</Otazka>
-          <Vyber emoji="🅰️" title="Vie mať účet" desc="Dospelý s dokladmi. Peniaze zamknuté v escrow do prevzatia (claim = KYC + účet)." active={prijemcaTyp === "A"} onClick={() => { setPrijemcaTyp("A"); setFin("proxy"); }} />
+          <Vyber emoji="🅰️" title="Vie mať účet" desc="Dospelý s dokladmi. Peniaze sú v úschove, kým si ich neprevezme overený príjemca." active={prijemcaTyp === "A"} onClick={() => { setPrijemcaTyp("A"); setFin("proxy"); }} />
           <Vyber emoji="🅱️" title="Nemôže konať" desc="Dieťa / koma / opatera → zákonný zástupca s dokladom, alebo platba priamo poskytovateľovi (faktúra)." active={prijemcaTyp === "B"} onClick={() => { setPrijemcaTyp("B"); setFin("proxy"); }} />
           <Vyber emoji="🏛" title="Cez Charitu" desc="Bez dokladov / vysoká suma → zbierku zastreší partnerská charita (núdzny anonymizovaný)." onClick={() => { setPrijemcaTyp(null); setFin("charita"); }} />
         </div>
@@ -756,7 +765,7 @@ function RequestFlow({ onBack, onZverejni }: { onBack: () => void; onZverejni: (
               ) : (
                 <button onClick={() => setIbanOvereny(true)} disabled={iban.trim().length < 8} style={{ ...btn(iban.trim().length < 8 ? "disabled" : "ghost"), width: "100%", marginTop: SPACE.sm }}>Overiť účet (micro-deposit)</button>
               )}
-              <div style={{ fontSize: 11, color: C.textTer, marginTop: SPACE.xs }}>Micro-deposit iniciuje procesor/banka, nie platforma (non-custody). Mock v prototype.</div>
+              <div style={{ fontSize: 11, color: C.textTer, marginTop: SPACE.xs }}>Overovaciu mikroplatbu posiela banka — potvrdí, že účet patrí príjemcovi.</div>
             </div>
           )}
           {ibanCesta === "B" && <div style={{ ...infoBox, marginTop: SPACE.sm, background: tint(C.gold, .1), borderColor: tint(C.gold, .35), color: C.gold, fontSize: 12.5 }}>⏳ Kým sa nedoplní účet príjemcu, FIAT nepôjde — beží len DEED.</div>}
@@ -879,7 +888,7 @@ function RequestFlow({ onBack, onZverejni }: { onBack: () => void; onZverejni: (
                 <span key={k} title={ESCROW[k].popis} style={{ ...tagChip(C.textSec), display: "inline-flex", gap: 4 }}>{ESCROW[k].emoji} {ESCROW[k].label}</span>
               ))}
             </div>
-            <div style={{ fontSize: 11, color: C.textTer, marginTop: SPACE.xs }}>Dary počas overenia idú do escrow. Neprejde → refund darcom. Mock v prototype.</div>
+            <div style={{ fontSize: 11, color: C.textTer, marginTop: SPACE.xs }}>Dary sú počas overenia v úschove. Ak overenie neprejde, vrátia sa darcom.</div>
             <NavBtns onBack={() => setKrok(3)} onNext={() => setKrok(5)} canNext={true} />
           </>
         )}

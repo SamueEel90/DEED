@@ -20,6 +20,8 @@ export * from "@/components/oblubene";
 export * from "@/components/hladanie";
 export * from "@/components/states";
 export * from "@/components/ui";
+export * from "@/components/entity";
+export * from "@/components/podporadeed";
 export * from "@/components/feedcard";
 export * from "@/components/obnova";
 export * from "@/components/swipeback";

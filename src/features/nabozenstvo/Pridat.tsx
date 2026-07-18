@@ -46,7 +46,7 @@ const ZBIERKA: Kat = {
       polia: ["Názov", "Väzba na udalosť", "Popis", "Cieľová suma €", "Foto", "Dĺžka"], akcie: ["Prispieť"], feed: "farský" },
     { id: "z-registrovany", emoji: "🔗", titul: "Pre iného — registrovaný", popis: "Jednorazový 6-miestny kód od príjemcu (PC-friendly, bez kamery) · obojstranné potvrdenie", kto: "F", qrMerge: true, split: "svadba",
       polia: ["Názov", "Kód príjemcu (6-miestny)", "Split (rodina/kostol)", "Text (kto)", "Foto"], akcie: ["Prispieť"], feed: "iba farský" },
-    { id: "z-neregistrovany", emoji: "🧾", titul: "Pre iného — neregistrovaný", popis: "Plný Help sprievodca (8 krokov) — escrow/IBAN overenie", kto: "F", helpWizard: true,
+    { id: "z-neregistrovany", emoji: "🧾", titul: "Pre iného — neregistrovaný", popis: "Plný sprievodca s overením účtu a úschovou darov", kto: "F", helpWizard: true,
       polia: ["Názov", "Podmienky", "Opis", "IBAN overenie", "Téma", "Suma", "Doklady/escrow", "Foto", "Kanál"], akcie: ["Prispieť"], feed: "Help + zrkadlí do farského" },
   ],
 };
@@ -131,7 +131,7 @@ export function PridatSheet({ farar, farnost, onClose, toast }: {
           <UzolForm uzol={uzol} farar={farar} farnost={farnost}
             onSplit={uzol.split ? () => setSplit(uzol.split!) : undefined}
             onPublish={(it) => { if (farnost) pridajPrispevok(farnost.id, it); toast(publishText(uzol, farar)); onClose(); }}
-            onHelp={uzol.helpWizard ? () => { toast("Otváram Help sprievodcu (8 krokov) — escrow/IBAN overenie (demo)"); onClose(); } : undefined}
+            onHelp={uzol.helpWizard ? () => { toast("Otváram Help sprievodcu"); onClose(); } : undefined}
             toast={toast} />
           )}
         </SheetPanel>
@@ -440,7 +440,7 @@ function PoleInput({ label, value, onChange, toast }: { label: string; value: st
 
   // foto/QR → mock priloženie (attach) tlačidlom
   if (t === "foto" || t === "qr") {
-    const priloz = () => { onChange(value ? "" : "✓"); toast(value ? "Odobraté" : t === "qr" ? "QR naskenované (demo)" : "Príloha nahraná (demo)"); };
+    const priloz = () => { onChange(value ? "" : "✓"); toast(value ? "Odobraté" : t === "qr" ? "QR naskenované" : "Príloha nahraná"); };
     return (
       <div>{lab}
         <button type="button" onClick={priloz}

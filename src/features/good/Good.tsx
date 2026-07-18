@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, memo } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { SIRKA, C, inp, btn, GRAD, GRAD_ZELENY, SPACE, RADIUS } from "@/theme";
-import { Foto, FotoPrispevku, MiniFotky, Video, ModulHlavicka, Hlavicka, AvatarUroven, PodporaSekcia, PlatbaModal, HladanieModal, OblubeneHviezda, OblubeneBtn, toast, Oslava, useGaleria, useScrollPamat, useMotiv, useLayout, useStrankaAkcie, useTvorbaGate, StatRiadok, MoniBar, FeedStlpce, FeedGrid, FeedCard, KartaBadge, typKluc, BackChip, ProgresBox, SwipeBack, obalSiroky, SegTabs, Lupa, Zdielanie, IkonaSipVlavo, IkonaMoznosti, IkonaUlozit, IkonaFajka, IkonaPlay, IkonaDoska, IkonaPin, OkruhVyber, QrModal, SplitQrSheet, FotoVyber, FeedSkeleton, EmptyState, ErrorState, ScreenSwitch, FormatovanyText, ZoznamDarcov } from "@/shared";
+import { Foto, FotoPrispevku, MiniFotky, Video, ModulHlavicka, Hlavicka, AvatarUroven, PodporaSekcia, PlatbaModal, HladanieModal, OblubeneHviezda, OblubeneBtn, PodporitDeed, toast, Oslava, useGaleria, useScrollPamat, useMotiv, useLayout, useStrankaAkcie, useTvorbaGate, StatRiadok, MoniBar, FeedStlpce, FeedGrid, FeedCard, KartaBadge, typKluc, BackChip, ProgresBox, SwipeBack, obalSiroky, SegTabs, Lupa, Zdielanie, IkonaSipVlavo, IkonaMoznosti, IkonaUlozit, IkonaFajka, IkonaPlay, IkonaDoska, IkonaPin, OkruhVyber, QrModal, SplitQrSheet, FotoVyber, FeedSkeleton, EmptyState, ErrorState, ScreenSwitch, FormatovanyText, ZoznamDarcov } from "@/shared";
 import { pridajDar, type VolbaDaru } from "@/lib/darcovia";
 import { pripravFeed, vzdialenostKm, FEED_CFG, type FeedUser } from "@/lib/feed";
 import { tint, tagChip, jeHrdina, HRDINA_COL, rovnakeOkremFunkcii } from "@/lib/ui";
@@ -215,7 +215,7 @@ function Home({ wide, toast, otvorModul, pohlad, setPohlad, radius, setRadius, o
   useStrankaAkcie(() => ({
     pridat: { id: "add", label: "Pridať", onClick: onAdd },
     extra: [
-      { id: "talent", label: "Ukáž svoj talent", popis: "TikTok kanál skutkov", ikona: <IkonaPlay size={18} color="var(--a-green)" />, onClick: gate(() => toast("Ukáž svoj talent — TikTok kanál (demo)")) },
+      { id: "talent", label: "Ukáž svoj talent", popis: "TikTok kanál skutkov", ikona: <IkonaPlay size={18} color="var(--a-green)" />, onClick: gate(() => toast("Ukáž svoj talent — TikTok kanál")) },
       { id: "board", label: "Nástenka", popis: "Skutky a výzvy v okolí", ikona: <IkonaDoska size={18} color="var(--a-green)" />, onClick: onBoard },
     ],
   }), []);
@@ -824,7 +824,10 @@ export function GoodDetail({ it, toast, oslavuj, onBack, onVerify, onAutor }: Go
 
         {/* uložiť do obľúbených */}
         <div style={{ marginTop: SPACE.gutter }}>
-          <OblubeneBtn polozka={oblubenyZGood(it)} toast={toast} style={{ width: "100%" }} />
+          <div style={{ display: "flex", gap: SPACE.xs }}>
+            <OblubeneBtn polozka={oblubenyZGood(it)} toast={toast} style={{ flex: 1, minWidth: 0 }} />
+            <PodporitDeed toast={toast} style={{ flex: 1, minWidth: 0 }} />
+          </div>
         </div>
 
         {/* QR skutku (§10) — klik otvorí univerzálny QR s 3 výstupmi */}
@@ -1039,7 +1042,7 @@ function GoodAdd({ toast, oslavuj, onPridaj, onDone }: { toast: (m: string) => v
               <div onClick={() => setKrok("solo")} style={{ flex: 1, background: C.surface2, border: `1px solid ${C.line}`, borderRadius: RADIUS.md, padding: `${SPACE.lg}px ${SPACE.gutter}px`, textAlign: "center", cursor: "pointer" }}>
                 <div style={{ fontSize: 34 }}>🙋</div><div style={{ fontWeight: 700, marginTop: SPACE.sm }}>Sólo</div><div style={{ fontSize: 11, color: C.textTer, marginTop: SPACE.xxs }}>urobil som to sám</div>
               </div>
-              <div onClick={() => toast("Komunitný — scan QR účastníkov (demo)")} style={{ flex: 1, background: C.surface2, border: `1px solid ${C.line}`, borderRadius: RADIUS.md, padding: `${SPACE.lg}px ${SPACE.gutter}px`, textAlign: "center", cursor: "pointer" }}>
+              <div onClick={() => toast("Komunitný — scan QR účastníkov")} style={{ flex: 1, background: C.surface2, border: `1px solid ${C.line}`, borderRadius: RADIUS.md, padding: `${SPACE.lg}px ${SPACE.gutter}px`, textAlign: "center", cursor: "pointer" }}>
                 <div style={{ fontSize: 34 }}>👥</div><div style={{ fontWeight: 700, marginTop: SPACE.sm }}>Komunitný</div><div style={{ fontSize: 11, color: C.textTer, marginTop: SPACE.xxs }}>boli sme viacerí</div>
               </div>
             </div>

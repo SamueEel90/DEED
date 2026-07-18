@@ -238,19 +238,21 @@ const psPill = (active?: boolean): CSSProperties => ({
 });
 // 1 DEED ≈ 0,01 € (ilustračne) — zobrazí sa pod hodnotou
 const eurZaDeed = (a: number) => (a * 0.01).toLocaleString("sk", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €";
-// stupňované zvýraznenie pevných súm: 0 = najjemnejšie (10) · 1 = stredné (50) · 2 = najvýraznejšie (100)
-const psFix = (tier = 0, col = "var(--a-info)"): CSSProperties => {
-  const t = [
-    { bg: C.surface2, bd: C.line, sh: "none" },
-    { bg: tint(col, .09), bd: tint(col, .4), sh: "none" },
-    { bg: "rgba(240,168,94,.16)", bd: "rgba(240,168,94,.65)", sh: "0 6px 20px rgba(240,168,94,.28)" },
-  ][tier];
-  return {
-    flex: tier === 2 ? 1.18 : 1, minHeight: 64, borderRadius: RADIUS.md, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-    cursor: "pointer", fontFamily: "inherit", fontWeight: 700, transition: "transform .12s ease",
-    background: t.bg, border: `1px solid ${t.bd}`, boxShadow: t.sh, color: C.text,
-  };
-};
+// sumové chipy — čistá typografia (žiadne emoji); `top` = najčastejšia voľba zvýraznená akcentom
+const psSuma = (top: boolean, col = "var(--a-info)"): CSSProperties => ({
+  position: "relative", flex: 1, minHeight: 58, borderRadius: RADIUS.md,
+  display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+  cursor: "pointer", fontFamily: "inherit", fontWeight: 700, transition: "border-color .15s ease, background .15s ease",
+  background: top ? tint(col, .1) : C.surface2,
+  border: `1px solid ${top ? tint(col, .5) : C.line}`,
+  color: C.text, overflow: "visible",
+});
+const psTag = (col: string): CSSProperties => ({
+  position: "absolute", top: -8, left: "50%", transform: "translateX(-50%)",
+  fontSize: 8, fontWeight: 800, letterSpacing: ".06em", whiteSpace: "nowrap",
+  color: "#fff", background: col, borderRadius: RADIUS.pill, padding: "2px 7px",
+  boxShadow: "0 2px 6px rgba(0,0,0,.22)", pointerEvents: "none",
+});
 const psKanal: CSSProperties = {
   flex: 1, minHeight: 56, borderRadius: RADIUS.md, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
   cursor: "pointer", fontFamily: "inherit", background: C.surface2, border: `1px solid ${C.line}`, color: C.text,
@@ -268,9 +270,9 @@ export function PodporaSekcia({ onShare, upvotes = 0, onUpvote, onPodpor, onSms,
   const deedAkcia = (akcia: () => void) => () => (mozeDeed ? akcia() : upgrade());
   const goldTxt = svetly ? "#8A6B0E" : C.gold; // v svetlom režime tmavšia zlatá (čitateľnosť)
   const fix = [
-    { e: "★", v: "10", col: accent, a: 10, tier: 0 },
-    { e: "◆", v: "50", col: accent, a: 50, tier: 1 },
-    { e: "🔥", v: "100", col: "var(--a-clay)", a: 100, tier: 2 },
+    { v: 10, top: false },
+    { v: 50, top: false },
+    { v: 100, top: true }, // najčastejšia voľba — akcentové zvýraznenie namiesto ikonky
   ];
   return (
     <div>
@@ -288,18 +290,20 @@ export function PodporaSekcia({ onShare, upvotes = 0, onUpvote, onPodpor, onSms,
 
       {bezDaru ? null : (<>
       <PSLabel>{supLabel}</PSLabel>
-      <div style={{ display: "flex", gap: SPACE.xs, alignItems: "stretch" }}>
+      <div style={{ display: "flex", gap: SPACE.xs, alignItems: "stretch", paddingTop: 8 }}>
         {fix.map((b) => (
-          <button key={b.v} onClick={deedAkcia(() => onPodpor(b.a))} style={psFix(b.tier, b.col)}>
-            <span style={{ fontSize: b.tier === 2 ? 22 : 20, color: b.col, lineHeight: 1 }}>{b.e}</span>
-            <span style={{ fontSize: b.tier === 2 ? 14 : 13, marginTop: SPACE.xxs }}>{b.v} <span style={{ fontSize: 9, fontWeight: 700, color: C.textTer, letterSpacing: ".3px" }}>DEED</span></span>
-            <span style={{ fontSize: 9.5, color: C.textTer, marginTop: SPACE.xxs }}>≈ {eurZaDeed(b.a)}</span>
+          <button key={b.v} onClick={deedAkcia(() => onPodpor(b.v))} style={psSuma(b.top, accent)}>
+            {b.top && <span style={psTag(accent)}>NAJČASTEJŠIE</span>}
+            <span style={{ fontSize: 17, fontWeight: 800, lineHeight: 1, fontVariantNumeric: "tabular-nums", color: b.top ? accent : C.text }}>
+              {b.v}<span style={{ fontSize: 9, fontWeight: 700, color: C.textTer, marginLeft: 3, letterSpacing: ".04em" }}>DEED</span>
+            </span>
+            <span style={{ fontSize: 10, fontWeight: 600, color: C.textTer, marginTop: 4 }}>≈ {eurZaDeed(b.v)}</span>
           </button>
         ))}
         <div style={{ width: 1, alignSelf: "stretch", borderLeft: `1px dashed ${C.line}`, margin: `${SPACE.xxs}px ${SPACE.xxs}px` }} />
-        <button onClick={onSms} style={{ ...psFix(0), flex: 0.85, background: svetly ? "rgba(240,199,90,.16)" : "rgba(240,199,90,.08)", borderColor: svetly ? "rgba(180,140,20,.5)" : "rgba(240,199,90,.35)" }}>
-          <span style={{ fontSize: 14, fontWeight: 800, color: goldTxt }}>SMS</span>
-          <span style={{ fontSize: 13, marginTop: SPACE.xxs, color: goldTxt }}>€</span>
+        <button onClick={onSms} style={{ ...psSuma(false, accent), flex: 0.85, background: svetly ? "rgba(240,199,90,.16)" : "rgba(240,199,90,.08)", borderColor: svetly ? "rgba(180,140,20,.5)" : "rgba(240,199,90,.35)" }}>
+          <span style={{ fontSize: 15, fontWeight: 800, lineHeight: 1, color: goldTxt }}>SMS</span>
+          <span style={{ fontSize: 10, fontWeight: 600, marginTop: 4, color: goldTxt }}>dar v €</span>
         </button>
       </div>
 

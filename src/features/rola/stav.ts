@@ -43,9 +43,9 @@ export const TIER_LABEL: Record<Pozicia, [string, string, string]> = {
   b2b: ["Free", "STARTER", "BUSINESS"], // = B2B Master §6 (ENTERPRISE mimo záber)
 };
 export const TIER_POPIS: Record<Pozicia, [string, string, string]> = {
-  charita: ["vizitka + 1 zbierka", "rád Basic vizitky", "rád Standard vizitky"],
-  tvorca: ["profil + reťaze", "rád Basic — podstránka + terminál", "rád Standard — akcie + QR"],
-  b2b: ["Štandard verifikácia + Free vizitka", "STARTER (B2B Master §6)", "BUSINESS (B2B Master §6)"],
+  charita: ["profil a jedna zbierka", "viac súbežných zbierok a kalendár", "plné nástroje vrátane dobrovoľníkov a reportov"],
+  tvorca: ["profil a reťaze", "príspevky, oznamy a štatistiky", "akcie, QR a overené smeny"],
+  b2b: ["verifikácia a základná vizitka", "tímové funkcie a odmeny", "plné firemné nástroje a ESG"],
 };
 /** rola pripnutá na účet (§1.1/§2.1/§3.1) — názvy rolí pre správu/labely */
 export const ROLA_UCTU: Record<Pozicia, string> = {
