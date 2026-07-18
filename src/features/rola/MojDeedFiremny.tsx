@@ -1,30 +1,37 @@
 import { useEffect, useMemo, useState } from "react";
 import { C, SPACE, RADIUS } from "@/theme";
-import { BackHeader, Sheet, SegTabs, Switch, MoniBar, tint } from "@/shared";
+import { BackHeader, Sheet, SegTabs, Switch, MoniBar, Stit, naStitLevel, STIT_POPIS, Tip, FotoUpload, tint } from "@/shared";
 import { pressable } from "@/components/pressable";
 import { MojaRetaz } from "@/features/retaz/MojaRetaz";
 import {
   FLAGS, KONFIG, POZICIE, TIER_LABEL, TIER_POPIS, ROLA_UCTU,
   nacitajPoziciu, ulozPoziciu, nacitajTiery, ulozTiery, nacitajDrzitel, ulozDrzitel,
   nacitajDoklady, ulozDoklady, percentoDolozene, nacitajTerminal, ulozTerminal,
-  nacitajOrgExtra, ulozOrgExtra,
+  nacitajOrgExtra, ulozOrgExtra, nacitajLogo, ulozLogo,
   type Pozicia, type Tier, type DokladZbierky,
 } from "./stav";
-import { PANELY, SPRAVY, SPRAVA_NADPIS, ZASLUZENA, ORG_ZBIERKY, type PanelBlok, type SpravaItem, type OrgZbierka } from "./mock";
+import { PANELY, SPRAVY, SPRAVA_NADPIS, ZASLUZENA, SUBJEKTY, ORG_ZBIERKY, FIRMY_ADRESAR, type PanelBlok, type SpravaItem, type OrgZbierka } from "./mock";
+import { Podstranka } from "./Podstranka";
 
 /*
   ============================================================
   MÔJ DEED FIREMNÝ — rolové panely a správa (Charita · Tvorca · B2B)
-  per DEED_Role_Panely_Sprava_v0_1. Architektonický vzor = farár
-  v module Náboženstvo (§0):
-   · jeden účet, rola pripnutá na účet — panely sa PRIDÁVAJÚ navrch
-     userovho základu, nikdy nenahrádzajú
-   · všetky 3 rolové pohľady v JEDNEJ sekcii — hore prepínače pozícií
-     (DEV flag dev_role_switcher) + tier prepínač (dev_tier_switcher)
-   · jeden skelet UI — rovnaké komponenty, rolový data-feed (mock.ts)
-   · tier gating na úrovni AKCIE (paywall modal), NIE skrývanie sekcií
-   · dokladovanie (§1.4) = POVINNÉ, mimo tier gatingu úplne
-   · zaslúžená os (karma/badge) číta len aktivitu, nikdy tier (§4.5)
+  per DEED_Role_Panely_Sprava_v0_1 + PATCH 1 + PATCH 2.
+
+  PATCH 2 §1 — farský vzor namiesto kokpitu s kartičkami (jeden engine,
+  farnosť = prototyp, ostatní podmnožiny s inými nástrojmi):
+   1 karta subjektu (logo, meno, overená, ŠTÍT bez progresu, 3 čísla)
+   2 prehľadové bloky (Dnes prišlo, dobrovoľníci, sponzoring…)
+   3 verejný obsah (čo vidí každý zvonku) + vstup na verejnú podstránku
+   4 SPRÁVA [typ] — inline, vidí len držiteľ roly + delegovaní
+   5 kontakt
+  DEV prepínače POZÍCIE + TIERU zostávajú hore (flagy, v produkcii preč).
+
+  PATCH 1: badge len ŠTÍT + text (žiadny progress/percentá — level-up je
+  prekvapenie, hook on_badge_levelup) · veta o kúpiteľnom vs. zaslúženom
+  z UI von (nanajvýš tooltip „?" pri tieri) · zamknuté karty NEukazujú
+  reálne dáta (blur/placeholder) · tier lišta per rola (charita/tvorca
+  T0/T1/T2, B2B Free/STARTER/BUSINESS).
   ============================================================
 */
 
@@ -40,24 +47,28 @@ const F = {
 };
 
 type PaywallReq = { tierMin: Tier; nazov: string; dovod?: string };
-type OtvorenySheet = null | "zbierky" | "terminal" | "retaz" | { dokladovanie: OrgZbierka };
+type OtvorenySheet = null | "zbierky" | "terminal" | "retaz" | "profil" | "adresarB2B" | { dokladovanie: OrgZbierka };
 
 export function MojDeedFiremny({ onBack, toast }: { onBack: () => void; toast: (m: string) => void }) {
   // rola + tier per rola — DEV: lokálny stav/LS; produkcia: overený účet + fakturácia (§0.1/§0.1b)
   const [pozicia, setPozicia] = useState<Pozicia>(nacitajPoziciu);
   const [tiery, setTiery] = useState<Record<Pozicia, Tier>>(nacitajTiery);
   const [drzitel, setDrzitel] = useState<boolean>(nacitajDrzitel); // SPRÁVA len držiteľovi roly (+ delegácia)
+  const [logo, setLogo] = useState<string | null>(() => nacitajLogo(nacitajPoziciu()));
   const [paywall, setPaywall] = useState<PaywallReq | null>(null);
   const [sheet, setSheet] = useState<OtvorenySheet>(null);
+  const [podstranka, setPodstranka] = useState(false);
 
   const tier = tiery[pozicia];
-  const prepniPoziciu = (p: Pozicia) => { setPozicia(p); ulozPoziciu(p); };
+  const prepniPoziciu = (p: Pozicia) => { setPozicia(p); ulozPoziciu(p); setLogo(nacitajLogo(p)); };
   const nastavTier = (t: Tier) => { const n = { ...tiery, [pozicia]: t }; setTiery(n); ulozTiery(n); };
   const prepniDrzitela = () => { setDrzitel((d) => { ulozDrzitel(!d); return !d; }); };
 
   const bloky = PANELY[pozicia];
   const sprava = SPRAVY[pozicia];
   const rolaMeta = POZICIE.find((p) => p.key === pozicia)!;
+  const subjekt = SUBJEKTY[pozicia];
+  const stit = naStitLevel(ZASLUZENA[pozicia].badge);
 
   // gate na úrovni akcie: pod tierom → paywall modal s vysvetlením (§4.3)
   const gateTier = (tierMin: Tier, nazov: string, akcia: () => void, dovod?: string) => () => {
@@ -69,18 +80,20 @@ export function MojDeedFiremny({ onBack, toast }: { onBack: () => void; toast: (
   const blokAkcia = (b: PanelBlok) => {
     if (pozicia === "charita" && b.id === "zbierky") return setSheet("zbierky");
     if (pozicia === "tvorca" && b.id === "retaz") return setSheet("retaz");
-    if (b.zasluzena) return toast("Zaslúžená os — karma a badge rastú overenou aktivitou, tier ich nemení ani o bod");
+    if (pozicia === "b2b" && b.id === "rebricek") return toast("Rebríček odvetvia v meste — porovnanie s inými firmami (súťaž, nie postup)");
     toast(`${b.nazov} — detail (demo)`);
   };
 
   // routing položiek SPRÁVY
   const spravaAkcia = (it: SpravaItem) => {
+    if (it.id === "profil" || it.id === "podstranka") return setSheet("profil");
     if (pozicia === "charita" && (it.id === "zbierky" || it.id === "dokladovanie")) return setSheet("zbierky");
     if (pozicia === "tvorca" && it.id === "terminal") return setSheet("terminal");
     toast(`${it.nazov} — otvorí sa správcovské rozhranie (demo)`);
   };
 
-  const zasluzena = ZASLUZENA[pozicia];
+  // vlastník vidí TÚ ISTÚ verejnú stránku ako cudzí (PATCH 2 §3)
+  if (podstranka) return <Podstranka pozicia={pozicia} logo={logo} toast={toast} onBack={() => setPodstranka(false)} />;
 
   return (
     <div style={{ paddingBottom: SPACE.lg, color: F.txt }}>
@@ -117,12 +130,16 @@ export function MojDeedFiremny({ onBack, toast }: { onBack: () => void; toast: (
           </>
         )}
 
-        {/* ---- DEV prepínač tierov (§0.1b) — simulácia bez novej registrácie a bez platby ---- */}
+        {/* ---- DEV prepínač tierov (§0.1b) — tier lišta per rola (PATCH 1 §4);
+             veta o kúpiteľnom vs. zaslúženom žije len v tooltipe „?" (PATCH 1 §2) ---- */}
         {FLAGS.dev_tier_switcher && (
           <>
             <div style={{ display: "flex", alignItems: "center", gap: SPACE.xs, marginBottom: SPACE.xs }}>
               <SekciaLabel>TIER</SekciaLabel>
               <DevChip />
+              <Tip label="Tier pridáva kapacitu a nástroje. Štít, karma ani poradie sa kúpiť nedajú — zaslúžená os beží naplno aj na Tier 0.">
+                <span style={{ width: 15, height: 15, borderRadius: "50%", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 9.5, fontWeight: 800, color: F.txt3, border: `1px solid ${F.line}`, cursor: "help" }}>?</span>
+              </Tip>
               <span style={{ fontSize: 10.5, color: F.txt3, marginLeft: "auto" }}>rola účtu: {ROLA_UCTU[pozicia]}</span>
             </div>
             <SegTabs
@@ -138,31 +155,43 @@ export function MojDeedFiremny({ onBack, toast }: { onBack: () => void; toast: (
               )}
             />
             <div style={{ fontSize: 10.5, color: F.txt3, marginBottom: SPACE.gutter }}>
-              {TIER_LABEL[pozicia][tier]}: {TIER_POPIS[pozicia][tier]} · prepnutie okamžite prerenderuje panely aj správu
+              {TIER_LABEL[pozicia][tier]}: {TIER_POPIS[pozicia][tier]}
             </div>
           </>
         )}
 
-        {/* ---- zaslúžená os — beží naplno aj na Tier 0; tier ju NIKDY nekupuje (§0 bod 5) ---- */}
+        {/* ==== 1 · KARTA SUBJEKTU — logo, meno, overená, ŠTÍT (bez progresu!), 3 čísla ==== */}
         <div style={{ background: F.card, border: `1px solid ${F.line}`, borderRadius: RADIUS.md, padding: SPACE.gutter, marginBottom: SPACE.gutter }}>
           <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm }}>
-            <span style={{ width: 40, height: 40, borderRadius: RADIUS.sm, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 19, background: F.goldBg, color: F.gold }}>⬢</span>
+            <span style={{ width: 52, height: 52, borderRadius: "50%", flex: "none", overflow: "hidden", background: C.surface2, border: `1px solid ${F.line}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, fontWeight: 800 }}>
+              {logo ? <img src={logo} alt={subjekt.nazov} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : (pozicia === "tvorca" ? subjekt.emoji : subjekt.iniciacky)}
+            </span>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 14, fontWeight: 800 }}>{rolaMeta.label} · badge <span style={{ color: F.gold }}>{zasluzena.badge}</span> · level {zasluzena.level}</div>
-              <div style={{ fontSize: 11, color: F.txt3, marginTop: 2 }}>zaslúžená os — do {zasluzena.dalsi} chýba {100 - zasluzena.progres} %</div>
+              <div style={{ fontSize: 15.5, fontWeight: 800, display: "flex", alignItems: "center", gap: SPACE.xs, flexWrap: "wrap" }}>
+                {subjekt.nazov}
+                {subjekt.overena && <span style={{ fontSize: 10, fontWeight: 800, color: F.green, background: F.greenBg, border: `1px solid ${F.greenEdge}`, padding: `1px ${SPACE.xs}px`, borderRadius: RADIUS.xs }}>✓ overená</span>}
+              </div>
+              <div style={{ fontSize: 11, color: F.txt3, marginTop: 2 }}>📍 {subjekt.lok} · {rolaMeta.label}</div>
             </div>
-            <span style={{ fontSize: 13, fontWeight: 800, color: F.gold, flex: "none" }}>{zasluzena.progres} %</span>
+            {/* štít + text — NIKDY progress bar/percentá (DEED_Stity §1) */}
+            <div style={{ flex: "none", textAlign: "center" }}>
+              <Stit level={stit} size={42} />
+              <div style={{ fontSize: 10, fontWeight: 800, color: F.gold, marginTop: 2 }}>{stit}</div>
+            </div>
           </div>
-          <div style={{ height: 7, background: "rgba(var(--glass-rgb),.1)", borderRadius: 4, overflow: "hidden", marginTop: SPACE.sm }}>
-            <div style={{ height: "100%", width: `${zasluzena.progres}%`, background: F.gold, borderRadius: 4 }} />
-          </div>
-          <div style={{ fontSize: 10.5, color: F.txt3, marginTop: SPACE.xs, lineHeight: 1.45 }}>
-            Platený tier kupuje <b>priestor a nástroje</b> — nikdy karmu, badge, level ani poradie vo feede. Zmena tieru nezmení karmu ani o bod.
+          <div style={{ fontSize: 10.5, color: F.txt3, margin: `${SPACE.xs}px 0 ${SPACE.sm}px` }}>{STIT_POPIS[stit]}</div>
+          <div style={{ display: "flex", gap: SPACE.xs }}>
+            {subjekt.cisla.map(([hodnota, label], i) => (
+              <div key={i} style={{ flex: 1, textAlign: "center", background: C.surface2, border: `1px solid ${F.line}`, borderRadius: RADIUS.sm, padding: `${SPACE.xs}px ${SPACE.xxs}px` }}>
+                <div style={{ fontSize: 14, fontWeight: 800, color: i === 2 ? F.gold : F.txt }}>{hodnota}</div>
+                <div style={{ fontSize: 9.5, color: F.txt3, marginTop: 1 }}>{label}</div>
+              </div>
+            ))}
           </div>
         </div>
 
-        {/* ---- rolový „MÔJ DEED" panel — jeden skelet, rolový data-feed (§0 bod 4) ---- */}
-        <SekciaLabel>MÔJ DEED — {rolaMeta.label.toUpperCase()}</SekciaLabel>
+        {/* ==== 2 · PREHĽAD — rolové bloky (ako „Prehľad farnosti"); zamknuté = blur dát ==== */}
+        <SekciaLabel>PREHĽAD — {rolaMeta.label.toUpperCase()}</SekciaLabel>
         {bloky.map((b) => (
           <PanelBlokKarta key={b.id} b={b} tier={tier} pozicia={pozicia}
             onClick={gateTier(b.tierMin, b.nazov, () => blokAkcia(b))} />
@@ -173,13 +202,42 @@ export function MojDeedFiremny({ onBack, toast }: { onBack: () => void; toast: (
           </div>
         )}
 
-        {/* ---- SPRÁVA — viditeľná len držiteľovi roly (+ delegovaní); v DEV prepínateľná (§0 bod 3) ---- */}
+        {/* ==== 3 · VEREJNÝ OBSAH — čo vidí každý zvonku + vstup na podstránku ==== */}
+        <div style={{ display: "flex", alignItems: "center", gap: SPACE.xs, margin: `${SPACE.gutter}px 0 ${SPACE.xs}px` }}>
+          <SekciaLabel>VEREJNÝ OBSAH</SekciaLabel>
+          <span style={{ fontSize: 10, color: F.txt3 }}>· vidí každý zvonku</span>
+        </div>
+        {subjekt.taby.map((t) => (
+          <div key={t.key} {...pressable(() => setPodstranka(true), t.label)}
+            style={{ display: "flex", alignItems: "center", gap: SPACE.sm, background: C.surface2, border: `1px solid ${F.line}`, borderRadius: RADIUS.sm, padding: `${SPACE.xs}px ${SPACE.sm}px`, marginBottom: SPACE.xxs, cursor: "pointer" }}>
+            <span style={{ fontSize: 15, flex: "none" }}>{t.polozky[0]?.emoji ?? "📄"}</span>
+            <div style={{ flex: 1, minWidth: 0, fontSize: 12.5, fontWeight: 700 }}>{t.label} <span style={{ color: F.txt3, fontWeight: 600 }}>· {t.polozky.length}</span></div>
+            <span style={{ color: F.txt3, fontSize: 14 }}>›</span>
+          </div>
+        ))}
+        <button onClick={() => setPodstranka(true)} style={{ width: "100%", height: 42, marginTop: SPACE.xxs, borderRadius: RADIUS.sm, border: `1px solid ${F.blueEdge}`, cursor: "pointer", fontFamily: "inherit", fontWeight: 800, fontSize: 13, background: F.blueBg, color: F.blue }}>
+          Otvoriť verejnú podstránku ›
+        </button>
+        <div style={{ fontSize: 10, color: F.txt3, textAlign: "center", marginTop: SPACE.xxs }}>vlastník vidí tú istú verejnú stránku ako cudzí — jeden zdroj pravdy</div>
+        {pozicia === "b2b" && (
+          <div {...pressable(() => setSheet("adresarB2B"), "Adresár firiem")}
+            style={{ display: "flex", alignItems: "center", gap: SPACE.sm, background: F.card, border: `1px solid ${F.line}`, borderRadius: RADIUS.sm, padding: `${SPACE.sm}px ${SPACE.sm}px`, marginTop: SPACE.sm, cursor: "pointer" }}>
+            <span style={{ fontSize: 16, flex: "none" }}>🏢</span>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 13, fontWeight: 700 }}>Adresár firiem</div>
+              <div style={{ fontSize: 10.5, color: F.txt3 }}>Výkladná skriňa + anti-greenwashing overenie</div>
+            </div>
+            <span style={{ color: F.txt3, fontSize: 15 }}>›</span>
+          </div>
+        )}
+
+        {/* ==== 4 · SPRÁVA — inline, vidí len držiteľ roly (+ delegovaní); v DEV prepínateľná ==== */}
         <DrzitelToggle on={drzitel} rola={rolaMeta.label} onToggle={prepniDrzitela} />
         {drzitel && (
           <>
             <div style={{ display: "flex", alignItems: "center", gap: SPACE.xs, margin: `${SPACE.gutter}px 0 ${SPACE.xs}px` }}>
               <SekciaLabel>{SPRAVA_NADPIS[pozicia]}</SekciaLabel>
-              <span style={{ fontSize: 10, color: F.txt3 }}>· podstránka správcu</span>
+              <span style={{ fontSize: 10, color: F.txt3 }}>· vidí len držiteľ + delegovaní</span>
             </div>
             {sprava.map((it) => {
               const zamknute = !it.povinne && tier < it.tierMin; // povinnosti sa netierujú (§0 bod 7)
@@ -202,16 +260,22 @@ export function MojDeedFiremny({ onBack, toast }: { onBack: () => void; toast: (
             })}
             {pozicia === "charita" && (
               <div style={{ fontSize: 10.5, color: F.txt3, lineHeight: 1.5, marginTop: SPACE.xs }}>
-                Dokladovanie je povinnosť — žiadny paywall sa ho nesmie dotknúť. Nedoložená ukončená zbierka po {KONFIG.lehotaDokladovaniaDni} dňoch = stav „čaká na doklady" na profile (vplyv na badge dôvery, nie blokácia platieb).
+                Dokladovanie je povinnosť — žiadny paywall sa ho nesmie dotknúť. Nedoložená ukončená zbierka po {KONFIG.lehotaDokladovaniaDni} dňoch = stav „čaká na doklady" na profile (vplyv na štít dôvery, nie blokácia platieb).
               </div>
             )}
             {pozicia === "b2b" && (
               <div style={{ fontSize: 10.5, color: F.txt3, lineHeight: 1.5, marginTop: SPACE.xs }}>
-                Tier 0 firma: modrá fajka + Free vizitka + prispievanie a budovanie badge/karmy od prvého dňa. Tiery = existujúci cenník B2B Master §6 · správcovia podľa tieru: {KONFIG.spravcoviaB2B[tier]}.
+                Tier 0 firma: modrá fajka + Free vizitka + prispievanie od prvého dňa. Tiery = existujúci cenník B2B Master §6 · správcovia podľa tieru: {KONFIG.spravcoviaB2B[tier]}.
               </div>
             )}
           </>
         )}
+
+        {/* ==== 5 · KONTAKT ==== */}
+        <div style={{ margin: `${SPACE.gutter}px 0 ${SPACE.xs}px` }}><SekciaLabel>KONTAKT</SekciaLabel></div>
+        <div style={{ background: F.card, border: `1px solid ${F.line}`, borderRadius: RADIUS.md, padding: SPACE.gutter, fontSize: 12.5, color: F.txt2, lineHeight: 1.7 }}>
+          📍 {subjekt.kontakt.adresa}<br />✉️ {subjekt.kontakt.email}<br />📞 {subjekt.kontakt.tel}{subjekt.kontakt.web && <><br />🌐 {subjekt.kontakt.web}</>}
+        </div>
       </div>
 
       {/* ---- sheety ---- */}
@@ -224,6 +288,11 @@ export function MojDeedFiremny({ onBack, toast }: { onBack: () => void; toast: (
       )}
       {sheet === "terminal" && <TerminalSheet toast={toast} onClose={() => setSheet(null)} />}
       {sheet === "retaz" && <MojaRetaz onClose={() => setSheet(null)} toast={toast} />}
+      {sheet === "profil" && (
+        <UpravProfilSheet pozicia={pozicia} logo={logo} toast={toast}
+          onLogo={(url) => { setLogo(url); ulozLogo(pozicia, url); }} onClose={() => setSheet(null)} />
+      )}
+      {sheet === "adresarB2B" && <AdresarB2BSheet toast={toast} onClose={() => setSheet(null)} />}
 
       {/* paywall — v DEV preklikateľný: tester vidí modal aj stav po „zakúpení" (§0.1b) */}
       {paywall && (
@@ -235,28 +304,32 @@ export function MojDeedFiremny({ onBack, toast }: { onBack: () => void; toast: (
   );
 }
 
-// ===================== BLOK PANELA (jeden skelet) =====================
+// ===================== BLOK PREHĽADU (jeden skelet) =====================
+// PATCH 1 §3: karta zamknutá tierom NESMIE ukazovať reálne dáta — obsah sa
+// rozmaže (placeholder), inak by Free tier dostal zadarmo, čo vyšší predáva.
 function PanelBlokKarta({ b, tier, pozicia, onClick }: { b: PanelBlok; tier: Tier; pozicia: Pozicia; onClick: () => void }) {
   const zamknute = tier < b.tierMin;
+  const blur: React.CSSProperties = zamknute ? { filter: "blur(5px)", userSelect: "none", pointerEvents: "none" } : {};
   return (
     <div {...pressable(onClick, b.nazov)}
-      style={{ background: C.surface2, border: `1px solid ${F.line}`, borderRadius: RADIUS.sm, padding: SPACE.sm, marginBottom: SPACE.xs, cursor: "pointer", opacity: zamknute ? .75 : 1 }}>
+      style={{ background: C.surface2, border: `1px solid ${F.line}`, borderRadius: RADIUS.sm, padding: SPACE.sm, marginBottom: SPACE.xs, cursor: "pointer", opacity: zamknute ? .8 : 1 }}>
       <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm }}>
         <span style={{ width: 34, height: 34, borderRadius: RADIUS.xs, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 17, background: "rgba(var(--glass-rgb),.06)" }}>{b.emoji}</span>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 14, fontWeight: 700, display: "flex", alignItems: "center", gap: SPACE.xs, flexWrap: "wrap" }}>
             {b.nazov}
-            {b.zasluzena && <span style={{ fontSize: 9.5, fontWeight: 800, color: F.gold, background: tint("var(--a-gold)", .14), borderRadius: RADIUS.xs, padding: `1px ${SPACE.xs}px` }}>zaslúžená os</span>}
             {zamknute && <TierChip label={`od ${TIER_LABEL[pozicia][b.tierMin]}`} />}
           </div>
           {/* „Dnes prišlo" — live tok darov (rastie live, §1.2) */}
           {pozicia === "charita" && b.id === "dnes" ? <DnesPrislo /> : (
-            <div style={{ fontSize: 11.5, color: F.txt3, marginTop: 2, lineHeight: 1.4 }}>{b.popis}</div>
+            <div style={{ fontSize: 11.5, color: F.txt3, marginTop: 2, lineHeight: 1.4, ...blur }}>
+              {zamknute ? "12 345 · placeholder — odomkne tier" : b.popis}
+            </div>
           )}
         </div>
-        {b.hodnota && <span style={{ flex: "none", fontSize: 14, fontWeight: 800, color: F.blue }}>{b.hodnota}</span>}
+        {b.hodnota && <span style={{ flex: "none", fontSize: 14, fontWeight: 800, color: F.blue, ...blur }}>{zamknute ? "9 999" : b.hodnota}</span>}
       </div>
-      {b.progress ? <div style={{ marginTop: SPACE.xs }}><MoniBar vyzbierane={b.progress.vyzbierane} ciel={b.progress.ciel} mini /></div> : null}
+      {b.progress ? <div style={{ marginTop: SPACE.xs, ...blur }}><MoniBar vyzbierane={b.progress.vyzbierane} ciel={b.progress.ciel} mini /></div> : null}
       <div style={{ display: "flex", marginTop: SPACE.xs }}>
         <span style={{ marginLeft: "auto", fontSize: 11.5, fontWeight: 700, color: zamknute ? F.txt3 : F.blue }}>{zamknute ? "🔒 odomkne tier" : `${b.akcia || "Spravovať"} ›`}</span>
       </div>
@@ -317,11 +390,8 @@ function PaywallModal({ req, pozicia, onKupit, onClose }: { req: PaywallReq; poz
       {req.dovod && (
         <div style={{ fontSize: 12.5, color: F.txt2, lineHeight: 1.5, background: F.card, border: `1px solid ${F.line}`, borderRadius: RADIUS.sm, padding: SPACE.sm, marginBottom: SPACE.sm }}>{req.dovod}</div>
       )}
-      <div style={{ fontSize: 12.5, color: F.txt2, lineHeight: 1.55, marginBottom: SPACE.sm }}>
+      <div style={{ fontSize: 12.5, color: F.txt2, lineHeight: 1.55, marginBottom: SPACE.md }}>
         <b style={{ color: F.txt }}>{label}</b> = {TIER_POPIS[pozicia][req.tierMin]}. Tier pridáva <b>kapacitu a nástroje</b> — priestor konať vo väčšom.
-      </div>
-      <div style={{ fontSize: 11, color: F.txt3, lineHeight: 1.5, background: F.goldBg, border: `1px solid ${F.goldEdge}`, borderRadius: RADIUS.sm, padding: SPACE.sm, marginBottom: SPACE.md }}>
-        Tvrdé pravidlo: platený tier <b>nikdy nekupuje</b> karmu, badge, level ani poradie vo feede podľa dôvery. Zaslúžená os beží naplno aj na Tier 0 — a povinnosti (napr. dokladovanie) sa platbou neodomykajú, tie sú v základe.
       </div>
       <button onClick={onKupit} style={{ width: "100%", height: 48, borderRadius: RADIUS.sm, border: "none", cursor: "pointer", fontFamily: "inherit", fontWeight: 800, fontSize: 15, background: F.gold, color: "#231a02" }}>
         Aktivovať {label} (demo — bez platby)
@@ -433,11 +503,12 @@ function DokladovanieSheet({ z, toast, onClose }: { z: OrgZbierka; toast: (m: st
         </div>
         <span style={{ flex: "none", fontSize: 13, fontWeight: 800, color: pct >= 100 ? F.green : F.gold }}>{pct} %</span>
       </div>
+      {/* pozn.: toto NIE je badge progres — je to stav dokladovania financií (§1.4) */}
       <div style={{ height: 7, background: "rgba(var(--glass-rgb),.1)", borderRadius: 4, overflow: "hidden", marginBottom: SPACE.sm }}>
         <div style={{ height: "100%", width: `${pct}%`, background: pct >= 100 ? F.green : F.gold, borderRadius: 4, transition: "width .3s ease" }} />
       </div>
       <div style={{ fontSize: 11, color: F.txt3, lineHeight: 1.5, background: F.greenBg, border: `1px solid ${F.greenEdge}`, borderRadius: RADIUS.sm, padding: SPACE.sm, marginBottom: SPACE.md }}>
-        <b style={{ color: F.green }}>Povinná základná funkcia — nikdy netierovaná.</b> Darca vidí pri zbierke „doložené {pct} % použitia". Ukončená zbierka bez dokladov po {KONFIG.lehotaDokladovaniaDni} dňoch → „čaká na doklady" na profile (vplyv na badge dôvery, NIE blokácia platieb).
+        <b style={{ color: F.green }}>Povinná základná funkcia — nikdy netierovaná.</b> Darca vidí pri zbierke „doložené {pct} % použitia". Ukončená zbierka bez dokladov po {KONFIG.lehotaDokladovaniaDni} dňoch → „čaká na doklady" na profile (vplyv na štít dôvery, NIE blokácia platieb).
       </div>
 
       {/* nahratie dokladu (mock — bloček/faktúra/foto + popis + suma + dátum) */}
@@ -495,6 +566,83 @@ function TerminalSheet({ toast, onClose }: { toast: (m: string) => void; onClose
           Otvorené (Dagmar): status tvorcu pri termináli (živnostník vs. f. o.) — zatiaľ neblokuje, drží ho feature flag <code style={{ fontSize: 10 }}>terminal_requires_business_id</code>.
         </div>
       )}
+    </Sheet>
+  );
+}
+
+// ===================== UPRAVIŤ PROFIL + LOGO SUBJEKTU (PATCH 2 §6) =====================
+// Logo = štvorcový avatar entity (v krúžku): karta subjektu, hero podstránky,
+// riadok adresára, embed badge, logo pri sponzoringu. Tvorca logo nepotrebuje
+// (profilová fotka osoby). Fallback bez loga = iniciálky.
+function UpravProfilSheet({ pozicia, logo, toast, onLogo, onClose }: {
+  pozicia: Pozicia; logo: string | null; toast: (m: string) => void;
+  onLogo: (url: string | null) => void; onClose: () => void;
+}) {
+  const s = SUBJEKTY[pozicia];
+  const maLogo = pozicia !== "tvorca";
+  return (
+    <Sheet onClose={onClose} label="Upraviť profil">
+      <div style={{ fontSize: 16, fontWeight: 800, marginBottom: 2 }}>✏️ Upraviť profil</div>
+      <div style={{ fontSize: 11.5, color: F.txt3, marginBottom: SPACE.md }}>{s.nazov} · foto, popis, kontakt — plný editor príde s registráciou subjektov</div>
+
+      {maLogo ? (
+        <>
+          <div style={{ fontSize: 10.5, fontWeight: 800, color: F.txt3, letterSpacing: ".04em", marginBottom: SPACE.xs }}>LOGO SUBJEKTU</div>
+          <div style={{ display: "flex", gap: SPACE.gutter, alignItems: "center", marginBottom: SPACE.sm }}>
+            <span style={{ width: 64, height: 64, borderRadius: "50%", flex: "none", overflow: "hidden", background: C.surface2, border: `1px solid ${F.line}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, fontWeight: 800 }}>
+              {logo ? <img src={logo} alt="logo" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : s.iniciacky}
+            </span>
+            <div style={{ flex: 1, minWidth: 0, fontSize: 11, color: F.txt3, lineHeight: 1.5 }}>
+              Štvorcové logo — zobrazuje sa v krúžku: karta subjektu, adresár, hero podstránky, embed badge, logo pri sponzoringu. Bez loga = iniciálky.
+            </div>
+          </div>
+          <FotoUpload value={logo ?? undefined} onZmena={(url) => { onLogo(url); toast("Logo uložené"); }} pomer={1} vyska={120} />
+          {logo && (
+            <button onClick={() => { onLogo(null); toast("Logo odstránené — späť na iniciálky"); }}
+              style={{ width: "100%", height: 38, marginTop: SPACE.xs, borderRadius: RADIUS.sm, border: `1px solid ${F.line}`, cursor: "pointer", fontFamily: "inherit", fontWeight: 700, fontSize: 12, background: "transparent", color: F.txt2 }}>
+              Odstrániť logo
+            </button>
+          )}
+        </>
+      ) : (
+        <div style={{ fontSize: 12, color: F.txt2, lineHeight: 1.55, background: F.card, border: `1px solid ${F.line}`, borderRadius: RADIUS.sm, padding: SPACE.sm }}>
+          Tvorca logo nepotrebuje — identitou je profilová fotka osoby (jedna identita, žiadna druhá stránka). Bio, portfólio a odkazy sa editujú v profile.
+        </div>
+      )}
+    </Sheet>
+  );
+}
+
+// ===================== ADRESÁR FIRIEM (PATCH 2 §5) =====================
+// Výkladná skriňa + anti-greenwashing. Riadok = logo/iniciálky, štít, odvetvie,
+// mesto, súčet podpory — len súhrn, detail na podstránke (adresár je rázcestník,
+// nie dashboard). Radenie dôvera+blízkosť; poradie sa NIKDY nepredáva.
+// Tvorca adresár NEMÁ (osoba → žiadny rebríček FO; objavuje sa cez obsah/QR/reťaze).
+function AdresarB2BSheet({ toast, onClose }: { toast: (m: string) => void; onClose: () => void }) {
+  return (
+    <Sheet onClose={onClose} label="Adresár firiem">
+      <div style={{ fontSize: 16, fontWeight: 800, marginBottom: 2 }}>🏢 Adresár firiem</div>
+      <div style={{ fontSize: 11.5, color: F.txt3, marginBottom: SPACE.sm }}>radenie: dôvera + blízkosť · poradie sa nikdy nepredáva</div>
+      {FIRMY_ADRESAR.map((f) => (
+        <div key={f.nazov} {...pressable(() => toast(`${f.nazov} — verejná podstránka firmy (demo)`), f.nazov)}
+          style={{ display: "flex", alignItems: "center", gap: SPACE.sm, padding: `${SPACE.sm}px ${SPACE.xxs}px`, borderBottom: `1px solid ${F.line}`, cursor: "pointer" }}>
+          <span style={{ width: 38, height: 38, borderRadius: "50%", flex: "none", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 800, background: F.blueBg, color: F.blue }}>{f.iniciacky}</span>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 14, fontWeight: 700 }}>{f.nazov}</div>
+            <div style={{ fontSize: 11.5, color: F.txt3, marginTop: 1 }}>{f.odvetvie} · {f.mesto}</div>
+          </div>
+          <div style={{ flex: "none", display: "flex", alignItems: "center", gap: SPACE.sm }}>
+            <div style={{ textAlign: "right" }}>
+              <div style={{ fontSize: 12, fontWeight: 800, color: F.green }}>{f.podpora}</div>
+              <div style={{ fontSize: 9.5, color: F.txt3 }}>podpora</div>
+            </div>
+            <Stit level={naStitLevel(f.stit)} size={28} />
+          </div>
+        </div>
+      ))}
+      <div style={{ fontSize: 10, color: F.txt3, textAlign: "center", marginTop: SPACE.sm, lineHeight: 1.5 }}>
+        anti-greenwashing: každé euro dohľadateľné (D++ stopa) · featured pozícia z Premium vizitky smie byť v moduloch, NIE v adresári
+      </div>
     </Sheet>
   );
 }

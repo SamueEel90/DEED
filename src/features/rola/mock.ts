@@ -14,9 +14,7 @@ export interface PanelBlok {
   popis: string;                 // druhý riadok (obsah bloku)
   hodnota?: string;              // zvýraznená hodnota vpravo
   progress?: { vyzbierane: number; ciel: number };
-  tierMin: Tier;                 // gate na úrovni AKCIE — blok vidno vždy (§4.3)
-  /** zaslúžená os (karma/badge/level) — číta výlučne aktivitu, NIKDY tier (§4.5) */
-  zasluzena?: boolean;
+  tierMin: Tier;                 // gate na úrovni AKCIE — blok vidno vždy (§4.3); zamknutý blok = blur dát (PATCH 1 §3)
   akcia?: string;                // label CTA (default „Spravovať")
 }
 
@@ -47,12 +45,101 @@ export interface OrgZbierka {
 }
 
 // ---- zaslúžená os (mock) — konštanty NEZÁVISLÉ od tieru; test §4.5:
-// zmena tieru nesmie zmeniť karmu/badge ani o bod ----
-export const ZASLUZENA: Record<Pozicia, { badge: string; level: number; progres: number; dalsi: string }> = {
-  charita: { badge: "Gold", level: 7, progres: 72, dalsi: "Legend" },
-  tvorca: { badge: "Silver", level: 4, progres: 45, dalsi: "Gold" },
-  b2b: { badge: "Bronze", level: 2, progres: 58, dalsi: "Silver" },
+// zmena tieru nesmie zmeniť karmu/badge ani o bod. PATCH 1: badge sa
+// zobrazuje VÝLUČNE ako štít + text — žiadny progres/percentá/odpočty. ----
+export const ZASLUZENA: Record<Pozicia, { badge: "Bronze" | "Silver" | "Gold" | "Platinum" | "Legend" }> = {
+  charita: { badge: "Gold" },
+  tvorca: { badge: "Silver" },
+  b2b: { badge: "Bronze" },
 };
+
+// ---- karta subjektu + verejná podstránka (PATCH 2 §1/§3) — jednotná
+// štruktúra pre všetky subjekty; 3 čísla per rola sú fixné zo špecifikácie ----
+export interface SubjektMeta {
+  nazov: string;
+  emoji: string;          // fallback identity bez loga
+  iniciacky: string;      // fallback do krúžku (adresár, avatar)
+  lok: string;
+  overena: boolean;
+  /** 3 čísla — charita: vyzbierané/podporovatelia/úroveň · tvorca: mobilizované/prípady/úroveň · firma: podporené €/prípady/úroveň */
+  cisla: [string, string][];
+  onas: string;
+  kontakt: { adresa: string; email: string; tel: string; web?: string };
+  /** taby verejného obsahu per rola (fixné poradie §3 bod 4) */
+  taby: { key: string; label: string; polozky: { emoji: string; titul: string; popis: string }[] }[];
+}
+
+export const SUBJEKTY: Record<Pozicia, SubjektMeta> = {
+  charita: {
+    nazov: "Svetlo pomoci o.z.", emoji: "💛", iniciacky: "SP", lok: "Trenčín", overena: true,
+    cisla: [["24 600 €", "vyzbierané"], ["1 204", "podporovateľov"], ["Gold", "úroveň"]],
+    onas: "Občianske združenie Svetlo pomoci pomáha rodinám v núdzi v Trenčianskom kraji od roku 2014. Každé euro dokladujeme — transparentnosť per prípad je naša podstata.",
+    kontakt: { adresa: "Mierové námestie 4, Trenčín", email: "info@svetlopomoci.sk", tel: "+421 901 234 567", web: "svetlopomoci.sk" },
+    taby: [
+      { key: "kampane", label: "Kampane", polozky: [
+        { emoji: "🚗", titul: "Auto pre mobilný hospic", popis: "8 600 € z 12 000 € · 214 darcov" },
+        { emoji: "🛏", titul: "Zimná nocľaháreň — vybavenie", popis: "ukončená · 4 000 € · dokladovanie beží" },
+      ] },
+      { key: "skutky", label: "Skutky", polozky: [
+        { emoji: "🍲", titul: "120 teplých jedál", popis: "vydaných tento mesiac v teréne" },
+        { emoji: "🏠", titul: "Rodina Horváthová má strechu", popis: "uzavretý prípad · takto sme pomohli" },
+      ] },
+      { key: "talent", label: "Talent", polozky: [
+        { emoji: "🎨", titul: "Deti maľujú pre útulok", popis: "výtvarná akcia s komunitou" },
+      ] },
+    ],
+  },
+  tvorca: {
+    nazov: "Marek Tvorí", emoji: "🎬", iniciacky: "MT", lok: "Bratislava", overena: true,
+    cisla: [["4 320 €", "mobilizované"], ["6", "uzavretých prípadov"], ["Silver", "úroveň"]],
+    onas: "Točím videá o ľuďoch, ktorí pomáhajú. Cez moju reťaz ide časť z každého honoráru na zbierku, ktorú práve podporujem.",
+    kontakt: { adresa: "Bratislava", email: "marek@marektvori.sk", tel: "+421 902 111 222", web: "marektvori.sk" },
+    taby: [
+      { key: "retaz", label: "Reťaz", polozky: [
+        { emoji: "⛓", titul: "Aktívna: Auto pre mobilný hospic", popis: "moje fixné 5 % · 2 ďalšie vo fronte" },
+      ] },
+      { key: "skutky", label: "Skutky", polozky: [
+        { emoji: "🎥", titul: "Video pre Plamienok", popis: "kampaň dosiahla cieľ za 9 dní" },
+      ] },
+      { key: "akcie", label: "Akcie", polozky: [
+        { emoji: "🎟", titul: "Workshop „Kamera v teréne“", popis: "so 14. 8. · 12/20 prihlásených" },
+      ] },
+      { key: "oznamy", label: "Oznamy", polozky: [
+        { emoji: "📣", titul: "Nový diel v stredu", popis: "séria Skutoční hrdinovia pokračuje" },
+      ] },
+    ],
+  },
+  b2b: {
+    nazov: "Pekáreň Dobrota s.r.o.", emoji: "🥖", iniciacky: "PD", lok: "Trenčín", overena: true,
+    cisla: [["2 400 €", "podporené"], ["3", "prípady"], ["Bronze", "úroveň"]],
+    onas: "Rodinná pekáreň z Trenčína. Podporujeme miestne zbierky a naši ľudia chodia na dobrovoľnícke akcie — každé euro je dohľadateľné (D++ stopa).",
+    kontakt: { adresa: "Bratislavská 12, Trenčín", email: "dobrota@pekaren.sk", tel: "+421 903 333 444", web: "pekarendobrota.sk" },
+    taby: [
+      { key: "podporujeme", label: "Podporujeme", polozky: [
+        { emoji: "🔥", titul: "Rodina Kováčová", popis: "500 € · záruka Lidl · D++ stopa" },
+        { emoji: "⭐", titul: "Plamienok", popis: "pravidelná mesačná podpora" },
+      ] },
+      { key: "skutky", label: "Skutky", polozky: [
+        { emoji: "🍞", titul: "Pečivo pre nocľaháreň", popis: "každý piatok · 40 kusov" },
+      ] },
+      { key: "akcie", label: "Akcie", polozky: [
+        { emoji: "🙋", titul: "Firemná brigáda — Brezina", popis: "výsadba stromov · 12 zamestnancov" },
+      ] },
+    ],
+  },
+};
+
+// ---- B2B adresár (PATCH 2 §5) — výkladná skriňa + anti-greenwashing.
+// Riadok = logo/iniciálky, štít, odvetvie, mesto, súčet podpory. Radenie
+// dôvera+blízkosť; poradie sa NIKDY nepredáva. Tvorca adresár nemá. ----
+export interface FirmaAdresar { iniciacky: string; nazov: string; odvetvie: string; mesto: string; stit: "Bronze" | "Silver" | "Gold" | "Platinum" | "Legend"; podpora: string }
+export const FIRMY_ADRESAR: FirmaAdresar[] = [
+  { iniciacky: "LD", nazov: "Lidl SK", odvetvie: "Retail", mesto: "celé SR", stit: "Gold", podpora: "12 400 €" },
+  { iniciacky: "PD", nazov: "Pekáreň Dobrota", odvetvie: "Gastro", mesto: "Trenčín", stit: "Bronze", podpora: "2 400 €" },
+  { iniciacky: "IT", nazov: "ITech Solutions", odvetvie: "IT", mesto: "Bratislava", stit: "Silver", podpora: "5 100 €" },
+  { iniciacky: "ZS", nazov: "Zelená stavba", odvetvie: "Stavebníctvo", mesto: "Žilina", stit: "Silver", podpora: "3 750 €" },
+  { iniciacky: "KV", nazov: "Kvety Viola", odvetvie: "Služby", mesto: "Trenčín", stit: "Bronze", podpora: "640 €" },
+];
 
 // ---- CHARITA (§1) ----
 export const ORG_ZBIERKY: OrgZbierka[] = [
@@ -64,7 +151,6 @@ export const PANEL_CHARITA: PanelBlok[] = [
   { id: "zbierky", emoji: "🎯", nazov: "Moje zbierky (org)", popis: "1 aktívna · 1 ukončená · stav dokladovania", tierMin: 0 },
   { id: "dnes", emoji: "💶", nazov: "Dnes prišlo", popis: "live tok darov · noví darcovia", tierMin: 0 },
   { id: "dobrovolnici", emoji: "🙋", nazov: "Moji dobrovoľníci", popis: "12 prihlásených na sobotňajšiu brigádu · dochádzka po akcii", tierMin: 2, akcia: "Otvoriť" },
-  { id: "karma", emoji: "⬢", nazov: "Badge & karma", popis: "zaslúžená os — beží naplno aj na T0", tierMin: 0, zasluzena: true, akcia: "Detail" },
   { id: "sledujuci", emoji: "👥", nazov: "Sledujúci", popis: "za posledný mesiac +38", hodnota: "1 204", tierMin: 0, akcia: "Detail" },
   { id: "nastenka", emoji: "📅", nazov: "Moja nástenka", popis: "2 zverejnené udalosti · 1 koncept", tierMin: 0, akcia: "Otvoriť" },
 ];
@@ -90,7 +176,6 @@ export const PANEL_TVORCA: PanelBlok[] = [
   { id: "vplyv", emoji: "🌊", nazov: "Môj vplyv", popis: "6 uzavretých prípadov · mostová váha 1,8×", hodnota: "4 320 €", tierMin: 0, akcia: "Detail" },
   { id: "podporovatelia", emoji: "💚", nazov: "Podporovatelia", popis: "Príspevky cez môj terminál (podstránka)", tierMin: 1, akcia: "Otvoriť" },
   { id: "akcie", emoji: "🎟", nazov: "Moje akcie", popis: "Workshop „Kamera v teréne“ · so 14. 8. · 12/20 prihlásených", tierMin: 2, akcia: "Otvoriť" },
-  { id: "karma", emoji: "⬢", nazov: "Karma & tituly", popis: "zaslúžená os — beží naplno aj na T0", tierMin: 0, zasluzena: true, akcia: "Detail" },
   { id: "oznamy", emoji: "📣", nazov: "Moje oznamy", popis: "3 zverejnené · 1 koncept", tierMin: 1, akcia: "Otvoriť" },
 ];
 
@@ -105,7 +190,9 @@ export const SPRAVA_TVORCA: SpravaItem[] = [
 
 // ---- B2B FIRMA (§3) ----
 export const PANEL_B2B: PanelBlok[] = [
-  { id: "karma", emoji: "⬢", nazov: "Firemná karma & badge", popis: "zaslúžená os · rebríček odvetvia v meste: #3 (súťažná vrstva)", tierMin: 0, zasluzena: true, akcia: "Detail" },
+  // PATCH 1: karta badge/karma preč (štít žije na karte subjektu); rebríček
+  // odvetvia ZOSTÁVA — porovnanie s inými = súťaž, nie postup
+  { id: "rebricek", emoji: "🏆", nazov: "Rebríček odvetvia", popis: "#3 v odvetví Gastro · Trenčín — súťažná vrstva", tierMin: 0, akcia: "Detail" },
   { id: "ludia", emoji: "👥", nazov: "Naši ľudia", popis: "AGREGÁTY: 46 zapojených (opt-in) · 312 h · k-anonymita, žiadny detail osôb", tierMin: 1, akcia: "Otvoriť" },
   { id: "sponzoring", emoji: "🛡", nazov: "Sponzorujeme", popis: "3 podporené prípady · každé euro dohľadateľné (D++ stopa)", hodnota: "2 400 €", tierMin: 0, akcia: "Detail" },
   { id: "ucet", emoji: "🏅", nazov: "Stav účtu", popis: "Founding Member badge · trial Premium — odpočet 21 dní", tierMin: 0, akcia: "Detail" },

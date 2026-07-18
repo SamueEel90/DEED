@@ -95,6 +95,11 @@ export function percentoDolozene(doklady: DokladZbierky[], vyzbierane: number): 
 export const nacitajTerminal = (): boolean => nacitaj(kluc("terminal"), false);
 export const ulozTerminal = (on: boolean) => uloz(kluc("terminal"), on);
 
+// ---- logo subjektu (PATCH 2 §6) — štvorcový avatar entity (charita, B2B; tvorca
+// logo nepotrebuje — má profilovú fotku osoby). Fallback bez loga = iniciálky. ----
+export const nacitajLogo = (p: Pozicia): string | null => nacitaj<string | null>(kluc(`logo.${p}`), null);
+export const ulozLogo = (p: Pozicia, dataUrl: string | null) => uloz(kluc(`logo.${p}`), dataUrl);
+
 // ---- zbierky vytvorené v správe charity navyše k mocku (limit per tier §1.3) ----
 export const nacitajOrgExtra = (): OrgZbierka[] => nacitaj<OrgZbierka[]>(kluc("orgzbierky"), []);
 export const ulozOrgExtra = (z: OrgZbierka[]) => uloz(kluc("orgzbierky"), z);

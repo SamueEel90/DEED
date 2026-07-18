@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { SIRKA, C, GRAD, GRAD_ZELENY, SPACE, RADIUS } from "@/theme";
-import { toast, Sheet, AvatarUroven, useScrollPamat, useViac, useMotiv, useLayout, useTvorbaGate, obalSiroky, QrModal, pressable, IkonaMenu, IkonaNastavenia, IkonaSipVlavo, IkonaSipDole, IkonaPenazenka, IkonaHviezda, IkonaFajka, IkonaDoska, IkonaUsmev, IkonaOsoba, IkonaPin, IkonaSlnko, IkonaMesiac, IkonaStit, SkeletonRiadky, EmptyState, ErrorState, ScreenSwitch } from "@/shared";
+import { toast, Sheet, AvatarUroven, Stit, STIT_POPIS, useScrollPamat, useViac, useMotiv, useLayout, useTvorbaGate, obalSiroky, QrModal, pressable, IkonaMenu, IkonaNastavenia, IkonaSipVlavo, IkonaSipDole, IkonaPenazenka, IkonaHviezda, IkonaFajka, IkonaDoska, IkonaUsmev, IkonaOsoba, IkonaPin, IkonaSlnko, IkonaMesiac, IkonaStit, IkonaInstitucia, SkeletonRiadky, EmptyState, ErrorState, ScreenSwitch } from "@/shared";
+import { MojDeedFiremny } from "@/features/rola/MojDeedFiremny";
 import { RetazDobraSheet } from "@/features/retaz/RetazDobra";
 import { IntroPruvodca } from "@/components/intro";
 import { nacitajZostatok as nacitajZostatokDB, dobitPenazenku as dobitPenazenkuDB } from "@/lib/osobne";
@@ -49,8 +50,9 @@ export default function ModulProfil({ wide, walletReq = 0 }: ProfilProps) {
   return (
     <div style={{ minHeight: "100%" }}>
       <ScreenSwitch k={screen}>
-      {screen === "profil" && obal(<ProfilHlavny toast={toast} naWallet={() => setScreen("wallet")} naSub={sub} naNastavenia={() => setScreen("nastavenia")} naPriatelia={() => setScreen("priatelia")} />)}
+      {screen === "profil" && obal(<ProfilHlavny toast={toast} naWallet={() => setScreen("wallet")} naSub={sub} naNastavenia={() => setScreen("nastavenia")} naPriatelia={() => setScreen("priatelia")} naFiremny={() => setScreen("firemny")} />)}
       {screen === "wallet" && obal(<Penazenka toast={toast} onBack={() => setScreen("profil")} />)}
+      {screen === "firemny" && obal(<MojDeedFiremny onBack={() => setScreen("profil")} toast={toast} />)}
       {screen === "sub" && obal(<SubScreen nazov={subNazov} toast={toast} onBack={() => setScreen("profil")} />)}
       {screen === "priatelia" && obal(<PriateliaScreen toast={toast} onBack={() => setScreen("profil")} />)}
       {screen === "nastavenia" && obal(<NastaveniaScreen toast={toast} onBack={() => setScreen("profil")} onNotif={() => setScreen("notif")} />)}
@@ -64,6 +66,9 @@ export default function ModulProfil({ wide, walletReq = 0 }: ProfilProps) {
 const PROFIL_NAV: { key: string; nazov?: string; label: string; ikona: React.ReactNode }[] = [
   { key: "profil", label: "Prehľad", ikona: <IkonaOsoba size={18} /> },
   { key: "wallet", label: "Peňaženka", ikona: <IkonaPenazenka size={18} /> },
+  // DEV vchod (PATCH 2 §2): kópia vchodu na „Môj DEED firemný" — rovnaká obrazovka
+  // ako karta v Charite; finál = avatar/prepínač identít vpravo hore (s registráciou)
+  { key: "firemny", label: "Moje roly", ikona: <IkonaInstitucia size={18} /> },
   { key: "sub", nazov: "Karma a úrovne", label: "Karma a úrovne", ikona: <IkonaHviezda size={18} /> },
   { key: "sub", nazov: "Moje skutky", label: "Moje skutky", ikona: <IkonaFajka size={18} /> },
   { key: "sub", nazov: "Štatistiky a umiestnenie", label: "Štatistiky", ikona: <IkonaDoska size={18} /> },
@@ -77,6 +82,7 @@ function ProfilDesktop({ screen, subNazov, setScreen, onSub }: { screen: string;
 
   let obsah: React.ReactNode;
   if (screen === "wallet") obsah = <Penazenka toast={toast} desktop onBack={() => setScreen("profil")} />;
+  else if (screen === "firemny") obsah = <MojDeedFiremny onBack={() => setScreen("profil")} toast={toast} />;
   else if (screen === "sub") obsah = <SubScreen nazov={subNazov} toast={toast} desktop onBack={() => setScreen("profil")} />;
   else if (screen === "priatelia") obsah = <PriateliaScreen toast={toast} desktop onBack={() => setScreen("profil")} />;
   else if (screen === "nastavenia") obsah = <NastaveniaScreen toast={toast} desktop onBack={() => setScreen("profil")} onNotif={() => setScreen("notif")} />;
@@ -138,15 +144,17 @@ type ProfilHlavnyProps = {
   naSub: (n: string) => void;
   naNastavenia: () => void;
   naPriatelia: () => void;
+  naFiremny: () => void;
 };
 
-function ProfilHlavny({ toast, naWallet, naSub, naNastavenia, naPriatelia }: ProfilHlavnyProps) {
+function ProfilHlavny({ toast, naWallet, naSub, naNastavenia, naPriatelia, naFiremny }: ProfilHlavnyProps) {
   const otvorViac = useViac();
   const dlazdice: [string, string, string, string, React.ReactNode, () => void][] = [
     ["Peňaženka", "1 240 DEED", "color-mix(in srgb, var(--a-info) 14%, transparent)", "var(--a-info)", <IkonaPenazenka size={26} />, naWallet],
     ["Karma a úrovne", "7 modulov", "rgba(169,139,240,.15)", "var(--a-plum)", <IkonaHviezda size={26} />, () => naSub("Karma a úrovne")],
     ["Moje skutky", "48 skutkov", "rgba(61,214,140,.13)", "var(--a-green)", <IkonaFajka size={26} />, () => naSub("Moje skutky")],
     ["Štatistiky", "umiestnenie", "rgba(61,214,206,.13)", "var(--a-teal)", <IkonaDoska size={24} />, () => naSub("Štatistiky a umiestnenie")],
+    ["Moje roly", "Charita · Tvorca · B2B", "rgba(231,199,102,.14)", "var(--a-gold)", <IkonaInstitucia size={26} />, naFiremny],
     ["Priatelia", "nájdi známych", "rgba(231,199,102,.14)", "var(--a-gold)", <IkonaUsmev size={26} />, naPriatelia],
     ["Nastavenia", "vzhľad, jazyk", "rgba(154,160,168,.16)", C.textTer, <IkonaNastavenia size={26} />, naNastavenia],
   ];
@@ -190,20 +198,15 @@ function IdentitaKarta({ naNastavenia }: { naNastavenia: () => void }) {
         </div>
       </div>
 
-      {ja.demo ? (
-        <div style={{ marginTop: SPACE.gutter }}>
-          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: C.textTer }}>
-            <span>Do ďalšej úrovne (Platinum)</span><span style={{ color: "var(--a-gold)" }}>72 %</span>
-          </div>
-          <div style={{ height: 8, background: "rgba(var(--glass-rgb),.1)", borderRadius: 4, overflow: "hidden", marginTop: SPACE.xs }}>
-            <div style={{ height: "100%", width: "72%", background: "linear-gradient(90deg, #F0C75A, #F09A5E)", borderRadius: 4, boxShadow: "0 0 12px rgba(240,199,90,.4)" }} />
-          </div>
+      {/* ŠTÍT + text — NIKDY progress bar/percentá (DEED_Stity §1: level-up je
+          prekvapenie, postup sa nezobrazuje; všetci začínajú Bronze) */}
+      <div style={{ marginTop: SPACE.gutter, display: "flex", alignItems: "center", gap: SPACE.sm }}>
+        <Stit level={ja.demo ? "Gold" : "Bronze"} size={36} />
+        <div style={{ minWidth: 0, fontSize: 12, color: C.textTer, lineHeight: 1.45 }}>
+          <b style={{ color: "var(--a-gold)" }}>{ja.demo ? "Gold" : "Bronze"}</b> · {STIT_POPIS[ja.demo ? "Gold" : "Bronze"]}
+          {!ja.demo && <><br />{ja.mesto && ja.mesto !== "—" ? `${ja.mesto} · ` : ""}Karma rastie overenými skutkami.</>}
         </div>
-      ) : (
-        <div style={{ marginTop: SPACE.gutter, fontSize: 12.5, color: C.textTer, lineHeight: 1.5 }}>
-          {ja.mesto && ja.mesto !== "—" ? `${ja.mesto} · ` : ""}Nový účet — karma a úroveň pribúdajú overenými skutkami.
-        </div>
-      )}
+      </div>
     </div>
   );
 }

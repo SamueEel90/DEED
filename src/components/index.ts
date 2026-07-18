@@ -26,6 +26,7 @@ export * from "@/components/swipeback";
 export * from "@/components/motion";
 export * from "@/components/sheet";
 export * from "@/components/znacka";
+export * from "@/components/stit";
 export * from "@/components/upgrade";
 export * from "@/components/pressable";
 export * from "@/components/segtabs";
