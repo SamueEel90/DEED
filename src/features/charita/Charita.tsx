@@ -18,6 +18,7 @@ import { useVrstva } from "@/lib/urlnav";
 import { zdielaj, aktualnaUrl } from "@/lib/zdielanie";
 import { OzvatSaSheet } from "@/components/ozvatsa";
 import { NahlasitSheet } from "@/components/nahlasit";
+import { MojDeedFiremny } from "@/features/rola/MojDeedFiremny";
 
 /*
   ============================================================
@@ -124,7 +125,7 @@ type ModulCharitaProps = {
   otvorModul?: (m: string) => void;
 };
 
-type Screen = "feed" | "detail" | "cudzi" | "board" | "event";
+type Screen = "feed" | "detail" | "cudzi" | "board" | "event" | "firemny";
 type Sheet = "add" | "reg" | "dir" | null;
 
 export default function ModulCharita({ wide, otvorModul }: ModulCharitaProps) {
@@ -147,7 +148,8 @@ export default function ModulCharita({ wide, otvorModul }: ModulCharitaProps) {
   return (
     <div style={{ minHeight: "100%", color: K.txt }}>
       <ScreenSwitch k={screen}>
-      {screen === "feed" && <CharitaFeed wide={wide} toast={toast} onDetail={(z) => { setAktZ(z ?? null); setScreen("detail"); }} onHladaj={() => setHladaj(true)} onSheet={setSheet} onBoard={() => setScreen("board")} />}
+      {screen === "feed" && <CharitaFeed wide={wide} toast={toast} onDetail={(z) => { setAktZ(z ?? null); setScreen("detail"); }} onHladaj={() => setHladaj(true)} onSheet={setSheet} onBoard={() => setScreen("board")} onFiremny={() => setScreen("firemny")} />}
+      {screen === "firemny" && obal(<SwipeBack onBack={() => setScreen("feed")}><MojDeedFiremny onBack={() => setScreen("feed")} toast={toast} /></SwipeBack>)}
       {screen === "detail" && obal(<SwipeBack onBack={() => setScreen("feed")}><CharitaDetail z={aktZ} toast={toast} onBack={() => setScreen("feed")} onReg={() => setSheet("reg")} onAutor={(s) => { setAktSubjekt(s); setScreen("cudzi"); }} /></SwipeBack>)}
       {screen === "cudzi" && aktSubjekt && obal(<CudziProfil subjekt={aktSubjekt as any} toast={toast} onBack={() => setScreen("feed")} />)}
       {screen === "board" && <GoodBoard onBack={() => setScreen("feed")} onEvent={(id) => { setAktEvent(id); setScreen("event"); }} toast={toast} />}
@@ -183,9 +185,10 @@ type FeedProps = {
   onHladaj: () => void;
   onSheet: (s: Sheet) => void;
   onBoard: () => void;
+  onFiremny: () => void;
 };
 
-function CharitaFeed({ wide, toast, onDetail, onHladaj, onSheet, onBoard }: FeedProps) {
+function CharitaFeed({ wide, toast, onDetail, onHladaj, onSheet, onBoard, onFiremny }: FeedProps) {
   const { desktop } = useLayout();
   const { data: FEED_ITEMS = [], isLoading, isError, refetch } = useCharitaFeed();
   // zvolený rádius — Feed algoritmus (Časť B): filter podľa okruhu + adaptívny
@@ -223,6 +226,7 @@ function CharitaFeed({ wide, toast, onDetail, onHladaj, onSheet, onBoard }: Feed
     extra: [
       { id: "talent", label: "Ukáž svoj talent", popis: "Tvorivé skutky a talenty", ikona: <IkonaPlay size={18} color="var(--a-green)" />, onClick: gate(() => toast("Ukáž svoj talent (demo)")) },
       { id: "board", label: "Nástenka", popis: "Akcie a udalosti v okolí", ikona: <IkonaDoska size={18} color="var(--a-green)" />, onClick: onBoard },
+      { id: "firemny", label: "Môj DEED firemný", popis: "Rolové panely a správa — Charita · Tvorca · B2B", ikona: <IkonaInstitucia size={18} color="var(--a-green)" />, onClick: onFiremny },
     ],
   }), []);
 
@@ -248,6 +252,15 @@ function CharitaFeed({ wide, toast, onDetail, onHladaj, onSheet, onBoard }: Feed
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 14, fontWeight: 700 }}>Adresár charít & OZ</div>
                 <div style={{ fontSize: 11.5, color: C.textTer }}>Overené organizácie na jednom mieste</div>
+              </div>
+              <span style={{ color: C.textTer, fontSize: 16 }}>›</span>
+            </div>
+            {/* rolové panely a správa (Charita · Tvorca · B2B) — vzor farár z Náboženstva */}
+            <div onClick={onFiremny} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, background: K.goldBg, border: `1px solid ${tint("var(--a-gold)", .3)}`, borderRadius: RADIUS.sm, padding: `${SPACE.sm}px ${SPACE.gutter}px`, cursor: "pointer", marginTop: SPACE.xs }}>
+              <span style={{ width: 38, height: 38, borderRadius: RADIUS.sm, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", background: tint("var(--a-gold)", .15), fontSize: 18 }}>🏢</span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 14, fontWeight: 700 }}>Môj DEED firemný</div>
+                <div style={{ fontSize: 11.5, color: C.textTer }}>Rolové panely a správa — Charita · Tvorca · B2B</div>
               </div>
               <span style={{ color: C.textTer, fontSize: 16 }}>›</span>
             </div>
