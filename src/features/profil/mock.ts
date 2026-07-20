@@ -3,6 +3,7 @@
 // Čisté dátové polia vyňaté z Profil.tsx. Bez JSX.
 // ============================================================
 import type { PrevodTuple, MojSkutokTuple } from "@/types";
+import type { StitLevel } from "@/components/stit";
 
 /** Posledné prevody v peňaženke. */
 export const PREVODY: PrevodTuple[] = [
@@ -33,17 +34,28 @@ export const MOJE_SKUTKY: MojSkutokTuple[] = [
   ["Daroval som plazmu — už 20. raz", "+40", "#3DD6CE"],
 ];
 
-/** Podstránka „Karma a úrovne". */
+/** Podstránka „Karma a úrovne" — súhrnné riadky; modulové levely žijú
+ *  v MODULOVA_KARMA ako štíty (DEED_Stity §2), nie textové riadky. */
 export const KARMA: MojSkutokTuple[] = [
   ["Celková karma", "Gold · L7", "#E7C766"],
   ["Generosity Score (reťaz dobra)", "+142 ♻", "#2BD49B"],
-  ["Komunita", "Silver", "#5BA8F0"],
-  ["Príroda", "Gold", "#3DD68C"],
-  ["Zdravie", "Bronze", "#3DD6CE"],
-  ["Učenie", "Bronze", "#A98BF0"],
-  ["Pomoc", "Silver", "#F2706F"],
   ["Séria dní v rade", "21 🔥", "#E7C766"],
 ];
+
+/** Modulová karma (DEED_Stity §2–§4) — hladký štít + gravírovaný symbol
+ *  modulu; titul je TEXT pri štíte („Hrdina srdca · Charita"), nie grafika.
+ *  MVP 6 modulov; fáza 2 (Health/Gov/SOS/Kids) sa potvrdí pri module. */
+export const MODULOVA_KARMA: { symbol: string; label: string; level: StitLevel; titul?: string }[] = [
+  { symbol: "help", label: "Help", level: "Silver" },
+  { symbol: "charita", label: "Charita", level: "Gold", titul: "Hrdina srdca" },
+  { symbol: "sport", label: "Šport", level: "Bronze" },
+  { symbol: "art", label: "Art", level: "Bronze" },
+  { symbol: "learn", label: "Learn", level: "Silver" },
+  { symbol: "eco", label: "Eco", level: "Gold", titul: "Strážca prírody" },
+];
+
+/** Doživotné badge usera (mock) — id z katalógu DOZIVOTNE_BADGE (§5). */
+export const DOZIVOTNE_ZISKANE: string[] = ["svedok-dobra"];
 
 /** Podstránka „Štatistiky a umiestnenie". */
 export const STATISTIKY: MojSkutokTuple[] = [

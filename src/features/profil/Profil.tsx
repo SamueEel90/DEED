@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { SIRKA, C, GRAD, GRAD_ZELENY, SPACE, RADIUS } from "@/theme";
-import { toast, Sheet, AvatarUroven, Stit, STIT_POPIS, useScrollPamat, useViac, useMotiv, useLayout, useTvorbaGate, obalSiroky, QrModal, pressable, IkonaMenu, IkonaNastavenia, IkonaSipVlavo, IkonaSipDole, IkonaPenazenka, IkonaHviezda, IkonaFajka, IkonaDoska, IkonaUsmev, IkonaOsoba, IkonaPin, IkonaSlnko, IkonaMesiac, IkonaStit, IkonaInstitucia, IkonaCeruzka, IkonaQr, IkonaObalka, IkonaList, IkonaKniha, IkonaSport, IkonaPaleta, IkonaZachrana, IkonaLudia, IkonaSrdceLine, BtnAkcia, MenuSkupina, MenuPolozka, MenuPrepinac, SkeletonRiadky, EmptyState, ErrorState, ScreenSwitch } from "@/shared";
+import { toast, Sheet, AvatarUroven, Stit, StitRiadok, STIT_POPIS, DozivotnyChip, useScrollPamat, useViac, useMotiv, useLayout, useTvorbaGate, obalSiroky, QrModal, pressable, IkonaMenu, IkonaNastavenia, IkonaSipVlavo, IkonaSipDole, IkonaPenazenka, IkonaHviezda, IkonaFajka, IkonaDoska, IkonaUsmev, IkonaOsoba, IkonaPin, IkonaSlnko, IkonaMesiac, IkonaStit, IkonaInstitucia, IkonaCeruzka, IkonaQr, IkonaObalka, IkonaList, IkonaKniha, IkonaSport, IkonaPaleta, IkonaZachrana, IkonaLudia, IkonaSrdceLine, BtnAkcia, MenuSkupina, MenuPolozka, MenuPrepinac, SkeletonRiadky, EmptyState, ErrorState, ScreenSwitch } from "@/shared";
 import { MojDeedFiremny } from "@/features/rola/MojDeedFiremny";
 import { RetazDobraSheet } from "@/features/retaz/RetazDobra";
 import { IntroPruvodca } from "@/components/intro";
@@ -16,6 +16,7 @@ import { Nastavenia as NotifNastavenia } from "@/features/notifikacie/Notifikaci
 import GlassIcons from "@/components/GlassIcons";
 import type { Toast as ToastFn, WideProps, PrevodTuple, MojSkutokTuple, ZiadostPriatelstvo, CestaPriatelstva, RezimNastavenia } from "@/types";
 import { useProfilPrevody, useProfilMojeSkutky, useProfilKarma, useProfilStatistiky } from "@/data";
+import { MODULOVA_KARMA, DOZIVOTNE_ZISKANE } from "./mock";
 
 /*
   ============================================================
@@ -479,6 +480,30 @@ function SubScreen({ nazov, toast, onBack, desktop }: SubScreenProps) {
         <h3 style={{ fontSize: 17, margin: 0 }}>{nazov}</h3>
       </div>
       <div style={{ padding: "0 16px" }}>{obsah}</div>
+
+      {/* modulová karma = hladké štíty so symbolom + doživotné badge ako textové
+          chipy (DEED_Stity §2–§5) — žiadny progres/percentá, len štít + text */}
+      {nazov === "Karma a úrovne" && (
+        <div style={{ padding: "0 16px" }}>
+          <div style={sekciaLabel}>MODULOVÉ ŠTÍTY</div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: SPACE.xs }}>
+            {MODULOVA_KARMA.map((m) => (
+              <div key={m.symbol} style={{ background: C.surface, border: `1px solid ${C.line}`, borderRadius: RADIUS.sm, padding: `${SPACE.sm}px ${SPACE.gutter}px` }}>
+                <StitRiadok level={m.level} trieda="modul" symbol={m.symbol} size={36} titul={m.titul ? `${m.titul} · ${m.label}` : m.label} />
+              </div>
+            ))}
+          </div>
+          {DOZIVOTNE_ZISKANE.length > 0 && (<>
+            <div style={sekciaLabel}>DOŽIVOTNÉ OCENENIA</div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: SPACE.xs }}>
+              {DOZIVOTNE_ZISKANE.map((id) => <DozivotnyChip key={id} id={id} />)}
+            </div>
+          </>)}
+          <div style={{ fontSize: 11, color: C.textTer, lineHeight: 1.5, marginTop: SPACE.sm }}>
+            Štíty aj ocenenia sú zaslúžené overenými skutkami — nedajú sa kúpiť a nikde neuvidíš percentá do ďalšieho stupňa.
+          </div>
+        </div>
+      )}
 
       {/* ručná Reťaz dobra pri menšom skutku (§9) */}
       {retaz && (

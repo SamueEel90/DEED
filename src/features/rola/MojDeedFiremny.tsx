@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { C, SPACE, RADIUS, SIRKA } from "@/theme";
 import {
-  BackHeader, Sheet, SegTabs, Switch, MoniBar, Stit, naStitLevel, Tip, FotoUpload, tint,
+  BackHeader, Sheet, SegTabs, Switch, MoniBar, Stit, naStitLevel, emitBadgeLevelup, Tip, FotoUpload, tint,
   useLayout, obalSiroky,
   EntityHero, BtnAkcia, BtnIkonka, KontextMenu, MenuSkupina, MenuHlavicka, MenuPolozka, KontaktPolozka,
   Zdielanie, IkonaCeruzka, IkonaMoznosti, IkonaTerc, IkonaEuro, IkonaLudia, IkonaOsoba, IkonaKalendar,
@@ -103,7 +103,8 @@ export function MojDeedFiremny({ onBack, toast }: { onBack: () => void; toast: (
       {/* ---- DEV panel — simulácia roly/tieru/držiteľa (v produkcii sa nezobrazuje) ---- */}
       {(FLAGS.dev_role_switcher || FLAGS.dev_tier_switcher) && (
         <DevPanel pozicia={pozicia} tier={tier} drzitel={drzitel}
-          onPozicia={prepniPoziciu} onTier={nastavTier} onDrzitel={prepniDrzitela} />
+          onPozicia={prepniPoziciu} onTier={nastavTier} onDrzitel={prepniDrzitela}
+          onLevelup={() => emitBadgeLevelup({ subjekt: subjekt.nazov, level: stit })} />
       )}
 
       {/* ==== HERO SUBJEKTU — cover, logo, meno + odznak, štatistiky, akcie ==== */}
@@ -235,7 +236,7 @@ export function MojDeedFiremny({ onBack, toast }: { onBack: () => void; toast: (
         <UpravProfilSheet pozicia={pozicia} logo={logo} toast={toast}
           onLogo={(url) => { setLogo(url); ulozLogo(pozicia, url); }} onClose={() => setSheet(null)} />
       )}
-      {sheet === "adresarB2B" && <AdresarB2BSheet toast={toast} onClose={() => setSheet(null)} />}
+      {sheet === "adresarB2B" && <AdresarB2BSheet vlastneLogo={logo} toast={toast} onClose={() => setSheet(null)} />}
 
       {paywall && (
         <PaywallModal req={paywall} pozicia={pozicia}
@@ -247,9 +248,10 @@ export function MojDeedFiremny({ onBack, toast }: { onBack: () => void; toast: (
 }
 
 // ===================== DEV PANEL — simulácia roly/tieru/držiteľa =====================
-function DevPanel({ pozicia, tier, drzitel, onPozicia, onTier, onDrzitel }: {
+function DevPanel({ pozicia, tier, drzitel, onPozicia, onTier, onDrzitel, onLevelup }: {
   pozicia: Pozicia; tier: Tier; drzitel: boolean;
   onPozicia: (p: Pozicia) => void; onTier: (t: Tier) => void; onDrzitel: () => void;
+  onLevelup: () => void;
 }) {
   const [open, setOpen] = useState(true);
   const seg = (on: boolean, farba: string): React.CSSProperties => ({
@@ -286,6 +288,11 @@ function DevPanel({ pozicia, tier, drzitel, onPozicia, onTier, onDrzitel }: {
             </div>
             <Switch on={drzitel} onChange={onDrzitel} ariaLabel="Držiteľ roly" />
           </div>
+          {/* on_badge_levelup ukážka — prehrá reveal moment (DEED_Stity §6) */}
+          <button onClick={onLevelup}
+            style={{ width: "100%", height: 34, borderRadius: RADIUS.xs, border: `1px dashed ${tint("var(--a-plum)", .4)}`, background: "transparent", color: "var(--a-plum)", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+            ▶ Prehrať level-up reveal
+          </button>
         </div>
       )}
     </div>
@@ -534,15 +541,20 @@ function UpravProfilSheet({ pozicia, logo, toast, onLogo, onClose }: {
 }
 
 // ===================== ADRESÁR FIRIEM =====================
-function AdresarB2BSheet({ toast, onClose }: { toast: (m: string) => void; onClose: () => void }) {
+function AdresarB2BSheet({ vlastneLogo, toast, onClose }: { vlastneLogo: string | null; toast: (m: string) => void; onClose: () => void }) {
   return (
     <Sheet onClose={onClose} label="Adresár firiem">
       <div style={{ fontSize: 16, fontWeight: 800, marginBottom: 2 }}>Adresár firiem</div>
       <div style={{ fontSize: 11.5, color: C.textTer, marginBottom: SPACE.sm }}>Overené firmy a ich podpora komunity</div>
-      {FIRMY_ADRESAR.map((f) => (
+      {FIRMY_ADRESAR.map((f) => {
+        // logo v riadku (PATCH 2 §6) — vlastná firma berie nahraté logo zo správy; fallback iniciálky
+        const logoRiadku = f.iniciacky === SUBJEKTY.b2b.iniciacky ? (vlastneLogo ?? f.logo) : f.logo;
+        return (
         <div key={f.nazov} {...pressable(() => toast(`${f.nazov} — verejný profil firmy`), f.nazov)}
           style={{ display: "flex", alignItems: "center", gap: SPACE.sm, padding: `${SPACE.sm}px ${SPACE.xxs}px`, borderBottom: `1px solid ${C.line}`, cursor: "pointer" }}>
-          <span style={{ width: 38, height: 38, borderRadius: "50%", flex: "none", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 800, background: tint("var(--a-info)", .1), color: "var(--a-info)" }}>{f.iniciacky}</span>
+          <span style={{ width: 38, height: 38, borderRadius: "50%", flex: "none", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 800, background: tint("var(--a-info)", .1), color: "var(--a-info)" }}>
+            {logoRiadku ? <img src={logoRiadku} alt={f.nazov} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : f.iniciacky}
+          </span>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 14, fontWeight: 700 }}>{f.nazov}</div>
             <div style={{ fontSize: 11.5, color: C.textTer, marginTop: 1 }}>{f.odvetvie} · {f.mesto}</div>
@@ -555,7 +567,8 @@ function AdresarB2BSheet({ toast, onClose }: { toast: (m: string) => void; onClo
             <Stit level={naStitLevel(f.stit)} size={28} />
           </div>
         </div>
-      ))}
+        );
+      })}
     </Sheet>
   );
 }

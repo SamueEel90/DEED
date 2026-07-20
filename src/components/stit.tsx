@@ -11,7 +11,9 @@
 //  Finálne assety (5+5 štítov + 6 symbolov) sa dosadia z výroby; SVG tu
 //  drží siluetu a kovy, aby výmena bola len swap assetov.
 // ============================================================
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
+import { zdielaj, aktualnaUrl } from "@/lib/zdielanie";
+import { toast } from "./toast";
 
 export type StitLevel = "Bronze" | "Silver" | "Gold" | "Platinum" | "Legend";
 
@@ -135,7 +137,98 @@ export function onBadgeLevelup(handler: BadgeLevelupHandler): () => void {
   levelupHandlers.add(handler);
   return () => levelupHandlers.delete(handler);
 }
-/** zavolá karma engine pri povýšení — spustí reveal (zatiaľ len rozošle hook) */
+/** zavolá karma engine pri povýšení — spustí reveal (StitRevealHost počúva) */
 export function emitBadgeLevelup(ev: { subjekt: string; level: StitLevel }) {
   levelupHandlers.forEach((h) => h(ev));
+}
+
+/**
+ * Host reveal momentu — namontovaný raz v App; počúva on_badge_levelup
+ * a prehrá reveal overlay. Finálne badge videá per LEVEL (4 ks, Silver→Legend)
+ * prídu z výroby — do ich príchodu drží moment CSS animácia s rovnakou
+ * anatómiou: personalizácia menom, vždy skippable, zdieľateľná von (§6).
+ */
+export function StitRevealHost() {
+  const [ev, setEv] = useState<{ subjekt: string; level: StitLevel } | null>(null);
+  useEffect(() => onBadgeLevelup(setEv), []);
+  if (!ev) return null;
+  return <StitReveal subjekt={ev.subjekt} level={ev.level} onClose={() => setEv(null)} />;
+}
+
+export function StitReveal({ subjekt, level, onClose }: { subjekt: string; level: StitLevel; onClose: () => void }) {
+  const kov = KOVY[level];
+  // Escape = preskočiť (skippable aj z klávesnice)
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+  const podelSa = () => {
+    void zdielaj({ titul: `Nový štít: ${level}`, text: `${subjekt} — ${level} štít na DEED. Postavené na skutkoch, nie na rečiach.`, url: aktualnaUrl() }, toast);
+  };
+  return (
+    <div role="dialog" aria-label={`Nový štít ${level}`} onClick={onClose}
+      style={{ position: "fixed", inset: 0, zIndex: 300, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24, background: "radial-gradient(circle at 50% 40%, rgba(28,22,10,.9), rgba(4,6,12,.97) 75%)", animation: "stitRevealFade .35s ease" }}>
+      <style>{`
+        @keyframes stitRevealFade { from { opacity: 0 } to { opacity: 1 } }
+        @keyframes stitRevealPop { 0% { transform: scale(.15) rotate(-16deg); opacity: 0 } 55% { transform: scale(1.14) rotate(4deg); opacity: 1 } 75% { transform: scale(.96) rotate(-1deg) } 100% { transform: scale(1) rotate(0) } }
+        @keyframes stitRevealRay { from { transform: rotate(0) } to { transform: rotate(360deg) } }
+        @keyframes stitRevealUp { from { opacity: 0; transform: translateY(14px) } to { opacity: 1; transform: none } }
+      `}</style>
+      {/* vždy skippable — ✕ hore, klik na pozadie, Escape */}
+      <button onClick={onClose} aria-label="Preskočiť"
+        style={{ position: "absolute", top: 18, right: 18, height: 34, padding: "0 14px", borderRadius: 17, border: "1px solid rgba(255,255,255,.25)", background: "rgba(255,255,255,.08)", color: "rgba(255,255,255,.85)", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+        Preskočiť ✕
+      </button>
+      <div onClick={(e) => e.stopPropagation()} style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", maxWidth: 340 }}>
+        {/* lúče za štítom — jediný pohyblivý prvok, kým prídu videá */}
+        <div style={{ position: "relative", width: 220, height: 220, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div aria-hidden style={{ position: "absolute", inset: 0, borderRadius: "50%", background: `conic-gradient(${kov.a}33, transparent 22%, ${kov.a}22 38%, transparent 55%, ${kov.a}33 72%, transparent 90%, ${kov.a}33)`, filter: "blur(2px)", animation: "stitRevealRay 14s linear infinite" }} />
+          <div aria-hidden style={{ position: "absolute", inset: 34, borderRadius: "50%", background: `radial-gradient(circle, ${kov.a}40, transparent 70%)` }} />
+          <span style={{ position: "relative", animation: "stitRevealPop .9s cubic-bezier(.2,1.4,.4,1) both .15s" }}>
+            <Stit level={level} size={128} />
+          </span>
+        </div>
+        <div style={{ animation: "stitRevealUp .5s ease both .7s" }}>
+          <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: ".28em", color: "rgba(255,255,255,.55)" }}>NOVÝ ŠTÍT</div>
+          <div style={{ fontSize: 34, fontWeight: 800, color: kov.a, marginTop: 4, textShadow: `0 0 28px ${kov.a}55` }}>{level}</div>
+          {/* meno = textový overlay na šablónu (§6) — nie nový render */}
+          <div style={{ fontSize: 15, fontWeight: 700, color: "#fff", marginTop: 8 }}>{subjekt}</div>
+          <div style={{ fontSize: 12, color: "rgba(255,255,255,.6)", marginTop: 4, lineHeight: 1.5 }}>{STIT_POPIS[level]}</div>
+        </div>
+        <div style={{ display: "flex", gap: 10, marginTop: 22, animation: "stitRevealUp .5s ease both 1s" }}>
+          <button onClick={podelSa} style={{ height: 44, padding: "0 20px", borderRadius: 12, border: "none", background: `linear-gradient(135deg, ${kov.a}, ${kov.b})`, color: "#1c1608", fontSize: 14, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}>
+            Zdieľať štít
+          </button>
+          <button onClick={onClose} style={{ height: 44, padding: "0 18px", borderRadius: 12, border: "1px solid rgba(255,255,255,.25)", background: "transparent", color: "rgba(255,255,255,.85)", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+            Pokračovať
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// Doživotné badge (§5) — medaily/piny, NIE štíty. MVP = textový chip;
+// grafika (medaily) post-MVP, až budú prví držitelia.
+// ============================================================
+export const DOZIVOTNE_BADGE: { id: string; nazov: string; popis: string }[] = [
+  { id: "zachranca-zivota", nazov: "Záchranca života", popis: "Preukázateľne zachránil ľudský život" },
+  { id: "senior-hero", nazov: "Senior Hero", popis: "Dlhodobá výnimočná pomoc seniorom" },
+  { id: "once-a-legend", nazov: "Once a Legend", popis: "Raz dosiahnutý Legend sa nezabúda" },
+  { id: "renta-hrdina", nazov: "Renta hrdina", popis: "Trvalá renta venovaná dobru" },
+  { id: "community-hero", nazov: "Community Hero", popis: "Mimoriadny prínos celej komunite" },
+  { id: "svedok-dobra", nazov: "Svedok dobra", popis: "Overil a doložil skutky iných" },
+];
+
+/** textový chip doživotného badge — mimo úrovní, nedá sa kúpiť ani stratiť */
+export function DozivotnyChip({ id }: { id: string }) {
+  const b = DOZIVOTNE_BADGE.find((x) => x.id === id);
+  if (!b) return null;
+  return (
+    <span title={b.popis} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "4px 10px", borderRadius: 999, fontSize: 12, fontWeight: 700, color: "var(--a-gold)", background: "rgba(231,199,102,.12)", border: "1px solid rgba(200,162,58,.45)", whiteSpace: "nowrap" }}>
+      🎖 {b.nazov}
+    </span>
+  );
 }

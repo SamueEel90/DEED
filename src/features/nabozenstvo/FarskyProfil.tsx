@@ -66,7 +66,7 @@ export function FarskyProfil({ farnost, farar, jeDomovska, following, onToggleFo
   const [selfAddOpen, setSelfAddOpen] = useState(false); // správca: oznamy od farníkov ON/OFF + poplatok
   // editovateľný pohľad profilu (mock — perzistovaný do localStorage per farnost.id)
   const [view, setView] = useState<ProfilView>(() => nacitajStav<ProfilView>("profil", farnost.id, {
-    foto: farnost.foto, popis: farnost.popis, omseSuhrn: farnost.omseSuhrn ?? "", video: "",
+    foto: farnost.foto, logo: "", popis: farnost.popis, omseSuhrn: farnost.omseSuhrn ?? "", video: "",
     adresa: farnost.kontakt?.adresa ?? "", tel: farnost.kontakt?.tel ?? "", email: farnost.kontakt?.email ?? "", web: farnost.kontakt?.web ?? "",
   }));
   const ja = usePouzivatel(); // registrovaný vs pasívny — určuje zápis do zoznamu darcov
@@ -111,7 +111,10 @@ export function FarskyProfil({ farnost, farar, jeDomovska, following, onToggleFo
       <div style={{ padding: `${SPACE.gutter}px ${SPACE.md}px 0` }}>
         {/* hlavička farnosti */}
         <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm, marginBottom: SPACE.xs }}>
-          <span style={{ width: 42, height: 42, borderRadius: RADIUS.sm, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, background: N.indBg }}>⛪</span>
+          {/* logo farnosti (Role Panely PATCH 2 §6 — „aj farnosť dodatočne"); fallback ⛪ */}
+          <span style={{ width: 42, height: 42, borderRadius: RADIUS.sm, flex: "none", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, background: N.indBg }}>
+            {view.logo ? <img src={view.logo} alt={farnost.skratka} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : "⛪"}
+          </span>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 16, fontWeight: 800, display: "flex", alignItems: "center", gap: SPACE.xs }}>{farnost.nazov} <Overena /></div>
             <div style={{ fontSize: 11.5, color: N.txt2, marginTop: SPACE.xxs }}>📍 {farnost.obec}{farnost.kostol ? ` · ${farnost.kostol}` : ""}{farnost.farar ? ` · ${farnost.farar}` : ""}</div>
@@ -425,7 +428,7 @@ function ViditelnostSheet({ hodnota, onSet, onClose }: { hodnota: ViditSum; onSe
 }
 
 // ---- editovateľný pohľad + sheet editácie profilu (správca, mock) ----
-type ProfilView = { foto: string; popis: string; omseSuhrn: string; video?: string; adresa: string; tel: string; email: string; web: string };
+type ProfilView = { foto: string; logo?: string; popis: string; omseSuhrn: string; video?: string; adresa: string; tel: string; email: string; web: string };
 
 function SpravaFarnosti({ farnost, view, onSave, onClose }: { farnost: Farnost; view: ProfilView; onSave: (v: ProfilView) => void; onClose: () => void }) {
   const [v, setV] = useState<ProfilView>(view);
@@ -440,6 +443,10 @@ function SpravaFarnosti({ farnost, view, onSave, onClose }: { farnost: Farnost; 
       <FotoUpload value={v.foto} onZmena={set("foto")} pomer={16 / 9} vyska={140} />
       <div style={{ fontSize: 10.5, color: N.txt3, margin: `${SPACE.xs}px 0 ${SPACE.xxs}px` }}>…alebo vlož URL obrázka (doplnková cesta):</div>
       <Input value={v.foto.startsWith("data:") ? "" : v.foto} onChange={set("foto")} placeholder="https://…" />
+
+      <PoleLabel>LOGO FARNOSTI (štvorcové)</PoleLabel>
+      <FotoUpload value={v.logo || undefined} onZmena={set("logo")} pomer={1} vyska={120} />
+      <div style={{ fontSize: 10.5, color: N.txt3, marginTop: SPACE.xxs }}>Logo je identita v malom — hlavička profilu a adresáre. Bez loga ostáva ⛪. Cover foto vyššie je hero pozadie.</div>
 
       <PoleLabel>POPIS (história, výnimočnosti)</PoleLabel>
       <RichTextInput value={v.popis} onChange={set("popis")} minH={110} placeholder="Napíš popis farnosti… Odseky, tučné písmo aj vloženie z Wordu prežijú." />

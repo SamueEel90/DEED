@@ -140,10 +140,10 @@ export const SUBJEKTY: Record<Pozicia, SubjektMeta> = {
 // ---- B2B adresár (PATCH 2 §5) — výkladná skriňa + anti-greenwashing.
 // Riadok = logo/iniciálky, štít, odvetvie, mesto, súčet podpory. Radenie
 // dôvera+blízkosť; poradie sa NIKDY nepredáva. Tvorca adresár nemá. ----
-export interface FirmaAdresar { iniciacky: string; nazov: string; odvetvie: string; mesto: string; stit: "Bronze" | "Silver" | "Gold" | "Platinum" | "Legend"; podpora: string }
+export interface FirmaAdresar { iniciacky: string; nazov: string; odvetvie: string; mesto: string; stit: "Bronze" | "Silver" | "Gold" | "Platinum" | "Legend"; podpora: string; logo?: string }
 export const FIRMY_ADRESAR: FirmaAdresar[] = [
   { iniciacky: "LD", nazov: "Lidl SK", odvetvie: "Retail", mesto: "celé SR", stit: "Gold", podpora: "12 400 €" },
-  { iniciacky: "PD", nazov: "Pekáreň Dobrota", odvetvie: "Gastro", mesto: "Trenčín", stit: "Bronze", podpora: "2 400 €" },
+  { iniciacky: "PD", nazov: "Pekáreň Dobrota", odvetvie: "Gastro", mesto: "Trenčín", stit: "Bronze", podpora: "2 400 €", logo: U("photo-1628428799437-d886d7d2e9b2") },
   { iniciacky: "IT", nazov: "ITech Solutions", odvetvie: "IT", mesto: "Bratislava", stit: "Silver", podpora: "5 100 €" },
   { iniciacky: "ZS", nazov: "Zelená stavba", odvetvie: "Stavebníctvo", mesto: "Žilina", stit: "Silver", podpora: "3 750 €" },
   { iniciacky: "KV", nazov: "Kvety Viola", odvetvie: "Služby", mesto: "Trenčín", stit: "Bronze", podpora: "640 €" },

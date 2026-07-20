@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useRef, lazy, Suspense, type CSSProperties } from "react";
 import { LazyMotion, domAnimation, MotionConfig } from "motion/react";
 import { C } from "@/theme";
-import { GaleriaContext, ScrollContext, ScrollElContext, ViacContext, StrankaAkcieContext, UpgradeContext, UpgradePanel, Lightbox, DychajucePozadie, MotivContext, PortalContext, LayoutContext, DeedToaster, FeedSkeleton, PullToRefresh } from "@/shared";
+import { GaleriaContext, ScrollContext, ScrollElContext, ViacContext, StrankaAkcieContext, UpgradeContext, UpgradePanel, Lightbox, DychajucePozadie, MotivContext, PortalContext, LayoutContext, DeedToaster, FeedSkeleton, PullToRefresh, StitRevealHost } from "@/shared";
 import type { StrankaAkcie } from "@/components/context";
 import { TabBar, ViacSheet, PridatFAB, nacitajTaby, ulozTaby, VSETKY_MODULY } from "@/components/TabBar";
 import { Sidebar } from "@/components/Sidebar";
@@ -133,6 +133,8 @@ export default function App() {
                   </div>
                 </div>
                 <DeedToaster />
+                {/* on_badge_levelup → reveal moment štítu (DEED_Stity §6) — jeden host pre celú appku */}
+                <StitRevealHost />
               </LayoutContext.Provider>
               </TipProvider>
             </PortalContext.Provider>
