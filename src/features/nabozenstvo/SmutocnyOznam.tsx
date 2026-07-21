@@ -59,13 +59,14 @@ export function SmutocnyOznamBlok({ s, onKondolencia, onZvacsit }: { s: Smutocny
           onClick={onZvacsit}
           style={{ display: "block", width: "100%", height: "auto", maxHeight: 560, objectFit: "contain", borderRadius: RADIUS.md, border: `1px solid ${N.line}`, background: "#111", cursor: onZvacsit ? "zoom-in" : undefined }} />
         {/* minimálne systémové polia — nenápadne (pre kalendár/hľadanie), žiadny veľký duplicitný blok */}
-        <div style={{ fontSize: 11, color: N.txt3, textAlign: "center", marginTop: SPACE.xxs }}>{s.meno} · †{fmtDatum(s.datumUmr)} · {rozlucka}</div>
+        <div style={{ fontSize: 11, color: N.txt3, textAlign: "center", marginTop: SPACE.xxs }}>{s.meno}{s.rodena ? `, rodená ${s.rodena}` : ""} · †{fmtDatum(s.datumUmr)} · {rozlucka}</div>
       </>) : s.templateId === 2 ? (
         /* B — teplá: tmavá, zlaté akcenty, sviečka + „Zapáliť sviečku" (= kondolencia) */
         <div style={{ borderRadius: RADIUS.md, background: "#171412", border: "1px solid #3A3226", padding: `${SPACE.lg}px ${SPACE.md}px`, textAlign: "center", color: "#EFE6D5" }}>
           <div style={{ fontSize: 30 }}>🕯</div>
           <div style={{ fontSize: 11, letterSpacing: ".2em", color: "#D9B36A", fontWeight: 700, marginTop: SPACE.sm }}>S HLBOKÝM ZÁRMUTKOM OZNAMUJEME</div>
           <div style={{ fontSize: 24, fontWeight: 800, marginTop: SPACE.sm, fontFamily: "Georgia, serif" }}>{s.meno}</div>
+          {s.rodena && <div style={{ fontSize: 12.5, fontStyle: "italic", color: "#C9BBA2", marginTop: 2 }}>rodená {s.rodena}</div>}
           <div style={{ fontSize: 13, color: "#C9BBA2", marginTop: SPACE.xxs }}>{datumy}{vek != null ? ` · ${vek} rokov` : ""}</div>
           {s.foto && <div style={{ margin: `${SPACE.md}px auto 0`, width: 110, height: 110, borderRadius: "50%", overflow: "hidden", border: "2px solid #D9B36A" }}><Foto src={s.foto} h={110} w={110} alt={s.meno} /></div>}
           {s.vers && <div style={{ fontStyle: "italic", fontSize: 13.5, lineHeight: 1.6, color: "#D9CBB0", marginTop: SPACE.md, fontFamily: "Georgia, serif" }}>„{s.vers}"</div>}
@@ -84,6 +85,7 @@ export function SmutocnyOznamBlok({ s, onKondolencia, onZvacsit }: { s: Smutocny
           {s.foto && <Foto src={s.foto} h={230} alt={s.meno} />}
           <div style={{ padding: `${SPACE.md}px ${SPACE.md}px`, textAlign: "center" }}>
             <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: ".01em" }}>{s.meno}</div>
+            {s.rodena && <div style={{ fontSize: 12.5, fontStyle: "italic", color: "#6B6459", marginTop: 2 }}>rodená {s.rodena}</div>}
             <div style={{ fontSize: 13, color: "#6B6459", marginTop: SPACE.xxs }}>{datumy}{vek != null ? ` · ${vek} rokov` : ""}</div>
             {s.vers && <div style={{ fontStyle: "italic", fontSize: 13, color: "#6B6459", marginTop: SPACE.sm, lineHeight: 1.55 }}>„{s.vers}"</div>}
             {/* §6: aj minimalistická zobrazuje rozlúčku */}
@@ -97,6 +99,7 @@ export function SmutocnyOznamBlok({ s, onKondolencia, onZvacsit }: { s: Smutocny
           {s.foto && <div style={{ margin: `${SPACE.sm}px auto 0`, width: 96, height: 96, borderRadius: RADIUS.xs, overflow: "hidden", border: "1px solid #C9BCA2" }}><Foto src={s.foto} h={96} w={96} alt={s.meno} /></div>}
           <div style={{ fontSize: 12, letterSpacing: ".12em", color: "#6B6151", marginTop: SPACE.sm }}>V TICHEJ SPOMIENKE</div>
           <div style={{ fontSize: 23, fontWeight: 700, marginTop: SPACE.xxs }}>{s.meno}</div>
+          {s.rodena && <div style={{ fontSize: 13, fontStyle: "italic", color: "#6B6151", marginTop: 2 }}>rodená {s.rodena}</div>}
           <div style={{ fontSize: 13.5, color: "#4C4437", marginTop: SPACE.xxs }}>{datumy}{vek != null ? ` · vo veku ${vek} rokov` : ""}</div>
           {s.vers && <div style={{ fontStyle: "italic", fontSize: 13.5, lineHeight: 1.6, color: "#4C4437", marginTop: SPACE.md, maxWidth: 420, marginLeft: "auto", marginRight: "auto" }}>„{s.vers}"</div>}
           <div style={{ width: 46, borderTop: "1px solid #C9BCA2", margin: `${SPACE.md}px auto 0` }} />
@@ -143,6 +146,7 @@ export function SmutocnyForm({ farnost, autor, farar, onPublish }: {
 }) {
   const [mode, setMode] = useState<"template" | "image">("template");
   const [meno, setMeno] = useState("");
+  const [rodena, setRodena] = useState("");           // meno za slobodna (voliteľné, pri ženách)
   const [datumNar, setDatumNar] = useState("");
   const [datumUmr, setDatumUmr] = useState("");
   const [versIdx, setVersIdx] = useState<number | "vlastny" | null>(null);
@@ -165,7 +169,7 @@ export function SmutocnyForm({ farnost, autor, farar, onPublish }: {
   const data: SmutocnyData = {
     mode, templateId: mode === "template" ? sablona : undefined,
     imageUrl: mode === "image" ? fotky[0] : undefined,
-    meno: meno.trim(), datumNar, datumUmr, vers: vers || undefined,
+    meno: meno.trim(), rodena: rodena.trim() || undefined, datumNar, datumUmr, vers: vers || undefined,
     rozluckaMiesto: miesto.trim(), rozluckaDatum: rozDatum, rozluckaCas: rozCas,
     foto: mode === "template" ? fotky[0] : undefined,
     text: text || undefined,
@@ -210,6 +214,10 @@ export function SmutocnyForm({ farnost, autor, farar, onPublish }: {
       {/* 1 · meno */}
       {lab("MENO — KOHO SPOMÍNAME", true)}
       <Input value={meno} onChange={setMeno} placeholder="napr. Anna Kováčová" />
+
+      {/* 1b · rodená — meno za slobodna (voliteľné, pri ženách) → „…, rodená Kováčová" */}
+      {lab("RODENÁ — MENO ZA SLOBODNA (VOLITEĽNÉ)")}
+      <Input value={rodena} onChange={setRodena} placeholder="napr. Kováčová (pri ženách)" />
 
       {/* 2 · dátumy + vek (dopočíta sa) */}
       {lab("DÁTUMY — NARODENIE · ÚMRTIE", true)}

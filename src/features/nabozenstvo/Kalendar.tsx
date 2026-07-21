@@ -6,8 +6,8 @@ import { N, Chip } from "./ui";
 import { nacitajStav, ulozStav } from "./stav";
 import {
   generujOmse, isoDatum, CASY, OMSA_LABEL, KAT_FARBA, KAT_LABEL, KAL_UDALOSTI,
-  PREDVYPLNENY_ROZVRH, PRAZDNY_ROZVRH,
-  type RozvrhOmsi, type DennaOmsa, type OmsaTyp, type MassInstance, type Farnost,
+  PREDVYPLNENY_ROZVRH, PRAZDNY_ROZVRH, predvoleneKostoly,
+  type RozvrhOmsi, type DennaOmsa, type OmsaTyp, type MassInstance, type Farnost, type KostolFarnosti,
 } from "./mock";
 
 /*
@@ -42,6 +42,13 @@ export function Kalendar({ farnost, onBack, onPridat, toast }: { farnost: Farnos
 
   const generovane = useMemo(() => generujOmse(rok, mesiac, rozvrh), [rok, mesiac, rozvrh]);
 
+  // kostoly farnosti (Správa/Profil §3) — každý má vlastné časy omší, ktoré sa
+  // napájajú sem do rozvrhu; spravujú sa v „Upraviť profil farnosti"
+  const kostoly = useMemo<KostolFarnosti[]>(() => {
+    const p = nacitajStav<{ kostoly?: KostolFarnosti[] }>("profil", farnost.id, {});
+    return (p.kostoly ?? predvoleneKostoly(farnost)).filter((k) => k.nazov.trim());
+  }, [farnost]);
+
   // efektívne omše dňa (auto/feast bez zrušených + override časov + manuálne pridané)
   function omseDna(iso: string): MassInstance[] {
     const zaklad = generovane
@@ -75,7 +82,7 @@ export function Kalendar({ farnost, onBack, onPridat, toast }: { farnost: Farnos
       </div>
 
       {vyhlad === "rozvrh" ? (
-        <RozvrhSetup rozvrh={rozvrh} onRozvrh={setRozvrh}
+        <RozvrhSetup rozvrh={rozvrh} onRozvrh={setRozvrh} kostoly={kostoly}
           onUlozit={() => { ulozStav("rozvrh", farnost.id, rozvrh); toast("Rozvrh uložený — omše a zbierky vygenerované na mesiac dopredu"); setVyhlad("kalendar"); }}
           toast={toast} />
       ) : (
@@ -153,7 +160,7 @@ function Legenda({ col, t }: { col: string; t: string }) {
 }
 
 // ===================== ROZVRH — SETUP =====================
-function RozvrhSetup({ rozvrh, onRozvrh, onUlozit, toast }: { rozvrh: RozvrhOmsi; onRozvrh: (r: RozvrhOmsi) => void; onUlozit: () => void; toast: (m: string) => void }) {
+function RozvrhSetup({ rozvrh, onRozvrh, kostoly, onUlozit, toast }: { rozvrh: RozvrhOmsi; onRozvrh: (r: RozvrhOmsi) => void; kostoly: KostolFarnosti[]; onUlozit: () => void; toast: (m: string) => void }) {
   const nastavCas = (typ: "ranna" | "vecerna" | "velka", cas: string) => onRozvrh({ ...rozvrh, defaultTimes: { ...rozvrh.defaultTimes, [typ]: cas } });
   const denMa = (dow: number, typ: OmsaTyp) => rozvrh.weeklyPattern.find((p) => p.dayOfWeek === dow)?.masses.some((m) => m.type === typ) ?? false;
   const prepniDen = (dow: number, typ: OmsaTyp) => {
@@ -208,8 +215,27 @@ function RozvrhSetup({ rozvrh, onRozvrh, onUlozit, toast }: { rozvrh: RozvrhOmsi
         ))}
       </div>
 
+      {/* kostoly farnosti — každý s vlastnými časmi omší (napojené z profilu §3) */}
+      {kostoly.length > 0 && (
+        <>
+          <SekNadpis>3 · Kostoly farnosti — vlastné časy omší</SekNadpis>
+          <div style={{ display: "grid", gap: SPACE.xs }}>
+            {kostoly.map((k, i) => (
+              <div key={i} style={{ background: N.card, border: `1px solid ${N.line}`, borderRadius: RADIUS.sm, padding: `${SPACE.sm}px ${SPACE.gutter}px` }}>
+                <div style={{ fontSize: 13, fontWeight: 700 }}>⛪ {k.nazov}</div>
+                {k.adresa && <div style={{ fontSize: 10.5, color: N.txt3, marginTop: 1 }}>📍 {k.adresa}</div>}
+                <div style={{ fontSize: 12, color: k.casyOmsi ? N.green : N.txt3, marginTop: 2 }}>{k.casyOmsi ? `🕑 ${k.casyOmsi}` : "časy omší zatiaľ nenastavené"}</div>
+              </div>
+            ))}
+          </div>
+          <div style={{ fontSize: 10.5, color: N.txt3, marginTop: SPACE.xs, lineHeight: 1.45 }}>
+            Kostoly a ich časy sa spravujú v <b>Upraviť profil farnosti</b> — sem sa napájajú do rozvrhu a kalendára.
+          </div>
+        </>
+      )}
+
       {/* granularita zbierky + viditeľnosť */}
-      <SekNadpis>3 · Zbierky</SekNadpis>
+      <SekNadpis>{kostoly.length > 0 ? "4" : "3"} · Zbierky</SekNadpis>
       <label style={{ display: "flex", alignItems: "center", gap: SPACE.sm, background: N.card, border: `1px solid ${N.line}`, borderRadius: RADIUS.sm, padding: SPACE.gutter, fontSize: 13, color: N.txt2 }}>
         <Switch on={rozvrh.generateCollectionPerMass} onChange={(v) => onRozvrh({ ...rozvrh, generateCollectionPerMass: v })} ariaLabel="Zbierka ku každej omši" />
         <span>Zbierka ku každej omši <span style={{ color: N.txt3 }}>(vypni = jedna denná „dnešné omše")</span></span>

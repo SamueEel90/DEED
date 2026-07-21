@@ -204,6 +204,10 @@ export function UserOznamForm({ typ, farnost, autor, poplatok = 0, onPublish }: 
         <div {...pressable(() => setMode("image"), "Vlastný návrh (obrázok)")} style={seg(mode === "image")}>🖼 Vlastný návrh</div>
       </div>
 
+      {/* NÁZOV = HORE (Opravy 17. 7. bod 3) — headline; predvyplní sa z mena/subjektu, upraviteľný */}
+      {lab("NÁZOV OZNAMU — PREDVYPLNENÝ, UPRAVITEĽNÝ")}
+      <Input value={nazovEdit} onChange={setNazovEdit} placeholder={nazov} />
+
       {/* polia podľa typu — poradie §4 */}
       {typ === "jubilejny" && (<>
         {lab("MENO JUBILANTA", true)}
@@ -260,10 +264,6 @@ export function UserOznamForm({ typ, farnost, autor, poplatok = 0, onPublish }: 
         <ObrazokVyber typ={typ} imageMode={imageMode} setImageMode={setImageMode}
           presetId={presetId} setPresetId={setPresetId} fotky={fotky} setFotky={setFotky} />
       </>)}
-
-      {/* NÁZOV (delta bod 18) — headline; predvyplní sa z mena/subjektu, upraviteľný */}
-      {lab("NÁZOV OZNAMU — PREDVYPLNENÝ, UPRAVITEĽNÝ")}
-      <Input value={nazovEdit} onChange={setNazovEdit} placeholder={nazov} />
 
       {/* TTL (§8) */}
       {lab("PLATNOSŤ VO FEEDE (DNÍ)")}

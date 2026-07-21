@@ -2,12 +2,12 @@ import { useState } from "react";
 import { SPACE, RADIUS } from "@/theme";
 import { MEDIA_AR } from "@/lib/cardSize";
 import {
-  Foto, BackHeader, ProgresBox, PodporaSekcia, PlatbaModal, RecurringSheet, SplitQrSheet, QrModal,
+  Foto, BackHeader, ProgresBox, PodporaSekcia, PlatbaModal, RecurringSheet, QrModal,
   MoniBar, Switch, Input, EmptyState, useStrankaAkcie,
   Zdielanie, IkonaVlajka, IkonaOpakovat, IkonaDoska, IkonaFoto, IkonaPlus, IkonaOko, IkonaNastavenia, Srdce, tint, useGaleria, useLayout,
   ZoznamDarcov, FormatovanyText, RichTextInput, FotoUpload, VideoEmbed, vlozenieVidea,
   StatRad, BtnAkcia, BtnIkonka, KontextMenu, MenuSkupina, MenuHlavicka, MenuPolozka, DvaStlpce,
-  IkonaMoznosti, IkonaQr, IkonaKalendar, IkonaMegafon, IkonaLudia, IkonaCeruzka,
+  IkonaMoznosti, IkonaQr, IkonaKalendar, IkonaMegafon, IkonaCeruzka,
 } from "@/shared";
 import { pridajDar, type VolbaDaru } from "@/lib/darcovia";
 import { usePouzivatel } from "@/lib/pouzivatel";
@@ -19,7 +19,7 @@ import { SelfAddSheet, nacitajSelfAdd } from "./UserOznamy";
 import { ParteMiniatura } from "./SmutocnyOznam";
 import { nacitajStav, ulozStav } from "./stav";
 import { cistyText } from "@/lib/richtext";
-import { obsahFarnosti, farnostStat, farskySplitVariant, KAT_FARBA, vlastnePrispevkyVsetky, zmazPrispevok, pridajPrispevok, upravPrispevok, type Farnost, type NabozFeedItem, type NabozTyp } from "./mock";
+import { obsahFarnosti, farnostStat, KAT_FARBA, vlastnePrispevkyVsetky, zmazPrispevok, pridajPrispevok, upravPrispevok, predvoleneKostoly, type Farnost, type NabozFeedItem, type NabozTyp, type FararInfo, type OsobaFarnosti, type KostolFarnosti } from "./mock";
 
 type ViditSum = "zobrazit" | "skryt" | "len-farar";
 const VIDIT_LABEL: Record<ViditSum, string> = { zobrazit: "zobraziť", skryt: "skryť", "len-farar": "len farár" };
@@ -54,7 +54,6 @@ export function FarskyProfil({ farnost, farar, jeDomovska, following, onToggleFo
   const [ludia, setLudia] = useState(farnost.podpora);
   const [platba, setPlatba] = useState<Kanal | null>(null);
   const [recur, setRecur] = useState(false);
-  const [split, setSplit] = useState(false);
   const [qr, setQr] = useState<"donacny" | "zdielat" | null>(null);
   const [sprava, setSprava] = useState(false); // editácia profilu (sheet)
   const [potvrdHome, setPotvrdHome] = useState(false); // A9 potvrdenie „nastaviť ako moju cirkev"
@@ -64,11 +63,13 @@ export function FarskyProfil({ farnost, farar, jeDomovska, following, onToggleFo
   const [viditOpen, setViditOpen] = useState(false); // správca: viditeľnosť súm (§72)
   const [viditSum, setViditSum] = useState<ViditSum>(() => nacitajStav<ViditSum>("viditelnost", farnost.id, "zobrazit"));
   const [selfAddOpen, setSelfAddOpen] = useState(false); // správca: oznamy od farníkov ON/OFF + poplatok
-  // editovateľný pohľad profilu (mock — perzistovaný do localStorage per farnost.id)
-  const [view, setView] = useState<ProfilView>(() => nacitajStav<ProfilView>("profil", farnost.id, {
-    foto: farnost.foto, logo: "", popis: farnost.popis, omseSuhrn: farnost.omseSuhrn ?? "", video: "",
-    adresa: farnost.kontakt?.adresa ?? "", tel: farnost.kontakt?.tel ?? "", email: farnost.kontakt?.email ?? "", web: farnost.kontakt?.web ?? "",
-  }));
+  // editovateľný pohľad profilu (mock — perzistovaný do localStorage per farnost.id);
+  // staršie uložené profily nemajú farára/osoby/kostoly → domergujú sa defaulty
+  const [view, setView] = useState<ProfilView>(() => {
+    const def = predvolenyProfil(farnost);
+    const ulozene = nacitajStav<Partial<ProfilView>>("profil", farnost.id, {});
+    return { ...def, ...ulozene, farar: { ...def.farar, ...ulozene.farar } };
+  });
   const ja = usePouzivatel(); // registrovaný vs pasívny — určuje zápis do zoznamu darcov
   const darRef = `farnost-${farnost.id}`; // kľúč všeobecnej podpory v zozname darcov
 
@@ -117,7 +118,7 @@ export function FarskyProfil({ farnost, farar, jeDomovska, following, onToggleFo
           </span>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 16, fontWeight: 800, display: "flex", alignItems: "center", gap: SPACE.xs }}>{farnost.nazov} <Overena /></div>
-            <div style={{ fontSize: 11.5, color: N.txt2, marginTop: SPACE.xxs }}>📍 {farnost.obec}{farnost.kostol ? ` · ${farnost.kostol}` : ""}{farnost.farar ? ` · ${farnost.farar}` : ""}</div>
+            <div style={{ fontSize: 11.5, color: N.txt2, marginTop: SPACE.xxs }}>📍 {farnost.obec}{farnost.kostol ? ` · ${farnost.kostol}` : ""}{(view.farar.meno || farnost.farar) ? ` · ${view.farar.meno || farnost.farar}` : ""}</div>
           </div>
         </div>
 
@@ -222,20 +223,21 @@ export function FarskyProfil({ farnost, farar, jeDomovska, following, onToggleFo
               <ZoznamDarcov refId={darRef} celkom={ludia} />
             </div>
 
-            {/* ===== [SPRÁVCA] PANEL — nástroje správcu (jednotný settings list) ===== */}
+            {/* ===== [SPRÁVCA] PANEL — nástroje správcu (jednotný settings list) =====
+                Poradie podľa DEED_Sprava_Profil_Farnosti_DEV §2. „Pridať kampaň" preč
+                (duplicita s „+"), „Spoločná zbierka" preč (split = vlastnosť zbierky).
+                „QR na tlač" je dole. */}
             {farar && (
               <MenuSkupina hlavicka={
                 <MenuHlavicka ikona={<IkonaNastavenia size={15} />} farba={N.gold} label="SPRÁVA FARNOSTI"
                   popis="Nástroje správcu — vidí len farár a delegovaná rada" />
               }>
-                <MenuPolozka ikona={<IkonaCeruzka size={16} />} farba={N.ind} label="Upraviť profil farnosti" popis="Foto, popis, video, časy omší, kontakt" onClick={() => setSprava(true)} />
+                <MenuPolozka ikona={<IkonaCeruzka size={16} />} farba={N.ind} label="Upraviť profil farnosti" popis="Foto, popis, video, farár a osoby, kostoly, kontakt" onClick={() => setSprava(true)} />
                 <MenuPolozka ikona={<IkonaKalendar size={16} />} farba={N.info} label="Kalendár a rozvrh" popis="Omše, sviatky, udalosti farnosti" onClick={onKalendar} />
-                <MenuPolozka ikona={<IkonaPlus size={16} />} farba={N.green} label="Pridať kampaň alebo udalosť" popis="Zbierka, udalosť, oznam, dobrovoľníctvo" onClick={onPridat} />
-                <MenuPolozka ikona={<IkonaLudia size={16} />} farba={N.clay} label="Spoločná zbierka — pohreb / svadba" popis="Rozdelenie výťažku medzi viacero strán" onClick={() => setSplit(true)} />
-                <MenuPolozka ikona={<IkonaQr size={16} />} farba={N.gold} label="QR na tlač do kostola" popis="Pokladnička, nástenka, lavice — sken otvorí darovanie" onClick={() => setQr("donacny")} />
                 <MenuPolozka ikona={<IkonaVlajka size={15} />} farba={N.clay} label="Moderácia príspevkov" popis="Oznamy farníkov — upraviť, zmazať alebo obnoviť" onClick={() => setModeracia(true)} />
                 <MenuPolozka ikona={<IkonaMegafon size={16} />} farba={N.green} label="Oznamy od farníkov" hodnota={selfAddLabel(farnost.id)} popis="Povoliť pridávanie oznamov a voliteľný poplatok" onClick={() => setSelfAddOpen(true)} />
-                <MenuPolozka ikona={<IkonaOko size={16} />} farba={N.ind} label="Viditeľnosť súm zbierok" hodnota={VIDIT_LABEL[viditSum]} popis="Čo vidia návštevníci profilu" onClick={() => setViditOpen(true)} posledna />
+                <MenuPolozka ikona={<IkonaOko size={16} />} farba={N.ind} label="Viditeľnosť súm zbierok" hodnota={VIDIT_LABEL[viditSum]} popis="Čo vidia návštevníci profilu" onClick={() => setViditOpen(true)} />
+                <MenuPolozka ikona={<IkonaQr size={16} />} farba={N.gold} label="QR na tlač do kostola" popis="Pokladnička, nástenka, lavice — sken otvorí darovanie" onClick={() => setQr("donacny")} posledna />
               </MenuSkupina>
             )}
 
@@ -271,6 +273,35 @@ export function FarskyProfil({ farnost, farar, jeDomovska, following, onToggleFo
               </>
             )}
 
+            {/* ===== VEDENIE FARNOSTI — farár + roster osôb (Správa/Profil §3) ===== */}
+            {(view.farar.meno || view.osoby.some((o) => o.meno.trim())) && (
+              <>
+                <SekciaNadpis>VEDENIE FARNOSTI</SekciaNadpis>
+                <div style={{ background: N.card, border: `1px solid ${N.line}`, borderRadius: RADIUS.sm, padding: SPACE.gutter, display: "grid", gap: SPACE.sm }}>
+                  {view.farar.meno && <OsobaRiadok foto={view.farar.foto} meno={view.farar.meno} rola="farár · hlavný správca" zvyrazni />}
+                  {view.osoby.filter((o) => o.meno.trim()).map((o, i) => (
+                    <OsobaRiadok key={i} foto={o.foto} meno={o.meno} rola={o.rola.trim() || "člen farnosti"} />
+                  ))}
+                </div>
+              </>
+            )}
+
+            {/* ===== KOSTOLY FARNOSTI — viacero pod jednou farnosťou, každý s časmi omší ===== */}
+            {view.kostoly.some((k) => k.nazov.trim()) && (
+              <>
+                <SekciaNadpis>KOSTOLY FARNOSTI</SekciaNadpis>
+                <div style={{ background: N.card, border: `1px solid ${N.line}`, borderRadius: RADIUS.sm, padding: SPACE.gutter, display: "grid", gap: SPACE.sm }}>
+                  {view.kostoly.filter((k) => k.nazov.trim()).map((k, i) => (
+                    <div key={i}>
+                      <div style={{ fontSize: 13, fontWeight: 700 }}>⛪ {k.nazov}</div>
+                      {k.adresa && <div style={{ fontSize: 11, color: N.txt3, marginTop: 2 }}>📍 {k.adresa}</div>}
+                      {k.casyOmsi && <div style={{ fontSize: 11.5, color: N.txt2, marginTop: 2 }}>🕑 {k.casyOmsi}</div>}
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+
             {/* ===== DOKLADY O POUŽITÍ ===== */}
             <div style={{ marginTop: SPACE.gutter, background: N.card, border: `1px solid ${N.line}`, borderRadius: RADIUS.sm, padding: SPACE.gutter, fontSize: 11.5, color: N.txt2, lineHeight: 1.5 }}>
               📄 <b>Doklady o použití prostriedkov zverejňujeme</b> — pri každej zbierke vidíš, kam šli peniaze.
@@ -281,8 +312,6 @@ export function FarskyProfil({ farnost, farar, jeDomovska, following, onToggleFo
 
       {platba && <PlatbaModal kanal={platba} komu={farnost.nazov} onClose={() => setPlatba(null)} onDone={platbaHotova} />}
       {recur && <RecurringSheet nazov={farnost.nazov} onClose={() => setRecur(false)} toast={toast} />}
-      {split && <SplitQrSheet titul={`Pohrebná/svadobná zbierka · ${farnost.nazov}`} caseId={null} zdroj="autor"
-        variant={farskySplitVariant("pohreb")} onClose={() => setSplit(false)} toast={toast} />}
       {menu && (
         <KontextMenu onClose={() => setMenu(false)} polozky={[
           { ikona: <Zdielanie size={17} />, label: "Zdieľať profil", onClick: () => setQr("zdielat") },
@@ -428,11 +457,27 @@ function ViditelnostSheet({ hodnota, onSet, onClose }: { hodnota: ViditSum; onSe
 }
 
 // ---- editovateľný pohľad + sheet editácie profilu (správca, mock) ----
-type ProfilView = { foto: string; logo?: string; popis: string; omseSuhrn: string; video?: string; adresa: string; tel: string; email: string; web: string };
+// Rozšírené (DEED_Sprava_Profil_Farnosti_DEV §3): farár (foto + meno), osoby
+// farnosti (roster, delegovaný prístup k Správe) a viacero kostolov.
+type ProfilView = {
+  foto: string; logo?: string; popis: string; omseSuhrn: string; video?: string;
+  adresa: string; tel: string; email: string; web: string;
+  farar: FararInfo; osoby: OsobaFarnosti[]; kostoly: KostolFarnosti[];
+};
+function predvolenyProfil(f: Farnost): ProfilView {
+  return {
+    foto: f.foto, logo: "", popis: f.popis, omseSuhrn: f.omseSuhrn ?? "", video: "",
+    adresa: f.kontakt?.adresa ?? "", tel: f.kontakt?.tel ?? "", email: f.kontakt?.email ?? "", web: f.kontakt?.web ?? "",
+    farar: { meno: f.farar ?? "", foto: "" }, osoby: [], kostoly: predvoleneKostoly(f),
+  };
+}
 
 function SpravaFarnosti({ farnost, view, onSave, onClose }: { farnost: Farnost; view: ProfilView; onSave: (v: ProfilView) => void; onClose: () => void }) {
   const [v, setV] = useState<ProfilView>(view);
   const set = (k: keyof ProfilView) => (val: string) => setV((s) => ({ ...s, [k]: val }));
+  const setFarar = (patch: Partial<FararInfo>) => setV((s) => ({ ...s, farar: { ...s.farar, ...patch } }));
+  const setOsoba = (i: number, patch: Partial<OsobaFarnosti>) => setV((s) => ({ ...s, osoby: s.osoby.map((o, j) => (j === i ? { ...o, ...patch } : o)) }));
+  const setKostol = (i: number, patch: Partial<KostolFarnosti>) => setV((s) => ({ ...s, kostoly: s.kostoly.map((k, j) => (j === i ? { ...k, ...patch } : k)) }));
   return (
     <SheetPanel title={`Upraviť profil · ${farnost.skratka}`} onClose={onClose}>
       <div style={{ fontSize: 12, color: N.txt3, marginBottom: SPACE.md, lineHeight: 1.5 }}>Zmeny sa prejavia na verejnom profile farnosti.</div>
@@ -457,6 +502,62 @@ function SpravaFarnosti({ farnost, view, onSave, onClose }: { farnost: Farnost; 
       {vlozenieVidea(v.video) && <div style={{ marginTop: SPACE.xs }}><VideoEmbed url={v.video!} /></div>}
       <div style={{ fontSize: 10.5, color: N.txt3, marginTop: SPACE.xxs }}>Video sa vkladá ako odkaz na YouTube alebo Vimeo.</div>
 
+      {/* ===== FARÁR — foto + meno (§3; hlavička kariet môže „hovoriť" jeho tvárou) ===== */}
+      <PoleLabel>FARÁR — VEDIE FARNOSŤ (foto + meno)</PoleLabel>
+      <div style={{ display: "flex", gap: SPACE.sm, alignItems: "flex-start" }}>
+        <div style={{ width: 96, flex: "none" }}>
+          <FotoUpload value={v.farar.foto || undefined} onZmena={(x: string) => setFarar({ foto: x })} pomer={1} vyska={96} />
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <Input value={v.farar.meno} onChange={(x: string) => setFarar({ meno: x })} placeholder="napr. Mgr. Jozef Halčin" />
+          <div style={{ fontSize: 10.5, color: N.txt3, marginTop: SPACE.xxs, lineHeight: 1.45 }}>Hlavný správca farnosti. Hlavička oznamov môže „hovoriť" farárovou tvárou (prepínač pri tvorbe oznamu).</div>
+        </div>
+      </div>
+
+      {/* ===== OSOBY FARNOSTI — roster (§3): rola + meno + foto; prístup k Správe deleguje farár ===== */}
+      <PoleLabel>OSOBY FARNOSTI — ROSTER</PoleLabel>
+      <div style={{ fontSize: 10.5, color: N.txt3, marginBottom: SPACE.xs, lineHeight: 1.45 }}>
+        Kaplán, dozorca, kostolník, organista… (voľná rola). Zobrazujú sa na profile. <b>Default = len zobrazenie</b> — prístup k Správe farnosti zapína farár každej osobe zvlášť.
+      </div>
+      {v.osoby.map((o, i) => (
+        <div key={i} style={{ background: N.card, border: `1px solid ${N.line}`, borderRadius: RADIUS.sm, padding: SPACE.sm, marginBottom: SPACE.xs }}>
+          <div style={{ display: "flex", gap: SPACE.sm, alignItems: "flex-start" }}>
+            <div style={{ width: 64, flex: "none" }}>
+              <FotoUpload value={o.foto || undefined} onZmena={(x: string) => setOsoba(i, { foto: x })} pomer={1} vyska={64} />
+            </div>
+            <div style={{ flex: 1, minWidth: 0, display: "grid", gap: SPACE.xs }}>
+              <Input value={o.rola} onChange={(x: string) => setOsoba(i, { rola: x })} placeholder="Rola — napr. kaplán, kostolník…" />
+              <Input value={o.meno} onChange={(x: string) => setOsoba(i, { meno: x })} placeholder="Meno" />
+            </div>
+            <span {...pressable(() => setV((s) => ({ ...s, osoby: s.osoby.filter((_, j) => j !== i) })), "Odobrať osobu")} style={{ color: N.txt3, cursor: "pointer", fontSize: 16, flex: "none", padding: SPACE.xxs }}>✕</span>
+          </div>
+          <label style={{ display: "flex", alignItems: "center", gap: SPACE.sm, marginTop: SPACE.sm, fontSize: 12, color: N.txt2 }}>
+            <Switch on={o.pristupKSprave} onChange={(x: boolean) => setOsoba(i, { pristupKSprave: x })} ariaLabel="Prístup k Správe farnosti" />
+            <span><b>Prístup k Správe farnosti</b> — {o.pristupKSprave ? "zapnutý (delegovaná rada)" : "vypnutý · len zobrazenie na profile"}</span>
+          </label>
+        </div>
+      ))}
+      <button onClick={() => setV((s) => ({ ...s, osoby: [...s.osoby, { rola: "", meno: "", foto: "", pristupKSprave: false }] }))}
+        style={{ width: "100%", height: 40, border: `1px dashed ${N.indEdge}`, background: N.indBg, color: N.ind, borderRadius: RADIUS.sm, fontWeight: 700, fontSize: 13, fontFamily: "inherit", cursor: "pointer" }}>+ Pridať osobu</button>
+
+      {/* ===== KOSTOLY — viacero pod jednou farnosťou (§3); časy sa napoja do rozvrhu ===== */}
+      <PoleLabel>KOSTOLY FARNOSTI (názov · adresa · časy omší)</PoleLabel>
+      <div style={{ fontSize: 10.5, color: N.txt3, marginBottom: SPACE.xs, lineHeight: 1.45 }}>
+        Každý kostol má vlastné časy omší — napoja sa do rozvrhu a kalendára farnosti.
+      </div>
+      {v.kostoly.map((k, i) => (
+        <div key={i} style={{ background: N.card, border: `1px solid ${N.line}`, borderRadius: RADIUS.sm, padding: SPACE.sm, marginBottom: SPACE.xs, display: "grid", gap: SPACE.xs }}>
+          <div style={{ display: "flex", gap: SPACE.sm, alignItems: "center" }}>
+            <div style={{ flex: 1 }}><Input value={k.nazov} onChange={(x: string) => setKostol(i, { nazov: x })} placeholder="Názov kostola" /></div>
+            <span {...pressable(() => setV((s) => ({ ...s, kostoly: s.kostoly.filter((_, j) => j !== i) })), "Odobrať kostol")} style={{ color: N.txt3, cursor: "pointer", fontSize: 16, flex: "none", padding: SPACE.xxs }}>✕</span>
+          </div>
+          <Input value={k.adresa} onChange={(x: string) => setKostol(i, { adresa: x })} placeholder="Adresa" />
+          <Input value={k.casyOmsi} onChange={(x: string) => setKostol(i, { casyOmsi: x })} placeholder="Časy omší — napr. Ne 9:00 · St 17:30" />
+        </div>
+      ))}
+      <button onClick={() => setV((s) => ({ ...s, kostoly: [...s.kostoly, { nazov: "", adresa: "", casyOmsi: "" }] }))}
+        style={{ width: "100%", height: 40, border: `1px dashed ${N.indEdge}`, background: N.indBg, color: N.ind, borderRadius: RADIUS.sm, fontWeight: 700, fontSize: 13, fontFamily: "inherit", cursor: "pointer" }}>+ Pridať kostol</button>
+
       <PoleLabel>ČASY OMŠÍ (súhrn)</PoleLabel>
       <Input value={v.omseSuhrn} onChange={set("omseSuhrn")} placeholder="Ne 7:30 · 10:30 · Št 18:00" />
       <div style={{ fontSize: 10.5, color: N.txt3, marginTop: SPACE.xxs, marginBottom: SPACE.xs }}>Podrobný rozvrh omší sa nastavuje v <b>Kalendár &amp; rozvrh</b>. Toto je len súhrn pre profil.</div>
@@ -469,7 +570,8 @@ function SpravaFarnosti({ farnost, view, onSave, onClose }: { farnost: Farnost; 
         <Input value={v.web} onChange={set("web")} placeholder="Web" />
       </div>
 
-      <button onClick={() => onSave(v)} style={{ width: "100%", marginTop: SPACE.md, height: 48, border: "none", borderRadius: RADIUS.md, background: N.green, color: "#fff", fontWeight: 700, fontSize: 15, fontFamily: "inherit", cursor: "pointer" }}>Uložiť zmeny</button>
+      <button onClick={() => onSave({ ...v, osoby: v.osoby.filter((o) => o.meno.trim() || o.rola.trim()), kostoly: v.kostoly.filter((k) => k.nazov.trim()) })}
+        style={{ width: "100%", marginTop: SPACE.md, height: 48, border: "none", borderRadius: RADIUS.md, background: N.green, color: "#fff", fontWeight: 700, fontSize: 15, fontFamily: "inherit", cursor: "pointer" }}>Uložiť zmeny</button>
     </SheetPanel>
   );
 }
@@ -482,6 +584,21 @@ function PodsekciaNadpis({ children }: { children: React.ReactNode }) {
 }
 function PoleLabel({ children }: { children: React.ReactNode }) {
   return <div style={{ fontSize: 11, fontWeight: 700, color: N.txt3, letterSpacing: ".03em", margin: `${SPACE.md}px 0 ${SPACE.xxs}px` }}>{children}</div>;
+}
+// riadok osoby na verejnom profile — foto (fallback 👤) + meno + rola;
+// delegovaný prístup k Správe sa verejne NEukazuje (interná vec farnosti)
+function OsobaRiadok({ foto, meno, rola, zvyrazni }: { foto?: string; meno: string; rola: string; zvyrazni?: boolean }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm }}>
+      <span style={{ width: 36, height: 36, borderRadius: "50%", overflow: "hidden", flex: "none", background: N.indBg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>
+        {foto ? <img src={foto} alt={meno} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : "👤"}
+      </span>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 13, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{meno}</div>
+        <div style={{ fontSize: 10.5, color: zvyrazni ? N.gold : N.txt3 }}>{rola}</div>
+      </div>
+    </div>
+  );
 }
 export function KontaktRiadok({ ikona, label, hodnota }: { ikona: string; label: string; hodnota: string }) {
   return (

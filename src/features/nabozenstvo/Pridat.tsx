@@ -7,7 +7,7 @@ import { usePouzivatel } from "@/lib/pouzivatel";
 import { N, SheetPanel } from "./ui";
 import { SmutocnyForm } from "./SmutocnyOznam";
 import { UserOznamForm, nacitajSelfAdd, type UserOznamTyp } from "./UserOznamy";
-import { SPLIT_LABELY, farskySplitVariant, pridajPrispevok, type Farnost, type NabozFeedItem, type NabozTyp, type UdalostKat, type ReakciaTyp } from "./mock";
+import { SPLIT_LABELY, SVIATKY, farskySplitVariant, pridajPrispevok, type Farnost, type NabozFeedItem, type NabozTyp, type UdalostKat, type ReakciaTyp } from "./mock";
 
 /*
   ============================================================
@@ -35,18 +35,19 @@ type Uzol = {
 type Kat = { id: string; emoji: string; titul: string; popis: string; uzly: Uzol[] };
 
 // Deliaca čiara (delta bod 27): JEDEN príjemca = samostatná zbierka, 100 % jemu,
-// žiadny bežec. DVAJA+ = split (bežec sa objaví). „Pre nás" preto BEZ splitu aj
-// BEZ tagov (bod 29 — feed je scopovaný na farnosť, typ je známy).
+// žiadny bežec. DVAJA+ = split (bežec sa objaví). „Zbierky farnosti" preto BEZ
+// splitu aj BEZ tagov (bod 29 — feed je scopovaný na farnosť, typ je známy).
+// Opravy 17. 7. bod 5–6: „Na akciu" zrušená (duplicita) — väzba na udalosť je
+// prepínač VNÚTRI Zbierok farnosti; položky premenované. Pohreb/svadba idú VŽDY
+// cez registrovaných (rodina je KYC) — preto ich popis neregistrovaných nemá.
 const ZBIERKA: Kat = {
   id: "zbierka", emoji: "💶", titul: "Zbierka", popis: "Jeden príjemca → celé jemu · dvaja a viac → bežec rozdelí",
   uzly: [
-    { id: "z-farska", emoji: "🏛", titul: "Pre nás (farnosť)", popis: "Ľahká vetva (KYB) · 1 príjemca = 100 % — bez tagov, bez splitu", kto: "F",
+    { id: "z-farska", emoji: "🏛", titul: "Zbierky farnosti", popis: "Ľahká vetva (KYB) · 1 príjemca = 100 % — bez tagov, bez splitu · voliteľne naviazať na udalosť", kto: "F",
       polia: ["Názov", "Popis", "Cieľová suma €", "Foto/video", "Dĺžka"], akcie: ["Prispieť"], feed: "farský (+ Charita) · settlement € na farský účet" },
-    { id: "z-akcia", emoji: "🎪", titul: "Na akciu", popis: "Viazaná na udalosť (koncert, farský deň…) · 1 príjemca = farnosť", kto: "F",
-      polia: ["Názov", "Väzba na udalosť", "Popis", "Cieľová suma €", "Foto", "Dĺžka"], akcie: ["Prispieť"], feed: "farský" },
-    { id: "z-registrovany", emoji: "🔗", titul: "Pre iného — registrovaný", popis: "Jednorazový 6-miestny kód od príjemcu (PC-friendly, bez kamery) · obojstranné potvrdenie", kto: "F", qrMerge: true, split: "svadba",
+    { id: "z-registrovany", emoji: "🔗", titul: "Zbierky pre veriacich — registrovaných", popis: "Pohreb, svadba, iné · jednorazový 6-miestny kód od príjemcu (PC-friendly, bez kamery) · obojstranné potvrdenie", kto: "F", qrMerge: true, split: "svadba",
       polia: ["Názov", "Kód príjemcu (6-miestny)", "Split (rodina/kostol)", "Text (kto)", "Foto"], akcie: ["Prispieť"], feed: "iba farský" },
-    { id: "z-neregistrovany", emoji: "🧾", titul: "Pre iného — neregistrovaný", popis: "Plný sprievodca s overením účtu a úschovou darov", kto: "F", helpWizard: true,
+    { id: "z-neregistrovany", emoji: "🧾", titul: "Zbierky pre veriacich — neregistrovaných", popis: "Plný sprievodca s overením účtu a úschovou darov", kto: "F", helpWizard: true,
       polia: ["Názov", "Podmienky", "Opis", "IBAN overenie", "Téma", "Suma", "Doklady/escrow", "Foto", "Kanál"], akcie: ["Prispieť"], feed: "Help + zrkadlí do farského" },
   ],
 };
@@ -54,9 +55,9 @@ const UDALOST: Kat = {
   id: "udalost", emoji: "🗓", titul: "Udalosť", popis: "Má dátum/čas → kalendár + pripomienka",
   uzly: [
     { id: "u-omsa", emoji: "⛪", titul: "Omša (z rozvrhu)", popis: "Čas z rozvrhu · auto-generuje omšovú zbierku", kto: "F", datum: true,
-      polia: ["Čas z rozvrhu", "Poznámka"], akcie: ["Prispieť", "Pripomeň"], feed: "farský · omša nemá RSVP" },
+      polia: ["Názov", "Čas z rozvrhu", "Poznámka"], akcie: ["Prispieť", "Pripomeň"], feed: "farský · omša nemá RSVP" },
     { id: "u-sviatok", emoji: "✨", titul: "Sviatok / prikázaný sviatok", popis: "Dátum predvyplnený z cirkevného kalendára", kto: "F", datum: true,
-      polia: ["Dátum (z kalendára)", "Časy omší", "Poznámka"], akcie: ["Prispieť", "Pripomeň"], feed: "farský" },
+      polia: ["Názov", "Dátum (z kalendára)", "Časy omší", "Poznámka"], akcie: ["Prispieť", "Pripomeň"], feed: "farský" },
     { id: "u-put", emoji: "⛰", titul: "Púť", popis: "Voliteľná zbierka na dopravu + kapacita", kto: "F", datum: true,
       polia: ["Názov", "Dátum", "Popis", "Foto", "Zbierka na dopravu (voliteľné)", "Kapacita"], akcie: ["Zúčastním sa", "Prispieť", "Pripomeň"], feed: "farský" },
     { id: "u-akcia", emoji: "🎶", titul: "Akcia (koncert, ples, farský deň)", popis: "Vstupné / zbierka voliteľné", kto: "F", datum: true,
@@ -74,7 +75,7 @@ const OZNAM: Kat = {
     { id: "o-umrtie", emoji: "🕯", titul: "Oznámenie o úmrtí (parte)", popis: "Šablóna alebo vlastné parte · čistý oznam — zbierka sa pripája až na zverejnenom ozname cez Pridať zbierku", kto: "F",
       polia: ["Meno", "Dátumy + vek", "Verš", "Rozlúčka (kde + kedy)", "Foto", "Šablóna"], feed: "farský" },
     { id: "o-ohlasky", emoji: "💍", titul: "Ohlášky", popis: "Mená snúbencov · termín je priamo v ohláškach (žiadny odkaz na svadbu)", kto: "F",
-      polia: ["Mená snúbencov", "Dátum + čas sobáša", "Miesto"], feed: "farský" },
+      polia: ["Názov", "Mená snúbencov", "Dátum + čas sobáša", "Miesto", "Foto (so súhlasom)"], feed: "farský" },
     { id: "o-vlastny", emoji: "📣", titul: "Vlastný oznam", popis: "Čokoľvek — zatvorený kostol, ples, zbierka šatstva… (catch-all)", kto: "F",
       polia: ["Názov", "Text", "Foto (voliteľné)", "Platnosť (dní)"], feed: "farský" },
     { id: "o-smutocny", emoji: "🤍", titul: "Oznámenie o úmrtí (parte)", popis: "Šablóna alebo vlastné parte · polia pod oznamom · reakcia = kondolencia · bez zbierky", kto: "U",
@@ -282,6 +283,16 @@ function postavPrispevok(uzol: Uzol, opts: {
   };
 }
 
+// predvyplnený NÁZOV (Opravy 17. 7. body 1+4) — ohlášky z mien, omša „Svätá omša"
+// + čas, sviatok z cirkevného kalendára; zobrazí sa ako placeholder a použije sa
+// ako fallback pri publikovaní, keď farár názov neprepíše.
+function nazovPredvyplneny(uzol: Uzol, polia: Record<string, string>): string | undefined {
+  if (uzol.id === "o-ohlasky") { const m = polia["Mená snúbencov"]?.trim(); return m ? `Ohlášky — ${m}` : "Ohlášky"; }
+  if (uzol.id === "u-omsa") { const c = polia["Čas z rozvrhu"]?.trim(); return c ? `Svätá omša · ${c}` : "Svätá omša"; }
+  if (uzol.id === "u-sviatok") { const d = polia["Dátum (z kalendára)"] ?? ""; return SVIATKY.find((s) => s.md === d.slice(5))?.nazov ?? "Sviatok"; }
+  return undefined;
+}
+
 // ---- FORM uzla — polia + akcie preview + ukážka/publikovať (reálny príspevok) ----
 function UzolForm({ uzol, farar, farnost, onSplit, onPublish, onHelp, toast }: {
   uzol: Uzol; farar: boolean; farnost?: Farnost; onSplit?: () => void; onPublish: (it: NabozFeedItem) => void; onHelp?: () => void; toast: (m: string) => void;
@@ -293,8 +304,11 @@ function UzolForm({ uzol, farar, farnost, onSplit, onPublish, onHelp, toast }: {
   const [preview, setPreview] = useState(false);
   const [polia, setPolia] = useState<Record<string, string>>({});
   const [fotky, setFotky] = useState<string[]>([]); // reálne fotky/video (FotoVyber → data URL)
+  const [naviazat, setNaviazat] = useState(false);  // Opravy bod 5 — väzba na udalosť = prepínač v Zbierkach farnosti
+  const [udalostVazba, setUdalostVazba] = useState("");
   const setPole = (k: string, v: string) => setPolia((s) => ({ ...s, [k]: v }));
   const lab = uzol.split ? SPLIT_LABELY[uzol.split] : null;
+  const predvNazov = nazovPredvyplneny(uzol, polia);
   // NÁZOV sa renderuje ako PRVÉ pole (pred popisom); hlavné textové pole (POPIS/TEXT
   // OZNAMU) rieši voľný text → obe vynechaj zo zoznamu POLIA
   const nazovPole = uzol.polia.find((p) => p.toLowerCase().startsWith("názov"));
@@ -311,11 +325,11 @@ function UzolForm({ uzol, farar, farnost, onSplit, onPublish, onHelp, toast }: {
         {uzol.datum && <MetaChip>🗓 kalendár + pripomienka</MetaChip>}
       </div>
 
-      {/* NÁZOV — vždy prvé pole (pred popisom) */}
+      {/* NÁZOV — vždy prvé pole HORE (pred popisom); pri ohláškach/omši/sviatku predvyplnený */}
       {nazovPole && (
         <>
-          <div style={{ fontSize: 11, fontWeight: 700, color: N.txt3, letterSpacing: ".03em", marginBottom: SPACE.xxs }}>NÁZOV</div>
-          <Input value={polia[nazovPole] ?? ""} onChange={(v) => setPole(nazovPole, v)} placeholder="Názov príspevku…" />
+          <div style={{ fontSize: 11, fontWeight: 700, color: N.txt3, letterSpacing: ".03em", marginBottom: SPACE.xxs }}>NÁZOV{predvNazov ? " — PREDVYPLNENÝ, UPRAVITEĽNÝ" : ""}</div>
+          <Input value={polia[nazovPole] ?? ""} onChange={(v) => setPole(nazovPole, v)} placeholder={predvNazov ?? "Názov príspevku…"} />
           <div style={{ height: SPACE.sm }} />
         </>
       )}
@@ -347,6 +361,18 @@ function UzolForm({ uzol, farar, farnost, onSplit, onPublish, onHelp, toast }: {
             })}
           </div>
         </>
+      )}
+
+      {/* Opravy bod 5: väzba na udalosť už NIE JE samostatná položka „Na akciu" —
+          je to prepínač vnútri Zbierok farnosti */}
+      {uzol.id === "z-farska" && (
+        <div style={{ marginTop: SPACE.md }}>
+          <label style={{ display: "flex", alignItems: "center", gap: SPACE.sm, fontSize: 13, color: N.txt2 }}>
+            <Switch on={naviazat} onChange={setNaviazat} ariaLabel="Naviazať na udalosť" />
+            <span><b>Naviazať na udalosť</b> — koncert, farský deň… (zbierka sa zobrazí pri udalosti)</span>
+          </label>
+          {naviazat && <div style={{ marginTop: SPACE.sm }}><Input value={udalostVazba} onChange={setUdalostVazba} placeholder="napr. Vianočný koncert · Farský deň" /></div>}
+        </div>
       )}
 
       {/* bod 20: farár si môže dať vlastnú tvár do hlavičky — „farár hovorí osobne" */}
@@ -402,7 +428,13 @@ function UzolForm({ uzol, farar, farnost, onSplit, onPublish, onHelp, toast }: {
                 {fotky.length > 0 && <div style={{ fontSize: 11, color: N.txt3, marginTop: SPACE.xxs }}>📎 {fotky.length} {fotky.length === 1 ? "príloha" : "prílohy"}</div>}
                 <div style={{ fontSize: 13, color: N.txt2, marginTop: SPACE.xs, lineHeight: 1.5 }}>{text || <span style={{ color: N.txt3 }}>(text oznamu)</span>}</div>
               </div>
-              <button onClick={() => onPublish(postavPrispevok(uzol, { farar, farnost, autor: celeMeno || "Farník", text, polia, fotky, autorTvar: tvar }))} style={ctaStyle(N.green)}>Publikovať</button>
+              <button onClick={() => {
+                // fallback: neprepísaný NÁZOV = predvyplnená hodnota z placeholderu
+                const eff = nazovPole && predvNazov && !(polia[nazovPole] ?? "").trim() ? { ...polia, [nazovPole]: predvNazov } : polia;
+                const it = postavPrispevok(uzol, { farar, farnost, autor: celeMeno || "Farník", text, polia: eff, fotky, autorTvar: tvar });
+                if (naviazat && udalostVazba.trim()) it.popis = `${it.popis} · 🎪 naviazané na: ${udalostVazba.trim()}`;
+                onPublish(it);
+              }} style={ctaStyle(N.green)}>Publikovať</button>
             </>
           )}
         </>

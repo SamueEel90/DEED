@@ -47,6 +47,7 @@ export interface SmutocnyData {
   templateId?: 1 | 2 | 3;        // A klasická · B teplá (sviečka) · C minimalistická
   imageUrl?: string;             // režim B — nahrané parte
   meno: string;                  // koho spomíname (povinné)
+  rodena?: string;               // meno za slobodna (voliteľné, pri ženách) — zobrazí sa pod menom
   datumNar: string;              // ISO (povinné)
   datumUmr: string;              // ISO (povinné)
   vers?: string;                 // výber z prednastavených alebo vlastný
@@ -355,6 +356,18 @@ export interface Farnost {
   sledovatelia?: number;  // počet sledujúcich (stat riadok / správcovský prehľad)
   kontakt?: { adresa?: string; tel?: string; email?: string; web?: string };  // editovateľné v správe
   omseSuhrn?: string;     // krátky súhrn časov omší (rozvrh žije v Kalendári) — editovateľné
+}
+
+// ---- rozšírený profil farnosti (DEED_Sprava_Profil_Farnosti_DEV §3–4) ----
+// Farár = hlavný správca. Osoby = roster (kaplán, kostolník, organista… — voľná
+// rola); default LEN zobrazenie na profile, prístup k Správe zapína farár per osoba.
+export interface FararInfo { meno: string; foto?: string; }
+export interface OsobaFarnosti { rola: string; meno: string; foto?: string; pristupKSprave: boolean; }
+// Viacero kostolov pod jednou farnosťou — každý má vlastné časy omší,
+// tie sa napájajú do rozvrhu/kalendára (sekcia v Kalendár & rozvrh).
+export interface KostolFarnosti { nazov: string; adresa: string; casyOmsi: string; }
+export function predvoleneKostoly(f: Farnost): KostolFarnosti[] {
+  return f.kostol ? [{ nazov: f.kostol, adresa: f.kontakt?.adresa ?? "", casyOmsi: f.omseSuhrn ?? "" }] : [];
 }
 
 export const FARNOSTI: Farnost[] = [
