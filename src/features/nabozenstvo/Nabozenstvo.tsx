@@ -27,6 +27,9 @@ import {
   FEED_ITEMS, CIRKVI, CIRKVI_FLAT, HLADAJ_DATA, FARNOSTI, FARNOST_PODLA_ID, farnostIdOf, farnostiCirkvi,
   farskySplitVariant, farnostStat, obsahFarnosti, kmNum, rodinaCirkvi, rodinaZoSkratky, KAT_FARBA, reakciaToast,
   jeVlastnyPrispevok, zmazPrispevok, upravPrispevok,
+} from "./mock";
+import { usePrispevkySync } from "./prispevkyDB";
+import {
   type NabozFeedItem, type Farnost, type CirkevPolozka,
 } from "./mock";
 
@@ -346,6 +349,7 @@ const OBSAH_SKUPINY: { key: NabozFeedItem["ntyp"]; label: string }[] = [
 function FarnostFeed({ f, onPrispevok }: { f: Farnost; onPrispevok: (z: NabozFeedItem) => void }) {
   const { desktop } = useLayout(); // desktop → 2× väčšie miniatúry (viac plochy)
   const k = desktop ? 2 : 1;
+  usePrispevkySync(f.id); // DB → LS zrkadlo (príspevky z iných zariadení); po syncu re-render
   const obsah = obsahFarnosti(f.id);
   // kontakt číta perzistovaný profil (edituje ho farár v správe) s fallbackom na mock
   const view = nacitajStav("profil", f.id, {

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { SPACE, RADIUS } from "@/theme";
 import { MEDIA_AR } from "@/lib/cardSize";
 import {
@@ -20,6 +20,7 @@ import { ParteMiniatura } from "./SmutocnyOznam";
 import { nacitajStav, ulozStav } from "./stav";
 import { cistyText } from "@/lib/richtext";
 import { obsahFarnosti, farnostStat, KAT_FARBA, vlastnePrispevkyVsetky, zmazPrispevok, pridajPrispevok, upravPrispevok, predvoleneKostoly, type Farnost, type NabozFeedItem, type NabozTyp, type FararInfo, type OsobaFarnosti, type KostolFarnosti } from "./mock";
+import { usePrispevkySync } from "./prispevkyDB";
 
 type ViditSum = "zobrazit" | "skryt" | "len-farar";
 const VIDIT_LABEL: Record<ViditSum, string> = { zobrazit: "zobraziť", skryt: "skryť", "len-farar": "len farár" };
@@ -73,6 +74,14 @@ export function FarskyProfil({ farnost, farar, jeDomovska, following, onToggleFo
   const ja = usePouzivatel(); // registrovaný vs pasívny — určuje zápis do zoznamu darcov
   const darRef = `farnost-${farnost.id}`; // kľúč všeobecnej podpory v zozname darcov
 
+  const syncVerzia = usePrispevkySync(farnost.id); // DB → LS zrkadlo (príspevky + profil z iných zariadení)
+  useEffect(() => { // po syncu znova prečítaj profil/viditeľnosť z LS (useState initializery sa nere-initnú)
+    if (!syncVerzia) return;
+    const def = predvolenyProfil(farnost);
+    const ulozene = nacitajStav<Partial<ProfilView>>("profil", farnost.id, {});
+    setView({ ...def, ...ulozene, farar: { ...def.farar, ...ulozene.farar } });
+    setViditSum(nacitajStav<ViditSum>("viditelnost", farnost.id, "zobrazit"));
+  }, [syncVerzia]);
   const obsah = obsahFarnosti(farnost.id);
   const stat = farnostStat(farnost.id);
   const maKontakt = !!(view.adresa || view.tel || view.email || view.web || view.omseSuhrn);

@@ -10,6 +10,7 @@ import { U } from "@/theme";
 import type { CharitaFeedItem, HladanieZaznam } from "@/types";
 import type { SplitVariant } from "@/shared";
 import { nacitajStav, ulozStav } from "./stav";
+import { vytvorPrispevokDB, zmazPrispevokDB, upravPrispevokDB } from "./prispevkyDB";
 
 // ---- typ obsahu (chips = TYP obsahu, NIE porovnávanie cirkví) ----
 export type NabozTyp = "zbierka" | "udalost" | "oznam" | "dobrovolnictvo";
@@ -535,17 +536,24 @@ export const farnostIdOf = (it: NabozFeedItem): string => it.farnostId ?? KOMUNI
 // cez obsahFarnosti (vlastné navrchu — najnovšie prvé). Mock bez backendu.
 export const vlastnePrispevky = (fid: string): NabozFeedItem[] =>
   nacitajStav<NabozFeedItem[]>("prispevky", fid, []).filter(oznamAktivny); // TTL §8b — expirované z feedu von, záznam ostáva
-export function pridajPrispevok(fid: string, it: NabozFeedItem) { ulozStav("prispevky", fid, [it, ...nacitajStav<NabozFeedItem[]>("prispevky", fid, [])]); }
+export function pridajPrispevok(fid: string, it: NabozFeedItem) {
+  ulozStav("prispevky", fid, [it, ...nacitajStav<NabozFeedItem[]>("prispevky", fid, [])]);
+  void vytvorPrispevokDB(fid, it); // dual-write → prenos medzi zariadeniami (mock = no-op)
+}
 // mazanie cez farára („farár môže zmazať" — auto-publish poistka): REÁLNE odstráni
 // záznam z úložiska (aj expirovaný — preto raw zoznam bez TTL filtra).
 export const vlastnePrispevkyVsetky = (fid: string): NabozFeedItem[] =>
   nacitajStav<NabozFeedItem[]>("prispevky", fid, []);
 export function zmazPrispevok(fid: string, id: string) {
   ulozStav("prispevky", fid, vlastnePrispevkyVsetky(fid).filter((it) => it.id !== id));
+  void zmazPrispevokDB(id);
 }
 // úprava publikovaného príspevku (farár: „Upraviť" v moderácii · „Pridať zbierku" na parte)
 export function upravPrispevok(fid: string, id: string, patch: Partial<NabozFeedItem>) {
-  ulozStav("prispevky", fid, vlastnePrispevkyVsetky(fid).map((it) => (it.id === id ? { ...it, ...patch } : it)));
+  const novy = vlastnePrispevkyVsetky(fid).map((it) => (it.id === id ? { ...it, ...patch } : it));
+  ulozStav("prispevky", fid, novy);
+  const it = novy.find((x) => x.id === id);
+  if (it) void upravPrispevokDB(id, it);
 }
 /** Vlastný (publikovaný cez appku) príspevok = jediný, ktorý sa dá reálne zmazať — demo obsah z mocku nie. */
 export const jeVlastnyPrispevok = (fid: string, id: string): boolean =>
