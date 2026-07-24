@@ -34,6 +34,7 @@ const ModulProfil = lazy(() => import("@/features/profil/Profil"));
 const ModulAktivity = lazy(() => import("@/features/aktivity/Aktivity"));
 const ModulMapa = lazy(() => import("@/features/mapa/Mapa"));
 const ModulTop = lazy(() => import("@/features/top/Top"));
+const ModulSkore = lazy(() => import("@/features/skore/Skore"));
 
 /*
   ============================================================
@@ -49,7 +50,7 @@ const ModulTop = lazy(() => import("@/features/top/Top"));
 const FONT = "'Plus Jakarta Sans', -apple-system, 'Segoe UI', Arial, sans-serif";
 
 /** ID modulov, ktoré appka routuje. */
-export type ModulId = "good" | "help" | "charita" | "nabozenstvo" | "profil" | "vyzva" | "mapa" | "top";
+export type ModulId = "good" | "help" | "charita" | "nabozenstvo" | "profil" | "vyzva" | "mapa" | "top" | "skore";
 
 interface RozmeryOkna {
   w: number;
@@ -326,6 +327,7 @@ export function Screens({ wide, desktop }: { wide?: boolean; desktop?: boolean }
             {modul === "vyzva" && <ModulAktivity wide={wide} />}
             {modul === "mapa" && <ModulMapa wide={wide} />}
             {modul === "top" && <ModulTop wide={wide} />}
+            {modul === "skore" && <ModulSkore wide={wide} />}
           </Suspense>
         </div>
 

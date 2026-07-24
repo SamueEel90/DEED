@@ -1,0 +1,122 @@
+{
+  "_meta": {
+    "configVersion": "v1.0-test",
+    "datum": "2026-07-23",
+    "stav": "ŠTARTOVACIE ČÍSLA — kalibruje Martin v teste, potom fix",
+    "dovernost": "DÔVERNÉ — nikdy do frontendu, nikdy verejne. Parametre = obchodné tajomstvo.",
+    "zdroj": "Handover AI Hodnotenie v2 (17.6.) + Scoring v3.1 (14.6.)",
+    "poznamka": "Každá zmena čísel = nová configVersion + zápis dôvodu do changelog."
+  },
+
+  "changelog": [
+    { "verzia": "v1.0-test", "datum": "2026-07-23", "zmena": "Prvá verzia pre testovací modul.", "kto": "Fero + Martin" }
+  ],
+
+  "vzorec": {
+    "popis": "Skore = (Dopad × vahaDopad + Narocnost × vahaNarocnost) × Nezistnost × Kredibilita",
+    "vahaDopad": 0.8,
+    "vahaNarocnost": 0.2
+  },
+
+  "dopad": {
+    "pravidlo": "Ber VYŠŠIE z hĺbky a šírky. Nie súčet, nie priemer. Šírka ráta len REÁLNU pomoc (nie oslovených).",
+    "hranica_1_3": "Rozhoduje zraniteľnosť príjemcu alebo reálnosť pomoci. Zraniteľný = senior, dieťa, chorý, ZŤP, človek v núdzi/kríze, zviera. NIE 'každý, komu sa nehodí'.",
+    "kotvy": {
+      "1": {
+        "popis": "Dočasná drobná úľava jednému, bežná situácia",
+        "priklady": ["podržal dvere", "poradil cudzincovi smer", "pustil sadnúť", "odniesol nákup zdravému susedovi"]
+      },
+      "3": {
+        "popis": "Jednému citeľne (zraniteľnému) ALEBO malej skupine reálne",
+        "priklady": ["celý deň pri chorom seniorovi", "nakúpil imobilnej susede a vyniesol do bytu", "uvaril pre 5 ľudí bez domova"]
+      },
+      "6": {
+        "popis": "Viacerým reálne ALEBO trvalejší efekt jednotlivcovi",
+        "priklady": ["zorganizoval upratovanie ulice", "pravidelná opatera odkázaného", "dobrovoľník v hospici"]
+      },
+      "10": {
+        "popis": "Zásadná zmena osudu jednotlivca ALEBO celá komunita",
+        "priklady": ["zachránil topiaceho", "pestúnstvo dieťaťa", "zorganizoval pomoc 30 rodinám po povodni"]
+      }
+    }
+  },
+
+  "narocnost": {
+    "pravidlo": "Ber VYŠŠIE z času / rizika / peňazí / zručnosti. Nie súčet. Riziko ráta LEN ak z neho vzniklo dobro (nie odmena za blbé hrdinstvo).",
+    "naklad_poznamka": "Peniaze premenené na čin = náklad tu (benzín, materiál). Peniaze poslané ako peniaze = DAR, mimo tohto hodnotenia.",
+    "kotvy": {
+      "1": {
+        "popis": "Pár minút, žiadne riziko, nič nestálo",
+        "priklady": ["podržal dvere", "poradil smer"]
+      },
+      "3": {
+        "popis": "Hodina + reálne úsilie ALEBO malý náklad",
+        "priklady": ["odviezol k lekárovi", "nakúpil za svoje"]
+      },
+      "6": {
+        "popis": "Pol dňa / odborná zručnosť / menšie riziko / citeľný náklad",
+        "priklady": ["opravil strechu dôchodcovi", "celodenná opatera"]
+      },
+      "10": {
+        "popis": "Dni úsilia ALEBO vážne riziko (ohrozil sa) ALEBO veľký náklad",
+        "priklady": ["vytiahol človeka z vody", "týždne dobrovoľníctva v krízovej oblasti"]
+      }
+    }
+  },
+
+  "nezistnost": {
+    "pravidlo": "Malý modifikátor. Zverejnenie NIE je hriech (default, vítané). Anonymita = malý bonus. Privysoký bonus = ľudia začnú všetko skrývať.",
+    "zverejnene": 1.0,
+    "anonymne": 1.15
+  },
+
+  "kredibilita": {
+    "pravidlo": "Hodnotí sa OBSAH dôkazu, nie typ súboru. Absencia ≠ vina, rozpor = problém. Strop celku = 1.0.",
+    "sila_dokazu": {
+      "len_text": 0.4,
+      "nejasna_fotka": 0.5,
+      "jasne_fotky": { "min": 0.7, "max": 0.85, "poznamka": "viac fotiek zachytávajúcich skutok = úroveň videa (0.85)" },
+      "video_skutku": 1.0
+    },
+    "faktor_suladu": {
+      "default": 1.0,
+      "rozpor": 0.5,
+      "poznamka": "GPS/EXIF/čas ZRÁŽAJÚ za rozpor, nepridávajú za prítomnosť. Hrubý rozpor → verdikt zamietnuť, nie násobič."
+    },
+    "qr_organizovana_akcia": {
+      "hodnota": 1.0,
+      "poznamka": "Potvrdenie treťou stranou obchádza chrbticu. V testovacom module zatiaľ simulované textom 'prikladám QR akcie'."
+    }
+  },
+
+  "pasma": {
+    "pravidlo": "Pásma 0–3 zo skóre. Pásmo 4 (krízový režim) LEN z krizovyRezim=true, NIKDY zo skóre.",
+    "prah_feed": 1.0,
+    "prah_2_riadky": 3.0,
+    "prah_3_riadky": 6.0,
+    "popis": {
+      "0": "pod prahom — len karma, do feedu nejde",
+      "1": "1 riadok — drobná pomoc",
+      "2": "2 riadky — bežná pomoc",
+      "3": "3 riadky — špička bežných skutkov",
+      "4": "4 riadky — LEN krízový režim (povodeň, SOS, hromadná núdza)"
+    }
+  },
+
+  "api": {
+    "model": "claude-opus-4-8",
+    "model_poznamka": "PINOVANÁ verzia — Frozen Intelligence. Zmena = vedomé rozhodnutie + zápis do changelogu.",
+    "temperature": 0,
+    "max_tokens": 2000,
+    "timeout_ms": 60000,
+    "retry": { "pocet": 2, "pauza_ms": 3000, "poznamka": "retry len pri sieťovej chybe / 529, NIE pri obsahovej odpovedi" },
+    "denny_strop_volani": 200,
+    "denny_strop_poznamka": "Ochrana kreditu pri teste. Po prekročení: hláška 'denný limit testu vyčerpaný'."
+  },
+
+  "otazky": {
+    "max_pocet": 3,
+    "max_kola": 1,
+    "ton": "krátke, priateľské, NIE výsluch. Len keď dielik chýba. Mlčanie ≠ vina."
+  }
+}

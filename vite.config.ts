@@ -2,11 +2,15 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 import { fileURLToPath, URL } from 'node:url'
+import { apiDevPlugin } from './scripts/apiDevPlugin'
 
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [
     react(),
+    // /api/score endpointy aj v dev/preview serveri (lokálne bez `vercel dev`;
+    // bez ANTHROPIC_API_KEY beží hodnotenie v MOCK režime)
+    apiDevPlugin(),
     // PWA: manifest + service worker (precache shellu, runtime cache obrázkov/dlaždíc/API).
     // registerType "prompt" → update ohlási sonner toast s tlačidlom Obnoviť (src/lib/pwa.ts).
     VitePWA({

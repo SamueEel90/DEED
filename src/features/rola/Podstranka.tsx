@@ -30,7 +30,9 @@ export function Podstranka({ pozicia, logo, toast, onBack }: {
   const { desktop } = useLayout();
   const s = SUBJEKTY[pozicia];
   const stit = naStitLevel(ZASLUZENA[pozicia].badge);
-  const [tab, setTab] = useState(s.taby[0].key);
+  // „Všetko" — virtuálny tab navrchu (pred Kampane/Skutky/Talent…): zoskupí položky zo všetkých sekcií
+  const taby = [{ key: "vsetko", label: "Všetko", polozky: s.taby.flatMap((t) => t.polozky) }, ...s.taby];
+  const [tab, setTab] = useState("vsetko");
   const [sledujem, setSledujem] = useState(false);
   const [zvoncek, setZvoncek] = useState(false);
   const [qr, setQr] = useState(false);
@@ -40,15 +42,15 @@ export function Podstranka({ pozicia, logo, toast, onBack }: {
   const [suma, setSuma] = useState(8600);   // mock — všeobecná podpora charity
   const [ludia, setLudia] = useState(214);
   const terminalOn = pozicia === "tvorca" && nacitajTerminal();
-  const aktTab = s.taby.find((t) => t.key === tab) ?? s.taby[0];
+  const aktTab = taby.find((t) => t.key === tab) ?? taby[0];
 
   const zdielajProfil = () => void zdielaj({ titul: s.nazov, text: s.nazov, url: aktualnaUrl() }, toast);
   const skopirujOdkaz = async () => {
     try { await navigator.clipboard.writeText(aktualnaUrl()); toast("Odkaz skopírovaný"); } catch { zdielajProfil(); }
   };
 
-  const labels = Object.fromEntries(s.taby.map((t) => [t.key, t.label])) as Record<string, string>;
-  const badges = Object.fromEntries(s.taby.map((t) => [t.key, t.polozky.length])) as Record<string, number>;
+  const labels = Object.fromEntries(taby.map((t) => [t.key, t.label])) as Record<string, string>;
+  const badges = Object.fromEntries(taby.map((t) => [t.key, t.polozky.length])) as Record<string, number>;
 
   // ---- bloky obsahu (zdieľané mobil/desktop) ----
   const podporaBlok = pozicia === "charita" && (
@@ -66,7 +68,7 @@ export function Podstranka({ pozicia, logo, toast, onBack }: {
 
   const obsahBlok = (
     <>
-      <TabyProfil options={s.taby.map((t) => t.key)} labels={labels} badges={badges} value={tab} onChange={setTab} ariaLabel="Obsah profilu" />
+      <TabyProfil options={taby.map((t) => t.key)} labels={labels} badges={badges} value={tab} onChange={setTab} ariaLabel="Obsah profilu" />
       {aktTab.polozky.length === 0 ? (
         <div style={{ fontSize: 12.5, color: C.textTer, textAlign: "center", padding: SPACE.lg }}>Zatiaľ žiadny obsah.</div>
       ) : aktTab.polozky.map((p, i) => (

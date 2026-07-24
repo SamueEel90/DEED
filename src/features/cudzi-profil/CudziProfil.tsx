@@ -57,7 +57,7 @@ export function CudziProfil({ subjekt = {} as CudziSubjekt, onBack, toast, onKam
 // ============================================================
 function OrgProfil({ s, onBack, toast, onKampan }: { s: CudziSubjektOrg; onBack?: () => void; toast?: Toast; onKampan?: (k: OrgKampan) => void }) {
   const { desktop } = useLayout();
-  const [tab, setTab] = useState("kampane");
+  const [tab, setTab] = useState("vsetko");
   const { sledujem, toggleSledovanie } = usePersonalizacia(); // sledovanie = zdieľaný store (Môj DEED)
   const [qr, setQr] = useState(false);
   const [menu, setMenu] = useState(false);
@@ -80,12 +80,12 @@ function OrgProfil({ s, onBack, toast, onKampan }: { s: CudziSubjektOrg; onBack?
   const obsahBlok = (
     <>
       <TabyProfil
-        options={["kampane", "skutky", "talent"] as const}
-        labels={{ kampane: "Kampane", skutky: "Skutky", talent: "Talent" }}
-        badges={{ kampane: kampane.length }}
+        options={["vsetko", "kampane", "skutky", "talent"] as const}
+        labels={{ vsetko: "Všetko", kampane: "Kampane", skutky: "Skutky", talent: "Talent" }}
+        badges={{ vsetko: kampane.length + akcie.length, kampane: kampane.length }}
         value={tab} onChange={setTab} ariaLabel="Sekcie profilu organizácie"
       />
-      {tab === "kampane" && (<>
+      {(tab === "vsetko" || tab === "kampane") && (<>
         {kampane.map((k) => (
           <div key={k.id} {...pressable(() => otvorKampan(k), k.nazov)} style={{ background: C.surface, border: `1px solid ${C.line}`, borderRadius: RADIUS.sm, padding: SPACE.sm, marginBottom: SPACE.xs, cursor: "pointer" }}>
             <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm }}>

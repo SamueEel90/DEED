@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { C, GRAD, glassTmavy, SPACE, RADIUS } from "@/theme";
-import { IkonaDomov, IkonaSrdceLine, IkonaCharita, IkonaKompas, IkonaMapa, IkonaPohar, IkonaOsoba, IkonaPenazenka, IkonaPlus, IkonaSlnko, IkonaMesiac, IkonaInstitucia } from "@/shared";
+import { IkonaDomov, IkonaSrdceLine, IkonaCharita, IkonaKompas, IkonaMapa, IkonaPohar, IkonaOsoba, IkonaPenazenka, IkonaPlus, IkonaSlnko, IkonaMesiac, IkonaInstitucia, IkonaGraf } from "@/shared";
 import { pressable } from "@/components/pressable";
 import { Sheet } from "@/components/sheet";
 import { Hmat } from "@/components/ui";
@@ -35,6 +35,7 @@ export const VSETKY_MODULY: Modul[] = [
   { id: "vyzva",   nazov: "Aktivity", ikona: <IkonaKompas />,  popis: "Skutky, talenty, workshopy a pomoc v okolí" },
   { id: "mapa",    nazov: "Mapa",    ikona: <IkonaMapa />,     popis: "Pomoc a skutky v okolí" },
   { id: "top",     nazov: "Top",     ikona: <IkonaPohar />,    popis: "Rebríčky darcov a hrdinov" },
+  { id: "skore",   nazov: "AI Skóre", ikona: <IkonaGraf />,    popis: "Test hodnotenia skutkov — reálny Opus (kalibrácia)" },
   { id: "profil",  nazov: "Profil",  ikona: <IkonaOsoba />,    popis: "Karma, peňaženka, nastavenia" },
 ];
 
