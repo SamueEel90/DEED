@@ -17,6 +17,7 @@ import { Nastavenia as NotifNastavenia } from "@/features/notifikacie/Notifikaci
 import GlassIcons from "@/components/GlassIcons";
 import type { Toast as ToastFn, WideProps, PrevodTuple, MojSkutokTuple, ZiadostPriatelstvo, CestaPriatelstva, RezimNastavenia } from "@/types";
 import { useProfilPrevody, useProfilMojeSkutky, useProfilKarma, useProfilStatistiky } from "@/data";
+import { MEDIA_AR } from "@/lib/cardSize";
 import { MODULOVA_KARMA, DOZIVOTNE_ZISKANE } from "./mock";
 
 /*
@@ -189,8 +190,9 @@ function IdentitaKarta({ naNastavenia }: { naNastavenia: () => void }) {
   return (
     <div>
       <div style={{ background: C.surface, border: `1px solid ${C.line}`, borderRadius: RADIUS.md, overflow: "hidden" }}>
-        {/* cover pásik — nahratá titulná fotka, inak jemný brand gradient */}
-        <div style={{ position: "relative", height: mojeFotky.cover ? 104 : 56, overflow: "hidden", background: "linear-gradient(135deg, color-mix(in srgb, var(--a-green) 22%, transparent), color-mix(in srgb, var(--a-info) 16%, transparent) 60%, color-mix(in srgb, var(--a-gold) 18%, transparent))" }}>
+        {/* titulná fotka — celý 16:9 pás (presne to, čo si orezal pri nahratí);
+            bez fotky ostáva nízky gradientový pásik */}
+        <div style={{ position: "relative", ...(mojeFotky.cover ? { aspectRatio: MEDIA_AR } : { height: 56 }), overflow: "hidden", background: "linear-gradient(135deg, color-mix(in srgb, var(--a-green) 22%, transparent), color-mix(in srgb, var(--a-info) 16%, transparent) 60%, color-mix(in srgb, var(--a-gold) 18%, transparent))" }}>
           {mojeFotky.cover && <img src={mojeFotky.cover} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />}
           <ZmenitPill onClick={() => setFotka(true)} />
         </div>

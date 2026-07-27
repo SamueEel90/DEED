@@ -51,7 +51,6 @@ export function FarskyProfil({ farnost, farar, jeDomovska, following, onToggleFo
   onToggleFollow?: () => void; onToggleSpravca?: () => void; onSetHome?: () => void;
   onBack: () => void; onDetail: (it: NabozFeedItem) => void; onKalendar: () => void; onPridat: () => void; toast: (m: string) => void;
 }) {
-  const { wide } = useLayout();
   const otvorGaleriu = useGaleria();
   const [suma, setSuma] = useState(farnost.vyzbierane);
   const [ludia, setLudia] = useState(farnost.podpora);
@@ -111,8 +110,9 @@ export function FarskyProfil({ farnost, farar, jeDomovska, following, onToggleFo
 
       {/* hero foto (+ správca: zmeniť foto) */}
       <div style={{ padding: `0 ${SPACE.md}px` }}>
-        <div style={{ position: "relative", ...(wide ? { width: "100%", aspectRatio: MEDIA_AR } : {}) }}>
-          <Foto src={view.foto} emoji="⛪" h={wide ? "100%" : 210} w={wide ? "100%" : undefined} radius={14} onClick={() => otvorGaleriu([view.foto], 0)} />
+        {/* titulná fotka farnosti — vždy celý 16:9 pás (ako sa oreže pri nahratí) */}
+        <div style={{ position: "relative", width: "100%", aspectRatio: MEDIA_AR }}>
+          <Foto src={view.foto} emoji="⛪" h="100%" w="100%" radius={14} onClick={() => otvorGaleriu([view.foto], 0)} />
           {/* farár mení fotky v Správe profilu; v testovacom režime ich smie prehodiť ktokoľvek */}
           {(farar || FOTO_TEST_REZIM) && (
             <ZmenitPill label={farar ? "Upraviť" : "Zmeniť titulnú"} style={{ bottom: 10, right: 10 }}
@@ -518,7 +518,7 @@ function SpravaFarnosti({ farnost, view, onSave, onClose }: { farnost: Farnost; 
       <Input value={v.foto.startsWith("data:") ? "" : v.foto} onChange={set("foto")} placeholder="https://…" />
 
       <PoleLabel>LOGO FARNOSTI (štvorcové)</PoleLabel>
-      <FotoUpload value={v.logo || undefined} onZmena={set("logo")} pomer={1} vyska={120} maxSirka={AVATAR_SIRKA} />
+      <FotoUpload value={v.logo || undefined} onZmena={set("logo")} pomer={1} vyska={120} maxSirka={AVATAR_SIRKA} tvar="stvorec" />
       <div style={{ fontSize: 10.5, color: N.txt3, marginTop: SPACE.xxs }}>Logo je identita v malom — hlavička profilu a adresáre. Bez loga ostáva ⛪. Cover foto vyššie je hero pozadie.</div>
 
       <PoleLabel>POPIS (história, výnimočnosti)</PoleLabel>
@@ -534,7 +534,7 @@ function SpravaFarnosti({ farnost, view, onSave, onClose }: { farnost: Farnost; 
       <PoleLabel>FARÁR — VEDIE FARNOSŤ (foto + meno)</PoleLabel>
       <div style={{ display: "flex", gap: SPACE.sm, alignItems: "flex-start" }}>
         <div style={{ width: 96, flex: "none" }}>
-          <FotoUpload value={v.farar.foto || undefined} onZmena={(x: string) => setFarar({ foto: x })} pomer={1} vyska={96} maxSirka={AVATAR_SIRKA} />
+          <FotoUpload value={v.farar.foto || undefined} onZmena={(x: string) => setFarar({ foto: x })} pomer={1} vyska={96} maxSirka={AVATAR_SIRKA} tvar="kruh" />
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <Input value={v.farar.meno} onChange={(x: string) => setFarar({ meno: x })} placeholder="napr. Mgr. Jozef Halčin" />
@@ -551,7 +551,7 @@ function SpravaFarnosti({ farnost, view, onSave, onClose }: { farnost: Farnost; 
         <div key={i} style={{ background: N.card, border: `1px solid ${N.line}`, borderRadius: RADIUS.sm, padding: SPACE.sm, marginBottom: SPACE.xs }}>
           <div style={{ display: "flex", gap: SPACE.sm, alignItems: "flex-start" }}>
             <div style={{ width: 64, flex: "none" }}>
-              <FotoUpload value={o.foto || undefined} onZmena={(x: string) => setOsoba(i, { foto: x })} pomer={1} vyska={64} maxSirka={AVATAR_SIRKA} />
+              <FotoUpload value={o.foto || undefined} onZmena={(x: string) => setOsoba(i, { foto: x })} pomer={1} vyska={64} maxSirka={AVATAR_SIRKA} tvar="kruh" />
             </div>
             <div style={{ flex: 1, minWidth: 0, display: "grid", gap: SPACE.xs }}>
               <Input value={o.rola} onChange={(x: string) => setOsoba(i, { rola: x })} placeholder="Rola — napr. kaplán, kostolník…" />

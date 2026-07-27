@@ -54,18 +54,20 @@ export function FotoProfiluSheet({
         </div>
       </div>
 
+      {/* náhľady držia presne ten tvar, v akom sa fotka zobrazí na profile:
+          profilovka v krúžku, titulná ako 16:9 pás — čo vidíš, to dostaneš */}
       {onZmena && (
         <>
-          <PoleNadpis>PROFILOVÁ FOTKA (štvorec)</PoleNadpis>
-          <FotoUpload value={foto ?? undefined} onZmena={(url) => onZmena(url)} pomer={1} vyska={180} maxSirka={AVATAR_SIRKA} />
+          <PoleNadpis>PROFILOVÁ FOTKA — v krúžku, ako ju uvidia ostatní</PoleNadpis>
+          <FotoUpload value={foto ?? undefined} onZmena={(url) => onZmena(url)} pomer={1} vyska={172} maxSirka={AVATAR_SIRKA} tvar="kruh" />
           {foto && <OdstranitBtn label="Odstrániť profilovú fotku" onClick={() => onZmena(null)} />}
         </>
       )}
 
       {onCover && (
         <>
-          <PoleNadpis style={{ marginTop: onZmena ? SPACE.md : 0 }}>TITULNÁ FOTKA (16:9)</PoleNadpis>
-          <FotoUpload value={cover ?? undefined} onZmena={(url) => onCover(url)} pomer={16 / 9} vyska={140} />
+          <PoleNadpis style={{ marginTop: onZmena ? SPACE.md : 0 }}>TITULNÁ FOTKA — celý pás 16:9</PoleNadpis>
+          <FotoUpload value={cover ?? undefined} onZmena={(url) => onCover(url)} pomer={16 / 9} />
           <div style={{ fontSize: 10.5, color: C.textTer, marginTop: SPACE.xxs, lineHeight: 1.45 }}>{coverPopis}</div>
           {cover && <OdstranitBtn label="Odstrániť titulnú fotku" onClick={() => onCover(null)} />}
         </>

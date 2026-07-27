@@ -9,6 +9,7 @@ import {
 } from "@/shared";
 import { pressable } from "@/components/pressable";
 import { FOTO_TEST_REZIM, klucEntity, useFotkyEntity } from "@/lib/fotoentity";
+import { MEDIA_AR } from "@/lib/cardSize";
 import { NahlasitSheet } from "@/components/nahlasit";
 import type { CudziSubjekt, CudziSubjektOrg, CudziSubjektOsoba } from "@/types";
 import { usePersonalizacia } from "@/lib/personalizacia";
@@ -296,7 +297,7 @@ function OsobaProfil({ s, onBack, toast }: { s: CudziSubjektOsoba; onBack?: () =
 
       <div style={{ padding: `0 ${SPACE.md}px` }}>
         {/* hero osoby — cover podľa stavu (alebo nahratá titulná), avatar, meno + stavový chip */}
-        <div style={{ position: "relative", height: 96, borderRadius: RADIUS.md, overflow: "hidden", background: `linear-gradient(160deg, ${tintVar(farba, .3)}, ${tintVar(farba, .08)})`, transition: "background .3s ease" }}>
+        <div style={{ position: "relative", ...(vlastne.cover ? { aspectRatio: MEDIA_AR } : { height: 96 }), borderRadius: RADIUS.md, overflow: "hidden", background: `linear-gradient(160deg, ${tintVar(farba, .3)}, ${tintVar(farba, .08)})`, transition: "background .3s ease" }}>
           {vlastne.cover && <img src={vlastne.cover} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />}
           {smiemUpravit && <ZmenitPill onClick={() => setFotky(true)} />}
         </div>

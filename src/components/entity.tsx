@@ -17,6 +17,7 @@
 import type { CSSProperties, ReactNode } from "react";
 import { C, SPACE, RADIUS, GRAD } from "@/theme";
 import { tint } from "@/lib/ui";
+import { MEDIA_AR } from "@/lib/cardSize";
 import { pressable } from "@/components/pressable";
 import { Sheet } from "@/components/sheet";
 import { Switch, Hmat } from "@/components/ui";
@@ -107,9 +108,12 @@ export function EntityHero({ cover, coverEl, avatar, meno, overene, overeneLabel
   const { desktop } = useLayout();
   const vyskaCover = desktop ? 200 : 132;
   const av = desktop ? 84 : 68;
+  // s nahratou titulnou fotkou drží hlavička celý pomer 16:9 — vidno presne to,
+  // čo sa orezalo pri nahratí; bez fotky ostáva nižší gradientový pás
+  const coverStyl: CSSProperties = cover ? { aspectRatio: MEDIA_AR } : { height: vyskaCover };
   return (
     <div>
-      <div style={{ position: "relative", height: vyskaCover, borderRadius: RADIUS.md, overflow: "hidden", background: `linear-gradient(135deg, ${tint("var(--a-info)", .22)}, ${tint("var(--a-plum)", .16)} 60%, ${tint("var(--a-gold)", .18)})` }}>
+      <div style={{ position: "relative", ...coverStyl, borderRadius: RADIUS.md, overflow: "hidden", background: `linear-gradient(135deg, ${tint("var(--a-info)", .22)}, ${tint("var(--a-plum)", .16)} 60%, ${tint("var(--a-gold)", .18)})` }}>
         {cover ? <img src={cover} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} /> : coverEl}
         {onCover && <ZmenitPill label={coverLabel} onClick={onCover} />}
       </div>

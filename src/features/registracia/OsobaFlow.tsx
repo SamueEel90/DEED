@@ -657,7 +657,7 @@ function KrokFoto({ ucet, meno, onBack, onNext }: KrokFotoProps) {
         </div>
         {/* nahratie zo zariadenia — mobil: galéria/fotoaparát · desktop: súbor + drag&drop */}
         <div style={{ width: "100%" }}>
-          <FotoUpload value={foto ?? undefined} onZmena={uloz} pomer={1} vyska={150} maxSirka={AVATAR_SIRKA} />
+          <FotoUpload value={foto ?? undefined} onZmena={uloz} pomer={1} vyska={150} maxSirka={AVATAR_SIRKA} tvar="kruh" />
           {foto && (
             <button
               onClick={() => uloz(null)}

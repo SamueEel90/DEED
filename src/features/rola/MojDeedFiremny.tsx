@@ -541,7 +541,7 @@ function UpravProfilSheet({ pozicia, logo, cover, toast, onLogo, onCover, onClos
               Logo sa zobrazuje na profile, v adresári a pri sponzorovaných kampaniach. Bez loga sa použijú iniciálky.
             </div>
           </div>
-          <FotoUpload value={logo ?? undefined} onZmena={(url) => { onLogo(url); toast("Logo uložené"); }} pomer={1} vyska={120} maxSirka={AVATAR_SIRKA} />
+          <FotoUpload value={logo ?? undefined} onZmena={(url) => { onLogo(url); toast("Logo uložené"); }} pomer={1} vyska={150} maxSirka={AVATAR_SIRKA} tvar="kruh" />
           {logo && (
             <button onClick={() => { onLogo(null); toast("Logo odstránené"); }}
               style={{ width: "100%", height: 38, marginTop: SPACE.xs, borderRadius: RADIUS.sm, border: `1px solid ${C.line}`, cursor: "pointer", fontFamily: "inherit", fontWeight: 700, fontSize: 12, background: "transparent", color: C.textSec }}>
@@ -561,7 +561,7 @@ function UpravProfilSheet({ pozicia, logo, cover, toast, onLogo, onCover, onClos
             </div>
           </div>
           {/* tvorca nemá logo: mení sa priamo profilová fotka osoby (jeden zdroj pravdy) */}
-          <FotoUpload value={ja.foto ?? undefined} onZmena={(url) => { ja.nastavFoto?.(url); toast("Profilová fotka uložená"); }} pomer={1} vyska={120} maxSirka={AVATAR_SIRKA} />
+          <FotoUpload value={ja.foto ?? undefined} onZmena={(url) => { ja.nastavFoto?.(url); toast("Profilová fotka uložená"); }} pomer={1} vyska={150} maxSirka={AVATAR_SIRKA} tvar="kruh" />
           {ja.foto && (
             <button onClick={() => { ja.nastavFoto?.(null); toast("Profilová fotka odstránená"); }}
               style={{ width: "100%", height: 38, marginTop: SPACE.xs, borderRadius: RADIUS.sm, border: `1px solid ${C.line}`, cursor: "pointer", fontFamily: "inherit", fontWeight: 700, fontSize: 12, background: "transparent", color: C.textSec }}>
