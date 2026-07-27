@@ -6,6 +6,7 @@
 // ============================================================
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 import { nacitajUcetData } from "./db";
+import { nacitajFotoProfilu, ulozFotoProfilu } from "./fotoprofilu";
 import type { Pouzivatel, Session, UcetData } from "@/types";
 
 // DEMO identita = presne to, čo appka zobrazovala doteraz (admin/preskočiť)
@@ -19,6 +20,7 @@ const DEMO: Pouzivatel = {
   priezvisko: "K.",
   celeMeno: "Martin K.",
   iniciala: "M",
+  foto: null, // demo identita si fotku dopĺňa sama (nacitajFotoProfilu pri mounte)
   mesto: "Trenčín",
   poradoveCislo: null,
   rezim: "cele",
@@ -60,6 +62,8 @@ function odvod(data: UcetData | null, session: Session): Pouzivatel {
     priezvisko,
     celeMeno: celeMeno || "Člen",
     iniciala: (celeMeno.trim()[0] || "?").toUpperCase(),
+    // fotka: DB je zdroj pravdy, lokálna kópia drží posledný upload (offline/mock)
+    foto: profil?.profilovka_url || nacitajFotoProfilu(ucet?.id || ses?.ucet_id) || null,
     mesto,
     poradoveCislo: ucet?.poradove_cislo ?? ses?.poradove_cislo ?? null,
     rezim: zobrazenie?.rezim || "anonym",
@@ -86,6 +90,7 @@ function seed(session: Session): Pouzivatel {
     priezvisko: "",
     celeMeno: meno,
     iniciala: (meno.trim()[0] || "?").toUpperCase(),
+    foto: nacitajFotoProfilu(ses?.ucet_id) || null,
     mesto: "—",
     poradoveCislo: ses?.poradove_cislo ?? null,
     rezim: "anonym",
@@ -97,7 +102,8 @@ function seed(session: Session): Pouzivatel {
 }
 
 export function PouzivatelProvider({ session, children }: { session: Session; children: ReactNode }) {
-  const [stav, setStav] = useState<Pouzivatel>(() => (!session || session.demo ? DEMO : seed(session)));
+  const [stav, setStav] = useState<Pouzivatel>(() =>
+    !session || session.demo ? { ...DEMO, foto: nacitajFotoProfilu(null) } : seed(session));
 
   const refresh = useCallback(async () => {
     if (!session || session.demo || !session.ucet_id) return;
@@ -109,14 +115,22 @@ export function PouzivatelProvider({ session, children }: { session: Session; ch
     }
   }, [session]);
 
+  // profilová fotka — jedna cesta pre demo aj reálny účet (LS + best-effort DB),
+  // stav sa prepíše hneď (bez čakania na refresh z DB) → avatar sa zmení okamžite
+  const ucetId = stav.ucetId;
+  const nastavFoto = useCallback((dataUrl: string | null) => {
+    ulozFotoProfilu(ucetId, dataUrl);
+    setStav((s) => ({ ...s, foto: dataUrl }));
+  }, [ucetId]);
+
   useEffect(() => {
     if (!session || session.demo) {
-      setStav(DEMO);
+      setStav({ ...DEMO, foto: nacitajFotoProfilu(null) });
       return;
     }
     setStav(seed(session));
     refresh();
   }, [session, refresh]);
 
-  return <PouzivatelContext.Provider value={{ ...stav, refresh }}>{children}</PouzivatelContext.Provider>;
+  return <PouzivatelContext.Provider value={{ ...stav, refresh, nastavFoto }}>{children}</PouzivatelContext.Provider>;
 }

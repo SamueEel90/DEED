@@ -256,7 +256,7 @@ function Home({ wide, toast, otvorModul, pohlad, setPohlad, radius, setRadius, o
           <>
             <span {...pressable(onHladaj, "Hľadať")} style={{ display: "flex", alignItems: "center", cursor: "pointer" }}><Lupa size={20} color={C.textSec} /></span>
             <Zvoncek color={C.textSec} toast={toast} />
-            <AvatarUroven ini={ja.iniciala} tint={ja.tint} tier={ja.tier} size={34} onClick={() => otvorModul && otvorModul("profil")} title={ja.tier} />
+            <AvatarUroven ini={ja.iniciala} foto={ja.foto} tint={ja.tint} tier={ja.tier} size={34} onClick={() => otvorModul && otvorModul("profil")} title={ja.tier} />
           </>
         } />
 

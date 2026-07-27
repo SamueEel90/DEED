@@ -9,8 +9,9 @@
 // ============================================================
 import { useEffect, useState } from "react";
 import { C, GRAD, infoBox, SPACE, RADIUS } from "@/theme";
-import { Vyber, Otazka, Oslava, Suhrn } from "@/shared";
+import { Vyber, Otazka, Oslava, Suhrn, FotoUpload } from "@/shared";
 import { setSession } from "@/lib/session";
+import { AVATAR_SIRKA, nacitajFotoProfilu, ulozFotoProfilu } from "@/lib/fotoprofilu";
 import * as db from "@/lib/db";
 import {
   Shell,
@@ -216,6 +217,7 @@ export function OsobaFlow({ onHotovo, onSpat, toast, startKrok = "vidlicka", aut
   if (krok === "a7") {
     return (
       <KrokFoto
+        ucet={ucet}
         meno={profilMeno}
         onBack={() => goto("a6")}
         onNext={() => {
@@ -572,16 +574,21 @@ function KrokZobrazenie({ ucet, toast, onBack, onNext }: KrokZobrazenieProps) {
 }
 
 // ============================================================
-// KROK 7 — Foto (nepovinné, bez uploadu)
+// KROK 7 — Foto (nepovinné) — nahratie zo zariadenia (galéria/fotoaparát)
 // ============================================================
 interface KrokFotoProps {
+  ucet: Ucet | null;
   meno: string;
   onBack: () => void;
   onNext: () => void;
 }
 
-function KrokFoto({ meno, onBack, onNext }: KrokFotoProps) {
+function KrokFoto({ ucet, meno, onBack, onNext }: KrokFotoProps) {
   const iniciala = (meno || "?").trim().charAt(0).toUpperCase() || "?";
+  const [foto, setFoto] = useState<string | null>(() => nacitajFotoProfilu(ucet?.id));
+  // fotka sa ukladá hneď po výbere (LS + best-effort DB) — „Preskočiť" ju nezmaže,
+  // ak si ju používateľ predtým vybral; odstránenie je explicitné tlačidlo
+  const uloz = (url: string | null) => { setFoto(url); ulozFotoProfilu(ucet?.id ?? null, url); };
   return (
     <Shell
       title="Profilová fotka"
@@ -639,16 +646,29 @@ function KrokFoto({ meno, onBack, onNext }: KrokFotoProps) {
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
+            overflow: "hidden",
             fontSize: 44,
             fontWeight: 800,
             color: "#fff",
             boxShadow: "0 10px 30px color-mix(in srgb, var(--a-green) 32%, transparent), inset 0 1px 0 rgba(255,255,255,.25)",
           }}
         >
-          {iniciala}
+          {foto ? <img src={foto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} /> : iniciala}
+        </div>
+        {/* nahratie zo zariadenia — mobil: galéria/fotoaparát · desktop: súbor + drag&drop */}
+        <div style={{ width: "100%" }}>
+          <FotoUpload value={foto ?? undefined} onZmena={uloz} pomer={1} vyska={150} maxSirka={AVATAR_SIRKA} />
+          {foto && (
+            <button
+              onClick={() => uloz(null)}
+              style={{ width: "100%", height: 38, marginTop: SPACE.xs, borderRadius: RADIUS.sm, border: `1px solid ${C.line}`, background: "transparent", color: C.textSec, fontWeight: 700, fontSize: 12, cursor: "pointer", fontFamily: "inherit" }}
+            >
+              Odstrániť fotku
+            </button>
+          )}
         </div>
         <div style={{ fontSize: 13.5, color: C.textSec, textAlign: "center", maxWidth: 280, lineHeight: 1.5 }}>
-          Foto je nepovinné — pokojne ho doplníš neskôr v profile.
+          Foto je nepovinné — pokojne ho doplníš neskôr v profile. Pred uložením sa prekóduje, takže <b>EXIF ani GPS</b> z fotky neodíde.
         </div>
       </div>
     </Shell>

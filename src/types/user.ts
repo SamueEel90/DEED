@@ -310,6 +310,8 @@ export interface Pouzivatel {
   priezvisko: string;
   celeMeno: string;
   iniciala: string;
+  /** Profilová fotka (data-URL alebo URL); null = zobrazí sa iniciála. */
+  foto: string | null;
   mesto: string;
   poradoveCislo: number | null;
   rezim: RezimZobrazenia;
@@ -318,6 +320,8 @@ export interface Pouzivatel {
   tint: HexFarba;
   nacitavam: boolean;
   refresh?: () => Promise<void>;
+  /** Nastaví/zmaže profilovú fotku (uloží lokálne + best-effort do DB). */
+  nastavFoto?: (dataUrl: string | null) => void;
 }
 
 /* PROFIL (modul) — Profil.jsx */

@@ -43,4 +43,5 @@ export * from "@/components/zoznamdarcov";
 export * from "@/components/formattext";
 export * from "@/components/richtext";
 export * from "@/components/fotoupload";
+export * from "@/components/fotoprofilu";
 export { tint } from "@/lib/ui";

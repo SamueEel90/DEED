@@ -12,12 +12,14 @@ import { toast } from "@/components/toast";
 import { Foto } from "@/components/media";
 import { IkonaFoto } from "@/components/icons";
 
-export function FotoUpload({ value, onZmena, pomer = 16 / 9, vyska = 140 }: {
+export function FotoUpload({ value, onZmena, pomer = 16 / 9, vyska = 140, maxSirka }: {
   value?: string;
   onZmena: (dataUrl: string) => void;
   /** pomer orezu (16/9 cover · 1 avatar) */
   pomer?: number;
   vyska?: number;
+  /** dlhšia strana po zmenšení (avatar = menší data-URL, viď AVATAR_SIRKA) */
+  maxSirka?: number;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [tahanie, setTahanie] = useState(false);
@@ -27,7 +29,7 @@ export function FotoUpload({ value, onZmena, pomer = 16 / 9, vyska = 140 }: {
     if (!file || pracujem) return;
     setPracujem(true);
     try {
-      onZmena(await spracujFotku(file, { pomer }));
+      onZmena(await spracujFotku(file, { pomer, maxSirka }));
       toast("Fotka nahraná — EXIF/GPS odstránené");
     } catch (e) {
       toast(e instanceof Error ? e.message : "Nahranie fotky zlyhalo.");

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { SIRKA, C, GRAD, GRAD_ZELENY, SPACE, RADIUS } from "@/theme";
-import { toast, Sheet, AvatarUroven, Stit, StitRiadok, STIT_POPIS, DozivotnyChip, useScrollPamat, useViac, useMotiv, useLayout, useTvorbaGate, obalSiroky, QrModal, pressable, IkonaMenu, IkonaNastavenia, IkonaSipVlavo, IkonaSipDole, IkonaPenazenka, IkonaHviezda, IkonaFajka, IkonaDoska, IkonaUsmev, IkonaOsoba, IkonaPin, IkonaSlnko, IkonaMesiac, IkonaStit, IkonaInstitucia, IkonaCeruzka, IkonaQr, IkonaObalka, IkonaList, IkonaKniha, IkonaSport, IkonaPaleta, IkonaZachrana, IkonaLudia, IkonaSrdceLine, BtnAkcia, MenuSkupina, MenuPolozka, MenuPrepinac, SkeletonRiadky, EmptyState, ErrorState, ScreenSwitch } from "@/shared";
+import { toast, Sheet, AvatarUroven, Stit, StitRiadok, STIT_POPIS, DozivotnyChip, useScrollPamat, useViac, useMotiv, useLayout, useTvorbaGate, obalSiroky, QrModal, pressable, IkonaMenu, IkonaNastavenia, IkonaSipVlavo, IkonaSipDole, IkonaPenazenka, IkonaHviezda, IkonaFajka, IkonaDoska, IkonaUsmev, IkonaOsoba, IkonaPin, IkonaSlnko, IkonaMesiac, IkonaStit, IkonaInstitucia, IkonaCeruzka, IkonaQr, IkonaObalka, IkonaList, IkonaKniha, IkonaSport, IkonaPaleta, IkonaZachrana, IkonaLudia, IkonaSrdceLine, IkonaFoto, FotoProfiluSheet, KamerkaBadge, BtnAkcia, MenuSkupina, MenuPolozka, MenuPrepinac, SkeletonRiadky, EmptyState, ErrorState, ScreenSwitch } from "@/shared";
 import { MojDeedFiremny } from "@/features/rola/MojDeedFiremny";
 import { RetazDobraSheet } from "@/features/retaz/RetazDobra";
 import { IntroPruvodca } from "@/components/intro";
@@ -182,6 +182,7 @@ function ProfilHlavny({ toast, naWallet, naSub, naNastavenia, naPriatelia, naFir
 function IdentitaKarta({ naNastavenia }: { naNastavenia: () => void }) {
   const ja = usePouzivatel();
   const [qr, setQr] = useState(false);
+  const [fotka, setFotka] = useState(false); // sheet „Profilová fotka"
   return (
     <div>
       <div style={{ background: C.surface, border: `1px solid ${C.line}`, borderRadius: RADIUS.md, overflow: "hidden" }}>
@@ -189,8 +190,11 @@ function IdentitaKarta({ naNastavenia }: { naNastavenia: () => void }) {
         <div style={{ height: 56, background: "linear-gradient(135deg, color-mix(in srgb, var(--a-green) 22%, transparent), color-mix(in srgb, var(--a-info) 16%, transparent) 60%, color-mix(in srgb, var(--a-gold) 18%, transparent))" }} />
         <div style={{ padding: `0 ${SPACE.md}px ${SPACE.md}px` }}>
           <div style={{ display: "flex", alignItems: "flex-end", gap: SPACE.gutter, marginTop: -24 }}>
-            <span style={{ flex: "none", borderRadius: RADIUS.round, border: `3px solid var(--c-bg)`, background: "var(--c-bg)" }}>
-              <AvatarUroven ini={ja.iniciala} tint={ja.tint} tier={ja.tier} size={60} />
+            {/* klik na avatar = nastaviť/zmeniť profilovú fotku (vzor IG/FB) */}
+            <span {...pressable(() => setFotka(true), "Zmeniť profilovú fotku")}
+              style={{ position: "relative", flex: "none", borderRadius: RADIUS.round, border: `3px solid var(--c-bg)`, background: "var(--c-bg)", cursor: "pointer" }}>
+              <AvatarUroven ini={ja.iniciala} foto={ja.foto} tint={ja.tint} tier={ja.tier} size={60} />
+              <KamerkaBadge size={24} strana="vlavo" />
             </span>
             <div style={{ minWidth: 0, paddingBottom: 2 }}>
               <div style={{ fontSize: 17, fontWeight: 800, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ja.celeMeno}</div>
@@ -204,8 +208,9 @@ function IdentitaKarta({ naNastavenia }: { naNastavenia: () => void }) {
           </div>
           {/* akčný rad profilu (vzor IG: Upraviť · Zdieľať) */}
           <div style={{ display: "flex", gap: SPACE.xs, marginTop: SPACE.sm }}>
-            <BtnAkcia variant="secondary" onClick={naNastavenia}><IkonaCeruzka size={14} /> Upraviť profil</BtnAkcia>
-            <BtnAkcia variant="secondary" onClick={() => setQr(true)}><IkonaQr size={14} /> Môj QR</BtnAkcia>
+            <BtnAkcia variant="secondary" onClick={() => setFotka(true)}><IkonaFoto size={14} /> {ja.foto ? "Zmeniť fotku" : "Pridať fotku"}</BtnAkcia>
+            <BtnAkcia variant="secondary" onClick={naNastavenia}><IkonaCeruzka size={14} /> Upraviť</BtnAkcia>
+            <BtnAkcia variant="secondary" onClick={() => setQr(true)}><IkonaQr size={14} /> QR</BtnAkcia>
           </div>
         </div>
       </div>
@@ -220,6 +225,14 @@ function IdentitaKarta({ naNastavenia }: { naNastavenia: () => void }) {
       </div>
 
       {qr && <QrModal typ="identita" titul="Môj QR" popis="Ukáž QR — druhá strana ťa pridá alebo ti pošle DEED" odkaz={qrUrl("handle", "martin-k")} onClose={() => setQr(false)} toast={toast} />}
+
+      {/* profilová fotka — nahratie zo zariadenia (galéria/fotoaparát/drag&drop) */}
+      {fotka && (
+        <FotoProfiluSheet
+          foto={ja.foto} nahrada={ja.iniciala}
+          onZmena={(url) => { ja.nastavFoto?.(url); toast(url ? "Profilová fotka uložená" : "Profilová fotka odstránená"); if (!url) setFotka(false); }}
+          onClose={() => setFotka(false)} />
+      )}
     </div>
   );
 }
@@ -584,6 +597,8 @@ type NastaveniaScreenProps = { toast: ToastFn; onBack: () => void; onNotif: () =
 
 function NastaveniaScreen({ toast, onBack, onNotif, desktop }: NastaveniaScreenProps) {
   const { svetly, prepni } = useMotiv();
+  const ja = usePouzivatel();
+  const [fotka, setFotka] = useState(false);              // sheet „Profilová fotka"
   const [jazyk, setJazyk] = useState("SK");
   const [rezim, setRezim] = useState<RezimNastavenia>("verejny");  // verejný / anonym (§13.1 ochrana)
   const [uroven, setUroven] = useState(true);             // zobrazovať moju úroveň (dá sa skryť)
@@ -608,6 +623,9 @@ function NastaveniaScreen({ toast, onBack, onNotif, desktop }: NastaveniaScreenP
         </MenuSkupina>
 
         <MenuSkupina nadpis="SÚKROMIE A PROFIL">
+          <MenuPolozka ikona={<IkonaFoto size={16} />} farba="var(--a-teal)"
+            label="Profilová fotka" popis="Nahraj z galérie alebo odfoť — EXIF/GPS sa odstráni"
+            hodnota={ja.foto ? "Nastavená" : "Bez fotky"} onClick={() => setFotka(true)} />
           <MenuPolozka ikona={<IkonaOsoba size={16} />} farba={rezim === "verejny" ? "var(--a-green)" : "var(--a-plum)"}
             label="Režim profilu" hodnota={rezim === "verejny" ? "Verejný" : "Anonym"}
             onClick={() => setRezim((r) => r === "verejny" ? "anonym" : "verejny")} />
@@ -670,6 +688,14 @@ function NastaveniaScreen({ toast, onBack, onNotif, desktop }: NastaveniaScreenP
           <button onClick={() => { setOAppke(false); setAko(true); }} style={{ width: "100%", height: 48, borderRadius: RADIUS.md, marginTop: SPACE.md, border: "none", background: GRAD, color: "#fff", fontWeight: 700, fontSize: 15, cursor: "pointer", fontFamily: "inherit" }}>Ako DEED funguje — sprievodca</button>
           <div style={{ fontSize: 11, color: C.textTer, textAlign: "center", marginTop: SPACE.sm, lineHeight: 1.5 }}>Spätnú väzbu a problémy nahlás cez vlajku 🚩 pri obsahu alebo autorovi projektu.</div>
         </Sheet>
+      )}
+
+      {/* profilová fotka — tá istá cesta ako klik na avatar v identite */}
+      {fotka && (
+        <FotoProfiluSheet
+          foto={ja.foto} nahrada={ja.iniciala}
+          onZmena={(url) => { ja.nastavFoto?.(url); toast(url ? "Profilová fotka uložená" : "Profilová fotka odstránená"); if (!url) setFotka(false); }}
+          onClose={() => setFotka(false)} />
       )}
 
       {/* sprievodca „Ako DEED funguje" (rovnaký ako pri prvom spustení) */}

@@ -23,6 +23,7 @@ import { Switch, Hmat } from "@/components/ui";
 import { Tip } from "@/components/tooltip";
 import { useLayout } from "@/components/context";
 import { IkonaSipVpravo, IkonaZamok, IkonaOdznakOver } from "@/components/icons";
+import { KamerkaBadge } from "@/components/fotoprofilu";
 import { SegTabs } from "@/components/segtabs";
 
 // ---- OVEROVACÍ ODZNAK — jediný vizuál overenia subjektu v appke ----
@@ -110,9 +111,14 @@ export function EntityHero({ cover, coverEl, avatar, meno, overene, overeneLabel
       {/* position:relative + zIndex — riadok s avatarom sa prekrýva cez cover <img>;
           bez toho replaced content coveru premaľuje pozadie/rámik avatara (paint order) */}
       <div style={{ display: "flex", alignItems: "flex-end", gap: SPACE.sm, marginTop: -(av / 2.6), padding: `0 ${SPACE.sm}px`, position: "relative", zIndex: 1 }}>
-        <span {...(onAvatar ? pressable(onAvatar, "Profilová fotka") : {})}
-          style={{ width: av, height: av, borderRadius: RADIUS.round, flex: "none", overflow: "hidden", border: `3px solid var(--c-bg)`, background: C.surface2, display: "flex", alignItems: "center", justifyContent: "center", fontSize: Math.round(av * .36), fontWeight: 800, cursor: onAvatar ? "pointer" : "default", boxShadow: "0 2px 10px rgba(0,0,0,.18)" }}>
-          {avatar}
+        {/* onAvatar = fotka sa dá zmeniť → odznak fotoaparátu žije MIMO orezaného
+            krúžku (span nižšie má overflow:hidden, inak by ho odrezal) */}
+        <span style={{ position: "relative", flex: "none", display: "inline-flex" }}>
+          <span {...(onAvatar ? pressable(onAvatar, "Profilová fotka") : {})}
+            style={{ width: av, height: av, borderRadius: RADIUS.round, flex: "none", overflow: "hidden", border: `3px solid var(--c-bg)`, background: C.surface2, display: "flex", alignItems: "center", justifyContent: "center", fontSize: Math.round(av * .36), fontWeight: 800, cursor: onAvatar ? "pointer" : "default", boxShadow: "0 2px 10px rgba(0,0,0,.18)" }}>
+            {avatar}
+          </span>
+          {onAvatar && <KamerkaBadge size={Math.round(av * .34)} />}
         </span>
         <div style={{ flex: 1, minWidth: 0, paddingBottom: 2 }}>
           <div style={{ fontSize: desktop ? 19 : 16.5, fontWeight: 800, display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>

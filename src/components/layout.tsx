@@ -35,12 +35,15 @@ export function Otazka({ children }: { children?: ReactNode }) { return <div sty
 // ---- AVATAR S ÚROVŇOU ----
 // Úroveň (napr. „L7") je zakomponovaná priamo do profilového obrázka ako malý zlatý odznak.
 // `tier` môže byť „Gold · L7" / „Nováčik · L1" / „Overená charita" — úroveň sa vyparsuje, ak chýba, odznak sa nezobrazí.
-export function AvatarUroven({ ini, tint, tier, size = 34, ring = true, onClick, title }: { ini?: ReactNode; tint: string; tier?: string; size?: number; ring?: boolean; onClick?: () => void; title?: string }) {
+export function AvatarUroven({ ini, foto, tint, tier, size = 34, ring = true, onClick, title }: { ini?: ReactNode; foto?: string | null; tint: string; tier?: string; size?: number; ring?: boolean; onClick?: () => void; title?: string }) {
   const lvl = (String(tier || "").match(/L(\d+)/) || [])[1];
   const bH = Math.round(size * 0.44);
   return (
     <div {...(onClick ? pressable(onClick, title) : {})} title={title} style={{ position: "relative", flex: "0 0 auto", cursor: onClick ? "pointer" : "default" }}>
-      <div style={{ width: size, height: size, borderRadius: RADIUS.round, background: tint, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: Math.round(size * 0.41), color: "#fff", boxShadow: ring ? `0 0 0 ${Math.max(2, Math.round(size / 17))}px rgba(240,199,90,.85)` : "none" }}>{ini}</div>
+      {/* nahratá profilová fotka prekryje iniciálu (rovnaký krúžok, rovnaký zlatý prstenec) */}
+      <div style={{ width: size, height: size, borderRadius: RADIUS.round, background: tint, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: Math.round(size * 0.41), color: "#fff", overflow: "hidden", boxShadow: ring ? `0 0 0 ${Math.max(2, Math.round(size / 17))}px rgba(240,199,90,.85)` : "none" }}>
+        {foto ? <img src={foto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} /> : ini}
+      </div>
       {lvl && (
         <Tip label={`Úroveň karmy L${lvl} — rastie za overené dobré skutky a podporu (Bronze → Legend). Karma patrí ľuďom, nie číslam.`}>
           <span style={{ position: "absolute", bottom: -Math.round(size * 0.07), right: -Math.round(size * 0.09), height: bH, minWidth: bH, padding: `0 ${SPACE.xxs}px`, borderRadius: bH / 2, background: "linear-gradient(135deg,#F4CE63,#DE9E36)", color: "#3A2C0E", fontSize: Math.round(size * 0.26), fontWeight: 800, lineHeight: 1, display: "flex", alignItems: "center", justifyContent: "center", letterSpacing: ".02em", boxShadow: "0 1px 4px rgba(0,0,0,.32), 0 0 0 1.6px var(--c-bg)" }}>L{lvl}</span>

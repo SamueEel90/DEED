@@ -10,6 +10,8 @@ import {
   IkonaSrdceLine, IkonaNastavenia,
 } from "@/shared";
 import { pressable } from "@/components/pressable";
+import { usePouzivatel } from "@/lib/pouzivatel";
+import { AVATAR_SIRKA } from "@/lib/fotoprofilu";
 import { zdielaj, aktualnaUrl } from "@/lib/zdielanie";
 import { MojaRetaz } from "@/features/retaz/MojaRetaz";
 import {
@@ -55,6 +57,7 @@ const ikonaPre = (id: string, fallback: string): ReactNode => IKONY[id] ?? <span
 
 export function MojDeedFiremny({ onBack, toast }: { onBack: () => void; toast: (m: string) => void }) {
   const { desktop } = useLayout();
+  const ja = usePouzivatel(); // tvorca vystupuje pod vlastnou profilovou fotkou (nie logom)
   // rola + tier per rola — DEV: lokálny stav; produkcia: overený účet + fakturácia
   const [pozicia, setPozicia] = useState<Pozicia>(nacitajPoziciu);
   const [tiery, setTiery] = useState<Record<Pozicia, Tier>>(nacitajTiery);
@@ -95,6 +98,9 @@ export function MojDeedFiremny({ onBack, toast }: { onBack: () => void; toast: (
     toast(`${it.nazov} — čoskoro`);
   };
 
+  // avatar subjektu: charita/B2B = nahraté logo · tvorca = moja profilová fotka
+  const avatarSrc = (pozicia === "tvorca" ? ja.foto : logo) ?? subjekt.foto;
+
   // vlastník vidí TÚ ISTÚ verejnú stránku ako cudzí
   if (podstranka) return <Podstranka pozicia={pozicia} logo={logo} toast={toast} onBack={() => setPodstranka(false)} />;
 
@@ -109,7 +115,10 @@ export function MojDeedFiremny({ onBack, toast }: { onBack: () => void; toast: (
 
       {/* ==== HERO SUBJEKTU — cover, logo, meno + odznak, štatistiky, akcie ==== */}
       <EntityHero
-        avatar={(logo || subjekt.foto) ? <img src={logo ?? subjekt.foto} alt={subjekt.nazov} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : (pozicia === "tvorca" ? subjekt.emoji : subjekt.iniciacky)}
+        avatar={avatarSrc
+          ? <img src={avatarSrc} alt={subjekt.nazov} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+          : (pozicia === "tvorca" ? subjekt.emoji : subjekt.iniciacky)}
+        onAvatar={() => setSheet("profil")}
         cover={subjekt.cover}
         coverEl={<span style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 42, opacity: .4 }}>{subjekt.emoji}</span>}
         meno={subjekt.nazov} overene={subjekt.overena} overeneLabel="Overený subjekt — identita potvrdená"
@@ -506,6 +515,7 @@ function UpravProfilSheet({ pozicia, logo, toast, onLogo, onClose }: {
   onLogo: (url: string | null) => void; onClose: () => void;
 }) {
   const s = SUBJEKTY[pozicia];
+  const ja = usePouzivatel();
   const maLogo = pozicia !== "tvorca";
   return (
     <Sheet onClose={onClose} label="Upraviť profil">
@@ -523,7 +533,7 @@ function UpravProfilSheet({ pozicia, logo, toast, onLogo, onClose }: {
               Logo sa zobrazuje na profile, v adresári a pri sponzorovaných kampaniach. Bez loga sa použijú iniciálky.
             </div>
           </div>
-          <FotoUpload value={logo ?? undefined} onZmena={(url) => { onLogo(url); toast("Logo uložené"); }} pomer={1} vyska={120} />
+          <FotoUpload value={logo ?? undefined} onZmena={(url) => { onLogo(url); toast("Logo uložené"); }} pomer={1} vyska={120} maxSirka={AVATAR_SIRKA} />
           {logo && (
             <button onClick={() => { onLogo(null); toast("Logo odstránené"); }}
               style={{ width: "100%", height: 38, marginTop: SPACE.xs, borderRadius: RADIUS.sm, border: `1px solid ${C.line}`, cursor: "pointer", fontFamily: "inherit", fontWeight: 700, fontSize: 12, background: "transparent", color: C.textSec }}>
@@ -532,9 +542,25 @@ function UpravProfilSheet({ pozicia, logo, toast, onLogo, onClose }: {
           )}
         </>
       ) : (
-        <div style={{ fontSize: 12, color: C.textSec, lineHeight: 1.55, background: C.surface, border: `1px solid ${C.line}`, borderRadius: RADIUS.sm, padding: SPACE.sm }}>
-          Tvorca vystupuje pod vlastným menom a profilovou fotkou. Bio, portfólio a odkazy upravíš vo svojom profile.
-        </div>
+        <>
+          <div style={{ fontSize: 10.5, fontWeight: 800, color: C.textTer, letterSpacing: ".04em", marginBottom: SPACE.xs }}>PROFILOVÁ FOTKA</div>
+          <div style={{ display: "flex", gap: SPACE.gutter, alignItems: "center", marginBottom: SPACE.sm }}>
+            <span style={{ width: 64, height: 64, borderRadius: "50%", flex: "none", overflow: "hidden", background: C.surface2, border: `1px solid ${C.line}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, fontWeight: 800 }}>
+              {ja.foto ? <img src={ja.foto} alt="profilová fotka" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : ja.iniciala}
+            </span>
+            <div style={{ flex: 1, minWidth: 0, fontSize: 11, color: C.textTer, lineHeight: 1.5 }}>
+              Tvorca vystupuje pod vlastným menom a profilovou fotkou — je to tá istá fotka ako v tvojom osobnom profile.
+            </div>
+          </div>
+          {/* tvorca nemá logo: mení sa priamo profilová fotka osoby (jeden zdroj pravdy) */}
+          <FotoUpload value={ja.foto ?? undefined} onZmena={(url) => { ja.nastavFoto?.(url); toast("Profilová fotka uložená"); }} pomer={1} vyska={120} maxSirka={AVATAR_SIRKA} />
+          {ja.foto && (
+            <button onClick={() => { ja.nastavFoto?.(null); toast("Profilová fotka odstránená"); }}
+              style={{ width: "100%", height: 38, marginTop: SPACE.xs, borderRadius: RADIUS.sm, border: `1px solid ${C.line}`, cursor: "pointer", fontFamily: "inherit", fontWeight: 700, fontSize: 12, background: "transparent", color: C.textSec }}>
+              Odstrániť fotku
+            </button>
+          )}
+        </>
       )}
     </Sheet>
   );

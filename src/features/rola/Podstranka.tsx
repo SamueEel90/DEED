@@ -7,6 +7,7 @@ import {
   IkonaMoznosti, IkonaQr, IkonaVlajka, IkonaPin, IkonaObalka, IkonaOdkaz,
 } from "@/shared";
 import { pressable } from "@/components/pressable";
+import { usePouzivatel } from "@/lib/pouzivatel";
 import { NahlasitSheet } from "@/components/nahlasit";
 import { qrUrl } from "@/lib/qr";
 import { zdielaj, aktualnaUrl } from "@/lib/zdielanie";
@@ -28,8 +29,11 @@ export function Podstranka({ pozicia, logo, toast, onBack }: {
   pozicia: Pozicia; logo: string | null; toast: (m: string) => void; onBack: () => void;
 }) {
   const { desktop } = useLayout();
+  const ja = usePouzivatel();
   const s = SUBJEKTY[pozicia];
   const stit = naStitLevel(ZASLUZENA[pozicia].badge);
+  // tvorca vystupuje pod profilovou fotkou osoby, charita/B2B pod logom subjektu
+  const avatarSrc = (pozicia === "tvorca" ? ja.foto : logo) ?? s.foto;
   // „Všetko" — virtuálny tab navrchu (pred Kampane/Skutky/Talent…): zoskupí položky zo všetkých sekcií
   const taby = [{ key: "vsetko", label: "Všetko", polozky: s.taby.flatMap((t) => t.polozky) }, ...s.taby];
   const [tab, setTab] = useState("vsetko");
@@ -123,7 +127,7 @@ export function Podstranka({ pozicia, logo, toast, onBack }: {
   const telo = (
     <div style={{ padding: `0 ${SPACE.md}px` }}>
       <EntityHero
-        avatar={(logo || s.foto) ? <img src={logo ?? s.foto} alt={s.nazov} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : (pozicia === "tvorca" ? s.emoji : s.iniciacky)}
+        avatar={avatarSrc ? <img src={avatarSrc} alt={s.nazov} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : (pozicia === "tvorca" ? s.emoji : s.iniciacky)}
         cover={s.cover}
         coverEl={<span style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 46, opacity: .45 }}>{s.emoji}</span>}
         meno={s.nazov} overene={s.overena} overeneLabel="Overený subjekt — identita potvrdená"
