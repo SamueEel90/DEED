@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect, memo } from "react";
-import { ModulHlavicka, Hlavicka, PodporaSekcia, PlatbaModal, HladanieModal, toast, Oslava, useMotiv, useLayout, useScrollPamat, useStrankaAkcie, useTvorbaGate, Ticker, StatRiadok, FiltreStat, FeedStlpce, FeedGrid, FeedCard, KartaBadge, TypBadge, BackChip, SwipeBack, obalSiroky, OkruhVyber, Lupa, Zvon, IkonaSipVlavo, IkonaMoznosti, Zdielanie, IkonaUlozit, IkonaPlay, IkonaDoska, IkonaPin, IkonaObalka, FotoPrispevku, FotoVyber, FeedSkeleton, EmptyState, ErrorState, ScreenSwitch, EntityHero, BtnAkcia, Overene, KontextMenu, IkonaOdkaz, IkonaVlajka } from "@/shared";
+import { ModulHlavicka, Hlavicka, PodporaSekcia, PlatbaModal, HladanieModal, toast, Oslava, useMotiv, useLayout, useScrollPamat, useStrankaAkcie, useTvorbaGate, Ticker, StatRiadok, FiltreStat, FeedStlpce, FeedGrid, FeedCard, KartaBadge, TypBadge, BackChip, SwipeBack, obalSiroky, OkruhVyber, Lupa, Zvon, IkonaSipVlavo, IkonaMoznosti, Zdielanie, IkonaUlozit, IkonaPlay, IkonaDoska, IkonaPin, IkonaObalka, FotoPrispevku, FotoVyber, FeedSkeleton, EmptyState, ErrorState, ScreenSwitch, EntityHero, BtnAkcia, Overene, KontextMenu, IkonaOdkaz, IkonaVlajka, FotoProfiluSheet } from "@/shared";
+import { FOTO_TEST_REZIM, klucEntity, useFotkyEntity } from "@/lib/fotoentity";
 import { SIRKA, C, GRAD, GRAD_ZELENY, SPACE, RADIUS } from "@/theme";
 import { pripravFeed, FEED_CFG } from "@/lib/feed";
 import { MEDIA_AR } from "@/lib/cardSize";
@@ -788,6 +789,10 @@ function OsobaProfil({ name, items, follows, toggleFollow, onOpen, toast, home }
   const p = osoba(name, items);
   const { gate } = useTvorbaGate(); // „Správa" iniciuje chat = create
   const sledujem = !!follows[name];
+  // fotky profilu — v testovacom režime ich smie nastaviť aj návštevník
+  const [fotky, zmenFotky] = useFotkyEntity(klucEntity("osoba", name));
+  const [fotkySheet, setFotkySheet] = useState(false);
+  const smiemUpravit = FOTO_TEST_REZIM || p.isMe;
   const acc = p.domains[0] ? DOM[p.domains[0]] : DOM.mix;
   const followers = p.followers + (sledujem ? 1 : 0);
 
@@ -800,7 +805,12 @@ function OsobaProfil({ name, items, follows, toggleFollow, onOpen, toast, home }
       {/* hero — jednotný entity vzor (cover→avatar→meno+odznak→štatistiky→akcie) */}
       <div style={{ padding: `${SPACE.xxs}px ${SPACE.md}px 0` }}>
         <EntityHero
-          avatar={<span style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 26, color: "#fff", background: p.pfp }}>{p.ini}</span>}
+          avatar={fotky.avatar
+            ? <img src={fotky.avatar} alt={p.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+            : <span style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 26, color: "#fff", background: p.pfp }}>{p.ini}</span>}
+          cover={fotky.cover ?? undefined}
+          onAvatar={smiemUpravit ? () => setFotkySheet(true) : undefined}
+          onCover={smiemUpravit ? () => setFotkySheet(true) : undefined}
           coverEl={<span style={{ position: "absolute", inset: 0, background: `linear-gradient(160deg, ${tint(acc.c, .3)}, ${tint(acc.c, .06)})` }} />}
           meno={<>{p.name}{p.profi && <Wb bg={A.purpleBg} c={A.purple}>PROFI</Wb>}</>}
           overene={p.verified} overeneLabel="Overený člen — potvrdené komunitou"
@@ -821,6 +831,17 @@ function OsobaProfil({ name, items, follows, toggleFollow, onOpen, toast, home }
           </>)}
         />
       </div>
+
+      {fotkySheet && (
+        <FotoProfiluSheet
+          titul={`Fotky profilu · ${p.name}`}
+          popis="Profilová fotka a titulná fotka tohto profilu."
+          foto={fotky.avatar} nahrada={p.ini}
+          onZmena={(url) => { zmenFotky({ avatar: url }); toast(url ? "Profilová fotka uložená" : "Profilová fotka odstránená"); }}
+          cover={fotky.cover}
+          onCover={(url) => { zmenFotky({ cover: url }); toast(url ? "Titulná fotka uložená" : "Titulná fotka odstránená"); }}
+          onClose={() => setFotkySheet(false)} />
+      )}
 
       {/* bio */}
       <p style={{ padding: `${SPACE.sm}px ${SPACE.md}px 0`, margin: 0, fontSize: 14, lineHeight: 1.55, color: A.txt2 }}>{p.bio}</p>

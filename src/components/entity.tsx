@@ -23,7 +23,7 @@ import { Switch, Hmat } from "@/components/ui";
 import { Tip } from "@/components/tooltip";
 import { useLayout } from "@/components/context";
 import { IkonaSipVpravo, IkonaZamok, IkonaOdznakOver } from "@/components/icons";
-import { KamerkaBadge } from "@/components/fotoprofilu";
+import { KamerkaBadge, ZmenitPill } from "@/components/fotoprofilu";
 import { SegTabs } from "@/components/segtabs";
 
 // ---- OVEROVACÍ ODZNAK — jediný vizuál overenia subjektu v appke ----
@@ -85,7 +85,7 @@ export function BtnIkonka({ onClick, label, aktivne, farba = "var(--a-info)", ch
 }
 
 // ---- ENTITY HERO — hlavička profilu subjektu (cover + avatar + akcie) ----
-export function EntityHero({ cover, coverEl, avatar, meno, overene, overeneLabel, podtitul, vpravo, stats, akcie, onAvatar }: {
+export function EntityHero({ cover, coverEl, avatar, meno, overene, overeneLabel, podtitul, vpravo, stats, akcie, onAvatar, onCover, coverLabel }: {
   /** URL cover fotky; alternatívne coverEl = vlastný element (gradient, Foto…) */
   cover?: string; coverEl?: ReactNode;
   /** avatar element (Foto/img/iniciálky) — vykreslí sa v krúžku cez okraj coveru */
@@ -98,7 +98,11 @@ export function EntityHero({ cover, coverEl, avatar, meno, overene, overeneLabel
   stats?: StatPolozka[];
   /** rad akčných tlačidiel (BtnAkcia/BtnIkonka) */
   akcie?: ReactNode;
+  /** klik na avatar (nastaviť profilovú fotku) — zobrazí odznak fotoaparátu */
   onAvatar?: () => void;
+  /** klik na titulnú fotku — zobrazí pilulku „Zmeniť titulnú" v rohu coveru */
+  onCover?: () => void;
+  coverLabel?: string;
 }) {
   const { desktop } = useLayout();
   const vyskaCover = desktop ? 200 : 132;
@@ -107,6 +111,7 @@ export function EntityHero({ cover, coverEl, avatar, meno, overene, overeneLabel
     <div>
       <div style={{ position: "relative", height: vyskaCover, borderRadius: RADIUS.md, overflow: "hidden", background: `linear-gradient(135deg, ${tint("var(--a-info)", .22)}, ${tint("var(--a-plum)", .16)} 60%, ${tint("var(--a-gold)", .18)})` }}>
         {cover ? <img src={cover} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} /> : coverEl}
+        {onCover && <ZmenitPill label={coverLabel} onClick={onCover} />}
       </div>
       {/* position:relative + zIndex — riadok s avatarom sa prekrýva cez cover <img>;
           bez toho replaced content coveru premaľuje pozadie/rámik avatara (paint order) */}

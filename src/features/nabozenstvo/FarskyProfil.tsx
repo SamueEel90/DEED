@@ -5,13 +5,14 @@ import {
   Foto, BackHeader, ProgresBox, PodporaSekcia, PlatbaModal, RecurringSheet, QrModal,
   MoniBar, Switch, Input, EmptyState, useStrankaAkcie,
   Zdielanie, IkonaVlajka, IkonaOpakovat, IkonaDoska, IkonaFoto, IkonaPlus, IkonaOko, IkonaNastavenia, Srdce, tint, useGaleria, useLayout,
-  ZoznamDarcov, FormatovanyText, RichTextInput, FotoUpload, KamerkaBadge, VideoEmbed, vlozenieVidea,
+  ZoznamDarcov, FormatovanyText, RichTextInput, FotoUpload, KamerkaBadge, ZmenitPill, FotoProfiluSheet, VideoEmbed, vlozenieVidea,
   StatRad, BtnAkcia, BtnIkonka, KontextMenu, MenuSkupina, MenuHlavicka, MenuPolozka, DvaStlpce,
   IkonaMoznosti, IkonaQr, IkonaKalendar, IkonaMegafon, IkonaCeruzka,
 } from "@/shared";
 import { pridajDar, type VolbaDaru } from "@/lib/darcovia";
 import { usePouzivatel } from "@/lib/pouzivatel";
 import { AVATAR_SIRKA } from "@/lib/fotoprofilu";
+import { FOTO_TEST_REZIM } from "@/lib/fotoentity";
 import { pressable } from "@/components/pressable";
 import { NahlasitSheet } from "@/components/nahlasit";
 import type { Kanal } from "@/types";
@@ -58,6 +59,7 @@ export function FarskyProfil({ farnost, farar, jeDomovska, following, onToggleFo
   const [recur, setRecur] = useState(false);
   const [qr, setQr] = useState<"donacny" | "zdielat" | null>(null);
   const [sprava, setSprava] = useState(false); // editácia profilu (sheet)
+  const [fotky, setFotky] = useState(false);   // rýchla zmena fotiek (test režim, bez správy)
   const [potvrdHome, setPotvrdHome] = useState(false); // A9 potvrdenie „nastaviť ako moju cirkev"
   const [nahlasit, setNahlasit] = useState(false); // nahlásenie profilu (z ⋯ menu)
   const [menu, setMenu] = useState(false); // ⋯ kontextové menu profilu
@@ -111,10 +113,10 @@ export function FarskyProfil({ farnost, farar, jeDomovska, following, onToggleFo
       <div style={{ padding: `0 ${SPACE.md}px` }}>
         <div style={{ position: "relative", ...(wide ? { width: "100%", aspectRatio: MEDIA_AR } : {}) }}>
           <Foto src={view.foto} emoji="⛪" h={wide ? "100%" : 210} w={wide ? "100%" : undefined} radius={14} onClick={() => otvorGaleriu([view.foto], 0)} />
-          {farar && (
-            <span {...pressable(() => setSprava(true), "Zmeniť foto")} style={{ position: "absolute", bottom: 10, right: 10, display: "inline-flex", alignItems: "center", gap: SPACE.xxs, fontSize: 11.5, fontWeight: 700, color: "#fff", background: "rgba(8,11,18,.6)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)", border: "1px solid rgba(255,255,255,.18)", padding: `${SPACE.xxs}px ${SPACE.sm}px`, borderRadius: RADIUS.xs, cursor: "pointer" }}>
-              <IkonaFoto size={13} color="#fff" /> Upraviť
-            </span>
+          {/* farár mení fotky v Správe profilu; v testovacom režime ich smie prehodiť ktokoľvek */}
+          {(farar || FOTO_TEST_REZIM) && (
+            <ZmenitPill label={farar ? "Upraviť" : "Zmeniť titulnú"} style={{ bottom: 10, right: 10 }}
+              onClick={() => (farar ? setSprava(true) : setFotky(true))} />
           )}
         </div>
       </div>
@@ -124,12 +126,12 @@ export function FarskyProfil({ farnost, farar, jeDomovska, following, onToggleFo
         <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm, marginBottom: SPACE.xs }}>
           {/* logo farnosti (Role Panely PATCH 2 §6 — „aj farnosť dodatočne"); fallback ⛪.
               Správca ho vie zmeniť klikom (odznak fotoaparátu → sheet Správa profilu). */}
-          <span {...(farar ? pressable(() => setSprava(true), "Zmeniť logo farnosti") : {})}
-            style={{ position: "relative", flex: "none", display: "inline-flex", cursor: farar ? "pointer" : "default" }}>
+          <span {...((farar || FOTO_TEST_REZIM) ? pressable(() => (farar ? setSprava(true) : setFotky(true)), "Zmeniť logo farnosti") : {})}
+            style={{ position: "relative", flex: "none", display: "inline-flex", cursor: (farar || FOTO_TEST_REZIM) ? "pointer" : "default" }}>
             <span style={{ width: 42, height: 42, borderRadius: RADIUS.sm, flex: "none", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, background: N.indBg }}>
               {view.logo ? <img src={view.logo} alt={farnost.skratka} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : "⛪"}
             </span>
-            {farar && <KamerkaBadge size={18} />}
+            {(farar || FOTO_TEST_REZIM) && <KamerkaBadge size={18} />}
           </span>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 16, fontWeight: 800, display: "flex", alignItems: "center", gap: SPACE.xs }}>{farnost.nazov} <Overena /></div>
@@ -344,6 +346,17 @@ export function FarskyProfil({ farnost, farar, jeDomovska, following, onToggleFo
         <SpravaFarnosti farnost={farnost} view={view}
           onSave={(v) => { setView(v); ulozStav("profil", farnost.id, v); setSprava(false); toast("Profil farnosti uložený"); }}
           onClose={() => setSprava(false)} />
+      )}
+      {/* rýchla zmena fotiek farnosti (test režim) — zapisuje do toho istého profilu ako Správa */}
+      {fotky && (
+        <FotoProfiluSheet
+          titul={`Fotky profilu · ${farnost.skratka}`}
+          popis="Logo farnosti a titulná fotka profilu."
+          foto={view.logo || undefined} nahrada="⛪"
+          onZmena={(url) => { const v = { ...view, logo: url || "" }; setView(v); ulozStav("profil", farnost.id, v); toast(url ? "Logo uložené" : "Logo odstránené"); }}
+          cover={view.foto}
+          onCover={(url) => { const v = { ...view, foto: url || predvolenyProfil(farnost).foto }; setView(v); ulozStav("profil", farnost.id, v); toast(url ? "Titulná fotka uložená" : "Titulná fotka vrátená na pôvodnú"); }}
+          onClose={() => setFotky(false)} />
       )}
       {selfAddOpen && <SelfAddSheet farnost={farnost} onClose={() => setSelfAddOpen(false)} toast={toast} />}
       {moderacia && <ModeraciaSheet fid={farnost.id} onClose={() => setModeracia(false)} toast={toast} />}

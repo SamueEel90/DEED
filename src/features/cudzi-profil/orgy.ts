@@ -8,6 +8,7 @@
 // organizácia dostane cover + logo z tematického poolu.
 // ============================================================
 import { U, AV } from "@/theme";
+import { klucEntity, nacitajFotky } from "@/lib/fotoentity";
 import type { Akcia } from "@/types";
 
 export interface OrgKampan {
@@ -231,13 +232,22 @@ const POOL: { cover: string; logo: string }[] = [
 const hashMena = (m: string) => { let h = 0; for (let i = 0; i < m.length; i++) h = (h * 31 + m.charCodeAt(i)) >>> 0; return h; };
 
 /** Nájde profil organizácie podľa mena — kurátorovaný, alebo deterministický fallback. */
+// Fotky nahraté v appke (profilová/titulná) prebijú fotky z registra —
+// vďaka tomu ich vidno všade, kde sa organizácia kreslí (adresár, feed,
+// detail zbierky), nielen na jej profile. Kurátorovaný objekt sa NEmutuje.
+function sVlastnymiFotkami(o: OrgData): OrgData {
+  const f = nacitajFotky(klucEntity("org", o.meno));
+  if (!f.avatar && !f.cover) return o;
+  return { ...o, logo: f.avatar ?? o.logo, cover: f.cover ?? o.cover };
+}
+
 export function najdiOrg(meno?: string): OrgData {
   const m = (meno || "").trim().toLowerCase();
   const kur = ORGY.find((o) => o.meno.toLowerCase() === m || (m && (o.meno.toLowerCase().includes(m) || m.includes(o.meno.toLowerCase()))));
-  if (kur) return kur;
+  if (kur) return sVlastnymiFotkami(kur);
   const p = POOL[hashMena(m || "org") % POOL.length];
   const n = hashMena(m || "org");
-  return {
+  return sVlastnymiFotkami({
     meno: meno || "Organizácia", lok: "Slovensko", level: "Silver", emoji: "🏛",
     cover: p.cover, logo: p.logo,
     onas: `${meno || "Organizácia"} je overená organizácia na platforme DEED. Doklady o použití prostriedkov zverejňuje pri každej zbierke.`,
@@ -247,7 +257,7 @@ export function najdiOrg(meno?: string): OrgData {
         popis: "Podpora dlhodobej činnosti organizácie — každé euro je dohľadateľné a vyúčtované." },
     ],
     akcie: [],
-  };
+  });
 }
 
 /** Avatar osoby (pravatar) — deterministicky podľa mena, pre feedy/adresáre. */

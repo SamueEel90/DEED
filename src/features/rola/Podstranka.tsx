@@ -8,6 +8,7 @@ import {
 } from "@/shared";
 import { pressable } from "@/components/pressable";
 import { usePouzivatel } from "@/lib/pouzivatel";
+import { klucEntity, useFotkyEntity } from "@/lib/fotoentity";
 import { NahlasitSheet } from "@/components/nahlasit";
 import { qrUrl } from "@/lib/qr";
 import { zdielaj, aktualnaUrl } from "@/lib/zdielanie";
@@ -34,6 +35,8 @@ export function Podstranka({ pozicia, logo, toast, onBack }: {
   const stit = naStitLevel(ZASLUZENA[pozicia].badge);
   // tvorca vystupuje pod profilovou fotkou osoby, charita/B2B pod logom subjektu
   const avatarSrc = (pozicia === "tvorca" ? ja.foto : logo) ?? s.foto;
+  const [fotky] = useFotkyEntity(klucEntity("rola", pozicia)); // titulná fotka zo správy roly
+  const coverSrc = fotky.cover ?? s.cover;
   // „Všetko" — virtuálny tab navrchu (pred Kampane/Skutky/Talent…): zoskupí položky zo všetkých sekcií
   const taby = [{ key: "vsetko", label: "Všetko", polozky: s.taby.flatMap((t) => t.polozky) }, ...s.taby];
   const [tab, setTab] = useState("vsetko");
@@ -128,7 +131,7 @@ export function Podstranka({ pozicia, logo, toast, onBack }: {
     <div style={{ padding: `0 ${SPACE.md}px` }}>
       <EntityHero
         avatar={avatarSrc ? <img src={avatarSrc} alt={s.nazov} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : (pozicia === "tvorca" ? s.emoji : s.iniciacky)}
-        cover={s.cover}
+        cover={coverSrc}
         coverEl={<span style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 46, opacity: .45 }}>{s.emoji}</span>}
         meno={s.nazov} overene={s.overena} overeneLabel="Overený subjekt — identita potvrdená"
         podtitul={<span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}><IkonaPin size={11} color={C.textTer} /> {s.lok}</span>}

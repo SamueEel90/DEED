@@ -1,17 +1,20 @@
 // ============================================================
-// DEED · PROFILOVÁ FOTKA — jednotné UI pre VŠETKY profily
-// (osobný · tvorca · charita · B2B · farnosť).
-//  · FotoProfiluSheet — sheet „Profilová fotka": náhľad + nahratie zo
-//    zariadenia (galéria/fotoaparát/drag&drop) + odstránenie.
-//  · KamerkaBadge     — malý odznak fotoaparátu cez roh avataru; signál
-//    „na fotku sa dá kliknúť a zmeniť ju".
+// DEED · FOTKY PROFILU — jednotné UI pre VŠETKY profily
+// (osobný · tvorca · charita · B2B · farnosť · cudzia org/osoba).
+//  · FotoProfiluSheet — sheet s dvoma nezávislými sekciami:
+//    PROFILOVÁ (štvorec 1:1) a TITULNÁ/cover (16:9). Sekcia sa zobrazí
+//    len ak volajúci dodá príslušný `onZmena`/`onCover`.
+//  · KamerkaBadge  — odznak fotoaparátu cez roh avataru (klik = zmeniť).
+//  · ZmenitPill    — sklenená pilulka „Zmeniť titulnú" do rohu cover fotky.
 // Fotka ide vždy cez FotoUpload → spracujFotku (re-enkód, EXIF/GPS preč,
-// orez na štvorec) — nikde v appke sa surový súbor nepoužíva.
+// orez na pomer) — nikde v appke sa surový súbor nepoužíva.
 // ============================================================
+import type { ReactNode } from "react";
 import { C, SPACE, RADIUS } from "@/theme";
 import { Sheet } from "@/components/sheet";
 import { FotoUpload } from "@/components/fotoupload";
 import { IkonaFoto } from "@/components/icons";
+import { pressable } from "@/components/pressable";
 import { AVATAR_SIRKA } from "@/lib/fotoprofilu";
 
 export function FotoProfiluSheet({
@@ -20,16 +23,23 @@ export function FotoProfiluSheet({
   foto,
   nahrada,
   onZmena,
+  cover,
+  onCover,
+  coverPopis = "Široká fotka na pozadí hlavičky profilu.",
   onClose,
 }: {
   titul?: string;
   popis?: string;
-  /** aktuálna fotka (data-URL/URL) */
+  /** aktuálna profilová fotka (data-URL/URL); vynechaj `onZmena` a sekcia sa nezobrazí */
   foto?: string | null;
   /** čo ukázať bez fotky — iniciála, emoji, logo… */
-  nahrada?: React.ReactNode;
+  nahrada?: ReactNode;
   /** null = odstrániť fotku */
-  onZmena: (dataUrl: string | null) => void;
+  onZmena?: (dataUrl: string | null) => void;
+  /** aktuálna titulná (cover) fotka — sekcia sa zobrazí len s `onCover` */
+  cover?: string | null;
+  onCover?: (dataUrl: string | null) => void;
+  coverPopis?: string;
   onClose: () => void;
 }) {
   return (
@@ -44,20 +54,41 @@ export function FotoProfiluSheet({
         </div>
       </div>
 
-      <FotoUpload value={foto ?? undefined} onZmena={(url) => onZmena(url)} pomer={1} vyska={190} maxSirka={AVATAR_SIRKA} />
-
-      <div style={{ display: "flex", alignItems: "flex-start", gap: SPACE.xs, fontSize: 11, color: C.textTer, lineHeight: 1.5, marginTop: SPACE.sm }}>
-        <IkonaFoto size={13} color={C.textTer} />
-        <span>Fotka sa pred uložením prekóduje — <b>EXIF aj GPS súradnice</b> sa odstránia a obrázok sa oreže na štvorec.</span>
-      </div>
-
-      {foto && (
-        <button onClick={() => onZmena(null)}
-          style={{ width: "100%", height: 42, marginTop: SPACE.sm, borderRadius: RADIUS.sm, cursor: "pointer", fontFamily: "inherit", fontWeight: 700, fontSize: 13, background: "transparent", color: "var(--a-danger)", border: "1px solid rgba(242,112,111,.4)" }}>
-          Odstrániť fotku
-        </button>
+      {onZmena && (
+        <>
+          <PoleNadpis>PROFILOVÁ FOTKA (štvorec)</PoleNadpis>
+          <FotoUpload value={foto ?? undefined} onZmena={(url) => onZmena(url)} pomer={1} vyska={180} maxSirka={AVATAR_SIRKA} />
+          {foto && <OdstranitBtn label="Odstrániť profilovú fotku" onClick={() => onZmena(null)} />}
+        </>
       )}
+
+      {onCover && (
+        <>
+          <PoleNadpis style={{ marginTop: onZmena ? SPACE.md : 0 }}>TITULNÁ FOTKA (16:9)</PoleNadpis>
+          <FotoUpload value={cover ?? undefined} onZmena={(url) => onCover(url)} pomer={16 / 9} vyska={140} />
+          <div style={{ fontSize: 10.5, color: C.textTer, marginTop: SPACE.xxs, lineHeight: 1.45 }}>{coverPopis}</div>
+          {cover && <OdstranitBtn label="Odstrániť titulnú fotku" onClick={() => onCover(null)} />}
+        </>
+      )}
+
+      <div style={{ display: "flex", alignItems: "flex-start", gap: SPACE.xs, fontSize: 11, color: C.textTer, lineHeight: 1.5, marginTop: SPACE.md }}>
+        <IkonaFoto size={13} color={C.textTer} />
+        <span>Fotka sa pred uložením prekóduje — <b>EXIF aj GPS súradnice</b> sa odstránia a obrázok sa oreže na správny pomer.</span>
+      </div>
     </Sheet>
+  );
+}
+
+function PoleNadpis({ children, style }: { children: ReactNode; style?: React.CSSProperties }) {
+  return <div style={{ fontSize: 10.5, fontWeight: 800, color: C.textTer, letterSpacing: ".04em", marginBottom: SPACE.xs, ...style }}>{children}</div>;
+}
+
+function OdstranitBtn({ label, onClick }: { label: string; onClick: () => void }) {
+  return (
+    <button onClick={onClick}
+      style={{ width: "100%", height: 40, marginTop: SPACE.xs, borderRadius: RADIUS.sm, cursor: "pointer", fontFamily: "inherit", fontWeight: 700, fontSize: 12.5, background: "transparent", color: "var(--a-danger)", border: "1px solid rgba(242,112,111,.4)" }}>
+      {label}
+    </button>
   );
 }
 
@@ -71,6 +102,21 @@ export function KamerkaBadge({ size = 24, strana = "vpravo" }: { size?: number; 
       background: C.surface2, border: `1.5px solid var(--c-bg)`, color: C.textSec, boxShadow: "0 2px 8px rgba(0,0,0,.28)",
     }}>
       <IkonaFoto size={Math.round(size * 0.55)} color={C.textSec} />
+    </span>
+  );
+}
+
+/** sklenená pilulka do rohu cover fotky („Zmeniť titulnú") — vzor z profilu farnosti */
+export function ZmenitPill({ label = "Zmeniť titulnú", onClick, style }: { label?: string; onClick: () => void; style?: React.CSSProperties }) {
+  return (
+    <span {...pressable(onClick, label)}
+      style={{
+        position: "absolute", bottom: 8, right: 8, display: "inline-flex", alignItems: "center", gap: SPACE.xxs,
+        fontSize: 11, fontWeight: 700, color: "#fff", background: "rgba(8,11,18,.6)",
+        backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)", border: "1px solid rgba(255,255,255,.18)",
+        padding: `${SPACE.xxs}px ${SPACE.sm}px`, borderRadius: RADIUS.xs, cursor: "pointer", zIndex: 2, ...style,
+      }}>
+      <IkonaFoto size={12} color="#fff" /> {label}
     </span>
   );
 }

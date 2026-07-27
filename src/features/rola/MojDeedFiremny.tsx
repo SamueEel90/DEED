@@ -12,6 +12,7 @@ import {
 import { pressable } from "@/components/pressable";
 import { usePouzivatel } from "@/lib/pouzivatel";
 import { AVATAR_SIRKA } from "@/lib/fotoprofilu";
+import { klucEntity, useFotkyEntity } from "@/lib/fotoentity";
 import { zdielaj, aktualnaUrl } from "@/lib/zdielanie";
 import { MojaRetaz } from "@/features/retaz/MojaRetaz";
 import {
@@ -68,6 +69,9 @@ export function MojDeedFiremny({ onBack, toast }: { onBack: () => void; toast: (
   const [menu, setMenu] = useState(false);
   const [podstranka, setPodstranka] = useState(false);
 
+  // titulná (cover) fotka subjektu — per rola, oddelene od loga/profilovky
+  const [fotky, zmenFotky] = useFotkyEntity(klucEntity("rola", pozicia));
+
   const tier = tiery[pozicia];
   const prepniPoziciu = (p: Pozicia) => { setPozicia(p); ulozPoziciu(p); setLogo(nacitajLogo(p)); };
   const nastavTier = (t: Tier) => { const n = { ...tiery, [pozicia]: t }; setTiery(n); ulozTiery(n); };
@@ -100,6 +104,7 @@ export function MojDeedFiremny({ onBack, toast }: { onBack: () => void; toast: (
 
   // avatar subjektu: charita/B2B = nahraté logo · tvorca = moja profilová fotka
   const avatarSrc = (pozicia === "tvorca" ? ja.foto : logo) ?? subjekt.foto;
+  const coverSrc = fotky.cover ?? subjekt.cover;
 
   // vlastník vidí TÚ ISTÚ verejnú stránku ako cudzí
   if (podstranka) return <Podstranka pozicia={pozicia} logo={logo} toast={toast} onBack={() => setPodstranka(false)} />;
@@ -119,7 +124,8 @@ export function MojDeedFiremny({ onBack, toast }: { onBack: () => void; toast: (
           ? <img src={avatarSrc} alt={subjekt.nazov} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
           : (pozicia === "tvorca" ? subjekt.emoji : subjekt.iniciacky)}
         onAvatar={() => setSheet("profil")}
-        cover={subjekt.cover}
+        onCover={() => setSheet("profil")}
+        cover={coverSrc}
         coverEl={<span style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 42, opacity: .4 }}>{subjekt.emoji}</span>}
         meno={subjekt.nazov} overene={subjekt.overena} overeneLabel="Overený subjekt — identita potvrdená"
         podtitul={<span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}><IkonaPin size={11} color={C.textTer} /> {subjekt.lok} · {rolaMeta.label}</span>}
@@ -242,8 +248,10 @@ export function MojDeedFiremny({ onBack, toast }: { onBack: () => void; toast: (
       {sheet === "terminal" && <TerminalSheet toast={toast} onClose={() => setSheet(null)} />}
       {sheet === "retaz" && <MojaRetaz onClose={() => setSheet(null)} toast={toast} />}
       {sheet === "profil" && (
-        <UpravProfilSheet pozicia={pozicia} logo={logo} toast={toast}
-          onLogo={(url) => { setLogo(url); ulozLogo(pozicia, url); }} onClose={() => setSheet(null)} />
+        <UpravProfilSheet pozicia={pozicia} logo={logo} cover={fotky.cover} toast={toast}
+          onLogo={(url) => { setLogo(url); ulozLogo(pozicia, url); }}
+          onCover={(url) => zmenFotky({ cover: url })}
+          onClose={() => setSheet(null)} />
       )}
       {sheet === "adresarB2B" && <AdresarB2BSheet vlastneLogo={logo} toast={toast} onClose={() => setSheet(null)} />}
 
@@ -510,9 +518,9 @@ function TerminalSheet({ toast, onClose }: { toast: (m: string) => void; onClose
 }
 
 // ===================== UPRAVIŤ PROFIL + LOGO SUBJEKTU =====================
-function UpravProfilSheet({ pozicia, logo, toast, onLogo, onClose }: {
-  pozicia: Pozicia; logo: string | null; toast: (m: string) => void;
-  onLogo: (url: string | null) => void; onClose: () => void;
+function UpravProfilSheet({ pozicia, logo, cover, toast, onLogo, onCover, onClose }: {
+  pozicia: Pozicia; logo: string | null; cover?: string | null; toast: (m: string) => void;
+  onLogo: (url: string | null) => void; onCover: (url: string | null) => void; onClose: () => void;
 }) {
   const s = SUBJEKTY[pozicia];
   const ja = usePouzivatel();
@@ -561,6 +569,17 @@ function UpravProfilSheet({ pozicia, logo, toast, onLogo, onClose }: {
             </button>
           )}
         </>
+      )}
+
+      {/* TITULNÁ (cover) — nezávislá od profilovej/loga, pre každú rolu */}
+      <div style={{ fontSize: 10.5, fontWeight: 800, color: C.textTer, letterSpacing: ".04em", margin: `${SPACE.md}px 0 ${SPACE.xs}px` }}>TITULNÁ FOTKA (16:9)</div>
+      <FotoUpload value={cover ?? s.cover} onZmena={(url) => { onCover(url); toast("Titulná fotka uložená"); }} pomer={16 / 9} vyska={130} />
+      <div style={{ fontSize: 10.5, color: C.textTer, marginTop: SPACE.xxs, lineHeight: 1.45 }}>Široká fotka na pozadí hlavičky profilu — vidí ju každý návštevník.</div>
+      {cover && (
+        <button onClick={() => { onCover(null); toast("Titulná fotka vrátená na pôvodnú"); }}
+          style={{ width: "100%", height: 38, marginTop: SPACE.xs, borderRadius: RADIUS.sm, border: `1px solid ${C.line}`, cursor: "pointer", fontFamily: "inherit", fontWeight: 700, fontSize: 12, background: "transparent", color: C.textSec }}>
+          Odstrániť titulnú fotku
+        </button>
       )}
     </Sheet>
   );

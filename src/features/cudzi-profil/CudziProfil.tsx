@@ -5,8 +5,10 @@ import {
   EntityHero, BtnAkcia, BtnIkonka, KontextMenu, TabyProfil, MenuSkupina, MenuPolozka, DvaStlpce,
   IkonaMoznosti, IkonaQr, IkonaVlajka, IkonaOdkaz, Zvon, tint as tintVar,
   Foto, Sheet, ProgresBox, PodporaSekcia, PlatbaModal, ZoznamDarcov,
+  FotoProfiluSheet, KamerkaBadge, ZmenitPill,
 } from "@/shared";
 import { pressable } from "@/components/pressable";
+import { FOTO_TEST_REZIM, klucEntity, useFotkyEntity } from "@/lib/fotoentity";
 import { NahlasitSheet } from "@/components/nahlasit";
 import type { CudziSubjekt, CudziSubjektOrg, CudziSubjektOsoba } from "@/types";
 import { usePersonalizacia } from "@/lib/personalizacia";
@@ -64,8 +66,16 @@ function OrgProfil({ s, onBack, toast, onKampan }: { s: CudziSubjektOrg; onBack?
   const [zvoncek, setZvoncek] = useState(false);
   const [nahlasit, setNahlasit] = useState(false);
   const [kampanDetail, setKampanDetail] = useState<OrgKampan | null>(null); // vstavaný detail zbierky
+  const [fotky, setFotky] = useState(false);   // sheet „Fotky profilu" (profilová + titulná)
   const meno = s.meno || "Detská nemocnica — nadácia";
   const org = najdiOrg(meno); // register: cover, logo, o nás, štatistiky, kampane s fotkami
+  // TEST REŽIM: prihlásený smie prehodiť profilovku aj titulku na KAŽDOM profile.
+  // najdiOrg už nahraté fotky domerguje (vidno ich aj v adresári a vo feede) —
+  // hook tu drží zápis a prekreslenie po zmene.
+  const [vlastne, zmenFotky] = useFotkyEntity(klucEntity("org", meno));
+  const smiemUpravit = FOTO_TEST_REZIM;
+  const logo = org.logo;
+  const cover = org.cover;
   const sleduje = sledujem(meno);
   const level = s.level || org.level;
   const kampane = org.kampane;
@@ -142,8 +152,10 @@ function OrgProfil({ s, onBack, toast, onKampan }: { s: CudziSubjektOrg; onBack?
 
       <div style={{ padding: `0 ${SPACE.md}px` }}>
         <EntityHero
-          avatar={<img src={org.logo} alt={meno} style={{ width: "100%", height: "100%", objectFit: "cover" }} />}
-          cover={org.cover}
+          avatar={<img src={logo} alt={meno} style={{ width: "100%", height: "100%", objectFit: "cover" }} />}
+          cover={cover}
+          onAvatar={smiemUpravit ? () => setFotky(true) : undefined}
+          onCover={smiemUpravit ? () => setFotky(true) : undefined}
           meno={meno} overene overeneLabel={`Overená charita · ${level}`}
           podtitul={s.lok || org.lok}
           stats={[
@@ -181,6 +193,19 @@ function OrgProfil({ s, onBack, toast, onKampan }: { s: CudziSubjektOrg; onBack?
       {nahlasit && <NahlasitSheet co={`Profil · ${meno}`} refId={meno} modul="charity" onClose={() => setNahlasit(false)} toast={toast ?? (() => {})} />}
       {qr && <QrModal typ="skutok" titul={`QR profilu · ${meno}`} popis="Odznak dôvery s odkazom na profil" odkaz={qrUrl("org", "detska-nemocnica")} onClose={() => setQr(false)} toast={toast} />}
       {kampanDetail && <KampanSheet k={kampanDetail} org={meno} toast={toast} onClose={() => setKampanDetail(null)} />}
+
+      {/* fotky profilu — profilová aj titulná zvlášť (test režim: aj na cudzom profile) */}
+      {fotky && (
+        <FotoProfiluSheet
+          titul={`Fotky profilu · ${meno}`}
+          popis="Profilová fotka a titulná fotka tohto profilu."
+          foto={vlastne.avatar ?? logo} nahrada={s.emoji ?? meno[0]}
+          onZmena={(url) => { zmenFotky({ avatar: url }); toast?.(url ? "Profilová fotka uložená" : "Profilová fotka vrátená na pôvodnú"); }}
+          cover={vlastne.cover ?? cover}
+          onCover={(url) => { zmenFotky({ cover: url }); toast?.(url ? "Titulná fotka uložená" : "Titulná fotka vrátená na pôvodnú"); }}
+          coverPopis="Široká fotka na pozadí hlavičky profilu — vidí ju každý návštevník."
+          onClose={() => setFotky(false)} />
+      )}
     </div>
   );
 }
@@ -236,11 +261,15 @@ function OsobaProfil({ s, onBack, toast }: { s: CudziSubjektOsoba; onBack?: () =
   // demo: prepínač stavu (v reále stav určuje vzťah + súhlas)
   const [stav, setStav] = useState<string>(s.stav || "bezna");
   const [pridane, setPridane] = useState(false);
+  const [fotky, setFotky] = useState(false);
   const { sledujem, toggleSledovanie } = usePersonalizacia(); // sledovanie = zdieľaný store (Môj DEED)
   const meno = s.meno || "Ján Novák";
   const sleduje = sledujem(meno);
   const level = s.level || "Silver";
   const farba = stav === "tvorca" ? "var(--a-plum)" : stav === "priatel" ? "var(--a-green)" : "var(--a-info)";
+  // TEST REŽIM: fotky sa dajú nastaviť aj cudzej osobe (profilová + titulná zvlášť)
+  const [vlastne, zmenFotky] = useFotkyEntity(klucEntity("osoba", meno));
+  const smiemUpravit = FOTO_TEST_REZIM;
 
   return (
     <div style={{ paddingBottom: SPACE.lg }}>
@@ -266,11 +295,18 @@ function OsobaProfil({ s, onBack, toast }: { s: CudziSubjektOsoba; onBack?: () =
       </div>
 
       <div style={{ padding: `0 ${SPACE.md}px` }}>
-        {/* hero osoby — cover podľa stavu, avatar, meno + stavový chip */}
-        <div style={{ height: 96, borderRadius: RADIUS.md, background: `linear-gradient(160deg, ${tintVar(farba, .3)}, ${tintVar(farba, .08)})`, transition: "background .3s ease" }} />
-        <div style={{ display: "flex", alignItems: "flex-end", gap: SPACE.sm, marginTop: -30, padding: `0 ${SPACE.sm}px` }}>
-          <span style={{ flex: "none", borderRadius: RADIUS.round, border: `3px solid var(--c-bg)`, boxShadow: "0 2px 10px rgba(0,0,0,.18)" }}>
-            <Aura size={68} hrubka={2}><span style={{ fontSize: 26, fontWeight: 800, color: "#fff" }}>{meno[0]}</span></Aura>
+        {/* hero osoby — cover podľa stavu (alebo nahratá titulná), avatar, meno + stavový chip */}
+        <div style={{ position: "relative", height: 96, borderRadius: RADIUS.md, overflow: "hidden", background: `linear-gradient(160deg, ${tintVar(farba, .3)}, ${tintVar(farba, .08)})`, transition: "background .3s ease" }}>
+          {vlastne.cover && <img src={vlastne.cover} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />}
+          {smiemUpravit && <ZmenitPill onClick={() => setFotky(true)} />}
+        </div>
+        <div style={{ display: "flex", alignItems: "flex-end", gap: SPACE.sm, marginTop: -30, padding: `0 ${SPACE.sm}px`, position: "relative", zIndex: 1 }}>
+          <span {...(smiemUpravit ? pressable(() => setFotky(true), "Profilová fotka") : {})}
+            style={{ position: "relative", flex: "none", borderRadius: RADIUS.round, border: `3px solid var(--c-bg)`, boxShadow: "0 2px 10px rgba(0,0,0,.18)", cursor: smiemUpravit ? "pointer" : "default" }}>
+            {vlastne.avatar
+              ? <img src={vlastne.avatar} alt={meno} style={{ width: 68, height: 68, borderRadius: RADIUS.round, objectFit: "cover", display: "block" }} />
+              : <Aura size={68} hrubka={2}><span style={{ fontSize: 26, fontWeight: 800, color: "#fff" }}>{meno[0]}</span></Aura>}
+            {smiemUpravit && <KamerkaBadge size={22} />}
           </span>
           <div style={{ flex: 1, minWidth: 0, paddingBottom: 2 }}>
             <div style={{ fontSize: 16.5, fontWeight: 800, display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
@@ -345,6 +381,17 @@ function OsobaProfil({ s, onBack, toast }: { s: CudziSubjektOsoba; onBack?: () =
           <div style={{ fontSize: 11, color: C.textTer, textAlign: "center" }}>Profil je verejný, lebo osoba dobrovoľne ponúka službu.</div>
         </>)}
       </div>
+
+      {fotky && (
+        <FotoProfiluSheet
+          titul={`Fotky profilu · ${meno}`}
+          popis="Profilová fotka a titulná fotka tohto profilu."
+          foto={vlastne.avatar} nahrada={meno[0]}
+          onZmena={(url) => { zmenFotky({ avatar: url }); toast?.(url ? "Profilová fotka uložená" : "Profilová fotka odstránená"); }}
+          cover={vlastne.cover}
+          onCover={(url) => { zmenFotky({ cover: url }); toast?.(url ? "Titulná fotka uložená" : "Titulná fotka odstránená"); }}
+          onClose={() => setFotky(false)} />
+      )}
     </div>
   );
 }
