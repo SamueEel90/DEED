@@ -335,7 +335,7 @@ function MojDeedObsah({ onDetail, onBoard, toast }: { onDetail: (id: string | nu
   const { zaujmy, zaujmyKluce, sledovani, toggleSledovanie, podpory, oblubene, mojeZbierky, upravZbierku } = usePersonalizacia();
   const [spravovana, setSpravovana] = useState<string | null>(null); // id zbierky v správe
   const zbierkaVSprave = mojeZbierky.find((z) => z.id === spravovana) || null;
-  const modulLabel: Record<string, string> = { help: "Help", charity: "Charita", good: "Domov", workshop: "Talent", nabozenstvo: "Nábož." };
+  const modulLabel: Record<string, string> = { help: "Help", charity: "Charita", good: "Domov", workshop: "Talent", nabozenstvo: "Viera" };
 
   const maZaujmy = zaujmy.length > 0;
 

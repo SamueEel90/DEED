@@ -7,7 +7,7 @@ import { usePouzivatel } from "@/lib/pouzivatel";
 import { N, SheetPanel } from "./ui";
 import { SmutocnyForm } from "./SmutocnyOznam";
 import { UserOznamForm, nacitajSelfAdd, type UserOznamTyp } from "./UserOznamy";
-import { SPLIT_LABELY, SVIATKY, farskySplitVariant, pridajPrispevok, type Farnost, type NabozFeedItem, type NabozTyp, type UdalostKat, type ReakciaTyp } from "./mock";
+import { SPLIT_LABELY, SVIATKY, farskySplitVariant, pridajPrispevok, type Farnost, type VieraFeedItem, type VieraTyp, type UdalostKat, type ReakciaTyp } from "./mock";
 
 /*
   ============================================================
@@ -247,17 +247,17 @@ const UKAT_UZLA: Record<string, UdalostKat> = {
 const REAKCIA_UZLA: Record<string, ReakciaTyp> = {
   "o-smutocny": "kondolencia", "o-umrtie": "kondolencia", "o-spomienkovy": "kondolencia", "o-modlitba": "modlitba", "o-jubilejny": "blahozelanie",
 };
-const NTYP_META: Record<NabozTyp, { tag: string; badge: string }> = {
+const NTYP_META: Record<VieraTyp, { tag: string; badge: string }> = {
   zbierka: { tag: "Zbierka", badge: "ZBIERKA" }, udalost: { tag: "Udalosť", badge: "UDALOSŤ" },
   oznam: { tag: "Oznam", badge: "OZNAM" }, dobrovolnictvo: { tag: "Dobrovoľníctvo", badge: "VÝZVA" },
 };
 
 function postavPrispevok(uzol: Uzol, opts: {
   farar: boolean; farnost?: Farnost; autor: string; text: string; polia: Record<string, string>; fotky: string[]; autorTvar?: boolean;
-}): NabozFeedItem {
+}): VieraFeedItem {
   const { farar, farnost, autor, text, polia, fotky, autorTvar } = opts;
   const pole = (test: (l: string) => boolean) => { const p = uzol.polia.find((x) => test(x.toLowerCase())); return p ? polia[p] : undefined; };
-  const ntyp: NabozTyp = uzol.id.startsWith("z-") ? "zbierka" : uzol.id.startsWith("u-") ? "udalost" : uzol.id.startsWith("d-") ? "dobrovolnictvo" : "oznam";
+  const ntyp: VieraTyp = uzol.id.startsWith("z-") ? "zbierka" : uzol.id.startsWith("u-") ? "udalost" : uzol.id.startsWith("d-") ? "dobrovolnictvo" : "oznam";
   const meta = NTYP_META[ntyp];
   const nazovPola = pole((l) => l.startsWith("názov"));
   const meno = pole((l) => l.includes("meno") || l.includes("mená"));
@@ -295,7 +295,7 @@ function nazovPredvyplneny(uzol: Uzol, polia: Record<string, string>): string | 
 
 // ---- FORM uzla — polia + akcie preview + ukážka/publikovať (reálny príspevok) ----
 function UzolForm({ uzol, farar, farnost, onSplit, onPublish, onHelp, toast }: {
-  uzol: Uzol; farar: boolean; farnost?: Farnost; onSplit?: () => void; onPublish: (it: NabozFeedItem) => void; onHelp?: () => void; toast: (m: string) => void;
+  uzol: Uzol; farar: boolean; farnost?: Farnost; onSplit?: () => void; onPublish: (it: VieraFeedItem) => void; onHelp?: () => void; toast: (m: string) => void;
 }) {
   const { celeMeno } = usePouzivatel();
   const [text, setText] = useState("");

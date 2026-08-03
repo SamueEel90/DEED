@@ -1,6 +1,6 @@
 // ============================================================
 // DEED · „Ozvať sa" — mini formulár so správou pre organizáciu
-// (Charita „Zapojiť sa", Help „Mám záujem", Náboženstvo dobrovoľníctvo).
+// (Charita „Zapojiť sa", Help „Mám záujem", Viera dobrovoľníctvo).
 // Mock v1: správa sa uloží lokálne (deed.spravy.v1) — až príde messaging
 // backend, odošle sa reálne. UI je už finálne.
 // ============================================================

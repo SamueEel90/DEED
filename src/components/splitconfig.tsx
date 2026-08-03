@@ -3,7 +3,7 @@
 // Vlastník (autor/influencer) si drží ZVYŠOK; k organizáciám/žiadostiam
 // (z useRetazZiadosti) nastavíš % posuvníkom. Σ = 100 %.
 // Pravidlá bežca (Split bežec, 6.7.2026): zaokrúhľovanie po 5 % VŠADE;
-// mimo Náboženstva min 5 % (pod 5 % hláška + disabled), v Náboženstve
+// mimo Viery min 5 % (pod 5 % hláška + disabled), vo Viere
 // minPct=0 → 0 % povolené (kostolný podiel je dobrovoľný — nepridá sa).
 // Používa: SplitQrSheet (osobný QR), tvorba príspevku (autorský split),
 // správca QR (nový QR). Rodič vlastní `ciele`; owner % = 100 − Σ.
@@ -15,7 +15,7 @@ import { Lupa, IkonaKriz } from "@/components/icons";
 import { useRetazZiadosti } from "@/data";
 
 export type SplitCiel = { id: string; komu: string; pct: number; pinned?: boolean };
-export const SPLIT_MIN = 5;   // minimálny podiel mimo Náboženstva (v Náboženstve minPct=0)
+export const SPLIT_MIN = 5;   // minimálny podiel mimo Viery (vo Viere minPct=0)
 export const SPLIT_KROK = 5;  // bežec zaokrúhľuje po 5 % — všade
 
 // prekryv textov/ikon pre nešpecifické varianty (napr. farársky „Rozdeliť dar":
@@ -32,7 +32,7 @@ export type SplitLabely = {
 export const splitOwnerPct = (ciele: SplitCiel[]): number =>
   100 - ciele.reduce((s, c) => s + c.pct, 0);
 
-// minPct = 0 (Náboženstvo): 0 % povolené, žiadna hláška — stačí, aby súčet nepresiahol 100 %.
+// minPct = 0 (Viera): 0 % povolené, žiadna hláška — stačí, aby súčet nepresiahol 100 %.
 // minPct > 0 (default): aspoň 1 príjemca a všetky podiely (aj owner) ≥ minPct.
 export const splitValid = (ciele: SplitCiel[], minPct: number = SPLIT_MIN): boolean => {
   const owner = splitOwnerPct(ciele);
@@ -54,7 +54,7 @@ export function SplitConfigStep({ ownerLabel, ciele, onCiele, ownerColor = "var(
   onCiele: (c: SplitCiel[]) => void;
   ownerColor?: string;
   labely?: SplitLabely;
-  minPct?: number; // 0 = Náboženstvo (0 % povolené), inak SPLIT_MIN
+  minPct?: number; // 0 = Viera (0 % povolené), inak SPLIT_MIN
 }) {
   const { data: ZIADOSTI = [] } = useRetazZiadosti();
   const [q, setQ] = useState("");
@@ -121,7 +121,7 @@ export function SplitConfigStep({ ownerLabel, ciele, onCiele, ownerColor = "var(
         </div>
       )}
 
-      {/* validácia + zámok — mimo Náboženstva min 5 %, v Náboženstve (minPct=0) 0 % ok */}
+      {/* validácia + zámok — mimo Viery min 5 %, vo Viere (minPct=0) 0 % ok */}
       <div style={{ display: "flex", alignItems: "center", gap: SPACE.xs, fontSize: 11, color: ownerPct < 0 || (minPct > 0 && (ownerPct < minPct || ciele.some((c) => c.pct < minPct))) ? "var(--a-danger)" : C.gold, marginTop: SPACE.xs, lineHeight: 1.4 }}>
         {ownerPct < 0
           ? `⚠️ Súčet presahuje 100 % — zníž niektorý podiel.`

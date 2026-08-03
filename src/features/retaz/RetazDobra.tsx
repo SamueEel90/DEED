@@ -93,7 +93,7 @@ export function RetazDobraSheet({ odmena = 130, mode = "skutok", titulOdkaz = "S
           {!honorar && <span style={{ fontSize: 12.5, color: C.textSec }}>≈ <b style={{ color: C.text }}>{reazSuma} DEED</b> z {odmena} DEED</span>}
           {honorar && <span style={{ fontSize: 12.5, color: C.textSec }}>z každého budúceho honoráru</span>}
         </div>
-        {/* Split bežec (mimo Náboženstva): min 5 %, zaokrúhľovanie po 5 % */}
+        {/* Split bežec (mimo Viery): min 5 %, zaokrúhľovanie po 5 % */}
         <input type="range" min={5} max={100} step={5} value={pct} onChange={(e) => setPct(+e.target.value)}
           style={{ width: "100%", marginTop: SPACE.sm, accentColor: "var(--a-green)" }} />
         <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: C.textTer }}>

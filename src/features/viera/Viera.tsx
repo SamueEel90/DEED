@@ -30,12 +30,12 @@ import {
 } from "./mock";
 import { usePrispevkySync } from "./prispevkyDB";
 import {
-  type NabozFeedItem, type Farnost, type CirkevPolozka,
+  type VieraFeedItem, type Farnost, type CirkevPolozka,
 } from "./mock";
 
 /*
   ============================================================
-  MODUL NÁBOŽENSTVO — v2 (adresár-first, produkčná úroveň)
+  MODUL VIERA — v2 (adresár-first, produkčná úroveň)
   ------------------------------------------------------------
   · VSTUP = adresár kostolov (farností), NIE zmiešaný feed (§ požiadavka vlastníka)
   · príspevky žijú AŽ v profile kostola (klik na kartu → FarskyProfil)
@@ -49,14 +49,14 @@ import {
 type Screen = "domov" | "profil" | "kalendar" | "detail";
 type Sheet = "dir" | "add" | null;
 
-export default function ModulNabozenstvo({ wide }: { wide?: boolean; otvorModul?: (m: string) => void }) {
+export default function ModulViera({ wide }: { wide?: boolean; otvorModul?: (m: string) => void }) {
   const { desktop } = useLayout();
   const [screen, setScreen] = useState<Screen>("domov");
   const [sheet, setSheet] = useState<Sheet>(null);
   // pod-obrazovka = vrstva histórie → browser Back sa vráti na adresár (nie von z appky)
   useVrstva(screen !== "domov", () => setScreen("domov"), screen);
   const [hladaj, setHladaj] = useState(false);
-  const [akt, setAkt] = useState<NabozFeedItem | null>(null);
+  const [akt, setAkt] = useState<VieraFeedItem | null>(null);
   const [aktFarnost, setAktFarnost] = useState<Farnost | null>(null);
 
   // domovská cirkev (A9 súhlas) · obľúbené = sledované (jeden zdroj pravdy) · správcovský režim
@@ -78,7 +78,7 @@ export default function ModulNabozenstvo({ wide }: { wide?: boolean; otvorModul?
     <div style={{ minHeight: "100%", color: N.txt }}>
       <ScreenSwitch k={screen}>
         {screen === "domov" && (
-          <NabozDomov wide={wide} domFarnost={domFarnost} oblubene={oblubene} rodina={rodina} onRodina={setRodina}
+          <VieraDomov wide={wide} domFarnost={domFarnost} oblubene={oblubene} rodina={rodina} onRodina={setRodina}
             onProfil={otvorProfil} onHladaj={() => setHladaj(true)} onSprievodca={() => setSheet("dir")}
             onPridat={() => setSheet("add")}
             onToggleFollow={toggleFollow}
@@ -102,7 +102,7 @@ export default function ModulNabozenstvo({ wide }: { wide?: boolean; otvorModul?
         )}
         {screen === "detail" && akt && obal(
           <SwipeBack onBack={spatZDetailu}>
-            <NabozDetail z={akt} farar={spravovana === farnostIdOf(akt)} onBack={spatZDetailu} onProfil={otvorProfil} />
+            <VieraDetail z={akt} farar={spravovana === farnostIdOf(akt)} onBack={spatZDetailu} onProfil={otvorProfil} />
           </SwipeBack>
         )}
       </ScreenSwitch>
@@ -160,12 +160,12 @@ type DomovProps = {
   onSprievodca: () => void;
   onPridat: () => void;         // otvor PridatSheet (user = len oznam, farár = celý strom)
   onToggleFollow: (id: string) => void;
-  onPrispevok: (z: NabozFeedItem) => void;
+  onPrispevok: (z: VieraFeedItem) => void;
   spravujeDomov: boolean;       // farár režim pre domovskú farnosť (label + toggle)
   onToggleSpravca: () => void;  // prepni účet farára pre domovskú farnosť
 };
 
-function NabozDomov({ wide, domFarnost, oblubene, rodina, onRodina, onProfil, onHladaj, onSprievodca, onPridat, onToggleFollow, onPrispevok, spravujeDomov, onToggleSpravca }: DomovProps) {
+function VieraDomov({ wide, domFarnost, oblubene, rodina, onRodina, onProfil, onHladaj, onSprievodca, onPridat, onToggleFollow, onPrispevok, spravujeDomov, onToggleSpravca }: DomovProps) {
   const { desktop } = useLayout();
   const [sort, setSort] = useState<"najblizsie" | "abecedne">("najblizsie");
   const [radius, setRadius] = useState<string>("mesto");
@@ -293,7 +293,7 @@ function NabozDomov({ wide, domFarnost, oblubene, rodina, onRodina, onProfil, on
 
   return (
     <div style={{ paddingBottom: SPACE.gutter }}>
-      <ModulHlavicka title="Náboženstvo" right={
+      <ModulHlavicka title="Viera" right={
         <>
           <span {...pressable(onHladaj, "Hľadať")} style={{ display: "flex", alignItems: "center", cursor: "pointer" }}><Lupa size={20} color={N.txt2} /></span>
           <Zvoncek color={N.txt2} toast={toast} />
@@ -341,12 +341,12 @@ function NabozDomov({ wide, domFarnost, oblubene, rodina, onRodina, onProfil, on
 
 // HLAVNÝ feed domovskej farnosti — CELÝ jej obsah pod sebou (ako profil: zbierky /
 // udalosti / oznamy / dobrovoľníctvo) + kontakt na konci. Nahrádza mriežku kostolov.
-const OBSAH_SKUPINY: { key: NabozFeedItem["ntyp"]; label: string }[] = [
+const OBSAH_SKUPINY: { key: VieraFeedItem["ntyp"]; label: string }[] = [
   { key: "zbierka", label: "Zbierky" }, { key: "udalost", label: "Udalosti" },
   { key: "oznam", label: "Oznamy" }, { key: "dobrovolnictvo", label: "Dobrovoľníctvo" },
 ];
 
-function FarnostFeed({ f, onPrispevok }: { f: Farnost; onPrispevok: (z: NabozFeedItem) => void }) {
+function FarnostFeed({ f, onPrispevok }: { f: Farnost; onPrispevok: (z: VieraFeedItem) => void }) {
   const { desktop } = useLayout(); // desktop → 2× väčšie miniatúry (viac plochy)
   const k = desktop ? 2 : 1;
   usePrispevkySync(f.id); // DB → LS zrkadlo (príspevky z iných zariadení); po syncu re-render
@@ -482,7 +482,7 @@ function fotoBadge(pos: number, side: "left" | "right"): React.CSSProperties {
 }
 
 // ===================== DETAIL PRÍSPEVKU =====================
-function NabozDetail({ z, farar, onBack, onProfil }: { z: NabozFeedItem; farar: boolean; onBack: () => void; onProfil: (f: Farnost) => void }) {
+function VieraDetail({ z, farar, onBack, onProfil }: { z: VieraFeedItem; farar: boolean; onBack: () => void; onProfil: (f: Farnost) => void }) {
   const { wide } = useLayout();
   const otvorGaleriu = useGaleria();
   // parte režim 2: „Pridať zbierku" nastaví cieľ aj lokálne (z je snapshot z feedu)

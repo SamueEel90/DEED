@@ -1,8 +1,8 @@
 // ============================================================
-// MODUL NÁBOŽENSTVO — lokálna paleta + drobné zdieľané kúsky.
+// MODUL VIERA — lokálna paleta + drobné zdieľané kúsky.
 // Paleta N (pokojné indigo/slivka + zlatá + zelená) — theme-aware tinty,
 // žiadne hardcoded rgba (viď pamäť svetlého motívu). Zdieľané naprieč
-// Nabozenstvo / FarskyProfil / Kalendar / Pridat.
+// Viera / FarskyProfil / Kalendar / Pridat.
 // ============================================================
 import { useState, forwardRef, type ReactNode, type HTMLAttributes } from "react";
 import { SPACE, RADIUS, SIRKA } from "@/theme";

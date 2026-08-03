@@ -24,7 +24,7 @@ import { useVrstva } from "@/lib/urlnav";
 import { kopiruj, zdielaj, aktualnaUrl } from "@/lib/zdielanie";
 import { OzvatSaSheet } from "@/components/ozvatsa";
 import { NahlasitSheet } from "@/components/nahlasit";
-import { OverujemNamietam } from "@/features/nabozenstvo/ui";
+import { OverujemNamietam } from "@/features/viera/ui";
 import { USER_LOK, ZIVE_DARY, CHARITY_FISKALNE } from "./mock";
 
 /*

@@ -23,7 +23,7 @@ import { Input, FotoVyber, Foto, RichTextInput, FormatovanyText } from "@/shared
 import { cistyText } from "@/lib/richtext";
 import { pressable } from "@/components/pressable";
 import { N } from "./ui";
-import { vekZDatumov, type SmutocnyData, type Farnost, type NabozFeedItem } from "./mock";
+import { vekZDatumov, type SmutocnyData, type Farnost, type VieraFeedItem } from "./mock";
 
 // prednastavené verše + možnosť vlastného (spec §4.3)
 export const SMUTOCNE_VERSE = [
@@ -142,7 +142,7 @@ export function ParteMiniatura({ s, w = 52, h = 64 }: { s: SmutocnyData; w?: num
 // (+ voliteľný formátovateľný TEXT podľa §5 — zaradený za veršom)
 // ============================================================
 export function SmutocnyForm({ farnost, autor, farar, onPublish }: {
-  farnost?: Farnost; autor: string; farar?: boolean; onPublish: (it: NabozFeedItem) => void;
+  farnost?: Farnost; autor: string; farar?: boolean; onPublish: (it: VieraFeedItem) => void;
 }) {
   const [mode, setMode] = useState<"template" | "image">("template");
   const [meno, setMeno] = useState("");

@@ -22,7 +22,7 @@ import { cistyText } from "@/lib/richtext";
 import { pressable } from "@/components/pressable";
 import { N, SheetPanel } from "./ui";
 import { nacitajStav, ulozStav } from "./stav";
-import type { Farnost, NabozFeedItem, ReakciaTyp } from "./mock";
+import type { Farnost, VieraFeedItem, ReakciaTyp } from "./mock";
 
 export type UserOznamTyp = "jubilejny" | "podakovanie" | "modlitba" | "spomienkovy";
 
@@ -113,7 +113,7 @@ function ObrazokVyber({ typ, imageMode, setImageMode, presetId, setPresetId, fot
 // FORMULÁR — polia a poradie presne podľa §4 (per typ)
 // ============================================================
 export function UserOznamForm({ typ, farnost, autor, poplatok = 0, onPublish }: {
-  typ: UserOznamTyp; farnost?: Farnost; autor: string; poplatok?: number; onPublish: (it: NabozFeedItem) => void;
+  typ: UserOznamTyp; farnost?: Farnost; autor: string; poplatok?: number; onPublish: (it: VieraFeedItem) => void;
 }) {
   const m = META[typ];
   const [mode, setMode] = useState<"card" | "image">("card");

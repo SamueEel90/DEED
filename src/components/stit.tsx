@@ -46,7 +46,7 @@ export const SYMBOLY_MODULOV: Record<string, string> = {
   eco: "🌿",        // vavrínová vetva / dub
   // fáza 2 (potvrdiť pri module): health = Asklépiova palica (JEDEN had),
   // gov = váhy, sos = maják, kids = klíčiaci výhonok
-  // Core = bez symbolu (ornamentál) · Náboženstvo = bez karmy → bez štítu
+  // Core = bez symbolu (ornamentál) · Viera = bez karmy → bez štítu
 };
 
 /** bezpečný mapper zo stringu (mock dáta) na level — neznáme → Bronze */

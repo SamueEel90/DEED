@@ -1,6 +1,6 @@
 import { useState, useEffect, memo } from "react";
 import { SIRKA, C, U, AV, GRAD, GRAD_ZELENY, SPACE, RADIUS } from "@/theme";
-import { Foto, Avatar, MiniFotky, ModulHlavicka, PodporaSekcia, PlatbaModal, RecurringSheet, SplitQrSheet, HladanieModal, OblubeneHviezda, OblubeneBtn, toast, useGaleria, useLayout, useScrollPamat, useStrankaAkcie, useTvorbaGate, Ticker, StatRiadok, FiltreStat, FeedStlpce, FeedGrid, FeedCard, KartaBadge, BackHeader, ProgresBox, obalSiroky, OkruhVyber, SegTabs, tint, Lupa, Zvon, Zdielanie, IkonaVlajka, IkonaFoto, IkonaPlay, IkonaDoska, IkonaOpakovat, IkonaKriz, IkonaInstitucia, IkonaMoznosti, IkonaOdkaz, IkonaRetaz, KontextMenu, DvaStlpce, Overene, PodporitDeed, FeedSkeleton, SkeletonRiadky, EmptyState, ErrorState, ScreenSwitch, SwipeBack, ZoznamDarcov, FormatovanyText } from "@/shared";
+import { Foto, Avatar, MiniFotky, ModulHlavicka, PodporaSekcia, PlatbaModal, RecurringSheet, SplitQrSheet, HladanieModal, OblubeneHviezda, OblubeneBtn, toast, useGaleria, useLayout, useScrollPamat, useStrankaAkcie, useTvorbaGate, Ticker, StatRiadok, FiltreStat, FeedStlpce, FeedGrid, FeedCard, KartaBadge, BackHeader, ProgresBox, obalSiroky, OkruhVyber, SegTabs, tint, Lupa, Zvon, Zdielanie, IkonaVlajka, IkonaFoto, IkonaPlay, IkonaDoska, IkonaOpakovat, IkonaKriz, IkonaInstitucia, IkonaMoznosti, IkonaOdkaz, IkonaRetaz, KontextMenu, Overene, PodporitDeed, FeedSkeleton, SkeletonRiadky, EmptyState, ErrorState, ScreenSwitch, SwipeBack, ZoznamDarcov, FormatovanyText } from "@/shared";
 import { pridajDar, type VolbaDaru } from "@/lib/darcovia";
 import { usePouzivatel } from "@/lib/pouzivatel";
 import { pripravFeed, FEED_CFG } from "@/lib/feed";
@@ -257,7 +257,7 @@ function CharitaFeed({ wide, toast, onDetail, onHladaj, onSheet, onBoard, onFire
               </div>
               <span style={{ color: C.textTer, fontSize: 16 }}>›</span>
             </div>
-            {/* rolové panely a správa (Charita · Tvorca · B2B) — vzor farár z Náboženstva */}
+            {/* rolové panely a správa (Charita · Tvorca · B2B) — vzor farár z Viery */}
             <div onClick={onFiremny} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, background: K.goldBg, border: `1px solid ${tint("var(--a-gold)", .3)}`, borderRadius: RADIUS.sm, padding: `${SPACE.sm}px ${SPACE.gutter}px`, cursor: "pointer", marginTop: SPACE.xs }}>
               <span style={{ width: 38, height: 38, borderRadius: RADIUS.sm, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", background: tint("var(--a-gold)", .15), fontSize: 18 }}>🏢</span>
               <div style={{ flex: 1, minWidth: 0 }}>
@@ -417,7 +417,7 @@ function CharitaDetail({ z: zProp, toast, onBack, onReg, onAutor }: { z?: Zbierk
   const [nahlasit, setNahlasit] = useState(false);          // nahlásenie obsahu (z ⋯ menu)
   const [menu, setMenu] = useState(false);                  // ⋯ kontextové menu
   const otvorGaleriu = useGaleria();
-  const { wide, desktop } = useLayout();
+  const { wide } = useLayout();
   const ja = usePouzivatel(); // registrovaný vs pasívny — určuje zápis do zoznamu darcov
   if (!zRaw) return null;
   const z = zRaw; // zúžené na non-null (bezpečné aj v closure onDone/onPodpor)
@@ -526,24 +526,15 @@ function CharitaDetail({ z: zProp, toast, onBack, onReg, onAutor }: { z?: Zbierk
       </BackHeader>
       <div style={{ height: SPACE.sm }} />
 
-      {desktop ? (
-        <div style={{ padding: `0 ${SPACE.md}px` }}>
-          <DvaStlpce sirkaBoku={380}
-            hlavny={<>{fotoBlok}<MiniFotky fotky={fotky} /><div style={{ height: SPACE.gutter }} />{pribehBlok}{darcoviaBlok}</>}
-            bok={podporaBlok}
-          />
-        </div>
-      ) : (
-        <>
-          {fotoBlok && <div style={{ padding: `0 ${SPACE.md}px` }}>{fotoBlok}</div>}
-          <MiniFotky fotky={fotky} />
-          <div style={{ padding: `${SPACE.gutter}px ${SPACE.md}px 0` }}>
-            {pribehBlok}
-            {podporaBlok}
-            {darcoviaBlok}
-          </div>
-        </>
-      )}
+      {/* JEDEN stĺpec na všetkých šírkach — rovnaká anatómia detailu ako Help/Domov
+          (foto → autor + príbeh → podpora → darcovia). Šírku capuje `obal` v module. */}
+      {fotoBlok && <div style={{ padding: `0 ${SPACE.md}px` }}>{fotoBlok}</div>}
+      <MiniFotky fotky={fotky} />
+      <div style={{ padding: `${SPACE.gutter}px ${SPACE.md}px 0` }}>
+        {pribehBlok}
+        {podporaBlok}
+        {darcoviaBlok}
+      </div>
 
       {menu && (
         <KontextMenu onClose={() => setMenu(false)} polozky={[

@@ -21,7 +21,7 @@ import { SelfAddSheet, nacitajSelfAdd } from "./UserOznamy";
 import { ParteMiniatura } from "./SmutocnyOznam";
 import { nacitajStav, ulozStav } from "./stav";
 import { cistyText } from "@/lib/richtext";
-import { obsahFarnosti, farnostStat, KAT_FARBA, vlastnePrispevkyVsetky, zmazPrispevok, pridajPrispevok, upravPrispevok, predvoleneKostoly, type Farnost, type NabozFeedItem, type NabozTyp, type FararInfo, type OsobaFarnosti, type KostolFarnosti } from "./mock";
+import { obsahFarnosti, farnostStat, KAT_FARBA, vlastnePrispevkyVsetky, zmazPrispevok, pridajPrispevok, upravPrispevok, predvoleneKostoly, type Farnost, type VieraFeedItem, type VieraTyp, type FararInfo, type OsobaFarnosti, type KostolFarnosti } from "./mock";
 import { usePrispevkySync } from "./prispevkyDB";
 
 type ViditSum = "zobrazit" | "skryt" | "len-farar";
@@ -39,7 +39,7 @@ const VIDIT_LABEL: Record<ViditSum, string> = { zobrazit: "zobraziť", skryt: "s
   ============================================================
 */
 
-const TABY: { key: NabozTyp; label: string }[] = [
+const TABY: { key: VieraTyp; label: string }[] = [
   { key: "zbierka", label: "Zbierky" }, { key: "udalost", label: "Udalosti" },
   { key: "oznam", label: "Oznamy" }, { key: "dobrovolnictvo", label: "Dobrovoľníctvo" },
 ];
@@ -49,7 +49,7 @@ const eur = (n: number) => Math.round(n).toLocaleString("sk-SK");
 export function FarskyProfil({ farnost, farar, jeDomovska, following, onToggleFollow, onToggleSpravca, onSetHome, onBack, onDetail, onKalendar, onPridat, toast }: {
   farnost: Farnost; farar: boolean; jeDomovska?: boolean; following?: boolean;
   onToggleFollow?: () => void; onToggleSpravca?: () => void; onSetHome?: () => void;
-  onBack: () => void; onDetail: (it: NabozFeedItem) => void; onKalendar: () => void; onPridat: () => void; toast: (m: string) => void;
+  onBack: () => void; onDetail: (it: VieraFeedItem) => void; onKalendar: () => void; onPridat: () => void; toast: (m: string) => void;
 }) {
   const otvorGaleriu = useGaleria();
   const [suma, setSuma] = useState(farnost.vyzbierane);
@@ -160,7 +160,7 @@ export function FarskyProfil({ farnost, farar, jeDomovska, following, onToggleFo
           </div>
         )}
 
-        {/* nastaviť túto cirkev ako moju domovskú (zobrazí sa navrchu Náboženstva) */}
+        {/* nastaviť túto cirkev ako moju domovskú (zobrazí sa navrchu Viery) */}
         {!jeDomovska && onSetHome && (
           potvrdHome ? (
             <div style={{ marginBottom: SPACE.sm }}>
@@ -380,11 +380,11 @@ function selfAddLabel(fid: string): string {
 function ModeraciaSheet({ fid, onClose, toast }: { fid: string; onClose: () => void; toast: (m: string) => void }) {
   // publikované oznamy z úložiska (raw, bez TTL filtra — mazať sa dá aj expirovaný);
   // zoznam držíme lokálne, nech „Obnoviť" funguje kým je sheet otvorený
-  const [polozky, setPolozky] = useState<NabozFeedItem[]>(() => vlastnePrispevkyVsetky(fid).filter((it) => it.ntyp === "oznam"));
+  const [polozky, setPolozky] = useState<VieraFeedItem[]>(() => vlastnePrispevkyVsetky(fid).filter((it) => it.ntyp === "oznam"));
   const [zmazane, setZmazane] = useState<Set<string>>(() => new Set());
   const [potvrd, setPotvrd] = useState<string | null>(null);   // „naozaj zmazať?" (bod 26)
-  const [editujem, setEditujem] = useState<NabozFeedItem | null>(null); // „Upraviť" (bod 26)
-  const prepni = (it: NabozFeedItem) => {
+  const [editujem, setEditujem] = useState<VieraFeedItem | null>(null); // „Upraviť" (bod 26)
+  const prepni = (it: VieraFeedItem) => {
     if (zmazane.has(it.id)) {
       setZmazane((s) => { const n = new Set(s); n.delete(it.id); return n; });
       pridajPrispevok(fid, it); toast("Oznam obnovený");
@@ -433,7 +433,7 @@ function ModeraciaSheet({ fid, onClose, toast }: { fid: string; onClose: () => v
 
 // „Upraviť oznam" (bod 26) — predvyplnená rýchla editácia (názov · text · dátum);
 // plný re-render formulára per typ = ďalšia fáza, toto rieši preklep/zlý čas.
-function UpravOznamSheet({ it, onUloz, onClose }: { it: NabozFeedItem; onUloz: (patch: Partial<NabozFeedItem>) => void; onClose: () => void }) {
+function UpravOznamSheet({ it, onUloz, onClose }: { it: VieraFeedItem; onUloz: (patch: Partial<VieraFeedItem>) => void; onClose: () => void }) {
   const [nazov, setNazov] = useState(it.nazov ?? "");
   const [text, setText] = useState(it.pribeh ?? it.popis ?? "");
   const [datum, setDatum] = useState(it.datum ?? "");
@@ -637,7 +637,7 @@ export function KontaktRiadok({ ikona, label, hodnota }: { ikona: string; label:
     </div>
   );
 }
-function KampanRiadok({ it, onClick }: { it: NabozFeedItem; onClick: () => void }) {
+function KampanRiadok({ it, onClick }: { it: VieraFeedItem; onClick: () => void }) {
   const { desktop } = useLayout();
   const k = desktop ? 2 : 1; // desktop → 2× väčšia miniatúra
   return (
@@ -654,7 +654,7 @@ function KampanRiadok({ it, onClick }: { it: NabozFeedItem; onClick: () => void 
     </div>
   );
 }
-function UdalostRiadok({ it, onClick }: { it: NabozFeedItem; onClick: () => void }) {
+function UdalostRiadok({ it, onClick }: { it: VieraFeedItem; onClick: () => void }) {
   const { desktop } = useLayout();
   const k = desktop ? 2 : 1; // desktop → 2× väčšia miniatúra
   const col = it.ukat ? KAT_FARBA[it.ukat] : N.ind;

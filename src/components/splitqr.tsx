@@ -38,7 +38,7 @@ export type SplitVariant = {
   preset: SplitCiel[];     // predvyplnení príjemcovia (napr. kostol 5 %, odstrániteľný)
   qrPopis?: string;        // popis v QrModal
   labely?: SplitLabely;    // texty/ikony do SplitConfigStep
-  minPct?: number;         // minimálny podiel — Náboženstvo dáva 0 (0 % povolené, bez fronty)
+  minPct?: number;         // minimálny podiel — Viera dáva 0 (0 % povolené, bez fronty)
 };
 
 interface SplitQrSheetProps {

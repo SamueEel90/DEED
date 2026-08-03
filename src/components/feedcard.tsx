@@ -1,7 +1,7 @@
 // ============================================================
 // DEED · FEED KARTA — JEDNA Instagram karta pre celú appku.
 // Nahrádza GoodKarta / Help FeedCard / CharitaKarta / AktCard /
-// NabozKarta — rovnaká anatómia všade:
+// VieraKarta — rovnaká anatómia všade:
 //   [autor?] → [médium + odznaky] → [titul + chipy] → [text] →
 //   [progres (MoniBar)] → [pätička podľa typu]
 // Moduly dodávajú len OBSAH (sloty), nie layout.

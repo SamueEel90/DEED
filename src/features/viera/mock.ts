@@ -1,5 +1,5 @@
 // ============================================================
-// MODUL NÁBOŽENSTVO — mock dáta (v1, port špecifikácie DEED_Modul_Nabozenstvo_v1)
+// MODUL VIERA — mock dáta (v1, port špecifikácie DEED_Modul_Nabozenstvo_v1)
 // „Šošovka" nad enginom — kópia modulu Charita s iným obsahom.
 //   · adresár registrovaných cirkví SR (register MK SR, zákon 308/1991)
 //   · feed: obsah komunít (Zbierky / Udalosti / Oznamy / Dobrovoľníctvo)
@@ -13,8 +13,8 @@ import { nacitajStav, ulozStav } from "./stav";
 import { vytvorPrispevokDB, zmazPrispevokDB, upravPrispevokDB } from "./prispevkyDB";
 
 // ---- typ obsahu (chips = TYP obsahu, NIE porovnávanie cirkví) ----
-export type NabozTyp = "zbierka" | "udalost" | "oznam" | "dobrovolnictvo";
-export const TYP_CHIP: Record<NabozTyp, string> = {
+export type VieraTyp = "zbierka" | "udalost" | "oznam" | "dobrovolnictvo";
+export const TYP_CHIP: Record<VieraTyp, string> = {
   zbierka: "Zbierky", udalost: "Udalosti", oznam: "Oznamy", dobrovolnictvo: "Dobrovoľníctvo",
 };
 
@@ -22,8 +22,8 @@ export const TYP_CHIP: Record<NabozTyp, string> = {
 // `farnostId` = väzba na konkrétnu komunitu (FARNOSTI) → profil ju filtruje do tabov.
 // `ukat` = jemná pod-kategória Udalosti/Oznamu (omša/svadba/pohreb… — farba v kalendári).
 // `datum` = ISO deň (udalosti s dátumom → kalendár + pripomienka).
-export type NabozFeedItem = CharitaFeedItem & {
-  ntyp: NabozTyp; cirkev: string; komunita?: string; pribeh?: string;
+export type VieraFeedItem = CharitaFeedItem & {
+  ntyp: VieraTyp; cirkev: string; komunita?: string; pribeh?: string;
   farnostId?: string; ukat?: UdalostKat; datum?: string; rsvp?: boolean; split?: boolean;
   overitelne?: boolean; // pravosť rieši komunitné Overujem/Namietam (§78) — zbierka pre iného/pohreb/svadba
   reakciaTyp?: ReakciaTyp; // kontext srdiečka (§ delta bod 2): kondolencia / modlím sa / blahoželáme
@@ -71,7 +71,7 @@ export function vekZDatumov(nar: string, umr: string): number | null {
 // TTL oznamu (§8b): default 7 dní; pri úmrtí platí min. do rozlúčky + 3 dni — čo je neskôr.
 // „Preč z feedu" ≠ hard delete — expirovaný sa len nefiltruje do feedu (záznam ostáva v localStorage).
 const DEN_MS = 86400000;
-export function oznamAktivny(it: NabozFeedItem): boolean {
+export function oznamAktivny(it: VieraFeedItem): boolean {
   if (it.ntyp !== "oznam" || !it.vytvorene) return true; // TTL zatiaľ len pre oznamy s časom vzniku
   const zaklad = it.vytvorene + (it.platnostDni ?? 7) * DEN_MS;
   const rozlucka = it.smutocny?.rozluckaDatum ? Date.parse(it.smutocny.rozluckaDatum) + 3 * DEN_MS : 0;
@@ -122,7 +122,7 @@ export const CIRKVI_FLAT: CirkevPolozka[] = CIRKVI.flatMap((s) => s.polozky);
 // ---- FEED: obsah komunít ----
 // engine typ: zbierka → "charita" (stĺpec Zbierky) · ostatné → "skutok" (stĺpec Komunita).
 // Súradnice pri Trenčíne; celoslovenské = narodne:true (zobrazia sa pri okruhu „celá SR").
-export const FEED_ITEMS: NabozFeedItem[] = [
+export const FEED_ITEMS: VieraFeedItem[] = [
   { id: "strecha", comp: "data", typ: "charita", modul: "charity", kat: "Pomoc", ntyp: "zbierka",
     skore: 8, typSituacie: "normal", lat: 48.894, lng: 18.046, dni: 0, podpora: 62, farnostId: "tn-mesto",
     cirkev: "Rímskokatolícka cirkev v SR", komunita: "Farnosť Trenčín — mesto",
@@ -529,27 +529,27 @@ export const KOMUNITA_FARNOST: Record<string, string> = {
   "Zbor BJB Trenčín": "bjb-tn",
   "Židovská obec Bratislava": "zob-ba",
 };
-export const farnostIdOf = (it: NabozFeedItem): string => it.farnostId ?? KOMUNITA_FARNOST[it.komunita ?? ""] ?? "";
+export const farnostIdOf = (it: VieraFeedItem): string => it.farnostId ?? KOMUNITA_FARNOST[it.komunita ?? ""] ?? "";
 
 // ---- vlastné (publikované) príspevky — perzistované v localStorage per farnosť ----
 // PridatSheet po „Publikovať" uloží reálnu položku; feedy/taby/kalendár ju čítajú
 // cez obsahFarnosti (vlastné navrchu — najnovšie prvé). Mock bez backendu.
-export const vlastnePrispevky = (fid: string): NabozFeedItem[] =>
-  nacitajStav<NabozFeedItem[]>("prispevky", fid, []).filter(oznamAktivny); // TTL §8b — expirované z feedu von, záznam ostáva
-export function pridajPrispevok(fid: string, it: NabozFeedItem) {
-  ulozStav("prispevky", fid, [it, ...nacitajStav<NabozFeedItem[]>("prispevky", fid, [])]);
+export const vlastnePrispevky = (fid: string): VieraFeedItem[] =>
+  nacitajStav<VieraFeedItem[]>("prispevky", fid, []).filter(oznamAktivny); // TTL §8b — expirované z feedu von, záznam ostáva
+export function pridajPrispevok(fid: string, it: VieraFeedItem) {
+  ulozStav("prispevky", fid, [it, ...nacitajStav<VieraFeedItem[]>("prispevky", fid, [])]);
   void vytvorPrispevokDB(fid, it); // dual-write → prenos medzi zariadeniami (mock = no-op)
 }
 // mazanie cez farára („farár môže zmazať" — auto-publish poistka): REÁLNE odstráni
 // záznam z úložiska (aj expirovaný — preto raw zoznam bez TTL filtra).
-export const vlastnePrispevkyVsetky = (fid: string): NabozFeedItem[] =>
-  nacitajStav<NabozFeedItem[]>("prispevky", fid, []);
+export const vlastnePrispevkyVsetky = (fid: string): VieraFeedItem[] =>
+  nacitajStav<VieraFeedItem[]>("prispevky", fid, []);
 export function zmazPrispevok(fid: string, id: string) {
   ulozStav("prispevky", fid, vlastnePrispevkyVsetky(fid).filter((it) => it.id !== id));
   void zmazPrispevokDB(id);
 }
 // úprava publikovaného príspevku (farár: „Upraviť" v moderácii · „Pridať zbierku" na parte)
-export function upravPrispevok(fid: string, id: string, patch: Partial<NabozFeedItem>) {
+export function upravPrispevok(fid: string, id: string, patch: Partial<VieraFeedItem>) {
   const novy = vlastnePrispevkyVsetky(fid).map((it) => (it.id === id ? { ...it, ...patch } : it));
   ulozStav("prispevky", fid, novy);
   const it = novy.find((x) => x.id === id);
@@ -558,14 +558,14 @@ export function upravPrispevok(fid: string, id: string, patch: Partial<NabozFeed
 /** Vlastný (publikovaný cez appku) príspevok = jediný, ktorý sa dá reálne zmazať — demo obsah z mocku nie. */
 export const jeVlastnyPrispevok = (fid: string, id: string): boolean =>
   vlastnePrispevkyVsetky(fid).some((it) => it.id === id);
-export const obsahFarnosti = (fid: string): NabozFeedItem[] =>
+export const obsahFarnosti = (fid: string): VieraFeedItem[] =>
   [...vlastnePrispevky(fid), ...FEED_ITEMS.filter((it) => farnostIdOf(it) === fid)];
 
 // odvodené počty obsahu farnosti — stat riadok karty · počty v taboch profilu · správcovský prehľad
 export interface FarnostStat { zbierky: number; udalosti: number; oznamy: number; dobro: number; spolu: number; }
 export const farnostStat = (fid: string): FarnostStat => {
   const o = obsahFarnosti(fid);
-  const poc = (t: NabozTyp) => o.filter((it) => it.ntyp === t).length;
+  const poc = (t: VieraTyp) => o.filter((it) => it.ntyp === t).length;
   return { zbierky: poc("zbierka"), udalosti: poc("udalost"), oznamy: poc("oznam"), dobro: poc("dobrovolnictvo"), spolu: o.length };
 };
 
@@ -718,7 +718,7 @@ export const SPLIT_LABELY = {
 };
 
 // farársky variant pre zdieľaný SplitQrSheet (Split bežec, 6.7.2026): nadpis „Rozdeliť dar",
-// vlastník = rodina (dostane zvyšok), predvyplnený kostol na 5 % (odstrániteľný). V Náboženstve
+// vlastník = rodina (dostane zvyšok), predvyplnený kostol na 5 % (odstrániteľný). Vo Viere
 // minPct=0 → 0 % povolené (kostolný podiel je dobrovoľný dar — 0 % = nepridá sa, žiadna hláška).
 // Žiadna fronta — delí sa výnos JEDNEJ zbierky. Krok 5 %, % sa po vytvorení zafixujú.
 export function farskySplitVariant(kind: "pohreb" | "svadba" = "pohreb"): SplitVariant {
@@ -728,7 +728,7 @@ export function farskySplitVariant(kind: "pohreb" | "svadba" = "pohreb"): SplitV
     emoji: kind === "pohreb" ? "🕯" : "💍",
     podnadpis: "Rodina nastaví lištou · kostolný podiel je dobrovoľný dar (0 % ok)",
     ownerLabel: lab.rodina,
-    minPct: 0, // Náboženstvo: 0 % povolené, žiadna hláška o minime
+    minPct: 0, // Viera: 0 % povolené, žiadna hláška o minime
     preset: [{ id: "kostol", komu: lab.kostol, pct: 5 }], // odstrániteľný (bez pinned)
     qrPopis: "Rozdelenie daru medzi príjemcov (farársky Split QR)",
     labely: {
@@ -746,7 +746,7 @@ export function farskySplitVariant(kind: "pohreb" | "svadba" = "pohreb"): SplitV
 // ---- kontextový text reakcie-srdiečka (§ delta bod 2) ----
 // Srdiečko je jediná reakcia modulu (NIE palec — ten ostáva v Core). Význam sa mení
 // podľa typu príspevku: pohreb/úmrtie/smútočné = kondolencia, prosba o modlitbu = „modlím sa".
-export function reakciaToast(z: NabozFeedItem): string {
+export function reakciaToast(z: VieraFeedItem): string {
   const typ: ReakciaTyp = z.reakciaTyp ?? (z.ukat === "pohreb" ? "kondolencia" : "srdce");
   switch (typ) {
     case "kondolencia": return "🕯 Kondolencia odoslaná";

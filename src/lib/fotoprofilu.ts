@@ -4,7 +4,7 @@
 // EXIF/GPS preč, orez na štvorec) a ukladá sa ako data-URL:
 //  · localStorage (per účet) — funguje aj v mock/offline režime,
 //  · Supabase `profil.profilovka_url` — best-effort, aby fotka prešla
-//    aj na iné zariadenie (rovnaký vzor ako nabozenstvo/stav.ts).
+//    aj na iné zariadenie (rovnaký vzor ako viera/stav.ts).
 // Čítanie ide cez usePouzivatel().foto — komponenty nesiahajú na LS priamo.
 // Poznámka: avatar sa zmenšuje na AVATAR_SIRKA px, aby data-URL ostal malý
 // (LS má ~5 MB) — hero cover fotky idú inou cestou (FotoUpload 16:9).

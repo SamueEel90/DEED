@@ -29,7 +29,7 @@ import { RetazPodstranka } from "@/features/retaz/RetazPodstranka";
 const ModulGood = lazy(() => import("@/features/good/Good"));
 const ModulHelp = lazy(() => import("@/features/help/Help"));
 const ModulCharita = lazy(() => import("@/features/charita/Charita"));
-const ModulNabozenstvo = lazy(() => import("@/features/nabozenstvo/Nabozenstvo"));
+const ModulViera = lazy(() => import("@/features/viera/Viera"));
 const ModulProfil = lazy(() => import("@/features/profil/Profil"));
 const ModulAktivity = lazy(() => import("@/features/aktivity/Aktivity"));
 const ModulMapa = lazy(() => import("@/features/mapa/Mapa"));
@@ -322,7 +322,7 @@ export function Screens({ wide, desktop }: { wide?: boolean; desktop?: boolean }
             {modul === "good" && <ModulGood wide={wide} otvorModul={prepni} otvorId={dlDetail?.modul === "good" ? dlDetail.ref : undefined} onOtvorene={() => setDlDetail(null)} />}
             {modul === "help" && <ModulHelp wide={wide} />}
             {modul === "charita" && <ModulCharita wide={wide} otvorModul={prepni} />}
-            {modul === "nabozenstvo" && <ModulNabozenstvo wide={wide} otvorModul={prepni} />}
+            {modul === "nabozenstvo" && <ModulViera wide={wide} otvorModul={prepni} />}
             {modul === "profil" && <ModulProfil wide={wide} walletReq={walletReq} />}
             {modul === "vyzva" && <ModulAktivity wide={wide} />}
             {modul === "mapa" && <ModulMapa wide={wide} />}

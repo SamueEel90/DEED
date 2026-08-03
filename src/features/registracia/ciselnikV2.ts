@@ -148,6 +148,6 @@ export const SEKCIE_MODULY: SekciaModul[] = [
   { id: "help", label: "Pomoc", emoji: "🆘", desc: "Dopyty a ponuky pomoci v okolí." },
   { id: "charita", label: "Charita", emoji: "💛", desc: "Zbierky, dobrovoľníctvo, materiálna pomoc." },
   { id: "aktivity", label: "Aktivity", emoji: "🏃", desc: "Skutky a aktivity komunity." },
-  { id: "nabozenstvo", label: "Náboženstvo", emoji: "⛪", desc: "Farnosti a cirkvi, oznamy a rozvrhy." },
+  { id: "nabozenstvo", label: "Viera", emoji: "⛪", desc: "Farnosti a cirkvi, oznamy a rozvrhy." },
   { id: "vyzvy", label: "Výzvy", emoji: "🏆", desc: "Komunitné výzvy a súťaže." },
 ];

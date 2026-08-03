@@ -18,7 +18,7 @@ const KARTY = [
   {
     emoji: "📍",
     titul: "Tvoje okolie aj celé Slovensko",
-    text: "Okruh (štvrť → mesto → Slovensko) určuje, čo vidíš vo feede. Všetkých 8 modulov — Domov, Help, Charita, Aktivity, Náboženstvo, Mapa, Top a Profil — nájdeš v menu ☰ hore; päť obľúbených si pripneš do spodnej lišty.",
+    text: "Okruh (štvrť → mesto → Slovensko) určuje, čo vidíš vo feede. Všetkých 8 modulov — Domov, Help, Charita, Aktivity, Viera, Mapa, Top a Profil — nájdeš v menu ☰ hore; päť obľúbených si pripneš do spodnej lišty.",
   },
   {
     emoji: "🛡️",

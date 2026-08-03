@@ -87,7 +87,7 @@ export function BackChip({ onBack, hero, label = "Späť" }: { onBack?: () => vo
 
 // ---- BACK HEADER — JEDNOTNÁ hlavička pod-obrazovky (detail/sheet) ----
 // sticky glass riadok: ← späť · obsah (badge/labels) · pravé akcie.
-// Používajú Charita/Help/Náboženstvo/… detaily — jeden vzor „ako sa vrátim".
+// Používajú Charita/Help/Viera/… detaily — jeden vzor „ako sa vrátim".
 export function BackHeader({ onBack, title, children, right }: { onBack?: () => void; title?: ReactNode; children?: ReactNode; right?: ReactNode }) {
   return (
     <div style={{ position: "sticky", top: 0, zIndex: 5, ...glassTmavy(18, .6), borderLeft: "none", borderRight: "none", borderTop: "none" }}>

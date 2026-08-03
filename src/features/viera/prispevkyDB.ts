@@ -1,5 +1,5 @@
 // ============================================================
-// NÁBOŽENSTVO · príspevky farnosti v Supabase (prenos medzi zariadeniami).
+// VIERA · príspevky farnosti v Supabase (prenos medzi zariadeniami).
 // localStorage (stav.ts, oblasť "prispevky") zostáva ako offline cache:
 //   · synchronizujPrispevky(fid) pri otvorení farnosti stiahne DB stav,
 //     offline vytvorené položky DOPLNÍ do DB a zrkadlo uloží do LS
@@ -13,7 +13,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { nahrajFotky } from "@/lib/uploadFoto";
 import { nacitajStav, ulozStav, synchronizujStav } from "./stav";
-import type { NabozFeedItem } from "./mock";
+import type { VieraFeedItem } from "./mock";
 
 function oznacVDb(fid: string, id: string) {
   const s = new Set(nacitajStav<string[]>("dbsync", fid, []));
@@ -21,17 +21,17 @@ function oznacVDb(fid: string, id: string) {
   ulozStav("dbsync", fid, [...s]);
 }
 
-export async function nacitajPrispevkyDB(fid: string): Promise<NabozFeedItem[] | null> {
+export async function nacitajPrispevkyDB(fid: string): Promise<VieraFeedItem[] | null> {
   if (!supabase) return null;
   const { data, error } = await supabase
     .from("naboz_prispevok").select("data")
     .eq("farnost_id", fid).order("vytvorene", { ascending: false });
   if (error) return null;
-  return (data ?? []).map((r) => r.data as NabozFeedItem);
+  return (data ?? []).map((r) => r.data as VieraFeedItem);
 }
 
 /** Upsert (idempotentné — id generuje klient). Fotky data URL → Storage. */
-export async function vytvorPrispevokDB(fid: string, it: NabozFeedItem): Promise<void> {
+export async function vytvorPrispevokDB(fid: string, it: VieraFeedItem): Promise<void> {
   if (!supabase) return;
   const fotky = await nahrajFotky(it.fotky ?? []);
   const { error } = await supabase.from("naboz_prispevok").upsert(
@@ -46,7 +46,7 @@ export async function zmazPrispevokDB(id: string): Promise<void> {
   await supabase.from("naboz_prispevok").delete().eq("id", id);
 }
 
-export async function upravPrispevokDB(id: string, it: NabozFeedItem): Promise<void> {
+export async function upravPrispevokDB(id: string, it: VieraFeedItem): Promise<void> {
   if (!supabase) return;
   await supabase.from("naboz_prispevok")
     .update({ data: it, upravene: new Date().toISOString() })
@@ -62,7 +62,7 @@ export async function synchronizujPrispevky(fid: string): Promise<boolean> {
   if (zDb === null) return false; // mock režim / DB nedostupná → LS ostáva
   const dbIds = new Set(zDb.map((it) => it.id));
   const uzBoliVDb = new Set(nacitajStav<string[]>("dbsync", fid, []));
-  const lokalne = nacitajStav<NabozFeedItem[]>("prispevky", fid, []);
+  const lokalne = nacitajStav<VieraFeedItem[]>("prispevky", fid, []);
   // len-lokálne, ktoré v DB nikdy neboli = vytvorené offline → doplň do DB;
   // tie, čo v DB boli a už nie sú = zmazané inde → vypadnú aj lokálne
   const naDoplnenie = lokalne.filter((it) => !dbIds.has(it.id) && !uzBoliVDb.has(it.id));

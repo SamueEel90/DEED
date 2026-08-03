@@ -1,5 +1,5 @@
 // ============================================================
-// MODUL NÁBOŽENSTVO — perzistencia stavu (localStorage + Supabase zrkadlo).
+// MODUL VIERA — perzistencia stavu (localStorage + Supabase zrkadlo).
 // Správcovské úkony (editácia profilu, rozvrh, viditeľnosť súm, self-add
 // konfig) sa ukladajú lokálne A zároveň do tabuľky `naboz_stav` (migrácia
 // 0022) — aby sa preniesli na ostatné zariadenia. synchronizujStav(id)

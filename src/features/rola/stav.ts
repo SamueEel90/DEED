@@ -4,7 +4,7 @@
 // rolové panely sa PRIDÁVAJÚ navrch userovho základu. V DEV režime sa rola
 // aj tier simulujú prepínačmi (žiadne oddelené registrácie) — v produkcii
 // sa rola číta z overeného účtu a tier z fakturácie.
-// Perzistencia = localStorage (rovnaký vzor ako nabozenstvo/stav.ts).
+// Perzistencia = localStorage (rovnaký vzor ako viera/stav.ts).
 // ============================================================
 import type { OrgZbierka } from "./mock"; // type-only — bez runtime cyklu
 
