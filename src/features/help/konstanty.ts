@@ -98,11 +98,11 @@ export const ESCROW: Record<EscrowStav, { label: string; emoji: string; popis: s
 };
 
 // ---- OCHUTNÁVKA (bez registrácie) -----------------------------------------
-export const DAR_BEZ_REG_EUR = 10;   // 1. návšteva, dar do 10 €, bez registrácie (FIAT/SMS)
+export const DAR_BEZ_REG_EUR = 10;   // 1. návšteva, dar do 10 €, bez registrácie (FIAT)
 
 // ---- POPLATKY (placeholder — kto platí = neskôr) --------------------------
 export const POPLATKY = {
   deedOd: 3,     // % degresívne
   deedDo: 1.5,   // %
-  poznamka: "DEED degresívne 3 → 1,5 %; SMS/FIAT fix + marža. Vopred, transparentne.",
+  poznamka: "DEED degresívne 3 → 1,5 %; FIAT fix + marža. Vopred, transparentne.",
 };

@@ -57,7 +57,7 @@ function odvod(data: UcetData | null, session: Session): Pouzivatel {
     ucetId: ucet?.id || ses?.ucet_id || null,
     typ,
     mozeTvorit: typ !== "pasivny", // pasívny len prezerá + prispieva
-    mozeDeed: typ !== "pasivny", // pasívny prispieva len EUR + SMS (DEED vyžaduje účet)
+    mozeDeed: typ !== "pasivny", // pasívny prispieva len v EUR (DEED vyžaduje účet)
     meno,
     priezvisko,
     celeMeno: celeMeno || "Člen",
@@ -85,7 +85,7 @@ function seed(session: Session): Pouzivatel {
     ucetId: ses?.ucet_id || null,
     typ,
     mozeTvorit: typ !== "pasivny", // pasívny len prezerá + prispieva
-    mozeDeed: typ !== "pasivny", // pasívny prispieva len EUR + SMS (DEED vyžaduje účet)
+    mozeDeed: typ !== "pasivny", // pasívny prispieva len v EUR (DEED vyžaduje účet)
     meno,
     priezvisko: "",
     celeMeno: meno,

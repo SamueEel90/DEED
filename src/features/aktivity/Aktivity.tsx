@@ -485,7 +485,7 @@ function DeedDetail({ it, support, votes, vote, toast, home, openPerson }: any) 
         <PodporaSekcia
           onShare={() => zdielaj({ titul: it.title, text: it.title, url: aktualnaUrl() }, toast)}
           upvotes={Math.floor((it.likes || 0) / 3)} onUpvote={() => toast("Páči sa ti to")}
-          onPodpor={(s: number) => support(s, it.author, it)} onSms={() => toast("SMS podpora (euro/operátor)")}
+          onPodpor={(s: number) => support(s, it.author, it)}
           onKanal={(k: string) => setPlatba(k)} supLabel={supLabel} />
 
         <div style={{ display: "flex", alignItems: "center", gap: SPACE.gutter, background: A.surface2, border: `1px solid ${A.line}`, borderRadius: RADIUS.md, padding: SPACE.sm, marginTop: SPACE.gutter }}>
@@ -587,7 +587,7 @@ function HelpDetail({ it, toast, celebrate, home, openPerson }: any) {
         <PodporaSekcia
           onShare={() => zdielaj({ titul: it.title, text: it.title, url: aktualnaUrl() }, toast)}
           upvotes={it.helpers || 0} onUpvote={() => toast("Páči sa ti to")}
-          onPodpor={(s: number) => toast(`Ďakujeme za ${s} DEED pre ${it.author}`)} onSms={() => toast("SMS podpora (euro/operátor)")}
+          onPodpor={(s: number) => toast(`Ďakujeme za ${s} DEED pre ${it.author}`)}
           onKanal={(k: string) => setPlatba(k)} supLabel="PODPORIŤ — klik a hneď odíde" />
       </div>
       {/* simulácia platby (EUR karta / SEPA prevod / DEED peňaženka) */}

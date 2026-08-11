@@ -56,7 +56,7 @@ export type OkruhKod = "stvrt" | "mesto" | "okres" | "kraj" | "krajina";
 export type MapaUroven = OkruhKod;
 
 /** Platobný / podporný kanál. */
-export type Kanal = "EUR" | "DEED" | "SMS";
+export type Kanal = "EUR" | "DEED";
 
 /** Cena workshopu. */
 export type CenaTyp = "free" | "paid";

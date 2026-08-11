@@ -431,11 +431,11 @@ function CharitaDetail({ z: zProp, toast, onBack, onReg, onAutor }: { z?: Zbierk
   const pct = ciel ? Math.min(100, Math.round(suma / ciel * 100)) : 0;
 
   // počítadlo „ľudí pomohlo" aj zoznam darcov rastú z JEDNÉHO miesta (konzistentné čísla)
-  function podpor(hodnota: number, text: string, kanal: "deed" | "sms" = "deed") {
+  function podpor(hodnota: number, text: string) {
     setSuma((s) => s + hodnota * 0.01);
     setLudia((l) => l + 1);
-    // SMS = kanál bez účtu → vždy anonymný darca; drobná DEED podpora je pod prahom (suma sa neukáže)
-    pridajDar({ refId: darRef, suma: hodnota * 0.01, kanal, registrovany: kanal !== "sms" && ja.typ !== "pasivny" });
+    // drobná DEED podpora je pod prahom (suma sa neukáže)
+    pridajDar({ refId: darRef, suma: hodnota * 0.01, kanal: "deed", registrovany: ja.typ !== "pasivny" });
     toast(text);
   }
   function platbaHotova(s: number, volba?: VolbaDaru) {
@@ -476,7 +476,7 @@ function CharitaDetail({ z: zProp, toast, onBack, onReg, onAutor }: { z?: Zbierk
         <PodporaSekcia
           onShare={() => zdielaj({ titul: z.nazov, text: z.nazov, url: aktualnaUrl() }, toast)}
           upvotes={140} onUpvote={() => toast("Palec hore")}
-          onPodpor={(s: number) => podpor(s, `Ďakujeme za ${s} DEED pre ${z.nazov}`)} onSms={() => podpor(100, "SMS podpora", "sms")}
+          onPodpor={(s: number) => podpor(s, `Ďakujeme za ${s} DEED pre ${z.nazov}`)}
           onKanal={(k: string) => setPlatba(k as Kanal)} />
       </div>
       <div onClick={() => setRecur(true)} style={{ width: "100%", border: `1px solid ${K.blueEdge}`, background: K.blueBg, borderRadius: RADIUS.sm, padding: SPACE.sm, textAlign: "center", fontSize: 13.5, fontWeight: 700, color: K.blue, cursor: "pointer", marginBottom: SPACE.xs, display: "flex", alignItems: "center", justifyContent: "center", gap: SPACE.xs, boxSizing: "border-box" }}>
@@ -494,7 +494,7 @@ function CharitaDetail({ z: zProp, toast, onBack, onReg, onAutor }: { z?: Zbierk
       <PodporaSekcia
         onShare={() => zdielaj({ titul: z.nazov, text: z.nazov, url: aktualnaUrl() }, toast)}
         upvotes={140} onUpvote={() => toast("Palec hore")}
-        onPodpor={(s: number) => podpor(s, `Ďakujeme za ${s} DEED pre ${z.nazov}`)} onSms={() => podpor(100, "SMS podpora", "sms")}
+        onPodpor={(s: number) => podpor(s, `Ďakujeme za ${s} DEED pre ${z.nazov}`)}
         onKanal={(k: string) => setPlatba(k as Kanal)} supLabel="PODPORIŤ — klik a hneď odíde" />
     </>
   );

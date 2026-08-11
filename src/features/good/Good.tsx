@@ -819,7 +819,7 @@ export function GoodDetail({ it, toast, oslavuj, onBack, onVerify, onAutor }: Go
         <PodporaSekcia
           onShare={() => zdielaj({ titul: it.titul, text: it.titul, url: aktualnaUrl() }, toast)}
           upvotes={Math.floor((it.lajky || 0) / 3)} onUpvote={() => toast("Páči sa ti to")}
-          onPodpor={(s: number) => podpor(s)} onSms={() => toast("SMS podpora (euro/operátor)")}
+          onPodpor={(s: number) => podpor(s)}
           onKanal={(k: string) => setPlatba(k)} />
 
         {/* uložiť do obľúbených */}

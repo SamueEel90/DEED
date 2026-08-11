@@ -310,10 +310,9 @@ function Detail({ z, onBack, onAutor }: { z: any; onBack: () => void; onAutor: (
 
   // počítadlo aj zoznam darcov rastú z JEDNÉHO miesta (konzistentné čísla)
   function posliPevne(hodnota: number, kanal: string) {
-    setSuma((s: number) => s + (kanal === "SMS" ? 1 : hodnota * 0.01)); // DEED ~0,01€ ilustračne
+    setSuma((s: number) => s + hodnota * 0.01); // DEED ~0,01€ ilustračne
     setLudia((l: number) => l + 1);
-    // SMS = kanál bez účtu → vždy anonymný darca (spec §4)
-    pridajDar({ refId: darRef, suma: kanal === "SMS" ? 1 : hodnota * 0.01, kanal: kanal === "SMS" ? "sms" : "deed", registrovany: kanal !== "SMS" && ja.typ !== "pasivny" });
+    pridajDar({ refId: darRef, suma: hodnota * 0.01, kanal: "deed", registrovany: ja.typ !== "pasivny" });
     toast(`Odoslané: ${hodnota} ${kanal} · ⛓ ${hash()}`);
   }
   function platbaHotova(s: number, volba?: VolbaDaru) {
@@ -397,7 +396,7 @@ function Detail({ z, onBack, onAutor }: { z: any; onBack: () => void; onAutor: (
           <PodporaSekcia
             onShare={() => zdielaj({ titul: z.nazov, text: z.nazov, url: aktualnaUrl() }, toast)}
             upvotes={140} onUpvote={() => toast("Palec hore")}
-            onPodpor={(s: number) => posliPevne(s, "DEED")} onSms={() => posliPevne(1, "SMS")}
+            onPodpor={(s: number) => posliPevne(s, "DEED")}
             onKanal={(k: string) => setPlatba(k)} />
           {/* §11: komunitné Overujem/Namietam — pravosť prípadov jednotlivcov (núdza + riziko podvodu) */}
           <div style={{ marginTop: SPACE.gutter }}>
@@ -905,7 +904,7 @@ function RequestFlow({ onBack, onZverejni }: { onBack: () => void; onZverejni: (
         {krok === 6 && (
           <>
             <Otazka>Ako chceš prijímať podporu?</Otazka>
-            {["DEED (wallet)", "EUR (euro na účet)", "SMS"].map((k, i) => (
+            {["DEED (wallet)", "EUR (euro na účet)"].map((k, i) => (
               <div key={i} style={{ ...vyberBox(false), display: "flex", justifyContent: "space-between" }}>
                 <span>{k}</span><span style={{ fontSize: 11, color: C.textTer }}>poplatok vopred</span>
               </div>

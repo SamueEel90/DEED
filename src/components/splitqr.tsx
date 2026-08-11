@@ -187,7 +187,7 @@ export function SplitLanding({ splitId, onClose, toast }: { splitId: string; onC
             <PodporaSekcia
               onShare={() => toast?.("Zdieľať: odkaz skopírovaný · siete")}
               upvotes={0} onUpvote={() => toast?.("Palec hore")}
-              onPodpor={(s: number) => posli(s, "deed")} onSms={() => posli(1, "sms")}
+              onPodpor={(s: number) => posli(s, "deed")}
               onKanal={(k: string) => setPlatba(k)} accent={GREEN} />
           </div>
         </>

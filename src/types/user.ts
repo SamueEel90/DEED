@@ -11,7 +11,7 @@ export type IsoDate = string; // "2015-03-12"
 export type HexFarba = string; // "#3A8DD6"
 
 /** Typ účtu/subjektu (DB ucet.typ + demo identita).
- *  „pasivny" = prihlásený divák-darca: prezerá a prispieva (FIAT/karta/SMS)
+ *  „pasivny" = prihlásený divák-darca: prezerá a prispieva (FIAT/karta)
  *  všade, ale NEsmie nič vytvárať/pridávať (gating cez Pouzivatel.mozeTvorit). */
 export type TypUctu = "aktivny" | "pasivny" | "charita" | "demo";
 
@@ -304,7 +304,7 @@ export interface Pouzivatel {
   typ: TypUctu;
   /** Smie vytvárať/pridávať obsah? Pasívny divák-darca = false (len prezerá + prispieva). */
   mozeTvorit: boolean;
-  /** Smie platiť/prispievať v DEED (peňaženka)? Pasívny = false (len EUR + SMS; DEED vyžaduje účet). */
+  /** Smie platiť/prispievať v DEED (peňaženka)? Pasívny = false (len EUR; DEED vyžaduje účet). */
   mozeDeed: boolean;
   meno: string;
   priezvisko: string;

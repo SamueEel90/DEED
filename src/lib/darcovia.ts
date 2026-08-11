@@ -3,7 +3,7 @@
 // Železné pravidlá: zoznam je LEN zobrazenie daru — číta hotové dáta,
 // nič nepočíta a nikam inam nezapisuje. Default = anonymita (opt-in darcu).
 // Mock v1: in-memory store + seed; v produkcii sa plní z párovacieho
-// enginu po PRIPÍSANÍ platby (PSP / AIS / SMS / on-chain) — tabuľka
+// enginu po PRIPÍSANÍ platby (PSP / AIS / on-chain) — tabuľka
 // `platba` / view `v_vypis` (0014_payment_engine.sql).
 // ============================================================
 import { useSyncExternalStore } from "react";
@@ -18,7 +18,7 @@ export const DARCOVIA_CFG = {
 
 // verzie zobrazenia identity (spec §2) — volí registrovaný darca pri platbe
 export type VerziaIdentity = 1 | 2 | 3 | 4; // 1 celé meno · 2 meno+iniciála · 3 prezývka · 4 anonym
-export type KanalDaru = "psp" | "sepa" | "sms" | "deed";
+export type KanalDaru = "psp" | "sepa" | "deed";
 
 export interface VolbaDaru { verzia: VerziaIdentity; zobrazSumu: boolean }
 
@@ -81,7 +81,7 @@ function seed(refId: string): DarRiadok[] {
   // mix verzií, kanálov a súm — anonym, pod prahom, nad prahom so sumou aj bez
   const vzor: Array<Partial<DarRiadok> & { minPred: number }> = [
     { minPred: 4, suma: 10, kanal: "psp", verzia: 2, zobrazSumu: true, mestoVerejne: true },
-    { minPred: 22, suma: 2, kanal: "sms", registrovany: false },
+    { minPred: 22, suma: 2, kanal: "psp", registrovany: false },
     { minPred: 51, suma: 25, kanal: "sepa", verzia: 1, zobrazSumu: true, mestoVerejne: true },
     { minPred: 60 * 3, suma: 4, kanal: "deed", verzia: 3, zobrazSumu: true }, // pod prahom → suma sa NEukáže
     { minPred: 60 * 9, suma: 15, kanal: "psp", verzia: 4 },
@@ -113,7 +113,7 @@ export function useDarcovia(refId: string): DarRiadok[] {
   return useSyncExternalStore(subscribe, () => riadkyPre(refId));
 }
 
-/** Zápis daru po pripísaní platby. SMS/QR bez účtu → registrovany:false (vždy anonym). */
+/** Zápis daru po pripísaní platby. QR bez účtu → registrovany:false (vždy anonym). */
 export function pridajDar(vstup: { refId: string; suma: number; kanal: KanalDaru; registrovany: boolean; volba?: VolbaDaru }): DarRiadok {
   const reg = vstup.registrovany;
   const volba = reg ? (vstup.volba ?? nacitajPredvolbu()) : { verzia: 4 as VerziaIdentity, zobrazSumu: false };

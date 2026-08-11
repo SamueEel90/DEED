@@ -46,7 +46,7 @@ export function Registracia({ onHotovo, start, resume }: { onHotovo?: () => void
   };
 
   // pasívny vstup bez prihlásenia (anonym, bez DB účtu) → ephemeral session → appka.
-  // Pasívny len prezerá a prispieva (EUR/SMS); na tvorbu sa kedykoľvek zaregistruje.
+  // Pasívny len prezerá a prispieva (EUR); na tvorbu sa kedykoľvek zaregistruje.
   const vstupPasivne = () => {
     setSession({ typ: "pasivny", meno: "Hosť" });
     onHotovo?.();
@@ -166,7 +166,7 @@ function PasivnyVstup({ onConfirm, onSpat }: { onConfirm: () => void; onSpat: ()
       <Vyber
         emoji="💛"
         title="Pasívny — len prispievam"
-        desc="Prezeraj a prispievaj (FIAT/karta/SMS) všade. Bez vytvárania obsahu."
+        desc="Prezeraj a prispievaj (FIAT/karta) všade. Bez vytvárania obsahu."
         active={false}
         onClick={onConfirm}
       />

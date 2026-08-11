@@ -104,8 +104,9 @@ export function importLegacyFollows(): Sledovanie[] {
 // z tabuľky `podpora` (group by príjemca). Zápis = nový event (in-app dar).
 // Demo (Martin K.) číta podľa `darca_nazov`; reálny účet podľa `ucet_id`.
 // ============================================================
-const KANAL_Z_DB: Record<string, string> = { deed: "DEED", fiat: "EUR", sms: "SMS" };
-const KANAL_DO_DB: Record<string, string> = { DEED: "deed", EUR: "fiat", SMS: "sms" };
+// SMS ako kanál daru sa už neponúka; z DB ho mapujeme len kvôli starým riadkom.
+const KANAL_Z_DB: Record<string, string> = { deed: "DEED", fiat: "EUR", sms: "EUR" };
+const KANAL_DO_DB: Record<string, string> = { DEED: "deed", EUR: "fiat" };
 const jeUuid = (v: unknown): v is string =>
   typeof v === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v);
 
@@ -156,7 +157,7 @@ export async function pridajPodporuDB(p: {
   prijemca?: string; suma?: number; kanal?: string; vyzbierane?: number; ciel?: number;
 }): Promise<void> {
   if (!supabase) return;
-  const kanal = KANAL_DO_DB[p.kanal || "DEED"] || "deed";        // DEED→deed, EUR→fiat, SMS→sms
+  const kanal = KANAL_DO_DB[p.kanal || "DEED"] || "deed";        // DEED→deed, EUR→fiat
   const mena = kanal === "deed" ? "DEED" : "EUR";
   let idemKluc: string;
   try { idemKluc = crypto.randomUUID(); } catch { idemKluc = `dar-${Date.now()}-${Math.round(Math.random() * 1e9)}`; }

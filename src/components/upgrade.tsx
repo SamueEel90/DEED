@@ -1,6 +1,6 @@
 // ============================================================
 // DEED · Upgrade (pasívny → aktívny)
-// Pasívny divák-darca smie PREZERAŤ a PRISPIEVAŤ (FIAT/karta/SMS) všade,
+// Pasívny divák-darca smie PREZERAŤ a PRISPIEVAŤ (FIAT/karta) všade,
 // ale NESMIE nič vytvárať/pridávať. Create vstupy ostávajú viditeľné, no
 // po kliku otvoria tento panel „Staň sa aktívnym" (konverzia, nie tvrdé skrytie).
 //
@@ -53,7 +53,7 @@ export function UpgradePanel({ onClose, onAktivovat }: { onClose?: () => void; o
         </div>
         <div style={{ fontSize: 18, fontWeight: 800, marginTop: SPACE.gutter }}>Toto je pre aktívnych členov</div>
         <div style={{ fontSize: 13.5, color: C.textSec, marginTop: SPACE.xs, lineHeight: 1.55, maxWidth: 320 }}>
-          Ako pasívny môžeš všetko prezerať a prispieť v EUR či SMS. Na DEED a vytváranie obsahu sa staň aktívnym — zadarmo a kedykoľvek, bez straty doterajšieho.
+          Ako pasívny môžeš všetko prezerať a prispieť v EUR. Na DEED a vytváranie obsahu sa staň aktívnym — zadarmo a kedykoľvek, bez straty doterajšieho.
         </div>
       </div>
 

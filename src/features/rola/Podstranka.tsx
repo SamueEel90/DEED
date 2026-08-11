@@ -68,7 +68,6 @@ export function Podstranka({ pozicia, logo, toast, onBack }: {
         onShare={zdielajProfil}
         upvotes={ludia} onUpvote={() => toast("❤")}
         onPodpor={(d: number) => { setSuma((x) => x + d * 0.01); setLudia((l) => l + 1); toast(`Ďakujeme za ${d} DEED pre ${s.nazov}`); }}
-        onSms={() => { setLudia((l) => l + 1); toast("SMS podpora"); }}
         onKanal={(k: string) => setPlatba(k as Kanal)} />
     </div>
   );

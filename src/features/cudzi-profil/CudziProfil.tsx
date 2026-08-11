@@ -220,10 +220,10 @@ function KampanSheet({ k, org, toast, onClose }: { k: OrgKampan; org: string; to
   const ja = usePouzivatel();
   const darRef = `org-kampan-${k.id}`;
 
-  const podpor = (hodnota: number, kanal: "deed" | "sms" = "deed") => {
+  const podpor = (hodnota: number) => {
     setSuma((s) => s + hodnota * 0.01);
     setLudia((l) => l + 1);
-    pridajDar({ refId: darRef, suma: hodnota * 0.01, kanal, registrovany: kanal !== "sms" && ja.typ !== "pasivny" });
+    pridajDar({ refId: darRef, suma: hodnota * 0.01, kanal: "deed", registrovany: ja.typ !== "pasivny" });
     toast?.(`Ďakujeme za ${hodnota} DEED · ${k.nazov}`);
   };
 
@@ -238,7 +238,7 @@ function KampanSheet({ k, org, toast, onClose }: { k: OrgKampan; org: string; to
         <PodporaSekcia
           onShare={() => void zdielaj({ titul: k.nazov, text: k.nazov, url: aktualnaUrl() }, toast ?? (() => {}))}
           upvotes={ludia} onUpvote={() => toast?.("❤")}
-          onPodpor={(d: number) => podpor(d)} onSms={() => podpor(100, "sms")}
+          onPodpor={(d: number) => podpor(d)}
           onKanal={(kanal: string) => setPlatba(kanal as Kanal)} />
         <div style={{ marginTop: SPACE.gutter }}>
           <ZoznamDarcov refId={darRef} celkom={ludia} />

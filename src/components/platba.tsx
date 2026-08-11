@@ -3,7 +3,7 @@ import type { CSSProperties, ReactNode } from "react";
 import { C, GRAD, GRAD_ZELENY, SPACE, RADIUS } from "@/theme";
 import { tint } from "@/lib/ui";
 import { navrhniTip } from "@/lib/poplatky";
-import { useMotiv, useUpgrade } from "@/components/context";
+import { useUpgrade } from "@/components/context";
 import { usePouzivatel } from "@/lib/pouzivatel";
 import { Sheet } from "@/components/sheet";
 import { IkonaStit, IkonaFajka, Zdielanie, Palec, Srdce } from "@/components/icons";
@@ -258,9 +258,8 @@ const psKanal: CSSProperties = {
   cursor: "pointer", fontFamily: "inherit", background: C.surface2, border: `1px solid ${C.line}`, color: C.text,
 };
 
-export function PodporaSekcia({ onShare, upvotes = 0, onUpvote, onPodpor, onSms, onKanal, accent = "var(--a-info)", supLabel = "DROBNÁ PODPORA — klik a hneď odíde", reakcia = "palec", bezDaru = false }: { onShare?: () => void; upvotes?: number; onUpvote?: () => void; onPodpor: (a: number) => void; onSms?: () => void; onKanal: (k: string) => void; accent?: string; supLabel?: ReactNode; reakcia?: "palec" | "srdce"; bezDaru?: boolean }) {
-  const { svetly } = useMotiv();
-  // pasívny prispieva len EUR + SMS; DEED (peňaženka) vyžaduje účet → výzva na registráciu
+export function PodporaSekcia({ onShare, upvotes = 0, onUpvote, onPodpor, onKanal, accent = "var(--a-info)", supLabel = "DROBNÁ PODPORA — klik a hneď odíde", reakcia = "palec", bezDaru = false }: { onShare?: () => void; upvotes?: number; onUpvote?: () => void; onPodpor: (a: number) => void; onKanal: (k: string) => void; accent?: string; supLabel?: ReactNode; reakcia?: "palec" | "srdce"; bezDaru?: boolean }) {
+  // pasívny prispieva len v EUR; DEED (peňaženka) vyžaduje účet → výzva na registráciu
   const { mozeDeed } = usePouzivatel();
   const upgrade = useUpgrade();
   // lajk: lokálny toggle + počítadlo (onUpvote = side-effect len pri lajknutí)
@@ -268,7 +267,6 @@ export function PodporaSekcia({ onShare, upvotes = 0, onUpvote, onPodpor, onSms,
   const lajkov = upvotes + (liked ? 1 : 0);
   const toggleLike = () => setLiked((v) => { const n = !v; if (n) onUpvote?.(); return n; });
   const deedAkcia = (akcia: () => void) => () => (mozeDeed ? akcia() : upgrade());
-  const goldTxt = svetly ? "#8A6B0E" : C.gold; // v svetlom režime tmavšia zlatá (čitateľnosť)
   const fix = [
     { v: 10, top: false },
     { v: 50, top: false },
@@ -300,11 +298,6 @@ export function PodporaSekcia({ onShare, upvotes = 0, onUpvote, onPodpor, onSms,
             <span style={{ fontSize: 10, fontWeight: 600, color: C.textTer, marginTop: 4 }}>≈ {eurZaDeed(b.v)}</span>
           </button>
         ))}
-        <div style={{ width: 1, alignSelf: "stretch", borderLeft: `1px dashed ${C.line}`, margin: `${SPACE.xxs}px ${SPACE.xxs}px` }} />
-        <button onClick={onSms} style={{ ...psSuma(false, accent), flex: 0.85, background: svetly ? "rgba(240,199,90,.16)" : "rgba(240,199,90,.08)", borderColor: svetly ? "rgba(180,140,20,.5)" : "rgba(240,199,90,.35)" }}>
-          <span style={{ fontSize: 15, fontWeight: 800, lineHeight: 1, color: goldTxt }}>SMS</span>
-          <span style={{ fontSize: 10, fontWeight: 600, marginTop: 4, color: goldTxt }}>dar v €</span>
-        </button>
       </div>
 
       <PSLabel>VLASTNÁ SUMA — vyber kanál</PSLabel>
