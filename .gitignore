@@ -1,6 +1,33 @@
+# závislosti
 node_modules
-dist
-*.local
-.DS_Store
 
+# build výstupy
+dist
+dist-ssr
+*.tsbuildinfo
+
+# lokálne prostredie — NIKDY necommitovať (obsahuje kľúče)
+.env
+.env.local
+.env.*.local
+*.local
+
+# nástroje / hosting
 .vercel
+.vite
+coverage
+
+# logy
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# editory a OS
+.DS_Store
+Thumbs.db
+.idea
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json

@@ -1,0 +1,26 @@
+# Jednotné riadkové konce naprieč Windows / macOS / Linux.
+# Bez tohto git na Windows hlási "LF will be replaced by CRLF" a diffy
+# medzi vývojármi obsahujú celé prepísané súbory.
+* text=auto eol=lf
+
+# Binárne súbory nikdy nekonvertovať.
+*.png    binary
+*.jpg    binary
+*.jpeg   binary
+*.gif    binary
+*.webp   binary
+*.avif   binary
+*.ico    binary
+*.mp4    binary
+*.webm   binary
+*.woff   binary
+*.woff2  binary
+*.ttf    binary
+*.otf    binary
+*.pdf    binary
+
+# SVG je text, ale nech sa needituje ako "kód" v review štatistikách.
+*.svg    text eol=lf
+
+# Lockfile: vždy LF, v diffe zbaliť.
+package-lock.json text eol=lf linguist-generated=true
