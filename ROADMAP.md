@@ -93,7 +93,16 @@ Z appky spraviť nasaditeľný produkt.
 
 - [x] **Auth (email/heslo):** reálny Supabase Auth ako identitná vrstva. Migrácia `0012` (`ucet.auth_id` → `auth.users`). `lib/auth.ts` (signUp/signIn/signOut/**resolveSession** reconciliation/**subscribeAuth**). AuthPage robí reálny signUp/signInWithPassword (busy/chyba). Onboarding je **auth-first** (OsobaFlow/CharitaFlow preskočia telefón-OTP+PIN, vytvoria `auth_id`-naviazaný `ucet`; pasívny tiež dostane reálny ucet). App **auth-boot gate** (splash → resolveSession → app / resume onboarding / login; stale session sa čistí). Logout = `supabase.auth.signOut()`+`clearSession`. Demo/hosť zachované. Živo overené (signup→ucet link→lookup OK). **⚠ Vyžaduje dashboard krok: Authentication → Email → vypnúť „Confirm email" pre dev** (inak signup nevráti session). *Pozn.: upgrade-overlay `start="aktivny"` ostáva zatiaľ legacy telefón tok — follow-up.*
 - **RLS & bezpečnosť (ĎALŠIE KOLO):** nahradiť 25× `test_all_access (using true)` owner-only politikami: `ucet` `using (auth_id = auth.uid())`, child tabuľky cez `ucet_id in (select id from ucet where auth_id = auth.uid())`, obsah (prispevok/udalost/adresar_charita…) public SELECT. Po RLS znova zapnúť „Confirm email" a presunúť tvorbu `ucet` server-side. Audit `get_advisors` (dnes hlási očakávaných 25 warnings).
-- **Kvalita:** ESLint + Prettier, `tsc --noEmit` a testy (Vitest + React Testing Library) v CI.
+- [x] **Kvalita — tooling:** ESLint 10 (flat config) + Prettier + `tsc --noEmit`
+  a lint v CI (`.github/workflows/ci.yml`, `npm run verify`). Odstránený mŕtvy kód
+  (47 nepoužitých symbolov).
+- **Kvalita — testy:** Vitest + React Testing Library. Zatiaľ neexistujú žiadne
+  automatizované testy; overuje sa manuálne (`.claude/skills/verify/SKILL.md`).
+- **Lint backlog (~142 warningov):** ~96× `@typescript-eslint/no-explicit-any`
+  (hranice k Supabase/3rd-party, súvisí so sprísnením `noImplicitAny`) a ~43×
+  nové React-Compiler pravidlá z `eslint-plugin-react-hooks` v7
+  (`static-components`, `set-state-in-effect`, `refs`, `purity`). Dnes `warn`;
+  po dočistení prepnúť na `error` v `eslint.config.js`.
 - **Výkon:** code-splitting modulov (lazy import), rozpočet na bundle, optimalizácia obrázkov/CDN.
 - **Observabilita:** error tracking (napr. Sentry), základná analytika.
 - **PWA / mobilný shell:** manifest, offline-friendly app shell, install prompt.
@@ -101,39 +110,22 @@ Z appky spraviť nasaditeľný produkt.
 
 ---
 
-## Cieľová štruktúra priečinkov
+## Štruktúra priečinkov
 
-```
-src/
-  main.tsx
-  app/
-    App.tsx                 # shell: pozadie, motív, layout (bez device preview)
-    Router.tsx              # prepínanie modulov (neskôr príp. react-router)
-    providers/              # Motiv, Pouzivatel, Galeria, Scroll, Viac
-  components/               # zdieľané „dumb" UI
-    icons/                  # ~60 SVG ikon + index.ts
-    media/                  # Foto, Avatar, Video, Lightbox, MiniFotky
-    feedback/               # Toast, Oslava, Modal
-    layout/                 # Hlavicka, ModulHlavicka, FeedStlpce, OkruhVyber
-    qr/                     # QrVizual, QrModal
-    platba/                 # PlatbaModal (rozdelený)
-    hladanie/               # HladanieModal
-  features/
-    good/ help/ charita/ aktivity/ profil/ mapa/ top/
-    notifikacie/ retazdobra/ funzona/ cudziprofil/
-    registracia/            # Registracia, OsobaFlow, CharitaFlow, RegKit
-       └─ <modul>/: index.tsx, components/, mock.ts, types.ts
-  lib/                      # supabase, session, qr, feed, cardSize, format
-  data/
-    repos/                  # *.repo.ts (interface), *.mock.ts, *.supabase.ts
-    index.ts                # selektor mock/supabase podľa env
-  theme/                    # tokens.ts, glass.ts, theme.css
-  types/                    # domain.ts, db.ts (generované Supabase typy)
-```
+> Pôvodný plán z 2026-06-25 počítal s priečinkami ako `app/Router.tsx`,
+> `components/icons/`, `data/repos/` či `theme/`. Reálne sa postavila plochšia
+> štruktúra (`components/*.tsx`, `data/*.supabase.ts`, `theme.ts` + `tokens.ts`)
+> a navigácia sa vyriešila bez routera cez `lib/urlnav.ts`.
+> **Aktuálnu mapu kódu má [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** —
+> tento plán sa už nepoužíva a bol odstránený, aby neposielal hľadať
+> neexistujúce súbory.
 
 ---
 
 ## Stav na štarte (2026-06-25)
+
+> Historický snímok pri štarte migrácie. **Aktuálny stav projektu je
+> v [README.md → Stav projektu](README.md#stav-projektu).**
 
 | Oblasť | Zdroj dát | Zrelosť |
 |---|---|---|
