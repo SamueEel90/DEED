@@ -3,7 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { SIRKA, C, inp, infoBox, btn, GRAD_ZELENY, glassTmavy, SPACE, RADIUS } from "@/theme";
 import { pasmo, POZNAMKA_DAVKY, tagLabels, CHARITA_SEGMENTY, segmentLabel, OVERENIA_POTREBNE, ESCROW } from "./konstanty";
 import { TagTemy, prepniTag, ZranitelniBlok, PrisnyBadge, AiPoznamka, GuardFuzzy } from "./HelpKit";
-import { Foto, Avatar, MiniFotky, Hlavicka, ModulHlavicka, PodporaSekcia, PlatbaModal, HladanieModal, OblubeneHviezda, OblubeneBtn, Otazka, Vyber, vyberBox, NavBtns, Suhrn, DokladRow, toast, Oslava, useGaleria, useLayout, useScrollPamat, useStrankaAkcie, useTvorbaGate, Ticker, StatRiadok, FiltreStat, FeedStlpce, FeedGrid, FeedCard, KartaBadge, typKluc, BackHeader, ProgresBox, obalSiroky, OkruhVyber, Lupa, Zdielanie, IkonaVlajka, IkonaFoto, IkonaPlay, IkonaDoska, IkonaPin, IkonaOsoba, IkonaCharita, FeedSkeleton, EmptyState, ErrorState, ScreenSwitch, KontextMenu, Overene, IkonaMoznosti, IkonaOdkaz, PodporitDeed, SwipeBack, ZoznamDarcov, FormatovanyText, RichTextInput } from "@/shared";
+import { Foto, Avatar, MiniFotky, Hlavicka, ModulHlavicka, PlatobnyModul, PlatbaModal, HladanieModal, OblubeneHviezda, Otazka, Vyber, vyberBox, NavBtns, Suhrn, DokladRow, toast, Oslava, useGaleria, useLayout, useScrollPamat, useStrankaAkcie, useTvorbaGate, Ticker, StatRiadok, FiltreStat, FeedStlpce, FeedGrid, FeedCard, KartaBadge, typKluc, BackHeader, ProgresBox, obalSiroky, OkruhVyber, Lupa, Zdielanie, IkonaVlajka, IkonaFoto, IkonaPlay, IkonaDoska, IkonaPin, IkonaOsoba, IkonaCharita, FeedSkeleton, EmptyState, ErrorState, ScreenSwitch, KontextMenu, Overene, IkonaMoznosti, IkonaOdkaz, SwipeBack, ZoznamDarcov, FormatovanyText, RichTextInput } from "@/shared";
 import { pridajDar, type VolbaDaru } from "@/lib/darcovia";
 import { cistyText } from "@/lib/richtext";
 import { Zvoncek } from "@/features/notifikacie/Notifikacie";
@@ -355,12 +355,6 @@ function Detail({ z, onBack, onAutor }: { z: any; onBack: () => void; onAutor: (
       {/* pribeh — FormatovanyText: odseky/formátovanie prežijú (staré texty = pre-wrap) */}
       <FormatovanyText text={z.pribeh} style={{ padding: `${SPACE.gutter}px ${SPACE.md}px ${SPACE.sm}px`, fontSize: 14, lineHeight: 1.5, color: C.text }} />
 
-      {/* uložiť do obľúbených */}
-      <div style={{ padding: `0 ${SPACE.md}px ${SPACE.sm}px`, display: "flex", gap: SPACE.xs }}>
-        <OblubeneBtn polozka={oblubenyZHelp(z)} toast={toast} style={{ flex: 1, minWidth: 0 }} />
-        <PodporitDeed toast={toast} style={{ flex: 1, minWidth: 0 }} />
-      </div>
-
       {/* D++ sponzor */}
       {z.sponzor && (
         <div style={{ margin: `0 ${SPACE.gutter}px ${SPACE.sm}px`, background: "rgba(224,169,61,.08)", border: `1px solid rgba(224,169,61,.35)`, borderRadius: RADIUS.sm, padding: `${SPACE.sm}px ${SPACE.sm}px`, display: "flex", alignItems: "center", gap: SPACE.sm }}>
@@ -384,20 +378,25 @@ function Detail({ z, onBack, onAutor }: { z: any; onBack: () => void; onAutor: (
         <div style={{ padding: `0 ${SPACE.gutter}px ${SPACE.gutter}px` }}>
           <button onClick={() => setOzvat(true)} style={{ ...btn("primary"), width: "100%" }}>✍️ Mám záujem — ozvať sa</button>
           <div style={{ textAlign: "center", fontSize: 11, color: C.textTer, margin: `${SPACE.sm}px 0` }}>Po ozvaní sa dohodnete na detailoch cez chat → prípadne QR na mieste.</div>
-          <button onClick={() => setQr(true)} style={{ ...btn("ghost"), width: "100%", marginBottom: SPACE.sm }}>▦ QR na mieste (potvrdenie skutku)</button>
-          {/* PONUKA = niekto ponúka pomoc/službu → NEdáva sa mu dar (len zdieľať + reakcia). Prispievať sa dá len na žiadosti/zbierky. */}
-          <PodporaSekcia bezDaru
+          {/* PONUKA = niekto ponúka pomoc/službu → NEdáva sa mu dar (len zdieľať + reakcia).
+              Prispievať sa dá len na žiadosti/zbierky, preto modul beží v režime bezDaru. */}
+          <PlatobnyModul bezDaru
             onShare={() => zdielaj({ titul: z.nazov, text: z.nazov, url: aktualnaUrl() }, toast)}
             upvotes={140} onUpvote={() => toast("Palec hore")}
-            onPodpor={() => {}} onKanal={() => {}} />
+            onPodpor={() => {}} onKanal={() => {}}
+            oblubene={oblubenyZHelp(z)} toast={toast}
+            qr={{ label: "QR na mieste", popis: "Potvrdenie skutku · skenovať · zdieľať", onClick: () => setQr(true) }} />
         </div>
       ) : (
         <div style={{ padding: `0 ${SPACE.gutter}px ${SPACE.gutter}px` }}>
-          <PodporaSekcia
+          <PlatobnyModul
             onShare={() => zdielaj({ titul: z.nazov, text: z.nazov, url: aktualnaUrl() }, toast)}
             upvotes={140} onUpvote={() => toast("Palec hore")}
             onPodpor={(s: number) => posliPevne(s, "DEED")}
-            onKanal={(k: string) => setPlatba(k)} />
+            onKanal={(k: string) => setPlatba(k)}
+            oblubene={oblubenyZHelp(z)} toast={toast}
+            qr={{ label: "QR na dar", popis: "Sken → dar za 2 kliky · tlač · zdieľanie", onClick: () => setQr(true) }}
+            retaz={{ onClick: () => setSplitQr(true) }} />
           {/* §11: komunitné Overujem/Namietam — pravosť prípadov jednotlivcov (núdza + riziko podvodu) */}
           <div style={{ marginTop: SPACE.gutter }}>
             <OverujemNamietam overeni={ludia > 3 ? Math.round(ludia / 3) : 2} namietky={0} subjekt={z.nazov || "prípad"}
@@ -407,12 +406,6 @@ function Detail({ z, onBack, onAutor }: { z: any; onBack: () => void; onAutor: (
           <div style={{ marginTop: SPACE.gutter }}>
             <ZoznamDarcov refId={darRef} celkom={ludia} />
           </div>
-          {/* QR výstupy — donačný QR žiadosti + reťaz dobra (rovnaký vzor ako Charita/Good) */}
-          <div style={{ display: "flex", gap: SPACE.sm, marginTop: SPACE.sm }}>
-            <button onClick={() => setQr(true)} style={{ ...btn("ghost"), flex: 1 }}>▦ QR na dar</button>
-            <button onClick={() => setSplitQr(true)} style={{ ...btn("ghost"), flex: 1 }}>🔗 Reťaz dobra — rozdeliť</button>
-          </div>
-          <div style={{ textAlign: "center", fontSize: 10.5, color: C.textTer, marginTop: SPACE.xs }}>QR na dar = sken → prispetie za 2 kliky (tlač/zdieľanie) · Reťaz dobra = tvorca rozdelí platby</div>
         </div>
       )}
 

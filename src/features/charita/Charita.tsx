@@ -1,6 +1,6 @@
 import { useState, useEffect, memo } from "react";
 import { SIRKA, C, U, AV, GRAD, GRAD_ZELENY, SPACE, RADIUS } from "@/theme";
-import { Foto, Avatar, MiniFotky, ModulHlavicka, PodporaSekcia, PlatbaModal, RecurringSheet, SplitQrSheet, HladanieModal, OblubeneHviezda, OblubeneBtn, toast, useGaleria, useLayout, useScrollPamat, useStrankaAkcie, useTvorbaGate, Ticker, StatRiadok, FiltreStat, FeedStlpce, FeedGrid, FeedCard, KartaBadge, BackHeader, ProgresBox, obalSiroky, OkruhVyber, SegTabs, tint, Lupa, Zvon, Zdielanie, IkonaVlajka, IkonaFoto, IkonaPlay, IkonaDoska, IkonaOpakovat, IkonaKriz, IkonaInstitucia, IkonaMoznosti, IkonaOdkaz, IkonaRetaz, KontextMenu, Overene, PodporitDeed, FeedSkeleton, SkeletonRiadky, EmptyState, ErrorState, ScreenSwitch, SwipeBack, ZoznamDarcov, FormatovanyText } from "@/shared";
+import { Foto, Avatar, MiniFotky, ModulHlavicka, PlatobnyModul, PlatbaModal, RecurringSheet, SplitQrSheet, QrModal, HladanieModal, OblubeneHviezda, toast, useGaleria, useLayout, useScrollPamat, useStrankaAkcie, useTvorbaGate, Ticker, StatRiadok, FiltreStat, FeedStlpce, FeedGrid, FeedCard, KartaBadge, BackHeader, ProgresBox, obalSiroky, OkruhVyber, SegTabs, tint, Lupa, Zvon, Zdielanie, IkonaVlajka, IkonaFoto, IkonaPlay, IkonaDoska, IkonaKriz, IkonaInstitucia, IkonaMoznosti, IkonaOdkaz, KontextMenu, Overene, FeedSkeleton, SkeletonRiadky, EmptyState, ErrorState, ScreenSwitch, SwipeBack, ZoznamDarcov, FormatovanyText } from "@/shared";
 import { pridajDar, type VolbaDaru } from "@/lib/darcovia";
 import { usePouzivatel } from "@/lib/pouzivatel";
 import { pripravFeed, FEED_CFG } from "@/lib/feed";
@@ -413,6 +413,7 @@ function CharitaDetail({ z: zProp, toast, onBack, onReg, onAutor }: { z?: Zbierk
   const [platba, setPlatba] = useState<Kanal | null>(null); // "EUR" | "DEED"
   const [recur, setRecur] = useState(false);                // pravidelná podpora (LEN charita)
   const [split, setSplit] = useState(false);                // split QR (influencer)
+  const [qr, setQr] = useState(false);                      // QR zbierky/akcie (§10)
   const [ozvat, setOzvat] = useState(false);                // „Zapojiť sa" → správa organizácii
   const [nahlasit, setNahlasit] = useState(false);          // nahlásenie obsahu (z ⋯ menu)
   const [menu, setMenu] = useState(false);                  // ⋯ kontextové menu
@@ -473,17 +474,15 @@ function CharitaDetail({ z: zProp, toast, onBack, onReg, onAutor }: { z?: Zbierk
         </div>
       )}
       <div style={{ marginBottom: SPACE.gutter }}>
-        <PodporaSekcia
+        <PlatobnyModul
           onShare={() => zdielaj({ titul: z.nazov, text: z.nazov, url: aktualnaUrl() }, toast)}
           upvotes={140} onUpvote={() => toast("Palec hore")}
           onPodpor={(s: number) => podpor(s, `Ďakujeme za ${s} DEED pre ${z.nazov}`)}
-          onKanal={(k: string) => setPlatba(k as Kanal)} />
-      </div>
-      <div onClick={() => setRecur(true)} style={{ width: "100%", border: `1px solid ${K.blueEdge}`, background: K.blueBg, borderRadius: RADIUS.sm, padding: SPACE.sm, textAlign: "center", fontSize: 13.5, fontWeight: 700, color: K.blue, cursor: "pointer", marginBottom: SPACE.xs, display: "flex", alignItems: "center", justifyContent: "center", gap: SPACE.xs, boxSizing: "border-box" }}>
-        <IkonaOpakovat size={16} color={K.blue} /> Pravidelná podpora
-      </div>
-      <div onClick={() => setSplit(true)} style={{ width: "100%", border: `1px solid ${K.greenEdge}`, background: K.greenBg, borderRadius: RADIUS.sm, padding: SPACE.sm, textAlign: "center", fontSize: 13.5, fontWeight: 700, color: K.green, cursor: "pointer", marginBottom: SPACE.sm, display: "flex", alignItems: "center", justifyContent: "center", gap: SPACE.xs, boxSizing: "border-box" }}>
-        <IkonaRetaz size={15} color={K.green} /> Reťaz dobra — rozdeliť platbu
+          onKanal={(k: string) => setPlatba(k as Kanal)}
+          oblubene={oblubenyZo(z)} toast={toast}
+          opakovana={{ onClick: () => setRecur(true) }}
+          qr={{ label: "QR tejto zbierky", onClick: () => setQr(true) }}
+          retaz={{ onClick: () => setSplit(true) }} />
       </div>
     </>
   ) : (
@@ -491,22 +490,22 @@ function CharitaDetail({ z: zProp, toast, onBack, onReg, onAutor }: { z?: Zbierk
       <div {...pressable(() => setOzvat(true), "Zapojiť sa — napísať organizácii")} style={{ width: "100%", border: `2px solid ${K.greenEdge}`, background: K.greenBg, borderRadius: RADIUS.sm, padding: SPACE.gutter, textAlign: "center", fontSize: 15, fontWeight: 700, color: K.green, cursor: "pointer", marginBottom: SPACE.sm, boxSizing: "border-box" }}>
         🙌 Zapojiť sa
       </div>
-      <PodporaSekcia
+      <PlatobnyModul
         onShare={() => zdielaj({ titul: z.nazov, text: z.nazov, url: aktualnaUrl() }, toast)}
         upvotes={140} onUpvote={() => toast("Palec hore")}
         onPodpor={(s: number) => podpor(s, `Ďakujeme za ${s} DEED pre ${z.nazov}`)}
-        onKanal={(k: string) => setPlatba(k as Kanal)} supLabel="PODPORIŤ — klik a hneď odíde" />
+        onKanal={(k: string) => setPlatba(k as Kanal)} supLabel="PODPORIŤ — klik a hneď odíde"
+        oblubene={oblubenyZo(z)} toast={toast}
+        qr={{ label: "QR tejto akcie", onClick: () => setQr(true) }}
+        retaz={{ onClick: () => setSplit(true) }}
+        style={{ marginBottom: SPACE.gutter }} />
     </>
   );
 
   const pribehBlok = (
     <>
       {autorBlok}
-      <FormatovanyText text={pribeh} style={{ fontSize: 14, lineHeight: 1.55, margin: `${SPACE.sm}px 0 ${SPACE.sm}px` }} />
-      <div style={{ display: "flex", gap: SPACE.xs, marginBottom: SPACE.gutter }}>
-        <OblubeneBtn polozka={oblubenyZo(z)} toast={toast} style={{ flex: 1, minWidth: 0 }} />
-        <PodporitDeed toast={toast} style={{ flex: 1, minWidth: 0 }} />
-      </div>
+      <FormatovanyText text={pribeh} style={{ fontSize: 14, lineHeight: 1.55, margin: `${SPACE.sm}px 0 ${SPACE.gutter}px` }} />
     </>
   );
 
@@ -549,6 +548,10 @@ function CharitaDetail({ z: zProp, toast, onBack, onReg, onAutor }: { z?: Zbierk
 
       {/* pravidelná podpora — LEN charita (3 voľby + dvojité potvrdenie) */}
       {recur && <RecurringSheet nazov={z.nazov} onClose={() => setRecur(false)} toast={toast} />}
+
+      {/* QR zbierky/akcie (§10) — sken → dar, kopírovať, zdieľať/tlačiť */}
+      {qr && <QrModal typ={jeZbierka ? "platba" : "skutok"} titul={`QR · ${z.nazov}`} popis={(pribeh || z.nazov).slice(0, 38)}
+        qrCiel={{ druh: "case", ref: String(z.id ?? z.nazov), modul: "charity" }} onClose={() => setQr(false)} toast={toast} />}
 
       {/* split QR (influencer) — rozdelenie platby medzi príjemcov */}
       {split && <SplitQrSheet titul={z.nazov} caseId={z.id ?? null} onClose={() => setSplit(false)} toast={toast} />}

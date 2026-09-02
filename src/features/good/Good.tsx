@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, memo } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { SIRKA, C, inp, btn, GRAD, GRAD_ZELENY, SPACE, RADIUS } from "@/theme";
-import { Foto, FotoPrispevku, MiniFotky, Video, ModulHlavicka, Hlavicka, AvatarUroven, PodporaSekcia, PlatbaModal, HladanieModal, OblubeneHviezda, OblubeneBtn, PodporitDeed, toast, Oslava, useGaleria, useScrollPamat, useMotiv, useLayout, useStrankaAkcie, useTvorbaGate, StatRiadok, MoniBar, FeedStlpce, FeedGrid, FeedCard, KartaBadge, typKluc, BackChip, ProgresBox, SwipeBack, obalSiroky, SegTabs, Lupa, Zdielanie, IkonaSipVlavo, IkonaMoznosti, IkonaUlozit, IkonaFajka, IkonaPlay, IkonaDoska, IkonaPin, OkruhVyber, QrModal, SplitQrSheet, FotoVyber, FeedSkeleton, EmptyState, ErrorState, ScreenSwitch, FormatovanyText, ZoznamDarcov } from "@/shared";
+import { Foto, FotoPrispevku, MiniFotky, Video, ModulHlavicka, Hlavicka, AvatarUroven, PlatobnyModul, PlatbaModal, HladanieModal, OblubeneHviezda, OblubeneBtn, toast, Oslava, useGaleria, useScrollPamat, useMotiv, useLayout, useStrankaAkcie, useTvorbaGate, StatRiadok, MoniBar, FeedStlpce, FeedGrid, FeedCard, KartaBadge, typKluc, BackChip, ProgresBox, SwipeBack, obalSiroky, SegTabs, Lupa, Zdielanie, IkonaSipVlavo, IkonaMoznosti, IkonaUlozit, IkonaFajka, IkonaPlay, IkonaDoska, IkonaPin, OkruhVyber, QrModal, SplitQrSheet, FotoVyber, FeedSkeleton, EmptyState, ErrorState, ScreenSwitch, FormatovanyText, ZoznamDarcov } from "@/shared";
 import { pridajDar, type VolbaDaru } from "@/lib/darcovia";
 import { pripravFeed, vzdialenostKm, FEED_CFG, type FeedUser } from "@/lib/feed";
 import { tint, tagChip, jeHrdina, HRDINA_COL, rovnakeOkremFunkcii } from "@/lib/ui";
@@ -816,41 +816,15 @@ export function GoodDetail({ it, toast, oslavuj, onBack, onVerify, onAutor }: Go
           </div>
         )}
 
-        <PodporaSekcia
+        {/* jednotný platobný modul (§ platba) — sumy → obľúbené → QR → reťaz dobra */}
+        <PlatobnyModul
           onShare={() => zdielaj({ titul: it.titul, text: it.titul, url: aktualnaUrl() }, toast)}
           upvotes={Math.floor((it.lajky || 0) / 3)} onUpvote={() => toast("Páči sa ti to")}
           onPodpor={(s: number) => podpor(s)}
-          onKanal={(k: string) => setPlatba(k)} />
-
-        {/* uložiť do obľúbených */}
-        <div style={{ marginTop: SPACE.gutter }}>
-          <div style={{ display: "flex", gap: SPACE.xs }}>
-            <OblubeneBtn polozka={oblubenyZGood(it)} toast={toast} style={{ flex: 1, minWidth: 0 }} />
-            <PodporitDeed toast={toast} style={{ flex: 1, minWidth: 0 }} />
-          </div>
-        </div>
-
-        {/* QR skutku (§10) — klik otvorí univerzálny QR s 3 výstupmi */}
-        <div onClick={() => setQr(true)} style={{ display: "flex", alignItems: "center", gap: SPACE.gutter, background: C.surface2, border: `1px solid ${C.line}`, borderRadius: RADIUS.md, padding: SPACE.sm, marginTop: SPACE.gutter, cursor: "pointer" }}>
-          <div style={{ width: 52, height: 52, borderRadius: RADIUS.xs, background: "#fff", flex: "none", display: "grid", gridTemplateColumns: "repeat(5,1fr)", gridTemplateRows: "repeat(5,1fr)", gap: 1, padding: SPACE.xxs }}>
-            {[...Array(25)].map((_, k) => <i key={k} style={{ background: (k * 7 + 3) % 3 ? "#0B0C0F" : "transparent", borderRadius: 1 }} />)}
-          </div>
-          <div>
-            <div style={{ fontWeight: 700, fontSize: 12.5 }}>QR tohto skutku</div>
-            <div style={{ fontSize: 12, color: C.textTer }}>Skenovať · kopírovať · zdieľať</div>
-          </div>
-          <div style={{ marginLeft: "auto", background: GRAD, color: "#fff", fontWeight: 700, fontSize: 11, padding: `${SPACE.xs}px ${SPACE.md}px`, borderRadius: RADIUS.sm, cursor: "pointer", boxShadow: "0 5px 16px color-mix(in srgb, var(--a-green) 32%, transparent)" }}>Otvoriť QR</div>
-        </div>
-
-        {/* Reťaz dobra (split QR) — nastav, aká časť platby ide komu (§10 × §9) */}
-        <div onClick={() => setSplit(true)} style={{ display: "flex", alignItems: "center", gap: SPACE.gutter, background: "rgba(31,191,143,.06)", border: "1px solid rgba(31,191,143,.25)", borderRadius: RADIUS.md, padding: SPACE.sm, marginTop: SPACE.sm, cursor: "pointer" }}>
-          <div style={{ width: 52, height: 52, borderRadius: RADIUS.xs, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, background: "rgba(31,191,143,.12)" }}>🔗</div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontWeight: 700, fontSize: 12.5 }}>Reťaz dobra — rozdeliť platbu</div>
-            <div style={{ fontSize: 12, color: C.textTer }}>Nastav v QR, aká časť ide komu (tebe + charitám)</div>
-          </div>
-          <div style={{ marginLeft: "auto", background: GRAD_ZELENY, color: "#06281d", fontWeight: 800, fontSize: 11, padding: `${SPACE.xs}px ${SPACE.md}px`, borderRadius: RADIUS.sm, boxShadow: "0 5px 16px rgba(31,191,143,.3)" }}>Split QR</div>
-        </div>
+          onKanal={(k: string) => setPlatba(k)}
+          oblubene={oblubenyZGood(it)} toast={toast}
+          qr={{ label: "QR tohto skutku", onClick: () => setQr(true) }}
+          retaz={{ onClick: () => setSplit(true) }} />
 
         <div style={{ textAlign: "center", fontSize: 10, color: C.textTer, marginTop: SPACE.md }}>Bol si pri tom? Komunita preveruje skutky.</div>
         <div style={{ display: "flex", gap: SPACE.sm, marginTop: SPACE.gutter }}>

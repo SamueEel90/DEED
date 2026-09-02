@@ -13,7 +13,8 @@ import { qrUrl } from "@/lib/qr";
 import { Sheet } from "@/components/sheet";
 import { QrModal } from "@/components/qr";
 import { Foto } from "@/components/media";
-import { PodporaSekcia, PlatbaModal } from "@/components/platba";
+import { PlatbaModal } from "@/components/platba";
+import { PlatobnyModul } from "@/components/platobnymodul";
 import { IkonaFajka } from "@/components/icons";
 import { SplitConfigStep, splitValid, splitOwnerPct, splitCielePayload, splitPreQrModal, SPLIT_MIN, type SplitCiel, type SplitLabely } from "@/components/splitconfig";
 import { useQrSplitCreate, useQrSplitGet, useQrSplitPay } from "@/data";
@@ -184,7 +185,8 @@ export function SplitLanding({ splitId, onClose, toast }: { splitId: string; onC
 
           {/* prispieť cez tento QR */}
           <div style={{ marginTop: SPACE.gutter }}>
-            <PodporaSekcia
+            {/* vnorený modul v QR sheete — bez riadku Obľúbené/QR/Reťaz (bol by rekurzívny) */}
+            <PlatobnyModul bezOblubenych
               onShare={() => toast?.("Zdieľať: odkaz skopírovaný · siete")}
               upvotes={0} onUpvote={() => toast?.("Palec hore")}
               onPodpor={(s: number) => posli(s, "deed")}

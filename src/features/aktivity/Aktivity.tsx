@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, memo } from "react";
-import { ModulHlavicka, Hlavicka, PodporaSekcia, PlatbaModal, HladanieModal, toast, Oslava, useMotiv, useLayout, useScrollPamat, useStrankaAkcie, useTvorbaGate, Ticker, StatRiadok, FiltreStat, FeedStlpce, FeedGrid, FeedCard, KartaBadge, TypBadge, BackChip, SwipeBack, obalSiroky, OkruhVyber, Lupa, Zvon, IkonaSipVlavo, IkonaMoznosti, Zdielanie, IkonaUlozit, IkonaPlay, IkonaDoska, IkonaPin, IkonaObalka, FotoPrispevku, FotoVyber, FeedSkeleton, EmptyState, ErrorState, ScreenSwitch, EntityHero, BtnAkcia, Overene, KontextMenu, IkonaOdkaz, IkonaVlajka, FotoProfiluSheet } from "@/shared";
+import { ModulHlavicka, Hlavicka, PlatobnyModul, PlatbaModal, HladanieModal, toast, Oslava, useMotiv, useLayout, useScrollPamat, useStrankaAkcie, useTvorbaGate, Ticker, StatRiadok, FiltreStat, FeedStlpce, FeedGrid, FeedCard, KartaBadge, TypBadge, BackChip, SwipeBack, obalSiroky, OkruhVyber, Lupa, Zvon, IkonaSipVlavo, IkonaMoznosti, Zdielanie, IkonaUlozit, IkonaPlay, IkonaDoska, IkonaPin, IkonaObalka, FotoPrispevku, FotoVyber, FeedSkeleton, EmptyState, ErrorState, ScreenSwitch, EntityHero, BtnAkcia, Overene, KontextMenu, IkonaOdkaz, IkonaVlajka, FotoProfiluSheet } from "@/shared";
 import { FOTO_TEST_REZIM, klucEntity, useFotkyEntity } from "@/lib/fotoentity";
 import { SIRKA, C, GRAD, GRAD_ZELENY, SPACE, RADIUS } from "@/theme";
 import { pripravFeed, FEED_CFG } from "@/lib/feed";
@@ -437,8 +437,6 @@ function DetailHero({ it, onBack, children }: { it: AktItem; onBack: () => void;
     </>
   );
 }
-const qrCells = () => [...Array(25)].map((_, k) => <i key={k} style={{ background: (k * 7 + 3) % 3 ? "#0B0C0F" : "transparent", borderRadius: 1 }} />);
-
 function Detail({ it, liked, like, support, votes, vote, toast, celebrate, home, openPerson }: any) {
   if (it.type === "workshop") return <WorkshopDetail it={it} toast={toast} celebrate={celebrate} home={home} openPerson={openPerson} />;
   if (it.type === "help") return <HelpDetail it={it} toast={toast} celebrate={celebrate} home={home} openPerson={openPerson} />;
@@ -482,17 +480,13 @@ function DeedDetail({ it, support, votes, vote, toast, home, openPerson }: any) 
           </div>
         )}
 
-        <PodporaSekcia
+        <PlatobnyModul
           onShare={() => zdielaj({ titul: it.title, text: it.title, url: aktualnaUrl() }, toast)}
           upvotes={Math.floor((it.likes || 0) / 3)} onUpvote={() => toast("Páči sa ti to")}
           onPodpor={(s: number) => support(s, it.author, it)}
-          onKanal={(k: string) => setPlatba(k)} supLabel={supLabel} />
-
-        <div style={{ display: "flex", alignItems: "center", gap: SPACE.gutter, background: A.surface2, border: `1px solid ${A.line}`, borderRadius: RADIUS.md, padding: SPACE.sm, marginTop: SPACE.gutter }}>
-          <div style={{ width: 52, height: 52, borderRadius: RADIUS.xs, background: "#fff", flex: "none", display: "grid", gridTemplateColumns: "repeat(5,1fr)", gridTemplateRows: "repeat(5,1fr)", gap: 1, padding: SPACE.xxs }}>{qrCells()}</div>
-          <div><div style={{ fontWeight: 700, fontSize: 12.5 }}>QR {isCase ? "tejto akcie" : isTalent ? "tohto talentu" : "tohto skutku"}</div><div style={{ fontSize: 12, color: A.txt3 }}>Zväčšiť a zdieľať na siete</div></div>
-          <div onClick={() => zdielaj({ titul: it.title, text: it.title, url: aktualnaUrl() }, toast)} style={{ marginLeft: "auto", background: GRAD, color: "#fff", fontWeight: 700, fontSize: 11, padding: `${SPACE.xs}px ${SPACE.md}px`, borderRadius: RADIUS.sm, cursor: "pointer", boxShadow: "0 5px 16px color-mix(in srgb, var(--a-green) 32%, transparent)" }}>Zdieľať</div>
-        </div>
+          onKanal={(k: string) => setPlatba(k)} supLabel={supLabel}
+          oblubene={{ refId: it.id, typ: isCase ? "ziadost" : isTalent ? "talent" : "skutok", modul: "aktivity", nazov: it.title, lok: it.loc }} toast={toast}
+          qr={{ label: `QR ${isCase ? "tejto akcie" : isTalent ? "tohto talentu" : "tohto skutku"}`, popis: "Zväčšiť · kopírovať · zdieľať", cta: "Zdieľať", onClick: () => zdielaj({ titul: it.title, text: it.title, url: aktualnaUrl() }, toast) }} />
 
         <div style={{ textAlign: "center", fontSize: 10, color: A.txt3, marginTop: SPACE.md }}>
           {myVote ? (myVote === "ok" ? "Označil(a) si tento skutok ako overený. Ďakujeme." : "Podal(a) si námietku — preverí ju AI + komunita.") : "Bol si pri tom? Komunita preveruje skutky."}
@@ -584,11 +578,13 @@ function HelpDetail({ it, toast, celebrate, home, openPerson }: any) {
         <InfoBox>{it.helpers} ľudí sa už zapojilo. Po prijatí sa otvorí chat, dohodnete sa. Po dokončení: hodnotenie + tip + reťaz dobra.</InfoBox>
         <Btn green onClick={gate(() => { celebrate("Ozval si sa!", `Otvorili sme chat s ${it.author}. Dohodnite si detaily.`); setTimeout(home, 1700); })}>✋ Môžem pomôcť</Btn>
         {/* podpora — pomôcť sa dá aj peniazmi (karta / SEPA prevod / peňaženka), nielen časom */}
-        <PodporaSekcia
+        <PlatobnyModul
           onShare={() => zdielaj({ titul: it.title, text: it.title, url: aktualnaUrl() }, toast)}
           upvotes={it.helpers || 0} onUpvote={() => toast("Páči sa ti to")}
           onPodpor={(s: number) => toast(`Ďakujeme za ${s} DEED pre ${it.author}`)}
-          onKanal={(k: string) => setPlatba(k)} supLabel="PODPORIŤ — klik a hneď odíde" />
+          onKanal={(k: string) => setPlatba(k)} supLabel="PODPORIŤ — klik a hneď odíde"
+          oblubene={{ refId: it.id, typ: "ziadost", modul: "aktivity", nazov: it.title, lok: it.loc }} toast={toast}
+          qr={{ label: "QR tejto žiadosti", popis: "Zväčšiť · kopírovať · zdieľať", cta: "Zdieľať", onClick: () => zdielaj({ titul: it.title, text: it.title, url: aktualnaUrl() }, toast) }} />
       </div>
       {/* simulácia platby (EUR karta / SEPA prevod / DEED peňaženka) */}
       {platba && <PlatbaModal kanal={platba} komu={it.author} onClose={() => setPlatba(null)}

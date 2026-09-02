@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { C, SPACE, RADIUS, SIRKA } from "@/theme";
 import {
-  BackHeader, PodporaSekcia, PlatbaModal, ProgresBox, QrModal, Stit, naStitLevel, tint,
+  BackHeader, PlatobnyModul, PlatbaModal, ProgresBox, QrModal, Stit, naStitLevel, tint,
   Zdielanie, Zvon, Srdce, useLayout, obalSiroky,
   EntityHero, BtnAkcia, BtnIkonka, KontextMenu, TabyProfil, MenuSkupina, KontaktPolozka, DvaStlpce,
   IkonaMoznosti, IkonaQr, IkonaVlajka, IkonaPin, IkonaObalka, IkonaOdkaz,
@@ -64,11 +64,13 @@ export function Podstranka({ pozicia, logo, toast, onBack }: {
     <div style={{ marginBottom: SPACE.gutter }}>
       <SekciaLabel>PODPORA ORGANIZÁCIE</SekciaLabel>
       <div style={{ marginBottom: SPACE.sm }}><ProgresBox suma={suma} ciel={12000} ludia={ludia} /></div>
-      <PodporaSekcia
+      <PlatobnyModul
         onShare={zdielajProfil}
         upvotes={ludia} onUpvote={() => toast("❤")}
         onPodpor={(d: number) => { setSuma((x) => x + d * 0.01); setLudia((l) => l + 1); toast(`Ďakujeme za ${d} DEED pre ${s.nazov}`); }}
-        onKanal={(k: string) => setPlatba(k as Kanal)} />
+        onKanal={(k: string) => setPlatba(k as Kanal)}
+        oblubene={{ refId: `rola-${s.nazov}`, typ: pozicia, modul: "charity", nazov: s.nazov, lok: s.lok }} toast={toast}
+        qr={{ label: "QR tohto profilu", popis: "QR aj embed odznak na vlastný web", onClick: () => setQr(true) }} />
     </div>
   );
 

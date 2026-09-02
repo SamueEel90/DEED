@@ -2,9 +2,9 @@ import { useEffect, useState } from "react";
 import { SPACE, RADIUS } from "@/theme";
 import { MEDIA_AR } from "@/lib/cardSize";
 import {
-  Foto, BackHeader, ProgresBox, PodporaSekcia, PlatbaModal, RecurringSheet, QrModal,
+  Foto, BackHeader, ProgresBox, PlatobnyModul, PlatbaModal, RecurringSheet, QrModal,
   MoniBar, Switch, Input, EmptyState, useStrankaAkcie,
-  Zdielanie, IkonaVlajka, IkonaOpakovat, IkonaDoska, IkonaFoto, IkonaPlus, IkonaOko, IkonaNastavenia, Srdce, tint, useGaleria, useLayout,
+  Zdielanie, IkonaVlajka, IkonaDoska, IkonaFoto, IkonaPlus, IkonaOko, IkonaNastavenia, Srdce, tint, useGaleria, useLayout,
   ZoznamDarcov, FormatovanyText, RichTextInput, FotoUpload, KamerkaBadge, ZmenitPill, FotoProfiluSheet, VideoEmbed, vlozenieVidea,
   StatRad, BtnAkcia, BtnIkonka, KontextMenu, MenuSkupina, MenuHlavicka, MenuPolozka, DvaStlpce,
   IkonaMoznosti, IkonaQr, IkonaKalendar, IkonaMegafon, IkonaCeruzka,
@@ -218,23 +218,23 @@ export function FarskyProfil({ farnost, farar, jeDomovska, following, onToggleFo
             <div style={{ fontSize: 11, fontWeight: 800, color: N.txt3, letterSpacing: ".04em", marginBottom: SPACE.xs }}>VŠEOBECNÁ PODPORA FARNOSTI</div>
             <div style={{ marginBottom: SPACE.sm }}><ProgresBox suma={suma} ciel={farnost.ciel} ludia={ludia} /></div>
             {/* farár si nedaruje sám — darovacie UI vidia len návštevníci */}
-            {!farar && (
+            {!farar ? (
               <div style={{ marginBottom: SPACE.sm }}>
-                <PodporaSekcia
+                <PlatobnyModul
                   onShare={() => setQr("zdielat")}
                   upvotes={ludia} onUpvote={() => toast("❤")} reakcia="srdce"
                   onPodpor={(s: number) => podpor(s, `Ďakujeme za ${s} DEED pre ${farnost.nazov}`)}
-                  onKanal={(k: string) => setPlatba(k as Kanal)} accent={N.ind} supLabel="RÝCHLY DAR — klik a hneď odíde" />
+                  onKanal={(k: string) => setPlatba(k as Kanal)} accent={N.ind} supLabel="RÝCHLY DAR — klik a hneď odíde"
+                  oblubene={{ refId: `farnost-${farnost.id}`, typ: "farnost", modul: "nabozenstvo", nazov: farnost.nazov, lok: farnost.obec }} toast={toast}
+                  opakovana={{ label: "Opakovaný dar", onClick: () => setRecur(true) }}
+                  qr={{ label: "QR na dar", popis: "Sken → dar za 2 kliky · zdieľanie", onClick: () => setQr("zdielat") }} />
+              </div>
+            ) : (
+              /* farár si nedaruje sám — z modulu mu ostáva len QR na tlač do kostola */
+              <div onClick={() => setQr("donacny")} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: SPACE.xs, border: `1px solid ${N.line}`, background: N.card, borderRadius: RADIUS.sm, padding: SPACE.sm, textAlign: "center", fontSize: 13, fontWeight: 700, color: N.txt, cursor: "pointer", marginBottom: SPACE.xs }}>
+                <IkonaQr size={15} /> QR na tlač
               </div>
             )}
-            <div style={{ display: "flex", gap: SPACE.sm, marginBottom: SPACE.xs }}>
-              <div onClick={() => setRecur(true)} style={{ flex: 1, border: `1px solid ${N.indEdge}`, background: N.indBg, borderRadius: RADIUS.sm, padding: SPACE.sm, textAlign: "center", fontSize: 13, fontWeight: 700, color: N.ind, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: SPACE.xs }}>
-                <IkonaOpakovat size={16} color={N.ind} /> Opakovaný dar
-              </div>
-              <div onClick={() => setQr(farar ? "donacny" : "zdielat")} style={{ flex: 1, border: `1px solid ${N.line}`, background: N.card, borderRadius: RADIUS.sm, padding: SPACE.sm, textAlign: "center", fontSize: 13, fontWeight: 700, color: N.txt, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: SPACE.xs }}>
-                <IkonaQr size={15} /> {farar ? "QR na tlač" : "QR na dar"}
-              </div>
-            </div>
             {/* zoznam darcov — až pod opakovaným darom / QR, rovnaké číslo ako počítadlo */}
             <div style={{ marginBottom: SPACE.gutter }}>
               <ZoznamDarcov refId={darRef} celkom={ludia} />

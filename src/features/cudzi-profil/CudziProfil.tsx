@@ -4,7 +4,7 @@ import {
   Aura, MoniBar, QrModal, SegTabs, useLayout, obalSiroky, BackHeader, IkonaFajka, IkonaPlay, Zdielanie, IkonaUsmev,
   EntityHero, BtnAkcia, BtnIkonka, KontextMenu, TabyProfil, MenuSkupina, MenuPolozka, DvaStlpce,
   IkonaMoznosti, IkonaQr, IkonaVlajka, IkonaOdkaz, Zvon, tint as tintVar,
-  Foto, Sheet, ProgresBox, PodporaSekcia, PlatbaModal, ZoznamDarcov,
+  Foto, Sheet, ProgresBox, PlatobnyModul, PlatbaModal, ZoznamDarcov,
   FotoProfiluSheet, KamerkaBadge, ZmenitPill,
 } from "@/shared";
 import { pressable } from "@/components/pressable";
@@ -217,6 +217,7 @@ function KampanSheet({ k, org, toast, onClose }: { k: OrgKampan; org: string; to
   const [suma, setSuma] = useState(k.vyzbierane);
   const [ludia, setLudia] = useState(k.ludia ?? 0);
   const [platba, setPlatba] = useState<Kanal | null>(null);
+  const [qrKampan, setQrKampan] = useState(false); // QR kampane (§10) — sken → dar
   const ja = usePouzivatel();
   const darRef = `org-kampan-${k.id}`;
 
@@ -235,15 +236,19 @@ function KampanSheet({ k, org, toast, onClose }: { k: OrgKampan; org: string; to
         <div style={{ fontSize: 11.5, color: C.textTer, marginBottom: SPACE.sm }}>{org}{k.lok ? ` · ${k.lok}` : ""}</div>
         <div style={{ fontSize: 13.5, lineHeight: 1.55, color: C.textSec, marginBottom: SPACE.sm }}>{k.popis}</div>
         <div style={{ marginBottom: SPACE.sm }}><ProgresBox suma={suma} ciel={k.ciel} ludia={ludia} /></div>
-        <PodporaSekcia
+        <PlatobnyModul
           onShare={() => void zdielaj({ titul: k.nazov, text: k.nazov, url: aktualnaUrl() }, toast ?? (() => {}))}
           upvotes={ludia} onUpvote={() => toast?.("❤")}
           onPodpor={(d: number) => podpor(d)}
-          onKanal={(kanal: string) => setPlatba(kanal as Kanal)} />
+          onKanal={(kanal: string) => setPlatba(kanal as Kanal)}
+          oblubene={{ refId: k.id, typ: "charita", modul: "charity", nazov: k.nazov, lok: k.lok, ciel: k.ciel, vyzbierane: suma }} toast={toast}
+          qr={{ label: "QR tejto kampane", onClick: () => setQrKampan(true) }} />
         <div style={{ marginTop: SPACE.gutter }}>
           <ZoznamDarcov refId={darRef} celkom={ludia} />
         </div>
       </Sheet>
+      {qrKampan && <QrModal typ="platba" titul={`QR · ${k.nazov}`} popis={`${org}${k.lok ? ` · ${k.lok}` : ""}`}
+        qrCiel={{ druh: "case", ref: String(k.id), modul: "charity" }} onClose={() => setQrKampan(false)} toast={toast} />}
       {platba && <PlatbaModal kanal={platba} komu={k.nazov} onClose={() => setPlatba(null)}
         onDone={(s: number, volba?: VolbaDaru) => {
           setSuma((x) => x + s * (platba === "EUR" ? 1 : 0.01));

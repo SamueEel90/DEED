@@ -1,6 +1,6 @@
 import { useState, useEffect, memo } from "react";
 import { SIRKA, SPACE, RADIUS } from "@/theme";
-import { Foto, MiniFotky, ModulHlavicka, PodporaSekcia, PlatbaModal, SplitQrSheet, HladanieModal, toast, useGaleria, useLayout, useScrollPamat, useStrankaAkcie, FeedGrid, StatRiadok, FiltreStat, OkruhVyber, MoniBar, ProgresBox, BackHeader, obalSiroky, SegTabs, tint, Lupa, Zdielanie, IkonaVlajka, IkonaFoto, IkonaInstitucia, Srdce, EmptyState, ScreenSwitch, SwipeBack, ZoznamDarcov, FormatovanyText, Input } from "@/shared";
+import { Foto, MiniFotky, ModulHlavicka, PlatobnyModul, PlatbaModal, SplitQrSheet, QrModal, HladanieModal, toast, useGaleria, useLayout, useScrollPamat, useStrankaAkcie, FeedGrid, StatRiadok, FiltreStat, OkruhVyber, MoniBar, ProgresBox, BackHeader, obalSiroky, SegTabs, tint, Lupa, Zdielanie, IkonaVlajka, IkonaFoto, IkonaInstitucia, Srdce, EmptyState, ScreenSwitch, SwipeBack, ZoznamDarcov, FormatovanyText, Input } from "@/shared";
 import { pridajDar, type VolbaDaru } from "@/lib/darcovia";
 import { usePouzivatel } from "@/lib/pouzivatel";
 import { cistyText } from "@/lib/richtext";
@@ -492,6 +492,7 @@ function VieraDetail({ z, farar, onBack, onProfil }: { z: VieraFeedItem; farar: 
   const [ludia, setLudia] = useState(z.podpora ?? 0);
   const [platba, setPlatba] = useState<Kanal | null>(null);
   const [split, setSplit] = useState(false);
+  const [qr, setQr] = useState(false); // QR zbierky (§10) — sken → dar
   const fotky = z.fotky ?? [];
   // bod 23: pri parte ŽIADNY surový banner navrchu — parte je obsah (foto už obsahuje)
   const maFoto = fotky.length > 0 && !z.smutocny;
@@ -631,20 +632,17 @@ function VieraDetail({ z, farar, onBack, onProfil }: { z: VieraFeedItem; farar: 
             </div>
 
             <div style={{ marginBottom: SPACE.gutter }}>
-              <PodporaSekcia
+              <PlatobnyModul
                 onShare={zdielajDetail}
                 upvotes={ludia} onUpvote={() => toast(reakcia)} reakcia="srdce"
                 onPodpor={(s: number) => podpor(s, `Ďakujeme za ${s} DEED pre ${z.nazov}`)}
                 onKanal={(k: string) => setPlatba(k as Kanal)} accent={N.ind}
-                supLabel={z.ukat === "pohreb" ? "PRISPIEŤ — pohrebná zbierka (predĺžené okno ~týždeň)" : "PRISPIEŤ — klik a hneď odíde"} />
+                supLabel={z.ukat === "pohreb" ? "PRISPIEŤ — pohrebná zbierka (predĺžené okno ~týždeň)" : "PRISPIEŤ — klik a hneď odíde"}
+                oblubene={{ refId: z.id, typ: z.ntyp ?? "zbierka", modul: "nabozenstvo", nazov: z.nazov ?? "Zbierka", lok: z.lok, ciel: cielLocal ?? undefined, vyzbierane: suma }} toast={toast}
+                qr={{ label: "QR tejto zbierky", onClick: () => setQr(true) }}
+                {/* Split QR pri pohrebe/svadbe nastavuje LEN farár (rodine ↔ kostolu) */
+                ...(jeSplit && farar ? { retaz: { label: "Rozdeliť dar (Split QR)", popis: "Rodine ↔ kostolu — % sa zafixujú pri vzniku", onClick: () => setSplit(true) } } : {})} />
             </div>
-
-            {/* pohreb/svadba — Split QR (len farár: rodine ↔ kostolu) */}
-            {jeSplit && farar && (
-              <div onClick={() => setSplit(true)} style={{ border: `1px solid ${N.greenEdge}`, background: N.greenBg, borderRadius: RADIUS.sm, padding: SPACE.gutter, textAlign: "center", fontSize: 14, fontWeight: 700, color: N.green, cursor: "pointer", marginBottom: SPACE.gutter }}>
-                ⚖ Rozdeliť dar (Split QR) — rodine ↔ kostolu
-              </div>
-            )}
 
             {/* zoznam darcov — až pod pravidelnou podporou / reťazou dobra */}
             <div style={{ marginBottom: SPACE.gutter }}>
@@ -663,10 +661,11 @@ function VieraDetail({ z, farar, onBack, onProfil }: { z: VieraFeedItem; farar: 
               </div>
             )}
             {/* §12: oznam/dobrovoľníctvo bez napojenej zbierky → LEN srdiečko + zdieľať. */}
-            <PodporaSekcia
+            <PlatobnyModul
               onShare={zdielajDetail}
               upvotes={ludia} onUpvote={() => toast(reakcia)} reakcia="srdce" bezDaru
-              onPodpor={() => {}} onKanal={() => {}} accent={N.ind} />
+              onPodpor={() => {}} onKanal={() => {}} accent={N.ind}
+              oblubene={{ refId: z.id, typ: z.ntyp ?? "oznam", modul: "nabozenstvo", nazov: z.nazov ?? "Oznam", lok: z.lok }} toast={toast} />
             {z.ntyp === "oznam" && <div style={{ fontSize: 10.5, color: N.txt3, textAlign: "center", marginTop: SPACE.sm }}>Bez zbierky — len srdiečko a zdieľať. „Prispieť" sa objaví len ak je oznam napojený na zbierku (napr. úmrtie → pohrebná zbierka). Žiadne komentáre (železné pravidlo).</div>}
           </div>
         )}
@@ -687,6 +686,9 @@ function VieraDetail({ z, farar, onBack, onProfil }: { z: VieraFeedItem; farar: 
       </div>
 
       {platba && <PlatbaModal kanal={platba} komu={z.nazov || ""} onClose={() => setPlatba(null)} onDone={platbaHotova} />}
+      {/* QR zbierky (§10) — sken otvorí darovanie, dá sa vytlačiť aj zdieľať */}
+      {qr && <QrModal typ="platba" titul={`QR · ${z.nazov ?? "Zbierka"}`} popis={(z.komunita || z.cirkev || "").slice(0, 38)}
+        qrCiel={{ druh: "case", ref: String(z.id), modul: "nabozenstvo" }} onClose={() => setQr(false)} toast={toast} />}
       {split && <SplitQrSheet titul={z.nazov || "Zbierka"} caseId={null} zdroj="autor"
         variant={farskySplitVariant(z.ukat === "svadba" ? "svadba" : "pohreb")}
         onClose={() => setSplit(false)} toast={toast} />}
