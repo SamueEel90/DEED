@@ -1,6 +1,6 @@
-import { useState, useEffect, memo } from "react";
-import { SIRKA, C, U, AV, GRAD, GRAD_ZELENY, SPACE, RADIUS } from "@/theme";
-import { Foto, Avatar, MiniFotky, ModulHlavicka, PlatobnyModul, PlatbaModal, RecurringSheet, SplitQrSheet, QrModal, HladanieModal, OblubeneHviezda, toast, useGaleria, useLayout, useScrollPamat, useStrankaAkcie, useTvorbaGate, Ticker, StatRiadok, FiltreStat, FeedStlpce, FeedGrid, FeedCard, KartaBadge, BackHeader, ProgresBox, obalSiroky, OkruhVyber, SegTabs, tint, Lupa, Zvon, Zdielanie, IkonaVlajka, IkonaFoto, IkonaPlay, IkonaDoska, IkonaKriz, IkonaInstitucia, IkonaMoznosti, IkonaOdkaz, KontextMenu, Overene, FeedSkeleton, SkeletonRiadky, EmptyState, ErrorState, ScreenSwitch, SwipeBack, ZoznamDarcov, FormatovanyText } from "@/shared";
+import { useState, memo } from "react";
+import { SIRKA, C, SPACE, RADIUS } from "@/theme";
+import { Foto, Avatar, MiniFotky, ModulHlavicka, PlatobnyModul, PlatbaModal, RecurringSheet, SplitQrSheet, QrModal, HladanieModal, OblubeneHviezda, toast, useGaleria, useLayout, useScrollPamat, useStrankaAkcie, useTvorbaGate, Ticker, StatRiadok, FiltreStat, FeedStlpce, FeedGrid, FeedCard, KartaBadge, BackHeader, ProgresBox, obalSiroky, OkruhVyber, SegTabs, tint, Lupa, Zdielanie, IkonaVlajka, IkonaFoto, IkonaPlay, IkonaDoska, IkonaKriz, IkonaInstitucia, IkonaMoznosti, IkonaOdkaz, KontextMenu, Overene, FeedSkeleton, SkeletonRiadky, EmptyState, ErrorState, ScreenSwitch, SwipeBack, ZoznamDarcov, FormatovanyText } from "@/shared";
 import { pridajDar, type VolbaDaru } from "@/lib/darcovia";
 import { usePouzivatel } from "@/lib/pouzivatel";
 import { pripravFeed, FEED_CFG } from "@/lib/feed";
@@ -154,7 +154,7 @@ export default function ModulCharita({ wide, otvorModul }: ModulCharitaProps) {
       {screen === "detail" && obal(<SwipeBack onBack={() => setScreen("feed")}><CharitaDetail z={aktZ} toast={toast} onBack={() => setScreen("feed")} onReg={() => setSheet("reg")} onAutor={(s) => { setAktSubjekt(s); setScreen("cudzi"); }} /></SwipeBack>)}
       {screen === "cudzi" && aktSubjekt && obal(<CudziProfil subjekt={aktSubjekt as any} toast={toast} onBack={() => setScreen("feed")}
         onKampan={(k: OrgKampan) => { setAktZ({ id: k.id, nazov: k.nazov, emoji: k.emoji, overena: true, orgProfil: true, avatar: najdiOrg((aktSubjekt as { meno?: string } | null)?.meno).logo, lok: k.lok, fotky: [k.foto], popis: k.popis, pribeh: k.popis, vyzbierane: k.vyzbierane, ciel: k.ciel, ludia: k.ludia }); setScreen("detail"); }} />)}
-      {screen === "board" && <GoodBoard onBack={() => setScreen("feed")} onEvent={(id) => { setAktEvent(id); setScreen("event"); }} toast={toast} />}
+      {screen === "board" && <GoodBoard onBack={() => setScreen("feed")} onEvent={(id) => { setAktEvent(id); setScreen("event"); }} />}
       {screen === "event" && obal(<GoodEvent id={aktEvent} onBack={() => setScreen("board")} toast={toast} oslavuj={(s, komu) => toast(`Ďakujeme za ${s} pre ${komu}`)} />)}
       </ScreenSwitch>
 
@@ -371,36 +371,12 @@ function badge({ top, left, right, color, background }: { top?: number; left?: n
 function Overena() {
   return <Overene size={15} label="Overená zbierka" />;
 }
-type RiadokKartaProps = {
-  wide?: boolean;
-  onClick: () => void;
-  ikona: React.ReactNode;
-  ikonaBg: string;
-  ikonaCol: string;
-  ikonaText?: boolean;
-  nazov: string;
-  tag: string;
-  tagBg: string;
-  tagCol: string;
-  popis: string;
-};
-function RiadokKarta({ wide, onClick, ikona, ikonaBg, ikonaCol, ikonaText, nazov, tag, tagBg, tagCol, popis }: RiadokKartaProps) {
-  return (
-    <div onClick={onClick} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, background: K.card, border: `1px solid ${K.line}`, borderRadius: RADIUS.sm, padding: `${SPACE.sm}px ${SPACE.sm}px`, marginBottom: wide ? 0 : SPACE.sm, cursor: "pointer" }}>
-      <div style={{ width: 42, height: 42, borderRadius: RADIUS.xs, background: ikonaBg, color: ikonaCol, display: "flex", alignItems: "center", justifyContent: "center", fontSize: ikonaText ? 12 : 18, fontWeight: ikonaText ? 700 : 400, flexShrink: 0 }}>{ikona}</div>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 15, fontWeight: 600, display: "flex", alignItems: "center", gap: SPACE.xxs }}>{nazov} <span style={{ fontSize: 11, padding: `${SPACE.xxs}px ${SPACE.xs}px`, borderRadius: 5, fontWeight: 600, background: tagBg, color: tagCol }}>{tag}</span></div>
-        <div style={{ fontSize: 13, color: K.txt2, marginTop: SPACE.xxs, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{popis}</div>
-      </div>
-    </div>
-  );
-}
 
 // ===================== DETAIL ZBIERKY =====================
 // `z` = obsah kliknutej karty (ktorákoľvek karta feedu). Ak chýba (deep-link,
 // hľadanie „rodina"), fallback = hlavná zbierka z DB/mocku. Bez cieľa (ciel) ide
 // o dobrovoľníctvo/materiál → bez progresu a namiesto podpory CTA „Zapojiť sa".
-function CharitaDetail({ z: zProp, toast, onBack, onReg, onAutor }: { z?: ZbierkaDetail | null; toast: (m: string) => void; onBack: () => void; onReg: () => void; onAutor?: (s: Subjekt) => void }) {
+function CharitaDetail({ z: zProp, toast, onBack, onAutor }: { z?: ZbierkaDetail | null; toast: (m: string) => void; onBack: () => void; onReg: () => void; onAutor?: (s: Subjekt) => void }) {
   const { data: DB } = useCharitaZbierka();
   const zRaw: ZbierkaDetail | null = zProp ?? (DB ? {
     nazov: DB.nazov, emoji: "🔥", accent: K.gold, badge: "🔥 URGENTNÉ", overena: true,
@@ -429,7 +405,6 @@ function CharitaDetail({ z: zProp, toast, onBack, onReg, onAutor }: { z?: Zbierk
   const fotky = z.fotky ?? [];
   const maFoto = fotky.length > 0;
   const pribeh = z.pribeh ?? z.popis;
-  const pct = ciel ? Math.min(100, Math.round(suma / ciel * 100)) : 0;
 
   // počítadlo „ľudí pomohlo" aj zoznam darcov rastú z JEDNÉHO miesta (konzistentné čísla)
   function podpor(hodnota: number, text: string) {
@@ -565,13 +540,6 @@ function CharitaDetail({ z: zProp, toast, onBack, onReg, onAutor }: { z?: Zbierk
   );
 }
 
-function PayBtn({ flex, bg, bd, col, e, v, onClick }: { flex?: number | string; bg?: string; bd?: string; col?: string; e?: React.ReactNode; v?: React.ReactNode; onClick?: () => void }) {
-  return (
-    <div onClick={onClick} style={{ flex, background: bg, border: `1px solid ${bd}`, borderRadius: RADIUS.sm, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: `${SPACE.xs}px 0`, cursor: "pointer", gap: SPACE.xxs }}>
-      <span style={{ fontSize: 18, color: col }}>{e}</span><span style={{ fontSize: 11, fontWeight: 600, color: col }}>{v}</span>
-    </div>
-  );
-}
 
 // ===================== SHEETY =====================
 function SheetObal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
@@ -596,7 +564,7 @@ type SheetMoznost = [emoji: string, titul: string, popis: string, akcia: () => v
 
 function SheetPridat({ toast, otvorModul, onClose }: { toast: (m: string) => void; otvorModul?: (m: string) => void; onClose: () => void }) {
   const moznosti: SheetMoznost[] = [
-    ["💶", "Žiadosť o pomoc", "Finančná zbierka — krátka alebo dlhodobá", () => { onClose(); otvorModul && otvorModul("help"); }],
+    ["💶", "Žiadosť o pomoc", "Finančná zbierka — krátka alebo dlhodobá", () => { onClose(); otvorModul?.("help"); }],
     ["🙋", "Žiadosť na dobrovoľníctvo", "Nábor — počet, miesto, dĺžka, QR", () => toast("Sprievodca dobrovoľníckej výzvy (6 krokov)")],
     ["📦", "Iná nefinančná pomoc", "Materiál (deky, krmivo…) — fáza 2", () => toast("Materiál — fáza 2")],
     ["📎", "Dôkaz / update", "Dokladovanie použitia k bežiacej žiadosti", () => toast("Pridať dôkaz / update k bežiacej zbierke")],

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, memo } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { SIRKA, C, inp, btn, GRAD, GRAD_ZELENY, SPACE, RADIUS } from "@/theme";
-import { Foto, FotoPrispevku, MiniFotky, Video, ModulHlavicka, Hlavicka, AvatarUroven, PlatobnyModul, PlatbaModal, HladanieModal, OblubeneHviezda, OblubeneBtn, toast, Oslava, useGaleria, useScrollPamat, useMotiv, useLayout, useStrankaAkcie, useTvorbaGate, StatRiadok, MoniBar, FeedStlpce, FeedGrid, FeedCard, KartaBadge, typKluc, BackChip, ProgresBox, SwipeBack, obalSiroky, SegTabs, Lupa, Zdielanie, IkonaSipVlavo, IkonaMoznosti, IkonaUlozit, IkonaFajka, IkonaPlay, IkonaDoska, IkonaPin, OkruhVyber, QrModal, SplitQrSheet, FotoVyber, FeedSkeleton, EmptyState, ErrorState, ScreenSwitch, FormatovanyText, ZoznamDarcov } from "@/shared";
+import { Foto, MiniFotky, Video, ModulHlavicka, Hlavicka, AvatarUroven, PlatobnyModul, PlatbaModal, HladanieModal, OblubeneHviezda, OblubeneBtn, toast, Oslava, useGaleria, useScrollPamat, useMotiv, useLayout, useStrankaAkcie, useTvorbaGate, StatRiadok, MoniBar, FeedStlpce, FeedGrid, FeedCard, KartaBadge, typKluc, BackChip, ProgresBox, SwipeBack, obalSiroky, Lupa, Zdielanie, IkonaSipVlavo, IkonaMoznosti, IkonaUlozit, IkonaFajka, IkonaPlay, IkonaDoska, IkonaPin, OkruhVyber, QrModal, SplitQrSheet, FotoVyber, FeedSkeleton, EmptyState, ErrorState, ScreenSwitch, FormatovanyText, ZoznamDarcov } from "@/shared";
 import { pridajDar, type VolbaDaru } from "@/lib/darcovia";
 import { pripravFeed, vzdialenostKm, FEED_CFG, type FeedUser } from "@/lib/feed";
 import { tint, tagChip, jeHrdina, HRDINA_COL, rovnakeOkremFunkcii } from "@/lib/ui";
@@ -53,7 +53,6 @@ const heroGrad = (kat: GoodPolozka["kat"]) => `linear-gradient(160deg, ${KAT[kat
 // `tint` je teraz var-aware (z @/lib/ui) — zvláda hex aj CSS premenné (var(--a-*) → color-mix).
 // Predtým tu bol lokálny hex-only helper, ktorý z premenných robil takmer čiernu (rozbité tinty).
 // jednotný „glass" odznak na médiu karty
-const mediaBadge = (extra: React.CSSProperties): React.CSSProperties => ({ position: "absolute", zIndex: 1, display: "inline-flex", alignItems: "center", gap: SPACE.xxs, fontSize: 10, fontWeight: 700, padding: `${SPACE.xxs}px ${SPACE.xs}px`, borderRadius: RADIUS.xs, background: "rgba(8,11,18,.62)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)", border: "1px solid rgba(255,255,255,.18)", color: "#fff", pointerEvents: "none", ...extra });
 
 // ===================== MODUL =====================
 export default function ModulGood({ wide, otvorModul, otvorId, onOtvorene }: { wide?: boolean; otvorModul?: (m: string) => void; otvorId?: string; onOtvorene?: () => void }) {
@@ -131,7 +130,7 @@ export default function ModulGood({ wide, otvorModul, otvorId, onOtvorene }: { w
         <CudziProfil subjekt={aktSubjekt as any} toast={toast} onBack={() => setScreen(predtym)} />
       )}
       {screen === "board" && (
-        <GoodBoard onBack={() => setScreen("home")} onEvent={(id) => { setAktEvent(id); setScreen("event"); }} toast={toast} />
+        <GoodBoard onBack={() => setScreen("home")} onEvent={(id) => { setAktEvent(id); setScreen("event"); }} />
       )}
       {screen === "event" && obal(
         <GoodEvent id={aktEvent} onBack={() => setScreen("board")} toast={toast} oslavuj={oslavuj} />
@@ -706,7 +705,6 @@ function GoodKartaBase({ it, wide, onDetail }: { it: GoodPolozka; wide?: boolean
   const jeCharita = it.typ === "charita";
   const overCol = svetly ? "#0F8A5E" : "var(--a-green)";
   const accent = jeZiadost ? C.red : jeCharita ? C.gold : kat.c;
-  const medLabel = jeCharita ? `✓ Charita ${it.charLevel || ""}`.trim() : jeZiadost ? "Žiadosť" : katLabel(it.kat);
   return (
     <FeedCard wide={wide} onClick={onDetail} label={`Otvoriť: ${it.titul}`} typ={typKluc(it.typ)}
       accent={jeZiadost ? C.red : undefined} ring={it.topovane ? C.gold : undefined}
@@ -763,7 +761,6 @@ export function GoodDetail({ it, toast, oslavuj, onBack, onVerify, onAutor }: Go
   const maHero = !!(it.video || it.fotky?.length);
   const jeZiadost = it.typ === "ziadost", jeCharita = it.typ === "charita";
   const maProgres = (jeZiadost && it.ciel) || jeCharita;
-  const pct = maProgres && it.ciel ? Math.round((it.vyzbierane ?? 0) / it.ciel * 100) : 0;
 
   // zaznamenaj podporu do zdieľaného store (snapshot progresu k momentu podpory)
   const zaznamenajPodporu = (suma: number, kanal: string = "DEED") =>
@@ -1127,9 +1124,9 @@ function GoodAdd({ toast, oslavuj, onPridaj, onDone }: { toast: (m: string) => v
 
       {/* Reťaz dobra — Cesta A (§9): nastav % + vyber žiadosť → QR D+R */}
       {retaz && (
-        <RetazDobraSheet odmena={ODMENA} mode="skutok" titulOdkaz="Tvoj skutok"
+        <RetazDobraSheet odmena={ODMENA} mode="skutok"
           onClose={() => setRetaz(false)}
-          onDone={({ pct, ziadost }: { pct: number; ziadost?: { nazov?: string } }) => { onPridaj(vytvorSkutok()); oslavuj(ODMENA, ziadost?.nazov || "reťaz dobra"); setTimeout(onDone, 700); }}
+          onDone={({ ziadost }: { pct: number; ziadost?: { nazov?: string } }) => { onPridaj(vytvorSkutok()); oslavuj(ODMENA, ziadost?.nazov || "reťaz dobra"); setTimeout(onDone, 700); }}
           toast={toast} />
       )}
     </div>
@@ -1242,7 +1239,7 @@ function BoardKalendar({ events, den, setDen, onEvent, desktop }: { events: Udal
   );
 }
 
-export function GoodBoard({ onBack, onEvent, toast }: { onBack: () => void; onEvent: (id: string) => void; toast: (m: string) => void }) {
+export function GoodBoard({ onBack, onEvent }: { onBack: () => void; onEvent: (id: string) => void }) {
   const { data: EVENTS = [] } = useGoodUdalosti();
   const { wide, desktop } = useLayout();
   const { mesto, okruh, nastavOkruh } = useLokalita(); // Kde = jedno nastavenie s Domovom (spec §1.1)

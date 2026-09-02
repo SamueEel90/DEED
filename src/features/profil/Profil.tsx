@@ -15,7 +15,7 @@ import { usePersonalizacia } from "@/lib/personalizacia";
 import { ZAUJMY_KATALOG } from "@/lib/personalizaciaStore";
 import { Nastavenia as NotifNastavenia } from "@/features/notifikacie/Notifikacie";
 import GlassIcons from "@/components/GlassIcons";
-import type { Toast as ToastFn, WideProps, PrevodTuple, MojSkutokTuple, ZiadostPriatelstvo, CestaPriatelstva, RezimNastavenia } from "@/types";
+import type { Toast as ToastFn, WideProps, PrevodTuple, ZiadostPriatelstvo, CestaPriatelstva, RezimNastavenia } from "@/types";
 import { useProfilPrevody, useProfilMojeSkutky, useProfilKarma, useProfilStatistiky } from "@/data";
 import { MEDIA_AR } from "@/lib/cardSize";
 import { MODULOVA_KARMA, DOZIVOTNE_ZISKANE } from "./mock";
@@ -53,7 +53,7 @@ export default function ModulProfil({ wide, walletReq = 0 }: ProfilProps) {
   return (
     <div style={{ minHeight: "100%" }}>
       <ScreenSwitch k={screen}>
-      {screen === "profil" && obal(<ProfilHlavny toast={toast} naWallet={() => setScreen("wallet")} naSub={sub} naNastavenia={() => setScreen("nastavenia")} naPriatelia={() => setScreen("priatelia")} naFiremny={() => setScreen("firemny")} />)}
+      {screen === "profil" && obal(<ProfilHlavny naWallet={() => setScreen("wallet")} naSub={sub} naNastavenia={() => setScreen("nastavenia")} naPriatelia={() => setScreen("priatelia")} naFiremny={() => setScreen("firemny")} />)}
       {screen === "wallet" && obal(<Penazenka toast={toast} onBack={() => setScreen("profil")} />)}
       {screen === "firemny" && obal(<MojDeedFiremny onBack={() => setScreen("profil")} toast={toast} />)}
       {screen === "sub" && obal(<SubScreen nazov={subNazov} toast={toast} onBack={() => setScreen("profil")} />)}
@@ -135,14 +135,13 @@ function NotifObrazovka({ onBack, desktop }: { onBack: () => void; desktop?: boo
         {!desktop && <div onClick={onBack} style={spatBtn}><IkonaSipVlavo size={18} color={C.textSec} /></div>}
         <h3 style={{ fontSize: 17, margin: 0 }}>Notifikácie</h3>
       </div>
-      <div style={{ padding: "0 16px", display: "flex", flexDirection: "column" }}><NotifNastavenia embedded toast={toast} /></div>
+      <div style={{ padding: "0 16px", display: "flex", flexDirection: "column" }}><NotifNastavenia embedded /></div>
     </div>
   );
 }
 
 // ===================== PROFIL =====================
 type ProfilHlavnyProps = {
-  toast: ToastFn;
   naWallet: () => void;
   naSub: (n: string) => void;
   naNastavenia: () => void;
@@ -150,7 +149,7 @@ type ProfilHlavnyProps = {
   naFiremny: () => void;
 };
 
-function ProfilHlavny({ toast, naWallet, naSub, naNastavenia, naPriatelia, naFiremny }: ProfilHlavnyProps) {
+function ProfilHlavny({ naWallet, naSub, naNastavenia, naPriatelia, naFiremny }: ProfilHlavnyProps) {
   const otvorViac = useViac();
   const dlazdice: [string, string, string, string, React.ReactNode, () => void][] = [
     ["Peňaženka", "1 240 DEED", "color-mix(in srgb, var(--a-info) 14%, transparent)", "var(--a-info)", <IkonaPenazenka size={26} />, naWallet],
@@ -531,7 +530,7 @@ function SubScreen({ nazov, toast, onBack, desktop }: SubScreenProps) {
 
       {/* ručná Reťaz dobra pri menšom skutku (§9) */}
       {retaz && (
-        <RetazDobraSheet odmena={retaz.odmena} mode="skutok" titulOdkaz="Tvoj skutok"
+        <RetazDobraSheet odmena={retaz.odmena} mode="skutok"
           onClose={() => setRetaz(null)}
           onDone={() => toast("Reťaz dobra spustená — časť ide ďalej")}
           toast={toast} />

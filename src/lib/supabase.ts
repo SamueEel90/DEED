@@ -31,8 +31,6 @@ export const USE_SUPABASE: boolean = supabaseReady && !FORCE_MOCK;
 export const supabase: SupabaseClient | null = USE_SUPABASE ? createClient(url!, anonKey!) : null;
 
 if (import.meta.env.DEV) {
-  // eslint-disable-next-line no-console
   if (!supabaseReady) console.warn("[DEED] Supabase nie je nakonfigurovaný — chýba VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY (.env.local).");
-  // eslint-disable-next-line no-console
   else if (FORCE_MOCK) console.info("[DEED] VITE_USE_MOCK=1 → appka beží na MOCK dátach (Supabase je vypnutý, žiadne CORS chyby).");
 }

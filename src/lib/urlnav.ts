@@ -16,7 +16,7 @@ import { useEffect, useRef } from "react";
 
 type Vrstva = { id: number; zatvor: () => void };
 
-let vrstvy: Vrstva[] = [];
+const vrstvy: Vrstva[] = [];
 let sentinelSeq = 0;
 let ignorujPop = 0; // tiché history.back() z UI-zatvorenia nesmie spustiť handler
 let modulListener: ((modul: string | null) => void) | null = null;

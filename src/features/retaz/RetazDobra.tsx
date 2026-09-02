@@ -32,7 +32,6 @@ const norm = (s?: string) => (s || "").toLowerCase().normalize("NFD").replace(/[
 interface RetazDobraSheetProps {
   odmena?: number;
   mode?: RetazMode;
-  titulOdkaz?: string;
   odkaz?: string;
   onClose?: () => void;
   onDone?: (vysledok: RetazVysledok) => void;
@@ -41,7 +40,7 @@ interface RetazDobraSheetProps {
 
 // ---- bottom-sheet tok: nastav % + vyber žiadosť → zverejnené + QR D+R ----
 // mode: "skutok" (Cesta A) | "honorar" (Cesta B)
-export function RetazDobraSheet({ odmena = 130, mode = "skutok", titulOdkaz = "Skutok", odkaz = "https://deed.app/s/120042", onClose, onDone, toast }: RetazDobraSheetProps) {
+export function RetazDobraSheet({ odmena = 130, mode = "skutok", odkaz = "https://deed.app/s/120042", onClose, onDone, toast }: RetazDobraSheetProps) {
   const { data: ZIADOSTI = [] } = useRetazZiadosti();
   const { ucetId } = usePouzivatel();
   const chain = useChainCreate();

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { SIRKA, C, GRAD, SPACE, RADIUS } from "@/theme";
+import { SIRKA, C, SPACE, RADIUS } from "@/theme";
 import {
   Aura, MoniBar, QrModal, SegTabs, useLayout, obalSiroky, BackHeader, IkonaFajka, IkonaPlay, Zdielanie, IkonaUsmev,
   EntityHero, BtnAkcia, BtnIkonka, KontextMenu, TabyProfil, MenuSkupina, MenuPolozka, DvaStlpce,

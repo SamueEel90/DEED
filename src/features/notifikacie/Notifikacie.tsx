@@ -91,13 +91,13 @@ export function Zvoncek({ color = "#C4CCDB", toast }: { color?: string; toast?: 
               <Zoznam onClose={() => setOtvor(false)} onPrecitaj={() => setPrecitane(true)} toast={toast} hideSettings />
             </div>
             <div style={{ width: 330, flex: "0 0 330px", borderLeft: `1px solid ${C.line}`, paddingLeft: SPACE.md, display: "flex", flexDirection: "column", minHeight: 0 }}>
-              <Nastavenia embedded toast={toast} />
+              <Nastavenia embedded />
             </div>
           </div>
         ) : view === "zoznam" ? (
           <Zoznam onSettings={() => setView("nastavenia")} onClose={() => setOtvor(false)} onPrecitaj={() => setPrecitane(true)} toast={toast} />
         ) : (
-          <Nastavenia onBack={() => setView("zoznam")} toast={toast} />
+          <Nastavenia onBack={() => setView("zoznam")} />
         )}
       </div>
     </div>
@@ -164,7 +164,7 @@ function Zoznam({ onSettings, onClose, onPrecitaj, toast, hideSettings }: { onSe
 }
 
 // ---- NASTAVENIA notifikácií (kategórie + master + tiché hodiny) ----
-export function Nastavenia({ onBack, embedded, toast }: { onBack?: () => void; embedded?: boolean; toast?: (msg: string) => void }) {
+export function Nastavenia({ onBack, embedded }: { onBack?: () => void; embedded?: boolean }) {
   const [master, setMaster] = useState(true);
   const [tiche, setTiche] = useState(true);
   const [vyp, setVyp] = useState<VypnuteMapa>(VYPNUTE_DEF); // mapka vypnutých prepínačov

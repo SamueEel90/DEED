@@ -1,6 +1,6 @@
 import { useState, useEffect, memo, type ReactNode } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { SIRKA, C, inp, infoBox, btn, GRAD_ZELENY, glassTmavy, SPACE, RADIUS } from "@/theme";
+import { SIRKA, C, inp, infoBox, btn, SPACE, RADIUS } from "@/theme";
 import { pasmo, POZNAMKA_DAVKY, tagLabels, CHARITA_SEGMENTY, segmentLabel, OVERENIA_POTREBNE, ESCROW } from "./konstanty";
 import { TagTemy, prepniTag, ZranitelniBlok, PrisnyBadge, AiPoznamka, GuardFuzzy } from "./HelpKit";
 import { Foto, Avatar, MiniFotky, Hlavicka, ModulHlavicka, PlatobnyModul, PlatbaModal, HladanieModal, OblubeneHviezda, Otazka, Vyber, vyberBox, NavBtns, Suhrn, DokladRow, toast, Oslava, useGaleria, useLayout, useScrollPamat, useStrankaAkcie, useTvorbaGate, Ticker, StatRiadok, FiltreStat, FeedStlpce, FeedGrid, FeedCard, KartaBadge, typKluc, BackHeader, ProgresBox, obalSiroky, OkruhVyber, Lupa, Zdielanie, IkonaVlajka, IkonaFoto, IkonaPlay, IkonaDoska, IkonaPin, IkonaOsoba, IkonaCharita, FeedSkeleton, EmptyState, ErrorState, ScreenSwitch, KontextMenu, Overene, IkonaMoznosti, IkonaOdkaz, SwipeBack, ZoznamDarcov, FormatovanyText, RichTextInput } from "@/shared";
@@ -122,7 +122,7 @@ export default function ModulHelp({ wide }: { wide?: boolean }) {
       {screen === "offer" && obal(<OfferFlow onBack={() => setScreen("feed")} onZverejni={zverejni} />)}
       {screen === "request" && obal(<RequestFlow onBack={() => setScreen("feed")} onZverejni={zverejni} />)}
       {screen === "cudzi" && aktSubjekt && obal(<CudziProfil subjekt={aktSubjekt as any} toast={toast} onBack={() => setScreen("feed")} />)}
-      {screen === "board" && <GoodBoard onBack={() => setScreen("feed")} onEvent={(id) => { setAktEvent(id); setScreen("event"); }} toast={toast} />}
+      {screen === "board" && <GoodBoard onBack={() => setScreen("feed")} onEvent={(id) => { setAktEvent(id); setScreen("event"); }} />}
       {screen === "event" && obal(<GoodEvent id={aktEvent} onBack={() => setScreen("board")} toast={toast} oslavuj={(s, komu) => toast(`Ďakujeme za ${s} pre ${komu}`)} />)}
       </ScreenSwitch>
 
@@ -261,7 +261,6 @@ function HelpKartaBase({ z, wide, onClick }: { z: any; wide?: boolean; onClick: 
   const jePonuka = z.typ === "ponuka";
   const jeKriza = z.typSituacie === "kriza";
   const accent = jeZiadost ? (z.sponzor ? C.gold : C.red) : jePonuka ? C.purple : C.gold;
-  const typLabel = jeZiadost ? (z.sponzor ? "ŽIADOSŤ · SO SPONZOROM" : "ŽIADOSŤ") : jePonuka ? "PONUKA POMOCI" : "CHARITA";
   return (
     <FeedCard wide={wide} onClick={onClick} label={z.nazov} typ={typKluc(z.typ)} accent={jeKriza ? C.red : accent} ring={jeKriza ? C.red : undefined}
       media={{
@@ -322,7 +321,6 @@ function Detail({ z, onBack, onAutor }: { z: any; onBack: () => void; onAutor: (
     toast(`Odoslané: ${platba === "EUR" ? s + " €" : s + " DEED"} · ⛓ ${hash()}`);
   }
 
-  const pct = z.ciel ? Math.min(100, Math.round(suma / z.ciel * 100)) : 0;
   const jePonuka = z.typ === "ponuka"; // ponuka pomoci → kontakt, nie darovanie
 
   return (
@@ -440,14 +438,6 @@ function Detail({ z, onBack, onAutor }: { z: any; onBack: () => void; onAutor: (
   );
 }
 
-function Pevne({ emoji, val, w, bg, bd, col, onClick }: { emoji: string; val: string; w: number; bg: string; bd: string; col: string; onClick?: () => void }) {
-  return (
-    <div onClick={onClick} style={{ width: w, textAlign: "center", borderRadius: RADIUS.xs, background: bg, border: `1px solid ${bd}`, padding: `${SPACE.xs}px 0`, cursor: "pointer" }}>
-      <div style={{ fontSize: 15 }}>{emoji}</div>
-      <div style={{ fontSize: 11, fontWeight: "bold", color: col }}>{val}</div>
-    </div>
-  );
-}
 
 // ===================== ADD — rázcestník =====================
 function Add({ onBack, onOffer, onRequest }: { onBack: () => void; onOffer: () => void; onRequest: () => void }) {

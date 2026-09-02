@@ -6,7 +6,7 @@ import { N, Chip } from "./ui";
 import { nacitajStav, ulozStav } from "./stav";
 import {
   generujOmse, isoDatum, CASY, OMSA_LABEL, KAT_FARBA, KAT_LABEL, KAL_UDALOSTI,
-  PREDVYPLNENY_ROZVRH, PRAZDNY_ROZVRH, predvoleneKostoly,
+  PREDVYPLNENY_ROZVRH, predvoleneKostoly,
   type RozvrhOmsi, type DennaOmsa, type OmsaTyp, type MassInstance, type Farnost, type KostolFarnosti,
 } from "./mock";
 
@@ -143,7 +143,7 @@ export function Kalendar({ farnost, onBack, onPridat, toast }: { farnost: Farnos
       {vybranyDen && (
         <DenDetail iso={vybranyDen} omse={omseDna(vybranyDen)} udalosti={udalostiDna(vybranyDen)}
           perMass={rozvrh.generateCollectionPerMass}
-          onZrus={(id) => setZrusene((s) => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); ulozStav("zrusene", farnost.id, [...n]); return n; })}
+          onZrus={(id) => setZrusene((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); ulozStav("zrusene", farnost.id, [...n]); return n; })}
           zrusene={zrusene}
           onCas={(id, t) => setCasy((c) => { const n = { ...c, [id]: t }; ulozStav("casy", farnost.id, n); return n; })}
           onPridaj={(o) => setPridane((p) => { const n = { ...p, [vybranyDen]: [...(p[vybranyDen] ?? []), o] }; ulozStav("pridane", farnost.id, n); return n; })}

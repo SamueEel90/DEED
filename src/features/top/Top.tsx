@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { SIRKA, C, SPACE, RADIUS } from "@/theme";
-import { ModulHlavicka, toast, useScrollHore, useLayout, useTvorbaGate, obalSiroky, SkeletonRiadky, ErrorState, IkonaStit, IkonaKorunka, IkonaHviezda, IkonaUsmev, IkonaKompas, IkonaInstitucia } from "@/shared";
+import { ModulHlavicka, toast, useScrollHore, useLayout, useTvorbaGate, obalSiroky, SkeletonRiadky, ErrorState, IkonaStit, IkonaKorunka, IkonaHviezda, IkonaKompas, IkonaInstitucia } from "@/shared";
 import { Zvoncek } from "@/features/notifikacie/Notifikacie";
 import { CudziProfil } from "@/features/cudzi-profil/CudziProfil";
 import { FunZona } from "@/features/fun/FunZona";

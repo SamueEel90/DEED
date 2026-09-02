@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, memo } from "react";
-import { ModulHlavicka, Hlavicka, PlatobnyModul, PlatbaModal, HladanieModal, toast, Oslava, useMotiv, useLayout, useScrollPamat, useStrankaAkcie, useTvorbaGate, Ticker, StatRiadok, FiltreStat, FeedStlpce, FeedGrid, FeedCard, KartaBadge, TypBadge, BackChip, SwipeBack, obalSiroky, OkruhVyber, Lupa, Zvon, IkonaSipVlavo, IkonaMoznosti, Zdielanie, IkonaUlozit, IkonaPlay, IkonaDoska, IkonaPin, IkonaObalka, FotoPrispevku, FotoVyber, FeedSkeleton, EmptyState, ErrorState, ScreenSwitch, EntityHero, BtnAkcia, Overene, KontextMenu, IkonaOdkaz, IkonaVlajka, FotoProfiluSheet } from "@/shared";
+import { ModulHlavicka, Hlavicka, PlatobnyModul, PlatbaModal, HladanieModal, toast, Oslava, useMotiv, useLayout, useScrollPamat, useStrankaAkcie, useTvorbaGate, Ticker, StatRiadok, FiltreStat, FeedStlpce, FeedGrid, FeedCard, TypBadge, BackChip, SwipeBack, obalSiroky, OkruhVyber, Lupa, IkonaMoznosti, Zdielanie, IkonaPlay, IkonaDoska, IkonaPin, IkonaObalka, FotoPrispevku, FotoVyber, FeedSkeleton, EmptyState, ErrorState, ScreenSwitch, EntityHero, BtnAkcia, Overene, KontextMenu, IkonaOdkaz, IkonaVlajka, FotoProfiluSheet } from "@/shared";
 import { FOTO_TEST_REZIM, klucEntity, useFotkyEntity } from "@/lib/fotoentity";
 import { SIRKA, C, GRAD, GRAD_ZELENY, SPACE, RADIUS } from "@/theme";
 import { pripravFeed, FEED_CFG } from "@/lib/feed";
@@ -43,11 +43,9 @@ const DOM_IKONA: Record<string, React.ReactNode> = {
 };
 
 // ---- spoločné štýly ----
-const cardS: React.CSSProperties = { background: A.surface2, border: `1px solid ${A.line}`, borderRadius: RADIUS.md, marginBottom: SPACE.sm, overflow: "hidden", cursor: "pointer" };
 const rowTopS: React.CSSProperties = { display: "flex", alignItems: "center", gap: SPACE.sm, marginBottom: SPACE.xxs };
 const pfpS = (bg: string): React.CSSProperties => ({ width: 36, height: 36, borderRadius: "50%", flex: "none", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 15, color: "#fff", background: bg });
 const nameS: React.CSSProperties = { fontWeight: 700, fontSize: 15.5 };
-const timeS: React.CSSProperties = { marginLeft: "auto", fontSize: 12, color: A.txt2 };
 const titleS: React.CSSProperties = { fontSize: 16, fontWeight: 700, lineHeight: 1.4 };
 const heroGrad = (d: string) => `linear-gradient(160deg, ${DOM[d].bg} 0%, #0a0c11 100%)`;
 const secLbl: React.CSSProperties = { fontSize: 11.5, letterSpacing: ".4px", color: A.txt3, fontWeight: 700, margin: `${SPACE.md}px 0 ${SPACE.xs}px` };
@@ -55,18 +53,9 @@ const secLbl: React.CSSProperties = { fontSize: 11.5, letterSpacing: ".4px", col
 function Chip({ bg, c, children }: { bg: string; c: string; children: React.ReactNode }) {
   return <span style={{ display: "inline-flex", alignItems: "center", fontSize: 10, fontWeight: 600, padding: `${SPACE.xxs}px ${SPACE.xs}px`, borderRadius: RADIUS.xs, background: bg, color: c }}>{children}</span>;
 }
-function DomTag({ it }: { it: AktItem }) {
-  const a = DOM[it.dom];
-  if (it.type === "talent") return <Chip bg={tint(a.c, .14)} c={a.c}>▶ Talent · {a.label}</Chip>;
-  if (it.source === "Charity") return <Chip bg={A.goldBg} c={A.gold}>✓ Charita · {a.label}</Chip>;
-  return <Chip bg={tint(a.c, .14)} c={a.c}>{a.ic} {a.label}</Chip>;
-}
 function Play({ big }: { big?: boolean }) {
   const s = big ? 58 : 54;
   return <span style={{ width: s, height: s, borderRadius: "50%", background: "rgba(255,255,255,.16)", backdropFilter: "blur(2px)", WebkitBackdropFilter: "blur(2px)", border: "1px solid rgba(255,255,255,.4)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, color: "#fff", paddingLeft: SPACE.xxs }}>▶</span>;
-}
-function badge(side: "l" | "r"): React.CSSProperties {
-  return { position: "absolute", top: 12, [side === "l" ? "left" : "right"]: 12, fontSize: 10, fontWeight: 700, padding: `${SPACE.xxs}px ${SPACE.xs}px`, borderRadius: RADIUS.xs, background: "rgba(0,0,0,.6)", color: side === "l" ? A.gold : "#fff", display: "flex", alignItems: "center", gap: SPACE.xxs, pointerEvents: "none" };
 }
 
 // ===================== MODUL =====================
@@ -313,18 +302,8 @@ function Home({ items, dom, view, pickDom, pickView, toast, open, openPerson, se
 }
 
 // ---- karty ----
-const stop = (fn: () => void) => (e: React.MouseEvent) => { e.stopPropagation(); fn(); };
 function Wb({ bg, c, children }: { bg: string; c: string; children: React.ReactNode }) {
   return <span style={{ display: "inline-flex", alignItems: "center", fontSize: 9, fontWeight: 700, padding: `${SPACE.xxs}px ${SPACE.xs}px`, borderRadius: RADIUS.xs, background: bg, color: c }}>{children}</span>;
-}
-function ProgressMini({ it }: { it: AktItem }) {
-  const pct = Math.round((it.raised as number) / (it.goal as number) * 100);
-  return (
-    <div style={{ width: "100%", marginTop: SPACE.sm }}>
-      <div style={{ height: 6, background: "rgba(var(--glass-rgb),.12)", borderRadius: 99, overflow: "hidden" }}><div style={{ height: "100%", width: `${pct}%`, background: GRAD_ZELENY, borderRadius: 99 }} /></div>
-      <div style={{ fontSize: 10, color: A.txt3, marginTop: SPACE.xxs }}>{(it.raised as number).toLocaleString("sk")} € z {(it.goal as number).toLocaleString("sk")} € · {pct}% · D++R {it.drr}%</div>
-    </div>
-  );
 }
 
 // JEDNOTNÁ karta = zdieľaná FeedCard (rovnaká anatómia ako Domov/Help/Charita);
@@ -560,7 +539,6 @@ function WorkshopDetail({ it, toast, celebrate, home, openPerson }: any) {
 }
 
 function HelpDetail({ it, toast, celebrate, home, openPerson }: any) {
-  const a = DOM[it.dom];
   const { gate } = useTvorbaGate(); // „Môžem pomôcť" otvára chat = create
   const [platba, setPlatba] = useState<string | null>(null); // "EUR" | "DEED" — pomôcť sa dá aj peniazmi (karta / SEPA / peňaženka)
   return (
@@ -596,13 +574,6 @@ function HelpDetail({ it, toast, celebrate, home, openPerson }: any) {
 // ---- detail helpery ----
 function InfoBox({ children }: { children: React.ReactNode }) {
   return <div style={{ background: A.surface2, border: `1px solid ${A.line}`, borderRadius: RADIUS.sm, padding: SPACE.sm, marginTop: SPACE.gutter, fontSize: 11.5, color: A.txt2, lineHeight: 1.5 }}>{children}</div>;
-}
-function Fx({ w, h, e, v, eCol, bg, bd, col, onClick }: any) {
-  return (
-    <div onClick={onClick} style={{ width: w, height: h, borderRadius: RADIUS.sm, background: bg || A.surface2, border: `1px solid ${bd || A.line}`, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", cursor: "pointer", color: col || A.blue, fontWeight: 700 }}>
-      <span style={{ fontSize: 17, color: eCol }}>{e}</span><span style={{ fontSize: 11, marginTop: SPACE.xxs }}>{v}</span>
-    </div>
-  );
 }
 function Cbtn({ ic, t, s, tCol, active, onClick }: any) {
   return (

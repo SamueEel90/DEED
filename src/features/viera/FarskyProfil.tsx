@@ -4,7 +4,7 @@ import { MEDIA_AR } from "@/lib/cardSize";
 import {
   Foto, BackHeader, ProgresBox, PlatobnyModul, PlatbaModal, RecurringSheet, QrModal,
   MoniBar, Switch, Input, EmptyState, useStrankaAkcie,
-  Zdielanie, IkonaVlajka, IkonaDoska, IkonaFoto, IkonaPlus, IkonaOko, IkonaNastavenia, Srdce, tint, useGaleria, useLayout,
+  Zdielanie, IkonaVlajka, IkonaDoska, IkonaPlus, IkonaOko, IkonaNastavenia, Srdce, useGaleria, useLayout,
   ZoznamDarcov, FormatovanyText, RichTextInput, FotoUpload, KamerkaBadge, ZmenitPill, FotoProfiluSheet, VideoEmbed, vlozenieVidea,
   StatRad, BtnAkcia, BtnIkonka, KontextMenu, MenuSkupina, MenuHlavicka, MenuPolozka, DvaStlpce,
   IkonaMoznosti, IkonaQr, IkonaKalendar, IkonaMegafon, IkonaCeruzka,

@@ -7,7 +7,7 @@
 // Beží nad qr_split / platba_split (0018). Bez DB (mock) → placeholder QR.
 // ============================================================
 import { useState } from "react";
-import { C, GRAD, GRAD_ZELENY, SPACE, RADIUS } from "@/theme";
+import { C, GRAD_ZELENY, SPACE, RADIUS } from "@/theme";
 import { tint } from "@/lib/ui";
 import { qrUrl } from "@/lib/qr";
 import { Sheet } from "@/components/sheet";

@@ -22,7 +22,6 @@ import type { RetazZiadost } from "@/types";
 
 const GREEN = "var(--a-green)";
 const norm = (s?: string) => (s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
-const dnesSk = () => { try { return new Date().toLocaleDateString("sk", { day: "numeric", month: "short" }); } catch { return ""; } };
 const datumSk = (iso?: string) => { if (!iso) return ""; try { return new Date(iso).toLocaleDateString("sk", { day: "numeric", month: "short" }); } catch { return ""; } };
 
 export function MojaRetaz({ onClose, toast }: { onClose?: () => void; toast?: (m: string) => void }) {

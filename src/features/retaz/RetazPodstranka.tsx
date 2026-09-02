@@ -9,7 +9,7 @@ import { useState } from "react";
 import { C, GRAD, GRAD_ZELENY, SPACE, RADIUS } from "@/theme";
 import { tint } from "@/lib/ui";
 import { Sheet, PlatbaModal, IkonaFajka } from "@/shared";
-import { aktivnaPolozka, jeNaplnena, smerujDar, type CreatorChain } from "./fronta";
+import { aktivnaPolozka, smerujDar, type CreatorChain } from "./fronta";
 import { mockPublishedChain, FALLBACK_KANDIDATI } from "./mock";
 
 const GREEN = "var(--a-green)";

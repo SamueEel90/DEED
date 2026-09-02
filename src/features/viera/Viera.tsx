@@ -70,7 +70,7 @@ export default function ModulViera({ wide }: { wide?: boolean; otvorModul?: (m: 
   const obal = (el: React.ReactNode) => obalSiroky(el, { wide, desktop, max: SIRKA.stlpec, maxDesktop: SIRKA.citanie });
 
   const otvorProfil = (f: Farnost) => { setAktFarnost(f); setScreen("profil"); };
-  const toggleFollow = (id: string) => setOblubene((s) => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  const toggleFollow = (id: string) => setOblubene((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; });
   const toggleSpravca = (id: string) => setSpravovana((p) => (p === id ? null : id));
   const spatZDetailu = () => setScreen(aktFarnost ? "profil" : "domov");
 
@@ -203,7 +203,7 @@ function VieraDomov({ wide, domFarnost, oblubene, rodina, onRodina, onProfil, on
       <SekciaLabel>MOJA FARNOSŤ</SekciaLabel>
       {domFarnost ? (
         <>
-          <KostolKarta wide={wide} f={domFarnost} home following={oblubene.has(domFarnost.id)}
+          <KostolKarta f={domFarnost} home following={oblubene.has(domFarnost.id)}
             onClick={() => onProfil(domFarnost)} onFollow={() => onToggleFollow(domFarnost.id)} />
           <div style={{ display: "flex", gap: SPACE.xs, marginTop: SPACE.sm }}>
             <PrehladTile ikona="👥 " hodnota={(domFarnost.sledovatelia ?? 0).toLocaleString("sk-SK")} label="sledujúcich" color={N.ind} />
@@ -281,7 +281,7 @@ function VieraDomov({ wide, domFarnost, oblubene, rodina, onRodina, onProfil, on
           action={<span {...pressable(() => setVyberOkruh(true), "Zväčšiť okruh")} style={{ display: "inline-block", fontSize: 13, fontWeight: 700, color: N.ind, background: N.indBg, border: `1px solid ${N.indEdge}`, borderRadius: RADIUS.sm, padding: `${SPACE.sm}px ${SPACE.gutter}px`, cursor: "pointer" }}>Zväčšiť okruh</span>} />
       ) : (
         <FeedGrid cols={desktop ? 2 : wide ? 2 : 1} padding={`4px ${adrPadX}px 14px`} cards={zoradene.map((f) => (
-          <KostolKarta key={f.id} wide={wide} f={f} following={oblubene.has(f.id)}
+          <KostolKarta key={f.id} f={f} following={oblubene.has(f.id)}
             onClick={() => onProfil(f)} onFollow={() => onToggleFollow(f.id)} />
         ))} />
       )}
@@ -443,8 +443,8 @@ function SekciaLabel({ children }: { children: React.ReactNode }) {
 // ---- karta kostola (adresárová entita — NIE post karta) ----
 // memo: re-render len pri zmene farnosti/home/following (inline handlery sa ignorujú)
 const KostolKarta = memo(KostolKartaBase, rovnakeOkremFunkcii);
-function KostolKartaBase({ wide, f, home, following, onClick, onFollow }: {
-  wide?: boolean; f: Farnost; home?: boolean; following?: boolean; onClick: () => void; onFollow?: () => void;
+function KostolKartaBase({ f, home, following, onClick, onFollow }: {
+  f: Farnost; home?: boolean; following?: boolean; onClick: () => void; onFollow?: () => void;
 }) {
   const st = farnostStat(f.id);
   const statText = st.spolu > 0
