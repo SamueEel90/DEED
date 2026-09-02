@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+
+# Nový push do tej istej vetvy zruší predchádzajúci beh.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: typecheck · lint · build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Inštalácia závislostí
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      # Build beží s mock dátami — CI nepotrebuje prístup k Supabase.
+      # Reálne kľúče sa nastavujú až v hostingu (Vercel → Environment Variables).
+      - name: Build
+        env:
+          VITE_USE_MOCK: "1"
+        run: npm run build
