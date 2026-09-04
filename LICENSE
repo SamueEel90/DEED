@@ -1,0 +1,24 @@
+Copyright (c) 2026 DEED. Všetky práva vyhradené.
+All rights reserved.
+
+Tento softvér a sprievodná dokumentácia sú vlastníckym a dôverným dielom.
+Nie sú open source.
+
+Bez predchádzajúceho písomného súhlasu vlastníka je zakázané softvér alebo
+jeho časti kopírovať, upravovať, zlučovať, publikovať, distribuovať,
+sublicencovať, predávať ani sprístupňovať tretím stranám.
+
+Osobitne upozorňujeme, že súbory `api/_lib/prompt.ts` a
+`api/_lib/scoring-config.json` obsahujú dôverné obchodné tajomstvo
+(produkčný prompt a kalibračné parametre AI hodnotenia). Repozitár musí
+ostať privátny.
+
+Prístup udelený spolupracovníkom je obmedzený na vývoj a prevádzku tohto
+projektu a zaniká ukončením spolupráce.
+
+---
+
+This software and accompanying documentation are proprietary and
+confidential. Not open source. No permission is granted to copy, modify,
+merge, publish, distribute, sublicense, or sell copies of the software
+without the prior written consent of the owner.
