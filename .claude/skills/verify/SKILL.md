@@ -12,16 +12,22 @@ npm run preview        # servíruje dist na http://localhost:4173 (spusti na poz
 ```
 Dev server: `npm run dev` (port 5173) — na verify stačí preview nad distom.
 
-## Handle na prehliadač
-V repe nie je Playwright. Funguje `playwright-core` (nainštaluj do scratchpadu, ~2 s)
-+ systémový Chrome:
-```js
-const { chromium } = require("playwright-core");
-const browser = await chromium.launch({
-  executablePath: "C:/Program Files/Google/Chrome/Application/chrome.exe",
-  headless: true,
-});
+## Najprv skús smoke test
+Väčšinu regresií chytí hotový skript — netreba písať vlastný driver:
+```bash
+npm run smoke          # build + prejde všetky moduly a detaily
 ```
+Zdroj: `scripts/smoke.mjs`. Keď stačí overiť „appka sa spustí a nič nehádže", končíš tu.
+
+## Handle na prehliadač (vlastný scenár)
+Playwright je devDependency (`npx playwright install chromium` jednorazovo):
+```js
+import { chromium } from "playwright";
+const browser = await chromium.launch();   // bundled chromium, netreba cestu
+```
+Ako predloha poslúži `scripts/smoke.mjs` — má už vyriešený štart preview servera
+cez vite `preview()` API, demo session aj zber `pageerror`/console chýb.
+
 Mobilný viewport 430×930 ukáže mobilný layout (TabBar); desktop ~1280 šírka.
 
 ## Obídenie loginu a intra (demo session)

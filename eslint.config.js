@@ -88,6 +88,15 @@ export default tseslint.config(
     },
   },
 
+  // --- smoke test: Node skript, ktorý cez addInitScript posiela kód
+  //     do prehliadača — preto v ňom legitímne žijú browser globals ---
+  {
+    files: ["scripts/smoke.mjs"],
+    languageOptions: {
+      globals: { localStorage: "readonly", window: "readonly", document: "readonly" },
+    },
+  },
+
   // --- spoločné doladenie ---
   {
     files: ["**/*.{ts,tsx,mjs}"],

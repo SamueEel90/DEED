@@ -12,9 +12,9 @@ concurrency:
 
 jobs:
   verify:
-    name: typecheck · lint · build
+    name: typecheck · lint · build · smoke
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
 
     steps:
       - uses: actions/checkout@v4
@@ -33,9 +33,25 @@ jobs:
       - name: Lint
         run: npm run lint
 
-      # Build beží s mock dátami — CI nepotrebuje prístup k Supabase.
+      # Build aj smoke bežia s mock dátami — CI nepotrebuje prístup k Supabase.
       # Reálne kľúče sa nastavujú až v hostingu (Vercel → Environment Variables).
       - name: Build
         env:
           VITE_USE_MOCK: "1"
         run: npm run build
+
+      - name: Prehliadač pre smoke test
+        run: npx playwright install --with-deps chromium
+
+      # Overí, že sa appka naozaj spustí — nielen skompiluje.
+      # Otvorí každý modul aj detail príspevku a spadne na chybe v konzole.
+      - name: Smoke test
+        run: node scripts/smoke.mjs
+
+      - name: Záznam pri zlyhaní
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist
+          retention-days: 5
