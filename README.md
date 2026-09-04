@@ -1,7 +1,11 @@
 # DEED
 
+[![CI](https://github.com/SamueEel90/DEED/actions/workflows/ci.yml/badge.svg)](https://github.com/SamueEel90/DEED/actions/workflows/ci.yml)
+
 Platforma dobra — dobré skutky, darcovstvo a vzájomná pomoc. React SPA (PWA)
 so Supabase backendom a serverless funkciami na Verceli.
+
+**Stack:** React 18 · TypeScript · Vite 5 · Supabase · TanStack Query · PWA
 
 > **Repozitár musí ostať privátny.** `api/_lib/prompt.ts` obsahuje produkčný
 > SYSTEM prompt pre AI hodnotenie skutkov a `api/_lib/scoring-config.json`
@@ -37,9 +41,21 @@ Node ≥ 20.19 (verzia je v `.nvmrc`; `nvm use` si ju vezme sám).
 | `npm run lint:fix` | ESLint s automatickými opravami |
 | `npm run format` | Prettier — naformátuje súbory |
 | `npm run format:check` | Prettier — len skontroluje |
-| **`npm run verify`** | **typecheck + lint + build — spusti pred každým pushom** |
+| `npm run smoke` | Build + smoke test v prehliadači |
+| **`npm run verify`** | **typecheck + lint + build + smoke — spusti pred každým pushom** |
 
 `npm run verify` je presne to, čo beží v CI ([.github/workflows/ci.yml](.github/workflows/ci.yml)).
+
+Smoke test potrebuje jednorazovo stiahnuť prehliadač:
+
+```bash
+npx playwright install chromium
+```
+
+Otvorí každý modul aj detail príspevku v skutočnom Chromiu a spadne, keď sa
+niečo nevykreslí alebo vyhodí chybu do konzoly. Chytí presne tú triedu
+regresií, ktorú typecheck prejde — odstránený prop, zlý import v lazy chunku,
+chyba v efekte.
 
 ---
 
@@ -127,6 +143,39 @@ funkcie v `api/**` s `maxDuration` 60 s.
 
 ---
 
+## Bezpečnosť — čítaj pred prvým reálnym používateľom
+
+**RLS politiky sú zámerne otvorené a takto sa nesmie ísť do produkcie.**
+
+Databáza má dnes v 10 migráciách politiky typu `test_all_access using (true)`,
+teda každý riadok je čitateľný aj zapisovateľný pre kohokoľvek.
+
+Prečo je to problém: `VITE_SUPABASE_ANON_KEY` je **verejný kľúč** — ide
+v každom frontend bundle a ktokoľvek si ho vie prečítať zo zdrojáku nasadenej
+appky. To je v poriadku len vtedy, keď prístup obmedzuje RLS. Kým je v DB len
+testovací obsah, nič sa nedeje. V momente, keď pribudne prvý reálny
+používateľ, je to únik osobných údajov.
+
+Čo treba spraviť pred ostrou prevádzkou:
+
+- nahradiť `test_all_access` owner-only politikami (`ucet` cez
+  `auth_id = auth.uid()`, child tabuľky cez `ucet_id in (select id from ucet …)`,
+  obsah verejný len na `SELECT`),
+- znova zapnúť „Confirm email" v Supabase → Authentication (pre dev bol vypnutý),
+- presunúť tvorbu `ucet` na server,
+- prejsť `get_advisors` (dnes hlási očakávaných 25 warningov).
+
+Podrobnosti sú vo Fáze 5 v [ROADMAP.md](ROADMAP.md).
+
+Ďalšie dve veci, na ktoré netreba zabudnúť:
+
+- **`SUPABASE_SERVICE_ROLE_KEY` obchádza RLS úplne.** Patrí len do premenných
+  serverless funkcií, nikdy nie do `VITE_*` a nikdy nie do frontendu.
+- **Repozitár musí ostať privátny** kvôli `api/_lib/prompt.ts`
+  a `api/_lib/scoring-config.json`.
+
+---
+
 ## Stav projektu
 
 Appka je **funkčný produktový prototyp**, nie hotový produkt. Konkrétne:
@@ -139,7 +188,9 @@ Appka je **funkčný produktový prototyp**, nie hotový produkt. Konkrétne:
   DEED netečú. Právne dôvody sú v
   [docs/business/DEED_Pravna_Analyza_ZHRNUTIE_v1.md](docs/business/DEED_Pravna_Analyza_ZHRNUTIE_v1.md).
 - **KYC/KYB a SMS vendori sú mockovaní.**
-- **Žiadne automatizované testy.** Overuje sa manuálne — postup je
+- **Žiadne unit testy.** Jediná automatická kontrola správania je smoke test
+  (`npm run smoke`) — overí, že sa moduly a detaily vykreslia bez chýb.
+  Všetko ostatné sa overuje manuálne, postup je
   v [.claude/skills/verify/SKILL.md](.claude/skills/verify/SKILL.md).
 - **142 lint warningov** — prevažne `any` na hraniciach k Supabase a nové
   React-Compiler odporúčania. Nie sú to chyby v bežiacej appke; rozpis

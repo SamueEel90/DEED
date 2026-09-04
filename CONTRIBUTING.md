@@ -136,7 +136,8 @@ pravidlá v [eslint.config.js](eslint.config.js) na `error`.
 
 ## Čo overiť pred pushom
 
-Testy neexistujú, takže overovanie je manuálne. Minimum:
+Unit testy neexistujú. `npm run verify` spustí typecheck, lint, build a smoke
+test (ten otvorí moduly a detaily v skutočnom prehliadači) — zvyšok je manuálny:
 
 - [ ] `npm run verify` prejde
 - [ ] Svetlý **aj** tmavý motív (prepínač je v menu „Viac" a v Profile)
@@ -146,6 +147,17 @@ Testy neexistujú, takže overovanie je manuálne. Minimum:
 
 Podrobný postup vrátane headless Chrome je v
 [.claude/skills/verify/SKILL.md](.claude/skills/verify/SKILL.md).
+
+### Smoke test
+
+[scripts/smoke.mjs](scripts/smoke.mjs) je jediná automatická kontrola
+správania. Otvorí každý modul cez `/m/<id>`, klikne do detailu príspevku
+a overí, že sa vykreslil platobný modul a že nič nevyhodilo chybu do konzoly.
+
+Jednorazovo si stiahni prehliadač: `npx playwright install chromium`.
+
+Keď pridávaš **nový modul**, dopíš jeho ID do poľa `MODULY` v tom skripte —
+inak ho CI nikdy neotvorí.
 
 ---
 
@@ -165,3 +177,8 @@ Veci, ktoré vyzerajú ako chyba, ale sú zámer:
 **Repozitár musí ostať privátny** — `api/_lib/prompt.ts` a
 `api/_lib/scoring-config.json` obsahujú produkčný prompt a kalibračné
 parametre AI hodnotenia.
+
+**RLS politiky sú otvorené (`using (true)`) a takto sa nesmie ísť do
+produkcie.** Kým je v DB testovací obsah, je to v poriadku; pred prvým reálnym
+používateľom to treba prerobiť. Vysvetlenie je v
+[README → Bezpečnosť](README.md#bezpečnosť--čítaj-pred-prvým-reálnym-používateľom).

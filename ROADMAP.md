@@ -96,8 +96,11 @@ Z appky spraviť nasaditeľný produkt.
 - [x] **Kvalita — tooling:** ESLint 10 (flat config) + Prettier + `tsc --noEmit`
   a lint v CI (`.github/workflows/ci.yml`, `npm run verify`). Odstránený mŕtvy kód
   (47 nepoužitých symbolov).
-- **Kvalita — testy:** Vitest + React Testing Library. Zatiaľ neexistujú žiadne
-  automatizované testy; overuje sa manuálne (`.claude/skills/verify/SKILL.md`).
+- [x] **Kvalita — smoke test:** `scripts/smoke.mjs` (Playwright) otvorí každý
+  modul aj detail príspevku v prehliadači a spadne na chybe v konzole. Beží
+  v CI aj cez `npm run verify`.
+- **Kvalita — unit testy:** Vitest + React Testing Library. Zatiaľ neexistujú;
+  zvyšok sa overuje manuálne (`.claude/skills/verify/SKILL.md`).
 - **Lint backlog (~142 warningov):** ~96× `@typescript-eslint/no-explicit-any`
   (hranice k Supabase/3rd-party, súvisí so sprísnením `noImplicitAny`) a ~43×
   nové React-Compiler pravidlá z `eslint-plugin-react-hooks` v7
