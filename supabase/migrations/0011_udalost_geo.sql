@@ -17,7 +17,7 @@ from (values
   ('KC Juh',                     48.8770, 18.0300),
   ('Komunitná záhrada, Juh',     48.8760, 18.0312),
   ('KC Sihoť',                   48.9010, 18.0390),
-  ('KC Aktivity',                48.8935, 18.0470),
+  ('KC Brezina',                 48.8935, 18.0470),
   ('Music Club, Trenčín',        48.8951, 18.0440)
 ) as v(miesto, lat, lng)
 where u.miesto = v.miesto;

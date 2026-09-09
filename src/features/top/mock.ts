@@ -31,14 +31,14 @@ export const topPrispevky = (limit = 12): GoodPolozka[] =>
 
 export const REBRICKY_MOCK: Record<RebricekKluc, RebricekPolozka[]> = {
   b2b: [
-    { meno: "Kaufland", info: "12 400 € · ESG report", subjekt: { typ: "org", meno: "Kaufland", emoji: "🏢", lok: "Firma · ESG partner", level: "Gold" } },
-    { meno: "Lidl", info: "9 800 € · matching", subjekt: { typ: "org", meno: "Lidl pomáha — nadácia", emoji: "🏢", lok: "Firma · matching kampaň", level: "Gold" } },
-    { meno: "Tesco", info: "7 200 € · grantový program", subjekt: { typ: "org", meno: "Tesco", emoji: "🏢", lok: "Firma · grantový program", level: "Gold" } },
-    { meno: "O2 Slovensko", info: "5 400 € · zamestnanecká zbierka", subjekt: { typ: "org", meno: "O2 Slovensko", emoji: "🏢", lok: "Firma · zamestnanecké 2 %", level: "Silver" } },
-    { meno: "Leoni Slovakia", info: "4 600 € · firemné dobrovoľníctvo", subjekt: { typ: "org", meno: "Leoni Slovakia", emoji: "🏭", lok: "Zamestnávateľ · Trenčín", level: "Silver" } },
-    { meno: "Vetropack Nemšová", info: "materiál a sklo pre projekty", subjekt: { typ: "org", meno: "Vetropack Nemšová", emoji: "🏭", lok: "Sklárne · Nemšová", level: "Silver" } },
+    { meno: "Vitalmarket", info: "12 400 € · ESG report", subjekt: { typ: "org", meno: "Vitalmarket", emoji: "🏢", lok: "Firma · ESG partner", level: "Gold" } },
+    { meno: "Nordika", info: "9 800 € · matching", subjekt: { typ: "org", meno: "Nadácia Nordika", emoji: "🏢", lok: "Firma · matching kampaň", level: "Gold" } },
+    { meno: "Merkuria", info: "7 200 € · grantový program", subjekt: { typ: "org", meno: "Merkuria", emoji: "🏢", lok: "Firma · grantový program", level: "Gold" } },
+    { meno: "Telko Slovensko", info: "5 400 € · zamestnanecká zbierka", subjekt: { typ: "org", meno: "Telko Slovensko", emoji: "🏢", lok: "Firma · zamestnanecké 2 %", level: "Silver" } },
+    { meno: "Elkotech Slovakia", info: "4 600 € · firemné dobrovoľníctvo", subjekt: { typ: "org", meno: "Elkotech Slovakia", emoji: "🏭", lok: "Zamestnávateľ · Trenčín", level: "Silver" } },
+    { meno: "Sklárne Vážska", info: "materiál a sklo pre projekty", subjekt: { typ: "org", meno: "Sklárne Vážska", emoji: "🏭", lok: "Sklárne · Trenčiansky kraj", level: "Silver" } },
     { meno: "Pekáreň U Janka", info: "denne pečivo do útulku", subjekt: { typ: "org", meno: "Pekáreň U Janka", emoji: "🥨", lok: "Lokálny partner · Trenčín", level: "Silver" } },
-    { meno: "Slovnaft", info: "3 100 € · doprava pomoci", subjekt: { typ: "org", meno: "Slovnaft", emoji: "🏢", lok: "Firma · logistika pomoci", level: "Bronze" } },
+    { meno: "Petrolia SK", info: "3 100 € · doprava pomoci", subjekt: { typ: "org", meno: "Petrolia SK", emoji: "🏢", lok: "Firma · logistika pomoci", level: "Bronze" } },
   ],
   darcovia: [
     { meno: "Lukáš H.", info: "1 850 DEED tento mesiac", subjekt: { typ: "osoba", meno: "Lukáš H.", level: "Gold" } },
@@ -61,17 +61,17 @@ export const REBRICKY_MOCK: Record<RebricekKluc, RebricekPolozka[]> = {
   aktivity: [
     { meno: "Cyklo TN", info: "240 km pre dobro", subjekt: { typ: "osoba", meno: "Cyklo TN", level: "Silver", stav: "tvorca" } },
     { meno: "EkoTím Juh", info: "14 vriec odpadu", subjekt: { typ: "osoba", meno: "EkoTím Juh", level: "Silver", stav: "tvorca" } },
-    { meno: "Tlupa", info: "koncert za Mareka", subjekt: { typ: "osoba", meno: "Tlupa", level: "Silver", stav: "tvorca" } },
+    { meno: "Vlnobitie", info: "koncert za Mareka", subjekt: { typ: "osoba", meno: "Vlnobitie", level: "Silver", stav: "tvorca" } },
     { meno: "Crew TN", info: "pouličný tanec pre detský oddiel", subjekt: { typ: "osoba", meno: "Crew TN", level: "Silver", stav: "tvorca" } },
     { meno: "Zelený Trenčín", info: "30 vysadených stromov", subjekt: { typ: "osoba", meno: "Zelený Trenčín", level: "Silver", stav: "tvorca" } },
     { meno: "Klub Delfín", info: "plávanie pre deti", subjekt: { typ: "osoba", meno: "Klub Delfín", level: "Silver", stav: "tvorca" } },
   ],
   charity: [
-    { meno: "Liga proti rakovine", info: "Gold · celá SR", subjekt: { typ: "org", meno: "Liga proti rakovine", emoji: "🎗", lok: "Overená charita · celá SR", level: "Gold" } },
-    { meno: "Plamienok", info: "Gold · BA", subjekt: { typ: "org", meno: "Plamienok", emoji: "🕊", lok: "Overená charita · Bratislava", level: "Gold" } },
-    { meno: "Dobrý anjel", info: "Gold · celá SR", subjekt: { typ: "org", meno: "Dobrý anjel", emoji: "😇", lok: "Rodiny s vážnou chorobou · SR", level: "Gold" } },
-    { meno: "Úsmev ako dar", info: "Gold · celá SR", subjekt: { typ: "org", meno: "Úsmev ako dar", emoji: "🧒", lok: "Deti v náhradnej starostlivosti · SR", level: "Gold" } },
-    { meno: "Sloboda zvierat", info: "Gold · útulky SR", subjekt: { typ: "org", meno: "Sloboda zvierat", emoji: "🐾", lok: "Útulky · celá SR", level: "Gold" } },
-    { meno: "Depaul Slovensko", info: "Silver · Bratislava", subjekt: { typ: "org", meno: "Depaul Slovensko", emoji: "🏠", lok: "Ľudia bez domova · BA", level: "Silver" } },
+    { meno: "Nádej pacientom", info: "Gold · celá SR", subjekt: { typ: "org", meno: "Nádej pacientom", emoji: "🎗", lok: "Overená charita · celá SR", level: "Gold" } },
+    { meno: "Motýlik", info: "Gold · BA", subjekt: { typ: "org", meno: "Motýlik", emoji: "🕊", lok: "Overená charita · Bratislava", level: "Gold" } },
+    { meno: "Tichý pomocník", info: "Gold · celá SR", subjekt: { typ: "org", meno: "Tichý pomocník", emoji: "😇", lok: "Rodiny s vážnou chorobou · SR", level: "Gold" } },
+    { meno: "Náruč deťom", info: "Gold · celá SR", subjekt: { typ: "org", meno: "Náruč deťom", emoji: "🧒", lok: "Deti v náhradnej starostlivosti · SR", level: "Gold" } },
+    { meno: "Zvieracia archa", info: "Gold · útulky SR", subjekt: { typ: "org", meno: "Zvieracia archa", emoji: "🐾", lok: "Útulky · celá SR", level: "Gold" } },
+    { meno: "Prístrešie SK", info: "Silver · Bratislava", subjekt: { typ: "org", meno: "Prístrešie SK", emoji: "🏠", lok: "Ľudia bez domova · BA", level: "Silver" } },
   ],
 };

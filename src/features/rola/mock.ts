@@ -106,7 +106,7 @@ export const SUBJEKTY: Record<Pozicia, SubjektMeta> = {
         { emoji: "⛓", titul: "Aktívna: Auto pre mobilný hospic", popis: "moje fixné 5 % · 2 ďalšie vo fronte" },
       ] },
       { key: "skutky", label: "Skutky", polozky: [
-        { emoji: "🎥", titul: "Video pre Plamienok", popis: "kampaň dosiahla cieľ za 9 dní" },
+        { emoji: "🎥", titul: "Video pre Motýlik", popis: "kampaň dosiahla cieľ za 9 dní" },
       ] },
       { key: "akcie", label: "Akcie", polozky: [
         { emoji: "🎟", titul: "Workshop „Kamera v teréne“", popis: "so 14. 8. · 12/20 prihlásených" },
@@ -125,7 +125,7 @@ export const SUBJEKTY: Record<Pozicia, SubjektMeta> = {
     taby: [
       { key: "podporujeme", label: "Podporujeme", polozky: [
         { emoji: "🔥", titul: "Rodina Kováčová", popis: "500 € · overená podpora" },
-        { emoji: "⭐", titul: "Plamienok", popis: "pravidelná mesačná podpora" },
+        { emoji: "⭐", titul: "Motýlik", popis: "pravidelná mesačná podpora" },
       ] },
       { key: "skutky", label: "Skutky", polozky: [
         { emoji: "🍞", titul: "Pečivo pre nocľaháreň", popis: "každý piatok · 40 kusov" },
@@ -142,7 +142,7 @@ export const SUBJEKTY: Record<Pozicia, SubjektMeta> = {
 // dôvera+blízkosť; poradie sa NIKDY nepredáva. Tvorca adresár nemá. ----
 export interface FirmaAdresar { iniciacky: string; nazov: string; odvetvie: string; mesto: string; stit: "Bronze" | "Silver" | "Gold" | "Platinum" | "Legend"; podpora: string; logo?: string }
 export const FIRMY_ADRESAR: FirmaAdresar[] = [
-  { iniciacky: "LD", nazov: "Lidl SK", odvetvie: "Retail", mesto: "celé SR", stit: "Gold", podpora: "12 400 €" },
+  { iniciacky: "ND", nazov: "Nordika SK", odvetvie: "Retail", mesto: "celé SR", stit: "Gold", podpora: "12 400 €" },
   { iniciacky: "PD", nazov: "Pekáreň Dobrota", odvetvie: "Gastro", mesto: "Trenčín", stit: "Bronze", podpora: "2 400 €", logo: U("photo-1628428799437-d886d7d2e9b2") },
   { iniciacky: "IT", nazov: "ITech Solutions", odvetvie: "IT", mesto: "Bratislava", stit: "Silver", podpora: "5 100 €" },
   { iniciacky: "ZS", nazov: "Zelená stavba", odvetvie: "Stavebníctvo", mesto: "Žilina", stit: "Silver", podpora: "3 750 €" },

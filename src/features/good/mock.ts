@@ -52,7 +52,7 @@ export const POLOZKY: GoodPolozka[] = [
     titul: "Po povodni nám zatopilo pivnicu — hľadáme pomoc",
     popis: "Voda nám zničila kotol a nábytok v suteréne. Sami to nezvládneme. Prosíme o pomoc s odpratávaním v sobotu a o príspevok na nový kotol.",
     ciel: 2400, vyzbierane: 1450, emoji: "⚠", pomocnici: 12,
-    fotky: ["/img/dom.jpg", U("photo-1604276661516-9c26d19251a1")] },
+    fotky: [U("photo-1657069343871-fd1476990d04"), U("photo-1604276661516-9c26d19251a1")] },
 
   { id: 4, typ: "charita", velkost: "med", kat: "Komunita", zdroj: "Charity", overene: true, charLevel: "Gold",
     skore: 8, typSituacie: "normal", modul: "charity", narodne: true, lat: 48.146, lng: 17.107, dni: 0, podpora: 40,
@@ -76,8 +76,8 @@ export const POLOZKY: GoodPolozka[] = [
 
   { id: 7, typ: "charita", velkost: "small", kat: "Komunita", zdroj: "Charity", overene: true, charLevel: "Silver",
     skore: 5, typSituacie: "normal", modul: "charity", narodne: true, lat: 48.700, lng: 19.700, dni: 1, podpora: 30,
-    autor: "Lidl pomáha – nadácia", pfp: "#5BA8F0", ini: "L", lok: "celá SR", cas: "1 d", num: 120015,
-    titul: "Firma zdvojnásobí každý dar zamestnanca", popis: "Daruj €50, Lidl pridá ďalších €50. Matching kampaň na detské ihriská.",
+    autor: "Nadácia Nordika", pfp: "#5BA8F0", ini: "N", lok: "celá SR", cas: "1 d", num: 120015,
+    titul: "Firma zdvojnásobí každý dar zamestnanca", popis: "Daruj €50, Nordika pridá ďalších €50. Matching kampaň na detské ihriská.",
     emoji: "🤝", suma: 0, lajky: 156 },
 
   { id: 8, typ: "skutok", velkost: "small", kat: "Zdravie", media: "kreslene",
@@ -202,8 +202,8 @@ export const POLOZKY: GoodPolozka[] = [
 
   { id: 27, typ: "charita", velkost: "med", kat: "Zdravie", zdroj: "Charity", overene: true, charLevel: "Gold",
     skore: 7, typSituacie: "normal", modul: "charity", narodne: true, lat: 48.146, lng: 17.107, dni: 1, podpora: 60,
-    autor: "Liga proti rakovine", pfp: "#C264D8", ini: "L", lok: "celá SR", cas: "1 d", num: 120012,
-    titul: "Deň narcisov — verejná zbierka na pomoc onkologickým pacientom", popis: "Overená zbierka. Výnos ide na psychologickú a sociálnu pomoc rodinám pacientov. Pripni si narcis.",
+    autor: "Nádej pacientom", pfp: "#C264D8", ini: "N", lok: "celá SR", cas: "1 d", num: 120012,
+    titul: "Deň žltej stužky — verejná zbierka na pomoc onkologickým pacientom", popis: "Overená zbierka. Výnos ide na psychologickú a sociálnu pomoc rodinám pacientov. Pripni si žltú stužku.",
     ciel: 50000, vyzbierane: 31800, emoji: "🌼", suma: 0, lajky: 312 },
 
   { id: 28, typ: "skutok", velkost: "small", kat: "Ucenie", media: "foto",
@@ -221,7 +221,7 @@ export const POLOZKY: GoodPolozka[] = [
   // --- štvrť / mesto Trenčín: reálne inštitúcie (zvyšujú hustotu „v okolí") ---
   { id: 29, typ: "skutok", velkost: "med", kat: "Zdravie", media: "foto", overene: true,
     skore: 6, typSituacie: "normal", modul: "good", lat: 48.897, lng: 18.050, dni: 0, podpora: 22,
-    autor: "Fakultná nemocnica Trenčín", pfp: "#3DD6CE", ini: "F", karma: "Gold", lok: "Trenčín · Legionárska", cas: "4 h", num: 120049,
+    autor: "Nemocnica na Sihoti", pfp: "#3DD6CE", ini: "F", karma: "Gold", lok: "Trenčín · Legionárska", cas: "4 h", num: 120049,
     titul: "Mobilný odber krvi pred nemocnicou — prišlo 70 darcov.",
     popis: "Vyhlásili sme výzvu pre 0− a A−. Za jedno dopoludnie prišlo 70 ľudí, naplnili sme zásoby na dva týždne. Ďakujeme každému, kto vyhrnul rukáv.",
     emoji: "🏥", suma: 90, lajky: 58,
@@ -229,7 +229,7 @@ export const POLOZKY: GoodPolozka[] = [
 
   { id: 30, typ: "skutok", velkost: "small", kat: "Ucenie", media: "foto", overene: true,
     skore: 4, typSituacie: "normal", modul: "good", lat: 48.894, lng: 18.046, dni: 1, podpora: 9,
-    autor: "Verejná knižnica M. Rešetku", pfp: "#A98BF0", ini: "K", karma: "Silver", lok: "Trenčín · Hasičská", cas: "1 d", num: 120028,
+    autor: "Mestská knižnica Brezina", pfp: "#A98BF0", ini: "M", karma: "Silver", lok: "Trenčín · Hasičská", cas: "1 d", num: 120028,
     titul: "Spustili sme bezplatné čitateľské popoludnia pre deti.",
     popis: "Každú stredu predčítame a tvoríme s deťmi, ktoré nemajú doma veľa kníh. Knižnica patrí všetkým.",
     emoji: "📚", suma: 24, lajky: 26,
@@ -237,7 +237,7 @@ export const POLOZKY: GoodPolozka[] = [
 
   { id: 31, typ: "skutok", velkost: "med", kat: "Komunita", media: "foto", overene: true,
     skore: 4.5, typSituacie: "normal", modul: "good", lat: 48.870, lng: 18.062, dni: 1, podpora: 14,
-    autor: "Mestský útulok Trenčín", pfp: "#5BA8F0", ini: "Ú", karma: "Silver", lok: "Trenčín · Zlatovce", cas: "1 d", num: 120026,
+    autor: "Útulok Pri Váhu", pfp: "#5BA8F0", ini: "Ú", karma: "Silver", lok: "Trenčín · Zlatovce", cas: "1 d", num: 120026,
     titul: "Cez víkend si našlo nový domov 9 psíkov.",
     popis: "Deň otvorených dverí v útulku. Prišli desiatky rodín, 9 psíkov odišlo do nového domova. Ostatným stále hľadáme.",
     emoji: "🐶", suma: 32, lajky: 47,
@@ -245,14 +245,14 @@ export const POLOZKY: GoodPolozka[] = [
 
   { id: 32, typ: "skutok", velkost: "small", kat: "Zdravie", media: "kreslene",
     skore: 4, typSituacie: "normal", modul: "good", lat: 48.893, lng: 18.043, dni: 2, podpora: 11,
-    autor: "Slovenský Červený kríž — TN", pfp: "#7A3030", ini: "Č", karma: "Gold", lok: "Trenčín · centrum", cas: "2 d", num: 120016,
+    autor: "Humanitárna služba SR — TN", pfp: "#7A3030", ini: "Č", karma: "Gold", lok: "Trenčín · centrum", cas: "2 d", num: 120016,
     titul: "Kurz prvej pomoci zadarmo pre 30 mamičiek.",
     popis: "Naučili sme ich, čo robiť pri dusení a horúčke u detí. Pokoj v kríze sa dá natrénovať.",
     emoji: "➕", suma: 28, lajky: 24 },
 
   { id: 33, typ: "skutok", velkost: "small", kat: "Komunita", media: "foto",
     skore: 3.5, typSituacie: "normal", modul: "good", lat: 48.906, lng: 18.031, dni: 3, podpora: 8,
-    autor: "Materské centrum Srdiečko", pfp: "#3A8DD6", ini: "S", karma: "Silver", lok: "Trenčín · Sihoť", cas: "3 d", num: 119982,
+    autor: "Materské centrum Lienka", pfp: "#3A8DD6", ini: "S", karma: "Silver", lok: "Trenčín · Sihoť", cas: "3 d", num: 119982,
     titul: "Otvorili sme herňu pre rodiny v núdzi — vstup zadarmo.",
     popis: "Teplo, hračky a káva pre mamy, ktoré inak celý deň ostávajú samy doma s deťmi. Príď, keď máš ťažký deň.",
     emoji: "🧸", suma: 20, lajky: 22,
@@ -286,7 +286,7 @@ export const POLOZKY: GoodPolozka[] = [
 
   { id: 37, typ: "ziadost", velkost: "req", kat: "Pomoc", zdroj: "Help",
     skore: 6.5, typSituacie: "normal", modul: "help", lat: 48.720, lng: 18.258, dni: 0, podpora: 12,
-    autor: "Hospic Bánovce", pfp: "#7A3030", ini: "H", lok: "Bánovce n. Bebravou", cas: "5 h", num: 120041,
+    autor: "Hospic Podhorie", pfp: "#7A3030", ini: "H", lok: "Bánovce n. Bebravou", cas: "5 h", num: 120041,
     titul: "Hľadáme dobrovoľníkov a príspevok na polohovacie lôžka",
     popis: "Staráme sa o nevyliečiteľne chorých. Chýbajú nám dve polohovacie lôžka a ruky dobrovoľníkov, ktorí prídu posedieť k pacientom.",
     ciel: 4000, vyzbierane: 1650, emoji: "🕯", pomocnici: 12,
@@ -319,14 +319,14 @@ export const POLOZKY: GoodPolozka[] = [
   // --- celá SR (národné kampane): skóre ≥ 9 alebo narodne ---
   { id: 41, typ: "charita", velkost: "med", kat: "Zdravie", zdroj: "Charity", overene: true, charLevel: "Gold",
     skore: 9, typSituacie: "normal", modul: "charity", narodne: true, lat: 48.146, lng: 17.107, dni: 0, podpora: 80,
-    autor: "Dobrý anjel", pfp: "#C264D8", ini: "D", lok: "celá SR", cas: "6 h", num: 120046,
+    autor: "Tichý pomocník", pfp: "#C264D8", ini: "T", lok: "celá SR", cas: "6 h", num: 120046,
     titul: "Pravidelná pomoc rodinám, kde rakovina zobrala príjem", popis: "Overená nadácia. 100 % z tvojho príspevku ide rodinám s vážnou chorobou. Staň sa Dobrým anjelom aj ty.",
     ciel: 80000, vyzbierane: 52400, emoji: "😇", suma: 0, lajky: 410 },
 
   // --- LOKÁLNE charity v Trenčíne (≤ 5 km) — aby kategória „Charita" žila aj v štvrti ---
   { id: 42, typ: "charita", velkost: "med", kat: "Zdravie", zdroj: "Charity", overene: true, charLevel: "Gold",
     skore: 6, typSituacie: "normal", modul: "charity", lat: 48.895, lng: 18.047, dni: 0, podpora: 34,
-    autor: "Hospic Milosrdných sestier", pfp: "#C264D8", ini: "H", lok: "Trenčín · centrum", cas: "5 h", num: 120045,
+    autor: "Hospic Pod Brezinou", pfp: "#C264D8", ini: "H", lok: "Trenčín · centrum", cas: "5 h", num: 120045,
     titul: "Zbierka na polohovacie lôžka pre paliatívne oddelenie",
     popis: "Overená miestna zbierka. Dve polohovacie lôžka uľahčia posledné dni nevyliečiteľne chorým. Doklady o nákupe zverejníme.",
     ciel: 6000, vyzbierane: 2380, emoji: "🕊", suma: 0, lajky: 142,
@@ -383,20 +383,20 @@ export const EVENTS: Udalost[] = [
     desc: "Základy mobilnej fotografie. Vezmi si telefón. Platený workshop (cez DEED/EUR).", place: "Ateliér, centrum", cap: "12 miest" },
   { id: "e9", when: "ŠTV 17:00", datum: oDen(4, 17), dom: "mix", km: 1.4, title: "Burza detského oblečenia — zadarmo", who: "MC Lienka", src: "Komunita", kat: "Komunita",
     desc: "Prines, čo deti prerástli, a vyber si, čo potrebuješ. Všetko zadarmo. Rodiny v núdzi prednostne.", place: "Materské centrum, centrum", cap: "otvorené" },
-  { id: "e10", top: true, when: "SO 14:00", datum: oDen(6, 14), dom: "zdravie", km: 0.6, title: "Deň narcisov — verejná zbierka", who: "Liga proti rakovine", src: "Partner", kat: "Zdravie",
-    desc: "Pripni si narcis a podpor onkologických pacientov. Dobrovoľníci v uliciach celého mesta.", place: "Mierové námestie a okolie", cap: "celé mesto" },
+  { id: "e10", top: true, when: "SO 14:00", datum: oDen(6, 14), dom: "zdravie", km: 0.6, title: "Deň žltej stužky — verejná zbierka", who: "Nádej pacientom", src: "Partner", kat: "Zdravie",
+    desc: "Pripni si žltú stužku a podpor onkologických pacientov. Dobrovoľníci v uliciach celého mesta.", place: "Mierové námestie a okolie", cap: "celé mesto" },
   { id: "e11", when: "NE 10:00", datum: oDen(0, 10), dom: "learn", km: 2.4, title: "Predčítanie deťom v nemocnici", who: "Čitateľský klub", src: "Komunita", kat: "Ucenie",
     desc: "Hľadáme dobrovoľníkov, ktorí prídu predčítať deťom na detskom oddelení. Stačí dobrý hlas a trpezlivosť.", place: "Nemocnica, detské oddelenie", cap: "8 dobrovoľníkov" },
   { id: "e12", when: "UT 16:00", datum: oDen(2, 16), dom: "learn", km: 3.1, title: "Krúžok robotiky pre deti", who: "Veronika S.", src: "Komunita", kat: "Ucenie",
     desc: "Bezplatný krúžok pre deti z Juhu. Stavebnice zabezpečené. Vhodné pre 8–13 rokov.", place: "KC Juh", cap: "12 detí" },
-  { id: "e13", when: "ST 18:00", datum: oDen(3, 18), dom: "zdravie", km: 0.8, title: "Darovanie krvi — mobilný odber", who: "NTS Trenčín", src: "Mesto", kat: "Zdravie",
+  { id: "e13", when: "ST 18:00", datum: oDen(3, 18), dom: "zdravie", km: 0.8, title: "Darovanie krvi — mobilný odber", who: "Odberové centrum Trenčín", src: "Mesto", kat: "Zdravie",
     desc: "Mobilná transfúzna stanica. Kritický nedostatok 0−. Prvodarcovia vítaní, stačí občiansky.", place: "Mestský úrad", cap: "bez objednania" },
   { id: "e14", when: "SO 08:00", datum: oDen(6, 8), dom: "eko", km: 3.4, title: "Komunitná záhrada — sadíme spolu", who: "EkoTím Juh", src: "Komunita", kat: "Priroda",
     desc: "Spoločná výsadba zeleniny a byliniek. Úroda sa rozdelí medzi seniorov zo štvrte. Náradie máme.", place: "Komunitná záhrada, Juh", cap: "30 ľudí" },
   { id: "e15", when: "PIA 18:30", datum: oDen(5, 18, 30), dom: "mix", km: 1.9, title: "Spoločenský večer klubu seniorov", who: "Klub seniorov Sihoť", src: "Komunita", kat: "Komunita",
     desc: "Káva, harmonika a spoločnosť pre osamelých seniorov. Odvoz pre menej pohyblivých zabezpečíme.", place: "KC Sihoť", cap: "50 miest" },
-  { id: "e16", top: true, when: "NE 16:00", datum: oDen(0, 16), dom: "art", km: 2.2, title: "Benefičný koncert za rodinu Kováčovú", who: "Tlupa", src: "Partner", kat: "Komunita",
-    desc: "Lokálne kapely hrajú pre rodinu, ktorej zhorel dom. Celý výťažok ide priamo im.", place: "KC Aktivity", cap: "200 miest" },
+  { id: "e16", top: true, when: "NE 16:00", datum: oDen(0, 16), dom: "art", km: 2.2, title: "Benefičný koncert za rodinu Kováčovú", who: "Vlnobitie", src: "Partner", kat: "Komunita",
+    desc: "Lokálne kapely hrajú pre rodinu, ktorej zhorel dom. Celý výťažok ide priamo im.", place: "KC Brezina", cap: "200 miest" },
   // ďalšie týždne — nech má kalendár čo ukázať aj pri listovaní mesiacom
   { id: "e17", when: "SO +7 dní · 09:00", datum: oDen(6, 9, 0, 1), dom: "sport", km: 1.0, title: "Nočný beh mestom — tréning", who: "Mesto Trenčín", src: "Mesto", kat: "Zdravie",
     desc: "Spoločný prípravný tréning na nočný beh. Tempo pre každého, čelovky so sebou.", place: "Mierové námestie", cap: "200 bežcov" },

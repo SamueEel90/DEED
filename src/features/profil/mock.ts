@@ -16,7 +16,7 @@ export const PREVODY: PrevodTuple[] = [
   ["Podpora · Útulok Túlavá labka", "-25", "#F2706F"],
   ["Odmena za darovanie krvi", "+50", "#3DD68C"],
   ["Reťaz dobra → Pani Oľga", "-20", "#2BD49B"],
-  ["Dar · Deň narcisov", "-2", "#F2706F"],
+  ["Dar · Deň žltej stužky", "-2", "#F2706F"],
   ["Bonus za 30 dní aktivity", "+60", "#E7C766"],
 ];
 

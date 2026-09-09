@@ -18,7 +18,7 @@ export const NOTIFY: Notifikacia[] = [
   { id: 13, kat: "penazenka", ic: "💎", col: "var(--a-gold)",   titul: "Prijatý DEED",                   text: "Eva K. ti poslala 40 DEED", cas: "3 h" },
   { id: 14, kat: "socialne",  ic: "👥", col: "var(--a-plum)",   titul: "Zuzana P. ťa začala sledovať",   text: "Nový sledujúci", cas: "4 h" },
   { id: 15, kat: "skutky",    ic: "⚠", col: "var(--a-clay)",   titul: "Námietka k skutku",              text: "Skutok #120018 čaká na doplnenie dôkazu", cas: "6 h" },
-  { id: 16, kat: "sledovane", ic: "🌼", col: "var(--a-info)",   titul: "Liga proti rakovine — Deň narcisov", text: "Sledované · zajtra verejná zbierka", cas: "8 h" },
+  { id: 16, kat: "sledovane", ic: "🌼", col: "var(--a-info)",   titul: "Nádej pacientom — Deň žltej stužky", text: "Sledované · zajtra verejná zbierka", cas: "8 h" },
   { id: 17, kat: "penazenka", ic: "♻", col: "var(--a-green)",  titul: "Reťaz dobra prijatá",            text: "Dostal si 24 DEED z reťaze dobra", cas: "1 d" },
   { id: 18, kat: "deed",      ic: "✦", col: "var(--a-teal)",   titul: "Nová úroveň karmy!",             text: "Dosiahol si Gold · L7", cas: "2 d" },
 ];

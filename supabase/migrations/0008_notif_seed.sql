@@ -20,6 +20,6 @@ insert into public.notifikacia (kat, ikona, col, titul, text, nove, agg, cas) va
 ('penazenka', '💎', 'var(--a-gold)', 'Prijatý DEED', 'Eva K. ti poslala 40 DEED', false, false, now() - interval '3 hours'),
 ('socialne', '👥', 'var(--a-plum)', 'Zuzana P. ťa začala sledovať', 'Nový sledujúci', false, false, now() - interval '4 hours'),
 ('skutky', '⚠', 'var(--a-clay)', 'Námietka k skutku', 'Skutok #120018 čaká na doplnenie dôkazu', false, false, now() - interval '6 hours'),
-('sledovane', '🌼', 'var(--a-info)', 'Liga proti rakovine — Deň narcisov', 'Sledované · zajtra verejná zbierka', false, false, now() - interval '8 hours'),
+('sledovane', '🌼', 'var(--a-info)', 'Nádej pacientom — Deň žltej stužky', 'Sledované · zajtra verejná zbierka', false, false, now() - interval '8 hours'),
 ('penazenka', '♻', 'var(--a-green)', 'Reťaz dobra prijatá', 'Dostal si 24 DEED z reťaze dobra', false, false, now() - interval '1 days'),
 ('deed', '✦', 'var(--a-teal)', 'Nová úroveň karmy!', 'Dosiahol si Gold · L7', false, false, now() - interval '2 days');

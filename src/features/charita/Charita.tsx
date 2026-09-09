@@ -78,11 +78,11 @@ type ZbierkaDetail = {
 };
 
 // fixné karty feedu (top/mala/zapoj/material) — obsah raz, použije sa na kartu aj detail
-const D_PLAMIENOK: ZbierkaDetail = {
-  id: "plamienok", nazov: "Plamienok", emoji: "⭐", accent: K.blue, tag: "HOSPIC", tagCol: K.diamond,
+const D_MOTYLIK: ZbierkaDetail = {
+  id: "motylik", nazov: "Motýlik", emoji: "⭐", accent: K.blue, tag: "HOSPIC", tagCol: K.diamond,
   badge: "⭐ TOP", overena: true, lok: "Bratislava · celé SR", karma: "Gold", orgProfil: true,
   popis: "Detský hospic — pomôžte nám zabezpečiť mobilnú paliatívnu starostlivosť pre rodiny.",
-  pribeh: "Plamienok je prvý detský hospic na Slovensku. Sprevádzame nevyliečiteľne choré deti a ich rodiny doma, kde to majú najradšej. Vaša podpora platí mobilné tímy sestier a lekárov, ktoré sú s rodinami vo dne aj v noci.",
+  pribeh: "Motýlik je prvý detský hospic na Slovensku. Sprevádzame nevyliečiteľne choré deti a ich rodiny doma, kde to majú najradšej. Vaša podpora platí mobilné tímy sestier a lekárov, ktoré sú s rodinami vo dne aj v noci.",
   vyzbierane: 8200, ciel: 15000, ludia: 214,
 };
 const D_ZOFIA: ZbierkaDetail = {
@@ -166,7 +166,7 @@ export default function ModulCharita({ wide, otvorModul }: ModulCharitaProps) {
         <HladanieModal akcent="var(--a-info)" placeholder="Hľadať zbierky, charity, oblasti…"
           data={HLADAJ_DATA}
           onPick={(id: string) => {
-            const priame: Record<string, ZbierkaDetail | null> = { rodina: null, plamienok: D_PLAMIENOK, zofia: D_ZOFIA, stromosvet: D_STROMOSVET, zelena: D_ZELENA };
+            const priame: Record<string, ZbierkaDetail | null> = { rodina: null, motylik: D_MOTYLIK, zofia: D_ZOFIA, stromosvet: D_STROMOSVET, zelena: D_ZELENA };
             if (id in priame) { setAktZ(priame[id]); setScreen("detail"); }
             else if (String(id).startsWith("adr-")) setSheet("dir");
             else { const d = HLADAJ_DATA.find((x) => x.id === id); toast(`${d?.titul} — ${d?.tag}`); }
@@ -243,7 +243,7 @@ function CharitaFeed({ wide, toast, onDetail, onHladaj, onSheet, onBoard, onFire
       } />
 
       {/* živý ticker */}
-      <Ticker>Liga proti rakovine <b style={{ color: C.greenL }}>práve dostala 100 DEED</b> → Marek</Ticker>
+      <Ticker>Nádej pacientom <b style={{ color: C.greenL }}>práve dostala 100 DEED</b> → Marek</Ticker>
 
       {/* skratka na Adresár charít & OZ + štatistický riadok — na desktope na jednom riadku */}
       <FiltreStat
@@ -337,16 +337,16 @@ function ZbierkyUrgent({ wide, onDetail }: { wide?: boolean; onDetail: (z?: Zbie
     vyzbierane: ZBIERKA.suma, ciel: ZBIERKA.ciel, ludia: ZBIERKA.ludia,
   };
   return <CharitaKarta wide={wide} onClick={() => onDetail(detail)} fotky={ZBIERKA.fotky} emoji="🔥" accent={K.gold}
-    badgeL={{ t: "🔥 URGENTNÉ", col: K.gold }} badgeR={{ t: "🛡 Lidl · 500 €", col: K.diamond, bg: tint("var(--a-info)", .18) }}
+    badgeL={{ t: "🔥 URGENTNÉ", col: K.gold }} badgeR={{ t: "🛡 Nordika · 500 €", col: K.diamond, bg: tint("var(--a-info)", .18) }}
     nazov="Rodina Kováčová" overena popis="V noci nám zhorel dom, ostali sme bez strechy s dvomi deťmi. Potrebujeme pomoc."
     vyzbierane={1430} ciel={2200} oblubena={oblubenyZo(detail)} />;
 }
 function ZbierkyTop({ wide, onDetail }: { wide?: boolean; onDetail: (z?: ZbierkaDetail) => void }) {
-  return <CharitaKarta wide={wide} onClick={() => onDetail(D_PLAMIENOK)} emoji="⭐" accent={K.blue}
+  return <CharitaKarta wide={wide} onClick={() => onDetail(D_MOTYLIK)} emoji="⭐" accent={K.blue}
     badgeL={{ t: "⭐ TOP", col: K.diamond, bg: tint("var(--a-info)", .18) }}
-    nazov="Plamienok" tag="HOSPIC" tagBg={tint("var(--a-info)", .12)} tagCol={K.diamond}
+    nazov="Motýlik" tag="HOSPIC" tagBg={tint("var(--a-info)", .12)} tagCol={K.diamond}
     popis="Detský hospic — pomôžte nám zabezpečiť mobilnú paliatívnu starostlivosť pre rodiny."
-    vyzbierane={8200} ciel={15000} oblubena={oblubenyZo(D_PLAMIENOK)} />;
+    vyzbierane={8200} ciel={15000} oblubena={oblubenyZo(D_MOTYLIK)} />;
 }
 function ZbierkyMala({ wide, onDetail }: { wide?: boolean; onDetail: (z?: ZbierkaDetail) => void }) {
   return <CharitaKarta wide={wide} onClick={() => onDetail(D_ZOFIA)} fotky={ZOFIA_FOTKY} emoji="🩺" accent={K.green}

@@ -8,9 +8,9 @@ export const USER_LOK = { lat: 48.894, lng: 18.044 };
 // „zastrešenie zbierky charitou" = flag z REGISTRÁCIE charity; Help ho len číta.
 export interface CharitaSponzor { id: string; nazov: string; segmenty: string[]; lok: string; kontakt: string; }
 export const CHARITY_FISKALNE: CharitaSponzor[] = [
-  { id: "c1", nazov: "Charita Trenčín", segmenty: ["byvanie", "jedlo", "hygiena"], lok: "Trenčín", kontakt: "trencin@charita.sk · 032/…" },
-  { id: "c2", nazov: "Depaul Slovensko", segmenty: ["byvanie", "jedlo"], lok: "Trenčín · okolie", kontakt: "info@depaul.sk" },
-  { id: "c3", nazov: "Liga proti rakovine", segmenty: ["lieky", "ine"], lok: "SK", kontakt: "pomoc@lpr.sk" },
+  { id: "c1", nazov: "OZ Otvorené dvere Trenčín", segmenty: ["byvanie", "jedlo", "hygiena"], lok: "Trenčín", kontakt: "trencin@charita.sk · 032/…" },
+  { id: "c2", nazov: "Prístrešie SK", segmenty: ["byvanie", "jedlo"], lok: "Trenčín · okolie", kontakt: "info@pristresie.sk" },
+  { id: "c3", nazov: "Nádej pacientom", segmenty: ["lieky", "ine"], lok: "SK", kontakt: "pomoc@nadejpacientom.sk" },
   { id: "c4", nazov: "Červený kríž — Trenčín", segmenty: ["osatenie", "hygiena", "jedlo"], lok: "Trenčín", kontakt: "tn@redcross.sk" },
 ];
 
@@ -22,7 +22,7 @@ export const MOCK_FEED: HelpFeedItem[] = [
     suma: 1250, ciel: 1800, ludia: 52, ikona: "🦴", velkost: "velka",
     fotky: ["/img/chrbtica.jpg", U("photo-1576091160399-112ba8d25d1d"), U("photo-1584308666744-24d5c474f2ae"), U("photo-1579684385127-1ef15d508118")],
     avatar: AV(68),
-    sponzor: { meno: "LIDL", suma: 500 } },
+    sponzor: { meno: "Nordika", suma: 500 } },
   { id: 1, typ: "ziadost", nazov: "Rodina Kováčová", overeny: true, karma: "Silver", lok: "Trenčín · Zámostie",
     skore: 9, typSituacie: "kriza", modul: "help", kat: "Pomoc", lat: 48.892, lng: 18.020, dni: 0, podpora: 38,
     pribeh: "V noci nám zhorel dom, ostali sme bez strechy s dvomi deťmi. Potrebujeme provizórne bývanie a základné veci.",
@@ -107,7 +107,7 @@ export const MOCK_FEED: HelpFeedItem[] = [
     ikona: "🧠", velkost: "stredna" },
 
   // ---- REÁLNE ORGANIZÁCIE & GEO-ROZPTYL ----
-  { id: 19, typ: "ziadost", nazov: "Charita Trenčín", overeny: true, karma: "Gold", lok: "Trenčín · centrum",
+  { id: 19, typ: "ziadost", nazov: "OZ Otvorené dvere Trenčín", overeny: true, karma: "Gold", lok: "Trenčín · centrum",
     skore: 6, typSituacie: "normal", modul: "help", kat: "Pomoc", lat: 48.894, lng: 18.046, dni: 0, podpora: 41,
     pribeh: "Naša nízkoprahová jedáleň vydáva denne 120 teplých obedov ľuďom bez domova. Pred zimou nám dochádzajú zásoby a teplé oblečenie.",
     suma: 940, ciel: 2500, ludia: 41, ikona: "🍲", velkost: "velka",
@@ -161,12 +161,12 @@ export const MOCK_FEED: HelpFeedItem[] = [
 export const ZIVE_DARY: ZivyDar[] = [
   { kto: "Anna M.", co: "5 €", komu: "Rodina Kováčová" },
   { kto: "Peter V.", co: "💎 50 DEED", komu: "Marek B." },
-  { kto: "LIDL", co: "500 €", komu: "Marek B." },
+  { kto: "Nordika", co: "500 €", komu: "Marek B." },
   { kto: "Ján H.", co: "10 €", komu: "Žofia K." },
   { kto: "Eva K.", co: "🔥 100 DEED", komu: "Rodina Kováčová" },
   { kto: "Mária T.", co: "2 €", komu: "Žofia K." },
   { kto: "Lukáš H.", co: "20 €", komu: "Mladá rodina K." },
-  { kto: "Kaufland", co: "300 € · matching", komu: "Mladá rodina K." },
+  { kto: "Vitalmarket", co: "300 € · matching", komu: "Mladá rodina K." },
   { kto: "Zuzana P.", co: "💎 30 DEED", komu: "Štefan B. (71)" },
   { kto: "Anonym", co: "15 €", komu: "Rodina Horváthová" },
   { kto: "Tomáš R.", co: "2 €", komu: "Jozef P. (vozičkár)" },

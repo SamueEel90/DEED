@@ -8,10 +8,10 @@ export const ZIADOSTI: RetazZiadost[] = [
   { id: "z1", nazov: "Rodina po povodni", zdroj: "Help", lok: "tvoja štvrť · Trenčín", odpor: true, emoji: "⚠", col: "#F2706F" },
   { id: "z2", nazov: "Detská nemocnica — inkubátor", zdroj: "Charita", lok: "Gold · Bratislava", overena: true, emoji: "🏥", col: "#5BA8F0" },
   { id: "z3", nazov: "Po úraze — odvoz na rehabilitácie", zdroj: "Help", lok: "Zámostie · Trenčín", emoji: "🦽", col: "#F2706F" },
-  { id: "z4", nazov: "Liga proti rakovine", zdroj: "Charita", lok: "Gold · celá SR", overena: true, emoji: "🎗", col: "#5BA8F0" },
+  { id: "z4", nazov: "Nádej pacientom", zdroj: "Charita", lok: "Gold · celá SR", overena: true, emoji: "🎗", col: "#5BA8F0" },
   { id: "z5", nazov: "Útulok Túlavá labka — krmivo na zimu", zdroj: "Help", lok: "okraj · Trenčín", emoji: "🐾", col: "#3DD68C" },
   { id: "z6", nazov: "Mladá rodina — predčasné dvojičky", zdroj: "Help", lok: "Noviny · Trenčín", odpor: true, emoji: "👶", col: "#F2706F" },
-  { id: "z7", nazov: "Deň narcisov — onkopacienti", zdroj: "Charita", lok: "Gold · celá SR", overena: true, emoji: "🌼", col: "#5BA8F0" },
+  { id: "z7", nazov: "Deň žltej stužky — onkopacienti", zdroj: "Charita", lok: "Gold · celá SR", overena: true, emoji: "🌼", col: "#5BA8F0" },
 ];
 
 // ---- REŤAZ TVORCU (FRONTA) — mock ----

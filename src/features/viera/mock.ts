@@ -197,7 +197,7 @@ export const FEED_ITEMS: VieraFeedItem[] = [
 
   { id: "obed", comp: "data", typ: "skutok", modul: "charity", kat: "Pomoc", ntyp: "dobrovolnictvo",
     skore: 5.5, typSituacie: "normal", narodne: true, lat: 48.150, lng: 17.110, dni: 0, podpora: 24,
-    cirkev: "Rímskokatolícka cirkev v SR", komunita: "Slovenská katolícka charita",
+    cirkev: "Rímskokatolícka cirkev v SR", komunita: "Katolícka pomoc SR",
     nazov: "Pomoc pri charitatívnom obede", lok: "Bratislava · celé SR", overena: true,
     badgeL: "🍲 DOBROVOĽNÍCTVO", tag: "Dobrovoľníctvo", emoji: "🍲",
     popis: "Hľadáme dobrovoľníkov na výdaj teplých obedov ľuďom bez domova.",
