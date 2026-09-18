@@ -14,6 +14,7 @@ import { qrUrl } from "@/lib/qr";
 import { zdielaj, aktualnaUrl } from "@/lib/zdielanie";
 import type { Kanal } from "@/types";
 import { SUBJEKTY, ZASLUZENA } from "./mock";
+import { najdiZbierku } from "@/lib/zbierky";
 import { nacitajTerminal, type Pozicia } from "./stav";
 
 /*
@@ -42,6 +43,7 @@ export function Podstranka({ pozicia, logo, toast, onBack }: {
   const [tab, setTab] = useState("vsetko");
   const [sledujem, setSledujem] = useState(false);
   const [onasViac, setOnasViac] = useState(false);
+  const [rozbalena, setRozbalena] = useState<string | null>(null);
   const [zvoncek, setZvoncek] = useState(false);
   const [qr, setQr] = useState(false);
   const [menu, setMenu] = useState(false);
@@ -80,17 +82,68 @@ export function Podstranka({ pozicia, logo, toast, onBack }: {
       <TabyProfil options={taby.map((t) => t.key)} labels={labels} badges={badges} value={tab} onChange={setTab} ariaLabel="Obsah profilu" />
       {aktTab.polozky.length === 0 ? (
         <div style={{ fontSize: 12.5, color: C.textTer, textAlign: "center", padding: SPACE.lg }}>Zatiaľ žiadny obsah.</div>
-      ) : aktTab.polozky.map((p, i) => (
-        <div key={i} {...pressable(() => toast(`${p.titul} — detail`), p.titul)}
-          style={{ display: "flex", alignItems: "center", gap: SPACE.sm, background: C.surface, border: `1px solid ${C.line}`, borderRadius: RADIUS.sm, padding: SPACE.sm, marginBottom: SPACE.xs, cursor: "pointer" }}>
-          <span style={{ width: 40, height: 40, borderRadius: RADIUS.xs, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 19, background: "rgba(var(--glass-rgb),.06)" }}>{p.emoji}</span>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 13.5, fontWeight: 700 }}>{p.titul}</div>
-            <div style={{ fontSize: 11, color: C.textTer, marginTop: 2 }}>{p.popis}</div>
+      ) : aktTab.polozky.map((p, i) => {
+        const z = p.zbierkaId ? najdiZbierku(p.zbierkaId) : undefined;
+        const kluc = p.zbierkaId ?? `x${i}`;
+        const otvorena = rozbalena === kluc;
+        const titul = z?.nazov || p.titul;
+        const popis = z ? [p.popis, z.komu].filter(Boolean).join(" · ") : p.popis;
+        return (
+          <div key={kluc} style={{ background: C.surface, border: `1px solid ${otvorena ? tint("var(--a-info)", .38) : C.line}`, borderRadius: RADIUS.sm, marginBottom: SPACE.xs, overflow: "hidden" }}>
+            <div {...pressable(() => (z ? setRozbalena(otvorena ? null : kluc) : toast(`${titul} — detail`)), titul)}
+              style={{ display: "flex", alignItems: "center", gap: SPACE.sm, padding: SPACE.sm, cursor: "pointer" }}>
+              {/* úvodná fotka zbierky — tá istá, akú vidíš v samotnej zbierke */}
+              <span style={{ width: 44, height: 44, borderRadius: RADIUS.xs, flex: "none", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 19, background: "rgba(var(--glass-rgb),.06)" }}>
+                {z ? <img src={z.foto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : p.emoji}
+              </span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 13.5, fontWeight: 700 }}>{titul}</div>
+                <div style={{ fontSize: 11, color: C.textTer, marginTop: 2 }}>{popis}</div>
+                {z && (
+                  <div style={{ display: "flex", alignItems: "center", gap: SPACE.xs, marginTop: 5 }}>
+                    <span style={{ flex: 1, height: 4, borderRadius: 3, background: "rgba(var(--glass-rgb),.12)", overflow: "hidden" }}>
+                      <span style={{ display: "block", height: "100%", width: `${Math.min(100, Math.round(z.vyzbierane / z.ciel * 100))}%`, background: z.stav === "ukoncena" ? "var(--a-info)" : "var(--a-green)" }} />
+                    </span>
+                    <span style={{ flex: "none", fontSize: 10.5, fontWeight: 700, color: C.textTer }}>{z.vyzbierane.toLocaleString("sk")} / {z.ciel.toLocaleString("sk")} €</span>
+                  </div>
+                )}
+              </div>
+              {p.split != null && (
+                <span style={{ flex: "none", fontSize: 11, fontWeight: 800, color: "var(--a-gold)", background: tint("var(--a-gold)", .14), borderRadius: RADIUS.xs, padding: `2px ${SPACE.xs}px` }}>{p.split} %</span>
+              )}
+              <span style={{ color: C.textTer, fontSize: 15, flex: "none", transform: otvorena ? "rotate(90deg)" : "none", transition: "transform .18s ease" }}>›</span>
+            </div>
+
+            {/* rozbalená zbierka — celá tu, profil ostáva pod ňou; druhý klik zbalí */}
+            {otvorena && z && (
+              <div style={{ padding: `0 ${SPACE.sm}px ${SPACE.sm}px` }}>
+                <div style={{ borderRadius: RADIUS.sm, overflow: "hidden", marginBottom: SPACE.sm }}>
+                  <img src={z.foto} alt="" style={{ width: "100%", aspectRatio: "16/9", objectFit: "cover", display: "block" }} />
+                </div>
+                <div style={{ fontSize: 12.5, color: C.textSec, lineHeight: 1.5, marginBottom: SPACE.sm }}>{z.popis}</div>
+                {p.split != null && (
+                  <div style={{ fontSize: 12, color: "var(--a-gold)", background: tint("var(--a-gold)", .1), border: `1px solid ${tint("var(--a-gold)", .3)}`, borderRadius: RADIUS.sm, padding: SPACE.sm, marginBottom: SPACE.sm, lineHeight: 1.45 }}>
+                    Z každého honoráru posielam <b>{p.split} %</b> do tejto zbierky. Percento je zafixované — znížiť sa nedá.
+                  </div>
+                )}
+                <div style={{ marginBottom: SPACE.sm }}><ProgresBox suma={z.vyzbierane} ciel={z.ciel} ludia={z.darcovia} live={z.stav === "aktivna"} /></div>
+                {z.stav === "aktivna" ? (
+                  <PlatobnyModul
+                    onShare={zdielajProfil}
+                    upvotes={z.darcovia} onUpvote={() => toast("❤")}
+                    onPodpor={(d: number) => toast(`Ďakujeme za ${d} DEED pre ${z.komu}`)}
+                    onKanal={(k: string) => setPlatba(k as Kanal)}
+                    oblubene={{ refId: z.id, typ: "zbierka", modul: "charity", nazov: z.nazov, lok: z.lok }} toast={toast} />
+                ) : (
+                  <div style={{ fontSize: 12, color: C.textTer, textAlign: "center", padding: SPACE.sm }}>Zbierka je ukončená — cieľ sa podarilo vyzbierať.</div>
+                )}
+                <div {...pressable(() => setRozbalena(null), "Zbaliť")}
+                  style={{ textAlign: "center", fontSize: 12.5, fontWeight: 700, color: C.textTer, padding: `${SPACE.sm}px 0 0`, cursor: "pointer" }}>Zbaliť ▲</div>
+              </div>
+            )}
           </div>
-          <span style={{ color: C.textTer, fontSize: 15 }}>›</span>
-        </div>
-      ))}
+        );
+      })}
     </>
   );
 

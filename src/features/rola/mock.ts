@@ -70,8 +70,10 @@ export interface SubjektMeta {
   cisla: [string, string][];
   onas: string;
   kontakt: { adresa: string; email: string; tel: string; web?: string };
-  /** taby verejného obsahu per rola (fixné poradie §3 bod 4) */
-  taby: { key: string; label: string; polozky: { emoji: string; titul: string; popis: string }[] }[];
+  /** taby verejného obsahu per rola (fixné poradie §3 bod 4).
+   *  Položka viazaná na zbierku nesie `zbierkaId` — názov, fotka a suma sa ťahajú
+   *  zo /lib/zbierky, takže na profile je to isté, čo v zbierke. */
+  taby: { key: string; label: string; polozky: { emoji: string; titul: string; popis: string; zbierkaId?: string; split?: number }[] }[];
 }
 
 export const SUBJEKTY: Record<Pozicia, SubjektMeta> = {
@@ -82,16 +84,13 @@ export const SUBJEKTY: Record<Pozicia, SubjektMeta> = {
     onas: "Občianske združenie Svetlo pomoci pomáha rodinám v núdzi v Trenčianskom kraji od roku 2014. Každé euro dokladujeme — transparentnosť per prípad je naša podstata.",
     kontakt: { adresa: "Mierové námestie 4, Trenčín", email: "info@svetlopomoci.sk", tel: "+421 901 234 567", web: "svetlopomoci.sk" },
     taby: [
-      { key: "kampane", label: "Kampane", polozky: [
-        { emoji: "🚗", titul: "Auto pre mobilný hospic", popis: "8 600 € z 12 000 € · 214 darcov" },
-        { emoji: "🛏", titul: "Zimná nocľaháreň — vybavenie", popis: "ukončená · 4 000 € · dokladovanie beží" },
+      { key: "zbierky", label: "Zbierky", polozky: [
+        { emoji: "🚗", titul: "", popis: "", zbierkaId: "z-hospic-auto" },
+        { emoji: "🛏", titul: "", popis: "dokladovanie beží", zbierkaId: "z-noclaharen" },
       ] },
       { key: "skutky", label: "Skutky", polozky: [
         { emoji: "🍲", titul: "120 teplých jedál", popis: "vydaných tento mesiac v teréne" },
         { emoji: "🏠", titul: "Rodina Horváthová má strechu", popis: "uzavretý prípad · takto sme pomohli" },
-      ] },
-      { key: "talent", label: "Talent", polozky: [
-        { emoji: "🎨", titul: "Deti maľujú pre útulok", popis: "výtvarná akcia s komunitou" },
       ] },
     ],
   },
@@ -103,16 +102,15 @@ export const SUBJEKTY: Record<Pozicia, SubjektMeta> = {
     kontakt: { adresa: "Bratislava", email: "marek@marektvori.sk", tel: "+421 902 111 222", web: "marektvori.sk" },
     taby: [
       { key: "retaz", label: "Reťaz", polozky: [
-        { emoji: "⛓", titul: "Aktívna: Auto pre mobilný hospic", popis: "moje fixné 5 % · 2 ďalšie vo fronte" },
+        { emoji: "⛓", titul: "", popis: "", zbierkaId: "z-hospic-auto", split: 5 },
+        { emoji: "⛓", titul: "", popis: "", zbierkaId: "z-motylik", split: 12 },
+        { emoji: "⛓", titul: "", popis: "", zbierkaId: "z-labka", split: 3 },
       ] },
       { key: "skutky", label: "Skutky", polozky: [
         { emoji: "🎥", titul: "Video pre Motýlik", popis: "kampaň dosiahla cieľ za 9 dní" },
       ] },
       { key: "akcie", label: "Akcie", polozky: [
         { emoji: "🎟", titul: "Workshop „Kamera v teréne“", popis: "so 14. 8. · 12/20 prihlásených" },
-      ] },
-      { key: "oznamy", label: "Oznamy", polozky: [
-        { emoji: "📣", titul: "Nový diel v stredu", popis: "séria Skutoční hrdinovia pokračuje" },
       ] },
     ],
   },
@@ -122,16 +120,12 @@ export const SUBJEKTY: Record<Pozicia, SubjektMeta> = {
     cisla: [["2 400 €", "Darované"], ["5", "Skutky"], ["2 roky", "S nami"]],
     onas: "Rodinná pekáreň z Trenčína. Podporujeme miestne zbierky a naši ľudia chodia na dobrovoľnícke akcie — každé euro je dohľadateľné.",
     kontakt: { adresa: "Bratislavská 12, Trenčín", email: "dobrota@pekaren.sk", tel: "+421 903 333 444", web: "pekarendobrota.sk" },
+    // program ZADARMO: firma smie darovať a mať z toho karmu.
+    // Vytváranie skutkov a akcií je nástroj — otvára sa až od T1.
     taby: [
-      { key: "podporujeme", label: "Podporujeme", polozky: [
-        { emoji: "🔥", titul: "Rodina Kováčová", popis: "500 € · overená podpora" },
-        { emoji: "⭐", titul: "Motýlik", popis: "pravidelná mesačná podpora" },
-      ] },
-      { key: "skutky", label: "Skutky", polozky: [
-        { emoji: "🍞", titul: "Pečivo pre nocľaháreň", popis: "každý piatok · 40 kusov" },
-      ] },
-      { key: "akcie", label: "Akcie", polozky: [
-        { emoji: "🙋", titul: "Firemná brigáda — Brezina", popis: "výsadba stromov · 12 zamestnancov" },
+      { key: "darovali", label: "Darovali sme", polozky: [
+        { emoji: "🔥", titul: "", popis: "500 € · overená podpora", zbierkaId: "z-kovacova" },
+        { emoji: "⭐", titul: "", popis: "pravidelná mesačná podpora", zbierkaId: "z-motylik" },
       ] },
     ],
   },
