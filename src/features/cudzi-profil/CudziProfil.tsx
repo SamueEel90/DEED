@@ -2,10 +2,10 @@ import { useState } from "react";
 import { SIRKA, C, SPACE, RADIUS } from "@/theme";
 import {
   Aura, MoniBar, QrModal, SegTabs, useLayout, obalSiroky, BackHeader, IkonaFajka, IkonaPlay, Zdielanie, IkonaUsmev,
-  EntityHero, BtnAkcia, BtnIkonka, KontextMenu, TabyProfil, MenuSkupina, MenuPolozka, DvaStlpce,
+  EntityHero, BtnAkcia, BtnIkonka, KontextMenu, TabyProfil, MenuSkupina, DvaStlpce,
   IkonaMoznosti, IkonaQr, IkonaVlajka, IkonaOdkaz, Zvon, tint as tintVar,
   Foto, Sheet, ProgresBox, PlatobnyModul, PlatbaModal, ZoznamDarcov,
-  FotoProfiluSheet, KamerkaBadge, ZmenitPill,
+  FotoProfiluSheet, KamerkaBadge, ZmenitPill, Stit, naStitLevel,
 } from "@/shared";
 import { pressable } from "@/components/pressable";
 import { FOTO_TEST_REZIM, klucEntity, useFotkyEntity } from "@/lib/fotoentity";
@@ -79,6 +79,7 @@ function OrgProfil({ s, onBack, toast, onKampan }: { s: CudziSubjektOrg; onBack?
   const cover = org.cover;
   const sleduje = sledujem(meno);
   const level = s.level || org.level;
+  const [onasViac, setOnasViac] = useState(false);
   const kampane = org.kampane;
   const akcie = org.akcie;
   const otvorKampan = (k: OrgKampan) => { if (onKampan) onKampan(k); else setKampanDetail(k); };
@@ -124,23 +125,22 @@ function OrgProfil({ s, onBack, toast, onKampan }: { s: CudziSubjektOrg; onBack?
     </>
   );
 
-  const oNasBlok = (
-    <MenuSkupina nadpis="O NÁS">
-      <div style={{ padding: SPACE.gutter, fontSize: 13, lineHeight: 1.55, color: C.textSec }}>{org.onas}</div>
-    </MenuSkupina>
+  // O nás priamo pod hlavičkou — 3 riadky, zvyšok na „viac"
+  const oNasKratky = (
+    <div style={{ fontSize: 13, lineHeight: 1.5, color: C.textSec }}>
+      <span style={onasViac ? undefined : { display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{org.onas}</span>
+      {org.onas.length > 140 && (
+        <span {...pressable(() => setOnasViac((v) => !v), onasViac ? "Zbaliť" : "Zobraziť viac")}
+          style={{ display: "inline-block", marginTop: 2, fontSize: 12.5, fontWeight: 700, color: "var(--a-info)", cursor: "pointer" }}>
+          {onasViac ? "menej" : "viac"}
+        </span>
+      )}
+    </div>
   );
 
-  const doveraBlok = (
-    <>
-      <MenuSkupina nadpis="DÔVERA">
-        <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm, padding: SPACE.gutter }}>
-          <span style={{ width: 38, height: 38, borderRadius: RADIUS.sm, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", background: tintVar("var(--a-green)", .12) }}><IkonaFajka size={18} color="var(--a-green)" /></span>
-          <div style={{ fontSize: 12, color: C.textSec, lineHeight: 1.45 }}><b style={{ color: C.text }}>Odznak dôvery {level}</b> — zaslúžený za overené skutky, nedá sa kúpiť.</div>
-        </div>
-        <MenuPolozka ikona={<IkonaQr size={16} />} farba="var(--a-info)" label="QR profilu charity" popis="Zdieľanie a odznak na vlastný web" onClick={() => setQr(true)} posledna />
-      </MenuSkupina>
-    </>
-  );
+  const oNasBlok = null;
+
+  const doveraBlok = null;
 
   return (
     <div style={{ paddingBottom: SPACE.lg }}>
@@ -159,10 +159,16 @@ function OrgProfil({ s, onBack, toast, onKampan }: { s: CudziSubjektOrg; onBack?
           onCover={smiemUpravit ? () => setFotky(true) : undefined}
           meno={meno} overene overeneLabel={`Overená charita · ${level}`}
           podtitul={s.lok || org.lok}
+          vpravo={
+            <div style={{ textAlign: "center" }} title="Štít sa zaslúži skutkami — nedá sa kúpiť">
+              <Stit level={naStitLevel(level)} size={desktop ? 104 : 86} detail subjekt={meno} />
+            </div>
+          }
+          podMenom={oNasKratky}
           stats={[
-            { hodnota: org.stat.vyzbierane, label: "vyzbierané" },
-            { hodnota: org.stat.podporovatelia, label: "podporovateľov" },
-            { hodnota: level, label: "úroveň", farba: "var(--a-gold)" },
+            { hodnota: org.stat.vyzbierane, label: "Vyzbierané" },
+            { hodnota: org.stat.skutky, label: "Skutky" },
+            { hodnota: org.stat.snami, label: "S nami" },
           ]}
           akcie={<>
             <BtnAkcia variant={sleduje ? "secondary" : "primary"} ariaPressed={sleduje}
@@ -170,6 +176,7 @@ function OrgProfil({ s, onBack, toast, onKampan }: { s: CudziSubjektOrg; onBack?
               {sleduje ? "✓ Sledované" : "Sledovať"}
             </BtnAkcia>
             <BtnAkcia variant="secondary" onClick={zdielajProfil}><Zdielanie size={14} /> Zdieľať</BtnAkcia>
+            <BtnIkonka label="QR kód profilu" onClick={() => setQr(true)}><IkonaQr size={16} /></BtnIkonka>
             <BtnIkonka label={zvoncek ? "Vypnúť upozornenia" : "Zapnúť upozornenia"} aktivne={zvoncek} farba="var(--a-gold)"
               onClick={() => { setZvoncek((v) => !v); toast?.(zvoncek ? "Upozornenia vypnuté" : "Upozornenia na kampane a akcie zapnuté"); }}>
               <Zvon size={16} />

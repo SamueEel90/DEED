@@ -224,7 +224,7 @@ function IdentitaKarta({ naNastavenia }: { naNastavenia: () => void }) {
 
       {/* ŠTÍT + text — NIKDY progress bar/percentá (level-up je prekvapenie; všetci začínajú Bronze) */}
       <div style={{ marginTop: SPACE.gutter, display: "flex", alignItems: "center", gap: SPACE.sm }}>
-        <Stit level={ja.demo ? "Gold" : "Bronze"} size={36} />
+        <Stit level={ja.demo ? "Gold" : "Bronze"} size={86} detail subjekt={ja.meno} />
         <div style={{ minWidth: 0, fontSize: 12, color: C.textTer, lineHeight: 1.45 }}>
           <b style={{ color: "var(--a-gold)" }}>{ja.demo ? "Gold" : "Bronze"}</b> · {STIT_POPIS[ja.demo ? "Gold" : "Bronze"]}
           {!ja.demo && <><br />{ja.mesto && ja.mesto !== "—" ? `${ja.mesto} · ` : ""}Karma rastie overenými skutkami.</>}
