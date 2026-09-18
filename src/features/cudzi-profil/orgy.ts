@@ -31,7 +31,7 @@ export interface OrgData {
   cover: string;
   logo: string;
   onas: string;
-  stat: { vyzbierane: string; podporovatelia: string };
+  stat: { vyzbierane: string; podporovatelia: string; skutky: string; snami: string };
   kampane: OrgKampan[];
   akcie: Akcia[];
 }
@@ -68,7 +68,7 @@ const ORGY: OrgData[] = [
     meno: "OZ Otvorené dvere Trenčín", lok: "Trenčín · centrum", level: "Gold", emoji: "🍲",
     cover: F.vydajObedov, logo: F.jedalen,
     onas: "Nízkoprahová jedáleň a nocľaháreň pre ľudí bez domova v Trenčíne. Denne vydáme 120 teplých obedov a pred zimou dopĺňame zásoby. Doklady o použití prostriedkov zverejňujeme.",
-    stat: { vyzbierane: "18 400 €", podporovatelia: "612" },
+    stat: { vyzbierane: "18 400 €", podporovatelia: "612", skutky: "64", snami: "4 roky" },
     kampane: [
       { id: "charitatn", nazov: "Zásoby pre jedáleň pred zimou", vyzbierane: 940, ciel: 2500, foto: F.jedalen, emoji: "🍲", lok: "Trenčín · centrum", ludia: 41,
         popis: "Nízkoprahová jedáleň vydáva denne 120 teplých obedov ľuďom bez domova. Pred zimou chýbajú zásoby." },
@@ -81,7 +81,7 @@ const ORGY: OrgData[] = [
     meno: "OZ Túlavá labka", lok: "Trenčín · okraj", level: "Silver", emoji: "🐾",
     cover: F.utulok, logo: F.utulok,
     onas: "Zachraňujeme opustené psy a mačky v okolí Trenčína. Staráme sa o 40 zvierat, hľadáme im nové domovy a pokrývame veterinárnu starostlivosť.",
-    stat: { vyzbierane: "6 850 €", podporovatelia: "294" },
+    stat: { vyzbierane: "6 850 €", podporovatelia: "294", skutky: "31", snami: "2 roky" },
     kampane: [
       { id: "labka", nazov: "Krmivo a deky na zimu", vyzbierane: 540, ciel: 1200, foto: F.utulok, emoji: "🐾", lok: "Trenčín · okraj", ludia: 28,
         popis: "Krmivo a deky pre 40 psov a mačiek na zimu. Pomôže aj materiálny dar." },
@@ -94,7 +94,7 @@ const ORGY: OrgData[] = [
     meno: "Hospic Pod Brezinou", lok: "Trenčín · centrum", level: "Gold", emoji: "🕊",
     cover: F.zdravotnici, logo: F.zdravotnici,
     onas: "Paliatívna starostlivosť s dôstojnosťou do poslednej chvíle. Sprevádzame pacientov aj ich rodiny — doma aj na lôžkovom oddelení.",
-    stat: { vyzbierane: "31 200 €", podporovatelia: "857" },
+    stat: { vyzbierane: "31 200 €", podporovatelia: "857", skutky: "71", snami: "3 roky" },
     kampane: [
       { id: "hospic", nazov: "Polohovacie lôžka pre paliatívne oddelenie", vyzbierane: 2380, ciel: 6000, foto: F.zdravotnici, emoji: "🛏", lok: "Trenčín · centrum", ludia: 34,
         popis: "Zbierka na polohovacie lôžka pre paliatívne oddelenie. Dôstojnosť do poslednej chvíle." },
@@ -107,7 +107,7 @@ const ORGY: OrgData[] = [
     meno: "Detská nemocnica — nadácia", lok: "nadácia · Bratislava", level: "Gold", emoji: "🏥",
     cover: F.nemocnica, logo: F.nemocnica,
     onas: "Pomáhame detským oddeleniam nemocníc na Slovensku. Overená nezisková organizácia. Doklady o použití prostriedkov zverejňujeme.",
-    stat: { vyzbierane: "64 300 €", podporovatelia: "2 118" },
+    stat: { vyzbierane: "64 300 €", podporovatelia: "2 118", skutky: "176", snami: "5 rokov" },
     kampane: [
       { id: "nadacia-inkubator", nazov: "Nový inkubátor pre novorodencov", vyzbierane: 11200, ciel: 18000, foto: F.nemocnica, emoji: "👶", lok: "Bratislava", ludia: 204,
         popis: "Neonatologické oddelenie potrebuje nový inkubátor pre predčasne narodené deti. Každé euro pomáha najmenším." },
@@ -120,7 +120,7 @@ const ORGY: OrgData[] = [
     meno: "Motýlik", lok: "Detský hospic · Bratislava", level: "Gold", emoji: "🕊",
     cover: F.srdce, logo: F.srdce,
     onas: "Detský hospic — mobilná paliatívna starostlivosť pre nevyliečiteľne choré deti a ich rodiny. Sprevádzame doma, kde je deťom najlepšie.",
-    stat: { vyzbierane: "128 500 €", podporovatelia: "4 902" },
+    stat: { vyzbierane: "128 500 €", podporovatelia: "4 902", skutky: "408", snami: "5 rokov" },
     kampane: [
       { id: "motylik-mobil", nazov: "Mobilná paliatívna starostlivosť", vyzbierane: 42300, ciel: 60000, foto: F.zdravotnici, emoji: "🚑", lok: "celá SR", ludia: 1240,
         popis: "Tím lekárov a sestier dochádza za deťmi domov po celom Slovensku. Ročné náklady na jednu rodinu sú 4 800 €." },
@@ -131,7 +131,7 @@ const ORGY: OrgData[] = [
     meno: "Nádej pacientom", lok: "Onkopacienti · celé SR", level: "Legend", emoji: "🎗",
     cover: F.lieky, logo: F.lieky,
     onas: "Už 30 rokov pomáhame onkologickým pacientom a ich rodinám — poradenstvo, ubytovanie pri liečbe, rekondičné pobyty a prevencia.",
-    stat: { vyzbierane: "212 000 €", podporovatelia: "9 340" },
+    stat: { vyzbierane: "212 000 €", podporovatelia: "9 340", skutky: "778", snami: "5 rokov" },
     kampane: [
       { id: "nadej-den-stuzky", nazov: "Deň žltej stužky — podpora pacientov", vyzbierane: 86000, ciel: 120000, foto: F.kvety, emoji: "🌼", lok: "celá SR", ludia: 5120,
         popis: "Výnos Dňa žltej stužky financuje bezplatné poradenstvo, ubytovanie rodín pri liečbe a rekondičné pobyty pacientov." },
@@ -142,7 +142,7 @@ const ORGY: OrgData[] = [
     meno: "Tichý pomocník", lok: "Rodiny s vážnou chorobou · SR", level: "Gold", emoji: "😇",
     cover: F.srdce, logo: F.kvety,
     onas: "Pravidelné mesačné príspevky rodinám, kde choroba dieťaťa alebo rodiča spôsobila finančnú núdzu. Každé euro od darcov ide rodinám do posledného centu.",
-    stat: { vyzbierane: "540 000 €", podporovatelia: "18 250" },
+    stat: { vyzbierane: "540 000 €", podporovatelia: "18 250", skutky: "1520", snami: "5 rokov" },
     kampane: [
       { id: "pomocnik-rodiny", nazov: "Mesačná pomoc 3 200 rodinám", vyzbierane: 265000, ciel: 400000, foto: F.srdce, emoji: "💛", lok: "celá SR", ludia: 18250,
         popis: "Pravidelný mesačný príspevok drží rodiny s chorým dieťaťom nad vodou. Systém Dobrého anjela posiela darcom presné vyúčtovanie." },
@@ -153,7 +153,7 @@ const ORGY: OrgData[] = [
     meno: "Náruč deťom", lok: "Deti v náhradnej starostlivosti · SR", level: "Gold", emoji: "🧒",
     cover: F.deti, logo: F.deti,
     onas: "Aby každé dieťa malo rodinu. Podporujeme deti v centrách pre deti a rodiny, sprevádzame náhradné rodiny a pomáhame súrodencom ostať spolu.",
-    stat: { vyzbierane: "98 700 €", podporovatelia: "3 605" },
+    stat: { vyzbierane: "98 700 €", podporovatelia: "3 605", skutky: "300", snami: "5 rokov" },
     kampane: [
       { id: "naruc-tabory", nazov: "Letné tábory pre deti z centier", vyzbierane: 7400, ciel: 15000, foto: F.mladez, emoji: "⛺", lok: "celá SR", ludia: 411,
         popis: "Týždeň tábora pre dieťa z centra znamená kamarátov, zážitky a pocit normálneho detstva. Jeden pobyt = 180 €." },
@@ -164,7 +164,7 @@ const ORGY: OrgData[] = [
     meno: "Zvieracia archa", lok: "Útulky · celá SR", level: "Gold", emoji: "🐾",
     cover: F.utulok, logo: F.utulok,
     onas: "Najväčšia sieť útulkov na Slovensku. Ročne zachránime tisíce zvierat — veterinárna starostlivosť, adopcie a terénne zásahy proti týraniu.",
-    stat: { vyzbierane: "156 000 €", podporovatelia: "7 812" },
+    stat: { vyzbierane: "156 000 €", podporovatelia: "7 812", skutky: "651", snami: "5 rokov" },
     kampane: [
       { id: "archa-utulky", nazov: "Prevádzka útulkov a krmivo", vyzbierane: 34500, ciel: 50000, foto: F.utulok, emoji: "🐕", lok: "celá SR", ludia: 2140,
         popis: "Denná prevádzka útulkov: krmivo, energie a veterinárna starostlivosť pre stovky zvierat čakajúcich na domov." },
@@ -175,7 +175,7 @@ const ORGY: OrgData[] = [
     meno: "Prístrešie SK", lok: "Ľudia bez domova · Bratislava", level: "Silver", emoji: "🏠",
     cover: F.vydajObedov, logo: F.ruky,
     onas: "Nocľahárne a útulky s najnižším prahom — prijmeme každého. Nocľah, jedlo, ošetrenie a cesta späť do života pre ľudí bez domova.",
-    stat: { vyzbierane: "72 400 €", podporovatelia: "2 511" },
+    stat: { vyzbierane: "72 400 €", podporovatelia: "2 511", skutky: "209", snami: "5 rokov" },
     kampane: [
       { id: "pristresie-nocl", nazov: "Nocľaháreň sv. Vincenta — zima", vyzbierane: 18200, ciel: 30000, foto: F.vydajObedov, emoji: "🛏", lok: "Bratislava", ludia: 903,
         popis: "V mrazoch je nocľaháreň otázka života. Jedna noc s večerou a ošetrením pre jedného človeka = 9 €." },
@@ -186,7 +186,7 @@ const ORGY: OrgData[] = [
     meno: "Stromosvet", lok: "Výsadba stromov · SR", level: "Bronze", emoji: "🌳",
     cover: F.les, logo: F.les,
     onas: "Sadíme stromy tam, kde chýbajú — mestské aleje, vetrolamy aj obnova lesov po kalamitách. Každý strom má svojho darcu.",
-    stat: { vyzbierane: "12 300 €", podporovatelia: "740" },
+    stat: { vyzbierane: "12 300 €", podporovatelia: "740", skutky: "61", snami: "3 roky" },
     kampane: [
       { id: "stromosvet-brezina", nazov: "1 000 stromov pre Brezinu", vyzbierane: 4100, ciel: 8000, foto: F.les, emoji: "🌳", lok: "Trenčín · Brezina", ludia: 312,
         popis: "Obnova lesoparku Brezina po kalamite. Jeden strom so sadením a starostlivosťou = 8 €." },
@@ -197,7 +197,7 @@ const ORGY: OrgData[] = [
     meno: "Klub seniorov Sihoť", lok: "Komunita · Sihoť", level: "Silver", emoji: "☕",
     cover: F.seniori, logo: F.seniori2,
     onas: "Komunitný klub pre osamelých seniorov na Sihoti — pravidelné stretnutia, výlety, tvorivé dielne a medzigeneračné akcie so školami.",
-    stat: { vyzbierane: "3 900 €", podporovatelia: "186" },
+    stat: { vyzbierane: "3 900 €", podporovatelia: "186", skutky: "15", snami: "2 roky" },
     kampane: [
       { id: "seniori-dielne", nazov: "Tvorivé dielne a výlety pre seniorov", vyzbierane: 820, ciel: 2000, foto: F.seniori, emoji: "🎨", lok: "Trenčín · Sihoť", ludia: 74,
         popis: "Program na celý polrok: dielne, prednášky a dva výlety. Účasť pre seniorov zostáva zadarmo." },
@@ -208,7 +208,7 @@ const ORGY: OrgData[] = [
     meno: "Dobrovoľní hasiči TN", lok: "Komunita · Trenčín", level: "Gold", emoji: "🚒",
     cover: F.dobrovolnici, logo: F.dobrovolnici,
     onas: "Dobrovoľný hasičský zbor Trenčín — zásahy pri povodniach a požiaroch, ukážky pre školy a výcvik mladých hasičov.",
-    stat: { vyzbierane: "9 100 €", podporovatelia: "402" },
+    stat: { vyzbierane: "9 100 €", podporovatelia: "402", skutky: "33", snami: "2 roky" },
     kampane: [
       { id: "hasici-vybava", nazov: "Zásahová výbava pre mladých hasičov", vyzbierane: 2900, ciel: 6000, foto: F.dobrovolnici, emoji: "🧯", lok: "Trenčín", ludia: 168,
         popis: "Prilby, rukavice a výstroj pre dorast. Mladí hasiči trénujú s výbavou po starších — potrebujú vlastnú." },
@@ -251,7 +251,7 @@ export function najdiOrg(meno?: string): OrgData {
     meno: meno || "Organizácia", lok: "Slovensko", level: "Silver", emoji: "🏛",
     cover: p.cover, logo: p.logo,
     onas: `${meno || "Organizácia"} je overená organizácia na platforme DEED. Doklady o použití prostriedkov zverejňuje pri každej zbierke.`,
-    stat: { vyzbierane: `${(2 + (n % 38)).toLocaleString("sk")} ${(100 + (n % 900)).toString().padStart(3, "0")} €`, podporovatelia: (120 + (n % 4200)).toLocaleString("sk") },
+    stat: { vyzbierane: `${(2 + (n % 38)).toLocaleString("sk")} ${(100 + (n % 900)).toString().padStart(3, "0")} €`, podporovatelia: (120 + (n % 4200)).toLocaleString("sk"), skutky: String(8 + (n % 140)), snami: `${1 + (n % 5)} rok${(1 + (n % 5)) === 1 ? "" : (1 + (n % 5)) < 5 ? "y" : "ov"}` },
     kampane: [
       { id: `gen-${n % 9999}`, nazov: "Všeobecná podpora organizácie", vyzbierane: 800 + (n % 4000), ciel: 6000, foto: p.cover, emoji: "💛", lok: "Slovensko", ludia: 40 + (n % 300),
         popis: "Podpora dlhodobej činnosti organizácie — každé euro je dohľadateľné a vyúčtované." },

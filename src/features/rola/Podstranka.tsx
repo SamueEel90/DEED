@@ -137,7 +137,7 @@ export function Podstranka({ pozicia, logo, toast, onBack }: {
         podtitul={<span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}><IkonaPin size={11} color={C.textTer} /> {s.lok}</span>}
         vpravo={
           <div style={{ textAlign: "center" }} title="Štít sa zaslúži skutkami — nedá sa kúpiť">
-            <Stit level={stit} size={desktop ? 104 : 86} detail subjekt={s.nazov} />
+            <Stit level={stit} size={desktop ? 88 : 64} detail subjekt={s.nazov} />
           </div>
         }
         podMenom={oNasKratky}

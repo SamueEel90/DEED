@@ -4,7 +4,7 @@ import { MEDIA_AR } from "@/lib/cardSize";
 import {
   Foto, BackHeader, ProgresBox, PlatobnyModul, PlatbaModal, RecurringSheet, QrModal,
   MoniBar, Switch, Input, EmptyState, useStrankaAkcie,
-  Zdielanie, IkonaVlajka, IkonaDoska, IkonaPlus, IkonaOko, IkonaNastavenia, Srdce, useGaleria, useLayout,
+  Zdielanie, IkonaVlajka, IkonaDoska, IkonaPlus, IkonaOko, IkonaNastavenia, Srdce, Zvon, useGaleria, useLayout,
   ZoznamDarcov, FormatovanyText, RichTextInput, FotoUpload, KamerkaBadge, ZmenitPill, FotoProfiluSheet, VideoEmbed, vlozenieVidea,
   StatRad, BtnAkcia, BtnIkonka, KontextMenu, MenuSkupina, MenuHlavicka, MenuPolozka, DvaStlpce,
   IkonaMoznosti, IkonaQr, IkonaKalendar, IkonaMegafon, IkonaCeruzka,
@@ -57,6 +57,8 @@ export function FarskyProfil({ farnost, farar, jeDomovska, following, onToggleFo
   const [platba, setPlatba] = useState<Kanal | null>(null);
   const [recur, setRecur] = useState(false);
   const [qr, setQr] = useState<"donacny" | "zdielat" | null>(null);
+  const [popisViac, setPopisViac] = useState(false);
+  const [zvoncek, setZvoncek] = useState(false);
   const [sprava, setSprava] = useState(false); // editácia profilu (sheet)
   const [fotky, setFotky] = useState(false);   // rýchla zmena fotiek (test režim, bez správy)
   const [potvrdHome, setPotvrdHome] = useState(false); // A9 potvrdenie „nastaviť ako moju cirkev"
@@ -141,16 +143,24 @@ export function FarskyProfil({ farnost, farar, jeDomovska, following, onToggleFo
 
         {/* stat hlavička (bez karmy — len fakty) */}
         <div style={{ marginBottom: SPACE.sm }}>
-          <StatRad kompakt stats={[
-            { hodnota: (farnost.sledovatelia ?? 0).toLocaleString("sk-SK"), label: "sledujúcich" },
-            { hodnota: stat.zbierky, label: stat.zbierky === 1 ? "zbierka" : "zbierky" },
-            ...(farnost.zalozena ? [{ hodnota: farnost.zalozena, label: "založená", farba: N.gold }] : []),
+          <StatRad stats={[
+            { hodnota: `${eur(suma)} €`, label: "Vyzbierané" },
+            { hodnota: String(stat.zbierky), label: "Skutky" },
+            { hodnota: "2 roky", label: "S nami" },
           ]} />
         </div>
 
         {/* popis (história, založenie, výnimočnosti) — formátovaný text (odseky prežijú) */}
-        <div style={{ fontSize: 14, lineHeight: 1.55, color: N.txt2, margin: `${SPACE.xs}px 0 ${SPACE.gutter}px` }}>
-          <FormatovanyText text={view.popis} />
+        <div style={{ fontSize: 13, lineHeight: 1.5, color: N.txt2, margin: `${SPACE.xs}px 0 ${SPACE.gutter}px` }}>
+          <div style={popisViac ? undefined : { display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+            <FormatovanyText text={view.popis} />
+          </div>
+          {cistyText(view.popis).length > 140 && (
+            <span {...pressable(() => setPopisViac((v) => !v), popisViac ? "Zbaliť" : "Zobraziť viac")}
+              style={{ display: "inline-block", marginTop: 2, fontSize: 12.5, fontWeight: 700, color: "var(--a-info)", cursor: "pointer" }}>
+              {popisViac ? "menej" : "viac"}
+            </span>
+          )}
         </div>
 
         {/* video farnosti — LEN embed (YouTube/Vimeo), nič nehostujeme */}
@@ -193,10 +203,15 @@ export function FarskyProfil({ farnost, farar, jeDomovska, following, onToggleFo
               <Srdce size={14} filled={following} color={following ? N.green : "#fff"} /> {following ? "Sledované" : "Sledovať"}
             </BtnAkcia>
           )}
+          <BtnAkcia variant="secondary" onClick={() => setQr("zdielat")}><Zdielanie size={14} /> Zdieľať</BtnAkcia>
+          <BtnIkonka label="QR kód profilu" onClick={() => setQr(farar ? "donacny" : "zdielat")}><IkonaQr size={16} /></BtnIkonka>
+          <BtnIkonka label={zvoncek ? "Vypnúť upozornenia" : "Zapnúť upozornenia"} aktivne={zvoncek} farba={N.gold}
+            onClick={() => { setZvoncek((v) => !v); toast(zvoncek ? "Upozornenia vypnuté" : "Upozornenia zapnuté"); }}>
+            <Zvon size={16} />
+          </BtnIkonka>
           {!farar && (
-            <BtnAkcia variant="secondary" onClick={onPridat}><IkonaPlus size={14} /> Pridať oznam</BtnAkcia>
+            <BtnIkonka label="Pridať oznam" onClick={onPridat}><IkonaPlus size={16} /></BtnIkonka>
           )}
-          <BtnIkonka label="Zdieľať profil" onClick={() => setQr("zdielat")}><Zdielanie size={16} /></BtnIkonka>
         </div>
 
         <DvaStlpce
