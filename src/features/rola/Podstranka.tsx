@@ -41,6 +41,7 @@ export function Podstranka({ pozicia, logo, toast, onBack }: {
   const taby = [{ key: "vsetko", label: "Všetko", polozky: s.taby.flatMap((t) => t.polozky) }, ...s.taby];
   const [tab, setTab] = useState("vsetko");
   const [sledujem, setSledujem] = useState(false);
+  const [onasViac, setOnasViac] = useState(false);
   const [zvoncek, setZvoncek] = useState(false);
   const [qr, setQr] = useState(false);
   const [menu, setMenu] = useState(false);
@@ -93,23 +94,21 @@ export function Podstranka({ pozicia, logo, toast, onBack }: {
     </>
   );
 
+  // O nás priamo pod hlavičkou — 2–3 riadky, zvyšok na „viac“
+  const oNasKratky = (
+    <div style={{ fontSize: 13, lineHeight: 1.5, color: C.textSec }}>
+      <span style={onasViac ? undefined : { display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{s.onas}</span>
+      {s.onas.length > 140 && (
+        <span {...pressable(() => setOnasViac((v) => !v), onasViac ? "Zbaliť" : "Zobraziť viac")}
+          style={{ display: "inline-block", marginTop: 2, fontSize: 12.5, fontWeight: 700, color: "var(--a-info)", cursor: "pointer" }}>
+          {onasViac ? "menej" : "viac"}
+        </span>
+      )}
+    </div>
+  );
+
   const oNasBlok = (
     <>
-      <MenuSkupina nadpis="O NÁS">
-        <div style={{ padding: SPACE.gutter, fontSize: 13.5, lineHeight: 1.55, color: C.textSec }}>{s.onas}</div>
-      </MenuSkupina>
-      <MenuSkupina nadpis="DÔVERA">
-        <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm, padding: SPACE.gutter }}>
-          <Stit level={stit} size={38} />
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 13, fontWeight: 800 }}>{stit}</div>
-            <div style={{ fontSize: 11, color: C.textTer, lineHeight: 1.4 }}>Štít je zaslúžený za overené skutky — nedá sa kúpiť.</div>
-          </div>
-          <span {...pressable(() => setQr(true), "QR profilu")} style={{ flex: "none", display: "inline-flex", alignItems: "center", gap: 6, fontSize: 11.5, fontWeight: 700, color: "var(--a-info)", border: `1px solid ${tint("var(--a-info)", .38)}`, background: tint("var(--a-info)", .1), borderRadius: RADIUS.sm, padding: `${SPACE.xs}px ${SPACE.sm}px`, cursor: "pointer" }}>
-            <IkonaQr size={13} /> QR profilu
-          </span>
-        </div>
-      </MenuSkupina>
       <MenuSkupina nadpis="KONTAKT">
         <KontaktPolozka ikona={<IkonaPin size={15} />} label="Adresa" hodnota={s.kontakt.adresa} />
         <KontaktPolozka ikona={<IkonaObalka size={15} />} label="E-mail" hodnota={s.kontakt.email} href={`mailto:${s.kontakt.email}`} />
@@ -136,14 +135,20 @@ export function Podstranka({ pozicia, logo, toast, onBack }: {
         coverEl={<span style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 46, opacity: .45 }}>{s.emoji}</span>}
         meno={s.nazov} overene={s.overena} overeneLabel="Overený subjekt — identita potvrdená"
         podtitul={<span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}><IkonaPin size={11} color={C.textTer} /> {s.lok}</span>}
-        vpravo={<Stit level={stit} size={38} />}
-        stats={s.cisla.map(([hodnota, label], i) => ({ hodnota, label, farba: i === 2 ? "var(--a-gold)" : undefined }))}
+        vpravo={
+          <div style={{ textAlign: "center" }} title="Štít sa zaslúži skutkami — nedá sa kúpiť">
+            <Stit level={stit} size={desktop ? 104 : 86} detail subjekt={s.nazov} />
+          </div>
+        }
+        podMenom={oNasKratky}
+        stats={s.cisla.map(([hodnota, label]) => ({ hodnota, label }))}
         akcie={<>
           <BtnAkcia variant={sledujem ? "secondary" : "primary"} ariaPressed={sledujem}
             onClick={() => { setSledujem((v) => !v); toast(sledujem ? `Prestal si sledovať ${s.nazov}` : `Sleduješ ${s.nazov}`); }}>
             <Srdce size={14} filled={sledujem} color={sledujem ? "var(--a-green)" : "#fff"} /> {sledujem ? "Sledované" : "Sledovať"}
           </BtnAkcia>
           <BtnAkcia variant="secondary" onClick={zdielajProfil}><Zdielanie size={14} /> Zdieľať</BtnAkcia>
+          <BtnIkonka label="QR kód profilu" onClick={() => setQr(true)}><IkonaQr size={16} /></BtnIkonka>
           <BtnIkonka label={zvoncek ? "Vypnúť upozornenia" : "Zapnúť upozornenia"} aktivne={zvoncek} farba="var(--a-gold)"
             onClick={() => { setZvoncek((v) => !v); toast(zvoncek ? "Upozornenia vypnuté" : "Upozornenia zapnuté"); }}>
             <Zvon size={16} />

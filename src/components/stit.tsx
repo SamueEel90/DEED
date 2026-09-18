@@ -26,6 +26,16 @@ const KOVY: Record<StitLevel, { a: string; b: string; edge: string; lesk: string
   Legend:   { a: "#f3d97e", b: "#7a5bd8", edge: "#4d3596", lesk: "#ffe9a8" },
 };
 
+/** hotové assety štítov (public/stity) — hlavná karma. Modulová trieda ostáva SVG,
+ *  kým neprídu jej vlastné assety so symbolmi. */
+const OBRAZKY: Record<StitLevel, string> = {
+  Bronze: "/stity/bronze.png",
+  Silver: "/stity/silver.png",
+  Gold: "/stity/gold.png",
+  Platinum: "/stity/platinum.png",
+  Legend: "/stity/legend.png",
+};
+
 /** krátky textový popis k štítu — jediné, čo sa smie zobraziť (žiadny postup) */
 export const STIT_POPIS: Record<StitLevel, string> = {
   Bronze: "zaslúžený štít — každý začína tu",
@@ -60,19 +70,30 @@ export function naStitLevel(s?: string): StitLevel {
  *  · trieda "modul": hladká plocha + symbol modulu (modulová karma)
  * Malé rozlíšenie (avatar ~40 px): detail gravírovania sa stráca — počíta sa s tým.
  */
-export function Stit({ level, trieda = "hlavna", symbol, size = 44, title }: {
+export function Stit({ level, trieda = "hlavna", symbol, size = 44, title, detail, subjekt }: {
   level: StitLevel;
   trieda?: "hlavna" | "modul";
   /** kľúč z SYMBOLY_MODULOV alebo vlastný glyf (len trieda "modul") */
   symbol?: string;
   size?: number;
   title?: string;
+  /** klik na štít otvorí zväčšený detail (level + popis) */
+  detail?: boolean;
+  /** meno subjektu do detailu */
+  subjekt?: string;
 }) {
+  const [otvoreny, setOtvoreny] = useState(false);
   const kov = KOVY[level];
   const id = `stit-${level}-${trieda}`; // gradienty per level+trieda (stabilné id → žiadne duplicity defs nevadia)
   const glyf = symbol ? (SYMBOLY_MODULOV[symbol] ?? symbol) : null;
   return (
-    <span title={title ?? `${level} — ${STIT_POPIS[level]}`} style={{ display: "inline-flex", position: "relative", width: size, height: size * 1.12, flex: "none" }} aria-label={`Štít ${level}`}>
+    <span title={title ?? `${level} — ${STIT_POPIS[level]}`}
+      {...(detail ? { role: "button", tabIndex: 0, onClick: (e: React.MouseEvent) => { e.stopPropagation(); setOtvoreny(true); }, onKeyDown: (e: React.KeyboardEvent) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setOtvoreny(true); } } } : {})}
+      style={{ display: "inline-flex", position: "relative", width: size, height: size * 1.12, flex: "none", cursor: detail ? "pointer" : "default" }} aria-label={`Štít ${level}`}>
+      {trieda === "hlavna" ? (
+        <img src={OBRAZKY[level]} alt="" width={size} height={size * 1.12}
+          style={{ display: "block", width: size, height: size * 1.12, objectFit: "contain", filter: "drop-shadow(0 2px 6px rgba(0,0,0,.45))" }} />
+      ) : (
       <svg viewBox="0 0 100 112" width={size} height={size * 1.12} style={{ display: "block" }}>
         <defs>
           <linearGradient id={id} x1="0" y1="0" x2="1" y2="1">
@@ -85,25 +106,51 @@ export function Stit({ level, trieda = "hlavna", symbol, size = 44, title }: {
           fill={`url(#${id})`} stroke={kov.edge} strokeWidth="3" />
         {/* horný lesk kovu */}
         <path d="M50 8 L88 20 V32 C74 26 26 26 12 32 V20 Z" fill={kov.lesk} opacity=".35" />
-        {trieda === "hlavna" ? (
-          // ornamentálne gravírovanie (hlavná karma) — bohatá plocha
-          <g stroke={kov.edge} strokeWidth="1.6" fill="none" opacity=".55">
-            <path d="M50 16 L80 26 V54 C80 72 67 84 50 92 C33 84 20 72 20 54 V26 Z" />
-            <path d="M50 28 C58 36 66 36 70 32 C70 50 62 62 50 68 C38 62 30 50 30 32 C34 36 42 36 50 28 Z" />
-            <path d="M26 40 C32 46 38 46 42 42 M74 40 C68 46 62 46 58 42" />
-            <circle cx="50" cy="50" r="6" />
-            <path d="M50 74 C46 78 42 79 38 78 M50 74 C54 78 58 79 62 78" />
-          </g>
-        ) : (
-          // hladký štít — len jemná vnútorná linka, symbol nesie význam
-          <path d="M50 14 L84 25 V55 C84 76 69 90 50 99 C31 90 16 76 16 55 V25 Z"
-            fill="none" stroke={kov.edge} strokeWidth="1.4" opacity=".4" />
-        )}
+        {/* hladký štít — len jemná vnútorná linka, symbol nesie význam */}
+        <path d="M50 14 L84 25 V55 C84 76 69 90 50 99 C31 90 16 76 16 55 V25 Z"
+          fill="none" stroke={kov.edge} strokeWidth="1.4" opacity=".4" />
       </svg>
+      )}
       {trieda === "modul" && glyf && (
         // gravírovaný symbol — jednofarebná razba kovom štítu (grayscale ≈ reliéf)
         <span aria-hidden style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: size * .42, filter: "grayscale(1) contrast(.85) opacity(.8)", transform: "translateY(-4%)" }}>{glyf}</span>
       )}
+      {otvoreny && <StitDetail level={level} trieda={trieda} symbol={symbol} subjekt={subjekt} onClose={() => setOtvoreny(false)} />}
+    </span>
+  );
+}
+
+/**
+ * Detail štítu — klik na štít ho zväčší. NIE je to reveal moment povýšenia
+ * (ten je StitReveal). Tu sa len pozerám na štít, ktorý subjekt už má.
+ */
+export function StitDetail({ level, trieda = "hlavna", symbol, subjekt, onClose }: {
+  level: StitLevel; trieda?: "hlavna" | "modul"; symbol?: string; subjekt?: string; onClose: () => void;
+}) {
+  const kov = KOVY[level];
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+  return (
+    <span role="dialog" aria-label={`Štít ${level}`} onClick={(e) => { e.stopPropagation(); onClose(); }}
+      style={{ position: "fixed", inset: 0, zIndex: 280, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24, cursor: "default", background: "radial-gradient(circle at 50% 42%, rgba(20,18,12,.88), rgba(4,6,12,.96) 78%)", animation: "stitDetailFade .22s ease" }}>
+      <style>{`
+        @keyframes stitDetailFade { from { opacity: 0 } to { opacity: 1 } }
+        @keyframes stitDetailPop { from { transform: scale(.82); opacity: 0 } to { transform: scale(1); opacity: 1 } }
+      `}</style>
+      <span onClick={(e) => e.stopPropagation()} style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", animation: "stitDetailPop .28s cubic-bezier(.2,1.1,.4,1) both" }}>
+        <span style={{ position: "relative", display: "inline-flex", alignItems: "center", justifyContent: "center", width: 300, height: 300 }}>
+          <span aria-hidden style={{ position: "absolute", inset: 30, borderRadius: "50%", background: `radial-gradient(circle, ${kov.a}38, transparent 70%)` }} />
+          <span style={{ position: "relative" }}><Stit level={level} trieda={trieda} symbol={symbol} size={230} /></span>
+        </span>
+        {subjekt && <span style={{ display: "block", fontSize: 15, fontWeight: 700, color: "#fff" }}>{subjekt}</span>}
+        <span style={{ display: "block", fontSize: 12.5, color: "rgba(255,255,255,.62)", marginTop: 6, lineHeight: 1.5, maxWidth: 280 }}>{STIT_POPIS[level]}</span>
+        <button onClick={onClose} style={{ height: 42, padding: "0 22px", marginTop: 22, borderRadius: 12, border: "1px solid rgba(255,255,255,.25)", background: "rgba(255,255,255,.08)", color: "rgba(255,255,255,.88)", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+          Zavrieť
+        </button>
+      </span>
     </span>
   );
 }
