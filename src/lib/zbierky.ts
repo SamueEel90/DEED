@@ -89,7 +89,7 @@ export const ZBIERKY: Zbierka[] = [
   },
 ];
 
-/** dolná hranica splitu tvorcu — pod 5 % sa reťaz nastaviť nedá */
+/** dolná hranica splitu tvorcu — pod 5 % sa reťaz nastaviť nedá. Hore strop nie je. */
 export const SPLIT_MIN = 5;
 
 export const najdiZbierku = (id: string): Zbierka | undefined => ZBIERKY.find((z) => z.id === id);
@@ -100,7 +100,7 @@ export interface OdkazNaZbierku {
   zbierkaId: string;
   /** čo o tom hovorí profil entity — napr. „500 € · overená podpora" */
   poznamka?: string;
-  /** tvorca: jeho fixné % do tejto zbierky. MINIMUM 5 % — menej sa nastaviť nedá
-   *  (zdieľanie sa odmeňuje: QR so zdieľaním od 5 % je zadarmo a bez limitu). */
+  /** tvorca: jeho fixné % do tejto zbierky. Dole hranica 5 %, hore žiadny strop —
+   *  bežne 50 aj 70 %, pokojne aj celý honorár. Zdieľanie sa odmeňuje. */
   split?: number;
 }

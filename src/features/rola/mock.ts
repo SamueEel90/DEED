@@ -103,8 +103,8 @@ export const SUBJEKTY: Record<Pozicia, SubjektMeta> = {
     taby: [
       { key: "retaz", label: "Reťaz", polozky: [
         { emoji: "⛓", titul: "", popis: "", zbierkaId: "z-hospic-auto", split: 5 },
-        { emoji: "⛓", titul: "", popis: "", zbierkaId: "z-motylik", split: 12 },
-        { emoji: "⛓", titul: "", popis: "", zbierkaId: "z-labka", split: 5 },
+        { emoji: "⛓", titul: "", popis: "", zbierkaId: "z-motylik", split: 50 },
+        { emoji: "⛓", titul: "", popis: "", zbierkaId: "z-labka", split: 70 },
       ] },
       { key: "skutky", label: "Skutky", polozky: [
         { emoji: "🎥", titul: "Video pre Motýlik", popis: "kampaň dosiahla cieľ za 9 dní" },
