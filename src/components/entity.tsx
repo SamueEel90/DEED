@@ -86,7 +86,7 @@ export function BtnIkonka({ onClick, label, aktivne, farba = "var(--a-info)", ch
 }
 
 // ---- ENTITY HERO — hlavička profilu subjektu (cover + avatar + akcie) ----
-export function EntityHero({ cover, coverEl, avatar, meno, overene, overeneLabel, podtitul, vpravo, stats, akcie, onAvatar, onCover, coverLabel }: {
+export function EntityHero({ cover, coverEl, avatar, meno, overene, overeneLabel, podtitul, vpravo, podMenom, stats, akcie, onAvatar, onCover, coverLabel }: {
   /** URL cover fotky; alternatívne coverEl = vlastný element (gradient, Foto…) */
   cover?: string; coverEl?: ReactNode;
   /** avatar element (Foto/img/iniciálky) — vykreslí sa v krúžku cez okraj coveru */
@@ -96,6 +96,8 @@ export function EntityHero({ cover, coverEl, avatar, meno, overene, overeneLabel
   podtitul?: ReactNode;
   /** pravý horný slot vedľa mena (štít…) */
   vpravo?: ReactNode;
+  /** blok medzi hlavičkou a číslami (O nás…) */
+  podMenom?: ReactNode;
   stats?: StatPolozka[];
   /** rad akčných tlačidiel (BtnAkcia/BtnIkonka) */
   akcie?: ReactNode;
@@ -136,8 +138,9 @@ export function EntityHero({ cover, coverEl, avatar, meno, overene, overeneLabel
           </div>
           {podtitul && <div style={{ fontSize: desktop ? 12.5 : 11.5, color: C.textSec, marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{podtitul}</div>}
         </div>
-        {vpravo && <div style={{ flex: "none", paddingBottom: 2 }}>{vpravo}</div>}
+        {vpravo && <div style={{ flex: "none", marginTop: -(av * 0.62), alignSelf: "flex-end" }}>{vpravo}</div>}
       </div>
+      {podMenom && <div style={{ marginTop: SPACE.sm }}>{podMenom}</div>}
       {stats && stats.length > 0 && <div style={{ marginTop: SPACE.sm }}><StatRad stats={stats} /></div>}
       {akcie && <div style={{ display: "flex", gap: SPACE.xs, marginTop: SPACE.sm }}>{akcie}</div>}
     </div>

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { C, SPACE, RADIUS, SIRKA } from "@/theme";
 import {
-  BackHeader, Sheet, SegTabs, Switch, MoniBar, Stit, naStitLevel, emitBadgeLevelup, Tip, FotoUpload, tint,
+  BackHeader, Sheet, SegTabs, Switch, MoniBar, Stit, naStitLevel, Tip, FotoUpload, tint,
   useLayout, obalSiroky,
   EntityHero, BtnAkcia, BtnIkonka, KontextMenu, MenuSkupina, MenuHlavicka, MenuPolozka, KontaktPolozka,
   Zdielanie, IkonaCeruzka, IkonaMoznosti, IkonaTerc, IkonaEuro, IkonaLudia, IkonaOsoba, IkonaKalendar,
@@ -114,8 +114,7 @@ export function MojDeedFiremny({ onBack, toast }: { onBack: () => void; toast: (
       {/* ---- DEV panel — simulácia roly/tieru/držiteľa (v produkcii sa nezobrazuje) ---- */}
       {(FLAGS.dev_role_switcher || FLAGS.dev_tier_switcher) && (
         <DevPanel pozicia={pozicia} tier={tier} drzitel={drzitel}
-          onPozicia={prepniPoziciu} onTier={nastavTier} onDrzitel={prepniDrzitela}
-          onLevelup={() => emitBadgeLevelup({ subjekt: subjekt.nazov, level: stit })} />
+          onPozicia={prepniPoziciu} onTier={nastavTier} onDrzitel={prepniDrzitela} />
       )}
 
       {/* ==== HERO SUBJEKTU — cover, logo, meno + odznak, štatistiky, akcie ==== */}
@@ -130,9 +129,8 @@ export function MojDeedFiremny({ onBack, toast }: { onBack: () => void; toast: (
         meno={subjekt.nazov} overene={subjekt.overena} overeneLabel="Overený subjekt — identita potvrdená"
         podtitul={<span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}><IkonaPin size={11} color={C.textTer} /> {subjekt.lok} · {rolaMeta.label}</span>}
         vpravo={
-          <div style={{ textAlign: "center" }}>
-            <Stit level={stit} size={40} />
-            <div style={{ fontSize: 10, fontWeight: 800, color: "var(--a-gold)", marginTop: 2 }}>{stit}</div>
+          <div style={{ textAlign: "center" }} title="Štít sa zaslúži skutkami — nedá sa kúpiť">
+            <Stit level={stit} size={desktop ? 104 : 86} detail subjekt={subjekt.nazov} />
           </div>
         }
         stats={subjekt.cisla.map(([hodnota, label], i) => ({ hodnota, label, farba: i === 2 ? "var(--a-gold)" : undefined }))}
@@ -265,10 +263,9 @@ export function MojDeedFiremny({ onBack, toast }: { onBack: () => void; toast: (
 }
 
 // ===================== DEV PANEL — simulácia roly/tieru/držiteľa =====================
-function DevPanel({ pozicia, tier, drzitel, onPozicia, onTier, onDrzitel, onLevelup }: {
+function DevPanel({ pozicia, tier, drzitel, onPozicia, onTier, onDrzitel }: {
   pozicia: Pozicia; tier: Tier; drzitel: boolean;
   onPozicia: (p: Pozicia) => void; onTier: (t: Tier) => void; onDrzitel: () => void;
-  onLevelup: () => void;
 }) {
   const [open, setOpen] = useState(true);
   const seg = (on: boolean, farba: string): React.CSSProperties => ({
@@ -305,11 +302,6 @@ function DevPanel({ pozicia, tier, drzitel, onPozicia, onTier, onDrzitel, onLeve
             </div>
             <Switch on={drzitel} onChange={onDrzitel} ariaLabel="Držiteľ roly" />
           </div>
-          {/* on_badge_levelup ukážka — prehrá reveal moment (DEED_Stity §6) */}
-          <button onClick={onLevelup}
-            style={{ width: "100%", height: 34, borderRadius: RADIUS.xs, border: `1px dashed ${tint("var(--a-plum)", .4)}`, background: "transparent", color: "var(--a-plum)", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
-            ▶ Prehrať level-up reveal
-          </button>
         </div>
       )}
     </div>

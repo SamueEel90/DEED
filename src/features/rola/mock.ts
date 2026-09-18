@@ -66,7 +66,7 @@ export interface SubjektMeta {
   foto?: string;
   lok: string;
   overena: boolean;
-  /** 3 čísla — charita: vyzbierané/podporovatelia/úroveň · tvorca: mobilizované/prípady/úroveň · firma: podporené €/prípady/úroveň */
+  /** 3 čísla — jednotné: prijímateľ Vyzbierané · Skutky · S nami | firma Darované · Skutky · S nami */
   cisla: [string, string][];
   onas: string;
   kontakt: { adresa: string; email: string; tel: string; web?: string };
@@ -78,7 +78,7 @@ export const SUBJEKTY: Record<Pozicia, SubjektMeta> = {
   charita: {
     nazov: "Svetlo pomoci o.z.", emoji: "💛", iniciacky: "SP", lok: "Trenčín", overena: true,
     cover: U("photo-1416879595882-3373a0480b5b"), foto: U("photo-1518199266791-5375a83190b7"),
-    cisla: [["24 600 €", "vyzbierané"], ["1 204", "podporovateľov"], ["Gold", "úroveň"]],
+    cisla: [["24 600 €", "Vyzbierané"], ["48", "Skutky"], ["3 roky", "S nami"]],
     onas: "Občianske združenie Svetlo pomoci pomáha rodinám v núdzi v Trenčianskom kraji od roku 2014. Každé euro dokladujeme — transparentnosť per prípad je naša podstata.",
     kontakt: { adresa: "Mierové námestie 4, Trenčín", email: "info@svetlopomoci.sk", tel: "+421 901 234 567", web: "svetlopomoci.sk" },
     taby: [
@@ -98,7 +98,7 @@ export const SUBJEKTY: Record<Pozicia, SubjektMeta> = {
   tvorca: {
     nazov: "Marek Tvorí", emoji: "🎬", iniciacky: "MT", lok: "Bratislava", overena: true,
     cover: U("photo-1513364776144-60967b0f800f"), foto: AV(33),
-    cisla: [["4 320 €", "mobilizované"], ["6", "uzavretých prípadov"], ["Silver", "úroveň"]],
+    cisla: [["4 320 €", "Vyzbierané"], ["12", "Skutky"], ["1 rok", "S nami"]],
     onas: "Točím videá o ľuďoch, ktorí pomáhajú. Cez moju reťaz ide časť z každého honoráru na zbierku, ktorú práve podporujem.",
     kontakt: { adresa: "Bratislava", email: "marek@marektvori.sk", tel: "+421 902 111 222", web: "marektvori.sk" },
     taby: [
@@ -119,7 +119,7 @@ export const SUBJEKTY: Record<Pozicia, SubjektMeta> = {
   b2b: {
     nazov: "Pekáreň Dobrota s.r.o.", emoji: "🥖", iniciacky: "PD", lok: "Trenčín", overena: true,
     cover: U("photo-1578985545062-69928b1d9587"), foto: U("photo-1628428799437-d886d7d2e9b2"),
-    cisla: [["2 400 €", "podporené"], ["3", "prípady"], ["Bronze", "úroveň"]],
+    cisla: [["2 400 €", "Darované"], ["5", "Skutky"], ["2 roky", "S nami"]],
     onas: "Rodinná pekáreň z Trenčína. Podporujeme miestne zbierky a naši ľudia chodia na dobrovoľnícke akcie — každé euro je dohľadateľné.",
     kontakt: { adresa: "Bratislavská 12, Trenčín", email: "dobrota@pekaren.sk", tel: "+421 903 333 444", web: "pekarendobrota.sk" },
     taby: [
