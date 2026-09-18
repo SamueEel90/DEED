@@ -104,7 +104,7 @@ export const SUBJEKTY: Record<Pozicia, SubjektMeta> = {
       { key: "retaz", label: "Reťaz", polozky: [
         { emoji: "⛓", titul: "", popis: "", zbierkaId: "z-hospic-auto", split: 5 },
         { emoji: "⛓", titul: "", popis: "", zbierkaId: "z-motylik", split: 12 },
-        { emoji: "⛓", titul: "", popis: "", zbierkaId: "z-labka", split: 3 },
+        { emoji: "⛓", titul: "", popis: "", zbierkaId: "z-labka", split: 5 },
       ] },
       { key: "skutky", label: "Skutky", polozky: [
         { emoji: "🎥", titul: "Video pre Motýlik", popis: "kampaň dosiahla cieľ za 9 dní" },
