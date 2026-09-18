@@ -161,7 +161,7 @@ function OrgProfil({ s, onBack, toast, onKampan }: { s: CudziSubjektOrg; onBack?
           podtitul={s.lok || org.lok}
           vpravo={
             <div style={{ textAlign: "center" }} title="Štít sa zaslúži skutkami — nedá sa kúpiť">
-              <Stit level={naStitLevel(level)} size={desktop ? 104 : 86} detail subjekt={meno} />
+              <Stit level={naStitLevel(level)} size={desktop ? 88 : 64} detail subjekt={meno} />
             </div>
           }
           podMenom={oNasKratky}

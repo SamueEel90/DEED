@@ -130,7 +130,7 @@ export function MojDeedFiremny({ onBack, toast }: { onBack: () => void; toast: (
         podtitul={<span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}><IkonaPin size={11} color={C.textTer} /> {subjekt.lok} · {rolaMeta.label}</span>}
         vpravo={
           <div style={{ textAlign: "center" }} title="Štít sa zaslúži skutkami — nedá sa kúpiť">
-            <Stit level={stit} size={desktop ? 104 : 86} detail subjekt={subjekt.nazov} />
+            <Stit level={stit} size={desktop ? 88 : 64} detail subjekt={subjekt.nazov} />
           </div>
         }
         stats={subjekt.cisla.map(([hodnota, label], i) => ({ hodnota, label, farba: i === 2 ? "var(--a-gold)" : undefined }))}

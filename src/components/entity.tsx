@@ -61,6 +61,7 @@ export function BtnAkcia({ variant = "secondary", onClick, children, ariaPressed
   const base: CSSProperties = {
     flex: 1, minWidth: 0, height: 38, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: SPACE.xs,
     borderRadius: RADIUS.sm, fontFamily: "inherit", fontSize: 13.5, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap",
+    overflow: "hidden", textOverflow: "ellipsis",
     transition: "background .15s ease, border-color .15s ease, transform .12s ease", padding: `0 ${SPACE.sm}px`,
   };
   const v: CSSProperties =
@@ -114,11 +115,15 @@ export function EntityHero({ cover, coverEl, avatar, meno, overene, overeneLabel
   // čo sa orezalo pri nahratí; bez fotky ostáva nižší gradientový pás
   const coverStyl: CSSProperties = cover ? { aspectRatio: MEDIA_AR } : { height: vyskaCover };
   return (
-    <div>
+    <div style={{ position: "relative" }}>
       <div style={{ position: "relative", ...coverStyl, borderRadius: RADIUS.md, overflow: "hidden", background: `linear-gradient(135deg, ${tint("var(--a-info)", .22)}, ${tint("var(--a-plum)", .16)} 60%, ${tint("var(--a-gold)", .18)})` }}>
         {cover ? <img src={cover} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} /> : coverEl}
-        {onCover && <ZmenitPill label={coverLabel} onClick={onCover} />}
+        {onCover && <ZmenitPill label={coverLabel} onClick={onCover} style={{ right: "auto", left: 8 }} />}
       </div>
+      {/* štít sedí na pravej hrane coveru — mimo riadku s menom, aby meno malo celú šírku */}
+      {vpravo && (
+        <div style={{ position: "absolute", right: SPACE.sm, bottom: 0, transform: "translateY(38%)", zIndex: 2, pointerEvents: "auto" }}>{vpravo}</div>
+      )}
       {/* position:relative + zIndex — riadok s avatarom sa prekrýva cez cover <img>;
           bez toho replaced content coveru premaľuje pozadie/rámik avatara (paint order) */}
       <div style={{ display: "flex", alignItems: "flex-end", gap: SPACE.sm, marginTop: -(av / 2.6), padding: `0 ${SPACE.sm}px`, position: "relative", zIndex: 1 }}>
@@ -131,14 +136,13 @@ export function EntityHero({ cover, coverEl, avatar, meno, overene, overeneLabel
           </span>
           {onAvatar && <KamerkaBadge size={Math.round(av * .34)} />}
         </span>
-        <div style={{ flex: 1, minWidth: 0, paddingBottom: 2 }}>
+        <div style={{ flex: 1, minWidth: 0, paddingBottom: 2, paddingRight: vpravo ? (desktop ? 98 : 76) : 0 }}>
           <div style={{ fontSize: desktop ? 19 : 16.5, fontWeight: 800, display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
             <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{meno}</span>
             {overene && <Overene size={desktop ? 18 : 16} label={overeneLabel} />}
           </div>
           {podtitul && <div style={{ fontSize: desktop ? 12.5 : 11.5, color: C.textSec, marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{podtitul}</div>}
         </div>
-        {vpravo && <div style={{ flex: "none", marginTop: -(av * 0.62), alignSelf: "flex-end" }}>{vpravo}</div>}
       </div>
       {podMenom && <div style={{ marginTop: SPACE.sm }}>{podMenom}</div>}
       {stats && stats.length > 0 && <div style={{ marginTop: SPACE.sm }}><StatRad stats={stats} /></div>}
