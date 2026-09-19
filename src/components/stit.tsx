@@ -12,6 +12,7 @@
 //  drží siluetu a kovy, aby výmena bola len swap assetov.
 // ============================================================
 import { useEffect, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { zdielaj, aktualnaUrl } from "@/lib/zdielanie";
 import { toast } from "./toast";
 
@@ -115,7 +116,10 @@ export function Stit({ level, trieda = "hlavna", symbol, size = 44, title, detai
         // gravírovaný symbol — jednofarebná razba kovom štítu (grayscale ≈ reliéf)
         <span aria-hidden style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: size * .42, filter: "grayscale(1) contrast(.85) opacity(.8)", transform: "translateY(-4%)" }}>{glyf}</span>
       )}
-      {otvoreny && <StitDetail level={level} trieda={trieda} symbol={symbol} subjekt={subjekt} onClose={() => setOtvoreny(false)} />}
+      {otvoreny && createPortal(
+        <StitDetail level={level} trieda={trieda} symbol={symbol} subjekt={subjekt} onClose={() => setOtvoreny(false)} />,
+        document.body,
+      )}
     </span>
   );
 }
@@ -134,7 +138,7 @@ export function StitDetail({ level, trieda = "hlavna", symbol, subjekt, onClose 
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
   return (
-    <span role="dialog" aria-label={`Štít ${level}`} onClick={(e) => { e.stopPropagation(); onClose(); }}
+    <div role="dialog" aria-label={`Štít ${level}`} onClick={(e) => { e.stopPropagation(); onClose(); }}
       style={{ position: "fixed", inset: 0, zIndex: 280, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24, cursor: "default", background: "radial-gradient(circle at 50% 42%, rgba(20,18,12,.88), rgba(4,6,12,.96) 78%)", animation: "stitDetailFade .22s ease" }}>
       <style>{`
         @keyframes stitDetailFade { from { opacity: 0 } to { opacity: 1 } }
@@ -147,11 +151,11 @@ export function StitDetail({ level, trieda = "hlavna", symbol, subjekt, onClose 
         </span>
         {subjekt && <span style={{ display: "block", fontSize: 15, fontWeight: 700, color: "#fff" }}>{subjekt}</span>}
         <span style={{ display: "block", fontSize: 12.5, color: "rgba(255,255,255,.62)", marginTop: 6, lineHeight: 1.5, maxWidth: 280 }}>{STIT_POPIS[level]}</span>
-        <button onClick={onClose} style={{ height: 42, padding: "0 22px", marginTop: 22, borderRadius: 12, border: "1px solid rgba(255,255,255,.25)", background: "rgba(255,255,255,.08)", color: "rgba(255,255,255,.88)", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+        <button onClick={(e) => { e.stopPropagation(); onClose(); }} style={{ height: 42, padding: "0 22px", marginTop: 22, borderRadius: 12, border: "1px solid rgba(255,255,255,.25)", background: "rgba(255,255,255,.08)", color: "rgba(255,255,255,.88)", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
           Zavrieť
         </button>
       </span>
-    </span>
+    </div>
   );
 }
 

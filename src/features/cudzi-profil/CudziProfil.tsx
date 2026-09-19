@@ -243,7 +243,7 @@ function KampanSheet({ k, org, toast, onClose }: { k: OrgKampan; org: string; to
         <div style={{ fontSize: 11.5, color: C.textTer, marginBottom: SPACE.sm }}>{org}{k.lok ? ` · ${k.lok}` : ""}</div>
         <div style={{ fontSize: 13.5, lineHeight: 1.55, color: C.textSec, marginBottom: SPACE.sm }}>{k.popis}</div>
         <div style={{ marginBottom: SPACE.sm }}><ProgresBox suma={suma} ciel={k.ciel} ludia={ludia} /></div>
-        <PlatobnyModul
+        <PlatobnyModul zbalene
           onShare={() => void zdielaj({ titul: k.nazov, text: k.nazov, url: aktualnaUrl() }, toast ?? (() => {}))}
           upvotes={ludia} onUpvote={() => toast?.("❤")}
           onPodpor={(d: number) => podpor(d)}
@@ -258,10 +258,10 @@ function KampanSheet({ k, org, toast, onClose }: { k: OrgKampan; org: string; to
         qrCiel={{ druh: "case", ref: String(k.id), modul: "charity" }} onClose={() => setQrKampan(false)} toast={toast} />}
       {platba && <PlatbaModal kanal={platba} komu={k.nazov} onClose={() => setPlatba(null)}
         onDone={(s: number, volba?: VolbaDaru) => {
-          setSuma((x) => x + s * (platba === "EUR" ? 1 : 0.01));
+          setSuma((x) => x + s * (platba === "DEED" ? 0.01 : 1));
           setLudia((l) => l + 1);
-          pridajDar({ refId: darRef, suma: s * (platba === "EUR" ? 1 : 0.01), kanal: platba === "EUR" ? "psp" : "deed", registrovany: ja.typ !== "pasivny", volba });
-          toast?.(`Odoslané ${platba === "EUR" ? s + " €" : s + " DEED"} · ${k.nazov}`);
+          pridajDar({ refId: darRef, suma: s * (platba === "DEED" ? 0.01 : 1), kanal: platba === "EUR" ? "psp" : "deed", registrovany: ja.typ !== "pasivny", volba });
+          toast?.(`Odoslané ${platba === "EUR" ? s + " €" : platba === "EURC" ? s + " EURC" : s + " DEED"} · ${k.nazov}`);
         }} />}
     </>
   );

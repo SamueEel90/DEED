@@ -43,3 +43,7 @@ export function navrhniTip(suma: number): number {
   if (suma <= 10000) return 10;
   return 50;
 }
+
+/** SEPA: priama platba je zadarmo. Splitovaná (delí sa medzi viac príjemcov) je
+ *  s poplatkom platobného partnera — PLACEHOLDER, presné číslo určí zmluva s partnerom. */
+export const SEPA_SPLIT_POPLATOK = 0.35;

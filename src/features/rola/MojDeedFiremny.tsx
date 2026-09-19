@@ -107,7 +107,7 @@ export function MojDeedFiremny({ onBack, toast }: { onBack: () => void; toast: (
   const coverSrc = fotky.cover ?? subjekt.cover;
 
   // vlastník vidí TÚ ISTÚ verejnú stránku ako cudzí
-  if (podstranka) return <Podstranka pozicia={pozicia} logo={logo} toast={toast} onBack={() => setPodstranka(false)} />;
+  if (podstranka) return <Podstranka pozicia={pozicia} tier={tier} logo={logo} toast={toast} onBack={() => setPodstranka(false)} />;
 
   const telo = (
     <div style={{ padding: `${SPACE.sm}px ${SPACE.md}px 0` }}>
@@ -288,7 +288,7 @@ function DevPanel({ pozicia, tier, drzitel, onPozicia, onTier, onDrzitel }: {
             style={{ display: "flex", gap: SPACE.xxs, padding: SPACE.xxs, borderRadius: RADIUS.sm, background: C.surface2, border: `1px solid ${C.line}` }}
             render={(k, on) => { const p = POZICIE.find((x) => x.key === k)!; return <span style={seg(on, "var(--a-info)")}>{p.emoji} {p.label}</span>; }} />
           <div style={{ display: "flex", alignItems: "center", gap: SPACE.xs }}>
-            <SegTabs options={["0", "1", "2"]} value={String(tier)} onChange={(t) => onTier(Number(t) as Tier)} ariaLabel="Úroveň (DEV)"
+            <SegTabs options={["0", "1", "2", "3", "4"]} value={String(tier)} onChange={(t) => onTier(Number(t) as Tier)} ariaLabel="Úroveň (DEV)"
               style={{ flex: 1, display: "flex", gap: SPACE.xxs, padding: SPACE.xxs, borderRadius: RADIUS.sm, background: C.surface2, border: `1px solid ${C.line}` }}
               render={(t, on) => <span style={seg(on, "var(--a-gold)")}>{TIER_LABEL[pozicia][Number(t)]}</span>} />
             <Tip label="Vyššia úroveň pridáva kapacitu a nástroje. Štít, karma ani poradie sa kúpiť nedajú.">
@@ -367,7 +367,7 @@ function OrgZbierkySheet({ tier, toast, onPaywall, onDokladovanie, onClose }: {
 
   const vytvor = () => {
     if (aktivne >= limit) {
-      if (tier < 2) {
+      if (tier < 4) {
         onPaywall({
           tierMin: (tier + 1) as Tier, nazov: "Ďalšia súbežná zbierka",
           dovod: `Na úrovni ${TIER_LABEL.charita[tier]} máš limit ${limit} ${limit === 1 ? "súbežnú zbierku" : "súbežné zbierky"} (${aktivne} aktívnych).`,

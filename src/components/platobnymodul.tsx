@@ -3,7 +3,7 @@
 // Poradie je záväzné (rovnaké v Good, Help, Charita, Viera, Aktivity,
 // cudzom profile, rolovej podstránke aj v Split QR sheete):
 //
-//   1. ZADARMO                  — Zdieľať + reakcia (palec/srdce)
+//   1. Zdieľať + reakcia (palec/srdce) — bez nadpisu
 //   2. DROBNÁ PODPORA           — 10 / 50 / 100 DEED
 //   3. VLASTNÁ SUMA             — € EUR / DEED
 //   4. Obľúbené + Podporiť DEED — rozdelený riadok pol na pol
@@ -44,6 +44,13 @@ export interface PlatobnyModulProps {
   supLabel?: ReactNode;
   /** Bez darovania (ponuka pomoci, oznam bez zbierky) — ostane len Zdieľať + reakcia. */
   bezDaru?: boolean;
+  /** Charita a farnosť: „Dary v eurách" (0,50 / 1 / 3 € len SEPA) a „Dary v krypte" sú zbalené. */
+  zbalene?: boolean;
+  /** komu idú peniaze — do hlavičky platby pri drobnom eurovom dare */
+  komu?: ReactNode;
+  onDarEur?: (suma: number) => void;
+  /** v čom príjemca berie krypto: EURC (charita, Viera) · DEED (ostatní) · „nie" */
+  krypto?: "EURC" | "DEED" | "nie";
   // --- 4.–7. riadky ---
   /** Položka do „Môj DEED → Obľúbené". Bez nej má riadok len „Podporiť DEED". */
   oblubene?: Oblubeny;
@@ -82,7 +89,7 @@ function QrNahlad() {
 
 export function PlatobnyModul({
   onShare, upvotes = 0, onUpvote, reakcia = "palec",
-  onPodpor, onKanal, accent = "var(--a-info)", supLabel, bezDaru = false,
+  onPodpor, onKanal, accent = "var(--a-info)", supLabel, bezDaru = false, zbalene = false, komu, onDarEur, krypto,
   oblubene, toast, bezOblubenych = false, opakovana, qr, retaz, style,
 }: PlatobnyModulProps) {
   return (
@@ -90,6 +97,8 @@ export function PlatobnyModul({
       <PodporaSekcia
         onShare={onShare} upvotes={upvotes} onUpvote={onUpvote} reakcia={reakcia}
         onPodpor={onPodpor} onKanal={onKanal} accent={accent} bezDaru={bezDaru}
+        zbalene={zbalene} komu={komu} krypto={krypto} onDarEur={onDarEur ?? ((sm) => toast?.(`Ďakujeme za dar ${sm.toLocaleString("sk")} €`))}
+        onDarKrypto={(v) => toast?.(`Ďakujeme za dar ${v.toLocaleString("sk", { minimumFractionDigits: 2 })} EURC`)}
         {...(supLabel ? { supLabel } : {})} />
 
       {/* 4. Obľúbené + Podporiť DEED — rovnaká výška oboch tlačidiel */}

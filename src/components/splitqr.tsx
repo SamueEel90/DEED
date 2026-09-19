@@ -195,7 +195,7 @@ export function SplitLanding({ splitId, onClose, toast }: { splitId: string; onC
         </>
       )}
     </Sheet>
-    {platba && data && <PlatbaModal kanal={platba} komu={data.owner_text || "cez QR"} onClose={() => setPlatba(null)}
+    {platba && data && <PlatbaModal split kanal={platba} komu={data.owner_text || "cez QR"} onClose={() => setPlatba(null)}
       onDone={(s: number) => posli(s, platba === "EUR" ? "fiat" : "deed")} />}
     </>
   );

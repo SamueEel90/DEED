@@ -6,6 +6,7 @@
 // ============================================================
 import { U, AV } from "@/theme";
 import type { Pozicia, Tier } from "./stav";
+import type { Dokaz } from "@/lib/zbierky";
 
 // blok rolového panela — rovnaká anatómia ako karty userovho „Môj DEED"
 export interface PanelBlok {
@@ -68,10 +69,14 @@ export interface SubjektMeta {
   overena: boolean;
   /** 3 čísla — jednotné: prijímateľ Vyzbierané · Skutky · S nami | firma Darované · Skutky · S nami */
   cisla: [string, string][];
+  /** čísla v programe ZADARMO, ak sa líšia (firma zadarmo nerobí skutky → počet darov) */
+  cislaZadarmo?: [string, string][];
   onas: string;
   kontakt: { adresa: string; email: string; tel: string; web?: string };
-  /** taby verejného obsahu per rola (fixné poradie §3 bod 4) */
-  taby: { key: string; label: string; polozky: { emoji: string; titul: string; popis: string }[] }[];
+  /** taby verejného obsahu per rola (fixné poradie §3 bod 4).
+   *  Položka viazaná na zbierku nesie `zbierkaId` — názov, fotka a suma sa ťahajú
+   *  zo /lib/zbierky, takže na profile je to isté, čo v zbierke. */
+  taby: { key: string; label: string; odTieru?: Tier; polozky: { emoji: string; titul: string; popis: string; zbierkaId?: string; split?: number; odTieru?: Tier; dokaz?: Dokaz; dokazZbierky?: string }[] }[];
 }
 
 export const SUBJEKTY: Record<Pozicia, SubjektMeta> = {
@@ -82,16 +87,31 @@ export const SUBJEKTY: Record<Pozicia, SubjektMeta> = {
     onas: "Občianske združenie Svetlo pomoci pomáha rodinám v núdzi v Trenčianskom kraji od roku 2014. Každé euro dokladujeme — transparentnosť per prípad je naša podstata.",
     kontakt: { adresa: "Mierové námestie 4, Trenčín", email: "info@svetlopomoci.sk", tel: "+421 901 234 567", web: "svetlopomoci.sk" },
     taby: [
-      { key: "kampane", label: "Kampane", polozky: [
-        { emoji: "🚗", titul: "Auto pre mobilný hospic", popis: "8 600 € z 12 000 € · 214 darcov" },
-        { emoji: "🛏", titul: "Zimná nocľaháreň — vybavenie", popis: "ukončená · 4 000 € · dokladovanie beží" },
+      // `odTieru` = od ktorého programu sa to na verejnom profile ukáže (bez neho = ZADARMO).
+      // ZADARMO: jedna aktívna zbierka PRE NIEKOHO. T1: viac súbežných + centrálna. T2: akcie.
+      { key: "zbierky", label: "Zbierky", polozky: [
+        { emoji: "🧺", titul: "", popis: "", zbierkaId: "z-anna" },
+        { emoji: "🎒", titul: "", popis: "", zbierkaId: "z-skola", odTieru: 1 },
+        { emoji: "📦", titul: "", popis: "", zbierkaId: "z-potraviny", odTieru: 1 },
       ] },
       { key: "skutky", label: "Skutky", polozky: [
-        { emoji: "🍲", titul: "120 teplých jedál", popis: "vydaných tento mesiac v teréne" },
-        { emoji: "🏠", titul: "Rodina Horváthová má strechu", popis: "uzavretý prípad · takto sme pomohli" },
+        { emoji: "🍲", titul: "120 teplých jedál", popis: "vydaných tento mesiac v teréne", dokaz: {
+          text: "Každý štvrtok varíme na Mierovom námestí. V septembri sme vydali 120 teplých jedál.",
+          fotky: [
+            { src: U("photo-1593113598332-cd288d649433"), popis: "VÝDAJ" },
+            { src: U("photo-1488459716781-31db52582fe9"), popis: "NÁKUP" },
+          ],
+          doklady: [
+            { druh: "Bloček", nazov: "Suroviny — 4 nákupy", dodavatel: "Kaufland Trenčín", cislo: "4 bločky", datum: "sept. 2026", suma: 386.2 },
+            { druh: "Faktúra", nazov: "Jednorazové obaly a príbory", dodavatel: "Obaly Slovakia s.r.o.", cislo: "FA 26-0931", datum: "3. 9. 2026", suma: 74.9 },
+          ],
+        } },
+        // ukončená a doložená zbierka = jeden skutok (žiadna duplicita so Zbierkami)
+        { emoji: "🏠", titul: "", popis: "doložené faktúrami", zbierkaId: "z-horvathova" },
       ] },
-      { key: "talent", label: "Talent", polozky: [
-        { emoji: "🎨", titul: "Deti maľujú pre útulok", popis: "výtvarná akcia s komunitou" },
+      { key: "akcie", label: "Akcie", odTieru: 2, polozky: [
+        { emoji: "🏃", titul: "Beh pre Svetlo — benefičný beh", popis: "ne 12. 10. · Trenčín, Ostrov · 64 prihlásených" },
+        { emoji: "🍲", titul: "Varíme pre ulicu — dobrovoľníci", popis: "každý štvrtok · Mierové námestie" },
       ] },
     ],
   },
@@ -103,7 +123,9 @@ export const SUBJEKTY: Record<Pozicia, SubjektMeta> = {
     kontakt: { adresa: "Bratislava", email: "marek@marektvori.sk", tel: "+421 902 111 222", web: "marektvori.sk" },
     taby: [
       { key: "retaz", label: "Reťaz", polozky: [
-        { emoji: "⛓", titul: "Aktívna: Auto pre mobilný hospic", popis: "moje fixné 5 % · 2 ďalšie vo fronte" },
+        { emoji: "⛓", titul: "", popis: "", zbierkaId: "z-hospic-auto", split: 5 },
+        { emoji: "⛓", titul: "", popis: "", zbierkaId: "z-motylik", split: 50 },
+        { emoji: "⛓", titul: "", popis: "", zbierkaId: "z-labka", split: 70 },
       ] },
       { key: "skutky", label: "Skutky", polozky: [
         { emoji: "🎥", titul: "Video pre Motýlik", popis: "kampaň dosiahla cieľ za 9 dní" },
@@ -111,27 +133,42 @@ export const SUBJEKTY: Record<Pozicia, SubjektMeta> = {
       { key: "akcie", label: "Akcie", polozky: [
         { emoji: "🎟", titul: "Workshop „Kamera v teréne“", popis: "so 14. 8. · 12/20 prihlásených" },
       ] },
-      { key: "oznamy", label: "Oznamy", polozky: [
-        { emoji: "📣", titul: "Nový diel v stredu", popis: "séria Skutoční hrdinovia pokračuje" },
-      ] },
     ],
   },
   b2b: {
     nazov: "Pekáreň Dobrota s.r.o.", emoji: "🥖", iniciacky: "PD", lok: "Trenčín", overena: true,
     cover: U("photo-1578985545062-69928b1d9587"), foto: U("photo-1628428799437-d886d7d2e9b2"),
     cisla: [["2 400 €", "Darované"], ["5", "Skutky"], ["2 roky", "S nami"]],
+    cislaZadarmo: [["2 400 €", "Darované"], ["2", "Dary"], ["2 roky", "S nami"]],
     onas: "Rodinná pekáreň z Trenčína. Podporujeme miestne zbierky a naši ľudia chodia na dobrovoľnícke akcie — každé euro je dohľadateľné.",
     kontakt: { adresa: "Bratislavská 12, Trenčín", email: "dobrota@pekaren.sk", tel: "+421 903 333 444", web: "pekarendobrota.sk" },
+    // program ZADARMO: firma smie darovať a mať z toho karmu.
+    // Vytváranie skutkov a akcií je nástroj — otvára sa až od T1.
     taby: [
-      { key: "podporujeme", label: "Podporujeme", polozky: [
-        { emoji: "🔥", titul: "Rodina Kováčová", popis: "500 € · overená podpora" },
-        { emoji: "⭐", titul: "Motýlik", popis: "pravidelná mesačná podpora" },
+      { key: "darovali", label: "Darovali sme", polozky: [
+        { emoji: "🔥", titul: "", popis: "500 € · overená podpora", zbierkaId: "z-kovacova" },
+        { emoji: "⭐", titul: "", popis: "pravidelná mesačná podpora", zbierkaId: "z-motylik" },
       ] },
-      { key: "skutky", label: "Skutky", polozky: [
-        { emoji: "🍞", titul: "Pečivo pre nocľaháreň", popis: "každý piatok · 40 kusov" },
+      // T1 (živnostník): vlastné skutky a ponuky
+      { key: "skutky", label: "Skutky", odTieru: 1, polozky: [
+        { emoji: "🥖", titul: "Chlieb pre nocľaháreň", popis: "každý piatok 30 bochníkov · Otvorené dvere Trenčín" },
+        { emoji: "🎂", titul: "Torta pre detský domov", popis: "k Mikulášovi · DeD Trenčín" },
       ] },
-      { key: "akcie", label: "Akcie", polozky: [
-        { emoji: "🙋", titul: "Firemná brigáda — Brezina", popis: "výsadba stromov · 12 zamestnancov" },
+      { key: "ponuky", label: "Ponuky", odTieru: 1, polozky: [
+        { emoji: "🧺", titul: "Včerajšie pečivo zadarmo", popis: "pre charity a OZ · denne po 18:00" },
+      ] },
+      // T2 (firma s prevádzkou): akcie pre zákazníkov
+      { key: "akcie", label: "Akcie", odTieru: 2, polozky: [
+        { emoji: "👩‍🍳", titul: "Pečieme s deťmi", popis: "so 18. 10. · výťažok pre Motýlik · 14/20 miest" },
+      ] },
+      // T3 (so zamestnancami): skutky tímu a oznamy do mesta
+      { key: "tim", label: "Náš tím", odTieru: 3, polozky: [
+        { emoji: "🙋", titul: "Dobrovoľnícky deň v útulku", popis: "6 zamestnancov · 24 hodín · Túlavá labka" },
+        { emoji: "📣", titul: "Zbierame zimné bundy", popis: "oznam do mesta · zberné miesto v predajni" },
+      ] },
+      // T4: ESG výkaz a rozšírené štatistiky
+      { key: "dopad", label: "Dopad", odTieru: 4, polozky: [
+        { emoji: "📊", titul: "ESG výkaz 2026", popis: "8 400 € · 312 hodín dobrovoľníctva · 14 prijímateľov" },
       ] },
     ],
   },

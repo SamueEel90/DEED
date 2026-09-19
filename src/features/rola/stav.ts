@@ -9,7 +9,7 @@
 import type { OrgZbierka } from "./mock"; // type-only — bez runtime cyklu
 
 export type Pozicia = "charita" | "tvorca" | "b2b";
-export type Tier = 0 | 1 | 2;
+export type Tier = 0 | 1 | 2 | 3 | 4;
 
 // ---- feature flagy (DEV barličky — pred launchom odstrániť/vypnúť, §0.1/§0.1b) ----
 export const FLAGS = {
@@ -24,11 +24,11 @@ export const FLAGS = {
 // ---- placeholder čísla = config, nie hardcode (§4.6 — ceny/limity rieši Vitkovič) ----
 export const KONFIG = {
   /** limit súbežných zbierok charity podľa tieru (T1/T2 = placeholder) */
-  limitZbierok: { 0: 1, 1: 3, 2: 10 } as Record<Tier, number>,
+  limitZbierok: { 0: 1, 1: 3, 2: 10, 3: 30, 4: 9999 } as Record<Tier, number>,
   /** lehota dokladovania po ukončení zbierky (placeholder X dní, §1.4) */
   lehotaDokladovaniaDni: 30,
   /** počet delegovaných správcov B2B podľa tieru (§3.1) */
-  spravcoviaB2B: { 0: 1, 1: 2, 2: 5 } as Record<Tier, number>,
+  spravcoviaB2B: { 0: 1, 1: 1, 2: 1, 3: 2, 4: 5 } as Record<Tier, number>,
 };
 
 // ---- tierová mriežka — mapovanie na existujúce cenníky (§0.2, žiadny nový cenník) ----
@@ -37,15 +37,17 @@ export const POZICIE: { key: Pozicia; label: string; emoji: string }[] = [
   { key: "tvorca", label: "Tvorca", emoji: "🎬" },
   { key: "b2b", label: "B2B", emoji: "🏢" },
 ];
-export const TIER_LABEL: Record<Pozicia, [string, string, string]> = {
-  charita: ["T0", "T1", "T2"],
-  tvorca: ["T0", "T1", "T2"],
-  b2b: ["Free", "STARTER", "BUSINESS"], // = B2B Master §6 (ENTERPRISE mimo záber)
+// 5 stupňov: ZADARMO + T1–T4. BUSINESS a ENTERPRISE (firmy) prídu neskôr.
+type Paterica = [string, string, string, string, string];
+export const TIER_LABEL: Record<Pozicia, Paterica> = {
+  charita: ["ZADARMO", "T1", "T2", "T3", "T4"],
+  tvorca: ["ZADARMO", "T1", "T2", "T3", "T4"],
+  b2b: ["ZADARMO", "T1", "T2", "T3", "T4"],
 };
-export const TIER_POPIS: Record<Pozicia, [string, string, string]> = {
-  charita: ["profil a jedna zbierka", "viac súbežných zbierok a kalendár", "plné nástroje vrátane dobrovoľníkov a reportov"],
-  tvorca: ["profil a reťaze", "príspevky, oznamy a štatistiky", "akcie, QR a overené smeny"],
-  b2b: ["verifikácia a základná vizitka", "tímové funkcie a odmeny", "plné firemné nástroje a ESG"],
+export const TIER_POPIS: Record<Pozicia, Paterica> = {
+  charita: ["profil a jedna zbierka pre niekoho", "viac súbežných zbierok", "viac zbierok a akcie", "plné nástroje", "bez limitov"],
+  tvorca: ["profil, reťaz a jedna zbierka", "vlastná stránka, podporovatelia · 30 €", "akcie a sponzoring · 60 €", "tím a overený sponzoring · 120 €", "redakčné kontá, bez limitov · 240 €"],
+  b2b: ["profil a darovanie", "živnostník · 15 €", "firma s prevádzkou · 30 €", "firma so zamestnancami · 50 €", "firma 10–50 ľudí · 100 €"],
 };
 /** rola pripnutá na účet (§1.1/§2.1/§3.1) — názvy rolí pre správu/labely */
 export const ROLA_UCTU: Record<Pozicia, string> = {

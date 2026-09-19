@@ -59,10 +59,10 @@ export function BtnAkcia({ variant = "secondary", onClick, children, ariaPressed
   variant?: "primary" | "secondary" | "ghost"; onClick?: () => void; children?: ReactNode; ariaPressed?: boolean; style?: CSSProperties;
 }) {
   const base: CSSProperties = {
-    flex: 1, minWidth: 0, height: 38, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: SPACE.xs,
-    borderRadius: RADIUS.sm, fontFamily: "inherit", fontSize: 13.5, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap",
+    flex: "1 1 0", minWidth: 0, height: 38, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: SPACE.xs,
+    borderRadius: RADIUS.sm, fontFamily: "inherit", fontSize: 13, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap",
     overflow: "hidden", textOverflow: "ellipsis",
-    transition: "background .15s ease, border-color .15s ease, transform .12s ease", padding: `0 ${SPACE.sm}px`,
+    transition: "background .15s ease, border-color .15s ease, transform .12s ease", padding: `0 ${SPACE.xs}px`,
   };
   const v: CSSProperties =
     variant === "primary" ? { background: GRAD, color: "#fff", border: "1px solid transparent", boxShadow: "0 4px 14px color-mix(in srgb, var(--a-green) 26%, transparent)" }
@@ -76,7 +76,7 @@ export function BtnIkonka({ onClick, label, aktivne, farba = "var(--a-info)", ch
 }) {
   return (
     <button onClick={onClick} aria-label={label} aria-pressed={aktivne} title={label}
-      style={{ width: 40, height: 38, flex: "0 0 auto", display: "inline-flex", alignItems: "center", justifyContent: "center",
+      style={{ width: 36, height: 38, flex: "0 0 auto", display: "inline-flex", alignItems: "center", justifyContent: "center",
         borderRadius: RADIUS.sm, cursor: "pointer", fontFamily: "inherit", position: "relative",
         background: aktivne ? tint(farba, .12) : C.surface2, border: `1px solid ${aktivne ? tint(farba, .4) : C.line}`,
         color: aktivne ? farba : C.textSec, transition: "background .15s ease, border-color .15s ease" }}>
@@ -116,14 +116,16 @@ export function EntityHero({ cover, coverEl, avatar, meno, overene, overeneLabel
   const coverStyl: CSSProperties = cover ? { aspectRatio: MEDIA_AR } : { height: vyskaCover };
   return (
     <div style={{ position: "relative" }}>
-      <div style={{ position: "relative", ...coverStyl, borderRadius: RADIUS.md, overflow: "hidden", background: `linear-gradient(135deg, ${tint("var(--a-info)", .22)}, ${tint("var(--a-plum)", .16)} 60%, ${tint("var(--a-gold)", .18)})` }}>
-        {cover ? <img src={cover} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} /> : coverEl}
-        {onCover && <ZmenitPill label={coverLabel} onClick={onCover} style={{ right: "auto", left: 8 }} />}
+      <div style={{ position: "relative" }}>
+        <div style={{ position: "relative", ...coverStyl, borderRadius: RADIUS.md, overflow: "hidden", background: `linear-gradient(135deg, ${tint("var(--a-info)", .22)}, ${tint("var(--a-plum)", .16)} 60%, ${tint("var(--a-gold)", .18)})` }}>
+          {cover ? <img src={cover} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} /> : coverEl}
+          {onCover && <ZmenitPill label={coverLabel} onClick={onCover} style={{ right: "auto", left: 8 }} />}
+        </div>
+        {/* štít visí z pravej hrany titulnej fotky — mimo riadku s menom, aby meno malo celú šírku */}
+        {vpravo && (
+          <div style={{ position: "absolute", right: SPACE.sm, bottom: 0, transform: "translateY(30%)", zIndex: 3 }}>{vpravo}</div>
+        )}
       </div>
-      {/* štít sedí na pravej hrane coveru — mimo riadku s menom, aby meno malo celú šírku */}
-      {vpravo && (
-        <div style={{ position: "absolute", right: SPACE.sm, bottom: 0, transform: "translateY(38%)", zIndex: 2, pointerEvents: "auto" }}>{vpravo}</div>
-      )}
       {/* position:relative + zIndex — riadok s avatarom sa prekrýva cez cover <img>;
           bez toho replaced content coveru premaľuje pozadie/rámik avatara (paint order) */}
       <div style={{ display: "flex", alignItems: "flex-end", gap: SPACE.sm, marginTop: -(av / 2.6), padding: `0 ${SPACE.sm}px`, position: "relative", zIndex: 1 }}>
@@ -146,7 +148,7 @@ export function EntityHero({ cover, coverEl, avatar, meno, overene, overeneLabel
       </div>
       {podMenom && <div style={{ marginTop: SPACE.sm }}>{podMenom}</div>}
       {stats && stats.length > 0 && <div style={{ marginTop: SPACE.sm }}><StatRad stats={stats} /></div>}
-      {akcie && <div style={{ display: "flex", gap: SPACE.xs, marginTop: SPACE.sm }}>{akcie}</div>}
+      {akcie && <div style={{ display: "flex", gap: 6, marginTop: SPACE.sm }}>{akcie}</div>}
     </div>
   );
 }

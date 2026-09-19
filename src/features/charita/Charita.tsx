@@ -415,10 +415,10 @@ function CharitaDetail({ z: zProp, toast, onBack, onAutor }: { z?: ZbierkaDetail
     toast(text);
   }
   function platbaHotova(s: number, volba?: VolbaDaru) {
-    setSuma((x) => x + s * (platba === "EUR" ? 1 : 0.01));
+    setSuma((x) => x + s * (platba === "DEED" ? 0.01 : 1));
     setLudia((l) => l + 1);
-    pridajDar({ refId: darRef, suma: s * (platba === "EUR" ? 1 : 0.01), kanal: platba === "EUR" ? "psp" : "deed", registrovany: ja.typ !== "pasivny", volba });
-    toast(`Odoslané ${platba === "EUR" ? s + " €" : s + " DEED"} · ${z.nazov}`);
+    pridajDar({ refId: darRef, suma: s * (platba === "DEED" ? 0.01 : 1), kanal: platba === "EUR" ? "psp" : "deed", registrovany: ja.typ !== "pasivny", volba });
+    toast(`Odoslané ${platba === "EUR" ? s + " €" : platba === "EURC" ? s + " EURC" : s + " DEED"} · ${z.nazov}`);
   }
 
   // hero foto — LEN ak prípad má fotku (bez placeholdera; inak čisto textový detail)
@@ -449,7 +449,7 @@ function CharitaDetail({ z: zProp, toast, onBack, onAutor }: { z?: ZbierkaDetail
         </div>
       )}
       <div style={{ marginBottom: SPACE.gutter }}>
-        <PlatobnyModul
+        <PlatobnyModul zbalene
           onShare={() => zdielaj({ titul: z.nazov, text: z.nazov, url: aktualnaUrl() }, toast)}
           upvotes={140} onUpvote={() => toast("Palec hore")}
           onPodpor={(s: number) => podpor(s, `Ďakujeme za ${s} DEED pre ${z.nazov}`)}
@@ -465,7 +465,7 @@ function CharitaDetail({ z: zProp, toast, onBack, onAutor }: { z?: ZbierkaDetail
       <div {...pressable(() => setOzvat(true), "Zapojiť sa — napísať organizácii")} style={{ width: "100%", border: `2px solid ${K.greenEdge}`, background: K.greenBg, borderRadius: RADIUS.sm, padding: SPACE.gutter, textAlign: "center", fontSize: 15, fontWeight: 700, color: K.green, cursor: "pointer", marginBottom: SPACE.sm, boxSizing: "border-box" }}>
         🙌 Zapojiť sa
       </div>
-      <PlatobnyModul
+      <PlatobnyModul zbalene
         onShare={() => zdielaj({ titul: z.nazov, text: z.nazov, url: aktualnaUrl() }, toast)}
         upvotes={140} onUpvote={() => toast("Palec hore")}
         onPodpor={(s: number) => podpor(s, `Ďakujeme za ${s} DEED pre ${z.nazov}`)}
