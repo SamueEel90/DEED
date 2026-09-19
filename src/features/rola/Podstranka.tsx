@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { C, SPACE, RADIUS, SIRKA } from "@/theme";
 import {
   BackHeader, PlatobnyModul, PlatbaModal, ProgresBox, QrModal, Stit, naStitLevel, tint,
@@ -158,7 +158,13 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
       <TabyProfil options={taby.map((t) => t.key)} labels={labels} badges={badges} value={tab} onChange={setTab} ariaLabel="Obsah profilu" />
       {aktTab.polozky.length === 0 ? (
         <div style={{ fontSize: 12.5, color: C.textTer, textAlign: "center", padding: SPACE.lg }}>Zatiaľ žiadny obsah.</div>
-      ) : aktTab.polozky.map((p, i) => {
+      ) : (tab === "vsetko" ? mojeTaby : [aktTab]).map((g) => (
+        <Fragment key={g.key}>
+          {/* vo Všetko odsek podľa druhu: Zbierky → Skutky → Akcie */}
+          {tab === "vsetko" && g.polozky.length > 0 && (
+            <div style={{ fontSize: 14, fontWeight: 800, color: C.text, margin: `${SPACE.gutter}px 0 ${SPACE.xs}px` }}>{g.label}</div>
+          )}
+          {g.polozky.map((p, i) => {
         const z = p.zbierkaId ? najdiZbierku(p.zbierkaId) : undefined;
         const kluc = p.zbierkaId ?? `x${i}`;
         const otvorena = rozbalena === kluc;
@@ -299,6 +305,8 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
           </div>
         );
       })}
+        </Fragment>
+      ))}
     </>
   );
 
