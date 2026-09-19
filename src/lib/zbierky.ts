@@ -40,7 +40,14 @@ export interface Zbierka {
   lok: string;
   stav: ZbierkaStav;
   ziadatel: Ziadatel;
+  /** krypto dary podľa voľby príjemcu pri registrácii: charita a Viera → EURC,
+   *  všetci ostatní → DEED, „nie" = krypto neprijíma (sekcia sa neukáže) */
+  krypto?: Krypto;
 }
+
+export type Krypto = "EURC" | "DEED" | "nie";
+/** predvoľba, kým nemáme registráciu: organizácia (charita) EURC, osoba DEED */
+export const kryptoZbierky = (z: Zbierka): Krypto => z.krypto ?? (z.ziadatel.typ === "org" ? "EURC" : "DEED");
 
 const AV = (n: number) => `https://i.pravatar.cc/200?img=${n}`;
 

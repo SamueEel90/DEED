@@ -270,7 +270,7 @@ const psKanal: CSSProperties = {
   cursor: "pointer", fontFamily: "inherit", background: C.surface2, border: `1px solid ${C.line}`, color: C.text,
 };
 
-export function PodporaSekcia({ onShare, upvotes = 0, onUpvote, onPodpor, onKanal, accent = "var(--a-info)", supLabel = "DROBNÁ PODPORA — klik a hneď odíde", reakcia = "palec", bezDaru = false, zbalene = false, komu, onDarEur, onDarKrypto }: { onShare?: () => void; upvotes?: number; onUpvote?: () => void; onPodpor: (a: number) => void; onKanal: (k: string) => void; accent?: string; supLabel?: ReactNode; reakcia?: "palec" | "srdce"; bezDaru?: boolean; zbalene?: boolean; komu?: ReactNode; onDarEur?: (suma: number) => void; onDarKrypto?: (eurc: number) => void }) {
+export function PodporaSekcia({ onShare, upvotes = 0, onUpvote, onPodpor, onKanal, accent = "var(--a-info)", supLabel = "DROBNÁ PODPORA — klik a hneď odíde", reakcia = "palec", bezDaru = false, zbalene = false, komu, onDarEur, onDarKrypto, krypto = "EURC" }: { onShare?: () => void; upvotes?: number; onUpvote?: () => void; onPodpor: (a: number) => void; onKanal: (k: string) => void; accent?: string; supLabel?: ReactNode; reakcia?: "palec" | "srdce"; bezDaru?: boolean; zbalene?: boolean; komu?: ReactNode; onDarEur?: (suma: number) => void; onDarKrypto?: (eurc: number) => void; krypto?: "EURC" | "DEED" | "nie" }) {
   // pasívny prispieva len v EUR; DEED (peňaženka) vyžaduje účet → výzva na registráciu
   const { mozeDeed } = usePouzivatel();
   const upgrade = useUpgrade();
@@ -324,9 +324,25 @@ export function PodporaSekcia({ onShare, upvotes = 0, onUpvote, onPodpor, onKana
           </button>
         </>)}
 
-        {/* DARY V KRYPTE */}
-        <Rozbal otvorene={otvKrypto} onClick={() => setOtvKrypto((v) => !v)}>DARY V KRYPTE</Rozbal>
-        {otvKrypto && (<>
+        {/* DARY V KRYPTE — EURC (charita, Viera) alebo DEED (ostatní); „nie" = príjemca krypto neberie */}
+        {krypto !== "nie" && <Rozbal otvorene={otvKrypto} onClick={() => setOtvKrypto((v) => !v)}>DARY V KRYPTE</Rozbal>}
+        {krypto === "DEED" && otvKrypto && (<>
+          <div style={{ display: "flex", gap: SPACE.xs, alignItems: "stretch", paddingTop: 8 }}>
+            {fix.map((b) => (
+              <button key={b.v} onClick={deedAkcia(() => onPodpor(b.v))} style={psSuma(b.top, accent)}>
+                {b.top && <span style={psTag(accent)}>NAJČASTEJŠIE</span>}
+                <span style={{ fontSize: 17, fontWeight: 800, lineHeight: 1, fontVariantNumeric: "tabular-nums", color: b.top ? accent : C.text }}>
+                  {b.v}<span style={{ fontSize: 9, fontWeight: 700, color: C.textTer, marginLeft: 3, letterSpacing: ".04em" }}>DEED</span>
+                </span>
+                <span style={{ fontSize: 10, fontWeight: 600, color: C.textTer, marginTop: 4 }}>≈ {eurZaDeed(b.v)}</span>
+              </button>
+            ))}
+          </div>
+          <button onClick={deedAkcia(() => onKanal("DEED"))} style={{ ...psKanal, width: "100%", marginTop: SPACE.xs }}>
+            <span style={{ fontWeight: 800, fontSize: 14, color: accent }}>Vlastná suma v DEED</span>
+          </button>
+        </>)}
+        {krypto === "EURC" && otvKrypto && (<>
           <div style={{ display: "flex", gap: SPACE.xs, alignItems: "stretch", paddingTop: 8 }}>
             {rychleKrypto.map((v, i) => (
               <button key={v} onClick={deedAkcia(() => onDarKrypto?.(v))} style={psSuma(i === 2, accent)}>

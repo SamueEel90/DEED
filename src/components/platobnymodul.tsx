@@ -49,6 +49,8 @@ export interface PlatobnyModulProps {
   /** komu idú peniaze — do hlavičky platby pri drobnom eurovom dare */
   komu?: ReactNode;
   onDarEur?: (suma: number) => void;
+  /** v čom príjemca berie krypto: EURC (charita, Viera) · DEED (ostatní) · „nie" */
+  krypto?: "EURC" | "DEED" | "nie";
   // --- 4.–7. riadky ---
   /** Položka do „Môj DEED → Obľúbené". Bez nej má riadok len „Podporiť DEED". */
   oblubene?: Oblubeny;
@@ -87,7 +89,7 @@ function QrNahlad() {
 
 export function PlatobnyModul({
   onShare, upvotes = 0, onUpvote, reakcia = "palec",
-  onPodpor, onKanal, accent = "var(--a-info)", supLabel, bezDaru = false, zbalene = false, komu, onDarEur,
+  onPodpor, onKanal, accent = "var(--a-info)", supLabel, bezDaru = false, zbalene = false, komu, onDarEur, krypto,
   oblubene, toast, bezOblubenych = false, opakovana, qr, retaz, style,
 }: PlatobnyModulProps) {
   return (
@@ -95,7 +97,7 @@ export function PlatobnyModul({
       <PodporaSekcia
         onShare={onShare} upvotes={upvotes} onUpvote={onUpvote} reakcia={reakcia}
         onPodpor={onPodpor} onKanal={onKanal} accent={accent} bezDaru={bezDaru}
-        zbalene={zbalene} komu={komu} onDarEur={onDarEur ?? ((sm) => toast?.(`Ďakujeme za dar ${sm.toLocaleString("sk")} €`))}
+        zbalene={zbalene} komu={komu} krypto={krypto} onDarEur={onDarEur ?? ((sm) => toast?.(`Ďakujeme za dar ${sm.toLocaleString("sk")} €`))}
         onDarKrypto={(v) => toast?.(`Ďakujeme za dar ${v.toLocaleString("sk", { minimumFractionDigits: 2 })} EURC`)}
         {...(supLabel ? { supLabel } : {})} />
 

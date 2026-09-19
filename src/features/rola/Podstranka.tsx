@@ -14,7 +14,7 @@ import { qrUrl } from "@/lib/qr";
 import { zdielaj, aktualnaUrl } from "@/lib/zdielanie";
 import type { Kanal } from "@/types";
 import { SUBJEKTY, ZASLUZENA } from "./mock";
-import { najdiZbierku } from "@/lib/zbierky";
+import { najdiZbierku, kryptoZbierky } from "@/lib/zbierky";
 import { nacitajTerminal, type Pozicia, type Tier } from "./stav";
 
 /*
@@ -187,7 +187,7 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
                 )}
                 <div style={{ marginBottom: SPACE.sm }}><ProgresBox suma={z.vyzbierane} ciel={z.ciel} ludia={z.darcovia} live={z.stav === "aktivna"} /></div>
                 {z.stav === "aktivna" ? (
-                  <PlatobnyModul zbalene
+                  <PlatobnyModul zbalene krypto={kryptoZbierky(z)}
                     onShare={zdielajProfil}
                     upvotes={z.darcovia} onUpvote={() => toast("❤")}
                     onPodpor={(d: number) => toast(`Ďakujeme za ${d} DEED pre ${z.komu}`)}
