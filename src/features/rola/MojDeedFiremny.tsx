@@ -107,7 +107,7 @@ export function MojDeedFiremny({ onBack, toast }: { onBack: () => void; toast: (
   const coverSrc = fotky.cover ?? subjekt.cover;
 
   // vlastník vidí TÚ ISTÚ verejnú stránku ako cudzí
-  if (podstranka) return <Podstranka pozicia={pozicia} logo={logo} toast={toast} onBack={() => setPodstranka(false)} />;
+  if (podstranka) return <Podstranka pozicia={pozicia} tier={tier} logo={logo} toast={toast} onBack={() => setPodstranka(false)} />;
 
   const telo = (
     <div style={{ padding: `${SPACE.sm}px ${SPACE.md}px 0` }}>

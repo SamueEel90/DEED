@@ -113,6 +113,28 @@ export const ZBIERKY: Zbierka[] = [
     lok: "Trenčín · centrum", stav: "ukoncena",
     ziadatel: { meno: "OZ Otvorené dvere Trenčín", typ: "org", overeny: true, level: "Silver", lok: "Trenčín · centrum", foto: U("photo-1509099836639-18ba1795216d"), onas: "Nízkoprahová jedáleň a zimná nocľaháreň pre ľudí bez domova.", vyzbierane: "18 400 €", skutky: "64", snami: "4 roky" },
   },
+  {
+    id: "z-anna",
+    nazov: "Práčka a chladnička pre pani Annu (81)",
+    komu: "pani Anna, Trenčín · Sihoť",
+    popis: "Pani Anna žije sama, práčka aj chladnička jej dosluhujú. Nové spotrebiče jej kúpime a dovezieme.",
+    foto: U("photo-1581578731548-c64695cc6952"),
+    emoji: "🧺",
+    ciel: 900, vyzbierane: 520, darcovia: 38,
+    lok: "Trenčín · Sihoť", stav: "aktivna",
+    ziadatel: { meno: "Svetlo pomoci o.z.", typ: "org", overeny: true, level: "Gold", lok: "Trenčín", foto: U("photo-1518199266791-5375a83190b7"), onas: "Pomáhame rodinám v núdzi v Trenčianskom kraji. Každé euro dokladujeme.", vyzbierane: "24 600 €", skutky: "48", snami: "3 roky" },
+  },
+  {
+    id: "z-horvathova",
+    nazov: "Strecha pre rodinu Horváthovú",
+    komu: "Rodina Horváthová, Nemšová",
+    popis: "Po búrke zatekalo do detskej izby. Strecha je hotová, faktúry sú priložené.",
+    foto: U("photo-1632759145351-1d592919f522"),
+    emoji: "🏠",
+    ciel: 3500, vyzbierane: 3500, darcovia: 142,
+    lok: "Nemšová", stav: "ukoncena",
+    ziadatel: { meno: "Svetlo pomoci o.z.", typ: "org", overeny: true, level: "Gold", lok: "Trenčín", foto: U("photo-1518199266791-5375a83190b7"), onas: "Pomáhame rodinám v núdzi v Trenčianskom kraji. Každé euro dokladujeme.", vyzbierane: "24 600 €", skutky: "48", snami: "3 roky" },
+  },
 ];
 
 /** dolná hranica splitu tvorcu — pod 5 % sa reťaz nastaviť nedá. Hore strop nie je. */

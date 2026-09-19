@@ -15,7 +15,7 @@ import { zdielaj, aktualnaUrl } from "@/lib/zdielanie";
 import type { Kanal } from "@/types";
 import { SUBJEKTY, ZASLUZENA } from "./mock";
 import { najdiZbierku } from "@/lib/zbierky";
-import { nacitajTerminal, type Pozicia } from "./stav";
+import { nacitajTerminal, type Pozicia, type Tier } from "./stav";
 
 /*
   ============================================================
@@ -27,8 +27,8 @@ import { nacitajTerminal, type Pozicia } from "./stav";
   ============================================================
 */
 
-export function Podstranka({ pozicia, logo, toast, onBack }: {
-  pozicia: Pozicia; logo: string | null; toast: (m: string) => void; onBack: () => void;
+export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
+  pozicia: Pozicia; tier?: Tier; logo: string | null; toast: (m: string) => void; onBack: () => void;
 }) {
   const { desktop } = useLayout();
   const ja = usePouzivatel();
@@ -64,7 +64,9 @@ export function Podstranka({ pozicia, logo, toast, onBack }: {
   const badges = Object.fromEntries(taby.map((t) => [t.key, t.polozky.length])) as Record<string, number>;
 
   // ---- bloky obsahu (zdieľané mobil/desktop) ----
-  const podporaBlok = pozicia === "charita" && (
+  // centrálna zbierka organizácie (podpora pre seba) — charita ju má až v platenom programe od T2.
+  // ZADARMO = len jedna aktívna zbierka PRE NIEKOHO, nie pre seba.
+  const podporaBlok = pozicia === "charita" && tier >= 2 && (
     <div style={{ marginBottom: SPACE.gutter }}>
       <SekciaLabel>PODPORA ORGANIZÁCIE</SekciaLabel>
       <div style={{ marginBottom: SPACE.sm }}><ProgresBox suma={suma} ciel={12000} ludia={ludia} /></div>

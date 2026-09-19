@@ -84,9 +84,10 @@ export const SUBJEKTY: Record<Pozicia, SubjektMeta> = {
     onas: "Občianske združenie Svetlo pomoci pomáha rodinám v núdzi v Trenčianskom kraji od roku 2014. Každé euro dokladujeme — transparentnosť per prípad je naša podstata.",
     kontakt: { adresa: "Mierové námestie 4, Trenčín", email: "info@svetlopomoci.sk", tel: "+421 901 234 567", web: "svetlopomoci.sk" },
     taby: [
+      // ZADARMO: jedna aktívna zbierka PRE NIEKOHO. Centrálna zbierka pre seba je od T2.
       { key: "zbierky", label: "Zbierky", polozky: [
-        { emoji: "🚗", titul: "", popis: "", zbierkaId: "z-hospic-auto" },
-        { emoji: "🛏", titul: "", popis: "dokladovanie beží", zbierkaId: "z-noclaharen" },
+        { emoji: "🧺", titul: "", popis: "", zbierkaId: "z-anna" },
+        { emoji: "🏠", titul: "", popis: "doložené faktúrami", zbierkaId: "z-horvathova" },
       ] },
       { key: "skutky", label: "Skutky", polozky: [
         { emoji: "🍲", titul: "120 teplých jedál", popis: "vydaných tento mesiac v teréne" },
