@@ -128,7 +128,7 @@ export function EntityHero({ cover, coverEl, avatar, meno, overene, overeneLabel
       </div>
       {/* position:relative + zIndex — riadok s avatarom sa prekrýva cez cover <img>;
           bez toho replaced content coveru premaľuje pozadie/rámik avatara (paint order) */}
-      <div style={{ display: "flex", alignItems: "flex-end", gap: SPACE.sm, marginTop: -(av / 2.6), padding: `0 ${SPACE.sm}px`, position: "relative", zIndex: 1 }}>
+      <div style={{ display: "flex", alignItems: "flex-start", gap: SPACE.sm, marginTop: -(av / 2.6), padding: `0 ${SPACE.sm}px`, position: "relative", zIndex: 1 }}>
         {/* onAvatar = fotka sa dá zmeniť → odznak fotoaparátu žije MIMO orezaného
             krúžku (span nižšie má overflow:hidden, inak by ho odrezal) */}
         <span style={{ position: "relative", flex: "none", display: "inline-flex" }}>
@@ -138,9 +138,10 @@ export function EntityHero({ cover, coverEl, avatar, meno, overene, overeneLabel
           </span>
           {onAvatar && <KamerkaBadge size={Math.round(av * .34)} />}
         </span>
-        <div style={{ flex: 1, minWidth: 0, paddingBottom: 2, paddingRight: vpravo ? (desktop ? 98 : 76) : 0 }}>
-          <div style={{ fontSize: desktop ? 19 : 16.5, fontWeight: 800, display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
-            <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{meno}</span>
+        {/* meno sa nikdy neskracuje: text začína pod hranou titulky a zalomí sa nadol */}
+        <div style={{ flex: 1, minWidth: 0, paddingTop: Math.round(av / 2.6) + 4, paddingRight: vpravo ? (desktop ? 98 : 76) : 0 }}>
+          <div style={{ fontSize: desktop ? 19 : 16.5, fontWeight: 800, display: "flex", alignItems: "flex-start", gap: 6, minWidth: 0 }}>
+            <span style={{ minWidth: 0, overflowWrap: "anywhere", lineHeight: 1.2 }}>{meno}</span>
             {overene && <Overene size={desktop ? 18 : 16} label={overeneLabel} />}
           </div>
           {podtitul && <div style={{ fontSize: desktop ? 12.5 : 11.5, color: C.textSec, marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{podtitul}</div>}
