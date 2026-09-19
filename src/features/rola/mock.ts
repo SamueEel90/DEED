@@ -6,6 +6,7 @@
 // ============================================================
 import { U, AV } from "@/theme";
 import type { Pozicia, Tier } from "./stav";
+import type { Dokaz } from "@/lib/zbierky";
 
 // blok rolového panela — rovnaká anatómia ako karty userovho „Môj DEED"
 export interface PanelBlok {
@@ -73,7 +74,7 @@ export interface SubjektMeta {
   /** taby verejného obsahu per rola (fixné poradie §3 bod 4).
    *  Položka viazaná na zbierku nesie `zbierkaId` — názov, fotka a suma sa ťahajú
    *  zo /lib/zbierky, takže na profile je to isté, čo v zbierke. */
-  taby: { key: string; label: string; odTieru?: Tier; polozky: { emoji: string; titul: string; popis: string; zbierkaId?: string; split?: number; odTieru?: Tier }[] }[];
+  taby: { key: string; label: string; odTieru?: Tier; polozky: { emoji: string; titul: string; popis: string; zbierkaId?: string; split?: number; odTieru?: Tier; dokaz?: Dokaz; dokazZbierky?: string }[] }[];
 }
 
 export const SUBJEKTY: Record<Pozicia, SubjektMeta> = {
@@ -93,8 +94,18 @@ export const SUBJEKTY: Record<Pozicia, SubjektMeta> = {
         { emoji: "🏠", titul: "", popis: "doložené faktúrami", zbierkaId: "z-horvathova" },
       ] },
       { key: "skutky", label: "Skutky", polozky: [
-        { emoji: "🍲", titul: "120 teplých jedál", popis: "vydaných tento mesiac v teréne" },
-        { emoji: "🏠", titul: "Rodina Horváthová má strechu", popis: "uzavretý prípad · takto sme pomohli" },
+        { emoji: "🍲", titul: "120 teplých jedál", popis: "vydaných tento mesiac v teréne", dokaz: {
+          text: "Každý štvrtok varíme na Mierovom námestí. V septembri sme vydali 120 teplých jedál.",
+          fotky: [
+            { src: U("photo-1593113598332-cd288d649433"), popis: "VÝDAJ" },
+            { src: U("photo-1488459716781-31db52582fe9"), popis: "NÁKUP" },
+          ],
+          doklady: [
+            { druh: "Bloček", nazov: "Suroviny — 4 nákupy", dodavatel: "Kaufland Trenčín", cislo: "4 bločky", datum: "sept. 2026", suma: 386.2 },
+            { druh: "Faktúra", nazov: "Jednorazové obaly a príbory", dodavatel: "Obaly Slovakia s.r.o.", cislo: "FA 26-0931", datum: "3. 9. 2026", suma: 74.9 },
+          ],
+        } },
+        { emoji: "🏠", titul: "Rodina Horváthová má strechu", popis: "uzavretý prípad · takto sme pomohli", dokazZbierky: "z-horvathova" },
       ] },
       { key: "akcie", label: "Akcie", odTieru: 2, polozky: [
         { emoji: "🏃", titul: "Beh pre Svetlo — benefičný beh", popis: "ne 12. 10. · Trenčín, Ostrov · 64 prihlásených" },

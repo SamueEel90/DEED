@@ -14,7 +14,7 @@ import { qrUrl } from "@/lib/qr";
 import { zdielaj, aktualnaUrl } from "@/lib/zdielanie";
 import type { Kanal } from "@/types";
 import { SUBJEKTY, ZASLUZENA } from "./mock";
-import { najdiZbierku, kryptoZbierky } from "@/lib/zbierky";
+import { najdiZbierku, kryptoZbierky, type Dokaz } from "@/lib/zbierky";
 import { nacitajTerminal, type Pozicia, type Tier } from "./stav";
 
 /*
@@ -26,6 +26,67 @@ import { nacitajTerminal, type Pozicia, type Tier } from "./stav";
   Sekundárne akcie (zdieľať / QR / nahlásiť) žijú v ⋯ menu.
   ============================================================
 */
+
+/** výrazný štítok ukončenej zbierky — má udrieť do očí */
+function UkoncenaPill() {
+  return (
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, fontWeight: 800, letterSpacing: ".04em", color: "#fff", background: "var(--a-green)", borderRadius: RADIUS.pill, padding: `2px ${SPACE.xs + 2}px`, marginBottom: 4 }}>
+      ✓ UKONČENÁ · CIEĽ SPLNENÝ
+    </span>
+  );
+}
+
+const eur = (n: number) => n.toLocaleString("sk", { minimumFractionDigits: n % 1 ? 2 : 0, maximumFractionDigits: 2 }) + " €";
+
+/** Dôkaz pomoci — fotky pred/po a doklady s sumou. Klik na doklad ukáže jeho náhľad. */
+function DokazBlok({ dokaz, vyzbierane }: { dokaz: Dokaz; vyzbierane?: number }) {
+  const [otvoreny, setOtvoreny] = useState<number | null>(null);
+  const spolu = dokaz.doklady.reduce((a, d) => a + d.suma, 0);
+  return (
+    <div style={{ marginBottom: SPACE.sm }}>
+      <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".05em", color: C.textTer, marginBottom: SPACE.xs }}>DÔKAZ — TAKTO SME POMOHLI</div>
+      <div style={{ display: "grid", gridTemplateColumns: `repeat(${dokaz.fotky.length}, 1fr)`, gap: SPACE.xs, marginBottom: SPACE.sm }}>
+        {dokaz.fotky.map((f) => (
+          <div key={f.src} style={{ position: "relative", borderRadius: RADIUS.sm, overflow: "hidden" }}>
+            <img src={f.src} alt={f.popis} style={{ width: "100%", aspectRatio: "4/3", objectFit: "cover", display: "block" }} />
+            <span style={{ position: "absolute", left: 6, top: 6, fontSize: 11, fontWeight: 800, letterSpacing: ".05em", color: "#fff", background: f.popis === "PRED" ? "rgba(0,0,0,.65)" : "var(--a-green)", borderRadius: RADIUS.xs, padding: "2px 7px" }}>{f.popis}</span>
+          </div>
+        ))}
+      </div>
+      <div style={{ fontSize: 14, fontWeight: 600, color: C.text, lineHeight: 1.5, marginBottom: SPACE.sm }}>{dokaz.text}</div>
+      <div style={{ background: C.surface2, border: `1px solid ${C.line}`, borderRadius: RADIUS.sm, overflow: "hidden" }}>
+        {dokaz.doklady.map((d, i) => (
+          <div key={d.cislo} style={{ borderBottom: `1px solid ${C.line}` }}>
+            <div {...pressable(() => setOtvoreny(otvoreny === i ? null : i), `${d.druh} ${d.nazov}`)}
+              style={{ display: "flex", alignItems: "center", gap: SPACE.sm, padding: `${SPACE.sm}px ${SPACE.gutter}px`, cursor: "pointer" }}>
+              <span style={{ fontSize: 18 }}>📄</span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 13.5, fontWeight: 700 }}>{d.nazov}</div>
+                <div style={{ fontSize: 11, color: C.textTer }}>{d.druh} · {d.dodavatel}</div>
+              </div>
+              <span style={{ flex: "none", fontSize: 14, fontWeight: 800 }}>{eur(d.suma)}</span>
+              <span style={{ color: C.textTer, fontSize: 14, transform: otvoreny === i ? "rotate(90deg)" : "none" }}>›</span>
+            </div>
+            {otvoreny === i && (
+              <div style={{ margin: `0 ${SPACE.gutter}px ${SPACE.sm}px`, background: "#fff", color: "#222", borderRadius: RADIUS.xs, padding: SPACE.gutter, fontSize: 12, lineHeight: 1.6, boxShadow: "0 1px 6px rgba(0,0,0,.15)" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 800, fontSize: 13, marginBottom: 6 }}><span>{d.druh.toUpperCase()}</span><span>{d.cislo}</span></div>
+                <div>Dodávateľ: <b>{d.dodavatel}</b></div>
+                <div>Odberateľ: <b>Svetlo pomoci o.z.</b></div>
+                <div>Dátum: {d.datum}</div>
+                <div style={{ borderTop: "1px dashed #bbb", margin: "6px 0", paddingTop: 6, display: "flex", justifyContent: "space-between" }}><span>{d.nazov}</span><b>{eur(d.suma)}</b></div>
+                <div style={{ color: "#1a7f37", fontWeight: 700 }}>✓ Uhradené zo zbierky · overené DEED</div>
+              </div>
+            )}
+          </div>
+        ))}
+        <div style={{ display: "flex", justifyContent: "space-between", padding: `${SPACE.sm}px ${SPACE.gutter}px`, fontSize: 14, fontWeight: 800 }}>
+          <span>Spolu doložené</span>
+          <span style={{ color: "var(--a-green)" }}>{eur(spolu)}{vyzbierane ? ` z ${eur(vyzbierane)}` : ""}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
   pozicia: Pozicia; tier?: Tier; logo: string | null; toast: (m: string) => void; onBack: () => void;
@@ -94,19 +155,23 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
         const z = p.zbierkaId ? najdiZbierku(p.zbierkaId) : undefined;
         const kluc = p.zbierkaId ?? `x${i}`;
         const otvorena = rozbalena === kluc;
+        // skutok s dôkazom (fotky pred/po + doklady) sa tiež rozbalí
+        const dokaz = p.dokaz ?? (p.dokazZbierky ? najdiZbierku(p.dokazZbierky)?.dokaz : undefined);
         const titul = z?.nazov || p.titul;
         const popis = z ? [p.popis, z.komu].filter(Boolean).join(" · ") : p.popis;
         return (
           <div key={kluc} style={{ background: C.surface, border: `1px solid ${otvorena ? tint("var(--a-info)", .38) : C.line}`, borderRadius: RADIUS.sm, marginBottom: SPACE.xs, overflow: "hidden" }}>
-            <div {...pressable(() => (z ? setRozbalena(otvorena ? null : kluc) : toast(`${titul} — detail`)), titul)}
+            <div {...pressable(() => (z || dokaz ? setRozbalena(otvorena ? null : kluc) : toast(`${titul} — detail`)), titul)}
               style={{ display: "flex", alignItems: "center", gap: SPACE.sm, padding: SPACE.sm, cursor: "pointer" }}>
               {/* úvodná fotka zbierky — tá istá, akú vidíš v samotnej zbierke */}
               <span style={{ width: 44, height: 44, borderRadius: RADIUS.xs, flex: "none", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 19, background: "rgba(var(--glass-rgb),.06)" }}>
                 {z ? <img src={z.foto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : p.emoji}
               </span>
               <div style={{ flex: 1, minWidth: 0 }}>
+                {z?.stav === "ukoncena" && <UkoncenaPill />}
                 <div style={{ fontSize: 13.5, fontWeight: 700 }}>{titul}</div>
                 <div style={{ fontSize: 11, color: C.textTer, marginTop: 2 }}>{popis}</div>
+                {!z && dokaz && <div style={{ fontSize: 11, fontWeight: 700, color: "var(--a-green)", marginTop: 3 }}>📷 {dokaz.fotky.length} fotky · 📄 {dokaz.doklady.length} doklady</div>}
                 {z && (
                   <div style={{ display: "flex", alignItems: "center", gap: SPACE.xs, marginTop: 5 }}>
                     <span style={{ flex: 1, height: 4, borderRadius: 3, background: "rgba(var(--glass-rgb),.12)", overflow: "hidden" }}>
@@ -121,6 +186,15 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
               )}
               <span style={{ color: C.textTer, fontSize: 15, flex: "none", transform: otvorena ? "rotate(90deg)" : "none", transition: "transform .18s ease" }}>›</span>
             </div>
+
+            {/* rozbalený skutok — dôkaz, že sme pomohli */}
+            {otvorena && !z && dokaz && (
+              <div style={{ padding: `0 ${SPACE.sm}px ${SPACE.sm}px` }}>
+                <DokazBlok dokaz={dokaz} vyzbierane={p.dokazZbierky ? najdiZbierku(p.dokazZbierky)?.vyzbierane : undefined} />
+                <div {...pressable(() => setRozbalena(null), "Zmenšiť")}
+                  style={{ textAlign: "center", fontSize: 12.5, fontWeight: 700, color: C.textTer, padding: `${SPACE.sm}px 0 0`, cursor: "pointer" }}>Zmenšiť ▲</div>
+              </div>
+            )}
 
             {/* rozbalená zbierka — celá tu, profil ostáva pod ňou; druhý klik zbalí */}
             {otvorena && z && (
@@ -200,7 +274,16 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
                     oblubene={{ refId: z.id, typ: "zbierka", modul: "charity", nazov: z.nazov, lok: z.lok }} toast={toast}
                     qr={{ label: "QR tejto zbierky", popis: "Skenovať · kopírovať · zdieľať", onClick: () => setQrZbierka({ id: z.id, nazov: z.nazov }) }} />
                 ) : (
-                  <div style={{ fontSize: 12, color: C.textTer, textAlign: "center", padding: SPACE.sm }}>Zbierka je ukončená — cieľ sa podarilo vyzbierať.</div>
+                  <>
+                    <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm, background: "var(--a-green)", color: "#fff", borderRadius: RADIUS.sm, padding: `${SPACE.sm}px ${SPACE.gutter}px`, marginBottom: SPACE.sm }}>
+                      <span style={{ fontSize: 24, lineHeight: 1 }}>✓</span>
+                      <div>
+                        <div style={{ fontSize: 15, fontWeight: 800, letterSpacing: ".03em" }}>ZBIERKA UKONČENÁ — CIEĽ SPLNENÝ</div>
+                        <div style={{ fontSize: 12.5, fontWeight: 600, opacity: .92 }}>{z.vyzbierane.toLocaleString("sk")} € od {z.darcovia} darcov{z.dokaz ? " · doložené dokladmi nižšie" : ""}</div>
+                      </div>
+                    </div>
+                    {z.dokaz && <DokazBlok dokaz={z.dokaz} vyzbierane={z.vyzbierane} />}
+                  </>
                 )}
                 <div {...pressable(() => { setRozbalena(null); setProfilZiad(null); }, "Zmenšiť")}
                   style={{ textAlign: "center", fontSize: 12.5, fontWeight: 700, color: C.textTer, padding: `${SPACE.sm}px 0 0`, cursor: "pointer" }}>Zmenšiť ▲</div>

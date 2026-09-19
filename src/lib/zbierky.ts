@@ -43,7 +43,13 @@ export interface Zbierka {
   /** krypto dary podľa voľby príjemcu pri registrácii: charita a Viera → EURC,
    *  všetci ostatní → DEED, „nie" = krypto neprijíma (sekcia sa neukáže) */
   krypto?: Krypto;
+  /** dôkaz pomoci po ukončení — fotky pred/po a doklady, za čo išli peniaze */
+  dokaz?: Dokaz;
 }
+
+/** Dôkaz, že sme pomohli: fotky (pred/po) a doklady s sumami. */
+export interface Doklad { druh: "Faktúra" | "Bloček" | "Výpis"; nazov: string; dodavatel: string; cislo: string; datum: string; suma: number }
+export interface Dokaz { text: string; fotky: { src: string; popis: string }[]; doklady: Doklad[] }
 
 export type Krypto = "EURC" | "DEED" | "nie";
 /** predvoľba, kým nemáme registráciu: organizácia (charita) EURC, osoba DEED */
@@ -140,6 +146,17 @@ export const ZBIERKY: Zbierka[] = [
     emoji: "🏠",
     ciel: 3500, vyzbierane: 3500, darcovia: 142,
     lok: "Nemšová", stav: "ukoncena",
+    dokaz: {
+      text: "Strecha je hotová od 14. 6. Rodina býva v suchu, detská izba je znova obývateľná.",
+      fotky: [
+        { src: U("photo-1632759145351-1d592919f522"), popis: "PRED" },
+        { src: U("photo-1635424710928-0544e8512eae"), popis: "PO" },
+      ],
+      doklady: [
+        { druh: "Faktúra", nazov: "Strešná krytina a materiál", dodavatel: "Stavebniny Váh s.r.o.", cislo: "FA 2026/0412", datum: "2. 6. 2026", suma: 2180 },
+        { druh: "Faktúra", nazov: "Práca pokrývača", dodavatel: "Pokrývačstvo Kubík", cislo: "FA 118/2026", datum: "14. 6. 2026", suma: 1320 },
+      ],
+    },
     ziadatel: { meno: "Svetlo pomoci o.z.", typ: "org", overeny: true, level: "Gold", lok: "Trenčín", foto: U("photo-1518199266791-5375a83190b7"), onas: "Pomáhame rodinám v núdzi v Trenčianskom kraji. Každé euro dokladujeme.", vyzbierane: "24 600 €", skutky: "48", snami: "3 roky" },
   },
   {
