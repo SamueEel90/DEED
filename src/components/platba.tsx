@@ -2,7 +2,7 @@ import { useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
 import { C, GRAD, GRAD_ZELENY, SPACE, RADIUS } from "@/theme";
 import { tint } from "@/lib/ui";
-import { navrhniTip } from "@/lib/poplatky";
+import { navrhniTip, SEPA_SPLIT_POPLATOK } from "@/lib/poplatky";
 import { useUpgrade } from "@/components/context";
 import { usePouzivatel } from "@/lib/pouzivatel";
 import { Sheet } from "@/components/sheet";
@@ -29,7 +29,7 @@ function DarPreNas({ on, label, onToggle }: { on: boolean; label: string; onTogg
     </button>
   );
 }
-export function PlatbaModal({ kanal, komu, suma: sumaInit, lenSepa = false, onClose, onDone }: { kanal?: string; komu?: ReactNode; suma?: number; lenSepa?: boolean; onClose?: () => void; onDone?: (suma: number, volba?: VolbaDaru) => void }) {
+export function PlatbaModal({ kanal, komu, suma: sumaInit, lenSepa = false, split = false, onClose, onDone }: { kanal?: string; komu?: ReactNode; suma?: number; lenSepa?: boolean; split?: boolean; onClose?: () => void; onDone?: (suma: number, volba?: VolbaDaru) => void }) {
   const jeEur = kanal === "EUR";
   const jed = kanal === "EURC" ? "EURC" : "DEED"; // krypto jednotka: EURC pri charite a Viere, inak DEED
   const [krok, setKrok] = useState("suma"); // suma | metoda | detaily | spracovanie | hotovo
@@ -46,7 +46,8 @@ export function PlatbaModal({ kanal, komu, suma: sumaInit, lenSepa = false, onCl
   // SEPA = 0 % marža (Zeffy model) · karta: 1,4 % + 0,15 € · DEED: 0
   // „Dar pre nás" (chod DEED) — vo VŠETKÝCH kanáloch, jednotky = mena kanála
   const tipSuma = navrhniTip(sumaNum);
-  const poplatok = !jeEur ? 0 : jeSepa ? 0 : Math.round((sumaNum * 0.014 + 0.15) * 100) / 100;
+  // SEPA: priama zadarmo, splitovaná s poplatkom partnera
+  const poplatok = !jeEur ? 0 : jeSepa ? (split ? SEPA_SPLIT_POPLATOK : 0) : Math.round((sumaNum * 0.014 + 0.15) * 100) / 100;
   const tipAplik = tip ? tipSuma : 0;
   const spolu = Math.round((sumaNum + poplatok + tipAplik) * 100) / 100;
   const malo = !jeEur && spolu > PLATBA_ZOSTATOK;
@@ -133,7 +134,7 @@ export function PlatbaModal({ kanal, komu, suma: sumaInit, lenSepa = false, onCl
         <div style={{ fontSize: 12.5, color: C.textTer, margin: `${SPACE.xxs}px 0 ${SPACE.sm}px` }}>Vyber spôsob platby pre {sumaNum.toFixed(2)} €</div>
         {[
           { id: "karta" as const, ic: "💳", t: "Platobná karta", d: "Visa · Mastercard · okamžite · 3‑D Secure", fee: `poplatok 1,4 % + 0,15 €` },
-          { id: "sepa" as const, ic: "🏦", t: "Bankový prevod (SEPA)", d: "IBAN · pripísanie do 1 prac. dňa", fee: "poplatok 0,35 €" },
+          { id: "sepa" as const, ic: "🏦", t: "Bankový prevod (SEPA)", d: "IBAN · pripísanie do 1 prac. dňa", fee: split ? `poplatok ${SEPA_SPLIT_POPLATOK.toLocaleString("sk", { minimumFractionDigits: 2 })} € (split)` : "bez poplatku" },
         ].map((m) => (
           <button key={m.id} onClick={() => { setMetoda(m.id); setKrok("detaily"); }} style={{ width: "100%", display: "flex", alignItems: "center", gap: SPACE.sm, textAlign: "left", padding: `${SPACE.sm}px ${SPACE.gutter}px`, marginBottom: SPACE.sm, borderRadius: RADIUS.md, cursor: "pointer", fontFamily: "inherit", background: C.surface2, border: `1px solid ${C.line}`, color: C.text }}>
             <span style={{ fontSize: 22, flex: "none" }}>{m.ic}</span>
@@ -175,6 +176,7 @@ export function PlatbaModal({ kanal, komu, suma: sumaInit, lenSepa = false, onCl
         <div style={{ background: "rgba(var(--glass-rgb),.05)", border: `1px solid ${C.line}`, borderRadius: RADIUS.sm, padding: `${SPACE.xxs}px ${SPACE.sm}px ${SPACE.xs}px` }}>
           <Riadok k="Dar charite" v={`${sumaNum.toFixed(2)} €`} />
           <Riadok k="Marža DEED" v="0 € · neberieme nič" accent={C.green} />
+          {split && <Riadok k="Poplatok partnera (split)" v={`${poplatok.toFixed(2)} €`} />}
           {tipAplik > 0 && <Riadok k="Dar pre nás (chod DEED)" v={`${tipSuma.toFixed(2)} €`} accent={C.green} />}
           <div style={{ display: "flex", justifyContent: "space-between", paddingTop: SPACE.xs, fontSize: 14, fontWeight: 800 }}><span>Spolu</span><span>{spolu.toFixed(2)} €</span></div>
         </div>
