@@ -59,10 +59,10 @@ export function BtnAkcia({ variant = "secondary", onClick, children, ariaPressed
   variant?: "primary" | "secondary" | "ghost"; onClick?: () => void; children?: ReactNode; ariaPressed?: boolean; style?: CSSProperties;
 }) {
   const base: CSSProperties = {
-    flex: "1 1 120px", minWidth: 110, height: 38, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: SPACE.xs,
-    borderRadius: RADIUS.sm, fontFamily: "inherit", fontSize: 13.5, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap",
+    flex: "1 1 0", minWidth: 0, height: 38, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: SPACE.xs,
+    borderRadius: RADIUS.sm, fontFamily: "inherit", fontSize: 13, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap",
     overflow: "hidden", textOverflow: "ellipsis",
-    transition: "background .15s ease, border-color .15s ease, transform .12s ease", padding: `0 ${SPACE.sm}px`,
+    transition: "background .15s ease, border-color .15s ease, transform .12s ease", padding: `0 ${SPACE.xs}px`,
   };
   const v: CSSProperties =
     variant === "primary" ? { background: GRAD, color: "#fff", border: "1px solid transparent", boxShadow: "0 4px 14px color-mix(in srgb, var(--a-green) 26%, transparent)" }
@@ -76,7 +76,7 @@ export function BtnIkonka({ onClick, label, aktivne, farba = "var(--a-info)", ch
 }) {
   return (
     <button onClick={onClick} aria-label={label} aria-pressed={aktivne} title={label}
-      style={{ width: 40, height: 38, flex: "0 0 auto", display: "inline-flex", alignItems: "center", justifyContent: "center",
+      style={{ width: 36, height: 38, flex: "0 0 auto", display: "inline-flex", alignItems: "center", justifyContent: "center",
         borderRadius: RADIUS.sm, cursor: "pointer", fontFamily: "inherit", position: "relative",
         background: aktivne ? tint(farba, .12) : C.surface2, border: `1px solid ${aktivne ? tint(farba, .4) : C.line}`,
         color: aktivne ? farba : C.textSec, transition: "background .15s ease, border-color .15s ease" }}>
@@ -148,7 +148,7 @@ export function EntityHero({ cover, coverEl, avatar, meno, overene, overeneLabel
       </div>
       {podMenom && <div style={{ marginTop: SPACE.sm }}>{podMenom}</div>}
       {stats && stats.length > 0 && <div style={{ marginTop: SPACE.sm }}><StatRad stats={stats} /></div>}
-      {akcie && <div style={{ display: "flex", gap: SPACE.xs, marginTop: SPACE.sm, flexWrap: "wrap" }}>{akcie}</div>}
+      {akcie && <div style={{ display: "flex", gap: 6, marginTop: SPACE.sm }}>{akcie}</div>}
     </div>
   );
 }
