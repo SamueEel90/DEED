@@ -632,7 +632,7 @@ function VieraDetail({ z, farar, onBack, onProfil }: { z: VieraFeedItem; farar: 
             </div>
 
             <div style={{ marginBottom: SPACE.gutter }}>
-              <PlatobnyModul
+              <PlatobnyModul zbalene
                 onShare={zdielajDetail}
                 upvotes={ludia} onUpvote={() => toast(reakcia)} reakcia="srdce"
                 onPodpor={(s: number) => podpor(s, `Ďakujeme za ${s} DEED pre ${z.nazov}`)}
@@ -661,7 +661,7 @@ function VieraDetail({ z, farar, onBack, onProfil }: { z: VieraFeedItem; farar: 
               </div>
             )}
             {/* §12: oznam/dobrovoľníctvo bez napojenej zbierky → LEN srdiečko + zdieľať. */}
-            <PlatobnyModul
+            <PlatobnyModul zbalene
               onShare={zdielajDetail}
               upvotes={ludia} onUpvote={() => toast(reakcia)} reakcia="srdce" bezDaru
               onPodpor={() => {}} onKanal={() => {}} accent={N.ind}

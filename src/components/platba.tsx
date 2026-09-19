@@ -29,12 +29,12 @@ function DarPreNas({ on, label, onToggle }: { on: boolean; label: string; onTogg
     </button>
   );
 }
-export function PlatbaModal({ kanal, komu, suma: sumaInit, onClose, onDone }: { kanal?: string; komu?: ReactNode; suma?: number; onClose?: () => void; onDone?: (suma: number, volba?: VolbaDaru) => void }) {
+export function PlatbaModal({ kanal, komu, suma: sumaInit, lenSepa = false, onClose, onDone }: { kanal?: string; komu?: ReactNode; suma?: number; lenSepa?: boolean; onClose?: () => void; onDone?: (suma: number, volba?: VolbaDaru) => void }) {
   const jeEur = kanal === "EUR";
   const [krok, setKrok] = useState("suma"); // suma | metoda | detaily | spracovanie | hotovo
   // zoznam darcov: voľba identity per dar — posledná voľba je predvoľba (spec §2)
   const [volba, setVolba] = useState<VolbaDaru>(nacitajPredvolbu);
-  const [metoda, setMetoda] = useState<"karta" | "sepa">("karta"); // EUR: spôsob platby
+  const [metoda, setMetoda] = useState<"karta" | "sepa">(lenSepa ? "sepa" : "karta"); // EUR: spôsob platby; drobné sumy len SEPA
   const [suma, setSuma] = useState(sumaInit && sumaInit > 0 ? String(sumaInit) : ""); // predvyplnená (napr. cena workshopu)
   const [karta, setKarta] = useState({ cislo: "", exp: "", cvc: "" });
   const [sepa, setSepa] = useState({ iban: "", meno: "" });
@@ -124,7 +124,7 @@ export function PlatbaModal({ kanal, komu, suma: sumaInit, onClose, onDone }: { 
         </div>
         {!jeEur && <div style={{ fontSize: 11.5, color: C.textTer, marginTop: SPACE.sm }}>Zostatok v peňaženke: <b style={{ color: C.text }}>{PLATBA_ZOSTATOK.toLocaleString("sk")} DEED</b></div>}
         {malo && <div style={{ fontSize: 12, color: C.red, marginTop: SPACE.xs }}>Nedostatok DEED v peňaženke.</div>}
-        <button disabled={sumaNum <= 0 || malo} onClick={() => setKrok(jeEur ? "metoda" : "detaily")} style={btnP(sumaNum > 0 && !malo)}>Pokračovať</button>
+        <button disabled={sumaNum <= 0 || malo} onClick={() => setKrok(jeEur && !lenSepa ? "metoda" : "detaily")} style={btnP(sumaNum > 0 && !malo)}>Pokračovať</button>
       </>)}
 
       {/* EUR: výber spôsobu platby — karta alebo SEPA prevod */}
@@ -226,6 +226,17 @@ export function PlatbaModal({ kanal, komu, suma: sumaInit, onClose, onDone }: { 
 // JEDNOTNÁ SEKCIA PODPORY (ZADARMO · DROBNÁ PODPORA · VLASTNÁ SUMA)
 // rovnaký dizajn naprieč Domov / Help / Charita / Aktivity
 // ============================================================
+/** nadpis zbaliteľnej sekcie platobného modulu (Dary v eurách / v krypte) */
+function Rozbal({ otvorene, onClick, children }: { otvorene: boolean; onClick: () => void; children: ReactNode }) {
+  return (
+    <button onClick={onClick} aria-expanded={otvorene}
+      style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", background: "transparent", border: "none", padding: 0, margin: `${SPACE.md}px 0 ${SPACE.xs}px`, cursor: "pointer", fontFamily: "inherit", fontSize: 12.5, letterSpacing: ".4px", fontWeight: 800, color: otvorene ? C.text : C.textSec }}>
+      <span>{children}</span>
+      <span style={{ fontSize: 14, transform: otvorene ? "rotate(90deg)" : "none", transition: "transform .15s ease" }}>›</span>
+    </button>
+  );
+}
+
 function PSLabel({ children }: { children?: ReactNode }) {
   return <div style={{ fontSize: 11.5, letterSpacing: ".4px", color: C.textTer, fontWeight: 700, margin: `${SPACE.md}px 0 ${SPACE.xs}px` }}>{children}</div>;
 }
@@ -258,7 +269,7 @@ const psKanal: CSSProperties = {
   cursor: "pointer", fontFamily: "inherit", background: C.surface2, border: `1px solid ${C.line}`, color: C.text,
 };
 
-export function PodporaSekcia({ onShare, upvotes = 0, onUpvote, onPodpor, onKanal, accent = "var(--a-info)", supLabel = "DROBNÁ PODPORA — klik a hneď odíde", reakcia = "palec", bezDaru = false }: { onShare?: () => void; upvotes?: number; onUpvote?: () => void; onPodpor: (a: number) => void; onKanal: (k: string) => void; accent?: string; supLabel?: ReactNode; reakcia?: "palec" | "srdce"; bezDaru?: boolean }) {
+export function PodporaSekcia({ onShare, upvotes = 0, onUpvote, onPodpor, onKanal, accent = "var(--a-info)", supLabel = "DROBNÁ PODPORA — klik a hneď odíde", reakcia = "palec", bezDaru = false, zbalene = false, komu, onDarEur }: { onShare?: () => void; upvotes?: number; onUpvote?: () => void; onPodpor: (a: number) => void; onKanal: (k: string) => void; accent?: string; supLabel?: ReactNode; reakcia?: "palec" | "srdce"; bezDaru?: boolean; zbalene?: boolean; komu?: ReactNode; onDarEur?: (suma: number) => void }) {
   // pasívny prispieva len v EUR; DEED (peňaženka) vyžaduje účet → výzva na registráciu
   const { mozeDeed } = usePouzivatel();
   const upgrade = useUpgrade();
@@ -272,10 +283,14 @@ export function PodporaSekcia({ onShare, upvotes = 0, onUpvote, onPodpor, onKana
     { v: 50, top: false },
     { v: 100, top: true }, // najčastejšia voľba — akcentové zvýraznenie namiesto ikonky
   ];
+  // charita + farnosť: dary v eurách a v krypte sú zbalené, otvárajú sa klikom na nadpis
+  const [otvEur, setOtvEur] = useState(false);
+  const [otvKrypto, setOtvKrypto] = useState(false);
+  const [rychlyEur, setRychlyEur] = useState<number | null>(null);
+  const rychleEur = [0.5, 1, 3]; // drobné — len SEPA (pevný poplatok karty by ich zožral)
   return (
     <div>
-      <PSLabel>ZADARMO</PSLabel>
-      <div style={{ display: "flex", gap: SPACE.sm }}>
+      <div style={{ display: "flex", gap: SPACE.sm, marginTop: SPACE.sm }}>
         <button onClick={onShare} style={{ ...psPill(false), color: C.text }}>
           <Zdielanie size={18} color={C.textSec} /> Zdieľať
         </button>
@@ -286,7 +301,51 @@ export function PodporaSekcia({ onShare, upvotes = 0, onUpvote, onPodpor, onKana
         </button>
       </div>
 
-      {bezDaru ? null : (<>
+      {bezDaru ? null : zbalene ? (<>
+        {/* DARY V EURÁCH — drobné sumy len SEPA, vlastná suma karta aj SEPA */}
+        <Rozbal otvorene={otvEur} onClick={() => setOtvEur((v) => !v)}>DARY V EURÁCH</Rozbal>
+        {otvEur && (<>
+          <div style={{ display: "flex", gap: SPACE.xs, alignItems: "stretch" }}>
+            {rychleEur.map((v) => (
+              <button key={v} onClick={() => setRychlyEur(v)} style={psSuma(false, accent)}>
+                <span style={{ fontSize: 17, fontWeight: 800, lineHeight: 1, fontVariantNumeric: "tabular-nums", color: C.text }}>
+                  {v.toLocaleString("sk", { minimumFractionDigits: v < 1 ? 2 : 0 })}<span style={{ fontSize: 10, fontWeight: 700, color: C.textTer, marginLeft: 3 }}>€</span>
+                </span>
+                <span style={{ fontSize: 10, fontWeight: 600, color: C.textTer, marginTop: 4 }}>SEPA</span>
+              </button>
+            ))}
+          </div>
+          <button onClick={() => onKanal("EUR")} style={{ ...psKanal, width: "100%", marginTop: SPACE.xs }}>
+            <span style={{ fontWeight: 800, fontSize: 14 }}>Vlastná suma v €</span>
+            <span style={{ fontSize: 11, color: C.textTer, marginLeft: 6 }}>karta · SEPA</span>
+          </button>
+        </>)}
+
+        {/* DARY V KRYPTE */}
+        <Rozbal otvorene={otvKrypto} onClick={() => setOtvKrypto((v) => !v)}>DARY V KRYPTE</Rozbal>
+        {otvKrypto && (<>
+          <div style={{ display: "flex", gap: SPACE.xs, alignItems: "stretch", paddingTop: 8 }}>
+            {fix.map((b) => (
+              <button key={b.v} onClick={deedAkcia(() => onPodpor(b.v))} style={psSuma(b.top, accent)}>
+                {b.top && <span style={psTag(accent)}>NAJČASTEJŠIE</span>}
+                <span style={{ fontSize: 17, fontWeight: 800, lineHeight: 1, fontVariantNumeric: "tabular-nums", color: b.top ? accent : C.text }}>
+                  {b.v}<span style={{ fontSize: 9, fontWeight: 700, color: C.textTer, marginLeft: 3, letterSpacing: ".04em" }}>DEED</span>
+                </span>
+                <span style={{ fontSize: 10, fontWeight: 600, color: C.textTer, marginTop: 4 }}>≈ {eurZaDeed(b.v)}</span>
+              </button>
+            ))}
+          </div>
+          <button onClick={deedAkcia(() => onKanal("DEED"))} style={{ ...psKanal, width: "100%", marginTop: SPACE.xs }}>
+            <span style={{ fontWeight: 800, fontSize: 14, color: accent }}>Vlastná suma v DEED</span>
+          </button>
+        </>)}
+
+        {rychlyEur != null && (
+          <PlatbaModal kanal="EUR" komu={komu} suma={rychlyEur} lenSepa
+            onClose={() => setRychlyEur(null)}
+            onDone={(sm) => { setRychlyEur(null); onDarEur?.(sm); }} />
+        )}
+      </>) : (<>
       <PSLabel>{supLabel}</PSLabel>
       <div style={{ display: "flex", gap: SPACE.xs, alignItems: "stretch", paddingTop: 8 }}>
         {fix.map((b) => (

@@ -243,7 +243,7 @@ function KampanSheet({ k, org, toast, onClose }: { k: OrgKampan; org: string; to
         <div style={{ fontSize: 11.5, color: C.textTer, marginBottom: SPACE.sm }}>{org}{k.lok ? ` · ${k.lok}` : ""}</div>
         <div style={{ fontSize: 13.5, lineHeight: 1.55, color: C.textSec, marginBottom: SPACE.sm }}>{k.popis}</div>
         <div style={{ marginBottom: SPACE.sm }}><ProgresBox suma={suma} ciel={k.ciel} ludia={ludia} /></div>
-        <PlatobnyModul
+        <PlatobnyModul zbalene
           onShare={() => void zdielaj({ titul: k.nazov, text: k.nazov, url: aktualnaUrl() }, toast ?? (() => {}))}
           upvotes={ludia} onUpvote={() => toast?.("❤")}
           onPodpor={(d: number) => podpor(d)}

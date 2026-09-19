@@ -235,7 +235,7 @@ export function FarskyProfil({ farnost, farar, jeDomovska, following, onToggleFo
             {/* farár si nedaruje sám — darovacie UI vidia len návštevníci */}
             {!farar ? (
               <div style={{ marginBottom: SPACE.sm }}>
-                <PlatobnyModul
+                <PlatobnyModul zbalene
                   onShare={() => setQr("zdielat")}
                   upvotes={ludia} onUpvote={() => toast("❤")} reakcia="srdce"
                   onPodpor={(s: number) => podpor(s, `Ďakujeme za ${s} DEED pre ${farnost.nazov}`)}

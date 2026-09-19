@@ -64,13 +64,13 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
   const badges = Object.fromEntries(taby.map((t) => [t.key, t.polozky.length])) as Record<string, number>;
 
   // ---- bloky obsahu (zdieľané mobil/desktop) ----
-  // centrálna zbierka organizácie (podpora pre seba) — charita ju má až v platenom programe od T2.
+  // centrálna zbierka organizácie (pre seba) — charita ju má od prvého plateného programu T1.
   // ZADARMO = len jedna aktívna zbierka PRE NIEKOHO, nie pre seba.
-  const podporaBlok = pozicia === "charita" && tier >= 2 && (
+  const podporaBlok = pozicia === "charita" && tier >= 1 && (
     <div style={{ marginBottom: SPACE.gutter }}>
-      <SekciaLabel>PODPORA ORGANIZÁCIE</SekciaLabel>
+      <SekciaLabel>CENTRÁLNA ZBIERKA ORGANIZÁCIE</SekciaLabel>
       <div style={{ marginBottom: SPACE.sm }}><ProgresBox suma={suma} ciel={12000} ludia={ludia} /></div>
-      <PlatobnyModul
+      <PlatobnyModul zbalene
         onShare={zdielajProfil}
         upvotes={ludia} onUpvote={() => toast("❤")}
         onPodpor={(d: number) => { setSuma((x) => x + d * 0.01); setLudia((l) => l + 1); toast(`Ďakujeme za ${d} DEED pre ${s.nazov}`); }}
@@ -187,7 +187,7 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
                 )}
                 <div style={{ marginBottom: SPACE.sm }}><ProgresBox suma={z.vyzbierane} ciel={z.ciel} ludia={z.darcovia} live={z.stav === "aktivna"} /></div>
                 {z.stav === "aktivna" ? (
-                  <PlatobnyModul
+                  <PlatobnyModul zbalene
                     onShare={zdielajProfil}
                     upvotes={z.darcovia} onUpvote={() => toast("❤")}
                     onPodpor={(d: number) => toast(`Ďakujeme za ${d} DEED pre ${z.komu}`)}
