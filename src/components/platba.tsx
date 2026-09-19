@@ -289,7 +289,7 @@ export function PodporaSekcia({ onShare, upvotes = 0, onUpvote, onPodpor, onKana
   const [otvKrypto, setOtvKrypto] = useState(false);
   const [rychlyEur, setRychlyEur] = useState<number | null>(null);
   const rychleEur = [1, 3, 5]; // drobné — len SEPA (pevný poplatok karty by ich zožral)
-  const odtienEur = [.10, .20, .32]; // jemná → silnejšia červená — suma graduje
+  const odtienEur = [0, .10, .20]; // 1 € sivá, 3 € jemná červená, 5 € silnejšia — suma graduje
   const rychleKrypto = [0.1, 0.5, 1]; // mikrodary v EURC
   return (
     <div>
@@ -311,7 +311,7 @@ export function PodporaSekcia({ onShare, upvotes = 0, onUpvote, onPodpor, onKana
           <div style={{ display: "flex", gap: SPACE.xs, alignItems: "stretch" }}>
             {rychleEur.map((v, i) => (
               <button key={v} onClick={() => setRychlyEur(v)}
-                style={{ ...psSuma(false, accent), background: tint("var(--a-danger)", odtienEur[i]), border: `1px solid ${tint("var(--a-danger)", odtienEur[i] + .18)}` }}>
+                style={odtienEur[i] ? { ...psSuma(false, accent), background: tint("var(--a-danger)", odtienEur[i]), border: `1px solid ${tint("var(--a-danger)", odtienEur[i] + .18)}` } : psSuma(false, accent)}>
                 <span style={{ fontSize: 18, fontWeight: 800, lineHeight: 1, fontVariantNumeric: "tabular-nums", color: C.text }}>
                   {v}<span style={{ fontSize: 11, fontWeight: 700, color: C.textSec, marginLeft: 3 }}>€</span>
                 </span>
