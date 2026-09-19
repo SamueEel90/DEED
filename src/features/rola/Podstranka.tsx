@@ -159,9 +159,28 @@ export function Podstranka({ pozicia, logo, toast, onBack }: {
                       style={{ textAlign: "center", fontSize: 13, fontWeight: 700, color: C.textSec, border: `1px solid ${C.line}`, borderRadius: RADIUS.sm, padding: `${SPACE.xs}px 0`, cursor: "pointer" }}>Zavrieť profil ▲</div>
                   </div>
                 )}
+                {/* split tvorcu — vizuálne, nič sa nečíta: kto si koľko necháva, koľko ide ďalej */}
                 {p.split != null && (
-                  <div style={{ fontSize: 12, color: "var(--a-gold)", background: tint("var(--a-gold)", .1), border: `1px solid ${tint("var(--a-gold)", .3)}`, borderRadius: RADIUS.sm, padding: SPACE.sm, marginBottom: SPACE.sm, lineHeight: 1.45 }}>
-                    Z každého honoráru posielam <b>{p.split} %</b> do tejto zbierky. Percento je zafixované — znížiť sa nedá.
+                  <div style={{ marginBottom: SPACE.sm }}>
+                    <SekciaLabel>{s.nazov.toUpperCase()} — ZVYŠOK</SekciaLabel>
+                    <div style={{ display: "flex", alignItems: "center", gap: SPACE.xs, background: tint("var(--a-green)", .06), border: `1px solid ${tint("var(--a-green)", .3)}`, borderRadius: RADIUS.sm, padding: `${SPACE.sm}px ${SPACE.gutter}px`, marginBottom: SPACE.sm }}>
+                      <span style={{ fontSize: 15 }}>🎬</span>
+                      <span style={{ flex: 1, minWidth: 0, fontSize: 13.5, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.nazov}</span>
+                      <span style={{ flex: "none", fontSize: 20, fontWeight: 800, color: "var(--a-green)" }}>{100 - p.split} %</span>
+                    </div>
+                    <SekciaLabel>IDE ĎALEJ — KOMU KOĽKO</SekciaLabel>
+                    <div style={{ background: C.surface2, border: `1px solid ${C.line}`, borderRadius: RADIUS.sm, padding: `${SPACE.sm}px ${SPACE.gutter}px` }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: SPACE.xs, marginBottom: SPACE.xs }}>
+                        <span style={{ fontSize: 14 }}>📌</span>
+                        <span style={{ flex: 1, minWidth: 0, fontSize: 13.5, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{z.komu}</span>
+                        <span style={{ flex: "none", fontSize: 9.5, fontWeight: 800, letterSpacing: ".04em", color: "var(--a-green)", background: tint("var(--a-green)", .14), borderRadius: RADIUS.pill, padding: `2px ${SPACE.xs}px` }}>TÁTO ZBIERKA</span>
+                        <span style={{ flex: "none", fontSize: 18, fontWeight: 800, color: "var(--a-green)" }}>{p.split} %</span>
+                      </div>
+                      <div style={{ position: "relative", height: 8, borderRadius: 4, background: "rgba(var(--glass-rgb),.12)" }}>
+                        <span style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: `${p.split}%`, borderRadius: 4, background: "var(--a-green)" }} />
+                        <span style={{ position: "absolute", top: "50%", left: `${p.split}%`, width: 14, height: 14, borderRadius: "50%", background: "var(--a-green)", border: "2px solid var(--c-bg)", transform: "translate(-50%, -50%)" }} />
+                      </div>
+                    </div>
                   </div>
                 )}
                 <div style={{ marginBottom: SPACE.sm }}><ProgresBox suma={z.vyzbierane} ciel={z.ciel} ludia={z.darcovia} live={z.stav === "aktivna"} /></div>
