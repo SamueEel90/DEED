@@ -142,6 +142,28 @@ export const ZBIERKY: Zbierka[] = [
     lok: "Nemšová", stav: "ukoncena",
     ziadatel: { meno: "Svetlo pomoci o.z.", typ: "org", overeny: true, level: "Gold", lok: "Trenčín", foto: U("photo-1518199266791-5375a83190b7"), onas: "Pomáhame rodinám v núdzi v Trenčianskom kraji. Každé euro dokladujeme.", vyzbierane: "24 600 €", skutky: "48", snami: "3 roky" },
   },
+  {
+    id: "z-skola",
+    nazov: "Školské potreby pre troch súrodencov",
+    komu: "Súrodenci Baloghovci, Dubnica",
+    popis: "Mama je na troch deťoch sama. Taška, zošity a prezuvky pre všetkých troch do septembra.",
+    foto: U("photo-1503676260728-1c00da094a0b"),
+    emoji: "🎒",
+    ciel: 450, vyzbierane: 180, darcovia: 17,
+    lok: "Dubnica nad Váhom", stav: "aktivna",
+    ziadatel: { meno: "Svetlo pomoci o.z.", typ: "org", overeny: true, level: "Gold", lok: "Trenčín", foto: U("photo-1518199266791-5375a83190b7"), onas: "Pomáhame rodinám v núdzi v Trenčianskom kraji. Každé euro dokladujeme.", vyzbierane: "24 600 €", skutky: "48", snami: "3 roky" },
+  },
+  {
+    id: "z-potraviny",
+    nazov: "Potravinové balíčky na zimu",
+    komu: "12 rodín v núdzi, Trenčiansky kraj",
+    popis: "Trvanlivé potraviny a hygiena pre dvanásť rodín, ktoré sme v zime prevzali do starostlivosti.",
+    foto: U("photo-1488521787991-ed7bbaae773c"),
+    emoji: "📦",
+    ciel: 1800, vyzbierane: 640, darcovia: 45,
+    lok: "Trenčiansky kraj", stav: "aktivna",
+    ziadatel: { meno: "Svetlo pomoci o.z.", typ: "org", overeny: true, level: "Gold", lok: "Trenčín", foto: U("photo-1518199266791-5375a83190b7"), onas: "Pomáhame rodinám v núdzi v Trenčianskom kraji. Každé euro dokladujeme.", vyzbierane: "24 600 €", skutky: "48", snami: "3 roky" },
+  },
 ];
 
 /** dolná hranica splitu tvorcu — pod 5 % sa reťaz nastaviť nedá. Hore strop nie je. */

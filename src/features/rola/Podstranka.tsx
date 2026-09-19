@@ -39,7 +39,11 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
   const [fotky] = useFotkyEntity(klucEntity("rola", pozicia)); // titulná fotka zo správy roly
   const coverSrc = fotky.cover ?? s.cover;
   // „Všetko" — virtuálny tab navrchu (pred Kampane/Skutky/Talent…): zoskupí položky zo všetkých sekcií
-  const taby = [{ key: "vsetko", label: "Všetko", polozky: s.taby.flatMap((t) => t.polozky) }, ...s.taby];
+  // verejný profil ukáže len to, čo má entita v aktuálnom programe (`odTieru`, bez neho = ZADARMO)
+  const mojeTaby = s.taby
+    .filter((t) => (t.odTieru ?? 0) <= tier)
+    .map((t) => ({ ...t, polozky: t.polozky.filter((p) => (p.odTieru ?? 0) <= tier) }));
+  const taby = [{ key: "vsetko", label: "Všetko", polozky: mojeTaby.flatMap((t) => t.polozky) }, ...mojeTaby];
   const [tab, setTab] = useState("vsetko");
   const [sledujem, setSledujem] = useState(false);
   const [onasViac, setOnasViac] = useState(false);

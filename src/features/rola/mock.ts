@@ -73,7 +73,7 @@ export interface SubjektMeta {
   /** taby verejného obsahu per rola (fixné poradie §3 bod 4).
    *  Položka viazaná na zbierku nesie `zbierkaId` — názov, fotka a suma sa ťahajú
    *  zo /lib/zbierky, takže na profile je to isté, čo v zbierke. */
-  taby: { key: string; label: string; polozky: { emoji: string; titul: string; popis: string; zbierkaId?: string; split?: number }[] }[];
+  taby: { key: string; label: string; odTieru?: Tier; polozky: { emoji: string; titul: string; popis: string; zbierkaId?: string; split?: number; odTieru?: Tier }[] }[];
 }
 
 export const SUBJEKTY: Record<Pozicia, SubjektMeta> = {
@@ -84,14 +84,21 @@ export const SUBJEKTY: Record<Pozicia, SubjektMeta> = {
     onas: "Občianske združenie Svetlo pomoci pomáha rodinám v núdzi v Trenčianskom kraji od roku 2014. Každé euro dokladujeme — transparentnosť per prípad je naša podstata.",
     kontakt: { adresa: "Mierové námestie 4, Trenčín", email: "info@svetlopomoci.sk", tel: "+421 901 234 567", web: "svetlopomoci.sk" },
     taby: [
-      // ZADARMO: jedna aktívna zbierka PRE NIEKOHO. Centrálna zbierka pre seba je od T2.
+      // `odTieru` = od ktorého programu sa to na verejnom profile ukáže (bez neho = ZADARMO).
+      // ZADARMO: jedna aktívna zbierka PRE NIEKOHO. T1: viac súbežných + centrálna. T2: akcie.
       { key: "zbierky", label: "Zbierky", polozky: [
         { emoji: "🧺", titul: "", popis: "", zbierkaId: "z-anna" },
+        { emoji: "🎒", titul: "", popis: "", zbierkaId: "z-skola", odTieru: 1 },
+        { emoji: "📦", titul: "", popis: "", zbierkaId: "z-potraviny", odTieru: 1 },
         { emoji: "🏠", titul: "", popis: "doložené faktúrami", zbierkaId: "z-horvathova" },
       ] },
       { key: "skutky", label: "Skutky", polozky: [
         { emoji: "🍲", titul: "120 teplých jedál", popis: "vydaných tento mesiac v teréne" },
         { emoji: "🏠", titul: "Rodina Horváthová má strechu", popis: "uzavretý prípad · takto sme pomohli" },
+      ] },
+      { key: "akcie", label: "Akcie", odTieru: 2, polozky: [
+        { emoji: "🏃", titul: "Beh pre Svetlo — benefičný beh", popis: "ne 12. 10. · Trenčín, Ostrov · 64 prihlásených" },
+        { emoji: "🍲", titul: "Varíme pre ulicu — dobrovoľníci", popis: "každý štvrtok · Mierové námestie" },
       ] },
     ],
   },
