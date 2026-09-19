@@ -7,6 +7,23 @@
 
 export type ZbierkaStav = "aktivna" | "ukoncena";
 
+/** Žiadateľ = kto zbiera. Kto pýta peniaze, má verejný profil — vždy sa dá overiť. */
+export interface Ziadatel {
+  meno: string;
+  typ: "osoba" | "org";
+  overeny: boolean;
+  /** štít hlavnej karmy — Bronze…Legend */
+  level: string;
+  lok: string;
+  foto: string;
+  /** krátko o sebe — 2–3 vety */
+  onas: string;
+  /** tri čísla ako na každom profile */
+  vyzbierane: string;
+  skutky: string;
+  snami: string;
+}
+
 export interface Zbierka {
   id: string;
   /** názov zbierky — jediný zdroj pre kartu, feed aj profil */
@@ -22,7 +39,10 @@ export interface Zbierka {
   darcovia: number;
   lok: string;
   stav: ZbierkaStav;
+  ziadatel: Ziadatel;
 }
+
+const AV = (n: number) => `https://i.pravatar.cc/200?img=${n}`;
 
 const U = (id: string) => `https://images.unsplash.com/${id}?w=1200&q=70&auto=format&fit=crop`;
 
@@ -36,6 +56,7 @@ export const ZBIERKY: Zbierka[] = [
     emoji: "🔥",
     ciel: 2200, vyzbierane: 1430, darcovia: 86,
     lok: "Trenčín · Zámostie", stav: "aktivna",
+    ziadatel: { meno: "Rodina Kováčová", typ: "osoba", overeny: true, level: "Silver", lok: "Trenčín · Zámostie", foto: AV(45), onas: "Mama dvoch detí, pracuje v miestnej škôlke. Dom vyhorel v noci 3. septembra, rodina býva dočasne u príbuzných.", vyzbierane: "1 430 €", skutky: "9", snami: "2 roky" },
   },
   {
     id: "z-motylik",
@@ -46,6 +67,7 @@ export const ZBIERKY: Zbierka[] = [
     emoji: "⭐",
     ciel: 4800, vyzbierane: 3120, darcovia: 214,
     lok: "Trenčín", stav: "aktivna",
+    ziadatel: { meno: "OZ Motýlik", typ: "org", overeny: true, level: "Gold", lok: "Trenčín", foto: U("photo-1488521787991-ed7bbaae773c"), onas: "Pomáhame rodinám detí so zdravotným znevýhodnením. Rehabilitácie, pomôcky, sprevádzanie.", vyzbierane: "31 200 €", skutky: "71", snami: "3 roky" },
   },
   {
     id: "z-hospic",
@@ -56,6 +78,7 @@ export const ZBIERKY: Zbierka[] = [
     emoji: "🕊",
     ciel: 6000, vyzbierane: 2380, darcovia: 133,
     lok: "Trenčín · centrum", stav: "aktivna",
+    ziadatel: { meno: "Hospic Pod Brezinou", typ: "org", overeny: true, level: "Gold", lok: "Trenčín · centrum", foto: U("photo-1576765608535-5f04d1e3f289"), onas: "Paliatívna starostlivosť pre ľudí na konci života a podpora ich rodín.", vyzbierane: "64 300 €", skutky: "176", snami: "5 rokov" },
   },
   {
     id: "z-labka",
@@ -66,6 +89,7 @@ export const ZBIERKY: Zbierka[] = [
     emoji: "🐾",
     ciel: 1200, vyzbierane: 540, darcovia: 61,
     lok: "Trenčín · okraj", stav: "aktivna",
+    ziadatel: { meno: "OZ Túlavá labka", typ: "org", overeny: true, level: "Silver", lok: "Trenčín · okraj", foto: U("photo-1543466835-00a7907e9de1"), onas: "Útulok pre opustené psy a mačky. Kastrácie, adopcie, dočasky.", vyzbierane: "6 850 €", skutky: "31", snami: "2 roky" },
   },
   {
     id: "z-hospic-auto",
@@ -76,6 +100,7 @@ export const ZBIERKY: Zbierka[] = [
     emoji: "🚗",
     ciel: 12000, vyzbierane: 8600, darcovia: 214,
     lok: "Trenčianský kraj", stav: "aktivna",
+    ziadatel: { meno: "Svetlo pomoci o.z.", typ: "org", overeny: true, level: "Gold", lok: "Trenčín", foto: U("photo-1518199266791-5375a83190b7"), onas: "Pomáhame rodinám v núdzi v Trenčianskom kraji. Každé euro dokladujeme.", vyzbierane: "24 600 €", skutky: "48", snami: "3 roky" },
   },
   {
     id: "z-noclaharen",
@@ -86,6 +111,7 @@ export const ZBIERKY: Zbierka[] = [
     emoji: "🛏",
     ciel: 4000, vyzbierane: 4000, darcovia: 178,
     lok: "Trenčín · centrum", stav: "ukoncena",
+    ziadatel: { meno: "OZ Otvorené dvere Trenčín", typ: "org", overeny: true, level: "Silver", lok: "Trenčín · centrum", foto: U("photo-1509099836639-18ba1795216d"), onas: "Nízkoprahová jedáleň a zimná nocľaháreň pre ľudí bez domova.", vyzbierane: "18 400 €", skutky: "64", snami: "4 roky" },
   },
 ];
 

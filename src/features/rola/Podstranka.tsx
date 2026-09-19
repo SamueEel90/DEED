@@ -3,7 +3,7 @@ import { C, SPACE, RADIUS, SIRKA } from "@/theme";
 import {
   BackHeader, PlatobnyModul, PlatbaModal, ProgresBox, QrModal, Stit, naStitLevel, tint,
   Zdielanie, Zvon, Srdce, useLayout, obalSiroky,
-  EntityHero, BtnAkcia, BtnIkonka, KontextMenu, TabyProfil, MenuSkupina, KontaktPolozka, DvaStlpce,
+  EntityHero, BtnAkcia, BtnIkonka, KontextMenu, TabyProfil, MenuSkupina, KontaktPolozka, DvaStlpce, StatRad,
   IkonaMoznosti, IkonaQr, IkonaVlajka, IkonaPin, IkonaObalka, IkonaOdkaz,
 } from "@/shared";
 import { pressable } from "@/components/pressable";
@@ -44,6 +44,7 @@ export function Podstranka({ pozicia, logo, toast, onBack }: {
   const [sledujem, setSledujem] = useState(false);
   const [onasViac, setOnasViac] = useState(false);
   const [rozbalena, setRozbalena] = useState<string | null>(null);
+  const [profilZiad, setProfilZiad] = useState<string | null>(null);
   const [zvoncek, setZvoncek] = useState(false);
   const [qr, setQr] = useState(false);
   const [menu, setMenu] = useState(false);
@@ -117,10 +118,47 @@ export function Podstranka({ pozicia, logo, toast, onBack }: {
             {/* rozbalená zbierka — celá tu, profil ostáva pod ňou; druhý klik zbalí */}
             {otvorena && z && (
               <div style={{ padding: `0 ${SPACE.sm}px ${SPACE.sm}px` }}>
+                {/* fotka menšia (21:9) — hlavná je správa, nie obrázok */}
                 <div style={{ borderRadius: RADIUS.sm, overflow: "hidden", marginBottom: SPACE.sm }}>
-                  <img src={z.foto} alt="" style={{ width: "100%", aspectRatio: "16/9", objectFit: "cover", display: "block" }} />
+                  <img src={z.foto} alt="" style={{ width: "100%", aspectRatio: "21/9", objectFit: "cover", display: "block" }} />
                 </div>
-                <div style={{ fontSize: 12.5, color: C.textSec, lineHeight: 1.5, marginBottom: SPACE.sm }}>{z.popis}</div>
+                <div style={{ fontSize: 15, fontWeight: 600, color: C.text, lineHeight: 1.5, marginBottom: SPACE.sm }}>{z.popis}</div>
+
+                {/* žiadateľ — kto zbiera. Klik otvorí jeho profil NAD platbou: nič nezakryje, len odsunie nižšie */}
+                <div {...pressable(() => setProfilZiad(profilZiad === z.id ? null : z.id), `Profil — ${z.ziadatel.meno}`)}
+                  style={{ display: "flex", alignItems: "center", gap: SPACE.sm, background: C.surface2, border: `1px solid ${profilZiad === z.id ? tint("var(--a-info)", .4) : C.line}`, borderRadius: RADIUS.sm, padding: SPACE.sm, marginBottom: SPACE.sm, cursor: "pointer" }}>
+                  <img src={z.ziadatel.foto} alt="" style={{ width: 40, height: 40, borderRadius: z.ziadatel.typ === "org" ? RADIUS.xs : "50%", objectFit: "cover", flex: "none" }} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: ".04em", color: C.textTer }}>ŽIADATEĽ</div>
+                    <div style={{ fontSize: 14, fontWeight: 700, display: "flex", alignItems: "center", gap: 5 }}>
+                      <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{z.ziadatel.meno}</span>
+                      {z.ziadatel.overeny && <span style={{ color: "var(--a-info)", fontSize: 13 }}>✓</span>}
+                    </div>
+                  </div>
+                  <Stit level={naStitLevel(z.ziadatel.level)} size={30} />
+                  <span style={{ flex: "none", fontSize: 12, fontWeight: 700, color: "var(--a-info)" }}>{profilZiad === z.id ? "Zavrieť" : "Profil"}</span>
+                </div>
+
+                {profilZiad === z.id && (
+                  <div style={{ background: C.surface2, border: `1px solid ${tint("var(--a-info)", .3)}`, borderRadius: RADIUS.sm, padding: SPACE.sm, marginBottom: SPACE.sm }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm, marginBottom: SPACE.sm }}>
+                      <img src={z.ziadatel.foto} alt="" style={{ width: 56, height: 56, borderRadius: z.ziadatel.typ === "org" ? RADIUS.sm : "50%", objectFit: "cover", flex: "none" }} />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 16, fontWeight: 800 }}>{z.ziadatel.meno} {z.ziadatel.overeny && <span style={{ color: "var(--a-info)", fontSize: 14 }}>✓</span>}</div>
+                        <div style={{ fontSize: 12, color: C.textTer, marginTop: 2 }}>{z.ziadatel.lok} · {z.ziadatel.typ === "org" ? "organizácia" : "overená osoba"}</div>
+                      </div>
+                      <Stit level={naStitLevel(z.ziadatel.level)} size={52} detail subjekt={z.ziadatel.meno} />
+                    </div>
+                    <div style={{ fontSize: 13.5, color: C.textSec, lineHeight: 1.5, marginBottom: SPACE.sm }}>{z.ziadatel.onas}</div>
+                    <div style={{ marginBottom: SPACE.sm }}><StatRad kompakt stats={[
+                      { hodnota: z.ziadatel.vyzbierane, label: "Vyzbierané" },
+                      { hodnota: z.ziadatel.skutky, label: "Skutky" },
+                      { hodnota: z.ziadatel.snami, label: "S nami" },
+                    ]} /></div>
+                    <div {...pressable(() => setProfilZiad(null), "Zavrieť profil")}
+                      style={{ textAlign: "center", fontSize: 13, fontWeight: 700, color: C.textSec, border: `1px solid ${C.line}`, borderRadius: RADIUS.sm, padding: `${SPACE.xs}px 0`, cursor: "pointer" }}>Zavrieť profil ▲</div>
+                  </div>
+                )}
                 {p.split != null && (
                   <div style={{ fontSize: 12, color: "var(--a-gold)", background: tint("var(--a-gold)", .1), border: `1px solid ${tint("var(--a-gold)", .3)}`, borderRadius: RADIUS.sm, padding: SPACE.sm, marginBottom: SPACE.sm, lineHeight: 1.45 }}>
                     Z každého honoráru posielam <b>{p.split} %</b> do tejto zbierky. Percento je zafixované — znížiť sa nedá.
@@ -137,8 +175,8 @@ export function Podstranka({ pozicia, logo, toast, onBack }: {
                 ) : (
                   <div style={{ fontSize: 12, color: C.textTer, textAlign: "center", padding: SPACE.sm }}>Zbierka je ukončená — cieľ sa podarilo vyzbierať.</div>
                 )}
-                <div {...pressable(() => setRozbalena(null), "Zbaliť")}
-                  style={{ textAlign: "center", fontSize: 12.5, fontWeight: 700, color: C.textTer, padding: `${SPACE.sm}px 0 0`, cursor: "pointer" }}>Zbaliť ▲</div>
+                <div {...pressable(() => { setRozbalena(null); setProfilZiad(null); }, "Zmenšiť")}
+                  style={{ textAlign: "center", fontSize: 12.5, fontWeight: 700, color: C.textTer, padding: `${SPACE.sm}px 0 0`, cursor: "pointer" }}>Zmenšiť ▲</div>
               </div>
             )}
           </div>
