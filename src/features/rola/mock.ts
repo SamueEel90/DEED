@@ -91,7 +91,6 @@ export const SUBJEKTY: Record<Pozicia, SubjektMeta> = {
         { emoji: "🧺", titul: "", popis: "", zbierkaId: "z-anna" },
         { emoji: "🎒", titul: "", popis: "", zbierkaId: "z-skola", odTieru: 1 },
         { emoji: "📦", titul: "", popis: "", zbierkaId: "z-potraviny", odTieru: 1 },
-        { emoji: "🏠", titul: "", popis: "doložené faktúrami", zbierkaId: "z-horvathova" },
       ] },
       { key: "skutky", label: "Skutky", polozky: [
         { emoji: "🍲", titul: "120 teplých jedál", popis: "vydaných tento mesiac v teréne", dokaz: {
@@ -105,7 +104,8 @@ export const SUBJEKTY: Record<Pozicia, SubjektMeta> = {
             { druh: "Faktúra", nazov: "Jednorazové obaly a príbory", dodavatel: "Obaly Slovakia s.r.o.", cislo: "FA 26-0931", datum: "3. 9. 2026", suma: 74.9 },
           ],
         } },
-        { emoji: "🏠", titul: "Rodina Horváthová má strechu", popis: "uzavretý prípad · takto sme pomohli", dokazZbierky: "z-horvathova" },
+        // ukončená a doložená zbierka = jeden skutok (žiadna duplicita so Zbierkami)
+        { emoji: "🏠", titul: "", popis: "doložené faktúrami", zbierkaId: "z-horvathova" },
       ] },
       { key: "akcie", label: "Akcie", odTieru: 2, polozky: [
         { emoji: "🏃", titul: "Beh pre Svetlo — benefičný beh", popis: "ne 12. 10. · Trenčín, Ostrov · 64 prihlásených" },

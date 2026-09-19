@@ -101,9 +101,16 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
   const coverSrc = fotky.cover ?? s.cover;
   // „Všetko" — virtuálny tab navrchu (pred Kampane/Skutky/Talent…): zoskupí položky zo všetkých sekcií
   // verejný profil ukáže len to, čo má entita v aktuálnom programe (`odTieru`, bez neho = ZADARMO)
+  // Zbierky = len aktívne. Ukončená zbierka sa presunie do Skutkov ako jedna karta s dôkazom.
+  const ukoncena = (p: { zbierkaId?: string }) => !!p.zbierkaId && najdiZbierku(p.zbierkaId)?.stav === "ukoncena";
+  const presunute = s.taby.find((t) => t.key === "zbierky")?.polozky.filter(ukoncena) ?? [];
   const mojeTaby = s.taby
     .filter((t) => (t.odTieru ?? 0) <= tier)
-    .map((t) => ({ ...t, polozky: t.polozky.filter((p) => (p.odTieru ?? 0) <= tier) }));
+    .map((t) => ({ ...t, polozky: (
+      t.key === "zbierky" ? t.polozky.filter((p) => !ukoncena(p))
+      : t.key === "skutky" ? [...presunute, ...t.polozky]
+      : t.polozky
+    ).filter((p) => (p.odTieru ?? 0) <= tier) }));
   const taby = [{ key: "vsetko", label: "Všetko", polozky: mojeTaby.flatMap((t) => t.polozky) }, ...mojeTaby];
   const [tab, setTab] = useState("vsetko");
   const [sledujem, setSledujem] = useState(false);
