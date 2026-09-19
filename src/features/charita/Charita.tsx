@@ -415,10 +415,10 @@ function CharitaDetail({ z: zProp, toast, onBack, onAutor }: { z?: ZbierkaDetail
     toast(text);
   }
   function platbaHotova(s: number, volba?: VolbaDaru) {
-    setSuma((x) => x + s * (platba === "EUR" ? 1 : 0.01));
+    setSuma((x) => x + s * (platba === "DEED" ? 0.01 : 1));
     setLudia((l) => l + 1);
-    pridajDar({ refId: darRef, suma: s * (platba === "EUR" ? 1 : 0.01), kanal: platba === "EUR" ? "psp" : "deed", registrovany: ja.typ !== "pasivny", volba });
-    toast(`Odoslané ${platba === "EUR" ? s + " €" : s + " DEED"} · ${z.nazov}`);
+    pridajDar({ refId: darRef, suma: s * (platba === "DEED" ? 0.01 : 1), kanal: platba === "EUR" ? "psp" : "deed", registrovany: ja.typ !== "pasivny", volba });
+    toast(`Odoslané ${platba === "EUR" ? s + " €" : platba === "EURC" ? s + " EURC" : s + " DEED"} · ${z.nazov}`);
   }
 
   // hero foto — LEN ak prípad má fotku (bez placeholdera; inak čisto textový detail)

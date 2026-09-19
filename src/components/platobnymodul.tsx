@@ -96,6 +96,7 @@ export function PlatobnyModul({
         onShare={onShare} upvotes={upvotes} onUpvote={onUpvote} reakcia={reakcia}
         onPodpor={onPodpor} onKanal={onKanal} accent={accent} bezDaru={bezDaru}
         zbalene={zbalene} komu={komu} onDarEur={onDarEur ?? ((sm) => toast?.(`Ďakujeme za dar ${sm.toLocaleString("sk")} €`))}
+        onDarKrypto={(v) => toast?.(`Ďakujeme za dar ${v.toLocaleString("sk", { minimumFractionDigits: 2 })} EURC`)}
         {...(supLabel ? { supLabel } : {})} />
 
       {/* 4. Obľúbené + Podporiť DEED — rovnaká výška oboch tlačidiel */}

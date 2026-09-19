@@ -68,7 +68,7 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
   // ZADARMO = len jedna aktívna zbierka PRE NIEKOHO, nie pre seba.
   const podporaBlok = pozicia === "charita" && tier >= 1 && (
     <div style={{ marginBottom: SPACE.gutter }}>
-      <SekciaLabel>CENTRÁLNA ZBIERKA ORGANIZÁCIE</SekciaLabel>
+      <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".05em", color: C.textTer, marginBottom: SPACE.xs }}>CENTRÁLNA ZBIERKA ORGANIZÁCIE</div>
       <div style={{ marginBottom: SPACE.sm }}><ProgresBox suma={suma} ciel={12000} ludia={ludia} /></div>
       <PlatobnyModul zbalene
         onShare={zdielajProfil}
@@ -76,7 +76,7 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
         onPodpor={(d: number) => { setSuma((x) => x + d * 0.01); setLudia((l) => l + 1); toast(`Ďakujeme za ${d} DEED pre ${s.nazov}`); }}
         onKanal={(k: string) => setPlatba(k as Kanal)}
         oblubene={{ refId: `rola-${s.nazov}`, typ: pozicia, modul: "charity", nazov: s.nazov, lok: s.lok }} toast={toast}
-        qr={{ label: "QR tohto profilu", popis: "QR aj embed odznak na vlastný web", onClick: () => setQr(true) }} />
+        qr={{ label: "QR tejto zbierky", popis: "Sken → dar za 2 kliky · zdieľanie", onClick: () => setQr(true) }} />
     </div>
   );
 
@@ -298,7 +298,7 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
       )}
       {nahlasit && <NahlasitSheet co={`Profil · ${s.nazov}`} refId={`rola-${pozicia}`} modul="rola" onClose={() => setNahlasit(false)} toast={toast} />}
       {platba && <PlatbaModal kanal={platba} komu={s.nazov} onClose={() => setPlatba(null)}
-        onDone={(d: number) => { setSuma((x) => x + d * (platba === "EUR" ? 1 : 0.01)); setLudia((l) => l + 1); toast(`Odoslané ${platba === "EUR" ? d + " €" : d + " DEED"} · ${s.nazov}`); }} />}
+        onDone={(d: number) => { setSuma((x) => x + d * (platba === "DEED" ? 0.01 : 1)); setLudia((l) => l + 1); toast(`Odoslané ${platba === "EUR" ? d + " €" : platba === "EURC" ? d + " EURC" : d + " DEED"} · ${s.nazov}`); }} />}
       {qr && <QrModal typ="skutok" titul={`QR — ${s.nazov}`} popis="Profil subjektu — QR aj embed odznak na vlastný web"
         odkaz={qrUrl("handle", s.nazov.toLowerCase().replace(/[^a-z0-9]+/g, "-"))} onClose={() => setQr(false)} toast={toast} />}
     </div>

@@ -31,6 +31,7 @@ function DarPreNas({ on, label, onToggle }: { on: boolean; label: string; onTogg
 }
 export function PlatbaModal({ kanal, komu, suma: sumaInit, lenSepa = false, onClose, onDone }: { kanal?: string; komu?: ReactNode; suma?: number; lenSepa?: boolean; onClose?: () => void; onDone?: (suma: number, volba?: VolbaDaru) => void }) {
   const jeEur = kanal === "EUR";
+  const jed = kanal === "EURC" ? "EURC" : "DEED"; // krypto jednotka: EURC pri charite a Viere, inak DEED
   const [krok, setKrok] = useState("suma"); // suma | metoda | detaily | spracovanie | hotovo
   // zoznam darcov: voľba identity per dar — posledná voľba je predvoľba (spec §2)
   const [volba, setVolba] = useState<VolbaDaru>(nacitajPredvolbu);
@@ -49,7 +50,7 @@ export function PlatbaModal({ kanal, komu, suma: sumaInit, lenSepa = false, onCl
   const tipAplik = tip ? tipSuma : 0;
   const spolu = Math.round((sumaNum + poplatok + tipAplik) * 100) / 100;
   const malo = !jeEur && spolu > PLATBA_ZOSTATOK;
-  const tipLabel = jeEur ? `${tipSuma.toFixed(2)} €` : `${tipSuma.toLocaleString("sk")} DEED`;
+  const tipLabel = jeEur ? `${tipSuma.toFixed(2)} €` : `${tipSuma.toLocaleString("sk")} ${jed}`;
 
   const inpS: CSSProperties = { width: "100%", padding: `${SPACE.sm}px ${SPACE.sm}px`, borderRadius: RADIUS.sm, background: "rgba(var(--glass-rgb),.06)", border: `1px solid ${C.line}`, color: C.text, fontSize: 16, outline: "none", fontFamily: "inherit" };
   const btnP = (ok: boolean, grad = GRAD): CSSProperties => ({ width: "100%", padding: `${SPACE.sm}px 0`, borderRadius: RADIUS.md, border: "none", fontWeight: 700, fontSize: 15, cursor: ok ? "pointer" : "not-allowed", fontFamily: "inherit", background: ok ? grad : "rgba(var(--glass-rgb),.06)", color: ok ? "#fff" : C.textTer, boxShadow: ok ? "0 8px 26px color-mix(in srgb, var(--a-green) 32%, transparent)" : "none", marginTop: SPACE.gutter });
@@ -103,7 +104,7 @@ export function PlatbaModal({ kanal, komu, suma: sumaInit, lenSepa = false, onCl
         <span style={{ width: 38, height: 38, borderRadius: RADIUS.sm, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", background: jeEur ? "color-mix(in srgb, var(--a-info) 14%, transparent)" : "color-mix(in srgb, var(--a-teal) 14%, transparent)", color: jeEur ? C.blueL : C.teal, fontWeight: 800, fontSize: 14 }}>{jeEur ? "€" : "D⁺"}</span>
         <div style={{ minWidth: 0 }}>
           <div style={{ fontSize: 15, fontWeight: 800 }}>{jeEur ? "Platba v eurách" : "Platba z peňaženky"}</div>
-          <div style={{ fontSize: 11.5, color: C.textTer, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{jeEur ? (jeSepa ? "EUR · SEPA prevod" : "EUR · karta / prevod") : "DEED · wallet → wallet"}{komu ? ` · pre ${komu}` : ""}</div>
+          <div style={{ fontSize: 11.5, color: C.textTer, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{jeEur ? (jeSepa ? "EUR · SEPA prevod" : "EUR · karta / prevod") : `${jed} · wallet → wallet`}{komu ? ` · pre ${komu}` : ""}</div>
         </div>
       </div>
 
@@ -111,7 +112,7 @@ export function PlatbaModal({ kanal, komu, suma: sumaInit, lenSepa = false, onCl
         {/* veľký, vždy viditeľný display sumy — žiadna systémová klávesnica (na mobile neprekrýva sheet) */}
         <div style={{ display: "flex", alignItems: "baseline", justifyContent: "center", gap: SPACE.xs, padding: `${SPACE.xs}px 0 ${SPACE.gutter}px`, minHeight: 50 }}>
           <span style={{ fontSize: 40, fontWeight: 800, lineHeight: 1, letterSpacing: ".5px", color: suma ? C.text : C.textTer }}>{suma || "0"}</span>
-          <span style={{ fontSize: 18, fontWeight: 800, color: C.textTer }}>{jeEur ? "€" : "DEED"}</span>
+          <span style={{ fontSize: 18, fontWeight: 800, color: C.textTer }}>{jeEur ? "€" : jed}</span>
         </div>
         <div style={{ display: "flex", gap: SPACE.xs, marginBottom: SPACE.sm }}>
           {chips.map((c) => <button key={c} onClick={() => setSuma(String(c))} style={{ flex: 1, padding: `${SPACE.xs}px 0`, borderRadius: RADIUS.sm, border: `1px solid ${sumaNum === c ? C.green : C.line}`, background: sumaNum === c ? tint(C.green, .1) : "rgba(var(--glass-rgb),.05)", color: sumaNum === c ? C.green : C.text, fontWeight: 700, fontSize: 13, cursor: "pointer", fontFamily: "inherit" }}>{c}</button>)}
@@ -122,8 +123,8 @@ export function PlatbaModal({ kanal, komu, suma: sumaInit, lenSepa = false, onCl
             <button key={i} disabled={!kk} onClick={() => stlac(kk)} style={{ height: 50, borderRadius: RADIUS.sm, border: `1px solid ${kk ? C.line : "transparent"}`, background: kk ? C.surface2 : "transparent", color: C.text, fontSize: kk === "⌫" ? 19 : 22, fontWeight: 700, cursor: kk ? "pointer" : "default", fontFamily: "inherit", userSelect: "none" }}>{kk}</button>
           ))}
         </div>
-        {!jeEur && <div style={{ fontSize: 11.5, color: C.textTer, marginTop: SPACE.sm }}>Zostatok v peňaženke: <b style={{ color: C.text }}>{PLATBA_ZOSTATOK.toLocaleString("sk")} DEED</b></div>}
-        {malo && <div style={{ fontSize: 12, color: C.red, marginTop: SPACE.xs }}>Nedostatok DEED v peňaženke.</div>}
+        {!jeEur && <div style={{ fontSize: 11.5, color: C.textTer, marginTop: SPACE.sm }}>Zostatok v peňaženke: <b style={{ color: C.text }}>{PLATBA_ZOSTATOK.toLocaleString("sk")} {jed}</b></div>}
+        {malo && <div style={{ fontSize: 12, color: C.red, marginTop: SPACE.xs }}>Nedostatok {jed} v peňaženke.</div>}
         <button disabled={sumaNum <= 0 || malo} onClick={() => setKrok(jeEur && !lenSepa ? "metoda" : "detaily")} style={btnP(sumaNum > 0 && !malo)}>Pokračovať</button>
       </>)}
 
@@ -184,10 +185,10 @@ export function PlatbaModal({ kanal, komu, suma: sumaInit, lenSepa = false, onCl
 
       {krok === "detaily" && !jeEur && (<>
         <div style={{ background: "rgba(var(--glass-rgb),.05)", border: `1px solid ${C.line}`, borderRadius: RADIUS.sm, padding: `${SPACE.xxs}px ${SPACE.sm}px ${SPACE.xs}px` }}>
-          <Riadok k="Suma" v={`${sumaNum.toLocaleString("sk")} DEED`} />
-          <Riadok k="Poplatok" v="0 DEED" accent={C.green} />
-          {tipAplik > 0 && <Riadok k="Dar pre nás (chod DEED)" v={`${tipSuma.toLocaleString("sk")} DEED`} accent={C.green} />}
-          <div style={{ display: "flex", justifyContent: "space-between", paddingTop: SPACE.xs, fontSize: 13.5, fontWeight: 700 }}><span>Zostatok po platbe</span><span>{(PLATBA_ZOSTATOK - spolu).toLocaleString("sk")} DEED</span></div>
+          <Riadok k="Suma" v={`${sumaNum.toLocaleString("sk")} ${jed}`} />
+          <Riadok k="Poplatok" v={`0 ${jed}`} accent={C.green} />
+          {tipAplik > 0 && <Riadok k="Dar pre nás (chod DEED)" v={`${tipSuma.toLocaleString("sk")} ${jed}`} accent={C.green} />}
+          <div style={{ display: "flex", justifyContent: "space-between", paddingTop: SPACE.xs, fontSize: 13.5, fontWeight: 700 }}><span>Zostatok po platbe</span><span>{(PLATBA_ZOSTATOK - spolu).toLocaleString("sk")} {jed}</span></div>
         </div>
         {tipSuma > 0 && <DarPreNas on={tip} label={tipLabel} onToggle={() => setTip((v) => !v)} />}
         <div style={{ display: "flex", alignItems: "center", gap: SPACE.xs, fontSize: 11, color: C.textTer, marginTop: SPACE.sm, lineHeight: 1.4 }}><IkonaStit size={13} color={C.teal} /> Wallet → wallet · okamžite · podpis na chaine</div>
@@ -206,10 +207,10 @@ export function PlatbaModal({ kanal, komu, suma: sumaInit, lenSepa = false, onCl
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: SPACE.xs, padding: `${SPACE.xxs}px 0 ${SPACE.gutter}px` }}>
           <div style={{ width: 54, height: 54, borderRadius: RADIUS.round, background: "rgba(46,200,140,.16)", display: "flex", alignItems: "center", justifyContent: "center" }}><IkonaFajka size={28} color="var(--a-green)" /></div>
           <div style={{ fontSize: 17, fontWeight: 800 }}>{jeSepa ? "Prevod odoslaný" : "Platba úspešná"}</div>
-          <div style={{ fontSize: 12.5, color: C.textSec }}>{jeEur ? `${spolu.toFixed(2)} €` : `${spolu.toLocaleString("sk")} DEED`}{komu ? ` → ${komu}` : ""}</div>
+          <div style={{ fontSize: 12.5, color: C.textSec }}>{jeEur ? `${spolu.toFixed(2)} €` : `${spolu.toLocaleString("sk")} ${jed}`}{komu ? ` → ${komu}` : ""}</div>
         </div>
         <div style={{ background: "rgba(var(--glass-rgb),.05)", border: `1px solid ${C.line}`, borderRadius: RADIUS.sm, padding: `${SPACE.xxs}px ${SPACE.sm}px ${SPACE.xs}px` }}>
-          <Riadok k="Kanál" v={jeEur ? (jeSepa ? "SEPA prevod (EUR)" : "Karta (EUR)") : "Peňaženka (DEED)"} />
+          <Riadok k="Kanál" v={jeEur ? (jeSepa ? "SEPA prevod (EUR)" : "Karta (EUR)") : `Peňaženka (${jed})`} />
           {jeEur && <Riadok k="Poplatok" v={`${poplatok.toFixed(2)} €`} />}
           {tipAplik > 0 && <Riadok k="Dar pre nás (chod DEED)" v={tipLabel} accent={C.green} />}
           <Riadok k={jeSepa ? "Referencia prevodu" : "ID transakcie"} v={res.id} />
@@ -269,7 +270,7 @@ const psKanal: CSSProperties = {
   cursor: "pointer", fontFamily: "inherit", background: C.surface2, border: `1px solid ${C.line}`, color: C.text,
 };
 
-export function PodporaSekcia({ onShare, upvotes = 0, onUpvote, onPodpor, onKanal, accent = "var(--a-info)", supLabel = "DROBNÁ PODPORA — klik a hneď odíde", reakcia = "palec", bezDaru = false, zbalene = false, komu, onDarEur }: { onShare?: () => void; upvotes?: number; onUpvote?: () => void; onPodpor: (a: number) => void; onKanal: (k: string) => void; accent?: string; supLabel?: ReactNode; reakcia?: "palec" | "srdce"; bezDaru?: boolean; zbalene?: boolean; komu?: ReactNode; onDarEur?: (suma: number) => void }) {
+export function PodporaSekcia({ onShare, upvotes = 0, onUpvote, onPodpor, onKanal, accent = "var(--a-info)", supLabel = "DROBNÁ PODPORA — klik a hneď odíde", reakcia = "palec", bezDaru = false, zbalene = false, komu, onDarEur, onDarKrypto }: { onShare?: () => void; upvotes?: number; onUpvote?: () => void; onPodpor: (a: number) => void; onKanal: (k: string) => void; accent?: string; supLabel?: ReactNode; reakcia?: "palec" | "srdce"; bezDaru?: boolean; zbalene?: boolean; komu?: ReactNode; onDarEur?: (suma: number) => void; onDarKrypto?: (eurc: number) => void }) {
   // pasívny prispieva len v EUR; DEED (peňaženka) vyžaduje účet → výzva na registráciu
   const { mozeDeed } = usePouzivatel();
   const upgrade = useUpgrade();
@@ -284,10 +285,12 @@ export function PodporaSekcia({ onShare, upvotes = 0, onUpvote, onPodpor, onKana
     { v: 100, top: true }, // najčastejšia voľba — akcentové zvýraznenie namiesto ikonky
   ];
   // charita + farnosť: dary v eurách a v krypte sú zbalené, otvárajú sa klikom na nadpis
-  const [otvEur, setOtvEur] = useState(false);
+  const [otvEur, setOtvEur] = useState(true); // eurá otvorené hneď
   const [otvKrypto, setOtvKrypto] = useState(false);
   const [rychlyEur, setRychlyEur] = useState<number | null>(null);
-  const rychleEur = [0.5, 1, 3]; // drobné — len SEPA (pevný poplatok karty by ich zožral)
+  const rychleEur = [1, 3, 5]; // drobné — len SEPA (pevný poplatok karty by ich zožral)
+  const odtienEur = [.10, .20, .32]; // jemná → silnejšia červená — suma graduje
+  const rychleKrypto = [0.1, 0.5, 1]; // mikrodary v EURC
   return (
     <div>
       <div style={{ display: "flex", gap: SPACE.sm, marginTop: SPACE.sm }}>
@@ -306,10 +309,11 @@ export function PodporaSekcia({ onShare, upvotes = 0, onUpvote, onPodpor, onKana
         <Rozbal otvorene={otvEur} onClick={() => setOtvEur((v) => !v)}>DARY V EURÁCH</Rozbal>
         {otvEur && (<>
           <div style={{ display: "flex", gap: SPACE.xs, alignItems: "stretch" }}>
-            {rychleEur.map((v) => (
-              <button key={v} onClick={() => setRychlyEur(v)} style={psSuma(false, accent)}>
-                <span style={{ fontSize: 17, fontWeight: 800, lineHeight: 1, fontVariantNumeric: "tabular-nums", color: C.text }}>
-                  {v.toLocaleString("sk", { minimumFractionDigits: v < 1 ? 2 : 0 })}<span style={{ fontSize: 10, fontWeight: 700, color: C.textTer, marginLeft: 3 }}>€</span>
+            {rychleEur.map((v, i) => (
+              <button key={v} onClick={() => setRychlyEur(v)}
+                style={{ ...psSuma(false, accent), background: tint("var(--a-danger)", odtienEur[i]), border: `1px solid ${tint("var(--a-danger)", odtienEur[i] + .18)}` }}>
+                <span style={{ fontSize: 18, fontWeight: 800, lineHeight: 1, fontVariantNumeric: "tabular-nums", color: C.text }}>
+                  {v}<span style={{ fontSize: 11, fontWeight: 700, color: C.textSec, marginLeft: 3 }}>€</span>
                 </span>
                 <span style={{ fontSize: 10, fontWeight: 600, color: C.textTer, marginTop: 4 }}>SEPA</span>
               </button>
@@ -317,7 +321,6 @@ export function PodporaSekcia({ onShare, upvotes = 0, onUpvote, onPodpor, onKana
           </div>
           <button onClick={() => onKanal("EUR")} style={{ ...psKanal, width: "100%", marginTop: SPACE.xs }}>
             <span style={{ fontWeight: 800, fontSize: 14 }}>Vlastná suma v €</span>
-            <span style={{ fontSize: 11, color: C.textTer, marginLeft: 6 }}>karta · SEPA</span>
           </button>
         </>)}
 
@@ -325,18 +328,18 @@ export function PodporaSekcia({ onShare, upvotes = 0, onUpvote, onPodpor, onKana
         <Rozbal otvorene={otvKrypto} onClick={() => setOtvKrypto((v) => !v)}>DARY V KRYPTE</Rozbal>
         {otvKrypto && (<>
           <div style={{ display: "flex", gap: SPACE.xs, alignItems: "stretch", paddingTop: 8 }}>
-            {fix.map((b) => (
-              <button key={b.v} onClick={deedAkcia(() => onPodpor(b.v))} style={psSuma(b.top, accent)}>
-                {b.top && <span style={psTag(accent)}>NAJČASTEJŠIE</span>}
-                <span style={{ fontSize: 17, fontWeight: 800, lineHeight: 1, fontVariantNumeric: "tabular-nums", color: b.top ? accent : C.text }}>
-                  {b.v}<span style={{ fontSize: 9, fontWeight: 700, color: C.textTer, marginLeft: 3, letterSpacing: ".04em" }}>DEED</span>
+            {rychleKrypto.map((v, i) => (
+              <button key={v} onClick={deedAkcia(() => onDarKrypto?.(v))} style={psSuma(i === 2, accent)}>
+                {i === 2 && <span style={psTag(accent)}>NAJČASTEJŠIE</span>}
+                <span style={{ fontSize: 17, fontWeight: 800, lineHeight: 1, fontVariantNumeric: "tabular-nums", color: i === 2 ? accent : C.text }}>
+                  {v.toLocaleString("sk", { minimumFractionDigits: v < 1 ? 2 : 0 })}<span style={{ fontSize: 9, fontWeight: 700, color: C.textTer, marginLeft: 3, letterSpacing: ".04em" }}>EURC</span>
                 </span>
-                <span style={{ fontSize: 10, fontWeight: 600, color: C.textTer, marginTop: 4 }}>≈ {eurZaDeed(b.v)}</span>
+                <span style={{ fontSize: 10, fontWeight: 600, color: C.textTer, marginTop: 4 }}>= {v.toLocaleString("sk", { minimumFractionDigits: 2 })} €</span>
               </button>
             ))}
           </div>
-          <button onClick={deedAkcia(() => onKanal("DEED"))} style={{ ...psKanal, width: "100%", marginTop: SPACE.xs }}>
-            <span style={{ fontWeight: 800, fontSize: 14, color: accent }}>Vlastná suma v DEED</span>
+          <button onClick={deedAkcia(() => onKanal("EURC"))} style={{ ...psKanal, width: "100%", marginTop: SPACE.xs }}>
+            <span style={{ fontWeight: 800, fontSize: 14, color: accent }}>Vlastná suma v EURC</span>
           </button>
         </>)}
 
