@@ -357,7 +357,7 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
           </div>
         }
         podMenom={oNasKratky}
-        stats={s.cisla.map(([hodnota, label]) => ({ hodnota, label }))}
+        stats={(tier === 0 && s.cislaZadarmo ? s.cislaZadarmo : s.cisla).map(([hodnota, label]) => ({ hodnota, label }))}
         akcie={<>
           <BtnAkcia variant={sledujem ? "secondary" : "primary"} ariaPressed={sledujem}
             onClick={() => { setSledujem((v) => !v); toast(sledujem ? `Prestal si sledovať ${s.nazov}` : `Sleduješ ${s.nazov}`); }}>

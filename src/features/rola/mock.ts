@@ -69,6 +69,8 @@ export interface SubjektMeta {
   overena: boolean;
   /** 3 čísla — jednotné: prijímateľ Vyzbierané · Skutky · S nami | firma Darované · Skutky · S nami */
   cisla: [string, string][];
+  /** čísla v programe ZADARMO, ak sa líšia (firma zadarmo nerobí skutky → počet darov) */
+  cislaZadarmo?: [string, string][];
   onas: string;
   kontakt: { adresa: string; email: string; tel: string; web?: string };
   /** taby verejného obsahu per rola (fixné poradie §3 bod 4).
@@ -137,6 +139,7 @@ export const SUBJEKTY: Record<Pozicia, SubjektMeta> = {
     nazov: "Pekáreň Dobrota s.r.o.", emoji: "🥖", iniciacky: "PD", lok: "Trenčín", overena: true,
     cover: U("photo-1578985545062-69928b1d9587"), foto: U("photo-1628428799437-d886d7d2e9b2"),
     cisla: [["2 400 €", "Darované"], ["5", "Skutky"], ["2 roky", "S nami"]],
+    cislaZadarmo: [["2 400 €", "Darované"], ["2", "Dary"], ["2 roky", "S nami"]],
     onas: "Rodinná pekáreň z Trenčína. Podporujeme miestne zbierky a naši ľudia chodia na dobrovoľnícke akcie — každé euro je dohľadateľné.",
     kontakt: { adresa: "Bratislavská 12, Trenčín", email: "dobrota@pekaren.sk", tel: "+421 903 333 444", web: "pekarendobrota.sk" },
     // program ZADARMO: firma smie darovať a mať z toho karmu.
@@ -145,6 +148,27 @@ export const SUBJEKTY: Record<Pozicia, SubjektMeta> = {
       { key: "darovali", label: "Darovali sme", polozky: [
         { emoji: "🔥", titul: "", popis: "500 € · overená podpora", zbierkaId: "z-kovacova" },
         { emoji: "⭐", titul: "", popis: "pravidelná mesačná podpora", zbierkaId: "z-motylik" },
+      ] },
+      // T1 (živnostník): vlastné skutky a ponuky
+      { key: "skutky", label: "Skutky", odTieru: 1, polozky: [
+        { emoji: "🥖", titul: "Chlieb pre nocľaháreň", popis: "každý piatok 30 bochníkov · Otvorené dvere Trenčín" },
+        { emoji: "🎂", titul: "Torta pre detský domov", popis: "k Mikulášovi · DeD Trenčín" },
+      ] },
+      { key: "ponuky", label: "Ponuky", odTieru: 1, polozky: [
+        { emoji: "🧺", titul: "Včerajšie pečivo zadarmo", popis: "pre charity a OZ · denne po 18:00" },
+      ] },
+      // T2 (firma s prevádzkou): akcie pre zákazníkov
+      { key: "akcie", label: "Akcie", odTieru: 2, polozky: [
+        { emoji: "👩‍🍳", titul: "Pečieme s deťmi", popis: "so 18. 10. · výťažok pre Motýlik · 14/20 miest" },
+      ] },
+      // T3 (so zamestnancami): skutky tímu a oznamy do mesta
+      { key: "tim", label: "Náš tím", odTieru: 3, polozky: [
+        { emoji: "🙋", titul: "Dobrovoľnícky deň v útulku", popis: "6 zamestnancov · 24 hodín · Túlavá labka" },
+        { emoji: "📣", titul: "Zbierame zimné bundy", popis: "oznam do mesta · zberné miesto v predajni" },
+      ] },
+      // T4: ESG výkaz a rozšírené štatistiky
+      { key: "dopad", label: "Dopad", odTieru: 4, polozky: [
+        { emoji: "📊", titul: "ESG výkaz 2026", popis: "8 400 € · 312 hodín dobrovoľníctva · 14 prijímateľov" },
       ] },
     ],
   },
