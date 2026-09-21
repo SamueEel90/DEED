@@ -50,7 +50,9 @@ export function PlatbaModal({ kanal, komu, suma: sumaInit, lenSepa = false, spli
   // registrovaný darca má v appke uloženú kartu, účet a peňaženku → nič nevypĺňa, len potvrdí
   const { typ: typUctu } = usePouzivatel();
   const registrovany = typUctu !== "pasivny";
-  const [krok, setKrok] = useState("suma"); // suma | metoda | detaily | spracovanie | hotovo
+  // rýchla suma (klik na 1 · 3 · 5 € …) → suma je jasná, rovno výber karta / SEPA (o klik menej);
+  // vlastná suma začína zadaním sumy
+  const [krok, setKrok] = useState(() => (sumaInit && sumaInit > 0 ? (kanal === "EUR" && !lenSepa ? "metoda" : "detaily") : "suma")); // suma | metoda | detaily | spracovanie | hotovo
   // zoznam darcov: voľba identity per dar — posledná voľba je predvoľba (spec §2)
   const [volba, setVolba] = useState<VolbaDaru>(nacitajPredvolbu);
   const [metoda, setMetoda] = useState<"karta" | "sepa">(lenSepa ? "sepa" : "karta"); // EUR: spôsob platby; drobné sumy len SEPA
