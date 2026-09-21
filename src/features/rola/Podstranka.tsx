@@ -15,7 +15,9 @@ import { zdielaj, aktualnaUrl } from "@/lib/zdielanie";
 import type { Kanal } from "@/types";
 import { SUBJEKTY, ZASLUZENA } from "./mock";
 import { najdiZbierku, kryptoZbierky, type Dokaz } from "@/lib/zbierky";
-import { nacitajTerminal, type Pozicia, type Tier } from "./stav";
+import { nacitajTerminal, nacitajOnas, type Pozicia, type Tier } from "./stav";
+import { FormatovanyText } from "@/components/formattext";
+import { cistyText } from "@/lib/richtext";
 
 /*
   ============================================================
@@ -115,6 +117,7 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
   const [tab, setTab] = useState("vsetko");
   const [sledujem, setSledujem] = useState(false);
   const [onasViac, setOnasViac] = useState(false);
+  const [onas] = useState(() => nacitajOnas(pozicia) ?? s.onas); // text zo správy (editor), inak pôvodný
   const [rozbalena, setRozbalena] = useState<string | null>(null);
   const [profilZiad, setProfilZiad] = useState<string | null>(null);
   const [qrZbierka, setQrZbierka] = useState<{ id: string; nazov: string } | null>(null);
@@ -341,8 +344,10 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
   // O nás priamo pod hlavičkou — 2–3 riadky, zvyšok na „viac“
   const oNasKratky = (
     <div style={{ fontSize: 13, lineHeight: 1.5, color: C.textSec }}>
-      <span style={onasViac ? undefined : { display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{s.onas}</span>
-      {s.onas.length > 140 && (
+      <div style={onasViac ? undefined : { display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+        <FormatovanyText text={onas} />
+      </div>
+      {cistyText(onas).length > 140 && (
         <span {...pressable(() => setOnasViac((v) => !v), onasViac ? "Zbaliť" : "Zobraziť viac")}
           style={{ display: "inline-block", marginTop: 2, fontSize: 12.5, fontWeight: 700, color: "var(--a-info)", cursor: "pointer" }}>
           {onasViac ? "menej" : "viac"}

@@ -19,11 +19,12 @@ import {
   FLAGS, KONFIG, POZICIE, TIER_LABEL, TIER_POPIS, ROLA_UCTU,
   nacitajPoziciu, ulozPoziciu, nacitajTiery, ulozTiery, nacitajDrzitel, ulozDrzitel,
   nacitajDoklady, ulozDoklady, percentoDolozene, nacitajTerminal, ulozTerminal,
-  nacitajOrgExtra, ulozOrgExtra, nacitajLogo, ulozLogo,
+  nacitajOrgExtra, ulozOrgExtra, nacitajLogo, ulozLogo, nacitajOnas, ulozOnas, ONAS_MAX,
   type Pozicia, type Tier, type DokladZbierky,
 } from "./stav";
 import { PANELY, SPRAVY, SPRAVA_NADPIS, ZASLUZENA, SUBJEKTY, ORG_ZBIERKY, FIRMY_ADRESAR, type PanelBlok, type SpravaItem, type OrgZbierka } from "./mock";
 import { Podstranka } from "./Podstranka";
+import { RichTextInput } from "@/components/richtext";
 
 /*
   ============================================================
@@ -139,7 +140,7 @@ export function MojDeedFiremny({ onBack, toast }: { onBack: () => void; toast: (
         stats={subjekt.cisla.map(([hodnota, label], i) => ({ hodnota, label, farba: i === 2 ? "var(--a-gold)" : undefined }))}
         akcie={<>
           <BtnAkcia variant="primary" onClick={() => setPodstranka(true)}>Verejný profil</BtnAkcia>
-          <BtnAkcia variant="secondary" onClick={() => setSheet("profil")}><IkonaCeruzka size={14} /> Upraviť</BtnAkcia>
+          <BtnAkcia variant="secondary" onClick={() => setSheet("profil")}><IkonaCeruzka size={14} /> Upraviť profil</BtnAkcia>
           <BtnIkonka label="Ďalšie možnosti" onClick={() => setMenu(true)}><IkonaMoznosti size={16} /></BtnIkonka>
         </>}
       />
@@ -520,10 +521,21 @@ function UpravProfilSheet({ pozicia, logo, cover, toast, onLogo, onCover, onClos
   const s = SUBJEKTY[pozicia];
   const ja = usePouzivatel();
   const maLogo = pozicia !== "tvorca";
+  const [onas, setOnas] = useState(() => nacitajOnas(pozicia) ?? s.onas);
   return (
     <Sheet onClose={onClose} label="Upraviť profil">
       <div style={{ fontSize: 16, fontWeight: 800, marginBottom: 2 }}>Upraviť profil</div>
       <div style={{ fontSize: 11.5, color: C.textTer, marginBottom: SPACE.md }}>{s.nazov} · foto, popis a kontakt</div>
+
+      {/* O NÁS — jednotné písmo pre všetkých; len tučné, kurzíva, odrážky, emoji */}
+      <div style={{ fontSize: 10.5, fontWeight: 800, color: C.textTer, letterSpacing: ".04em", marginBottom: SPACE.xs }}>O NÁS</div>
+      <RichTextInput value={onas} maxZnakov={ONAS_MAX} minH={140}
+        nastroje={["bold", "italic", "insertUnorderedList", "emoji"]}
+        placeholder="Kto ste a komu pomáhate…"
+        onChange={(html) => { setOnas(html); ulozOnas(pozicia, html); }} />
+      <div style={{ fontSize: 10.5, color: C.textTer, marginTop: SPACE.xxs, marginBottom: SPACE.md, lineHeight: 1.45 }}>
+        Prvé 3 riadky sa ukážu v hlavičke profilu, zvyšok pod „viac". Prvé dve vety nech povedia, kto ste.
+      </div>
 
       {maLogo ? (
         <>

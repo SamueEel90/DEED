@@ -102,6 +102,11 @@ export const ulozTerminal = (on: boolean) => uloz(kluc("terminal"), on);
 export const nacitajLogo = (p: Pozicia): string | null => nacitaj<string | null>(kluc(`logo.${p}`), null);
 export const ulozLogo = (p: Pozicia, dataUrl: string | null) => uloz(kluc(`logo.${p}`), dataUrl);
 
+// ---- O nás (formátovaný text z editora, max 800 znakov) — null = pôvodný text z mocku ----
+export const ONAS_MAX = 800;
+export const nacitajOnas = (p: Pozicia): string | null => nacitaj<string | null>(kluc(`onas.${p}`), null);
+export const ulozOnas = (p: Pozicia, html: string | null) => uloz(kluc(`onas.${p}`), html);
+
 // ---- zbierky vytvorené v správe charity navyše k mocku (limit per tier §1.3) ----
 export const nacitajOrgExtra = (): OrgZbierka[] => nacitaj<OrgZbierka[]>(kluc("orgzbierky"), []);
 export const ulozOrgExtra = (z: OrgZbierka[]) => uloz(kluc("orgzbierky"), z);

@@ -24,11 +24,20 @@ const NASTROJE: Array<{ id: string; label: string; titul: string; styl?: CSSProp
   { id: "insertUnorderedList", label: "•", titul: "Odrážky" },
   { id: "insertOrderedList", label: "1.", titul: "Číslovaný zoznam" },
   { id: "odkaz", label: "🔗", titul: "Odkaz" },
+  { id: "emoji", label: "😊", titul: "Emoji" },
 ];
+const EMOJI = ["❤️", "🙏", "💛", "🤝", "✨", "🎉", "🏠", "🍲", "🧸", "🌱", "🐾", "👉"];
 
-export function RichTextInput({ value, onChange, placeholder, minH = 110, ariaLabel }: {
+export function RichTextInput({ value, onChange, placeholder, minH = 110, ariaLabel, nastroje, maxZnakov }: {
   value?: string; onChange?: (html: string) => void; placeholder?: string; minH?: number; ariaLabel?: string;
+  /** ktoré nástroje ukázať (id z NASTROJE); bez neho všetky okrem emoji */
+  nastroje?: string[];
+  /** limit znakov (čistý text) — nad limitom sa neukladá, počítadlo sčervenie */
+  maxZnakov?: number;
 }) {
+  const lista = NASTROJE.filter((n) => (nastroje ? nastroje.includes(n.id) : n.id !== "emoji"));
+  const [emojiOtv, setEmojiOtv] = useState(false);
+  const [znakov, setZnakov] = useState(0);
   const ref = useRef<HTMLDivElement>(null);
   const posledne = useRef<string>(""); // čo sme naposledy emitli — nech externý echo nepremaže kurzor
   const [prazdne, setPrazdne] = useState(!value);
@@ -43,6 +52,7 @@ export function RichTextInput({ value, onChange, placeholder, minH = 110, ariaLa
       el.innerHTML = v ? (jeHtmlText(v) ? sanitizujHtml(v) : textNaHtml(v)) : "";
       posledne.current = v;
       setPrazdne(!el.textContent?.trim());
+      setZnakov((el.textContent || "").length);
     }
   }, [value]);
 
@@ -50,6 +60,9 @@ export function RichTextInput({ value, onChange, placeholder, minH = 110, ariaLa
     const el = ref.current;
     if (!el) return;
     setPrazdne(!el.textContent?.trim());
+    const dlzka = (el.textContent || "").length;
+    setZnakov(dlzka);
+    if (maxZnakov && dlzka > maxZnakov) return; // nad limitom sa neukladá
     const cisty = sanitizujHtml(el.innerHTML);
     posledne.current = cisty;
     onChange?.(cisty);
@@ -61,6 +74,9 @@ export function RichTextInput({ value, onChange, placeholder, minH = 110, ariaLa
       // toggle: nadpis ↔ odsek (jedna úroveň — h3)
       const blok = document.queryCommandValue("formatBlock");
       prikaz("formatBlock", /h3/i.test(blok) ? "<p>" : "<h3>");
+    } else if (id === "emoji") {
+      setEmojiOtv((o) => !o);
+      return;
     } else if (id === "odkaz") {
       const url = window.prompt("Adresa odkazu (https://…):", "https://");
       if (url && /^https?:\/\//i.test(url)) prikaz("createLink", url);
@@ -90,7 +106,7 @@ export function RichTextInput({ value, onChange, placeholder, minH = 110, ariaLa
     <div style={{ position: "relative" }}>
       {/* lišta nástrojov */}
       <div role="toolbar" aria-label="Formátovanie textu" style={{ display: "flex", gap: SPACE.xxs, padding: `${SPACE.xxs}px ${SPACE.xs}px`, background: "rgba(var(--glass-rgb),.07)", border: `1px solid ${C.line}`, borderRadius: `${RADIUS.sm}px ${RADIUS.sm}px 0 0` }}>
-        {NASTROJE.map((n) => (
+        {lista.map((n) => (
           <button key={n.id} type="button" title={n.titul} aria-label={n.titul}
             onMouseDown={(e) => e.preventDefault() /* nepusti focus z editora */}
             onClick={() => nastroj(n.id)}
@@ -99,8 +115,23 @@ export function RichTextInput({ value, onChange, placeholder, minH = 110, ariaLa
           </button>
         ))}
       </div>
+      {emojiOtv && (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 2, padding: `${SPACE.xxs}px ${SPACE.xs}px`, background: "rgba(var(--glass-rgb),.05)", borderLeft: `1px solid ${C.line}`, borderRight: `1px solid ${C.line}` }}>
+          {EMOJI.map((e) => (
+            <button key={e} type="button" aria-label={`Vložiť ${e}`}
+              onMouseDown={(ev) => ev.preventDefault()}
+              onClick={() => { ref.current?.focus(); prikaz("insertText", e); emit(); }}
+              style={{ width: 34, height: 32, border: "none", background: "transparent", fontSize: 18, cursor: "pointer" }}>{e}</button>
+          ))}
+        </div>
+      )}
       <div ref={ref} className="ftext" contentEditable role="textbox" aria-multiline="true" aria-label={ariaLabel || placeholder}
         onInput={emit} onBlur={emit} onPaste={paste} style={base} />
+      {maxZnakov && (
+        <div style={{ textAlign: "right", fontSize: 11.5, fontWeight: 700, marginTop: 4, color: znakov > maxZnakov ? "var(--a-danger)" : C.textTer }}>
+          {znakov > maxZnakov ? `Príliš dlhé — skráť text, inak sa neuloží · ` : ""}{znakov} / {maxZnakov}
+        </div>
+      )}
       {prazdne && placeholder && (
         <div aria-hidden style={{ position: "absolute", top: 34 + SPACE.md, left: SPACE.md, right: SPACE.md, color: C.textTer, fontSize: 14.5, lineHeight: 1.5, pointerEvents: "none" }}>
           {placeholder}
