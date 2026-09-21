@@ -25,6 +25,7 @@ import { PANELY, SPRAVY, SPRAVA_NADPIS, ZASLUZENA, SUBJEKTY, ORG_ZBIERKY, FIRMY_
 import { Podstranka } from "./Podstranka";
 import { UpravProfilSheet } from "./UpravProfil";
 import { OnasKratky } from "./OnasKratky";
+import { verejneTaby, zamknuteTaby, popisTabu, BLOK_ZA_TAB } from "./obsah";
 
 /*
   ============================================================
@@ -157,7 +158,7 @@ export function MojDeedFiremny({ onBack, toast }: { onBack: () => void; toast: (
         podMenom={<OnasKratky text={onas ?? subjekt.onas} />}
         stats={(tier === 0 && subjekt.cislaZadarmo ? subjekt.cislaZadarmo : subjekt.cisla).map(([hodnota, label], i) => ({ hodnota, label, farba: i === 2 ? "var(--a-gold)" : undefined }))}
         akcie={<>
-          <BtnAkcia variant="primary" onClick={() => setPodstranka(true)}>Verejný profil</BtnAkcia>
+          <BtnAkcia variant="secondary" onClick={() => setPodstranka(true)}>Verejný profil · DEV</BtnAkcia>
           <BtnAkcia variant="secondary" onClick={() => setSheet("profil")}><IkonaCeruzka size={14} /> Upraviť profil</BtnAkcia>
           <BtnIkonka label="Ďalšie možnosti" onClick={() => setMenu(true)}><IkonaMoznosti size={16} /></BtnIkonka>
         </>}
@@ -167,9 +168,29 @@ export function MojDeedFiremny({ onBack, toast }: { onBack: () => void; toast: (
       </>)}
       <div style={{ height: SPACE.gutter }} />
 
-      {/* ==== PREHĽAD — rolové bloky; zamknuté neukazujú reálne dáta ==== */}
-      <MenuSkupina zbalitelna="rola-prehlad" nadpis={`PREHĽAD — ${rolaMeta.label.toUpperCase()}`}>
-        {bloky.map((b, i) => {
+      {/* ==== PREHĽAD PROFILU — obsah verejného profilu (ten istý výpočet ako profil) + živé čísla ==== */}
+      <MenuSkupina zbalitelna="rola-prehlad" nadpis="PREHĽAD PROFILU">
+        {verejneTaby(pozicia, tier).map((t) => {
+          const blok = PANELY[pozicia].find((b) => b.id === BLOK_ZA_TAB[t.key]);
+          return (
+            <MenuPolozka key={`tab-${t.key}`}
+              ikona={<span style={{ fontSize: 15 }}>{t.polozky[0]?.emoji ?? "📄"}</span>}
+              farba="var(--a-plum)"
+              label={t.label} popis={popisTabu(t)} hodnota={String(t.polozky.length)}
+              onClick={() => (blok ? blokAkcia(blok) : setPodstranka(true))}
+            />
+          );
+        })}
+        {zamknuteTaby(pozicia, tier).map((t) => (
+          <MenuPolozka key={`tab-${t.key}`}
+            ikona={<span style={{ fontSize: 15, opacity: .5 }}>{t.polozky[0]?.emoji ?? "📄"}</span>}
+            farba="var(--c-textTer)" label={t.label} zamknute
+            chip={<TierChip label={`od ${TIER_LABEL[pozicia][t.odTieru ?? 0]}`} />}
+            popis={`Dostupné od úrovne ${TIER_LABEL[pozicia][t.odTieru ?? 0]}`}
+            onClick={gateTier((t.odTieru ?? 0) as Tier, t.label, () => undefined)}
+          />
+        ))}
+        {bloky.filter((b) => !Object.values(BLOK_ZA_TAB).includes(b.id)).map((b, i, arr) => {
           const zamknute = tier < b.tierMin;
           return (
             <MenuPolozka key={b.id}
@@ -182,10 +203,15 @@ export function MojDeedFiremny({ onBack, toast }: { onBack: () => void; toast: (
               hodnota={zamknute ? undefined : b.hodnota}
               zamknute={zamknute}
               onClick={gateTier(b.tierMin, b.nazov, () => blokAkcia(b))}
-              posledna={i === bloky.length - 1}
+              posledna={i === arr.length - 1 && pozicia !== "b2b"}
             />
           );
         })}
+        {pozicia === "b2b" && (
+          <MenuPolozka ikona={<IkonaInstitucia size={17} />} farba="var(--a-info)"
+            label="Adresár firiem" popis="Overené firmy a ich podpora komunity"
+            onClick={() => setSheet("adresarB2B")} posledna />
+        )}
       </MenuSkupina>
 
 
@@ -215,27 +241,10 @@ export function MojDeedFiremny({ onBack, toast }: { onBack: () => void; toast: (
         </MenuSkupina>
       )}
 
-      {/* ==== VEREJNÝ OBSAH — čo vidí návštevník + vstup na verejný profil ==== */}
-      <MenuSkupina zbalitelna="rola-verejny" nadpis="VEREJNÝ OBSAH" poznamka="vidí každý návštevník">
-        {subjekt.taby.map((t) => (
-          <MenuPolozka key={t.key}
-            ikona={<span style={{ fontSize: 15 }}>{t.polozky[0]?.emoji ?? "📄"}</span>}
-            farba="var(--a-plum)"
-            label={t.label} hodnota={String(t.polozky.length)}
-            onClick={() => setPodstranka(true)}
-          />
-        ))}
-        {pozicia === "b2b" && (
-          <MenuPolozka ikona={<IkonaInstitucia size={17} />} farba="var(--a-info)"
-            label="Adresár firiem" popis="Overené firmy a ich podpora komunity"
-            onClick={() => setSheet("adresarB2B")} />
-        )}
-        <div style={{ padding: `${SPACE.xs}px ${SPACE.gutter}px ${SPACE.sm}px` }}>
-          <BtnAkcia variant="secondary" style={{ width: "100%" }} onClick={() => setPodstranka(true)}>
-            Zobraziť verejný profil
-          </BtnAkcia>
-        </div>
-      </MenuSkupina>
+      {/* ==== VÝSLEDOK — klient si po úpravách pozrie, ako profil vidí návštevník ==== */}
+      <BtnAkcia variant="primary" style={{ width: "100%", marginBottom: SPACE.gutter }} onClick={() => setPodstranka(true)}>
+        Zobraziť verejný profil
+      </BtnAkcia>
 
       {/* ==== KONTAKT ==== */}
       <MenuSkupina zbalitelna="rola-kontakt" nadpis="KONTAKT">
