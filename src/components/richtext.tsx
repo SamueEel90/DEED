@@ -63,7 +63,10 @@ export function RichTextInput({ value, onChange, placeholder, minH = 110, ariaLa
     const dlzka = (el.textContent || "").length;
     setZnakov(dlzka);
     if (maxZnakov && dlzka > maxZnakov) return; // nad limitom sa neukladá
-    const cisty = sanitizujHtml(el.innerHTML);
+    let cisty = sanitizujHtml(el.innerHTML);
+    // text začínajúci obyčajným textom (bez <p>) by sa pri ďalšom otvorení bral ako čistý text
+    // a značky by sa ukázali ako &lt;strong&gt; — preto vždy obaliť do odseku
+    if (cisty.trim() && !/^\s*</.test(cisty)) cisty = `<p>${cisty}</p>`;
     posledne.current = cisty;
     onChange?.(cisty);
   }
