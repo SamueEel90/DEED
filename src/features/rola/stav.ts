@@ -24,7 +24,7 @@ export const FLAGS = {
 // ---- placeholder čísla = config, nie hardcode (§4.6 — ceny/limity rieši Vitkovič) ----
 export const KONFIG = {
   /** limit súbežných zbierok charity podľa tieru (T1/T2 = placeholder) */
-  limitZbierok: { 0: 1, 1: 3, 2: 10, 3: 30, 4: 9999 } as Record<Tier, number>,
+  limitZbierok: { 0: 1, 1: 3, 2: 10, 3: 9999, 4: 9999 } as Record<Tier, number>, // cenník charity: 1 · 3 · 10 · bez limitu
   /** lehota dokladovania po ukončení zbierky (placeholder X dní, §1.4) */
   lehotaDokladovaniaDni: 30,
   /** počet delegovaných správcov B2B podľa tieru (§3.1) */
