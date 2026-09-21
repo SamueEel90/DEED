@@ -13,8 +13,17 @@ import type { Siet } from "./kontakt";
 let registrovana: db.CharitaData | null = null;
 let segmenty: string[] = SEGMENTY_CHARITY;
 
-/** segmenty, ktoré si charita vybrala pri registrácii (pod-segment, inak sektor) */
-export const segmentyCharity = () => segmenty;
+const KLUC_SEG = "deed.rola.segmenty.charita";
+/** segmenty charity: z registrácie, prípadne upravené správcom (odškrtnuté) */
+export function segmentyCharity(): string[] {
+  try { const s = localStorage.getItem(KLUC_SEG); if (s) return JSON.parse(s) as string[]; } catch { /* LS */ }
+  return segmenty;
+}
+/** všetky segmenty z registrácie (aj odškrtnuté) — na kontrolu v správe */
+export const segmentyZRegistracie = () => segmenty;
+export function nastavSegmenty(v: string[]) {
+  try { localStorage.setItem(KLUC_SEG, JSON.stringify(v)); } catch { /* LS */ }
+}
 /** siete z registrácie (na predvyplnenie kontaktu) */
 export function sieteZRegistracie(): Partial<Record<Siet, string>> {
   const out: Partial<Record<Siet, string>> = {};

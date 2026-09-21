@@ -18,7 +18,7 @@ import {
   FLAGS, KONFIG, POZICIE, TIER_LABEL, TIER_POPIS, ROLA_UCTU,
   nacitajPoziciu, ulozPoziciu, nacitajTiery, ulozTiery, nacitajDrzitel, ulozDrzitel,
   ulozDoklady, percentoDolozene, nacitajTerminal, ulozTerminal,
-  nacitajOrgExtra, ulozOrgExtra, nacitajLogo, ulozLogo, nacitajOnas, ulozOnas, nacitajTvarLoga, ulozTvarLoga, nacitajZdrojAvatara, ulozZdrojAvatara, nacitajHlavuZbalenu, ulozHlavuZbalenu,
+  nacitajOrgExtra, ulozOrgExtra, nacitajLogo, ulozLogo, nacitajOnas, ulozOnas, nacitajTvarLoga, ulozTvarLoga, nacitajZdrojAvatara, ulozZdrojAvatara, nacitajHlavuZbalenu, ulozHlavuZbalenu, nacitajCentralnu,
   type Pozicia, type Tier, type DokladZbierky,
 } from "./stav";
 import { PANELY, SPRAVY, SPRAVA_NADPIS, ZASLUZENA, SUBJEKTY, FIRMY_ADRESAR, type PanelBlok, type SpravaItem, type OrgZbierka } from "./mock";
@@ -26,6 +26,7 @@ import { Podstranka } from "./Podstranka";
 import { UpravProfilSheet } from "./UpravProfil";
 import { useRegistraciaCharity, ulozDoRegistracie, segmentyCharity } from "./registracia";
 import { OnasKratky } from "./OnasKratky";
+import { CentralnaZbierkaSheet } from "./CentralnaZbierka";
 import { KontaktBlok, nacitajKontakt, ulozKontakt } from "./kontakt";
 import { verejneTaby, zamknuteTaby, popisTabu, BLOK_ZA_TAB, zbierkyOrg, dokladyZbierky } from "./obsah";
 
@@ -40,7 +41,7 @@ import { verejneTaby, zamknuteTaby, popisTabu, BLOK_ZA_TAB, zbierkyOrg, dokladyZ
 */
 
 type PaywallReq = { tierMin: Tier; nazov: string; dovod?: string };
-type OtvorenySheet = null | "zbierky" | "terminal" | "retaz" | "profil" | "adresarB2B" | { dokladovanie: OrgZbierka };
+type OtvorenySheet = null | "zbierky" | "centralna" | "terminal" | "retaz" | "profil" | "adresarB2B" | { dokladovanie: OrgZbierka };
 
 // ---- SVG ikony blokov a správy (nahrádzajú emoji — jednotný vizuál) ----
 const IKONY: Record<string, ReactNode> = {
@@ -124,6 +125,7 @@ function MojDeedFiremnyObsah({ onBack, toast, orgId }: { onBack: () => void; toa
 
   const blokAkcia = (b: PanelBlok) => {
     if (pozicia === "charita" && b.id === "zbierky") return setSheet("zbierky");
+    if (pozicia === "charita" && b.id === "centralna") return setSheet("centralna");
     if (pozicia === "tvorca" && b.id === "retaz") return setSheet("retaz");
     setSheet(null); toast(`${b.nazov} — detail`);
   };
@@ -132,6 +134,7 @@ function MojDeedFiremnyObsah({ onBack, toast, orgId }: { onBack: () => void; toa
     if (it.id === "profil" || it.id === "podstranka") return setSheet("profil");
     if (pozicia === "charita" && (it.id === "zbierky" || it.id === "dokladovanie")) return setSheet("zbierky");
     if (pozicia === "tvorca" && it.id === "terminal") return setSheet("terminal");
+    if (pozicia === "charita" && it.id === "centralna") return setSheet("centralna");
     if (pozicia === "charita" && it.id === "segment") return toast(`Segmenty z registrácie: ${segmentyCharity().join(" · ")}`);
     toast(`${it.nazov} — čoskoro`);
   };
@@ -211,7 +214,8 @@ function MojDeedFiremnyObsah({ onBack, toast, orgId }: { onBack: () => void; toa
           bloky.filter((b) => !Object.values(BLOK_ZA_TAB).includes(b.id) && tier >= b.tierMin).forEach((b) => {
             riadky.push({ k: b.id, tier: -1, el: (posledna) => (
               <MenuPolozka key={b.id} posledna={posledna} ikona={ikonaPre(b.id, b.emoji)} farba="var(--a-info)"
-                label={b.nazov} popis={pozicia === "charita" && b.id === "dnes" ? <DnesPrislo /> : b.popis} hodnota={b.hodnota}
+                label={b.nazov} popis={pozicia === "charita" && b.id === "dnes" ? <DnesPrislo />
+                  : b.id === "centralna" && !nacitajCentralnu("charita") ? "Zatiaľ nespustená · hotová za minútu" : b.popis} hodnota={b.hodnota}
                 onClick={b.info ? undefined : () => blokAkcia(b)} />
             ) });
           });
@@ -289,6 +293,7 @@ function MojDeedFiremnyObsah({ onBack, toast, orgId }: { onBack: () => void; toa
       )}
 
       {/* ---- sheety ---- */}
+      {sheet === "centralna" && <CentralnaZbierkaSheet toast={toast} onClose={() => setSheet(null)} />}
       {sheet === "zbierky" && (
         <OrgZbierkySheet tier={tier} toast={toast} onPaywall={(p) => setPaywall(p)}
           onDokladovanie={(z) => setSheet({ dokladovanie: z })} onClose={() => setSheet(null)} />

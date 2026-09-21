@@ -112,6 +112,13 @@ export const nacitajZdrojAvatara = (p: Pozicia): ZdrojAvatara =>
   p === "tvorca" ? nacitaj<ZdrojAvatara>(kluc(`avatar.${p}`), "foto") : "logo";
 export const ulozZdrojAvatara = (p: Pozicia, z: ZdrojAvatara) => uloz(kluc(`avatar.${p}`), z);
 
+// ---- charita: prijíma dary v krypte (EURC)? platí pre všetky jej zbierky ----
+export const nacitajKryptoOrg = (p: Pozicia): boolean => nacitaj(kluc(`krypto.${p}`), true);
+export const ulozKryptoOrg = (p: Pozicia, v: boolean) => uloz(kluc(`krypto.${p}`), v);
+// ---- centrálna zbierka organizácie spustená (nastavenie zo správy) ----
+export const nacitajCentralnu = (p: Pozicia): boolean => nacitaj(kluc(`centralna.${p}`), false);
+export const ulozCentralnu = (p: Pozicia, v: boolean) => uloz(kluc(`centralna.${p}`), v);
+
 // ---- tvar loga (kruh/štvorec) — vyberá si subjekt v Upraviť profil ----
 export type TvarLoga = "kruh" | "stvorec";
 export const nacitajTvarLoga = (p: Pozicia): TvarLoga => nacitaj<TvarLoga>(kluc(`logotvar.${p}`), "kruh");

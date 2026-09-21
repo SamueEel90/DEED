@@ -17,7 +17,7 @@ import type { Kanal } from "@/types";
 import { SUBJEKTY, ZASLUZENA } from "./mock";
 import { segmentyCharity } from "./registracia";
 import { najdiZbierku, kryptoZbierky, type Dokaz } from "@/lib/zbierky";
-import { nacitajTerminal, nacitajOnas, nacitajTvarLoga, nacitajZdrojAvatara, type Pozicia, type Tier } from "./stav";
+import { nacitajTerminal, nacitajKryptoOrg, nacitajCentralnu, nacitajOnas, nacitajTvarLoga, nacitajZdrojAvatara, type Pozicia, type Tier } from "./stav";
 import { OnasKratky } from "./OnasKratky";
 import { KontaktBlok, nacitajKontakt } from "./kontakt";
 import { verejneTaby } from "./obsah";
@@ -139,11 +139,13 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
   // ---- bloky obsahu (zdieľané mobil/desktop) ----
   // centrálna zbierka organizácie (pre seba) — charita ju má od prvého plateného programu T1.
   // ZADARMO = len jedna aktívna zbierka PRE NIEKOHO, nie pre seba.
-  const podporaBlok = pozicia === "charita" && tier >= 1 && (
+  // na profile je len spustená centrálna zbierka (spúšťa sa v správe); krypto dary podľa rozhodnutia charity
+  const kryptoOrg = pozicia !== "charita" || nacitajKryptoOrg("charita");
+  const podporaBlok = pozicia === "charita" && tier >= 1 && nacitajCentralnu("charita") && (
     <div style={{ marginBottom: SPACE.gutter }}>
       <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".05em", color: C.textTer, marginBottom: SPACE.xs }}>CENTRÁLNA ZBIERKA ORGANIZÁCIE</div>
       <div style={{ marginBottom: SPACE.sm }}><ProgresBox suma={suma} ciel={12000} ludia={ludia} /></div>
-      <PlatobnyModul zbalene
+      <PlatobnyModul zbalene krypto={kryptoOrg ? "EURC" : "nie"}
         onShare={zdielajProfil}
         upvotes={ludia} onUpvote={() => toast("❤")}
         onPodpor={(d: number) => { setSuma((x) => x + d * 0.01); setLudia((l) => l + 1); toast(`Ďakujeme za ${d} DEED pre ${s.nazov}`); }}
@@ -308,7 +310,7 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
                 )}
                 <div style={{ marginBottom: SPACE.sm }}><ProgresBox suma={z.vyzbierane} ciel={z.ciel} ludia={z.darcovia} live={z.stav === "aktivna"} /></div>
                 {z.stav === "aktivna" ? (
-                  <PlatobnyModul zbalene krypto={kryptoZbierky(z)}
+                  <PlatobnyModul zbalene krypto={kryptoOrg ? kryptoZbierky(z) : "nie"}
                     onShare={zdielajProfil}
                     upvotes={z.darcovia} onUpvote={() => toast("❤")}
                     onPodpor={(d: number) => toast(`Ďakujeme za ${d} DEED pre ${z.komu}`)}
