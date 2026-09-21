@@ -30,7 +30,7 @@ export function RecurringSheet({ nazov, caseId, charitaUcet, onClose, toast }: {
   const [mena, setMena] = useState<"EUR" | "DEED">("EUR");
 
   const volby: { id: Rozsah; t: string; d: string }[] = [
-    ...(caseId ? [{ id: "request" as const, t: "Táto žiadosť", d: "Skončí, keď zbierka skončí — okamžite a s notifikáciou." }] : []),
+    ...(caseId ? [{ id: "request" as const, t: "Táto zbierka", d: "Skončí, keď zbierka skončí — okamžite a s notifikáciou." }] : []),
     { id: "segment", t: "Segment (téma)", d: "Charita rozdelí podľa vlastného kľúča." },
     { id: "charita", t: "Celá charita", d: "Paušál na chod a najnaliehavejšie potreby." },
   ];

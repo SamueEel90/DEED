@@ -41,6 +41,7 @@ const btnPrimary = {
 export function UpgradePanel({ onClose, onAktivovat }: { onClose?: () => void; onAktivovat?: () => void }) {
   const vyhody = [
     { Ikona: IkonaPlus, col: "var(--a-green)", t: "Pridávaj skutky, žiadosti a zbierky" },
+    { Ikona: IkonaPenazenka, col: "var(--a-green)", t: "Nastav pravidelnú podporu zbierky" },
     { Ikona: IkonaPlay, col: "var(--a-info)", t: "Komentuj a ukáž svoj talent" },
     { Ikona: IkonaPenazenka, col: "var(--a-teal)", t: "Prispievaj aj v DEED z peňaženky" },
     { Ikona: IkonaPohar, col: "var(--a-gold)", t: "Získavaj karmu, úrovne a odmeny" },
@@ -51,9 +52,9 @@ export function UpgradePanel({ onClose, onAktivovat }: { onClose?: () => void; o
         <div style={{ width: 60, height: 60, borderRadius: RADIUS.md, background: GRAD, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 10px 28px rgba(78,122,62,.35)" }}>
           <SipHore size={28} color="#fff" />
         </div>
-        <div style={{ fontSize: 18, fontWeight: 800, marginTop: SPACE.gutter }}>Toto je pre aktívnych členov</div>
+        <div style={{ fontSize: 18, fontWeight: 800, marginTop: SPACE.gutter }}>Toto je pre registrovaných</div>
         <div style={{ fontSize: 13.5, color: C.textSec, marginTop: SPACE.xs, lineHeight: 1.55, maxWidth: 320 }}>
-          Ako pasívny môžeš všetko prezerať a prispieť v EUR. Na DEED a vytváranie obsahu sa staň aktívnym — zadarmo a kedykoľvek, bez straty doterajšieho.
+          Bez registrácie môžeš všetko prezerať a prispieť v EUR. Na pravidelnú podporu, DEED a vytváranie obsahu sa zaregistruj — zadarmo, doterajšie ti ostane.
         </div>
       </div>
 
@@ -68,7 +69,7 @@ export function UpgradePanel({ onClose, onAktivovat }: { onClose?: () => void; o
         ))}
       </div>
 
-      <button onClick={onAktivovat} style={btnPrimary}>Stať sa aktívnym</button>
+      <button onClick={onAktivovat} style={btnPrimary}>Zaregistrovať sa</button>
       <button onClick={onClose} style={{ width: "100%", padding: `${SPACE.sm}px 0`, marginTop: SPACE.sm, borderRadius: RADIUS.md, background: "transparent", color: C.textSec, border: "none", fontWeight: 700, fontSize: 14.5, cursor: "pointer", fontFamily: "inherit" }}>
         Teraz nie
       </button>
