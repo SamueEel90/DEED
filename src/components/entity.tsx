@@ -87,7 +87,9 @@ export function BtnIkonka({ onClick, label, aktivne, farba = "var(--a-info)", ch
 }
 
 // ---- ENTITY HERO — hlavička profilu subjektu (cover + avatar + akcie) ----
-export function EntityHero({ cover, coverEl, avatar, meno, overene, overeneLabel, podtitul, vpravo, podMenom, stats, akcie, onAvatar, onCover, coverLabel }: {
+export function EntityHero({ cover, coverEl, avatar, avatarTvar = "kruh", meno, overene, overeneLabel, podtitul, vpravo, podMenom, stats, akcie, onAvatar, onCover, coverLabel }: {
+  /** tvar loga/avatara — organizácia si môže zvoliť štvorec */
+  avatarTvar?: "kruh" | "stvorec";
   /** URL cover fotky; alternatívne coverEl = vlastný element (gradient, Foto…) */
   cover?: string; coverEl?: ReactNode;
   /** avatar element (Foto/img/iniciálky) — vykreslí sa v krúžku cez okraj coveru */
@@ -133,7 +135,7 @@ export function EntityHero({ cover, coverEl, avatar, meno, overene, overeneLabel
             krúžku (span nižšie má overflow:hidden, inak by ho odrezal) */}
         <span style={{ position: "relative", flex: "none", display: "inline-flex" }}>
           <span {...(onAvatar ? pressable(onAvatar, "Profilová fotka") : {})}
-            style={{ width: av, height: av, borderRadius: RADIUS.round, flex: "none", overflow: "hidden", border: `3px solid var(--c-bg)`, background: C.surface2, display: "flex", alignItems: "center", justifyContent: "center", fontSize: Math.round(av * .36), fontWeight: 800, cursor: onAvatar ? "pointer" : "default", boxShadow: "0 2px 10px rgba(0,0,0,.18)" }}>
+            style={{ width: av, height: av, borderRadius: avatarTvar === "stvorec" ? RADIUS.md : RADIUS.round, flex: "none", overflow: "hidden", border: `3px solid var(--c-bg)`, background: C.surface2, display: "flex", alignItems: "center", justifyContent: "center", fontSize: Math.round(av * .36), fontWeight: 800, cursor: onAvatar ? "pointer" : "default", boxShadow: "0 2px 10px rgba(0,0,0,.18)" }}>
             {avatar}
           </span>
           {onAvatar && <KamerkaBadge size={Math.round(av * .34)} />}

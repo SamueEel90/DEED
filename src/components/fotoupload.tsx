@@ -7,11 +7,15 @@
 // ============================================================
 import { useRef, useState } from "react";
 import { C, SPACE, RADIUS } from "@/theme";
-import { spracujFotku, OBRAZOK_CFG } from "@/lib/obrazok";
+import { spracujFotku, rozmeryFotky, OBRAZOK_CFG } from "@/lib/obrazok";
 import { toast } from "@/components/toast";
 import { IkonaFoto } from "@/components/icons";
 
-export function FotoUpload({ value, onZmena, pomer = 16 / 9, vyska = 140, maxSirka, tvar = "obdlznik" }: {
+export function FotoUpload({ value, onZmena, pomer = 16 / 9, vyska = 140, maxSirka, tvar = "obdlznik", minRozmer, zony }: {
+  /** kontrola kvality — pod týmto rozmerom varovanie „bude rozmazané" (nahrá sa aj tak) */
+  minRozmer?: { w: number; h: number };
+  /** bezpečné zóny titulky: vľavo dole logo, vpravo dole štít */
+  zony?: boolean;
   value?: string;
   onZmena: (dataUrl: string) => void;
   /** pomer orezu (16/9 cover · 1 avatar) — náhľad drží ten istý pomer */
@@ -32,8 +36,11 @@ export function FotoUpload({ value, onZmena, pomer = 16 / 9, vyska = 140, maxSir
     if (!file || pracujem) return;
     setPracujem(true);
     try {
+      const r = minRozmer ? await rozmeryFotky(file) : null;
       onZmena(await spracujFotku(file, { pomer, maxSirka }));
-      toast("Fotka nahraná — EXIF/GPS odstránené");
+      if (r && minRozmer && (r.w < minRozmer.w || r.h < minRozmer.h)) {
+        toast(`Fotka má ${r.w} × ${r.h} px — odporúčame aspoň ${minRozmer.w} × ${minRozmer.h} px, inak bude rozmazaná.`);
+      } else toast("Fotka nahraná — EXIF/GPS odstránené");
     } catch (e) {
       toast(e instanceof Error ? e.message : "Nahranie fotky zlyhalo.");
     } finally {
@@ -71,6 +78,13 @@ export function FotoUpload({ value, onZmena, pomer = 16 / 9, vyska = 140, maxSir
             {!maly && <div style={{ fontSize: 10.5 }}>JPG · PNG · WebP · HEIC — max {OBRAZOK_CFG.maxMB} MB</div>}
           </div>
         )}
+        {zony && (
+          // bezpečné zóny: tu sa na profile prekrýva logo (vľavo dole) a štít (vpravo dole)
+          <>
+            <span style={{ position: "absolute", left: "3%", bottom: "-12%", width: "22%", aspectRatio: "1", borderRadius: "50%", border: "2px dashed rgba(255,255,255,.9)", background: "rgba(0,0,0,.25)", pointerEvents: "none", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 10.5, fontWeight: 800 }}>LOGO</span>
+            <span style={{ position: "absolute", right: "3%", bottom: "-8%", width: "18%", aspectRatio: "0.85", borderRadius: 10, border: "2px dashed rgba(255,255,255,.9)", background: "rgba(0,0,0,.25)", pointerEvents: "none", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 10.5, fontWeight: 800 }}>ŠTÍT</span>
+          </>
+        )}
         {pracujem && (
           <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,.45)", color: "#fff", fontSize: 12.5, fontWeight: 700 }}>
             Spracúvam… (re-enkód + čistenie EXIF)
@@ -78,7 +92,7 @@ export function FotoUpload({ value, onZmena, pomer = 16 / 9, vyska = 140, maxSir
         )}
         {value && !pracujem && (
           // v kruhu sedí pilulka v strede dole (v rohu by ju orezal oblúk)
-          <span style={{ position: "absolute", bottom: kruh ? 10 : 8, ...(kruh ? { left: "50%", transform: "translateX(-50%)" } : { right: 8 }), display: "inline-flex", alignItems: "center", gap: SPACE.xxs, fontSize: 11, fontWeight: 700, color: "#fff", background: "rgba(8,11,18,.6)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)", border: "1px solid rgba(255,255,255,.18)", padding: `${SPACE.xxs}px ${SPACE.sm}px`, borderRadius: RADIUS.xs, pointerEvents: "none", whiteSpace: "nowrap" }}>
+          <span style={{ position: "absolute", ...(zony ? { top: 8 } : { bottom: kruh ? 10 : 8 }), ...(kruh ? { left: "50%", transform: "translateX(-50%)" } : { right: 8 }), display: "inline-flex", alignItems: "center", gap: SPACE.xxs, fontSize: 11, fontWeight: 700, color: "#fff", background: "rgba(8,11,18,.6)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)", border: "1px solid rgba(255,255,255,.18)", padding: `${SPACE.xxs}px ${SPACE.sm}px`, borderRadius: RADIUS.xs, pointerEvents: "none", whiteSpace: "nowrap" }}>
             <IkonaFoto size={12} color="#fff" /> Zmeniť
           </span>
         )}

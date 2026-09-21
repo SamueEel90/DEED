@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { C, SPACE, RADIUS, SIRKA } from "@/theme";
 import {
-  BackHeader, Sheet, SegTabs, Switch, MoniBar, Stit, naStitLevel, Tip, FotoUpload, tint,
+  BackHeader, Sheet, SegTabs, Switch, MoniBar, Stit, naStitLevel, Tip, tint,
   useLayout, obalSiroky,
   EntityHero, BtnAkcia, BtnIkonka, KontextMenu, MenuSkupina, MenuHlavicka, MenuPolozka, KontaktPolozka,
   Zdielanie, IkonaCeruzka, IkonaMoznosti, IkonaTerc, IkonaEuro, IkonaLudia, IkonaOsoba, IkonaKalendar,
@@ -11,7 +11,6 @@ import {
 } from "@/shared";
 import { pressable } from "@/components/pressable";
 import { usePouzivatel } from "@/lib/pouzivatel";
-import { AVATAR_SIRKA } from "@/lib/fotoprofilu";
 import { klucEntity, useFotkyEntity } from "@/lib/fotoentity";
 import { zdielaj, aktualnaUrl } from "@/lib/zdielanie";
 import { MojaRetaz } from "@/features/retaz/MojaRetaz";
@@ -19,12 +18,12 @@ import {
   FLAGS, KONFIG, POZICIE, TIER_LABEL, TIER_POPIS, ROLA_UCTU,
   nacitajPoziciu, ulozPoziciu, nacitajTiery, ulozTiery, nacitajDrzitel, ulozDrzitel,
   nacitajDoklady, ulozDoklady, percentoDolozene, nacitajTerminal, ulozTerminal,
-  nacitajOrgExtra, ulozOrgExtra, nacitajLogo, ulozLogo, nacitajOnas, ulozOnas, ONAS_MAX,
+  nacitajOrgExtra, ulozOrgExtra, nacitajLogo, ulozLogo, ulozOnas, nacitajTvarLoga, ulozTvarLoga,
   type Pozicia, type Tier, type DokladZbierky,
 } from "./stav";
 import { PANELY, SPRAVY, SPRAVA_NADPIS, ZASLUZENA, SUBJEKTY, ORG_ZBIERKY, FIRMY_ADRESAR, type PanelBlok, type SpravaItem, type OrgZbierka } from "./mock";
 import { Podstranka } from "./Podstranka";
-import { RichTextInput } from "@/components/richtext";
+import { UpravProfilSheet } from "./UpravProfil";
 
 /*
   ============================================================
@@ -65,6 +64,7 @@ export function MojDeedFiremny({ onBack, toast }: { onBack: () => void; toast: (
   const [tiery, setTiery] = useState<Record<Pozicia, Tier>>(nacitajTiery);
   const [drzitel, setDrzitel] = useState<boolean>(nacitajDrzitel);
   const [logo, setLogo] = useState<string | null>(() => nacitajLogo(nacitajPoziciu()));
+  const [tvarLoga, setTvarLoga] = useState(() => nacitajTvarLoga(nacitajPoziciu()));
   const [paywall, setPaywall] = useState<PaywallReq | null>(null);
   const [sheet, setSheet] = useState<OtvorenySheet>(null);
   const [menu, setMenu] = useState(false);
@@ -74,7 +74,7 @@ export function MojDeedFiremny({ onBack, toast }: { onBack: () => void; toast: (
   const [fotky, zmenFotky] = useFotkyEntity(klucEntity("rola", pozicia));
 
   const tier = tiery[pozicia];
-  const prepniPoziciu = (p: Pozicia) => { setPozicia(p); ulozPoziciu(p); setLogo(nacitajLogo(p)); };
+  const prepniPoziciu = (p: Pozicia) => { setPozicia(p); ulozPoziciu(p); setLogo(nacitajLogo(p)); setTvarLoga(nacitajTvarLoga(p)); };
   const nastavTier = (t: Tier) => { const n = { ...tiery, [pozicia]: t }; setTiery(n); ulozTiery(n); };
   const prepniDrzitela = () => { setDrzitel((d) => { ulozDrzitel(!d); return !d; }); };
 
@@ -122,7 +122,7 @@ export function MojDeedFiremny({ onBack, toast }: { onBack: () => void; toast: (
       )}
 
       {/* ==== HERO SUBJEKTU — cover, logo, meno + odznak, štatistiky, akcie ==== */}
-      <EntityHero
+      <EntityHero avatarTvar={pozicia === "tvorca" ? "kruh" : tvarLoga}
         avatar={avatarSrc
           ? <img src={avatarSrc} alt={subjekt.nazov} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
           : (pozicia === "tvorca" ? subjekt.emoji : subjekt.iniciacky)}
@@ -251,8 +251,12 @@ export function MojDeedFiremny({ onBack, toast }: { onBack: () => void; toast: (
       {sheet === "retaz" && <MojaRetaz onClose={() => setSheet(null)} toast={toast} />}
       {sheet === "profil" && (
         <UpravProfilSheet pozicia={pozicia} logo={logo} cover={fotky.cover} toast={toast}
-          onLogo={(url) => { setLogo(url); ulozLogo(pozicia, url); }}
-          onCover={(url) => zmenFotky({ cover: url })}
+          onUloz={(z) => {
+            ulozOnas(pozicia, z.onas);
+            setLogo(z.logo); ulozLogo(pozicia, z.logo);
+            setTvarLoga(z.tvar); ulozTvarLoga(pozicia, z.tvar);
+            if (z.cover !== (fotky.cover ?? null)) zmenFotky({ cover: z.cover });
+          }}
           onClose={() => setSheet(null)} />
       )}
       {sheet === "adresarB2B" && <AdresarB2BSheet vlastneLogo={logo} toast={toast} onClose={() => setSheet(null)} />}
@@ -513,84 +517,6 @@ function TerminalSheet({ toast, onClose }: { toast: (m: string) => void; onClose
   );
 }
 
-// ===================== UPRAVIŤ PROFIL + LOGO SUBJEKTU =====================
-function UpravProfilSheet({ pozicia, logo, cover, toast, onLogo, onCover, onClose }: {
-  pozicia: Pozicia; logo: string | null; cover?: string | null; toast: (m: string) => void;
-  onLogo: (url: string | null) => void; onCover: (url: string | null) => void; onClose: () => void;
-}) {
-  const s = SUBJEKTY[pozicia];
-  const ja = usePouzivatel();
-  const maLogo = pozicia !== "tvorca";
-  const [onas, setOnas] = useState(() => nacitajOnas(pozicia) ?? s.onas);
-  return (
-    <Sheet onClose={onClose} label="Upraviť profil">
-      <div style={{ fontSize: 16, fontWeight: 800, marginBottom: 2 }}>Upraviť profil</div>
-      <div style={{ fontSize: 11.5, color: C.textTer, marginBottom: SPACE.md }}>{s.nazov} · foto, popis a kontakt</div>
-
-      {/* O NÁS — jednotné písmo pre všetkých; len tučné, kurzíva, odrážky, emoji */}
-      <div style={{ fontSize: 10.5, fontWeight: 800, color: C.textTer, letterSpacing: ".04em", marginBottom: SPACE.xs }}>O NÁS</div>
-      <RichTextInput value={onas} maxZnakov={ONAS_MAX} minH={140}
-        nastroje={["bold", "italic", "insertUnorderedList", "emoji"]}
-        placeholder="Kto ste a komu pomáhate…"
-        onChange={(html) => { setOnas(html); ulozOnas(pozicia, html); }} />
-      <div style={{ fontSize: 10.5, color: C.textTer, marginTop: SPACE.xxs, marginBottom: SPACE.md, lineHeight: 1.45 }}>
-        Prvé 3 riadky sa ukážu v hlavičke profilu, zvyšok pod „viac". Prvé dve vety nech povedia, kto ste.
-      </div>
-
-      {maLogo ? (
-        <>
-          <div style={{ fontSize: 10.5, fontWeight: 800, color: C.textTer, letterSpacing: ".04em", marginBottom: SPACE.xs }}>LOGO</div>
-          <div style={{ display: "flex", gap: SPACE.gutter, alignItems: "center", marginBottom: SPACE.sm }}>
-            <span style={{ width: 64, height: 64, borderRadius: "50%", flex: "none", overflow: "hidden", background: C.surface2, border: `1px solid ${C.line}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, fontWeight: 800 }}>
-              {logo ? <img src={logo} alt="logo" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : s.iniciacky}
-            </span>
-            <div style={{ flex: 1, minWidth: 0, fontSize: 11, color: C.textTer, lineHeight: 1.5 }}>
-              Logo sa zobrazuje na profile, v adresári a pri sponzorovaných kampaniach. Bez loga sa použijú iniciálky.
-            </div>
-          </div>
-          <FotoUpload value={logo ?? undefined} onZmena={(url) => { onLogo(url); toast("Logo uložené"); }} pomer={1} vyska={150} maxSirka={AVATAR_SIRKA} tvar="kruh" />
-          {logo && (
-            <button onClick={() => { onLogo(null); toast("Logo odstránené"); }}
-              style={{ width: "100%", height: 38, marginTop: SPACE.xs, borderRadius: RADIUS.sm, border: `1px solid ${C.line}`, cursor: "pointer", fontFamily: "inherit", fontWeight: 700, fontSize: 12, background: "transparent", color: C.textSec }}>
-              Odstrániť logo
-            </button>
-          )}
-        </>
-      ) : (
-        <>
-          <div style={{ fontSize: 10.5, fontWeight: 800, color: C.textTer, letterSpacing: ".04em", marginBottom: SPACE.xs }}>PROFILOVÁ FOTKA</div>
-          <div style={{ display: "flex", gap: SPACE.gutter, alignItems: "center", marginBottom: SPACE.sm }}>
-            <span style={{ width: 64, height: 64, borderRadius: "50%", flex: "none", overflow: "hidden", background: C.surface2, border: `1px solid ${C.line}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, fontWeight: 800 }}>
-              {ja.foto ? <img src={ja.foto} alt="profilová fotka" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : ja.iniciala}
-            </span>
-            <div style={{ flex: 1, minWidth: 0, fontSize: 11, color: C.textTer, lineHeight: 1.5 }}>
-              Tvorca vystupuje pod vlastným menom a profilovou fotkou — je to tá istá fotka ako v tvojom osobnom profile.
-            </div>
-          </div>
-          {/* tvorca nemá logo: mení sa priamo profilová fotka osoby (jeden zdroj pravdy) */}
-          <FotoUpload value={ja.foto ?? undefined} onZmena={(url) => { ja.nastavFoto?.(url); toast("Profilová fotka uložená"); }} pomer={1} vyska={150} maxSirka={AVATAR_SIRKA} tvar="kruh" />
-          {ja.foto && (
-            <button onClick={() => { ja.nastavFoto?.(null); toast("Profilová fotka odstránená"); }}
-              style={{ width: "100%", height: 38, marginTop: SPACE.xs, borderRadius: RADIUS.sm, border: `1px solid ${C.line}`, cursor: "pointer", fontFamily: "inherit", fontWeight: 700, fontSize: 12, background: "transparent", color: C.textSec }}>
-              Odstrániť fotku
-            </button>
-          )}
-        </>
-      )}
-
-      {/* TITULNÁ (cover) — nezávislá od profilovej/loga, pre každú rolu */}
-      <div style={{ fontSize: 10.5, fontWeight: 800, color: C.textTer, letterSpacing: ".04em", margin: `${SPACE.md}px 0 ${SPACE.xs}px` }}>TITULNÁ FOTKA (16:9)</div>
-      <FotoUpload value={cover ?? s.cover} onZmena={(url) => { onCover(url); toast("Titulná fotka uložená"); }} pomer={16 / 9} vyska={130} />
-      <div style={{ fontSize: 10.5, color: C.textTer, marginTop: SPACE.xxs, lineHeight: 1.45 }}>Široká fotka na pozadí hlavičky profilu — vidí ju každý návštevník.</div>
-      {cover && (
-        <button onClick={() => { onCover(null); toast("Titulná fotka vrátená na pôvodnú"); }}
-          style={{ width: "100%", height: 38, marginTop: SPACE.xs, borderRadius: RADIUS.sm, border: `1px solid ${C.line}`, cursor: "pointer", fontFamily: "inherit", fontWeight: 700, fontSize: 12, background: "transparent", color: C.textSec }}>
-          Odstrániť titulnú fotku
-        </button>
-      )}
-    </Sheet>
-  );
-}
 
 // ===================== ADRESÁR FIRIEM =====================
 function AdresarB2BSheet({ vlastneLogo, toast, onClose }: { vlastneLogo: string | null; toast: (m: string) => void; onClose: () => void }) {

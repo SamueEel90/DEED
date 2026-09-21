@@ -40,7 +40,7 @@ export function RichTextInput({ value, onChange, placeholder, minH = 110, ariaLa
   value?: string; onChange?: (html: string) => void; placeholder?: string; minH?: number; ariaLabel?: string;
   /** ktoré nástroje ukázať (id z NASTROJE); bez neho všetky okrem emoji */
   nastroje?: string[];
-  /** limit znakov (čistý text) — nad limitom sa neukladá, počítadlo sčervenie */
+  /** limit znakov (čistý text) — počítadlo; nad limitom sčervenie (uloženie stráži volajúci) */
   maxZnakov?: number;
 }) {
   const lista = NASTROJE.filter((n) => (nastroje ? nastroje.includes(n.id) : n.id !== "emoji"));
@@ -77,7 +77,6 @@ export function RichTextInput({ value, onChange, placeholder, minH = 110, ariaLa
     setPrazdne(!el.textContent?.trim());
     const dlzka = (el.textContent || "").length;
     setZnakov(dlzka);
-    if (maxZnakov && dlzka > maxZnakov) return; // nad limitom sa neukladá
     let cisty = sanitizujHtml(el.innerHTML);
     // text začínajúci obyčajným textom (bez <p>) by sa pri ďalšom otvorení bral ako čistý text
     // a značky by sa ukázali ako &lt;strong&gt; — preto vždy obaliť do odseku

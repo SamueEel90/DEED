@@ -15,7 +15,7 @@ import { zdielaj, aktualnaUrl } from "@/lib/zdielanie";
 import type { Kanal } from "@/types";
 import { SUBJEKTY, ZASLUZENA } from "./mock";
 import { najdiZbierku, kryptoZbierky, type Dokaz } from "@/lib/zbierky";
-import { nacitajTerminal, nacitajOnas, type Pozicia, type Tier } from "./stav";
+import { nacitajTerminal, nacitajOnas, nacitajTvarLoga, type Pozicia, type Tier } from "./stav";
 import { FormatovanyText } from "@/components/formattext";
 import { cistyText } from "@/lib/richtext";
 
@@ -378,7 +378,7 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
 
   const telo = (
     <div style={{ padding: `0 ${SPACE.md}px` }}>
-      <EntityHero
+      <EntityHero avatarTvar={pozicia === "tvorca" ? "kruh" : nacitajTvarLoga(pozicia)}
         avatar={avatarSrc ? <img src={avatarSrc} alt={s.nazov} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : (pozicia === "tvorca" ? s.emoji : s.iniciacky)}
         cover={coverSrc}
         coverEl={<span style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 46, opacity: .45 }}>{s.emoji}</span>}

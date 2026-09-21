@@ -102,6 +102,11 @@ export const ulozTerminal = (on: boolean) => uloz(kluc("terminal"), on);
 export const nacitajLogo = (p: Pozicia): string | null => nacitaj<string | null>(kluc(`logo.${p}`), null);
 export const ulozLogo = (p: Pozicia, dataUrl: string | null) => uloz(kluc(`logo.${p}`), dataUrl);
 
+// ---- tvar loga (kruh/štvorec) — vyberá si subjekt v Upraviť profil ----
+export type TvarLoga = "kruh" | "stvorec";
+export const nacitajTvarLoga = (p: Pozicia): TvarLoga => nacitaj<TvarLoga>(kluc(`logotvar.${p}`), "kruh");
+export const ulozTvarLoga = (p: Pozicia, t: TvarLoga) => uloz(kluc(`logotvar.${p}`), t);
+
 // ---- O nás (formátovaný text z editora, max 800 znakov) — null = pôvodný text z mocku ----
 export const ONAS_MAX = 800;
 export const nacitajOnas = (p: Pozicia): string | null => nacitaj<string | null>(kluc(`onas.${p}`), null);

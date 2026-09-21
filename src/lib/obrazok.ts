@@ -67,3 +67,48 @@ export async function spracujFotku(file: File, o: { pomer?: number | null; maxSi
   // toDataURL = čerstvý JPEG bez metadát → EXIF/GPS je preč
   return canvas.toDataURL("image/jpeg", OBRAZOK_CFG.kvalita);
 }
+
+// ---------- LOGO (Upraviť profil) ----------
+export const LOGO_CFG = { maxMB: 5, minPx: 500, vystup: 512 };
+export const COVER_CFG = { maxMB: 10, minSirka: 1600, minVyska: 900 };
+export type LogoRezim = "vyplnit" | "cele";
+export type LogoPozadie = "biele" | "tmave" | "priehladne";
+
+/** rozmery obrázka zo súboru (na kontrolu kvality) — hádže Error so slovenskou hláškou */
+export async function rozmeryFotky(file: File): Promise<{ w: number; h: number }> {
+  let z: ImageBitmap | HTMLImageElement;
+  try { z = await dekoduj(file); } catch { throw new Error("Toto nie je platný obrázok (JPG/PNG/WebP/HEIC) — súbor sa nedá prečítať."); }
+  const r = { w: z.width, h: z.height };
+  if ("close" in z) z.close();
+  return r;
+}
+
+/**
+ * Logo do štvorca. „vyplnit" = orez na stred (ako doteraz), „cele" = celé logo
+ * zmenšené do rámu s okrajom a doplneným pozadím — široké logo sa neoreže.
+ * Priehľadné pozadie → PNG, inak JPEG (EXIF preč v oboch prípadoch).
+ */
+export async function spracujLogo(file: File, o: { rezim: LogoRezim; pozadie: LogoPozadie }): Promise<string> {
+  if (file.size > LOGO_CFG.maxMB * 1024 * 1024) throw new Error(`Logo má ${(file.size / 1024 / 1024).toFixed(1)} MB — limit je ${LOGO_CFG.maxMB} MB.`);
+  let z: ImageBitmap | HTMLImageElement;
+  try { z = await dekoduj(file); } catch { throw new Error("Toto nie je platný obrázok (JPG/PNG/WebP) — súbor sa nedá prečítať."); }
+  const sw = z.width, sh = z.height;
+  if (!sw || !sh) throw new Error("Obrázok je prázdny alebo poškodený.");
+  const S = LOGO_CFG.vystup;
+  const canvas = document.createElement("canvas");
+  canvas.width = S; canvas.height = S;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Canvas nie je dostupný.");
+  if (o.pozadie !== "priehladne") { ctx.fillStyle = o.pozadie === "biele" ? "#ffffff" : "#15171c"; ctx.fillRect(0, 0, S, S); }
+  if (o.rezim === "vyplnit") {
+    const k = Math.min(sw, sh);
+    ctx.drawImage(z as CanvasImageSource, (sw - k) / 2, (sh - k) / 2, k, k, 0, 0, S, S);
+  } else {
+    const okraj = S * 0.1, vnut = S - 2 * okraj;
+    const m = Math.min(vnut / sw, vnut / sh);
+    const w = sw * m, h = sh * m;
+    ctx.drawImage(z as CanvasImageSource, 0, 0, sw, sh, (S - w) / 2, (S - h) / 2, w, h);
+  }
+  if ("close" in z) z.close();
+  return o.pozadie === "priehladne" ? canvas.toDataURL("image/png") : canvas.toDataURL("image/jpeg", OBRAZOK_CFG.kvalita);
+}
