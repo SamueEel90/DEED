@@ -28,6 +28,14 @@ const NASTROJE: Array<{ id: string; label: string; titul: string; styl?: CSSProp
 ];
 const EMOJI = ["❤️", "🙏", "💛", "🤝", "✨", "🎉", "🏠", "🍲", "🧸", "🌱", "🐾", "👉"];
 
+/** zapnuté formátovanie pod kurzorom (null = kurzor nie je v editore) */
+function zistiAktivne(el: HTMLElement | null): string[] | null {
+  if (!el || !el.contains(document.getSelection()?.anchorNode ?? null)) return null;
+  return ["bold", "italic", "insertUnorderedList", "insertOrderedList"].filter((c) => {
+    try { return document.queryCommandState(c); } catch { return false; }
+  });
+}
+
 export function RichTextInput({ value, onChange, placeholder, minH = 110, ariaLabel, nastroje, maxZnakov }: {
   value?: string; onChange?: (html: string) => void; placeholder?: string; minH?: number; ariaLabel?: string;
   /** ktoré nástroje ukázať (id z NASTROJE); bez neho všetky okrem emoji */
@@ -38,7 +46,14 @@ export function RichTextInput({ value, onChange, placeholder, minH = 110, ariaLa
   const lista = NASTROJE.filter((n) => (nastroje ? nastroje.includes(n.id) : n.id !== "emoji"));
   const [emojiOtv, setEmojiOtv] = useState(false);
   const [znakov, setZnakov] = useState(0);
+  // ktoré formátovanie je práve zapnuté pod kurzorom — tlačidlo sa vysvieti
+  const [aktivne, setAktivne] = useState<string[]>([]);
   const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const obnov = () => { const a = zistiAktivne(ref.current); if (a) setAktivne(a); };
+    document.addEventListener("selectionchange", obnov);
+    return () => document.removeEventListener("selectionchange", obnov);
+  }, []);
   const posledne = useRef<string>(""); // čo sme naposledy emitli — nech externý echo nepremaže kurzor
   const [prazdne, setPrazdne] = useState(!value);
 
@@ -87,6 +102,7 @@ export function RichTextInput({ value, onChange, placeholder, minH = 110, ariaLa
       prikaz(id);
     }
     emit();
+    const a = zistiAktivne(ref.current); if (a) setAktivne(a);
   }
 
   // kľúčová požiadavka (spec §3): paste z Wordu — štruktúra prežije, balast nie
@@ -113,7 +129,10 @@ export function RichTextInput({ value, onChange, placeholder, minH = 110, ariaLa
           <button key={n.id} type="button" title={n.titul} aria-label={n.titul}
             onMouseDown={(e) => e.preventDefault() /* nepusti focus z editora */}
             onClick={() => nastroj(n.id)}
-            style={{ width: 30, height: 28, borderRadius: RADIUS.xs, border: "none", background: "transparent", color: C.textSec, fontSize: 13, cursor: "pointer", fontFamily: "inherit", ...n.styl }}>
+            aria-pressed={aktivne.includes(n.id) || (n.id === "emoji" && emojiOtv)}
+            style={{ width: 30, height: 28, borderRadius: RADIUS.xs, border: "none",
+              background: aktivne.includes(n.id) || (n.id === "emoji" && emojiOtv) ? "var(--a-info)" : "transparent",
+              color: aktivne.includes(n.id) ? "#fff" : C.textSec, fontSize: 13, cursor: "pointer", fontFamily: "inherit", ...n.styl }}>
             {n.label}
           </button>
         ))}
@@ -128,7 +147,7 @@ export function RichTextInput({ value, onChange, placeholder, minH = 110, ariaLa
           ))}
         </div>
       )}
-      <div ref={ref} className="ftext" contentEditable role="textbox" aria-multiline="true" aria-label={ariaLabel || placeholder}
+      <div ref={ref} className="ftext" contentEditable spellCheck lang="sk" role="textbox" aria-multiline="true" aria-label={ariaLabel || placeholder}
         onInput={emit} onBlur={emit} onPaste={paste} style={base} />
       {maxZnakov && (
         <div style={{ textAlign: "right", fontSize: 11.5, fontWeight: 700, marginTop: 4, color: znakov > maxZnakov ? "var(--a-danger)" : C.textTer }}>
