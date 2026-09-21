@@ -12,12 +12,13 @@ import { klucEntity, useFotkyEntity } from "@/lib/fotoentity";
 import { NahlasitSheet } from "@/components/nahlasit";
 import { qrUrl } from "@/lib/qr";
 import { RecurringSheet } from "@/components/recurring";
+import { SADY_EUR, SADY_EURC } from "@/lib/sadyDarov";
 import { zdielaj, aktualnaUrl } from "@/lib/zdielanie";
 import type { Kanal } from "@/types";
 import { SUBJEKTY, ZASLUZENA } from "./mock";
 import { segmentyCharity } from "./registracia";
 import { najdiZbierku, kryptoZbierky, type Dokaz } from "@/lib/zbierky";
-import { nacitajTerminal, nacitajKryptoOrg, nacitajCentralnu, nacitajOnas, nacitajTvarLoga, nacitajZdrojAvatara, type Pozicia, type Tier } from "./stav";
+import { nacitajTerminal, nacitajKryptoOrg, nacitajCentralnu, nacitajSady, nacitajOnas, nacitajTvarLoga, nacitajZdrojAvatara, type Pozicia, type Tier } from "./stav";
 import { OnasKratky } from "./OnasKratky";
 import { KontaktBlok, nacitajKontakt } from "./kontakt";
 import { verejneTaby } from "./obsah";
@@ -141,11 +142,13 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
   // ZADARMO = len jedna aktívna zbierka PRE NIEKOHO, nie pre seba.
   // na profile je len spustená centrálna zbierka (spúšťa sa v správe); krypto dary podľa rozhodnutia charity
   const kryptoOrg = pozicia !== "charita" || nacitajKryptoOrg("charita");
+  const sady = nacitajSady(pozicia); // rýchle sumy, ktoré si subjekt vybral
+  const sumy = { sumyEur: SADY_EUR[sady.eur].sumy, sumyEurc: SADY_EURC[sady.eurc].sumy };
   const podporaBlok = pozicia === "charita" && tier >= 1 && nacitajCentralnu("charita") && (
     <div style={{ marginBottom: SPACE.gutter }}>
       <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".05em", color: C.textTer, marginBottom: SPACE.xs }}>CENTRÁLNA ZBIERKA ORGANIZÁCIE</div>
       <div style={{ marginBottom: SPACE.sm }}><ProgresBox suma={suma} ciel={12000} ludia={ludia} /></div>
-      <PlatobnyModul zbalene krypto={kryptoOrg ? "EURC" : "nie"}
+      <PlatobnyModul zbalene krypto={kryptoOrg ? "EURC" : "nie"} {...sumy}
         onShare={zdielajProfil}
         upvotes={ludia} onUpvote={() => toast("❤")}
         onPodpor={(d: number) => { setSuma((x) => x + d * 0.01); setLudia((l) => l + 1); toast(`Ďakujeme za ${d} DEED pre ${s.nazov}`); }}
@@ -310,7 +313,7 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
                 )}
                 <div style={{ marginBottom: SPACE.sm }}><ProgresBox suma={z.vyzbierane} ciel={z.ciel} ludia={z.darcovia} live={z.stav === "aktivna"} /></div>
                 {z.stav === "aktivna" ? (
-                  <PlatobnyModul zbalene krypto={kryptoOrg ? kryptoZbierky(z) : "nie"}
+                  <PlatobnyModul zbalene krypto={kryptoOrg ? kryptoZbierky(z) : "nie"} {...sumy}
                     onShare={zdielajProfil}
                     upvotes={z.darcovia} onUpvote={() => toast("❤")}
                     onPodpor={(d: number) => toast(`Ďakujeme za ${d} DEED pre ${z.komu}`)}

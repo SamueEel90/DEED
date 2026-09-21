@@ -10,11 +10,13 @@ import { PlatobnyModul } from "@/components/platobnymodul";
 import { ProgresBox } from "@/components/ui";
 import { SUBJEKTY } from "./mock";
 import { segmentyZRegistracie, segmentyCharity, nastavSegmenty } from "./registracia";
-import { nacitajKryptoOrg, ulozKryptoOrg, nacitajCentralnu, ulozCentralnu } from "./stav";
+import { nacitajKryptoOrg, ulozKryptoOrg, nacitajCentralnu, ulozCentralnu, nacitajSady, ulozSady } from "./stav";
+import { SADY_EUR, SADY_EURC, type SadaEur, type SadaEurc } from "@/lib/sadyDarov";
 
 export function CentralnaZbierkaSheet({ toast, onClose }: { toast: (m: string) => void; onClose: () => void }) {
   const s = SUBJEKTY.charita;
   const [krypto, setKrypto] = useState(() => nacitajKryptoOrg("charita"));
+  const [sady, setSady] = useState(() => nacitajSady("charita"));
   const zRegistracie = segmentyZRegistracie();
   const [vybrane, setVybrane] = useState<string[]>(() => segmentyCharity());
   // vlastné segmenty dopísané charitou (mimo číselníka) — ostávajú v zozname aj po odškrtnutí
@@ -35,6 +37,7 @@ export function CentralnaZbierkaSheet({ toast, onClose }: { toast: (m: string) =
   const prepni = (sg: string) => setVybrane((v) => (v.includes(sg) ? v.filter((x) => x !== sg) : [...v, sg]));
   const spusti = () => {
     ulozKryptoOrg("charita", krypto);
+    ulozSady("charita", sady);
     nastavSegmenty(vybrane);
     ulozCentralnu("charita", true);
     toast(spustena ? "Centrálna zbierka upravená" : "Centrálna zbierka spustená — je na vašom profile");
@@ -56,11 +59,24 @@ export function CentralnaZbierkaSheet({ toast, onClose }: { toast: (m: string) =
       <div style={{ background: C.surface2, border: `1px solid ${C.line}`, borderRadius: RADIUS.md, padding: SPACE.sm }}>
         <div style={{ fontSize: 14, fontWeight: 800, marginBottom: SPACE.xs }}>{s.nazov}</div>
         <div style={{ marginBottom: SPACE.sm }}><ProgresBox suma={0} ciel={12000} ludia={0} /></div>
-        <PlatobnyModul zbalene kryptoOtvorene krypto={krypto ? "EURC" : "nie"}
+        <PlatobnyModul key={`${sady.eur}-${sady.eurc}`} zbalene kryptoOtvorene krypto={krypto ? "EURC" : "nie"}
+          sumyEur={SADY_EUR[sady.eur].sumy} sumyEurc={SADY_EURC[sady.eurc].sumy}
           onShare={() => undefined} upvotes={0} onUpvote={() => undefined}
           onPodpor={() => undefined} onKanal={() => undefined} toast={() => undefined}
           opakovana={{ popis: "Segment alebo celá organizácia · len pre registrovaných", onClick: () => undefined }} />
       </div>
+
+      {nadpis("RÝCHLE SUMY — EURÁ")}
+      <div style={{ display: "flex", gap: SPACE.xs }}>
+        {(Object.keys(SADY_EUR) as SadaEur[]).map((k) => (
+          <button key={k} type="button" style={{ ...volba(sady.eur === k), height: 48, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", lineHeight: 1.2 }}
+            onClick={() => setSady((x) => ({ ...x, eur: k }))}>
+            <span>{SADY_EUR[k].label}</span>
+            <span style={{ fontSize: 11, fontWeight: 600, opacity: .85 }}>{SADY_EUR[k].sumy.join(" · ")} €</span>
+          </button>
+        ))}
+      </div>
+      <div style={{ fontSize: 11.5, color: C.textTer, marginTop: SPACE.xxs }}>Sumy do 5 € idú len cez SEPA, vyššie aj kartou. Vlastnú sumu môže darca zadať vždy.</div>
 
       {nadpis("DARY V KRYPTOMENE")}
       <div style={{ fontSize: 13.5, fontWeight: 700, marginBottom: SPACE.xs }}>Chcete prijímať dary v kryptomene EURC?</div>
@@ -71,6 +87,20 @@ export function CentralnaZbierkaSheet({ toast, onClose }: { toast: (m: string) =
       <div style={{ fontSize: 11.5, color: C.textTer, marginTop: SPACE.xxs }}>
         {krypto ? "EURC je digitálne euro 1 : 1." : "Dary v krypte sa nebudú zobrazovať v žiadnej vašej zbierke."} Platí pre všetky vaše zbierky, zmeniť to môžete kedykoľvek.
       </div>
+      {krypto && (
+        <>
+          <div style={{ fontSize: 12, fontWeight: 700, color: C.textSec, margin: `${SPACE.sm}px 0 ${SPACE.xs}px` }}>Rýchle sumy v EURC</div>
+          <div style={{ display: "flex", gap: SPACE.xs }}>
+            {(Object.keys(SADY_EURC) as SadaEurc[]).map((k) => (
+              <button key={k} type="button" style={{ ...volba(sady.eurc === k), height: 48, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", lineHeight: 1.2 }}
+                onClick={() => setSady((x) => ({ ...x, eurc: k }))}>
+                <span>{SADY_EURC[k].label}</span>
+                <span style={{ fontSize: 11, fontWeight: 600, opacity: .85 }}>{SADY_EURC[k].sumy.map((v) => v.toLocaleString("sk")).join(" · ")}</span>
+              </button>
+            ))}
+          </div>
+        </>
+      )}
 
       {nadpis("SKONTROLUJTE SVOJE SEGMENTY")}
       <div style={{ fontSize: 12, color: C.textSec, marginBottom: SPACE.xs }}>Darcovia ich vidia pri pravidelnej podpore. Nechajte len tie, na ktoré máte oprávnenie podľa stanov.</div>

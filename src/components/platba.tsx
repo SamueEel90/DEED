@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { LEN_SEPA_DO } from "@/lib/sadyDarov";
 import type { CSSProperties, ReactNode } from "react";
 import { C, GRAD, GRAD_ZELENY, SPACE, RADIUS } from "@/theme";
 import { tint } from "@/lib/ui";
@@ -272,11 +273,13 @@ const psKanal: CSSProperties = {
   cursor: "pointer", fontFamily: "inherit", background: C.surface2, border: `1px solid ${C.line}`, color: C.text,
 };
 
-export function PodporaSekcia({ onShare, upvotes = 0, onUpvote, onPodpor, onKanal, accent = "var(--a-info)", supLabel = "DROBNÁ PODPORA — klik a hneď odíde", reakcia = "palec", bezDaru = false, zbalene = false, komu, onDarEur, onDarKrypto, krypto = "EURC", poEurach, kryptoOtvorene = false }: { onShare?: () => void; upvotes?: number; onUpvote?: () => void; onPodpor: (a: number) => void; onKanal: (k: string) => void; accent?: string; supLabel?: ReactNode; reakcia?: "palec" | "srdce"; bezDaru?: boolean; zbalene?: boolean; komu?: ReactNode; onDarEur?: (suma: number) => void; onDarKrypto?: (eurc: number) => void; krypto?: "EURC" | "DEED" | "nie";
+export function PodporaSekcia({ onShare, upvotes = 0, onUpvote, onPodpor, onKanal, accent = "var(--a-info)", supLabel = "DROBNÁ PODPORA — klik a hneď odíde", reakcia = "palec", bezDaru = false, zbalene = false, komu, onDarEur, onDarKrypto, krypto = "EURC", poEurach, kryptoOtvorene = false, sumyEur = [1, 3, 5], sumyEurc = [0.1, 0.5, 1] }: { onShare?: () => void; upvotes?: number; onUpvote?: () => void; onPodpor: (a: number) => void; onKanal: (k: string) => void; accent?: string; supLabel?: ReactNode; reakcia?: "palec" | "srdce"; bezDaru?: boolean; zbalene?: boolean; komu?: ReactNode; onDarEur?: (suma: number) => void; onDarKrypto?: (eurc: number) => void; krypto?: "EURC" | "DEED" | "nie";
   /** riadky vložené medzi dary v eurách a dary v krypte (pravidelná podpora, Obľúbené + Podporiť DEED) */
   poEurach?: ReactNode;
   /** dary v krypte rozbalené hneď (napr. náhľad v správe, aby bolo vidno, čo zmizne) */
-  kryptoOtvorene?: boolean }) {
+  kryptoOtvorene?: boolean;
+  /** rýchle sumy (sada, ktorú si vybral príjemca) */
+  sumyEur?: number[]; sumyEurc?: number[] }) {
   // pasívny prispieva len v EUR; DEED (peňaženka) vyžaduje účet → výzva na registráciu
   const { mozeDeed } = usePouzivatel();
   const upgrade = useUpgrade();
@@ -294,9 +297,9 @@ export function PodporaSekcia({ onShare, upvotes = 0, onUpvote, onPodpor, onKana
   const [otvEur, setOtvEur] = useState(true); // eurá otvorené hneď
   const [otvKrypto, setOtvKrypto] = useState(kryptoOtvorene);
   const [rychlyEur, setRychlyEur] = useState<number | null>(null);
-  const rychleEur = [1, 3, 5]; // drobné — len SEPA (pevný poplatok karty by ich zožral)
+  const rychleEur = sumyEur; // do 5 € len SEPA (pevný poplatok karty by ich zožral), vyššie aj kartou
   const odtienEur = [0, .10, .20]; // 1 € sivá, 3 € jemná červená, 5 € silnejšia — suma graduje
-  const rychleKrypto = [0.1, 0.5, 1]; // mikrodary v EURC
+  const rychleKrypto = sumyEurc; // EURC — sada podľa príjemcu
   return (
     <div>
       <div style={{ display: "flex", gap: SPACE.sm, marginTop: SPACE.sm }}>
@@ -321,7 +324,7 @@ export function PodporaSekcia({ onShare, upvotes = 0, onUpvote, onPodpor, onKana
                 <span style={{ fontSize: 18, fontWeight: 800, lineHeight: 1, fontVariantNumeric: "tabular-nums", color: C.text }}>
                   {v}<span style={{ fontSize: 11, fontWeight: 700, color: C.textSec, marginLeft: 3 }}>€</span>
                 </span>
-                <span style={{ fontSize: 10, fontWeight: 600, color: C.textTer, marginTop: 4 }}>SEPA</span>
+                <span style={{ fontSize: 10, fontWeight: 600, color: C.textTer, marginTop: 4 }}>{v <= LEN_SEPA_DO ? "SEPA" : "SEPA · karta"}</span>
               </button>
             ))}
           </div>
@@ -368,7 +371,7 @@ export function PodporaSekcia({ onShare, upvotes = 0, onUpvote, onPodpor, onKana
         </>)}
 
         {rychlyEur != null && (
-          <PlatbaModal kanal="EUR" komu={komu} suma={rychlyEur} lenSepa
+          <PlatbaModal kanal="EUR" komu={komu} suma={rychlyEur} lenSepa={rychlyEur <= LEN_SEPA_DO}
             onClose={() => setRychlyEur(null)}
             onDone={(sm) => { setRychlyEur(null); onDarEur?.(sm); }} />
         )}

@@ -6,6 +6,7 @@
 // sa rola číta z overeného účtu a tier z fakturácie.
 // Perzistencia = localStorage (rovnaký vzor ako viera/stav.ts).
 // ============================================================
+import type { SadaEur, SadaEurc } from "@/lib/sadyDarov";
 import type { OrgZbierka } from "./mock"; // type-only — bez runtime cyklu
 
 export type Pozicia = "charita" | "tvorca" | "b2b";
@@ -115,6 +116,9 @@ export const ulozZdrojAvatara = (p: Pozicia, z: ZdrojAvatara) => uloz(kluc(`avat
 // ---- charita: prijíma dary v krypte (EURC)? platí pre všetky jej zbierky ----
 export const nacitajKryptoOrg = (p: Pozicia): boolean => nacitaj(kluc(`krypto.${p}`), true);
 export const ulozKryptoOrg = (p: Pozicia, v: boolean) => uloz(kluc(`krypto.${p}`), v);
+// ---- sady rýchlych súm (eurá + EURC), ktoré si vybral príjemca ----
+export const nacitajSady = (p: Pozicia): { eur: SadaEur; eurc: SadaEurc } => nacitaj(kluc(`sady.${p}`), { eur: "drobne", eurc: "mikro" } as { eur: SadaEur; eurc: SadaEurc });
+export const ulozSady = (p: Pozicia, v: { eur: SadaEur; eurc: SadaEurc }) => uloz(kluc(`sady.${p}`), v);
 // ---- centrálna zbierka organizácie spustená (nastavenie zo správy) ----
 export const nacitajCentralnu = (p: Pozicia): boolean => nacitaj(kluc(`centralna.${p}`), false);
 export const ulozCentralnu = (p: Pozicia, v: boolean) => uloz(kluc(`centralna.${p}`), v);
