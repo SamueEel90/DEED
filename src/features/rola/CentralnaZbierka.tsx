@@ -15,8 +15,20 @@ import { nacitajKryptoOrg, ulozKryptoOrg, nacitajCentralnu, ulozCentralnu } from
 export function CentralnaZbierkaSheet({ toast, onClose }: { toast: (m: string) => void; onClose: () => void }) {
   const s = SUBJEKTY.charita;
   const [krypto, setKrypto] = useState(() => nacitajKryptoOrg("charita"));
-  const vsetky = segmentyZRegistracie();
+  const zRegistracie = segmentyZRegistracie();
   const [vybrane, setVybrane] = useState<string[]>(() => segmentyCharity());
+  // vlastné segmenty dopísané charitou (mimo číselníka) — ostávajú v zozname aj po odškrtnutí
+  const [vlastne, setVlastne] = useState<string[]>(() => segmentyCharity().filter((x) => !zRegistracie.includes(x)));
+  const vsetky = [...zRegistracie, ...vlastne];
+  const [novy, setNovy] = useState("");
+  const pridaj = () => {
+    const t = novy.trim();
+    if (!t) return;
+    if (vsetky.some((x) => x.toLowerCase() === t.toLowerCase())) { toast("Tento segment už v zozname je"); return; }
+    setVlastne((v) => [...v, t]);
+    setVybrane((v) => [...v, t]);
+    setNovy("");
+  };
   const [potvrdene, setPotvrdene] = useState(false);
   const spustena = nacitajCentralnu("charita");
 
@@ -65,9 +77,20 @@ export function CentralnaZbierkaSheet({ toast, onClose }: { toast: (m: string) =
       {vsetky.map((sg) => (
         <label key={sg} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, padding: `${SPACE.xs}px 0`, fontSize: 13.5, cursor: "pointer" }}>
           <input type="checkbox" checked={vybrane.includes(sg)} onChange={() => prepni(sg)} style={{ width: 18, height: 18, accentColor: "var(--a-green)" }} />
-          {sg}
+          {sg}{vlastne.includes(sg) && <span style={{ fontSize: 11, color: C.textTer }}>· vlastný</span>}
         </label>
       ))}
+      {/* doplniť ďalší segment vlastným textom */}
+      <div style={{ display: "flex", gap: SPACE.xs, marginTop: SPACE.xs }}>
+        <input value={novy} onChange={(e) => setNovy(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") pridaj(); }}
+          placeholder="Doplniť segment, napr. Sociálne · výdajňa potravín" maxLength={60}
+          style={{ flex: 1, minWidth: 0, height: 38, padding: `0 ${SPACE.sm}px`, borderRadius: RADIUS.sm, border: `1px solid ${C.line}`, background: "rgba(var(--glass-rgb),.05)", color: C.text, fontSize: 14, fontFamily: "inherit", outline: "none" }} />
+        <button type="button" onClick={pridaj} disabled={!novy.trim()}
+          style={{ flex: "none", height: 38, padding: `0 ${SPACE.sm}px`, borderRadius: RADIUS.sm, border: "none", fontFamily: "inherit", fontWeight: 700, fontSize: 13,
+            background: novy.trim() ? "var(--a-green)" : "rgba(var(--glass-rgb),.15)", color: novy.trim() ? "#fff" : C.textTer, cursor: novy.trim() ? "pointer" : "default" }}>
+          + Pridať
+        </button>
+      </div>
       <div style={{ background: "rgba(var(--glass-rgb),.06)", border: `1px solid ${C.line}`, borderRadius: RADIUS.sm, padding: SPACE.sm, marginTop: SPACE.xs, fontSize: 12.5, lineHeight: 1.5, color: C.text }}>
         <b>Upozornenie:</b> segment, na ktorý nemáte oprávnenie, považujeme za pokus o podvod. Pri zistení môžete byť v aplikácii zablokovaní, aj dlhodobo.
       </div>
