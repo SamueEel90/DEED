@@ -106,6 +106,12 @@ export const ulozLogo = (p: Pozicia, dataUrl: string | null) => uloz(kluc(`logo.
 export const nacitajHlavuZbalenu = (): boolean => nacitaj(kluc("hlavaZbalena"), false);
 export const ulozHlavuZbalenu = (z: boolean) => uloz(kluc("hlavaZbalena"), z);
 
+// ---- čo je v krúžku profilu: fotka osoby alebo logo (tvorca si vyberá — môže mať značku) ----
+export type ZdrojAvatara = "foto" | "logo";
+export const nacitajZdrojAvatara = (p: Pozicia): ZdrojAvatara =>
+  p === "tvorca" ? nacitaj<ZdrojAvatara>(kluc(`avatar.${p}`), "foto") : "logo";
+export const ulozZdrojAvatara = (p: Pozicia, z: ZdrojAvatara) => uloz(kluc(`avatar.${p}`), z);
+
 // ---- tvar loga (kruh/štvorec) — vyberá si subjekt v Upraviť profil ----
 export type TvarLoga = "kruh" | "stvorec";
 export const nacitajTvarLoga = (p: Pozicia): TvarLoga => nacitaj<TvarLoga>(kluc(`logotvar.${p}`), "kruh");

@@ -15,7 +15,7 @@ import { zdielaj, aktualnaUrl } from "@/lib/zdielanie";
 import type { Kanal } from "@/types";
 import { SUBJEKTY, ZASLUZENA } from "./mock";
 import { najdiZbierku, kryptoZbierky, type Dokaz } from "@/lib/zbierky";
-import { nacitajTerminal, nacitajOnas, nacitajTvarLoga, type Pozicia, type Tier } from "./stav";
+import { nacitajTerminal, nacitajOnas, nacitajTvarLoga, nacitajZdrojAvatara, type Pozicia, type Tier } from "./stav";
 import { OnasKratky } from "./OnasKratky";
 import { KontaktBlok, nacitajKontakt } from "./kontakt";
 import { verejneTaby } from "./obsah";
@@ -99,7 +99,8 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
   const s = SUBJEKTY[pozicia];
   const stit = naStitLevel(ZASLUZENA[pozicia].badge);
   // tvorca vystupuje pod profilovou fotkou osoby, charita/B2B pod logom subjektu
-  const avatarSrc = (pozicia === "tvorca" ? ja.foto : logo) ?? s.foto;
+  const fotoOsoby = pozicia === "tvorca" && nacitajZdrojAvatara(pozicia) === "foto"; // tvorca: fotka alebo logo značky
+  const avatarSrc = (fotoOsoby ? ja.foto : logo) ?? s.foto;
   const [fotky] = useFotkyEntity(klucEntity("rola", pozicia)); // titulná fotka zo správy roly
   const coverSrc = fotky.cover ?? s.cover;
   // „Všetko" — virtuálny tab navrchu (pred Kampane/Skutky/Talent…): zoskupí položky zo všetkých sekcií
@@ -350,7 +351,7 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
 
   const telo = (
     <div style={{ padding: `0 ${SPACE.md}px` }}>
-      <EntityHero avatarTvar={pozicia === "tvorca" ? "kruh" : nacitajTvarLoga(pozicia)}
+      <EntityHero avatarTvar={fotoOsoby ? "kruh" : nacitajTvarLoga(pozicia)}
         avatar={avatarSrc ? <img src={avatarSrc} alt={s.nazov} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : (pozicia === "tvorca" ? s.emoji : s.iniciacky)}
         cover={coverSrc}
         coverEl={<span style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 46, opacity: .45 }}>{s.emoji}</span>}

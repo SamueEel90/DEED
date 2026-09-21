@@ -15,9 +15,9 @@ import { AVATAR_SIRKA } from "@/lib/fotoprofilu";
 import { spracujLogo, rozmeryFotky, LOGO_CFG, COVER_CFG, type LogoRezim, type LogoPozadie } from "@/lib/obrazok";
 import { SUBJEKTY } from "./mock";
 import { nacitajKontakt, SIETE, MAX_TEL, MAX_EMAIL, chybaSiete, chybaWebu, chybaEmailu, chybaTel, type Kontakt } from "./kontakt";
-import { nacitajOnas, nacitajTvarLoga, ONAS_MAX, type Pozicia, type TvarLoga } from "./stav";
+import { nacitajOnas, nacitajTvarLoga, nacitajZdrojAvatara, ONAS_MAX, type Pozicia, type TvarLoga, type ZdrojAvatara } from "./stav";
 
-export interface ProfilZmeny { onas: string; logo: string | null; tvar: TvarLoga; cover: string | null; kontakt: Kontakt }
+export interface ProfilZmeny { onas: string; logo: string | null; tvar: TvarLoga; cover: string | null; kontakt: Kontakt; zdroj: ZdrojAvatara }
 
 const Nadpis = ({ children }: { children: ReactNode }) => (
   <div style={{ fontSize: 10.5, fontWeight: 800, color: C.textTer, letterSpacing: ".04em", margin: `${SPACE.md}px 0 ${SPACE.xs}px` }}>{children}</div>
@@ -78,9 +78,12 @@ export function UpravProfilSheet({ pozicia, logo, cover, toast, onUloz, onClose 
 }) {
   const s = SUBJEKTY[pozicia];
   const ja = usePouzivatel();
-  const maLogo = pozicia !== "tvorca"; // tvorca vystupuje pod vlastnou fotkou osoby
+  // tvorca si vyberá: vlastná fotka alebo logo značky; ostatní majú vždy logo
+  const jeTvorca = pozicia === "tvorca";
+  const [zdroj, setZdroj] = useState<ZdrojAvatara>(() => nacitajZdrojAvatara(pozicia));
+  const maLogo = !jeTvorca || zdroj === "logo";
 
-  const [povodne] = useState<ProfilZmeny>(() => ({ onas: nacitajOnas(pozicia) ?? s.onas, logo, tvar: nacitajTvarLoga(pozicia), cover: cover ?? null, kontakt: nacitajKontakt(pozicia) }));
+  const [povodne] = useState<ProfilZmeny>(() => ({ onas: nacitajOnas(pozicia) ?? s.onas, logo, tvar: nacitajTvarLoga(pozicia), cover: cover ?? null, kontakt: nacitajKontakt(pozicia), zdroj: nacitajZdrojAvatara(pozicia) }));
   const [kontakt, setKontakt] = useState<Kontakt>(povodne.kontakt);
   const zmenK = (z: Partial<Kontakt>) => setKontakt((k) => ({ ...k, ...z }));
   const chybyKontaktu = [
@@ -133,14 +136,14 @@ export function UpravProfilSheet({ pozicia, logo, cover, toast, onUloz, onClose 
   const zmenPozadie = (p: LogoPozadie) => { setPozadie(p); if (logoSubor) void spracuj(logoSubor, rezim, p); };
 
   const dlhy = cistyText(onas).length > ONAS_MAX;
-  const zmenene = JSON.stringify(kontakt) !== JSON.stringify(povodne.kontakt) || onas !== povodne.onas || logoD !== povodne.logo || tvar !== povodne.tvar
+  const zmenene = zdroj !== povodne.zdroj || JSON.stringify(kontakt) !== JSON.stringify(povodne.kontakt) || onas !== povodne.onas || logoD !== povodne.logo || tvar !== povodne.tvar
     || coverD !== povodne.cover || (!maLogo && foto !== (ja.foto ?? null));
 
   const uloz = () => {
     if (dlhy) { toast(`O nás je dlhšie ako ${ONAS_MAX} znakov — skráť ho.`); return; }
     if (chybyKontaktu.length) { toast("V kontakte je chyba — oprav červeno označené pole."); return; }
     if (!maLogo && foto !== (ja.foto ?? null)) ja.nastavFoto?.(foto);
-    onUloz({ onas, logo: logoD, tvar, cover: coverD, kontakt: {
+    onUloz({ onas, logo: logoD, tvar, cover: coverD, zdroj, kontakt: {
       ...kontakt,
       telefony: kontakt.telefony.filter((t) => t.cislo.trim()),
       emaily: kontakt.emaily.filter((e) => e.adresa.trim()),
@@ -167,9 +170,15 @@ export function UpravProfilSheet({ pozicia, logo, cover, toast, onUloz, onClose 
       </div>
 
       {/* ---- LOGO / PROFILOVÁ FOTKA ---- */}
+      {jeTvorca && (
+        <>
+          <Nadpis>V KRÚŽKU PROFILU</Nadpis>
+          <Volba moznosti={[["foto", "Moja fotka"], ["logo", "Logo značky"]]} value={zdroj} onChange={setZdroj} />
+        </>
+      )}
       {maLogo ? (
         <>
-          <Nadpis>LOGO</Nadpis>
+          {!jeTvorca && <Nadpis>LOGO</Nadpis>}
           <Volba moznosti={[["kruh", "◯ Kruh"], ["stvorec", "▢ Štvorec"]]} value={tvar} onChange={setTvar} />
           <Volba moznosti={[["cele", "Celé logo"], ["vyplnit", "Vyplniť (orez)"]]} value={rezim} onChange={zmenRezim} />
           {rezim === "cele" && (
@@ -206,7 +215,7 @@ export function UpravProfilSheet({ pozicia, logo, cover, toast, onUloz, onClose 
         </>
       ) : (
         <>
-          <Nadpis>PROFILOVÁ FOTKA</Nadpis>
+          {!jeTvorca && <Nadpis>PROFILOVÁ FOTKA</Nadpis>}
           <FotoUpload value={foto ?? undefined} onZmena={setFoto} pomer={1} vyska={130} maxSirka={AVATAR_SIRKA} tvar="kruh" minRozmer={{ w: LOGO_CFG.minPx, h: LOGO_CFG.minPx }} />
           <div style={{ fontSize: 10.5, color: C.textTer, marginTop: SPACE.xxs, lineHeight: 1.45 }}>Tvorca vystupuje pod vlastnou fotkou — tá istá ako v osobnom profile.</div>
         </>

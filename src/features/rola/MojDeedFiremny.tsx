@@ -18,7 +18,7 @@ import {
   FLAGS, KONFIG, POZICIE, TIER_LABEL, TIER_POPIS, ROLA_UCTU,
   nacitajPoziciu, ulozPoziciu, nacitajTiery, ulozTiery, nacitajDrzitel, ulozDrzitel,
   ulozDoklady, percentoDolozene, nacitajTerminal, ulozTerminal,
-  nacitajOrgExtra, ulozOrgExtra, nacitajLogo, ulozLogo, nacitajOnas, ulozOnas, nacitajTvarLoga, ulozTvarLoga, nacitajHlavuZbalenu, ulozHlavuZbalenu,
+  nacitajOrgExtra, ulozOrgExtra, nacitajLogo, ulozLogo, nacitajOnas, ulozOnas, nacitajTvarLoga, ulozTvarLoga, nacitajZdrojAvatara, ulozZdrojAvatara, nacitajHlavuZbalenu, ulozHlavuZbalenu,
   type Pozicia, type Tier, type DokladZbierky,
 } from "./stav";
 import { PANELY, SPRAVY, SPRAVA_NADPIS, ZASLUZENA, SUBJEKTY, FIRMY_ADRESAR, type PanelBlok, type SpravaItem, type OrgZbierka } from "./mock";
@@ -68,6 +68,7 @@ export function MojDeedFiremny({ onBack, toast }: { onBack: () => void; toast: (
   const [drzitel, setDrzitel] = useState<boolean>(nacitajDrzitel);
   const [logo, setLogo] = useState<string | null>(() => nacitajLogo(nacitajPoziciu()));
   const [tvarLoga, setTvarLoga] = useState(() => nacitajTvarLoga(nacitajPoziciu()));
+  const [zdrojAvatara, setZdrojAvatara] = useState(() => nacitajZdrojAvatara(nacitajPoziciu()));
   const [onas, setOnas] = useState<string | null>(() => nacitajOnas(nacitajPoziciu()));
   const [kontakt, setKontakt] = useState(() => nacitajKontakt(nacitajPoziciu()));
   const [zbalena, setZbalena] = useState(nacitajHlavuZbalenu);
@@ -81,7 +82,7 @@ export function MojDeedFiremny({ onBack, toast }: { onBack: () => void; toast: (
   const [fotky, zmenFotky] = useFotkyEntity(klucEntity("rola", pozicia));
 
   const tier = tiery[pozicia];
-  const prepniPoziciu = (p: Pozicia) => { setPozicia(p); ulozPoziciu(p); setLogo(nacitajLogo(p)); setTvarLoga(nacitajTvarLoga(p)); setOnas(nacitajOnas(p)); setKontakt(nacitajKontakt(p)); };
+  const prepniPoziciu = (p: Pozicia) => { setPozicia(p); ulozPoziciu(p); setLogo(nacitajLogo(p)); setTvarLoga(nacitajTvarLoga(p)); setZdrojAvatara(nacitajZdrojAvatara(p)); setOnas(nacitajOnas(p)); setKontakt(nacitajKontakt(p)); };
   const nastavTier = (t: Tier) => { const n = { ...tiery, [pozicia]: t }; setTiery(n); ulozTiery(n); };
   const prepniDrzitela = () => { setDrzitel((d) => { ulozDrzitel(!d); return !d; }); };
 
@@ -117,7 +118,8 @@ export function MojDeedFiremny({ onBack, toast }: { onBack: () => void; toast: (
   };
 
   // avatar subjektu: charita/B2B = nahraté logo · tvorca = moja profilová fotka
-  const avatarSrc = (pozicia === "tvorca" ? ja.foto : logo) ?? subjekt.foto;
+  const fotoOsoby = pozicia === "tvorca" && zdrojAvatara === "foto"; // tvorca: fotka alebo logo značky
+  const avatarSrc = (fotoOsoby ? ja.foto : logo) ?? subjekt.foto;
   const coverSrc = fotky.cover ?? subjekt.cover;
 
   // vlastník vidí TÚ ISTÚ verejnú stránku ako cudzí
@@ -135,7 +137,7 @@ export function MojDeedFiremny({ onBack, toast }: { onBack: () => void; toast: (
       {zbalena ? (
         // zmenšená hlavička — na mobile nezaberá miesto pri práci s nástrojmi
         <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm, background: C.surface, border: `1px solid ${C.line}`, borderRadius: RADIUS.md, padding: SPACE.sm }}>
-          <span style={{ width: 44, height: 44, flex: "none", overflow: "hidden", borderRadius: pozicia !== "tvorca" && tvarLoga === "stvorec" ? RADIUS.sm : "50%", background: C.surface2, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800 }}>
+          <span style={{ width: 44, height: 44, flex: "none", overflow: "hidden", borderRadius: !fotoOsoby && tvarLoga === "stvorec" ? RADIUS.sm : "50%", background: C.surface2, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800 }}>
             {avatarSrc ? <img src={avatarSrc} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : subjekt.iniciacky}
           </span>
           <div style={{ flex: 1, minWidth: 0 }}>
@@ -147,7 +149,7 @@ export function MojDeedFiremny({ onBack, toast }: { onBack: () => void; toast: (
           <Stit level={stit} size={36} />
         </div>
       ) : (<>
-      <EntityHero avatarTvar={pozicia === "tvorca" ? "kruh" : tvarLoga}
+      <EntityHero avatarTvar={fotoOsoby ? "kruh" : tvarLoga}
         avatar={avatarSrc
           ? <img src={avatarSrc} alt={subjekt.nazov} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
           : (pozicia === "tvorca" ? subjekt.emoji : subjekt.iniciacky)}
@@ -281,6 +283,7 @@ export function MojDeedFiremny({ onBack, toast }: { onBack: () => void; toast: (
             ulozOnas(pozicia, z.onas); setOnas(z.onas);
             setLogo(z.logo); ulozLogo(pozicia, z.logo);
             setTvarLoga(z.tvar); ulozTvarLoga(pozicia, z.tvar);
+            setZdrojAvatara(z.zdroj); ulozZdrojAvatara(pozicia, z.zdroj);
             if (z.cover !== (fotky.cover ?? null)) zmenFotky({ cover: z.cover });
             ulozKontakt(pozicia, z.kontakt); setKontakt(z.kontakt);
           }}
