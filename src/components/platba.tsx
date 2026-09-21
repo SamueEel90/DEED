@@ -49,7 +49,7 @@ export function PlatbaModal({ kanal, komu, suma: sumaInit, lenSepa = false, spli
   const jeEur = kanal === "EUR";
   const jed = kanal === "EURC" ? "EURC" : "DEED"; // krypto jednotka: EURC pri charite a Viere, inak DEED
   // registrovaný darca má v appke uloženú kartu, účet a peňaženku → nič nevypĺňa, len potvrdí
-  const { typ: typUctu } = usePouzivatel();
+  const { typ: typUctu, meno } = usePouzivatel();
   const registrovany = typUctu !== "pasivny";
   // rýchla suma (klik na 1 · 3 · 5 € …) → suma je jasná, rovno výber karta / SEPA (o klik menej);
   // vlastná suma začína zadaním sumy
@@ -232,7 +232,8 @@ export function PlatbaModal({ kanal, komu, suma: sumaInit, lenSepa = false, spli
 
       {krok === "hotovo" && res && (<>
         {/* ďakovačka — Svetlúšik */}
-        <Svetlusik nadpis="Ďakujeme za tvoju podporu!" dar="Tvoj dar je na ceste" />
+        {/* registrovanému ďakujeme menom — aj keď daroval ako anonym (meno pozná len on) */}
+        <Svetlusik nadpis={registrovany && meno ? `Ďakujeme, ${meno}, za tvoju podporu!` : "Ďakujeme za tvoju podporu!"} dar="Tvoj dar je na ceste" />
         <div style={{ background: "rgba(var(--glass-rgb),.05)", border: `1px solid ${C.line}`, borderRadius: RADIUS.sm, padding: `${SPACE.xxs}px ${SPACE.sm}px ${SPACE.xs}px` }}>
           <Riadok k="Kanál" v={jeEur ? (jeSepa ? "SEPA prevod (EUR)" : "Karta (EUR)") : `Peňaženka (${jed})`} />
           {jeEur && <Riadok k="Poplatok" v={`${poplatok.toFixed(2)} €`} />}
