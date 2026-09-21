@@ -166,7 +166,7 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
           )}
           {g.polozky.map((p, i) => {
         const z = p.zbierkaId ? najdiZbierku(p.zbierkaId) : undefined;
-        const kluc = p.zbierkaId ?? `x${i}`;
+        const kluc = p.zbierkaId ?? `${g.key}-${i}`; // unikátny aj naprieč odsekmi vo Všetko
         const otvorena = rozbalena === kluc;
         // skutok s dôkazom (fotky pred/po + doklady) sa tiež rozbalí
         const dokaz = p.dokaz ?? (p.dokazZbierky ? najdiZbierku(p.dokazZbierky)?.dokaz : undefined);
