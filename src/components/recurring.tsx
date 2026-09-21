@@ -7,6 +7,7 @@ import { useUpgrade } from "@/components/context";
 import { useRecurringCreate } from "@/data";
 import { Sheet } from "@/components/sheet";
 import { IkonaOpakovat, IkonaFajka } from "@/components/icons";
+import { Svetlusik } from "@/components/svetlusik";
 
 // ============================================================
 // PRAVIDELNÁ PODPORA (Fáza 4) — LEN charita (Help ju nikdy nemá).
@@ -28,10 +29,10 @@ export function RecurringSheet({ nazov, caseId, charitaUcet, segmenty, bezCelej 
   bezCelej?: boolean;
   onClose?: () => void; toast?: (t: string) => void;
 }) {
-  const { ucetId, demo } = usePouzivatel();
+  const { ucetId, demo, typ, meno } = usePouzivatel();
   const upgrade = useUpgrade();
   const rec = useRecurringCreate();
-  const [krok, setKrok] = useState<"nastav" | "potvrd">("nastav");
+  const [krok, setKrok] = useState<"nastav" | "potvrd" | "hotovo">("nastav");
   const [rozsah, setRozsah] = useState<Rozsah>(caseId ? "request" : "charita");
   const [suma, setSuma] = useState(10);
   const [perioda, setPerioda] = useState<Perioda>("mesacne");
@@ -53,7 +54,8 @@ export function RecurringSheet({ nazov, caseId, charitaUcet, segmenty, bezCelej 
   ];
 
   async function potvrd() {
-    if (!ucetId || demo) { onClose?.(); upgrade(); return; }  // recurring = registrovaný darca
+    if (typ === "pasivny") { onClose?.(); upgrade(); return; }  // recurring = len registrovaný darca
+    if (!ucetId || demo) { setKrok("hotovo"); return; }          // ukážka (demo účet): záväzok sa len simuluje
     try {
       await rec.mutateAsync({
         rozsah, darca: ucetId, suma, mena, perioda,
@@ -62,7 +64,7 @@ export function RecurringSheet({ nazov, caseId, charitaUcet, segmenty, bezCelej 
         viazaneNaZbierku: rozsah === "request",
       });
       toast?.(`Pravidelná podpora nastavená · ${suma} ${mena} / ${periodaTxt(perioda)}`);
-      onClose?.();
+      setKrok("hotovo");
     } catch {
       toast?.("Nepodarilo sa nastaviť — skús znova.");
     }
@@ -116,6 +118,11 @@ export function RecurringSheet({ nazov, caseId, charitaUcet, segmenty, bezCelej 
         </div>
 
         <button onClick={() => setKrok("potvrd")} style={btn(true, true)}>Pokračovať</button>
+      </>) : krok === "hotovo" ? (<>
+        <Svetlusik nadpis={meno ? `Ďakujeme, ${meno}, za tvoju podporu!` : "Ďakujeme za tvoju podporu!"}
+          dar={`${suma} ${mena} každý ${periodaTxt(perioda)}`}
+          karma="Pravidelnú podporu zrušíš kedykoľvek v Peňaženke." />
+        <button onClick={() => onClose?.()} style={btn(true, true)}>Hotovo</button>
       </>) : (<>
         {/* DVOJITÉ potvrdenie — záväzok */}
         <div style={{ background: "rgba(var(--glass-rgb),.05)", border: `1px solid ${C.line}`, borderRadius: RADIUS.sm, padding: `${SPACE.sm}px ${SPACE.gutter}px` }}>
