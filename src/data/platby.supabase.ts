@@ -33,7 +33,7 @@ export interface RecurringVstup {
   rozsah: "request" | "segment" | "charita";  // táto žiadosť / segment / celá charita
   darca: string;
   suma: number;
-  mena: "DEED" | "EUR";
+  mena: "DEED" | "EUR" | "EURC"; // charita a Viera: krypto v EURC
   perioda: "tyzdenne" | "mesacne" | "rocne";
   caseId?: string | null;
   charitaUcet?: string | null;

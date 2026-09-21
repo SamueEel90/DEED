@@ -19,11 +19,13 @@ type Perioda = "tyzdenne" | "mesacne" | "rocne";
 
 const periodaTxt = (p: Perioda) => (p === "tyzdenne" ? "týždeň" : p === "rocne" ? "rok" : "mesiac");
 
-export function RecurringSheet({ nazov, caseId, charitaUcet, segmenty, onClose, toast }: {
+export function RecurringSheet({ nazov, caseId, charitaUcet, segmenty, bezCelej = false, onClose, toast }: {
   nazov?: ReactNode; caseId?: string | null; charitaUcet?: string | null;
   /** segmenty, ktoré si charita nastavila (program AKCIA). null = charita segmenty ani celú organizáciu neponúka;
    *  undefined = starý režim bez zoznamu (feed, kým nepoznáme program charity) */
   segmenty?: string[] | null;
+  /** skryť voľbu „Celá charita" (charita ju v svojom programe neponúka) */
+  bezCelej?: boolean;
   onClose?: () => void; toast?: (t: string) => void;
 }) {
   const { ucetId, demo } = usePouzivatel();
@@ -33,7 +35,7 @@ export function RecurringSheet({ nazov, caseId, charitaUcet, segmenty, onClose, 
   const [rozsah, setRozsah] = useState<Rozsah>(caseId ? "request" : "charita");
   const [suma, setSuma] = useState(10);
   const [perioda, setPerioda] = useState<Perioda>("mesacne");
-  const [mena, setMena] = useState<"EUR" | "DEED">("EUR");
+  const [mena, setMena] = useState<"EUR" | "EURC">("EUR"); // charita a Viera prijímajú krypto v EURC, nie DEED
 
   const [segment, setSegment] = useState<string | null>(segmenty?.[0] ?? null);
   // čím širší cieľ, tým menej sa dá doložiť, kam išlo práve tvoje euro — darca to musí vidieť pred potvrdením
@@ -43,6 +45,8 @@ export function RecurringSheet({ nazov, caseId, charitaUcet, segmenty, onClose, 
     ...(segmenty === null ? [] : [
       { id: "segment" as const, t: "Segment (téma)", d: "Charita rozdelí peniaze v rámci témy podľa vlastného kľúča.",
         kontrola: "Doklady budeme požadovať za celú tému, nezaručujeme však, že pokryjú práve váš dar.", farba: "var(--a-green)" },
+    ]),
+    ...(bezCelej ? [] : [
       { id: "charita" as const, t: "Celá charita", d: "Paušál na chod a najnaliehavejšie potreby.",
         kontrola: "Nad použitím daru pre celú organizáciu nemáme kontrolu.", farba: "var(--a-green)" },
     ]),
@@ -103,7 +107,7 @@ export function RecurringSheet({ nazov, caseId, charitaUcet, segmenty, onClose, 
         </div>
         <div style={{ display: "flex", gap: SPACE.xs }}>
           <button onClick={() => setMena("EUR")} style={chip(mena === "EUR")}>€ EUR</button>
-          <button onClick={() => setMena("DEED")} style={chip(mena === "DEED")}>DEED</button>
+          <button onClick={() => setMena("EURC")} style={chip(mena === "EURC")}>EURC</button>
         </div>
 
         <div style={{ fontSize: 11.5, letterSpacing: ".4px", color: C.textTer, fontWeight: 700, margin: `${SPACE.md}px 0 ${SPACE.xs}px` }}>AKO ČASTO</div>

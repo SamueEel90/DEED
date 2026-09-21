@@ -416,7 +416,11 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
       {nahlasit && <NahlasitSheet co={`Profil · ${s.nazov}`} refId={`rola-${pozicia}`} modul="rola" onClose={() => setNahlasit(false)} toast={toast} />}
       {platba && <PlatbaModal kanal={platba} komu={s.nazov} onClose={() => setPlatba(null)}
         onDone={(d: number) => { setSuma((x) => x + d * (platba === "DEED" ? 0.01 : 1)); setLudia((l) => l + 1); toast(`Odoslané ${platba === "EUR" ? d + " €" : platba === "EURC" ? d + " EURC" : d + " DEED"} · ${s.nazov}`); }} />}
-      {pravidelna && <RecurringSheet nazov={pravidelna.nazov} caseId={pravidelna.id} segmenty={tier >= 2 ? segmentyCharity() : null} onClose={() => setPravidelna(null)} toast={toast} />}
+      {pravidelna && <RecurringSheet nazov={pravidelna.nazov}
+        // centrálna zbierka = celá organizácia → nedá sa doložiť per dar, preto bez voľby „Táto zbierka"
+        caseId={pravidelna.id === "z-centralna" ? null : pravidelna.id}
+        segmenty={tier >= 2 ? segmentyCharity() : null}
+        bezCelej={pravidelna.id !== "z-centralna" && tier < 2} onClose={() => setPravidelna(null)} toast={toast} />}
       {qrZbierka && <QrModal typ="skutok" titul={`QR — ${qrZbierka.nazov}`} popis="Sken otvorí túto zbierku — daj ho na web, do správy alebo na plagát"
         odkaz={qrUrl("case", qrZbierka.id)} onClose={() => setQrZbierka(null)} toast={toast} />}
       {qr && <QrModal typ="skutok" titul={`QR — ${s.nazov}`} popis="Profil subjektu — QR aj embed odznak na vlastný web"
