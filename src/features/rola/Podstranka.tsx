@@ -178,7 +178,7 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
         upvotes={0} onUpvote={() => undefined}
         onPodpor={(d: number) => daruj("z-centralna", d * 0.01, "deed", undefined, s.nazov)}
         onDarEur={(sm, v) => daruj("z-centralna", sm, "sepa", v, s.nazov)}
-        onDarKrypto={(v) => daruj("z-centralna", v, "deed", undefined, s.nazov)}
+        onDarKrypto={(v, vol) => daruj("z-centralna", v, "deed", vol, s.nazov)}
         onKanal={(k: string) => { setPlatbaRef({ id: "z-centralna", komu: s.nazov }); setPlatba(k as Kanal); }}
         oblubene={{ refId: `rola-${s.nazov}`, typ: pozicia, modul: "charity", nazov: s.nazov, lok: s.lok }} toast={toast}
         opakovana={maPravidelnu ? { popis: "Mesačne · len pre registrovaných · kedykoľvek zrušíš", onClick: () => setPravidelna({ id: "z-centralna", nazov: "Centrálna zbierka organizácie" }) } : undefined}
@@ -347,7 +347,7 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
                     upvotes={0} onUpvote={() => undefined}
                     onPodpor={(d: number) => daruj(z.id, d * 0.01, "deed", undefined, z.komu)}
                     onDarEur={(sm, v) => daruj(z.id, sm, "sepa", v, z.komu)}
-                    onDarKrypto={(v) => daruj(z.id, v, "deed", undefined, z.komu)}
+                    onDarKrypto={(v, vol) => daruj(z.id, v, "deed", vol, z.komu)}
                     onKanal={(k: string) => { setPlatbaRef({ id: z.id, komu: z.komu }); setPlatba(k as Kanal); }}
                     oblubene={{ refId: z.id, typ: "zbierka", modul: "charity", nazov: z.nazov, lok: z.lok }} toast={toast}
                     opakovana={maPravidelnu ? { popis: "Mesačne · len pre registrovaných · kedykoľvek zrušíš", onClick: () => setPravidelna({ id: z.id, nazov: z.nazov }) } : undefined}

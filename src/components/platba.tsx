@@ -170,7 +170,7 @@ export function PlatbaModal({ kanal, komu, suma: sumaInit, lenSepa = false, spli
       </>)}
 
       {/* zoznam darcov — ako sa darca ukáže (jedným klikom, pamätá sa) */}
-      {krok === "detaily" && <VolbaDarcovstva volba={volba} onZmena={setVolba} sumaEur={jeEur ? sumaNum : sumaNum * 0.01} />}
+      {krok === "detaily" && <VolbaDarcovstva volba={volba} onZmena={setVolba} sumaEur={jeEur || kanal === "EURC" ? sumaNum : sumaNum * 0.01} />}
 
       {/* EUR · KARTA */}
       {krok === "detaily" && jeEur && !jeSepa && (<>
@@ -295,7 +295,7 @@ const psKanal: CSSProperties = {
   cursor: "pointer", fontFamily: "inherit", background: C.surface2, border: `1px solid ${C.line}`, color: C.text,
 };
 
-export function PodporaSekcia({ onShare, upvotes = 0, onUpvote, onPodpor, onKanal, accent = "var(--a-info)", supLabel = "DROBNÁ PODPORA — klik a hneď odíde", reakcia = "palec", bezDaru = false, zbalene = false, komu, onDarEur, onDarKrypto, krypto = "EURC", poEurach, kryptoOtvorene = false, sumyEur = [1, 3, 5], sumyEurc = [0.1, 0.5, 1] }: { onShare?: () => void; upvotes?: number; onUpvote?: () => void; onPodpor: (a: number) => void; onKanal: (k: string) => void; accent?: string; supLabel?: ReactNode; reakcia?: "palec" | "srdce"; bezDaru?: boolean; zbalene?: boolean; komu?: ReactNode; onDarEur?: (suma: number, volba?: VolbaDaru) => void; onDarKrypto?: (eurc: number) => void; krypto?: "EURC" | "DEED" | "nie";
+export function PodporaSekcia({ onShare, upvotes = 0, onUpvote, onPodpor, onKanal, accent = "var(--a-info)", supLabel = "DROBNÁ PODPORA — klik a hneď odíde", reakcia = "palec", bezDaru = false, zbalene = false, komu, onDarEur, onDarKrypto, krypto = "EURC", poEurach, kryptoOtvorene = false, sumyEur = [1, 3, 5], sumyEurc = [0.1, 0.5, 1] }: { onShare?: () => void; upvotes?: number; onUpvote?: () => void; onPodpor: (a: number) => void; onKanal: (k: string) => void; accent?: string; supLabel?: ReactNode; reakcia?: "palec" | "srdce"; bezDaru?: boolean; zbalene?: boolean; komu?: ReactNode; onDarEur?: (suma: number, volba?: VolbaDaru) => void; onDarKrypto?: (eurc: number, volba?: VolbaDaru) => void; krypto?: "EURC" | "DEED" | "nie";
   /** riadky vložené medzi dary v eurách a dary v krypte (pravidelná podpora, Obľúbené + Podporiť DEED) */
   poEurach?: ReactNode;
   /** dary v krypte rozbalené hneď (napr. náhľad v správe, aby bolo vidno, čo zmizne) */
@@ -319,6 +319,7 @@ export function PodporaSekcia({ onShare, upvotes = 0, onUpvote, onPodpor, onKana
   const [otvEur, setOtvEur] = useState(true); // eurá otvorené hneď
   const [otvKrypto, setOtvKrypto] = useState(kryptoOtvorene);
   const [rychlyEur, setRychlyEur] = useState<number | null>(null);
+  const [rychlyKrypto, setRychlyKrypto] = useState<number | null>(null); // rýchly EURC dar → potvrdenie + ďakovačka
   const rychleEur = sumyEur; // do 5 € len SEPA (pevný poplatok karty by ich zožral), vyššie aj kartou
   const odtienEur = [0, .10, .20]; // 1 € sivá, 3 € jemná červená, 5 € silnejšia — suma graduje
   const rychleKrypto = sumyEurc; // EURC — sada podľa príjemcu
@@ -378,7 +379,7 @@ export function PodporaSekcia({ onShare, upvotes = 0, onUpvote, onPodpor, onKana
         {krypto === "EURC" && otvKrypto && (<>
           <div style={{ display: "flex", gap: SPACE.xs, alignItems: "stretch", paddingTop: 8 }}>
             {rychleKrypto.map((v, i) => (
-              <button key={v} onClick={deedAkcia(() => onDarKrypto?.(v))} style={psSuma(i === 2, accent)}>
+              <button key={v} onClick={deedAkcia(() => setRychlyKrypto(v))} style={psSuma(i === 2, accent)}>
                 {i === 2 && <span style={psTag(accent)}>NAJČASTEJŠIE</span>}
                 <span style={{ fontSize: 17, fontWeight: 800, lineHeight: 1, fontVariantNumeric: "tabular-nums", color: i === 2 ? accent : C.text }}>
                   {v.toLocaleString("sk", { minimumFractionDigits: v < 1 ? 2 : 0 })}<span style={{ fontSize: 9, fontWeight: 700, color: C.textTer, marginLeft: 3, letterSpacing: ".04em" }}>EURC</span>
@@ -396,6 +397,11 @@ export function PodporaSekcia({ onShare, upvotes = 0, onUpvote, onPodpor, onKana
           <PlatbaModal kanal="EUR" komu={komu} suma={rychlyEur} lenSepa={rychlyEur <= LEN_SEPA_DO}
             onClose={() => setRychlyEur(null)}
             onDone={(sm, v) => { setRychlyEur(null); onDarEur?.(sm, v); }} />
+        )}
+        {rychlyKrypto != null && (
+          <PlatbaModal kanal="EURC" komu={komu} suma={rychlyKrypto}
+            onClose={() => setRychlyKrypto(null)}
+            onDone={(sm, v) => { setRychlyKrypto(null); onDarKrypto?.(sm, v); }} />
         )}
       </>) : (<>
       <PSLabel>{supLabel}</PSLabel>

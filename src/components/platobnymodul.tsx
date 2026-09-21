@@ -54,7 +54,7 @@ export interface PlatobnyModulProps {
   komu?: ReactNode;
   onDarEur?: (suma: number, volba?: import("@/lib/darcovia").VolbaDaru) => void;
   /** rýchly dar v krypte (EURC) */
-  onDarKrypto?: (eurc: number) => void;
+  onDarKrypto?: (eurc: number, volba?: import("@/lib/darcovia").VolbaDaru) => void;
   /** v čom príjemca berie krypto: EURC (charita, Viera) · DEED (ostatní) · „nie" */
   krypto?: "EURC" | "DEED" | "nie";
   // --- 4.–7. riadky ---
