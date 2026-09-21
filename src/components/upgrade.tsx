@@ -54,7 +54,7 @@ export function UpgradePanel({ onClose, onAktivovat }: { onClose?: () => void; o
         </div>
         <div style={{ fontSize: 18, fontWeight: 800, marginTop: SPACE.gutter }}>Toto je pre registrovaných</div>
         <div style={{ fontSize: 13.5, color: C.textSec, marginTop: SPACE.xs, lineHeight: 1.55, maxWidth: 320 }}>
-          Bez registrácie môžeš všetko prezerať a prispieť v EUR. Na pravidelnú podporu, DEED a vytváranie obsahu sa zaregistruj — zadarmo, doterajšie ti ostane.
+          Bez registrácie môžeš všetko prezerať a prispieť v EUR. Na pravidelnú podporu, DEED a vytváranie obsahu sa zaregistruj. Registrácia je zadarmo.
         </div>
       </div>
 
