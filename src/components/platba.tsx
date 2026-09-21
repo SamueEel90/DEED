@@ -272,9 +272,11 @@ const psKanal: CSSProperties = {
   cursor: "pointer", fontFamily: "inherit", background: C.surface2, border: `1px solid ${C.line}`, color: C.text,
 };
 
-export function PodporaSekcia({ onShare, upvotes = 0, onUpvote, onPodpor, onKanal, accent = "var(--a-info)", supLabel = "DROBNÁ PODPORA — klik a hneď odíde", reakcia = "palec", bezDaru = false, zbalene = false, komu, onDarEur, onDarKrypto, krypto = "EURC", poEurach }: { onShare?: () => void; upvotes?: number; onUpvote?: () => void; onPodpor: (a: number) => void; onKanal: (k: string) => void; accent?: string; supLabel?: ReactNode; reakcia?: "palec" | "srdce"; bezDaru?: boolean; zbalene?: boolean; komu?: ReactNode; onDarEur?: (suma: number) => void; onDarKrypto?: (eurc: number) => void; krypto?: "EURC" | "DEED" | "nie";
+export function PodporaSekcia({ onShare, upvotes = 0, onUpvote, onPodpor, onKanal, accent = "var(--a-info)", supLabel = "DROBNÁ PODPORA — klik a hneď odíde", reakcia = "palec", bezDaru = false, zbalene = false, komu, onDarEur, onDarKrypto, krypto = "EURC", poEurach, kryptoOtvorene = false }: { onShare?: () => void; upvotes?: number; onUpvote?: () => void; onPodpor: (a: number) => void; onKanal: (k: string) => void; accent?: string; supLabel?: ReactNode; reakcia?: "palec" | "srdce"; bezDaru?: boolean; zbalene?: boolean; komu?: ReactNode; onDarEur?: (suma: number) => void; onDarKrypto?: (eurc: number) => void; krypto?: "EURC" | "DEED" | "nie";
   /** riadky vložené medzi dary v eurách a dary v krypte (pravidelná podpora, Obľúbené + Podporiť DEED) */
-  poEurach?: ReactNode }) {
+  poEurach?: ReactNode;
+  /** dary v krypte rozbalené hneď (napr. náhľad v správe, aby bolo vidno, čo zmizne) */
+  kryptoOtvorene?: boolean }) {
   // pasívny prispieva len v EUR; DEED (peňaženka) vyžaduje účet → výzva na registráciu
   const { mozeDeed } = usePouzivatel();
   const upgrade = useUpgrade();
@@ -290,7 +292,7 @@ export function PodporaSekcia({ onShare, upvotes = 0, onUpvote, onPodpor, onKana
   ];
   // charita + farnosť: dary v eurách a v krypte sú zbalené, otvárajú sa klikom na nadpis
   const [otvEur, setOtvEur] = useState(true); // eurá otvorené hneď
-  const [otvKrypto, setOtvKrypto] = useState(false);
+  const [otvKrypto, setOtvKrypto] = useState(kryptoOtvorene);
   const [rychlyEur, setRychlyEur] = useState<number | null>(null);
   const rychleEur = [1, 3, 5]; // drobné — len SEPA (pevný poplatok karty by ich zožral)
   const odtienEur = [0, .10, .20]; // 1 € sivá, 3 € jemná červená, 5 € silnejšia — suma graduje

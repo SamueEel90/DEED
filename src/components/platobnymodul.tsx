@@ -32,6 +32,8 @@ export interface RiadokAkcie {
 }
 
 export interface PlatobnyModulProps {
+  /** dary v krypte rozbalené hneď */
+  kryptoOtvorene?: boolean;
   // --- 1. ZADARMO ---
   onShare?: () => void;
   upvotes?: number;
@@ -90,7 +92,7 @@ function QrNahlad() {
 export function PlatobnyModul({
   onShare, upvotes = 0, onUpvote, reakcia = "palec",
   onPodpor, onKanal, accent = "var(--a-info)", supLabel, bezDaru = false, zbalene = false, komu, onDarEur, krypto,
-  oblubene, toast, bezOblubenych = false, opakovana, qr, retaz, style,
+  oblubene, toast, bezOblubenych = false, opakovana, qr, retaz, style, kryptoOtvorene,
 }: PlatobnyModulProps) {
   // Pravidelná podpora — zelená a výraznejšia; v zbalenom module sedí hneď pod darmi v eurách
   const pravidelnaEl = opakovana && (
@@ -121,7 +123,7 @@ export function PlatobnyModul({
       <PodporaSekcia
         onShare={onShare} upvotes={upvotes} onUpvote={onUpvote} reakcia={reakcia}
         onPodpor={onPodpor} onKanal={onKanal} accent={accent} bezDaru={bezDaru}
-        zbalene={zbalene} komu={komu} krypto={krypto} poEurach={zbalene ? <>{pravidelnaEl}{oblubeneEl}</> : undefined} onDarEur={onDarEur ?? ((sm) => toast?.(`Ďakujeme za dar ${sm.toLocaleString("sk")} €`))}
+        zbalene={zbalene} komu={komu} krypto={krypto} kryptoOtvorene={kryptoOtvorene} poEurach={zbalene ? <>{pravidelnaEl}{oblubeneEl}</> : undefined} onDarEur={onDarEur ?? ((sm) => toast?.(`Ďakujeme za dar ${sm.toLocaleString("sk")} €`))}
         onDarKrypto={(v) => toast?.(`Ďakujeme za dar ${v.toLocaleString("sk", { minimumFractionDigits: 2 })} EURC`)}
         {...(supLabel ? { supLabel } : {})} />
 

@@ -44,7 +44,7 @@ export function CentralnaZbierkaSheet({ toast, onClose }: { toast: (m: string) =
       <div style={{ background: C.surface2, border: `1px solid ${C.line}`, borderRadius: RADIUS.md, padding: SPACE.sm }}>
         <div style={{ fontSize: 14, fontWeight: 800, marginBottom: SPACE.xs }}>{s.nazov}</div>
         <div style={{ marginBottom: SPACE.sm }}><ProgresBox suma={0} ciel={12000} ludia={0} /></div>
-        <PlatobnyModul zbalene krypto={krypto ? "EURC" : "nie"}
+        <PlatobnyModul zbalene kryptoOtvorene krypto={krypto ? "EURC" : "nie"}
           onShare={() => undefined} upvotes={0} onUpvote={() => undefined}
           onPodpor={() => undefined} onKanal={() => undefined} toast={() => undefined}
           opakovana={{ popis: "Segment alebo celá organizácia · len pre registrovaných", onClick: () => undefined }} />
