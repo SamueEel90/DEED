@@ -20,7 +20,7 @@ const ISKRY = [
   "translate(0,-75px)", "translate(-80px,5px)", "translate(40px,65px)", "translate(85px,-10px)",
 ];
 
-export function Svetlusik({ nadpis, dar, karma }: { nadpis: ReactNode; dar: ReactNode; karma: ReactNode }) {
+export function Svetlusik({ nadpis, dar, karma }: { nadpis: ReactNode; dar: ReactNode; karma?: ReactNode }) {
   return (
     <div className="sv" style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", padding: `${SPACE.xs}px 0 ${SPACE.gutter}px` }}>
       <style>{CSS}</style>
@@ -46,9 +46,9 @@ export function Svetlusik({ nadpis, dar, karma }: { nadpis: ReactNode; dar: Reac
         </span>
       </div>
       <div style={{ animation: "sv-text .5s ease-out .7s both" }}>
-        <div style={{ fontSize: 19, fontWeight: 800 }}>{nadpis}</div>
-        <div style={{ fontSize: 14.5, fontWeight: 700, color: "var(--a-green)", marginTop: 4 }}>{dar}</div>
-        <div style={{ fontSize: 12.5, color: C.textSec, marginTop: SPACE.xs, lineHeight: 1.45, maxWidth: 300 }}>{karma}</div>
+        <div style={{ fontSize: 26, fontWeight: 800, lineHeight: 1.2 }}>{nadpis}</div>
+        <div style={{ fontSize: 19, fontWeight: 800, color: "var(--a-green)", marginTop: SPACE.xs }}>{dar}</div>
+        {karma && <div style={{ fontSize: 12.5, color: C.textSec, marginTop: SPACE.xs, lineHeight: 1.45, maxWidth: 300 }}>{karma}</div>}
       </div>
     </div>
   );
