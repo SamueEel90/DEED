@@ -52,7 +52,9 @@ export interface PlatobnyModulProps {
   zbalene?: boolean;
   /** komu idú peniaze — do hlavičky platby pri drobnom eurovom dare */
   komu?: ReactNode;
-  onDarEur?: (suma: number) => void;
+  onDarEur?: (suma: number, volba?: import("@/lib/darcovia").VolbaDaru) => void;
+  /** rýchly dar v krypte (EURC) */
+  onDarKrypto?: (eurc: number) => void;
   /** v čom príjemca berie krypto: EURC (charita, Viera) · DEED (ostatní) · „nie" */
   krypto?: "EURC" | "DEED" | "nie";
   // --- 4.–7. riadky ---
@@ -93,7 +95,7 @@ function QrNahlad() {
 
 export function PlatobnyModul({
   onShare, upvotes = 0, onUpvote, reakcia = "palec",
-  onPodpor, onKanal, accent = "var(--a-info)", supLabel, bezDaru = false, zbalene = false, komu, onDarEur, krypto,
+  onPodpor, onKanal, accent = "var(--a-info)", supLabel, bezDaru = false, zbalene = false, komu, onDarEur, onDarKrypto, krypto,
   oblubene, toast, bezOblubenych = false, opakovana, qr, retaz, style, kryptoOtvorene, sumyEur, sumyEurc,
 }: PlatobnyModulProps) {
   // Pravidelná podpora — zelená a výraznejšia; v zbalenom module sedí hneď pod darmi v eurách
@@ -126,7 +128,7 @@ export function PlatobnyModul({
         onShare={onShare} upvotes={upvotes} onUpvote={onUpvote} reakcia={reakcia}
         onPodpor={onPodpor} onKanal={onKanal} accent={accent} bezDaru={bezDaru}
         zbalene={zbalene} komu={komu} krypto={krypto} kryptoOtvorene={kryptoOtvorene} sumyEur={sumyEur} sumyEurc={sumyEurc} poEurach={zbalene ? <>{pravidelnaEl}{oblubeneEl}</> : undefined} onDarEur={onDarEur ?? ((sm) => toast?.(`Ďakujeme za dar ${sm.toLocaleString("sk")} €`))}
-        onDarKrypto={(v) => toast?.(`Ďakujeme za dar ${v.toLocaleString("sk", { minimumFractionDigits: 2 })} EURC`)}
+        onDarKrypto={onDarKrypto ?? ((v) => toast?.(`Ďakujeme za dar ${v.toLocaleString("sk", { minimumFractionDigits: 2 })} EURC`))}
         {...(supLabel ? { supLabel } : {})} />
 
       {/* nezbalený modul: pravidelná podpora a Obľúbené pod darmi (v zbalenom sú pred darmi v krypte) */}

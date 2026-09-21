@@ -7,6 +7,12 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 import { nacitajUcetData } from "./db";
 import { nacitajFotoProfilu, ulozFotoProfilu } from "./fotoprofilu";
+import { jeNeregistrovany, sledujDarcu } from "./devDarca";
+
+// demo identita podľa DEV prepínača: registrovaný (plný účet) / neregistrovaný (host, len EUR)
+const demoStav = (): Pouzivatel => (jeNeregistrovany()
+  ? { ...DEMO, typ: "pasivny", mozeTvorit: false, mozeDeed: false, foto: nacitajFotoProfilu(null) }
+  : { ...DEMO, foto: nacitajFotoProfilu(null) });
 import type { Pouzivatel, Session, UcetData } from "@/types";
 
 // DEMO identita = presne to, čo appka zobrazovala doteraz (admin/preskočiť)
@@ -17,14 +23,14 @@ const DEMO: Pouzivatel = {
   mozeTvorit: true, // demo = plný náhľad (admin / „pozrieť appku")
   mozeDeed: true,
   meno: "Martin",
-  priezvisko: "K.",
-  celeMeno: "Martin K.",
+  priezvisko: "Konaľ",
+  celeMeno: "Martin Konaľ",
   iniciala: "M",
   foto: null, // demo identita si fotku dopĺňa sama (nacitajFotoProfilu pri mounte)
   mesto: "Trenčín",
   poradoveCislo: null,
   rezim: "cele",
-  nick: null,
+  nick: "Martin585",
   tier: "Gold · L7",
   tint: "#3A8DD6",
   nacitavam: false,
@@ -103,7 +109,7 @@ function seed(session: Session): Pouzivatel {
 
 export function PouzivatelProvider({ session, children }: { session: Session; children: ReactNode }) {
   const [stav, setStav] = useState<Pouzivatel>(() =>
-    !session || session.demo ? { ...DEMO, foto: nacitajFotoProfilu(null) } : seed(session));
+    !session || session.demo ? demoStav() : seed(session));
 
   const refresh = useCallback(async () => {
     if (!session || session.demo || !session.ucet_id) return;
@@ -125,8 +131,8 @@ export function PouzivatelProvider({ session, children }: { session: Session; ch
 
   useEffect(() => {
     if (!session || session.demo) {
-      setStav({ ...DEMO, foto: nacitajFotoProfilu(null) });
-      return;
+      setStav(demoStav());
+      return sledujDarcu(() => setStav(demoStav())); // DEV prepínač registrovaný / neregistrovaný
     }
     setStav(seed(session));
     refresh();

@@ -17,7 +17,7 @@ export const DARCOVIA_CFG = {
 };
 
 // verzie zobrazenia identity (spec §2) — volí registrovaný darca pri platbe
-export type VerziaIdentity = 1 | 2 | 3 | 4; // 1 celé meno · 2 meno+iniciála · 3 prezývka · 4 anonym
+export type VerziaIdentity = 1 | 2 | 3 | 4 | 5; // 1 celé meno · 2 meno+iniciála · 3 prezývka · 4 anonym · 5 celé meno + mesto
 export type KanalDaru = "psp" | "sepa" | "deed";
 
 export interface VolbaDaru { verzia: VerziaIdentity; zobrazSumu: boolean }
@@ -44,7 +44,7 @@ const KLUC_MESTO = "deed.dar.mesto"; // profilové nastavenie „zobrazovať mes
 export function nacitajPredvolbu(): VolbaDaru {
   try {
     const s = localStorage.getItem(KLUC_PREDVOLBA);
-    if (s) { const v = JSON.parse(s) as VolbaDaru; if (v.verzia >= 1 && v.verzia <= 4) return { verzia: v.verzia, zobrazSumu: !!v.zobrazSumu }; }
+    if (s) { const v = JSON.parse(s) as VolbaDaru; if (v.verzia >= 1 && v.verzia <= 5) return { verzia: v.verzia, zobrazSumu: !!v.zobrazSumu }; }
   } catch { /* LS nedostupné */ }
   return { verzia: 4, zobrazSumu: false }; // default = anonym, bez sumy
 }
@@ -61,7 +61,10 @@ export function ulozMestoVerejne(on: boolean) {
 // ---- store (mock, in-memory) — zoznam + počítadlo rastú z JEDNÉHO miesta ----
 const sklad = new Map<string, DarRiadok[]>();
 const posluchaci = new Set<() => void>();
-const emit = () => posluchaci.forEach((f) => f());
+let verzia = 0;
+const emit = () => { verzia++; posluchaci.forEach((f) => f()); };
+/** prekreslenie pri akomkoľvek novom dare (súčty v hlavičke a ukazovateľoch) */
+export function useZmenyDarov(): number { return useSyncExternalStore(subscribe, () => verzia); }
 function subscribe(f: () => void) { posluchaci.add(f); return () => { posluchaci.delete(f); }; }
 
 // deterministický seed per refId (mock „posledné dary" — ako keby prišli z enginu)
@@ -102,10 +105,20 @@ function seed(refId: string): DarRiadok[] {
   });
 }
 
+// zbierky na ukážku klientovi: začínajú bez vymyslených darov — pribúdajú len skutočné (simulované) platby
+const ciste = new Set<string>();
+export function nastavCiste(ids: string[]) { ids.forEach((i) => ciste.add(i)); }
+
 function riadkyPre(refId: string): DarRiadok[] {
   let r = sklad.get(refId);
-  if (!r) { r = seed(refId); sklad.set(refId, r); }
+  if (!r) { r = ciste.has(refId) ? [] : seed(refId); sklad.set(refId, r); }
   return r;
+}
+
+/** súčet a počet darov zbierky (eurá; EURC 1 : 1) — jeden zdroj pre ukazovateľ aj hlavičku */
+export function sucetDarov(refId: string): { suma: number; pocet: number } {
+  const r = riadkyPre(refId);
+  return { suma: r.reduce((a, x) => a + x.suma, 0), pocet: r.length };
 }
 
 /** Živý zoznam darov pre zbierku — chronologicky, najnovší hore. */
@@ -141,8 +154,9 @@ export interface JaIdentita { meno?: string; priezvisko?: string; celeMeno?: str
 export function identitaDarcu(r: DarRiadok, ja?: JaIdentita): string {
   if (!r.registrovany) return "Anonymný darca"; // bez mesta, bez čohokoľvek
   const zdroj = r.moj && ja
-    ? { meno: ja.celeMeno || ja.meno || "Člen", inicialovo: `${ja.meno || "Člen"} ${(ja.priezvisko || "")[0]?.toUpperCase() ?? ""}${(ja.priezvisko || "")[0] ? "." : ""}`.trim(), nick: ja.nick || undefined, mesto: ja.mesto, mestoVerejne: nacitajMestoVerejne() }
+    ? { meno: ja.celeMeno || ja.meno || "Člen", inicialovo: `${ja.meno || "Člen"} ${(ja.priezvisko || "")[0]?.toUpperCase() ?? ""}${(ja.priezvisko || "")[0] ? "." : ""}`.trim(), nick: ja.nick || undefined, mesto: ja.mesto, mestoVerejne: false }
     : r;
+  if (r.verzia === 5) return `${zdroj.meno || "Darca"}${zdroj.mesto && zdroj.mesto !== "—" ? `, ${zdroj.mesto}` : ""}`;
   const zaklad = r.verzia === 1 ? (zdroj.meno || "Darca")
     : r.verzia === 2 ? (zdroj.inicialovo || zdroj.meno || "Darca")
     : r.verzia === 3 ? (zdroj.nick || zdroj.inicialovo || "Darca")

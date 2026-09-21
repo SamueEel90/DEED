@@ -13,6 +13,8 @@ import { NahlasitSheet } from "@/components/nahlasit";
 import { qrUrl } from "@/lib/qr";
 import { RecurringSheet } from "@/components/recurring";
 import { SADY_EUR, SADY_EURC } from "@/lib/sadyDarov";
+import { nastavCiste, sucetDarov, useZmenyDarov, pridajDar, type VolbaDaru } from "@/lib/darcovia";
+import { ZoznamDarcov } from "@/components/zoznamdarcov";
 import { zdielaj, aktualnaUrl } from "@/lib/zdielanie";
 import type { Kanal } from "@/types";
 import { SUBJEKTY, ZASLUZENA } from "./mock";
@@ -94,6 +96,22 @@ function DokazBlok({ dokaz, vyzbierane }: { dokaz: Dokaz; vyzbierane?: number })
   );
 }
 
+// ukážka klientovi: zbierky 3 vzorových profilov a centrálna zbierka začínajú bez vymyslených darov
+nastavCiste([
+  ...Object.values(SUBJEKTY).flatMap((x) => x.taby.flatMap((t) => t.polozky.map((p) => p.zbierkaId).filter((id): id is string => !!id))),
+  "z-centralna",
+]);
+/** súčet všetkého, čo charita vyzbierala (jej zbierky + centrálna) */
+function vyzbieraneCharita(): number {
+  const ids = SUBJEKTY.charita.taby.flatMap((t) => t.polozky.map((p) => p.zbierkaId)).filter((id): id is string => !!id);
+  return ids.reduce((a, id) => { const z = najdiZbierku(id); return a + (z ? ziva(z).vyzbierane : 0); }, 0) + sucetDarov("z-centralna").suma;
+}
+/** zbierka so živými číslami: základ + skutočné (simulované) dary */
+function ziva<T extends { id: string; vyzbierane: number; darcovia: number }>(z: T): T {
+  const d = sucetDarov(z.id);
+  return { ...z, vyzbierane: z.vyzbierane + d.suma, darcovia: z.darcovia + d.pocet };
+}
+
 export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
   pozicia: Pozicia; tier?: Tier; logo: string | null; toast: (m: string) => void; onBack: () => void;
 }) {
@@ -124,8 +142,15 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
   const [menu, setMenu] = useState(false);
   const [nahlasit, setNahlasit] = useState(false);
   const [platba, setPlatba] = useState<Kanal | null>(null);
-  const [suma, setSuma] = useState(8600);   // mock — všeobecná podpora charity
-  const [ludia, setLudia] = useState(214);
+  useZmenyDarov(); // prekreslí sumy po každom dare
+  const registrovany = ja.typ !== "pasivny";
+  const centr = sucetDarov("z-centralna");
+  const [platbaRef, setPlatbaRef] = useState<{ id: string; komu: string } | null>(null);
+  // zápis daru → zoznam darcov + súčty (registrovaný so zvoleným menom, inak anonym)
+  const daruj = (refId: string, suma: number, kanal: "psp" | "sepa" | "deed", volba?: VolbaDaru, komu?: string) => {
+    pridajDar({ refId, suma, kanal, registrovany, volba });
+    toast(`Ďakujeme za dar ${suma.toLocaleString("sk", { maximumFractionDigits: 2 })} ${kanal === "deed" ? "EURC" : "€"}${komu ? ` · ${komu}` : ""}`);
+  };
   const terminalOn = pozicia === "tvorca" && nacitajTerminal();
   const aktTab = taby.find((t) => t.key === tab) ?? taby[0];
 
@@ -147,15 +172,18 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
   const podporaBlok = pozicia === "charita" && tier >= 1 && nacitajCentralnu("charita") && (
     <div style={{ marginBottom: SPACE.gutter }}>
       <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".05em", color: C.textTer, marginBottom: SPACE.xs }}>CENTRÁLNA ZBIERKA ORGANIZÁCIE</div>
-      <div style={{ marginBottom: SPACE.sm }}><ProgresBox suma={suma} ciel={12000} ludia={ludia} /></div>
+      <div style={{ marginBottom: SPACE.sm }}><ProgresBox suma={centr.suma} ciel={12000} ludia={centr.pocet} /></div>
       <PlatobnyModul zbalene krypto={kryptoOrg ? "EURC" : "nie"} {...sumy}
         onShare={zdielajProfil}
-        upvotes={ludia} onUpvote={() => toast("❤")}
-        onPodpor={(d: number) => { setSuma((x) => x + d * 0.01); setLudia((l) => l + 1); toast(`Ďakujeme za ${d} DEED pre ${s.nazov}`); }}
-        onKanal={(k: string) => setPlatba(k as Kanal)}
+        upvotes={0} onUpvote={() => undefined}
+        onPodpor={(d: number) => daruj("z-centralna", d * 0.01, "deed", undefined, s.nazov)}
+        onDarEur={(sm, v) => daruj("z-centralna", sm, "sepa", v, s.nazov)}
+        onDarKrypto={(v) => daruj("z-centralna", v, "deed", undefined, s.nazov)}
+        onKanal={(k: string) => { setPlatbaRef({ id: "z-centralna", komu: s.nazov }); setPlatba(k as Kanal); }}
         oblubene={{ refId: `rola-${s.nazov}`, typ: pozicia, modul: "charity", nazov: s.nazov, lok: s.lok }} toast={toast}
         opakovana={maPravidelnu ? { popis: "Mesačne · len pre registrovaných · kedykoľvek zrušíš", onClick: () => setPravidelna({ id: "z-centralna", nazov: "Centrálna zbierka organizácie" }) } : undefined}
         qr={{ label: "QR tejto zbierky", popis: "Sken → dar za 2 kliky · zdieľanie", onClick: () => setQr(true) }} />
+      <ZoznamDarcov refId="z-centralna" celkom={centr.pocet} style={{ marginTop: SPACE.sm }} />
     </div>
   );
 
@@ -171,7 +199,8 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
             <div style={{ fontSize: 14, fontWeight: 800, color: C.text, margin: `${SPACE.gutter}px 0 ${SPACE.xs}px` }}>{g.label}</div>
           )}
           {g.polozky.map((p, i) => {
-        const z = p.zbierkaId ? najdiZbierku(p.zbierkaId) : undefined;
+        const z0 = p.zbierkaId ? najdiZbierku(p.zbierkaId) : undefined;
+        const z = z0 ? ziva(z0) : undefined;
         const kluc = p.zbierkaId ?? `${g.key}-${i}`; // unikátny aj naprieč odsekmi vo Všetko
         const otvorena = rozbalena === kluc;
         // skutok s dôkazom (fotky pred/po + doklady) sa tiež rozbalí
@@ -315,13 +344,17 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
                 {z.stav === "aktivna" ? (
                   <PlatobnyModul zbalene krypto={kryptoOrg ? kryptoZbierky(z) : "nie"} {...sumy}
                     onShare={zdielajProfil}
-                    upvotes={z.darcovia} onUpvote={() => toast("❤")}
-                    onPodpor={(d: number) => toast(`Ďakujeme za ${d} DEED pre ${z.komu}`)}
-                    onKanal={(k: string) => setPlatba(k as Kanal)}
+                    upvotes={0} onUpvote={() => undefined}
+                    onPodpor={(d: number) => daruj(z.id, d * 0.01, "deed", undefined, z.komu)}
+                    onDarEur={(sm, v) => daruj(z.id, sm, "sepa", v, z.komu)}
+                    onDarKrypto={(v) => daruj(z.id, v, "deed", undefined, z.komu)}
+                    onKanal={(k: string) => { setPlatbaRef({ id: z.id, komu: z.komu }); setPlatba(k as Kanal); }}
                     oblubene={{ refId: z.id, typ: "zbierka", modul: "charity", nazov: z.nazov, lok: z.lok }} toast={toast}
                     opakovana={maPravidelnu ? { popis: "Mesačne · len pre registrovaných · kedykoľvek zrušíš", onClick: () => setPravidelna({ id: z.id, nazov: z.nazov }) } : undefined}
                     qr={{ label: "QR tejto zbierky", popis: "Skenovať · kopírovať · zdieľať", onClick: () => setQrZbierka({ id: z.id, nazov: z.nazov }) }} />
-                ) : (
+                ) : null}
+                {z.stav === "aktivna" && <ZoznamDarcov refId={z.id} celkom={z.darcovia} style={{ marginTop: SPACE.sm }} />}
+                {z.stav === "aktivna" ? null : (
                   <>
                     <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm, background: "var(--a-green)", color: "#fff", borderRadius: RADIUS.sm, padding: `${SPACE.sm}px ${SPACE.gutter}px`, marginBottom: SPACE.sm }}>
                       <span style={{ fontSize: 24, lineHeight: 1 }}>✓</span>
@@ -375,7 +408,9 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
           </div>
         }
         podMenom={oNasKratky}
-        stats={(tier === 0 && s.cislaZadarmo ? s.cislaZadarmo : s.cisla).map(([hodnota, label]) => ({ hodnota, label }))}
+        stats={(tier === 0 && s.cislaZadarmo ? s.cislaZadarmo : s.cisla).map(([hodnota, label], i) => ({
+          // charita: „Vyzbierané" = súčet všetkých jej zbierok (ukončené + živé dary) + centrálna
+          hodnota: pozicia === "charita" && i === 0 ? `${vyzbieraneCharita().toLocaleString("sk", { maximumFractionDigits: 0 })} €` : hodnota, label }))}
         akcie={<>
           <BtnAkcia variant={sledujem ? "secondary" : "primary"} ariaPressed={sledujem}
             onClick={() => { setSledujem((v) => !v); toast(sledujem ? `Prestal si sledovať ${s.nazov}` : `Sleduješ ${s.nazov}`); }}>
@@ -419,8 +454,8 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
         ]} />
       )}
       {nahlasit && <NahlasitSheet co={`Profil · ${s.nazov}`} refId={`rola-${pozicia}`} modul="rola" onClose={() => setNahlasit(false)} toast={toast} />}
-      {platba && <PlatbaModal kanal={platba} komu={s.nazov} onClose={() => setPlatba(null)}
-        onDone={(d: number) => { setSuma((x) => x + d * (platba === "DEED" ? 0.01 : 1)); setLudia((l) => l + 1); toast(`Odoslané ${platba === "EUR" ? d + " €" : platba === "EURC" ? d + " EURC" : d + " DEED"} · ${s.nazov}`); }} />}
+      {platba && <PlatbaModal kanal={platba} komu={platbaRef?.komu ?? s.nazov} onClose={() => { setPlatba(null); setPlatbaRef(null); }}
+        onDone={(d: number, v?: VolbaDaru) => daruj(platbaRef?.id ?? "z-centralna", platba === "DEED" ? d * 0.01 : d, platba === "EUR" ? "psp" : "deed", v, platbaRef?.komu ?? s.nazov)} />}
       {pravidelna && <RecurringSheet nazov={pravidelna.nazov}
         // centrálna zbierka = celá organizácia → nedá sa doložiť per dar, preto bez voľby „Táto zbierka"
         caseId={pravidelna.id === "z-centralna" ? null : pravidelna.id}

@@ -26,6 +26,7 @@ import { Podstranka } from "./Podstranka";
 import { UpravProfilSheet } from "./UpravProfil";
 import { useRegistraciaCharity, ulozDoRegistracie, segmentyCharity } from "./registracia";
 import { OnasKratky } from "./OnasKratky";
+import { jeNeregistrovany, nastavNeregistrovany } from "@/lib/devDarca";
 import { CentralnaZbierkaSheet } from "./CentralnaZbierka";
 import { KontaktBlok, nacitajKontakt, ulozKontakt } from "./kontakt";
 import { verejneTaby, zamknuteTaby, popisTabu, BLOK_ZA_TAB, zbierkyOrg, dokladyZbierky } from "./obsah";
@@ -337,6 +338,7 @@ function DevPanel({ pozicia, tier, drzitel, onPozicia, onTier, onDrzitel }: {
   onPozicia: (p: Pozicia) => void; onTier: (t: Tier) => void; onDrzitel: () => void;
 }) {
   const [open, setOpen] = useState(true);
+  const [neregistrovany, setNeregistrovany] = useState(jeNeregistrovany);
   const seg = (on: boolean, farba: string): React.CSSProperties => ({
     flex: 1, height: 32, display: "flex", alignItems: "center", justifyContent: "center", gap: 5,
     borderRadius: RADIUS.xs, cursor: "pointer", fontSize: 12, fontWeight: on ? 800 : 600,
@@ -370,6 +372,14 @@ function DevPanel({ pozicia, tier, drzitel, onPozicia, onTier, onDrzitel }: {
               <div style={{ fontSize: 10.5, color: C.textTer }}>Zapne sekciu Správa ({ROLA_UCTU[pozicia]})</div>
             </div>
             <Switch on={drzitel} onChange={onDrzitel} ariaLabel="Držiteľ roly" />
+          </div>
+          {/* darca na ukážku: registrovaný má uloženú kartu, účet a peňaženku; neregistrovaný vypĺňa polia a je anonym */}
+          <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm, padding: `${SPACE.xxs}px ${SPACE.xxs}px` }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 12, fontWeight: 700 }}>Darca: {neregistrovany ? "neregistrovaný" : "registrovaný"}</div>
+              <div style={{ fontSize: 10.5, color: C.textTer }}>{neregistrovany ? "Vypĺňa kartu / IBAN · v zozname darcov anonym" : "Uložená karta, účet, peňaženka · pod darom jeho meno"}</div>
+            </div>
+            <Switch on={!neregistrovany} onChange={() => { nastavNeregistrovany(!neregistrovany); setNeregistrovany(!neregistrovany); }} ariaLabel="Registrovaný darca" />
           </div>
         </div>
       )}

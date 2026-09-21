@@ -30,9 +30,26 @@ function DarPreNas({ on, label, onToggle }: { on: boolean; label: string; onTogg
     </button>
   );
 }
+/** uložený platobný prostriedok registrovaného darcu (karta / účet) */
+function Ulozene({ ikona, t, d }: { ikona: string; t: string; d: string }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm, padding: `${SPACE.sm}px ${SPACE.gutter}px`, marginBottom: SPACE.sm, borderRadius: RADIUS.sm, background: tint(C.green, .06), border: `1px solid ${tint(C.green, .35)}` }}>
+      <span style={{ fontSize: 22 }}>{ikona}</span>
+      <span style={{ flex: 1, minWidth: 0 }}>
+        <span style={{ display: "block", fontSize: 14, fontWeight: 700 }}>{t}</span>
+        <span style={{ display: "block", fontSize: 11.5, color: C.textTer }}>{d}</span>
+      </span>
+      <IkonaFajka size={16} color="var(--a-green)" />
+    </div>
+  );
+}
+
 export function PlatbaModal({ kanal, komu, suma: sumaInit, lenSepa = false, split = false, onClose, onDone }: { kanal?: string; komu?: ReactNode; suma?: number; lenSepa?: boolean; split?: boolean; onClose?: () => void; onDone?: (suma: number, volba?: VolbaDaru) => void }) {
   const jeEur = kanal === "EUR";
   const jed = kanal === "EURC" ? "EURC" : "DEED"; // krypto jednotka: EURC pri charite a Viere, inak DEED
+  // registrovaný darca má v appke uloženú kartu, účet a peňaženku → nič nevypĺňa, len potvrdí
+  const { typ: typUctu } = usePouzivatel();
+  const registrovany = typUctu !== "pasivny";
   const [krok, setKrok] = useState("suma"); // suma | metoda | detaily | spracovanie | hotovo
   // zoznam darcov: voľba identity per dar — posledná voľba je predvoľba (spec §2)
   const [volba, setVolba] = useState<VolbaDaru>(nacitajPredvolbu);
@@ -60,9 +77,9 @@ export function PlatbaModal({ kanal, komu, suma: sumaInit, lenSepa = false, spli
   const fmtCislo = (v: string) => v.replace(/\D/g, "").slice(0, 16).replace(/(.{4})(?=.)/g, "$1 ");
   const fmtExp = (v: string) => { const d = v.replace(/\D/g, "").slice(0, 4); return d.length > 2 ? d.slice(0, 2) + "/" + d.slice(2) : d; };
   const fmtIban = (v: string) => v.replace(/[^a-zA-Z0-9]/g, "").toUpperCase().slice(0, 34).replace(/(.{4})(?=.)/g, "$1 ");
-  const kartaOk = karta.cislo.replace(/\s/g, "").length === 16 && karta.exp.length === 5 && karta.cvc.length >= 3;
+  const kartaOk = registrovany || (karta.cislo.replace(/\s/g, "").length === 16 && karta.exp.length === 5 && karta.cvc.length >= 3);
   const ibanClean = sepa.iban.replace(/\s/g, "");
-  const sepaOk = ibanClean.length >= 15 && sepa.meno.trim().length >= 3;
+  const sepaOk = registrovany || (ibanClean.length >= 15 && sepa.meno.trim().length >= 3);
 
   // vlastná numerická klávesnica — hodnota je VŽDY viditeľná hore, žiadna systémová
   // klávesnica (na mobile prekrývala spodný sheet a sumu nebolo vidno pri zadávaní).
@@ -154,11 +171,13 @@ export function PlatbaModal({ kanal, komu, suma: sumaInit, lenSepa = false, spli
 
       {/* EUR · KARTA */}
       {krok === "detaily" && jeEur && !jeSepa && (<>
+        {registrovany ? <Ulozene ikona="💳" t="Visa •••• 4242" d="Uložená karta · platnosť 08/28" /> : (<>
         <input autoFocus inputMode="numeric" placeholder="Číslo karty" value={karta.cislo} onChange={(e) => setKarta({ ...karta, cislo: fmtCislo(e.target.value) })} style={{ ...inpS, marginBottom: SPACE.sm, letterSpacing: ".06em" }} />
         <div style={{ display: "flex", gap: SPACE.sm, marginBottom: SPACE.sm }}>
           <input inputMode="numeric" placeholder="MM/RR" value={karta.exp} onChange={(e) => setKarta({ ...karta, exp: fmtExp(e.target.value) })} style={{ ...inpS, flex: 1 }} />
           <input inputMode="numeric" placeholder="CVC" value={karta.cvc} onChange={(e) => setKarta({ ...karta, cvc: e.target.value.replace(/\D/g, "").slice(0, 4) })} style={{ ...inpS, flex: 1 }} />
         </div>
+        </>)}
         <div style={{ background: "rgba(var(--glass-rgb),.05)", border: `1px solid ${C.line}`, borderRadius: RADIUS.sm, padding: `${SPACE.xxs}px ${SPACE.sm}px ${SPACE.xs}px` }}>
           <Riadok k="Suma" v={`${sumaNum.toFixed(2)} €`} />
           <Riadok k="Poplatok (1,4 % + 0,15 €)" v={`${poplatok.toFixed(2)} €`} />
@@ -172,8 +191,10 @@ export function PlatbaModal({ kanal, komu, suma: sumaInit, lenSepa = false, spli
 
       {/* EUR · SEPA prevod */}
       {krok === "detaily" && jeSepa && (<>
+        {registrovany ? <Ulozene ikona="🏦" t="SK31 •••• •••• 7788" d="Uložený účet · Tatra banka" /> : (<>
         <input autoFocus placeholder="IBAN (napr. SK89 0000 0000 0000 0000 0000)" value={sepa.iban} onChange={(e) => setSepa({ ...sepa, iban: fmtIban(e.target.value) })} style={{ ...inpS, marginBottom: SPACE.sm, letterSpacing: ".04em", fontSize: 15 }} />
         <input placeholder="Meno majiteľa účtu" value={sepa.meno} onChange={(e) => setSepa({ ...sepa, meno: e.target.value })} style={{ ...inpS, marginBottom: SPACE.sm }} />
+        </>)}
         <div style={{ background: "rgba(var(--glass-rgb),.05)", border: `1px solid ${C.line}`, borderRadius: RADIUS.sm, padding: `${SPACE.xxs}px ${SPACE.sm}px ${SPACE.xs}px` }}>
           <Riadok k="Dar charite" v={`${sumaNum.toFixed(2)} €`} />
           <Riadok k="Marža DEED" v="0 € · neberieme nič" accent={C.green} />
@@ -273,7 +294,7 @@ const psKanal: CSSProperties = {
   cursor: "pointer", fontFamily: "inherit", background: C.surface2, border: `1px solid ${C.line}`, color: C.text,
 };
 
-export function PodporaSekcia({ onShare, upvotes = 0, onUpvote, onPodpor, onKanal, accent = "var(--a-info)", supLabel = "DROBNÁ PODPORA — klik a hneď odíde", reakcia = "palec", bezDaru = false, zbalene = false, komu, onDarEur, onDarKrypto, krypto = "EURC", poEurach, kryptoOtvorene = false, sumyEur = [1, 3, 5], sumyEurc = [0.1, 0.5, 1] }: { onShare?: () => void; upvotes?: number; onUpvote?: () => void; onPodpor: (a: number) => void; onKanal: (k: string) => void; accent?: string; supLabel?: ReactNode; reakcia?: "palec" | "srdce"; bezDaru?: boolean; zbalene?: boolean; komu?: ReactNode; onDarEur?: (suma: number) => void; onDarKrypto?: (eurc: number) => void; krypto?: "EURC" | "DEED" | "nie";
+export function PodporaSekcia({ onShare, upvotes = 0, onUpvote, onPodpor, onKanal, accent = "var(--a-info)", supLabel = "DROBNÁ PODPORA — klik a hneď odíde", reakcia = "palec", bezDaru = false, zbalene = false, komu, onDarEur, onDarKrypto, krypto = "EURC", poEurach, kryptoOtvorene = false, sumyEur = [1, 3, 5], sumyEurc = [0.1, 0.5, 1] }: { onShare?: () => void; upvotes?: number; onUpvote?: () => void; onPodpor: (a: number) => void; onKanal: (k: string) => void; accent?: string; supLabel?: ReactNode; reakcia?: "palec" | "srdce"; bezDaru?: boolean; zbalene?: boolean; komu?: ReactNode; onDarEur?: (suma: number, volba?: VolbaDaru) => void; onDarKrypto?: (eurc: number) => void; krypto?: "EURC" | "DEED" | "nie";
   /** riadky vložené medzi dary v eurách a dary v krypte (pravidelná podpora, Obľúbené + Podporiť DEED) */
   poEurach?: ReactNode;
   /** dary v krypte rozbalené hneď (napr. náhľad v správe, aby bolo vidno, čo zmizne) */
@@ -373,7 +394,7 @@ export function PodporaSekcia({ onShare, upvotes = 0, onUpvote, onPodpor, onKana
         {rychlyEur != null && (
           <PlatbaModal kanal="EUR" komu={komu} suma={rychlyEur} lenSepa={rychlyEur <= LEN_SEPA_DO}
             onClose={() => setRychlyEur(null)}
-            onDone={(sm) => { setRychlyEur(null); onDarEur?.(sm); }} />
+            onDone={(sm, v) => { setRychlyEur(null); onDarEur?.(sm, v); }} />
         )}
       </>) : (<>
       <PSLabel>{supLabel}</PSLabel>
