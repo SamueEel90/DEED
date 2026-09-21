@@ -207,7 +207,7 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
               <span style={{ color: C.textTer, fontSize: 15, flex: "none", transform: otvorena ? "rotate(90deg)" : "none", transition: "transform .18s ease" }}>›</span>
             </div>
 
-            {/* rozbalené video Talentu — prehrávač + väzba na zbierku */}
+            {/* rozbalené video — prehrávač + väzba na zbierku */}
             {otvorena && !z && p.video && (
               <div style={{ padding: `0 ${SPACE.sm}px ${SPACE.sm}px` }}>
                 <div {...pressable(() => toast(`▶ ${p.titul}`), "Prehrať video")}
