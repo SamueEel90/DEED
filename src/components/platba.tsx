@@ -9,6 +9,7 @@ import { usePouzivatel } from "@/lib/pouzivatel";
 import { Sheet } from "@/components/sheet";
 import { IkonaStit, IkonaFajka, Zdielanie, Palec, Srdce } from "@/components/icons";
 import { VolbaDarcovstva } from "@/components/zoznamdarcov";
+import { Svetlusik } from "@/components/svetlusik";
 import { nacitajPredvolbu, ulozPredvolbu, type VolbaDaru } from "@/lib/darcovia";
 
 // ============================================================
@@ -48,7 +49,7 @@ export function PlatbaModal({ kanal, komu, suma: sumaInit, lenSepa = false, spli
   const jeEur = kanal === "EUR";
   const jed = kanal === "EURC" ? "EURC" : "DEED"; // krypto jednotka: EURC pri charite a Viere, inak DEED
   // registrovaný darca má v appke uloženú kartu, účet a peňaženku → nič nevypĺňa, len potvrdí
-  const { typ: typUctu } = usePouzivatel();
+  const { typ: typUctu, meno } = usePouzivatel();
   const registrovany = typUctu !== "pasivny";
   // rýchla suma (klik na 1 · 3 · 5 € …) → suma je jasná, rovno výber karta / SEPA (o klik menej);
   // vlastná suma začína zadaním sumy
@@ -230,11 +231,13 @@ export function PlatbaModal({ kanal, komu, suma: sumaInit, lenSepa = false, spli
       )}
 
       {krok === "hotovo" && res && (<>
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: SPACE.xs, padding: `${SPACE.xxs}px 0 ${SPACE.gutter}px` }}>
-          <div style={{ width: 54, height: 54, borderRadius: RADIUS.round, background: "rgba(46,200,140,.16)", display: "flex", alignItems: "center", justifyContent: "center" }}><IkonaFajka size={28} color="var(--a-green)" /></div>
-          <div style={{ fontSize: 17, fontWeight: 800 }}>{jeSepa ? "Prevod odoslaný" : "Platba úspešná"}</div>
-          <div style={{ fontSize: 12.5, color: C.textSec }}>{jeEur ? `${spolu.toFixed(2)} €` : `${spolu.toLocaleString("sk")} ${jed}`}{komu ? ` → ${komu}` : ""}</div>
-        </div>
+        {/* ďakovačka — Svetlúšik: dar do popredia + karma rastie s každým skutkom */}
+        <Svetlusik
+          nadpis={registrovany ? `Ďakujeme, ${meno}!` : "Ďakujeme!"}
+          dar={<>{jeEur ? `${sumaNum.toLocaleString("sk", { maximumFractionDigits: 2 })} €` : `${sumaNum.toLocaleString("sk")} ${jed}`}{komu ? <> pre {komu}</> : null}</>}
+          karma={registrovany
+            ? <>Tvoja karma rastie s každým skutkom ✨<br />{jeSepa ? "Prevod je na ceste — pripísanie do 1 pracovného dňa." : "Dar je na ceste."}</>
+            : <>Zaregistruj sa a tvoja karma porastie s každým skutkom ✨</>} />
         <div style={{ background: "rgba(var(--glass-rgb),.05)", border: `1px solid ${C.line}`, borderRadius: RADIUS.sm, padding: `${SPACE.xxs}px ${SPACE.sm}px ${SPACE.xs}px` }}>
           <Riadok k="Kanál" v={jeEur ? (jeSepa ? "SEPA prevod (EUR)" : "Karta (EUR)") : `Peňaženka (${jed})`} />
           {jeEur && <Riadok k="Poplatok" v={`${poplatok.toFixed(2)} €`} />}
