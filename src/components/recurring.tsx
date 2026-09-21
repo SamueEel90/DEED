@@ -39,12 +39,12 @@ export function RecurringSheet({ nazov, caseId, charitaUcet, segmenty, onClose, 
   // čím širší cieľ, tým menej sa dá doložiť, kam išlo práve tvoje euro — darca to musí vidieť pred potvrdením
   const volby: { id: Rozsah; t: string; d: string; kontrola: string; farba: string }[] = [
     ...(caseId ? [{ id: "request" as const, t: "Táto zbierka", d: "Skončí, keď zbierka skončí — okamžite a s notifikáciou.",
-      kontrola: "✓ Každé euro doložené dokladmi k tejto zbierke.", farba: "var(--a-green)" }] : []),
+      kontrola: "✓ K tejto zbierke budú doložené doklady o použití.", farba: "var(--a-green)" }] : []),
     ...(segmenty === null ? [] : [
       { id: "segment" as const, t: "Segment (téma)", d: "Charita rozdelí peniaze v rámci témy podľa vlastného kľúča.",
-        kontrola: "⚠ Doložené len za celú tému — nie za tvoj konkrétny dar.", farba: "var(--a-gold)" },
+        kontrola: "⚠ Doklady budeme požadovať za celú tému, nezaručujeme však, že pokryjú práve váš dar.", farba: "var(--a-gold)" },
       { id: "charita" as const, t: "Celá charita", d: "Paušál na chod a najnaliehavejšie potreby.",
-        kontrola: "⚠ Použitie tvojho daru sa nedá dohľadať — ide na celú organizáciu.", farba: "var(--a-danger)" },
+        kontrola: "⚠ Nad použitím daru pre celú organizáciu nemáme kontrolu.", farba: "var(--a-danger)" },
     ]),
   ];
 
@@ -118,7 +118,7 @@ export function RecurringSheet({ nazov, caseId, charitaUcet, segmenty, onClose, 
           <Riadok k="Suma" v={`${suma} ${mena}`} />
           <Riadok k="Perióda" v={`každý ${periodaTxt(perioda)}`} />
           <Riadok k="Cieľ" v={rozsah === "segment" && segment ? `Segment — ${segment}` : volby.find((x) => x.id === rozsah)?.t} />
-          <Riadok k="Dokladovanie" v={<span style={{ color: volby.find((x) => x.id === rozsah)?.farba }}>{rozsah === "request" ? "úplné" : rozsah === "segment" ? "len za tému" : "žiadne"}</span>} />
+          <Riadok k="Dokladovanie" v={<span style={{ color: volby.find((x) => x.id === rozsah)?.farba }}>{rozsah === "request" ? "doklady k zbierke" : rozsah === "segment" ? "doklady za tému" : "bez kontroly"}</span>} />
           {rozsah === "request" && <Riadok k="Pozn." v="zastaví sa pri ukončení zbierky" />}
         </div>
         <div style={{ fontSize: 11.5, color: C.textTer, marginTop: SPACE.sm, lineHeight: 1.5 }}>
