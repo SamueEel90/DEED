@@ -39,12 +39,12 @@ export function RecurringSheet({ nazov, caseId, charitaUcet, segmenty, onClose, 
   // čím širší cieľ, tým menej sa dá doložiť, kam išlo práve tvoje euro — darca to musí vidieť pred potvrdením
   const volby: { id: Rozsah; t: string; d: string; kontrola: string; farba: string }[] = [
     ...(caseId ? [{ id: "request" as const, t: "Táto zbierka", d: "Skončí, keď zbierka skončí — okamžite a s notifikáciou.",
-      kontrola: "✓ K tejto zbierke budú doložené doklady o použití.", farba: "var(--a-green)" }] : []),
+      kontrola: "K tejto zbierke budú doložené doklady o použití.", farba: "var(--a-green)" }] : []),
     ...(segmenty === null ? [] : [
       { id: "segment" as const, t: "Segment (téma)", d: "Charita rozdelí peniaze v rámci témy podľa vlastného kľúča.",
-        kontrola: "⚠ Doklady budeme požadovať za celú tému, nezaručujeme však, že pokryjú práve váš dar.", farba: "var(--a-gold)" },
+        kontrola: "Doklady budeme požadovať za celú tému, nezaručujeme však, že pokryjú práve váš dar.", farba: "var(--a-green)" },
       { id: "charita" as const, t: "Celá charita", d: "Paušál na chod a najnaliehavejšie potreby.",
-        kontrola: "⚠ Nad použitím daru pre celú organizáciu nemáme kontrolu.", farba: "var(--a-danger)" },
+        kontrola: "Nad použitím daru pre celú organizáciu nemáme kontrolu.", farba: "var(--a-green)" },
     ]),
   ];
 
