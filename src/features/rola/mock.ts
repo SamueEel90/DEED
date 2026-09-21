@@ -81,6 +81,9 @@ export interface SubjektMeta {
   taby: { key: string; label: string; odTieru?: Tier; polozky: { emoji: string; titul: string; popis: string; zbierkaId?: string; split?: number; odTieru?: Tier; dokaz?: Dokaz; dokazZbierky?: string; video?: { nahlad: string; dlzka: string; zbierkaId?: string } }[] }[];
 }
 
+/** segmenty (témy), ktoré si charita nastavila v správe — darca ich vidí pri pravidelnej podpore (program AKCIA) */
+export const SEGMENTY_CHARITY = ["Rodiny v núdzi", "Seniori", "Jedlo pre ulicu"];
+
 export const SUBJEKTY: Record<Pozicia, SubjektMeta> = {
   charita: {
     nazov: "Svetlo pomoci o.z.", emoji: "💛", iniciacky: "SP", lok: "Trenčín", overena: true,
@@ -230,7 +233,7 @@ export const SPRAVA_CHARITA: SpravaItem[] = [
   // AKCIA (T2)
   { id: "podujatia", emoji: "🎟", nazov: "Benefičné podujatia a predaj", popis: "Podujatie s QR a potvrdením účasti · predaj lístkov, merchu a služieb · školenia (provízia 10 %)", tierMin: 2 },
   { id: "dobrovolnici", emoji: "🙋", nazov: "Dobrovoľníctvo", popis: "Výzva pre verejnosť · QR dochádzka (prah 60 %) · náhradníci a chat · upozornenie v okolí · výkaz hodín", tierMin: 2 },
-  { id: "segment", emoji: "🧩", nazov: "Dar pre segment alebo celú organizáciu", popis: "Darca nemusí vybrať konkrétnu zbierku", tierMin: 2 },
+  { id: "segment", emoji: "🧩", nazov: "Segmenty pre darcov", popis: "Nastav témy (napr. Seniori, Rodiny v núdzi) — darca podporí tému alebo celú organizáciu", tierMin: 2 },
   { id: "upoutavky", emoji: "▶️", nazov: "Upútavky na zbierky v Talente", popis: "2 videá / mesiac · až 10 súbežných zbierok · 5 inzerátov", tierMin: 2 },
   // KAMPAŇ (T3)
   { id: "sektorove-qr", emoji: "🔳", nazov: "Sektorové QR", popis: "QR pre celý sektor organizácie", tierMin: 3 },

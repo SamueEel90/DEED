@@ -19,7 +19,13 @@ type Perioda = "tyzdenne" | "mesacne" | "rocne";
 
 const periodaTxt = (p: Perioda) => (p === "tyzdenne" ? "týždeň" : p === "rocne" ? "rok" : "mesiac");
 
-export function RecurringSheet({ nazov, caseId, charitaUcet, onClose, toast }: { nazov?: ReactNode; caseId?: string | null; charitaUcet?: string | null; onClose?: () => void; toast?: (t: string) => void }) {
+export function RecurringSheet({ nazov, caseId, charitaUcet, segmenty, onClose, toast }: {
+  nazov?: ReactNode; caseId?: string | null; charitaUcet?: string | null;
+  /** segmenty, ktoré si charita nastavila (program AKCIA). null = charita segmenty ani celú organizáciu neponúka;
+   *  undefined = starý režim bez zoznamu (feed, kým nepoznáme program charity) */
+  segmenty?: string[] | null;
+  onClose?: () => void; toast?: (t: string) => void;
+}) {
   const { ucetId, demo } = usePouzivatel();
   const upgrade = useUpgrade();
   const rec = useRecurringCreate();
@@ -29,10 +35,17 @@ export function RecurringSheet({ nazov, caseId, charitaUcet, onClose, toast }: {
   const [perioda, setPerioda] = useState<Perioda>("mesacne");
   const [mena, setMena] = useState<"EUR" | "DEED">("EUR");
 
-  const volby: { id: Rozsah; t: string; d: string }[] = [
-    ...(caseId ? [{ id: "request" as const, t: "Táto zbierka", d: "Skončí, keď zbierka skončí — okamžite a s notifikáciou." }] : []),
-    { id: "segment", t: "Segment (téma)", d: "Charita rozdelí podľa vlastného kľúča." },
-    { id: "charita", t: "Celá charita", d: "Paušál na chod a najnaliehavejšie potreby." },
+  const [segment, setSegment] = useState<string | null>(segmenty?.[0] ?? null);
+  // čím širší cieľ, tým menej sa dá doložiť, kam išlo práve tvoje euro — darca to musí vidieť pred potvrdením
+  const volby: { id: Rozsah; t: string; d: string; kontrola: string; farba: string }[] = [
+    ...(caseId ? [{ id: "request" as const, t: "Táto zbierka", d: "Skončí, keď zbierka skončí — okamžite a s notifikáciou.",
+      kontrola: "✓ Každé euro doložené dokladmi k tejto zbierke.", farba: "var(--a-green)" }] : []),
+    ...(segmenty === null ? [] : [
+      { id: "segment" as const, t: "Segment (téma)", d: "Charita rozdelí peniaze v rámci témy podľa vlastného kľúča.",
+        kontrola: "⚠ Doložené len za celú tému — nie za tvoj konkrétny dar.", farba: "var(--a-gold)" },
+      { id: "charita" as const, t: "Celá charita", d: "Paušál na chod a najnaliehavejšie potreby.",
+        kontrola: "⚠ Použitie tvojho daru sa nedá dohľadať — ide na celú organizáciu.", farba: "var(--a-danger)" },
+    ]),
   ];
 
   async function potvrd() {
@@ -72,9 +85,17 @@ export function RecurringSheet({ nazov, caseId, charitaUcet, onClose, toast }: {
             <span style={{ flex: 1, minWidth: 0 }}>
               <span style={{ display: "block", fontSize: 14, fontWeight: 700 }}>{v.t}</span>
               <span style={{ display: "block", fontSize: 11.5, color: C.textTer, marginTop: SPACE.xxs }}>{v.d}</span>
+              <span style={{ display: "block", fontSize: 11.5, fontWeight: 700, color: v.farba, marginTop: SPACE.xxs }}>{v.kontrola}</span>
             </span>
           </button>
         ))}
+        {rozsah === "segment" && segmenty && segmenty.length > 0 && (
+          <div style={{ display: "flex", flexWrap: "wrap", gap: SPACE.xs, margin: `${SPACE.xxs}px 0 ${SPACE.xs}px` }}>
+            {segmenty.map((sg) => (
+              <button key={sg} onClick={() => setSegment(sg)} style={{ ...chip(segment === sg), flex: "none", padding: `${SPACE.xs}px ${SPACE.sm}px` }}>{sg}</button>
+            ))}
+          </div>
+        )}
 
         <div style={{ fontSize: 11.5, letterSpacing: ".4px", color: C.textTer, fontWeight: 700, margin: `${SPACE.md}px 0 ${SPACE.xs}px` }}>SUMA</div>
         <div style={{ display: "flex", gap: SPACE.xs, marginBottom: SPACE.sm }}>
@@ -96,7 +117,8 @@ export function RecurringSheet({ nazov, caseId, charitaUcet, onClose, toast }: {
         <div style={{ background: "rgba(var(--glass-rgb),.05)", border: `1px solid ${C.line}`, borderRadius: RADIUS.sm, padding: `${SPACE.sm}px ${SPACE.gutter}px` }}>
           <Riadok k="Suma" v={`${suma} ${mena}`} />
           <Riadok k="Perióda" v={`každý ${periodaTxt(perioda)}`} />
-          <Riadok k="Cieľ" v={volby.find((x) => x.id === rozsah)?.t} />
+          <Riadok k="Cieľ" v={rozsah === "segment" && segment ? `Segment — ${segment}` : volby.find((x) => x.id === rozsah)?.t} />
+          <Riadok k="Dokladovanie" v={<span style={{ color: volby.find((x) => x.id === rozsah)?.farba }}>{rozsah === "request" ? "úplné" : rozsah === "segment" ? "len za tému" : "žiadne"}</span>} />
           {rozsah === "request" && <Riadok k="Pozn." v="zastaví sa pri ukončení zbierky" />}
         </div>
         <div style={{ fontSize: 11.5, color: C.textTer, marginTop: SPACE.sm, lineHeight: 1.5 }}>

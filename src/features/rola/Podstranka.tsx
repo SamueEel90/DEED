@@ -14,7 +14,7 @@ import { qrUrl } from "@/lib/qr";
 import { RecurringSheet } from "@/components/recurring";
 import { zdielaj, aktualnaUrl } from "@/lib/zdielanie";
 import type { Kanal } from "@/types";
-import { SUBJEKTY, ZASLUZENA } from "./mock";
+import { SUBJEKTY, ZASLUZENA, SEGMENTY_CHARITY } from "./mock";
 import { najdiZbierku, kryptoZbierky, type Dokaz } from "@/lib/zbierky";
 import { nacitajTerminal, nacitajOnas, nacitajTvarLoga, nacitajZdrojAvatara, type Pozicia, type Tier } from "./stav";
 import { OnasKratky } from "./OnasKratky";
@@ -148,7 +148,7 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
         onPodpor={(d: number) => { setSuma((x) => x + d * 0.01); setLudia((l) => l + 1); toast(`Ďakujeme za ${d} DEED pre ${s.nazov}`); }}
         onKanal={(k: string) => setPlatba(k as Kanal)}
         oblubene={{ refId: `rola-${s.nazov}`, typ: pozicia, modul: "charity", nazov: s.nazov, lok: s.lok }} toast={toast}
-        opakovana={maPravidelnu ? { popis: "Mesačne · len pre registrovaných · kedykoľvek zrušíš", onClick: () => setPravidelna({ id: null, nazov: "Centrálna zbierka organizácie" }) } : undefined}
+        opakovana={maPravidelnu ? { popis: "Mesačne · len pre registrovaných · kedykoľvek zrušíš", onClick: () => setPravidelna({ id: "z-centralna", nazov: "Centrálna zbierka organizácie" }) } : undefined}
         qr={{ label: "QR tejto zbierky", popis: "Sken → dar za 2 kliky · zdieľanie", onClick: () => setQr(true) }} />
     </div>
   );
@@ -415,7 +415,7 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
       {nahlasit && <NahlasitSheet co={`Profil · ${s.nazov}`} refId={`rola-${pozicia}`} modul="rola" onClose={() => setNahlasit(false)} toast={toast} />}
       {platba && <PlatbaModal kanal={platba} komu={s.nazov} onClose={() => setPlatba(null)}
         onDone={(d: number) => { setSuma((x) => x + d * (platba === "DEED" ? 0.01 : 1)); setLudia((l) => l + 1); toast(`Odoslané ${platba === "EUR" ? d + " €" : platba === "EURC" ? d + " EURC" : d + " DEED"} · ${s.nazov}`); }} />}
-      {pravidelna && <RecurringSheet nazov={pravidelna.nazov} caseId={pravidelna.id} onClose={() => setPravidelna(null)} toast={toast} />}
+      {pravidelna && <RecurringSheet nazov={pravidelna.nazov} caseId={pravidelna.id} segmenty={tier >= 2 ? SEGMENTY_CHARITY : null} onClose={() => setPravidelna(null)} toast={toast} />}
       {qrZbierka && <QrModal typ="skutok" titul={`QR — ${qrZbierka.nazov}`} popis="Sken otvorí túto zbierku — daj ho na web, do správy alebo na plagát"
         odkaz={qrUrl("case", qrZbierka.id)} onClose={() => setQrZbierka(null)} toast={toast} />}
       {qr && <QrModal typ="skutok" titul={`QR — ${s.nazov}`} popis="Profil subjektu — QR aj embed odznak na vlastný web"
