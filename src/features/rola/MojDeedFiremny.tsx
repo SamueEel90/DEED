@@ -77,8 +77,11 @@ export function MojDeedFiremny({ onBack, toast }: { onBack: () => void; toast: (
   const nastavTier = (t: Tier) => { const n = { ...tiery, [pozicia]: t }; setTiery(n); ulozTiery(n); };
   const prepniDrzitela = () => { setDrzitel((d) => { ulozDrzitel(!d); return !d; }); };
 
-  const bloky = PANELY[pozicia];
-  const sprava = SPRAVY[pozicia];
+  // Viditeľnosť nástrojov: vlastné + najviac 2 programy nad sebou (zamknuté).
+  // Vyššie sa nezobrazujú vôbec — ZADARMO nevidí nástroje z T3/T4, T1 nevidí T4 atď.
+  const viditelny = (tierMin: Tier) => tierMin <= tier + 2;
+  const bloky = PANELY[pozicia].filter((b) => viditelny(b.tierMin));
+  const sprava = SPRAVY[pozicia].filter((it) => it.povinne || viditelny(it.tierMin));
   const rolaMeta = POZICIE.find((p) => p.key === pozicia)!;
   const subjekt = SUBJEKTY[pozicia];
   const stit = naStitLevel(ZASLUZENA[pozicia].badge);
