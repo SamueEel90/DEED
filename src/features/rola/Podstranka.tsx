@@ -174,16 +174,23 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
         const popis = z ? [p.popis, z.komu].filter(Boolean).join(" · ") : p.popis;
         return (
           <div key={kluc} style={{ background: C.surface, border: `1px solid ${otvorena ? tint("var(--a-info)", .38) : C.line}`, borderRadius: RADIUS.sm, marginBottom: SPACE.xs, overflow: "hidden" }}>
-            <div {...pressable(() => (z || dokaz ? setRozbalena(otvorena ? null : kluc) : toast(`${titul} — detail`)), titul)}
+            <div {...pressable(() => (z || dokaz || p.video ? setRozbalena(otvorena ? null : kluc) : toast(`${titul} — detail`)), titul)}
               style={{ display: "flex", alignItems: "center", gap: SPACE.sm, padding: SPACE.sm, cursor: "pointer" }}>
               {/* úvodná fotka zbierky — tá istá, akú vidíš v samotnej zbierke */}
               <span style={{ width: 44, height: 44, borderRadius: RADIUS.xs, flex: "none", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 19, background: "rgba(var(--glass-rgb),.06)" }}>
-                {z ? <img src={z.foto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : p.emoji}
+                {z ? <img src={z.foto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  : p.video ? (
+                    <span style={{ position: "relative", width: "100%", height: "100%", display: "block" }}>
+                      <img src={p.video.nahlad} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                      <span style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,.28)", color: "#fff", fontSize: 16 }}>▶</span>
+                    </span>
+                  ) : p.emoji}
               </span>
               <div style={{ flex: 1, minWidth: 0 }}>
                 {z?.stav === "ukoncena" && <UkoncenaPill />}
                 <div style={{ fontSize: 13.5, fontWeight: 700 }}>{titul}</div>
                 <div style={{ fontSize: 11, color: C.textTer, marginTop: 2 }}>{popis}</div>
+                {!z && p.video && <div style={{ fontSize: 11, fontWeight: 700, color: C.textSec, marginTop: 3 }}>▶ video · {p.video.dlzka}</div>}
                 {!z && dokaz && <div style={{ fontSize: 11, fontWeight: 700, color: "var(--a-green)", marginTop: 3 }}>📷 {dokaz.fotky.length} fotky · 📄 {dokaz.doklady.length} doklady</div>}
                 {z && (
                   <div style={{ display: "flex", alignItems: "center", gap: SPACE.xs, marginTop: 5 }}>
@@ -199,6 +206,27 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
               )}
               <span style={{ color: C.textTer, fontSize: 15, flex: "none", transform: otvorena ? "rotate(90deg)" : "none", transition: "transform .18s ease" }}>›</span>
             </div>
+
+            {/* rozbalené video Talentu — prehrávač + väzba na zbierku */}
+            {otvorena && !z && p.video && (
+              <div style={{ padding: `0 ${SPACE.sm}px ${SPACE.sm}px` }}>
+                <div {...pressable(() => toast(`▶ ${p.titul}`), "Prehrať video")}
+                  style={{ position: "relative", borderRadius: RADIUS.sm, overflow: "hidden", cursor: "pointer", marginBottom: SPACE.sm }}>
+                  <img src={p.video.nahlad} alt="" style={{ width: "100%", aspectRatio: "16/9", objectFit: "cover", display: "block" }} />
+                  <span style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,.25)" }}>
+                    <span style={{ width: 58, height: 58, borderRadius: "50%", background: "rgba(0,0,0,.6)", color: "#fff", fontSize: 24, display: "flex", alignItems: "center", justifyContent: "center", paddingLeft: 4 }}>▶</span>
+                  </span>
+                  <span style={{ position: "absolute", right: 8, bottom: 8, fontSize: 11.5, fontWeight: 700, color: "#fff", background: "rgba(0,0,0,.65)", borderRadius: RADIUS.xs, padding: "1px 6px" }}>{p.video.dlzka}</span>
+                </div>
+                {p.video.zbierkaId && najdiZbierku(p.video.zbierkaId) && (
+                  <div style={{ fontSize: 12.5, color: C.textSec, marginBottom: SPACE.xs }}>
+                    Video k zbierke: <b style={{ color: C.text }}>{najdiZbierku(p.video.zbierkaId)!.nazov}</b>
+                  </div>
+                )}
+                <div {...pressable(() => setRozbalena(null), "Zmenšiť")}
+                  style={{ textAlign: "center", fontSize: 12.5, fontWeight: 700, color: C.textTer, padding: `${SPACE.sm}px 0 0`, cursor: "pointer" }}>Zmenšiť ▲</div>
+              </div>
+            )}
 
             {/* rozbalený skutok — dôkaz, že sme pomohli */}
             {otvorena && !z && dokaz && (
