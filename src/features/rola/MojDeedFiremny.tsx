@@ -109,6 +109,9 @@ function MojDeedFiremnyObsah({ onBack, toast, orgId }: { onBack: () => void; toa
   const sprava = SPRAVY[pozicia].filter((it) => it.povinne || viditelny(it.tierMin))
     .map((it, i) => ({ it, i, z: !it.povinne && tier < it.tierMin ? it.tierMin : -1 }))
     .sort((a, b) => a.z - b.z || a.i - b.i).map((x) => x.it);
+  // „Začni tu": charita od T1 začína centrálnou zbierkou (hore), v ZADARMO zbierkou pre niekoho
+  const startId = pozicia === "charita" ? (tier >= 1 ? "centralna" : "zbierky") : null;
+  const spravaZoradena = startId ? [...sprava.filter((it) => it.id === startId), ...sprava.filter((it) => it.id !== startId)] : sprava;
   const rolaMeta = POZICIE.find((p) => p.key === pozicia)!;
   const subjekt = SUBJEKTY[pozicia];
   const stit = naStitLevel(ZASLUZENA[pozicia].badge);
@@ -239,20 +242,22 @@ function MojDeedFiremnyObsah({ onBack, toast, orgId }: { onBack: () => void; toa
           hlavicka={<MenuHlavicka ikona={<IkonaNastavenia size={15} />} label={SPRAVA_NADPIS[pozicia]}
             popis="Nástroje správcu — vidí len držiteľ roly a delegovaní správcovia" />}
         >
-          {sprava.map((it, i) => {
+          {spravaZoradena.map((it, i) => {
             const zamknute = !it.povinne && tier < it.tierMin;
             return (
               <MenuPolozka key={it.id}
-                ikona={ikonaPre(it.id, it.emoji)}
+                ikona={it.id === startId ? <span style={{ fontSize: 17 }}>🚀</span> : ikonaPre(it.id, it.emoji)}
                 farba={it.povinne ? "var(--a-green)" : "var(--a-info)"}
                 label={it.nazov}
-                chip={it.povinne
+                chip={it.id === startId
+                  ? <span style={{ fontSize: 9.5, fontWeight: 800, color: "#fff", background: "var(--a-green)", borderRadius: RADIUS.xs, padding: `1px ${SPACE.xs}px`, flex: "none" }}>🚀 Začni tu</span>
+                  : it.povinne
                   ? <span style={{ fontSize: 9.5, fontWeight: 800, color: "var(--a-green)", background: tint("var(--a-green)", .14), borderRadius: RADIUS.xs, padding: `1px ${SPACE.xs}px`, flex: "none" }}>Povinné</span>
                   : zamknute ? <TierChip label={`od ${TIER_LABEL[pozicia][it.tierMin]}`} /> : undefined}
                 popis={it.popis}
                 zamknute={zamknute}
                 onClick={it.povinne ? () => spravaAkcia(it) : gateTier(it.tierMin, it.nazov, () => spravaAkcia(it))}
-                posledna={i === sprava.length - 1}
+                posledna={i === spravaZoradena.length - 1}
               />
             );
           })}
