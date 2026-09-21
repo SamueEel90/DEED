@@ -232,14 +232,16 @@ export const SPRAVA_CHARITA: SpravaItem[] = [
   { id: "qr", emoji: "▦", nazov: "QR nástroje", popis: "QR overenej organizácie a QR zbierok — plagát, pokladnička", tierMin: 0 },
   { id: "sumy", emoji: "👁", nazov: "Viditeľnosť súm", popis: "Čo vidia návštevníci profilu", tierMin: 0 },
   // ZBIERKA (T1)
-  { id: "centralna", emoji: "💛", nazov: "Centrálna zbierka organizácie", popis: "Dlhodobá zbierka bez pevného konca · predĺženie nad 30 dní · až 3 súbežné", tierMin: 1 },
+  { id: "centralna", emoji: "💛", nazov: "Centrálna zbierka organizácie", popis: "Pridať a spravovať — pravidelná podpora na segment alebo celú organizáciu", tierMin: 1 },
+  { id: "segment", emoji: "🧩", nazov: "Segmenty pre darcov", popis: "Témy z registrácie — darca podporí tému alebo celú organizáciu", tierMin: 1 },
+  { id: "dlhodobe", emoji: "📆", nazov: "Dlhodobé zbierky", popis: "Zbierka bez pevného konca · predĺženie nad 30 dní · až 3 súbežné", tierMin: 1 },
   { id: "sponzoring", emoji: "🤝", nazov: "Sponzoring", popis: "Hľadáme sponzora s protiplnením · predvyplnená zmluva · logo sponzora na profile · oznam v meste · doklad o protiplnení · sponzorské zbierky bez limitu", tierMin: 1 },
   { id: "prezentacia", emoji: "📣", nazov: "Prezentácia, oznamy a inzeráty", popis: "Prezentácia činnosti a služieb · oznamy na profile · akcie na nástenku mesta · 1 inzerát (zamestnanec, brigádnik, člen)", tierMin: 1 },
   { id: "embed", emoji: "🔗", nazov: "Štít dôvery na vlastný web", popis: "Odznak s odkazom na profil (embed)", tierMin: 1 },
   // AKCIA (T2)
   { id: "podujatia", emoji: "🎟", nazov: "Benefičné podujatia a predaj", popis: "Podujatie s QR a potvrdením účasti · predaj lístkov, merchu a služieb · školenia (provízia 10 %)", tierMin: 2 },
   { id: "dobrovolnici", emoji: "🙋", nazov: "Dobrovoľníctvo", popis: "Výzva pre verejnosť · QR dochádzka (prah 60 %) · náhradníci a chat · upozornenie v okolí · výkaz hodín", tierMin: 2 },
-  { id: "segment", emoji: "🧩", nazov: "Segmenty pre darcov", popis: "Nastav témy (napr. Seniori, Rodiny v núdzi) — darca podporí tému alebo celú organizáciu", tierMin: 2 },
+
   { id: "upoutavky", emoji: "▶️", nazov: "Upútavky na zbierky v Talente", popis: "2 videá / mesiac · až 10 súbežných zbierok · 5 inzerátov", tierMin: 2 },
   // KAMPAŇ (T3)
   { id: "sektorove-qr", emoji: "🔳", nazov: "Sektorové QR", popis: "QR pre celý sektor organizácie", tierMin: 3 },
