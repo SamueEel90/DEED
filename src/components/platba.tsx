@@ -272,7 +272,9 @@ const psKanal: CSSProperties = {
   cursor: "pointer", fontFamily: "inherit", background: C.surface2, border: `1px solid ${C.line}`, color: C.text,
 };
 
-export function PodporaSekcia({ onShare, upvotes = 0, onUpvote, onPodpor, onKanal, accent = "var(--a-info)", supLabel = "DROBNÁ PODPORA — klik a hneď odíde", reakcia = "palec", bezDaru = false, zbalene = false, komu, onDarEur, onDarKrypto, krypto = "EURC" }: { onShare?: () => void; upvotes?: number; onUpvote?: () => void; onPodpor: (a: number) => void; onKanal: (k: string) => void; accent?: string; supLabel?: ReactNode; reakcia?: "palec" | "srdce"; bezDaru?: boolean; zbalene?: boolean; komu?: ReactNode; onDarEur?: (suma: number) => void; onDarKrypto?: (eurc: number) => void; krypto?: "EURC" | "DEED" | "nie" }) {
+export function PodporaSekcia({ onShare, upvotes = 0, onUpvote, onPodpor, onKanal, accent = "var(--a-info)", supLabel = "DROBNÁ PODPORA — klik a hneď odíde", reakcia = "palec", bezDaru = false, zbalene = false, komu, onDarEur, onDarKrypto, krypto = "EURC", poEurach }: { onShare?: () => void; upvotes?: number; onUpvote?: () => void; onPodpor: (a: number) => void; onKanal: (k: string) => void; accent?: string; supLabel?: ReactNode; reakcia?: "palec" | "srdce"; bezDaru?: boolean; zbalene?: boolean; komu?: ReactNode; onDarEur?: (suma: number) => void; onDarKrypto?: (eurc: number) => void; krypto?: "EURC" | "DEED" | "nie";
+  /** riadok vložený medzi dary v eurách a dary v krypte (pravidelná podpora) */
+  poEurach?: ReactNode }) {
   // pasívny prispieva len v EUR; DEED (peňaženka) vyžaduje účet → výzva na registráciu
   const { mozeDeed } = usePouzivatel();
   const upgrade = useUpgrade();
@@ -325,6 +327,8 @@ export function PodporaSekcia({ onShare, upvotes = 0, onUpvote, onPodpor, onKana
             <span style={{ fontWeight: 800, fontSize: 14 }}>Vlastná suma v €</span>
           </button>
         </>)}
+
+        {poEurach}
 
         {/* DARY V KRYPTE — EURC (charita, Viera) alebo DEED (ostatní); „nie" = príjemca krypto neberie */}
         {krypto !== "nie" && <Rozbal otvorene={otvKrypto} onClick={() => setOtvKrypto((v) => !v)}>DARY V KRYPTE</Rozbal>}
