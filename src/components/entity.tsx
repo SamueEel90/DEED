@@ -14,7 +14,7 @@
 //  · TabyProfil     — podčiarknuté taby obsahu (IG štýl) nad SegTabs (a11y)
 //  · DvaStlpce      — desktop layout profilu: obsah + sticky bočný rail
 // ============================================================
-import type { CSSProperties, ReactNode } from "react";
+import { useState, type CSSProperties, type ReactNode } from "react";
 import { C, SPACE, RADIUS, GRAD } from "@/theme";
 import { tint } from "@/lib/ui";
 import { MEDIA_AR } from "@/lib/cardSize";
@@ -157,7 +157,7 @@ export function EntityHero({ cover, coverEl, avatar, avatarTvar = "kruh", meno, 
 }
 
 // ---- MENU SKUPINA — zoskupený zoznam (nastavenia / nástroje / kontakt) ----
-export function MenuSkupina({ nadpis, poznamka, hlavicka, children, style }: {
+export function MenuSkupina({ nadpis, poznamka, hlavicka, children, style, zbalitelna }: {
   /** malý nadpis NAD kartou (sekcia) */
   nadpis?: ReactNode;
   /** drobný text vpravo od nadpisu */
@@ -165,19 +165,42 @@ export function MenuSkupina({ nadpis, poznamka, hlavicka, children, style }: {
   /** voliteľná zvýraznená hlavička VO vnútri karty (napr. SPRÁVA — zlatý pás) */
   hlavicka?: ReactNode;
   children?: ReactNode; style?: CSSProperties;
+  /** kľúč → sekcia sa dá zbaliť klikom na nadpis/hlavičku; stav sa pamätá */
+  zbalitelna?: string;
 }) {
+  const kluc = zbalitelna ? `deed.zbalene.${zbalitelna}` : null;
+  const [zbalene, setZbalene] = useState(() => {
+    if (!kluc) return false;
+    try { return localStorage.getItem(kluc) === "1"; } catch { return false; }
+  });
+  const prepni = () => setZbalene((z) => {
+    try { if (kluc) localStorage.setItem(kluc, z ? "0" : "1"); } catch { /* LS nedostupné */ }
+    return !z;
+  });
+  const sipka = kluc && (
+    <span aria-hidden style={{ fontSize: 11, color: C.textTer, transform: zbalene ? "rotate(-90deg)" : "none", transition: "transform .15s ease", display: "inline-block" }}>▼</span>
+  );
   return (
     <div style={{ marginBottom: SPACE.gutter, ...style }}>
       {(nadpis || poznamka) && (
-        <div style={{ display: "flex", alignItems: "baseline", gap: SPACE.xs, margin: `0 ${SPACE.xxs}px ${SPACE.xs}px` }}>
+        <div {...(kluc ? pressable(prepni, zbalene ? "Rozbaliť sekciu" : "Zbaliť sekciu") : {})}
+          style={{ display: "flex", alignItems: "baseline", gap: SPACE.xs, margin: `0 ${SPACE.xxs}px ${SPACE.xs}px`, cursor: kluc ? "pointer" : "default" }}>
+          {sipka}
           {nadpis && <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: ".05em", color: C.textTer }}>{nadpis}</span>}
           {poznamka && <span style={{ fontSize: 10.5, color: C.textTer, marginLeft: "auto" }}>{poznamka}</span>}
         </div>
       )}
-      <div style={{ background: C.surface, border: `1px solid ${C.line}`, borderRadius: RADIUS.md, overflow: "hidden" }}>
-        {hlavicka}
-        {children}
-      </div>
+      {!(zbalene && (nadpis || poznamka)) && (
+        <div style={{ background: C.surface, border: `1px solid ${C.line}`, borderRadius: RADIUS.md, overflow: "hidden" }}>
+          {hlavicka && kluc && !(nadpis || poznamka) ? (
+            <div {...pressable(prepni, zbalene ? "Rozbaliť sekciu" : "Zbaliť sekciu")} style={{ position: "relative", cursor: "pointer" }}>
+              {hlavicka}
+              <span style={{ position: "absolute", right: SPACE.gutter, top: "50%", transform: "translateY(-50%)" }}>{sipka}</span>
+            </div>
+          ) : hlavicka}
+          {!zbalene && children}
+        </div>
+      )}
     </div>
   );
 }
