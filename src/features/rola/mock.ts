@@ -82,7 +82,13 @@ export interface SubjektMeta {
 }
 
 /** segmenty (témy), ktoré si charita nastavila v správe — darca ich vidí pri pravidelnej podpore (program AKCIA) */
-export const SEGMENTY_CHARITY = ["Rodiny v núdzi", "Seniori", "Jedlo pre ulicu"];
+// Svetlo pomoci — simulácia výberu z registrácie (číselník: sektor → pod-segment)
+export const SEGMENTY_CHARITY = [
+  "Sociálne · chudoba a núdza",
+  "Sociálne · osamelí seniori",
+  "Sociálne · ľudia bez domova",
+  "Deti · ohrozené rodiny",
+];
 
 export const SUBJEKTY: Record<Pozicia, SubjektMeta> = {
   charita: {

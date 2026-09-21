@@ -36,7 +36,7 @@ function aplikuj(d: db.CharitaData) {
   if (d.profil?.misia) s.onas = d.profil.misia;
   if (d.profil?.cover_url) s.cover = d.profil.cover_url;
   if (d.profil?.logo_url) s.foto = d.profil.logo_url;
-  const seg = d.segmenty.map((x) => x.pod_segment || x.sektor).filter(Boolean);
+  const seg = d.segmenty.map((x) => (x.pod_segment ? `${x.sektor} · ${x.pod_segment}` : x.sektor)).filter(Boolean);
   if (seg.length) segmenty = Array.from(new Set(seg));
   registrovana = d;
 }

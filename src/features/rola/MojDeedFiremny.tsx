@@ -24,7 +24,7 @@ import {
 import { PANELY, SPRAVY, SPRAVA_NADPIS, ZASLUZENA, SUBJEKTY, FIRMY_ADRESAR, type PanelBlok, type SpravaItem, type OrgZbierka } from "./mock";
 import { Podstranka } from "./Podstranka";
 import { UpravProfilSheet } from "./UpravProfil";
-import { useRegistraciaCharity, ulozDoRegistracie } from "./registracia";
+import { useRegistraciaCharity, ulozDoRegistracie, segmentyCharity } from "./registracia";
 import { OnasKratky } from "./OnasKratky";
 import { KontaktBlok, nacitajKontakt, ulozKontakt } from "./kontakt";
 import { verejneTaby, zamknuteTaby, popisTabu, BLOK_ZA_TAB, zbierkyOrg, dokladyZbierky } from "./obsah";
@@ -129,6 +129,7 @@ function MojDeedFiremnyObsah({ onBack, toast, orgId }: { onBack: () => void; toa
     if (it.id === "profil" || it.id === "podstranka") return setSheet("profil");
     if (pozicia === "charita" && (it.id === "zbierky" || it.id === "dokladovanie")) return setSheet("zbierky");
     if (pozicia === "tvorca" && it.id === "terminal") return setSheet("terminal");
+    if (pozicia === "charita" && it.id === "segment") return toast(`Segmenty z registrácie: ${segmentyCharity().join(" · ")}`);
     toast(`${it.nazov} — čoskoro`);
   };
 
