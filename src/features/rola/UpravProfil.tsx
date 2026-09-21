@@ -253,7 +253,7 @@ export function UpravProfilSheet({ pozicia, logo, cover, toast, onUloz, onClose 
         <Riadok key={`t${i}`} chyba={chybaTel(t.cislo)} onZmaz={kontakt.telefony.length > 1 ? () => zmenK({ telefony: kontakt.telefony.filter((_, j) => j !== i) }) : undefined}>
           <input style={{ ...vstup, flex: 3 }} value={t.cislo} placeholder="+421 …" inputMode="tel"
             onChange={(e) => zmenK({ telefony: kontakt.telefony.map((x, j) => (j === i ? { ...x, cislo: e.target.value } : x)) })} />
-          <input style={{ ...vstup, flex: 2 }} value={t.popis} placeholder="Kancelária"
+          <input style={{ ...vstup, flex: 2 }} value={t.popis} placeholder="Kto? napr. Kancelária"
             onChange={(e) => zmenK({ telefony: kontakt.telefony.map((x, j) => (j === i ? { ...x, popis: e.target.value } : x)) })} />
         </Riadok>
       ))}
@@ -266,7 +266,7 @@ export function UpravProfilSheet({ pozicia, logo, cover, toast, onUloz, onClose 
         <Riadok key={`e${i}`} chyba={chybaEmailu(m.adresa)} onZmaz={kontakt.emaily.length > 1 ? () => zmenK({ emaily: kontakt.emaily.filter((_, j) => j !== i) }) : undefined}>
           <input style={{ ...vstup, flex: 3 }} value={m.adresa} placeholder="info@…" inputMode="email"
             onChange={(e) => zmenK({ emaily: kontakt.emaily.map((x, j) => (j === i ? { ...x, adresa: e.target.value } : x)) })} />
-          <input style={{ ...vstup, flex: 2 }} value={m.popis} placeholder="napr. Zbierky"
+          <input style={{ ...vstup, flex: 2 }} value={m.popis} placeholder="Na čo? napr. Dobrovoľníci"
             onChange={(e) => zmenK({ emaily: kontakt.emaily.map((x, j) => (j === i ? { ...x, popis: e.target.value } : x)) })} />
         </Riadok>
       ))}
