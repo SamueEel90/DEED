@@ -14,9 +14,10 @@ import { usePouzivatel } from "@/lib/pouzivatel";
 import { AVATAR_SIRKA } from "@/lib/fotoprofilu";
 import { spracujLogo, rozmeryFotky, LOGO_CFG, COVER_CFG, type LogoRezim, type LogoPozadie } from "@/lib/obrazok";
 import { SUBJEKTY } from "./mock";
+import { nacitajKontakt, SIETE, MAX_TEL, MAX_EMAIL, chybaSiete, chybaWebu, chybaEmailu, chybaTel, type Kontakt } from "./kontakt";
 import { nacitajOnas, nacitajTvarLoga, ONAS_MAX, type Pozicia, type TvarLoga } from "./stav";
 
-export interface ProfilZmeny { onas: string; logo: string | null; tvar: TvarLoga; cover: string | null }
+export interface ProfilZmeny { onas: string; logo: string | null; tvar: TvarLoga; cover: string | null; kontakt: Kontakt }
 
 const Nadpis = ({ children }: { children: ReactNode }) => (
   <div style={{ fontSize: 10.5, fontWeight: 800, color: C.textTer, letterSpacing: ".04em", margin: `${SPACE.md}px 0 ${SPACE.xs}px` }}>{children}</div>
@@ -36,6 +37,41 @@ function Volba<T extends string>({ moznosti, value, onChange }: { moznosti: [T, 
   );
 }
 
+const vstup: React.CSSProperties = {
+  width: "100%", minWidth: 0, height: 38, padding: `0 ${SPACE.sm}px`, borderRadius: RADIUS.sm, border: `1px solid ${C.line}`,
+  background: "rgba(var(--glass-rgb),.05)", color: C.text, fontSize: 14, fontFamily: "inherit", outline: "none", boxSizing: "border-box",
+};
+const stitok: React.CSSProperties = { flex: "none", width: 78, fontSize: 12, fontWeight: 700, color: C.textSec };
+
+const Pole = ({ label, children }: { label: string; children: ReactNode }) => (
+  <div style={{ marginBottom: SPACE.xs }}>
+    <div style={{ fontSize: 11, color: C.textTer, marginBottom: 3 }}>{label}</div>
+    {children}
+  </div>
+);
+
+function Riadok({ chyba, onZmaz, children }: { chyba?: string | null; onZmaz?: () => void; children: ReactNode }) {
+  return (
+    <div style={{ marginBottom: SPACE.xs }}>
+      <div style={{ display: "flex", alignItems: "center", gap: SPACE.xs }}>
+        {children}
+        {onZmaz && (
+          <button type="button" onClick={onZmaz} aria-label="Odstrániť"
+            style={{ flex: "none", width: 32, height: 38, border: "none", background: "transparent", color: C.textTer, fontSize: 18, cursor: "pointer" }}>×</button>
+        )}
+      </div>
+      {chyba && <div style={{ fontSize: 11, color: "var(--a-danger)", marginTop: 2 }}>{chyba}</div>}
+    </div>
+  );
+}
+
+const Pridat = ({ onClick, children }: { onClick: () => void; children: ReactNode }) => (
+  <button type="button" onClick={onClick}
+    style={{ border: "none", background: "transparent", color: "var(--a-info)", fontWeight: 700, fontSize: 12.5, cursor: "pointer", padding: `2px 0 ${SPACE.xs}px`, fontFamily: "inherit" }}>
+    {children}
+  </button>
+);
+
 export function UpravProfilSheet({ pozicia, logo, cover, toast, onUloz, onClose }: {
   pozicia: Pozicia; logo: string | null; cover?: string | null; toast: (m: string) => void;
   onUloz: (z: ProfilZmeny) => void; onClose: () => void;
@@ -44,7 +80,15 @@ export function UpravProfilSheet({ pozicia, logo, cover, toast, onUloz, onClose 
   const ja = usePouzivatel();
   const maLogo = pozicia !== "tvorca"; // tvorca vystupuje pod vlastnou fotkou osoby
 
-  const [povodne] = useState<ProfilZmeny>(() => ({ onas: nacitajOnas(pozicia) ?? s.onas, logo, tvar: nacitajTvarLoga(pozicia), cover: cover ?? null }));
+  const [povodne] = useState<ProfilZmeny>(() => ({ onas: nacitajOnas(pozicia) ?? s.onas, logo, tvar: nacitajTvarLoga(pozicia), cover: cover ?? null, kontakt: nacitajKontakt(pozicia) }));
+  const [kontakt, setKontakt] = useState<Kontakt>(povodne.kontakt);
+  const zmenK = (z: Partial<Kontakt>) => setKontakt((k) => ({ ...k, ...z }));
+  const chybyKontaktu = [
+    ...kontakt.telefony.map((t) => chybaTel(t.cislo)),
+    ...kontakt.emaily.map((e) => chybaEmailu(e.adresa)),
+    chybaWebu(kontakt.web),
+    ...SIETE.map((x) => chybaSiete(x.k, kontakt.siete[x.k] ?? "")),
+  ].filter(Boolean);
   const [onas, setOnas] = useState(povodne.onas);
   const [logoD, setLogoD] = useState<string | null>(logo);
   const [tvar, setTvar] = useState<TvarLoga>(povodne.tvar);
@@ -89,13 +133,18 @@ export function UpravProfilSheet({ pozicia, logo, cover, toast, onUloz, onClose 
   const zmenPozadie = (p: LogoPozadie) => { setPozadie(p); if (logoSubor) void spracuj(logoSubor, rezim, p); };
 
   const dlhy = cistyText(onas).length > ONAS_MAX;
-  const zmenene = onas !== povodne.onas || logoD !== povodne.logo || tvar !== povodne.tvar
+  const zmenene = JSON.stringify(kontakt) !== JSON.stringify(povodne.kontakt) || onas !== povodne.onas || logoD !== povodne.logo || tvar !== povodne.tvar
     || coverD !== povodne.cover || (!maLogo && foto !== (ja.foto ?? null));
 
   const uloz = () => {
     if (dlhy) { toast(`O nás je dlhšie ako ${ONAS_MAX} znakov — skráť ho.`); return; }
+    if (chybyKontaktu.length) { toast("V kontakte je chyba — oprav červeno označené pole."); return; }
     if (!maLogo && foto !== (ja.foto ?? null)) ja.nastavFoto?.(foto);
-    onUloz({ onas, logo: logoD, tvar, cover: coverD });
+    onUloz({ onas, logo: logoD, tvar, cover: coverD, kontakt: {
+      ...kontakt,
+      telefony: kontakt.telefony.filter((t) => t.cislo.trim()),
+      emaily: kontakt.emaily.filter((e) => e.adresa.trim()),
+    } });
     toast("Profil uložený");
     onClose();
   };
@@ -189,14 +238,64 @@ export function UpravProfilSheet({ pozicia, logo, cover, toast, onUloz, onClose 
         </button>
       )}
 
+      {/* ---- KONTAKT — predvyplnený z registrácie, tu sa len mení a dopĺňa ---- */}
+      <Nadpis>KONTAKT</Nadpis>
+      <Pole label="Sídlo (z registrácie, overené cez IČO)">
+        <div style={{ ...vstup, display: "flex", alignItems: "center", gap: 6, color: C.textSec, background: "rgba(var(--glass-rgb),.04)" }}>🔒 {kontakt.sidlo}</div>
+      </Pole>
+      <Pole label="Adresa pre verejnosť (ak sa líši od sídla — výdajňa, kancelária)">
+        <input style={vstup} value={kontakt.adresaVerejna} placeholder="napr. Hviezdoslavova 12, Trenčín"
+          onChange={(e) => zmenK({ adresaVerejna: e.target.value })} />
+      </Pole>
+
+      <div style={{ fontSize: 11.5, fontWeight: 700, color: C.textSec, margin: `${SPACE.sm}px 0 ${SPACE.xxs}px` }}>Telefóny <span style={{ fontWeight: 500, color: C.textTer }}>· číslo uvidí každý návštevník</span></div>
+      {kontakt.telefony.map((t, i) => (
+        <Riadok key={`t${i}`} chyba={chybaTel(t.cislo)} onZmaz={kontakt.telefony.length > 1 ? () => zmenK({ telefony: kontakt.telefony.filter((_, j) => j !== i) }) : undefined}>
+          <input style={{ ...vstup, flex: 3 }} value={t.cislo} placeholder="+421 …" inputMode="tel"
+            onChange={(e) => zmenK({ telefony: kontakt.telefony.map((x, j) => (j === i ? { ...x, cislo: e.target.value } : x)) })} />
+          <input style={{ ...vstup, flex: 2 }} value={t.popis} placeholder="Kancelária"
+            onChange={(e) => zmenK({ telefony: kontakt.telefony.map((x, j) => (j === i ? { ...x, popis: e.target.value } : x)) })} />
+        </Riadok>
+      ))}
+      {kontakt.telefony.length < MAX_TEL && (
+        <Pridat onClick={() => zmenK({ telefony: [...kontakt.telefony, { cislo: "", popis: "" }] })}>+ Pridať telefón</Pridat>
+      )}
+
+      <div style={{ fontSize: 11.5, fontWeight: 700, color: C.textSec, margin: `${SPACE.sm}px 0 ${SPACE.xxs}px` }}>E-maily</div>
+      {kontakt.emaily.map((m, i) => (
+        <Riadok key={`e${i}`} chyba={chybaEmailu(m.adresa)} onZmaz={kontakt.emaily.length > 1 ? () => zmenK({ emaily: kontakt.emaily.filter((_, j) => j !== i) }) : undefined}>
+          <input style={{ ...vstup, flex: 3 }} value={m.adresa} placeholder="info@…" inputMode="email"
+            onChange={(e) => zmenK({ emaily: kontakt.emaily.map((x, j) => (j === i ? { ...x, adresa: e.target.value } : x)) })} />
+          <input style={{ ...vstup, flex: 2 }} value={m.popis} placeholder="napr. Zbierky"
+            onChange={(e) => zmenK({ emaily: kontakt.emaily.map((x, j) => (j === i ? { ...x, popis: e.target.value } : x)) })} />
+        </Riadok>
+      ))}
+      {kontakt.emaily.length < MAX_EMAIL && (
+        <Pridat onClick={() => zmenK({ emaily: [...kontakt.emaily, { adresa: "", popis: "" }] })}>+ Pridať e-mail</Pridat>
+      )}
+
+      <div style={{ fontSize: 11.5, fontWeight: 700, color: C.textSec, margin: `${SPACE.sm}px 0 ${SPACE.xxs}px` }}>Web a sociálne siete</div>
+      <Riadok chyba={chybaWebu(kontakt.web)}>
+        <span style={stitok}>Web</span>
+        <input style={{ ...vstup, flex: 1 }} value={kontakt.web} placeholder="www.vasastranka.sk" inputMode="url"
+          onChange={(e) => zmenK({ web: e.target.value })} />
+      </Riadok>
+      {SIETE.map((x) => (
+        <Riadok key={x.k} chyba={chybaSiete(x.k, kontakt.siete[x.k] ?? "")}>
+          <span style={stitok}>{x.label}</span>
+          <input style={{ ...vstup, flex: 1 }} value={kontakt.siete[x.k] ?? ""} placeholder={`${x.domeny[0]}/…`} inputMode="url"
+            onChange={(e) => zmenK({ siete: { ...kontakt.siete, [x.k]: e.target.value } })} />
+        </Riadok>
+      ))}
+
       {/* ---- ULOŽIŤ ---- */}
       <div style={{ position: "sticky", bottom: 0, paddingTop: SPACE.sm, paddingBottom: SPACE.sm, marginTop: SPACE.md, background: "var(--c-bg)", display: "flex", gap: SPACE.xs }}>
         <button type="button" onClick={onClose}
           style={{ flex: 1, height: 44, borderRadius: RADIUS.sm, border: `1px solid ${C.line}`, background: "transparent", color: C.textSec, fontWeight: 700, fontSize: 14, cursor: "pointer", fontFamily: "inherit" }}>
           Zrušiť
         </button>
-        <button type="button" onClick={uloz} disabled={!zmenene || dlhy}
-          style={{ flex: 2, height: 44, borderRadius: RADIUS.sm, border: "none", background: zmenene && !dlhy ? "var(--a-green)" : "rgba(var(--glass-rgb),.15)", color: zmenene && !dlhy ? "#fff" : C.textTer, fontWeight: 800, fontSize: 14, cursor: zmenene && !dlhy ? "pointer" : "default", fontFamily: "inherit" }}>
+        <button type="button" onClick={uloz} disabled={!zmenene || dlhy || chybyKontaktu.length > 0}
+          style={{ flex: 2, height: 44, borderRadius: RADIUS.sm, border: "none", background: zmenene && !dlhy && !chybyKontaktu.length ? "var(--a-green)" : "rgba(var(--glass-rgb),.15)", color: zmenene && !dlhy && !chybyKontaktu.length ? "#fff" : C.textTer, fontWeight: 800, fontSize: 14, cursor: zmenene && !dlhy && !chybyKontaktu.length ? "pointer" : "default", fontFamily: "inherit" }}>
           Uložiť profil
         </button>
       </div>

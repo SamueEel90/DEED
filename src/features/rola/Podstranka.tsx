@@ -3,8 +3,8 @@ import { C, SPACE, RADIUS, SIRKA } from "@/theme";
 import {
   BackHeader, PlatobnyModul, PlatbaModal, ProgresBox, QrModal, Stit, naStitLevel, tint,
   Zdielanie, Zvon, Srdce, useLayout, obalSiroky,
-  EntityHero, BtnAkcia, BtnIkonka, KontextMenu, TabyProfil, MenuSkupina, KontaktPolozka, DvaStlpce, StatRad,
-  IkonaMoznosti, IkonaQr, IkonaVlajka, IkonaPin, IkonaObalka, IkonaOdkaz,
+  EntityHero, BtnAkcia, BtnIkonka, KontextMenu, TabyProfil, DvaStlpce, StatRad,
+  IkonaMoznosti, IkonaQr, IkonaVlajka, IkonaPin, IkonaOdkaz,
 } from "@/shared";
 import { pressable } from "@/components/pressable";
 import { usePouzivatel } from "@/lib/pouzivatel";
@@ -17,6 +17,7 @@ import { SUBJEKTY, ZASLUZENA } from "./mock";
 import { najdiZbierku, kryptoZbierky, type Dokaz } from "@/lib/zbierky";
 import { nacitajTerminal, nacitajOnas, nacitajTvarLoga, type Pozicia, type Tier } from "./stav";
 import { OnasKratky } from "./OnasKratky";
+import { KontaktBlok, nacitajKontakt } from "./kontakt";
 import { verejneTaby } from "./obsah";
 
 /*
@@ -336,14 +337,7 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
 
   const oNasBlok = (
     <>
-      <MenuSkupina nadpis="KONTAKT">
-        <KontaktPolozka ikona={<IkonaPin size={15} />} label="Adresa" hodnota={s.kontakt.adresa} />
-        <KontaktPolozka ikona={<IkonaObalka size={15} />} label="E-mail" hodnota={s.kontakt.email} href={`mailto:${s.kontakt.email}`} />
-        <KontaktPolozka ikona={<span style={{ fontSize: 13 }}>📞</span>} label="Telefón" hodnota={s.kontakt.tel} href={`tel:${s.kontakt.tel.replace(/\s/g, "")}`} />
-        {s.kontakt.web
-          ? <KontaktPolozka ikona={<IkonaOdkaz size={15} />} label="Web" hodnota={s.kontakt.web} href={`https://${s.kontakt.web}`} posledna />
-          : null}
-      </MenuSkupina>
+      <KontaktBlok k={nacitajKontakt(pozicia)} />
     </>
   );
 

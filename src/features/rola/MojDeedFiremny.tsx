@@ -3,10 +3,10 @@ import { C, SPACE, RADIUS, SIRKA } from "@/theme";
 import {
   BackHeader, Sheet, SegTabs, Switch, MoniBar, Stit, naStitLevel, Tip, tint,
   useLayout, obalSiroky,
-  EntityHero, BtnAkcia, BtnIkonka, KontextMenu, MenuSkupina, MenuHlavicka, MenuPolozka, KontaktPolozka,
+  EntityHero, BtnAkcia, BtnIkonka, KontextMenu, MenuSkupina, MenuHlavicka, MenuPolozka,
   Zdielanie, IkonaCeruzka, IkonaMoznosti, IkonaTerc, IkonaEuro, IkonaLudia, IkonaOsoba, IkonaKalendar,
   IkonaQr, IkonaDokument, IkonaKorunka, IkonaInstitucia, IkonaOdkaz, IkonaOko, IkonaGraf, IkonaRetaz,
-  IkonaMegafon, IkonaHodiny, IkonaPenazenka, IkonaPohar, IkonaStit, IkonaHviezda, IkonaDarcek, IkonaObalka, IkonaPin,
+  IkonaMegafon, IkonaHodiny, IkonaPenazenka, IkonaPohar, IkonaStit, IkonaHviezda, IkonaDarcek, IkonaPin,
   IkonaSrdceLine, IkonaNastavenia,
 } from "@/shared";
 import { pressable } from "@/components/pressable";
@@ -25,6 +25,7 @@ import { PANELY, SPRAVY, SPRAVA_NADPIS, ZASLUZENA, SUBJEKTY, FIRMY_ADRESAR, type
 import { Podstranka } from "./Podstranka";
 import { UpravProfilSheet } from "./UpravProfil";
 import { OnasKratky } from "./OnasKratky";
+import { KontaktBlok, nacitajKontakt, ulozKontakt } from "./kontakt";
 import { verejneTaby, zamknuteTaby, popisTabu, BLOK_ZA_TAB, zbierkyOrg, dokladyZbierky } from "./obsah";
 
 /*
@@ -68,6 +69,7 @@ export function MojDeedFiremny({ onBack, toast }: { onBack: () => void; toast: (
   const [logo, setLogo] = useState<string | null>(() => nacitajLogo(nacitajPoziciu()));
   const [tvarLoga, setTvarLoga] = useState(() => nacitajTvarLoga(nacitajPoziciu()));
   const [onas, setOnas] = useState<string | null>(() => nacitajOnas(nacitajPoziciu()));
+  const [kontakt, setKontakt] = useState(() => nacitajKontakt(nacitajPoziciu()));
   const [zbalena, setZbalena] = useState(nacitajHlavuZbalenu);
   const prepniHlavu = () => setZbalena((z) => { ulozHlavuZbalenu(!z); return !z; });
   const [paywall, setPaywall] = useState<PaywallReq | null>(null);
@@ -79,7 +81,7 @@ export function MojDeedFiremny({ onBack, toast }: { onBack: () => void; toast: (
   const [fotky, zmenFotky] = useFotkyEntity(klucEntity("rola", pozicia));
 
   const tier = tiery[pozicia];
-  const prepniPoziciu = (p: Pozicia) => { setPozicia(p); ulozPoziciu(p); setLogo(nacitajLogo(p)); setTvarLoga(nacitajTvarLoga(p)); setOnas(nacitajOnas(p)); };
+  const prepniPoziciu = (p: Pozicia) => { setPozicia(p); ulozPoziciu(p); setLogo(nacitajLogo(p)); setTvarLoga(nacitajTvarLoga(p)); setOnas(nacitajOnas(p)); setKontakt(nacitajKontakt(p)); };
   const nastavTier = (t: Tier) => { const n = { ...tiery, [pozicia]: t }; setTiery(n); ulozTiery(n); };
   const prepniDrzitela = () => { setDrzitel((d) => { ulozDrzitel(!d); return !d; }); };
 
@@ -245,12 +247,7 @@ export function MojDeedFiremny({ onBack, toast }: { onBack: () => void; toast: (
       </BtnAkcia>
 
       {/* ==== KONTAKT ==== */}
-      <MenuSkupina zbalitelna="rola-kontakt" nadpis="KONTAKT">
-        <KontaktPolozka ikona={<IkonaPin size={15} />} label="Adresa" hodnota={subjekt.kontakt.adresa} />
-        <KontaktPolozka ikona={<IkonaObalka size={15} />} label="E-mail" hodnota={subjekt.kontakt.email} href={`mailto:${subjekt.kontakt.email}`} />
-        <KontaktPolozka ikona={<span style={{ fontSize: 13 }}>📞</span>} label="Telefón" hodnota={subjekt.kontakt.tel} href={`tel:${subjekt.kontakt.tel.replace(/\s/g, "")}`} posledna={!subjekt.kontakt.web} />
-        {subjekt.kontakt.web && <KontaktPolozka ikona={<IkonaOdkaz size={15} />} label="Web" hodnota={subjekt.kontakt.web} href={`https://${subjekt.kontakt.web}`} posledna />}
-      </MenuSkupina>
+      <KontaktBlok k={kontakt} zbalitelna="rola-kontakt" />
     </div>
   );
 
@@ -285,6 +282,7 @@ export function MojDeedFiremny({ onBack, toast }: { onBack: () => void; toast: (
             setLogo(z.logo); ulozLogo(pozicia, z.logo);
             setTvarLoga(z.tvar); ulozTvarLoga(pozicia, z.tvar);
             if (z.cover !== (fotky.cover ?? null)) zmenFotky({ cover: z.cover });
+            ulozKontakt(pozicia, z.kontakt); setKontakt(z.kontakt);
           }}
           onClose={() => setSheet(null)} />
       )}
