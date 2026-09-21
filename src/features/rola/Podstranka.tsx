@@ -16,8 +16,7 @@ import type { Kanal } from "@/types";
 import { SUBJEKTY, ZASLUZENA } from "./mock";
 import { najdiZbierku, kryptoZbierky, type Dokaz } from "@/lib/zbierky";
 import { nacitajTerminal, nacitajOnas, nacitajTvarLoga, type Pozicia, type Tier } from "./stav";
-import { FormatovanyText } from "@/components/formattext";
-import { cistyText } from "@/lib/richtext";
+import { OnasKratky } from "./OnasKratky";
 
 /*
   ============================================================
@@ -116,7 +115,6 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
   const taby = [{ key: "vsetko", label: "Všetko", polozky: mojeTaby.flatMap((t) => t.polozky) }, ...mojeTaby];
   const [tab, setTab] = useState("vsetko");
   const [sledujem, setSledujem] = useState(false);
-  const [onasViac, setOnasViac] = useState(false);
   const [onas] = useState(() => nacitajOnas(pozicia) ?? s.onas); // text zo správy (editor), inak pôvodný
   const [rozbalena, setRozbalena] = useState<string | null>(null);
   const [profilZiad, setProfilZiad] = useState<string | null>(null);
@@ -342,19 +340,7 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
   );
 
   // O nás priamo pod hlavičkou — 2–3 riadky, zvyšok na „viac“
-  const oNasKratky = (
-    <div style={{ fontSize: 13, lineHeight: 1.5, color: C.textSec }}>
-      <div style={onasViac ? undefined : { display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
-        <FormatovanyText text={onas} />
-      </div>
-      {cistyText(onas).length > 140 && (
-        <span {...pressable(() => setOnasViac((v) => !v), onasViac ? "Zbaliť" : "Zobraziť viac")}
-          style={{ display: "inline-block", marginTop: 2, fontSize: 12.5, fontWeight: 700, color: "var(--a-info)", cursor: "pointer" }}>
-          {onasViac ? "menej" : "viac"}
-        </span>
-      )}
-    </div>
-  );
+  const oNasKratky = <OnasKratky text={onas} />;
 
   const oNasBlok = (
     <>

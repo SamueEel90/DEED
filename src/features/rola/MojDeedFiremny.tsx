@@ -18,12 +18,13 @@ import {
   FLAGS, KONFIG, POZICIE, TIER_LABEL, TIER_POPIS, ROLA_UCTU,
   nacitajPoziciu, ulozPoziciu, nacitajTiery, ulozTiery, nacitajDrzitel, ulozDrzitel,
   nacitajDoklady, ulozDoklady, percentoDolozene, nacitajTerminal, ulozTerminal,
-  nacitajOrgExtra, ulozOrgExtra, nacitajLogo, ulozLogo, ulozOnas, nacitajTvarLoga, ulozTvarLoga,
+  nacitajOrgExtra, ulozOrgExtra, nacitajLogo, ulozLogo, nacitajOnas, ulozOnas, nacitajTvarLoga, ulozTvarLoga, nacitajHlavuZbalenu, ulozHlavuZbalenu,
   type Pozicia, type Tier, type DokladZbierky,
 } from "./stav";
 import { PANELY, SPRAVY, SPRAVA_NADPIS, ZASLUZENA, SUBJEKTY, ORG_ZBIERKY, FIRMY_ADRESAR, type PanelBlok, type SpravaItem, type OrgZbierka } from "./mock";
 import { Podstranka } from "./Podstranka";
 import { UpravProfilSheet } from "./UpravProfil";
+import { OnasKratky } from "./OnasKratky";
 
 /*
   ============================================================
@@ -65,6 +66,9 @@ export function MojDeedFiremny({ onBack, toast }: { onBack: () => void; toast: (
   const [drzitel, setDrzitel] = useState<boolean>(nacitajDrzitel);
   const [logo, setLogo] = useState<string | null>(() => nacitajLogo(nacitajPoziciu()));
   const [tvarLoga, setTvarLoga] = useState(() => nacitajTvarLoga(nacitajPoziciu()));
+  const [onas, setOnas] = useState<string | null>(() => nacitajOnas(nacitajPoziciu()));
+  const [zbalena, setZbalena] = useState(nacitajHlavuZbalenu);
+  const prepniHlavu = () => setZbalena((z) => { ulozHlavuZbalenu(!z); return !z; });
   const [paywall, setPaywall] = useState<PaywallReq | null>(null);
   const [sheet, setSheet] = useState<OtvorenySheet>(null);
   const [menu, setMenu] = useState(false);
@@ -74,7 +78,7 @@ export function MojDeedFiremny({ onBack, toast }: { onBack: () => void; toast: (
   const [fotky, zmenFotky] = useFotkyEntity(klucEntity("rola", pozicia));
 
   const tier = tiery[pozicia];
-  const prepniPoziciu = (p: Pozicia) => { setPozicia(p); ulozPoziciu(p); setLogo(nacitajLogo(p)); setTvarLoga(nacitajTvarLoga(p)); };
+  const prepniPoziciu = (p: Pozicia) => { setPozicia(p); ulozPoziciu(p); setLogo(nacitajLogo(p)); setTvarLoga(nacitajTvarLoga(p)); setOnas(nacitajOnas(p)); };
   const nastavTier = (t: Tier) => { const n = { ...tiery, [pozicia]: t }; setTiery(n); ulozTiery(n); };
   const prepniDrzitela = () => { setDrzitel((d) => { ulozDrzitel(!d); return !d; }); };
 
@@ -122,12 +126,25 @@ export function MojDeedFiremny({ onBack, toast }: { onBack: () => void; toast: (
       )}
 
       {/* ==== HERO SUBJEKTU — cover, logo, meno + odznak, štatistiky, akcie ==== */}
+      {zbalena ? (
+        // zmenšená hlavička — na mobile nezaberá miesto pri práci s nástrojmi
+        <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm, background: C.surface, border: `1px solid ${C.line}`, borderRadius: RADIUS.md, padding: SPACE.sm }}>
+          <span style={{ width: 44, height: 44, flex: "none", overflow: "hidden", borderRadius: pozicia !== "tvorca" && tvarLoga === "stvorec" ? RADIUS.sm : "50%", background: C.surface2, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800 }}>
+            {avatarSrc ? <img src={avatarSrc} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : subjekt.iniciacky}
+          </span>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 14.5, fontWeight: 800, lineHeight: 1.2 }}>{subjekt.nazov}</div>
+            <div {...pressable(prepniHlavu, "Rozbaliť profil")} style={{ fontSize: 12, fontWeight: 700, color: "var(--a-info)", cursor: "pointer", marginTop: 2 }}>Rozbaliť profil ▼</div>
+          </div>
+          <BtnIkonka label="Verejný profil" onClick={() => setPodstranka(true)}><span style={{ fontSize: 15 }}>👁</span></BtnIkonka>
+          <BtnIkonka label="Upraviť profil" onClick={() => setSheet("profil")}><IkonaCeruzka size={15} /></BtnIkonka>
+          <Stit level={stit} size={36} />
+        </div>
+      ) : (<>
       <EntityHero avatarTvar={pozicia === "tvorca" ? "kruh" : tvarLoga}
         avatar={avatarSrc
           ? <img src={avatarSrc} alt={subjekt.nazov} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
           : (pozicia === "tvorca" ? subjekt.emoji : subjekt.iniciacky)}
-        onAvatar={() => setSheet("profil")}
-        onCover={() => setSheet("profil")}
         cover={coverSrc}
         coverEl={<span style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 42, opacity: .4 }}>{subjekt.emoji}</span>}
         meno={subjekt.nazov} overene={subjekt.overena} overeneLabel="Overený subjekt — identita potvrdená"
@@ -137,13 +154,17 @@ export function MojDeedFiremny({ onBack, toast }: { onBack: () => void; toast: (
             <Stit level={stit} size={desktop ? 88 : 64} detail subjekt={subjekt.nazov} />
           </div>
         }
-        stats={subjekt.cisla.map(([hodnota, label], i) => ({ hodnota, label, farba: i === 2 ? "var(--a-gold)" : undefined }))}
+        podMenom={<OnasKratky text={onas ?? subjekt.onas} />}
+        stats={(tier === 0 && subjekt.cislaZadarmo ? subjekt.cislaZadarmo : subjekt.cisla).map(([hodnota, label], i) => ({ hodnota, label, farba: i === 2 ? "var(--a-gold)" : undefined }))}
         akcie={<>
           <BtnAkcia variant="primary" onClick={() => setPodstranka(true)}>Verejný profil</BtnAkcia>
           <BtnAkcia variant="secondary" onClick={() => setSheet("profil")}><IkonaCeruzka size={14} /> Upraviť profil</BtnAkcia>
           <BtnIkonka label="Ďalšie možnosti" onClick={() => setMenu(true)}><IkonaMoznosti size={16} /></BtnIkonka>
         </>}
       />
+      <div {...pressable(prepniHlavu, "Zmenšiť profil")}
+        style={{ textAlign: "center", fontSize: 12, fontWeight: 700, color: C.textTer, paddingTop: SPACE.xs, cursor: "pointer" }}>Zmenšiť profil ▲</div>
+      </>)}
       <div style={{ height: SPACE.gutter }} />
 
       {/* ==== PREHĽAD — rolové bloky; zamknuté neukazujú reálne dáta ==== */}
@@ -252,7 +273,7 @@ export function MojDeedFiremny({ onBack, toast }: { onBack: () => void; toast: (
       {sheet === "profil" && (
         <UpravProfilSheet pozicia={pozicia} logo={logo} cover={fotky.cover} toast={toast}
           onUloz={(z) => {
-            ulozOnas(pozicia, z.onas);
+            ulozOnas(pozicia, z.onas); setOnas(z.onas);
             setLogo(z.logo); ulozLogo(pozicia, z.logo);
             setTvarLoga(z.tvar); ulozTvarLoga(pozicia, z.tvar);
             if (z.cover !== (fotky.cover ?? null)) zmenFotky({ cover: z.cover });

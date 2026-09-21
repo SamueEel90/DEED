@@ -102,6 +102,10 @@ export const ulozTerminal = (on: boolean) => uloz(kluc("terminal"), on);
 export const nacitajLogo = (p: Pozicia): string | null => nacitaj<string | null>(kluc(`logo.${p}`), null);
 export const ulozLogo = (p: Pozicia, dataUrl: string | null) => uloz(kluc(`logo.${p}`), dataUrl);
 
+// ---- hlavička správy zmenšená (na mobile šetrí miesto) ----
+export const nacitajHlavuZbalenu = (): boolean => nacitaj(kluc("hlavaZbalena"), false);
+export const ulozHlavuZbalenu = (z: boolean) => uloz(kluc("hlavaZbalena"), z);
+
 // ---- tvar loga (kruh/štvorec) — vyberá si subjekt v Upraviť profil ----
 export type TvarLoga = "kruh" | "stvorec";
 export const nacitajTvarLoga = (p: Pozicia): TvarLoga => nacitaj<TvarLoga>(kluc(`logotvar.${p}`), "kruh");
