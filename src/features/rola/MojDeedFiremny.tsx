@@ -21,11 +21,11 @@ import {
   nacitajOrgExtra, ulozOrgExtra, nacitajLogo, ulozLogo, nacitajOnas, ulozOnas, nacitajTvarLoga, ulozTvarLoga, nacitajHlavuZbalenu, ulozHlavuZbalenu,
   type Pozicia, type Tier, type DokladZbierky,
 } from "./stav";
-import { PANELY, SPRAVY, SPRAVA_NADPIS, ZASLUZENA, SUBJEKTY, ORG_ZBIERKY, FIRMY_ADRESAR, type PanelBlok, type SpravaItem, type OrgZbierka } from "./mock";
+import { PANELY, SPRAVY, SPRAVA_NADPIS, ZASLUZENA, SUBJEKTY, FIRMY_ADRESAR, type PanelBlok, type SpravaItem, type OrgZbierka } from "./mock";
 import { Podstranka } from "./Podstranka";
 import { UpravProfilSheet } from "./UpravProfil";
 import { OnasKratky } from "./OnasKratky";
-import { verejneTaby, zamknuteTaby, popisTabu, BLOK_ZA_TAB } from "./obsah";
+import { verejneTaby, zamknuteTaby, popisTabu, BLOK_ZA_TAB, zbierkyOrg, dokladyZbierky } from "./obsah";
 
 /*
   ============================================================
@@ -400,7 +400,8 @@ function OrgZbierkySheet({ tier, toast, onPaywall, onDokladovanie, onClose }: {
   onDokladovanie: (z: OrgZbierka) => void; onClose: () => void;
 }) {
   const [extra, setExtra] = useState<OrgZbierka[]>(nacitajOrgExtra);
-  const zbierky = useMemo(() => [...ORG_ZBIERKY, ...extra], [extra]);
+  // tie isté zbierky ako na verejnom profile (+ koncepty vytvorené tu)
+  const zbierky = useMemo(() => [...zbierkyOrg("charita", tier), ...extra], [extra, tier]);
   const aktivne = zbierky.filter((z) => z.stav === "aktivna").length;
   const limit = KONFIG.limitZbierok[tier];
 
@@ -426,7 +427,7 @@ function OrgZbierkySheet({ tier, toast, onPaywall, onDokladovanie, onClose }: {
       <div style={{ fontSize: 11.5, color: C.textTer, marginBottom: SPACE.sm }}>{aktivne} aktívne · limit úrovne {TIER_LABEL.charita[tier]}: {limit} súbežných</div>
 
       {zbierky.map((z) => {
-        const doklady = nacitajDoklady(z.id);
+        const doklady = dokladyZbierky(z.id);
         const pct = percentoDolozene(doklady, z.vyzbierane);
         const poLehote = z.stav === "ukoncena" && z.ukoncena
           && (Date.now() - new Date(z.ukoncena).getTime()) / 86400000 > KONFIG.lehotaDokladovaniaDni;
@@ -461,7 +462,7 @@ function OrgZbierkySheet({ tier, toast, onPaywall, onDokladovanie, onClose }: {
 
 // ===================== DOKLADOVANIE — povinná funkcia, mimo spoplatnenia =====================
 function DokladovanieSheet({ z, toast, onClose }: { z: OrgZbierka; toast: (m: string) => void; onClose: () => void }) {
-  const [doklady, setDoklady] = useState<DokladZbierky[]>(() => nacitajDoklady(z.id));
+  const [doklady, setDoklady] = useState<DokladZbierky[]>(() => dokladyZbierky(z.id));
   const [typ, setTyp] = useState("Bloček");
   const [popis, setPopis] = useState("");
   const [suma, setSuma] = useState("");

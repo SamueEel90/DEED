@@ -4,7 +4,8 @@
 // ============================================================
 import { najdiZbierku } from "@/lib/zbierky";
 import { SUBJEKTY, type SubjektMeta } from "./mock";
-import type { Pozicia, Tier } from "./stav";
+import { nacitajDoklady, type DokladZbierky, type Pozicia, type Tier } from "./stav";
+import type { OrgZbierka } from "./mock";
 
 export type Tab = SubjektMeta["taby"][number];
 
@@ -47,3 +48,22 @@ export function popisTabu(t: Tab): string {
 
 /** panelové bloky, ktoré kopírujú záložku verejného profilu — v prehľade by boli dvakrát */
 export const BLOK_ZA_TAB: Record<string, string> = { zbierky: "zbierky", retaz: "retaz", darovali: "sponzoring" };
+
+// ---------- zbierky organizácie v správe = tie isté ako na verejnom profile ----------
+
+/** všetky zbierky subjektu v danom programe (aktívne aj ukončené) v tvare pre správu */
+export function zbierkyOrg(pozicia: Pozicia, tier: Tier): OrgZbierka[] {
+  const polozky = SUBJEKTY[pozicia].taby.find((t) => t.key === "zbierky")?.polozky ?? [];
+  return polozky
+    .filter((p) => p.zbierkaId && (p.odTieru ?? 0) <= tier)
+    .map((p) => najdiZbierku(p.zbierkaId!))
+    .filter((z): z is NonNullable<typeof z> => !!z)
+    .map((z) => ({ id: z.id, nazov: z.nazov, emoji: z.emoji, ciel: z.ciel, vyzbierane: z.vyzbierane, stav: z.stav, darcovia: z.darcovia }));
+}
+
+/** doklady zbierky: nahraté v správe, inak tie z dôkazu na profile (faktúry, bločky) */
+export function dokladyZbierky(id: string): DokladZbierky[] {
+  const ulozene = nacitajDoklady(id);
+  if (ulozene.length) return ulozene;
+  return (najdiZbierku(id)?.dokaz?.doklady ?? []).map((d) => ({ nazov: d.druh, popis: `${d.nazov} · ${d.dodavatel}`, suma: d.suma, datum: d.datum }));
+}
