@@ -24,6 +24,7 @@ import {
 import { PANELY, SPRAVY, SPRAVA_NADPIS, ZASLUZENA, SUBJEKTY, FIRMY_ADRESAR, type PanelBlok, type SpravaItem, type OrgZbierka } from "./mock";
 import { Podstranka } from "./Podstranka";
 import { UpravProfilSheet } from "./UpravProfil";
+import { useRegistraciaCharity, ulozDoRegistracie } from "./registracia";
 import { OnasKratky } from "./OnasKratky";
 import { KontaktBlok, nacitajKontakt, ulozKontakt } from "./kontakt";
 import { verejneTaby, zamknuteTaby, popisTabu, BLOK_ZA_TAB, zbierkyOrg, dokladyZbierky } from "./obsah";
@@ -59,7 +60,21 @@ const IKONY: Record<string, ReactNode> = {
 };
 const ikonaPre = (id: string, fallback: string): ReactNode => IKONY[id] ?? <span style={{ fontSize: 16 }}>{fallback}</span>;
 
+/** Prihlásená charita sa najprv načíta z databázy (údaje z registrácie), potom sa ukáže správa. */
 export function MojDeedFiremny({ onBack, toast }: { onBack: () => void; toast: (m: string) => void }) {
+  const { pripravene, orgId } = useRegistraciaCharity();
+  if (!pripravene) {
+    return (
+      <div>
+        <BackHeader onBack={onBack} title="Môj DEED firemný" />
+        <div style={{ padding: "48px 0", textAlign: "center", color: C.textTer, fontSize: 14 }}>Načítavam údaje organizácie…</div>
+      </div>
+    );
+  }
+  return <MojDeedFiremnyObsah onBack={onBack} toast={toast} orgId={orgId} />;
+}
+
+function MojDeedFiremnyObsah({ onBack, toast, orgId }: { onBack: () => void; toast: (m: string) => void; orgId: string | null }) {
   const { desktop } = useLayout();
   const ja = usePouzivatel(); // tvorca vystupuje pod vlastnou profilovou fotkou (nie logom)
   // rola + tier per rola — DEV: lokálny stav; produkcia: overený účet + fakturácia
@@ -286,6 +301,11 @@ export function MojDeedFiremny({ onBack, toast }: { onBack: () => void; toast: (
             setZdrojAvatara(z.zdroj); ulozZdrojAvatara(pozicia, z.zdroj);
             if (z.cover !== (fotky.cover ?? null)) zmenFotky({ cover: z.cover });
             ulozKontakt(pozicia, z.kontakt); setKontakt(z.kontakt);
+            // registrovaná charita: misia, web a siete idú aj do databázy (ten istý profil ako z registrácie)
+            if (orgId && pozicia === "charita") {
+              ulozDoRegistracie(orgId, { misia: z.onas, web: z.kontakt.web, siete: z.kontakt.siete })
+                .catch(() => toast("Profil uložený v zariadení — do databázy sa nepodarilo, skús neskôr"));
+            }
           }}
           onClose={() => setSheet(null)} />
       )}

@@ -8,6 +8,7 @@ import { MenuSkupina, KontaktPolozka } from "@/components/entity";
 import { IkonaPin, IkonaObalka, IkonaOdkaz } from "@/components/icons";
 import { SUBJEKTY } from "./mock";
 import type { Pozicia } from "./stav";
+import { sieteZRegistracie } from "./registracia";
 
 export type Siet = "facebook" | "instagram" | "youtube" | "tiktok" | "linkedin";
 export const SIETE: { k: Siet; label: string; domeny: string[] }[] = [
@@ -40,7 +41,7 @@ export function nacitajKontakt(p: Pozicia): Kontakt {
     sidlo: k.adresa, adresaVerejna: "",
     telefony: [{ cislo: k.tel, popis: "Kancelária" }],
     emaily: [{ adresa: k.email, popis: "" }],
-    web: k.web ?? "", siete: {},
+    web: k.web ?? "", siete: p === "charita" ? sieteZRegistracie() : {},
   };
   try {
     const s = localStorage.getItem(kluc(p));
