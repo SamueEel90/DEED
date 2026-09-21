@@ -18,7 +18,7 @@ export const SIETE: { k: Siet; label: string; domeny: string[] }[] = [
   { k: "linkedin", label: "LinkedIn", domeny: ["linkedin.com"] },
 ];
 export const MAX_TEL = 3;
-export const MAX_EMAIL = 2;
+export const MAX_EMAIL = 5;
 
 export interface Kontakt {
   /** sídlo z registrácie (overené cez IČO) — needituje sa */
@@ -77,7 +77,7 @@ export function KontaktBlok({ k, zbalitelna }: { k: Kontakt; zbalitelna?: string
   k.telefony.filter((t) => t.cislo.trim()).forEach((t, i) => riadky.push(
     <KontaktPolozka key={`t${i}`} ikona={<span style={{ fontSize: 13 }}>📞</span>} label={t.popis || "Telefón"} hodnota={t.cislo} href={`tel:${t.cislo.replace(/\s/g, "")}`} />));
   k.emaily.filter((e) => e.adresa.trim()).forEach((e, i) => riadky.push(
-    <KontaktPolozka key={`e${i}`} ikona={<IkonaObalka size={15} />} label={e.popis || "E-mail"} hodnota={e.adresa} href={`mailto:${e.adresa}`} />));
+    <KontaktPolozka key={`e${i}`} ikona={<IkonaObalka size={15} />} label={i === 0 ? "Hlavný e-mail" : e.popis || "E-mail"} hodnota={e.adresa} href={`mailto:${e.adresa}`} />));
   if (k.web.trim()) riadky.push(<KontaktPolozka key="web" ikona={<IkonaOdkaz size={15} />} label="Web" hodnota={bezProtokolu(k.web)} href={naUrl(k.web)} />);
   const siete = SIETE.filter((s) => k.siete[s.k]?.trim());
   return (

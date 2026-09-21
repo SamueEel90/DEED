@@ -261,13 +261,17 @@ export function UpravProfilSheet({ pozicia, logo, cover, toast, onUloz, onClose 
         <Pridat onClick={() => zmenK({ telefony: [...kontakt.telefony, { cislo: "", popis: "" }] })}>+ Pridať telefón</Pridat>
       )}
 
-      <div style={{ fontSize: 11.5, fontWeight: 700, color: C.textSec, margin: `${SPACE.sm}px 0 ${SPACE.xxs}px` }}>E-maily</div>
+      <div style={{ fontSize: 11.5, fontWeight: 700, color: C.textSec, margin: `${SPACE.sm}px 0 ${SPACE.xxs}px` }}>E-maily <span style={{ fontWeight: 500, color: C.textTer }}>· najviac {MAX_EMAIL}</span></div>
       {kontakt.emaily.map((m, i) => (
-        <Riadok key={`e${i}`} chyba={chybaEmailu(m.adresa)} onZmaz={kontakt.emaily.length > 1 ? () => zmenK({ emaily: kontakt.emaily.filter((_, j) => j !== i) }) : undefined}>
+        <Riadok key={`e${i}`} chyba={chybaEmailu(m.adresa)} onZmaz={i > 0 ? () => zmenK({ emaily: kontakt.emaily.filter((_, j) => j !== i) }) : undefined}>
+          {/* prvý = hlavný e-mail (bez popisu, nedá sa zmazať); ďalšie s popisom, na čo sú */}
+          {i === 0 && <span style={stitok}>Hlavný</span>}
           <input style={{ ...vstup, flex: 3 }} value={m.adresa} placeholder="info@…" inputMode="email"
             onChange={(e) => zmenK({ emaily: kontakt.emaily.map((x, j) => (j === i ? { ...x, adresa: e.target.value } : x)) })} />
-          <input style={{ ...vstup, flex: 2 }} value={m.popis} placeholder="Na čo? napr. Dobrovoľníci"
-            onChange={(e) => zmenK({ emaily: kontakt.emaily.map((x, j) => (j === i ? { ...x, popis: e.target.value } : x)) })} />
+          {i > 0 && (
+            <input style={{ ...vstup, flex: 2 }} value={m.popis} placeholder="Popis, napr. Dobrovoľníci"
+              onChange={(e) => zmenK({ emaily: kontakt.emaily.map((x, j) => (j === i ? { ...x, popis: e.target.value } : x)) })} />
+          )}
         </Riadok>
       ))}
       {kontakt.emaily.length < MAX_EMAIL && (
