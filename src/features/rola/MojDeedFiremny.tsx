@@ -170,48 +170,43 @@ export function MojDeedFiremny({ onBack, toast }: { onBack: () => void; toast: (
 
       {/* ==== PREHĽAD PROFILU — obsah verejného profilu (ten istý výpočet ako profil) + živé čísla ==== */}
       <MenuSkupina zbalitelna="rola-prehlad" nadpis="PREHĽAD PROFILU">
-        {verejneTaby(pozicia, tier).map((t) => {
-          const blok = PANELY[pozicia].find((b) => b.id === BLOK_ZA_TAB[t.key]);
-          return (
-            <MenuPolozka key={`tab-${t.key}`}
-              ikona={<span style={{ fontSize: 15 }}>{t.polozky[0]?.emoji ?? "📄"}</span>}
-              farba="var(--a-plum)"
-              label={t.label} popis={popisTabu(t)} hodnota={String(t.polozky.length)}
-              onClick={() => (blok ? blokAkcia(blok) : setPodstranka(true))}
-            />
-          );
-        })}
-        {zamknuteTaby(pozicia, tier).map((t) => (
-          <MenuPolozka key={`tab-${t.key}`}
-            ikona={<span style={{ fontSize: 15, opacity: .5 }}>{t.polozky[0]?.emoji ?? "📄"}</span>}
-            farba="var(--c-textTer)" label={t.label} zamknute
-            chip={<TierChip label={`od ${TIER_LABEL[pozicia][t.odTieru ?? 0]}`} />}
-            popis={`Dostupné od úrovne ${TIER_LABEL[pozicia][t.odTieru ?? 0]}`}
-            onClick={gateTier((t.odTieru ?? 0) as Tier, t.label, () => undefined)}
-          />
-        ))}
-        {bloky.filter((b) => !Object.values(BLOK_ZA_TAB).includes(b.id)).map((b, i, arr) => {
-          const zamknute = tier < b.tierMin;
-          return (
-            <MenuPolozka key={b.id}
-              ikona={ikonaPre(b.id, b.emoji)}
-              farba={zamknute ? "var(--c-textTer)" : "var(--a-info)"}
-              label={b.nazov}
-              chip={zamknute ? <TierChip label={`od ${TIER_LABEL[pozicia][b.tierMin]}`} /> : undefined}
-              popis={zamknute ? `Dostupné od úrovne ${TIER_LABEL[pozicia][b.tierMin]}`
-                : (pozicia === "charita" && b.id === "dnes" ? <DnesPrislo /> : b.popis)}
-              hodnota={zamknute ? undefined : b.hodnota}
-              zamknute={zamknute}
-              onClick={gateTier(b.tierMin, b.nazov, () => blokAkcia(b))}
-              posledna={i === arr.length - 1 && pozicia !== "b2b"}
-            />
-          );
-        })}
-        {pozicia === "b2b" && (
-          <MenuPolozka ikona={<IkonaInstitucia size={17} />} farba="var(--a-info)"
-            label="Adresár firiem" popis="Overené firmy a ich podpora komunity"
-            onClick={() => setSheet("adresarB2B")} posledna />
-        )}
+        {(() => {
+          // poradie: čo program má (obsah profilu, potom živé čísla) → zamknuté na spodku podľa programu
+          const riadky: { k: string; tier: number; el: (posledna: boolean) => ReactNode }[] = [];
+          verejneTaby(pozicia, tier).forEach((t) => {
+            const blok = PANELY[pozicia].find((b) => b.id === BLOK_ZA_TAB[t.key]);
+            riadky.push({ k: `tab-${t.key}`, tier: -1, el: (posledna) => (
+              <MenuPolozka key={`tab-${t.key}`} posledna={posledna}
+                ikona={<span style={{ fontSize: 15 }}>{t.polozky[0]?.emoji ?? "📄"}</span>} farba="var(--a-plum)"
+                label={t.label} popis={popisTabu(t)} hodnota={String(t.polozky.length)}
+                onClick={() => (blok ? blokAkcia(blok) : setPodstranka(true))} />
+            ) });
+          });
+          bloky.filter((b) => !Object.values(BLOK_ZA_TAB).includes(b.id) && tier >= b.tierMin).forEach((b) => {
+            riadky.push({ k: b.id, tier: -1, el: (posledna) => (
+              <MenuPolozka key={b.id} posledna={posledna} ikona={ikonaPre(b.id, b.emoji)} farba="var(--a-info)"
+                label={b.nazov} popis={pozicia === "charita" && b.id === "dnes" ? <DnesPrislo /> : b.popis} hodnota={b.hodnota}
+                onClick={b.info ? undefined : () => blokAkcia(b)} />
+            ) });
+          });
+          if (pozicia === "b2b") riadky.push({ k: "adresar", tier: -1, el: (posledna) => (
+            <MenuPolozka key="adresar" posledna={posledna} ikona={<IkonaInstitucia size={17} />} farba="var(--a-info)"
+              label="Adresár firiem" popis="Overené firmy a ich podpora komunity" onClick={() => setSheet("adresarB2B")} />
+          ) });
+          const zamk = [
+            ...zamknuteTaby(pozicia, tier).map((t) => ({ k: `tab-${t.key}`, t: t.odTieru ?? 0, emoji: t.polozky[0]?.emoji ?? "📄", nazov: t.label, ikona: null as ReactNode })),
+            ...bloky.filter((b) => !Object.values(BLOK_ZA_TAB).includes(b.id) && tier < b.tierMin)
+              .map((b) => ({ k: b.id, t: b.tierMin as number, emoji: b.emoji, nazov: b.nazov, ikona: ikonaPre(b.id, b.emoji) })),
+          ].sort((a, b) => a.t - b.t);
+          zamk.forEach((z) => riadky.push({ k: z.k, tier: z.t, el: (posledna) => (
+            <MenuPolozka key={z.k} posledna={posledna} zamknute farba="var(--c-textTer)"
+              ikona={z.ikona ?? <span style={{ fontSize: 15, opacity: .5 }}>{z.emoji}</span>}
+              label={z.nazov} chip={<TierChip label={`od ${TIER_LABEL[pozicia][z.t as Tier]}`} />}
+              popis={`Dostupné od úrovne ${TIER_LABEL[pozicia][z.t as Tier]}`}
+              onClick={gateTier(z.t as Tier, z.nazov, () => undefined)} />
+          ) }));
+          return riadky.map((r, i) => r.el(i === riadky.length - 1));
+        })()}
       </MenuSkupina>
 
 

@@ -18,6 +18,8 @@ export interface PanelBlok {
   progress?: { vyzbierane: number; ciel: number };
   tierMin: Tier;                 // gate na úrovni AKCIE — blok vidno vždy (§4.3); zamknutý blok = blur dát (PATCH 1 §3)
   akcia?: string;                // label CTA (default „Spravovať")
+  /** len informácia — riadok sa neklikne (napr. počet sledujúcich) */
+  info?: boolean;
 }
 
 // položka podstránky SPRÁVA — viditeľná len držiteľovi roly (+ delegovaní)
@@ -201,9 +203,12 @@ export const ORG_ZBIERKY: OrgZbierka[] = [
 export const PANEL_CHARITA: PanelBlok[] = [
   { id: "zbierky", emoji: "🎯", nazov: "Moje zbierky (org)", popis: "1 aktívna · 1 ukončená", tierMin: 0 },
   { id: "dnes", emoji: "💶", nazov: "Dnes prišlo", popis: "Živý prehľad dnešných darov", tierMin: 0 },
+  { id: "sledujuci", emoji: "👥", nazov: "Sledujúci", popis: "+38 za posledný mesiac", hodnota: "1 204", tierMin: 0, info: true },
+  // T1: zbierka pre seba (Centrálna zbierka organizácie)
+  { id: "centralna", emoji: "💛", nazov: "Centrálna zbierka organizácie", popis: "8 600 € z 12 000 € · 214 darcov", tierMin: 1, akcia: "Otvoriť" },
+  // T2: akcie a dobrovoľníci — nástenka udalostí patrí k akciám
+  { id: "nastenka", emoji: "📅", nazov: "Moja nástenka", popis: "2 zverejnené udalosti · 1 koncept", tierMin: 2, akcia: "Otvoriť" },
   { id: "dobrovolnici", emoji: "🙋", nazov: "Moji dobrovoľníci", popis: "12 prihlásených na sobotňajšiu brigádu", tierMin: 2, akcia: "Otvoriť" },
-  { id: "sledujuci", emoji: "👥", nazov: "Sledujúci", popis: "+38 za posledný mesiac", hodnota: "1 204", tierMin: 0, akcia: "Detail" },
-  { id: "nastenka", emoji: "📅", nazov: "Moja nástenka", popis: "2 zverejnené udalosti · 1 koncept", tierMin: 0, akcia: "Otvoriť" },
 ];
 
 export const SPRAVA_CHARITA: SpravaItem[] = [
