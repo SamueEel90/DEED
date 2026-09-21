@@ -109,25 +109,26 @@ export function PlatobnyModul({
       </div>
     </div>
   );
+  // Obľúbené + Podporiť DEED — rovnaká výška oboch tlačidiel
+  const oblubeneEl = !bezOblubenych && (
+        <div style={{ display: "flex", gap: SPACE.xs, marginTop: SPACE.gutter }}>
+          {oblubene && <OblubeneBtn polozka={oblubene} toast={toast} style={{ flex: 1, minWidth: 0, height: 46 }} />}
+          <PodporitDeed toast={toast} style={{ flex: 1, minWidth: 0, height: 46 }} />
+        </div>
+      );
   return (
     <div style={style}>
       <PodporaSekcia
         onShare={onShare} upvotes={upvotes} onUpvote={onUpvote} reakcia={reakcia}
         onPodpor={onPodpor} onKanal={onKanal} accent={accent} bezDaru={bezDaru}
-        zbalene={zbalene} komu={komu} krypto={krypto} poEurach={zbalene ? pravidelnaEl : undefined} onDarEur={onDarEur ?? ((sm) => toast?.(`Ďakujeme za dar ${sm.toLocaleString("sk")} €`))}
+        zbalene={zbalene} komu={komu} krypto={krypto} poEurach={zbalene ? <>{pravidelnaEl}{oblubeneEl}</> : undefined} onDarEur={onDarEur ?? ((sm) => toast?.(`Ďakujeme za dar ${sm.toLocaleString("sk")} €`))}
         onDarKrypto={(v) => toast?.(`Ďakujeme za dar ${v.toLocaleString("sk", { minimumFractionDigits: 2 })} EURC`)}
         {...(supLabel ? { supLabel } : {})} />
 
-      {/* Pravidelná podpora nad Obľúbené (v zbalenom module je už pod darmi v eurách) */}
+      {/* nezbalený modul: pravidelná podpora a Obľúbené pod darmi (v zbalenom sú pred darmi v krypte) */}
       {!zbalene && pravidelnaEl}
 
-      {/* 4. Obľúbené + Podporiť DEED — rovnaká výška oboch tlačidiel */}
-      {!bezOblubenych && (
-        <div style={{ display: "flex", gap: SPACE.xs, marginTop: SPACE.gutter }}>
-          {oblubene && <OblubeneBtn polozka={oblubene} toast={toast} style={{ flex: 1, minWidth: 0, height: 46 }} />}
-          <PodporitDeed toast={toast} style={{ flex: 1, minWidth: 0, height: 46 }} />
-        </div>
-      )}
+      {!zbalene && oblubeneEl}
 
       {/* 6. QR */}
       {qr && (
