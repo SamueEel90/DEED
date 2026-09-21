@@ -7,6 +7,7 @@ import { useRef, useState, type ReactNode } from "react";
 import { C, SPACE, RADIUS } from "@/theme";
 import { Sheet } from "@/components/sheet";
 import { FotoUpload } from "@/components/fotoupload";
+import { OrezFotky } from "@/components/orezfotky";
 import { RichTextInput } from "@/components/richtext";
 import { cistyText } from "@/lib/richtext";
 import { usePouzivatel } from "@/lib/pouzivatel";
@@ -57,6 +58,20 @@ export function UpravProfilSheet({ pozicia, logo, cover, toast, onUloz, onClose 
   const [logoInfo, setLogoInfo] = useState<string | null>(null);
   const [pracujem, setPracujem] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  // titulka: vybraný súbor sa najprv otvorí vo výreze (posun, zoom, celá fotka)
+  const [coverSubor, setCoverSubor] = useState<File | null>(null);
+  const [coverInfo, setCoverInfo] = useState<string | null>(null);
+  const coverRef = useRef<HTMLInputElement>(null);
+  async function vyberCover(f: File) {
+    if (f.size > COVER_CFG.maxMB * 1024 * 1024) { toast(`Fotka má ${(f.size / 1024 / 1024).toFixed(1)} MB — limit je ${COVER_CFG.maxMB} MB.`); return; }
+    try {
+      const { w, h } = await rozmeryFotky(f);
+      setCoverInfo(w < COVER_CFG.minSirka || h < COVER_CFG.minVyska
+        ? `⚠ Fotka má ${w} × ${h} px — odporúčame aspoň ${COVER_CFG.minSirka} × ${COVER_CFG.minVyska} px, inak bude rozmazaná.`
+        : `✓ ${w} × ${h} px — kvalita v poriadku`);
+      setCoverSubor(f);
+    } catch (e) { toast(e instanceof Error ? e.message : "Fotku sa nepodarilo načítať."); }
+  }
 
   async function spracuj(f: File, r: LogoRezim, p: LogoPozadie) {
     setPracujem(true);
@@ -150,7 +165,20 @@ export function UpravProfilSheet({ pozicia, logo, cover, toast, onUloz, onClose 
 
       {/* ---- TITULNÁ FOTKA ---- */}
       <Nadpis>TITULNÁ FOTKA (16:9)</Nadpis>
-      <FotoUpload value={coverD ?? s.cover} onZmena={setCoverD} pomer={16 / 9} zony minRozmer={{ w: COVER_CFG.minSirka, h: COVER_CFG.minVyska }} />
+      {coverSubor ? (
+        <OrezFotky subor={coverSubor} pomer={16 / 9} zony
+          onHotovo={(url) => { setCoverD(url); setCoverSubor(null); }}
+          onZrusit={() => setCoverSubor(null)} />
+      ) : (
+        <div onClick={() => coverRef.current?.click()} role="button" aria-label="Nahrať titulnú fotku"
+          style={{ position: "relative", aspectRatio: "16/9", borderRadius: RADIUS.sm, overflow: "hidden", cursor: "pointer", border: `1px solid ${C.line}` }}>
+          {(coverD ?? s.cover) && <img src={coverD ?? s.cover} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />}
+          <span style={{ position: "absolute", top: 8, right: 8, fontSize: 11, fontWeight: 700, color: "#fff", background: "rgba(8,11,18,.6)", borderRadius: RADIUS.xs, padding: "3px 8px" }}>📷 Nahrať novú</span>
+        </div>
+      )}
+      <input ref={coverRef} type="file" accept="image/*,.heic,.heif" style={{ display: "none" }}
+        onChange={(e) => { const f = e.target.files?.[0]; e.currentTarget.value = ""; if (f) void vyberCover(f); }} />
+      {coverInfo && <div style={{ fontSize: 10.5, marginTop: SPACE.xxs, color: coverInfo.startsWith("⚠") ? "var(--a-danger)" : "var(--a-green)" }}>{coverInfo}</div>}
       <div style={{ fontSize: 10.5, color: C.textTer, marginTop: SPACE.xxs, lineHeight: 1.45 }}>
         Aspoň {COVER_CFG.minSirka} × {COVER_CFG.minVyska} px, max {COVER_CFG.maxMB} MB. Do označených miest (logo, štít) nedávaj nič dôležité. Fotka bez textu vyzerá na mobile najlepšie.
       </div>
