@@ -17,7 +17,7 @@ import { MojaRetaz } from "@/features/retaz/MojaRetaz";
 import {
   FLAGS, KONFIG, POZICIE, TIER_LABEL, TIER_POPIS, ROLA_UCTU,
   nacitajPoziciu, ulozPoziciu, nacitajTiery, ulozTiery, nacitajDrzitel, ulozDrzitel,
-  nacitajDoklady, ulozDoklady, percentoDolozene, nacitajTerminal, ulozTerminal,
+  ulozDoklady, percentoDolozene, nacitajTerminal, ulozTerminal,
   nacitajOrgExtra, ulozOrgExtra, nacitajLogo, ulozLogo, nacitajOnas, ulozOnas, nacitajTvarLoga, ulozTvarLoga, nacitajHlavuZbalenu, ulozHlavuZbalenu,
   type Pozicia, type Tier, type DokladZbierky,
 } from "./stav";
