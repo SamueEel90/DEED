@@ -109,10 +109,11 @@ export const SUBJEKTY: Record<Pozicia, SubjektMeta> = {
         // ukončená a doložená zbierka = jeden skutok (žiadna duplicita so Zbierkami)
         { emoji: "🏠", titul: "", popis: "doložené faktúrami", zbierkaId: "z-horvathova" },
       ] },
-      // Talent: krátke videá — k zbierke, k tomu, čo chystáme, alebo šťastní obdarovaní. ZADARMO 1 video mesačne.
+      // Talent: krátke videá — k zbierke, k tomu, čo chystáme, alebo šťastní obdarovaní.
+      // ZADARMO: verejne sa zobrazuje JEDNO video; ďalšie ostávajú v správe, ukážu sa až v platenom programe.
       { key: "talent", label: "Talent", polozky: [
         { emoji: "🎬", titul: "Pani Anna — prečo zbierame", popis: "september · k zbierke", video: { nahlad: U("photo-1581578731548-c64695cc6952"), dlzka: "0:48", zbierkaId: "z-anna" } },
-        { emoji: "🎬", titul: "Horváthovci ďakujú — prvá noc v suchu", popis: "august · po odovzdaní daru", video: { nahlad: U("photo-1635424710928-0544e8512eae"), dlzka: "1:12", zbierkaId: "z-horvathova" } },
+        { emoji: "🎬", titul: "Horváthovci ďakujú — prvá noc v suchu", popis: "august · po odovzdaní daru", video: { nahlad: U("photo-1635424710928-0544e8512eae"), dlzka: "1:12", zbierkaId: "z-horvathova" }, odTieru: 1 },
       ] },
       { key: "akcie", label: "Akcie", odTieru: 2, polozky: [
         { emoji: "🏃", titul: "Beh pre Svetlo — benefičný beh", popis: "ne 12. 10. · Trenčín, Ostrov · 64 prihlásených" },
