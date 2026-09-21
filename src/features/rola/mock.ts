@@ -212,17 +212,21 @@ export const PANEL_CHARITA: PanelBlok[] = [
 ];
 
 export const SPRAVA_CHARITA: SpravaItem[] = [
-  { id: "profil", emoji: "✏️", nazov: "Upraviť profil", popis: "Foto, popis, video, kontakt, web, IBAN", tierMin: 0 },
+  // Upraviť profil je v hlavičke (tlačidlo) — tu by bol dvakrát
   { id: "zbierky", emoji: "🎯", nazov: "Zbierky — vytvoriť a spravovať", popis: "Nová zbierka, úpravy a stav priebehu", tierMin: 0 },
+  { id: "skutok", emoji: "✨", nazov: "Pridať skutok", popis: "Takto sme pomohli — fotky pred/po a doklady", tierMin: 0 },
   { id: "dokladovanie", emoji: "🧾", nazov: "Dokladovanie zbierok", popis: "Doklady použitia financií — priebežne aj po ukončení", tierMin: 0, povinne: true },
   { id: "darcovia", emoji: "💌", nazov: "Zoznam darcov + poďakovanie", popis: "Zoznam darcov a hromadné poďakovanie", tierMin: 0 },
-  { id: "kalendar", emoji: "📅", nazov: "Kalendár & udalosti", popis: "Dobrovoľnícke akcie, brigády, termíny", tierMin: 1 },
   { id: "qr", emoji: "▦", nazov: "QR nástroje", popis: "QR na tlač — plagát, pokladnička, nástenka", tierMin: 0 },
-  { id: "qr2", emoji: "🔄", nazov: "QR dochádzka na akciách", popis: "Rotujúci QR pre dochádzku dobrovoľníkov", tierMin: 2 },
-  { id: "dobrovolnici", emoji: "🙋", nazov: "Dobrovoľníci — správa", popis: "Prihlášky, dochádzka a vzájomné hodnotenie", tierMin: 2 },
-  { id: "firmy", emoji: "🤝", nazov: "Spolupráca s firmami", popis: "Sponzoring a firemné dobrovoľníctvo", tierMin: 2 },
   { id: "embed", emoji: "🔗", nazov: "Badge embed", popis: "Odznak s odkazom na profil pre vlastný web", tierMin: 0 },
   { id: "sumy", emoji: "👁", nazov: "Viditeľnosť súm", popis: "Čo vidia návštevníci profilu", tierMin: 0 },
+  // T1 — zbierka pre seba + viac súbežných zbierok
+  { id: "centralna", emoji: "💛", nazov: "Centrálna zbierka organizácie", popis: "Zbierka na vlastnú činnosť, stále na profile", tierMin: 1 },
+  // T2 — akcie, udalosti, dobrovoľníci
+  { id: "kalendar", emoji: "📅", nazov: "Kalendár & udalosti", popis: "Dobrovoľnícke akcie, brigády, termíny", tierMin: 2 },
+  { id: "dobrovolnici", emoji: "🙋", nazov: "Dobrovoľníci — správa", popis: "Prihlášky, dochádzka a vzájomné hodnotenie", tierMin: 2 },
+  { id: "qr2", emoji: "🔄", nazov: "QR dochádzka na akciách", popis: "Rotujúci QR pre dochádzku dobrovoľníkov", tierMin: 2 },
+  { id: "firmy", emoji: "🤝", nazov: "Spolupráca s firmami", popis: "Sponzoring a firemné dobrovoľníctvo", tierMin: 2 },
   { id: "reporty", emoji: "📊", nazov: "Reporty / exporty", popis: "Podklady pre výročnú správu a export dát", tierMin: 2 },
 ];
 
@@ -270,5 +274,5 @@ export const SPRAVY: Record<Pozicia, SpravaItem[]> = { charita: SPRAVA_CHARITA, 
 
 // nadpis podstránky správy per rola (§1.3/§2.4/§3.3)
 export const SPRAVA_NADPIS: Record<Pozicia, string> = {
-  charita: "SPRÁVA CHARITY", tvorca: "SPRÁVA TVORCU", b2b: "SPRÁVA FIRMY",
+  charita: "SPRÁVA PROFILU A NÁSTROJE", tvorca: "SPRÁVA TVORCU", b2b: "SPRÁVA FIRMY",
 };

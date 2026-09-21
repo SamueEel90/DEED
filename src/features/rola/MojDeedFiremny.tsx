@@ -87,7 +87,10 @@ export function MojDeedFiremny({ onBack, toast }: { onBack: () => void; toast: (
   // Vyššie sa nezobrazujú vôbec — ZADARMO nevidí nástroje z T3/T4, T1 nevidí T4 atď.
   const viditelny = (tierMin: Tier) => tierMin <= tier + 2;
   const bloky = PANELY[pozicia].filter((b) => viditelny(b.tierMin));
-  const sprava = SPRAVY[pozicia].filter((it) => it.povinne || viditelny(it.tierMin));
+  // odomknuté nástroje navrch, zamknuté pod ne zoradené podľa programu (najprv T1, potom T2)
+  const sprava = SPRAVY[pozicia].filter((it) => it.povinne || viditelny(it.tierMin))
+    .map((it, i) => ({ it, i, z: !it.povinne && tier < it.tierMin ? it.tierMin : -1 }))
+    .sort((a, b) => a.z - b.z || a.i - b.i).map((x) => x.it);
   const rolaMeta = POZICIE.find((p) => p.key === pozicia)!;
   const subjekt = SUBJEKTY[pozicia];
   const stit = naStitLevel(ZASLUZENA[pozicia].badge);
