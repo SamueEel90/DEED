@@ -4,6 +4,16 @@ import { C, SPACE, RADIUS } from "@/theme";
 import { pressable } from "@/components/pressable";
 import { jePdf, otvorDoklad } from "@/lib/doklad";
 import type { Dokaz } from "@/lib/zbierky";
+import { jeVideo, useVideoUrl } from "@/lib/videoUloz";
+import type { CSSProperties } from "react";
+
+/** fotka alebo video dôkazu (video z úložiska „idb:…") */
+export function MediaNahlad({ src, popis, ovladanie, style }: { src: string; popis: string; ovladanie?: boolean; style?: CSSProperties }) {
+  const url = useVideoUrl(src);
+  if (!jeVideo(src)) return <img src={src} alt={popis} style={style} />;
+  if (!url) return <div style={{ ...style, background: "#111", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 12 }}>▶ video</div>;
+  return <video src={url} controls={ovladanie} muted={!ovladanie} playsInline preload="metadata" style={{ ...style, background: "#000" }} />;
+}
 
 const eur = (n: number) => n.toLocaleString("sk", { minimumFractionDigits: n % 1 ? 2 : 0, maximumFractionDigits: 2 }) + " €";
 
@@ -16,7 +26,7 @@ export function DokazBlok({ dokaz, vyzbierane, odberatel = "Svetlo pomoci o.z." 
       <div style={{ display: "grid", gridTemplateColumns: `repeat(${Math.min(3, Math.max(1, dokaz.fotky.length))}, 1fr)`, gap: SPACE.xs, marginBottom: SPACE.sm }}>
         {dokaz.fotky.map((f) => (
           <div key={f.src} style={{ position: "relative", borderRadius: RADIUS.sm, overflow: "hidden" }}>
-            <img src={f.src} alt={f.popis} style={{ width: "100%", aspectRatio: "4/3", objectFit: "cover", display: "block" }} />
+            <MediaNahlad src={f.src} popis={f.popis} ovladanie style={{ width: "100%", aspectRatio: "4/3", objectFit: "cover", display: "block" }} />
             <span style={{ position: "absolute", left: 6, top: 6, fontSize: 11, fontWeight: 800, letterSpacing: ".05em", color: "#fff", background: f.popis === "PRED" ? "rgba(0,0,0,.65)" : "var(--a-green)", borderRadius: RADIUS.xs, padding: "2px 7px" }}>{f.popis}</span>
           </div>
         ))}

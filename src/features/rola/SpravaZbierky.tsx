@@ -10,6 +10,8 @@ import { Sheet, MoniBar, tint } from "@/shared";
 import { pressable } from "@/components/pressable";
 import { spracujFotku } from "@/lib/obrazok";
 import { nacitajDoklad, jePdf, otvorDoklad } from "@/lib/doklad";
+import { ulozVideo, jeVideo, VIDEO_CFG } from "@/lib/videoUloz";
+import { MediaNahlad } from "./DokazBlok";
 import { sucetDarov, useZmenyDarov } from "@/lib/darcovia";
 import { ZBIERKY, predvolenyStav } from "@/lib/zbierky";
 import {
@@ -258,7 +260,10 @@ function Dokladovanie({ zbierkaId, s, zmen, vyzbierane, toast, aktivna }: {
     if (!files) return;
     const nove = [...s.fotky];
     for (const f of Array.from(files)) {
-      try { nove.push({ src: await spracujFotku(f, { pomer: 4 / 3, maxSirka: 1200 }), popis: "PO" }); }
+      try {
+        const src = f.type.startsWith("video/") ? await ulozVideo(f) : await spracujFotku(f, { pomer: 4 / 3, maxSirka: 1200 });
+        nove.push({ src, popis: "PO" });
+      }
       catch (e) { toast((e as Error).message); }
     }
     zmen({ fotky: nove });
@@ -330,11 +335,12 @@ function Dokladovanie({ zbierkaId, s, zmen, vyzbierane, toast, aktivna }: {
         placeholder="Napr. Kúpili sme práčku a chladničku, v utorok ich doviezli pani Anne domov." style={{ ...input, resize: "vertical", marginBottom: SPACE.sm }} />
 
       {/* fotky použitia */}
-      <div style={{ fontSize: 12, fontWeight: 800, color: C.textTer, letterSpacing: ".04em", marginBottom: SPACE.xxs }}>FOTKY — AKO SME POMOHLI</div>
+      <div style={{ fontSize: 12, fontWeight: 800, color: C.textTer, letterSpacing: ".04em", marginBottom: SPACE.xxs }}>FOTKY A VIDEO — AKO SME POMOHLI</div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: SPACE.xxs, marginBottom: SPACE.sm }}>
         {s.fotky.map((f, i) => (
           <div key={i} style={{ position: "relative", borderRadius: RADIUS.xs, overflow: "hidden", aspectRatio: "4/3" }}>
-            <img src={f.src} alt={f.popis} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+            <MediaNahlad src={f.src} popis={f.popis} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+            {jeVideo(f.src) && <span style={{ position: "absolute", left: "50%", top: "50%", transform: "translate(-50%,-50%)", fontSize: 18, color: "#fff", textShadow: "0 1px 4px rgba(0,0,0,.6)", pointerEvents: "none" }}>▶</span>}
             <span {...pressable(() => zmen({ fotky: s.fotky.map((x, j) => (j === i ? { ...x, popis: x.popis === "PRED" ? "PO" : "PRED" } : x)) }), "PRED/PO")}
               style={{ position: "absolute", left: 3, top: 3, fontSize: 9.5, fontWeight: 800, color: "#fff", background: f.popis === "PRED" ? "rgba(0,0,0,.65)" : ZELENA, borderRadius: 4, padding: "1px 5px", cursor: "pointer" }}>{f.popis}</span>
             <span {...pressable(() => zmen({ fotky: s.fotky.filter((_, j) => j !== i) }), "Odstrániť fotku")}
@@ -342,10 +348,11 @@ function Dokladovanie({ zbierkaId, s, zmen, vyzbierane, toast, aktivna }: {
           </div>
         ))}
         <label style={{ aspectRatio: "4/3", borderRadius: RADIUS.xs, border: `1.5px dashed ${C.line}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: C.textSec, cursor: "pointer" }}>
-          + Fotka
-          <input type="file" accept="image/*" multiple hidden onChange={(e) => { void pridajFotky(e.target.files); e.target.value = ""; }} />
+          + Foto / video
+          <input type="file" accept="image/*,video/*" multiple hidden onChange={(e) => { void pridajFotky(e.target.files); e.target.value = ""; }} />
         </label>
       </div>
+      <div style={{ fontSize: 10.5, color: C.textTer, marginTop: -SPACE.xs, marginBottom: SPACE.sm }}>Video najviac {VIDEO_CFG.maxSekund} s. Ťukni na štítok PRED/PO a prepni ho.</div>
 
       {/* položky + doklady */}
       <div style={{ fontSize: 12, fontWeight: 800, color: C.textTer, letterSpacing: ".04em", marginBottom: SPACE.xxs }}>ROZPIS A DOKLADY</div>
