@@ -352,7 +352,7 @@ export function FarskyProfil({ farnost, farar, jeDomovska, following, onToggleFo
         ]} />
       )}
       {qr && (
-        <QrModal typ={qr === "donacny" ? "platba" : "skutok"}
+        <QrModal odznak="D++" typ={qr === "donacny" ? "platba" : "skutok"}
           titul={qr === "donacny" ? `Donačný QR · ${farnost.nazov}` : `Zdieľať profil · ${farnost.nazov}`}
           popis={qr === "donacny" ? "QR na tlač — pokladnička, nástenka, lavice. Sken otvorí darovanie." : "Zdieľaj profil farnosti"}
           onClose={() => setQr(null)} toast={toast} />

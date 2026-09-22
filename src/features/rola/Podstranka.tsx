@@ -462,9 +462,9 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
         // pravidelná podpora je od T1 celá: zbierka → táto zbierka / segment / celá charita,
         // centrálna zbierka → segment / celá organizácia
         segmenty={segmentyCharity()} onClose={() => setPravidelna(null)} toast={toast} />}
-      {qrZbierka && <QrModal typ="skutok" titul={`QR — ${qrZbierka.nazov}`} popis="Sken otvorí túto zbierku — daj ho na web, do správy alebo na plagát"
+      {qrZbierka && <QrModal odznak={pozicia === "tvorca" ? "D+" : "D++"} typ="skutok" titul={`QR — ${qrZbierka.nazov}`} popis="Sken otvorí túto zbierku — daj ho na web, do správy alebo na plagát"
         odkaz={qrUrl("case", qrZbierka.id)} onClose={() => setQrZbierka(null)} toast={toast} />}
-      {qr && <QrModal typ="skutok" titul={`QR — ${s.nazov}`} popis="Profil subjektu — QR aj embed odznak na vlastný web"
+      {qr && <QrModal odznak={pozicia === "tvorca" ? "D+" : "D++"} typ="skutok" titul={`QR — ${s.nazov}`} popis="Profil subjektu — QR aj embed odznak na vlastný web"
         odkaz={qrUrl("handle", s.nazov.toLowerCase().replace(/[^a-z0-9]+/g, "-"))} onClose={() => setQr(false)} toast={toast} />}
     </div>
   );

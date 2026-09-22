@@ -199,7 +199,7 @@ function OrgProfil({ s, onBack, toast, onKampan }: { s: CudziSubjektOrg; onBack?
         ]} />
       )}
       {nahlasit && <NahlasitSheet co={`Profil · ${meno}`} refId={meno} modul="charity" onClose={() => setNahlasit(false)} toast={toast ?? (() => {})} />}
-      {qr && <QrModal typ="skutok" titul={`QR profilu · ${meno}`} popis="Odznak dôvery s odkazom na profil" odkaz={qrUrl("org", "detska-nemocnica")} onClose={() => setQr(false)} toast={toast} />}
+      {qr && <QrModal odznak="D++" typ="skutok" titul={`QR profilu · ${meno}`} popis="Odznak dôvery s odkazom na profil" odkaz={qrUrl("org", "detska-nemocnica")} onClose={() => setQr(false)} toast={toast} />}
       {kampanDetail && <KampanSheet k={kampanDetail} org={meno} toast={toast} onClose={() => setKampanDetail(null)} />}
 
       {/* fotky profilu — profilová aj titulná zvlášť (test režim: aj na cudzom profile) */}
@@ -254,7 +254,7 @@ function KampanSheet({ k, org, toast, onClose }: { k: OrgKampan; org: string; to
           <ZoznamDarcov refId={darRef} celkom={ludia} />
         </div>
       </Sheet>
-      {qrKampan && <QrModal typ="platba" titul={`QR · ${k.nazov}`} popis={`${org}${k.lok ? ` · ${k.lok}` : ""}`}
+      {qrKampan && <QrModal odznak="D++" typ="platba" titul={`QR · ${k.nazov}`} popis={`${org}${k.lok ? ` · ${k.lok}` : ""}`}
         qrCiel={{ druh: "case", ref: String(k.id), modul: "charity" }} onClose={() => setQrKampan(false)} toast={toast} />}
       {platba && <PlatbaModal kanal={platba} komu={k.nazov} onClose={() => setPlatba(null)}
         onDone={(s: number, volba?: VolbaDaru) => {

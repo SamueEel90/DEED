@@ -525,7 +525,7 @@ function CharitaDetail({ z: zProp, toast, onBack, onAutor }: { z?: ZbierkaDetail
       {recur && <RecurringSheet nazov={z.nazov} caseId={String(z.id)} onClose={() => setRecur(false)} toast={toast} />}
 
       {/* QR zbierky/akcie (§10) — sken → dar, kopírovať, zdieľať/tlačiť */}
-      {qr && <QrModal typ={jeZbierka ? "platba" : "skutok"} titul={`QR · ${z.nazov}`} popis={(pribeh || z.nazov).slice(0, 38)}
+      {qr && <QrModal odznak="D++" typ={jeZbierka ? "platba" : "skutok"} titul={`QR · ${z.nazov}`} popis={(pribeh || z.nazov).slice(0, 38)}
         qrCiel={{ druh: "case", ref: String(z.id ?? z.nazov), modul: "charity" }} onClose={() => setQr(false)} toast={toast} />}
 
       {/* split QR (influencer) — rozdelenie platby medzi príjemcov */}

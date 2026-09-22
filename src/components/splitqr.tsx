@@ -87,7 +87,7 @@ export function SplitQrSheet({ titul = "Skutok", caseId = null, zdroj = "osobny"
   // ---- KROK 2: hotový split QR ----
   if (krok === "hotovo") {
     return (
-      <QrModal typ="rozdelenie" titul={`Split QR · ${titul}`} popis={variant?.qrPopis ?? "Reťaz dobra — rozdelenie platby medzi príjemcov"}
+      <QrModal odznak="D++" typ="rozdelenie" titul={`Split QR · ${titul}`} popis={variant?.qrPopis ?? "Reťaz dobra — rozdelenie platby medzi príjemcov"}
         odkaz={vytvoreny?.slug ? qrUrl("split", vytvoreny.slug) : odkaz}
         split={splitPreQrModal(owner, ciele)} onClose={onClose} toast={toast} />
     );
