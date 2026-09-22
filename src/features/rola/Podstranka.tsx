@@ -123,9 +123,13 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
   const podporaBlok = pozicia === "charita" && tier >= 1 && nacitajCentralnu("charita") && (
     <div style={{ marginBottom: SPACE.gutter }}>
       <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".05em", color: C.textTer, marginBottom: SPACE.xs }}>CENTRÁLNA ZBIERKA ORGANIZÁCIE</div>
-      <div style={{ marginBottom: SPACE.sm }}>
-        <NahladKarty profil={profilCentralnej} logo={logoOrg} vyzbierane={centr.suma} dolozene={0} ludia={centr.pocet} />
+      {/* karta sa správa ako každá iná zbierka — platobný modul až po kliknutí */}
+      <div {...pressable(() => setRozbalena(rozbalena === CENTRALNA_ID ? null : CENTRALNA_ID), profilCentralnej.nazov)}
+        style={{ cursor: "pointer", marginBottom: rozbalena === CENTRALNA_ID ? SPACE.sm : 0 }}>
+        <NahladKarty profil={profilCentralnej} logo={logoOrg} vyzbierane={centr.suma} dolozene={0} ludia={centr.pocet}
+          sipka={rozbalena === CENTRALNA_ID ? "otvorena" : "zavreta"} />
       </div>
+      {rozbalena === CENTRALNA_ID && (<>
       <PlatobnyModul zbalene krypto={kryptoOrg ? "EURC" : "nie"} {...sumy}
         onShare={zdielajProfil}
         upvotes={0} onUpvote={() => undefined}
@@ -137,6 +141,7 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
         opakovana={maPravidelnu ? { popis: "Mesačne · len pre registrovaných · kedykoľvek zrušíš", onClick: () => setPravidelna({ id: "z-centralna", nazov: "Centrálna zbierka organizácie" }) } : undefined}
         qr={{ label: "QR tejto zbierky", popis: "Sken → dar za 2 kliky · zdieľanie", onClick: () => setQr(true) }} />
       <ZoznamDarcov refId="z-centralna" celkom={centr.pocet} style={{ marginTop: SPACE.sm }} skrytSumy={pozicia === "charita" && !nacitajViditelnost("charita").sumyDarov} />
+      </>)}
     </div>
   );
 

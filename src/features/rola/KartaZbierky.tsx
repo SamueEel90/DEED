@@ -70,14 +70,19 @@ export function KartaZbierkyForm({ profil, zmen, logo, toast, deti, bar }: {
 }
 
 /** náhľad karty tak, ako ju uvidí darca vo feede */
-export function NahladKarty({ profil, logo, vyzbierane, dolozene, ludia }: {
+export function NahladKarty({ profil, logo, vyzbierane, dolozene, ludia, sipka }: {
   profil: ProfilZbierky; logo?: string; vyzbierane: number; dolozene: number; ludia?: number;
+  /** karta je rozbaľovacia (verejný profil) — šípka ako pri ostatných zbierkach */
+  sipka?: "zavreta" | "otvorena";
 }) {
   return (
     <div style={{ background: C.surface2, border: `1px solid ${tint(ZELENA, .25)}`, borderRadius: RADIUS.md, overflow: "hidden" }}>
       {(profil.foto || logo) && <img src={profil.foto || logo} alt="" style={{ width: "100%", aspectRatio: "16 / 9", objectFit: "cover", display: "block" }} />}
       <div style={{ padding: SPACE.sm }}>
-        <div style={{ fontSize: 14.5, fontWeight: 800 }}>{profil.nazov || "Bez názvu"}</div>
+        <div style={{ display: "flex", alignItems: "center", gap: SPACE.xs }}>
+          <div style={{ flex: 1, minWidth: 0, fontSize: 14.5, fontWeight: 800 }}>{profil.nazov || "Bez názvu"}</div>
+          {sipka && <span style={{ flex: "none", color: C.textTer, fontSize: 15, transform: sipka === "otvorena" ? "rotate(90deg)" : "none", transition: "transform .18s ease" }}>›</span>}
+        </div>
         {profil.popis && <div style={{ fontSize: 12, color: C.textSec, lineHeight: 1.45, margin: `2px 0 ${SPACE.sm}px` }}>{profil.popis}</div>}
         <MilnikBar vyzbierane={vyzbierane} dolozene={dolozene} ludia={ludia} />
       </div>
