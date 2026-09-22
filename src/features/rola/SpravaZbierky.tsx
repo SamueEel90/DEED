@@ -73,6 +73,7 @@ export function SpravaZbierkySheet({ z, tier, toast, onPaywall, onClose }: {
   const [potvrdUkoncit, setPotvrdUkoncit] = useState(false);
   const [platba, setPlatba] = useState<null | { druh: "predlzenie" } | { druh: "top"; kluc: string }>(null);
   const [sprava, setSprava] = useState("");
+  const [podakovanie, setPodakovanie] = useState<null | { karma: number }>(null);
 
   const dalsiePredlzenie = CFG.predlzenia[s.predlzenia];
   const topAktivny = s.top && dniDo(s.top.do, teraz) > 0 ? s.top : null;
@@ -101,6 +102,19 @@ export function SpravaZbierkySheet({ z, tier, toast, onPaywall, onClose }: {
 
   return (
     <Sheet onClose={onClose} label={`Spravovať — ${z.nazov}`}>
+      {podakovanie ? (
+        <div style={{ textAlign: "center", padding: `${SPACE.md}px 0 ${SPACE.sm}px` }}>
+          <div style={{ fontSize: 44, lineHeight: 1 }}>💚</div>
+          <div style={{ fontSize: 21, fontWeight: 800, marginTop: SPACE.sm }}>Ďakujeme za doloženie!</div>
+          <div style={{ fontSize: 13.5, color: C.textSec, lineHeight: 1.5, margin: `${SPACE.xs}px 0 ${SPACE.sm}px` }}>
+            Všetkým darcom zbierky „{z.nazov}“ išlo oznámenie s tvojím dokladovaním a s poďakovaním za ich dar. Takto rastie dôvera k vašej organizácii.
+          </div>
+          <div style={{ display: "inline-block", fontSize: 13, fontWeight: 800, color: ZELENA, background: tint(ZELENA, .12), border: `1px solid ${tint(ZELENA, .35)}`, borderRadius: RADIUS.pill, padding: `${SPACE.xxs}px ${SPACE.sm}px`, marginBottom: SPACE.md }}>
+            ✓ Doložené {percentoDolozenia(s, vyzbierane)} % použitia{podakovanie.karma > 0 ? ` · +${podakovanie.karma} karmy za dôkaz navyše` : ""}
+          </div>
+          <button onClick={onClose} style={btnHlavny}>Hotovo</button>
+        </div>
+      ) : (<>
       {/* hlavička */}
       <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm, marginBottom: SPACE.xs }}>
         <span style={{ width: 40, height: 40, borderRadius: RADIUS.sm, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 19, background: "rgba(var(--glass-rgb),.06)" }}>{z.emoji}</span>
@@ -154,7 +168,7 @@ export function SpravaZbierkySheet({ z, tier, toast, onPaywall, onClose }: {
             )}
           </Karta>
 
-          <Karta nadpis="Predĺžiť zbierku" popis="Predĺženie je platené, aby sa nenaťahovali zbierky, ktoré už nežijú. Na dlhodobú pomoc slúžia segmenty charity.">
+          <Karta nadpis="Predĺžiť zbierku" popis={CFG.predlzenia.map((p, i) => `${i === 0 ? "Predĺženie" : "potom"} o ${p.dni} dní za ${eur(p.cena)}`).join(", ") + "."}>
             {dalsiePredlzenie ? (
               platba?.druh === "predlzenie" ? (
                 <div style={{ display: "flex", gap: SPACE.xs }}>
@@ -192,7 +206,7 @@ export function SpravaZbierkySheet({ z, tier, toast, onPaywall, onClose }: {
           </Karta>
 
           <Karta nadpis="Dokladovať priebežne" popis="Doklady môžeš pridávať už počas zbierky — darcovia vidia, že to žije.">
-            <Dokladovanie zbierkaId={z.id} s={s} zmen={zmen} vyzbierane={vyzbierane} toast={toast} aktivna />
+            <Dokladovanie zbierkaId={z.id} s={s} zmen={zmen} vyzbierane={vyzbierane} toast={toast} aktivna onZverejnene={(k) => setPodakovanie({ karma: k })} />
           </Karta>
 
           {potvrdUkoncit ? (
@@ -207,9 +221,11 @@ export function SpravaZbierkySheet({ z, tier, toast, onPaywall, onClose }: {
       ) : (
         <>
           <StavDokladovania s={s} vyzbierane={vyzbierane} teraz={teraz} zmen={zmen} toast={toast} />
-          <Dokladovanie zbierkaId={z.id} s={s} zmen={zmen} vyzbierane={vyzbierane} toast={toast} />
+          <Dokladovanie zbierkaId={z.id} s={s} zmen={zmen} vyzbierane={vyzbierane} toast={toast} onZverejnene={(k) => setPodakovanie({ karma: k })} />
         </>
       )}
+      <button onClick={onClose} style={{ ...btnDruhy, marginTop: SPACE.sm }}>Zavrieť bez zverejnenia</button>
+      </>)}
     </Sheet>
   );
 }
@@ -242,8 +258,8 @@ function StavDokladovania({ s, vyzbierane, teraz, zmen, toast }: {
 }
 
 // ---- dokladovanie: povinné podľa pásma + navyše ----
-function Dokladovanie({ zbierkaId, s, zmen, vyzbierane, toast, aktivna }: {
-  zbierkaId: string; s: StavZbierky; zmen: (p: Partial<StavZbierky>) => void; vyzbierane: number; toast: (m: string) => void; aktivna?: boolean;
+function Dokladovanie({ zbierkaId, s, zmen, vyzbierane, toast, aktivna, onZverejnene }: {
+  zbierkaId: string; s: StavZbierky; onZverejnene: (karma: number) => void; zmen: (p: Partial<StavZbierky>) => void; vyzbierane: number; toast: (m: string) => void; aktivna?: boolean;
 }) {
   const pas = PASMA_DOKLADOV[pasmoPre(vyzbierane)];
   const hotovo = pas.povinne.every((p) => splnene(p, s, vyzbierane));
@@ -293,7 +309,7 @@ function Dokladovanie({ zbierkaId, s, zmen, vyzbierane, toast, aktivna }: {
     if (!aktivna && !hotovo) { toast("Najprv doplň povinné minimum pre toto pásmo"); return; }
     zmen({ zverejnene: new Date().toISOString() });
     pridajOznamDarcom({ zbierkaId, typ: "dolozene" });
-    toast(s.zverejnene ? "Aktualizované — darcovia dostali oznámenie 🔔" : "Zverejnené — všetkým darcom išlo oznámenie s poďakovaním 🔔");
+    onZverejnene(n * CFG.karmaNavyse);
   };
 
   return (
