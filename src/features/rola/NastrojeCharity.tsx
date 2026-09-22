@@ -12,7 +12,7 @@ import { usePouzivatel } from "@/lib/pouzivatel";
 import { darcoviaPre, useZmenyDarov, identitaDarcu, relCas } from "@/lib/darcovia";
 import { najdiZbierku, odznakZbierky } from "@/lib/zbierky";
 import { qrUrl } from "@/lib/qr";
-import { ulozVideoInfo } from "@/lib/videoUloz";
+import { ulozVideoInfo, zmazVideo } from "@/lib/videoUloz";
 import { pridajOznamDarcom } from "@/lib/oznamyDarcom";
 import { MediaNahlad } from "./DokazBlok";
 import { zbierkyOrg } from "./obsah";
@@ -80,6 +80,15 @@ export function VideoSheet({ tier, toast, onClose }: { tier: Tier; toast: (m: st
     toast(zaplatene ? `Video zverejnené · ${VIDEO_ORG_CFG.cenaDalsie} € (demo platba)` : "Video zverejnené na profile");
     setNove(null); setTitul(""); setZbierkaId(""); setPlatit(false);
   };
+  const [zmazat, setZmazat] = useState<string | null>(null);
+  const zmaz = (v: VideoOrg) => {
+    void zmazVideo(v.src);
+    const zvysok = videa.filter((x) => x.id !== v.id);
+    // nech profil neostane bez videa — navrch ide najnovšie zvyšné
+    ulozVidea(zvysok.some((x) => x.naProfile) || !zvysok.length ? zvysok : zvysok.map((x, i) => (i === 0 ? { ...x, naProfile: true } : x)));
+    setZmazat(null); toast("Video zmazané");
+  };
+  const dolu = (id: string) => ulozVidea(videa.map((x) => (x.id === id ? { ...x, naProfile: false } : x)));
   const naProfil = (id: string) => {
     ulozVidea(videa.map((x) => (x.id === id ? { ...x, naProfile: true } : naProfileMax <= 1 ? { ...x, naProfile: false } : x)));
   };
@@ -125,9 +134,17 @@ export function VideoSheet({ tier, toast, onClose }: { tier: Tier; toast: (m: st
               <div style={{ fontSize: 13, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{v.titul}</div>
               <div style={{ fontSize: 10.5, color: C.textTer }}>{v.dlzka}{v.zbierkaId ? ` · ${najdiZbierku(v.zbierkaId)?.nazov ?? "zbierka"}` : ""}</div>
             </div>
-            {vidno
-              ? <span style={{ flex: "none", fontSize: 10.5, fontWeight: 800, color: ZELENA, background: tint(ZELENA, .12), borderRadius: RADIUS.xs, padding: `2px ${SPACE.xs}px` }}>Na profile</span>
-              : <span {...pressable(() => naProfil(v.id), "Dať na profil")} style={{ flex: "none", fontSize: 11, fontWeight: 800, color: ZELENA, cursor: "pointer" }}>Dať na profil</span>}
+            <div style={{ flex: "none", display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 3 }}>
+              {vidno
+                ? <span {...pressable(() => dolu(v.id), "Stiahnuť z profilu")} style={{ fontSize: 10.5, fontWeight: 800, color: ZELENA, background: tint(ZELENA, .12), borderRadius: RADIUS.xs, padding: `2px ${SPACE.xs}px`, cursor: "pointer" }}>Na profile ✕</span>
+                : <span {...pressable(() => naProfil(v.id), "Dať na profil")} style={{ fontSize: 11, fontWeight: 800, color: ZELENA, cursor: "pointer" }}>Dať na profil</span>}
+              {zmazat === v.id
+                ? <span style={{ display: "flex", gap: SPACE.xs }}>
+                    <span {...pressable(() => zmaz(v), "Naozaj zmazať")} style={{ fontSize: 10.5, fontWeight: 800, color: "var(--a-danger)", cursor: "pointer" }}>Naozaj zmazať</span>
+                    <span {...pressable(() => setZmazat(null), "Späť")} style={{ fontSize: 10.5, fontWeight: 700, color: C.textTer, cursor: "pointer" }}>Späť</span>
+                  </span>
+                : <span {...pressable(() => setZmazat(v.id), "Zmazať video")} style={{ fontSize: 10.5, fontWeight: 700, color: C.textTer, cursor: "pointer" }}>Zmazať</span>}
+            </div>
           </div>
         );
       })}

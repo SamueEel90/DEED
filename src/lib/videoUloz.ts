@@ -59,3 +59,17 @@ export function useVideoUrl(src?: string): string | null {
   }, [src]);
   return url;
 }
+
+/** zmaže video z úložiska prehliadača (odkaz „idb:…") */
+export async function zmazVideo(src?: string) {
+  if (!jeVideo(src)) return;
+  try {
+    const db = await otvor();
+    await new Promise<void>((ok) => {
+      const tx = db.transaction(STORE, "readwrite");
+      tx.objectStore(STORE).delete(src!.slice(4));
+      tx.oncomplete = () => ok();
+      tx.onerror = () => ok();
+    });
+  } catch { /* nič */ }
+}
