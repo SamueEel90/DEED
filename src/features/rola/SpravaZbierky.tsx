@@ -4,16 +4,17 @@
 // ukončená → dokladovanie podľa pásma (povinné minimum + navyše = karma)
 // Pravidlá a čísla: lib/zbierkaSprava.ts (SPRAVA_ZBIERKY_CFG, PASMA_DOKLADOV).
 // ============================================================
-import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { C, SPACE, RADIUS } from "@/theme";
 import { Sheet, MoniBar, tint } from "@/shared";
 import { pressable } from "@/components/pressable";
 import { spracujFotku } from "@/lib/obrazok";
+import { nacitajDoklad, jePdf, otvorDoklad } from "@/lib/doklad";
 import { sucetDarov, useZmenyDarov } from "@/lib/darcovia";
 import { ZBIERKY, predvolenyStav } from "@/lib/zbierky";
 import {
   SPRAVA_ZBIERKY_CFG as CFG, PASMA_DOKLADOV, POZIADAVKA_TEXT, DRUHY_DOKLADU, OVERENY_SKEN,
-  nacitajStav, ulozStav, pasmoPre, splnene, navyse, percentoDolozenia, fazaDokladovania, dniDo, pridajDni,
+  nacitajStav, ulozStav, pasmoPre, sumaDokladov, splnene, navyse, percentoDolozenia, fazaDokladovania, dniDo, pridajDni,
   type StavZbierky, type Lehota, type DruhDokladu, type PolozkaDokladu,
 } from "@/lib/zbierkaSprava";
 import { FLAGS, TIER_LABEL, type Tier } from "./stav";
@@ -107,7 +108,8 @@ export function SpravaZbierkySheet({ z, tier, toast, onPaywall, onClose }: {
         </div>
         <span style={{ flex: "none", fontSize: 10.5, fontWeight: 800, color: aktivna ? ZELENA : "var(--a-info)", background: tint(aktivna ? ZELENA : "var(--a-info)", .14), borderRadius: RADIUS.xs, padding: `${SPACE.xxs}px ${SPACE.xs}px` }}>{aktivna ? "Aktívna" : "Ukončená"}</span>
       </div>
-      <div style={{ marginBottom: SPACE.sm }}><MoniBar vyzbierane={vyzbierane} ciel={z.ciel} mini /></div>
+      <div style={{ marginBottom: SPACE.xxs }}><MoniBar vyzbierane={vyzbierane} ciel={z.ciel} mini /></div>
+      <div style={{ fontSize: 12, fontWeight: 700, color: ZELENA, marginBottom: SPACE.sm }}>Doložené použitie: {percentoDolozenia(s, vyzbierane)} %</div>
 
       {FLAGS.dev_tier_switcher && (
         <div style={{ display: "flex", alignItems: "center", gap: SPACE.xxs, flexWrap: "wrap", fontSize: 10.5, color: C.textTer, marginBottom: SPACE.sm }}>
@@ -242,7 +244,6 @@ function Dokladovanie({ s, zmen, vyzbierane, toast, aktivna }: {
   const hotovo = pas.povinne.every((p) => splnene(p, s, vyzbierane));
   const pct = percentoDolozenia(s, vyzbierane);
   const n = navyse(s, vyzbierane);
-  const skenRef = useRef<HTMLInputElement>(null);
   const [druh, setDruh] = useState<DruhDokladu>("Bloček");
   const [nazov, setNazov] = useState("");
   const [dodavatel, setDodavatel] = useState("");
@@ -260,7 +261,16 @@ function Dokladovanie({ s, zmen, vyzbierane, toast, aktivna }: {
   };
   const nacitajSken = async (files: FileList | null) => {
     const f = files?.[0]; if (!f) return;
-    try { setSken(await spracujFotku(f, { pomer: null, maxSirka: 1400 })); } catch (e) { toast((e as Error).message); }
+    try { setSken(await nacitajDoklad(f)); } catch (e) { toast((e as Error).message); }
+  };
+  /** doklad dodatočne k položke, ktorá ho ešte nemá */
+  const priloz = async (id: string, files: FileList | null) => {
+    const f = files?.[0]; if (!f) return;
+    try {
+      const u = await nacitajDoklad(f);
+      zmen({ doklady: s.doklady.map((d) => (d.id === id ? { ...d, foto: u } : d)) });
+      toast("Doklad priložený");
+    } catch (e) { toast((e as Error).message); }
   };
   const pridajPolozku = () => {
     const sum = Number(suma.replace(",", "."));
@@ -278,6 +288,20 @@ function Dokladovanie({ s, zmen, vyzbierane, toast, aktivna }: {
 
   return (
     <div>
+      {/* doložené použitie — to, čo vidí darca pri zbierke */}
+      <div style={{ background: tint(ZELENA, .08), border: `1px solid ${tint(ZELENA, .3)}`, borderRadius: RADIUS.sm, padding: SPACE.sm, marginBottom: SPACE.sm }}>
+        <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
+          <span style={{ fontSize: 13, fontWeight: 800 }}>Doložené použitie</span>
+          <span style={{ fontSize: 22, fontWeight: 800, color: ZELENA }}>{pct} %</span>
+        </div>
+        <div style={{ height: 8, background: "rgba(var(--glass-rgb),.12)", borderRadius: 4, overflow: "hidden", margin: `${SPACE.xxs}px 0` }}>
+          <div style={{ height: "100%", width: `${pct}%`, background: ZELENA, transition: "width .3s ease" }} />
+        </div>
+        <div style={{ fontSize: 11, color: C.textSec, lineHeight: 1.45 }}>
+          {eur(sumaDokladov(s, true))} z {eur(vyzbierane)} má priložený doklad. Darcovia vidia pri zbierke „doložené {pct} %“. Položka bez dokladu sa nepočíta.
+        </div>
+      </div>
+
       {/* pásmo + povinné minimum */}
       <div style={{ background: C.surface, border: `1px solid ${C.line}`, borderRadius: RADIUS.sm, padding: SPACE.sm, marginBottom: SPACE.sm }}>
         <div style={{ fontSize: 12, color: C.textSec, marginBottom: SPACE.xs }}>
@@ -292,10 +316,6 @@ function Dokladovanie({ s, zmen, vyzbierane, toast, aktivna }: {
             </div>
           );
         })}
-        <div style={{ height: 6, background: "rgba(var(--glass-rgb),.1)", borderRadius: 3, overflow: "hidden", marginTop: SPACE.xs }}>
-          <div style={{ height: "100%", width: `${pct}%`, background: ZELENA }} />
-        </div>
-        <div style={{ fontSize: 11, color: ZELENA, fontWeight: 700, marginTop: 3 }}>doložené {pct} % použitia</div>
         {n > 0 && <div style={{ fontSize: 11.5, color: ZELENA, fontWeight: 700, marginTop: SPACE.xxs }}>★ Navyše doložené: {n}× → +{n * CFG.karmaNavyse} karmy</div>}
       </div>
 
@@ -326,12 +346,20 @@ function Dokladovanie({ s, zmen, vyzbierane, toast, aktivna }: {
       <div style={{ fontSize: 12, fontWeight: 800, color: C.textTer, letterSpacing: ".04em", marginBottom: SPACE.xxs }}>ROZPIS A DOKLADY</div>
       {s.doklady.map((d) => (
         <div key={d.id} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, background: C.surface, border: `1px solid ${C.line}`, borderRadius: RADIUS.sm, padding: `${SPACE.xs}px ${SPACE.sm}px`, marginBottom: SPACE.xxs }}>
-          {d.foto && d.foto !== OVERENY_SKEN
+          {jePdf(d.foto)
+            ? <span {...pressable(() => void otvorDoklad(d.foto!), "Otvoriť PDF")} style={{ width: 32, height: 32, flex: "none", borderRadius: 4, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9.5, fontWeight: 800, color: "#fff", background: "#c0392b", cursor: "pointer" }}>PDF</span>
+            : d.foto && d.foto !== OVERENY_SKEN
             ? <img src={d.foto} alt="doklad" style={{ width: 32, height: 32, objectFit: "cover", borderRadius: 4, flex: "none" }} />
             : <span style={{ fontSize: 16, flex: "none" }}>{d.foto ? "📄" : "✏️"}</span>}
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 12.5, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{d.nazov}</div>
-            <div style={{ fontSize: 10.5, color: C.textTer }}>{d.druh}{d.dodavatel ? ` · ${d.dodavatel}` : ""} · {d.foto ? "s dokladom" : "bez skenu"}</div>
+            <div style={{ fontSize: 10.5, color: C.textTer }}>{d.druh}{d.dodavatel ? ` · ${d.dodavatel}` : ""}{d.foto ? " · s dokladom" : ""}</div>
+            {!d.foto && (
+              <label style={{ display: "inline-block", marginTop: 2, fontSize: 11, fontWeight: 800, color: ZELENA, cursor: "pointer" }}>
+                📎 Priložiť doklad (foto alebo PDF)
+                <input type="file" accept="image/*,application/pdf,.pdf" hidden onChange={(e) => { void priloz(d.id, e.target.files); e.target.value = ""; }} />
+              </label>
+            )}
           </div>
           <span style={{ flex: "none", fontSize: 12.5, fontWeight: 800, color: ZELENA }}>{eur(d.suma)}</span>
           <span {...pressable(() => zmen({ doklady: s.doklady.filter((x) => x.id !== d.id) }), "Odstrániť položku")} style={{ flex: "none", color: C.textTer, cursor: "pointer", fontSize: 15 }}>×</span>
@@ -347,10 +375,12 @@ function Dokladovanie({ s, zmen, vyzbierane, toast, aktivna }: {
           <input value={suma} onChange={(e) => setSuma(e.target.value)} placeholder="€" inputMode="decimal" style={{ ...input, width: 80, flex: "none", textAlign: "right" }} />
         </div>
         <div style={{ display: "flex", gap: SPACE.xs }}>
-          <button onClick={() => skenRef.current?.click()} style={{ ...btnDruhy, flex: 1, color: sken ? ZELENA : C.textSec, borderColor: sken ? tint(ZELENA, .45) : C.line }}>{sken ? "✓ Sken priložený" : "📷 Odfotiť doklad"}</button>
+          <label style={{ ...btnDruhy, flex: 1, display: "flex", alignItems: "center", justifyContent: "center", boxSizing: "border-box", color: sken ? ZELENA : C.textSec, borderColor: sken ? tint(ZELENA, .45) : C.line }}>
+            {sken ? (jePdf(sken) ? "✓ PDF priložené" : "✓ Foto priložené") : "📎 Doklad (foto/PDF)"}
+            <input type="file" accept="image/*,application/pdf,.pdf" hidden onChange={(e) => { void nacitajSken(e.target.files); e.target.value = ""; }} />
+          </label>
           <button onClick={pridajPolozku} style={{ ...btnHlavny, flex: 1, height: 42 }}>Pridať položku</button>
         </div>
-        <input ref={skenRef} type="file" accept="image/*" capture="environment" hidden onChange={(e) => { void nacitajSken(e.target.files); e.target.value = ""; }} />
         <div style={{ fontSize: 10.5, color: C.textTer, marginTop: SPACE.xxs }}>Osobné údaje príjemcu (meno, adresa) na doklade pred odfotením zakry.</div>
       </div>
 
