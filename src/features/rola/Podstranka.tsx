@@ -2,8 +2,8 @@ import { Fragment, useState, type CSSProperties } from "react";
 import { C, SPACE, RADIUS, SIRKA } from "@/theme";
 import {
   BackHeader, PlatobnyModul, PlatbaModal, ProgresBox, QrModal, Stit, naStitLevel, tint,
-  Zdielanie, Zvon, Srdce, useLayout, obalSiroky, FeedGrid, Sheet,
-  EntityHero, BtnAkcia, BtnIkonka, KontextMenu, TabyProfil, DvaStlpce, StatRad,
+  Zdielanie, Zvon, Srdce, useLayout, obalSiroky, Sheet,
+  EntityHero, BtnAkcia, BtnIkonka, KontextMenu, TabyProfil, StatRad,
   IkonaMoznosti, IkonaQr, IkonaVlajka, IkonaPin, IkonaOdkaz,
 } from "@/shared";
 import { pressable } from "@/components/pressable";
@@ -348,7 +348,7 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
           <div style={{ flex: 1, minWidth: 0 }}>
             {x.z?.stav === "ukoncena" && <UkoncenaPill />}
             <div style={{ fontSize: 13.5, fontWeight: 700 }}>{x.titul}</div>
-            <div style={{ fontSize: 11, color: C.textTer, marginTop: 2 }}>{x.popis}</div>
+            <div style={{ fontSize: 12, color: C.textSec, marginTop: 2 }}>{x.popis}</div>
             <StavPolozky x={x} />
           </div>
           {x.p.split != null && (
@@ -364,18 +364,18 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
   // TABLET / PC — karta do mriežky (fotka hore, ako vo feede)
   const kartaPolozky = (x: Zbalena) => (
     <div key={x.kluc} {...pressable(() => otvor(x), x.titul)}
-      style={{ background: C.surface, border: `1px solid ${C.line}`, borderRadius: RADIUS.md, overflow: "hidden", cursor: "pointer" }}>
+      style={{ background: C.surface, border: `1px solid ${C.line}`, borderRadius: RADIUS.md, overflow: "hidden", cursor: "pointer", display: "flex", flexDirection: "column" }}>
       <div style={{ position: "relative" }}>
         <Miniatura x={x} velka />
         {x.p.split != null && (
           <span style={{ position: "absolute", right: SPACE.xs, top: SPACE.xs, fontSize: 11, fontWeight: 800, color: "#fff", background: "rgba(0,0,0,.6)", borderRadius: RADIUS.pill, padding: `2px ${SPACE.xs}px` }}>{x.p.split} %</span>
         )}
       </div>
-      <div style={{ padding: SPACE.sm }}>
+      <div style={{ padding: SPACE.sm, display: "flex", flexDirection: "column", flex: 1 }}>
         {x.z?.stav === "ukoncena" && <UkoncenaPill />}
         <div style={{ fontSize: 14.5, fontWeight: 800, lineHeight: 1.3 }}>{x.titul}</div>
-        {x.popis && <div style={{ fontSize: 12, color: C.textTer, lineHeight: 1.45, marginTop: 3 }}>{x.popis}</div>}
-        <StavPolozky x={x} />
+        {x.popis && <div style={{ fontSize: 12.5, color: C.textSec, lineHeight: 1.45, marginTop: 3 }}>{x.popis}</div>}
+        <div style={{ marginTop: "auto" }}><StavPolozky x={x} /></div>
       </div>
     </div>
   );
@@ -394,7 +394,9 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
               <div style={{ fontSize: 14, fontWeight: 800, color: C.text, margin: `${SPACE.gutter}px 0 ${SPACE.xs}px` }}>{g.label}</div>
             )}
             {siroke
-              ? <FeedGrid cards={polozky.map(kartaPolozky)} cols={desktop ? 3 : 2} gap={12} padding="0" />
+              ? <div style={{ display: "grid", gridTemplateColumns: `repeat(${desktop ? 3 : 2}, minmax(0,1fr))`, gap: SPACE.sm, alignItems: "stretch" }}>
+                  {polozky.map(kartaPolozky)}
+                </div>
               : polozky.map(riadokPolozky)}
           </Fragment>
         );
@@ -416,11 +418,7 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
   // O nás priamo pod hlavičkou — 2–3 riadky, zvyšok na „viac“
   const oNasKratky = <OnasKratky text={onas} />;
 
-  const oNasBlok = (
-    <>
-      <KontaktBlok k={nacitajKontakt(pozicia)} />
-    </>
-  );
+  const oNasBlok = <KontaktBlok k={nacitajKontakt(pozicia)} vodorovne={siroke} />;
 
   const terminalBlok = pozicia === "tvorca" && terminalOn && (
     <div {...pressable(() => toast("Priamy príspevok tvorcovi"), "Podporiť tvorcu")}
@@ -459,14 +457,8 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
         </>}
       />
       <div style={{ height: SPACE.gutter }} />
-      {desktop ? (
-        <DvaStlpce
-          hlavny={<>{podporaBlok}{obsahBlok}{terminalBlok}</>}
-          bok={oNasBlok}
-        />
-      ) : (
-        <>{podporaBlok}{obsahBlok}{oNasBlok}{terminalBlok}</>
-      )}
+      {/* kontakt je dole aj na PC — hore patrí to, čo charita robí, nie telefónne číslo */}
+      <>{podporaBlok}{obsahBlok}{terminalBlok}{oNasBlok}</>
     </div>
   );
 
