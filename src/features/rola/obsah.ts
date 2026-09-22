@@ -33,7 +33,7 @@ export function verejneTaby(pozicia: Pozicia, tier: Tier): Tab[] {
   if (!ukoncene.length) return taby;
   // Ukončené hneď za Zbierkami
   const i = taby.findIndex((t) => t.key === "zbierky");
-  const ukoncenyTab = { key: "ukoncene", label: "Ukončené", polozky: ukoncene } as Tab;
+  const ukoncenyTab = { key: "ukoncene", label: "Ukončené zbierky", polozky: ukoncene } as Tab;
   return [...taby.slice(0, i + 1), ukoncenyTab, ...taby.slice(i + 1)];
 }
 
