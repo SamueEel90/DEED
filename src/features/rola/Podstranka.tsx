@@ -3,19 +3,27 @@ import { C, SPACE, RADIUS, SIRKA } from "@/theme";
 import {
   BackHeader, PlatobnyModul, PlatbaModal, ProgresBox, QrModal, Stit, naStitLevel, tint,
   Zdielanie, Zvon, Srdce, useLayout, obalSiroky,
-  EntityHero, BtnAkcia, BtnIkonka, KontextMenu, TabyProfil, MenuSkupina, KontaktPolozka, DvaStlpce, StatRad,
-  IkonaMoznosti, IkonaQr, IkonaVlajka, IkonaPin, IkonaObalka, IkonaOdkaz,
+  EntityHero, BtnAkcia, BtnIkonka, KontextMenu, TabyProfil, DvaStlpce, StatRad,
+  IkonaMoznosti, IkonaQr, IkonaVlajka, IkonaPin, IkonaOdkaz,
 } from "@/shared";
 import { pressable } from "@/components/pressable";
 import { usePouzivatel } from "@/lib/pouzivatel";
 import { klucEntity, useFotkyEntity } from "@/lib/fotoentity";
 import { NahlasitSheet } from "@/components/nahlasit";
 import { qrUrl } from "@/lib/qr";
+import { RecurringSheet } from "@/components/recurring";
+import { SADY_EUR, SADY_EURC } from "@/lib/sadyDarov";
+import { nastavCiste, sucetDarov, useZmenyDarov, pridajDar, type VolbaDaru } from "@/lib/darcovia";
+import { ZoznamDarcov } from "@/components/zoznamdarcov";
 import { zdielaj, aktualnaUrl } from "@/lib/zdielanie";
 import type { Kanal } from "@/types";
 import { SUBJEKTY, ZASLUZENA } from "./mock";
+import { segmentyCharity } from "./registracia";
 import { najdiZbierku, kryptoZbierky, type Dokaz } from "@/lib/zbierky";
-import { nacitajTerminal, type Pozicia, type Tier } from "./stav";
+import { nacitajTerminal, nacitajKryptoOrg, nacitajCentralnu, nacitajSady, nacitajOnas, nacitajTvarLoga, nacitajZdrojAvatara, type Pozicia, type Tier } from "./stav";
+import { OnasKratky } from "./OnasKratky";
+import { KontaktBlok, nacitajKontakt } from "./kontakt";
+import { verejneTaby } from "./obsah";
 
 /*
   ============================================================
@@ -88,6 +96,22 @@ function DokazBlok({ dokaz, vyzbierane }: { dokaz: Dokaz; vyzbierane?: number })
   );
 }
 
+// ukážka klientovi: zbierky 3 vzorových profilov a centrálna zbierka začínajú bez vymyslených darov
+nastavCiste([
+  ...Object.values(SUBJEKTY).flatMap((x) => x.taby.flatMap((t) => t.polozky.map((p) => p.zbierkaId).filter((id): id is string => !!id))),
+  "z-centralna",
+]);
+/** súčet všetkého, čo charita vyzbierala (jej zbierky + centrálna) */
+function vyzbieraneCharita(): number {
+  const ids = SUBJEKTY.charita.taby.flatMap((t) => t.polozky.map((p) => p.zbierkaId)).filter((id): id is string => !!id);
+  return ids.reduce((a, id) => { const z = najdiZbierku(id); return a + (z ? ziva(z).vyzbierane : 0); }, 0) + sucetDarov("z-centralna").suma;
+}
+/** zbierka so živými číslami: základ + skutočné (simulované) dary */
+function ziva<T extends { id: string; vyzbierane: number; darcovia: number }>(z: T): T {
+  const d = sucetDarov(z.id);
+  return { ...z, vyzbierane: z.vyzbierane + d.suma, darcovia: z.darcovia + d.pocet };
+}
+
 export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
   pozicia: Pozicia; tier?: Tier; logo: string | null; toast: (m: string) => void; onBack: () => void;
 }) {
@@ -96,35 +120,37 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
   const s = SUBJEKTY[pozicia];
   const stit = naStitLevel(ZASLUZENA[pozicia].badge);
   // tvorca vystupuje pod profilovou fotkou osoby, charita/B2B pod logom subjektu
-  const avatarSrc = (pozicia === "tvorca" ? ja.foto : logo) ?? s.foto;
+  const fotoOsoby = pozicia === "tvorca" && nacitajZdrojAvatara(pozicia) === "foto"; // tvorca: fotka alebo logo značky
+  const avatarSrc = (fotoOsoby ? ja.foto : logo) ?? s.foto;
   const [fotky] = useFotkyEntity(klucEntity("rola", pozicia)); // titulná fotka zo správy roly
   const coverSrc = fotky.cover ?? s.cover;
   // „Všetko" — virtuálny tab navrchu (pred Kampane/Skutky/Talent…): zoskupí položky zo všetkých sekcií
-  // verejný profil ukáže len to, čo má entita v aktuálnom programe (`odTieru`, bez neho = ZADARMO)
-  // Zbierky = len aktívne. Ukončená zbierka sa presunie do Skutkov ako jedna karta s dôkazom.
-  const ukoncena = (p: { zbierkaId?: string }) => !!p.zbierkaId && najdiZbierku(p.zbierkaId)?.stav === "ukoncena";
-  const presunute = s.taby.find((t) => t.key === "zbierky")?.polozky.filter(ukoncena) ?? [];
-  const mojeTaby = s.taby
-    .filter((t) => (t.odTieru ?? 0) <= tier)
-    .map((t) => ({ ...t, polozky: (
-      t.key === "zbierky" ? t.polozky.filter((p) => !ukoncena(p))
-      : t.key === "skutky" ? [...presunute, ...t.polozky]
-      : t.polozky
-    ).filter((p) => (p.odTieru ?? 0) <= tier) }));
+  // len to, čo má entita v aktuálnom programe — ten istý výpočet ako prehľad v správe
+  const mojeTaby = verejneTaby(pozicia, tier);
   const taby = [{ key: "vsetko", label: "Všetko", polozky: mojeTaby.flatMap((t) => t.polozky) }, ...mojeTaby];
   const [tab, setTab] = useState("vsetko");
   const [sledujem, setSledujem] = useState(false);
-  const [onasViac, setOnasViac] = useState(false);
+  const [onas] = useState(() => nacitajOnas(pozicia) ?? s.onas); // text zo správy (editor), inak pôvodný
   const [rozbalena, setRozbalena] = useState<string | null>(null);
   const [profilZiad, setProfilZiad] = useState<string | null>(null);
   const [qrZbierka, setQrZbierka] = useState<{ id: string; nazov: string } | null>(null);
+  // pravidelná podpora = funkcia zbierky (charita od programu ZBIERKA/T1), len pre registrovaných darcov
+  const [pravidelna, setPravidelna] = useState<{ id: string | null; nazov: string } | null>(null);
+  const maPravidelnu = pozicia === "charita" && tier >= 1;
   const [zvoncek, setZvoncek] = useState(false);
   const [qr, setQr] = useState(false);
   const [menu, setMenu] = useState(false);
   const [nahlasit, setNahlasit] = useState(false);
   const [platba, setPlatba] = useState<Kanal | null>(null);
-  const [suma, setSuma] = useState(8600);   // mock — všeobecná podpora charity
-  const [ludia, setLudia] = useState(214);
+  useZmenyDarov(); // prekreslí sumy po každom dare
+  const registrovany = ja.typ !== "pasivny";
+  const centr = sucetDarov("z-centralna");
+  const [platbaRef, setPlatbaRef] = useState<{ id: string; komu: string } | null>(null);
+  // zápis daru → zoznam darcov + súčty (registrovaný so zvoleným menom, inak anonym)
+  const daruj = (refId: string, suma: number, kanal: "psp" | "sepa" | "deed", volba?: VolbaDaru, komu?: string) => {
+    pridajDar({ refId, suma, kanal, registrovany, volba });
+    toast(`Ďakujeme za dar ${suma.toLocaleString("sk", { maximumFractionDigits: 2 })} ${kanal === "deed" ? "EURC" : "€"}${komu ? ` · ${komu}` : ""}`);
+  };
   const terminalOn = pozicia === "tvorca" && nacitajTerminal();
   const aktTab = taby.find((t) => t.key === tab) ?? taby[0];
 
@@ -139,17 +165,25 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
   // ---- bloky obsahu (zdieľané mobil/desktop) ----
   // centrálna zbierka organizácie (pre seba) — charita ju má od prvého plateného programu T1.
   // ZADARMO = len jedna aktívna zbierka PRE NIEKOHO, nie pre seba.
-  const podporaBlok = pozicia === "charita" && tier >= 1 && (
+  // na profile je len spustená centrálna zbierka (spúšťa sa v správe); krypto dary podľa rozhodnutia charity
+  const kryptoOrg = pozicia !== "charita" || nacitajKryptoOrg("charita");
+  const sady = nacitajSady(pozicia); // rýchle sumy, ktoré si subjekt vybral
+  const sumy = { sumyEur: SADY_EUR[sady.eur].sumy, sumyEurc: SADY_EURC[sady.eurc].sumy };
+  const podporaBlok = pozicia === "charita" && tier >= 1 && nacitajCentralnu("charita") && (
     <div style={{ marginBottom: SPACE.gutter }}>
       <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".05em", color: C.textTer, marginBottom: SPACE.xs }}>CENTRÁLNA ZBIERKA ORGANIZÁCIE</div>
-      <div style={{ marginBottom: SPACE.sm }}><ProgresBox suma={suma} ciel={12000} ludia={ludia} /></div>
-      <PlatobnyModul zbalene
+      <div style={{ marginBottom: SPACE.sm }}><ProgresBox suma={centr.suma} ciel={12000} ludia={centr.pocet} /></div>
+      <PlatobnyModul zbalene krypto={kryptoOrg ? "EURC" : "nie"} {...sumy}
         onShare={zdielajProfil}
-        upvotes={ludia} onUpvote={() => toast("❤")}
-        onPodpor={(d: number) => { setSuma((x) => x + d * 0.01); setLudia((l) => l + 1); toast(`Ďakujeme za ${d} DEED pre ${s.nazov}`); }}
-        onKanal={(k: string) => setPlatba(k as Kanal)}
+        upvotes={0} onUpvote={() => undefined}
+        onPodpor={(d: number) => daruj("z-centralna", d * 0.01, "deed", undefined, s.nazov)}
+        onDarEur={(sm, v) => daruj("z-centralna", sm, "sepa", v, s.nazov)}
+        onDarKrypto={(v, vol) => daruj("z-centralna", v, "deed", vol, s.nazov)}
+        onKanal={(k: string) => { setPlatbaRef({ id: "z-centralna", komu: s.nazov }); setPlatba(k as Kanal); }}
         oblubene={{ refId: `rola-${s.nazov}`, typ: pozicia, modul: "charity", nazov: s.nazov, lok: s.lok }} toast={toast}
+        opakovana={maPravidelnu ? { popis: "Mesačne · len pre registrovaných · kedykoľvek zrušíš", onClick: () => setPravidelna({ id: "z-centralna", nazov: "Centrálna zbierka organizácie" }) } : undefined}
         qr={{ label: "QR tejto zbierky", popis: "Sken → dar za 2 kliky · zdieľanie", onClick: () => setQr(true) }} />
+      <ZoznamDarcov refId="z-centralna" celkom={centr.pocet} style={{ marginTop: SPACE.sm }} />
     </div>
   );
 
@@ -165,8 +199,9 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
             <div style={{ fontSize: 14, fontWeight: 800, color: C.text, margin: `${SPACE.gutter}px 0 ${SPACE.xs}px` }}>{g.label}</div>
           )}
           {g.polozky.map((p, i) => {
-        const z = p.zbierkaId ? najdiZbierku(p.zbierkaId) : undefined;
-        const kluc = p.zbierkaId ?? `x${i}`;
+        const z0 = p.zbierkaId ? najdiZbierku(p.zbierkaId) : undefined;
+        const z = z0 ? ziva(z0) : undefined;
+        const kluc = p.zbierkaId ?? `${g.key}-${i}`; // unikátny aj naprieč odsekmi vo Všetko
         const otvorena = rozbalena === kluc;
         // skutok s dôkazom (fotky pred/po + doklady) sa tiež rozbalí
         const dokaz = p.dokaz ?? (p.dokazZbierky ? najdiZbierku(p.dokazZbierky)?.dokaz : undefined);
@@ -174,16 +209,23 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
         const popis = z ? [p.popis, z.komu].filter(Boolean).join(" · ") : p.popis;
         return (
           <div key={kluc} style={{ background: C.surface, border: `1px solid ${otvorena ? tint("var(--a-info)", .38) : C.line}`, borderRadius: RADIUS.sm, marginBottom: SPACE.xs, overflow: "hidden" }}>
-            <div {...pressable(() => (z || dokaz ? setRozbalena(otvorena ? null : kluc) : toast(`${titul} — detail`)), titul)}
+            <div {...pressable(() => (z || dokaz || p.video ? setRozbalena(otvorena ? null : kluc) : toast(`${titul} — detail`)), titul)}
               style={{ display: "flex", alignItems: "center", gap: SPACE.sm, padding: SPACE.sm, cursor: "pointer" }}>
               {/* úvodná fotka zbierky — tá istá, akú vidíš v samotnej zbierke */}
               <span style={{ width: 44, height: 44, borderRadius: RADIUS.xs, flex: "none", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 19, background: "rgba(var(--glass-rgb),.06)" }}>
-                {z ? <img src={z.foto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : p.emoji}
+                {z ? <img src={z.foto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  : p.video ? (
+                    <span style={{ position: "relative", width: "100%", height: "100%", display: "block" }}>
+                      <img src={p.video.nahlad} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                      <span style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,.28)", color: "#fff", fontSize: 16 }}>▶</span>
+                    </span>
+                  ) : p.emoji}
               </span>
               <div style={{ flex: 1, minWidth: 0 }}>
                 {z?.stav === "ukoncena" && <UkoncenaPill />}
                 <div style={{ fontSize: 13.5, fontWeight: 700 }}>{titul}</div>
                 <div style={{ fontSize: 11, color: C.textTer, marginTop: 2 }}>{popis}</div>
+                {!z && p.video && <div style={{ fontSize: 11, fontWeight: 700, color: C.textSec, marginTop: 3 }}>▶ video · {p.video.dlzka}</div>}
                 {!z && dokaz && <div style={{ fontSize: 11, fontWeight: 700, color: "var(--a-green)", marginTop: 3 }}>📷 {dokaz.fotky.length} fotky · 📄 {dokaz.doklady.length} doklady</div>}
                 {z && (
                   <div style={{ display: "flex", alignItems: "center", gap: SPACE.xs, marginTop: 5 }}>
@@ -199,6 +241,27 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
               )}
               <span style={{ color: C.textTer, fontSize: 15, flex: "none", transform: otvorena ? "rotate(90deg)" : "none", transition: "transform .18s ease" }}>›</span>
             </div>
+
+            {/* rozbalené video — prehrávač + väzba na zbierku */}
+            {otvorena && !z && p.video && (
+              <div style={{ padding: `0 ${SPACE.sm}px ${SPACE.sm}px` }}>
+                <div {...pressable(() => toast(`▶ ${p.titul}`), "Prehrať video")}
+                  style={{ position: "relative", borderRadius: RADIUS.sm, overflow: "hidden", cursor: "pointer", marginBottom: SPACE.sm }}>
+                  <img src={p.video.nahlad} alt="" style={{ width: "100%", aspectRatio: "16/9", objectFit: "cover", display: "block" }} />
+                  <span style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,.25)" }}>
+                    <span style={{ width: 58, height: 58, borderRadius: "50%", background: "rgba(0,0,0,.6)", color: "#fff", fontSize: 24, display: "flex", alignItems: "center", justifyContent: "center", paddingLeft: 4 }}>▶</span>
+                  </span>
+                  <span style={{ position: "absolute", right: 8, bottom: 8, fontSize: 11.5, fontWeight: 700, color: "#fff", background: "rgba(0,0,0,.65)", borderRadius: RADIUS.xs, padding: "1px 6px" }}>{p.video.dlzka}</span>
+                </div>
+                {p.video.zbierkaId && najdiZbierku(p.video.zbierkaId) && (
+                  <div style={{ fontSize: 12.5, color: C.textSec, marginBottom: SPACE.xs }}>
+                    Video k zbierke: <b style={{ color: C.text }}>{najdiZbierku(p.video.zbierkaId)!.nazov}</b>
+                  </div>
+                )}
+                <div {...pressable(() => setRozbalena(null), "Zmenšiť")}
+                  style={{ textAlign: "center", fontSize: 12.5, fontWeight: 700, color: C.textTer, padding: `${SPACE.sm}px 0 0`, cursor: "pointer" }}>Zmenšiť ▲</div>
+              </div>
+            )}
 
             {/* rozbalený skutok — dôkaz, že sme pomohli */}
             {otvorena && !z && dokaz && (
@@ -279,14 +342,19 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
                 )}
                 <div style={{ marginBottom: SPACE.sm }}><ProgresBox suma={z.vyzbierane} ciel={z.ciel} ludia={z.darcovia} live={z.stav === "aktivna"} /></div>
                 {z.stav === "aktivna" ? (
-                  <PlatobnyModul zbalene krypto={kryptoZbierky(z)}
+                  <PlatobnyModul zbalene krypto={kryptoOrg ? kryptoZbierky(z) : "nie"} {...sumy}
                     onShare={zdielajProfil}
-                    upvotes={z.darcovia} onUpvote={() => toast("❤")}
-                    onPodpor={(d: number) => toast(`Ďakujeme za ${d} DEED pre ${z.komu}`)}
-                    onKanal={(k: string) => setPlatba(k as Kanal)}
+                    upvotes={0} onUpvote={() => undefined}
+                    onPodpor={(d: number) => daruj(z.id, d * 0.01, "deed", undefined, z.komu)}
+                    onDarEur={(sm, v) => daruj(z.id, sm, "sepa", v, z.komu)}
+                    onDarKrypto={(v, vol) => daruj(z.id, v, "deed", vol, z.komu)}
+                    onKanal={(k: string) => { setPlatbaRef({ id: z.id, komu: z.komu }); setPlatba(k as Kanal); }}
                     oblubene={{ refId: z.id, typ: "zbierka", modul: "charity", nazov: z.nazov, lok: z.lok }} toast={toast}
+                    opakovana={maPravidelnu ? { popis: "Mesačne · len pre registrovaných · kedykoľvek zrušíš", onClick: () => setPravidelna({ id: z.id, nazov: z.nazov }) } : undefined}
                     qr={{ label: "QR tejto zbierky", popis: "Skenovať · kopírovať · zdieľať", onClick: () => setQrZbierka({ id: z.id, nazov: z.nazov }) }} />
-                ) : (
+                ) : null}
+                {z.stav === "aktivna" && <ZoznamDarcov refId={z.id} celkom={z.darcovia} style={{ marginTop: SPACE.sm }} />}
+                {z.stav === "aktivna" ? null : (
                   <>
                     <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm, background: "var(--a-green)", color: "#fff", borderRadius: RADIUS.sm, padding: `${SPACE.sm}px ${SPACE.gutter}px`, marginBottom: SPACE.sm }}>
                       <span style={{ fontSize: 24, lineHeight: 1 }}>✓</span>
@@ -311,28 +379,11 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
   );
 
   // O nás priamo pod hlavičkou — 2–3 riadky, zvyšok na „viac“
-  const oNasKratky = (
-    <div style={{ fontSize: 13, lineHeight: 1.5, color: C.textSec }}>
-      <span style={onasViac ? undefined : { display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{s.onas}</span>
-      {s.onas.length > 140 && (
-        <span {...pressable(() => setOnasViac((v) => !v), onasViac ? "Zbaliť" : "Zobraziť viac")}
-          style={{ display: "inline-block", marginTop: 2, fontSize: 12.5, fontWeight: 700, color: "var(--a-info)", cursor: "pointer" }}>
-          {onasViac ? "menej" : "viac"}
-        </span>
-      )}
-    </div>
-  );
+  const oNasKratky = <OnasKratky text={onas} />;
 
   const oNasBlok = (
     <>
-      <MenuSkupina nadpis="KONTAKT">
-        <KontaktPolozka ikona={<IkonaPin size={15} />} label="Adresa" hodnota={s.kontakt.adresa} />
-        <KontaktPolozka ikona={<IkonaObalka size={15} />} label="E-mail" hodnota={s.kontakt.email} href={`mailto:${s.kontakt.email}`} />
-        <KontaktPolozka ikona={<span style={{ fontSize: 13 }}>📞</span>} label="Telefón" hodnota={s.kontakt.tel} href={`tel:${s.kontakt.tel.replace(/\s/g, "")}`} />
-        {s.kontakt.web
-          ? <KontaktPolozka ikona={<IkonaOdkaz size={15} />} label="Web" hodnota={s.kontakt.web} href={`https://${s.kontakt.web}`} posledna />
-          : null}
-      </MenuSkupina>
+      <KontaktBlok k={nacitajKontakt(pozicia)} />
     </>
   );
 
@@ -345,7 +396,7 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
 
   const telo = (
     <div style={{ padding: `0 ${SPACE.md}px` }}>
-      <EntityHero
+      <EntityHero avatarTvar={fotoOsoby ? "kruh" : nacitajTvarLoga(pozicia)}
         avatar={avatarSrc ? <img src={avatarSrc} alt={s.nazov} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : (pozicia === "tvorca" ? s.emoji : s.iniciacky)}
         cover={coverSrc}
         coverEl={<span style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 46, opacity: .45 }}>{s.emoji}</span>}
@@ -357,7 +408,9 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
           </div>
         }
         podMenom={oNasKratky}
-        stats={(tier === 0 && s.cislaZadarmo ? s.cislaZadarmo : s.cisla).map(([hodnota, label]) => ({ hodnota, label }))}
+        stats={(tier === 0 && s.cislaZadarmo ? s.cislaZadarmo : s.cisla).map(([hodnota, label], i) => ({
+          // charita: „Vyzbierané" = súčet všetkých jej zbierok (ukončené + živé dary) + centrálna
+          hodnota: pozicia === "charita" && i === 0 ? `${vyzbieraneCharita().toLocaleString("sk", { maximumFractionDigits: 0 })} €` : hodnota, label }))}
         akcie={<>
           <BtnAkcia variant={sledujem ? "secondary" : "primary"} ariaPressed={sledujem}
             onClick={() => { setSledujem((v) => !v); toast(sledujem ? `Prestal si sledovať ${s.nazov}` : `Sleduješ ${s.nazov}`); }}>
@@ -401,8 +454,14 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
         ]} />
       )}
       {nahlasit && <NahlasitSheet co={`Profil · ${s.nazov}`} refId={`rola-${pozicia}`} modul="rola" onClose={() => setNahlasit(false)} toast={toast} />}
-      {platba && <PlatbaModal kanal={platba} komu={s.nazov} onClose={() => setPlatba(null)}
-        onDone={(d: number) => { setSuma((x) => x + d * (platba === "DEED" ? 0.01 : 1)); setLudia((l) => l + 1); toast(`Odoslané ${platba === "EUR" ? d + " €" : platba === "EURC" ? d + " EURC" : d + " DEED"} · ${s.nazov}`); }} />}
+      {platba && <PlatbaModal kanal={platba} komu={platbaRef?.komu ?? s.nazov} onClose={() => { setPlatba(null); setPlatbaRef(null); }}
+        onDone={(d: number, v?: VolbaDaru) => daruj(platbaRef?.id ?? "z-centralna", platba === "DEED" ? d * 0.01 : d, platba === "EUR" ? "psp" : "deed", v, platbaRef?.komu ?? s.nazov)} />}
+      {pravidelna && <RecurringSheet nazov={pravidelna.nazov}
+        // centrálna zbierka = celá organizácia → nedá sa doložiť per dar, preto bez voľby „Táto zbierka"
+        caseId={pravidelna.id === "z-centralna" ? null : pravidelna.id}
+        // pravidelná podpora je od T1 celá: zbierka → táto zbierka / segment / celá charita,
+        // centrálna zbierka → segment / celá organizácia
+        segmenty={segmentyCharity()} onClose={() => setPravidelna(null)} toast={toast} />}
       {qrZbierka && <QrModal typ="skutok" titul={`QR — ${qrZbierka.nazov}`} popis="Sken otvorí túto zbierku — daj ho na web, do správy alebo na plagát"
         odkaz={qrUrl("case", qrZbierka.id)} onClose={() => setQrZbierka(null)} toast={toast} />}
       {qr && <QrModal typ="skutok" titul={`QR — ${s.nazov}`} popis="Profil subjektu — QR aj embed odznak na vlastný web"

@@ -7,6 +7,7 @@ import { useUpgrade } from "@/components/context";
 import { useRecurringCreate } from "@/data";
 import { Sheet } from "@/components/sheet";
 import { IkonaOpakovat, IkonaFajka } from "@/components/icons";
+import { Svetlusik } from "@/components/svetlusik";
 
 // ============================================================
 // PRAVIDELNÁ PODPORA (Fáza 4) — LEN charita (Help ju nikdy nemá).
@@ -19,24 +20,42 @@ type Perioda = "tyzdenne" | "mesacne" | "rocne";
 
 const periodaTxt = (p: Perioda) => (p === "tyzdenne" ? "týždeň" : p === "rocne" ? "rok" : "mesiac");
 
-export function RecurringSheet({ nazov, caseId, charitaUcet, onClose, toast }: { nazov?: ReactNode; caseId?: string | null; charitaUcet?: string | null; onClose?: () => void; toast?: (t: string) => void }) {
-  const { ucetId, demo } = usePouzivatel();
+export function RecurringSheet({ nazov, caseId, charitaUcet, segmenty, bezCelej = false, onClose, toast }: {
+  nazov?: ReactNode; caseId?: string | null; charitaUcet?: string | null;
+  /** segmenty, ktoré si charita nastavila (program AKCIA). null = charita segmenty ani celú organizáciu neponúka;
+   *  undefined = starý režim bez zoznamu (feed, kým nepoznáme program charity) */
+  segmenty?: string[] | null;
+  /** skryť voľbu „Celá charita" (charita ju v svojom programe neponúka) */
+  bezCelej?: boolean;
+  onClose?: () => void; toast?: (t: string) => void;
+}) {
+  const { ucetId, demo, typ, meno } = usePouzivatel();
   const upgrade = useUpgrade();
   const rec = useRecurringCreate();
-  const [krok, setKrok] = useState<"nastav" | "potvrd">("nastav");
+  const [krok, setKrok] = useState<"nastav" | "potvrd" | "hotovo">("nastav");
   const [rozsah, setRozsah] = useState<Rozsah>(caseId ? "request" : "charita");
   const [suma, setSuma] = useState(10);
   const [perioda, setPerioda] = useState<Perioda>("mesacne");
-  const [mena, setMena] = useState<"EUR" | "DEED">("EUR");
+  const [mena, setMena] = useState<"EUR" | "EURC">("EUR"); // charita a Viera prijímajú krypto v EURC, nie DEED
 
-  const volby: { id: Rozsah; t: string; d: string }[] = [
-    ...(caseId ? [{ id: "request" as const, t: "Táto žiadosť", d: "Skončí, keď zbierka skončí — okamžite a s notifikáciou." }] : []),
-    { id: "segment", t: "Segment (téma)", d: "Charita rozdelí podľa vlastného kľúča." },
-    { id: "charita", t: "Celá charita", d: "Paušál na chod a najnaliehavejšie potreby." },
+  const [segment, setSegment] = useState<string | null>(segmenty?.[0] ?? null);
+  // čím širší cieľ, tým menej sa dá doložiť, kam išlo práve tvoje euro — darca to musí vidieť pred potvrdením
+  const volby: { id: Rozsah; t: string; d: string; kontrola: string; farba: string }[] = [
+    ...(caseId ? [{ id: "request" as const, t: "Táto zbierka", d: "Skončí, keď zbierka skončí — okamžite a s notifikáciou.",
+      kontrola: "K tejto zbierke budú doložené doklady o použití.", farba: "var(--a-green)" }] : []),
+    ...(segmenty === null ? [] : [
+      { id: "segment" as const, t: "Segment (téma)", d: "Charita rozdelí peniaze v rámci témy podľa vlastného kľúča.",
+        kontrola: "Doklady budeme požadovať za celú tému, nezaručujeme však, že pokryjú práve váš dar.", farba: "var(--a-green)" },
+    ]),
+    ...(bezCelej ? [] : [
+      { id: "charita" as const, t: "Celá charita", d: "Paušál na chod a najnaliehavejšie potreby.",
+        kontrola: "Nad použitím daru pre celú organizáciu nemáme kontrolu.", farba: "var(--a-green)" },
+    ]),
   ];
 
   async function potvrd() {
-    if (!ucetId || demo) { onClose?.(); upgrade(); return; }  // recurring = registrovaný darca
+    if (typ === "pasivny") { onClose?.(); upgrade(); return; }  // recurring = len registrovaný darca
+    if (!ucetId || demo) { setKrok("hotovo"); return; }          // ukážka (demo účet): záväzok sa len simuluje
     try {
       await rec.mutateAsync({
         rozsah, darca: ucetId, suma, mena, perioda,
@@ -45,7 +64,7 @@ export function RecurringSheet({ nazov, caseId, charitaUcet, onClose, toast }: {
         viazaneNaZbierku: rozsah === "request",
       });
       toast?.(`Pravidelná podpora nastavená · ${suma} ${mena} / ${periodaTxt(perioda)}`);
-      onClose?.();
+      setKrok("hotovo");
     } catch {
       toast?.("Nepodarilo sa nastaviť — skús znova.");
     }
@@ -72,9 +91,17 @@ export function RecurringSheet({ nazov, caseId, charitaUcet, onClose, toast }: {
             <span style={{ flex: 1, minWidth: 0 }}>
               <span style={{ display: "block", fontSize: 14, fontWeight: 700 }}>{v.t}</span>
               <span style={{ display: "block", fontSize: 11.5, color: C.textTer, marginTop: SPACE.xxs }}>{v.d}</span>
+              <span style={{ display: "block", fontSize: 11.5, fontWeight: 700, color: v.farba, marginTop: SPACE.xxs }}>{v.kontrola}</span>
             </span>
           </button>
         ))}
+        {rozsah === "segment" && segmenty && segmenty.length > 0 && (
+          <div style={{ display: "flex", flexWrap: "wrap", gap: SPACE.xs, margin: `${SPACE.xxs}px 0 ${SPACE.xs}px` }}>
+            {segmenty.map((sg) => (
+              <button key={sg} onClick={() => setSegment(sg)} style={{ ...chip(segment === sg), flex: "none", padding: `${SPACE.xs}px ${SPACE.sm}px` }}>{sg}</button>
+            ))}
+          </div>
+        )}
 
         <div style={{ fontSize: 11.5, letterSpacing: ".4px", color: C.textTer, fontWeight: 700, margin: `${SPACE.md}px 0 ${SPACE.xs}px` }}>SUMA</div>
         <div style={{ display: "flex", gap: SPACE.xs, marginBottom: SPACE.sm }}>
@@ -82,7 +109,7 @@ export function RecurringSheet({ nazov, caseId, charitaUcet, onClose, toast }: {
         </div>
         <div style={{ display: "flex", gap: SPACE.xs }}>
           <button onClick={() => setMena("EUR")} style={chip(mena === "EUR")}>€ EUR</button>
-          <button onClick={() => setMena("DEED")} style={chip(mena === "DEED")}>DEED</button>
+          <button onClick={() => setMena("EURC")} style={chip(mena === "EURC")}>EURC</button>
         </div>
 
         <div style={{ fontSize: 11.5, letterSpacing: ".4px", color: C.textTer, fontWeight: 700, margin: `${SPACE.md}px 0 ${SPACE.xs}px` }}>AKO ČASTO</div>
@@ -91,12 +118,18 @@ export function RecurringSheet({ nazov, caseId, charitaUcet, onClose, toast }: {
         </div>
 
         <button onClick={() => setKrok("potvrd")} style={btn(true, true)}>Pokračovať</button>
+      </>) : krok === "hotovo" ? (<>
+        <Svetlusik nadpis={meno ? `Ďakujeme, ${meno}, za tvoju podporu!` : "Ďakujeme za tvoju podporu!"}
+          dar={`${suma} ${mena} každý ${periodaTxt(perioda)}`}
+          karma="Pravidelnú podporu zrušíš kedykoľvek v Peňaženke." />
+        <button onClick={() => onClose?.()} style={btn(true, true)}>Hotovo</button>
       </>) : (<>
         {/* DVOJITÉ potvrdenie — záväzok */}
         <div style={{ background: "rgba(var(--glass-rgb),.05)", border: `1px solid ${C.line}`, borderRadius: RADIUS.sm, padding: `${SPACE.sm}px ${SPACE.gutter}px` }}>
           <Riadok k="Suma" v={`${suma} ${mena}`} />
           <Riadok k="Perióda" v={`každý ${periodaTxt(perioda)}`} />
-          <Riadok k="Cieľ" v={volby.find((x) => x.id === rozsah)?.t} />
+          <Riadok k="Cieľ" v={rozsah === "segment" && segment ? `Segment — ${segment}` : volby.find((x) => x.id === rozsah)?.t} />
+          <Riadok k="Dokladovanie" v={<span style={{ color: volby.find((x) => x.id === rozsah)?.farba }}>{rozsah === "request" ? "doklady k zbierke" : rozsah === "segment" ? "doklady za tému" : "bez kontroly"}</span>} />
           {rozsah === "request" && <Riadok k="Pozn." v="zastaví sa pri ukončení zbierky" />}
         </div>
         <div style={{ fontSize: 11.5, color: C.textTer, marginTop: SPACE.sm, lineHeight: 1.5 }}>

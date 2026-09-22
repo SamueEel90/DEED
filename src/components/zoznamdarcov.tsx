@@ -16,7 +16,7 @@ import { Sheet } from "@/components/sheet";
 import { Switch } from "@/components/ui";
 import {
   DARCOVIA_CFG, useDarcovia, identitaDarcu, zobrazenaSuma, relCas, prepniNaAnonym,
-  nacitajMestoVerejne, ulozMestoVerejne,
+  
   type DarRiadok, type VolbaDaru, type VerziaIdentity,
 } from "@/lib/darcovia";
 
@@ -89,7 +89,6 @@ export function VolbaDarcovstva({ volba, onZmena, sumaEur }: {
   volba: VolbaDaru; onZmena: (v: VolbaDaru) => void; sumaEur: number;
 }) {
   const ja = usePouzivatel();
-  const [mesto, setMesto] = useState(nacitajMestoVerejne);
   const registrovany = ja.typ !== "pasivny";
 
   if (!registrovany) {
@@ -102,12 +101,14 @@ export function VolbaDarcovstva({ volba, onZmena, sumaEur }: {
   }
 
   const inicialovo = `${ja.meno} ${(ja.priezvisko || "")[0]?.toUpperCase() ?? ""}${(ja.priezvisko || "")[0] ? "." : ""}`.trim();
-  const mestoSuffix = mesto && ja.mesto && ja.mesto !== "—" ? ` · ${ja.mesto}` : "";
+  // Martin K. · Martin Konaľ · Martin Konaľ, Trenčín · Martin585 · Anonym (predvolená = posledná voľba)
+  const maMesto = !!ja.mesto && ja.mesto !== "—";
   const moznosti: Array<{ v: VerziaIdentity; label: string }> = [
-    { v: 1, label: ja.celeMeno + mestoSuffix },
-    { v: 2, label: inicialovo + mestoSuffix },
-    ...(ja.nick ? [{ v: 3 as VerziaIdentity, label: ja.nick + mestoSuffix }] : []),
-    { v: 4, label: "Anonym" + mestoSuffix },
+    { v: 2, label: inicialovo },
+    { v: 1, label: ja.celeMeno },
+    ...(maMesto ? [{ v: 5 as VerziaIdentity, label: `${ja.celeMeno}, ${ja.mesto}` }] : []),
+    ...(ja.nick ? [{ v: 3 as VerziaIdentity, label: ja.nick }] : []),
+    { v: 4, label: "Anonym" },
   ];
   const podPrahom = sumaEur > 0 && sumaEur < DARCOVIA_CFG.prahSumy;
 
@@ -126,12 +127,6 @@ export function VolbaDarcovstva({ volba, onZmena, sumaEur }: {
         })}
       </div>
       <div style={{ display: "grid", gap: SPACE.xs, marginTop: SPACE.xs }}>
-        {volba.verzia !== 4 && (
-          <label style={{ display: "flex", alignItems: "center", gap: SPACE.sm, fontSize: 11.5, color: C.textSec, cursor: "pointer" }}>
-            <Switch on={mesto} onChange={(v) => { setMesto(v); ulozMestoVerejne(v); }} ariaLabel="Zobraziť mesto" />
-            Zobraziť mesto{ja.mesto && ja.mesto !== "—" ? ` (${ja.mesto})` : ""}
-          </label>
-        )}
         {sumaEur >= DARCOVIA_CFG.prahSumy ? (
           <label style={{ display: "flex", alignItems: "center", gap: SPACE.sm, fontSize: 11.5, color: C.textSec, cursor: "pointer" }}>
             <Switch on={volba.zobrazSumu} onChange={(v) => onZmena({ ...volba, zobrazSumu: v })} ariaLabel="Zobraziť sumu" />

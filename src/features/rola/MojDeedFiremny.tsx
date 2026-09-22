@@ -1,29 +1,35 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { C, SPACE, RADIUS, SIRKA } from "@/theme";
 import {
-  BackHeader, Sheet, SegTabs, Switch, MoniBar, Stit, naStitLevel, Tip, FotoUpload, tint,
+  BackHeader, Sheet, SegTabs, Switch, MoniBar, Stit, naStitLevel, Tip, tint,
   useLayout, obalSiroky,
-  EntityHero, BtnAkcia, BtnIkonka, KontextMenu, MenuSkupina, MenuHlavicka, MenuPolozka, KontaktPolozka,
+  EntityHero, BtnAkcia, BtnIkonka, KontextMenu, MenuSkupina, MenuHlavicka, MenuPolozka,
   Zdielanie, IkonaCeruzka, IkonaMoznosti, IkonaTerc, IkonaEuro, IkonaLudia, IkonaOsoba, IkonaKalendar,
   IkonaQr, IkonaDokument, IkonaKorunka, IkonaInstitucia, IkonaOdkaz, IkonaOko, IkonaGraf, IkonaRetaz,
-  IkonaMegafon, IkonaHodiny, IkonaPenazenka, IkonaPohar, IkonaStit, IkonaHviezda, IkonaDarcek, IkonaObalka, IkonaPin,
+  IkonaMegafon, IkonaHodiny, IkonaPenazenka, IkonaPohar, IkonaStit, IkonaHviezda, IkonaDarcek, IkonaPin,
   IkonaSrdceLine, IkonaNastavenia,
 } from "@/shared";
 import { pressable } from "@/components/pressable";
 import { usePouzivatel } from "@/lib/pouzivatel";
-import { AVATAR_SIRKA } from "@/lib/fotoprofilu";
 import { klucEntity, useFotkyEntity } from "@/lib/fotoentity";
 import { zdielaj, aktualnaUrl } from "@/lib/zdielanie";
 import { MojaRetaz } from "@/features/retaz/MojaRetaz";
 import {
   FLAGS, KONFIG, POZICIE, TIER_LABEL, TIER_POPIS, ROLA_UCTU,
   nacitajPoziciu, ulozPoziciu, nacitajTiery, ulozTiery, nacitajDrzitel, ulozDrzitel,
-  nacitajDoklady, ulozDoklady, percentoDolozene, nacitajTerminal, ulozTerminal,
-  nacitajOrgExtra, ulozOrgExtra, nacitajLogo, ulozLogo,
+  ulozDoklady, percentoDolozene, nacitajTerminal, ulozTerminal,
+  nacitajOrgExtra, ulozOrgExtra, nacitajLogo, ulozLogo, nacitajOnas, ulozOnas, nacitajTvarLoga, ulozTvarLoga, nacitajZdrojAvatara, ulozZdrojAvatara, nacitajHlavuZbalenu, ulozHlavuZbalenu, nacitajCentralnu,
   type Pozicia, type Tier, type DokladZbierky,
 } from "./stav";
-import { PANELY, SPRAVY, SPRAVA_NADPIS, ZASLUZENA, SUBJEKTY, ORG_ZBIERKY, FIRMY_ADRESAR, type PanelBlok, type SpravaItem, type OrgZbierka } from "./mock";
+import { PANELY, SPRAVY, SPRAVA_NADPIS, ZASLUZENA, SUBJEKTY, FIRMY_ADRESAR, type PanelBlok, type SpravaItem, type OrgZbierka } from "./mock";
 import { Podstranka } from "./Podstranka";
+import { UpravProfilSheet } from "./UpravProfil";
+import { useRegistraciaCharity, ulozDoRegistracie, segmentyCharity } from "./registracia";
+import { OnasKratky } from "./OnasKratky";
+import { jeNeregistrovany, nastavNeregistrovany } from "@/lib/devDarca";
+import { CentralnaZbierkaSheet } from "./CentralnaZbierka";
+import { KontaktBlok, nacitajKontakt, ulozKontakt } from "./kontakt";
+import { verejneTaby, zamknuteTaby, popisTabu, BLOK_ZA_TAB, zbierkyOrg, dokladyZbierky } from "./obsah";
 
 /*
   ============================================================
@@ -36,7 +42,7 @@ import { Podstranka } from "./Podstranka";
 */
 
 type PaywallReq = { tierMin: Tier; nazov: string; dovod?: string };
-type OtvorenySheet = null | "zbierky" | "terminal" | "retaz" | "profil" | "adresarB2B" | { dokladovanie: OrgZbierka };
+type OtvorenySheet = null | "zbierky" | "centralna" | "terminal" | "retaz" | "profil" | "adresarB2B" | { dokladovanie: OrgZbierka };
 
 // ---- SVG ikony blokov a správy (nahrádzajú emoji — jednotný vizuál) ----
 const IKONY: Record<string, ReactNode> = {
@@ -56,7 +62,21 @@ const IKONY: Record<string, ReactNode> = {
 };
 const ikonaPre = (id: string, fallback: string): ReactNode => IKONY[id] ?? <span style={{ fontSize: 16 }}>{fallback}</span>;
 
+/** Prihlásená charita sa najprv načíta z databázy (údaje z registrácie), potom sa ukáže správa. */
 export function MojDeedFiremny({ onBack, toast }: { onBack: () => void; toast: (m: string) => void }) {
+  const { pripravene, orgId } = useRegistraciaCharity();
+  if (!pripravene) {
+    return (
+      <div>
+        <BackHeader onBack={onBack} title="Môj DEED firemný" />
+        <div style={{ padding: "48px 0", textAlign: "center", color: C.textTer, fontSize: 14 }}>Načítavam údaje organizácie…</div>
+      </div>
+    );
+  }
+  return <MojDeedFiremnyObsah onBack={onBack} toast={toast} orgId={orgId} />;
+}
+
+function MojDeedFiremnyObsah({ onBack, toast, orgId }: { onBack: () => void; toast: (m: string) => void; orgId: string | null }) {
   const { desktop } = useLayout();
   const ja = usePouzivatel(); // tvorca vystupuje pod vlastnou profilovou fotkou (nie logom)
   // rola + tier per rola — DEV: lokálny stav; produkcia: overený účet + fakturácia
@@ -64,6 +84,12 @@ export function MojDeedFiremny({ onBack, toast }: { onBack: () => void; toast: (
   const [tiery, setTiery] = useState<Record<Pozicia, Tier>>(nacitajTiery);
   const [drzitel, setDrzitel] = useState<boolean>(nacitajDrzitel);
   const [logo, setLogo] = useState<string | null>(() => nacitajLogo(nacitajPoziciu()));
+  const [tvarLoga, setTvarLoga] = useState(() => nacitajTvarLoga(nacitajPoziciu()));
+  const [zdrojAvatara, setZdrojAvatara] = useState(() => nacitajZdrojAvatara(nacitajPoziciu()));
+  const [onas, setOnas] = useState<string | null>(() => nacitajOnas(nacitajPoziciu()));
+  const [kontakt, setKontakt] = useState(() => nacitajKontakt(nacitajPoziciu()));
+  const [zbalena, setZbalena] = useState(nacitajHlavuZbalenu);
+  const prepniHlavu = () => setZbalena((z) => { ulozHlavuZbalenu(!z); return !z; });
   const [paywall, setPaywall] = useState<PaywallReq | null>(null);
   const [sheet, setSheet] = useState<OtvorenySheet>(null);
   const [menu, setMenu] = useState(false);
@@ -73,12 +99,21 @@ export function MojDeedFiremny({ onBack, toast }: { onBack: () => void; toast: (
   const [fotky, zmenFotky] = useFotkyEntity(klucEntity("rola", pozicia));
 
   const tier = tiery[pozicia];
-  const prepniPoziciu = (p: Pozicia) => { setPozicia(p); ulozPoziciu(p); setLogo(nacitajLogo(p)); };
+  const prepniPoziciu = (p: Pozicia) => { setPozicia(p); ulozPoziciu(p); setLogo(nacitajLogo(p)); setTvarLoga(nacitajTvarLoga(p)); setZdrojAvatara(nacitajZdrojAvatara(p)); setOnas(nacitajOnas(p)); setKontakt(nacitajKontakt(p)); };
   const nastavTier = (t: Tier) => { const n = { ...tiery, [pozicia]: t }; setTiery(n); ulozTiery(n); };
   const prepniDrzitela = () => { setDrzitel((d) => { ulozDrzitel(!d); return !d; }); };
 
-  const bloky = PANELY[pozicia];
-  const sprava = SPRAVY[pozicia];
+  // Viditeľnosť nástrojov: vlastné + najviac 2 programy nad sebou (zamknuté).
+  // Vyššie sa nezobrazujú vôbec — ZADARMO nevidí nástroje z T3/T4, T1 nevidí T4 atď.
+  const viditelny = (tierMin: Tier) => tierMin <= tier + 2;
+  const bloky = PANELY[pozicia].filter((b) => viditelny(b.tierMin));
+  // odomknuté nástroje navrch, zamknuté pod ne zoradené podľa programu (najprv T1, potom T2)
+  const sprava = SPRAVY[pozicia].filter((it) => it.povinne || viditelny(it.tierMin))
+    .map((it, i) => ({ it, i, z: !it.povinne && tier < it.tierMin ? it.tierMin : -1 }))
+    .sort((a, b) => a.z - b.z || a.i - b.i).map((x) => x.it);
+  // „Začni tu": charita od T1 začína centrálnou zbierkou (hore), v ZADARMO zbierkou pre niekoho
+  const startId = pozicia === "charita" ? (tier >= 1 ? "centralna" : "zbierky") : null;
+  const spravaZoradena = startId ? [...sprava.filter((it) => it.id === startId), ...sprava.filter((it) => it.id !== startId)] : sprava;
   const rolaMeta = POZICIE.find((p) => p.key === pozicia)!;
   const subjekt = SUBJEKTY[pozicia];
   const stit = naStitLevel(ZASLUZENA[pozicia].badge);
@@ -91,6 +126,7 @@ export function MojDeedFiremny({ onBack, toast }: { onBack: () => void; toast: (
 
   const blokAkcia = (b: PanelBlok) => {
     if (pozicia === "charita" && b.id === "zbierky") return setSheet("zbierky");
+    if (pozicia === "charita" && b.id === "centralna") return setSheet("centralna");
     if (pozicia === "tvorca" && b.id === "retaz") return setSheet("retaz");
     setSheet(null); toast(`${b.nazov} — detail`);
   };
@@ -99,11 +135,14 @@ export function MojDeedFiremny({ onBack, toast }: { onBack: () => void; toast: (
     if (it.id === "profil" || it.id === "podstranka") return setSheet("profil");
     if (pozicia === "charita" && (it.id === "zbierky" || it.id === "dokladovanie")) return setSheet("zbierky");
     if (pozicia === "tvorca" && it.id === "terminal") return setSheet("terminal");
+    if (pozicia === "charita" && it.id === "centralna") return setSheet("centralna");
+    if (pozicia === "charita" && it.id === "segment") return toast(`Segmenty z registrácie: ${segmentyCharity().join(" · ")}`);
     toast(`${it.nazov} — čoskoro`);
   };
 
   // avatar subjektu: charita/B2B = nahraté logo · tvorca = moja profilová fotka
-  const avatarSrc = (pozicia === "tvorca" ? ja.foto : logo) ?? subjekt.foto;
+  const fotoOsoby = pozicia === "tvorca" && zdrojAvatara === "foto"; // tvorca: fotka alebo logo značky
+  const avatarSrc = (fotoOsoby ? ja.foto : logo) ?? subjekt.foto;
   const coverSrc = fotky.cover ?? subjekt.cover;
 
   // vlastník vidí TÚ ISTÚ verejnú stránku ako cudzí
@@ -118,12 +157,25 @@ export function MojDeedFiremny({ onBack, toast }: { onBack: () => void; toast: (
       )}
 
       {/* ==== HERO SUBJEKTU — cover, logo, meno + odznak, štatistiky, akcie ==== */}
-      <EntityHero
+      {zbalena ? (
+        // zmenšená hlavička — na mobile nezaberá miesto pri práci s nástrojmi
+        <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm, background: C.surface, border: `1px solid ${C.line}`, borderRadius: RADIUS.md, padding: SPACE.sm }}>
+          <span style={{ width: 44, height: 44, flex: "none", overflow: "hidden", borderRadius: !fotoOsoby && tvarLoga === "stvorec" ? RADIUS.sm : "50%", background: C.surface2, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800 }}>
+            {avatarSrc ? <img src={avatarSrc} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : subjekt.iniciacky}
+          </span>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 14.5, fontWeight: 800, lineHeight: 1.2 }}>{subjekt.nazov}</div>
+            <div {...pressable(prepniHlavu, "Rozbaliť profil")} style={{ fontSize: 12, fontWeight: 700, color: "var(--a-info)", cursor: "pointer", marginTop: 2 }}>Rozbaliť profil ▼</div>
+          </div>
+          <BtnIkonka label="Verejný profil" onClick={() => setPodstranka(true)}><span style={{ fontSize: 15 }}>👁</span></BtnIkonka>
+          <BtnIkonka label="Upraviť profil" onClick={() => setSheet("profil")}><IkonaCeruzka size={15} /></BtnIkonka>
+          <Stit level={stit} size={36} />
+        </div>
+      ) : (<>
+      <EntityHero avatarTvar={fotoOsoby ? "kruh" : tvarLoga}
         avatar={avatarSrc
           ? <img src={avatarSrc} alt={subjekt.nazov} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
           : (pozicia === "tvorca" ? subjekt.emoji : subjekt.iniciacky)}
-        onAvatar={() => setSheet("profil")}
-        onCover={() => setSheet("profil")}
         cover={coverSrc}
         coverEl={<span style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 42, opacity: .4 }}>{subjekt.emoji}</span>}
         meno={subjekt.nazov} overene={subjekt.overena} overeneLabel="Overený subjekt — identita potvrdená"
@@ -133,91 +185,97 @@ export function MojDeedFiremny({ onBack, toast }: { onBack: () => void; toast: (
             <Stit level={stit} size={desktop ? 88 : 64} detail subjekt={subjekt.nazov} />
           </div>
         }
-        stats={subjekt.cisla.map(([hodnota, label], i) => ({ hodnota, label, farba: i === 2 ? "var(--a-gold)" : undefined }))}
+        podMenom={<OnasKratky text={onas ?? subjekt.onas} />}
+        stats={(tier === 0 && subjekt.cislaZadarmo ? subjekt.cislaZadarmo : subjekt.cisla).map(([hodnota, label], i) => ({ hodnota, label, farba: i === 2 ? "var(--a-gold)" : undefined }))}
         akcie={<>
-          <BtnAkcia variant="primary" onClick={() => setPodstranka(true)}>Verejný profil</BtnAkcia>
-          <BtnAkcia variant="secondary" onClick={() => setSheet("profil")}><IkonaCeruzka size={14} /> Upraviť</BtnAkcia>
+          <BtnAkcia variant="secondary" onClick={() => setPodstranka(true)}>Verejný profil · DEV</BtnAkcia>
+          <BtnAkcia variant="secondary" onClick={() => setSheet("profil")}><IkonaCeruzka size={14} /> Upraviť profil</BtnAkcia>
           <BtnIkonka label="Ďalšie možnosti" onClick={() => setMenu(true)}><IkonaMoznosti size={16} /></BtnIkonka>
         </>}
       />
+      <div {...pressable(prepniHlavu, "Zmenšiť profil")}
+        style={{ textAlign: "center", fontSize: 12, fontWeight: 700, color: C.textTer, paddingTop: SPACE.xs, cursor: "pointer" }}>Zmenšiť profil ▲</div>
+      </>)}
       <div style={{ height: SPACE.gutter }} />
 
-      {/* ==== PREHĽAD — rolové bloky; zamknuté neukazujú reálne dáta ==== */}
-      <MenuSkupina nadpis={`PREHĽAD — ${rolaMeta.label.toUpperCase()}`}>
-        {bloky.map((b, i) => {
-          const zamknute = tier < b.tierMin;
-          return (
-            <MenuPolozka key={b.id}
-              ikona={ikonaPre(b.id, b.emoji)}
-              farba={zamknute ? "var(--c-textTer)" : "var(--a-info)"}
-              label={b.nazov}
-              chip={zamknute ? <TierChip label={`od ${TIER_LABEL[pozicia][b.tierMin]}`} /> : undefined}
-              popis={zamknute ? `Dostupné od úrovne ${TIER_LABEL[pozicia][b.tierMin]}`
-                : (pozicia === "charita" && b.id === "dnes" ? <DnesPrislo /> : b.popis)}
-              hodnota={zamknute ? undefined : b.hodnota}
-              zamknute={zamknute}
-              onClick={gateTier(b.tierMin, b.nazov, () => blokAkcia(b))}
-              posledna={i === bloky.length - 1}
-            />
-          );
-        })}
+      {/* ==== PREHĽAD PROFILU — obsah verejného profilu (ten istý výpočet ako profil) + živé čísla ==== */}
+      <MenuSkupina zbalitelna="rola-prehlad" nadpis="PREHĽAD PROFILU">
+        {(() => {
+          // poradie: čo program má (obsah profilu, potom živé čísla) → zamknuté na spodku podľa programu
+          const riadky: { k: string; tier: number; el: (posledna: boolean) => ReactNode }[] = [];
+          verejneTaby(pozicia, tier).forEach((t) => {
+            const blok = PANELY[pozicia].find((b) => b.id === BLOK_ZA_TAB[t.key]);
+            riadky.push({ k: `tab-${t.key}`, tier: -1, el: (posledna) => (
+              <MenuPolozka key={`tab-${t.key}`} posledna={posledna}
+                ikona={<span style={{ fontSize: 15 }}>{t.polozky[0]?.emoji ?? "📄"}</span>} farba="var(--a-plum)"
+                label={t.label} popis={popisTabu(t)} hodnota={String(t.polozky.length)}
+                onClick={() => (blok ? blokAkcia(blok) : setPodstranka(true))} />
+            ) });
+          });
+          bloky.filter((b) => !Object.values(BLOK_ZA_TAB).includes(b.id) && tier >= b.tierMin).forEach((b) => {
+            riadky.push({ k: b.id, tier: -1, el: (posledna) => (
+              <MenuPolozka key={b.id} posledna={posledna} ikona={ikonaPre(b.id, b.emoji)} farba="var(--a-info)"
+                label={b.nazov} popis={pozicia === "charita" && b.id === "dnes" ? <DnesPrislo />
+                  : b.id === "centralna" && !nacitajCentralnu("charita") ? "Zatiaľ nespustená · hotová za minútu" : b.popis} hodnota={b.hodnota}
+                onClick={b.info ? undefined : () => blokAkcia(b)} />
+            ) });
+          });
+          if (pozicia === "b2b") riadky.push({ k: "adresar", tier: -1, el: (posledna) => (
+            <MenuPolozka key="adresar" posledna={posledna} ikona={<IkonaInstitucia size={17} />} farba="var(--a-info)"
+              label="Adresár firiem" popis="Overené firmy a ich podpora komunity" onClick={() => setSheet("adresarB2B")} />
+          ) });
+          const zamk = [
+            ...zamknuteTaby(pozicia, tier).map((t) => ({ k: `tab-${t.key}`, t: t.odTieru ?? 0, emoji: t.polozky[0]?.emoji ?? "📄", nazov: t.label, ikona: null as ReactNode })),
+            ...bloky.filter((b) => !Object.values(BLOK_ZA_TAB).includes(b.id) && tier < b.tierMin)
+              .map((b) => ({ k: b.id, t: b.tierMin as number, emoji: b.emoji, nazov: b.nazov, ikona: ikonaPre(b.id, b.emoji) })),
+          ].sort((a, b) => a.t - b.t);
+          zamk.forEach((z) => riadky.push({ k: z.k, tier: z.t, el: (posledna) => (
+            <MenuPolozka key={z.k} posledna={posledna} zamknute farba="var(--c-textTer)"
+              ikona={z.ikona ?? <span style={{ fontSize: 15, opacity: .5 }}>{z.emoji}</span>}
+              label={z.nazov} chip={<TierChip label={`od ${TIER_LABEL[pozicia][z.t as Tier]}`} />}
+              popis={`Dostupné od úrovne ${TIER_LABEL[pozicia][z.t as Tier]}`}
+              onClick={gateTier(z.t as Tier, z.nazov, () => undefined)} />
+          ) }));
+          return riadky.map((r, i) => r.el(i === riadky.length - 1));
+        })()}
       </MenuSkupina>
 
-      {/* ==== VEREJNÝ OBSAH — čo vidí návštevník + vstup na verejný profil ==== */}
-      <MenuSkupina nadpis="VEREJNÝ OBSAH" poznamka="vidí každý návštevník">
-        {subjekt.taby.map((t) => (
-          <MenuPolozka key={t.key}
-            ikona={<span style={{ fontSize: 15 }}>{t.polozky[0]?.emoji ?? "📄"}</span>}
-            farba="var(--a-plum)"
-            label={t.label} hodnota={String(t.polozky.length)}
-            onClick={() => setPodstranka(true)}
-          />
-        ))}
-        {pozicia === "b2b" && (
-          <MenuPolozka ikona={<IkonaInstitucia size={17} />} farba="var(--a-info)"
-            label="Adresár firiem" popis="Overené firmy a ich podpora komunity"
-            onClick={() => setSheet("adresarB2B")} />
-        )}
-        <div style={{ padding: `${SPACE.xs}px ${SPACE.gutter}px ${SPACE.sm}px` }}>
-          <BtnAkcia variant="secondary" style={{ width: "100%" }} onClick={() => setPodstranka(true)}>
-            Zobraziť verejný profil
-          </BtnAkcia>
-        </div>
-      </MenuSkupina>
 
       {/* ==== SPRÁVA — vidí len držiteľ roly a delegovaní správcovia ==== */}
       {drzitel && (
-        <MenuSkupina
+        <MenuSkupina zbalitelna="rola-sprava"
           hlavicka={<MenuHlavicka ikona={<IkonaNastavenia size={15} />} label={SPRAVA_NADPIS[pozicia]}
             popis="Nástroje správcu — vidí len držiteľ roly a delegovaní správcovia" />}
         >
-          {sprava.map((it, i) => {
+          {spravaZoradena.map((it, i) => {
             const zamknute = !it.povinne && tier < it.tierMin;
             return (
               <MenuPolozka key={it.id}
-                ikona={ikonaPre(it.id, it.emoji)}
+                ikona={it.id === startId ? <span style={{ fontSize: 17 }}>🚀</span> : ikonaPre(it.id, it.emoji)}
                 farba={it.povinne ? "var(--a-green)" : "var(--a-info)"}
                 label={it.nazov}
-                chip={it.povinne
+                chip={it.id === startId
+                  ? <span style={{ fontSize: 9.5, fontWeight: 800, color: "#fff", background: "var(--a-green)", borderRadius: RADIUS.xs, padding: `1px ${SPACE.xs}px`, flex: "none" }}>🚀 Začni tu</span>
+                  : it.povinne
                   ? <span style={{ fontSize: 9.5, fontWeight: 800, color: "var(--a-green)", background: tint("var(--a-green)", .14), borderRadius: RADIUS.xs, padding: `1px ${SPACE.xs}px`, flex: "none" }}>Povinné</span>
                   : zamknute ? <TierChip label={`od ${TIER_LABEL[pozicia][it.tierMin]}`} /> : undefined}
                 popis={it.popis}
                 zamknute={zamknute}
                 onClick={it.povinne ? () => spravaAkcia(it) : gateTier(it.tierMin, it.nazov, () => spravaAkcia(it))}
-                posledna={i === sprava.length - 1}
+                posledna={i === spravaZoradena.length - 1}
               />
             );
           })}
         </MenuSkupina>
       )}
 
+      {/* ==== VÝSLEDOK — klient si po úpravách pozrie, ako profil vidí návštevník ==== */}
+      <BtnAkcia variant="primary" style={{ width: "100%", marginBottom: SPACE.gutter }} onClick={() => setPodstranka(true)}>
+        Zobraziť verejný profil
+      </BtnAkcia>
+
       {/* ==== KONTAKT ==== */}
-      <MenuSkupina nadpis="KONTAKT">
-        <KontaktPolozka ikona={<IkonaPin size={15} />} label="Adresa" hodnota={subjekt.kontakt.adresa} />
-        <KontaktPolozka ikona={<IkonaObalka size={15} />} label="E-mail" hodnota={subjekt.kontakt.email} href={`mailto:${subjekt.kontakt.email}`} />
-        <KontaktPolozka ikona={<span style={{ fontSize: 13 }}>📞</span>} label="Telefón" hodnota={subjekt.kontakt.tel} href={`tel:${subjekt.kontakt.tel.replace(/\s/g, "")}`} posledna={!subjekt.kontakt.web} />
-        {subjekt.kontakt.web && <KontaktPolozka ikona={<IkonaOdkaz size={15} />} label="Web" hodnota={subjekt.kontakt.web} href={`https://${subjekt.kontakt.web}`} posledna />}
-      </MenuSkupina>
+      <KontaktBlok k={kontakt} zbalitelna="rola-kontakt" />
     </div>
   );
 
@@ -236,6 +294,7 @@ export function MojDeedFiremny({ onBack, toast }: { onBack: () => void; toast: (
       )}
 
       {/* ---- sheety ---- */}
+      {sheet === "centralna" && <CentralnaZbierkaSheet toast={toast} onClose={() => setSheet(null)} />}
       {sheet === "zbierky" && (
         <OrgZbierkySheet tier={tier} toast={toast} onPaywall={(p) => setPaywall(p)}
           onDokladovanie={(z) => setSheet({ dokladovanie: z })} onClose={() => setSheet(null)} />
@@ -247,8 +306,19 @@ export function MojDeedFiremny({ onBack, toast }: { onBack: () => void; toast: (
       {sheet === "retaz" && <MojaRetaz onClose={() => setSheet(null)} toast={toast} />}
       {sheet === "profil" && (
         <UpravProfilSheet pozicia={pozicia} logo={logo} cover={fotky.cover} toast={toast}
-          onLogo={(url) => { setLogo(url); ulozLogo(pozicia, url); }}
-          onCover={(url) => zmenFotky({ cover: url })}
+          onUloz={(z) => {
+            ulozOnas(pozicia, z.onas); setOnas(z.onas);
+            setLogo(z.logo); ulozLogo(pozicia, z.logo);
+            setTvarLoga(z.tvar); ulozTvarLoga(pozicia, z.tvar);
+            setZdrojAvatara(z.zdroj); ulozZdrojAvatara(pozicia, z.zdroj);
+            if (z.cover !== (fotky.cover ?? null)) zmenFotky({ cover: z.cover });
+            ulozKontakt(pozicia, z.kontakt); setKontakt(z.kontakt);
+            // registrovaná charita: misia, web a siete idú aj do databázy (ten istý profil ako z registrácie)
+            if (orgId && pozicia === "charita") {
+              ulozDoRegistracie(orgId, { misia: z.onas, web: z.kontakt.web, siete: z.kontakt.siete })
+                .catch(() => toast("Profil uložený v zariadení — do databázy sa nepodarilo, skús neskôr"));
+            }
+          }}
           onClose={() => setSheet(null)} />
       )}
       {sheet === "adresarB2B" && <AdresarB2BSheet vlastneLogo={logo} toast={toast} onClose={() => setSheet(null)} />}
@@ -268,6 +338,7 @@ function DevPanel({ pozicia, tier, drzitel, onPozicia, onTier, onDrzitel }: {
   onPozicia: (p: Pozicia) => void; onTier: (t: Tier) => void; onDrzitel: () => void;
 }) {
   const [open, setOpen] = useState(true);
+  const [neregistrovany, setNeregistrovany] = useState(jeNeregistrovany);
   const seg = (on: boolean, farba: string): React.CSSProperties => ({
     flex: 1, height: 32, display: "flex", alignItems: "center", justifyContent: "center", gap: 5,
     borderRadius: RADIUS.xs, cursor: "pointer", fontSize: 12, fontWeight: on ? 800 : 600,
@@ -301,6 +372,14 @@ function DevPanel({ pozicia, tier, drzitel, onPozicia, onTier, onDrzitel }: {
               <div style={{ fontSize: 10.5, color: C.textTer }}>Zapne sekciu Správa ({ROLA_UCTU[pozicia]})</div>
             </div>
             <Switch on={drzitel} onChange={onDrzitel} ariaLabel="Držiteľ roly" />
+          </div>
+          {/* darca na ukážku: registrovaný má uloženú kartu, účet a peňaženku; neregistrovaný vypĺňa polia a je anonym */}
+          <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm, padding: `${SPACE.xxs}px ${SPACE.xxs}px` }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 12, fontWeight: 700 }}>Darca: {neregistrovany ? "neregistrovaný" : "registrovaný"}</div>
+              <div style={{ fontSize: 10.5, color: C.textTer }}>{neregistrovany ? "Vypĺňa kartu / IBAN · v zozname darcov anonym" : "Uložená karta, účet, peňaženka · pod darom jeho meno"}</div>
+            </div>
+            <Switch on={!neregistrovany} onChange={() => { nastavNeregistrovany(!neregistrovany); setNeregistrovany(!neregistrovany); }} ariaLabel="Registrovaný darca" />
           </div>
         </div>
       )}
@@ -361,7 +440,8 @@ function OrgZbierkySheet({ tier, toast, onPaywall, onDokladovanie, onClose }: {
   onDokladovanie: (z: OrgZbierka) => void; onClose: () => void;
 }) {
   const [extra, setExtra] = useState<OrgZbierka[]>(nacitajOrgExtra);
-  const zbierky = useMemo(() => [...ORG_ZBIERKY, ...extra], [extra]);
+  // tie isté zbierky ako na verejnom profile (+ koncepty vytvorené tu)
+  const zbierky = useMemo(() => [...zbierkyOrg("charita", tier), ...extra], [extra, tier]);
   const aktivne = zbierky.filter((z) => z.stav === "aktivna").length;
   const limit = KONFIG.limitZbierok[tier];
 
@@ -387,7 +467,7 @@ function OrgZbierkySheet({ tier, toast, onPaywall, onDokladovanie, onClose }: {
       <div style={{ fontSize: 11.5, color: C.textTer, marginBottom: SPACE.sm }}>{aktivne} aktívne · limit úrovne {TIER_LABEL.charita[tier]}: {limit} súbežných</div>
 
       {zbierky.map((z) => {
-        const doklady = nacitajDoklady(z.id);
+        const doklady = dokladyZbierky(z.id);
         const pct = percentoDolozene(doklady, z.vyzbierane);
         const poLehote = z.stav === "ukoncena" && z.ukoncena
           && (Date.now() - new Date(z.ukoncena).getTime()) / 86400000 > KONFIG.lehotaDokladovaniaDni;
@@ -422,7 +502,7 @@ function OrgZbierkySheet({ tier, toast, onPaywall, onDokladovanie, onClose }: {
 
 // ===================== DOKLADOVANIE — povinná funkcia, mimo spoplatnenia =====================
 function DokladovanieSheet({ z, toast, onClose }: { z: OrgZbierka; toast: (m: string) => void; onClose: () => void }) {
-  const [doklady, setDoklady] = useState<DokladZbierky[]>(() => nacitajDoklady(z.id));
+  const [doklady, setDoklady] = useState<DokladZbierky[]>(() => dokladyZbierky(z.id));
   const [typ, setTyp] = useState("Bloček");
   const [popis, setPopis] = useState("");
   const [suma, setSuma] = useState("");
@@ -509,73 +589,6 @@ function TerminalSheet({ toast, onClose }: { toast: (m: string) => void; onClose
   );
 }
 
-// ===================== UPRAVIŤ PROFIL + LOGO SUBJEKTU =====================
-function UpravProfilSheet({ pozicia, logo, cover, toast, onLogo, onCover, onClose }: {
-  pozicia: Pozicia; logo: string | null; cover?: string | null; toast: (m: string) => void;
-  onLogo: (url: string | null) => void; onCover: (url: string | null) => void; onClose: () => void;
-}) {
-  const s = SUBJEKTY[pozicia];
-  const ja = usePouzivatel();
-  const maLogo = pozicia !== "tvorca";
-  return (
-    <Sheet onClose={onClose} label="Upraviť profil">
-      <div style={{ fontSize: 16, fontWeight: 800, marginBottom: 2 }}>Upraviť profil</div>
-      <div style={{ fontSize: 11.5, color: C.textTer, marginBottom: SPACE.md }}>{s.nazov} · foto, popis a kontakt</div>
-
-      {maLogo ? (
-        <>
-          <div style={{ fontSize: 10.5, fontWeight: 800, color: C.textTer, letterSpacing: ".04em", marginBottom: SPACE.xs }}>LOGO</div>
-          <div style={{ display: "flex", gap: SPACE.gutter, alignItems: "center", marginBottom: SPACE.sm }}>
-            <span style={{ width: 64, height: 64, borderRadius: "50%", flex: "none", overflow: "hidden", background: C.surface2, border: `1px solid ${C.line}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, fontWeight: 800 }}>
-              {logo ? <img src={logo} alt="logo" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : s.iniciacky}
-            </span>
-            <div style={{ flex: 1, minWidth: 0, fontSize: 11, color: C.textTer, lineHeight: 1.5 }}>
-              Logo sa zobrazuje na profile, v adresári a pri sponzorovaných kampaniach. Bez loga sa použijú iniciálky.
-            </div>
-          </div>
-          <FotoUpload value={logo ?? undefined} onZmena={(url) => { onLogo(url); toast("Logo uložené"); }} pomer={1} vyska={150} maxSirka={AVATAR_SIRKA} tvar="kruh" />
-          {logo && (
-            <button onClick={() => { onLogo(null); toast("Logo odstránené"); }}
-              style={{ width: "100%", height: 38, marginTop: SPACE.xs, borderRadius: RADIUS.sm, border: `1px solid ${C.line}`, cursor: "pointer", fontFamily: "inherit", fontWeight: 700, fontSize: 12, background: "transparent", color: C.textSec }}>
-              Odstrániť logo
-            </button>
-          )}
-        </>
-      ) : (
-        <>
-          <div style={{ fontSize: 10.5, fontWeight: 800, color: C.textTer, letterSpacing: ".04em", marginBottom: SPACE.xs }}>PROFILOVÁ FOTKA</div>
-          <div style={{ display: "flex", gap: SPACE.gutter, alignItems: "center", marginBottom: SPACE.sm }}>
-            <span style={{ width: 64, height: 64, borderRadius: "50%", flex: "none", overflow: "hidden", background: C.surface2, border: `1px solid ${C.line}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, fontWeight: 800 }}>
-              {ja.foto ? <img src={ja.foto} alt="profilová fotka" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : ja.iniciala}
-            </span>
-            <div style={{ flex: 1, minWidth: 0, fontSize: 11, color: C.textTer, lineHeight: 1.5 }}>
-              Tvorca vystupuje pod vlastným menom a profilovou fotkou — je to tá istá fotka ako v tvojom osobnom profile.
-            </div>
-          </div>
-          {/* tvorca nemá logo: mení sa priamo profilová fotka osoby (jeden zdroj pravdy) */}
-          <FotoUpload value={ja.foto ?? undefined} onZmena={(url) => { ja.nastavFoto?.(url); toast("Profilová fotka uložená"); }} pomer={1} vyska={150} maxSirka={AVATAR_SIRKA} tvar="kruh" />
-          {ja.foto && (
-            <button onClick={() => { ja.nastavFoto?.(null); toast("Profilová fotka odstránená"); }}
-              style={{ width: "100%", height: 38, marginTop: SPACE.xs, borderRadius: RADIUS.sm, border: `1px solid ${C.line}`, cursor: "pointer", fontFamily: "inherit", fontWeight: 700, fontSize: 12, background: "transparent", color: C.textSec }}>
-              Odstrániť fotku
-            </button>
-          )}
-        </>
-      )}
-
-      {/* TITULNÁ (cover) — nezávislá od profilovej/loga, pre každú rolu */}
-      <div style={{ fontSize: 10.5, fontWeight: 800, color: C.textTer, letterSpacing: ".04em", margin: `${SPACE.md}px 0 ${SPACE.xs}px` }}>TITULNÁ FOTKA (16:9)</div>
-      <FotoUpload value={cover ?? s.cover} onZmena={(url) => { onCover(url); toast("Titulná fotka uložená"); }} pomer={16 / 9} vyska={130} />
-      <div style={{ fontSize: 10.5, color: C.textTer, marginTop: SPACE.xxs, lineHeight: 1.45 }}>Široká fotka na pozadí hlavičky profilu — vidí ju každý návštevník.</div>
-      {cover && (
-        <button onClick={() => { onCover(null); toast("Titulná fotka vrátená na pôvodnú"); }}
-          style={{ width: "100%", height: 38, marginTop: SPACE.xs, borderRadius: RADIUS.sm, border: `1px solid ${C.line}`, cursor: "pointer", fontFamily: "inherit", fontWeight: 700, fontSize: 12, background: "transparent", color: C.textSec }}>
-          Odstrániť titulnú fotku
-        </button>
-      )}
-    </Sheet>
-  );
-}
 
 // ===================== ADRESÁR FIRIEM =====================
 function AdresarB2BSheet({ vlastneLogo, toast, onClose }: { vlastneLogo: string | null; toast: (m: string) => void; onClose: () => void }) {

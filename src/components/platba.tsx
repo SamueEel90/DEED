@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { LEN_SEPA_DO } from "@/lib/sadyDarov";
 import type { CSSProperties, ReactNode } from "react";
 import { C, GRAD, GRAD_ZELENY, SPACE, RADIUS } from "@/theme";
 import { tint } from "@/lib/ui";
@@ -8,6 +9,7 @@ import { usePouzivatel } from "@/lib/pouzivatel";
 import { Sheet } from "@/components/sheet";
 import { IkonaStit, IkonaFajka, Zdielanie, Palec, Srdce } from "@/components/icons";
 import { VolbaDarcovstva } from "@/components/zoznamdarcov";
+import { Svetlusik } from "@/components/svetlusik";
 import { nacitajPredvolbu, ulozPredvolbu, type VolbaDaru } from "@/lib/darcovia";
 
 // ============================================================
@@ -29,10 +31,29 @@ function DarPreNas({ on, label, onToggle }: { on: boolean; label: string; onTogg
     </button>
   );
 }
+/** uložený platobný prostriedok registrovaného darcu (karta / účet) */
+function Ulozene({ ikona, t, d }: { ikona: string; t: string; d: string }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm, padding: `${SPACE.sm}px ${SPACE.gutter}px`, marginBottom: SPACE.sm, borderRadius: RADIUS.sm, background: tint(C.green, .06), border: `1px solid ${tint(C.green, .35)}` }}>
+      <span style={{ fontSize: 22 }}>{ikona}</span>
+      <span style={{ flex: 1, minWidth: 0 }}>
+        <span style={{ display: "block", fontSize: 14, fontWeight: 700 }}>{t}</span>
+        <span style={{ display: "block", fontSize: 11.5, color: C.textTer }}>{d}</span>
+      </span>
+      <IkonaFajka size={16} color="var(--a-green)" />
+    </div>
+  );
+}
+
 export function PlatbaModal({ kanal, komu, suma: sumaInit, lenSepa = false, split = false, onClose, onDone }: { kanal?: string; komu?: ReactNode; suma?: number; lenSepa?: boolean; split?: boolean; onClose?: () => void; onDone?: (suma: number, volba?: VolbaDaru) => void }) {
   const jeEur = kanal === "EUR";
   const jed = kanal === "EURC" ? "EURC" : "DEED"; // krypto jednotka: EURC pri charite a Viere, inak DEED
-  const [krok, setKrok] = useState("suma"); // suma | metoda | detaily | spracovanie | hotovo
+  // registrovaný darca má v appke uloženú kartu, účet a peňaženku → nič nevypĺňa, len potvrdí
+  const { typ: typUctu, meno } = usePouzivatel();
+  const registrovany = typUctu !== "pasivny";
+  // rýchla suma (klik na 1 · 3 · 5 € …) → suma je jasná, rovno výber karta / SEPA (o klik menej);
+  // vlastná suma začína zadaním sumy
+  const [krok, setKrok] = useState(() => (sumaInit && sumaInit > 0 ? (kanal === "EUR" && !lenSepa ? "metoda" : "detaily") : "suma")); // suma | metoda | detaily | spracovanie | hotovo
   // zoznam darcov: voľba identity per dar — posledná voľba je predvoľba (spec §2)
   const [volba, setVolba] = useState<VolbaDaru>(nacitajPredvolbu);
   const [metoda, setMetoda] = useState<"karta" | "sepa">(lenSepa ? "sepa" : "karta"); // EUR: spôsob platby; drobné sumy len SEPA
@@ -59,9 +80,9 @@ export function PlatbaModal({ kanal, komu, suma: sumaInit, lenSepa = false, spli
   const fmtCislo = (v: string) => v.replace(/\D/g, "").slice(0, 16).replace(/(.{4})(?=.)/g, "$1 ");
   const fmtExp = (v: string) => { const d = v.replace(/\D/g, "").slice(0, 4); return d.length > 2 ? d.slice(0, 2) + "/" + d.slice(2) : d; };
   const fmtIban = (v: string) => v.replace(/[^a-zA-Z0-9]/g, "").toUpperCase().slice(0, 34).replace(/(.{4})(?=.)/g, "$1 ");
-  const kartaOk = karta.cislo.replace(/\s/g, "").length === 16 && karta.exp.length === 5 && karta.cvc.length >= 3;
+  const kartaOk = registrovany || (karta.cislo.replace(/\s/g, "").length === 16 && karta.exp.length === 5 && karta.cvc.length >= 3);
   const ibanClean = sepa.iban.replace(/\s/g, "");
-  const sepaOk = ibanClean.length >= 15 && sepa.meno.trim().length >= 3;
+  const sepaOk = registrovany || (ibanClean.length >= 15 && sepa.meno.trim().length >= 3);
 
   // vlastná numerická klávesnica — hodnota je VŽDY viditeľná hore, žiadna systémová
   // klávesnica (na mobile prekrývala spodný sheet a sumu nebolo vidno pri zadávaní).
@@ -149,15 +170,17 @@ export function PlatbaModal({ kanal, komu, suma: sumaInit, lenSepa = false, spli
       </>)}
 
       {/* zoznam darcov — ako sa darca ukáže (jedným klikom, pamätá sa) */}
-      {krok === "detaily" && <VolbaDarcovstva volba={volba} onZmena={setVolba} sumaEur={jeEur ? sumaNum : sumaNum * 0.01} />}
+      {krok === "detaily" && <VolbaDarcovstva volba={volba} onZmena={setVolba} sumaEur={jeEur || kanal === "EURC" ? sumaNum : sumaNum * 0.01} />}
 
       {/* EUR · KARTA */}
       {krok === "detaily" && jeEur && !jeSepa && (<>
+        {registrovany ? <Ulozene ikona="💳" t="Visa •••• 4242" d="Uložená karta · platnosť 08/28" /> : (<>
         <input autoFocus inputMode="numeric" placeholder="Číslo karty" value={karta.cislo} onChange={(e) => setKarta({ ...karta, cislo: fmtCislo(e.target.value) })} style={{ ...inpS, marginBottom: SPACE.sm, letterSpacing: ".06em" }} />
         <div style={{ display: "flex", gap: SPACE.sm, marginBottom: SPACE.sm }}>
           <input inputMode="numeric" placeholder="MM/RR" value={karta.exp} onChange={(e) => setKarta({ ...karta, exp: fmtExp(e.target.value) })} style={{ ...inpS, flex: 1 }} />
           <input inputMode="numeric" placeholder="CVC" value={karta.cvc} onChange={(e) => setKarta({ ...karta, cvc: e.target.value.replace(/\D/g, "").slice(0, 4) })} style={{ ...inpS, flex: 1 }} />
         </div>
+        </>)}
         <div style={{ background: "rgba(var(--glass-rgb),.05)", border: `1px solid ${C.line}`, borderRadius: RADIUS.sm, padding: `${SPACE.xxs}px ${SPACE.sm}px ${SPACE.xs}px` }}>
           <Riadok k="Suma" v={`${sumaNum.toFixed(2)} €`} />
           <Riadok k="Poplatok (1,4 % + 0,15 €)" v={`${poplatok.toFixed(2)} €`} />
@@ -171,8 +194,10 @@ export function PlatbaModal({ kanal, komu, suma: sumaInit, lenSepa = false, spli
 
       {/* EUR · SEPA prevod */}
       {krok === "detaily" && jeSepa && (<>
+        {registrovany ? <Ulozene ikona="🏦" t="SK31 •••• •••• 7788" d="Uložený účet · Tatra banka" /> : (<>
         <input autoFocus placeholder="IBAN (napr. SK89 0000 0000 0000 0000 0000)" value={sepa.iban} onChange={(e) => setSepa({ ...sepa, iban: fmtIban(e.target.value) })} style={{ ...inpS, marginBottom: SPACE.sm, letterSpacing: ".04em", fontSize: 15 }} />
         <input placeholder="Meno majiteľa účtu" value={sepa.meno} onChange={(e) => setSepa({ ...sepa, meno: e.target.value })} style={{ ...inpS, marginBottom: SPACE.sm }} />
+        </>)}
         <div style={{ background: "rgba(var(--glass-rgb),.05)", border: `1px solid ${C.line}`, borderRadius: RADIUS.sm, padding: `${SPACE.xxs}px ${SPACE.sm}px ${SPACE.xs}px` }}>
           <Riadok k="Dar charite" v={`${sumaNum.toFixed(2)} €`} />
           <Riadok k="Marža DEED" v="0 € · neberieme nič" accent={C.green} />
@@ -206,11 +231,9 @@ export function PlatbaModal({ kanal, komu, suma: sumaInit, lenSepa = false, spli
       )}
 
       {krok === "hotovo" && res && (<>
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: SPACE.xs, padding: `${SPACE.xxs}px 0 ${SPACE.gutter}px` }}>
-          <div style={{ width: 54, height: 54, borderRadius: RADIUS.round, background: "rgba(46,200,140,.16)", display: "flex", alignItems: "center", justifyContent: "center" }}><IkonaFajka size={28} color="var(--a-green)" /></div>
-          <div style={{ fontSize: 17, fontWeight: 800 }}>{jeSepa ? "Prevod odoslaný" : "Platba úspešná"}</div>
-          <div style={{ fontSize: 12.5, color: C.textSec }}>{jeEur ? `${spolu.toFixed(2)} €` : `${spolu.toLocaleString("sk")} ${jed}`}{komu ? ` → ${komu}` : ""}</div>
-        </div>
+        {/* ďakovačka — Svetlúšik */}
+        {/* registrovanému ďakujeme menom — aj keď daroval ako anonym (meno pozná len on) */}
+        <Svetlusik nadpis={registrovany && meno ? `Ďakujeme, ${meno}, za tvoju podporu!` : "Ďakujeme za tvoju podporu!"} dar="Tvoj dar je na ceste" />
         <div style={{ background: "rgba(var(--glass-rgb),.05)", border: `1px solid ${C.line}`, borderRadius: RADIUS.sm, padding: `${SPACE.xxs}px ${SPACE.sm}px ${SPACE.xs}px` }}>
           <Riadok k="Kanál" v={jeEur ? (jeSepa ? "SEPA prevod (EUR)" : "Karta (EUR)") : `Peňaženka (${jed})`} />
           {jeEur && <Riadok k="Poplatok" v={`${poplatok.toFixed(2)} €`} />}
@@ -272,7 +295,13 @@ const psKanal: CSSProperties = {
   cursor: "pointer", fontFamily: "inherit", background: C.surface2, border: `1px solid ${C.line}`, color: C.text,
 };
 
-export function PodporaSekcia({ onShare, upvotes = 0, onUpvote, onPodpor, onKanal, accent = "var(--a-info)", supLabel = "DROBNÁ PODPORA — klik a hneď odíde", reakcia = "palec", bezDaru = false, zbalene = false, komu, onDarEur, onDarKrypto, krypto = "EURC" }: { onShare?: () => void; upvotes?: number; onUpvote?: () => void; onPodpor: (a: number) => void; onKanal: (k: string) => void; accent?: string; supLabel?: ReactNode; reakcia?: "palec" | "srdce"; bezDaru?: boolean; zbalene?: boolean; komu?: ReactNode; onDarEur?: (suma: number) => void; onDarKrypto?: (eurc: number) => void; krypto?: "EURC" | "DEED" | "nie" }) {
+export function PodporaSekcia({ onShare, upvotes = 0, onUpvote, onPodpor, onKanal, accent = "var(--a-info)", supLabel = "DROBNÁ PODPORA — klik a hneď odíde", reakcia = "palec", bezDaru = false, zbalene = false, komu, onDarEur, onDarKrypto, krypto = "EURC", poEurach, kryptoOtvorene = false, sumyEur = [1, 3, 5], sumyEurc = [0.1, 0.5, 1] }: { onShare?: () => void; upvotes?: number; onUpvote?: () => void; onPodpor: (a: number) => void; onKanal: (k: string) => void; accent?: string; supLabel?: ReactNode; reakcia?: "palec" | "srdce"; bezDaru?: boolean; zbalene?: boolean; komu?: ReactNode; onDarEur?: (suma: number, volba?: VolbaDaru) => void; onDarKrypto?: (eurc: number, volba?: VolbaDaru) => void; krypto?: "EURC" | "DEED" | "nie";
+  /** riadky vložené medzi dary v eurách a dary v krypte (pravidelná podpora, Obľúbené + Podporiť DEED) */
+  poEurach?: ReactNode;
+  /** dary v krypte rozbalené hneď (napr. náhľad v správe, aby bolo vidno, čo zmizne) */
+  kryptoOtvorene?: boolean;
+  /** rýchle sumy (sada, ktorú si vybral príjemca) */
+  sumyEur?: number[]; sumyEurc?: number[] }) {
   // pasívny prispieva len v EUR; DEED (peňaženka) vyžaduje účet → výzva na registráciu
   const { mozeDeed } = usePouzivatel();
   const upgrade = useUpgrade();
@@ -288,11 +317,12 @@ export function PodporaSekcia({ onShare, upvotes = 0, onUpvote, onPodpor, onKana
   ];
   // charita + farnosť: dary v eurách a v krypte sú zbalené, otvárajú sa klikom na nadpis
   const [otvEur, setOtvEur] = useState(true); // eurá otvorené hneď
-  const [otvKrypto, setOtvKrypto] = useState(false);
+  const [otvKrypto, setOtvKrypto] = useState(kryptoOtvorene);
   const [rychlyEur, setRychlyEur] = useState<number | null>(null);
-  const rychleEur = [1, 3, 5]; // drobné — len SEPA (pevný poplatok karty by ich zožral)
+  const [rychlyKrypto, setRychlyKrypto] = useState<number | null>(null); // rýchly EURC dar → potvrdenie + ďakovačka
+  const rychleEur = sumyEur; // do 5 € len SEPA (pevný poplatok karty by ich zožral), vyššie aj kartou
   const odtienEur = [0, .10, .20]; // 1 € sivá, 3 € jemná červená, 5 € silnejšia — suma graduje
-  const rychleKrypto = [0.1, 0.5, 1]; // mikrodary v EURC
+  const rychleKrypto = sumyEurc; // EURC — sada podľa príjemcu
   return (
     <div>
       <div style={{ display: "flex", gap: SPACE.sm, marginTop: SPACE.sm }}>
@@ -317,7 +347,7 @@ export function PodporaSekcia({ onShare, upvotes = 0, onUpvote, onPodpor, onKana
                 <span style={{ fontSize: 18, fontWeight: 800, lineHeight: 1, fontVariantNumeric: "tabular-nums", color: C.text }}>
                   {v}<span style={{ fontSize: 11, fontWeight: 700, color: C.textSec, marginLeft: 3 }}>€</span>
                 </span>
-                <span style={{ fontSize: 10, fontWeight: 600, color: C.textTer, marginTop: 4 }}>SEPA</span>
+                <span style={{ fontSize: 10, fontWeight: 600, color: C.textTer, marginTop: 4 }}>{v <= LEN_SEPA_DO ? "SEPA" : "SEPA · karta"}</span>
               </button>
             ))}
           </div>
@@ -325,6 +355,8 @@ export function PodporaSekcia({ onShare, upvotes = 0, onUpvote, onPodpor, onKana
             <span style={{ fontWeight: 800, fontSize: 14 }}>Vlastná suma v €</span>
           </button>
         </>)}
+
+        {poEurach}
 
         {/* DARY V KRYPTE — EURC (charita, Viera) alebo DEED (ostatní); „nie" = príjemca krypto neberie */}
         {krypto !== "nie" && <Rozbal otvorene={otvKrypto} onClick={() => setOtvKrypto((v) => !v)}>DARY V KRYPTE</Rozbal>}
@@ -347,7 +379,7 @@ export function PodporaSekcia({ onShare, upvotes = 0, onUpvote, onPodpor, onKana
         {krypto === "EURC" && otvKrypto && (<>
           <div style={{ display: "flex", gap: SPACE.xs, alignItems: "stretch", paddingTop: 8 }}>
             {rychleKrypto.map((v, i) => (
-              <button key={v} onClick={deedAkcia(() => onDarKrypto?.(v))} style={psSuma(i === 2, accent)}>
+              <button key={v} onClick={deedAkcia(() => setRychlyKrypto(v))} style={psSuma(i === 2, accent)}>
                 {i === 2 && <span style={psTag(accent)}>NAJČASTEJŠIE</span>}
                 <span style={{ fontSize: 17, fontWeight: 800, lineHeight: 1, fontVariantNumeric: "tabular-nums", color: i === 2 ? accent : C.text }}>
                   {v.toLocaleString("sk", { minimumFractionDigits: v < 1 ? 2 : 0 })}<span style={{ fontSize: 9, fontWeight: 700, color: C.textTer, marginLeft: 3, letterSpacing: ".04em" }}>EURC</span>
@@ -362,9 +394,14 @@ export function PodporaSekcia({ onShare, upvotes = 0, onUpvote, onPodpor, onKana
         </>)}
 
         {rychlyEur != null && (
-          <PlatbaModal kanal="EUR" komu={komu} suma={rychlyEur} lenSepa
+          <PlatbaModal kanal="EUR" komu={komu} suma={rychlyEur} lenSepa={rychlyEur <= LEN_SEPA_DO}
             onClose={() => setRychlyEur(null)}
-            onDone={(sm) => { setRychlyEur(null); onDarEur?.(sm); }} />
+            onDone={(sm, v) => { setRychlyEur(null); onDarEur?.(sm, v); }} />
+        )}
+        {rychlyKrypto != null && (
+          <PlatbaModal kanal="EURC" komu={komu} suma={rychlyKrypto}
+            onClose={() => setRychlyKrypto(null)}
+            onDone={(sm, v) => { setRychlyKrypto(null); onDarKrypto?.(sm, v); }} />
         )}
       </>) : (<>
       <PSLabel>{supLabel}</PSLabel>

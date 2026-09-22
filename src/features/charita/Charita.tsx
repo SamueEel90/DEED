@@ -522,7 +522,7 @@ function CharitaDetail({ z: zProp, toast, onBack, onAutor }: { z?: ZbierkaDetail
       {platba && <PlatbaModal kanal={platba} komu={z.nazov} onClose={() => setPlatba(null)} onDone={platbaHotova} />}
 
       {/* pravidelná podpora — LEN charita (3 voľby + dvojité potvrdenie) */}
-      {recur && <RecurringSheet nazov={z.nazov} onClose={() => setRecur(false)} toast={toast} />}
+      {recur && <RecurringSheet nazov={z.nazov} caseId={String(z.id)} onClose={() => setRecur(false)} toast={toast} />}
 
       {/* QR zbierky/akcie (§10) — sken → dar, kopírovať, zdieľať/tlačiť */}
       {qr && <QrModal typ={jeZbierka ? "platba" : "skutok"} titul={`QR · ${z.nazov}`} popis={(pribeh || z.nazov).slice(0, 38)}

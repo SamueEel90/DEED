@@ -180,6 +180,29 @@ export async function nacitajUcetData(ucetId: string): Promise<UcetData> {
   return { ucet: u.data, profil: p.data, zobrazenie: z.data, lokalita: l.data, organizacia } as UcetData;
 }
 
+/** Všetko, čo charita zadala pri registrácii — pre profil a správu (jeden zdroj pravdy). */
+export interface CharitaData {
+  email: string | null; telefon: string | null;
+  organizacia: { nazov: string | null; ico: string | null; sidlo: string | null; bankovy_ucet: string | null } | null;
+  profil: { misia: string | null; web: string | null; siete: { typ: string; url: string }[] | null; logo_url: string | null; cover_url: string | null } | null;
+  segmenty: { sektor: string; pod_segment: string | null }[];
+}
+export async function nacitajCharitu(orgUcetId: string): Promise<CharitaData> {
+  const c = db();
+  const [u, o, p, sg] = await Promise.all([
+    c.from("ucet").select("email, telefon").eq("id", orgUcetId).maybeSingle(),
+    c.from("organizacia").select("nazov, ico, sidlo, bankovy_ucet").eq("ucet_id", orgUcetId).maybeSingle(),
+    c.from("profil_charity").select("misia, web, siete, logo_url, cover_url").eq("org_ucet_id", orgUcetId).maybeSingle(),
+    c.from("segmenty").select("sektor, pod_segment").eq("org_ucet_id", orgUcetId),
+  ]);
+  if (u.error) throw u.error;
+  return {
+    email: u.data?.email ?? null, telefon: u.data?.telefon ?? null,
+    organizacia: o.data ?? null, profil: (p.data as CharitaData["profil"]) ?? null,
+    segmenty: (sg.data as CharitaData["segmenty"]) ?? [],
+  };
+}
+
 // ============================================================
 // FYZICKÁ OSOBA
 // ============================================================

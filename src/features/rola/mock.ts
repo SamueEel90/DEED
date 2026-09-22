@@ -18,6 +18,8 @@ export interface PanelBlok {
   progress?: { vyzbierane: number; ciel: number };
   tierMin: Tier;                 // gate na úrovni AKCIE — blok vidno vždy (§4.3); zamknutý blok = blur dát (PATCH 1 §3)
   akcia?: string;                // label CTA (default „Spravovať")
+  /** len informácia — riadok sa neklikne (napr. počet sledujúcich) */
+  info?: boolean;
 }
 
 // položka podstránky SPRÁVA — viditeľná len držiteľovi roly (+ delegovaní)
@@ -76,8 +78,17 @@ export interface SubjektMeta {
   /** taby verejného obsahu per rola (fixné poradie §3 bod 4).
    *  Položka viazaná na zbierku nesie `zbierkaId` — názov, fotka a suma sa ťahajú
    *  zo /lib/zbierky, takže na profile je to isté, čo v zbierke. */
-  taby: { key: string; label: string; odTieru?: Tier; polozky: { emoji: string; titul: string; popis: string; zbierkaId?: string; split?: number; odTieru?: Tier; dokaz?: Dokaz; dokazZbierky?: string }[] }[];
+  taby: { key: string; label: string; odTieru?: Tier; polozky: { emoji: string; titul: string; popis: string; zbierkaId?: string; split?: number; odTieru?: Tier; dokaz?: Dokaz; dokazZbierky?: string; video?: { nahlad: string; dlzka: string; zbierkaId?: string } }[] }[];
 }
+
+/** segmenty (témy), ktoré si charita nastavila v správe — darca ich vidí pri pravidelnej podpore (program AKCIA) */
+// Svetlo pomoci — simulácia výberu z registrácie (číselník: sektor → pod-segment)
+export const SEGMENTY_CHARITY = [
+  "Sociálne · chudoba a núdza",
+  "Sociálne · osamelí seniori",
+  "Sociálne · ľudia bez domova",
+  "Deti · ohrozené rodiny",
+];
 
 export const SUBJEKTY: Record<Pozicia, SubjektMeta> = {
   charita: {
@@ -108,6 +119,12 @@ export const SUBJEKTY: Record<Pozicia, SubjektMeta> = {
         } },
         // ukončená a doložená zbierka = jeden skutok (žiadna duplicita so Zbierkami)
         { emoji: "🏠", titul: "", popis: "doložené faktúrami", zbierkaId: "z-horvathova" },
+      ] },
+      // Video: krátke videá — k zbierke, k tomu, čo chystáme, alebo šťastní obdarovaní.
+      // ZADARMO: verejne sa zobrazuje JEDNO video; ďalšie ostávajú v správe, ukážu sa až v platenom programe.
+      { key: "video", label: "Video", polozky: [
+        { emoji: "🎬", titul: "Pani Anna — prečo zbierame", popis: "september · k zbierke", video: { nahlad: U("photo-1581578731548-c64695cc6952"), dlzka: "0:48", zbierkaId: "z-anna" } },
+        { emoji: "🎬", titul: "Horváthovci ďakujú — prvá noc v suchu", popis: "august · po odovzdaní daru", video: { nahlad: U("photo-1635424710928-0544e8512eae"), dlzka: "1:12", zbierkaId: "z-horvathova" }, odTieru: 1 },
       ] },
       { key: "akcie", label: "Akcie", odTieru: 2, polozky: [
         { emoji: "🏃", titul: "Beh pre Svetlo — benefičný beh", popis: "ne 12. 10. · Trenčín, Ostrov · 64 prihlásených" },
@@ -195,24 +212,42 @@ export const ORG_ZBIERKY: OrgZbierka[] = [
 export const PANEL_CHARITA: PanelBlok[] = [
   { id: "zbierky", emoji: "🎯", nazov: "Moje zbierky (org)", popis: "1 aktívna · 1 ukončená", tierMin: 0 },
   { id: "dnes", emoji: "💶", nazov: "Dnes prišlo", popis: "Živý prehľad dnešných darov", tierMin: 0 },
+  { id: "sledujuci", emoji: "👥", nazov: "Sledujúci", popis: "+38 za posledný mesiac", hodnota: "1 204", tierMin: 0, info: true },
+  // T1: zbierka pre seba (Centrálna zbierka organizácie)
+  { id: "centralna", emoji: "💛", nazov: "Centrálna zbierka organizácie", popis: "8 600 € z 12 000 € · 214 darcov", tierMin: 1, akcia: "Otvoriť" },
+  // T1 (ZBIERKA): akcie na nástenku mesta · T2 (AKCIA): dobrovoľníctvo
+  { id: "nastenka", emoji: "📅", nazov: "Moja nástenka", popis: "2 zverejnené udalosti · 1 koncept", tierMin: 1, akcia: "Otvoriť" },
   { id: "dobrovolnici", emoji: "🙋", nazov: "Moji dobrovoľníci", popis: "12 prihlásených na sobotňajšiu brigádu", tierMin: 2, akcia: "Otvoriť" },
-  { id: "sledujuci", emoji: "👥", nazov: "Sledujúci", popis: "+38 za posledný mesiac", hodnota: "1 204", tierMin: 0, akcia: "Detail" },
-  { id: "nastenka", emoji: "📅", nazov: "Moja nástenka", popis: "2 zverejnené udalosti · 1 koncept", tierMin: 0, akcia: "Otvoriť" },
 ];
 
+// podľa cenníka „Cennik_urovne_charita_spolky" — ZADARMO · ZBIERKA (T1) · AKCIA (T2) · KAMPAŇ (T3)
 export const SPRAVA_CHARITA: SpravaItem[] = [
-  { id: "profil", emoji: "✏️", nazov: "Upraviť profil", popis: "Foto, popis, video, kontakt, web, IBAN", tierMin: 0 },
-  { id: "zbierky", emoji: "🎯", nazov: "Zbierky — vytvoriť a spravovať", popis: "Nová zbierka, úpravy a stav priebehu", tierMin: 0 },
-  { id: "dokladovanie", emoji: "🧾", nazov: "Dokladovanie zbierok", popis: "Doklady použitia financií — priebežne aj po ukončení", tierMin: 0, povinne: true },
-  { id: "darcovia", emoji: "💌", nazov: "Zoznam darcov + poďakovanie", popis: "Zoznam darcov a hromadné poďakovanie", tierMin: 0 },
-  { id: "kalendar", emoji: "📅", nazov: "Kalendár & udalosti", popis: "Dobrovoľnícke akcie, brigády, termíny", tierMin: 1 },
-  { id: "qr", emoji: "▦", nazov: "QR nástroje", popis: "QR na tlač — plagát, pokladnička, nástenka", tierMin: 0 },
-  { id: "qr2", emoji: "🔄", nazov: "QR dochádzka na akciách", popis: "Rotujúci QR pre dochádzku dobrovoľníkov", tierMin: 2 },
-  { id: "dobrovolnici", emoji: "🙋", nazov: "Dobrovoľníci — správa", popis: "Prihlášky, dochádzka a vzájomné hodnotenie", tierMin: 2 },
-  { id: "firmy", emoji: "🤝", nazov: "Spolupráca s firmami", popis: "Sponzoring a firemné dobrovoľníctvo", tierMin: 2 },
-  { id: "embed", emoji: "🔗", nazov: "Badge embed", popis: "Odznak s odkazom na profil pre vlastný web", tierMin: 0 },
+  // ZADARMO
+  { id: "zbierky", emoji: "🎯", nazov: "Zbierky — vytvoriť a spravovať", popis: "Krátka cieľová zbierka do 30 dní · 1 súbežná · QR na zdieľanie", tierMin: 0 },
+  { id: "skutok", emoji: "✨", nazov: "Pridať skutok", popis: "Do feedu mesta — takto sme pomohli, fotky pred/po a doklady", tierMin: 0 },
+  { id: "dokladovanie", emoji: "🧾", nazov: "Dôkazy a správy k zbierkam", popis: "Doklady použitia financií — priebežne aj po ukončení", tierMin: 0, povinne: true },
+  { id: "video", emoji: "🎬", nazov: "Mám talent — video", popis: "Video do 45 s s platobným modulom · 1 / mesiac, ďalšie 10 €", tierMin: 0 },
+  { id: "darcovia", emoji: "💌", nazov: "Prehľad darcov a vyzbieraných súm", popis: "Zoznam darcov a hromadné poďakovanie", tierMin: 0 },
+  { id: "vypis", emoji: "📄", nazov: "Ročný výpis činnosti", popis: "Podklad na výročnú schôdzu", tierMin: 0 },
+  { id: "qr", emoji: "▦", nazov: "QR nástroje", popis: "QR overenej organizácie a QR zbierok — plagát, pokladnička", tierMin: 0 },
   { id: "sumy", emoji: "👁", nazov: "Viditeľnosť súm", popis: "Čo vidia návštevníci profilu", tierMin: 0 },
-  { id: "reporty", emoji: "📊", nazov: "Reporty / exporty", popis: "Podklady pre výročnú správu a export dát", tierMin: 2 },
+  // ZBIERKA (T1)
+  { id: "centralna", emoji: "💛", nazov: "Centrálna zbierka organizácie", popis: "Pridať a spravovať — pravidelná podpora na segment alebo celú organizáciu", tierMin: 1 },
+  { id: "segment", emoji: "🧩", nazov: "Segmenty pre darcov", popis: "Témy z registrácie — darca podporí tému alebo celú organizáciu", tierMin: 1 },
+  { id: "dlhodobe", emoji: "📆", nazov: "Dlhodobé zbierky", popis: "Zbierka bez pevného konca · predĺženie nad 30 dní · až 3 súbežné", tierMin: 1 },
+  { id: "sponzoring", emoji: "🤝", nazov: "Sponzoring", popis: "Hľadáme sponzora s protiplnením · predvyplnená zmluva · logo sponzora na profile · oznam v meste · doklad o protiplnení · sponzorské zbierky bez limitu", tierMin: 1 },
+  { id: "prezentacia", emoji: "📣", nazov: "Prezentácia, oznamy a inzeráty", popis: "Prezentácia činnosti a služieb · oznamy na profile · akcie na nástenku mesta · 1 inzerát (zamestnanec, brigádnik, člen)", tierMin: 1 },
+  { id: "embed", emoji: "🔗", nazov: "Štít dôvery na vlastný web", popis: "Odznak s odkazom na profil (embed)", tierMin: 1 },
+  // AKCIA (T2)
+  { id: "podujatia", emoji: "🎟", nazov: "Benefičné podujatia a predaj", popis: "Podujatie s QR a potvrdením účasti · predaj lístkov, merchu a služieb · školenia (provízia 10 %)", tierMin: 2 },
+  { id: "dobrovolnici", emoji: "🙋", nazov: "Dobrovoľníctvo", popis: "Výzva pre verejnosť · QR dochádzka (prah 60 %) · náhradníci a chat · upozornenie v okolí · výkaz hodín", tierMin: 2 },
+
+  { id: "upoutavky", emoji: "▶️", nazov: "Upútavky na zbierky v Talente", popis: "2 videá / mesiac · až 10 súbežných zbierok · 5 inzerátov", tierMin: 2 },
+  // KAMPAŇ (T3)
+  { id: "sektorove-qr", emoji: "🔳", nazov: "Sektorové QR", popis: "QR pre celý sektor organizácie", tierMin: 3 },
+  { id: "materialne", emoji: "📦", nazov: "Materiálne zbierky", popis: "Zbierka vecí namiesto peňazí (fáza 2)", tierMin: 3 },
+  { id: "prednost", emoji: "⭐", nazov: "Prednosť vo vyhľadávaní a v adresári", popis: "Bez limitu zbierok, pobočiek a inzerátov · 4 videá / mesiac", tierMin: 3 },
+  { id: "export", emoji: "📊", nazov: "Export pre grantové správy a výkazy", popis: "Podklady pre granty a výročnú správu", tierMin: 3 },
 ];
 
 // ---- TVORCA (§2) ----
@@ -259,5 +294,5 @@ export const SPRAVY: Record<Pozicia, SpravaItem[]> = { charita: SPRAVA_CHARITA, 
 
 // nadpis podstránky správy per rola (§1.3/§2.4/§3.3)
 export const SPRAVA_NADPIS: Record<Pozicia, string> = {
-  charita: "SPRÁVA CHARITY", tvorca: "SPRÁVA TVORCU", b2b: "SPRÁVA FIRMY",
+  charita: "SPRÁVA PROFILU A NÁSTROJE", tvorca: "SPRÁVA TVORCU", b2b: "SPRÁVA FIRMY",
 };

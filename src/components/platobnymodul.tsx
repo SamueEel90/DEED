@@ -32,6 +32,10 @@ export interface RiadokAkcie {
 }
 
 export interface PlatobnyModulProps {
+  /** dary v krypte rozbalené hneď */
+  kryptoOtvorene?: boolean;
+  /** rýchle sumy — sada, ktorú si vybral príjemca */
+  sumyEur?: number[]; sumyEurc?: number[];
   // --- 1. ZADARMO ---
   onShare?: () => void;
   upvotes?: number;
@@ -48,7 +52,9 @@ export interface PlatobnyModulProps {
   zbalene?: boolean;
   /** komu idú peniaze — do hlavičky platby pri drobnom eurovom dare */
   komu?: ReactNode;
-  onDarEur?: (suma: number) => void;
+  onDarEur?: (suma: number, volba?: import("@/lib/darcovia").VolbaDaru) => void;
+  /** rýchly dar v krypte (EURC) */
+  onDarKrypto?: (eurc: number, volba?: import("@/lib/darcovia").VolbaDaru) => void;
   /** v čom príjemca berie krypto: EURC (charita, Viera) · DEED (ostatní) · „nie" */
   krypto?: "EURC" | "DEED" | "nie";
   // --- 4.–7. riadky ---
@@ -89,43 +95,46 @@ function QrNahlad() {
 
 export function PlatobnyModul({
   onShare, upvotes = 0, onUpvote, reakcia = "palec",
-  onPodpor, onKanal, accent = "var(--a-info)", supLabel, bezDaru = false, zbalene = false, komu, onDarEur, krypto,
-  oblubene, toast, bezOblubenych = false, opakovana, qr, retaz, style,
+  onPodpor, onKanal, accent = "var(--a-info)", supLabel, bezDaru = false, zbalene = false, komu, onDarEur, onDarKrypto, krypto,
+  oblubene, toast, bezOblubenych = false, opakovana, qr, retaz, style, kryptoOtvorene, sumyEur, sumyEurc,
 }: PlatobnyModulProps) {
+  // Pravidelná podpora — zelená a výraznejšia; v zbalenom module sedí hneď pod darmi v eurách
+  const pravidelnaEl = opakovana && (
+    <div onClick={opakovana.onClick} role="button" tabIndex={0}
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); opakovana.onClick(); } }}
+      style={riadok("color-mix(in srgb, var(--a-green) 7%, transparent)", "color-mix(in srgb, var(--a-green) 40%, transparent)")}>
+      <div style={{ width: 52, height: 52, borderRadius: RADIUS.xs, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", background: "color-mix(in srgb, var(--a-green) 18%, transparent)" }}>
+        <IkonaOpakovat size={26} color="var(--a-green)" />
+      </div>
+      <div style={riadokText}>
+        <div style={{ ...riadokLabel, color: "var(--a-green)" }}>{opakovana.label ?? "Pravidelná podpora"}</div>
+        <div style={riadokPopis}>{opakovana.popis ?? "Mesačne · kedykoľvek zrušíš"}</div>
+      </div>
+      <div style={{ ...ctaBase, background: "var(--a-green)", border: "1px solid var(--a-green)", color: "#fff" }}>
+        {opakovana.cta ?? "Nastaviť"}
+      </div>
+    </div>
+  );
+  // Obľúbené + Podporiť DEED — rovnaká výška oboch tlačidiel
+  const oblubeneEl = !bezOblubenych && (
+        <div style={{ display: "flex", gap: SPACE.xs, marginTop: SPACE.gutter }}>
+          {oblubene && <OblubeneBtn polozka={oblubene} toast={toast} style={{ flex: 1, minWidth: 0, height: 46 }} />}
+          <PodporitDeed toast={toast} style={{ flex: 1, minWidth: 0, height: 46 }} />
+        </div>
+      );
   return (
     <div style={style}>
       <PodporaSekcia
         onShare={onShare} upvotes={upvotes} onUpvote={onUpvote} reakcia={reakcia}
         onPodpor={onPodpor} onKanal={onKanal} accent={accent} bezDaru={bezDaru}
-        zbalene={zbalene} komu={komu} krypto={krypto} onDarEur={onDarEur ?? ((sm) => toast?.(`Ďakujeme za dar ${sm.toLocaleString("sk")} €`))}
-        onDarKrypto={(v) => toast?.(`Ďakujeme za dar ${v.toLocaleString("sk", { minimumFractionDigits: 2 })} EURC`)}
+        zbalene={zbalene} komu={komu} krypto={krypto} kryptoOtvorene={kryptoOtvorene} sumyEur={sumyEur} sumyEurc={sumyEurc} poEurach={zbalene ? <>{pravidelnaEl}{oblubeneEl}</> : undefined} onDarEur={onDarEur ?? ((sm) => toast?.(`Ďakujeme za dar ${sm.toLocaleString("sk")} €`))}
+        onDarKrypto={onDarKrypto ?? ((v) => toast?.(`Ďakujeme za dar ${v.toLocaleString("sk", { minimumFractionDigits: 2 })} EURC`))}
         {...(supLabel ? { supLabel } : {})} />
 
-      {/* 4. Obľúbené + Podporiť DEED — rovnaká výška oboch tlačidiel */}
-      {!bezOblubenych && (
-        <div style={{ display: "flex", gap: SPACE.xs, marginTop: SPACE.gutter }}>
-          {oblubene && <OblubeneBtn polozka={oblubene} toast={toast} style={{ flex: 1, minWidth: 0, height: 46 }} />}
-          <PodporitDeed toast={toast} style={{ flex: 1, minWidth: 0, height: 46 }} />
-        </div>
-      )}
+      {/* nezbalený modul: pravidelná podpora a Obľúbené pod darmi (v zbalenom sú pred darmi v krypte) */}
+      {!zbalene && pravidelnaEl}
 
-      {/* 5. Pravidelná podpora */}
-      {opakovana && (
-        <div onClick={opakovana.onClick} role="button" tabIndex={0}
-          onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); opakovana.onClick(); } }}
-          style={riadok(C.surface2, C.line)}>
-          <div style={{ width: 52, height: 52, borderRadius: RADIUS.xs, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", background: "color-mix(in srgb, var(--a-info) 12%, transparent)" }}>
-            <IkonaOpakovat size={22} color="var(--a-info)" />
-          </div>
-          <div style={riadokText}>
-            <div style={riadokLabel}>{opakovana.label ?? "Pravidelná podpora"}</div>
-            <div style={riadokPopis}>{opakovana.popis ?? "Mesačne · kedykoľvek zrušíš"}</div>
-          </div>
-          <div style={{ ...ctaBase, background: "color-mix(in srgb, var(--a-info) 14%, transparent)", border: "1px solid color-mix(in srgb, var(--a-info) 40%, transparent)", color: "var(--a-info)" }}>
-            {opakovana.cta ?? "Nastaviť"}
-          </div>
-        </div>
-      )}
+      {!zbalene && oblubeneEl}
 
       {/* 6. QR */}
       {qr && (

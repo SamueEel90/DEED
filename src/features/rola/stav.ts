@@ -6,6 +6,7 @@
 // sa rola číta z overeného účtu a tier z fakturácie.
 // Perzistencia = localStorage (rovnaký vzor ako viera/stav.ts).
 // ============================================================
+import type { SadaEur, SadaEurc } from "@/lib/sadyDarov";
 import type { OrgZbierka } from "./mock"; // type-only — bez runtime cyklu
 
 export type Pozicia = "charita" | "tvorca" | "b2b";
@@ -24,7 +25,7 @@ export const FLAGS = {
 // ---- placeholder čísla = config, nie hardcode (§4.6 — ceny/limity rieši Vitkovič) ----
 export const KONFIG = {
   /** limit súbežných zbierok charity podľa tieru (T1/T2 = placeholder) */
-  limitZbierok: { 0: 1, 1: 3, 2: 10, 3: 30, 4: 9999 } as Record<Tier, number>,
+  limitZbierok: { 0: 1, 1: 3, 2: 10, 3: 9999, 4: 9999 } as Record<Tier, number>, // cenník charity: 1 · 3 · 10 · bez limitu
   /** lehota dokladovania po ukončení zbierky (placeholder X dní, §1.4) */
   lehotaDokladovaniaDni: 30,
   /** počet delegovaných správcov B2B podľa tieru (§3.1) */
@@ -101,6 +102,36 @@ export const ulozTerminal = (on: boolean) => uloz(kluc("terminal"), on);
 // logo nepotrebuje — má profilovú fotku osoby). Fallback bez loga = iniciálky. ----
 export const nacitajLogo = (p: Pozicia): string | null => nacitaj<string | null>(kluc(`logo.${p}`), null);
 export const ulozLogo = (p: Pozicia, dataUrl: string | null) => uloz(kluc(`logo.${p}`), dataUrl);
+
+// ---- hlavička správy zmenšená (na mobile šetrí miesto) ----
+export const nacitajHlavuZbalenu = (): boolean => nacitaj(kluc("hlavaZbalena"), false);
+export const ulozHlavuZbalenu = (z: boolean) => uloz(kluc("hlavaZbalena"), z);
+
+// ---- čo je v krúžku profilu: fotka osoby alebo logo (tvorca si vyberá — môže mať značku) ----
+export type ZdrojAvatara = "foto" | "logo";
+export const nacitajZdrojAvatara = (p: Pozicia): ZdrojAvatara =>
+  p === "tvorca" ? nacitaj<ZdrojAvatara>(kluc(`avatar.${p}`), "foto") : "logo";
+export const ulozZdrojAvatara = (p: Pozicia, z: ZdrojAvatara) => uloz(kluc(`avatar.${p}`), z);
+
+// ---- charita: prijíma dary v krypte (EURC)? platí pre všetky jej zbierky ----
+export const nacitajKryptoOrg = (p: Pozicia): boolean => nacitaj(kluc(`krypto.${p}`), true);
+export const ulozKryptoOrg = (p: Pozicia, v: boolean) => uloz(kluc(`krypto.${p}`), v);
+// ---- sady rýchlych súm (eurá + EURC), ktoré si vybral príjemca ----
+export const nacitajSady = (p: Pozicia): { eur: SadaEur; eurc: SadaEurc } => nacitaj(kluc(`sady.${p}`), { eur: "drobne", eurc: "mikro" } as { eur: SadaEur; eurc: SadaEurc });
+export const ulozSady = (p: Pozicia, v: { eur: SadaEur; eurc: SadaEurc }) => uloz(kluc(`sady.${p}`), v);
+// ---- centrálna zbierka organizácie spustená (nastavenie zo správy) ----
+export const nacitajCentralnu = (p: Pozicia): boolean => nacitaj(kluc(`centralna.${p}`), false);
+export const ulozCentralnu = (p: Pozicia, v: boolean) => uloz(kluc(`centralna.${p}`), v);
+
+// ---- tvar loga (kruh/štvorec) — vyberá si subjekt v Upraviť profil ----
+export type TvarLoga = "kruh" | "stvorec";
+export const nacitajTvarLoga = (p: Pozicia): TvarLoga => nacitaj<TvarLoga>(kluc(`logotvar.${p}`), "kruh");
+export const ulozTvarLoga = (p: Pozicia, t: TvarLoga) => uloz(kluc(`logotvar.${p}`), t);
+
+// ---- O nás (formátovaný text z editora, max 800 znakov) — null = pôvodný text z mocku ----
+export const ONAS_MAX = 800;
+export const nacitajOnas = (p: Pozicia): string | null => nacitaj<string | null>(kluc(`onas.${p}`), null);
+export const ulozOnas = (p: Pozicia, html: string | null) => uloz(kluc(`onas.${p}`), html);
 
 // ---- zbierky vytvorené v správe charity navyše k mocku (limit per tier §1.3) ----
 export const nacitajOrgExtra = (): OrgZbierka[] => nacitaj<OrgZbierka[]>(kluc("orgzbierky"), []);

@@ -14,7 +14,7 @@
 //  · TabyProfil     — podčiarknuté taby obsahu (IG štýl) nad SegTabs (a11y)
 //  · DvaStlpce      — desktop layout profilu: obsah + sticky bočný rail
 // ============================================================
-import type { CSSProperties, ReactNode } from "react";
+import { useState, type CSSProperties, type ReactNode } from "react";
 import { C, SPACE, RADIUS, GRAD } from "@/theme";
 import { tint } from "@/lib/ui";
 import { MEDIA_AR } from "@/lib/cardSize";
@@ -87,7 +87,9 @@ export function BtnIkonka({ onClick, label, aktivne, farba = "var(--a-info)", ch
 }
 
 // ---- ENTITY HERO — hlavička profilu subjektu (cover + avatar + akcie) ----
-export function EntityHero({ cover, coverEl, avatar, meno, overene, overeneLabel, podtitul, vpravo, podMenom, stats, akcie, onAvatar, onCover, coverLabel }: {
+export function EntityHero({ cover, coverEl, avatar, avatarTvar = "kruh", meno, overene, overeneLabel, podtitul, vpravo, podMenom, stats, akcie, onAvatar, onCover, coverLabel }: {
+  /** tvar loga/avatara — organizácia si môže zvoliť štvorec */
+  avatarTvar?: "kruh" | "stvorec";
   /** URL cover fotky; alternatívne coverEl = vlastný element (gradient, Foto…) */
   cover?: string; coverEl?: ReactNode;
   /** avatar element (Foto/img/iniciálky) — vykreslí sa v krúžku cez okraj coveru */
@@ -128,19 +130,20 @@ export function EntityHero({ cover, coverEl, avatar, meno, overene, overeneLabel
       </div>
       {/* position:relative + zIndex — riadok s avatarom sa prekrýva cez cover <img>;
           bez toho replaced content coveru premaľuje pozadie/rámik avatara (paint order) */}
-      <div style={{ display: "flex", alignItems: "flex-end", gap: SPACE.sm, marginTop: -(av / 2.6), padding: `0 ${SPACE.sm}px`, position: "relative", zIndex: 1 }}>
+      <div style={{ display: "flex", alignItems: "flex-start", gap: SPACE.sm, marginTop: -(av / 2.6), padding: `0 ${SPACE.sm}px`, position: "relative", zIndex: 1 }}>
         {/* onAvatar = fotka sa dá zmeniť → odznak fotoaparátu žije MIMO orezaného
             krúžku (span nižšie má overflow:hidden, inak by ho odrezal) */}
         <span style={{ position: "relative", flex: "none", display: "inline-flex" }}>
           <span {...(onAvatar ? pressable(onAvatar, "Profilová fotka") : {})}
-            style={{ width: av, height: av, borderRadius: RADIUS.round, flex: "none", overflow: "hidden", border: `3px solid var(--c-bg)`, background: C.surface2, display: "flex", alignItems: "center", justifyContent: "center", fontSize: Math.round(av * .36), fontWeight: 800, cursor: onAvatar ? "pointer" : "default", boxShadow: "0 2px 10px rgba(0,0,0,.18)" }}>
+            style={{ width: av, height: av, borderRadius: avatarTvar === "stvorec" ? RADIUS.md : RADIUS.round, flex: "none", overflow: "hidden", border: `3px solid var(--c-bg)`, background: C.surface2, display: "flex", alignItems: "center", justifyContent: "center", fontSize: Math.round(av * .36), fontWeight: 800, cursor: onAvatar ? "pointer" : "default", boxShadow: "0 2px 10px rgba(0,0,0,.18)" }}>
             {avatar}
           </span>
           {onAvatar && <KamerkaBadge size={Math.round(av * .34)} />}
         </span>
-        <div style={{ flex: 1, minWidth: 0, paddingBottom: 2, paddingRight: vpravo ? (desktop ? 98 : 76) : 0 }}>
-          <div style={{ fontSize: desktop ? 19 : 16.5, fontWeight: 800, display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
-            <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{meno}</span>
+        {/* meno sa nikdy neskracuje: text začína pod hranou titulky a zalomí sa nadol */}
+        <div style={{ flex: 1, minWidth: 0, paddingTop: Math.round(av / 2.6) + 4, paddingRight: vpravo ? (desktop ? 98 : 76) : 0 }}>
+          <div style={{ fontSize: desktop ? 19 : 16.5, fontWeight: 800, display: "flex", alignItems: "flex-start", gap: 6, minWidth: 0 }}>
+            <span style={{ minWidth: 0, overflowWrap: "anywhere", lineHeight: 1.2 }}>{meno}</span>
             {overene && <Overene size={desktop ? 18 : 16} label={overeneLabel} />}
           </div>
           {podtitul && <div style={{ fontSize: desktop ? 12.5 : 11.5, color: C.textSec, marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{podtitul}</div>}
@@ -154,7 +157,7 @@ export function EntityHero({ cover, coverEl, avatar, meno, overene, overeneLabel
 }
 
 // ---- MENU SKUPINA — zoskupený zoznam (nastavenia / nástroje / kontakt) ----
-export function MenuSkupina({ nadpis, poznamka, hlavicka, children, style }: {
+export function MenuSkupina({ nadpis, poznamka, hlavicka, children, style, zbalitelna }: {
   /** malý nadpis NAD kartou (sekcia) */
   nadpis?: ReactNode;
   /** drobný text vpravo od nadpisu */
@@ -162,19 +165,42 @@ export function MenuSkupina({ nadpis, poznamka, hlavicka, children, style }: {
   /** voliteľná zvýraznená hlavička VO vnútri karty (napr. SPRÁVA — zlatý pás) */
   hlavicka?: ReactNode;
   children?: ReactNode; style?: CSSProperties;
+  /** kľúč → sekcia sa dá zbaliť klikom na nadpis/hlavičku; stav sa pamätá */
+  zbalitelna?: string;
 }) {
+  const kluc = zbalitelna ? `deed.zbalene.${zbalitelna}` : null;
+  const [zbalene, setZbalene] = useState(() => {
+    if (!kluc) return false;
+    try { return localStorage.getItem(kluc) === "1"; } catch { return false; }
+  });
+  const prepni = () => setZbalene((z) => {
+    try { if (kluc) localStorage.setItem(kluc, z ? "0" : "1"); } catch { /* LS nedostupné */ }
+    return !z;
+  });
+  const sipka = kluc && (
+    <span aria-hidden style={{ fontSize: 11, color: C.textTer, transform: zbalene ? "rotate(-90deg)" : "none", transition: "transform .15s ease", display: "inline-block" }}>▼</span>
+  );
   return (
     <div style={{ marginBottom: SPACE.gutter, ...style }}>
       {(nadpis || poznamka) && (
-        <div style={{ display: "flex", alignItems: "baseline", gap: SPACE.xs, margin: `0 ${SPACE.xxs}px ${SPACE.xs}px` }}>
+        <div {...(kluc ? pressable(prepni, zbalene ? "Rozbaliť sekciu" : "Zbaliť sekciu") : {})}
+          style={{ display: "flex", alignItems: "baseline", gap: SPACE.xs, margin: `0 ${SPACE.xxs}px ${SPACE.xs}px`, cursor: kluc ? "pointer" : "default" }}>
+          {sipka}
           {nadpis && <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: ".05em", color: C.textTer }}>{nadpis}</span>}
           {poznamka && <span style={{ fontSize: 10.5, color: C.textTer, marginLeft: "auto" }}>{poznamka}</span>}
         </div>
       )}
-      <div style={{ background: C.surface, border: `1px solid ${C.line}`, borderRadius: RADIUS.md, overflow: "hidden" }}>
-        {hlavicka}
-        {children}
-      </div>
+      {!(zbalene && (nadpis || poznamka)) && (
+        <div style={{ background: C.surface, border: `1px solid ${C.line}`, borderRadius: RADIUS.md, overflow: "hidden" }}>
+          {hlavicka && kluc && !(nadpis || poznamka) ? (
+            <div {...pressable(prepni, zbalene ? "Rozbaliť sekciu" : "Zbaliť sekciu")} style={{ position: "relative", cursor: "pointer" }}>
+              {hlavicka}
+              <span style={{ position: "absolute", right: SPACE.gutter, top: "50%", transform: "translateY(-50%)" }}>{sipka}</span>
+            </div>
+          ) : hlavicka}
+          {!zbalene && children}
+        </div>
+      )}
     </div>
   );
 }
