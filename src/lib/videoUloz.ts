@@ -1,0 +1,57 @@
+// ============================================================
+// VIDEO K DÔKAZU — mock úložisko v prehliadači (IndexedDB, prežije reload).
+// V produkcii upload do úložiska + prekódovanie na serveri.
+// V dátach sa drží len odkaz „idb:<kľúč>"; URL na prehratie sa získa hookom.
+// ============================================================
+import { useEffect, useState } from "react";
+
+export const VIDEO_CFG = { maxMB: 60, maxSekund: 90 };
+const DB = "deed-media", STORE = "video";
+
+function otvor(): Promise<IDBDatabase> {
+  return new Promise((ok, zle) => {
+    const r = indexedDB.open(DB, 1);
+    r.onupgradeneeded = () => r.result.createObjectStore(STORE);
+    r.onsuccess = () => ok(r.result);
+    r.onerror = () => zle(r.error);
+  });
+}
+
+export const jeVideo = (src?: string) => !!src && src.startsWith("idb:");
+
+/** skontroluje dĺžku/veľkosť, uloží a vráti odkaz „idb:…" */
+export async function ulozVideo(f: File): Promise<string> {
+  if (f.size > VIDEO_CFG.maxMB * 1024 * 1024) throw new Error(`Video má ${(f.size / 1024 / 1024).toFixed(0)} MB — limit je ${VIDEO_CFG.maxMB} MB.`);
+  const dlzka = await new Promise<number>((ok) => {
+    const v = document.createElement("video");
+    v.preload = "metadata";
+    v.onloadedmetadata = () => { ok(v.duration); URL.revokeObjectURL(v.src); };
+    v.onerror = () => ok(0);
+    v.src = URL.createObjectURL(f);
+  });
+  if (dlzka > VIDEO_CFG.maxSekund) throw new Error(`Video má ${Math.round(dlzka)} s — limit je ${VIDEO_CFG.maxSekund} s.`);
+  const kluc = `v${Date.now()}`;
+  const db = await otvor();
+  await new Promise<void>((ok, zle) => {
+    const tx = db.transaction(STORE, "readwrite");
+    tx.objectStore(STORE).put(f, kluc);
+    tx.oncomplete = () => ok();
+    tx.onerror = () => zle(new Error("Video sa nepodarilo uložiť."));
+  });
+  return `idb:${kluc}`;
+}
+
+/** odkaz „idb:…" → URL na prehratie (null kým sa načítava / keď chýba) */
+export function useVideoUrl(src?: string): string | null {
+  const [url, setUrl] = useState<string | null>(null);
+  useEffect(() => {
+    if (!jeVideo(src)) return;
+    let u: string | null = null, zive = true;
+    otvor().then((db) => {
+      const r = db.transaction(STORE).objectStore(STORE).get(src!.slice(4));
+      r.onsuccess = () => { if (zive && r.result) { u = URL.createObjectURL(r.result as Blob); setUrl(u); } };
+    }).catch(() => {});
+    return () => { zive = false; if (u) URL.revokeObjectURL(u); };
+  }, [src]);
+  return url;
+}

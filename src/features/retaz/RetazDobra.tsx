@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { C, GRAD, GRAD_ZELENY, SPACE, RADIUS } from "@/theme";
-import { Sheet, QrVizual, IkonaFajka, IkonaDoska, Lupa, Zdielanie, tint, pressable } from "@/shared";
+import { Sheet, DeedQr, IkonaFajka, IkonaDoska, Lupa, Zdielanie, tint, pressable } from "@/shared";
 import type { RetazMode, RetazKrok, RetazVysledok } from "@/types";
 import { useRetazZiadosti, useChainCreate } from "@/data";
 import { usePouzivatel } from "@/lib/pouzivatel";
@@ -165,8 +165,7 @@ export function RetazDobraSheet({ odmena = 130, mode = "skutok", odkaz = "https:
       {/* QR D+R */}
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: SPACE.xs, marginTop: SPACE.gutter }}>
         <div style={{ position: "relative" }}>
-          <QrVizual data={slug ? qrUrl("chain", slug) : odkaz + "·dr" + pct} size={150} />
-          <span style={{ position: "absolute", top: -8, right: -8, fontSize: 10, fontWeight: 800, padding: `${SPACE.xxs}px ${SPACE.xs}px`, borderRadius: RADIUS.lg, background: GRAD_ZELENY, color: "#06281d", boxShadow: "0 4px 12px rgba(31,191,143,.4)" }}>D+R {pct}%</span>
+          <DeedQr data={slug ? qrUrl("chain", slug) : odkaz + "·dr" + pct} odznak="D+" retaz delenie={`${pct} % → ${(ziadost?.nazov ?? "").slice(0, 22)}`} size={240} />
         </div>
         <div style={{ fontSize: 12, color: C.textSec, textAlign: "center" }}>{pct}% ide ďalej → <b style={{ color: C.text }}>{ziadost?.nazov}</b><br /><span style={{ fontSize: 10.5, color: C.textTer }}>skén → vidíš príjemcu · QR = odkaz na skutok</span></div>
       </div>

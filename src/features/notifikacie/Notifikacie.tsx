@@ -6,6 +6,21 @@ import type { Notifikacia, VypnuteMapa } from "@/types";
 import { useNotifikacie } from "@/data";
 import { useVrstva } from "@/lib/urlnav";
 import { KATEGORIE, VYPNUTE_DEF } from "./mock";
+import { useOznamyDarcom, oznacPrecitany, oznacVsetkyPrecitane, type OznamDarcovi } from "@/lib/oznamyDarcom";
+import { najdiZbierku } from "@/lib/zbierky";
+import { relCas } from "@/lib/darcovia";
+import { OznamDarcoviSheet } from "./OznamDarcovi";
+
+/** oznamy darcom (doložená zbierka, novinka) → riadok zoznamu; id záporné = oznam darcovi */
+function oznamyNaRiadky(oz: OznamDarcovi[]): Notifikacia[] {
+  return oz.map((o, i) => {
+    const z = najdiZbierku(o.zbierkaId);
+    const org = z?.ziadatel.meno ?? "Charita";
+    return o.typ === "dolozene"
+      ? { id: -(i + 1), kat: "sledovane", ic: "🧾", col: "var(--a-green)", titul: `${org} doložila tvoj dar`, text: `${z?.nazov ?? "Zbierka"} · pozri, na čo išli peniaze`, cas: relCas(Date.parse(o.datum)), nove: !o.precitane }
+      : { id: -(i + 1), kat: "sledovane", ic: "💬", col: "var(--a-green)", titul: `Novinka: ${z?.nazov ?? "zbierka"}`, text: o.text ?? "", cas: relCas(Date.parse(o.datum)), nove: !o.precitane };
+  });
+}
 
 /*
   ============================================================
@@ -46,7 +61,11 @@ export function Zvoncek({ color = "#C4CCDB", toast }: { color?: string; toast?: 
   const [otvor, setOtvor] = useState(false);
   const [view, setView] = useState<"zoznam" | "nastavenia">("zoznam");
   const [precitane, setPrecitane] = useState(false);
-  const neprecitane = precitane ? 0 : NOTIFY.filter((n) => n.nove).length;
+  const oznamy = useOznamyDarcom();
+  const [detail, setDetail] = useState<OznamDarcovi | null>(null);
+  const neprecitane = (precitane ? 0 : NOTIFY.filter((n) => n.nove).length) + oznamy.filter((o) => !o.precitane).length;
+  const otvorOznam = (o: OznamDarcovi) => { oznacPrecitany(o.id); setOtvor(false); setDetail(o); };
+  const precitajVsetko = () => { setPrecitane(true); oznacVsetkyPrecitane(); };
 
   // Escape zatvorí overlay (klávesnica) — custom overlay nemá Vaul focus-trap
   useEffect(() => {
@@ -88,14 +107,14 @@ export function Zvoncek({ color = "#C4CCDB", toast }: { color?: string; toast?: 
         {desktop ? (
           <div style={{ display: "flex", gap: SPACE.md, flex: "1 1 auto", minHeight: 0 }}>
             <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", minHeight: 0 }}>
-              <Zoznam onClose={() => setOtvor(false)} onPrecitaj={() => setPrecitane(true)} toast={toast} hideSettings />
+              <Zoznam onClose={() => setOtvor(false)} onPrecitaj={precitajVsetko} onOznam={otvorOznam} toast={toast} hideSettings />
             </div>
             <div style={{ width: 330, flex: "0 0 330px", borderLeft: `1px solid ${C.line}`, paddingLeft: SPACE.md, display: "flex", flexDirection: "column", minHeight: 0 }}>
               <Nastavenia embedded />
             </div>
           </div>
         ) : view === "zoznam" ? (
-          <Zoznam onSettings={() => setView("nastavenia")} onClose={() => setOtvor(false)} onPrecitaj={() => setPrecitane(true)} toast={toast} />
+          <Zoznam onSettings={() => setView("nastavenia")} onClose={() => setOtvor(false)} onPrecitaj={precitajVsetko} onOznam={otvorOznam} toast={toast} />
         ) : (
           <Nastavenia onBack={() => setView("zoznam")} />
         )}
@@ -113,13 +132,16 @@ export function Zvoncek({ color = "#C4CCDB", toast }: { color?: string; toast?: 
       </span>
 
       {otvor && (portalEl ? createPortal(overlay, portalEl) : overlay)}
+      {detail && <OznamDarcoviSheet zbierkaId={detail.zbierkaId} typ={detail.typ} text={detail.text} onClose={() => setDetail(null)} />}
     </>
   );
 }
 
 // ---- ZOZNAM oznámení ----
-function Zoznam({ onSettings, onClose, onPrecitaj, toast, hideSettings }: { onSettings?: () => void; onClose?: () => void; onPrecitaj?: () => void; toast?: (msg: string) => void; hideSettings?: boolean }) {
-  const { data: NOTIFY = [], isLoading, isError, refetch } = useNotifikacie();
+function Zoznam({ onSettings, onClose, onPrecitaj, onOznam, toast, hideSettings }: { onSettings?: () => void; onClose?: () => void; onPrecitaj?: () => void; onOznam?: (o: OznamDarcovi) => void; toast?: (msg: string) => void; hideSettings?: boolean }) {
+  const { data: zakladne = [], isLoading, isError, refetch } = useNotifikacie();
+  const oznamy = useOznamyDarcom();
+  const NOTIFY = [...oznamyNaRiadky(oznamy), ...zakladne];
   const neprecitane = NOTIFY.filter((n) => n.nove).length;
   const listRef = useRef<HTMLDivElement>(null); // scroll kontajner pre virtualizáciu (rastúce dáta)
   return (
@@ -142,7 +164,7 @@ function Zoznam({ onSettings, onClose, onPrecitaj, toast, hideSettings }: { onSe
           <>
         <VirtualList items={NOTIFY} scrollRef={listRef} estimateSize={64} getKey={(n: Notifikacia) => n.id}
           renderItem={(n: Notifikacia) => (
-          <div key={n.id} {...pressable(() => toast?.(n.titul), n.titul)} style={{ display: "flex", alignItems: "flex-start", gap: SPACE.sm, padding: `${SPACE.sm}px ${SPACE.xs}px`, borderRadius: RADIUS.sm, cursor: "pointer", borderBottom: `1px solid ${C.line2}`, background: n.nove ? tint("var(--a-green)", .06) : "transparent" }}>
+          <div key={n.id} {...pressable(() => (n.id < 0 ? onOznam?.(oznamy[-n.id - 1]) : toast?.(n.titul)), n.titul)} style={{ display: "flex", alignItems: "flex-start", gap: SPACE.sm, padding: `${SPACE.sm}px ${SPACE.xs}px`, borderRadius: RADIUS.sm, cursor: "pointer", borderBottom: `1px solid ${C.line2}`, background: n.nove ? tint("var(--a-green)", .06) : "transparent" }}>
             <span style={{ width: 38, height: 38, borderRadius: RADIUS.sm, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 17, background: tint(n.col, .15), color: n.col }}>{n.ic}</span>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 13.5, fontWeight: 700, display: "flex", alignItems: "center", gap: SPACE.xs }}>

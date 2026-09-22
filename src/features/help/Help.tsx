@@ -142,7 +142,7 @@ export default function ModulHelp({ wide }: { wide?: boolean }) {
 
       {/* autorský Split QR po zverejnení — zdieľaj / vytlač / skenuj (§10 tri výstupy) */}
       {hotovyQr && (
-        <QrModal typ="rozdelenie" titul={`Split QR · ${hotovyQr.titul}`}
+        <QrModal odznak="D++" typ="rozdelenie" titul={`Split QR · ${hotovyQr.titul}`}
           popis="Tvoj autorský QR — platby sa rozdelia podľa zafixovaných %. Zdieľaj alebo vytlač."
           odkaz={hotovyQr.odkaz ?? "https://deed.good/split/demo"} split={hotovyQr.split}
           onClose={() => setHotovyQr(null)} toast={toast} />
@@ -429,6 +429,7 @@ function Detail({ z, onBack, onAutor }: { z: any; onBack: () => void; onAutor: (
           titul={`${jePonuka ? "QR na mieste" : "Donačný QR"} · ${z.nazov}`}
           popis={jePonuka ? "Ukáž pri odovzdaní pomoci — sken potvrdí skutok na mieste (proof-of-deed)" : "Sken → dar za 2 kliky · vytlač na leták alebo zdieľaj"}
           qrCiel={{ druh: "case", ref: String(z.id), modul: "help" }}
+          odznak="D+"
           onClose={() => setQr(false)} toast={toast} />
       )}
 

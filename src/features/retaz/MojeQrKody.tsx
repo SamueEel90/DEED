@@ -55,7 +55,7 @@ export function MojeQrKody({ onClose, toast }: { onClose?: () => void; toast?: (
     const split = [{ komu: celeMeno || "Ty", pct: Math.round(openQr.owner_podiel * 100) },
       ...openQr.ciele.map((c) => ({ komu: c.prijemca_text || "organizácia", pct: Math.round(c.podiel * 100) }))];
     return (
-      <QrModal typ="rozdelenie" titul={`QR · ${openQr.titul || "Príspevok"}`}
+      <QrModal odznak="D++" typ="rozdelenie" titul={`QR · ${openQr.titul || "Príspevok"}`}
         popis={`Odoslané organizáciám: ${Math.round(openQr.org_odoslane).toLocaleString("sk")} ${openQr.mena}`}
         odkaz={qrUrl("split", openQr.slug)} split={split} onClose={() => setOpenQr(null)} toast={toast} />
     );

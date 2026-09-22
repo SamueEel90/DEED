@@ -223,9 +223,8 @@ export const PANEL_CHARITA: PanelBlok[] = [
 // podľa cenníka „Cennik_urovne_charita_spolky" — ZADARMO · ZBIERKA (T1) · AKCIA (T2) · KAMPAŇ (T3)
 export const SPRAVA_CHARITA: SpravaItem[] = [
   // ZADARMO
-  { id: "zbierky", emoji: "🎯", nazov: "Zbierky — vytvoriť a spravovať", popis: "Krátka cieľová zbierka do 30 dní · 1 súbežná · QR na zdieľanie", tierMin: 0 },
+  { id: "zbierky", emoji: "🎯", nazov: "Zbierky — vytvoriť a spravovať", popis: "Zbierka na 30 dní · predĺžiť, topovať, ukončiť · dokladovanie použitia", tierMin: 0 },
   { id: "skutok", emoji: "✨", nazov: "Pridať skutok", popis: "Do feedu mesta — takto sme pomohli, fotky pred/po a doklady", tierMin: 0 },
-  { id: "dokladovanie", emoji: "🧾", nazov: "Dôkazy a správy k zbierkam", popis: "Doklady použitia financií — priebežne aj po ukončení", tierMin: 0, povinne: true },
   { id: "video", emoji: "🎬", nazov: "Mám talent — video", popis: "Video do 45 s s platobným modulom · 1 / mesiac, ďalšie 10 €", tierMin: 0 },
   { id: "darcovia", emoji: "💌", nazov: "Prehľad darcov a vyzbieraných súm", popis: "Zoznam darcov a hromadné poďakovanie", tierMin: 0 },
   { id: "vypis", emoji: "📄", nazov: "Ročný výpis činnosti", popis: "Podklad na výročnú schôdzu", tierMin: 0 },

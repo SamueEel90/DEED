@@ -1,12 +1,13 @@
 import { useState, useEffect, lazy, Suspense } from "react";
 import type { ReactNode } from "react";
 import QRCode from "qrcode";
-import { C, GRAD_ZELENY, SPACE, RADIUS } from "@/theme";
+import { C, SPACE, RADIUS } from "@/theme";
 import { tint } from "@/lib/ui";
 import { QR_TYPY, type QrCiel } from "@/lib/qr";
 import { zdielaj as zdielajLib, kopiruj as kopirujLib } from "@/lib/zdielanie";
 import { useQrStatic, useEventToken } from "@/data";
 import { Sheet } from "@/components/sheet";
+import { DeedQr, type DeedOdznak } from "@/components/deedqr";
 import { Lupa, IkonaDoska, IkonaUlozit, Zdielanie } from "@/components/icons";
 
 // skener (@zxing/browser) = vlastný chunk, načíta sa až pri otvorení kamery
@@ -35,7 +36,7 @@ export function QrVizual({ data = "deed", size = 132, fg = "#0B0C10" }: { data?:
   );
 }
 
-export function QrModal({ typ = "skutok", titul, popis, odkaz = "https://deed.app/s/120042", qrCiel, eventId, reazPct, prijemca, split, onClose, toast }: { typ?: string; titul?: ReactNode; popis?: ReactNode; odkaz?: string; qrCiel?: QrCiel | null; eventId?: string | null; reazPct?: number | null; prijemca?: ReactNode; split?: { komu: string; pct: number }[]; onClose?: () => void; toast?: (t: string) => void }) {
+export function QrModal({ typ = "skutok", titul, popis, odkaz = "https://deed.app/s/120042", qrCiel, eventId, reazPct, prijemca, split, odznak, retaz, suma, delenie, onClose, toast }: { odznak?: DeedOdznak; retaz?: boolean; suma?: string; delenie?: string; typ?: string; titul?: ReactNode; popis?: ReactNode; odkaz?: string; qrCiel?: QrCiel | null; eventId?: string | null; reazPct?: number | null; prijemca?: ReactNode; split?: { komu: string; pct: number }[]; onClose?: () => void; toast?: (t: string) => void }) {
   const meta = QR_TYPY[typ] || QR_TYPY.skutok;
   const rotujuci = meta.rot > 0;
   const [zb, setZb] = useState(meta.rot);     // zostávajúce sekundy do rotácie
@@ -54,6 +55,14 @@ export function QrModal({ typ = "skutok", titul, popis, odkaz = "https://deed.ap
     return () => clearInterval(t);
   }, [rotujuci, meta.rot]);
   const seed = realnyRot ? (token ?? odkazReal) : odkazReal + (rotujuci ? "·" + krok : "");
+
+  // DEED QR odznak: reťaz = split/reťaz tvorcu · delenie = koľko % a komu (bez vlastníka)
+  const jeRetaz = retaz ?? (typ === "rozdelenie" || reazPct != null);
+  const ciele = split && split.length > 1 ? split.slice(1) : (split ?? []);
+  const kratko = (t: string) => (t.length > 22 ? t.slice(0, 21) + "…" : t);
+  const delenieText = delenie ?? (ciele.length === 1 ? `${ciele[0].pct} % → ${kratko(ciele[0].komu)}`
+    : ciele.length > 1 ? `${ciele.reduce((a, c) => a + c.pct, 0)} % → ${kratko(ciele[0].komu)} +${ciele.length - 1}`
+    : reazPct != null && typeof prijemca === "string" ? `${reazPct} % → ${kratko(prijemca)}` : undefined);
 
   const kopiruj = () => { void kopirujLib(odkazReal, toast); };
   const zdielaj = () => { void zdielajLib({ titul: (titul as string) || "DEED", url: odkazReal }, toast); };
@@ -81,13 +90,7 @@ export function QrModal({ typ = "skutok", titul, popis, odkaz = "https://deed.ap
       {/* samotný QR */}
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: SPACE.sm, padding: `${SPACE.xs}px 0 ${SPACE.xxs}px` }}>
         <div style={{ position: "relative" }}>
-          <QrVizual data={seed} size={156} />
-          {reazPct != null && (
-            <span style={{ position: "absolute", top: -8, right: -8, fontSize: 10, fontWeight: 800, padding: `${SPACE.xxs}px ${SPACE.xs}px`, borderRadius: RADIUS.lg, background: GRAD_ZELENY, color: "#06281d", boxShadow: "0 4px 12px rgba(31,191,143,.4)" }}>D+R {reazPct}%</span>
-          )}
-          {reazPct == null && split && split.length > 0 && (
-            <span style={{ position: "absolute", top: -8, right: -8, fontSize: 10, fontWeight: 800, padding: `${SPACE.xxs}px ${SPACE.xs}px`, borderRadius: RADIUS.lg, background: GRAD_ZELENY, color: "#06281d", boxShadow: "0 4px 12px rgba(31,191,143,.4)" }}>SPLIT</span>
-          )}
+          <DeedQr data={seed} odznak={odznak ?? "D+"} retaz={jeRetaz} suma={suma} delenie={delenieText} size={260} />
         </div>
         {prijemca && <div style={{ fontSize: 12, color: C.textSec }}>{reazPct}% ide ďalej → <b style={{ color: C.text }}>{prijemca}</b></div>}
         {rotujuci ? (

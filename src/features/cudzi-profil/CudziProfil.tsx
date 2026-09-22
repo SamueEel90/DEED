@@ -18,6 +18,7 @@ import { qrUrl } from "@/lib/qr";
 import { zdielaj, aktualnaUrl } from "@/lib/zdielanie";
 import { STAVY } from "./mock";
 import { najdiOrg, type OrgKampan } from "./orgy";
+import { odznakZbierky } from "@/lib/zbierky";
 import { pridajDar, type VolbaDaru } from "@/lib/darcovia";
 import { usePouzivatel } from "@/lib/pouzivatel";
 import type { Kanal } from "@/types";
@@ -254,7 +255,7 @@ function KampanSheet({ k, org, toast, onClose }: { k: OrgKampan; org: string; to
           <ZoznamDarcov refId={darRef} celkom={ludia} />
         </div>
       </Sheet>
-      {qrKampan && <QrModal typ="platba" titul={`QR · ${k.nazov}`} popis={`${org}${k.lok ? ` · ${k.lok}` : ""}`}
+      {qrKampan && <QrModal odznak={odznakZbierky(k.id)} typ="platba" titul={`QR · ${k.nazov}`} popis={`${org}${k.lok ? ` · ${k.lok}` : ""}`}
         qrCiel={{ druh: "case", ref: String(k.id), modul: "charity" }} onClose={() => setQrKampan(false)} toast={toast} />}
       {platba && <PlatbaModal kanal={platba} komu={k.nazov} onClose={() => setPlatba(null)}
         onDone={(s: number, volba?: VolbaDaru) => {

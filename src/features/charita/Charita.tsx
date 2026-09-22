@@ -1,6 +1,7 @@
 import { useState, memo } from "react";
 import { SIRKA, C, SPACE, RADIUS } from "@/theme";
 import { Foto, Avatar, MiniFotky, ModulHlavicka, PlatobnyModul, PlatbaModal, RecurringSheet, SplitQrSheet, QrModal, HladanieModal, OblubeneHviezda, toast, useGaleria, useLayout, useScrollPamat, useStrankaAkcie, useTvorbaGate, Ticker, StatRiadok, FiltreStat, FeedStlpce, FeedGrid, FeedCard, KartaBadge, BackHeader, ProgresBox, obalSiroky, OkruhVyber, SegTabs, tint, Lupa, Zdielanie, IkonaVlajka, IkonaFoto, IkonaPlay, IkonaDoska, IkonaKriz, IkonaInstitucia, IkonaMoznosti, IkonaOdkaz, KontextMenu, Overene, FeedSkeleton, SkeletonRiadky, EmptyState, ErrorState, ScreenSwitch, SwipeBack, ZoznamDarcov, FormatovanyText } from "@/shared";
+import { odznakZbierky } from "@/lib/zbierky";
 import { pridajDar, type VolbaDaru } from "@/lib/darcovia";
 import { usePouzivatel } from "@/lib/pouzivatel";
 import { pripravFeed, FEED_CFG } from "@/lib/feed";
@@ -525,7 +526,7 @@ function CharitaDetail({ z: zProp, toast, onBack, onAutor }: { z?: ZbierkaDetail
       {recur && <RecurringSheet nazov={z.nazov} caseId={String(z.id)} onClose={() => setRecur(false)} toast={toast} />}
 
       {/* QR zbierky/akcie (§10) — sken → dar, kopírovať, zdieľať/tlačiť */}
-      {qr && <QrModal typ={jeZbierka ? "platba" : "skutok"} titul={`QR · ${z.nazov}`} popis={(pribeh || z.nazov).slice(0, 38)}
+      {qr && <QrModal odznak={odznakZbierky(z.id)} typ={jeZbierka ? "platba" : "skutok"} titul={`QR · ${z.nazov}`} popis={(pribeh || z.nazov).slice(0, 38)}
         qrCiel={{ druh: "case", ref: String(z.id ?? z.nazov), modul: "charity" }} onClose={() => setQr(false)} toast={toast} />}
 
       {/* split QR (influencer) — rozdelenie platby medzi príjemcov */}
