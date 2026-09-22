@@ -448,7 +448,7 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
             <Srdce size={14} filled={sledujem} color={sledujem ? "var(--a-green)" : "#fff"} /> {sledujem ? "Sledované" : "Sledovať"}
           </BtnAkcia>
           <BtnAkcia variant="secondary" onClick={zdielajProfil}><Zdielanie size={14} /> Zdieľať</BtnAkcia>
-          <BtnIkonka label="QR kód profilu" onClick={() => setQr(true)}><IkonaQr size={16} /></BtnIkonka>
+          <BtnIkonka label="QR kód profilu" text="QR" onClick={() => setQr(true)}><IkonaQr size={18} /></BtnIkonka>
           <BtnIkonka label={zvoncek ? "Vypnúť upozornenia" : "Zapnúť upozornenia"} aktivne={zvoncek} farba="var(--a-gold)"
             onClick={() => { setZvoncek((v) => !v); toast(zvoncek ? "Upozornenia vypnuté" : "Upozornenia zapnuté"); }}>
             <Zvon size={16} />

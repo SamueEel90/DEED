@@ -71,17 +71,23 @@ export function BtnAkcia({ variant = "secondary", onClick, children, ariaPressed
   return <button onClick={onClick} aria-pressed={ariaPressed} style={{ ...base, ...v, ...style }}>{children}</button>;
 }
 
-export function BtnIkonka({ onClick, label, aktivne, farba = "var(--a-info)", children }: {
-  onClick?: () => void; label: string; aktivne?: boolean; farba?: string; children?: ReactNode;
+export function BtnIkonka({ onClick, label, aktivne, farba = "var(--a-info)", text, children }: {
+  onClick?: () => void; label: string; aktivne?: boolean; farba?: string;
+  /** krátky popis vedľa ikony — samotná ikona nemusí byť každému jasná (napr. „QR“) */
+  text?: string;
+  children?: ReactNode;
 }) {
   return (
     <button onClick={onClick} aria-label={label} aria-pressed={aktivne} title={label}
-      style={{ width: 36, height: 38, flex: "0 0 auto", display: "inline-flex", alignItems: "center", justifyContent: "center",
+      style={{ width: text ? "auto" : 36, minWidth: text ? 72 : undefined, height: text ? 42 : 38, padding: text ? `0 ${SPACE.sm}px` : 0,
+        gap: text ? 6 : 0, flex: "0 0 auto", display: "inline-flex", alignItems: "center", justifyContent: "center",
+        fontSize: 13, fontWeight: 800,
         borderRadius: RADIUS.sm, cursor: "pointer", fontFamily: "inherit", position: "relative",
         background: aktivne ? tint(farba, .12) : C.surface2, border: `1px solid ${aktivne ? tint(farba, .4) : C.line}`,
         color: aktivne ? farba : C.textSec, transition: "background .15s ease, border-color .15s ease" }}>
       <Hmat o={4} />
       {children}
+      {text && <span>{text}</span>}
     </button>
   );
 }
