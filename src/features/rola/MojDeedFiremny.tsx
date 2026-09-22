@@ -208,6 +208,13 @@ function MojDeedFiremnyObsah({ onBack, toast, orgId }: { onBack: () => void; toa
         {(() => {
           // poradie: čo program má (obsah profilu, potom živé čísla) → zamknuté na spodku podľa programu
           const riadky: { k: string; tier: number; el: (posledna: boolean) => ReactNode }[] = [];
+          // poradie zhora: Centrálna zbierka (od T1) → Zbierky → Ukončené zbierky → ostatné
+          const centralnyBlok = pozicia === "charita" ? bloky.find((b) => b.id === "centralna" && tier >= b.tierMin) : undefined;
+          if (centralnyBlok) riadky.push({ k: "centralna", tier: -1, el: (posledna) => (
+            <MenuPolozka key="centralna" posledna={posledna} ikona={ikonaPre(centralnyBlok.id, centralnyBlok.emoji)} farba="var(--a-info)"
+              label={centralnyBlok.nazov} popis={nacitajCentralnu("charita") ? centralnyBlok.popis : "Zatiaľ nespustená · hotová za minútu"}
+              hodnota={centralnyBlok.hodnota} onClick={() => blokAkcia(centralnyBlok)} />
+          ) });
           // Video má vlastný nástroj v SPRÁVE (zoznam aj správa videí) — v prehľade by bol dvakrát
           verejneTaby(pozicia, tier).filter((t) => !(pozicia === "charita" && t.key === "video")).forEach((t) => {
             const blok = PANELY[pozicia].find((b) => b.id === BLOK_ZA_TAB[t.key]);
@@ -218,7 +225,7 @@ function MojDeedFiremnyObsah({ onBack, toast, orgId }: { onBack: () => void; toa
                 onClick={() => (blok ? blokAkcia(blok) : setPodstranka(true))} />
             ) });
           });
-          bloky.filter((b) => !Object.values(BLOK_ZA_TAB).includes(b.id) && tier >= b.tierMin).forEach((b) => {
+          bloky.filter((b) => !Object.values(BLOK_ZA_TAB).includes(b.id) && tier >= b.tierMin && b.id !== centralnyBlok?.id).forEach((b) => {
             riadky.push({ k: b.id, tier: -1, el: (posledna) => (
               <MenuPolozka key={b.id} posledna={posledna} ikona={ikonaPre(b.id, b.emoji)} farba="var(--a-info)"
                 label={b.nazov} popis={pozicia === "charita" && b.id === "dnes" ? <DnesPrislo />
