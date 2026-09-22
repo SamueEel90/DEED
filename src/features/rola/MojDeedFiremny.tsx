@@ -320,7 +320,7 @@ function MojDeedFiremnyObsah({ onBack, toast, orgId }: { onBack: () => void; toa
       {sheet === "darcovia" && <DarcoviaSheet tier={tier} toast={toast} onClose={() => setSheet(null)} />}
       {sheet === "qr" && <QrNastrojeSheet tier={tier} toast={toast} onClose={() => setSheet(null)} />}
       {sheet === "sumy" && <ViditelnostSheet toast={toast} onClose={() => setSheet(null)} />}
-      {sheet === "segment" && <SegmentySheet toast={toast} onClose={() => setSheet(null)} />}
+      {sheet === "segment" && <SegmentySheet tier={tier} toast={toast} onPaywall={setPaywall} onClose={() => setSheet(null)} />}
       {sheet === "terminal" && <TerminalSheet toast={toast} onClose={() => setSheet(null)} />}
       {sheet === "retaz" && <MojaRetaz onClose={() => setSheet(null)} toast={toast} />}
       {sheet === "profil" && (
