@@ -20,7 +20,11 @@ function otvor(): Promise<IDBDatabase> {
 export const jeVideo = (src?: string) => !!src && src.startsWith("idb:");
 
 /** skontroluje dĺžku/veľkosť, uloží a vráti odkaz „idb:…" */
-export async function ulozVideo(f: File): Promise<string> {
+export async function ulozVideo(f: File, maxSekund = VIDEO_CFG.maxSekund): Promise<string> {
+  return (await ulozVideoInfo(f, maxSekund)).ref;
+}
+/** ako ulozVideo, navyše vráti dĺžku v sekundách */
+export async function ulozVideoInfo(f: File, maxSekund = VIDEO_CFG.maxSekund): Promise<{ ref: string; sekundy: number }> {
   if (f.size > VIDEO_CFG.maxMB * 1024 * 1024) throw new Error(`Video má ${(f.size / 1024 / 1024).toFixed(0)} MB — limit je ${VIDEO_CFG.maxMB} MB.`);
   const dlzka = await new Promise<number>((ok) => {
     const v = document.createElement("video");
@@ -29,7 +33,7 @@ export async function ulozVideo(f: File): Promise<string> {
     v.onerror = () => ok(0);
     v.src = URL.createObjectURL(f);
   });
-  if (dlzka > VIDEO_CFG.maxSekund) throw new Error(`Video má ${Math.round(dlzka)} s — limit je ${VIDEO_CFG.maxSekund} s.`);
+  if (dlzka > maxSekund) throw new Error(`Video má ${Math.round(dlzka)} s — limit je ${maxSekund} s.`);
   const kluc = `v${Date.now()}`;
   const db = await otvor();
   await new Promise<void>((ok, zle) => {
@@ -38,7 +42,7 @@ export async function ulozVideo(f: File): Promise<string> {
     tx.oncomplete = () => ok();
     tx.onerror = () => zle(new Error("Video sa nepodarilo uložiť."));
   });
-  return `idb:${kluc}`;
+  return { ref: `idb:${kluc}`, sekundy: Math.round(dlzka) };
 }
 
 /** odkaz „idb:…" → URL na prehratie (null kým sa načítava / keď chýba) */

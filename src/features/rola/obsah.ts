@@ -5,7 +5,8 @@ import { sucetDarov } from "@/lib/darcovia";
 // ============================================================
 import { najdiZbierku } from "@/lib/zbierky";
 import { SUBJEKTY, type SubjektMeta } from "./mock";
-import { nacitajDoklady, type DokladZbierky, type Pozicia, type Tier } from "./stav";
+import { videaNaProfil } from "./videa";
+import { nacitajDoklady, nacitajViditelnost, type DokladZbierky, type Pozicia, type Tier } from "./stav";
 import type { OrgZbierka } from "./mock";
 
 export type Tab = SubjektMeta["taby"][number];
@@ -21,6 +22,7 @@ export function verejneTaby(pozicia: Pozicia, tier: Tier): Tab[] {
     .map((t) => ({ ...t, polozky: (
       t.key === "zbierky" ? t.polozky.filter((p) => !ukoncena(p))
       : t.key === "skutky" ? [...presunute, ...t.polozky]
+      : t.key === "video" && pozicia === "charita" ? videaNaProfil(tier)
       : t.polozky
     ).filter((p) => (p.odTieru ?? 0) <= tier) }));
 }
@@ -80,5 +82,8 @@ export function cislaSubjektu(pozicia: Pozicia, tier: Tier): [string, string][] 
   const ids = [...new Set(s.taby.flatMap((t) => t.polozky.map((p) => p.zbierkaId)).filter((id): id is string => !!id))];
   const vyzbierane = ids.reduce((a, id) => a + (najdiZbierku(id)?.vyzbierane ?? 0) + sucetDarov(id).suma, 0) + sucetDarov("z-centralna").suma;
   const skutky = verejneTaby(pozicia, tier).find((t) => t.key === "skutky")?.polozky.length ?? 0;
-  return zaklad.map(([h, l], i) => (i === 0 ? [`${vyzbierane.toLocaleString("sk", { maximumFractionDigits: 0 })} €`, l] : i === 1 ? [String(skutky), l] : [h, l]));
+  const prvy: [string, string] = nacitajViditelnost("charita").hlavicka
+    ? [`${vyzbierane.toLocaleString("sk", { maximumFractionDigits: 0 })} €`, zaklad[0][1]]
+    : [String(zbierkyOrg("charita", tier).length), "Zbierky"];
+  return zaklad.map(([h, l], i) => (i === 0 ? prvy : i === 1 ? [String(skutky), l] : [h, l]));
 }

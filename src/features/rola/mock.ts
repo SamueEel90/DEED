@@ -78,7 +78,7 @@ export interface SubjektMeta {
   /** taby verejného obsahu per rola (fixné poradie §3 bod 4).
    *  Položka viazaná na zbierku nesie `zbierkaId` — názov, fotka a suma sa ťahajú
    *  zo /lib/zbierky, takže na profile je to isté, čo v zbierke. */
-  taby: { key: string; label: string; odTieru?: Tier; polozky: { emoji: string; titul: string; popis: string; zbierkaId?: string; split?: number; odTieru?: Tier; dokaz?: Dokaz; dokazZbierky?: string; video?: { nahlad: string; dlzka: string; zbierkaId?: string } }[] }[];
+  taby: { key: string; label: string; odTieru?: Tier; polozky: { emoji: string; titul: string; popis: string; zbierkaId?: string; split?: number; odTieru?: Tier; dokaz?: Dokaz; dokazZbierky?: string; video?: { nahlad: string; dlzka: string; zbierkaId?: string; src?: string } }[] }[];
 }
 
 /** segmenty (témy), ktoré si charita nastavila v správe — darca ich vidí pri pravidelnej podpore (program AKCIA) */

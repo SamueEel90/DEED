@@ -20,8 +20,8 @@ import type { Kanal } from "@/types";
 import { SUBJEKTY, ZASLUZENA } from "./mock";
 import { segmentyCharity } from "./registracia";
 import { najdiZbierku, kryptoZbierky, odznakZbierky } from "@/lib/zbierky";
-import { DokazBlok } from "./DokazBlok";
-import { nacitajTerminal, nacitajKryptoOrg, nacitajCentralnu, nacitajSady, nacitajOnas, nacitajTvarLoga, nacitajZdrojAvatara, type Pozicia, type Tier } from "./stav";
+import { DokazBlok, MediaNahlad } from "./DokazBlok";
+import { nacitajViditelnost, nacitajTerminal, nacitajKryptoOrg, nacitajCentralnu, nacitajSady, nacitajOnas, nacitajTvarLoga, nacitajZdrojAvatara, type Pozicia, type Tier } from "./stav";
 import { OnasKratky } from "./OnasKratky";
 import { KontaktBlok, nacitajKontakt } from "./kontakt";
 import { verejneTaby, cislaSubjektu } from "./obsah";
@@ -129,7 +129,7 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
         oblubene={{ refId: `rola-${s.nazov}`, typ: pozicia, modul: "charity", nazov: s.nazov, lok: s.lok }} toast={toast}
         opakovana={maPravidelnu ? { popis: "Mesačne · len pre registrovaných · kedykoľvek zrušíš", onClick: () => setPravidelna({ id: "z-centralna", nazov: "Centrálna zbierka organizácie" }) } : undefined}
         qr={{ label: "QR tejto zbierky", popis: "Sken → dar za 2 kliky · zdieľanie", onClick: () => setQr(true) }} />
-      <ZoznamDarcov refId="z-centralna" celkom={centr.pocet} style={{ marginTop: SPACE.sm }} />
+      <ZoznamDarcov refId="z-centralna" celkom={centr.pocet} style={{ marginTop: SPACE.sm }} skrytSumy={pozicia === "charita" && !nacitajViditelnost("charita").sumyDarov} />
     </div>
   );
 
@@ -162,7 +162,8 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
                 {z ? <img src={z.foto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                   : p.video ? (
                     <span style={{ position: "relative", width: "100%", height: "100%", display: "block" }}>
-                      <img src={p.video.nahlad} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                      {p.video.src ? <MediaNahlad src={p.video.src} popis={p.titul} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                        : <img src={p.video.nahlad} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />}
                       <span style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,.28)", color: "#fff", fontSize: 16 }}>▶</span>
                     </span>
                   ) : p.emoji}
@@ -191,6 +192,11 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
             {/* rozbalené video — prehrávač + väzba na zbierku */}
             {otvorena && !z && p.video && (
               <div style={{ padding: `0 ${SPACE.sm}px ${SPACE.sm}px` }}>
+                {p.video.src ? (
+                  <div style={{ borderRadius: RADIUS.sm, overflow: "hidden", marginBottom: SPACE.sm }}>
+                    <MediaNahlad src={p.video.src} popis={p.titul} ovladanie style={{ width: "100%", aspectRatio: "16/9", objectFit: "contain", display: "block" }} />
+                  </div>
+                ) : (
                 <div {...pressable(() => toast(`▶ ${p.titul}`), "Prehrať video")}
                   style={{ position: "relative", borderRadius: RADIUS.sm, overflow: "hidden", cursor: "pointer", marginBottom: SPACE.sm }}>
                   <img src={p.video.nahlad} alt="" style={{ width: "100%", aspectRatio: "16/9", objectFit: "cover", display: "block" }} />
@@ -199,6 +205,7 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
                   </span>
                   <span style={{ position: "absolute", right: 8, bottom: 8, fontSize: 11.5, fontWeight: 700, color: "#fff", background: "rgba(0,0,0,.65)", borderRadius: RADIUS.xs, padding: "1px 6px" }}>{p.video.dlzka}</span>
                 </div>
+                )}
                 {p.video.zbierkaId && najdiZbierku(p.video.zbierkaId) && (
                   <div style={{ fontSize: 12.5, color: C.textSec, marginBottom: SPACE.xs }}>
                     Video k zbierke: <b style={{ color: C.text }}>{najdiZbierku(p.video.zbierkaId)!.nazov}</b>
@@ -299,7 +306,7 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
                     opakovana={maPravidelnu ? { popis: "Mesačne · len pre registrovaných · kedykoľvek zrušíš", onClick: () => setPravidelna({ id: z.id, nazov: z.nazov }) } : undefined}
                     qr={{ label: "QR tejto zbierky", popis: "Skenovať · kopírovať · zdieľať", onClick: () => setQrZbierka({ id: z.id, nazov: z.nazov }) }} />
                 ) : null}
-                {z.stav === "aktivna" && <ZoznamDarcov refId={z.id} celkom={z.darcovia} style={{ marginTop: SPACE.sm }} />}
+                {z.stav === "aktivna" && <ZoznamDarcov refId={z.id} celkom={z.darcovia} style={{ marginTop: SPACE.sm }} skrytSumy={pozicia === "charita" && !nacitajViditelnost("charita").sumyDarov} />}
                 {z.stav === "aktivna" ? null : (
                   <>
                     <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm, background: "var(--a-green)", color: "#fff", borderRadius: RADIUS.sm, padding: `${SPACE.sm}px ${SPACE.gutter}px`, marginBottom: SPACE.sm }}>

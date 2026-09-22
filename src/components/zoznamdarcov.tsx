@@ -21,9 +21,9 @@ import {
 } from "@/lib/darcovia";
 
 // ---- jeden riadok zoznamu ----
-function Riadok({ r, refId, prvy }: { r: DarRiadok; refId: string; prvy?: boolean }) {
+function Riadok({ r, refId, prvy, skrytSumy }: { r: DarRiadok; refId: string; prvy?: boolean; skrytSumy?: boolean }) {
   const ja = usePouzivatel();
-  const suma = zobrazenaSuma(r);
+  const suma = skrytSumy ? null : zobrazenaSuma(r);
   const mozeAnonym = !!r.moj && r.registrovany && r.verzia !== 4; // jednosmerné: len K anonymite
   return (
     <div style={{ display: "flex", alignItems: "baseline", gap: SPACE.xs, padding: `${SPACE.xs}px 0`, borderBottom: `1px solid ${C.line2}`, fontSize: 12.5, ...(prvy ? { animation: "fadeUp .3s ease" } : {}) }}>
@@ -44,8 +44,10 @@ function Riadok({ r, refId, prvy }: { r: DarRiadok; refId: string; prvy?: boolea
   );
 }
 
-export function ZoznamDarcov({ refId, celkom, style }: {
+export function ZoznamDarcov({ refId, celkom, style, skrytSumy }: {
   refId: string;
+  /** príjemca vypol sumy darov na svojom profile (Viditeľnosť súm) */
+  skrytSumy?: boolean;
   /** počítadlo „X ľudí pomohlo" — rovnaké číslo ako ProgresBox (jeden zdroj, spec §0.3) */
   celkom?: number;
   style?: CSSProperties;
@@ -61,7 +63,7 @@ export function ZoznamDarcov({ refId, celkom, style }: {
         DARCOVIA
         <span style={{ marginLeft: "auto", color: C.greenL, fontWeight: 700, fontSize: 10.5 }}>● rastie live</span>
       </div>
-      {kompakt.map((r, i) => <Riadok key={r.id} r={r} refId={refId} prvy={i === 0 && !r.id.includes("-seed-")} />)}
+      {kompakt.map((r, i) => <Riadok key={r.id} r={r} refId={refId} prvy={i === 0 && !r.id.includes("-seed-")} skrytSumy={skrytSumy} />)}
       <div {...pressable(() => setVsetci(true), "Zobraziť všetkých darcov")}
         style={{ position: "relative", textAlign: "center", fontSize: 12, fontWeight: 700, color: C.textSec, padding: `${SPACE.sm}px 0 ${SPACE.xxs}px`, cursor: "pointer" }}>
         Zobraziť všetkých ({n.toLocaleString("sk")})
@@ -72,7 +74,7 @@ export function ZoznamDarcov({ refId, celkom, style }: {
           <div style={{ fontSize: 15, fontWeight: 800, marginBottom: SPACE.xxs }}>Darcovia ({n.toLocaleString("sk")})</div>
           <div style={{ fontSize: 11, color: C.textTer, marginBottom: SPACE.sm }}>Chronologicky, najnovší hore. Identita aj suma sú voľbou darcu — default je Anonym.</div>
           <div style={{ maxHeight: "55vh", overflowY: "auto" }}>
-            {riadky.map((r) => <Riadok key={r.id} r={r} refId={refId} />)}
+            {riadky.map((r) => <Riadok key={r.id} r={r} refId={refId} skrytSumy={skrytSumy} />)}
           </div>
         </Sheet>
       )}

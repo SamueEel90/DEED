@@ -121,6 +121,9 @@ export function sucetDarov(refId: string): { suma: number; pocet: number } {
   return { suma: r.reduce((a, x) => a + x.suma, 0), pocet: r.length };
 }
 
+/** Dary pre zbierku bez hooku (prehľady v správe — reaktivitu dá useZmenyDarov). */
+export function darcoviaPre(refId: string): DarRiadok[] { return riadkyPre(refId); }
+
 /** Živý zoznam darov pre zbierku — chronologicky, najnovší hore. */
 export function useDarcovia(refId: string): DarRiadok[] {
   return useSyncExternalStore(subscribe, () => riadkyPre(refId));

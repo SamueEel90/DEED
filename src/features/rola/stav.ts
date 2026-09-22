@@ -136,3 +136,9 @@ export const ulozOnas = (p: Pozicia, html: string | null) => uloz(kluc(`onas.${p
 // ---- zbierky vytvorené v správe charity navyše k mocku (limit per tier §1.3) ----
 export const nacitajOrgExtra = (): OrgZbierka[] => nacitaj<OrgZbierka[]>(kluc("orgzbierky"), []);
 export const ulozOrgExtra = (z: OrgZbierka[]) => uloz(kluc("orgzbierky"), z);
+
+// ---- viditeľnosť súm na verejnom profile (charita, ZADARMO) ----
+// stav zbierok (progres) je vždy verejný — to je základ dôvery; voliteľné je len toto:
+export interface Viditelnost { hlavicka: boolean; sumyDarov: boolean }
+export const nacitajViditelnost = (p: Pozicia): Viditelnost => nacitaj(kluc(`viditelnost.${p}`), { hlavicka: true, sumyDarov: true });
+export const ulozViditelnost = (p: Pozicia, v: Viditelnost) => uloz(kluc(`viditelnost.${p}`), v);
