@@ -130,9 +130,12 @@ export function VolbaDarcovstva({ volba, onZmena, sumaEur }: {
       </div>
       <div style={{ display: "grid", gap: SPACE.xs, marginTop: SPACE.xs }}>
         {sumaEur >= DARCOVIA_CFG.prahSumy ? (
-          <label style={{ display: "flex", alignItems: "center", gap: SPACE.sm, fontSize: 11.5, color: C.textSec, cursor: "pointer" }}>
-            <Switch on={volba.zobrazSumu} onChange={(v) => onZmena({ ...volba, zobrazSumu: v })} ariaLabel="Zobraziť sumu" />
-            Zobraziť aj sumu daru
+          <label style={{ display: "flex", alignItems: "center", gap: SPACE.sm, cursor: "pointer", background: tint(C.green, volba.zobrazSumu ? .12 : .06), border: `1px solid ${tint(C.green, volba.zobrazSumu ? .45 : .25)}`, borderRadius: RADIUS.sm, padding: `${SPACE.xs}px ${SPACE.sm}px` }}>
+            <Switch on={volba.zobrazSumu} onChange={(v) => onZmena({ ...volba, zobrazSumu: v })} ariaLabel="Zobraziť sumu daru" />
+            <span style={{ minWidth: 0 }}>
+              <span style={{ display: "block", fontSize: 13.5, fontWeight: 800, color: volba.zobrazSumu ? C.green : C.text }}>Zobraziť sumu daru</span>
+              <span style={{ display: "block", fontSize: 11, color: C.textTer }}>{volba.zobrazSumu ? "V zozname darcov bude pri tebe aj suma." : "V zozname darcov bude len „daroval“, bez sumy."}</span>
+            </span>
           </label>
         ) : podPrahom ? (
           <div style={{ fontSize: 10.5, color: C.textTer }}>Dar pod {DARCOVIA_CFG.prahSumy} € sa zobrazuje bez sumy — vždy len „daroval".</div>
