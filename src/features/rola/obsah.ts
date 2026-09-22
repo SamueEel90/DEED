@@ -13,18 +13,28 @@ export type Tab = SubjektMeta["taby"][number];
 
 const ukoncena = (p: { zbierkaId?: string }) => !!p.zbierkaId && najdiZbierku(p.zbierkaId)?.stav === "ukoncena";
 
-/** Záložky verejného profilu pre daný program: len čo program má; ukončené zbierky sú v Skutkoch. */
+/** Záložky verejného profilu pre daný program: len čo program má.
+ *  Ukončená zbierka NIE JE skutok — má vlastnú záložku Ukončené (história a dokladovanie).
+ *  Skutok = čo organizácia urobila nad rámec svojej činnosti. */
 export function verejneTaby(pozicia: Pozicia, tier: Tier): Tab[] {
   const s = SUBJEKTY[pozicia];
-  const presunute = s.taby.find((t) => t.key === "zbierky")?.polozky.filter(ukoncena) ?? [];
-  return s.taby
+  // ukončené zbierky pozbierame zo všetkých záložiek (bez duplicít) a dáme im vlastnú
+  const ukoncene = s.taby
+    .filter((t) => (t.odTieru ?? 0) <= tier)
+    .flatMap((t) => t.polozky)
+    .filter((p) => ukoncena(p) && (p.odTieru ?? 0) <= tier && !p.video)
+    .filter((p, i, a) => a.findIndex((x) => x.zbierkaId === p.zbierkaId) === i);
+  const jeUkoncena = (p: Tab["polozky"][number]) => ukoncene.some((u) => u === p);
+  const taby = s.taby
     .filter((t) => (t.odTieru ?? 0) <= tier)
     .map((t) => ({ ...t, polozky: (
-      t.key === "zbierky" ? t.polozky.filter((p) => !ukoncena(p))
-      : t.key === "skutky" ? [...presunute, ...t.polozky]
-      : t.key === "video" && pozicia === "charita" ? videaNaProfil(tier)
-      : t.polozky
+      t.key === "video" && pozicia === "charita" ? videaNaProfil(tier) : t.polozky.filter((p) => !jeUkoncena(p))
     ).filter((p) => (p.odTieru ?? 0) <= tier) }));
+  if (!ukoncene.length) return taby;
+  // Ukončené hneď za Zbierkami
+  const i = taby.findIndex((t) => t.key === "zbierky");
+  const ukoncenyTab = { key: "ukoncene", label: "Ukončené", polozky: ukoncene } as Tab;
+  return [...taby.slice(0, i + 1), ukoncenyTab, ...taby.slice(i + 1)];
 }
 
 /** Záložky, ktoré program ešte nemá, ale sú najviac 2 programy nad ním (v správe zamknuté). */
@@ -41,6 +51,11 @@ export function popisTabu(t: Tab): string {
     const ciel = z.reduce((a, x) => a + (x?.ciel ?? 0), 0);
     return `${n} ${n === 1 ? "aktívna" : n < 5 ? "aktívne" : "aktívnych"} · ${spolu.toLocaleString("sk")} € z ${ciel.toLocaleString("sk")} €`;
   }
+  if (t.key === "ukoncene") {
+    const z = t.polozky.map((p) => (p.zbierkaId ? najdiZbierku(p.zbierkaId) : undefined)).filter(Boolean);
+    const dolozene = z.filter((x) => x?.dokaz).length;
+    return `${n} ukončené · ${dolozene} doložené, ${n - dolozene} čaká na doklady`;
+  }
   if (t.key === "skutky") {
     const dolozene = t.polozky.filter((p) => p.dokaz || p.dokazZbierky || (p.zbierkaId && najdiZbierku(p.zbierkaId)?.dokaz)).length;
     return `${n} na profile · ${dolozene} doložené fotkami a dokladmi`;
@@ -50,7 +65,7 @@ export function popisTabu(t: Tab): string {
 }
 
 /** panelové bloky, ktoré kopírujú záložku verejného profilu — v prehľade by boli dvakrát */
-export const BLOK_ZA_TAB: Record<string, string> = { zbierky: "zbierky", retaz: "retaz", darovali: "sponzoring" };
+export const BLOK_ZA_TAB: Record<string, string> = { zbierky: "zbierky", ukoncene: "zbierky", retaz: "retaz", darovali: "sponzoring" };
 
 // ---------- zbierky organizácie v správe = tie isté ako na verejnom profile ----------
 
