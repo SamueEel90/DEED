@@ -198,3 +198,10 @@ export interface OdkazNaZbierku {
    *  bežne 50 aj 70 %, pokojne aj celý honorár. Zdieľanie sa odmeňuje. */
   split?: number;
 }
+
+/** DEED QR odznak zbierky: D+ = zbiera pre seba · D++ = zbiera pre niekoho iného
+ *  (napr. charita pre pani Annu). Neznáma zbierka → D+. */
+export function odznakZbierky(id?: string | null): "D+" | "D++" {
+  const z = id ? ZBIERKY.find((x) => x.id === id) : undefined;
+  return z && z.komu.trim() !== z.ziadatel.meno.trim() ? "D++" : "D+";
+}

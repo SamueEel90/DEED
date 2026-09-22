@@ -687,7 +687,7 @@ function VieraDetail({ z, farar, onBack, onProfil }: { z: VieraFeedItem; farar: 
 
       {platba && <PlatbaModal kanal={platba} komu={z.nazov || ""} onClose={() => setPlatba(null)} onDone={platbaHotova} />}
       {/* QR zbierky (§10) — sken otvorí darovanie, dá sa vytlačiť aj zdieľať */}
-      {qr && <QrModal odznak="D++" typ="platba" titul={`QR · ${z.nazov ?? "Zbierka"}`} popis={(z.komunita || z.cirkev || "").slice(0, 38)}
+      {qr && <QrModal typ="platba" titul={`QR · ${z.nazov ?? "Zbierka"}`} popis={(z.komunita || z.cirkev || "").slice(0, 38)}
         qrCiel={{ druh: "case", ref: String(z.id), modul: "nabozenstvo" }} onClose={() => setQr(false)} toast={toast} />}
       {split && <SplitQrSheet titul={z.nazov || "Zbierka"} caseId={null} zdroj="autor"
         variant={farskySplitVariant(z.ukat === "svadba" ? "svadba" : "pohreb")}

@@ -19,7 +19,7 @@ import { zdielaj, aktualnaUrl } from "@/lib/zdielanie";
 import type { Kanal } from "@/types";
 import { SUBJEKTY, ZASLUZENA } from "./mock";
 import { segmentyCharity } from "./registracia";
-import { najdiZbierku, kryptoZbierky, type Dokaz } from "@/lib/zbierky";
+import { najdiZbierku, kryptoZbierky, odznakZbierky, type Dokaz } from "@/lib/zbierky";
 import { nacitajTerminal, nacitajKryptoOrg, nacitajCentralnu, nacitajSady, nacitajOnas, nacitajTvarLoga, nacitajZdrojAvatara, type Pozicia, type Tier } from "./stav";
 import { OnasKratky } from "./OnasKratky";
 import { KontaktBlok, nacitajKontakt } from "./kontakt";
@@ -462,9 +462,9 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
         // pravidelná podpora je od T1 celá: zbierka → táto zbierka / segment / celá charita,
         // centrálna zbierka → segment / celá organizácia
         segmenty={segmentyCharity()} onClose={() => setPravidelna(null)} toast={toast} />}
-      {qrZbierka && <QrModal odznak={pozicia === "tvorca" ? "D+" : "D++"} typ="skutok" titul={`QR — ${qrZbierka.nazov}`} popis="Sken otvorí túto zbierku — daj ho na web, do správy alebo na plagát"
+      {qrZbierka && <QrModal odznak={odznakZbierky(qrZbierka.id)} typ="skutok" titul={`QR — ${qrZbierka.nazov}`} popis="Sken otvorí túto zbierku — daj ho na web, do správy alebo na plagát"
         odkaz={qrUrl("case", qrZbierka.id)} onClose={() => setQrZbierka(null)} toast={toast} />}
-      {qr && <QrModal odznak={pozicia === "tvorca" ? "D+" : "D++"} typ="skutok" titul={`QR — ${s.nazov}`} popis="Profil subjektu — QR aj embed odznak na vlastný web"
+      {qr && <QrModal typ="skutok" titul={`QR — ${s.nazov}`} popis="Profil subjektu — QR aj embed odznak na vlastný web"
         odkaz={qrUrl("handle", s.nazov.toLowerCase().replace(/[^a-z0-9]+/g, "-"))} onClose={() => setQr(false)} toast={toast} />}
     </div>
   );
