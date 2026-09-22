@@ -310,16 +310,16 @@ export function SegmentySheet({ toast, onClose }: { toast: (m: string) => void; 
   const zmen = (id: string, patch: Partial<SegmentOrg>) => ulozSegmenty(segmenty.map((x) => (x.id === id ? { ...x, ...patch } : x)));
   const pridaj = () => {
     const n = novy.trim();
-    if (n.length < 3) { toast("Napíš názov segmentu"); return; }
-    if (segmenty.some((x) => x.nazov.toLowerCase() === n.toLowerCase())) { toast("Taký segment už máš"); return; }
+    if (n.length < 3) { toast("Napíš názov sektora"); return; }
+    if (segmenty.some((x) => x.nazov.toLowerCase() === n.toLowerCase())) { toast("Taký sektor už máš"); return; }
     ulozSegmenty([...segmenty, { id: `s${Date.now()}`, nazov: n, popis: "", aktivny: true }]);
-    setNovy(""); toast("Segment pridaný");
+    setNovy(""); toast("Sektor činnosti pridaný");
   };
-  const zmaz = (s2: SegmentOrg) => { ulozSegmenty(segmenty.filter((x) => x.id !== s2.id)); toast("Segment odstránený"); };
+  const zmaz = (s2: SegmentOrg) => { ulozSegmenty(segmenty.filter((x) => x.id !== s2.id)); toast("Sektor činnosti odstránený"); };
 
   return (
-    <Sheet onClose={onClose} label="Segmenty pre darcov">
-      <Hlavicka nadpis="Segmenty pre darcov" popis="Témy, ktoré si darca vyberie pri pravidelnej podpore, keď nechce podporiť jednu zbierku, ale celú oblasť vašej práce. Základ je z registrácie." />
+    <Sheet onClose={onClose} label="Sektory činnosti">
+      <Hlavicka nadpis="Sektory činnosti" popis="Oblasti vašej práce, ktoré si darca vyberie pri pravidelnej podpore, keď nechce podporiť jednu zbierku. Základ je z registrácie." />
 
       {segmenty.map((sg) => (
         <div key={sg.id} style={karta}>
@@ -339,7 +339,7 @@ export function SegmentySheet({ toast, onClose }: { toast: (m: string) => void; 
       ))}
 
       <div style={{ ...karta, borderStyle: "dashed" }}>
-        <div style={{ fontSize: 13.5, fontWeight: 800, marginBottom: SPACE.xxs }}>Pridať vlastný segment</div>
+        <div style={{ fontSize: 13.5, fontWeight: 800, marginBottom: SPACE.xxs }}>Pridať vlastný sektor</div>
         <div style={{ display: "flex", gap: SPACE.xs }}>
           <input value={novy} onChange={(e) => setNovy(e.target.value)} placeholder="Napr. Seniori · rozvoz obedov" style={{ ...input, flex: 1 }} />
           <button onClick={pridaj} style={{ ...btnHlavny, width: 110, height: 42 }}>Pridať</button>
@@ -356,7 +356,7 @@ export function SegmentySheet({ toast, onClose }: { toast: (m: string) => void; 
           ))}
           <span style={{ fontSize: 11.5, fontWeight: 700, padding: `${SPACE.xxs}px ${SPACE.xs}px`, borderRadius: RADIUS.pill, background: C.surface, border: `1px solid ${C.line}`, color: C.textSec }}>Celú organizáciu</span>
         </div>
-        {!aktivne.length && <div style={{ fontSize: 11.5, color: C.textTer, marginTop: SPACE.xs }}>Žiadny zapnutý segment — darca si bude vyberať len zbierku alebo celú organizáciu.</div>}
+        {!aktivne.length && <div style={{ fontSize: 11.5, color: C.textTer, marginTop: SPACE.xs }}>Žiadny zapnutý sektor — darca si bude vyberať len zbierku alebo celú organizáciu.</div>}
       </div>
     </Sheet>
   );

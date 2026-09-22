@@ -62,7 +62,7 @@ export interface BalikVolba {
 // KROK 8 — Balíky
 export const BALIKY: BalikVolba[] = [
   { plan: "FREE", emoji: "🆓", title: "FREE — 0 €", desc: "Overenie + profil + 10 sektorov + základný badge." },
-  { plan: "BASIC", emoji: "⭐", title: "BASIC — 400 €", desc: "Pod-segmenty, výzvy pre dobrovoľníkov, väčšia viditeľnosť." },
+  { plan: "BASIC", emoji: "⭐", title: "BASIC — 400 €", desc: "Podsektory, výzvy pre dobrovoľníkov, väčšia viditeľnosť." },
   { plan: "PRO", emoji: "🚀", title: "PRO — 1 500 €", desc: "Pobočky, rozšírené funkcie a dosah." },
   { plan: "ENTERPRISE", emoji: "🏛️", title: "ENTERPRISE — 2 990 €", desc: "Plný balík pre veľké organizácie." },
 ];

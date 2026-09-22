@@ -26,7 +26,7 @@ export function CentralnaZbierkaSheet({ toast, onClose }: { toast: (m: string) =
   const pridaj = () => {
     const t = novy.trim();
     if (!t) return;
-    if (vsetky.some((x) => x.toLowerCase() === t.toLowerCase())) { toast("Tento segment už v zozname je"); return; }
+    if (vsetky.some((x) => x.toLowerCase() === t.toLowerCase())) { toast("Tento sektor už v zozname je"); return; }
     setVlastne((v) => [...v, t]);
     setVybrane((v) => [...v, t]);
     setNovy("");
@@ -63,7 +63,7 @@ export function CentralnaZbierkaSheet({ toast, onClose }: { toast: (m: string) =
           sumyEur={SADY_EUR[sady.eur].sumy} sumyEurc={SADY_EURC[sady.eurc].sumy}
           onShare={() => undefined} upvotes={0} onUpvote={() => undefined}
           onPodpor={() => undefined} onKanal={() => undefined} toast={() => undefined}
-          opakovana={{ popis: "Segment alebo celá organizácia · len pre registrovaných", onClick: () => undefined }} />
+          opakovana={{ popis: "Sektor činnosti alebo celá organizácia · len pre registrovaných", onClick: () => undefined }} />
       </div>
 
       {nadpis("RÝCHLE SUMY — EURÁ")}
@@ -113,7 +113,7 @@ export function CentralnaZbierkaSheet({ toast, onClose }: { toast: (m: string) =
       {/* doplniť ďalší segment vlastným textom */}
       <div style={{ display: "flex", gap: SPACE.xs, marginTop: SPACE.xs }}>
         <input value={novy} onChange={(e) => setNovy(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") pridaj(); }}
-          placeholder="Doplniť segment, napr. Sociálne · výdajňa potravín" maxLength={60}
+          placeholder="Doplniť sektor činnosti, napr. Sociálne · výdajňa potravín" maxLength={60}
           style={{ flex: 1, minWidth: 0, height: 38, padding: `0 ${SPACE.sm}px`, borderRadius: RADIUS.sm, border: `1px solid ${C.line}`, background: "rgba(var(--glass-rgb),.05)", color: C.text, fontSize: 14, fontFamily: "inherit", outline: "none" }} />
         <button type="button" onClick={pridaj} disabled={!novy.trim()}
           style={{ flex: "none", height: 38, padding: `0 ${SPACE.sm}px`, borderRadius: RADIUS.sm, border: "none", fontFamily: "inherit", fontWeight: 700, fontSize: 13,
@@ -122,7 +122,7 @@ export function CentralnaZbierkaSheet({ toast, onClose }: { toast: (m: string) =
         </button>
       </div>
       <div style={{ background: "rgba(var(--glass-rgb),.06)", border: `1px solid ${C.line}`, borderRadius: RADIUS.sm, padding: SPACE.sm, marginTop: SPACE.xs, fontSize: 12.5, lineHeight: 1.5, color: C.text }}>
-        <b>Upozornenie:</b> segment, na ktorý nemáte oprávnenie, považujeme za pokus o podvod. Pri zistení môžete byť v aplikácii zablokovaní, aj dlhodobo.
+        <b>Upozornenie:</b> sektor činnosti, na ktorý nemáte oprávnenie, považujeme za pokus o podvod. Pri zistení môžete byť v aplikácii zablokovaní, aj dlhodobo.
       </div>
       <label style={{ display: "flex", alignItems: "flex-start", gap: SPACE.sm, marginTop: SPACE.sm, fontSize: 13, cursor: "pointer" }}>
         <input type="checkbox" checked={potvrdene} onChange={(e) => setPotvrdene(e.target.checked)} style={{ width: 18, height: 18, marginTop: 1, accentColor: "var(--a-green)" }} />

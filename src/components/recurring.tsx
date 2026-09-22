@@ -44,7 +44,7 @@ export function RecurringSheet({ nazov, caseId, charitaUcet, segmenty, bezCelej 
     ...(caseId ? [{ id: "request" as const, t: "Táto zbierka", d: "Skončí, keď zbierka skončí — okamžite a s notifikáciou.",
       kontrola: "K tejto zbierke budú doložené doklady o použití.", farba: "var(--a-green)" }] : []),
     ...(segmenty === null ? [] : [
-      { id: "segment" as const, t: "Segment (téma)", d: "Charita rozdelí peniaze v rámci témy podľa vlastného kľúča.",
+      { id: "segment" as const, t: "Sektor činnosti", d: "Charita rozdelí peniaze v rámci témy podľa vlastného kľúča.",
         kontrola: "Doklady budeme požadovať za celú tému, nezaručujeme však, že pokryjú práve váš dar.", farba: "var(--a-green)" },
     ]),
     ...(bezCelej ? [] : [
@@ -128,8 +128,8 @@ export function RecurringSheet({ nazov, caseId, charitaUcet, segmenty, bezCelej 
         <div style={{ background: "rgba(var(--glass-rgb),.05)", border: `1px solid ${C.line}`, borderRadius: RADIUS.sm, padding: `${SPACE.sm}px ${SPACE.gutter}px` }}>
           <Riadok k="Suma" v={`${suma} ${mena}`} />
           <Riadok k="Perióda" v={`každý ${periodaTxt(perioda)}`} />
-          <Riadok k="Cieľ" v={rozsah === "segment" && segment ? `Segment — ${segment}` : volby.find((x) => x.id === rozsah)?.t} />
-          <Riadok k="Dokladovanie" v={<span style={{ color: volby.find((x) => x.id === rozsah)?.farba }}>{rozsah === "request" ? "doklady k zbierke" : rozsah === "segment" ? "doklady za tému" : "bez kontroly"}</span>} />
+          <Riadok k="Cieľ" v={rozsah === "segment" && segment ? `Sektor činnosti — ${segment}` : volby.find((x) => x.id === rozsah)?.t} />
+          <Riadok k="Dokladovanie" v={<span style={{ color: volby.find((x) => x.id === rozsah)?.farba }}>{rozsah === "request" ? "doklady k zbierke" : rozsah === "segment" ? "doklady za sektor" : "bez kontroly"}</span>} />
           {rozsah === "request" && <Riadok k="Pozn." v="zastaví sa pri ukončení zbierky" />}
         </div>
         <div style={{ fontSize: 11.5, color: C.textTer, marginTop: SPACE.sm, lineHeight: 1.5 }}>
