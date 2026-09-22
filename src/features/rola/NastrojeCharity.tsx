@@ -73,7 +73,7 @@ export function VideoSheet({ tier, toast, onClose }: { tier: Tier; toast: (m: st
     if (!nove) { toast("Najprv vyber video"); return; }
     if (!titul.trim()) { toast("Napíš názov videa"); return; }
     if (zaplatene && !platit) { setPlatit(true); return; }
-    const dlzka = `${Math.floor(nove.sekundy / 60)}:${String(nove.sekundy % 60).padStart(2, "0")}`;
+    const dlzka = nove.sekundy > 0 ? `${Math.floor(nove.sekundy / 60)}:${String(nove.sekundy % 60).padStart(2, "0")}` : "video";
     const v: VideoOrg = { id: `v${Date.now()}`, titul: titul.trim(), popis: zbierkaId ? "k zbierke" : "video organizácie", src: nove.ref, dlzka, zbierkaId: zbierkaId || undefined, datum: new Date().toISOString(), naProfile: true };
     // v ZADARMO je na profile 1 video → nové ide navrch, staršie ostávajú v správe
     ulozVidea([v, ...videa.map((x) => (naProfileMax <= 1 ? { ...x, naProfile: false } : x))]);
@@ -140,19 +140,21 @@ export function DarcoviaSheet({ tier, toast, onClose }: { tier: Tier; toast: (m:
   useZmenyDarov();
   const ja = usePouzivatel();
   const zbierky = zbierkyNastroje(tier);
+  // z.vyzbierane / z.darcovia = história pred ukážkou (bez mien) + dary cez DEED
   const riadky = zbierky.map((z) => ({ z, dary: darcoviaPre(z.id) }));
-  const spolu = riadky.reduce((a, r) => a + r.dary.reduce((b, d) => b + d.suma, 0), 0);
-  const pocetDarov = riadky.reduce((a, r) => a + r.dary.length, 0);
+  const sumaZbierky = (r: typeof riadky[number]) => r.z.vyzbierane + r.dary.reduce((b, d) => b + d.suma, 0);
+  const spolu = riadky.reduce((a, r) => a + sumaZbierky(r), 0);
+  const pocetDarov = riadky.reduce((a, r) => a + r.z.darcovia + r.dary.length, 0);
   const [otvorena, setOtvorena] = useState<string | null>(null);
   const [komu, setKomu] = useState<string>("vsetci");
   const [text, setText] = useState("");
 
   const podakuj = () => {
     if (text.trim().length < 10) { toast("Napíš aspoň krátku vetu poďakovania"); return; }
-    const ciele = riadky.filter((r) => r.dary.length && (komu === "vsetci" || r.z.id === komu));
+    const ciele = riadky.filter((r) => (r.dary.length || r.z.darcovia) && (komu === "vsetci" || r.z.id === komu));
     if (!ciele.length) { toast("Zatiaľ tu nie sú darcovia, ktorým by prišlo poďakovanie"); return; }
     ciele.forEach((r) => pridajOznamDarcom({ zbierkaId: r.z.id, typ: "sprava", text: text.trim() }));
-    setText(""); toast(`Poďakovanie odoslané darcom (${ciele.reduce((a, r) => a + r.dary.length, 0)} darov) 🔔`);
+    setText(""); toast(`Poďakovanie odoslané darcom (${ciele.reduce((a, r) => a + r.dary.length + r.z.darcovia, 0)} darov) 🔔`);
   };
 
   return (
@@ -167,8 +169,10 @@ export function DarcoviaSheet({ tier, toast, onClose }: { tier: Tier; toast: (m:
         ))}
       </div>
 
-      {riadky.map(({ z, dary }) => {
-        const suma = dary.reduce((a, d) => a + d.suma, 0);
+      {riadky.map((r) => {
+        const { z, dary } = r;
+        const suma = sumaZbierky(r);
+        const n = z.darcovia + dary.length;
         const open = otvorena === z.id;
         return (
           <div key={z.id} style={karta}>
@@ -176,14 +180,15 @@ export function DarcoviaSheet({ tier, toast, onClose }: { tier: Tier; toast: (m:
               <span style={{ fontSize: 17 }}>{z.emoji}</span>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 13, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{z.nazov}</div>
-                <div style={{ fontSize: 10.5, color: C.textTer }}>{dary.length} {dary.length === 1 ? "dar" : dary.length < 5 && dary.length > 0 ? "dary" : "darov"}{z.stav === "ukoncena" ? " · ukončená" : ""}</div>
+                <div style={{ fontSize: 10.5, color: C.textTer }}>{n} {n === 1 ? "dar" : n < 5 && n > 0 ? "dary" : "darov"}{z.stav === "ukoncena" ? " · ukončená" : ""}</div>
               </div>
               <span style={{ flex: "none", fontSize: 13, fontWeight: 800, color: ZELENA }}>{eur(suma)}</span>
               <span style={{ color: C.textTer, transform: open ? "rotate(90deg)" : "none" }}>›</span>
             </div>
             {open && (
               <div style={{ marginTop: SPACE.xs }}>
-                {dary.length === 0 ? <div style={{ fontSize: 12, color: C.textTer, padding: `${SPACE.xs}px 0` }}>Zatiaľ bez darov.</div>
+                {z.darcovia > 0 && <div style={{ fontSize: 11.5, color: C.textTer, padding: `${SPACE.xxs}px 0` }}>{z.darcovia} starších darov ({eur(z.vyzbierane)}) — pred spustením v DEED, bez mien</div>}
+                {dary.length === 0 ? (z.darcovia ? null : <div style={{ fontSize: 12, color: C.textTer, padding: `${SPACE.xs}px 0` }}>Zatiaľ bez darov.</div>)
                   : dary.map((d) => (
                     <div key={d.id} style={{ display: "flex", alignItems: "baseline", gap: SPACE.xs, fontSize: 12.5, padding: `${SPACE.xxs}px 0`, borderTop: `1px solid ${C.line2}` }}>
                       <b style={{ fontWeight: 600, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{identitaDarcu(d, ja)}</b>
