@@ -208,7 +208,8 @@ function MojDeedFiremnyObsah({ onBack, toast, orgId }: { onBack: () => void; toa
         {(() => {
           // poradie: čo program má (obsah profilu, potom živé čísla) → zamknuté na spodku podľa programu
           const riadky: { k: string; tier: number; el: (posledna: boolean) => ReactNode }[] = [];
-          verejneTaby(pozicia, tier).forEach((t) => {
+          // Video má vlastný nástroj v SPRÁVE (zoznam aj správa videí) — v prehľade by bol dvakrát
+          verejneTaby(pozicia, tier).filter((t) => !(pozicia === "charita" && t.key === "video")).forEach((t) => {
             const blok = PANELY[pozicia].find((b) => b.id === BLOK_ZA_TAB[t.key]);
             riadky.push({ k: `tab-${t.key}`, tier: -1, el: (posledna) => (
               <MenuPolozka key={`tab-${t.key}`} posledna={posledna}
