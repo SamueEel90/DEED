@@ -144,6 +144,8 @@ export function pridajDar(vstup: { refId: string; suma: number; kanal: KanalDaru
 }
 
 /** Spätné prepnutie daru na Anonym — JEDNOSMERNÉ (k väčšej anonymite áno, opačne nie). */
+/** Spätné skrytie identity vlastného daru. V zozname darcov TLAČIDLO NIE JE —
+ *  darca si identitu volí v profile a pri platbe; v zozname sa dalo kliknúť omylom. */
 export function prepniNaAnonym(refId: string, id: string) {
   const nove = riadkyPre(refId).map((r) => (r.id === id ? { ...r, verzia: 4 as VerziaIdentity, zobrazSumu: false } : r));
   sklad.set(refId, nove);
