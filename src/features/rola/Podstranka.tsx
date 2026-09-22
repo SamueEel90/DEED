@@ -15,13 +15,15 @@ import { RecurringSheet } from "@/components/recurring";
 import { SADY_EUR, SADY_EURC } from "@/lib/sadyDarov";
 import { nastavCiste, sucetDarov, useZmenyDarov, pridajDar, type VolbaDaru } from "@/lib/darcovia";
 import { ZoznamDarcov } from "@/components/zoznamdarcov";
+import { NahladKarty } from "./KartaZbierky";
+import { nacitajProfil, useZmenyProfilov, CENTRALNA_ID } from "./vlastneZbierky";
 import { zdielaj, aktualnaUrl } from "@/lib/zdielanie";
 import type { Kanal } from "@/types";
 import { SUBJEKTY, ZASLUZENA } from "./mock";
 import { segmentyCharity } from "./registracia";
 import { najdiZbierku, kryptoZbierky, odznakZbierky } from "@/lib/zbierky";
 import { DokazBlok, MediaNahlad } from "./DokazBlok";
-import { nacitajViditelnost, nacitajTerminal, nacitajKryptoOrg, nacitajCentralnu, nacitajSady, nacitajOnas, nacitajTvarLoga, nacitajZdrojAvatara, type Pozicia, type Tier } from "./stav";
+import { nacitajViditelnost, nacitajTerminal, nacitajKryptoOrg, nacitajCentralnu, nacitajSady, nacitajOnas, nacitajTvarLoga, nacitajZdrojAvatara, nacitajLogo, type Pozicia, type Tier } from "./stav";
 import { OnasKratky } from "./OnasKratky";
 import { KontaktBlok, nacitajKontakt } from "./kontakt";
 import { verejneTaby, cislaSubjektu } from "./obsah";
@@ -90,7 +92,10 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
   const [platba, setPlatba] = useState<Kanal | null>(null);
   useZmenyDarov(); // prekreslí sumy po každom dare
   const registrovany = ja.typ !== "pasivny";
-  const centr = sucetDarov("z-centralna");
+  const centr = sucetDarov(CENTRALNA_ID);
+  useZmenyProfilov();
+  const logoOrg = nacitajLogo(pozicia) ?? s.foto;
+  const profilCentralnej = nacitajProfil(CENTRALNA_ID) ?? { nazov: `${s.nazov} — celá organizácia`, popis: "" };
   const [platbaRef, setPlatbaRef] = useState<{ id: string; komu: string } | null>(null);
   // zápis daru → zoznam darcov + súčty (registrovaný so zvoleným menom, inak anonym)
   const daruj = (refId: string, suma: number, kanal: "psp" | "sepa" | "deed", volba?: VolbaDaru, komu?: string) => {
@@ -118,7 +123,9 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
   const podporaBlok = pozicia === "charita" && tier >= 1 && nacitajCentralnu("charita") && (
     <div style={{ marginBottom: SPACE.gutter }}>
       <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".05em", color: C.textTer, marginBottom: SPACE.xs }}>CENTRÁLNA ZBIERKA ORGANIZÁCIE</div>
-      <div style={{ marginBottom: SPACE.sm }}><ProgresBox suma={centr.suma} ciel={12000} ludia={centr.pocet} /></div>
+      <div style={{ marginBottom: SPACE.sm }}>
+        <NahladKarty profil={profilCentralnej} logo={logoOrg} vyzbierane={centr.suma} dolozene={0} ludia={centr.pocet} />
+      </div>
       <PlatobnyModul zbalene krypto={kryptoOrg ? "EURC" : "nie"} {...sumy}
         onShare={zdielajProfil}
         upvotes={0} onUpvote={() => undefined}

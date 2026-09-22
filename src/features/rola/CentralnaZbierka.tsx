@@ -7,7 +7,8 @@ import { useState } from "react";
 import { C, SPACE, RADIUS } from "@/theme";
 import { Sheet } from "@/components/sheet";
 import { PlatobnyModul } from "@/components/platobnymodul";
-import { NahladKarty, KartaZbierkyForm, vstup } from "./KartaZbierky";
+import { KartaZbierkyForm, vstup } from "./KartaZbierky";
+import { MilnikBar } from "@/components/milnikbar";
 import { SUBJEKTY } from "./mock";
 import { segmentyZRegistracie, segmentyCharity, nastavSegmenty } from "./registracia";
 import { nacitajKryptoOrg, ulozKryptoOrg, nacitajCentralnu, ulozCentralnu, nacitajSady, ulozSady, nacitajIbanOrg, nacitajLogo } from "./stav";
@@ -67,8 +68,10 @@ export function CentralnaZbierkaSheet({ toast, onClose }: { toast: (m: string) =
       <div style={{ fontSize: 16, fontWeight: 800 }}>🚀 Centrálna zbierka organizácie</div>
       <div style={{ fontSize: 12, color: C.textTer, marginTop: 2 }}>Zbierka na vašu činnosť · údaje z registrácie · hotová za minútu</div>
 
-      {nadpis("KARTA ZBIERKY")}
-      <KartaZbierkyForm profil={profil} zmen={zmenProfil} logo={logo} toast={toast} deti={
+      {nadpis("KARTA ZBIERKY — TAKTO JU UVIDIA DARCOVIA")}
+      <KartaZbierkyForm profil={profil} zmen={zmenProfil} logo={logo} toast={toast}
+        bar={<MilnikBar vyzbierane={vyzbierane} dolozene={0} ludia={0} />}
+        deti={
         <div style={{ marginTop: SPACE.sm }}>
           <div style={{ fontSize: 11.5, fontWeight: 700, color: C.textSec, marginBottom: 2 }}>Účet zbierky (IBAN)</div>
           <input value={ibanOrg ? formatujIban(ibanOrg) : "— nie je v registrácii —"} readOnly
@@ -79,11 +82,10 @@ export function CentralnaZbierkaSheet({ toast, onClose }: { toast: (m: string) =
         </div>
       } />
 
-      {nadpis("TAKTO JU UVIDIA DARCOVIA")}
-      <NahladKarty profil={profil} logo={logo} vyzbierane={vyzbierane} dolozene={0} ludia={0} />
-      <div style={{ fontSize: 11, color: C.textTer, margin: `${SPACE.xxs}px 0 ${SPACE.xs}px`, lineHeight: 1.45 }}>
+      <div style={{ fontSize: 11, color: C.textTer, margin: `${SPACE.xs}px 0 ${SPACE.sm}px`, lineHeight: 1.45 }}>
         Centrálna zbierka nemá cieľovú sumu — beží od míľnika k míľniku. Po každých {VLASTNA_ZBIERKA_CFG.milnik.toLocaleString("sk")} € doložíte použitie do {VLASTNA_ZBIERKA_CFG.dniNaDolozenie} dní, inak značka ostane oranžová aj pre darcov.
       </div>
+      {nadpis("PLATOBNÝ MODUL")}
       <div style={{ background: C.surface2, border: `1px solid ${C.line}`, borderRadius: RADIUS.md, padding: SPACE.sm }}>
         <PlatobnyModul key={`${sady.eur}-${sady.eurc}`} zbalene kryptoOtvorene krypto={krypto ? "EURC" : "nie"}
           sumyEur={SADY_EUR[sady.eur].sumy} sumyEurc={SADY_EURC[sady.eurc].sumy}

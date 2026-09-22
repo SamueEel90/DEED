@@ -16,7 +16,7 @@ export const vstup: CSSProperties = {
   borderRadius: RADIUS.sm, padding: SPACE.sm, color: C.text, fontSize: 13.5, fontFamily: "inherit", outline: "none",
 };
 
-export function KartaZbierkyForm({ profil, zmen, logo, toast, deti }: {
+export function KartaZbierkyForm({ profil, zmen, logo, toast, deti, bar }: {
   profil: ProfilZbierky;
   zmen: (patch: Partial<ProfilZbierky>) => void;
   /** fallback obrázok, keď charita nedá vlastnú fotku (logo organizácie) */
@@ -24,6 +24,8 @@ export function KartaZbierkyForm({ profil, zmen, logo, toast, deti }: {
   toast: (m: string) => void;
   /** doplnkové polia (napr. IBAN sektora) */
   deti?: ReactNode;
+  /** míľnikový bar — karta je zároveň náhľadom, netreba ju ukazovať druhýkrát */
+  bar?: ReactNode;
 }) {
   const nahraj = async (files: FileList | null) => {
     const f = files?.[0]; if (!f) return;
@@ -38,10 +40,18 @@ export function KartaZbierkyForm({ profil, zmen, logo, toast, deti }: {
         {profil.foto || logo
           ? <img src={profil.foto || logo} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", opacity: profil.foto ? 1 : .55 }} />
           : <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", fontSize: 34 }}>💛</div>}
-        <label style={{ position: "absolute", right: SPACE.xs, bottom: SPACE.xs, fontSize: 11.5, fontWeight: 800, cursor: "pointer", background: "rgba(0,0,0,.6)", color: "#fff", borderRadius: RADIUS.pill, padding: `${SPACE.xxs}px ${SPACE.sm}px` }}>
-          {profil.foto ? "Zmeniť fotku" : "Pridať fotku"}
-          <input type="file" accept="image/*" hidden onChange={(e) => void nahraj(e.target.files)} />
-        </label>
+        <div style={{ position: "absolute", right: SPACE.xs, bottom: SPACE.xs, display: "flex", gap: SPACE.xxs }}>
+          {profil.foto && (
+            <button type="button" onClick={() => zmen({ foto: undefined })}
+              style={{ fontSize: 11.5, fontWeight: 800, cursor: "pointer", border: "none", fontFamily: "inherit", background: "rgba(0,0,0,.6)", color: "#fff", borderRadius: RADIUS.pill, padding: `${SPACE.xxs}px ${SPACE.sm}px` }}>
+              Odstrániť
+            </button>
+          )}
+          <label style={{ fontSize: 11.5, fontWeight: 800, cursor: "pointer", background: "rgba(0,0,0,.6)", color: "#fff", borderRadius: RADIUS.pill, padding: `${SPACE.xxs}px ${SPACE.sm}px` }}>
+            {profil.foto ? "Zmeniť fotku" : "Pridať fotku"}
+            <input type="file" accept="image/*" hidden onChange={(e) => void nahraj(e.target.files)} />
+          </label>
+        </div>
       </div>
       {!profil.foto && <div style={{ fontSize: 11, color: C.textTer, marginBottom: SPACE.xs }}>Bez fotky sa použije logo organizácie. Vlastná fotka z vašej práce chytí darcu viac.</div>}
 
@@ -53,6 +63,7 @@ export function KartaZbierkyForm({ profil, zmen, logo, toast, deti }: {
         style={{ ...vstup, resize: "vertical" }} />
       <div style={{ fontSize: 10.5, color: C.textTer, textAlign: "right", marginTop: 2 }}>{profil.popis.length} / 220</div>
 
+      {bar && <div style={{ marginTop: SPACE.sm }}>{bar}</div>}
       {deti}
     </>
   );
