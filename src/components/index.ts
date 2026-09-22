@@ -9,6 +9,7 @@ export * from "@/components/feedback";
 export * from "@/components/media";
 export * from "@/components/layout";
 export * from "@/components/qr";
+export * from "@/components/deedqr";
 export * from "@/components/splitconfig";
 export * from "@/components/splitqr";
 // qrskener (@zxing/browser, ~200kB) sa NEexportuje eagerly — QrModal ho lazy-loaduje

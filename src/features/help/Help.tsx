@@ -429,6 +429,7 @@ function Detail({ z, onBack, onAutor }: { z: any; onBack: () => void; onAutor: (
           titul={`${jePonuka ? "QR na mieste" : "Donačný QR"} · ${z.nazov}`}
           popis={jePonuka ? "Ukáž pri odovzdaní pomoci — sken potvrdí skutok na mieste (proof-of-deed)" : "Sken → dar za 2 kliky · vytlač na leták alebo zdieľaj"}
           qrCiel={{ druh: "case", ref: String(z.id), modul: "help" }}
+          odznak={jePonuka ? undefined : "D+"}
           onClose={() => setQr(false)} toast={toast} />
       )}
 
