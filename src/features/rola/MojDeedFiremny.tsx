@@ -32,7 +32,7 @@ import { SpravaZbierkySheet } from "./SpravaZbierky";
 import { ZBIERKY, predvolenyStav } from "@/lib/zbierky";
 import { nacitajStav, percentoDolozenia, fazaDokladovania, useZmenySpravy } from "@/lib/zbierkaSprava";
 import { KontaktBlok, nacitajKontakt, ulozKontakt } from "./kontakt";
-import { verejneTaby, zamknuteTaby, popisTabu, BLOK_ZA_TAB, zbierkyOrg } from "./obsah";
+import { verejneTaby, zamknuteTaby, popisTabu, BLOK_ZA_TAB, zbierkyOrg, cislaSubjektu } from "./obsah";
 
 /*
   ============================================================
@@ -189,7 +189,7 @@ function MojDeedFiremnyObsah({ onBack, toast, orgId }: { onBack: () => void; toa
           </div>
         }
         podMenom={<OnasKratky text={onas ?? subjekt.onas} />}
-        stats={(tier === 0 && subjekt.cislaZadarmo ? subjekt.cislaZadarmo : subjekt.cisla).map(([hodnota, label], i) => ({ hodnota, label, farba: i === 2 ? "var(--a-gold)" : undefined }))}
+        stats={cislaSubjektu(pozicia, tier).map(([hodnota, label], i) => ({ hodnota, label, farba: i === 2 ? "var(--a-gold)" : undefined }))}
         akcie={<>
           <BtnAkcia variant="secondary" onClick={() => setPodstranka(true)}>Verejný profil · DEV</BtnAkcia>
           <BtnAkcia variant="secondary" onClick={() => setSheet("profil")}><IkonaCeruzka size={14} /> Upraviť profil</BtnAkcia>

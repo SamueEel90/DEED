@@ -24,7 +24,7 @@ import { DokazBlok } from "./DokazBlok";
 import { nacitajTerminal, nacitajKryptoOrg, nacitajCentralnu, nacitajSady, nacitajOnas, nacitajTvarLoga, nacitajZdrojAvatara, type Pozicia, type Tier } from "./stav";
 import { OnasKratky } from "./OnasKratky";
 import { KontaktBlok, nacitajKontakt } from "./kontakt";
-import { verejneTaby } from "./obsah";
+import { verejneTaby, cislaSubjektu } from "./obsah";
 
 /*
   ============================================================
@@ -52,11 +52,6 @@ nastavCiste([
   ...Object.values(SUBJEKTY).flatMap((x) => x.taby.flatMap((t) => t.polozky.map((p) => p.zbierkaId).filter((id): id is string => !!id))),
   "z-centralna",
 ]);
-/** súčet všetkého, čo charita vyzbierala (jej zbierky + centrálna) */
-function vyzbieraneCharita(): number {
-  const ids = SUBJEKTY.charita.taby.flatMap((t) => t.polozky.map((p) => p.zbierkaId)).filter((id): id is string => !!id);
-  return ids.reduce((a, id) => { const z = najdiZbierku(id); return a + (z ? ziva(z).vyzbierane : 0); }, 0) + sucetDarov("z-centralna").suma;
-}
 /** zbierka so živými číslami: základ + skutočné (simulované) dary */
 function ziva<T extends { id: string; vyzbierane: number; darcovia: number }>(z: T): T {
   const d = sucetDarov(z.id);
@@ -359,9 +354,7 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
           </div>
         }
         podMenom={oNasKratky}
-        stats={(tier === 0 && s.cislaZadarmo ? s.cislaZadarmo : s.cisla).map(([hodnota, label], i) => ({
-          // charita: „Vyzbierané" = súčet všetkých jej zbierok (ukončené + živé dary) + centrálna
-          hodnota: pozicia === "charita" && i === 0 ? `${vyzbieraneCharita().toLocaleString("sk", { maximumFractionDigits: 0 })} €` : hodnota, label }))}
+        stats={cislaSubjektu(pozicia, tier).map(([hodnota, label]) => ({ hodnota, label }))}
         akcie={<>
           <BtnAkcia variant={sledujem ? "secondary" : "primary"} ariaPressed={sledujem}
             onClick={() => { setSledujem((v) => !v); toast(sledujem ? `Prestal si sledovať ${s.nazov}` : `Sleduješ ${s.nazov}`); }}>
