@@ -18,6 +18,8 @@ import {
   type StavZbierky, type Lehota, type DruhDokladu, type PolozkaDokladu,
 } from "@/lib/zbierkaSprava";
 import { FLAGS, TIER_LABEL, type Tier } from "./stav";
+import { pridajOznamDarcom } from "@/lib/oznamyDarcom";
+import { OznamDarcoviSheet } from "@/features/notifikacie/OznamDarcovi";
 import type { OrgZbierka } from "./mock";
 
 const ZELENA = "var(--a-green)";
@@ -91,7 +93,8 @@ export function SpravaZbierkySheet({ z, tier, toast, onPaywall, onClose }: {
   const poslatSpravu = () => {
     if (sprava.trim().length < 10) { toast("Napíš aspoň krátku vetu"); return; }
     zmen({ spravy: [...s.spravy, { text: sprava.trim(), datum: new Date().toISOString() }] });
-    setSprava(""); toast("Správa odoslaná všetkým darcom");
+    pridajOznamDarcom({ zbierkaId: z.id, typ: "sprava", text: sprava.trim() });
+    setSprava(""); toast("Správa odoslaná všetkým darcom — pozri Oznámenia 🔔");
   };
 
   return (
@@ -187,7 +190,7 @@ export function SpravaZbierkySheet({ z, tier, toast, onPaywall, onClose }: {
           </Karta>
 
           <Karta nadpis="Dokladovať priebežne" popis="Doklady môžeš pridávať už počas zbierky — darcovia vidia, že to žije.">
-            <Dokladovanie s={s} zmen={zmen} vyzbierane={vyzbierane} toast={toast} aktivna />
+            <Dokladovanie zbierkaId={z.id} s={s} zmen={zmen} vyzbierane={vyzbierane} toast={toast} aktivna />
           </Karta>
 
           {potvrdUkoncit ? (
@@ -202,7 +205,7 @@ export function SpravaZbierkySheet({ z, tier, toast, onPaywall, onClose }: {
       ) : (
         <>
           <StavDokladovania s={s} vyzbierane={vyzbierane} teraz={teraz} zmen={zmen} toast={toast} />
-          <Dokladovanie s={s} zmen={zmen} vyzbierane={vyzbierane} toast={toast} />
+          <Dokladovanie zbierkaId={z.id} s={s} zmen={zmen} vyzbierane={vyzbierane} toast={toast} />
         </>
       )}
     </Sheet>
@@ -237,8 +240,8 @@ function StavDokladovania({ s, vyzbierane, teraz, zmen, toast }: {
 }
 
 // ---- dokladovanie: povinné podľa pásma + navyše ----
-function Dokladovanie({ s, zmen, vyzbierane, toast, aktivna }: {
-  s: StavZbierky; zmen: (p: Partial<StavZbierky>) => void; vyzbierane: number; toast: (m: string) => void; aktivna?: boolean;
+function Dokladovanie({ zbierkaId, s, zmen, vyzbierane, toast, aktivna }: {
+  zbierkaId: string; s: StavZbierky; zmen: (p: Partial<StavZbierky>) => void; vyzbierane: number; toast: (m: string) => void; aktivna?: boolean;
 }) {
   const pas = PASMA_DOKLADOV[pasmoPre(vyzbierane)];
   const hotovo = pas.povinne.every((p) => splnene(p, s, vyzbierane));
@@ -249,6 +252,7 @@ function Dokladovanie({ s, zmen, vyzbierane, toast, aktivna }: {
   const [dodavatel, setDodavatel] = useState("");
   const [suma, setSuma] = useState("");
   const [sken, setSken] = useState<string | undefined>();
+  const [nahlad, setNahlad] = useState(false);
 
   const pridajFotky = async (files: FileList | null) => {
     if (!files) return;
@@ -283,7 +287,8 @@ function Dokladovanie({ s, zmen, vyzbierane, toast, aktivna }: {
   const zverejni = () => {
     if (!aktivna && !hotovo) { toast("Najprv doplň povinné minimum pre toto pásmo"); return; }
     zmen({ zverejnene: new Date().toISOString() });
-    toast(s.zverejnene ? "Dokladovanie aktualizované — darcovia dostali správu" : "Zverejnené — všetkým darcom išla správa s poďakovaním");
+    pridajOznamDarcom({ zbierkaId, typ: "dolozene" });
+    toast(s.zverejnene ? "Aktualizované — darcovia dostali oznámenie 🔔" : "Zverejnené — všetkým darcom išlo oznámenie s poďakovaním 🔔");
   };
 
   return (
@@ -385,6 +390,8 @@ function Dokladovanie({ s, zmen, vyzbierane, toast, aktivna }: {
       </div>
 
       <Zelene>Všetkým darcom príde správa o vašom dokladovaní s opätovným poďakovaním za dar.</Zelene>
+      <button onClick={() => setNahlad(true)} style={{ ...btnDruhy, marginBottom: SPACE.xs }}>👁 Náhľad — čo uvidí darca</button>
+      {nahlad && <OznamDarcoviSheet zbierkaId={zbierkaId} typ="dolozene" nahladStav={s} onClose={() => setNahlad(false)} />}
       <button onClick={zverejni} style={{ ...btnHlavny, opacity: !aktivna && !hotovo ? .55 : 1 }}>
         {s.zverejnene ? "Aktualizovať a poslať darcom" : aktivna ? "Zverejniť priebežne a poslať darcom" : "Zverejniť a poslať darcom"}
       </button>
