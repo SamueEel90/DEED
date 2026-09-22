@@ -55,7 +55,7 @@ export default function ModulProfil({ wide, walletReq = 0 }: ProfilProps) {
       <ScreenSwitch k={screen}>
       {screen === "profil" && obal(<ProfilHlavny naWallet={() => setScreen("wallet")} naSub={sub} naNastavenia={() => setScreen("nastavenia")} naPriatelia={() => setScreen("priatelia")} naFiremny={() => setScreen("firemny")} />)}
       {screen === "wallet" && obal(<Penazenka toast={toast} onBack={() => setScreen("profil")} />)}
-      {screen === "firemny" && obal(<MojDeedFiremny onBack={() => setScreen("profil")} toast={toast} />)}
+      {screen === "firemny" && obalSiroky(<MojDeedFiremny onBack={() => setScreen("profil")} toast={toast} />, { wide, desktop, max: SIRKA.stlpec })}
       {screen === "sub" && obal(<SubScreen nazov={subNazov} toast={toast} onBack={() => setScreen("profil")} />)}
       {screen === "priatelia" && obal(<PriateliaScreen toast={toast} onBack={() => setScreen("profil")} />)}
       {screen === "nastavenia" && obal(<NastaveniaScreen toast={toast} onBack={() => setScreen("profil")} onNotif={() => setScreen("notif")} />)}

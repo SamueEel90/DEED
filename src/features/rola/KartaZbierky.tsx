@@ -77,7 +77,7 @@ export function NahladKarty({ profil, logo, vyzbierane, dolozene, ludia, sipka }
 }) {
   return (
     <div style={{ background: C.surface2, border: `1px solid ${tint(ZELENA, .25)}`, borderRadius: RADIUS.md, overflow: "hidden" }}>
-      {(profil.foto || logo) && <img src={profil.foto || logo} alt="" style={{ width: "100%", aspectRatio: "16 / 9", objectFit: "cover", display: "block" }} />}
+      {(profil.foto || logo) && <img src={profil.foto || logo} alt="" style={{ width: "100%", aspectRatio: "16 / 9", maxHeight: 280, objectFit: "cover", display: "block" }} />}
       <div style={{ padding: SPACE.sm }}>
         <div style={{ display: "flex", alignItems: "center", gap: SPACE.xs }}>
           <div style={{ flex: 1, minWidth: 0, fontSize: 14.5, fontWeight: 800 }}>{profil.nazov || "Bez názvu"}</div>
