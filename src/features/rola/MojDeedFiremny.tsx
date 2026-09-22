@@ -17,9 +17,9 @@ import { MojaRetaz } from "@/features/retaz/MojaRetaz";
 import {
   FLAGS, KONFIG, POZICIE, TIER_LABEL, TIER_POPIS, ROLA_UCTU,
   nacitajPoziciu, ulozPoziciu, nacitajTiery, ulozTiery, nacitajDrzitel, ulozDrzitel,
-  ulozDoklady, percentoDolozene, nacitajTerminal, ulozTerminal,
+  nacitajTerminal, ulozTerminal,
   nacitajOrgExtra, ulozOrgExtra, nacitajLogo, ulozLogo, nacitajOnas, ulozOnas, nacitajTvarLoga, ulozTvarLoga, nacitajZdrojAvatara, ulozZdrojAvatara, nacitajHlavuZbalenu, ulozHlavuZbalenu, nacitajCentralnu,
-  type Pozicia, type Tier, type DokladZbierky,
+  type Pozicia, type Tier,
 } from "./stav";
 import { PANELY, SPRAVY, SPRAVA_NADPIS, ZASLUZENA, SUBJEKTY, FIRMY_ADRESAR, type PanelBlok, type SpravaItem, type OrgZbierka } from "./mock";
 import { Podstranka } from "./Podstranka";
@@ -28,8 +28,11 @@ import { useRegistraciaCharity, ulozDoRegistracie, segmentyCharity } from "./reg
 import { OnasKratky } from "./OnasKratky";
 import { jeNeregistrovany, nastavNeregistrovany } from "@/lib/devDarca";
 import { CentralnaZbierkaSheet } from "./CentralnaZbierka";
+import { SpravaZbierkySheet } from "./SpravaZbierky";
+import { ZBIERKY, predvolenyStav } from "@/lib/zbierky";
+import { nacitajStav, percentoDolozenia, fazaDokladovania, useZmenySpravy } from "@/lib/zbierkaSprava";
 import { KontaktBlok, nacitajKontakt, ulozKontakt } from "./kontakt";
-import { verejneTaby, zamknuteTaby, popisTabu, BLOK_ZA_TAB, zbierkyOrg, dokladyZbierky } from "./obsah";
+import { verejneTaby, zamknuteTaby, popisTabu, BLOK_ZA_TAB, zbierkyOrg } from "./obsah";
 
 /*
   ============================================================
@@ -42,7 +45,7 @@ import { verejneTaby, zamknuteTaby, popisTabu, BLOK_ZA_TAB, zbierkyOrg, dokladyZ
 */
 
 type PaywallReq = { tierMin: Tier; nazov: string; dovod?: string };
-type OtvorenySheet = null | "zbierky" | "centralna" | "terminal" | "retaz" | "profil" | "adresarB2B" | { dokladovanie: OrgZbierka };
+type OtvorenySheet = null | "zbierky" | "centralna" | "terminal" | "retaz" | "profil" | "adresarB2B" | { spravovat: OrgZbierka };
 
 // ---- SVG ikony blokov a správy (nahrádzajú emoji — jednotný vizuál) ----
 const IKONY: Record<string, ReactNode> = {
@@ -297,10 +300,12 @@ function MojDeedFiremnyObsah({ onBack, toast, orgId }: { onBack: () => void; toa
       {sheet === "centralna" && <CentralnaZbierkaSheet toast={toast} onClose={() => setSheet(null)} />}
       {sheet === "zbierky" && (
         <OrgZbierkySheet tier={tier} toast={toast} onPaywall={(p) => setPaywall(p)}
-          onDokladovanie={(z) => setSheet({ dokladovanie: z })} onClose={() => setSheet(null)} />
+          onSpravovat={(z) => setSheet({ spravovat: z })} onClose={() => setSheet(null)} />
       )}
-      {typeof sheet === "object" && sheet && "dokladovanie" in sheet && (
-        <DokladovanieSheet z={sheet.dokladovanie} toast={toast} onClose={() => setSheet("zbierky")} />
+      {typeof sheet === "object" && sheet && "spravovat" in sheet && (
+        <SpravaZbierkySheet z={sheet.spravovat} tier={tier} toast={toast}
+          onPaywall={(tierMin, nazov, dovod) => setPaywall({ tierMin, nazov, dovod })}
+          onClose={() => setSheet("zbierky")} />
       )}
       {sheet === "terminal" && <TerminalSheet toast={toast} onClose={() => setSheet(null)} />}
       {sheet === "retaz" && <MojaRetaz onClose={() => setSheet(null)} toast={toast} />}
@@ -435,10 +440,12 @@ function PaywallModal({ req, pozicia, onKupit, onClose }: { req: PaywallReq; poz
 }
 
 // ===================== ZBIERKY ORGANIZÁCIE =====================
-function OrgZbierkySheet({ tier, toast, onPaywall, onDokladovanie, onClose }: {
+function OrgZbierkySheet({ tier, toast, onPaywall, onSpravovat, onClose }: {
   tier: Tier; toast: (m: string) => void; onPaywall: (p: PaywallReq) => void;
-  onDokladovanie: (z: OrgZbierka) => void; onClose: () => void;
+  onSpravovat: (z: OrgZbierka) => void; onClose: () => void;
 }) {
+  const [teraz] = useState(() => Date.now());
+  useZmenySpravy();
   const [extra, setExtra] = useState<OrgZbierka[]>(nacitajOrgExtra);
   // tie isté zbierky ako na verejnom profile (+ koncepty vytvorené tu)
   const zbierky = useMemo(() => [...zbierkyOrg("charita", tier), ...extra], [extra, tier]);
@@ -467,13 +474,19 @@ function OrgZbierkySheet({ tier, toast, onPaywall, onDokladovanie, onClose }: {
       <div style={{ fontSize: 11.5, color: C.textTer, marginBottom: SPACE.sm }}>{aktivne} aktívne · limit úrovne {TIER_LABEL.charita[tier]}: {limit} súbežných</div>
 
       {zbierky.map((z) => {
-        const doklady = dokladyZbierky(z.id);
-        const pct = percentoDolozene(doklady, z.vyzbierane);
-        const poLehote = z.stav === "ukoncena" && z.ukoncena
-          && (Date.now() - new Date(z.ukoncena).getTime()) / 86400000 > KONFIG.lehotaDokladovaniaDni;
-        const cakaNaDoklady = poLehote && pct < 100;
+        const raw = ZBIERKY.find((x) => x.id === z.id);
+        const st = nacitajStav(z.id) ?? (raw ? predvolenyStav(raw, teraz) : null);
+        const vyz = st?.simVyzbierane ?? z.vyzbierane;
+        const pct = st ? percentoDolozenia(st, vyz) : 0;
+        const faza = st && z.stav === "ukoncena" ? fazaDokladovania(st, vyz, teraz) : null;
+        const stavText = !faza ? `doložené ${pct} % použitia`
+          : faza.faza === "dolozene" ? "✓ doložené"
+          : faza.faza === "lehota" ? `na doloženie ${faza.dni} dní`
+          : faza.faza === "vyzva" ? `dolož do ${faza.dni} dní`
+          : faza.faza === "zdovodnene" ? "zdôvodnenie posudzujeme"
+          : "čaká na doklady";
         return (
-          <div key={z.id} style={{ background: C.surface2, border: `1px solid ${cakaNaDoklady ? tint("var(--a-danger)", .4) : C.line}`, borderRadius: RADIUS.sm, padding: SPACE.sm, marginBottom: SPACE.xs }}>
+          <div key={z.id} style={{ background: C.surface2, border: `1px solid ${C.line}`, borderRadius: RADIUS.sm, padding: SPACE.sm, marginBottom: SPACE.xs }}>
             <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm }}>
               <span style={{ width: 34, height: 34, borderRadius: RADIUS.xs, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 17, background: "rgba(var(--glass-rgb),.06)" }}>{z.emoji}</span>
               <div style={{ flex: 1, minWidth: 0 }}>
@@ -484,10 +497,8 @@ function OrgZbierkySheet({ tier, toast, onPaywall, onDokladovanie, onClose }: {
             </div>
             <div style={{ marginTop: SPACE.xs }}><MoniBar vyzbierane={z.vyzbierane} ciel={z.ciel} mini /></div>
             <div style={{ display: "flex", alignItems: "center", gap: SPACE.xs, marginTop: SPACE.xs, flexWrap: "wrap" }}>
-              {cakaNaDoklady
-                ? <span style={{ fontSize: 10.5, fontWeight: 800, color: "var(--a-danger)", background: tint("var(--a-danger)", .12), borderRadius: RADIUS.xs, padding: `${SPACE.xxs}px ${SPACE.xs}px` }}>⚠ čaká na doklady</span>
-                : <span style={{ fontSize: 10.5, fontWeight: 700, color: pct >= 100 ? "var(--a-green)" : C.textTer, background: "rgba(var(--glass-rgb),.06)", borderRadius: RADIUS.xs, padding: `${SPACE.xxs}px ${SPACE.xs}px` }}>doložené {pct} % použitia</span>}
-              <span {...pressable(() => onDokladovanie(z), `Dokladovanie — ${z.nazov}`)} style={{ marginLeft: "auto", fontSize: 11.5, fontWeight: 700, color: "var(--a-info)", cursor: "pointer" }}>Dokladovanie ›</span>
+              <span style={{ fontSize: 10.5, fontWeight: 700, color: pct >= 100 || faza?.faza === "dolozene" ? "var(--a-green)" : C.textTer, background: "rgba(var(--glass-rgb),.06)", borderRadius: RADIUS.xs, padding: `${SPACE.xxs}px ${SPACE.xs}px` }}>{stavText}</span>
+              <span {...pressable(() => onSpravovat(z), `Spravovať — ${z.nazov}`)} style={{ marginLeft: "auto", fontSize: 12, fontWeight: 800, color: "var(--a-green)", cursor: "pointer" }}>Spravovať ›</span>
             </div>
           </div>
         );
@@ -496,74 +507,6 @@ function OrgZbierkySheet({ tier, toast, onPaywall, onDokladovanie, onClose }: {
       <button onClick={vytvor} style={{ width: "100%", height: 46, marginTop: SPACE.xs, borderRadius: RADIUS.sm, border: `1px solid ${tint("var(--a-info)", .38)}`, cursor: "pointer", fontFamily: "inherit", fontWeight: 800, fontSize: 14, background: tint("var(--a-info)", .1), color: "var(--a-info)" }}>
         + Vytvoriť zbierku
       </button>
-    </Sheet>
-  );
-}
-
-// ===================== DOKLADOVANIE — povinná funkcia, mimo spoplatnenia =====================
-function DokladovanieSheet({ z, toast, onClose }: { z: OrgZbierka; toast: (m: string) => void; onClose: () => void }) {
-  const [doklady, setDoklady] = useState<DokladZbierky[]>(() => dokladyZbierky(z.id));
-  const [typ, setTyp] = useState("Bloček");
-  const [popis, setPopis] = useState("");
-  const [suma, setSuma] = useState("");
-  const pct = percentoDolozene(doklady, z.vyzbierane);
-
-  const pridaj = () => {
-    const s = Number(suma.replace(",", "."));
-    if (!popis.trim()) { toast("Napíš krátky popis použitia"); return; }
-    if (!s || s <= 0) { toast("Zadaj sumu dokladu v €"); return; }
-    const nove = [...doklady, { nazov: typ, popis: popis.trim(), suma: s, datum: new Date().toISOString() }];
-    setDoklady(nove); ulozDoklady(z.id, nove);
-    setPopis(""); setSuma("");
-    toast(`Doklad priložený — doložené ${percentoDolozene(nove, z.vyzbierane)} % použitia`);
-  };
-
-  const input: React.CSSProperties = { width: "100%", boxSizing: "border-box", background: C.surface2, border: `1px solid ${C.line}`, borderRadius: RADIUS.sm, padding: `${SPACE.sm}px ${SPACE.sm}px`, color: C.text, fontSize: 13, fontFamily: "inherit", outline: "none" };
-
-  return (
-    <Sheet onClose={onClose} label={`Dokladovanie — ${z.nazov}`}>
-      <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm, marginBottom: SPACE.xs }}>
-        <span style={{ width: 40, height: 40, borderRadius: RADIUS.sm, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", background: tint("var(--a-green)", .1), color: "var(--a-green)" }}><IkonaDokument size={19} /></span>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 16, fontWeight: 800 }}>Dokladovanie zbierky</div>
-          <div style={{ fontSize: 11.5, color: C.textTer, marginTop: 2 }}>{z.nazov} · vyzbierané {z.vyzbierane.toLocaleString("sk")} €</div>
-        </div>
-        <span style={{ flex: "none", fontSize: 13, fontWeight: 800, color: pct >= 100 ? "var(--a-green)" : "var(--a-gold)" }}>{pct} %</span>
-      </div>
-      {/* stav dokladovania financií (nie badge progres) */}
-      <div style={{ height: 7, background: "rgba(var(--glass-rgb),.1)", borderRadius: 4, overflow: "hidden", marginBottom: SPACE.sm }}>
-        <div style={{ height: "100%", width: `${pct}%`, background: pct >= 100 ? "var(--a-green)" : "var(--a-gold)", borderRadius: 4, transition: "width .3s ease" }} />
-      </div>
-      <div style={{ fontSize: 11, color: C.textTer, lineHeight: 1.5, background: tint("var(--a-green)", .08), border: `1px solid ${tint("var(--a-green)", .3)}`, borderRadius: RADIUS.sm, padding: SPACE.sm, marginBottom: SPACE.md }}>
-        Darcovia vidia pri zbierke „doložené {pct} % použitia". Ukončená zbierka bez dokladov po {KONFIG.lehotaDokladovaniaDni} dňoch dostane na profile stav „čaká na doklady".
-      </div>
-
-      <div style={{ display: "flex", gap: SPACE.xs, marginBottom: SPACE.xs }}>
-        {["Bloček", "Faktúra", "Foto"].map((t) => (
-          <span key={t} {...pressable(() => setTyp(t), t)} aria-pressed={typ === t}
-            style={{ flex: 1, textAlign: "center", fontSize: 12, fontWeight: typ === t ? 800 : 600, padding: `${SPACE.xs}px 0`, borderRadius: RADIUS.pill, cursor: "pointer", background: typ === t ? tint("var(--a-info)", .1) : C.surface2, border: `1px solid ${typ === t ? tint("var(--a-info)", .38) : C.line}`, color: typ === t ? "var(--a-info)" : C.textSec }}>{t}</span>
-        ))}
-      </div>
-      <div style={{ display: "flex", gap: SPACE.xs, marginBottom: SPACE.xs }}>
-        <input value={popis} onChange={(e) => setPopis(e.target.value)} placeholder="Krátky popis použitia (napr. palivo, nájom)" style={{ ...input, flex: 1 }} />
-        <input value={suma} onChange={(e) => setSuma(e.target.value)} placeholder="€" inputMode="decimal" style={{ ...input, width: 76, flex: "none", textAlign: "right" }} />
-      </div>
-      <button onClick={pridaj} style={{ width: "100%", height: 44, borderRadius: RADIUS.sm, border: "none", cursor: "pointer", fontFamily: "inherit", fontWeight: 800, fontSize: 14, background: "var(--a-green)", color: "#06281d", marginBottom: SPACE.md }}>
-        Priložiť doklad
-      </button>
-
-      {doklady.length === 0 ? (
-        <div style={{ fontSize: 12, color: C.textTer, textAlign: "center", padding: SPACE.md }}>Zatiaľ žiadne doklady — priebežné dokladovanie dvíha dôveru darcov.</div>
-      ) : doklady.map((d, i) => (
-        <div key={i} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, background: C.surface2, border: `1px solid ${C.line}`, borderRadius: RADIUS.sm, padding: `${SPACE.xs}px ${SPACE.sm}px`, marginBottom: SPACE.xxs }}>
-          <span style={{ fontSize: 15, flex: "none" }}>{d.nazov === "Faktúra" ? "📄" : d.nazov === "Foto" ? "📷" : "🧾"}</span>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 12.5, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{d.popis}</div>
-            <div style={{ fontSize: 10, color: C.textTer }}>{d.nazov} · {new Date(d.datum).toLocaleDateString("sk")}</div>
-          </div>
-          <span style={{ flex: "none", fontSize: 12.5, fontWeight: 800, color: "var(--a-green)" }}>{d.suma.toLocaleString("sk")} €</span>
-        </div>
-      ))}
     </Sheet>
   );
 }

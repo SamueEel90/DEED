@@ -5,6 +5,8 @@
 // Položka na profile nesie ID zbierky, nikdy vlastnú kópiu textu.
 // ============================================================
 
+import { nacitajStav, pridajDni, OVERENY_SKEN, type StavZbierky } from "@/lib/zbierkaSprava";
+
 export type ZbierkaStav = "aktivna" | "ukoncena";
 
 /** Žiadateľ = kto zbiera. Kto pýta peniaze, má verejný profil — vždy sa dá overiť. */
@@ -48,7 +50,7 @@ export interface Zbierka {
 }
 
 /** Dôkaz, že sme pomohli: fotky (pred/po) a doklady s sumami. */
-export interface Doklad { druh: "Faktúra" | "Bloček" | "Výpis"; nazov: string; dodavatel: string; cislo: string; datum: string; suma: number }
+export interface Doklad { druh: "Faktúra" | "Bloček" | "Výpis" | "Potvrdenie o prevzatí"; nazov: string; dodavatel: string; cislo: string; datum: string; suma: number; sken?: string }
 export interface Dokaz { text: string; fotky: { src: string; popis: string }[]; doklady: Doklad[] }
 
 export type Krypto = "EURC" | "DEED" | "nie";
@@ -186,7 +188,46 @@ export const ZBIERKY: Zbierka[] = [
 /** dolná hranica splitu tvorcu — pod 5 % sa reťaz nastaviť nedá. Hore strop nie je. */
 export const SPLIT_MIN = 5;
 
-export const najdiZbierku = (id: string): Zbierka | undefined => ZBIERKY.find((z) => z.id === id);
+/** Zbierka + stav zo správy (ukončenie, zverejnené dokladovanie) — správa aj verejný profil
+ *  čítajú to isté. Bez zásahu v správe = pôvodné dáta. */
+export const najdiZbierku = (id: string): Zbierka | undefined => {
+  const z = ZBIERKY.find((x) => x.id === id);
+  if (!z) return undefined;
+  const s = nacitajStav(id);
+  if (!s) return z;
+  return { ...z, stav: s.stav, dokaz: s.zverejnene ? dokazZoStavu(s) : z.dokaz };
+};
+
+/** dokladovanie zo správy → tvar, ktorý ukazuje verejný profil */
+export function dokazZoStavu(s: StavZbierky): Dokaz {
+  return {
+    text: s.text,
+    fotky: s.fotky,
+    doklady: s.doklady.map((d, i) => ({
+      druh: d.druh, nazov: d.nazov, dodavatel: d.dodavatel || "—",
+      cislo: `D-${String(i + 1).padStart(3, "0")}`,
+      datum: isNaN(Date.parse(d.datum)) ? d.datum : new Date(d.datum).toLocaleDateString("sk"),
+      suma: d.suma, ...(d.foto && d.foto !== OVERENY_SKEN ? { sken: d.foto } : {}),
+    })),
+  };
+}
+
+/** prvé otvorenie v správe: stav z pôvodných dát (aktívna = beží, ukončená s dôkazom = doložená) */
+export function predvolenyStav(z: Zbierka, teraz: number): StavZbierky {
+  const ukoncena = z.stav === "ukoncena" ? pridajDni(teraz, -10) : undefined;
+  return {
+    stav: z.stav,
+    koniec: z.stav === "aktivna" ? pridajDni(teraz, 12) : pridajDni(teraz, -10),
+    ukoncena, predlzenia: 0, lehota: "30",
+    text: z.dokaz?.text ?? "",
+    fotky: z.dokaz?.fotky ?? [],
+    doklady: (z.dokaz?.doklady ?? []).map((d, i) => ({
+      id: `p${i}`, druh: d.druh, nazov: d.nazov, dodavatel: d.dodavatel, suma: d.suma, datum: d.datum, foto: OVERENY_SKEN,
+    })),
+    spravy: [],
+    ...(z.dokaz ? { zverejnene: ukoncena ?? new Date(teraz).toISOString() } : {}),
+  };
+}
 
 /** Odkaz na zbierku z profilu entity. Text sa neduplikuje — ťahá sa zo ZBIERKY.
  *  `split` = percento, ktoré tvorca posiela zo svojho honoráru do tejto zbierky. */

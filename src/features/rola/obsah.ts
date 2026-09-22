@@ -53,9 +53,10 @@ export const BLOK_ZA_TAB: Record<string, string> = { zbierky: "zbierky", retaz: 
 
 /** všetky zbierky subjektu v danom programe (aktívne aj ukončené) v tvare pre správu */
 export function zbierkyOrg(pozicia: Pozicia, tier: Tier): OrgZbierka[] {
-  const polozky = SUBJEKTY[pozicia].taby.find((t) => t.key === "zbierky")?.polozky ?? [];
+  // zbierky zo všetkých záložiek (ukončené sú na profile v Skutkoch) — bez duplicít
+  const polozky = SUBJEKTY[pozicia].taby.filter((t) => (t.odTieru ?? 0) <= tier).flatMap((t) => t.polozky);
   return polozky
-    .filter((p) => p.zbierkaId && (p.odTieru ?? 0) <= tier)
+    .filter((p, i, a) => p.zbierkaId && (p.odTieru ?? 0) <= tier && a.findIndex((x) => x.zbierkaId === p.zbierkaId) === i)
     .map((p) => najdiZbierku(p.zbierkaId!))
     .filter((z): z is NonNullable<typeof z> => !!z)
     .map((z) => ({ id: z.id, nazov: z.nazov, emoji: z.emoji, ciel: z.ciel, vyzbierane: z.vyzbierane, stav: z.stav, darcovia: z.darcovia }));

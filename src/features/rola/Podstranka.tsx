@@ -81,6 +81,7 @@ function DokazBlok({ dokaz, vyzbierane }: { dokaz: Dokaz; vyzbierane?: number })
                 <div>Dodávateľ: <b>{d.dodavatel}</b></div>
                 <div>Odberateľ: <b>Svetlo pomoci o.z.</b></div>
                 <div>Dátum: {d.datum}</div>
+                {d.sken && <img src={d.sken} alt={`Sken — ${d.nazov}`} style={{ width: "100%", borderRadius: 4, margin: "6px 0", display: "block" }} />}
                 <div style={{ borderTop: "1px dashed #bbb", margin: "6px 0", paddingTop: 6, display: "flex", justifyContent: "space-between" }}><span>{d.nazov}</span><b>{eur(d.suma)}</b></div>
                 <div style={{ color: "#1a7f37", fontWeight: 700 }}>✓ Uhradené zo zbierky · overené DEED</div>
               </div>
