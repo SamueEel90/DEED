@@ -7,10 +7,13 @@ import { useState } from "react";
 import { C, SPACE, RADIUS } from "@/theme";
 import { Sheet } from "@/components/sheet";
 import { PlatobnyModul } from "@/components/platobnymodul";
-import { ProgresBox } from "@/components/ui";
+import { NahladKarty, KartaZbierkyForm, vstup } from "./KartaZbierky";
 import { SUBJEKTY } from "./mock";
 import { segmentyZRegistracie, segmentyCharity, nastavSegmenty } from "./registracia";
-import { nacitajKryptoOrg, ulozKryptoOrg, nacitajCentralnu, ulozCentralnu, nacitajSady, ulozSady } from "./stav";
+import { nacitajKryptoOrg, ulozKryptoOrg, nacitajCentralnu, ulozCentralnu, nacitajSady, ulozSady, nacitajIbanOrg, nacitajLogo } from "./stav";
+import { nacitajProfil, ulozProfil, CENTRALNA_ID, VLASTNA_ZBIERKA_CFG, type ProfilZbierky } from "./vlastneZbierky";
+import { sucetDarov } from "@/lib/darcovia";
+import { formatujIban } from "./segmenty";
 import { SADY_EUR, SADY_EURC, type SadaEur, type SadaEurc } from "@/lib/sadyDarov";
 
 export function CentralnaZbierkaSheet({ toast, onClose }: { toast: (m: string) => void; onClose: () => void }) {
@@ -33,12 +36,21 @@ export function CentralnaZbierkaSheet({ toast, onClose }: { toast: (m: string) =
   };
   const [potvrdene, setPotvrdene] = useState(false);
   const spustena = nacitajCentralnu("charita");
+  const logo = nacitajLogo("charita") ?? s.foto;
+  const ibanOrg = nacitajIbanOrg("charita");
+  const [profil, setProfil] = useState<ProfilZbierky>(() => nacitajProfil(CENTRALNA_ID) ?? {
+    nazov: `${s.nazov} — celá organizácia`,
+    popis: "Podporte našu činnosť ako celok. Peniaze idú tam, kde sú práve najviac potrebné — a každých 3 000 € doložíme dokladmi.",
+  });
+  const zmenProfil = (patch: Partial<ProfilZbierky>) => setProfil((x) => ({ ...x, ...patch }));
+  const vyzbierane = sucetDarov(CENTRALNA_ID).suma;
 
   const prepni = (sg: string) => setVybrane((v) => (v.includes(sg) ? v.filter((x) => x !== sg) : [...v, sg]));
   const spusti = () => {
     ulozKryptoOrg("charita", krypto);
     ulozSady("charita", sady);
     nastavSegmenty(vybrane);
+    ulozProfil(CENTRALNA_ID, { ...profil, iban: ibanOrg || undefined, spustena: true, vytvorena: profil.vytvorena ?? new Date().toISOString() });
     ulozCentralnu("charita", true);
     toast(spustena ? "Centrálna zbierka upravená" : "Centrálna zbierka spustená — je na vašom profile");
     onClose();
@@ -55,10 +67,24 @@ export function CentralnaZbierkaSheet({ toast, onClose }: { toast: (m: string) =
       <div style={{ fontSize: 16, fontWeight: 800 }}>🚀 Centrálna zbierka organizácie</div>
       <div style={{ fontSize: 12, color: C.textTer, marginTop: 2 }}>Zbierka na vašu činnosť · údaje z registrácie · hotová za minútu</div>
 
+      {nadpis("KARTA ZBIERKY")}
+      <KartaZbierkyForm profil={profil} zmen={zmenProfil} logo={logo} toast={toast} deti={
+        <div style={{ marginTop: SPACE.sm }}>
+          <div style={{ fontSize: 11.5, fontWeight: 700, color: C.textSec, marginBottom: 2 }}>Účet zbierky (IBAN)</div>
+          <input value={ibanOrg ? formatujIban(ibanOrg) : "— nie je v registrácii —"} readOnly
+            style={{ ...vstup, color: ibanOrg ? C.textSec : C.textTer, cursor: "default" }} />
+          <div style={{ fontSize: 10.5, color: C.textTer, marginTop: 2, lineHeight: 1.4 }}>
+            Hlavný účet organizácie z registrácie. Zmena účtu ide cez profil organizácie, nie cez zbierku.
+          </div>
+        </div>
+      } />
+
       {nadpis("TAKTO JU UVIDIA DARCOVIA")}
+      <NahladKarty profil={profil} logo={logo} vyzbierane={vyzbierane} dolozene={0} ludia={0} />
+      <div style={{ fontSize: 11, color: C.textTer, margin: `${SPACE.xxs}px 0 ${SPACE.xs}px`, lineHeight: 1.45 }}>
+        Centrálna zbierka nemá cieľovú sumu — beží od míľnika k míľniku. Po každých {VLASTNA_ZBIERKA_CFG.milnik.toLocaleString("sk")} € doložíte použitie do {VLASTNA_ZBIERKA_CFG.dniNaDolozenie} dní, inak značka ostane oranžová aj pre darcov.
+      </div>
       <div style={{ background: C.surface2, border: `1px solid ${C.line}`, borderRadius: RADIUS.md, padding: SPACE.sm }}>
-        <div style={{ fontSize: 14, fontWeight: 800, marginBottom: SPACE.xs }}>{s.nazov}</div>
-        <div style={{ marginBottom: SPACE.sm }}><ProgresBox suma={0} ciel={12000} ludia={0} /></div>
         <PlatobnyModul key={`${sady.eur}-${sady.eurc}`} zbalene kryptoOtvorene krypto={krypto ? "EURC" : "nie"}
           sumyEur={SADY_EUR[sady.eur].sumy} sumyEurc={SADY_EURC[sady.eurc].sumy}
           onShare={() => undefined} upvotes={0} onUpvote={() => undefined}

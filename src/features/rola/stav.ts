@@ -133,6 +133,11 @@ export const ONAS_MAX = 800;
 export const nacitajOnas = (p: Pozicia): string | null => nacitaj<string | null>(kluc(`onas.${p}`), null);
 export const ulozOnas = (p: Pozicia, html: string | null) => uloz(kluc(`onas.${p}`), html);
 
+// ---- bankový účet organizácie z registrácie (organizacie.bankovy_ucet) ----
+// Centrálna zbierka ho len zobrazuje — mení sa v profile organizácie, nie v zbierke.
+export const nacitajIbanOrg = (p: Pozicia): string => nacitaj<string>(kluc(`iban.${p}`), "");
+export const ulozIbanOrg = (p: Pozicia, v: string) => uloz(kluc(`iban.${p}`), v);
+
 // ---- zbierky vytvorené v správe charity navyše k mocku (limit per tier §1.3) ----
 export const nacitajOrgExtra = (): OrgZbierka[] => nacitaj<OrgZbierka[]>(kluc("orgzbierky"), []);
 export const ulozOrgExtra = (z: OrgZbierka[]) => uloz(kluc("orgzbierky"), z);

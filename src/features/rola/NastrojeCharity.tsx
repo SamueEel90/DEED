@@ -2,7 +2,7 @@
 // NÁSTROJE CHARITY (ZADARMO) — Video · Prehľad darcov · QR nástroje · Viditeľnosť súm
 // Dáta sú tie isté ako na verejnom profile (zbierkyOrg, videá, dary).
 // ============================================================
-import { useMemo, useState, type CSSProperties, type ReactNode } from "react";
+import { useState, type CSSProperties, type ReactNode } from "react";
 import { C, SPACE, RADIUS } from "@/theme";
 import { Sheet, Switch, tint } from "@/shared";
 import { pressable } from "@/components/pressable";
@@ -11,15 +11,15 @@ import { DeedQr, stiahniDeedQr, type DeedOdznak, type DeedQrVariant } from "@/co
 import { usePouzivatel } from "@/lib/pouzivatel";
 import { darcoviaPre, useZmenyDarov, identitaDarcu, relCas } from "@/lib/darcovia";
 import { najdiZbierku, odznakZbierky } from "@/lib/zbierky";
-import { qrUrl, qrResolveUrl } from "@/lib/qr";
+import { qrUrl } from "@/lib/qr";
 import { ulozVideoInfo, zmazVideo } from "@/lib/videoUloz";
 import { pridajOznamDarcom } from "@/lib/oznamyDarcom";
 import { MediaNahlad } from "./DokazBlok";
 import { zbierkyOrg } from "./obsah";
-import { SUBJEKTY, type OrgZbierka } from "./mock";
+import { SUBJEKTY } from "./mock";
 import { useVidea, ulozVidea, videiTentoMesiac, VIDEO_ORG_CFG, type VideoOrg } from "./videa";
-import { useSegmenty, ulozSegmenty, overIban, formatujIban, SEKTOR_ROZSIRENIE_OD_TIERU, type SegmentOrg } from "./segmenty";
-import { KONFIG, TIER_LABEL, nacitajCentralnu, nacitajOrgExtra, ulozOrgExtra, nacitajViditelnost, ulozViditelnost, type Tier, type Viditelnost } from "./stav";
+import { useSegmenty, ulozSegmenty, SEKTOR_ROZSIRENIE_OD_TIERU, type SegmentOrg } from "./segmenty";
+import { TIER_LABEL, nacitajCentralnu, nacitajViditelnost, ulozViditelnost, type Tier, type Viditelnost } from "./stav";
 
 const ZELENA = "var(--a-green)";
 const eur = (n: number) => `${n.toLocaleString("sk", { maximumFractionDigits: 2 })} €`;
@@ -308,15 +308,8 @@ export function SegmentySheet({ tier, toast, onPaywall, onClose }: {
 }) {
   const segmenty = useSegmenty();
   const [novy, setNovy] = useState("");
-  const [qr, setQr] = useState<null | { titul: string; odkaz: string; odznak: DeedOdznak }>(null);
-  const [extra, setExtra] = useState<OrgZbierka[]>(nacitajOrgExtra);
   const aktivne = segmenty.filter((x) => x.aktivny);
   const rozsirenie = tier >= SEKTOR_ROZSIRENIE_OD_TIERU;
-  const limit = KONFIG.limitZbierok[tier];
-  const aktivnychZbierok = useMemo(
-    () => zbierkyNastroje(tier).filter((z) => z.stav === "aktivna").length + extra.filter((z) => z.stav === "aktivna").length,
-    [extra, tier],
-  );
 
   const zmen = (id: string, patch: Partial<SegmentOrg>) => ulozSegmenty(segmenty.map((x) => (x.id === id ? { ...x, ...patch } : x)));
   const pridaj = () => {
@@ -328,103 +321,37 @@ export function SegmentySheet({ tier, toast, onPaywall, onClose }: {
   };
   const zmaz = (s2: SegmentOrg) => { ulozSegmenty(segmenty.filter((x) => x.id !== s2.id)); toast("Sektor činnosti odstránený"); };
 
-  // ---- AKCIA (T2): vlastný QR · vlastná zbierka · vlastný účet ----
-  const odkazSektora = (sg: SegmentOrg) =>
-    sg.zbierkaId ? qrUrl("case", sg.zbierkaId)
-      : qrResolveUrl(`${SUBJEKTY.charita.nazov.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${sg.nazov.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`);
-  const odznakSektora = (sg: SegmentOrg): DeedOdznak => odznakZbierky(sg.zbierkaId);
-  const stiahni = async (sg: SegmentOrg) => {
-    try { await stiahniDeedQr({ data: odkazSektora(sg), odznak: odznakSektora(sg), variant: "svetly", nazov: `QR ${sg.nazov}` }); toast("QR sektora stiahnuté (PNG na tlač)"); }
-    catch (e) { toast((e as Error).message); }
-  };
-  const vytvorZbierku = (sg: SegmentOrg) => {
-    if (aktivnychZbierok >= limit) {
-      if (tier < 4) onPaywall({ tierMin: (tier + 1) as Tier, nazov: "Ďalšia súbežná zbierka", dovod: `Na úrovni ${TIER_LABEL.charita[tier]} máš limit ${limit} súbežných zbierok (${aktivnychZbierok} aktívnych).` });
-      else toast(`Dosiahnutý limit súbežných zbierok: ${limit}`);
-      return;
-    }
-    const n: OrgZbierka = { id: `org-sekt-${sg.id}`, nazov: sg.nazov, emoji: "🎯", ciel: 1000, vyzbierane: 0, stav: "aktivna", darcovia: 0 };
-    const nove = [...extra.filter((z) => z.id !== n.id), n];
-    setExtra(nove); ulozOrgExtra(nove);
-    zmen(sg.id, { zbierkaId: n.id });
-    toast("Zbierka sektora vytvorená — spravuješ ju v Zbierkach organizácie");
-  };
-  const ulozIban = (sg: SegmentOrg, el: HTMLInputElement) => {
-    const x = el.value.trim();
-    if (!x) { if (sg.iban) { zmen(sg.id, { iban: undefined }); toast("Účet zmazaný — dary idú na hlavný účet"); } return; }
-    const ok = overIban(x);
-    if (!ok) { toast("Neplatný IBAN — skontroluj číslo"); return; }
-    el.value = formatujIban(ok);
-    if (ok !== sg.iban) { zmen(sg.id, { iban: ok }); toast("Účet sektora uložený"); }
-  };
-
   return (
     <Sheet onClose={onClose} label="Sektory činnosti">
       <Hlavicka nadpis="Sektory činnosti" popis="Oblasti vašej práce, ktoré si darca vyberie pri pravidelnej podpore, keď nechce podporiť jednu zbierku. Základ je z registrácie." />
 
-      {!rozsirenie && (
-        <div style={{ ...karta, borderStyle: "dashed", background: tint(ZELENA, .06), borderColor: tint(ZELENA, .3) }}>
-          <div style={{ fontSize: 13.5, fontWeight: 800, marginBottom: 2 }}>🔒 Vlastný QR, zbierka a účet pre každý sektor</div>
-          <div style={{ fontSize: 11.5, color: C.textSec, lineHeight: 1.45, marginBottom: SPACE.xs }}>
-            Od programu {TIER_LABEL.charita[SEKTOR_ROZSIRENIE_OD_TIERU as Tier]} dostane každý sektor vlastný QR kód na plagát, vlastnú zbierku a vlastný účet (IBAN), na ktorý idú jeho dary.
-          </div>
-          <button onClick={() => onPaywall({ tierMin: SEKTOR_ROZSIRENIE_OD_TIERU as Tier, nazov: "Sektor: vlastný QR, zbierka a účet", dovod: "Každý sektor činnosti dostane svoj QR kód, samostatnú zbierku a vlastný účet." })} style={btnHlavny}>
+      <div style={{ ...karta, background: tint(ZELENA, .06), borderColor: tint(ZELENA, .3) }}>
+        <div style={{ fontSize: 12.5, fontWeight: 800, marginBottom: 2 }}>{rozsirenie ? "Zbierku a účet pre sektor nastavíš v Sektorových zbierkach" : "🔒 Sektor ako téma vs. sektor so zbierkou"}</div>
+        <div style={{ fontSize: 11.5, color: C.textSec, lineHeight: 1.45 }}>
+          Sektor tu je <b>téma</b> pravidelnej podpory — dary idú na hlavný účet organizácie a použitie negarantujeme.
+          Od programu {TIER_LABEL.charita[SEKTOR_ROZSIRENIE_OD_TIERU as Tier]} mu vieš dať <b>vlastnú zbierku, vlastný účet a vlastný QR</b>, a potom je doložiteľný.
+        </div>
+        {!rozsirenie && (
+          <button onClick={() => onPaywall({ tierMin: SEKTOR_ROZSIRENIE_OD_TIERU as Tier, nazov: "Sektorové zbierky", dovod: "Každý sektor dostane samostatnú zbierku, vlastný účet a vlastný QR kód." })} style={{ ...btnHlavny, marginTop: SPACE.xs }}>
             Odomknúť v {TIER_LABEL.charita[SEKTOR_ROZSIRENIE_OD_TIERU as Tier]}
           </button>
-        </div>
-      )}
+        )}
+      </div>
 
       {segmenty.map((sg) => (
         <div key={sg.id} style={karta}>
           <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm }}>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 13.5, fontWeight: 700, color: sg.aktivny ? C.text : C.textTer }}>{sg.nazov}</div>
-              <div style={{ fontSize: 10.5, color: C.textTer }}>{sg.zRegistracie ? "z registrácie" : "vlastný"} · pravidelná podpora: zatiaľ žiadna</div>
+              <div style={{ fontSize: 10.5, color: sg.zbierkaId ? ZELENA : C.textTer }}>
+                {sg.zRegistracie ? "z registrácie" : "vlastný"}{sg.zbierkaId ? " · má vlastnú zbierku a účet" : " · pravidelná podpora: zatiaľ žiadna"}
+              </div>
             </div>
             <Switch on={sg.aktivny} onChange={(v) => zmen(sg.id, { aktivny: v })} ariaLabel={`Ponúkať darcom — ${sg.nazov}`} />
           </div>
           <input defaultValue={sg.popis} onBlur={(e) => zmen(sg.id, { popis: e.target.value })} maxLength={90}
             placeholder="Jedna veta pre darcu (napr. Potraviny a lieky pre rodiny v núdzi)" style={{ ...input, marginTop: SPACE.xs }} />
-
-          {rozsirenie && (
-            <div style={{ marginTop: SPACE.xs, paddingTop: SPACE.xs, borderTop: `1px solid ${C.line2}` }}>
-              {/* QR sektora */}
-              <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm }}>
-                <span style={{ flex: "none", borderRadius: RADIUS.xs, overflow: "hidden" }}><DeedQr data={odkazSektora(sg)} odznak={odznakSektora(sg)} size={56} /></span>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 12.5, fontWeight: 700 }}>QR sektora</div>
-                  <div style={{ fontSize: 10.5, color: C.textTer }}>{sg.zbierkaId ? "Sken otvorí zbierku sektora a dar" : "Sken otvorí tento sektor na vašom profile"}</div>
-                  <div style={{ display: "flex", gap: SPACE.sm, marginTop: 4 }}>
-                    <span {...pressable(() => setQr({ titul: sg.nazov, odkaz: odkazSektora(sg), odznak: odznakSektora(sg) }), "Zobraziť QR")} style={{ fontSize: 11.5, fontWeight: 800, color: ZELENA, cursor: "pointer" }}>Zobraziť</span>
-                    <span {...pressable(() => void stiahni(sg), "Stiahnuť PNG")} style={{ fontSize: 11.5, fontWeight: 800, color: ZELENA, cursor: "pointer" }}>⬇ Stiahnuť PNG</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* samostatná zbierka sektora */}
-              <div style={{ marginTop: SPACE.xs }}>
-                {sg.zbierkaId ? (
-                  <div style={{ fontSize: 11.5, fontWeight: 700, color: ZELENA, background: tint(ZELENA, .1), border: `1px solid ${tint(ZELENA, .3)}`, borderRadius: RADIUS.xs, padding: `${SPACE.xxs}px ${SPACE.xs}px` }}>
-                    ✓ Samostatná zbierka sektora — spravuješ ju v Zbierkach organizácie
-                  </div>
-                ) : (
-                  <button onClick={() => vytvorZbierku(sg)} style={btnDruhy}>Vytvoriť zbierku pre sektor</button>
-                )}
-              </div>
-
-              {/* účet zbierky sektora */}
-              <div style={{ marginTop: SPACE.xs }}>
-                <div style={{ fontSize: 11.5, fontWeight: 700, color: C.textSec, marginBottom: 2 }}>Účet zbierky (IBAN)</div>
-                <input defaultValue={sg.iban ? formatujIban(sg.iban) : ""} onBlur={(e) => ulozIban(sg, e.target)}
-                  placeholder="SK00 0000 0000 0000 0000 0000" autoComplete="off" spellCheck={false} style={input} />
-                <div style={{ fontSize: 10.5, color: C.textTer, marginTop: 2, lineHeight: 1.4 }}>
-                  Dary z tohto sektora idú na tento účet. Prázdne = hlavný účet organizácie.
-                </div>
-              </div>
-            </div>
-          )}
-
-          {!sg.zRegistracie && (
+          {!sg.zRegistracie && !sg.zbierkaId && (
             <span {...pressable(() => zmaz(sg), `Odstrániť ${sg.nazov}`)} style={{ display: "inline-block", marginTop: SPACE.xxs, fontSize: 11, fontWeight: 700, color: C.textTer, cursor: "pointer" }}>Odstrániť</span>
           )}
         </div>
@@ -450,8 +377,6 @@ export function SegmentySheet({ tier, toast, onPaywall, onClose }: {
         </div>
         {!aktivne.length && <div style={{ fontSize: 11.5, color: C.textTer, marginTop: SPACE.xs }}>Žiadny zapnutý sektor — darca si bude vyberať len zbierku alebo celú organizáciu.</div>}
       </div>
-
-      {qr && <QrModal odznak={qr.odznak} typ="skutok" titul={`QR — ${qr.titul}`} odkaz={qr.odkaz} onClose={() => setQr(null)} toast={toast} />}
     </Sheet>
   );
 }

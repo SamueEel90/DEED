@@ -20,6 +20,7 @@ import {
   KrokZabezpecenie,
 } from "./RegKit";
 import { DOBRO_TYPY, POBOCKA_REZIMY, BALIKY } from "./mock";
+import { ulozIbanOrg } from "@/features/rola/stav";
 
 // charita akcent (fialová) — odlišuje organizačný tok od osobného
 const AKCENT = "var(--a-plum)";
@@ -418,6 +419,7 @@ function KrokProfil({ org, nazov, toast, onBack, onNext }: KrokProfilProps) {
       });
       // IBAN patrí na organizáciu (profil_charity nemá bankový stĺpec)
       await db.ulozOrganizaciu(org.id, { bankovy_ucet: iban.trim() || null });
+      ulozIbanOrg("charita", iban.trim());  // správa charity ho ukáže pri centrálnej zbierke
       onNext();
     } catch (e: any) {
       toast?.("Chyba: " + e.message);
