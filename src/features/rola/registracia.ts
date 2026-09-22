@@ -16,6 +16,11 @@ let segmenty: string[] = SEGMENTY_CHARITY;
 const KLUC_SEG = "deed.rola.segmenty.charita";
 /** segmenty charity: z registrácie, prípadne upravené správcom (odškrtnuté) */
 export function segmentyCharity(): string[] {
+  // nové: zoznam spravuje nástroj Segmenty pre darcov (features/rola/segmenty.ts)
+  try {
+    const v2 = localStorage.getItem("deed.rola.segmenty.charita.v2");
+    if (v2) return (JSON.parse(v2) as { nazov: string; aktivny: boolean }[]).filter((x) => x.aktivny).map((x) => x.nazov);
+  } catch { /* LS */ }
   try { const s = localStorage.getItem(KLUC_SEG); if (s) return JSON.parse(s) as string[]; } catch { /* LS */ }
   return segmenty;
 }
