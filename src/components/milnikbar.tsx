@@ -12,17 +12,19 @@ const ZELENA = "var(--a-green)";
 const ORANZ = "var(--a-warn, #E0913A)";
 const eur = (n: number) => `${Math.round(n).toLocaleString("sk")} €`;
 
-export function MilnikBar({ vyzbierane, dolozene, ludia, krok = VLASTNA_ZBIERKA_CFG.milnik, mini = false }: {
+export function MilnikBar({ vyzbierane, dolozene, ludia, krok = VLASTNA_ZBIERKA_CFG.milnik, mini = false, dobrovolne = false }: {
   vyzbierane: number;
   /** koľko € z vyzbieraného je doložených dokladmi */
   dolozene: number;
   ludia?: number;
   krok?: number;
   mini?: boolean;
+  /** centrálna zbierka: dokladovanie je dobrovoľné → žiadna oranžová výčitka, len zelený bonus */
+  dobrovolne?: boolean;
 }) {
   const m = milniky(vyzbierane, krok);
   const dolozenych = dolozeneMilniky(dolozene, krok);
-  const cakaTranza = m.dosiahnute.length > dolozenych;
+  const cakaTranza = !dobrovolne && m.dosiahnute.length > dolozenych;
 
   return (
     <div>
@@ -45,10 +47,10 @@ export function MilnikBar({ vyzbierane, dolozene, ludia, krok = VLASTNA_ZBIERKA_
       </div>
 
       {/* značky míľnikov */}
-      {m.dosiahnute.length > 0 && (
+      {m.dosiahnute.length > 0 && !(dobrovolne && dolozenych === 0) && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: SPACE.xxs, marginTop: SPACE.xs }}>
-          {m.dosiahnute.map((v, i) => {
-            const ok = i < dolozenych;
+          {(dobrovolne ? m.dosiahnute.slice(0, dolozenych) : m.dosiahnute).map((v, i) => {
+            const ok = dobrovolne || i < dolozenych;
             const f = ok ? ZELENA : ORANZ;
             return (
               <span key={v} title={ok ? "doložené" : "čaká na doklady"}
@@ -62,8 +64,10 @@ export function MilnikBar({ vyzbierane, dolozene, ludia, krok = VLASTNA_ZBIERKA_
 
       {!mini && (
         <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11.5, marginTop: SPACE.xs }}>
-          <span style={{ color: cakaTranza ? ORANZ : C.textSec, fontWeight: cakaTranza ? 700 : 400 }}>
-            {m.dosiahnute.length === 0 ? "Prvé doklady pri " + eur(krok)
+          <span style={{ color: cakaTranza ? ORANZ : dolozenych > 0 ? ZELENA : C.textSec, fontWeight: cakaTranza || dolozenych > 0 ? 700 : 400 }}>
+            {dobrovolne
+              ? (dolozenych > 0 ? `✓ Dobrovoľne doložené ${eur(dolozenych * krok)}` : "Dokladovanie je tu dobrovoľné")
+              : m.dosiahnute.length === 0 ? "Prvé doklady pri " + eur(krok)
               : cakaTranza ? `Čaká na doklady k ${eur(m.dosiahnute.length * krok)}`
               : `Doložené ${eur(dolozenych * krok)}`}
           </span>

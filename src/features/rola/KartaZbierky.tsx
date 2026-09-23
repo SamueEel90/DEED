@@ -148,8 +148,10 @@ export function KartaZbierkyForm({ profil, zmen, logo, toast, deti, bar }: {
 }
 
 /** náhľad karty tak, ako ju uvidí darca vo feede */
-export function NahladKarty({ profil, logo, vyzbierane, dolozene, ludia, sipka }: {
+export function NahladKarty({ profil, logo, vyzbierane, dolozene, ludia, sipka, dobrovolne }: {
   profil: ProfilZbierky; logo?: string; vyzbierane: number; dolozene: number; ludia?: number;
+  /** centrálna zbierka — dokladovanie dobrovoľné (bonus k dôvere, nie povinnosť) */
+  dobrovolne?: boolean;
   /** karta je rozbaľovacia (verejný profil) — šípka ako pri ostatných zbierkach */
   sipka?: "zavreta" | "otvorena";
 }) {
@@ -173,7 +175,7 @@ export function NahladKarty({ profil, logo, vyzbierane, dolozene, ludia, sipka }
           {sipka && <span style={{ flex: "none", color: C.textTer, fontSize: 15, transform: sipka === "otvorena" ? "rotate(90deg)" : "none", transition: "transform .18s ease" }}>›</span>}
         </div>
         {profil.popis && <div style={{ fontSize: 12.5, color: C.textSec, lineHeight: 1.45, margin: `2px 0 ${SPACE.sm}px` }}>{profil.popis}</div>}
-        <MilnikBar vyzbierane={vyzbierane} dolozene={dolozene} ludia={ludia} />
+        <MilnikBar vyzbierane={vyzbierane} dolozene={dolozene} ludia={ludia} dobrovolne={dobrovolne} />
       </div>
     </div>
   );

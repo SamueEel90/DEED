@@ -12,8 +12,11 @@ import { useSyncExternalStore } from "react";
 export const VLASTNA_ZBIERKA_CFG = {
   /** tranža, po ktorej musí charita doložiť použitie (placeholder, ladí Martin) */
   milnik: 3000,
-  /** koľko dní má na doloženie tranže */
+  /** koľko dní má na doloženie tranže (platí pre sektorové zbierky) */
   dniNaDolozenie: 30,
+  /** centrálna zbierka = chod organizácie → dokladovanie DOBROVOĽNÉ (bonus k dôvere a karme),
+   *  sektorová zbierka má konkrétny účel a vlastný transparentný účet → dokladovanie povinné */
+  centralnaDokladovaniePovinne: false,
   /** sektorové zbierky sú od programu AKCIA (T2), centrálna od ZBIERKA (T1) */
   sektoroveOdTieru: 2,
   centralnaOdTieru: 1,

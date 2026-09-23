@@ -162,7 +162,7 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
     return (
       <div {...pressable(() => setRozbalena(otvorena ? null : id), profil.nazov)} style={{ cursor: "pointer" }}>
         <NahladKarty profil={profil} logo={logoOrg} vyzbierane={dary.suma} dolozene={0} ludia={dary.pocet}
-          sipka={otvorena ? "otvorena" : "zavreta"} />
+          dobrovolne={id === CENTRALNA_ID} sipka={otvorena ? "otvorena" : "zavreta"} />
       </div>
     );
   };

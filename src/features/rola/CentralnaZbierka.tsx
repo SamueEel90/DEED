@@ -70,7 +70,7 @@ export function CentralnaZbierkaSheet({ toast, onClose }: { toast: (m: string) =
 
       {nadpis("KARTA ZBIERKY — TAKTO JU UVIDIA DARCOVIA")}
       <KartaZbierkyForm profil={profil} zmen={zmenProfil} logo={logo} toast={toast}
-        bar={<MilnikBar vyzbierane={vyzbierane} dolozene={0} ludia={0} />}
+        bar={<MilnikBar vyzbierane={vyzbierane} dolozene={0} ludia={0} dobrovolne />}
         deti={
         <div style={{ marginTop: SPACE.sm }}>
           <div style={{ fontSize: 11.5, fontWeight: 700, color: C.textSec, marginBottom: 2 }}>Účet zbierky (IBAN)</div>
@@ -83,7 +83,7 @@ export function CentralnaZbierkaSheet({ toast, onClose }: { toast: (m: string) =
       } />
 
       <div style={{ fontSize: 11, color: C.textTer, margin: `${SPACE.xs}px 0 ${SPACE.sm}px`, lineHeight: 1.45 }}>
-        Centrálna zbierka nemá cieľovú sumu — beží od míľnika k míľniku. Po každých {VLASTNA_ZBIERKA_CFG.milnik.toLocaleString("sk")} € doložíte použitie do {VLASTNA_ZBIERKA_CFG.dniNaDolozenie} dní, inak značka ostane oranžová aj pre darcov.
+        Centrálna zbierka nemá cieľovú sumu ani povinné dokladovanie — je to zbierka na váš chod. Keď doložíte použitie po niektorom míľniku ({VLASTNA_ZBIERKA_CFG.milnik.toLocaleString("sk")} €), darcovia to uvidia ako zelené „✓ doložené" a stúpne vám karma. Nedoložené míľniky sa nikde nevyčítajú.
       </div>
       {nadpis("PLATOBNÝ MODUL")}
       <div style={{ background: C.surface2, border: `1px solid ${C.line}`, borderRadius: RADIUS.md, padding: SPACE.sm }}>
