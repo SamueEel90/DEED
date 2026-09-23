@@ -245,6 +245,7 @@ export const SPRAVA_CHARITA: SpravaItem[] = [
   // ZBIERKA (T1)
   { id: "centralna", emoji: "💛", nazov: "Centrálna zbierka organizácie", popis: "Pridať a spravovať — pravidelná podpora na sektor činnosti alebo celú organizáciu", tierMin: 1, sekcia: "zbierky" },
   { id: "segment", emoji: "🧩", nazov: "Sektorové zbierky a činnosti", popis: "Témy pre darcov · od AKCIE vlastná zbierka, účet a QR pre každý sektor", tierMin: 1, sekcia: "zbierky" },
+  { id: "dorovnanie", emoji: "🤝", nazov: "Dorovnanie daru", popis: "Firma pridá k daru ľudí svoj diel · dar, nie sponzoring · peniaze vopred na váš účet", tierMin: 1, sekcia: "zbierky" },
   { id: "sponzoring", emoji: "🤝", nazov: "Sponzoring", popis: "Hľadáme sponzora s protiplnením · predvyplnená zmluva · logo sponzora na profile · oznam v meste · doklad o protiplnení · sponzorské zbierky bez limitu", tierMin: 1, sekcia: "akcie" },
   { id: "oznamy", emoji: "📣", nazov: "Oznamy", popis: "Krátka správa na profil — čo je nové · vidia ju tí, čo vás sledujú", tierMin: 1, sekcia: "obsah" },
   { id: "inzeraty", emoji: "📌", nazov: "Pracovné ponuky", popis: "Hľadáme brigádnika, zamestnanca, pomoc · ZBIERKA 1 · AKCIA 5 · KAMPAŇ bez limitu", tierMin: 1, sekcia: "akcie" },

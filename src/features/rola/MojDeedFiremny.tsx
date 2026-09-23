@@ -33,6 +33,7 @@ import { VideoSheet, DarcoviaSheet, QrNastrojeSheet, ViditelnostSheet } from "./
 import { SektoroveZbierkySheet } from "./SektoroveZbierky";
 import { OznamySheet } from "./Oznamy";
 import { InzeratySheet } from "./Inzeraty";
+import { DorovnanieSheet } from "./Dorovnanie";
 import { ZBIERKY, predvolenyStav } from "@/lib/zbierky";
 import { nacitajStav, percentoDolozenia, fazaDokladovania, useZmenySpravy } from "@/lib/zbierkaSprava";
 import { KontaktBlok, nacitajKontakt, ulozKontakt } from "./kontakt";
@@ -49,7 +50,7 @@ import { verejneTaby, zamknuteTaby, popisTabu, BLOK_ZA_TAB, zbierkyOrg, cislaSub
 */
 
 type PaywallReq = { tierMin: Tier; nazov: string; dovod?: string };
-type OtvorenySheet = null | "zbierky" | "centralna" | "terminal" | "retaz" | "profil" | "adresarB2B" | { spravovat: OrgZbierka } | "video" | "darcovia" | "qr" | "sumy" | "segment" | "oznamy" | "inzeraty";
+type OtvorenySheet = null | "zbierky" | "centralna" | "terminal" | "retaz" | "profil" | "adresarB2B" | { spravovat: OrgZbierka } | "video" | "darcovia" | "qr" | "sumy" | "segment" | "oznamy" | "inzeraty" | "dorovnanie";
 
 // ---- SVG ikony blokov a správy (nahrádzajú emoji — jednotný vizuál) ----
 const IKONY: Record<string, ReactNode> = {
@@ -156,7 +157,7 @@ function MojDeedFiremnyObsah({ onBack, toast, orgId }: { onBack: () => void; toa
     if (pozicia === "charita" && (it.id === "zbierky" || it.id === "dokladovanie")) return setSheet("zbierky");
     if (pozicia === "tvorca" && it.id === "terminal") return setSheet("terminal");
     if (pozicia === "charita" && it.id === "centralna") return setSheet("centralna");
-    if (pozicia === "charita" && (it.id === "video" || it.id === "darcovia" || it.id === "qr" || it.id === "sumy" || it.id === "segment" || it.id === "oznamy" || it.id === "inzeraty")) return setSheet(it.id);
+    if (pozicia === "charita" && (it.id === "video" || it.id === "darcovia" || it.id === "qr" || it.id === "sumy" || it.id === "segment" || it.id === "oznamy" || it.id === "inzeraty" || it.id === "dorovnanie")) return setSheet(it.id);
     toast(`${it.nazov} — čoskoro`);
   };
 
@@ -344,6 +345,7 @@ function MojDeedFiremnyObsah({ onBack, toast, orgId }: { onBack: () => void; toa
       {sheet === "qr" && <QrNastrojeSheet tier={tier} toast={toast} onClose={() => setSheet(null)} />}
       {sheet === "sumy" && <ViditelnostSheet toast={toast} onClose={() => setSheet(null)} />}
       {sheet === "oznamy" && <OznamySheet entita={pozicia} autor={subjekt.nazov} logo={logo ?? subjekt.foto} toast={toast} onClose={() => setSheet(null)} />}
+      {sheet === "dorovnanie" && <DorovnanieSheet entita={pozicia} toast={toast} onClose={() => setSheet(null)} />}
       {sheet === "inzeraty" && <InzeratySheet entita={pozicia} autor={subjekt.nazov} logo={logo ?? subjekt.foto} tier={tier} toast={toast} onPaywall={setPaywall} onClose={() => setSheet(null)} />}
       {sheet === "segment" && <SektoroveZbierkySheet tier={tier} toast={toast} onPaywall={setPaywall} onClose={() => setSheet(null)} />}
       {sheet === "terminal" && <TerminalSheet toast={toast} onClose={() => setSheet(null)} />}
