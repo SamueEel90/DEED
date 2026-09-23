@@ -6,6 +6,8 @@ import { usePouzivatel } from "@/lib/pouzivatel";
 import { useUpgrade } from "@/components/context";
 import { useRecurringCreate } from "@/data";
 import { Sheet } from "@/components/sheet";
+import { VolbaDarcovstva } from "@/components/zoznamdarcov";
+import { nacitajPredvolbu, ulozPredvolbu, type VolbaDaru } from "@/lib/darcovia";
 import { IkonaOpakovat, IkonaFajka } from "@/components/icons";
 import { Svetlusik } from "@/components/svetlusik";
 
@@ -20,8 +22,15 @@ type Perioda = "tyzdenne" | "mesacne" | "rocne";
 
 const periodaTxt = (p: Perioda) => (p === "tyzdenne" ? "týždeň" : p === "rocne" ? "rok" : "mesiac");
 
-export function RecurringSheet({ nazov, caseId, charitaUcet, segmenty, bezCelej = false, onClose, toast }: {
+export function RecurringSheet({ nazov, caseId, charitaUcet, segmenty, bezCelej = false, sektor, onCiel, onDar, onClose, toast }: {
   nazov?: ReactNode; caseId?: string | null; charitaUcet?: string | null;
+  /** zbierka JE zbierkou sektora — voľba „téma sektora" by bola to isté, preto sa neponúka */
+  sektor?: string | null;
+  /** po poďakovaní prejsť tam, kam peniaze idú (centrálna / sektorová zbierka) —
+   *  darca musí vidieť, kde dar skončil. Vráť undefined, keď cieľ nemá kam viesť. */
+  onCiel?: (rozsah: string, segment: string | null) => { label: string; onClick: () => void } | undefined;
+  /** prvá platba záväzku — zapíše sa do zoznamu darcov cieľovej zbierky */
+  onDar?: (suma: number, mena: "EUR" | "EURC", volba: VolbaDaru, rozsah: string, segment: string | null) => void;
   /** segmenty, ktoré si charita nastavila (program AKCIA). null = charita segmenty ani celú organizáciu neponúka;
    *  undefined = starý režim bez zoznamu (feed, kým nepoznáme program charity) */
   segmenty?: string[] | null;
@@ -35,27 +44,35 @@ export function RecurringSheet({ nazov, caseId, charitaUcet, segmenty, bezCelej 
   const [krok, setKrok] = useState<"nastav" | "potvrd" | "hotovo">("nastav");
   const [rozsah, setRozsah] = useState<Rozsah>(caseId ? "request" : "charita");
   const [suma, setSuma] = useState(10);
+  const [vlastna, setVlastna] = useState(false);
+  const [volba, setVolba] = useState<VolbaDaru>(nacitajPredvolbu);
   const [perioda, setPerioda] = useState<Perioda>("mesacne");
   const [mena, setMena] = useState<"EUR" | "EURC">("EUR"); // charita a Viera prijímajú krypto v EURC, nie DEED
 
   const [segment, setSegment] = useState<string | null>(segmenty?.[0] ?? null);
   // čím širší cieľ, tým menej sa dá doložiť, kam išlo práve tvoje euro — darca to musí vidieť pred potvrdením
   const volby: { id: Rozsah; t: string; d: string; kontrola: string; farba: string }[] = [
-    ...(caseId ? [{ id: "request" as const, t: "Táto zbierka", d: "Skončí, keď zbierka skončí — okamžite a s notifikáciou.",
-      kontrola: "K tejto zbierke budú doložené doklady o použití.", farba: "var(--a-green)" }] : []),
+    ...(caseId ? [{ id: "request" as const,
+      t: sektor ? `Tento sektor — ${sektor}` : "Táto zbierka",
+      d: sektor ? "Zbierka sektora s vlastným transparentným účtom." : "Skončí, keď zbierka skončí — okamžite a s notifikáciou.",
+      kontrola: sektor
+        ? "Použitie darov v zbierke sektora sa povinne nedokladuje. Je to na uvážení organizácie."
+        : "K tejto zbierke budú doložené doklady o použití.",
+      farba: "var(--a-green)" }] : []),
     ...(segmenty === null ? [] : [
-      { id: "segment" as const, t: "Sektor činnosti", d: "Charita rozdelí peniaze v rámci témy podľa vlastného kľúča.",
-        kontrola: "Doklady budeme požadovať za celú tému, nezaručujeme však, že pokryjú práve váš dar.", farba: "var(--a-green)" },
+      { id: "segment" as const, t: "Sektor organizácie — vlastná zbierka", d: "Zbierka sektora s vlastným transparentným účtom.",
+        kontrola: "Použitie darov v zbierke sektora sa povinne nedokladuje. Je to na uvážení organizácie.", farba: "var(--a-green)" },
     ]),
     ...(bezCelej ? [] : [
-      { id: "charita" as const, t: "Celá charita", d: "Paušál na chod a najnaliehavejšie potreby.",
-        kontrola: "Nad použitím daru pre celú organizáciu nemáme kontrolu.", farba: "var(--a-green)" },
+      { id: "charita" as const, t: "Celá organizácia — centrálna zbierka", d: "Pravidelná podpora na chod organizácie.",
+        kontrola: "Použitie darov v centrálnej zbierke sa povinne nedokladuje. Je to na uvážení organizácie.", farba: "var(--a-green)" },
     ]),
   ];
 
+  function zapisDar() { onDar?.(suma, mena, volba, rozsah, rozsah === "segment" ? segment : null); }
   async function potvrd() {
     if (typ === "pasivny") { onClose?.(); upgrade(); return; }  // recurring = len registrovaný darca
-    if (!ucetId || demo) { setKrok("hotovo"); return; }          // ukážka (demo účet): záväzok sa len simuluje
+    if (!ucetId || demo) { zapisDar(); setKrok("hotovo"); return; }  // ukážka (demo účet): záväzok sa len simuluje
     try {
       await rec.mutateAsync({
         rozsah, darca: ucetId, suma, mena, perioda,
@@ -64,12 +81,14 @@ export function RecurringSheet({ nazov, caseId, charitaUcet, segmenty, bezCelej 
         viazaneNaZbierku: rozsah === "request",
       });
       toast?.(`Pravidelná podpora nastavená · ${suma} ${mena} / ${periodaTxt(perioda)}`);
+      zapisDar();
       setKrok("hotovo");
     } catch {
       toast?.("Nepodarilo sa nastaviť — skús znova.");
     }
   }
 
+  const ciel = onCiel?.(rozsah, rozsah === "segment" ? segment : null);
   const btn = (ok: boolean, grad = false): CSSProperties => ({ width: "100%", padding: `${SPACE.sm}px 0`, borderRadius: RADIUS.md, border: "none", fontWeight: 700, fontSize: 15, cursor: ok ? "pointer" : "not-allowed", fontFamily: "inherit", background: ok ? (grad ? GRAD_ZELENY : C.surface2) : "rgba(var(--glass-rgb),.06)", color: ok ? (grad ? "#fff" : C.text) : C.textTer, marginTop: SPACE.gutter });
   const chip = (active: boolean): CSSProperties => ({ flex: 1, padding: `${SPACE.xs}px 0`, borderRadius: RADIUS.sm, border: `1px solid ${active ? C.green : C.line}`, background: active ? tint(C.green, .1) : C.surface2, color: active ? C.green : C.text, fontWeight: 700, fontSize: 13, cursor: "pointer", fontFamily: "inherit" });
 
@@ -104,9 +123,16 @@ export function RecurringSheet({ nazov, caseId, charitaUcet, segmenty, bezCelej 
         )}
 
         <div style={{ fontSize: 11.5, letterSpacing: ".4px", color: C.textTer, fontWeight: 700, margin: `${SPACE.md}px 0 ${SPACE.xs}px` }}>SUMA</div>
-        <div style={{ display: "flex", gap: SPACE.xs, marginBottom: SPACE.sm }}>
-          {[5, 10, 20, 50].map((c) => <button key={c} onClick={() => setSuma(c)} style={chip(suma === c)}>{c}</button>)}
+        <div style={{ display: "flex", gap: SPACE.xs, marginBottom: SPACE.xs }}>
+          {[5, 10, 20, 50].map((c) => <button key={c} onClick={() => { setSuma(c); setVlastna(false); }} style={chip(!vlastna && suma === c)}>{c}</button>)}
         </div>
+        <button onClick={() => setVlastna(true)} style={{ ...chip(vlastna), width: "100%", marginBottom: SPACE.sm }}>Vlastná suma</button>
+        {vlastna && (
+          <input type="number" inputMode="decimal" min={1} step={1} autoFocus value={suma || ""}
+            onChange={(e) => setSuma(Math.max(0, Number(e.target.value)))}
+            placeholder="Napíš sumu"
+            style={{ width: "100%", boxSizing: "border-box", background: C.surface2, border: `1px solid ${C.line}`, borderRadius: RADIUS.sm, padding: SPACE.sm, color: C.text, fontSize: 18, fontWeight: 800, fontFamily: "inherit", outline: "none", marginBottom: SPACE.sm, textAlign: "center" }} />
+        )}
         <div style={{ display: "flex", gap: SPACE.xs }}>
           <button onClick={() => setMena("EUR")} style={chip(mena === "EUR")}>€ EUR</button>
           <button onClick={() => setMena("EURC")} style={chip(mena === "EURC")}>EURC</button>
@@ -117,19 +143,27 @@ export function RecurringSheet({ nazov, caseId, charitaUcet, segmenty, bezCelej 
           {(["tyzdenne", "mesacne", "rocne"] as Perioda[]).map((p) => <button key={p} onClick={() => setPerioda(p)} style={chip(perioda === p)}>{periodaTxt(p)}</button>)}
         </div>
 
-        <button onClick={() => setKrok("potvrd")} style={btn(true, true)}>Pokračovať</button>
+        <div style={{ fontSize: 11.5, letterSpacing: ".4px", color: C.textTer, fontWeight: 700, margin: `${SPACE.md}px 0 ${SPACE.xs}px` }}>AKO SA ZOBRAZÍŠ V ZOZNAME DARCOV</div>
+        <VolbaDarcovstva volba={volba} onZmena={(v) => { setVolba(v); ulozPredvolbu(v); }} sumaEur={mena === "EUR" ? suma : suma} />
+
+        <button disabled={suma <= 0} onClick={() => setKrok("potvrd")} style={btn(suma > 0, true)}>Pokračovať</button>
       </>) : krok === "hotovo" ? (<>
         <Svetlusik nadpis={meno ? `Ďakujeme, ${meno}, za tvoju podporu!` : "Ďakujeme za tvoju podporu!"}
           dar={`${suma} ${mena} každý ${periodaTxt(perioda)}`}
           karma="Pravidelnú podporu zrušíš kedykoľvek v Peňaženke." />
-        <button onClick={() => onClose?.()} style={btn(true, true)}>Hotovo</button>
+        {ciel ? (<>
+          <button onClick={() => { onClose?.(); ciel.onClick(); }} style={btn(true, true)}>{ciel.label}</button>
+          <button onClick={() => onClose?.()} style={{ ...btn(true), background: "rgba(var(--glass-rgb),.06)", color: C.textSec, marginTop: SPACE.sm }}>Hotovo</button>
+        </>) : (
+          <button onClick={() => onClose?.()} style={btn(true, true)}>Hotovo</button>
+        )}
       </>) : (<>
         {/* DVOJITÉ potvrdenie — záväzok */}
         <div style={{ background: "rgba(var(--glass-rgb),.05)", border: `1px solid ${C.line}`, borderRadius: RADIUS.sm, padding: `${SPACE.sm}px ${SPACE.gutter}px` }}>
           <Riadok k="Suma" v={`${suma} ${mena}`} />
           <Riadok k="Perióda" v={`každý ${periodaTxt(perioda)}`} />
-          <Riadok k="Cieľ" v={rozsah === "segment" && segment ? `Sektor činnosti — ${segment}` : volby.find((x) => x.id === rozsah)?.t} />
-          <Riadok k="Dokladovanie" v={<span style={{ color: volby.find((x) => x.id === rozsah)?.farba }}>{rozsah === "request" ? "doklady k zbierke" : rozsah === "segment" ? "doklady za sektor" : "bez kontroly"}</span>} />
+          <Riadok k="Cieľ" v={rozsah === "segment" && segment ? `Sektor — ${segment}` : volby.find((x) => x.id === rozsah)?.t} />
+          <Riadok k="Dokladovanie" v={<span style={{ color: volby.find((x) => x.id === rozsah)?.farba }}>{rozsah === "request" && !sektor ? "doklady k zbierke" : "dobrovoľné"}</span>} />
           {rozsah === "request" && <Riadok k="Pozn." v="zastaví sa pri ukončení zbierky" />}
         </div>
         <div style={{ fontSize: 11.5, color: C.textTer, marginTop: SPACE.sm, lineHeight: 1.5 }}>

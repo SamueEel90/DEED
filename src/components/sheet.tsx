@@ -103,12 +103,21 @@ export function Sheet({
         }}
       >
       <div style={stred ? {
+          position: "relative",
           width: "100%", maxWidth: SIRKA.citanie, maxHeight: "100%",
           display: "flex", flexDirection: "column", pointerEvents: "auto",
           ...glassTmavy(26, 0.8), borderRadius: RADIUS.xl, boxShadow: SHADOW.lg, overflow: "hidden",
         } : { display: "contents" }}>
         {/* grabber pill — vizuálny ťah (Vaul ho spraví funkčným); pri top sheete je dole */}
         {!zhora && grabber}
+        {/* na desktope nie je čo ťahať — musí tam byť viditeľné zavretie */}
+        {stred && dismissible && (
+          <button type="button" aria-label="Zavrieť" onClick={() => onClose?.()}
+            style={{ position: "absolute", right: 14, top: 12, width: 32, height: 32, borderRadius: "50%", border: "none", cursor: "pointer",
+              background: "rgba(var(--glass-rgb),.12)", color: "var(--c-textSec)", fontSize: 18, lineHeight: "32px", fontFamily: "inherit", padding: 0, zIndex: 2 }}>
+            ×
+          </button>
+        )}
         {/* Vaul/Radix vyžaduje Title pre a11y — vizuálne skrytý */}
         <Drawer.Title style={{ position: "absolute", width: 1, height: 1, padding: 0, margin: -1, overflow: "hidden", clip: "rect(0 0 0 0)", whiteSpace: "nowrap", border: 0 }}>
           {label}

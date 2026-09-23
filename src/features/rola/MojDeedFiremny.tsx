@@ -29,7 +29,7 @@ import { OnasKratky } from "./OnasKratky";
 import { jeNeregistrovany, nastavNeregistrovany } from "@/lib/devDarca";
 import { CentralnaZbierkaSheet } from "./CentralnaZbierka";
 import { SpravaZbierkySheet } from "./SpravaZbierky";
-import { VideoSheet, DarcoviaSheet, QrNastrojeSheet, ViditelnostSheet, SegmentySheet } from "./NastrojeCharity";
+import { VideoSheet, DarcoviaSheet, QrNastrojeSheet, ViditelnostSheet } from "./NastrojeCharity";
 import { SektoroveZbierkySheet } from "./SektoroveZbierky";
 import { ZBIERKY, predvolenyStav } from "@/lib/zbierky";
 import { nacitajStav, percentoDolozenia, fazaDokladovania, useZmenySpravy } from "@/lib/zbierkaSprava";
@@ -47,7 +47,7 @@ import { verejneTaby, zamknuteTaby, popisTabu, BLOK_ZA_TAB, zbierkyOrg, cislaSub
 */
 
 type PaywallReq = { tierMin: Tier; nazov: string; dovod?: string };
-type OtvorenySheet = null | "zbierky" | "centralna" | "terminal" | "retaz" | "profil" | "adresarB2B" | { spravovat: OrgZbierka } | "video" | "darcovia" | "qr" | "sumy" | "segment" | "sektorove";
+type OtvorenySheet = null | "zbierky" | "centralna" | "terminal" | "retaz" | "profil" | "adresarB2B" | { spravovat: OrgZbierka } | "video" | "darcovia" | "qr" | "sumy" | "segment";
 
 // ---- SVG ikony blokov a správy (nahrádzajú emoji — jednotný vizuál) ----
 const IKONY: Record<string, ReactNode> = {
@@ -116,9 +116,13 @@ function MojDeedFiremnyObsah({ onBack, toast, orgId }: { onBack: () => void; toa
   const sprava = SPRAVY[pozicia].filter((it) => it.povinne || viditelny(it.tierMin))
     .map((it, i) => ({ it, i, z: !it.povinne && tier < it.tierMin ? it.tierMin : -1 }))
     .sort((a, b) => a.z - b.z || a.i - b.i).map((x) => x.it);
-  // „Začni tu": charita od T1 začína centrálnou zbierkou (hore), v ZADARMO zbierkou pre niekoho
-  const startId = pozicia === "charita" ? (tier >= 1 ? "centralna" : "zbierky") : null;
-  const spravaZoradena = startId ? [...sprava.filter((it) => it.id === startId), ...sprava.filter((it) => it.id !== startId)] : sprava;
+  // „Začni tu": charita od T1 začína centrálnou zbierkou (hore) a hneď pod ňou sú sektory,
+  // lebo patria k sebe — v ZADARMO je navrchu zbierka pre niekoho
+  const hore = pozicia === "charita" ? (tier >= 1 ? ["centralna", "segment"] : ["zbierky"]) : [];
+  const startId = hore[0] ?? null;  // „Začni tu" ostáva len na prvej položke
+  const spravaZoradena = hore.length
+    ? [...hore.map((id) => sprava.find((it) => it.id === id)).filter((it): it is SpravaItem => !!it), ...sprava.filter((it) => !hore.includes(it.id))]
+    : sprava;
   const rolaMeta = POZICIE.find((p) => p.key === pozicia)!;
   const subjekt = SUBJEKTY[pozicia];
   const stit = naStitLevel(ZASLUZENA[pozicia].badge);
@@ -141,7 +145,7 @@ function MojDeedFiremnyObsah({ onBack, toast, orgId }: { onBack: () => void; toa
     if (pozicia === "charita" && (it.id === "zbierky" || it.id === "dokladovanie")) return setSheet("zbierky");
     if (pozicia === "tvorca" && it.id === "terminal") return setSheet("terminal");
     if (pozicia === "charita" && it.id === "centralna") return setSheet("centralna");
-    if (pozicia === "charita" && (it.id === "video" || it.id === "darcovia" || it.id === "qr" || it.id === "sumy" || it.id === "segment" || it.id === "sektorove")) return setSheet(it.id);
+    if (pozicia === "charita" && (it.id === "video" || it.id === "darcovia" || it.id === "qr" || it.id === "sumy" || it.id === "segment")) return setSheet(it.id);
     toast(`${it.nazov} — čoskoro`);
   };
 
@@ -321,8 +325,7 @@ function MojDeedFiremnyObsah({ onBack, toast, orgId }: { onBack: () => void; toa
       {sheet === "darcovia" && <DarcoviaSheet tier={tier} toast={toast} onClose={() => setSheet(null)} />}
       {sheet === "qr" && <QrNastrojeSheet tier={tier} toast={toast} onClose={() => setSheet(null)} />}
       {sheet === "sumy" && <ViditelnostSheet toast={toast} onClose={() => setSheet(null)} />}
-      {sheet === "segment" && <SegmentySheet tier={tier} toast={toast} onPaywall={setPaywall} onClose={() => setSheet(null)} />}
-      {sheet === "sektorove" && <SektoroveZbierkySheet tier={tier} toast={toast} onPaywall={setPaywall} onClose={() => setSheet(null)} />}
+      {sheet === "segment" && <SektoroveZbierkySheet tier={tier} toast={toast} onPaywall={setPaywall} onClose={() => setSheet(null)} />}
       {sheet === "terminal" && <TerminalSheet toast={toast} onClose={() => setSheet(null)} />}
       {sheet === "retaz" && <MojaRetaz onClose={() => setSheet(null)} toast={toast} />}
       {sheet === "profil" && (

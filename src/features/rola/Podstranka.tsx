@@ -15,12 +15,12 @@ import { RecurringSheet } from "@/components/recurring";
 import { SADY_EUR, SADY_EURC } from "@/lib/sadyDarov";
 import { nastavCiste, sucetDarov, useZmenyDarov, pridajDar, type VolbaDaru } from "@/lib/darcovia";
 import { ZoznamDarcov } from "@/components/zoznamdarcov";
-import { NahladKarty } from "./KartaZbierky";
-import { nacitajProfil, useZmenyProfilov, CENTRALNA_ID } from "./vlastneZbierky";
+import { NahladKarty, GaleriaZbierky } from "./KartaZbierky";
+import { nacitajProfil, useZmenyProfilov, CENTRALNA_ID, VLASTNA_ZBIERKA_CFG, type ProfilZbierky } from "./vlastneZbierky";
+import { useSegmenty } from "./segmenty";
 import { zdielaj, aktualnaUrl } from "@/lib/zdielanie";
 import type { Kanal } from "@/types";
 import { SUBJEKTY, ZASLUZENA } from "./mock";
-import { segmentyCharity } from "./registracia";
 import type { Dokaz } from "@/lib/zbierky";
 import { najdiZbierku, kryptoZbierky, odznakZbierky } from "@/lib/zbierky";
 import { DokazBlok, MediaNahlad } from "./DokazBlok";
@@ -77,16 +77,37 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
   // „Všetko" — virtuálny tab navrchu (pred Kampane/Skutky/Talent…): zoskupí položky zo všetkých sekcií
   // len to, čo má entita v aktuálnom programe — ten istý výpočet ako prehľad v správe
   const mojeTaby = verejneTaby(pozicia, tier);
-  const taby = [{ key: "vsetko", label: "Všetko", polozky: mojeTaby.flatMap((t) => t.polozky) }, ...mojeTaby];
+  // sektorové zbierky (AKCIA) — vlastná záložka, nie stĺp veľkých kariet nad profilom
+  const sektory = useSegmenty();
+  useZmenyProfilov();
+  const sektoroveZbierky = pozicia === "charita" && tier >= VLASTNA_ZBIERKA_CFG.sektoroveOdTieru
+    ? sektory.flatMap((sg) => {
+        const profil = sg.zbierkaId ? nacitajProfil(sg.zbierkaId) : null;
+        return profil ? [{ id: sg.zbierkaId!, nazov: sg.nazov, profil }] : [];
+      })
+    : [];
+  const taby = [
+    { key: "vsetko", label: "Všetko", polozky: mojeTaby.flatMap((t) => t.polozky) },
+    ...mojeTaby,
+    ...(sektoroveZbierky.length ? [{ key: "sektory", label: "Sektory", polozky: [] as typeof mojeTaby[number]["polozky"] }] : []),
+  ];
   const [tab, setTab] = useState("vsetko");
   const [sledujem, setSledujem] = useState(false);
   const [onas] = useState(() => nacitajOnas(pozicia) ?? s.onas); // text zo správy (editor), inak pôvodný
   const [rozbalena, setRozbalena] = useState<string | null>(null);
   const [profilZiad, setProfilZiad] = useState<string | null>(null);
+  const [zbalenaCentralna, setZbalenaCentralna] = useState(false);
   const [qrZbierka, setQrZbierka] = useState<{ id: string; nazov: string } | null>(null);
   // pravidelná podpora = funkcia zbierky (charita od programu ZBIERKA/T1), len pre registrovaných darcov
-  const [pravidelna, setPravidelna] = useState<{ id: string | null; nazov: string } | null>(null);
+  const [pravidelna, setPravidelna] = useState<{ id: string | null; nazov: string; sektor?: string } | null>(null);
   const maPravidelnu = pozicia === "charita" && tier >= 1;
+  const maCentralnu = pozicia === "charita" && tier >= 1 && nacitajCentralnu("charita");
+  /** kam idú peniaze podľa zvoleného rozsahu pravidelnej podpory */
+  const cielPravidelnej = (rozsah: string, segment: string | null): string => {
+    if (rozsah === "segment" && segment) return sektoroveZbierky.find((z) => z.nazov === segment)?.id ?? CENTRALNA_ID;
+    if (rozsah === "charita") return CENTRALNA_ID;
+    return pravidelna?.id ?? CENTRALNA_ID;
+  };
   const [zvoncek, setZvoncek] = useState(false);
   const [qr, setQr] = useState(false);
   const [menu, setMenu] = useState(false);
@@ -94,8 +115,6 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
   const [platba, setPlatba] = useState<Kanal | null>(null);
   useZmenyDarov(); // prekreslí sumy po každom dare
   const registrovany = ja.typ !== "pasivny";
-  const centr = sucetDarov(CENTRALNA_ID);
-  useZmenyProfilov();
   const logoOrg = nacitajLogo(pozicia) ?? s.foto;
   const profilCentralnej = nacitajProfil(CENTRALNA_ID) ?? { nazov: `${s.nazov} — celá organizácia`, popis: "" };
   const [platbaRef, setPlatbaRef] = useState<{ id: string; komu: string } | null>(null);
@@ -113,7 +132,7 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
   };
 
   const labels = Object.fromEntries(taby.map((t) => [t.key, t.label])) as Record<string, string>;
-  const badges = Object.fromEntries(taby.map((t) => [t.key, t.polozky.length])) as Record<string, number>;
+  const badges = Object.fromEntries(taby.map((t) => [t.key, t.key === "sektory" ? sektoroveZbierky.length : t.polozky.length])) as Record<string, number>;
 
   // ---- bloky obsahu (zdieľané mobil/desktop) ----
   // centrálna zbierka organizácie (pre seba) — charita ju má od prvého plateného programu T1.
@@ -122,30 +141,80 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
   const kryptoOrg = pozicia !== "charita" || nacitajKryptoOrg("charita");
   const sady = nacitajSady(pozicia); // rýchle sumy, ktoré si subjekt vybral
   const sumy = { sumyEur: SADY_EUR[sady.eur].sumy, sumyEurc: SADY_EURC[sady.eurc].sumy };
-  const podporaBlok = pozicia === "charita" && tier >= 1 && nacitajCentralnu("charita") && (
-    <div style={{ marginBottom: SPACE.gutter }}>
-      <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".05em", color: C.textTer, marginBottom: SPACE.xs }}>CENTRÁLNA ZBIERKA ORGANIZÁCIE</div>
-      {/* karta sa správa ako každá iná zbierka — platobný modul až po kliknutí */}
-      <div {...pressable(() => setRozbalena(rozbalena === CENTRALNA_ID ? null : CENTRALNA_ID), profilCentralnej.nazov)}
-        style={{ cursor: "pointer", marginBottom: rozbalena === CENTRALNA_ID ? SPACE.sm : 0 }}>
-        <NahladKarty profil={profilCentralnej} logo={logoOrg} vyzbierane={centr.suma} dolozene={0} ludia={centr.pocet}
-          sipka={rozbalena === CENTRALNA_ID ? "otvorena" : "zavreta"} />
+  // ---- vlastné zbierky organizácie (centrálna + sektorové) ----
+  // Charita zbiera na svoju overenú činnosť (D+): karta s fotkou a míľnikmi,
+  // platobný modul až po kliknutí — rovnako ako pri ostatných zbierkach.
+  const obsahVlastnej = (id: string, profil: ProfilZbierky) => {
+    const dary = sucetDarov(id);
+    return (
+      <>
+        <PlatobnyModul zbalene krypto={kryptoOrg ? "EURC" : "nie"} {...sumy}
+          onShare={zdielajProfil}
+          upvotes={0} onUpvote={() => undefined}
+          onPodpor={(d: number) => daruj(id, d * 0.01, "deed", undefined, s.nazov)}
+          onDarEur={(sm, v) => daruj(id, sm, "sepa", v, s.nazov)}
+          onDarKrypto={(v, vol) => daruj(id, v, "deed", vol, s.nazov)}
+          onKanal={(k: string) => { setPlatbaRef({ id, komu: s.nazov }); setPlatba(k as Kanal); }}
+          oblubene={{ refId: id, typ: "zbierka", modul: "charity", nazov: profil.nazov, lok: s.lok }} toast={toast}
+          opakovana={maPravidelnu ? { popis: "Mesačne · len pre registrovaných · kedykoľvek zrušíš", onClick: () => setPravidelna({ id: id === CENTRALNA_ID ? "z-centralna" : id, nazov: profil.nazov, sektor: sektoroveZbierky.find((z) => z.id === id)?.nazov }) } : undefined}
+          qr={{ label: "QR tejto zbierky", popis: "Sken → dar za 2 kliky · zdieľanie", onClick: () => (id === CENTRALNA_ID ? setQr(true) : setQrZbierka({ id, nazov: profil.nazov })) }} />
+        <GaleriaZbierky profil={profil} />
+        <ZoznamDarcov refId={id} celkom={dary.pocet} style={{ marginTop: SPACE.sm }} skrytSumy={pozicia === "charita" && !nacitajViditelnost("charita").sumyDarov} />
+      </>
+    );
+  };
+  const kartaVlastnej = (id: string, profil: ProfilZbierky, otvorena: boolean) => {
+    const dary = sucetDarov(id);
+    return (
+      <div {...pressable(() => setRozbalena(otvorena ? null : id), profil.nazov)} style={{ cursor: "pointer" }}>
+        <NahladKarty profil={profil} logo={logoOrg} vyzbierane={dary.suma} dolozene={0} ludia={dary.pocet}
+          dobrovolne sipka={otvorena ? "otvorena" : "zavreta"} />
       </div>
-      {rozbalena === CENTRALNA_ID && (<>
-      <PlatobnyModul zbalene krypto={kryptoOrg ? "EURC" : "nie"} {...sumy}
-        onShare={zdielajProfil}
-        upvotes={0} onUpvote={() => undefined}
-        onPodpor={(d: number) => daruj("z-centralna", d * 0.01, "deed", undefined, s.nazov)}
-        onDarEur={(sm, v) => daruj("z-centralna", sm, "sepa", v, s.nazov)}
-        onDarKrypto={(v, vol) => daruj("z-centralna", v, "deed", vol, s.nazov)}
-        onKanal={(k: string) => { setPlatbaRef({ id: "z-centralna", komu: s.nazov }); setPlatba(k as Kanal); }}
-        oblubene={{ refId: `rola-${s.nazov}`, typ: pozicia, modul: "charity", nazov: s.nazov, lok: s.lok }} toast={toast}
-        opakovana={maPravidelnu ? { popis: "Mesačne · len pre registrovaných · kedykoľvek zrušíš", onClick: () => setPravidelna({ id: "z-centralna", nazov: "Centrálna zbierka organizácie" }) } : undefined}
-        qr={{ label: "QR tejto zbierky", popis: "Sken → dar za 2 kliky · zdieľanie", onClick: () => setQr(true) }} />
-      <ZoznamDarcov refId="z-centralna" celkom={centr.pocet} style={{ marginTop: SPACE.sm }} skrytSumy={pozicia === "charita" && !nacitajViditelnost("charita").sumyDarov} />
-      </>)}
+    );
+  };
+
+  // centrálna zbierka — jediná karta nad záložkami, dá sa zbaliť
+  const podporaBlok = maCentralnu ? (
+    <div id="deed-centralna" style={{ marginBottom: SPACE.gutter }}>
+      <div style={{ display: "flex", alignItems: "center", gap: SPACE.xs, marginBottom: SPACE.xs }}>
+        <div style={{ flex: 1, minWidth: 0, fontSize: 12, fontWeight: 800, letterSpacing: ".05em", color: C.textTer }}>CENTRÁLNA ZBIERKA ORGANIZÁCIE</div>
+        <span {...pressable(() => { setZbalenaCentralna(!zbalenaCentralna); if (!zbalenaCentralna && rozbalena === CENTRALNA_ID) setRozbalena(null); }, zbalenaCentralna ? "Rozbaliť" : "Zbaliť")}
+          style={{ flex: "none", fontSize: 11.5, fontWeight: 700, color: C.textSec, cursor: "pointer" }}>
+          {zbalenaCentralna ? "Rozbaliť ▾" : "Zbaliť ▴"}
+        </span>
+      </div>
+      {zbalenaCentralna ? (
+        <div {...pressable(() => setZbalenaCentralna(false), profilCentralnej.nazov)}
+          style={{ display: "flex", alignItems: "center", gap: SPACE.sm, background: C.surface, border: `1px solid ${C.line}`, borderRadius: RADIUS.sm, padding: SPACE.sm, cursor: "pointer" }}>
+          <div style={{ flex: 1, minWidth: 0, fontSize: 13.5, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{profilCentralnej.nazov}</div>
+          <span style={{ flex: "none", fontSize: 13, fontWeight: 800, color: "var(--a-green)" }}>{Math.round(sucetDarov(CENTRALNA_ID).suma).toLocaleString("sk")} €</span>
+        </div>
+      ) : (
+        <>
+          <div style={{ marginBottom: rozbalena === CENTRALNA_ID ? SPACE.sm : 0 }}>{kartaVlastnej(CENTRALNA_ID, profilCentralnej, rozbalena === CENTRALNA_ID)}</div>
+          {rozbalena === CENTRALNA_ID && obsahVlastnej(CENTRALNA_ID, profilCentralnej)}
+        </>
+      )}
+      {/* ďalšie zbierky tej istej organizácie — darcovi musí byť hneď jasné, že je to zase ona */}
+      {sektoroveZbierky.length > 0 && (
+        <div style={{ marginTop: SPACE.sm, background: tint("var(--a-green)", .06), border: `1px solid ${tint("var(--a-green)", .28)}`, borderRadius: RADIUS.sm, padding: SPACE.sm }}>
+          <div {...pressable(() => setTab("sektory"), "Ďalšie zbierky organizácie")}
+            style={{ display: "flex", alignItems: "center", gap: SPACE.xs, cursor: "pointer", marginBottom: SPACE.xs }}>
+            <span style={{ flex: 1, minWidth: 0, fontSize: 13.5, fontWeight: 800, color: C.text }}>Ďalšie zbierky organizácie — podľa činnosti</span>
+            <span style={{ flex: "none", fontSize: 12, fontWeight: 800, color: "var(--a-green)" }}>Zobraziť {sektoroveZbierky.length} ›</span>
+          </div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: SPACE.xxs }}>
+            {sektoroveZbierky.map((z) => (
+              <span key={z.id} {...pressable(() => setTab("sektory"), `Sektor ${z.nazov}`)}
+                style={{ fontSize: 12, fontWeight: 700, color: "var(--a-green)", background: C.surface, border: `1px solid ${tint("var(--a-green)", .35)}`, borderRadius: RADIUS.pill, padding: `3px ${SPACE.sm}px`, cursor: "pointer" }}>
+                {z.nazov}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
-  );
+  ) : null;
 
   // detail položky (zbierka · skutok s dôkazom · video) — na mobile sa rozbalí
   // v riadku, na tablete/PC sa otvorí v okne nad mriežkou kariet
@@ -383,7 +452,18 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
   const obsahBlok = (
     <>
       <TabyProfil options={taby.map((t) => t.key)} labels={labels} badges={badges} value={tab} onChange={setTab} ariaLabel="Obsah profilu" />
-      {aktTab.polozky.length === 0 ? (
+      {tab === "sektory" ? (
+        <div style={siroke ? { display: "grid", gridTemplateColumns: `repeat(${desktop ? 3 : 2}, minmax(0,1fr))`, gap: SPACE.sm, alignItems: "start" } : undefined}>
+          {sektoroveZbierky.map((z) => (
+            <div key={z.id} id={`deed-sektor-${z.id}`} style={{ marginBottom: siroke ? 0 : SPACE.sm }}>
+              <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: ".04em", color: C.textTer, marginBottom: 4 }}>{z.nazov.toUpperCase()}</div>
+              {kartaVlastnej(z.id, z.profil, rozbalena === z.id)}
+              {/* na širokej ploche sa detail otvorí v okne — mriežka sa nerozhádže */}
+              {rozbalena === z.id && !siroke && <div style={{ marginTop: SPACE.sm }}>{obsahVlastnej(z.id, z.profil)}</div>}
+            </div>
+          ))}
+        </div>
+      ) : aktTab.polozky.length === 0 ? (
         <div style={{ fontSize: 12.5, color: C.textTer, textAlign: "center", padding: SPACE.lg }}>Zatiaľ žiadny obsah.</div>
       ) : (tab === "vsetko" ? mojeTaby : [aktTab]).map((g) => {
         const polozky = g.polozky.map((p, i) => zbaluj(p, p.zbierkaId ?? `${g.key}-${i}`));
@@ -408,7 +488,14 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
   const vybrana = siroke && rozbalena
     ? (tab === "vsetko" ? mojeTaby : [aktTab]).flatMap((g) => g.polozky.map((p, i) => zbaluj(p, p.zbierkaId ?? `${g.key}-${i}`))).find((x) => x.kluc === rozbalena)
     : undefined;
-  const oknoDetailu = vybrana && (
+  const vlastnaVybrana = siroke && rozbalena ? sektoroveZbierky.find((z) => z.id === rozbalena) : undefined;
+  const oknoDetailu = vlastnaVybrana ? (
+    <Sheet onClose={zavriDetail} label={vlastnaVybrana.profil.nazov}>
+      <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: ".04em", color: C.textTer }}>{vlastnaVybrana.nazov.toUpperCase()}</div>
+      <div style={{ fontSize: 17, fontWeight: 800, marginBottom: SPACE.xs }}>{vlastnaVybrana.profil.nazov}</div>
+      {obsahVlastnej(vlastnaVybrana.id, vlastnaVybrana.profil)}
+    </Sheet>
+  ) : vybrana && (
     <Sheet onClose={zavriDetail} label={vybrana.titul}>
       <div style={{ fontSize: 17, fontWeight: 800, marginBottom: SPACE.xs }}>{vybrana.titul}</div>
       {detailPolozky(vybrana.p, vybrana.z, vybrana.dokaz)}
@@ -487,7 +574,33 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
         caseId={pravidelna.id === "z-centralna" ? null : pravidelna.id}
         // pravidelná podpora je od T1 celá: zbierka → táto zbierka / segment / celá charita,
         // centrálna zbierka → segment / celá organizácia
-        segmenty={segmentyCharity()} onClose={() => setPravidelna(null)} toast={toast} />}
+        // rozsah je daný tým, odkiaľ darca klikol: centrálna → celá organizácia,
+        // sektorová → ten sektor, bežná zbierka → táto zbierka + centrálna
+        sektor={pravidelna.sektor}
+        // sektor ako voľba má zmysel LEN keď má vlastnú zbierku a účet (AKCIA) —
+        // inak by dary padli na hlavný účet a nedalo by sa k nim nič doložiť
+        segmenty={pravidelna.sektor || !sektoroveZbierky.length ? null : sektoroveZbierky.map((z) => z.nazov)}
+        // „celá organizácia" = centrálna zbierka → ponúkame ju, len keď charita spustenú má
+        bezCelej={!!pravidelna.sektor || !maCentralnu}
+        // prvá platba záväzku sa objaví v zozname darcov cieľovej zbierky
+        onDar={(su, _me, vo, rozsah, segment) => daruj(cielPravidelnej(rozsah, segment), su, "sepa", vo, s.nazov)}
+        // po poďakovaní vedieme darcu tam, kam peniaze idú — centrálna alebo zbierka sektora
+        onCiel={(rozsah, segment) => {
+          const ciel = cielPravidelnej(rozsah, segment);
+          if (rozsah === "request") return undefined;   // darca už na tej zbierke je
+          const sekt = sektoroveZbierky.find((z) => z.id === ciel);
+          if (rozsah === "charita" && !maCentralnu) return undefined;
+          return {
+            label: sekt ? "Zobraziť zbierku sektora" : "Zobraziť centrálnu zbierku",
+            onClick: () => {
+              // na tablete/PC sa detail otvorí v okne — scrollovať pod ním by okno odsunulo mimo obrazovku
+              const skoc = (id: string) => { if (!siroke) setTimeout(() => document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" }), 140); };
+              if (sekt) { setTab("sektory"); setRozbalena(sekt.id); skoc("deed-sektor-" + sekt.id); return; }
+              setZbalenaCentralna(false); setRozbalena(CENTRALNA_ID); setTab("vsetko"); skoc("deed-centralna");
+            },
+          };
+        }}
+        onClose={() => setPravidelna(null)} toast={toast} />}
       {qrZbierka && <QrModal odznak={odznakZbierky(qrZbierka.id)} typ="skutok" titul={`QR — ${qrZbierka.nazov}`} popis="Sken otvorí túto zbierku — daj ho na web, do správy alebo na plagát"
         odkaz={qrUrl("case", qrZbierka.id)} onClose={() => setQrZbierka(null)} toast={toast} />}
       {qr && <QrModal typ="skutok" titul={`QR — ${s.nazov}`} popis="Profil subjektu — QR aj embed odznak na vlastný web"

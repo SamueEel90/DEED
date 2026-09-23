@@ -231,8 +231,7 @@ export const SPRAVA_CHARITA: SpravaItem[] = [
   { id: "qr", emoji: "▦", nazov: "QR nástroje", popis: "QR overenej organizácie a QR zbierok — plagát, pokladnička", tierMin: 0 },
   // ZBIERKA (T1)
   { id: "centralna", emoji: "💛", nazov: "Centrálna zbierka organizácie", popis: "Pridať a spravovať — pravidelná podpora na sektor činnosti alebo celú organizáciu", tierMin: 1 },
-  { id: "sektorove", emoji: "🧾", nazov: "Sektorové zbierky", popis: "Samostatná zbierka, vlastný účet a QR pre každý sektor činnosti", tierMin: 2 },
-  { id: "segment", emoji: "🧩", nazov: "Sektory činnosti", popis: "Z registrácie — darca podporí sektor alebo celú organizáciu", tierMin: 1 },
+  { id: "segment", emoji: "🧩", nazov: "Sektorové zbierky a činnosti", popis: "Témy pre darcov · od AKCIE vlastná zbierka, účet a QR pre každý sektor", tierMin: 1 },
   { id: "dlhodobe", emoji: "📆", nazov: "Dlhodobé zbierky", popis: "Zbierka bez pevného konca · predĺženie nad 30 dní · až 3 súbežné", tierMin: 1 },
   { id: "sponzoring", emoji: "🤝", nazov: "Sponzoring", popis: "Hľadáme sponzora s protiplnením · predvyplnená zmluva · logo sponzora na profile · oznam v meste · doklad o protiplnení · sponzorské zbierky bez limitu", tierMin: 1 },
   { id: "prezentacia", emoji: "📣", nazov: "Prezentácia, oznamy a inzeráty", popis: "Prezentácia činnosti a služieb · oznamy na profile · akcie na nástenku mesta · 1 inzerát (zamestnanec, brigádnik, člen)", tierMin: 1 },
