@@ -92,8 +92,8 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
     : [];
   const taby = [
     { key: "vsetko", label: "Všetko", polozky: mojeTaby.flatMap((t) => t.polozky) },
-    ...mojeTaby,
     ...(oznamy.length ? [{ key: "oznamy", label: "Oznamy", polozky: [] as typeof mojeTaby[number]["polozky"] }] : []),
+    ...mojeTaby,
     ...(sektoroveZbierky.length ? [{ key: "sektory", label: "Sektory", polozky: [] as typeof mojeTaby[number]["polozky"] }] : []),
   ];
   const [tab, setTab] = useState("vsetko");
@@ -454,6 +454,22 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
     </div>
   );
 
+  // najnovší oznam nad záložkami — inak ho v rade ôsmich tabov nikto nenájde
+  const oznamPas = oznamy.length > 0 && (
+    <div {...pressable(() => setTab("oznamy"), "Oznamy")}
+      style={{ display: "flex", alignItems: "center", gap: SPACE.xs, cursor: "pointer", marginBottom: SPACE.sm,
+        background: tint("var(--a-info)", .07), border: `1px solid ${tint("var(--a-info)", .28)}`, borderRadius: RADIUS.sm, padding: SPACE.sm }}>
+      <span style={{ flex: "none", fontSize: 15 }}>📣</span>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: ".04em", color: C.textTer }}>OZNAM</div>
+        <div style={{ fontSize: 13.5, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{oznamy[0].nadpis}</div>
+      </div>
+      <span style={{ flex: "none", fontSize: 12, fontWeight: 800, color: "var(--a-info)" }}>
+        {oznamy.length > 1 ? `Všetky (${oznamy.length}) ›` : "Čítať ›"}
+      </span>
+    </div>
+  );
+
   const obsahBlok = (
     <>
       <TabyProfil options={taby.map((t) => t.key)} labels={labels} badges={badges} value={tab} onChange={setTab} ariaLabel="Obsah profilu" />
@@ -558,7 +574,7 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
       />
       <div style={{ height: SPACE.gutter }} />
       {/* kontakt je dole aj na PC — hore patrí to, čo charita robí, nie telefónne číslo */}
-      <>{podporaBlok}{obsahBlok}{terminalBlok}{oNasBlok}</>
+      <>{oznamPas}{podporaBlok}{obsahBlok}{terminalBlok}{oNasBlok}</>
     </div>
   );
 
