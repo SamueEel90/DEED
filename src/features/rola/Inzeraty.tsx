@@ -17,6 +17,8 @@ import {
   otvorInzeratZnova, beziaceInzeraty, limitInzeratov, dniDoKonca, type Oznam,
 } from "@/lib/oznamy";
 import type { Tier } from "./stav";
+import { usePouzivatel } from "@/lib/pouzivatel";
+import { pridajZaujemcu, zrusZaujem } from "@/lib/oznamy";
 
 const ZELENA = "var(--a-green)";
 const karta: CSSProperties = { background: C.surface2, border: `1px solid ${C.line}`, borderRadius: RADIUS.sm, padding: SPACE.sm, marginBottom: SPACE.xs };
@@ -294,5 +296,80 @@ export function InzeratySheet({ entita, autor, logo, tier, toast, onPaywall, onC
         Kontakty záujemcov sa {INZERAT_CFG.dniDoZmazaniaKontaktov} dní po zavretí ponuky zmažú.
       </div>
     </Sheet>
+  );
+}
+
+
+// ---------- VEREJNÁ ČASŤ — „Mám záujem" ----------
+const KLUC_ZAUJEM = (entita: string, id: string) => `deed.zaujem.${entita}.${id}`;
+
+/** blok pod ponukou na verejnom profile: jeden klik, vlastné údaje, žiadne dopisovanie */
+export function MamZaujem({ entita, inzerat, toast }: { entita: string; inzerat: Oznam; toast: (m: string) => void }) {
+  const ja = usePouzivatel();
+  const [odoslane, setOdoslane] = useState<string | null>(() => {
+    try { return localStorage.getItem(KLUC_ZAUJEM(entita, inzerat.id)); } catch { return null; }
+  });
+  const [otvorene, setOtvorene] = useState(false);
+  const [meno, setMeno] = useState(ja.celeMeno ?? "");
+  const [telefon, setTelefon] = useState("");
+  const [email, setEmail] = useState("");
+  const [poznamka, setPoznamka] = useState("");
+  const [soStitom, setSoStitom] = useState(false);   // štít a karma sú dobrovoľné, defaultne vypnuté
+
+  const posli = () => {
+    if (meno.trim().length < 3) { toast("Napíšte meno, nech organizácia vie, kto sa ozval."); return; }
+    if (!telefon.trim() && !email.trim()) { toast("Nechajte telefón alebo e-mail — inak sa vám nemá ako ozvať."); return; }
+    const novy = pridajZaujemcu(entita, inzerat.id, {
+      meno: meno.trim(),
+      telefon: telefon.trim() || undefined,
+      email: email.trim() || undefined,
+      poznamka: poznamka.trim() || undefined,
+      stit: soStitom ? ja.tier : undefined,
+    });
+    if (!novy) { toast("Ponuku sa nepodarilo nájsť"); return; }
+    try { localStorage.setItem(KLUC_ZAUJEM(entita, inzerat.id), novy); } catch { /* LS nedostupné */ }
+    setOdoslane(novy);
+    setOtvorene(false);
+    toast("Záujem odoslaný — organizácia sa vám ozve");
+  };
+
+  const zrus = () => {
+    if (odoslane) zrusZaujem(entita, inzerat.id, odoslane);
+    try { localStorage.removeItem(KLUC_ZAUJEM(entita, inzerat.id)); } catch { /* LS nedostupné */ }
+    setOdoslane(null);
+    toast("Záujem zrušený");
+  };
+
+  if (odoslane) return (
+    <div style={{ marginTop: SPACE.sm, background: tint(ZELENA, .1), border: `1px solid ${tint(ZELENA, .35)}`, borderRadius: RADIUS.sm, padding: SPACE.sm }}>
+      <div style={{ fontSize: 13, fontWeight: 800, color: ZELENA }}>✓ Záujem odoslaný</div>
+      <div style={{ fontSize: 11.5, color: C.textSec, marginTop: 2, lineHeight: 1.45 }}>
+        Organizácia vidí vaše meno a kontakt. Ozve sa vám sama — tu sa nedopisuje.
+      </div>
+      <span {...pressable(zrus, "Zrušiť záujem")} style={{ display: "inline-block", marginTop: SPACE.xs, fontSize: 11.5, fontWeight: 700, color: C.textTer, cursor: "pointer" }}>Zrušiť záujem</span>
+    </div>
+  );
+
+  if (!otvorene) return (
+    <button type="button" onClick={() => setOtvorene(true)} style={{ ...btnHlavny, marginTop: SPACE.sm }}>Mám záujem</button>
+  );
+
+  return (
+    <div style={{ marginTop: SPACE.sm, background: C.surface2, border: `1px solid ${C.line}`, borderRadius: RADIUS.sm, padding: SPACE.sm }}>
+      <div style={{ fontSize: 11.5, color: C.textTer, marginBottom: SPACE.xs, lineHeight: 1.45 }}>
+        Nechajte na seba kontakt — čo z toho vyplníte, to organizácia uvidí. Nič iné sa neposiela.
+      </div>
+      <input value={meno} onChange={(e) => setMeno(e.target.value)} placeholder="Meno" style={{ ...vstup, marginBottom: SPACE.xs }} />
+      <input value={telefon} onChange={(e) => setTelefon(e.target.value)} inputMode="tel" placeholder="Telefón (nepovinné)" style={{ ...vstup, marginBottom: SPACE.xs }} />
+      <input value={email} onChange={(e) => setEmail(e.target.value)} inputMode="email" placeholder="E-mail (nepovinné)" style={{ ...vstup, marginBottom: SPACE.xs }} />
+      <textarea value={poznamka} onChange={(e) => setPoznamka(e.target.value)} rows={2} maxLength={200}
+        placeholder="Chcete niečo odkázať? (nepovinné)" style={{ ...vstup, resize: "vertical", marginBottom: SPACE.xs }} />
+      <label style={{ display: "flex", alignItems: "center", gap: SPACE.xs, fontSize: 12, color: C.textSec, cursor: "pointer" }}>
+        <input type="checkbox" checked={soStitom} onChange={(e) => setSoStitom(e.target.checked)} />
+        Priložiť môj štít a karmu {ja.tier ? <span style={{ color: C.textTer }}>({ja.tier})</span> : null}
+      </label>
+      <button type="button" onClick={posli} style={{ ...btnHlavny, marginTop: SPACE.sm }}>Odoslať záujem</button>
+      <button type="button" onClick={() => setOtvorene(false)} style={{ ...btnDruhy, marginTop: SPACE.xs }}>Zrušiť</button>
+    </div>
   );
 }

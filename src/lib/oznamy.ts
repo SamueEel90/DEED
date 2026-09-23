@@ -109,11 +109,12 @@ export function obsadInzerat(entita: string, id: string) {
 export function otvorInzeratZnova(entita: string, id: string, dni: number) {
   upravOznam(entita, id, { obsadene: undefined, vytvorene: Date.now(), platnostDni: dni });
 }
-export function pridajZaujemcu(entita: string, id: string, z: Omit<Zaujemca, "id" | "kedy">): void {
+export function pridajZaujemcu(entita: string, id: string, z: Omit<Zaujemca, "id" | "kedy">): string | null {
   const inz = nacitajOznamy(entita).find((o) => o.id === id);
-  if (!inz) return;
+  if (!inz) return null;
   const novy: Zaujemca = { ...z, id: `zj-${Date.now()}`, kedy: Date.now() };
   upravOznam(entita, id, { zaujemcovia: [...(inz.zaujemcovia ?? []), novy] });
+  return novy.id;
 }
 export function zrusZaujem(entita: string, id: string, zaujemcaId: string): void {
   const inz = nacitajOznamy(entita).find((o) => o.id === id);

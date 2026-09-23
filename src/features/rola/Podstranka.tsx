@@ -17,6 +17,7 @@ import { nastavCiste, sucetDarov, useZmenyDarov, pridajDar, type VolbaDaru } fro
 import { ZoznamDarcov } from "@/components/zoznamdarcov";
 import { NahladKarty, GaleriaZbierky } from "./KartaZbierky";
 import { OznamKarta } from "./Oznamy";
+import { InzeratKarta, MamZaujem } from "./Inzeraty";
 import { verejneOznamy, useZmenyOznamov } from "@/lib/oznamy";
 import { nacitajProfil, useZmenyProfilov, CENTRALNA_ID, VLASTNA_ZBIERKA_CFG, type ProfilZbierky } from "./vlastneZbierky";
 import { useSegmenty } from "./segmenty";
@@ -84,6 +85,7 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
   useZmenyProfilov();
   useZmenyOznamov();
   const oznamy = tier >= 1 ? verejneOznamy(pozicia) : [];
+  const ponuky = tier >= 1 ? verejneOznamy(pozicia, "inzerat") : [];
   const sektoroveZbierky = pozicia === "charita" && tier >= VLASTNA_ZBIERKA_CFG.sektoroveOdTieru
     ? sektory.flatMap((sg) => {
         const profil = sg.zbierkaId ? nacitajProfil(sg.zbierkaId) : null;
@@ -93,6 +95,7 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
   const taby = [
     { key: "vsetko", label: "Všetko", polozky: mojeTaby.flatMap((t) => t.polozky) },
     ...(oznamy.length ? [{ key: "oznamy", label: "Oznamy", polozky: [] as typeof mojeTaby[number]["polozky"] }] : []),
+    ...(ponuky.length ? [{ key: "ponuky", label: "Ponuky", polozky: [] as typeof mojeTaby[number]["polozky"] }] : []),
     ...mojeTaby,
     ...(sektoroveZbierky.length ? [{ key: "sektory", label: "Sektory", polozky: [] as typeof mojeTaby[number]["polozky"] }] : []),
   ];
@@ -138,7 +141,7 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
   };
 
   const labels = Object.fromEntries(taby.map((t) => [t.key, t.label])) as Record<string, string>;
-  const badges = Object.fromEntries(taby.map((t) => [t.key, t.key === "sektory" ? sektoroveZbierky.length : t.key === "oznamy" ? oznamy.length : t.polozky.length])) as Record<string, number>;
+  const badges = Object.fromEntries(taby.map((t) => [t.key, t.key === "sektory" ? sektoroveZbierky.length : t.key === "oznamy" ? oznamy.length : t.key === "ponuky" ? ponuky.length : t.polozky.length])) as Record<string, number>;
 
   // ---- bloky obsahu (zdieľané mobil/desktop) ----
   // centrálna zbierka organizácie (pre seba) — charita ju má od prvého plateného programu T1.
@@ -500,6 +503,18 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
             <button type="button" onClick={() => setOtvorenyOznam(null)} style={btnProfil}>Všetky oznamy ({oznamy.length})</button>
           )}
           {/* z oznamov musí viesť cesta von — inak sa človek vie vrátiť len cez „Všetko" */}
+          <button type="button" onClick={onBack} style={btnProfil}>Zavrieť</button>
+        </div>
+      </>) : tab === "ponuky" ? (<>
+        <div>
+          {ponuky.map((o) => (
+            <div key={o.id} style={{ marginBottom: SPACE.sm }}>
+              <InzeratKarta o={o} autor={s.nazov} logo={logoOrg}
+                deti={<MamZaujem entita={pozicia} inzerat={o} toast={toast} />} />
+            </div>
+          ))}
+        </div>
+        <div style={{ display: "flex", gap: SPACE.sm, justifyContent: "center", marginTop: SPACE.md }}>
           <button type="button" onClick={onBack} style={btnProfil}>Zavrieť</button>
         </div>
       </>) : tab === "sektory" ? (
