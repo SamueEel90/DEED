@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { Fragment, useEffect, useMemo, useState, type ReactNode } from "react";
 import { C, SPACE, RADIUS, SIRKA } from "@/theme";
 import {
   BackHeader, Sheet, SegTabs, Switch, MoniBar, Stit, naStitLevel, Tip, tint,
@@ -21,7 +21,7 @@ import {
   nacitajOrgExtra, ulozOrgExtra, nacitajLogo, ulozLogo, nacitajOnas, ulozOnas, nacitajTvarLoga, ulozTvarLoga, nacitajZdrojAvatara, ulozZdrojAvatara, nacitajHlavuZbalenu, ulozHlavuZbalenu, nacitajCentralnu,
   type Pozicia, type Tier,
 } from "./stav";
-import { PANELY, SPRAVY, SPRAVA_NADPIS, ZASLUZENA, SUBJEKTY, FIRMY_ADRESAR, type PanelBlok, type SpravaItem, type OrgZbierka } from "./mock";
+import { PANELY, SPRAVY, SPRAVA_NADPIS, SEKCIE_SPRAVY, ZASLUZENA, SUBJEKTY, FIRMY_ADRESAR, type PanelBlok, type SpravaItem, type OrgZbierka } from "./mock";
 import { Podstranka } from "./Podstranka";
 import { UpravProfilSheet } from "./UpravProfil";
 import { useRegistraciaCharity, ulozDoRegistracie } from "./registracia";
@@ -124,6 +124,15 @@ function MojDeedFiremnyObsah({ onBack, toast, orgId }: { onBack: () => void; toa
   const spravaZoradena = hore.length
     ? [...hore.map((id) => sprava.find((it) => it.id === id)).filter((it): it is SpravaItem => !!it), ...sprava.filter((it) => !hore.includes(it.id))]
     : sprava;
+  // nástroje sa triedia do sekcií (Zbierky · Oznamy a obsah · …), nech sa 17 položiek dá nájsť
+  // očami; rola bez sekcií (tvorca, B2B) ostáva jedným blokom ako doteraz
+  const spravaVSekciach: { nazov: string | null; polozky: SpravaItem[] }[] = spravaZoradena.some((it) => it.sekcia)
+    ? SEKCIE_SPRAVY.map((sek) => ({ nazov: sek.nazov as string, polozky: spravaZoradena.filter((it) => it.sekcia === sek.id) }))
+        .filter((sek) => sek.polozky.length > 0)
+        .concat(spravaZoradena.some((it) => !it.sekcia)
+          ? [{ nazov: "ĎALŠIE", polozky: spravaZoradena.filter((it) => !it.sekcia) }] : [])
+    : [{ nazov: null, polozky: spravaZoradena }];
+
   const rolaMeta = POZICIE.find((p) => p.key === pozicia)!;
   const subjekt = SUBJEKTY[pozicia];
   const stit = naStitLevel(ZASLUZENA[pozicia].badge);
@@ -265,7 +274,12 @@ function MojDeedFiremnyObsah({ onBack, toast, orgId }: { onBack: () => void; toa
           hlavicka={<MenuHlavicka ikona={<IkonaNastavenia size={15} />} label={SPRAVA_NADPIS[pozicia]}
             popis="Nástroje správcu — vidí len držiteľ roly a delegovaní správcovia" />}
         >
-          {spravaZoradena.map((it, i) => {
+          {spravaVSekciach.map(({ nazov, polozky }) => (
+            <Fragment key={nazov ?? "bez"}>
+              {nazov && (
+                <div style={{ padding: `${SPACE.sm}px ${SPACE.gutter}px 4px`, fontSize: 10.5, fontWeight: 800, letterSpacing: ".05em", color: C.textTer, borderTop: `1px solid ${C.line}` }}>{nazov}</div>
+              )}
+              {polozky.map((it, i) => {
             const zamknute = !it.povinne && tier < it.tierMin;
             return (
               <MenuPolozka key={it.id}
@@ -280,10 +294,12 @@ function MojDeedFiremnyObsah({ onBack, toast, orgId }: { onBack: () => void; toa
                 popis={it.popis}
                 zamknute={zamknute}
                 onClick={it.povinne ? () => spravaAkcia(it) : gateTier(it.tierMin, it.nazov, () => spravaAkcia(it))}
-                posledna={i === spravaZoradena.length - 1}
+                posledna={i === polozky.length - 1}
               />
             );
-          })}
+              })}
+            </Fragment>
+          ))}
         </MenuSkupina>
       )}
 
