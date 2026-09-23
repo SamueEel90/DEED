@@ -88,8 +88,8 @@ export function SektoroveZbierkySheet({ tier, toast, onPaywall, onClose }: {
     onSpat={() => setUprava(null)} />;
 
   return (
-    <Sheet onClose={onClose} label="Sektorové zbierky">
-      <div style={{ fontSize: 16, fontWeight: 800 }}>🧩 Sektory činnosti</div>
+    <Sheet onClose={onClose} label="Sektorové zbierky a činnosti">
+      <div style={{ fontSize: 16, fontWeight: 800 }}>🧩 Sektorové zbierky a činnosti</div>
       <div style={{ fontSize: 11.5, color: C.textTer, marginTop: 2, lineHeight: 1.45, marginBottom: SPACE.sm }}>
         Oblasti vašej práce zo registrácie. Darca si ich vyberie pri pravidelnej podpore. Od programu {TIER_LABEL.charita[VLASTNA_ZBIERKA_CFG.sektoroveOdTieru as Tier]} môže mať každý sektor aj samostatnú zbierku s vlastným účtom a QR.
       </div>

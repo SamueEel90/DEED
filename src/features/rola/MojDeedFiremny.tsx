@@ -116,9 +116,13 @@ function MojDeedFiremnyObsah({ onBack, toast, orgId }: { onBack: () => void; toa
   const sprava = SPRAVY[pozicia].filter((it) => it.povinne || viditelny(it.tierMin))
     .map((it, i) => ({ it, i, z: !it.povinne && tier < it.tierMin ? it.tierMin : -1 }))
     .sort((a, b) => a.z - b.z || a.i - b.i).map((x) => x.it);
-  // „Začni tu": charita od T1 začína centrálnou zbierkou (hore), v ZADARMO zbierkou pre niekoho
-  const startId = pozicia === "charita" ? (tier >= 1 ? "centralna" : "zbierky") : null;
-  const spravaZoradena = startId ? [...sprava.filter((it) => it.id === startId), ...sprava.filter((it) => it.id !== startId)] : sprava;
+  // „Začni tu": charita od T1 začína centrálnou zbierkou (hore) a hneď pod ňou sú sektory,
+  // lebo patria k sebe — v ZADARMO je navrchu zbierka pre niekoho
+  const hore = pozicia === "charita" ? (tier >= 1 ? ["centralna", "segment"] : ["zbierky"]) : [];
+  const startId = hore[0] ?? null;  // „Začni tu" ostáva len na prvej položke
+  const spravaZoradena = hore.length
+    ? [...hore.map((id) => sprava.find((it) => it.id === id)).filter((it): it is SpravaItem => !!it), ...sprava.filter((it) => !hore.includes(it.id))]
+    : sprava;
   const rolaMeta = POZICIE.find((p) => p.key === pozicia)!;
   const subjekt = SUBJEKTY[pozicia];
   const stit = naStitLevel(ZASLUZENA[pozicia].badge);
