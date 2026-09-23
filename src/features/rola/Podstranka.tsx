@@ -189,16 +189,22 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
           {rozbalena === CENTRALNA_ID && obsahVlastnej(CENTRALNA_ID, profilCentralnej)}
         </>
       )}
-      {/* sektory ako chipy — darca vidí, že existujú, ale nezaberú pol profilu */}
+      {/* ďalšie zbierky tej istej organizácie — darcovi musí byť hneď jasné, že je to zase ona */}
       {sektoroveZbierky.length > 0 && (
-        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: SPACE.xxs, marginTop: SPACE.xs }}>
-          <span style={{ fontSize: 11.5, color: C.textSec }}>Zbierame aj na:</span>
-          {sektoroveZbierky.map((z) => (
-            <span key={z.id} {...pressable(() => setTab("sektory"), `Sektor ${z.nazov}`)}
-              style={{ fontSize: 11.5, fontWeight: 700, color: "var(--a-green)", background: tint("var(--a-green)", .1), border: `1px solid ${tint("var(--a-green)", .3)}`, borderRadius: RADIUS.pill, padding: `2px ${SPACE.xs}px`, cursor: "pointer" }}>
-              {z.nazov}
-            </span>
-          ))}
+        <div style={{ marginTop: SPACE.sm, background: tint("var(--a-green)", .06), border: `1px solid ${tint("var(--a-green)", .28)}`, borderRadius: RADIUS.sm, padding: SPACE.sm }}>
+          <div {...pressable(() => setTab("sektory"), "Ďalšie zbierky organizácie")}
+            style={{ display: "flex", alignItems: "center", gap: SPACE.xs, cursor: "pointer", marginBottom: SPACE.xs }}>
+            <span style={{ flex: 1, minWidth: 0, fontSize: 13.5, fontWeight: 800, color: C.text }}>Ďalšie zbierky organizácie — podľa činnosti</span>
+            <span style={{ flex: "none", fontSize: 12, fontWeight: 800, color: "var(--a-green)" }}>Zobraziť {sektoroveZbierky.length} ›</span>
+          </div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: SPACE.xxs }}>
+            {sektoroveZbierky.map((z) => (
+              <span key={z.id} {...pressable(() => setTab("sektory"), `Sektor ${z.nazov}`)}
+                style={{ fontSize: 12, fontWeight: 700, color: "var(--a-green)", background: C.surface, border: `1px solid ${tint("var(--a-green)", .35)}`, borderRadius: RADIUS.pill, padding: `3px ${SPACE.sm}px`, cursor: "pointer" }}>
+                {z.nazov}
+              </span>
+            ))}
+          </div>
         </div>
       )}
     </div>
