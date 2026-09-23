@@ -12,7 +12,7 @@ import { pressable } from "@/components/pressable";
 import { ORG_ZBIERKY, FIRMY_ADRESAR } from "./mock";
 import { PlatbaModal } from "@/components/platba";
 import {
-  DOROVNANIE_CFG, useDorovnania, zapecat, potvrdPlatbu, odmietni, ukonci,
+  DOROVNANIE_CFG, useDorovnania, zapecat, potvrdPlatbu, odmietni, ukonci, pozastav, vysporiadaj,
   vycerpane, zostatok, popisPomeru, nazovPomeru, priklad, bezi, type Dorovnanie,
 } from "@/lib/dorovnanie";
 
@@ -246,6 +246,9 @@ export function DorovnanieSheet({ entita, toast, onClose }: {
   const stavText = (d: Dorovnanie) =>
     d.stav === "zapecatene" ? "firma uhradila — potvrďte príjem na účte"
     : d.stav === "aktivne" ? (bezi(d, teraz) ? `beží · ostáva ${eur(zostatok(d))}` : "beží, ale mimo obdobia")
+    : d.stav === "pozastavene" ? (d.vysporiadane
+        ? "pozastavené · zvyšok vysporiadaný — môžete ukončiť"
+        : `pozastavené · treba vysporiadať ${eur(zostatok(d))}`)
     : d.stav === "vycerpane" ? `strop vyčerpaný · pridané ${eur(vycerpane(d))}`
     : d.stav === "ukoncene" ? `ukončené · pridané ${eur(vycerpane(d))}`
     : d.stav === "odmietnute" ? "odmietnuté charitou"
@@ -270,6 +273,7 @@ export function DorovnanieSheet({ entita, toast, onClose }: {
           <div style={{ fontSize: 10.5, color: C.textTer, marginTop: 2 }}>
             zapečatené {datum(d.zapecatene)}{d.zaplatene ? ` · zaplatené ${datum(d.zaplatene)}` : ""}
             {d.zaznamy.length > 0 ? ` · ${d.zaznamy.length} dorovnaných darov` : ""}
+            {d.vysporiadane ? ` · zvyšok ${eur(d.vysporiadane.suma)} ${d.vysporiadane.kam === "firme" ? "vrátený firme" : "ostal zbierke"} ${datum(d.vysporiadane.kedy)}` : ""}
           </div>
           <div style={{ display: "flex", gap: SPACE.sm, marginTop: SPACE.xs, flexWrap: "wrap" }}>
             {d.stav === "zapecatene" && (<>
@@ -279,8 +283,25 @@ export function DorovnanieSheet({ entita, toast, onClose }: {
                 style={{ marginLeft: "auto", fontSize: 11.5, fontWeight: 700, color: C.textTer, cursor: "pointer" }}>Odmietnuť</span>
             </>)}
             {d.stav === "aktivne" && (
-              <span {...pressable(() => { ukonci(entita, d.id); toast("Dorovnanie ukončené"); }, "Ukončiť")}
-                style={{ marginLeft: "auto", fontSize: 11.5, fontWeight: 700, color: C.textTer, cursor: "pointer" }}>Ukončiť</span>
+              <span {...pressable(() => { pozastav(entita, d.id); toast("Zbierka aj dorovnanie stoja — dary sa neprijímajú"); }, "Pozastaviť")}
+                style={{ marginLeft: "auto", fontSize: 11.5, fontWeight: 700, color: C.textTer, cursor: "pointer" }}>Pozastaviť zbierku</span>
+            )}
+            {d.stav === "pozastavene" && !d.vysporiadane && (
+              <span {...pressable(() => {
+                vysporiadaj(entita, d.id);
+                toast(d.zvysok === "firme" ? `Vrátené firme: ${eur(zostatok(d))}` : `Zvyšok ${eur(zostatok(d))} ostáva zbierke ako dar`);
+              }, "Vysporiadať zvyšok")} style={{ fontSize: 11.5, fontWeight: 800, color: ZELENA, cursor: "pointer" }}>
+                {d.zvysok === "firme" ? `Vrátiť firme ${eur(zostatok(d))}` : `Zvyšok ${eur(zostatok(d))} necháva zbierke`}
+              </span>
+            )}
+            {d.stav === "pozastavene" && (
+              <span {...pressable(() => {
+                if (!ukonci(entita, d.id)) { toast("Najprv vysporiadajte zvyšok — bez toho sa ukončiť nedá"); return; }
+                toast("Dorovnanie ukončené");
+              }, "Ukončiť")}
+                style={{ marginLeft: "auto", fontSize: 11.5, fontWeight: 700, color: d.vysporiadane ? C.textSec : C.textTer, cursor: "pointer", opacity: d.vysporiadane ? 1 : .5 }}>
+                Ukončiť dorovnanie
+              </span>
             )}
           </div>
         </div>

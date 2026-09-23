@@ -29,6 +29,7 @@ export const DOROVNANIE_CFG = {
 export type StavDorovnania =
   | "zapecatene"      // firma uhradila a zapečatila, čaká na potvrdenie charity
   | "aktivne"         // peniaze sú u charity, dorovnanie beží
+  | "pozastavene"     // zbierka aj dary stoja; čaká sa na vysporiadanie zvyšku
   | "vycerpane"       // strop minutý
   | "ukoncene"        // koniec obdobia alebo koniec zbierky
   | "odmietnute"      // charita odmietla (len pred platbou)
@@ -70,6 +71,10 @@ export interface Dorovnanie {
   ukoncene?: number;
   /** nemenná história dorovnaných darov */
   zaznamy: ZaznamDorovnania[];
+  // ---- ukončenie: zbierka stojí → zvyšok vysporiadaný → až potom koniec ----
+  pozastavene?: number;
+  /** ako sa naložilo so zvyškom a kedy — bez toho sa dorovnanie nedá ukončiť */
+  vysporiadane?: { suma: number; kam: "zbierke" | "firme"; kedy: number; referencia?: string };
 }
 
 const KLUC = (entita: string) => `deed.dorovnania.${entita}`;
@@ -125,7 +130,27 @@ export const potvrdPlatbu = (entita: string, id: string) =>
 /** len kým firma nezaplatila */
 export const odmietni = (entita: string, id: string) => zmen(entita, id, { stav: "odmietnute", ukoncene: Date.now() });
 export const zrus = (entita: string, id: string) => zmen(entita, id, { stav: "zrusene", ukoncene: Date.now() });
-export const ukonci = (entita: string, id: string) => zmen(entita, id, { stav: "ukoncene", ukoncene: Date.now() });
+
+// ---- ukončenie má poradie: pozastaviť → vysporiadať zvyšok → ukončiť ----
+/** zbierka sa zastaví: neprijíma dary, takže sa už nič nedorovnáva */
+export const pozastav = (entita: string, id: string) =>
+  zmen(entita, id, { stav: "pozastavene", pozastavene: Date.now() });
+
+/** zvyšok putuje podľa toho, čo si firma zvolila pri zapečatení */
+export function vysporiadaj(entita: string, id: string, referencia?: string) {
+  const d = nacitajDorovnania(entita).find((x) => x.id === id);
+  if (!d || d.stav !== "pozastavene" || d.vysporiadane) return;
+  zmen(entita, id, { vysporiadane: { suma: zostatok(d), kam: d.zvysok, kedy: Date.now(), referencia } });
+}
+
+/** ukončiť sa dá až po vysporiadaní zvyšku — inak by charita držala cudzie peniaze */
+export function ukonci(entita: string, id: string): boolean {
+  const d = nacitajDorovnania(entita).find((x) => x.id === id);
+  if (!d) return false;
+  if (d.stav !== "pozastavene" || !d.vysporiadane) return false;
+  zmen(entita, id, { stav: "ukoncene", ukoncene: Date.now() });
+  return true;
+}
 
 /** zapíše dorovnanie k jednému daru — vracia, koľko firma pridala */
 export function zapisDar(entita: string, id: string, dar: number, teraz = Date.now()): number {
