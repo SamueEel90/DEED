@@ -88,7 +88,7 @@ export function Sheet({
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          padding: 24,
+          padding: 14,        // na nízkom okne je každý pixel výšky panelu dobrý
           background: "transparent",
           pointerEvents: "none",   // klik mimo karty ide na prekrytie = zavrie
         } : {
