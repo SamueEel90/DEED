@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { Fragment, useEffect, useMemo, useState, type ReactNode } from "react";
 import { C, SPACE, RADIUS, SIRKA } from "@/theme";
 import {
   BackHeader, Sheet, SegTabs, Switch, MoniBar, Stit, naStitLevel, Tip, tint,
@@ -21,7 +21,7 @@ import {
   nacitajOrgExtra, ulozOrgExtra, nacitajLogo, ulozLogo, nacitajOnas, ulozOnas, nacitajTvarLoga, ulozTvarLoga, nacitajZdrojAvatara, ulozZdrojAvatara, nacitajHlavuZbalenu, ulozHlavuZbalenu, nacitajCentralnu,
   type Pozicia, type Tier,
 } from "./stav";
-import { PANELY, SPRAVY, SPRAVA_NADPIS, ZASLUZENA, SUBJEKTY, FIRMY_ADRESAR, type PanelBlok, type SpravaItem, type OrgZbierka } from "./mock";
+import { PANELY, SPRAVY, SPRAVA_NADPIS, SEKCIE_SPRAVY, ZASLUZENA, SUBJEKTY, FIRMY_ADRESAR, type PanelBlok, type SpravaItem, type OrgZbierka } from "./mock";
 import { Podstranka } from "./Podstranka";
 import { UpravProfilSheet } from "./UpravProfil";
 import { useRegistraciaCharity, ulozDoRegistracie } from "./registracia";
@@ -31,6 +31,8 @@ import { CentralnaZbierkaSheet } from "./CentralnaZbierka";
 import { SpravaZbierkySheet } from "./SpravaZbierky";
 import { VideoSheet, DarcoviaSheet, QrNastrojeSheet, ViditelnostSheet } from "./NastrojeCharity";
 import { SektoroveZbierkySheet } from "./SektoroveZbierky";
+import { OznamySheet } from "./Oznamy";
+import { InzeratySheet } from "./Inzeraty";
 import { ZBIERKY, predvolenyStav } from "@/lib/zbierky";
 import { nacitajStav, percentoDolozenia, fazaDokladovania, useZmenySpravy } from "@/lib/zbierkaSprava";
 import { KontaktBlok, nacitajKontakt, ulozKontakt } from "./kontakt";
@@ -47,7 +49,7 @@ import { verejneTaby, zamknuteTaby, popisTabu, BLOK_ZA_TAB, zbierkyOrg, cislaSub
 */
 
 type PaywallReq = { tierMin: Tier; nazov: string; dovod?: string };
-type OtvorenySheet = null | "zbierky" | "centralna" | "terminal" | "retaz" | "profil" | "adresarB2B" | { spravovat: OrgZbierka } | "video" | "darcovia" | "qr" | "sumy" | "segment";
+type OtvorenySheet = null | "zbierky" | "centralna" | "terminal" | "retaz" | "profil" | "adresarB2B" | { spravovat: OrgZbierka } | "video" | "darcovia" | "qr" | "sumy" | "segment" | "oznamy" | "inzeraty";
 
 // ---- SVG ikony blokov a správy (nahrádzajú emoji — jednotný vizuál) ----
 const IKONY: Record<string, ReactNode> = {
@@ -123,6 +125,15 @@ function MojDeedFiremnyObsah({ onBack, toast, orgId }: { onBack: () => void; toa
   const spravaZoradena = hore.length
     ? [...hore.map((id) => sprava.find((it) => it.id === id)).filter((it): it is SpravaItem => !!it), ...sprava.filter((it) => !hore.includes(it.id))]
     : sprava;
+  // nástroje sa triedia do sekcií (Zbierky · Oznamy a obsah · …), nech sa 17 položiek dá nájsť
+  // očami; rola bez sekcií (tvorca, B2B) ostáva jedným blokom ako doteraz
+  const spravaVSekciach: { nazov: string | null; polozky: SpravaItem[] }[] = spravaZoradena.some((it) => it.sekcia)
+    ? SEKCIE_SPRAVY.map((sek) => ({ nazov: sek.nazov as string, polozky: spravaZoradena.filter((it) => it.sekcia === sek.id) }))
+        .filter((sek) => sek.polozky.length > 0)
+        .concat(spravaZoradena.some((it) => !it.sekcia)
+          ? [{ nazov: "ĎALŠIE", polozky: spravaZoradena.filter((it) => !it.sekcia) }] : [])
+    : [{ nazov: null, polozky: spravaZoradena }];
+
   const rolaMeta = POZICIE.find((p) => p.key === pozicia)!;
   const subjekt = SUBJEKTY[pozicia];
   const stit = naStitLevel(ZASLUZENA[pozicia].badge);
@@ -145,7 +156,7 @@ function MojDeedFiremnyObsah({ onBack, toast, orgId }: { onBack: () => void; toa
     if (pozicia === "charita" && (it.id === "zbierky" || it.id === "dokladovanie")) return setSheet("zbierky");
     if (pozicia === "tvorca" && it.id === "terminal") return setSheet("terminal");
     if (pozicia === "charita" && it.id === "centralna") return setSheet("centralna");
-    if (pozicia === "charita" && (it.id === "video" || it.id === "darcovia" || it.id === "qr" || it.id === "sumy" || it.id === "segment")) return setSheet(it.id);
+    if (pozicia === "charita" && (it.id === "video" || it.id === "darcovia" || it.id === "qr" || it.id === "sumy" || it.id === "segment" || it.id === "oznamy" || it.id === "inzeraty")) return setSheet(it.id);
     toast(`${it.nazov} — čoskoro`);
   };
 
@@ -264,7 +275,12 @@ function MojDeedFiremnyObsah({ onBack, toast, orgId }: { onBack: () => void; toa
           hlavicka={<MenuHlavicka ikona={<IkonaNastavenia size={15} />} label={SPRAVA_NADPIS[pozicia]}
             popis="Nástroje správcu — vidí len držiteľ roly a delegovaní správcovia" />}
         >
-          {spravaZoradena.map((it, i) => {
+          {spravaVSekciach.map(({ nazov, polozky }) => (
+            <Fragment key={nazov ?? "bez"}>
+              {nazov && (
+                <div style={{ padding: `${SPACE.sm}px ${SPACE.gutter}px 4px`, fontSize: 10.5, fontWeight: 800, letterSpacing: ".05em", color: C.textTer, borderTop: `1px solid ${C.line}` }}>{nazov}</div>
+              )}
+              {polozky.map((it, i) => {
             const zamknute = !it.povinne && tier < it.tierMin;
             return (
               <MenuPolozka key={it.id}
@@ -279,10 +295,12 @@ function MojDeedFiremnyObsah({ onBack, toast, orgId }: { onBack: () => void; toa
                 popis={it.popis}
                 zamknute={zamknute}
                 onClick={it.povinne ? () => spravaAkcia(it) : gateTier(it.tierMin, it.nazov, () => spravaAkcia(it))}
-                posledna={i === spravaZoradena.length - 1}
+                posledna={i === polozky.length - 1}
               />
             );
-          })}
+              })}
+            </Fragment>
+          ))}
         </MenuSkupina>
       )}
 
@@ -325,6 +343,8 @@ function MojDeedFiremnyObsah({ onBack, toast, orgId }: { onBack: () => void; toa
       {sheet === "darcovia" && <DarcoviaSheet tier={tier} toast={toast} onClose={() => setSheet(null)} />}
       {sheet === "qr" && <QrNastrojeSheet tier={tier} toast={toast} onClose={() => setSheet(null)} />}
       {sheet === "sumy" && <ViditelnostSheet toast={toast} onClose={() => setSheet(null)} />}
+      {sheet === "oznamy" && <OznamySheet entita={pozicia} autor={subjekt.nazov} logo={logo ?? subjekt.foto} toast={toast} onClose={() => setSheet(null)} />}
+      {sheet === "inzeraty" && <InzeratySheet entita={pozicia} autor={subjekt.nazov} logo={logo ?? subjekt.foto} tier={tier} toast={toast} onPaywall={setPaywall} onClose={() => setSheet(null)} />}
       {sheet === "segment" && <SektoroveZbierkySheet tier={tier} toast={toast} onPaywall={setPaywall} onClose={() => setSheet(null)} />}
       {sheet === "terminal" && <TerminalSheet toast={toast} onClose={() => setSheet(null)} />}
       {sheet === "retaz" && <MojaRetaz onClose={() => setSheet(null)} toast={toast} />}

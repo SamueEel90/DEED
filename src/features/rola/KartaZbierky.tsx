@@ -8,6 +8,7 @@ import { C, SPACE, RADIUS } from "@/theme";
 import { tint } from "@/lib/ui";
 import { pressable } from "@/components/pressable";
 import { spracujFotku } from "@/lib/obrazok";
+import { FotkaObsahu } from "@/components/fotka";
 import { ulozVideoInfo, zmazVideo, jeVideo } from "@/lib/videoUloz";
 import { MediaNahlad } from "./DokazBlok";
 import { MilnikBar } from "@/components/milnikbar";
@@ -45,7 +46,7 @@ export function KartaZbierkyForm({ profil, zmen, logo, toast, deti, bar }: {
     setNahravam(true);
     const nove: string[] = [];
     for (const f of Array.from(files).slice(0, volne)) {
-      try { nove.push(await spracujFotku(f, { pomer: 16 / 9, maxSirka: 1200 })); }
+      try { nove.push(await spracujFotku(f, { pomer: null, maxSirka: 1400 })); }  // bez orezu — fotka si nesie svoj pomer
       catch (e) { toast((e as Error).message); }
     }
     setNahravam(false);
@@ -70,10 +71,10 @@ export function KartaZbierkyForm({ profil, zmen, logo, toast, deti, bar }: {
   return (
     <>
       {/* úvodná fotka */}
-      <div style={{ position: "relative", borderRadius: RADIUS.md, overflow: "hidden", border: `1px solid ${C.line}`, background: C.surface2, aspectRatio: "16 / 9", marginBottom: SPACE.xs }}>
+      <div style={{ position: "relative", borderRadius: RADIUS.md, overflow: "hidden", border: `1px solid ${C.line}`, background: C.surface2, minHeight: 160, marginBottom: SPACE.xs }}>
         {titulna
-          ? <img src={titulna} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", opacity: uvodnaFotka(profil) ? 1 : .55 }} />
-          : <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", fontSize: 34 }}>💛</div>}
+          ? <FotkaObsahu src={titulna} maxVyska={360} style={{ opacity: uvodnaFotka(profil) ? 1 : .55 }} />
+          : <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 160, fontSize: 34 }}>💛</div>}
         <span style={{ position: "absolute", left: SPACE.xs, top: SPACE.xs, fontSize: 10.5, fontWeight: 800, letterSpacing: ".04em", color: "#fff", background: "rgba(0,0,0,.55)", borderRadius: RADIUS.pill, padding: `2px ${SPACE.xs}px` }}>
           {uvodnaFotka(profil) ? "ÚVODNÁ FOTKA" : "LOGO ORGANIZÁCIE"}
         </span>
@@ -94,7 +95,7 @@ export function KartaZbierkyForm({ profil, zmen, logo, toast, deti, bar }: {
                 <span {...pressable(() => zmen({ uvodna: i }), `Nastaviť ako úvodnú fotku ${i + 1}`)}
                   style={{ display: "block", width: 84, height: 48, borderRadius: RADIUS.xs, overflow: "hidden", cursor: "pointer",
                     border: `2px solid ${i === uvodna ? ZELENA : "transparent"}`, boxSizing: "border-box" }}>
-                  <img src={f} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                  <img src={f} alt="" style={{ width: "100%", height: "100%", objectFit: "contain", background: "rgba(var(--glass-rgb),.06)", display: "block" }} />
                 </span>
                 <button type="button" onClick={() => zmazFotku(i)} aria-label={`Odstrániť fotku ${i + 1}`}
                   style={{ position: "absolute", right: 2, top: 2, width: 18, height: 18, lineHeight: "16px", textAlign: "center", borderRadius: "50%", border: "none", cursor: "pointer", background: "rgba(0,0,0,.65)", color: "#fff", fontSize: 12, padding: 0 }}>×</button>
@@ -161,7 +162,7 @@ export function NahladKarty({ profil, logo, vyzbierane, dolozene, ludia, sipka, 
     <div style={{ background: C.surface2, border: `1px solid ${tint(ZELENA, .25)}`, borderRadius: RADIUS.md, overflow: "hidden" }}>
       {titulna && (
         <div style={{ position: "relative" }}>
-          <img src={titulna} alt="" style={{ width: "100%", aspectRatio: "16 / 9", maxHeight: 280, objectFit: "cover", display: "block" }} />
+          <FotkaObsahu src={titulna} maxVyska={320} />
           {(dalsie > 0 || profil.video) && (
             <span style={{ position: "absolute", right: SPACE.xs, bottom: SPACE.xs, fontSize: 11, fontWeight: 800, color: "#fff", background: "rgba(0,0,0,.6)", borderRadius: RADIUS.pill, padding: `2px ${SPACE.xs}px` }}>
               {profil.video ? "▶ video" : ""}{profil.video && dalsie > 0 ? " · " : ""}{dalsie > 0 ? `📷 +${dalsie}` : ""}
@@ -198,7 +199,7 @@ export function GaleriaZbierky({ profil }: { profil: ProfilZbierky }) {
           {fotky.map((f, i) => (
             <span key={i} {...pressable(() => setOtvorena(otvorena === i ? null : i), `Fotka ${i + 1}`)}
               style={{ flex: "none", width: otvorena === i ? "100%" : 96, height: otvorena === i ? "auto" : 60, borderRadius: RADIUS.xs, overflow: "hidden", cursor: "pointer" }}>
-              <img src={f} alt="" style={{ width: "100%", height: otvorena === i ? "auto" : "100%", objectFit: "cover", display: "block" }} />
+              <img src={f} alt="" style={{ width: "100%", height: otvorena === i ? "auto" : "100%", objectFit: "contain", background: "rgba(var(--glass-rgb),.06)", display: "block" }} />
             </span>
           ))}
         </div>

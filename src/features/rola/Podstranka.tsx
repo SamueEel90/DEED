@@ -16,6 +16,9 @@ import { SADY_EUR, SADY_EURC } from "@/lib/sadyDarov";
 import { nastavCiste, sucetDarov, useZmenyDarov, pridajDar, type VolbaDaru } from "@/lib/darcovia";
 import { ZoznamDarcov } from "@/components/zoznamdarcov";
 import { NahladKarty, GaleriaZbierky } from "./KartaZbierky";
+import { OznamKarta } from "./Oznamy";
+import { InzeratKarta, MamZaujem } from "./Inzeraty";
+import { verejneOznamy, useZmenyOznamov } from "@/lib/oznamy";
 import { nacitajProfil, useZmenyProfilov, CENTRALNA_ID, VLASTNA_ZBIERKA_CFG, type ProfilZbierky } from "./vlastneZbierky";
 import { useSegmenty } from "./segmenty";
 import { zdielaj, aktualnaUrl } from "@/lib/zdielanie";
@@ -80,6 +83,12 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
   // sektorové zbierky (AKCIA) — vlastná záložka, nie stĺp veľkých kariet nad profilom
   const sektory = useSegmenty();
   useZmenyProfilov();
+  useZmenyOznamov();
+  const oznamy = tier >= 1 ? verejneOznamy(pozicia) : [];
+  const ponuky = tier >= 1 ? verejneOznamy(pozicia, "inzerat") : [];
+  // ponuky bývajú v tej istej záložke ako oznamy — sú platené, tak idú nad ne
+  // (pripnutý oznam si prvé miesto drží, to si charita zvolila sama)
+  const naste = [...oznamy.filter((o) => o.pripnute), ...ponuky, ...oznamy.filter((o) => !o.pripnute)];
   const sektoroveZbierky = pozicia === "charita" && tier >= VLASTNA_ZBIERKA_CFG.sektoroveOdTieru
     ? sektory.flatMap((sg) => {
         const profil = sg.zbierkaId ? nacitajProfil(sg.zbierkaId) : null;
@@ -88,6 +97,7 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
     : [];
   const taby = [
     { key: "vsetko", label: "Všetko", polozky: mojeTaby.flatMap((t) => t.polozky) },
+    ...(naste.length ? [{ key: "oznamy", label: ponuky.length ? "Oznamy a ponuky" : "Oznamy", polozky: [] as typeof mojeTaby[number]["polozky"] }] : []),
     ...mojeTaby,
     ...(sektoroveZbierky.length ? [{ key: "sektory", label: "Sektory", polozky: [] as typeof mojeTaby[number]["polozky"] }] : []),
   ];
@@ -95,6 +105,7 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
   const [sledujem, setSledujem] = useState(false);
   const [onas] = useState(() => nacitajOnas(pozicia) ?? s.onas); // text zo správy (editor), inak pôvodný
   const [rozbalena, setRozbalena] = useState<string | null>(null);
+  const [otvorenyOznam, setOtvorenyOznam] = useState<string | null>(null);   // klik na oznam otvorí len ten jeden
   const [profilZiad, setProfilZiad] = useState<string | null>(null);
   const [zbalenaCentralna, setZbalenaCentralna] = useState(false);
   const [qrZbierka, setQrZbierka] = useState<{ id: string; nazov: string } | null>(null);
@@ -132,7 +143,7 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
   };
 
   const labels = Object.fromEntries(taby.map((t) => [t.key, t.label])) as Record<string, string>;
-  const badges = Object.fromEntries(taby.map((t) => [t.key, t.key === "sektory" ? sektoroveZbierky.length : t.polozky.length])) as Record<string, number>;
+  const badges = Object.fromEntries(taby.map((t) => [t.key, t.key === "sektory" ? sektoroveZbierky.length : t.key === "oznamy" ? naste.length : t.polozky.length])) as Record<string, number>;
 
   // ---- bloky obsahu (zdieľané mobil/desktop) ----
   // centrálna zbierka organizácie (pre seba) — charita ju má od prvého plateného programu T1.
@@ -449,10 +460,60 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
     </div>
   );
 
+  // najnovší oznam nad záložkami — inak ho v rade ôsmich tabov nikto nenájde
+  const naOznam = (id: string) => {
+    setOtvorenyOznam(id);
+    setTab("oznamy");
+    setTimeout(() => document.getElementById("deed-obsah")?.scrollIntoView({ behavior: "smooth", block: "start" }), 80);
+  };
+  const oznamPas = naste.length > 0 && (
+    <div style={{ marginBottom: SPACE.sm }}>
+      {naste.map((o) => {
+        const ponuka = o.kategoria === "inzerat";
+        const akcent = ponuka ? "var(--a-gold)" : "var(--a-info)";
+        return (
+        <div key={o.id} {...pressable(() => naOznam(o.id), `${ponuka ? "Pracovná ponuka" : "Oznam"}: ${o.nadpis}`)}
+          style={{ display: "flex", alignItems: "center", gap: SPACE.xs, cursor: "pointer", marginBottom: SPACE.xxs,
+            background: tint(akcent, ponuka ? .12 : .07), border: `1px solid ${tint(akcent, ponuka ? .45 : .28)}`, borderRadius: RADIUS.sm, padding: SPACE.sm }}>
+          <span style={{ flex: "none", fontSize: 15 }}>{ponuka ? "💼" : o.pripnute ? "📌" : "📣"}</span>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: ".04em", color: ponuka ? akcent : C.textTer }}>{ponuka ? "PRACOVNÁ PONUKA" : "OZNAM"}</div>
+            <div style={{ fontSize: ponuka ? 14.5 : 13.5, fontWeight: ponuka ? 800 : 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{o.nadpis}</div>
+          </div>
+          <span style={{ flex: "none", fontSize: 12, fontWeight: 800, color: akcent }}>{ponuka ? "Mám záujem ›" : "Čítať ›"}</span>
+        </div>
+        );
+      })}
+    </div>
+  );
+
+  const otvoreny = otvorenyOznam ? naste.find((o) => o.id === otvorenyOznam) ?? null : null;
+  const btnProfil: CSSProperties = { minWidth: 160, height: 44, padding: `0 ${SPACE.md}px`, borderRadius: RADIUS.sm, border: `1px solid ${C.line}`, background: "transparent", color: C.textSec, cursor: "pointer", fontFamily: "inherit", fontWeight: 800, fontSize: 13.5 };
+
   const obsahBlok = (
-    <>
-      <TabyProfil options={taby.map((t) => t.key)} labels={labels} badges={badges} value={tab} onChange={setTab} ariaLabel="Obsah profilu" />
-      {tab === "sektory" ? (
+    <div id="deed-obsah">
+      {oznamPas}
+      <TabyProfil options={taby.map((t) => t.key)} labels={labels} badges={badges} value={tab}
+        onChange={(t) => { setTab(t); setOtvorenyOznam(null); }} ariaLabel="Obsah profilu" />
+      {tab === "oznamy" ? (<>
+        {/* čítam ten oznam, ktorý som otvoril — nie všetky naraz; každý má vlastný riadok */}
+        <div>
+          {(otvoreny ? [otvoreny] : naste).map((o) => (
+            <div key={o.id} style={{ marginBottom: SPACE.sm }}>
+              {o.kategoria === "inzerat"
+                ? <InzeratKarta o={o} autor={s.nazov} logo={logoOrg} deti={<MamZaujem entita={pozicia} inzerat={o} toast={toast} />} />
+                : <OznamKarta o={o} autor={s.nazov} logo={logoOrg} />}
+            </div>
+          ))}
+        </div>
+        <div style={{ display: "flex", gap: SPACE.sm, justifyContent: "center", marginTop: SPACE.md, flexWrap: "wrap" }}>
+          {otvoreny && naste.length > 1 && (
+            <button type="button" onClick={() => setOtvorenyOznam(null)} style={btnProfil}>Zobraziť všetko ({naste.length})</button>
+          )}
+          {/* z oznamov musí viesť cesta von — inak sa človek vie vrátiť len cez „Všetko" */}
+          <button type="button" onClick={onBack} style={btnProfil}>Zavrieť</button>
+        </div>
+      </>) : tab === "sektory" ? (
         <div style={siroke ? { display: "grid", gridTemplateColumns: `repeat(${desktop ? 3 : 2}, minmax(0,1fr))`, gap: SPACE.sm, alignItems: "start" } : undefined}>
           {sektoroveZbierky.map((z) => (
             <div key={z.id} id={`deed-sektor-${z.id}`} style={{ marginBottom: siroke ? 0 : SPACE.sm }}>
@@ -481,7 +542,7 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
           </Fragment>
         );
       })}
-    </>
+    </div>
   );
 
   // na tablete/PC sa detail otvorí v okne nad mriežkou — karty sa nerozhadzujú

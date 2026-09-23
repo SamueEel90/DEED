@@ -24,6 +24,11 @@ function zaistiCss() {
 .ftext li{margin:.15em 0}
 .ftext a{color:var(--a-info);text-decoration:underline;word-break:break-word}
 .ftext strong{font-weight:700}
+.ftext [data-v="velke"]{font-size:1.1em}
+.ftext [data-v="male"]{font-size:.92em}
+/* kým je text v editore, nesie veľkosť ešte ako <font size> — nech vyzerá rovnako ako po uložení */
+.ftext font[size="5"]{font-size:1.1em}
+.ftext font[size="2"]{font-size:.92em}
 `;
   document.head.appendChild(s);
 }

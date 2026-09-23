@@ -21,6 +21,8 @@ const NASTROJE: Array<{ id: string; label: string; titul: string; styl?: CSSProp
   { id: "bold", label: "B", titul: "Tučné", styl: { fontWeight: 800 } },
   { id: "italic", label: "I", titul: "Kurzíva", styl: { fontStyle: "italic", fontFamily: "serif" } },
   { id: "nadpis", label: "H", titul: "Nadpis" },
+  { id: "vacsie", label: "A+", titul: "Väčšie písmo", styl: { fontSize: 14 } },
+  { id: "mensie", label: "A-", titul: "Menšie písmo", styl: { fontSize: 11 } },
   { id: "insertUnorderedList", label: "•", titul: "Odrážky" },
   { id: "insertOrderedList", label: "1.", titul: "Číslovaný zoznam" },
   { id: "odkaz", label: "🔗", titul: "Odkaz" },
@@ -91,6 +93,10 @@ export function RichTextInput({ value, onChange, placeholder, minH = 110, ariaLa
       // toggle: nadpis ↔ odsek (jedna úroveň — h3)
       const blok = document.queryCommandValue("formatBlock");
       prikaz("formatBlock", /h3/i.test(blok) ? "<p>" : "<h3>");
+    } else if (id === "vacsie") {
+      prikaz("fontSize", "5");      // <font size=5> → sanitizér z toho spraví span[data-v=velke]
+    } else if (id === "mensie") {
+      prikaz("fontSize", "2");
     } else if (id === "emoji") {
       setEmojiOtv((o) => !o);
       return;
