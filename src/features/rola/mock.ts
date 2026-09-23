@@ -78,7 +78,7 @@ export interface SubjektMeta {
   /** taby verejného obsahu per rola (fixné poradie §3 bod 4).
    *  Položka viazaná na zbierku nesie `zbierkaId` — názov, fotka a suma sa ťahajú
    *  zo /lib/zbierky, takže na profile je to isté, čo v zbierke. */
-  taby: { key: string; label: string; odTieru?: Tier; polozky: { emoji: string; titul: string; popis: string; zbierkaId?: string; split?: number; odTieru?: Tier; dokaz?: Dokaz; dokazZbierky?: string; video?: { nahlad: string; dlzka: string; zbierkaId?: string } }[] }[];
+  taby: { key: string; label: string; odTieru?: Tier; polozky: { emoji: string; titul: string; popis: string; zbierkaId?: string; split?: number; odTieru?: Tier; dokaz?: Dokaz; dokazZbierky?: string; video?: { nahlad: string; dlzka: string; zbierkaId?: string; src?: string } }[] }[];
 }
 
 /** segmenty (témy), ktoré si charita nastavila v správe — darca ich vidí pri pravidelnej podpore (program AKCIA) */
@@ -229,10 +229,10 @@ export const SPRAVA_CHARITA: SpravaItem[] = [
   { id: "darcovia", emoji: "💌", nazov: "Prehľad darcov a vyzbieraných súm", popis: "Zoznam darcov a hromadné poďakovanie", tierMin: 0 },
   { id: "vypis", emoji: "📄", nazov: "Ročný výpis činnosti", popis: "Podklad na výročnú schôdzu", tierMin: 0 },
   { id: "qr", emoji: "▦", nazov: "QR nástroje", popis: "QR overenej organizácie a QR zbierok — plagát, pokladnička", tierMin: 0 },
-  { id: "sumy", emoji: "👁", nazov: "Viditeľnosť súm", popis: "Čo vidia návštevníci profilu", tierMin: 0 },
   // ZBIERKA (T1)
-  { id: "centralna", emoji: "💛", nazov: "Centrálna zbierka organizácie", popis: "Pridať a spravovať — pravidelná podpora na segment alebo celú organizáciu", tierMin: 1 },
-  { id: "segment", emoji: "🧩", nazov: "Segmenty pre darcov", popis: "Témy z registrácie — darca podporí tému alebo celú organizáciu", tierMin: 1 },
+  { id: "centralna", emoji: "💛", nazov: "Centrálna zbierka organizácie", popis: "Pridať a spravovať — pravidelná podpora na sektor činnosti alebo celú organizáciu", tierMin: 1 },
+  { id: "sektorove", emoji: "🧾", nazov: "Sektorové zbierky", popis: "Samostatná zbierka, vlastný účet a QR pre každý sektor činnosti", tierMin: 2 },
+  { id: "segment", emoji: "🧩", nazov: "Sektory činnosti", popis: "Z registrácie — darca podporí sektor alebo celú organizáciu", tierMin: 1 },
   { id: "dlhodobe", emoji: "📆", nazov: "Dlhodobé zbierky", popis: "Zbierka bez pevného konca · predĺženie nad 30 dní · až 3 súbežné", tierMin: 1 },
   { id: "sponzoring", emoji: "🤝", nazov: "Sponzoring", popis: "Hľadáme sponzora s protiplnením · predvyplnená zmluva · logo sponzora na profile · oznam v meste · doklad o protiplnení · sponzorské zbierky bez limitu", tierMin: 1 },
   { id: "prezentacia", emoji: "📣", nazov: "Prezentácia, oznamy a inzeráty", popis: "Prezentácia činnosti a služieb · oznamy na profile · akcie na nástenku mesta · 1 inzerát (zamestnanec, brigádnik, člen)", tierMin: 1 },
@@ -247,6 +247,8 @@ export const SPRAVA_CHARITA: SpravaItem[] = [
   { id: "materialne", emoji: "📦", nazov: "Materiálne zbierky", popis: "Zbierka vecí namiesto peňazí (fáza 2)", tierMin: 3 },
   { id: "prednost", emoji: "⭐", nazov: "Prednosť vo vyhľadávaní a v adresári", popis: "Bez limitu zbierok, pobočiek a inzerátov · 4 videá / mesiac", tierMin: 3 },
   { id: "export", emoji: "📊", nazov: "Export pre grantové správy a výkazy", popis: "Podklady pre granty a výročnú správu", tierMin: 3 },
+  // na spodku: nastavenie, nie nástroj
+  { id: "sumy", emoji: "👁", nazov: "Viditeľnosť súm", popis: "Čo vidia návštevníci profilu", tierMin: 0 },
 ];
 
 // ---- TVORCA (§2) ----

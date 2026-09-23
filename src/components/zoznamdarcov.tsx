@@ -15,16 +15,15 @@ import { pressable } from "@/components/pressable";
 import { Sheet } from "@/components/sheet";
 import { Switch } from "@/components/ui";
 import {
-  DARCOVIA_CFG, useDarcovia, identitaDarcu, zobrazenaSuma, relCas, prepniNaAnonym,
+  DARCOVIA_CFG, useDarcovia, identitaDarcu, zobrazenaSuma, relCas,
   
   type DarRiadok, type VolbaDaru, type VerziaIdentity,
 } from "@/lib/darcovia";
 
 // ---- jeden riadok zoznamu ----
-function Riadok({ r, refId, prvy }: { r: DarRiadok; refId: string; prvy?: boolean }) {
+function Riadok({ r, prvy, skrytSumy }: { r: DarRiadok; prvy?: boolean; skrytSumy?: boolean }) {
   const ja = usePouzivatel();
-  const suma = zobrazenaSuma(r);
-  const mozeAnonym = !!r.moj && r.registrovany && r.verzia !== 4; // jednosmerné: len K anonymite
+  const suma = skrytSumy ? null : zobrazenaSuma(r);
   return (
     <div style={{ display: "flex", alignItems: "baseline", gap: SPACE.xs, padding: `${SPACE.xs}px 0`, borderBottom: `1px solid ${C.line2}`, fontSize: 12.5, ...(prvy ? { animation: "fadeUp .3s ease" } : {}) }}>
       <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
@@ -33,19 +32,14 @@ function Riadok({ r, refId, prvy }: { r: DarRiadok; refId: string; prvy?: boolea
         {suma && <b style={{ fontWeight: 700, color: C.greenL }}>{suma}</b>}
       </span>
       <span style={{ marginLeft: "auto", flex: "none", color: C.textTer, fontSize: 11 }}>{relCas(r.cas)}</span>
-      {mozeAnonym && (
-        <span {...pressable(() => prepniNaAnonym(refId, r.id), "Prepnúť môj dar na Anonym")}
-          title="Spätne skryť identitu (nedá sa vrátiť)"
-          style={{ flex: "none", fontSize: 10, fontWeight: 700, color: C.textTer, border: `1px solid ${C.line}`, borderRadius: RADIUS.pill, padding: `1px ${SPACE.xs}px`, cursor: "pointer", position: "relative" }}>
-          → Anonym
-        </span>
-      )}
     </div>
   );
 }
 
-export function ZoznamDarcov({ refId, celkom, style }: {
+export function ZoznamDarcov({ refId, celkom, style, skrytSumy }: {
   refId: string;
+  /** príjemca vypol sumy darov na svojom profile (Viditeľnosť súm) */
+  skrytSumy?: boolean;
   /** počítadlo „X ľudí pomohlo" — rovnaké číslo ako ProgresBox (jeden zdroj, spec §0.3) */
   celkom?: number;
   style?: CSSProperties;
@@ -61,7 +55,7 @@ export function ZoznamDarcov({ refId, celkom, style }: {
         DARCOVIA
         <span style={{ marginLeft: "auto", color: C.greenL, fontWeight: 700, fontSize: 10.5 }}>● rastie live</span>
       </div>
-      {kompakt.map((r, i) => <Riadok key={r.id} r={r} refId={refId} prvy={i === 0 && !r.id.includes("-seed-")} />)}
+      {kompakt.map((r, i) => <Riadok key={r.id} r={r} prvy={i === 0 && !r.id.includes("-seed-")} skrytSumy={skrytSumy} />)}
       <div {...pressable(() => setVsetci(true), "Zobraziť všetkých darcov")}
         style={{ position: "relative", textAlign: "center", fontSize: 12, fontWeight: 700, color: C.textSec, padding: `${SPACE.sm}px 0 ${SPACE.xxs}px`, cursor: "pointer" }}>
         Zobraziť všetkých ({n.toLocaleString("sk")})
@@ -72,7 +66,7 @@ export function ZoznamDarcov({ refId, celkom, style }: {
           <div style={{ fontSize: 15, fontWeight: 800, marginBottom: SPACE.xxs }}>Darcovia ({n.toLocaleString("sk")})</div>
           <div style={{ fontSize: 11, color: C.textTer, marginBottom: SPACE.sm }}>Chronologicky, najnovší hore. Identita aj suma sú voľbou darcu — default je Anonym.</div>
           <div style={{ maxHeight: "55vh", overflowY: "auto" }}>
-            {riadky.map((r) => <Riadok key={r.id} r={r} refId={refId} />)}
+            {riadky.map((r) => <Riadok key={r.id} r={r} skrytSumy={skrytSumy} />)}
           </div>
         </Sheet>
       )}
@@ -128,9 +122,12 @@ export function VolbaDarcovstva({ volba, onZmena, sumaEur }: {
       </div>
       <div style={{ display: "grid", gap: SPACE.xs, marginTop: SPACE.xs }}>
         {sumaEur >= DARCOVIA_CFG.prahSumy ? (
-          <label style={{ display: "flex", alignItems: "center", gap: SPACE.sm, fontSize: 11.5, color: C.textSec, cursor: "pointer" }}>
-            <Switch on={volba.zobrazSumu} onChange={(v) => onZmena({ ...volba, zobrazSumu: v })} ariaLabel="Zobraziť sumu" />
-            Zobraziť aj sumu daru
+          <label style={{ display: "flex", alignItems: "center", gap: SPACE.sm, cursor: "pointer", background: tint(C.green, volba.zobrazSumu ? .12 : .06), border: `1px solid ${tint(C.green, volba.zobrazSumu ? .45 : .25)}`, borderRadius: RADIUS.sm, padding: `${SPACE.xs}px ${SPACE.sm}px` }}>
+            <Switch on={volba.zobrazSumu} onChange={(v) => onZmena({ ...volba, zobrazSumu: v })} ariaLabel="Zobraziť sumu daru" />
+            <span style={{ minWidth: 0 }}>
+              <span style={{ display: "block", fontSize: 13.5, fontWeight: 800, color: volba.zobrazSumu ? C.green : C.text }}>Zobraziť sumu daru</span>
+              <span style={{ display: "block", fontSize: 11, color: C.textTer }}>{volba.zobrazSumu ? "V zozname darcov bude pri tebe aj suma." : "V zozname darcov bude len „daroval“, bez sumy."}</span>
+            </span>
           </label>
         ) : podPrahom ? (
           <div style={{ fontSize: 10.5, color: C.textTer }}>Dar pod {DARCOVIA_CFG.prahSumy} € sa zobrazuje bez sumy — vždy len „daroval".</div>

@@ -105,3 +105,25 @@ export function DeedQr({ data, odznak = "D+", retaz = false, suma, delenie, vari
     </svg>
   );
 }
+
+/** Stiahne DEED QR ako PNG (2000 px — na tlač). Variant volí používateľ. */
+export async function stiahniDeedQr(o: {
+  data: string; odznak?: DeedOdznak; retaz?: boolean; suma?: string | null; delenie?: string | null;
+  variant: DeedQrVariant; nazov: string;
+}) {
+  const { renderToStaticMarkup } = await import("react-dom/server");
+  const px = 2000;
+  const svg = renderToStaticMarkup(<DeedQr data={o.data} odznak={o.odznak} retaz={o.retaz} suma={o.suma} delenie={o.delenie} variant={o.variant} size={px} />);
+  const url = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml" }));
+  try {
+    const img = new Image();
+    await new Promise<void>((ok, zle) => { img.onload = () => ok(); img.onerror = () => zle(new Error("QR sa nepodarilo vykresliť")); img.src = url; });
+    const c = document.createElement("canvas");
+    c.width = px; c.height = px;
+    c.getContext("2d")!.drawImage(img, 0, 0, px, px);
+    const a = document.createElement("a");
+    a.download = `${o.nazov.replace(/[^\p{L}\p{N}]+/gu, "-").replace(/^-|-$/g, "") || "qr"}.png`;
+    a.href = c.toDataURL("image/png");
+    a.click();
+  } finally { URL.revokeObjectURL(url); }
+}

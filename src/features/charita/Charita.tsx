@@ -151,7 +151,7 @@ export default function ModulCharita({ wide, otvorModul }: ModulCharitaProps) {
     <div style={{ minHeight: "100%", color: K.txt }}>
       <ScreenSwitch k={screen}>
       {screen === "feed" && <CharitaFeed wide={wide} toast={toast} onDetail={(z) => { setAktZ(z ?? null); setScreen("detail"); }} onHladaj={() => setHladaj(true)} onSheet={setSheet} onBoard={() => setScreen("board")} onFiremny={() => setScreen("firemny")} />}
-      {screen === "firemny" && obal(<SwipeBack onBack={() => setScreen("feed")}><MojDeedFiremny onBack={() => setScreen("feed")} toast={toast} /></SwipeBack>)}
+      {screen === "firemny" && obalSiroky(<SwipeBack onBack={() => setScreen("feed")}><MojDeedFiremny onBack={() => setScreen("feed")} toast={toast} /></SwipeBack>, { wide, desktop, max: SIRKA.stlpec })}
       {screen === "detail" && obal(<SwipeBack onBack={() => setScreen("feed")}><CharitaDetail z={aktZ} toast={toast} onBack={() => setScreen("feed")} onReg={() => setSheet("reg")} onAutor={(s) => { setAktSubjekt(s); setScreen("cudzi"); }} /></SwipeBack>)}
       {screen === "cudzi" && aktSubjekt && obal(<CudziProfil subjekt={aktSubjekt as any} toast={toast} onBack={() => setScreen("feed")}
         onKampan={(k: OrgKampan) => { setAktZ({ id: k.id, nazov: k.nazov, emoji: k.emoji, overena: true, orgProfil: true, avatar: najdiOrg((aktSubjekt as { meno?: string } | null)?.meno).logo, lok: k.lok, fotky: [k.foto], popis: k.popis, pribeh: k.popis, vyzbierane: k.vyzbierane, ciel: k.ciel, ludia: k.ludia }); setScreen("detail"); }} />)}

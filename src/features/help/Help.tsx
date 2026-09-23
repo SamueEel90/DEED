@@ -771,7 +771,7 @@ function RequestFlow({ onBack, onZverejni }: { onBack: () => void; onZverejni: (
           <Otazka>Opíš, s čím treba pomôcť</Otazka>
           <RichTextInput value={popis} onChange={setPopis} minH={90} placeholder="Krátko situácia núdzneho a čo potrebuje." />
 
-          <Otazka>Segment potreby</Otazka>
+          <Otazka>Sektor potreby</Otazka>
           <TagTemy vybrane={charitaSegmenty} onToggle={(id) => { setCharitaSegmenty((s) => prepniTag(s, id)); setCharitaHladane(false); }} polozky={CHARITA_SEGMENTY} akcent="var(--a-teal)" varovanie={false} />
 
           <button onClick={() => setCharitaHladane(true)} disabled={!popis.trim() || charitaSegmenty.length === 0} style={{ ...btn(!popis.trim() || charitaSegmenty.length === 0 ? "disabled" : "primary"), width: "100%", marginTop: SPACE.gutter }}>Nájsť vhodné charity</button>
@@ -779,7 +779,7 @@ function RequestFlow({ onBack, onZverejni }: { onBack: () => void; onZverejni: (
           {charitaHladane && (
             <div style={{ marginTop: SPACE.md }}>
               {matchujuce.length === 0 ? (
-                <div style={{ ...infoBox, background: tint(C.gold, .1), borderColor: tint(C.gold, .35), color: C.gold }}>Žiadna vhodná charita v okolí pre segment <b>{charitaSegmenty.map(segmentLabel).join(", ")}</b>. Skús rozšíriť rádius — stav prípadu: „hľadá zastrešenie".</div>
+                <div style={{ ...infoBox, background: tint(C.gold, .1), borderColor: tint(C.gold, .35), color: C.gold }}>Žiadna vhodná charita v okolí pre sektor <b>{charitaSegmenty.map(segmentLabel).join(", ")}</b>. Skús rozšíriť rádius — stav prípadu: „hľadá zastrešenie".</div>
               ) : (
                 <>
                   <div style={{ fontSize: 13, fontWeight: 700, marginBottom: SPACE.sm }}>Vhodné charity ({matchujuce.length}) — oslov ich priamo:</div>

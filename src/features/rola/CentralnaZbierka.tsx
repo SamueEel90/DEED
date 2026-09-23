@@ -7,10 +7,14 @@ import { useState } from "react";
 import { C, SPACE, RADIUS } from "@/theme";
 import { Sheet } from "@/components/sheet";
 import { PlatobnyModul } from "@/components/platobnymodul";
-import { ProgresBox } from "@/components/ui";
+import { KartaZbierkyForm, vstup } from "./KartaZbierky";
+import { MilnikBar } from "@/components/milnikbar";
 import { SUBJEKTY } from "./mock";
 import { segmentyZRegistracie, segmentyCharity, nastavSegmenty } from "./registracia";
-import { nacitajKryptoOrg, ulozKryptoOrg, nacitajCentralnu, ulozCentralnu, nacitajSady, ulozSady } from "./stav";
+import { nacitajKryptoOrg, ulozKryptoOrg, nacitajCentralnu, ulozCentralnu, nacitajSady, ulozSady, nacitajIbanOrg, nacitajLogo } from "./stav";
+import { nacitajProfil, ulozProfil, CENTRALNA_ID, VLASTNA_ZBIERKA_CFG, type ProfilZbierky } from "./vlastneZbierky";
+import { sucetDarov } from "@/lib/darcovia";
+import { formatujIban } from "./segmenty";
 import { SADY_EUR, SADY_EURC, type SadaEur, type SadaEurc } from "@/lib/sadyDarov";
 
 export function CentralnaZbierkaSheet({ toast, onClose }: { toast: (m: string) => void; onClose: () => void }) {
@@ -26,19 +30,28 @@ export function CentralnaZbierkaSheet({ toast, onClose }: { toast: (m: string) =
   const pridaj = () => {
     const t = novy.trim();
     if (!t) return;
-    if (vsetky.some((x) => x.toLowerCase() === t.toLowerCase())) { toast("Tento segment už v zozname je"); return; }
+    if (vsetky.some((x) => x.toLowerCase() === t.toLowerCase())) { toast("Tento sektor už v zozname je"); return; }
     setVlastne((v) => [...v, t]);
     setVybrane((v) => [...v, t]);
     setNovy("");
   };
   const [potvrdene, setPotvrdene] = useState(false);
   const spustena = nacitajCentralnu("charita");
+  const logo = nacitajLogo("charita") ?? s.foto;
+  const ibanOrg = nacitajIbanOrg("charita");
+  const [profil, setProfil] = useState<ProfilZbierky>(() => nacitajProfil(CENTRALNA_ID) ?? {
+    nazov: `${s.nazov} — celá organizácia`,
+    popis: "Podporte našu činnosť ako celok. Peniaze idú tam, kde sú práve najviac potrebné — a každých 3 000 € doložíme dokladmi.",
+  });
+  const zmenProfil = (patch: Partial<ProfilZbierky>) => setProfil((x) => ({ ...x, ...patch }));
+  const vyzbierane = sucetDarov(CENTRALNA_ID).suma;
 
   const prepni = (sg: string) => setVybrane((v) => (v.includes(sg) ? v.filter((x) => x !== sg) : [...v, sg]));
   const spusti = () => {
     ulozKryptoOrg("charita", krypto);
     ulozSady("charita", sady);
     nastavSegmenty(vybrane);
+    ulozProfil(CENTRALNA_ID, { ...profil, iban: ibanOrg || undefined, spustena: true, vytvorena: profil.vytvorena ?? new Date().toISOString() });
     ulozCentralnu("charita", true);
     toast(spustena ? "Centrálna zbierka upravená" : "Centrálna zbierka spustená — je na vašom profile");
     onClose();
@@ -55,15 +68,30 @@ export function CentralnaZbierkaSheet({ toast, onClose }: { toast: (m: string) =
       <div style={{ fontSize: 16, fontWeight: 800 }}>🚀 Centrálna zbierka organizácie</div>
       <div style={{ fontSize: 12, color: C.textTer, marginTop: 2 }}>Zbierka na vašu činnosť · údaje z registrácie · hotová za minútu</div>
 
-      {nadpis("TAKTO JU UVIDIA DARCOVIA")}
+      {nadpis("KARTA ZBIERKY — TAKTO JU UVIDIA DARCOVIA")}
+      <KartaZbierkyForm profil={profil} zmen={zmenProfil} logo={logo} toast={toast}
+        bar={<MilnikBar vyzbierane={vyzbierane} dolozene={0} ludia={0} />}
+        deti={
+        <div style={{ marginTop: SPACE.sm }}>
+          <div style={{ fontSize: 11.5, fontWeight: 700, color: C.textSec, marginBottom: 2 }}>Účet zbierky (IBAN)</div>
+          <input value={ibanOrg ? formatujIban(ibanOrg) : "— nie je v registrácii —"} readOnly
+            style={{ ...vstup, color: ibanOrg ? C.textSec : C.textTer, cursor: "default" }} />
+          <div style={{ fontSize: 10.5, color: C.textTer, marginTop: 2, lineHeight: 1.4 }}>
+            Hlavný účet organizácie z registrácie. Zmena účtu ide cez profil organizácie, nie cez zbierku.
+          </div>
+        </div>
+      } />
+
+      <div style={{ fontSize: 11, color: C.textTer, margin: `${SPACE.xs}px 0 ${SPACE.sm}px`, lineHeight: 1.45 }}>
+        Centrálna zbierka nemá cieľovú sumu — beží od míľnika k míľniku. Po každých {VLASTNA_ZBIERKA_CFG.milnik.toLocaleString("sk")} € doložíte použitie do {VLASTNA_ZBIERKA_CFG.dniNaDolozenie} dní, inak značka ostane oranžová aj pre darcov.
+      </div>
+      {nadpis("PLATOBNÝ MODUL")}
       <div style={{ background: C.surface2, border: `1px solid ${C.line}`, borderRadius: RADIUS.md, padding: SPACE.sm }}>
-        <div style={{ fontSize: 14, fontWeight: 800, marginBottom: SPACE.xs }}>{s.nazov}</div>
-        <div style={{ marginBottom: SPACE.sm }}><ProgresBox suma={0} ciel={12000} ludia={0} /></div>
         <PlatobnyModul key={`${sady.eur}-${sady.eurc}`} zbalene kryptoOtvorene krypto={krypto ? "EURC" : "nie"}
           sumyEur={SADY_EUR[sady.eur].sumy} sumyEurc={SADY_EURC[sady.eurc].sumy}
           onShare={() => undefined} upvotes={0} onUpvote={() => undefined}
           onPodpor={() => undefined} onKanal={() => undefined} toast={() => undefined}
-          opakovana={{ popis: "Segment alebo celá organizácia · len pre registrovaných", onClick: () => undefined }} />
+          opakovana={{ popis: "Sektor činnosti alebo celá organizácia · len pre registrovaných", onClick: () => undefined }} />
       </div>
 
       {nadpis("RÝCHLE SUMY — EURÁ")}
@@ -113,7 +141,7 @@ export function CentralnaZbierkaSheet({ toast, onClose }: { toast: (m: string) =
       {/* doplniť ďalší segment vlastným textom */}
       <div style={{ display: "flex", gap: SPACE.xs, marginTop: SPACE.xs }}>
         <input value={novy} onChange={(e) => setNovy(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") pridaj(); }}
-          placeholder="Doplniť segment, napr. Sociálne · výdajňa potravín" maxLength={60}
+          placeholder="Doplniť sektor činnosti, napr. Sociálne · výdajňa potravín" maxLength={60}
           style={{ flex: 1, minWidth: 0, height: 38, padding: `0 ${SPACE.sm}px`, borderRadius: RADIUS.sm, border: `1px solid ${C.line}`, background: "rgba(var(--glass-rgb),.05)", color: C.text, fontSize: 14, fontFamily: "inherit", outline: "none" }} />
         <button type="button" onClick={pridaj} disabled={!novy.trim()}
           style={{ flex: "none", height: 38, padding: `0 ${SPACE.sm}px`, borderRadius: RADIUS.sm, border: "none", fontFamily: "inherit", fontWeight: 700, fontSize: 13,
@@ -122,7 +150,7 @@ export function CentralnaZbierkaSheet({ toast, onClose }: { toast: (m: string) =
         </button>
       </div>
       <div style={{ background: "rgba(var(--glass-rgb),.06)", border: `1px solid ${C.line}`, borderRadius: RADIUS.sm, padding: SPACE.sm, marginTop: SPACE.xs, fontSize: 12.5, lineHeight: 1.5, color: C.text }}>
-        <b>Upozornenie:</b> segment, na ktorý nemáte oprávnenie, považujeme za pokus o podvod. Pri zistení môžete byť v aplikácii zablokovaní, aj dlhodobo.
+        <b>Upozornenie:</b> sektor činnosti, na ktorý nemáte oprávnenie, považujeme za pokus o podvod. Pri zistení môžete byť v aplikácii zablokovaní, aj dlhodobo.
       </div>
       <label style={{ display: "flex", alignItems: "flex-start", gap: SPACE.sm, marginTop: SPACE.sm, fontSize: 13, cursor: "pointer" }}>
         <input type="checkbox" checked={potvrdene} onChange={(e) => setPotvrdene(e.target.checked)} style={{ width: 18, height: 18, marginTop: 1, accentColor: "var(--a-green)" }} />

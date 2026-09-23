@@ -20,6 +20,7 @@ import {
   KrokZabezpecenie,
 } from "./RegKit";
 import { DOBRO_TYPY, POBOCKA_REZIMY, BALIKY } from "./mock";
+import { ulozIbanOrg } from "@/features/rola/stav";
 
 // charita akcent (fialová) — odlišuje organizačný tok od osobného
 const AKCENT = "var(--a-plum)";
@@ -418,6 +419,7 @@ function KrokProfil({ org, nazov, toast, onBack, onNext }: KrokProfilProps) {
       });
       // IBAN patrí na organizáciu (profil_charity nemá bankový stĺpec)
       await db.ulozOrganizaciu(org.id, { bankovy_ucet: iban.trim() || null });
+      ulozIbanOrg("charita", iban.trim());  // správa charity ho ukáže pri centrálnej zbierke
       onNext();
     } catch (e: any) {
       toast?.("Chyba: " + e.message);
@@ -636,7 +638,7 @@ function KrokSegmenty({ org, toast, onBack, onNext }: KrokSegmentyProps) {
 
   return (
     <Shell
-      title="Sektory a segmenty"
+      title="Sektory činnosti"
       step={6}
       total={8}
       onBack={onBack}
@@ -655,7 +657,7 @@ function KrokSegmenty({ org, toast, onBack, onNext }: KrokSegmentyProps) {
         <Accordion skupiny={skupiny} jeVybrane={jeVybrane} onToggle={onToggle} onVlastny={onVlastny} akcent={AKCENT} />
       )}
       <div style={infoBox}>
-        Vyber podľa stanov — nie vymýšľaj. 10 sektorov je free, pod-segmenty od BASIC. Citlivé segmenty = prísnejšia spätná kontrola.
+        Vyber podľa stanov — nie vymýšľaj. 10 sektorov je free, podsektory od BASIC. Citlivé sektory = prísnejšia spätná kontrola.
       </div>
     </Shell>
   );

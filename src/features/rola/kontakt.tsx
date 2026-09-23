@@ -72,7 +72,9 @@ export const chybaEmailu = (e: string) => (!e.trim() || /^[^\s@]+@[^\s@]+\.[^\s@
 export const chybaTel = (t: string) => (!t.trim() || /^\+?[0-9 ]{9,16}$/.test(t.trim()) ? null : "Neplatné číslo (napr. +421 901 234 567)");
 
 /** sekcia KONTAKT — rovnaká v správe aj na verejnom profile */
-export function KontaktBlok({ k, zbalitelna }: { k: Kontakt; zbalitelna?: string }) {
+export function KontaktBlok({ k, zbalitelna, vodorovne }: { k: Kontakt; zbalitelna?: string;
+  /** na širokej ploche: kontakt dole na celú šírku, položky vedľa seba (nie stĺpec vpravo) */
+  vodorovne?: boolean }) {
   const riadky: ReactNode[] = [];
   riadky.push(<KontaktPolozka key="adr" ikona={<IkonaPin size={15} />} label={k.adresaVerejna ? "Adresa pre verejnosť" : "Adresa"} hodnota={k.adresaVerejna || k.sidlo} />);
   k.telefony.filter((t) => t.cislo.trim()).forEach((t, i) => riadky.push(
@@ -81,6 +83,27 @@ export function KontaktBlok({ k, zbalitelna }: { k: Kontakt; zbalitelna?: string
     <KontaktPolozka key={`e${i}`} ikona={<IkonaObalka size={15} />} label={i === 0 ? "Hlavný e-mail" : e.popis || "E-mail"} hodnota={e.adresa} href={`mailto:${e.adresa}`} />));
   if (k.web.trim()) riadky.push(<KontaktPolozka key="web" ikona={<IkonaOdkaz size={15} />} label="Web" hodnota={bezProtokolu(k.web)} href={naUrl(k.web)} />);
   const siete = SIETE.filter((s) => k.siete[s.k]?.trim());
+  if (vodorovne) return (
+    <div style={{ marginTop: SPACE.lg }}>
+      <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".05em", color: C.textTer, marginBottom: SPACE.xs }}>KONTAKT</div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(230px, 1fr))", gap: SPACE.xs }}>
+        {riadky.map((r, i) => (
+          <div key={i} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, background: C.surface, border: `1px solid ${C.line}`, borderRadius: RADIUS.sm, padding: `${SPACE.xs}px ${SPACE.sm}px` }}>{r}</div>
+        ))}
+      </div>
+      {siete.length > 0 && (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: SPACE.xs, marginTop: SPACE.xs }}>
+          {siete.map((s) => (
+            <a key={s.k} href={naUrl(k.siete[s.k]!)} target="_blank" rel="noreferrer"
+              style={{ fontSize: 12, fontWeight: 700, color: "var(--a-info)", textDecoration: "none", border: `1px solid ${C.line}`, borderRadius: RADIUS.pill, padding: `4px ${SPACE.sm}px` }}>
+              {s.label}
+            </a>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
   return (
     <MenuSkupina zbalitelna={zbalitelna} nadpis="KONTAKT">
       {riadky}

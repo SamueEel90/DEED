@@ -204,7 +204,7 @@ export function FarskyProfil({ farnost, farar, jeDomovska, following, onToggleFo
             </BtnAkcia>
           )}
           <BtnAkcia variant="secondary" onClick={() => setQr("zdielat")}><Zdielanie size={14} /> Zdieľať</BtnAkcia>
-          <BtnIkonka label="QR kód profilu" onClick={() => setQr(farar ? "donacny" : "zdielat")}><IkonaQr size={16} /></BtnIkonka>
+          <BtnIkonka label="QR kód profilu" text="QR" onClick={() => setQr(farar ? "donacny" : "zdielat")}><IkonaQr size={18} /></BtnIkonka>
           <BtnIkonka label={zvoncek ? "Vypnúť upozornenia" : "Zapnúť upozornenia"} aktivne={zvoncek} farba={N.gold}
             onClick={() => { setZvoncek((v) => !v); toast(zvoncek ? "Upozornenia vypnuté" : "Upozornenia zapnuté"); }}>
             <Zvon size={16} />

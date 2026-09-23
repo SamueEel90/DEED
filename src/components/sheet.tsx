@@ -35,6 +35,9 @@ export function Sheet({
   // desktop: sheet nedržíme na celú šírku plochy (roztiahnutý panel pôsobí lacno) —
   // capneme na čitateľnú šírku a vycentrujeme (left:0/right:0 + auto marginy = stred)
   const cap = desktop ? { maxWidth: SIRKA.citanie, marginLeft: "auto", marginRight: "auto" } : {};
+  // desktop + bežný (spodný) sheet: nelepíme ho na spodný okraj — panel je vycentrovaný
+  // v ploche appky (Content je priehľadná plocha, samotný panel je vnútorná karta).
+  const stred = desktop && !zhora;
   const grabber = (
     <div
       aria-hidden
@@ -71,7 +74,18 @@ export function Sheet({
       <Drawer.Content
         aria-describedby={undefined}
         className="deed-sheet"
-        style={{
+        style={stred ? {
+          position: "absolute",
+          inset: 0,
+          zIndex: 56,
+          outline: "none",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: 24,
+          background: "transparent",
+          pointerEvents: "none",   // klik mimo karty ide na prekrytie = zavrie
+        } : {
           position: "absolute",
           left: 0,
           right: 0,
@@ -88,6 +102,11 @@ export function Sheet({
           boxShadow: SHADOW.lg,
         }}
       >
+      <div style={stred ? {
+          width: "100%", maxWidth: SIRKA.citanie, maxHeight: "100%",
+          display: "flex", flexDirection: "column", pointerEvents: "auto",
+          ...glassTmavy(26, 0.8), borderRadius: RADIUS.xl, boxShadow: SHADOW.lg, overflow: "hidden",
+        } : { display: "contents" }}>
         {/* grabber pill — vizuálny ťah (Vaul ho spraví funkčným); pri top sheete je dole */}
         {!zhora && grabber}
         {/* Vaul/Radix vyžaduje Title pre a11y — vizuálne skrytý */}
@@ -98,10 +117,11 @@ export function Sheet({
             TOP sheet (menu „Viac"/notifikácie): scroll obsahom = ťah prstom NAHOR, čo Vaul
             u top-drawera číta ako drag-to-dismiss → zavrelo by sa pri scrollovaní. `data-vaul-no-drag`
             vypne drag z obsahu (zatvorí sa len grabberom/tapom mimo), takže sa dá pokojne scrollovať. */}
-        <div {...(zhora ? { "data-vaul-no-drag": true } : {})} style={{ flex: "1 1 auto", minHeight: 0, overflowY: "auto", overflowX: "hidden", padding: zhora ? "14px 20px 4px" : "0 20px calc(22px + env(safe-area-inset-bottom, 0px))" }}>
+        <div {...(zhora ? { "data-vaul-no-drag": true } : {})} style={{ flex: "1 1 auto", minHeight: 0, overflowY: "auto", overflowX: "hidden", padding: zhora ? "14px 20px 4px" : stred ? "0 20px 22px" : "0 20px calc(22px + env(safe-area-inset-bottom, 0px))" }}>
           {children}
         </div>
         {zhora && grabber}
+      </div>
       </Drawer.Content>
     </Drawer.Root>
   );

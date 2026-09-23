@@ -11,7 +11,7 @@ import { useSyncExternalStore } from "react";
 // ---- CONFIG (spec §6) — všetky čísla ŠTARTOVACIE, žijú tu, nie v kóde ----
 export const DARCOVIA_CFG = {
   configVersion: 1,
-  prahSumy: 5,             // € — pod prahom sa suma nezobrazí NIKDY (ani keď darca chce)
+  prahSumy: 2,             // € — pod prahom sa suma nezobrazí NIKDY (ani keď darca chce)
   pocetRiadkovKompakt: 5,  // kompakt pod platobným modulom
   tickerZivotnostSek: 3.5, // rotácia tickera (rovnaký zdroj ako zoznam)
 };
@@ -46,7 +46,7 @@ export function nacitajPredvolbu(): VolbaDaru {
     const s = localStorage.getItem(KLUC_PREDVOLBA);
     if (s) { const v = JSON.parse(s) as VolbaDaru; if (v.verzia >= 1 && v.verzia <= 5) return { verzia: v.verzia, zobrazSumu: !!v.zobrazSumu }; }
   } catch { /* LS nedostupné */ }
-  return { verzia: 4, zobrazSumu: false }; // default = anonym, bez sumy
+  return { verzia: 4, zobrazSumu: true }; // default = anonym, so sumou (darca vie sumu vypnúť)
 }
 export function ulozPredvolbu(v: VolbaDaru) {
   try { localStorage.setItem(KLUC_PREDVOLBA, JSON.stringify(v)); } catch { /* LS nedostupné */ }
@@ -121,6 +121,9 @@ export function sucetDarov(refId: string): { suma: number; pocet: number } {
   return { suma: r.reduce((a, x) => a + x.suma, 0), pocet: r.length };
 }
 
+/** Dary pre zbierku bez hooku (prehľady v správe — reaktivitu dá useZmenyDarov). */
+export function darcoviaPre(refId: string): DarRiadok[] { return riadkyPre(refId); }
+
 /** Živý zoznam darov pre zbierku — chronologicky, najnovší hore. */
 export function useDarcovia(refId: string): DarRiadok[] {
   return useSyncExternalStore(subscribe, () => riadkyPre(refId));
@@ -141,6 +144,8 @@ export function pridajDar(vstup: { refId: string; suma: number; kanal: KanalDaru
 }
 
 /** Spätné prepnutie daru na Anonym — JEDNOSMERNÉ (k väčšej anonymite áno, opačne nie). */
+/** Spätné skrytie identity vlastného daru. V zozname darcov TLAČIDLO NIE JE —
+ *  darca si identitu volí v profile a pri platbe; v zozname sa dalo kliknúť omylom. */
 export function prepniNaAnonym(refId: string, id: string) {
   const nove = riadkyPre(refId).map((r) => (r.id === id ? { ...r, verzia: 4 as VerziaIdentity, zobrazSumu: false } : r));
   sklad.set(refId, nove);
