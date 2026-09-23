@@ -16,7 +16,8 @@ import { SADY_EUR, SADY_EURC } from "@/lib/sadyDarov";
 import { nastavCiste, sucetDarov, useZmenyDarov, pridajDar, type VolbaDaru } from "@/lib/darcovia";
 import { ZoznamDarcov } from "@/components/zoznamdarcov";
 import { NahladKarty } from "./KartaZbierky";
-import { nacitajProfil, useZmenyProfilov, CENTRALNA_ID } from "./vlastneZbierky";
+import { nacitajProfil, useZmenyProfilov, CENTRALNA_ID, VLASTNA_ZBIERKA_CFG, type ProfilZbierky } from "./vlastneZbierky";
+import { useSegmenty } from "./segmenty";
 import { zdielaj, aktualnaUrl } from "@/lib/zdielanie";
 import type { Kanal } from "@/types";
 import { SUBJEKTY, ZASLUZENA } from "./mock";
@@ -94,10 +95,10 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
   const [platba, setPlatba] = useState<Kanal | null>(null);
   useZmenyDarov(); // prekreslí sumy po každom dare
   const registrovany = ja.typ !== "pasivny";
-  const centr = sucetDarov(CENTRALNA_ID);
   useZmenyProfilov();
   const logoOrg = nacitajLogo(pozicia) ?? s.foto;
   const profilCentralnej = nacitajProfil(CENTRALNA_ID) ?? { nazov: `${s.nazov} — celá organizácia`, popis: "" };
+  const sektory = useSegmenty();
   const [platbaRef, setPlatbaRef] = useState<{ id: string; komu: string } | null>(null);
   // zápis daru → zoznam darcov + súčty (registrovaný so zvoleným menom, inak anonym)
   const daruj = (refId: string, suma: number, kanal: "psp" | "sepa" | "deed", volba?: VolbaDaru, komu?: string) => {
@@ -122,30 +123,48 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
   const kryptoOrg = pozicia !== "charita" || nacitajKryptoOrg("charita");
   const sady = nacitajSady(pozicia); // rýchle sumy, ktoré si subjekt vybral
   const sumy = { sumyEur: SADY_EUR[sady.eur].sumy, sumyEurc: SADY_EURC[sady.eurc].sumy };
-  const podporaBlok = pozicia === "charita" && tier >= 1 && nacitajCentralnu("charita") && (
-    <div style={{ marginBottom: SPACE.gutter }}>
-      <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".05em", color: C.textTer, marginBottom: SPACE.xs }}>CENTRÁLNA ZBIERKA ORGANIZÁCIE</div>
-      {/* karta sa správa ako každá iná zbierka — platobný modul až po kliknutí */}
-      <div {...pressable(() => setRozbalena(rozbalena === CENTRALNA_ID ? null : CENTRALNA_ID), profilCentralnej.nazov)}
-        style={{ cursor: "pointer", marginBottom: rozbalena === CENTRALNA_ID ? SPACE.sm : 0 }}>
-        <NahladKarty profil={profilCentralnej} logo={logoOrg} vyzbierane={centr.suma} dolozene={0} ludia={centr.pocet}
-          sipka={rozbalena === CENTRALNA_ID ? "otvorena" : "zavreta"} />
+  // ---- vlastné zbierky organizácie (centrálna + sektorové) ----
+  // Charita zbiera na svoju overenú činnosť (D+): karta s fotkou a míľnikmi,
+  // platobný modul až po kliknutí — rovnako ako pri ostatných zbierkach.
+  const vlastnaZbierka = (id: string, profil: ProfilZbierky, nadpis: string) => {
+    const dary = sucetDarov(id);
+    const otvorena = rozbalena === id;
+    return (
+      <div key={id} style={{ marginBottom: SPACE.gutter }}>
+        <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".05em", color: C.textTer, marginBottom: SPACE.xs }}>{nadpis}</div>
+        <div {...pressable(() => setRozbalena(otvorena ? null : id), profil.nazov)}
+          style={{ cursor: "pointer", marginBottom: otvorena ? SPACE.sm : 0 }}>
+          <NahladKarty profil={profil} logo={logoOrg} vyzbierane={dary.suma} dolozene={0} ludia={dary.pocet}
+            sipka={otvorena ? "otvorena" : "zavreta"} />
+        </div>
+        {otvorena && (<>
+          <PlatobnyModul zbalene krypto={kryptoOrg ? "EURC" : "nie"} {...sumy}
+            onShare={zdielajProfil}
+            upvotes={0} onUpvote={() => undefined}
+            onPodpor={(d: number) => daruj(id, d * 0.01, "deed", undefined, s.nazov)}
+            onDarEur={(sm, v) => daruj(id, sm, "sepa", v, s.nazov)}
+            onDarKrypto={(v, vol) => daruj(id, v, "deed", vol, s.nazov)}
+            onKanal={(k: string) => { setPlatbaRef({ id, komu: s.nazov }); setPlatba(k as Kanal); }}
+            oblubene={{ refId: id, typ: "zbierka", modul: "charity", nazov: profil.nazov, lok: s.lok }} toast={toast}
+            opakovana={maPravidelnu ? { popis: "Mesačne · len pre registrovaných · kedykoľvek zrušíš", onClick: () => setPravidelna({ id: id === CENTRALNA_ID ? "z-centralna" : id, nazov: profil.nazov }) } : undefined}
+            qr={{ label: "QR tejto zbierky", popis: "Sken → dar za 2 kliky · zdieľanie", onClick: () => (id === CENTRALNA_ID ? setQr(true) : setQrZbierka({ id, nazov: profil.nazov })) }} />
+          <ZoznamDarcov refId={id} celkom={dary.pocet} style={{ marginTop: SPACE.sm }} skrytSumy={pozicia === "charita" && !nacitajViditelnost("charita").sumyDarov} />
+        </>)}
       </div>
-      {rozbalena === CENTRALNA_ID && (<>
-      <PlatobnyModul zbalene krypto={kryptoOrg ? "EURC" : "nie"} {...sumy}
-        onShare={zdielajProfil}
-        upvotes={0} onUpvote={() => undefined}
-        onPodpor={(d: number) => daruj("z-centralna", d * 0.01, "deed", undefined, s.nazov)}
-        onDarEur={(sm, v) => daruj("z-centralna", sm, "sepa", v, s.nazov)}
-        onDarKrypto={(v, vol) => daruj("z-centralna", v, "deed", vol, s.nazov)}
-        onKanal={(k: string) => { setPlatbaRef({ id: "z-centralna", komu: s.nazov }); setPlatba(k as Kanal); }}
-        oblubene={{ refId: `rola-${s.nazov}`, typ: pozicia, modul: "charity", nazov: s.nazov, lok: s.lok }} toast={toast}
-        opakovana={maPravidelnu ? { popis: "Mesačne · len pre registrovaných · kedykoľvek zrušíš", onClick: () => setPravidelna({ id: "z-centralna", nazov: "Centrálna zbierka organizácie" }) } : undefined}
-        qr={{ label: "QR tejto zbierky", popis: "Sken → dar za 2 kliky · zdieľanie", onClick: () => setQr(true) }} />
-      <ZoznamDarcov refId="z-centralna" celkom={centr.pocet} style={{ marginTop: SPACE.sm }} skrytSumy={pozicia === "charita" && !nacitajViditelnost("charita").sumyDarov} />
-      </>)}
-    </div>
-  );
+    );
+  };
+
+  const podporaBlok = pozicia === "charita" && tier >= 1 && nacitajCentralnu("charita")
+    ? vlastnaZbierka(CENTRALNA_ID, profilCentralnej, "CENTRÁLNA ZBIERKA ORGANIZÁCIE")
+    : null;
+
+  // sektorové zbierky (AKCIA) — každý sektor s vlastnou zbierkou má na profile svoju kartu
+  const sektoroveBloky = pozicia === "charita" && tier >= VLASTNA_ZBIERKA_CFG.sektoroveOdTieru
+    ? sektory.filter((sg) => sg.zbierkaId).map((sg) => {
+        const profil = nacitajProfil(sg.zbierkaId!);
+        return profil ? vlastnaZbierka(sg.zbierkaId!, profil, `SEKTOR · ${sg.nazov.toUpperCase()}`) : null;
+      })
+    : null;
 
   // detail položky (zbierka · skutok s dôkazom · video) — na mobile sa rozbalí
   // v riadku, na tablete/PC sa otvorí v okne nad mriežkou kariet
@@ -458,7 +477,7 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
       />
       <div style={{ height: SPACE.gutter }} />
       {/* kontakt je dole aj na PC — hore patrí to, čo charita robí, nie telefónne číslo */}
-      <>{podporaBlok}{obsahBlok}{terminalBlok}{oNasBlok}</>
+      <>{podporaBlok}{sektoroveBloky}{obsahBlok}{terminalBlok}{oNasBlok}</>
     </div>
   );
 
