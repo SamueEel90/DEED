@@ -21,6 +21,28 @@ export const OZNAM_CFG = {
   maxPripnutych: 1,
 };
 
+/** limity inzerátov podľa programu — počítajú sa BEŽIACE (neobsadené, nevypršané) */
+export const INZERAT_CFG = {
+  limity: { 0: 0, 1: 1, 2: 5, 3: 9999, 4: 9999 } as Record<number, number>,
+  platnostDni: 30,
+  platnosti: [14, 30, 60],
+  /** po zavretí inzerátu sa kontakty záujemcov po toľkých dňoch zmažú */
+  dniDoZmazaniaKontaktov: 30,
+};
+
+/** človek, čo klikol „Mám záujem" — vypĺňa si údaje sám a vyberá, čo dá k dispozícii */
+export interface Zaujemca {
+  id: string;
+  meno: string;
+  telefon?: string;
+  email?: string;
+  poznamka?: string;
+  /** dobrovoľne priložený štít a karma z profilu */
+  stit?: string;
+  karma?: number;
+  kedy: number;
+}
+
 export interface Oznam {
   id: string;
   /** kľúč subjektu — „charita", „tvorca", „b2b", „fara:<id>" */
@@ -33,6 +55,10 @@ export interface Oznam {
   vytvorene: number;    // ms
   upravene?: number;    // ms
   pripnute?: boolean;
+  // ---- len inzerát ----
+  /** miesto je obsadené — inzerát prestáva bežať, ostatným sa poďakuje */
+  obsadene?: number;      // ms, kedy sa zavrel
+  zaujemcovia?: Zaujemca[];
 }
 
 const KLUC = (entita: string) => `deed.oznamy.${entita}`;
@@ -54,21 +80,45 @@ const DEN = 86400000;
 export const oznamAktivny = (o: Oznam, teraz = Date.now()) => teraz < o.vytvorene + o.platnostDni * DEN;
 /** koľko dní ešte visí (záporné = skončil) */
 export const dniDoKonca = (o: Oznam, teraz = Date.now()) =>
-  Math.ceil((o.vytvorene + o.platnostDni * DEN - teraz) / DEN);
+  Math.max(0, Math.round((o.vytvorene + o.platnostDni * DEN - teraz) / DEN));
 
 /** oznamy subjektu pre verejný profil — pripnuté navrch, potom najnovšie */
-export function verejneOznamy(entita: string, teraz = Date.now()): Oznam[] {
+export function verejneOznamy(entita: string, kategoria: KategoriaOznamu = "oznam", teraz = Date.now()): Oznam[] {
   return nacitajOznamy(entita)
-    .filter((o) => oznamAktivny(o, teraz))
+    .filter((o) => o.kategoria === kategoria && !o.obsadene && oznamAktivny(o, teraz))
     .sort((a, b) => Number(!!b.pripnute) - Number(!!a.pripnute) || b.vytvorene - a.vytvorene);
 }
 /** všetky oznamy subjektu pre správu — aj skončené, najnovšie hore */
-export function vsetkyOznamy(entita: string): Oznam[] {
-  return nacitajOznamy(entita).sort((a, b) => b.vytvorene - a.vytvorene);
+export function vsetkyOznamy(entita: string, kategoria: KategoriaOznamu = "oznam"): Oznam[] {
+  return nacitajOznamy(entita).filter((o) => o.kategoria === kategoria).sort((a, b) => b.vytvorene - a.vytvorene);
 }
-export function useOznamy(entita: string): Oznam[] {
+export function useOznamy(entita: string, kategoria: KategoriaOznamu = "oznam"): Oznam[] {
   useZmenyOznamov();
-  return vsetkyOznamy(entita);
+  return vsetkyOznamy(entita, kategoria);
+}
+
+// ---- INZERÁTY ----
+/** beží = neobsadený a nevypršaný; limit sa počíta z týchto */
+export const beziaceInzeraty = (entita: string, teraz = Date.now()) =>
+  nacitajOznamy(entita).filter((o) => o.kategoria === "inzerat" && !o.obsadene && oznamAktivny(o, teraz));
+export const limitInzeratov = (tier: number) => INZERAT_CFG.limity[tier] ?? 0;
+/** miesto obsadené — inzerát zmizne z profilu, záujemcovia ostávajú v správe */
+export function obsadInzerat(entita: string, id: string) {
+  upravOznam(entita, id, { obsadene: Date.now() });
+}
+export function otvorInzeratZnova(entita: string, id: string, dni: number) {
+  upravOznam(entita, id, { obsadene: undefined, vytvorene: Date.now(), platnostDni: dni });
+}
+export function pridajZaujemcu(entita: string, id: string, z: Omit<Zaujemca, "id" | "kedy">): void {
+  const inz = nacitajOznamy(entita).find((o) => o.id === id);
+  if (!inz) return;
+  const novy: Zaujemca = { ...z, id: `zj-${Date.now()}`, kedy: Date.now() };
+  upravOznam(entita, id, { zaujemcovia: [...(inz.zaujemcovia ?? []), novy] });
+}
+export function zrusZaujem(entita: string, id: string, zaujemcaId: string): void {
+  const inz = nacitajOznamy(entita).find((o) => o.id === id);
+  if (!inz) return;
+  upravOznam(entita, id, { zaujemcovia: (inz.zaujemcovia ?? []).filter((z) => z.id !== zaujemcaId) });
 }
 
 export function pridajOznam(o: Omit<Oznam, "id" | "vytvorene">): Oznam {
