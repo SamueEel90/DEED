@@ -593,9 +593,10 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
           return {
             label: sekt ? "Zobraziť zbierku sektora" : "Zobraziť centrálnu zbierku",
             onClick: () => {
-              if (sekt) { setTab("sektory"); setRozbalena(sekt.id); setTimeout(() => document.getElementById("deed-sektor-" + sekt.id)?.scrollIntoView({ behavior: "smooth", block: "start" }), 140); return; }
-              setZbalenaCentralna(false); setRozbalena(CENTRALNA_ID); setTab("vsetko");
-              setTimeout(() => document.getElementById("deed-centralna")?.scrollIntoView({ behavior: "smooth", block: "start" }), 140);
+              // na tablete/PC sa detail otvorí v okne — scrollovať pod ním by okno odsunulo mimo obrazovku
+              const skoc = (id: string) => { if (!siroke) setTimeout(() => document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" }), 140); };
+              if (sekt) { setTab("sektory"); setRozbalena(sekt.id); skoc("deed-sektor-" + sekt.id); return; }
+              setZbalenaCentralna(false); setRozbalena(CENTRALNA_ID); setTab("vsetko"); skoc("deed-centralna");
             },
           };
         }}
