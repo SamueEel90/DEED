@@ -136,11 +136,17 @@ export const zrus = (entita: string, id: string) => zmen(entita, id, { stav: "zr
 export const pozastav = (entita: string, id: string) =>
   zmen(entita, id, { stav: "pozastavene", pozastavene: Date.now() });
 
-/** zvyšok putuje podľa toho, čo si firma zvolila pri zapečatení */
-export function vysporiadaj(entita: string, id: string, referencia?: string) {
+/** Kam ide zvyšok:
+ *  · charita zbierku zrušila sama → VŠETKO späť firme. Firma si kupovala
+ *    dorovnanie darov, nie dar charite — keď charita skončí, nemá si čo nechať.
+ *  · zbierka dobehla prirodzene (cieľ, termín) → podľa toho, čo si firma
+ *    zvolila pri zapečatení (nechať zbierke / vrátiť).
+ */
+export function vysporiadaj(entita: string, id: string, predcasne = true, referencia?: string) {
   const d = nacitajDorovnania(entita).find((x) => x.id === id);
   if (!d || d.stav !== "pozastavene" || d.vysporiadane) return;
-  zmen(entita, id, { vysporiadane: { suma: zostatok(d), kam: d.zvysok, kedy: Date.now(), referencia } });
+  const kam: "zbierke" | "firme" = predcasne ? "firme" : d.zvysok;
+  zmen(entita, id, { vysporiadane: { suma: zostatok(d), kam, kedy: Date.now(), referencia } });
 }
 
 /** ukončiť sa dá až po vysporiadaní zvyšku — inak by charita držala cudzie peniaze */

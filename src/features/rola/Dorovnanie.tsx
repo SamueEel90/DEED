@@ -84,7 +84,9 @@ function Formular({ entita, toast, onHotovo, onSpat }: {
     : !doVycerpania && doKedy <= od ? "Koniec musí byť neskôr než dnes."
     : null;
 
-  if (potvrd) return (
+  // platobný modul je SESTRA panelu, nie jeho dieťa — vnorený panel by dostal
+  // len výšku rodiča (~420 px) a človek by v ňom musel rolovať
+  if (potvrd) return (<>
     <Sheet onClose={onSpat} label="Zapečatiť dorovnanie">
       <div style={{ fontSize: 16, fontWeight: 800 }}>Skontrolujte a zapečaťte</div>
       <div style={{ fontSize: 11.5, color: C.textTer, marginTop: 2, marginBottom: SPACE.sm, lineHeight: 1.45 }}>
@@ -123,13 +125,13 @@ function Formular({ entita, toast, onHotovo, onSpat }: {
       }}>{uhradene ? "Zapečatiť a poslať" : "Zapečatiť (najprv uhraďte)"}</button>
       <button style={{ ...btnDruhy, marginTop: SPACE.xs }} onClick={() => setPotvrd(false)}>Ešte upraviť</button>
 
-      {platba && (
-        <PlatbaModal kanal="EUR" suma={suma} komu={`dorovnanie zbierky ${zbierka?.nazov ?? ""}`}
-          onClose={() => setPlatba(false)}
-          onDone={() => { setPlatba(false); setUhradene(true); toast(`Uhradené ${eur(suma)} — môžete zapečatiť`); }} />
-      )}
     </Sheet>
-  );
+    {platba && (
+      <PlatbaModal kanal="EUR" suma={suma} komu={`dorovnanie zbierky ${zbierka?.nazov ?? ""}`}
+        onClose={() => setPlatba(false)}
+        onDone={() => { setPlatba(false); setUhradene(true); toast(`Uhradené ${eur(suma)} — môžete zapečatiť`); }} />
+    )}
+  </>);
 
   return (
     <Sheet onClose={onSpat} label="Nové dorovnanie" pisanie>
@@ -247,8 +249,8 @@ export function DorovnanieSheet({ entita, toast, onClose }: {
     d.stav === "zapecatene" ? "firma uhradila — potvrďte príjem na účte"
     : d.stav === "aktivne" ? (bezi(d, teraz) ? `beží · ostáva ${eur(zostatok(d))}` : "beží, ale mimo obdobia")
     : d.stav === "pozastavene" ? (d.vysporiadane
-        ? "pozastavené · zvyšok vysporiadaný — môžete ukončiť"
-        : `pozastavené · treba vysporiadať ${eur(zostatok(d))}`)
+        ? "pozastavené · zvyšok vrátený — môžete ukončiť"
+        : `pozastavené · treba vrátiť firme ${eur(zostatok(d))}`)
     : d.stav === "vycerpane" ? `strop vyčerpaný · pridané ${eur(vycerpane(d))}`
     : d.stav === "ukoncene" ? `ukončené · pridané ${eur(vycerpane(d))}`
     : d.stav === "odmietnute" ? "odmietnuté charitou"
@@ -288,10 +290,10 @@ export function DorovnanieSheet({ entita, toast, onClose }: {
             )}
             {d.stav === "pozastavene" && !d.vysporiadane && (
               <span {...pressable(() => {
-                vysporiadaj(entita, d.id);
-                toast(d.zvysok === "firme" ? `Vrátené firme: ${eur(zostatok(d))}` : `Zvyšok ${eur(zostatok(d))} ostáva zbierke ako dar`);
-              }, "Vysporiadať zvyšok")} style={{ fontSize: 11.5, fontWeight: 800, color: ZELENA, cursor: "pointer" }}>
-                {d.zvysok === "firme" ? `Vrátiť firme ${eur(zostatok(d))}` : `Zvyšok ${eur(zostatok(d))} necháva zbierke`}
+                vysporiadaj(entita, d.id);   // charita ruší sama → celý zvyšok späť firme
+                toast(`Vrátené firme: ${eur(zostatok(d))}`);
+              }, "Vrátiť zvyšok firme")} style={{ fontSize: 11.5, fontWeight: 800, color: ZELENA, cursor: "pointer" }}>
+                Vrátiť firme {eur(zostatok(d))}
               </span>
             )}
             {d.stav === "pozastavene" && (
