@@ -232,7 +232,6 @@ export const SPRAVA_CHARITA: SpravaItem[] = [
   // ZBIERKA (T1)
   { id: "centralna", emoji: "💛", nazov: "Centrálna zbierka organizácie", popis: "Pridať a spravovať — pravidelná podpora na sektor činnosti alebo celú organizáciu", tierMin: 1 },
   { id: "segment", emoji: "🧩", nazov: "Sektorové zbierky a činnosti", popis: "Témy pre darcov · od AKCIE vlastná zbierka, účet a QR pre každý sektor", tierMin: 1 },
-  { id: "dlhodobe", emoji: "📆", nazov: "Dlhodobé zbierky", popis: "Zbierka bez pevného konca · predĺženie nad 30 dní · až 3 súbežné", tierMin: 1 },
   { id: "sponzoring", emoji: "🤝", nazov: "Sponzoring", popis: "Hľadáme sponzora s protiplnením · predvyplnená zmluva · logo sponzora na profile · oznam v meste · doklad o protiplnení · sponzorské zbierky bez limitu", tierMin: 1 },
   { id: "oznamy", emoji: "📣", nazov: "Oznamy", popis: "Krátka správa na profil — čo je nové · vidia ju tí, čo vás sledujú", tierMin: 1 },
   { id: "embed", emoji: "🔗", nazov: "Štít dôvery na vlastný web", popis: "Odznak s odkazom na profil (embed)", tierMin: 1 },
