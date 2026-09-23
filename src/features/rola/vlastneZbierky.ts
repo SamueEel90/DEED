@@ -19,14 +19,35 @@ export const VLASTNA_ZBIERKA_CFG = {
   centralnaOdTieru: 1,
 };
 
+/** koľko fotiek zvládne galéria zbierky (placeholder) */
+export const MAX_FOTIEK = 8;
+/** maximálna dĺžka videa zbierky v sekundách */
+export const VIDEO_SEKUND = 60;
+
 /** karta zbierky — to, čo z nej robí zbierku a nie suchý platobný modul */
 export interface ProfilZbierky {
   nazov: string;
   popis: string;
-  foto?: string;       // data-URL; prázdne = logo organizácie
+  /** galéria — data-URL fotiek; prvá podľa `uvodna` je titulná */
+  fotky?: string[];
+  /** index úvodnej fotky v galérii */
+  uvodna?: number;
+  /** krátke video zbierky (odkaz „idb:…") */
+  video?: string;
+  /** staršie profily mali jednu fotku — čítame cez fotkyZbierky() */
+  foto?: string;
   iban?: string;       // centrálna: z registrácie · sektorová: transparentný účet zbierky
   spustena?: boolean;
   vytvorena?: string;  // ISO
+}
+
+/** galéria profilu (zvládne aj staré profily s jedinou `foto`) */
+export const fotkyZbierky = (p: ProfilZbierky): string[] =>
+  p.fotky?.length ? p.fotky : p.foto ? [p.foto] : [];
+/** titulná fotka — tá, ktorú si charita vybrala ako úvodnú */
+export function uvodnaFotka(p: ProfilZbierky): string | undefined {
+  const f = fotkyZbierky(p);
+  return f[Math.min(p.uvodna ?? 0, f.length - 1)] ?? undefined;
 }
 
 const KLUC = (id: string) => `deed.zbierka.profil.${id}`;

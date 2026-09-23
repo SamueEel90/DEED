@@ -15,7 +15,7 @@ import { RecurringSheet } from "@/components/recurring";
 import { SADY_EUR, SADY_EURC } from "@/lib/sadyDarov";
 import { nastavCiste, sucetDarov, useZmenyDarov, pridajDar, type VolbaDaru } from "@/lib/darcovia";
 import { ZoznamDarcov } from "@/components/zoznamdarcov";
-import { NahladKarty } from "./KartaZbierky";
+import { NahladKarty, GaleriaZbierky } from "./KartaZbierky";
 import { nacitajProfil, useZmenyProfilov, CENTRALNA_ID, VLASTNA_ZBIERKA_CFG, type ProfilZbierky } from "./vlastneZbierky";
 import { useSegmenty } from "./segmenty";
 import { zdielaj, aktualnaUrl } from "@/lib/zdielanie";
@@ -148,6 +148,7 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
             oblubene={{ refId: id, typ: "zbierka", modul: "charity", nazov: profil.nazov, lok: s.lok }} toast={toast}
             opakovana={maPravidelnu ? { popis: "Mesačne · len pre registrovaných · kedykoľvek zrušíš", onClick: () => setPravidelna({ id: id === CENTRALNA_ID ? "z-centralna" : id, nazov: profil.nazov }) } : undefined}
             qr={{ label: "QR tejto zbierky", popis: "Sken → dar za 2 kliky · zdieľanie", onClick: () => (id === CENTRALNA_ID ? setQr(true) : setQrZbierka({ id, nazov: profil.nazov })) }} />
+          <GaleriaZbierky profil={profil} />
           <ZoznamDarcov refId={id} celkom={dary.pocet} style={{ marginTop: SPACE.sm }} skrytSumy={pozicia === "charita" && !nacitajViditelnost("charita").sumyDarov} />
         </>)}
       </div>
