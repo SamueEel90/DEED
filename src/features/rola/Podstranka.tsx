@@ -456,7 +456,7 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
 
   // najnovší oznam nad záložkami — inak ho v rade ôsmich tabov nikto nenájde
   const oznamPas = oznamy.length > 0 && (
-    <div {...pressable(() => setTab("oznamy"), "Oznamy")}
+    <div {...pressable(() => { setTab("oznamy"); setTimeout(() => document.getElementById("deed-obsah")?.scrollIntoView({ behavior: "smooth", block: "start" }), 80); }, "Oznamy")}
       style={{ display: "flex", alignItems: "center", gap: SPACE.xs, cursor: "pointer", marginBottom: SPACE.sm,
         background: tint("var(--a-info)", .07), border: `1px solid ${tint("var(--a-info)", .28)}`, borderRadius: RADIUS.sm, padding: SPACE.sm }}>
       <span style={{ flex: "none", fontSize: 15 }}>📣</span>
@@ -471,7 +471,8 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
   );
 
   const obsahBlok = (
-    <>
+    <div id="deed-obsah">
+      {oznamPas}
       <TabyProfil options={taby.map((t) => t.key)} labels={labels} badges={badges} value={tab} onChange={setTab} ariaLabel="Obsah profilu" />
       {tab === "oznamy" ? (
         <div style={siroke ? { display: "grid", gridTemplateColumns: `repeat(${desktop ? 3 : 2}, minmax(0,1fr))`, gap: SPACE.sm, alignItems: "start" } : undefined}>
@@ -510,7 +511,7 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
           </Fragment>
         );
       })}
-    </>
+    </div>
   );
 
   // na tablete/PC sa detail otvorí v okne nad mriežkou — karty sa nerozhadzujú
@@ -574,7 +575,7 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
       />
       <div style={{ height: SPACE.gutter }} />
       {/* kontakt je dole aj na PC — hore patrí to, čo charita robí, nie telefónne číslo */}
-      <>{oznamPas}{podporaBlok}{obsahBlok}{terminalBlok}{oNasBlok}</>
+      <>{podporaBlok}{obsahBlok}{terminalBlok}{oNasBlok}</>
     </div>
   );
 
