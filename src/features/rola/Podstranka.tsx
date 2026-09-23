@@ -474,7 +474,7 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
     <div id="deed-obsah">
       {oznamPas}
       <TabyProfil options={taby.map((t) => t.key)} labels={labels} badges={badges} value={tab} onChange={setTab} ariaLabel="Obsah profilu" />
-      {tab === "oznamy" ? (
+      {tab === "oznamy" ? (<>
         <div style={siroke ? { display: "grid", gridTemplateColumns: `repeat(${desktop ? 3 : 2}, minmax(0,1fr))`, gap: SPACE.sm, alignItems: "start" } : undefined}>
           {oznamy.map((o) => (
             <div key={o.id} style={{ marginBottom: siroke ? 0 : SPACE.sm }}>
@@ -482,7 +482,12 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
             </div>
           ))}
         </div>
-      ) : tab === "sektory" ? (
+        {/* z oznamov musí viesť cesta von — inak sa človek vie vrátiť len cez „Všetko" */}
+        <button type="button" onClick={onBack}
+          style={{ display: "block", width: "100%", maxWidth: 320, margin: `${SPACE.md}px auto 0`, height: 44, borderRadius: RADIUS.sm, border: `1px solid ${C.line}`, background: "transparent", color: C.textSec, cursor: "pointer", fontFamily: "inherit", fontWeight: 800, fontSize: 13.5 }}>
+          Zavrieť
+        </button>
+      </>) : tab === "sektory" ? (
         <div style={siroke ? { display: "grid", gridTemplateColumns: `repeat(${desktop ? 3 : 2}, minmax(0,1fr))`, gap: SPACE.sm, alignItems: "start" } : undefined}>
           {sektoroveZbierky.map((z) => (
             <div key={z.id} id={`deed-sektor-${z.id}`} style={{ marginBottom: siroke ? 0 : SPACE.sm }}>
