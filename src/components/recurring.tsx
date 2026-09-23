@@ -20,10 +20,12 @@ type Perioda = "tyzdenne" | "mesacne" | "rocne";
 
 const periodaTxt = (p: Perioda) => (p === "tyzdenne" ? "týždeň" : p === "rocne" ? "rok" : "mesiac");
 
-export function RecurringSheet({ nazov, caseId, charitaUcet, segmenty, bezCelej = false, sektor, onClose, toast }: {
+export function RecurringSheet({ nazov, caseId, charitaUcet, segmenty, bezCelej = false, sektor, onCiel, onClose, toast }: {
   nazov?: ReactNode; caseId?: string | null; charitaUcet?: string | null;
   /** zbierka JE zbierkou sektora — voľba „téma sektora" by bola to isté, preto sa neponúka */
   sektor?: string | null;
+  /** po poďakovaní prejsť tam, kam peniaze idú (centrálna zbierka) — darca musí vidieť, kde dar skončil */
+  onCiel?: { label: string; onClick: () => void };
   /** segmenty, ktoré si charita nastavila (program AKCIA). null = charita segmenty ani celú organizáciu neponúka;
    *  undefined = starý režim bez zoznamu (feed, kým nepoznáme program charity) */
   segmenty?: string[] | null;
@@ -55,7 +57,7 @@ export function RecurringSheet({ nazov, caseId, charitaUcet, segmenty, bezCelej 
         kontrola: "Doklady budeme požadovať za celú tému, nezaručujeme však, že pokryjú práve váš dar.", farba: "var(--a-green)" },
     ]),
     ...(bezCelej ? [] : [
-      { id: "charita" as const, t: "Celá charita", d: "Paušál na chod a najnaliehavejšie potreby.",
+      { id: "charita" as const, t: "Celá organizácia — centrálna zbierka", d: "Pravidelná podpora na chod organizácie.",
         kontrola: "Použitie darov v centrálnej zbierke sa povinne nedokladuje. Je to na uvážení organizácie.", farba: "var(--a-green)" },
     ]),
   ];
@@ -129,7 +131,12 @@ export function RecurringSheet({ nazov, caseId, charitaUcet, segmenty, bezCelej 
         <Svetlusik nadpis={meno ? `Ďakujeme, ${meno}, za tvoju podporu!` : "Ďakujeme za tvoju podporu!"}
           dar={`${suma} ${mena} každý ${periodaTxt(perioda)}`}
           karma="Pravidelnú podporu zrušíš kedykoľvek v Peňaženke." />
-        <button onClick={() => onClose?.()} style={btn(true, true)}>Hotovo</button>
+        {onCiel && rozsah === "charita" ? (<>
+          <button onClick={() => { onClose?.(); onCiel.onClick(); }} style={btn(true, true)}>{onCiel.label}</button>
+          <button onClick={() => onClose?.()} style={{ ...btn(true), background: "rgba(var(--glass-rgb),.06)", color: C.textSec, marginTop: SPACE.sm }}>Hotovo</button>
+        </>) : (
+          <button onClick={() => onClose?.()} style={btn(true, true)}>Hotovo</button>
+        )}
       </>) : (<>
         {/* DVOJITÉ potvrdenie — záväzok */}
         <div style={{ background: "rgba(var(--glass-rgb),.05)", border: `1px solid ${C.line}`, borderRadius: RADIUS.sm, padding: `${SPACE.sm}px ${SPACE.gutter}px` }}>

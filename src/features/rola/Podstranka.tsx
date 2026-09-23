@@ -21,7 +21,6 @@ import { useSegmenty } from "./segmenty";
 import { zdielaj, aktualnaUrl } from "@/lib/zdielanie";
 import type { Kanal } from "@/types";
 import { SUBJEKTY, ZASLUZENA } from "./mock";
-import { segmentyCharity } from "./registracia";
 import type { Dokaz } from "@/lib/zbierky";
 import { najdiZbierku, kryptoZbierky, odznakZbierky } from "@/lib/zbierky";
 import { DokazBlok, MediaNahlad } from "./DokazBlok";
@@ -102,6 +101,7 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
   // pravidelná podpora = funkcia zbierky (charita od programu ZBIERKA/T1), len pre registrovaných darcov
   const [pravidelna, setPravidelna] = useState<{ id: string | null; nazov: string; sektor?: string } | null>(null);
   const maPravidelnu = pozicia === "charita" && tier >= 1;
+  const maCentralnu = pozicia === "charita" && tier >= 1 && nacitajCentralnu("charita");
   const [zvoncek, setZvoncek] = useState(false);
   const [qr, setQr] = useState(false);
   const [menu, setMenu] = useState(false);
@@ -168,8 +168,8 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
   };
 
   // centrálna zbierka — jediná karta nad záložkami, dá sa zbaliť
-  const podporaBlok = pozicia === "charita" && tier >= 1 && nacitajCentralnu("charita") ? (
-    <div style={{ marginBottom: SPACE.gutter }}>
+  const podporaBlok = maCentralnu ? (
+    <div id="deed-centralna" style={{ marginBottom: SPACE.gutter }}>
       <div style={{ display: "flex", alignItems: "center", gap: SPACE.xs, marginBottom: SPACE.xs }}>
         <div style={{ flex: 1, minWidth: 0, fontSize: 12, fontWeight: 800, letterSpacing: ".05em", color: C.textTer }}>CENTRÁLNA ZBIERKA ORGANIZÁCIE</div>
         <span {...pressable(() => { setZbalenaCentralna(!zbalenaCentralna); if (!zbalenaCentralna && rozbalena === CENTRALNA_ID) setRozbalena(null); }, zbalenaCentralna ? "Rozbaliť" : "Zbaliť")}
@@ -569,10 +569,18 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
         // pravidelná podpora je od T1 celá: zbierka → táto zbierka / segment / celá charita,
         // centrálna zbierka → segment / celá organizácia
         // rozsah je daný tým, odkiaľ darca klikol: centrálna → celá organizácia,
-        // sektorová → ten sektor, bežná zbierka → plný výber (zbierka / sektor / celá)
+        // sektorová → ten sektor, bežná zbierka → táto zbierka + centrálna
         sektor={pravidelna.sektor}
-        bezCelej={!!pravidelna.sektor}
-        segmenty={pravidelna.id === "z-centralna" || pravidelna.sektor ? null : segmentyCharity()}
+        // sektor ako voľba má zmysel LEN keď má vlastnú zbierku a účet (AKCIA) —
+        // inak by dary padli na hlavný účet a nedalo by sa k nim nič doložiť
+        segmenty={null}
+        // „celá organizácia" = centrálna zbierka → ponúkame ju, len keď charita spustenú má
+        bezCelej={!!pravidelna.sektor || !maCentralnu}
+        onCiel={maCentralnu ? { label: "Zobraziť centrálnu zbierku", onClick: () => {
+          setZbalenaCentralna(false); setRozbalena(CENTRALNA_ID); setTab("vsetko");
+          // darca musí vidieť, kde jeho dar skončil — doscrollujeme ho na kartu
+          setTimeout(() => document.getElementById("deed-centralna")?.scrollIntoView({ behavior: "smooth", block: "start" }), 120);
+        } } : undefined}
         onClose={() => setPravidelna(null)} toast={toast} />}
       {qrZbierka && <QrModal odznak={odznakZbierky(qrZbierka.id)} typ="skutok" titul={`QR — ${qrZbierka.nazov}`} popis="Sken otvorí túto zbierku — daj ho na web, do správy alebo na plagát"
         odkaz={qrUrl("case", qrZbierka.id)} onClose={() => setQrZbierka(null)} toast={toast} />}
