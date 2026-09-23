@@ -223,7 +223,7 @@ export function InzeratySheet({ entita, autor, logo, tier, toast, onPaywall, onC
       return;
     }
     if (bezi.length >= limit) {
-      onPaywall({ tierMin: Math.min(tier + 1, 3) as Tier, nazov: "Ďalšia súbežná ponuka", dovod: `Vo vašom programe môžu bežať ${limit} ponuky naraz. Zavrite niektorú, alebo si pridajte kapacitu.` });
+      onPaywall({ tierMin: Math.min(tier + 1, 3) as Tier, nazov: "Ďalšia súbežná ponuka", dovod: `Vo vašom programe ${limit === 1 ? "môže" : "môžu"} bežať ${limit === 1 ? "naraz jedna ponuka" : `naraz ${limit} ponuky`}. Zavrite niektorú, alebo si pridajte kapacitu.` });
       return;
     }
     setPisem(true);
@@ -249,7 +249,7 @@ export function InzeratySheet({ entita, autor, logo, tier, toast, onPaywall, onC
           {beziaci
             ? <span {...pressable(() => { obsadInzerat(entita, o.id); toast("Ponuka je zavretá — záujemcom sa poďakujeme"); }, "Obsadené")} style={odkaz}>✓ Obsadené — zavrieť</span>
             : <span {...pressable(() => {
-                if (bezi.length >= limit) { toast(`Naraz môžu bežať ${limit} ponuky — najprv niektorú zavrite`); return; }
+                if (bezi.length >= limit) { toast(`Naraz ${limit === 1 ? "môže" : "môžu"} bežať ${limit} ${limit === 1 ? "ponuka" : limit < 5 ? "ponuky" : "ponúk"} — najprv niektorú zavrite`); return; }
                 otvorInzeratZnova(entita, o.id, o.platnostDni);
                 toast("Ponuka je zase na profile");
               }, "Pustiť znova")} style={odkaz}>Pustiť znova</span>}
@@ -267,8 +267,10 @@ export function InzeratySheet({ entita, autor, logo, tier, toast, onPaywall, onC
       </div>
 
       <div style={{ fontSize: 11.5, color: C.textSec, marginBottom: SPACE.xs }}>
-        Naraz môžu bežať <b style={{ color: C.text }}>{limit >= 9999 ? "neobmedzene" : limit}</b>
-        {limit < 9999 && (limit === 1 ? " ponuka" : " ponuky")} · teraz bežia <b style={{ color: C.text }}>{bezi.length}</b>
+        {limit >= 9999
+          ? <>Naraz môže bežať <b style={{ color: C.text }}>neobmedzene</b> ponúk</>
+          : <>Naraz {limit === 1 ? "môže" : "môžu"} bežať <b style={{ color: C.text }}>{limit}</b>{limit === 1 ? " ponuka" : limit < 5 ? " ponuky" : " ponúk"}</>}
+        {" · "}teraz {bezi.length === 1 ? "beží" : "bežia"} <b style={{ color: C.text }}>{bezi.length}</b>
       </div>
 
       <button onClick={novy} style={btnHlavny}>Nová pracovná ponuka</button>
