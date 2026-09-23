@@ -21,6 +21,7 @@ import { usePouzivatel } from "@/lib/pouzivatel";
 import { pridajZaujemcu, zrusZaujem } from "@/lib/oznamy";
 
 const ZELENA = "var(--a-green)";
+const ZLATA = "var(--a-gold)";
 const karta: CSSProperties = { background: C.surface2, border: `1px solid ${C.line}`, borderRadius: RADIUS.sm, padding: SPACE.sm, marginBottom: SPACE.xs };
 const vstup: CSSProperties = { width: "100%", boxSizing: "border-box", background: C.surface2, border: `1px solid ${C.line}`, borderRadius: RADIUS.sm, padding: SPACE.sm, color: C.text, fontSize: 14, fontFamily: "inherit", outline: "none" };
 const btnHlavny: CSSProperties = { width: "100%", height: 48, borderRadius: RADIUS.sm, border: "none", cursor: "pointer", fontFamily: "inherit", fontWeight: 800, fontSize: 15, background: ZELENA, color: "#06281d" };
@@ -33,7 +34,12 @@ export function InzeratKarta({ o, autor, logo, deti }: { o: Oznam; autor: string
   const fotky = o.fotky ?? [];
   const bezTextu = cistyText(o.text).length === 0;
   return (<>
-    <div style={{ background: C.surface, border: `1px solid ${C.line}`, borderRadius: RADIUS.md, overflow: "hidden" }}>
+    {/* ponuka je platená a má sa odlíšiť od oznamu — zlatý rám a pás navrchu */}
+    <div style={{ background: C.surface, border: `1px solid ${tint(ZLATA, .45)}`, borderRadius: RADIUS.md, overflow: "hidden" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: SPACE.xs, background: tint(ZLATA, .14), padding: `${SPACE.xxs}px ${SPACE.sm}px` }}>
+        <span style={{ fontSize: 13 }}>💼</span>
+        <span style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: ".05em", color: ZLATA }}>PRACOVNÁ PONUKA</span>
+      </div>
       {fotky[0] && (
         <span {...pressable(() => setFotka(0), "Otvoriť fotku")} style={{ display: "block", cursor: "pointer" }}>
           {/* v ozname/ponuke sa fotka nikdy neoreže — býva to plagát a text v ňom musí byť vidieť */}
@@ -44,7 +50,6 @@ export function InzeratKarta({ o, autor, logo, deti }: { o: Oznam; autor: string
         <div style={{ display: "flex", alignItems: "center", gap: SPACE.xs, marginBottom: SPACE.xxs }}>
           {logo && <img src={logo} alt="" style={{ width: 22, height: 22, borderRadius: RADIUS.xs, objectFit: "cover", flex: "none" }} />}
           <span style={{ flex: 1, minWidth: 0, fontSize: 11, color: C.textTer, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{autor}</span>
-          <span style={{ flex: "none", fontSize: 10, fontWeight: 800, color: "var(--a-info)", background: tint("var(--a-info)", .12), borderRadius: RADIUS.pill, padding: `1px ${SPACE.xs}px` }}>HĽADÁME</span>
         </div>
         <div style={{ fontSize: 15, fontWeight: 800, lineHeight: 1.3 }}>{o.nadpis}</div>
         {!bezTextu && (
