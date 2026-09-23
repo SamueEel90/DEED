@@ -53,7 +53,7 @@ export function RecurringSheet({ nazov, caseId, charitaUcet, segmenty, bezCelej 
     ]),
     ...(bezCelej ? [] : [
       { id: "charita" as const, t: "Celá charita", d: "Paušál na chod a najnaliehavejšie potreby.",
-        kontrola: "Nad použitím daru pre celú organizáciu nemáme kontrolu.", farba: "var(--a-green)" },
+        kontrola: "Použitie darov v centrálnej zbierke sa povinne nedokladuje. Je to na uvážení organizácie.", farba: "var(--a-green)" },
     ]),
   ];
 
