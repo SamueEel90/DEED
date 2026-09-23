@@ -107,7 +107,7 @@ function Formular({ entita, toast, onHotovo, onSpat }: {
       ) : (
         <div style={{ fontSize: 12.5, fontWeight: 800, color: ZELENA, background: tint(ZELENA, .1), border: `1px solid ${tint(ZELENA, .35)}`,
           borderRadius: RADIUS.sm, padding: SPACE.sm, marginBottom: SPACE.sm }}>
-          ✓ Uhradené {eur(suma)} · {datum(Date.now())}
+          ✓ Uhradené {eur(suma)} · {datum(od)}
         </div>
       )}
 
