@@ -162,7 +162,7 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
     return (
       <div {...pressable(() => setRozbalena(otvorena ? null : id), profil.nazov)} style={{ cursor: "pointer" }}>
         <NahladKarty profil={profil} logo={logoOrg} vyzbierane={dary.suma} dolozene={0} ludia={dary.pocet}
-          dobrovolne={id === CENTRALNA_ID} sipka={otvorena ? "otvorena" : "zavreta"} />
+          dobrovolne sipka={otvorena ? "otvorena" : "zavreta"} />
       </div>
     );
   };
@@ -568,9 +568,12 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
         caseId={pravidelna.id === "z-centralna" ? null : pravidelna.id}
         // pravidelná podpora je od T1 celá: zbierka → táto zbierka / segment / celá charita,
         // centrálna zbierka → segment / celá organizácia
-        // zbierka sektora: voľba „sektor ako téma" je to isté, preto sa neponúka
+        // rozsah je daný tým, odkiaľ darca klikol: centrálna → celá organizácia,
+        // sektorová → ten sektor, bežná zbierka → plný výber (zbierka / sektor / celá)
         sektor={pravidelna.sektor}
-        segmenty={pravidelna.sektor ? null : segmentyCharity()} onClose={() => setPravidelna(null)} toast={toast} />}
+        bezCelej={!!pravidelna.sektor}
+        segmenty={pravidelna.id === "z-centralna" || pravidelna.sektor ? null : segmentyCharity()}
+        onClose={() => setPravidelna(null)} toast={toast} />}
       {qrZbierka && <QrModal odznak={odznakZbierky(qrZbierka.id)} typ="skutok" titul={`QR — ${qrZbierka.nazov}`} popis="Sken otvorí túto zbierku — daj ho na web, do správy alebo na plagát"
         odkaz={qrUrl("case", qrZbierka.id)} onClose={() => setQrZbierka(null)} toast={toast} />}
       {qr && <QrModal typ="skutok" titul={`QR — ${s.nazov}`} popis="Profil subjektu — QR aj embed odznak na vlastný web"

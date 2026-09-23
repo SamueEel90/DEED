@@ -46,7 +46,10 @@ export function RecurringSheet({ nazov, caseId, charitaUcet, segmenty, bezCelej 
     ...(caseId ? [{ id: "request" as const,
       t: sektor ? `Tento sektor — ${sektor}` : "Táto zbierka",
       d: sektor ? "Zbierka sektora s vlastným transparentným účtom." : "Skončí, keď zbierka skončí — okamžite a s notifikáciou.",
-      kontrola: "K tejto zbierke budú doložené doklady o použití.", farba: "var(--a-green)" }] : []),
+      kontrola: sektor
+        ? "Použitie darov v zbierke sektora sa povinne nedokladuje. Je to na uvážení organizácie."
+        : "K tejto zbierke budú doložené doklady o použití.",
+      farba: "var(--a-green)" }] : []),
     ...(segmenty === null ? [] : [
       { id: "segment" as const, t: "Sektor činnosti", d: "Charita rozdelí peniaze v rámci témy podľa vlastného kľúča.",
         kontrola: "Doklady budeme požadovať za celú tému, nezaručujeme však, že pokryjú práve váš dar.", farba: "var(--a-green)" },

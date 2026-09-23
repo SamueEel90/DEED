@@ -14,9 +14,9 @@ export const VLASTNA_ZBIERKA_CFG = {
   milnik: 3000,
   /** koľko dní má na doloženie tranže (platí pre sektorové zbierky) */
   dniNaDolozenie: 30,
-  /** centrálna zbierka = chod organizácie → dokladovanie DOBROVOĽNÉ (bonus k dôvere a karme),
-   *  sektorová zbierka má konkrétny účel a vlastný transparentný účet → dokladovanie povinné */
-  centralnaDokladovaniePovinne: false,
+  /** centrálna aj sektorová zbierka: dokladovanie DOBROVOĽNÉ (bonus k dôvere a karme).
+   *  Povinné dokladovanie pri sektorových zbierkach zatiaľ NIE JE dohodnuté — neriešiť za Martina. */
+  dokladovaniePovinne: false,
   /** sektorové zbierky sú od programu AKCIA (T2), centrálna od ZBIERKA (T1) */
   sektoroveOdTieru: 2,
   centralnaOdTieru: 1,
