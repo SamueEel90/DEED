@@ -576,6 +576,11 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
         segmenty={null}
         // „celá organizácia" = centrálna zbierka → ponúkame ju, len keď charita spustenú má
         bezCelej={!!pravidelna.sektor || !maCentralnu}
+        // prvá platba záväzku sa objaví v zozname darcov cieľovej zbierky
+        onDar={(su, me, vo, rozsah) => {
+          const ciel = rozsah === "charita" ? CENTRALNA_ID : (pravidelna.id ?? CENTRALNA_ID);
+          daruj(ciel, me === "EUR" ? su : su, "sepa", vo, s.nazov);
+        }}
         onCiel={maCentralnu ? { label: "Zobraziť centrálnu zbierku", onClick: () => {
           setZbalenaCentralna(false); setRozbalena(CENTRALNA_ID); setTab("vsetko");
           // darca musí vidieť, kde jeho dar skončil — doscrollujeme ho na kartu
