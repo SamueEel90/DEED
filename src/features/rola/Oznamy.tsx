@@ -9,6 +9,7 @@ import { Sheet, tint } from "@/shared";
 import { pressable } from "@/components/pressable";
 import { spracujFotku } from "@/lib/obrazok";
 import { FotkaObsahu, Miniatura, PrehliadacFotiek } from "@/components/fotka";
+import { EditorTextu, cistyText, naBezpecneHtml } from "@/components/textformat";
 import {
   OZNAM_CFG, useOznamy, pridajOznam, upravOznam, zmazOznam, pripniOznam,
   oznamAktivny, dniDoKonca, type Oznam,
@@ -38,7 +39,8 @@ export function OznamKarta({ o, autor, logo }: { o: Oznam; autor: string; logo?:
           {o.pripnute && <span style={{ flex: "none", fontSize: 10, fontWeight: 800, color: ZELENA, background: tint(ZELENA, .12), borderRadius: RADIUS.pill, padding: `1px ${SPACE.xs}px` }}>📌 Pripnuté</span>}
         </div>
         <div style={{ fontSize: 15, fontWeight: 800, lineHeight: 1.3 }}>{o.nadpis}</div>
-        <div style={{ fontSize: 13.5, color: C.textSec, lineHeight: 1.5, marginTop: 4, whiteSpace: "pre-wrap" }}>{o.text}</div>
+        <div className="deed-text" style={{ fontSize: 13.5, color: C.textSec, lineHeight: 1.5, marginTop: 4 }}
+          dangerouslySetInnerHTML={{ __html: naBezpecneHtml(o.text) }} />
         {fotky.length > 1 && (
           <div style={{ display: "flex", alignItems: "center", gap: SPACE.xxs, marginTop: SPACE.xs, overflowX: "auto" }}>
             {fotky.slice(1).map((f, i) => <Miniatura key={i} src={f} onClick={() => setFotka(i + 1)} />)}
@@ -75,8 +77,10 @@ function Formular({ entita, autor, logo, uprava, toast, onHotovo, onSpat }: {
     if (nove.length) setFotky([...fotky, ...nove]);
   };
 
+  const dlzka = cistyText(text).length;
   const chyba = nadpis.trim().length < 3 ? "Napíš, o čo ide — stačí pár slov."
-    : text.trim().length < 10 ? "Napíš aspoň vetu, nech ľudia vedia, o čom to je."
+    : dlzka < 10 ? "Napíš aspoň vetu, nech ľudia vedia, o čom to je."
+    : dlzka > OZNAM_CFG.maxText ? `Text je dlhší, než sa do oznamu zmestí — skráťte ho o ${dlzka - OZNAM_CFG.maxText} znakov.`
     : null;
 
   const zverejni = () => {
@@ -113,9 +117,9 @@ function Formular({ entita, autor, logo, uprava, toast, onHotovo, onSpat }: {
           placeholder="Napríklad: Zbierka šatstva pokračuje do konca mesiaca" style={{ ...vstup, fontWeight: 700 }} />
 
         <div style={{ fontSize: 12.5, fontWeight: 700, color: C.textSec, margin: `${SPACE.sm}px 0 4px` }}>Čo chcete ľuďom povedať?</div>
-        <textarea value={text} onChange={(e) => setText(e.target.value)} maxLength={OZNAM_CFG.maxText} rows={5}
-          placeholder="Píšte, ako by ste to povedali susedovi. Kedy, kde, čo treba priniesť." style={{ ...vstup, resize: "vertical", lineHeight: 1.5 }} />
-        <div style={{ fontSize: 10.5, color: C.textTer, textAlign: "right", marginTop: 2 }}>{text.length} / {OZNAM_CFG.maxText}</div>
+        <EditorTextu hodnota={text} onZmena={setText} placeholder="Píšte, ako by ste to povedali susedovi. Kedy, kde, čo treba priniesť." />
+        <div style={{ fontSize: 10.5, color: C.textTer, textAlign: "right", marginTop: 2 }}>{dlzka} / {OZNAM_CFG.maxText}</div>
+        <div style={{ fontSize: 10.5, color: C.textTer, marginTop: 2 }}>Text skopírovaný z Wordu, Facebooku či Instagramu si tučné, kurzívu aj odrážky ponechá.</div>
 
         <div style={{ fontSize: 12.5, fontWeight: 700, color: C.textSec, margin: `${SPACE.xs}px 0 4px` }}>Fotka <span style={{ fontWeight: 400, color: C.textTer }}>— nepovinné, ale pomôže</span></div>
         <div style={{ display: "flex", gap: SPACE.xxs, flexWrap: "wrap", alignItems: "center" }}>

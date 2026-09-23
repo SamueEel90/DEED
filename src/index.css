@@ -198,3 +198,12 @@ button:active, [role="button"]:active {
   0%, 100% { transform: translateY(0); }
   50%      { transform: translateY(-5px); }
 }
+
+/* --- formátovaný text (oznamy) — to isté v editore aj na karte --- */
+.deed-text p { margin: 0 0 6px; }
+.deed-text p:last-child { margin-bottom: 0; }
+.deed-text ul, .deed-text ol { margin: 4px 0 6px; padding-left: 20px; }
+.deed-text li { margin: 0 0 2px; }
+.deed-text [data-v="velke"] { font-size: 1.18em; font-weight: 700; }
+.deed-text [data-v="male"] { font-size: .86em; }
+.deed-editor:empty::before { content: attr(data-placeholder); color: var(--c-textTer); pointer-events: none; }
