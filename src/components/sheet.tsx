@@ -20,6 +20,7 @@ export function Sheet({
   dismissible = true,
   direction = "bottom",
   label = "Panel",
+  pisanie = false,
 }: {
   children?: ReactNode;
   onClose?: () => void;
@@ -29,6 +30,9 @@ export function Sheet({
   direction?: "bottom" | "top";
   /** názov panelu pre čítačky (Radix Dialog Title, vizuálne skrytý) */
   label?: string;
+  /** v paneli sa píše text: klik mimo ho nezavrie (rozpísané sa nesmie stratiť)
+   *  a text v poliach sa dá označiť myšou (Vaul inak ťah číta ako zatváranie) */
+  pisanie?: boolean;
 }) {
   const zhora = direction === "top";
   const { desktop } = useLayout();
@@ -73,6 +77,8 @@ export function Sheet({
       />
       <Drawer.Content
         aria-describedby={undefined}
+        onPointerDownOutside={(e) => { if (pisanie) e.preventDefault(); }}
+        onInteractOutside={(e) => { if (pisanie) e.preventDefault(); }}
         className="deed-sheet"
         style={stred ? {
           position: "absolute",
@@ -126,7 +132,7 @@ export function Sheet({
             TOP sheet (menu „Viac"/notifikácie): scroll obsahom = ťah prstom NAHOR, čo Vaul
             u top-drawera číta ako drag-to-dismiss → zavrelo by sa pri scrollovaní. `data-vaul-no-drag`
             vypne drag z obsahu (zatvorí sa len grabberom/tapom mimo), takže sa dá pokojne scrollovať. */}
-        <div {...(zhora ? { "data-vaul-no-drag": true } : {})} style={{ flex: "1 1 auto", minHeight: 0, overflowY: "auto", overflowX: "hidden", padding: zhora ? "14px 20px 4px" : stred ? "0 20px 22px" : "0 20px calc(22px + env(safe-area-inset-bottom, 0px))" }}>
+        <div {...(zhora || pisanie ? { "data-vaul-no-drag": true } : {})} style={{ flex: "1 1 auto", minHeight: 0, overflowY: "auto", overflowX: "hidden", padding: zhora ? "14px 20px 4px" : stred ? "0 20px 22px" : "0 20px calc(22px + env(safe-area-inset-bottom, 0px))" }}>
           {children}
         </div>
         {zhora && grabber}

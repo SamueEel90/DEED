@@ -94,7 +94,7 @@ function Formular({ entita, autor, logo, uprava, toast, onHotovo, onSpat }: {
   const ukazka: Oznam = { id: "nahlad", entita, kategoria: "oznam", nadpis: nadpis.trim() || "Bez nadpisu", text: text.trim(), fotky, platnostDni: dni, vytvorene: teraz };
 
   return (
-    <Sheet onClose={onSpat} label={uprava ? "Upraviť oznam" : "Napísať oznam"}>
+    <Sheet onClose={onSpat} label={uprava ? "Upraviť oznam" : "Napísať oznam"} pisanie>
       <div style={{ fontSize: 16, fontWeight: 800 }}>{uprava ? "Upraviť oznam" : "Napísať oznam"}</div>
       <div style={{ fontSize: 11.5, color: C.textTer, marginTop: 2, marginBottom: SPACE.sm }}>
         Uvidia ho ľudia na vašom profile a tí, čo vás sledujú.
