@@ -11,7 +11,9 @@ import { Sheet, tint } from "@/shared";
 import { pressable } from "@/components/pressable";
 import { spracujFotku } from "@/lib/obrazok";
 import { FotkaObsahu, Miniatura, PrehliadacFotiek } from "@/components/fotka";
-import { EditorTextu, cistyText, naBezpecneHtml } from "@/components/textformat";
+import { RichTextInput } from "@/components/richtext";
+import { FormatovanyText } from "@/components/formattext";
+import { cistyText } from "@/lib/richtext";
 import {
   OZNAM_CFG, INZERAT_CFG, useOznamy, pridajOznam, upravOznam, zmazOznam, obsadInzerat,
   otvorInzeratZnova, beziaceInzeraty, limitInzeratov, dniDoKonca, type Oznam,
@@ -53,8 +55,7 @@ export function InzeratKarta({ o, autor, logo, deti }: { o: Oznam; autor: string
         </div>
         <div style={{ fontSize: 15, fontWeight: 800, lineHeight: 1.3 }}>{o.nadpis}</div>
         {!bezTextu && (
-          <div className="deed-text" style={{ fontSize: 13.5, color: C.textSec, lineHeight: 1.5, marginTop: 4 }}
-            dangerouslySetInnerHTML={{ __html: naBezpecneHtml(o.text) }} />
+          <FormatovanyText text={o.text} style={{ fontSize: 13.5, color: C.textSec, lineHeight: 1.5, marginTop: 4 }} />
         )}
         {fotky.length > 1 && (
           <div style={{ display: "flex", alignItems: "center", gap: SPACE.xxs, marginTop: SPACE.xs, overflowX: "auto" }}>
@@ -133,8 +134,8 @@ function Formular({ entita, autor, logo, uprava, toast, onHotovo, onSpat }: {
           placeholder="Napríklad: Brigádnik na triedenie šatstva" style={{ ...vstup, fontWeight: 700 }} />
 
         <div style={{ fontSize: 12.5, fontWeight: 700, color: C.textSec, margin: `${SPACE.sm}px 0 4px` }}>Čo treba robiť, kedy a kde? <span style={{ fontWeight: 400, color: C.textTer }}>— netreba, ak dáte hotový plagát</span></div>
-        <EditorTextu hodnota={text} onZmena={setText} placeholder="Píšte, ako by ste to povedali susedovi. Kedy, kde, na ako dlho, či treba niečo vedieť." />
-        <div style={{ fontSize: 10.5, color: C.textTer, textAlign: "right", marginTop: 2 }}>{dlzka} / {OZNAM_CFG.maxText}</div>
+        <RichTextInput value={text} onChange={setText} minH={130} maxZnakov={OZNAM_CFG.maxText}
+          placeholder="Píšte, ako by ste to povedali susedovi. Kedy, kde, na ako dlho, či treba niečo vedieť." />
 
         <div style={{ fontSize: 12.5, fontWeight: 700, color: C.textSec, margin: `${SPACE.xs}px 0 4px` }}>Fotka alebo hotový plagát <span style={{ fontWeight: 400, color: C.textTer }}>— plagát sa ukáže celý, nič sa z neho neoreže</span></div>
         <div style={{ display: "flex", gap: SPACE.xxs, flexWrap: "wrap", alignItems: "center" }}>

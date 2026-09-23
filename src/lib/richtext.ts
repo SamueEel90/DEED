@@ -9,6 +9,19 @@
 // ============================================================
 
 const POVOLENE = new Set(["p", "br", "strong", "em", "h3", "ul", "ol", "li", "a"]);
+// dve veľkosti písma (A+ / A−) — jediný povolený „štýl", drží sa cez data-v
+const VELKOSTI = new Set(["velke", "male"]);
+/** akú veľkosť nesie element: vlastné data-v, alebo <font size> z execCommand/Wordu */
+function velkostZ(el: Element): string | null {
+  const v = el.getAttribute("data-v");
+  if (v && VELKOSTI.has(v)) return v;
+  const size = Number(el.getAttribute("size") || 0);
+  if (size >= 4) return "velke";
+  if (size > 0 && size <= 2) return "male";
+  return null;
+}
+const jeTucne = (el: Element) => /(^|;)\s*font-weight\s*:\s*(bold|[6-9]00)/i.test(el.getAttribute("style") || "");
+const jeKurziva = (el: Element) => /(^|;)\s*font-style\s*:\s*italic/i.test(el.getAttribute("style") || "");
 // premapovanie príbuzných tagov na whitelist (b→strong, všetky nadpisy→h3, div→p)
 const PREMAP: Record<string, string> = { b: "strong", i: "em", h1: "h3", h2: "h3", h4: "h3", h5: "h3", h6: "h3", div: "p" };
 // tieto tagy sa zahadzujú AJ S OBSAHOM (nie unwrap)
@@ -43,6 +56,24 @@ function prepisDeti(zdroj: Node, ciel: Element, doc: Document) {
     }
     aktualnyUl = null;
 
+    // span/font: nesie veľkosť (A+/A−) alebo tučné/kurzívu zo schránky (FB, Word)
+    if (tag === "span" || tag === "font") {
+      const velkost = velkostZ(el);
+      if (velkost) {
+        const obal = doc.createElement("span");
+        obal.setAttribute("data-v", velkost);
+        ciel.appendChild(obal);
+        prepisDeti(el, obal, doc);
+        return;
+      }
+      if (jeTucne(el) || jeKurziva(el)) {
+        const obal = doc.createElement(jeTucne(el) ? "strong" : "em");
+        ciel.appendChild(obal);
+        prepisDeti(el, obal, doc);
+        return;
+      }
+    }
+
     const mapovany = POVOLENE.has(tag) ? tag : PREMAP[tag];
     if (!mapovany) { prepisDeti(el, ciel, doc); return; } // unwrap: span/font/… — obsah prežije, obal nie
 
@@ -74,7 +105,7 @@ export function sanitizujHtml(spinave: string): string {
 
 /** Je uložený text HTML (z editora), alebo starý čistý text (render cez pre-wrap)? */
 export function jeHtmlText(t?: string | null): boolean {
-  return !!t && /^\s*</.test(t) && /<\/?(p|br|strong|em|h3|ul|ol|li|a)[\s>/]/i.test(t);
+  return !!t && /^\s*</.test(t) && /<\/?(p|br|strong|em|h3|ul|ol|li|a|span)[\s>/]/i.test(t);
 }
 
 /** Čistý text z HTML — pre krátke náhľady v kartách/riadkoch (tam HTML nepatrí). */
