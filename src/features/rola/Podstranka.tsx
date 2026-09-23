@@ -16,6 +16,8 @@ import { SADY_EUR, SADY_EURC } from "@/lib/sadyDarov";
 import { nastavCiste, sucetDarov, useZmenyDarov, pridajDar, type VolbaDaru } from "@/lib/darcovia";
 import { ZoznamDarcov } from "@/components/zoznamdarcov";
 import { NahladKarty, GaleriaZbierky } from "./KartaZbierky";
+import { OznamKarta } from "./Oznamy";
+import { verejneOznamy, useZmenyOznamov } from "@/lib/oznamy";
 import { nacitajProfil, useZmenyProfilov, CENTRALNA_ID, VLASTNA_ZBIERKA_CFG, type ProfilZbierky } from "./vlastneZbierky";
 import { useSegmenty } from "./segmenty";
 import { zdielaj, aktualnaUrl } from "@/lib/zdielanie";
@@ -80,6 +82,8 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
   // sektorové zbierky (AKCIA) — vlastná záložka, nie stĺp veľkých kariet nad profilom
   const sektory = useSegmenty();
   useZmenyProfilov();
+  useZmenyOznamov();
+  const oznamy = tier >= 1 ? verejneOznamy(pozicia) : [];
   const sektoroveZbierky = pozicia === "charita" && tier >= VLASTNA_ZBIERKA_CFG.sektoroveOdTieru
     ? sektory.flatMap((sg) => {
         const profil = sg.zbierkaId ? nacitajProfil(sg.zbierkaId) : null;
@@ -89,6 +93,7 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
   const taby = [
     { key: "vsetko", label: "Všetko", polozky: mojeTaby.flatMap((t) => t.polozky) },
     ...mojeTaby,
+    ...(oznamy.length ? [{ key: "oznamy", label: "Oznamy", polozky: [] as typeof mojeTaby[number]["polozky"] }] : []),
     ...(sektoroveZbierky.length ? [{ key: "sektory", label: "Sektory", polozky: [] as typeof mojeTaby[number]["polozky"] }] : []),
   ];
   const [tab, setTab] = useState("vsetko");
@@ -132,7 +137,7 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
   };
 
   const labels = Object.fromEntries(taby.map((t) => [t.key, t.label])) as Record<string, string>;
-  const badges = Object.fromEntries(taby.map((t) => [t.key, t.key === "sektory" ? sektoroveZbierky.length : t.polozky.length])) as Record<string, number>;
+  const badges = Object.fromEntries(taby.map((t) => [t.key, t.key === "sektory" ? sektoroveZbierky.length : t.key === "oznamy" ? oznamy.length : t.polozky.length])) as Record<string, number>;
 
   // ---- bloky obsahu (zdieľané mobil/desktop) ----
   // centrálna zbierka organizácie (pre seba) — charita ju má od prvého plateného programu T1.
@@ -452,7 +457,15 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
   const obsahBlok = (
     <>
       <TabyProfil options={taby.map((t) => t.key)} labels={labels} badges={badges} value={tab} onChange={setTab} ariaLabel="Obsah profilu" />
-      {tab === "sektory" ? (
+      {tab === "oznamy" ? (
+        <div style={siroke ? { display: "grid", gridTemplateColumns: `repeat(${desktop ? 3 : 2}, minmax(0,1fr))`, gap: SPACE.sm, alignItems: "start" } : undefined}>
+          {oznamy.map((o) => (
+            <div key={o.id} style={{ marginBottom: siroke ? 0 : SPACE.sm }}>
+              <OznamKarta o={o} autor={s.nazov} logo={logoOrg} />
+            </div>
+          ))}
+        </div>
+      ) : tab === "sektory" ? (
         <div style={siroke ? { display: "grid", gridTemplateColumns: `repeat(${desktop ? 3 : 2}, minmax(0,1fr))`, gap: SPACE.sm, alignItems: "start" } : undefined}>
           {sektoroveZbierky.map((z) => (
             <div key={z.id} id={`deed-sektor-${z.id}`} style={{ marginBottom: siroke ? 0 : SPACE.sm }}>
