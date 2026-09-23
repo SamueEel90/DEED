@@ -5,8 +5,8 @@
 //
 // Poradie krokov (dôkaz v každom kroku, nič sa nemení spätne):
 //   charita pri vytváraní zbierky zapne „Prijímame dorovnanie"
-//   → firma nastaví parametre a ZAPEČATÍ (odvtedy sa nedajú zmeniť)
-//   → firma pošle peniaze priamo charite (my sa ich nedotkneme)
+//   → firma nastaví parametre a UHRADÍ sumu priamo charite (my sa jej nedotkneme)
+//   → až po úhrade ZAPEČATÍ (odvtedy sa parametre nedajú zmeniť)
 //   → charita príjem potvrdí → dorovnanie beží a je vidieť pri zbierke
 // Charita nič neschvaľuje (súhlas dala zaškrtnutím), ale kým firma
 // nezaplatila, vie ho odmietnuť.
@@ -14,8 +14,8 @@
 import { useSyncExternalStore } from "react";
 
 export const DOROVNANIE_CFG = {
-  /** ponuka pomerov vo formulári firmy (× k daru) — 4 = k príjemcovi ide päťnásobok */
-  pomery: [0.5, 1, 2, 4],
+  /** ponuka pomerov vo formulári firmy — koľkonásobok daru firma pridá */
+  pomery: [0.5, 1, 2, 5],
   /** predvolený pomer */
   pomer: 1,
   /** odvetvia, ktoré nesmú dorovnávať tam, kde samy robia škodu (§ pravidlo platformy) */
@@ -27,7 +27,7 @@ export const DOROVNANIE_CFG = {
 };
 
 export type StavDorovnania =
-  | "zapecatene"      // firma nastavila a zapečatila, čaká sa na jej platbu
+  | "zapecatene"      // firma uhradila a zapečatila, čaká na potvrdenie charity
   | "aktivne"         // peniaze sú u charity, dorovnanie beží
   | "vycerpane"       // strop minutý
   | "ukoncene"        // koniec obdobia alebo koniec zbierky
@@ -57,7 +57,10 @@ export interface Dorovnanie {
   /** koľko firma vyčlenila celkom (predplatené) */
   strop: number;
   od: number;
+  /** koniec obdobia; pri „do vyčerpania" je to len technický strop */
   do: number;
+  /** beží, kým sa nevyčerpá strop — bez dátumu konca */
+  doVycerpania?: boolean;
   /** nevyčerpaný zvyšok na konci: ostáva zbierke (default) alebo späť firme */
   zvysok: "zbierke" | "firme";
   stav: StavDorovnania;
@@ -136,6 +139,21 @@ export function zapisDar(entita: string, id: string, dar: number, teraz = Date.n
   return pridane;
 }
 
-/** text na bežec pri zbierke */
+/** čo firma pridáva — slovom, nech to netreba lúštiť */
 export const popisPomeru = (pomer: number) =>
-  pomer === 1 ? "×2" : pomer === 2 ? "×3" : pomer === 0.5 ? "+50 %" : `×${1 + pomer}`;
+  pomer === 0.5 ? "polovicu daru"
+  : pomer === 1 ? "rovnakú sumu"
+  : pomer === 2 ? "dvojnásobok"
+  : pomer === 5 ? "päťnásobok"
+  : `${pomer}-násobok`;
+
+/** názov voľby vo formulári firmy */
+export const nazovPomeru = (pomer: number) =>
+  pomer === 0.5 ? "Polovica daru"
+  : pomer === 1 ? "Rovnaký dar"
+  : pomer === 2 ? "Dvojnásobný dar"
+  : pomer === 5 ? "Päťnásobný dar"
+  : `${pomer}× dar`;
+
+/** koľko bude mať príjemca z daru 20 € — príklad pod voľbu */
+export const priklad = (pomer: number, dar = 20) => dar + dar * pomer;
