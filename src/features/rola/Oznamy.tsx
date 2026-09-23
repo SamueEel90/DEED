@@ -8,7 +8,7 @@ import { C, SPACE, RADIUS } from "@/theme";
 import { Sheet, tint } from "@/shared";
 import { pressable } from "@/components/pressable";
 import { spracujFotku } from "@/lib/obrazok";
-import { FotkaObsahu, Miniatura } from "@/components/fotka";
+import { FotkaObsahu, Miniatura, PrehliadacFotiek } from "@/components/fotka";
 import {
   OZNAM_CFG, useOznamy, pridajOznam, upravOznam, zmazOznam, pripniOznam,
   oznamAktivny, dniDoKonca, type Oznam,
@@ -22,9 +22,15 @@ const btnDruhy: CSSProperties = { width: "100%", height: 44, borderRadius: RADIU
 
 /** karta oznamu tak, ako ju uvidia ľudia — ten istý vzhľad v náhľade aj na profile */
 export function OznamKarta({ o, autor, logo }: { o: Oznam; autor: string; logo?: string }) {
-  return (
+  const [fotka, setFotka] = useState<number | null>(null);
+  const fotky = o.fotky ?? [];
+  return (<>
     <div style={{ background: C.surface, border: `1px solid ${o.pripnute ? tint(ZELENA, .4) : C.line}`, borderRadius: RADIUS.md, overflow: "hidden" }}>
-      {o.fotky?.[0] && <FotkaObsahu src={o.fotky[0]} maxVyska={380} />}
+      {fotky[0] && (
+        <span {...pressable(() => setFotka(0), "Otvoriť fotku")} style={{ display: "block", cursor: "pointer" }}>
+          <FotkaObsahu src={fotky[0]} maxVyska={380} />
+        </span>
+      )}
       <div style={{ padding: SPACE.sm }}>
         <div style={{ display: "flex", alignItems: "center", gap: SPACE.xs, marginBottom: SPACE.xxs }}>
           {logo && <img src={logo} alt="" style={{ width: 22, height: 22, borderRadius: RADIUS.xs, objectFit: "cover", flex: "none" }} />}
@@ -33,14 +39,16 @@ export function OznamKarta({ o, autor, logo }: { o: Oznam; autor: string; logo?:
         </div>
         <div style={{ fontSize: 15, fontWeight: 800, lineHeight: 1.3 }}>{o.nadpis}</div>
         <div style={{ fontSize: 13.5, color: C.textSec, lineHeight: 1.5, marginTop: 4, whiteSpace: "pre-wrap" }}>{o.text}</div>
-        {o.fotky && o.fotky.length > 1 && (
-          <div style={{ display: "flex", gap: SPACE.xxs, marginTop: SPACE.xs, overflowX: "auto" }}>
-            {o.fotky.slice(1).map((f, i) => <Miniatura key={i} src={f} />)}
+        {fotky.length > 1 && (
+          <div style={{ display: "flex", alignItems: "center", gap: SPACE.xxs, marginTop: SPACE.xs, overflowX: "auto" }}>
+            {fotky.slice(1).map((f, i) => <Miniatura key={i} src={f} onClick={() => setFotka(i + 1)} />)}
+            <span style={{ flex: "none", fontSize: 11, color: C.textTer, paddingLeft: 2 }}>{fotky.length} fotky — klikni</span>
           </div>
         )}
       </div>
     </div>
-  );
+    {fotka !== null && <PrehliadacFotiek fotky={fotky} start={fotka} onClose={() => setFotka(null)} />}
+  </>);
 }
 
 // ---------- formulár: tri polia, zvyšok predvolené ----------
