@@ -43,7 +43,13 @@ export function ocistiHtml(html: string): string {
       else rozbal(el);
       continue;
     }
-    if (t === "H1" || t === "H2" || t === "H3" || t === "H4" || t === "H5" || t === "H6") { premen(el, "p", "velke"); continue; }
+    if (t === "H1" || t === "H2" || t === "H3" || t === "H4" || t === "H5" || t === "H6") {
+      const silne = document.createElement("strong");
+      while (el.firstChild) silne.appendChild(el.firstChild);
+      el.replaceChildren(silne);
+      premen(el, "p", "velke");
+      continue;
+    }
     if (t === "DIV") { premen(el, "p"); continue; }
     if (t === "SPAN") {
       const v = el.getAttribute("data-v") ?? "";

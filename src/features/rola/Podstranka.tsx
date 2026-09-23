@@ -455,18 +455,24 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
   );
 
   // najnovší oznam nad záložkami — inak ho v rade ôsmich tabov nikto nenájde
+  const naOznam = (id: string) => {
+    setTab("oznamy");
+    setTimeout(() => (document.getElementById(`deed-oznam-${id}`) ?? document.getElementById("deed-obsah"))?.scrollIntoView({ behavior: "smooth", block: "start" }), 80);
+  };
   const oznamPas = oznamy.length > 0 && (
-    <div {...pressable(() => { setTab("oznamy"); setTimeout(() => document.getElementById("deed-obsah")?.scrollIntoView({ behavior: "smooth", block: "start" }), 80); }, "Oznamy")}
-      style={{ display: "flex", alignItems: "center", gap: SPACE.xs, cursor: "pointer", marginBottom: SPACE.sm,
-        background: tint("var(--a-info)", .07), border: `1px solid ${tint("var(--a-info)", .28)}`, borderRadius: RADIUS.sm, padding: SPACE.sm }}>
-      <span style={{ flex: "none", fontSize: 15 }}>📣</span>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: ".04em", color: C.textTer }}>OZNAM</div>
-        <div style={{ fontSize: 13.5, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{oznamy[0].nadpis}</div>
-      </div>
-      <span style={{ flex: "none", fontSize: 12, fontWeight: 800, color: "var(--a-info)" }}>
-        {oznamy.length > 1 ? `Všetky (${oznamy.length}) ›` : "Čítať ›"}
-      </span>
+    <div style={{ marginBottom: SPACE.sm }}>
+      {oznamy.map((o) => (
+        <div key={o.id} {...pressable(() => naOznam(o.id), `Oznam: ${o.nadpis}`)}
+          style={{ display: "flex", alignItems: "center", gap: SPACE.xs, cursor: "pointer", marginBottom: SPACE.xxs,
+            background: tint("var(--a-info)", .07), border: `1px solid ${tint("var(--a-info)", .28)}`, borderRadius: RADIUS.sm, padding: SPACE.sm }}>
+          <span style={{ flex: "none", fontSize: 15 }}>{o.pripnute ? "📌" : "📣"}</span>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: ".04em", color: C.textTer }}>OZNAM</div>
+            <div style={{ fontSize: 13.5, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{o.nadpis}</div>
+          </div>
+          <span style={{ flex: "none", fontSize: 12, fontWeight: 800, color: "var(--a-info)" }}>Čítať ›</span>
+        </div>
+      ))}
     </div>
   );
 
@@ -475,9 +481,10 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
       {oznamPas}
       <TabyProfil options={taby.map((t) => t.key)} labels={labels} badges={badges} value={tab} onChange={setTab} ariaLabel="Obsah profilu" />
       {tab === "oznamy" ? (<>
-        <div style={siroke ? { display: "grid", gridTemplateColumns: `repeat(${desktop ? 3 : 2}, minmax(0,1fr))`, gap: SPACE.sm, alignItems: "start" } : undefined}>
+        {/* oznam je text na čítanie — každý má vlastný riadok, nie stĺpec v mriežke */}
+        <div>
           {oznamy.map((o) => (
-            <div key={o.id} style={{ marginBottom: siroke ? 0 : SPACE.sm }}>
+            <div key={o.id} id={`deed-oznam-${o.id}`} style={{ marginBottom: SPACE.sm }}>
               <OznamKarta o={o} autor={s.nazov} logo={logoOrg} />
             </div>
           ))}
