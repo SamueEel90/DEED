@@ -247,7 +247,7 @@ export const SPRAVA_CHARITA: SpravaItem[] = [
   { id: "segment", emoji: "🧩", nazov: "Sektorové zbierky a činnosti", popis: "Témy pre darcov · od AKCIE vlastná zbierka, účet a QR pre každý sektor", tierMin: 1, sekcia: "zbierky" },
   { id: "sponzoring", emoji: "🤝", nazov: "Sponzoring", popis: "Hľadáme sponzora s protiplnením · predvyplnená zmluva · logo sponzora na profile · oznam v meste · doklad o protiplnení · sponzorské zbierky bez limitu", tierMin: 1, sekcia: "akcie" },
   { id: "oznamy", emoji: "📣", nazov: "Oznamy", popis: "Krátka správa na profil — čo je nové · vidia ju tí, čo vás sledujú", tierMin: 1, sekcia: "obsah" },
-  { id: "inzeraty", emoji: "📌", nazov: "Inzeráty", popis: "Hľadáme brigádnika, zamestnanca, pomoc · ZBIERKA 1 · AKCIA 5 · KAMPAŇ bez limitu", tierMin: 1, sekcia: "akcie" },
+  { id: "inzeraty", emoji: "📌", nazov: "Pracovné ponuky", popis: "Hľadáme brigádnika, zamestnanca, pomoc · ZBIERKA 1 · AKCIA 5 · KAMPAŇ bez limitu", tierMin: 1, sekcia: "akcie" },
   { id: "embed", emoji: "🔗", nazov: "Štít dôvery na vlastný web", popis: "Odznak s odkazom na profil (embed)", tierMin: 1, sekcia: "nastroje" },
   // AKCIA (T2)
   { id: "podujatia", emoji: "🎟", nazov: "Benefičné podujatia a predaj", popis: "Podujatie s QR a potvrdením účasti · predaj lístkov, merchu a služieb · školenia (provízia 10 %)", tierMin: 2, sekcia: "akcie" },

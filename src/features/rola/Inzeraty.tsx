@@ -1,5 +1,5 @@
 // ============================================================
-// INZERÁTY SUBJEKTU (správa) — „hľadáme človeka". Beží na tom istom engine
+// PRACOVNÉ PONUKY SUBJEKTU (správa) — „hľadáme človeka". Beží na tom istom engine
 // ako oznamy (kategória „inzerat"), ale navyše: limit podľa programu,
 // záujemcovia a jedno tlačidlo „Obsadené".
 // Pravidlo ako pri oznamoch: musí to zvládnuť človek, čo v živote nič
@@ -25,7 +25,7 @@ const btnHlavny: CSSProperties = { width: "100%", height: 48, borderRadius: RADI
 const btnDruhy: CSSProperties = { width: "100%", height: 44, borderRadius: RADIUS.sm, border: `1px solid ${C.line}`, cursor: "pointer", fontFamily: "inherit", fontWeight: 700, fontSize: 13.5, background: "transparent", color: C.textSec };
 const odkaz: CSSProperties = { fontSize: 11.5, fontWeight: 800, color: ZELENA, cursor: "pointer" };
 
-/** karta inzerátu tak, ako ju uvidia ľudia — rovnaká v náhľade aj na profile */
+/** karta pracovnej ponuky tak, ako ju uvidia ľudia — rovnaká v náhľade aj na profile */
 export function InzeratKarta({ o, autor, logo, deti }: { o: Oznam; autor: string; logo?: string; deti?: React.ReactNode }) {
   const [fotka, setFotka] = useState<number | null>(null);
   const fotky = o.fotky ?? [];
@@ -34,7 +34,7 @@ export function InzeratKarta({ o, autor, logo, deti }: { o: Oznam; autor: string
     <div style={{ background: C.surface, border: `1px solid ${C.line}`, borderRadius: RADIUS.md, overflow: "hidden" }}>
       {fotky[0] && (
         <span {...pressable(() => setFotka(0), "Otvoriť fotku")} style={{ display: "block", cursor: "pointer" }}>
-          {/* v ozname/inzeráte sa fotka nikdy neoreže — býva to plagát a text v ňom musí byť vidieť */}
+          {/* v ozname/ponuke sa fotka nikdy neoreže — býva to plagát a text v ňom musí byť vidieť */}
           <FotkaObsahu src={fotky[0]} maxVyska={380} cela />
         </span>
       )}
@@ -89,17 +89,17 @@ function Formular({ entita, autor, logo, uprava, toast, onHotovo, onSpat }: {
   const dlzka = cistyText(text).length;
   const chyba = nadpis.trim().length < 3 ? "Napíšte, koho hľadáte — stačí pár slov."
     : dlzka < 10 && fotky.length === 0 ? "Napíšte aspoň vetu — čo treba robiť, kedy a kde. Alebo nahrajte hotový plagát ako fotku."
-    : dlzka > OZNAM_CFG.maxText ? `Text je dlhší, než sa do inzerátu zmestí — skráťte ho o ${dlzka - OZNAM_CFG.maxText} znakov.`
+    : dlzka > OZNAM_CFG.maxText ? `Text je dlhší, než sa do ponuky zmestí — skráťte ho o ${dlzka - OZNAM_CFG.maxText} znakov.`
     : null;
 
   const zverejni = () => {
     if (chyba) { toast(chyba); return; }
     if (uprava) {
       upravOznam(entita, uprava.id, { nadpis: nadpis.trim(), text, fotky, platnostDni: dni });
-      toast("Inzerát upravený");
+      toast("Ponuka upravená");
     } else {
       pridajOznam({ entita, kategoria: "inzerat", nadpis: nadpis.trim(), text, fotky, platnostDni: dni });
-      toast("Inzerát je na vašom profile");
+      toast("Ponuka je na vašom profile");
     }
     onHotovo();
   };
@@ -107,10 +107,10 @@ function Formular({ entita, autor, logo, uprava, toast, onHotovo, onSpat }: {
   const ukazka: Oznam = { id: "nahlad", entita, kategoria: "inzerat", nadpis: nadpis.trim() || "Bez nadpisu", text, fotky, platnostDni: dni, vytvorene: teraz };
 
   return (
-    <Sheet onClose={onSpat} label={uprava ? "Upraviť inzerát" : "Nový inzerát"} pisanie>
-      <div style={{ fontSize: 16, fontWeight: 800 }}>{uprava ? "Upraviť inzerát" : "Nový inzerát"}</div>
+    <Sheet onClose={onSpat} label={uprava ? "Upraviť ponuku" : "Nová pracovná ponuka"} pisanie>
+      <div style={{ fontSize: 16, fontWeight: 800 }}>{uprava ? "Upraviť ponuku" : "Nová pracovná ponuka"}</div>
       <div style={{ fontSize: 11.5, color: C.textTer, marginTop: 2, marginBottom: SPACE.sm }}>
-        Uvidia ho ľudia na vašom profile. Kto má záujem, klikne — a vy uvidíte jeho meno a kontakt.
+        Uvidia ju ľudia na vašom profile. Kto má záujem, klikne — a vy uvidíte jeho meno a kontakt.
       </div>
 
       {nahlad ? (<>
@@ -155,7 +155,7 @@ function Formular({ entita, autor, logo, uprava, toast, onHotovo, onSpat }: {
             </span>
           ))}
         </div>
-        <div style={{ fontSize: 10.5, color: C.textTer, marginTop: 4 }}>Keď miesto obsadíte, inzerát zavriete jedným klikom — ostatným sa poďakujeme.</div>
+        <div style={{ fontSize: 10.5, color: C.textTer, marginTop: 4 }}>Keď miesto obsadíte, ponuku zavriete jedným klikom — ostatným sa poďakujeme.</div>
 
         <button onClick={() => (chyba ? toast(chyba) : setNahlad(true))} style={{ ...btnHlavny, marginTop: SPACE.md }}>Ukázať, ako to bude vyzerať</button>
         <button onClick={onSpat} style={{ ...btnDruhy, marginTop: SPACE.xs }}>Zrušiť</button>
@@ -164,7 +164,7 @@ function Formular({ entita, autor, logo, uprava, toast, onHotovo, onSpat }: {
   );
 }
 
-// ---------- záujemcovia jedného inzerátu ----------
+// ---------- záujemcovia jednej ponuky ----------
 function Zaujemcovia({ inzerat, onSpat }: { inzerat: Oznam; onSpat: () => void }) {
   const ludia = inzerat.zaujemcovia ?? [];
   return (
@@ -173,7 +173,7 @@ function Zaujemcovia({ inzerat, onSpat }: { inzerat: Oznam; onSpat: () => void }
       <div style={{ fontSize: 11.5, color: C.textTer, marginTop: 2, marginBottom: SPACE.sm }}>{inzerat.nadpis}</div>
       {ludia.length === 0 ? (
         <div style={{ fontSize: 12.5, color: C.textTer, textAlign: "center", padding: SPACE.lg, lineHeight: 1.5 }}>
-          Zatiaľ sa nikto neozval.<br />Inzerát vidia ľudia na vašom profile a tí, čo vás sledujú.
+          Zatiaľ sa nikto neozval.<br />Ponuku vidia ľudia na vašom profile a tí, čo vás sledujú.
         </div>
       ) : ludia.map((z) => (
         <div key={z.id} style={karta}>
@@ -219,11 +219,11 @@ export function InzeratySheet({ entita, autor, logo, tier, toast, onPaywall, onC
 
   const novy = () => {
     if (limit <= 0) {
-      onPaywall({ tierMin: 1 as Tier, nazov: "Inzeráty", dovod: "Hľadanie brigádnika, zamestnanca alebo dobrovoľníka priamo na profile." });
+      onPaywall({ tierMin: 1 as Tier, nazov: "Pracovné ponuky", dovod: "Hľadanie brigádnika, zamestnanca alebo dobrovoľníka priamo na profile." });
       return;
     }
     if (bezi.length >= limit) {
-      onPaywall({ tierMin: Math.min(tier + 1, 3) as Tier, nazov: "Ďalší súbežný inzerát", dovod: `Vo vašom programe môžu bežať ${limit} inzeráty naraz. Zavrite niektorý, alebo si pridajte kapacitu.` });
+      onPaywall({ tierMin: Math.min(tier + 1, 3) as Tier, nazov: "Ďalšia súbežná ponuka", dovod: `Vo vašom programe môžu bežať ${limit} ponuky naraz. Zavrite niektorú, alebo si pridajte kapacitu.` });
       return;
     }
     setPisem(true);
@@ -247,31 +247,31 @@ export function InzeratySheet({ entita, autor, logo, tier, toast, onPaywall, onC
           <span {...pressable(() => setDetail(o.id), "Záujemcovia")} style={odkaz}>Záujemcovia ({pocet})</span>
           <span {...pressable(() => setUprava(o), "Upraviť")} style={odkaz}>Upraviť</span>
           {beziaci
-            ? <span {...pressable(() => { obsadInzerat(entita, o.id); toast("Inzerát je zavretý — záujemcom sa poďakujeme"); }, "Obsadené")} style={odkaz}>✓ Obsadené — zavrieť</span>
+            ? <span {...pressable(() => { obsadInzerat(entita, o.id); toast("Ponuka je zavretá — záujemcom sa poďakujeme"); }, "Obsadené")} style={odkaz}>✓ Obsadené — zavrieť</span>
             : <span {...pressable(() => {
-                if (bezi.length >= limit) { toast(`Naraz môžu bežať ${limit} inzeráty — najprv niektorý zavrite`); return; }
+                if (bezi.length >= limit) { toast(`Naraz môžu bežať ${limit} ponuky — najprv niektorú zavrite`); return; }
                 otvorInzeratZnova(entita, o.id, o.platnostDni);
-                toast("Inzerát je zase na profile");
+                toast("Ponuka je zase na profile");
               }, "Pustiť znova")} style={odkaz}>Pustiť znova</span>}
-          <span {...pressable(() => { zmazOznam(entita, o.id); toast("Inzerát zmazaný"); }, "Zmazať")} style={{ marginLeft: "auto", fontSize: 11.5, fontWeight: 700, color: C.textTer, cursor: "pointer" }}>Zmazať</span>
+          <span {...pressable(() => { zmazOznam(entita, o.id); toast("Ponuka zmazaná"); }, "Zmazať")} style={{ marginLeft: "auto", fontSize: 11.5, fontWeight: 700, color: C.textTer, cursor: "pointer" }}>Zmazať</span>
         </div>
       </div>
     );
   };
 
   return (
-    <Sheet onClose={onClose} label="Inzeráty">
-      <div style={{ fontSize: 16, fontWeight: 800 }}>📌 Inzeráty</div>
+    <Sheet onClose={onClose} label="Pracovné ponuky">
+      <div style={{ fontSize: 16, fontWeight: 800 }}>📌 Pracovné ponuky</div>
       <div style={{ fontSize: 11.5, color: C.textTer, marginTop: 2, lineHeight: 1.45, marginBottom: SPACE.sm }}>
-        Hľadáte brigádnika, zamestnanca alebo pomoc? Napíšte to na profil. Kto má záujem, klikne — a vy uvidíte jeho meno a kontakt. Žiadne dopisovanie.
+        Hľadáte brigádnika, zamestnanca alebo pomoc? Dajte to na profil. Kto má záujem, klikne — a vy uvidíte jeho meno a kontakt. Žiadne dopisovanie.
       </div>
 
       <div style={{ fontSize: 11.5, color: C.textSec, marginBottom: SPACE.xs }}>
         Naraz môžu bežať <b style={{ color: C.text }}>{limit >= 9999 ? "neobmedzene" : limit}</b>
-        {limit < 9999 && (limit === 1 ? " inzerát" : " inzeráty")} · teraz bežia <b style={{ color: C.text }}>{bezi.length}</b>
+        {limit < 9999 && (limit === 1 ? " ponuka" : " ponuky")} · teraz bežia <b style={{ color: C.text }}>{bezi.length}</b>
       </div>
 
-      <button onClick={novy} style={btnHlavny}>Nový inzerát</button>
+      <button onClick={novy} style={btnHlavny}>Nová pracovná ponuka</button>
 
       {bezi.length > 0 && (<>
         <div style={{ fontSize: 12, fontWeight: 800, color: C.textTer, letterSpacing: ".04em", margin: `${SPACE.md}px 0 ${SPACE.xxs}px` }}>NA PROFILE</div>
@@ -285,11 +285,11 @@ export function InzeratySheet({ entita, autor, logo, tier, toast, onPaywall, onC
 
       {!inzeraty.length && (
         <div style={{ fontSize: 12.5, color: C.textTer, textAlign: "center", padding: SPACE.lg, lineHeight: 1.5 }}>
-          Zatiaľ ste nedali žiadny inzerát.<br />Skúste napríklad: „Hľadáme brigádnika do skladu na sobotu."
+          Zatiaľ ste nedali žiadnu pracovnú ponuku.<br />Skúste napríklad: „Hľadáme brigádnika do skladu na sobotu."
         </div>
       )}
       <div style={{ fontSize: 10.5, color: C.textTer, marginTop: SPACE.sm, lineHeight: 1.45 }}>
-        Kontakty záujemcov sa {INZERAT_CFG.dniDoZmazaniaKontaktov} dní po zavretí inzerátu zmažú.
+        Kontakty záujemcov sa {INZERAT_CFG.dniDoZmazaniaKontaktov} dní po zavretí ponuky zmažú.
       </div>
     </Sheet>
   );
