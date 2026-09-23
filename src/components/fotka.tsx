@@ -16,17 +16,26 @@ export const FOTKA_CFG = {
   minPomer: 4 / 5,
 };
 
-export function FotkaObsahu({ src, alt = "", maxVyska = 420, radius = 0, style }: {
-  src: string; alt?: string; maxVyska?: number; radius?: number; style?: CSSProperties;
+export function FotkaObsahu({ src, alt = "", maxVyska = 420, radius = 0, cela = false, style }: {
+  src: string; alt?: string; maxVyska?: number; radius?: number;
+  /** plagát — celá fotka sa musí vidieť, nič sa neoreže (text je v nej) */
+  cela?: boolean; style?: CSSProperties;
 }) {
   const [pomer, setPomer] = useState<number | null>(null);
   const clamp = pomer ? Math.min(FOTKA_CFG.maxPomer, Math.max(FOTKA_CFG.minPomer, pomer)) : FOTKA_CFG.maxPomer;
+  const zmer = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    const el = e.currentTarget;
+    if (el.naturalWidth && el.naturalHeight) setPomer(el.naturalWidth / el.naturalHeight);
+  };
+  // plagát: celý, nič sa neoreže — výška je stropom, šírka sa dopočíta a obrázok sa vycentruje
+  if (cela) return (
+    <span style={{ display: "block", textAlign: "center", background: "rgba(var(--glass-rgb),.06)" }}>
+      <img src={src} alt={alt} onLoad={zmer}
+        style={{ maxWidth: "100%", maxHeight: Math.max(maxVyska, 520), width: "auto", display: "inline-block", verticalAlign: "top", borderRadius: radius || undefined, ...style }} />
+    </span>
+  );
   return (
-    <img src={src} alt={alt}
-      onLoad={(e) => {
-        const el = e.currentTarget;
-        if (el.naturalWidth && el.naturalHeight) setPomer(el.naturalWidth / el.naturalHeight);
-      }}
+    <img src={src} alt={alt} onLoad={zmer}
       style={{
         width: "100%", aspectRatio: String(clamp), maxHeight: maxVyska,
         objectFit: "cover", display: "block",

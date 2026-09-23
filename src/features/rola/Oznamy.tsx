@@ -25,11 +25,13 @@ const btnDruhy: CSSProperties = { width: "100%", height: 44, borderRadius: RADIU
 export function OznamKarta({ o, autor, logo }: { o: Oznam; autor: string; logo?: string }) {
   const [fotka, setFotka] = useState<number | null>(null);
   const fotky = o.fotky ?? [];
+  const plagat = fotky.length > 0 && cistyText(o.text).length === 0;
   return (<>
     <div style={{ background: C.surface, border: `1px solid ${o.pripnute ? tint(ZELENA, .4) : C.line}`, borderRadius: RADIUS.md, overflow: "hidden" }}>
       {fotky[0] && (
         <span {...pressable(() => setFotka(0), "Otvoriť fotku")} style={{ display: "block", cursor: "pointer" }}>
-          <FotkaObsahu src={fotky[0]} maxVyska={380} />
+          {/* hotový plagát (fotka bez textu) sa musí vidieť celý — text je v ňom */}
+          <FotkaObsahu src={fotky[0]} maxVyska={380} cela={plagat} />
         </span>
       )}
       <div style={{ padding: SPACE.sm }}>
@@ -39,8 +41,10 @@ export function OznamKarta({ o, autor, logo }: { o: Oznam; autor: string; logo?:
           {o.pripnute && <span style={{ flex: "none", fontSize: 10, fontWeight: 800, color: ZELENA, background: tint(ZELENA, .12), borderRadius: RADIUS.pill, padding: `1px ${SPACE.xs}px` }}>📌 Pripnuté</span>}
         </div>
         <div style={{ fontSize: 15, fontWeight: 800, lineHeight: 1.3 }}>{o.nadpis}</div>
-        <div className="deed-text" style={{ fontSize: 13.5, color: C.textSec, lineHeight: 1.5, marginTop: 4 }}
-          dangerouslySetInnerHTML={{ __html: naBezpecneHtml(o.text) }} />
+        {!plagat && (
+          <div className="deed-text" style={{ fontSize: 13.5, color: C.textSec, lineHeight: 1.5, marginTop: 4 }}
+            dangerouslySetInnerHTML={{ __html: naBezpecneHtml(o.text) }} />
+        )}
         {fotky.length > 1 && (
           <div style={{ display: "flex", alignItems: "center", gap: SPACE.xxs, marginTop: SPACE.xs, overflowX: "auto" }}>
             {fotky.slice(1).map((f, i) => <Miniatura key={i} src={f} onClick={() => setFotka(i + 1)} />)}
@@ -79,7 +83,7 @@ function Formular({ entita, autor, logo, uprava, toast, onHotovo, onSpat }: {
 
   const dlzka = cistyText(text).length;
   const chyba = nadpis.trim().length < 3 ? "Napíš, o čo ide — stačí pár slov."
-    : dlzka < 10 ? "Napíš aspoň vetu, nech ľudia vedia, o čom to je."
+    : dlzka < 10 && fotky.length === 0 ? "Napíš aspoň vetu, nech ľudia vedia, o čom to je. Alebo nahraj hotový plagát ako fotku."
     : dlzka > OZNAM_CFG.maxText ? `Text je dlhší, než sa do oznamu zmestí — skráťte ho o ${dlzka - OZNAM_CFG.maxText} znakov.`
     : null;
 
@@ -116,12 +120,12 @@ function Formular({ entita, autor, logo, uprava, toast, onHotovo, onSpat }: {
         <input value={nadpis} onChange={(e) => setNadpis(e.target.value)} maxLength={OZNAM_CFG.maxNadpis}
           placeholder="Napríklad: Zbierka šatstva pokračuje do konca mesiaca" style={{ ...vstup, fontWeight: 700 }} />
 
-        <div style={{ fontSize: 12.5, fontWeight: 700, color: C.textSec, margin: `${SPACE.sm}px 0 4px` }}>Čo chcete ľuďom povedať?</div>
+        <div style={{ fontSize: 12.5, fontWeight: 700, color: C.textSec, margin: `${SPACE.sm}px 0 4px` }}>Čo chcete ľuďom povedať? <span style={{ fontWeight: 400, color: C.textTer }}>— netreba, ak dáte hotový plagát</span></div>
         <EditorTextu hodnota={text} onZmena={setText} placeholder="Píšte, ako by ste to povedali susedovi. Kedy, kde, čo treba priniesť." />
         <div style={{ fontSize: 10.5, color: C.textTer, textAlign: "right", marginTop: 2 }}>{dlzka} / {OZNAM_CFG.maxText}</div>
         <div style={{ fontSize: 10.5, color: C.textTer, marginTop: 2 }}>Text skopírovaný z Wordu, Facebooku či Instagramu si tučné, kurzívu aj odrážky ponechá.</div>
 
-        <div style={{ fontSize: 12.5, fontWeight: 700, color: C.textSec, margin: `${SPACE.xs}px 0 4px` }}>Fotka <span style={{ fontWeight: 400, color: C.textTer }}>— nepovinné, ale pomôže</span></div>
+        <div style={{ fontSize: 12.5, fontWeight: 700, color: C.textSec, margin: `${SPACE.xs}px 0 4px` }}>Fotka alebo hotový plagát <span style={{ fontWeight: 400, color: C.textTer }}>— plagát sa ukáže celý, nič sa z neho neoreže</span></div>
         <div style={{ display: "flex", gap: SPACE.xxs, flexWrap: "wrap", alignItems: "center" }}>
           {fotky.map((f, i) => (
             <span key={i} style={{ position: "relative", display: "block" }}>
