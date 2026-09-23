@@ -25,13 +25,13 @@ const btnDruhy: CSSProperties = { width: "100%", height: 44, borderRadius: RADIU
 export function OznamKarta({ o, autor, logo }: { o: Oznam; autor: string; logo?: string }) {
   const [fotka, setFotka] = useState<number | null>(null);
   const fotky = o.fotky ?? [];
-  const plagat = fotky.length > 0 && cistyText(o.text).length === 0;
+  const bezTextu = cistyText(o.text).length === 0;
   return (<>
     <div style={{ background: C.surface, border: `1px solid ${o.pripnute ? tint(ZELENA, .4) : C.line}`, borderRadius: RADIUS.md, overflow: "hidden" }}>
       {fotky[0] && (
         <span {...pressable(() => setFotka(0), "Otvoriť fotku")} style={{ display: "block", cursor: "pointer" }}>
-          {/* hotový plagát (fotka bez textu) sa musí vidieť celý — text je v ňom */}
-          <FotkaObsahu src={fotky[0]} maxVyska={380} cela={plagat} />
+          {/* v ozname/inzeráte sa fotka nikdy neoreže — býva to plagát a text v ňom musí byť vidieť */}
+          <FotkaObsahu src={fotky[0]} maxVyska={380} cela />
         </span>
       )}
       <div style={{ padding: SPACE.sm }}>
@@ -41,7 +41,7 @@ export function OznamKarta({ o, autor, logo }: { o: Oznam; autor: string; logo?:
           {o.pripnute && <span style={{ flex: "none", fontSize: 10, fontWeight: 800, color: ZELENA, background: tint(ZELENA, .12), borderRadius: RADIUS.pill, padding: `1px ${SPACE.xs}px` }}>📌 Pripnuté</span>}
         </div>
         <div style={{ fontSize: 15, fontWeight: 800, lineHeight: 1.3 }}>{o.nadpis}</div>
-        {!plagat && (
+        {!bezTextu && (
           <div className="deed-text" style={{ fontSize: 13.5, color: C.textSec, lineHeight: 1.5, marginTop: 4 }}
             dangerouslySetInnerHTML={{ __html: naBezpecneHtml(o.text) }} />
         )}
