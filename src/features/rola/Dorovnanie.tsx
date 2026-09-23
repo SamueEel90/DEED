@@ -9,8 +9,8 @@ import { useState, type CSSProperties } from "react";
 import { C, SPACE, RADIUS } from "@/theme";
 import { Sheet, tint } from "@/shared";
 import { pressable } from "@/components/pressable";
-import { ORG_ZBIERKY } from "./mock";
-import { QrVizual } from "@/components/qr";
+import { ORG_ZBIERKY, FIRMY_ADRESAR } from "./mock";
+import { PlatbaModal } from "@/components/platba";
 import {
   DOROVNANIE_CFG, useDorovnania, zapecat, potvrdPlatbu, odmietni, ukonci,
   vycerpane, zostatok, popisPomeru, nazovPomeru, priklad, bezi, type Dorovnanie,
@@ -62,7 +62,11 @@ function Formular({ entita, toast, onHotovo, onSpat }: {
   const [ciel, setCiel] = useState(ORG_ZBIERKY[0]?.id ?? "");
   const [firma, setFirma] = useState("");
   const [profil, setProfil] = useState("");
+  const [logo, setLogo] = useState<string | undefined>();
+  const [iban, setIban] = useState("");
+  const [skener, setSkener] = useState(false);       // „načítaj QR firmy" — vyplní údaje za ňu
   const [doVycerpania, setDoVycerpania] = useState(false);
+  const [platba, setPlatba] = useState(false);
   const [pomer, setPomer] = useState(DOROVNANIE_CFG.pomer);
   const [strop, setStrop] = useState("");
   // „od dnes" = od polnoci, nie od minúty vyplnenia — inak sa tesne po založení
@@ -75,7 +79,7 @@ function Formular({ entita, toast, onHotovo, onSpat }: {
 
   const suma = Number(strop.replace(",", ".")) || 0;
   const zbierka = ORG_ZBIERKY.find((z) => z.id === ciel);
-  const chyba = firma.trim().length < 2 ? "Napíšte názov firmy."
+  const chyba = firma.trim().length < 2 ? "Načítajte QR firmy — z neho sa vyplnia údaje."
     : suma <= 0 ? "Zadajte, koľko celkom vyčleňujete."
     : !doVycerpania && doKedy <= od ? "Koniec musí byť neskôr než dnes."
     : null;
@@ -101,7 +105,7 @@ function Formular({ entita, toast, onHotovo, onSpat }: {
       </div>
 
       {!uhradene ? (
-        <button style={btnHlavny} onClick={() => { setUhradene(true); toast(`Úhrada ${eur(suma)} odoslaná charite`); }}>
+        <button style={btnHlavny} onClick={() => setPlatba(true)}>
           Uhradiť {eur(suma)} charite
         </button>
       ) : (
@@ -112,12 +116,18 @@ function Formular({ entita, toast, onHotovo, onSpat }: {
       )}
 
       <button disabled={!uhradene} style={{ ...btnHlavny, marginTop: uhradene ? 0 : SPACE.xs, opacity: uhradene ? 1 : .45, cursor: uhradene ? "pointer" : "not-allowed" }} onClick={() => {
-        zapecat({ entita, ciel, cielNazov: zbierka?.nazov ?? ciel, firma: firma.trim(), firmaProfil: profil.trim() || undefined,
+        zapecat({ entita, ciel, cielNazov: zbierka?.nazov ?? ciel, firma: firma.trim(), firmaProfil: profil.trim() || undefined, firmaLogo: logo,
           pomer, strop: suma, od, do: doVycerpania ? od + 3650 * DEN : doKedy, doVycerpania, zvysok });
         toast("Dorovnanie zapečatené — čaká na potvrdenie charity");
         onHotovo();
       }}>{uhradene ? "Zapečatiť a poslať" : "Zapečatiť (najprv uhraďte)"}</button>
       <button style={{ ...btnDruhy, marginTop: SPACE.xs }} onClick={() => setPotvrd(false)}>Ešte upraviť</button>
+
+      {platba && (
+        <PlatbaModal kanal="EUR" suma={suma} komu={`dorovnanie zbierky ${zbierka?.nazov ?? ""}`}
+          onClose={() => setPlatba(false)}
+          onDone={() => { setPlatba(false); setUhradene(true); toast(`Uhradené ${eur(suma)} — môžete zapečatiť`); }} />
+      )}
     </Sheet>
   );
 
@@ -134,13 +144,47 @@ function Formular({ entita, toast, onHotovo, onSpat }: {
       </select>
 
       <div style={{ fontSize: 12.5, fontWeight: 700, color: C.textSec, marginBottom: 4 }}>Firma</div>
-      <input value={firma} onChange={(e) => setFirma(e.target.value)} placeholder="Napríklad: Pekáreň Kováč" style={{ ...vstup, marginBottom: SPACE.xs }} />
-      <input value={profil} onChange={(e) => setProfil(e.target.value)} placeholder="Odkaz na váš profil (deed.app/…) — bude z neho QR" style={{ ...vstup, marginBottom: SPACE.xxs }} />
-      {profil.trim().length > 4 && (
-        <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm, marginBottom: SPACE.sm }}>
-          <QrVizual data={profil.trim()} size={64} />
-          <div style={{ fontSize: 11, color: C.textTer, lineHeight: 1.45 }}>Toto uvidia ľudia pri zbierke — načítajú si váš profil.</div>
+      {!firma ? (
+        <button onClick={() => setSkener(true)} style={{ ...btnDruhy, marginBottom: SPACE.sm }}>▦ Načítať QR firmy — vyplní údaje za vás</button>
+      ) : (
+        <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm, background: C.surface2, border: `1px solid ${C.line}`, borderRadius: RADIUS.sm, padding: SPACE.sm, marginBottom: SPACE.sm }}>
+          {logo
+            ? <img src={logo} alt="" style={{ width: 34, height: 34, borderRadius: RADIUS.xs, objectFit: "cover", flex: "none" }} />
+            : <span style={{ flex: "none", fontSize: 20 }}>🏢</span>}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 13.5, fontWeight: 800 }}>{firma}</div>
+            <div style={{ fontSize: 11, color: C.textTer, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{profil} · {iban}</div>
+          </div>
+          <span {...pressable(() => { setFirma(""); setProfil(""); setLogo(undefined); setIban(""); }, "Načítať inú firmu")}
+            style={{ flex: "none", fontSize: 11.5, fontWeight: 700, color: C.textTer, cursor: "pointer" }}>Zmeniť</span>
         </div>
+      )}
+      {skener && (
+        <Sheet onClose={() => setSkener(false)} label="Načítať QR firmy">
+          <div style={{ fontSize: 16, fontWeight: 800 }}>▦ Načítať QR firmy</div>
+          <div style={{ fontSize: 11.5, color: C.textTer, marginTop: 2, marginBottom: SPACE.sm, lineHeight: 1.45 }}>
+            Z QR sa natiahne názov, logo, odkaz na profil aj platobné údaje — nič sa neprepisuje ručne.
+            (V prototype vyberte firmu zo zoznamu namiesto skenovania.)
+          </div>
+          {FIRMY_ADRESAR.map((f) => (
+            <div key={f.nazov} {...pressable(() => {
+              setFirma(f.nazov);
+              setProfil(`deed.app/f/${f.nazov.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}`);
+              setLogo(f.logo);
+              setIban(`SK${String(12 + f.nazov.length)} 1100 0000 0026 ${String(1000 + f.nazov.length * 7)}`);
+              setSkener(false);
+              toast(`Načítané z QR — ${f.nazov}`);
+            }, f.nazov)} style={{ ...karta, display: "flex", alignItems: "center", gap: SPACE.sm, cursor: "pointer" }}>
+              {f.logo
+                ? <img src={f.logo} alt="" style={{ width: 34, height: 34, borderRadius: RADIUS.xs, objectFit: "cover", flex: "none" }} />
+                : <span style={{ width: 34, height: 34, flex: "none", borderRadius: RADIUS.xs, background: C.surface, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 800, color: C.textSec }}>{f.iniciacky}</span>}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 13.5, fontWeight: 700 }}>{f.nazov}</div>
+                <div style={{ fontSize: 11, color: C.textTer }}>{f.odvetvie} · {f.mesto}</div>
+              </div>
+            </div>
+          ))}
+        </Sheet>
       )}
 
       <div style={{ fontSize: 12.5, fontWeight: 700, color: C.textSec, marginBottom: 4 }}>Koľko pridáte ku každému daru?</div>
