@@ -100,7 +100,7 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
   const [zbalenaCentralna, setZbalenaCentralna] = useState(false);
   const [qrZbierka, setQrZbierka] = useState<{ id: string; nazov: string } | null>(null);
   // pravidelná podpora = funkcia zbierky (charita od programu ZBIERKA/T1), len pre registrovaných darcov
-  const [pravidelna, setPravidelna] = useState<{ id: string | null; nazov: string } | null>(null);
+  const [pravidelna, setPravidelna] = useState<{ id: string | null; nazov: string; sektor?: string } | null>(null);
   const maPravidelnu = pozicia === "charita" && tier >= 1;
   const [zvoncek, setZvoncek] = useState(false);
   const [qr, setQr] = useState(false);
@@ -150,7 +150,7 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
           onDarKrypto={(v, vol) => daruj(id, v, "deed", vol, s.nazov)}
           onKanal={(k: string) => { setPlatbaRef({ id, komu: s.nazov }); setPlatba(k as Kanal); }}
           oblubene={{ refId: id, typ: "zbierka", modul: "charity", nazov: profil.nazov, lok: s.lok }} toast={toast}
-          opakovana={maPravidelnu ? { popis: "Mesačne · len pre registrovaných · kedykoľvek zrušíš", onClick: () => setPravidelna({ id: id === CENTRALNA_ID ? "z-centralna" : id, nazov: profil.nazov }) } : undefined}
+          opakovana={maPravidelnu ? { popis: "Mesačne · len pre registrovaných · kedykoľvek zrušíš", onClick: () => setPravidelna({ id: id === CENTRALNA_ID ? "z-centralna" : id, nazov: profil.nazov, sektor: sektoroveZbierky.find((z) => z.id === id)?.nazov }) } : undefined}
           qr={{ label: "QR tejto zbierky", popis: "Sken → dar za 2 kliky · zdieľanie", onClick: () => (id === CENTRALNA_ID ? setQr(true) : setQrZbierka({ id, nazov: profil.nazov })) }} />
         <GaleriaZbierky profil={profil} />
         <ZoznamDarcov refId={id} celkom={dary.pocet} style={{ marginTop: SPACE.sm }} skrytSumy={pozicia === "charita" && !nacitajViditelnost("charita").sumyDarov} />
@@ -568,7 +568,9 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
         caseId={pravidelna.id === "z-centralna" ? null : pravidelna.id}
         // pravidelná podpora je od T1 celá: zbierka → táto zbierka / segment / celá charita,
         // centrálna zbierka → segment / celá organizácia
-        segmenty={segmentyCharity()} onClose={() => setPravidelna(null)} toast={toast} />}
+        // zbierka sektora: voľba „sektor ako téma" je to isté, preto sa neponúka
+        sektor={pravidelna.sektor}
+        segmenty={pravidelna.sektor ? null : segmentyCharity()} onClose={() => setPravidelna(null)} toast={toast} />}
       {qrZbierka && <QrModal odznak={odznakZbierky(qrZbierka.id)} typ="skutok" titul={`QR — ${qrZbierka.nazov}`} popis="Sken otvorí túto zbierku — daj ho na web, do správy alebo na plagát"
         odkaz={qrUrl("case", qrZbierka.id)} onClose={() => setQrZbierka(null)} toast={toast} />}
       {qr && <QrModal typ="skutok" titul={`QR — ${s.nazov}`} popis="Profil subjektu — QR aj embed odznak na vlastný web"

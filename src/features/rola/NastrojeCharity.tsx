@@ -18,7 +18,6 @@ import { MediaNahlad } from "./DokazBlok";
 import { zbierkyOrg } from "./obsah";
 import { SUBJEKTY } from "./mock";
 import { useVidea, ulozVidea, videiTentoMesiac, VIDEO_ORG_CFG, type VideoOrg } from "./videa";
-import { useSegmenty, ulozSegmenty, SEKTOR_ROZSIRENIE_OD_TIERU, type SegmentOrg } from "./segmenty";
 import { TIER_LABEL, nacitajCentralnu, nacitajViditelnost, ulozViditelnost, type Tier, type Viditelnost } from "./stav";
 
 const ZELENA = "var(--a-green)";
@@ -296,86 +295,6 @@ export function ViditelnostSheet({ toast, onClose }: { toast: (m: string) => voi
       {riadok("Sumy darov v zozname darcov", "Pri mene darcu suma daru — len ak ju darca sám povolil. Vypnuté = len „daroval“.", v.sumyDarov, (x) => zmen({ sumyDarov: x }))}
       <div style={{ fontSize: 11.5, color: C.textSec, lineHeight: 1.5, background: tint(ZELENA, .08), border: `1px solid ${tint(ZELENA, .3)}`, borderRadius: RADIUS.sm, padding: SPACE.sm, marginTop: SPACE.xs }}>
         Stav každej zbierky (koľko z cieľa je vyzbierané) je vždy verejný — na tom stojí dôvera darcov.
-      </div>
-    </Sheet>
-  );
-}
-
-// ===================== SEGMENTY PRE DARCOV =====================
-export function SegmentySheet({ tier, toast, onPaywall, onClose }: {
-  tier: Tier; toast: (m: string) => void;
-  onPaywall: (p: { tierMin: Tier; nazov: string; dovod?: string }) => void; onClose: () => void;
-}) {
-  const segmenty = useSegmenty();
-  const [novy, setNovy] = useState("");
-  const aktivne = segmenty.filter((x) => x.aktivny);
-  const rozsirenie = tier >= SEKTOR_ROZSIRENIE_OD_TIERU;
-
-  const zmen = (id: string, patch: Partial<SegmentOrg>) => ulozSegmenty(segmenty.map((x) => (x.id === id ? { ...x, ...patch } : x)));
-  const pridaj = () => {
-    const n = novy.trim();
-    if (n.length < 3) { toast("Napíš názov sektora"); return; }
-    if (segmenty.some((x) => x.nazov.toLowerCase() === n.toLowerCase())) { toast("Taký sektor už máš"); return; }
-    ulozSegmenty([...segmenty, { id: `s${Date.now()}`, nazov: n, popis: "", aktivny: true }]);
-    setNovy(""); toast("Sektor činnosti pridaný");
-  };
-  const zmaz = (s2: SegmentOrg) => { ulozSegmenty(segmenty.filter((x) => x.id !== s2.id)); toast("Sektor činnosti odstránený"); };
-
-  return (
-    <Sheet onClose={onClose} label="Sektory činnosti">
-      <Hlavicka nadpis="Sektory činnosti" popis="Oblasti vašej práce, ktoré si darca vyberie pri pravidelnej podpore, keď nechce podporiť jednu zbierku. Základ je z registrácie." />
-
-      <div style={{ ...karta, background: tint(ZELENA, .06), borderColor: tint(ZELENA, .3) }}>
-        <div style={{ fontSize: 12.5, fontWeight: 800, marginBottom: 2 }}>{rozsirenie ? "Zbierku a účet pre sektor nastavíš v Sektorových zbierkach" : "🔒 Sektor ako téma vs. sektor so zbierkou"}</div>
-        <div style={{ fontSize: 11.5, color: C.textSec, lineHeight: 1.45 }}>
-          Sektor tu je <b>téma</b> pravidelnej podpory — dary idú na hlavný účet organizácie a použitie negarantujeme.
-          Od programu {TIER_LABEL.charita[SEKTOR_ROZSIRENIE_OD_TIERU as Tier]} mu vieš dať <b>vlastnú zbierku, vlastný účet a vlastný QR</b>, a potom je doložiteľný.
-        </div>
-        {!rozsirenie && (
-          <button onClick={() => onPaywall({ tierMin: SEKTOR_ROZSIRENIE_OD_TIERU as Tier, nazov: "Sektorové zbierky", dovod: "Každý sektor dostane samostatnú zbierku, vlastný účet a vlastný QR kód." })} style={{ ...btnHlavny, marginTop: SPACE.xs }}>
-            Odomknúť v {TIER_LABEL.charita[SEKTOR_ROZSIRENIE_OD_TIERU as Tier]}
-          </button>
-        )}
-      </div>
-
-      {segmenty.map((sg) => (
-        <div key={sg.id} style={karta}>
-          <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm }}>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 13.5, fontWeight: 700, color: sg.aktivny ? C.text : C.textTer }}>{sg.nazov}</div>
-              <div style={{ fontSize: 10.5, color: sg.zbierkaId ? ZELENA : C.textTer }}>
-                {sg.zRegistracie ? "z registrácie" : "vlastný"}{sg.zbierkaId ? " · má vlastnú zbierku a účet" : " · pravidelná podpora: zatiaľ žiadna"}
-              </div>
-            </div>
-            <Switch on={sg.aktivny} onChange={(v) => zmen(sg.id, { aktivny: v })} ariaLabel={`Ponúkať darcom — ${sg.nazov}`} />
-          </div>
-          <input defaultValue={sg.popis} onBlur={(e) => zmen(sg.id, { popis: e.target.value })} maxLength={90}
-            placeholder="Jedna veta pre darcu (napr. Potraviny a lieky pre rodiny v núdzi)" style={{ ...input, marginTop: SPACE.xs }} />
-          {!sg.zRegistracie && !sg.zbierkaId && (
-            <span {...pressable(() => zmaz(sg), `Odstrániť ${sg.nazov}`)} style={{ display: "inline-block", marginTop: SPACE.xxs, fontSize: 11, fontWeight: 700, color: C.textTer, cursor: "pointer" }}>Odstrániť</span>
-          )}
-        </div>
-      ))}
-
-      <div style={{ ...karta, borderStyle: "dashed" }}>
-        <div style={{ fontSize: 13.5, fontWeight: 800, marginBottom: SPACE.xxs }}>Pridať vlastný sektor</div>
-        <div style={{ display: "flex", gap: SPACE.xs }}>
-          <input value={novy} onChange={(e) => setNovy(e.target.value)} placeholder="Napr. Seniori · rozvoz obedov" style={{ ...input, flex: 1 }} />
-          <button onClick={pridaj} style={{ ...btnHlavny, width: 110, height: 42 }}>Pridať</button>
-        </div>
-      </div>
-
-      <div style={{ fontSize: 12, fontWeight: 800, color: C.textTer, letterSpacing: ".04em", margin: `${SPACE.sm}px 0 ${SPACE.xxs}px` }}>ČO VIDÍ DARCA</div>
-      <div style={{ ...karta, background: tint(ZELENA, .07), border: `1px solid ${tint(ZELENA, .3)}` }}>
-        <div style={{ fontSize: 12.5, fontWeight: 700, marginBottom: SPACE.xs }}>Pravidelná podpora — čo chceš podporovať</div>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: SPACE.xxs }}>
-          <span style={{ fontSize: 11.5, fontWeight: 700, padding: `${SPACE.xxs}px ${SPACE.xs}px`, borderRadius: RADIUS.pill, background: C.surface, border: `1px solid ${C.line}`, color: C.textSec }}>Túto zbierku</span>
-          {aktivne.map((sg) => (
-            <span key={sg.id} style={{ fontSize: 11.5, fontWeight: 700, padding: `${SPACE.xxs}px ${SPACE.xs}px`, borderRadius: RADIUS.pill, background: tint(ZELENA, .12), border: `1px solid ${tint(ZELENA, .4)}`, color: ZELENA }}>{sg.nazov}</span>
-          ))}
-          <span style={{ fontSize: 11.5, fontWeight: 700, padding: `${SPACE.xxs}px ${SPACE.xs}px`, borderRadius: RADIUS.pill, background: C.surface, border: `1px solid ${C.line}`, color: C.textSec }}>Celú organizáciu</span>
-        </div>
-        {!aktivne.length && <div style={{ fontSize: 11.5, color: C.textTer, marginTop: SPACE.xs }}>Žiadny zapnutý sektor — darca si bude vyberať len zbierku alebo celú organizáciu.</div>}
       </div>
     </Sheet>
   );

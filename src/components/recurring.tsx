@@ -20,8 +20,10 @@ type Perioda = "tyzdenne" | "mesacne" | "rocne";
 
 const periodaTxt = (p: Perioda) => (p === "tyzdenne" ? "týždeň" : p === "rocne" ? "rok" : "mesiac");
 
-export function RecurringSheet({ nazov, caseId, charitaUcet, segmenty, bezCelej = false, onClose, toast }: {
+export function RecurringSheet({ nazov, caseId, charitaUcet, segmenty, bezCelej = false, sektor, onClose, toast }: {
   nazov?: ReactNode; caseId?: string | null; charitaUcet?: string | null;
+  /** zbierka JE zbierkou sektora — voľba „téma sektora" by bola to isté, preto sa neponúka */
+  sektor?: string | null;
   /** segmenty, ktoré si charita nastavila (program AKCIA). null = charita segmenty ani celú organizáciu neponúka;
    *  undefined = starý režim bez zoznamu (feed, kým nepoznáme program charity) */
   segmenty?: string[] | null;
@@ -41,7 +43,9 @@ export function RecurringSheet({ nazov, caseId, charitaUcet, segmenty, bezCelej 
   const [segment, setSegment] = useState<string | null>(segmenty?.[0] ?? null);
   // čím širší cieľ, tým menej sa dá doložiť, kam išlo práve tvoje euro — darca to musí vidieť pred potvrdením
   const volby: { id: Rozsah; t: string; d: string; kontrola: string; farba: string }[] = [
-    ...(caseId ? [{ id: "request" as const, t: "Táto zbierka", d: "Skončí, keď zbierka skončí — okamžite a s notifikáciou.",
+    ...(caseId ? [{ id: "request" as const,
+      t: sektor ? `Tento sektor — ${sektor}` : "Táto zbierka",
+      d: sektor ? "Zbierka sektora s vlastným transparentným účtom." : "Skončí, keď zbierka skončí — okamžite a s notifikáciou.",
       kontrola: "K tejto zbierke budú doložené doklady o použití.", farba: "var(--a-green)" }] : []),
     ...(segmenty === null ? [] : [
       { id: "segment" as const, t: "Sektor činnosti", d: "Charita rozdelí peniaze v rámci témy podľa vlastného kľúča.",
