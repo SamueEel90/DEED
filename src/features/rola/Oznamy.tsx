@@ -8,6 +8,7 @@ import { C, SPACE, RADIUS } from "@/theme";
 import { Sheet, tint } from "@/shared";
 import { pressable } from "@/components/pressable";
 import { spracujFotku } from "@/lib/obrazok";
+import { FotkaObsahu, Miniatura } from "@/components/fotka";
 import {
   OZNAM_CFG, useOznamy, pridajOznam, upravOznam, zmazOznam, pripniOznam,
   oznamAktivny, dniDoKonca, type Oznam,
@@ -23,7 +24,7 @@ const btnDruhy: CSSProperties = { width: "100%", height: 44, borderRadius: RADIU
 export function OznamKarta({ o, autor, logo }: { o: Oznam; autor: string; logo?: string }) {
   return (
     <div style={{ background: C.surface, border: `1px solid ${o.pripnute ? tint(ZELENA, .4) : C.line}`, borderRadius: RADIUS.md, overflow: "hidden" }}>
-      {o.fotky?.[0] && <img src={o.fotky[0]} alt="" style={{ width: "100%", aspectRatio: "16 / 9", maxHeight: 260, objectFit: "cover", display: "block" }} />}
+      {o.fotky?.[0] && <FotkaObsahu src={o.fotky[0]} maxVyska={380} />}
       <div style={{ padding: SPACE.sm }}>
         <div style={{ display: "flex", alignItems: "center", gap: SPACE.xs, marginBottom: SPACE.xxs }}>
           {logo && <img src={logo} alt="" style={{ width: 22, height: 22, borderRadius: RADIUS.xs, objectFit: "cover", flex: "none" }} />}
@@ -34,7 +35,7 @@ export function OznamKarta({ o, autor, logo }: { o: Oznam; autor: string; logo?:
         <div style={{ fontSize: 13.5, color: C.textSec, lineHeight: 1.5, marginTop: 4, whiteSpace: "pre-wrap" }}>{o.text}</div>
         {o.fotky && o.fotky.length > 1 && (
           <div style={{ display: "flex", gap: SPACE.xxs, marginTop: SPACE.xs, overflowX: "auto" }}>
-            {o.fotky.slice(1).map((f, i) => <img key={i} src={f} alt="" style={{ flex: "none", width: 92, height: 58, objectFit: "cover", borderRadius: RADIUS.xs }} />)}
+            {o.fotky.slice(1).map((f, i) => <Miniatura key={i} src={f} />)}
           </div>
         )}
       </div>
@@ -60,7 +61,7 @@ function Formular({ entita, autor, logo, uprava, toast, onHotovo, onSpat }: {
     if (volne <= 0) { toast(`Viac než ${OZNAM_CFG.maxFotiek} fotky nejdú`); return; }
     const nove: string[] = [];
     for (const f of Array.from(files).slice(0, volne)) {
-      try { nove.push(await spracujFotku(f, { pomer: 16 / 9, maxSirka: 1200 })); }
+      try { nove.push(await spracujFotku(f, { pomer: null, maxSirka: 1400 })); }  // bez orezu — nevieme, čo charita nahrá
       catch (e) { toast((e as Error).message); }
     }
     if (nove.length) setFotky([...fotky, ...nove]);
@@ -112,7 +113,7 @@ function Formular({ entita, autor, logo, uprava, toast, onHotovo, onSpat }: {
         <div style={{ display: "flex", gap: SPACE.xxs, flexWrap: "wrap", alignItems: "center" }}>
           {fotky.map((f, i) => (
             <span key={i} style={{ position: "relative", display: "block" }}>
-              <img src={f} alt="" style={{ width: 92, height: 58, objectFit: "cover", borderRadius: RADIUS.xs, display: "block" }} />
+              <Miniatura src={f} />
               <button type="button" onClick={() => setFotky(fotky.filter((_, x) => x !== i))} aria-label={`Odstrániť fotku ${i + 1}`}
                 style={{ position: "absolute", right: 2, top: 2, width: 18, height: 18, lineHeight: "16px", borderRadius: "50%", border: "none", cursor: "pointer", background: "rgba(0,0,0,.65)", color: "#fff", fontSize: 12, padding: 0 }}>×</button>
             </span>
@@ -164,7 +165,7 @@ export function OznamySheet({ entita, autor, logo, toast, onClose }: {
   const riadok = (o: Oznam, beziaci: boolean) => (
     <div key={o.id} style={karta}>
       <div style={{ display: "flex", alignItems: "flex-start", gap: SPACE.sm }}>
-        {o.fotky?.[0] && <img src={o.fotky[0]} alt="" style={{ width: 54, height: 40, objectFit: "cover", borderRadius: RADIUS.xs, flex: "none" }} />}
+        {o.fotky?.[0] && <Miniatura src={o.fotky[0]} sirka={54} vyska={40} />}
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 13.5, fontWeight: 700 }}>{o.nadpis}</div>
           <div style={{ fontSize: 10.5, color: beziaci ? ZELENA : C.textTer, marginTop: 2 }}>
