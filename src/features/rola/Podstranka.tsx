@@ -18,6 +18,8 @@ import { ZoznamDarcov } from "@/components/zoznamdarcov";
 import { NahladKarty, GaleriaZbierky } from "./KartaZbierky";
 import { OznamKarta } from "./Oznamy";
 import { InzeratKarta, MamZaujem } from "./Inzeraty";
+import { DorovnaniePas } from "./Dorovnanie";
+import { beziaceDorovnanie, dorovnanieKDaru, useZmenyDorovnani } from "@/lib/dorovnanie";
 import { verejneOznamy, useZmenyOznamov } from "@/lib/oznamy";
 import { nacitajProfil, useZmenyProfilov, CENTRALNA_ID, VLASTNA_ZBIERKA_CFG, type ProfilZbierky } from "./vlastneZbierky";
 import { useSegmenty } from "./segmenty";
@@ -106,6 +108,7 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
   const [onas] = useState(() => nacitajOnas(pozicia) ?? s.onas); // text zo správy (editor), inak pôvodný
   const [rozbalena, setRozbalena] = useState<string | null>(null);
   const [otvorenyOznam, setOtvorenyOznam] = useState<string | null>(null);   // klik na oznam otvorí len ten jeden
+  useZmenyDorovnani();                                                        // bežec sa má prekresliť, keď firma dorovná
   const [profilZiad, setProfilZiad] = useState<string | null>(null);
   const [zbalenaCentralna, setZbalenaCentralna] = useState(false);
   const [qrZbierka, setQrZbierka] = useState<{ id: string; nazov: string } | null>(null);
@@ -157,8 +160,17 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
   // platobný modul až po kliknutí — rovnako ako pri ostatných zbierkach.
   const obsahVlastnej = (id: string, profil: ProfilZbierky) => {
     const dary = sucetDarov(id);
+    const dorovnanie = beziaceDorovnanie(pozicia, id);
     return (
       <>
+        {dorovnanie && (
+          <div style={{ marginBottom: SPACE.sm }}>
+            <DorovnaniePas d={dorovnanie} />
+            <div style={{ fontSize: 12, fontWeight: 800, color: "var(--a-gold)", textAlign: "center", marginTop: SPACE.xxs }}>
+              daruješ 20 € → k príjemcovi ide {20 + dorovnanieKDaru(dorovnanie, 20)} €
+            </div>
+          </div>
+        )}
         <PlatobnyModul zbalene krypto={kryptoOrg ? "EURC" : "nie"} {...sumy}
           onShare={zdielajProfil}
           upvotes={0} onUpvote={() => undefined}

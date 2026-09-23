@@ -10,6 +10,7 @@ import { C, SPACE, RADIUS } from "@/theme";
 import { Sheet, tint } from "@/shared";
 import { pressable } from "@/components/pressable";
 import { ORG_ZBIERKY, FIRMY_ADRESAR } from "./mock";
+import { CENTRALNA_ID, nacitajProfil } from "./vlastneZbierky";
 import { PlatbaModal } from "@/components/platba";
 import {
   DOROVNANIE_CFG, useDorovnania, zapecat, potvrdPlatbu, odmietni, ukonci, pozastav, vysporiadaj,
@@ -59,7 +60,12 @@ export function DorovnaniePas({ d, onFirma }: { d: Dorovnanie; onFirma?: () => v
 function Formular({ entita, toast, onHotovo, onSpat }: {
   entita: string; toast: (m: string) => void; onHotovo: () => void; onSpat: () => void;
 }) {
-  const [ciel, setCiel] = useState(ORG_ZBIERKY[0]?.id ?? "");
+  // ciele: centrálna zbierka (je na profile hneď navrchu) + zbierky organizácie
+  const [ciele] = useState(() => [
+    { id: CENTRALNA_ID, nazov: nacitajProfil(CENTRALNA_ID)?.nazov ?? "Centrálna zbierka organizácie", emoji: "💛" },
+    ...ORG_ZBIERKY.map((z) => ({ id: z.id, nazov: z.nazov, emoji: z.emoji })),
+  ]);
+  const [ciel, setCiel] = useState(CENTRALNA_ID);
   const [firma, setFirma] = useState("");
   const [profil, setProfil] = useState("");
   const [logo, setLogo] = useState<string | undefined>();
@@ -78,7 +84,7 @@ function Formular({ entita, toast, onHotovo, onSpat }: {
   const [uhradene, setUhradene] = useState(false);   // pečatí sa až po úhrade
 
   const suma = Number(strop.replace(",", ".")) || 0;
-  const zbierka = ORG_ZBIERKY.find((z) => z.id === ciel);
+  const zbierka = ciele.find((z) => z.id === ciel);
   const chyba = firma.trim().length < 2 ? "Načítajte QR firmy — z neho sa vyplnia údaje."
     : suma <= 0 ? "Zadajte, koľko celkom vyčleňujete."
     : !doVycerpania && doKedy <= od ? "Koniec musí byť neskôr než dnes."
@@ -142,7 +148,7 @@ function Formular({ entita, toast, onHotovo, onSpat }: {
 
       <div style={{ fontSize: 12.5, fontWeight: 700, color: C.textSec, marginBottom: 4 }}>Ktorú zbierku dorovnávate?</div>
       <select value={ciel} onChange={(e) => setCiel(e.target.value)} style={{ ...vstup, marginBottom: SPACE.sm }}>
-        {ORG_ZBIERKY.map((z) => <option key={z.id} value={z.id}>{z.emoji} {z.nazov}</option>)}
+        {ciele.map((z) => <option key={z.id} value={z.id}>{z.emoji} {z.nazov}</option>)}
       </select>
 
       <div style={{ fontSize: 12.5, fontWeight: 700, color: C.textSec, marginBottom: 4 }}>Firma</div>
