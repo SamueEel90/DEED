@@ -26,10 +26,11 @@ export function RecurringSheet({ nazov, caseId, charitaUcet, segmenty, bezCelej 
   nazov?: ReactNode; caseId?: string | null; charitaUcet?: string | null;
   /** zbierka JE zbierkou sektora — voľba „téma sektora" by bola to isté, preto sa neponúka */
   sektor?: string | null;
-  /** po poďakovaní prejsť tam, kam peniaze idú (centrálna zbierka) — darca musí vidieť, kde dar skončil */
-  onCiel?: { label: string; onClick: () => void };
+  /** po poďakovaní prejsť tam, kam peniaze idú (centrálna / sektorová zbierka) —
+   *  darca musí vidieť, kde dar skončil. Vráť undefined, keď cieľ nemá kam viesť. */
+  onCiel?: (rozsah: string, segment: string | null) => { label: string; onClick: () => void } | undefined;
   /** prvá platba záväzku — zapíše sa do zoznamu darcov cieľovej zbierky */
-  onDar?: (suma: number, mena: "EUR" | "EURC", volba: VolbaDaru, rozsah: string) => void;
+  onDar?: (suma: number, mena: "EUR" | "EURC", volba: VolbaDaru, rozsah: string, segment: string | null) => void;
   /** segmenty, ktoré si charita nastavila (program AKCIA). null = charita segmenty ani celú organizáciu neponúka;
    *  undefined = starý režim bez zoznamu (feed, kým nepoznáme program charity) */
   segmenty?: string[] | null;
@@ -59,8 +60,8 @@ export function RecurringSheet({ nazov, caseId, charitaUcet, segmenty, bezCelej 
         : "K tejto zbierke budú doložené doklady o použití.",
       farba: "var(--a-green)" }] : []),
     ...(segmenty === null ? [] : [
-      { id: "segment" as const, t: "Sektor činnosti", d: "Charita rozdelí peniaze v rámci témy podľa vlastného kľúča.",
-        kontrola: "Doklady budeme požadovať za celú tému, nezaručujeme však, že pokryjú práve váš dar.", farba: "var(--a-green)" },
+      { id: "segment" as const, t: "Sektor organizácie — vlastná zbierka", d: "Zbierka sektora s vlastným transparentným účtom.",
+        kontrola: "Použitie darov v zbierke sektora sa povinne nedokladuje. Je to na uvážení organizácie.", farba: "var(--a-green)" },
     ]),
     ...(bezCelej ? [] : [
       { id: "charita" as const, t: "Celá organizácia — centrálna zbierka", d: "Pravidelná podpora na chod organizácie.",
@@ -68,7 +69,7 @@ export function RecurringSheet({ nazov, caseId, charitaUcet, segmenty, bezCelej 
     ]),
   ];
 
-  function zapisDar() { onDar?.(suma, mena, volba, rozsah); }
+  function zapisDar() { onDar?.(suma, mena, volba, rozsah, rozsah === "segment" ? segment : null); }
   async function potvrd() {
     if (typ === "pasivny") { onClose?.(); upgrade(); return; }  // recurring = len registrovaný darca
     if (!ucetId || demo) { zapisDar(); setKrok("hotovo"); return; }  // ukážka (demo účet): záväzok sa len simuluje
@@ -87,6 +88,7 @@ export function RecurringSheet({ nazov, caseId, charitaUcet, segmenty, bezCelej 
     }
   }
 
+  const ciel = onCiel?.(rozsah, rozsah === "segment" ? segment : null);
   const btn = (ok: boolean, grad = false): CSSProperties => ({ width: "100%", padding: `${SPACE.sm}px 0`, borderRadius: RADIUS.md, border: "none", fontWeight: 700, fontSize: 15, cursor: ok ? "pointer" : "not-allowed", fontFamily: "inherit", background: ok ? (grad ? GRAD_ZELENY : C.surface2) : "rgba(var(--glass-rgb),.06)", color: ok ? (grad ? "#fff" : C.text) : C.textTer, marginTop: SPACE.gutter });
   const chip = (active: boolean): CSSProperties => ({ flex: 1, padding: `${SPACE.xs}px 0`, borderRadius: RADIUS.sm, border: `1px solid ${active ? C.green : C.line}`, background: active ? tint(C.green, .1) : C.surface2, color: active ? C.green : C.text, fontWeight: 700, fontSize: 13, cursor: "pointer", fontFamily: "inherit" });
 
@@ -149,8 +151,8 @@ export function RecurringSheet({ nazov, caseId, charitaUcet, segmenty, bezCelej 
         <Svetlusik nadpis={meno ? `Ďakujeme, ${meno}, za tvoju podporu!` : "Ďakujeme za tvoju podporu!"}
           dar={`${suma} ${mena} každý ${periodaTxt(perioda)}`}
           karma="Pravidelnú podporu zrušíš kedykoľvek v Peňaženke." />
-        {onCiel && rozsah === "charita" ? (<>
-          <button onClick={() => { onClose?.(); onCiel.onClick(); }} style={btn(true, true)}>{onCiel.label}</button>
+        {ciel ? (<>
+          <button onClick={() => { onClose?.(); ciel.onClick(); }} style={btn(true, true)}>{ciel.label}</button>
           <button onClick={() => onClose?.()} style={{ ...btn(true), background: "rgba(var(--glass-rgb),.06)", color: C.textSec, marginTop: SPACE.sm }}>Hotovo</button>
         </>) : (
           <button onClick={() => onClose?.()} style={btn(true, true)}>Hotovo</button>
@@ -160,8 +162,8 @@ export function RecurringSheet({ nazov, caseId, charitaUcet, segmenty, bezCelej 
         <div style={{ background: "rgba(var(--glass-rgb),.05)", border: `1px solid ${C.line}`, borderRadius: RADIUS.sm, padding: `${SPACE.sm}px ${SPACE.gutter}px` }}>
           <Riadok k="Suma" v={`${suma} ${mena}`} />
           <Riadok k="Perióda" v={`každý ${periodaTxt(perioda)}`} />
-          <Riadok k="Cieľ" v={rozsah === "segment" && segment ? `Sektor činnosti — ${segment}` : volby.find((x) => x.id === rozsah)?.t} />
-          <Riadok k="Dokladovanie" v={<span style={{ color: volby.find((x) => x.id === rozsah)?.farba }}>{rozsah === "request" ? "doklady k zbierke" : rozsah === "segment" ? "doklady za sektor" : "bez kontroly"}</span>} />
+          <Riadok k="Cieľ" v={rozsah === "segment" && segment ? `Sektor — ${segment}` : volby.find((x) => x.id === rozsah)?.t} />
+          <Riadok k="Dokladovanie" v={<span style={{ color: volby.find((x) => x.id === rozsah)?.farba }}>{rozsah === "request" && !sektor ? "doklady k zbierke" : "dobrovoľné"}</span>} />
           {rozsah === "request" && <Riadok k="Pozn." v="zastaví sa pri ukončení zbierky" />}
         </div>
         <div style={{ fontSize: 11.5, color: C.textTer, marginTop: SPACE.sm, lineHeight: 1.5 }}>
