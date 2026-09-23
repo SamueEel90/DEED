@@ -120,10 +120,10 @@ function Formular({ entita, toast, onHotovo, onSpat }: {
       <input value={firma} onChange={(e) => setFirma(e.target.value)} placeholder="Napríklad: Pekáreň Kováč" style={{ ...vstup, marginBottom: SPACE.sm }} />
 
       <div style={{ fontSize: 12.5, fontWeight: 700, color: C.textSec, marginBottom: 4 }}>Koľko pridáte ku každému daru?</div>
-      <div style={{ display: "flex", gap: SPACE.xs, marginBottom: SPACE.sm }}>
+      <div style={{ display: "flex", gap: SPACE.xs, marginBottom: SPACE.sm, flexWrap: "wrap" }}>
         {DOROVNANIE_CFG.pomery.map((x) => (
           <span key={x} {...pressable(() => setPomer(x), `${x}× dar`)}
-            style={{ flex: 1, textAlign: "center", cursor: "pointer", fontSize: 13, fontWeight: pomer === x ? 800 : 600, padding: `${SPACE.xs}px 0`, borderRadius: RADIUS.sm,
+            style={{ flex: "1 1 calc(50% - 6px)", textAlign: "center", cursor: "pointer", fontSize: 13, fontWeight: pomer === x ? 800 : 600, padding: `${SPACE.xs}px 0`, borderRadius: RADIUS.sm,
               background: pomer === x ? tint(ZLATA, .14) : C.surface, border: `1px solid ${pomer === x ? tint(ZLATA, .5) : C.line}`, color: pomer === x ? ZLATA : C.textSec }}>
             {x}× dar <span style={{ fontWeight: 400, fontSize: 11 }}>({popisPomeru(x)})</span>
           </span>

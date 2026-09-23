@@ -14,8 +14,8 @@
 import { useSyncExternalStore } from "react";
 
 export const DOROVNANIE_CFG = {
-  /** ponuka pomerov vo formulári firmy (× k daru) */
-  pomery: [0.5, 1, 2],
+  /** ponuka pomerov vo formulári firmy (× k daru) — 4 = k príjemcovi ide päťnásobok */
+  pomery: [0.5, 1, 2, 4],
   /** predvolený pomer */
   pomer: 1,
   /** odvetvia, ktoré nesmú dorovnávať tam, kde samy robia škodu (§ pravidlo platformy) */
