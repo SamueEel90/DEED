@@ -100,6 +100,7 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
   const [sledujem, setSledujem] = useState(false);
   const [onas] = useState(() => nacitajOnas(pozicia) ?? s.onas); // text zo správy (editor), inak pôvodný
   const [rozbalena, setRozbalena] = useState<string | null>(null);
+  const [otvorenyOznam, setOtvorenyOznam] = useState<string | null>(null);   // klik na oznam otvorí len ten jeden
   const [profilZiad, setProfilZiad] = useState<string | null>(null);
   const [zbalenaCentralna, setZbalenaCentralna] = useState(false);
   const [qrZbierka, setQrZbierka] = useState<{ id: string; nazov: string } | null>(null);
@@ -456,8 +457,9 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
 
   // najnovší oznam nad záložkami — inak ho v rade ôsmich tabov nikto nenájde
   const naOznam = (id: string) => {
+    setOtvorenyOznam(id);
     setTab("oznamy");
-    setTimeout(() => (document.getElementById(`deed-oznam-${id}`) ?? document.getElementById("deed-obsah"))?.scrollIntoView({ behavior: "smooth", block: "start" }), 80);
+    setTimeout(() => document.getElementById("deed-obsah")?.scrollIntoView({ behavior: "smooth", block: "start" }), 80);
   };
   const oznamPas = oznamy.length > 0 && (
     <div style={{ marginBottom: SPACE.sm }}>
@@ -476,24 +478,30 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
     </div>
   );
 
+  const otvoreny = otvorenyOznam ? oznamy.find((o) => o.id === otvorenyOznam) ?? null : null;
+  const btnProfil: CSSProperties = { minWidth: 160, height: 44, padding: `0 ${SPACE.md}px`, borderRadius: RADIUS.sm, border: `1px solid ${C.line}`, background: "transparent", color: C.textSec, cursor: "pointer", fontFamily: "inherit", fontWeight: 800, fontSize: 13.5 };
+
   const obsahBlok = (
     <div id="deed-obsah">
       {oznamPas}
-      <TabyProfil options={taby.map((t) => t.key)} labels={labels} badges={badges} value={tab} onChange={setTab} ariaLabel="Obsah profilu" />
+      <TabyProfil options={taby.map((t) => t.key)} labels={labels} badges={badges} value={tab}
+        onChange={(t) => { setTab(t); setOtvorenyOznam(null); }} ariaLabel="Obsah profilu" />
       {tab === "oznamy" ? (<>
-        {/* oznam je text na čítanie — každý má vlastný riadok, nie stĺpec v mriežke */}
+        {/* čítam ten oznam, ktorý som otvoril — nie všetky naraz; každý má vlastný riadok */}
         <div>
-          {oznamy.map((o) => (
-            <div key={o.id} id={`deed-oznam-${o.id}`} style={{ marginBottom: SPACE.sm }}>
+          {(otvoreny ? [otvoreny] : oznamy).map((o) => (
+            <div key={o.id} style={{ marginBottom: SPACE.sm }}>
               <OznamKarta o={o} autor={s.nazov} logo={logoOrg} />
             </div>
           ))}
         </div>
-        {/* z oznamov musí viesť cesta von — inak sa človek vie vrátiť len cez „Všetko" */}
-        <button type="button" onClick={onBack}
-          style={{ display: "block", width: "100%", maxWidth: 320, margin: `${SPACE.md}px auto 0`, height: 44, borderRadius: RADIUS.sm, border: `1px solid ${C.line}`, background: "transparent", color: C.textSec, cursor: "pointer", fontFamily: "inherit", fontWeight: 800, fontSize: 13.5 }}>
-          Zavrieť
-        </button>
+        <div style={{ display: "flex", gap: SPACE.sm, justifyContent: "center", marginTop: SPACE.md, flexWrap: "wrap" }}>
+          {otvoreny && oznamy.length > 1 && (
+            <button type="button" onClick={() => setOtvorenyOznam(null)} style={btnProfil}>Všetky oznamy ({oznamy.length})</button>
+          )}
+          {/* z oznamov musí viesť cesta von — inak sa človek vie vrátiť len cez „Všetko" */}
+          <button type="button" onClick={onBack} style={btnProfil}>Zavrieť</button>
+        </div>
       </>) : tab === "sektory" ? (
         <div style={siroke ? { display: "grid", gridTemplateColumns: `repeat(${desktop ? 3 : 2}, minmax(0,1fr))`, gap: SPACE.sm, alignItems: "start" } : undefined}>
           {sektoroveZbierky.map((z) => (
