@@ -19,7 +19,7 @@ import { NahladKarty, GaleriaZbierky } from "./KartaZbierky";
 import { OznamKarta } from "./Oznamy";
 import { InzeratKarta, MamZaujem } from "./Inzeraty";
 import { DorovnaniePas, NoveDorovnanieSheet } from "./Dorovnanie";
-import { beziaceDorovnanie, dorovnanieKDaru, zapisDar as zapisDorovnanie, useZmenyDorovnani } from "@/lib/dorovnanie";
+import { beziaceDorovnanie, dorovnanieKDaru, rovnakaFirma, zapisDar as zapisDorovnanie, useZmenyDorovnani } from "@/lib/dorovnanie";
 import { verejneOznamy, useZmenyOznamov } from "@/lib/oznamy";
 import { nacitajProfil, useZmenyProfilov, CENTRALNA_ID, VLASTNA_ZBIERKA_CFG, type ProfilZbierky } from "./vlastneZbierky";
 import { useSegmenty } from "./segmenty";
@@ -109,7 +109,8 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
   const [rozbalena, setRozbalena] = useState<string | null>(null);
   const [otvorenyOznam, setOtvorenyOznam] = useState<string | null>(null);   // klik na oznam otvorí len ten jeden
   useZmenyDorovnani();                                                        // bežec sa má prekresliť, keď firma dorovná
-  const [noveDorovnanie, setNoveDorovnanie] = useState<{ id: string; nazov: string } | null>(null);  // firma vstupuje do zbierky
+  const [noveDorovnanie, setNoveDorovnanie] = useState<{ id: string; nazov: string } | null>(null);
+  const [firmaProfil, setFirmaProfil] = useState<string | null>(null);   // profil dorovnávajúcej firmy — v appke, nie v novom okne  // firma vstupuje do zbierky
   const [profilZiad, setProfilZiad] = useState<string | null>(null);
   const [zbalenaCentralna, setZbalenaCentralna] = useState(false);
   const [qrZbierka, setQrZbierka] = useState<{ id: string; nazov: string } | null>(null);
@@ -176,7 +177,7 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
       <>
         {dorovnanie && (
           <div style={{ marginBottom: SPACE.sm }}>
-            <DorovnaniePas d={dorovnanie} />
+            <DorovnaniePas d={dorovnanie} onFirma={() => setFirmaProfil(dorovnanie.firma)} />
             <div style={{ fontSize: 12, fontWeight: 800, color: "var(--a-gold)", textAlign: "center", marginTop: SPACE.xxs }}>
               daruješ 20 € → k príjemcovi ide {20 + dorovnanieKDaru(dorovnanie, 20)} €
             </div>
@@ -367,7 +368,7 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
                   const dv = beziaceDorovnanie(pozicia, z.id)!;
                   return (
                     <div style={{ marginBottom: SPACE.sm }}>
-                      <DorovnaniePas d={dv} />
+                      <DorovnaniePas d={dv} onFirma={() => setFirmaProfil(dv.firma)} />
                       <div style={{ fontSize: 12, fontWeight: 800, color: "var(--a-gold)", textAlign: "center", marginTop: SPACE.xxs }}>
                         daruješ 20 € → k príjemcovi ide {20 + dorovnanieKDaru(dv, 20)} €
                       </div>
@@ -645,6 +646,13 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
       <>{podporaBlok}{obsahBlok}{terminalBlok}{oNasBlok}</>
     </div>
   );
+
+  // profil dorovnávajúcej firmy — verejná stránka toho istého druhu, v appke;
+  // späť sa vráti sem, nikam sa neodchádza z DEED
+  if (firmaProfil) {
+    const rolaFirmy = (Object.keys(SUBJEKTY) as Pozicia[]).find((r) => rovnakaFirma(SUBJEKTY[r].nazov, firmaProfil));
+    if (rolaFirmy) return <Podstranka pozicia={rolaFirmy} tier={3} logo={null} toast={toast} onBack={() => setFirmaProfil(null)} />;
+  }
 
   return (
     <div style={{ paddingBottom: SPACE.lg, color: C.text }}>

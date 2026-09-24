@@ -74,13 +74,13 @@ export function DorovnaniePas({ d, onFirma }: { d: Dorovnanie; onFirma?: () => v
           {zaznam && <div>{zaznam.odvetvie} · {zaznam.mesto} · cez DEED podporila {zaznam.podpora}</div>}
           {!minute && (<>
             <div>vyčlenila <b style={{ color: C.text }}>{eur(d.strop)}</b>, ostáva <b style={{ color: C.text }}>{eur(zost)}</b></div>
-            <div>beží {d.doVycerpania ? "kým sa strop minie" : `do ${datum(d.do)}`}</div>
+            <div>{d.doVycerpania ? "Darca prispieva, dokiaľ sa neminie celková suma" : `Darca prispieva do ${datum(d.do)}`}</div>
           </>)}
           <div style={{ fontSize: 11.5, color: C.textTer, marginTop: 2 }}>
-            Je to dar firmy, nie sponzoring — peniaze už ležia na účte charity.
+            Je to dar firmy, nie sponzoring — peniaze sú na účte charity k čerpaniu.
           </div>
-          {(onFirma || d.firmaProfil) && (
-            <div {...pressable(() => (onFirma ? onFirma() : window.open(`https://${d.firmaProfil}`, "_blank", "noopener")), `Stránka ${d.firma}`)}
+          {onFirma && (
+            <div {...pressable(onFirma, `Stránka ${d.firma}`)}
               style={{ marginTop: SPACE.xs, fontSize: 12.5, fontWeight: 800, color: "var(--a-info)", cursor: "pointer" }}>
               Otvoriť stránku firmy ›
             </div>
