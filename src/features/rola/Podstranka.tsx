@@ -19,7 +19,7 @@ import { NahladKarty, GaleriaZbierky } from "./KartaZbierky";
 import { OznamKarta } from "./Oznamy";
 import { InzeratKarta, MamZaujem } from "./Inzeraty";
 import { DorovnaniePas } from "./Dorovnanie";
-import { beziaceDorovnanie, dorovnanieKDaru, useZmenyDorovnani } from "@/lib/dorovnanie";
+import { beziaceDorovnanie, dorovnanieKDaru, zapisDar as zapisDorovnanie, useZmenyDorovnani } from "@/lib/dorovnanie";
 import { verejneOznamy, useZmenyOznamov } from "@/lib/oznamy";
 import { nacitajProfil, useZmenyProfilov, CENTRALNA_ID, VLASTNA_ZBIERKA_CFG, type ProfilZbierky } from "./vlastneZbierky";
 import { useSegmenty } from "./segmenty";
@@ -135,6 +135,16 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
   // zápis daru → zoznam darcov + súčty (registrovaný so zvoleným menom, inak anonym)
   const daruj = (refId: string, suma: number, kanal: "psp" | "sepa" | "deed", volba?: VolbaDaru, komu?: string) => {
     pridajDar({ refId, suma, kanal, registrovany, volba });
+    // firma dorovná ten istý dar — zapíše sa jej to zo stropu a darca to hneď vidí.
+    // Dorovnaná suma ide do zbierky ako samostatný dar (zoznam darcov ju zatiaľ
+    // ukáže bez mena firmy — identita firmy v zozname je ďalší krok).
+    const dv = beziaceDorovnanie(pozicia, refId);
+    const dorovnane = dv ? zapisDorovnanie(pozicia, dv.id, suma) : 0;
+    if (dorovnane > 0) {
+      pridajDar({ refId, suma: dorovnane, kanal, registrovany: true, volba: { verzia: 4, zobrazSumu: true } });
+      toast(`Ďakujeme za ${suma.toFixed(2)} € — firma pridala ${dorovnane.toFixed(2)} €, k príjemcovi ide ${(suma + dorovnane).toFixed(2)} €`);
+      return;
+    }
     toast(`Ďakujeme za dar ${suma.toLocaleString("sk", { maximumFractionDigits: 2 })} ${kanal === "deed" ? "EURC" : "€"}${komu ? ` · ${komu}` : ""}`);
   };
   const terminalOn = pozicia === "tvorca" && nacitajTerminal();

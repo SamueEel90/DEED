@@ -241,11 +241,98 @@ function Formular({ entita, toast, onHotovo, onSpat }: {
   );
 }
 
+/** jeden krok sprievodcu — číslo, názov, a obsah len pri kroku, na ktorom stojíme */
+function KrokKarty({ c, krok, nazov, hotovo, deti }: { c: number; krok: number; nazov: string; hotovo: boolean; deti?: React.ReactNode }) {
+  return (
+    <div style={{ ...karta, opacity: c > krok ? .45 : 1, border: `1px solid ${c === krok ? tint(ZELENA, .45) : C.line}` }}>
+      <div style={{ display: "flex", alignItems: "center", gap: SPACE.xs }}>
+        <span style={{ width: 22, height: 22, flex: "none", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center",
+          fontSize: 11.5, fontWeight: 800, background: hotovo ? ZELENA : C.surface, color: hotovo ? "#06281d" : C.textSec, border: `1px solid ${hotovo ? ZELENA : C.line}` }}>
+          {hotovo ? "✓" : c}
+        </span>
+        <span style={{ flex: 1, minWidth: 0, fontSize: 13.5, fontWeight: 700 }}>{nazov}</span>
+      </div>
+      {c === krok && deti && <div style={{ marginTop: SPACE.xs }}>{deti}</div>}
+    </div>
+  );
+}
+
+/** Ukončenie zbierky s bežiacim dorovnaním — tri kroky, nedá sa preskočiť:
+ *  ste si istí? → pozastaviť → vrátiť firme zvyšok (reálnym prevodom) → ukončiť.
+ *  Ukončenie býva aj omyl, preto sa naň pýtame a hovoríme rovno cenu. */
+function Ukoncenie({ entita, d, toast, onClose }: {
+  entita: string; d: Dorovnanie; toast: (m: string) => void; onClose: () => void;
+}) {
+  const [platba, setPlatba] = useState(false);
+  const zost = zostatok(d);
+  const krok = d.stav !== "pozastavene" ? 1 : !d.vysporiadane ? 2 : 3;
+
+  return (<>
+    <Sheet onClose={onClose} label="Ukončiť zbierku">
+      <div style={{ fontSize: 16, fontWeight: 800 }}>Ukončiť zbierku s dorovnaním</div>
+      <div style={{ fontSize: 12, color: C.textSec, marginTop: 4, marginBottom: SPACE.sm, lineHeight: 1.5 }}>
+        Na zbierke beží dorovnanie od <b style={{ color: C.text }}>{d.firma}</b>. Ak ju ukončíte, musíte firme vrátiť
+        celý nevyčerpaný zvyšok — <b style={{ color: C.text }}>{eur(zost)}</b>. Firma si kupovala dorovnanie darov, nie dar pre vás.
+      </div>
+
+      <KrokKarty krok={krok} c={1} nazov="Pozastaviť zbierku" hotovo={krok > 1} deti={
+        <>
+          <div style={{ fontSize: 11.5, color: C.textTer, marginBottom: SPACE.xs, lineHeight: 1.45 }}>
+            Zbierka prestane prijímať dary, takže sa už nič nedorovná. Ešte nič nevraciate a dá sa to rozmyslieť.
+          </div>
+          <button style={btnHlavny} onClick={() => { pozastav(entita, d.id); toast("Zbierka pozastavená — dary sa neprijímajú"); }}>
+            Áno, pozastaviť zbierku
+          </button>
+        </>
+      } />
+
+      <KrokKarty krok={krok} c={2} nazov={`Vrátiť firme ${eur(zost)}`} hotovo={krok > 2} deti={
+        <>
+          <div style={{ fontSize: 11.5, color: C.textTer, marginBottom: SPACE.xs, lineHeight: 1.45 }}>
+            Prevod ide z vášho účtu na účet firmy. Bez neho sa zbierka ukončiť nedá.
+          </div>
+          <button style={btnHlavny} onClick={() => setPlatba(true)}>Uhradiť {eur(zost)} firme</button>
+        </>
+      } />
+
+      <KrokKarty krok={krok} c={3} nazov="Ukončiť zbierku a dorovnanie" hotovo={d.stav === "ukoncene"} deti={
+        <button style={btnHlavny} onClick={() => {
+          if (!ukonci(entita, d.id)) { toast("Najprv vráťte zvyšok"); return; }
+          toast("Zbierka aj dorovnanie sú ukončené");
+          onClose();
+        }}>Ukončiť</button>
+      } />
+
+      {d.vysporiadane && (
+        <div style={{ fontSize: 11, color: C.textTer, marginTop: SPACE.xs, lineHeight: 1.45 }}>
+          Vrátené {eur(d.vysporiadane.suma)} · {datum(d.vysporiadane.kedy)}
+          {d.vysporiadane.referencia ? ` · ${d.vysporiadane.referencia}` : ""}
+        </div>
+      )}
+
+      <button style={{ ...btnDruhy, marginTop: SPACE.md }} onClick={onClose}>
+        {krok === 1 ? "Nie, nechať zbierku bežať" : "Zavrieť"}
+      </button>
+    </Sheet>
+
+    {platba && (
+      <PlatbaModal kanal="EUR" lenSepa suma={zost} komu={`vrátenie zvyšku · ${d.firma}`}
+        onClose={() => setPlatba(false)}
+        onDone={() => {
+          setPlatba(false);
+          vysporiadaj(entita, d.id, true, `TX-VRAT-${d.id.slice(-4).toUpperCase()}`);
+          toast(`Vrátené firme ${eur(zost)} — teraz môžete ukončiť`);
+        }} />
+    )}
+  </>);
+}
+
 // ---------- zoznam v správe ----------
 export function DorovnanieSheet({ entita, toast, onClose }: {
   entita: string; toast: (m: string) => void; onClose: () => void;
 }) {
   const dorovnania = useDorovnania(entita);
+  const [koniec, setKoniec] = useState<string | null>(null);
   const [pisem, setPisem] = useState(false);
   const [teraz] = useState(() => Date.now());
 
@@ -261,6 +348,9 @@ export function DorovnanieSheet({ entita, toast, onClose }: {
     : d.stav === "ukoncene" ? `ukončené · pridané ${eur(vycerpane(d))}`
     : d.stav === "odmietnute" ? "odmietnuté charitou"
     : "zrušené firmou";
+
+  const koniecD = koniec ? dorovnania.find((x) => x.id === koniec) : null;
+  if (koniecD) return <Ukoncenie entita={entita} d={koniecD} toast={toast} onClose={() => setKoniec(null)} />;
 
   return (
     <Sheet onClose={onClose} label="Dorovnanie daru">
@@ -290,25 +380,10 @@ export function DorovnanieSheet({ entita, toast, onClose }: {
               <span {...pressable(() => { odmietni(entita, d.id); toast("Dorovnanie odmietnuté"); }, "Odmietnuť")}
                 style={{ marginLeft: "auto", fontSize: 11.5, fontWeight: 700, color: C.textTer, cursor: "pointer" }}>Odmietnuť</span>
             </>)}
-            {d.stav === "aktivne" && (
-              <span {...pressable(() => { pozastav(entita, d.id); toast("Zbierka aj dorovnanie stoja — dary sa neprijímajú"); }, "Pozastaviť")}
-                style={{ marginLeft: "auto", fontSize: 11.5, fontWeight: 700, color: C.textTer, cursor: "pointer" }}>Pozastaviť zbierku</span>
-            )}
-            {d.stav === "pozastavene" && !d.vysporiadane && (
-              <span {...pressable(() => {
-                vysporiadaj(entita, d.id);   // charita ruší sama → celý zvyšok späť firme
-                toast(`Vrátené firme: ${eur(zostatok(d))}`);
-              }, "Vrátiť zvyšok firme")} style={{ fontSize: 11.5, fontWeight: 800, color: ZELENA, cursor: "pointer" }}>
-                Vrátiť firme {eur(zostatok(d))}
-              </span>
-            )}
-            {d.stav === "pozastavene" && (
-              <span {...pressable(() => {
-                if (!ukonci(entita, d.id)) { toast("Najprv vysporiadajte zvyšok — bez toho sa ukončiť nedá"); return; }
-                toast("Dorovnanie ukončené");
-              }, "Ukončiť")}
-                style={{ marginLeft: "auto", fontSize: 11.5, fontWeight: 700, color: d.vysporiadane ? C.textSec : C.textTer, cursor: "pointer", opacity: d.vysporiadane ? 1 : .5 }}>
-                Ukončiť dorovnanie
+            {(d.stav === "aktivne" || d.stav === "pozastavene") && (
+              <span {...pressable(() => setKoniec(d.id), "Ukončiť zbierku")}
+                style={{ marginLeft: "auto", fontSize: 11.5, fontWeight: 700, color: C.textTer, cursor: "pointer" }}>
+                {d.stav === "aktivne" ? "Ukončiť zbierku…" : "Dokončiť ukončenie…"}
               </span>
             )}
           </div>
