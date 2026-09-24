@@ -13,10 +13,11 @@ import { FIRMY_ADRESAR } from "./mock";
 import { nacitajSegmenty } from "./segmenty";
 import { CENTRALNA_ID, nacitajProfil } from "./vlastneZbierky";
 import { PlatbaModal } from "@/components/platba";
+import { Stit, naStitLevel } from "@/components/stit";
 import {
   DOROVNANIE_CFG, useDorovnania, zapecat, potvrdPlatbu, odmietni, ukonci, pozastav, vysporiadaj,
   vycerpane, zostatok, popisPomeru, nazovPomeru, priklad, bezi, daSaZmazat, zmazDorovnanie,
-  useDorovnaniaFirmy, beziaceDorovnanie, casAutomatu, type Dorovnanie, type KanalDorovnania,
+  useDorovnaniaFirmy, beziaceDorovnanie, casAutomatu, rovnakaFirma, type Dorovnanie, type KanalDorovnania,
 } from "@/lib/dorovnanie";
 
 const ZLATA = "var(--a-gold)";
@@ -31,28 +32,60 @@ const datum = (ms: number) => new Date(ms).toLocaleDateString("sk-SK", { day: "n
 const naDatum = (ms: number) => new Date(ms).toISOString().slice(0, 10);
 const zDatumu = (s: string, zaloha: number) => (s ? new Date(`${s}T00:00:00`).getTime() : zaloha);
 
-/** bežec pri zbierke — čo dorovnanie dáva, koľko ostáva a dokedy */
+/**
+ * Bežec pri zbierke — kto dorovnáva. Tvar je zámerne ten istý ako karta
+ * „ŽIADATEĽ": logo vľavo, štít a „Profil" vpravo, čísla až po rozkliknutí.
+ * Firma platí zo všetkých najviac, tak nech je aj vidieť ako partner,
+ * nie ako mikro-riadok v platobnom module.
+ */
 export function DorovnaniePas({ d, onFirma }: { d: Dorovnanie; onFirma?: () => void }) {
+  const [otvorene, setOtvorene] = useState(false);
   const zost = zostatok(d);
   const minute = zost <= 0;
+  // štít firmy je v adresári (v produkcii príde s profilom firmy)
+  const zaznam = FIRMY_ADRESAR.find((f) => rovnakaFirma(f.nazov, d.firma));
+  const logo = d.firmaLogo ?? zaznam?.logo;
+  const ram = tint(ZLATA, minute ? .25 : .45);
+
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm, background: tint(ZLATA, minute ? .07 : .13),
-      border: `1px solid ${tint(ZLATA, minute ? .25 : .45)}`, borderRadius: RADIUS.sm, padding: SPACE.sm }}>
-      {d.firmaLogo
-        ? <img src={d.firmaLogo} alt="" style={{ width: 30, height: 30, borderRadius: RADIUS.xs, objectFit: "cover", flex: "none" }} />
-        : <span style={{ flex: "none", fontSize: 18 }}>🤝</span>}
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 13.5, fontWeight: 800, lineHeight: 1.3 }}>
-          {minute ? `${d.firma} — strop vyčerpaný, ďakujeme` : <>{d.firma} pridá k tvojmu daru <span style={{ color: ZLATA }}>{popisPomeru(d.pomer)}</span></>}
+    <div style={{ background: tint(ZLATA, minute ? .07 : .13), border: `1px solid ${otvorene ? tint(ZLATA, .7) : ram}`,
+      borderRadius: RADIUS.sm, marginBottom: SPACE.xxs }}>
+      <div {...pressable(() => setOtvorene((o) => !o), `Dorovnáva ${d.firma}`)}
+        style={{ display: "flex", alignItems: "center", gap: SPACE.sm, padding: SPACE.sm, cursor: "pointer" }}>
+        {logo
+          ? <img src={logo} alt="" style={{ width: 40, height: 40, borderRadius: RADIUS.xs, objectFit: "cover", flex: "none" }} />
+          : <span style={{ flex: "none", width: 40, height: 40, borderRadius: RADIUS.xs, background: tint(ZLATA, .25),
+              display: "grid", placeItems: "center", fontSize: 18 }}>🤝</span>}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: ".04em", color: C.textTer }}>
+            {minute ? "DOROVNÁVALA" : "DOROVNÁVA"}
+          </div>
+          <div style={{ fontSize: 14, fontWeight: 800, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.firma}</div>
+          <div style={{ fontSize: 11.5, color: C.textSec, marginTop: 1 }}>
+            {minute ? `spolu pridala ${eur(vycerpane(d))}` : <>k tvojmu daru pridá <b style={{ color: ZLATA }}>{popisPomeru(d.pomer)}</b></>}
+          </div>
         </div>
-        <div style={{ fontSize: 11.5, color: C.textSec, marginTop: 1 }}>
-          {minute
-            ? `spolu pridala ${eur(vycerpane(d))}`
-            : <>z {eur(d.strop)} ostáva <b style={{ color: C.text }}>{eur(zost)}</b> · {d.doVycerpania ? "kým sa minie" : `do ${datum(d.do)}`}</>}
-        </div>
+        {zaznam && <Stit level={naStitLevel(zaznam.stit)} size={30} />}
+        <span style={{ flex: "none", fontSize: 12, fontWeight: 700, color: "var(--a-info)" }}>{otvorene ? "Zavrieť" : "Profil"}</span>
       </div>
-      {onFirma && (
-        <span {...pressable(onFirma, `Profil ${d.firma}`)} style={{ flex: "none", fontSize: 11.5, fontWeight: 800, color: "var(--a-info)", cursor: "pointer" }}>Profil ›</span>
+
+      {otvorene && (
+        <div style={{ borderTop: `1px solid ${ram}`, padding: SPACE.sm, fontSize: 12.5, color: C.textSec, lineHeight: 1.7 }}>
+          {zaznam && <div>{zaznam.odvetvie} · {zaznam.mesto} · cez DEED podporila {zaznam.podpora}</div>}
+          {!minute && (<>
+            <div>vyčlenila <b style={{ color: C.text }}>{eur(d.strop)}</b>, ostáva <b style={{ color: C.text }}>{eur(zost)}</b></div>
+            <div>beží {d.doVycerpania ? "kým sa strop minie" : `do ${datum(d.do)}`}</div>
+          </>)}
+          <div style={{ fontSize: 11.5, color: C.textTer, marginTop: 2 }}>
+            Je to dar firmy, nie sponzoring — peniaze už ležia na účte charity.
+          </div>
+          {(onFirma || d.firmaProfil) && (
+            <div {...pressable(() => (onFirma ? onFirma() : window.open(`https://${d.firmaProfil}`, "_blank", "noopener")), `Stránka ${d.firma}`)}
+              style={{ marginTop: SPACE.xs, fontSize: 12.5, fontWeight: 800, color: "var(--a-info)", cursor: "pointer" }}>
+              Otvoriť stránku firmy ›
+            </div>
+          )}
+        </div>
       )}
     </div>
   );
