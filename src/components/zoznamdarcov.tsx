@@ -27,9 +27,9 @@ function Riadok({ r, prvy, skrytSumy }: { r: DarRiadok; prvy?: boolean; skrytSum
   return (
     <div style={{ display: "flex", alignItems: "baseline", gap: SPACE.xs, padding: `${SPACE.xs}px 0`, borderBottom: `1px solid ${C.line2}`, fontSize: 12.5, ...(prvy ? { animation: "fadeUp .3s ease" } : {}) }}>
       <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-        <b style={{ fontWeight: 600, color: r.moj ? C.greenL : C.text }}>{identitaDarcu(r, ja)}</b>
-        <span style={{ color: C.textSec }}> daroval{suma ? " " : ""}</span>
-        {suma && <b style={{ fontWeight: 700, color: C.greenL }}>{suma}</b>}
+        <b style={{ fontWeight: 600, color: r.firma ? "var(--a-gold)" : r.moj ? C.greenL : C.text }}>{identitaDarcu(r, ja)}</b>
+        <span style={{ color: C.textSec }}>{r.firma ? " dorovnala " : ` daroval${suma ? " " : ""}`}</span>
+        {suma && <b style={{ fontWeight: 700, color: r.firma ? "var(--a-gold)" : C.greenL }}>{suma}</b>}
       </span>
       <span style={{ marginLeft: "auto", flex: "none", color: C.textTer, fontSize: 11 }}>{relCas(r.cas)}</span>
     </div>

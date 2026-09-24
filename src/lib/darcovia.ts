@@ -33,6 +33,9 @@ export interface DarRiadok {
   zobrazSumu: boolean;     // samostatný prepínač darcu (len nad prahom)
   moj?: boolean;           // dar aktuálneho používateľa — identita sa NEZAPEKÁ,
                            // renderuje sa z aktuálneho profilu (spec §5)
+  /** dorovnanie firmy — dar nie je od človeka, ale od firmy, a tá sa podpisuje
+   *  vždy menom (firma má v DEED len verejný profil, anonymitu si nevyberá) */
+  firma?: string;
   // zapečené polia LEN pre mock cudzích darcov (v produkcii render cez userId):
   meno?: string; inicialovo?: string; nick?: string; mesto?: string; mestoVerejne?: boolean;
 }
@@ -130,13 +133,14 @@ export function useDarcovia(refId: string): DarRiadok[] {
 }
 
 /** Zápis daru po pripísaní platby. QR bez účtu → registrovany:false (vždy anonym). */
-export function pridajDar(vstup: { refId: string; suma: number; kanal: KanalDaru; registrovany: boolean; volba?: VolbaDaru }): DarRiadok {
+export function pridajDar(vstup: { refId: string; suma: number; kanal: KanalDaru; registrovany: boolean; volba?: VolbaDaru; firma?: string }): DarRiadok {
   const reg = vstup.registrovany;
   const volba = reg ? (vstup.volba ?? nacitajPredvolbu()) : { verzia: 4 as VerziaIdentity, zobrazSumu: false };
   const riadok: DarRiadok = {
     id: `dar-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
     refId: vstup.refId, cas: Date.now(), suma: vstup.suma, kanal: vstup.kanal,
-    registrovany: reg, verzia: volba.verzia, zobrazSumu: volba.zobrazSumu, moj: reg,
+    registrovany: reg, verzia: volba.verzia, zobrazSumu: volba.zobrazSumu, moj: reg && !vstup.firma,
+    ...(vstup.firma ? { firma: vstup.firma } : {}),
   };
   sklad.set(vstup.refId, [riadok, ...riadkyPre(vstup.refId)]);
   emit();
@@ -157,6 +161,7 @@ export interface JaIdentita { meno?: string; priezvisko?: string; celeMeno?: str
 
 /** Identita riadku podľa verzie. Vlastné dary sa renderujú z AKTUÁLNEHO profilu (nezapekajú sa). */
 export function identitaDarcu(r: DarRiadok, ja?: JaIdentita): string {
+  if (r.firma) return r.firma;                  // dorovnanie — firma sa podpisuje vždy
   if (!r.registrovany) return "Anonymný darca"; // bez mesta, bez čohokoľvek
   const zdroj = r.moj && ja
     ? { meno: ja.celeMeno || ja.meno || "Člen", inicialovo: `${ja.meno || "Člen"} ${(ja.priezvisko || "")[0]?.toUpperCase() ?? ""}${(ja.priezvisko || "")[0] ? "." : ""}`.trim(), nick: ja.nick || undefined, mesto: ja.mesto, mestoVerejne: false }
@@ -173,6 +178,7 @@ export function identitaDarcu(r: DarRiadok, ja?: JaIdentita): string {
 
 /** Suma na zobrazenie — alebo null (= len „daroval"). Prah žije v configu (AC#3). */
 export function zobrazenaSuma(r: DarRiadok): string | null {
+  if (r.firma) return `${r.suma.toLocaleString("sk-SK", { maximumFractionDigits: 2 })} €`;
   if (!r.registrovany || !r.zobrazSumu) return null;
   if (r.suma < DARCOVIA_CFG.prahSumy) return null; // pod prahom NIKDY — žiadne dvojeurové výkriky
   return `${r.suma.toLocaleString("sk", { maximumFractionDigits: 2 })} €`;

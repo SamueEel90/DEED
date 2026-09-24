@@ -138,12 +138,13 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
   const daruj = (refId: string, suma: number, kanal: "psp" | "sepa" | "deed", volba?: VolbaDaru, komu?: string) => {
     pridajDar({ refId, suma, kanal, registrovany, volba });
     // firma dorovná ten istý dar — zapíše sa jej to zo stropu a darca to hneď vidí.
-    // Dorovnaná suma ide do zbierky ako samostatný dar (zoznam darcov ju zatiaľ
-    // ukáže bez mena firmy — identita firmy v zozname je ďalší krok).
+    // Dorovnaná suma ide do zbierky ako samostatný dar podpísaný firmou: firma má
+    // v DEED len verejný profil, anonymitu si nevyberá, a darca aj charita musia
+    // vidieť, odkiaľ tie peniaze sú.
     const dv = beziaceDorovnanie(pozicia, refId);
     const dorovnane = dv ? zapisDorovnanie(pozicia, dv.id, suma) : 0;
-    if (dorovnane > 0) {
-      pridajDar({ refId, suma: dorovnane, kanal, registrovany: true, volba: { verzia: 4, zobrazSumu: true } });
+    if (dv && dorovnane > 0) {
+      pridajDar({ refId, suma: dorovnane, kanal, registrovany: true, volba: { verzia: 4, zobrazSumu: true }, firma: dv.firma });
       toast(`Ďakujeme za ${suma.toFixed(2)} € — firma pridala ${dorovnane.toFixed(2)} €, k príjemcovi ide ${(suma + dorovnane).toFixed(2)} €`);
       return;
     }
