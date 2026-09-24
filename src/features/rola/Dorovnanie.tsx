@@ -16,7 +16,7 @@ import { PlatbaModal } from "@/components/platba";
 import {
   DOROVNANIE_CFG, useDorovnania, zapecat, potvrdPlatbu, odmietni, ukonci, pozastav, vysporiadaj,
   vycerpane, zostatok, popisPomeru, nazovPomeru, priklad, bezi, daSaZmazat, zmazDorovnanie,
-  useDorovnaniaFirmy, type Dorovnanie,
+  useDorovnaniaFirmy, beziaceDorovnanie, type Dorovnanie,
 } from "@/lib/dorovnanie";
 
 const ZLATA = "var(--a-gold)";
@@ -359,6 +359,16 @@ export function DorovnanieFirmySheet({ firma, toast, onClose }: {
 }) {
   const moje = useDorovnaniaFirmy(firma);
   const [teraz] = useState(() => Date.now());
+  const [vyber, setVyber] = useState(false);
+  const [nova, setNova] = useState<{ entita: string; ciel: string } | null>(null);
+  // zbierky, ktoré sú na profile a nikto ich práve nedorovnáva
+  const volne = [
+    ...(nacitajProfil(CENTRALNA_ID) ? [{ entita: "charita", id: CENTRALNA_ID, nazov: nacitajProfil(CENTRALNA_ID)!.nazov, emoji: "💛" }] : []),
+    ...nacitajSegmenty().flatMap((sg) => {
+      const pr = sg.zbierkaId ? nacitajProfil(sg.zbierkaId) : null;
+      return pr ? [{ entita: "charita", id: sg.zbierkaId!, nazov: `${sg.nazov} — ${pr.nazov}`, emoji: "🧩" }] : [];
+    }),
+  ].filter((z) => !beziaceDorovnanie(z.entita, z.id, teraz));
   const beziace = moje.filter((d) => bezi(d, teraz));
   const vyclenene = moje.filter((d) => d.stav === "aktivne" || d.stav === "zapecatene" || d.stav === "pozastavene")
     .reduce((s, d) => s + zostatok(d), 0);
@@ -372,6 +382,34 @@ export function DorovnanieFirmySheet({ firma, toast, onClose }: {
     : d.stav === "ukoncene" ? `ukončené${d.vysporiadane?.kam === "firme" ? ` · vrátené ${eur(d.vysporiadane.suma)}` : ""}`
     : d.stav === "odmietnute" ? "charita odmietla"
     : "zrušené";
+
+  if (nova) return (
+    <Formular entita={nova.entita} cielFix={nova.ciel} toast={toast}
+      onHotovo={() => setNova(null)} onSpat={() => setNova(null)} />
+  );
+
+  if (vyber) return (
+    <Sheet onClose={() => setVyber(false)} label="Vybrať zbierku">
+      <div style={{ fontSize: 16, fontWeight: 800 }}>Ktorú zbierku dorovnáte?</div>
+      <div style={{ fontSize: 11.5, color: C.textTer, marginTop: 2, marginBottom: SPACE.sm, lineHeight: 1.45 }}>
+        Zbierky, ktoré práve nikto nedorovnáva. Radšej si ich najprv pozrite na profile charity — uvidíte, na čo sa zbiera.
+      </div>
+      {volne.map((z) => (
+        <div key={z.id} {...pressable(() => setNova({ entita: z.entita, ciel: z.id }), z.nazov)}
+          style={{ ...karta, display: "flex", alignItems: "center", gap: SPACE.sm, cursor: "pointer" }}>
+          <span style={{ fontSize: 20 }}>{z.emoji}</span>
+          <div style={{ flex: 1, minWidth: 0, fontSize: 13.5, fontWeight: 700 }}>{z.nazov}</div>
+          <span style={{ fontSize: 11.5, fontWeight: 800, color: ZLATA }}>Dorovnať ›</span>
+        </div>
+      ))}
+      {!volne.length && (
+        <div style={{ fontSize: 12.5, color: C.textTer, textAlign: "center", padding: SPACE.lg, lineHeight: 1.5 }}>
+          Všetky zbierky už niekto dorovnáva.<br />Skúste neskôr alebo si nájdite inú charitu.
+        </div>
+      )}
+      <button onClick={() => setVyber(false)} style={{ ...btnDruhy, marginTop: SPACE.sm }}>Späť</button>
+    </Sheet>
+  );
 
   return (
     <Sheet onClose={onClose} label="Dorovnanie darov">
@@ -390,9 +428,9 @@ export function DorovnanieFirmySheet({ firma, toast, onClose }: {
         ))}
       </div>
 
-      <div style={{ fontSize: 11.5, color: C.textSec, background: tint(ZLATA, .1), border: `1px solid ${tint(ZLATA, .35)}`, borderRadius: RADIUS.sm, padding: SPACE.sm, lineHeight: 1.45, marginBottom: SPACE.sm }}>
-        <b style={{ color: C.text }}>Nové dorovnanie sa zakladá pri zbierke.</b> Otvorte si profil charity, ktorú chcete podporiť,
-        a pri jej zbierke kliknite na „Chcem dorovnávať" — uvidíte, komu dávate a na čo sa zbiera.
+      <button onClick={() => setVyber(true)} style={{ ...btnHlavny, marginBottom: SPACE.sm }}>Dorovnať ďalšiu zbierku</button>
+      <div style={{ fontSize: 11, color: C.textTer, lineHeight: 1.45, marginBottom: SPACE.sm }}>
+        Dá sa to aj opačne: otvoriť profil charity a pri jej zbierke kliknúť na „Chcem dorovnávať" — tam vidíte, na čo sa zbiera.
       </div>
 
       {moje.map((d) => (
@@ -415,9 +453,6 @@ export function DorovnanieFirmySheet({ firma, toast, onClose }: {
         </div>
       )}
 
-      <button onClick={() => { toast("Otvorte si profil charity a pri jej zbierke kliknite na Chcem dorovnávať"); onClose(); }} style={{ ...btnDruhy, marginTop: SPACE.sm }}>
-        Hľadať zbierku na dorovnanie
-      </button>
     </Sheet>
   );
 }

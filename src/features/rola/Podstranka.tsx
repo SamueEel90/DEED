@@ -191,7 +191,10 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
           onKanal={(k: string) => { setPlatbaRef({ id, komu: s.nazov }); setPlatba(k as Kanal); }}
           oblubene={{ refId: id, typ: "zbierka", modul: "charity", nazov: profil.nazov, lok: s.lok }} toast={toast}
           opakovana={maPravidelnu ? { popis: "Mesačne · len pre registrovaných · kedykoľvek zrušíš", onClick: () => setPravidelna({ id: id === CENTRALNA_ID ? "z-centralna" : id, nazov: profil.nazov, sektor: sektoroveZbierky.find((z) => z.id === id)?.nazov }) } : undefined}
-          dorovnanie={dorovnanie ? undefined : { onClick: () => setNoveDorovnanie(id) }}
+          dorovnanie={dorovnanie
+            ? { label: `Dorovnáva ${dorovnanie.firma}`, popis: "Jedna zbierka, jedno dorovnanie · ďalšia firma sa môže pridať, keď toto skončí", cta: "Obsadené",
+                onClick: () => toast(`Túto zbierku už dorovnáva ${dorovnanie.firma} — ďalšia firma sa môže pridať, keď sa jej strop minie alebo sa dorovnanie skončí`) }
+            : { onClick: () => setNoveDorovnanie(id) }}
           qr={{ label: "QR tejto zbierky", popis: "Sken → dar za 2 kliky · zdieľanie", onClick: () => (id === CENTRALNA_ID ? setQr(true) : setQrZbierka({ id, nazov: profil.nazov })) }} />
         <GaleriaZbierky profil={profil} />
         <ZoznamDarcov refId={id} celkom={dary.pocet} style={{ marginTop: SPACE.sm }} skrytSumy={pozicia === "charita" && !nacitajViditelnost("charita").sumyDarov} />
