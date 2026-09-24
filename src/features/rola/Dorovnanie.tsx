@@ -59,8 +59,8 @@ export function DorovnaniePas({ d, onFirma }: { d: Dorovnanie; onFirma?: () => v
 }
 
 // ---------- formulár firmy ----------
-function Formular({ entita, cielFix, toast, onHotovo, onSpat }: {
-  entita: string; cielFix?: string; toast: (m: string) => void; onHotovo: () => void; onSpat: () => void;
+function Formular({ entita, cielFix, cielNazov, toast, onHotovo, onSpat }: {
+  entita: string; cielFix?: string; cielNazov?: string; toast: (m: string) => void; onHotovo: () => void; onSpat: () => void;
 }) {
   // ciele = len zbierky, ktoré sú naozaj na verejnom profile. Inak by firma
   // zaplatila dorovnanie a nikde by nesvietilo.
@@ -90,7 +90,9 @@ function Formular({ entita, cielFix, toast, onHotovo, onSpat }: {
   const [uhradene, setUhradene] = useState(false);   // pečatí sa až po úhrade
 
   const suma = Number(strop.replace(",", ".")) || 0;
-  const zbierka = ciele.find((z) => z.id === ciel);
+  // pri pevnom cieli (vstup od zbierky) nemusí byť v zozname „vlastných" —
+  // názov si vtedy vypýtame od volajúceho
+  const zbierka = ciele.find((z) => z.id === ciel) ?? (cielFix ? { id: cielFix, nazov: cielNazov ?? "Táto zbierka", emoji: "🎯" } : undefined);
   const chyba = !ciel ? "Najprv spustite verejnú zbierku — dorovnanie musí byť kde zobraziť."
     : firma.trim().length < 2 ? "Načítajte QR firmy — z neho sa vyplnia údaje."
     : suma <= 0 ? "Zadajte, koľko celkom vyčleňujete."
@@ -156,7 +158,7 @@ function Formular({ entita, cielFix, toast, onHotovo, onSpat }: {
       <div style={{ fontSize: 12.5, fontWeight: 700, color: C.textSec, marginBottom: 4 }}>Ktorú zbierku dorovnávate?</div>
       {cielFix && (
         <div style={{ ...vstup, marginBottom: SPACE.sm, fontWeight: 700, background: C.surface }}>
-          {ciele.find((z) => z.id === cielFix)?.nazov ?? "Táto zbierka"}
+          {zbierka?.nazov ?? "Táto zbierka"}
         </div>
       )}
       {ciele.length === 0 && (
@@ -345,10 +347,10 @@ function Ukoncenie({ entita, d, toast, onClose }: {
 }
 
 /** vstup pre firmu priamo pri zbierke — cieľ je daný, firma vypĺňa len svoje podmienky */
-export function NoveDorovnanieSheet({ entita, cielId, toast, onClose }: {
-  entita: string; cielId: string; toast: (m: string) => void; onClose: () => void;
+export function NoveDorovnanieSheet({ entita, cielId, cielNazov, toast, onClose }: {
+  entita: string; cielId: string; cielNazov?: string; toast: (m: string) => void; onClose: () => void;
 }) {
-  return <Formular entita={entita} cielFix={cielId} toast={toast} onHotovo={onClose} onSpat={onClose} />;
+  return <Formular entita={entita} cielFix={cielId} cielNazov={cielNazov} toast={toast} onHotovo={onClose} onSpat={onClose} />;
 }
 
 /** Správa FIRMY — čo moja firma dorovnáva, koľko z toho ostáva a kde to beží.
