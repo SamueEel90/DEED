@@ -58,8 +58,8 @@ export function DorovnaniePas({ d, onFirma }: { d: Dorovnanie; onFirma?: () => v
 }
 
 // ---------- formulár firmy ----------
-function Formular({ entita, toast, onHotovo, onSpat }: {
-  entita: string; toast: (m: string) => void; onHotovo: () => void; onSpat: () => void;
+function Formular({ entita, cielFix, toast, onHotovo, onSpat }: {
+  entita: string; cielFix?: string; toast: (m: string) => void; onHotovo: () => void; onSpat: () => void;
 }) {
   // ciele = len zbierky, ktoré sú naozaj na verejnom profile. Inak by firma
   // zaplatila dorovnanie a nikde by nesvietilo.
@@ -70,7 +70,7 @@ function Formular({ entita, toast, onHotovo, onSpat }: {
       return pr ? [{ id: sg.zbierkaId!, nazov: `${sg.nazov} — ${pr.nazov}`, emoji: "🧩" }] : [];
     }),
   ]);
-  const [ciel, setCiel] = useState(() => (nacitajProfil(CENTRALNA_ID) ? CENTRALNA_ID : ""));
+  const [ciel, setCiel] = useState(() => cielFix ?? (nacitajProfil(CENTRALNA_ID) ? CENTRALNA_ID : ""));
   const [firma, setFirma] = useState("");
   const [profil, setProfil] = useState("");
   const [logo, setLogo] = useState<string | undefined>();
@@ -153,14 +153,19 @@ function Formular({ entita, toast, onHotovo, onSpat }: {
       </div>
 
       <div style={{ fontSize: 12.5, fontWeight: 700, color: C.textSec, marginBottom: 4 }}>Ktorú zbierku dorovnávate?</div>
+      {cielFix && (
+        <div style={{ ...vstup, marginBottom: SPACE.sm, fontWeight: 700, background: C.surface }}>
+          {ciele.find((z) => z.id === cielFix)?.nazov ?? "Táto zbierka"}
+        </div>
+      )}
       {ciele.length === 0 && (
         <div style={{ fontSize: 12, color: "var(--a-clay)", background: tint("var(--a-clay)", .1), border: `1px solid ${tint("var(--a-clay)", .35)}`, borderRadius: RADIUS.sm, padding: SPACE.sm, marginBottom: SPACE.sm, lineHeight: 1.45 }}>
           Charita nemá spustenú žiadnu verejnú zbierku. Dorovnanie by nemalo kde svietiť — najprv spustite centrálnu alebo sektorovú zbierku.
         </div>
       )}
-      <select value={ciel} onChange={(e) => setCiel(e.target.value)} style={{ ...vstup, marginBottom: SPACE.sm }}>
+      {!cielFix && <select value={ciel} onChange={(e) => setCiel(e.target.value)} style={{ ...vstup, marginBottom: SPACE.sm }}>
         {ciele.map((z) => <option key={z.id} value={z.id}>{z.emoji} {z.nazov}</option>)}
-      </select>
+      </select>}
 
       <div style={{ fontSize: 12.5, fontWeight: 700, color: C.textSec, marginBottom: 4 }}>Firma</div>
       {!firma ? (
@@ -336,6 +341,13 @@ function Ukoncenie({ entita, d, toast, onClose }: {
         }} />
     )}
   </>);
+}
+
+/** vstup pre firmu priamo pri zbierke — cieľ je daný, firma vypĺňa len svoje podmienky */
+export function NoveDorovnanieSheet({ entita, cielId, toast, onClose }: {
+  entita: string; cielId: string; toast: (m: string) => void; onClose: () => void;
+}) {
+  return <Formular entita={entita} cielFix={cielId} toast={toast} onHotovo={onClose} onSpat={onClose} />;
 }
 
 // ---------- zoznam v správe ----------
