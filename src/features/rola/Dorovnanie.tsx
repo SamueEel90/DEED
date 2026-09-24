@@ -10,6 +10,8 @@ import { C, SPACE, RADIUS } from "@/theme";
 import { Sheet, tint } from "@/shared";
 import { pressable } from "@/components/pressable";
 import { FIRMY_ADRESAR } from "./mock";
+import { pripniVyclenene } from "@/lib/podpory";
+import { rovnakaFirma } from "@/lib/firma";
 import { nacitajSegmenty } from "./segmenty";
 import { CENTRALNA_ID, nacitajProfil } from "./vlastneZbierky";
 import { PlatbaModal } from "@/components/platba";
@@ -17,7 +19,7 @@ import { Stit, naStitLevel } from "@/components/stit";
 import {
   DOROVNANIE_CFG, useDorovnania, zapecat, potvrdPlatbu, odmietni, ukonci, pozastav, vysporiadaj,
   vycerpane, zostatok, popisPomeru, nazovPomeru, priklad, bezi, daSaZmazat, zmazDorovnanie,
-  useDorovnaniaFirmy, beziaceDorovnanie, casAutomatu, rovnakaFirma, type Dorovnanie, type KanalDorovnania,
+  useDorovnaniaFirmy, beziaceDorovnanie, casAutomatu, platiPreMna, type Dorovnanie, type KanalDorovnania,
 } from "@/lib/dorovnanie";
 
 const ZLATA = "var(--a-gold)";
@@ -62,7 +64,9 @@ export function DorovnaniePas({ d, onFirma }: { d: Dorovnanie; onFirma?: () => v
           </div>
           <div style={{ fontSize: 14, fontWeight: 800, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.firma}</div>
           <div style={{ fontSize: 11.5, color: C.textSec, marginTop: 1 }}>
-            {minute ? `spolu pridala ${eur(vycerpane(d))}` : <>k tvojmu daru pridá <b style={{ color: ZLATA }}>{popisPomeru(d.pomer)}</b></>}
+            {minute ? `spolu pridala ${eur(vycerpane(d))}`
+              : !platiPreMna(d) ? "dorovnáva dary svojich zamestnancov"
+              : <>k tvojmu daru pridá <b style={{ color: ZLATA }}>{popisPomeru(d.pomer)}</b></>}
           </div>
         </div>
         {zaznam && <Stit level={naStitLevel(zaznam.stit)} size={30} />}
@@ -119,6 +123,7 @@ function Formular({ entita, cielFix, cielNazov, toast, onHotovo, onSpat }: {
   const [od] = useState(() => new Date(new Date().toDateString()).getTime());
   const [doKedy, setDoKedy] = useState(() => Date.now() + 30 * DEN);
   const [zvysok, setZvysok] = useState<"zbierke" | "firme">("zbierke");
+  const [lenZamestnanci, setLenZamestnanci] = useState(false);   // zamestnanecký matching
   const [potvrd, setPotvrd] = useState(false);
   const [uhradene, setUhradene] = useState(false);   // pečatí sa až po úhrade
   const [kanal, setKanal] = useState<KanalDorovnania | null>(null);   // ktorou rúrou → kedy nabehne
@@ -148,7 +153,8 @@ function Formular({ entita, cielFix, cielNazov, toast, onHotovo, onSpat }: {
           z daru 20 € bude: <b style={{ color: C.text }}>{eur(priklad(pomer))}</b><br />
           celkom vyčleňuje: <b style={{ color: C.text }}>{eur(suma)}</b><br />
           beží: <b style={{ color: C.text }}>{doVycerpania ? "od dnes, kým sa strop nevyčerpá" : `od dnes do ${datum(doKedy)}`}</b><br />
-          nevyčerpaný zvyšok: <b style={{ color: C.text }}>{zvysok === "zbierke" ? "ostáva zbierke" : "vráti sa firme"}</b>
+          nevyčerpaný zvyšok: <b style={{ color: C.text }}>{zvysok === "zbierke" ? "ostáva zbierke" : "vráti sa firme"}</b><br />
+          dorovnávate: <b style={{ color: C.text }}>{lenZamestnanci ? "len dary vlastných zamestnancov" : "každý dar"}</b>
         </div>
       </div>
       <div style={{ fontSize: 11.5, color: C.textTer, lineHeight: 1.45, marginBottom: SPACE.sm }}>
@@ -181,7 +187,9 @@ function Formular({ entita, cielFix, cielNazov, toast, onHotovo, onSpat }: {
       <button disabled={!uhradene} style={{ ...btnHlavny, marginTop: uhradene ? 0 : SPACE.xs, opacity: uhradene ? 1 : .45, cursor: uhradene ? "pointer" : "not-allowed" }} onClick={() => {
         zapecat({ entita, ciel, cielNazov: zbierka?.nazov ?? ciel, firma: firma.trim(), firmaProfil: profil.trim() || undefined, firmaLogo: logo,
           pomer, strop: suma, od, do: doVycerpania ? od + 3650 * DEN : doKedy, doVycerpania, zvysok,
-          kanal: kanal ?? "sepa" });
+          lenZamestnanci, kanal: kanal ?? "sepa" });
+        // strop je zaplatený vopred → zbierka sa firme pripína na podstránku už teraz
+        pripniVyclenene(firma.trim(), ciel, suma);
         toast(kanal === "sepa"
           ? "Zapečatené — charita potvrdí príjem, najneskôr o 48 h beží samo"
           : "Zapečatené — dorovnanie beží");
@@ -306,6 +314,23 @@ function Formular({ entita, cielFix, cielNazov, toast, onHotovo, onSpat }: {
           </span>
         ))}
       </div>
+
+      <div style={{ fontSize: 12.5, fontWeight: 700, color: C.textSec, margin: `${SPACE.sm}px 0 4px` }}>Komu dorovnávate?</div>
+      <div style={{ display: "flex", gap: SPACE.xs }}>
+        {([[false, "Každému darcovi"], [true, "Len našim zamestnancom"]] as const).map(([k, l]) => (
+          <span key={l} {...pressable(() => setLenZamestnanci(k), l)}
+            style={{ flex: 1, textAlign: "center", cursor: "pointer", fontSize: 13, fontWeight: lenZamestnanci === k ? 800 : 600, padding: `${SPACE.xs}px 0`, borderRadius: RADIUS.sm,
+              background: lenZamestnanci === k ? tint(ZELENA, .12) : C.surface, border: `1px solid ${lenZamestnanci === k ? tint(ZELENA, .45) : C.line}`, color: lenZamestnanci === k ? ZELENA : C.textSec }}>
+            {l}
+          </span>
+        ))}
+      </div>
+      {lenZamestnanci && (
+        <div style={{ fontSize: 11.5, color: C.textTer, lineHeight: 1.45, marginTop: SPACE.xs }}>
+          Dorovnáte len dary ľudí, ktorí sú k vám v DEED pripojení a vy ste ich potvrdili.
+          Ostatní darcovia o dorovnaní nebudú vôbec informovaní — nesľubuje sa im nič.
+        </div>
+      )}
 
       <button style={{ ...btnHlavny, marginTop: SPACE.md }} onClick={() => (chyba ? toast(chyba) : setPotvrd(true))}>Skontrolovať a zapečatiť</button>
       <button style={{ ...btnDruhy, marginTop: SPACE.xs }} onClick={onSpat}>Zrušiť</button>

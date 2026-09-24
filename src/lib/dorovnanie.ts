@@ -20,6 +20,8 @@
 // a aj SEPA sa páruje automaticky podľa VS.
 // ============================================================
 import { useSyncExternalStore } from "react";
+import { rovnakaFirma } from "./firma";
+import { somZamestnanec } from "./zamestnanci";
 
 export const DOROVNANIE_CFG = {
   /** ponuka pomerov vo formulári firmy — koľkonásobok daru firma pridá */
@@ -79,6 +81,9 @@ export interface Dorovnanie {
   /** nevyčerpaný zvyšok na konci: ostáva zbierke (default) alebo späť firme */
   zvysok: "zbierke" | "firme";
   stav: StavDorovnania;
+  /** dorovnávame len dary vlastných zamestnancov (zamestnanecký matching).
+   *  Bez toho dorovnáva každý dar, nech ho dá ktokoľvek. */
+  lenZamestnanci?: boolean;
   /** ktorou rúrou firma zaplatila (staré záznamy ju nemajú → berú sa ako SEPA) */
   kanal?: KanalDorovnania;
   /** dorovnanie nabehlo tichým súhlasom po 48 h, nie klikom charity */
@@ -137,11 +142,17 @@ function uloz(entita: string, v: Dorovnanie[]) {
 export const vycerpane = (d: Dorovnanie) => d.zaznamy.reduce((s, z) => s + z.dorovnane, 0);
 export const zostatok = (d: Dorovnanie) => Math.max(0, d.strop - vycerpane(d));
 
-/** koľko firma pridá k tomuto daru — nikdy viac, než koľko jej ostáva */
+/** koľko firma pridá k tomuto daru — nikdy viac, než koľko jej ostáva.
+ *  Pri zamestnaneckom dorovnaní platí len pre potvrdených zamestnancov firmy;
+ *  ostatným darcom sa nič nesľubuje ani nezobrazuje. */
 export function dorovnanieKDaru(d: Dorovnanie, dar: number, teraz = Date.now()): number {
   if (!bezi(d, teraz) || dar <= 0) return 0;
+  if (d.lenZamestnanci && !somZamestnanec(d.firma)) return 0;
   return Math.min(Math.round(dar * d.pomer * 100) / 100, zostatok(d));
 }
+
+/** platí toto dorovnanie pre práve prihláseného darcu? (texty, bežec, prepočet) */
+export const platiPreMna = (d: Dorovnanie): boolean => !d.lenZamestnanci || somZamestnanec(d.firma);
 
 export const bezi = (d: Dorovnanie, teraz = Date.now()) =>
   d.stav === "aktivne" && teraz >= d.od && teraz <= d.do && zostatok(d) > 0;
@@ -149,6 +160,16 @@ export const bezi = (d: Dorovnanie, teraz = Date.now()) =>
 /** dorovnanie, ktoré práve beží na danom cieli (zbierka/sektor/organizácia) */
 export function beziaceDorovnanie(entita: string, ciel: string, teraz = Date.now()): Dorovnanie | null {
   return nacitajDorovnania(entita).find((d) => d.ciel === ciel && bezi(d, teraz)) ?? null;
+}
+
+/** dorovnanie bežiace na tomto cieli — nech dar príde z ktorejkoľvek obrazovky.
+ *  Zbierku dorovnáva vždy najviac jedna firma, takže prvý nález je ten pravý. */
+export function beziaceDorovnanieNaCiel(ciel: string, teraz = Date.now()): (Dorovnanie & { entita: string }) | null {
+  for (const e of vsetkyEntity()) {
+    const d = nacitajDorovnania(e).find((x) => x.ciel === ciel && bezi(x, teraz));
+    if (d) return { ...d, entita: d.entita ?? e };
+  }
+  return null;
 }
 
 /** zmazať sa dá len to, čo je už uzavreté — bežiace a zaplatené drží peniaze */
@@ -176,15 +197,6 @@ function vsetkyEntity(): string[] {
   return out;
 }
 
-/** porovnanie názvov firiem — „Pekáreň Dobrota" a „Pekáreň Dobrota s.r.o." je tá istá
- *  firma (v prototype je identitou názov z QR; v produkcii to bude IČO) */
-const kluceFirmy = (n: string) => n
-  .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-  .toLowerCase()
-  .replace(/\b(s\.?\s?r\.?\s?o\.?|a\.?\s?s\.?|o\.?\s?z\.?|spol\.?|k\.?\s?s\.?|n\.?\s?o\.?)\b/g, "")
-  .replace(/[^a-z0-9]+/g, "")
-  .trim();
-export const rovnakaFirma = (a: string, b: string) => kluceFirmy(a) === kluceFirmy(b);
 
 /** dorovnania jednej firmy naprieč charitami — pohľad z jej vlastnej správy */
 export function dorovnaniaFirmy(firma: string): Dorovnanie[] {

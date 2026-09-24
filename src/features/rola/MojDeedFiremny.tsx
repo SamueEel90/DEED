@@ -26,7 +26,7 @@ import { Podstranka } from "./Podstranka";
 import { UpravProfilSheet } from "./UpravProfil";
 import { useRegistraciaCharity, ulozDoRegistracie } from "./registracia";
 import { OnasKratky } from "./OnasKratky";
-import { jeNeregistrovany, nastavNeregistrovany } from "@/lib/devDarca";
+import { jeNeregistrovany, nastavNeregistrovany, darujemAkoFirma, nastavDarcuFirmu } from "@/lib/devDarca";
 import { CentralnaZbierkaSheet } from "./CentralnaZbierka";
 import { SpravaZbierkySheet } from "./SpravaZbierky";
 import { VideoSheet, DarcoviaSheet, QrNastrojeSheet, ViditelnostSheet } from "./NastrojeCharity";
@@ -34,6 +34,8 @@ import { SektoroveZbierkySheet } from "./SektoroveZbierky";
 import { OznamySheet } from "./Oznamy";
 import { InzeratySheet } from "./Inzeraty";
 import { DorovnanieSheet, DorovnanieFirmySheet } from "./Dorovnanie";
+import { NaseZbierkySheet } from "./NaseZbierky";
+import { ZamestnanciSheet } from "./Zamestnanci";
 import { useDorovnania, casAutomatu } from "@/lib/dorovnanie";
 import { ZBIERKY, predvolenyStav } from "@/lib/zbierky";
 import { nacitajStav, percentoDolozenia, fazaDokladovania, useZmenySpravy } from "@/lib/zbierkaSprava";
@@ -51,7 +53,7 @@ import { verejneTaby, zamknuteTaby, popisTabu, BLOK_ZA_TAB, zbierkyOrg, cislaSub
 */
 
 type PaywallReq = { tierMin: Tier; nazov: string; dovod?: string };
-type OtvorenySheet = null | "zbierky" | "centralna" | "terminal" | "retaz" | "profil" | "adresarB2B" | { spravovat: OrgZbierka } | "video" | "darcovia" | "qr" | "sumy" | "segment" | "oznamy" | "inzeraty" | "dorovnanie";
+type OtvorenySheet = null | "zbierky" | "centralna" | "terminal" | "retaz" | "profil" | "adresarB2B" | { spravovat: OrgZbierka } | "video" | "darcovia" | "qr" | "sumy" | "segment" | "oznamy" | "inzeraty" | "dorovnanie" | "zamestnanci";
 
 // ---- SVG ikony blokov a správy (nahrádzajú emoji — jednotný vizuál) ----
 const IKONY: Record<string, ReactNode> = {
@@ -160,7 +162,7 @@ function MojDeedFiremnyObsah({ onBack, toast, orgId }: { onBack: () => void; toa
     if (pozicia === "charita" && (it.id === "zbierky" || it.id === "dokladovanie")) return setSheet("zbierky");
     if (pozicia === "tvorca" && it.id === "terminal") return setSheet("terminal");
     if (pozicia === "charita" && it.id === "centralna") return setSheet("centralna");
-    if (pozicia === "b2b" && it.id === "dorovnanie") return setSheet("dorovnanie");
+    if (pozicia === "b2b" && (it.id === "dorovnanie" || it.id === "zbierky" || it.id === "zamestnanci")) return setSheet(it.id);
     if (pozicia === "charita" && (it.id === "video" || it.id === "darcovia" || it.id === "qr" || it.id === "sumy" || it.id === "segment" || it.id === "oznamy" || it.id === "inzeraty" || it.id === "dorovnanie")) return setSheet(it.id);
     toast(`${it.nazov} — čoskoro`);
   };
@@ -355,6 +357,8 @@ function MojDeedFiremnyObsah({ onBack, toast, orgId }: { onBack: () => void; toa
       {sheet === "qr" && <QrNastrojeSheet tier={tier} toast={toast} onClose={() => setSheet(null)} />}
       {sheet === "sumy" && <ViditelnostSheet toast={toast} onClose={() => setSheet(null)} />}
       {sheet === "oznamy" && <OznamySheet entita={pozicia} autor={subjekt.nazov} logo={logo ?? subjekt.foto} toast={toast} onClose={() => setSheet(null)} />}
+      {sheet === "zbierky" && pozicia === "b2b" && <NaseZbierkySheet firma={subjekt.nazov} toast={toast} onClose={() => setSheet(null)} />}
+      {sheet === "zamestnanci" && pozicia === "b2b" && <ZamestnanciSheet firma={subjekt.nazov} toast={toast} onClose={() => setSheet(null)} />}
       {sheet === "dorovnanie" && (pozicia === "b2b"
         ? <DorovnanieFirmySheet firma={subjekt.nazov} toast={toast} onClose={() => setSheet(null)} />
         : <DorovnanieSheet entita={pozicia} toast={toast} onClose={() => setSheet(null)} />)}
@@ -397,6 +401,7 @@ function DevPanel({ pozicia, tier, drzitel, onPozicia, onTier, onDrzitel }: {
 }) {
   const [open, setOpen] = useState(true);
   const [neregistrovany, setNeregistrovany] = useState(jeNeregistrovany);
+  const [akoFirma, setAkoFirma] = useState(darujemAkoFirma);
   const seg = (on: boolean, farba: string): React.CSSProperties => ({
     flex: 1, height: 32, display: "flex", alignItems: "center", justifyContent: "center", gap: 5,
     borderRadius: RADIUS.xs, cursor: "pointer", fontSize: 12, fontWeight: on ? 800 : 600,
@@ -438,6 +443,17 @@ function DevPanel({ pozicia, tier, drzitel, onPozicia, onTier, onDrzitel }: {
               <div style={{ fontSize: 10.5, color: C.textTer }}>{neregistrovany ? "Vypĺňa kartu / IBAN · v zozname darcov anonym" : "Uložená karta, účet, peňaženka · pod darom jeho meno"}</div>
             </div>
             <Switch on={!neregistrovany} onChange={() => { nastavNeregistrovany(!neregistrovany); setNeregistrovany(!neregistrovany); }} ariaLabel="Registrovaný darca" />
+          </div>
+          {/* kto práve daruje — nezávisle od prepnutej roly: firemný dar sa musí dať
+              skúsiť aj na profile charity, kde si prepnutý ako charita */}
+          <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm, padding: `${SPACE.xxs}px ${SPACE.xxs}px` }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 12, fontWeight: 700 }}>Darujem ako: {akoFirma ? "firma" : "ja"}</div>
+              <div style={{ fontSize: 10.5, color: C.textTer }}>
+                {akoFirma ? "Zbierka sa firme pripne na podstránku a pri zbierke svieti jej meno" : "Bežný osobný dar"}
+              </div>
+            </div>
+            <Switch on={akoFirma} onChange={() => { nastavDarcuFirmu(!akoFirma); setAkoFirma(!akoFirma); }} ariaLabel="Darujem ako firma" />
           </div>
         </div>
       )}

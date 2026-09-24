@@ -56,6 +56,9 @@ function odvod(data: UcetData | null, session: Session): Pouzivatel {
     : profil?.meno || ses?.meno || "Člen";
   const priezvisko = jeCharita ? "" : profil?.priezvisko || "";
   const celeMeno = (jeCharita ? meno : `${meno} ${priezvisko}`).trim();
+  // meno prihláseného sa odkladá aj do localStorage: engine dorovnaní musí vedieť,
+  // či darca je zamestnancom firmy, a k React kontextu sa nedostane
+  try { localStorage.setItem("deed.ja.meno", celeMeno || meno); } catch { /* LS nedostupné */ }
   const mesto = lokalita?.mesto || profil?.mesto || organizacia?.sidlo || "—";
   const typ = ucet?.typ || ses?.typ || "aktivny";
   return {

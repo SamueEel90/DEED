@@ -7,6 +7,8 @@
 // `platba` / view `v_vypis` (0014_payment_engine.sql).
 // ============================================================
 import { useSyncExternalStore } from "react";
+import { beziaceDorovnanieNaCiel, zapisDar as zapisDorovnanie } from "./dorovnanie";
+import { pridajPodporu, firmaAkoDarca } from "./podpory";
 
 // ---- CONFIG (spec §6) — všetky čísla ŠTARTOVACIE, žijú tu, nie v kóde ----
 export const DARCOVIA_CFG = {
@@ -133,7 +135,13 @@ export function useDarcovia(refId: string): DarRiadok[] {
 }
 
 /** Zápis daru po pripísaní platby. QR bez účtu → registrovany:false (vždy anonym). */
-export function pridajDar(vstup: { refId: string; suma: number; kanal: KanalDaru; registrovany: boolean; volba?: VolbaDaru; firma?: string }): DarRiadok {
+/** Zápis daru je JEDINÉ miesto, cez ktoré prechádzajú všetky dary (Charita,
+ *  Help, Viera, cudzí profil, vlastný profil). Preto tu — a nikde inde — visí
+ *  aj to, čo sa má stať „pri každom dare":
+ *   · beží na zbierke dorovnanie firmy → firma pridá svoj diel a zapíše sa ako darca
+ *   · daruje samotná firma (je prepnutá do svojej roly) → zbierka sa jej pripne
+ *  Keby to viselo na obrazovkách, každá nová obrazovka by na to zabudla. */
+export function pridajDar(vstup: { refId: string; suma: number; kanal: KanalDaru; registrovany: boolean; volba?: VolbaDaru; firma?: string }): DarRiadok & { dorovnane?: number; dorovnalaFirma?: string } {
   const reg = vstup.registrovany;
   const volba = reg ? (vstup.volba ?? nacitajPredvolbu()) : { verzia: 4 as VerziaIdentity, zobrazSumu: false };
   const riadok: DarRiadok = {
@@ -144,7 +152,31 @@ export function pridajDar(vstup: { refId: string; suma: number; kanal: KanalDaru
   };
   sklad.set(vstup.refId, [riadok, ...riadkyPre(vstup.refId)]);
   emit();
-  return riadok;
+  // dar od firmy (dorovnanie alebo firemný dar) sa ďalej nespracúva — inak by
+  // dorovnanie dorovnávalo samo seba
+  if (vstup.firma) return riadok;
+  // Viera je samostatný svet: zbierky sa odtiaľ neberú, firmy ich nedorovnávajú
+  // ani si ich nepripínajú. Cirkevná charita ide cez modul Charita ako každá iná.
+  if (/^(farnost|naboz)-/.test(vstup.refId)) return riadok;
+
+  // 1) beží dorovnanie → firma pridá svoj diel hneď za darcov dar
+  let dorovnane = 0;
+  let dorovnalaFirma: string | undefined;
+  const dv = beziaceDorovnanieNaCiel(vstup.refId);
+  if (dv) {
+    dorovnane = zapisDorovnanie(dv.entita, dv.id, vstup.suma);
+    if (dorovnane > 0) {
+      dorovnalaFirma = dv.firma;
+      pridajDar({ refId: vstup.refId, suma: dorovnane, kanal: vstup.kanal, registrovany: true,
+        volba: { verzia: 4, zobrazSumu: true }, firma: dv.firma });
+      pridajPodporu(dv.firma, vstup.refId, dorovnane);
+    }
+  }
+  // 2) daruje firma → zbierka jej naskočí na podstránku („dar = pripnutie")
+  const firmaDarca = firmaAkoDarca();
+  if (firmaDarca) pridajPodporu(firmaDarca, vstup.refId, vstup.suma);
+
+  return dorovnane > 0 ? { ...riadok, dorovnane, dorovnalaFirma } : riadok;
 }
 
 /** Spätné prepnutie daru na Anonym — JEDNOSMERNÉ (k väčšej anonymite áno, opačne nie). */

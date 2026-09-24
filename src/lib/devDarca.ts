@@ -10,3 +10,16 @@ export function nastavNeregistrovany(v: boolean) {
   posluchaci.forEach((f) => f());
 }
 export function sledujDarcu(f: () => void) { posluchaci.add(f); return () => { posluchaci.delete(f); }; }
+
+// ---- DEV: darujem ako firma? ----
+// Prepínač roly hore hovorí „koho profil spravujem", nie „kto práve daruje" —
+// inak by sa firemný dar nedal skúsiť na vlastnom profile charity (tam musíš byť
+// prepnutý ako charita). Preto je to samostatný prepínač.
+const KLUC_FIRMA = "deed.dev.darcaFirma";
+export function darujemAkoFirma(): boolean {
+  try { return localStorage.getItem(KLUC_FIRMA) === "1"; } catch { return false; }
+}
+export function nastavDarcuFirmu(v: boolean) {
+  try { localStorage.setItem(KLUC_FIRMA, v ? "1" : "0"); } catch { /* LS */ }
+  posluchaci.forEach((f) => f());
+}

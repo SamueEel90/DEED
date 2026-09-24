@@ -19,17 +19,20 @@ import { NahladKarty, GaleriaZbierky } from "./KartaZbierky";
 import { OznamKarta } from "./Oznamy";
 import { InzeratKarta, MamZaujem } from "./Inzeraty";
 import { DorovnaniePas, NoveDorovnanieSheet } from "./Dorovnanie";
-import { beziaceDorovnanie, dorovnanieKDaru, rovnakaFirma, zapisDar as zapisDorovnanie, useZmenyDorovnani } from "@/lib/dorovnanie";
+import { beziaceDorovnanie, dorovnanieKDaru, useZmenyDorovnani } from "@/lib/dorovnanie";
+import { rovnakaFirma } from "@/lib/firma";
 import { verejneOznamy, useZmenyOznamov } from "@/lib/oznamy";
 import { nacitajProfil, useZmenyProfilov, CENTRALNA_ID, VLASTNA_ZBIERKA_CFG, type ProfilZbierky } from "./vlastneZbierky";
 import { useSegmenty } from "./segmenty";
 import { zdielaj, aktualnaUrl } from "@/lib/zdielanie";
 import type { Kanal } from "@/types";
 import { SUBJEKTY, ZASLUZENA } from "./mock";
+import { usePodporyFirmy, usePodporyZbierky, type Podpora } from "@/lib/podpory";
+import { najdiKampan } from "@/features/cudzi-profil/orgy";
 import type { Dokaz } from "@/lib/zbierky";
 import { najdiZbierku, kryptoZbierky, odznakZbierky } from "@/lib/zbierky";
 import { DokazBlok, MediaNahlad } from "./DokazBlok";
-import { nacitajViditelnost, nacitajTerminal, nacitajKryptoOrg, nacitajCentralnu, nacitajSady, nacitajOnas, nacitajTvarLoga, nacitajZdrojAvatara, nacitajLogo, type Pozicia, type Tier } from "./stav";
+import { nacitajViditelnost, nacitajTerminal, nacitajKryptoOrg, nacitajCentralnu, nacitajSady, nacitajOnas, nacitajTvarLoga, nacitajZdrojAvatara, nacitajLogo, nacitajPoziciu, type Pozicia, type Tier } from "./stav";
 import { OnasKratky } from "./OnasKratky";
 import { KontaktBlok, nacitajKontakt } from "./kontakt";
 import { verejneTaby, cislaSubjektu } from "./obsah";
@@ -66,6 +69,26 @@ function ziva<T extends { id: string; vyzbierane: number; darcovia: number }>(z:
   return { ...z, vyzbierane: z.vyzbierane + d.suma, darcovia: z.darcovia + d.pocet };
 }
 
+/** Firmy, ktoré na zbierku dali — v zbierke je vidieť, kto a koľko.
+ *  Archív (stiahnutie z firemnej stránky) sem nezasahuje: dar patrí zbierke. */
+function PodporiliFirmy({ zbierkaId, onFirma }: { zbierkaId: string; onFirma: (firma: string) => void }) {
+  const podpory = usePodporyZbierky(zbierkaId);
+  if (!podpory.length) return null;
+  const eur = (n: number) => `${n.toLocaleString("sk-SK", { maximumFractionDigits: 2 })} €`;
+  return (
+    <div style={{ display: "flex", flexWrap: "wrap", gap: SPACE.xs, marginBottom: SPACE.sm }}>
+      {podpory.map((x) => (
+        <span key={x.firma} {...pressable(() => onFirma(x.firma), `Profil ${x.firma}`)}
+          style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 11.5, fontWeight: 700, cursor: "pointer",
+            color: "var(--a-gold)", background: tint("var(--a-gold)", .12), border: `1px solid ${tint("var(--a-gold)", .35)}`,
+            borderRadius: RADIUS.pill, padding: `3px ${SPACE.sm}px` }}>
+          🤝 {x.firma} · {eur(x.suma + (x.vyclenene ?? 0))}
+        </span>
+      ))}
+    </div>
+  );
+}
+
 export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
   pozicia: Pozicia; tier?: Tier; logo: string | null; toast: (m: string) => void; onBack: () => void;
 }) {
@@ -81,7 +104,49 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
   const coverSrc = fotky.cover ?? s.cover;
   // „Všetko" — virtuálny tab navrchu (pred Kampane/Skutky/Talent…): zoskupí položky zo všetkých sekcií
   // len to, čo má entita v aktuálnom programe — ten istý výpočet ako prehľad v správe
-  const mojeTaby = verejneTaby(pozicia, tier);
+  const eurSk = (n: number) => `${n.toLocaleString("sk-SK", { maximumFractionDigits: 2 })} €`;
+  const mojeTabyZaklad = verejneTaby(pozicia, tier);
+  // Zbierky, ktoré si firma pripla tým, že na ne dala — bežiace sú „Podporujeme",
+  // ukončené a stiahnuté spadnú do „Komu sme pomohli" (história ostáva navždy).
+  const podpory = usePodporyFirmy(pozicia === "b2b" ? s.nazov : "");
+  // zbierka môže byť naša (register zbierok) alebo z profilu cudzej organizácie
+  // (modul Charita) — firma daruje kam chce, tak musíme vedieť pomenovať oboje
+  const kZbierke = (id: string) => {
+    const z = najdiZbierku(id);
+    if (z) return { nazov: z.nazov, komu: z.komu, foto: z.foto, emoji: z.emoji, aktivna: z.stav === "aktivna", nasa: true };
+    const k = najdiKampan(id);
+    if (k) return { nazov: k.kampan.nazov, komu: k.org, foto: k.kampan.foto, emoji: k.kampan.emoji, aktivna: true, nasa: false };
+    return null;
+  };
+  type PolProfilu = (typeof mojeTabyZaklad)[number]["polozky"][number];
+  const podporaPolozka = (x: Podpora): PolProfilu => {
+    const z = kZbierke(x.zbierkaId);
+    const dane = x.suma > 0 ? `darovali ${eurSk(x.suma)}` : "";
+    const vyclen = x.vyclenene ? `vyčlenili ${eurSk(x.vyclenene)} na dorovnávanie` : "";
+    return {
+      emoji: z?.emoji ?? "🤝",
+      titul: z?.nazov ?? "Zbierka",
+      // pri našej zbierke pripisuje príjemcu už samotná karta — nepíšeme ho dvakrát
+      popis: [z?.nasa ? "" : z?.komu, vyclen, dane].filter(Boolean).join(" · "),
+      // na cudziu zbierku nemáme detail — kartu vykreslíme s jej fotkou, ale
+      // neotvárame prázdno; naša zbierka sa otvorí ako doteraz
+      ...(z?.nasa ? { zbierkaId: x.zbierkaId } : z?.foto ? { foto: z.foto } : {}),
+    };
+  };
+  const bezi = (x: Podpora) => !x.archivovane && !!kZbierke(x.zbierkaId)?.aktivna;
+  const podporujeme = podpory.filter(bezi).map(podporaPolozka);
+  const pomohliSme = podpory.filter((x) => !bezi(x)).map(podporaPolozka);
+  // „Komu sme pomohli" je jedna záložka: čo firma podporila a už sa to skončilo,
+  // plus staršia história z profilu — nie dva zoznamy o tom istom
+  const podporaTaby = pozicia !== "b2b" || !podporujeme.length ? [] : [
+    { key: "podporujeme", label: "Podporujeme", polozky: podporujeme },
+  ] as typeof mojeTabyZaklad;
+  // ukončené a stiahnuté podpory idú do existujúcej záložky „Komu sme pomohli",
+  // aby na profile neboli dva zoznamy o tom istom
+  const mojeTaby = !pomohliSme.length ? mojeTabyZaklad
+    : mojeTabyZaklad.some((t) => t.key === "pomohli")
+      ? mojeTabyZaklad.map((t) => (t.key === "pomohli" ? { ...t, polozky: [...pomohliSme, ...t.polozky] } : t))
+      : ([...mojeTabyZaklad, { key: "pomohli", label: "Komu sme pomohli", polozky: pomohliSme }] as typeof mojeTabyZaklad);
   // sektorové zbierky (AKCIA) — vlastná záložka, nie stĺp veľkých kariet nad profilom
   const sektory = useSegmenty();
   useZmenyProfilov();
@@ -98,8 +163,9 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
       })
     : [];
   const taby = [
-    { key: "vsetko", label: "Všetko", polozky: mojeTaby.flatMap((t) => t.polozky) },
+    { key: "vsetko", label: "Všetko", polozky: [...podporaTaby, ...mojeTaby].flatMap((t) => t.polozky) },
     ...(naste.length ? [{ key: "oznamy", label: ponuky.length ? "Oznamy a ponuky" : "Oznamy", polozky: [] as typeof mojeTaby[number]["polozky"] }] : []),
+    ...podporaTaby,
     ...mojeTaby,
     ...(sektoroveZbierky.length ? [{ key: "sektory", label: "Sektory", polozky: [] as typeof mojeTaby[number]["polozky"] }] : []),
   ];
@@ -136,15 +202,10 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
   const [platbaRef, setPlatbaRef] = useState<{ id: string; komu: string } | null>(null);
   // zápis daru → zoznam darcov + súčty (registrovaný so zvoleným menom, inak anonym)
   const daruj = (refId: string, suma: number, kanal: "psp" | "sepa" | "deed", volba?: VolbaDaru, komu?: string) => {
-    pridajDar({ refId, suma, kanal, registrovany, volba });
-    // firma dorovná ten istý dar — zapíše sa jej to zo stropu a darca to hneď vidí.
-    // Dorovnaná suma ide do zbierky ako samostatný dar podpísaný firmou: firma má
-    // v DEED len verejný profil, anonymitu si nevyberá, a darca aj charita musia
-    // vidieť, odkiaľ tie peniaze sú.
-    const dv = beziaceDorovnanie(pozicia, refId);
-    const dorovnane = dv ? zapisDorovnanie(pozicia, dv.id, suma) : 0;
-    if (dv && dorovnane > 0) {
-      pridajDar({ refId, suma: dorovnane, kanal, registrovany: true, volba: { verzia: 4, zobrazSumu: true }, firma: dv.firma });
+    // dorovnanie firmy aj pripnutie zbierky rieši zápis daru (lib/darcovia) —
+    // platí to rovnako pre Charitu, Help, Vieru aj cudzí profil
+    const { dorovnane = 0 } = pridajDar({ refId, suma, kanal, registrovany, volba });
+    if (dorovnane > 0) {
       toast(`Ďakujeme za ${suma.toFixed(2)} € — firma pridala ${dorovnane.toFixed(2)} €, k príjemcovi ide ${(suma + dorovnane).toFixed(2)} €`);
       return;
     }
@@ -179,9 +240,11 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
         {dorovnanie && (
           <div style={{ marginBottom: SPACE.sm }}>
             <DorovnaniePas d={dorovnanie} onFirma={() => setFirmaProfil(dorovnanie.firma)} />
-            <div style={{ fontSize: 12, fontWeight: 800, color: "var(--a-gold)", textAlign: "center", marginTop: SPACE.xxs }}>
-              daruješ 20 € → k príjemcovi ide {20 + dorovnanieKDaru(dorovnanie, 20)} €
-            </div>
+            {dorovnanieKDaru(dorovnanie, 20) > 0 && (
+              <div style={{ fontSize: 12, fontWeight: 800, color: "var(--a-gold)", textAlign: "center", marginTop: SPACE.xxs }}>
+                daruješ 20 € → k príjemcovi ide {20 + dorovnanieKDaru(dorovnanie, 20)} €
+              </div>
+            )}
           </div>
         )}
         <PlatobnyModul zbalene krypto={kryptoOrg ? "EURC" : "nie"} {...sumy}
@@ -366,14 +429,17 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
                   </div>
                 )}
                 <div style={{ marginBottom: SPACE.sm }}><ProgresBox suma={z.vyzbierane} ciel={z.ciel} ludia={z.darcovia} live={z.stav === "aktivna"} /></div>
+                <PodporiliFirmy zbierkaId={z.id} onFirma={setFirmaProfil} />
                 {z.stav === "aktivna" && beziaceDorovnanie(pozicia, z.id) && (() => {
                   const dv = beziaceDorovnanie(pozicia, z.id)!;
                   return (
                     <div style={{ marginBottom: SPACE.sm }}>
                       <DorovnaniePas d={dv} onFirma={() => setFirmaProfil(dv.firma)} />
-                      <div style={{ fontSize: 12, fontWeight: 800, color: "var(--a-gold)", textAlign: "center", marginTop: SPACE.xxs }}>
-                        daruješ 20 € → k príjemcovi ide {20 + dorovnanieKDaru(dv, 20)} €
-                      </div>
+                      {dorovnanieKDaru(dv, 20) > 0 && (
+                        <div style={{ fontSize: 12, fontWeight: 800, color: "var(--a-gold)", textAlign: "center", marginTop: SPACE.xxs }}>
+                          daruješ 20 € → k príjemcovi ide {20 + dorovnanieKDaru(dv, 20)} €
+                        </div>
+                      )}
                     </div>
                   );
                 })()}
@@ -566,7 +632,7 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
         </div>
       ) : aktTab.polozky.length === 0 ? (
         <div style={{ fontSize: 12.5, color: C.textTer, textAlign: "center", padding: SPACE.lg }}>Zatiaľ žiadny obsah.</div>
-      ) : (tab === "vsetko" ? mojeTaby : [aktTab]).map((g) => {
+      ) : (tab === "vsetko" ? [...podporaTaby, ...mojeTaby] : [aktTab]).map((g) => {
         const polozky = g.polozky.map((p, i) => zbaluj(p, p.zbierkaId ?? `${g.key}-${i}`));
         return (
           <Fragment key={g.key}>
@@ -587,7 +653,7 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
 
   // na tablete/PC sa detail otvorí v okne nad mriežkou — karty sa nerozhadzujú
   const vybrana = siroke && rozbalena
-    ? (tab === "vsetko" ? mojeTaby : [aktTab]).flatMap((g) => g.polozky.map((p, i) => zbaluj(p, p.zbierkaId ?? `${g.key}-${i}`))).find((x) => x.kluc === rozbalena)
+    ? (tab === "vsetko" ? [...podporaTaby, ...mojeTaby] : [aktTab]).flatMap((g) => g.polozky.map((p, i) => zbaluj(p, p.zbierkaId ?? `${g.key}-${i}`))).find((x) => x.kluc === rozbalena)
     : undefined;
   const vlastnaVybrana = siroke && rozbalena ? sektoroveZbierky.find((z) => z.id === rozbalena) : undefined;
   const oknoDetailu = vlastnaVybrana ? (

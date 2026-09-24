@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { SIRKA, C, GRAD, GRAD_ZELENY, SPACE, RADIUS } from "@/theme";
 import { toast, Sheet, AvatarUroven, Stit, StitRiadok, STIT_POPIS, DozivotnyChip, useScrollPamat, useViac, useMotiv, useLayout, useTvorbaGate, obalSiroky, QrModal, pressable, IkonaMenu, IkonaNastavenia, IkonaSipVlavo, IkonaSipDole, IkonaPenazenka, IkonaHviezda, IkonaFajka, IkonaDoska, IkonaUsmev, IkonaOsoba, IkonaPin, IkonaSlnko, IkonaMesiac, IkonaStit, IkonaInstitucia, IkonaCeruzka, IkonaQr, IkonaObalka, IkonaList, IkonaKniha, IkonaSport, IkonaPaleta, IkonaZachrana, IkonaLudia, IkonaSrdceLine, IkonaFoto, FotoProfiluSheet, KamerkaBadge, ZmenitPill, BtnAkcia, MenuSkupina, MenuPolozka, MenuPrepinac, SkeletonRiadky, EmptyState, ErrorState, ScreenSwitch } from "@/shared";
 import { MojDeedFiremny } from "@/features/rola/MojDeedFiremny";
+import { MojZamestnavatelSheet } from "@/features/rola/MojZamestnavatel";
+import { useVazbaOsoby } from "@/lib/zamestnanci";
 import { RetazDobraSheet } from "@/features/retaz/RetazDobra";
 import { IntroPruvodca } from "@/components/intro";
 import { nacitajZostatok as nacitajZostatokDB, dobitPenazenku as dobitPenazenkuDB } from "@/lib/osobne";
@@ -615,6 +617,8 @@ function NastaveniaScreen({ toast, onBack, onNotif, desktop }: NastaveniaScreenP
   const [uroven, setUroven] = useState(true);             // zobrazovať moju úroveň (dá sa skryť)
   const [gps, setGps] = useState(true);
   const [ochrana, setOchrana] = useState(false);          // §13.1 anti-sociálny kredit (modal)
+  const [zamestnavatel, setZamestnavatel] = useState(false);  // väzba človek ↔ firma (obojstranná)
+  const vazbaFirmy = useVazbaOsoby(ja.celeMeno);
   const [oAppke, setOAppke] = useState(false);            // O aplikácii · podpora
   const [ako, setAko] = useState(false);                  // sprievodca „Ako DEED funguje"
 
@@ -651,13 +655,20 @@ function NastaveniaScreen({ toast, onBack, onNotif, desktop }: NastaveniaScreenP
         </MenuSkupina>
 
         <MenuSkupina nadpis="ÚČET">
-          <MenuPolozka ikona={<IkonaInstitucia size={16} />} farba="var(--a-gold)" label="Zamestnávateľ (B2B)" hodnota="Nenastavený" onClick={() => toast("Zamestnávateľ — príde s firemnými profilmi")} />
+          <MenuPolozka ikona={<IkonaInstitucia size={16} />} farba="var(--a-gold)" label="Zamestnávateľ (B2B)"
+            hodnota={vazbaFirmy?.stav === "potvrdeny" ? vazbaFirmy.firma
+              : vazbaFirmy?.stav === "pozvany" ? "Pozvánka čaká"
+              : vazbaFirmy?.stav === "ziadost" ? "Čaká na firmu" : "Nenastavený"}
+            onClick={() => setZamestnavatel(true)} />
           <MenuPolozka ikona={<IkonaPenazenka size={16} />} farba="var(--a-info)" label="Peňaženka a bezpečnosť" popis="Biometria a overenie pri výbere hodnoty" onClick={() => toast("Peňaženka a bezpečnosť — čoskoro")} />
           <MenuPolozka ikona={<IkonaObalka size={16} />} farba="var(--a-plum)" label="O aplikácii · podpora" onClick={() => setOAppke(true)} posledna />
         </MenuSkupina>
 
         <button onClick={() => { toast("Odhlásené"); void signOut(); }} style={{ width: "100%", height: 50, borderRadius: RADIUS.md, marginTop: SPACE.xs, border: "1px solid rgba(242,112,111,.4)", background: "rgba(242,112,111,.08)", color: "var(--a-danger)", fontWeight: 700, fontSize: 15, cursor: "pointer", fontFamily: "inherit" }}>Odhlásiť sa</button>
       </div>
+
+      {/* väzba človek ↔ firma — obojstranná, dobrovoľná */}
+      {zamestnavatel && <MojZamestnavatelSheet osoba={ja.celeMeno} toast={toast} onClose={() => setZamestnavatel(false)} />}
 
       {/* §13.1 — Ochrana osoby (anti-sociálny kredit) */}
       {ochrana && (

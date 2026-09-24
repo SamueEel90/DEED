@@ -175,7 +175,9 @@ export const SUBJEKTY: Record<Pozicia, SubjektMeta> = {
     // program ZADARMO: firma smie darovať a mať z toho karmu.
     // Vytváranie skutkov a akcií je nástroj — otvára sa až od T1.
     taby: [
-      { key: "darovali", label: "Darovali sme", polozky: [
+      // história podpory firmy — sem padajú aj zbierky, ktoré firma podporila
+      // a už sa skončili alebo si ich stiahla z podstránky (lib/podpory)
+      { key: "pomohli", label: "Komu sme pomohli", polozky: [
         { emoji: "🔥", titul: "", popis: "500 € · overená podpora", zbierkaId: "z-kovacova" },
         { emoji: "⭐", titul: "", popis: "pravidelná mesačná podpora", zbierkaId: "z-motylik" },
       ] },
@@ -296,6 +298,7 @@ export const PANEL_B2B: PanelBlok[] = [
 export const SPRAVA_B2B: SpravaItem[] = [
   { id: "profil", emoji: "✏️", nazov: "Profil firmy", popis: "Vizitka, logo a popis firmy", tierMin: 0 },
   { id: "sponzoring", emoji: "🛡", nazov: "Sponzoring", popis: "Podpora overených prípadov pod menom firmy", tierMin: 0 },
+  { id: "zbierky", emoji: "🎯", nazov: "Naše zbierky", popis: "Čo podporujeme — čísla, dorovnávanie, stiahnutie zo stránky", tierMin: 0 },
   { id: "dorovnanie", emoji: "🤝", nazov: "Dorovnanie darov", popis: "Pridávame k darom ľudí svoj diel · dar, nie sponzoring · zakladá sa pri zbierke", tierMin: 0 },
   { id: "zamestnanci", emoji: "👥", nazov: "Zamestnanci", popis: "Pripojenie cez QR alebo pozvánku — vždy dobrovoľné", tierMin: 1 },
   { id: "akcia", emoji: "🎟", nazov: "Firemná akcia", popis: "Firemné dobrovoľnícke akcie a udalosti", tierMin: 2 },

@@ -241,6 +241,17 @@ function sVlastnymiFotkami(o: OrgData): OrgData {
   return { ...o, logo: f.avatar ?? o.logo, cover: f.cover ?? o.cover };
 }
 
+/** kampaň (zbierka) kurátorovanej organizácie podľa jej id alebo daru `org-kampan-<id>`
+ *  — aby sa dar do cudzej zbierky dal pomenovať aj mimo tejto obrazovky */
+export function najdiKampan(ref: string): { kampan: OrgKampan; org: string } | null {
+  const id = ref.startsWith("org-kampan-") ? ref.slice("org-kampan-".length) : ref;
+  for (const o of ORGY) {
+    const kampan = o.kampane.find((k) => k.id === id);
+    if (kampan) return { kampan, org: o.meno };
+  }
+  return null;
+}
+
 export function najdiOrg(meno?: string): OrgData {
   const m = (meno || "").trim().toLowerCase();
   const kur = ORGY.find((o) => o.meno.toLowerCase() === m || (m && (o.meno.toLowerCase().includes(m) || m.includes(o.meno.toLowerCase()))));
