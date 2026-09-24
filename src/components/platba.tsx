@@ -55,7 +55,7 @@ function Ulozene({ ikona, t, d }: { ikona: string; t: string; d: string }) {
   );
 }
 
-export function PlatbaModal({ kanal, komu, suma: sumaInit, lenSepa = false, split = false, onClose, onDone }: { kanal?: string; komu?: ReactNode; suma?: number; lenSepa?: boolean; split?: boolean; onClose?: () => void; onDone?: (suma: number, volba?: VolbaDaru) => void }) {
+export function PlatbaModal({ kanal, komu, suma: sumaInit, lenSepa = false, split = false, onClose, onDone }: { kanal?: string; komu?: ReactNode; suma?: number; lenSepa?: boolean; split?: boolean; onClose?: () => void; onDone?: (suma: number, volba?: VolbaDaru, metoda?: "karta" | "sepa" | "krypto") => void }) {
   const jeEur = kanal === "EUR";
   const jed = kanal === "EURC" ? "EURC" : "DEED"; // krypto jednotka: EURC pri charite a Viere, inak DEED
   // registrovaný darca má v appke uloženú kartu, účet a peňaženku → nič nevypĺňa, len potvrdí
@@ -252,7 +252,7 @@ export function PlatbaModal({ kanal, komu, suma: sumaInit, lenSepa = false, spli
           {!jeSepa && <Riadok k="⛓ Hash" v={res.hash} accent={C.blueL} />}
           <Riadok k="Dátum" v={res.cas} />
         </div>
-        <button onClick={() => { onDone?.(sumaNum, volba); onClose?.(); }} style={btnP(true, GRAD_ZELENY)}>Hotovo</button>
+        <button onClick={() => { onDone?.(sumaNum, volba, jeEur ? metoda : "krypto"); onClose?.(); }} style={btnP(true, GRAD_ZELENY)}>Hotovo</button>
       </>)}
     </Sheet>
   );

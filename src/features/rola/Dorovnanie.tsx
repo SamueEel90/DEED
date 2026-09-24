@@ -16,7 +16,7 @@ import { PlatbaModal } from "@/components/platba";
 import {
   DOROVNANIE_CFG, useDorovnania, zapecat, potvrdPlatbu, odmietni, ukonci, pozastav, vysporiadaj,
   vycerpane, zostatok, popisPomeru, nazovPomeru, priklad, bezi, daSaZmazat, zmazDorovnanie,
-  useDorovnaniaFirmy, beziaceDorovnanie, type Dorovnanie,
+  useDorovnaniaFirmy, beziaceDorovnanie, casAutomatu, type Dorovnanie, type KanalDorovnania,
 } from "@/lib/dorovnanie";
 
 const ZLATA = "var(--a-gold)";
@@ -88,6 +88,7 @@ function Formular({ entita, cielFix, cielNazov, toast, onHotovo, onSpat }: {
   const [zvysok, setZvysok] = useState<"zbierke" | "firme">("zbierke");
   const [potvrd, setPotvrd] = useState(false);
   const [uhradene, setUhradene] = useState(false);   // pečatí sa až po úhrade
+  const [kanal, setKanal] = useState<KanalDorovnania | null>(null);   // ktorou rúrou → kedy nabehne
 
   const suma = Number(strop.replace(",", ".")) || 0;
   // pri pevnom cieli (vstup od zbierky) nemusí byť v zozname „vlastných" —
@@ -129,13 +130,21 @@ function Formular({ entita, cielFix, cielNazov, toast, onHotovo, onSpat }: {
         <div style={{ fontSize: 12.5, fontWeight: 800, color: ZELENA, background: tint(ZELENA, .1), border: `1px solid ${tint(ZELENA, .35)}`,
           borderRadius: RADIUS.sm, padding: SPACE.sm, marginBottom: SPACE.sm }}>
           ✓ Uhradené {eur(suma)} · {datum(od)}
+          <div style={{ fontWeight: 700, color: C.textSec, marginTop: 4 }}>
+            {kanal === "sepa"
+              ? "SEPA — charita potvrdí príjem; najneskôr o 48 h nabehne samo."
+              : "Karta / EURC — po zapečatení beží okamžite."}
+          </div>
         </div>
       )}
 
       <button disabled={!uhradene} style={{ ...btnHlavny, marginTop: uhradene ? 0 : SPACE.xs, opacity: uhradene ? 1 : .45, cursor: uhradene ? "pointer" : "not-allowed" }} onClick={() => {
         zapecat({ entita, ciel, cielNazov: zbierka?.nazov ?? ciel, firma: firma.trim(), firmaProfil: profil.trim() || undefined, firmaLogo: logo,
-          pomer, strop: suma, od, do: doVycerpania ? od + 3650 * DEN : doKedy, doVycerpania, zvysok });
-        toast("Dorovnanie zapečatené — čaká na potvrdenie charity");
+          pomer, strop: suma, od, do: doVycerpania ? od + 3650 * DEN : doKedy, doVycerpania, zvysok,
+          kanal: kanal ?? "sepa" });
+        toast(kanal === "sepa"
+          ? "Zapečatené — charita potvrdí príjem, najneskôr o 48 h beží samo"
+          : "Zapečatené — dorovnanie beží");
         onHotovo();
       }}>{uhradene ? "Zapečatiť a poslať" : "Zapečatiť (najprv uhraďte)"}</button>
       <button style={{ ...btnDruhy, marginTop: SPACE.xs }} onClick={() => setPotvrd(false)}>Ešte upraviť</button>
@@ -144,7 +153,11 @@ function Formular({ entita, cielFix, cielNazov, toast, onHotovo, onSpat }: {
     {platba && (
       <PlatbaModal kanal="EUR" suma={suma} komu={`dorovnanie zbierky ${zbierka?.nazov ?? ""}`}
         onClose={() => setPlatba(false)}
-        onDone={() => { setPlatba(false); setUhradene(true); toast(`Uhradené ${eur(suma)} — môžete zapečatiť`); }} />
+        onDone={(_sm, _v, metoda) => {
+          setPlatba(false); setUhradene(true);
+          setKanal(metoda === "karta" ? "karta" : metoda === "krypto" ? "krypto" : "sepa");
+          toast(`Uhradené ${eur(suma)} — môžete zapečatiť`);
+        }} />
     )}
   </>);
 
@@ -377,7 +390,7 @@ export function DorovnanieFirmySheet({ firma, toast, onClose }: {
   const rozdane = moje.reduce((s, d) => s + vycerpane(d), 0);
 
   const stavText = (d: Dorovnanie) =>
-    d.stav === "zapecatene" ? "čaká, kým charita potvrdí príjem"
+    d.stav === "zapecatene" ? `SEPA · charita potvrdzuje príjem — beží najneskôr ${casAutomatu(d, teraz)}`
     : d.stav === "aktivne" ? (bezi(d, teraz) ? `beží · ostáva ${eur(zostatok(d))}` : "mimo obdobia")
     : d.stav === "pozastavene" ? (d.vysporiadane ? "zbierka sa ukončuje · zvyšok vrátený" : `zbierka pozastavená · čaká sa na vrátenie ${eur(zostatok(d))}`)
     : d.stav === "vycerpane" ? "strop vyčerpaný"
@@ -471,7 +484,7 @@ export function DorovnanieSheet({ entita, toast, onClose }: {
   if (pisem) return <Formular entita={entita} toast={toast} onHotovo={() => setPisem(false)} onSpat={() => setPisem(false)} />;
 
   const stavText = (d: Dorovnanie) =>
-    d.stav === "zapecatene" ? "firma uhradila — potvrďte príjem na účte"
+    d.stav === "zapecatene" ? `firma uhradila SEPA — potvrďte príjem na účte (inak sa spustí samo ${casAutomatu(d, teraz)})`
     : d.stav === "aktivne" ? (bezi(d, teraz) ? `beží · ostáva ${eur(zostatok(d))}` : "beží, ale mimo obdobia")
     : d.stav === "pozastavene" ? (d.vysporiadane
         ? "pozastavené · zvyšok vrátený — môžete ukončiť"
@@ -501,7 +514,8 @@ export function DorovnanieSheet({ entita, toast, onClose }: {
             {d.cielNazov} · {stavText(d)}
           </div>
           <div style={{ fontSize: 10.5, color: C.textTer, marginTop: 2 }}>
-            zapečatené {datum(d.zapecatene)}{d.zaplatene ? ` · zaplatené ${datum(d.zaplatene)}` : ""}
+            zapečatené {datum(d.zapecatene)}{d.zaplatene ? ` · ${d.automaticky ? "spustené automaticky" : "príjem potvrdený"} ${datum(d.zaplatene)}` : ""}
+            {d.kanal && d.kanal !== "sepa" ? " · karta/EURC" : ""}
             {d.zaznamy.length > 0 ? ` · ${d.zaznamy.length} dorovnaných darov` : ""}
             {d.vysporiadane ? ` · zvyšok ${eur(d.vysporiadane.suma)} ${d.vysporiadane.kam === "firme" ? "vrátený firme" : "ostal zbierke"} ${datum(d.vysporiadane.kedy)}` : ""}
           </div>
@@ -509,8 +523,8 @@ export function DorovnanieSheet({ entita, toast, onClose }: {
             {d.stav === "zapecatene" && (<>
               <span {...pressable(() => { potvrdPlatbu(entita, d.id); toast("Peniaze potvrdené — dorovnanie beží"); }, "Potvrdiť platbu")}
                 style={{ fontSize: 11.5, fontWeight: 800, color: ZELENA, cursor: "pointer" }}>✓ Peniaze sú na účte — spustiť</span>
-              <span {...pressable(() => { odmietni(entita, d.id); toast("Dorovnanie odmietnuté"); }, "Odmietnuť")}
-                style={{ marginLeft: "auto", fontSize: 11.5, fontWeight: 700, color: C.textTer, cursor: "pointer" }}>Odmietnuť</span>
+              <span {...pressable(() => { odmietni(entita, d.id); toast("Peniaze neprišli — dorovnanie odmietnuté"); }, "Odmietnuť")}
+                style={{ marginLeft: "auto", fontSize: 11.5, fontWeight: 700, color: C.textTer, cursor: "pointer" }}>Peniaze neprišli — odmietnuť</span>
             </>)}
             {daSaZmazat(d) && (
               <span {...pressable(() => {

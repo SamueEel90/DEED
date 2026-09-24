@@ -7,9 +7,15 @@
 //   charita pri vytváraní zbierky zapne „Prijímame dorovnanie"
 //   → firma nastaví parametre a UHRADÍ sumu priamo charite (my sa jej nedotkneme)
 //   → až po úhrade ZAPEČATÍ (odvtedy sa parametre nedajú zmeniť)
-//   → charita príjem potvrdí → dorovnanie beží a je vidieť pri zbierke
-// Charita nič neschvaľuje (súhlas dala zaškrtnutím), ale kým firma
-// nezaplatila, vie ho odmietnuť.
+//   → dorovnanie beží a je vidieť pri zbierke
+// Kedy začne bežať, určuje RÚRA, nie nálada charity:
+//   KARTA / EURC — ide cez nášho procesora, potvrdenie máme v sekunde → beží IHNEĎ
+//   SEPA — non-custody, peniaze idú priamo na IBAN charity a do jej výpisu
+//          nevidíme; potvrdiť príjem vie zatiaľ len charita. Aby firemné peniaze
+//          neležali kvôli neodklikanej správe, po 48 h nabehne dorovnanie SAMO
+//          (tichý súhlas). Charita ho môže potvrdiť hneď alebo pred úhradou odmietnuť.
+// Keď charita pripojí účet (AIS čítanie výpisu, § A2 pre Dagmar), 48-ka padne
+// a aj SEPA sa páruje automaticky podľa VS.
 // ============================================================
 import { useSyncExternalStore } from "react";
 
@@ -26,8 +32,14 @@ export const DOROVNANIE_CFG = {
   ],
 };
 
+/** rúra, ktorou firma zaplatila — rozhoduje, či vieme príjem overiť sami */
+export type KanalDorovnania = "karta" | "krypto" | "sepa";
+
+/** kým beží 48-hodinový tichý súhlas pri SEPA */
+export const AUTOMAT_MS = 48 * 3600 * 1000;
+
 export type StavDorovnania =
-  | "zapecatene"      // firma uhradila a zapečatila, čaká na potvrdenie charity
+  | "zapecatene"      // SEPA: uhradené a zapečatené, čaká na potvrdenie charity (max 48 h)
   | "aktivne"         // peniaze sú u charity, dorovnanie beží
   | "pozastavene"     // zbierka aj dary stoja; čaká sa na vysporiadanie zvyšku
   | "vycerpane"       // strop minutý
@@ -65,6 +77,10 @@ export interface Dorovnanie {
   /** nevyčerpaný zvyšok na konci: ostáva zbierke (default) alebo späť firme */
   zvysok: "zbierke" | "firme";
   stav: StavDorovnania;
+  /** ktorou rúrou firma zaplatila (staré záznamy ju nemajú → berú sa ako SEPA) */
+  kanal?: KanalDorovnania;
+  /** dorovnanie nabehlo tichým súhlasom po 48 h, nie klikom charity */
+  automaticky?: boolean;
   /** časové pečiatky krokov — dôkaz, že poradie sedelo */
   zapecatene: number;
   zaplatene?: number;
@@ -84,7 +100,31 @@ const subscribe = (f: () => void) => { posluchaci.add(f); return () => posluchac
 export function useZmenyDorovnani(): number { return useSyncExternalStore(subscribe, () => verzia); }
 
 export function nacitajDorovnania(entita: string): Dorovnanie[] {
-  try { return JSON.parse(localStorage.getItem(KLUC(entita)) ?? "[]") as Dorovnanie[]; } catch { return []; }
+  let v: Dorovnanie[];
+  try { v = JSON.parse(localStorage.getItem(KLUC(entita)) ?? "[]") as Dorovnanie[]; } catch { return []; }
+  // tichý súhlas: čo čaká na potvrdenie dlhšie než 48 h, nabehne samo
+  const teraz = Date.now();
+  const po = v.map((d) => (d.stav === "zapecatene" && teraz >= d.zapecatene + AUTOMAT_MS
+    ? { ...d, stav: "aktivne" as StavDorovnania, zaplatene: d.zapecatene + AUTOMAT_MS, automaticky: true }
+    : d));
+  if (po.some((d, i) => d !== v[i])) {
+    try { localStorage.setItem(KLUC(entita), JSON.stringify(po)); } catch { /* LS nedostupné */ }
+  }
+  return po;
+}
+
+/** kedy najneskôr nabehne (SEPA, tichý súhlas) — null, ak už beží alebo je po ňom */
+export const automatOd = (d: Dorovnanie) =>
+  d.stav === "zapecatene" ? d.zapecatene + AUTOMAT_MS : null;
+
+/** „o 41 h" / „o 12 min" — koľko ostáva do automatického spustenia */
+export function casAutomatu(d: Dorovnanie, teraz = Date.now()): string {
+  const t = automatOd(d);
+  if (t === null) return "";
+  const zostava = t - teraz;
+  if (zostava <= 0) return "o chvíľu";
+  const hodiny = Math.floor(zostava / 3600000);
+  return hodiny >= 1 ? `o ${hodiny} h` : `o ${Math.max(1, Math.round(zostava / 60000))} min`;
 }
 function uloz(entita: string, v: Dorovnanie[]) {
   try { localStorage.setItem(KLUC(entita), JSON.stringify(v)); } catch { /* LS nedostupné */ }
@@ -164,7 +204,14 @@ export function useDorovnania(entita: string): Dorovnanie[] {
 // ---- kroky ----
 /** firma nastavila a zapečatila — parametre sa už nedajú zmeniť */
 export function zapecat(n: Omit<Dorovnanie, "id" | "stav" | "zapecatene" | "zaznamy">): Dorovnanie {
-  const novy: Dorovnanie = { ...n, id: `dv-${Date.now()}`, stav: "zapecatene", zapecatene: Date.now(), zaznamy: [] };
+  const teraz = Date.now();
+  // karta a EURC idú cez nášho procesora — príjem vieme overiť sami, čakať netreba
+  const hned = n.kanal === "karta" || n.kanal === "krypto";
+  const novy: Dorovnanie = {
+    ...n, id: `dv-${teraz}`, zaznamy: [], zapecatene: teraz,
+    stav: hned ? "aktivne" : "zapecatene",
+    ...(hned ? { zaplatene: teraz } : {}),
+  };
   uloz(n.entita, [novy, ...nacitajDorovnania(n.entita)]);
   return novy;
 }

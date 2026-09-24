@@ -34,6 +34,7 @@ import { SektoroveZbierkySheet } from "./SektoroveZbierky";
 import { OznamySheet } from "./Oznamy";
 import { InzeratySheet } from "./Inzeraty";
 import { DorovnanieSheet, DorovnanieFirmySheet } from "./Dorovnanie";
+import { useDorovnania, casAutomatu } from "@/lib/dorovnanie";
 import { ZBIERKY, predvolenyStav } from "@/lib/zbierky";
 import { nacitajStav, percentoDolozenia, fazaDokladovania, useZmenySpravy } from "@/lib/zbierkaSprava";
 import { KontaktBlok, nacitajKontakt, ulozKontakt } from "./kontakt";
@@ -113,6 +114,8 @@ function MojDeedFiremnyObsah({ onBack, toast, orgId }: { onBack: () => void; toa
 
   // Viditeľnosť nástrojov: vlastné + najviac 2 programy nad sebou (zamknuté).
   // Vyššie sa nezobrazujú vôbec — ZADARMO nevidí nástroje z T3/T4, T1 nevidí T4 atď.
+  // firemné peniaze už ležia na účte charity a čakajú len na klik — nech to v správe kričí
+  const cakajuceDorovnania = useDorovnania(pozicia).filter((d) => d.stav === "zapecatene");
   const viditelny = (tierMin: Tier) => tierMin <= tier + 2;
   const bloky = PANELY[pozicia].filter((b) => viditelny(b.tierMin));
   // odomknuté nástroje navrch, zamknuté pod ne zoradené podľa programu (najprv T1, potom T2)
@@ -291,10 +294,16 @@ function MojDeedFiremnyObsah({ onBack, toast, orgId }: { onBack: () => void; toa
                 label={it.nazov}
                 chip={it.id === startId
                   ? <span style={{ fontSize: 9.5, fontWeight: 800, color: "#fff", background: "var(--a-green)", borderRadius: RADIUS.xs, padding: `1px ${SPACE.xs}px`, flex: "none" }}>🚀 Začni tu</span>
+                  : it.id === "dorovnanie" && cakajuceDorovnania.length > 0
+                  ? <span style={{ fontSize: 9.5, fontWeight: 800, color: "#fff", background: "var(--a-clay)", borderRadius: RADIUS.xs, padding: `1px ${SPACE.xs}px`, flex: "none" }}>
+                      ⚠ Potvrdiť {cakajuceDorovnania.length > 1 ? `(${cakajuceDorovnania.length})` : ""}
+                    </span>
                   : it.povinne
                   ? <span style={{ fontSize: 9.5, fontWeight: 800, color: "var(--a-green)", background: tint("var(--a-green)", .14), borderRadius: RADIUS.xs, padding: `1px ${SPACE.xs}px`, flex: "none" }}>Povinné</span>
                   : zamknute ? <TierChip label={`od ${TIER_LABEL[pozicia][it.tierMin]}`} /> : undefined}
-                popis={it.popis}
+                popis={it.id === "dorovnanie" && cakajuceDorovnania[0]
+                  ? `Firma ${cakajuceDorovnania[0].firma} uhradila ${cakajuceDorovnania.length > 1 ? "dorovnania" : "dorovnanie"} — potvrďte príjem na účte. Ak nepotvrdíte, spustí sa samo ${casAutomatu(cakajuceDorovnania[0])}.`
+                  : it.popis}
                 zamknute={zamknute}
                 onClick={it.povinne ? () => spravaAkcia(it) : gateTier(it.tierMin, it.nazov, () => spravaAkcia(it))}
                 posledna={i === polozky.length - 1}
