@@ -9,7 +9,8 @@ import { useState, type CSSProperties } from "react";
 import { C, SPACE, RADIUS } from "@/theme";
 import { Sheet, tint } from "@/shared";
 import { pressable } from "@/components/pressable";
-import { ORG_ZBIERKY, FIRMY_ADRESAR } from "./mock";
+import { FIRMY_ADRESAR } from "./mock";
+import { nacitajSegmenty } from "./segmenty";
 import { CENTRALNA_ID, nacitajProfil } from "./vlastneZbierky";
 import { PlatbaModal } from "@/components/platba";
 import {
@@ -60,12 +61,16 @@ export function DorovnaniePas({ d, onFirma }: { d: Dorovnanie; onFirma?: () => v
 function Formular({ entita, toast, onHotovo, onSpat }: {
   entita: string; toast: (m: string) => void; onHotovo: () => void; onSpat: () => void;
 }) {
-  // ciele: centrálna zbierka (je na profile hneď navrchu) + zbierky organizácie
+  // ciele = len zbierky, ktoré sú naozaj na verejnom profile. Inak by firma
+  // zaplatila dorovnanie a nikde by nesvietilo.
   const [ciele] = useState(() => [
-    { id: CENTRALNA_ID, nazov: nacitajProfil(CENTRALNA_ID)?.nazov ?? "Centrálna zbierka organizácie", emoji: "💛" },
-    ...ORG_ZBIERKY.map((z) => ({ id: z.id, nazov: z.nazov, emoji: z.emoji })),
+    ...(nacitajProfil(CENTRALNA_ID) ? [{ id: CENTRALNA_ID, nazov: nacitajProfil(CENTRALNA_ID)!.nazov, emoji: "💛" }] : []),
+    ...nacitajSegmenty().flatMap((sg) => {
+      const pr = sg.zbierkaId ? nacitajProfil(sg.zbierkaId) : null;
+      return pr ? [{ id: sg.zbierkaId!, nazov: `${sg.nazov} — ${pr.nazov}`, emoji: "🧩" }] : [];
+    }),
   ]);
-  const [ciel, setCiel] = useState(CENTRALNA_ID);
+  const [ciel, setCiel] = useState(() => (nacitajProfil(CENTRALNA_ID) ? CENTRALNA_ID : ""));
   const [firma, setFirma] = useState("");
   const [profil, setProfil] = useState("");
   const [logo, setLogo] = useState<string | undefined>();
@@ -85,7 +90,8 @@ function Formular({ entita, toast, onHotovo, onSpat }: {
 
   const suma = Number(strop.replace(",", ".")) || 0;
   const zbierka = ciele.find((z) => z.id === ciel);
-  const chyba = firma.trim().length < 2 ? "Načítajte QR firmy — z neho sa vyplnia údaje."
+  const chyba = !ciel ? "Najprv spustite verejnú zbierku — dorovnanie musí byť kde zobraziť."
+    : firma.trim().length < 2 ? "Načítajte QR firmy — z neho sa vyplnia údaje."
     : suma <= 0 ? "Zadajte, koľko celkom vyčleňujete."
     : !doVycerpania && doKedy <= od ? "Koniec musí byť neskôr než dnes."
     : null;
@@ -147,6 +153,11 @@ function Formular({ entita, toast, onHotovo, onSpat }: {
       </div>
 
       <div style={{ fontSize: 12.5, fontWeight: 700, color: C.textSec, marginBottom: 4 }}>Ktorú zbierku dorovnávate?</div>
+      {ciele.length === 0 && (
+        <div style={{ fontSize: 12, color: "var(--a-clay)", background: tint("var(--a-clay)", .1), border: `1px solid ${tint("var(--a-clay)", .35)}`, borderRadius: RADIUS.sm, padding: SPACE.sm, marginBottom: SPACE.sm, lineHeight: 1.45 }}>
+          Charita nemá spustenú žiadnu verejnú zbierku. Dorovnanie by nemalo kde svietiť — najprv spustite centrálnu alebo sektorovú zbierku.
+        </div>
+      )}
       <select value={ciel} onChange={(e) => setCiel(e.target.value)} style={{ ...vstup, marginBottom: SPACE.sm }}>
         {ciele.map((z) => <option key={z.id} value={z.id}>{z.emoji} {z.nazov}</option>)}
       </select>
