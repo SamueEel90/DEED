@@ -33,6 +33,8 @@ import { VideoSheet, DarcoviaSheet, QrNastrojeSheet, ViditelnostSheet } from "./
 import { SektoroveZbierkySheet } from "./SektoroveZbierky";
 import { OznamySheet } from "./Oznamy";
 import { InzeratySheet } from "./Inzeraty";
+import { DorovnanieSheet, DorovnanieFirmySheet } from "./Dorovnanie";
+import { useDorovnania, casAutomatu } from "@/lib/dorovnanie";
 import { ZBIERKY, predvolenyStav } from "@/lib/zbierky";
 import { nacitajStav, percentoDolozenia, fazaDokladovania, useZmenySpravy } from "@/lib/zbierkaSprava";
 import { KontaktBlok, nacitajKontakt, ulozKontakt } from "./kontakt";
@@ -49,7 +51,7 @@ import { verejneTaby, zamknuteTaby, popisTabu, BLOK_ZA_TAB, zbierkyOrg, cislaSub
 */
 
 type PaywallReq = { tierMin: Tier; nazov: string; dovod?: string };
-type OtvorenySheet = null | "zbierky" | "centralna" | "terminal" | "retaz" | "profil" | "adresarB2B" | { spravovat: OrgZbierka } | "video" | "darcovia" | "qr" | "sumy" | "segment" | "oznamy" | "inzeraty";
+type OtvorenySheet = null | "zbierky" | "centralna" | "terminal" | "retaz" | "profil" | "adresarB2B" | { spravovat: OrgZbierka } | "video" | "darcovia" | "qr" | "sumy" | "segment" | "oznamy" | "inzeraty" | "dorovnanie";
 
 // ---- SVG ikony blokov a správy (nahrádzajú emoji — jednotný vizuál) ----
 const IKONY: Record<string, ReactNode> = {
@@ -112,6 +114,8 @@ function MojDeedFiremnyObsah({ onBack, toast, orgId }: { onBack: () => void; toa
 
   // Viditeľnosť nástrojov: vlastné + najviac 2 programy nad sebou (zamknuté).
   // Vyššie sa nezobrazujú vôbec — ZADARMO nevidí nástroje z T3/T4, T1 nevidí T4 atď.
+  // firemné peniaze už ležia na účte charity a čakajú len na klik — nech to v správe kričí
+  const cakajuceDorovnania = useDorovnania(pozicia).filter((d) => d.stav === "zapecatene");
   const viditelny = (tierMin: Tier) => tierMin <= tier + 2;
   const bloky = PANELY[pozicia].filter((b) => viditelny(b.tierMin));
   // odomknuté nástroje navrch, zamknuté pod ne zoradené podľa programu (najprv T1, potom T2)
@@ -156,7 +160,8 @@ function MojDeedFiremnyObsah({ onBack, toast, orgId }: { onBack: () => void; toa
     if (pozicia === "charita" && (it.id === "zbierky" || it.id === "dokladovanie")) return setSheet("zbierky");
     if (pozicia === "tvorca" && it.id === "terminal") return setSheet("terminal");
     if (pozicia === "charita" && it.id === "centralna") return setSheet("centralna");
-    if (pozicia === "charita" && (it.id === "video" || it.id === "darcovia" || it.id === "qr" || it.id === "sumy" || it.id === "segment" || it.id === "oznamy" || it.id === "inzeraty")) return setSheet(it.id);
+    if (pozicia === "b2b" && it.id === "dorovnanie") return setSheet("dorovnanie");
+    if (pozicia === "charita" && (it.id === "video" || it.id === "darcovia" || it.id === "qr" || it.id === "sumy" || it.id === "segment" || it.id === "oznamy" || it.id === "inzeraty" || it.id === "dorovnanie")) return setSheet(it.id);
     toast(`${it.nazov} — čoskoro`);
   };
 
@@ -289,10 +294,16 @@ function MojDeedFiremnyObsah({ onBack, toast, orgId }: { onBack: () => void; toa
                 label={it.nazov}
                 chip={it.id === startId
                   ? <span style={{ fontSize: 9.5, fontWeight: 800, color: "#fff", background: "var(--a-green)", borderRadius: RADIUS.xs, padding: `1px ${SPACE.xs}px`, flex: "none" }}>🚀 Začni tu</span>
+                  : it.id === "dorovnanie" && cakajuceDorovnania.length > 0
+                  ? <span style={{ fontSize: 9.5, fontWeight: 800, color: "#fff", background: "var(--a-clay)", borderRadius: RADIUS.xs, padding: `1px ${SPACE.xs}px`, flex: "none" }}>
+                      ⚠ Potvrdiť {cakajuceDorovnania.length > 1 ? `(${cakajuceDorovnania.length})` : ""}
+                    </span>
                   : it.povinne
                   ? <span style={{ fontSize: 9.5, fontWeight: 800, color: "var(--a-green)", background: tint("var(--a-green)", .14), borderRadius: RADIUS.xs, padding: `1px ${SPACE.xs}px`, flex: "none" }}>Povinné</span>
                   : zamknute ? <TierChip label={`od ${TIER_LABEL[pozicia][it.tierMin]}`} /> : undefined}
-                popis={it.popis}
+                popis={it.id === "dorovnanie" && cakajuceDorovnania[0]
+                  ? `Firma ${cakajuceDorovnania[0].firma} uhradila ${cakajuceDorovnania.length > 1 ? "dorovnania" : "dorovnanie"} — potvrďte príjem na účte. Ak nepotvrdíte, spustí sa samo ${casAutomatu(cakajuceDorovnania[0])}.`
+                  : it.popis}
                 zamknute={zamknute}
                 onClick={it.povinne ? () => spravaAkcia(it) : gateTier(it.tierMin, it.nazov, () => spravaAkcia(it))}
                 posledna={i === polozky.length - 1}
@@ -344,6 +355,9 @@ function MojDeedFiremnyObsah({ onBack, toast, orgId }: { onBack: () => void; toa
       {sheet === "qr" && <QrNastrojeSheet tier={tier} toast={toast} onClose={() => setSheet(null)} />}
       {sheet === "sumy" && <ViditelnostSheet toast={toast} onClose={() => setSheet(null)} />}
       {sheet === "oznamy" && <OznamySheet entita={pozicia} autor={subjekt.nazov} logo={logo ?? subjekt.foto} toast={toast} onClose={() => setSheet(null)} />}
+      {sheet === "dorovnanie" && (pozicia === "b2b"
+        ? <DorovnanieFirmySheet firma={subjekt.nazov} toast={toast} onClose={() => setSheet(null)} />
+        : <DorovnanieSheet entita={pozicia} toast={toast} onClose={() => setSheet(null)} />)}
       {sheet === "inzeraty" && <InzeratySheet entita={pozicia} autor={subjekt.nazov} logo={logo ?? subjekt.foto} tier={tier} toast={toast} onPaywall={setPaywall} onClose={() => setSheet(null)} />}
       {sheet === "segment" && <SektoroveZbierkySheet tier={tier} toast={toast} onPaywall={setPaywall} onClose={() => setSheet(null)} />}
       {sheet === "terminal" && <TerminalSheet toast={toast} onClose={() => setSheet(null)} />}

@@ -10,8 +10,14 @@ const DB = "deed-media", STORE = "video";
 
 function otvor(): Promise<IDBDatabase> {
   return new Promise((ok, zle) => {
-    const r = indexedDB.open(DB, 1);
-    r.onupgradeneeded = () => r.result.createObjectStore(STORE);
+    // verzia 2 = spoločná databáza s prílohami (lib/prilohy.ts) — obe musia
+    // otvárať rovnakú verziu, inak si navzájom hodia VersionError
+    const r = indexedDB.open(DB, 2);
+    r.onupgradeneeded = () => {
+      const db = r.result;
+      if (!db.objectStoreNames.contains(STORE)) db.createObjectStore(STORE);
+      if (!db.objectStoreNames.contains("priloha")) db.createObjectStore("priloha");
+    };
     r.onsuccess = () => ok(r.result);
     r.onerror = () => zle(r.error);
   });

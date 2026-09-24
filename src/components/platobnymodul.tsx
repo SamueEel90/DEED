@@ -64,6 +64,8 @@ export interface PlatobnyModulProps {
   /** Skryje riadok Obľúbené + Podporiť DEED (napr. vnorený modul v Split QR sheete). */
   bezOblubenych?: boolean;
   opakovana?: RiadokAkcie;
+  /** vstup pre firmu — dorovná dary ľudí zo svojho stropu */
+  dorovnanie?: RiadokAkcie;
   qr?: RiadokAkcie;
   retaz?: RiadokAkcie;
   style?: CSSProperties;
@@ -96,7 +98,7 @@ function QrNahlad() {
 export function PlatobnyModul({
   onShare, upvotes = 0, onUpvote, reakcia = "palec",
   onPodpor, onKanal, accent = "var(--a-info)", supLabel, bezDaru = false, zbalene = false, komu, onDarEur, onDarKrypto, krypto,
-  oblubene, toast, bezOblubenych = false, opakovana, qr, retaz, style, kryptoOtvorene, sumyEur, sumyEurc,
+  oblubene, toast, bezOblubenych = false, opakovana, dorovnanie, qr, retaz, style, kryptoOtvorene, sumyEur, sumyEurc,
 }: PlatobnyModulProps) {
   // Pravidelná podpora — zelená a výraznejšia; v zbalenom module sedí hneď pod darmi v eurách
   const pravidelnaEl = opakovana && (
@@ -115,6 +117,22 @@ export function PlatobnyModul({
       </div>
     </div>
   );
+  const dorovnanieEl = dorovnanie && (
+    <div onClick={dorovnanie.onClick} role="button" tabIndex={0}
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); dorovnanie.onClick(); } }}
+      style={riadok("color-mix(in srgb, var(--a-gold) 8%, transparent)", "color-mix(in srgb, var(--a-gold) 40%, transparent)")}>
+      <div style={{ width: 52, height: 52, borderRadius: RADIUS.xs, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, background: "color-mix(in srgb, var(--a-gold) 18%, transparent)" }}>
+        🤝
+      </div>
+      <div style={riadokText}>
+        <div style={{ ...riadokLabel, color: "var(--a-gold)" }}>{dorovnanie.label ?? "Dorovnanie daru — pre firmy"}</div>
+        <div style={riadokPopis}>{dorovnanie.popis ?? "Pridajte k daru ľudí svoj diel · dar, nie sponzoring"}</div>
+      </div>
+      <div style={{ ...ctaBase, background: "var(--a-gold)", border: "1px solid var(--a-gold)", color: "#1a1206" }}>
+        {dorovnanie.cta ?? "Chcem dorovnávať"}
+      </div>
+    </div>
+  );
   // Obľúbené + Podporiť DEED — rovnaká výška oboch tlačidiel
   const oblubeneEl = !bezOblubenych && (
         <div style={{ display: "flex", gap: SPACE.xs, marginTop: SPACE.gutter }}>
@@ -127,12 +145,13 @@ export function PlatobnyModul({
       <PodporaSekcia
         onShare={onShare} upvotes={upvotes} onUpvote={onUpvote} reakcia={reakcia}
         onPodpor={onPodpor} onKanal={onKanal} accent={accent} bezDaru={bezDaru}
-        zbalene={zbalene} komu={komu} krypto={krypto} kryptoOtvorene={kryptoOtvorene} sumyEur={sumyEur} sumyEurc={sumyEurc} poEurach={zbalene ? <>{pravidelnaEl}{oblubeneEl}</> : undefined} onDarEur={onDarEur ?? ((sm) => toast?.(`Ďakujeme za dar ${sm.toLocaleString("sk")} €`))}
+        zbalene={zbalene} komu={komu} krypto={krypto} kryptoOtvorene={kryptoOtvorene} sumyEur={sumyEur} sumyEurc={sumyEurc} poEurach={zbalene ? <>{pravidelnaEl}{dorovnanieEl}{oblubeneEl}</> : undefined} onDarEur={onDarEur ?? ((sm) => toast?.(`Ďakujeme za dar ${sm.toLocaleString("sk")} €`))}
         onDarKrypto={onDarKrypto ?? ((v) => toast?.(`Ďakujeme za dar ${v.toLocaleString("sk", { minimumFractionDigits: 2 })} EURC`))}
         {...(supLabel ? { supLabel } : {})} />
 
       {/* nezbalený modul: pravidelná podpora a Obľúbené pod darmi (v zbalenom sú pred darmi v krypte) */}
       {!zbalene && pravidelnaEl}
+      {!zbalene && dorovnanieEl}
 
       {!zbalene && oblubeneEl}
 

@@ -12,6 +12,8 @@ export type KategoriaOznamu = "oznam" | "akcia" | "inzerat";
 export const OZNAM_CFG = {
   maxNadpis: 70,
   maxText: 600,
+  /** pracovná ponuka je dlhšia — reálne výberové konania majú 2–4 tisíc znakov */
+  maxTextPonuky: 4000,
   maxFotiek: 3,
   /** predvolená platnosť v dňoch — koľko oznam visí na profile */
   platnostDni: 14,
@@ -29,6 +31,28 @@ export const INZERAT_CFG = {
   /** po zavretí inzerátu sa kontakty záujemcov po toľkých dňoch zmažú */
   dniDoZmazaniaKontaktov: 30,
 };
+
+/** podrobnosti pracovnej ponuky — to, čo človek hľadá očami skôr, než začne čítať */
+export interface PonukaDetail {
+  miesto?: string;
+  uvazok?: string;
+  nastup?: string;
+  /** uzávierka prihlášok (ms) — po nej ponuka sama zíde z profilu */
+  uzavierka?: number;
+  mzda?: string;
+  // ---- ako sa prihlásiť ----
+  /** cez DEED tlačidlom „Mám záujem" */
+  cezDeed?: boolean;
+  /** žiadosť e-mailom */
+  email?: string;
+  /** žiadosť poštou / osobne */
+  adresa?: string;
+  /** čo treba priložiť (životopis, doklad o vzdelaní…) */
+  doklady?: string;
+  /** hotový dokument výberového konania (odkaz „idb:…", lib/prilohy.ts) */
+  priloha?: string;
+  prilohaNazov?: string;
+}
 
 /** človek, čo klikol „Mám záujem" — vypĺňa si údaje sám a vyberá, čo dá k dispozícii */
 export interface Zaujemca {
@@ -59,6 +83,7 @@ export interface Oznam {
   /** miesto je obsadené — inzerát prestáva bežať, ostatným sa poďakuje */
   obsadene?: number;      // ms, kedy sa zavrel
   zaujemcovia?: Zaujemca[];
+  ponuka?: PonukaDetail;
 }
 
 const KLUC = (entita: string) => `deed.oznamy.${entita}`;
@@ -77,7 +102,11 @@ function uloz(entita: string, v: Oznam[]) {
 
 const DEN = 86400000;
 /** oznam je na profile, kým nevyprší platnosť — potom ostáva len v správe */
-export const oznamAktivny = (o: Oznam, teraz = Date.now()) => teraz < o.vytvorene + o.platnostDni * DEN;
+export const oznamAktivny = (o: Oznam, teraz = Date.now()) =>
+  teraz < o.vytvorene + o.platnostDni * DEN && !poUzavierke(o, teraz);
+/** ponuka s uzávierkou prihlášok zíde z profilu sama, nech nikto neposiela žiadosť zbytočne */
+export const poUzavierke = (o: Oznam, teraz = Date.now()) =>
+  !!o.ponuka?.uzavierka && teraz > o.ponuka.uzavierka + DEN;   // do konca dňa uzávierky
 /** koľko dní ešte visí (záporné = skončil) */
 export const dniDoKonca = (o: Oznam, teraz = Date.now()) =>
   Math.max(0, Math.round((o.vytvorene + o.platnostDni * DEN - teraz) / DEN));

@@ -31,6 +31,16 @@ function DarPreNas({ on, label, onToggle }: { on: boolean; label: string; onTogg
     </button>
   );
 }
+/** tlačidlo platby drží spodok panelu — na nízkom okne ho inak človek nevidí a musí rolovať */
+function Lipni({ children }: { children: ReactNode }) {
+  return (
+    <div style={{ position: "sticky", bottom: 0, zIndex: 3, marginTop: SPACE.sm,
+      paddingBottom: SPACE.xs, background: `linear-gradient(to bottom, transparent, ${C.surface} 22%)` }}>
+      {children}
+    </div>
+  );
+}
+
 /** uložený platobný prostriedok registrovaného darcu (karta / účet) */
 function Ulozene({ ikona, t, d }: { ikona: string; t: string; d: string }) {
   return (
@@ -45,7 +55,7 @@ function Ulozene({ ikona, t, d }: { ikona: string; t: string; d: string }) {
   );
 }
 
-export function PlatbaModal({ kanal, komu, suma: sumaInit, lenSepa = false, split = false, onClose, onDone }: { kanal?: string; komu?: ReactNode; suma?: number; lenSepa?: boolean; split?: boolean; onClose?: () => void; onDone?: (suma: number, volba?: VolbaDaru) => void }) {
+export function PlatbaModal({ kanal, komu, suma: sumaInit, lenSepa = false, split = false, onClose, onDone }: { kanal?: string; komu?: ReactNode; suma?: number; lenSepa?: boolean; split?: boolean; onClose?: () => void; onDone?: (suma: number, volba?: VolbaDaru, metoda?: "karta" | "sepa" | "krypto") => void }) {
   const jeEur = kanal === "EUR";
   const jed = kanal === "EURC" ? "EURC" : "DEED"; // krypto jednotka: EURC pri charite a Viere, inak DEED
   // registrovaný darca má v appke uloženú kartu, účet a peňaženku → nič nevypĺňa, len potvrdí
@@ -189,7 +199,7 @@ export function PlatbaModal({ kanal, komu, suma: sumaInit, lenSepa = false, spli
         </div>
         {tipSuma > 0 && <DarPreNas on={tip} label={tipLabel} onToggle={() => setTip((v) => !v)} />}
         <div style={{ display: "flex", alignItems: "center", gap: SPACE.xs, fontSize: 11, color: C.textTer, marginTop: SPACE.sm, lineHeight: 1.4 }}><IkonaStit size={13} color={C.green} /> Zabezpečené · 3‑D Secure · test 4242 4242 4242 4242</div>
-        <button disabled={!kartaOk} onClick={zaplatit} style={btnP(kartaOk)}>Zaplatiť {spolu.toFixed(2)} €</button>
+        <Lipni><button disabled={!kartaOk} onClick={zaplatit} style={btnP(kartaOk)}>Zaplatiť {spolu.toFixed(2)} €</button></Lipni>
       </>)}
 
       {/* EUR · SEPA prevod */}
@@ -207,7 +217,7 @@ export function PlatbaModal({ kanal, komu, suma: sumaInit, lenSepa = false, spli
         </div>
         {tipSuma > 0 && <DarPreNas on={tip} label={tipLabel} onToggle={() => setTip((v) => !v)} />}
         <div style={{ display: "flex", alignItems: "center", gap: SPACE.xs, fontSize: 11, color: C.textTer, marginTop: SPACE.sm, lineHeight: 1.4 }}><IkonaStit size={13} color={C.green} /> Bankový prevod · SEPA · charita dostane celý dar · pripísanie do 1 prac. dňa</div>
-        <button disabled={!sepaOk} onClick={zaplatit} style={btnP(sepaOk)}>Odoslať prevod {spolu.toFixed(2)} €</button>
+        <Lipni><button disabled={!sepaOk} onClick={zaplatit} style={btnP(sepaOk)}>Odoslať prevod {spolu.toFixed(2)} €</button></Lipni>
       </>)}
 
       {krok === "detaily" && !jeEur && (<>
@@ -242,7 +252,7 @@ export function PlatbaModal({ kanal, komu, suma: sumaInit, lenSepa = false, spli
           {!jeSepa && <Riadok k="⛓ Hash" v={res.hash} accent={C.blueL} />}
           <Riadok k="Dátum" v={res.cas} />
         </div>
-        <button onClick={() => { onDone?.(sumaNum, volba); onClose?.(); }} style={btnP(true, GRAD_ZELENY)}>Hotovo</button>
+        <button onClick={() => { onDone?.(sumaNum, volba, jeEur ? metoda : "krypto"); onClose?.(); }} style={btnP(true, GRAD_ZELENY)}>Hotovo</button>
       </>)}
     </Sheet>
   );

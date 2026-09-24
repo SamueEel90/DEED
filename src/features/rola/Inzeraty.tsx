@@ -14,8 +14,9 @@ import { FotkaObsahu, Miniatura, PrehliadacFotiek } from "@/components/fotka";
 import { RichTextInput } from "@/components/richtext";
 import { FormatovanyText } from "@/components/formattext";
 import { cistyText } from "@/lib/richtext";
+import { ulozPrilohu, usePrilohaUrl, zmazPrilohu, PRILOHA_CFG } from "@/lib/prilohy";
 import {
-  OZNAM_CFG, INZERAT_CFG, useOznamy, pridajOznam, upravOznam, zmazOznam, obsadInzerat,
+  OZNAM_CFG, INZERAT_CFG, type PonukaDetail, useOznamy, pridajOznam, upravOznam, zmazOznam, obsadInzerat,
   otvorInzeratZnova, beziaceInzeraty, limitInzeratov, dniDoKonca, type Oznam,
 } from "@/lib/oznamy";
 import type { Tier } from "./stav";
@@ -24,11 +25,80 @@ import { pridajZaujemcu, zrusZaujem } from "@/lib/oznamy";
 
 const ZELENA = "var(--a-green)";
 const ZLATA = "var(--a-gold)";
+const DEN = 86400000;
+const naDatum = (ms?: number) => (ms ? new Date(ms).toISOString().slice(0, 10) : "");
+const zDatumu = (s: string) => (s ? new Date(`${s}T00:00:00`).getTime() : undefined);
+const skratka = (ms: number) => new Date(ms).toLocaleDateString("sk-SK", { day: "numeric", month: "numeric", year: "numeric" });
 const karta: CSSProperties = { background: C.surface2, border: `1px solid ${C.line}`, borderRadius: RADIUS.sm, padding: SPACE.sm, marginBottom: SPACE.xs };
 const vstup: CSSProperties = { width: "100%", boxSizing: "border-box", background: C.surface2, border: `1px solid ${C.line}`, borderRadius: RADIUS.sm, padding: SPACE.sm, color: C.text, fontSize: 14, fontFamily: "inherit", outline: "none" };
 const btnHlavny: CSSProperties = { width: "100%", height: 48, borderRadius: RADIUS.sm, border: "none", cursor: "pointer", fontFamily: "inherit", fontWeight: 800, fontSize: 15, background: ZELENA, color: "#06281d" };
 const btnDruhy: CSSProperties = { width: "100%", height: 44, borderRadius: RADIUS.sm, border: `1px solid ${C.line}`, cursor: "pointer", fontFamily: "inherit", fontWeight: 700, fontSize: 13.5, background: "transparent", color: C.textSec };
 const odkaz: CSSProperties = { fontSize: 11.5, fontWeight: 800, color: ZELENA, cursor: "pointer" };
+
+/** riadok údajov — to, čo človek hľadá očami skôr, než začne čítať */
+function UdajePonuky({ o }: { o: Oznam }) {
+  const [teraz] = useState(() => Date.now());   // nech sa počet dní pri prekreslení nemení
+  const p = o.ponuka;
+  if (!p) return null;
+  const udaje = [
+    p.miesto && { i: "📍", t: p.miesto },
+    p.uvazok && { i: "⏱", t: p.uvazok },
+    p.nastup && { i: "📅", t: `nástup ${p.nastup}` },
+    p.mzda && { i: "💶", t: p.mzda },
+  ].filter(Boolean) as { i: string; t: string }[];
+  const dni = p.uzavierka ? Math.ceil((p.uzavierka + DEN - teraz) / DEN) : null;
+  if (!udaje.length && !p.uzavierka) return null;
+  return (
+    <div style={{ marginTop: SPACE.xs }}>
+      {udaje.length > 0 && (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: SPACE.xxs }}>
+          {udaje.map((u, i) => (
+            <span key={i} style={{ fontSize: 11.5, fontWeight: 700, color: C.textSec, background: C.surface2, border: `1px solid ${C.line}`, borderRadius: RADIUS.pill, padding: `2px ${SPACE.xs}px` }}>
+              {u.i} {u.t}
+            </span>
+          ))}
+        </div>
+      )}
+      {p.uzavierka && (
+        <div style={{ fontSize: 11.5, fontWeight: 800, marginTop: SPACE.xxs, color: dni !== null && dni <= 3 ? "var(--a-danger)" : C.textSec }}>
+          Uzávierka prihlášok: {skratka(p.uzavierka)}
+          {dni !== null && (dni > 0 ? ` · ostáva ${dni} ${dni === 1 ? "deň" : dni < 5 ? "dni" : "dní"}` : " · uzavreté")}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** hotový dokument výberového konania — charity ho majú aj tak spravený */
+function PrilohaPonuky({ o }: { o: Oznam }) {
+  const url = usePrilohaUrl(o.ponuka?.priloha);
+  if (!o.ponuka?.priloha) return null;
+  return (
+    <a href={url ?? undefined} target="_blank" rel="noopener noreferrer" download={o.ponuka.prilohaNazov}
+      style={{ display: "inline-flex", alignItems: "center", gap: SPACE.xxs, marginTop: SPACE.xs, fontSize: 12.5, fontWeight: 700, color: "var(--a-info)", textDecoration: "none" }}>
+      📄 {o.ponuka.prilohaNazov || "Podrobnosti (PDF)"}
+    </a>
+  );
+}
+
+/** žiadosť e-mailom alebo poštou — takto to charity reálne robia */
+function AkoSaPrihlasit({ o }: { o: Oznam }) {
+  const p = o.ponuka;
+  if (!p?.email && !p?.adresa) return null;
+  return (
+    <div style={{ marginTop: SPACE.sm, background: C.surface2, border: `1px solid ${C.line}`, borderRadius: RADIUS.sm, padding: SPACE.sm }}>
+      <div style={{ fontSize: 12, fontWeight: 800, color: C.textSec, marginBottom: 4 }}>Ako poslať žiadosť</div>
+      {p.email && (
+        <div style={{ fontSize: 12.5, marginBottom: 2 }}>
+          <span style={{ color: C.textTer }}>E-mailom: </span>
+          <a href={`mailto:${p.email}`} style={{ color: "var(--a-info)", fontWeight: 700 }}>{p.email}</a>
+        </div>
+      )}
+      {p.adresa && <div style={{ fontSize: 12.5, marginBottom: 2 }}><span style={{ color: C.textTer }}>Poštou: </span>{p.adresa}</div>}
+      {p.doklady && <div style={{ fontSize: 12, color: C.textSec, marginTop: 4, whiteSpace: "pre-wrap", lineHeight: 1.45 }}>{p.doklady}</div>}
+    </div>
+  );
+}
 
 /** karta pracovnej ponuky tak, ako ju uvidia ľudia — rovnaká v náhľade aj na profile */
 export function InzeratKarta({ o, autor, logo, deti }: { o: Oznam; autor: string; logo?: string; deti?: React.ReactNode }) {
@@ -54,6 +124,7 @@ export function InzeratKarta({ o, autor, logo, deti }: { o: Oznam; autor: string
           <span style={{ flex: 1, minWidth: 0, fontSize: 11, color: C.textTer, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{autor}</span>
         </div>
         <div style={{ fontSize: 15, fontWeight: 800, lineHeight: 1.3 }}>{o.nadpis}</div>
+        <UdajePonuky o={o} />
         {!bezTextu && (
           <FormatovanyText text={o.text} style={{ fontSize: 13.5, color: C.textSec, lineHeight: 1.5, marginTop: 4 }} />
         )}
@@ -63,7 +134,9 @@ export function InzeratKarta({ o, autor, logo, deti }: { o: Oznam; autor: string
             <span style={{ flex: "none", fontSize: 11, color: C.textTer, paddingLeft: 2 }}>{fotky.length} fotky — klikni</span>
           </div>
         )}
-        {deti}
+        <PrilohaPonuky o={o} />
+        <AkoSaPrihlasit o={o} />
+        {(o.ponuka?.cezDeed ?? true) && deti}
       </div>
     </div>
     {fotka !== null && <PrehliadacFotiek fotky={fotky} start={fotka} onClose={() => setFotka(null)} />}
@@ -79,6 +152,7 @@ function Formular({ entita, autor, logo, uprava, toast, onHotovo, onSpat }: {
   const [text, setText] = useState(uprava?.text ?? "");
   const [fotky, setFotky] = useState<string[]>(uprava?.fotky ?? []);
   const [dni, setDni] = useState(uprava?.platnostDni ?? INZERAT_CFG.platnostDni);
+  const [p, setP] = useState<PonukaDetail>(uprava?.ponuka ?? { cezDeed: true });
   const [nahlad, setNahlad] = useState(false);
   const [teraz] = useState(() => Date.now());
 
@@ -97,22 +171,23 @@ function Formular({ entita, autor, logo, uprava, toast, onHotovo, onSpat }: {
   const dlzka = cistyText(text).length;
   const chyba = nadpis.trim().length < 3 ? "Napíšte, koho hľadáte — stačí pár slov."
     : dlzka < 10 && fotky.length === 0 ? "Napíšte aspoň vetu — čo treba robiť, kedy a kde. Alebo nahrajte hotový plagát ako fotku."
-    : dlzka > OZNAM_CFG.maxText ? `Text je dlhší, než sa do ponuky zmestí — skráťte ho o ${dlzka - OZNAM_CFG.maxText} znakov.`
+    : dlzka > OZNAM_CFG.maxTextPonuky ? `Text je dlhší, než sa do ponuky zmestí — skráťte ho o ${dlzka - OZNAM_CFG.maxTextPonuky} znakov.`
+    : !p.cezDeed && !p.email?.trim() && !p.adresa?.trim() ? "Nechajte aspoň jednu cestu, ako sa prihlásiť — cez DEED, e-mailom alebo poštou."
     : null;
 
   const zverejni = () => {
     if (chyba) { toast(chyba); return; }
     if (uprava) {
-      upravOznam(entita, uprava.id, { nadpis: nadpis.trim(), text, fotky, platnostDni: dni });
+      upravOznam(entita, uprava.id, { nadpis: nadpis.trim(), text, fotky, platnostDni: dni, ponuka: p });
       toast("Ponuka upravená");
     } else {
-      pridajOznam({ entita, kategoria: "inzerat", nadpis: nadpis.trim(), text, fotky, platnostDni: dni });
+      pridajOznam({ entita, kategoria: "inzerat", nadpis: nadpis.trim(), text, fotky, platnostDni: dni, ponuka: p });
       toast("Ponuka je na vašom profile");
     }
     onHotovo();
   };
 
-  const ukazka: Oznam = { id: "nahlad", entita, kategoria: "inzerat", nadpis: nadpis.trim() || "Bez nadpisu", text, fotky, platnostDni: dni, vytvorene: teraz };
+  const ukazka: Oznam = { id: "nahlad", entita, kategoria: "inzerat", nadpis: nadpis.trim() || "Bez nadpisu", text, fotky, platnostDni: dni, vytvorene: teraz, ponuka: p };
 
   return (
     <Sheet onClose={onSpat} label={uprava ? "Upraviť ponuku" : "Nová pracovná ponuka"} pisanie>
@@ -134,8 +209,8 @@ function Formular({ entita, autor, logo, uprava, toast, onHotovo, onSpat }: {
           placeholder="Napríklad: Brigádnik na triedenie šatstva" style={{ ...vstup, fontWeight: 700 }} />
 
         <div style={{ fontSize: 12.5, fontWeight: 700, color: C.textSec, margin: `${SPACE.sm}px 0 4px` }}>Čo treba robiť, kedy a kde? <span style={{ fontWeight: 400, color: C.textTer }}>— netreba, ak dáte hotový plagát</span></div>
-        <RichTextInput value={text} onChange={setText} minH={130} maxZnakov={OZNAM_CFG.maxText}
-          placeholder="Píšte, ako by ste to povedali susedovi. Kedy, kde, na ako dlho, či treba niečo vedieť." />
+        <RichTextInput value={text} onChange={setText} minH={170} maxZnakov={OZNAM_CFG.maxTextPonuky}
+          placeholder="Čo bude robiť, čo požadujete, čo ponúkate. Pokojne to vložte z Wordu — formát prežije." />
 
         <div style={{ fontSize: 12.5, fontWeight: 700, color: C.textSec, margin: `${SPACE.xs}px 0 4px` }}>Fotka alebo hotový plagát <span style={{ fontWeight: 400, color: C.textTer }}>— plagát sa ukáže celý, nič sa z neho neoreže</span></div>
         <div style={{ display: "flex", gap: SPACE.xxs, flexWrap: "wrap", alignItems: "center" }}>
@@ -153,6 +228,46 @@ function Formular({ entita, autor, logo, uprava, toast, onHotovo, onSpat }: {
             </label>
           )}
         </div>
+
+        <div style={{ fontSize: 12, fontWeight: 800, color: C.textTer, letterSpacing: ".04em", margin: `${SPACE.md}px 0 ${SPACE.xxs}px` }}>PODROBNOSTI <span style={{ fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>— ukážu sa navrchu ponuky, vypĺňajte len čo dáva zmysel</span></div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: SPACE.xs }}>
+          <input value={p.miesto ?? ""} onChange={(e) => setP({ ...p, miesto: e.target.value })} placeholder="Miesto výkonu práce" style={vstup} />
+          <input value={p.uvazok ?? ""} onChange={(e) => setP({ ...p, uvazok: e.target.value })} placeholder="Úväzok (plný, 50 %…)" style={vstup} />
+          <input value={p.nastup ?? ""} onChange={(e) => setP({ ...p, nastup: e.target.value })} placeholder="Nástup (ihneď, 15. 3. …)" style={vstup} />
+          <input value={p.mzda ?? ""} onChange={(e) => setP({ ...p, mzda: e.target.value })} placeholder="Mzda (nepovinné)" style={vstup} />
+        </div>
+        <div style={{ fontSize: 12.5, fontWeight: 700, color: C.textSec, margin: `${SPACE.sm}px 0 4px` }}>Dokedy sa dá prihlásiť? <span style={{ fontWeight: 400, color: C.textTer }}>— po uzávierke ponuka zíde z profilu sama</span></div>
+        <input type="date" value={naDatum(p.uzavierka)} onChange={(e) => setP({ ...p, uzavierka: zDatumu(e.target.value) })} style={vstup} />
+
+        <div style={{ fontSize: 12, fontWeight: 800, color: C.textTer, letterSpacing: ".04em", margin: `${SPACE.md}px 0 ${SPACE.xxs}px` }}>AKO SA MÁ ČLOVEK PRIHLÁSIŤ</div>
+        <label style={{ display: "flex", alignItems: "center", gap: SPACE.xs, fontSize: 13, color: C.textSec, cursor: "pointer", marginBottom: SPACE.xs }}>
+          <input type="checkbox" checked={p.cezDeed ?? true} onChange={(e) => setP({ ...p, cezDeed: e.target.checked })} />
+          Cez DEED — klikne „Mám záujem" a vy uvidíte meno a kontakt
+        </label>
+        <input value={p.email ?? ""} onChange={(e) => setP({ ...p, email: e.target.value })} inputMode="email"
+          placeholder="Žiadosť e-mailom na… (nepovinné)" style={{ ...vstup, marginBottom: SPACE.xs }} />
+        <input value={p.adresa ?? ""} onChange={(e) => setP({ ...p, adresa: e.target.value })}
+          placeholder="Žiadosť poštou na adresu… (nepovinné)" style={{ ...vstup, marginBottom: SPACE.xs }} />
+        <textarea value={p.doklady ?? ""} onChange={(e) => setP({ ...p, doklady: e.target.value })} rows={3} maxLength={500}
+          placeholder="Čo má priložiť? (životopis, doklad o vzdelaní, čestné vyhlásenie…)" style={{ ...vstup, resize: "vertical" }} />
+
+        <div style={{ fontSize: 12.5, fontWeight: 700, color: C.textSec, margin: `${SPACE.sm}px 0 4px` }}>Dokument výberového konania <span style={{ fontWeight: 400, color: C.textTer }}>— PDF, ak ho už máte</span></div>
+        {p.priloha ? (
+          <div style={{ display: "flex", alignItems: "center", gap: SPACE.xs, fontSize: 12.5 }}>
+            <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>📄 {p.prilohaNazov}</span>
+            <span {...pressable(() => { void zmazPrilohu(p.priloha); setP({ ...p, priloha: undefined, prilohaNazov: undefined }); }, "Odstrániť prílohu")}
+              style={{ fontSize: 11.5, fontWeight: 700, color: C.textTer, cursor: "pointer" }}>Odstrániť</span>
+          </div>
+        ) : (
+          <label style={{ display: "inline-block", border: `1px dashed ${C.line}`, borderRadius: RADIUS.sm, padding: `${SPACE.xs}px ${SPACE.sm}px`, cursor: "pointer", fontSize: 12.5, fontWeight: 700, color: C.textSec }}>
+            + PDF (do {PRILOHA_CFG.maxMB} MB)
+            <input type="file" accept="application/pdf" hidden onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (!f) return;
+              void ulozPrilohu(f).then((ref) => setP({ ...p, priloha: ref, prilohaNazov: f.name })).catch((err: Error) => toast(err.message));
+            }} />
+          </label>
+        )}
 
         <div style={{ fontSize: 12.5, fontWeight: 700, color: C.textSec, margin: `${SPACE.sm}px 0 4px` }}>Ako dlho má visieť na profile?</div>
         <div style={{ display: "flex", gap: SPACE.xs }}>

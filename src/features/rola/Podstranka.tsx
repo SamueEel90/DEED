@@ -18,6 +18,8 @@ import { ZoznamDarcov } from "@/components/zoznamdarcov";
 import { NahladKarty, GaleriaZbierky } from "./KartaZbierky";
 import { OznamKarta } from "./Oznamy";
 import { InzeratKarta, MamZaujem } from "./Inzeraty";
+import { DorovnaniePas, NoveDorovnanieSheet } from "./Dorovnanie";
+import { beziaceDorovnanie, dorovnanieKDaru, zapisDar as zapisDorovnanie, useZmenyDorovnani } from "@/lib/dorovnanie";
 import { verejneOznamy, useZmenyOznamov } from "@/lib/oznamy";
 import { nacitajProfil, useZmenyProfilov, CENTRALNA_ID, VLASTNA_ZBIERKA_CFG, type ProfilZbierky } from "./vlastneZbierky";
 import { useSegmenty } from "./segmenty";
@@ -106,6 +108,8 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
   const [onas] = useState(() => nacitajOnas(pozicia) ?? s.onas); // text zo správy (editor), inak pôvodný
   const [rozbalena, setRozbalena] = useState<string | null>(null);
   const [otvorenyOznam, setOtvorenyOznam] = useState<string | null>(null);   // klik na oznam otvorí len ten jeden
+  useZmenyDorovnani();                                                        // bežec sa má prekresliť, keď firma dorovná
+  const [noveDorovnanie, setNoveDorovnanie] = useState<{ id: string; nazov: string } | null>(null);  // firma vstupuje do zbierky
   const [profilZiad, setProfilZiad] = useState<string | null>(null);
   const [zbalenaCentralna, setZbalenaCentralna] = useState(false);
   const [qrZbierka, setQrZbierka] = useState<{ id: string; nazov: string } | null>(null);
@@ -132,6 +136,16 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
   // zápis daru → zoznam darcov + súčty (registrovaný so zvoleným menom, inak anonym)
   const daruj = (refId: string, suma: number, kanal: "psp" | "sepa" | "deed", volba?: VolbaDaru, komu?: string) => {
     pridajDar({ refId, suma, kanal, registrovany, volba });
+    // firma dorovná ten istý dar — zapíše sa jej to zo stropu a darca to hneď vidí.
+    // Dorovnaná suma ide do zbierky ako samostatný dar (zoznam darcov ju zatiaľ
+    // ukáže bez mena firmy — identita firmy v zozname je ďalší krok).
+    const dv = beziaceDorovnanie(pozicia, refId);
+    const dorovnane = dv ? zapisDorovnanie(pozicia, dv.id, suma) : 0;
+    if (dorovnane > 0) {
+      pridajDar({ refId, suma: dorovnane, kanal, registrovany: true, volba: { verzia: 4, zobrazSumu: true } });
+      toast(`Ďakujeme za ${suma.toFixed(2)} € — firma pridala ${dorovnane.toFixed(2)} €, k príjemcovi ide ${(suma + dorovnane).toFixed(2)} €`);
+      return;
+    }
     toast(`Ďakujeme za dar ${suma.toLocaleString("sk", { maximumFractionDigits: 2 })} ${kanal === "deed" ? "EURC" : "€"}${komu ? ` · ${komu}` : ""}`);
   };
   const terminalOn = pozicia === "tvorca" && nacitajTerminal();
@@ -157,8 +171,17 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
   // platobný modul až po kliknutí — rovnako ako pri ostatných zbierkach.
   const obsahVlastnej = (id: string, profil: ProfilZbierky) => {
     const dary = sucetDarov(id);
+    const dorovnanie = beziaceDorovnanie(pozicia, id);
     return (
       <>
+        {dorovnanie && (
+          <div style={{ marginBottom: SPACE.sm }}>
+            <DorovnaniePas d={dorovnanie} />
+            <div style={{ fontSize: 12, fontWeight: 800, color: "var(--a-gold)", textAlign: "center", marginTop: SPACE.xxs }}>
+              daruješ 20 € → k príjemcovi ide {20 + dorovnanieKDaru(dorovnanie, 20)} €
+            </div>
+          </div>
+        )}
         <PlatobnyModul zbalene krypto={kryptoOrg ? "EURC" : "nie"} {...sumy}
           onShare={zdielajProfil}
           upvotes={0} onUpvote={() => undefined}
@@ -168,6 +191,7 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
           onKanal={(k: string) => { setPlatbaRef({ id, komu: s.nazov }); setPlatba(k as Kanal); }}
           oblubene={{ refId: id, typ: "zbierka", modul: "charity", nazov: profil.nazov, lok: s.lok }} toast={toast}
           opakovana={maPravidelnu ? { popis: "Mesačne · len pre registrovaných · kedykoľvek zrušíš", onClick: () => setPravidelna({ id: id === CENTRALNA_ID ? "z-centralna" : id, nazov: profil.nazov, sektor: sektoroveZbierky.find((z) => z.id === id)?.nazov }) } : undefined}
+          dorovnanie={dorovnanie ? undefined : { onClick: () => setNoveDorovnanie({ id, nazov: s.nazov }) }}
           qr={{ label: "QR tejto zbierky", popis: "Sken → dar za 2 kliky · zdieľanie", onClick: () => (id === CENTRALNA_ID ? setQr(true) : setQrZbierka({ id, nazov: profil.nazov })) }} />
         <GaleriaZbierky profil={profil} />
         <ZoznamDarcov refId={id} celkom={dary.pocet} style={{ marginTop: SPACE.sm }} skrytSumy={pozicia === "charita" && !nacitajViditelnost("charita").sumyDarov} />
@@ -339,6 +363,17 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
                   </div>
                 )}
                 <div style={{ marginBottom: SPACE.sm }}><ProgresBox suma={z.vyzbierane} ciel={z.ciel} ludia={z.darcovia} live={z.stav === "aktivna"} /></div>
+                {z.stav === "aktivna" && beziaceDorovnanie(pozicia, z.id) && (() => {
+                  const dv = beziaceDorovnanie(pozicia, z.id)!;
+                  return (
+                    <div style={{ marginBottom: SPACE.sm }}>
+                      <DorovnaniePas d={dv} />
+                      <div style={{ fontSize: 12, fontWeight: 800, color: "var(--a-gold)", textAlign: "center", marginTop: SPACE.xxs }}>
+                        daruješ 20 € → k príjemcovi ide {20 + dorovnanieKDaru(dv, 20)} €
+                      </div>
+                    </div>
+                  );
+                })()}
                 {z.stav === "aktivna" ? (
                   <PlatobnyModul zbalene krypto={kryptoOrg ? kryptoZbierky(z) : "nie"} {...sumy}
                     onShare={zdielajProfil}
@@ -349,6 +384,7 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
                     onKanal={(k: string) => { setPlatbaRef({ id: z.id, komu: z.komu }); setPlatba(k as Kanal); }}
                     oblubene={{ refId: z.id, typ: "zbierka", modul: "charity", nazov: z.nazov, lok: z.lok }} toast={toast}
                     opakovana={maPravidelnu ? { popis: "Mesačne · len pre registrovaných · kedykoľvek zrušíš", onClick: () => setPravidelna({ id: z.id, nazov: z.nazov }) } : undefined}
+                    dorovnanie={beziaceDorovnanie(pozicia, z.id) ? undefined : { onClick: () => setNoveDorovnanie({ id: z.id, nazov: z.nazov }) }}
                     qr={{ label: "QR tejto zbierky", popis: "Skenovať · kopírovať · zdieľať", onClick: () => setQrZbierka({ id: z.id, nazov: z.nazov }) }} />
                 ) : null}
                 {z.stav === "aktivna" && <ZoznamDarcov refId={z.id} celkom={z.darcovia} style={{ marginTop: SPACE.sm }} skrytSumy={pozicia === "charita" && !nacitajViditelnost("charita").sumyDarov} />}
@@ -662,6 +698,9 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
           };
         }}
         onClose={() => setPravidelna(null)} toast={toast} />}
+      {noveDorovnanie && (
+        <NoveDorovnanieSheet entita={pozicia} cielId={noveDorovnanie.id} cielNazov={noveDorovnanie.nazov} toast={toast} onClose={() => setNoveDorovnanie(null)} />
+      )}
       {qrZbierka && <QrModal odznak={odznakZbierky(qrZbierka.id)} typ="skutok" titul={`QR — ${qrZbierka.nazov}`} popis="Sken otvorí túto zbierku — daj ho na web, do správy alebo na plagát"
         odkaz={qrUrl("case", qrZbierka.id)} onClose={() => setQrZbierka(null)} toast={toast} />}
       {qr && <QrModal typ="skutok" titul={`QR — ${s.nazov}`} popis="Profil subjektu — QR aj embed odznak na vlastný web"
