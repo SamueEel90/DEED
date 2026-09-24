@@ -15,7 +15,7 @@ import { CENTRALNA_ID, nacitajProfil } from "./vlastneZbierky";
 import { PlatbaModal } from "@/components/platba";
 import {
   DOROVNANIE_CFG, useDorovnania, zapecat, potvrdPlatbu, odmietni, ukonci, pozastav, vysporiadaj,
-  vycerpane, zostatok, popisPomeru, nazovPomeru, priklad, bezi, type Dorovnanie,
+  vycerpane, zostatok, popisPomeru, nazovPomeru, priklad, bezi, daSaZmazat, zmazDorovnanie, type Dorovnanie,
 } from "@/lib/dorovnanie";
 
 const ZLATA = "var(--a-gold)";
@@ -391,6 +391,12 @@ export function DorovnanieSheet({ entita, toast, onClose }: {
               <span {...pressable(() => { odmietni(entita, d.id); toast("Dorovnanie odmietnuté"); }, "Odmietnuť")}
                 style={{ marginLeft: "auto", fontSize: 11.5, fontWeight: 700, color: C.textTer, cursor: "pointer" }}>Odmietnuť</span>
             </>)}
+            {daSaZmazat(d) && (
+              <span {...pressable(() => {
+                zmazDorovnanie(entita, d.id);
+                toast("Dorovnanie zmazané zo zoznamu");
+              }, "Zmazať")} style={{ marginLeft: "auto", fontSize: 11.5, fontWeight: 700, color: C.textTer, cursor: "pointer" }}>Zmazať</span>
+            )}
             {(d.stav === "aktivne" || d.stav === "pozastavene") && (
               <span {...pressable(() => setKoniec(d.id), "Ukončiť zbierku")}
                 style={{ marginLeft: "auto", fontSize: 11.5, fontWeight: 700, color: C.textTer, cursor: "pointer" }}>

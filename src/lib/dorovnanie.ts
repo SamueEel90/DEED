@@ -109,6 +109,19 @@ export function beziaceDorovnanie(entita: string, ciel: string, teraz = Date.now
   return nacitajDorovnania(entita).find((d) => d.ciel === ciel && bezi(d, teraz)) ?? null;
 }
 
+/** zmazať sa dá len to, čo je už uzavreté — bežiace a zaplatené drží peniaze */
+export const daSaZmazat = (d: Dorovnanie) =>
+  d.stav === "ukoncene" || d.stav === "odmietnute" || d.stav === "zrusene"
+  || (d.stav === "vycerpane" && !!d.ukoncene);
+
+export function zmazDorovnanie(entita: string, id: string): boolean {
+  const v = nacitajDorovnania(entita);
+  const d = v.find((x) => x.id === id);
+  if (!d || !daSaZmazat(d)) return false;
+  uloz(entita, v.filter((x) => x.id !== id));
+  return true;
+}
+
 export function useDorovnania(entita: string): Dorovnanie[] {
   useZmenyDorovnani();
   return nacitajDorovnania(entita).sort((a, b) => b.zapecatene - a.zapecatene);
