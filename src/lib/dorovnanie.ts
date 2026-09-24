@@ -122,6 +122,40 @@ export function zmazDorovnanie(entita: string, id: string): boolean {
   return true;
 }
 
+/** všetky entity, ktoré majú nejaké dorovnanie (mock — v produkcii jeden dotaz) */
+function vsetkyEntity(): string[] {
+  const out: string[] = [];
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k?.startsWith("deed.dorovnania.")) out.push(k.slice("deed.dorovnania.".length));
+    }
+  } catch { /* LS nedostupné */ }
+  return out;
+}
+
+/** porovnanie názvov firiem — „Pekáreň Dobrota" a „Pekáreň Dobrota s.r.o." je tá istá
+ *  firma (v prototype je identitou názov z QR; v produkcii to bude IČO) */
+const kluceFirmy = (n: string) => n
+  .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+  .toLowerCase()
+  .replace(/\b(s\.?\s?r\.?\s?o\.?|a\.?\s?s\.?|o\.?\s?z\.?|spol\.?|k\.?\s?s\.?|n\.?\s?o\.?)\b/g, "")
+  .replace(/[^a-z0-9]+/g, "")
+  .trim();
+export const rovnakaFirma = (a: string, b: string) => kluceFirmy(a) === kluceFirmy(b);
+
+/** dorovnania jednej firmy naprieč charitami — pohľad z jej vlastnej správy */
+export function dorovnaniaFirmy(firma: string): Dorovnanie[] {
+  return vsetkyEntity()
+    .flatMap((e) => nacitajDorovnania(e))
+    .filter((d) => rovnakaFirma(d.firma, firma))
+    .sort((a, b) => b.zapecatene - a.zapecatene);
+}
+export function useDorovnaniaFirmy(firma: string): Dorovnanie[] {
+  useZmenyDorovnani();
+  return dorovnaniaFirmy(firma);
+}
+
 export function useDorovnania(entita: string): Dorovnanie[] {
   useZmenyDorovnani();
   return nacitajDorovnania(entita).sort((a, b) => b.zapecatene - a.zapecatene);

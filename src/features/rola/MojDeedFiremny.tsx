@@ -33,7 +33,7 @@ import { VideoSheet, DarcoviaSheet, QrNastrojeSheet, ViditelnostSheet } from "./
 import { SektoroveZbierkySheet } from "./SektoroveZbierky";
 import { OznamySheet } from "./Oznamy";
 import { InzeratySheet } from "./Inzeraty";
-import { DorovnanieSheet } from "./Dorovnanie";
+import { DorovnanieSheet, DorovnanieFirmySheet } from "./Dorovnanie";
 import { ZBIERKY, predvolenyStav } from "@/lib/zbierky";
 import { nacitajStav, percentoDolozenia, fazaDokladovania, useZmenySpravy } from "@/lib/zbierkaSprava";
 import { KontaktBlok, nacitajKontakt, ulozKontakt } from "./kontakt";
@@ -157,6 +157,7 @@ function MojDeedFiremnyObsah({ onBack, toast, orgId }: { onBack: () => void; toa
     if (pozicia === "charita" && (it.id === "zbierky" || it.id === "dokladovanie")) return setSheet("zbierky");
     if (pozicia === "tvorca" && it.id === "terminal") return setSheet("terminal");
     if (pozicia === "charita" && it.id === "centralna") return setSheet("centralna");
+    if (pozicia === "b2b" && it.id === "dorovnanie") return setSheet("dorovnanie");
     if (pozicia === "charita" && (it.id === "video" || it.id === "darcovia" || it.id === "qr" || it.id === "sumy" || it.id === "segment" || it.id === "oznamy" || it.id === "inzeraty" || it.id === "dorovnanie")) return setSheet(it.id);
     toast(`${it.nazov} — čoskoro`);
   };
@@ -345,7 +346,9 @@ function MojDeedFiremnyObsah({ onBack, toast, orgId }: { onBack: () => void; toa
       {sheet === "qr" && <QrNastrojeSheet tier={tier} toast={toast} onClose={() => setSheet(null)} />}
       {sheet === "sumy" && <ViditelnostSheet toast={toast} onClose={() => setSheet(null)} />}
       {sheet === "oznamy" && <OznamySheet entita={pozicia} autor={subjekt.nazov} logo={logo ?? subjekt.foto} toast={toast} onClose={() => setSheet(null)} />}
-      {sheet === "dorovnanie" && <DorovnanieSheet entita={pozicia} toast={toast} onClose={() => setSheet(null)} />}
+      {sheet === "dorovnanie" && (pozicia === "b2b"
+        ? <DorovnanieFirmySheet firma={subjekt.nazov} toast={toast} onClose={() => setSheet(null)} />
+        : <DorovnanieSheet entita={pozicia} toast={toast} onClose={() => setSheet(null)} />)}
       {sheet === "inzeraty" && <InzeratySheet entita={pozicia} autor={subjekt.nazov} logo={logo ?? subjekt.foto} tier={tier} toast={toast} onPaywall={setPaywall} onClose={() => setSheet(null)} />}
       {sheet === "segment" && <SektoroveZbierkySheet tier={tier} toast={toast} onPaywall={setPaywall} onClose={() => setSheet(null)} />}
       {sheet === "terminal" && <TerminalSheet toast={toast} onClose={() => setSheet(null)} />}

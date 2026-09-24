@@ -15,7 +15,8 @@ import { CENTRALNA_ID, nacitajProfil } from "./vlastneZbierky";
 import { PlatbaModal } from "@/components/platba";
 import {
   DOROVNANIE_CFG, useDorovnania, zapecat, potvrdPlatbu, odmietni, ukonci, pozastav, vysporiadaj,
-  vycerpane, zostatok, popisPomeru, nazovPomeru, priklad, bezi, daSaZmazat, zmazDorovnanie, type Dorovnanie,
+  vycerpane, zostatok, popisPomeru, nazovPomeru, priklad, bezi, daSaZmazat, zmazDorovnanie,
+  useDorovnaniaFirmy, type Dorovnanie,
 } from "@/lib/dorovnanie";
 
 const ZLATA = "var(--a-gold)";
@@ -348,6 +349,77 @@ export function NoveDorovnanieSheet({ entita, cielId, toast, onClose }: {
   entita: string; cielId: string; toast: (m: string) => void; onClose: () => void;
 }) {
   return <Formular entita={entita} cielFix={cielId} toast={toast} onHotovo={onClose} onSpat={onClose} />;
+}
+
+/** Správa FIRMY — čo moja firma dorovnáva, koľko z toho ostáva a kde to beží.
+ *  Nové dorovnanie firma zakladá pri zbierke (tam vidí, komu dáva), preto tu
+ *  ponúkame cestu na profil charity, nie ďalší formulár naslepo. */
+export function DorovnanieFirmySheet({ firma, toast, onClose }: {
+  firma: string; toast: (m: string) => void; onClose: () => void;
+}) {
+  const moje = useDorovnaniaFirmy(firma);
+  const [teraz] = useState(() => Date.now());
+  const beziace = moje.filter((d) => bezi(d, teraz));
+  const vyclenene = moje.filter((d) => d.stav === "aktivne" || d.stav === "zapecatene" || d.stav === "pozastavene")
+    .reduce((s, d) => s + zostatok(d), 0);
+  const rozdane = moje.reduce((s, d) => s + vycerpane(d), 0);
+
+  const stavText = (d: Dorovnanie) =>
+    d.stav === "zapecatene" ? "čaká, kým charita potvrdí príjem"
+    : d.stav === "aktivne" ? (bezi(d, teraz) ? `beží · ostáva ${eur(zostatok(d))}` : "mimo obdobia")
+    : d.stav === "pozastavene" ? (d.vysporiadane ? "zbierka sa ukončuje · zvyšok vrátený" : `zbierka pozastavená · čaká sa na vrátenie ${eur(zostatok(d))}`)
+    : d.stav === "vycerpane" ? "strop vyčerpaný"
+    : d.stav === "ukoncene" ? `ukončené${d.vysporiadane?.kam === "firme" ? ` · vrátené ${eur(d.vysporiadane.suma)}` : ""}`
+    : d.stav === "odmietnute" ? "charita odmietla"
+    : "zrušené";
+
+  return (
+    <Sheet onClose={onClose} label="Dorovnanie darov">
+      <div style={{ fontSize: 16, fontWeight: 800 }}>🤝 Dorovnanie darov</div>
+      <div style={{ fontSize: 11.5, color: C.textTer, marginTop: 2, lineHeight: 1.45, marginBottom: SPACE.sm }}>
+        Pridávate k darom ľudí svoj diel, kým sa nevyčerpá váš strop. Právne je to dar — žiadne protiplnenie,
+        žiadna faktúra, žiadny odpočet. Karmu dostávate ako každý darca.
+      </div>
+
+      <div style={{ display: "flex", gap: SPACE.xs, marginBottom: SPACE.sm }}>
+        {[["Beží", String(beziace.length)], ["Vyčlenené", eur(vyclenene)], ["Rozdané", eur(rozdane)]].map(([k, v]) => (
+          <div key={k} style={{ flex: 1, background: C.surface2, border: `1px solid ${C.line}`, borderRadius: RADIUS.sm, padding: SPACE.sm, textAlign: "center" }}>
+            <div style={{ fontSize: 14, fontWeight: 800 }}>{v}</div>
+            <div style={{ fontSize: 10.5, color: C.textTer, marginTop: 1 }}>{k}</div>
+          </div>
+        ))}
+      </div>
+
+      <div style={{ fontSize: 11.5, color: C.textSec, background: tint(ZLATA, .1), border: `1px solid ${tint(ZLATA, .35)}`, borderRadius: RADIUS.sm, padding: SPACE.sm, lineHeight: 1.45, marginBottom: SPACE.sm }}>
+        <b style={{ color: C.text }}>Nové dorovnanie sa zakladá pri zbierke.</b> Otvorte si profil charity, ktorú chcete podporiť,
+        a pri jej zbierke kliknite na „Chcem dorovnávať" — uvidíte, komu dávate a na čo sa zbiera.
+      </div>
+
+      {moje.map((d) => (
+        <div key={d.id} style={karta}>
+          <div style={{ display: "flex", alignItems: "center", gap: SPACE.xs }}>
+            <div style={{ flex: 1, minWidth: 0, fontSize: 13.5, fontWeight: 700 }}>{d.cielNazov}</div>
+            <span style={{ flex: "none", fontSize: 11, fontWeight: 800, color: ZLATA }}>{popisPomeru(d.pomer)}</span>
+          </div>
+          <div style={{ fontSize: 11.5, color: C.textSec, marginTop: 2 }}>{stavText(d)}</div>
+          <div style={{ fontSize: 10.5, color: C.textTer, marginTop: 2 }}>
+            strop {eur(d.strop)} · rozdané {eur(vycerpane(d))} · {d.zaznamy.length} dorovnaných darov
+            {d.doVycerpania ? " · kým sa minie" : ` · do ${datum(d.do)}`}
+          </div>
+        </div>
+      ))}
+
+      {!moje.length && (
+        <div style={{ fontSize: 12.5, color: C.textTer, textAlign: "center", padding: SPACE.lg, lineHeight: 1.5 }}>
+          Zatiaľ nedorovnávate žiadnu zbierku.<br />Nájdite si charitu a pri jej zbierke kliknite „Chcem dorovnávať".
+        </div>
+      )}
+
+      <button onClick={() => { toast("Otvorte si profil charity a pri jej zbierke kliknite na Chcem dorovnávať"); onClose(); }} style={{ ...btnDruhy, marginTop: SPACE.sm }}>
+        Hľadať zbierku na dorovnanie
+      </button>
+    </Sheet>
+  );
 }
 
 // ---------- zoznam v správe ----------

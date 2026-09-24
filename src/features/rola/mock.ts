@@ -296,6 +296,7 @@ export const PANEL_B2B: PanelBlok[] = [
 export const SPRAVA_B2B: SpravaItem[] = [
   { id: "profil", emoji: "✏️", nazov: "Profil firmy", popis: "Vizitka, logo a popis firmy", tierMin: 0 },
   { id: "sponzoring", emoji: "🛡", nazov: "Sponzoring", popis: "Podpora overených prípadov pod menom firmy", tierMin: 0 },
+  { id: "dorovnanie", emoji: "🤝", nazov: "Dorovnanie darov", popis: "Pridávame k darom ľudí svoj diel · dar, nie sponzoring · zakladá sa pri zbierke", tierMin: 0 },
   { id: "zamestnanci", emoji: "👥", nazov: "Zamestnanci", popis: "Pripojenie cez QR alebo pozvánku — vždy dobrovoľné", tierMin: 1 },
   { id: "akcia", emoji: "🎟", nazov: "Firemná akcia", popis: "Firemné dobrovoľnícke akcie a udalosti", tierMin: 2 },
   { id: "vto", emoji: "⏱", nazov: "Firemné dobrovoľníctvo", popis: "Dochádzka cez QR a overené hodiny", tierMin: 2 },
