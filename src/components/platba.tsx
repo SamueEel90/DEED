@@ -42,6 +42,25 @@ function Lipni({ children }: { children: ReactNode }) {
 }
 
 /** uložený platobný prostriedok registrovaného darcu (karta / účet) */
+/** „tvojich 10 € → zbierka dostane 30 €" — pred výberom platby aj nad zhrnutím */
+function BonusPas({ bonus, suma }: { bonus?: BonusDaru; suma: number }) {
+  if (!bonus || suma <= 0) return null;
+  const pridane = bonus.kDaru(suma);
+  if (pridane <= 0) return null;
+  const spolu = suma + pridane;
+  return (
+    <div style={{ background: "color-mix(in srgb, var(--a-gold) 13%, transparent)", border: "1px solid color-mix(in srgb, var(--a-gold) 45%, transparent)",
+      borderRadius: RADIUS.sm, padding: SPACE.sm, marginBottom: SPACE.sm, lineHeight: 1.5 }}>
+      <div style={{ fontSize: 14, fontWeight: 800 }}>
+        Tvojich {suma.toLocaleString("sk", { maximumFractionDigits: 2 })} € → zbierka dostane <span style={{ color: "var(--a-gold)" }}>{spolu.toLocaleString("sk", { maximumFractionDigits: 2 })} €</span>
+      </div>
+      <div style={{ fontSize: 12, color: C.textSec, marginTop: 2 }}>
+        {bonus.firma} k tvojmu daru pridá {pridane.toLocaleString("sk", { maximumFractionDigits: 2 })} € zo svojej vyčlenenej sumy.
+      </div>
+    </div>
+  );
+}
+
 function Ulozene({ ikona, t, d }: { ikona: string; t: string; d: string }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm, padding: `${SPACE.sm}px ${SPACE.gutter}px`, marginBottom: SPACE.sm, borderRadius: RADIUS.sm, background: tint(C.green, .06), border: `1px solid ${tint(C.green, .35)}` }}>
@@ -55,7 +74,10 @@ function Ulozene({ ikona, t, d }: { ikona: string; t: string; d: string }) {
   );
 }
 
-export function PlatbaModal({ kanal, komu, suma: sumaInit, lenSepa = false, split = false, onClose, onDone }: { kanal?: string; komu?: ReactNode; suma?: number; lenSepa?: boolean; split?: boolean; onClose?: () => void; onDone?: (suma: number, volba?: VolbaDaru, metoda?: "karta" | "sepa" | "krypto") => void }) {
+/** dorovnanie firmy — darca musí vidieť, s čím jeho dar odchádza, ešte pred platbou */
+export interface BonusDaru { firma: string; kDaru: (suma: number) => number }
+
+export function PlatbaModal({ kanal, komu, suma: sumaInit, lenSepa = false, split = false, bonus, onClose, onDone }: { kanal?: string; komu?: ReactNode; suma?: number; lenSepa?: boolean; split?: boolean; bonus?: BonusDaru; onClose?: () => void; onDone?: (suma: number, volba?: VolbaDaru, metoda?: "karta" | "sepa" | "krypto") => void }) {
   const jeEur = kanal === "EUR";
   const jed = kanal === "EURC" ? "EURC" : "DEED"; // krypto jednotka: EURC pri charite a Viere, inak DEED
   // registrovaný darca má v appke uloženú kartu, účet a peňaženku → nič nevypĺňa, len potvrdí
@@ -162,6 +184,7 @@ export function PlatbaModal({ kanal, komu, suma: sumaInit, lenSepa = false, spli
 
       {/* EUR: výber spôsobu platby — karta alebo SEPA prevod */}
       {krok === "metoda" && jeEur && (<>
+        <BonusPas bonus={bonus} suma={sumaNum} />
         <div style={{ fontSize: 12.5, color: C.textTer, margin: `${SPACE.xxs}px 0 ${SPACE.sm}px` }}>Vyber spôsob platby pre {sumaNum.toFixed(2)} €</div>
         {[
           { id: "karta" as const, ic: "💳", t: "Platobná karta", d: "Visa · Mastercard · okamžite · 3‑D Secure", fee: `poplatok 1,4 % + 0,15 €` },
@@ -180,6 +203,7 @@ export function PlatbaModal({ kanal, komu, suma: sumaInit, lenSepa = false, spli
       </>)}
 
       {/* zoznam darcov — ako sa darca ukáže (jedným klikom, pamätá sa) */}
+      {krok === "detaily" && <BonusPas bonus={bonus} suma={sumaNum} />}
       {krok === "detaily" && <VolbaDarcovstva volba={volba} onZmena={setVolba} sumaEur={jeEur || kanal === "EURC" ? sumaNum : sumaNum * 0.01} />}
 
       {/* EUR · KARTA */}
@@ -305,13 +329,15 @@ const psKanal: CSSProperties = {
   cursor: "pointer", fontFamily: "inherit", background: C.surface2, border: `1px solid ${C.line}`, color: C.text,
 };
 
-export function PodporaSekcia({ onShare, upvotes = 0, onUpvote, onPodpor, onKanal, accent = "var(--a-info)", supLabel = "DROBNÁ PODPORA — klik a hneď odíde", reakcia = "palec", bezDaru = false, zbalene = false, komu, onDarEur, onDarKrypto, krypto = "EURC", poEurach, kryptoOtvorene = false, sumyEur = [1, 3, 5], sumyEurc = [0.1, 0.5, 1] }: { onShare?: () => void; upvotes?: number; onUpvote?: () => void; onPodpor: (a: number) => void; onKanal: (k: string) => void; accent?: string; supLabel?: ReactNode; reakcia?: "palec" | "srdce"; bezDaru?: boolean; zbalene?: boolean; komu?: ReactNode; onDarEur?: (suma: number, volba?: VolbaDaru) => void; onDarKrypto?: (eurc: number, volba?: VolbaDaru) => void; krypto?: "EURC" | "DEED" | "nie";
+export function PodporaSekcia({ onShare, upvotes = 0, onUpvote, onPodpor, onKanal, accent = "var(--a-info)", supLabel = "DROBNÁ PODPORA — klik a hneď odíde", reakcia = "palec", bezDaru = false, zbalene = false, komu, onDarEur, onDarKrypto, krypto = "EURC", poEurach, kryptoOtvorene = false, sumyEur = [1, 3, 5], sumyEurc = [0.1, 0.5, 1], bonus }: { onShare?: () => void; upvotes?: number; onUpvote?: () => void; onPodpor: (a: number) => void; onKanal: (k: string) => void; accent?: string; supLabel?: ReactNode; reakcia?: "palec" | "srdce"; bezDaru?: boolean; zbalene?: boolean; komu?: ReactNode; onDarEur?: (suma: number, volba?: VolbaDaru) => void; onDarKrypto?: (eurc: number, volba?: VolbaDaru) => void; krypto?: "EURC" | "DEED" | "nie";
   /** riadky vložené medzi dary v eurách a dary v krypte (pravidelná podpora, Obľúbené + Podporiť DEED) */
   poEurach?: ReactNode;
   /** dary v krypte rozbalené hneď (napr. náhľad v správe, aby bolo vidno, čo zmizne) */
   kryptoOtvorene?: boolean;
   /** rýchle sumy (sada, ktorú si vybral príjemca) */
-  sumyEur?: number[]; sumyEurc?: number[] }) {
+  sumyEur?: number[]; sumyEurc?: number[];
+  /** dorovnanie firmy — prepočet, ktorý darca uvidí pred platbou */
+  bonus?: BonusDaru }) {
   // pasívny prispieva len v EUR; DEED (peňaženka) vyžaduje účet → výzva na registráciu
   const { mozeDeed } = usePouzivatel();
   const upgrade = useUpgrade();
@@ -404,12 +430,12 @@ export function PodporaSekcia({ onShare, upvotes = 0, onUpvote, onPodpor, onKana
         </>)}
 
         {rychlyEur != null && (
-          <PlatbaModal kanal="EUR" komu={komu} suma={rychlyEur} lenSepa={rychlyEur <= LEN_SEPA_DO}
+          <PlatbaModal kanal="EUR" komu={komu} suma={rychlyEur} lenSepa={rychlyEur <= LEN_SEPA_DO} bonus={bonus}
             onClose={() => setRychlyEur(null)}
             onDone={(sm, v) => { setRychlyEur(null); onDarEur?.(sm, v); }} />
         )}
         {rychlyKrypto != null && (
-          <PlatbaModal kanal="EURC" komu={komu} suma={rychlyKrypto}
+          <PlatbaModal kanal="EURC" komu={komu} suma={rychlyKrypto} bonus={bonus}
             onClose={() => setRychlyKrypto(null)}
             onDone={(sm, v) => { setRychlyKrypto(null); onDarKrypto?.(sm, v); }} />
         )}

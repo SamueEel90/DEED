@@ -71,7 +71,7 @@ export function DorovnaniePas({ d, onFirma }: { d: Dorovnanie; onFirma?: () => v
 
       {otvorene && (
         <div style={{ borderTop: `1px solid ${ram}`, padding: SPACE.sm, fontSize: 12.5, color: C.textSec, lineHeight: 1.7 }}>
-          {zaznam && <div>{zaznam.odvetvie} · {zaznam.mesto} · cez DEED podporila {zaznam.podpora}</div>}
+          {zaznam && <div>{zaznam.odvetvie} · {zaznam.mesto}</div>}
           {!minute && (<>
             <div>vyčlenila <b style={{ color: C.text }}>{eur(d.strop)}</b>, ostáva <b style={{ color: C.text }}>{eur(zost)}</b></div>
             <div>{d.doVycerpania ? "Darca prispieva, dokiaľ sa neminie celková suma" : `Darca prispieva do ${datum(d.do)}`}</div>

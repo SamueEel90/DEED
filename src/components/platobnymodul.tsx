@@ -17,7 +17,7 @@
 // ============================================================
 import type { CSSProperties, ReactNode } from "react";
 import { C, GRAD, GRAD_ZELENY, SPACE, RADIUS } from "@/theme";
-import { PodporaSekcia } from "@/components/platba";
+import { PodporaSekcia, type BonusDaru } from "@/components/platba";
 import { OblubeneBtn } from "@/components/oblubene";
 import { PodporitDeed } from "@/components/podporadeed";
 import { IkonaOpakovat, IkonaRetaz } from "@/components/icons";
@@ -36,6 +36,8 @@ export interface PlatobnyModulProps {
   kryptoOtvorene?: boolean;
   /** rýchle sumy — sada, ktorú si vybral príjemca */
   sumyEur?: number[]; sumyEurc?: number[];
+  /** dorovnanie firmy — prepočet pre darcu pred platbou */
+  bonus?: BonusDaru;
   // --- 1. ZADARMO ---
   onShare?: () => void;
   upvotes?: number;
@@ -98,7 +100,7 @@ function QrNahlad() {
 export function PlatobnyModul({
   onShare, upvotes = 0, onUpvote, reakcia = "palec",
   onPodpor, onKanal, accent = "var(--a-info)", supLabel, bezDaru = false, zbalene = false, komu, onDarEur, onDarKrypto, krypto,
-  oblubene, toast, bezOblubenych = false, opakovana, dorovnanie, qr, retaz, style, kryptoOtvorene, sumyEur, sumyEurc,
+  oblubene, toast, bezOblubenych = false, opakovana, dorovnanie, qr, retaz, style, kryptoOtvorene, sumyEur, sumyEurc, bonus,
 }: PlatobnyModulProps) {
   // Pravidelná podpora — zelená a výraznejšia; v zbalenom module sedí hneď pod darmi v eurách
   const pravidelnaEl = opakovana && (
@@ -145,7 +147,7 @@ export function PlatobnyModul({
       <PodporaSekcia
         onShare={onShare} upvotes={upvotes} onUpvote={onUpvote} reakcia={reakcia}
         onPodpor={onPodpor} onKanal={onKanal} accent={accent} bezDaru={bezDaru}
-        zbalene={zbalene} komu={komu} krypto={krypto} kryptoOtvorene={kryptoOtvorene} sumyEur={sumyEur} sumyEurc={sumyEurc} poEurach={zbalene ? <>{pravidelnaEl}{dorovnanieEl}{oblubeneEl}</> : undefined} onDarEur={onDarEur ?? ((sm) => toast?.(`Ďakujeme za dar ${sm.toLocaleString("sk")} €`))}
+        zbalene={zbalene} komu={komu} krypto={krypto} kryptoOtvorene={kryptoOtvorene} sumyEur={sumyEur} sumyEurc={sumyEurc} bonus={bonus} poEurach={zbalene ? <>{pravidelnaEl}{dorovnanieEl}{oblubeneEl}</> : undefined} onDarEur={onDarEur ?? ((sm) => toast?.(`Ďakujeme za dar ${sm.toLocaleString("sk")} €`))}
         onDarKrypto={onDarKrypto ?? ((v) => toast?.(`Ďakujeme za dar ${v.toLocaleString("sk", { minimumFractionDigits: 2 })} EURC`))}
         {...(supLabel ? { supLabel } : {})} />
 
