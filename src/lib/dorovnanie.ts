@@ -9,7 +9,9 @@
 //   → až po úhrade ZAPEČATÍ (odvtedy sa parametre nedajú zmeniť)
 //   → dorovnanie beží a je vidieť pri zbierke
 // Kedy začne bežať, určuje RÚRA, nie nálada charity:
-//   KARTA / EURC — ide cez nášho procesora, potvrdenie máme v sekunde → beží IHNEĎ
+//   KARTA — ide cez nášho procesora, potvrdenie máme v sekunde → beží IHNEĎ
+//          (to isté bude platiť pre EURC, keď ho do platby dorovnania pridáme —
+//           engine kanál „krypto" už pozná, v platbe zatiaľ nie je)
 //   SEPA — non-custody, peniaze idú priamo na IBAN charity a do jej výpisu
 //          nevidíme; potvrdiť príjem vie zatiaľ len charita. Aby firemné peniaze
 //          neležali kvôli neodklikanej správe, po 48 h nabehne dorovnanie SAMO

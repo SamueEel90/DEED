@@ -121,6 +121,13 @@ function Formular({ entita, cielFix, cielNazov, toast, onHotovo, onSpat }: {
       <div style={{ fontSize: 11.5, color: C.textTer, lineHeight: 1.45, marginBottom: SPACE.sm }}>
         Najprv úhrada, až potom pečať. Darcom sa sľubuje len to, čo už leží na účte charity.
       </div>
+      <div style={{ fontSize: 11.5, color: C.textSec, lineHeight: 1.5, background: tint(ZLATA, .08), border: `1px solid ${tint(ZLATA, .3)}`,
+        borderRadius: RADIUS.sm, padding: SPACE.sm, marginBottom: SPACE.sm }}>
+        <b style={{ color: C.text }}>Kedy dorovnanie nabehne</b><br />
+        <b>Karta</b> — ide cez našu rúru, príjem vidíme hneď → beží <b>ihneď</b> po zapečatení.<br />
+        <b>SEPA</b> — prevod ide priamo na účet charity, do jej výpisu nevidíme → charita potvrdí príjem;
+        ak neklikne, beží <b>automaticky do 48 hodín</b>. Vaše peniaze nikde neležia nadarmo.
+      </div>
 
       {!uhradene ? (
         <button style={btnHlavny} onClick={() => setPlatba(true)}>
@@ -133,7 +140,7 @@ function Formular({ entita, cielFix, cielNazov, toast, onHotovo, onSpat }: {
           <div style={{ fontWeight: 700, color: C.textSec, marginTop: 4 }}>
             {kanal === "sepa"
               ? "SEPA — charita potvrdí príjem; najneskôr o 48 h nabehne samo."
-              : "Karta / EURC — po zapečatení beží okamžite."}
+              : "Karta — po zapečatení beží okamžite."}
           </div>
         </div>
       )}
@@ -515,7 +522,7 @@ export function DorovnanieSheet({ entita, toast, onClose }: {
           </div>
           <div style={{ fontSize: 10.5, color: C.textTer, marginTop: 2 }}>
             zapečatené {datum(d.zapecatene)}{d.zaplatene ? ` · ${d.automaticky ? "spustené automaticky" : "príjem potvrdený"} ${datum(d.zaplatene)}` : ""}
-            {d.kanal && d.kanal !== "sepa" ? " · karta/EURC" : ""}
+            {d.kanal === "karta" ? " · karta" : d.kanal === "krypto" ? " · EURC" : ""}
             {d.zaznamy.length > 0 ? ` · ${d.zaznamy.length} dorovnaných darov` : ""}
             {d.vysporiadane ? ` · zvyšok ${eur(d.vysporiadane.suma)} ${d.vysporiadane.kam === "firme" ? "vrátený firme" : "ostal zbierke"} ${datum(d.vysporiadane.kedy)}` : ""}
           </div>
