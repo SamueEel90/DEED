@@ -10,6 +10,7 @@ import { tint } from "@/lib/ui";
 import { qrUrl } from "@/lib/qr";
 import { zdielaj } from "@/lib/zdielanie";
 import { Sheet } from "@/components/sheet";
+import { PocitadloSheet } from "@/features/overlay/PocitadloSheet";
 import { QrModal } from "@/components/qr";
 import { Lupa, IkonaSpat, IkonaFajka, Zdielanie } from "@/components/icons";
 import { SplitConfigStep, splitValid, splitOwnerPct, splitCielePayload, type SplitCiel } from "@/components/splitconfig";
@@ -20,6 +21,8 @@ import type { QrSplitListItem } from "@/types";
 const GREEN = "var(--a-green)";
 
 export function MojeQrKody({ onClose, toast }: { onClose?: () => void; toast?: (m: string) => void }) {
+  // počítadlo do streamu sa viaže na konkrétny QR (split), nie na zbierku
+  const [pocitadlo, setPocitadlo] = useState<{ splitId: string; nazov?: string } | null>(null);
   const { ucetId, celeMeno } = usePouzivatel();
   const { data: moje = [], isLoading } = useQrSplitList(ucetId, celeMeno);
   const { data: POSTY = [] } = useGoodFeed();
@@ -111,6 +114,11 @@ export function MojeQrKody({ onClose, toast }: { onClose?: () => void; toast?: (
     );
   }
 
+  if (pocitadlo) return (
+    <PocitadloSheet splitId={pocitadlo.splitId} nazov={pocitadlo.nazov}
+      toast={toast ?? (() => undefined)} onClose={() => setPocitadlo(null)} />
+  );
+
   // ---- zoznam mojich QR ----
   return (
     <Sheet onClose={onClose}>
@@ -150,6 +158,7 @@ export function MojeQrKody({ onClose, toast }: { onClose?: () => void; toast?: (
               </div>
               <div style={{ display: "flex", gap: SPACE.xs, marginTop: SPACE.sm }}>
                 <button onClick={() => setOpenQr(s)} style={{ flex: 1, height: 38, borderRadius: RADIUS.sm, border: `1px solid ${C.line}`, background: C.surface2, color: C.text, fontWeight: 700, fontSize: 12.5, cursor: "pointer", fontFamily: "inherit" }}>Otvoriť QR</button>
+                <button onClick={() => setPocitadlo({ splitId: s.slug, nazov: s.titul || undefined })} aria-label="Počítadlo do streamu" style={{ flex: "none", height: 38, padding: `0 ${SPACE.sm}px`, borderRadius: RADIUS.sm, border: `1px solid ${C.line}`, background: C.surface2, color: C.text, fontWeight: 700, fontSize: 12.5, cursor: "pointer", fontFamily: "inherit" }}>📺 Do streamu</button>
                 <button onClick={() => zdielaj({ titul: s.titul || "DEED QR", url: qrUrl("split", s.slug) }, toast)} aria-label="Zdieľať QR odkaz" style={{ flex: "none", width: 44, height: 38, borderRadius: RADIUS.sm, border: `1px solid ${C.line}`, background: C.surface2, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Zdielanie size={16} color={C.textSec} /></button>
               </div>
             </div>

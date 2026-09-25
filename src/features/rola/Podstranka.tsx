@@ -13,13 +13,14 @@ import { NahlasitSheet } from "@/components/nahlasit";
 import { qrUrl } from "@/lib/qr";
 import { RecurringSheet } from "@/components/recurring";
 import { SADY_EUR, SADY_EURC } from "@/lib/sadyDarov";
-import { nastavCiste, sucetDarov, useZmenyDarov, pridajDar, type VolbaDaru } from "@/lib/darcovia";
+import { nastavCiste, sucetDarov, darcoviaPre, useZmenyDarov, pridajDar, type VolbaDaru } from "@/lib/darcovia";
+import { PoDare, type PoDareData } from "@/components/podare";
 import { ZoznamDarcov } from "@/components/zoznamdarcov";
 import { NahladKarty, GaleriaZbierky } from "./KartaZbierky";
 import { OznamKarta } from "./Oznamy";
 import { InzeratKarta, MamZaujem } from "./Inzeraty";
 import { DorovnaniePas, NoveDorovnanieSheet } from "./Dorovnanie";
-import { beziaceDorovnanie, dorovnanieKDaru, useZmenyDorovnani } from "@/lib/dorovnanie";
+import { beziaceDorovnanieNaCiel, dorovnanieKDaru, useZmenyDorovnani } from "@/lib/dorovnanie";
 import { rovnakaFirma } from "@/lib/firma";
 import { verejneOznamy, useZmenyOznamov } from "@/lib/oznamy";
 import { nacitajProfil, useZmenyProfilov, CENTRALNA_ID, VLASTNA_ZBIERKA_CFG, type ProfilZbierky } from "./vlastneZbierky";
@@ -177,6 +178,7 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
   useZmenyDorovnani();                                                        // bežec sa má prekresliť, keď firma dorovná
   const [noveDorovnanie, setNoveDorovnanie] = useState<{ id: string; nazov: string } | null>(null);
   const [firmaProfil, setFirmaProfil] = useState<string | null>(null);   // profil dorovnávajúcej firmy — v appke, nie v novom okne  // firma vstupuje do zbierky
+  const [poDare, setPoDare] = useState<PoDareData | null>(null);        // obrazovka po dare namiesto sivého toastu
   const [profilZiad, setProfilZiad] = useState<string | null>(null);
   const [zbalenaCentralna, setZbalenaCentralna] = useState(false);
   const [qrZbierka, setQrZbierka] = useState<{ id: string; nazov: string } | null>(null);
@@ -202,14 +204,26 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
   const [platbaRef, setPlatbaRef] = useState<{ id: string; komu: string } | null>(null);
   // zápis daru → zoznam darcov + súčty (registrovaný so zvoleným menom, inak anonym)
   const daruj = (refId: string, suma: number, kanal: "psp" | "sepa" | "deed", volba?: VolbaDaru, komu?: string) => {
+    // stav zbierky PRED darom — kvôli obrazovke po dare (ukazovateľ sa dotiahne
+    // z toho, čo bolo, na to, čo je); číta sa pred zápisom, inak by už bol vnútri
+    const zb = najdiZbierku(refId);
+    const predtym = (zb?.vyzbierane ?? 0) + sucetDarov(refId).suma;
+    const najvacsiDoteraz = darcoviaPre(refId).reduce((m, r) => Math.max(m, r.suma), 0);
+    const dvTu = beziaceDorovnanieNaCiel(refId);
+
     // dorovnanie firmy aj pripnutie zbierky rieši zápis daru (lib/darcovia) —
     // platí to rovnako pre Charitu, Help, Vieru aj cudzí profil
-    const { dorovnane = 0 } = pridajDar({ refId, suma, kanal, registrovany, volba });
-    if (dorovnane > 0) {
-      toast(`Ďakujeme za ${suma.toFixed(2)} € — firma pridala ${dorovnane.toFixed(2)} €, k príjemcovi ide ${(suma + dorovnane).toFixed(2)} €`);
-      return;
-    }
-    toast(`Ďakujeme za dar ${suma.toLocaleString("sk", { maximumFractionDigits: 2 })} ${kanal === "deed" ? "EURC" : "€"}${komu ? ` · ${komu}` : ""}`);
+    const { dorovnane = 0, dorovnalaFirma } = pridajDar({ refId, suma, kanal, registrovany, volba });
+
+    setPoDare({
+      suma, dorovnane, firma: dorovnalaFirma,
+      ciel: zb?.ciel, predtym,
+      zamestnanec: !!dvTu?.lenZamestnanci && dorovnane > 0,
+      najvacsi: suma + dorovnane > najvacsiDoteraz,
+      prvy: najvacsiDoteraz === 0 && predtym === 0,
+      mena: kanal === "deed" ? "EURC" : "€",
+    });
+    if (!zb) toast(`Ďakujeme za dar ${eurSk(suma)}${komu ? ` · ${komu}` : ""}`);
   };
   const terminalOn = pozicia === "tvorca" && nacitajTerminal();
   const aktTab = taby.find((t) => t.key === tab) ?? taby[0];
@@ -234,7 +248,7 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
   // platobný modul až po kliknutí — rovnako ako pri ostatných zbierkach.
   const obsahVlastnej = (id: string, profil: ProfilZbierky) => {
     const dary = sucetDarov(id);
-    const dorovnanie = beziaceDorovnanie(pozicia, id);
+    const dorovnanie = beziaceDorovnanieNaCiel(id);
     return (
       <>
         {dorovnanie && (
@@ -430,8 +444,8 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
                 )}
                 <div style={{ marginBottom: SPACE.sm }}><ProgresBox suma={z.vyzbierane} ciel={z.ciel} ludia={z.darcovia} live={z.stav === "aktivna"} /></div>
                 <PodporiliFirmy zbierkaId={z.id} onFirma={setFirmaProfil} />
-                {z.stav === "aktivna" && beziaceDorovnanie(pozicia, z.id) && (() => {
-                  const dv = beziaceDorovnanie(pozicia, z.id)!;
+                {z.stav === "aktivna" && beziaceDorovnanieNaCiel(z.id) && (() => {
+                  const dv = beziaceDorovnanieNaCiel(z.id)!;
                   return (
                     <div style={{ marginBottom: SPACE.sm }}>
                       <DorovnaniePas d={dv} onFirma={() => setFirmaProfil(dv.firma)} />
@@ -453,8 +467,8 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
                     onKanal={(k: string) => { setPlatbaRef({ id: z.id, komu: z.komu }); setPlatba(k as Kanal); }}
                     oblubene={{ refId: z.id, typ: "zbierka", modul: "charity", nazov: z.nazov, lok: z.lok }} toast={toast}
                     opakovana={maPravidelnu ? { popis: "Mesačne · len pre registrovaných · kedykoľvek zrušíš", onClick: () => setPravidelna({ id: z.id, nazov: z.nazov }) } : undefined}
-                    dorovnanie={beziaceDorovnanie(pozicia, z.id) ? undefined : { onClick: () => setNoveDorovnanie({ id: z.id, nazov: z.nazov }) }}
-                    bonus={(() => { const dv = beziaceDorovnanie(pozicia, z.id); return dv ? { firma: dv.firma, kDaru: (sm: number) => dorovnanieKDaru(dv, sm) } : undefined; })()}
+                    dorovnanie={beziaceDorovnanieNaCiel(z.id) ? undefined : { onClick: () => setNoveDorovnanie({ id: z.id, nazov: z.nazov }) }}
+                    bonus={(() => { const dv = beziaceDorovnanieNaCiel(z.id); return dv ? { firma: dv.firma, kDaru: (sm: number) => dorovnanieKDaru(dv, sm) } : undefined; })()}
                     qr={{ label: "QR tejto zbierky", popis: "Skenovať · kopírovať · zdieľať", onClick: () => setQrZbierka({ id: z.id, nazov: z.nazov }) }} />
                 ) : null}
                 {z.stav === "aktivna" && <ZoznamDarcov refId={z.id} celkom={z.darcovia} style={{ marginTop: SPACE.sm }} skrytSumy={pozicia === "charita" && !nacitajViditelnost("charita").sumyDarov} />}
@@ -740,9 +754,10 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
         ]} />
       )}
       {oknoDetailu}
+      {poDare && <PoDare d={poDare} onClose={() => setPoDare(null)} />}
       {nahlasit && <NahlasitSheet co={`Profil · ${s.nazov}`} refId={`rola-${pozicia}`} modul="rola" onClose={() => setNahlasit(false)} toast={toast} />}
       {platba && <PlatbaModal kanal={platba} komu={platbaRef?.komu ?? s.nazov}
-        bonus={(() => { const dv = platbaRef ? beziaceDorovnanie(pozicia, platbaRef.id) : null; return dv ? { firma: dv.firma, kDaru: (sm: number) => dorovnanieKDaru(dv, sm) } : undefined; })()}
+        bonus={(() => { const dv = platbaRef ? beziaceDorovnanieNaCiel(platbaRef.id) : null; return dv ? { firma: dv.firma, kDaru: (sm: number) => dorovnanieKDaru(dv, sm) } : undefined; })()}
         onClose={() => { setPlatba(null); setPlatbaRef(null); }}
         onDone={(d: number, v?: VolbaDaru) => daruj(platbaRef?.id ?? "z-centralna", platba === "DEED" ? d * 0.01 : d, platba === "EUR" ? "psp" : "deed", v, platbaRef?.komu ?? s.nazov)} />}
       {pravidelna && <RecurringSheet nazov={pravidelna.nazov}

@@ -282,6 +282,7 @@ export const SPRAVA_TVORCA: SpravaItem[] = [
   { id: "akcie", emoji: "🎟", nazov: "Akcie", popis: "Workshopy a školenia — kapacita, vstupné QR, prihlášky", tierMin: 2 },
   { id: "smena", emoji: "⏱", nazov: "Overená smena", popis: "Overené dobrovoľnícke hodiny so živým počítadlom", tierMin: 2 },
   { id: "statistiky", emoji: "📊", nazov: "Štatistiky", popis: "Návštevy profilu a konverzie na dary", tierMin: 1 },
+  { id: "pocitadlo", emoji: "📺", nazov: "Počítadlo do streamu", popis: "Živý pás so zbierkou do OBS — YouTube, Twitch, Kick, TikTok", tierMin: 1 },
 ];
 
 // ---- B2B FIRMA (§3) ----
@@ -298,8 +299,7 @@ export const PANEL_B2B: PanelBlok[] = [
 export const SPRAVA_B2B: SpravaItem[] = [
   { id: "profil", emoji: "✏️", nazov: "Profil firmy", popis: "Vizitka, logo a popis firmy", tierMin: 0 },
   { id: "sponzoring", emoji: "🛡", nazov: "Sponzoring", popis: "Podpora overených prípadov pod menom firmy", tierMin: 0 },
-  { id: "zbierky", emoji: "🎯", nazov: "Naše zbierky", popis: "Čo podporujeme — čísla, dorovnávanie, stiahnutie zo stránky", tierMin: 0 },
-  { id: "dorovnanie", emoji: "🤝", nazov: "Dorovnanie darov", popis: "Pridávame k darom ľudí svoj diel · dar, nie sponzoring · zakladá sa pri zbierke", tierMin: 0 },
+  { id: "zbierky", emoji: "🎯", nazov: "Naše zbierky", popis: "Dorovnávanie, naši ľudia a ESG — pri každej zbierke zvlášť", tierMin: 0 },
   { id: "zamestnanci", emoji: "👥", nazov: "Zamestnanci", popis: "Pripojenie cez QR alebo pozvánku — vždy dobrovoľné", tierMin: 1 },
   { id: "akcia", emoji: "🎟", nazov: "Firemná akcia", popis: "Firemné dobrovoľnícke akcie a udalosti", tierMin: 2 },
   { id: "vto", emoji: "⏱", nazov: "Firemné dobrovoľníctvo", popis: "Dochádzka cez QR a overené hodiny", tierMin: 2 },

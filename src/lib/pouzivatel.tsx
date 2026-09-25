@@ -56,9 +56,6 @@ function odvod(data: UcetData | null, session: Session): Pouzivatel {
     : profil?.meno || ses?.meno || "Člen";
   const priezvisko = jeCharita ? "" : profil?.priezvisko || "";
   const celeMeno = (jeCharita ? meno : `${meno} ${priezvisko}`).trim();
-  // meno prihláseného sa odkladá aj do localStorage: engine dorovnaní musí vedieť,
-  // či darca je zamestnancom firmy, a k React kontextu sa nedostane
-  try { localStorage.setItem("deed.ja.meno", celeMeno || meno); } catch { /* LS nedostupné */ }
   const mesto = lokalita?.mesto || profil?.mesto || organizacia?.sidlo || "—";
   const typ = ucet?.typ || ses?.typ || "aktivny";
   return {
@@ -140,6 +137,18 @@ export function PouzivatelProvider({ session, children }: { session: Session; ch
     setStav(seed(session));
     refresh();
   }, [session, refresh]);
+
+  // Meno prihláseného sa odkladá do localStorage: engine dorovnaní musí vedieť,
+  // či darca je zamestnancom firmy, a k React kontextu sa nedostane.
+  // Platí pre KAŽDÚ identitu vrátane demo — inak by zamestnanecké dorovnanie
+  // v prototype nikdy nenabehlo (demo cesta odvod() neprechádza).
+  useEffect(() => {
+    const meno = (stav.celeMeno || stav.meno || "").trim();
+    try {
+      if (meno) localStorage.setItem("deed.ja.meno", meno);
+      else localStorage.removeItem("deed.ja.meno");
+    } catch { /* LS nedostupné */ }
+  }, [stav.celeMeno, stav.meno]);
 
   return <PouzivatelContext.Provider value={{ ...stav, refresh, nastavFoto }}>{children}</PouzivatelContext.Provider>;
 }

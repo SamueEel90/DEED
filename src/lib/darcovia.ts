@@ -7,7 +7,7 @@
 // `platba` / view `v_vypis` (0014_payment_engine.sql).
 // ============================================================
 import { useSyncExternalStore } from "react";
-import { beziaceDorovnanieNaCiel, zapisDar as zapisDorovnanie } from "./dorovnanie";
+import { dorovnanieNaDar, zapisDar as zapisDorovnanie } from "./dorovnanie";
 import { pridajPodporu, firmaAkoDarca } from "./podpory";
 
 // ---- CONFIG (spec §6) — všetky čísla ŠTARTOVACIE, žijú tu, nie v kóde ----
@@ -141,7 +141,11 @@ export function useDarcovia(refId: string): DarRiadok[] {
  *   · beží na zbierke dorovnanie firmy → firma pridá svoj diel a zapíše sa ako darca
  *   · daruje samotná firma (je prepnutá do svojej roly) → zbierka sa jej pripne
  *  Keby to viselo na obrazovkách, každá nová obrazovka by na to zabudla. */
-export function pridajDar(vstup: { refId: string; suma: number; kanal: KanalDaru; registrovany: boolean; volba?: VolbaDaru; firma?: string }): DarRiadok & { dorovnane?: number; dorovnalaFirma?: string } {
+export function pridajDar(vstup: {
+  refId: string; suma: number; kanal: KanalDaru; registrovany: boolean; volba?: VolbaDaru; firma?: string;
+  /** dar prišiel cez QR (split) tohto tvorcu — rozhoduje o tvorcovskom dorovnaní */
+  cezTvorcu?: string;
+}): DarRiadok & { dorovnane?: number; dorovnalaFirma?: string } {
   const reg = vstup.registrovany;
   const volba = reg ? (vstup.volba ?? nacitajPredvolbu()) : { verzia: 4 as VerziaIdentity, zobrazSumu: false };
   const riadok: DarRiadok = {
@@ -162,9 +166,9 @@ export function pridajDar(vstup: { refId: string; suma: number; kanal: KanalDaru
   // 1) beží dorovnanie → firma pridá svoj diel hneď za darcov dar
   let dorovnane = 0;
   let dorovnalaFirma: string | undefined;
-  const dv = beziaceDorovnanieNaCiel(vstup.refId);
+  const dv = dorovnanieNaDar(vstup.refId, vstup.cezTvorcu);
   if (dv) {
-    dorovnane = zapisDorovnanie(dv.entita, dv.id, vstup.suma);
+    dorovnane = zapisDorovnanie(dv.entita, dv.id, vstup.suma, Date.now(), vstup.cezTvorcu);
     if (dorovnane > 0) {
       dorovnalaFirma = dv.firma;
       pridajDar({ refId: vstup.refId, suma: dorovnane, kanal: vstup.kanal, registrovany: true,
