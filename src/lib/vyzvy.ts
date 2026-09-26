@@ -52,7 +52,10 @@ export interface Odmena {
 export type StavVyzvy = "beziaca" | "uzavreta" | "vyzrebovana" | "zrusena";
 
 export interface Ucastnik {
-  /** kto — v prototype meno, v produkcii id účtu */
+  /** kto — v prototype meno, v produkcii id účtu.
+   *  Vždy ČLOVEK. Firmy do výziev nepatria: odmena je zľava, vstupenka či
+   *  párty a tvorca robí výzvu pre svoju komunitu, nie pre firmy.
+   *  (Vzťah tvorca ↔ firma sa rieši dorovnaním, nie žrebom.) */
   osoba: string;
   /** čím sa kvalifikoval (dar v €, alebo id overeného skutku) */
   dokaz: string;
@@ -169,10 +172,33 @@ export async function nahodaZBloku(): Promise<{ blok: number; hash: string }> {
   return { blok, hash };
 }
 
-/** Uzávierka: zamkne zoznam, vytiahne náhodu a zapíše výsledok. Raz a navždy. */
-export async function vyzrebuj(id: string): Promise<Vyzva | null> {
+/** Dá sa už žrebovať? Len po konci obdobia a len raz.
+ *  Kým výzva beží, môžu pribúdať účastníci — keby sa dalo žrebovať počas
+ *  behu, tvorca si vyberie moment, ktorý mu vyhovuje, a celá dokázateľnosť
+ *  je na nič. */
+export function daSaZrebovat(v: Vyzva, teraz = Date.now()): boolean {
+  return !v.zreb && v.stav !== "zrusena" && teraz > v.do;
+}
+
+/** „o 3 dni" — dokedy sa ešte čaká na uzávierku (prázdne, keď už je po nej) */
+export function doUzavierky(v: Vyzva, teraz = Date.now()): string {
+  const zostava = v.do - teraz;
+  if (zostava <= 0) return "";
+  const dni = Math.floor(zostava / 86400000);
+  if (dni >= 1) return `o ${dni} ${dni === 1 ? "deň" : dni < 5 ? "dni" : "dní"}`;
+  const hodiny = Math.floor(zostava / 3600000);
+  return hodiny >= 1 ? `o ${hodiny} h` : `o ${Math.max(1, Math.round(zostava / 60000))} min`;
+}
+
+/** Uzávierka: zamkne zoznam, vytiahne náhodu a zapíše výsledok. Raz a navždy.
+ *  Vracia null, ak je ešte skoro — volajúci má vtedy tlačidlo nechať zhasnuté. */
+export async function vyzrebuj(id: string, teraz = Date.now()): Promise<Vyzva | null> {
   const v = nacitaj().find((x) => x.id === id);
-  if (!v || v.zreb) return v ?? null;
+  if (!v) return null;
+  if (v.zreb) return v;                       // už vyžrebované — nič sa neprepisuje
+  if (!daSaZrebovat(v, teraz)) return null;   // pred uzávierkou sa nežrebuje
+  // hash sa berie AŽ TERAZ, teda po uzávierke — v čase vyhlásenia ten blok
+  // ešte neexistoval a tvorca ho nemohol poznať dopredu
   const { blok, hash } = await nahodaZBloku();
   const mena = v.ucastnici.map((u) => u.osoba);
   const pocet = v.odmena.typ === "zreb" ? (v.odmena.pocet ?? 1) : mena.length;

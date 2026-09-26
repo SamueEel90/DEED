@@ -283,6 +283,7 @@ export const SPRAVA_TVORCA: SpravaItem[] = [
   { id: "smena", emoji: "⏱", nazov: "Overená smena", popis: "Overené dobrovoľnícke hodiny so živým počítadlom", tierMin: 2 },
   { id: "statistiky", emoji: "📊", nazov: "Štatistiky", popis: "Návštevy profilu a konverzie na dary", tierMin: 1 },
   { id: "pocitadlo", emoji: "📺", nazov: "Počítadlo do streamu", popis: "Živý pás so zbierkou do OBS — YouTube, Twitch, Kick, TikTok", tierMin: 1 },
+  { id: "vyzvy", emoji: "🏆", nazov: "Výzvy a žrebovanie", popis: "Vyzvi komunitu na skutok alebo dar — odmena každému, alebo žreb", tierMin: 2 },
 ];
 
 // ---- B2B FIRMA (§3) ----

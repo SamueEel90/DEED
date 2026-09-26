@@ -35,6 +35,7 @@ import { OznamySheet } from "./Oznamy";
 import { InzeratySheet } from "./Inzeraty";
 import { DorovnanieSheet } from "./Dorovnanie";
 import { PocitadloVyberSheet } from "@/features/overlay/PocitadloVyber";
+import { VyzvySheet } from "./Vyzvy";
 import { NaseZbierkySheet } from "./NaseZbierky";
 import { ZamestnanciSheet } from "./Zamestnanci";
 import { useDorovnania, casAutomatu } from "@/lib/dorovnanie";
@@ -54,7 +55,7 @@ import { verejneTaby, zamknuteTaby, popisTabu, BLOK_ZA_TAB, zbierkyOrg, cislaSub
 */
 
 type PaywallReq = { tierMin: Tier; nazov: string; dovod?: string };
-type OtvorenySheet = null | "zbierky" | "centralna" | "terminal" | "retaz" | "profil" | "adresarB2B" | { spravovat: OrgZbierka } | "video" | "darcovia" | "qr" | "sumy" | "segment" | "oznamy" | "inzeraty" | "dorovnanie" | "zamestnanci" | "pocitadlo";
+type OtvorenySheet = null | "zbierky" | "centralna" | "terminal" | "retaz" | "profil" | "adresarB2B" | { spravovat: OrgZbierka } | "video" | "darcovia" | "qr" | "sumy" | "segment" | "oznamy" | "inzeraty" | "dorovnanie" | "zamestnanci" | "pocitadlo" | "vyzvy";
 
 // ---- SVG ikony blokov a správy (nahrádzajú emoji — jednotný vizuál) ----
 const IKONY: Record<string, ReactNode> = {
@@ -164,7 +165,7 @@ function MojDeedFiremnyObsah({ onBack, toast, orgId }: { onBack: () => void; toa
     if (pozicia === "tvorca" && it.id === "terminal") return setSheet("terminal");
     if (pozicia === "charita" && it.id === "centralna") return setSheet("centralna");
     if (pozicia === "b2b" && (it.id === "zbierky" || it.id === "zamestnanci")) return setSheet(it.id);
-    if (pozicia === "tvorca" && it.id === "pocitadlo") return setSheet("pocitadlo");
+    if (pozicia === "tvorca" && (it.id === "pocitadlo" || it.id === "vyzvy")) return setSheet(it.id);
     if (pozicia === "charita" && (it.id === "video" || it.id === "darcovia" || it.id === "qr" || it.id === "sumy" || it.id === "segment" || it.id === "oznamy" || it.id === "inzeraty" || it.id === "dorovnanie")) return setSheet(it.id);
     toast(`${it.nazov} — čoskoro`);
   };
@@ -367,6 +368,7 @@ function MojDeedFiremnyObsah({ onBack, toast, orgId }: { onBack: () => void; toa
       {sheet === "terminal" && <TerminalSheet toast={toast} onClose={() => setSheet(null)} />}
       {sheet === "retaz" && <MojaRetaz onClose={() => setSheet(null)} toast={toast} />}
       {sheet === "pocitadlo" && <PocitadloVyberSheet toast={toast} onClose={() => setSheet(null)} />}
+      {sheet === "vyzvy" && <VyzvySheet tvorca={subjekt.nazov} toast={toast} onClose={() => setSheet(null)} />}
       {sheet === "profil" && (
         <UpravProfilSheet pozicia={pozicia} logo={logo} cover={fotky.cover} toast={toast}
           onUloz={(z) => {
