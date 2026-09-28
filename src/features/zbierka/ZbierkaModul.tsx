@@ -7,8 +7,15 @@ import { Switch } from "@/shared";
 import { pressable } from "@/components/pressable";
 import { jeNeregistrovany, nastavNeregistrovany, darujemAkoFirma, nastavDarcuFirmu, sledujDarcu } from "@/lib/devDarca";
 import { MIESTA, NAZVY, pripojene, type Miesto, type Kontext, type Hodnota } from "./nastavenie";
+import { Hlavicka, Galeria, NadpisText, type Medium } from "./Vrch";
+import "@/styles/platba.css";
 
-export type ZbierkaData = { id: string; nazov: string; popis?: string };
+export type ZbierkaData = {
+  id: string; nazov: string; popis?: string;
+  cislo?: number;      // verejné číslo zbierky (#47 821) — len keď ho zbierka má
+  overena?: boolean;
+  media?: Medium[];    // poradie volí autor (predvolene video prvé)
+};
 
 // ---- DEV simulácia (len lokálne, v produkcii miesto a stav dodá appka) ----
 const KLUC_DEV = "deed.dev.zbierkaModul";
@@ -31,19 +38,16 @@ export function ZbierkaModul({ zbierka, miesto: miestoProp, onBack }: { zbierka:
   const polozky = pripojene(miesto, k);
 
   return (
-    <div style={{ minHeight: "100%", background: C.bg, color: C.text, paddingBottom: SPACE.lg }}>
+    <div className="deed-platba" style={{ minHeight: "100%", background: "var(--bg)", color: "var(--ink)", paddingBottom: SPACE.lg }}>
       <DevPanel dev={dev} setDev={setDev} miestoPevne={!!miestoProp} registrovany={registrovany} ico={ico} />
 
-      {/* pevné časti — na každom mieste (okrem hárku Podporiť DEED) */}
+      {/* karta 02 — hlavička, galéria, nadpis a text (všade okrem hárku Podporiť DEED) */}
       {miesto !== "podporitDeed" && (
-        <>
-          <Ram nazov="Hlavička"><span {...pressable(onBack, "Späť")} style={{ cursor: "pointer", fontWeight: 700 }}>‹ Späť</span> · #{zbierka.id}</Ram>
-          <Ram nazov="Galéria 16 : 9" />
-          <Ram nazov="Nadpis + text">
-            <div style={{ fontSize: 17, fontWeight: 700, color: C.text }}>{zbierka.nazov}</div>
-            {zbierka.popis && <div style={{ fontSize: 13, color: C.textSec, marginTop: 2, display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{zbierka.popis}</div>}
-          </Ram>
-        </>
+        <div style={{ padding: "4px 16px 0" }}>
+          <Hlavicka cisloZbierky={zbierka.cislo} overena={zbierka.overena} onBack={onBack} />
+          <Galeria media={zbierka.media ?? []} />
+          <NadpisText nazov={zbierka.nazov} text={zbierka.popis} />
+        </div>
       )}
       {miesto === "podporitDeed" && (
         <Ram nazov="Hárok Podporiť DEED"><span {...pressable(onBack, "Zavrieť")} style={{ cursor: "pointer", fontWeight: 700 }}>✕ Zavrieť</span></Ram>

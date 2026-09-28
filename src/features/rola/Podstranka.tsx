@@ -23,7 +23,8 @@ import { DorovnaniePas, NoveDorovnanieSheet } from "./Dorovnanie";
 import { beziaceDorovnanieNaCiel, dorovnanieKDaru, useZmenyDorovnani } from "@/lib/dorovnanie";
 import { rovnakaFirma } from "@/lib/firma";
 import { verejneOznamy, useZmenyOznamov } from "@/lib/oznamy";
-import { nacitajProfil, useZmenyProfilov, CENTRALNA_ID, VLASTNA_ZBIERKA_CFG, type ProfilZbierky } from "./vlastneZbierky";
+import { nacitajProfil, useZmenyProfilov, CENTRALNA_ID, VLASTNA_ZBIERKA_CFG, fotkyZbierky, type ProfilZbierky } from "./vlastneZbierky";
+import { jeVideo } from "@/lib/videoUloz";
 import { useSegmenty } from "./segmenty";
 import { zdielaj, aktualnaUrl } from "@/lib/zdielanie";
 import type { Kanal } from "@/types";
@@ -740,7 +741,14 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
     if (rolaFirmy) return <Podstranka pozicia={rolaFirmy} tier={3} logo={null} toast={toast} onBack={() => setFirmaProfil(null)} />;
   }
 
-  if (novyModul) return <ZbierkaModul zbierka={{ id: novyModul.id, nazov: novyModul.profil.nazov, popis: novyModul.profil.popis }} onBack={() => setNovyModul(null)} />;
+  if (novyModul) {
+    const pz = novyModul.profil, fotky = fotkyZbierky(pz), uv = Math.min(pz.uvodna ?? 0, Math.max(0, fotky.length - 1));
+    const media = [
+      ...(pz.video && jeVideo(pz.video) ? [{ typ: "video" as const, src: pz.video }] : []),
+      ...[...fotky.slice(uv), ...fotky.slice(0, uv)].map((src) => ({ typ: "foto" as const, src })),
+    ];
+    return <ZbierkaModul zbierka={{ id: novyModul.id, nazov: pz.nazov, popis: pz.popis, overena: s.overena, media }} onBack={() => setNovyModul(null)} />;
+  }
 
   return (
     <div style={{ paddingBottom: SPACE.lg, color: C.text }}>

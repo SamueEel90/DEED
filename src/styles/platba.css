@@ -1,0 +1,55 @@
+/* DEED · detail zbierky + platobný modul · MOST na farby appky (src/index.css).
+   Zdroj: dizajnér, kod/farby.css (CELOK v2.2). Všetko je zúžené na .deed-platba — nič globálne.
+   Doplnené z prototypu: --bSoft, --bBd (štítok čísla zbierky). */
+.deed-platba {
+  /* z appky */
+  --bg: var(--c-bg);
+  --ink: var(--c-text); --ink2: var(--c-textSec); --ink3: var(--c-textSec); --ink4: var(--c-textTer);
+  --green: var(--a-green);
+  --gold: var(--a-gold);
+  --card: rgba(var(--glass-rgb), .08);   /* rovnaké béžové sklo ako karty appky (bez blur) */
+  --cardBd: rgba(var(--glass-rgb), .14);
+  --sheet: var(--c-bg);
+
+  /* odvodené z appky */
+  --field: rgba(var(--panel-rgb), .9);
+  --fieldBd: rgba(var(--glass-rgb), .22);
+  --btn: rgba(var(--glass-rgb), .12);
+  --track: rgba(var(--glass-rgb), .16);
+  --handle: rgba(var(--glass-rgb), .28);
+  --gSoft: color-mix(in srgb, var(--a-green) 14%, transparent);
+  --gBd:   color-mix(in srgb, var(--a-green) 45%, transparent);
+  --gInk:  var(--a-green);
+  --blue: #3D6B8E;                                 /* token DEED / overenie */
+  --iconBg: color-mix(in srgb, #3D6B8E 14%, transparent);
+  --bSoft: #DCE2E4; --bBd: #B9C7CF;                /* štítok čísla zbierky (prototyp) */
+
+  /* nové — appka ich nemá */
+  --gGrad: linear-gradient(90deg, #4B7A35, #8DB866);
+  --goldGrad: linear-gradient(90deg, #8A6A1C, #C9A24A);
+  --goldBg: #E2D7BF; --goldBd: #C9B27B;
+  --t2: #EBDAD1; --t2Bd: #E0B9AE; --t3: #E6CCC4; --t3Bd: #D49A8E;
+  --scrim: rgba(20, 22, 18, .42);
+}
+html.dark .deed-platba {
+  --blue: #7FA6C6; --iconBg: color-mix(in srgb, #7FA6C6 16%, transparent);
+  --bSoft: #1C252C; --bBd: #3F586C;
+  --gInk: color-mix(in srgb, var(--a-green) 70%, white);
+  --goldBg: #2A2518; --goldBd: #6B5A2E;
+  --t2: #2A1F1B; --t2Bd: #5A3A31; --t3: #33231E; --t3Bd: #7A4A3E;
+  --scrim: rgba(0, 0, 0, .6);
+}
+html.dark .deed-platba button { box-shadow: inset 0 0 0 1px rgba(241,236,225,.07), inset 0 1px 0 rgba(241,236,225,.09); }
+
+/* galéria — natívny scroll-snap, skrytý posuvník */
+.deed-platba .zb-snap { display: flex; height: 100%; overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory; overscroll-behavior-x: contain; scrollbar-width: none; }
+.deed-platba .zb-snap::-webkit-scrollbar { display: none; }
+.deed-platba .zb-snap > * { flex: none; width: 100%; height: 100%; position: relative; scroll-snap-align: start; scroll-snap-stop: always; }
+
+@keyframes zbFsIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes zbFsScale { from { transform: scale(.92); } to { transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) { .deed-platba .zb-fs-media { animation: none !important; } }
+
+@keyframes svetlusikSprite { to { transform: translateX(-100%); } }
+@keyframes pulseDot { 0% { box-shadow: 0 0 0 0 rgba(78,125,55,.55); } 100% { box-shadow: 0 0 0 7px rgba(78,125,55,0); } }
+@keyframes sealIn { 0% { transform: scale(1.8) rotate(-18deg); opacity: 0; } 60% { transform: scale(.92) rotate(-8deg); opacity: 1; } 100% { transform: scale(1) rotate(-10deg); opacity: 1; } }
