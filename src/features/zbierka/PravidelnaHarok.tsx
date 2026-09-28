@@ -250,7 +250,7 @@ export function PravidelnaHarok({ refId, nazov, registrovany, onClose }: { refId
       </span>
     </>
   );
-  return <Harok onClose={() => { if (krok !== "spracovanie") onClose(); }} hlavicka={hlavicka} podHlavickou={krokyUI} paticka={paticka} plnaVyska>
+  return <Harok onClose={() => { if (krok !== "spracovanie") onClose(); }} hlavicka={hlavicka} podHlavickou={krokyUI} paticka={paticka}>
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>{obsah}</div>
   </Harok>;
 }
