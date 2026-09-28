@@ -136,8 +136,9 @@ function spojPary(r: DarRiadok[]): Par[] {
 }
 const sumaVZozname = (r: DarRiadok) => (r.firma || (r.registrovany && r.zobrazSumu)) && r.suma > DARCOVIA_CFG.prahSumy ? eK(r.suma) : null;
 
-export function Darcovia({ refId, nadpis = "DARCOVIA" }: { refId: string; nadpis?: string }) {
-  const dary = useDarcovia(refId);
+export function Darcovia({ refId, nadpis = "DARCOVIA", cezTvorcu }: { refId: string; nadpis?: string; cezTvorcu?: string }) {
+  const vsetky = useDarcovia(refId);
+  const dary = cezTvorcu ? vsetky.filter((r) => r.cezTvorcu === cezTvorcu) : vsetky;
   const ja = usePouzivatel();
   const [vsetci, setVsetci] = useState(false);
   const pary = spojPary(dary);

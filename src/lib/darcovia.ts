@@ -38,6 +38,8 @@ export interface DarRiadok {
   /** dorovnanie firmy — dar nie je od človeka, ale od firmy, a tá sa podpisuje
    *  vždy menom (firma má v DEED len verejný profil, anonymitu si nevyberá) */
   firma?: string;
+  /** dar prišiel cez QR / odkaz tohto tvorcu (karta 13 — suma a darcovia „cez tvorcu") */
+  cezTvorcu?: string;
   // zapečené polia LEN pre mock cudzích darcov (v produkcii render cez userId):
   meno?: string; inicialovo?: string; nick?: string; mesto?: string; mestoVerejne?: boolean;
 }
@@ -153,6 +155,7 @@ export function pridajDar(vstup: {
     refId: vstup.refId, cas: Date.now(), suma: vstup.suma, kanal: vstup.kanal,
     registrovany: reg, verzia: volba.verzia, zobrazSumu: volba.zobrazSumu, moj: reg && !vstup.firma,
     ...(vstup.firma ? { firma: vstup.firma } : {}),
+    ...(vstup.cezTvorcu ? { cezTvorcu: vstup.cezTvorcu } : {}),
   };
   sklad.set(vstup.refId, [riadok, ...riadkyPre(vstup.refId)]);
   emit();
@@ -172,7 +175,7 @@ export function pridajDar(vstup: {
     if (dorovnane > 0) {
       dorovnalaFirma = dv.firma;
       pridajDar({ refId: vstup.refId, suma: dorovnane, kanal: vstup.kanal, registrovany: true,
-        volba: { verzia: 4, zobrazSumu: true }, firma: dv.firma });
+        volba: { verzia: 4, zobrazSumu: true }, firma: dv.firma, cezTvorcu: vstup.cezTvorcu });
       pridajPodporu(dv.firma, vstup.refId, dorovnane);
     }
   }

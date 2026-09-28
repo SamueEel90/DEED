@@ -57,11 +57,12 @@ function Pruh({ podiel, vyska, blik, koniec }: { podiel: number; vyska: number; 
   );
 }
 
-function Ludia({ pocet }: { pocet: number }) {
+const fanusikovia = (n: number) => n === 1 ? "1 fanúšik pomohol" : n >= 2 && n <= 4 ? `${n} fanúšikovia pomohli` : `${n} fanúšikov pomohlo`;
+function Ludia({ pocet, fanusikov }: { pocet: number; fanusikov?: boolean }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 12, fontSize: 13, color: "var(--ink3)" }}>
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" /></svg>
-      <span style={{ flex: 1 }}>{ludiaPomohli(pocet)}</span>
+      <span style={{ flex: 1 }}>{fanusikov ? fanusikovia(pocet) : ludiaPomohli(pocet)}</span>
       <span style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--green)", fontWeight: 700 }}>
         <span className="zb-pulz" style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--green)" }} />
         rastie naživo
@@ -70,7 +71,9 @@ function Ludia({ pocet }: { pocet: number }) {
   );
 }
 
-export function KartaStavu({ refId, zaklad, ciel, ludiaZaklad, tempo = false, koniecPruhu }: {
+export function KartaStavu({ refId, zaklad, ciel, ludiaZaklad, tempo = false, koniecPruhu, cezTvorcu }: {
+  /** karta 13 — karta stavu „cez tvorcu": len dary cez neho, jeho suma je vždy vlastná */
+  cezTvorcu?: { id: string; menoAkuzativ: string };
   refId: string;
   tempo?: TempoRezim;    // karta 05 — vnútri karty pod pruhom
   koniecPruhu?: RefObject<HTMLDivElement>;
@@ -78,10 +81,12 @@ export function KartaStavu({ refId, zaklad, ciel, ludiaZaklad, tempo = false, ko
   ciel?: number | null;  // bez cieľa → míľniky
   ludiaZaklad: number;
 }) {
-  const dary = useDarcovia(refId);
+  const vsetkyDary = useDarcovia(refId);
+  const dary = cezTvorcu ? vsetkyDary.filter((r) => r.cezTvorcu === cezTvorcu.id) : vsetkyDary;
   const ja = usePouzivatel();
-  const suma = zaklad + dary.reduce((a, r) => a + r.suma, 0);
-  const ludia = ludiaZaklad + dary.length;
+  const suma = (cezTvorcu ? 0 : zaklad) + dary.reduce((a, r) => a + r.suma, 0);
+  const ludia = (cezTvorcu ? 0 : ludiaZaklad) + dary.filter((r) => !r.firma).length;
+  const nadpisVyzbierane = cezTvorcu ? `Vyzbierané cez ${cezTvorcu.menoAkuzativ}` : "Vyzbierané";
   const zobrazena = usePocitadlo(suma);
   const maCiel = ciel != null && ciel > 0;
 
@@ -102,6 +107,17 @@ export function KartaStavu({ refId, zaklad, ciel, ludiaZaklad, tempo = false, ko
   const karta: CSSProperties = { margin: "0 0 12px", borderRadius: 22, background: "var(--card)", border: "1px solid var(--cardBd)", padding: maCiel ? "18px 18px 14px" : "16px 18px 14px" };
   const velka: CSSProperties = { fontSize: 32, fontWeight: 800, letterSpacing: "-.02em", lineHeight: 1.1, fontVariantNumeric: "tabular-nums", color: "var(--ink)" };
 
+  if (maCiel && cezTvorcu) {
+    return (
+      <div style={karta}>
+        <div style={{ fontSize: 12.5, fontWeight: 700, color: "var(--ink3)" }}>{nadpisVyzbierane}</div>
+        <div style={{ ...velka, marginTop: 2, marginBottom: 12 }} data-zb-suma={refId}>{eur(zobrazena)}</div>
+        <Pruh podiel={suma / ciel!} vyska={10} koniec={koniecPruhu} />
+        <TempoDarov refId={refId} rezim={tempo} cezTvorcu={cezTvorcu.id} />
+        <Ludia pocet={ludia} fanusikov />
+      </div>
+    );
+  }
   if (maCiel) {
     const pct = Math.floor((suma / ciel!) * 100);
     return (
@@ -123,7 +139,7 @@ export function KartaStavu({ refId, zaklad, ciel, ludiaZaklad, tempo = false, ko
   const zakladMilnika = oslava ? 1 : suma / dalsi;
   return (
     <div style={karta}>
-      <div style={{ fontSize: 12.5, fontWeight: 700, color: "var(--ink3)" }}>Vyzbierané</div>
+      <div style={{ fontSize: 12.5, fontWeight: 700, color: "var(--ink3)" }}>{nadpisVyzbierane}</div>
       <div style={{ ...velka, marginTop: 2 }} data-zb-suma={refId}>{eur(zobrazena)}</div>
       {dnes > 0 && <div style={{ fontSize: 13, fontWeight: 700, color: "var(--green)", marginTop: 4 }}>dnes +{eur(dnes)}</div>}
       <div style={{ marginTop: 12 }}><Pruh podiel={zakladMilnika} vyska={6} blik={oslava || undefined} koniec={koniecPruhu} /></div>
@@ -138,8 +154,8 @@ export function KartaStavu({ refId, zaklad, ciel, ludiaZaklad, tempo = false, ko
           {sumaDaru(posledny) && <span style={{ fontSize: 13, fontWeight: 800, color: "var(--green)", flex: "none", fontVariantNumeric: "tabular-nums" }}>{sumaDaru(posledny)}</span>}
         </div>
       )}
-      <TempoDarov refId={refId} rezim={tempo} />
-      <Ludia pocet={ludia} />
+      <TempoDarov refId={refId} rezim={tempo} cezTvorcu={cezTvorcu?.id} />
+      <Ludia pocet={ludia} fanusikov={!!cezTvorcu} />
     </div>
   );
 }

@@ -44,10 +44,9 @@ export function PoleOrganizacie({ org, nadpis, otvorene, onPrepni, onOtvorStrank
           <span style={{ display: "block", fontSize: 12.5, color: "var(--ink3)" }}>{typLabel} · {org.mesto}</span>
         </span>
         <img src={`/odznaky/${SUBOR[org.stit]}.png`} alt={NAZOV_STITU[org.stit]} width={34} height={40} style={{ objectFit: "contain", flex: "none" }} />
-        <span style={{ width: 32, height: 32, borderRadius: "50%", background: "var(--bg)", flex: "none", display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-            style={{ transform: `rotate(${otvorene ? 180 : 0}deg)`, transition: "transform .3s ease" }}><path d="m6 9 6 6 6-6" /></svg>
-        </span>
+        {/* šípka bez kruhu (Martin zrušil šípky v kruhu) */}
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--ink3)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+          style={{ flex: "none", transform: `rotate(${otvorene ? 180 : 0}deg)`, transition: "transform .3s ease" }}><path d="m6 9 6 6 6-6" /></svg>
       </button>
       {otvorene && (
         <div style={{ borderTop: "1px solid var(--cardBd)", padding: "12px 14px 14px", fontSize: 13.5, color: "var(--ink2)", lineHeight: 1.5, animation: "zbFsIn .2s ease both" }}>

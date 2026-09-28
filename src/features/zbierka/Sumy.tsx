@@ -57,7 +57,7 @@ export function RychleSumyEur({ sumy, doplnok, kDaru, otvor }: { sumy: number[];
 
 // ---------------- B · DEED dlaždice (mikrodar) ----------------
 const DEED_SUMY = [10, 50, 100];
-export function DeedDlazdice({ refId, registrovany, mikro }: { refId: string; registrovany: boolean; mikro: MikroCiel }) {
+export function DeedDlazdice({ refId, registrovany, mikro, cezTvorcu }: { refId: string; registrovany: boolean; mikro: MikroCiel; cezTvorcu?: string }) {
   const { blok, zacni } = useBlok();
   return (
     <>
@@ -65,7 +65,7 @@ export function DeedDlazdice({ refId, registrovany, mikro }: { refId: string; re
       <div style={mriezka}>
         {DEED_SUMY.map((d) => (
           <MikrodarDlazdica key={d} suma={d} jednotka="DEED" eur={d / 100} najcastejsie={d === 100} root={mikro.root} ciel={mikro.ciel}
-            blokovane={blok} onOdoslane={zacni} onDoleteli={(eur) => pridajDar({ refId, suma: eur, kanal: "deed", registrovany })} />
+            blokovane={blok} onOdoslane={zacni} onDoleteli={(eur) => pridajDar({ refId, suma: eur, kanal: "deed", registrovany, cezTvorcu })} />
         ))}
       </div>
     </>
@@ -105,7 +105,7 @@ export function VlastnaSuma({ eur, deed, firma, otvor }: { eur: boolean; deed: b
 // ---------------- D · dary v krypte (EURC) ----------------
 const EURC_SUMY = [0.1, 0.5, 1];
 const KLUC_KRYPTO = "deed.zbierka.kryptoOtvorene";
-export function DaryVKrypte({ refId, otvor, mikro }: { refId: string; otvor: OtvorPlatbu; mikro: MikroCiel }) {
+export function DaryVKrypte({ refId, otvor, mikro, cezTvorcu }: { refId: string; otvor: OtvorPlatbu; mikro: MikroCiel; cezTvorcu?: string }) {
   const [otvorene, setOtvorene] = useState(() => { try { return localStorage.getItem(KLUC_KRYPTO) !== "0"; } catch { return true; } });
   const prepni = () => { const v = !otvorene; setOtvorene(v); try { localStorage.setItem(KLUC_KRYPTO, v ? "1" : "0"); } catch { /* LS */ } };
   const { blok, zacni } = useBlok(); // krypto má len registrovaný
@@ -123,7 +123,7 @@ export function DaryVKrypte({ refId, otvor, mikro }: { refId: string; otvor: Otv
           <div style={mriezka}>
             {EURC_SUMY.map((v) => (
               <MikrodarDlazdica key={v} suma={cislo(v)} jednotka="EURC" eur={v} najcastejsie={v === 1} root={mikro.root} ciel={mikro.ciel}
-                blokovane={blok} onOdoslane={zacni} onDoleteli={(eur) => pridajDar({ refId, suma: eur, kanal: "deed", registrovany: true })} />
+                blokovane={blok} onOdoslane={zacni} onDoleteli={(eur) => pridajDar({ refId, suma: eur, kanal: "deed", registrovany: true, cezTvorcu })} />
             ))}
           </div>
           <button type="button" className="zb-karta" onClick={() => otvor({ kanal: "eurc" })}
