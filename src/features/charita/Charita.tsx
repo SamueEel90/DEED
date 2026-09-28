@@ -158,7 +158,7 @@ export default function ModulCharita({ wide, otvorModul }: ModulCharitaProps) {
     }
     const { z, org, zoStrankyOrg } = krok.data;
     const o = org ? najdiOrg(org) : null;
-    return obal(<SwipeBack onBack={cesta.spat}><ZbierkaModul key={krok.id}
+    return (<SwipeBack onBack={cesta.spat}><ZbierkaModul key={krok.id}
       zbierka={{ id: z.id ?? z.nazov, nazov: z.nazov, popis: z.pribeh ?? z.popis, overena: z.overena,
         media: (z.fotky ?? []).map((src) => ({ typ: "foto" as const, src })), organizacia: o ? poleZOrg(o) : undefined,
         vyzbierane: z.vyzbierane, ciel: z.ciel, ludia: z.ludia }}
