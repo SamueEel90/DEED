@@ -97,7 +97,8 @@ export function PlatobneOkno({ kanal, suma: sumaStart, nazov, registrovany, bonu
   });
 
   const hlavicka = (
-    <div style={{ flex: "none", padding: "18px 18px 0" }}>
+    <div style={{ flex: "none", padding: wide ? "18px 18px 0" : "10px 18px 0" }}>
+      {!wide && <div style={{ width: 40, height: 4, borderRadius: 4, background: "var(--handle)", margin: "0 auto 12px" }} />}
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
         <span style={{ width: 46, height: 46, borderRadius: 13, background: "var(--bSoft)", color: "var(--blue)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: eur ? 19 : 13, fontWeight: 800, flex: "none" }}>{eur ? "€" : jednotka(kanal)}</span>
         <span style={{ flex: 1, minWidth: 0 }}>
@@ -240,7 +241,7 @@ export function PlatobneOkno({ kanal, suma: sumaStart, nazov, registrovany, bonu
   const okno: CSSProperties = wide
     ? { position: "relative", width: sirka, maxWidth: "calc(100vw - 32px)", maxHeight: "min(760px, calc(100vh - 48px))", borderRadius: 28,
         transform: otvorene ? "none" : "translateY(24px)", opacity: otvorene ? 1 : 0 }
-    : { position: "relative", width: "calc(100vw - 24px)", maxHeight: "calc(100dvh - 32px)", borderRadius: 28, transform: otvorene ? "none" : "translateY(24px)", opacity: otvorene ? 1 : 0 }; // aj mobil: okno v strede
+    : { position: "absolute", left: 0, right: 0, bottom: 0, maxHeight: "92%", borderRadius: "28px 28px 0 0", transform: otvorene ? "none" : "translateY(105%)" }; // mobil zdola, tablet/PC v strede
 
   return createPortal(
     <div className="deed-platba" role="dialog" aria-modal="true" aria-label="Platba"

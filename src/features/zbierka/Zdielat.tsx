@@ -29,9 +29,10 @@ export function Harok({ onClose, children, hlavicka, podHlavickou, paticka, plna
       <div onClick={zavri} style={{ position: "absolute", inset: 0, background: "var(--scrim)", opacity: otv ? 1 : 0, transition: "opacity .32s ease" }} />
       <div style={{ ...(wide
           ? { position: "relative", width: desktop ? 560 : 640, maxWidth: "calc(100vw - 32px)", maxHeight: "calc(100vh - 48px)", borderRadius: 28, transform: otv ? "none" : "translateY(24px)", opacity: otv ? 1 : 0 }
-          : { position: "relative", width: "calc(100vw - 24px)", ...(plnaVyska ? { height: "calc(100dvh - 32px)" } : { maxHeight: "calc(100dvh - 32px)" }), borderRadius: 28, transform: otv ? "none" : "translateY(24px)", opacity: otv ? 1 : 0 }), // aj mobil: okno v strede
-        background: "var(--sheet)", color: "var(--ink)", display: "flex", flexDirection: "column", overflow: "hidden", transition: "transform .32s cubic-bezier(.2,.8,.2,1), opacity .32s ease" }}>
-        <div style={{ flex: "none", padding: "18px 18px 0" }}>
+          : { position: "absolute", left: 0, right: 0, bottom: 0, ...(plnaVyska ? { height: "92%" } : { maxHeight: "92%" }), borderRadius: "28px 28px 0 0", transform: otv ? "none" : "translateY(105%)" }), // mobil zdola, tablet/PC v strede
+        background: "var(--sheet)", color: "var(--ink)", display: "flex", flexDirection: "column", overflow: "hidden", transition: "transform .42s cubic-bezier(.2,.8,.2,1), opacity .32s ease" }}>
+        <div style={{ flex: "none", padding: wide ? "18px 18px 0" : "10px 18px 0" }}>
+          {!wide && <div style={{ width: 40, height: 4, borderRadius: 4, background: "var(--handle)", margin: "0 auto 12px" }} />}
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             {hlavicka}
             <button type="button" onClick={zavri} aria-label="Zavrieť" style={{ width: 44, height: 44, borderRadius: "50%", border: "none", background: "var(--btn)", color: "var(--ink)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flex: "none" }}>
