@@ -53,3 +53,16 @@ html.dark .deed-platba button { box-shadow: inset 0 0 0 1px rgba(241,236,225,.07
 @keyframes svetlusikSprite { to { transform: translateX(-100%); } }
 @keyframes pulseDot { 0% { box-shadow: 0 0 0 0 rgba(78,125,55,.55); } 100% { box-shadow: 0 0 0 7px rgba(78,125,55,0); } }
 @keyframes sealIn { 0% { transform: scale(1.8) rotate(-18deg); opacity: 0; } 60% { transform: scale(.92) rotate(-8deg); opacity: 1; } 100% { transform: scale(1) rotate(-10deg); opacity: 1; } }
+
+/* karta stavu (karta 04) */
+.deed-platba .zb-pruh { transition: transform .9s cubic-bezier(.34,1.3,.5,1); }
+.deed-platba .zb-blik { animation: zbBlik .9s ease; }
+@keyframes zbBlik { 0%,100% { opacity: 1; } 30% { opacity: .35; } 60% { opacity: 1; } 80% { opacity: .6; } }
+.deed-platba .zb-pulz { animation: zbPulz 1.8s ease-in-out infinite; }
+@keyframes zbPulz { 0%,100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.5); opacity: .45; } }
+.deed-platba .zb-novy { animation: zbNovy .35s ease both; }
+@keyframes zbNovy { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .deed-platba .zb-pruh { transition: transform .3s ease; }
+  .deed-platba .zb-pulz, .deed-platba .zb-blik { animation: none; }
+}

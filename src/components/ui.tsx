@@ -5,10 +5,10 @@
 // JEDNA implementácia pre celú appku (koniec kópií btnLokal/btnP/…).
 // ============================================================
 import type { CSSProperties, ReactNode, ChangeEvent } from "react";
+import { SpatTlacidlo } from "@/components/cesta";
 import { C, GRAD, GRAD_ZELENY, glassTmavy, SPACE, RADIUS, TYPE, FW, SHADOW } from "@/theme";
 import { tint } from "@/lib/ui";
 import { pressable } from "@/components/pressable";
-import { IkonaSpat } from "@/components/icons";
 
 // ---- HMAT — neviditeľné zväčšenie dotykovej plochy malých ovládačov (WCAG 2.5.5 ≥44px) ----
 // Rodič MUSÍ mať position:relative; klik na rozšírenú plochu prebublá rodičovi.
@@ -78,11 +78,9 @@ export function Switch({ on, onChange, ariaLabel, disabled }: { on: boolean; onC
 }
 
 // ---- BACK CHIP — jednotné „späť" koliesko (glass rad / hero overlay) ----
-export function BackChip({ onBack, hero, label = "Späť" }: { onBack?: () => void; hero?: boolean; label?: string }) {
-  const styl: CSSProperties = hero
-    ? { position: "relative", width: 34, height: 34, borderRadius: RADIUS.round, background: "rgba(0,0,0,.55)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flex: "0 0 auto", zIndex: 2 }
-    : { position: "relative", width: 32, height: 32, borderRadius: RADIUS.round, background: "rgba(var(--glass-rgb),.06)", border: `1px solid ${C.line}`, color: C.textSec, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flex: "0 0 auto" };
-  return <span {...pressable(onBack, label)} style={styl}><Hmat o={6} /><IkonaSpat size={17} color={hero ? "#fff" : C.textSec} /></span>;
+export function BackChip({ onBack, hero }: { onBack?: () => void; hero?: boolean; label?: string }) {
+  // jednotné „‹ Späť" v celej appke (zelené, 15 px, 700); na fotke (hero) to isté na svetlej pilulke
+  return <SpatTlacidlo onClick={() => onBack?.()} naFotke={hero} />;
 }
 
 // ---- BACK HEADER — JEDNOTNÁ hlavička pod-obrazovky (detail/sheet) ----

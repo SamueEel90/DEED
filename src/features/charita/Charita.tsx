@@ -21,6 +21,10 @@ import { zdielaj, aktualnaUrl } from "@/lib/zdielanie";
 import { OzvatSaSheet } from "@/components/ozvatsa";
 import { NahlasitSheet } from "@/components/nahlasit";
 import { MojDeedFiremny } from "@/features/rola/MojDeedFiremny";
+import { ZbierkaModul } from "@/features/zbierka/ZbierkaModul";
+import { poleZOrg } from "@/features/zbierka/Pole";
+import { useCesta } from "@/lib/cesta";
+import { novyDetailZbierky } from "@/lib/devDarca";
 
 /*
   ============================================================
@@ -128,6 +132,10 @@ type ModulCharitaProps = {
 };
 
 type Screen = "feed" | "detail" | "cudzi" | "board" | "event" | "firemny";
+/** krok cesty Späť v module Charita (karta 03) — platba sa do cesty nezapisuje */
+type KrokCharita =
+  | { typ: "zbierka"; z: ZbierkaDetail; org?: string; zoStrankyOrg?: boolean }
+  | { typ: "org"; subjekt: Subjekt };
 type Sheet = "add" | "reg" | "dir" | null;
 
 export default function ModulCharita({ wide, otvorModul }: ModulCharitaProps) {
@@ -140,23 +148,49 @@ export default function ModulCharita({ wide, otvorModul }: ModulCharitaProps) {
   const [aktEvent, setAktEvent] = useState<string | null>(null);
 
   // pri prepnutí obrazovky (napr. otvorenie detailu) odscrolluj appku hore
-  useScrollPamat(screen); // pamäť scrollu — „Späť" obnoví pozíciu feedu (nie skok hore)
+  // cesta Späť (nový detail zbierky): každý krok má vlastný kľúč → vlastná pamäť scrollu
+  const cesta = useCesta<KrokCharita>();
+  useScrollPamat(cesta.kluc ?? screen); // pamäť scrollu — „Späť" obnoví pozíciu (nie skok hore)
 
-  // pod-obrazovka = vrstva histórie → browser Back sa vráti na feed (nie von z appky)
-  useVrstva(screen !== "feed", () => setScreen("feed"), screen);
+  // pod-obrazovka = vrstva histórie → browser Back sa vráti o krok (nie von z appky)
+  useVrstva(screen !== "feed" || !!cesta.aktualny, () => (cesta.aktualny ? cesta.spat() : setScreen("feed")), screen);
+
+  const otvorZbierku = (z: ZbierkaDetail) => cesta.otvor(z.nazov, { typ: "zbierka", z, org: z.orgProfil ? z.nazov : undefined });
+  const krokCesty = () => {
+    const krok = cesta.aktualny!;
+    const spatNazov = cesta.predosly?.nazov ?? "Tvoj feed";
+    if (krok.data.typ === "org") {
+      const meno = (krok.data.subjekt as { meno?: string }).meno ?? "";
+      return obal(<SwipeBack onBack={cesta.spat}><CudziProfil subjekt={krok.data.subjekt as any} toast={toast} onBack={cesta.spat} onZavriet={cesta.zavri}
+        onKampan={(k: OrgKampan) => cesta.otvor(k.nazov, { typ: "zbierka", org: meno, zoStrankyOrg: true,
+          z: { id: k.id, nazov: k.nazov, emoji: k.emoji, overena: true, orgProfil: true, lok: k.lok, fotky: [k.foto], popis: k.popis, pribeh: k.popis, vyzbierane: k.vyzbierane, ciel: k.ciel, ludia: k.ludia } })} /></SwipeBack>);
+    }
+    const { z, org, zoStrankyOrg } = krok.data;
+    const o = org ? najdiOrg(org) : null;
+    return obal(<SwipeBack onBack={cesta.spat}><ZbierkaModul key={krok.id}
+      zbierka={{ id: z.id ?? z.nazov, nazov: z.nazov, popis: z.pribeh ?? z.popis, overena: z.overena,
+        media: (z.fotky ?? []).map((src) => ({ typ: "foto" as const, src })), organizacia: o ? poleZOrg(o) : undefined,
+        vyzbierane: z.vyzbierane, ciel: z.ciel, ludia: z.ludia }}
+      onBack={cesta.spat} spatNazov={spatNazov} onZavriet={cesta.zavri} zoStrankyOrg={zoStrankyOrg}
+      onOtvorOrg={o ? () => cesta.otvor(o.meno, { typ: "org", subjekt: { typ: "org", meno: o.meno, emoji: o.emoji, lok: o.lok, level: o.level } as Subjekt }) : undefined}
+      stav={krok.stav} onStav={(zm) => cesta.ulozStav(krok.id, zm)} /></SwipeBack>);
+  };
 
   const obal = (el: React.ReactNode) => obalSiroky(el, { wide, desktop, max: SIRKA.stlpec, maxDesktop: SIRKA.citanie });
 
   return (
     <div style={{ minHeight: "100%", color: K.txt }}>
-      <ScreenSwitch k={screen}>
-      {screen === "feed" && <CharitaFeed wide={wide} toast={toast} onDetail={(z) => { setAktZ(z ?? null); setScreen("detail"); }} onHladaj={() => setHladaj(true)} onSheet={setSheet} onBoard={() => setScreen("board")} onFiremny={() => setScreen("firemny")} />}
+      <ScreenSwitch k={cesta.kluc ?? screen}>
+      {cesta.aktualny && krokCesty()}
+      {!cesta.aktualny && <>
+      {screen === "feed" && <CharitaFeed wide={wide} toast={toast} onDetail={(z) => { if (z && novyDetailZbierky()) { otvorZbierku(z); return; } setAktZ(z ?? null); setScreen("detail"); }} onHladaj={() => setHladaj(true)} onSheet={setSheet} onBoard={() => setScreen("board")} onFiremny={() => setScreen("firemny")} />}
       {screen === "firemny" && obalSiroky(<SwipeBack onBack={() => setScreen("feed")}><MojDeedFiremny onBack={() => setScreen("feed")} toast={toast} /></SwipeBack>, { wide, desktop, max: SIRKA.stlpec })}
       {screen === "detail" && obal(<SwipeBack onBack={() => setScreen("feed")}><CharitaDetail z={aktZ} toast={toast} onBack={() => setScreen("feed")} onReg={() => setSheet("reg")} onAutor={(s) => { setAktSubjekt(s); setScreen("cudzi"); }} /></SwipeBack>)}
       {screen === "cudzi" && aktSubjekt && obal(<CudziProfil subjekt={aktSubjekt as any} toast={toast} onBack={() => setScreen("feed")}
         onKampan={(k: OrgKampan) => { setAktZ({ id: k.id, nazov: k.nazov, emoji: k.emoji, overena: true, orgProfil: true, avatar: najdiOrg((aktSubjekt as { meno?: string } | null)?.meno).logo, lok: k.lok, fotky: [k.foto], popis: k.popis, pribeh: k.popis, vyzbierane: k.vyzbierane, ciel: k.ciel, ludia: k.ludia }); setScreen("detail"); }} />)}
       {screen === "board" && <GoodBoard onBack={() => setScreen("feed")} onEvent={(id) => { setAktEvent(id); setScreen("event"); }} />}
       {screen === "event" && obal(<GoodEvent id={aktEvent} onBack={() => setScreen("board")} toast={toast} oslavuj={(s, komu) => toast(`Ďakujeme za ${s} pre ${komu}`)} />)}
+      </>}
       </ScreenSwitch>
 
       {sheet === "add" && <SheetPridat toast={toast} otvorModul={otvorModul} onClose={() => setSheet(null)} />}

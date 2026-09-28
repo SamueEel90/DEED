@@ -6,6 +6,7 @@ import { pressable } from "@/components/pressable";
 import { useLayout } from "@/components/context";
 import { useVideoUrl } from "@/lib/videoUloz";
 import { FormatovanyText } from "@/components/formattext";
+import { SpatTlacidlo, ZavrietTlacidlo } from "@/components/cesta";
 
 export type Medium = { typ: "video"; src: string } | { typ: "foto"; src: string };
 
@@ -13,18 +14,20 @@ const TMAVA = "rgba(20,18,14,.7)";
 const cislo = (n: number) => n.toLocaleString("sk-SK");
 
 // ---------------- 1 · Hlavička ----------------
-export function Hlavicka({ cisloZbierky, overena, onBack }: { cisloZbierky?: number; overena?: boolean; onBack: () => void }) {
+export function Hlavicka({ cisloZbierky, overena, onBack, spatNazov, onZavriet }: {
+  cisloZbierky?: number; overena?: boolean; onBack: () => void;
+  spatNazov?: string;        // kam vedie Späť — zatiaľ sa nezobrazuje (jednotné „‹ Späť")
+  onZavriet?: () => void;    // krížik: zavrie celú cestu → feed na mieste, kde bola zbierka
+}) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 10, minHeight: 52, padding: "6px 0 14px", boxSizing: "border-box" }}>
-      <button type="button" onClick={onBack} aria-label="Späť"
-        style={{ width: 40, height: 40, borderRadius: "50%", background: "var(--card)", border: "1px solid var(--cardBd)", color: "var(--ink)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", padding: 0, flex: "none" }}>
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M11 6l-6 6 6 6" /></svg>
-      </button>
+      <SpatTlacidlo onClick={onBack} />
       {cisloZbierky != null && (
         <span style={{ padding: "5px 10px", borderRadius: 10, background: "var(--bSoft)", border: "1px solid var(--bBd)", color: "var(--blue)", fontSize: 13.5, fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>#{cislo(cisloZbierky)}</span>
       )}
       {overena && <span style={{ color: "var(--blue)", fontSize: 13.5, fontWeight: 700 }}>Overená</span>}
       <span aria-label="Ďalšie možnosti" role="button" style={{ marginLeft: "auto", fontSize: 18, color: "var(--ink3)", letterSpacing: 1, cursor: "pointer", padding: "0 4px" }}>···</span>
+      {onZavriet && <ZavrietTlacidlo onClick={onZavriet} />}
     </div>
   );
 }
@@ -170,12 +173,14 @@ function VideoCele({ src, aktivne }: { src: string; aktivne: boolean }) {
 // ---------------- 3 + 4 · Nadpis a text ----------------
 const RIADKY = 3, RIADOK = 21; // 14 px × 1,5
 
-export function NadpisText({ nazov, text }: { nazov: string; text?: string }) {
+export function NadpisText({ nazov, text, otvoreny: otvorenyZvonka, onOtvoreny }: { nazov: string; text?: string; otvoreny?: boolean; onOtvoreny?: (v: boolean) => void }) {
   const { wide, desktop } = useLayout();
   const obal = useRef<HTMLDivElement>(null);
   const vnutro = useRef<HTMLDivElement>(null);
   const [dlhy, setDlhy] = useState(false);
-  const [otvoreny, setOtvoreny] = useState(false);
+  const [otvorenyLok, setOtvorenyLok] = useState(false);
+  const otvoreny = otvorenyZvonka ?? otvorenyLok;           // pri ceste Späť sa obnoví rozbalenie
+  const setOtvoreny = (v: boolean) => { setOtvorenyLok(v); onOtvoreny?.(v); };
   const maText = !!text?.trim();
 
   useLayoutEffect(() => {

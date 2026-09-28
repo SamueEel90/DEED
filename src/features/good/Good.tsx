@@ -776,21 +776,18 @@ export function GoodDetail({ it, toast, oslavuj, onBack, onVerify, onAutor }: Go
   return (
     <div style={{ paddingBottom: SPACE.lg }}>
       {/* hero — desktop/tablet: 16:9; mobil: pôvodné výšky (video 220 / foto 150) */}
-      {maHero ? (
+      {/* lišta so Späť a možnosťami — vždy nad fotkou, rovnako ako všade */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: `${SPACE.sm}px ${SPACE.gutter}px` }}>
+          <BackChip onBack={onBack} />
+          <div onClick={() => setMoznosti(true)} style={{ width: 34, height: 34, borderRadius: "50%", background: "rgba(var(--glass-rgb),.06)", border: `1px solid ${C.line}`, display: "flex", alignItems: "center", justifyContent: "center", color: C.textSec, cursor: "pointer" }}><IkonaMoznosti size={18} color={C.textSec} /></div>
+        </div>
+      {maHero && (
         <div style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center", background: heroGrad(it.kat), ...(wide ? { width: "100%", aspectRatio: MEDIA_AR } : (it.video ? {} : { height: 150 })) }}>
           {it.video
             ? <Video src={it.video} poster={it.fotky?.[0]} h={wide ? "100%" : 220} badge={false} />
             : <Foto src={it.fotky![0]} emoji={it.emoji} h={wide ? "100%" : 150} w={wide ? "100%" : undefined} style={{ position: "absolute", inset: 0 }} onClick={() => otvorGaleriu(it.fotky ?? [], 0)} prednost alt={it.titul} />}
-          <div style={{ position: "absolute", top: 14, left: 14, zIndex: 2 }}><BackChip hero onBack={onBack} /></div>
-          <div onClick={() => setMoznosti(true)} style={{ position: "absolute", top: 14, right: 14, width: 34, height: 34, borderRadius: "50%", background: "rgba(0,0,0,.55)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", cursor: "pointer", zIndex: 2 }}><IkonaMoznosti size={18} color="#fff" /></div>
           <span style={{ position: "absolute", bottom: 12, left: 14, pointerEvents: "none" }}><ZdrojTag it={it} /></span>
           {(it.fotky?.length ?? 0) > 1 && <span style={{ position: "absolute", bottom: 12, right: 14, background: "rgba(0,0,0,.6)", borderRadius: RADIUS.sm, padding: `${SPACE.xxs}px ${SPACE.xs}px`, fontSize: 10, color: "#fff", pointerEvents: "none" }}>⧉ {it.fotky?.length} · klikni na foto</span>}
-        </div>
-      ) : (
-        /* bez fotky/videa: žiadny placeholder — len tenká lišta so späť + možnosti */
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: `${SPACE.sm}px ${SPACE.gutter}px` }}>
-          <BackChip onBack={onBack} />
-          <div onClick={() => setMoznosti(true)} style={{ width: 34, height: 34, borderRadius: "50%", background: "rgba(var(--glass-rgb),.06)", border: `1px solid ${C.line}`, display: "flex", alignItems: "center", justifyContent: "center", color: C.textSec, cursor: "pointer" }}><IkonaMoznosti size={18} color={C.textSec} /></div>
         </div>
       )}
       <MiniFotky fotky={it.fotky} />
