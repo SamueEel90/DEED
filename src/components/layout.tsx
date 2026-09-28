@@ -1,4 +1,5 @@
 import { useState, Children, type CSSProperties, type ReactNode, type ReactElement } from "react";
+import { SpatTlacidlo } from "@/components/cesta";
 import { C, GRAD, GRAD_ZELENY, glassTmavy, btn, SPACE, RADIUS } from "@/theme";
 import { tint } from "@/lib/ui";
 import { FEED_CFG } from "@/lib/feed";
@@ -9,7 +10,7 @@ import { VirtualList } from "@/components/virtuallist";
 import { pressable } from "@/components/pressable";
 import { Sheet } from "@/components/sheet";
 import { Znacka } from "@/components/znacka";
-import { IkonaSpat, IkonaMenu, IkonaPlay, IkonaDoska, IkonaPlus, IkonaPin, IkonaSipDole, IkonaFajka } from "@/components/icons";
+import { IkonaMenu, IkonaPlay, IkonaDoska, IkonaPlus, IkonaPin, IkonaSipDole, IkonaFajka } from "@/components/icons";
 import { Hmat } from "@/components/ui";
 import { Tip } from "@/components/tooltip";
 
@@ -20,7 +21,7 @@ export function Hlavicka({ title, onBack, step, total, right, titleColor }: { ti
   return (
     <div style={{ position: "sticky", top: 0, zIndex: 5, ...glassTmavy(18, .6), borderLeft: "none", borderRight: "none", borderTop: "none" }}>
       <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm, padding: `${SPACE.sm}px ${SPACE.gutter}px` }}>
-        <span {...pressable(onBack, "Späť")} style={{ width: 32, height: 32, borderRadius: RADIUS.round, background: "rgba(var(--glass-rgb),.06)", border: `1px solid ${C.line}`, display: "flex", alignItems: "center", justifyContent: "center", color: C.textSec, cursor: "pointer", flex: "0 0 auto" }}><IkonaSpat size={17} color={C.textSec} /></span>
+        <SpatTlacidlo onClick={() => onBack?.()} />
         <span style={{ fontSize: 16, fontWeight: 700, color: titleColor }}>{title}</span>
         {right ? <span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: SPACE.sm }}>{right}</span>
           : step ? <span style={{ marginLeft: "auto", fontSize: 11.5, fontWeight: 600, color: C.textTer }}>Krok {step}/{total}</span> : null}

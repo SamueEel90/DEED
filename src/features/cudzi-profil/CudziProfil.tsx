@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { CestaHlavicka } from "@/components/cesta";
 import { SIRKA, C, SPACE, RADIUS } from "@/theme";
 import {
   Aura, MoniBar, QrModal, SegTabs, useLayout, obalSiroky, BackHeader, IkonaFajka, IkonaPlay, Zdielanie, IkonaUsmev,
@@ -41,15 +42,17 @@ type Toast = (m: string) => void;
 interface CudziProfilProps {
   subjekt?: CudziSubjekt;
   onBack?: () => void;
+  /** v ceste Späť: krížik zavrie celú cestu (jednotná hlavička cesty) */
+  onZavriet?: () => void;
   toast?: Toast;
   /** klik na kampaň — modul môže otvoriť natívny detail zbierky; bez neho sa otvorí vstavaný detail s darovaním */
   onKampan?: (k: OrgKampan) => void;
 }
 
-export function CudziProfil({ subjekt = {} as CudziSubjekt, onBack, toast, onKampan }: CudziProfilProps) {
+export function CudziProfil({ subjekt = {} as CudziSubjekt, onBack, toast, onKampan, onZavriet }: CudziProfilProps) {
   const { wide, desktop } = useLayout();
   const inner = subjekt.typ === "org"
-    ? <OrgProfil s={subjekt} onBack={onBack} toast={toast} onKampan={onKampan} />
+    ? <OrgProfil s={subjekt} onBack={onBack} toast={toast} onKampan={onKampan} onZavriet={onZavriet} />
     : <OsobaProfil s={subjekt as CudziSubjektOsoba} onBack={onBack} toast={toast} />;
   // org profil má na desktope dvojstĺpec → širší cap; osoba ostáva v čitateľskom stĺpci
   if (subjekt.typ === "org") return obalSiroky(inner, { wide, desktop, max: SIRKA.stlpec, maxDesktop: SIRKA.citanie }) as React.ReactElement;
@@ -59,7 +62,7 @@ export function CudziProfil({ subjekt = {} as CudziSubjekt, onBack, toast, onKam
 // ============================================================
 // PROFIL ORGANIZÁCIE / CHARITY
 // ============================================================
-function OrgProfil({ s, onBack, toast, onKampan }: { s: CudziSubjektOrg; onBack?: () => void; toast?: Toast; onKampan?: (k: OrgKampan) => void }) {
+function OrgProfil({ s, onBack, toast, onKampan, onZavriet }: { s: CudziSubjektOrg; onBack?: () => void; toast?: Toast; onKampan?: (k: OrgKampan) => void; onZavriet?: () => void }) {
   const { desktop } = useLayout();
   const [tab, setTab] = useState("vsetko");
   const { sledujem, toggleSledovanie } = usePersonalizacia(); // sledovanie = zdieľaný store (Môj DEED)
@@ -145,11 +148,16 @@ function OrgProfil({ s, onBack, toast, onKampan }: { s: CudziSubjektOrg; onBack?
 
   return (
     <div style={{ paddingBottom: SPACE.lg }}>
+      {onZavriet && onBack ? (
+        <CestaHlavicka onBack={onBack} onZavriet={onZavriet}
+          right={<span {...pressable(() => setMenu(true), "Ďalšie možnosti")} style={{ display: "flex", cursor: "pointer" }}><IkonaMoznosti size={18} color={C.textSec} /></span>} />
+      ) : (
       <BackHeader onBack={onBack} right={
         <span {...pressable(() => setMenu(true), "Ďalšie možnosti")} style={{ display: "flex", cursor: "pointer" }}><IkonaMoznosti size={18} color={C.textSec} /></span>
       }>
         <span style={{ fontSize: 12, color: C.textSec }}>{meno}</span>
       </BackHeader>
+      )}
       <div style={{ height: SPACE.sm }} />
 
       <div style={{ padding: `0 ${SPACE.md}px` }}>

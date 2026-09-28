@@ -76,6 +76,8 @@ export interface Dorovnanie {
   pomer: number;
   /** koľko firma vyčlenila celkom (predplatené) */
   strop: number;
+  /** najviac k jednému daru (karta 11: 50–300 €, nikdy viac ako 300 €) — staré záznamy ho nemajú */
+  stropDaru?: number;
   od: number;
   /** koniec obdobia; pri „do vyčerpania" je to len technický strop */
   do: number;
@@ -164,7 +166,7 @@ export function dorovnanieKDaru(d: Dorovnanie, dar: number, teraz = Date.now(), 
   if (d.lenZamestnanci && !somZamestnanec(d.firma)) return 0;
   // dar, ktorý neprišiel cez QR toho tvorcu, sa nedorovnáva — to je celý zmysel
   if (d.lenTvorca && d.lenTvorca !== cezTvorcu) return 0;
-  return Math.min(Math.round(dar * d.pomer * 100) / 100, zostatok(d));
+  return Math.min(Math.round(dar * d.pomer * 100) / 100, d.stropDaru ?? Infinity, zostatok(d));
 }
 
 /** platí toto dorovnanie pre práve prihláseného darcu? (texty, bežec, prepočet)

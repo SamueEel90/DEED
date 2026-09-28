@@ -404,12 +404,15 @@ function DetailHero({ it, onBack, children }: { it: AktItem; onBack: () => void;
   }
   return (
     <>
+      {/* lišta nad fotkou — Späť a možnosti rovnako ako všade (nie na fotke) */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: `${SPACE.sm}px ${SPACE.gutter}px` }}>
+        <BackChip onBack={onBack} />
+        {menuBtn(false)}
+      </div>
       <div style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center", background: heroGrad(it.dom), ...(wide ? { width: "100%", aspectRatio: MEDIA_AR } : { height: 150 }) }}>
         <div style={{ position: "absolute", inset: 0 }}><FotoPrispevku fotky={it.fotky} h="100%" disableGaleria prednost alt={it.title} /></div>
         <div style={{ position: "absolute", inset: 0, background: "linear-gradient(0deg, rgba(0,0,0,.42), transparent 46%)", pointerEvents: "none" }} />
         {it.media === "video" && <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1 }}><Play big /></div>}
-        <div style={{ position: "absolute", top: 14, left: 14, zIndex: 2 }}><BackChip hero onBack={onBack} /></div>
-        <div style={{ position: "absolute", top: 14, right: 14, zIndex: 2 }}>{menuBtn(true)}</div>
         {children && <div style={{ position: "absolute", bottom: 12, left: 14, right: 14, zIndex: 2, display: "flex", flexWrap: "wrap", gap: SPACE.xs }}>{children}</div>}
       </div>
       {overlaye}

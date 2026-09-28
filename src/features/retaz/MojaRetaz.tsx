@@ -7,10 +7,11 @@
 // Mock: stav drží komponent; routing (dorovnanie/prehod) cez fronta.ts.
 // ============================================================
 import { useState, type CSSProperties } from "react";
+import { SpatTlacidlo } from "@/components/cesta";
 import { C, GRAD, GRAD_ZELENY, SPACE, RADIUS } from "@/theme";
 import { tint } from "@/lib/ui";
 import { qrUrl } from "@/lib/qr";
-import { Sheet, QrModal, Lupa, IkonaSpat, IkonaFajka, IkonaZamok, IkonaKriz, IkonaHviezda } from "@/shared";
+import { Sheet, QrModal, Lupa, IkonaFajka, IkonaZamok, IkonaKriz, IkonaHviezda } from "@/shared";
 import { usePouzivatel } from "@/lib/pouzivatel";
 import {
   PCT_MIN, PCT_KROK, PCT_MAX, naKrok, prečísluj, aktivnaPolozka, chainValid, mozeGenerovatQr,
@@ -246,7 +247,7 @@ function PickerPrijemcov({ voFronte, onVyber, onClose, toast }: {
   return (
     <Sheet onClose={onClose} label="Pridať zbierku do reťaze">
       <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm, marginBottom: SPACE.sm }}>
-        <span onClick={onClose} style={{ cursor: "pointer", display: "flex" }}><IkonaSpat size={18} color={C.textSec} /></span>
+        <SpatTlacidlo onClick={() => onClose?.()} />
         <div style={{ fontSize: 16, fontWeight: 800 }}>Pridať zbierku</div>
       </div>
 

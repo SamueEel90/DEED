@@ -5,6 +5,7 @@
 // (SplitConfigStep → qr_split_create). Beží nad qr_split (0018).
 // ============================================================
 import { useState } from "react";
+import { SpatTlacidlo } from "@/components/cesta";
 import { C, GRAD_ZELENY, SPACE, RADIUS } from "@/theme";
 import { tint } from "@/lib/ui";
 import { qrUrl } from "@/lib/qr";
@@ -12,7 +13,7 @@ import { zdielaj } from "@/lib/zdielanie";
 import { Sheet } from "@/components/sheet";
 import { PocitadloSheet } from "@/features/overlay/PocitadloSheet";
 import { QrModal } from "@/components/qr";
-import { Lupa, IkonaSpat, IkonaFajka, Zdielanie } from "@/components/icons";
+import { Lupa, IkonaFajka, Zdielanie } from "@/components/icons";
 import { SplitConfigStep, splitValid, splitOwnerPct, splitCielePayload, type SplitCiel } from "@/components/splitconfig";
 import { useQrSplitList, useQrSplitCreate, useGoodFeed } from "@/data";
 import { usePouzivatel } from "@/lib/pouzivatel";
@@ -70,7 +71,7 @@ export function MojeQrKody({ onClose, toast }: { onClose?: () => void; toast?: (
     return (
       <Sheet onClose={() => { setKrok("list"); setPost(null); setCiele([]); setQ(""); }}>
         <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm, marginBottom: SPACE.sm }}>
-          <span onClick={() => { setKrok("list"); setPost(null); }} style={{ cursor: "pointer", display: "flex" }}><IkonaSpat size={18} color={C.textSec} /></span>
+          <SpatTlacidlo onClick={() => { setKrok("list"); setPost(null); }} />
           <div style={{ fontSize: 16, fontWeight: 800 }}>{post ? "Nastav pomer" : "Vyber príspevok"}</div>
         </div>
 

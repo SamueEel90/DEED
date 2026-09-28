@@ -1,17 +1,17 @@
-import { Fragment, useState, type CSSProperties } from "react";
+import { Fragment, useRef, useState, type CSSProperties } from "react";
 import { C, SPACE, RADIUS, SIRKA } from "@/theme";
 import {
   BackHeader, PlatobnyModul, PlatbaModal, ProgresBox, QrModal, Stit, naStitLevel, tint,
   Zdielanie, Zvon, Srdce, useLayout, obalSiroky, Sheet,
-  EntityHero, BtnAkcia, BtnIkonka, KontextMenu, TabyProfil, StatRad,
-  IkonaMoznosti, IkonaQr, IkonaVlajka, IkonaPin, IkonaOdkaz,
+  EntityHero, BtnAkcia, BtnIkonka, KontextMenu, TabyProfil, IkonaMoznosti, IkonaQr, IkonaVlajka, IkonaPin, IkonaOdkaz,
 } from "@/shared";
 import { pressable } from "@/components/pressable";
 import { usePouzivatel } from "@/lib/pouzivatel";
 import { klucEntity, useFotkyEntity } from "@/lib/fotoentity";
 import { NahlasitSheet } from "@/components/nahlasit";
 import { qrUrl } from "@/lib/qr";
-import { RecurringSheet } from "@/components/recurring";
+import { PravidelnaHarok } from "@/features/zbierka/PravidelnaHarok";
+import { jeNeregistrovany } from "@/lib/devDarca";
 import { SADY_EUR, SADY_EURC } from "@/lib/sadyDarov";
 import { nastavCiste, sucetDarov, darcoviaPre, useZmenyDarov, pridajDar, type VolbaDaru } from "@/lib/darcovia";
 import { PoDare, type PoDareData } from "@/components/podare";
@@ -23,7 +23,8 @@ import { DorovnaniePas, NoveDorovnanieSheet } from "./Dorovnanie";
 import { beziaceDorovnanieNaCiel, dorovnanieKDaru, useZmenyDorovnani } from "@/lib/dorovnanie";
 import { rovnakaFirma } from "@/lib/firma";
 import { verejneOznamy, useZmenyOznamov } from "@/lib/oznamy";
-import { nacitajProfil, useZmenyProfilov, CENTRALNA_ID, VLASTNA_ZBIERKA_CFG, type ProfilZbierky } from "./vlastneZbierky";
+import { nacitajProfil, useZmenyProfilov, CENTRALNA_ID, VLASTNA_ZBIERKA_CFG, fotkyZbierky, type ProfilZbierky } from "./vlastneZbierky";
+import { jeVideo } from "@/lib/videoUloz";
 import { useSegmenty } from "./segmenty";
 import { zdielaj, aktualnaUrl } from "@/lib/zdielanie";
 import type { Kanal } from "@/types";
@@ -37,6 +38,10 @@ import { nacitajViditelnost, nacitajTerminal, nacitajKryptoOrg, nacitajCentralnu
 import { OnasKratky } from "./OnasKratky";
 import { KontaktBlok, nacitajKontakt } from "./kontakt";
 import { verejneTaby, cislaSubjektu } from "./obsah";
+import { ZbierkaModul } from "@/features/zbierka/ZbierkaModul";
+import type { OrgPole, StitUroven } from "@/features/zbierka/Pole";
+import type { ZbierkaData } from "@/features/zbierka/ZbierkaModul";
+import { useScrollEl } from "@/components/context";
 
 /*
   ============================================================
@@ -174,24 +179,28 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
   const [sledujem, setSledujem] = useState(false);
   const [onas] = useState(() => nacitajOnas(pozicia) ?? s.onas); // text zo správy (editor), inak pôvodný
   const [rozbalena, setRozbalena] = useState<string | null>(null);
+  // detail zbierky = vždy nový modul (<ZbierkaModul>); Späť vráti profil na to isté miesto scrollu
+  const [novyModul, setNovyModulRaw] = useState<{ data: ZbierkaData; zoStrankyOrg: boolean } | null>(null);
+  const scrollEl = useScrollEl();
+  const scrollProfilu = useRef(0);
+  const setNovyModul = (m: { data: ZbierkaData; zoStrankyOrg: boolean } | null) => {
+    if (m) scrollProfilu.current = scrollEl?.current?.scrollTop ?? 0;
+    setNovyModulRaw(m);
+    const el = scrollEl?.current;
+    if (el) { let n = 0; const ciel = m ? 0 : scrollProfilu.current; const krok = () => { el.scrollTop = ciel; if (Math.abs(el.scrollTop - ciel) > 2 && n++ < 40) requestAnimationFrame(krok); }; requestAnimationFrame(krok); }
+  };
   const [otvorenyOznam, setOtvorenyOznam] = useState<string | null>(null);   // klik na oznam otvorí len ten jeden
   useZmenyDorovnani();                                                        // bežec sa má prekresliť, keď firma dorovná
   const [noveDorovnanie, setNoveDorovnanie] = useState<{ id: string; nazov: string } | null>(null);
   const [firmaProfil, setFirmaProfil] = useState<string | null>(null);   // profil dorovnávajúcej firmy — v appke, nie v novom okne  // firma vstupuje do zbierky
   const [poDare, setPoDare] = useState<PoDareData | null>(null);        // obrazovka po dare namiesto sivého toastu
-  const [profilZiad, setProfilZiad] = useState<string | null>(null);
+  const [, setProfilZiad] = useState<string | null>(null);
   const [zbalenaCentralna, setZbalenaCentralna] = useState(false);
   const [qrZbierka, setQrZbierka] = useState<{ id: string; nazov: string } | null>(null);
-  // pravidelná podpora = funkcia zbierky (charita od programu ZBIERKA/T1), len pre registrovaných darcov
+  // pravidelná podpora = funkcia zbierky (charita od programu ZBIERKA/T1); môže aj neregistrovaný (s e-mailom)
   const [pravidelna, setPravidelna] = useState<{ id: string | null; nazov: string; sektor?: string } | null>(null);
   const maPravidelnu = pozicia === "charita" && tier >= 1;
   const maCentralnu = pozicia === "charita" && tier >= 1 && nacitajCentralnu("charita");
-  /** kam idú peniaze podľa zvoleného rozsahu pravidelnej podpory */
-  const cielPravidelnej = (rozsah: string, segment: string | null): string => {
-    if (rozsah === "segment" && segment) return sektoroveZbierky.find((z) => z.nazov === segment)?.id ?? CENTRALNA_ID;
-    if (rozsah === "charita") return CENTRALNA_ID;
-    return pravidelna?.id ?? CENTRALNA_ID;
-  };
   const [zvoncek, setZvoncek] = useState(false);
   const [qr, setQr] = useState(false);
   const [menu, setMenu] = useState(false);
@@ -269,7 +278,7 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
           onDarKrypto={(v, vol) => daruj(id, v, "deed", vol, s.nazov)}
           onKanal={(k: string) => { setPlatbaRef({ id, komu: s.nazov }); setPlatba(k as Kanal); }}
           oblubene={{ refId: id, typ: "zbierka", modul: "charity", nazov: profil.nazov, lok: s.lok }} toast={toast}
-          opakovana={maPravidelnu ? { popis: "Mesačne · len pre registrovaných · kedykoľvek zrušíš", onClick: () => setPravidelna({ id: id === CENTRALNA_ID ? "z-centralna" : id, nazov: profil.nazov, sektor: sektoroveZbierky.find((z) => z.id === id)?.nazov }) } : undefined}
+          opakovana={maPravidelnu ? { popis: "Mesačne · kartou alebo prevodom · kedykoľvek zrušíš", onClick: () => setPravidelna({ id: id === CENTRALNA_ID ? "z-centralna" : id, nazov: profil.nazov, sektor: sektoroveZbierky.find((z) => z.id === id)?.nazov }) } : undefined}
           dorovnanie={dorovnanie ? undefined : { onClick: () => setNoveDorovnanie({ id, nazov: s.nazov }) }}
           bonus={dorovnanie ? { firma: dorovnanie.firma, kDaru: (sm: number) => dorovnanieKDaru(dorovnanie, sm) } : undefined}
           qr={{ label: "QR tejto zbierky", popis: "Sken → dar za 2 kliky · zdieľanie", onClick: () => (id === CENTRALNA_ID ? setQr(true) : setQrZbierka({ id, nazov: profil.nazov })) }} />
@@ -278,10 +287,31 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
       </>
     );
   };
+  // vlastná zbierka organizácie → dáta nového detailu
+  const zVlastnej = (id: string, pz: ProfilZbierky): ZbierkaData => {
+    const fotky = fotkyZbierky(pz), uv = Math.min(pz.uvodna ?? 0, Math.max(0, fotky.length - 1));
+    return {
+      id, nazov: pz.nazov, popis: pz.popis, overena: s.overena, rychleSumy: SADY_EUR[nacitajSady(pozicia).eur].sumy,
+      media: [
+        ...(pz.video && jeVideo(pz.video) ? [{ typ: "video" as const, src: pz.video }] : []),
+        ...[...fotky.slice(uv), ...fotky.slice(0, uv)].map((src) => ({ typ: "foto" as const, src })),
+      ],
+    };
+  };
+  // zbierka inej organizácie / človeka (položka profilu) → dáta nového detailu, pole = žiadateľ
+  const zCudzej = (z: Zbierka): ZbierkaData => {
+    const ziad = z.ziadatel;
+    const org: OrgPole | undefined = ziad.typ === "org" ? {
+      meno: ziad.meno, typ: "charita", mesto: ziad.lok, obrazok: ziad.foto, veta: (ziad.onas.match(/^.*?[.!?](\s|$)/)?.[0] ?? ziad.onas).trim(),
+      cisla: [[ziad.vyzbierane, "vyzbierané"], [ziad.skutky, "skutkov"], [ziad.snami, "s nami"]], stit: naStitLevel(ziad.level) as StitUroven,
+    } : undefined;
+    return { id: z.id, nazov: z.nazov, popis: z.popis, overena: ziad.overeny, media: z.foto ? [{ typ: "foto", src: z.foto }] : [],
+      organizacia: org, vyzbierane: z.vyzbierane, ciel: z.ciel, ludia: z.darcovia, rychleSumy: [10, 25, 50] };
+  };
   const kartaVlastnej = (id: string, profil: ProfilZbierky, otvorena: boolean) => {
     const dary = sucetDarov(id);
     return (
-      <div {...pressable(() => setRozbalena(otvorena ? null : id), profil.nazov)} style={{ cursor: "pointer" }}>
+      <div {...pressable(() => setNovyModul({ data: zVlastnej(id, profil), zoStrankyOrg: true }), profil.nazov)} style={{ cursor: "pointer" }}>
         <NahladKarty profil={profil} logo={logoOrg} vyzbierane={dary.suma} dolozene={0} ludia={dary.pocet}
           dobrovolne sipka={otvorena ? "otvorena" : "zavreta"} />
       </div>
@@ -383,41 +413,6 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
                 </div>
                 <div style={{ fontSize: 15, fontWeight: 600, color: C.text, lineHeight: 1.5, marginBottom: SPACE.sm }}>{z.popis}</div>
 
-                {/* žiadateľ — kto zbiera. Klik otvorí jeho profil NAD platbou: nič nezakryje, len odsunie nižšie */}
-                <div {...pressable(() => setProfilZiad(profilZiad === z.id ? null : z.id), `Profil — ${z.ziadatel.meno}`)}
-                  style={{ display: "flex", alignItems: "center", gap: SPACE.sm, background: C.surface2, border: `1px solid ${profilZiad === z.id ? tint("var(--a-info)", .4) : C.line}`, borderRadius: RADIUS.sm, padding: SPACE.sm, marginBottom: SPACE.sm, cursor: "pointer" }}>
-                  <img src={z.ziadatel.foto} alt="" style={{ width: 40, height: 40, borderRadius: z.ziadatel.typ === "org" ? RADIUS.xs : "50%", objectFit: "cover", flex: "none" }} />
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: ".04em", color: C.textTer }}>ŽIADATEĽ</div>
-                    <div style={{ fontSize: 14, fontWeight: 700, display: "flex", alignItems: "center", gap: 5 }}>
-                      <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{z.ziadatel.meno}</span>
-                      {z.ziadatel.overeny && <span style={{ color: "var(--a-info)", fontSize: 13 }}>✓</span>}
-                    </div>
-                  </div>
-                  <Stit level={naStitLevel(z.ziadatel.level)} size={30} />
-                  <span style={{ flex: "none", fontSize: 12, fontWeight: 700, color: "var(--a-info)" }}>{profilZiad === z.id ? "Zavrieť" : "Profil"}</span>
-                </div>
-
-                {profilZiad === z.id && (
-                  <div style={{ background: C.surface2, border: `1px solid ${tint("var(--a-info)", .3)}`, borderRadius: RADIUS.sm, padding: SPACE.sm, marginBottom: SPACE.sm }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm, marginBottom: SPACE.sm }}>
-                      <img src={z.ziadatel.foto} alt="" style={{ width: 56, height: 56, borderRadius: z.ziadatel.typ === "org" ? RADIUS.sm : "50%", objectFit: "cover", flex: "none" }} />
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 16, fontWeight: 800 }}>{z.ziadatel.meno} {z.ziadatel.overeny && <span style={{ color: "var(--a-info)", fontSize: 14 }}>✓</span>}</div>
-                        <div style={{ fontSize: 12, color: C.textTer, marginTop: 2 }}>{z.ziadatel.lok} · {z.ziadatel.typ === "org" ? "organizácia" : "overená osoba"}</div>
-                      </div>
-                      <Stit level={naStitLevel(z.ziadatel.level)} size={52} detail subjekt={z.ziadatel.meno} />
-                    </div>
-                    <div style={{ fontSize: 13.5, color: C.textSec, lineHeight: 1.5, marginBottom: SPACE.sm }}>{z.ziadatel.onas}</div>
-                    <div style={{ marginBottom: SPACE.sm }}><StatRad kompakt stats={[
-                      { hodnota: z.ziadatel.vyzbierane, label: "Vyzbierané" },
-                      { hodnota: z.ziadatel.skutky, label: "Skutky" },
-                      { hodnota: z.ziadatel.snami, label: "S nami" },
-                    ]} /></div>
-                    <div {...pressable(() => setProfilZiad(null), "Zavrieť profil")}
-                      style={{ textAlign: "center", fontSize: 13, fontWeight: 700, color: C.textSec, border: `1px solid ${C.line}`, borderRadius: RADIUS.sm, padding: `${SPACE.xs}px 0`, cursor: "pointer" }}>Zavrieť profil ▲</div>
-                  </div>
-                )}
                 {/* split tvorcu — vizuálne, nič sa nečíta: kto si koľko necháva, koľko ide ďalej */}
                 {p.split != null && (
                   <div style={{ marginBottom: SPACE.sm }}>
@@ -466,7 +461,7 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
                     onDarKrypto={(v, vol) => daruj(z.id, v, "deed", vol, z.komu)}
                     onKanal={(k: string) => { setPlatbaRef({ id: z.id, komu: z.komu }); setPlatba(k as Kanal); }}
                     oblubene={{ refId: z.id, typ: "zbierka", modul: "charity", nazov: z.nazov, lok: z.lok }} toast={toast}
-                    opakovana={maPravidelnu ? { popis: "Mesačne · len pre registrovaných · kedykoľvek zrušíš", onClick: () => setPravidelna({ id: z.id, nazov: z.nazov }) } : undefined}
+                    opakovana={maPravidelnu ? { popis: "Mesačne · kartou alebo prevodom · kedykoľvek zrušíš", onClick: () => setPravidelna({ id: z.id, nazov: z.nazov }) } : undefined}
                     dorovnanie={beziaceDorovnanieNaCiel(z.id) ? undefined : { onClick: () => setNoveDorovnanie({ id: z.id, nazov: z.nazov }) }}
                     bonus={(() => { const dv = beziaceDorovnanieNaCiel(z.id); return dv ? { firma: dv.firma, kDaru: (sm: number) => dorovnanieKDaru(dv, sm) } : undefined; })()}
                     qr={{ label: "QR tejto zbierky", popis: "Skenovať · kopírovať · zdieľať", onClick: () => setQrZbierka({ id: z.id, nazov: z.nazov }) }} />
@@ -499,7 +494,9 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
     return { p, kluc, z, dokaz, titul: z?.nazov || p.titul, popis: z ? [p.popis, z.komu].filter(Boolean).join(" · ") : p.popis, klik: !!(z || dokaz || p.video) };
   };
   type Zbalena = ReturnType<typeof zbaluj>;
-  const otvor = (x: Zbalena) => (x.klik ? setRozbalena(rozbalena === x.kluc ? null : x.kluc) : toast(`${x.titul} — detail`));
+  const otvor = (x: Zbalena) => (x.z
+    ? setNovyModul({ data: zCudzej(x.z), zoStrankyOrg: x.z.ziadatel.meno === s.nazov })
+    : x.klik ? setRozbalena(rozbalena === x.kluc ? null : x.kluc) : toast(`${x.titul} — detail`));
 
   // miniatúra položky (zbierka · video · emoji) — v riadku 44 px, v karte 16:9
   const Miniatura = ({ x, velka }: { x: Zbalena; velka?: boolean }) => {
@@ -737,6 +734,8 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
     if (rolaFirmy) return <Podstranka pozicia={rolaFirmy} tier={3} logo={null} toast={toast} onBack={() => setFirmaProfil(null)} />;
   }
 
+  if (novyModul) return <ZbierkaModul zbierka={novyModul.data} zoStrankyOrg={novyModul.zoStrankyOrg} onBack={() => setNovyModul(null)} />;
+
   return (
     <div style={{ paddingBottom: SPACE.lg, color: C.text }}>
       <BackHeader onBack={onBack}>
@@ -760,38 +759,8 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
         bonus={(() => { const dv = platbaRef ? beziaceDorovnanieNaCiel(platbaRef.id) : null; return dv ? { firma: dv.firma, kDaru: (sm: number) => dorovnanieKDaru(dv, sm) } : undefined; })()}
         onClose={() => { setPlatba(null); setPlatbaRef(null); }}
         onDone={(d: number, v?: VolbaDaru) => daruj(platbaRef?.id ?? "z-centralna", platba === "DEED" ? d * 0.01 : d, platba === "EUR" ? "psp" : "deed", v, platbaRef?.komu ?? s.nazov)} />}
-      {pravidelna && <RecurringSheet nazov={pravidelna.nazov}
-        // centrálna zbierka = celá organizácia → nedá sa doložiť per dar, preto bez voľby „Táto zbierka"
-        caseId={pravidelna.id === "z-centralna" ? null : pravidelna.id}
-        // pravidelná podpora je od T1 celá: zbierka → táto zbierka / segment / celá charita,
-        // centrálna zbierka → segment / celá organizácia
-        // rozsah je daný tým, odkiaľ darca klikol: centrálna → celá organizácia,
-        // sektorová → ten sektor, bežná zbierka → táto zbierka + centrálna
-        sektor={pravidelna.sektor}
-        // sektor ako voľba má zmysel LEN keď má vlastnú zbierku a účet (AKCIA) —
-        // inak by dary padli na hlavný účet a nedalo by sa k nim nič doložiť
-        segmenty={pravidelna.sektor || !sektoroveZbierky.length ? null : sektoroveZbierky.map((z) => z.nazov)}
-        // „celá organizácia" = centrálna zbierka → ponúkame ju, len keď charita spustenú má
-        bezCelej={!!pravidelna.sektor || !maCentralnu}
-        // prvá platba záväzku sa objaví v zozname darcov cieľovej zbierky
-        onDar={(su, _me, vo, rozsah, segment) => daruj(cielPravidelnej(rozsah, segment), su, "sepa", vo, s.nazov)}
-        // po poďakovaní vedieme darcu tam, kam peniaze idú — centrálna alebo zbierka sektora
-        onCiel={(rozsah, segment) => {
-          const ciel = cielPravidelnej(rozsah, segment);
-          if (rozsah === "request") return undefined;   // darca už na tej zbierke je
-          const sekt = sektoroveZbierky.find((z) => z.id === ciel);
-          if (rozsah === "charita" && !maCentralnu) return undefined;
-          return {
-            label: sekt ? "Zobraziť zbierku sektora" : "Zobraziť centrálnu zbierku",
-            onClick: () => {
-              // na tablete/PC sa detail otvorí v okne — scrollovať pod ním by okno odsunulo mimo obrazovku
-              const skoc = (id: string) => { if (!siroke) setTimeout(() => document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" }), 140); };
-              if (sekt) { setTab("sektory"); setRozbalena(sekt.id); skoc("deed-sektor-" + sekt.id); return; }
-              setZbalenaCentralna(false); setRozbalena(CENTRALNA_ID); setTab("vsetko"); skoc("deed-centralna");
-            },
-          };
-        }}
-        onClose={() => setPravidelna(null)} toast={toast} />}
+      {pravidelna && <PravidelnaHarok refId={pravidelna.id ?? CENTRALNA_ID} nazov={pravidelna.nazov} registrovany={!jeNeregistrovany()}
+        zbierka={pravidelna.id !== CENTRALNA_ID && pravidelna.id !== "z-centralna"} onClose={() => setPravidelna(null)} />}
       {noveDorovnanie && (
         <NoveDorovnanieSheet entita={pozicia} cielId={noveDorovnanie.id} cielNazov={noveDorovnanie.nazov} toast={toast} onClose={() => setNoveDorovnanie(null)} />
       )}

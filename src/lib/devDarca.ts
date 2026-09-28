@@ -23,3 +23,4 @@ export function nastavDarcuFirmu(v: boolean) {
   try { localStorage.setItem(KLUC_FIRMA, v ? "1" : "0"); } catch { /* LS */ }
   posluchaci.forEach((f) => f());
 }
+

@@ -1,8 +1,9 @@
+import { PravidelnaHarok } from "@/features/zbierka/PravidelnaHarok";
 import { useEffect, useState } from "react";
 import { SPACE, RADIUS } from "@/theme";
 import { MEDIA_AR } from "@/lib/cardSize";
 import {
-  Foto, BackHeader, ProgresBox, PlatobnyModul, PlatbaModal, RecurringSheet, QrModal,
+  Foto, BackHeader, ProgresBox, PlatobnyModul, PlatbaModal, QrModal,
   MoniBar, Switch, Input, EmptyState, useStrankaAkcie,
   Zdielanie, IkonaVlajka, IkonaDoska, IkonaPlus, IkonaOko, IkonaNastavenia, Srdce, Zvon, useGaleria, useLayout,
   ZoznamDarcov, FormatovanyText, RichTextInput, FotoUpload, KamerkaBadge, ZmenitPill, FotoProfiluSheet, VideoEmbed, vlozenieVidea,
@@ -343,7 +344,7 @@ export function FarskyProfil({ farnost, farar, jeDomovska, following, onToggleFo
       </div>
 
       {platba && <PlatbaModal kanal={platba} komu={farnost.nazov} onClose={() => setPlatba(null)} onDone={platbaHotova} />}
-      {recur && <RecurringSheet nazov={farnost.nazov} onClose={() => setRecur(false)} toast={toast} />}
+      {recur && <PravidelnaHarok refId={darRef} nazov={farnost.nazov} zbierka={false} registrovany={ja.typ !== "pasivny"} onClose={() => setRecur(false)} />}
       {menu && (
         <KontextMenu onClose={() => setMenu(false)} polozky={[
           { ikona: <Zdielanie size={17} />, label: "Zdieľať profil", onClick: () => setQr("zdielat") },
