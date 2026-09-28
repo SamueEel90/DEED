@@ -2,16 +2,29 @@
 // Zatiaľ len kostra: pripojené položky sú rámy v pevnom poradí. Vzhľad každej položky
 // prichádza postupne s kartami 02–15. Odpojené položky sa nevykresľujú vôbec.
 import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
+import type React from "react";
 import { C, SPACE, RADIUS } from "@/theme";
 import { Switch } from "@/shared";
 import { pressable } from "@/components/pressable";
 import { jeNeregistrovany, nastavNeregistrovany, darujemAkoFirma, nastavDarcuFirmu, sledujDarcu } from "@/lib/devDarca";
 import { pridajDar } from "@/lib/darcovia";
-import { dorovnanieNaDar, useZmenyDorovnani } from "@/lib/dorovnanie";
-import { MIESTA, NAZVY, pripojene, type Miesto, type Kontext, type Hodnota } from "./nastavenie";
+import { dorovnanieNaDar, dorovnanieKDaru, useZmenyDorovnani } from "@/lib/dorovnanie";
+import { MIESTA, NAZVY, POLOZKY, pripojene, type Miesto, type Kontext, type Hodnota } from "./nastavenie";
 import { Hlavicka, Galeria, NadpisText, type Medium } from "./Vrch";
 import { PoleOrganizacie, type OrgPole } from "./Pole";
 import { KartaStavu } from "./KartaStavu";
+import { RychleSumyEur, DeedDlazdice, VlastnaSuma, DaryVKrypte, type OtvorPlatbu } from "./Sumy";
+import { toast } from "@/components/toast";
+import { PlatobneOkno, potvrditTuknutim, nastavPotvrditTuknutim } from "./Platba";
+import type { KanalPlatby } from "./Sumy";
+import { ZdielatRiadok, PravidelnaRiadok, OblubenePodporit, ZapojitFirmuRiadok, RetazRiadok, KartaDorovnava, Darcovia } from "./Riadky";
+import { zdielaj, aktualnaUrl } from "@/lib/zdielanie";
+import { firmaAkoDarca } from "@/lib/podpory";
+import { RecurringSheet } from "@/components/recurring";
+import { SplitQrSheet } from "@/components/splitqr";
+import { NoveDorovnanieSheet } from "@/features/rola/Dorovnanie";
+import { STUPNE, nastavDevTempo, useDevTempo, type Stupen } from "./tempoStupen";
+import type { TempoRezim } from "./Tempo";
 import type { StavKroku } from "@/lib/cesta";
 import "@/styles/platba.css";
 
@@ -24,6 +37,7 @@ export type ZbierkaData = {
   vyzbierane?: number;   // základ mimo živých darov (karta 04)
   ciel?: number;         // bez cieľa → míľniky
   ludia?: number;
+  rychleSumy?: number[];  // € dlaždice — sadu volí charita v nastaveniach zbierky (predvolene 10 / 25 / 50)
 };
 
 // ---- DEV simulácia (len lokálne, v produkcii miesto a stav dodá appka) ----
@@ -62,7 +76,13 @@ export function ZbierkaModul({ zbierka, miesto: miestoProp, onBack, spatNazov, o
   // dorovnanie = skutočný stav (rovnaký zdroj, ktorý dorovná aj dar) — nie DEV prepínač
   useZmenyDorovnani();
   const dorovnanie = dorovnanieNaDar(zbierka.id);
-  const k: Kontext = { registrovany, ico, maCiel, dorovnanieAktivne: !!dorovnanie, split: dev.split, tempoSilna: dev.tempoSilna };
+  const k: Kontext = { registrovany, ico, maCiel, dorovnanieAktivne: !!dorovnanie, split: dev.split, tempoSilna: true /* viditeľnosť rieši TempoDarov (karta 05) */ };
+  const tempoRezim = POLOZKY[miesto].tempo as TempoRezim;
+  // karta 07 — platobné okno (so sumou rovno na Spôsob, bez sumy od kroku Suma)
+  const [platba, setPlatba] = useState<{ kanal: KanalPlatby; suma?: number } | null>(null);
+  const otvorPlatbu: OtvorPlatbu = (p) => setPlatba(p);
+  // hárky z karty 12 (zatiaľ pôvodné hárky appky — nový vzhľad príde s ich kartami)
+  const [harok, setHarok] = useState<"pravidelna" | "firma" | "retaz" | null>(null);
   const polozky = pripojene(miesto, k);
 
   return (
@@ -83,6 +103,21 @@ export function ZbierkaModul({ zbierka, miesto: miestoProp, onBack, spatNazov, o
         <Ram nazov="Hárok Podporiť DEED"><span {...pressable(onBack, "Zavrieť")} style={{ cursor: "pointer", fontWeight: 700 }}>✕ Zavrieť</span></Ram>
       )}
 
+      {platba && (
+        <PlatobneOkno kanal={platba.kanal} suma={platba.suma} nazov={zbierka.nazov} registrovany={registrovany}
+          bonus={dorovnanie ? (sm) => dorovnanieKDaru(dorovnanie, sm) : undefined} firma={dorovnanie?.firma}
+          onClose={() => setPlatba(null)}
+          onHotovo={(v) => {
+            pridajDar({ refId: zbierka.id, suma: v.eur, kanal: v.kanal === "eur" ? (v.sposob === "sepa" ? "sepa" : "psp") : "deed", registrovany, volba: v.volba });
+            setPlatba(null);
+            toast("Dar odoslaný · poďakovanie (Svetlúšik a hláška) príde s kartou 09");
+          }} />
+      )}
+
+      {harok === "pravidelna" && <RecurringSheet nazov={zbierka.nazov} caseId={zbierka.id} onClose={() => setHarok(null)} toast={toast} />}
+      {harok === "firma" && <NoveDorovnanieSheet entita="charita" cielId={zbierka.id} cielNazov={zbierka.nazov} toast={toast} onClose={() => setHarok(null)} />}
+      {harok === "retaz" && <SplitQrSheet titul={zbierka.nazov} caseId={zbierka.id} onClose={() => setHarok(null)} toast={toast} />}
+
       {/* pripojené položky — vždy rovnaké poradie, odpojené chýbajú úplne */}
       {polozky.map((p) => {
         // karta 03 — pole charity / overovateľa (skryté, keď si prišiel zo stránky tej istej organizácie)
@@ -100,11 +135,42 @@ export function ZbierkaModul({ zbierka, miesto: miestoProp, onBack, spatNazov, o
         if (p.kluc === "kartaStavu" && p.hodnota === "cela") {
           return (
             <div key={p.kluc} style={{ padding: "0 16px" }}>
-              <KartaStavu refId={zbierka.id} zaklad={zbierka.vyzbierane ?? 0} ciel={ciel} ludiaZaklad={zbierka.ludia ?? 0} />
+              <KartaStavu refId={zbierka.id} zaklad={zbierka.vyzbierane ?? 0} ciel={ciel} ludiaZaklad={zbierka.ludia ?? 0} tempo={tempoRezim} />
             </div>
           );
         }
-        if (p.kluc === "milniky") return null;
+        if (p.kluc === "milniky" || p.kluc === "tempo") return null; // súčasť karty stavu
+        // karta 06 — rýchle sumy + vlastná suma (vlastná suma je hneď pod nimi)
+        if (p.kluc === "rychleSumy" && p.hodnota !== "podporitDeed") {
+          const naDeed = p.hodnota === "deed";
+          const vlastnaEur = polozky.some((x) => x.kluc === "vlastnaEur") || (miesto === "deed" && registrovany);
+          return (
+            <div key={p.kluc} style={{ padding: "0 16px" }}>
+              {naDeed
+                ? <DeedDlazdice refId={zbierka.id} registrovany={registrovany} />
+                : <RychleSumyEur sumy={p.hodnota === "eurDrobne" ? [1, 3, 5] : zbierka.rychleSumy ?? [10, 25, 50]}
+                    doplnok={p.hodnota === "eurDrobne" || miesto === "sukromna" ? undefined : "sumy si volí charita"}
+                    kDaru={dorovnanie ? (sm) => dorovnanieKDaru(dorovnanie, sm) : undefined} otvor={otvorPlatbu} />}
+              <VlastnaSuma eur={vlastnaEur} deed={miesto === "deed" && registrovany} otvor={otvorPlatbu}
+                firma={dorovnanie ? `${dorovnanie.firma} ${dorovnanie.pomer === 1 ? "zdvojnásobí" : "dorovná"}` : undefined} />
+            </div>
+          );
+        }
+        if (p.kluc === "vlastnaEur") return null; // vykreslená spolu s rýchlymi sumami
+        const obal = (el: React.ReactNode) => <div key={p.kluc} style={{ padding: "0 16px" }}>{el}</div>;
+        if (p.kluc === "zdielat") return obal(<ZdielatRiadok onZdielat={() => void zdielaj({ titul: zbierka.nazov, text: zbierka.nazov, url: aktualnaUrl() }, toast)} />);
+        if (p.kluc === "dorovnanie" && dorovnanie) return obal(<>
+          <KartaDorovnava d={dorovnanie} />
+          {dorovnanieKDaru(dorovnanie, 20) > 0 && <div style={{ margin: "-4px 0 12px", textAlign: "center", fontSize: 13.5, fontWeight: 700, color: "var(--gold)", fontVariantNumeric: "tabular-nums" }}>
+            daruješ 20 € → k príjemcovi ide {(20 + dorovnanieKDaru(dorovnanie, 20)).toLocaleString("sk-SK")} €</div>}
+        </>);
+        if (p.kluc === "pravidelna") return obal(<PravidelnaRiadok registrovany={registrovany} onClick={() => setHarok("pravidelna")} />);
+        if (p.kluc === "oblubene") return obal(<OblubenePodporit polozka={{ refId: zbierka.id, typ: "charita", modul: "charity", nazov: zbierka.nazov, ciel: zbierka.ciel }}
+          onPodporit={() => toast("Hárok Podporiť DEED — príde s kartou 06 E")} />);
+        if (p.kluc === "zapojitFirmu") return obal(<ZapojitFirmuRiadok firma={firmaAkoDarca() ?? "Vaša firma"} onClick={() => setHarok("firma")} />);
+        if (p.kluc === "retazNastavit") return obal(<RetazRiadok onClick={() => setHarok("retaz")} />);
+        if (p.kluc === "darcovia") return obal(<Darcovia refId={zbierka.id} />);
+        if (p.kluc === "krypto") return <div key={p.kluc} style={{ padding: "0 16px" }}><DaryVKrypte refId={zbierka.id} otvor={otvorPlatbu} /></div>;
         return <Ram key={p.kluc} nazov={NAZVY[p.kluc]} hodnota={p.hodnota} />;
       })}
     </div>
@@ -128,7 +194,11 @@ function DevPanel({ dev, setDev, miestoPevne, registrovany, ico, cielInfo, onDar
   dev: DevStav; setDev: (z: Partial<DevStav>) => void; miestoPevne: boolean; registrovany: boolean; ico: boolean;
   cielInfo?: string; onDar: (suma: number) => void; dorovnava?: string;
 }) {
-  const [skryty, setSkryty] = useState(false);
+  // predvolene zbalený, nech detail vyzerá ako v appke; stav sa pamätá
+  const [skryty, setSkrytyRaw] = useState(() => { try { return localStorage.getItem("deed.dev.zbierkaPanel") !== "1"; } catch { return true; } });
+  const setSkryty = (v: boolean) => { setSkrytyRaw(v); try { localStorage.setItem("deed.dev.zbierkaPanel", v ? "0" : "1"); } catch { /* LS */ } };
+  const tempo = useDevTempo();
+  const [tuk, setTuk] = useState(potvrditTuknutim);
   const chip = (on: boolean): CSSProperties => ({ padding: `${SPACE.xxs}px ${SPACE.sm}px`, borderRadius: RADIUS.pill, fontSize: 11.5, fontWeight: 700, cursor: "pointer",
     border: `1px solid ${on ? "var(--a-info)" : C.line}`, background: on ? C.surface2 : "transparent", color: on ? C.text : C.textSec });
   const riadok = (label: string, on: boolean, zmen: (v: boolean) => void) => (
@@ -161,7 +231,11 @@ function DevPanel({ dev, setDev, miestoPevne, registrovany, ico, cielInfo, onDar
             <div style={{ fontSize: 10.5, fontWeight: 400, color: C.textTer }}>skutočný stav zbierky · zapína ho firma cez „Zapojiť firmu do dorovnania"</div>
           </div>
           {dev.miesto === "sukromna" && riadok("Súkromnú splitol tvorca", dev.split, (v) => setDev({ split: v }))}
-          {riadok("Tempo aspoň Silná", dev.tempoSilna, (v) => setDev({ tempoSilna: v }))}
+          <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: SPACE.xxs, padding: `${SPACE.xxs}px 0` }}>
+            <span style={{ flex: 1, fontSize: 12, fontWeight: 700 }}>Tempo darov (výpočet ešte nie je)</span>
+            {STUPNE.map((n, i) => <span key={n} {...pressable(() => nastavDevTempo(i as Stupen), n)} style={chip(tempo === i)}>{n}</span>)}
+          </div>
+          {riadok("Potvrdiť platbu ťuknutím (namiesto podržania)", tuk, (v) => { nastavPotvrditTuknutim(v); setTuk(v); })}
           {riadok("Darca registrovaný", registrovany, (v) => nastavNeregistrovany(!v))}
           {riadok("Darca má IČO", ico, (v) => nastavDarcuFirmu(v))}
         </>

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { useDarcovia, identitaDarcu, DARCOVIA_CFG, type DarRiadok } from "@/lib/darcovia";
 import { usePouzivatel } from "@/lib/pouzivatel";
 import { ludiaPomohli } from "./hlasky";
+import { TempoDarov, type TempoRezim } from "./Tempo";
 
 // míľniky: počíta systém sám, nikto ich nenastavuje
 const MILNIKY = [100, 250, 500, 1000, 2500, 5000, 10000, 25000, 50000, 100000];
@@ -65,8 +66,9 @@ function Ludia({ pocet }: { pocet: number }) {
   );
 }
 
-export function KartaStavu({ refId, zaklad, ciel, ludiaZaklad }: {
+export function KartaStavu({ refId, zaklad, ciel, ludiaZaklad, tempo = false }: {
   refId: string;
+  tempo?: TempoRezim;    // karta 05 — vnútri karty pod pruhom
   zaklad: number;        // vyzbierané mimo zoznamu živých darov (z dát zbierky)
   ciel?: number | null;  // bez cieľa → míľniky
   ludiaZaklad: number;
@@ -100,11 +102,12 @@ export function KartaStavu({ refId, zaklad, ciel, ludiaZaklad }: {
     return (
       <div style={karta}>
         <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 12 }}>
-          <span style={velka}>{eur(zobrazena)}</span>
+          <span style={velka} data-zb-suma={refId}>{eur(zobrazena)}</span>
           <span style={{ fontSize: 14, color: "var(--ink3)" }}>z {eur(ciel!)}</span>
           <span style={{ marginLeft: "auto", fontSize: 18, fontWeight: 800, color: "var(--green)", fontVariantNumeric: "tabular-nums" }}>{pct} %</span>
         </div>
         <Pruh podiel={suma / ciel!} vyska={10} />
+        <TempoDarov refId={refId} rezim={tempo} />
         <Ludia pocet={ludia} />
       </div>
     );
@@ -116,7 +119,7 @@ export function KartaStavu({ refId, zaklad, ciel, ludiaZaklad }: {
   return (
     <div style={karta}>
       <div style={{ fontSize: 12.5, fontWeight: 700, color: "var(--ink3)" }}>Vyzbierané</div>
-      <div style={{ ...velka, marginTop: 2 }}>{eur(zobrazena)}</div>
+      <div style={{ ...velka, marginTop: 2 }} data-zb-suma={refId}>{eur(zobrazena)}</div>
       {dnes > 0 && <div style={{ fontSize: 13, fontWeight: 700, color: "var(--green)", marginTop: 4 }}>dnes +{eur(dnes)}</div>}
       <div style={{ marginTop: 12 }}><Pruh podiel={zakladMilnika} vyska={6} blik={oslava || undefined} /></div>
       <div style={{ display: "flex", justifyContent: "space-between", gap: 8, marginTop: 8, fontSize: 12.5, fontWeight: 700, color: "var(--ink3)" }}>
@@ -130,6 +133,7 @@ export function KartaStavu({ refId, zaklad, ciel, ludiaZaklad }: {
           {sumaDaru(posledny) && <span style={{ fontSize: 13, fontWeight: 800, color: "var(--green)", flex: "none", fontVariantNumeric: "tabular-nums" }}>{sumaDaru(posledny)}</span>}
         </div>
       )}
+      <TempoDarov refId={refId} rezim={tempo} />
       <Ludia pocet={ludia} />
     </div>
   );

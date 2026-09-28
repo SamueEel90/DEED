@@ -23,6 +23,8 @@
   --blue: #3D6B8E;                                 /* token DEED / overenie */
   --iconBg: color-mix(in srgb, #3D6B8E 14%, transparent);
   --bSoft: #DCE2E4; --bBd: #B9C7CF;                /* štítok čísla zbierky (prototyp) */
+  /* ďalšie z prototypu (karta 00) */
+  --gCard: #E6EAE0; --bCard: #E3E4E0; --bBd2: #9DB3C2; --soft: #EDE9E1; --key: #F3F0EA; --pillBd: #D0CABD; --chkBd: #A8A396; --seg: #E8E3D7;
 
   /* nové — appka ich nemá */
   --gGrad: linear-gradient(90deg, #4B7A35, #8DB866);
@@ -34,6 +36,7 @@
 html.dark .deed-platba {
   --blue: #7FA6C6; --iconBg: color-mix(in srgb, #7FA6C6 16%, transparent);
   --bSoft: #1C252C; --bBd: #3F586C;
+  --gCard: #172014; --bCard: #1D2227; --bBd2: #557590; --soft: #1A1814; --key: #24211B; --pillBd: #4A443A; --chkBd: #6A6354; --seg: #221F1A;
   --gInk: color-mix(in srgb, var(--a-green) 70%, white);
   --goldBg: #2A2518; --goldBd: #6B5A2E;
   --t2: #2A1F1B; --t2Bd: #5A3A31; --t3: #33231E; --t3Bd: #7A4A3E;
@@ -66,3 +69,35 @@ html.dark .deed-platba button { box-shadow: inset 0 0 0 1px rgba(241,236,225,.07
   .deed-platba .zb-pruh { transition: transform .3s ease; }
   .deed-platba .zb-pulz, .deed-platba .zb-blik { animation: none; }
 }
+
+/* tempo darov (karta 05) — nie zlatá (tá patrí len dorovnaniu) */
+.deed-platba { --tempo1: #6E8F5A; --tempo2: #4E7D37; --tempo3: #3F6E2A; --tempo4: #C8732E; --tempo5: #B8452F; }
+.deed-platba .zb-tempo-diel { transition: transform .6s ease; animation-name: zbTempoPulz; animation-iteration-count: infinite; animation-timing-function: ease-in-out; }
+@keyframes zbTempoPulz { 0%,100% { opacity: 1; } 50% { opacity: .55; } }
+.deed-platba .zb-tempo-zhasni { animation: zbZhasni 1s ease forwards; }
+@keyframes zbZhasni { from { opacity: 1; } to { opacity: 0; } }
+.deed-platba .zb-tempo-in { animation: zbTempoIn .35s ease both; }
+.deed-platba .zb-tempo-out { animation: zbTempoOut .35s ease both; }
+@keyframes zbTempoOut { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateY(8px); } }
+@keyframes zbTempoIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .deed-platba .zb-tempo-diel, .deed-platba .zb-tempo-in, .deed-platba .zb-tempo-out { animation: none; } }
+
+/* dlaždice a karty — stlačenie (karta 00): dlaždice .96, karty .98, 0,15 s */
+.deed-platba .zb-dlazdica { transition: transform .15s ease, background-color .3s ease, border-color .3s ease, opacity .2s ease; }
+.deed-platba .zb-dlazdica:active:not(:disabled) { transform: scale(.96); }
+.deed-platba .zb-dlazdica:disabled { cursor: default; }
+.deed-platba .zb-karta { transition: transform .15s ease; }
+.deed-platba .zb-karta:active { transform: scale(.98); }
+
+/* platobné okno (karta 07) — výmena kroku: opacity + translateX 12 px */
+.deed-platba .zb-krok { animation: zbKrok .25s ease both; }
+@keyframes zbKrok { from { opacity: 0; transform: translateX(12px); } to { opacity: 1; transform: none; } }
+.deed-platba .zb-kl { transition: background-color .12s ease; }
+.deed-platba .zb-kl:active { background: var(--btn) !important; }
+@media (prefers-reduced-motion: reduce) { .deed-platba .zb-krok { animation: none; } }
+
+/* karta 12 · hviezda pri zapnutí · karta 10 · nový riadok darcu */
+.deed-platba .zb-hviezda { animation: zbHviezda .25s ease; }
+@keyframes zbHviezda { 50% { transform: scale(1.2); } }
+.deed-platba .zb-novy-riadok { animation: zbNovyRiadok .3s ease both; }
+@keyframes zbNovyRiadok { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }

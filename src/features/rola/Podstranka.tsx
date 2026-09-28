@@ -747,7 +747,7 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
       ...(pz.video && jeVideo(pz.video) ? [{ typ: "video" as const, src: pz.video }] : []),
       ...[...fotky.slice(uv), ...fotky.slice(0, uv)].map((src) => ({ typ: "foto" as const, src })),
     ];
-    return <ZbierkaModul zbierka={{ id: novyModul.id, nazov: pz.nazov, popis: pz.popis, overena: s.overena, media }} onBack={() => setNovyModul(null)} />;
+    return <ZbierkaModul zbierka={{ id: novyModul.id, nazov: pz.nazov, popis: pz.popis, overena: s.overena, media, rychleSumy: SADY_EUR[nacitajSady(pozicia).eur].sumy }} onBack={() => setNovyModul(null)} />;
   }
 
   return (
