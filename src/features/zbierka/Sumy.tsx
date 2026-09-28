@@ -1,6 +1,7 @@
 // KARTA 06 · Rýchle sumy v €, DEED dlaždice (mikrodar), vlastná suma, dary v krypte.
 // Mikrodar = klik a hneď odíde (bez okna peňaženky): svetielko letí k sume zbierky, po 0,65 s suma narastie, dlaždica 1,6 s „Odoslané".
-import { useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { useState, type CSSProperties, type ReactNode, type RefObject } from "react";
+import { MikrodarDlazdica } from "./AnimovaneKomponenty";
 import { pridajDar } from "@/lib/darcovia";
 import { KARTA_OD_EUR } from "./nastavenie";
 
@@ -9,7 +10,6 @@ export type KanalPlatby = "eur" | "deed" | "eurc";
 export type OtvorPlatbu = (p: { kanal: KanalPlatby; suma?: number }) => void;
 
 const eurTxt = (n: number) => `${n.toLocaleString("sk-SK", { minimumFractionDigits: n % 1 ? 2 : 0, maximumFractionDigits: 2 })} €`;
-const eur2 = (n: number) => `${n.toLocaleString("sk-SK", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`;
 const cislo = (n: number) => n.toLocaleString("sk-SK", { minimumFractionDigits: n % 1 ? 2 : 0, maximumFractionDigits: 2 });
 const EUR_FARBY: [string, string][] = [["var(--card)", "var(--cardBd)"], ["var(--t2)", "var(--t2Bd)"], ["var(--t3)", "var(--t3Bd)"]];
 
@@ -24,44 +24,14 @@ export function NadpisSekcie({ text, doplnok }: { text: string; doplnok?: string
 const mriezka: CSSProperties = { display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 };
 const dlazdica = (bg: string, bd: string): CSSProperties => ({ position: "relative", height: 66, borderRadius: 16, background: bg, border: `1px solid ${bd}`, cursor: "pointer",
   display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 1, color: "var(--ink)", fontFamily: "inherit", padding: 0 });
-function Najcastejsie() {
-  return <span style={{ position: "absolute", top: -9, left: "50%", transform: "translateX(-50%)", padding: "2px 8px", borderRadius: 7, background: "var(--blue)", color: "#fff", fontSize: 10.5, fontWeight: 800, letterSpacing: ".05em", whiteSpace: "nowrap" }}>NAJČASTEJŠIE</span>;
-}
 
-/** svetielko „+100 DEED" letí z dlaždice k sume zbierky (len transform/opacity) */
-function svetielko(z: HTMLElement, refId: string, text: string) {
-  const ciel = document.querySelector<HTMLElement>(`[data-zb-suma="${CSS.escape(refId)}"]`);
-  const a = z.getBoundingClientRect();
-  const el = document.createElement("span");
-  el.textContent = text;
-  Object.assign(el.style, { position: "fixed", left: `${a.left + a.width / 2}px`, top: `${a.top + a.height / 2}px`, zIndex: "300", pointerEvents: "none",
-    padding: "3px 9px", borderRadius: "999px", background: "var(--a-green)", color: "#fff", fontSize: "12.5px", fontWeight: "800", whiteSpace: "nowrap",
-    boxShadow: "0 0 14px rgba(255,196,92,.7)", fontFamily: "inherit" });
-  document.body.appendChild(el);
-  const dx = ciel ? ciel.getBoundingClientRect().left + 30 - (a.left + a.width / 2) : 0;
-  const dy = ciel ? ciel.getBoundingClientRect().top + 16 - (a.top + a.height / 2) : -80;
-  const bezPohybu = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-  el.animate(bezPohybu
-    ? [{ opacity: 0 }, { opacity: 1 }, { opacity: 0 }]
-    : [{ transform: "translate(-50%,-50%) scale(.7)", opacity: 0 }, { transform: "translate(-50%,-50%) scale(1)", opacity: 1, offset: .15 },
-       { transform: `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(.6)`, opacity: .2 }],
-    { duration: 600, easing: "cubic-bezier(.4,0,.2,1)", fill: "forwards" }).onfinish = () => el.remove();
-}
 
-/** mikrodar — jedna dlaždica „klik a hneď odíde" */
-function useMikrodar(refId: string, registrovany: boolean) {
-  const [odoslane, setOdoslane] = useState<number | null>(null);
-  const bezi = useRef(false);
-  const posli = (i: number, el: HTMLElement, text: string, eur: number) => {
-    if (bezi.current) return; // počas mikrodaru sa ďalší ťuk ignoruje
-    bezi.current = true;
-    svetielko(el, refId, text);
-    setTimeout(() => { pridajDar({ refId, suma: eur, kanal: "deed", registrovany }); setOdoslane(i); }, 650);
-    setTimeout(() => { setOdoslane(null); bezi.current = false; }, 650 + 1600);
-  };
-  return { odoslane, posli, bezi: odoslane !== null };
+/** mikrodar — hotová dlaždica dizajnéra (AnimovaneKomponenty.tsx): svetielko letí na koniec pruhu, potom sa dar zapíše a suma naskočí */
+export type MikroCiel = { root: RefObject<HTMLElement>; ciel: RefObject<HTMLElement> };
+function useBlok() {
+  const [blok, setBlok] = useState(false);
+  return { blok, zacni: () => { setBlok(true); setTimeout(() => setBlok(false), 1600); } };
 }
-function Odoslane() { return <span style={{ fontSize: 14, fontWeight: 800, color: "var(--gInk)" }}>Odoslané</span>; }
 
 // ---------------- A · rýchle sumy v € ----------------
 export function RychleSumyEur({ sumy, doplnok, kDaru, otvor }: { sumy: number[]; doplnok?: string; kDaru?: (s: number) => number; otvor: OtvorPlatbu }) {
@@ -87,26 +57,16 @@ export function RychleSumyEur({ sumy, doplnok, kDaru, otvor }: { sumy: number[];
 
 // ---------------- B · DEED dlaždice (mikrodar) ----------------
 const DEED_SUMY = [10, 50, 100];
-export function DeedDlazdice({ refId, registrovany }: { refId: string; registrovany: boolean }) {
-  const m = useMikrodar(refId, registrovany);
+export function DeedDlazdice({ refId, registrovany, mikro }: { refId: string; registrovany: boolean; mikro: MikroCiel }) {
+  const { blok, zacni } = useBlok();
   return (
     <>
       <NadpisSekcie text="DROBNÁ PODPORA" doplnok="klik a hneď odíde" />
       <div style={mriezka}>
-        {DEED_SUMY.map((d, i) => {
-          const hlavna = d === 100, sent = m.odoslane === i;
-          return (
-            <button key={d} type="button" className="zb-dlazdica" disabled={m.bezi && !sent} aria-label={`Poslať ${d} DEED`}
-              onClick={(e) => m.posli(i, e.currentTarget, `+${d} DEED`, d / 100)}
-              style={{ ...dlazdica(sent ? "var(--gSoft)" : hlavna ? "var(--bCard)" : "var(--card)", sent ? "var(--gBd)" : hlavna ? "var(--bBd)" : "var(--cardBd)"), opacity: m.bezi && !sent ? .45 : 1 }}>
-              {hlavna && !sent && <Najcastejsie />}
-              {sent ? <Odoslane /> : <>
-                <span style={{ fontSize: 20, fontWeight: 800, color: hlavna ? "var(--blue)" : "var(--ink)", fontVariantNumeric: "tabular-nums" }}>{d} <span style={{ fontSize: 11.5, fontWeight: 700 }}>DEED</span></span>
-                <span style={{ fontSize: 12, fontWeight: 600, color: "var(--ink3)" }}>≈ {eur2(d / 100)}</span>
-              </>}
-            </button>
-          );
-        })}
+        {DEED_SUMY.map((d) => (
+          <MikrodarDlazdica key={d} suma={d} jednotka="DEED" eur={d / 100} najcastejsie={d === 100} root={mikro.root} ciel={mikro.ciel}
+            blokovane={blok} onOdoslane={zacni} onDoleteli={(eur) => pridajDar({ refId, suma: eur, kanal: "deed", registrovany })} />
+        ))}
       </div>
     </>
   );
@@ -145,10 +105,10 @@ export function VlastnaSuma({ eur, deed, firma, otvor }: { eur: boolean; deed: b
 // ---------------- D · dary v krypte (EURC) ----------------
 const EURC_SUMY = [0.1, 0.5, 1];
 const KLUC_KRYPTO = "deed.zbierka.kryptoOtvorene";
-export function DaryVKrypte({ refId, otvor }: { refId: string; otvor: OtvorPlatbu }) {
+export function DaryVKrypte({ refId, otvor, mikro }: { refId: string; otvor: OtvorPlatbu; mikro: MikroCiel }) {
   const [otvorene, setOtvorene] = useState(() => { try { return localStorage.getItem(KLUC_KRYPTO) !== "0"; } catch { return true; } });
   const prepni = () => { const v = !otvorene; setOtvorene(v); try { localStorage.setItem(KLUC_KRYPTO, v ? "1" : "0"); } catch { /* LS */ } };
-  const m = useMikrodar(refId, true); // krypto má len registrovaný
+  const { blok, zacni } = useBlok(); // krypto má len registrovaný
   return (
     <>
       <button type="button" onClick={prepni} aria-expanded={otvorene}
@@ -161,20 +121,10 @@ export function DaryVKrypte({ refId, otvor }: { refId: string; otvor: OtvorPlatb
         <>
           <div style={{ margin: "-4px 2px 8px", fontSize: 12.5, fontWeight: 600, color: "var(--ink3)" }}>klik a hneď odíde</div>
           <div style={mriezka}>
-            {EURC_SUMY.map((v, i) => {
-              const hlavna = v === 1, sent = m.odoslane === i;
-              return (
-                <button key={v} type="button" className="zb-dlazdica" disabled={m.bezi && !sent} aria-label={`Poslať ${cislo(v)} EURC`}
-                  onClick={(e) => m.posli(i, e.currentTarget, `+${cislo(v)} EURC`, v)}
-                  style={{ ...dlazdica(sent ? "var(--gSoft)" : hlavna ? "var(--bCard)" : "var(--card)", sent ? "var(--gBd)" : hlavna ? "var(--bBd)" : "var(--cardBd)"), opacity: m.bezi && !sent ? .45 : 1 }}>
-                  {hlavna && !sent && <Najcastejsie />}
-                  {sent ? <Odoslane /> : <>
-                    <span style={{ fontSize: 20, fontWeight: 800, color: hlavna ? "var(--blue)" : "var(--ink)", fontVariantNumeric: "tabular-nums" }}>{cislo(v)} <span style={{ fontSize: 11.5, fontWeight: 700 }}>EURC</span></span>
-                    <span style={{ fontSize: 12, fontWeight: 600, color: "var(--ink3)" }}>≈ {eur2(v)}</span>
-                  </>}
-                </button>
-              );
-            })}
+            {EURC_SUMY.map((v) => (
+              <MikrodarDlazdica key={v} suma={cislo(v)} jednotka="EURC" eur={v} najcastejsie={v === 1} root={mikro.root} ciel={mikro.ciel}
+                blokovane={blok} onOdoslane={zacni} onDoleteli={(eur) => pridajDar({ refId, suma: eur, kanal: "deed", registrovany: true })} />
+            ))}
           </div>
           <button type="button" className="zb-karta" onClick={() => otvor({ kanal: "eurc" })}
             style={{ width: "100%", height: 56, marginTop: 10, borderRadius: 16, background: "var(--card)", border: "1px solid var(--cardBd)", cursor: "pointer", fontFamily: "inherit", fontSize: 15.5, fontWeight: 800, color: "var(--blue)" }}>

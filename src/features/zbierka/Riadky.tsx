@@ -22,8 +22,8 @@ export function ZdielatRiadok({ onZdielat, paciSa = 0 }: { onZdielat: () => void
       </button>
       <button type="button" className="zb-karta" onClick={() => setPaci(!paci)} aria-pressed={paci}
         style={{ ...riadkove, background: paci ? "var(--gSoft)" : "var(--card)", border: `1px solid ${paci ? "var(--gBd)" : "var(--cardBd)"}`, color: paci ? "var(--gInk)" : "var(--ink)", transition: "background .25s ease, color .25s ease, transform .15s ease" }}>
-        <svg width="19" height="19" viewBox="0 0 24 24" fill={paci ? "currentColor" : "none"} stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"><path d="M7 10v11H4a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1h3zm0 0l4-7a2.5 2.5 0 0 1 2.5 2.5V9h5.2a2 2 0 0 1 2 2.3l-1.3 8A2 2 0 0 1 17.4 21H7" /></svg>
-        {pocet > 0 ? <span style={{ fontVariantNumeric: "tabular-nums" }}>{pocet.toLocaleString("sk-SK")}</span> : "Páči sa mi"}
+        <svg key={String(paci)} className={paci ? "zb-hviezda" : undefined} width="19" height="19" viewBox="0 0 24 24" fill={paci ? "currentColor" : "none"} stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"><path d="M7 10v11H4a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1h3zm0 0l4-7a2.5 2.5 0 0 1 2.5 2.5V9h5.2a2 2 0 0 1 2 2.3l-1.3 8A2 2 0 0 1 17.4 21H7" /></svg>
+        <span>Páči sa mi · <span style={{ fontVariantNumeric: "tabular-nums" }}>{pocet.toLocaleString("sk-SK")}</span></span>
       </button>
     </div>
   );

@@ -10,6 +10,9 @@ import PodrzTlacidlo from "./PodrzTlacidlo";
 import { Svetlusik } from "./Svetlusik";
 import { MIN_DAR_EUR, KARTA_OD_EUR } from "./nastavenie";
 import type { KanalPlatby } from "./Sumy";
+import { PodakovaniePoDare } from "./AnimovaneKomponenty";
+import { hlaskaPoDare } from "./hlasky";
+import { milnikyPre } from "./KartaStavu";
 
 export type SposobEur = "karta" | "sepa";
 export type VysledokPlatby = { kanal: KanalPlatby; sposob?: SposobEur; suma: number; eur: number; darDeed: number; volba?: VolbaDaru };
@@ -26,9 +29,12 @@ const vSume = (n: number, k: KanalPlatby) => (k === "eur" ? eK(n) : `${n.toLocal
 /** poplatok karty 1,4 % + 0,15 € (platí darca) */
 export const poplatokKarty = (s: number) => Math.round((s * 0.014 + 0.15) * 100) / 100;
 
-type Krok = "suma" | "sposob" | "zhrnutie" | "spracovanie";
+type Krok = "suma" | "sposob" | "zhrnutie" | "spracovanie" | "hotovo";
+/** stav zbierky tesne pred darom — pre poďakovanie a hlášku (karta 09) */
+export type PredDarom = { vyzbierane: number; ciel: number | null; pocetDarov: number; darovDnes: number };
 
-export function PlatobneOkno({ kanal, suma: sumaStart, nazov, registrovany, bonus, firma, onHotovo, onClose }: {
+export function PlatobneOkno({ kanal, suma: sumaStart, nazov, registrovany, bonus, firma, pred, onHotovo, onClose }: {
+  pred: PredDarom;
   kanal: KanalPlatby; suma?: number; nazov: string; registrovany: boolean;
   bonus?: (eur: number) => number;   // dorovnanie firmy k daru (len €)
   firma?: string;
@@ -55,6 +61,7 @@ export function PlatobneOkno({ kanal, suma: sumaStart, nazov, registrovany, bonu
   const spolu = Math.round((suma + poplatok + dar) * 100) / 100;
   const dorovna = eur && bonus ? bonus(suma) : 0;
 
+  const ja = usePouzivatel();
   const zatvor = () => { if (krok !== "spracovanie") { setOtvorene(false); setTimeout(onClose, 250); } };
   const dalej = () => {
     if (!mozeDalej) return;
@@ -64,7 +71,7 @@ export function PlatobneOkno({ kanal, suma: sumaStart, nazov, registrovany, bonu
   const zaplat = () => {
     if (registrovany) ulozPredvolbu(volba);
     setKrok("spracovanie");
-    setTimeout(() => onHotovo({ kanal, sposob, suma, eur: eurHodnota, darDeed: dar, volba: registrovany ? volba : undefined }), 1800);
+    setTimeout(() => { onHotovo({ kanal, sposob, suma, eur: eurHodnota, darDeed: dar, volba: registrovany ? volba : undefined }); setKrok("hotovo"); }, 1800);
   };
 
   // klávesnica (PC): čísla, čiarka, Backspace, Enter = ďalej, Esc = zavrieť
@@ -104,7 +111,7 @@ export function PlatobneOkno({ kanal, suma: sumaStart, nazov, registrovany, bonu
           </button>
         )}
       </div>
-      {krok !== "spracovanie" && (
+      {krok !== "spracovanie" && krok !== "hotovo" && (
         <div style={{ display: "flex", gap: 6, marginTop: 14 }}>
           {kroky.map((k, i) => {
             const ai = kroky.indexOf(krok), hotovy = i <= ai;
@@ -206,6 +213,19 @@ export function PlatobneOkno({ kanal, suma: sumaStart, nazov, registrovany, bonu
           ? <HlavneTlacidlo onClick={zaplat}>{label}</HlavneTlacidlo>
           : <PodrzTlacidlo label={label} onConfirm={zaplat} onHint={() => setNap(true)} />}
       </div>
+    );
+  } else if (krok === "hotovo") {
+    // karta 09 — poďakovanie (hotový komponent dizajnéra): Svetlúšik, roj do pruhu, hláška
+    const po = pred.vyzbierane + eurHodnota + dorovna;
+    const G = pred.ciel;
+    const m0 = milnikyPre(pred.vyzbierane), m1 = milnikyPre(po);
+    obsah = (
+      <PodakovaniePoDare meno={ja.meno} registrovany={registrovany} eur={eurHodnota} sumaTxt={vSume(suma, kanal)}
+        dorovnanieTxt={dorovna > 0 ? eK(dorovna) : undefined} firma={firma}
+        predPct={G ? Math.min(1, pred.vyzbierane / G) : pred.vyzbierane / m0.dalsi} poPct={G ? Math.min(1, po / G) : Math.min(1, po / m1.dalsi)}
+        poTxt={G ? `${eK(po)} z ${eK(G)}` : `Vyzbierané ${eK(po)}`} poPctTxt={G ? `${Math.floor((po / G) * 100)} %` : `ďalší míľnik ${eK(m1.dalsi)}`}
+        hlaska={hlaskaPoDare({ vyzbierane: pred.vyzbierane, ciel: G, pocetDarov: pred.pocetDarov, darovDnes: pred.darovDnes }, { eur: eurHodnota, dorovnanie: dorovna, registrovany })}
+        onRegistrovat={() => toast("Registrácia s pripísaním daru — karta 08")} onHotovo={zatvor} />
     );
   } else {
     obsah = (

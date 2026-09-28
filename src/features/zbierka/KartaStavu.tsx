@@ -1,6 +1,6 @@
 // KARTA 04 · Karta stavu zbierky — s cieľom (suma, %, pruh) alebo bez cieľa (míľniky, posledný dar).
 // Všetko z reálnych dát (základ zbierky + živé dary). Animácie len transform/opacity.
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type RefObject } from "react";
 import { useDarcovia, identitaDarcu, DARCOVIA_CFG, type DarRiadok } from "@/lib/darcovia";
 import { usePouzivatel } from "@/lib/pouzivatel";
 import { ludiaPomohli } from "./hlasky";
@@ -42,14 +42,18 @@ function usePocitadlo(ciel: number): number {
 }
 
 /** pruh cez transform: scaleX — pri prvom vykreslení rastie od 0 */
-function Pruh({ podiel, vyska, blik }: { podiel: number; vyska: number; blik?: number }) {
+function Pruh({ podiel, vyska, blik, koniec }: { podiel: number; vyska: number; blik?: number; koniec?: RefObject<HTMLDivElement> }) {
   const [p, setP] = useState(0);
   useEffect(() => { const r = requestAnimationFrame(() => setP(Math.max(0, Math.min(1, podiel)))); return () => cancelAnimationFrame(r); }, [podiel]);
   return (
+    <>
     <div style={{ height: vyska, borderRadius: 10, background: "var(--track)", overflow: "hidden" }}>
       <div key={blik} className={`zb-pruh${blik ? " zb-blik" : ""}`}
         style={{ height: "100%", borderRadius: 10, background: "linear-gradient(90deg, #4B7A35, #8DB866)", transformOrigin: "0 50%", transform: `scaleX(${p})` }} />
     </div>
+    {/* koniec pruhu — sem letí svetielko pri mikrodare (animacie.ts, [data-bar-end]) */}
+    <div style={{ position: "relative", height: 0 }}><div ref={koniec} data-bar-end style={{ position: "absolute", top: -vyska / 2, left: `${Math.max(0, Math.min(1, podiel)) * 100}%`, width: 0, height: 0 }} /></div>
+    </>
   );
 }
 
@@ -66,9 +70,10 @@ function Ludia({ pocet }: { pocet: number }) {
   );
 }
 
-export function KartaStavu({ refId, zaklad, ciel, ludiaZaklad, tempo = false }: {
+export function KartaStavu({ refId, zaklad, ciel, ludiaZaklad, tempo = false, koniecPruhu }: {
   refId: string;
   tempo?: TempoRezim;    // karta 05 — vnútri karty pod pruhom
+  koniecPruhu?: RefObject<HTMLDivElement>;
   zaklad: number;        // vyzbierané mimo zoznamu živých darov (z dát zbierky)
   ciel?: number | null;  // bez cieľa → míľniky
   ludiaZaklad: number;
@@ -106,7 +111,7 @@ export function KartaStavu({ refId, zaklad, ciel, ludiaZaklad, tempo = false }: 
           <span style={{ fontSize: 14, color: "var(--ink3)" }}>z {eur(ciel!)}</span>
           <span style={{ marginLeft: "auto", fontSize: 18, fontWeight: 800, color: "var(--green)", fontVariantNumeric: "tabular-nums" }}>{pct} %</span>
         </div>
-        <Pruh podiel={suma / ciel!} vyska={10} />
+        <Pruh podiel={suma / ciel!} vyska={10} koniec={koniecPruhu} />
         <TempoDarov refId={refId} rezim={tempo} />
         <Ludia pocet={ludia} />
       </div>
@@ -121,7 +126,7 @@ export function KartaStavu({ refId, zaklad, ciel, ludiaZaklad, tempo = false }: 
       <div style={{ fontSize: 12.5, fontWeight: 700, color: "var(--ink3)" }}>Vyzbierané</div>
       <div style={{ ...velka, marginTop: 2 }} data-zb-suma={refId}>{eur(zobrazena)}</div>
       {dnes > 0 && <div style={{ fontSize: 13, fontWeight: 700, color: "var(--green)", marginTop: 4 }}>dnes +{eur(dnes)}</div>}
-      <div style={{ marginTop: 12 }}><Pruh podiel={zakladMilnika} vyska={6} blik={oslava || undefined} /></div>
+      <div style={{ marginTop: 12 }}><Pruh podiel={zakladMilnika} vyska={6} blik={oslava || undefined} koniec={koniecPruhu} /></div>
       <div style={{ display: "flex", justifyContent: "space-between", gap: 8, marginTop: 8, fontSize: 12.5, fontWeight: 700, color: "var(--ink3)" }}>
         <span>{dosiahnuty ? `míľnik ${eur(dosiahnuty)} dosiahnutý` : "prvý míľnik"}</span>
         <span>ďalší míľnik <span style={{ color: "var(--green)" }}>{eur(dalsi)}</span></span>
