@@ -22,8 +22,8 @@ import { ZdielatRiadok, PravidelnaRiadok, OblubenePodporit, ZapojitFirmuRiadok, 
 import { ZdielatHarok } from "./Zdielat";
 import { firmaAkoDarca } from "@/lib/podpory";
 import { RecurringSheet } from "@/components/recurring";
-import { SplitQrSheet } from "@/components/splitqr";
-import { NoveDorovnanieSheet } from "@/features/rola/Dorovnanie";
+import { RetazDobraHarok } from "./RetazDobra";
+import { DorovnanieFirmyHarok } from "./DorovnanieFirmy";
 import { STUPNE, nastavDevTempo, useDevTempo, type Stupen } from "./tempoStupen";
 import type { TempoRezim } from "./Tempo";
 import type { StavKroku } from "@/lib/cesta";
@@ -133,11 +133,11 @@ export function ZbierkaModul({ zbierka, miesto: miestoProp, onBack, spatNazov, o
       )}
 
       {harok === "pravidelna" && <RecurringSheet nazov={zbierka.nazov} caseId={zbierka.id} onClose={() => setHarok(null)} toast={toast} />}
-      {harok === "firma" && <NoveDorovnanieSheet entita="charita" cielId={zbierka.id} cielNazov={zbierka.nazov} toast={toast} onClose={() => setHarok(null)} />}
+      {harok === "firma" && <DorovnanieFirmyHarok zbierkaId={zbierka.id} zbierkaNazov={zbierka.nazov} firma={firmaAkoDarca() ?? "Vaša firma"} onClose={() => setHarok(null)} />}
       {harok === "zdielat" && <ZdielatHarok id={zbierka.id} nazov={zbierka.nazov} organizacia={zbierka.organizacia?.meno}
         obrazok={zbierka.media?.find((m) => m.typ === "foto")?.src} onClose={() => setHarok(null)} />}
       {harok === "podporit" && <PodporitDeedHarok registrovany={registrovany} onClose={() => setHarok(null)} />}
-      {harok === "retaz" && <SplitQrSheet titul={zbierka.nazov} caseId={zbierka.id} onClose={() => setHarok(null)} toast={toast} />}
+      {harok === "retaz" && <RetazDobraHarok zbierka={{ id: zbierka.id, nazov: zbierka.nazov, org: zbierka.organizacia?.meno, ciel, vyzbierane: zbierka.vyzbierane }} onClose={() => setHarok(null)} />}
 
       {/* pripojené položky — vždy rovnaké poradie, odpojené chýbajú úplne */}
       {polozky.map((p) => {

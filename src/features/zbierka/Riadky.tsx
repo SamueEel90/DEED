@@ -111,7 +111,7 @@ export function KartaDorovnava({ d, logo }: { d: Dorovnanie; logo?: string }) {
         <div style={{ height: 6, borderRadius: 6, background: "var(--track)", overflow: "hidden", marginTop: 6 }}>
           <div className="zb-pruh" style={{ height: "100%", background: "var(--goldGrad)", transformOrigin: "0 50%", transform: `scaleX(${d.strop ? Math.min(1, minute / d.strop) : 0})` }} />
         </div>
-        <div style={{ marginTop: 6, fontSize: 12.5, color: "var(--ink3)" }}>{d.doVycerpania ? "dorovnáva, kým sa neminie rozpočet" : `dorovnáva do ${datum}`}</div>
+        <div style={{ marginTop: 6, fontSize: 12.5, color: "var(--ink3)" }}>{d.doVycerpania ? "dorovnáva, kým sa neminie rozpočet" : `dorovnáva do ${datum}`}{d.stropDaru ? ` · najviac ${eK(d.stropDaru)} k jednému daru` : ""}</div>
         {otvorene && (
           <div style={{ marginTop: 10, paddingTop: 10, borderTop: "1px solid var(--goldBd)", fontSize: 13.5, lineHeight: 1.5, color: "var(--ink2)", animation: "zbFsIn .2s ease both" }}>
             Je to dar firmy, nie sponzoring. Peniaze sú už na účte charity a čerpajú sa s každým darom.
