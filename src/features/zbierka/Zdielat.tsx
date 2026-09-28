@@ -9,7 +9,12 @@ import { vibruj } from "./animacie";
 export const odkazZbierky = (id: string) => `https://deed.sk/z/${encodeURIComponent(id)}`;
 
 /** spoločný hárok modulu: mobil zdola, tablet 640 px / PC 560 px na stred, bez blur */
-export function Harok({ onClose, children, hlavicka }: { onClose: () => void; children: ReactNode; hlavicka: ReactNode }) {
+export function Harok({ onClose, children, hlavicka, podHlavickou, paticka, plnaVyska }: {
+  onClose: () => void; children: ReactNode; hlavicka: ReactNode;
+  /** napr. kroky (Nastavenie · Spôsob · Zhrnutie) — pevne pod hlavičkou */ podHlavickou?: ReactNode;
+  /** pevné tlačidlá dole — obsah nad nimi sa posúva */ paticka?: ReactNode;
+  /** mobil: hárok vždy 92 % výšky (nie podľa obsahu) */ plnaVyska?: boolean;
+}) {
   const { wide, desktop } = useLayout();
   const [otv, setOtv] = useState(false);
   useEffect(() => { const r = requestAnimationFrame(() => setOtv(true)); return () => cancelAnimationFrame(r); }, []);
@@ -24,7 +29,7 @@ export function Harok({ onClose, children, hlavicka }: { onClose: () => void; ch
       <div onClick={zavri} style={{ position: "absolute", inset: 0, background: "var(--scrim)", opacity: otv ? 1 : 0, transition: "opacity .32s ease" }} />
       <div style={{ ...(wide
           ? { position: "relative", width: desktop ? 560 : 640, maxWidth: "calc(100vw - 32px)", maxHeight: "calc(100vh - 48px)", borderRadius: 28, transform: otv ? "none" : "translateY(24px)", opacity: otv ? 1 : 0 }
-          : { position: "absolute", left: 0, right: 0, bottom: 0, maxHeight: "92%", borderRadius: "28px 28px 0 0", transform: otv ? "none" : "translateY(100%)" }),
+          : { position: "absolute", left: 0, right: 0, bottom: 0, ...(plnaVyska ? { height: "92%" } : { maxHeight: "92%" }), borderRadius: "28px 28px 0 0", transform: otv ? "none" : "translateY(100%)" }),
         background: "var(--sheet)", color: "var(--ink)", display: "flex", flexDirection: "column", overflow: "hidden", transition: "transform .32s cubic-bezier(.2,.8,.2,1), opacity .32s ease" }}>
         <div style={{ flex: "none", padding: wide ? "18px 18px 0" : "10px 18px 0" }}>
           {!wide && <div style={{ width: 40, height: 4, borderRadius: 4, background: "var(--handle)", margin: "0 auto 12px" }} />}
@@ -34,8 +39,10 @@ export function Harok({ onClose, children, hlavicka }: { onClose: () => void; ch
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg>
             </button>
           </div>
+          {podHlavickou}
         </div>
-        <div style={{ flex: 1, overflowY: "auto", padding: "14px 18px max(22px, env(safe-area-inset-bottom))", display: "flex", flexDirection: "column", gap: 12 }}>{children}</div>
+        <div style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: paticka ? "14px 18px 18px" : "14px 18px max(22px, env(safe-area-inset-bottom))", display: "flex", flexDirection: "column", gap: 12 }}>{children}</div>
+        {paticka && <div style={{ flex: "none", padding: "12px 18px max(22px, env(safe-area-inset-bottom))", borderTop: "1px solid var(--cardBd)", display: "flex", gap: 10, background: "var(--sheet)" }}>{paticka}</div>}
       </div>
     </div>,
     document.body,

@@ -15,13 +15,12 @@ import { Hlavicka, Galeria, NadpisText, type Medium } from "./Vrch";
 import { PoleOrganizacie, type OrgPole } from "./Pole";
 import { KartaStavu } from "./KartaStavu";
 import { RychleSumyEur, DeedDlazdice, VlastnaSuma, DaryVKrypte, type OtvorPlatbu } from "./Sumy";
-import { toast } from "@/components/toast";
 import { PlatobneOkno, potvrditTuknutim, nastavPotvrditTuknutim } from "./Platba";
 import type { KanalPlatby } from "./Sumy";
 import { ZdielatRiadok, PravidelnaRiadok, OblubenePodporit, ZapojitFirmuRiadok, RetazRiadok, KartaDorovnava, Darcovia } from "./Riadky";
 import { ZdielatHarok } from "./Zdielat";
 import { firmaAkoDarca } from "@/lib/podpory";
-import { RecurringSheet } from "@/components/recurring";
+import { PravidelnaHarok } from "./PravidelnaHarok";
 import { RetazDobraHarok } from "./RetazDobra";
 import { DorovnanieFirmyHarok } from "./DorovnanieFirmy";
 import { STUPNE, nastavDevTempo, useDevTempo, type Stupen } from "./tempoStupen";
@@ -215,7 +214,7 @@ export function ZbierkaModul({ zbierka, miesto: miestoProp, onBack, spatNazov, o
           }} />
       )}
 
-      {harok === "pravidelna" && <RecurringSheet nazov={zbierka.nazov} caseId={zbierka.id} onClose={() => setHarok(null)} toast={toast} />}
+      {harok === "pravidelna" && <PravidelnaHarok refId={zbierka.id} nazov={zbierka.nazov} registrovany={registrovany} onClose={() => setHarok(null)} />}
       {harok === "firma" && <DorovnanieFirmyHarok zbierkaId={zbierka.id} zbierkaNazov={zbierka.nazov} firma={firmaAkoDarca() ?? "Vaša firma"} onClose={() => setHarok(null)} />}
       {harok === "zdielat" && <ZdielatHarok id={zbierka.id} nazov={zbierka.nazov} organizacia={zbierka.organizacia?.meno}
         obrazok={zbierka.media?.find((m) => m.typ === "foto")?.src} onClose={() => setHarok(null)} />}

@@ -308,7 +308,7 @@ function RiadokPlatby({ kanal, sposob, registrovany }: { kanal: KanalPlatby; spo
   );
 }
 /** „V ZOZNAME DARCOV SA UKÁŽEŠ AKO" + „Zobraziť sumu" (do 2 € sa suma nezobrazí nikdy) */
-function Identita({ volba, setVolba, eur }: { volba: VolbaDaru; setVolba: (v: VolbaDaru) => void; eur: number }) {
+export function Identita({ volba, setVolba, eur }: { volba: VolbaDaru; setVolba: (v: VolbaDaru) => void; eur: number }) {
   const ja = usePouzivatel();
   const meno = ja.meno || "Darca", priezv = ja.priezvisko || "";
   const moznosti = useMemo((): [VerziaIdentity, string][] => [
