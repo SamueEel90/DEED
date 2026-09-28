@@ -116,3 +116,8 @@ html.dark .deed-platba .zb-tvorca { background: linear-gradient(135deg, #27425A 
   .zb-pravy { position: sticky; top: 24px; display: flex; flex-direction: column; min-width: 0; }
   .zb-obsah .zb-pol { padding-left: 0 !important; padding-right: 0 !important; }
 }
+
+/* karta 18 · žiara za štítom v profile (len transform/opacity) */
+@keyframes pfZiara { 0%, 100% { opacity: .55; transform: scale(1); } 50% { opacity: 1; transform: scale(1.1); } }
+.pf-ziara { animation: pfZiara 3.4s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .pf-ziara { animation: none; } }

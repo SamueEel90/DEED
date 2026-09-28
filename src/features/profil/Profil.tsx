@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { SIRKA, C, GRAD, GRAD_ZELENY, SPACE, RADIUS } from "@/theme";
-import { toast, Sheet, AvatarUroven, Stit, StitRiadok, STIT_POPIS, DozivotnyChip, useScrollPamat, useViac, useMotiv, useLayout, useTvorbaGate, obalSiroky, QrModal, pressable, IkonaMenu, IkonaNastavenia, IkonaSipVlavo, IkonaSipDole, IkonaPenazenka, IkonaHviezda, IkonaFajka, IkonaDoska, IkonaUsmev, IkonaOsoba, IkonaPin, IkonaSlnko, IkonaMesiac, IkonaStit, IkonaInstitucia, IkonaCeruzka, IkonaQr, IkonaObalka, IkonaList, IkonaKniha, IkonaSport, IkonaPaleta, IkonaZachrana, IkonaLudia, IkonaSrdceLine, IkonaFoto, FotoProfiluSheet, KamerkaBadge, ZmenitPill, BtnAkcia, MenuSkupina, MenuPolozka, MenuPrepinac, SkeletonRiadky, EmptyState, ErrorState, ScreenSwitch } from "@/shared";
+import { toast, Sheet, StitRiadok, DozivotnyChip, useScrollPamat, useMotiv, useLayout, useTvorbaGate, obalSiroky, QrModal, pressable, IkonaNastavenia, IkonaSipVlavo, IkonaPenazenka, IkonaHviezda, IkonaFajka, IkonaDoska, IkonaUsmev, IkonaOsoba, IkonaPin, IkonaSlnko, IkonaMesiac, IkonaStit, IkonaInstitucia, IkonaQr, IkonaObalka, IkonaFoto, FotoProfiluSheet, MenuSkupina, MenuPolozka, MenuPrepinac, SkeletonRiadky, EmptyState, ErrorState, ScreenSwitch } from "@/shared";
 import { MojDeedFiremny } from "@/features/rola/MojDeedFiremny";
 import { MojZamestnavatelSheet } from "@/features/rola/MojZamestnavatel";
 import { useVazbaOsoby } from "@/lib/zamestnanci";
@@ -14,13 +14,11 @@ import { usePouzivatel } from "@/lib/pouzivatel";
 import { klucEntity, useFotkyEntity } from "@/lib/fotoentity";
 import { useVrstva } from "@/lib/urlnav";
 import { usePersonalizacia } from "@/lib/personalizacia";
-import { ZAUJMY_KATALOG } from "@/lib/personalizaciaStore";
 import { Nastavenia as NotifNastavenia } from "@/features/notifikacie/Notifikacie";
-import GlassIcons from "@/components/GlassIcons";
 import type { Toast as ToastFn, WideProps, PrevodTuple, ZiadostPriatelstvo, CestaPriatelstva, RezimNastavenia } from "@/types";
 import { useProfilPrevody, useProfilMojeSkutky, useProfilKarma, useProfilStatistiky } from "@/data";
-import { MEDIA_AR } from "@/lib/cardSize";
 import { MODULOVA_KARMA, DOZIVOTNE_ZISKANE } from "./mock";
+import { ProfilHlavny18, IdentitaKarta18, StitKarta18, MojeZaujmy } from "./ProfilHlavny";
 
 /*
   ============================================================
@@ -46,16 +44,19 @@ export default function ModulProfil({ wide, walletReq = 0 }: ProfilProps) {
   useEffect(() => { if (walletReq) setScreen("wallet"); }, [walletReq]);
 
   const sub = (n: string) => { setSubNazov(n); setScreen("sub"); };
+  const [qr, setQr] = useState(false); // Môj QR (karta 18 bod 4 príde samostatne)
+  const qrModal = qr && <QrModal typ="identita" titul="Môj QR" odkaz={qrUrl("handle", "martin-k")} onClose={() => setQr(false)} toast={toast} />;
   const obal = (el: React.ReactNode) => obalSiroky(el, { wide, desktop, max: SIRKA.stlpec, maxDesktop: SIRKA.citanie });
 
   // DESKTOP — profesionálny 2-panel layout: bočná navigácia (identita + sekcie) + obsahový panel
-  if (desktop) return <ProfilDesktop screen={screen} subNazov={subNazov} setScreen={setScreen} onSub={sub} />;
+  if (desktop) return <>{qrModal}<ProfilDesktop screen={screen} subNazov={subNazov} setScreen={setScreen} onSub={sub} onQr={() => setQr(true)} /></>;
 
   // MOBIL — pôvodný tok (dlaždice → pod-obrazovky cez ScreenSwitch)
   return (
     <div style={{ minHeight: "100%" }}>
       <ScreenSwitch k={screen}>
-      {screen === "profil" && obal(<ProfilHlavny naWallet={() => setScreen("wallet")} naSub={sub} naNastavenia={() => setScreen("nastavenia")} naPriatelia={() => setScreen("priatelia")} naFiremny={() => setScreen("firemny")} />)}
+      {screen === "profil" && obal(<ProfilHlavny18 naWallet={() => setScreen("wallet")} naSub={sub} naNastavenia={() => setScreen("nastavenia")} naPriatelia={() => setScreen("priatelia")}
+        naUpravit={() => setScreen("nastavenia")} naQr={() => setQr(true)} />)}
       {screen === "wallet" && obal(<Penazenka toast={toast} onBack={() => setScreen("profil")} />)}
       {screen === "firemny" && obalSiroky(<MojDeedFiremny onBack={() => setScreen("profil")} toast={toast} />, { wide, desktop, max: SIRKA.stlpec })}
       {screen === "sub" && obal(<SubScreen nazov={subNazov} toast={toast} onBack={() => setScreen("profil")} />)}
@@ -63,6 +64,7 @@ export default function ModulProfil({ wide, walletReq = 0 }: ProfilProps) {
       {screen === "nastavenia" && obal(<NastaveniaScreen toast={toast} onBack={() => setScreen("profil")} onNotif={() => setScreen("notif")} />)}
       {screen === "notif" && obal(<NotifObrazovka onBack={() => setScreen("nastavenia")} />)}
       </ScreenSwitch>
+      {qrModal}
     </div>
   );
 }
@@ -71,9 +73,6 @@ export default function ModulProfil({ wide, walletReq = 0 }: ProfilProps) {
 const PROFIL_NAV: { key: string; nazov?: string; label: string; ikona: React.ReactNode }[] = [
   { key: "profil", label: "Prehľad", ikona: <IkonaOsoba size={18} /> },
   { key: "wallet", label: "Peňaženka", ikona: <IkonaPenazenka size={18} /> },
-  // DEV vchod (PATCH 2 §2): kópia vchodu na „Môj DEED firemný" — rovnaká obrazovka
-  // ako karta v Charite; finál = avatar/prepínač identít vpravo hore (s registráciou)
-  { key: "firemny", label: "Moje roly", ikona: <IkonaInstitucia size={18} /> },
   { key: "sub", nazov: "Karma a úrovne", label: "Karma a úrovne", ikona: <IkonaHviezda size={18} /> },
   { key: "sub", nazov: "Moje skutky", label: "Moje skutky", ikona: <IkonaFajka size={18} /> },
   { key: "sub", nazov: "Štatistiky a umiestnenie", label: "Štatistiky", ikona: <IkonaDoska size={18} /> },
@@ -81,7 +80,7 @@ const PROFIL_NAV: { key: string; nazov?: string; label: string; ikona: React.Rea
   { key: "nastavenia", label: "Nastavenia", ikona: <IkonaNastavenia size={18} /> },
 ];
 
-function ProfilDesktop({ screen, subNazov, setScreen, onSub }: { screen: string; subNazov: string | null; setScreen: (s: string) => void; onSub: (n: string) => void }) {
+function ProfilDesktop({ screen, subNazov, setScreen, onSub, onQr }: { screen: string; subNazov: string | null; setScreen: (s: string) => void; onSub: (n: string) => void; onQr: () => void }) {
   const naNastavenia = () => setScreen("nastavenia");
   const jeAktivny = (it: (typeof PROFIL_NAV)[number]) => screen === it.key && (it.key !== "sub" || subNazov === it.nazov);
 
@@ -94,8 +93,10 @@ function ProfilDesktop({ screen, subNazov, setScreen, onSub }: { screen: string;
   else if (screen === "notif") obsah = <NotifObrazovka desktop onBack={() => setScreen("nastavenia")} />;
   else obsah = (
     <div style={{ padding: `${SPACE.md}px ${SPACE.md}px ${SPACE.lg}px` }}>
-      <h3 style={{ fontSize: 18, margin: `0 0 ${SPACE.gutter}px` }}>Prehľad</h3>
-      <PrehladZaujmy />
+      <div className="deed-platba" style={{ display: "flex", flexDirection: "column", gap: 14, color: "var(--ink)" }}>
+        <StitKarta18 />
+        <MojeZaujmy />
+      </div>
     </div>
   );
 
@@ -106,7 +107,7 @@ function ProfilDesktop({ screen, subNazov, setScreen, onSub }: { screen: string;
       </div>
       <div style={{ display: "flex", gap: SPACE.lg, alignItems: "flex-start" }}>
         <aside style={{ width: 300, flex: "0 0 300px", minWidth: 0, position: "sticky", top: SPACE.md, display: "flex", flexDirection: "column", gap: SPACE.sm }}>
-          <IdentitaKarta naNastavenia={naNastavenia} />
+          <div className="deed-platba" style={{ color: "var(--ink)" }}><IdentitaKarta18 naUpravit={naNastavenia} naQr={onQr} /></div>
           <nav style={{ display: "flex", flexDirection: "column", gap: SPACE.xxs, background: C.surface, border: `1px solid ${C.line}`, borderRadius: RADIUS.md, padding: SPACE.xs }}>
             {PROFIL_NAV.map((it) => {
               const on = jeAktivny(it);
@@ -139,187 +140,6 @@ function NotifObrazovka({ onBack, desktop }: { onBack: () => void; desktop?: boo
       </div>
       <div style={{ padding: "0 16px", display: "flex", flexDirection: "column" }}><NotifNastavenia embedded /></div>
     </div>
-  );
-}
-
-// ===================== PROFIL =====================
-type ProfilHlavnyProps = {
-  naWallet: () => void;
-  naSub: (n: string) => void;
-  naNastavenia: () => void;
-  naPriatelia: () => void;
-  naFiremny: () => void;
-};
-
-function ProfilHlavny({ naWallet, naSub, naNastavenia, naPriatelia, naFiremny }: ProfilHlavnyProps) {
-  const otvorViac = useViac();
-  const dlazdice: [string, string, string, string, React.ReactNode, () => void][] = [
-    ["Peňaženka", "1 240 DEED", "color-mix(in srgb, var(--a-info) 14%, transparent)", "var(--a-info)", <IkonaPenazenka size={26} />, naWallet],
-    ["Karma a úrovne", "7 modulov", "rgba(169,139,240,.15)", "var(--a-plum)", <IkonaHviezda size={26} />, () => naSub("Karma a úrovne")],
-    ["Moje skutky", "48 skutkov", "rgba(61,214,140,.13)", "var(--a-green)", <IkonaFajka size={26} />, () => naSub("Moje skutky")],
-    ["Štatistiky", "umiestnenie", "rgba(61,214,206,.13)", "var(--a-teal)", <IkonaDoska size={24} />, () => naSub("Štatistiky a umiestnenie")],
-    ["Moje roly", "Charita · Tvorca · B2B", "rgba(231,199,102,.14)", "var(--a-gold)", <IkonaInstitucia size={26} />, naFiremny],
-    ["Priatelia", "nájdi známych", "rgba(231,199,102,.14)", "var(--a-gold)", <IkonaUsmev size={26} />, naPriatelia],
-    ["Nastavenia", "vzhľad, jazyk", "rgba(154,160,168,.16)", C.textTer, <IkonaNastavenia size={26} />, naNastavenia],
-  ];
-
-  return (
-    <div style={{ paddingBottom: SPACE.gutter }}>
-      <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm, padding: "16px 18px 10px" }}>
-        <span onClick={otvorViac} title="Menu modulov" style={{ display: "flex", alignItems: "center", color: C.textSec, cursor: "pointer", flex: "0 0 auto" }}><IkonaMenu size={22} color={C.textSec} /></span>
-        <span style={{ fontSize: 18, fontWeight: 800 }}>Môj profil</span>
-        <span onClick={naNastavenia} style={{ marginLeft: "auto", display: "flex", color: C.textSec, cursor: "pointer" }}><IkonaNastavenia size={19} color={C.textSec} /></span>
-      </div>
-      <div style={{ padding: `0 ${SPACE.md}px` }}>
-        <div style={{ marginTop: SPACE.sm }}><IdentitaKarta naNastavenia={naNastavenia} /></div>
-        <div style={{ marginTop: SPACE.md }}><PrehladZaujmy /></div>
-      </div>
-      <div style={{ padding: SPACE.md }}>
-        <GlassIcons columns={3} items={dlazdice.map((d) => ({ icon: d[4], color: d[3], label: d[0], sub: d[1], onClick: d[5] }))} />
-      </div>
-    </div>
-  );
-}
-
-// identita (avatar, úroveň, režim, štít) — zdieľaná mobilom (ProfilHlavny) aj desktopom (bočný panel)
-function IdentitaKarta({ naNastavenia }: { naNastavenia: () => void }) {
-  const ja = usePouzivatel();
-  const [qr, setQr] = useState(false);
-  const [fotka, setFotka] = useState(false); // sheet „Fotky profilu"
-  // titulná fotka osobného profilu (profilovka žije v usePouzivatel — ide aj do DB)
-  const [mojeFotky, zmenMojeFotky] = useFotkyEntity(klucEntity("ja", ja.ucetId || "demo"));
-  return (
-    <div>
-      <div style={{ background: C.surface, border: `1px solid ${C.line}`, borderRadius: RADIUS.md, overflow: "hidden" }}>
-        {/* titulná fotka — celý 16:9 pás (presne to, čo si orezal pri nahratí);
-            bez fotky ostáva nízky gradientový pásik */}
-        <div style={{ position: "relative", ...(mojeFotky.cover ? { aspectRatio: MEDIA_AR } : { height: 56 }), overflow: "hidden", background: "linear-gradient(135deg, color-mix(in srgb, var(--a-green) 22%, transparent), color-mix(in srgb, var(--a-info) 16%, transparent) 60%, color-mix(in srgb, var(--a-gold) 18%, transparent))" }}>
-          {mojeFotky.cover && <img src={mojeFotky.cover} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />}
-          <ZmenitPill onClick={() => setFotka(true)} />
-        </div>
-        <div style={{ padding: `0 ${SPACE.md}px ${SPACE.md}px` }}>
-          <div style={{ display: "flex", alignItems: "flex-end", gap: SPACE.gutter, marginTop: -24 }}>
-            {/* klik na avatar = nastaviť/zmeniť profilovú fotku (vzor IG/FB) */}
-            <span {...pressable(() => setFotka(true), "Zmeniť profilovú fotku")}
-              style={{ position: "relative", flex: "none", borderRadius: RADIUS.round, border: `3px solid var(--c-bg)`, background: "var(--c-bg)", cursor: "pointer" }}>
-              <AvatarUroven ini={ja.iniciala} foto={ja.foto} tint={ja.tint} tier={ja.tier} size={60} />
-              <KamerkaBadge size={24} strana="vlavo" />
-            </span>
-            <div style={{ minWidth: 0, paddingBottom: 2 }}>
-              <div style={{ fontSize: 17, fontWeight: 800, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ja.celeMeno}</div>
-              <div style={{ display: "flex", alignItems: "center", gap: SPACE.xs, marginTop: 3, flexWrap: "wrap" }}>
-                <span style={{ display: "inline-flex", alignItems: "center", gap: SPACE.xxs, background: "rgba(231,199,102,.14)", border: "1px solid rgba(200,162,58,.5)", color: "var(--a-gold)", fontSize: 10, fontWeight: 700, padding: `1px ${SPACE.xs}px`, borderRadius: RADIUS.xs }}>
-                  ★ {ja.demo ? "Gold" : String(ja.tier).replace(/\s*·\s*L\d+/, "")}{!ja.demo && ja.poradoveCislo ? ` · člen #${ja.poradoveCislo}` : ""}
-                </span>
-                <span style={{ display: "inline-flex", fontSize: 9.5, color: ja.rezim === "anonym" ? C.textTer : "var(--a-green)", background: ja.rezim === "anonym" ? "rgba(154,160,168,.14)" : "rgba(61,214,140,.13)", border: `1px solid ${ja.rezim === "anonym" ? "rgba(154,160,168,.4)" : "rgba(46,125,82,.45)"}`, padding: `1px ${SPACE.xs}px`, borderRadius: RADIUS.xs }}>{ja.rezim === "anonym" ? "anonym" : "verejný"}</span>
-              </div>
-            </div>
-          </div>
-          {/* akčný rad profilu (vzor IG: Upraviť · Zdieľať) */}
-          <div style={{ display: "flex", gap: SPACE.xs, marginTop: SPACE.sm }}>
-            <BtnAkcia variant="secondary" onClick={() => setFotka(true)}><IkonaFoto size={14} /> {ja.foto ? "Zmeniť fotku" : "Pridať fotku"}</BtnAkcia>
-            <BtnAkcia variant="secondary" onClick={naNastavenia}><IkonaCeruzka size={14} /> Upraviť</BtnAkcia>
-            <BtnAkcia variant="secondary" onClick={() => setQr(true)}><IkonaQr size={14} /> QR</BtnAkcia>
-          </div>
-        </div>
-      </div>
-
-      {/* ŠTÍT + text — NIKDY progress bar/percentá (level-up je prekvapenie; všetci začínajú Bronze) */}
-      <div style={{ marginTop: SPACE.gutter, display: "flex", alignItems: "center", gap: SPACE.sm }}>
-        <Stit level={ja.demo ? "Gold" : "Bronze"} size={86} detail subjekt={ja.meno} />
-        <div style={{ minWidth: 0, fontSize: 12, color: C.textTer, lineHeight: 1.45 }}>
-          <b style={{ color: "var(--a-gold)" }}>{ja.demo ? "Gold" : "Bronze"}</b> · {STIT_POPIS[ja.demo ? "Gold" : "Bronze"]}
-          {!ja.demo && <><br />{ja.mesto && ja.mesto !== "—" ? `${ja.mesto} · ` : ""}Karma rastie overenými skutkami.</>}
-        </div>
-      </div>
-
-      {qr && <QrModal typ="identita" titul="Môj QR" popis="Ukáž QR — druhá strana ťa pridá alebo ti pošle DEED" odkaz={qrUrl("handle", "martin-k")} onClose={() => setQr(false)} toast={toast} />}
-
-      {/* fotky profilu — profilová aj titulná zvlášť (galéria/fotoaparát/drag&drop) */}
-      {fotka && (
-        <FotoProfiluSheet
-          titul="Fotky môjho profilu"
-          foto={ja.foto} nahrada={ja.iniciala}
-          onZmena={(url) => { ja.nastavFoto?.(url); toast(url ? "Profilová fotka uložená" : "Profilová fotka odstránená"); }}
-          cover={mojeFotky.cover}
-          onCover={(url) => { zmenMojeFotky({ cover: url }); toast(url ? "Titulná fotka uložená" : "Titulná fotka odstránená"); }}
-          onClose={() => setFotka(false)} />
-      )}
-    </div>
-  );
-}
-
-// SVG ikony oblastí záujmov — minimalistické line ikony (žiadne emoji)
-const IKONA_OBLASTI: Record<string, React.ReactNode> = {
-  Priroda: <IkonaList size={17} />,
-  Komunita: <IkonaLudia size={17} />,
-  Zdravie: <IkonaSrdceLine size={17} />,
-  Ucenie: <IkonaKniha size={17} />,
-  Sport: <IkonaSport size={17} />,
-  Art: <IkonaPaleta size={17} />,
-  Pomoc: <IkonaZachrana size={17} />,
-};
-
-// prehľad (sledujem / podporujem / záujmy) + accordion záujmov — zdieľaný mobilom aj desktopom
-function PrehladZaujmy() {
-  const { maZaujem, toggleZaujem, sledovani, podpory, zaujmy } = usePersonalizacia();
-  const [otvorenaOblast, setOtvorenaOblast] = useState<string | null>(null);
-  return (
-    <>
-      <div style={{ display: "flex", gap: SPACE.xs }}>
-        {[[String(sledovani.length), "sledujem"], [String(podpory.length), "podporujem"], [String(zaujmy.length), "záujmy"]].map((x, i) => (
-          <div key={i} style={{ flex: 1, textAlign: "center", background: C.surface, border: `1px solid ${C.line}`, borderRadius: RADIUS.sm, padding: `${SPACE.sm}px ${SPACE.xxs}px` }}>
-            <div style={{ fontSize: 17, fontWeight: 800 }}>{x[0]}</div>
-            <div style={{ fontSize: 10, color: C.textTer, marginTop: SPACE.xxs }}>{x[1]}</div>
-          </div>
-        ))}
-      </div>
-
-      {/* TVOJE ZÁUJMY — accordion: kategória → detailné pod-položky (číselník z registrácie §6.2). */}
-      <div style={{ marginTop: SPACE.md }}>
-        <div style={{ fontSize: 10.5, letterSpacing: ".5px", color: C.textTer, fontWeight: 700, margin: "0 0 9px", textAlign: "center" }}>BODY ZÁUJMU — POZVÁNKY Z OKOLIA</div>
-        <div style={{ display: "flex", flexDirection: "column", gap: SPACE.xs }}>
-          {ZAUJMY_KATALOG.map((z) => {
-            const otvor = otvorenaOblast === z.oblast;
-            const vybrane = zaujmy.filter((x) => x.oblast === z.oblast);
-            const celaOblast = vybrane.some((x) => x.pod_polozka === "*");
-            const pocetPod = vybrane.filter((x) => x.pod_polozka !== "*").length;
-            const aktiv = vybrane.length > 0;
-            return (
-              <div key={z.oblast} style={{ border: `1px solid ${aktiv ? "color-mix(in srgb, var(--a-info) 45%, transparent)" : C.line}`, borderRadius: RADIUS.md, overflow: "hidden", background: aktiv ? "color-mix(in srgb, var(--a-info) 7%, transparent)" : C.surface2, transition: "background .2s ease, border-color .2s ease" }}>
-                <div {...pressable(() => setOtvorenaOblast(otvor ? null : z.oblast), `${z.label} — detail`)} aria-expanded={otvor} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, padding: `${SPACE.sm}px ${SPACE.gutter}px`, cursor: "pointer" }}>
-                  <span style={{ width: 30, height: 30, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: RADIUS.xs, background: aktiv ? "color-mix(in srgb, var(--a-info) 14%, transparent)" : "rgba(var(--glass-rgb),.06)", color: aktiv ? "var(--a-info)" : C.textSec }}>{IKONA_OBLASTI[z.oblast] ?? <span style={{ fontSize: 15 }}>{z.emoji}</span>}</span>
-                  <span style={{ fontSize: 14, fontWeight: 700, color: aktiv ? "var(--a-info)" : C.text }}>{z.label}</span>
-                  {(celaOblast || pocetPod > 0) && (
-                    <span style={{ fontSize: 10.5, fontWeight: 800, color: "var(--a-info)", background: "color-mix(in srgb, var(--a-info) 15%, transparent)", borderRadius: RADIUS.pill, padding: `1px ${SPACE.xs}px` }}>{celaOblast ? "✓ celé" : `${pocetPod}`}</span>
-                  )}
-                  <span style={{ marginLeft: "auto", display: "flex", transform: otvor ? "rotate(180deg)" : "none", transition: "transform .2s ease" }}><IkonaSipDole size={16} color={C.textTer} /></span>
-                </div>
-                {otvor && (
-                  <div style={{ padding: `0 ${SPACE.gutter}px ${SPACE.sm}px`, display: "flex", flexWrap: "wrap", gap: SPACE.xxs }}>
-                    <PodChip label="Celá oblasť" on={celaOblast} onClick={() => toggleZaujem(z.oblast)} />
-                    {z.podpolozky.map((p) => (
-                      <PodChip key={p} label={p} on={maZaujem(z.oblast, p)} onClick={() => toggleZaujem(z.oblast, p)} />
-                    ))}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-        <div style={{ fontSize: 11, color: C.textTer, lineHeight: 1.5, marginTop: SPACE.sm, textAlign: "center" }}>Nevyberáš si, čo budeš pozerať — vyberáš si, kam ťa smú pozvať. Témy ladia nástenku a oznamy; feed skutkov ich nečíta.</div>
-      </div>
-    </>
-  );
-}
-
-// pod-chip v dropdowne záujmov — jedna pod-položka (výber = ladí feed + „Môj DEED")
-function PodChip({ label, on, onClick }: { label: string; on: boolean; onClick: () => void }) {
-  return (
-    <span {...pressable(onClick, label)} aria-pressed={on} style={{
-      padding: `${SPACE.xxs}px ${SPACE.sm}px`, borderRadius: RADIUS.pill, fontSize: 12, fontWeight: on ? 700 : 500, cursor: "pointer", whiteSpace: "nowrap",
-      background: on ? "color-mix(in srgb, var(--a-info) 16%, transparent)" : C.surface, border: `1px solid ${on ? "color-mix(in srgb, var(--a-info) 50%, transparent)" : C.line}`, color: on ? "var(--a-info)" : C.textSec,
-    }}>{on ? "✓ " : ""}{label}</span>
   );
 }
 

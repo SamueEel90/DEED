@@ -37,10 +37,13 @@ export const MOJE_SKUTKY: MojSkutokTuple[] = [
 /** Podstránka „Karma a úrovne" — súhrnné riadky; modulové levely žijú
  *  v MODULOVA_KARMA ako štíty (DEED_Stity §2), nie textové riadky. */
 export const KARMA: MojSkutokTuple[] = [
-  ["Celková karma", "Gold · L7", "#E7C766"],
-  ["Generosity Score (reťaz dobra)", "+142 ♻", "#2BD49B"],
-  ["Séria dní v rade", "21 🔥", "#E7C766"],
+  ["Celková karma", "2 480", "var(--a-gold)"],
+  ["Séria dní v rade", "21 dní", "var(--a-gold)"],
 ];
+
+/** karma vlastníka (vidí ju len on) a počet jeho skutkov — mock do Supabase */
+export const MOJA_KARMA = 2480;
+export const MOJE_SKUTKY_POCET = 48;
 
 /** Modulová karma (DEED_Stity §2–§4) — hladký štít + gravírovaný symbol
  *  modulu; titul je TEXT pri štíte („Hrdina srdca · Charita"), nie grafika.
