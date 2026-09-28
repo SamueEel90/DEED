@@ -31,7 +31,11 @@ const bodka = (on: boolean) => (
   <span style={{ flex: "none", width: 22, height: 22, borderRadius: "50%", border: `1.5px solid ${on ? "var(--green)" : "var(--chkBd)"}`, background: on ? "var(--green)" : "transparent", color: "#fff", fontSize: 12, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>{on ? "✓" : ""}</span>);
 const pole = { height: 50, padding: "0 14px", borderRadius: 13, border: "1px solid var(--fieldBd)", background: "var(--field)", fontSize: 15.5, color: "var(--ink)", outline: "none", fontFamily: "inherit", minWidth: 0 } as const;
 
-export function PravidelnaHarok({ refId, nazov, registrovany, onClose }: { refId: string; nazov: string; registrovany: boolean; onClose: () => void }) {
+export function PravidelnaHarok({ refId, nazov, registrovany, onClose, zbierka = true }: {
+  refId: string; nazov: string; registrovany: boolean; onClose: () => void;
+  /** false = farnosť / organizácia (nie konkrétna zbierka) — bez riadku o dokladoch */
+  zbierka?: boolean;
+}) {
   const ja = usePouzivatel();
   const rec = useRecurringCreate();
   const [dnes] = useState(() => new Date());
@@ -45,6 +49,10 @@ export function PravidelnaHarok({ refId, nazov, registrovany, onClose }: { refId
   const [tip, setTip] = useState(false);
   const [napoveda, setNapoveda] = useState(false);
   const [hlaska, setHlaska] = useState("");
+  // neregistrovaný vypĺňa platobné údaje a e-mail — bez nich sa pravidelný dar nenastaví
+  const [karta, setKarta] = useState(""), [exp, setExp] = useState(""), [cvc, setCvc] = useState("");
+  const [iban, setIban] = useState(""), [majitel, setMajitel] = useState(""), [email, setEmail] = useState("");
+  const [ukazChyby, setUkazChyby] = useState(false);
   const podrz = !potvrditTuknutim();
 
   const eurc = registrovany && mena === "EURC";
@@ -52,6 +60,15 @@ export function PravidelnaHarok({ refId, nazov, registrovany, onClose }: { refId
   const mala = eur > 0 && eur < KARTA_OD_EUR;
   const sp: Sposob | "eurc" = eurc ? "eurc" : mala ? "sepa" : sposob;
   const poplatok = sp === "karta" ? poplatokKarty(eur) : 0;
+  const zle = {
+    karta: sp === "karta" && karta.replace(/\D/g, "").length < 15,
+    exp: sp === "karta" && !(/^(0[1-9]|1[0-2]) \/ \d{2}$/.test(exp)),
+    cvc: sp === "karta" && cvc.length < 3,
+    iban: sp === "sepa" && !/^[A-Z]{2}\d{2}[A-Z0-9]{11,30}$/.test(iban.replace(/\s/g, "")),
+    majitel: sp === "sepa" && majitel.trim().length < 3,
+    email: !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.trim()),
+  };
+  const chybaUdaje = !registrovany && !eurc && Object.values(zle).some(Boolean);
   const tipV = Math.max(0.5, Math.round(eur * 0.1 * 2) / 2);
   const spolu = eur + poplatok + (tip && !eurc ? tipV : 0);
   const jed = eurc ? " EURC" : " €";
@@ -67,6 +84,7 @@ export function PravidelnaHarok({ refId, nazov, registrovany, onClose }: { refId
   const labelSposob = { karta: registrovany ? "Karta Visa •••• 4242" : "Platobná karta", sepa: registrovany ? "SEPA inkaso · SK31 •••• 4421" : "SEPA inkaso", eurc: "Peňaženka EURC" }[sp];
 
   const potvrd = async () => {
+    if (chybaUdaje) { setKrok("sposob"); setUkazChyby(true); return; }
     setKrok("spracovanie");
     const mn = eurc ? "EURC" : "EUR";
     if (ja.ucetId && !ja.demo) {
@@ -77,17 +95,19 @@ export function PravidelnaHarok({ refId, nazov, registrovany, onClose }: { refId
     // prvá platba odchádza hneď — je to dar ako každý iný (firma ho nedorovnáva)
     pridajDar({ refId, suma: eur, kanal: eurc ? "deed" : sp === "sepa" ? "sepa" : "psp", registrovany, volba: registrovany ? volba : undefined });
     const n = predtym + 1;
+    const co = zbierka ? "túto zbierku" : nazov, Co = zbierka ? "Túto zbierku" : nazov;
     setHlaska(n === 1
-      ? (registrovany ? "Si prvý, kto túto zbierku podporuje pravidelne." : "Toto je prvý pravidelný dar pre túto zbierku.")
-      : registrovany ? `S tebou túto zbierku pravidelne podporuje ${n} ${n <= 4 ? "ľudia" : "ľudí"}.` : `Túto zbierku teraz pravidelne podporuje ${n} ${n <= 4 ? "ľudia" : "ľudí"}.`);
+      ? (registrovany ? `Si prvý, kto ${co} podporuje pravidelne.` : `Toto je prvý pravidelný dar pre ${co}.`)
+      : registrovany ? `S tebou ${co} pravidelne podporuje ${n} ${n <= 4 ? "ľudia" : "ľudí"}.` : `${Co} teraz pravidelne podporuje ${n} ${n <= 4 ? "ľudia" : "ľudí"}.`);
     window.setTimeout(() => { setKrok("hotovo"); try { navigator.vibrate?.([10, 40, 16]); } catch { /* bez vibrácie */ } }, 1800);
   };
   const dalej = () => {
     if (krok === "nastavenie") { if (eur > 0) setKrok(eurc ? "zhrnutie" : "sposob"); }
-    else if (krok === "sposob") setKrok("zhrnutie");
+    else if (krok === "sposob") { if (chybaUdaje) { setUkazChyby(true); return; } setKrok("zhrnutie"); }
   };
   const spat = () => { if (ki > 0) { setKrok(kroky[ki - 1]); setNapoveda(false); } };
 
+  const ram = (zly: boolean) => (ukazChyby && zly ? { ...pole, border: "1.5px solid #A34A2A" } : pole);
   let obsah: ReactNode;
   if (krok === "nastavenie") {
     obsah = (
@@ -144,13 +164,21 @@ export function PravidelnaHarok({ refId, nazov, registrovany, onClose }: { refId
         {!registrovany && <>
           {nadpis("TVOJE ÚDAJE")}
           {sp === "karta" ? <>
-            <input placeholder="Číslo karty" inputMode="numeric" autoComplete="cc-number" style={pole} />
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}><input placeholder="MM / RR" autoComplete="cc-exp" style={pole} /><input placeholder="CVC" autoComplete="cc-csc" style={pole} /></div>
+            <input value={karta} onChange={(e) => setKarta(e.target.value.replace(/\D/g, "").slice(0, 19).replace(/(\d{4})(?=\d)/g, "$1 "))}
+              placeholder="Číslo karty" inputMode="numeric" autoComplete="cc-number" style={ram(zle.karta)} />
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+              <input value={exp} onChange={(e) => { const d = e.target.value.replace(/\D/g, "").slice(0, 4); setExp(d.length > 2 ? `${d.slice(0, 2)} / ${d.slice(2)}` : d); }}
+                placeholder="MM / RR" inputMode="numeric" autoComplete="cc-exp" style={ram(zle.exp)} />
+              <input value={cvc} onChange={(e) => setCvc(e.target.value.replace(/\D/g, "").slice(0, 4))} placeholder="CVC" inputMode="numeric" autoComplete="cc-csc" style={ram(zle.cvc)} />
+            </div>
           </> : <>
-            <input placeholder="IBAN" style={{ ...pole, textTransform: "uppercase" }} />
-            <input placeholder="Meno majiteľa účtu" autoComplete="name" style={pole} />
+            <input value={iban} onChange={(e) => setIban(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 34).replace(/(.{4})(?=.)/g, "$1 "))}
+              placeholder="IBAN" autoComplete="off" style={ram(zle.iban)} />
+            <input value={majitel} onChange={(e) => setMajitel(e.target.value)} placeholder="Meno majiteľa účtu" autoComplete="name" style={ram(zle.majitel)} />
           </>}
-          <input placeholder="E-mail" inputMode="email" autoComplete="email" style={pole} />
+          <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="E-mail" inputMode="email" autoComplete="email" style={ram(zle.email)} />
+          {ukazChyby && chybaUdaje && <div style={{ fontSize: 13, fontWeight: 600, color: "#A34A2A" }}>
+            {sp === "karta" ? "Doplň údaje karty a e-mail. Bez nich pravidelný dar nenastavíme." : "Doplň IBAN, meno majiteľa účtu a e-mail. Bez nich pravidelný dar nenastavíme."}</div>}
           <div style={{ fontSize: 12.5, lineHeight: 1.45, color: "var(--ink3)", padding: "0 4px" }}>Na e-mail ti pošleme potvrdenie, odkaz na zrušenie a správu, ak by platba neprešla.</div>
         </>}
       </>
@@ -158,7 +186,7 @@ export function PravidelnaHarok({ refId, nazov, registrovany, onClose }: { refId
   } else if (krok === "zhrnutie") {
     const riadky: [string, string][] = [
       ["Suma", f(eur, true)], ["Ako často", SLOVO[perioda]], ["Prvá platba", `dnes, ${fD(dnes, rok)}`], ["Ďalšia platba", fD(dalsiaD, rok)],
-      ["Podporuješ", "túto zbierku"], ["Doklady o použití", "budú doložené"], ["Platba", labelSposob],
+      ["Podporuješ", zbierka ? "túto zbierku" : nazov], ...(zbierka ? [["Doklady o použití", "budú doložené"] as [string, string]] : []), ["Platba", labelSposob],
       ...(poplatok ? [["Poplatok za kartu", f(poplatok, true)] as [string, string]] : []),
     ];
     obsah = (
@@ -220,13 +248,13 @@ export function PravidelnaHarok({ refId, nazov, registrovany, onClose }: { refId
   }
 
   const tlacidlo = (label: string, onClick: () => void, druhe?: boolean, off?: boolean) => (
-    <button type="button" onClick={onClick} disabled={off}
-      style={{ flex: druhe ? 1 : 2, height: 54, borderRadius: 16, border: "none", background: druhe ? "var(--btn)" : "linear-gradient(90deg,#4B7A35,#8DB866)", color: druhe ? "var(--ink)" : "#fff", fontSize: druhe ? 16 : 15.5, fontWeight: druhe ? 700 : 800, cursor: off ? "not-allowed" : "pointer", opacity: off ? .45 : 1, fontFamily: "inherit" }}>{label}</button>);
+    <button type="button" onClick={onClick}
+      style={{ flex: druhe ? 1 : 2, height: 54, borderRadius: 16, border: "none", background: druhe ? "var(--btn)" : "linear-gradient(90deg,#4B7A35,#8DB866)", color: druhe ? "var(--ink)" : "#fff", fontSize: druhe ? 16 : 15.5, fontWeight: druhe ? 700 : 800, cursor: "pointer", opacity: off ? .45 : 1, fontFamily: "inherit" }}>{label}</button>);
   const potvrdLabel = `${podrz ? "Podrž a potvrď" : "Potvrdiť"} · ${f(spolu, true)} ${SLOVO[perioda]}`;
   const paticka = krok === "spracovanie" ? null : (
     <>
       {(krok === "sposob" || krok === "zhrnutie") && tlacidlo("Späť", spat, true)}
-      {krok === "nastavenie" || krok === "sposob" ? tlacidlo("Pokračovať", dalej, false, eur <= 0)
+      {krok === "nastavenie" || krok === "sposob" ? tlacidlo("Pokračovať", dalej, false, eur <= 0 || (krok === "sposob" && chybaUdaje))
         : krok === "zhrnutie" ? <div style={{ flex: 2, display: "flex", flexDirection: "column" }}>{podrz ? <PodrzTlacidlo label={potvrdLabel} onConfirm={potvrd} onHint={() => setNapoveda(true)} /> : tlacidlo(potvrdLabel, potvrd)}</div>
         : tlacidlo("Hotovo", onClose)}
     </>

@@ -16,7 +16,6 @@ export * from "@/components/splitqr";
 // až pri otvorení skenera (drží initial bundle malý, viď ROADMAP code-splitting).
 export * from "@/components/platba";
 export * from "@/components/platobnymodul";
-export * from "@/components/recurring";
 export * from "@/components/badge";
 export * from "@/components/oblubene";
 export * from "@/components/hladanie";

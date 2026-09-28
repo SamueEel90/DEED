@@ -10,7 +10,8 @@ import { usePouzivatel } from "@/lib/pouzivatel";
 import { klucEntity, useFotkyEntity } from "@/lib/fotoentity";
 import { NahlasitSheet } from "@/components/nahlasit";
 import { qrUrl } from "@/lib/qr";
-import { RecurringSheet } from "@/components/recurring";
+import { PravidelnaHarok } from "@/features/zbierka/PravidelnaHarok";
+import { jeNeregistrovany } from "@/lib/devDarca";
 import { SADY_EUR, SADY_EURC } from "@/lib/sadyDarov";
 import { nastavCiste, sucetDarov, darcoviaPre, useZmenyDarov, pridajDar, type VolbaDaru } from "@/lib/darcovia";
 import { PoDare, type PoDareData } from "@/components/podare";
@@ -196,16 +197,10 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
   const [, setProfilZiad] = useState<string | null>(null);
   const [zbalenaCentralna, setZbalenaCentralna] = useState(false);
   const [qrZbierka, setQrZbierka] = useState<{ id: string; nazov: string } | null>(null);
-  // pravidelná podpora = funkcia zbierky (charita od programu ZBIERKA/T1), len pre registrovaných darcov
+  // pravidelná podpora = funkcia zbierky (charita od programu ZBIERKA/T1); môže aj neregistrovaný (s e-mailom)
   const [pravidelna, setPravidelna] = useState<{ id: string | null; nazov: string; sektor?: string } | null>(null);
   const maPravidelnu = pozicia === "charita" && tier >= 1;
   const maCentralnu = pozicia === "charita" && tier >= 1 && nacitajCentralnu("charita");
-  /** kam idú peniaze podľa zvoleného rozsahu pravidelnej podpory */
-  const cielPravidelnej = (rozsah: string, segment: string | null): string => {
-    if (rozsah === "segment" && segment) return sektoroveZbierky.find((z) => z.nazov === segment)?.id ?? CENTRALNA_ID;
-    if (rozsah === "charita") return CENTRALNA_ID;
-    return pravidelna?.id ?? CENTRALNA_ID;
-  };
   const [zvoncek, setZvoncek] = useState(false);
   const [qr, setQr] = useState(false);
   const [menu, setMenu] = useState(false);
@@ -283,7 +278,7 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
           onDarKrypto={(v, vol) => daruj(id, v, "deed", vol, s.nazov)}
           onKanal={(k: string) => { setPlatbaRef({ id, komu: s.nazov }); setPlatba(k as Kanal); }}
           oblubene={{ refId: id, typ: "zbierka", modul: "charity", nazov: profil.nazov, lok: s.lok }} toast={toast}
-          opakovana={maPravidelnu ? { popis: "Mesačne · len pre registrovaných · kedykoľvek zrušíš", onClick: () => setPravidelna({ id: id === CENTRALNA_ID ? "z-centralna" : id, nazov: profil.nazov, sektor: sektoroveZbierky.find((z) => z.id === id)?.nazov }) } : undefined}
+          opakovana={maPravidelnu ? { popis: "Mesačne · kartou alebo prevodom · kedykoľvek zrušíš", onClick: () => setPravidelna({ id: id === CENTRALNA_ID ? "z-centralna" : id, nazov: profil.nazov, sektor: sektoroveZbierky.find((z) => z.id === id)?.nazov }) } : undefined}
           dorovnanie={dorovnanie ? undefined : { onClick: () => setNoveDorovnanie({ id, nazov: s.nazov }) }}
           bonus={dorovnanie ? { firma: dorovnanie.firma, kDaru: (sm: number) => dorovnanieKDaru(dorovnanie, sm) } : undefined}
           qr={{ label: "QR tejto zbierky", popis: "Sken → dar za 2 kliky · zdieľanie", onClick: () => (id === CENTRALNA_ID ? setQr(true) : setQrZbierka({ id, nazov: profil.nazov })) }} />
@@ -466,7 +461,7 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
                     onDarKrypto={(v, vol) => daruj(z.id, v, "deed", vol, z.komu)}
                     onKanal={(k: string) => { setPlatbaRef({ id: z.id, komu: z.komu }); setPlatba(k as Kanal); }}
                     oblubene={{ refId: z.id, typ: "zbierka", modul: "charity", nazov: z.nazov, lok: z.lok }} toast={toast}
-                    opakovana={maPravidelnu ? { popis: "Mesačne · len pre registrovaných · kedykoľvek zrušíš", onClick: () => setPravidelna({ id: z.id, nazov: z.nazov }) } : undefined}
+                    opakovana={maPravidelnu ? { popis: "Mesačne · kartou alebo prevodom · kedykoľvek zrušíš", onClick: () => setPravidelna({ id: z.id, nazov: z.nazov }) } : undefined}
                     dorovnanie={beziaceDorovnanieNaCiel(z.id) ? undefined : { onClick: () => setNoveDorovnanie({ id: z.id, nazov: z.nazov }) }}
                     bonus={(() => { const dv = beziaceDorovnanieNaCiel(z.id); return dv ? { firma: dv.firma, kDaru: (sm: number) => dorovnanieKDaru(dv, sm) } : undefined; })()}
                     qr={{ label: "QR tejto zbierky", popis: "Skenovať · kopírovať · zdieľať", onClick: () => setQrZbierka({ id: z.id, nazov: z.nazov }) }} />
@@ -764,38 +759,8 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
         bonus={(() => { const dv = platbaRef ? beziaceDorovnanieNaCiel(platbaRef.id) : null; return dv ? { firma: dv.firma, kDaru: (sm: number) => dorovnanieKDaru(dv, sm) } : undefined; })()}
         onClose={() => { setPlatba(null); setPlatbaRef(null); }}
         onDone={(d: number, v?: VolbaDaru) => daruj(platbaRef?.id ?? "z-centralna", platba === "DEED" ? d * 0.01 : d, platba === "EUR" ? "psp" : "deed", v, platbaRef?.komu ?? s.nazov)} />}
-      {pravidelna && <RecurringSheet nazov={pravidelna.nazov}
-        // centrálna zbierka = celá organizácia → nedá sa doložiť per dar, preto bez voľby „Táto zbierka"
-        caseId={pravidelna.id === "z-centralna" ? null : pravidelna.id}
-        // pravidelná podpora je od T1 celá: zbierka → táto zbierka / segment / celá charita,
-        // centrálna zbierka → segment / celá organizácia
-        // rozsah je daný tým, odkiaľ darca klikol: centrálna → celá organizácia,
-        // sektorová → ten sektor, bežná zbierka → táto zbierka + centrálna
-        sektor={pravidelna.sektor}
-        // sektor ako voľba má zmysel LEN keď má vlastnú zbierku a účet (AKCIA) —
-        // inak by dary padli na hlavný účet a nedalo by sa k nim nič doložiť
-        segmenty={pravidelna.sektor || !sektoroveZbierky.length ? null : sektoroveZbierky.map((z) => z.nazov)}
-        // „celá organizácia" = centrálna zbierka → ponúkame ju, len keď charita spustenú má
-        bezCelej={!!pravidelna.sektor || !maCentralnu}
-        // prvá platba záväzku sa objaví v zozname darcov cieľovej zbierky
-        onDar={(su, _me, vo, rozsah, segment) => daruj(cielPravidelnej(rozsah, segment), su, "sepa", vo, s.nazov)}
-        // po poďakovaní vedieme darcu tam, kam peniaze idú — centrálna alebo zbierka sektora
-        onCiel={(rozsah, segment) => {
-          const ciel = cielPravidelnej(rozsah, segment);
-          if (rozsah === "request") return undefined;   // darca už na tej zbierke je
-          const sekt = sektoroveZbierky.find((z) => z.id === ciel);
-          if (rozsah === "charita" && !maCentralnu) return undefined;
-          return {
-            label: sekt ? "Zobraziť zbierku sektora" : "Zobraziť centrálnu zbierku",
-            onClick: () => {
-              // na tablete/PC sa detail otvorí v okne — scrollovať pod ním by okno odsunulo mimo obrazovku
-              const skoc = (id: string) => { if (!siroke) setTimeout(() => document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" }), 140); };
-              if (sekt) { setTab("sektory"); setRozbalena(sekt.id); skoc("deed-sektor-" + sekt.id); return; }
-              setZbalenaCentralna(false); setRozbalena(CENTRALNA_ID); setTab("vsetko"); skoc("deed-centralna");
-            },
-          };
-        }}
-        onClose={() => setPravidelna(null)} toast={toast} />}
+      {pravidelna && <PravidelnaHarok refId={pravidelna.id ?? CENTRALNA_ID} nazov={pravidelna.nazov} registrovany={!jeNeregistrovany()}
+        zbierka={pravidelna.id !== CENTRALNA_ID && pravidelna.id !== "z-centralna"} onClose={() => setPravidelna(null)} />}
       {noveDorovnanie && (
         <NoveDorovnanieSheet entita={pozicia} cielId={noveDorovnanie.id} cielNazov={noveDorovnanie.nazov} toast={toast} onClose={() => setNoveDorovnanie(null)} />
       )}

@@ -1,6 +1,6 @@
 import { useState, memo } from "react";
 import { SIRKA, C, SPACE, RADIUS } from "@/theme";
-import { ModulHlavicka, RecurringSheet, HladanieModal, OblubeneHviezda, toast, useLayout, useScrollPamat, useStrankaAkcie, useTvorbaGate, Ticker, StatRiadok, FiltreStat, FeedStlpce, FeedGrid, FeedCard, KartaBadge, obalSiroky, OkruhVyber, SegTabs, tint, Lupa, IkonaPlay, IkonaDoska, IkonaKriz, IkonaInstitucia, Overene, FeedSkeleton, SkeletonRiadky, EmptyState, ErrorState, ScreenSwitch, SwipeBack } from "@/shared";
+import { ModulHlavicka, HladanieModal, OblubeneHviezda, toast, useLayout, useScrollPamat, useStrankaAkcie, useTvorbaGate, Ticker, StatRiadok, FiltreStat, FeedStlpce, FeedGrid, FeedCard, KartaBadge, obalSiroky, OkruhVyber, SegTabs, tint, Lupa, IkonaPlay, IkonaDoska, IkonaKriz, IkonaInstitucia, Overene, FeedSkeleton, SkeletonRiadky, EmptyState, ErrorState, ScreenSwitch, SwipeBack } from "@/shared";
 import { pripravFeed, FEED_CFG } from "@/lib/feed";
 import { Zvoncek } from "@/features/notifikacie/Notifikacie";
 import type { CharitaFeedItem, CharitaLevel, Subjekt, Oblubeny } from "@/types";
@@ -124,7 +124,7 @@ type Screen = "feed" | "cudzi" | "board" | "event" | "firemny";
 type KrokCharita =
   | { typ: "zbierka"; z: ZbierkaDetail; org?: string; zoStrankyOrg?: boolean }
   | { typ: "org"; subjekt: Subjekt };
-type Sheet = "add" | "reg" | "dir" | null;
+type Sheet = "add" | "dir" | null;
 
 export default function ModulCharita({ wide, otvorModul }: ModulCharitaProps) {
   const { desktop } = useLayout();
@@ -185,7 +185,6 @@ export default function ModulCharita({ wide, otvorModul }: ModulCharitaProps) {
       </ScreenSwitch>
 
       {sheet === "add" && <SheetPridat toast={toast} otvorModul={otvorModul} onClose={() => setSheet(null)} />}
-      {sheet === "reg" && <RecurringSheet onClose={() => setSheet(null)} toast={toast} />}
       {sheet === "dir" && <SheetAdresar toast={toast} onClose={() => setSheet(null)} onSubjekt={(s) => { setSheet(null); setAktSubjekt(s); setScreen("cudzi"); }} />}
 
       {hladaj && (
