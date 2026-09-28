@@ -26,7 +26,7 @@ import { Podstranka } from "./Podstranka";
 import { UpravProfilSheet } from "./UpravProfil";
 import { useRegistraciaCharity, ulozDoRegistracie } from "./registracia";
 import { OnasKratky } from "./OnasKratky";
-import { jeNeregistrovany, nastavNeregistrovany, darujemAkoFirma, nastavDarcuFirmu } from "@/lib/devDarca";
+import { jeNeregistrovany, nastavNeregistrovany, darujemAkoFirma, nastavDarcuFirmu, novyDetailZbierky, nastavNovyDetailZbierky } from "@/lib/devDarca";
 import { CentralnaZbierkaSheet } from "./CentralnaZbierka";
 import { SpravaZbierkySheet } from "./SpravaZbierky";
 import { VideoSheet, DarcoviaSheet, QrNastrojeSheet, ViditelnostSheet } from "./NastrojeCharity";
@@ -404,6 +404,7 @@ function DevPanel({ pozicia, tier, drzitel, onPozicia, onTier, onDrzitel }: {
 }) {
   const [open, setOpen] = useState(true);
   const [neregistrovany, setNeregistrovany] = useState(jeNeregistrovany);
+  const [novyDetail, setNovyDetail] = useState(novyDetailZbierky);
   const [akoFirma, setAkoFirma] = useState(darujemAkoFirma);
   const seg = (on: boolean, farba: string): React.CSSProperties => ({
     flex: 1, height: 32, display: "flex", alignItems: "center", justifyContent: "center", gap: 5,
@@ -457,6 +458,14 @@ function DevPanel({ pozicia, tier, drzitel, onPozicia, onTier, onDrzitel }: {
               </div>
             </div>
             <Switch on={akoFirma} onChange={() => { nastavDarcuFirmu(!akoFirma); setAkoFirma(!akoFirma); }} ariaLabel="Darujem ako firma" />
+          </div>
+          {/* prepis detailu zbierky podľa dizajnéra — klik na zbierku na verejnom profile otvorí nový modul */}
+          <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm, padding: `${SPACE.xxs}px ${SPACE.xxs}px` }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 12, fontWeight: 700 }}>Detail zbierky: {novyDetail ? "nový" : "starý"}</div>
+              <div style={{ fontSize: 10.5, color: C.textTer }}>{novyDetail ? "Klik na zbierku na verejnom profile otvorí nový modul" : "Zbierka sa rozbalí po starom"}</div>
+            </div>
+            <Switch on={novyDetail} onChange={() => { nastavNovyDetailZbierky(!novyDetail); setNovyDetail(!novyDetail); }} ariaLabel="Nový detail zbierky" />
           </div>
         </div>
       )}

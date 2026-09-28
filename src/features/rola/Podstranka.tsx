@@ -37,6 +37,8 @@ import { nacitajViditelnost, nacitajTerminal, nacitajKryptoOrg, nacitajCentralnu
 import { OnasKratky } from "./OnasKratky";
 import { KontaktBlok, nacitajKontakt } from "./kontakt";
 import { verejneTaby, cislaSubjektu } from "./obsah";
+import { ZbierkaModul } from "@/features/zbierka/ZbierkaModul";
+import { novyDetailZbierky } from "@/lib/devDarca";
 
 /*
   ============================================================
@@ -174,6 +176,7 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
   const [sledujem, setSledujem] = useState(false);
   const [onas] = useState(() => nacitajOnas(pozicia) ?? s.onas); // text zo správy (editor), inak pôvodný
   const [rozbalena, setRozbalena] = useState<string | null>(null);
+  const [novyModul, setNovyModul] = useState<{ id: string; profil: ProfilZbierky } | null>(null); // DEV: nový detail zbierky
   const [otvorenyOznam, setOtvorenyOznam] = useState<string | null>(null);   // klik na oznam otvorí len ten jeden
   useZmenyDorovnani();                                                        // bežec sa má prekresliť, keď firma dorovná
   const [noveDorovnanie, setNoveDorovnanie] = useState<{ id: string; nazov: string } | null>(null);
@@ -281,7 +284,7 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
   const kartaVlastnej = (id: string, profil: ProfilZbierky, otvorena: boolean) => {
     const dary = sucetDarov(id);
     return (
-      <div {...pressable(() => setRozbalena(otvorena ? null : id), profil.nazov)} style={{ cursor: "pointer" }}>
+      <div {...pressable(() => (novyDetailZbierky() ? setNovyModul({ id, profil }) : setRozbalena(otvorena ? null : id)), profil.nazov)} style={{ cursor: "pointer" }}>
         <NahladKarty profil={profil} logo={logoOrg} vyzbierane={dary.suma} dolozene={0} ludia={dary.pocet}
           dobrovolne sipka={otvorena ? "otvorena" : "zavreta"} />
       </div>
@@ -736,6 +739,8 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
     const rolaFirmy = (Object.keys(SUBJEKTY) as Pozicia[]).find((r) => rovnakaFirma(SUBJEKTY[r].nazov, firmaProfil));
     if (rolaFirmy) return <Podstranka pozicia={rolaFirmy} tier={3} logo={null} toast={toast} onBack={() => setFirmaProfil(null)} />;
   }
+
+  if (novyModul) return <ZbierkaModul zbierka={{ id: novyModul.id, nazov: novyModul.profil.nazov, popis: novyModul.profil.popis }} onBack={() => setNovyModul(null)} />;
 
   return (
     <div style={{ paddingBottom: SPACE.lg, color: C.text }}>

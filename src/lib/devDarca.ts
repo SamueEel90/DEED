@@ -23,3 +23,13 @@ export function nastavDarcuFirmu(v: boolean) {
   try { localStorage.setItem(KLUC_FIRMA, v ? "1" : "0"); } catch { /* LS */ }
   posluchaci.forEach((f) => f());
 }
+
+// ---- DEV: klik na zbierku otvorí nový detail (<ZbierkaModul>, prepis podľa dizajnéra) ----
+const KLUC_NOVY = "deed.dev.novyDetailZbierky";
+export function novyDetailZbierky(): boolean {
+  try { return localStorage.getItem(KLUC_NOVY) !== "0"; } catch { return true; }
+}
+export function nastavNovyDetailZbierky(v: boolean) {
+  try { localStorage.setItem(KLUC_NOVY, v ? "1" : "0"); } catch { /* LS */ }
+  posluchaci.forEach((f) => f());
+}
