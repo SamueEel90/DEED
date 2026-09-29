@@ -19,6 +19,7 @@ import { Statistiky } from "./Statistiky";
 import { Zamestnavatel, IK_BUDOVA } from "./Zamestnavatel";
 import { MojeSkutky21 } from "./MojeSkutky21";
 import { Priatelia, type PriateliaTab } from "./Priatelia";
+import type { Oblast } from "@/lib/stityOblasti";
 import { useDlazdice, type DlazdicaId } from "@/lib/dlazdice";
 import { SpatTlacidlo } from "@/components/cesta";
 
@@ -45,7 +46,10 @@ export default function ModulProfil({ wide, walletReq = 0 }: ProfilProps) {
   // ☰ menu → Peňaženka: otvor peňaženku (walletReq sa zvýši pri kliknutí)
   useEffect(() => { if (walletReq) setScreen("wallet"); }, [walletReq]);
 
-  const sub = (n: string) => { setSubNazov(n); setScreen("sub"); };
+  const [skOblast, setSkOblast] = useState<Oblast | undefined>(undefined); // Moje skutky s filtrom oblasti (z detailu oblasti)
+  const sub = (n: string) => { setSubNazov(n); setSkOblast(undefined); setScreen("sub"); };
+  const skutkyOblasti = (o: Oblast) => { setSubNazov("Moje skutky"); setSkOblast(o); setScreen("sub"); };
+  const spatZoSkutkov = () => { if (skOblast) { setSkOblast(undefined); setSubNazov("Karma a štíty"); } else setScreen("profil"); };
   const [pTab, setPTab] = useState<PriateliaTab>("priatelia"); // KARTA 29: „sledujem / podporujem" v profile otvorí príslušnú záložku
   const priatelia = (t: PriateliaTab = "priatelia") => { setPTab(t); setScreen("priatelia"); };
   const [qr, setQr] = useState(false); // Môj QR (karta 18 bod 4 príde samostatne)
@@ -55,7 +59,7 @@ export default function ModulProfil({ wide, walletReq = 0 }: ProfilProps) {
   const obal = (el: React.ReactNode) => obalSiroky(el, { wide, desktop, max: SIRKA.stlpec, maxDesktop: SIRKA.citanie });
 
   // DESKTOP — profesionálny 2-panel layout: bočná navigácia (identita + sekcie) + obsahový panel
-  if (desktop) return <>{qrModal}{upravaHarok}<ProfilDesktop screen={screen} subNazov={subNazov} setScreen={setScreen} onSub={sub} onQr={() => setQr(true)} onUpravit={() => setUprava(true)} pTab={pTab} onPriatelia={priatelia} /></>;
+  if (desktop) return <>{qrModal}{upravaHarok}<ProfilDesktop screen={screen} subNazov={subNazov} setScreen={setScreen} onSub={sub} onQr={() => setQr(true)} onUpravit={() => setUprava(true)} pTab={pTab} onPriatelia={priatelia} skOblast={skOblast} skutkyOblasti={skutkyOblasti} spatZoSkutkov={spatZoSkutkov} /></>;
 
   // MOBIL — pôvodný tok (dlaždice → pod-obrazovky cez ScreenSwitch)
   return (
@@ -65,7 +69,7 @@ export default function ModulProfil({ wide, walletReq = 0 }: ProfilProps) {
         naUpravit={() => setUprava(true)} naQr={() => setQr(true)} />)}
       {screen === "wallet" && obal(<Penazenka18 onBack={() => setScreen("profil")} />)}
       {screen === "firemny" && obalSiroky(<MojDeedFiremny onBack={() => setScreen("profil")} toast={toast} />, { wide, desktop, max: SIRKA.stlpec })}
-      {screen === "sub" && (subNazov === "Moje záujmy" ? obal(<ZaujmyObrazovka onBack={() => setScreen("profil")} />) : subNazov === "Moje skutky" ? <MojeSkutky21 onBack={() => setScreen("profil")} /> : subNazov === "Karma a štíty" ? obal(<KarmaStity onBack={() => setScreen("profil")} />) : obal(<Statistiky onBack={() => setScreen("profil")} />))}
+      {screen === "sub" && (subNazov === "Moje záujmy" ? obal(<ZaujmyObrazovka onBack={() => setScreen("profil")} />) : subNazov === "Moje skutky" ? <MojeSkutky21 key={skOblast ?? "vsetky"} oblastStitu={skOblast} onBack={spatZoSkutkov} /> : subNazov === "Karma a štíty" ? obal(<KarmaStity naSkutky={skutkyOblasti} onBack={() => setScreen("profil")} />) : obal(<Statistiky onBack={() => setScreen("profil")} />))}
       {screen === "priatelia" && obal(<Priatelia tab={pTab} onBack={() => setScreen("profil")} />)}
       {screen === "firma" && obal(<Zamestnavatel onBack={() => setScreen("profil")} />)}
       {screen === "nastavenia" && obal(<Nastavenia20 onBack={() => setScreen("profil")} onNotif={() => setScreen("notif")} onUpravProfil={() => setUprava(true)} />)}
@@ -101,7 +105,7 @@ function ZaujmyObrazovka({ onBack, desktop }: { onBack: () => void; desktop?: bo
     </div>);
 }
 
-function ProfilDesktop({ screen, subNazov, setScreen, onSub, onQr, onUpravit, pTab, onPriatelia }: { screen: string; subNazov: string | null; setScreen: (s: string) => void; onSub: (n: string) => void; onQr: () => void; onUpravit: () => void; pTab: PriateliaTab; onPriatelia: (t?: PriateliaTab) => void }) {
+function ProfilDesktop({ screen, subNazov, setScreen, onSub, onQr, onUpravit, pTab, onPriatelia, skOblast, skutkyOblasti, spatZoSkutkov }: { screen: string; subNazov: string | null; setScreen: (s: string) => void; onSub: (n: string) => void; onQr: () => void; onUpravit: () => void; pTab: PriateliaTab; onPriatelia: (t?: PriateliaTab) => void; skOblast?: Oblast; skutkyOblasti: (o: Oblast) => void; spatZoSkutkov: () => void }) {
   // OPRAVY 61: zlatá bodka pri Zamestnávateľovi len keď firma čaká na odpoveď (pozvánka, „Stále pracuješ…?")
   const ja = usePouzivatel();
   const vazby = useVazbyOsoby(ja.celeMeno);
@@ -120,7 +124,7 @@ function ProfilDesktop({ screen, subNazov, setScreen, onSub, onQr, onUpravit, pT
   let obsah: React.ReactNode;
   if (screen === "wallet") obsah = <Penazenka18 desktop onBack={() => setScreen("profil")} />;
   else if (screen === "firemny") obsah = <MojDeedFiremny onBack={() => setScreen("profil")} toast={toast} />;
-  else if (screen === "sub") obsah = subNazov === "Moje záujmy" ? <ZaujmyObrazovka desktop onBack={() => setScreen("profil")} /> : subNazov === "Moje skutky" ? <MojeSkutky21 onBack={() => setScreen("profil")} /> : subNazov === "Karma a štíty" ? <KarmaStity desktop onBack={() => setScreen("profil")} /> : <Statistiky desktop onBack={() => setScreen("profil")} />;
+  else if (screen === "sub") obsah = subNazov === "Moje záujmy" ? <ZaujmyObrazovka desktop onBack={() => setScreen("profil")} /> : subNazov === "Moje skutky" ? <MojeSkutky21 key={skOblast ?? "vsetky"} oblastStitu={skOblast} onBack={spatZoSkutkov} /> : subNazov === "Karma a štíty" ? <KarmaStity desktop naSkutky={skutkyOblasti} onBack={() => setScreen("profil")} /> : <Statistiky desktop onBack={() => setScreen("profil")} />;
   else if (screen === "priatelia") obsah = <Priatelia key={pTab} tab={pTab} desktop onBack={() => setScreen("profil")} />;
   else if (screen === "firma") obsah = <Zamestnavatel desktop onBack={() => setScreen("profil")} />;
   else if (screen === "nastavenia") obsah = <Nastavenia20 desktop onBack={() => setScreen("profil")} onNotif={() => setScreen("notif")} onUpravProfil={onUpravit} />;

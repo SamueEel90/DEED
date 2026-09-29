@@ -5,7 +5,10 @@ import { useEffect, useRef, useState } from "react";
 import { SpatTlacidlo } from "@/components/cesta";
 import { toast } from "@/components/toast";
 import { StitObr, StitZoom, type StitLevel } from "@/components/stit";
-import { STIT_SK, OBLASTI_USER, MA_ASSET, MOJE_STITY, MOJ_HLAVNY, KARMA_MESIAC, MOJE_USPECHY, LICHOTKY, MAX_VYVESENE, prepniVyvesenie, zoradVyvesene, useVyvesene, type Oblast } from "@/lib/stityOblasti";
+import { STIT_SK, OBLASTI_USER, MA_ASSET, MOJE_STITY, MOJ_HLAVNY, KARMA_MESIAC, MOJE_USPECHY, LICHOTKY, MAX_VYVESENE, PORADIE, ZISKANE_DNA, ZAUJEM_OBLAST, prepniVyvesenie, zoradVyvesene, useVyvesene, type Oblast } from "@/lib/stityOblasti";
+import { Harok } from "@/features/zbierka/Zdielat";
+import { usePouzivatel } from "@/lib/pouzivatel";
+import { mojeSkutky } from "@/lib/mojeSkutky";
 import { MOJA_KARMA } from "./mock";
 import "@/styles/platba.css";
 
@@ -22,19 +25,27 @@ const lbl = { fontSize: 12, fontWeight: 800, letterSpacing: ".06em", color: "var
 const karta = { borderRadius: 18, background: "var(--d-card, var(--card))", border: "1px solid var(--d-cardBd, var(--cardBd))" } as const;
 const Ik = ({ d, s = 18, w = 2.2 }: { d: string; s?: number; w?: number }) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={w} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={d} /></svg>;
 
-export function KarmaStity({ onBack, desktop }: { onBack: () => void; desktop?: boolean }) {
-  const hlavny = MOJ_HLAVNY;
-  const li = LICHOTKY[hlavny];
+/** nezískaný štít = stlmený náhľad skutočného obrázka (karta 26, doplnok 29. 9.) */
+const NAHLAD = { opacity: 0.45, filter: "grayscale(.75)", lineHeight: 0 } as const;
+const VITAJ = ["Vitaj. S Bronzovým štítom začína každý. Začni tým, čo ťa baví."];
+
+export function KarmaStity({ onBack, desktop, naSkutky }: { onBack: () => void; desktop?: boolean; naSkutky?: (o: Oblast) => void }) {
+  const ja = usePouzivatel();
+  const novy = !ja.demo; // nový účet: hlavný Bronzový od registrácie, oblasti zamknuté (mock údaje len v ukážke)
+  const hlavny: StitLevel = novy ? "Bronze" : MOJ_HLAVNY;
+  const li = novy ? VITAJ : LICHOTKY[hlavny];
+  const [det, setDet] = useState<Oblast | null>(null);
   const [i, setI] = useState(0);
   const [liOp, setLiOp] = useState(1);
   const [ak, setAk] = useState<number | null>(null);
   const [zoom, setZoom] = useState<null | { level: StitLevel; oblast?: Oblast; nazov?: string; popis?: string }>(null);
   const vy = useVyvesene();
-  const moje = new Map(MOJE_STITY.map((s) => [s.oblast, s.level]));
+  const moje = new Map<Oblast, StitLevel>(novy ? [] : MOJE_STITY.map((s) => [s.oblast, s.level]));
 
   // lichotka sa strieda každých 6 s (opacity 0,5 s)
   useEffect(() => {
     let t: number | undefined;
+    if (li.length < 2) return;
     const ti = window.setInterval(() => { setLiOp(0); t = window.setTimeout(() => { setI((x) => (x + 1) % li.length); setLiOp(1); }, 500); }, 6000);
     return () => { window.clearInterval(ti); window.clearTimeout(t); };
   }, [li.length]);
@@ -51,7 +62,7 @@ export function KarmaStity({ onBack, desktop }: { onBack: () => void; desktop?: 
       {/* 1 · hlavný štít */}
       <div style={{ position: "relative", borderRadius: 26, background: "var(--goldBg)", border: "1px solid var(--sek-oBd, var(--goldBd))", padding: "20px 18px 18px", display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", gap: 6, overflow: "hidden" }}>
         <button type="button" onClick={() => setZoom({ level: hlavny, nazov: STIT_SK[hlavny], popis: li[i] })} aria-label={`Zväčšiť ${STIT_SK[hlavny]} štít`}
-          style={{ position: "relative", width: 150, height: 172, border: "none", background: "none", padding: 0, cursor: "zoom-in", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          style={{ position: "relative", width: 150, height: 172, border: "none", background: "none", boxShadow: "none", padding: 0, cursor: "zoom-in", display: "flex", alignItems: "center", justifyContent: "center" }}>
           <span aria-hidden="true" className="pf-ziara" style={{ position: "absolute", left: "50%", top: "50%", width: 230, height: 230, margin: "-115px 0 0 -115px", borderRadius: "50%", background: "radial-gradient(circle,rgba(255,231,163,.9) 0%,rgba(246,183,60,.28) 40%,rgba(246,183,60,0) 70%)" }} />
           <span style={{ position: "relative" }}><StitObr level={hlavny} h={172} /></span>
         </button>
@@ -63,8 +74,8 @@ export function KarmaStity({ onBack, desktop }: { onBack: () => void; desktop?: 
       {/* 2 · karma — len číslo, vidí ju len vlastník */}
       <div style={{ ...karta, display: "flex", alignItems: "center", gap: 12, padding: 14 }}>
         <span style={{ width: 40, height: 40, borderRadius: 12, background: "var(--gSoft)", color: "var(--green)", display: "flex", alignItems: "center", justifyContent: "center", flex: "none" }}><Ik d="M6 11h12v10H6zM8.5 11V8a3.5 3.5 0 0 1 7 0v3" /></span>
-        <span style={{ flex: 1, minWidth: 0 }}><span style={{ display: "block", fontSize: 12.5, color: "var(--ink3)" }}>Tvoja karma · vidíš ju len ty</span><span style={{ display: "block", fontSize: 24, fontWeight: 800, fontVariantNumeric: "tabular-nums" }}>{MOJA_KARMA.toLocaleString("sk-SK")}</span></span>
-        <span style={{ flex: "none", textAlign: "right" }}><span style={{ display: "block", fontSize: 15, fontWeight: 800, color: "var(--gInk)", fontVariantNumeric: "tabular-nums" }}>+{KARMA_MESIAC}</span><span style={{ display: "block", fontSize: 12, color: "var(--ink3)" }}>tento mesiac</span></span>
+        <span style={{ flex: 1, minWidth: 0 }}><span style={{ display: "block", fontSize: 12.5, color: "var(--ink3)" }}>Tvoja karma · vidíš ju len ty</span><span style={{ display: "block", fontSize: 24, fontWeight: 800, fontVariantNumeric: "tabular-nums" }}>{novy ? "0" : MOJA_KARMA.toLocaleString("sk-SK")}</span></span>
+        <span style={{ flex: "none", textAlign: "right" }}><span style={{ display: "block", fontSize: 15, fontWeight: 800, color: "var(--gInk)", fontVariantNumeric: "tabular-nums" }}>{novy ? "—" : `+${KARMA_MESIAC}`}</span><span style={{ display: "block", fontSize: 12, color: "var(--ink3)" }}>tento mesiac</span></span>
       </div>
 
       {/* 3 · štíty podľa oblastí */}
@@ -75,15 +86,13 @@ export function KarmaStity({ onBack, desktop }: { onBack: () => void; desktop?: 
             const lv = moje.get(o), pripravuje = !MA_ASSET[o], ma = !!lv && !pripravuje, v = vy.includes(o);
             return (
               <div key={o} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, padding: "12px 6px 10px", borderRadius: 16, background: ma ? "var(--d-card, var(--card))" : "var(--field)", border: "1px solid var(--d-cardBd, var(--cardBd))" }}>
-                <button type="button" disabled={!ma} onClick={() => ma && setZoom({ level: lv!, oblast: o, popis: "Zaslúžený skutkami v tejto oblasti. Započítava sa do hlavného štítu." })}
-                  aria-label={ma ? `${o}, ${STIT_SK[lv!]} štít, zväčšiť` : `${o}, ${pripravuje ? "štít pripravujeme" : "bez štítu"}`}
-                  style={{ position: "relative", width: 56, height: 64, display: "flex", alignItems: "center", justifyContent: "center", border: "none", background: "none", padding: 0, cursor: ma ? "zoom-in" : "default" }}>
-                  {ma ? <StitObr level={lv!} oblast={o} h={62} lazy /> : <>
-                    <span aria-hidden="true" style={{ opacity: 0.18, lineHeight: 0 }}><StitObr level={lv ?? "Bronze"} oblast={MA_ASSET[o] ? o : undefined} h={60} lazy /></span>
-                    <span aria-hidden="true" style={{ position: "absolute", inset: "4px 8px", border: "2px dashed var(--chkBd)", borderRadius: "10px 10px 22px 22px" }} /></>}
+                <button type="button" disabled={pripravuje} onClick={() => setDet(o)}
+                  aria-label={pripravuje ? `${o}, štít pripravujeme` : ma ? `${o}, ${STIT_SK[lv!]} štít, detail oblasti` : `${o}, zatiaľ bez štítu, detail oblasti`}
+                  style={{ position: "relative", width: 56, height: 64, display: "flex", alignItems: "center", justifyContent: "center", border: "none", background: "none", boxShadow: "none", padding: 0, cursor: pripravuje ? "default" : "pointer" }}>
+                  {ma ? <StitObr level={lv!} oblast={o} h={62} lazy /> : <span aria-hidden="true" style={NAHLAD}><StitObr level="Bronze" oblast={MA_ASSET[o] ? o : undefined} h={62} lazy /></span>}
                 </button>
                 <span style={{ fontSize: 13.5, fontWeight: 800 }}>{o}</span>
-                <span style={{ fontSize: 11.5, fontWeight: 600, color: ma ? "var(--gInk)" : "var(--ink3)", textAlign: "center", lineHeight: 1.3 }}>{pripravuje ? "štít pripravujeme" : ma ? STIT_SK[lv!] : "zatiaľ bez štítu"}</span>
+                <span style={{ fontSize: 11.5, fontWeight: 600, color: ma ? "var(--gInk)" : "var(--ink3)", textAlign: "center", lineHeight: 1.3 }}>{pripravuje ? "štít pripravujeme" : ma ? STIT_SK[lv!] : "stačí trocha snahy"}</span>
                 {ma && <button type="button" role="switch" aria-checked={v} aria-label={`Vyvesiť na profile: ${o}`} onClick={() => vyves(o)}
                   style={{ marginTop: 4, minHeight: 30, padding: "3px 10px", borderRadius: 9, fontSize: 11.5, fontWeight: 800, fontFamily: "inherit", cursor: "pointer", background: v ? "var(--gSoft)" : "transparent", color: v ? "var(--gInk)" : "var(--ink3)", border: `1px solid ${v ? "var(--gBd)" : "var(--cardBd)"}`, boxShadow: "none" }}>{v ? "Vyvesený" : "Vyvesiť"}</button>}
               </div>);
@@ -93,8 +102,8 @@ export function KarmaStity({ onBack, desktop }: { onBack: () => void; desktop?: 
         {vy.length > 1 && <PoradieVyvesenych vy={vy} moje={moje} />}
       </div>
 
-      {/* 4 · moje úspechy */}
-      <div>
+      {/* 4 · moje úspechy (nový účet ich ešte nemá) */}
+      {!novy && <div>
         <div style={lbl}>MOJE ÚSPECHY</div>
         <div style={{ ...karta, padding: "4px 14px" }}>
           {MOJE_USPECHY.map((u, k) => (
@@ -103,7 +112,7 @@ export function KarmaStity({ onBack, desktop }: { onBack: () => void; desktop?: 
               <span style={{ flex: 1, minWidth: 0 }}><span style={{ display: "block", fontSize: 14.5, fontWeight: 800 }}>{u.t}</span><span style={{ display: "block", fontSize: 13, lineHeight: 1.45, color: "var(--ink2)", marginTop: 1 }}>{u.s}</span><span style={{ display: "block", fontSize: 12, color: "var(--ink3)", marginTop: 3 }}>{u.d}</span></span>
             </div>))}
         </div>
-      </div>
+      </div>}
 
       {/* 5 · ako funguje karma */}
       <div>
@@ -123,34 +132,81 @@ export function KarmaStity({ onBack, desktop }: { onBack: () => void; desktop?: 
       {/* 6 · záver */}
       <div style={{ fontSize: 14.5, lineHeight: 1.6, color: "var(--ink2)", textAlign: "center", padding: "6px 12px 0" }}>Hľadali sme spravodlivosť. Či sa nám to podarilo, ukáže čas.</div>
 
+      {det && <DetailOblasti o={det} lv={moje.get(det)} onClose={() => setDet(null)} naZoom={(l) => setZoom({ level: l, oblast: det, nazov: `${STIT_SK[l]} · ${det}`, popis: `Získaný ${ZISKANE_DNA[l] ?? ""}. Započítava sa do hlavného štítu.` })}
+        naSkutky={naSkutky ? () => { setDet(null); naSkutky(det); } : undefined} />}
       {zoom && <StitZoom level={zoom.level} oblast={zoom.oblast} nazov={zoom.nazov} popis={zoom.popis} onClose={() => setZoom(null)} />}
     </div>
   );
 }
 
-/** poradie vyvesených štítov — ťahaním (myš aj prst), klávesnicou šípkami */
+/** detail oblasti — rebrík 5 stupňov, skutky v oblasti. Bez percent a „chýba N". */
+function DetailOblasti({ o, lv, onClose, naZoom, naSkutky }: { o: Oblast; lv?: StitLevel; onClose: () => void; naZoom: (l: StitLevel) => void; naSkutky?: () => void }) {
+  const idx = lv ? PORADIE.indexOf(lv) : -1;
+  const skutky = mojeSkutky().filter((x) => ZAUJEM_OBLAST[x.oblast] === o).slice(0, 3);
+  const dat = (d: number) => { const t = new Date(d); return `${t.getDate()}. ${t.getMonth() + 1}.`; };
+  return (
+    <Harok onClose={onClose} zatvorText="Zavrieť" hlavicka={<span style={{ flex: 1, fontSize: 20, fontWeight: 800 }}>Štíty {o}</span>}>
+      <div style={{ fontSize: 14, lineHeight: 1.5, color: "var(--ink2)" }}>{lv ? `Tvoj štít v oblasti ${o} je ${STIT_SK[lv].toLowerCase()}. Ťukni na získaný štít a zväčšíš ho.` : `V oblasti ${o} zatiaľ nemáš štít. Urob skutok v tejto oblasti a Bronzový sa ti odomkne.`}</div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        {PORADIE.map((l, i) => {
+          const ma = i <= idx, ter = i === idx;
+          const pod = ma ? `získaný ${ZISKANE_DNA[l] ?? ""}`.trim() : l === "Bronze" ? "Stačí trocha snahy a Bronzový je tvoj." : i === idx + 1 ? "ďalší stupeň · čaká ťa" : "čaká ťa";
+          const obsah = (<>
+            <span aria-hidden="true" style={{ width: 48, height: 56, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", ...(ma ? { lineHeight: 0 } : { ...NAHLAD, opacity: 0.5 }) }}><StitObr level={l} oblast={o} h={56} lazy /></span>
+            <span style={{ flex: 1, minWidth: 0 }}><span style={{ display: "block", fontSize: 15.5, fontWeight: 800, color: ma ? "var(--ink)" : "var(--ink3)" }}>{STIT_SK[l]}</span><span style={{ display: "block", fontSize: 12.5, color: "var(--ink3)", marginTop: 1 }}>{pod}</span></span>
+            {ter && <span style={{ flex: "none", padding: "3px 9px", borderRadius: 9, fontSize: 11.5, fontWeight: 800, background: "var(--gSoft)", color: "var(--gInk)", border: "1px solid var(--gBd)" }}>teraz</span>}
+          </>);
+          const st = { display: "flex", alignItems: "center", gap: 14, padding: "10px 14px", borderRadius: 16, background: ter ? "var(--gSoft)" : ma ? "var(--card)" : "var(--field)", border: `1.5px solid ${ter ? "var(--gBd)" : "var(--cardBd)"}`, color: "var(--ink)" } as const;
+          return ma
+            ? <button key={l} type="button" onClick={() => naZoom(l)} aria-label={`${STIT_SK[l]} štít ${o}, zväčšiť`} style={{ ...st, width: "100%", textAlign: "left", fontFamily: "inherit", cursor: "zoom-in", boxShadow: "none" }}>{obsah}</button>
+            : <div key={l} style={st}>{obsah}</div>;
+        })}
+      </div>
+      <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".06em", color: "var(--ink3)", marginTop: 2 }}>SKUTKY V TEJTO OBLASTI</div>
+      <div style={{ ...karta, borderRadius: 16, padding: "0 14px" }}>
+        {skutky.length === 0 && <div style={{ minHeight: 52, display: "flex", alignItems: "center", fontSize: 14, color: "var(--ink3)" }}>Zatiaľ tu nemáš skutok. Prvý skutok odomkne Bronzový.</div>}
+        {skutky.map((k, i) => (
+          <div key={k.id} style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 52, borderTop: i ? "1px solid var(--cardBd)" : "none" }}>
+            <span style={{ flex: 1, minWidth: 0, fontSize: 14.5, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{k.nazov}</span>
+            <span style={{ flex: "none", fontSize: 12, color: "var(--ink4, var(--ink3))" }}>{dat(k.datum)}</span>
+          </div>))}
+        {skutky.length > 0 && naSkutky && <button type="button" onClick={naSkutky} style={{ width: "100%", minHeight: 48, border: "none", borderTop: "1px solid var(--cardBd)", background: "none", boxShadow: "none", textAlign: "left", fontSize: 14, fontWeight: 800, color: "var(--green)", fontFamily: "inherit", cursor: "pointer" }}>Všetky skutky v oblasti {o}</button>}
+      </div>
+      <div style={{ fontSize: 12.5, lineHeight: 1.5, color: "var(--ink3)" }}>Ďalší stupeň prichádza so skutkami v tejto oblasti. Nepočítame percentá, príde, keď si ho zaslúžiš.</div>
+    </Harok>
+  );
+}
+
+/** poradie vyvesených štítov — ťahaním (myš aj prst), klávesnicou šípkami. OPRAVY 69: cieľ podľa skutočných pozícií + živý náhľad */
 function PoradieVyvesenych({ vy, moje }: { vy: Oblast[]; moje: Map<Oblast, StitLevel> }) {
-  const [tah, setTah] = useState<{ o: Oblast; x0: number; dx: number } | null>(null);
-  const rad = useRef<HTMLDivElement>(null);
+  const [tah, setTah] = useState<{ o: Oblast; from: number; to: number; x0: number; dx: number; rects: DOMRect[] } | null>(null);
+  const el = useRef<(HTMLDivElement | null)[]>([]);
   const SIRKA = 60;
   const presun = (o: Oblast, kam: number) => { const bez = vy.filter((x) => x !== o); const k = Math.max(0, Math.min(bez.length, kam)); zoradVyvesene([...bez.slice(0, k), o, ...bez.slice(k)]); };
-  const koniec = () => {
+  const pohyb = (e: React.PointerEvent) => {
     if (!tah) return;
-    const od = vy.indexOf(tah.o);
-    presun(tah.o, od + Math.round(tah.dx / SIRKA));
-    setTah(null);
+    const dx = e.clientX - tah.x0, r = tah.rects[tah.from], mid = r.left + r.width / 2 + dx;
+    let to = 0; tah.rects.forEach((q, k) => { if (k !== tah.from && q.left + q.width / 2 < mid) to++; });
+    setTah({ ...tah, dx, to });
+  };
+  const koniec = () => { if (tah && tah.to !== tah.from) { presun(tah.o, tah.to); navigator.vibrate?.(8); } setTah(null); };
+  const posun = (k: number) => {
+    if (!tah || k === tah.from) return 0;
+    const w = tah.rects[tah.from].width;
+    if (tah.from < tah.to && k > tah.from && k <= tah.to) return -w;
+    if (tah.from > tah.to && k >= tah.to && k < tah.from) return w;
+    return 0;
   };
   return (
     <div style={{ marginTop: 12 }}>
       <div style={{ ...lbl, paddingBottom: 6 }} id="poradie-nadpis">PORADIE NA PROFILE</div>
-      <div ref={rad} role="list" aria-labelledby="poradie-nadpis" style={{ display: "flex", gap: 0, padding: "10px 8px", borderRadius: 16, background: "var(--field)", border: "1px dashed var(--d-cardBd, var(--cardBd))", touchAction: "pan-y" }}>
+      <div role="list" aria-labelledby="poradie-nadpis" style={{ display: "flex", gap: 0, padding: "10px 8px", borderRadius: 16, background: "var(--field)", border: "1px dashed var(--d-cardBd, var(--cardBd))", touchAction: "pan-y" }}>
         {vy.map((o, k) => { const lv = moje.get(o); const t = tah?.o === o; return (
-          <div key={o} role="listitem" tabIndex={0} aria-label={`${o}, ${k + 1}. miesto. Posuň šípkami doľava a doprava.`}
+          <div key={o} ref={(x) => { el.current[k] = x; }} role="listitem" tabIndex={0} aria-label={`${o}, ${k + 1}. miesto. Posuň šípkami doľava a doprava.`}
             onKeyDown={(e) => { if (e.key === "ArrowLeft") { e.preventDefault(); presun(o, k - 1); } if (e.key === "ArrowRight") { e.preventDefault(); presun(o, k + 1); } }}
-            onPointerDown={(e) => { (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId); setTah({ o, x0: e.clientX, dx: 0 }); }}
-            onPointerMove={(e) => { if (tah?.o === o) setTah({ ...tah, dx: e.clientX - tah.x0 }); }}
-            onPointerUp={koniec} onPointerCancel={() => setTah(null)}
-            style={{ width: SIRKA, display: "flex", flexDirection: "column", alignItems: "center", gap: 2, cursor: t ? "grabbing" : "grab", transform: t ? `translateX(${tah!.dx}px) scale(1.08)` : "none", transition: t ? "none" : "transform .2s ease", zIndex: t ? 2 : 1, position: "relative", touchAction: "none", userSelect: "none" }}>
+            onPointerDown={(e) => { (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId); setTah({ o, from: k, to: k, x0: e.clientX, dx: 0, rects: el.current.slice(0, vy.length).map((r) => r!.getBoundingClientRect()) }); }}
+            onPointerMove={pohyb} onPointerUp={koniec} onPointerCancel={() => setTah(null)}
+            style={{ width: SIRKA, minHeight: 44, display: "flex", flexDirection: "column", alignItems: "center", gap: 2, cursor: t ? "grabbing" : "grab", transform: t ? `translateX(${tah!.dx}px) scale(1.08)` : `translateX(${posun(k)}px)`, transition: t ? "none" : "transform .18s ease", zIndex: t ? 2 : 1, position: "relative", touchAction: "none", userSelect: "none" }}>
             {lv && <StitObr level={lv} oblast={o} h={44} tien />}
             <span style={{ fontSize: 10.5, fontWeight: 800, color: "var(--ink2)" }}>{o}</span>
           </div>); })}

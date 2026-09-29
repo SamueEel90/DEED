@@ -14,6 +14,7 @@ import { mojeSkutky, useZmenySkutkov, upravSkutok, karmaSkutkov, normalizuj, typ
 import { otvorPridatSkutok } from "@/features/skutok/otvor";
 import { PruhySkutkov } from "@/features/skutok/Pruhy";
 import { MOJA_KARMA } from "./mock";
+import { ZAUJEM_OBLAST, type Oblast as OblastStitu } from "@/lib/stityOblasti";
 import "@/styles/platba.css";
 
 const MESIACE = ["január", "február", "marec", "apríl", "máj", "jún", "júl", "august", "september", "október", "november", "december"];
@@ -52,7 +53,8 @@ const datumTxt = (t: number) => {
 };
 const pocet = (n: number) => `${n} ${n === 1 ? "skutok" : n >= 2 && n <= 4 ? "skutky" : "skutkov"}`;
 
-export function MojeSkutky21({ onBack }: { onBack: () => void }) {
+export function MojeSkutky21({ onBack, oblastStitu }: { onBack: () => void; /** z detailu oblasti v Karma a štíty */ oblastStitu?: OblastStitu }) {
+  const [len, setLen] = useState<OblastStitu | undefined>(oblastStitu);
   useZmenySkutkov();
   const { desktop } = useLayout();
   const session = useSession() as { demo?: boolean } | null;
@@ -75,7 +77,7 @@ export function MojeSkutky21({ onBack }: { onBack: () => void }) {
 
   useEffect(() => { if (!ukazky) return; const t = setInterval(() => setM((x) => (x + 1) % MOT.length), 4200); return () => clearInterval(t); }, [ukazky]);
 
-  const hladane = useMemo(() => { const n = normalizuj(q); return (x: MojSkutok) => !n || normalizuj(`${x.nazov} ${x.oblast} ${x.miesto}`).includes(n); }, [q]);
+  const hladane = useMemo(() => { const n = normalizuj(q); return (x: MojSkutok) => (!len || ZAUJEM_OBLAST[x.oblast] === len) && (!n || normalizuj(`${x.nazov} ${x.oblast} ${x.miesto}`).includes(n)); }, [q, len]);
   const zoznam = vsetky.filter(PREJDE[f]).filter(hladane);
   const tentoRok = vsetky.filter((x) => new Date(x.datum).getFullYear() === R);
   const tentoMes = tentoRok.filter((x) => new Date(x.datum).getMonth() === M);
@@ -211,6 +213,9 @@ export function MojeSkutky21({ onBack }: { onBack: () => void }) {
         </div>
         {hlad && <input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder="Hľadaj skutok alebo oblasť" aria-label="Hľadaj skutok alebo oblasť" className="pf-rise"
           style={{ height: 50, padding: "0 14px", borderRadius: 13, background: "var(--field)", border: "1.5px solid var(--fieldBd)", fontSize: 16, color: "var(--ink)", outline: "none", fontFamily: "inherit" }} />}
+        {len && <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "4px 4px 4px 14px", borderRadius: 13, background: "var(--gSoft)", border: "1px solid var(--gBd)", color: "var(--gInk)", fontSize: 14, fontWeight: 700 }}>
+          <span style={{ flex: 1 }}>Len oblasť {len}</span>
+          <button type="button" onClick={() => setLen(undefined)} style={{ minHeight: 40, padding: "0 12px", border: "none", background: "none", boxShadow: "none", fontSize: 14, fontWeight: 800, color: "var(--gInk)", fontFamily: "inherit", cursor: "pointer" }}>Zobraziť všetky</button></div>}
         {obsah}
         {/* dole: banner akcie / ohláseného skutku + Pridať skutok (jediný vstup) — lepí sa na spodok stĺpca */}
         <div style={{ position: "sticky", bottom: fabBottom, zIndex: 41, display: "flex", flexDirection: "column", alignItems: "stretch", gap: 12, pointerEvents: "none", marginTop: 8 }}>

@@ -38,7 +38,7 @@ export function Harok({ onClose, children, hlavicka, podHlavickou, paticka, plna
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             {hlavicka}
             {zatvorText
-              ? <button type="button" onClick={zavri} style={{ border: "none", background: "transparent", color: "var(--ink3)", fontSize: 14.5, fontWeight: 700, cursor: "pointer", padding: "10px 0 10px 10px", flex: "none", fontFamily: "inherit" }}>{zatvorText}</button>
+              ? <button type="button" onClick={zavri} style={{ border: "none", boxShadow: "none", background: "transparent", color: "var(--ink3)", fontSize: 14.5, fontWeight: 700, cursor: "pointer", padding: "10px 0 10px 10px", flex: "none", fontFamily: "inherit" }}>{zatvorText}</button>
               : <button type="button" onClick={zavri} aria-label="Zavrieť" style={{ width: 44, height: 44, borderRadius: "50%", border: "none", background: "var(--btn)", color: "var(--ink)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flex: "none" }}>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg>
                 </button>}

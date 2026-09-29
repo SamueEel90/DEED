@@ -43,6 +43,14 @@ export const MOJE_STITY: StitOblasti[] = [
   { oblast: "SPORT", level: "Bronze" }, { oblast: "EKO", level: "Gold" },
 ];
 export const MOJ_HLAVNY: StitLevel = "Gold";
+/** dátumy získania stupňov v oblasti (mock) */
+export const ZISKANE_DNA: Partial<Record<StitLevel, string>> = { Bronze: "11. 3. 2026", Silver: "3. 6. 2026", Gold: "2. 9. 2026" };
+
+/** Karta 26 · doplnok 29. 9.: hlavný štít Bronzový má každý od registrácie; štíty oblastí sú na začiatku zamknuté.
+ *  Bronzový v oblasti odomkne skutok alebo dar v tej oblasti v hodnote aspoň PRAH_BRONZ_OBLAST (ekvivalent v €,
+ *  návrh 20 € — dohodne tím). User číslo nevidí. V produkcii rozhoduje karma engine na serveri. */
+export const PRAH_BRONZ_OBLAST = 20;
+export const odomkneBronzVOblasti = (hodnotaEur: number) => hodnotaEur >= PRAH_BRONZ_OBLAST;
 export const KARMA_MESIAC = 84;
 
 export type Uspech = { level: StitLevel; oblast?: Oblast; t: string; s: string; d: string };
