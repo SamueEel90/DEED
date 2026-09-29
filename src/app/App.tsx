@@ -31,7 +31,7 @@ import { PolohaOkruhu } from "@/features/profil/Bezpecnost24";
 
 // Code-splitting: každý modul = vlastný chunk, načíta sa až pri otvorení
 // (initial load = shell + prvý modul namiesto jedného veľkého bundle).
-const ModulGood = lazy(() => import("@/features/good/Good"));
+const ModulDomov = lazy(() => import("@/features/domov/Domov"));
 const ModulHelp = lazy(() => import("@/features/help/Help"));
 const ModulCharita = lazy(() => import("@/features/charita/Charita"));
 const ModulViera = lazy(() => import("@/features/viera/Viera"));
@@ -336,7 +336,7 @@ export function Screens({ wide, desktop }: { wide?: boolean; desktop?: boolean }
             role="main" (nie <main>) — ref je zdieľaný ako HTMLDivElement (ScrollEl/PullToRefresh) */}
         <div role="main" ref={scrollRef} style={{ flex: 1, minWidth: 0, overflowY: "auto", minHeight: 0, paddingBottom: desktop ? 40 : 168 }}>
           <Suspense fallback={<FeedSkeleton count={4} />}>
-            {modul === "good" && <ModulGood wide={wide} otvorModul={prepni} otvorId={dlDetail?.modul === "good" ? dlDetail.ref : undefined} onOtvorene={() => setDlDetail(null)} />}
+            {modul === "good" && <ModulDomov wide={wide} otvorModul={prepni} otvorId={dlDetail?.modul === "good" ? dlDetail.ref : undefined} onOtvorene={() => setDlDetail(null)} />}
             {modul === "help" && <ModulHelp wide={wide} />}
             {modul === "charita" && <ModulCharita wide={wide} otvorModul={prepni} />}
             {modul === "nabozenstvo" && <ModulViera wide={wide} otvorModul={prepni} />}

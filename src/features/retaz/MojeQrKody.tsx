@@ -4,6 +4,7 @@
 // každý išlo organizáciám. Vyhľadávanie príspevkov + vytvorenie nového QR
 // (SplitConfigStep → qr_split_create). Beží nad qr_split (0018).
 // ============================================================
+import { Emo } from "@/components/icons";
 import { useState } from "react";
 import { SpatTlacidlo } from "@/components/cesta";
 import { C, GRAD_ZELENY, SPACE, RADIUS } from "@/theme";
@@ -124,7 +125,7 @@ export function MojeQrKody({ onClose, toast }: { onClose?: () => void; toast?: (
   return (
     <Sheet onClose={onClose}>
       <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm, marginBottom: SPACE.sm }}>
-        <span style={{ width: 36, height: 36, borderRadius: RADIUS.sm, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", background: tint(GREEN, .16), fontSize: 18 }}>⛓</span>
+        <span style={{ width: 36, height: 36, borderRadius: RADIUS.sm, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", background: tint(GREEN, .16), fontSize: 18 }}><Emo e="⛓" /></span>
         <div style={{ minWidth: 0 }}>
           <div style={{ fontSize: 16, fontWeight: 800 }}>Moje QR kódy</div>
           <div style={{ fontSize: 11.5, color: C.textTer }}>Rozdelenie honoráru · % ku každému QR</div>

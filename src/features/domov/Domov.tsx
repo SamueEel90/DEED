@@ -1,3 +1,4 @@
+import { Emo } from "@/components/icons";
 import { useState, useEffect, useRef, memo } from "react";
 import { SIRKA, C, inp, btn, GRAD, SPACE, RADIUS } from "@/theme";
 import { Foto, MiniFotky, Video, ModulHlavicka, Hlavicka, AvatarUroven, PlatobnyModul, PlatbaModal, HladanieModal, OblubeneHviezda, OblubeneBtn, toast, Oslava, useGaleria, useScrollPamat, useMotiv, useLayout, useStrankaAkcie, useTvorbaGate, StatRiadok, MoniBar, FeedStlpce, FeedGrid, FeedCard, KartaBadge, typKluc, BackChip, ProgresBox, SwipeBack, obalSiroky, Lupa, Zdielanie, IkonaSipVlavo, IkonaMoznosti, IkonaUlozit, IkonaFajka, IkonaPlay, IkonaDoska, IkonaPin, OkruhVyber, QrModal, SplitQrSheet, FotoVyber, FeedSkeleton, EmptyState, ErrorState, ScreenSwitch, FormatovanyText, ZoznamDarcov } from "@/shared";
@@ -43,7 +44,7 @@ export const USER_LOK = { lat: 48.894, lng: 18.044 };
 
 /*
   ============================================================
-  MODUL DOMOV (DEED Good) — port z deed_prototype.html
+  MODUL DOMOV — port z deed_prototype.html
   feed skutkov → detail (podpora, QR, overenie komunitou)
   → overujem/namietam → ＋ pridať skutok (AI náhľad)
   ============================================================
@@ -55,7 +56,7 @@ const heroGrad = (kat: GoodPolozka["kat"]) => `linear-gradient(160deg, ${KAT[kat
 // jednotný „glass" odznak na médiu karty
 
 // ===================== MODUL =====================
-export default function ModulGood({ wide, otvorModul, otvorId, onOtvorene }: { wide?: boolean; otvorModul?: (m: string) => void; otvorId?: string; onOtvorene?: () => void }) {
+export default function ModulDomov({ wide, otvorModul, otvorId, onOtvorene }: { wide?: boolean; otvorModul?: (m: string) => void; otvorId?: string; onOtvorene?: () => void }) {
   const { desktop } = useLayout();
   const { data: POLOZKY = [] } = useGoodFeed();
   const { gate } = useTvorbaGate(); // pasívny nesmie tvoriť (overovanie skutku = create)
@@ -107,21 +108,21 @@ export default function ModulGood({ wide, otvorModul, otvorId, onOtvorene }: { w
         <CudziProfil subjekt={aktSubjekt as any} toast={toast} onBack={() => setScreen(predtym)} />
       )}
       {screen === "board" && (
-        <GoodBoard onBack={() => setScreen("home")} onEvent={(id) => { setAktEvent(id); setScreen("event"); }} />
+        <DomovBoard onBack={() => setScreen("home")} onEvent={(id) => { setAktEvent(id); setScreen("event"); }} />
       )}
       {screen === "event" && obal(
-        <GoodEvent id={aktEvent} onBack={() => setScreen("board")} toast={toast} oslavuj={oslavuj} />
+        <DomovEvent id={aktEvent} onBack={() => setScreen("board")} toast={toast} oslavuj={oslavuj} />
       )}
       {screen === "detail" && akt && obal(
         <SwipeBack onBack={() => setScreen("home")}>
-          <GoodDetail it={akt} toast={toast} oslavuj={oslavuj}
+          <DomovDetail it={akt} toast={toast} oslavuj={oslavuj}
             onBack={() => setScreen("home")}
             onAutor={() => otvorProfil(autorSubjekt(akt), "detail")}
             onVerify={(mode) => gate(() => { setVerifyMode(mode); setScreen("verify"); })()} />
         </SwipeBack>
       )}
       {screen === "verify" && akt && obal(
-        <GoodVerify it={akt} mode={verifyMode} toast={toast} onBack={() => setScreen("detail")} />
+        <DomovVerify it={akt} mode={verifyMode} toast={toast} onBack={() => setScreen("detail")} />
       )}
       </ScreenSwitch>
 
@@ -175,7 +176,7 @@ type HomeProps = {
 // ===================== HOME / FEED =====================
 function Home({ wide, toast, otvorModul, pohlad, setPohlad, radius, setRadius, onDetail, onHladaj, onBoard, onAdd }: HomeProps) {
   const { data: POLOZKY = [], isLoading, isError, refetch } = useGoodFeed();
-  // `radius` aj `pohlad` žijú v ModulGood (prežijú návrat z detailu) — sem prichádzajú cez props
+  // `radius` aj `pohlad` žijú v ModulDomov (prežijú návrat z detailu) — sem prichádzajú cez props
   const [vyberOkruh, setVyberOkruh] = useState(false);
   const nastavenia = useNastaveniaAppky(); // karta 24 · 2d: „podľa polohy" pri okruhu
   const lokalita = useLokalita();
@@ -191,7 +192,7 @@ function Home({ wide, toast, otvorModul, pohlad, setPohlad, radius, setRadius, o
   // frekvenčný strop → zoradenie. Veľkosť karty (Časť A) cez zobrazVelkost.
   // Lacné: pracuje len s uloženým skóre, žiadne AI. (Neskôr: GET /feed na backende.)
   const feed = pripravFeed(POLOZKY as any, user).map((it: any) => ({ ...it, velkost: zobrazVelkost(it) })) as GoodPolozka[];
-  const karta = (it: GoodPolozka) => <GoodKarta key={it.id} it={it} wide={wide} onDetail={() => onDetail(it.id)} />;
+  const karta = (it: GoodPolozka) => <DomovKarta key={it.id} it={it} wide={wide} onDetail={() => onDetail(it.id)} />;
 
   // kontextové akcie stránky → plávajúce „+ Pridať" dole + sekcia „Na tejto stránke" v menu (☰)
   useStrankaAkcie(() => ({
@@ -601,7 +602,7 @@ function SpravaZbierky({ z, upravZbierku, toast, onClose }: {
 function PrazdnyTip({ emoji, text }: { emoji: string; text: string }) {
   return (
     <div style={{ display: "flex", gap: SPACE.sm, alignItems: "center", background: "rgba(var(--glass-rgb),.04)", border: `1px dashed ${C.line}`, borderRadius: RADIUS.sm, padding: `${SPACE.gutter}px ${SPACE.gutter}px`, marginBottom: SPACE.xs }}>
-      <span style={{ fontSize: 22, flex: "none" }}>{emoji}</span>
+      <span style={{ fontSize: 22, flex: "none" }}><Emo e={emoji} /></span>
       <span style={{ fontSize: 12.5, color: C.textSec, lineHeight: 1.5 }}>{text}</span>
     </div>
   );
@@ -645,7 +646,7 @@ function TopPruh({ radius, onDetail }: { radius: OkruhKod; onDetail: (id: string
         <div style={{ display: "flex", gap: SPACE.sm, overflowX: "auto", scrollSnapType: "x mandatory", WebkitOverflowScrolling: "touch", padding: `0 ${SPACE.gutter}px ${SPACE.xs}px` }}>
           {vidno.map((it) => (
             <div key={it.id} style={{ flex: "0 0 88%", scrollSnapAlign: "start", minWidth: 0 }}>
-              <GoodKarta it={it} wide onDetail={() => onDetail(it.id)} />
+              <DomovKarta it={it} wide onDetail={() => onDetail(it.id)} />
             </div>
           ))}
         </div>
@@ -680,8 +681,8 @@ function TopPruhKarta({ it, rank, onClick }: { it: GoodPolozka; rank: number; on
 // Good mapuje skutok/charitu/žiadosť do slotov. Exportovaná — Top renderuje identickú kartu.
 // memo: karta sa re-renderuje len keď sa zmení JEJ položka/wide (inline onDetail
 // closure sa ignoruje — zachytáva stabilné settery, viď rovnakeOkremFunkcii)
-export const GoodKarta = memo(GoodKartaBase, rovnakeOkremFunkcii);
-function GoodKartaBase({ it, wide, onDetail }: { it: GoodPolozka; wide?: boolean; onDetail: () => void }) {
+export const DomovKarta = memo(DomovKartaBase, rovnakeOkremFunkcii);
+function DomovKartaBase({ it, wide, onDetail }: { it: GoodPolozka; wide?: boolean; onDetail: () => void }) {
   const { svetly } = useMotiv();
   const kat = KAT[it.kat];
   const jeZiadost = it.typ === "ziadost";
@@ -731,7 +732,7 @@ type GoodDetailProps = {
 
 // ===================== DETAIL =====================
 // Exportovaný — Top „Najvýznamnejšie príspevky" otvára rovnaký detail (podpora/QR/overenie).
-export function GoodDetail({ it, toast, oslavuj, onBack, onVerify, onAutor }: GoodDetailProps) {
+export function DomovDetail({ it, toast, oslavuj, onBack, onVerify, onAutor }: GoodDetailProps) {
   const [platba, setPlatba] = useState<string | null>(null); // "EUR" | "DEED"
   const [qr, setQr] = useState(false);        // QR skutku (§10) — 3 výstupy
   const [split, setSplit] = useState(false);  // split QR — reťaz dobra §10 × §9
@@ -881,7 +882,7 @@ function VerifyBtn({ ok, onClick }: { ok?: boolean; onClick: () => void }) {
 
 // ===================== OVERENIE / NÁMIETKA =====================
 // Exportované — Top „Najvýznamnejšie príspevky" zdieľa rovnaký flow overenia/námietky.
-export function GoodVerify({ it, mode, toast, onBack }: { it: GoodPolozka; mode: string; toast: (m: string) => void; onBack: () => void }) {
+export function DomovVerify({ it, mode, toast, onBack }: { it: GoodPolozka; mode: string; toast: (m: string) => void; onBack: () => void }) {
   const ok = mode === "ok";
   const [dokazy, setDokazy] = useState<string[]>([]); // foto dôkazy (data URL, náhľad) — zvyšujú dôveryhodnosť
   return (
@@ -1016,7 +1017,7 @@ function BoardKalendar({ events, den, setDen, onEvent, desktop }: { events: Udal
   );
 }
 
-export function GoodBoard({ onBack, onEvent }: { onBack: () => void; onEvent: (id: string) => void }) {
+export function DomovBoard({ onBack, onEvent }: { onBack: () => void; onEvent: (id: string) => void }) {
   const { data: EVENTS = [] } = useGoodUdalosti();
   const { wide, desktop } = useLayout();
   const { mesto, okruh, nastavOkruh } = useLokalita(); // Kde = jedno nastavenie s Domovom (spec §1.1)
@@ -1125,7 +1126,7 @@ export function GoodBoard({ onBack, onEvent }: { onBack: () => void; onEvent: (i
 
 // ===================== DETAIL UDALOSTI =====================
 // Exportovaný — detail udalosti z komunitnej nástenky (zdieľaný do Help/Charita).
-export function GoodEvent({ id, onBack, toast }: { id: string | null; onBack: () => void; toast: (m: string) => void; oslavuj?: (suma: number, komu: string) => void }) {
+export function DomovEvent({ id, onBack, toast }: { id: string | null; onBack: () => void; toast: (m: string) => void; oslavuj?: (suma: number, komu: string) => void }) {
   const { data: EVENTS = [] } = useGoodUdalosti();
   const e: Udalost | undefined = EVENTS.find((x) => x.id === id);
   if (!e) return null;

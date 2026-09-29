@@ -1,3 +1,4 @@
+import { Emo } from "@/components/icons";
 import { Fragment, useRef, useState, type CSSProperties } from "react";
 import { C, SPACE, RADIUS, SIRKA } from "@/theme";
 import {
@@ -514,7 +515,7 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
                 : <img src={p.video.nahlad} alt="" style={media} />}
               <span style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,.28)", color: "#fff", fontSize: velka ? 30 : 16 }}>▶</span>
             </span>
-          ) : <span style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: "100%", fontSize: velka ? 40 : 19 }}>{p.emoji}</span>}
+          ) : <span style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: "100%", fontSize: velka ? 40 : 19 }}><Emo e={p.emoji} /></span>}
       </span>
     );
   };
@@ -695,9 +696,9 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
   const telo = (
     <div style={{ padding: `0 ${SPACE.md}px` }}>
       <EntityHero avatarTvar={fotoOsoby ? "kruh" : nacitajTvarLoga(pozicia)}
-        avatar={avatarSrc ? <img src={avatarSrc} alt={s.nazov} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : (pozicia === "tvorca" ? s.emoji : s.iniciacky)}
+        avatar={avatarSrc ? <img src={avatarSrc} alt={s.nazov} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : (pozicia === "tvorca" ? s.iniciacky : s.iniciacky)}
         cover={coverSrc}
-        coverEl={<span style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 46, opacity: .45 }}>{s.emoji}</span>}
+        coverEl={<span style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 46, opacity: .45 }}><Emo e={s.emoji} /></span>}
         meno={s.nazov} overene={s.overena} overeneLabel="Overený subjekt — identita potvrdená"
         podtitul={<span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}><IkonaPin size={11} color={C.textTer} /> {s.lok}</span>}
         vpravo={

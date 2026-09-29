@@ -13,6 +13,7 @@ import { Harok } from "@/features/zbierka/Zdielat";
 import { MOJA_KARMA, MOJE_SKUTKY_POCET } from "./mock";
 import { useOsobnyProfil } from "@/lib/osobnyProfil";
 import "@/styles/platba.css";
+import { vetaStitu } from "@/features/zbierka/hlasky";
 
 export const STIT_SK: Record<StitLevel, string> = { Bronze: "Bronzový", Silver: "Strieborný", Gold: "Zlatý", Platinum: "Platinový", Legend: "Legenda" };
 const STIT_SUBOR: Record<StitLevel, string> = { Bronze: "bronze", Silver: "silver", Gold: "gold", Platinum: "platinum", Legend: "legend" };
@@ -105,19 +106,29 @@ export function IdentitaKarta18({ naUpravit, naQr }: { naUpravit: () => void; na
 export function StitKarta18() {
   const ja = usePouzivatel();
   const stit = stitUzivatela(!!ja.demo);
+  const veta = vetaStitu(stit, dniNaStite(!!ja.demo));
   return (
-    <div style={{ position: "relative", borderRadius: 24, background: "var(--goldBg)", border: "1px solid var(--goldBd)", padding: "18px 16px", display: "flex", alignItems: "center", gap: 16, overflow: "hidden", color: "#1D211B" }}>
-      <div style={{ position: "relative", width: 96, height: 112, flex: "none" }}>
-        <div className="pf-ziara" style={{ position: "absolute", left: "50%", top: "50%", width: 150, height: 150, margin: "-75px 0 0 -75px", borderRadius: "50%", background: "radial-gradient(circle,rgba(255,231,163,.85) 0%,rgba(246,183,60,.25) 40%,rgba(246,183,60,0) 70%)" }} />
+    <div style={{ position: "relative", borderRadius: 24, background: "var(--goldBg)", border: "1px solid var(--sek-oBd)", padding: "16px 16px", display: "flex", alignItems: "center", gap: 16, overflow: "hidden", color: "var(--ink)" }}>
+      <div style={{ position: "relative", width: 132, height: 154, flex: "none" }}>
+        <div className="pf-ziara" style={{ position: "absolute", left: "50%", top: "50%", width: 190, height: 190, margin: "-95px 0 0 -95px", borderRadius: "50%", background: "radial-gradient(circle,rgba(255,231,163,.85) 0%,rgba(246,183,60,.25) 40%,rgba(246,183,60,0) 70%)" }} />
         <img src={`/odznaky/${STIT_SUBOR[stit]}.png`} alt={`${STIT_SK[stit]} štít`} style={{ position: "relative", width: "100%", height: "100%", objectFit: "contain" }} />
       </div>
       <div style={{ position: "relative", minWidth: 0 }}>
-        <div style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: ".07em", color: "#876712" }}>ŠTÍT</div>
-        <div style={{ fontSize: 22, fontWeight: 800, marginTop: 2 }}>{STIT_SK[stit]}</div>
-        <div style={{ fontSize: 13.5, lineHeight: 1.5, color: "#4A4C43", marginTop: 4 }}>Zaslúžený skutkami. Ďalší stupeň príde ako prekvapenie.</div>
+        <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".07em", color: "var(--sek-o)" }}>ŠTÍT</div>
+        <div style={{ fontSize: 22, fontWeight: 800, marginTop: 2, color: "var(--ink)" }}>{STIT_SK[stit]}</div>
+        <div style={{ fontSize: 14, lineHeight: 1.5, color: "var(--ink2)", marginTop: 4 }}>{veta}</div>
       </div>
     </div>
   );
+}
+
+/** koľko dní je používateľ na terajšom štíte (lokálne, kým to nevráti server) */
+function dniNaStite(demo: boolean): number {
+  try {
+    let od = Number(localStorage.getItem("deed.stit.od"));
+    if (!od) { od = demo ? Date.now() - 40 * 86400000 : Date.now(); localStorage.setItem("deed.stit.od", String(od)); }
+    return Math.floor((Date.now() - od) / 86400000);
+  } catch { return 0; }
 }
 
 /** Moje záujmy — 10 oblastí v mriežke 2 × 5, ťuk → hárok (Celá oblasť + pod-položky) */

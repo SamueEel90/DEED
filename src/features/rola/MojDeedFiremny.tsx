@@ -1,3 +1,4 @@
+import { Emo } from "@/components/icons";
 import { Fragment, useEffect, useMemo, useState, type ReactNode } from "react";
 import { C, SPACE, RADIUS, SIRKA } from "@/theme";
 import {
@@ -205,9 +206,9 @@ function MojDeedFiremnyObsah({ onBack, toast, orgId }: { onBack: () => void; toa
       <EntityHero avatarTvar={fotoOsoby ? "kruh" : tvarLoga}
         avatar={avatarSrc
           ? <img src={avatarSrc} alt={subjekt.nazov} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-          : (pozicia === "tvorca" ? subjekt.emoji : subjekt.iniciacky)}
+          : (pozicia === "tvorca" ? subjekt.iniciacky : subjekt.iniciacky)}
         cover={coverSrc}
-        coverEl={<span style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 42, opacity: .4 }}>{subjekt.emoji}</span>}
+        coverEl={<span style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 42, opacity: .4 }}><Emo e={subjekt.emoji} /></span>}
         meno={subjekt.nazov} overene={subjekt.overena} overeneLabel="Overený subjekt — identita potvrdená"
         podtitul={<span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}><IkonaPin size={11} color={C.textTer} /> {subjekt.lok} · {rolaMeta.label}</span>}
         vpravo={
@@ -269,7 +270,7 @@ function MojDeedFiremnyObsah({ onBack, toast, orgId }: { onBack: () => void; toa
           ].sort((a, b) => a.t - b.t);
           zamk.forEach((z) => riadky.push({ k: z.k, tier: z.t, el: (posledna) => (
             <MenuPolozka key={z.k} posledna={posledna} zamknute farba="var(--c-textTer)"
-              ikona={z.ikona ?? <span style={{ fontSize: 15, opacity: .5 }}>{z.emoji}</span>}
+              ikona={z.ikona ?? <span style={{ fontSize: 15, opacity: .5 }}><Emo e={z.emoji} /></span>}
               label={z.nazov} chip={<TierChip label={`od ${TIER_LABEL[pozicia][z.t as Tier]}`} />}
               popis={`Dostupné od úrovne ${TIER_LABEL[pozicia][z.t as Tier]}`}
               onClick={gateTier(z.t as Tier, z.nazov, () => undefined)} />
@@ -423,7 +424,7 @@ function DevPanel({ pozicia, tier, drzitel, onPozicia, onTier, onDrzitel }: {
         <div style={{ padding: SPACE.sm, display: "grid", gap: SPACE.xs }}>
           <SegTabs options={POZICIE.map((p) => p.key)} value={pozicia} onChange={(k) => onPozicia(k as Pozicia)} ariaLabel="Rola (DEV)"
             style={{ display: "flex", gap: SPACE.xxs, padding: SPACE.xxs, borderRadius: RADIUS.sm, background: C.surface2, border: `1px solid ${C.line}` }}
-            render={(k, on) => { const p = POZICIE.find((x) => x.key === k)!; return <span style={seg(on, "var(--a-info)")}>{p.emoji} {p.label}</span>; }} />
+            render={(k, on) => { const p = POZICIE.find((x) => x.key === k)!; return <span style={seg(on, "var(--a-info)")}><Emo e={p.emoji} /> {p.label}</span>; }} />
           <div style={{ display: "flex", alignItems: "center", gap: SPACE.xs }}>
             <SegTabs options={["0", "1", "2", "3", "4"]} value={String(tier)} onChange={(t) => onTier(Number(t) as Tier)} ariaLabel="Úroveň (DEV)"
               style={{ flex: 1, display: "flex", gap: SPACE.xxs, padding: SPACE.xxs, borderRadius: RADIUS.sm, background: C.surface2, border: `1px solid ${C.line}` }}
@@ -560,7 +561,7 @@ function OrgZbierkySheet({ tier, toast, onPaywall, onSpravovat, onClose }: {
         return (
           <div key={z.id} style={{ background: C.surface2, border: `1px solid ${C.line}`, borderRadius: RADIUS.sm, padding: SPACE.sm, marginBottom: SPACE.xs }}>
             <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm }}>
-              <span style={{ width: 34, height: 34, borderRadius: RADIUS.xs, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 17, background: "rgba(var(--glass-rgb),.06)" }}>{z.emoji}</span>
+              <span style={{ width: 34, height: 34, borderRadius: RADIUS.xs, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 17, background: "rgba(var(--glass-rgb),.06)" }}><Emo e={z.emoji} /></span>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 14, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{z.nazov}</div>
                 <div style={{ fontSize: 11, color: C.textTer, marginTop: 2 }}>{z.darcovia} darcov</div>

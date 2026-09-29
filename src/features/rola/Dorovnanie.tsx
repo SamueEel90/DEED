@@ -5,6 +5,7 @@
 // Kým firma nezaplatí, charita vie dorovnanie odmietnuť.
 // V prototype je firmová strana DEV formulár na tom istom mieste.
 // ============================================================
+import { Emo } from "@/components/icons";
 import { useState, type CSSProperties } from "react";
 import { C, SPACE, RADIUS } from "@/theme";
 import { Sheet, tint } from "@/shared";
@@ -228,7 +229,7 @@ function Formular({ entita, cielFix, cielNazov, toast, onHotovo, onSpat }: {
         </div>
       )}
       {!cielFix && <select value={ciel} onChange={(e) => setCiel(e.target.value)} style={{ ...vstup, marginBottom: SPACE.sm }}>
-        {ciele.map((z) => <option key={z.id} value={z.id}>{z.emoji} {z.nazov}</option>)}
+        {ciele.map((z) => <option key={z.id} value={z.id}>{z.nazov}</option>)}
       </select>}
 
       <div style={{ fontSize: 12.5, fontWeight: 700, color: C.textSec, marginBottom: 4 }}>Firma</div>
@@ -477,7 +478,7 @@ export function DorovnanieFirmySheet({ firma, toast, onClose }: {
       {volne.map((z) => (
         <div key={z.id} {...pressable(() => setNova({ entita: z.entita, ciel: z.id }), z.nazov)}
           style={{ ...karta, display: "flex", alignItems: "center", gap: SPACE.sm, cursor: "pointer" }}>
-          <span style={{ fontSize: 20 }}>{z.emoji}</span>
+          <span style={{ fontSize: 20 }}><Emo e={z.emoji} /></span>
           <div style={{ flex: 1, minWidth: 0, fontSize: 13.5, fontWeight: 700 }}>{z.nazov}</div>
           <span style={{ fontSize: 11.5, fontWeight: 800, color: ZLATA }}>Dorovnať ›</span>
         </div>

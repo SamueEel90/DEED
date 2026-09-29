@@ -1,3 +1,4 @@
+import { Emo } from "@/components/icons";
 import { useState, useMemo, useEffect, memo } from "react";
 import { FormatovanyText, RichTextInput } from "@/shared";
 import { ModulHlavicka, Hlavicka, PlatobnyModul, PlatbaModal, HladanieModal, toast, Oslava, useMotiv, useLayout, useScrollPamat, useStrankaAkcie, useTvorbaGate, Ticker, StatRiadok, FiltreStat, FeedStlpce, FeedGrid, FeedCard, TypBadge, BackChip, SwipeBack, obalSiroky, OkruhVyber, Lupa, IkonaMoznosti, Zdielanie, IkonaPlay, IkonaDoska, IkonaPin, IkonaObalka, FotoPrispevku, FotoVyber, FeedSkeleton, EmptyState, ErrorState, ScreenSwitch, EntityHero, BtnAkcia, Overene, KontextMenu, IkonaOdkaz, IkonaVlajka, FotoProfiluSheet } from "@/shared";
@@ -288,7 +289,7 @@ function Home({ items, dom, view, pickDom, pickView, toast, open, openPerson, se
       ) : isLoading ? (
         <FeedSkeleton count={4} />
       ) : !feed.length ? (
-        <EmptyState emoji="✨" title="Zatiaľ tu nič nie je" text="V tejto kategórii zatiaľ nie sú príspevky." />
+        <EmptyState emoji={<Emo e="✨" />} title="Zatiaľ tu nič nie je" text="V tejto kategórii zatiaľ nie sú príspevky." />
       ) : desktop ? (
         <FeedGrid cols={3} cards={feed.map(boardCard)} />
       ) : (
@@ -824,7 +825,7 @@ function OsobaProfil({ name, items, follows, toggleFollow, onOpen, toast, home }
           const lbl = it.type === "talent" ? "Talent" : it.type === "workshop" ? "Workshop" : it.type === "help" ? "Hľadá pomoc" : it.type === "case" ? "Akcia" : "Skutok";
           return (
             <div key={it.id} onClick={() => onOpen(it.id)} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, padding: `${SPACE.sm}px ${SPACE.sm}px`, background: A.surface, border: `1px solid ${A.line2}`, borderRadius: RADIUS.sm, marginBottom: SPACE.xs, cursor: "pointer" }}>
-              <div style={{ width: 38, height: 38, borderRadius: RADIUS.xs, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 17, flex: "none", background: a.bg, border: `1px solid ${a.bd}` }}>{it.emoji}</div>
+              <div style={{ width: 38, height: 38, borderRadius: RADIUS.xs, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 17, flex: "none", background: a.bg, border: `1px solid ${a.bd}` }}><Emo e={it.emoji} /></div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 13.5, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{it.title}</div>
                 <div style={{ fontSize: 11, color: A.txt3, marginTop: SPACE.xxs }}><span style={{ color: a.c, fontWeight: 700 }}>{lbl}</span> · {a.label} · {it.time}</div>

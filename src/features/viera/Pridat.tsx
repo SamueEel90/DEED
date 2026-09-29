@@ -1,3 +1,4 @@
+import { Emo } from "@/components/icons";
 import { useState } from "react";
 import { SPACE, RADIUS } from "@/theme";
 import { Input, Switch, SplitQrSheet, FotoVyber, RichTextInput, tint } from "@/shared";
@@ -56,7 +57,7 @@ const UDALOST: Kat = {
   uzly: [
     { id: "u-omsa", emoji: "⛪", titul: "Omša (z rozvrhu)", popis: "Čas z rozvrhu · auto-generuje omšovú zbierku", kto: "F", datum: true,
       polia: ["Názov", "Čas z rozvrhu", "Poznámka"], akcie: ["Prispieť", "Pripomeň"], feed: "farský · omša nemá RSVP" },
-    { id: "u-sviatok", emoji: "✨", titul: "Sviatok / prikázaný sviatok", popis: "Dátum predvyplnený z cirkevného kalendára", kto: "F", datum: true,
+    { id: "u-sviatok", emoji: "★", titul: "Sviatok / prikázaný sviatok", popis: "Dátum predvyplnený z cirkevného kalendára", kto: "F", datum: true,
       polia: ["Názov", "Dátum (z kalendára)", "Časy omší", "Poznámka"], akcie: ["Prispieť", "Pripomeň"], feed: "farský" },
     { id: "u-put", emoji: "⛰", titul: "Púť", popis: "Voliteľná zbierka na dopravu + kapacita", kto: "F", datum: true,
       polia: ["Názov", "Dátum", "Popis", "Foto", "Zbierka na dopravu (voliteľné)", "Kapacita"], akcie: ["Zúčastním sa", "Prispieť", "Pripomeň"], feed: "farský" },
@@ -200,7 +201,7 @@ const tileStyle: React.CSSProperties = {
   borderRadius: RADIUS.sm, padding: SPACE.md, marginBottom: SPACE.sm, cursor: "pointer",
 };
 function Bublina({ emoji }: { emoji: string }) {
-  return <div style={{ width: 42, height: 42, borderRadius: RADIUS.sm, background: N.indBg, color: N.ind, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 19, flexShrink: 0 }}>{emoji}</div>;
+  return <div style={{ width: 42, height: 42, borderRadius: RADIUS.sm, background: N.indBg, color: N.ind, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 19, flexShrink: 0 }}><Emo e={emoji} /></div>;
 }
 const KTO_LABEL: Record<string, string> = { F: "farár", "R→F": "dotknutý → farár schváli", U: "user → auto-publish" };
 function UzolTile({ u, onClick }: { u: Uzol; onClick: () => void }) {
@@ -271,7 +272,7 @@ function postavPrispevok(uzol: Uzol, opts: {
     ntyp, skore: 6, typSituacie: "normal", dni: 0, podpora: 0,
     lat: farnost?.lat, lng: farnost?.lng, lok: farnost?.obec,
     farnostId: farnost?.id, cirkev: farnost?.cirkev ?? "", komunita: farar ? farnost?.nazov : autor,
-    nazov, overena: farar, badgeL: `${uzol.emoji} ${meta.badge}`, tag: meta.tag, emoji: uzol.emoji,
+    nazov, overena: farar, badgeL: `${meta.badge}`, tag: meta.tag, emoji: uzol.emoji,
     // popis = krátky ČISTÝ text do kariet/riadkov · pribeh = formátovaný obsah do detailu
     popis: cistyText(text) || uzol.popis, pribeh: text || undefined,
     datum: datum || undefined, ukat: UKAT_UZLA[uzol.id], reakciaTyp: REAKCIA_UZLA[uzol.id],

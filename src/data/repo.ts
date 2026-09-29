@@ -21,7 +21,7 @@ import type {
   MapaBod,
 } from "@/types";
 
-import { POLOZKY, EVENTS } from "@/features/good/mock";
+import { POLOZKY, EVENTS } from "@/features/domov/mock";
 import { MOCK_FEED } from "@/features/help/mock";
 import { FEED_ITEMS, ADRESAR, ZBIERKA } from "@/features/charita/mock";
 import { SEED_ITEMS } from "@/features/aktivity/mock";

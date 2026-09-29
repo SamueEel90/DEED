@@ -51,3 +51,29 @@ export const dorovnanie = (dar: number, pomer: number, stropFirmy: number, zosta
 
 // Zoznam darcov: suma do 2 € sa NIKDY nezobrazí — ani riadok firmy (prezradil by ju)
 export const zobrazSumu = (eurDar: number, darcaChce: boolean) => darcaChce && eurDar > 2;
+
+// ===== Vety pri štíte (karta 18 bod 2.3) — len pre vlastníka, striedajú sa raz za deň.
+// Prvých 14 dní na novom štíte len 1. veta; posledná jemne láka na ďalší stupeň (Legenda bez lákania).
+export type StitKluc = 'Bronze' | 'Silver' | 'Gold' | 'Platinum' | 'Legend';
+export const STIT_VETY: Record<StitKluc, string[]> = {
+  Bronze: ['Tvoj prvý štít. Dobrý začiatok.', 'Skutky sa počítajú, aj tie malé.', 'Striebro už nie je ďaleko.'],
+  Silver: ['Striebro sa len tak nedostane.', 'Ľudia okolo teba to cítia.', 'Zlato sa blyští inak.'],
+  Gold: ['Tento štít nemá hocikto. Si dobrý človek.', 'Zlatý ti pristane.', 'Ale tá Platina má iný lesk.'],
+  Platinum: ['Platina. To je už iná liga.', 'Takých ľudí je málo.', 'Legendy sa rodia zo skutkov.'],
+  Legend: ['Legenda. Viac nie je čo dodať.', 'Ďakujeme, že si.'],
+};
+/** profil firmy (vykanie) */
+export const STIT_VETY_FIRMA: Record<StitKluc, string[]> = {
+  Bronze: ['Prvý štít vašej firmy. Dobrý začiatok.', 'Každý skutok vašich ľudí sa počíta.', 'Striebro už nie je ďaleko.'],
+  Silver: ['Striebro sa len tak nedostane.', 'Vaše okolie to cíti.', 'Zlato sa blyští inak.'],
+  Gold: ['Tento štít nemá hocijaká firma. Za ním sú skutky vašich ľudí.', 'Zlatý vám pristane.', 'Ale tá Platina má iný lesk.'],
+  Platinum: ['Platina. To je už iná liga.', 'Takých firiem je málo.', 'Legendy sa rodia zo skutkov.'],
+  Legend: ['Legenda. Viac nie je čo dodať.', 'Ďakujeme, že ste.'],
+};
+/** veta na dnešný deň: dniNaStite < 14 → vždy 1. veta, inak sa strieda podľa dňa */
+export function vetaStitu(stit: StitKluc, dniNaStite: number, firma = false, dnes = new Date()): string {
+  const vety = (firma ? STIT_VETY_FIRMA : STIT_VETY)[stit];
+  if (dniNaStite < 14) return vety[0];
+  const den = Math.floor((dnes.getTime() - dnes.getTimezoneOffset() * 60000) / 86400000);
+  return vety[den % vety.length];
+}

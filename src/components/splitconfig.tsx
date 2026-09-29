@@ -8,6 +8,7 @@
 // Používa: SplitQrSheet (osobný QR), tvorba príspevku (autorský split),
 // správca QR (nový QR). Rodič vlastní `ciele`; owner % = 100 − Σ.
 // ============================================================
+import { Emo } from "@/components/icons";
 import { useState, type CSSProperties } from "react";
 import { C, SPACE, RADIUS } from "@/theme";
 import { tint } from "@/lib/ui";
@@ -109,7 +110,7 @@ export function SplitConfigStep({ ownerLabel, ciele, onCiele, ownerColor = "var(
         <div style={{ maxHeight: 168, overflowY: "auto", margin: "0 -2px" }}>
           {zoznam.map((z) => (
             <div key={z.id} onClick={() => pridaj(z.nazov)} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, padding: `${SPACE.sm}px ${SPACE.sm}px`, borderRadius: RADIUS.sm, marginBottom: SPACE.xs, cursor: "pointer", background: "rgba(var(--glass-rgb),.04)", border: `1px solid ${C.line}` }}>
-              <span style={{ width: 32, height: 32, borderRadius: RADIUS.xs, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, background: tint(z.col, .15) }}>{z.emoji}</span>
+              <span style={{ width: 32, height: 32, borderRadius: RADIUS.xs, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, background: tint(z.col, .15) }}><Emo e={z.emoji} /></span>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 13, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{z.nazov}</div>
                 <div style={{ fontSize: 11, color: C.textTer }}>{z.zdroj} · {z.lok}</div>

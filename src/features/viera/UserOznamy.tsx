@@ -15,6 +15,7 @@
 //   komentáre · bez zbierky.
 // · TTL default 7 dní (prosba dlhšie, default 9) — oznamAktivny v mock.ts.
 // ============================================================
+import { Emo } from "@/components/icons";
 import { useState } from "react";
 import { SPACE, RADIUS, U } from "@/theme";
 import { Input, Switch, RichTextInput, FotoVyber, Foto } from "@/shared";
@@ -170,7 +171,7 @@ export function UserOznamForm({ typ, farnost, autor, poplatok = 0, onPublish }: 
       farnostId: farnost?.id, cirkev: farnost?.cirkev ?? "",
       // hlavička = meno usera z registrácie (§2); „bez mena" = obsah anonymný, KYC v pozadí (§4.3)
       komunita: typ === "modlitba" && bezMena ? "Farník — bez mena" : autor,
-      nazov: nazovEdit.trim() || nazov, overena: false, badgeL: `${m.emoji} OZNAM`, tag: "Oznam", emoji: m.emoji,
+      nazov: nazovEdit.trim() || nazov, overena: false, badgeL: `OZNAM`, tag: "Oznam", emoji: m.emoji,
       popis: cistyText(text) || popisKratky, pribeh: text || undefined,
       datum: datum || undefined, reakciaTyp: m.reakcia,
       fotky: obrazok ? [obrazok] : undefined,
@@ -293,7 +294,7 @@ export function UserOznamForm({ typ, farnost, autor, poplatok = 0, onPublish }: 
             {/* bod 25: portrét aj landscape — obrázok sa zobrazí celý (contain), neoreže sa do pruhu */}
             {obrazok && <img src={obrazok} alt={nazov} style={{ display: "block", width: "100%", height: "auto", maxHeight: 260, objectFit: "contain", background: "#111" }} />}
             <div style={{ padding: `${SPACE.sm}px ${SPACE.gutter}px ${SPACE.gutter}px` }}>
-              <div style={{ fontSize: 14.5, fontWeight: 700 }}>{m.emoji} {nazovEdit.trim() || nazov}</div>
+              <div style={{ fontSize: 14.5, fontWeight: 700 }}><Emo e={m.emoji} /> {nazovEdit.trim() || nazov}</div>
               <div style={{ fontSize: 12.5, color: N.txt2, marginTop: SPACE.xxs, lineHeight: 1.5 }}>{cistyText(text) || popisKratky}</div>
             </div>
           </div>

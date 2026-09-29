@@ -1,3 +1,4 @@
+import { Emo } from "@/components/icons";
 import { useState, useEffect, useRef } from "react";
 import type { CSSProperties } from "react";
 import { C, GRAD, glass, glassTmavy, SPACE, RADIUS } from "@/theme";
@@ -21,7 +22,7 @@ export function Foto({ src, emoji, h, w, radius = 0, style, onClick, sizes, alt,
     return (
       <div onClick={onClick} style={{ width: w || "100%", height: h, background: "rgba(var(--glass-rgb),.05)", display: "flex", alignItems: "center",
         justifyContent: "center", fontSize: Math.min((typeof h === "number" ? h : 90) / 3, 30), color: C.textTer, borderRadius: radius, flex: w ? "0 0 auto" : undefined, cursor: onClick ? "pointer" : undefined, ...style }}>
-        {emoji}
+        <Emo e={emoji} />
       </div>
     );
   }

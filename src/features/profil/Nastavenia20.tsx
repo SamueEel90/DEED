@@ -13,7 +13,7 @@ import { IntroPruvodca } from "@/components/intro";
 import { NahlasitSheet } from "@/components/nahlasit";
 import { MojZamestnavatelSheet } from "@/features/rola/MojZamestnavatel";
 import { Harok } from "@/features/zbierka/Zdielat";
-import { PotvrditPlatbuHarok, OkruhHarok, PrihlaseneZariadenia, EmailTelefonHeslo, ZablokovaniLudia, Suhlasy, hranicaText } from "./Bezpecnost24";
+import { PotvrditPlatbuHarok, OkruhHarok, PrihlaseneZariadenia, EmailTelefonHeslo, ZablokovaniLudia, Suhlasy, DetailSuhlasu, hranicaText } from "./Bezpecnost24";
 import { zariadenia, useZmenyZariadeni } from "@/lib/zariadenia";
 import { zablokovani, useZmenyBlokovania } from "@/lib/blokovanie";
 import "@/styles/platba.css";
@@ -58,6 +58,7 @@ export function Nastavenia20({ onBack, onNotif, onUpravProfil, desktop }: { onBa
   const [tuk, setTuk] = useState(potvrditTuknutim);
   const vazba = useVazbaOsoby(ja.celeMeno);
   const [harok, setHarok] = useState<null | "okruh" | "platba" | "zrusit" | "zamestnavatel" | "uvod" | "nahlasit">(null);
+  const [detail, setDetail] = useState<null | "pod" | "ud">(null); // OPRAVY 34: detail súhlasu (karta 24 · 2f)
   const [obr, setObr] = useState<null | "zariadenia" | "kontakt" | "blokovani" | "suhlasy">(null); // obrazovky sprava (karta 24)
   useZmenyZariadeni(); useZmenyBlokovania();
 
@@ -147,8 +148,8 @@ export function Nastavenia20({ onBack, onNotif, onUpravProfil, desktop }: { onBa
         <Riadok t="Časté otázky" onClick={coskoro} />
         <Riadok t="Napísať podpore" onClick={coskoro} />
         <Riadok t="Nahlásiť problém" onClick={() => setHarok("nahlasit")} />
-        <Riadok t="Podmienky používania" onClick={coskoro} />
-        <Riadok t="Ochrana súkromia" onClick={coskoro} />
+        <Riadok t="Podmienky používania" onClick={() => setDetail("pod")} />
+        <Riadok t="Ochrana súkromia" onClick={() => setDetail("ud")} />
       </Sekcia>
 
       <button type="button" onClick={() => { toast("Odhlásené"); void signOut(); }} style={{ minHeight: 54, borderRadius: 16, border: "1px solid var(--cardBd)", background: "var(--btn)", fontSize: 16, fontWeight: 700, color: "var(--ink)", cursor: "pointer", fontFamily: "inherit" }}>Odhlásiť sa</button>
@@ -160,6 +161,7 @@ export function Nastavenia20({ onBack, onNotif, onUpravProfil, desktop }: { onBa
       {obr === "kontakt" && <EmailTelefonHeslo onBack={() => setObr(null)} />}
       {obr === "blokovani" && <ZablokovaniLudia onBack={() => setObr(null)} />}
       {obr === "suhlasy" && <Suhlasy onBack={() => setObr(null)} />}
+      {detail && <DetailSuhlasu typ={detail} onBack={() => setDetail(null)} />}
       {harok === "zrusit" && <ZrusitUcet onClose={() => setHarok(null)} />}
       {harok === "zamestnavatel" && <MojZamestnavatelSheet osoba={ja.celeMeno} toast={toast} onClose={() => setHarok(null)} />}
       {harok === "uvod" && <IntroPruvodca onClose={() => setHarok(null)} />}

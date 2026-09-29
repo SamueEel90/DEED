@@ -7,7 +7,7 @@
 // `aktivity`/`b2b` ostávajú kurátorské do Fázy F (Aktivity) / dát o firmách.
 // ============================================================
 import type { RebricekPolozka, GoodPolozka } from "@/types";
-import { POLOZKY } from "@/features/good/mock";
+import { POLOZKY } from "@/features/domov/mock";
 
 /** Kľúče kategórií rebríčka (poradie zobrazenia rieši CATS v Top.tsx). */
 export type RebricekKluc = "b2b" | "darcovia" | "hrdinovia" | "aktivity" | "charity";

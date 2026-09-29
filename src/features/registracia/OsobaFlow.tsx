@@ -7,6 +7,7 @@
 // Stavový automat (krok) v tomto súbore; univerzálne kroky
 // (telefón+SMS, zabezpečenie) sa preberajú z RegKit.
 // ============================================================
+import { Emo } from "@/components/icons";
 import { useEffect, useState } from "react";
 import { C, GRAD, infoBox, SPACE, RADIUS } from "@/theme";
 import { Vyber, Otazka, Oslava, Suhrn, FotoUpload } from "@/shared";
@@ -373,7 +374,7 @@ function KrokSekcie({ onBack, onNext }: { onBack: () => void; onNext: () => void
           key={m.id}
           on={!!sekcie[m.id]}
           onToggle={() => toggle(m.id)}
-          title={`${m.emoji} ${m.label}`}
+          title={m.label}
           desc={m.desc}
         />
       ))}
@@ -724,14 +725,14 @@ function KrokKyc({ ucet, toast, onBack, onNext }: KrokKycProps) {
     >
       <Otazka>Over sa — odomkneš plné DEED</Otazka>
       <Vyber
-        emoji="📷"
+        emoji={<Emo e="📷" />}
         title="Overiť teraz (doklad + selfie)"
         desc="Klasické overenie cez Didit."
         active={sposob === "nove"}
         onClick={() => !overene && setSposob("nove")}
       />
       <Vyber
-        emoji="♻️"
+        emoji={<Emo e="♻" />}
         title="Použiť existujúce overenie (reusable / EUDI)"
         desc="Máš overenú digitálnu identitu."
         active={sposob === "reusable"}

@@ -3,6 +3,7 @@
 // Tag témy · Prísny režim (zraniteľní) · malé placeholder pomôcky.
 // Reusnuté naprieč OfferFlow / Ľudská pomoc / Finančný wizard.
 // ============================================================
+import { Emo } from "@/components/icons";
 import { C, infoBox, btn, SPACE, RADIUS } from "@/theme";
 import { tint, tagChip } from "@/lib/ui";
 import { pressable } from "@/components/pressable";
@@ -26,7 +27,7 @@ export function TagTemy({ vybrane, onToggle, akcent = "var(--a-danger)", polozky
           return (
             <span key={s.id} {...pressable(() => onToggle(s.id), s.label)} aria-pressed={on}
               style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "7px 12px", borderRadius: RADIUS.lg, fontSize: 12.5, fontWeight: on ? 700 : 600, cursor: "pointer", background: on ? tint(akcent, .15) : C.surface2, border: `1px solid ${on ? tint(akcent, .5) : C.line2}`, color: on ? akcent : C.textSec }}>
-              <span aria-hidden>{s.emoji}</span>{s.label}
+              <span aria-hidden><Emo e={s.emoji} /></span>{s.label}
             </span>
           );
         })}
@@ -73,7 +74,7 @@ export function PrisnyRezimPanel({ pomahajuci = false }: { pomahajuci?: boolean 
   return (
     <div style={{ marginTop: SPACE.sm, border: `1px solid ${tint("var(--a-danger)", .4)}`, background: tint("var(--a-danger)", .08), borderRadius: RADIUS.md, padding: SPACE.md }}>
       <div style={{ display: "flex", alignItems: "center", gap: SPACE.xs, fontWeight: 700, color: "var(--a-danger)", fontSize: 13.5 }}>
-        🛡 Prísny režim — práca so zraniteľnými
+        Prísny režim — práca so zraniteľnými
       </div>
       <div style={{ fontSize: 12.5, color: C.textSec, marginTop: SPACE.xs, lineHeight: 1.5 }}>
         {pomahajuci
@@ -89,7 +90,7 @@ export function PrisnyRezimPanel({ pomahajuci = false }: { pomahajuci?: boolean 
 
 // odznak do zhrnutia / karty
 export function PrisnyBadge() {
-  return <span style={tagChip("var(--a-danger)")}>🛡 zraniteľní — prísny režim</span>;
+  return <span style={tagChip("var(--a-danger)")}>zraniteľní · prísny režim</span>;
 }
 
 // ---- AI placeholder (mock verdikt) ----------------------------------------

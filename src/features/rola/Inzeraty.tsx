@@ -302,7 +302,7 @@ function Zaujemcovia({ inzerat, onSpat }: { inzerat: Oznam; onSpat: () => void }
         <div key={z.id} style={karta}>
           <div style={{ display: "flex", alignItems: "center", gap: SPACE.xs }}>
             <div style={{ flex: 1, minWidth: 0, fontSize: 13.5, fontWeight: 700 }}>{z.meno}</div>
-            {z.stit && <span style={{ flex: "none", fontSize: 10, fontWeight: 800, color: "var(--a-gold)", background: tint("var(--a-gold)", .14), borderRadius: RADIUS.pill, padding: `1px ${SPACE.xs}px` }}>🛡 {z.stit}</span>}
+            {z.stit && <span style={{ flex: "none", fontSize: 10, fontWeight: 800, color: "var(--a-gold)", background: tint("var(--a-gold)", .14), borderRadius: RADIUS.pill, padding: `1px ${SPACE.xs}px` }}>{z.stit}</span>}
             {typeof z.karma === "number" && <span style={{ flex: "none", fontSize: 10.5, color: C.textTer }}>karma {z.karma}</span>}
           </div>
           <div style={{ fontSize: 12, color: C.textSec, marginTop: 2 }}>

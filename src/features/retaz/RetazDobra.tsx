@@ -1,3 +1,4 @@
+import { Emo } from "@/components/icons";
 import { useState } from "react";
 import { C, GRAD, GRAD_ZELENY, SPACE, RADIUS } from "@/theme";
 import { Sheet, DeedQr, IkonaFajka, IkonaDoska, Lupa, Zdielanie, tint, pressable } from "@/shared";
@@ -76,7 +77,7 @@ export function RetazDobraSheet({ odmena = 130, mode = "skutok", odkaz = "https:
     return (
       <Sheet onClose={onClose}>
         <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm, marginBottom: SPACE.xxs }}>
-          <span style={{ width: 36, height: 36, borderRadius: RADIUS.sm, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", background: tint("var(--a-green)", .16), color: "var(--a-green)", fontSize: 18 }}>♻</span>
+          <span style={{ width: 36, height: 36, borderRadius: RADIUS.sm, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", background: tint("var(--a-green)", .16), color: "var(--a-green)", fontSize: 18 }}><Emo e="⛓" /></span>
           <div>
             <div style={{ fontSize: 16, fontWeight: 800 }}>Reťaz dobra</div>
             <div style={{ fontSize: 11.5, color: C.textTer }}>{honorar ? "Nastav reťaz na svoj honorár" : "Podeľ sa o časť odmeny za skutok"}</div>
@@ -114,7 +115,7 @@ export function RetazDobraSheet({ odmena = 130, mode = "skutok", odkaz = "https:
             return (
               <div key={z.id} {...pressable(() => setZid(z.id), `Žiadosť: ${z.nazov}`)} aria-pressed={on} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, padding: `${SPACE.sm}px ${SPACE.sm}px`, borderRadius: RADIUS.sm, marginBottom: SPACE.xs, cursor: "pointer",
                 background: on ? tint(z.col, .12) : "rgba(var(--glass-rgb),.04)", border: `1px solid ${on ? tint(z.col, .5) : C.line}` }}>
-                <span style={{ width: 34, height: 34, borderRadius: RADIUS.xs, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, background: tint(z.col, .15) }}>{z.emoji}</span>
+                <span style={{ width: 34, height: 34, borderRadius: RADIUS.xs, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, background: tint(z.col, .15) }}><Emo e={z.emoji} /></span>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 13.5, fontWeight: 700, display: "flex", alignItems: "center", gap: SPACE.xs }}>
                     {z.nazov}
@@ -170,9 +171,6 @@ export function RetazDobraSheet({ odmena = 130, mode = "skutok", odkaz = "https:
         <div style={{ fontSize: 12, color: C.textSec, textAlign: "center" }}>{pct}% ide ďalej → <b style={{ color: C.text }}>{ziadost?.nazov}</b><br /><span style={{ fontSize: 10.5, color: C.textTer }}>skén → vidíš príjemcu · QR = odkaz na skutok</span></div>
       </div>
 
-      <div style={{ display: "flex", alignItems: "center", gap: SPACE.xs, fontSize: 10.5, color: C.textTer, marginTop: SPACE.sm, lineHeight: 1.4, background: "rgba(31,191,143,.06)", border: "1px solid rgba(31,191,143,.18)", borderRadius: RADIUS.sm, padding: `${SPACE.xs}px ${SPACE.sm}px` }}>
-        ♻ Reťazová časť sa akumuluje oddelene (zamknutá) a odošle sa pri prahu 1000 DEED alebo uzávierke 30 dní. Generuje Generosity Score, nie nové DEED.
-      </div>
 
       <button onClick={() => { toast?.(honorar ? "Reťaz na honorár aktívna — QR pripravený na zdieľanie" : "Skutok + reťaz zverejnené · QR zdieľané"); onDone?.({ pct, reazSuma, ziadost, gener }); onClose?.(); }}
         style={{ width: "100%", height: 50, borderRadius: RADIUS.md, border: "none", marginTop: SPACE.gutter, fontWeight: 700, fontSize: 15, fontFamily: "inherit", background: GRAD, color: "#fff", cursor: "pointer", boxShadow: "0 8px 26px color-mix(in srgb, var(--a-green) 32%, transparent)", display: "flex", alignItems: "center", justifyContent: "center", gap: SPACE.xs }}>

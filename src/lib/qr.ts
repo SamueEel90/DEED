@@ -37,7 +37,7 @@ export const QR_TYPY: Record<string, { rot: number; tag: string; popis: string; 
   platba:     { rot: 0,  tag: "Platobný QR",   popis: "Pošli DEED / prepitné — statický kód",  col: "#43E0C8" },
   akcia:      { rot: 15, tag: "Akčný QR",      popis: "Overenie účasti (proof-of-presence)",    col: "#F0A85E" },
   skutok:     { rot: 0,  tag: "QR skutku",     popis: "Odkaz na skutok / reťaz dobra",          col: "#5BA8F0" },
-  rozdelenie: { rot: 0,  tag: "Split QR",      popis: "Reťaz dobra — rozdelenie platby na % pre viacerých príjemcov", col: "#2BD49B" },
+  rozdelenie: { rot: 0,  tag: "QR reťaze",     popis: "Reťaz dobra — rozdelenie platby na % pre viacerých príjemcov", col: "#2BD49B" },
 };
 
 // ============================================================

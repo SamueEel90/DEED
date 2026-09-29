@@ -412,7 +412,7 @@ const KAPITOLY: [string, string][] = [["1. Kto sme a čo je DEED", "DEED je appk
 const UDAJE: [string, string, string][] = [["Meno a overenie totožnosti", "účet a dôvera medzi ľuďmi", "kým máš účet"], ["E-mail a telefón", "prihlásenie, bezpečnosť a dôležité oznámenia", "kým máš účet"], ["Skutky, fotky a dôkazy", "overenie skutku a feed", "kým ich nezmažeš"], ["Dary a platby", "doklady, ktoré vyžaduje zákon", "10 rokov, po zrušení účtu anonymne"], ["Poloha", "skutky a pomoc v okolí, GPS pri akcii", "len pri používaní, históriu neukladáme"]];
 const PRAVA: [string, string][] = [["Pozrieť si údaje", "Stiahnuť moje údaje"], ["Opraviť údaje", "Upraviť profil, E-mail, telefón a heslo"], ["Stiahnuť údaje", "všetko v jednom súbore"], ["Vymazať údaje", "Zrušiť účet"]];
 
-function DetailSuhlasu({ typ, onBack }: { typ: "pod" | "ud"; onBack: () => void }) {
+export function DetailSuhlasu({ typ, onBack }: { typ: "pod" | "ud"; onBack: () => void }) {
   const [kap, setKap] = useState<number | null>(null);
   const titul = typ === "pod" ? "Podmienky používania" : "Spracovanie údajov";
   const pdf = () => {
@@ -444,7 +444,8 @@ function DetailSuhlasu({ typ, onBack }: { typ: "pod" | "ud"; onBack: () => void 
               <div style={{ fontSize: 13.5, lineHeight: 1.45, color: "var(--ink2)", marginTop: 2 }}>{preco}</div>
             </div>))}
         </div></div>
-        <div><h2 style={{ ...lbl, padding: "0 2px 6px" }}>KTO ICH VIDÍ</h2><div style={{ padding: "12px 14px", borderRadius: 14, background: "var(--card)", border: "1px solid var(--cardBd)", fontSize: 14.5, lineHeight: 1.55, color: "var(--ink2)" }}>Ty, AI pri overovaní skutkov a platobná brána pri platbe. Nikto iný. <b style={{ color: "var(--ink)" }}>Údaje nepredávame.</b></div></div>
+        <div><h2 style={{ ...lbl, padding: "0 2px 6px" }}>KTO ICH VIDÍ</h2><div style={{ padding: "12px 14px", borderRadius: 14, background: "var(--card)", border: "1px solid var(--cardBd)", fontSize: 14.5, lineHeight: 1.55, color: "var(--ink2)" }}>Ty, AI pri overovaní skutkov a platobná brána pri platbe. Nikto iný. <b style={{ color: "var(--ink)" }}>Zaväzujeme sa, že tvoje údaje ani to, čo v appke robíš, nikdy nepredáme iným firmám na komerčné účely.</b></div></div>
+        <div><h2 style={{ ...lbl, padding: "0 2px 6px" }}>SKUTKY PRE FIRMU (ESG)</h2><div style={{ padding: "12px 14px", borderRadius: 14, background: "var(--card)", border: "1px solid var(--cardBd)", fontSize: 14.5, lineHeight: 1.55, color: "var(--ink2)" }}>Ak je tvoj skutok priradený k firme, započítame ho do jej správ o zodpovednosti (ESG a CSGR). Vždy len <b style={{ color: "var(--ink)" }}>bez tvojho mena</b> a len v rozsahu, ktorý povoľuje zákon.</div></div>
         <div><h2 style={{ ...lbl, padding: "0 2px 6px" }}>TVOJE PRÁVA</h2><div style={karta}>
           {PRAVA.map(([t, s], i) => (
             <button type="button" key={t} onClick={() => { onBack(); toast(`Nájdeš v Nastaveniach: ${s}`); }} style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, minHeight: 56, border: "none", borderTop: i ? "1px solid var(--cardBd)" : "none", background: "transparent", cursor: "pointer", textAlign: "left", fontFamily: "inherit", color: "var(--ink)" }}>

@@ -6,6 +6,7 @@
 // Nahrádza paralelný split viacerých zbierok pre tvorcu (ten sa RUŠÍ).
 // Mock: stav drží komponent; routing (dorovnanie/prehod) cez fronta.ts.
 // ============================================================
+import { Emo } from "@/components/icons";
 import { useState, type CSSProperties } from "react";
 import { SpatTlacidlo } from "@/components/cesta";
 import { C, GRAD, GRAD_ZELENY, SPACE, RADIUS } from "@/theme";
@@ -76,7 +77,7 @@ export function MojaRetaz({ onClose, toast }: { onClose?: () => void; toast?: (m
       <Sheet onClose={onClose} label="Moja reťaz">
         {/* hlavička */}
         <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm, marginBottom: SPACE.sm }}>
-          <span style={{ width: 36, height: 36, borderRadius: RADIUS.sm, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", background: tint(GREEN, .16), color: GREEN, fontSize: 18 }}>⛓</span>
+          <span style={{ width: 36, height: 36, borderRadius: RADIUS.sm, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", background: tint(GREEN, .16), color: GREEN, fontSize: 18 }}><Emo e="⛓" /></span>
           <div style={{ minWidth: 0, flex: 1 }}>
             <div style={{ fontSize: 16, fontWeight: 800 }}>Moja reťaz</div>
             <div style={{ fontSize: 11.5, color: C.textTer }}>{draft ? "Fronta zbierok · % z honoráru ku každej" : "Zverejnená · zamknutá"}</div>
@@ -103,7 +104,7 @@ export function MojaRetaz({ onClose, toast }: { onClose?: () => void; toast?: (m
               padding: `${SPACE.sm}px ${SPACE.gutter}px`, marginBottom: SPACE.xs, opacity: filled ? .72 : 1,
             }}>
               <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm }}>
-                <span style={{ width: 34, height: 34, borderRadius: RADIUS.xs, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, background: tint(it.col || GREEN, .15) }}>{it.emoji}</span>
+                <span style={{ width: 34, height: 34, borderRadius: RADIUS.xs, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, background: tint(it.col || GREEN, .15) }}><Emo e={it.emoji} /></span>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 13.5, fontWeight: 700, display: "flex", alignItems: "center", gap: SPACE.xs, overflow: "hidden" }}>
                     <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it.nazov}</span>
@@ -188,7 +189,7 @@ export function MojaRetaz({ onClose, toast }: { onClose?: () => void; toast?: (m
             <button onClick={() => setQr(true)} disabled={!mozeGenerovatQr(chain)}
               style={{ width: "100%", height: 50, borderRadius: RADIUS.md, border: "none", marginTop: SPACE.sm, fontWeight: 700, fontSize: 15, fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: SPACE.xs,
                 background: mozeGenerovatQr(chain) ? GRAD : "rgba(var(--glass-rgb),.06)", color: mozeGenerovatQr(chain) ? "#fff" : C.textTer, cursor: mozeGenerovatQr(chain) ? "pointer" : "not-allowed" }}>
-              ⛓ Vygenerovať / zdieľať QR reťaze
+              Vygenerovať a zdieľať QR reťaze
             </button>
             <div style={{ display: "flex", gap: SPACE.xs, marginTop: SPACE.xs }}>
               <button onClick={() => setNahlad(true)} style={{ flex: 1, height: 42, borderRadius: RADIUS.sm, border: `1px solid ${C.line}`, background: C.surface2, color: C.text, fontWeight: 700, fontSize: 12.5, cursor: "pointer", fontFamily: "inherit" }}>👁 Verejná podstránka</button>
@@ -275,7 +276,7 @@ function PickerPrijemcov({ voFronte, onVyber, onClose, toast }: {
           return (
             <div key={z.id} onClick={() => !on && onVyber(z)} role="button" aria-disabled={on}
               style={{ display: "flex", alignItems: "center", gap: SPACE.sm, padding: `${SPACE.sm}px ${SPACE.sm}px`, borderRadius: RADIUS.sm, marginBottom: SPACE.xs, cursor: on ? "default" : "pointer", opacity: on ? .5 : 1, background: "rgba(var(--glass-rgb),.04)", border: `1px solid ${C.line}` }}>
-              <span style={{ width: 34, height: 34, borderRadius: RADIUS.xs, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, background: tint(z.col, .15) }}>{z.emoji}</span>
+              <span style={{ width: 34, height: 34, borderRadius: RADIUS.xs, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, background: tint(z.col, .15) }}><Emo e={z.emoji} /></span>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 13.5, fontWeight: 700, display: "flex", alignItems: "center", gap: SPACE.xs }}>
                   <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{z.nazov}</span>

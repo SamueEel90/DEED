@@ -1,5 +1,5 @@
 // ============================================================
-// MODUL DOMOV (DEED Good) — MOCK dáta
+// MODUL DOMOV — MOCK dáta
 // Čisté dátové polia presunuté z Good.jsx (žiadne JSX → .ts).
 // KAT = farby kategórií, POLOZKY = feed skutkov, EVENTS = nástenka.
 // ============================================================

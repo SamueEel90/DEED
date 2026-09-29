@@ -1,3 +1,4 @@
+import { Emo } from "@/components/icons";
 import { useState, useEffect, memo } from "react";
 import { SIRKA, SPACE, RADIUS } from "@/theme";
 import { Foto, MiniFotky, ModulHlavicka, PlatobnyModul, PlatbaModal, SplitQrSheet, QrModal, HladanieModal, toast, useGaleria, useLayout, useScrollPamat, useStrankaAkcie, FeedGrid, StatRiadok, FiltreStat, OkruhVyber, MoniBar, ProgresBox, BackHeader, obalSiroky, SegTabs, tint, Lupa, Zdielanie, IkonaVlajka, IkonaFoto, IkonaInstitucia, Srdce, EmptyState, ScreenSwitch, SwipeBack, ZoznamDarcov, FormatovanyText, Input } from "@/shared";
@@ -387,7 +388,7 @@ function FarnostFeed({ f, onPrispevok }: { f: Farnost; onPrispevok: (z: VieraFee
                   ) : (<>
                     <Foto src={o.fotky?.[0]} emoji={o.emoji ?? "📢"} w={58 * k} h={44 * k} radius={RADIUS.xs} sizes={`${58 * k}px`} alt={o.nazov} />
                     {o.fotky?.length && o.emoji ? (
-                      <span style={{ position: "absolute", bottom: -4, right: -4, fontSize: 12 * k, lineHeight: 1, filter: "drop-shadow(0 1px 2px rgba(0,0,0,.5))" }}>{o.emoji}</span>
+                      <span style={{ position: "absolute", bottom: -4, right: -4, fontSize: 12 * k, lineHeight: 1, filter: "drop-shadow(0 1px 2px rgba(0,0,0,.5))" }}><Emo e={o.emoji} /></span>
                     ) : null}
                   </>)}
                 </div>
@@ -424,7 +425,7 @@ function FararToggle({ on, onToggle }: { on: boolean; onToggle: () => void }) {
   return (
     <div {...pressable(onToggle, on ? "Vypnúť správcovský režim farára" : "Zapnúť účet farára")} aria-pressed={on}
       style={{ display: "flex", alignItems: "center", gap: SPACE.sm, marginTop: SPACE.sm, background: on ? tint(N.ind, .12) : N.card, border: `1px solid ${on ? N.indEdge : N.line}`, borderRadius: RADIUS.sm, padding: `${SPACE.sm}px ${SPACE.gutter}px`, cursor: "pointer" }}>
-      <span style={{ fontSize: 17, flex: "none" }}>🛡</span>
+      <span style={{ fontSize: 17, flex: "none", display: "flex" }}><Emo e="🛡" /></span>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 13, fontWeight: 700, color: on ? N.ind : N.txt }}>Účet farára (správca)</div>
         <div style={{ fontSize: 11, color: N.txt3, lineHeight: 1.4 }}>{on ? "Spravuješ farnosť — pridávaj oznamy a zbierky." : "Prepni na správu tvojej farnosti."}</div>

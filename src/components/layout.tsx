@@ -1,3 +1,4 @@
+import { Emo } from "@/components/icons";
 import { useState, Children, type CSSProperties, type ReactNode, type ReactElement } from "react";
 import { SpatTlacidlo } from "@/components/cesta";
 import { C, GRAD, GRAD_ZELENY, glassTmavy, btn, SPACE, RADIUS } from "@/theme";
@@ -112,7 +113,7 @@ export function vyberBox(active?: boolean): CSSProperties {
 export function Vyber({ emoji, title, desc, active, onClick }: { emoji?: ReactNode; title?: ReactNode; desc?: ReactNode; active?: boolean; onClick?: () => void }) {
   return (
     <div {...pressable(onClick)} style={vyberBox(active)}>
-      <div style={{ fontSize: 14, fontWeight: 700 }}>{emoji} {title}</div>
+      <div style={{ fontSize: 14, fontWeight: 700 }}><Emo e={emoji} /> {title}</div>
       {desc && <div style={{ fontSize: 12, color: C.textSec, marginTop: SPACE.xxs, lineHeight: 1.4 }}>{desc}</div>}
     </div>
   );

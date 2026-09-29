@@ -93,7 +93,7 @@ export const LIMIT_MEDZI_ZIADOSTAMI_DNI = 30;
 export type EscrowStav = "drzi" | "uvolnene" | "refund";
 export const ESCROW: Record<EscrowStav, { label: string; emoji: string; popis: string }> = {
   drzi:     { label: "Drží", emoji: "🔒", popis: "DEED je v kontrakte s ID žiadosti; kontrakt eviduje kto koľko (kvôli refundu). Platforma NEMÁ právo presmerovať." },
-  uvolnene: { label: "Uvoľnené", emoji: "✅", popis: "Príjemca prešiel KYC + claim → vytvorila sa mu ERC-4337 peňaženka → uvoľnené. Ďalšie príspevky už priamo jemu." },
+  uvolnene: { label: "Uvoľnené", emoji: "✓", popis: "Príjemca prešiel KYC + claim → vytvorila sa mu ERC-4337 peňaženka → uvoľnené. Ďalšie príspevky už priamo jemu." },
   refund:   { label: "Refund", emoji: "↩️", popis: "Koniec + grace (30 dní) bez claimu → vrátenie darcom (Base L2, lacný batch)." },
 };
 

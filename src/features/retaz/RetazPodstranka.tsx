@@ -5,6 +5,7 @@
 // stránka ŽIVO prehodí na ďalšiu vo fronte („Cieľ naplnený! Teraz: B").
 // Darca vždy vidí, komu presne jeho dar ide — aj tesne po prepnutí (§6.6).
 // ============================================================
+import { Emo } from "@/components/icons";
 import { useState } from "react";
 import { C, GRAD, GRAD_ZELENY, SPACE, RADIUS } from "@/theme";
 import { tint } from "@/lib/ui";
@@ -66,7 +67,7 @@ export function RetazPodstranka({ chain: chainProp, tvorca = "Tvorca", onClose, 
             <div style={{ background: tint(GREEN, .06), border: `1px solid ${tint(GREEN, .3)}`, borderRadius: RADIUS.lg, padding: SPACE.gutter }}>
               <div style={{ fontSize: 10.5, letterSpacing: ".5px", color: GREEN, fontWeight: 800, marginBottom: SPACE.xs }}>▸ TERAZ PODPORUJEŠ</div>
               <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm }}>
-                <span style={{ width: 44, height: 44, borderRadius: RADIUS.sm, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, background: tint(aktiv.col || GREEN, .15) }}>{aktiv.emoji}</span>
+                <span style={{ width: 44, height: 44, borderRadius: RADIUS.sm, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, background: tint(aktiv.col || GREEN, .15) }}><Emo e={aktiv.emoji} /></span>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 15.5, fontWeight: 800, lineHeight: 1.25 }}>{aktiv.nazov}</div>
                   <div style={{ fontSize: 11.5, color: C.textTer, marginTop: 1 }}>{aktiv.zdroj} · {aktiv.lok}</div>
@@ -114,7 +115,7 @@ export function RetazPodstranka({ chain: chainProp, tvorca = "Tvorca", onClose, 
             {historia.map((it) => (
               <div key={it.id} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, background: "rgba(var(--glass-rgb),.04)", border: `1px solid ${C.line}`, borderRadius: RADIUS.sm, padding: `${SPACE.xs}px ${SPACE.gutter}px`, marginBottom: SPACE.xs }}>
                 <IkonaFajka size={15} color={GREEN} />
-                <span style={{ fontSize: 18, flex: "none" }}>{it.emoji}</span>
+                <span style={{ fontSize: 18, flex: "none" }}><Emo e={it.emoji} /></span>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 13, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it.nazov}</div>
                   <div style={{ fontSize: 10.5, color: C.textTer }}>{it.percent}% z honoráru · {it.ciel.toLocaleString("sk")}{it.filledAt ? ` · ${datumSk(it.filledAt)}` : ""}</div>

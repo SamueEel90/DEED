@@ -2,6 +2,7 @@
 // NÁSTROJE CHARITY (ZADARMO) — Video · Prehľad darcov · QR nástroje · Viditeľnosť súm
 // Dáta sú tie isté ako na verejnom profile (zbierkyOrg, videá, dary).
 // ============================================================
+import { Emo } from "@/components/icons";
 import { useState, type CSSProperties, type ReactNode } from "react";
 import { C, SPACE, RADIUS } from "@/theme";
 import { Sheet, Switch, tint } from "@/shared";
@@ -194,7 +195,7 @@ export function DarcoviaSheet({ tier, toast, onClose }: { tier: Tier; toast: (m:
         return (
           <div key={z.id} style={karta}>
             <div {...pressable(() => setOtvorena(open ? null : z.id), z.nazov)} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, cursor: "pointer" }}>
-              <span style={{ fontSize: 17 }}>{z.emoji}</span>
+              <span style={{ fontSize: 17 }}><Emo e={z.emoji} /></span>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 13, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{z.nazov}</div>
                 <div style={{ fontSize: 10.5, color: C.textTer }}>{n} {n === 1 ? "dar" : n < 5 && n > 0 ? "dary" : "darov"}{z.stav === "ukoncena" ? " · ukončená" : ""}</div>

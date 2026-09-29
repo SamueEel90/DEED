@@ -6,7 +6,7 @@ import { Zvoncek } from "@/features/notifikacie/Notifikacie";
 import type { CharitaFeedItem, CharitaLevel, Subjekt, Oblubeny } from "@/types";
 import { CudziProfil } from "@/features/cudzi-profil/CudziProfil";
 import { najdiOrg, type OrgKampan } from "@/features/cudzi-profil/orgy";
-import { GoodBoard, GoodEvent } from "@/features/good/Good";
+import { DomovBoard, DomovEvent } from "@/features/domov/Domov";
 import { useCharitaFeed, useCharitaAdresar, useCharitaZbierka } from "@/data";
 import { useLokalita } from "@/lib/lokalita";
 import { ZOFIA_FOTKY, HLADAJ_DATA } from "./mock";
@@ -184,8 +184,8 @@ export default function ModulCharita({ wide, otvorModul }: ModulCharitaProps) {
       {screen === "cudzi" && aktSubjekt && obal(<CudziProfil subjekt={aktSubjekt as any} toast={toast} onBack={() => setScreen("feed")}
         onKampan={(k: OrgKampan) => cesta.otvor(k.nazov, { typ: "zbierka", org: (aktSubjekt as { meno?: string } | null)?.meno, zoStrankyOrg: true,
           z: { id: k.id, nazov: k.nazov, emoji: k.emoji, overena: true, orgProfil: true, lok: k.lok, fotky: [k.foto], popis: k.popis, pribeh: k.popis, vyzbierane: k.vyzbierane, ciel: k.ciel, ludia: k.ludia } })} />)}
-      {screen === "board" && <GoodBoard onBack={() => setScreen("feed")} onEvent={(id) => { setAktEvent(id); setScreen("event"); }} />}
-      {screen === "event" && obal(<GoodEvent id={aktEvent} onBack={() => setScreen("board")} toast={toast} oslavuj={(s, komu) => toast(`Ďakujeme za ${s} pre ${komu}`)} />)}
+      {screen === "board" && <DomovBoard onBack={() => setScreen("feed")} onEvent={(id) => { setAktEvent(id); setScreen("event"); }} />}
+      {screen === "event" && obal(<DomovEvent id={aktEvent} onBack={() => setScreen("board")} toast={toast} oslavuj={(s, komu) => toast(`Ďakujeme za ${s} pre ${komu}`)} />)}
       </>}
       </ScreenSwitch>
 

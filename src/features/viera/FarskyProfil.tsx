@@ -1,3 +1,4 @@
+import { Emo } from "@/components/icons";
 import { PravidelnaHarok } from "@/features/zbierka/PravidelnaHarok";
 import { useEffect, useState } from "react";
 import { SPACE, RADIUS } from "@/theme";
@@ -416,7 +417,7 @@ function ModeraciaSheet({ fid, onClose, toast }: { fid: string; onClose: () => v
     <SheetPanel title="Moderácia príspevkov" onClose={onClose}>
       <div style={{ fontSize: 12, color: N.txt3, marginBottom: SPACE.md, lineHeight: 1.5 }}>Oznam farníka môžeš <b>upraviť</b> (preklep, zlý čas) alebo <b>zmazať</b> — odstráni sa z feedu aj z profilu.</div>
       {polozky.length === 0 ? (
-        <EmptyState emoji="🛡" title="Žiadne oznamy na moderáciu" text="Keď farníci pridajú oznamy, objavia sa tu." />
+        <EmptyState emoji={<Emo e="🛡" />} title="Žiadne oznamy na moderáciu" text="Keď farníci pridajú oznamy, objavia sa tu." />
       ) : polozky.map((it) => {
         const del = zmazane.has(it.id);
         const pyta = potvrd === it.id;
