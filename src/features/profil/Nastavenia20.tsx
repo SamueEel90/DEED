@@ -140,6 +140,7 @@ export function Nastavenia20({ onBack, onNotif, desktop }: { onBack: () => void;
 
       <Sekcia nadpis="POMOC">
         <Riadok prvy t="Prehrať úvod" onClick={() => setHarok("uvod")} />
+        <Riadok t="Ukážky pre začiatok" s="vzorové skutky, kým nepridáš vlastné" prepinac={n.ukazky} onClick={() => zmenNastavenia({ ukazky: !n.ukazky })} />
         <Riadok t="Časté otázky" onClick={coskoro} />
         <Riadok t="Napísať podpore" onClick={coskoro} />
         <Riadok t="Nahlásiť problém" onClick={() => setHarok("nahlasit")} />

@@ -10,6 +10,7 @@ import { DeedQr } from "@/components/deedqr";
 import { Harok } from "@/features/zbierka/Zdielat";
 import { STIT_SK, stitUzivatela } from "./ProfilHlavny";
 import "@/styles/platba.css";
+import { otvorAkciu } from "@/lib/akcia";
 
 export type ZalozkaQr = "akcia" | "overit" | "pozvanka";
 const PERIODA = 15;
@@ -101,6 +102,10 @@ export function MojQr({ zalozka = "akcia", onClose }: { zalozka?: ZalozkaQr; onC
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 4, padding: 4, borderRadius: 14, background: "var(--seg)" }}>
             {zalozkaBtn("akcia", "Na akciu")}{zalozkaBtn("overit", "Overiť ma")}{zalozkaBtn("pozvanka", "Pozvánka")}
           </div>
+          {/* karta 22 · skratka na skener akcie (nie štvrtá záložka) */}
+          <button type="button" onClick={() => { onClose(); otvorAkciu(); }} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, minHeight: 50, borderRadius: 14, border: "1.5px dashed var(--gBd)", background: "transparent", fontSize: 15, fontWeight: 700, color: "var(--gInk)", cursor: "pointer", fontFamily: "inherit" }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M4 12h16" /></svg>
+            Organizujem akciu · skenovať účastníkov</button>
           {z === "overit" && (
             <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 18, background: "var(--card)", border: "1px solid var(--cardBd)" }}>
               <span onClick={() => setZoomFoto(true)} role="button" aria-label="Zväčšiť fotku" style={{ position: "relative", flex: "none", width: 64, height: 64, borderRadius: "50%", padding: 2.5, background: KRUH, cursor: "zoom-in", boxSizing: "border-box" }}>

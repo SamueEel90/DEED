@@ -14,9 +14,11 @@ export type NastaveniaAppky = {
   biometria: boolean;
   hranicaPlatby: number;  // nad túto sumu tvár / odtlačok / PIN (20 | 50 | 100 | 200)
   kontakty: boolean;
+  /** ukážky pre začiatok (Moje skutky, neskôr peňaženka, priatelia, záujmy) */
+  ukazky: boolean;
 };
 const KLUC = "deed.nastavenia.appky";
-const ZAKLAD: NastaveniaAppky = { pismo: 100, obmedzAnim: false, vibracie: true, titulky: true, tichyCas: true, poloha: true, okruh: "mesto", biometria: false, hranicaPlatby: 50, kontakty: false };
+const ZAKLAD: NastaveniaAppky = { pismo: 100, obmedzAnim: false, vibracie: true, titulky: true, tichyCas: true, poloha: true, okruh: "mesto", biometria: false, hranicaPlatby: 50, kontakty: false, ukazky: true };
 let verzia = 0;
 const posluchaci = new Set<() => void>();
 

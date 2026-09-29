@@ -2,17 +2,17 @@ import { useState, useEffect } from "react";
 import { SIRKA, C, GRAD, SPACE, RADIUS } from "@/theme";
 import { toast, StitRiadok, DozivotnyChip, useScrollPamat, useLayout, useTvorbaGate, obalSiroky, IkonaNastavenia, IkonaSipVlavo, IkonaPenazenka, IkonaHviezda, IkonaFajka, IkonaDoska, IkonaUsmev, IkonaOsoba, SkeletonRiadky, EmptyState, ErrorState, ScreenSwitch } from "@/shared";
 import { MojDeedFiremny } from "@/features/rola/MojDeedFiremny";
-import { RetazDobraSheet } from "@/features/retaz/RetazDobra";
 import { useVrstva } from "@/lib/urlnav";
 import { Nastavenia as NotifNastavenia } from "@/features/notifikacie/Notifikacie";
 import type { Toast as ToastFn, WideProps, ZiadostPriatelstvo, CestaPriatelstva } from "@/types";
-import { useProfilMojeSkutky, useProfilKarma, useProfilStatistiky } from "@/data";
+import { useProfilKarma, useProfilStatistiky } from "@/data";
 import { MODULOVA_KARMA, DOZIVOTNE_ZISKANE } from "./mock";
 import { ProfilHlavny18, IdentitaKarta18, StitKarta18, MojeZaujmy } from "./ProfilHlavny";
 import { UpravOsobnyProfil } from "./UpravOsobnyProfil";
 import { MojQr } from "./MojQr";
 import { Penazenka18 } from "./Penazenka18";
 import { Nastavenia20 } from "./Nastavenia20";
+import { MojeSkutky21 } from "./MojeSkutky21";
 
 /*
   ============================================================
@@ -55,7 +55,7 @@ export default function ModulProfil({ wide, walletReq = 0 }: ProfilProps) {
         naUpravit={() => setUprava(true)} naQr={() => setQr(true)} />)}
       {screen === "wallet" && obal(<Penazenka18 onBack={() => setScreen("profil")} />)}
       {screen === "firemny" && obalSiroky(<MojDeedFiremny onBack={() => setScreen("profil")} toast={toast} />, { wide, desktop, max: SIRKA.stlpec })}
-      {screen === "sub" && obal(<SubScreen nazov={subNazov} toast={toast} onBack={() => setScreen("profil")} />)}
+      {screen === "sub" && (subNazov === "Moje skutky" ? <MojeSkutky21 onBack={() => setScreen("profil")} /> : obal(<SubScreen nazov={subNazov} toast={toast} onBack={() => setScreen("profil")} />))}
       {screen === "priatelia" && obal(<PriateliaScreen toast={toast} onBack={() => setScreen("profil")} />)}
       {screen === "nastavenia" && obal(<Nastavenia20 onBack={() => setScreen("profil")} onNotif={() => setScreen("notif")} />)}
       {screen === "notif" && obal(<NotifObrazovka onBack={() => setScreen("nastavenia")} />)}
@@ -82,7 +82,7 @@ function ProfilDesktop({ screen, subNazov, setScreen, onSub, onQr, onUpravit }: 
   let obsah: React.ReactNode;
   if (screen === "wallet") obsah = <Penazenka18 desktop onBack={() => setScreen("profil")} />;
   else if (screen === "firemny") obsah = <MojDeedFiremny onBack={() => setScreen("profil")} toast={toast} />;
-  else if (screen === "sub") obsah = <SubScreen nazov={subNazov} toast={toast} desktop onBack={() => setScreen("profil")} />;
+  else if (screen === "sub") obsah = subNazov === "Moje skutky" ? <MojeSkutky21 onBack={() => setScreen("profil")} /> : <SubScreen nazov={subNazov} toast={toast} desktop onBack={() => setScreen("profil")} />;
   else if (screen === "priatelia") obsah = <PriateliaScreen toast={toast} desktop onBack={() => setScreen("profil")} />;
   else if (screen === "nastavenia") obsah = <Nastavenia20 desktop onBack={() => setScreen("profil")} onNotif={() => setScreen("notif")} />;
   else if (screen === "notif") obsah = <NotifObrazovka desktop onBack={() => setScreen("nastavenia")} />;
@@ -118,7 +118,7 @@ function ProfilDesktop({ screen, subNazov, setScreen, onSub, onQr, onUpravit }: 
             })}
           </nav>
         </aside>
-        <main style={{ flex: 1, minWidth: 0, background: C.surface, border: `1px solid ${C.line}`, borderRadius: RADIUS.lg, overflow: "hidden", minHeight: 420 }}>
+        <main style={{ flex: 1, minWidth: 0, background: C.surface, border: `1px solid ${C.line}`, borderRadius: RADIUS.lg, overflow: "clip", minHeight: 420 }}>
           {obsah}
         </main>
       </div>
@@ -140,16 +140,12 @@ function NotifObrazovka({ onBack, desktop }: { onBack: () => void; desktop?: boo
 
 type SubScreenProps = { nazov: string | null; toast: ToastFn; onBack: () => void; desktop?: boolean };
 
-function SubScreen({ nazov, toast, onBack, desktop }: SubScreenProps) {
-  const { data: MOJE_SKUTKY = [], isLoading: skutkyLoad, isError: skutkyErr, refetch: skutkyRefetch } = useProfilMojeSkutky();
+function SubScreen({ nazov, onBack, desktop }: SubScreenProps) {
   const { data: KARMA = [], isLoading: karmaLoad, isError: karmaErr, refetch: karmaRefetch } = useProfilKarma();
   const { data: STATISTIKY = [], isLoading: statLoad, isError: statErr, refetch: statRefetch } = useProfilStatistiky();
-  const [retaz, setRetaz] = useState<{ odmena: number } | null>(null); // ručná Reťaz dobra pri menšom skutku {odmena}
 
   // aktívna sekcia → stavy načítania zoznamu
-  const aktiv = nazov === "Moje skutky"
-    ? { isLoading: skutkyLoad, isError: skutkyErr, refetch: skutkyRefetch, empty: MOJE_SKUTKY.length === 0, emoji: "✅", title: "Žiadne skutky", text: "Tvoje overené skutky sa zobrazia tu." }
-    : nazov === "Karma a úrovne"
+  const aktiv = nazov === "Karma a úrovne"
     ? { isLoading: karmaLoad, isError: karmaErr, refetch: karmaRefetch, empty: KARMA.length === 0, emoji: "⭐", title: "Žiadna karma", text: "Karma pribúda overenými skutkami." }
     : { isLoading: statLoad, isError: statErr, refetch: statRefetch, empty: STATISTIKY.length === 0, emoji: "📊", title: "Žiadne štatistiky", text: "Štatistiky a umiestnenie sa zobrazia tu." };
 
@@ -160,15 +156,6 @@ function SubScreen({ nazov, toast, onBack, desktop }: SubScreenProps) {
     obsah = <SkeletonRiadky count={4} />;
   } else if (aktiv.empty) {
     obsah = <EmptyState emoji={aktiv.emoji} title={aktiv.title} text={aktiv.text} />;
-  } else if (nazov === "Moje skutky") {
-    obsah = MOJE_SKUTKY.map((r, i) => (
-      <div key={i} style={{ ...subItem, gap: SPACE.xs }}>
-        <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r[0]}</span>
-        <span onClick={() => setRetaz({ odmena: Math.abs(parseInt(r[1], 10)) || 30 })} title="Reťaz dobra — pošli časť ďalej"
-          style={{ flex: "none", fontSize: 11, fontWeight: 700, color: "var(--a-green)", border: "1px solid rgba(31,191,143,.4)", background: "rgba(31,191,143,.08)", borderRadius: RADIUS.xs, padding: `${SPACE.xxs}px ${SPACE.xs}px`, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 4 }}><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1" /></svg>Reťaz</span>
-        <span style={{ fontWeight: 700, color: r[2], flex: "none" }}>{r[1]}</span>
-      </div>
-    ));
   } else if (nazov === "Karma a úrovne") {
     obsah = KARMA.map((r, i) => (
       <div key={i} style={subItem}><span>{r[0]}</span><span style={{ fontWeight: 700, color: r[2] }}>{r[1]}</span></div>
@@ -211,13 +198,6 @@ function SubScreen({ nazov, toast, onBack, desktop }: SubScreenProps) {
         </div>
       )}
 
-      {/* ručná Reťaz dobra pri menšom skutku (§9) */}
-      {retaz && (
-        <RetazDobraSheet odmena={retaz.odmena} mode="skutok"
-          onClose={() => setRetaz(null)}
-          onDone={() => toast("Reťaz dobra spustená — časť ide ďalej")}
-          toast={toast} />
-      )}
     </div>
   );
 }

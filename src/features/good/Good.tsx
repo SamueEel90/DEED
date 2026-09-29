@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef, memo } from "react";
-import { useQueryClient } from "@tanstack/react-query";
-import { SIRKA, C, inp, btn, GRAD, GRAD_ZELENY, SPACE, RADIUS } from "@/theme";
+import { SIRKA, C, inp, btn, GRAD, SPACE, RADIUS } from "@/theme";
 import { Foto, MiniFotky, Video, ModulHlavicka, Hlavicka, AvatarUroven, PlatobnyModul, PlatbaModal, HladanieModal, OblubeneHviezda, OblubeneBtn, toast, Oslava, useGaleria, useScrollPamat, useMotiv, useLayout, useStrankaAkcie, useTvorbaGate, StatRiadok, MoniBar, FeedStlpce, FeedGrid, FeedCard, KartaBadge, typKluc, BackChip, ProgresBox, SwipeBack, obalSiroky, Lupa, Zdielanie, IkonaSipVlavo, IkonaMoznosti, IkonaUlozit, IkonaFajka, IkonaPlay, IkonaDoska, IkonaPin, OkruhVyber, QrModal, SplitQrSheet, FotoVyber, FeedSkeleton, EmptyState, ErrorState, ScreenSwitch, FormatovanyText, ZoznamDarcov } from "@/shared";
 import { pridajDar, type VolbaDaru } from "@/lib/darcovia";
 import { pripravFeed, vzdialenostKm, FEED_CFG, type FeedUser } from "@/lib/feed";
@@ -14,14 +13,14 @@ import { Tip } from "@/components/tooltip";
 import { usePouzivatel } from "@/lib/pouzivatel";
 import { useLokalita } from "@/lib/lokalita";
 import { zobrazVelkost, MEDIA_AR } from "@/lib/cardSize";
-import { RetazDobraSheet } from "@/features/retaz/RetazDobra";
 import { Zvoncek } from "@/features/notifikacie/Notifikacie";
 import { CudziProfil } from "@/features/cudzi-profil/CudziProfil";
 import type { GoodPolozka, Subjekt, Udalost, OkruhKod, Oblubeny, MojaZbierka, MojDoklad } from "@/types";
-import { useGoodFeed, useGoodUdalosti, useTopPrispevky, useQrSplitCreate, qk, repo } from "@/data";
-import { SplitConfigStep, splitOwnerPct, splitCielePayload, splitValid, type SplitCiel } from "@/shared";
+import { useGoodFeed, useGoodUdalosti, useTopPrispevky } from "@/data";
 import { usePersonalizacia } from "@/lib/personalizacia";
 import { KAT, SRC_COL, NASTENKA_TEMY, TEMA_FARBA } from "./mock";
+import { otvorPridatSkutok } from "@/features/skutok/otvor";
+import { PruhySkutkov } from "@/features/skutok/Pruhy";
 
 const katLabel = (k: GoodPolozka["kat"]) => KAT[k].label || k;
 
@@ -59,7 +58,7 @@ export default function ModulGood({ wide, otvorModul, otvorId, onOtvorene }: { w
   const { desktop } = useLayout();
   const { data: POLOZKY = [] } = useGoodFeed();
   const { gate } = useTvorbaGate(); // pasívny nesmie tvoriť (overovanie skutku = create)
-  const [screen, setScreen] = useState("home"); // home | detail | verify | add | board | event | cudzi
+  const [screen, setScreen] = useState("home"); // home | detail | verify | board | event | cudzi
   const [pohlad, setPohlad] = useState<"okolie" | "mojdeed">("okolie"); // prežije návrat z detailu (ScreenSwitch remountuje Home)
   // okruh = JEDNO nastavenie okolia pre celú appku (Domov ↔ nástenka ↔ push) — spec Nástenka v1 §1.1
   const { okruh: radius, nastavOkruh: setRadius } = useLokalita();
@@ -90,29 +89,6 @@ export default function ModulGood({ wide, otvorModul, otvorId, onOtvorene }: { w
   const oslavuj = (suma: number, komu: string) => { setOslava({ suma, komu }); setTimeout(() => setOslava(null), 1900); };
   const obal = (el: React.ReactNode) => obalSiroky(el, { wide, desktop, max: SIRKA.stlpec, maxDesktop: SIRKA.citanie });
 
-  // tvorba: nový skutok sa (1) OPTIMISTICKY vloží navrch feedu (okamžitý výsledok) a
-  // (2) zapíše do DB (prispevok). Po úspešnom zápise invaliduj feed → refetch z DB,
-  // takže príspevok uvidia aj ostatní. Bez DB (mock) ostane len optimistický záznam.
-  const qc = useQueryClient();
-  const ja = usePouzivatel();
-  const createSplit = useQrSplitCreate();
-  const pridajSkutok = (it: GoodPolozka, split?: SplitCiel[]) => {
-    qc.setQueryData<GoodPolozka[]>(qk.good.feed, (old = []) => [it, ...old]);
-    repo.good.vytvor(it, ja.ucetId)
-      .then((novyId) => {
-        if (novyId) qc.invalidateQueries({ queryKey: qk.good.feed });
-        // autorský QR split (ak autor nastavil rozdelenie pri tvorbe) — viazaný na nový príspevok
-        if (novyId && split && split.length) {
-          createSplit.mutate({
-            caseId: novyId, owner: ja.ucetId, ownerText: ja.celeMeno,
-            ownerPodiel: +(splitOwnerPct(split) / 100).toFixed(5),
-            ciele: splitCielePayload(split), zdroj: "autor", mena: "DEED",
-          });
-        }
-      })
-      .catch(() => {});
-  };
-
   const akt = POLOZKY.find((x) => x.id === aktId);
 
   return (
@@ -124,7 +100,7 @@ export default function ModulGood({ wide, otvorModul, otvorId, onOtvorene }: { w
           onDetail={(id) => { setAktId(id); setScreen("detail"); }}
           onHladaj={() => setHladaj(true)}
           onBoard={() => setScreen("board")}
-          onAdd={() => setScreen("add")} />
+          onAdd={() => otvorPridatSkutok()} />
       )}
       {screen === "cudzi" && aktSubjekt && obal(
         <CudziProfil subjekt={aktSubjekt as any} toast={toast} onBack={() => setScreen(predtym)} />
@@ -146,10 +122,14 @@ export default function ModulGood({ wide, otvorModul, otvorId, onOtvorene }: { w
       {screen === "verify" && akt && obal(
         <GoodVerify it={akt} mode={verifyMode} toast={toast} onBack={() => setScreen("detail")} />
       )}
-      {screen === "add" && obal(
-        <GoodAdd toast={toast} oslavuj={oslavuj} onPridaj={pridajSkutok} onDone={() => setScreen("home")} />
-      )}
       </ScreenSwitch>
+
+      {/* akcia beží / ohlásený skutok — tmavý pruh nad tlačidlom ＋ (karty 21, 22) */}
+      {screen === "home" && (
+        <div style={{ position: "fixed", left: 0, right: 0, bottom: desktop ? 100 : "calc(172px + env(safe-area-inset-bottom, 0px))", zIndex: 41, display: "flex", justifyContent: "center", padding: "0 16px", pointerEvents: "none" }}>
+          <div style={{ width: "100%", maxWidth: 620, display: "flex", flexDirection: "column", gap: 12 }}><PruhySkutkov /></div>
+        </div>
+      )}
 
       {/* oslava — jednotný celebration overlay (aura prsteň = podpis značky) */}
       {oslava && (
@@ -927,209 +907,6 @@ export function GoodVerify({ it, mode, toast, onBack }: { it: GoodPolozka; mode:
 }
 
 // ===================== PRIDAŤ SKUTOK =====================
-function GoodAdd({ toast, oslavuj, onPridaj, onDone }: { toast: (m: string) => void; oslavuj: (suma: number, komu: string) => void; onPridaj: (it: GoodPolozka, split?: SplitCiel[]) => void; onDone: () => void }) {
-  const ja = usePouzivatel();
-  const lok = useLokalita(); // skutok dostane geo aktívneho mesta → zobrazí sa v jeho okolí
-  const [krok, setKrok] = useState("vyber"); // vyber | solo | nahlad | vyhodnotene
-  const [text, setText] = useState("");
-  const [miesto, setMiesto] = useState("");        // kde sa skutok stal — zaradenie do regiónu/feedu (nie dôkaz pravdy)
-  const [kontrola, setKontrola] = useState(false); // medzistav: „AI kontroluje skutok…"
-  const [aiNavrh, setAiNavrh] = useState("");      // editovateľný AI návrh textu (krok náhľad)
-  const [suhlas, setSuhlas] = useState(false);     // povinné potvrdenie pravdivosti skutku
-  const [retaz, setRetaz] = useState(false);       // Reťaz dobra — Cesta A (po vyhodnotení významného)
-  const [rozdel, setRozdel] = useState(false);     // autorský QR split — rozdelenie odmeny medzi organizácie
-  const [ciele, setCiele] = useState<SplitCiel[]>([]); // organizácie autorského splitu
-  const [fotky, setFotky] = useState<string[]>([]); // nahraté foto (data URL) — náhľad + zobrazí sa na karte
-
-  // načítaj vybraný obrázok z disku ako data URL (bez uploadu — žije v session)
-  const nacitajFoto = (k: number, file?: File | null) => {
-    if (!file) return;
-    const r = new FileReader();
-    r.onload = () => setFotky((f) => { const n = [...f]; n[k] = String(r.result); return n; });
-    r.readAsDataURL(file);
-  };
-  const ODMENA = 130;                              // DEED odmena za významný skutok (placeholder)
-  const mozePokracovat = miesto.trim().length > 0; // miesto je povinné
-
-  // medzistav po „Pokračovať": krátky loading, neskôr sem príde reálne AI overenie
-  useEffect(() => {
-    if (!kontrola) return;
-    const t = setTimeout(() => { setKontrola(false); setKrok("nahlad"); }, 1500);
-    return () => clearTimeout(t);
-  }, [kontrola]);
-
-  // späť: počas kontroly ju najprv zruš, inak normálna navigácia medzi krokmi
-  const nazad = () => {
-    if (kontrola) return setKontrola(false);
-    if (krok === "vyber") return onDone();
-    if (krok === "vyhodnotene") return setKrok("nahlad");
-    setKrok(krok === "nahlad" ? "solo" : "vyber");
-  };
-
-  const aiText = () => {
-    const raw = text.trim() || "Pomohol som susede vyniesť nákup do tretieho poschodia.";
-    let s = raw.charAt(0).toUpperCase() + raw.slice(1);
-    if (!/[.!?]$/.test(s)) s += ".";
-    return s;
-  };
-
-  // zostav nový skutok do feedu: geo = moje okolie (USER_LOK) + vysoké skóre → veľká karta navrchu.
-  const vytvorSkutok = (): GoodPolozka => ({
-    id: Date.now(),
-    typ: "skutok",
-    velkost: "big",
-    kat: "Komunita",
-    autor: ja.celeMeno || "Ty",
-    num: 0,
-    emoji: "🤝",
-    fotky: fotky.filter(Boolean),
-    titul: aiNavrh.replace(/[.!?]+$/, ""),
-    popis: aiNavrh,
-    lok: miesto.trim() || lok.mesto,
-    overene: true,
-    skore: 8,
-    typSituacie: "normal",
-    modul: "good",
-    dni: 0,
-    podpora: 0,
-    lat: lok.lat,
-    lng: lok.lng,
-  });
-
-  return (
-    <div style={{ paddingBottom: SPACE.lg }}>
-      <Hlavicka title={krok === "vyber" ? "Pridať skutok" : krok === "solo" ? "Opíš svoj skutok" : krok === "vyhodnotene" ? "Skutok vyhodnotený" : "Skontroluj a potvrď"}
-        onBack={nazad} />
-
-      <div style={{ padding: SPACE.md }}>
-        {krok === "vyber" && (
-          <>
-            <h2 style={{ fontSize: 18, marginBottom: SPACE.xs }}>Ako si pomohol?</h2>
-            <p style={{ color: C.textSec, fontSize: 13 }}>Vyber, či si skutok urobil sám, alebo vo viacerých.</p>
-            <div style={{ display: "flex", gap: SPACE.sm, marginTop: SPACE.md }}>
-              <div onClick={() => setKrok("solo")} style={{ flex: 1, background: C.surface2, border: `1px solid ${C.line}`, borderRadius: RADIUS.md, padding: `${SPACE.lg}px ${SPACE.gutter}px`, textAlign: "center", cursor: "pointer" }}>
-                <div style={{ fontSize: 34 }}>🙋</div><div style={{ fontWeight: 700, marginTop: SPACE.sm }}>Sólo</div><div style={{ fontSize: 11, color: C.textTer, marginTop: SPACE.xxs }}>urobil som to sám</div>
-              </div>
-              <div onClick={() => toast("Komunitný — scan QR účastníkov")} style={{ flex: 1, background: C.surface2, border: `1px solid ${C.line}`, borderRadius: RADIUS.md, padding: `${SPACE.lg}px ${SPACE.gutter}px`, textAlign: "center", cursor: "pointer" }}>
-                <div style={{ fontSize: 34 }}>👥</div><div style={{ fontWeight: 700, marginTop: SPACE.sm }}>Komunitný</div><div style={{ fontSize: 11, color: C.textTer, marginTop: SPACE.xxs }}>boli sme viacerí</div>
-              </div>
-            </div>
-            <div style={{ padding: `${SPACE.gutter}px 0`, fontSize: 11, color: C.textTer, lineHeight: 1.5 }}>Žiadosti o pomoc sa vytvárajú v module Help. Tu pridávaš len skutky, ktoré si vykonal.</div>
-          </>
-        )}
-
-        {krok === "solo" && !kontrola && (
-          <>
-            <p style={{ color: C.textSec, fontSize: 13 }}>Napíš vlastnými slovami, čo si urobil. AI to upraví a navrhne kategóriu.</p>
-            <textarea value={text} onChange={(e) => setText(e.target.value)} rows={4} placeholder="Napr.: pomohol som susede vyniesť nákup do tretieho poschodia…" style={{ ...inp(90), marginTop: SPACE.xs }} />
-
-            {/* kde sa skutok stal — povinné, slúži na zaradenie do regiónu/feedu */}
-            <div style={{ fontSize: 12, color: C.textTer, lineHeight: 1.5, margin: `${SPACE.md}px 0 ${SPACE.xs}px` }}>Kde sa skutok stal — pomôže zaradiť ho do správneho okolia.</div>
-            <input value={miesto} onChange={(e) => setMiesto(e.target.value)} placeholder="Mesto / obec / miesto" style={inp(50)} />
-
-            <SekciaLabel>Foto / video k skutku</SekciaLabel>
-            <div style={{ display: "flex", gap: SPACE.sm, marginTop: SPACE.xs }}>
-              {[0, 1].map((k) => (
-                <label key={k} title="Pridať foto" style={{ width: 64, height: 64, border: `1px dashed ${fotky[k] ? "transparent" : C.line}`, borderRadius: RADIUS.sm, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, color: C.textTer, cursor: "pointer", overflow: "hidden", position: "relative", backgroundImage: fotky[k] ? `url(${fotky[k]})` : undefined, backgroundSize: "cover", backgroundPosition: "center" }}>
-                  {!fotky[k] && "+"}
-                  {fotky[k] && <span style={{ position: "absolute", bottom: 2, right: 4, fontSize: 11, color: "#fff", textShadow: "0 1px 3px rgba(0,0,0,.8)" }}>✎</span>}
-                  <input type="file" accept="image/*" onChange={(e) => nacitajFoto(k, e.target.files?.[0])} style={{ display: "none" }} />
-                </label>
-              ))}
-            </div>
-            <button onClick={() => { if (!mozePokracovat) return; setAiNavrh(aiText()); setSuhlas(false); setKontrola(true); }} disabled={!mozePokracovat}
-              style={{ width: "100%", height: 50, borderRadius: RADIUS.md, background: GRAD, border: "none", color: "#fff", fontWeight: 700, fontSize: 15, cursor: mozePokracovat ? "pointer" : "not-allowed", marginTop: SPACE.md, boxShadow: "0 8px 26px color-mix(in srgb, var(--a-green) 32%, transparent)", opacity: mozePokracovat ? 1 : .5, transition: "opacity .2s ease" }}>
-              Pokračovať
-            </button>
-          </>
-        )}
-
-        {krok === "solo" && kontrola && (
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: SPACE.md, padding: "64px 18px", textAlign: "center", animation: "fadeUp .25s ease" }}>
-            <div style={{ width: 40, height: 40, borderRadius: "50%", border: `3px solid ${C.line}`, borderTopColor: "var(--a-plum)", animation: "tocenie .8s linear infinite" }} />
-            <div style={{ fontSize: 15, fontWeight: 700, color: C.text }}>AI kontroluje skutok…</div>
-            <div style={{ fontSize: 12.5, color: C.textTer, maxWidth: 250, lineHeight: 1.5 }}>Chvíľu strpenia — overujeme tvoj popis.</div>
-          </div>
-        )}
-
-        {krok === "nahlad" && (
-          <>
-            <div style={{ display: "flex", alignItems: "center", gap: SPACE.xs }}>
-              <b style={{ color: "var(--a-green)", fontSize: 13 }}>✦ AI návrh textu</b>
-              <span style={{ fontSize: 11, color: C.textTer }}>· môžeš ho upraviť</span>
-            </div>
-            {/* editovateľný AI návrh — používateľ má posledné slovo */}
-            <textarea value={aiNavrh} onChange={(e) => setAiNavrh(e.target.value)} rows={3}
-              style={{ ...inp(90), marginTop: SPACE.xs, background: "rgba(61,214,140,.10)", border: "1px solid rgba(46,125,82,.45)" }} />
-            <div style={{ fontSize: 11, color: C.textTer, marginTop: SPACE.xs }}>Kategória: Komunita · navrhnutá AI</div>
-            <p style={{ fontSize: 11, color: C.textTer, marginTop: SPACE.gutter }}>Vidíš, ako sa skutok zobrazí. Máš posledné slovo — text vyššie môžeš upraviť.</p>
-
-            {/* potvrdenie pravdivosti — povinné zaškrtnutie pred pridaním */}
-            <div onClick={() => setSuhlas((s) => !s)} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, background: "rgba(242,112,111,.1)", border: `1px solid ${suhlas ? "rgba(31,191,143,.55)" : "rgba(122,48,48,.4)"}`, borderRadius: RADIUS.sm, padding: SPACE.gutter, marginTop: SPACE.gutter, fontSize: 12.5, lineHeight: 1.45, color: C.textSec, cursor: "pointer", transition: "border-color .2s ease" }}>
-              <div style={{ width: 26, height: 26, flex: "0 0 auto", borderRadius: RADIUS.xs, border: `2px solid ${suhlas ? "var(--a-green)" : C.textTer}`, background: suhlas ? "var(--a-green)" : "transparent", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 16, fontWeight: 800, transition: "all .15s ease" }}>{suhlas ? "✓" : ""}</div>
-              <span>Skutok je pravdivý a súhlasím s náhľadom. Klamstvo = zrušenie + sankcia.</span>
-            </div>
-
-            <button onClick={() => { if (!suhlas) return; setKrok("vyhodnotene"); }} disabled={!suhlas}
-              style={{ width: "100%", height: 50, borderRadius: RADIUS.md, background: GRAD_ZELENY, border: "none", color: "#fff", fontWeight: 700, fontSize: 15, cursor: suhlas ? "pointer" : "not-allowed", marginTop: SPACE.md, boxShadow: "0 8px 26px rgba(31,191,143,.32)", opacity: suhlas ? 1 : .5, transition: "opacity .2s ease" }}>
-              Súhlasím a pridať skutok
-            </button>
-          </>
-        )}
-
-        {/* CESTA A — po vyhodnotení významného skutku: ponuka Reťaze dobra (§9) */}
-        {krok === "vyhodnotene" && (
-          <>
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: SPACE.xs, padding: `${SPACE.xs}px 0 ${SPACE.gutter}px` }}>
-              <div style={{ width: 54, height: 54, borderRadius: "50%", background: "rgba(31,191,143,.16)", display: "flex", alignItems: "center", justifyContent: "center" }}><IkonaFajka size={28} color="var(--a-green)" /></div>
-              <div style={{ fontSize: 18, fontWeight: 800 }}>Skutok schválený</div>
-              <div style={{ display: "inline-flex", alignItems: "center", gap: SPACE.xs, fontSize: 11, fontWeight: 700, color: "var(--a-gold)", background: "rgba(240,199,90,.12)", border: "1px solid rgba(240,199,90,.3)", padding: `${SPACE.xxs}px ${SPACE.sm}px`, borderRadius: RADIUS.lg }}>★ Vyhodnotený ako VÝZNAMNÝ · 3 riadky vo feede</div>
-            </div>
-
-            <div style={{ textAlign: "center", background: "color-mix(in srgb, var(--a-info) 7%, transparent)", border: "1px solid color-mix(in srgb, var(--a-info) 28%, transparent)", borderRadius: RADIUS.md, padding: `${SPACE.md}px ${SPACE.gutter}px` }}>
-              <div style={{ fontSize: 12, color: C.textSec }}>Pridelená odmena</div>
-              <div style={{ fontSize: 28, fontWeight: 800, color: "var(--a-info)", marginTop: 2 }}>+{ODMENA} <span style={{ fontSize: 15 }}>DEED</span></div>
-            </div>
-
-            <p style={{ textAlign: "center", fontSize: 13.5, color: C.textSec, lineHeight: 1.5, marginTop: SPACE.md }}>Chceš celú odmenu sebe, podeliť sa v Reťazi dobra, alebo <b style={{ color: "var(--a-green)" }}>nastaviť rozdelenie</b> pre svoj QR?</p>
-            <div style={{ display: "flex", gap: SPACE.sm, marginTop: SPACE.sm }}>
-              <button onClick={() => { onPridaj(vytvorSkutok()); toast(`Skutok pridaný! +${ODMENA} DEED — celé tebe`); oslavuj(ODMENA, "teba"); setTimeout(onDone, 700); }}
-                style={{ flex: 1, height: 50, borderRadius: RADIUS.md, border: `1px solid ${C.line}`, background: "rgba(var(--glass-rgb),.05)", color: C.text, fontWeight: 700, fontSize: 14.5, cursor: "pointer", fontFamily: "inherit" }}>Celé mne</button>
-              <button onClick={() => setRetaz(true)}
-                style={{ flex: 1.2, height: 50, borderRadius: RADIUS.md, border: "none", background: GRAD_ZELENY, color: "#fff", fontWeight: 700, fontSize: 14.5, cursor: "pointer", fontFamily: "inherit", boxShadow: "0 8px 26px rgba(31,191,143,.32)" }}>♻ Podeliť sa</button>
-            </div>
-
-            {/* autorský split — nastav pri tvorbe, koľko % ide tebe a koľko organizáciám (→ QR príspevku) */}
-            <button onClick={() => setRozdel((v) => !v)}
-              style={{ width: "100%", height: 46, marginTop: SPACE.sm, borderRadius: RADIUS.md, border: `1px solid ${rozdel ? "rgba(31,191,143,.5)" : C.line}`, background: rozdel ? "rgba(31,191,143,.08)" : "rgba(var(--glass-rgb),.05)", color: rozdel ? "var(--a-green)" : C.text, fontWeight: 700, fontSize: 14, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: SPACE.xs }}>
-              🎬 Rozdeliť medzi organizácie (QR) {rozdel ? "▲" : "▼"}
-            </button>
-            {rozdel && (
-              <div style={{ marginTop: SPACE.sm, background: "rgba(var(--glass-rgb),.03)", border: `1px solid ${C.line}`, borderRadius: RADIUS.md, padding: SPACE.gutter }}>
-                <div style={{ fontSize: 12, color: C.textSec, lineHeight: 1.5, marginBottom: SPACE.xs }}>Nastav pomer teraz — príspevok dostane vlastný QR, cez ktorý ide časť platieb tebe a časť organizáciám. % sa zafixujú.</div>
-                <SplitConfigStep ownerLabel="Tebe (autor)" ciele={ciele} onCiele={setCiele} />
-                <button onClick={() => { onPridaj(vytvorSkutok(), ciele); toast("Skutok + autorský QR vytvorený"); oslavuj(ODMENA, "teba"); setTimeout(onDone, 700); }} disabled={!splitValid(ciele)}
-                  style={{ width: "100%", height: 48, marginTop: SPACE.gutter, borderRadius: RADIUS.md, border: "none", background: splitValid(ciele) ? GRAD_ZELENY : "rgba(var(--glass-rgb),.06)", color: splitValid(ciele) ? "#fff" : C.textTer, fontWeight: 700, fontSize: 14.5, cursor: splitValid(ciele) ? "pointer" : "not-allowed", fontFamily: "inherit" }}>
-                  Zverejniť + vytvoriť QR
-                </button>
-              </div>
-            )}
-            <div style={{ fontSize: 11, color: C.textTer, lineHeight: 1.5, marginTop: SPACE.gutter, textAlign: "center" }}>Ponuka Reťaze sa zobrazí len pri významných skutkoch. Rozdelenie (QR) vieš neskôr spravovať v <b>Profil / Reťaz → Moje QR</b>.</div>
-          </>
-        )}
-      </div>
-
-      {/* Reťaz dobra — Cesta A (§9): nastav % + vyber žiadosť → QR D+R */}
-      {retaz && (
-        <RetazDobraSheet odmena={ODMENA} mode="skutok"
-          onClose={() => setRetaz(false)}
-          onDone={({ ziadost }: { pct: number; ziadost?: { nazov?: string } }) => { onPridaj(vytvorSkutok()); oslavuj(ODMENA, ziadost?.nazov || "reťaz dobra"); setTimeout(onDone, 700); }}
-          toast={toast} />
-      )}
-    </div>
-  );
-}
-
 // ===================== NÁSTENKA (board) =====================
 // Exportovaná — komunitná nástenka (udalosti/akcie v okolí) je zdieľaná aj do Help/Charita.
 // Filtre Kde·Kedy·témy + druhý pohľad kalendár (DEED_Nastenka_Filtre_Kalendar_DEV_v1.md).

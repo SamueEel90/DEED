@@ -17,6 +17,8 @@ import { MojDeedFiremny } from "@/features/rola/MojDeedFiremny";
 import { ZbierkaModul } from "@/features/zbierka/ZbierkaModul";
 import { poleZOrg } from "@/features/zbierka/Pole";
 import { useCesta } from "@/lib/cesta";
+import { otvorPridatSkutok } from "@/features/skutok/otvor";
+import { usePouzivatel } from "@/lib/pouzivatel";
 
 /*
   ============================================================
@@ -416,12 +418,13 @@ function SheetObal({ title, onClose, children }: { title: string; onClose: () =>
 type SheetMoznost = [emoji: string, titul: string, popis: string, akcia: () => void];
 
 function SheetPridat({ toast, otvorModul, onClose }: { toast: (m: string) => void; otvorModul?: (m: string) => void; onClose: () => void }) {
+  const ja = usePouzivatel(); // organizácia ako autor skutku
   const moznosti: SheetMoznost[] = [
     ["💶", "Žiadosť o pomoc", "Finančná zbierka — krátka alebo dlhodobá", () => { onClose(); otvorModul?.("help"); }],
     ["🙋", "Žiadosť na dobrovoľníctvo", "Nábor — počet, miesto, dĺžka, QR", () => toast("Sprievodca dobrovoľníckej výzvy (6 krokov)")],
     ["📦", "Iná nefinančná pomoc", "Materiál (deky, krmivo…) — fáza 2", () => toast("Materiál — fáza 2")],
     ["📎", "Dôkaz / update", "Dokladovanie použitia k bežiacej žiadosti", () => toast("Pridať dôkaz / update k bežiacej zbierke")],
-    ["✨", "Skutok „takto sme pomohli“", "Dopad / výsledok → Talent", () => toast("Pridať skutok „takto sme pomohli“ → Talent")],
+    ["✨", "Skutok „takto sme pomohli“", "Dopad a výsledok vašej pomoci", () => { onClose(); otvorPridatSkutok({ start: "skupina", autor: ja.celeMeno }); }],
   ];
   return (
     <SheetObal title="Pridať" onClose={onClose}>

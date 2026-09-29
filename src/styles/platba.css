@@ -121,3 +121,15 @@ html.dark .deed-platba .zb-tvorca { background: linear-gradient(135deg, #27425A 
 @keyframes pfZiara { 0%, 100% { opacity: .55; transform: scale(1); } 50% { opacity: 1; transform: scale(1.1); } }
 .pf-ziara { animation: pfZiara 3.4s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) { .pf-ziara { animation: none; } }
+
+/* karta 21 · jemné vysunutie nového bloku (len transform/opacity) */
+.deed-platba .pf-rise { animation: pfRise .3s ease-out both; }
+@keyframes pfRise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .deed-platba .pf-rise { animation: none; } }
+html.obmedz-anim .deed-platba .pf-rise { animation: none; }
+
+/* karta 22 · čiara skenera akcie (len transform) */
+.deed-platba .ak-ciara { animation: akSken 2s ease-in-out infinite alternate; }
+@keyframes akSken { from { transform: translateY(8px); } to { transform: translateY(calc(var(--akH, 170px) - 10px)); } }
+@media (prefers-reduced-motion: reduce) { .deed-platba .ak-ciara { animation: none; transform: translateY(calc(var(--akH, 170px) / 2)); } }
+html.obmedz-anim .deed-platba .ak-ciara { animation: none; transform: translateY(calc(var(--akH, 170px) / 2)); }

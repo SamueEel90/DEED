@@ -17,6 +17,8 @@ import { usePersonalizacia } from "@/lib/personalizacia";
 import { useLokalita } from "@/lib/lokalita";
 import { EVENTS, type AktItem } from "./mock";
 import { LS, load, save, obohatit, osoba, vytvorPost, type NovyPostSpec } from "./utils";
+import { otvorPridatSkutok } from "@/features/skutok/otvor";
+import type { Oblast } from "@/lib/mojeSkutky";
 
 /*
   ============================================================
@@ -34,6 +36,8 @@ import { LS, load, save, obohatit, osoba, vytvorPost, type NovyPostSpec } from "
 function DI({ children }: { children: React.ReactNode }) {
   return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: "block" }}>{children}</svg>;
 }
+// doména Aktivít → oblasť skutku (Pridať skutok s predvolenou oblasťou)
+const DOM_OBLAST: Record<string, Oblast> = { sport: "Šport", art: "Umenie", learn: "Učenie", eko: "Príroda", zdravie: "Zdravie" };
 const DOM_IKONA: Record<string, React.ReactNode> = {
   zdravie: <DI><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.29 1.51 4.04 3 5.5l7 7Z" /></DI>,
   learn: <DI><path d="M22 10 12 5 2 10l10 5 10-5Z" /><path d="M6 12v5c0 1 2 3 6 3s6-2 6-3v-5" /></DI>,
@@ -624,40 +628,35 @@ function Add({ dom, add, setAdd, toast, celebrate, home, createPost }: any) {
         <h2 style={{ fontSize: 18, margin: `${SPACE.xxs}px 0` }}>Čo chceš pridať?</h2>
         <div style={{ fontSize: 12, color: A.txt3 }}>Predvyplníme doménu, aby si klikal čo najmenej.</div>
         <div style={{ display: "flex", flexDirection: "column", gap: SPACE.sm, marginTop: SPACE.md }}>
-          <Ch ic="✅" t="Pridať skutok" s="spravil som niečo dobré (zabehol, zasadil, pomohol, vytvoril)" onClick={() => setAdd({ kind: "skutok", d })} />
+          <Ch ic="✅" t="Pridať skutok" s="spravil som niečo dobré (zabehol, zasadil, pomohol, vytvoril)" onClick={() => otvorPridatSkutok({ oblast: DOM_OBLAST[d] ?? "Šport" })} />
           <Ch ic="🎓" t="Pridať školenie / workshop" s="ponúkam pomoc — učím, vediem, školím" onClick={() => setAdd({ kind: "skolenie", d })} />
           <Ch ic="❓" t="Hľadám pomoc" s="potrebujem mentora, parťáka, dobrovoľníkov" onClick={() => setAdd({ kind: "help", d })} />
         </div>
-        <div style={{ padding: `${SPACE.gutter}px 0`, fontSize: 11, color: A.txt3, lineHeight: 1.5 }}>Talent (ukáž sa) pridáš tiež cez „Pridať skutok" → typ Talent. Video 45 s (do 1 min), KYC, automatický vodoznak + QR, AI moderácia.</div>
       </div>
     </div>
   );
 }
 
 function AddForm({ kind, d, a, pill, setAdd, toast, celebrate, home, createPost }: any) {
-  const isTalentable = kind === "skutok", isSkol = kind === "skolenie";
+  const isSkol = kind === "skolenie";
   const [text, setText] = useState("");
   const [fotky, setFotky] = useState<string[]>([]); // vybrané foto (data URL, náhľad) → na kartu príspevku
-  const [talent, setTalent] = useState(false); // skutok: false = skutok, true = talent
   const [free, setFree] = useState(true);      // školenie: true = zadarmo
   const [checks, setChecks] = useState<{ a: boolean; b: boolean }>({ a: false, b: false });
   const tg = (k: "a" | "b") => setChecks((c) => ({ ...c, [k]: !c[k] }));
 
-  const titles: Record<string, string> = { skutok: "Nový skutok", skolenie: "Nové školenie", help: "Hľadám pomoc" };
+  const titles: Record<string, string> = { skolenie: "Nové školenie", help: "Hľadám pomoc" };
   const fieldlbl: React.CSSProperties = { fontSize: 11, fontWeight: 700, color: A.txt2, marginTop: SPACE.gutter };
   const inp: React.CSSProperties = { width: "100%", background: A.surface2, border: `1px solid ${A.line}`, borderRadius: RADIUS.sm, padding: SPACE.gutter, color: A.txt, fontSize: 14, fontFamily: "inherit", resize: "none", marginTop: SPACE.xs, outline: "none" };
 
   function submit() {
-    if (!text.trim()) return toast(isSkol ? "Najprv zadaj názov workshopu" : kind === "help" ? "Najprv napíš, čo hľadáš" : "Najprv opíš svoj skutok");
-    if (isTalentable && !checks.a) return toast("Potvrď prvé vyhlásenie");
-    if (isTalentable && talent && !checks.b) return toast("Pri talente potvrď súhlas s vodoznakom");
+    if (!text.trim()) return toast(isSkol ? "Najprv zadaj názov workshopu" : "Najprv napíš, čo hľadáš");
     if (isSkol && (!checks.a || !checks.b)) return toast("Potvrď obe vyhlásenia (zodpovednosť + oprávnenie školiť)");
 
-    createPost({ kind, d, text, talent: isTalentable && talent, free: isSkol && free, fotky });
-    const ttl = kind === "skutok" ? (talent ? "Talent pridaný!" : "Skutok pridaný!") : isSkol ? "Workshop vytvorený!" : "Žiadosť zverejnená!";
+    createPost({ kind, d, text, talent: false, free: isSkol && free, fotky });
+    const ttl = isSkol ? "Workshop vytvorený!" : "Žiadosť zverejnená!";
     const body = kind === "help" ? "Tvoja žiadosť je navrchu feedu. Keď sa niekto ozve, otvorí sa chat."
-      : isSkol ? "Workshop sa práve zobrazil vo feede aj na Nástenke."
-      : "Práve sa zobrazil navrchu feedu. Ďakujeme, že konáš.";
+      : "Workshop sa práve zobrazil vo feede aj na Nástenke.";
     celebrate(ttl, body);
     setTimeout(home, 1500);
   }
@@ -668,17 +667,9 @@ function AddForm({ kind, d, a, pill, setAdd, toast, celebrate, home, createPost 
       <div style={{ padding: `${SPACE.xs}px ${SPACE.md}px ${SPACE.md}px` }}>
         <div style={pill()}>{a.ic} {a.label}</div>
 
-        {isTalentable && (<>
-          <div style={fieldlbl}>Typ</div>
-          <div style={{ display: "flex", gap: SPACE.xs, marginTop: SPACE.xs }}>
-            <Cbtn t="Skutok" s="popis + foto" active={!talent} onClick={() => setTalent(false)} />
-            <Cbtn t="Talent ▶" s="45 s video" tCol={a.c} active={talent} onClick={() => setTalent(true)} />
-          </div>
-        </>)}
-
-        <div style={fieldlbl}>{isSkol ? "Názov workshopu" : kind === "help" ? "Čo hľadáš" : "Popis skutku"}</div>
+        <div style={fieldlbl}>{isSkol ? "Názov workshopu" : "Čo hľadáš"}</div>
         <textarea rows={3} value={text} onChange={(e) => setText(e.target.value)}
-          placeholder={isSkol ? "napr. Akvarel pre začiatočníkov" : kind === "help" ? "napr. Hľadám parťáka na beh..." : "napr. Vyčistili sme breh Váhu..."} style={inp} />
+          placeholder={isSkol ? "napr. Akvarel pre začiatočníkov" : "napr. Hľadám parťáka na beh..."} style={inp} />
 
         {isSkol && (<>
           <div style={fieldlbl}>Cena</div>
@@ -688,22 +679,20 @@ function AddForm({ kind, d, a, pill, setAdd, toast, celebrate, home, createPost 
           </div>
         </>)}
 
-        <div style={fieldlbl}>Foto{isTalentable && talent ? " / video" : ""}</div>
+        <div style={fieldlbl}>Foto</div>
         <div style={{ display: "flex", gap: SPACE.sm, marginTop: SPACE.xs, alignItems: "center" }}>
           <FotoVyber fotky={fotky} onZmena={setFotky} max={4} />
-          {isTalentable && talent && <Mslot onClick={() => toast("Video — vodoznak sa pridá automaticky")}><IkonaPlay size={20} /></Mslot>}
         </div>
 
-        <div style={{ background: A.greenBg, border: `1px solid ${A.greenBd}`, borderRadius: RADIUS.sm, padding: SPACE.gutter, marginTop: SPACE.gutter, fontSize: 13, lineHeight: 1.4 }}>🤖 <b>AI pomôže</b> — z popisu navrhne kategóriu, dôležitosť a skontroluje obsah. Pri talente: automatický vodoznak + QR, anti-deepfake.</div>
+        <div style={{ background: A.greenBg, border: `1px solid ${A.greenBd}`, borderRadius: RADIUS.sm, padding: SPACE.gutter, marginTop: SPACE.gutter, fontSize: 13, lineHeight: 1.4 }}>🤖 <b>AI pomôže</b> — z popisu navrhne kategóriu, dôležitosť a skontroluje obsah.</div>
 
-        {(isTalentable || isSkol) && (<>
+        {isSkol && (<>
           <div style={fieldlbl}>Potvrdenie</div>
           <Check on={checks.a} onClick={() => tg("a")}>Som to ja alebo blízka osoba s jej súhlasom, zodpovedám za obsah.</Check>
-          {isTalentable && talent && <Check on={checks.b} onClick={() => tg("b")}>Súhlasím s logom / vodoznakom DEED na videu.</Check>}
           {isSkol && <Check on={checks.b} onClick={() => tg("b")}>Čestne vyhlasujem, že mám oprávnenie toto školiť (vzdelanie/skúška/certifikát) a doklady viem predložiť k auditu.</Check>}
         </>)}
 
-        <Btn onClick={submit}>{kind === "help" ? "Zverejniť žiadosť" : isSkol ? "Vytvoriť workshop" : "Pridať skutok"}</Btn>
+        <Btn onClick={submit}>{kind === "help" ? "Zverejniť žiadosť" : "Vytvoriť workshop"}</Btn>
         <div style={{ textAlign: "center", padding: `${SPACE.gutter}px 0 0`, fontSize: 11, color: A.txt3 }}>Pred zverejnením prejde AI kontrolou. {isSkol ? "Lektor = KYC." : ""}</div>
       </div>
     </div>
@@ -716,9 +705,6 @@ function Ch({ ic, t, s, onClick }: any) {
       <div><div style={{ fontWeight: 700, fontSize: 14 }}>{t}</div><div style={{ fontSize: 11, color: A.txt3, marginTop: SPACE.xxs }}>{s}</div></div>
     </div>
   );
-}
-function Mslot({ children, onClick }: { children: React.ReactNode; onClick?: () => void }) {
-  return <div onClick={onClick} style={{ width: 64, height: 64, border: `1px dashed ${A.line}`, borderRadius: RADIUS.sm, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, color: C.textTer, cursor: "pointer" }}>{children}</div>;
 }
 function Check({ on, onClick, children }: { on: boolean; onClick?: () => void; children: React.ReactNode }) {
   return (
