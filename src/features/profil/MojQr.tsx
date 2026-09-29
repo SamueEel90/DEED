@@ -1,6 +1,7 @@
 // KARTA 18 · bod 4 — Môj QR: Na akciu · Overiť ma · Pozvánka.
 // Na akciu a Overiť ma: kód sa mení každých 15 s (snímka obrazovky neplatí), token sa tvorí v telefóne,
 // takže funguje aj bez signálu (účasť/overenie sa pripíše po pripojení). Pozvánka: statický odkaz na verejný profil.
+import { DeedZnacka } from "@/components/DeedZnacka";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { QrSkener } from "@/components/qrskener";
@@ -16,7 +17,7 @@ export type ZalozkaQr = "akcia" | "overit" | "pozvanka";
 const PERIODA = 15;
 const PODNADPIS: Record<ZalozkaQr, string> = { akcia: "Ukáž ho pri vstupe na akciu.", overit: "Ukáž, kto si, pri prvej návšteve.", pozvanka: "Pozvi ľudí na svoj profil." };
 const POUZITIE: Record<"akcia" | "overit", string[]> = {
-  akcia: ["Potvrdí tvoju účasť na akcii alebo brigáde", "Pridá ťa medzi priateľov alebo ti pošle DEED"],
+  akcia: ["Potvrdí tvoju účasť na akcii alebo brigáde", "Pridá ťa medzi priateľov alebo ti pošle DeeD"],
   overit: ["Druhá strana uvidí tvoju fotku, meno a štít", "Na prvú návštevu, napr. u dôchodcu", "Platí aj keď ťa objednal niekto iný"],
 };
 const KRUH = "linear-gradient(135deg,#E2C174,#A8842A)";
@@ -152,7 +153,7 @@ export function MojQr({ zalozka = "akcia", onClose }: { zalozka?: ZalozkaQr; onC
               <button type="button" onClick={() => { const n = navigator as Navigator & { share?: (d: ShareData) => Promise<void> }; if (n.share) n.share({ title: ja.celeMeno, url: `https://${odkaz}` }).catch(() => {}); else { navigator.clipboard?.writeText(`https://${odkaz}`).catch(() => {}); setKop(true); window.setTimeout(() => setKop(false), 1600); } }}
                 style={{ height: 52, borderRadius: 16, border: "none", background: "var(--gGrad)", fontSize: 15, fontWeight: 800, color: "#fff", cursor: "pointer", fontFamily: "inherit" }}>Zdieľať</button>
             </div>
-            <div style={{ fontSize: 12.5, lineHeight: 1.5, color: "var(--ink3)", textAlign: "center", padding: "0 8px" }}>Otvorí tvoj verejný profil. Kto DEED ešte nemá, dostane pozvánku do appky.</div>
+            <div style={{ fontSize: 12.5, lineHeight: 1.5, color: "var(--ink3)", textAlign: "center", padding: "0 8px" }}>Otvorí tvoj verejný profil. Kto <DeedZnacka /> ešte nemá, dostane pozvánku do appky.</div>
           </>}
         </div>
       </Harok>

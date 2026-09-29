@@ -160,17 +160,17 @@ export const MOCK_FEED: HelpFeedItem[] = [
 // ---- ŽIVÝ TICKER DAROV (mock) ----
 export const ZIVE_DARY: ZivyDar[] = [
   { kto: "Anna M.", co: "5 €", komu: "Rodina Kováčová" },
-  { kto: "Peter V.", co: "💎 50 DEED", komu: "Marek B." },
+  { kto: "Peter V.", co: "💎 50 DeeD", komu: "Marek B." },
   { kto: "Nordika", co: "500 €", komu: "Marek B." },
   { kto: "Ján H.", co: "10 €", komu: "Žofia K." },
-  { kto: "Eva K.", co: "🔥 100 DEED", komu: "Rodina Kováčová" },
+  { kto: "Eva K.", co: "🔥 100 DeeD", komu: "Rodina Kováčová" },
   { kto: "Mária T.", co: "2 €", komu: "Žofia K." },
   { kto: "Lukáš H.", co: "20 €", komu: "Mladá rodina K." },
   { kto: "Vitalmarket", co: "300 € · matching", komu: "Mladá rodina K." },
-  { kto: "Zuzana P.", co: "💎 30 DEED", komu: "Štefan B. (71)" },
+  { kto: "Zuzana P.", co: "💎 30 DeeD", komu: "Štefan B. (71)" },
   { kto: "Anonym", co: "15 €", komu: "Rodina Horváthová" },
   { kto: "Tomáš R.", co: "2 €", komu: "Jozef P. (vozičkár)" },
-  { kto: "Mesto Trenčín", co: "🔥 200 DEED", komu: "Útulok Túlavá labka" },
+  { kto: "Mesto Trenčín", co: "🔥 200 DeeD", komu: "Útulok Túlavá labka" },
   { kto: "Eva K.", co: "10 €", komu: "Pani Oľga (78)" },
-  { kto: "Jana N.", co: "💎 40 DEED", komu: "Karol M." },
+  { kto: "Jana N.", co: "💎 40 DeeD", komu: "Karol M." },
 ];

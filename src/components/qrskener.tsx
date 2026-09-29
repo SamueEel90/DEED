@@ -21,7 +21,7 @@ const VERDIKT_TXT: Record<Verdikt, { t: string; d: string; col: string }> = {
   ok:             { t: "Overené",        d: "Prítomnosť zaznamenaná cez tvoj účet.", col: "var(--a-green)" },
   replay:         { t: "Už naskenované", d: "Tento kód si už použil na tomto zariadení.", col: "var(--a-clay)" },
   expired:        { t: "Kód expiroval",  d: "Screenshot je neplatný — naskenuj živý kód.", col: "var(--a-clay)" },
-  fake:           { t: "Neplatný kód",   d: "Podpis nesedí — toto nie je DEED akčný QR.", col: "var(--a-danger)" },
+  fake:           { t: "Neplatný kód",   d: "Podpis nesedí — toto nie je DEED+ akčný QR.", col: "var(--a-danger)" },
   out_of_radius:  { t: "Mimo miesta",    d: "Si príliš ďaleko od akcie.", col: "var(--a-danger)" },
 };
 
@@ -40,7 +40,7 @@ export function QrSkener({ onClose, toast }: { onClose?: () => void; toast?: (t:
   async function over(raw: string) {
     if (hotovoRef.current) return;
     const t = raw.trim();
-    if (!t.startsWith("DEED1.")) { toast?.("To nie je DEED akčný QR"); return; }
+    if (!t.startsWith("DEED1.")) { toast?.("To nie je DEED+ akčný QR"); return; }
     hotovoRef.current = true;
     stopCam();
     try {

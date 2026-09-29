@@ -59,7 +59,7 @@ export const MOJE_USPECHY: Uspech[] = [
   { level: "Gold", oblast: "EKO", t: "Zlatý štít v oblasti EKO", s: "Rok čistenia potoka so susedmi, 12 akcií.", d: "2. 9. 2026" },
   { level: "Silver", oblast: "LEARN", t: "Strieborný štít v oblasti LEARN", s: "Doučovanie matematiky pre deti zo sídliska.", d: "18. 7. 2026" },
   { level: "Silver", oblast: "ART", t: "Strieborný štít v oblasti ART", s: "Maľovanie múru v materskej škole.", d: "3. 6. 2026" },
-  { level: "Bronze", oblast: "HEALTH", t: "Prvý štít v oblasti HEALTH", s: "Prvé darovanie krvi cez DEED.", d: "11. 3. 2026" },
+  { level: "Bronze", oblast: "HEALTH", t: "Prvý štít v oblasti HEALTH", s: "Prvé darovanie krvi cez DEED+.", d: "11. 3. 2026" },
 ];
 
 /** lichotky pri hlavnom štíte — striedajú sa (staré tituly smú byť len lichotkou, nie odznakom) */

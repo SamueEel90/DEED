@@ -1,4 +1,5 @@
 // KARTA 24 · 2g Jazyk · 2h Stiahnuť moje údaje — obrazovky sprava z Nastavení (OPRAVY 39). Zamestnávateľ je v profile (Zamestnavatel.tsx).
+import { DeedZnacka } from "@/components/DeedZnacka";
 import { useEffect, useRef, useState } from "react";
 import { useNastaveniaAppky, zmenNastavenia } from "@/lib/nastaveniaAppky";
 import { usePouzivatel } from "@/lib/pouzivatel";
@@ -70,7 +71,7 @@ const CO: [string, string, string, string[]][] = [
   ["pr", "Profil a nastavenia", "meno, kontakty, záujmy, súhlasy", ["deed.ja", "deed.profil", "deed.nastavenia", "deed.zaujmy"]],
   ["sk", "Skutky a denník", "texty, fotky, videá, doklady", ["deed.skutky", "deed.moje", "deed.koncept"]],
   ["da", "Dary a zbierky", "kam si daroval, doklady o daroch", ["deed.dary", "deed.zbierk", "deed.oblub", "deed.pravid"]],
-  ["pe", "Peňaženka", "pohyby DEED a EURC, výpisy", ["deed.penaz", "deed.wallet", "deed.karty"]],
+  ["pe", "Peňaženka", "pohyby DeeD a EURC, výpisy", ["deed.penaz", "deed.wallet", "deed.karty"]],
   ["sp", "Správy a komentáre", "čo si napísal ty", ["deed.spravy", "deed.koment"]],
   ["su", "Prihlásenia a zariadenia", "kedy a odkiaľ si sa prihlásil", ["deed.zariad", "deed.blok"]],
 ];
@@ -104,7 +105,7 @@ export function StiahnutUdajeObrazovka({ onBack, z }: { onBack: () => void; /** 
 
   return (
     <ObrazovkaSprava titul="Stiahnuť moje údaje" onBack={onBack} z={z}>
-      <div style={{ fontSize: 15, lineHeight: 1.55, color: "var(--d-ink2, var(--ink2))", padding: "0 6px" }}>Všetko, čo o tebe v DEED máme, dostaneš v jednom súbore.</div>
+      <div style={{ fontSize: 15, lineHeight: 1.55, color: "var(--d-ink2, var(--ink2))", padding: "0 6px" }}>Všetko, čo o tebe v <DeedZnacka /> máme, dostaneš v jednom súbore.</div>
       {stav === null || stav === "overenie" ? <>
         <div>
           <h2 style={lbl}>ČO STIAHNUŤ</h2>

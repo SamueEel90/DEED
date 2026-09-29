@@ -37,7 +37,7 @@ async function darcoviaLive(): Promise<RebricekPolozka[]> {
     .slice(0, 6)
     .map(([meno, deed]) => ({
       meno,
-      info: `${sk(deed)} DEED`,
+      info: `${sk(deed)} DeeD`,
       subjekt: { typ: "osoba", meno, level: (deed >= 1000 ? "Gold" : "Silver") as Karma },
     }));
 }

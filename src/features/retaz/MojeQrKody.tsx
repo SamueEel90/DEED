@@ -161,7 +161,7 @@ export function MojeQrKody({ onClose, toast }: { onClose?: () => void; toast?: (
               <div style={{ display: "flex", gap: SPACE.xs, marginTop: SPACE.sm }}>
                 <button onClick={() => setOpenQr(s)} style={{ flex: 1, height: 38, borderRadius: RADIUS.sm, border: `1px solid ${C.line}`, background: C.surface2, color: C.text, fontWeight: 700, fontSize: 12.5, cursor: "pointer", fontFamily: "inherit" }}>Otvoriť QR</button>
                 <button onClick={() => setPocitadlo({ splitId: s.slug, nazov: s.titul || undefined })} aria-label="Počítadlo do streamu" style={{ flex: "none", height: 38, padding: `0 ${SPACE.sm}px`, borderRadius: RADIUS.sm, border: `1px solid ${C.line}`, background: C.surface2, color: C.text, fontWeight: 700, fontSize: 12.5, cursor: "pointer", fontFamily: "inherit" }}>📺 Do streamu</button>
-                <button onClick={() => zdielaj({ titul: s.titul || "DEED QR", url: qrUrl("split", s.slug) }, toast)} aria-label="Zdieľať QR odkaz" style={{ flex: "none", width: 44, height: 38, borderRadius: RADIUS.sm, border: `1px solid ${C.line}`, background: C.surface2, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Zdielanie size={16} color={C.textSec} /></button>
+                <button onClick={() => zdielaj({ titul: s.titul || "DEED+ QR", url: qrUrl("split", s.slug) }, toast)} aria-label="Zdieľať QR odkaz" style={{ flex: "none", width: 44, height: 38, borderRadius: RADIUS.sm, border: `1px solid ${C.line}`, background: C.surface2, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Zdielanie size={16} color={C.textSec} /></button>
               </div>
             </div>
           );

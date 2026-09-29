@@ -149,8 +149,8 @@ export default function ModulAktivity({ wide }: { wide?: boolean }) {
     } else if (it) {
       setDeltas((dd) => { const cur = dd[it.id] || {}; return { ...dd, [it.id]: { ...cur, support: (cur.support || 0) + 1 } }; });
     }
-    setTick({ who: "Ty", what: `práve podporil(a) ${amt} DEED →`, to: komu });
-    celebrate(amt >= 100 ? "Skvelé! Veľká podpora!" : "Ďakujeme!", `Tvoja podpora ${amt} DEED letí k ${komu}. Reťaz dobra pokračuje.`);
+    setTick({ who: "Ty", what: `práve podporil(a) ${amt} DeeD →`, to: komu });
+    celebrate(amt >= 100 ? "Skvelé! Veľká podpora!" : "Ďakujeme!", `Tvoja podpora ${amt} DeeD letí k ${komu}. Reťaz dobra pokračuje.`);
   }
 
   function vote(id: number, kind: string) {
@@ -275,7 +275,7 @@ function Home({ items, dom, view, pickDom, pickView, toast, open, openPerson, se
       <Ticker>
         {tick
           ? <>{tick.who} <b style={{ color: C.greenL }}>{tick.what}</b>{tick.to ? ` ${tick.to}` : ""}</>
-          : <>Cyklo TN <b style={{ color: C.greenL }}>práve dostal 100 DEED</b> → Marek</>}
+          : <>Cyklo TN <b style={{ color: C.greenL }}>práve dostal 100 DeeD</b> → Marek</>}
       </Ticker>
 
       {/* filter hore na stránke + štatistický riadok — na desktope na jednom riadku */}
@@ -571,14 +571,14 @@ function HelpDetail({ it, toast, celebrate, home, openPerson }: any) {
         <PlatobnyModul
           onShare={() => zdielaj({ titul: it.title, text: it.title, url: aktualnaUrl() }, toast)}
           upvotes={it.helpers || 0} onUpvote={() => toast("Páči sa ti to")}
-          onPodpor={(s: number) => toast(`Ďakujeme za ${s} DEED pre ${it.author}`)}
+          onPodpor={(s: number) => toast(`Ďakujeme za ${s} DeeD pre ${it.author}`)}
           onKanal={(k: string) => setPlatba(k)} supLabel="PODPORIŤ — klik a hneď odíde"
           oblubene={{ refId: it.id, typ: "ziadost", modul: "aktivity", nazov: it.title, lok: it.loc }} toast={toast}
           qr={{ label: "QR tejto žiadosti", popis: "Zväčšiť · kopírovať · zdieľať", cta: "Zdieľať", onClick: () => zdielaj({ titul: it.title, text: it.title, url: aktualnaUrl() }, toast) }} />
       </div>
       {/* simulácia platby (EUR karta / SEPA prevod / DEED peňaženka) */}
       {platba && <PlatbaModal kanal={platba} komu={it.author} onClose={() => setPlatba(null)}
-        onDone={(s: number) => { setPlatba(null); toast(`Odoslané ${platba === "EUR" ? s + " €" : s + " DEED"} · ${it.author}`); }} />}
+        onDone={(s: number) => { setPlatba(null); toast(`Odoslané ${platba === "EUR" ? s + " €" : s + " DeeD"} · ${it.author}`); }} />}
     </div>
   );
 }

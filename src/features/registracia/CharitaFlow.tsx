@@ -858,7 +858,7 @@ function KrokBaliky({ org, nazov, toast, onBack, onHotovo }: KrokBalikyProps) {
       <Oslava
         emoji="🎉"
         title="Ste overení"
-        text="Vitajte v DEED."
+        text="Vitajte v DEED+."
         onClose={zatvorOslavu}
       />
     );

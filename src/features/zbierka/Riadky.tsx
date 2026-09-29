@@ -1,5 +1,6 @@
 // Riadky detailu zbierky: Zdieľať · QR + Páči sa mi (karta 00/06), karta 12 (pravidelná podpora,
-// obľúbené + Podporiť DEED, zapojiť firmu, reťaz dobra), karta 10 (darcovia), karta 11 (karta Dorovnáva pre darcu).
+// obľúbené + Podporiť DEED+, zapojiť firmu, reťaz dobra), karta 10 (darcovia), karta 11 (karta Dorovnáva pre darcu).
+import { DeedZnacka } from "@/components/DeedZnacka";
 import { useState, type CSSProperties, type ReactNode } from "react";
 import { usePersonalizacia } from "@/lib/personalizacia";
 import { usePouzivatel } from "@/lib/pouzivatel";
@@ -59,7 +60,7 @@ export function OblubenePodporit({ polozka, onPodporit }: { polozka: Oblubeny; o
       </button>
       <button type="button" className="zb-karta" onClick={onPodporit} style={{ ...male, color: "var(--green)" }}>
         <span style={{ width: 18, height: 18, borderRadius: 5, background: "var(--green)", color: "#fff", fontSize: 11, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>D</span>
-        Podporiť DEED
+        Podporiť <DeedZnacka />
       </button>
     </div>
   );

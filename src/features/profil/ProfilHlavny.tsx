@@ -1,12 +1,14 @@
 // KARTA 18 · Môj profil — hlavná obrazovka (prototyp „Moj profil.dc.html").
 // Hlavička · karta identity · karta štítu · karma (len vlastník) · čísla · dlaždice 2 × 3 · Moje záujmy (10 oblastí).
 // Bez L-úrovní, percent, emoji a anglických názvov štítov.
+import { DeedZnacka } from "@/components/DeedZnacka";
 import { useState } from "react";
 import { usePouzivatel } from "@/lib/pouzivatel";
 import { usePersonalizacia } from "@/lib/personalizacia";
 import { ZAUJMY_KATALOG } from "@/lib/personalizaciaStore";
 import { klucEntity, useFotkyEntity } from "@/lib/fotoentity";
 import { useViac } from "@/components/context";
+import { RozpracovanySkutok, PrveKroky, Podakovania } from "./ProfilKarty";
 import { MriezkaDlazdic, type Dlazdica } from "./Dlazdice";
 import { STATISTIKY, POHYBY } from "./mock";
 import { MOJA_CESTA, suhrn } from "@/lib/cestaDaru";
@@ -161,7 +163,7 @@ export function MojeZaujmy() {
         <span style={{ fontSize: 18, fontWeight: 800 }}>Moje záujmy</span>
         <span style={{ fontSize: 12.5, color: "var(--ink3)", fontVariantNumeric: "tabular-nums" }}>{aktivne} z {ZAUJMY_KATALOG.length} oblastí</span>
       </div>
-      <div style={{ fontSize: 13, lineHeight: 1.5, color: "var(--ink2)", marginTop: -6 }}>Podľa nich ti DEED skladá nástenku, pozvánky a ponuky z okolia. Feed skutkov ich nečíta.</div>
+      <div style={{ fontSize: 13, lineHeight: 1.5, color: "var(--ink2)", marginTop: -6 }}>Podľa nich ti <DeedZnacka /> skladá nástenku, pozvánky a ponuky z okolia. Feed skutkov ich nečíta.</div>
       <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) minmax(0,1fr)", gap: 8 }}>
         {ZAUJMY_KATALOG.map((z) => {
           const v = vybrane(z.oblast), a = v.length > 0;
@@ -214,7 +216,7 @@ export function ProfilHlavny18(a: ProfilAkcie) {
   const { zaujmy } = usePersonalizacia();
   const zaujmyN = ZAUJMY_KATALOG.filter((z) => zaujmy.some((x) => x.oblast === z.oblast)).length;
   const dlazdice: Dlazdica[] = [
-    { id: "wallet", t: "Peňaženka", s: "1 240 DEED", ikona: <Ik d={IK.wallet} />, bg: "var(--bSoft)", c: "var(--blue)", onClick: a.naWallet },
+    { id: "wallet", t: "Peňaženka", s: "1 240 DeeD", ikona: <Ik d={IK.wallet} />, bg: "var(--bSoft)", c: "var(--blue)", onClick: a.naWallet },
     { id: "nastavenia", t: "Nastavenia", s: "vzhľad, súkromie", ikona: <Ik d={IK.nastavenia} />, bg: "var(--card)", c: "var(--ink2)", onClick: a.naNastavenia },
     { id: "skutky", t: "Moje skutky", s: `${MOJE_SKUTKY_POCET} skutkov`, ikona: <Ik d={IK.skutky} />, bg: "var(--gSoft)", c: "var(--green)", onClick: () => a.naSub("Moje skutky") },
     { id: "priatelia", t: "Priatelia", s: "kam idú tvoji priatelia", ikona: <Ik d={IK.priatelia} />, bg: "var(--bSoft)", c: "var(--blue)", onClick: a.naPriatelia },
@@ -251,7 +253,9 @@ export function ProfilHlavny18(a: ProfilAkcie) {
             <div style={{ fontSize: 12.5, color: "var(--ink3)", marginTop: 2 }}>{l}</div>
           </button>); })}
       </div>
-      <MriezkaDlazdic vsetky={dlazdice} sekcie={sekcie} />
+      <RozpracovanySkutok />
+      {!ja.demo && <PrveKroky naZaujmy={() => a.naSub("Moje záujmy")} naPriatelia={a.naPriatelia} />}
+      <MriezkaDlazdic vsetky={dlazdice} sekcie={sekcie} medzi={<Podakovania ukazka={!!ja.demo} />} />
     </div>
   );
 }

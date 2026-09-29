@@ -1,5 +1,6 @@
 // KARTA 20 · Nastavenia appky — všetko o appke, nič o profile (fotky, režim profilu a Ochrana osoby sú v Upraviť profil).
 // Poradie: Vzhľad · Prístupnosť · Oznámenia · Poloha · Bezpečnosť · Súkromie a údaje · Účet · Pomoc · [Odhlásiť sa].
+import { DeedZnacka } from "@/components/DeedZnacka";
 import { useState } from "react";
 import { useMotiv, type Tema } from "@/components/context";
 import { useNastaveniaAppky, zmenNastavenia, type Okruh } from "@/lib/nastaveniaAppky";
@@ -114,7 +115,7 @@ export function Nastavenia20({ onBack, onNotif, onUpravProfil, desktop }: { onBa
       </Sekcia>
 
       <button type="button" onClick={() => { toast("Odhlásené"); void signOut(); }} style={{ minHeight: 54, borderRadius: 16, border: "1px solid var(--cardBd)", background: "var(--btn)", fontSize: 16, fontWeight: 700, color: "var(--ink)", cursor: "pointer", fontFamily: "inherit" }}>Odhlásiť sa</button>
-      <div style={{ fontSize: 12.5, color: "var(--ink3)", textAlign: "center" }}>DEED · verzia {VERZIA_APPKY}</div>
+      <div style={{ fontSize: 12.5, color: "var(--ink3)", textAlign: "center" }}><DeedZnacka /> · verzia {VERZIA_APPKY}</div>
 
       {harok === "okruh" && <OkruhHarok onClose={() => setHarok(null)} onZmenitMiesto={() => { setHarok(null); onUpravProfil?.(); }} />}
       {harok === "platba" && <PotvrditPlatbuHarok onClose={() => setHarok(null)} />}

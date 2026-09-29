@@ -172,7 +172,7 @@ export function PridatSheet({ farar, farnost, onClose, toast }: {
             </div>
           ))}
           <div style={{ fontSize: 10.5, color: N.txt3, textAlign: "center", padding: SPACE.sm }}>
-            Aj cez „+" na ploche aj cez Môj DEED (správcovský panel). User nikdy nevidí farárove možnosti a naopak.
+            Aj cez „+" na ploche aj cez Môj DEED+ (správcovský panel). User nikdy nevidí farárove možnosti a naopak.
           </div>
         </>
       ) : !selfAdd.on ? (

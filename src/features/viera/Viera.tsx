@@ -522,7 +522,7 @@ function VieraDetail({ z, farar, onBack, onProfil }: { z: VieraFeedItem; farar: 
   }
   // sekundárne: pridať do systémového kalendára (.ics) — spoľahlivé aj pri zavretej appke
   const doKalendara = () => { if (z.datum) stiahniIcs({ id: z.id, nazov: z.nazov ?? "Udalosť", datum: z.datum, miesto: z.lok, popis: cistyText(z.pribeh ?? z.popis ?? "").slice(0, 200) }, toast); };
-  const zdielajDetail = () => void zdielaj({ titul: z.nazov ?? "DEED", text: `${z.nazov ?? ""} — ${z.komunita || z.cirkev}`, url: aktualnaUrl() }, toast);
+  const zdielajDetail = () => void zdielaj({ titul: z.nazov ?? "DEED+", text: `${z.nazov ?? ""} — ${z.komunita || z.cirkev}`, url: aktualnaUrl() }, toast);
   const [ozvat, setOzvat] = useState(false); // „Zapojiť sa" → správa farnosti
   const [nahlasit, setNahlasit] = useState(false); // vlajka → nahlásenie obsahu
   const [mazem, setMazem] = useState(false); // farárske mazanie — 2. ťuk potvrdí
@@ -536,7 +536,7 @@ function VieraDetail({ z, farar, onBack, onProfil }: { z: VieraFeedItem; farar: 
   const ja = usePouzivatel();
   const darRef = `naboz-${z.id}`;
   function podpor(hodnota: number, text: string) { setSuma((s) => s + hodnota * 0.01); setLudia((l) => l + 1); pridajDar({ refId: darRef, suma: hodnota * 0.01, kanal: "deed", registrovany: ja.typ !== "pasivny" }); toast(text); }
-  function platbaHotova(s: number, volba?: VolbaDaru) { setSuma((x) => x + s * (platba === "DEED" ? 0.01 : 1)); setLudia((l) => l + 1); pridajDar({ refId: darRef, suma: s * (platba === "DEED" ? 0.01 : 1), kanal: platba === "EUR" ? "psp" : "deed", registrovany: ja.typ !== "pasivny", volba }); toast(`Odoslané ${platba === "EUR" ? s + " €" : platba === "EURC" ? s + " EURC" : s + " DEED"} · ${z.nazov}`); }
+  function platbaHotova(s: number, volba?: VolbaDaru) { setSuma((x) => x + s * (platba === "DEED" ? 0.01 : 1)); setLudia((l) => l + 1); pridajDar({ refId: darRef, suma: s * (platba === "DEED" ? 0.01 : 1), kanal: platba === "EUR" ? "psp" : "deed", registrovany: ja.typ !== "pasivny", volba }); toast(`Odoslané ${platba === "EUR" ? s + " €" : platba === "EURC" ? s + " EURC" : s + " DeeD"} · ${z.nazov}`); }
   // §delta bod 2: kontextová reakcia-srdiečko (kondolencia / modlím sa / blahoželáme) — odvodené z typu
   const reakcia = reakciaToast(z);
 
@@ -636,7 +636,7 @@ function VieraDetail({ z, farar, onBack, onProfil }: { z: VieraFeedItem; farar: 
               <PlatobnyModul zbalene
                 onShare={zdielajDetail}
                 upvotes={ludia} onUpvote={() => toast(reakcia)} reakcia="srdce"
-                onPodpor={(s: number) => podpor(s, `Ďakujeme za ${s} DEED pre ${z.nazov}`)}
+                onPodpor={(s: number) => podpor(s, `Ďakujeme za ${s} DeeD pre ${z.nazov}`)}
                 onKanal={(k: string) => setPlatba(k as Kanal)} accent={N.ind}
                 supLabel={z.ukat === "pohreb" ? "PRISPIEŤ — pohrebná zbierka (predĺžené okno ~týždeň)" : "PRISPIEŤ — klik a hneď odíde"}
                 oblubene={{ refId: z.id, typ: z.ntyp ?? "zbierka", modul: "nabozenstvo", nazov: z.nazov ?? "Zbierka", lok: z.lok, ciel: cielLocal ?? undefined, vyzbierane: suma }} toast={toast}

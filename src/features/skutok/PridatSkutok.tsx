@@ -2,6 +2,7 @@
 // Aktivity, Charita, Môj QR, detail zbierky, oznam „AI sa pýta"). Otvára sa cez otvorPridatSkutok().
 // 6 krokov: Sám / So skupinou (→ bežný / skutok ako dar) · Opíš · AI kontroluje · Ešte pár otázok · Náhľad · Hotovo.
 // AI = existujúce ohodnot() (POST /api/score, verdikt ok / doplnit / zamietnut) — backend sa nemení.
+import { DeedZnacka } from "@/components/DeedZnacka";
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { useQueryClient } from "@tanstack/react-query";
@@ -225,6 +226,10 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
     ulozKoncept(null); setKon(null); setKr(2);
   };
 
+  // profil → Rozpracovaný skutok → Dokončiť: rovno pokračovať v koncepte
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { if (pr.koncept && kon) pokracujKoncept(); }, []);
+
   // ---- živá kontrola textu pod poľom ----
   const zmenPo = (html: string) => {
     if (html === po) return; // blur editora pošle ten istý text — kontrolu nespúšťať znova
@@ -277,14 +282,14 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
   const ucN = uc.length ? `${uc.length + 1} spolu s tebou` : "";
   const pozvi = async () => {
     const url = `https://deed.sk/skutok/${id}/pridaj-sa`;
-    if (typeof navigator.share === "function") { try { await navigator.share({ title: "Bol si pri tom? Potvrď v DEED", url }); } catch { return; } }
+    if (typeof navigator.share === "function") { try { await navigator.share({ title: "Bol si pri tom? Potvrď v DEED+", url }); } catch { return; } }
     else { try { await navigator.clipboard.writeText(url); toast("Pozvánka skopírovaná"); } catch { /* bez schránky */ } }
     setUc((u) => [...u, { meno: `Pozvánka ${u.filter((x) => !x.overeny).length + 1}`, overeny: false }]);
   };
   // pozvánka kolegom vyzerá rovnako ako každá iná (aj od šéfa) — žiadne „povinné"
   const pozviKolegov = async () => {
     const url = `https://deed.sk/skutok/${id}/pridaj-sa`;
-    if (typeof navigator.share === "function") { try { await navigator.share({ title: "Bol si pri tom? Potvrď v DEED", url }); } catch { return; } }
+    if (typeof navigator.share === "function") { try { await navigator.share({ title: "Bol si pri tom? Potvrď v DEED+", url }); } catch { return; } }
     else { try { await navigator.clipboard.writeText(url); toast("Pozvánka pre kolegov skopírovaná"); } catch { /* bez schránky */ } }
     setUc((u) => [...u, { meno: `Kolega ${u.filter((x) => !x.overeny).length + 1}`, overeny: false }]);
   };
@@ -518,7 +523,7 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
           placeholder={plan ? "Opíš, čo sa chystáš urobiť a prečo. Píš ako vieš, AI ti text upraví do najlepšej podoby." : "Opíš, čo si urobil, pre koho a prečo. Píš ako vieš, AI ti text upraví do najlepšej podoby."}
           vpravo={<button type="button" onClick={diktuj} aria-label="Diktovať hlasom" aria-pressed={mic} onMouseDown={(e) => e.preventDefault()}
             style={{ marginLeft: "auto", height: 32, padding: "0 10px", border: "none", borderRadius: 8, background: mic ? "var(--gSoft)" : "transparent", color: mic ? "var(--gInk)" : "var(--ink2)", display: "flex", alignItems: "center", gap: 5, fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}><Ik d={IK.mic} s={15} />{mic ? "Počúvam…" : "Diktovať"}</button>} />
-        <div style={P.maly}>Text môžeš vložiť aj z Wordu alebo inej appky. Tučné, nadpisy, odrážky a odkazy ostanú, ostatné formátovanie sa zjednotí so vzhľadom DEED.</div>
+        <div style={P.maly}>Text môžeš vložiť aj z Wordu alebo inej appky. Tučné, nadpisy, odrážky a odkazy ostanú, ostatné formátovanie sa zjednotí so vzhľadom <DeedZnacka />.</div>
         {!plan && !ohl && <>
           <Zaskrt on={prav} onClick={() => setPrav(!prav)}><b style={{ color: "var(--ink)" }}>Robím to pravidelne</b></Zaskrt>
           {prav && <>
@@ -708,7 +713,7 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
       ) : !ohl?.retaz && (
         <div style={{ alignSelf: "stretch", textAlign: "left", borderRadius: 18, background: "var(--card)", border: "1px solid var(--gBd)", padding: 14, display: "flex", flexDirection: "column", gap: 10 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}><span style={{ width: 34, height: 34, borderRadius: 10, background: "var(--gSoft)", color: "var(--green)", display: "flex", alignItems: "center", justifyContent: "center", flex: "none" }}><Ik d={IK.retaz} /></span><span style={{ fontSize: 16, fontWeight: 800 }}>Reťaz dobra</span></div>
-          <div style={{ fontSize: 14, lineHeight: 1.5, color: "var(--ink2)" }}>{sk ? "Keď vám ľudia za tento skutok pošlú odmenu, časť alebo celú ju môžete posunúť na zbierku v DEED. Reťaz nastavuješ ty za celú skupinu, ostatní ju uvidia v ozname." : "Keď ti ľudia za tento skutok pošlú odmenu, časť alebo celú ju môžeš posunúť na zbierku v DEED. Funguje to ako zbierka tvorcu, tvorcom si teraz ty."} <b style={{ color: "var(--ink)" }}>Nastaviť sa dá len teraz a po zapečatení sa výška delenia už nedá zmeniť.</b></div>
+          <div style={{ fontSize: 14, lineHeight: 1.5, color: "var(--ink2)" }}>{sk ? "Keď vám ľudia za tento skutok pošlú odmenu, časť alebo celú ju môžete posunúť na zbierku v DEED+. Reťaz nastavuješ ty za celú skupinu, ostatní ju uvidia v ozname." : "Keď ti ľudia za tento skutok pošlú odmenu, časť alebo celú ju môžeš posunúť na zbierku v DEED+. Funguje to ako zbierka tvorcu, tvorcom si teraz ty."} <b style={{ color: "var(--ink)" }}>Nastaviť sa dá len teraz a po zapečatení sa výška delenia už nedá zmeniť.</b></div>
           {!rz.open && !rz.hot && <button type="button" onClick={() => setRz((r) => ({ ...r, open: true }))} style={{ height: 48, borderRadius: 14, border: "none", background: "var(--gGrad)", fontSize: 15, fontWeight: 800, color: "#fff", cursor: "pointer", fontFamily: "inherit" }}>Nastaviť reťaz dobra</button>}
           {rz.open && !rz.hot && <div className="pf-rise" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             <div role="radiogroup" aria-label="Zbierka pre reťaz" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -776,7 +781,7 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
           <div onClick={() => setPrv(false)} style={{ position: "absolute", inset: 0, background: "var(--scrim)" }} />
           <div role="dialog" aria-label="Pravidlá fotiek a videí" className="pf-rise" style={{ position: "relative", width: "100%", maxHeight: "92%", overflowY: "auto", borderRadius: "28px 28px 0 0", background: "var(--sheet)", padding: "18px 20px max(28px, env(safe-area-inset-bottom))", display: "flex", flexDirection: "column", gap: 12 }}>
             <div style={{ fontSize: 20, fontWeight: 800 }}>Pravidlá fotiek a videí</div>
-            {[["Súhlas.", "Zverejňuj len ľudí, ktorí s tým súhlasia. Za súhlas zodpovedáš ty."], ["Deti.", "Tváre detí bez súhlasu rodiča nezverejníme, AI ich rozmaže alebo skutok ukáže kreslene."], ["Dôstojnosť.", "Fotky človeka v núdzi, v chorobe alebo po nehode zverejníme len so súhlasom a ak ho neponižujú. Silný skutok si zaslúži, aby ho videli."], ["Kreslená verzia.", "Ak by fotka mohla niekoho ponížiť, ostane len ako dôkaz a skutok ukážeme kreslenou verziou alebo kresleným videom."], ["Bez osobných údajov.", "Na fotkách nesmú byť čitateľné adresy, EČV, doklady ani čísla."], ["Právo nezverejniť.", "DEED môže ktorúkoľvek fotku nezverejniť. Skutok a karma tým neutrpia."]].map(([t, s]) => (
+            {[["Súhlas.", "Zverejňuj len ľudí, ktorí s tým súhlasia. Za súhlas zodpovedáš ty."], ["Deti.", "Tváre detí bez súhlasu rodiča nezverejníme, AI ich rozmaže alebo skutok ukáže kreslene."], ["Dôstojnosť.", "Fotky človeka v núdzi, v chorobe alebo po nehode zverejníme len so súhlasom a ak ho neponižujú. Silný skutok si zaslúži, aby ho videli."], ["Kreslená verzia.", "Ak by fotka mohla niekoho ponížiť, ostane len ako dôkaz a skutok ukážeme kreslenou verziou alebo kresleným videom."], ["Bez osobných údajov.", "Na fotkách nesmú byť čitateľné adresy, EČV, doklady ani čísla."], ["Právo nezverejniť.", "DEED+ môže ktorúkoľvek fotku nezverejniť. Skutok a karma tým neutrpia."]].map(([t, s]) => (
               <div key={t} style={{ display: "flex", gap: 10, fontSize: 14.5, lineHeight: 1.5, color: "var(--ink2)" }}><span aria-hidden="true" style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--green)", flex: "none", marginTop: 8 }} /><span><b style={{ color: "var(--ink)" }}>{t}</b> {s}</span></div>))}
             <button type="button" onClick={() => setPrv(false)} style={{ ...P.hlavne, height: 54, borderRadius: 16, fontSize: 16, marginTop: 6 }}>Rozumiem</button>
           </div>

@@ -2,6 +2,7 @@
 // Tento rok | Od začiatku · čísla 2 × 3 · séria (len informácia, bez tlaku) · skutky po mesiacoch · kde pomáhaš ·
 // tvoj dosah · cesta môjho daru · môj rok v DEED (zdieľanie 1080 × 1350, bez karmy a súm).
 // Zmazané: umiestnenia v meste/štvrti, sledujúci, farebné bodky, emoji. Neporovnávame s inými.
+import { DeedZnacka } from "@/components/DeedZnacka";
 import { useState } from "react";
 import { SpatTlacidlo } from "@/components/cesta";
 import { toast } from "@/components/toast";
@@ -52,7 +53,7 @@ export function Statistiky({ onBack, desktop }: { onBack: () => void; desktop?: 
     const cv = document.createElement("canvas"); cv.width = 1080; cv.height = 1350;
     const x = cv.getContext("2d")!;
     await ramObrazka(x, 1080, 1350);
-    x.fillStyle = "#876712"; x.font = "800 36px 'Plus Jakarta Sans', sans-serif"; x.fillText(`MÔJ ROK ${rok} V DEED`, 72, 120);
+    x.fillStyle = "#876712"; x.font = "800 36px 'Plus Jakarta Sans', sans-serif"; x.fillText(`MÔJ ROK ${rok} V DEED+`, 72, 120);
     const nacitaj = (src: string) => new Promise<HTMLImageElement | null>((ok) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => ok(null); i.src = src; });
     const hl = await nacitaj(`/stity/${MOJ_HLAVNY.toLowerCase()}.png`);
     if (hl) { const h = 420, w = h * (hl.width / hl.height); x.drawImage(hl, (1080 - w) / 2, 170, w, h); }
@@ -65,7 +66,7 @@ export function Statistiky({ onBack, desktop }: { onBack: () => void; desktop?: 
     const cc: [string, string][] = [[String(r.skutkov), skutkovTvar(r.skutkov)], [`${r.hodin} h`, "pre druhých"], [String(r.ludi), "podporených ľudí"]];
     cc.forEach(([h, l], k) => { const cx = 200 + k * 340; x.fillStyle = "#1D211B"; x.font = "800 76px 'Plus Jakarta Sans', sans-serif"; x.fillText(h, cx, 990); x.fillStyle = "#4A4C43"; x.font = "600 30px 'Plus Jakarta Sans', sans-serif"; x.fillText(l, cx, 1034); });
     x.textAlign = "left";
-    const v = await zdielajCanvas(cv, `moj-rok-${rok}.png`, `Môj rok ${rok} v DEED`);
+    const v = await zdielajCanvas(cv, `moj-rok-${rok}.png`, `Môj rok ${rok} v DEED+`);
     if (v === "stiahnute") toast("Obrázok je stiahnutý");
   };
 
@@ -148,7 +149,7 @@ export function Statistiky({ onBack, desktop }: { onBack: () => void; desktop?: 
           <div style={{ display: "flex", flexDirection: "column", gap: 12, padding: 16, borderRadius: 22, background: "linear-gradient(150deg,var(--gSoft) 0%,var(--goldBg) 100%)", border: "1px solid var(--goldBd)" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
               <StitObr level={MOJ_HLAVNY} h={64} />
-              <span><span style={{ display: "block", fontSize: 12, fontWeight: 800, letterSpacing: ".06em", color: "var(--gold)" }}>MÔJ ROK {rok} V DEED</span>
+              <span><span style={{ display: "block", fontSize: 12, fontWeight: 800, letterSpacing: ".06em", color: "var(--gold)" }}>MÔJ ROK {rok} V <DeedZnacka /></span>
                 <span style={{ display: "block", fontSize: 18, fontWeight: 800, marginTop: 2 }}>{r.skutkov} {skutkovTvar(r.skutkov)} · {r.hodin} h · {r.ludi} ľudí</span></span>
             </div>
             <div style={{ fontSize: 14, lineHeight: 1.5, color: "var(--ink2)" }}>Ročný súhrn na zdieľanie. Bez karmy a bez súm, len tvoje skutky a štíty.</div>

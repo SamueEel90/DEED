@@ -45,7 +45,7 @@ const DATA: Record<string, FirmaData> = {
       { d: 11, m: "OKT", t: "Ranná smena", s: "predajňa Námestie · 6:00 – 14:00", stitok: "potvrdené", typ: "smena" },
     ],
     odmeny: [
-      { za: "Za pomoc pri povodni v Bošáci", hodnota: "+300 DEED", kedy: "14. 9.", zdroj: "skutok s menom", vdaka: "„Ďakujeme, že si reprezentoval celú pekáreň.“ — vedenie" },
+      { za: "Za pomoc pri povodni v Bošáci", hodnota: "+300 DeeD", kedy: "14. 9.", zdroj: "skutok s menom", vdaka: "„Ďakujeme, že si reprezentoval celú pekáreň.“ — vedenie" },
       { za: "Za firemnú brigádu v útulku", hodnota: "deň voľna", kedy: "20. 8.", zdroj: "firemná akcia", vdaka: "„Vďaka tebe sme mali najviac dobrovoľníkov v meste.“" },
     ],
     vto: {

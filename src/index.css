@@ -60,6 +60,9 @@ html.dark {
   box-sizing: border-box;
 }
 
+/* OPRAVY 73: Plus Jakarta Sans spája f + i do ligatúry „ﬁ" a bodka nad i zmizne (profil, filter) — vypnuté pre celú appku */
+html, body, button, input, textarea, select { font-variant-ligatures: no-common-ligatures; font-feature-settings: "liga" 0, "clig" 0; }
+
 body {
   margin: 0;
   background: var(--c-bg);

@@ -239,7 +239,7 @@ function KampanSheet({ k, org, toast, onClose }: { k: OrgKampan; org: string; to
     setSuma((s) => s + hodnota * 0.01);
     setLudia((l) => l + 1);
     pridajDar({ refId: darRef, suma: hodnota * 0.01, kanal: "deed", registrovany: ja.typ !== "pasivny" });
-    toast?.(`Ďakujeme za ${hodnota} DEED · ${k.nazov}`);
+    toast?.(`Ďakujeme za ${hodnota} DeeD · ${k.nazov}`);
   };
 
   return (
@@ -268,7 +268,7 @@ function KampanSheet({ k, org, toast, onClose }: { k: OrgKampan; org: string; to
           setSuma((x) => x + s * (platba === "DEED" ? 0.01 : 1));
           setLudia((l) => l + 1);
           pridajDar({ refId: darRef, suma: s * (platba === "DEED" ? 0.01 : 1), kanal: platba === "EUR" ? "psp" : "deed", registrovany: ja.typ !== "pasivny", volba });
-          toast?.(`Odoslané ${platba === "EUR" ? s + " €" : platba === "EURC" ? s + " EURC" : s + " DEED"} · ${k.nazov}`);
+          toast?.(`Odoslané ${platba === "EUR" ? s + " €" : platba === "EURC" ? s + " EURC" : s + " DeeD"} · ${k.nazov}`);
         }} />}
     </>
   );

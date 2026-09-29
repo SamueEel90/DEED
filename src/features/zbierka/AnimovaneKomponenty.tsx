@@ -5,10 +5,10 @@ import { letSvetielko, roj, pocitadlo, vibruj } from './animacie';
 
 /* ───────── MIKRODAR (DEED / EURC dlaždica) — klik a hneď odíde ─────────
    Použitie:
-   <MikrodarDlazdica suma={100} jednotka="DEED" eur={1} najcastejsie root={obrazovkaRef} ciel={koniecPruhuRef}
+   <MikrodarDlazdica suma={100} jednotka="DeeD" eur={1} najcastejsie root={obrazovkaRef} ciel={koniecPruhuRef}
      onOdoslane={async () => await api.mikrodar(zbierkaId, 100, 'DEED')} onDoleteli={(eur) => navysSumu(eur)} />
    ciel = element na konci pruhu karty stavu (data-bar-end). */
-type MikroProps = { suma: number | string; jednotka: 'DEED' | 'EURC'; eur: number; najcastejsie?: boolean;
+type MikroProps = { suma: number | string; jednotka: 'DeeD' | 'EURC'; eur: number; najcastejsie?: boolean;
   root: React.RefObject<HTMLElement>; ciel: React.RefObject<HTMLElement>; blokovane?: boolean;
   onOdoslane: () => Promise<void> | void; onDoleteli: (eur: number) => void; };
 export function MikrodarDlazdica({ suma, jednotka, eur, najcastejsie, root, ciel, blokovane, onOdoslane, onDoleteli }: MikroProps) {

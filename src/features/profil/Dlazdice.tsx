@@ -8,7 +8,7 @@ import { Prepinac } from "./nastUi";
 
 export type Dlazdica = { id: DlazdicaId; t: string; s: string; ikona: ReactNode; bg: string; c: string; onClick: () => void; skryt?: boolean };
 
-export function MriezkaDlazdic({ vsetky, sekcie }: { vsetky: Dlazdica[]; sekcie: Partial<Record<DlazdicaId, ReactNode>> }) {
+export function MriezkaDlazdic({ vsetky, sekcie, medzi }: { vsetky: Dlazdica[]; sekcie: Partial<Record<DlazdicaId, ReactNode>>; /** medzi tlačidlom a rozbalenými sekciami (Poďakovania) */ medzi?: ReactNode }) {
   const n = useDlazdice();
   const [uprava, setUprava] = useState(false);
   const dostupne = vsetky.filter((d) => !d.skryt); // napr. Zamestnávateľ len pre prepojeného / s pozvánkou
@@ -27,6 +27,7 @@ export function MriezkaDlazdic({ vsetky, sekcie }: { vsetky: Dlazdica[]; sekcie:
       </div>
       <button type="button" onClick={() => setUprava(true)} style={{ alignSelf: "center", minHeight: 44, padding: "0 16px", borderRadius: 14, border: "1px solid var(--cardBd)", background: "transparent", color: "var(--ink2)", fontSize: 14, fontWeight: 700, fontFamily: "inherit", cursor: "pointer", display: "flex", alignItems: "center", gap: 8 }}>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4" /></svg>Upraviť dlaždice</button>
+      {medzi}
       {rozbalene.map((id) => <div key={id}>{sekcie[id]}</div>)}
       {uprava && <UpravitDlazdice dostupne={dostupne} onClose={() => setUprava(false)} maSekciu={(id) => !!sekcie[id]} />}
     </>

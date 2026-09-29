@@ -2,14 +2,14 @@
 import { useSyncExternalStore } from "react";
 
 export type VidiaPriatelia = { kam: boolean; skutky: boolean; stity: boolean };
-type Stav = { vidia: VidiaPriatelia; idem: string[] };
+type Stav = { vidia: VidiaPriatelia; idem: string[]; mamPriatela?: boolean };
 const ZAKLAD: Stav = { vidia: { kam: true, skutky: true, stity: true }, idem: [] };
 const KLUC = "deed.priatelia";
 const posl = new Set<() => void>();
 let ver = 0;
 
 function nacitaj(): Stav {
-  try { const s = JSON.parse(localStorage.getItem(KLUC) ?? "null") as Stav | null; return s ? { vidia: { ...ZAKLAD.vidia, ...s.vidia }, idem: s.idem ?? [] } : ZAKLAD; } catch { return ZAKLAD; }
+  try { const s = JSON.parse(localStorage.getItem(KLUC) ?? "null") as Stav | null; return s ? { vidia: { ...ZAKLAD.vidia, ...s.vidia }, idem: s.idem ?? [], mamPriatela: !!s.mamPriatela } : ZAKLAD; } catch { return ZAKLAD; }
 }
 function uloz(s: Stav) { try { localStorage.setItem(KLUC, JSON.stringify(s)); } catch { /* LS */ } ver++; posl.forEach((f) => f()); }
 
@@ -19,3 +19,5 @@ export function usePriatelia(): Stav {
 }
 export const prepniVidia = (k: keyof VidiaPriatelia) => { const s = nacitaj(); uloz({ ...s, vidia: { ...s.vidia, [k]: !s.vidia[k] } }); };
 export const prepniIdem = (id: string) => { const s = nacitaj(); uloz({ ...s, idem: s.idem.includes(id) ? s.idem.filter((x) => x !== id) : [...s.idem, id] }); };
+/** Prvé kroky: prvý priateľ (prijatá alebo poslaná žiadosť) — v produkcii zo servera */
+export const oznacPriatela = () => { const s = nacitaj(); if (!s.mamPriatela) uloz({ ...s, mamPriatela: true }); };

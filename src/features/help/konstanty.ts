@@ -92,7 +92,7 @@ export const LIMIT_MEDZI_ZIADOSTAMI_DNI = 30;
 // Kľúč (NIE custody): kontrakt má len DVE destinácie — príjemca po KYC, alebo späť darcom.
 export type EscrowStav = "drzi" | "uvolnene" | "refund";
 export const ESCROW: Record<EscrowStav, { label: string; emoji: string; popis: string }> = {
-  drzi:     { label: "Drží", emoji: "🔒", popis: "DEED je v kontrakte s ID žiadosti; kontrakt eviduje kto koľko (kvôli refundu). Platforma NEMÁ právo presmerovať." },
+  drzi:     { label: "Drží", emoji: "🔒", popis: "DeeD je v kontrakte s ID žiadosti; kontrakt eviduje kto koľko (kvôli refundu). Platforma NEMÁ právo presmerovať." },
   uvolnene: { label: "Uvoľnené", emoji: "✓", popis: "Príjemca prešiel KYC + claim → vytvorila sa mu ERC-4337 peňaženka → uvoľnené. Ďalšie príspevky už priamo jemu." },
   refund:   { label: "Refund", emoji: "↩️", popis: "Koniec + grace (30 dní) bez claimu → vrátenie darcom (Base L2, lacný batch)." },
 };
@@ -104,5 +104,5 @@ export const DAR_BEZ_REG_EUR = 10;   // 1. návšteva, dar do 10 €, bez regist
 export const POPLATKY = {
   deedOd: 3,     // % degresívne
   deedDo: 1.5,   // %
-  poznamka: "DEED degresívne 3 → 1,5 %; FIAT fix + marža. Vopred, transparentne.",
+  poznamka: "DeeD degresívne 3 → 1,5 %; FIAT fix + marža. Vopred, transparentne.",
 };

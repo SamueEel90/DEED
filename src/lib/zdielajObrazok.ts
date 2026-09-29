@@ -22,6 +22,9 @@ export async function ramObrazka(ctx: CanvasRenderingContext2D, W: number, H: nu
   ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
   ctx.fillStyle = "#1D211B"; ctx.font = "800 44px 'Plus Jakarta Sans', sans-serif"; ctx.textBaseline = "alphabetic";
   ctx.fillText("DEED", 72, H - 80);
+  // plus značky DEED+ (karta 30, 2b): nakreslený dvoma pásikmi, .34em, hrúbka .095em, vrch = vrch D
+  const em = 44, w = ctx.measureText("DEED").width, pl = 72 + w + 0.07 * em, vel = 0.34 * em, hr = 0.095 * em, vrch = H - 80 - 0.70 * em;
+  ctx.fillRect(pl, vrch + (vel - hr) / 2, vel, hr); ctx.fillRect(pl + (vel - hr) / 2, vrch, hr, vel);
   ctx.fillStyle = "#4A4C43"; ctx.font = "600 26px 'Plus Jakarta Sans', sans-serif";
   ctx.fillText("Miesto, kde nerozhodujú slová, ale skutky", 72, H - 42);
   try {

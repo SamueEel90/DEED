@@ -77,7 +77,7 @@ export function DeedQr({ data, odznak = "D+", retaz = false, suma, delenie, vari
   const delenieW = delenie ? Math.min(560, Math.max(260, 60 + delenie.length * 17)) : 0;
 
   return (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000" width={size} height={size} role="img" aria-label={`DEED QR ${odznak}${retaz ? " reťaz" : ""}`} style={{ display: "block", borderRadius: size * 0.04 }}>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000" width={size} height={size} role="img" aria-label={`DEED+ QR ${odznak}${retaz ? " reťaz" : ""}`} style={{ display: "block", borderRadius: size * 0.04 }}>
       <rect width={1000} height={1000} fill={pozadie} />
       <g transform="translate(-31.5,-12)">
         <rect x={64} y={72} width={14} height={880} rx={7} fill={ramik} />

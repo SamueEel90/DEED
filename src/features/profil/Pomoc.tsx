@@ -1,5 +1,6 @@
 // KARTA 24 · 2k (OPRAVY 50) · Pomoc: Časté otázky · Napísať podpore · Nahlásiť problém (+ Zatras telefónom a nahlás).
 // Otázky a odpovede v produkcii zo servera (tím ich upraví bez novej verzie appky). Správy podpore a nahlásenia → server.
+import { sZnackou } from "@/components/DeedZnacka";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useNastaveniaAppky, zmenNastavenia } from "@/lib/nastaveniaAppky";
 import { toast } from "@/components/toast";
@@ -14,9 +15,9 @@ const IK_DOLE = "M6 9l6 6 6-6";
 
 // ======================= ČASTÉ OTÁZKY =======================
 const FAQ: [string, [string, string][]][] = [
-  ["ZAČIATOK", [["Čo je DEED?", "Miesto pre dobré skutky, pomoc a zbierky v tvojom okolí. Pomôžeš, daruješ alebo zdieľaš, darovať môžeš už od 0,10 €."], ["Prečo mám overené meno?", "Aby si ľudia mohli dôverovať. Meno overujeme raz pri registrácii a zmeniť ho vie len podpora."]]],
+  ["ZAČIATOK", [["Čo je DEED+ a DeeD?", "DEED+ je skrátený názov DEEDGOOD. DeeD je mena, ktorú dostávaš za skutky."], ["Čo je DEED+?", "Miesto pre dobré skutky, pomoc a zbierky v tvojom okolí. Pomôžeš, daruješ alebo zdieľaš, darovať môžeš už od 0,10 €."], ["Prečo mám overené meno?", "Aby si ľudia mohli dôverovať. Meno overujeme raz pri registrácii a zmeniť ho vie len podpora."]]],
   ["SKUTKY A KARMA", [["Ako sa dostanem do feedu?", "Skutok najprv skontroluje AI. Podľa dôkazov a karmy dostane miesto vo feede štvrte. Keď ho susedia overia, rastie dôvera a môže sa dostať ďalej."], ["Kto vidí moju karmu?", "Len ty. Ostatní vidia iba tvoj štít."], ["Čo je Môj denník?", "Malé skutky pre osobný rozvoj, napríklad prvý beh alebo prečítaná kniha. Vidíš ich len ty."]]],
-  ["PLATBY A DARY", [["Drží DEED moje peniaze?", "Nie. Dar ide priamo zbierke alebo žiadateľovi, DEED peniaze nikdy nedrží."], ["Aké sú poplatky?", "Kartou 1,4 % + 0,15 €, prevodom SEPA bez poplatku. Poplatok vždy vidíš pred zaplatením."], ["Ako pripíšem starší dar?", "V Moje dary ťukni Pripísať starší dar a zadaj kód z dokladu, napríklad DAR-4782-K9TQ."]]],
+  ["PLATBY A DARY", [["Drží DEED+ moje peniaze?", "Nie. Dar ide priamo zbierke alebo žiadateľovi, DEED+ peniaze nikdy nedrží."], ["Aké sú poplatky?", "Kartou 1,4 % + 0,15 €, prevodom SEPA bez poplatku. Poplatok vždy vidíš pred zaplatením."], ["Ako pripíšem starší dar?", "V Moje dary ťukni Pripísať starší dar a zadaj kód z dokladu, napríklad DAR-4782-K9TQ."]]],
   ["ÚČET A BEZPEČNOSŤ", [["Stratil som prístup k e-mailu", "V E-mail, telefón a heslo ťukni Zmeniť a over sa tvárou, SMS alebo kľúčom. Ak nemáš nič z toho, obnovíme účet cez podporu."], ["Čo sa stane po zrušení účtu?", "Účet sa na 30 dní uspí a prihlásením ho obnovíš. Potom sa zmaže, dary a skutky ostanú zapísané."]]],
 ];
 const bez = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
@@ -36,10 +37,10 @@ export function CasteOtazky({ onBack, onPodpora, z }: { onBack: () => void; onPo
             {L.map(([t, a], i) => { const o = otv === t || qq.length >= 3; return (
               <div key={t} style={{ borderTop: i ? oddelovac : "none" }}>
                 <button type="button" aria-expanded={o} onClick={() => setOtv(otv === t ? null : t)} style={{ width: "100%", display: "flex", alignItems: "center", gap: 12, minHeight: 60, padding: "10px 18px", border: "none", boxShadow: "none", background: "transparent", cursor: "pointer", textAlign: "left", fontFamily: "inherit", color: "var(--d-ink, var(--ink))" }}>
-                  <span style={{ flex: 1, fontSize: 15.5, fontWeight: 800 }}>{t}</span>
+                  <span style={{ flex: 1, fontSize: 15.5, fontWeight: 800 }}>{sZnackou(t)}</span>
                   <span style={{ display: "flex", transform: o ? "rotate(180deg)" : "none", transition: "transform .25s ease" }}><Ik d={IK_DOLE} s={16} w={2.4} c="var(--d-ink3, var(--ink3))" /></span>
                 </button>
-                {o && <div className="pf-rise" style={{ padding: "0 18px 14px", fontSize: 14.5, lineHeight: 1.55, color: "var(--d-ink2, var(--ink2))" }}>{a}</div>}
+                {o && <div className="pf-rise" style={{ padding: "0 18px 14px", fontSize: 14.5, lineHeight: 1.55, color: "var(--d-ink2, var(--ink2))" }}>{sZnackou(a)}</div>}
               </div>); })}
           </NastKarta>
         </div>))}

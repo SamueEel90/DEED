@@ -8,6 +8,7 @@
 // Klik na značku vždy otvorí QR na celú obrazovku (na bielej karte →
 // QR ostáva skenovateľný aj na tmavom pozadí).
 // ============================================================
+import { DeedZnacka } from "@/components/DeedZnacka";
 import { useState } from "react";
 import { createPortal } from "react-dom";
 import { RADIUS, SPACE } from "@/theme";
@@ -19,7 +20,9 @@ const APP_SRC = "/brand/deed-appicon.svg";
 // cieľ v QR (viď brand kit README) — len informatívny podtitul pod QR
 const QR_CIEL = "deed-help.vercel.app";
 
-export function Znacka({ size = 40, force, style }: {
+export function Znacka({ size = 40, force, style, text }: {
+  /** KARTA 30: logo v hlavičke ako nápis DEED+ (<DeedZnacka />); klik stále otvorí QR */
+  text?: boolean;
   size?: number;
   /** "qr" = QR vlajka (default všade) · "app" = App ikona (launcher-kontexty) */
   force?: "qr" | "app";
@@ -31,11 +34,12 @@ export function Znacka({ size = 40, force, style }: {
 
   return (
     <>
-      <span {...pressable(() => setFull(true), "Logo DEED — zobraziť QR kód na celú obrazovku")}
+      <span {...pressable(() => setFull(true), "Logo DEED+ — zobraziť QR kód na celú obrazovku")}
         style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flex: "0 0 auto", ...style }}>
+        {text ? <span style={{ fontSize: Math.round(size * 0.62), fontWeight: 800, letterSpacing: "-.01em", color: "var(--a-green)", lineHeight: 1 }}><DeedZnacka /></span> : <>
         {/* D⁺ QR vlajka = biely štvorec → jemne zaoblené rohy */}
-        <img src={src} alt="DEED" draggable={false}
-          style={{ width: size, height: size, display: "block", borderRadius: mode === "qr" ? Math.round(size * 0.16) : undefined }} />
+        <img src={src} alt="DEED+" draggable={false}
+          style={{ width: size, height: size, display: "block", borderRadius: mode === "qr" ? Math.round(size * 0.16) : undefined }} /></>}
       </span>
       {/* portál do document.body — inak `position:fixed` uviazne v glass predku
           (backdrop-filter v bočnej lište / hlavičke = containing block) a overlay
@@ -48,7 +52,7 @@ export function Znacka({ size = 40, force, style }: {
 // QR na celú obrazovku — biela karta (kontrast pre skener) + podtitul + zavretie
 function ZnackaFull({ onClose }: { onClose: () => void }) {
   return (
-    <div role="dialog" aria-modal="true" aria-label="DEED QR kód" onClick={onClose}
+    <div role="dialog" aria-modal="true" aria-label="DEED+ QR kód" onClick={onClose}
       style={{ position: "fixed", inset: 0, zIndex: 200, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: SPACE.lg, padding: SPACE.xl,
         background: "rgba(4,6,12,.85)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)", animation: "fadeUp .2s ease" }}>
       <span {...pressable(onClose, "Zavrieť")}
@@ -58,11 +62,11 @@ function ZnackaFull({ onClose }: { onClose: () => void }) {
       {/* biela karta → QR ostáva skenovateľný (zelené moduly na bielej) */}
       <div onClick={(e) => e.stopPropagation()}
         style={{ background: "#fff", borderRadius: RADIUS.xl, padding: SPACE.lg, boxShadow: "0 24px 70px rgba(0,0,0,.55)" }}>
-        <img src={QR_SRC} alt="DEED — naskenuj QR kód" draggable={false}
+        <img src={QR_SRC} alt="DEED+ — naskenuj QR kód" draggable={false}
           style={{ width: "min(72vw, 360px)", height: "auto", display: "block" }} />
       </div>
       <div style={{ color: "#fff", textAlign: "center", lineHeight: 1.5 }}>
-        <div style={{ fontSize: 15, fontWeight: 700 }}>Naskenuj a otvor DEED</div>
+        <div style={{ fontSize: 15, fontWeight: 700 }}>Naskenuj a otvor <DeedZnacka /></div>
         <div style={{ fontSize: 12.5, opacity: .7, marginTop: 2 }}>{QR_CIEL}</div>
       </div>
     </div>

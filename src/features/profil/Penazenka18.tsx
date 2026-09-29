@@ -60,7 +60,7 @@ export function Penazenka18({ onBack, desktop }: { onBack: () => void; desktop?:
     const w = window.open("", "_blank");
     if (!w) return;
     const riadky = POHYBY.map((p) => `<tr><td>${p[0]}</td><td>${p[1]}<br><small>${p[2]}</small></td><td style="text-align:right">${p[3]}</td></tr>`).join("");
-    w.document.write(`<!doctype html><html lang="sk"><head><meta charset="utf-8"><title>Výpis ${mesiac}</title><style>body{font-family:'Plus Jakarta Sans',Arial,sans-serif;padding:32px;color:#1D211B}td{padding:8px 6px;border-bottom:1px solid #ddd;vertical-align:top}small{color:#666}</style></head><body><h2>DEED · výpis peňaženky</h2><p>${ja.celeMeno} · ${mesiac} · DEED a EURC</p><table style="width:100%;border-collapse:collapse">${riadky}</table></body></html>`);
+    w.document.write(`<!doctype html><html lang="sk"><head><meta charset="utf-8"><title>Výpis ${mesiac}</title><style>body{font-family:'Plus Jakarta Sans',Arial,sans-serif;padding:32px;color:#1D211B}td{padding:8px 6px;border-bottom:1px solid #ddd;vertical-align:top}small{color:#666}</style></head><body><h2>DEED+ · výpis peňaženky</h2><p>${ja.celeMeno} · ${mesiac} · DeeD a EURC</p><table style="width:100%;border-collapse:collapse">${riadky}</table></body></html>`);
     w.document.close(); w.focus(); window.setTimeout(() => w.print(), 400);
   };
 
@@ -83,15 +83,15 @@ export function Penazenka18({ onBack, desktop }: { onBack: () => void; desktop?:
       </div>
       <div style={{ fontSize: 12, lineHeight: 1.45, color: "var(--ink4)", marginTop: -6 }}>Karty ukladá platobná brána, u nás sú len posledné 4 čísla.</div>
 
-      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8, marginTop: 6 }}><span style={{ fontSize: 17, fontWeight: 800, color: "var(--blue)" }}>Krypto peňaženka</span><span style={{ fontSize: 12.5, color: "var(--ink3)" }}>DEED a EURC</span></div>
+      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8, marginTop: 6 }}><span style={{ fontSize: 17, fontWeight: 800, color: "var(--blue)" }}>Krypto peňaženka</span><span style={{ fontSize: 12.5, color: "var(--ink3)" }}>DeeD a EURC</span></div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 4, padding: 4, borderRadius: 14, background: "var(--seg)" }}>
-        {(["DEED", "EURC"] as const).map((m) => <button key={m} type="button" onClick={() => { setMena(m); setViac(false); }} style={{ height: 44, borderRadius: 10, border: "none", cursor: "pointer", fontSize: 15, fontWeight: 800, fontFamily: "inherit", background: mena === m ? "#fff" : "transparent", color: mena === m ? "#1D211B" : "var(--ink3)" }}>{m}</button>)}
+        {(["DEED", "EURC"] as const).map((m) => <button key={m} type="button" onClick={() => { setMena(m); setViac(false); }} style={{ height: 44, borderRadius: 10, border: "none", cursor: "pointer", fontSize: 15, fontWeight: 800, fontFamily: "inherit", background: mena === m ? "#fff" : "transparent", color: mena === m ? "#1D211B" : "var(--ink3)" }}>{m === "DEED" ? "DeeD" : m}</button>)}
       </div>
       <div style={{ borderRadius: 24, background: "linear-gradient(150deg,var(--bSoft) 0%,var(--bCard) 60%,var(--gCard) 100%)", border: "1px solid var(--bBd)", padding: 18 }}>
-        <div style={{ fontSize: 12.5, fontWeight: 700, color: "var(--ink3)" }}>Zostatok {mena}</div>
+        <div style={{ fontSize: 12.5, fontWeight: 700, color: "var(--ink3)" }}>Zostatok {mena === "DEED" ? "DeeD" : mena}</div>
         <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginTop: 2 }}>
           <span style={{ fontSize: 38, fontWeight: 800, letterSpacing: "-.02em", fontVariantNumeric: "tabular-nums" }}>{mena === "DEED" ? deed.toLocaleString("sk-SK") : e2(eurc)}</span>
-          <span style={{ fontSize: 17, fontWeight: 800, color: "var(--blue)" }}>{mena}</span></div>
+          <span style={{ fontSize: 17, fontWeight: 800, color: "var(--blue)" }}>{mena === "DEED" ? "DeeD" : mena}</span></div>
         <div style={{ fontSize: 13.5, color: "var(--ink3)", marginTop: 2 }}>{mena === "DEED" ? `≈ ${e2(deed / KURZ_DEED_ZA_EUR)} €` : `= ${e2(eurc / KURZ_EURC_ZA_EUR)} €`}</div>
         <div style={{ fontSize: 12.5, lineHeight: 1.5, color: "var(--ink2)", marginTop: 10, paddingTop: 10, borderTop: "1px solid var(--bBd)" }}>
           {mena === "DEED" ? "Mena skutkov: odmeny za skutky, dary v Domove, Help a Aktivitách, poďakovania." : "Digitálne euro na mikrodary od 0,10 € a dary v krypte. Jeden EURC je vždy jedno euro."}</div>
@@ -104,7 +104,7 @@ export function Penazenka18({ onBack, desktop }: { onBack: () => void; desktop?:
       </div>
       <div style={{ ...karta, padding: "4px 14px 6px" }}>
         <div style={{ padding: "10px 0 2px", fontSize: 12, fontWeight: 800, letterSpacing: ".06em", color: "var(--ink3)" }}>PREPOJENÉ KRYPTO ÚČTY</div>
-        <div style={{ fontSize: 12.5, lineHeight: 1.45, color: "var(--ink3)", paddingBottom: 8 }}>Dobíjaj DEED a EURC z krypto účtu alebo krypto karty.</div>
+        <div style={{ fontSize: 12.5, lineHeight: 1.45, color: "var(--ink3)", paddingBottom: 8 }}>Dobíjaj DeeD a EURC z krypto účtu alebo krypto karty.</div>
         <Riadok prvy ikona={kocka(<Ik d={IK.krypto} size={16} />)} t="Coinbase" s="prepojené · EURC, USDC" vpravo={stitok("Prepojené")} />
         <Riadok ikona={kocka(<Ik d={IK.krypto} size={16} />)} t="Revolut" s="krypto účet · karta" vpravo={odkaz("Prepojiť", brana)} />
         <Riadok ikona={kocka(<Ik d={IK.krypto} size={16} />)} t="Iná krypto peňaženka" s="príjem na tvoju adresu v sieti Base" vpravo={odkaz("Adresa", brana)} />
@@ -112,7 +112,7 @@ export function Penazenka18({ onBack, desktop }: { onBack: () => void; desktop?:
 
       <button type="button" onClick={() => toast("Moje dary nájdeš v profile")} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", ...karta, cursor: "pointer", textAlign: "left", fontFamily: "inherit", color: "var(--ink)" }}>
         <span style={{ width: 38, height: 38, borderRadius: 12, background: "var(--gSoft)", color: "var(--green)", display: "flex", alignItems: "center", justifyContent: "center", flex: "none" }}><Ik d={IK.srdce} /></span>
-        <span style={{ flex: 1, minWidth: 0 }}><span style={{ display: "block", fontSize: 15, fontWeight: 800 }}>Darované tento rok</span><span style={{ display: "block", fontSize: 12.5, color: "var(--ink3)", marginTop: 2 }}>840 € · 1 400 DEED · 37 zbierok</span></span>
+        <span style={{ flex: 1, minWidth: 0 }}><span style={{ display: "block", fontSize: 15, fontWeight: 800 }}>Darované tento rok</span><span style={{ display: "block", fontSize: 12.5, color: "var(--ink3)", marginTop: 2 }}>840 € · 1 400 DeeD · 37 zbierok</span></span>
         <span style={{ fontSize: 13.5, fontWeight: 700, color: "var(--green)" }}>Moje dary ›</span>
       </button>
 
@@ -137,11 +137,11 @@ export function Penazenka18({ onBack, desktop }: { onBack: () => void; desktop?:
       <div style={{ ...karta, padding: "0 14px" }}>
         {VYPISY.map(([m, s], i) => (
           <button key={m} type="button" onClick={() => stiahni(i)} style={{ width: "100%", display: "flex", alignItems: "center", gap: 12, minHeight: 56, border: "none", borderTop: i ? "1px solid var(--cardBd)" : "none", background: "transparent", cursor: "pointer", textAlign: "left", fontFamily: "inherit", color: "var(--ink)", padding: 0 }}>
-            <span style={{ flex: 1, minWidth: 0 }}><span style={{ display: "block", fontSize: 15, fontWeight: 700 }}>{m}</span><span style={{ display: "block", fontSize: 12.5, color: "var(--ink3)" }}>{s}</span></span>
+            <span style={{ flex: 1, minWidth: 0 }}><span style={{ display: "block", fontSize: 15, fontWeight: 700 }}>{m === "DEED" ? "DeeD" : m}</span><span style={{ display: "block", fontSize: 12.5, color: "var(--ink3)" }}>{s}</span></span>
             <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13.5, fontWeight: 700, color: vypis === i ? "var(--gInk)" : "var(--green)" }}>{vypis === i ? "Stiahnuté" : "PDF"}<Ik d={IK.stiahni} size={16} /></span>
           </button>))}
       </div>
-      <div style={{ fontSize: 12, lineHeight: 1.5, color: "var(--ink4)", textAlign: "center", padding: "0 10px" }}>Výpis obsahuje pohyby DEED aj EURC za daný mesiac. Doklady o daroch nájdeš v Moje dary.</div>
+      <div style={{ fontSize: 12, lineHeight: 1.5, color: "var(--ink4)", textAlign: "center", padding: "0 10px" }}>Výpis obsahuje pohyby DeeD aj EURC za daný mesiac. Doklady o daroch nájdeš v Moje dary.</div>
 
       {prijat && <MojQr zalozka="akcia" onClose={() => setPrijat(false)} />}
       {blok && <Harok onClose={() => setBlok(null)} hlavicka={<span style={{ flex: 1, fontSize: 20, fontWeight: 800 }}>Pridať {blok}</span>}><Blokacia24h co={blok === "kartu" ? "novú kartu pridáš" : "nový účet (IBAN) pridáš"} /><div style={{ fontSize: 13.5, lineHeight: 1.5, color: "var(--ink3)" }}>Chránime ťa pred zneužitím: prvých 24 hodín na novom zariadení nezmeníš e-mail, telefón, IBAN ani kartu a platby sú najviac do 50 €.</div></Harok>}
@@ -149,7 +149,7 @@ export function Penazenka18({ onBack, desktop }: { onBack: () => void; desktop?:
         onDobite={async (eur) => {
           if (mena === "DEED") { const nove = await dobitPenazenku(eur * KURZ_DEED_ZA_EUR); setDeed(nove); }
           else setEurc((x) => Math.round((x + eur * KURZ_EURC_ZA_EUR) * 100) / 100);
-          toast(`Dobité ${mena === "DEED" ? (eur * KURZ_DEED_ZA_EUR).toLocaleString("sk-SK") + " DEED" : e2(eur) + " EURC"}`);
+          toast(`Dobité ${mena === "DEED" ? (eur * KURZ_DEED_ZA_EUR).toLocaleString("sk-SK") + " DeeD" : e2(eur) + " EURC"}`);
         }} />}
     </div>
   );
@@ -160,10 +160,10 @@ function DobitHarok({ mena, onClose, onDobite }: { mena: Mena; onClose: () => vo
   const [eur, setEur] = useState(20);
   const [sposob, setSposob] = useState<"sepa" | "karta">("karta");
   const spolu = sposob === "karta" ? eur + poplatokKarty(eur) : eur;
-  const dostanes = mena === "DEED" ? `${(eur * KURZ_DEED_ZA_EUR).toLocaleString("sk-SK")} DEED` : `${e2(eur * KURZ_EURC_ZA_EUR)} EURC`;
+  const dostanes = mena === "DEED" ? `${(eur * KURZ_DEED_ZA_EUR).toLocaleString("sk-SK")} DeeD` : `${e2(eur * KURZ_EURC_ZA_EUR)} EURC`;
   return (
     <Harok onClose={onClose} zatvorText="Zrušiť" hlavicka={
-      <span style={{ flex: 1, minWidth: 0 }}><span style={{ display: "block", fontSize: 20, fontWeight: 800 }}>Dobiť {mena}</span><span style={{ display: "block", fontSize: 13.5, color: "var(--ink3)" }}>1 € = {mena === "DEED" ? `${KURZ_DEED_ZA_EUR} DEED` : `${KURZ_EURC_ZA_EUR} EURC`}</span></span>}
+      <span style={{ flex: 1, minWidth: 0 }}><span style={{ display: "block", fontSize: 20, fontWeight: 800 }}>Dobiť {mena === "DEED" ? "DeeD" : mena}</span><span style={{ display: "block", fontSize: 13.5, color: "var(--ink3)" }}>1 € = {mena === "DEED" ? `${KURZ_DEED_ZA_EUR} DeeD` : `${KURZ_EURC_ZA_EUR} EURC`}</span></span>}
       paticka={<button type="button" onClick={() => { onDobite(eur); onClose(); }} style={{ flex: 1, height: 58, borderRadius: 18, border: "none", fontSize: 17, fontWeight: 800, color: "#fff", cursor: "pointer", background: "var(--gGrad)", fontFamily: "inherit" }}>Zaplatiť {e2(spolu)} €</button>}>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 8 }}>
         {[10, 20, 50, 100].map((v) => { const on = eur === v; return (

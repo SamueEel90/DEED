@@ -1,6 +1,7 @@
 // OPRAVY 44–45 · Zamestnávateľ je v PROFILE (dlaždica + menu), nie v Nastaveniach. Karta 24 · 2i + PRAVIDLA-APPKY „Firma a zamestnanec".
 // Viac firiem naraz (čipy) · Pracovný QR · oznámenia od firmy · akcie, školenia a smeny + Navrhnúť firemnú akciu ·
 // moje odmeny · benefity · firemné hodiny (VTO) · skutky mimo firmy (Neukázať / Anonymne / S menom) · čo firma vidí.
+import { DeedZnacka } from "@/components/DeedZnacka";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { useNastaveniaAppky, zmenNastavenia } from "@/lib/nastaveniaAppky";
@@ -116,7 +117,7 @@ function Pripojit({ osoba, maFirmy, onHotovo }: { osoba: string; maFirmy: boolea
     setKod(""); ziadaj(f);
   };
   return (<>
-    <div style={{ fontSize: 15, lineHeight: 1.55, color: "var(--d-ink2, var(--ink2))", padding: "0 6px" }}>{maFirmy ? "Pracuješ aj v ďalšej firme? Prepoj sa aj s ňou. Každá firma má vlastný pracovný QR, hodiny a benefity." : "Ak je tvoja firma v DEED, prepoj sa s ňou. Získaš firemné benefity a tvoje skutky pomôžu aj firme."}</div>
+    <div style={{ fontSize: 15, lineHeight: 1.55, color: "var(--d-ink2, var(--ink2))", padding: "0 6px" }}>{maFirmy ? "Pracuješ aj v ďalšej firme? Prepoj sa aj s ňou. Každá firma má vlastný pracovný QR, hodiny a benefity." : "Ak je tvoja firma v DEED+, prepoj sa s ňou. Získaš firemné benefity a tvoje skutky pomôžu aj firme."}</div>
     {!maFirmy && <div>
       <Nadpis>ČO TÝM ZÍSKAŠ</Nadpis>
       <NastKarta k="o" style={{ padding: "14px 18px", display: "flex", gap: 12, alignItems: "flex-start" }}>
@@ -135,7 +136,7 @@ function Pripojit({ osoba, maFirmy, onHotovo }: { osoba: string; maFirmy: boolea
             <button type="button" onClick={() => ziadaj(f.nazov)} style={{ minHeight: 44, padding: "0 14px", borderRadius: 12, border: "1px solid var(--sek-bBd)", boxShadow: "none", background: "var(--sek-bBg)", color: "var(--sek-b)", fontSize: 14, fontWeight: 800, fontFamily: "inherit", cursor: "pointer", flex: "none" }}>Požiadať</button>
           </div>))}
       </NastKarta>}
-      {qq.length >= 2 && !vysledky.length && <div style={{ ...pozn, marginTop: 10 }}>Firmu sme nenašli. Možno ešte nie je v DEED, pozvi ju cez personálne.</div>}
+      {qq.length >= 2 && !vysledky.length && <div style={{ ...pozn, marginTop: 10 }}>Firmu sme nenašli. Možno ešte nie je v <DeedZnacka />, pozvi ju cez personálne.</div>}
     </div>
     <div aria-hidden="true" style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 13, fontWeight: 700, color: "var(--d-ink3, var(--ink3))" }}><span style={{ flex: 1, height: 1, background: "var(--d-sep, var(--cardBd))" }} />alebo<span style={{ flex: 1, height: 1, background: "var(--d-sep, var(--cardBd))" }} /></div>
     <div>
@@ -152,7 +153,7 @@ function Pripojit({ osoba, maFirmy, onHotovo }: { osoba: string; maFirmy: boolea
 }
 
 // ---------------- prepojený ----------------
-const VIDI = ["že si ich zamestnanec a máš DEED", "firemné akcie, školenia a smeny, na ktoré si prišiel", "odpracované firemné hodiny a oblasť (miesto nie, ak ho označíš ako súkromné)", "skutky, ktoré ukážeš s menom", `súhrn bez mien, po oblastiach až od ${MIN_ROZPAD} zapojených`];
+const VIDI = ["že si ich zamestnanec a máš DEED+", "firemné akcie, školenia a smeny, na ktoré si prišiel", "odpracované firemné hodiny a oblasť (miesto nie, ak ho označíš ako súkromné)", "skutky, ktoré ukážeš s menom", `súhrn bez mien, po oblastiach až od ${MIN_ROZPAD} zapojených`];
 const NEVIDI = ["tvoje voľby ani predvoľbu", "tvoju karmu ani denník", "kam a koľko daruješ", "tvoju peňaženku", "tvoju polohu mimo firemnej akcie"];
 
 function Prepojeny({ v, osoba, onOdpojene }: { v: Vazba; osoba: string; onOdpojene: () => void }) {

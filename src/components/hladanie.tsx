@@ -20,7 +20,7 @@ export const HL_FILTRE = ["Všetko", "Osoby", "Firmy", "Školitelia", "Charity",
 // SÚKROMNÉ osoby tu zámerne NIE SÚ (ochrana pred lustráciou §11/§13).
 export const SUBJEKTY = [
   // firmy & partneri (fiktívne podniky / zamestnávatelia (mock dáta))
-  { id: "s-vital",  typ: "Firmy",      titul: "Vitalmarket — DEED partner",        podtitul: "Firma · ESG report · Trenčín",        emoji: "🏢", tag: "Firma" },
+  { id: "s-vital",  typ: "Firmy",      titul: "Vitalmarket — DEED+ partner",        podtitul: "Firma · ESG report · Trenčín",        emoji: "🏢", tag: "Firma" },
   { id: "s-nordika",  typ: "Firmy",      titul: "Nadácia Nordika",          podtitul: "Firma · matching kampaň",             emoji: "🏢", tag: "Firma" },
   { id: "s-elkotech", typ: "Firmy",      titul: "Elkotech Slovakia",                 podtitul: "Zamestnávateľ · firemné dobrovoľníctvo · Trenčín", emoji: "🏭", tag: "Firma" },
   { id: "s-sklarne", typ: "Firmy",      titul: "Sklárne Vážska",              podtitul: "Sklárne · podpora komunity · Trenčiansky kraj", emoji: "🏭", tag: "Firma" },

@@ -10,6 +10,7 @@ import { Nastavenia as NotifNastavenia } from "@/features/notifikacie/Notifikaci
 import type { WideProps } from "@/types";
 import { ProfilHlavny18, IdentitaKarta18, StitKarta18, MojeZaujmy, StatVSkratke, PoslednePohyby } from "./ProfilHlavny";
 import { UpravitDlazdice, type Dlazdica } from "./Dlazdice";
+import { RozpracovanySkutok, PrveKroky, Podakovania } from "./ProfilKarty";
 import { UpravOsobnyProfil } from "./UpravOsobnyProfil";
 import { MojQr } from "./MojQr";
 import { Penazenka18 } from "./Penazenka18";
@@ -133,6 +134,9 @@ function ProfilDesktop({ screen, subNazov, setScreen, onSub, onQr, onUpravit, pT
     <div style={{ padding: `${SPACE.md}px ${SPACE.md}px ${SPACE.lg}px` }}>
       <div className="deed-platba" style={{ display: "flex", flexDirection: "column", gap: 14, color: "var(--ink)" }}>
         <StitKarta18 />
+        <RozpracovanySkutok />
+        {!ja.demo && <PrveKroky naZaujmy={() => onSub("Moje záujmy")} naPriatelia={() => onPriatelia()} />}
+        <Podakovania ukazka={!!ja.demo} />
         {rozbalene.map((id) => <div key={id}>{sekcie[id]}</div>)}
       </div>
     </div>

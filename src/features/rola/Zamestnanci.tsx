@@ -98,7 +98,7 @@ export function ZamestnanciSheet({ firma, toast, onClose }: {
       <div style={{ fontSize: 12.5, fontWeight: 700, color: C.textSec, marginBottom: 4 }}>Pozvať zamestnanca</div>
       <input value={meno} onChange={(e) => setMeno(e.target.value)} placeholder="Meno a priezvisko" style={{ ...vstup, marginBottom: 4 }} />
       <div style={{ fontSize: 10.5, color: C.textTer, lineHeight: 1.45, marginBottom: SPACE.xs }}>
-        V prototype sa pozvánka páruje podľa presného mena v DEED. (Ostro to pôjde cez e-mail alebo firemný QR.)
+        V prototype sa pozvánka páruje podľa presného mena v DEED+. (Ostro to pôjde cez e-mail alebo firemný QR.)
         {" "}
         <span {...pressable(() => setMeno(ja.celeMeno), "Pozvať seba")}
           style={{ fontWeight: 800, color: "var(--a-info)", cursor: "pointer" }}>Pozvať seba ({ja.celeMeno})</span>

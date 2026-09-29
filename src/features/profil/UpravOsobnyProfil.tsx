@@ -6,7 +6,7 @@ import { usePouzivatel } from "@/lib/pouzivatel";
 import { nacitajPredvolbu, ulozPredvolbu, type VerziaIdentity } from "@/lib/darcovia";
 import { nacitajOsobny, ulozOsobny, type OsobnyProfil } from "@/lib/osobnyProfil";
 import { klucEntity, useFotkyEntity } from "@/lib/fotoentity";
-import { FotoProfiluSheet } from "@/components/fotoprofilu";
+import { FotoProfiluObsah } from "@/components/fotoprofilu";
 import { toast } from "@/components/toast";
 import { Harok } from "@/features/zbierka/Zdielat";
 import "@/styles/platba.css";
@@ -75,7 +75,6 @@ export function UpravOsobnyProfil({ onClose }: { onClose: () => void }) {
                 <span style={{ fontSize: 13.5, fontWeight: 700 }}>Titulná</span>
               </button>
             </div>
-            {pomoc("Detail fotiek doriešime zvlášť.")}
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -138,11 +137,13 @@ export function UpravOsobnyProfil({ onClose }: { onClose: () => void }) {
       </Harok>
       {ochrana && <OchranaOsoby onClose={() => setOchrana(false)} />}
       {fotka && (
-        <FotoProfiluSheet titul="Fotky môjho profilu" foto={ja.foto} nahrada={ja.iniciala}
-          onZmena={(url) => { ja.nastavFoto?.(url); toast(url ? "Profilová fotka uložená" : "Profilová fotka odstránená"); }}
-          cover={mojeFotky.cover}
-          onCover={(url) => { zmenMojeFotky({ cover: url }); toast(url ? "Titulná fotka uložená" : "Titulná fotka odstránená"); }}
-          onClose={() => setFotka(false)} />
+        // OPRAVY 72: fotky ako hárok NAD Upraviť profil (vyššia vrstva); hárok pod ním sa nehýbe, Späť zavrie len fotky
+        <Harok z={170} onClose={() => setFotka(false)} zatvorText="Späť" hlavicka={<span style={{ flex: 1, fontSize: 19, fontWeight: 800 }}>Fotky môjho profilu</span>}>
+          <FotoProfiluObsah titul="Fotky môjho profilu" popis="" bezHlavicky foto={ja.foto} nahrada={ja.iniciala}
+            onZmena={(url) => { ja.nastavFoto?.(url); toast(url ? "Profilová fotka uložená" : "Profilová fotka odstránená"); }}
+            cover={mojeFotky.cover} coverPopis="Široká fotka na pozadí hlavičky profilu."
+            onCover={(url) => { zmenMojeFotky({ cover: url }); toast(url ? "Titulná fotka uložená" : "Titulná fotka odstránená"); }} />
+        </Harok>
       )}
     </>
   );

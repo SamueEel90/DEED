@@ -83,7 +83,7 @@ export function ModulHlavicka({ title, right, slogan = "Miesto, kde nerozhodujú
           </span>
         )}
         {/* logo = App ikona (D⁺); klik → QR logo na celú obrazovku (§ prianie vlastníka) */}
-        {!desktop && <Znacka size={34} />}
+        {!desktop && <Znacka size={34} text />}
         {/* h1 = názov modulu (SR navigácia po nadpisoch) — vizuál nezmenený */}
         <h1 style={{ fontSize: 20, fontWeight: 800, margin: 0, lineHeight: "inherit" }}>{title}</h1>
         <span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: SPACE.sm }}>

@@ -1,4 +1,5 @@
 import { Emo, IkonaVlajka } from "@/components/icons";
+import { DeedZnacka } from "@/components/DeedZnacka";
 import { NahlasitSheet } from "@/components/nahlasit";
 import { useState, useEffect, useRef, memo } from "react";
 import { SIRKA, C, inp, btn, GRAD, SPACE, RADIUS } from "@/theme";
@@ -139,7 +140,7 @@ export default function ModulDomov({ wide, otvorModul, otvorId, onOtvorene }: { 
         <Oslava
           emoji={oslava.suma >= 100 ? "🎊" : oslava.suma >= 50 ? "⭐" : "😊"}
           title={oslava.suma >= 100 ? "Skvelé! Veľká podpora!" : "Ďakujeme!"}
-          text={<>Tvoja podpora <b style={{ color: C.greenL }}>{oslava.suma} DEED</b> letí k {oslava.komu}. Reťaz dobra pokračuje.</>}
+          text={<>Tvoja podpora <b style={{ color: C.greenL }}>{oslava.suma} DeeD</b> letí k {oslava.komu}. Reťaz dobra pokračuje.</>}
           onClose={() => setOslava(null)}
         />
       )}
@@ -253,7 +254,7 @@ function Home({ wide, toast, otvorModul, pohlad, setPohlad, radius, setRadius, o
             {okolieFeed}
           </div>
           <aside style={{ width: 408, flex: "0 0 408px", minWidth: 0 }}>
-            <div style={{ fontSize: 11.5, letterSpacing: ".4px", color: C.textTer, fontWeight: 800, margin: `${SPACE.xxs}px 0 ${SPACE.sm}px`, paddingLeft: SPACE.xxs }}>MÔJ DEED</div>
+            <div style={{ fontSize: 11.5, letterSpacing: ".4px", color: C.textTer, fontWeight: 800, margin: `${SPACE.xxs}px 0 ${SPACE.sm}px`, paddingLeft: SPACE.xxs }}>MÔJ <DeedZnacka /></div>
             <MojDeedObsah onDetail={onDetail} onBoard={onBoard} toast={toast} />
           </aside>
         </div>
@@ -297,7 +298,7 @@ function PohladSwitch({ pohlad, setPohlad }: { pohlad: string; setPohlad: (p: "o
   return (
     <div style={{ display: "flex", gap: SPACE.xxs, padding: SPACE.xxs, margin: `0 ${SPACE.md}px ${SPACE.xs}px`, borderRadius: RADIUS.md, background: C.surface2, border: `1px solid ${C.line}` }}>
       {tab("okolie", "Okolie")}
-      {tab("mojdeed", "Môj DEED")}
+      {tab("mojdeed", "Môj DEED+")}
     </div>
   );
 }
@@ -383,7 +384,7 @@ function MojDeedObsah({ onDetail, onBoard, toast }: { onDetail: (id: string | nu
           <div key={String(p.refId)} onClick={() => id && onDetail(id)} style={{ background: C.surface2, border: `1px solid ${C.line}`, borderRadius: RADIUS.sm, padding: SPACE.sm, marginBottom: SPACE.xs, cursor: id ? "pointer" : "default" }}>
             <div style={{ display: "flex", alignItems: "center", gap: SPACE.xs }}>
               <span style={{ fontSize: 14, fontWeight: 700, flex: 1, minWidth: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{titul}</span>
-              {p.suma ? <span style={{ flex: "none", fontSize: 11, fontWeight: 700, color: "var(--a-green)", background: "rgba(31,191,143,.12)", borderRadius: RADIUS.xs, padding: `${SPACE.xxs}px ${SPACE.xs}px` }}>tvojich {p.suma} {p.kanal === "EUR" ? "€" : "DEED"}</span> : null}
+              {p.suma ? <span style={{ flex: "none", fontSize: 11, fontWeight: 700, color: "var(--a-green)", background: "rgba(31,191,143,.12)", borderRadius: RADIUS.xs, padding: `${SPACE.xxs}px ${SPACE.xs}px` }}>tvojich {p.suma} {p.kanal === "EUR" ? "€" : "DeeD"}</span> : null}
             </div>
             {ciel ? <div style={{ marginTop: SPACE.xs }}><MoniBar vyzbierane={vyzbierane || 0} ciel={ciel} mini /></div>
               : <div style={{ fontSize: 11.5, color: C.textTer, marginTop: SPACE.xs }}>otvorená podpora · ďakujeme</div>}
@@ -755,7 +756,7 @@ export function DomovDetail({ it, toast, oslavuj, onBack, onVerify, onAutor }: G
   function podpor(suma: number) {
     zaznamenajPodporu(suma);
     pridajDar({ refId: darRef, suma: suma * 0.01, kanal: "deed", registrovany: ja.typ !== "pasivny" });
-    toast(`Ďakujeme za ${suma} DEED pre ${it.autor}`);
+    toast(`Ďakujeme za ${suma} DeeD pre ${it.autor}`);
     oslavuj(suma, it.autor);
   }
 
@@ -820,7 +821,7 @@ export function DomovDetail({ it, toast, oslavuj, onBack, onVerify, onAutor }: G
 
       {/* simulácia platby (EUR karta / DEED peňaženka) */}
       {platba && <PlatbaModal kanal={platba} komu={it.autor} onClose={() => setPlatba(null)}
-        onDone={(s: number, volba?: VolbaDaru) => { zaznamenajPodporu(s, platba); pridajDar({ refId: darRef, suma: s * (platba === "EUR" ? 1 : 0.01), kanal: platba === "EUR" ? "psp" : "deed", registrovany: ja.typ !== "pasivny", volba }); toast(`Odoslané ${platba === "EUR" ? s + " €" : s + " DEED"} · ${it.autor}`); oslavuj(platba === "EUR" ? Math.round(s * 100) : s, it.autor); }} />}
+        onDone={(s: number, volba?: VolbaDaru) => { zaznamenajPodporu(s, platba); pridajDar({ refId: darRef, suma: s * (platba === "EUR" ? 1 : 0.01), kanal: platba === "EUR" ? "psp" : "deed", registrovany: ja.typ !== "pasivny", volba }); toast(`Odoslané ${platba === "EUR" ? s + " €" : s + " DeeD"} · ${it.autor}`); oslavuj(platba === "EUR" ? Math.round(s * 100) : s, it.autor); }} />}
 
       {/* univerzálny QR skutku (§10) — reálne skenovateľný odkaz na živé interné ID */}
       {qr && <QrModal typ="skutok" titul={`QR skutku č. ${it.num.toLocaleString("sk")}`} popis={it.titul.slice(0, 38) + "…"}

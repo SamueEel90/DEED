@@ -66,18 +66,18 @@ export const TEMY: string[] = ["Šport", "Eko", "Zdravie", "Art", "Učenie", "Ko
 
 /** Peňaženka (karta 18 bod 5) — posledné pohyby: [deň, názov, popis, suma, príjem?, mena] — mock do Supabase */
 export const POHYBY: [string, string, string, string, boolean, "DEED" | "EURC"][] = [
-  ["Dnes", "Odmena za skutok", "Vyčistili sme skládku pri potoku", "+84 DEED", true, "DEED"],
+  ["Dnes", "Odmena za skutok", "Vyčistili sme skládku pri potoku", "+84 DeeD", true, "DEED"],
   ["Dnes", "Mikrodar · Zbierka pre Sárku", "cez Mareka Tvorí", "−1,00 EURC", false, "EURC"],
   ["Včera", "Mikrodar · Útulok Túlavá labka", "EURC", "−0,50 EURC", false, "EURC"],
-  ["Včera", "Dobitie kartou", "20 € → 400 DEED", "+400 DEED", true, "DEED"],
-  ["23. 9.", "Poslané · Jana N.", "poďakovanie za pomoc", "−50 DEED", false, "DEED"],
-  ["23. 9.", "Reťaz dobra · Rodina po povodni", "časť odmeny ďalej", "−39 DEED", false, "DEED"],
+  ["Včera", "Dobitie kartou", "20 € → 400 DeeD", "+400 DeeD", true, "DEED"],
+  ["23. 9.", "Poslané · Jana N.", "poďakovanie za pomoc", "−50 DeeD", false, "DEED"],
+  ["23. 9.", "Reťaz dobra · Rodina po povodni", "časť odmeny ďalej", "−39 DeeD", false, "DEED"],
   ["22. 9.", "Dobitie SEPA", "10 € → 10 EURC", "+10,00 EURC", true, "EURC"],
-  ["18. 9.", "Odmena za skutok", "Odviezol som suseda na dialýzu", "+30 DEED", true, "DEED"],
+  ["18. 9.", "Odmena za skutok", "Odviezol som suseda na dialýzu", "+30 DeeD", true, "DEED"],
   ["18. 9.", "Mikrodar · Deň žltej stužky", "EURC", "−0,20 EURC", false, "EURC"],
-  ["12. 9.", "Podpora · Jozef M.", "poďakovanie", "−100 DEED", false, "DEED"],
+  ["12. 9.", "Podpora · Jozef M.", "poďakovanie", "−100 DeeD", false, "DEED"],
   ["12. 9.", "Mikrodar · Rodina po požiari", "EURC", "−2,00 EURC", false, "EURC"],
-  ["5. 9.", "Odmena za darovanie krvi", "Daroval som plazmu", "+50 DEED", true, "DEED"],
+  ["5. 9.", "Odmena za darovanie krvi", "Daroval som plazmu", "+50 DeeD", true, "DEED"],
   ["5. 9.", "Dobitie kartou", "10 € → 10 EURC", "+10,00 EURC", true, "EURC"],
 ];
 /** výpisy v PDF po mesiacoch */

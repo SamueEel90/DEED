@@ -180,7 +180,7 @@ const KAT_VZHLAD: Record<string, { k: Sek; d: string; t: string; s: string }> = 
   "PENIAZE A PLATBY": { k: "o", d: IK.wallet, t: "Peniaze a platby", s: "dary, prijaté peniaze, doklady" },
   "ZBIERKY": { k: "r", d: IK.heart, t: "Zbierky", s: "míľniky, naplnenie, poďakovania" },
   "ĽUDIA A PROFIL": { k: "b", d: IK.user, t: "Ľudia a profil", s: "priatelia, sledovanie, štít" },
-  "OD DEED": { k: "g", d: IK.leaf, t: "Od DEED", s: "novinky a dôležité zmeny" },
+  "OD DEED+": { k: "g", d: IK.leaf, t: "Od DEED+", s: "novinky a dôležité zmeny" },
 };
 
 export function NastaveniaOznameni({ onBack }: { onBack: () => void }) {

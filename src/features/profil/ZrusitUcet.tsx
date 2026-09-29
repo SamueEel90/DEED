@@ -42,7 +42,7 @@ export function ZrusitUcet({ onClose }: { onClose: () => void }) {
 
   // PRED ZRUŠENÍM · [id, názov, popis, akcia?, blokuje?] — pilot: údaje z ukážky, v produkcii zo servera
   const PRED: [string, string, string, string?, boolean?][] = [
-    ["penaze", "Vyber peniaze z peňaženky", "1 240 DEED a 18,40 EURC. Po zmazaní sa k nim nedostaneš.", "Vybrať"],
+    ["penaze", "Vyber peniaze z peňaženky", "1 240 DeeD a 18,40 EURC. Po zmazaní sa k nim nedostaneš.", "Vybrať"],
     ["sprava", "Odovzdaj správu zbierok a rolí", "Spravuješ Zbierku pre Sárku. Bez správcu by ostala opustená.", "Odovzdať", true],
     ["pravidelne", "Pravidelné dary sa zastavia", "2 pravidelné podpory, posledná platba 1. 10."],
     ...(firmy.length ? [["firma", "Odpojíme ťa od zamestnávateľa", "Hodiny, ktoré čakajú na schválenie, firme ešte odošleme."] as [string, string, string]] : []),

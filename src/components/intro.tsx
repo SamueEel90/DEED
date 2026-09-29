@@ -1,6 +1,6 @@
 // ============================================================
 // DEED · Úvod (karta 17) — pri prvom spustení (raz, flag deed.intro.v1)
-// + „Ako DEED funguje" z menu Viac (kedykoľvek).
+// + „Ako DEED+ funguje" z menu Viac (kedykoľvek).
 // Obsah je hotový kód dizajnéra <Uvitanie> (plocha 390 × 844) — tu je len obal:
 // väčší displej → plocha v strede, menší → celá plocha zmenšená cez transform.
 // ============================================================
@@ -35,7 +35,7 @@ export function IntroPruvodca({ onClose }: { onClose: () => void }) {
   }, []);
 
   return (
-    <div ref={rootRef} role="dialog" aria-modal="true" aria-label="Ako DEED funguje" tabIndex={-1} className="deed-platba"
+    <div ref={rootRef} role="dialog" aria-modal="true" aria-label="Ako DEED+ funguje" tabIndex={-1} className="deed-platba"
       style={{ position: "absolute", inset: 0, zIndex: 95, background: "var(--bg)", display: "grid", placeItems: "center", overflow: "hidden", outline: "none" }}>
       <div style={{ width: W * mierka, height: H * mierka }}>
         <div style={{ width: W, height: H, transform: `scale(${mierka})`, transformOrigin: "0 0" }}>

@@ -261,7 +261,7 @@ export function najdiOrg(meno?: string): OrgData {
   return sVlastnymiFotkami({
     meno: meno || "Organizácia", lok: "Slovensko", level: "Silver", emoji: "🏛",
     cover: p.cover, logo: p.logo,
-    onas: `${meno || "Organizácia"} je overená organizácia na platforme DEED. Doklady o použití prostriedkov zverejňuje pri každej zbierke.`,
+    onas: `${meno || "Organizácia"} je overená organizácia na platforme DEED+. Doklady o použití prostriedkov zverejňuje pri každej zbierke.`,
     stat: { vyzbierane: `${(2 + (n % 38)).toLocaleString("sk")} ${(100 + (n % 900)).toString().padStart(3, "0")} €`, podporovatelia: (120 + (n % 4200)).toLocaleString("sk"), skutky: String(8 + (n % 140)), snami: `${1 + (n % 5)} rok${(1 + (n % 5)) === 1 ? "" : (1 + (n % 5)) < 5 ? "y" : "ov"}` },
     kampane: [
       { id: `gen-${n % 9999}`, nazov: "Všeobecná podpora organizácie", vyzbierane: 800 + (n % 4000), ciel: 6000, foto: p.cover, emoji: "💛", lok: "Slovensko", ludia: 40 + (n % 300),

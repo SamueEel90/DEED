@@ -242,7 +242,7 @@ function StavDokladovania({ s, vyzbierane, teraz, zmen, toast }: {
     lehota: `Na doloženie ti zostáva ${dni} ${dni === 1 ? "deň" : dni < 5 ? "dni" : "dní"}.`,
     vyzva: `Lehota uplynula. Dolož prosím do ${dni} ${dni === 1 ? "dňa" : "dní"} — inak sa zbierka zobrazí v zozname nedoložených.`,
     caka: "Na profile sa pri zbierke zobrazuje „čaká na doklady“. Keď doložíš, stav sa hneď zmení.",
-    zdovodnene: "Zdôvodnenie sme prijali — posudzuje ho DEED. Kým rozhodneme, doklady môžeš stále doplniť.",
+    zdovodnene: "Zdôvodnenie sme prijali — posudzuje ho DEED+. Kým rozhodneme, doklady môžeš stále doplniť.",
   }[faza];
   return (
     <>
@@ -250,7 +250,7 @@ function StavDokladovania({ s, vyzbierane, teraz, zmen, toast }: {
       {(faza === "vyzva" || faza === "caka") && (
         <div style={{ marginBottom: SPACE.sm }}>
           <textarea value={zdov} onChange={(e) => setZdov(e.target.value)} rows={2} placeholder="Nemáme doklady, pretože…" style={{ ...input, resize: "vertical" }} />
-          <button onClick={() => { if (zdov.trim().length < 20) { toast("Napíš zdôvodnenie aspoň jednou vetou"); return; } zmen({ zdovodnenieBezDokladov: zdov.trim() }); toast("Zdôvodnenie odoslané — posúdi ho DEED"); }}
+          <button onClick={() => { if (zdov.trim().length < 20) { toast("Napíš zdôvodnenie aspoň jednou vetou"); return; } zmen({ zdovodnenieBezDokladov: zdov.trim() }); toast("Zdôvodnenie odoslané — posúdi ho DEED+"); }}
             style={{ ...btnDruhy, marginTop: SPACE.xs }}>Poslať zdôvodnenie</button>
         </div>
       )}

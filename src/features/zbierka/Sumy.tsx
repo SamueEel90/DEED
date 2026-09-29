@@ -64,7 +64,7 @@ export function DeedDlazdice({ refId, registrovany, mikro, cezTvorcu }: { refId:
       <NadpisSekcie text="DROBNÁ PODPORA" doplnok="klik a hneď odíde" />
       <div style={mriezka}>
         {DEED_SUMY.map((d) => (
-          <MikrodarDlazdica key={d} suma={d} jednotka="DEED" eur={d / 100} najcastejsie={d === 100} root={mikro.root} ciel={mikro.ciel}
+          <MikrodarDlazdica key={d} suma={d} jednotka="DeeD" eur={d / 100} najcastejsie={d === 100} root={mikro.root} ciel={mikro.ciel}
             blokovane={blok} onOdoslane={zacni} onDoleteli={(eur) => pridajDar({ refId, suma: eur, kanal: "deed", registrovany, cezTvorcu })} />
         ))}
       </div>
@@ -96,7 +96,7 @@ export function VlastnaSuma({ eur, deed, firma, otvor }: { eur: boolean; deed: b
       <div style={{ display: "flex", gap: 10 }}>
         {eur && <KartaVlastna flex={1.25} nadpis="Vlastná suma v €" popis="karta alebo prevod" onClick={() => otvor({ kanal: "eur" })}
           extra={firma ? <span style={{ marginTop: 3, fontSize: 12, fontWeight: 700, color: "var(--gold)" }}>{firma}</span> : undefined} />}
-        {deed && <KartaVlastna flex={1} modra nadpis="DEED" popis="z peňaženky" onClick={() => otvor({ kanal: "deed" })} />}
+        {deed && <KartaVlastna flex={1} modra nadpis="DeeD" popis="z peňaženky" onClick={() => otvor({ kanal: "deed" })} />}
       </div>
     </>
   );

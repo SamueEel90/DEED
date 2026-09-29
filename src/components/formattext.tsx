@@ -49,7 +49,7 @@ export function FormatovanyText({ text, style }: { text?: string | null; style?:
     if (!a) return;
     e.preventDefault();
     const href = a.getAttribute("href") || "";
-    if (window.confirm(`Odkaz vedie mimo DEED:\n${href}\n\nOtvoriť?`)) window.open(href, "_blank", "noopener");
+    if (window.confirm(`Odkaz vedie mimo DEED+:\n${href}\n\nOtvoriť?`)) window.open(href, "_blank", "noopener");
   };
 
   return <div className="ftext" style={style} onClick={klik} dangerouslySetInnerHTML={{ __html: html }} />;

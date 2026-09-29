@@ -1,4 +1,5 @@
 import { otvorPomoc } from "@/features/profil/Pomoc";
+import { DeedZnacka } from "@/components/DeedZnacka";
 import { useState } from "react";
 import { C, GRAD, glassTmavy, SPACE, RADIUS } from "@/theme";
 import { IkonaDomov, IkonaSrdceLine, IkonaCharita, IkonaKompas, IkonaMapa, IkonaPohar, IkonaOsoba, IkonaPenazenka, IkonaPlus, IkonaSlnko, IkonaMesiac, IkonaInstitucia, IkonaGraf } from "@/shared";
@@ -199,11 +200,11 @@ export function ViacSheet({ taby, setTaby, aktivny, onModul, onPenazenka, onAko,
 
         {/* Peňaženka — 1. položka v menu (súkromie: cudzí nevidí zostatok na hlavnej obrazovke) */}
         {!uprava && onPenazenka && (
-          <div {...pressable(onPenazenka, "Peňaženka — zostatok DEED, poslať / prijať / kúpiť")} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, background: "color-mix(in srgb, var(--a-info) 8%, transparent)", border: "1px solid color-mix(in srgb, var(--a-info) 30%, transparent)", borderRadius: RADIUS.md, padding: `${SPACE.sm}px ${SPACE.sm}px`, marginBottom: SPACE.xs, cursor: "pointer" }}>
+          <div {...pressable(onPenazenka, "Peňaženka — zostatok DeeD, poslať / prijať / kúpiť")} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, background: "color-mix(in srgb, var(--a-info) 8%, transparent)", border: "1px solid color-mix(in srgb, var(--a-info) 30%, transparent)", borderRadius: RADIUS.md, padding: `${SPACE.sm}px ${SPACE.sm}px`, marginBottom: SPACE.xs, cursor: "pointer" }}>
             <span style={{ width: 38, height: 38, borderRadius: RADIUS.sm, background: "color-mix(in srgb, var(--a-info) 16%, transparent)", display: "flex", alignItems: "center", justifyContent: "center", flex: "0 0 auto", color: "var(--a-info)" }}><IkonaPenazenka size={20} color="var(--a-info)" /></span>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 13.5, fontWeight: 700 }}>Peňaženka <span style={{ fontSize: 9, fontWeight: 700, color: "var(--a-info)", border: "1px solid color-mix(in srgb, var(--a-info) 40%, transparent)", background: "color-mix(in srgb, var(--a-info) 10%, transparent)", borderRadius: RADIUS.sm, padding: "1px 7px", marginLeft: SPACE.xxs }}>súkromné</span></div>
-              <div style={{ fontSize: 11, color: C.textTer, marginTop: SPACE.xxs }}>Zostatok DEED · poslať / prijať / kúpiť</div>
+              <div style={{ fontSize: 11, color: C.textTer, marginTop: SPACE.xxs }}>Zostatok DeeD · poslať / prijať / kúpiť</div>
             </div>
             <span style={{ color: C.textTer, fontSize: 15 }}>›</span>
           </div>
@@ -263,10 +264,10 @@ export function ViacSheet({ taby, setTaby, aktivny, onModul, onPenazenka, onAko,
         )}
         {!uprava && onAko && (
           <>
-            <div {...pressable(onAko, "Ako DEED funguje — krátky sprievodca")} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, background: "rgba(var(--glass-rgb),.05)", border: `1px solid ${C.line}`, borderRadius: RADIUS.md, padding: `${SPACE.sm}px ${SPACE.sm}px`, cursor: "pointer" }}>
+            <div {...pressable(onAko, "Ako DEED+ funguje — krátky sprievodca")} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, background: "rgba(var(--glass-rgb),.05)", border: `1px solid ${C.line}`, borderRadius: RADIUS.md, padding: `${SPACE.sm}px ${SPACE.sm}px`, cursor: "pointer" }}>
               <span aria-hidden style={{ width: 38, height: 38, borderRadius: RADIUS.sm, background: "color-mix(in srgb, var(--a-green) 12%, transparent)", border: `1px solid ${C.line2}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 17, flex: "0 0 auto" }}>🌱</span>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 13.5, fontWeight: 700 }}>Ako DEED funguje</div>
+                <div style={{ fontSize: 13.5, fontWeight: 700 }}>Ako <DeedZnacka /> funguje</div>
                 <div style={{ fontSize: 11, color: C.textTer, marginTop: SPACE.xxs }}>Skutky bez komentárov · okruh · karma a overovanie</div>
               </div>
               <span style={{ color: C.textTer, fontSize: 15 }}>›</span>
@@ -313,11 +314,11 @@ function InstallRiadok() {
     ? instaluj
     : () => toast("iPhone/iPad: v Safari ťukni Zdieľať (□↑) a vyber Pridať na plochu.");
   return (
-    <div {...pressable(klik, "Pridať DEED na plochu")} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, background: "rgba(var(--glass-rgb),.05)", border: `1px solid ${C.line}`, borderRadius: RADIUS.md, padding: `${SPACE.sm}px ${SPACE.sm}px`, marginTop: SPACE.xs, cursor: "pointer" }}>
+    <div {...pressable(klik, "Pridať DEED+ na plochu")} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, background: "rgba(var(--glass-rgb),.05)", border: `1px solid ${C.line}`, borderRadius: RADIUS.md, padding: `${SPACE.sm}px ${SPACE.sm}px`, marginTop: SPACE.xs, cursor: "pointer" }}>
       <span aria-hidden style={{ width: 38, height: 38, borderRadius: RADIUS.sm, background: "color-mix(in srgb, var(--a-info) 12%, transparent)", border: `1px solid ${C.line2}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 17, flex: "0 0 auto" }}>📲</span>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 13.5, fontWeight: 700 }}>Pridať na plochu</div>
-        <div style={{ fontSize: 11, color: C.textTer, marginTop: SPACE.xxs }}>{dostupny ? "Nainštaluj DEED ako appku — rýchly štart z plochy" : "Návod pre iPhone/iPad (Safari)"}</div>
+        <div style={{ fontSize: 11, color: C.textTer, marginTop: SPACE.xxs }}>{dostupny ? "Nainštaluj DEED+ ako appku — rýchly štart z plochy" : "Návod pre iPhone/iPad (Safari)"}</div>
       </div>
       <span style={{ color: C.textTer, fontSize: 15 }}>›</span>
     </div>

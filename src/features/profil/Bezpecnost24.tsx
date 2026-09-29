@@ -76,7 +76,7 @@ export function PotvrditPlatbuHarok({ onClose }: { onClose: () => void }) {
       paticka={<button type="button" onClick={() => { zmenNastavenia({ hranicaPlatby: v }); toast("Uložené"); onClose(); }} style={hlavne}>Uložiť</button>}>
       <div style={{ fontSize: 15, lineHeight: 1.55, color: "var(--ink2)" }}>Pri platbe nad túto sumu ťa appka požiada o tvár, odtlačok alebo PIN. Menšie platby prejdú podržaním tlačidla.</div>
       <div role="radiogroup" aria-label="Potvrdiť platbu nad" style={{ display: "flex", flexDirection: "column", gap: 6 }}>{MOZ.map(([h, t, s]) => <Volba key={h} on={v === h} onClick={() => setV(h)} t={t} s={s} />)}</div>
-      <div style={{ padding: "10px 12px", borderRadius: 13, background: "var(--field)", border: "1px solid var(--cardBd)", fontSize: 13, lineHeight: 1.5, color: "var(--ink2)" }}>Mikrodary v DEED a EURC do 1 € sa nepotvrdzujú nikdy, aby dar na jeden klik ostal na jeden klik. Pravidelná podpora sa potvrdí raz, pri nastavení.</div>
+      <div style={{ padding: "10px 12px", borderRadius: 13, background: "var(--field)", border: "1px solid var(--cardBd)", fontSize: 13, lineHeight: 1.5, color: "var(--ink2)" }}>Mikrodary v DeeD a EURC do 1 € sa nepotvrdzujú nikdy, aby dar na jeden klik ostal na jeden klik. Pravidelná podpora sa potvrdí raz, pri nastavení.</div>
     </Harok>);
 }
 
@@ -360,7 +360,7 @@ export function ZablokovaniLudia({ onBack }: { onBack: () => void }) {
 // ======================= 2e · SÚHLASY + 2f DETAIL =======================
 const VERZIA_PODMIENOK = "1.2";
 type Nep = "pers" | "stat" | "news" | "part";
-const NEPOVINNE: [Nep, string, string][] = [["pers", "Feed podľa mojich záujmov", "nástenka a pozvánky podľa Moje záujmy"], ["stat", "Anonymné štatistiky", "pomáhajú nám opraviť chyby, bez mena a polohy"], ["news", "Novinky od DEED e-mailom", "najviac raz mesačne"], ["part", "Údaje pre partnerov", "firmy uvidia len súhrn, nikdy tvoje meno"]];
+const NEPOVINNE: [Nep, string, string][] = [["pers", "Feed podľa mojich záujmov", "nástenka a pozvánky podľa Moje záujmy"], ["stat", "Anonymné štatistiky", "pomáhajú nám opraviť chyby, bez mena a polohy"], ["news", "Novinky od DEED+ e-mailom", "najviac raz mesačne"], ["part", "Údaje pre partnerov", "firmy uvidia len súhrn, nikdy tvoje meno"]];
 
 function usePovolenie(meno: "geolocation" | "camera"): string {
   const [s, setS] = useState("zisťujem…");
@@ -382,7 +382,7 @@ export function Suhlasy({ onBack }: { onBack: () => void }) {
     const s = n.suhlasy, on = !s[k], d = new Date();
     zmenNastavenia({ suhlasy: { ...s, [k]: on, zaznam: [...s.zaznam, { k, on, cas: d.toISOString(), verzia: VERZIA_PODMIENOK }] } });
   };
-  const sys = () => toast("Otvor Nastavenia telefónu → Aplikácie → DEED");
+  const sys = () => toast("Otvor Nastavenia telefónu → Aplikácie → DEED+");
   const riadok = (t: string, s: string, d: string, pravo: ReactNode, onClick: () => void, i: number, role?: { switch: boolean }) => (
     <button type="button" key={t} onClick={onClick} role={role ? "switch" : undefined} aria-checked={role ? role.switch : undefined}
       style={{ width: "100%", display: "flex", alignItems: "center", gap: 12, minHeight: 64, padding: "8px 0", border: "none", borderTop: i ? "1px solid var(--cardBd)" : "none", background: "transparent", cursor: "pointer", textAlign: "left", fontFamily: "inherit", color: "var(--ink)" }}>
@@ -393,7 +393,7 @@ export function Suhlasy({ onBack }: { onBack: () => void }) {
     <ObrazovkaSprava titul="Súhlasy" onBack={onBack}>
       <div style={{ fontSize: 15, lineHeight: 1.55, color: "var(--ink2)" }}>Tu vidíš, na čo si dal súhlas. Nepovinné môžeš kedykoľvek vypnúť, appka bude fungovať ďalej.</div>
       <div><h2 style={{ ...lbl, padding: "0 2px 6px" }}>POVINNÉ</h2><div style={karta}>
-        {riadok("Podmienky používania", "pravidlá DEED, skutky, dary a zbierky", `odsúhlasené 3. 9. 2026 · verzia ${VERZIA_PODMIENOK}`, odk("Zobraziť"), () => setDetail("pod"), 0)}
+        {riadok("Podmienky používania", "pravidlá DEEDGOOD, skutky, dary a zbierky", `odsúhlasené 3. 9. 2026 · verzia ${VERZIA_PODMIENOK}`, odk("Zobraziť"), () => setDetail("pod"), 0)}
         {riadok("Spracovanie údajov pre účet", "meno, e-mail, telefón, história skutkov a darov", "odsúhlasené 3. 9. 2026", odk("Zobraziť"), () => setDetail("ud"), 1)}
       </div></div>
       <div><h2 style={{ ...lbl, padding: "0 2px 6px" }}>POVOLENIA TELEFÓNU</h2><div style={karta}>
@@ -410,8 +410,8 @@ export function Suhlasy({ onBack }: { onBack: () => void }) {
 }
 
 // znenie je NÁVRH z prototypu — potvrdí právnik; neskôr sa načíta zo servera podľa verzie
-const V_SKRATKE = ["Skutky overuje AI a komunita. Za pravdivosť skutku zodpovedáš ty.", "DEED nedrží tvoje peniaze. Dary idú priamo zbierke alebo žiadateľovi.", "Karma a skutky patria len tebe. Verejný je iba tvoj štít.", "Fotky ľudí zverejňuj len s ich súhlasom a s úctou k nim.", "Účet môžeš kedykoľvek zrušiť. Dary ostanú zapísané, môžu byť anonymné."];
-const KAPITOLY: [string, string][] = [["1. Kto sme a čo je DEED", "DEED je appka pre dobré skutky, pomoc a zbierky. Prevádzkovateľ, kontakt a sídlo doplní právnik."], ["2. Tvoj účet", "Jeden človek, jeden účet. Meno overujeme pri registrácii. Za bezpečnosť hesla a zariadení zodpovedáš ty."], ["3. Skutky a overovanie", "Skutky kontroluje AI a komunita cez Overujem a Namietam. Nepravdivý skutok môžeme zrušiť a karmu odobrať."], ["4. Dary, zbierky a platby", "Platby spracúva platobná brána. DEED peniaze nedrží. Poplatky vidíš vždy pred zaplatením."], ["5. Obsah a správanie", "Bez urážok, reklamy a osobných údajov iných. Fotky ľudí len s ich súhlasom."], ["6. Zmeny podmienok", "Pri zmene ťa upozorníme a požiadame o nový súhlas. Zmeny ukážeme zvýraznené."]];
+const V_SKRATKE = ["Skutky overuje AI a komunita. Za pravdivosť skutku zodpovedáš ty.", "DEED+ nedrží tvoje peniaze. Dary idú priamo zbierke alebo žiadateľovi.", "Karma a skutky patria len tebe. Verejný je iba tvoj štít.", "Fotky ľudí zverejňuj len s ich súhlasom a s úctou k nim.", "Účet môžeš kedykoľvek zrušiť. Dary ostanú zapísané, môžu byť anonymné."];
+const KAPITOLY: [string, string][] = [["1. Kto sme a čo je DEEDGOOD", "DEEDGOOD je appka pre dobré skutky, pomoc a zbierky. Prevádzkovateľ, kontakt a sídlo doplní právnik."], ["2. Tvoj účet", "Jeden človek, jeden účet. Meno overujeme pri registrácii. Za bezpečnosť hesla a zariadení zodpovedáš ty."], ["3. Skutky a overovanie", "Skutky kontroluje AI a komunita cez Overujem a Namietam. Nepravdivý skutok môžeme zrušiť a karmu odobrať."], ["4. Dary, zbierky a platby", "Platby spracúva platobná brána. DEEDGOOD peniaze nedrží. Poplatky vidíš vždy pred zaplatením."], ["5. Obsah a správanie", "Bez urážok, reklamy a osobných údajov iných. Fotky ľudí len s ich súhlasom."], ["6. Zmeny podmienok", "Pri zmene ťa upozorníme a požiadame o nový súhlas. Zmeny ukážeme zvýraznené."]];
 const UDAJE: [string, string, string][] = [["Meno a overenie totožnosti", "účet a dôvera medzi ľuďmi", "kým máš účet"], ["E-mail a telefón", "prihlásenie, bezpečnosť a dôležité oznámenia", "kým máš účet"], ["Skutky, fotky a dôkazy", "overenie skutku a feed", "kým ich nezmažeš"], ["Dary a platby", "doklady, ktoré vyžaduje zákon", "10 rokov, po zrušení účtu anonymne"], ["Poloha", "skutky a pomoc v okolí, GPS pri akcii", "len pri používaní, históriu neukladáme"]];
 const PRAVA: [string, string][] = [["Pozrieť si údaje", "Stiahnuť moje údaje"], ["Opraviť údaje", "Upraviť profil, E-mail, telefón a heslo"], ["Stiahnuť údaje", "všetko v jednom súbore"], ["Vymazať údaje", "Zrušiť účet"]];
 
@@ -422,7 +422,7 @@ export function DetailSuhlasu({ typ, onBack }: { typ: "pod" | "ud"; onBack: () =
     const w = window.open("", "_blank"); if (!w) return;
     const esc = (t: string) => t.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]!));
     const telo = typ === "pod" ? KAPITOLY.map(([t, x]) => `<h3>${esc(t)}</h3><p>${esc(x)}</p>`).join("") : UDAJE.map(([a, b, c]) => `<h3>${esc(a)}</h3><p>${esc(b)} · ${esc(c)}</p>`).join("");
-    w.document.write(`<!doctype html><html lang="sk"><head><meta charset="utf-8"><title>${titul}</title><style>body{font-family:'Plus Jakarta Sans',Arial,sans-serif;padding:28px;color:#1D211B;line-height:1.5}</style></head><body><h1>DEED · ${titul}</h1><p>Verzia ${VERZIA_PODMIENOK}</p>${telo}</body></html>`);
+    w.document.write(`<!doctype html><html lang="sk"><head><meta charset="utf-8"><title>${titul}</title><style>body{font-family:'Plus Jakarta Sans',Arial,sans-serif;padding:28px;color:#1D211B;line-height:1.5}</style></head><body><h1>DEEDGOOD · ${titul}</h1><p>Verzia ${VERZIA_PODMIENOK}</p>${telo}</body></html>`);
     w.document.close(); w.focus(); setTimeout(() => w.print(), 300);
   };
   return (

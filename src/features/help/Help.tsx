@@ -313,13 +313,13 @@ function Detail({ z, onBack, onAutor }: { z: any; onBack: () => void; onAutor: (
     setSuma((s: number) => s + hodnota * 0.01); // DEED ~0,01€ ilustračne
     setLudia((l: number) => l + 1);
     pridajDar({ refId: darRef, suma: hodnota * 0.01, kanal: "deed", registrovany: ja.typ !== "pasivny" });
-    toast(`Odoslané: ${hodnota} ${kanal} · záznam platby ${hash()}`);
+    toast(`Odoslané: ${hodnota} ${kanal === "DEED" ? "DeeD" : kanal} · záznam platby ${hash()}`);
   }
   function platbaHotova(s: number, volba?: VolbaDaru) {
     setSuma((x: number) => x + s * (platba === "EUR" ? 1 : 0.01));
     setLudia((l: number) => l + 1);
     pridajDar({ refId: darRef, suma: s * (platba === "EUR" ? 1 : 0.01), kanal: platba === "EUR" ? "psp" : "deed", registrovany: ja.typ !== "pasivny", volba });
-    toast(`Odoslané: ${platba === "EUR" ? s + " €" : s + " DEED"} · záznam platby ${hash()}`);
+    toast(`Odoslané: ${platba === "EUR" ? s + " €" : s + " DeeD"} · záznam platby ${hash()}`);
   }
 
   const jePonuka = z.typ === "ponuka"; // ponuka pomoci → kontakt, nie darovanie
@@ -739,7 +739,7 @@ function RequestFlow({ onBack, onZverejni }: { onBack: () => void; onZverejni: (
 
           <Otazka>IBAN príjemcu (pre FIAT)</Otazka>
           <Vyber emoji={<Emo e="✅" />} title="IBAN poznám" desc="Zadám a overím micro-depositom, že účet patrí príjemcovi." active={ibanCesta === "A"} onClick={() => { setIbanCesta("A"); setIbanOvereny(false); }} />
-          <Vyber emoji="⏳" title="IBAN nemám" desc="Doplním neskôr cez doplnenie žiadosti. Dovtedy beží len DEED, FIAT nepôjde." active={ibanCesta === "B"} onClick={() => { setIbanCesta("B"); setIban(""); setIbanOvereny(false); }} />
+          <Vyber emoji="⏳" title="IBAN nemám" desc="Doplním neskôr cez doplnenie žiadosti. Dovtedy beží len DeeD, FIAT nepôjde." active={ibanCesta === "B"} onClick={() => { setIbanCesta("B"); setIban(""); setIbanOvereny(false); }} />
 
           {ibanCesta === "A" && (
             <div style={{ marginTop: SPACE.sm }}>
@@ -752,7 +752,7 @@ function RequestFlow({ onBack, onZverejni }: { onBack: () => void; onZverejni: (
               <div style={{ fontSize: 11, color: C.textTer, marginTop: SPACE.xs }}>Overovaciu mikroplatbu posiela banka — potvrdí, že účet patrí príjemcovi.</div>
             </div>
           )}
-          {ibanCesta === "B" && <div style={{ ...infoBox, marginTop: SPACE.sm, background: tint(C.gold, .1), borderColor: tint(C.gold, .35), color: C.gold, fontSize: 12.5 }}>⏳ Kým sa nedoplní účet príjemcu, FIAT nepôjde — beží len DEED.</div>}
+          {ibanCesta === "B" && <div style={{ ...infoBox, marginTop: SPACE.sm, background: tint(C.gold, .1), borderColor: tint(C.gold, .35), color: C.gold, fontSize: 12.5 }}>⏳ Kým sa nedoplní účet príjemcu, FIAT nepôjde — beží len DeeD.</div>}
 
           <button onClick={() => { setKrok(0); setFin("wizard"); }} disabled={!proxyOk} style={{ ...btn(proxyOk ? "primary" : "disabled"), width: "100%", marginTop: SPACE.gutter }}>Pokračovať na žiadosť</button>
         </div>
@@ -889,7 +889,7 @@ function RequestFlow({ onBack, onZverejni }: { onBack: () => void; onZverejni: (
         {krok === 6 && (
           <>
             <Otazka>Ako chceš prijímať podporu?</Otazka>
-            {["DEED (wallet)", "EUR (euro na účet)"].map((k, i) => (
+            {["DeeD (peňaženka)", "EUR (euro na účet)"].map((k, i) => (
               <div key={i} style={{ ...vyberBox(false), display: "flex", justifyContent: "space-between" }}>
                 <span>{k}</span><span style={{ fontSize: 11, color: C.textTer }}>poplatok vopred</span>
               </div>
@@ -909,7 +909,7 @@ function RequestFlow({ onBack, onZverejni }: { onBack: () => void; onZverejni: (
             <Otazka>Potvrdenie</Otazka>
             <Suhrn rows={[
               ["Pre koho", preKohoLabel],
-              ...(preKoho === "zastupeni" ? [["Príjemca", `${proxyMeno || "—"}${ibanCesta === "B" ? " · IBAN neskôr (len DEED)" : ""}`] as [string, string]] : []),
+              ...(preKoho === "zastupeni" ? [["Príjemca", `${proxyMeno || "—"}${ibanCesta === "B" ? " · IBAN neskôr (len DeeD)" : ""}`] as [string, string]] : []),
               ["Témy", tagLabels(tagy)],
               ["Suma", `${sumaNum} € (pásmo ${p?.kod})`],
               ["Opis", popis.slice(0, 60) + (popis.length > 60 ? "…" : "")],

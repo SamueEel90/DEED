@@ -9,7 +9,7 @@ export const MIESTA: { kluc: Miesto; nazov: string }[] = [
   { kluc: "deed", nazov: "Help · Good · Aktivity" },
   { kluc: "tvorca", nazov: "Cez tvorcu" },
   { kluc: "sukromna", nazov: "Súkromná" },
-  { kluc: "podporitDeed", nazov: "Podporiť DEED" },
+  { kluc: "podporitDeed", nazov: "Podporiť DEED+" },
 ];
 
 export type Hodnota = boolean | string;
@@ -32,7 +32,7 @@ export const POLOZKY: Record<Miesto, Polozky> = {
 export const NAZVY: Record<Kluc, string> = {
   poleZodpoveda: "Pole zodpovedá / overil", kamIdeDar: "Kam ide tvoj dar", kartaStavu: "Karta stavu", milniky: "Míľniky",
   tempo: "Tempo darov", dorovnanie: "Dorovnanie firmy", zdielat: "Zdieľať · QR + páči sa mi", rychleSumy: "Rýchle sumy",
-  vlastnaEur: "Vlastná suma v €", krypto: "Dary v krypte", pravidelna: "Pravidelná podpora", oblubene: "Obľúbené + Podporiť DEED",
+  vlastnaEur: "Vlastná suma v €", krypto: "Dary v krypte", pravidelna: "Pravidelná podpora", oblubene: "Obľúbené + Podporiť DEED+",
   zapojitFirmu: "Zapojiť firmu do dorovnania", retazNastavit: "Reťaz dobra · nastaviť", darcovia: "Darcovia",
 };
 

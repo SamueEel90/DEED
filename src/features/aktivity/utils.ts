@@ -99,7 +99,7 @@ export function osoba(name: string, items: AktItem[]) {
     verified: mine.some((it) => it.verified),
     profi: mine.some((it) => it.profi),
     loc: (first.loc || "Trenčín").split(" · ")[0],
-    bio: BIOS[name] || (isMe ? "To si ty — tvoje skutky, talenty a žiadosti na jednom mieste." : "Člen komunity DEED. Koná dobro vo svojom okolí."),
+    bio: BIOS[name] || (isMe ? "To si ty — tvoje skutky, talenty a žiadosti na jednom mieste." : "Člen komunity DEED+. Koná dobro vo svojom okolí."),
     followers: isMe ? 0 : 40 + (h % 920),
     following: isMe ? 0 : 12 + (h % 130),
     skutky: mine.length,

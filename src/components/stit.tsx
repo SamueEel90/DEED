@@ -199,7 +199,7 @@ export function StitReveal({ subjekt, level, onClose }: { subjekt: string; level
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
   const podelSa = () => {
-    void zdielaj({ titul: `Nový štít: ${STIT_SK[level]}`, text: `${subjekt} · ${STIT_SK[level]} štít v DEED. Postavené na skutkoch.`, url: aktualnaUrl() }, toast);
+    void zdielaj({ titul: `Nový štít: ${STIT_SK[level]}`, text: `${subjekt} · ${STIT_SK[level]} štít v DEED+. Postavené na skutkoch.`, url: aktualnaUrl() }, toast);
   };
   return (
     <div role="dialog" aria-label={`Nový štít: ${STIT_SK[level]}`} onClick={onClose}

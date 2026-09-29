@@ -65,7 +65,7 @@ export function QrModal({ typ = "skutok", titul, popis, odkaz = "https://deed.ap
     : reazPct != null && typeof prijemca === "string" ? `${reazPct} % → ${kratko(prijemca)}` : undefined);
 
   const kopiruj = () => { void kopirujLib(odkazReal, toast); };
-  const zdielaj = () => { void zdielajLib({ titul: (titul as string) || "DEED", url: odkazReal }, toast); };
+  const zdielaj = () => { void zdielajLib({ titul: (titul as string) || "DEED+", url: odkazReal }, toast); };
 
   const out = (ic: ReactNode, label: ReactNode, sub: ReactNode, onClick?: () => void) => (
     <button onClick={onClick} style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: SPACE.xxs, padding: `${SPACE.sm}px ${SPACE.xs}px`, borderRadius: RADIUS.sm, background: C.surface2, border: `1px solid ${C.line}`, color: C.text, cursor: "pointer", fontFamily: "inherit" }}>

@@ -9,8 +9,9 @@
 //   · onPasivny()— „Pokračovať bez prihlásenia" → pasívny vstup (bez účtu)
 // Auth je zatiaľ mock (bez reálneho backendu) — overuje len formát polí.
 // ============================================================
+import { DeedZnacka } from "@/components/DeedZnacka";
 import { useState, type CSSProperties, type ReactNode } from "react";
-import { C, GRAD, gradText, SPACE, RADIUS } from "@/theme";
+import { C, GRAD, SPACE, RADIUS } from "@/theme";
 import { toast, Znacka, IkonaObalka, IkonaZamok, IkonaOko, IkonaOkoOff, IkonaSipVpravo } from "@/shared";
 import { signIn, signUp, resolveSession, resetHeslo, zmenHeslo } from "@/lib/auth";
 import type { TypUctu } from "@/types";
@@ -108,7 +109,7 @@ export function AuthPage({ onAuthed, onGuest, onPasivny, uvodnyRezim = "login" }
           {/* QR logo na login/register (mobil aj desktop) — klik zväčší na celú obrazovku */}
           <Znacka force="qr" size={116} />
           <div style={{ fontSize: 27, fontWeight: 800, marginTop: SPACE.md, letterSpacing: "-.01em" }}>
-            {jeLogin ? "Vitaj späť" : <>Vitaj v <span style={gradText}>DEED</span></>}
+            {jeLogin ? "Vitaj späť" : <>Vitaj v <span style={{ color: "var(--a-green)" }}><DeedZnacka /></span></>}
           </div>
           <div style={{ fontSize: 13.5, color: C.textSec, marginTop: SPACE.xxs, lineHeight: 1.5, maxWidth: 300 }}>
             {jeLogin ? "Prihlás sa a pokračuj v dobrých skutkoch." : "Vytvor si účet — miesto, kde nerozhodujú slová, ale skutky."}

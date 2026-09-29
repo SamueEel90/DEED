@@ -5,6 +5,7 @@
 // Kým firma nezaplatí, charita vie dorovnanie odmietnuť.
 // V prototype je firmová strana DEV formulár na tom istom mieste.
 // ============================================================
+import { DeedZnacka } from "@/components/DeedZnacka";
 import { Emo } from "@/components/icons";
 import { useState, type CSSProperties } from "react";
 import { C, SPACE, RADIUS } from "@/theme";
@@ -328,7 +329,7 @@ function Formular({ entita, cielFix, cielNazov, toast, onHotovo, onSpat }: {
       </div>
       {lenZamestnanci && (
         <div style={{ fontSize: 11.5, color: C.textTer, lineHeight: 1.45, marginTop: SPACE.xs }}>
-          Dorovnáte len dary ľudí, ktorí sú k vám v DEED pripojení a vy ste ich potvrdili.
+          Dorovnáte len dary ľudí, ktorí sú k vám v <DeedZnacka /> pripojení a vy ste ich potvrdili.
           Ostatní darcovia o dorovnaní nebudú vôbec informovaní — nesľubuje sa im nič.
         </div>
       )}

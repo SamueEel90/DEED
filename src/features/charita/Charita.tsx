@@ -1,4 +1,5 @@
 import { useState, memo } from "react";
+import { DeedZnacka } from "@/components/DeedZnacka";
 import { SIRKA, C, SPACE, RADIUS } from "@/theme";
 import { ModulHlavicka, HladanieModal, OblubeneHviezda, toast, useLayout, useScrollPamat, useStrankaAkcie, useTvorbaGate, Ticker, StatRiadok, FiltreStat, FeedStlpce, FeedGrid, FeedCard, KartaBadge, obalSiroky, OkruhVyber, SegTabs, tint, Lupa, IkonaPlay, IkonaDoska, IkonaKriz, IkonaInstitucia, Overene, FeedSkeleton, SkeletonRiadky, EmptyState, ErrorState, ScreenSwitch, SwipeBack } from "@/shared";
 import { pripravFeed, FEED_CFG } from "@/lib/feed";
@@ -258,7 +259,7 @@ function CharitaFeed({ wide, toast, onDetail, onHladaj, onSheet, onBoard, onFire
     extra: [
       { id: "talent", label: "Ukáž svoj talent", popis: "Tvorivé skutky a talenty", ikona: <IkonaPlay size={18} color="var(--a-green)" />, onClick: gate(() => toast("Ukáž svoj talent")) },
       { id: "board", label: "Nástenka", popis: "Akcie a udalosti v okolí", ikona: <IkonaDoska size={18} color="var(--a-green)" />, onClick: onBoard },
-      { id: "firemny", label: "Môj DEED firemný", popis: "Rolové panely a správa — Charita · Tvorca · B2B", ikona: <IkonaInstitucia size={18} color="var(--a-green)" />, onClick: onFiremny },
+      { id: "firemny", label: "Môj DEED+ firemný", popis: "Rolové panely a správa — Charita · Tvorca · B2B", ikona: <IkonaInstitucia size={18} color="var(--a-green)" />, onClick: onFiremny },
     ],
   }), []);
 
@@ -273,7 +274,7 @@ function CharitaFeed({ wide, toast, onDetail, onHladaj, onSheet, onBoard, onFire
       } />
 
       {/* živý ticker */}
-      <Ticker>Nádej pacientom <b style={{ color: C.greenL }}>práve dostala 100 DEED</b> → Marek</Ticker>
+      <Ticker>Nádej pacientom <b style={{ color: C.greenL }}>práve dostala 100 DeeD</b> → Marek</Ticker>
 
       {/* skratka na Adresár charít & OZ + štatistický riadok — na desktope na jednom riadku */}
       <FiltreStat
@@ -291,7 +292,7 @@ function CharitaFeed({ wide, toast, onDetail, onHladaj, onSheet, onBoard, onFire
             <div onClick={onFiremny} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, background: K.goldBg, border: `1px solid ${tint("var(--a-gold)", .3)}`, borderRadius: RADIUS.sm, padding: `${SPACE.sm}px ${SPACE.gutter}px`, cursor: "pointer", marginTop: SPACE.xs }}>
               <span style={{ width: 38, height: 38, borderRadius: RADIUS.sm, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", background: tint("var(--a-gold)", .15), fontSize: 18 }}>🏢</span>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 14, fontWeight: 700 }}>Môj DEED firemný</div>
+                <div style={{ fontSize: 14, fontWeight: 700 }}>Môj <DeedZnacka /> firemný</div>
                 <div style={{ fontSize: 11.5, color: C.textTer }}>Rolové panely a správa — Charita · Tvorca · B2B</div>
               </div>
               <span style={{ color: C.textTer, fontSize: 16 }}>›</span>

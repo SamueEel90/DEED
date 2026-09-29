@@ -12,6 +12,7 @@
 //
 // Parametre: ?tema=svetla · ?demo=1 (kŕmi sa samo) · ?paleta=aurora
 // ============================================================
+import { DeedZnacka } from "@/components/DeedZnacka";
 import { useEffect, useState } from "react";
 import Overlay from "./Overlay";
 import { nacitajStav, type StavOverlay } from "./zdroj";
@@ -62,7 +63,7 @@ function Cakanie({ jeDemo, svetla }: { jeDemo: boolean; svetla: boolean }) {
       color: svetla ? "#10131a" : "#fff",
       textShadow: svetla ? "0 1px 2px rgba(255,255,255,.7)" : "0 2px 6px rgba(0,0,0,.85)",
       fontFamily: "'Plus Jakarta Sans', -apple-system, 'Segoe UI', sans-serif" }}>
-      <div style={{ fontSize: 16, fontWeight: 800 }}>DEED · počítadlo zbierky</div>
+      <div style={{ fontSize: 16, fontWeight: 800 }}><DeedZnacka /> · počítadlo zbierky</div>
       <div style={{ fontSize: 13, marginTop: 2 }}>
         čaká sa na prvé dáta{jeDemo ? "" : " — na skúšku pridaj do odkazu ?demo=1"}
       </div>

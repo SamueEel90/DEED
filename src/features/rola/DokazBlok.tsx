@@ -1,4 +1,5 @@
 // Dôkaz použitia zbierky — fotky PRED/PO, text a doklady (verejný profil aj oznam darcovi)
+import { DeedZnacka } from "@/components/DeedZnacka";
 import { useState } from "react";
 import { C, SPACE, RADIUS } from "@/theme";
 import { pressable } from "@/components/pressable";
@@ -55,7 +56,7 @@ export function DokazBlok({ dokaz, vyzbierane, odberatel = "Svetlo pomoci o.z." 
                   ? <span {...pressable(() => void otvorDoklad(d.sken!), "Otvoriť PDF")} style={{ display: "inline-block", margin: "6px 0", fontWeight: 800, color: "#1a5fb4", cursor: "pointer" }}>📄 Otvoriť faktúru (PDF)</span>
                   : <img src={d.sken} alt={`Sken — ${d.nazov}`} style={{ width: "100%", borderRadius: 4, margin: "6px 0", display: "block" }} />)}
                 <div style={{ borderTop: "1px dashed #bbb", margin: "6px 0", paddingTop: 6, display: "flex", justifyContent: "space-between" }}><span>{d.nazov}</span><b>{eur(d.suma)}</b></div>
-                <div style={{ color: "#1a7f37", fontWeight: 700 }}>✓ Uhradené zo zbierky · overené DEED</div>
+                <div style={{ color: "#1a7f37", fontWeight: 700 }}>✓ Uhradené zo zbierky · overené <DeedZnacka /></div>
               </div>
             )}
           </div>

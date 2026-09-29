@@ -45,7 +45,7 @@ export function Harok({ onClose, children, hlavicka, podHlavickou, paticka, plna
           </div>
           {podHlavickou}
         </div>
-        <div style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: paticka ? "14px 18px 18px" : "14px 18px max(22px, env(safe-area-inset-bottom))", display: "flex", flexDirection: "column", gap: 12 }}>{children}</div>
+        <div style={{ flex: 1, minHeight: 0, overflowY: "auto", overscrollBehavior: "contain", padding: paticka ? "14px 18px 18px" : "14px 18px max(22px, env(safe-area-inset-bottom))", display: "flex", flexDirection: "column", gap: 12 }}>{children}</div>
         {paticka && <div style={{ flex: "none", padding: "12px 18px max(22px, env(safe-area-inset-bottom))", borderTop: "1px solid var(--cardBd)", display: "flex", gap: 10, background: "var(--sheet)" }}>{paticka}</div>}
       </div>
     </div>,

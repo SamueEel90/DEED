@@ -88,7 +88,7 @@ export function RetazDobraSheet({ odmena = 130, mode = "skutok", odkaz = "https:
         </div>
         <div style={{ display: "flex", alignItems: "baseline", gap: SPACE.sm }}>
           <span style={{ fontSize: 34, fontWeight: 800, color: "var(--a-green)" }}>{pct}%</span>
-          {!honorar && <span style={{ fontSize: 12.5, color: C.textSec }}>≈ <b style={{ color: C.text }}>{reazSuma} DEED</b> z {odmena} DEED</span>}
+          {!honorar && <span style={{ fontSize: 12.5, color: C.textSec }}>≈ <b style={{ color: C.text }}>{reazSuma} DeeD</b> z {odmena} DeeD</span>}
           {honorar && <span style={{ fontSize: 12.5, color: C.textSec }}>z každého budúceho honoráru</span>}
         </div>
         {/* Split bežec (mimo Viery): min 5 %, zaokrúhľovanie po 5 % */}
@@ -153,8 +153,8 @@ export function RetazDobraSheet({ odmena = 130, mode = "skutok", odkaz = "https:
 
       {/* zhrnutie */}
       <div style={{ background: "rgba(var(--glass-rgb),.05)", border: `1px solid ${C.line}`, borderRadius: RADIUS.md, padding: `${SPACE.sm}px ${SPACE.gutter}px`, marginTop: SPACE.xxs }}>
-        <Row k={honorar ? "Honorár" : "Tvoja odmena"} v={honorar ? "každý budúci príjem" : `${odmena} DEED`} />
-        <Row k="Ide ďalej (zamknuté)" v={`${pct}%${honorar ? "" : ` · ${reazSuma} DEED`}`} accent="var(--a-green)" />
+        <Row k={honorar ? "Honorár" : "Tvoja odmena"} v={honorar ? "každý budúci príjem" : `${odmena} DeeD`} />
+        <Row k="Ide ďalej (zamknuté)" v={`${pct}%${honorar ? "" : ` · ${reazSuma} DeeD`}`} accent="var(--a-green)" />
         <Row k="Príjemca" v={ziadost?.nazov} />
       </div>
 

@@ -1,6 +1,7 @@
 // KARTA 29 · Priatelia — záložky Priatelia | Sledujem | Podporujem, žiadosti, Kam idú tvoji priatelia (+ Pridať sa),
 // moji priatelia so štítom, Pridať priateľa (4 cesty), hárok Čo o mne vidia priatelia. Anonymný profil = len meno.
 // Priateľ = vzájomný súhlas · Sledovanie = jednostranné · Podporujem = pravidelné dary. Údaje sú zatiaľ ukážkové.
+import { DeedZnacka } from "@/components/DeedZnacka";
 import { useEffect, useRef, useState } from "react";
 import { SpatTlacidlo } from "@/components/cesta";
 import { toast } from "@/components/toast";
@@ -12,7 +13,7 @@ import { useNastaveniaAppky, zmenNastavenia } from "@/lib/nastaveniaAppky";
 import { Harok } from "@/features/zbierka/Zdielat";
 import { useTvorbaGate } from "@/shared";
 import { useOsobnyProfil } from "@/lib/osobnyProfil";
-import { usePriatelia, prepniVidia, prepniIdem, type VidiaPriatelia } from "@/lib/priatelia";
+import { usePriatelia, prepniVidia, prepniIdem, oznacPriatela, type VidiaPriatelia } from "@/lib/priatelia";
 import { bezDiakritiky } from "./JazykUdaje";
 import { Prepinac } from "./nastUi";
 import "@/styles/platba.css";
@@ -46,14 +47,14 @@ type Okno = "kontakty" | "hladat" | "pozvanka" | "sken";
 const MENU: [string, string, boolean][] = [
   ["Zobraziť profil", "M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8", false],
   ["Pozvať na akciu", "M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z", false],
-  ["Poslať DEED ako poďakovanie", "M7 17L17 7M9 7h8v8", false],
+  ["Poslať DeeD ako poďakovanie", "M7 17L17 7M9 7h8v8", false],
   ["Odobrať z priateľov", "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M17 11h6", false],
   ["Zablokovať", "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM5.6 5.6l12.8 12.8", true],
 ];
 const PRIDAT: { k: Okno; t: string; s: string; d: string }[] = [
-  { k: "kontakty", t: "Z kontaktov", s: "známi, čo už majú DEED", d: "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M19 8v6M22 11h-6" },
+  { k: "kontakty", t: "Z kontaktov", s: "známi, čo už majú DEED+", d: "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M19 8v6M22 11h-6" },
   { k: "hladat", t: "Hľadať", s: "len verejné profily", d: "M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16zM21 21l-4.3-4.3" },
-  { k: "pozvanka", t: "Pozvánka", s: "odkaz alebo QR aj pre tých bez DEED", d: "M10 13a5 5 0 0 0 7.5.5l2-2a5 5 0 0 0-7-7l-1.2 1.1M14 11a5 5 0 0 0-7.5-.5l-2 2a5 5 0 0 0 7 7l1.2-1.1" },
+  { k: "pozvanka", t: "Pozvánka", s: "odkaz alebo QR aj pre tých bez DEED+", d: "M10 13a5 5 0 0 0 7.5.5l2-2a5 5 0 0 0-7-7l-1.2 1.1M14 11a5 5 0 0 0-7.5-.5l-2 2a5 5 0 0 0 7 7l1.2-1.1" },
   { k: "sken", t: "Naskenovať QR", s: "pri stretnutí, fotoaparátom", d: "M4 7V5a1 1 0 0 1 1-1h2M17 4h2a1 1 0 0 1 1 1v2M20 17v2a1 1 0 0 1-1 1h-2M7 20H5a1 1 0 0 1-1-1v-2M7 12h10" },
 ];
 const VIDIA: [keyof VidiaPriatelia, string, string][] = [["kam", "Kam idem", "akcie, dobrovoľníctvo, kultúra, posedenia"], ["skutky", "Moje skutky", "overené skutky, nie denník"], ["stity", "Moje štíty", "hlavný štít a vyvesené štíty"]];
@@ -75,9 +76,9 @@ export function Priatelia({ onBack, desktop, tab: tab0 = "priatelia" }: { onBack
   const [vid, setVid] = useState(false);
   const [okno, setOkno] = useState<Okno | null>(null);
   const [odoslane, setOdoslane] = useState<string[]>([]); // Pridať → Poslané, Sledovať → Sledujem (lokálne)
-  const posli = (k: string) => setOdoslane((o) => (o.includes(k) ? o : [...o, k]));
+  const posli = (k: string) => { oznacPriatela(); setOdoslane((o) => (o.includes(k) ? o : [...o, k])); };
 
-  const vybav = (ok: boolean) => { setZiadost(false); toast(ok ? "Peter K. je tvoj priateľ" : "Žiadosť odmietnutá"); };
+  const vybav = (ok: boolean) => { setZiadost(false); if (ok) oznacPriatela(); toast(ok ? "Peter K. je tvoj priateľ" : "Žiadosť odmietnutá"); };
   const pridat = (k: Okno) => setOkno(k);
   const q = bezDiakritiky(hladaj.trim());
   const zoznam = PRIATELIA.filter((p) => !odobrani.includes(p.id) && (!q || bezDiakritiky(p.n).includes(q)));
@@ -187,7 +188,7 @@ export function Priatelia({ onBack, desktop, tab: tab0 = "priatelia" }: { onBack
                 const m = menu;
                 if (i === 0) toast("Profil priateľa sa otvorí so serverom");
                 else if (i === 1) toast("Vyber akciu, na ktorú ho pozveš");
-                else if (i === 2) toast("Poslanie DEED priateľovi príde s peňaženkou");
+                else if (i === 2) toast("Poslanie DeeD priateľovi príde s peňaženkou");
                 else if (i === 3) { setOdobrani((o) => [...o, m.id]); toast(`${m.n} už nie je tvoj priateľ. Nedostane o tom správu.`); }
                 else { setOdobrani((o) => [...o, m.id]); toast(`${m.n} je zablokovaný. Nájdeš ho v Nastaveniach.`); }
                 setMenu(null);
@@ -250,13 +251,13 @@ function ZKontaktov({ odoslane, posli, naPozvanku, onClose }: { odoslane: string
   return (
     <Harok onClose={onClose} zatvorText="Zavrieť" hlavicka={nadpisH("Z kontaktov")}>
       {!nast.kontakty ? (<>
-        <div style={{ fontSize: 14.5, lineHeight: 1.55, color: "var(--ink2)" }}>Nájdeme známych z tvojich kontaktov, ktorí už majú DEED. Čísla neukladáme, porovnávame len ich zašifrovaný odtlačok.</div>
+        <div style={{ fontSize: 14.5, lineHeight: 1.55, color: "var(--ink2)" }}>Nájdeme známych z tvojich kontaktov, ktorí už majú <DeedZnacka />. Čísla neukladáme, porovnávame len ich zašifrovaný odtlačok.</div>
         <button type="button" onClick={() => zmenNastavenia({ kontakty: true })} style={velke}>Povoliť prístup ku kontaktom</button>
         <div style={pozn}>Prístup zrušíš kedykoľvek v Nastaveniach, Súkromie a údaje.</div>
       </>) : (<>
-        <div style={nad}>MAJÚ DEED · {KONTAKTY.length}</div>
+        <div style={nad}>MAJÚ <DeedZnacka /> · {KONTAKTY.length}</div>
         <div style={{ ...karta, borderRadius: 16, padding: "0 14px" }}>{KONTAKTY.map((o, i) => <RiadokOsoby key={o.k} o={o} i={i} odoslane={odoslane} posli={posli} />)}</div>
-        <div style={{ ...nad, marginTop: 4 }}>EŠTE NEMAJÚ DEED · 41</div>
+        <div style={{ ...nad, marginTop: 4 }}>EŠTE NEMAJÚ <DeedZnacka /> · 41</div>
         <button type="button" onClick={naPozvanku} style={{ minHeight: 50, borderRadius: 15, border: "1.5px dashed var(--gBd)", background: "transparent", boxShadow: "none", fontSize: 15, fontWeight: 700, color: "var(--green)", fontFamily: "inherit", cursor: "pointer" }}>Poslať im pozvánku</button>
       </>)}
     </Harok>);
@@ -291,7 +292,7 @@ function Pozvanka({ onClose }: { onClose: () => void }) {
   const odkaz = `deed.sk/p/${handle}`;
   const kopiruj = async () => { try { await navigator.clipboard.writeText(`https://${odkaz}`); setKop(true); } catch { toast("Odkaz sa nepodarilo skopírovať"); } };
   const zdielaj = async () => {
-    const d = { title: "Pozvánka do DEED", text: `${ja.celeMeno || "Priateľ"} ťa pozýva do DEED.`, url: `https://${odkaz}` };
+    const d = { title: "Pozvánka do DEED+", text: `${ja.celeMeno || "Priateľ"} ťa pozýva do DEED+.`, url: `https://${odkaz}` };
     if (navigator.share) { try { await navigator.share(d); } catch { /* zrušené */ } } else void kopiruj();
   };
   return (
@@ -305,7 +306,7 @@ function Pozvanka({ onClose }: { onClose: () => void }) {
         <button type="button" onClick={kopiruj} style={{ ...vedlajsie, color: "var(--ink)" }}>{kop ? "Skopírované" : "Kopírovať"}</button>
       </div>
       <button type="button" onClick={zdielaj} style={velke}>Zdieľať pozvánku</button>
-      <div style={pozn}>Kto DEED ešte nemá, dostane pozvánku do appky. Po registrácii ti príde jeho žiadosť o priateľstvo.</div>
+      <div style={pozn}>Kto <DeedZnacka /> ešte nemá, dostane pozvánku do appky. Po registrácii ti príde jeho žiadosť o priateľstvo.</div>
     </Harok>);
 }
 
@@ -338,7 +339,7 @@ function SkenQr({ onClose }: { onClose: () => void }) {
         <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 16, background: "var(--gSoft)", border: "1px solid var(--gBd)" }}>
           <span style={{ width: 42, height: 42, borderRadius: "50%", background: "var(--card)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, flex: "none" }}>{ini}</span>
           <span style={{ flex: 1, minWidth: 0, fontSize: 15, fontWeight: 800 }}>{osoba}</span>
-          <button type="button" disabled={poslane} onClick={() => { setPoslane(true); toast("Žiadosť poslaná"); }} style={{ ...hlavne, ...(poslane ? { background: "var(--card)", color: "var(--gInk)", border: "1.5px solid var(--gBd)" } : {}) }}>{poslane ? "Žiadosť poslaná" : "Poslať žiadosť"}</button>
+          <button type="button" disabled={poslane} onClick={() => { setPoslane(true); oznacPriatela(); toast("Žiadosť poslaná"); }} style={{ ...hlavne, ...(poslane ? { background: "var(--card)", color: "var(--gInk)", border: "1.5px solid var(--gBd)" } : {}) }}>{poslane ? "Žiadosť poslaná" : "Poslať žiadosť"}</button>
         </div>)}
       <div style={pozn}>Namier na QR priateľa v jeho Môj QR. Priateľstvo platí, až keď ho potvrdí aj on.</div>
     </Harok>);
