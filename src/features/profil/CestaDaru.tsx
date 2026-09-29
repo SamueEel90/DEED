@@ -7,7 +7,8 @@ import { feature } from "topojson-client";
 import type { Feature, FeatureCollection, Geometry } from "geojson";
 import type { Topology, GeometryCollection } from "topojson-specification";
 import { toast } from "@/components/toast";
-import { MOJA_CESTA, suhrn, krajinTvar, zastavokTvar, rebricek, type Zastavka } from "@/lib/cestaDaru";
+import { MOJA_CESTA, suhrn, rebricek, type Zastavka } from "@/lib/cestaDaru";
+import { useT, type T } from "@/i18n";
 import { zdielajCanvas, ramObrazka } from "@/lib/zdielajObrazok";
 import { ObrazovkaSprava } from "./Bezpecnost24";
 import "@/styles/platba.css";
@@ -41,9 +42,14 @@ function projekcia(p: Pohlad, svet: FeatureCollection, z: Zastavka[], w = W, h =
   proj.fitExtent([[okraj.x, okraj.t], [w - okraj.x, h - okraj.b]], p === "sk" ? slovensko(svet) : p === "eu" ? euBox : body);
   return proj;
 }
+/** typ zastávky a dátum „12. 6." z mock dát → text podľa jazyka (KARTA 31) */
+const TYP: Record<string, string> = { "tvoj dar za skutok": "cesta.typ.tvojDarZaSkutok", "dar za skutok": "cesta.typ.darZaSkutok", "dar na zbierku": "cesta.typ.darNaZbierku" };
+const typT = (typ: string, t: T) => (TYP[typ] ? t(TYP[typ]) : typ);
+const datumT = (d: string, t: T) => { const m = /^(\d{1,2})\. (\d{1,2})\.$/.exec(d); return m ? t.datum(new Date(new Date().getFullYear(), +m[2] - 1, +m[1])) : d; };
 const znizPohyb = () => typeof window !== "undefined" && (!!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches || document.documentElement.classList.contains("obmedz-anim"));
 
 export function CestaDaru({ onBack }: { onBack: () => void }) {
+  const t = useT();
   const svet = useSvet();
   const [p, setP] = useState<Pohlad>("eu");
   const [beh, setBeh] = useState(0); // prehrať znova
@@ -85,7 +91,7 @@ export function CestaDaru({ onBack }: { onBack: () => void }) {
     const c = document.createElement("canvas"); c.width = 1080; c.height = 1350;
     const ctx = c.getContext("2d")!;
     await ramObrazka(ctx, 1080, 1350);
-    ctx.fillStyle = "#876712"; ctx.font = "800 30px 'Plus Jakarta Sans', sans-serif"; ctx.fillText("CESTA MÔJHO DARU", 72, 110);
+    ctx.fillStyle = "#876712"; ctx.font = "800 30px 'Plus Jakarta Sans', sans-serif"; ctx.fillText(t("cesta.nadpis"), 72, 110);
     ctx.fillStyle = "#1D211B"; ctx.font = "800 60px 'Plus Jakarta Sans', sans-serif"; ctx.fillText(`${moja.od} → ${moja.kam}`, 72, 186);
     // mapa celej cesty
     const mx = 72, my = 240, mw = 936, mh = 700;
@@ -101,21 +107,21 @@ export function CestaDaru({ onBack }: { onBack: () => void }) {
     vsetky.forEach((x, i) => { const [a, b] = proj(x.lonlat) ?? [0, 0]; ctx.beginPath(); ctx.arc(a, b, i ? 10 : 14, 0, Math.PI * 2); ctx.fillStyle = i ? "#4E7D37" : "#C9A24A"; ctx.fill(); ctx.lineWidth = 4; ctx.strokeStyle = "#fff"; ctx.stroke(); });
     ctx.restore();
     ctx.fillStyle = "#1D211B"; ctx.font = "800 54px 'Plus Jakarta Sans', sans-serif";
-    const cisla: [string, string][] = [[String(cela.zastavok), zastavokTvar(cela.zastavok)], [String(cela.krajin), krajinTvar(cela.krajin)], [cela.km.toLocaleString("sk-SK"), "km"]];
+    const cisla: [string, string][] = [[t.cislo(cela.zastavok), t("cesta.zastavokSlovo", { n: cela.zastavok })], [t.cislo(cela.krajin), t("cesta.krajinSlovo", { n: cela.krajin })], [t.cislo(cela.km), "km"]];
     cisla.forEach(([h, l], i) => { const x = 72 + i * 312; ctx.fillStyle = "#1D211B"; ctx.font = "800 54px 'Plus Jakarta Sans', sans-serif"; ctx.fillText(h, x, 1030); ctx.fillStyle = "#4A4C43"; ctx.font = "600 28px 'Plus Jakarta Sans', sans-serif"; ctx.fillText(l, x, 1072); });
-    const v = await zdielajCanvas(c, "cesta-mojho-daru.png", "Cesta môjho daru");
-    if (v === "stiahnute") toast("Obrázok je stiahnutý");
+    const v = await zdielajCanvas(c, "cesta-mojho-daru.png", t("cesta.titul"));
+    if (v === "stiahnute") toast(t("stat.obrazokStiahnuty"));
   };
 
   return (
-    <ObrazovkaSprava titul="Cesta môjho daru" onBack={onBack}>
-      <div style={{ fontSize: 14, lineHeight: 1.55, color: "var(--ink2)" }}>Tvoj dar z {MOJA_CESTA.zaciatok} putuje ďalej. Každý, kto ho dostal, niekomu pomohol a daroval ďalej.</div>
-      <div role="tablist" aria-label="Priblíženie mapy" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 4, padding: 4, borderRadius: 14, background: "var(--seg)" }}>
-        {([["sk", "Slovensko"], ["eu", "Európa"], ["svet", "Svet"]] as [Pohlad, string][]).map(([k, t]) => (
+    <ObrazovkaSprava titul={t("cesta.titul")} onBack={onBack}>
+      <div style={{ fontSize: 14, lineHeight: 1.55, color: "var(--ink2)" }}>{t("cesta.intro", { datum: datumT(MOJA_CESTA.zaciatok, t) })}</div>
+      <div role="tablist" aria-label={t("cesta.priblizenie")} style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 4, padding: 4, borderRadius: 14, background: "var(--seg)" }}>
+        {([["sk", t("cesta.slovensko")], ["eu", t("cesta.europa")], ["svet", t("cesta.svet")]] as [Pohlad, string][]).map(([k, l]) => (
           <button key={k} type="button" role="tab" aria-selected={p === k} onClick={() => setP(k)} className={p === k ? "seg-on" : undefined}
-            style={{ minHeight: 44, borderRadius: 11, border: "none", cursor: "pointer", fontSize: 14, fontWeight: 700, fontFamily: "inherit", ...(p === k ? {} : { background: "transparent", color: "var(--ink3)", boxShadow: "none" }) }}>{t}</button>))}
+            style={{ minHeight: 44, borderRadius: 11, border: "none", cursor: "pointer", fontSize: 14, fontWeight: 700, fontFamily: "inherit", ...(p === k ? {} : { background: "transparent", color: "var(--ink3)", boxShadow: "none" }) }}>{l}</button>))}
       </div>
-      <div role="img" aria-label={`Mapa cesty daru: ${z.map((x) => x.mesto).join(", ")}`} style={{ position: "relative", height: 340, borderRadius: 22, overflow: "hidden", background: "#DCE4E6", border: "1px solid var(--cardBd)" }}>
+      <div role="img" aria-label={t("cesta.mapaAria", { mesta: z.map((x) => x.mesto).join(", ") })} style={{ position: "relative", height: 340, borderRadius: 22, overflow: "hidden", background: "#DCE4E6", border: "1px solid var(--cardBd)" }}>
         {geo && <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet" style={{ display: "block", width: "100%", height: "100%" }} aria-hidden="true">
           <g>{geo.krajiny.map((k, i) => <path key={k.id + i} d={k.d} fill={k.sk ? SK.fill : KRAJINY.fill} stroke={k.sk ? SK.stroke : KRAJINY.stroke} strokeWidth={0.6} />)}</g>
           <g>{geo.useky.map((d, i) => <path key={i} d={d} fill="none" stroke="#4E7D37" strokeWidth={2.4} strokeLinecap="round" strokeDasharray="1 6" style={{ opacity: i < seg ? 1 : 0, transition: "opacity .6s ease" }} />)}</g>
@@ -125,44 +131,44 @@ export function CestaDaru({ onBack }: { onBack: () => void }) {
           {geo.xy[let_] && <g style={{ transform: `translate(${geo.xy[let_][0]}px,${geo.xy[let_][1]}px)`, transition: "transform 1s cubic-bezier(.45,0,.55,1)" }}>
             <circle r={11} fill="rgba(246,183,60,.45)" className="cd-ziara" /><circle r={4} fill="#F6B73C" /></g>}
         </svg>}
-        {!geo && <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13.5, color: "var(--ink3)" }}>Načítavam mapu…</div>}
+        {!geo && <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13.5, color: "var(--ink3)" }}>{t("cesta.nacitavam")}</div>}
         <button type="button" onClick={() => setBeh((x) => x + 1)} style={{ position: "absolute", right: 10, bottom: 10, display: "flex", alignItems: "center", gap: 6, minHeight: 44, padding: "0 14px", borderRadius: 22, border: "1px solid var(--cardBd)", background: "rgba(246,243,236,.94)", fontSize: 13.5, fontWeight: 700, color: "#4A4C43", cursor: "pointer", fontFamily: "inherit", boxShadow: "none" }}>
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5" /></svg>Prehrať cestu</button>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5" /></svg>{t("cesta.prehrat")}</button>
         <span style={{ position: "absolute", left: 10, bottom: 8, fontSize: 9.5, color: "#85867B" }}>Natural Earth</span>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", borderRadius: 18, background: "var(--card)", border: "1px solid var(--cardBd)" }}>
-        {([[String(s.zastavok), zastavokTvar(s.zastavok)], [String(s.krajin), krajinTvar(s.krajin)], [s.km.toLocaleString("sk-SK"), "km"]] as [string, string][]).map(([h, l], i) => (
+        {([[t.cislo(s.zastavok), t("cesta.zastavokSlovo", { n: s.zastavok })], [t.cislo(s.krajin), t("cesta.krajinSlovo", { n: s.krajin })], [t.cislo(s.km), "km"]] as [string, string][]).map(([h, l], i) => (
           <div key={l} style={{ padding: "12px 4px", textAlign: "center", borderLeft: i ? "1px solid var(--cardBd)" : "none" }}><b style={{ display: "block", fontSize: 22, fontWeight: 800, fontVariantNumeric: "tabular-nums" }}>{h}</b><span style={{ fontSize: 12.5, color: "var(--ink3)" }}>{l}</span></div>))}
       </div>
       <div>
-        <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".06em", color: "var(--ink3)", padding: "0 2px 8px" }}>ZASTÁVKY</div>
+        <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".06em", color: "var(--ink3)", padding: "0 2px 8px" }}>{t("cesta.zastavky")}</div>
         <ol style={{ listStyle: "none", margin: 0, borderRadius: 18, background: "var(--card)", border: "1px solid var(--cardBd)", padding: "0 14px" }}>
           {z.map((x, i) => (
             <li key={x.mesto + i} style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 56, borderTop: i ? "1px solid var(--cardBd)" : "none" }}>
               <span aria-hidden="true" style={{ width: 26, height: 26, borderRadius: "50%", flex: "none", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 800, background: i ? "var(--gSoft)" : "#C9A24A", color: i ? "var(--gInk)" : "#fff" }}>{i + 1}</span>
-              <span style={{ flex: 1, minWidth: 0 }}><b style={{ display: "block", fontSize: 14.5 }}>{x.mesto} · {x.krajina}</b><span style={{ display: "block", fontSize: 12.5, color: "var(--ink3)" }}>{x.typ}</span></span>
-              <span style={{ flex: "none", fontSize: 12, color: "var(--ink3)" }}>{x.datum}</span>
+              <span style={{ flex: 1, minWidth: 0 }}><b style={{ display: "block", fontSize: 14.5 }}>{x.mesto} · {x.krajina}</b><span style={{ display: "block", fontSize: 12.5, color: "var(--ink3)" }}>{typT(x.typ, t)}</span></span>
+              <span style={{ flex: "none", fontSize: 12, color: "var(--ink3)" }}>{datumT(x.datum, t)}</span>
             </li>))}
         </ol>
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 10, padding: 16, borderRadius: 20, background: "linear-gradient(150deg,var(--gSoft) 0%,var(--goldBg) 100%)", border: "1px solid var(--goldBd)" }}>
-        <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".06em", color: "var(--gold)" }}>ZDIEĽAJ SVOJU REŤAZ</div>
-        <div style={{ fontSize: 14, lineHeight: 1.5, color: "var(--ink2)" }}>Obrázok s mapou a počtom zastávok, bez mien a súm. Kto ho uvidí, môže reťaz predĺžiť.</div>
-        <button type="button" onClick={() => { void zdielaj(); }} style={{ minHeight: 50, borderRadius: 15, border: "none", fontSize: 15.5, fontWeight: 800, color: "#fff", cursor: "pointer", background: "var(--gGrad)", fontFamily: "inherit" }}>Zdieľať cestu môjho daru</button>
+        <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".06em", color: "var(--gold)" }}>{t("cesta.zdielajRetaz")}</div>
+        <div style={{ fontSize: 14, lineHeight: 1.5, color: "var(--ink2)" }}>{t("cesta.zdielajPopis")}</div>
+        <button type="button" onClick={() => { void zdielaj(); }} style={{ minHeight: 50, borderRadius: 15, border: "none", fontSize: 15.5, fontWeight: 800, color: "#fff", cursor: "pointer", background: "var(--gGrad)", fontFamily: "inherit" }}>{t("cesta.zdielat")}</button>
       </div>
       <div>
-        <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".06em", color: "var(--ink3)", padding: "0 2px 8px" }}>NAJDLHŠIE REŤAZE DOBRA</div>
+        <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".06em", color: "var(--ink3)", padding: "0 2px 8px" }}>{t("cesta.najdlhsie")}</div>
         <ol style={{ listStyle: "none", margin: 0, borderRadius: 18, background: "var(--card)", border: "1px solid var(--cardBd)", padding: "0 14px", overflow: "hidden" }}>
           {rebricek(moja).map(({ r, poradie, moja: m }, i) => (
             <li key={r.od + r.kam} style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 56, borderTop: i ? "1px solid var(--cardBd)" : "none", ...(m ? { background: "var(--gSoft)", margin: "0 -14px", padding: "0 14px" } : {}) }}>
               <span aria-hidden="true" style={{ width: 26, height: 26, borderRadius: "50%", flex: "none", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 800, background: "var(--goldBg)", color: "var(--gold)" }}>{poradie}</span>
-              <span style={{ flex: 1, minWidth: 0 }}><b style={{ display: "block", fontSize: 14.5 }}>{r.od} → {r.kam}{m ? " · tvoja" : ""}</b><span style={{ display: "block", fontSize: 12.5, color: "var(--ink3)" }}>{r.zastavok} {zastavokTvar(r.zastavok)} · {r.krajin} {krajinTvar(r.krajin)}</span></span>
-              <span style={{ flex: "none", fontSize: 13, fontWeight: 700, color: "var(--ink2)", fontVariantNumeric: "tabular-nums" }}>{r.km.toLocaleString("sk-SK")} km</span>
+              <span style={{ flex: 1, minWidth: 0 }}><b style={{ display: "block", fontSize: 14.5 }}>{r.od} → {r.kam}{m ? t("cesta.tvoja") : ""}</b><span style={{ display: "block", fontSize: 12.5, color: "var(--ink3)" }}>{t("cesta.zastavok", { n: r.zastavok })} · {t("cesta.krajin", { n: r.krajin })}</span></span>
+              <span style={{ flex: "none", fontSize: 13, fontWeight: 700, color: "var(--ink2)", fontVariantNumeric: "tabular-nums" }}>{t.cislo(r.km)} km</span>
             </li>))}
         </ol>
-        <div style={{ fontSize: 12.5, lineHeight: 1.5, color: "var(--ink3)", padding: "8px 2px 0" }}>Súťažia reťaze, nie ľudia. Bez mien, len odkiaľ a kam dobro doputovalo. Reťaz môže rásť mesiace aj roky.</div>
+        <div style={{ fontSize: 12.5, lineHeight: 1.5, color: "var(--ink3)", padding: "8px 2px 0" }}>{t("cesta.sutazia")}</div>
       </div>
-      <div style={{ fontSize: 12.5, lineHeight: 1.5, color: "var(--ink3)", padding: "0 2px" }}>Ukazujeme len mestá, bez mien a súm. Novú zastávku uvidíš o deň neskôr, pri malej obci len okres. Reťaz pokračuje vždy, keď niekto daruje ďalej, aj po rokoch.</div>
+      <div style={{ fontSize: 12.5, lineHeight: 1.5, color: "var(--ink3)", padding: "0 2px" }}>{t("cesta.pataPopis")}</div>
     </ObrazovkaSprava>
   );
 }

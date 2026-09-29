@@ -26,6 +26,7 @@ import { Priatelia, type PriateliaTab } from "./Priatelia";
 import type { Oblast } from "@/lib/stityOblasti";
 import { useDlazdice, type DlazdicaId } from "@/lib/dlazdice";
 import { SpatTlacidlo } from "@/components/cesta";
+import { useT } from "@/i18n";
 
 /*
   ============================================================
@@ -88,24 +89,25 @@ export default function ModulProfil({ wide, walletReq = 0 }: ProfilProps) {
 
 // ===================== DESKTOP — bočná navigácia + obsahový panel =====================
 // OPRAVY 62: poradie a skryté položky podľa Upraviť dlaždice (rovnaké ako dlaždice v mobile)
-const PROFIL_NAV: { id: DlazdicaId; key: string; nazov?: string; label: string; ikona: React.ReactNode }[] = [
-  { id: "nastavenia", key: "nastavenia", label: "Nastavenia", ikona: <IkonaNastavenia size={18} /> },
-  { id: "wallet", key: "wallet", label: "Peňaženka", ikona: <IkonaPenazenka size={18} /> },
-  { id: "skutky", key: "sub", nazov: "Moje skutky", label: "Moje skutky", ikona: <IkonaFajka size={18} /> },
-  { id: "zaujmy", key: "sub", nazov: "Moje záujmy", label: "Moje záujmy", ikona: <IkonaOsoba size={18} /> },
-  { id: "firma", key: "firma", label: "Zamestnávateľ", ikona: <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={IK_BUDOVA} /></svg> },
-  { id: "stat", key: "sub", nazov: "Štatistiky", label: "Štatistiky", ikona: <IkonaDoska size={18} /> },
-  { id: "priatelia", key: "priatelia", label: "Priatelia", ikona: <IkonaUsmev size={18} /> },
-  { id: "karma", key: "sub", nazov: "Karma a štíty", label: "Karma a štíty", ikona: <IkonaHviezda size={18} /> },
+const PROFIL_NAV: { id: DlazdicaId; key: string; nazov?: string; /** kľúč prekladu */ label: string; ikona: React.ReactNode }[] = [
+  { id: "nastavenia", key: "nastavenia", label: "dlazdice.nastavenia", ikona: <IkonaNastavenia size={18} /> },
+  { id: "wallet", key: "wallet", label: "dlazdice.penazenka", ikona: <IkonaPenazenka size={18} /> },
+  { id: "skutky", key: "sub", nazov: "Moje skutky", label: "dlazdice.skutky", ikona: <IkonaFajka size={18} /> },
+  { id: "zaujmy", key: "sub", nazov: "Moje záujmy", label: "dlazdice.zaujmy", ikona: <IkonaOsoba size={18} /> },
+  { id: "firma", key: "firma", label: "dlazdice.firma", ikona: <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={IK_BUDOVA} /></svg> },
+  { id: "stat", key: "sub", nazov: "Štatistiky", label: "dlazdice.stat", ikona: <IkonaDoska size={18} /> },
+  { id: "priatelia", key: "priatelia", label: "dlazdice.priatelia", ikona: <IkonaUsmev size={18} /> },
+  { id: "karma", key: "sub", nazov: "Karma a štíty", label: "dlazdice.karma", ikona: <IkonaHviezda size={18} /> },
 ];
 
 /** Moje záujmy ako samostatná obrazovka (dlaždica / položka menu) */
 function ZaujmyObrazovka({ onBack, desktop }: { onBack: () => void; desktop?: boolean }) {
+  const t = useT();
   return (
     <div className="deed-platba" style={{ padding: "0 16px 30px", color: "var(--ink)", display: "flex", flexDirection: "column", gap: 12 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 56 }}>
         {!desktop && <SpatTlacidlo onClick={onBack} />}
-        <h1 style={{ margin: 0, fontSize: 19, fontWeight: 800 }}>Moje záujmy</h1>
+        <h1 style={{ margin: 0, fontSize: 19, fontWeight: 800 }}>{t("profil.zaujmy.titul")}</h1>
       </div>
       <MojeZaujmy />
     </div>);
@@ -113,6 +115,7 @@ function ZaujmyObrazovka({ onBack, desktop }: { onBack: () => void; desktop?: bo
 
 function ProfilDesktop({ screen, subNazov, setScreen, onSub, onQr, onUpravit, pTab, onPriatelia, onStranka, skOblast, skutkyOblasti, spatZoSkutkov }: { screen: string; subNazov: string | null; setScreen: (s: string) => void; onSub: (n: string) => void; onQr: () => void; onUpravit: () => void; pTab: PriateliaTab; onPriatelia: (t?: PriateliaTab) => void; onStranka: (s: Stranka) => void; skOblast?: Oblast; skutkyOblasti: (o: Oblast) => void; spatZoSkutkov: () => void }) {
   // OPRAVY 61: zlatá bodka pri Zamestnávateľovi len keď firma čaká na odpoveď (pozvánka, „Stále pracuješ…?")
+  const t = useT();
   const ja = usePouzivatel();
   const vazby = useVazbyOsoby(ja.celeMeno);
   const mf = useMojaFirma();
@@ -123,7 +126,7 @@ function ProfilDesktop({ screen, subNazov, setScreen, onSub, onQr, onUpravit, pT
   const dostupne = PROFIL_NAV.filter((it) => it.id !== "firma" || vazby.length > 0);
   const nav = dl.poradie.map((id) => dostupne.find((it) => it.id === id)).filter((it): it is (typeof PROFIL_NAV)[number] => !!it && !dl.skryte.includes(it.id));
   const otvor = (it: (typeof PROFIL_NAV)[number]) => (it.key === "sub" ? onSub(it.nazov!) : it.key === "priatelia" ? onPriatelia() : setScreen(it.key));
-  const doUpravy: Dlazdica[] = dostupne.map((it) => ({ id: it.id, t: it.label, s: "", ikona: it.ikona, bg: "var(--btn)", c: "var(--ink2)", onClick: () => otvor(it) }));
+  const doUpravy: Dlazdica[] = dostupne.map((it) => ({ id: it.id, t: t(it.label), s: "", ikona: it.ikona, bg: "var(--btn)", c: "var(--ink2)", onClick: () => otvor(it) }));
   const sekcie: Partial<Record<DlazdicaId, React.ReactNode>> = { zaujmy: <MojeZaujmy />, stat: <StatVSkratke onOtvor={() => onSub("Štatistiky")} />, wallet: <PoslednePohyby onOtvor={() => setScreen("wallet")} /> };
   const rozbalene = dl.poradie.filter((id) => dl.rozbalene.includes(id) && !dl.skryte.includes(id) && sekcie[id]);
 
@@ -151,7 +154,7 @@ function ProfilDesktop({ screen, subNazov, setScreen, onSub, onQr, onUpravit, pT
   return (
     <div style={{ maxWidth: SIRKA.plocha, margin: "0 auto", padding: `${SPACE.md}px ${SPACE.md}px ${SPACE.lg}px` }}>
       <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm, padding: `0 ${SPACE.xxs}px ${SPACE.gutter}px` }}>
-        <span style={{ fontSize: 20, fontWeight: 800 }}>Môj profil</span>
+        <span style={{ fontSize: 20, fontWeight: 800 }}>{t("profil.titul")}</span>
         <span style={{ flex: 1, minWidth: 0, display: "flex", justifyContent: "center" }}><KonasAkoLista /></span>
       </div>
       <div style={{ display: "flex", gap: SPACE.lg, alignItems: "flex-start" }}>
@@ -166,15 +169,15 @@ function ProfilDesktop({ screen, subNazov, setScreen, onSub, onQr, onUpravit, pT
                     borderRadius: RADIUS.sm, padding: `${SPACE.sm}px ${SPACE.gutter}px`, fontSize: 14, fontWeight: on ? 800 : 600,
                     background: on ? "color-mix(in srgb, var(--a-green) 16%, transparent)" : "transparent", color: on ? C.text : C.textSec, transition: "background .15s ease" }}>
                   <span style={{ display: "flex", color: on ? "var(--a-green)" : C.textTer }}>{it.ikona}</span>
-                  {it.label}
-                  {it.key === "firma" && firmaCaka && <span role="status" aria-label="firma čaká na odpoveď" style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--a-gold)", marginLeft: "auto", flex: "none" }} />}
+                  {t(it.label)}
+                  {it.key === "firma" && firmaCaka && <span role="status" aria-label={t("profil.firmaCaka")} style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--a-gold)", marginLeft: "auto", flex: "none" }} />}
                 </button>
               );
             })}
           </nav>
           <div className="deed-platba" style={{ display: "flex", flexDirection: "column", color: "var(--ink)" }}>
             <button type="button" onClick={() => setUprava(true)} style={{ alignSelf: "center", minHeight: 44, padding: "0 16px", borderRadius: 14, border: "1px solid var(--cardBd)", background: "transparent", boxShadow: "none", color: "var(--ink2)", fontSize: 14, fontWeight: 700, fontFamily: "inherit", cursor: "pointer", display: "flex", alignItems: "center", gap: 8 }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4" /></svg>Upraviť dlaždice</button>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4" /></svg>{t("dlazdice.upravit")}</button>
             {uprava && <UpravitDlazdice dostupne={doUpravy} onClose={() => setUprava(false)} maSekciu={(id) => !!sekcie[id]} />}
           </div>
         </aside>

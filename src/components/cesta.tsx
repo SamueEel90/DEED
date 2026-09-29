@@ -1,16 +1,18 @@
 // Tlačidlá cesty Späť — JEDEN vzhľad na každej stránke cesty (Martin 28. 9. 2026):
 // „‹ Späť" vľavo hore (15 px, 700, zelená appky, bez kruhu a bez názvu stránky), krížik vpravo hore.
+import { useT } from "@/i18n";
 import type { ReactNode } from "react";
 
 /** naFotke = Späť položené na fotke/videu: rovnaké písmo, veľkosť a farba, len na svetlej pilulke, aby bolo čitateľné */
 export function SpatTlacidlo({ onClick, naFotke }: { onClick: () => void; naFotke?: boolean }) {
+  const t = useT();
   return (
-    <button type="button" onClick={onClick} aria-label="Späť"
+    <button type="button" onClick={onClick} aria-label={t("sp.spat")}
       style={{ display: "flex", alignItems: "center", gap: 4, height: naFotke ? 36 : 44, padding: naFotke ? "0 14px 0 8px" : "0 6px 0 0", border: "none",
         background: naFotke ? "rgba(var(--panel-rgb), .92)" : "transparent", borderRadius: naFotke ? 999 : 0, boxShadow: "none",
         cursor: "pointer", fontFamily: "inherit", fontSize: 15, fontWeight: 700, color: "var(--a-green)", flex: "none" }}>
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6" /></svg>
-      Späť
+      {t("sp.spat")}
     </button>
   );
 }

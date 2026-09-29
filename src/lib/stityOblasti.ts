@@ -7,6 +7,7 @@
 // ============================================================
 import { useSyncExternalStore } from "react";
 import type { StitLevel } from "@/components/stit";
+import type { T } from "@/i18n";
 
 export type Oblast = "ART" | "HEALTH" | "LEARN" | "SPORT" | "EKO" | "HELP" | "CARE" | "TEAM" | "PARTNER";
 /** poradie v mriežke Karma a štíty (PARTNER = štít firmy, u človeka sa nezobrazuje) */
@@ -16,6 +17,10 @@ export const MA_ASSET: Record<Oblast, boolean> = { ART: true, HEALTH: true, LEAR
 const SUBOR: Record<Oblast, string> = { ART: "Art", HEALTH: "Health", LEARN: "Learn", SPORT: "Sport", EKO: "Eko", HELP: "Help", CARE: "Care", TEAM: "Team", PARTNER: "Partner" };
 
 export const STIT_SK: Record<StitLevel, string> = { Bronze: "Bronzový", Silver: "Strieborný", Gold: "Zlatý", Platinum: "Platinový", Legend: "Legenda" };
+/** KARTA 31 · názov stupňa v jazyku appky (STIT_SK ostáva slovenská mapa) — nazovStitu(l, t) → „Zlatý" / „Gold" */
+export const nazovStitu = (l: StitLevel, t: T) => t(`stit.uroven.${l}`);
+/** „Zlatý štít" / „Gold shield" */
+export const nazovStituPlny = (l: StitLevel, t: T) => t("stit.nazov", { uroven: nazovStitu(l, t) });
 export const PORADIE: StitLevel[] = ["Bronze", "Silver", "Gold", "Platinum", "Legend"];
 
 /** obrázok hlavného štítu (jestvujúce assety) */
@@ -44,7 +49,7 @@ export const MOJE_STITY: StitOblasti[] = [
 ];
 export const MOJ_HLAVNY: StitLevel = "Gold";
 /** dátumy získania stupňov v oblasti (mock) */
-export const ZISKANE_DNA: Partial<Record<StitLevel, string>> = { Bronze: "11. 3. 2026", Silver: "3. 6. 2026", Gold: "2. 9. 2026" };
+export const ZISKANE_DNA: Partial<Record<StitLevel, number>> = { Bronze: new Date(2026, 2, 11).getTime(), Silver: new Date(2026, 5, 3).getTime(), Gold: new Date(2026, 8, 2).getTime() };
 
 /** Karta 26 · doplnok 29. 9.: hlavný štít Bronzový má každý od registrácie; štíty oblastí sú na začiatku zamknuté.
  *  Bronzový v oblasti odomkne skutok alebo dar v tej oblasti v hodnote aspoň PRAH_BRONZ_OBLAST (ekvivalent v €,
@@ -53,20 +58,20 @@ export const PRAH_BRONZ_OBLAST = 20;
 export const odomkneBronzVOblasti = (hodnotaEur: number) => hodnotaEur >= PRAH_BRONZ_OBLAST;
 export const KARMA_MESIAC = 84;
 
-export type Uspech = { level: StitLevel; oblast?: Oblast; t: string; s: string; d: string };
+export type Uspech = { level: StitLevel; oblast?: Oblast; t: string; s: string; d: number };
 export const MOJE_USPECHY: Uspech[] = [
-  { level: "Gold", t: "Hlavný štít: Zlatý", s: "Za rok skutkov v okolí. Prišiel ako prekvapenie a ostáva.", d: "14. 9. 2026" },
-  { level: "Gold", oblast: "EKO", t: "Zlatý štít v oblasti EKO", s: "Rok čistenia potoka so susedmi, 12 akcií.", d: "2. 9. 2026" },
-  { level: "Silver", oblast: "LEARN", t: "Strieborný štít v oblasti LEARN", s: "Doučovanie matematiky pre deti zo sídliska.", d: "18. 7. 2026" },
-  { level: "Silver", oblast: "ART", t: "Strieborný štít v oblasti ART", s: "Maľovanie múru v materskej škole.", d: "3. 6. 2026" },
-  { level: "Bronze", oblast: "HEALTH", t: "Prvý štít v oblasti HEALTH", s: "Prvé darovanie krvi cez DEED+.", d: "11. 3. 2026" },
+  { level: "Gold", t: "karma.uspech.1.t", s: "karma.uspech.1.s", d: new Date(2026, 8, 14).getTime() },
+  { level: "Gold", oblast: "EKO", t: "karma.uspech.2.t", s: "karma.uspech.2.s", d: new Date(2026, 8, 2).getTime() },
+  { level: "Silver", oblast: "LEARN", t: "karma.uspech.3.t", s: "karma.uspech.3.s", d: new Date(2026, 6, 18).getTime() },
+  { level: "Silver", oblast: "ART", t: "karma.uspech.4.t", s: "karma.uspech.4.s", d: new Date(2026, 5, 3).getTime() },
+  { level: "Bronze", oblast: "HEALTH", t: "karma.uspech.5.t", s: "karma.uspech.5.s", d: new Date(2026, 2, 11).getTime() },
 ];
 
 /** lichotky pri hlavnom štíte — striedajú sa (staré tituly smú byť len lichotkou, nie odznakom) */
-const ZAKLAD_LI = ["Zaslúžený skutkami. Ďakujeme, že si tu.", "Tvoje skutky sú vidieť. Ľudia okolo teba to cítia.", "Každý štít niekto potreboval. Tento si postavil ty."];
+const ZAKLAD_LI = ["karma.lichotka.1", "karma.lichotka.2", "karma.lichotka.3"];
 export const LICHOTKY: Record<StitLevel, string[]> = {
   Bronze: ZAKLAD_LI, Silver: ZAKLAD_LI,
-  Gold: [ZAKLAD_LI[0], ZAKLAD_LI[1], "Zlatý ti pristane. Ale tá Platina má iný lesk.", ZAKLAD_LI[2]],
+  Gold: [ZAKLAD_LI[0], ZAKLAD_LI[1], "karma.lichotka.zlaty", ZAKLAD_LI[2]],
   Platinum: ZAKLAD_LI, Legend: ZAKLAD_LI,
 };
 

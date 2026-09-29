@@ -7,6 +7,7 @@
 // Mapa ukazuje len mesto (obec pod 5 000 obyv. → okres), nová zastávka až o 24 h. (Server; tu mock.)
 // ============================================================
 import { geoDistance } from "d3-geo";
+import { tTeraz } from "@/i18n";
 
 export type Zastavka = { mesto: string; krajina: string; lonlat: [number, number]; typ: string; datum: string };
 export type Retaz = { od: string; kam: string; zastavok: number; krajin: number; km: number };
@@ -33,8 +34,8 @@ export function suhrn(z: Zastavka[]): { zastavok: number; krajin: number; km: nu
   let d = 0; for (let i = 1; i < z.length; i++) d += km(z[i - 1].lonlat, z[i].lonlat);
   return { zastavok: z.length, krajin: new Set(z.map((x) => x.krajina)).size, km: Math.round(d) };
 }
-export const krajinTvar = (n: number) => (n === 1 ? "krajina" : n < 5 ? "krajiny" : "krajín");
-export const zastavokTvar = (n: number) => (n === 1 ? "zastávka" : n < 5 ? "zastávky" : "zastávok");
+export const krajinTvar = (n: number) => tTeraz()("cesta.krajinSlovo", { n });
+export const zastavokTvar = (n: number) => tTeraz()("cesta.zastavokSlovo", { n });
 
 /** najdlhšie reťaze dobra — celkovo, bez obdobia; podľa km, pri rovnosti zastávky (mock) */
 export const NAJDLHSIE: Retaz[] = [

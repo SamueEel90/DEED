@@ -60,6 +60,7 @@ export function aplikujNastavenia(n: NastaveniaAppky = nacitajNastavenia()) {
   html.style.setProperty("--pismo", String(n.pismo / 100));
   (html.style as CSSStyleDeclaration & { zoom: string }).zoom = n.pismo === 100 ? "" : String(n.pismo / 100);
   html.classList.toggle("obmedz-anim", n.obmedzAnim);
+  html.lang = n.jazyk === "English" ? "en" : "sk"; // KARTA 31: <html lang> podľa jazyka appky
   window.dispatchEvent(new Event("resize")); // rozloženie (mobil/tablet/PC) sa prepočíta podľa novej veľkosti
   if (povodnaVibracia) {
     try { (navigator as Navigator & { vibrate: Navigator["vibrate"] }).vibrate = n.vibracie ? povodnaVibracia : () => false; } catch { /* read-only */ }

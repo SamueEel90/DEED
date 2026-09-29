@@ -4,9 +4,9 @@ import { useSyncExternalStore } from "react";
 
 export type DlazdicaId = "wallet" | "nastavenia" | "skutky" | "priatelia" | "karma" | "stat" | "firma" | "zaujmy";
 export const POVODNE: DlazdicaId[] = ["wallet", "nastavenia", "skutky", "priatelia", "karma", "stat", "firma", "zaujmy"];
-/** dlaždice, ktoré majú sekciu na rozbalenie pod mriežkou */
+/** dlaždice, ktoré majú sekciu na rozbalenie pod mriežkou (hodnota = kľúč prekladu) */
 export const MA_ROZBALENIE: Partial<Record<DlazdicaId, string>> = {
-  zaujmy: "Moje záujmy", stat: "Štatistiky v skratke a cesta môjho daru", wallet: "Posledné pohyby peňaženky",
+  zaujmy: "dlazdice.rozb.zaujmy", stat: "dlazdice.rozb.stat", wallet: "dlazdice.rozb.wallet",
 };
 export type NastavenieDlazdic = { poradie: DlazdicaId[]; skryte: DlazdicaId[]; rozbalene: DlazdicaId[] };
 const ZAKLAD: NastavenieDlazdic = { poradie: POVODNE, skryte: [], rozbalene: ["zaujmy"] };

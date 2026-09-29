@@ -16,12 +16,14 @@ import { PotvrditPlatbuHarok, OkruhHarok, PrihlaseneZariadenia, EmailTelefonHesl
 import { zariadenia, useZmenyZariadeni } from "@/lib/zariadenia";
 import { zablokovani, useZmenyBlokovania } from "@/lib/blokovanie";
 import { NastSekcia as Sekcia, NastRiadok as Riadok, IkonaSek, IK } from "./nastUi";
+import { useT } from "@/i18n";
 import "@/styles/platba.css";
 
-const OKRUH: Record<Okruh, string> = { stvrt: "Štvrť", mesto: "Mesto", slovensko: "Slovensko" };
+const OKRUH: Record<Okruh, string> = { stvrt: "nastavenia.okruh.stvrt", mesto: "nastavenia.okruh.mesto", slovensko: "nastavenia.okruh.slovensko" };
 
 export function Nastavenia20({ onBack, onNotif, onUpravProfil, desktop }: { onBack: () => void; onNotif: () => void; onUpravProfil?: () => void; desktop?: boolean }) {
   const { tema, nastavTemu } = useMotiv();
+  const t = useT();
   const n = useNastaveniaAppky();
   const [tuk, setTuk] = useState(potvrditTuknutim);
   const [harok, setHarok] = useState<null | "okruh" | "platba" | "zrusit" | "uvod">(null);
@@ -36,17 +38,17 @@ export function Nastavenia20({ onBack, onNotif, onUpravProfil, desktop }: { onBa
     <div className="deed-platba" style={{ padding: "0 16px 30px", display: "flex", flexDirection: "column", gap: 14, color: "var(--ink)" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 56 }}>
         {!desktop && <SpatTlacidlo onClick={onBack} />}
-        <h1 style={{ margin: 0, fontSize: 19, fontWeight: 800 }}>Nastavenia</h1>
+        <h1 style={{ margin: 0, fontSize: 19, fontWeight: 800 }}>{t("nastavenia.titul")}</h1>
       </div>
 
-      <Sekcia nadpis="VZHĽAD" k="b">
+      <Sekcia nadpis={t("nastavenia.sek.vzhlad")} k="b">
         <div style={{ padding: "12px 18px 16px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 14, minHeight: 44 }}>
             <IkonaSek d={IK.moon} />
-            <span style={{ fontSize: 16, fontWeight: 700 }} id="tema-nadpis">Téma</span>
+            <span style={{ fontSize: 16, fontWeight: 700 }} id="tema-nadpis">{t("nastavenia.tema")}</span>
           </div>
           <div role="radiogroup" aria-labelledby="tema-nadpis" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 4, padding: 4, marginTop: 12, borderRadius: 14, background: "var(--seg)" }}>
-            {([["svetla", "Svetlá"], ["tmava", "Tmavá"], ["system", "Podľa telefónu"]] as [Tema, string][]).map(([k, l]) => (
+            {([["svetla", t("nastavenia.tema.svetla")], ["tmava", t("nastavenia.tema.tmava")], ["system", t("nastavenia.tema.system")]] as [Tema, string][]).map(([k, l]) => (
               <button key={k} type="button" role="radio" aria-checked={tema === k} onClick={() => nastavTemu(k)} className={tema === k ? "seg-on" : undefined}
                 style={{ minHeight: 44, padding: "4px 6px", borderRadius: 11, border: "none", cursor: "pointer", fontSize: 14.5, fontWeight: 700, fontFamily: "inherit", lineHeight: 1.2, ...(tema === k ? {} : { background: "transparent", color: "var(--d-ink3, var(--ink3))", boxShadow: "none" }) }}>{l}</button>))}
           </div>
@@ -54,68 +56,68 @@ export function Nastavenia20({ onBack, onNotif, onUpravProfil, desktop }: { onBa
         <Riadok d={IK.globe} t={<JazykNazov jazyk={n.jazyk} />} hodnota={n.jazyk} onClick={() => setObr("jazyk")} />
       </Sekcia>
 
-      <Sekcia nadpis="PRÍSTUPNOSŤ" k="g">
+      <Sekcia nadpis={t("nastavenia.sek.pristupnost")} k="g">
         <div style={{ padding: "12px 18px 16px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 14, minHeight: 44 }}>
             <IkonaSek d={IK.type} />
-            <span style={{ flex: 1, fontSize: 16, fontWeight: 700 }}>Veľkosť písma</span>
-            <span aria-live="polite" style={{ fontSize: 15, fontWeight: 800, color: "var(--sek-g)", fontVariantNumeric: "tabular-nums" }}>{n.pismo} %</span>
+            <span style={{ flex: 1, fontSize: 16, fontWeight: 700 }}>{t("nastavenia.pismo")}</span>
+            <span aria-live="polite" style={{ fontSize: 15, fontWeight: 800, color: "var(--sek-g)", fontVariantNumeric: "tabular-nums" }}>{t("nastavenia.pct", { n: n.pismo })}</span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 10, paddingLeft: 52 }}>
-            <button type="button" onClick={() => pismo(-10)} disabled={n.pismo <= 90} aria-label="Zmenšiť písmo" style={{ width: 44, height: 44, borderRadius: 12, border: "none", background: "var(--btn)", fontSize: 13, fontWeight: 800, color: "var(--ink)", cursor: "pointer", opacity: n.pismo <= 90 ? .4 : 1, fontFamily: "inherit", flex: "none" }}>A</button>
+            <button type="button" onClick={() => pismo(-10)} disabled={n.pismo <= 90} aria-label={t("nastavenia.pismoMensie")} style={{ width: 44, height: 44, borderRadius: 12, border: "none", background: "var(--btn)", fontSize: 13, fontWeight: 800, color: "var(--ink)", cursor: "pointer", opacity: n.pismo <= 90 ? .4 : 1, fontFamily: "inherit", flex: "none" }}>A</button>
             <div aria-hidden="true" style={{ flex: 1, display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 5 }}>
               {Array.from({ length: 7 }, (_, i) => <span key={i} style={{ height: 6, borderRadius: 3, background: pasik(i) ? "var(--sek-g)" : "var(--d-trackOff, var(--track))" }} />)}
             </div>
-            <button type="button" onClick={() => pismo(10)} disabled={n.pismo >= 150} aria-label="Zväčšiť písmo" style={{ width: 44, height: 44, borderRadius: 12, border: "none", background: "var(--btn)", fontSize: 20, fontWeight: 800, color: "var(--ink)", cursor: "pointer", opacity: n.pismo >= 150 ? .4 : 1, fontFamily: "inherit", flex: "none" }}>A</button>
+            <button type="button" onClick={() => pismo(10)} disabled={n.pismo >= 150} aria-label={t("nastavenia.pismoVacsie")} style={{ width: 44, height: 44, borderRadius: 12, border: "none", background: "var(--btn)", fontSize: 20, fontWeight: 800, color: "var(--ink)", cursor: "pointer", opacity: n.pismo >= 150 ? .4 : 1, fontFamily: "inherit", flex: "none" }}>A</button>
           </div>
-          <div style={{ fontSize: 12.5, color: "var(--d-ink3, var(--ink3))", marginTop: 8, paddingLeft: 52 }}>Pridáva sa k veľkosti písma v telefóne.</div>
+          <div style={{ fontSize: 12.5, color: "var(--d-ink3, var(--ink3))", marginTop: 8, paddingLeft: 52 }}>{t("nastavenia.pismoPozn")}</div>
         </div>
-        <Riadok d={IK.spark} t="Obmedziť animácie" s="bez letov, iskier a pulzovania" prepinac={n.obmedzAnim} onClick={() => zmenNastavenia({ obmedzAnim: !n.obmedzAnim })} />
-        <Riadok d={IK.vib} t="Vibrácie" s="pri potvrdení a po dare" prepinac={n.vibracie} onClick={() => zmenNastavenia({ vibracie: !n.vibracie })} />
-        <Riadok d={IK.cc} t="Titulky vo videách" s="vždy zapnuté" prepinac={n.titulky} onClick={() => zmenNastavenia({ titulky: !n.titulky })} />
-        <Riadok d={IK.tap} t="Potvrdzovať ťuknutím" s="namiesto podržania, pri platbe dvakrát ťukni" prepinac={tuk} onClick={() => { nastavPotvrditTuknutim(!tuk); setTuk(!tuk); }} />
+        <Riadok d={IK.spark} t={t("nastavenia.anim")} s={t("nastavenia.animS")} prepinac={n.obmedzAnim} onClick={() => zmenNastavenia({ obmedzAnim: !n.obmedzAnim })} />
+        <Riadok d={IK.vib} t={t("nastavenia.vib")} s={t("nastavenia.vibS")} prepinac={n.vibracie} onClick={() => zmenNastavenia({ vibracie: !n.vibracie })} />
+        <Riadok d={IK.cc} t={t("nastavenia.titulky")} s={t("nastavenia.titulkyS")} prepinac={n.titulky} onClick={() => zmenNastavenia({ titulky: !n.titulky })} />
+        <Riadok d={IK.tap} t={t("nastavenia.tuk")} s={t("nastavenia.tukS")} prepinac={tuk} onClick={() => { nastavPotvrditTuknutim(!tuk); setTuk(!tuk); }} />
       </Sekcia>
 
-      <Sekcia nadpis="OZNÁMENIA" k="o">
-        <Riadok prvy d={IK.bell} t="Čo chceš dostávať" s="dary, pozvánky, priatelia, zbierky" onClick={onNotif} />
-        <Riadok d={IK.clock} t="Tichý čas" s={`${n.tichyOd} – ${n.tichyDo}, okrem SOS`} prepinac={n.tichyCas} onClick={() => zmenNastavenia({ tichyCas: !n.tichyCas })} />
+      <Sekcia nadpis={t("nastavenia.sek.oznamenia")} k="o">
+        <Riadok prvy d={IK.bell} t={t("nastavenia.notif")} s={t("nastavenia.notifS")} onClick={onNotif} />
+        <Riadok d={IK.clock} t={t("nastavenia.ticho")} s={t("nastavenia.tichoS", { od: n.tichyOd, do: n.tichyDo })} prepinac={n.tichyCas} onClick={() => zmenNastavenia({ tichyCas: !n.tichyCas })} />
       </Sekcia>
 
-      <Sekcia nadpis="POLOHA" k="r">
-        <Riadok prvy d={IK.pin} t="Poloha telefónu" s="na skutky a pomoc v okolí" prepinac={n.poloha} onClick={() => zmenNastavenia({ poloha: !n.poloha })} />
-        <Riadok d={IK.ring} t="Predvolený okruh" s={n.odPolohy ? "podľa toho, kde práve si" : undefined} hodnota={OKRUH[n.okruh]} onClick={() => setHarok("okruh")} />
+      <Sekcia nadpis={t("nastavenia.sek.poloha")} k="r">
+        <Riadok prvy d={IK.pin} t={t("nastavenia.poloha")} s={t("nastavenia.polohaS")} prepinac={n.poloha} onClick={() => zmenNastavenia({ poloha: !n.poloha })} />
+        <Riadok d={IK.ring} t={t("nastavenia.okruh")} s={n.odPolohy ? t("nastavenia.okruhS") : undefined} hodnota={t(OKRUH[n.okruh])} onClick={() => setHarok("okruh")} />
       </Sekcia>
 
-      <Sekcia nadpis="BEZPEČNOSŤ" k="b">
-        <Riadok prvy d={IK.finger} t="Prihlásenie tvárou alebo odtlačkom" prepinac={n.biometria} onClick={() => zmenNastavenia({ biometria: !n.biometria })} />
-        <Riadok d={IK.shield} t="Potvrdiť platbu nad" s="tvárou, odtlačkom alebo PIN" hodnota={<b style={{ color: "var(--ink)", whiteSpace: "nowrap" }}>{hranicaText(n.hranicaPlatby)}</b>} onClick={() => setHarok("platba")} />
-        <Riadok d={IK.phone} t="Prihlásené zariadenia" hodnota={String(zariadenia().length)} onClick={() => setObr("zariadenia")} />
-        <Riadok d={IK.mail} t="E-mail, telefón a heslo" onClick={() => setObr("kontakt")} />
+      <Sekcia nadpis={t("nastavenia.sek.bezpecnost")} k="b">
+        <Riadok prvy d={IK.finger} t={t("nastavenia.bio")} prepinac={n.biometria} onClick={() => zmenNastavenia({ biometria: !n.biometria })} />
+        <Riadok d={IK.shield} t={t("nastavenia.platba")} s={t("nastavenia.platbaS")} hodnota={<b style={{ color: "var(--ink)", whiteSpace: "nowrap" }}>{hranicaText(n.hranicaPlatby)}</b>} onClick={() => setHarok("platba")} />
+        <Riadok d={IK.phone} t={t("nastavenia.zariadenia")} hodnota={t.cislo(zariadenia().length)} onClick={() => setObr("zariadenia")} />
+        <Riadok d={IK.mail} t={t("nastavenia.kontakt")} onClick={() => setObr("kontakt")} />
       </Sekcia>
 
-      <Sekcia nadpis="SÚKROMIE A ÚDAJE" k="b">
-        <Riadok prvy d={IK.users} t="Hľadať priateľov v kontaktoch" s="čísla sa neukladajú, len ich odtlačok" prepinac={n.kontakty} onClick={() => zmenNastavenia({ kontakty: !n.kontakty })} />
-        <Riadok d={IK.block} t="Zablokovaní ľudia" hodnota={String(zablokovani().length)} onClick={() => setObr("blokovani")} />
-        <Riadok d={IK.file} t="Súhlasy" onClick={() => setObr("suhlasy")} />
-        <Riadok d={IK.download} t="Stiahnuť moje údaje" s="všetko o tebe v jednom súbore" onClick={() => setObr("udaje")} />
+      <Sekcia nadpis={t("nastavenia.sek.sukromie")} k="b">
+        <Riadok prvy d={IK.users} t={t("nastavenia.kontakty")} s={t("nastavenia.kontaktyS")} prepinac={n.kontakty} onClick={() => zmenNastavenia({ kontakty: !n.kontakty })} />
+        <Riadok d={IK.block} t={t("nastavenia.blokovani")} hodnota={t.cislo(zablokovani().length)} onClick={() => setObr("blokovani")} />
+        <Riadok d={IK.file} t={t("nastavenia.suhlasy")} onClick={() => setObr("suhlasy")} />
+        <Riadok d={IK.download} t={t("nastavenia.udaje")} s={t("nastavenia.udajeS")} onClick={() => setObr("udaje")} />
       </Sekcia>
 
-      <Sekcia nadpis="ÚČET" k="b">
-        <Riadok prvy d={IK.trash} t="Zrušiť účet" onClick={() => setHarok("zrusit")} />
+      <Sekcia nadpis={t("nastavenia.sek.ucet")} k="b">
+        <Riadok prvy d={IK.trash} t={t("nastavenia.zrusit")} onClick={() => setHarok("zrusit")} />
       </Sekcia>
 
-      <Sekcia nadpis="POMOC" k="g">
-        <Riadok prvy d={IK.play} t="Prehrať úvod" onClick={() => setHarok("uvod")} />
-        <Riadok d={IK.bulb} t="Ukážky pre začiatok" s="inšpirácia v prázdnych zoznamoch, len pre teba" prepinac={n.ukazky} onClick={() => zmenNastavenia({ ukazky: !n.ukazky })} />
-        <Riadok d={IK.help} t="Časté otázky" onClick={() => setObr("faq")} />
-        <Riadok d={IK.chat} t="Napísať podpore" onClick={() => setObr("podpora")} />
-        <Riadok d={IK.flag} t="Nahlásiť problém" onClick={() => setObr("problem")} />
-        <Riadok d={IK.file} t="Podmienky používania" onClick={() => setDetail("pod")} />
-        <Riadok d={IK.lock} t="Ochrana súkromia" onClick={() => setDetail("ud")} />
+      <Sekcia nadpis={t("nastavenia.sek.pomoc")} k="g">
+        <Riadok prvy d={IK.play} t={t("nastavenia.uvod")} onClick={() => setHarok("uvod")} />
+        <Riadok d={IK.bulb} t={t("nastavenia.ukazky")} s={t("nastavenia.ukazkyS")} prepinac={n.ukazky} onClick={() => zmenNastavenia({ ukazky: !n.ukazky })} />
+        <Riadok d={IK.help} t={t("nastavenia.faq")} onClick={() => setObr("faq")} />
+        <Riadok d={IK.chat} t={t("nastavenia.podpora")} onClick={() => setObr("podpora")} />
+        <Riadok d={IK.flag} t={t("nastavenia.problem")} onClick={() => setObr("problem")} />
+        <Riadok d={IK.file} t={t("nastavenia.podmienky")} onClick={() => setDetail("pod")} />
+        <Riadok d={IK.lock} t={t("nastavenia.sukromie")} onClick={() => setDetail("ud")} />
       </Sekcia>
 
-      <button type="button" onClick={() => { toast("Odhlásené"); void signOut(); }} style={{ minHeight: 54, borderRadius: 16, border: "1px solid var(--cardBd)", background: "var(--btn)", fontSize: 16, fontWeight: 700, color: "var(--ink)", cursor: "pointer", fontFamily: "inherit" }}>Odhlásiť sa</button>
-      <div style={{ fontSize: 12.5, color: "var(--ink3)", textAlign: "center" }}><DeedZnacka /> · verzia {VERZIA_APPKY}</div>
+      <button type="button" onClick={() => { toast(t("nastavenia.odhlasene")); void signOut(); }} style={{ minHeight: 54, borderRadius: 16, border: "1px solid var(--cardBd)", background: "var(--btn)", fontSize: 16, fontWeight: 700, color: "var(--ink)", cursor: "pointer", fontFamily: "inherit" }}>{t("nastavenia.odhlasit")}</button>
+      <div style={{ fontSize: 12.5, color: "var(--ink3)", textAlign: "center" }}><DeedZnacka /> · {t("nastavenia.verzia", { v: VERZIA_APPKY })}</div>
 
       {harok === "okruh" && <OkruhHarok onClose={() => setHarok(null)} onZmenitMiesto={() => { setHarok(null); onUpravProfil?.(); }} />}
       {harok === "platba" && <PotvrditPlatbuHarok onClose={() => setHarok(null)} />}

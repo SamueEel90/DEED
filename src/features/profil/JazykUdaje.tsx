@@ -1,5 +1,6 @@
 // KARTA 24 · 2g Jazyk · 2h Stiahnuť moje údaje — obrazovky sprava z Nastavení (OPRAVY 39). Zamestnávateľ je v profile (Zamestnavatel.tsx).
-import { DeedZnacka } from "@/components/DeedZnacka";
+import { sZnackou } from "@/components/DeedZnacka";
+import { useT } from "@/i18n";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import { useNastaveniaAppky, zmenNastavenia } from "@/lib/nastaveniaAppky";
@@ -24,12 +25,12 @@ export const bezDiakritiky = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/
 
 // ======================= 2g · JAZYK =======================
 /** svetové jazyky a úradné jazyky krajín, kde DEED bude (menšinové nie) · názov vo vlastnom jazyku + po slovensky */
-const JAZYKY: [string, string, string][] = [
-  ["Slovenčina", "slovenčina", "sk"], ["Čeština", "čeština", "cs"], ["English", "angličtina", "en"],
-  ["Deutsch", "nemčina", "de"], ["Español", "španielčina", "es"], ["Français", "francúzština", "fr"], ["Italiano", "taliančina", "it"],
-  ["Magyar", "maďarčina", "hu"], ["Polski", "poľština", "pl"], ["Română", "rumunčina", "ro"], ["Українська", "ukrajinčina", "uk"],
-  ["Hrvatski", "chorvátčina", "hr"], ["Slovenščina", "slovinčina", "sl"], ["Português", "portugalčina", "pt"], ["Nederlands", "holandčina", "nl"],
-  ["Türkçe", "turečtina", "tr"], ["العربية", "arabčina", "ar"], ["中文", "čínština", "zh"], ["日本語", "japončina", "ja"], ["हिन्दी", "hindčina", "hi"],
+const JAZYKY: [string, string][] = [
+  ["Slovenčina", "sk"], ["Čeština", "cs"], ["English", "en"],
+  ["Deutsch", "de"], ["Español", "es"], ["Français", "fr"], ["Italiano", "it"],
+  ["Magyar", "hu"], ["Polski", "pl"], ["Română", "ro"], ["Українська", "uk"],
+  ["Hrvatski", "hr"], ["Slovenščina", "sl"], ["Português", "pt"], ["Nederlands", "nl"],
+  ["Türkçe", "tr"], ["العربية", "ar"], ["中文", "zh"], ["日本語", "ja"], ["हिन्दी", "hi"],
 ];
 /** OPRAVY 74 · „Jazyk" v aktuálnom jazyku (anglické „Language" sa pridáva vždy) a text lišty po zmene */
 const SLOVO: Record<string, string> = { Slovenčina: "Jazyk", Čeština: "Jazyk", English: "Language", Deutsch: "Sprache", Español: "Idioma", Français: "Langue", Italiano: "Lingua", Magyar: "Nyelv", Polski: "Język", Română: "Limbă", Українська: "Мова", Hrvatski: "Jezik", Slovenščina: "Jezik", Português: "Idioma", Nederlands: "Taal", Türkçe: "Dil", "العربية": "اللغة", "中文": "语言", "日本語": "言語", "हिन्दी": "भाषा" };
@@ -53,7 +54,7 @@ export function JazykLista() {
   if (!zmena) return null;
   const z = zmena, [t, b] = LISTA[z.novy] ?? LISTA.English;
   return createPortal(
-    <div role="status" aria-live="polite" className="pf-rise" lang={JAZYKY.find((j) => j[0] === z.novy)?.[2]}
+    <div role="status" aria-live="polite" className="pf-rise" lang={JAZYKY.find((j) => j[0] === z.novy)?.[1]}
       style={{ position: "fixed", left: 16, right: 16, bottom: "calc(26px + env(safe-area-inset-bottom))", zIndex: 400, maxWidth: 520, margin: "0 auto", display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderRadius: 16, background: "#1D211B", color: "#F1ECE1", boxShadow: "0 10px 30px rgba(0,0,0,.3)", fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
       <span style={{ flex: 1, minWidth: 0, fontSize: 14, fontWeight: 600 }}>{t}</span>
       <button type="button" onClick={() => { zmenNastavenia({ jazyk: z.povodny }); zmena = null; ohlas(); }}
@@ -63,21 +64,22 @@ export function JazykLista() {
 const NAVRH = ["sk", "cs", "en"]; // krajiny, kde DEED beží
 
 export function JazykObrazovka({ onBack }: { onBack: () => void }) {
+  const t = useT();
   const n = useNastaveniaAppky();
   const [q, setQ] = useState("");
   const [zavri, setZavri] = useState(0);
   const telefon = (typeof navigator !== "undefined" ? navigator.language : "sk").slice(0, 2);
-  const navrh = [telefon, ...NAVRH.filter((k) => k !== telefon)].filter((k) => JAZYKY.some((j) => j[2] === k));
+  const navrh = [telefon, ...NAVRH.filter((k) => k !== telefon)].filter((k) => JAZYKY.some((j) => j[1] === k));
   const qq = bezDiakritiky(q.trim());
-  const sedi = (j: [string, string, string]) => !qq || bezDiakritiky(j[0]).includes(qq) || bezDiakritiky(j[1]).includes(qq);
-  const skupiny: [string, [string, string, string][]][] = [
-    ["NAVRHOVANÉ", navrh.map((k) => JAZYKY.find((j) => j[2] === k)!).filter(sedi)],
-    ["VŠETKY JAZYKY", JAZYKY.filter((j) => !navrh.includes(j[2])).filter(sedi)],
+  const sedi = (j: [string, string]) => !qq || bezDiakritiky(j[0]).includes(qq) || bezDiakritiky(t(`jazyk.n.${j[1]}`)).includes(qq);
+  const skupiny: [string, [string, string][]][] = [
+    [t("jazyk.navrhovane"), navrh.map((k) => JAZYKY.find((j) => j[1] === k)!).filter(sedi)],
+    [t("jazyk.vsetky"), JAZYKY.filter((j) => !navrh.includes(j[1])).filter(sedi)],
   ];
   const vyber = (nazov: string) => { zmenJazyk(nazov, n.jazyk); setZavri((x) => x + 1); };
   const en = n.jazyk === "English";
   return (
-    <ObrazovkaSprava titul={<JazykNazov jazyk={n.jazyk} />} aria="Jazyk · Language" onBack={onBack} zavriet={zavri}>
+    <ObrazovkaSprava titul={<JazykNazov jazyk={n.jazyk} />} aria={t("jazyk.aria")} onBack={onBack} zavriet={zavri}>
       {/* pevné English — nikdy sa neprekladá (záchrana, keď niekto omylom zmení jazyk) */}
       <div lang="en" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
         <button type="button" role="radio" aria-checked={en} onClick={() => vyber("English")}
@@ -87,36 +89,37 @@ export function JazykObrazovka({ onBack }: { onBack: () => void }) {
           <Radio on={en} /></button>
         <div style={{ fontSize: 12, lineHeight: 1.45, color: "var(--d-ink3, var(--ink3))", padding: "0 2px" }}>This line always stays in English.</div>
       </div>
-      {hladPole(q, setQ, "Hľadať jazyk")}
+      {hladPole(q, setQ, t("jazyk.hladat"))}
       {skupiny.map(([h, l]) => l.length > 0 && (
         <div key={h}>
           <h2 style={lbl}>{h}</h2>
           <NastKarta k="b">
             <div role="radiogroup" aria-label={h}>
-              {l.map(([nazov, sk, kod], i) => { const on = n.jazyk === nazov; return (
+              {l.map(([nazov, kod], i) => { const on = n.jazyk === nazov; return (
                 <button key={kod} type="button" role="radio" aria-checked={on} onClick={() => vyber(nazov)} lang={kod}
                   style={{ width: "100%", display: "flex", alignItems: "center", gap: 14, minHeight: 64, padding: "10px 18px", border: "none", borderTop: i ? oddelovac : "none", boxShadow: "none", background: "transparent", cursor: "pointer", textAlign: "left", fontFamily: "inherit", color: "var(--d-ink, var(--ink))" }}>
-                  <span style={{ flex: 1, minWidth: 0 }}><span style={{ display: "block", fontSize: 16, fontWeight: 700 }}>{nazov}</span><span lang="sk" style={{ display: "block", fontSize: 13, color: "var(--d-ink3, var(--ink3))" }}>{kod === telefon ? "jazyk telefónu" : sk}</span></span>
+                  <span style={{ flex: 1, minWidth: 0 }}><span style={{ display: "block", fontSize: 16, fontWeight: 700 }}>{nazov}</span><span lang={t.jazyk} style={{ display: "block", fontSize: 13, color: "var(--d-ink3, var(--ink3))" }}>{kod === telefon ? t("jazyk.telefonu") : t(`jazyk.n.${kod}`)}</span></span>
                   <Radio on={on} /></button>); })}
             </div>
           </NastKarta>
         </div>))}
-      {skupiny.every(([, l]) => !l.length) && <div style={pozn}>Taký jazyk nemáme. Skús iný názov.</div>}
-      <div style={pozn}>Jazyk appky nemení jazyk príspevkov. Tie ti vieme preložiť ťuknutím na Preložiť.</div>
+      {skupiny.every(([, l]) => !l.length) && <div style={pozn}>{t("jazyk.nemame")}</div>}
+      <div style={pozn}>{t("jazyk.pozn")}</div>
     </ObrazovkaSprava>
   );
 }
 // ======================= 2h · STIAHNUŤ MOJE ÚDAJE =======================
-const CO: [string, string, string, string[]][] = [
-  ["pr", "Profil a nastavenia", "meno, kontakty, záujmy, súhlasy", ["deed.ja", "deed.profil", "deed.nastavenia", "deed.zaujmy"]],
-  ["sk", "Skutky a denník", "texty, fotky, videá, doklady", ["deed.skutky", "deed.moje", "deed.koncept"]],
-  ["da", "Dary a zbierky", "kam si daroval, doklady o daroch", ["deed.dary", "deed.zbierk", "deed.oblub", "deed.pravid"]],
-  ["pe", "Peňaženka", "pohyby DeeD a EURC, výpisy", ["deed.penaz", "deed.wallet", "deed.karty"]],
-  ["sp", "Správy a komentáre", "čo si napísal ty", ["deed.spravy", "deed.koment"]],
-  ["su", "Prihlásenia a zariadenia", "kedy a odkiaľ si sa prihlásil", ["deed.zariad", "deed.blok"]],
+const CO: [string, string[]][] = [
+  ["pr", ["deed.ja", "deed.profil", "deed.nastavenia", "deed.zaujmy"]],
+  ["sk", ["deed.skutky", "deed.moje", "deed.koncept"]],
+  ["da", ["deed.dary", "deed.zbierk", "deed.oblub", "deed.pravid"]],
+  ["pe", ["deed.penaz", "deed.wallet", "deed.karty"]],
+  ["sp", ["deed.spravy", "deed.koment"]],
+  ["su", ["deed.zariad", "deed.blok"]],
 ];
 
 export function StiahnutUdajeObrazovka({ onBack, z }: { onBack: () => void; /** nad hárkom (Zrušiť účet) */ z?: number }) {
+  const t = useT();
   const ja = usePouzivatel();
   const [v, setV] = useState<Record<string, boolean>>(() => Object.fromEntries(CO.map(([k]) => [k, true])));
   const [format, setFormat] = useState<"pdf" | "zip">("pdf");
@@ -131,58 +134,58 @@ export function StiahnutUdajeObrazovka({ onBack, z }: { onBack: () => void; /** 
     window.clearInterval(tik.current);
     tik.current = window.setInterval(() => setPct((p) => { const x = Math.min(100, p + 9); if (x >= 100) { window.clearInterval(tik.current); setStav("hotovo"); } return x; }), 350);
   };
-  const subor = format === "pdf" ? "deed-moje-udaje.pdf · 2,4 MB" : "deed-moje-udaje.zip · 184 MB";
+  const subor = format === "pdf" ? t("udaje.suborPdf") : t("udaje.suborZip");
   // pilot: súbor skladá appka z údajov v tomto zariadení (JSON); PDF a ZIP pripraví server
   const stiahni = () => {
-    const kluce = CO.filter(([k]) => v[k]).flatMap(([, , , p]) => p);
-    const data: Record<string, unknown> = { vytvorene: new Date().toISOString(), meno: ja.celeMeno, obsah: CO.filter(([k]) => v[k]).map(([, t]) => t) };
+    const kluce = CO.filter(([k]) => v[k]).flatMap(([, p]) => p);
+    const data: Record<string, unknown> = { vytvorene: new Date().toISOString(), meno: ja.celeMeno, obsah: CO.filter(([k]) => v[k]).map(([k]) => t(`udaje.co.${k}`)) };
     try { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i)!; if (kluce.some((p) => k.startsWith(p))) { const x = localStorage.getItem(k); try { data[k] = JSON.parse(x ?? "null"); } catch { data[k] = x; } } } } catch { /* LS */ }
     const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }));
-    const a = document.createElement("a"); a.href = url; a.download = "deed-moje-udaje.json"; a.click();
+    const a = document.createElement("a"); a.href = url; a.download = t("udaje.suborJson"); a.click();
     window.setTimeout(() => URL.revokeObjectURL(url), 2000);
-    toast("Stiahnuté");
+    toast(t("udaje.stiahnute"));
   };
 
   return (
-    <ObrazovkaSprava titul="Stiahnuť moje údaje" onBack={onBack} z={z}>
-      <div style={{ fontSize: 15, lineHeight: 1.55, color: "var(--d-ink2, var(--ink2))", padding: "0 6px" }}>Všetko, čo o tebe v <DeedZnacka /> máme, dostaneš v jednom súbore.</div>
+    <ObrazovkaSprava titul={t("nastavenia.udaje")} onBack={onBack} z={z}>
+      <div style={{ fontSize: 15, lineHeight: 1.55, color: "var(--d-ink2, var(--ink2))", padding: "0 6px" }}>{sZnackou(t("udaje.uvod"))}</div>
       {stav === null || stav === "overenie" ? <>
         <div>
-          <h2 style={lbl}>ČO STIAHNUŤ</h2>
+          <h2 style={lbl}>{t("udaje.coStiahnut")}</h2>
           <NastKarta k="b">
-            {CO.map(([k, t, s], i) => (
+            {CO.map(([k], i) => (
               <button key={k} type="button" role="checkbox" aria-checked={v[k]} onClick={() => setV((x) => ({ ...x, [k]: !x[k] }))}
                 style={{ width: "100%", display: "flex", alignItems: "center", gap: 14, minHeight: 64, padding: "10px 18px", border: "none", borderTop: i ? oddelovac : "none", boxShadow: "none", background: "transparent", cursor: "pointer", textAlign: "left", fontFamily: "inherit", color: "var(--d-ink, var(--ink))" }}>
                 <Check on={v[k]} />
-                <span style={{ flex: 1, minWidth: 0 }}><span style={{ display: "block", fontSize: 16, fontWeight: 700 }}>{t}</span><span style={{ display: "block", fontSize: 13, color: "var(--d-ink3, var(--ink3))" }}>{s}</span></span>
+                <span style={{ flex: 1, minWidth: 0 }}><span style={{ display: "block", fontSize: 16, fontWeight: 700 }}>{t(`udaje.co.${k}`)}</span><span style={{ display: "block", fontSize: 13, color: "var(--d-ink3, var(--ink3))" }}>{t(`udaje.co.${k}.s`)}</span></span>
               </button>))}
           </NastKarta>
         </div>
         <div>
-          <h2 style={lbl} id="format-nadpis">FORMÁT</h2>
+          <h2 style={lbl} id="format-nadpis">{t("udaje.format")}</h2>
           <div role="radiogroup" aria-labelledby="format-nadpis" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 4, padding: 4, borderRadius: 14, background: "var(--seg)" }}>
-            {([["pdf", "PDF", "na čítanie a tlač"], ["zip", "ZIP", "dáta a všetky fotky"]] as const).map(([k, t, s]) => (
+            {([["pdf", "PDF", t("udaje.pdfS")], ["zip", "ZIP", t("udaje.zipS")]] as const).map(([k, f, s]) => (
               <button key={k} type="button" role="radio" aria-checked={format === k} onClick={() => setFormat(k)} className={format === k ? "seg-on" : undefined}
                 style={{ minHeight: 56, padding: "6px 8px", borderRadius: 11, border: "none", cursor: "pointer", fontFamily: "inherit", lineHeight: 1.25, ...(format === k ? {} : { background: "transparent", color: "var(--d-ink3, var(--ink3))", boxShadow: "none" }) }}>
-                <span style={{ display: "block", fontSize: 15, fontWeight: 800 }}>{t}</span><span style={{ display: "block", fontSize: 12.5, fontWeight: 600 }}>{s}</span></button>))}
+                <span style={{ display: "block", fontSize: 15, fontWeight: 800 }}>{f}</span><span style={{ display: "block", fontSize: 12.5, fontWeight: 600 }}>{s}</span></button>))}
           </div>
         </div>
-        <button type="button" disabled={!nieco} onClick={() => setStav("overenie")} style={btn(true, nieco)}>Pripraviť súbor</button>
-        <div style={pozn}>Súbor obsahuje len tvoje údaje, mená iných ľudí sú skryté. Je v ňom aj znenie súhlasov tak, ako si ich odsúhlasil.</div>
+        <button type="button" disabled={!nieco} onClick={() => setStav("overenie")} style={btn(true, nieco)}>{t("udaje.pripravit")}</button>
+        <div style={pozn}>{t("udaje.pozn")}</div>
       </> : stav === "priprava" ? (
         <NastKarta k="b" style={{ padding: "18px 18px 20px", display: "flex", flexDirection: "column", gap: 12 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}><b style={{ fontSize: 16.5 }}>Pripravujeme súbor</b><span aria-live="polite" style={{ fontSize: 14, fontWeight: 800, color: "var(--sek-b)", fontVariantNumeric: "tabular-nums" }}>{pct} %</span></div>
-          <div role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label="Príprava súboru" style={{ height: 8, borderRadius: 4, background: "var(--d-trackOff, var(--track))", overflow: "hidden" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}><b style={{ fontSize: 16.5 }}>{t("udaje.pripravujeme")}</b><span aria-live="polite" style={{ fontSize: 14, fontWeight: 800, color: "var(--sek-b)", fontVariantNumeric: "tabular-nums" }}>{t("nastavenia.pct", { n: pct })}</span></div>
+          <div role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label={t("udaje.priprava")} style={{ height: 8, borderRadius: 4, background: "var(--d-trackOff, var(--track))", overflow: "hidden" }}>
             <div style={{ height: "100%", background: "var(--sek-b)", transformOrigin: "left", transform: `scaleX(${pct / 100})`, transition: "transform .35s linear" }} /></div>
-          <div style={{ fontSize: 13.5, lineHeight: 1.5, color: "var(--d-ink2, var(--ink2))" }}>Môžeš appku zavrieť. Keď bude hotový, pošleme ti oznámenie.</div>
+          <div style={{ fontSize: 13.5, lineHeight: 1.5, color: "var(--d-ink2, var(--ink2))" }}>{t("udaje.zavriet")}</div>
         </NastKarta>
       ) : (
         <>
           <NastKarta k="g" style={{ padding: "18px", display: "flex", alignItems: "center", gap: 14 }}>
             <span aria-hidden="true" style={{ width: 42, height: 42, borderRadius: 12, background: "var(--sek-gBg)", color: "var(--sek-g)", display: "flex", alignItems: "center", justifyContent: "center", flex: "none" }}><Ik d={IK.check} s={20} w={2.6} /></span>
-            <span style={{ flex: 1, minWidth: 0 }}><span style={{ display: "block", fontSize: 16.5, fontWeight: 800 }}>Súbor je pripravený</span><span style={{ display: "block", fontSize: 13, color: "var(--d-ink3, var(--ink3))", marginTop: 2 }}>{subor} · odkaz platí 7 dní</span></span>
+            <span style={{ flex: 1, minWidth: 0 }}><span style={{ display: "block", fontSize: 16.5, fontWeight: 800 }}>{t("udaje.pripraveny")}</span><span style={{ display: "block", fontSize: 13, color: "var(--d-ink3, var(--ink3))", marginTop: 2 }}>{t("udaje.plati", { subor })}</span></span>
           </NastKarta>
-          <button type="button" onClick={stiahni} style={btn(true)}>Stiahnuť</button>
+          <button type="button" onClick={stiahni} style={btn(true)}>{t("udaje.stiahnut")}</button>
         </>
       )}
       {stav === "overenie" && <OverenieHarok z={z ? z + 15 : undefined} onClose={() => setStav(null)} onOk={pripravuj} />}
@@ -192,14 +195,15 @@ export function StiahnutUdajeObrazovka({ onBack, z }: { onBack: () => void; /** 
 
 /** pred prípravou súboru: tvár alebo odtlačok (v pilote simulované; v produkcii WebAuthn) */
 function OverenieHarok({ onClose, onOk, z }: { onClose: () => void; onOk: () => void; z?: number }) {
+  const t = useT();
   const [bezi, setBezi] = useState(false);
   const over = () => { setBezi(true); window.setTimeout(onOk, 700); };
   return (
-    <Harok z={z} onClose={onClose} hlavicka={<span style={{ flex: 1, fontSize: 20, fontWeight: 800 }}>Potvrď, že si to ty</span>}
-      paticka={<button type="button" onClick={over} disabled={bezi} style={{ ...btn(true, !bezi), flex: 1 }}>{bezi ? "Overujem…" : "Overiť tvárou alebo odtlačkom"}</button>}>
+    <Harok z={z} onClose={onClose} hlavicka={<span style={{ flex: 1, fontSize: 20, fontWeight: 800 }}>{t("udaje.potvrd")}</span>}
+      paticka={<button type="button" onClick={over} disabled={bezi} style={{ ...btn(true, !bezi), flex: 1 }}>{bezi ? t("udaje.overujem") : t("udaje.overit")}</button>}>
       <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
         <span aria-hidden="true" style={{ width: 52, height: 52, borderRadius: 14, background: "var(--sek-bBg)", color: "var(--sek-b)", display: "flex", alignItems: "center", justifyContent: "center", flex: "none" }}><Ik d={IK.finger} s={26} w={2} /></span>
-        <div style={{ fontSize: 14.5, lineHeight: 1.55, color: "var(--d-ink2, var(--ink2))" }}>Súbor obsahuje všetko o tebe. Preto ho pripravíme až po overení.</div>
+        <div style={{ fontSize: 14.5, lineHeight: 1.55, color: "var(--d-ink2, var(--ink2))" }}>{t("udaje.overText")}</div>
       </div>
     </Harok>
   );

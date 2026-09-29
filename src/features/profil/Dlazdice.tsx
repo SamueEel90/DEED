@@ -5,10 +5,12 @@ import { Harok } from "@/features/zbierka/Zdielat";
 import { toast } from "@/components/toast";
 import { useDlazdice, ulozDlazdice, obnovPovodne, MA_ROZBALENIE, type DlazdicaId } from "@/lib/dlazdice";
 import { Prepinac } from "./nastUi";
+import { useT } from "@/i18n";
 
 export type Dlazdica = { id: DlazdicaId; t: string; s: string; ikona: ReactNode; bg: string; c: string; onClick: () => void; skryt?: boolean };
 
 export function MriezkaDlazdic({ vsetky, sekcie, medzi }: { vsetky: Dlazdica[]; sekcie: Partial<Record<DlazdicaId, ReactNode>>; /** medzi tlačidlom a rozbalenými sekciami (Poďakovania) */ medzi?: ReactNode }) {
+  const t = useT();
   const n = useDlazdice();
   const [uprava, setUprava] = useState(false);
   const dostupne = vsetky.filter((d) => !d.skryt); // napr. Zamestnávateľ len pre prepojeného / s pozvánkou
@@ -26,7 +28,7 @@ export function MriezkaDlazdic({ vsetky, sekcie, medzi }: { vsetky: Dlazdica[]; 
           </button>))}
       </div>
       <button type="button" onClick={() => setUprava(true)} style={{ alignSelf: "center", minHeight: 44, padding: "0 16px", borderRadius: 14, border: "1px solid var(--cardBd)", background: "transparent", color: "var(--ink2)", fontSize: 14, fontWeight: 700, fontFamily: "inherit", cursor: "pointer", display: "flex", alignItems: "center", gap: 8 }}>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4" /></svg>Upraviť dlaždice</button>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4" /></svg>{t("dlazdice.upravit")}</button>
       {medzi}
       {rozbalene.map((id) => <div key={id}>{sekcie[id]}</div>)}
       {uprava && <UpravitDlazdice dostupne={dostupne} onClose={() => setUprava(false)} maSekciu={(id) => !!sekcie[id]} />}
@@ -38,6 +40,7 @@ type Tah = { id: DlazdicaId; from: number; to: number; y0: number; dy: number; r
 
 /** OPRAVY 69: riadky rovnako vysoké, cieľ podľa skutočných pozícií, živý náhľad, pustenie = presne index z náhľadu */
 export function UpravitDlazdice({ dostupne, onClose, maSekciu }: { dostupne: Dlazdica[]; onClose: () => void; maSekciu: (id: DlazdicaId) => boolean }) {
+  const tr = useT();
   const n = useDlazdice();
   const [tah, setTah] = useState<Tah | null>(null);
   const li = useRef<(HTMLLIElement | null)[]>([]);
@@ -70,10 +73,10 @@ export function UpravitDlazdice({ dostupne, onClose, maSekciu }: { dostupne: Dla
   const prepniSkryt = (id: DlazdicaId) => ulozDlazdice({ ...n, skryte: n.skryte.includes(id) ? n.skryte.filter((x) => x !== id) : [...n.skryte, id] });
   const prepniRozbal = (id: DlazdicaId) => ulozDlazdice({ ...n, rozbalene: n.rozbalene.includes(id) ? n.rozbalene.filter((x) => x !== id) : [...n.rozbalene, id] });
   return (
-    <Harok onClose={onClose} hlavicka={<span style={{ flex: 1, fontSize: 20, fontWeight: 800 }}>Upraviť dlaždice</span>} zatvorText="Hotovo"
-      paticka={<button type="button" onClick={() => { obnovPovodne(); toast("Pôvodné dlaždice obnovené"); }} style={{ flex: 1, minHeight: 50, borderRadius: 15, border: "1px solid var(--cardBd)", background: "var(--btn)", color: "var(--ink)", fontSize: 15, fontWeight: 700, fontFamily: "inherit", cursor: "pointer" }}>Obnoviť pôvodné</button>}>
-      <div style={{ fontSize: 13.5, lineHeight: 1.5, color: "var(--ink2)" }}>Chyť dlaždicu za úchyt a posuň ju. Rovnaké poradie má aj menu na tablete a počítači. Prepínač <b>Rozbalené</b> ukáže sekciu celú pod dlaždicami, vidíš ju len ty.</div>
-      <ul role="list" aria-label="Poradie dlaždíc" style={{ listStyle: "none", margin: 0, padding: 0, borderRadius: 18, background: "var(--card)", border: "1px solid var(--cardBd)", touchAction: tah ? "none" : undefined }}>
+    <Harok onClose={onClose} hlavicka={<span style={{ flex: 1, fontSize: 20, fontWeight: 800 }}>{tr("dlazdice.upravit")}</span>} zatvorText={tr("sp.hotovo")}
+      paticka={<button type="button" onClick={() => { obnovPovodne(); toast(tr("dlazdice.obnovene")); }} style={{ flex: 1, minHeight: 50, borderRadius: 15, border: "1px solid var(--cardBd)", background: "var(--btn)", color: "var(--ink)", fontSize: 15, fontWeight: 700, fontFamily: "inherit", cursor: "pointer" }}>{tr("dlazdice.obnovit")}</button>}>
+      <div style={{ fontSize: 13.5, lineHeight: 1.5, color: "var(--ink2)" }}>{tr("dlazdice.napoveda.a")}<b>{tr("dlazdice.rozbalene")}</b>{tr("dlazdice.napoveda.b")}</div>
+      <ul role="list" aria-label={tr("dlazdice.poradie")} style={{ listStyle: "none", margin: 0, padding: 0, borderRadius: 18, background: "var(--card)", border: "1px solid var(--cardBd)", touchAction: tah ? "none" : undefined }}>
         {zoznam.map((id, i) => {
           const d = dostupne.find((x) => x.id === id)!;
           const skryta = n.skryte.includes(id), t = tah?.id === id;
@@ -82,22 +85,22 @@ export function UpravitDlazdice({ dostupne, onClose, maSekciu }: { dostupne: Dla
             <li key={id} ref={(el) => { li.current[i] = el; }}
               style={{ position: "relative", zIndex: t ? 2 : 1, height: 64, display: "flex", alignItems: "center", gap: 8, padding: "0 6px 0 2px", borderTop: i ? "1px solid var(--cardBd)" : "none", background: t ? "var(--card)" : "transparent", borderRadius: t ? 14 : 0,
                 transform: t ? `translateY(${tah!.dy}px) scale(1.02)` : `translateY(${posun(i)}px)`, transition: t ? "none" : "transform .18s ease", boxShadow: t ? "0 10px 24px rgba(0,0,0,.18)" : "none" }}>
-              <span role="button" tabIndex={0} aria-label={`${d.t}, ${i + 1}. miesto. Šípkami hore a dole zmeníš poradie.`}
+              <span role="button" tabIndex={0} aria-label={tr("dlazdice.miesto", { nazov: d.t, n: i + 1 })}
                 onKeyDown={(e) => { if (e.key === "ArrowUp") { e.preventDefault(); presunNa(id, i - 1); } if (e.key === "ArrowDown") { e.preventDefault(); presunNa(id, i + 1); } }}
                 onPointerDown={(e) => zaciatok(id, i, e)} onPointerMove={pohyb} onPointerUp={koniec} onPointerCancel={() => setTah(null)}
                 style={{ width: 44, height: 44, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--ink3)", cursor: t ? "grabbing" : "grab", touchAction: "none", flex: "none" }}>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="9" cy="6" r="1.6" /><circle cx="15" cy="6" r="1.6" /><circle cx="9" cy="12" r="1.6" /><circle cx="15" cy="12" r="1.6" /><circle cx="9" cy="18" r="1.6" /><circle cx="15" cy="18" r="1.6" /></svg></span>
               <span style={{ width: 34, height: 34, borderRadius: 10, background: d.bg, color: d.c, display: "flex", alignItems: "center", justifyContent: "center", flex: "none", opacity: skryta ? 0.4 : 1 }}>{d.ikona}</span>
-              <span style={{ flex: 1, minWidth: 0, opacity: skryta ? 0.5 : 1 }}><span style={{ display: "block", fontSize: 15, fontWeight: 800, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{d.t}</span>{skryta && <span style={{ display: "block", fontSize: 12.5, color: "var(--ink3)" }}>skrytá</span>}</span>
+              <span style={{ flex: 1, minWidth: 0, opacity: skryta ? 0.5 : 1 }}><span style={{ display: "block", fontSize: 15, fontWeight: 800, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{d.t}</span>{skryta && <span style={{ display: "block", fontSize: 12.5, color: "var(--ink3)" }}>{tr("dlazdice.skryta")}</span>}</span>
               {rozb && !skryta && (
-                <button type="button" role="switch" aria-checked={rOn} aria-label={`Rozbalené na profile: ${d.t}`} title={MA_ROZBALENIE[id]} onClick={() => prepniRozbal(id)}
+                <button type="button" role="switch" aria-checked={rOn} aria-label={tr("dlazdice.rozbaleneNa", { nazov: d.t })} title={tr(MA_ROZBALENIE[id]!)} onClick={() => prepniRozbal(id)}
                   style={{ flex: "none", minHeight: 44, display: "flex", alignItems: "center", gap: 6, padding: "0 4px", border: "none", background: "none", boxShadow: "none", cursor: "pointer", color: rOn ? "var(--gInk)" : "var(--ink3)", fontFamily: "inherit" }}>
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10" /></svg>
                   <span style={{ display: "flex", transform: "scale(.8)", transformOrigin: "center" }}><Prepinac on={rOn} /></span>
                 </button>)}
               {id !== "nastavenia"
-                ? <button type="button" onClick={() => prepniSkryt(id)} style={{ flex: "none", minHeight: 44, minWidth: 56, padding: "0 6px", border: "none", background: "transparent", boxShadow: "none", color: skryta ? "var(--gInk)" : "var(--ink3)", fontSize: 13.5, fontWeight: 800, fontFamily: "inherit", cursor: "pointer" }}>{skryta ? "Ukázať" : "Skryť"}</button>
-                : <span style={{ flex: "none", minWidth: 56, textAlign: "center", fontSize: 12, color: "var(--ink3)" }}>vždy</span>}
+                ? <button type="button" onClick={() => prepniSkryt(id)} style={{ flex: "none", minHeight: 44, minWidth: 56, padding: "0 6px", border: "none", background: "transparent", boxShadow: "none", color: skryta ? "var(--gInk)" : "var(--ink3)", fontSize: 13.5, fontWeight: 800, fontFamily: "inherit", cursor: "pointer" }}>{skryta ? tr("sp.ukazat") : tr("sp.skryt")}</button>
+                : <span style={{ flex: "none", minWidth: 56, textAlign: "center", fontSize: 12, color: "var(--ink3)" }}>{tr("dlazdice.vzdy")}</span>}
             </li>);
         })}
       </ul>

@@ -15,7 +15,8 @@ import { useEffect, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { zdielaj, aktualnaUrl } from "@/lib/zdielanie";
 import { toast } from "./toast";
-import { STIT_SK, hlavnyObr, oblastObr, odNajvyssieho, MAX_VYVESENE, type Oblast, type StitOblasti } from "@/lib/stityOblasti";
+import { useT } from "@/i18n";
+import { nazovStitu, nazovStituPlny, hlavnyObr, oblastObr, odNajvyssieho, MAX_VYVESENE, type Oblast, type StitOblasti } from "@/lib/stityOblasti";
 
 export type StitLevel = "Bronze" | "Silver" | "Gold" | "Platinum" | "Legend";
 
@@ -72,13 +73,14 @@ export function Stit({ level, trieda = "hlavna", symbol, size = 44, title, detai
   subjekt?: string;
 }) {
   const [otvoreny, setOtvoreny] = useState(false);
+  const t = useT();
   const kov = KOVY[level];
   const id = `stit-${level}-${trieda}`; // gradienty per level+trieda (stabilné id → žiadne duplicity defs nevadia)
   void symbol;
   return (
-    <span title={title ?? `${STIT_SK[level]} štít`}
+    <span title={title ?? nazovStituPlny(level, t)}
       {...(detail ? { role: "button", tabIndex: 0, onClick: (e: React.MouseEvent) => { e.stopPropagation(); setOtvoreny(true); }, onKeyDown: (e: React.KeyboardEvent) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setOtvoreny(true); } } } : {})}
-      style={{ display: "inline-flex", position: "relative", width: size, height: size * 1.12, flex: "none", cursor: detail ? "pointer" : "default" }} aria-label={`${STIT_SK[level]} štít`}>
+      style={{ display: "inline-flex", position: "relative", width: size, height: size * 1.12, flex: "none", cursor: detail ? "pointer" : "default" }} aria-label={nazovStituPlny(level, t)}>
       {trieda === "hlavna" ? (
         <img src={OBRAZKY[level]} alt="" width={size} height={size * 1.12}
           style={{ display: "block", width: size, height: size * 1.12, objectFit: "contain", filter: "drop-shadow(0 2px 6px rgba(0,0,0,.45))" }} />
@@ -115,6 +117,7 @@ export function Stit({ level, trieda = "hlavna", symbol, size = 44, title, detai
 export function StitDetail({ level, trieda = "hlavna", symbol, subjekt, onClose }: {
   level: StitLevel; trieda?: "hlavna" | "modul"; symbol?: string; subjekt?: string; onClose: () => void;
 }) {
+  const t = useT();
   const kov = KOVY[level];
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
@@ -122,7 +125,7 @@ export function StitDetail({ level, trieda = "hlavna", symbol, subjekt, onClose 
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
   return (
-    <div role="dialog" aria-label={`${STIT_SK[level]} štít`} onClick={(e) => { e.stopPropagation(); onClose(); }}
+    <div role="dialog" aria-label={nazovStituPlny(level, t)} onClick={(e) => { e.stopPropagation(); onClose(); }}
       style={{ position: "fixed", inset: 0, zIndex: 280, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24, cursor: "default", background: "radial-gradient(circle at 50% 42%, rgba(20,18,12,.88), rgba(4,6,12,.96) 78%)", animation: "stitDetailFade .22s ease" }}>
       <style>{`
         @keyframes stitDetailFade { from { opacity: 0 } to { opacity: 1 } }
@@ -134,9 +137,9 @@ export function StitDetail({ level, trieda = "hlavna", symbol, subjekt, onClose 
           <span style={{ position: "relative" }}><Stit level={level} trieda={trieda} symbol={symbol} size={230} /></span>
         </span>
         {subjekt && <span style={{ display: "block", fontSize: 15, fontWeight: 700, color: "#fff" }}>{subjekt}</span>}
-        <span style={{ display: "block", fontSize: 12.5, color: "rgba(255,255,255,.62)", marginTop: 6, lineHeight: 1.5, maxWidth: 280 }}>{STIT_POPIS[level]}</span>
+        <span style={{ display: "block", fontSize: 12.5, color: "rgba(255,255,255,.62)", marginTop: 6, lineHeight: 1.5, maxWidth: 280 }}>{t(`stit.popis.${level}`)}</span>
         <button onClick={(e) => { e.stopPropagation(); onClose(); }} style={{ height: 42, padding: "0 22px", marginTop: 22, borderRadius: 12, border: "1px solid rgba(255,255,255,.25)", background: "rgba(255,255,255,.08)", color: "rgba(255,255,255,.88)", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
-          Zavrieť
+          {t("sp.zavriet")}
         </button>
       </span>
     </div>
@@ -147,12 +150,13 @@ export function StitDetail({ level, trieda = "hlavna", symbol, subjekt, onClose 
 export function StitRiadok({ level, titul, trieda, symbol, size = 44 }: {
   level: StitLevel; titul?: ReactNode; trieda?: "hlavna" | "modul"; symbol?: string; size?: number;
 }) {
+  const t = useT();
   return (
     <span style={{ display: "inline-flex", alignItems: "center", gap: 10 }}>
       <Stit level={level} trieda={trieda} symbol={symbol} size={size} />
       <span style={{ minWidth: 0 }}>
-        <span style={{ display: "block", fontSize: 14, fontWeight: 800, color: KOVY[level].b === "#7a5bd8" ? "var(--a-plum)" : "var(--c-text)" }}>{STIT_SK[level]}</span>
-        <span style={{ display: "block", fontSize: 10.5, color: "var(--c-textTer)", lineHeight: 1.35 }}>{titul ?? STIT_POPIS[level]}</span>
+        <span style={{ display: "block", fontSize: 14, fontWeight: 800, color: KOVY[level].b === "#7a5bd8" ? "var(--a-plum)" : "var(--c-text)" }}>{nazovStitu(level, t)}</span>
+        <span style={{ display: "block", fontSize: 10.5, color: "var(--c-textTer)", lineHeight: 1.35 }}>{titul ?? t(`stit.popis.${level}`)}</span>
       </span>
     </span>
   );
@@ -191,6 +195,8 @@ export function StitRevealHost() {
 }
 
 export function StitReveal({ subjekt, level, onClose }: { subjekt: string; level: StitLevel; onClose: () => void }) {
+  const t = useT();
+  const uroven = nazovStitu(level, t);
   const kov = KOVY[level];
   // Escape = preskočiť (skippable aj z klávesnice)
   useEffect(() => {
@@ -199,10 +205,10 @@ export function StitReveal({ subjekt, level, onClose }: { subjekt: string; level
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
   const podelSa = () => {
-    void zdielaj({ titul: `Nový štít: ${STIT_SK[level]}`, text: `${subjekt} · ${STIT_SK[level]} štít v DEED+. Postavené na skutkoch.`, url: aktualnaUrl() }, toast);
+    void zdielaj({ titul: t("stit.novy", { uroven }), text: t("stit.zdielatText", { subjekt, uroven }), url: aktualnaUrl() }, toast);
   };
   return (
-    <div role="dialog" aria-label={`Nový štít: ${STIT_SK[level]}`} onClick={onClose}
+    <div role="dialog" aria-label={t("stit.novy", { uroven })} onClick={onClose}
       style={{ position: "fixed", inset: 0, zIndex: 300, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24, background: "radial-gradient(circle at 50% 40%, rgba(28,22,10,.9), rgba(4,6,12,.97) 75%)", animation: "stitRevealFade .35s ease" }}>
       <style>{`
         @keyframes stitRevealFade { from { opacity: 0 } to { opacity: 1 } }
@@ -211,9 +217,9 @@ export function StitReveal({ subjekt, level, onClose }: { subjekt: string; level
         @keyframes stitRevealUp { from { opacity: 0; transform: translateY(14px) } to { opacity: 1; transform: none } }
       `}</style>
       {/* vždy skippable — ✕ hore, klik na pozadie, Escape */}
-      <button onClick={onClose} aria-label="Preskočiť"
+      <button onClick={onClose} aria-label={t("stit.preskocit")}
         style={{ position: "absolute", top: 18, right: 18, height: 34, padding: "0 14px", borderRadius: 17, border: "1px solid rgba(255,255,255,.25)", background: "rgba(255,255,255,.08)", color: "rgba(255,255,255,.85)", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
-        Preskočiť
+        {t("stit.preskocit")}
       </button>
       <div onClick={(e) => e.stopPropagation()} style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", maxWidth: 340 }}>
         {/* lúče za štítom — jediný pohyblivý prvok, kým prídu videá */}
@@ -225,18 +231,18 @@ export function StitReveal({ subjekt, level, onClose }: { subjekt: string; level
           </span>
         </div>
         <div style={{ animation: "stitRevealUp .5s ease both .7s" }}>
-          <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: ".28em", color: "rgba(255,255,255,.55)" }}>NOVÝ ŠTÍT</div>
-          <div style={{ fontSize: 34, fontWeight: 800, color: kov.a, marginTop: 4, textShadow: `0 0 28px ${kov.a}55` }}>{STIT_SK[level]}</div>
+          <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: ".28em", color: "rgba(255,255,255,.55)" }}>{t("stit.novyCaps")}</div>
+          <div style={{ fontSize: 34, fontWeight: 800, color: kov.a, marginTop: 4, textShadow: `0 0 28px ${kov.a}55` }}>{uroven}</div>
           {/* meno = textový overlay na šablónu (§6) — nie nový render */}
           <div style={{ fontSize: 15, fontWeight: 700, color: "#fff", marginTop: 8 }}>{subjekt}</div>
-          <div style={{ fontSize: 12, color: "rgba(255,255,255,.6)", marginTop: 4, lineHeight: 1.5 }}>{STIT_POPIS[level]}</div>
+          <div style={{ fontSize: 12, color: "rgba(255,255,255,.6)", marginTop: 4, lineHeight: 1.5 }}>{t(`stit.popis.${level}`)}</div>
         </div>
         <div style={{ display: "flex", gap: 10, marginTop: 22, animation: "stitRevealUp .5s ease both 1s" }}>
           <button onClick={podelSa} style={{ height: 44, padding: "0 20px", borderRadius: 12, border: "none", background: `linear-gradient(135deg, ${kov.a}, ${kov.b})`, color: "#1c1608", fontSize: 14, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}>
-            Zdieľať štít
+            {t("stit.zdielat")}
           </button>
           <button onClick={onClose} style={{ height: 44, padding: "0 18px", borderRadius: 12, border: "1px solid rgba(255,255,255,.25)", background: "transparent", color: "rgba(255,255,255,.85)", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
-            Pokračovať
+            {t("sp.pokracovat")}
           </button>
         </div>
       </div>
@@ -260,9 +266,10 @@ export function StitObr({ level, oblast, h, velky, lazy, tien }: { level: StitLe
 /** zväčšenie štítu — tmavé pozadie, 250 × 290, „<Stupeň> · <OBLASŤ>"; ťuk kamkoľvek zavrie */
 export function StitZoom({ level, oblast, nazov, popis, onClose }: { level: StitLevel; oblast?: Oblast; nazov?: string; popis?: string; onClose: () => void }) {
   useEffect(() => { const k = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); }; window.addEventListener("keydown", k); return () => window.removeEventListener("keydown", k); }, [onClose]);
-  const n = nazov ?? (oblast ? `${STIT_SK[level]} · ${oblast}` : `${STIT_SK[level]} štít`);
+  const t = useT();
+  const n = nazov ?? (oblast ? `${nazovStitu(level, t)} · ${oblast}` : nazovStituPlny(level, t));
   return createPortal(
-    <div role="dialog" aria-modal="true" aria-label={`Štít ${n}, ťukni a zavrieš`} onClick={(e) => { e.stopPropagation(); onClose(); }}
+    <div role="dialog" aria-modal="true" aria-label={t("stit.zoomAria", { nazov: n })} onClick={(e) => { e.stopPropagation(); onClose(); }}
       style={{ position: "fixed", inset: 0, zIndex: 290, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 14, padding: 24, cursor: "zoom-out", background: "rgba(18,17,14,.86)", fontFamily: "'Plus Jakarta Sans', sans-serif", animation: "stitDetailFade .22s ease" }}>
       <style>{"@keyframes stitDetailFade{from{opacity:0}to{opacity:1}}@keyframes stitDetailPop{from{transform:scale(.82);opacity:0}to{transform:none;opacity:1}}"}</style>
       <div style={{ position: "relative", width: 250, height: 290, display: "flex", alignItems: "center", justifyContent: "center", animation: "stitDetailPop .3s cubic-bezier(.2,1.1,.4,1) both" }}>
@@ -271,7 +278,7 @@ export function StitZoom({ level, oblast, nazov, popis, onClose }: { level: Stit
       </div>
       <span style={{ fontSize: 22, fontWeight: 800, color: "#E2C174", textAlign: "center" }}>{n}</span>
       {popis && <span style={{ fontSize: 14.5, lineHeight: 1.5, color: "#C4BDAE", textAlign: "center", maxWidth: 300 }}>{popis}</span>}
-      <span style={{ fontSize: 13, color: "#A59E8F", marginTop: 6 }}>ťukni kamkoľvek a zavrieš</span>
+      <span style={{ fontSize: 13, color: "#A59E8F", marginTop: 6 }}>{t("stit.zoomZavri")}</span>
     </div>, document.body);
 }
 
@@ -284,13 +291,14 @@ export function StitZoom({ level, oblast, nazov, popis, onClose }: { level: Stit
  * Ťuk na štít = zväčšenie. Nezískané štíty sa nikde verejne neukazujú.
  */
 export function StityRad({ hlavny, oblasti = [], variant, meno, velkost }: { hlavny: StitLevel; oblasti?: StitOblasti[]; variant: "hlavicka" | "pole" | "zoznam" | "profil"; meno?: string; velkost?: number }) {
+  const t = useT();
   const [zoom, setZoom] = useState<null | { level: StitLevel; oblast?: Oblast }>(null);
   const tuk = (z: { level: StitLevel; oblast?: Oblast }) => (e: React.MouseEvent | React.KeyboardEvent) => { e.stopPropagation(); setZoom(z); };
   const btn = (z: { level: StitLevel; oblast?: Oblast }, obsah: ReactNode, label: string, extra?: React.CSSProperties) => (
-    <span role="button" tabIndex={0} aria-label={`${label}, zväčšiť`} onClick={tuk(z)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); tuk(z)(e); } }}
+    <span role="button" tabIndex={0} aria-label={t("stit.zvacsit", { label })} onClick={tuk(z)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); tuk(z)(e); } }}
       style={{ display: "inline-flex", flex: "none", cursor: "zoom-in", lineHeight: 0, ...extra }}>{obsah}</span>);
-  const nazovO = (o: StitOblasti) => `${STIT_SK[o.level]} štít ${o.oblast}`;
-  const hl = `${STIT_SK[hlavny]} štít${meno ? ` · ${meno}` : ""}`;
+  const nazovO = (o: StitOblasti) => t("stit.nazovOblast", { uroven: nazovStitu(o.level, t), oblast: o.oblast });
+  const hl = `${nazovStituPlny(hlavny, t)}${meno ? ` · ${meno}` : ""}`;
   const zoomEl = zoom && <StitZoom level={zoom.level} oblast={zoom.oblast} onClose={() => setZoom(null)} />;
   const zor = variant === "profil" ? odNajvyssieho(oblasti) : oblasti; // vyvesené v poradí, ktoré si user zvolil
 
@@ -301,7 +309,7 @@ export function StityRad({ hlavny, oblasti = [], variant, meno, velkost }: { hla
       <span style={{ display: "inline-flex", alignItems: "flex-end", gap: 4 }}>
         {btn({ level: hlavny }, <StitObr level={hlavny} h={h} />, hl)}
         {male.map((o) => <span key={o.oblast}>{btn(o, <StitObr level={o.level} oblast={o.oblast} h={Math.round(h * 0.62)} lazy />, nazovO(o))}</span>)}
-        {navyse > 0 && <span style={{ fontSize: 12, fontWeight: 800, color: "var(--ink3, var(--c-textSec))", padding: "0 0 2px 2px" }} aria-label={`a ďalšie ${navyse}`}>+{navyse}</span>}
+        {navyse > 0 && <span style={{ fontSize: 12, fontWeight: 800, color: "var(--ink3, var(--c-textSec))", padding: "0 0 2px 2px" }} aria-label={t("stit.aDalsie", { n: navyse })}>+{navyse}</span>}
         {zoomEl}
       </span>);
   }

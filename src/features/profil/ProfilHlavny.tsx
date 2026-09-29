@@ -3,7 +3,8 @@
 // Bez L-úrovní, percent, emoji a anglických názvov štítov.
 import { MojeStranky, KonasAkoLista } from "./MojeStranky";
 import type { Stranka } from "@/lib/mojeStranky";
-import { DeedZnacka } from "@/components/DeedZnacka";
+import { sZnackou } from "@/components/DeedZnacka";
+import { useT } from "@/i18n";
 import { useState } from "react";
 import { usePouzivatel } from "@/lib/pouzivatel";
 import { usePersonalizacia } from "@/lib/personalizacia";
@@ -12,7 +13,7 @@ import { klucEntity, useFotkyEntity } from "@/lib/fotoentity";
 import { useViac } from "@/components/context";
 import { RozpracovanySkutok, PrveKroky, Podakovania } from "./ProfilKarty";
 import { MriezkaDlazdic, type Dlazdica } from "./Dlazdice";
-import { STATISTIKY, POHYBY } from "./mock";
+import { STATISTIKY, POHYBY, pohybZobraz } from "./mock";
 import { MOJA_CESTA, suhrn } from "@/lib/cestaDaru";
 import { StityRad, StitZoom } from "@/components/stit";
 import { MOJE_STITY } from "@/lib/stityOblasti";
@@ -23,7 +24,7 @@ import { Harok } from "@/features/zbierka/Zdielat";
 import { MOJA_KARMA, MOJE_SKUTKY_POCET } from "./mock";
 import { useOsobnyProfil } from "@/lib/osobnyProfil";
 import "@/styles/platba.css";
-import { vetaStitu } from "@/features/zbierka/hlasky";
+import { vetaStitu, STIT_VETY } from "@/features/zbierka/hlasky";
 
 export const STIT_SK: Record<StitLevel, string> = { Bronze: "Bronzový", Silver: "Strieborný", Gold: "Zlatý", Platinum: "Platinový", Legend: "Legenda" };
 const STIT_SUBOR: Record<StitLevel, string> = { Bronze: "bronze", Silver: "silver", Gold: "gold", Platinum: "platinum", Legend: "legend" };
@@ -79,6 +80,7 @@ export type ProfilAkcie = {
 
 /** karta identity (fotky sa menia len v Upraviť profil; ťuk na avatar fotku zväčší): titulná fotka, avatar so zlatým kruhom, meno, mesto, verejný/anonymný, Upraviť profil · Môj QR */
 export function IdentitaKarta18({ naUpravit, naQr }: { naUpravit: () => void; naQr: () => void }) {
+  const t = useT();
   const ja = usePouzivatel();
   const [fotka, setFotka] = useState(false);
   const [mojeFotky] = useFotkyEntity(klucEntity("ja", ja.ucetId || "demo"));
@@ -92,7 +94,7 @@ export function IdentitaKarta18({ naUpravit, naQr }: { naUpravit: () => void; na
       <div aria-hidden="true" style={{ height: 150, background: mojeFotky.cover ? `url(${mojeFotky.cover}) center/cover` : "linear-gradient(135deg,#C9D5BC 0%,#DCD3BE 55%,#E2D7BF 100%)" }} />
       <div style={{ padding: "0 16px 16px" }}>
         <div style={{ position: "relative", display: "flex", alignItems: "flex-start", gap: 14, marginTop: -38 }}>
-          <button type="button" onClick={() => setFotka(true)} aria-label="Zväčšiť profilovú fotku"
+          <button type="button" onClick={() => setFotka(true)} aria-label={t("profil.zvacsitFotku")}
             style={{ position: "relative", flex: "none", width: 84, height: 84, borderRadius: "50%", padding: 3, background: KRUH[stit], cursor: "pointer" }}>
             <span style={{ display: "flex", width: "100%", height: "100%", borderRadius: "50%", background: ja.foto ? `url(${ja.foto}) center/cover` : "color-mix(in srgb, var(--a-green) 16%, var(--c-bg))", border: "3px solid var(--bg)", alignItems: "center", justifyContent: "center", fontSize: 28, fontWeight: 800, color: "var(--gInk)", boxSizing: "border-box" }}>{ja.foto ? "" : ini}</span>
           </button>
@@ -103,12 +105,12 @@ export function IdentitaKarta18({ naUpravit, naQr }: { naUpravit: () => void; na
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 12, fontSize: 13, color: "var(--ink3)" }}>
           <Ik d={IK.oko} size={15} farba="var(--green)" />
-          {anonym ? <span>Profil je <b style={{ color: "var(--gInk)" }}>anonymný</b> · pri daroch si Anonymný darca</span>
-            : <span>Profil je <b style={{ color: "var(--gInk)" }}>verejný</b> · meno pri daroch vidia ostatní</span>}
+          {anonym ? <span>{t("profil.je")}<b style={{ color: "var(--gInk)" }}>{t("profil.anonymny")}</b>{t("profil.anonymnyPopis")}</span>
+            : <span>{t("profil.je")}<b style={{ color: "var(--gInk)" }}>{t("profil.verejny")}</b>{t("profil.verejnyPopis")}</span>}
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 12 }}>
-          <button type="button" onClick={naUpravit} style={btn}><Ik d={IK.ceruzka} size={15} />Upraviť profil</button>
-          <button type="button" onClick={naQr} style={btn}><Ik d={IK.qr} size={15} />Môj QR</button>
+          <button type="button" onClick={naUpravit} style={btn}><Ik d={IK.ceruzka} size={15} />{t("profil.upravit")}</button>
+          <button type="button" onClick={naQr} style={btn}><Ik d={IK.qr} size={15} />{t("profil.mojQr")}</button>
         </div>
       </div>
       {fotka && <ZvacsenaFotka onClose={() => setFotka(false)} />}
@@ -118,26 +120,29 @@ export function IdentitaKarta18({ naUpravit, naQr }: { naUpravit: () => void; na
 
 /** karta štítu — zlaté pozadie, štít so žiarou, slovenský názov */
 export function StitKarta18() {
+  const t = useT();
   const ja = usePouzivatel();
   const stit = stitUzivatela(!!ja.demo);
-  const veta = vetaStitu(stit, dniNaStite(!!ja.demo));
+  const vetaSk = vetaStitu(stit, dniNaStite(!!ja.demo));
+  const veta = t(`profil.veta.${stit}.${Math.max(0, STIT_VETY[stit].indexOf(vetaSk))}`);
   const [zoom, setZoom] = useState(false);
+  const nazovStitu = t(`profil.stit.${stit}`);
   const oblasti = ja.demo ? MOJE_STITY : []; // karta 26: rad všetkých získaných štítov oblastí (vidia ich aj ostatní)
   return (
     <div style={{ position: "relative", borderRadius: 24, background: "var(--goldBg)", border: "1px solid var(--sek-oBd)", boxShadow: "var(--d-hl, none)", padding: "16px 18px", display: "flex", flexDirection: "column", gap: 12, overflow: "hidden", color: "var(--d-ink, var(--ink))" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-        <button type="button" onClick={() => setZoom(true)} aria-label={`Zväčšiť ${STIT_SK[stit]} štít`} style={{ position: "relative", width: 132, height: 154, flex: "none", border: "none", background: "none", padding: 0, cursor: "zoom-in", boxShadow: "none" }}>
+        <button type="button" onClick={() => setZoom(true)} aria-label={t("profil.zvacsitStit", { stit: nazovStitu })} style={{ position: "relative", width: 132, height: 154, flex: "none", border: "none", background: "none", padding: 0, cursor: "zoom-in", boxShadow: "none" }}>
           <div className="pf-ziara" style={{ position: "absolute", left: "50%", top: "50%", width: 190, height: 190, margin: "-95px 0 0 -95px", borderRadius: "50%", background: "radial-gradient(circle,rgba(255,231,163,.85) 0%,rgba(246,183,60,.25) 40%,rgba(246,183,60,0) 70%)" }} />
           <img src={`/odznaky/${STIT_SUBOR[stit]}.png`} alt="" style={{ position: "relative", width: "100%", height: "100%", objectFit: "contain" }} />
         </button>
         <div style={{ position: "relative", minWidth: 0 }}>
-          <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".07em", color: "var(--sek-o)" }}>ŠTÍT</div>
-          <div style={{ fontSize: 22, fontWeight: 800, marginTop: 2, color: "var(--d-ink, var(--ink))" }}>{STIT_SK[stit]}</div>
+          <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".07em", color: "var(--sek-o)" }}>{t("profil.stitNadpis")}</div>
+          <div style={{ fontSize: 22, fontWeight: 800, marginTop: 2, color: "var(--d-ink, var(--ink))" }}>{nazovStitu}</div>
           <div style={{ fontSize: 14, lineHeight: 1.5, color: "var(--d-ink2, var(--ink2))", marginTop: 4 }}>{veta}</div>
         </div>
       </div>
       {oblasti.length > 0 && <StityRad variant="profil" hlavny={stit} oblasti={oblasti} />}
-      {zoom && <StitZoom level={stit} nazov={STIT_SK[stit]} popis={veta} onClose={() => setZoom(false)} />}
+      {zoom && <StitZoom level={stit} nazov={nazovStitu} popis={veta} onClose={() => setZoom(false)} />}
     </div>
   );
 }
@@ -153,6 +158,7 @@ function dniNaStite(demo: boolean): number {
 
 /** Moje záujmy — 10 oblastí v mriežke 2 × 5, ťuk → hárok (Celá oblasť + pod-položky) */
 export function MojeZaujmy() {
+  const t = useT();
   const { zaujmy, setZaujmy } = usePersonalizacia();
   const [otvorena, setOtvorena] = useState<string | null>(null);
   const vybrane = (o: string) => zaujmy.filter((z) => z.oblast === o).map((z) => z.pod_polozka);
@@ -163,31 +169,31 @@ export function MojeZaujmy() {
   return (
     <div style={{ borderRadius: 22, background: "var(--card)", border: "1px solid var(--cardBd)", padding: "16px 14px 14px", display: "flex", flexDirection: "column", gap: 12 }}>
       <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8 }}>
-        <span style={{ fontSize: 18, fontWeight: 800 }}>Moje záujmy</span>
-        <span style={{ fontSize: 12.5, color: "var(--ink3)", fontVariantNumeric: "tabular-nums" }}>{aktivne} z {ZAUJMY_KATALOG.length} oblastí</span>
+        <span style={{ fontSize: 18, fontWeight: 800 }}>{t("profil.zaujmy.titul")}</span>
+        <span style={{ fontSize: 12.5, color: "var(--ink3)", fontVariantNumeric: "tabular-nums" }}>{t("profil.zaujmy.pocet", { a: aktivne, n: ZAUJMY_KATALOG.length })}</span>
       </div>
-      <div style={{ fontSize: 13, lineHeight: 1.5, color: "var(--ink2)", marginTop: -6 }}>Podľa nich ti <DeedZnacka /> skladá nástenku, pozvánky a ponuky z okolia. Feed skutkov ich nečíta.</div>
+      <div style={{ fontSize: 13, lineHeight: 1.5, color: "var(--ink2)", marginTop: -6 }}>{sZnackou(t("profil.zaujmy.popis"))}</div>
       <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) minmax(0,1fr)", gap: 8 }}>
         {ZAUJMY_KATALOG.map((z) => {
           const v = vybrane(z.oblast), a = v.length > 0;
-          const popis = cela(z.oblast) ? "celá oblasť" : a ? v.join(", ") : "nevybraté";
+          const popis = cela(z.oblast) ? t("profil.zaujmy.cela") : a ? v.join(", ") : t("profil.zaujmy.nevybrate");
           return (
             <button key={z.oblast} type="button" onClick={() => setOtvorena(z.oblast)}
               style={{ display: "flex", alignItems: "center", gap: 10, minHeight: 58, padding: "8px 10px", borderRadius: 14, cursor: "pointer", textAlign: "left", fontFamily: "inherit", background: a ? "var(--gSoft)" : "var(--field)", border: `1.5px solid ${a ? "var(--gBd)" : "var(--cardBd)"}` }}>
               <span style={{ width: 34, height: 34, borderRadius: 10, background: a ? "#fff" : "var(--card)", color: a ? "var(--green)" : "var(--ink3)", display: "flex", alignItems: "center", justifyContent: "center", flex: "none" }}><Ik d={IK_OBLAST[z.oblast] ?? IK.stity} size={17} /></span>
               <span style={{ flex: 1, minWidth: 0 }}>
-                <span style={{ display: "block", fontSize: 14.5, fontWeight: 800, color: a ? "var(--gInk)" : "var(--ink)" }}>{z.label}</span>
+                <span style={{ display: "block", fontSize: 14.5, fontWeight: 800, color: a ? "var(--gInk)" : "var(--ink)" }}>{t(`skutky.oblast.${z.label}`)}</span>
                 <span style={{ display: "block", fontSize: 12, color: "var(--ink3)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{popis}</span>
               </span>
             </button>);
         })}
       </div>
       {o && (
-        <Harok onClose={() => setOtvorena(null)} hlavicka={<span style={{ flex: 1, fontSize: 20, fontWeight: 800 }}>{o.label}</span>}
-          paticka={<button type="button" onClick={() => setOtvorena(null)} style={{ flex: 1, height: 54, borderRadius: 16, border: "none", background: "var(--gGrad)", color: "#fff", fontSize: 16, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}>Hotovo</button>}>
+        <Harok onClose={() => setOtvorena(null)} hlavicka={<span style={{ flex: 1, fontSize: 20, fontWeight: 800 }}>{t(`skutky.oblast.${o.label}`)}</span>}
+          paticka={<button type="button" onClick={() => setOtvorena(null)} style={{ flex: 1, height: 54, borderRadius: 16, border: "none", background: "var(--gGrad)", color: "#fff", fontSize: 16, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}>{t("sp.hotovo")}</button>}>
           <div onClick={() => nastav(o.oblast, cela(o.oblast) ? [] : ["*"])} role="switch" aria-checked={cela(o.oblast)}
             style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 52, padding: "8px 14px", borderRadius: 14, cursor: "pointer", background: cela(o.oblast) ? "var(--gSoft)" : "var(--card)", border: `1.5px solid ${cela(o.oblast) ? "var(--gBd)" : "var(--cardBd)"}` }}>
-            <span style={{ flex: 1, fontSize: 15, fontWeight: 800 }}>Celá oblasť</span>
+            <span style={{ flex: 1, fontSize: 15, fontWeight: 800 }}>{t("profil.zaujmy.celaOblast")}</span>
             <span style={{ width: 48, height: 28, borderRadius: 14, background: cela(o.oblast) ? "var(--green)" : "#C9C4B8", position: "relative", transition: "background .2s ease", flex: "none" }}>
               <span style={{ position: "absolute", top: 3, left: 3, width: 22, height: 22, borderRadius: "50%", background: "#fff", transform: cela(o.oblast) ? "translateX(20px)" : "none", transition: "transform .2s ease" }} /></span>
           </div>
@@ -202,7 +208,7 @@ export function MojeZaujmy() {
                 }} style={{ display: "flex", alignItems: "center", minHeight: 40, padding: "0 14px", borderRadius: 20, fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", background: on ? "var(--gSoft)" : "var(--field)", border: `1.5px solid ${on ? "var(--gBd)" : "var(--cardBd)"}`, color: on ? "var(--gInk)" : "var(--ink2)" }}>{p}</button>);
             })}
           </div>
-          <div style={{ fontSize: 12.5, lineHeight: 1.5, color: "var(--ink3)" }}>Vyber celú oblasť alebo len to, čo ťa naozaj zaujíma. Zmeniť to môžeš kedykoľvek.</div>
+          <div style={{ fontSize: 12.5, lineHeight: 1.5, color: "var(--ink3)" }}>{t("profil.zaujmy.napoveda")}</div>
         </Harok>
       )}
     </div>
@@ -211,32 +217,34 @@ export function MojeZaujmy() {
 
 /** hlavná obrazovka profilu (mobil) */
 export function ProfilHlavny18(a: ProfilAkcie) {
+  const t = useT();
   const otvorViac = useViac();
   const { sledovani, podpory } = usePersonalizacia();
   const ja = usePouzivatel();
   const firmy = useVazbyOsoby(ja.celeMeno);
-  const firmaPod = firmy.some((v) => v.stav === "potvrdeny") ? firmy.filter((v) => v.stav === "potvrdeny").map((v) => v.firma).join(", ") : firmy.length ? "čaká na potvrdenie" : "prepoj sa s firmou";
+  const firmaPod = firmy.some((v) => v.stav === "potvrdeny") ? firmy.filter((v) => v.stav === "potvrdeny").map((v) => v.firma).join(", ") : firmy.length ? t("profil.firma.caka") : t("profil.firma.prepoj");
   const { zaujmy } = usePersonalizacia();
   const zaujmyN = ZAUJMY_KATALOG.filter((z) => zaujmy.some((x) => x.oblast === z.oblast)).length;
   const dlazdice: Dlazdica[] = [
-    { id: "wallet", t: "Peňaženka", s: "1 240 DeeD", ikona: <Ik d={IK.wallet} />, bg: "var(--bSoft)", c: "var(--blue)", onClick: a.naWallet },
-    { id: "nastavenia", t: "Nastavenia", s: "vzhľad, súkromie", ikona: <Ik d={IK.nastavenia} />, bg: "var(--card)", c: "var(--ink2)", onClick: a.naNastavenia },
-    { id: "skutky", t: "Moje skutky", s: `${MOJE_SKUTKY_POCET} skutkov`, ikona: <Ik d={IK.skutky} />, bg: "var(--gSoft)", c: "var(--green)", onClick: () => a.naSub("Moje skutky") },
-    { id: "priatelia", t: "Priatelia", s: "kam idú tvoji priatelia", ikona: <Ik d={IK.priatelia} />, bg: "var(--bSoft)", c: "var(--blue)", onClick: a.naPriatelia },
-    { id: "karma", t: "Karma a štíty", s: "štíty podľa oblastí", ikona: <Ik d={IK.stity} />, bg: "var(--goldBg)", c: "var(--sek-o)", onClick: () => a.naSub("Karma a štíty") },
-    { id: "stat", t: "Štatistiky", s: "tento mesiac +9", ikona: <Ik d={IK.stat} />, bg: "var(--gSoft)", c: "var(--green)", onClick: () => a.naSub("Štatistiky") },
-    { id: "firma", t: "Zamestnávateľ", s: firmaPod, ikona: <Ik d={IK.budova} />, bg: "var(--sek-oBg)", c: "var(--sek-o)", onClick: a.naFirma, skryt: firmy.length === 0 },
-    { id: "zaujmy", t: "Moje záujmy", s: `${zaujmyN} z ${ZAUJMY_KATALOG.length} oblastí`, ikona: <Ik d={IK.osoba} />, bg: "var(--gSoft)", c: "var(--green)", onClick: () => a.naSub("Moje záujmy") },
+    { id: "wallet", t: t("dlazdice.penazenka"), s: t("dlazdice.penazenka.s", { n: 1240 }), ikona: <Ik d={IK.wallet} />, bg: "var(--bSoft)", c: "var(--blue)", onClick: a.naWallet },
+    { id: "nastavenia", t: t("dlazdice.nastavenia"), s: t("dlazdice.nastavenia.s"), ikona: <Ik d={IK.nastavenia} />, bg: "var(--card)", c: "var(--ink2)", onClick: a.naNastavenia },
+    { id: "skutky", t: t("dlazdice.skutky"), s: t("sp.skutkov", { n: MOJE_SKUTKY_POCET }), ikona: <Ik d={IK.skutky} />, bg: "var(--gSoft)", c: "var(--green)", onClick: () => a.naSub("Moje skutky") },
+    { id: "priatelia", t: t("dlazdice.priatelia"), s: t("dlazdice.priatelia.s"), ikona: <Ik d={IK.priatelia} />, bg: "var(--bSoft)", c: "var(--blue)", onClick: a.naPriatelia },
+    { id: "karma", t: t("dlazdice.karma"), s: t("dlazdice.karma.s"), ikona: <Ik d={IK.stity} />, bg: "var(--goldBg)", c: "var(--sek-o)", onClick: () => a.naSub("Karma a štíty") },
+    { id: "stat", t: t("dlazdice.stat"), s: t("dlazdice.stat.s", { n: 9 }), ikona: <Ik d={IK.stat} />, bg: "var(--gSoft)", c: "var(--green)", onClick: () => a.naSub("Štatistiky") },
+    { id: "firma", t: t("dlazdice.firma"), s: firmaPod, ikona: <Ik d={IK.budova} />, bg: "var(--sek-oBg)", c: "var(--sek-o)", onClick: a.naFirma, skryt: firmy.length === 0 },
+    { id: "zaujmy", t: t("dlazdice.zaujmy"), s: t("profil.zaujmy.pocet", { a: zaujmyN, n: ZAUJMY_KATALOG.length }), ikona: <Ik d={IK.osoba} />, bg: "var(--gSoft)", c: "var(--green)", onClick: () => a.naSub("Moje záujmy") },
   ];
   const sekcie = { zaujmy: <MojeZaujmy />, stat: <StatVSkratke onOtvor={() => a.naSub("Štatistiky")} />, wallet: <PoslednePohyby onOtvor={a.naWallet} /> };
   const pocty: [number, string][] = [[sledovani.length, "sledujem"], [podpory.length, "podporujem"], [MOJE_SKUTKY_POCET, "skutkov"]];
+  const popisPoctu = (n: number, l: string) => t(`profil.pocet.${l}`, { n });
   return (
     <div className="deed-platba" style={{ padding: "0 16px 30px", display: "flex", flexDirection: "column", gap: 14, color: "var(--ink)" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 12, height: 56 }}>
-        <button type="button" onClick={otvorViac} aria-label="Menu modulov" style={{ width: 44, height: 44, marginLeft: -10, border: "none", background: "transparent", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "var(--ink2)" }}><Ik d={IK.menu} size={22} /></button>
-        <span style={{ fontSize: 19, fontWeight: 800 }}>Môj profil</span>
+        <button type="button" onClick={otvorViac} aria-label={t("profil.menuModulov")} style={{ width: 44, height: 44, marginLeft: -10, border: "none", background: "transparent", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "var(--ink2)" }}><Ik d={IK.menu} size={22} /></button>
+        <span style={{ fontSize: 19, fontWeight: 800 }}>{t("profil.titul")}</span>
         <span style={{ flex: 1, minWidth: 0, display: "flex", justifyContent: "center" }}><KonasAkoLista /></span>
-        <button type="button" onClick={a.naNastavenia} aria-label="Nastavenia" style={{  marginRight: -8, width: 44, height: 44, border: "none", background: "transparent", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "var(--ink2)" }}><Ik d={IK.ozubene} size={21} /></button>
+        <button type="button" onClick={a.naNastavenia} aria-label={t("dlazdice.nastavenia")} style={{  marginRight: -8, width: 44, height: 44, border: "none", background: "transparent", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "var(--ink2)" }}><Ik d={IK.ozubene} size={21} /></button>
       </div>
       <IdentitaKarta18 naUpravit={a.naUpravit} naQr={a.naQr} />
       <MojeStranky naSpravovat={(s) => a.naStranku?.(s)} />
@@ -244,18 +252,18 @@ export function ProfilHlavny18(a: ProfilAkcie) {
       <button type="button" onClick={() => a.naSub("Karma a štíty")} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 18, background: "var(--card)", border: "1px solid var(--cardBd)", cursor: "pointer", textAlign: "left", fontFamily: "inherit", color: "var(--ink)" }}>
         <span style={{ width: 38, height: 38, borderRadius: 12, background: "var(--gSoft)", color: "var(--green)", display: "flex", alignItems: "center", justifyContent: "center", flex: "none" }}><Ik d={IK.zamok} size={18} /></span>
         <span style={{ flex: 1, minWidth: 0 }}>
-          <span style={{ display: "block", fontSize: 12.5, color: "var(--ink3)" }}>Tvoja karma · vidíš ju len ty</span>
-          <span style={{ display: "block", fontSize: 19, fontWeight: 800, fontVariantNumeric: "tabular-nums" }}>{MOJA_KARMA.toLocaleString("sk-SK")}</span>
+          <span style={{ display: "block", fontSize: 12.5, color: "var(--ink3)" }}>{t("profil.karma")}</span>
+          <span style={{ display: "block", fontSize: 19, fontWeight: 800, fontVariantNumeric: "tabular-nums" }}>{t.cislo(MOJA_KARMA)}</span>
         </span>
-        <span style={{ fontSize: 13.5, fontWeight: 700, color: "var(--green)" }}>Detail ›</span>
+        <span style={{ fontSize: 13.5, fontWeight: 700, color: "var(--green)" }}>{t("sp.detail")} ›</span>
       </button>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", borderRadius: 18, background: "var(--card)", border: "1px solid var(--cardBd)" }}>
         {pocty.map(([n, l], i) => {
           const tuk = l === "sledujem" ? () => (a.naPriatelia2 ? a.naPriatelia2("sledujem") : a.naPriatelia()) : l === "podporujem" ? () => (a.naPriatelia2 ? a.naPriatelia2("podporujem") : a.naPriatelia()) : () => a.naSub("Moje skutky");
           return (
           <button key={l} type="button" onClick={tuk} style={{ padding: "12px 4px", textAlign: "center", border: "none", borderLeft: i ? "1px solid var(--cardBd)" : "none", background: "transparent", cursor: "pointer", fontFamily: "inherit", color: "var(--ink)", minHeight: 64 }}>
-            <div style={{ fontSize: 19, fontWeight: 800, fontVariantNumeric: "tabular-nums" }}>{n.toLocaleString("sk-SK")}</div>
-            <div style={{ fontSize: 12.5, color: "var(--ink3)", marginTop: 2 }}>{l}</div>
+            <div style={{ fontSize: 19, fontWeight: 800, fontVariantNumeric: "tabular-nums" }}>{t.cislo(n)}</div>
+            <div style={{ fontSize: 12.5, color: "var(--ink3)", marginTop: 2 }}>{popisPoctu(n, l)}</div>
           </button>); })}
       </div>
       <RozpracovanySkutok />
@@ -268,28 +276,30 @@ export function ProfilHlavny18(a: ProfilAkcie) {
 
 /** rozbalená sekcia · Štatistiky v skratke + cesta môjho daru (OPRAVY 62, vidí len vlastník) */
 export function StatVSkratke({ onOtvor }: { onOtvor: () => void }) {
+  const t = useT();
   const r = STATISTIKY.rok, c = suhrn(MOJA_CESTA.zastavky), z = MOJA_CESTA.zastavky;
   return (
     <button type="button" onClick={onOtvor} style={{ width: "100%", display: "flex", flexDirection: "column", gap: 12, padding: "14px", borderRadius: 22, background: "var(--card)", border: "1px solid var(--cardBd)", cursor: "pointer", textAlign: "left", fontFamily: "inherit", color: "var(--ink)" }}>
-      <span style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}><b style={{ fontSize: 18 }}>Štatistiky v skratke</b><span style={{ fontSize: 12.5, color: "var(--ink3)" }}>tento rok</span></span>
+      <span style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}><b style={{ fontSize: 18 }}>{t("profil.stat.titul")}</b><span style={{ fontSize: 12.5, color: "var(--ink3)" }}>{t("profil.stat.tentoRok")}</span></span>
       <span style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 8 }}>
-        {([[String(r.skutkov), "skutkov"], [`${r.hodin} h`, "pre druhých"], [String(r.ludi), "ľudí"]] as const).map(([h, l]) => (
+        {([[t.cislo(r.skutkov), t("profil.pocet.skutkov", { n: r.skutkov })], [`${t.cislo(r.hodin)} h`, t("profil.stat.preDruhych")], [t.cislo(r.ludi), t("profil.stat.ludi")]] as const).map(([h, l]) => (
           <span key={l}><b style={{ display: "block", fontSize: 20, fontVariantNumeric: "tabular-nums" }}>{h}</b><span style={{ fontSize: 12.5, color: "var(--ink3)" }}>{l}</span></span>))}
       </span>
-      {z.length > 1 && <span style={{ fontSize: 13.5, color: "var(--ink2)", borderTop: "1px solid var(--cardBd)", paddingTop: 10 }}>Cesta môjho daru: <b style={{ color: "var(--ink)" }}>{z[0].mesto} → {z[z.length - 1].mesto}</b> · {c.km.toLocaleString("sk-SK")} km</span>}
+      {z.length > 1 && <span style={{ fontSize: 13.5, color: "var(--ink2)", borderTop: "1px solid var(--cardBd)", paddingTop: 10 }}>{t("profil.stat.cesta")}<b style={{ color: "var(--ink)" }}>{z[0].mesto} → {z[z.length - 1].mesto}</b> · {t.cislo(c.km)} km</span>}
     </button>);
 }
 
 /** rozbalená sekcia · posledné pohyby peňaženky (3) */
 export function PoslednePohyby({ onOtvor }: { onOtvor: () => void }) {
+  const t = useT();
   return (
     <div style={{ borderRadius: 22, background: "var(--card)", border: "1px solid var(--cardBd)", padding: "14px 14px 6px" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 4 }}><b style={{ fontSize: 18 }}>Posledné pohyby</b>
-        <button type="button" onClick={onOtvor} style={{ minHeight: 44, border: "none", background: "transparent", color: "var(--gInk)", fontSize: 13.5, fontWeight: 800, fontFamily: "inherit", cursor: "pointer" }}>Peňaženka ›</button></div>
-      {POHYBY.slice(0, 3).map(([den, t, s2, suma, prijem], i) => (
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 4 }}><b style={{ fontSize: 18 }}>{t("profil.pohyby.titul")}</b>
+        <button type="button" onClick={onOtvor} style={{ minHeight: 44, border: "none", background: "transparent", color: "var(--gInk)", fontSize: 13.5, fontWeight: 800, fontFamily: "inherit", cursor: "pointer" }}>{t("profil.pohyby.penazenka")}</button></div>
+      {POHYBY.slice(0, 3).map((p, i) => { const prijem = p[4]; const { den, nazov, popis: s2, suma } = pohybZobraz(p, t); return (
         <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, minHeight: 52, borderTop: i ? "1px solid var(--cardBd)" : "none" }}>
-          <span style={{ flex: 1, minWidth: 0 }}><span style={{ display: "block", fontSize: 14.5, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t}</span><span style={{ display: "block", fontSize: 12.5, color: "var(--ink3)" }}>{den} · {s2}</span></span>
+          <span style={{ flex: 1, minWidth: 0 }}><span style={{ display: "block", fontSize: 14.5, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{nazov}</span><span style={{ display: "block", fontSize: 12.5, color: "var(--ink3)" }}>{den} · {s2}</span></span>
           <b style={{ fontSize: 14, color: prijem ? "var(--gInk)" : "var(--ink)", whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>{suma}</b>
-        </div>))}
+        </div>); })}
     </div>);
 }

@@ -3,6 +3,7 @@
 // Čisté dátové polia vyňaté z Profil.tsx. Bez JSX.
 // ============================================================
 import type { PrevodTuple, MojSkutokTuple } from "@/types";
+import type { T } from "@/i18n";
 
 /** Posledné prevody v peňaženke. */
 export const PREVODY: PrevodTuple[] = [
@@ -80,5 +81,30 @@ export const POHYBY: [string, string, string, string, boolean, "DEED" | "EURC"][
   ["5. 9.", "Odmena za darovanie krvi", "Daroval som plazmu", "+50 DeeD", true, "DEED"],
   ["5. 9.", "Dobitie kartou", "10 € → 10 EURC", "+10,00 EURC", true, "EURC"],
 ];
-/** výpisy v PDF po mesiacoch */
-export const VYPISY: [string, string][] = [["September 2026", "priebežný · do dnes"], ["August 2026", "14 pohybov"], ["Júl 2026", "9 pohybov"], ["Jún 2026", "11 pohybov"]];
+/** výpisy v PDF po mesiacoch: [rok, mesiac 0–11, počet pohybov | null = priebežný · do dnes] (texty v i18n penazenka.*) */
+export const VYPISY: [number, number, number | null][] = [[2026, 8, null], [2026, 7, 14], [2026, 6, 9], [2026, 5, 11]];
+
+/** preklad jedného pohybu na zobrazenie (KARTA 31): deň, typ, popis rozhrania a suma podľa jazyka.
+ *  Názvy zbierok, ľudí a obsah skutkov ostávajú ako sú. */
+const POH_TYP: Record<string, string> = {
+  "Odmena za skutok": "penazenka.poh.odmenaSkutok", "Odmena za darovanie krvi": "penazenka.poh.odmenaKrv",
+  "Mikrodar": "penazenka.poh.mikrodar", "Dobitie kartou": "penazenka.poh.dobitieKartou", "Dobitie SEPA": "penazenka.poh.dobitieSepa",
+  "Poslané": "penazenka.poh.poslane", "Reťaz dobra": "penazenka.poh.retaz", "Podpora": "penazenka.poh.podpora",
+};
+const POH_POPIS: Record<string, string> = {
+  "poďakovanie za pomoc": "penazenka.poh.podakovaniePomoc", "poďakovanie": "penazenka.poh.podakovanie", "časť odmeny ďalej": "penazenka.poh.castOdmeny",
+};
+export function pohybZobraz(p: (typeof POHYBY)[number], t: T): { den: string; nazov: string; popis: string; suma: string } {
+  const [den, nazov, popis, suma] = p;
+  const dm = /^(\d{1,2})\. (\d{1,2})\.$/.exec(den);
+  const denT = den === "Dnes" ? t("penazenka.poh.dnes") : den === "Včera" ? t("penazenka.poh.vcera") : dm ? t.datum(new Date(new Date().getFullYear(), +dm[2] - 1, +dm[1])) : den;
+  const [typ, ...zvysok] = nazov.split(" · ");
+  const nazovT = [POH_TYP[typ] ? t(POH_TYP[typ]) : typ, ...zvysok].join(" · ");
+  const prevod = /^(\d+) € → (\d+) (DeeD|EURC)$/.exec(popis);
+  const popisT = POH_POPIS[popis] ? t(POH_POPIS[popis]) : popis.startsWith("cez ") ? t("penazenka.poh.cez", { kto: popis.slice(4) })
+    : prevod ? `${t.eur(+prevod[1])} → ${t.cislo(+prevod[2])} ${prevod[3]}` : popis;
+  const s = /^([+−-])([\d\s,]+) (DeeD|EURC)$/.exec(suma);
+  const n = s ? Number(s[2].replace(/\s/g, "").replace(",", ".")) : NaN;
+  const sumaT = s && !Number.isNaN(n) ? `${s[1]}${s[3] === "EURC" ? new Intl.NumberFormat(t.locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n) : t.cislo(n)} ${s[3]}` : suma;
+  return { den: denT, nazov: nazovT, popis: popisT, suma: sumaT };
+}

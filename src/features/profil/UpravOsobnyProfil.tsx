@@ -9,6 +9,7 @@ import { klucEntity, useFotkyEntity } from "@/lib/fotoentity";
 import { FotoProfiluObsah } from "@/components/fotoprofilu";
 import { toast } from "@/components/toast";
 import { Harok } from "@/features/zbierka/Zdielat";
+import { useT } from "@/i18n";
 import "@/styles/platba.css";
 
 type Stav = OsobnyProfil & { verzia: VerziaIdentity };
@@ -28,6 +29,7 @@ const Sipka = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" 
 const Stit = ({ size = 17 }: { size?: number }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z" /></svg>;
 
 export function UpravOsobnyProfil({ onClose }: { onClose: () => void }) {
+  const tr = useT();
   const ja = usePouzivatel();
   const [mojeFotky, zmenMojeFotky] = useFotkyEntity(klucEntity("ja", ja.ucetId || "demo"));
   const [fotka, setFotka] = useState(false);
@@ -42,10 +44,10 @@ export function UpravOsobnyProfil({ onClose }: { onClose: () => void }) {
   const zmena = JSON.stringify(e) !== JSON.stringify(povodny);
   const moze = zmena && e.ulica.trim().length > 0 && e.mesto.trim().length > 0;
 
-  const meno = ja.meno || "Člen", priezv = ja.priezvisko || "";
+  const meno = ja.meno || tr("upravit.clen"), priezv = ja.priezvisko || "";
   const inic = `${meno}${priezv ? ` ${priezv[0]}.` : ""}`;
-  const MOZNOSTI: [VerziaIdentity, string, string][] = [[1, "Celé meno", `${meno} ${priezv}`.trim()], [2, "Meno a iniciála", inic], [3, "Prezývka", "vymyslíš si ju"], [4, "Anonymne", "Anonymný darca"]];
-  const nahlad = e.verzia === 1 ? `${meno} ${priezv}`.trim() : e.verzia === 2 ? inic : e.verzia === 3 ? (e.prezyvka || "Prezývka") : "Anonymný darca";
+  const MOZNOSTI: [VerziaIdentity, string, string][] = [[1, tr("upravit.celeMeno"), `${meno} ${priezv}`.trim()], [2, tr("upravit.menoIniciala"), inic], [3, tr("upravit.prezyvka"), tr("upravit.prezyvka.s")], [4, tr("upravit.anonymne"), tr("upravit.anonymnyDarca")]];
+  const nahlad = e.verzia === 1 ? `${meno} ${priezv}`.trim() : e.verzia === 2 ? inic : e.verzia === 3 ? (e.prezyvka || tr("upravit.prezyvka")) : tr("upravit.anonymnyDarca");
   const foto = e.verzia !== 4 && e.fotoPriDare;
   const ini = `${meno[0] ?? ""}${priezv[0] ?? ""}`.toUpperCase();
 
@@ -54,38 +56,38 @@ export function UpravOsobnyProfil({ onClose }: { onClose: () => void }) {
     const { verzia, ...osobny } = e;
     ulozOsobny(osobny);
     ulozPredvolbu({ ...nacitajPredvolbu(), verzia });
-    toast("Profil uložený");
+    toast(tr("upravit.ulozeny"));
     onClose();
   };
 
   return (
     <>
-      <Harok onClose={onClose} zatvorText="Zrušiť" plnaVyska hlavicka={<span style={{ flex: 1, fontSize: 19, fontWeight: 800 }}>Upraviť profil</span>}
-        paticka={<button type="button" onClick={uloz} disabled={!moze} style={{ flex: 1, height: 56, borderRadius: 18, border: "none", fontSize: 17, fontWeight: 800, color: "#fff", cursor: moze ? "pointer" : "default", background: "var(--gGrad)", opacity: moze ? 1 : .45, transition: "opacity .2s ease", fontFamily: "inherit" }}>Uložiť</button>}>
+      <Harok onClose={onClose} zatvorText={tr("sp.zrusit")} plnaVyska hlavicka={<span style={{ flex: 1, fontSize: 19, fontWeight: 800 }}>{tr("profil.upravit")}</span>}
+        paticka={<button type="button" onClick={uloz} disabled={!moze} style={{ flex: 1, height: 56, borderRadius: 18, border: "none", fontSize: 17, fontWeight: 800, color: "#fff", cursor: moze ? "pointer" : "default", background: "var(--gGrad)", opacity: moze ? 1 : .45, transition: "opacity .2s ease", fontFamily: "inherit" }}>{tr("sp.ulozit")}</button>}>
         <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {nadpis("FOTKY")}
+            {nadpis(tr("upravit.fotky"))}
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
               <button type="button" onClick={() => setFotka(true)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderRadius: 16, background: "var(--card)", border: "1px solid var(--cardBd)", minHeight: 60, cursor: "pointer", fontFamily: "inherit", color: "var(--ink)" }}>
                 <span style={{ width: 38, height: 38, borderRadius: "50%", background: ja.foto ? `url(${ja.foto}) center/cover` : "var(--gSoft)", color: "var(--gInk)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 800, flex: "none" }}>{ja.foto ? "" : ini}</span>
-                <span style={{ fontSize: 13.5, fontWeight: 700 }}>Profilová</span>
+                <span style={{ fontSize: 13.5, fontWeight: 700 }}>{tr("upravit.profilova")}</span>
               </button>
               <button type="button" onClick={() => setFotka(true)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderRadius: 16, background: "var(--card)", border: "1px solid var(--cardBd)", minHeight: 60, cursor: "pointer", fontFamily: "inherit", color: "var(--ink)" }}>
                 <span style={{ width: 52, height: 30, borderRadius: 7, background: mojeFotky.cover ? `url(${mojeFotky.cover}) center/cover` : "linear-gradient(135deg,#C9D5BC,#E2D7BF)", flex: "none" }} />
-                <span style={{ fontSize: 13.5, fontWeight: 700 }}>Titulná</span>
+                <span style={{ fontSize: 13.5, fontWeight: 700 }}>{tr("upravit.titulna")}</span>
               </button>
             </div>
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {nadpis("MENO")}
+            {nadpis(tr("upravit.meno"))}
             <div style={{ ...pole, display: "flex", alignItems: "center", gap: 10, color: "var(--ink2)" }}>
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--ink4)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="11" width="14" height="10" rx="2" /><path d="M8 11V7a4 4 0 0 1 8 0v4" /></svg>{ja.celeMeno}</div>
-            {pomoc("Overené pri registrácii. Zmenu mena rieši podpora.")}
+            {pomoc(tr("upravit.menoPomoc"))}
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {nadpis("AKO SA UKÁŽEŠ PRI DARE")}
+            {nadpis(tr("upravit.priDare"))}
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               {MOZNOSTI.map(([k, t, s]) => {
                 const on = e.verzia === k;
@@ -96,40 +98,40 @@ export function UpravOsobnyProfil({ onClose }: { onClose: () => void }) {
                   </div>);
               })}
             </div>
-            {e.verzia === 3 && <input value={e.prezyvka} onChange={(x) => set("prezyvka", x.target.value.slice(0, 24))} placeholder="Tvoja prezývka" maxLength={24} style={pole} />}
-            {e.verzia !== 4 && <Riadok t="Zobraziť fotku pri dare" s="inak sa ukáže iniciála" on={e.fotoPriDare} onClick={() => set("fotoPriDare", !e.fotoPriDare)} />}
+            {e.verzia === 3 && <input value={e.prezyvka} onChange={(x) => set("prezyvka", x.target.value.slice(0, 24))} placeholder={tr("upravit.tvojaPrezyvka")} maxLength={24} style={pole} />}
+            {e.verzia !== 4 && <Riadok t={tr("upravit.fotkaPriDare")} s={tr("upravit.fotkaPriDare.s")} on={e.fotoPriDare} onClick={() => set("fotoPriDare", !e.fotoPriDare)} />}
             <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderRadius: 14, border: "1.5px dashed var(--gBd)", background: "var(--card)" }}>
               <span style={{ width: 32, height: 32, borderRadius: "50%", background: foto ? (ja.foto ? `url(${ja.foto}) center/cover` : "linear-gradient(135deg,#8FA98A,#5F7F5A)") : "var(--gSoft)", color: foto ? "#fff" : "var(--gInk)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 13, flex: "none", border: foto ? "2px solid #fff" : "none", boxSizing: "border-box" }}>
-                {e.verzia === 4 ? "?" : foto ? (ja.foto ? "" : "foto") : (nahlad[0] || "M")}</span>
-              <span style={{ flex: 1, minWidth: 0 }}><span style={{ display: "block", fontSize: 15, fontWeight: 700 }}>{nahlad}</span><span style={{ display: "block", fontSize: 12, color: "var(--ink3)" }}>takto ťa uvidia v zozname darcov</span></span>
+                {e.verzia === 4 ? "?" : foto ? (ja.foto ? "" : tr("upravit.foto")) : (nahlad[0] || "M")}</span>
+              <span style={{ flex: 1, minWidth: 0 }}><span style={{ display: "block", fontSize: 15, fontWeight: 700 }}>{nahlad}</span><span style={{ display: "block", fontSize: 12, color: "var(--ink3)" }}>{tr("upravit.nahlad")}</span></span>
             </div>
-            {pomoc("Pri každom dare to môžeš zmeniť, toto je predvolené.")}
+            {pomoc(tr("upravit.predvolene"))}
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {nadpis("MIESTO, KDE SA ZDRŽIAVAM")}
+            {nadpis(tr("upravit.miesto"))}
             <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 108px", gap: 8 }}>
-              <input value={e.ulica} onChange={(x) => set("ulica", x.target.value)} placeholder="Ulica" autoComplete="address-line1" style={pole} />
-              <input value={e.cislo} onChange={(x) => set("cislo", x.target.value.slice(0, 10))} placeholder="Číslo" style={{ ...pole, fontVariantNumeric: "tabular-nums" }} />
+              <input value={e.ulica} onChange={(x) => set("ulica", x.target.value)} placeholder={tr("upravit.ulica")} autoComplete="address-line1" style={pole} />
+              <input value={e.cislo} onChange={(x) => set("cislo", x.target.value.slice(0, 10))} placeholder={tr("upravit.cislo")} style={{ ...pole, fontVariantNumeric: "tabular-nums" }} />
             </div>
-            <input value={e.mesto} onChange={(x) => set("mesto", x.target.value)} placeholder="Mesto alebo obec" autoComplete="address-level2" style={pole} />
-            {pomoc("Nemusí to byť adresa z občianskeho. Číslo domu je nepovinné. Adresu nikto nevidí, podľa nej ti ukážeme skutky a pomoc z tvojej štvrte.")}
+            <input value={e.mesto} onChange={(x) => set("mesto", x.target.value)} placeholder={tr("upravit.mesto")} autoComplete="address-level2" style={pole} />
+            {pomoc(tr("upravit.miestoPomoc"))}
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>{nadpis("O MNE")}<span style={{ fontSize: 12, color: "var(--ink4)", fontVariantNumeric: "tabular-nums" }}>{e.oMne.length} / 150</span></div>
-            <textarea value={e.oMne} onChange={(x) => set("oMne", x.target.value.slice(0, 150))} maxLength={150} rows={3} placeholder="Napr. Rád pomôžem so záhradou aj s počítačom."
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>{nadpis(tr("upravit.oMne"))}<span style={{ fontSize: 12, color: "var(--ink4)", fontVariantNumeric: "tabular-nums" }}>{e.oMne.length} / 150</span></div>
+            <textarea value={e.oMne} onChange={(x) => set("oMne", x.target.value.slice(0, 150))} maxLength={150} rows={3} placeholder={tr("upravit.oMnePlaceholder")}
               style={{ ...pole, height: "auto", padding: "12px 14px", fontSize: 15, lineHeight: 1.45, resize: "none" }} />
-            {pomoc("Nepovinné. Ukáže sa pod menom na tvojom profile.")}
+            {pomoc(tr("upravit.oMnePomoc"))}
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            {nadpis("SÚKROMIE")}
-            <Riadok t="Verejný profil" s={e.verejny ? "profil a skutky vidia ostatní" : "pri daroch si Anonymný darca"} on={e.verejny} onClick={() => set("verejny", !e.verejny)} />
-            <Riadok hore t="Ukazovať môj štít" s="pri mene, v zozname darcov a na profile" on={e.ukazStit} onClick={() => set("ukazStit", !e.ukazStit)} />
+            {nadpis(tr("upravit.sukromie"))}
+            <Riadok t={tr("upravit.verejny")} s={e.verejny ? tr("upravit.verejny.on") : tr("upravit.verejny.off")} on={e.verejny} onClick={() => set("verejny", !e.verejny)} />
+            <Riadok hore t={tr("upravit.ukazStit")} s={tr("upravit.ukazStit.s")} on={e.ukazStit} onClick={() => set("ukazStit", !e.ukazStit)} />
             <div onClick={() => setOchrana(true)} role="button" style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 56, cursor: "pointer", borderTop: "1px solid var(--cardBd)" }}>
               <span style={{ width: 34, height: 34, borderRadius: 10, background: "var(--gSoft)", color: "var(--green)", display: "flex", alignItems: "center", justifyContent: "center", flex: "none" }}><Stit /></span>
-              <span style={{ flex: 1, minWidth: 0 }}><span style={{ display: "block", fontSize: 15, fontWeight: 700 }}>Ochrana osoby</span><span style={{ display: "block", fontSize: 12.5, color: "var(--ink3)" }}>tvoje skóre nikdy nepoužijeme proti tebe</span></span>
+              <span style={{ flex: 1, minWidth: 0 }}><span style={{ display: "block", fontSize: 15, fontWeight: 700 }}>{tr("upravit.ochrana")}</span><span style={{ display: "block", fontSize: 12.5, color: "var(--ink3)" }}>{tr("upravit.ochrana.s")}</span></span>
               <Sipka />
             </div>
           </div>
@@ -138,11 +140,11 @@ export function UpravOsobnyProfil({ onClose }: { onClose: () => void }) {
       {ochrana && <OchranaOsoby onClose={() => setOchrana(false)} />}
       {fotka && (
         // OPRAVY 72: fotky ako hárok NAD Upraviť profil (vyššia vrstva); hárok pod ním sa nehýbe, Späť zavrie len fotky
-        <Harok z={170} onClose={() => setFotka(false)} zatvorText="Späť" hlavicka={<span style={{ flex: 1, fontSize: 19, fontWeight: 800 }}>Fotky môjho profilu</span>}>
-          <FotoProfiluObsah titul="Fotky môjho profilu" popis="" bezHlavicky foto={ja.foto} nahrada={ja.iniciala}
-            onZmena={(url) => { ja.nastavFoto?.(url); toast(url ? "Profilová fotka uložená" : "Profilová fotka odstránená"); }}
-            cover={mojeFotky.cover} coverPopis="Široká fotka na pozadí hlavičky profilu."
-            onCover={(url) => { zmenMojeFotky({ cover: url }); toast(url ? "Titulná fotka uložená" : "Titulná fotka odstránená"); }} />
+        <Harok z={170} onClose={() => setFotka(false)} zatvorText={tr("sp.spat")} hlavicka={<span style={{ flex: 1, fontSize: 19, fontWeight: 800 }}>{tr("upravit.fotkyProfilu")}</span>}>
+          <FotoProfiluObsah titul={tr("upravit.fotkyProfilu")} popis="" bezHlavicky foto={ja.foto} nahrada={ja.iniciala}
+            onZmena={(url) => { ja.nastavFoto?.(url); toast(url ? tr("upravit.fotkaUlozena") : tr("upravit.fotkaOdstranena")); }}
+            cover={mojeFotky.cover} coverPopis={tr("upravit.coverPopis")}
+            onCover={(url) => { zmenMojeFotky({ cover: url }); toast(url ? tr("upravit.titulnaUlozena") : tr("upravit.titulnaOdstranena")); }} />
         </Harok>
       )}
     </>
@@ -151,20 +153,21 @@ export function UpravOsobnyProfil({ onClose }: { onClose: () => void }) {
 
 /** Ochrana osoby — potvrdenie o človeku vyzerá vždy rovnako (nie vypínač) */
 export function OchranaOsoby({ onClose }: { onClose: () => void }) {
+  const tr = useT();
   const r = (k: string, v: string, prvy?: boolean) => (
     <div style={{ display: "flex", justifyContent: "space-between", padding: prvy ? "11px 0 9px" : "9px 0", marginTop: prvy ? 6 : 0, borderTop: "1px solid var(--cardBd)", fontSize: 14.5 }}><span>{k}</span><b style={{ color: "var(--gInk)" }}>{v}</b></div>);
   return (
     <Harok onClose={onClose} hlavicka={<>
       <span style={{ width: 44, height: 44, borderRadius: 13, background: "var(--gSoft)", color: "var(--green)", display: "flex", alignItems: "center", justifyContent: "center", flex: "none" }}><Stit size={22} /></span>
-      <span style={{ flex: 1, minWidth: 0 }}><span style={{ display: "block", fontSize: 20, fontWeight: 800 }}>Ochrana osoby</span><span style={{ display: "block", fontSize: 13.5, color: "var(--ink3)" }}>Tvoje skóre nikdy nepoužijeme proti tebe.</span></span>
-    </>} paticka={<button type="button" onClick={onClose} style={{ flex: 1, height: 56, borderRadius: 18, border: "none", fontSize: 17, fontWeight: 800, color: "#fff", cursor: "pointer", background: "var(--gGrad)", fontFamily: "inherit" }}>Rozumiem</button>}>
-      <div style={{ fontSize: 14.5, lineHeight: 1.55, color: "var(--ink2)" }}>Karmu a skutky vidíš len ty. Systém ich potrebuje, aby si dostal odmeny, ale nikto iný si ich nevie pozrieť ani porovnať.</div>
+      <span style={{ flex: 1, minWidth: 0 }}><span style={{ display: "block", fontSize: 20, fontWeight: 800 }}>{tr("upravit.ochrana")}</span><span style={{ display: "block", fontSize: 13.5, color: "var(--ink3)" }}>{tr("upravit.ochrana.veta")}</span></span>
+    </>} paticka={<button type="button" onClick={onClose} style={{ flex: 1, height: 56, borderRadius: 18, border: "none", fontSize: 17, fontWeight: 800, color: "#fff", cursor: "pointer", background: "var(--gGrad)", fontFamily: "inherit" }}>{tr("upravit.rozumiem")}</button>}>
+      <div style={{ fontSize: 14.5, lineHeight: 1.55, color: "var(--ink2)" }}>{tr("upravit.ochrana.popis")}</div>
       <div style={{ padding: "14px 16px 12px", borderRadius: 18, background: "var(--card)", border: "1px solid var(--cardBd)" }}>
-        <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".05em", color: "var(--blue)" }}>KEĎ NIEKTO CHCE POTVRDENIE O TEBE</div>
-        <div style={{ fontSize: 12.5, color: "var(--ink3)", marginTop: 3 }}>napr. úrad alebo zamestnávateľ, teraz ani v budúcnosti</div>
-        {r("Karma", "nad priemerom", true)}{r("Skutky", "v norme komunity")}{r("Dôveryhodnosť", "nad priemerom")}
+        <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".05em", color: "var(--blue)" }}>{tr("upravit.potvrdenie")}</div>
+        <div style={{ fontSize: 12.5, color: "var(--ink3)", marginTop: 3 }}>{tr("upravit.potvrdenie.s")}</div>
+        {r(tr("upravit.r.karma"), tr("upravit.r.nadPriemerom"), true)}{r(tr("upravit.r.skutky"), tr("upravit.r.vNorme"))}{r(tr("upravit.r.doveryhodnost"), tr("upravit.r.nadPriemerom"))}
       </div>
-      <div style={{ fontSize: 13.5, lineHeight: 1.5, color: "var(--ink2)" }}>Toto potvrdenie vyzerá rovnako pre každého. Nedá sa ním dokázať nízke skóre. <b style={{ color: "var(--ink)" }}>Za skutky ťa odmeníme, za ich nedostatok nikdy nepotrestáme.</b></div>
+      <div style={{ fontSize: 13.5, lineHeight: 1.5, color: "var(--ink2)" }}>{tr("upravit.rovnake")}<b style={{ color: "var(--ink)" }}>{tr("upravit.odmenime")}</b></div>
     </Harok>
   );
 }

@@ -6,6 +6,7 @@
 // Firma NIKDY nevidí voľby zamestnanca (predvoľbu Neukázať / Anonymne / S menom).
 // ============================================================
 import { useSyncExternalStore } from "react";
+import { tTeraz } from "@/i18n";
 
 export type FirmaVolba = "neukazat" | "anonym" | "meno";
 export const VOLBA_TXT: Record<FirmaVolba, string> = { neukazat: "Neukázať", anonym: "Anonymne", meno: "S menom" };
@@ -88,7 +89,7 @@ export const navrhniAkciu = (firma: string, a: { t: string; kedy: string }) => {
   const s = nacitaj();
   const dt = new Date(a.kedy);
   const m = ["JAN", "FEB", "MAR", "APR", "MÁJ", "JÚN", "JÚL", "AUG", "SEP", "OKT", "NOV", "DEC"];
-  const akcia: FirmaAkcia = { d: isNaN(dt.getTime()) ? 0 : dt.getDate(), m: isNaN(dt.getTime()) ? "" : m[dt.getMonth()], t: a.t, s: "tvoj návrh · čaká na firmu", stitok: "navrhnuté", typ: "akcia" };
+  const akcia: FirmaAkcia = { d: isNaN(dt.getTime()) ? 0 : dt.getDate(), m: isNaN(dt.getTime()) ? "" : m[dt.getMonth()], t: a.t, s: tTeraz()("firma.navrh.s"), stitok: "navrhnuté", typ: "akcia" };
   uloz({ ...s, navrhy: { ...s.navrhy, [firma]: [...(s.navrhy[firma] ?? []), akcia] } });
 };
 /** pilot: kód „PEKA-2931" → firma podľa prefixu (v produkcii overí server) */
