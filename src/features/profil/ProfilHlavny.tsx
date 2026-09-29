@@ -7,6 +7,7 @@ import { usePersonalizacia } from "@/lib/personalizacia";
 import { ZAUJMY_KATALOG } from "@/lib/personalizaciaStore";
 import { klucEntity, useFotkyEntity } from "@/lib/fotoentity";
 import { useViac } from "@/components/context";
+import { useVazbyOsoby } from "@/lib/zamestnanci";
 import { ZvacsenaFotka } from "./MojQr";
 import type { StitLevel } from "@/components/stit";
 import { Harok } from "@/features/zbierka/Zdielat";
@@ -27,6 +28,7 @@ export const stitUzivatela = (demo: boolean): StitLevel => (demo ? "Gold" : "Bro
 const Ik = ({ d, size = 19, farba = "currentColor" }: { d: string; size?: number; farba?: string }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={farba} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d={d} /></svg>);
 const IK = {
+  budova: "M3 21h18M5 21V7l7-4 7 4v14M9 9h1M14 9h1M9 13h1M14 13h1M10 21v-4h4v4",
   menu: "M4 7h16M4 12h16M4 17h16",
   kamera: "M4 8h3l2-3h6l2 3h3v11H4zM15.5 13a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0z",
   oko: "M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12zM15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0z",
@@ -60,7 +62,7 @@ const btn = { height: 46, borderRadius: 14, border: "1px solid var(--cardBd)", b
 
 export type ProfilAkcie = {
   naWallet: () => void; naNastavenia: () => void; naPriatelia: () => void; naSub: (n: string) => void;
-  naUpravit: () => void; naQr: () => void;
+  naUpravit: () => void; naQr: () => void; naFirma: () => void;
 };
 
 /** karta identity (fotky sa menia len v Upraviť profil; ťuk na avatar fotku zväčší): titulná fotka, avatar so zlatým kruhom, meno, mesto, verejný/anonymný, Upraviť profil · Môj QR */
@@ -193,6 +195,9 @@ export function MojeZaujmy() {
 export function ProfilHlavny18(a: ProfilAkcie) {
   const otvorViac = useViac();
   const { sledovani, podpory } = usePersonalizacia();
+  const ja = usePouzivatel();
+  const firmy = useVazbyOsoby(ja.celeMeno);
+  const firmaPod = firmy.some((v) => v.stav === "potvrdeny") ? firmy.filter((v) => v.stav === "potvrdeny").map((v) => v.firma).join(", ") : firmy.length ? "čaká na potvrdenie" : "prepoj sa s firmou";
   const dlazdice: [string, string, string, string, string, () => void][] = [
     ["Peňaženka", "1 240 DEED", IK.wallet, "var(--bSoft)", "var(--blue)", a.naWallet],
     ["Nastavenia", "vzhľad, súkromie", IK.nastavenia, "var(--card)", "var(--ink2)", a.naNastavenia],
@@ -200,6 +205,7 @@ export function ProfilHlavny18(a: ProfilAkcie) {
     ["Priatelia", "nájdi známych", IK.priatelia, "var(--bSoft)", "var(--blue)", a.naPriatelia],
     ["Štíty", "podľa oblastí", IK.stity, "var(--goldBg)", "#876712", () => a.naSub("Karma a úrovne")],
     ["Štatistiky", "tento mesiac +9", IK.stat, "var(--gSoft)", "var(--green)", () => a.naSub("Štatistiky a umiestnenie")],
+    ["Zamestnávateľ", firmaPod, IK.budova, "var(--sek-oBg)", "var(--sek-o)", a.naFirma],
   ];
   const pocty: [number, string][] = [[sledovani.length, "sledujem"], [podpory.length, "podporujem"], [MOJE_SKUTKY_POCET, "skutkov"]];
   return (

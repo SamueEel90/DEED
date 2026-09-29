@@ -27,13 +27,15 @@ function Retaz({ x, y, farba }: { x: number; y: number; farba: string }) {
   );
 }
 
-export function DeedQr({ data, odznak = "D+", retaz = false, suma, delenie, variant = "svetly", size = 260, bezOdznaku = false }: {
+export function DeedQr({ data, odznak = "D+", retaz = false, suma, delenie, variant = "svetly", size = 260, bezOdznaku = false, farba }: {
   data: string; odznak?: DeedOdznak; retaz?: boolean; suma?: string | null; delenie?: string | null;
   /** osobný QR (karta 18) — bez odznaku vľavo hore */ bezOdznaku?: boolean;
   variant?: DeedQrVariant; size?: number;
+  /** farba rámu a oporných štvorcov (pracovný QR = zlatá #C9A24A); predvolene zelená DEED */ farba?: string;
 }) {
   const inv = variant === "inverzny";
-  const ramik = inv ? "#ffffff" : ZELENA;
+  const zel = farba ?? ZELENA;
+  const ramik = inv ? "#ffffff" : zel;
   const pozadie = inv ? TMAVA : "#ffffff";
   const pillBg = inv ? "#ffffff" : TMAVA;
   const pillText = inv ? TMAVA : "#ffffff";
@@ -60,9 +62,9 @@ export function DeedQr({ data, odznak = "D+", retaz = false, suma, delenie, vari
       const x = QX + c * p, y = QY + r * p;
       findery.push(
         <g key={`f${r}-${c}`}>
-          <rect x={x} y={y} width={7 * p} height={7 * p} rx={1.6 * p} fill={ZELENA} />
+          <rect x={x} y={y} width={7 * p} height={7 * p} rx={1.6 * p} fill={zel} />
           <rect x={x + p} y={y + p} width={5 * p} height={5 * p} rx={1.1 * p} fill="#ffffff" />
-          <rect x={x + 2 * p} y={y + 2 * p} width={3 * p} height={3 * p} rx={0.7 * p} fill={ZELENA} />
+          <rect x={x + 2 * p} y={y + 2 * p} width={3 * p} height={3 * p} rx={0.7 * p} fill={zel} />
         </g>,
       );
     }

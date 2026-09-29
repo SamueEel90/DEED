@@ -21,6 +21,10 @@ import { verejneBeziace } from "@/lib/retaz";
 import { OBLASTI, normalizuj, pridajSkutok, upravSkutok, koncept as nacitajKoncept, ulozKoncept, nastavOhlasenie, ohlasenie as aktOhlasenie,
   type Oblast, type ZbierkaVolba, type Ucastnik, type MojSkutok } from "@/lib/mojeSkutky";
 import { otvorAkciu } from "@/lib/akcia";
+import { useVazbyOsoby } from "@/lib/zamestnanci";
+import { useNastaveniaAppky } from "@/lib/nastaveniaAppky";
+import { navrhniAkciu, VOLBA_VETA, type FirmaVolba } from "@/lib/mojaFirma";
+import { VolbaFirma } from "@/features/profil/Zamestnavatel";
 import { qk, repo } from "@/data";
 import type { GoodPolozka } from "@/types";
 import { usePridatSkutok, zavriPridatSkutok, type PridatParams } from "./otvor";
@@ -175,6 +179,10 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
   const [nz, setNz] = useState(pr.skutok?.nazov ?? "");
   const [po2, setPo2] = useState(() => (pr.skutok ? cistyText(pr.skutok.popis) : ""));
   const [pravda, setPravda] = useState(false);
+  // karta 21 · 11: riadok Firma (len prepojený so zamestnávateľom; firemná akcia je vždy s menom, riadok sa neukáže)
+  const nast = useNastaveniaAppky();
+  const mojeFirmy = useVazbyOsoby(ja.celeMeno).filter((v) => v.stav === "potvrdeny").map((v) => v.firma);
+  const [firmaV, setFirmaV] = useState<FirmaVolba>(nast.firmaPredvolba);
   // hotovo
   const [id] = useState(() => `m${teraz()}`);
   const [rz, setRz] = useState<{ open: boolean; z: ZbierkaVolba | null; v: number; hot: boolean }>({ open: false, z: null, v: 20, hot: false });
@@ -273,6 +281,13 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
     else { try { await navigator.clipboard.writeText(url); toast("Pozvánka skopírovaná"); } catch { /* bez schránky */ } }
     setUc((u) => [...u, { meno: `Pozvánka ${u.filter((x) => !x.overeny).length + 1}`, overeny: false }]);
   };
+  // pozvánka kolegom vyzerá rovnako ako každá iná (aj od šéfa) — žiadne „povinné"
+  const pozviKolegov = async () => {
+    const url = `https://deed.sk/skutok/${id}/pridaj-sa`;
+    if (typeof navigator.share === "function") { try { await navigator.share({ title: "Bol si pri tom? Potvrď v DEED", url }); } catch { return; } }
+    else { try { await navigator.clipboard.writeText(url); toast("Pozvánka pre kolegov skopírovaná"); } catch { /* bez schránky */ } }
+    setUc((u) => [...u, { meno: `Kolega ${u.filter((x) => !x.overeny).length + 1}`, overeny: false }]);
+  };
   const DEMO_MENA = ["Lucia H.", "Tomáš B.", "Jana N.", "Peťo K.", "Mária S.", "Ondrej V.", "Katka L.", "Miro D."];
   const naskenuj = () => {
     // skener QR „Na akciu" — overenie tokenu robí server; v DEV pribudne ukážkový účastník
@@ -343,7 +358,7 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
       stav: doFeedu ? "ok" : "ja", karma: doFeedu ? karma : Math.min(karma, 5),
       det: doFeedu ? "Overila AI. Skutok je vo feede tvojej štvrte. Overenia od susedov mu pridávajú dôveru." : "AI: ostáva v tvojom denníku.",
       fotky, osobny: !doFeedu, ucastnici: sk ? uc.filter((u) => u.overeny).map((u) => u.meno) : undefined, dar: dar ? darZ : undefined,
-      seria: prav ? pvF : undefined, retaz: ohl?.retaz,
+      seria: prav ? pvF : undefined, retaz: ohl?.retaz, firma: mojeFirmy.length ? firmaV : undefined,
     };
     pridajSkutok(s);
     if (ohl) nastavOhlasenie(null);
@@ -489,6 +504,10 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
             <button type="button" onClick={pozvi} style={{ height: 46, borderRadius: 13, border: "1px solid var(--cardBd)", background: "var(--btn)", fontSize: 14, fontWeight: 700, color: "var(--ink)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 7, fontFamily: "inherit" }}><Ik d={IK.poslat} s={16} />Poslať pozvánku</button>
           </div>
           <div style={P.maly}>Pomocníkov pridáš do 2 hodín po skutku. Kto dostane pozvánku, musí potvrdiť, že bol pri tom. Každý potom môže pridať aj svoje fotky.</div>
+          {mojeFirmy.length > 0 && <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+            <button type="button" onClick={pozviKolegov} style={{ minHeight: 46, padding: "4px 8px", borderRadius: 13, border: "1px solid var(--sek-oBd)", background: "var(--goldBg)", fontSize: 13.5, fontWeight: 700, color: "var(--ink)", cursor: "pointer", fontFamily: "inherit", lineHeight: 1.25 }}>Pozvať kolegov z firmy</button>
+            <button type="button" onClick={() => { navrhniAkciu(mojeFirmy[0], { t: nz0.trim() || "Spoločný skutok s kolegami", kedy: new Date().toISOString().slice(0, 10) }); toast(`Návrh sme poslali firme ${mojeFirmy[0]}`); }} style={{ minHeight: 46, padding: "4px 8px", borderRadius: 13, border: "1.5px dashed var(--sek-gBd)", background: "transparent", fontSize: 13.5, fontWeight: 700, color: "var(--sek-g)", cursor: "pointer", fontFamily: "inherit", lineHeight: 1.25 }}>Navrhnúť firme ako firemnú akciu</button>
+          </div>}
         </> : <div style={P.maly}>Účastníci z akcie sú overení skenom na mieste. Čas a miesto sú vyplnené z akcie. Každý dostane odkaz a môže pridať svoje fotky k spoločnému skutku.</div>}
       </div>}
 
@@ -650,6 +669,11 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
       {citlive && <div style={{ display: "flex", gap: 12, padding: "12px 14px", borderRadius: 16, background: "var(--bSoft)", border: "1px solid var(--bBd)" }}>
         <span style={{ width: 56, height: 56, borderRadius: 12, flex: "none", background: "linear-gradient(135deg,#F6F3EC,#DCE2E4)", border: "1px solid var(--bBd)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--blue)" }}><Ik d={IK.ceruzka} s={26} w={1.8} /></span>
         <span style={{ fontSize: 13.5, lineHeight: 1.5, color: "var(--ink2)" }}><b style={{ color: "var(--ink)" }}>Citlivá situácia, fotky posúdila AI.</b> Máš súhlas ľudí a fotky nikoho neponižujú, preto ich zverejníme. Keby ponižovali, ukázali by sme kreslenú verziu.</span>
+      </div>}
+      {mojeFirmy.length > 0 && !plan && <div style={{ display: "flex", flexDirection: "column", gap: 10, padding: "12px 14px", borderRadius: 16, background: "var(--card)", border: "1px solid var(--sek-oBd)" }}>
+        <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".05em", color: "var(--ink3)" }} id="firma-riadok">FIRMA · {mojeFirmy.join(", ").toUpperCase()}</span>
+        <VolbaFirma v={firmaV} set={setFirmaV} labelId="firma-riadok" />
+        <span aria-live="polite" style={{ fontSize: 13.5, lineHeight: 1.5, color: "var(--ink2)" }}>{firmaV === "meno" ? "Firma uvidí tento skutok a tvoje meno a môže ťa odmeniť." : VOLBA_VETA[firmaV]}</span>
       </div>}
       <Zaskrt on={pravda} onClick={() => setPravda(!pravda)} zarovnaj="flex-start">Skutok je pravdivý a súhlasím s náhľadom.</Zaskrt>
     </>, <>

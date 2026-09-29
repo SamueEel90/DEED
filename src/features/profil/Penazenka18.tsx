@@ -94,7 +94,7 @@ export function Penazenka18({ onBack, desktop }: { onBack: () => void; desktop?:
           <span style={{ fontSize: 17, fontWeight: 800, color: "var(--blue)" }}>{mena}</span></div>
         <div style={{ fontSize: 13.5, color: "var(--ink3)", marginTop: 2 }}>{mena === "DEED" ? `≈ ${e2(deed / KURZ_DEED_ZA_EUR)} €` : `= ${e2(eurc / KURZ_EURC_ZA_EUR)} €`}</div>
         <div style={{ fontSize: 12.5, lineHeight: 1.5, color: "var(--ink2)", marginTop: 10, paddingTop: 10, borderTop: "1px solid var(--bBd)" }}>
-          {mena === "DEED" ? "Mena skutkov: odmeny za skutky, dary v Help, Good a Aktivitách, poďakovania." : "Digitálne euro na mikrodary od 0,10 € a dary v krypte. Jeden EURC je vždy jedno euro."}</div>
+          {mena === "DEED" ? "Mena skutkov: odmeny za skutky, dary v Domove, Help a Aktivitách, poďakovania." : "Digitálne euro na mikrodary od 0,10 € a dary v krypte. Jeden EURC je vždy jedno euro."}</div>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10 }}>
         {([["Poslať", IK.poslat, () => toast("Poslať príde v ďalšej verzii")], ["Prijať", IK.prijat, () => setPrijat(true)], ["Dobiť", IK.dobit, () => setDobit(true)]] as const).map(([t, ic, fn]) => (

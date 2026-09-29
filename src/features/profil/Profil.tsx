@@ -13,6 +13,7 @@ import { UpravOsobnyProfil } from "./UpravOsobnyProfil";
 import { MojQr } from "./MojQr";
 import { Penazenka18 } from "./Penazenka18";
 import { Nastavenia20 } from "./Nastavenia20";
+import { Zamestnavatel, IK_BUDOVA } from "./Zamestnavatel";
 import { MojeSkutky21 } from "./MojeSkutky21";
 
 /*
@@ -52,12 +53,13 @@ export default function ModulProfil({ wide, walletReq = 0 }: ProfilProps) {
   return (
     <div style={{ minHeight: "100%" }}>
       <ScreenSwitch k={screen}>
-      {screen === "profil" && obal(<ProfilHlavny18 naWallet={() => setScreen("wallet")} naSub={sub} naNastavenia={() => setScreen("nastavenia")} naPriatelia={() => setScreen("priatelia")}
+      {screen === "profil" && obal(<ProfilHlavny18 naWallet={() => setScreen("wallet")} naSub={sub} naNastavenia={() => setScreen("nastavenia")} naPriatelia={() => setScreen("priatelia")} naFirma={() => setScreen("firma")}
         naUpravit={() => setUprava(true)} naQr={() => setQr(true)} />)}
       {screen === "wallet" && obal(<Penazenka18 onBack={() => setScreen("profil")} />)}
       {screen === "firemny" && obalSiroky(<MojDeedFiremny onBack={() => setScreen("profil")} toast={toast} />, { wide, desktop, max: SIRKA.stlpec })}
       {screen === "sub" && (subNazov === "Moje skutky" ? <MojeSkutky21 onBack={() => setScreen("profil")} /> : obal(<SubScreen nazov={subNazov} toast={toast} onBack={() => setScreen("profil")} />))}
       {screen === "priatelia" && obal(<PriateliaScreen toast={toast} onBack={() => setScreen("profil")} />)}
+      {screen === "firma" && obal(<Zamestnavatel onBack={() => setScreen("profil")} />)}
       {screen === "nastavenia" && obal(<Nastavenia20 onBack={() => setScreen("profil")} onNotif={() => setScreen("notif")} onUpravProfil={() => setUprava(true)} />)}
       {screen === "notif" && obal(<NotifObrazovka onBack={() => setScreen("nastavenia")} />)}
       </ScreenSwitch>
@@ -72,6 +74,7 @@ const PROFIL_NAV: { key: string; nazov?: string; label: string; ikona: React.Rea
   { key: "wallet", label: "Peňaženka", ikona: <IkonaPenazenka size={18} /> },
   { key: "sub", nazov: "Moje skutky", label: "Moje skutky", ikona: <IkonaFajka size={18} /> },
   { key: "profil", label: "Moje záujmy", ikona: <IkonaOsoba size={18} /> },
+  { key: "firma", label: "Zamestnávateľ", ikona: <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="var(--sek-o)" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={IK_BUDOVA} /></svg> },
   { key: "sub", nazov: "Štatistiky a umiestnenie", label: "Štatistiky", ikona: <IkonaDoska size={18} /> },
   { key: "priatelia", label: "Priatelia", ikona: <IkonaUsmev size={18} /> },
   { key: "sub", nazov: "Karma a úrovne", label: "Karma a úrovne", ikona: <IkonaHviezda size={18} /> },
@@ -85,6 +88,7 @@ function ProfilDesktop({ screen, subNazov, setScreen, onSub, onQr, onUpravit }: 
   else if (screen === "firemny") obsah = <MojDeedFiremny onBack={() => setScreen("profil")} toast={toast} />;
   else if (screen === "sub") obsah = subNazov === "Moje skutky" ? <MojeSkutky21 onBack={() => setScreen("profil")} /> : <SubScreen nazov={subNazov} toast={toast} desktop onBack={() => setScreen("profil")} />;
   else if (screen === "priatelia") obsah = <PriateliaScreen toast={toast} desktop onBack={() => setScreen("profil")} />;
+  else if (screen === "firma") obsah = <Zamestnavatel desktop onBack={() => setScreen("profil")} />;
   else if (screen === "nastavenia") obsah = <Nastavenia20 desktop onBack={() => setScreen("profil")} onNotif={() => setScreen("notif")} onUpravProfil={onUpravit} />;
   else if (screen === "notif") obsah = <NotifObrazovka desktop onBack={() => setScreen("nastavenia")} />;
   else obsah = (

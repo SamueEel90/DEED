@@ -31,6 +31,8 @@ export interface MojSkutok {
   retaz?: { zbierka: ZbierkaVolba; pct: number };
   dar?: ZbierkaVolba[];
   seria?: string;
+  /** karta 21 · 11: čo uvidí firma (len prepojený so zamestnávateľom) */
+  firma?: "neukazat" | "anonym" | "meno";
 }
 
 export interface Ucastnik { meno: string; overeny: boolean }

@@ -9,8 +9,8 @@ import type { Notifikacia } from "@/types";
 
 const IKONY = ["ok", "srd", "otaz", "stit", "ret", "lud", "kal", "dok", "ciel", "sum", "deed", "namiet"];
 const KAT_STARE: Record<string, Notifikacia["kat"]> = { penazenka: "penaze", sledovane: "zbierky", socialne: "ludia" };
-const KAT_IKONA: Record<Notifikacia["kat"], Notifikacia["ikona"]> = { skutky: "ok", skupina: "lud", penaze: "sum", zbierky: "ciel", ludia: "lud", deed: "deed" };
-const KAT_TON: Record<Notifikacia["kat"], Notifikacia["ton"]> = { skutky: "g", skupina: "b", penaze: "gold", zbierky: "gold", ludia: "b", deed: "b" };
+const KAT_IKONA: Record<Notifikacia["kat"], Notifikacia["ikona"]> = { skutky: "ok", skupina: "lud", penaze: "sum", zbierky: "ciel", ludia: "lud", deed: "deed", firma: "kal" };
+const KAT_TON: Record<Notifikacia["kat"], Notifikacia["ton"]> = { skutky: "g", skupina: "b", penaze: "gold", zbierky: "gold", ludia: "b", deed: "b", firma: "gold" };
 
 // timestamptz → deň skupiny (Dnes · Včera · 27. 9.) + čas (dnes relatívne, inak hh:mm)
 function denCas(ts?: string): { den: string; cas: string } {

@@ -101,6 +101,14 @@ export const zamestnanci = (firma: string): Vazba[] =>
 export const vazbaOsoby = (osoba: string): Vazba | null =>
   nacitaj().find((x) => rovnakaOsoba(x.osoba, osoba) && ziva(x)) ?? null;
 
+/** všetky živé väzby človeka — karta 24 · 2i doplnok: viac firiem naraz (brigádnik v 2 firmách) */
+export const vazbyOsoby = (osoba: string): Vazba[] =>
+  nacitaj().filter((x) => rovnakaOsoba(x.osoba, osoba) && ziva(x)).sort((a, b) => a.kedy - b.kedy);
+export function useVazbyOsoby(osoba: string): Vazba[] {
+  useZmenyVazieb();
+  return vazbyOsoby(osoba);
+}
+
 /** je tento človek potvrdeným zamestnancom firmy? (podklad pre dorovnanie) */
 export const jeZamestnanec = (firma: string, osoba: string): boolean =>
   nacitaj().some((x) => rovnakaFirma(x.firma, firma) && rovnakaOsoba(x.osoba, osoba) && x.stav === "potvrdeny");

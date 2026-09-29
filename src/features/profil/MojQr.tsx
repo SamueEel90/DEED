@@ -22,7 +22,7 @@ const POUZITIE: Record<"akcia" | "overit", string[]> = {
 const KRUH = "linear-gradient(135deg,#E2C174,#A8842A)";
 
 /** kód na 15 s — vytvorí sa v telefóne (offline). Podpis tajomstvom zariadenia doplní backend (Supabase). */
-function tokenQr(ucet: string, rezim: string, okno: number): string {
+export function tokenQr(ucet: string, rezim: string, okno: number): string {
   const surove = `${ucet}|${rezim}|${okno}`;
   let h = 2166136261;
   for (let i = 0; i < surove.length; i++) { h ^= surove.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; }

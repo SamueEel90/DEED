@@ -215,6 +215,7 @@ export const FIRMY_ADRESAR: FirmaAdresar[] = [
   { iniciacky: "PD", nazov: "Pekáreň Dobrota", odvetvie: "Gastro", mesto: "Trenčín", stit: "Bronze", podpora: "2 400 €", logo: U("photo-1628428799437-d886d7d2e9b2"), ico: "47 123 456" },
   { iniciacky: "IT", nazov: "ITech Solutions", odvetvie: "IT", mesto: "Bratislava", stit: "Silver", podpora: "5 100 €", ico: "50 234 118" },
   { iniciacky: "ZS", nazov: "Zelená stavba", odvetvie: "Stavebníctvo", mesto: "Žilina", stit: "Silver", podpora: "3 750 €", ico: "36 555 201" },
+  { iniciacky: "KH", nazov: "Kaviareň Pod Hradom", odvetvie: "Gastro", mesto: "Trenčín", stit: "Bronze", podpora: "380 €", ico: "54 210 339" },
   { iniciacky: "KV", nazov: "Kvety Viola", odvetvie: "Služby", mesto: "Trenčín", stit: "Bronze", podpora: "640 €", ico: "53 901 772" },
 ];
 

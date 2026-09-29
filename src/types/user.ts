@@ -391,7 +391,7 @@ export type OrgTab = "Kampane" | "Skutky" | "Talent";
 
 /* NOTIFIKÁCIE — Notifikacie.jsx (§8) */
 
-export type NotifKat = "skutky" | "skupina" | "penaze" | "zbierky" | "ludia" | "deed";
+export type NotifKat = "skutky" | "skupina" | "penaze" | "zbierky" | "ludia" | "deed" | "firma";
 /** čiarová ikona oznamu (bez emoji) */
 export type NotifIkona = "ok" | "srd" | "otaz" | "stit" | "ret" | "lud" | "kal" | "dok" | "ciel" | "sum" | "deed" | "namiet";
 /** farba podľa typu: g = hotové/dobré · b = potrebuje akciu/info · gold = peniaze/zbierka/pozor */

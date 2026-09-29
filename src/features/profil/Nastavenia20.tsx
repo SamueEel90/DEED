@@ -1,17 +1,15 @@
 // KARTA 20 · Nastavenia appky — všetko o appke, nič o profile (fotky, režim profilu a Ochrana osoby sú v Upraviť profil).
 // Poradie: Vzhľad · Prístupnosť · Oznámenia · Poloha · Bezpečnosť · Súkromie a údaje · Účet · Pomoc · [Odhlásiť sa].
 import { useState } from "react";
-import { usePouzivatel } from "@/lib/pouzivatel";
 import { useMotiv, type Tema } from "@/components/context";
 import { useNastaveniaAppky, zmenNastavenia, type Okruh } from "@/lib/nastaveniaAppky";
 import { potvrditTuknutim, nastavPotvrditTuknutim } from "@/features/zbierka/Platba";
-import { useVazbaOsoby } from "@/lib/zamestnanci";
 import { signOut } from "@/lib/auth";
 import { SpatTlacidlo } from "@/components/cesta";
 import { toast } from "@/components/toast";
 import { IntroPruvodca } from "@/components/intro";
 import { NahlasitSheet } from "@/components/nahlasit";
-import { JazykObrazovka, StiahnutUdajeObrazovka, ZamestnavatelObrazovka } from "./JazykUdajeFirma";
+import { JazykObrazovka, StiahnutUdajeObrazovka } from "./JazykUdaje";
 import { Harok } from "@/features/zbierka/Zdielat";
 import { PotvrditPlatbuHarok, OkruhHarok, PrihlaseneZariadenia, EmailTelefonHeslo, ZablokovaniLudia, Suhlasy, DetailSuhlasu, hranicaText } from "./Bezpecnost24";
 import { zariadenia, useZmenyZariadeni } from "@/lib/zariadenia";
@@ -24,14 +22,12 @@ const OKRUH: Record<Okruh, string> = { stvrt: "Štvrť", mesto: "Mesto", slovens
 const coskoro = () => toast("Pribudne v ďalšej verzii");
 
 export function Nastavenia20({ onBack, onNotif, onUpravProfil, desktop }: { onBack: () => void; onNotif: () => void; onUpravProfil?: () => void; desktop?: boolean }) {
-  const ja = usePouzivatel();
   const { tema, nastavTemu } = useMotiv();
   const n = useNastaveniaAppky();
   const [tuk, setTuk] = useState(potvrditTuknutim);
-  const vazba = useVazbaOsoby(ja.celeMeno);
   const [harok, setHarok] = useState<null | "okruh" | "platba" | "zrusit" | "uvod" | "nahlasit">(null);
   const [detail, setDetail] = useState<null | "pod" | "ud">(null); // OPRAVY 34: detail súhlasu (karta 24 · 2f)
-  const [obr, setObr] = useState<null | "zariadenia" | "kontakt" | "blokovani" | "suhlasy" | "jazyk" | "udaje" | "firma">(null); // obrazovky sprava (karta 24)
+  const [obr, setObr] = useState<null | "zariadenia" | "kontakt" | "blokovani" | "suhlasy" | "jazyk" | "udaje">(null); // obrazovky sprava (karta 24)
   useZmenyZariadeni(); useZmenyBlokovania();
 
   const pismo = (d: number) => zmenNastavenia({ pismo: Math.min(150, Math.max(90, n.pismo + d)) });
@@ -106,8 +102,7 @@ export function Nastavenia20({ onBack, onNotif, onUpravProfil, desktop }: { onBa
       </Sekcia>
 
       <Sekcia nadpis="ÚČET" k="b">
-        <Riadok prvy d={IK.brief} t="Zamestnávateľ" hodnota={vazba?.stav === "potvrdeny" ? vazba.firma : vazba?.stav === "pozvany" ? "Pozvánka od firmy" : vazba?.stav === "ziadost" ? "Čaká na potvrdenie" : "Nenastavený"} onClick={() => setObr("firma")} />
-        <Riadok d={IK.trash} t="Zrušiť účet" onClick={() => setHarok("zrusit")} />
+        <Riadok prvy d={IK.trash} t="Zrušiť účet" onClick={() => setHarok("zrusit")} />
       </Sekcia>
 
       <Sekcia nadpis="POMOC" k="g">
@@ -131,7 +126,6 @@ export function Nastavenia20({ onBack, onNotif, onUpravProfil, desktop }: { onBa
       {obr === "suhlasy" && <Suhlasy onBack={() => setObr(null)} />}
       {obr === "jazyk" && <JazykObrazovka onBack={() => setObr(null)} />}
       {obr === "udaje" && <StiahnutUdajeObrazovka onBack={() => setObr(null)} />}
-      {obr === "firma" && <ZamestnavatelObrazovka onBack={() => setObr(null)} />}
       {detail && <DetailSuhlasu typ={detail} onBack={() => setDetail(null)} />}
       {harok === "zrusit" && <ZrusitUcet onClose={() => setHarok(null)} />}
       {harok === "uvod" && <IntroPruvodca onClose={() => setHarok(null)} />}

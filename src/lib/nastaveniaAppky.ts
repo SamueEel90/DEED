@@ -1,5 +1,6 @@
 // Nastavenia appky (karta 20) — všetko o appke, nič o profile. Lokálne (localStorage).
 // Prístupnosť (karta 19): veľkosť písma, obmedziť animácie a vibrácie sa aplikujú hneď na celú appku.
+import type { FirmaVolba } from "./mojaFirma";
 import { useSyncExternalStore } from "react";
 
 export type Okruh = "stvrt" | "mesto" | "slovensko";
@@ -23,13 +24,14 @@ export type NastaveniaAppky = {
   /** okruh počítať od polohy telefónu (Kde práve som) namiesto Moje miesto */
   odPolohy: boolean;
   /** nepovinné súhlasy (karta 24 · 2e) + záznam zmien (čas, verzia) */
-  /** karta 24 · 2g jazyk appky (názov vo vlastnom jazyku) · 2i započítať skutky firme (ESG, bez mena) */
+  /** karta 24 · 2g jazyk appky (názov vo vlastnom jazyku) · 2i predvoľba ukázať firme */
   jazyk: string;
-  esgFirme: boolean;
+  /** skutky mimo firmy: predvoľba pre riadok Firma v náhľade (firma ju nikdy nevidí) */
+  firmaPredvolba: FirmaVolba;
   suhlasy: { pers: boolean; stat: boolean; news: boolean; part: boolean; zaznam: { k: string; on: boolean; cas: string; verzia: string }[] };
 };
 const KLUC = "deed.nastavenia.appky";
-const ZAKLAD: NastaveniaAppky = { pismo: 100, obmedzAnim: false, vibracie: true, titulky: true, tichyCas: true, poloha: true, okruh: "mesto", biometria: false, hranicaPlatby: 50, kontakty: false, ukazky: true, tichyOd: "22:00", tichyDo: "7:00", oznamy: { master: true, zmeny: {}, strop: true, vecer: false }, odPolohy: false, jazyk: "Slovenčina", esgFirme: true, suhlasy: { pers: true, stat: true, news: false, part: false, zaznam: [] } };
+const ZAKLAD: NastaveniaAppky = { pismo: 100, obmedzAnim: false, vibracie: true, titulky: true, tichyCas: true, poloha: true, okruh: "mesto", biometria: false, hranicaPlatby: 50, kontakty: false, ukazky: true, tichyOd: "22:00", tichyDo: "7:00", oznamy: { master: true, zmeny: {}, strop: true, vecer: false }, odPolohy: false, jazyk: "Slovenčina", firmaPredvolba: "anonym", suhlasy: { pers: true, stat: true, news: false, part: false, zaznam: [] } };
 let verzia = 0;
 const posluchaci = new Set<() => void>();
 

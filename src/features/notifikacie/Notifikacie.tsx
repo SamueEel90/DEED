@@ -17,6 +17,9 @@ import { otvorPridatSkutok } from "@/features/skutok/otvor";
 import { OznamDarcoviSheet } from "./OznamDarcovi";
 import { KATEGORIE, NA_DISPLEJ_VYP } from "./mock";
 import { NastKarta, IkonaSek, IK, sekFarba, oddelovac, type Sek } from "@/features/profil/nastUi";
+import { usePouzivatel } from "@/lib/pouzivatel";
+import { useVazbyOsoby } from "@/lib/zamestnanci";
+import { dataFirmy, useMojaFirma } from "@/lib/mojaFirma";
 import "@/styles/platba.css";
 
 export { NOTIFY } from "./mock";
@@ -30,7 +33,7 @@ const IKONA: Record<NotifIkona, string> = {
 };
 const TON: Record<NotifTon, [string, string]> = { g: ["var(--gSoft)", "var(--green)"], b: ["var(--bSoft)", "var(--blue)"], gold: ["var(--goldBg)", "var(--gold)"] };
 const AKCIA: Record<NotifAkciaKod, [string, boolean]> = { odpovedat: ["Odpovedať", true], bol: ["Bol som pri tom", true], nebol: ["Nebol", false], prijat: ["Prijať", true], neskor: ["Neskôr", false], otvorit: ["Otvoriť", true] };
-const FILTRE: [Notifikacia["kat"] | "vsetko", string][] = [["vsetko", "Všetko"], ["skutky", "Skutky"], ["skupina", "Skupina"], ["penaze", "Peniaze"], ["zbierky", "Zbierky"], ["ludia", "Ľudia"]];
+const FILTRE: [Notifikacia["kat"] | "vsetko", string][] = [["vsetko", "Všetko"], ["skutky", "Skutky"], ["skupina", "Skupina"], ["penaze", "Peniaze"], ["zbierky", "Zbierky"], ["ludia", "Ľudia"], ["firma", "Zamestnávateľ"]];
 const Ik = ({ d, s = 19, w = 2 }: { d: string; s?: number; w?: number }) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={w} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={d} /></svg>;
 const Prep = ({ on, male }: { on: boolean; male?: boolean }) => {
   const w = male ? 44 : 48, h = male ? 26 : 28, k = male ? 20 : 22;
@@ -66,7 +69,14 @@ export function Zvoncek({ color = "var(--c-textSec)", toast }: { color?: string;
   const [prec, setPrec] = useState<number[]>(nacitajPrec);
   const [detail, setDetail] = useState<OznamDarcovi | null>(null);
   const tlacidlo = useRef<HTMLButtonElement>(null);
-  const vsetky = [...oznamyNaRiadky(oznamy), ...zakladne];
+  // karta 24 · 2i: oznámenia od firmy chodia aj sem (filter Zamestnávateľ) — len keď je user prepojený
+  const ja = usePouzivatel();
+  const firmy = useVazbyOsoby(ja.celeMeno).filter((v) => v.stav === "potvrdeny");
+  const mf = useMojaFirma();
+  const odFirmy: Notifikacia[] = firmy.flatMap((v, fi) => dataFirmy(v.firma).oznamy.filter((o) => !mf.vybavene.includes(o.id)).map((o, i) => ({
+    id: 900000 + fi * 50 + i, kat: "firma" as const, den: "Dnes", cas: v.firma, ikona: o.typ === "kontrola" ? "otaz" as const : o.typ === "akcia" ? "kal" as const : "srd" as const,
+    ton: o.typ === "kontrola" ? "gold" as const : "g" as const, titul: o.t, text: `${v.firma} · ${o.s}`, nove: o.typ === "kontrola" })));
+  const vsetky = [...oznamyNaRiadky(oznamy), ...odFirmy, ...zakladne];
   const nove = vsetky.filter((n) => n.nove && !prec.includes(n.id)).length;
   const oznac = (id: number) => setPrec((p) => { const n = p.includes(id) ? p : [...p, id]; ulozPrec(n); return n; });
   const zavri = () => { setOtvor(false); requestAnimationFrame(() => tlacidlo.current?.focus()); };
@@ -117,7 +127,7 @@ function OznameniaObrazovka({ zoznam, prec, onOznac, onPrecitaj, onOznamDarcovi,
             <Ik d="M4 7h10M18 7h2M4 17h4M12 17h8M16 9a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM10 19a2 2 0 1 0 0-4 2 2 0 0 0 0 4" s={20} /></button>
         </div>
         <div role="group" aria-label="Filter oznámení" style={{ flex: "none", display: "flex", gap: 6, padding: "4px 16px 10px", overflowX: "auto", scrollbarWidth: "none" }}>
-          {FILTRE.map(([k, t]) => { const on = f === k, n = zoznam.filter((x) => (k === "vsetko" || x.kat === k) && jeNovy(x)).length; return (
+          {FILTRE.filter(([k]) => k !== "firma" || zoznam.some((x) => x.kat === "firma")).map(([k, t]) => { const on = f === k, n = zoznam.filter((x) => (k === "vsetko" || x.kat === k) && jeNovy(x)).length; return (
             <button type="button" key={k} aria-pressed={on} onClick={() => setF(k)} aria-label={n && k !== "vsetko" ? `${t}, ${n} nové` : t}
               style={{ flex: "none", display: "flex", alignItems: "center", gap: 6, height: 44, padding: "0 14px", borderRadius: 22, fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", background: on ? "var(--ink)" : "var(--card)", border: `1.5px solid ${on ? "var(--ink)" : "var(--cardBd)"}`, color: on ? "var(--bg)" : "var(--ink2)" }}>
               {t}{n > 0 && k !== "vsetko" && <span aria-hidden="true" style={{ minWidth: 18, height: 18, padding: "0 5px", borderRadius: 9, background: "var(--green)", color: "#fff", fontSize: 11, fontWeight: 800, display: "inline-flex", alignItems: "center", justifyContent: "center" }}>{n}</span>}</button>); })}
