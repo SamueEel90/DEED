@@ -27,8 +27,9 @@ function Retaz({ x, y, farba }: { x: number; y: number; farba: string }) {
   );
 }
 
-export function DeedQr({ data, odznak = "D+", retaz = false, suma, delenie, variant = "svetly", size = 260 }: {
+export function DeedQr({ data, odznak = "D+", retaz = false, suma, delenie, variant = "svetly", size = 260, bezOdznaku = false }: {
   data: string; odznak?: DeedOdznak; retaz?: boolean; suma?: string | null; delenie?: string | null;
+  /** osobný QR (karta 18) — bez odznaku vľavo hore */ bezOdznaku?: boolean;
   variant?: DeedQrVariant; size?: number;
 }) {
   const inv = variant === "inverzny";
@@ -84,9 +85,11 @@ export function DeedQr({ data, odznak = "D+", retaz = false, suma, delenie, vari
         {moduly}
         {findery}
         {/* odznak */}
-        <rect x={137} y={78} width={odznakW} height={66} rx={33} fill={pillBg} />
-        <text x={textX} y={121} textAnchor={retaz ? "start" : "middle"} fontFamily="Arial, Helvetica, sans-serif" fontSize={34} fontWeight="bold" fill={pillText}>{odznak}</text>
-        {retaz && <Retaz x={137 + odznakW - 50} y={111} farba={pillText} />}
+        {!bezOdznaku && <>
+          <rect x={137} y={78} width={odznakW} height={66} rx={33} fill={pillBg} />
+          <text x={textX} y={121} textAnchor={retaz ? "start" : "middle"} fontFamily="Arial, Helvetica, sans-serif" fontSize={34} fontWeight="bold" fill={pillText}>{odznak}</text>
+          {retaz && <Retaz x={137 + odznakW - 50} y={111} farba={pillText} />}
+        </>}
         {/* suma — potvrdenie príspevku */}
         {suma && (
           <g>

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { SIRKA, C, GRAD, GRAD_ZELENY, SPACE, RADIUS } from "@/theme";
-import { toast, Sheet, StitRiadok, DozivotnyChip, useScrollPamat, useMotiv, useLayout, useTvorbaGate, obalSiroky, QrModal, pressable, IkonaNastavenia, IkonaSipVlavo, IkonaPenazenka, IkonaHviezda, IkonaFajka, IkonaDoska, IkonaUsmev, IkonaOsoba, IkonaPin, IkonaSlnko, IkonaMesiac, IkonaStit, IkonaInstitucia, IkonaQr, IkonaObalka, IkonaFoto, FotoProfiluSheet, MenuSkupina, MenuPolozka, MenuPrepinac, SkeletonRiadky, EmptyState, ErrorState, ScreenSwitch } from "@/shared";
+import { toast, Sheet, StitRiadok, DozivotnyChip, useScrollPamat, useMotiv, useLayout, useTvorbaGate, obalSiroky, pressable, IkonaNastavenia, IkonaSipVlavo, IkonaPenazenka, IkonaHviezda, IkonaFajka, IkonaDoska, IkonaUsmev, IkonaOsoba, IkonaPin, IkonaSlnko, IkonaMesiac, IkonaStit, IkonaInstitucia, IkonaQr, IkonaObalka, IkonaFoto, FotoProfiluSheet, MenuSkupina, MenuPolozka, MenuPrepinac, SkeletonRiadky, EmptyState, ErrorState, ScreenSwitch } from "@/shared";
 import { MojDeedFiremny } from "@/features/rola/MojDeedFiremny";
 import { MojZamestnavatelSheet } from "@/features/rola/MojZamestnavatel";
 import { useVazbaOsoby } from "@/lib/zamestnanci";
@@ -9,7 +9,6 @@ import { IntroPruvodca } from "@/components/intro";
 import { nacitajZostatok as nacitajZostatokDB, dobitPenazenku as dobitPenazenkuDB } from "@/lib/osobne";
 import { MojaRetaz } from "@/features/retaz/MojaRetaz";
 import { signOut } from "@/lib/auth";
-import { qrUrl } from "@/lib/qr";
 import { usePouzivatel } from "@/lib/pouzivatel";
 import { klucEntity, useFotkyEntity } from "@/lib/fotoentity";
 import { useVrstva } from "@/lib/urlnav";
@@ -20,6 +19,7 @@ import { useProfilPrevody, useProfilMojeSkutky, useProfilKarma, useProfilStatist
 import { MODULOVA_KARMA, DOZIVOTNE_ZISKANE } from "./mock";
 import { ProfilHlavny18, IdentitaKarta18, StitKarta18, MojeZaujmy } from "./ProfilHlavny";
 import { UpravOsobnyProfil } from "./UpravOsobnyProfil";
+import { MojQr } from "./MojQr";
 
 /*
   ============================================================
@@ -48,7 +48,7 @@ export default function ModulProfil({ wide, walletReq = 0 }: ProfilProps) {
   const [qr, setQr] = useState(false); // Môj QR (karta 18 bod 4 príde samostatne)
   const [uprava, setUprava] = useState(false); // Upraviť profil (karta 18 bod 3)
   const upravaHarok = uprava && <UpravOsobnyProfil onClose={() => setUprava(false)} />;
-  const qrModal = qr && <QrModal typ="identita" titul="Môj QR" odkaz={qrUrl("handle", "martin-k")} onClose={() => setQr(false)} toast={toast} />;
+  const qrModal = qr && <MojQr onClose={() => setQr(false)} />;
   const obal = (el: React.ReactNode) => obalSiroky(el, { wide, desktop, max: SIRKA.stlpec, maxDesktop: SIRKA.citanie });
 
   // DESKTOP — profesionálny 2-panel layout: bočná navigácia (identita + sekcie) + obsahový panel
@@ -254,8 +254,7 @@ function Penazenka({ toast, onBack, desktop }: PenazenkaProps) {
       {dobit && <DobitSheet onDobit={dobite} onClose={() => setDobit(false)} />}
 
       {/* prijať DEED = ukáž svoj osobný QR */}
-      {prijat && <QrModal typ="identita" titul="Prijať DEED" popis="Ukáž QR — druhá strana ho naskenuje a pošle ti DEED"
-        odkaz={qrUrl("handle", "martin-k")} onClose={() => setPrijat(false)} toast={toast} />}
+      {prijat && <MojQr zalozka="akcia" onClose={() => setPrijat(false)} />}
     </div>
   );
 }
@@ -368,7 +367,6 @@ type PriateliaScreenProps = { toast: ToastFn; onBack: () => void; desktop?: bool
 
 function PriateliaScreen({ toast, onBack, desktop }: PriateliaScreenProps) {
   const { gate } = useTvorbaGate(); // pridávanie priateľa = iniciovanie vzťahu (create)
-  const ja = usePouzivatel();        // ucetId → reálny rotujúci token Identity Card (Fáza 3)
   const [qr, setQr] = useState<"pozvanka" | "osobny" | null>(null);
   const [ziadosti, setZiadosti] = useState<ZiadostPriatelstvo[]>([{ id: "p1", meno: "Peter K.", ini: "P", info: "3 spoloční priatelia" }]);
   const vybav = (id: string, ok: boolean) => { setZiadosti((z) => z.filter((x) => x.id !== id)); toast(ok ? "Priateľstvo prijaté — vzájomný súhlas" : "Žiadosť odmietnutá"); };
@@ -420,8 +418,8 @@ function PriateliaScreen({ toast, onBack, desktop }: PriateliaScreenProps) {
         </div>
       </div>
 
-      {qr === "pozvanka" && <QrModal typ="skutok" titul="Pozvánka do DEED" popis="Vedie len na žiadosť o priateľstvo" odkaz={qrUrl("handle", "martin-k")} onClose={() => setQr(null)} toast={toast} />}
-      {qr === "osobny" && <QrModal typ="identita" titul="Môj osobný QR" popis="Naživo · rotujúci · žiadosť o priateľstvo" odkaz={qrUrl("handle", "martin-k")} eventId={ja.ucetId ?? undefined} onClose={() => setQr(null)} toast={toast} />}
+      {qr === "pozvanka" && <MojQr zalozka="pozvanka" onClose={() => setQr(null)} />}
+      {qr === "osobny" && <MojQr zalozka="akcia" onClose={() => setQr(null)} />}
     </div>
   );
 }
