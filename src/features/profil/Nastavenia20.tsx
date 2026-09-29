@@ -8,26 +8,24 @@ import { signOut } from "@/lib/auth";
 import { SpatTlacidlo } from "@/components/cesta";
 import { toast } from "@/components/toast";
 import { IntroPruvodca } from "@/components/intro";
-import { NahlasitSheet } from "@/components/nahlasit";
 import { JazykObrazovka, StiahnutUdajeObrazovka } from "./JazykUdaje";
-import { Harok } from "@/features/zbierka/Zdielat";
+import { CasteOtazky, NapisatPodpore, NahlasitProblem, VERZIA_APPKY } from "./Pomoc";
+import { ZrusitUcet } from "./ZrusitUcet";
 import { PotvrditPlatbuHarok, OkruhHarok, PrihlaseneZariadenia, EmailTelefonHeslo, ZablokovaniLudia, Suhlasy, DetailSuhlasu, hranicaText } from "./Bezpecnost24";
 import { zariadenia, useZmenyZariadeni } from "@/lib/zariadenia";
 import { zablokovani, useZmenyBlokovania } from "@/lib/blokovanie";
-import { NastSekcia as Sekcia, NastRiadok as Riadok, IkonaSek, Prepinac, IK } from "./nastUi";
+import { NastSekcia as Sekcia, NastRiadok as Riadok, IkonaSek, IK } from "./nastUi";
 import "@/styles/platba.css";
 
-const VERZIA = "0.9 (pilot)";
 const OKRUH: Record<Okruh, string> = { stvrt: "Štvrť", mesto: "Mesto", slovensko: "Slovensko" };
-const coskoro = () => toast("Pribudne v ďalšej verzii");
 
 export function Nastavenia20({ onBack, onNotif, onUpravProfil, desktop }: { onBack: () => void; onNotif: () => void; onUpravProfil?: () => void; desktop?: boolean }) {
   const { tema, nastavTemu } = useMotiv();
   const n = useNastaveniaAppky();
   const [tuk, setTuk] = useState(potvrditTuknutim);
-  const [harok, setHarok] = useState<null | "okruh" | "platba" | "zrusit" | "uvod" | "nahlasit">(null);
+  const [harok, setHarok] = useState<null | "okruh" | "platba" | "zrusit" | "uvod">(null);
   const [detail, setDetail] = useState<null | "pod" | "ud">(null); // OPRAVY 34: detail súhlasu (karta 24 · 2f)
-  const [obr, setObr] = useState<null | "zariadenia" | "kontakt" | "blokovani" | "suhlasy" | "jazyk" | "udaje">(null); // obrazovky sprava (karta 24)
+  const [obr, setObr] = useState<null | "zariadenia" | "kontakt" | "blokovani" | "suhlasy" | "jazyk" | "udaje" | "faq" | "podpora" | "problem">(null); // obrazovky sprava (karta 24)
   useZmenyZariadeni(); useZmenyBlokovania();
 
   const pismo = (d: number) => zmenNastavenia({ pismo: Math.min(150, Math.max(90, n.pismo + d)) });
@@ -108,15 +106,15 @@ export function Nastavenia20({ onBack, onNotif, onUpravProfil, desktop }: { onBa
       <Sekcia nadpis="POMOC" k="g">
         <Riadok prvy d={IK.play} t="Prehrať úvod" onClick={() => setHarok("uvod")} />
         <Riadok d={IK.bulb} t="Ukážky pre začiatok" s="inšpirácia v prázdnych zoznamoch, len pre teba" prepinac={n.ukazky} onClick={() => zmenNastavenia({ ukazky: !n.ukazky })} />
-        <Riadok d={IK.help} t="Časté otázky" onClick={coskoro} />
-        <Riadok d={IK.chat} t="Napísať podpore" onClick={coskoro} />
-        <Riadok d={IK.flag} t="Nahlásiť problém" onClick={() => setHarok("nahlasit")} />
+        <Riadok d={IK.help} t="Časté otázky" onClick={() => setObr("faq")} />
+        <Riadok d={IK.chat} t="Napísať podpore" onClick={() => setObr("podpora")} />
+        <Riadok d={IK.flag} t="Nahlásiť problém" onClick={() => setObr("problem")} />
         <Riadok d={IK.file} t="Podmienky používania" onClick={() => setDetail("pod")} />
         <Riadok d={IK.lock} t="Ochrana súkromia" onClick={() => setDetail("ud")} />
       </Sekcia>
 
       <button type="button" onClick={() => { toast("Odhlásené"); void signOut(); }} style={{ minHeight: 54, borderRadius: 16, border: "1px solid var(--cardBd)", background: "var(--btn)", fontSize: 16, fontWeight: 700, color: "var(--ink)", cursor: "pointer", fontFamily: "inherit" }}>Odhlásiť sa</button>
-      <div style={{ fontSize: 12.5, color: "var(--ink3)", textAlign: "center" }}>DEED · verzia {VERZIA}</div>
+      <div style={{ fontSize: 12.5, color: "var(--ink3)", textAlign: "center" }}>DEED · verzia {VERZIA_APPKY}</div>
 
       {harok === "okruh" && <OkruhHarok onClose={() => setHarok(null)} onZmenitMiesto={() => { setHarok(null); onUpravProfil?.(); }} />}
       {harok === "platba" && <PotvrditPlatbuHarok onClose={() => setHarok(null)} />}
@@ -126,38 +124,12 @@ export function Nastavenia20({ onBack, onNotif, onUpravProfil, desktop }: { onBa
       {obr === "suhlasy" && <Suhlasy onBack={() => setObr(null)} />}
       {obr === "jazyk" && <JazykObrazovka onBack={() => setObr(null)} />}
       {obr === "udaje" && <StiahnutUdajeObrazovka onBack={() => setObr(null)} />}
+      {obr === "faq" && <CasteOtazky onBack={() => setObr(null)} onPodpora={() => setObr("podpora")} />}
+      {obr === "podpora" && <NapisatPodpore onBack={() => setObr(null)} />}
+      {obr === "problem" && <NahlasitProblem onBack={() => setObr(null)} />}
       {detail && <DetailSuhlasu typ={detail} onBack={() => setDetail(null)} />}
       {harok === "zrusit" && <ZrusitUcet onClose={() => setHarok(null)} />}
       {harok === "uvod" && <IntroPruvodca onClose={() => setHarok(null)} />}
-      {harok === "nahlasit" && <NahlasitSheet co="Problém v appke" refId="appka" modul="appka" toast={toast} onClose={() => setHarok(null)} />}
     </div>
-  );
-}
-
-/** Zrušiť účet — user ho zruší sám; aktívne až po napísaní ZRUŠIŤ */
-function ZrusitUcet({ onClose }: { onClose: () => void }) {
-  const [anonym, setAnonym] = useState(false);
-  const [text, setText] = useState("");
-  const moze = text.trim().toUpperCase() === "ZRUŠIŤ";
-  return (
-    <Harok onClose={onClose} hlavicka={<span style={{ flex: 1, fontSize: 20, fontWeight: 800 }}>Zrušiť účet</span>}
-      paticka={<>
-        <button type="button" onClick={onClose} style={{ flex: 1, minHeight: 54, borderRadius: 16, border: "none", background: "var(--btn)", fontSize: 15.5, fontWeight: 700, color: "var(--ink)", cursor: "pointer", fontFamily: "inherit" }}>Nechať účet</button>
-        <button type="button" disabled={!moze} onClick={() => { toast(anonym ? "Účet zrušený, dary sú anonymné" : "Účet zrušený"); onClose(); void signOut(); }}
-          style={{ flex: 1, minHeight: 54, borderRadius: 16, border: "none", background: "var(--ink2)", fontSize: 15.5, fontWeight: 800, color: "var(--bg)", cursor: moze ? "pointer" : "default", opacity: moze ? 1 : .4, transition: "opacity .2s ease", fontFamily: "inherit" }}>Zrušiť účet</button>
-      </>}>
-      <div style={{ fontSize: 14.5, lineHeight: 1.55, color: "var(--ink2)" }}>Zmažeme tvoj profil, fotky, záujmy a priateľov. Dary a skutky sa vymazať nedajú, ostávajú zapísané v zbierkach tak, ako si ich poslal.</div>
-      <div style={{ padding: "12px 14px", borderRadius: 16, background: "var(--card)", border: "1px solid var(--cardBd)", fontSize: 13.5, lineHeight: 1.5, color: "var(--ink2)" }}>
-        Pred zrušením si <b style={{ color: "var(--ink)" }}>vyber peniaze z peňaženky</b> (zostatok DEED, EURC). Po zrušení sa k nim už nedostaneš.</div>
-      <button type="button" role="switch" aria-checked={anonym} onClick={() => setAnonym(!anonym)} style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 68, padding: "12px 18px", borderRadius: 16, background: "var(--d-card, var(--card))", border: "1px solid var(--d-cardBd, var(--cardBd))", cursor: "pointer", textAlign: "left", fontFamily: "inherit", color: "var(--ink)" }}>
-        <span style={{ flex: 1, minWidth: 0 }}><span style={{ display: "block", fontSize: 15, fontWeight: 700 }}>Zmeniť všetky moje dary na anonymné</span><span style={{ display: "block", fontSize: 12.5, color: "var(--ink3)" }}>v zoznamoch darcov bude Anonymný darca</span></span>
-        <Prepinac on={anonym} />
-      </button>
-      <label style={{ display: "flex", flexDirection: "column", gap: 8, fontSize: 13.5, color: "var(--ink2)" }}>
-        <span>Na potvrdenie napíš <b style={{ color: "var(--ink)" }}>ZRUŠIŤ</b></span>
-        <input value={text} onChange={(e) => setText(e.target.value)} placeholder="ZRUŠIŤ" autoComplete="off"
-          style={{ height: 50, padding: "0 14px", borderRadius: 13, background: "var(--field)", border: "1.5px solid var(--fieldBd)", fontSize: 15.5, color: "var(--ink)", outline: "none", fontFamily: "inherit" }} />
-      </label>
-    </Harok>
   );
 }

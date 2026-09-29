@@ -75,7 +75,7 @@ const CO: [string, string, string, string[]][] = [
   ["su", "Prihlásenia a zariadenia", "kedy a odkiaľ si sa prihlásil", ["deed.zariad", "deed.blok"]],
 ];
 
-export function StiahnutUdajeObrazovka({ onBack }: { onBack: () => void }) {
+export function StiahnutUdajeObrazovka({ onBack, z }: { onBack: () => void; /** nad hárkom (Zrušiť účet) */ z?: number }) {
   const ja = usePouzivatel();
   const [v, setV] = useState<Record<string, boolean>>(() => Object.fromEntries(CO.map(([k]) => [k, true])));
   const [format, setFormat] = useState<"pdf" | "zip">("pdf");
@@ -103,7 +103,7 @@ export function StiahnutUdajeObrazovka({ onBack }: { onBack: () => void }) {
   };
 
   return (
-    <ObrazovkaSprava titul="Stiahnuť moje údaje" onBack={onBack}>
+    <ObrazovkaSprava titul="Stiahnuť moje údaje" onBack={onBack} z={z}>
       <div style={{ fontSize: 15, lineHeight: 1.55, color: "var(--d-ink2, var(--ink2))", padding: "0 6px" }}>Všetko, čo o tebe v DEED máme, dostaneš v jednom súbore.</div>
       {stav === null || stav === "overenie" ? <>
         <div>
@@ -144,17 +144,17 @@ export function StiahnutUdajeObrazovka({ onBack }: { onBack: () => void }) {
           <button type="button" onClick={stiahni} style={btn(true)}>Stiahnuť</button>
         </>
       )}
-      {stav === "overenie" && <OverenieHarok onClose={() => setStav(null)} onOk={pripravuj} />}
+      {stav === "overenie" && <OverenieHarok z={z ? z + 15 : undefined} onClose={() => setStav(null)} onOk={pripravuj} />}
     </ObrazovkaSprava>
   );
 }
 
 /** pred prípravou súboru: tvár alebo odtlačok (v pilote simulované; v produkcii WebAuthn) */
-function OverenieHarok({ onClose, onOk }: { onClose: () => void; onOk: () => void }) {
+function OverenieHarok({ onClose, onOk, z }: { onClose: () => void; onOk: () => void; z?: number }) {
   const [bezi, setBezi] = useState(false);
   const over = () => { setBezi(true); window.setTimeout(onOk, 700); };
   return (
-    <Harok onClose={onClose} hlavicka={<span style={{ flex: 1, fontSize: 20, fontWeight: 800 }}>Potvrď, že si to ty</span>}
+    <Harok z={z} onClose={onClose} hlavicka={<span style={{ flex: 1, fontSize: 20, fontWeight: 800 }}>Potvrď, že si to ty</span>}
       paticka={<button type="button" onClick={over} disabled={bezi} style={{ ...btn(true, !bezi), flex: 1 }}>{bezi ? "Overujem…" : "Overiť tvárou alebo odtlačkom"}</button>}>
       <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
         <span aria-hidden="true" style={{ width: 52, height: 52, borderRadius: 14, background: "var(--sek-bBg)", color: "var(--sek-b)", display: "flex", alignItems: "center", justifyContent: "center", flex: "none" }}><Ik d={IK.finger} s={26} w={2} /></span>

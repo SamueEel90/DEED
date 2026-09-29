@@ -9,12 +9,13 @@ import { vibruj } from "./animacie";
 export const odkazZbierky = (id: string) => `https://deed.sk/z/${encodeURIComponent(id)}`;
 
 /** spoločný hárok modulu: mobil zdola, tablet 640 px / PC 560 px na stred, bez blur */
-export function Harok({ onClose, children, hlavicka, podHlavickou, paticka, plnaVyska, zatvorText }: {
+export function Harok({ onClose, children, hlavicka, podHlavickou, paticka, plnaVyska, zatvorText, z = 150 }: {
   onClose: () => void; children: ReactNode; hlavicka: ReactNode;
   /** textové zatvorenie vpravo („Zrušiť", „Zavrieť") namiesto krížika */ zatvorText?: string;
   /** napr. kroky (Nastavenie · Spôsob · Zhrnutie) — pevne pod hlavičkou */ podHlavickou?: ReactNode;
   /** pevné tlačidlá dole — obsah nad nimi sa posúva */ paticka?: ReactNode;
   /** mobil: hárok vždy 92 % výšky (nie podľa obsahu) */ plnaVyska?: boolean;
+  /** vrstva (predvolene 150); vyššie, keď je hárok nad obrazovkou sprava otvorenou z iného hárku */ z?: number;
 }) {
   const { wide, desktop } = useLayout();
   const [otv, setOtv] = useState(false);
@@ -26,7 +27,7 @@ export function Harok({ onClose, children, hlavicka, podHlavickou, paticka, plna
   });
   return createPortal(
     <div className="deed-platba" role="dialog" aria-modal="true"
-      style={{ position: "fixed", inset: 0, zIndex: 150, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+      style={{ position: "fixed", inset: 0, zIndex: z, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
       <div onClick={zavri} style={{ position: "absolute", inset: 0, background: "var(--scrim)", opacity: otv ? 1 : 0, transition: "opacity .32s ease" }} />
       <div style={{ ...(wide
           ? { position: "relative", width: desktop ? 560 : 640, maxWidth: "calc(100vw - 32px)", maxHeight: "calc(100vh / var(--pismo, 1) - 48px)", borderRadius: 28, transform: otv ? "none" : "translateY(24px)", opacity: otv ? 1 : 0 }

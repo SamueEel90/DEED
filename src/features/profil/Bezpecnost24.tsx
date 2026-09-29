@@ -232,11 +232,11 @@ export function Blokacia24h({ co = "túto zmenu" }: { co?: string }) {
 // ======================= 2b · E-MAIL, TELEFÓN A HESLO =======================
 type Kontakt = { email: string; tel: string; hesloZmenene: number | null };
 const KLUC_KONTAKT = "deed.kontakt";
-const nacitajKontakt = (): Kontakt => {
+export const nacitajKontakt = (): Kontakt => {
   try { const s = localStorage.getItem(KLUC_KONTAKT); if (s) return JSON.parse(s); } catch { /* LS */ }
   return (getSession() as { demo?: boolean } | null)?.demo ? { email: "martin.konal@gmail.com", tel: "+421 905 123 482", hesloZmenene: Date.now() - 95 * 86400000 } : { email: "", tel: "", hesloZmenene: null };
 };
-const maskuj = (t: string, k: "e" | "t") => (k === "e" ? t.replace(/^(.)[^@]*(@.*)$/, "$1•••$2") : t.replace(/(\+\d{3}\s?\d)[\d\s]*(\d{3})$/, "$1•• ••• $2"));
+export const maskuj = (t: string, k: "e" | "t") => (k === "e" ? t.replace(/^(.)[^@]*(@.*)$/, "$1•••$2") : t.replace(/(\+\d{3}\s?\d)[\d\s]*(\d{3})$/, "$1•• ••• $2"));
 
 export function EmailTelefonHeslo({ onBack }: { onBack: () => void }) {
   useZmenyZariadeni();

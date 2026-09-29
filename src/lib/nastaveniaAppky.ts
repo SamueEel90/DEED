@@ -28,10 +28,12 @@ export type NastaveniaAppky = {
   jazyk: string;
   /** skutky mimo firmy: predvoľba pre riadok Firma v náhľade (firma ju nikdy nevidí) */
   firmaPredvolba: FirmaVolba;
+  /** karta 24 · 2k: zatras telefónom a nahlás problém */
+  zatras: boolean;
   suhlasy: { pers: boolean; stat: boolean; news: boolean; part: boolean; zaznam: { k: string; on: boolean; cas: string; verzia: string }[] };
 };
 const KLUC = "deed.nastavenia.appky";
-const ZAKLAD: NastaveniaAppky = { pismo: 100, obmedzAnim: false, vibracie: true, titulky: true, tichyCas: true, poloha: true, okruh: "mesto", biometria: false, hranicaPlatby: 50, kontakty: false, ukazky: true, tichyOd: "22:00", tichyDo: "7:00", oznamy: { master: true, zmeny: {}, strop: true, vecer: false }, odPolohy: false, jazyk: "Slovenčina", firmaPredvolba: "anonym", suhlasy: { pers: true, stat: true, news: false, part: false, zaznam: [] } };
+const ZAKLAD: NastaveniaAppky = { pismo: 100, obmedzAnim: false, vibracie: true, titulky: true, tichyCas: true, poloha: true, okruh: "mesto", biometria: false, hranicaPlatby: 50, kontakty: false, ukazky: true, tichyOd: "22:00", tichyDo: "7:00", oznamy: { master: true, zmeny: {}, strop: true, vecer: false }, odPolohy: false, jazyk: "Slovenčina", firmaPredvolba: "anonym", zatras: false, suhlasy: { pers: true, stat: true, news: false, part: false, zaznam: [] } };
 let verzia = 0;
 const posluchaci = new Set<() => void>();
 

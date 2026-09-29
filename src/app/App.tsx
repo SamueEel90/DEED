@@ -27,6 +27,7 @@ import { Registracia } from "@/features/registracia/Registracia";
 import { RetazPodstranka } from "@/features/retaz/RetazPodstranka";
 import { PridatSkutokHost } from "@/features/skutok/PridatSkutok";
 import { AkciaHost } from "@/features/skutok/Akcia";
+import { ZatrasHost } from "@/features/profil/Pomoc";
 import { PolohaOkruhu } from "@/features/profil/Bezpecnost24";
 
 // Code-splitting: každý modul = vlastný chunk, načíta sa až pri otvorení
@@ -368,6 +369,7 @@ export function Screens({ wide, desktop }: { wide?: boolean; desktop?: boolean }
         {/* Pridať skutok — jeden komponent pre celú appku (karta 21) */}
         <PridatSkutokHost />
         <AkciaHost />
+        <ZatrasHost />
         <PolohaOkruhu />
 
         {/* fullscreen galéria fotiek so swipovaním */}
