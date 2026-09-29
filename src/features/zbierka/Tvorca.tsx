@@ -2,6 +2,8 @@
 // Počet sledovateľov ani karma sa nezobrazujú. Odkazy na obsah mení tvorca kedykoľvek (nie sú súčasťou zapečatenia).
 import { useState } from "react";
 import { useDarcovia } from "@/lib/darcovia";
+import { StityRad } from "@/components/stit";
+import { stityOblastiSubjektu } from "@/lib/stityOblasti";
 import type { StitUroven } from "./Pole";
 
 export type TvorcaData = {
@@ -18,7 +20,6 @@ export type TvorcaData = {
   stit: StitUroven;
 };
 
-const SUBOR: Record<StitUroven, string> = { Bronze: "bronze", Silver: "silver", Gold: "gold", Platinum: "platinum", Legend: "legend" };
 const eK = (n: number) => `${n.toLocaleString("sk-SK", { minimumFractionDigits: n % 1 ? 2 : 0, maximumFractionDigits: 2 })} €`;
 
 export function KamIdeDar({ nazovZbierky, fotoZbierky, tvorca, onStrankaTvorcu }: { nazovZbierky: string; fotoZbierky?: string; tvorca: TvorcaData; onStrankaTvorcu?: () => void }) {
@@ -40,8 +41,9 @@ export function KamIdeDar({ nazovZbierky, fotoZbierky, tvorca, onStrankaTvorcu }
         <span style={{ flex: "none", fontSize: 18, fontWeight: 800, color: "var(--green)", fontVariantNumeric: "tabular-nums" }}>{tvorca.podielZbierke} %</span>
       </div>
       <div className="zb-tvorca" style={{ margin: "4px 10px 10px", borderRadius: 16, color: "#F1ECE1", overflow: "hidden" }}>
+        <div style={{ display: "flex", alignItems: "center", paddingRight: 10 }}>
         <button type="button" onClick={() => setOtv(!otv)} aria-expanded={otv}
-          style={{ width: "100%", display: "flex", alignItems: "center", gap: 12, padding: 12, border: "none", background: "transparent", boxShadow: "none", cursor: "pointer", textAlign: "left", color: "inherit", fontFamily: "inherit" }}>
+          style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: 12, padding: 12, border: "none", background: "transparent", boxShadow: "none", cursor: "pointer", textAlign: "left", color: "inherit", fontFamily: "inherit" }}>
           <span style={{ position: "relative", flex: "none", width: 60, height: 60 }}>
             <span style={{ position: "absolute", inset: 0, borderRadius: "50%", padding: 2.5, background: "linear-gradient(135deg,#B8452F,#E08A3C)" }}>
               <span style={{ display: "block", width: "100%", height: "100%", borderRadius: "50%", overflow: "hidden", border: "2px solid #1D211B", background: tvorca.foto ? `#2B3640 url(${tvorca.foto}) center/cover` : "#2B3640" }} />
@@ -53,11 +55,10 @@ export function KamIdeDar({ nazovZbierky, fotoZbierky, tvorca, onStrankaTvorcu }
             <span style={{ display: "block", marginTop: 3, fontSize: 12.5, color: "rgba(241,236,225,.72)" }}>{["tvorca", ...tvorca.platformy].join(" · ")}</span>
             <span style={{ display: "inline-flex", marginTop: 6, padding: "3px 8px", borderRadius: 8, background: "rgba(143,182,212,.16)", color: "#BFD6E8", fontSize: 12, fontWeight: 800, fontVariantNumeric: "tabular-nums" }}>{100 - tvorca.podielZbierke} % ide {tvorca.menoDativ}</span>
           </span>
-          <span style={{ flex: "none", display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
-            <img src={`/odznaky/${SUBOR[tvorca.stit]}.png`} alt="" width={40} height={46} style={{ objectFit: "contain" }} />
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#F1ECE1" strokeWidth="2.4" strokeLinecap="round" style={{ transform: `rotate(${otv ? 180 : 0}deg)`, transition: "transform .3s ease" }}><path d="M6 9l6 6 6-6" /></svg>
-          </span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#F1ECE1" strokeWidth="2.4" strokeLinecap="round" style={{ flex: "none", transform: `rotate(${otv ? 180 : 0}deg)`, transition: "transform .3s ease" }}><path d="M6 9l6 6 6-6" /></svg>
         </button>
+          <span style={{ flex: "none", color: "#F1ECE1" }}><StityRad variant="pole" hlavny={tvorca.stit} oblasti={stityOblastiSubjektu(tvorca.meno, tvorca.stit)} meno={tvorca.meno} velkost={42} /></span>
+        </div>
         {otv && (
           <div style={{ padding: "0 12px 12px", display: "flex", flexDirection: "column", gap: 8, fontSize: 13.5, color: "rgba(241,236,225,.82)", animation: "zbFsIn .2s ease both" }}>
             {tvorca.veta && <div>{tvorca.veta}</div>}

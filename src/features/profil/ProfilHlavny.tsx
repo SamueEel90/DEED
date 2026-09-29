@@ -7,6 +7,8 @@ import { usePersonalizacia } from "@/lib/personalizacia";
 import { ZAUJMY_KATALOG } from "@/lib/personalizaciaStore";
 import { klucEntity, useFotkyEntity } from "@/lib/fotoentity";
 import { useViac } from "@/components/context";
+import { StityRad, StitZoom } from "@/components/stit";
+import { MOJE_STITY } from "@/lib/stityOblasti";
 import { useVazbyOsoby } from "@/lib/zamestnanci";
 import { ZvacsenaFotka } from "./MojQr";
 import type { StitLevel } from "@/components/stit";
@@ -109,17 +111,23 @@ export function StitKarta18() {
   const ja = usePouzivatel();
   const stit = stitUzivatela(!!ja.demo);
   const veta = vetaStitu(stit, dniNaStite(!!ja.demo));
+  const [zoom, setZoom] = useState(false);
+  const oblasti = ja.demo ? MOJE_STITY : []; // karta 26: rad všetkých získaných štítov oblastí (vidia ich aj ostatní)
   return (
-    <div style={{ position: "relative", borderRadius: 24, background: "var(--goldBg)", border: "1px solid var(--sek-oBd)", boxShadow: "var(--d-hl, none)", padding: "16px 18px", display: "flex", alignItems: "center", gap: 16, overflow: "hidden", color: "var(--d-ink, var(--ink))" }}>
-      <div style={{ position: "relative", width: 132, height: 154, flex: "none" }}>
-        <div className="pf-ziara" style={{ position: "absolute", left: "50%", top: "50%", width: 190, height: 190, margin: "-95px 0 0 -95px", borderRadius: "50%", background: "radial-gradient(circle,rgba(255,231,163,.85) 0%,rgba(246,183,60,.25) 40%,rgba(246,183,60,0) 70%)" }} />
-        <img src={`/odznaky/${STIT_SUBOR[stit]}.png`} alt={`${STIT_SK[stit]} štít`} style={{ position: "relative", width: "100%", height: "100%", objectFit: "contain" }} />
+    <div style={{ position: "relative", borderRadius: 24, background: "var(--goldBg)", border: "1px solid var(--sek-oBd)", boxShadow: "var(--d-hl, none)", padding: "16px 18px", display: "flex", flexDirection: "column", gap: 12, overflow: "hidden", color: "var(--d-ink, var(--ink))" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+        <button type="button" onClick={() => setZoom(true)} aria-label={`Zväčšiť ${STIT_SK[stit]} štít`} style={{ position: "relative", width: 132, height: 154, flex: "none", border: "none", background: "none", padding: 0, cursor: "zoom-in", boxShadow: "none" }}>
+          <div className="pf-ziara" style={{ position: "absolute", left: "50%", top: "50%", width: 190, height: 190, margin: "-95px 0 0 -95px", borderRadius: "50%", background: "radial-gradient(circle,rgba(255,231,163,.85) 0%,rgba(246,183,60,.25) 40%,rgba(246,183,60,0) 70%)" }} />
+          <img src={`/odznaky/${STIT_SUBOR[stit]}.png`} alt="" style={{ position: "relative", width: "100%", height: "100%", objectFit: "contain" }} />
+        </button>
+        <div style={{ position: "relative", minWidth: 0 }}>
+          <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".07em", color: "var(--sek-o)" }}>ŠTÍT</div>
+          <div style={{ fontSize: 22, fontWeight: 800, marginTop: 2, color: "var(--d-ink, var(--ink))" }}>{STIT_SK[stit]}</div>
+          <div style={{ fontSize: 14, lineHeight: 1.5, color: "var(--d-ink2, var(--ink2))", marginTop: 4 }}>{veta}</div>
+        </div>
       </div>
-      <div style={{ position: "relative", minWidth: 0 }}>
-        <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".07em", color: "var(--sek-o)" }}>ŠTÍT</div>
-        <div style={{ fontSize: 22, fontWeight: 800, marginTop: 2, color: "var(--d-ink, var(--ink))" }}>{STIT_SK[stit]}</div>
-        <div style={{ fontSize: 14, lineHeight: 1.5, color: "var(--d-ink2, var(--ink2))", marginTop: 4 }}>{veta}</div>
-      </div>
+      {oblasti.length > 0 && <StityRad variant="profil" hlavny={stit} oblasti={oblasti} />}
+      {zoom && <StitZoom level={stit} nazov={STIT_SK[stit]} popis={veta} onClose={() => setZoom(false)} />}
     </div>
   );
 }
@@ -203,7 +211,7 @@ export function ProfilHlavny18(a: ProfilAkcie) {
     ["Nastavenia", "vzhľad, súkromie", IK.nastavenia, "var(--card)", "var(--ink2)", a.naNastavenia],
     ["Moje skutky", `${MOJE_SKUTKY_POCET} skutkov`, IK.skutky, "var(--gSoft)", "var(--green)", () => a.naSub("Moje skutky")],
     ["Priatelia", "nájdi známych", IK.priatelia, "var(--bSoft)", "var(--blue)", a.naPriatelia],
-    ["Štíty", "podľa oblastí", IK.stity, "var(--goldBg)", "#876712", () => a.naSub("Karma a úrovne")],
+    ["Karma a štíty", "štíty podľa oblastí", IK.stity, "var(--goldBg)", "var(--sek-o)", () => a.naSub("Karma a štíty")],
     ["Štatistiky", "tento mesiac +9", IK.stat, "var(--gSoft)", "var(--green)", () => a.naSub("Štatistiky a umiestnenie")],
     ["Zamestnávateľ", firmaPod, IK.budova, "var(--sek-oBg)", "var(--sek-o)", a.naFirma],
   ];
@@ -217,7 +225,7 @@ export function ProfilHlavny18(a: ProfilAkcie) {
       </div>
       <IdentitaKarta18 naUpravit={a.naUpravit} naQr={a.naQr} />
       <StitKarta18 />
-      <button type="button" onClick={() => a.naSub("Karma a úrovne")} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 18, background: "var(--card)", border: "1px solid var(--cardBd)", cursor: "pointer", textAlign: "left", fontFamily: "inherit", color: "var(--ink)" }}>
+      <button type="button" onClick={() => a.naSub("Karma a štíty")} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 18, background: "var(--card)", border: "1px solid var(--cardBd)", cursor: "pointer", textAlign: "left", fontFamily: "inherit", color: "var(--ink)" }}>
         <span style={{ width: 38, height: 38, borderRadius: 12, background: "var(--gSoft)", color: "var(--green)", display: "flex", alignItems: "center", justifyContent: "center", flex: "none" }}><Ik d={IK.zamok} size={18} /></span>
         <span style={{ flex: 1, minWidth: 0 }}>
           <span style={{ display: "block", fontSize: 12.5, color: "var(--ink3)" }}>Tvoja karma · vidíš ju len ty</span>

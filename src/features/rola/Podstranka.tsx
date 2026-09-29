@@ -1,8 +1,10 @@
 import { Emo } from "@/components/icons";
+import { StityRad } from "@/components/stit";
+import { stityOblastiSubjektu } from "@/lib/stityOblasti";
 import { Fragment, useRef, useState, type CSSProperties } from "react";
 import { C, SPACE, RADIUS, SIRKA } from "@/theme";
 import {
-  BackHeader, PlatobnyModul, PlatbaModal, ProgresBox, QrModal, Stit, naStitLevel, tint,
+  BackHeader, PlatobnyModul, PlatbaModal, ProgresBox, QrModal, naStitLevel, tint,
   Zdielanie, Zvon, Srdce, useLayout, obalSiroky, Sheet,
   EntityHero, BtnAkcia, BtnIkonka, KontextMenu, TabyProfil, IkonaMoznosti, IkonaQr, IkonaVlajka, IkonaPin, IkonaOdkaz,
 } from "@/shared";
@@ -701,11 +703,7 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
         coverEl={<span style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 46, opacity: .45 }}><Emo e={s.emoji} /></span>}
         meno={s.nazov} overene={s.overena} overeneLabel="Overený subjekt — identita potvrdená"
         podtitul={<span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}><IkonaPin size={11} color={C.textTer} /> {s.lok}</span>}
-        vpravo={
-          <div style={{ textAlign: "center" }} title="Štít sa zaslúži skutkami — nedá sa kúpiť">
-            <Stit level={stit} size={desktop ? 88 : 64} detail subjekt={s.nazov} />
-          </div>
-        }
+        vpravo={<StityRad variant="hlavicka" hlavny={stit} oblasti={stityOblastiSubjektu(s.nazov, stit)} meno={s.nazov} velkost={desktop ? 96 : 76} />}
         podMenom={oNasKratky}
         stats={cislaSubjektu(pozicia, tier).map(([hodnota, label]) => ({ hodnota, label }))}
         akcie={<>

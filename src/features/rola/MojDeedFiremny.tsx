@@ -1,4 +1,6 @@
 import { Emo } from "@/components/icons";
+import { StityRad } from "@/components/stit";
+import { stityOblastiSubjektu } from "@/lib/stityOblasti";
 import { Fragment, useEffect, useMemo, useState, type ReactNode } from "react";
 import { C, SPACE, RADIUS, SIRKA } from "@/theme";
 import {
@@ -211,11 +213,7 @@ function MojDeedFiremnyObsah({ onBack, toast, orgId }: { onBack: () => void; toa
         coverEl={<span style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 42, opacity: .4 }}><Emo e={subjekt.emoji} /></span>}
         meno={subjekt.nazov} overene={subjekt.overena} overeneLabel="Overený subjekt — identita potvrdená"
         podtitul={<span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}><IkonaPin size={11} color={C.textTer} /> {subjekt.lok} · {rolaMeta.label}</span>}
-        vpravo={
-          <div style={{ textAlign: "center" }} title="Štít sa zaslúži skutkami — nedá sa kúpiť">
-            <Stit level={stit} size={desktop ? 88 : 64} detail subjekt={subjekt.nazov} />
-          </div>
-        }
+        vpravo={<StityRad variant="hlavicka" hlavny={stit} oblasti={stityOblastiSubjektu(subjekt.nazov, stit)} meno={subjekt.nazov} velkost={desktop ? 96 : 76} />}
         podMenom={<OnasKratky text={onas ?? subjekt.onas} />}
         stats={cislaSubjektu(pozicia, tier).map(([hodnota, label], i) => ({ hodnota, label, farba: i === 2 ? "var(--a-gold)" : undefined }))}
         akcie={<>

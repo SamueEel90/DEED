@@ -1,4 +1,7 @@
 import { Emo } from "@/components/icons";
+import { StityRad, type StitLevel as StitLv } from "@/components/stit";
+import { stityOblastiSubjektu } from "@/lib/stityOblasti";
+const naStitLevelOpt = (k: string): StitLv | null => ((["Bronze", "Silver", "Gold", "Platinum", "Legend"] as string[]).includes(k) ? (k as StitLv) : null);
 import { useState, useMemo, useEffect, memo } from "react";
 import { FormatovanyText, RichTextInput } from "@/shared";
 import { ModulHlavicka, Hlavicka, PlatobnyModul, PlatbaModal, HladanieModal, toast, Oslava, useMotiv, useLayout, useScrollPamat, useStrankaAkcie, useTvorbaGate, Ticker, StatRiadok, FiltreStat, FeedStlpce, FeedGrid, FeedCard, TypBadge, BackChip, SwipeBack, obalSiroky, OkruhVyber, Lupa, IkonaMoznosti, Zdielanie, IkonaPlay, IkonaDoska, IkonaPin, IkonaObalka, FotoPrispevku, FotoVyber, FeedSkeleton, EmptyState, ErrorState, ScreenSwitch, EntityHero, BtnAkcia, Overene, KontextMenu, IkonaOdkaz, IkonaVlajka, FotoProfiluSheet } from "@/shared";
@@ -755,7 +758,6 @@ function OsobaProfil({ name, items, follows, toggleFollow, onOpen, toast, home }
   const acc = p.domains[0] ? DOM[p.domains[0]] : DOM.mix;
   const followers = p.followers + (sledujem ? 1 : 0);
 
-  const karmaCol = ({ Gold: A.gold, Silver: "#C9D2DE", Bronze: "#CD8B5E", "Nováčik": A.txt3 } as Record<string, string>)[p.karma] || A.txt3;
 
   return (
     <div style={{ paddingBottom: SPACE.lg }}>
@@ -773,7 +775,8 @@ function OsobaProfil({ name, items, follows, toggleFollow, onOpen, toast, home }
           coverEl={<span style={{ position: "absolute", inset: 0, background: `linear-gradient(160deg, ${tint(acc.c, .3)}, ${tint(acc.c, .06)})` }} />}
           meno={<>{p.name}{p.profi && <Wb bg={A.purpleBg} c={A.purple}>PROFI</Wb>}</>}
           overene={p.verified} overeneLabel="Overený člen — potvrdené komunitou"
-          podtitul={<><span style={{ color: karmaCol, fontWeight: 700 }}>◆ {p.karma}</span> · 📍 {p.loc}</>}
+          podtitul={<span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}><IkonaPin size={11} color={A.txt3} /> {p.loc.replace(/\s*\/\s*/g, " · ")}</span>}
+          vpravo={naStitLevelOpt(p.karma) && <StityRad variant="hlavicka" hlavny={naStitLevelOpt(p.karma)!} oblasti={stityOblastiSubjektu(p.name, naStitLevelOpt(p.karma)!)} meno={p.name} velkost={76} />}
           stats={[
             { hodnota: p.skutky, label: "skutkov" },
             { hodnota: followers.toLocaleString("sk"), label: "sledovateľov" },
