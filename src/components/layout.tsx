@@ -1,4 +1,5 @@
 import { Emo } from "@/components/icons";
+import { KonasAkoLista } from "@/features/profil/MojeStranky";
 import { useState, Children, type CSSProperties, type ReactNode, type ReactElement } from "react";
 import { SpatTlacidlo } from "@/components/cesta";
 import { C, GRAD, GRAD_ZELENY, glassTmavy, btn, SPACE, RADIUS } from "@/theme";
@@ -86,7 +87,9 @@ export function ModulHlavicka({ title, right, slogan = "Miesto, kde nerozhodujú
         {!desktop && <Znacka size={34} text />}
         {/* h1 = názov modulu (SR navigácia po nadpisoch) — vizuál nezmenený */}
         <h1 style={{ fontSize: 20, fontWeight: 800, margin: 0, lineHeight: "inherit" }}>{title}</h1>
-        <span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: SPACE.sm }}>
+        {/* OPRAVY 75: stred lišty — Prezentácia + Konáš ako (len kto spravuje stránky); appkové menu sa nemení */}
+        <span style={{ flex: 1, minWidth: 0, display: "flex", justifyContent: "center" }}><KonasAkoLista /></span>
+        <span style={{ display: "flex", alignItems: "center", gap: SPACE.sm }}>
           {right}
         </span>
       </div>

@@ -1,6 +1,7 @@
 // KARTA 24 · 2g Jazyk · 2h Stiahnuť moje údaje — obrazovky sprava z Nastavení (OPRAVY 39). Zamestnávateľ je v profile (Zamestnavatel.tsx).
 import { DeedZnacka } from "@/components/DeedZnacka";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { createPortal } from "react-dom";
 import { useNastaveniaAppky, zmenNastavenia } from "@/lib/nastaveniaAppky";
 import { usePouzivatel } from "@/lib/pouzivatel";
 import { Harok } from "@/features/zbierka/Zdielat";
@@ -30,6 +31,35 @@ const JAZYKY: [string, string, string][] = [
   ["Hrvatski", "chorvátčina", "hr"], ["Slovenščina", "slovinčina", "sl"], ["Português", "portugalčina", "pt"], ["Nederlands", "holandčina", "nl"],
   ["Türkçe", "turečtina", "tr"], ["العربية", "arabčina", "ar"], ["中文", "čínština", "zh"], ["日本語", "japončina", "ja"], ["हिन्दी", "hindčina", "hi"],
 ];
+/** OPRAVY 74 · „Jazyk" v aktuálnom jazyku (anglické „Language" sa pridáva vždy) a text lišty po zmene */
+const SLOVO: Record<string, string> = { Slovenčina: "Jazyk", Čeština: "Jazyk", English: "Language", Deutsch: "Sprache", Español: "Idioma", Français: "Langue", Italiano: "Lingua", Magyar: "Nyelv", Polski: "Język", Română: "Limbă", Українська: "Мова", Hrvatski: "Jezik", Slovenščina: "Jezik", Português: "Idioma", Nederlands: "Taal", Türkçe: "Dil", "العربية": "اللغة", "中文": "语言", "日本語": "言語", "हिन्दी": "भाषा" };
+const LISTA: Record<string, [string, string]> = { Slovenčina: ["Jazyk zmenený.", "Späť na "], Čeština: ["Jazyk změněn.", "Zpět na "], English: ["Language changed.", "Back to "], Deutsch: ["Sprache geändert.", "Zurück zu "] };
+export function JazykNazov({ jazyk }: { jazyk: string }) {
+  const w = SLOVO[jazyk] ?? "Language";
+  return <>{w}{w !== "Language" && <span lang="en" style={{ fontWeight: 600, color: "var(--d-ink3, var(--ink3))" }}> · Language</span>}</>;
+}
+// lišta „Jazyk zmenený · Späť na …" 10 s po zmene (žije mimo obrazovky Jazyk, tá sa po výbere zavrie)
+let zmena: { novy: string; povodny: string; id: number } | null = null;
+let verZ = 0; const poslZ = new Set<() => void>();
+const ohlas = () => { verZ++; poslZ.forEach((f) => f()); };
+function zmenJazyk(novy: string, povodny: string) {
+  if (novy === povodny) return;
+  zmenNastavenia({ jazyk: novy });
+  const id = Date.now(); zmena = { novy, povodny, id }; ohlas();
+  window.setTimeout(() => { if (zmena?.id === id) { zmena = null; ohlas(); } }, 10000);
+}
+export function JazykLista() {
+  useSyncExternalStore((f) => { poslZ.add(f); return () => poslZ.delete(f); }, () => verZ, () => 0);
+  if (!zmena) return null;
+  const z = zmena, [t, b] = LISTA[z.novy] ?? LISTA.English;
+  return createPortal(
+    <div role="status" aria-live="polite" className="pf-rise" lang={JAZYKY.find((j) => j[0] === z.novy)?.[2]}
+      style={{ position: "fixed", left: 16, right: 16, bottom: "calc(26px + env(safe-area-inset-bottom))", zIndex: 400, maxWidth: 520, margin: "0 auto", display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderRadius: 16, background: "#1D211B", color: "#F1ECE1", boxShadow: "0 10px 30px rgba(0,0,0,.3)", fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+      <span style={{ flex: 1, minWidth: 0, fontSize: 14, fontWeight: 600 }}>{t}</span>
+      <button type="button" onClick={() => { zmenNastavenia({ jazyk: z.povodny }); zmena = null; ohlas(); }}
+        style={{ flex: "none", whiteSpace: "nowrap", minHeight: 44, padding: "0 12px", borderRadius: 11, border: "none", boxShadow: "none", background: "#F1ECE1", color: "#1D211B", fontSize: 13.5, fontWeight: 800, fontFamily: "inherit", cursor: "pointer" }}>{b}{z.povodny}</button>
+    </div>, document.body);
+}
 const NAVRH = ["sk", "cs", "en"]; // krajiny, kde DEED beží
 
 export function JazykObrazovka({ onBack }: { onBack: () => void }) {
@@ -44,9 +74,19 @@ export function JazykObrazovka({ onBack }: { onBack: () => void }) {
     ["NAVRHOVANÉ", navrh.map((k) => JAZYKY.find((j) => j[2] === k)!).filter(sedi)],
     ["VŠETKY JAZYKY", JAZYKY.filter((j) => !navrh.includes(j[2])).filter(sedi)],
   ];
-  const vyber = (nazov: string) => { zmenNastavenia({ jazyk: nazov }); toast(`Jazyk: ${nazov}`); setZavri((x) => x + 1); };
+  const vyber = (nazov: string) => { zmenJazyk(nazov, n.jazyk); setZavri((x) => x + 1); };
+  const en = n.jazyk === "English";
   return (
-    <ObrazovkaSprava titul="Jazyk" onBack={onBack} zavriet={zavri}>
+    <ObrazovkaSprava titul={<JazykNazov jazyk={n.jazyk} />} aria="Jazyk · Language" onBack={onBack} zavriet={zavri}>
+      {/* pevné English — nikdy sa neprekladá (záchrana, keď niekto omylom zmení jazyk) */}
+      <div lang="en" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        <button type="button" role="radio" aria-checked={en} onClick={() => vyber("English")}
+          style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 60, padding: "8px 14px", borderRadius: 16, cursor: "pointer", textAlign: "left", fontFamily: "inherit", boxShadow: "none", background: en ? "var(--gSoft)" : "var(--d-card, var(--card))", border: `1.5px solid ${en ? "var(--gBd)" : "var(--bBd)"}`, color: "var(--d-ink, var(--ink))" }}>
+          <span style={{ width: 38, height: 38, borderRadius: 11, background: "var(--bSoft)", color: "var(--blue)", display: "flex", alignItems: "center", justifyContent: "center", flex: "none", fontSize: 13, fontWeight: 800 }}>EN</span>
+          <span style={{ flex: 1, minWidth: 0 }}><span style={{ display: "block", fontSize: 16, fontWeight: 800 }}>English</span><span style={{ display: "block", fontSize: 12.5, color: "var(--d-ink3, var(--ink3))" }}>Lost in another language? Tap here.</span></span>
+          <Radio on={en} /></button>
+        <div style={{ fontSize: 12, lineHeight: 1.45, color: "var(--d-ink3, var(--ink3))", padding: "0 2px" }}>This line always stays in English.</div>
+      </div>
       {hladPole(q, setQ, "Hľadať jazyk")}
       {skupiny.map(([h, l]) => l.length > 0 && (
         <div key={h}>

@@ -283,7 +283,7 @@ function Home({ wide, toast, otvorModul, pohlad, setPohlad, radius, setRadius, o
 
 // ===================== PREPÍNAČ POHĽADU (Okolie | Môj DEED) =====================
 function PohladSwitch({ pohlad, setPohlad }: { pohlad: string; setPohlad: (p: "okolie" | "mojdeed") => void }) {
-  const tab = (key: "okolie" | "mojdeed", label: string) => {
+  const tab = (key: "okolie" | "mojdeed", label: React.ReactNode) => {
     const on = pohlad === key;
     return (
       <button onClick={() => setPohlad(key)} aria-current={on ? "page" : undefined} style={{
@@ -298,7 +298,7 @@ function PohladSwitch({ pohlad, setPohlad }: { pohlad: string; setPohlad: (p: "o
   return (
     <div style={{ display: "flex", gap: SPACE.xxs, padding: SPACE.xxs, margin: `0 ${SPACE.md}px ${SPACE.xs}px`, borderRadius: RADIUS.md, background: C.surface2, border: `1px solid ${C.line}` }}>
       {tab("okolie", "Okolie")}
-      {tab("mojdeed", "Môj DEED+")}
+      {tab("mojdeed", <>Môj <DeedZnacka /></>)}
     </div>
   );
 }

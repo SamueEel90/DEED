@@ -1,6 +1,8 @@
 // KARTA 18 · Môj profil — hlavná obrazovka (prototyp „Moj profil.dc.html").
 // Hlavička · karta identity · karta štítu · karma (len vlastník) · čísla · dlaždice 2 × 3 · Moje záujmy (10 oblastí).
 // Bez L-úrovní, percent, emoji a anglických názvov štítov.
+import { MojeStranky, KonasAkoLista } from "./MojeStranky";
+import type { Stranka } from "@/lib/mojeStranky";
 import { DeedZnacka } from "@/components/DeedZnacka";
 import { useState } from "react";
 import { usePouzivatel } from "@/lib/pouzivatel";
@@ -71,6 +73,7 @@ const btn = { height: 46, borderRadius: 14, border: "1px solid var(--cardBd)", b
 export type ProfilAkcie = {
   naWallet: () => void; naNastavenia: () => void; naPriatelia: () => void; naSub: (n: string) => void;
   naUpravit: () => void; naQr: () => void; naFirma: () => void;
+  /** OPRAVY 75 · Moje stránky → Spravovať (rolový panel) */ naStranku?: (s: Stranka) => void;
   /** Priatelia · záložka (ťuk na „sledujem / podporujem" otvorí príslušnú) */ naPriatelia2?: (tab: "priatelia" | "sledujem" | "podporujem") => void;
 };
 
@@ -232,9 +235,11 @@ export function ProfilHlavny18(a: ProfilAkcie) {
       <div style={{ display: "flex", alignItems: "center", gap: 12, height: 56 }}>
         <button type="button" onClick={otvorViac} aria-label="Menu modulov" style={{ width: 44, height: 44, marginLeft: -10, border: "none", background: "transparent", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "var(--ink2)" }}><Ik d={IK.menu} size={22} /></button>
         <span style={{ fontSize: 19, fontWeight: 800 }}>Môj profil</span>
-        <button type="button" onClick={a.naNastavenia} aria-label="Nastavenia" style={{ marginLeft: "auto", marginRight: -8, width: 44, height: 44, border: "none", background: "transparent", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "var(--ink2)" }}><Ik d={IK.ozubene} size={21} /></button>
+        <span style={{ flex: 1, minWidth: 0, display: "flex", justifyContent: "center" }}><KonasAkoLista /></span>
+        <button type="button" onClick={a.naNastavenia} aria-label="Nastavenia" style={{  marginRight: -8, width: 44, height: 44, border: "none", background: "transparent", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "var(--ink2)" }}><Ik d={IK.ozubene} size={21} /></button>
       </div>
       <IdentitaKarta18 naUpravit={a.naUpravit} naQr={a.naQr} />
+      <MojeStranky naSpravovat={(s) => a.naStranku?.(s)} />
       <StitKarta18 />
       <button type="button" onClick={() => a.naSub("Karma a štíty")} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 18, background: "var(--card)", border: "1px solid var(--cardBd)", cursor: "pointer", textAlign: "left", fontFamily: "inherit", color: "var(--ink)" }}>
         <span style={{ width: 38, height: 38, borderRadius: 12, background: "var(--gSoft)", color: "var(--green)", display: "flex", alignItems: "center", justifyContent: "center", flex: "none" }}><Ik d={IK.zamok} size={18} /></span>

@@ -43,7 +43,7 @@ function Volba({ on, onClick, t, s, ikona }: { on: boolean; onClick: () => void;
 const Radio = ({ on }: { on: boolean }) => <span aria-hidden="true" style={{ width: 22, height: 22, borderRadius: "50%", flex: "none", border: `2px solid ${on ? "var(--green)" : "var(--chkBd)"}`, display: "flex", alignItems: "center", justifyContent: "center" }}><span style={{ width: 11, height: 11, borderRadius: "50%", background: "var(--green)", opacity: on ? 1 : 0 }} /></span>;
 
 /** obrazovka, ktorá príde sprava (Späť vráti na Nastavenia) */
-export function ObrazovkaSprava({ titul, onBack, children, z = 135, zavriet = 0 }: { titul: string; onBack: () => void; children: ReactNode; z?: number; /** zvýšenie = zasunúť a zavrieť (napr. po výbere) */ zavriet?: number }) {
+export function ObrazovkaSprava({ titul, aria, onBack, children, z = 135, zavriet = 0 }: { titul: ReactNode; /** názov pre čítačky, keď titul nie je text */ aria?: string; onBack: () => void; children: ReactNode; z?: number; /** zvýšenie = zasunúť a zavrieť (napr. po výbere) */ zavriet?: number }) {
   const [otv, setOtv] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => { const r = requestAnimationFrame(() => setOtv(true)); return () => cancelAnimationFrame(r); }, []);
@@ -53,7 +53,7 @@ export function ObrazovkaSprava({ titul, onBack, children, z = 135, zavriet = 0 
   // Esc zavrie len vrchnú vrstvu (hárok nad obrazovkou má vlastné Esc)
   useEffect(() => { const k = (e: KeyboardEvent) => { if (e.key !== "Escape") return; const vrch = [...document.querySelectorAll('[aria-modal="true"]')].pop(); if (vrch === ref.current) spat(); }; window.addEventListener("keydown", k); return () => window.removeEventListener("keydown", k); });
   return createPortal(
-    <div ref={ref} className="deed-platba" role="dialog" aria-modal="true" aria-label={titul}
+    <div ref={ref} className="deed-platba" role="dialog" aria-modal="true" aria-label={aria ?? (typeof titul === "string" ? titul : undefined)}
       style={{ position: "fixed", inset: 0, zIndex: z, background: "var(--bg)", color: "var(--ink)", fontFamily: "'Plus Jakarta Sans', sans-serif", transform: otv ? "none" : "translateX(105%)", transition: "transform .42s cubic-bezier(.45,0,.25,1)" }}>
       <div style={{ height: "100%", maxWidth: 640, margin: "0 auto", display: "flex", flexDirection: "column" }}>
         <div style={{ flex: "none", display: "flex", alignItems: "center", gap: 10, padding: "max(6px, env(safe-area-inset-top)) 16px 0", minHeight: 60 }}>

@@ -9,7 +9,7 @@ import { signOut } from "@/lib/auth";
 import { SpatTlacidlo } from "@/components/cesta";
 import { toast } from "@/components/toast";
 import { IntroPruvodca } from "@/components/intro";
-import { JazykObrazovka, StiahnutUdajeObrazovka } from "./JazykUdaje";
+import { JazykObrazovka, StiahnutUdajeObrazovka, JazykNazov, JazykLista } from "./JazykUdaje";
 import { CasteOtazky, NapisatPodpore, NahlasitProblem, VERZIA_APPKY } from "./Pomoc";
 import { ZrusitUcet } from "./ZrusitUcet";
 import { PotvrditPlatbuHarok, OkruhHarok, PrihlaseneZariadenia, EmailTelefonHeslo, ZablokovaniLudia, Suhlasy, DetailSuhlasu, hranicaText } from "./Bezpecnost24";
@@ -51,7 +51,7 @@ export function Nastavenia20({ onBack, onNotif, onUpravProfil, desktop }: { onBa
                 style={{ minHeight: 44, padding: "4px 6px", borderRadius: 11, border: "none", cursor: "pointer", fontSize: 14.5, fontWeight: 700, fontFamily: "inherit", lineHeight: 1.2, ...(tema === k ? {} : { background: "transparent", color: "var(--d-ink3, var(--ink3))", boxShadow: "none" }) }}>{l}</button>))}
           </div>
         </div>
-        <Riadok d={IK.globe} t="Jazyk" hodnota={n.jazyk} onClick={() => setObr("jazyk")} />
+        <Riadok d={IK.globe} t={<JazykNazov jazyk={n.jazyk} />} hodnota={n.jazyk} onClick={() => setObr("jazyk")} />
       </Sekcia>
 
       <Sekcia nadpis="PRÍSTUPNOSŤ" k="g">
@@ -124,6 +124,7 @@ export function Nastavenia20({ onBack, onNotif, onUpravProfil, desktop }: { onBa
       {obr === "blokovani" && <ZablokovaniLudia onBack={() => setObr(null)} />}
       {obr === "suhlasy" && <Suhlasy onBack={() => setObr(null)} />}
       {obr === "jazyk" && <JazykObrazovka onBack={() => setObr(null)} />}
+      <JazykLista />
       {obr === "udaje" && <StiahnutUdajeObrazovka onBack={() => setObr(null)} />}
       {obr === "faq" && <CasteOtazky onBack={() => setObr(null)} onPodpora={() => setObr("podpora")} />}
       {obr === "podpora" && <NapisatPodpore onBack={() => setObr(null)} />}

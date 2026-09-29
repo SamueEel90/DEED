@@ -96,9 +96,9 @@ function MojDeedFiremnyObsah({ onBack, toast, orgId }: { onBack: () => void; toa
   const { desktop } = useLayout();
   const ja = usePouzivatel(); // tvorca vystupuje pod vlastnou profilovou fotkou (nie logom)
   // rola + tier per rola — DEV: lokálny stav; produkcia: overený účet + fakturácia
-  const [pozicia, setPozicia] = useState<Pozicia>(nacitajPoziciu);
+  const [pozicia] = useState<Pozicia>(nacitajPoziciu);
   const [tiery, setTiery] = useState<Record<Pozicia, Tier>>(nacitajTiery);
-  const [drzitel, setDrzitel] = useState<boolean>(nacitajDrzitel);
+  const [drzitel] = useState<boolean>(nacitajDrzitel);
   const [logo, setLogo] = useState<string | null>(() => nacitajLogo(nacitajPoziciu()));
   const [tvarLoga, setTvarLoga] = useState(() => nacitajTvarLoga(nacitajPoziciu()));
   const [zdrojAvatara, setZdrojAvatara] = useState(() => nacitajZdrojAvatara(nacitajPoziciu()));
@@ -115,9 +115,7 @@ function MojDeedFiremnyObsah({ onBack, toast, orgId }: { onBack: () => void; toa
   const [fotky, zmenFotky] = useFotkyEntity(klucEntity("rola", pozicia));
 
   const tier = tiery[pozicia];
-  const prepniPoziciu = (p: Pozicia) => { setPozicia(p); ulozPoziciu(p); setLogo(nacitajLogo(p)); setTvarLoga(nacitajTvarLoga(p)); setZdrojAvatara(nacitajZdrojAvatara(p)); setOnas(nacitajOnas(p)); setKontakt(nacitajKontakt(p)); };
   const nastavTier = (t: Tier) => { const n = { ...tiery, [pozicia]: t }; setTiery(n); ulozTiery(n); };
-  const prepniDrzitela = () => { setDrzitel((d) => { ulozDrzitel(!d); return !d; }); };
 
   // Viditeľnosť nástrojov: vlastné + najviac 2 programy nad sebou (zamknuté).
   // Vyššie sa nezobrazujú vôbec — ZADARMO nevidí nástroje z T3/T4, T1 nevidí T4 atď.
@@ -183,11 +181,7 @@ function MojDeedFiremnyObsah({ onBack, toast, orgId }: { onBack: () => void; toa
 
   const telo = (
     <div style={{ padding: `${SPACE.sm}px ${SPACE.md}px 0` }}>
-      {/* ---- DEV panel — simulácia roly/tieru/držiteľa (v produkcii sa nezobrazuje) ---- */}
-      {(FLAGS.dev_role_switcher || FLAGS.dev_tier_switcher) && (
-        <DevPanel pozicia={pozicia} tier={tier} drzitel={drzitel}
-          onPozicia={prepniPoziciu} onTier={nastavTier} onDrzitel={prepniDrzitela} />
-      )}
+      {/* DEV simulácia sa presunula do profilu pod Moje stránky (OPRAVY 75, len testovacia verzia) */}
 
       {/* ==== HERO SUBJEKTU — cover, logo, meno + odznak, štatistiky, akcie ==== */}
       {zbalena ? (
@@ -397,6 +391,18 @@ function MojDeedFiremnyObsah({ onBack, toast, orgId }: { onBack: () => void; toa
 }
 
 // ===================== DEV PANEL — simulácia roly/tieru/držiteľa =====================
+/** OPRAVY 75 · DEV simulácia pod Moje stránky v profile (len testovacia verzia) — stav v rola/stav.ts */
+export function DevSimulacia() {
+  const [pozicia, setPozicia] = useState<Pozicia>(nacitajPoziciu);
+  const [tiery, setTiery] = useState<Record<Pozicia, Tier>>(nacitajTiery);
+  const [drzitel, setDrzitel] = useState<boolean>(nacitajDrzitel);
+  if (!(FLAGS.dev_role_switcher || FLAGS.dev_tier_switcher)) return null;
+  return <DevPanel pozicia={pozicia} tier={tiery[pozicia]} drzitel={drzitel}
+    onPozicia={(p) => { setPozicia(p); ulozPoziciu(p); }}
+    onTier={(t) => { const n = { ...tiery, [pozicia]: t }; setTiery(n); ulozTiery(n); }}
+    onDrzitel={() => setDrzitel((d) => { ulozDrzitel(!d); return !d; })} />;
+}
+
 function DevPanel({ pozicia, tier, drzitel, onPozicia, onTier, onDrzitel }: {
   pozicia: Pozicia; tier: Tier; drzitel: boolean;
   onPozicia: (p: Pozicia) => void; onTier: (t: Tier) => void; onDrzitel: () => void;

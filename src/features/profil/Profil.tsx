@@ -1,4 +1,7 @@
 import { useState, useEffect } from "react";
+import { MojeStranky, KonasAkoLista } from "./MojeStranky";
+import type { Stranka } from "@/lib/mojeStranky";
+import { ulozPoziciu } from "@/features/rola/stav";
 import { useVazbyOsoby } from "@/lib/zamestnanci";
 import { useMojaFirma, dataFirmy } from "@/lib/mojaFirma";
 import { usePouzivatel } from "@/lib/pouzivatel";
@@ -48,6 +51,8 @@ export default function ModulProfil({ wide, walletReq = 0 }: ProfilProps) {
   useEffect(() => { if (walletReq) setScreen("wallet"); }, [walletReq]);
 
   const [skOblast, setSkOblast] = useState<Oblast | undefined>(undefined); // Moje skutky s filtrom oblasti (z detailu oblasti)
+  // OPRAVY 75: Moje stránky → Spravovať = rolový panel danej stránky (nahrádza „Môj DEED+ firemný" v Charite)
+  const spravovat = (s: Stranka) => { ulozPoziciu(s.pozicia); setScreen("firemny"); };
   const sub = (n: string) => { setSubNazov(n); setSkOblast(undefined); setScreen("sub"); };
   const skutkyOblasti = (o: Oblast) => { setSubNazov("Moje skutky"); setSkOblast(o); setScreen("sub"); };
   const spatZoSkutkov = () => { if (skOblast) { setSkOblast(undefined); setSubNazov("Karma a štíty"); } else setScreen("profil"); };
@@ -60,13 +65,13 @@ export default function ModulProfil({ wide, walletReq = 0 }: ProfilProps) {
   const obal = (el: React.ReactNode) => obalSiroky(el, { wide, desktop, max: SIRKA.stlpec, maxDesktop: SIRKA.citanie });
 
   // DESKTOP — profesionálny 2-panel layout: bočná navigácia (identita + sekcie) + obsahový panel
-  if (desktop) return <>{qrModal}{upravaHarok}<ProfilDesktop screen={screen} subNazov={subNazov} setScreen={setScreen} onSub={sub} onQr={() => setQr(true)} onUpravit={() => setUprava(true)} pTab={pTab} onPriatelia={priatelia} skOblast={skOblast} skutkyOblasti={skutkyOblasti} spatZoSkutkov={spatZoSkutkov} /></>;
+  if (desktop) return <>{qrModal}{upravaHarok}<ProfilDesktop screen={screen} subNazov={subNazov} setScreen={setScreen} onSub={sub} onQr={() => setQr(true)} onUpravit={() => setUprava(true)} pTab={pTab} onPriatelia={priatelia} onStranka={spravovat} skOblast={skOblast} skutkyOblasti={skutkyOblasti} spatZoSkutkov={spatZoSkutkov} /></>;
 
   // MOBIL — pôvodný tok (dlaždice → pod-obrazovky cez ScreenSwitch)
   return (
     <div style={{ minHeight: "100%" }}>
       <ScreenSwitch k={screen}>
-      {screen === "profil" && obal(<ProfilHlavny18 naWallet={() => setScreen("wallet")} naSub={sub} naNastavenia={() => setScreen("nastavenia")} naPriatelia={() => priatelia()} naPriatelia2={priatelia} naFirma={() => setScreen("firma")}
+      {screen === "profil" && obal(<ProfilHlavny18 naWallet={() => setScreen("wallet")} naSub={sub} naNastavenia={() => setScreen("nastavenia")} naPriatelia={() => priatelia()} naPriatelia2={priatelia} naStranku={spravovat} naFirma={() => setScreen("firma")}
         naUpravit={() => setUprava(true)} naQr={() => setQr(true)} />)}
       {screen === "wallet" && obal(<Penazenka18 onBack={() => setScreen("profil")} />)}
       {screen === "firemny" && obalSiroky(<MojDeedFiremny onBack={() => setScreen("profil")} toast={toast} />, { wide, desktop, max: SIRKA.stlpec })}
@@ -106,7 +111,7 @@ function ZaujmyObrazovka({ onBack, desktop }: { onBack: () => void; desktop?: bo
     </div>);
 }
 
-function ProfilDesktop({ screen, subNazov, setScreen, onSub, onQr, onUpravit, pTab, onPriatelia, skOblast, skutkyOblasti, spatZoSkutkov }: { screen: string; subNazov: string | null; setScreen: (s: string) => void; onSub: (n: string) => void; onQr: () => void; onUpravit: () => void; pTab: PriateliaTab; onPriatelia: (t?: PriateliaTab) => void; skOblast?: Oblast; skutkyOblasti: (o: Oblast) => void; spatZoSkutkov: () => void }) {
+function ProfilDesktop({ screen, subNazov, setScreen, onSub, onQr, onUpravit, pTab, onPriatelia, onStranka, skOblast, skutkyOblasti, spatZoSkutkov }: { screen: string; subNazov: string | null; setScreen: (s: string) => void; onSub: (n: string) => void; onQr: () => void; onUpravit: () => void; pTab: PriateliaTab; onPriatelia: (t?: PriateliaTab) => void; onStranka: (s: Stranka) => void; skOblast?: Oblast; skutkyOblasti: (o: Oblast) => void; spatZoSkutkov: () => void }) {
   // OPRAVY 61: zlatá bodka pri Zamestnávateľovi len keď firma čaká na odpoveď (pozvánka, „Stále pracuješ…?")
   const ja = usePouzivatel();
   const vazby = useVazbyOsoby(ja.celeMeno);
@@ -133,6 +138,7 @@ function ProfilDesktop({ screen, subNazov, setScreen, onSub, onQr, onUpravit, pT
   else obsah = (
     <div style={{ padding: `${SPACE.md}px ${SPACE.md}px ${SPACE.lg}px` }}>
       <div className="deed-platba" style={{ display: "flex", flexDirection: "column", gap: 14, color: "var(--ink)" }}>
+        <MojeStranky naSpravovat={onStranka} />
         <StitKarta18 />
         <RozpracovanySkutok />
         {!ja.demo && <PrveKroky naZaujmy={() => onSub("Moje záujmy")} naPriatelia={() => onPriatelia()} />}
@@ -146,6 +152,7 @@ function ProfilDesktop({ screen, subNazov, setScreen, onSub, onQr, onUpravit, pT
     <div style={{ maxWidth: SIRKA.plocha, margin: "0 auto", padding: `${SPACE.md}px ${SPACE.md}px ${SPACE.lg}px` }}>
       <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm, padding: `0 ${SPACE.xxs}px ${SPACE.gutter}px` }}>
         <span style={{ fontSize: 20, fontWeight: 800 }}>Môj profil</span>
+        <span style={{ flex: 1, minWidth: 0, display: "flex", justifyContent: "center" }}><KonasAkoLista /></span>
       </div>
       <div style={{ display: "flex", gap: SPACE.lg, alignItems: "flex-start" }}>
         <aside style={{ width: 300, flex: "0 0 300px", minWidth: 0, position: "sticky", top: SPACE.md, display: "flex", flexDirection: "column", gap: SPACE.sm }}>
