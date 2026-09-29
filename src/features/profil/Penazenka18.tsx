@@ -10,6 +10,8 @@ import { toast } from "@/components/toast";
 import { Harok } from "@/features/zbierka/Zdielat";
 import { poplatokKarty } from "@/features/zbierka/Platba";
 import { MojQr } from "./MojQr";
+import { Blokacia24h } from "./Bezpecnost24";
+import { hodinNovehoZariadenia } from "@/lib/zariadenia";
 import { POHYBY, VYPISY } from "./mock";
 import "@/styles/platba.css";
 
@@ -46,6 +48,7 @@ export function Penazenka18({ onBack, desktop }: { onBack: () => void; desktop?:
   const [vypis, setVypis] = useState<number | null>(null);
   const [dobit, setDobit] = useState(false);
   const [prijat, setPrijat] = useState(false);
+  const [blok, setBlok] = useState<null | string>(null); // karta 24 · prvých 24 h na novom zariadení
   useEffect(() => { let z = false; nacitajZostatok().then((v) => { if (!z) setDeed(v); }); return () => { z = true; }; }, []);
   const android = typeof navigator !== "undefined" && /Android/i.test(navigator.userAgent);
   const pohyby = POHYBY.filter((p) => p[5] === mena).slice(0, viac ? 20 : 4);
@@ -75,7 +78,7 @@ export function Penazenka18({ onBack, desktop }: { onBack: () => void; desktop?:
         <Riadok ikona={kocka(<Ik d={IK.banka} size={16} />)} t="Účet SK31 •••• 6789" s={`SEPA · ${ja.celeMeno}`} />
         <Riadok ikona={kocka(<Ik d={IK.telefon} size={16} />, "var(--field)", "var(--ink2)")} t={android ? "Google Pay" : "Apple Pay"} s="platba jedným dotykom" vpravo={odkaz("Prepojiť", brana)} />
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, padding: "8px 0", borderTop: "1px solid var(--cardBd)" }}>
-          {["+ Pridať kartu", "+ Pridať účet"].map((t) => <button key={t} type="button" onClick={brana} style={{ height: 44, borderRadius: 13, border: "1.5px dashed var(--gBd)", background: "transparent", fontSize: 14, fontWeight: 700, color: "var(--green)", cursor: "pointer", fontFamily: "inherit" }}>{t}</button>)}
+          {["+ Pridať kartu", "+ Pridať účet"].map((t) => <button key={t} type="button" onClick={() => (hodinNovehoZariadenia() > 0 ? setBlok(t.includes("kartu") ? "kartu" : "účet") : brana())} style={{ height: 44, borderRadius: 13, border: "1.5px dashed var(--gBd)", background: "transparent", fontSize: 14, fontWeight: 700, color: "var(--green)", cursor: "pointer", fontFamily: "inherit" }}>{t}</button>)}
         </div>
       </div>
       <div style={{ fontSize: 12, lineHeight: 1.45, color: "var(--ink4)", marginTop: -6 }}>Karty ukladá platobná brána, u nás sú len posledné 4 čísla.</div>
@@ -141,6 +144,7 @@ export function Penazenka18({ onBack, desktop }: { onBack: () => void; desktop?:
       <div style={{ fontSize: 12, lineHeight: 1.5, color: "var(--ink4)", textAlign: "center", padding: "0 10px" }}>Výpis obsahuje pohyby DEED aj EURC za daný mesiac. Doklady o daroch nájdeš v Moje dary.</div>
 
       {prijat && <MojQr zalozka="akcia" onClose={() => setPrijat(false)} />}
+      {blok && <Harok onClose={() => setBlok(null)} hlavicka={<span style={{ flex: 1, fontSize: 20, fontWeight: 800 }}>Pridať {blok}</span>}><Blokacia24h co={blok === "kartu" ? "novú kartu pridáš" : "nový účet (IBAN) pridáš"} /><div style={{ fontSize: 13.5, lineHeight: 1.5, color: "var(--ink3)" }}>Chránime ťa pred zneužitím: prvých 24 hodín na novom zariadení nezmeníš e-mail, telefón, IBAN ani kartu a platby sú najviac do 50 €.</div></Harok>}
       {dobit && <DobitHarok mena={mena} onClose={() => setDobit(false)}
         onDobite={async (eur) => {
           if (mena === "DEED") { const nove = await dobitPenazenku(eur * KURZ_DEED_ZA_EUR); setDeed(nove); }

@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, memo } from "react";
+import { FormatovanyText, RichTextInput } from "@/shared";
 import { ModulHlavicka, Hlavicka, PlatobnyModul, PlatbaModal, HladanieModal, toast, Oslava, useMotiv, useLayout, useScrollPamat, useStrankaAkcie, useTvorbaGate, Ticker, StatRiadok, FiltreStat, FeedStlpce, FeedGrid, FeedCard, TypBadge, BackChip, SwipeBack, obalSiroky, OkruhVyber, Lupa, IkonaMoznosti, Zdielanie, IkonaPlay, IkonaDoska, IkonaPin, IkonaObalka, FotoPrispevku, FotoVyber, FeedSkeleton, EmptyState, ErrorState, ScreenSwitch, EntityHero, BtnAkcia, Overene, KontextMenu, IkonaOdkaz, IkonaVlajka, FotoProfiluSheet } from "@/shared";
 import { FOTO_TEST_REZIM, klucEntity, useFotkyEntity } from "@/lib/fotoentity";
 import { SIRKA, C, GRAD, GRAD_ZELENY, SPACE, RADIUS } from "@/theme";
@@ -455,7 +456,7 @@ function DeedDetail({ it, support, votes, vote, toast, home, openPerson }: any) 
           {it.verified && <span style={{ marginLeft: "auto", display: "inline-flex" }}><Overene size={15} label="Overené komunitou" /></span>}
         </div>
         <div style={{ ...titleS, marginTop: SPACE.sm, fontSize: 14 }}>{it.title}</div>
-        <p style={{ fontSize: 14.5, lineHeight: 1.6, marginTop: SPACE.xs, color: A.txt2 }}>{it.desc}</p>
+        <FormatovanyText text={it.desc} style={{ fontSize: 14.5, lineHeight: 1.6, marginTop: SPACE.xs, color: A.txt2 }} />
 
         {isCase && (
           <div style={{ textAlign: "center", padding: SPACE.sm, background: A.surface2, border: `1px solid ${a.bd}`, borderRadius: RADIUS.sm, marginTop: SPACE.xs }}>
@@ -508,7 +509,7 @@ function WorkshopDetail({ it, toast, celebrate, home, openPerson }: any) {
       </DetailHero>
       <div style={{ padding: `${SPACE.gutter}px ${SPACE.md}px` }}>
         <div style={{ ...titleS, fontSize: 15 }}>{it.title}</div>
-        <p style={{ fontSize: 14.5, lineHeight: 1.6, marginTop: SPACE.xs, color: A.txt2 }}>{it.desc}</p>
+        <FormatovanyText text={it.desc} style={{ fontSize: 14.5, lineHeight: 1.6, marginTop: SPACE.xs, color: A.txt2 }} />
 
         <div onClick={() => openPerson(it.author)} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, background: A.surface2, border: `1px solid ${A.line}`, borderRadius: RADIUS.sm, padding: SPACE.sm, marginTop: SPACE.gutter, cursor: "pointer" }}>
           <div style={{ width: 44, height: 44, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 16, color: "#fff", flex: "none", background: it.pfp }}>{it.ini}</div>
@@ -559,7 +560,7 @@ function HelpDetail({ it, toast, celebrate, home, openPerson }: any) {
           <div><div style={{ ...nameS, display: "flex", alignItems: "center", gap: SPACE.xs }}>{it.author} <span style={{ color: C.textTer, fontSize: 13 }}>›</span></div><div style={{ fontSize: 12, color: A.txt3 }}>{it.loc} · č. {it.num.toLocaleString("sk")}</div></div>
         </div>
         <div style={{ ...titleS, marginTop: SPACE.sm, fontSize: 14 }}>{it.title}</div>
-        <p style={{ fontSize: 14.5, lineHeight: 1.6, marginTop: SPACE.xs, color: A.txt2 }}>{it.desc}</p>
+        <FormatovanyText text={it.desc} style={{ fontSize: 14.5, lineHeight: 1.6, marginTop: SPACE.xs, color: A.txt2 }} />
         <InfoBox>{it.helpers} ľudí sa už zapojilo. Po prijatí sa otvorí chat, dohodnete sa. Po dokončení: hodnotenie + tip + reťaz dobra.</InfoBox>
         <Btn green onClick={gate(() => { celebrate("Ozval si sa!", `Otvorili sme chat s ${it.author}. Dohodnite si detaily.`); setTimeout(home, 1700); })}>✋ Môžem pomôcť</Btn>
         {/* podpora — pomôcť sa dá aj peniazmi (karta / SEPA prevod / peňaženka), nielen časom */}
@@ -628,7 +629,7 @@ function Add({ dom, add, setAdd, toast, celebrate, home, createPost }: any) {
         <h2 style={{ fontSize: 18, margin: `${SPACE.xxs}px 0` }}>Čo chceš pridať?</h2>
         <div style={{ fontSize: 12, color: A.txt3 }}>Predvyplníme doménu, aby si klikal čo najmenej.</div>
         <div style={{ display: "flex", flexDirection: "column", gap: SPACE.sm, marginTop: SPACE.md }}>
-          <Ch ic="✅" t="Pridať skutok" s="spravil som niečo dobré (zabehol, zasadil, pomohol, vytvoril)" onClick={() => otvorPridatSkutok({ oblast: DOM_OBLAST[d] ?? "Šport" })} />
+          <Ch ic={<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--a-green)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg>} t="Pridať skutok" s="spravil som niečo dobré (zabehol, zasadil, pomohol, vytvoril)" onClick={() => otvorPridatSkutok({ oblast: DOM_OBLAST[d] ?? "Šport" })} />
           <Ch ic="🎓" t="Pridať školenie / workshop" s="ponúkam pomoc — učím, vediem, školím" onClick={() => setAdd({ kind: "skolenie", d })} />
           <Ch ic="❓" t="Hľadám pomoc" s="potrebujem mentora, parťáka, dobrovoľníkov" onClick={() => setAdd({ kind: "help", d })} />
         </div>
@@ -650,7 +651,7 @@ function AddForm({ kind, d, a, pill, setAdd, toast, celebrate, home, createPost 
   const inp: React.CSSProperties = { width: "100%", background: A.surface2, border: `1px solid ${A.line}`, borderRadius: RADIUS.sm, padding: SPACE.gutter, color: A.txt, fontSize: 14, fontFamily: "inherit", resize: "none", marginTop: SPACE.xs, outline: "none" };
 
   function submit() {
-    if (!text.trim()) return toast(isSkol ? "Najprv zadaj názov workshopu" : "Najprv napíš, čo hľadáš");
+    if (!text.replace(/<[^>]+>/g, "").trim()) return toast(isSkol ? "Najprv zadaj názov workshopu" : "Najprv napíš, čo hľadáš");
     if (isSkol && (!checks.a || !checks.b)) return toast("Potvrď obe vyhlásenia (zodpovednosť + oprávnenie školiť)");
 
     createPost({ kind, d, text, talent: false, free: isSkol && free, fotky });
@@ -668,8 +669,9 @@ function AddForm({ kind, d, a, pill, setAdd, toast, celebrate, home, createPost 
         <div style={pill()}>{a.ic} {a.label}</div>
 
         <div style={fieldlbl}>{isSkol ? "Názov workshopu" : "Čo hľadáš"}</div>
-        <textarea rows={3} value={text} onChange={(e) => setText(e.target.value)}
-          placeholder={isSkol ? "napr. Akvarel pre začiatočníkov" : "napr. Hľadám parťáka na beh..."} style={inp} />
+        {isSkol
+          ? <input value={text} onChange={(e) => setText(e.target.value)} placeholder="napr. Akvarel pre začiatočníkov" aria-label="Názov workshopu" style={inp} />
+          : <div style={{ marginTop: SPACE.xs }}><RichTextInput value={text} onChange={setText} placeholder="napr. Hľadám parťáka na beh..." ariaLabel="Čo hľadáš" minH={90} /></div>}
 
         {isSkol && (<>
           <div style={fieldlbl}>Cena</div>

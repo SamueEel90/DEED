@@ -13,10 +13,12 @@ import { IntroPruvodca } from "@/components/intro";
 import { NahlasitSheet } from "@/components/nahlasit";
 import { MojZamestnavatelSheet } from "@/features/rola/MojZamestnavatel";
 import { Harok } from "@/features/zbierka/Zdielat";
+import { PotvrditPlatbuHarok, OkruhHarok, PrihlaseneZariadenia, EmailTelefonHeslo, ZablokovaniLudia, Suhlasy, hranicaText } from "./Bezpecnost24";
+import { zariadenia, useZmenyZariadeni } from "@/lib/zariadenia";
+import { zablokovani, useZmenyBlokovania } from "@/lib/blokovanie";
 import "@/styles/platba.css";
 
 const VERZIA = "0.9 (pilot)";
-const HRANICE = [20, 50, 100, 200];
 const OKRUH: Record<Okruh, string> = { stvrt: "Štvrť", mesto: "Mesto", slovensko: "Slovensko" };
 const coskoro = () => toast("Pribudne v ďalšej verzii");
 
@@ -49,13 +51,15 @@ function Riadok({ t, s, hodnota, prepinac, onClick, prvy }: { t: string; s?: str
   );
 }
 
-export function Nastavenia20({ onBack, onNotif, desktop }: { onBack: () => void; onNotif: () => void; desktop?: boolean }) {
+export function Nastavenia20({ onBack, onNotif, onUpravProfil, desktop }: { onBack: () => void; onNotif: () => void; onUpravProfil?: () => void; desktop?: boolean }) {
   const ja = usePouzivatel();
   const { tema, nastavTemu } = useMotiv();
   const n = useNastaveniaAppky();
   const [tuk, setTuk] = useState(potvrditTuknutim);
   const vazba = useVazbaOsoby(ja.celeMeno);
-  const [harok, setHarok] = useState<null | "okruh" | "zrusit" | "zamestnavatel" | "uvod" | "nahlasit">(null);
+  const [harok, setHarok] = useState<null | "okruh" | "platba" | "zrusit" | "zamestnavatel" | "uvod" | "nahlasit">(null);
+  const [obr, setObr] = useState<null | "zariadenia" | "kontakt" | "blokovani" | "suhlasy">(null); // obrazovky sprava (karta 24)
+  useZmenyZariadeni(); useZmenyBlokovania();
 
   const stiahniUdaje = () => {
     const data: Record<string, unknown> = { vytvorene: new Date().toISOString(), meno: ja.celeMeno };
@@ -115,21 +119,20 @@ export function Nastavenia20({ onBack, onNotif, desktop }: { onBack: () => void;
 
       <Sekcia nadpis="POLOHA">
         <Riadok prvy t="Poloha telefónu" s="na skutky a pomoc v okolí" prepinac={n.poloha} onClick={() => zmenNastavenia({ poloha: !n.poloha })} />
-        <Riadok t="Predvolený okruh" hodnota={OKRUH[n.okruh]} onClick={() => setHarok("okruh")} />
+        <Riadok t="Predvolený okruh" s={n.odPolohy ? "podľa toho, kde práve si" : undefined} hodnota={OKRUH[n.okruh]} onClick={() => setHarok("okruh")} />
       </Sekcia>
 
       <Sekcia nadpis="BEZPEČNOSŤ">
         <Riadok prvy t="Prihlásenie tvárou alebo odtlačkom" prepinac={n.biometria} onClick={() => zmenNastavenia({ biometria: !n.biometria })} />
-        <Riadok t="Potvrdiť platbu nad" s="tvárou, odtlačkom alebo PIN · ťukni a zmeň sumu" hodnota={<b style={{ color: "var(--ink)" }}>{n.hranicaPlatby} €</b>}
-          onClick={() => zmenNastavenia({ hranicaPlatby: HRANICE[(HRANICE.indexOf(n.hranicaPlatby) + 1) % HRANICE.length] })} />
-        <Riadok t="Prihlásené zariadenia" hodnota="2" onClick={coskoro} />
-        <Riadok t="E-mail, telefón a heslo" onClick={coskoro} />
+        <Riadok t="Potvrdiť platbu nad" s="tvárou, odtlačkom alebo PIN" hodnota={<b style={{ color: "var(--ink)", whiteSpace: "nowrap" }}>{hranicaText(n.hranicaPlatby)}</b>} onClick={() => setHarok("platba")} />
+        <Riadok t="Prihlásené zariadenia" hodnota={String(zariadenia().length)} onClick={() => setObr("zariadenia")} />
+        <Riadok t="E-mail, telefón a heslo" onClick={() => setObr("kontakt")} />
       </Sekcia>
 
       <Sekcia nadpis="SÚKROMIE A ÚDAJE">
         <Riadok prvy t="Hľadať priateľov v kontaktoch" s="čísla sa neukladajú, len ich odtlačok" prepinac={n.kontakty} onClick={() => zmenNastavenia({ kontakty: !n.kontakty })} />
-        <Riadok t="Zablokovaní ľudia" hodnota="0" onClick={coskoro} />
-        <Riadok t="Súhlasy" onClick={coskoro} />
+        <Riadok t="Zablokovaní ľudia" hodnota={String(zablokovani().length)} onClick={() => setObr("blokovani")} />
+        <Riadok t="Súhlasy" onClick={() => setObr("suhlasy")} />
         <Riadok t="Stiahnuť moje údaje" s="všetko o tebe v jednom súbore" onClick={stiahniUdaje} />
       </Sekcia>
 
@@ -140,7 +143,7 @@ export function Nastavenia20({ onBack, onNotif, desktop }: { onBack: () => void;
 
       <Sekcia nadpis="POMOC">
         <Riadok prvy t="Prehrať úvod" onClick={() => setHarok("uvod")} />
-        <Riadok t="Ukážky pre začiatok" s="vzorové skutky, kým nepridáš vlastné" prepinac={n.ukazky} onClick={() => zmenNastavenia({ ukazky: !n.ukazky })} />
+        <Riadok t="Ukážky pre začiatok" s="inšpirácia v prázdnych zoznamoch, len pre teba" prepinac={n.ukazky} onClick={() => zmenNastavenia({ ukazky: !n.ukazky })} />
         <Riadok t="Časté otázky" onClick={coskoro} />
         <Riadok t="Napísať podpore" onClick={coskoro} />
         <Riadok t="Nahlásiť problém" onClick={() => setHarok("nahlasit")} />
@@ -151,17 +154,12 @@ export function Nastavenia20({ onBack, onNotif, desktop }: { onBack: () => void;
       <button type="button" onClick={() => { toast("Odhlásené"); void signOut(); }} style={{ minHeight: 54, borderRadius: 16, border: "1px solid var(--cardBd)", background: "var(--btn)", fontSize: 16, fontWeight: 700, color: "var(--ink)", cursor: "pointer", fontFamily: "inherit" }}>Odhlásiť sa</button>
       <div style={{ fontSize: 12.5, color: "var(--ink3)", textAlign: "center" }}>DEED · verzia {VERZIA}</div>
 
-      {harok === "okruh" && (
-        <Harok onClose={() => setHarok(null)} zatvorText="Hotovo" hlavicka={<span style={{ flex: 1, fontSize: 20, fontWeight: 800 }}>Predvolený okruh</span>}>
-          <div role="radiogroup" aria-label="Predvolený okruh" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            {(Object.keys(OKRUH) as Okruh[]).map((k) => { const on = n.okruh === k; return (
-              <button key={k} type="button" role="radio" aria-checked={on} onClick={() => zmenNastavenia({ okruh: k })} style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 52, padding: "8px 14px", borderRadius: 14, cursor: "pointer", fontFamily: "inherit", textAlign: "left", color: "var(--ink)", background: on ? "var(--gSoft)" : "var(--card)", border: `1.5px solid ${on ? "var(--gBd)" : "var(--cardBd)"}` }}>
-                <span aria-hidden="true" style={{ width: 20, height: 20, borderRadius: "50%", flex: "none", border: `2px solid ${on ? "var(--green)" : "#A8A396"}`, display: "flex", alignItems: "center", justifyContent: "center", boxSizing: "border-box" }}><span style={{ width: 10, height: 10, borderRadius: "50%", background: "var(--green)", opacity: on ? 1 : 0 }} /></span>
-                <span style={{ fontSize: 15, fontWeight: 700 }}>{OKRUH[k]}</span>
-              </button>); })}
-          </div>
-        </Harok>
-      )}
+      {harok === "okruh" && <OkruhHarok onClose={() => setHarok(null)} onZmenitMiesto={() => { setHarok(null); onUpravProfil?.(); }} />}
+      {harok === "platba" && <PotvrditPlatbuHarok onClose={() => setHarok(null)} />}
+      {obr === "zariadenia" && <PrihlaseneZariadenia onBack={() => setObr(null)} />}
+      {obr === "kontakt" && <EmailTelefonHeslo onBack={() => setObr(null)} />}
+      {obr === "blokovani" && <ZablokovaniLudia onBack={() => setObr(null)} />}
+      {obr === "suhlasy" && <Suhlasy onBack={() => setObr(null)} />}
       {harok === "zrusit" && <ZrusitUcet onClose={() => setHarok(null)} />}
       {harok === "zamestnavatel" && <MojZamestnavatelSheet osoba={ja.celeMeno} toast={toast} onClose={() => setHarok(null)} />}
       {harok === "uvod" && <IntroPruvodca onClose={() => setHarok(null)} />}

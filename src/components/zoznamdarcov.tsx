@@ -53,7 +53,7 @@ export function ZoznamDarcov({ refId, celkom, style, skrytSumy }: {
     <div style={{ background: C.surface2, border: `1px solid ${C.line}`, borderRadius: RADIUS.md, padding: `${SPACE.sm}px ${SPACE.md}px`, ...style }}>
       <div style={{ display: "flex", alignItems: "center", fontSize: 11, fontWeight: 700, letterSpacing: ".4px", color: C.textTer, marginBottom: SPACE.xxs }}>
         DARCOVIA
-        <span style={{ marginLeft: "auto", color: C.greenL, fontWeight: 700, fontSize: 10.5 }}>● rastie live</span>
+        <span style={{ marginLeft: "auto", color: C.greenL, fontWeight: 700, fontSize: 10.5 }}>● rastie naživo</span>
       </div>
       {kompakt.map((r, i) => <Riadok key={r.id} r={r} prvy={i === 0 && !r.id.includes("-seed-")} skrytSumy={skrytSumy} />)}
       <div {...pressable(() => setVsetci(true), "Zobraziť všetkých darcov")}

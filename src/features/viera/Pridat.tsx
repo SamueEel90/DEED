@@ -401,7 +401,7 @@ function UzolForm({ uzol, farar, farnost, onSplit, onPublish, onHelp, toast }: {
       {/* farársky Split QR — pohreb/svadba/QR-merge */}
       {farar && onSplit && (
         <div onClick={onSplit} style={{ marginTop: SPACE.md, border: `1px solid ${N.greenEdge}`, background: N.greenBg, borderRadius: RADIUS.sm, padding: SPACE.gutter, cursor: "pointer" }}>
-          <div style={{ fontSize: 13.5, fontWeight: 700, color: N.green }}>⚖ Rozdeliť dar (Split QR)</div>
+          <div style={{ fontSize: 13.5, fontWeight: 700, color: N.green }}>Rozdeliť dar (QR reťaze)</div>
           {lab && <div style={{ fontSize: 11.5, color: N.txt2, marginTop: SPACE.xxs }}>{lab.rodina} ↔ {lab.kostol} · krok 5 % · 0 % ok (dobrovoľné) · % sa po vytvorení zafixujú</div>}
         </div>
       )}
@@ -500,11 +500,11 @@ function PoleInput({ label, value, onChange, toast }: { label: string; value: st
       </div>
     );
   }
-  // split → nastavuje sa dole cez „Rozdeliť dar (Split QR)"
+  // split → nastavuje sa dole cez „Rozdeliť dar (QR reťaze)"
   if (t === "split") {
     return (
       <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm, background: N.greenBg, border: `1px solid ${N.greenEdge}`, borderRadius: RADIUS.sm, padding: `${SPACE.sm}px ${SPACE.gutter}px`, fontSize: 12, color: N.txt2 }}>
-        <span>⚖</span><span>{label} — nastav nižšie cez <b style={{ color: N.green }}>Rozdeliť dar (Split QR)</b></span>
+        <span>{label} — nastav nižšie cez <b style={{ color: N.green }}>Rozdeliť dar (QR reťaze)</b></span>
       </div>
     );
   }

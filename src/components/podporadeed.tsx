@@ -42,7 +42,7 @@ function PodporitDeedSheet({ toast, onClose }: { toast?: (m: string) => void; on
   const ja = usePouzivatel();
   const dar = (deed: number) => {
     pridajDar({ refId: DAR_REF, suma: deed * 0.01, kanal: "deed", registrovany: ja.typ !== "pasivny" });
-    toast?.(`Ďakujeme za podporu platformy — ${deed} DEED 💚`);
+    toast?.(`Ďakujeme za podporu platformy — ${deed}\u00a0DEED`);
     onClose();
   };
   return (

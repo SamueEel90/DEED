@@ -52,7 +52,7 @@ export function OznamDarcoviSheet({ zbierkaId, typ, text, nahladStav, onClose }:
       {typ === "dolozene" ? (
         <>
           <div style={{ textAlign: "center", padding: `${SPACE.sm}px 0 ${SPACE.md}px` }}>
-            <div style={{ fontSize: 34, lineHeight: 1 }}>💚</div>
+            <div style={{ lineHeight: 0, color: "var(--a-green)" }}><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 21s-7-4.4-9.3-9A5 5 0 0 1 12 6a5 5 0 0 1 9.3 6c-2.3 4.6-9.3 9-9.3 9z" /></svg></div>
             <div style={{ fontSize: 21, fontWeight: 800, lineHeight: 1.25, marginTop: SPACE.xs }}>
               Ďakujeme{menom ? `, ${menom},` : ""} za tvoj dar!
             </div>

@@ -81,13 +81,13 @@ export function SplitQrSheet({ titul = "Skutok", caseId = null, zdroj = "osobny"
     } catch { /* offline/mock → placeholder QR */ }
     setVyrabam(false);
     setKrok("hotovo");
-    toast?.("Split QR vytvorený · % zafixované");
+    toast?.("QR reťaze vytvorený · % zafixované");
   }
 
   // ---- KROK 2: hotový split QR ----
   if (krok === "hotovo") {
     return (
-      <QrModal odznak="D++" typ="rozdelenie" titul={`Split QR · ${titul}`} popis={variant?.qrPopis ?? "Reťaz dobra — rozdelenie platby medzi príjemcov"}
+      <QrModal odznak="D++" typ="rozdelenie" titul={`QR reťaze · ${titul}`} popis={variant?.qrPopis ?? "Reťaz dobra — rozdelenie platby medzi príjemcov"}
         odkaz={vytvoreny?.slug ? qrUrl("split", vytvoreny.slug) : odkaz}
         split={splitPreQrModal(owner, ciele)} onClose={onClose} toast={toast} />
     );
@@ -110,7 +110,7 @@ export function SplitQrSheet({ titul = "Skutok", caseId = null, zdroj = "osobny"
         style={{ width: "100%", height: 50, borderRadius: RADIUS.md, border: "none", marginTop: SPACE.gutter, fontWeight: 700, fontSize: 15, fontFamily: "inherit",
           background: validne && !vyrabam ? GRAD_ZELENY : "rgba(var(--glass-rgb),.06)", color: validne && !vyrabam ? "#fff" : C.textTer, cursor: validne && !vyrabam ? "pointer" : "not-allowed",
           boxShadow: validne && !vyrabam ? "0 8px 26px rgba(31,191,143,.32)" : "none", display: "flex", alignItems: "center", justifyContent: "center", gap: SPACE.xs }}>
-        <IkonaFajka size={18} color={validne && !vyrabam ? "#fff" : C.textTer} /> {vyrabam ? "Vyrábam QR…" : "Vygenerovať split QR"}
+        <IkonaFajka size={18} color={validne && !vyrabam ? "#fff" : C.textTer} /> {vyrabam ? "Vyrábam QR…" : "Vytvoriť QR reťaze"}
       </button>
     </Sheet>
   );

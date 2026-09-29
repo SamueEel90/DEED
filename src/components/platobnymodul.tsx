@@ -186,7 +186,7 @@ export function PlatobnyModul({
             <div style={riadokPopis}>{retaz.popis ?? "Nastav v QR, aká časť ide komu (tebe + charitám)"}</div>
           </div>
           <div style={{ ...ctaBase, background: GRAD_ZELENY, color: "#06281d", fontWeight: 800, boxShadow: "0 5px 16px rgba(31,191,143,.3)" }}>
-            {retaz.cta ?? "Split QR"}
+            {retaz.cta ?? "QR reťaze"}
           </div>
         </div>
       )}

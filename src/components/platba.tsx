@@ -273,7 +273,7 @@ export function PlatbaModal({ kanal, komu, suma: sumaInit, lenSepa = false, spli
           {jeEur && <Riadok k="Poplatok" v={`${poplatok.toFixed(2)} €`} />}
           {tipAplik > 0 && <Riadok k="Dar pre nás (chod DEED)" v={tipLabel} accent={C.green} />}
           <Riadok k={jeSepa ? "Referencia prevodu" : "ID transakcie"} v={res.id} />
-          {!jeSepa && <Riadok k="⛓ Hash" v={res.hash} accent={C.blueL} />}
+          {!jeSepa && <Riadok k="Záznam platby" v={res.hash} accent={C.blueL} />}
           <Riadok k="Dátum" v={res.cas} />
         </div>
         <button onClick={() => { onDone?.(sumaNum, volba, jeEur ? metoda : "krypto"); onClose?.(); }} style={btnP(true, GRAD_ZELENY)}>Hotovo</button>

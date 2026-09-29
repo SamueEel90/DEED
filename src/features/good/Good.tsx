@@ -21,6 +21,7 @@ import { usePersonalizacia } from "@/lib/personalizacia";
 import { KAT, SRC_COL, NASTENKA_TEMY, TEMA_FARBA } from "./mock";
 import { otvorPridatSkutok } from "@/features/skutok/otvor";
 import { PruhySkutkov } from "@/features/skutok/Pruhy";
+import { useNastaveniaAppky } from "@/lib/nastaveniaAppky";
 
 const katLabel = (k: GoodPolozka["kat"]) => KAT[k].label || k;
 
@@ -176,6 +177,8 @@ function Home({ wide, toast, otvorModul, pohlad, setPohlad, radius, setRadius, o
   const { data: POLOZKY = [], isLoading, isError, refetch } = useGoodFeed();
   // `radius` aj `pohlad` žijú v ModulGood (prežijú návrat z detailu) — sem prichádzajú cez props
   const [vyberOkruh, setVyberOkruh] = useState(false);
+  const nastavenia = useNastaveniaAppky(); // karta 24 · 2d: „podľa polohy" pri okruhu
+  const lokalita = useLokalita();
   const ja = usePouzivatel();
   const { desktop } = useLayout();
   const { gate } = useTvorbaGate();
@@ -201,7 +204,7 @@ function Home({ wide, toast, otvorModul, pohlad, setPohlad, radius, setRadius, o
 
   // štatistický riadok — počet vo zvolenom okruhu + klikateľný výber okruhu
   const statRiadok = (
-    <StatRiadok pocet={feed.length} jednotka="skutkov" mesiac="9 480" miesto={ja.mesto}
+    <StatRiadok pocet={feed.length} jednotka="skutkov" mesiac="9 480" miesto={nastavenia.odPolohy ? `${lokalita.mesto} · podľa polohy` : ja.mesto}
       okruh={FEED_CFG.radiusy[radius].krat} onOkruh={() => setVyberOkruh(true)} />
   );
 

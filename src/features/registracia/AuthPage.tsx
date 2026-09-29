@@ -14,6 +14,16 @@ import { C, GRAD, gradText, SPACE, RADIUS } from "@/theme";
 import { toast, Znacka, IkonaObalka, IkonaZamok, IkonaOko, IkonaOkoOff, IkonaSipVpravo } from "@/shared";
 import { signIn, signUp, resolveSession, resetHeslo, zmenHeslo } from "@/lib/auth";
 import type { TypUctu } from "@/types";
+import { PotvrdNoveZariadenie, LimitZariadeni } from "@/features/profil/Bezpecnost24";
+import { zariadenia, odKedy, MAX_ZARIADENI } from "@/lib/zariadenia";
+
+// 5 zlých pokusov o prihlásenie → 15 minút čakanie (lokálne; server to stráži tiež)
+const KLUC_POKUSY = "deed.prihlasenie.pokusy";
+const pokusy = (): { n: number; do: number } => { try { return JSON.parse(localStorage.getItem(KLUC_POKUSY) || '{"n":0,"do":0}'); } catch { return { n: 0, do: 0 }; } };
+const zamknuteMin = () => { const p = pokusy(); return p.do > Date.now() ? Math.ceil((p.do - Date.now()) / 60000) : 0; };
+const zlyPokus = () => { const p = pokusy(), n = p.n + 1; try { localStorage.setItem(KLUC_POKUSY, JSON.stringify(n >= 5 ? { n: 0, do: Date.now() + 15 * 60000 } : { n, do: 0 })); } catch { /* LS */ } };
+const vynulujPokusy = () => { try { localStorage.removeItem(KLUC_POKUSY); } catch { /* LS */ } };
+const jeNoveZariadenie = () => { try { return !localStorage.getItem("deed.zariadenie.od"); } catch { return false; } };
 
 type Rezim = "login" | "register";
 
@@ -28,6 +38,8 @@ export function AuthPage({ onAuthed, onGuest, onPasivny, uvodnyRezim = "login" }
   const [ukazHeslo, setUkazHeslo] = useState(false);
   const [busy, setBusy] = useState(false);
   const [chyba, setChyba] = useState<string | null>(null);
+  // karta 24 · 3: nové zariadenie potvrdiť, najviac 5 zariadení (zoznam a overenie bude držať server)
+  const [brana, setBrana] = useState<null | { krok: "nove" | "limit"; dokonci: () => Promise<void> }>(null);
 
   const emailOk = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.trim());
   const hesloOk = heslo.length >= 6;
@@ -58,12 +70,20 @@ export function AuthPage({ onAuthed, onGuest, onPasivny, uvodnyRezim = "login" }
     setChyba(null);
     try {
       if (jeLogin) {
+        const cakaj = zamknuteMin();
+        if (cakaj) { setChyba(`Priveľa pokusov. Skús to o ${cakaj} minút.`); return; }
         const r = await signIn(email, heslo);
-        if (!r.ok) { setChyba(r.chyba ?? "Prihlásenie zlyhalo."); return; }
-        const res = await resolveSession();
-        if (res.kind === "app") return; // setSession → appka sa zobrazí reaktívne
-        if (res.kind === "resume") { onAuthed(res.authId, email.trim(), res.typ); return; }
-        setChyba("Účet sa nepodarilo načítať. Skús znova.");
+        if (!r.ok) { zlyPokus(); setChyba(zamknuteMin() ? "Priveľa pokusov. Skús to o 15 minút." : r.chyba ?? "Prihlásenie zlyhalo."); return; }
+        vynulujPokusy();
+        const dokonci = async () => {
+          const res = await resolveSession();
+          if (res.kind === "app") return; // setSession → appka sa zobrazí reaktívne
+          if (res.kind === "resume") { onAuthed(res.authId, email.trim(), res.typ); return; }
+          setChyba("Účet sa nepodarilo načítať. Skús znova.");
+        };
+        if (jeNoveZariadenie()) { setBrana({ krok: "nove", dokonci }); return; }
+        if (zariadenia().length > MAX_ZARIADENI) { setBrana({ krok: "limit", dokonci }); return; }
+        await dokonci();
       } else {
         const r = await signUp(email, heslo);
         if (!r.ok || !r.authId) { setChyba(r.chyba ?? "Registrácia zlyhala."); return; }
@@ -75,6 +95,9 @@ export function AuthPage({ onAuthed, onGuest, onPasivny, uvodnyRezim = "login" }
       setBusy(false);
     }
   };
+
+  if (brana?.krok === "nove") return <PotvrdNoveZariadenie onZrusit={() => setBrana(null)} onPotvrdene={() => { odKedy(); if (zariadenia().length > MAX_ZARIADENI) setBrana({ ...brana, krok: "limit" }); else { setBrana(null); void brana.dokonci(); } }} />;
+  if (brana?.krok === "limit") return <LimitZariadeni onPokracovat={() => { if (zariadenia().length > MAX_ZARIADENI) return; setBrana(null); void brana.dokonci(); }} />;
 
   return (
     <div style={{ height: "100%", overflowY: "auto", background: "transparent" }}>

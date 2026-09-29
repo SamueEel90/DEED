@@ -20,6 +20,9 @@ import { useCesta } from "@/lib/cesta";
 import { otvorPridatSkutok } from "@/features/skutok/otvor";
 import { usePouzivatel } from "@/lib/pouzivatel";
 
+// čiarová ikona recyklácie (namiesto emoji) — karta Materiál
+const IKONA_RECYKLACIA = <svg width="44" height="44" color="var(--a-info)" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M7 19H4.8a1.8 1.8 0 0 1-1.6-2.7L4.5 14M11 19h8.2a1.8 1.8 0 0 0 1.6-2.7l-1.3-2.3M14 16l-3 3 3 3M8.3 13.3 7.2 9.2 3.1 10.3M9.5 7.7l1.6-2.8a1.8 1.8 0 0 1 3.1 0l1.4 2.4M19.5 11.5l-1.1 4.1-4.1-1.1" /></svg>;
+
 /*
   ============================================================
   MODUL CHARITA — port z DEED_Charita_Prototyp_v1.html
@@ -59,7 +62,7 @@ type ZbierkaDetail = {
   nazov: string;
   emoji?: string;
   accent?: string;
-  badge?: string;        // odznak vľavo hore (napr. „🔥 URGENTNÉ")
+  badge?: string;        // odznak vľavo hore (napr. „URGENTNÉ")
   tag?: string;
   tagCol?: string;
   overena?: boolean;
@@ -97,7 +100,7 @@ const D_STROMOSVET: ZbierkaDetail = {
   pribeh: "Hľadáme 10 dobrovoľníkov na jesennú výsadbu stromov v lokalite Brezina. Stretávame sa v sobotu ráno, náradie a rukavice zabezpečíme. Príď pomôcť lesu — aj pár hodín má zmysel.",
 };
 const D_ZELENA: ZbierkaDetail = {
-  id: "zelena", nazov: "Zelená plus", emoji: "♻", accent: K.blue, badge: "MATERIÁL", lok: "Juh", volunteer: true, orgProfil: true,
+  id: "zelena", nazov: "Zelená plus", emoji: "", accent: K.blue, badge: "MATERIÁL", lok: "Juh", volunteer: true, orgProfil: true,
   popis: "Triedenie a zber šatstva pre útulok · streda, Juh",
   pribeh: "V stredu triedime a zbierame šatstvo a deky pre miestny útulok. Prines, čo už nenosíš, alebo príď pomôcť s triedením. Každý kus poteší a zahreje.",
 };
@@ -135,7 +138,7 @@ export default function ModulCharita({ wide, otvorModul }: ModulCharitaProps) {
   const [hladaj, setHladaj] = useState(false);
   // urgentná zbierka z DB/mocku (Rodina Kováčová) — pre vyhľadávanie
   const { data: ZB } = useCharitaZbierka();
-  const urgentna: ZbierkaDetail | null = ZB ? { nazov: ZB.nazov, emoji: "🔥", overena: true, lok: ZB.lok, karma: ZB.karma, avatar: ZB.avatar, fotky: ZB.fotky,
+  const urgentna: ZbierkaDetail | null = ZB ? { nazov: ZB.nazov, emoji: "", overena: true, lok: ZB.lok, karma: ZB.karma, avatar: ZB.avatar, fotky: ZB.fotky,
     popis: ZB.pribeh, pribeh: ZB.pribeh, vyzbierane: ZB.suma, ciel: ZB.ciel, ludia: ZB.ludia } : null;
   const [aktSubjekt, setAktSubjekt] = useState<Subjekt | null>(null);
   const [aktEvent, setAktEvent] = useState<string | null>(null);
@@ -358,13 +361,13 @@ function ZbierkyUrgent({ wide, onDetail }: { wide?: boolean; onDetail: (z?: Zbie
   if (!ZBIERKA) return null;
   // detail otvorí reálnu zbierku z DB/mocku (Rodina Kováčová) — plný obsah + progres
   const detail: ZbierkaDetail = {
-    nazov: ZBIERKA.nazov, emoji: "🔥", accent: K.gold, badge: "🔥 URGENTNÉ", overena: true,
+    nazov: ZBIERKA.nazov, emoji: "", accent: K.gold, badge: "URGENTNÉ", overena: true,
     lok: ZBIERKA.lok, karma: ZBIERKA.karma, avatar: ZBIERKA.avatar, fotky: ZBIERKA.fotky,
     popis: ZBIERKA.pribeh, pribeh: ZBIERKA.pribeh,
     vyzbierane: ZBIERKA.suma, ciel: ZBIERKA.ciel, ludia: ZBIERKA.ludia,
   };
-  return <CharitaKarta wide={wide} onClick={() => onDetail(detail)} fotky={ZBIERKA.fotky} emoji="🔥" accent={K.gold}
-    badgeL={{ t: "🔥 URGENTNÉ", col: K.gold }} badgeR={{ t: "🛡 Nordika · 500 €", col: K.diamond, bg: tint("var(--a-info)", .18) }}
+  return <CharitaKarta wide={wide} onClick={() => onDetail(detail)} fotky={ZBIERKA.fotky} emoji="" accent={K.gold}
+    badgeL={{ t: "URGENTNÉ", col: K.gold }} badgeR={{ t: "Nordika · 500\u00a0€", col: K.diamond, bg: tint("var(--a-info)", .18) }}
     nazov="Rodina Kováčová" overena popis="V noci nám zhorel dom, ostali sme bez strechy s dvomi deťmi. Potrebujeme pomoc."
     vyzbierane={1430} ciel={2200} oblubena={oblubenyZo(detail)} />;
 }
@@ -387,7 +390,7 @@ function ZapojSa({ wide, onDetail }: { wide?: boolean; onDetail: (z?: ZbierkaDet
     nazov="Stromosvet" popis="Hľadá 10 dobrovoľníkov · výsadba stromov · sobota, Brezina" oblubena={oblubenyZo(D_STROMOSVET)} />;
 }
 function Material({ wide, onDetail }: { wide?: boolean; onDetail: (z?: ZbierkaDetail) => void }) {
-  return <CharitaKarta wide={wide} onClick={() => onDetail(D_ZELENA)} emoji="♻" accent={K.blue}
+  return <CharitaKarta wide={wide} onClick={() => onDetail(D_ZELENA)} emoji={IKONA_RECYKLACIA} accent={K.blue}
     badgeL={{ t: "MATERIÁL", col: K.diamond, bg: tint("var(--a-info)", .18) }}
     nazov="Zelená plus" popis="Triedenie a zber šatstva pre útulok · streda, Juh" oblubena={oblubenyZo(D_ZELENA)} />;
 }
@@ -415,7 +418,7 @@ function SheetObal({ title, onClose, children }: { title: string; onClose: () =>
   );
 }
 
-type SheetMoznost = [emoji: string, titul: string, popis: string, akcia: () => void];
+type SheetMoznost = [emoji: React.ReactNode, titul: string, popis: string, akcia: () => void];
 
 function SheetPridat({ toast, otvorModul, onClose }: { toast: (m: string) => void; otvorModul?: (m: string) => void; onClose: () => void }) {
   const ja = usePouzivatel(); // organizácia ako autor skutku
@@ -424,7 +427,7 @@ function SheetPridat({ toast, otvorModul, onClose }: { toast: (m: string) => voi
     ["🙋", "Žiadosť na dobrovoľníctvo", "Nábor — počet, miesto, dĺžka, QR", () => toast("Sprievodca dobrovoľníckej výzvy (6 krokov)")],
     ["📦", "Iná nefinančná pomoc", "Materiál (deky, krmivo…) — fáza 2", () => toast("Materiál — fáza 2")],
     ["📎", "Dôkaz / update", "Dokladovanie použitia k bežiacej žiadosti", () => toast("Pridať dôkaz / update k bežiacej zbierke")],
-    ["✨", "Skutok „takto sme pomohli“", "Dopad a výsledok vašej pomoci", () => { onClose(); otvorPridatSkutok({ start: "skupina", autor: ja.celeMeno }); }],
+    [<svg key="i" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg>, "Skutok „takto sme pomohli“", "Dopad a výsledok vašej pomoci", () => { onClose(); otvorPridatSkutok({ start: "skupina", autor: ja.celeMeno }); }],
   ];
   return (
     <SheetObal title="Pridať" onClose={onClose}>

@@ -54,6 +54,7 @@ export function MojQr({ zalozka = "akcia", onClose }: { zalozka?: ZalozkaQr; onC
   const [zoomFoto, setZoomFoto] = useState(false);
   const [zoomStit, setZoomStit] = useState(false);
   const [skener, setSkener] = useState(false);
+  const [velky, setVelky] = useState(false); // OPRAVY 27: ťuk na QR → celá obrazovka
   const zamok = useRef<{ release: () => Promise<void> } | null>(null);
   const handle = (ja.nick || `${ja.meno}-${(ja.priezvisko || "")[0] ?? ""}`).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "ja";
   const odkaz = `deed.sk/p/${handle}`;
@@ -118,7 +119,10 @@ export function MojQr({ zalozka = "akcia", onClose }: { zalozka?: ZalozkaQr; onC
               <img onClick={() => setZoomStit(true)} src={`/odznaky/${stit.toLowerCase()}.png`} alt={`${STIT_SK[stit]} štít`} style={{ width: 40, height: 46, objectFit: "contain", flex: "none", cursor: "zoom-in" }} />
             </div>
           )}
-          <div onClick={import.meta.env.DEV ? potvrdenie : undefined} style={{ alignSelf: "center", position: "relative", borderRadius: 22, background: "#fff", padding: 8, lineHeight: 0 }}>
+          <div role={zivy ? "button" : undefined} tabIndex={zivy ? 0 : undefined} aria-label={zivy ? "Zväčšiť QR na celú obrazovku" : undefined}
+            onClick={zivy ? () => setVelky(true) : undefined} onDoubleClick={import.meta.env.DEV ? potvrdenie : undefined}
+            onKeyDown={(e) => { if (zivy && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); setVelky(true); } }}
+            style={{ alignSelf: "center", position: "relative", borderRadius: 22, background: "#fff", padding: 8, lineHeight: 0, cursor: zivy ? "zoom-in" : "default" }}>
             <div style={{ opacity: blik ? .15 : 1, transition: "opacity .25s ease" }}><DeedQr data={data} bezOdznaku size={252} /></div>
             <div aria-live="polite" style={{ position: "absolute", inset: 0, borderRadius: 22, background: "color-mix(in srgb, var(--a-green) 16%, #fff)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10, lineHeight: 1.3, opacity: ok ? 1 : 0, transform: ok ? "scale(1)" : "scale(.9)", transition: "opacity .3s ease, transform .4s cubic-bezier(.34,1.4,.5,1)", pointerEvents: "none" }}>
               <span style={{ width: 64, height: 64, borderRadius: "50%", background: "var(--green)", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -154,6 +158,12 @@ export function MojQr({ zalozka = "akcia", onClose }: { zalozka?: ZalozkaQr; onC
       </Harok>
       {skener && <QrSkener onClose={() => setSkener(false)} toast={toast} />}
       {zoomFoto && <ZvacsenaFotka onClose={() => setZoomFoto(false)} />}
+      {velky && zivy && createPortal(
+        <div onClick={() => setVelky(false)} role="dialog" aria-modal="true" aria-label="QR na celú obrazovku, ťukni a zavrieš"
+          style={{ position: "fixed", inset: 0, zIndex: 210, background: "#fff", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 18, cursor: "zoom-out", animation: "zbFsIn .25s ease both" }}>
+          <div style={{ opacity: blik ? 0.15 : 1, transition: "opacity .25s ease", lineHeight: 0 }}><DeedQr data={data} bezOdznaku size={Math.min(window.innerWidth - 48, window.innerHeight - 140)} /></div>
+          <span style={{ fontSize: 16, color: "#4A4C43", fontFamily: "'Plus Jakarta Sans', sans-serif" }}>nový kód o <b style={{ color: "#1D211B", fontVariantNumeric: "tabular-nums" }}>{sek} s</b></span>
+        </div>, document.body)}
       {zoomStit && createPortal(
         <div className="deed-platba" onClick={() => { setZoomFoto(false); setZoomStit(false); }} role="dialog" aria-modal="true"
           style={{ position: "fixed", inset: 0, zIndex: 200, background: "rgba(18,17,14,.82)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 14, cursor: "zoom-out", animation: "zbFsIn .3s ease both" }}>

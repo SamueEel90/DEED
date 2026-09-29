@@ -641,7 +641,7 @@ function VieraDetail({ z, farar, onBack, onProfil }: { z: VieraFeedItem; farar: 
                 oblubene={{ refId: z.id, typ: z.ntyp ?? "zbierka", modul: "nabozenstvo", nazov: z.nazov ?? "Zbierka", lok: z.lok, ciel: cielLocal ?? undefined, vyzbierane: suma }} toast={toast}
                 qr={{ label: "QR tejto zbierky", onClick: () => setQr(true) }}
                 {/* Split QR pri pohrebe/svadbe nastavuje LEN farár (rodine ↔ kostolu) */
-                ...(jeSplit && farar ? { retaz: { label: "Rozdeliť dar (Split QR)", popis: "Rodine ↔ kostolu — % sa zafixujú pri vzniku", onClick: () => setSplit(true) } } : {})} />
+                ...(jeSplit && farar ? { retaz: { label: "Rozdeliť dar (QR reťaze)", popis: "Rodine ↔ kostolu — % sa zafixujú pri vzniku", onClick: () => setSplit(true) } } : {})} />
             </div>
 
             {/* zoznam darcov — až pod pravidelnou podporou / reťazou dobra */}

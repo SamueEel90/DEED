@@ -57,7 +57,7 @@ export default function ModulProfil({ wide, walletReq = 0 }: ProfilProps) {
       {screen === "firemny" && obalSiroky(<MojDeedFiremny onBack={() => setScreen("profil")} toast={toast} />, { wide, desktop, max: SIRKA.stlpec })}
       {screen === "sub" && (subNazov === "Moje skutky" ? <MojeSkutky21 onBack={() => setScreen("profil")} /> : obal(<SubScreen nazov={subNazov} toast={toast} onBack={() => setScreen("profil")} />))}
       {screen === "priatelia" && obal(<PriateliaScreen toast={toast} onBack={() => setScreen("profil")} />)}
-      {screen === "nastavenia" && obal(<Nastavenia20 onBack={() => setScreen("profil")} onNotif={() => setScreen("notif")} />)}
+      {screen === "nastavenia" && obal(<Nastavenia20 onBack={() => setScreen("profil")} onNotif={() => setScreen("notif")} onUpravProfil={() => setUprava(true)} />)}
       {screen === "notif" && obal(<NotifObrazovka onBack={() => setScreen("nastavenia")} />)}
       </ScreenSwitch>
       {qrModal}{upravaHarok}
@@ -84,7 +84,7 @@ function ProfilDesktop({ screen, subNazov, setScreen, onSub, onQr, onUpravit }: 
   else if (screen === "firemny") obsah = <MojDeedFiremny onBack={() => setScreen("profil")} toast={toast} />;
   else if (screen === "sub") obsah = subNazov === "Moje skutky" ? <MojeSkutky21 onBack={() => setScreen("profil")} /> : <SubScreen nazov={subNazov} toast={toast} desktop onBack={() => setScreen("profil")} />;
   else if (screen === "priatelia") obsah = <PriateliaScreen toast={toast} desktop onBack={() => setScreen("profil")} />;
-  else if (screen === "nastavenia") obsah = <Nastavenia20 desktop onBack={() => setScreen("profil")} onNotif={() => setScreen("notif")} />;
+  else if (screen === "nastavenia") obsah = <Nastavenia20 desktop onBack={() => setScreen("profil")} onNotif={() => setScreen("notif")} onUpravProfil={onUpravit} />;
   else if (screen === "notif") obsah = <NotifObrazovka desktop onBack={() => setScreen("nastavenia")} />;
   else obsah = (
     <div style={{ padding: `${SPACE.md}px ${SPACE.md}px ${SPACE.lg}px` }}>
