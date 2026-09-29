@@ -59,6 +59,12 @@ export const ZAUJMY_KATALOG: ZaujemKategoria[] = [
   { oblast: "Viera",    label: "Viera",    emoji: "", kluce: ["viera"],
     podpolozky: ["Omše a bohoslužby", "Farské akcie", "Modlitbové stretnutia", "Púte", "Mládež vo farnosti", "Farská charita", "Duchovná hudba"] },
 ];
+/** oblasť z DB/registrácie (label, staré „Eko") → kľúč katalógu */
+export function oblastKluc(o: string): string {
+  if (o === "Eko") return "Priroda";
+  return ZAUJMY_KATALOG.find((z) => z.oblast === o || z.label === o)?.oblast ?? o;
+}
+export const normalizujZaujmy = (zs: Zaujem[]): Zaujem[] => zs.map((z) => ({ ...z, oblast: oblastKluc(z.oblast), pod_polozka: z.pod_polozka === "Zvieratá/príroda" ? "Ochrana prírody" : z.pod_polozka }));
 const KLUCE_OBLASTI: Record<string, string[]> = Object.fromEntries(ZAUJMY_KATALOG.map((z) => [z.oblast, z.kluce]));
 
 /** Záujmy → množina kľúčov pre feed afinitu (Good `kat` + Aktivity `dom`). */

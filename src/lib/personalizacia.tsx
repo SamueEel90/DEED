@@ -12,8 +12,7 @@ import {
   importLegacyFollows, legacyNaImport, demoSeed, zaujmyNaKluce, zaujemZOblasti,
   nacitajPodporyDB, pridajPodporuDB,
   nacitajOblubeneDB, pridajOblubeneDB, odoberOblubeneDB,
-  nacitajZbierkyDB, vytvorZbierkuDB, upravZbierkuDB,
-} from "./personalizaciaStore";
+  nacitajZbierkyDB, vytvorZbierkuDB, upravZbierkuDB, normalizujZaujmy } from "./personalizaciaStore";
 import type { Zaujem, Sledovanie, Podpora, Oblubeny, MojaZbierka } from "@/types";
 
 export interface PersonalizaciaApi {
@@ -92,7 +91,7 @@ export function PersonalizaciaProvider({ children }: { children: ReactNode }) {
       setPodpory(USE_SUPABASE ? [] : p);
       setMojeZbierky(USE_SUPABASE ? [] : ulozene.mojeZbierky);
     }
-    setZaujmyStav(z);
+    setZaujmyStav(normalizujZaujmy(z));
     setSledovani(s);
     setHydratovane(true);
   }, [demo]);

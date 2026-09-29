@@ -5,6 +5,7 @@
 // ani náklady. Pri ostrom spustení sa nahradia reálnymi.
 // ============================================================
 import { supabase } from "./supabase";
+import { ZAUJMY_KATALOG } from "./personalizaciaStore";
 import type {
   Ciselnik,
   CiselnikPolozka,
@@ -329,8 +330,9 @@ export async function nacitajCiselnikZaujmov(): Promise<Ciselnik[]> {
     .order("oblast", { ascending: true })
     .order("poradie", { ascending: true });
   if (error) throw error;
-  // → [{ nazov: oblast, polozky: [{hodnota: pod_polozka, ...}] }]
-  return zoskup(data || [], "oblast", "pod_polozka");
+  // → [{ nazov: oblast, polozky: [{hodnota: pod_polozka, ...}] }] — v poradí po pároch ako v profile (karta 18)
+  const poradie = (n: string) => { const i = ZAUJMY_KATALOG.findIndex((z) => z.label === n); return i < 0 ? 99 : i; };
+  return zoskup(data || [], "oblast", "pod_polozka").sort((a, b) => poradie(a.nazov) - poradie(b.nazov));
 }
 
 export async function nacitajCiselnikSektorov(): Promise<Ciselnik[]> {

@@ -37,6 +37,9 @@ const OBRAZKY: Record<StitLevel, string> = {
   Legend: "/stity/legend.png",
 };
 
+/** názvy štítov po slovensky (karta 18) — nikde „Gold/Bronze" */
+export const STIT_NAZOV: Record<StitLevel, string> = { Bronze: "Bronzový", Silver: "Strieborný", Gold: "Zlatý", Platinum: "Platinový", Legend: "Legenda" };
+
 /** krátky textový popis k štítu — jediné, čo sa smie zobraziť (žiadny postup) */
 export const STIT_POPIS: Record<StitLevel, string> = {
   Bronze: "zaslúžený štít — každý začína tu",
@@ -167,7 +170,7 @@ export function StitRiadok({ level, titul, trieda, symbol, size = 44 }: {
     <span style={{ display: "inline-flex", alignItems: "center", gap: 10 }}>
       <Stit level={level} trieda={trieda} symbol={symbol} size={size} />
       <span style={{ minWidth: 0 }}>
-        <span style={{ display: "block", fontSize: 14, fontWeight: 800, color: KOVY[level].b === "#7a5bd8" ? "var(--a-plum)" : "var(--c-text)" }}>{level}</span>
+        <span style={{ display: "block", fontSize: 14, fontWeight: 800, color: KOVY[level].b === "#7a5bd8" ? "var(--a-plum)" : "var(--c-text)" }}>{STIT_NAZOV[level]}</span>
         <span style={{ display: "block", fontSize: 10.5, color: "var(--c-textTer)", lineHeight: 1.35 }}>{titul ?? STIT_POPIS[level]}</span>
       </span>
     </span>
