@@ -1,4 +1,5 @@
-import { Emo } from "@/components/icons";
+import { Emo, IkonaVlajka } from "@/components/icons";
+import { NahlasitSheet } from "@/components/nahlasit";
 import { useState, useEffect, useRef, memo } from "react";
 import { SIRKA, C, inp, btn, GRAD, SPACE, RADIUS } from "@/theme";
 import { Foto, MiniFotky, Video, ModulHlavicka, Hlavicka, AvatarUroven, PlatobnyModul, PlatbaModal, HladanieModal, OblubeneHviezda, OblubeneBtn, toast, Oslava, useGaleria, useScrollPamat, useMotiv, useLayout, useStrankaAkcie, useTvorbaGate, StatRiadok, MoniBar, FeedStlpce, FeedGrid, FeedCard, KartaBadge, typKluc, BackChip, ProgresBox, SwipeBack, obalSiroky, Lupa, Zdielanie, IkonaSipVlavo, IkonaMoznosti, IkonaUlozit, IkonaFajka, IkonaPlay, IkonaDoska, IkonaPin, OkruhVyber, QrModal, SplitQrSheet, FotoVyber, FeedSkeleton, EmptyState, ErrorState, ScreenSwitch, FormatovanyText, ZoznamDarcov } from "@/shared";
@@ -736,7 +737,8 @@ export function DomovDetail({ it, toast, oslavuj, onBack, onVerify, onAutor }: G
   const [platba, setPlatba] = useState<string | null>(null); // "EUR" | "DEED"
   const [qr, setQr] = useState(false);        // QR skutku (§10) — 3 výstupy
   const [split, setSplit] = useState(false);  // split QR — reťaz dobra §10 × §9
-  const [moznosti, setMoznosti] = useState(false); // „⋯" menu — zdieľať/kopírovať/uložiť/QR
+  const [moznosti, setMoznosti] = useState(false); // „⋯" menu — zdieľať/kopírovať/uložiť/QR/nahlásiť
+  const [nahlasit, setNahlasit] = useState(false); // OPRAVY 51
   const otvorGaleriu = useGaleria();
   const { wide } = useLayout();
   const ja = usePouzivatel();
@@ -763,7 +765,7 @@ export function DomovDetail({ it, toast, oslavuj, onBack, onVerify, onAutor }: G
       {/* lišta so Späť a možnosťami — vždy nad fotkou, rovnako ako všade */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: `${SPACE.sm}px ${SPACE.gutter}px` }}>
           <BackChip onBack={onBack} />
-          <div onClick={() => setMoznosti(true)} style={{ width: 34, height: 34, borderRadius: "50%", background: "rgba(var(--glass-rgb),.06)", border: `1px solid ${C.line}`, display: "flex", alignItems: "center", justifyContent: "center", color: C.textSec, cursor: "pointer" }}><IkonaMoznosti size={18} color={C.textSec} /></div>
+          <button type="button" aria-label="Ďalšie možnosti" onClick={() => setMoznosti(true)} style={{ width: 44, height: 44, margin: -5, padding: 5, border: "none", background: "transparent", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}><span style={{ width: 34, height: 34, borderRadius: "50%", background: "rgba(var(--glass-rgb),.06)", border: `1px solid ${C.line}`, display: "flex", alignItems: "center", justifyContent: "center", color: C.textSec }}><IkonaMoznosti size={18} color={C.textSec} /></span></button>
         </div>
       {maHero && (
         <div style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center", background: heroGrad(it.kat), ...(wide ? { width: "100%", aspectRatio: MEDIA_AR } : (it.video ? {} : { height: 150 })) }}>
@@ -840,8 +842,11 @@ export function DomovDetail({ it, toast, oslavuj, onBack, onVerify, onAutor }: G
             onClick={() => { const bolo = jeOblubene(it.id); toggleOblubene(oblubenyZGood(it)); toast(bolo ? "Odobrané z obľúbených" : "Pridané do obľúbených ★"); setMoznosti(false); }} />
           <MoznostRiadok ikona={<span style={{ fontSize: 15 }}>▦</span>} label="Zobraziť QR skutku"
             onClick={() => { setMoznosti(false); setQr(true); }} />
+          <MoznostRiadok ikona={<IkonaVlajka size={17} color="var(--a-danger)" />} label="Nahlásiť skutok"
+            onClick={() => { setMoznosti(false); setNahlasit(true); }} />
         </Sheet>
       )}
+      {nahlasit && <NahlasitSheet typ="Skutok" co={it.titul} refId={it.id} modul="good" onClose={() => setNahlasit(false)} />}
     </div>
   );
 }

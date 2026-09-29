@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useNastaveniaAppky, zmenNastavenia } from "@/lib/nastaveniaAppky";
 import { toast } from "@/components/toast";
+import { nahlasit as nahlasitDB, type NahlasDovod } from "@/lib/osobne";
 import { ObrazovkaSprava, nacitajKontakt, maskuj } from "./Bezpecnost24";
 import { NastKarta, Prepinac, oddelovac } from "./nastUi";
 import { lbl, pozn, Ik, hladPole, btn } from "./JazykUdaje";
@@ -20,13 +21,13 @@ const FAQ: [string, [string, string][]][] = [
 ];
 const bez = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 
-export function CasteOtazky({ onBack, onPodpora }: { onBack: () => void; onPodpora: () => void }) {
+export function CasteOtazky({ onBack, onPodpora, z }: { onBack: () => void; onPodpora: () => void; z?: number }) {
   const [q, setQ] = useState("");
   const [otv, setOtv] = useState<string | null>(null);
   const qq = bez(q.trim());
   const skup = FAQ.map(([h, L]) => [h, L.filter(([t, a]) => !qq || bez(`${t} ${a}`).includes(qq))] as const).filter(([, L]) => L.length);
   return (
-    <ObrazovkaSprava titul="Časté otázky" onBack={onBack}>
+    <ObrazovkaSprava titul="Časté otázky" onBack={onBack} z={z}>
       {hladPole(q, setQ, "Hľadaj otázku")}
       {skup.map(([h, L]) => (
         <div key={h}>
@@ -78,7 +79,7 @@ const UKAZKA: Sprava[] = [{ t: "Nepríde mi SMS kód", tema: "Účet a prihláse
 const nacitajSpravy = (): Sprava[] => { try { const s = localStorage.getItem(KLUC_SPRAVY); return s ? JSON.parse(s) : UKAZKA; } catch { return UKAZKA; } };
 const TEMY_PODPORA = ["Účet a prihlásenie", "Platby a dary", "Skutky a karma", "Zbierky", "Zamestnávateľ", "Iné"];
 
-export function NapisatPodpore({ onBack }: { onBack: () => void }) {
+export function NapisatPodpore({ onBack, z }: { onBack: () => void; z?: number }) {
   const kontakt = nacitajKontakt();
   const [tema, setTema] = useState<string | null>(null);
   const [text, setText] = useState("");
@@ -95,7 +96,7 @@ export function NapisatPodpore({ onBack }: { onBack: () => void }) {
     setSpravy(nove); setHot(c);
   };
   return (
-    <ObrazovkaSprava titul="Napísať podpore" onBack={onBack}>
+    <ObrazovkaSprava titul="Napísať podpore" onBack={onBack} z={z}>
       {hot ? <Hotovo t="Správa odoslaná" s="Odpovieme do 24 hodín v pracovné dni. Odpoveď nájdeš v Oznámeniach." cislo={hot} onClose={onBack} /> : <>
         <div style={{ fontSize: 15, lineHeight: 1.55, color: "var(--d-ink2, var(--ink2))", padding: "0 6px" }}>Napíš nám, s čím potrebuješ pomôcť. Odpovie človek, nie robot.</div>
         <div>
@@ -135,7 +136,11 @@ const zariadenieText = () => {
   return "prehliadač";
 };
 
-export function NahlasitProblem({ onBack, obrazovka = "Nastavenia", z }: { onBack: () => void; obrazovka?: string; z?: number }) {
+/** čo sa nahlasuje z menu ⋯ (skutok, zbierka, komentár, profil) — obrazovka sa otvorí rovno s tým */
+export type Predmet = { typ: string; nazov: string; refId?: string | number; modul?: string };
+const DOVOD: Record<string, NahlasDovod> = { "Podvod alebo falošná zbierka": "podvod", "Nevhodný obsah": "urazlive" };
+
+export function NahlasitProblem({ onBack, obrazovka = "Nastavenia", z, predmet }: { onBack: () => void; obrazovka?: string; z?: number; predmet?: Predmet }) {
   const n = useNastaveniaAppky();
   const [typ, setTyp] = useState<string | null>(null);
   const [text, setText] = useState("");
@@ -155,13 +160,15 @@ export function NahlasitProblem({ onBack, obrazovka = "Nastavenia", z }: { onBac
   return (
     <ObrazovkaSprava titul="Nahlásiť problém" onBack={onBack} z={z}>
       {hot ? <Hotovo t="Ďakujeme, pozrieme sa na to" s={nal ? "Riešime to prednostne, do 2 hodín. Ak treba, obsah hneď skryjeme." : "Keď to opravíme, dáme ti vedieť v Oznámeniach."} cislo={hot} onClose={onBack} /> : <>
-        <div style={{ fontSize: 15, lineHeight: 1.55, color: "var(--d-ink2, var(--ink2))", padding: "0 6px" }}>Čo sa stalo? Pomôžeš nám opraviť to rýchlo.</div>
+        {predmet
+          ? <NastKarta k="r" style={{ padding: "12px 18px" }}><span style={{ display: "block", fontSize: 12, fontWeight: 800, letterSpacing: ".06em", color: "var(--sek-r)" }}>NAHLASUJEŠ · {predmet.typ.toUpperCase()}</span><span style={{ display: "block", fontSize: 15.5, fontWeight: 800, marginTop: 2 }}>{predmet.nazov}</span></NastKarta>
+          : <div style={{ fontSize: 15, lineHeight: 1.55, color: "var(--d-ink2, var(--ink2))", padding: "0 6px" }}>Čo sa stalo? Pomôžeš nám opraviť to rýchlo.</div>}
         <div>
           <h2 style={lbl} id="typ-problemu">ČO SA DEJE</h2>
           <div role="radiogroup" aria-labelledby="typ-problemu" style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>{TYPY.map((t) => <Cip key={t} on={typ === t} onClick={() => setTyp(t)}>{t}</Cip>)}</div>
         </div>
         {nal && <div role="alert" style={{ padding: "12px 14px", borderRadius: 14, background: "var(--goldBg)", border: "1px solid var(--goldBd)", fontSize: 14, lineHeight: 1.5, color: "var(--d-ink2, var(--ink2))" }}><b style={{ color: "var(--d-ink, var(--ink))" }}>Ak je niekto v ohrození, volaj <a href="tel:112" style={{ color: "inherit" }}>112</a>.</b> Nahlásenie riešime do 2 hodín, aj v noci.</div>}
-        <textarea value={text} onChange={(e) => setText(e.target.value)} placeholder="Kde a čo sa stalo? Napríklad: pri platbe sa zasekne tlačidlo Podrž a zaplať." aria-label="Opis problému" style={pole} />
+        <textarea value={text} onChange={(e) => setText(e.target.value)} placeholder={predmet ? "Čo je na tom zlé? Napíš, čo si si všimol." : "Kde a čo sa stalo? Napríklad: pri platbe sa zasekne tlačidlo Podrž a zaplať."} aria-label="Opis problému" style={pole} />
         <Priloha text="Pripojiť snímku obrazovky" subor={subor} setSubor={setSubor} />
         <NastKarta k="g" style={{ padding: "14px 18px", fontSize: 13.5, lineHeight: 1.5, color: "var(--d-ink2, var(--ink2))" }}>
           <b style={{ display: "block", color: "var(--d-ink, var(--ink))", marginBottom: 2 }}>Pripojíme automaticky</b>
@@ -173,21 +180,29 @@ export function NahlasitProblem({ onBack, obrazovka = "Nastavenia", z }: { onBac
             <span style={{ flex: 1, minWidth: 0 }}><span style={{ display: "block", fontSize: 15.5, fontWeight: 800 }}>Zatras telefónom a nahlás</span><span style={{ display: "block", fontSize: 13, color: "var(--d-ink3, var(--ink3))" }}>z ktorejkoľvek obrazovky, aj so snímkou</span></span>
             <Prepinac on={n.zatras} /></button>
         </NastKarta>
-        <button type="button" disabled={!ok} onClick={() => ok && setHot(cislo("N"))} style={btn(true, ok)}>Odoslať</button>
+        <button type="button" disabled={!ok} onClick={() => {
+          if (!ok) return;
+          // moderácia: nahlásený obsah ide do fronty (DB alebo lokálne), problém v appke na podporu
+          if (predmet) void nahlasitDB({ co: `${predmet.typ} · ${predmet.nazov}`, refId: predmet.refId, modul: predmet.modul, dovod: DOVOD[typ!] ?? "ine", poznamka: `${typ}: ${text.trim()}`, kedy: new Date().toISOString() });
+          setHot(cislo("N"));
+        }} style={btn(true, ok)}>Odoslať</button>
       </>}
     </ObrazovkaSprava>
   );
 }
 
-// ======================= ZATRAS TELEFÓNOM =======================
-// Host v App: keď je „Zatras" zapnuté, silné zatrasenie otvorí Nahlásiť problém nad aktuálnou obrazovkou.
-let otvoreneZ: string | null = null;
+// ======================= GLOBÁLNY HOST: Pomoc z menu ≡, Nahlásiť z menu ⋯, Zatras =======================
+type Otvorene = { druh: "faq" } | { druh: "podpora" } | { druh: "problem"; obrazovka: string; predmet?: Predmet };
+let otvorene: Otvorene | null = null;
 let verZ = 0;
 const poslZ = new Set<() => void>();
 const zmenaZ = () => { verZ++; poslZ.forEach((f) => f()); };
-export const otvorNahlasit = (obrazovka: string) => { otvoreneZ = obrazovka; zmenaZ(); };
+/** menu ≡ → Časté otázky */
+export const otvorPomoc = () => { otvorene = { druh: "faq" }; zmenaZ(); };
+/** zatrasenie alebo ⋯ Nahlásiť → Nahlásiť problém (s predmetom, ak je) */
+export const otvorNahlasit = (obrazovka: string, predmet?: Predmet) => { otvorene = { druh: "problem", obrazovka, predmet }; zmenaZ(); };
 
-export function ZatrasHost() {
+export function PomocHost() {
   const n = useNastaveniaAppky();
   useSyncExternalStore((f) => { poslZ.add(f); return () => poslZ.delete(f); }, () => verZ);
   useEffect(() => {
@@ -199,7 +214,7 @@ export function ZatrasHost() {
       if (sila < 25) return;
       const t = Date.now();
       otrasy = [...otrasy.filter((x) => t - x < 1000), t];
-      if (otrasy.length >= 3 && !otvoreneZ) {
+      if (otrasy.length >= 3 && !otvorene) {
         otrasy = [];
         const vrch = [...document.querySelectorAll('[aria-modal="true"]')].pop()?.getAttribute("aria-label");
         otvorNahlasit(vrch || document.title || "appka");
@@ -209,6 +224,9 @@ export function ZatrasHost() {
     window.addEventListener("devicemotion", h);
     return () => window.removeEventListener("devicemotion", h);
   }, [n.zatras]);
-  if (!otvoreneZ) return null;
-  return <NahlasitProblem obrazovka={otvoreneZ} z={170} onBack={() => { otvoreneZ = null; zmenaZ(); }} />;
+  const zavri = () => { otvorene = null; zmenaZ(); };
+  if (!otvorene) return null;
+  if (otvorene.druh === "faq") return <CasteOtazky z={170} onBack={zavri} onPodpora={() => { otvorene = { druh: "podpora" }; zmenaZ(); }} />;
+  if (otvorene.druh === "podpora") return <NapisatPodpore z={170} onBack={zavri} />;
+  return <NahlasitProblem key={otvorene.predmet?.nazov ?? "p"} obrazovka={otvorene.obrazovka} predmet={otvorene.predmet} z={170} onBack={zavri} />;
 }
