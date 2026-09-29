@@ -67,13 +67,13 @@ export default function ModulProfil({ wide, walletReq = 0 }: ProfilProps) {
 
 // ===================== DESKTOP — bočná navigácia + obsahový panel =====================
 const PROFIL_NAV: { key: string; nazov?: string; label: string; ikona: React.ReactNode }[] = [
-  { key: "profil", label: "Prehľad", ikona: <IkonaOsoba size={18} /> },
+  { key: "nastavenia", label: "Nastavenia", ikona: <IkonaNastavenia size={18} /> },
   { key: "wallet", label: "Peňaženka", ikona: <IkonaPenazenka size={18} /> },
-  { key: "sub", nazov: "Karma a úrovne", label: "Karma a úrovne", ikona: <IkonaHviezda size={18} /> },
   { key: "sub", nazov: "Moje skutky", label: "Moje skutky", ikona: <IkonaFajka size={18} /> },
+  { key: "profil", label: "Moje záujmy", ikona: <IkonaOsoba size={18} /> },
   { key: "sub", nazov: "Štatistiky a umiestnenie", label: "Štatistiky", ikona: <IkonaDoska size={18} /> },
   { key: "priatelia", label: "Priatelia", ikona: <IkonaUsmev size={18} /> },
-  { key: "nastavenia", label: "Nastavenia", ikona: <IkonaNastavenia size={18} /> },
+  { key: "sub", nazov: "Karma a úrovne", label: "Karma a úrovne", ikona: <IkonaHviezda size={18} /> },
 ];
 
 function ProfilDesktop({ screen, subNazov, setScreen, onSub, onQr, onUpravit }: { screen: string; subNazov: string | null; setScreen: (s: string) => void; onSub: (n: string) => void; onQr: () => void; onUpravit: () => void }) {

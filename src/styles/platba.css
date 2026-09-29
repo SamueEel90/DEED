@@ -137,3 +137,14 @@ html.obmedz-anim .deed-platba .ak-ciara { animation: none; transform: translateY
 /* ===== TMAVÝ REŽIM v2 (karta 25, farby.css) — farby sekcií nastavení: ikona, štvorček, linka karty ===== */
 :root      { --sek-b: #3D6B8E; --sek-bBg: #D8E1E6; --sek-bBd: #B9C7CF;  --sek-g: #4E7D37; --sek-gBg: #DCE3D0; --sek-gBd: #A9C08F;  --sek-o: #876712; --sek-oBg: #E9DEC5; --sek-oBd: #C9B27B;  --sek-r: #9A4F35; --sek-rBg: #EEDBD2; --sek-rBd: #D9A993; }
 html.dark  { --sek-b: #8DB3D2; --sek-bBg: rgba(141,179,210,.16); --sek-bBd: rgba(141,179,210,.42);  --sek-g: #9CC474; --sek-gBg: rgba(156,196,116,.15); --sek-gBd: rgba(156,196,116,.42);  --sek-o: #DDB65E; --sek-oBg: rgba(221,182,94,.16); --sek-oBd: rgba(221,182,94,.42);  --sek-r: #DE9B7E; --sek-rBg: rgba(222,155,126,.16); --sek-rBd: rgba(222,155,126,.42); }
+/* karta 25 · tmavý režim v2 (farby.css, varianta 2b): teplejší podklad, svetlejšie karty, viditeľný vypnutý prepínač */
+html.dark {
+  --c-bg: #161914; --page-grad: #161914;
+  --d-card: #232820; --d-cardBd: #333A2D; --d-sep: #2E3429;
+  --d-ink: #F1ECE1; --d-ink2: #CDC8BA; --d-ink3: #A6A395;
+  --d-trackOff: #3B4236; --d-knobOff: #CFC9BB;
+  --d-hl: inset 0 1px 0 rgba(241,236,225,.05);
+}
+/* vybraná téma: svetlá = biela so zelenou linkou, tmavá = #2F3A27 + rámik --sek-g (nie biely blok) */
+.deed-platba .seg-on { background: #fff; color: #1D211B; box-shadow: inset 0 0 0 1.5px var(--sek-g); }
+html.dark .deed-platba .seg-on { background: #2F3A27; color: var(--d-ink); }

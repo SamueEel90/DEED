@@ -1,6 +1,7 @@
 // KARTA 24 · Nastavenia: Potvrdiť platbu, Predvolený okruh, Prihlásené zariadenia, E-mail / telefón / heslo,
 // Zablokovaní ľudia, Súhlasy (+ detail povinného súhlasu) a hlášky pri prihlásení (6. zariadenie, nové zariadenie,
 // 24 h obmedzenie). Overovanie kódov, zoznam zariadení a znenia súhlasov bude držať server — tu je appková časť.
+import { Prepinac } from "./nastUi";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { SpatTlacidlo } from "@/components/cesta";
@@ -22,13 +23,13 @@ const IK = {
   mail: "M4 6h16v12H4zM4 6l8 7 8-7", kluc: "M15 7a4 4 0 1 1-3.9 5H8v3H5v-3H3v-3h8.1A4 4 0 0 1 15 7zM16 11h.01",
   poloha: "M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11zM12 12.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5", sipka: "M9 6l6 6-6 6", dole: "M6 9l6 6 6-6", pdf: "M12 3v12M7 10l5 5 5-5M5 21h14",
 };
-const lbl = { margin: 0, fontSize: 12.5, fontWeight: 800, letterSpacing: ".06em", color: "var(--ink3)" } as const;
-const karta = { borderRadius: 18, background: "var(--card)", border: "1px solid var(--cardBd)", padding: "0 14px" } as const;
+const lbl = { margin: 0, fontSize: 12.5, fontWeight: 800, letterSpacing: ".07em", color: "var(--d-ink3, var(--ink3))" } as const;
+const karta = { borderRadius: 20, background: "var(--d-card, var(--card))", border: "1px solid var(--sek-bBd)", boxShadow: "var(--d-hl, none)", padding: "0 18px" } as const; // karta 25: linka vo farbe sekcie (účet a súkromie = modrá)
 const hlavne = { width: "100%", height: 56, borderRadius: 18, border: "none", fontSize: 17, fontWeight: 800, color: "#fff", cursor: "pointer", background: "var(--gGrad)", fontFamily: "inherit" } as const;
 const vedlajsie = { height: 52, borderRadius: 16, border: "1px solid var(--cardBd)", background: "var(--btn)", fontSize: 15.5, fontWeight: 700, color: "var(--ink)", cursor: "pointer", fontFamily: "inherit" } as const;
 const pole = { height: 52, padding: "0 14px", borderRadius: 13, background: "var(--field)", border: "1.5px solid var(--fieldBd)", fontSize: 16, color: "var(--ink)", outline: "none", fontFamily: "inherit", minWidth: 0, width: "100%" } as const;
 const Bod = ({ children }: { children: ReactNode }) => <div style={{ display: "flex", gap: 10, fontSize: 13.5, lineHeight: 1.5, color: "var(--ink2)" }}><span aria-hidden="true" style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--green)", flex: "none", marginTop: 8 }} /><span>{children}</span></div>;
-const Prep = ({ on }: { on: boolean }) => <span aria-hidden="true" style={{ display: "block", width: 48, height: 28, borderRadius: 14, background: on ? "var(--green)" : "var(--chkBd)", position: "relative", flex: "none", transition: "background .2s ease" }}><span style={{ position: "absolute", top: 3, left: 3, width: 22, height: 22, borderRadius: "50%", background: "#fff", transform: on ? "translateX(20px)" : "none", transition: "transform .2s ease" }} /></span>;
+const Prep = Prepinac; // karta 25: vypnutý prepínač viditeľný aj v tmavej
 const Hotovo = ({ children }: { children: ReactNode }) => <div role="status" style={{ display: "flex", gap: 10, alignItems: "center", padding: "12px 14px", borderRadius: 14, background: "var(--gSoft)", border: "1px solid var(--gBd)", fontSize: 14.5, fontWeight: 700, color: "var(--gInk)" }}><Ik d={IK.fajka} w={2.6} />{children}</div>;
 function Volba({ on, onClick, t, s, ikona }: { on: boolean; onClick: () => void; t: string; s?: string; ikona?: string }) {
   return (
@@ -170,7 +171,7 @@ export function PrihlaseneZariadenia({ onBack }: { onBack: () => void }) {
       <ZoznamZariadeni onOdhlas={(z) => { odhlas(z.id); setSprava(`${z.nazov} je odhlásený.`); }} />
       {zoz.length > 1 && <button type="button" onClick={() => { odhlasOstatne(); setSprava("Ostatné zariadenia sú odhlásené."); }} style={{ ...vedlajsie, fontWeight: 800 }}>Odhlásiť všetky ostatné</button>}
       {sprava && <Hotovo>{sprava}</Hotovo>}
-      <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: 14, borderRadius: 16, background: "var(--card)", border: "1px solid var(--cardBd)" }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: "14px 18px", borderRadius: 20, background: "var(--d-card, var(--card))", border: "1px solid var(--sek-bBd)", boxShadow: "var(--d-hl, none)" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}><span style={{ color: "var(--green)", display: "flex" }}><Ik d={IK.stit} /></span><span style={{ fontSize: 15.5, fontWeight: 800 }}>Ako chránime tvoj účet</span></div>
         {OCHRANA.map(([t, s]) => <Bod key={t}><b style={{ color: "var(--ink)" }}>{t}</b> {s}</Bod>)}
       </div>
@@ -426,7 +427,7 @@ export function DetailSuhlasu({ typ, onBack }: { typ: "pod" | "ud"; onBack: () =
     <ObrazovkaSprava titul={titul} onBack={onBack} z={140}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", borderRadius: 14, background: "var(--gSoft)", border: "1px solid var(--gBd)", fontSize: 14, fontWeight: 700, color: "var(--gInk)" }}><Ik d={IK.fajka} w={2.6} />{typ === "pod" ? `Verzia ${VERZIA_PODMIENOK} · odsúhlasené 3. 9. 2026` : "Odsúhlasené 3. 9. 2026"}</div>
       {typ === "pod" ? <>
-        <div><h2 style={{ ...lbl, padding: "0 2px 6px" }}>V SKRATKE</h2><div style={{ display: "flex", flexDirection: "column", gap: 8, padding: 14, borderRadius: 16, background: "var(--card)", border: "1px solid var(--cardBd)" }}>{V_SKRATKE.map((t) => <Bod key={t}>{t}</Bod>)}</div></div>
+        <div><h2 style={{ ...lbl, padding: "0 2px 6px" }}>V SKRATKE</h2><div style={{ display: "flex", flexDirection: "column", gap: 8, padding: "14px 18px", borderRadius: 20, background: "var(--d-card, var(--card))", border: "1px solid var(--sek-bBd)", boxShadow: "var(--d-hl, none)" }}>{V_SKRATKE.map((t) => <Bod key={t}>{t}</Bod>)}</div></div>
         <div><h2 style={{ ...lbl, padding: "0 2px 6px" }}>ČO SA ZMENILO VO VERZII {VERZIA_PODMIENOK}</h2><div style={{ padding: "12px 14px", borderRadius: 14, background: "var(--goldBg)", border: "1px solid var(--goldBd)", fontSize: 14, lineHeight: 1.5, color: "var(--ink2)" }}>Pribudol skutok ako dar a ohlásený skutok. Doplnili sme pravidlá fotiek a dôstojnosti ľudí v ťažkej situácii.</div></div>
         <div><h2 style={{ ...lbl, padding: "0 2px 6px" }}>CELÉ ZNENIE</h2><div style={karta}>
           {KAPITOLY.map(([t, x], i) => { const o = kap === i; return (
@@ -444,8 +445,8 @@ export function DetailSuhlasu({ typ, onBack }: { typ: "pod" | "ud"; onBack: () =
               <div style={{ fontSize: 13.5, lineHeight: 1.45, color: "var(--ink2)", marginTop: 2 }}>{preco}</div>
             </div>))}
         </div></div>
-        <div><h2 style={{ ...lbl, padding: "0 2px 6px" }}>KTO ICH VIDÍ</h2><div style={{ padding: "12px 14px", borderRadius: 14, background: "var(--card)", border: "1px solid var(--cardBd)", fontSize: 14.5, lineHeight: 1.55, color: "var(--ink2)" }}>Ty, AI pri overovaní skutkov a platobná brána pri platbe. Nikto iný. <b style={{ color: "var(--ink)" }}>Zaväzujeme sa, že tvoje údaje ani to, čo v appke robíš, nikdy nepredáme iným firmám na komerčné účely.</b></div></div>
-        <div><h2 style={{ ...lbl, padding: "0 2px 6px" }}>SKUTKY PRE FIRMU (ESG)</h2><div style={{ padding: "12px 14px", borderRadius: 14, background: "var(--card)", border: "1px solid var(--cardBd)", fontSize: 14.5, lineHeight: 1.55, color: "var(--ink2)" }}>Ak je tvoj skutok priradený k firme, započítame ho do jej správ o zodpovednosti (ESG a CSGR). Vždy len <b style={{ color: "var(--ink)" }}>bez tvojho mena</b> a len v rozsahu, ktorý povoľuje zákon.</div></div>
+        <div><h2 style={{ ...lbl, padding: "0 2px 6px" }}>KTO ICH VIDÍ</h2><div style={{ padding: "14px 18px", borderRadius: 20, background: "var(--d-card, var(--card))", border: "1px solid var(--sek-bBd)", boxShadow: "var(--d-hl, none)", fontSize: 14.5, lineHeight: 1.55, color: "var(--ink2)" }}>Ty, AI pri overovaní skutkov a platobná brána pri platbe. Nikto iný. <b style={{ color: "var(--ink)" }}>Zaväzujeme sa, že tvoje údaje ani to, čo v appke robíš, nikdy nepredáme iným firmám na komerčné účely.</b></div></div>
+        <div><h2 style={{ ...lbl, padding: "0 2px 6px" }}>SKUTKY PRE FIRMU (ESG)</h2><div style={{ padding: "14px 18px", borderRadius: 20, background: "var(--d-card, var(--card))", border: "1px solid var(--sek-bBd)", boxShadow: "var(--d-hl, none)", fontSize: 14.5, lineHeight: 1.55, color: "var(--ink2)" }}>Ak je tvoj skutok priradený k firme, započítame ho do jej správ o zodpovednosti (ESG a CSGR). Vždy len <b style={{ color: "var(--ink)" }}>bez tvojho mena</b> a len v rozsahu, ktorý povoľuje zákon.</div></div>
         <div><h2 style={{ ...lbl, padding: "0 2px 6px" }}>TVOJE PRÁVA</h2><div style={karta}>
           {PRAVA.map(([t, s], i) => (
             <button type="button" key={t} onClick={() => { onBack(); toast(`Nájdeš v Nastaveniach: ${s}`); }} style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, minHeight: 56, border: "none", borderTop: i ? "1px solid var(--cardBd)" : "none", background: "transparent", cursor: "pointer", textAlign: "left", fontFamily: "inherit", color: "var(--ink)" }}>

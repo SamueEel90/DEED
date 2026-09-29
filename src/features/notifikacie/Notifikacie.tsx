@@ -16,6 +16,7 @@ import { relCas } from "@/lib/darcovia";
 import { otvorPridatSkutok } from "@/features/skutok/otvor";
 import { OznamDarcoviSheet } from "./OznamDarcovi";
 import { KATEGORIE, NA_DISPLEJ_VYP } from "./mock";
+import { NastKarta, IkonaSek, IK, sekFarba, oddelovac, type Sek } from "@/features/profil/nastUi";
 import "@/styles/platba.css";
 
 export { NOTIFY } from "./mock";
@@ -33,8 +34,8 @@ const FILTRE: [Notifikacia["kat"] | "vsetko", string][] = [["vsetko", "Všetko"]
 const Ik = ({ d, s = 19, w = 2 }: { d: string; s?: number; w?: number }) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={w} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={d} /></svg>;
 const Prep = ({ on, male }: { on: boolean; male?: boolean }) => {
   const w = male ? 44 : 48, h = male ? 26 : 28, k = male ? 20 : 22;
-  return <span aria-hidden="true" style={{ width: w, height: h, borderRadius: h / 2, background: on ? "var(--green)" : "var(--chkBd)", position: "relative", flex: "none", transition: "background .2s ease", display: "block" }}>
-    <span style={{ position: "absolute", top: 3, left: 3, width: k, height: k, borderRadius: "50%", background: "#fff", transform: on ? `translateX(${w - k - 6}px)` : "none", transition: "transform .2s ease" }} /></span>;
+  return <span aria-hidden="true" style={{ width: w, height: h, borderRadius: h / 2, background: on ? "var(--green)" : "var(--d-trackOff, #CFC9BC)", position: "relative", flex: "none", transition: "background .2s ease", display: "block" }}>
+    <span style={{ position: "absolute", top: 3, left: 3, width: k, height: k, borderRadius: "50%", background: on ? "#fff" : "var(--d-knobOff, #fff)", boxShadow: "0 1px 3px rgba(0,0,0,.25)", transform: on ? `translateX(${w - k - 6}px)` : "none", transition: "transform .2s ease" }} /></span>;
 };
 
 /** oznamy darcom (doložená zbierka, novinka) → riadok zoznamu; id záporné = oznam darcovi */
@@ -162,6 +163,16 @@ function OznameniaObrazovka({ zoznam, prec, onOznac, onPrecitaj, onOznamDarcovi,
 // ============================================================
 const stavPolozky = (zmeny: Record<string, { a: boolean; p: boolean }>, t: string) => zmeny[t] ?? { a: true, p: !NA_DISPLEJ_VYP.includes(t) };
 
+/** karta 25 · kategórie s ikonou a popisom, malými písmenami, farba podľa kategórie */
+const KAT_VZHLAD: Record<string, { k: Sek; d: string; t: string; s: string }> = {
+  "MOJE SKUTKY": { k: "g", d: IK.check, t: "Moje skutky", s: "overenie, námietky, karma" },
+  "SKUPINA A AKCIE": { k: "b", d: IK.users, t: "Skupina a akcie", s: "pozvánky, začiatok a koniec akcie" },
+  "PENIAZE A PLATBY": { k: "o", d: IK.wallet, t: "Peniaze a platby", s: "dary, prijaté peniaze, doklady" },
+  "ZBIERKY": { k: "r", d: IK.heart, t: "Zbierky", s: "míľniky, naplnenie, poďakovania" },
+  "ĽUDIA A PROFIL": { k: "b", d: IK.user, t: "Ľudia a profil", s: "priatelia, sledovanie, štít" },
+  "OD DEED": { k: "g", d: IK.leaf, t: "Od DEED", s: "novinky a dôležité zmeny" },
+};
+
 export function NastaveniaOznameni({ onBack }: { onBack: () => void }) {
   const n = useNastaveniaAppky();
   const oz = n.oznamy;
@@ -177,63 +188,72 @@ export function NastaveniaOznameni({ onBack }: { onBack: () => void }) {
   };
   const HODINY_OD = ["21:00", "22:00", "23:00"], HODINY_DO = ["6:00", "7:00", "8:00"];
   const dalsi = (x: string[], v: string) => x[(x.indexOf(v) + 1) % x.length];
-  const lbl = { margin: 0, fontSize: 12.5, fontWeight: 800, letterSpacing: ".06em", color: "var(--ink3)" } as const;
-  const karta = { borderRadius: 16, background: "var(--card)", border: "1px solid var(--cardBd)", padding: "0 14px" } as const;
-  const riadokPrep = (t: string, s: string, on: boolean, onClick: () => void, prvy: boolean) => (
-    <button type="button" role="switch" aria-checked={on} onClick={onClick} style={{ width: "100%", display: "flex", alignItems: "center", gap: 12, minHeight: 58, borderTop: prvy ? "none" : "1px solid var(--cardBd)", borderLeft: "none", borderRight: "none", borderBottom: "none", background: "transparent", cursor: "pointer", textAlign: "left", fontFamily: "inherit", color: "var(--ink)", padding: "6px 0" }}>
-      <span style={{ flex: 1, minWidth: 0 }}><span style={{ display: "block", fontSize: 15, fontWeight: 600 }}>{t}</span><span style={{ display: "block", fontSize: 12.5, color: "var(--ink3)" }}>{s}</span></span>
-      <Prep on={on} /></button>);
+  const lbl = { margin: 0, padding: "0 6px 8px", display: "flex", alignItems: "center", gap: 8, fontSize: 12.5, fontWeight: 800, letterSpacing: ".07em", color: "var(--d-ink3, var(--ink3))" } as const;
+  const bodka = (k: Sek) => <span aria-hidden="true" style={{ width: 8, height: 8, borderRadius: "50%", background: sekFarba(k).c, flex: "none" }} />;
+  const txt = (t: string, s: string) => <span style={{ flex: 1, minWidth: 0 }}><span style={{ display: "block", fontSize: 16, fontWeight: 700 }}>{t}</span>{s && <span style={{ display: "block", fontSize: 13, lineHeight: 1.4, color: "var(--d-ink3, var(--ink3))", marginTop: 2 }}>{s}</span>}</span>;
+  const riadokPrep = (d: string, t: string, s: string, on: boolean, onClick: () => void, prvy: boolean) => (
+    <button type="button" role="switch" aria-checked={on} onClick={onClick} style={{ width: "100%", display: "flex", alignItems: "center", gap: 14, minHeight: 68, padding: "12px 18px", borderTop: prvy ? "none" : oddelovac, borderLeft: "none", borderRight: "none", borderBottom: "none", boxShadow: "none", background: "transparent", cursor: "pointer", textAlign: "left", fontFamily: "inherit", color: "var(--d-ink, var(--ink))" }}>
+      <IkonaSek d={d} k="o" />{txt(t, s)}<Prep on={on} /></button>);
 
   return (
-    <div className="deed-platba" style={{ height: "100%", display: "flex", flexDirection: "column", background: "var(--bg)", color: "var(--ink)" }}>
+    <div className="deed-platba" style={{ height: "100%", display: "flex", flexDirection: "column", background: "var(--bg)", color: "var(--d-ink, var(--ink))" }}>
       <div style={{ flex: "none", display: "flex", alignItems: "center", gap: 10, padding: "max(6px, env(safe-area-inset-top)) 16px 0", minHeight: 60 }}>
         <SpatTlacidlo onClick={onBack} />
         <h1 style={{ margin: 0, fontSize: 18, fontWeight: 800 }}>Nastavenia oznámení</h1>
       </div>
-      <div style={{ flex: 1, minHeight: 0, overflowY: "auto" }}><div style={{ padding: "6px 16px max(30px, env(safe-area-inset-bottom))", display: "flex", flexDirection: "column", gap: 16 }}>
-        <button type="button" role="switch" aria-checked={oz.master} onClick={() => zmenOz({ master: !oz.master })} style={{ display: "flex", alignItems: "center", gap: 12, padding: 14, borderRadius: 18, background: "var(--gSoft)", border: "1px solid var(--gBd)", cursor: "pointer", textAlign: "left", fontFamily: "inherit", color: "var(--ink)" }}>
-          <span style={{ flex: 1 }}><span style={{ display: "block", fontSize: 16, fontWeight: 800 }}>Všetky oznámenia</span><span style={{ display: "block", fontSize: 13, color: "var(--ink2)", marginTop: 2 }}>hlavný vypínač · SOS a bezpečnosť ostávajú vždy</span></span>
+      <div style={{ flex: 1, minHeight: 0, overflowY: "auto" }}><div style={{ padding: "6px 16px max(30px, env(safe-area-inset-bottom))", display: "flex", flexDirection: "column", gap: 18 }}>
+        <button type="button" role="switch" aria-checked={oz.master} onClick={() => zmenOz({ master: !oz.master })} style={{ display: "flex", alignItems: "center", gap: 14, minHeight: 74, padding: "16px 18px", borderRadius: 20, background: "var(--sek-gBg)", border: "1px solid var(--sek-gBd)", boxShadow: "none", cursor: "pointer", textAlign: "left", fontFamily: "inherit", color: "var(--d-ink, var(--ink))" }}>
+          <span aria-hidden="true" style={{ width: 42, height: 42, borderRadius: 12, background: "var(--sek-g)", color: "var(--bg)", display: "flex", alignItems: "center", justifyContent: "center", flex: "none" }}><Ik d={IK.bell} s={20} w={2.2} /></span>
+          <span style={{ flex: 1 }}><span style={{ display: "block", fontSize: 16.5, fontWeight: 800 }}>Všetky oznámenia</span><span style={{ display: "block", fontSize: 13, color: "var(--d-ink2, var(--ink2))", marginTop: 2 }}>hlavný vypínač · SOS a bezpečnosť ostávajú vždy</span></span>
           <Prep on={oz.master} /></button>
-        <div aria-hidden="true" style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 64px 64px", gap: "0 6px", padding: "0 14px", fontSize: 11.5, fontWeight: 800, letterSpacing: ".05em", color: "var(--ink3)" }}><span /><span style={{ textAlign: "center" }}>V APPKE</span><span style={{ textAlign: "center" }}>NA DISPLEJ</span></div>
-        {KATEGORIE.map((k) => {
-          const o = otv.includes(k.hl), zap = k.polozky.filter((t) => oz.master && stavPolozky(oz.zmeny, t).a).length;
-          return (
-            <div key={k.hl}>
-              <button type="button" aria-expanded={o} onClick={() => setOtv((x) => (o ? x.filter((y) => y !== k.hl) : [...x, k.hl]))} style={{ width: "100%", display: "flex", alignItems: "center", gap: 8, minHeight: 44, padding: "0 2px", border: "none", background: "transparent", cursor: "pointer", fontFamily: "inherit" }}>
-                <h2 style={{ ...lbl, flex: 1, textAlign: "left" }}>{k.hl}</h2><span style={{ fontSize: 13, color: "var(--ink3)" }}>{zap} z {k.polozky.length}</span>
-                <span aria-hidden="true" style={{ display: "flex", color: "var(--ink3)", transform: o ? "rotate(180deg)" : "none", transition: "transform .25s ease" }}><Ik d="M6 9l6 6 6-6" s={15} w={2.4} /></span></button>
-              {o && <div className="pf-rise" style={{ ...karta, opacity: oz.master ? 1 : 0.4 }}>
-                {k.polozky.map((t, i) => { const st = stavPolozky(oz.zmeny, t), a = oz.master && st.a, pu = oz.master && st.p; return (
-                  <div key={t} style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 64px 64px", gap: "0 6px", alignItems: "center", minHeight: 56, borderTop: i ? "1px solid var(--cardBd)" : "none" }}>
-                    <span style={{ minWidth: 0 }}><span style={{ display: "block", fontSize: 15, fontWeight: 600 }}>{t}</span>{k.popisy[i] && <span style={{ display: "block", fontSize: 12.5, color: "var(--ink3)" }}>{k.popisy[i]}</span>}</span>
-                    <button type="button" role="switch" aria-checked={a} aria-label={`${t} v appke`} aria-disabled={!oz.master} onClick={() => prepni(t, "a")} style={{ justifySelf: "center", border: "none", background: "transparent", padding: 9, margin: -9, cursor: oz.master ? "pointer" : "default" }}><Prep on={a} male /></button>
-                    <button type="button" role="switch" aria-checked={pu} aria-label={`${t} na displej`} aria-disabled={!oz.master} onClick={() => prepni(t, "p")} style={{ justifySelf: "center", border: "none", background: "transparent", padding: 9, margin: -9, cursor: oz.master ? "pointer" : "default" }}><Prep on={pu} male /></button>
-                  </div>); })}
-              </div>}
-            </div>);
-        })}
         <div>
-          <h2 style={{ ...lbl, padding: "0 2px 6px" }}>ABY ŤA TO NERUŠILO</h2>
-          <div style={karta}>
-            {riadokPrep("Najviac 3 na displej denne", "okrem vecí, ktoré od teba niečo potrebujú, a bezpečnosti", oz.strop, () => zmenOz({ strop: !oz.strop }), true)}
-            {riadokPrep("Drobnosti raz denne o 19:00", "súhrn namiesto jednotlivých oznámení", oz.vecer, () => zmenOz({ vecer: !oz.vecer }), false)}
-          </div>
+          <h2 style={lbl}>{bodka("o")}ČO CHCEŠ DOSTÁVAŤ</h2>
+          <NastKarta k="o">
+            {KATEGORIE.map((k, ki) => {
+              const v = KAT_VZHLAD[k.hl] ?? { k: "o" as Sek, d: IK.bell, t: k.hl, s: "" };
+              const f = sekFarba(v.k);
+              const o = otv.includes(k.hl), zap = k.polozky.filter((t) => oz.master && stavPolozky(oz.zmeny, t).a).length;
+              return (
+                <div key={k.hl} style={{ borderTop: ki ? oddelovac : "none" }}>
+                  <button type="button" aria-expanded={o} onClick={() => setOtv((x) => (o ? x.filter((y) => y !== k.hl) : [...x, k.hl]))} style={{ width: "100%", display: "flex", alignItems: "center", gap: 14, minHeight: 66, padding: "12px 18px", border: "none", boxShadow: "none", background: "transparent", cursor: "pointer", fontFamily: "inherit", textAlign: "left", color: "var(--d-ink, var(--ink))" }}>
+                    <IkonaSek d={v.d} k={v.k} />{txt(v.t, v.s)}
+                    <span style={{ padding: "4px 10px", borderRadius: 10, background: f.bg, color: f.c, fontSize: 13, fontWeight: 800, fontVariantNumeric: "tabular-nums", flex: "none" }}>{zap} z {k.polozky.length}</span>
+                    <span aria-hidden="true" style={{ display: "flex", color: "var(--d-ink3, var(--ink3))", transform: o ? "rotate(180deg)" : "none", transition: "transform .25s ease", flex: "none" }}><Ik d="M6 9l6 6 6-6" s={16} w={2.4} /></span></button>
+                  {o && <div className="pf-rise" style={{ padding: "0 18px 8px 70px", opacity: oz.master ? 1 : 0.4 }}>
+                    <div aria-hidden="true" style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 56px 56px", gap: "0 4px", padding: "2px 0 4px", fontSize: 11, fontWeight: 800, letterSpacing: ".04em", color: "var(--d-ink3, var(--ink3))" }}><span /><span style={{ textAlign: "center" }}>V APPKE</span><span style={{ textAlign: "center" }}>NA DISPLEJ</span></div>
+                    {k.polozky.map((t, i) => { const st = stavPolozky(oz.zmeny, t), a = oz.master && st.a, pu = oz.master && st.p; return (
+                      <div key={t} style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 56px 56px", gap: "0 4px", alignItems: "center", minHeight: 56, borderTop: i ? oddelovac : "none" }}>
+                        <span style={{ minWidth: 0 }}><span style={{ display: "block", fontSize: 15, fontWeight: 600 }}>{t}</span>{k.popisy[i] && <span style={{ display: "block", fontSize: 12.5, color: "var(--d-ink3, var(--ink3))" }}>{k.popisy[i]}</span>}</span>
+                        <button type="button" role="switch" aria-checked={a} aria-label={`${t} v appke`} aria-disabled={!oz.master} onClick={() => prepni(t, "a")} style={{ justifySelf: "center", border: "none", boxShadow: "none", background: "transparent", padding: 9, margin: -9, cursor: oz.master ? "pointer" : "default" }}><Prep on={a} male /></button>
+                        <button type="button" role="switch" aria-checked={pu} aria-label={`${t} na displej`} aria-disabled={!oz.master} onClick={() => prepni(t, "p")} style={{ justifySelf: "center", border: "none", boxShadow: "none", background: "transparent", padding: 9, margin: -9, cursor: oz.master ? "pointer" : "default" }}><Prep on={pu} male /></button>
+                      </div>); })}
+                  </div>}
+                </div>);
+            })}
+          </NastKarta>
         </div>
         <div>
-          <h2 style={{ ...lbl, padding: "0 2px 6px" }}>TICHÝ ČAS</h2>
-          <div style={{ ...karta, padding: "4px 14px 12px", display: "flex", flexDirection: "column", gap: 10 }}>
-            {riadokPrep("Nerušiť", "oznámenia prídu potichu, v appke ich uvidíš", n.tichyCas, () => zmenNastavenia({ tichyCas: !n.tichyCas }), true)}
-            {n.tichyCas && <>
+          <h2 style={lbl}>{bodka("o")}ABY ŤA TO NERUŠILO</h2>
+          <NastKarta k="o">
+            {riadokPrep(IK.phone, "Najviac 3 na displej denne", "okrem vecí, ktoré od teba niečo potrebujú, a bezpečnosti", oz.strop, () => zmenOz({ strop: !oz.strop }), true)}
+            {riadokPrep(IK.clock, "Drobnosti raz denne o 19:00", "súhrn namiesto jednotlivých oznámení", oz.vecer, () => zmenOz({ vecer: !oz.vecer }), false)}
+          </NastKarta>
+        </div>
+        <div>
+          <h2 style={lbl}>{bodka("o")}TICHÝ ČAS</h2>
+          <NastKarta k="o">
+            {riadokPrep(IK.moon, "Nerušiť", "oznámenia prídu potichu, v appke ich uvidíš", n.tichyCas, () => zmenNastavenia({ tichyCas: !n.tichyCas }), true)}
+            {n.tichyCas && <div style={{ padding: "0 18px 16px 70px", display: "flex", flexDirection: "column", gap: 10 }}>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
                 {([["Od", n.tichyOd, () => zmenNastavenia({ tichyOd: dalsi(HODINY_OD, n.tichyOd) })], ["Do", n.tichyDo, () => zmenNastavenia({ tichyDo: dalsi(HODINY_DO, n.tichyDo) })]] as const).map(([l, v, tap]) => (
-                  <button type="button" key={l} onClick={tap} aria-label={`${l} ${v}, zmeniť`} style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 2, padding: "10px 12px", borderRadius: 12, background: "var(--field)", border: "1px solid var(--cardBd)", cursor: "pointer", fontFamily: "inherit", color: "var(--ink)" }}>
-                    <span style={{ fontSize: 12.5, color: "var(--ink3)" }}>{l}</span><span style={{ fontSize: 18, fontWeight: 800, fontVariantNumeric: "tabular-nums" }}>{v}</span></button>))}
+                  <button type="button" key={l} onClick={tap} aria-label={`${l} ${v}, zmeniť`} style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 2, padding: "10px 12px", borderRadius: 12, background: "var(--field)", border: "1px solid var(--d-cardBd, var(--cardBd))", boxShadow: "none", cursor: "pointer", fontFamily: "inherit", color: "var(--d-ink, var(--ink))" }}>
+                    <span style={{ fontSize: 12.5, color: "var(--d-ink3, var(--ink3))" }}>{l}</span><span style={{ fontSize: 18, fontWeight: 800, fontVariantNumeric: "tabular-nums" }}>{v}</span></button>))}
               </div>
-              <div style={{ display: "flex", gap: 8, alignItems: "flex-start", fontSize: 13, lineHeight: 1.5, color: "var(--ink2)" }}><span style={{ color: "var(--green)", display: "flex", flex: "none", marginTop: 2 }}><Ik d={IKONA.stit} s={16} /></span><span>SOS pomoc v okolí, bezpečnosť účtu a potvrdenie platby prídu vždy, aj v tichom čase.</span></div>
-            </>}
-          </div>
+              <div style={{ display: "flex", gap: 8, alignItems: "flex-start", fontSize: 13, lineHeight: 1.5, color: "var(--d-ink2, var(--ink2))" }}><span style={{ color: "var(--sek-g)", display: "flex", flex: "none", marginTop: 2 }}><Ik d={IKONA.stit} s={16} /></span><span>SOS pomoc v okolí, bezpečnosť účtu a potvrdenie platby prídu vždy, aj v tichom čase.</span></div>
+            </div>}
+          </NastKarta>
         </div>
-        <div style={{ padding: "12px 14px", borderRadius: 14, background: "var(--field)", border: "1px solid var(--cardBd)", fontSize: 13, lineHeight: 1.55, color: "var(--ink2)" }}><b style={{ color: "var(--ink)" }}>Nikdy ťa nezahltíme.</b> Malé dary spájame do jedného súhrnu. Na displej príde oznámenie len pri veciach, ktoré od teba niečo potrebujú alebo ťa naozaj potešia.</div>
+        <div style={{ padding: "14px 18px", borderRadius: 16, background: "var(--d-card, var(--field))", border: "1px solid var(--d-cardBd, var(--cardBd))", fontSize: 13, lineHeight: 1.55, color: "var(--d-ink2, var(--ink2))" }}><b style={{ color: "var(--d-ink, var(--ink))" }}>Nikdy ťa nezahltíme.</b> Malé dary spájame do jedného súhrnu. Na displej príde oznámenie len pri veciach, ktoré od teba niečo potrebujú alebo ťa naozaj potešia.</div>
       </div></div>
     </div>
   );

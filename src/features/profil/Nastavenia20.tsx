@@ -1,6 +1,6 @@
 // KARTA 20 · Nastavenia appky — všetko o appke, nič o profile (fotky, režim profilu a Ochrana osoby sú v Upraviť profil).
 // Poradie: Vzhľad · Prístupnosť · Oznámenia · Poloha · Bezpečnosť · Súkromie a údaje · Účet · Pomoc · [Odhlásiť sa].
-import { useState, type ReactNode } from "react";
+import { useState } from "react";
 import { usePouzivatel } from "@/lib/pouzivatel";
 import { useMotiv, type Tema } from "@/components/context";
 import { useNastaveniaAppky, zmenNastavenia, type Okruh } from "@/lib/nastaveniaAppky";
@@ -16,40 +16,12 @@ import { Harok } from "@/features/zbierka/Zdielat";
 import { PotvrditPlatbuHarok, OkruhHarok, PrihlaseneZariadenia, EmailTelefonHeslo, ZablokovaniLudia, Suhlasy, DetailSuhlasu, hranicaText } from "./Bezpecnost24";
 import { zariadenia, useZmenyZariadeni } from "@/lib/zariadenia";
 import { zablokovani, useZmenyBlokovania } from "@/lib/blokovanie";
+import { NastSekcia as Sekcia, NastRiadok as Riadok, IkonaSek, Prepinac, IK } from "./nastUi";
 import "@/styles/platba.css";
 
 const VERZIA = "0.9 (pilot)";
 const OKRUH: Record<Okruh, string> = { stvrt: "Štvrť", mesto: "Mesto", slovensko: "Slovensko" };
 const coskoro = () => toast("Pribudne v ďalšej verzii");
-
-const Sipka = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--ink3)" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg>;
-const Prepinac = ({ on }: { on: boolean }) => (
-  <span aria-hidden="true" style={{ width: 48, height: 28, borderRadius: 14, background: on ? "var(--green)" : "#C9C4B8", position: "relative", transition: "background .2s ease", flex: "none" }}>
-    <span style={{ position: "absolute", top: 3, left: 3, width: 22, height: 22, borderRadius: "50%", background: "#fff", transform: on ? "translateX(20px)" : "none", transition: "transform .2s ease" }} /></span>);
-
-function Sekcia({ nadpis, children }: { nadpis: string; children: ReactNode }) {
-  return (
-    <section aria-label={nadpis} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-      <h2 style={{ margin: "6px 0 0", fontSize: 12, fontWeight: 800, letterSpacing: ".06em", color: "var(--ink3)" }}>{nadpis}</h2>
-      <div style={{ borderRadius: 18, background: "var(--card)", border: "1px solid var(--cardBd)", padding: "0 14px" }}>{children}</div>
-    </section>
-  );
-}
-/** riadok: ťuk (›) alebo prepínač (role=switch) */
-function Riadok({ t, s, hodnota, prepinac, onClick, prvy }: { t: string; s?: string; hodnota?: ReactNode; prepinac?: boolean; onClick: () => void; prvy?: boolean }) {
-  const jePrep = prepinac !== undefined;
-  return (
-    <button type="button" onClick={onClick} role={jePrep ? "switch" : undefined} aria-checked={jePrep ? prepinac : undefined}
-      style={{ width: "100%", display: "flex", alignItems: "center", gap: 12, minHeight: 58, padding: "8px 0", border: "none", borderTop: prvy ? "none" : "1px solid var(--cardBd)", background: "transparent", cursor: "pointer", textAlign: "left", fontFamily: "inherit", color: "var(--ink)" }}>
-      <span style={{ flex: 1, minWidth: 0 }}>
-        <span style={{ display: "block", fontSize: 15, fontWeight: 700 }}>{t}</span>
-        {s && <span style={{ display: "block", fontSize: 12.5, color: "var(--ink3)", marginTop: 1 }}>{s}</span>}
-      </span>
-      {hodnota !== undefined && <span style={{ fontSize: 14, color: "var(--ink3)", flex: "none" }}>{hodnota}</span>}
-      {jePrep ? <Prepinac on={!!prepinac} /> : <Sipka />}
-    </button>
-  );
-}
 
 export function Nastavenia20({ onBack, onNotif, onUpravProfil, desktop }: { onBack: () => void; onNotif: () => void; onUpravProfil?: () => void; desktop?: boolean }) {
   const ja = usePouzivatel();
@@ -80,76 +52,80 @@ export function Nastavenia20({ onBack, onNotif, onUpravProfil, desktop }: { onBa
         <h1 style={{ margin: 0, fontSize: 19, fontWeight: 800 }}>Nastavenia</h1>
       </div>
 
-      <Sekcia nadpis="VZHĽAD">
-        <div style={{ padding: "12px 0" }}>
-          <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 10 }} id="tema-nadpis">Téma</div>
-          <div role="radiogroup" aria-labelledby="tema-nadpis" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 4, padding: 4, borderRadius: 14, background: "var(--seg)" }}>
+      <Sekcia nadpis="VZHĽAD" k="b">
+        <div style={{ padding: "12px 18px 16px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 14, minHeight: 44 }}>
+            <IkonaSek d={IK.moon} />
+            <span style={{ fontSize: 16, fontWeight: 700 }} id="tema-nadpis">Téma</span>
+          </div>
+          <div role="radiogroup" aria-labelledby="tema-nadpis" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 4, padding: 4, marginTop: 12, borderRadius: 14, background: "var(--seg)" }}>
             {([["svetla", "Svetlá"], ["tmava", "Tmavá"], ["system", "Podľa telefónu"]] as [Tema, string][]).map(([k, l]) => (
-              <button key={k} type="button" role="radio" aria-checked={tema === k} onClick={() => nastavTemu(k)}
-                style={{ minHeight: 44, padding: "4px 6px", borderRadius: 10, border: "none", cursor: "pointer", fontSize: 13.5, fontWeight: 700, fontFamily: "inherit", lineHeight: 1.2, background: tema === k ? "#fff" : "transparent", color: tema === k ? "#1D211B" : "var(--ink3)" }}>{l}</button>))}
+              <button key={k} type="button" role="radio" aria-checked={tema === k} onClick={() => nastavTemu(k)} className={tema === k ? "seg-on" : undefined}
+                style={{ minHeight: 44, padding: "4px 6px", borderRadius: 11, border: "none", cursor: "pointer", fontSize: 14.5, fontWeight: 700, fontFamily: "inherit", lineHeight: 1.2, ...(tema === k ? {} : { background: "transparent", color: "var(--d-ink3, var(--ink3))", boxShadow: "none" }) }}>{l}</button>))}
           </div>
         </div>
-        <Riadok t="Jazyk" hodnota="Slovenčina" onClick={coskoro} />
+        <Riadok d={IK.globe} t="Jazyk" hodnota="Slovenčina" onClick={coskoro} />
       </Sekcia>
 
-      <Sekcia nadpis="PRÍSTUPNOSŤ">
-        <div style={{ padding: "12px 0" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-            <span style={{ fontSize: 15, fontWeight: 700 }}>Veľkosť písma</span>
-            <span aria-live="polite" style={{ fontSize: 14, fontWeight: 800, color: "var(--gInk)", fontVariantNumeric: "tabular-nums" }}>{n.pismo} %</span>
+      <Sekcia nadpis="PRÍSTUPNOSŤ" k="g">
+        <div style={{ padding: "12px 18px 16px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 14, minHeight: 44 }}>
+            <IkonaSek d={IK.type} />
+            <span style={{ flex: 1, fontSize: 16, fontWeight: 700 }}>Veľkosť písma</span>
+            <span aria-live="polite" style={{ fontSize: 15, fontWeight: 800, color: "var(--sek-g)", fontVariantNumeric: "tabular-nums" }}>{n.pismo} %</span>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 10 }}>
-            <button type="button" onClick={() => pismo(-10)} disabled={n.pismo <= 90} aria-label="Zmenšiť písmo" style={{ width: 44, height: 44, borderRadius: 12, border: "none", background: "var(--btn)", fontSize: 13, fontWeight: 800, color: "var(--ink)", cursor: "pointer", opacity: n.pismo <= 90 ? .4 : 1, fontFamily: "inherit" }}>A</button>
-            <div aria-hidden="true" style={{ flex: 1, display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 6 }}>
-              {Array.from({ length: 7 }, (_, i) => <span key={i} style={{ height: 5, borderRadius: 3, background: pasik(i) ? "var(--green)" : "var(--track)" }} />)}
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 10, paddingLeft: 52 }}>
+            <button type="button" onClick={() => pismo(-10)} disabled={n.pismo <= 90} aria-label="Zmenšiť písmo" style={{ width: 44, height: 44, borderRadius: 12, border: "none", background: "var(--btn)", fontSize: 13, fontWeight: 800, color: "var(--ink)", cursor: "pointer", opacity: n.pismo <= 90 ? .4 : 1, fontFamily: "inherit", flex: "none" }}>A</button>
+            <div aria-hidden="true" style={{ flex: 1, display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 5 }}>
+              {Array.from({ length: 7 }, (_, i) => <span key={i} style={{ height: 6, borderRadius: 3, background: pasik(i) ? "var(--sek-g)" : "var(--d-trackOff, var(--track))" }} />)}
             </div>
-            <button type="button" onClick={() => pismo(10)} disabled={n.pismo >= 150} aria-label="Zväčšiť písmo" style={{ width: 44, height: 44, borderRadius: 12, border: "none", background: "var(--btn)", fontSize: 20, fontWeight: 800, color: "var(--ink)", cursor: "pointer", opacity: n.pismo >= 150 ? .4 : 1, fontFamily: "inherit" }}>A</button>
+            <button type="button" onClick={() => pismo(10)} disabled={n.pismo >= 150} aria-label="Zväčšiť písmo" style={{ width: 44, height: 44, borderRadius: 12, border: "none", background: "var(--btn)", fontSize: 20, fontWeight: 800, color: "var(--ink)", cursor: "pointer", opacity: n.pismo >= 150 ? .4 : 1, fontFamily: "inherit", flex: "none" }}>A</button>
           </div>
-          <div style={{ fontSize: 12.5, color: "var(--ink3)", marginTop: 8 }}>Pridáva sa k veľkosti písma v telefóne.</div>
+          <div style={{ fontSize: 12.5, color: "var(--d-ink3, var(--ink3))", marginTop: 8, paddingLeft: 52 }}>Pridáva sa k veľkosti písma v telefóne.</div>
         </div>
-        <Riadok t="Obmedziť animácie" s="bez letov, iskier a pulzovania" prepinac={n.obmedzAnim} onClick={() => zmenNastavenia({ obmedzAnim: !n.obmedzAnim })} />
-        <Riadok t="Vibrácie" s="pri potvrdení a po dare" prepinac={n.vibracie} onClick={() => zmenNastavenia({ vibracie: !n.vibracie })} />
-        <Riadok t="Titulky vo videách" s="vždy zapnuté" prepinac={n.titulky} onClick={() => zmenNastavenia({ titulky: !n.titulky })} />
-        <Riadok t="Potvrdzovať ťuknutím" s="namiesto podržania, pri platbe dvakrát ťukni" prepinac={tuk} onClick={() => { nastavPotvrditTuknutim(!tuk); setTuk(!tuk); }} />
+        <Riadok d={IK.spark} t="Obmedziť animácie" s="bez letov, iskier a pulzovania" prepinac={n.obmedzAnim} onClick={() => zmenNastavenia({ obmedzAnim: !n.obmedzAnim })} />
+        <Riadok d={IK.vib} t="Vibrácie" s="pri potvrdení a po dare" prepinac={n.vibracie} onClick={() => zmenNastavenia({ vibracie: !n.vibracie })} />
+        <Riadok d={IK.cc} t="Titulky vo videách" s="vždy zapnuté" prepinac={n.titulky} onClick={() => zmenNastavenia({ titulky: !n.titulky })} />
+        <Riadok d={IK.tap} t="Potvrdzovať ťuknutím" s="namiesto podržania, pri platbe dvakrát ťukni" prepinac={tuk} onClick={() => { nastavPotvrditTuknutim(!tuk); setTuk(!tuk); }} />
       </Sekcia>
 
-      <Sekcia nadpis="OZNÁMENIA">
-        <Riadok prvy t="Čo chceš dostávať" s="dary, pozvánky, priatelia, zbierky" onClick={onNotif} />
-        <Riadok t="Tichý čas" s={`${n.tichyOd} – ${n.tichyDo}, okrem SOS`} prepinac={n.tichyCas} onClick={() => zmenNastavenia({ tichyCas: !n.tichyCas })} />
+      <Sekcia nadpis="OZNÁMENIA" k="o">
+        <Riadok prvy d={IK.bell} t="Čo chceš dostávať" s="dary, pozvánky, priatelia, zbierky" onClick={onNotif} />
+        <Riadok d={IK.clock} t="Tichý čas" s={`${n.tichyOd} – ${n.tichyDo}, okrem SOS`} prepinac={n.tichyCas} onClick={() => zmenNastavenia({ tichyCas: !n.tichyCas })} />
       </Sekcia>
 
-      <Sekcia nadpis="POLOHA">
-        <Riadok prvy t="Poloha telefónu" s="na skutky a pomoc v okolí" prepinac={n.poloha} onClick={() => zmenNastavenia({ poloha: !n.poloha })} />
-        <Riadok t="Predvolený okruh" s={n.odPolohy ? "podľa toho, kde práve si" : undefined} hodnota={OKRUH[n.okruh]} onClick={() => setHarok("okruh")} />
+      <Sekcia nadpis="POLOHA" k="r">
+        <Riadok prvy d={IK.pin} t="Poloha telefónu" s="na skutky a pomoc v okolí" prepinac={n.poloha} onClick={() => zmenNastavenia({ poloha: !n.poloha })} />
+        <Riadok d={IK.ring} t="Predvolený okruh" s={n.odPolohy ? "podľa toho, kde práve si" : undefined} hodnota={OKRUH[n.okruh]} onClick={() => setHarok("okruh")} />
       </Sekcia>
 
-      <Sekcia nadpis="BEZPEČNOSŤ">
-        <Riadok prvy t="Prihlásenie tvárou alebo odtlačkom" prepinac={n.biometria} onClick={() => zmenNastavenia({ biometria: !n.biometria })} />
-        <Riadok t="Potvrdiť platbu nad" s="tvárou, odtlačkom alebo PIN" hodnota={<b style={{ color: "var(--ink)", whiteSpace: "nowrap" }}>{hranicaText(n.hranicaPlatby)}</b>} onClick={() => setHarok("platba")} />
-        <Riadok t="Prihlásené zariadenia" hodnota={String(zariadenia().length)} onClick={() => setObr("zariadenia")} />
-        <Riadok t="E-mail, telefón a heslo" onClick={() => setObr("kontakt")} />
+      <Sekcia nadpis="BEZPEČNOSŤ" k="b">
+        <Riadok prvy d={IK.finger} t="Prihlásenie tvárou alebo odtlačkom" prepinac={n.biometria} onClick={() => zmenNastavenia({ biometria: !n.biometria })} />
+        <Riadok d={IK.shield} t="Potvrdiť platbu nad" s="tvárou, odtlačkom alebo PIN" hodnota={<b style={{ color: "var(--ink)", whiteSpace: "nowrap" }}>{hranicaText(n.hranicaPlatby)}</b>} onClick={() => setHarok("platba")} />
+        <Riadok d={IK.phone} t="Prihlásené zariadenia" hodnota={String(zariadenia().length)} onClick={() => setObr("zariadenia")} />
+        <Riadok d={IK.mail} t="E-mail, telefón a heslo" onClick={() => setObr("kontakt")} />
       </Sekcia>
 
-      <Sekcia nadpis="SÚKROMIE A ÚDAJE">
-        <Riadok prvy t="Hľadať priateľov v kontaktoch" s="čísla sa neukladajú, len ich odtlačok" prepinac={n.kontakty} onClick={() => zmenNastavenia({ kontakty: !n.kontakty })} />
-        <Riadok t="Zablokovaní ľudia" hodnota={String(zablokovani().length)} onClick={() => setObr("blokovani")} />
-        <Riadok t="Súhlasy" onClick={() => setObr("suhlasy")} />
-        <Riadok t="Stiahnuť moje údaje" s="všetko o tebe v jednom súbore" onClick={stiahniUdaje} />
+      <Sekcia nadpis="SÚKROMIE A ÚDAJE" k="b">
+        <Riadok prvy d={IK.users} t="Hľadať priateľov v kontaktoch" s="čísla sa neukladajú, len ich odtlačok" prepinac={n.kontakty} onClick={() => zmenNastavenia({ kontakty: !n.kontakty })} />
+        <Riadok d={IK.block} t="Zablokovaní ľudia" hodnota={String(zablokovani().length)} onClick={() => setObr("blokovani")} />
+        <Riadok d={IK.file} t="Súhlasy" onClick={() => setObr("suhlasy")} />
+        <Riadok d={IK.download} t="Stiahnuť moje údaje" s="všetko o tebe v jednom súbore" onClick={stiahniUdaje} />
       </Sekcia>
 
-      <Sekcia nadpis="ÚČET">
-        <Riadok prvy t="Zamestnávateľ" hodnota={vazba?.stav === "potvrdeny" ? vazba.firma : vazba?.stav === "pozvany" ? "Pozvánka čaká" : vazba?.stav === "ziadost" ? "Čaká na firmu" : "Nenastavený"} onClick={() => setHarok("zamestnavatel")} />
-        <Riadok t="Zrušiť účet" onClick={() => setHarok("zrusit")} />
+      <Sekcia nadpis="ÚČET" k="b">
+        <Riadok prvy d={IK.brief} t="Zamestnávateľ" hodnota={vazba?.stav === "potvrdeny" ? vazba.firma : vazba?.stav === "pozvany" ? "Pozvánka čaká" : vazba?.stav === "ziadost" ? "Čaká na firmu" : "Nenastavený"} onClick={() => setHarok("zamestnavatel")} />
+        <Riadok d={IK.trash} t="Zrušiť účet" onClick={() => setHarok("zrusit")} />
       </Sekcia>
 
-      <Sekcia nadpis="POMOC">
-        <Riadok prvy t="Prehrať úvod" onClick={() => setHarok("uvod")} />
-        <Riadok t="Ukážky pre začiatok" s="inšpirácia v prázdnych zoznamoch, len pre teba" prepinac={n.ukazky} onClick={() => zmenNastavenia({ ukazky: !n.ukazky })} />
-        <Riadok t="Časté otázky" onClick={coskoro} />
-        <Riadok t="Napísať podpore" onClick={coskoro} />
-        <Riadok t="Nahlásiť problém" onClick={() => setHarok("nahlasit")} />
-        <Riadok t="Podmienky používania" onClick={() => setDetail("pod")} />
-        <Riadok t="Ochrana súkromia" onClick={() => setDetail("ud")} />
+      <Sekcia nadpis="POMOC" k="g">
+        <Riadok prvy d={IK.play} t="Prehrať úvod" onClick={() => setHarok("uvod")} />
+        <Riadok d={IK.bulb} t="Ukážky pre začiatok" s="inšpirácia v prázdnych zoznamoch, len pre teba" prepinac={n.ukazky} onClick={() => zmenNastavenia({ ukazky: !n.ukazky })} />
+        <Riadok d={IK.help} t="Časté otázky" onClick={coskoro} />
+        <Riadok d={IK.chat} t="Napísať podpore" onClick={coskoro} />
+        <Riadok d={IK.flag} t="Nahlásiť problém" onClick={() => setHarok("nahlasit")} />
+        <Riadok d={IK.file} t="Podmienky používania" onClick={() => setDetail("pod")} />
+        <Riadok d={IK.lock} t="Ochrana súkromia" onClick={() => setDetail("ud")} />
       </Sekcia>
 
       <button type="button" onClick={() => { toast("Odhlásené"); void signOut(); }} style={{ minHeight: 54, borderRadius: 16, border: "1px solid var(--cardBd)", background: "var(--btn)", fontSize: 16, fontWeight: 700, color: "var(--ink)", cursor: "pointer", fontFamily: "inherit" }}>Odhlásiť sa</button>
@@ -185,7 +161,7 @@ function ZrusitUcet({ onClose }: { onClose: () => void }) {
       <div style={{ fontSize: 14.5, lineHeight: 1.55, color: "var(--ink2)" }}>Zmažeme tvoj profil, fotky, záujmy a priateľov. Dary a skutky sa vymazať nedajú, ostávajú zapísané v zbierkach tak, ako si ich poslal.</div>
       <div style={{ padding: "12px 14px", borderRadius: 16, background: "var(--card)", border: "1px solid var(--cardBd)", fontSize: 13.5, lineHeight: 1.5, color: "var(--ink2)" }}>
         Pred zrušením si <b style={{ color: "var(--ink)" }}>vyber peniaze z peňaženky</b> (zostatok DEED, EURC). Po zrušení sa k nim už nedostaneš.</div>
-      <button type="button" role="switch" aria-checked={anonym} onClick={() => setAnonym(!anonym)} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", borderRadius: 16, background: "var(--card)", border: "1px solid var(--cardBd)", cursor: "pointer", textAlign: "left", fontFamily: "inherit", color: "var(--ink)" }}>
+      <button type="button" role="switch" aria-checked={anonym} onClick={() => setAnonym(!anonym)} style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 68, padding: "12px 18px", borderRadius: 16, background: "var(--d-card, var(--card))", border: "1px solid var(--d-cardBd, var(--cardBd))", cursor: "pointer", textAlign: "left", fontFamily: "inherit", color: "var(--ink)" }}>
         <span style={{ flex: 1, minWidth: 0 }}><span style={{ display: "block", fontSize: 15, fontWeight: 700 }}>Zmeniť všetky moje dary na anonymné</span><span style={{ display: "block", fontSize: 12.5, color: "var(--ink3)" }}>v zoznamoch darcov bude Anonymný darca</span></span>
         <Prepinac on={anonym} />
       </button>
