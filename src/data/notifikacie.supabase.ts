@@ -7,29 +7,38 @@
 import { supabase } from "@/lib/supabase";
 import type { Notifikacia } from "@/types";
 
-// timestamptz → relatívny čas pre kartu ("teraz" / "8 min" / "2 h" / "1 d")
-function casZ(ts?: string): string {
-  if (!ts) return "";
-  const min = Math.max(0, Math.floor((Date.now() - new Date(ts).getTime()) / 60000));
-  if (min < 1) return "teraz";
-  if (min < 60) return `${min} min`;
-  const h = Math.floor(min / 60);
-  if (h < 24) return `${h} h`;
-  return `${Math.floor(h / 24)} d`;
+const IKONY = ["ok", "srd", "otaz", "stit", "ret", "lud", "kal", "dok", "ciel", "sum", "deed", "namiet"];
+const KAT_STARE: Record<string, Notifikacia["kat"]> = { penazenka: "penaze", sledovane: "zbierky", socialne: "ludia" };
+const KAT_IKONA: Record<Notifikacia["kat"], Notifikacia["ikona"]> = { skutky: "ok", skupina: "lud", penaze: "sum", zbierky: "ciel", ludia: "lud", deed: "deed" };
+const KAT_TON: Record<Notifikacia["kat"], Notifikacia["ton"]> = { skutky: "g", skupina: "b", penaze: "gold", zbierky: "gold", ludia: "b", deed: "b" };
+
+// timestamptz → deň skupiny (Dnes · Včera · 27. 9.) + čas (dnes relatívne, inak hh:mm)
+function denCas(ts?: string): { den: string; cas: string } {
+  if (!ts) return { den: "Dnes", cas: "" };
+  const d = new Date(ts), t = new Date();
+  const dni = Math.round((new Date(t.toDateString()).getTime() - new Date(d.toDateString()).getTime()) / 86400000);
+  if (dni === 0) {
+    const min = Math.max(0, Math.floor((Date.now() - d.getTime()) / 60000));
+    return { den: "Dnes", cas: min < 1 ? "teraz" : min < 60 ? `${min} min` : `${Math.floor(min / 60)} h` };
+  }
+  const hm = `${d.getHours()}:${String(d.getMinutes()).padStart(2, "0")}`;
+  return { den: dni === 1 ? "Včera" : `${d.getDate()}. ${d.getMonth() + 1}.`, cas: hm };
 }
 
 /** riadok `notifikacia` → Notifikacia (modulový tvar). */
 function naNotifikaciu(r: any): Notifikacia {
+  const kat: Notifikacia["kat"] = KAT_STARE[r.kat] ?? r.kat ?? "deed";
   return {
     id: Number(r.id),
-    kat: r.kat,
-    ic: r.ikona || "•",
-    col: r.col || "var(--a-info)",
+    kat,
+    ikona: IKONY.includes(r.ikona) ? r.ikona : KAT_IKONA[kat] ?? "deed",
+    ton: r.ton === "g" || r.ton === "b" || r.ton === "gold" ? r.ton : KAT_TON[kat] ?? "b",
     titul: r.titul,
     text: r.text || "",
-    cas: casZ(r.cas),
+    ...denCas(r.cas),
     nove: !!r.nove,
     agg: !!r.agg,
+    akcie: Array.isArray(r.akcie) ? r.akcie : undefined,
   };
 }
 

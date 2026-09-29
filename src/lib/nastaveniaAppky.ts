@@ -16,9 +16,13 @@ export type NastaveniaAppky = {
   kontakty: boolean;
   /** ukážky pre začiatok (Moje skutky, neskôr peňaženka, priatelia, záujmy) */
   ukazky: boolean;
+  tichyOd: string;
+  tichyDo: string;
+  /** oznámenia (karta 23): hlavný vypínač, prepínače položiek (a = v appke, p = na displej), strop 3 denne, večerný súhrn */
+  oznamy: { master: boolean; zmeny: Record<string, { a: boolean; p: boolean }>; strop: boolean; vecer: boolean };
 };
 const KLUC = "deed.nastavenia.appky";
-const ZAKLAD: NastaveniaAppky = { pismo: 100, obmedzAnim: false, vibracie: true, titulky: true, tichyCas: true, poloha: true, okruh: "mesto", biometria: false, hranicaPlatby: 50, kontakty: false, ukazky: true };
+const ZAKLAD: NastaveniaAppky = { pismo: 100, obmedzAnim: false, vibracie: true, titulky: true, tichyCas: true, poloha: true, okruh: "mesto", biometria: false, hranicaPlatby: 50, kontakty: false, ukazky: true, tichyOd: "22:00", tichyDo: "7:00", oznamy: { master: true, zmeny: {}, strop: true, vecer: false } };
 let verzia = 0;
 const posluchaci = new Set<() => void>();
 

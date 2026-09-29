@@ -126,16 +126,8 @@ function ProfilDesktop({ screen, subNazov, setScreen, onSub, onQr, onUpravit }: 
   );
 }
 
-function NotifObrazovka({ onBack, desktop }: { onBack: () => void; desktop?: boolean }) {
-  return (
-    <div style={{ paddingBottom: SPACE.gutter }}>
-      <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm, padding: "16px 18px 8px" }}>
-        {!desktop && <div onClick={onBack} style={spatBtn}><IkonaSipVlavo size={18} color={C.textSec} /></div>}
-        <h3 style={{ fontSize: 17, margin: 0 }}>Notifikácie</h3>
-      </div>
-      <div style={{ padding: "0 16px", display: "flex", flexDirection: "column" }}><NotifNastavenia embedded /></div>
-    </div>
-  );
+function NotifObrazovka({ onBack }: { onBack: () => void; desktop?: boolean }) {
+  return <div style={{ minHeight: "100%" }}><NotifNastavenia onBack={onBack} /></div>;
 }
 
 type SubScreenProps = { nazov: string | null; toast: ToastFn; onBack: () => void; desktop?: boolean };

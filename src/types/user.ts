@@ -391,18 +391,28 @@ export type OrgTab = "Kampane" | "Skutky" | "Talent";
 
 /* NOTIFIKÁCIE — Notifikacie.jsx (§8) */
 
-export type NotifKat = "skutky" | "penazenka" | "sledovane" | "socialne" | "deed";
-
+export type NotifKat = "skutky" | "skupina" | "penaze" | "zbierky" | "ludia" | "deed";
+/** čiarová ikona oznamu (bez emoji) */
+export type NotifIkona = "ok" | "srd" | "otaz" | "stit" | "ret" | "lud" | "kal" | "dok" | "ciel" | "sum" | "deed" | "namiet";
+/** farba podľa typu: g = hotové/dobré · b = potrebuje akciu/info · gold = peniaze/zbierka/pozor */
+export type NotifTon = "g" | "b" | "gold";
+/** akcia priamo v ozname (bez otvárania) */
+export type NotifAkciaKod = "odpovedat" | "bol" | "nebol" | "prijat" | "neskor" | "otvorit";
 export interface Notifikacia {
   id: number;
   kat: NotifKat;
-  ic: string;
-  col: HexFarba;
+  ikona: NotifIkona;
+  ton: NotifTon;
   titul: string;
   text: string;
+  /** deň skupiny: Dnes · Včera · 27. 9. */
+  den: string;
   cas: string;
   nove?: boolean;
   agg?: boolean;
+  akcie?: NotifAkciaKod[];
+  /** kontext akcie (AI sa pýta: skutok a otázky) */
+  skutok?: { nazov: string; popis: string; otazky?: string[] };
 }
 
 export interface NotifKategoria {

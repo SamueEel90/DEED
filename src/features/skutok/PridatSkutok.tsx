@@ -149,11 +149,11 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
   const [plan, setPlan] = useState(false);
   const [planKedy, setPlanKedy] = useState("");
   const [planLink, setPlanLink] = useState("");
-  const [nz0, setNz0] = useState(ohl?.nazov ?? "");
-  const [po, setPo] = useState(ohl?.popis ?? "");
+  const [nz0, setNz0] = useState(ohl?.nazov ?? pr.skutok?.nazov ?? "");
+  const [po, setPo] = useState(ohl?.popis ?? pr.skutok?.popis ?? "");
   const [prav, setPrav] = useState(false);
   const [pvF, setPvF] = useState("každý týždeň");
-  const [aiSt, setAiSt] = useState<null | "beh" | "ok" | "zle">(ohl ? "ok" : null);
+  const [aiSt, setAiSt] = useState<null | "beh" | "ok" | "zle">(ohl || pr.skutok ? "ok" : null);
   const [aiC, setAiC] = useState(false);
   const [aiU, setAiU] = useState(false);
   const [mic, setMic] = useState(false);
@@ -169,11 +169,11 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
   const [oblast, setOblast] = useState<Oblast | null>(pr.oblast ?? null);
   // AI
   const [otazky, setOtazky] = useState<string[]>(pr.otazky ?? []);
-  const [odp, setOdp] = useState<string[]>([]);
-  const [kolo, setKolo] = useState<1 | 2>(pr.otazky ? 2 : 1);
+  const [odp, setOdp] = useState<string[]>(() => (pr.otazky ?? []).map(() => ""));
+  const [kolo, setKolo] = useState<1 | 2>(1);
   const [vysl, setVysl] = useState<Vysledok>(null);
-  const [nz, setNz] = useState("");
-  const [po2, setPo2] = useState("");
+  const [nz, setNz] = useState(pr.skutok?.nazov ?? "");
+  const [po2, setPo2] = useState(() => (pr.skutok ? cistyText(pr.skutok.popis) : ""));
   const [pravda, setPravda] = useState(false);
   // hotovo
   const [id] = useState(() => `m${teraz()}`);

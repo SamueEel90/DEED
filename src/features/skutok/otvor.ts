@@ -12,8 +12,9 @@ export type PridatParams = {
   oblast?: Oblast;
   /** organizácia ako autor (Charita „Skutok takto sme pomohli") */
   autor?: string;
-  /** oznam „AI sa pýta · Odpovedať" → rovno krok otázok */
+  /** oznam „AI sa pýta · Odpovedať" → rovno krok otázok (so skutkom, ku ktorému sa AI pýta) */
   otazky?: string[];
+  skutok?: { nazov: string; popis: string };
   /** ohlásený skutok „Dokončiť" → krok 2, text predvyplnený */
   dokoncit?: boolean;
   /** akcia skončila → krok 2 s účastníkmi, miestom a trvaním */

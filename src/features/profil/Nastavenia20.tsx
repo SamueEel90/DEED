@@ -110,7 +110,7 @@ export function Nastavenia20({ onBack, onNotif, desktop }: { onBack: () => void;
 
       <Sekcia nadpis="OZNÁMENIA">
         <Riadok prvy t="Čo chceš dostávať" s="dary, pozvánky, priatelia, zbierky" onClick={onNotif} />
-        <Riadok t="Tichý čas" s="22:00 – 7:00, okrem SOS" prepinac={n.tichyCas} onClick={() => zmenNastavenia({ tichyCas: !n.tichyCas })} />
+        <Riadok t="Tichý čas" s={`${n.tichyOd} – ${n.tichyDo}, okrem SOS`} prepinac={n.tichyCas} onClick={() => zmenNastavenia({ tichyCas: !n.tichyCas })} />
       </Sekcia>
 
       <Sekcia nadpis="POLOHA">

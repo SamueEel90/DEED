@@ -1,34 +1,36 @@
-import type { Notifikacia, NotifKategoria, VypnuteMapa } from "@/types";
+import type { Notifikacia, NotifKategoria } from "@/types";
 
-// kategórie: Moje skutky · Peňaženka/Reťaz · Sledované · Sociálne · Od DEED
-// col = theme-aware earthy akcent (var --a-*), nie napevno svetlé hexy (tie v svetlom režime zmiznú)
+// KARTA 23 · Oznámenia — ukážkový zoznam (kým nie je Supabase). Agregácia je povinná:
+// malé dary vždy v jednom súhrne, nikdy 1 oznam za každý dar.
 export const NOTIFY: Notifikacia[] = [
-  { id: 1, kat: "skutky",    ic: "✓", col: "var(--a-green)",  titul: "Skutok vyhodnotený",            text: "+130 DEED · významný (3 riadky vo feede)", cas: "teraz", nove: true },
-  { id: 2, kat: "skutky",    ic: "❤", col: "var(--a-danger)", titul: "Jana N. podporila tvoj skutok", text: "+50 DEED", cas: "8 min", nove: true },
-  { id: 3, kat: "penazenka", ic: "♻", col: "var(--a-green)",  titul: "Reťaz dobra odoslaná",          text: "39 DEED → Rodina po povodni", cas: "1 h" },
-  { id: 4, kat: "penazenka", ic: "⭐", col: "var(--a-gold)",   titul: "Súhrn podpory",                 text: "1 240 mikro-podpor spojených · +124 DEED", cas: "2 h", agg: true },
-  { id: 5, kat: "sledovane", ic: "🏥", col: "var(--a-info)",   titul: "Detská nemocnica — nová kampaň", text: "Sledované · zbierka na inkubátor", cas: "5 h" },
-  { id: 6, kat: "sledovane", ic: "🏃", col: "var(--a-clay)",   titul: "Pripomienka: Beh pre zdravie",  text: "Zajtra 09:00 · si prihlásený", cas: "6 h" },
-  { id: 7, kat: "socialne",  ic: "👤", col: "var(--a-plum)",   titul: "Peter chce byť tvoj priateľ",   text: "Žiadosť o priateľstvo", cas: "1 d" },
-  { id: 8, kat: "deed",      ic: "✦", col: "var(--a-teal)",   titul: "Oznam od DEED",                 text: "Nová funkcia: Reťaz dobra", cas: "2 d" },
-  { id: 9,  kat: "skutky",    ic: "✓", col: "var(--a-green)",  titul: "Skutok overený komunitou",       text: "Tvoj skutok potvrdili 3 susedia", cas: "20 min", nove: true },
-  { id: 10, kat: "skutky",    ic: "❤", col: "var(--a-danger)", titul: "Lukáš H. podporil tvoj skutok",  text: "+30 DEED", cas: "40 min", nove: true },
-  { id: 11, kat: "sledovane", ic: "🌳", col: "var(--a-green)",  titul: "EkoTím Juh pridal nový skutok",   text: "Sledované · čistenie brehu Váhu", cas: "1 h" },
-  { id: 12, kat: "sledovane", ic: "☕", col: "var(--a-info)",   titul: "Klub seniorov Sihoť — nová akcia", text: "Spoločenský večer · piatok 18:30", cas: "2 h" },
-  { id: 13, kat: "penazenka", ic: "💎", col: "var(--a-gold)",   titul: "Prijatý DEED",                   text: "Eva K. ti poslala 40 DEED", cas: "3 h" },
-  { id: 14, kat: "socialne",  ic: "👥", col: "var(--a-plum)",   titul: "Zuzana P. ťa začala sledovať",   text: "Nový sledujúci", cas: "4 h" },
-  { id: 15, kat: "skutky",    ic: "⚠", col: "var(--a-clay)",   titul: "Námietka k skutku",              text: "Skutok #120018 čaká na doplnenie dôkazu", cas: "6 h" },
-  { id: 16, kat: "sledovane", ic: "🌼", col: "var(--a-info)",   titul: "Nádej pacientom — Deň žltej stužky", text: "Sledované · zajtra verejná zbierka", cas: "8 h" },
-  { id: 17, kat: "penazenka", ic: "♻", col: "var(--a-green)",  titul: "Reťaz dobra prijatá",            text: "Dostal si 24 DEED z reťaze dobra", cas: "1 d" },
-  { id: 18, kat: "deed",      ic: "✦", col: "var(--a-teal)",   titul: "Nová úroveň karmy!",             text: "Dosiahol si Gold · L7", cas: "2 d" },
+  { id: 1, kat: "skutky", den: "Dnes", cas: "teraz", ikona: "ok", ton: "g", titul: "Skutok zverejnený vo feede štvrte", text: "Pitný režim pre susedu · +48 karmy", nove: true },
+  { id: 2, kat: "skutky", den: "Dnes", cas: "12 min", ikona: "otaz", ton: "b", titul: "AI sa pýta na tvoj skutok", text: "Pomoc na brigáde v parku · 2 otázky, bez nich ho nezverejníme", nove: true, akcie: ["odpovedat"],
+    skutok: { nazov: "Pomoc na brigáde v parku", popis: "<p>Pomohol som na brigáde v parku, hrabali sme lístie a zbierali odpadky.</p>", otazky: ["Koľko vriec alebo akú plochu ste vyčistili?", "Bol si sám, alebo s ďalšími?"] } },
+  { id: 3, kat: "skupina", den: "Dnes", cas: "40 min", ikona: "lud", ton: "g", titul: "Tomáš B. ťa pridal do skutku", text: "Vyčistili sme breh potoka · potvrď, že si bol pri tom", nove: true, akcie: ["bol", "nebol"] },
+  { id: 4, kat: "penaze", den: "Dnes", cas: "1 h", ikona: "sum", ton: "gold", titul: "Súhrn podpory", text: "38 ľudí ti poslalo odmenu za skutok · spolu 1 240 DEED", agg: true },
+  { id: 5, kat: "zbierky", den: "Dnes", cas: "2 h", ikona: "ciel", ton: "gold", titul: "Tvoja hlavná zbierka je naplnená", text: "Zbierka pre Sárku · odmeny teraz idú na ďalšiu v poradí", nove: true },
+  { id: 6, kat: "skupina", den: "Včera", cas: "18:40", ikona: "kal", ton: "b", titul: "O hodinu začína tvoj ohlásený skutok", text: "Čistenie brehu Váhu · nezabudni zapnúť GPS", akcie: ["otvorit"] },
+  { id: 7, kat: "skutky", den: "Včera", cas: "15:20", ikona: "stit", ton: "g", titul: "Suseda potvrdila tvoj skutok", text: "Pani Anna: Áno, pomohol mi · najsilnejší dôkaz" },
+  { id: 8, kat: "zbierky", den: "Včera", cas: "11:05", ikona: "dok", ton: "g", titul: "Charita Nitra doložila tvoj dar", text: "Po požiari bez strechy · pozri, na čo išli peniaze" },
+  { id: 9, kat: "penaze", den: "Včera", cas: "9:30", ikona: "ret", ton: "g", titul: "Reťaz dobra odoslaná", text: "12,00 € z odmien išlo na Útulok Túlavá labka" },
+  { id: 10, kat: "skutky", den: "27. 9.", cas: "20:14", ikona: "namiet", ton: "gold", titul: "Niekto namieta tvoj skutok", text: "Upratanie parku · komunita posúdi dôkazy, nemusíš nič robiť" },
+  { id: 11, kat: "ludia", den: "27. 9.", cas: "17:02", ikona: "lud", ton: "b", titul: "Peter K. chce byť tvoj priateľ", text: "Máte 3 spoločných priateľov", akcie: ["prijat", "neskor"] },
+  { id: 12, kat: "deed", den: "26. 9.", cas: "10:00", ikona: "deed", ton: "b", titul: "Nové v DEED: skutok ako dar", text: "Pomôž zbierke skutkom, aj bez peňazí" },
 ];
 
-export const KATEGORIE: NotifKategoria[] = [
-  { hl: "MOJE SKUTKY",       polozky: ["Vyhodnotenie skutku", "Overenie / námietka", "Niekto ma podporil"] },
-  { hl: "PEŇAŽENKA / REŤAZ", polozky: ["Prijatý DEED", "Reťaz dobra odoslaná"] },
-  { hl: "SLEDOVANÉ",         polozky: ["Nová kampaň / akcia", "Pripomienky akcií"] },
-  { hl: "SOCIÁLNE",          polozky: ["Žiadosti o priateľstvo", "Správy"] },
-  { hl: "OD DEED",           polozky: ["Oznamy a novinky"] },
+/** kategórie a položky nastavení (V appke · Na displej) — presne podľa prototypu */
+export const KATEGORIE: (NotifKategoria & { popisy: string[] })[] = [
+  { hl: "MOJE SKUTKY", polozky: ["Zverejnenie a hodnotenie", "Otázky od AI", "Overenie a námietka", "Potvrdenie od obdarovaného", "Rozpísaný a ohlásený skutok", "Pravidelný skutok"],
+    popisy: ["aj zamietnutie", "aby skutok nezostal visieť", "aj keď je vyriešená", "", "pripomienka, kým nevyprší", "pripomienka v deň skutku"] },
+  { hl: "SKUPINA A AKCIE", polozky: ["Pridal ťa do skutku", "Pomocník potvrdil alebo odmietol", "Pripomienka akcie", "Pozvánky na akcie"],
+    popisy: ["potvrdiť, že si bol pri tom", "", "deň vopred a 1 h pred", "podľa tvojich záujmov"] },
+  { hl: "PENIAZE A PLATBY", polozky: ["Platba prebehla alebo zlyhala", "Pravidelná podpora", "Odmena za skutok", "Súhrn malých darov", "Reťaz dobra", "Firemný benefit"],
+    popisy: ["", "3 dni pred stiahnutím, zlyhaná karta, koniec", "nad 100 DEED alebo v eurách", "raz denne", "odoslaná aj prijatá", ""] },
+  { hl: "ZBIERKY", polozky: ["Dar na moju zbierku", "Moja zbierka je na rade", "Tvorca pridal moju zbierku", "Zbierka naplnená alebo uzavretá", "Doklad a novinky od zbierky", "Dorovnanie firmy sa minulo", "Nová zbierka v okolí"],
+    popisy: ["malé dary v súhrne", "aj s platným QR", "", "", "", "", ""] },
+  { hl: "ĽUDIA A PROFIL", polozky: ["Žiadosti o priateľstvo", "Správy", "Nový štít", "Niekto ťa overil cez QR"], popisy: ["", "", "", ""] },
+  { hl: "OD DEED", polozky: ["Oznamy a novinky"], popisy: [""] },
 ];
 
-export const VYPNUTE_DEF: VypnuteMapa = { "Oznamy a novinky": true }; // default off (§8: Od DEED ticho)
+/** predvolene Na displej vypnuté (v appke áno) */
+export const NA_DISPLEJ_VYP = ["Súhrn malých darov", "Nová zbierka v okolí", "Oznamy a novinky"];
