@@ -1,25 +1,23 @@
 import { useState, useEffect } from "react";
-import { SIRKA, C, GRAD, GRAD_ZELENY, SPACE, RADIUS } from "@/theme";
-import { toast, Sheet, StitRiadok, DozivotnyChip, useScrollPamat, useMotiv, useLayout, useTvorbaGate, obalSiroky, pressable, IkonaNastavenia, IkonaSipVlavo, IkonaPenazenka, IkonaHviezda, IkonaFajka, IkonaDoska, IkonaUsmev, IkonaOsoba, IkonaPin, IkonaSlnko, IkonaMesiac, IkonaStit, IkonaInstitucia, IkonaQr, IkonaObalka, IkonaFoto, FotoProfiluSheet, MenuSkupina, MenuPolozka, MenuPrepinac, SkeletonRiadky, EmptyState, ErrorState, ScreenSwitch } from "@/shared";
+import { SIRKA, C, GRAD, SPACE, RADIUS } from "@/theme";
+import { toast, Sheet, StitRiadok, DozivotnyChip, useScrollPamat, useMotiv, useLayout, useTvorbaGate, obalSiroky, IkonaNastavenia, IkonaSipVlavo, IkonaPenazenka, IkonaHviezda, IkonaFajka, IkonaDoska, IkonaUsmev, IkonaOsoba, IkonaPin, IkonaSlnko, IkonaMesiac, IkonaStit, IkonaInstitucia, IkonaObalka, IkonaFoto, FotoProfiluSheet, MenuSkupina, MenuPolozka, MenuPrepinac, SkeletonRiadky, EmptyState, ErrorState, ScreenSwitch } from "@/shared";
 import { MojDeedFiremny } from "@/features/rola/MojDeedFiremny";
 import { MojZamestnavatelSheet } from "@/features/rola/MojZamestnavatel";
 import { useVazbaOsoby } from "@/lib/zamestnanci";
 import { RetazDobraSheet } from "@/features/retaz/RetazDobra";
 import { IntroPruvodca } from "@/components/intro";
-import { nacitajZostatok as nacitajZostatokDB, dobitPenazenku as dobitPenazenkuDB } from "@/lib/osobne";
-import { MojaRetaz } from "@/features/retaz/MojaRetaz";
 import { signOut } from "@/lib/auth";
 import { usePouzivatel } from "@/lib/pouzivatel";
 import { klucEntity, useFotkyEntity } from "@/lib/fotoentity";
 import { useVrstva } from "@/lib/urlnav";
-import { usePersonalizacia } from "@/lib/personalizacia";
 import { Nastavenia as NotifNastavenia } from "@/features/notifikacie/Notifikacie";
-import type { Toast as ToastFn, WideProps, PrevodTuple, ZiadostPriatelstvo, CestaPriatelstva, RezimNastavenia } from "@/types";
-import { useProfilPrevody, useProfilMojeSkutky, useProfilKarma, useProfilStatistiky } from "@/data";
+import type { Toast as ToastFn, WideProps, ZiadostPriatelstvo, CestaPriatelstva, RezimNastavenia } from "@/types";
+import { useProfilMojeSkutky, useProfilKarma, useProfilStatistiky } from "@/data";
 import { MODULOVA_KARMA, DOZIVOTNE_ZISKANE } from "./mock";
 import { ProfilHlavny18, IdentitaKarta18, StitKarta18, MojeZaujmy } from "./ProfilHlavny";
 import { UpravOsobnyProfil } from "./UpravOsobnyProfil";
 import { MojQr } from "./MojQr";
+import { Penazenka18 } from "./Penazenka18";
 
 /*
   ============================================================
@@ -60,7 +58,7 @@ export default function ModulProfil({ wide, walletReq = 0 }: ProfilProps) {
       <ScreenSwitch k={screen}>
       {screen === "profil" && obal(<ProfilHlavny18 naWallet={() => setScreen("wallet")} naSub={sub} naNastavenia={() => setScreen("nastavenia")} naPriatelia={() => setScreen("priatelia")}
         naUpravit={() => setUprava(true)} naQr={() => setQr(true)} />)}
-      {screen === "wallet" && obal(<Penazenka toast={toast} onBack={() => setScreen("profil")} />)}
+      {screen === "wallet" && obal(<Penazenka18 onBack={() => setScreen("profil")} />)}
       {screen === "firemny" && obalSiroky(<MojDeedFiremny onBack={() => setScreen("profil")} toast={toast} />, { wide, desktop, max: SIRKA.stlpec })}
       {screen === "sub" && obal(<SubScreen nazov={subNazov} toast={toast} onBack={() => setScreen("profil")} />)}
       {screen === "priatelia" && obal(<PriateliaScreen toast={toast} onBack={() => setScreen("profil")} />)}
@@ -87,7 +85,7 @@ function ProfilDesktop({ screen, subNazov, setScreen, onSub, onQr, onUpravit }: 
   const jeAktivny = (it: (typeof PROFIL_NAV)[number]) => screen === it.key && (it.key !== "sub" || subNazov === it.nazov);
 
   let obsah: React.ReactNode;
-  if (screen === "wallet") obsah = <Penazenka toast={toast} desktop onBack={() => setScreen("profil")} />;
+  if (screen === "wallet") obsah = <Penazenka18 desktop onBack={() => setScreen("profil")} />;
   else if (screen === "firemny") obsah = <MojDeedFiremny onBack={() => setScreen("profil")} toast={toast} />;
   else if (screen === "sub") obsah = <SubScreen nazov={subNazov} toast={toast} desktop onBack={() => setScreen("profil")} />;
   else if (screen === "priatelia") obsah = <PriateliaScreen toast={toast} desktop onBack={() => setScreen("profil")} />;
@@ -145,139 +143,6 @@ function NotifObrazovka({ onBack, desktop }: { onBack: () => void; desktop?: boo
   );
 }
 
-// ===================== PEŇAŽENKA =====================
-type PenazenkaProps = { toast: ToastFn; onBack: () => void; desktop?: boolean };
-
-function Penazenka({ toast, onBack, desktop }: PenazenkaProps) {
-  const { data: PREVODY = [], isLoading, isError, refetch } = useProfilPrevody();
-  const { podpory } = usePersonalizacia();
-  const [honorar, setHonorar] = useState(false); // Reťaz dobra — Cesta B (honorár tvorcu)
-  const [zostatok, setZostatok] = useState<number>(1240); // DEED zostatok (DB/localStorage) — načíta sa async
-  const [dobit, setDobit] = useState(false);   // kúpiť DEED kartou (mock top-up)
-  const [prijat, setPrijat] = useState(false); // prijať DEED = ukáž svoj QR
-  useEffect(() => { let z = false; nacitajZostatokDB().then((v) => { if (!z) setZostatok(v); }); return () => { z = true; }; }, []);
-  async function dobite(eur: number) {
-    const deed = eur * 20;
-    setDobit(false);
-    const nove = await dobitPenazenkuDB(deed);   // kurz 1 € ≈ 20 DEED
-    setZostatok(nove);
-    toast(`Dobité +${deed.toLocaleString("sk")} DEED (${eur} € kartou) · demo bez reálnej platby`);
-  }
-  const prevody: PrevodTuple[] = PREVODY;
-  // reálne odvodené z DB (Fáza D) — agregát „Čo podporujem". Zostatok peňaženky
-  // (dole) je zatiaľ placeholder do event-sourced wallet/karma modelu.
-  const darovaneDeed = podpory.filter((p) => (p.kanal || "DEED") !== "EUR").reduce((s, p) => s + (p.suma || 0), 0);
-  const darovaneEur = podpory.filter((p) => p.kanal === "EUR").reduce((s, p) => s + (p.suma || 0), 0);
-  return (
-    <div style={{ paddingBottom: SPACE.gutter }}>
-      <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm, padding: "16px 18px 8px" }}>
-        {!desktop && <div onClick={onBack} style={spatBtn}><IkonaSipVlavo size={18} color={C.textSec} /></div>}
-        <h3 style={{ fontSize: 17, margin: 0 }}>Peňaženka</h3>
-      </div>
-      <div style={{ padding: "0 16px" }}>
-        <div style={{ position: "relative", overflow: "hidden", background: "linear-gradient(150deg, color-mix(in srgb, var(--a-info) 22%, transparent), color-mix(in srgb, var(--a-plum) 16%, transparent) 55%, color-mix(in srgb, var(--a-teal) 13%, transparent))", border: "1px solid color-mix(in srgb, var(--a-info) 35%, transparent)", borderRadius: RADIUS.lg, padding: SPACE.md, boxShadow: "0 14px 40px rgba(0,0,0,.35), 0 0 36px color-mix(in srgb, var(--a-green) 14%, transparent), inset 0 1px 0 rgba(255,255,255,.12)" }}>
-          <div style={{ position: "absolute", top: -50, right: -40, width: 160, height: 160, borderRadius: RADIUS.round, background: "radial-gradient(circle, color-mix(in srgb, var(--a-plum) 30%, transparent), transparent 70%)", filter: "blur(28px)", pointerEvents: "none" }} />
-          <div style={{ fontSize: 12, color: C.textSec }}>Zostatok</div>
-          <div style={{ marginTop: SPACE.xxs }}><span style={{ fontSize: 30, fontWeight: 800 }}>{zostatok.toLocaleString("sk")}</span> <span style={{ color: "#5B86FF", fontWeight: 800 }}>DEED</span></div>
-          <div style={{ fontSize: 10, color: C.textTer, marginTop: SPACE.xxs }}>≈ {Math.round(zostatok / 20).toLocaleString("sk")} € · Base L2 · ERC-4337</div>
-        </div>
-
-        {/* DAROVANÉ SPOLU — reálne z DB (agregát podpôr „Čo podporujem") */}
-        <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm, marginTop: SPACE.sm, background: "color-mix(in srgb, var(--a-info) 7%, transparent)", border: "1px solid color-mix(in srgb, var(--a-info) 22%, transparent)", borderRadius: RADIUS.md, padding: `${SPACE.sm}px ${SPACE.gutter}px` }}>
-          <span style={{ width: 38, height: 38, borderRadius: RADIUS.sm, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", background: "color-mix(in srgb, var(--a-info) 14%, transparent)", color: "var(--a-info)", fontSize: 18 }}>💚</span>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 13, fontWeight: 700 }}>Darované spolu · <span style={{ color: "var(--a-info)" }}>{darovaneDeed} DEED{darovaneEur ? ` · ${darovaneEur} €` : ""}</span></div>
-            <div style={{ fontSize: 11, color: C.textTer, marginTop: SPACE.xxs }}>{podpory.length} {podpory.length === 1 ? "podporená zbierka" : "podporených zbierok"} · z tvojej stopy</div>
-          </div>
-        </div>
-
-        {/* REŤAZOVÁ ČASŤ — akumulovaná oddelene, zamknutá (§5.2, §9) */}
-        <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm, marginTop: SPACE.sm, background: "rgba(31,191,143,.07)", border: "1px solid rgba(31,191,143,.25)", borderRadius: RADIUS.md, padding: `${SPACE.sm}px ${SPACE.gutter}px` }}>
-          <span style={{ width: 38, height: 38, borderRadius: RADIUS.sm, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(31,191,143,.14)", color: "var(--a-green)", fontSize: 18 }}>♻</span>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 13, fontWeight: 700 }}>Reťazová časť · <span style={{ color: "var(--a-green)" }}>248 DEED</span> <span style={{ fontSize: 10, color: C.gold }}>🔒 zamknutá</span></div>
-            <div style={{ fontSize: 11, color: C.textTer, marginTop: SPACE.xxs }}>Odošle sa pri prahu 1000 DEED alebo o 30 dní</div>
-          </div>
-          <div style={{ textAlign: "right", flex: "none" }}>
-            <div style={{ fontSize: 9.5, color: C.textTer }}>Generosity</div>
-            <div style={{ fontSize: 14, fontWeight: 800, color: C.gold }}>+142</div>
-          </div>
-        </div>
-
-        {/* CESTA B — Moja reťaz (FRONTA honoráru, správca) */}
-        <div onClick={() => setHonorar(true)} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, marginTop: SPACE.sm, background: "color-mix(in srgb, var(--a-info) 7%, transparent)", border: "1px solid color-mix(in srgb, var(--a-info) 25%, transparent)", borderRadius: RADIUS.md, padding: `${SPACE.sm}px ${SPACE.gutter}px`, cursor: "pointer" }}>
-          <span style={{ width: 38, height: 38, borderRadius: RADIUS.sm, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", background: "color-mix(in srgb, var(--a-info) 14%, transparent)", color: "var(--a-info)", fontSize: 17 }}>⛓</span>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 13, fontWeight: 700 }}>Moja reťaz · fronta honoráru</div>
-            <div style={{ fontSize: 11, color: C.textTer, marginTop: SPACE.xxs }}>Zoradené zbierky · % ku každej · po naplnení sa QR prehodí ďalej</div>
-          </div>
-          <span style={{ color: C.textTer, fontSize: 16 }}>›</span>
-        </div>
-
-        <div style={{ display: "flex", gap: SPACE.xs, marginTop: SPACE.gutter }}>
-          {([["↑", "Poslať", "rgba(61,214,140,.13)", "rgba(46,125,82,.5)", "var(--a-green)", () => toast("Poslať DEED — naskenuj QR príjemcu (podpora priamo z detailu príspevku)")],
-            ["↓", "Prijať", "color-mix(in srgb, var(--a-info) 14%, transparent)", "rgba(42,94,142,.5)", "var(--a-info)", () => setPrijat(true)],
-            ["＋", "Kúpiť", "rgba(169,139,240,.15)", "rgba(122,91,216,.5)", "var(--a-plum)", () => setDobit(true)]] as [string, string, string, string, string, () => void][]).map((b, i) => (
-            <div key={i} {...pressable(b[5], b[1])} style={{ flex: 1, height: 58, borderRadius: RADIUS.sm, background: b[2], border: `1px solid ${b[3]}`, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-              <div style={{ fontWeight: 700, fontSize: 13, color: b[4] }}>{b[0]}</div>
-              <div style={{ fontSize: 10, color: C.textTer, marginTop: SPACE.xxs }}>{b[1]}</div>
-            </div>
-          ))}
-        </div>
-
-        <MenuSkupina nadpis="KÚPIŤ DEED" style={{ marginTop: SPACE.md }}>
-          <MenuPolozka ikona={<IkonaQr size={16} />} farba="var(--a-plum)" label="Cez burzu" popis="DEED/USDC — príde s reálnym walletom" onClick={() => toast("Burza DEED/USDC — príde s reálnym walletom")} />
-          <MenuPolozka ikona={<IkonaPenazenka size={16} />} farba="var(--a-green)" label="Platobnou kartou" popis="Okamžité dobitie" onClick={() => setDobit(true)} posledna />
-        </MenuSkupina>
-
-        <div style={sekciaLabel}>POSLEDNÉ PREVODY</div>
-        {isError ? (
-          <ErrorState onRetry={() => refetch()} />
-        ) : isLoading ? (
-          <SkeletonRiadky count={4} />
-        ) : prevody.length === 0 ? (
-          <EmptyState emoji="💸" title="Žiadne prevody" text="Tvoje DEED prevody sa zobrazia tu." />
-        ) : (
-          prevody.map((r, i) => (
-            <div key={i} style={subItem}>
-              <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}><span style={{ width: 6, height: 6, borderRadius: RADIUS.round, display: "inline-block", marginRight: SPACE.xs, background: r[2] }} />{r[0]}</span>
-              <span style={{ fontWeight: 700, color: r[2], flex: "none", marginLeft: SPACE.xs }}>{r[1]} DEED</span>
-            </div>
-          ))
-        )}
-      </div>
-
-      {/* Moja reťaz — FRONTA (§5.1) — nahrádza paralelný split viacerých zbierok pre tvorcu */}
-      {honorar && <MojaRetaz onClose={() => setHonorar(false)} toast={toast} />}
-
-      {/* dobitie kartou — mock top-up (reálna platba príde s walletom) */}
-      {dobit && <DobitSheet onDobit={dobite} onClose={() => setDobit(false)} />}
-
-      {/* prijať DEED = ukáž svoj osobný QR */}
-      {prijat && <MojQr zalozka="akcia" onClose={() => setPrijat(false)} />}
-    </div>
-  );
-}
-
-// mock top-up sheet — výber sumy v €, pripíše DEED (kurz 1 € ≈ 20 DEED)
-function DobitSheet({ onDobit, onClose }: { onDobit: (eur: number) => void; onClose: () => void }) {
-  const [eur, setEur] = useState(20);
-  return (
-    <Sheet onClose={onClose} label="Kúpiť DEED kartou">
-      <div style={{ fontSize: 15, fontWeight: 800 }}>▢ Kúpiť DEED kartou</div>
-      <div style={{ fontSize: 12, color: C.textTer, marginTop: SPACE.xxs, marginBottom: SPACE.sm }}>Kurz 1 € ≈ 20 DEED · demo — karta sa nezaťaží</div>
-      <div style={{ display: "flex", gap: SPACE.xs }}>
-        {[10, 20, 50, 100].map((s) => (
-          <button key={s} onClick={() => setEur(s)} style={{ flex: 1, padding: `${SPACE.sm}px 0`, borderRadius: RADIUS.sm, cursor: "pointer", fontFamily: "inherit", fontWeight: 700, fontSize: 14, border: `1px solid ${eur === s ? "var(--a-green)" : C.line}`, background: eur === s ? "rgba(61,214,140,.12)" : C.surface, color: eur === s ? "var(--a-green)" : C.text }}>{s} €</button>
-        ))}
-      </div>
-      <div style={{ textAlign: "center", fontSize: 13, color: C.textSec, marginTop: SPACE.sm }}>Dostaneš <b style={{ color: C.text }}>{(eur * 20).toLocaleString("sk")} DEED</b></div>
-      <button onClick={() => onDobit(eur)} style={{ width: "100%", height: 48, marginTop: SPACE.sm, borderRadius: RADIUS.sm, border: "none", cursor: "pointer", fontFamily: "inherit", fontWeight: 700, fontSize: 15, background: GRAD_ZELENY, color: "#06281d" }}>Zaplatiť {eur} € kartou</button>
-    </Sheet>
-  );
-}
-
-// ===================== PODSTRÁNKY =====================
 type SubScreenProps = { nazov: string | null; toast: ToastFn; onBack: () => void; desktop?: boolean };
 
 function SubScreen({ nazov, toast, onBack, desktop }: SubScreenProps) {
