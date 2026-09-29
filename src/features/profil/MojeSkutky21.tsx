@@ -1,4 +1,4 @@
-// KARTA 21 · Moje skutky — zoznam po mesiacoch, filtre 3 × 2, hľadanie, ročné zhrnutie (len v januári),
+// KARTA 21 · Moje skutky — zoznam po mesiacoch, filtre 3 × 2, hľadanie, (ročný súhrn na zdieľanie je v Štatistikách, karta 27),
 // prázdny stav = tá istá obrazovka s ukážkami. Pridať skutok = spoločný komponent (otvorPridatSkutok).
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { SpatTlacidlo } from "@/components/cesta";
@@ -70,7 +70,6 @@ export function MojeSkutky21({ onBack }: { onBack: () => void }) {
   const doplnitPre = useRef<string | null>(null);
 
   const d = new Date(), R = d.getFullYear(), M = d.getMonth();
-  const januar = M === 0 || (import.meta.env.DEV && localStorage.getItem("deed.dev.januar") === "1");
   const prazdne = vsetky.length === 0;
   const ukazky = prazdne && nast.ukazky;
 
@@ -83,11 +82,6 @@ export function MojeSkutky21({ onBack }: { onBack: () => void }) {
   const karma = session?.demo ? MOJA_KARMA + karmaSkutkov(vsetky.filter((x) => x.id.startsWith("m"))) : karmaSkutkov(vsetky);
   const vRoku = (r: number, mes: number) => zoznam.filter((x) => { const t = new Date(x.datum); return t.getFullYear() === r && t.getMonth() === mes; });
   const roky = [...new Set(vsetky.map((x) => new Date(x.datum).getFullYear()))].filter((r) => r < R).sort((a, b) => b - a);
-  // ročné zhrnutie za minulý rok (len v januári)
-  const minuly = vsetky.filter((x) => new Date(x.datum).getFullYear() === R - 1);
-  const oblastiMin = minuly.reduce<Record<string, number>>((a, x) => ({ ...a, [x.oblast]: (a[x.oblast] || 0) + 1 }), {});
-  const najOblast = Object.entries(oblastiMin).sort((a, b) => b[1] - a[1])[0]?.[0];
-  const najSkutok = [...minuly].sort((a, b) => (b.karma ?? 0) - (a.karma ?? 0))[0];
 
   const doplnFotku = async (files: FileList | null) => {
     const file = files?.[0], id = doplnitPre.current; if (!file || !id) return;
@@ -97,26 +91,6 @@ export function MojeSkutky21({ onBack }: { onBack: () => void }) {
       upravSkutok(id, { fotky: [src, ...(s?.fotky ?? [])], det: "Fotka doplnená. Kontrola AI pokračuje." });
       toast("Fotka doplnená, AI pokračuje v kontrole");
     } catch (e) { toast(e instanceof Error ? e.message : "Fotku sa nepodarilo načítať."); }
-  };
-  const zdielajRok = async () => {
-    const c = document.createElement("canvas"); c.width = 1080; c.height = 1350;
-    const x = c.getContext("2d")!;
-    x.fillStyle = "#E2D7BF"; x.fillRect(0, 0, 1080, 1350);
-    x.fillStyle = "#876712"; x.font = "800 44px 'Plus Jakarta Sans', sans-serif"; x.fillText("MÔJ ROK V DEED", 90, 200);
-    x.fillStyle = "#1D211B"; x.font = "800 150px 'Plus Jakarta Sans', sans-serif"; x.fillText(String(R - 1), 90, 360);
-    [[minuly.length, "skutkov"], [minuly.filter((s) => s.stav !== "ja").length, "akcií"], [Object.keys(oblastiMin).length, "oblastí"]].forEach(([n, t], i) => {
-      x.font = "800 96px 'Plus Jakarta Sans', sans-serif"; x.fillText(String(n), 90 + i * 320, 600);
-      x.font = "600 40px 'Plus Jakarta Sans', sans-serif"; x.fillStyle = "#4A4C43"; x.fillText(String(t), 90 + i * 320, 660); x.fillStyle = "#1D211B";
-    });
-    x.font = "600 44px 'Plus Jakarta Sans', sans-serif"; x.fillStyle = "#4A4C43";
-    if (najOblast) x.fillText(`Najviac som pomáhal v oblasti ${najOblast}.`, 90, 820);
-    x.fillStyle = "#4E7D37"; x.font = "800 48px 'Plus Jakarta Sans', sans-serif"; x.fillText("deed.sk", 90, 1240);
-    const blob = await new Promise<Blob | null>((ok) => c.toBlob(ok, "image/png"));
-    if (!blob) return;
-    const file = new File([blob], `moj-rok-${R - 1}.png`, { type: "image/png" });
-    const nav = navigator as Navigator & { canShare?: (d: { files: File[] }) => boolean };
-    if (nav.canShare?.({ files: [file] })) { try { await navigator.share({ files: [file], title: `Môj rok v DEED · ${R - 1}` }); } catch { /* zrušené */ } return; }
-    const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = file.name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   };
 
   const riadok = (k: MojSkutok, i: number) => {
@@ -171,19 +145,6 @@ export function MojeSkutky21({ onBack }: { onBack: () => void }) {
     const aktualne = zoznam.filter((x) => { const t = new Date(x.datum); return t.getFullYear() === R && t.getMonth() === M; });
     const starsie = Array.from({ length: M }, (_, i) => M - 1 - i).map((mes) => [mes, vRoku(R, mes)] as const).filter(([, z]) => z.length);
     obsah = <>
-      {januar && minuly.length > 0 && (
-        <div style={{ position: "relative", borderRadius: 24, background: "var(--goldBg)", border: "1px solid var(--goldBd)", padding: 18, display: "flex", flexDirection: "column", gap: 12, overflow: "hidden" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <Svetlusik size={56} />
-            <span><span style={{ display: "block", fontSize: 12, fontWeight: 800, letterSpacing: ".06em", color: "var(--gold)" }}>TVOJ ROK V DEED</span><span style={{ display: "block", fontSize: 22, fontWeight: 800 }}>{R - 1}</span></span>
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
-            {([[minuly.length, "skutkov"], [minuly.filter((s) => s.stav !== "ja").length, "akcií"], [Object.keys(oblastiMin).length, "oblastí"]] as const).map(([n, t]) => (
-              <div key={t}><div style={{ fontSize: 20, fontWeight: 800 }}>{n}</div><div style={{ fontSize: 12.5, color: "var(--ink3)" }}>{t}</div></div>))}
-          </div>
-          <div style={{ fontSize: 14, lineHeight: 1.5, color: "var(--ink2)" }}>Najviac si pomáhal v oblasti <b style={{ color: "var(--ink)" }}>{najOblast}</b>.{najSkutok && <> Najväčší skutok: <b style={{ color: "var(--ink)" }}>{najSkutok.nazov.toLowerCase()}</b>.</>}</div>
-          <button type="button" onClick={zdielajRok} style={{ height: 48, borderRadius: 14, border: "none", background: "#1D211B", color: "#F1ECE1", fontSize: 15, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}>Zdieľať môj rok</button>
-        </div>)}
       <div style={{ ...karta, borderRadius: 18, display: "grid", gridTemplateColumns: "1fr 1fr 1fr" }}>
         {([[tentoRok.length, "skutkov", "var(--ink)"], [tentoMes.length, "tento mesiac", "var(--ink)"], [karma.toLocaleString("sk-SK"), "karma · len ty", "var(--gInk)"]] as const).map(([n, t, c], i) => (
           <div key={t} style={{ padding: "12px 4px", textAlign: "center", borderLeft: i ? "1px solid var(--cardBd)" : "none" }}><div style={{ fontSize: 20, fontWeight: 800, color: c, whiteSpace: "nowrap" }}>{n}</div><div style={{ fontSize: 12.5, color: "var(--ink3)" }}>{t}</div></div>))}

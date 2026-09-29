@@ -1,18 +1,18 @@
 import { useState, useEffect } from "react";
 import { Emo } from "@/components/icons";
 import { SIRKA, C, GRAD, SPACE, RADIUS } from "@/theme";
-import { toast, useScrollPamat, useLayout, useTvorbaGate, obalSiroky, IkonaNastavenia, IkonaSipVlavo, IkonaPenazenka, IkonaHviezda, IkonaFajka, IkonaDoska, IkonaUsmev, IkonaOsoba, SkeletonRiadky, EmptyState, ErrorState, ScreenSwitch } from "@/shared";
+import { toast, useScrollPamat, useLayout, useTvorbaGate, obalSiroky, IkonaNastavenia, IkonaSipVlavo, IkonaPenazenka, IkonaHviezda, IkonaFajka, IkonaDoska, IkonaUsmev, IkonaOsoba, ScreenSwitch } from "@/shared";
 import { MojDeedFiremny } from "@/features/rola/MojDeedFiremny";
 import { useVrstva } from "@/lib/urlnav";
 import { Nastavenia as NotifNastavenia } from "@/features/notifikacie/Notifikacie";
 import type { Toast as ToastFn, WideProps, ZiadostPriatelstvo, CestaPriatelstva } from "@/types";
-import { useProfilStatistiky } from "@/data";
 import { ProfilHlavny18, IdentitaKarta18, StitKarta18, MojeZaujmy } from "./ProfilHlavny";
 import { UpravOsobnyProfil } from "./UpravOsobnyProfil";
 import { MojQr } from "./MojQr";
 import { Penazenka18 } from "./Penazenka18";
 import { Nastavenia20 } from "./Nastavenia20";
 import { KarmaStity } from "./KarmaStity";
+import { Statistiky } from "./Statistiky";
 import { Zamestnavatel, IK_BUDOVA } from "./Zamestnavatel";
 import { MojeSkutky21 } from "./MojeSkutky21";
 
@@ -57,7 +57,7 @@ export default function ModulProfil({ wide, walletReq = 0 }: ProfilProps) {
         naUpravit={() => setUprava(true)} naQr={() => setQr(true)} />)}
       {screen === "wallet" && obal(<Penazenka18 onBack={() => setScreen("profil")} />)}
       {screen === "firemny" && obalSiroky(<MojDeedFiremny onBack={() => setScreen("profil")} toast={toast} />, { wide, desktop, max: SIRKA.stlpec })}
-      {screen === "sub" && (subNazov === "Moje skutky" ? <MojeSkutky21 onBack={() => setScreen("profil")} /> : subNazov === "Karma a štíty" ? obal(<KarmaStity onBack={() => setScreen("profil")} />) : obal(<SubScreen nazov={subNazov} toast={toast} onBack={() => setScreen("profil")} />))}
+      {screen === "sub" && (subNazov === "Moje skutky" ? <MojeSkutky21 onBack={() => setScreen("profil")} /> : subNazov === "Karma a štíty" ? obal(<KarmaStity onBack={() => setScreen("profil")} />) : obal(<Statistiky onBack={() => setScreen("profil")} />))}
       {screen === "priatelia" && obal(<PriateliaScreen toast={toast} onBack={() => setScreen("profil")} />)}
       {screen === "firma" && obal(<Zamestnavatel onBack={() => setScreen("profil")} />)}
       {screen === "nastavenia" && obal(<Nastavenia20 onBack={() => setScreen("profil")} onNotif={() => setScreen("notif")} onUpravProfil={() => setUprava(true)} />)}
@@ -75,7 +75,7 @@ const PROFIL_NAV: { key: string; nazov?: string; label: string; ikona: React.Rea
   { key: "sub", nazov: "Moje skutky", label: "Moje skutky", ikona: <IkonaFajka size={18} /> },
   { key: "profil", label: "Moje záujmy", ikona: <IkonaOsoba size={18} /> },
   { key: "firma", label: "Zamestnávateľ", ikona: <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="var(--sek-o)" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={IK_BUDOVA} /></svg> },
-  { key: "sub", nazov: "Štatistiky a umiestnenie", label: "Štatistiky", ikona: <IkonaDoska size={18} /> },
+  { key: "sub", nazov: "Štatistiky", label: "Štatistiky", ikona: <IkonaDoska size={18} /> },
   { key: "priatelia", label: "Priatelia", ikona: <IkonaUsmev size={18} /> },
   { key: "sub", nazov: "Karma a štíty", label: "Karma a štíty", ikona: <IkonaHviezda size={18} /> },
 ];
@@ -86,7 +86,7 @@ function ProfilDesktop({ screen, subNazov, setScreen, onSub, onQr, onUpravit }: 
   let obsah: React.ReactNode;
   if (screen === "wallet") obsah = <Penazenka18 desktop onBack={() => setScreen("profil")} />;
   else if (screen === "firemny") obsah = <MojDeedFiremny onBack={() => setScreen("profil")} toast={toast} />;
-  else if (screen === "sub") obsah = subNazov === "Moje skutky" ? <MojeSkutky21 onBack={() => setScreen("profil")} /> : subNazov === "Karma a štíty" ? <KarmaStity desktop onBack={() => setScreen("profil")} /> : <SubScreen nazov={subNazov} toast={toast} desktop onBack={() => setScreen("profil")} />;
+  else if (screen === "sub") obsah = subNazov === "Moje skutky" ? <MojeSkutky21 onBack={() => setScreen("profil")} /> : subNazov === "Karma a štíty" ? <KarmaStity desktop onBack={() => setScreen("profil")} /> : <Statistiky desktop onBack={() => setScreen("profil")} />;
   else if (screen === "priatelia") obsah = <PriateliaScreen toast={toast} desktop onBack={() => setScreen("profil")} />;
   else if (screen === "firma") obsah = <Zamestnavatel desktop onBack={() => setScreen("profil")} />;
   else if (screen === "nastavenia") obsah = <Nastavenia20 desktop onBack={() => setScreen("profil")} onNotif={() => setScreen("notif")} onUpravProfil={onUpravit} />;
@@ -133,40 +133,6 @@ function ProfilDesktop({ screen, subNazov, setScreen, onSub, onQr, onUpravit }: 
 
 function NotifObrazovka({ onBack }: { onBack: () => void; desktop?: boolean }) {
   return <div style={{ minHeight: "100%" }}><NotifNastavenia onBack={onBack} /></div>;
-}
-
-type SubScreenProps = { nazov: string | null; toast: ToastFn; onBack: () => void; desktop?: boolean };
-
-function SubScreen({ nazov, onBack, desktop }: SubScreenProps) {
-  const { data: STATISTIKY = [], isLoading: statLoad, isError: statErr, refetch: statRefetch } = useProfilStatistiky();
-
-  // aktívna sekcia → stavy načítania zoznamu
-  const aktiv = { isLoading: statLoad, isError: statErr, refetch: statRefetch, empty: STATISTIKY.length === 0, emoji: "📊", title: "Žiadne štatistiky", text: "Štatistiky a umiestnenie sa zobrazia tu." };
-
-  let obsah: React.ReactNode;
-  if (aktiv.isError) {
-    obsah = <ErrorState onRetry={() => aktiv.refetch()} />;
-  } else if (aktiv.isLoading) {
-    obsah = <SkeletonRiadky count={4} />;
-  } else if (aktiv.empty) {
-    obsah = <EmptyState emoji={aktiv.emoji} title={aktiv.title} text={aktiv.text} />;
-  } else {
-    obsah = STATISTIKY.map((r, i) => (
-      <div key={i} style={subItem}><span>{r[0]}</span><span style={{ fontWeight: 700, color: r[2] }}>{r[1]}</span></div>
-    ));
-  }
-
-  return (
-    <div style={{ paddingBottom: SPACE.gutter }}>
-      <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm, padding: "16px 18px 8px" }}>
-        {!desktop && <div onClick={onBack} style={spatBtn}><IkonaSipVlavo size={18} color={C.textSec} /></div>}
-        <h3 style={{ fontSize: 17, margin: 0 }}>{nazov}</h3>
-      </div>
-      <div style={{ padding: "0 16px" }}>{obsah}</div>
-
-
-    </div>
-  );
 }
 
 // ===================== PRIDÁVANIE PRIATEĽA (§7) =====================
@@ -232,4 +198,3 @@ function PriateliaScreen({ toast, onBack, desktop }: PriateliaScreenProps) {
 }
 
 const spatBtn: React.CSSProperties = { width: 34, height: 34, borderRadius: RADIUS.round, background: C.surface2, border: `1px solid ${C.line}`, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: 17 };
-const subItem: React.CSSProperties = { display: "flex", alignItems: "center", justifyContent: "space-between", background: C.surface, border: `1px solid ${C.line}`, borderRadius: RADIUS.sm, padding: `${SPACE.md}px ${SPACE.gutter}px`, marginBottom: SPACE.xs, fontSize: 14.5 };

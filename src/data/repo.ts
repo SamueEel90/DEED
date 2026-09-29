@@ -28,7 +28,7 @@ import { SEED_ITEMS } from "@/features/aktivity/mock";
 import { NOTIFY } from "@/features/notifikacie/mock";
 import { ZIADOSTI } from "@/features/retaz/mock";
 import { FUN } from "@/features/fun/mock";
-import { PREVODY, MOJE_SKUTKY, KARMA, STATISTIKY } from "@/features/profil/mock";
+import { PREVODY, MOJE_SKUTKY, KARMA, STATISTIKY, type StatistikyData } from "@/features/profil/mock";
 import { REBRICKY_MOCK, topPrispevky, type RebricekKluc } from "@/features/top/mock";
 import { MAPA_UDALOSTI } from "@/features/mapa/mock";
 import { qrUrl, type QrCiel, type QrStatic, type QrResolved } from "@/lib/qr";
@@ -77,7 +77,7 @@ export interface Repo {
     prevody(): Promise<PrevodTuple[]>;
     mojeSkutky(): Promise<MojSkutokTuple[]>;
     karma(): Promise<MojSkutokTuple[]>;
-    statistiky(): Promise<MojSkutokTuple[]>;
+    statistiky(): Promise<StatistikyData>;
   };
   qr: {
     /** Zaistí/získa kanonické odkazové QR pre objekt → { slug, url }. */

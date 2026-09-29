@@ -212,7 +212,7 @@ export function ProfilHlavny18(a: ProfilAkcie) {
     ["Moje skutky", `${MOJE_SKUTKY_POCET} skutkov`, IK.skutky, "var(--gSoft)", "var(--green)", () => a.naSub("Moje skutky")],
     ["Priatelia", "nájdi známych", IK.priatelia, "var(--bSoft)", "var(--blue)", a.naPriatelia],
     ["Karma a štíty", "štíty podľa oblastí", IK.stity, "var(--goldBg)", "var(--sek-o)", () => a.naSub("Karma a štíty")],
-    ["Štatistiky", "tento mesiac +9", IK.stat, "var(--gSoft)", "var(--green)", () => a.naSub("Štatistiky a umiestnenie")],
+    ["Štatistiky", "tento mesiac +9", IK.stat, "var(--gSoft)", "var(--green)", () => a.naSub("Štatistiky")],
     ["Zamestnávateľ", firmaPod, IK.budova, "var(--sek-oBg)", "var(--sek-o)", a.naFirma],
   ];
   const pocty: [number, string][] = [[sledovani.length, "sledujem"], [podpory.length, "podporujem"], [MOJE_SKUTKY_POCET, "skutkov"]];

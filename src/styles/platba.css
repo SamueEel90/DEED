@@ -149,3 +149,8 @@ html.dark {
 .deed-platba .seg-on { background: #fff; color: #1D211B; box-shadow: inset 0 0 0 1.5px var(--sek-g); }
 html.dark .deed-platba .seg-on { background: #2F3A27; color: var(--d-ink); }
 .deed-platba .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+/* karta 28 · svetielko na mape cesty daru (len transform/opacity) */
+.cd-ziara { animation: cdZiara 1.8s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+@keyframes cdZiara { 0%, 100% { opacity: .5; transform: scale(1); } 50% { opacity: 1; transform: scale(1.35); } }
+@media (prefers-reduced-motion: reduce) { .cd-ziara { animation: none; } }
+html.obmedz-anim .cd-ziara { animation: none; }

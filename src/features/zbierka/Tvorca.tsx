@@ -57,7 +57,7 @@ export function KamIdeDar({ nazovZbierky, fotoZbierky, tvorca, onStrankaTvorcu }
           </span>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#F1ECE1" strokeWidth="2.4" strokeLinecap="round" style={{ flex: "none", transform: `rotate(${otv ? 180 : 0}deg)`, transition: "transform .3s ease" }}><path d="M6 9l6 6 6-6" /></svg>
         </button>
-          <span style={{ flex: "none", color: "#F1ECE1" }}><StityRad variant="pole" hlavny={tvorca.stit} oblasti={stityOblastiSubjektu(tvorca.meno, tvorca.stit)} meno={tvorca.meno} velkost={42} /></span>
+          <span style={{ flex: "none", color: "#F1ECE1" }}><StityRad variant="pole" hlavny={tvorca.stit} oblasti={stityOblastiSubjektu(tvorca.meno, tvorca.stit)} meno={tvorca.meno} velkost={36} /></span>
         </div>
         {otv && (
           <div style={{ padding: "0 12px 12px", display: "flex", flexDirection: "column", gap: 8, fontSize: 13.5, color: "rgba(241,236,225,.82)", animation: "zbFsIn .2s ease both" }}>

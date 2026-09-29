@@ -42,17 +42,24 @@ export const KARMA: MojSkutokTuple[] = [
 export const MOJA_KARMA = 2480;
 export const MOJE_SKUTKY_POCET = 48;
 
-/** Podstránka „Štatistiky a umiestnenie". */
-export const STATISTIKY: MojSkutokTuple[] = [
-  ["Celkové umiestnenie", "#412 v meste", "#E7C766"],
-  ["Príroda", "#28 v štvrti", "#3DD68C"],
-  ["Tento mesiac", "+9 skutkov", "#5BA8F0"],
-  ["Celkovo darované", "840 €", "#3DD68C"],
-  ["Komunita", "#54 v meste", "#5BA8F0"],
-  ["Najlepšia séria", "21 dní v rade", "#E7C766"],
-  ["Sledujúci", "128 ľudí", "#A98BF0"],
-  ["Podporených ľudí", "37", "#2BD49B"],
-];
+/** Štatistiky (karta 27) — vidí len vlastník; žiadne umiestnenia ani porovnanie s inými. Mock do Supabase. */
+export type StatObdobie = {
+  skutkov: number; hodin: number; darovaneEur: number; ludi: number; zbierok: number; oblasti: number;
+  /** skutky po mesiacoch (len Tento rok), index 0 = január */
+  mesiace?: number[];
+  /** kde pomáhaš — oblasti štítov a počet skutkov */
+  kde: [string, number][];
+  /** tvoj dosah: overili · darov cez skutky a reťaz · pridali sa na pozvánku */
+  dosah: [number, number, number];
+};
+export type StatistikyData = { rok: StatObdobie; vsetko: StatObdobie; seria: { najdlhsia: number; teraz: number } };
+export const STATISTIKY: StatistikyData = {
+  rok: { skutkov: 48, hodin: 126, darovaneEur: 840, ludi: 37, zbierok: 12, oblasti: 6, mesiace: [2, 3, 5, 4, 6, 3, 7, 4, 9],
+    kde: [["EKO", 16], ["HELP", 11], ["LEARN", 9], ["ART", 6], ["HEALTH", 4], ["SPORT", 2]], dosah: [214, 63, 5] },
+  vsetko: { skutkov: 131, hodin: 342, darovaneEur: 2310, ludi: 94, zbierok: 27, oblasti: 7,
+    kde: [["EKO", 41], ["HELP", 33], ["LEARN", 22], ["ART", 15], ["HEALTH", 11], ["SPORT", 6], ["CARE", 3]], dosah: [580, 171, 12] },
+  seria: { najdlhsia: 21, teraz: 3 },
+};
 
 /** Témy / záujmy v nastaveniach. */
 export const TEMY: string[] = ["Šport", "Eko", "Zdravie", "Art", "Učenie", "Komunita", "Zvieratá", "Senior"];
