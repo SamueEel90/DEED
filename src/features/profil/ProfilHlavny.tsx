@@ -7,8 +7,7 @@ import { usePersonalizacia } from "@/lib/personalizacia";
 import { ZAUJMY_KATALOG } from "@/lib/personalizaciaStore";
 import { klucEntity, useFotkyEntity } from "@/lib/fotoentity";
 import { useViac } from "@/components/context";
-import { FotoProfiluSheet } from "@/components/fotoprofilu";
-import { toast } from "@/components/toast";
+import { ZvacsenaFotka } from "./MojQr";
 import type { StitLevel } from "@/components/stit";
 import { Harok } from "@/features/zbierka/Zdielat";
 import { MOJA_KARMA, MOJE_SKUTKY_POCET } from "./mock";
@@ -63,11 +62,11 @@ export type ProfilAkcie = {
   naUpravit: () => void; naQr: () => void;
 };
 
-/** karta identity: titulná fotka, avatar so zlatým kruhom, meno, mesto, verejný/anonymný, Upraviť profil · Môj QR */
+/** karta identity (fotky sa menia len v Upraviť profil; ťuk na avatar fotku zväčší): titulná fotka, avatar so zlatým kruhom, meno, mesto, verejný/anonymný, Upraviť profil · Môj QR */
 export function IdentitaKarta18({ naUpravit, naQr }: { naUpravit: () => void; naQr: () => void }) {
   const ja = usePouzivatel();
   const [fotka, setFotka] = useState(false);
-  const [mojeFotky, zmenMojeFotky] = useFotkyEntity(klucEntity("ja", ja.ucetId || "demo"));
+  const [mojeFotky] = useFotkyEntity(klucEntity("ja", ja.ucetId || "demo"));
   const stit = stitUzivatela(!!ja.demo);
   const ini = `${(ja.meno || "?")[0]}${(ja.priezvisko || "")[0] ?? ""}`.toUpperCase();
   const osobny = useOsobnyProfil();
@@ -75,18 +74,14 @@ export function IdentitaKarta18({ naUpravit, naQr }: { naUpravit: () => void; na
   const mesto = osobny.mesto || (ja.mesto && ja.mesto !== "—" ? ja.mesto : "");
   return (
     <div style={{ ...karta, overflow: "hidden" }}>
-      <div style={{ position: "relative", height: 150, background: mojeFotky.cover ? `url(${mojeFotky.cover}) center/cover` : "linear-gradient(135deg,#C9D5BC 0%,#DCD3BE 55%,#E2D7BF 100%)" }}>
-        <button type="button" onClick={() => setFotka(true)} style={{ position: "absolute", right: 10, bottom: 10, display: "flex", alignItems: "center", gap: 6, height: 34, padding: "0 12px", borderRadius: 17, border: "none", background: "rgba(29,33,27,.72)", color: "#F1ECE1", fontSize: 12.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
-          <Ik d={IK.kamera} size={14} />Titulná fotka</button>
-      </div>
+      <div aria-hidden="true" style={{ height: 150, background: mojeFotky.cover ? `url(${mojeFotky.cover}) center/cover` : "linear-gradient(135deg,#C9D5BC 0%,#DCD3BE 55%,#E2D7BF 100%)" }} />
       <div style={{ padding: "0 16px 16px" }}>
-        <div style={{ position: "relative", display: "flex", alignItems: "flex-end", gap: 14, marginTop: -38 }}>
-          <span onClick={() => setFotka(true)} role="button" aria-label="Zmeniť profilovú fotku"
+        <div style={{ position: "relative", display: "flex", alignItems: "flex-start", gap: 14, marginTop: -38 }}>
+          <button type="button" onClick={() => setFotka(true)} aria-label="Zväčšiť profilovú fotku"
             style={{ position: "relative", flex: "none", width: 84, height: 84, borderRadius: "50%", padding: 3, background: KRUH[stit], cursor: "pointer" }}>
             <span style={{ display: "flex", width: "100%", height: "100%", borderRadius: "50%", background: ja.foto ? `url(${ja.foto}) center/cover` : "color-mix(in srgb, var(--a-green) 16%, var(--c-bg))", border: "3px solid var(--bg)", alignItems: "center", justifyContent: "center", fontSize: 28, fontWeight: 800, color: "var(--gInk)", boxSizing: "border-box" }}>{ja.foto ? "" : ini}</span>
-            <span style={{ position: "absolute", left: -2, bottom: 0, width: 30, height: 30, borderRadius: "50%", background: "var(--bg)", border: "1px solid var(--cardBd)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--ink2)" }}><Ik d={IK.kamera} size={15} /></span>
-          </span>
-          <div style={{ minWidth: 0, paddingBottom: 4 }}>
+          </button>
+          <div style={{ minWidth: 0, paddingTop: 50 }}>
             <div style={{ fontSize: 21, fontWeight: 800, letterSpacing: "-.01em", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ja.celeMeno}</div>
             {mesto && <div style={{ fontSize: 13.5, color: "var(--ink3)", marginTop: 2 }}>{mesto}</div>}
           </div>
@@ -101,13 +96,7 @@ export function IdentitaKarta18({ naUpravit, naQr }: { naUpravit: () => void; na
           <button type="button" onClick={naQr} style={btn}><Ik d={IK.qr} size={15} />Môj QR</button>
         </div>
       </div>
-      {fotka && (
-        <FotoProfiluSheet titul="Fotky môjho profilu" foto={ja.foto} nahrada={ja.iniciala}
-          onZmena={(url) => { ja.nastavFoto?.(url); toast(url ? "Profilová fotka uložená" : "Profilová fotka odstránená"); }}
-          cover={mojeFotky.cover}
-          onCover={(url) => { zmenMojeFotky({ cover: url }); toast(url ? "Titulná fotka uložená" : "Titulná fotka odstránená"); }}
-          onClose={() => setFotka(false)} />
-      )}
+      {fotka && <ZvacsenaFotka onClose={() => setFotka(false)} />}
     </div>
   );
 }

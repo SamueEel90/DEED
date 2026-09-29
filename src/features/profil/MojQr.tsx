@@ -28,6 +28,20 @@ function tokenQr(ucet: string, rezim: string, okno: number): string {
   return `https://deed.sk/q/${rezim}/${encodeURIComponent(ucet)}.${okno}.${h.toString(36)}`;
 }
 
+/** zväčšená profilová fotka (300 px, tmavé pozadie, meno) — ťuk kamkoľvek zavrie */
+export function ZvacsenaFotka({ onClose }: { onClose: () => void }) {
+  const ja = usePouzivatel();
+  const ini = `${(ja.meno || "?")[0]}${(ja.priezvisko || "")[0] ?? ""}`.toUpperCase();
+  return createPortal(
+    <div className="deed-platba" onClick={onClose} role="dialog" aria-modal="true" aria-label={`Fotka: ${ja.celeMeno}`}
+      style={{ position: "fixed", inset: 0, zIndex: 200, background: "rgba(18,17,14,.82)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 14, cursor: "zoom-out", animation: "zbFsIn .3s ease both" }}>
+      <span style={{ width: 300, height: 300, maxWidth: "80vw", maxHeight: "80vw", borderRadius: "50%", padding: 5, background: KRUH, boxSizing: "border-box" }}>
+        <span style={{ display: "flex", width: "100%", height: "100%", borderRadius: "50%", background: ja.foto ? `url(${ja.foto}) center/cover` : "#DCE3D0", border: "5px solid #12110E", alignItems: "center", justifyContent: "center", fontSize: 96, fontWeight: 800, color: "#3F6E2A", boxSizing: "border-box" }}>{ja.foto ? "" : ini}</span></span>
+      <span style={{ fontSize: 20, fontWeight: 800, color: "#F1ECE1" }}>{ja.celeMeno}</span>
+      <span style={{ fontSize: 13, color: "#A59E8F", marginTop: 6 }}>ťukni kamkoľvek a zavrieš</span>
+    </div>, document.body);
+}
+
 export function MojQr({ zalozka = "akcia", onClose }: { zalozka?: ZalozkaQr; onClose: () => void }) {
   const ja = usePouzivatel();
   const [z, setZ] = useState<ZalozkaQr>(zalozka);
@@ -134,20 +148,17 @@ export function MojQr({ zalozka = "akcia", onClose }: { zalozka?: ZalozkaQr; onC
         </div>
       </Harok>
       {skener && <QrSkener onClose={() => setSkener(false)} toast={toast} />}
-      {(zoomFoto || zoomStit) && createPortal(
+      {zoomFoto && <ZvacsenaFotka onClose={() => setZoomFoto(false)} />}
+      {zoomStit && createPortal(
         <div className="deed-platba" onClick={() => { setZoomFoto(false); setZoomStit(false); }} role="dialog" aria-modal="true"
           style={{ position: "fixed", inset: 0, zIndex: 200, background: "rgba(18,17,14,.82)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 14, cursor: "zoom-out", animation: "zbFsIn .3s ease both" }}>
-          {zoomFoto ? <>
-            <span style={{ width: 300, height: 300, maxWidth: "80vw", maxHeight: "80vw", borderRadius: "50%", padding: 5, background: KRUH, boxSizing: "border-box" }}>
-              <span style={{ display: "flex", width: "100%", height: "100%", borderRadius: "50%", background: ja.foto ? `url(${ja.foto}) center/cover` : "#DCE3D0", border: "5px solid #12110E", alignItems: "center", justifyContent: "center", fontSize: 96, fontWeight: 800, color: "#3F6E2A", boxSizing: "border-box" }}>{ja.foto ? "" : ini}</span></span>
-            <span style={{ fontSize: 20, fontWeight: 800, color: "#F1ECE1" }}>{ja.celeMeno}</span>
-          </> : <>
+          <>
             <div style={{ position: "relative", width: 260, height: 300 }}>
               <div className="pf-ziara" style={{ position: "absolute", left: "50%", top: "50%", width: 380, height: 380, margin: "-190px 0 0 -190px", borderRadius: "50%", background: "radial-gradient(circle,rgba(255,231,163,.55) 0%,rgba(246,183,60,.18) 40%,rgba(246,183,60,0) 70%)" }} />
               <img src={`/odznaky/${stit.toLowerCase()}.png`} alt="" style={{ position: "relative", width: "100%", height: "100%", objectFit: "contain" }} /></div>
             <span style={{ fontSize: 24, fontWeight: 800, color: "#E2C174" }}>{STIT_SK[stit]} štít</span>
             <span style={{ fontSize: 14, color: "#C4BDAE" }}>{ja.celeMeno} · zaslúžený skutkami</span>
-          </>}
+          </>
           <span style={{ fontSize: 13, color: "#A59E8F", marginTop: 6 }}>ťukni kamkoľvek a zavrieš</span>
         </div>, document.body,
       )}

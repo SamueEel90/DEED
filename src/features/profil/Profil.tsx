@@ -170,7 +170,7 @@ function SubScreen({ nazov, toast, onBack, desktop }: SubScreenProps) {
       <div key={i} style={{ ...subItem, gap: SPACE.xs }}>
         <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r[0]}</span>
         <span onClick={() => setRetaz({ odmena: Math.abs(parseInt(r[1], 10)) || 30 })} title="Reťaz dobra — pošli časť ďalej"
-          style={{ flex: "none", fontSize: 11, fontWeight: 700, color: "var(--a-green)", border: "1px solid rgba(31,191,143,.4)", background: "rgba(31,191,143,.08)", borderRadius: RADIUS.xs, padding: `${SPACE.xxs}px ${SPACE.xs}px`, cursor: "pointer" }}>♻ Reťaz</span>
+          style={{ flex: "none", fontSize: 11, fontWeight: 700, color: "var(--a-green)", border: "1px solid rgba(31,191,143,.4)", background: "rgba(31,191,143,.08)", borderRadius: RADIUS.xs, padding: `${SPACE.xxs}px ${SPACE.xs}px`, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 4 }}><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1" /></svg>Reťaz</span>
         <span style={{ fontWeight: 700, color: r[2], flex: "none" }}>{r[1]}</span>
       </div>
     ));
