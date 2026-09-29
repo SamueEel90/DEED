@@ -98,10 +98,10 @@ export function Statistiky({ onBack, desktop }: { onBack: () => void; desktop?: 
           <div style={lbl}>SKUTKY PO MESIACOCH · {rok}</div>
           <div style={{ ...karta, padding: "14px 12px 10px" }}>
             <div role="img" aria-label={`Skutky po mesiacoch: ${d.mesiace.map((n, i) => `${MES_CELE[i]} ${n}`).join(", ")}`} style={{ display: "grid", gridTemplateColumns: "repeat(12,1fr)", gap: 6, alignItems: "end", height: 120 }}>
-              {MES.map((m, i) => { const n = d.mesiace![i]; const ma = n != null; return (
-                <div key={i} aria-hidden="true" style={{ height: "100%", display: "flex", flexDirection: "column", justifyContent: "flex-end", alignItems: "center", gap: 4 }}>
-                  {ma && <span style={{ fontSize: 11, fontWeight: 800, color: "var(--ink2)" }}>{n}</span>}
-                  <span style={{ width: "100%", height: 96, borderRadius: 5, background: ma ? (i === mesNow ? "var(--green)" : "color-mix(in srgb, var(--green) 45%, transparent)") : "var(--d-trackOff, var(--track))", transformOrigin: "bottom", transform: `scaleY(${ma ? Math.max(0.04, n / maxMes) : 0.03})`, transition: "transform .5s ease" }} />
+              {MES.map((m, i) => { const n = d.mesiace![i]; const ma = n != null; const v = ma ? Math.max(4, Math.round((n / maxMes) * 96)) : 3; return (
+                <div key={i} aria-hidden="true" style={{ position: "relative", height: "100%" }}>
+                  <span style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: 96, borderRadius: 5, background: ma ? (i === mesNow ? "var(--green)" : "color-mix(in srgb, var(--green) 45%, transparent)") : "var(--d-trackOff, var(--track))", transformOrigin: "bottom", transform: `scaleY(${v / 96})`, transition: "transform .5s ease" }} />
+                  {ma && <span style={{ position: "absolute", left: 0, right: 0, bottom: 0, textAlign: "center", fontSize: 11, fontWeight: 800, lineHeight: "14px", color: "var(--ink2)", transform: `translateY(-${v + 4}px)`, transition: "transform .5s ease" }}>{n}</span>}
                 </div>); })}
             </div>
             <div aria-hidden="true" style={{ display: "grid", gridTemplateColumns: "repeat(12,1fr)", gap: 6, marginTop: 6 }}>{MES.map((m, i) => <span key={i} style={{ textAlign: "center", fontSize: 11.5, fontWeight: 700, color: "var(--ink3)" }}>{m}</span>)}</div>

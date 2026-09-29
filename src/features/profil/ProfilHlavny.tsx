@@ -7,6 +7,9 @@ import { usePersonalizacia } from "@/lib/personalizacia";
 import { ZAUJMY_KATALOG } from "@/lib/personalizaciaStore";
 import { klucEntity, useFotkyEntity } from "@/lib/fotoentity";
 import { useViac } from "@/components/context";
+import { MriezkaDlazdic, type Dlazdica } from "./Dlazdice";
+import { STATISTIKY, POHYBY } from "./mock";
+import { MOJA_CESTA, suhrn } from "@/lib/cestaDaru";
 import { StityRad, StitZoom } from "@/components/stit";
 import { MOJE_STITY } from "@/lib/stityOblasti";
 import { useVazbyOsoby } from "@/lib/zamestnanci";
@@ -30,6 +33,7 @@ export const stitUzivatela = (demo: boolean): StitLevel => (demo ? "Gold" : "Bro
 const Ik = ({ d, size = 19, farba = "currentColor" }: { d: string; size?: number; farba?: string }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={farba} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d={d} /></svg>);
 const IK = {
+  osoba: "M20 21a8 8 0 0 0-16 0M12 13a5 5 0 1 0 0-10 5 5 0 0 0 0 10",
   budova: "M3 21h18M5 21V7l7-4 7 4v14M9 9h1M14 9h1M9 13h1M14 13h1M10 21v-4h4v4",
   menu: "M4 7h16M4 12h16M4 17h16",
   kamera: "M4 8h3l2-3h6l2 3h3v11H4zM15.5 13a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0z",
@@ -65,6 +69,7 @@ const btn = { height: 46, borderRadius: 14, border: "1px solid var(--cardBd)", b
 export type ProfilAkcie = {
   naWallet: () => void; naNastavenia: () => void; naPriatelia: () => void; naSub: (n: string) => void;
   naUpravit: () => void; naQr: () => void; naFirma: () => void;
+  /** Priatelia · záložka (ťuk na „sledujem / podporujem" otvorí príslušnú) */ naPriatelia2?: (tab: "priatelia" | "sledujem" | "podporujem") => void;
 };
 
 /** karta identity (fotky sa menia len v Upraviť profil; ťuk na avatar fotku zväčší): titulná fotka, avatar so zlatým kruhom, meno, mesto, verejný/anonymný, Upraviť profil · Môj QR */
@@ -206,15 +211,19 @@ export function ProfilHlavny18(a: ProfilAkcie) {
   const ja = usePouzivatel();
   const firmy = useVazbyOsoby(ja.celeMeno);
   const firmaPod = firmy.some((v) => v.stav === "potvrdeny") ? firmy.filter((v) => v.stav === "potvrdeny").map((v) => v.firma).join(", ") : firmy.length ? "čaká na potvrdenie" : "prepoj sa s firmou";
-  const dlazdice: [string, string, string, string, string, () => void][] = [
-    ["Peňaženka", "1 240 DEED", IK.wallet, "var(--bSoft)", "var(--blue)", a.naWallet],
-    ["Nastavenia", "vzhľad, súkromie", IK.nastavenia, "var(--card)", "var(--ink2)", a.naNastavenia],
-    ["Moje skutky", `${MOJE_SKUTKY_POCET} skutkov`, IK.skutky, "var(--gSoft)", "var(--green)", () => a.naSub("Moje skutky")],
-    ["Priatelia", "nájdi známych", IK.priatelia, "var(--bSoft)", "var(--blue)", a.naPriatelia],
-    ["Karma a štíty", "štíty podľa oblastí", IK.stity, "var(--goldBg)", "var(--sek-o)", () => a.naSub("Karma a štíty")],
-    ["Štatistiky", "tento mesiac +9", IK.stat, "var(--gSoft)", "var(--green)", () => a.naSub("Štatistiky")],
-    ["Zamestnávateľ", firmaPod, IK.budova, "var(--sek-oBg)", "var(--sek-o)", a.naFirma],
+  const { zaujmy } = usePersonalizacia();
+  const zaujmyN = ZAUJMY_KATALOG.filter((z) => zaujmy.some((x) => x.oblast === z.oblast)).length;
+  const dlazdice: Dlazdica[] = [
+    { id: "wallet", t: "Peňaženka", s: "1 240 DEED", ikona: <Ik d={IK.wallet} />, bg: "var(--bSoft)", c: "var(--blue)", onClick: a.naWallet },
+    { id: "nastavenia", t: "Nastavenia", s: "vzhľad, súkromie", ikona: <Ik d={IK.nastavenia} />, bg: "var(--card)", c: "var(--ink2)", onClick: a.naNastavenia },
+    { id: "skutky", t: "Moje skutky", s: `${MOJE_SKUTKY_POCET} skutkov`, ikona: <Ik d={IK.skutky} />, bg: "var(--gSoft)", c: "var(--green)", onClick: () => a.naSub("Moje skutky") },
+    { id: "priatelia", t: "Priatelia", s: "kam idú tvoji priatelia", ikona: <Ik d={IK.priatelia} />, bg: "var(--bSoft)", c: "var(--blue)", onClick: a.naPriatelia },
+    { id: "karma", t: "Karma a štíty", s: "štíty podľa oblastí", ikona: <Ik d={IK.stity} />, bg: "var(--goldBg)", c: "var(--sek-o)", onClick: () => a.naSub("Karma a štíty") },
+    { id: "stat", t: "Štatistiky", s: "tento mesiac +9", ikona: <Ik d={IK.stat} />, bg: "var(--gSoft)", c: "var(--green)", onClick: () => a.naSub("Štatistiky") },
+    { id: "firma", t: "Zamestnávateľ", s: firmaPod, ikona: <Ik d={IK.budova} />, bg: "var(--sek-oBg)", c: "var(--sek-o)", onClick: a.naFirma, skryt: firmy.length === 0 },
+    { id: "zaujmy", t: "Moje záujmy", s: `${zaujmyN} z ${ZAUJMY_KATALOG.length} oblastí`, ikona: <Ik d={IK.osoba} />, bg: "var(--gSoft)", c: "var(--green)", onClick: () => a.naSub("Moje záujmy") },
   ];
+  const sekcie = { zaujmy: <MojeZaujmy />, stat: <StatVSkratke onOtvor={() => a.naSub("Štatistiky")} />, wallet: <PoslednePohyby onOtvor={a.naWallet} /> };
   const pocty: [number, string][] = [[sledovani.length, "sledujem"], [podpory.length, "podporujem"], [MOJE_SKUTKY_POCET, "skutkov"]];
   return (
     <div className="deed-platba" style={{ padding: "0 16px 30px", display: "flex", flexDirection: "column", gap: 14, color: "var(--ink)" }}>
@@ -234,21 +243,44 @@ export function ProfilHlavny18(a: ProfilAkcie) {
         <span style={{ fontSize: 13.5, fontWeight: 700, color: "var(--green)" }}>Detail ›</span>
       </button>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", borderRadius: 18, background: "var(--card)", border: "1px solid var(--cardBd)" }}>
-        {pocty.map(([n, l], i) => (
-          <div key={l} style={{ padding: "12px 4px", textAlign: "center", borderLeft: i ? "1px solid var(--cardBd)" : "none" }}>
+        {pocty.map(([n, l], i) => {
+          const tuk = l === "sledujem" ? () => (a.naPriatelia2 ? a.naPriatelia2("sledujem") : a.naPriatelia()) : l === "podporujem" ? () => (a.naPriatelia2 ? a.naPriatelia2("podporujem") : a.naPriatelia()) : () => a.naSub("Moje skutky");
+          return (
+          <button key={l} type="button" onClick={tuk} style={{ padding: "12px 4px", textAlign: "center", border: "none", borderLeft: i ? "1px solid var(--cardBd)" : "none", background: "transparent", cursor: "pointer", fontFamily: "inherit", color: "var(--ink)", minHeight: 64 }}>
             <div style={{ fontSize: 19, fontWeight: 800, fontVariantNumeric: "tabular-nums" }}>{n.toLocaleString("sk-SK")}</div>
             <div style={{ fontSize: 12.5, color: "var(--ink3)", marginTop: 2 }}>{l}</div>
-          </div>))}
+          </button>); })}
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-        {dlazdice.map(([t, s, ic, bg, c, onClick]) => (
-          <button key={t} type="button" onClick={onClick} style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 10, padding: 14, borderRadius: 18, background: "var(--card)", border: "1px solid var(--cardBd)", minHeight: 104, cursor: "pointer", textAlign: "left", fontFamily: "inherit", color: "var(--ink)" }}>
-            <span style={{ width: 38, height: 38, borderRadius: 12, background: bg, color: c, display: "flex", alignItems: "center", justifyContent: "center" }}><Ik d={ic} /></span>
-            <span><span style={{ display: "block", fontSize: 15, fontWeight: 800 }}>{t}</span><span style={{ display: "block", fontSize: 12.5, color: "var(--ink3)", marginTop: 2 }}>{s}</span></span>
-          </button>))}
-      </div>
-      <MojeZaujmy />
+      <MriezkaDlazdic vsetky={dlazdice} sekcie={sekcie} />
     </div>
   );
 }
 
+
+/** rozbalená sekcia · Štatistiky v skratke + cesta môjho daru (OPRAVY 62, vidí len vlastník) */
+export function StatVSkratke({ onOtvor }: { onOtvor: () => void }) {
+  const r = STATISTIKY.rok, c = suhrn(MOJA_CESTA.zastavky), z = MOJA_CESTA.zastavky;
+  return (
+    <button type="button" onClick={onOtvor} style={{ width: "100%", display: "flex", flexDirection: "column", gap: 12, padding: "14px", borderRadius: 22, background: "var(--card)", border: "1px solid var(--cardBd)", cursor: "pointer", textAlign: "left", fontFamily: "inherit", color: "var(--ink)" }}>
+      <span style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}><b style={{ fontSize: 18 }}>Štatistiky v skratke</b><span style={{ fontSize: 12.5, color: "var(--ink3)" }}>tento rok</span></span>
+      <span style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 8 }}>
+        {([[String(r.skutkov), "skutkov"], [`${r.hodin} h`, "pre druhých"], [String(r.ludi), "ľudí"]] as const).map(([h, l]) => (
+          <span key={l}><b style={{ display: "block", fontSize: 20, fontVariantNumeric: "tabular-nums" }}>{h}</b><span style={{ fontSize: 12.5, color: "var(--ink3)" }}>{l}</span></span>))}
+      </span>
+      {z.length > 1 && <span style={{ fontSize: 13.5, color: "var(--ink2)", borderTop: "1px solid var(--cardBd)", paddingTop: 10 }}>Cesta môjho daru: <b style={{ color: "var(--ink)" }}>{z[0].mesto} → {z[z.length - 1].mesto}</b> · {c.km.toLocaleString("sk-SK")} km</span>}
+    </button>);
+}
+
+/** rozbalená sekcia · posledné pohyby peňaženky (3) */
+export function PoslednePohyby({ onOtvor }: { onOtvor: () => void }) {
+  return (
+    <div style={{ borderRadius: 22, background: "var(--card)", border: "1px solid var(--cardBd)", padding: "14px 14px 6px" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 4 }}><b style={{ fontSize: 18 }}>Posledné pohyby</b>
+        <button type="button" onClick={onOtvor} style={{ minHeight: 44, border: "none", background: "transparent", color: "var(--gInk)", fontSize: 13.5, fontWeight: 800, fontFamily: "inherit", cursor: "pointer" }}>Peňaženka ›</button></div>
+      {POHYBY.slice(0, 3).map(([den, t, s2, suma, prijem], i) => (
+        <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, minHeight: 52, borderTop: i ? "1px solid var(--cardBd)" : "none" }}>
+          <span style={{ flex: 1, minWidth: 0 }}><span style={{ display: "block", fontSize: 14.5, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t}</span><span style={{ display: "block", fontSize: 12.5, color: "var(--ink3)" }}>{den} · {s2}</span></span>
+          <b style={{ fontSize: 14, color: prijem ? "var(--gInk)" : "var(--ink)", whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>{suma}</b>
+        </div>))}
+    </div>);
+}

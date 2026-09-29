@@ -1,12 +1,15 @@
 import { useState, useEffect } from "react";
-import { Emo } from "@/components/icons";
-import { SIRKA, C, GRAD, SPACE, RADIUS } from "@/theme";
-import { toast, useScrollPamat, useLayout, useTvorbaGate, obalSiroky, IkonaNastavenia, IkonaSipVlavo, IkonaPenazenka, IkonaHviezda, IkonaFajka, IkonaDoska, IkonaUsmev, IkonaOsoba, ScreenSwitch } from "@/shared";
+import { useVazbyOsoby } from "@/lib/zamestnanci";
+import { useMojaFirma, dataFirmy } from "@/lib/mojaFirma";
+import { usePouzivatel } from "@/lib/pouzivatel";
+import { SIRKA, C, SPACE, RADIUS } from "@/theme";
+import { toast, useScrollPamat, useLayout, obalSiroky, IkonaNastavenia, IkonaPenazenka, IkonaHviezda, IkonaFajka, IkonaDoska, IkonaUsmev, IkonaOsoba, ScreenSwitch } from "@/shared";
 import { MojDeedFiremny } from "@/features/rola/MojDeedFiremny";
 import { useVrstva } from "@/lib/urlnav";
 import { Nastavenia as NotifNastavenia } from "@/features/notifikacie/Notifikacie";
-import type { Toast as ToastFn, WideProps, ZiadostPriatelstvo, CestaPriatelstva } from "@/types";
-import { ProfilHlavny18, IdentitaKarta18, StitKarta18, MojeZaujmy } from "./ProfilHlavny";
+import type { WideProps } from "@/types";
+import { ProfilHlavny18, IdentitaKarta18, StitKarta18, MojeZaujmy, StatVSkratke, PoslednePohyby } from "./ProfilHlavny";
+import { UpravitDlazdice, type Dlazdica } from "./Dlazdice";
 import { UpravOsobnyProfil } from "./UpravOsobnyProfil";
 import { MojQr } from "./MojQr";
 import { Penazenka18 } from "./Penazenka18";
@@ -15,6 +18,9 @@ import { KarmaStity } from "./KarmaStity";
 import { Statistiky } from "./Statistiky";
 import { Zamestnavatel, IK_BUDOVA } from "./Zamestnavatel";
 import { MojeSkutky21 } from "./MojeSkutky21";
+import { Priatelia, type PriateliaTab } from "./Priatelia";
+import { useDlazdice, type DlazdicaId } from "@/lib/dlazdice";
+import { SpatTlacidlo } from "@/components/cesta";
 
 /*
   ============================================================
@@ -40,6 +46,8 @@ export default function ModulProfil({ wide, walletReq = 0 }: ProfilProps) {
   useEffect(() => { if (walletReq) setScreen("wallet"); }, [walletReq]);
 
   const sub = (n: string) => { setSubNazov(n); setScreen("sub"); };
+  const [pTab, setPTab] = useState<PriateliaTab>("priatelia"); // KARTA 29: „sledujem / podporujem" v profile otvorí príslušnú záložku
+  const priatelia = (t: PriateliaTab = "priatelia") => { setPTab(t); setScreen("priatelia"); };
   const [qr, setQr] = useState(false); // Môj QR (karta 18 bod 4 príde samostatne)
   const [uprava, setUprava] = useState(false); // Upraviť profil (karta 18 bod 3)
   const upravaHarok = uprava && <UpravOsobnyProfil onClose={() => setUprava(false)} />;
@@ -47,18 +55,18 @@ export default function ModulProfil({ wide, walletReq = 0 }: ProfilProps) {
   const obal = (el: React.ReactNode) => obalSiroky(el, { wide, desktop, max: SIRKA.stlpec, maxDesktop: SIRKA.citanie });
 
   // DESKTOP — profesionálny 2-panel layout: bočná navigácia (identita + sekcie) + obsahový panel
-  if (desktop) return <>{qrModal}{upravaHarok}<ProfilDesktop screen={screen} subNazov={subNazov} setScreen={setScreen} onSub={sub} onQr={() => setQr(true)} onUpravit={() => setUprava(true)} /></>;
+  if (desktop) return <>{qrModal}{upravaHarok}<ProfilDesktop screen={screen} subNazov={subNazov} setScreen={setScreen} onSub={sub} onQr={() => setQr(true)} onUpravit={() => setUprava(true)} pTab={pTab} onPriatelia={priatelia} /></>;
 
   // MOBIL — pôvodný tok (dlaždice → pod-obrazovky cez ScreenSwitch)
   return (
     <div style={{ minHeight: "100%" }}>
       <ScreenSwitch k={screen}>
-      {screen === "profil" && obal(<ProfilHlavny18 naWallet={() => setScreen("wallet")} naSub={sub} naNastavenia={() => setScreen("nastavenia")} naPriatelia={() => setScreen("priatelia")} naFirma={() => setScreen("firma")}
+      {screen === "profil" && obal(<ProfilHlavny18 naWallet={() => setScreen("wallet")} naSub={sub} naNastavenia={() => setScreen("nastavenia")} naPriatelia={() => priatelia()} naPriatelia2={priatelia} naFirma={() => setScreen("firma")}
         naUpravit={() => setUprava(true)} naQr={() => setQr(true)} />)}
       {screen === "wallet" && obal(<Penazenka18 onBack={() => setScreen("profil")} />)}
       {screen === "firemny" && obalSiroky(<MojDeedFiremny onBack={() => setScreen("profil")} toast={toast} />, { wide, desktop, max: SIRKA.stlpec })}
-      {screen === "sub" && (subNazov === "Moje skutky" ? <MojeSkutky21 onBack={() => setScreen("profil")} /> : subNazov === "Karma a štíty" ? obal(<KarmaStity onBack={() => setScreen("profil")} />) : obal(<Statistiky onBack={() => setScreen("profil")} />))}
-      {screen === "priatelia" && obal(<PriateliaScreen toast={toast} onBack={() => setScreen("profil")} />)}
+      {screen === "sub" && (subNazov === "Moje záujmy" ? obal(<ZaujmyObrazovka onBack={() => setScreen("profil")} />) : subNazov === "Moje skutky" ? <MojeSkutky21 onBack={() => setScreen("profil")} /> : subNazov === "Karma a štíty" ? obal(<KarmaStity onBack={() => setScreen("profil")} />) : obal(<Statistiky onBack={() => setScreen("profil")} />))}
+      {screen === "priatelia" && obal(<Priatelia tab={pTab} onBack={() => setScreen("profil")} />)}
       {screen === "firma" && obal(<Zamestnavatel onBack={() => setScreen("profil")} />)}
       {screen === "nastavenia" && obal(<Nastavenia20 onBack={() => setScreen("profil")} onNotif={() => setScreen("notif")} onUpravProfil={() => setUprava(true)} />)}
       {screen === "notif" && obal(<NotifObrazovka onBack={() => setScreen("nastavenia")} />)}
@@ -69,25 +77,51 @@ export default function ModulProfil({ wide, walletReq = 0 }: ProfilProps) {
 }
 
 // ===================== DESKTOP — bočná navigácia + obsahový panel =====================
-const PROFIL_NAV: { key: string; nazov?: string; label: string; ikona: React.ReactNode }[] = [
-  { key: "nastavenia", label: "Nastavenia", ikona: <IkonaNastavenia size={18} /> },
-  { key: "wallet", label: "Peňaženka", ikona: <IkonaPenazenka size={18} /> },
-  { key: "sub", nazov: "Moje skutky", label: "Moje skutky", ikona: <IkonaFajka size={18} /> },
-  { key: "profil", label: "Moje záujmy", ikona: <IkonaOsoba size={18} /> },
-  { key: "firma", label: "Zamestnávateľ", ikona: <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="var(--sek-o)" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={IK_BUDOVA} /></svg> },
-  { key: "sub", nazov: "Štatistiky", label: "Štatistiky", ikona: <IkonaDoska size={18} /> },
-  { key: "priatelia", label: "Priatelia", ikona: <IkonaUsmev size={18} /> },
-  { key: "sub", nazov: "Karma a štíty", label: "Karma a štíty", ikona: <IkonaHviezda size={18} /> },
+// OPRAVY 62: poradie a skryté položky podľa Upraviť dlaždice (rovnaké ako dlaždice v mobile)
+const PROFIL_NAV: { id: DlazdicaId; key: string; nazov?: string; label: string; ikona: React.ReactNode }[] = [
+  { id: "nastavenia", key: "nastavenia", label: "Nastavenia", ikona: <IkonaNastavenia size={18} /> },
+  { id: "wallet", key: "wallet", label: "Peňaženka", ikona: <IkonaPenazenka size={18} /> },
+  { id: "skutky", key: "sub", nazov: "Moje skutky", label: "Moje skutky", ikona: <IkonaFajka size={18} /> },
+  { id: "zaujmy", key: "sub", nazov: "Moje záujmy", label: "Moje záujmy", ikona: <IkonaOsoba size={18} /> },
+  { id: "firma", key: "firma", label: "Zamestnávateľ", ikona: <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={IK_BUDOVA} /></svg> },
+  { id: "stat", key: "sub", nazov: "Štatistiky", label: "Štatistiky", ikona: <IkonaDoska size={18} /> },
+  { id: "priatelia", key: "priatelia", label: "Priatelia", ikona: <IkonaUsmev size={18} /> },
+  { id: "karma", key: "sub", nazov: "Karma a štíty", label: "Karma a štíty", ikona: <IkonaHviezda size={18} /> },
 ];
 
-function ProfilDesktop({ screen, subNazov, setScreen, onSub, onQr, onUpravit }: { screen: string; subNazov: string | null; setScreen: (s: string) => void; onSub: (n: string) => void; onQr: () => void; onUpravit: () => void }) {
+/** Moje záujmy ako samostatná obrazovka (dlaždica / položka menu) */
+function ZaujmyObrazovka({ onBack, desktop }: { onBack: () => void; desktop?: boolean }) {
+  return (
+    <div className="deed-platba" style={{ padding: "0 16px 30px", color: "var(--ink)", display: "flex", flexDirection: "column", gap: 12 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 56 }}>
+        {!desktop && <SpatTlacidlo onClick={onBack} />}
+        <h1 style={{ margin: 0, fontSize: 19, fontWeight: 800 }}>Moje záujmy</h1>
+      </div>
+      <MojeZaujmy />
+    </div>);
+}
+
+function ProfilDesktop({ screen, subNazov, setScreen, onSub, onQr, onUpravit, pTab, onPriatelia }: { screen: string; subNazov: string | null; setScreen: (s: string) => void; onSub: (n: string) => void; onQr: () => void; onUpravit: () => void; pTab: PriateliaTab; onPriatelia: (t?: PriateliaTab) => void }) {
+  // OPRAVY 61: zlatá bodka pri Zamestnávateľovi len keď firma čaká na odpoveď (pozvánka, „Stále pracuješ…?")
+  const ja = usePouzivatel();
+  const vazby = useVazbyOsoby(ja.celeMeno);
+  const mf = useMojaFirma();
+  const firmaCaka = vazby.some((v) => v.stav === "pozvany") || vazby.some((v) => v.stav === "potvrdeny" && dataFirmy(v.firma).oznamy.some((o) => o.typ === "kontrola" && !mf.vybavene.includes(o.id)));
   const jeAktivny = (it: (typeof PROFIL_NAV)[number]) => screen === it.key && (it.key !== "sub" || subNazov === it.nazov);
+  const dl = useDlazdice();
+  const [uprava, setUprava] = useState(false);
+  const dostupne = PROFIL_NAV.filter((it) => it.id !== "firma" || vazby.length > 0);
+  const nav = dl.poradie.map((id) => dostupne.find((it) => it.id === id)).filter((it): it is (typeof PROFIL_NAV)[number] => !!it && !dl.skryte.includes(it.id));
+  const otvor = (it: (typeof PROFIL_NAV)[number]) => (it.key === "sub" ? onSub(it.nazov!) : it.key === "priatelia" ? onPriatelia() : setScreen(it.key));
+  const doUpravy: Dlazdica[] = dostupne.map((it) => ({ id: it.id, t: it.label, s: "", ikona: it.ikona, bg: "var(--btn)", c: "var(--ink2)", onClick: () => otvor(it) }));
+  const sekcie: Partial<Record<DlazdicaId, React.ReactNode>> = { zaujmy: <MojeZaujmy />, stat: <StatVSkratke onOtvor={() => onSub("Štatistiky")} />, wallet: <PoslednePohyby onOtvor={() => setScreen("wallet")} /> };
+  const rozbalene = dl.poradie.filter((id) => dl.rozbalene.includes(id) && !dl.skryte.includes(id) && sekcie[id]);
 
   let obsah: React.ReactNode;
   if (screen === "wallet") obsah = <Penazenka18 desktop onBack={() => setScreen("profil")} />;
   else if (screen === "firemny") obsah = <MojDeedFiremny onBack={() => setScreen("profil")} toast={toast} />;
-  else if (screen === "sub") obsah = subNazov === "Moje skutky" ? <MojeSkutky21 onBack={() => setScreen("profil")} /> : subNazov === "Karma a štíty" ? <KarmaStity desktop onBack={() => setScreen("profil")} /> : <Statistiky desktop onBack={() => setScreen("profil")} />;
-  else if (screen === "priatelia") obsah = <PriateliaScreen toast={toast} desktop onBack={() => setScreen("profil")} />;
+  else if (screen === "sub") obsah = subNazov === "Moje záujmy" ? <ZaujmyObrazovka desktop onBack={() => setScreen("profil")} /> : subNazov === "Moje skutky" ? <MojeSkutky21 onBack={() => setScreen("profil")} /> : subNazov === "Karma a štíty" ? <KarmaStity desktop onBack={() => setScreen("profil")} /> : <Statistiky desktop onBack={() => setScreen("profil")} />;
+  else if (screen === "priatelia") obsah = <Priatelia key={pTab} tab={pTab} desktop onBack={() => setScreen("profil")} />;
   else if (screen === "firma") obsah = <Zamestnavatel desktop onBack={() => setScreen("profil")} />;
   else if (screen === "nastavenia") obsah = <Nastavenia20 desktop onBack={() => setScreen("profil")} onNotif={() => setScreen("notif")} onUpravProfil={onUpravit} />;
   else if (screen === "notif") obsah = <NotifObrazovka desktop onBack={() => setScreen("nastavenia")} />;
@@ -95,7 +129,7 @@ function ProfilDesktop({ screen, subNazov, setScreen, onSub, onQr, onUpravit }: 
     <div style={{ padding: `${SPACE.md}px ${SPACE.md}px ${SPACE.lg}px` }}>
       <div className="deed-platba" style={{ display: "flex", flexDirection: "column", gap: 14, color: "var(--ink)" }}>
         <StitKarta18 />
-        <MojeZaujmy />
+        {rozbalene.map((id) => <div key={id}>{sekcie[id]}</div>)}
       </div>
     </div>
   );
@@ -109,19 +143,25 @@ function ProfilDesktop({ screen, subNazov, setScreen, onSub, onQr, onUpravit }: 
         <aside style={{ width: 300, flex: "0 0 300px", minWidth: 0, position: "sticky", top: SPACE.md, display: "flex", flexDirection: "column", gap: SPACE.sm }}>
           <div className="deed-platba" style={{ color: "var(--ink)" }}><IdentitaKarta18 naUpravit={onUpravit} naQr={onQr} /></div>
           <nav style={{ display: "flex", flexDirection: "column", gap: SPACE.xxs, background: C.surface, border: `1px solid ${C.line}`, borderRadius: RADIUS.md, padding: SPACE.xs }}>
-            {PROFIL_NAV.map((it) => {
+            {nav.map((it) => {
               const on = jeAktivny(it);
               return (
-                <button key={it.label} onClick={() => (it.key === "sub" ? onSub(it.nazov!) : setScreen(it.key))}
+                <button key={it.label} onClick={() => otvor(it)}
                   style={{ display: "flex", alignItems: "center", gap: SPACE.sm, width: "100%", textAlign: "left", border: "none", cursor: "pointer", fontFamily: "inherit",
                     borderRadius: RADIUS.sm, padding: `${SPACE.sm}px ${SPACE.gutter}px`, fontSize: 14, fontWeight: on ? 800 : 600,
                     background: on ? "color-mix(in srgb, var(--a-green) 16%, transparent)" : "transparent", color: on ? C.text : C.textSec, transition: "background .15s ease" }}>
                   <span style={{ display: "flex", color: on ? "var(--a-green)" : C.textTer }}>{it.ikona}</span>
                   {it.label}
+                  {it.key === "firma" && firmaCaka && <span role="status" aria-label="firma čaká na odpoveď" style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--a-gold)", marginLeft: "auto", flex: "none" }} />}
                 </button>
               );
             })}
           </nav>
+          <div className="deed-platba" style={{ display: "flex", flexDirection: "column", color: "var(--ink)" }}>
+            <button type="button" onClick={() => setUprava(true)} style={{ alignSelf: "center", minHeight: 44, padding: "0 16px", borderRadius: 14, border: "1px solid var(--cardBd)", background: "transparent", boxShadow: "none", color: "var(--ink2)", fontSize: 14, fontWeight: 700, fontFamily: "inherit", cursor: "pointer", display: "flex", alignItems: "center", gap: 8 }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4" /></svg>Upraviť dlaždice</button>
+            {uprava && <UpravitDlazdice dostupne={doUpravy} onClose={() => setUprava(false)} maSekciu={(id) => !!sekcie[id]} />}
+          </div>
         </aside>
         <main style={{ flex: 1, minWidth: 0, background: C.surface, border: `1px solid ${C.line}`, borderRadius: RADIUS.lg, overflow: "clip", minHeight: 420 }}>
           {obsah}
@@ -135,66 +175,3 @@ function NotifObrazovka({ onBack }: { onBack: () => void; desktop?: boolean }) {
   return <div style={{ minHeight: "100%" }}><NotifNastavenia onBack={onBack} /></div>;
 }
 
-// ===================== PRIDÁVANIE PRIATEĽA (§7) =====================
-type PriateliaScreenProps = { toast: ToastFn; onBack: () => void; desktop?: boolean };
-
-function PriateliaScreen({ toast, onBack, desktop }: PriateliaScreenProps) {
-  const { gate } = useTvorbaGate(); // pridávanie priateľa = iniciovanie vzťahu (create)
-  const [qr, setQr] = useState<"pozvanka" | "osobny" | null>(null);
-  const [ziadosti, setZiadosti] = useState<ZiadostPriatelstvo[]>([{ id: "p1", meno: "Peter K.", ini: "P", info: "3 spoloční priatelia" }]);
-  const vybav = (id: string, ok: boolean) => { setZiadosti((z) => z.filter((x) => x.id !== id)); toast(ok ? "Priateľstvo prijaté — vzájomný súhlas" : "Žiadosť odmietnutá"); };
-
-  const cesty: CestaPriatelstva[] = [
-    ["📇", "Telefónne kontakty", "Nájdi známych, čo už majú DEED", "Čísla sa hashujú · GDPR súhlas · dá sa vypnúť", () => toast("Hľadám v kontaktoch (hashované, GDPR)…")],
-    ["🔍", "Vyhľadávanie", "Len verejné profily a tvorcovia", "Súkromná osoba sa nedá nájsť (ochrana)", () => toast("Otvor lupu hore — hľadanie verejných profilov")],
-    ["🔗", "Pozvánka odkazom / QR", "Aj pre tých, čo DEED ešte nemajú", "Akvizícia — vedie len na žiadosť o priateľstvo", () => setQr("pozvanka")],
-    ["⚡", "Osobný QR (naživo)", "Naskenuj si telefóny pri stretnutí", "Rotujúci kód · vedie len na žiadosť", () => setQr("osobny")],
-  ];
-
-  return (
-    <div style={{ paddingBottom: SPACE.lg }}>
-      <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm, padding: "16px 18px 8px" }}>
-        {!desktop && <div onClick={onBack} style={spatBtn}><IkonaSipVlavo size={18} color={C.textSec} /></div>}
-        <h3 style={{ fontSize: 17, margin: 0 }}>Priatelia</h3>
-      </div>
-      <div style={{ padding: "0 16px" }}>
-        {/* žiadosti o priateľstvo */}
-        {ziadosti.length > 0 && (<>
-          <div style={{ fontSize: 10.5, letterSpacing: ".4px", color: C.textTer, fontWeight: 700, margin: "8px 0 8px" }}>ŽIADOSTI O PRIATEĽSTVO</div>
-          {ziadosti.map((z) => (
-            <div key={z.id} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, background: C.surface, border: `1px solid ${C.line}`, borderRadius: RADIUS.md, padding: `${SPACE.sm}px ${SPACE.sm}px`, marginBottom: SPACE.xs }}>
-              <div style={{ width: 40, height: 40, borderRadius: RADIUS.round, flex: "none", background: "var(--a-plum)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, color: "#fff" }}>{z.ini}</div>
-              <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontSize: 14, fontWeight: 700 }}>{z.meno}</div><div style={{ fontSize: 11, color: C.textTer }}>{z.info}</div></div>
-              <span onClick={() => vybav(z.id, true)} style={{ flex: "none", fontSize: 12, fontWeight: 700, color: "#fff", background: GRAD, borderRadius: RADIUS.sm, padding: `${SPACE.xs}px ${SPACE.sm}px`, cursor: "pointer" }}>Prijať</span>
-              <span onClick={() => vybav(z.id, false)} style={{ flex: "none", fontSize: 12, fontWeight: 700, color: C.textSec, border: `1px solid ${C.line}`, borderRadius: RADIUS.sm, padding: `${SPACE.xs}px ${SPACE.sm}px`, cursor: "pointer" }}>✕</span>
-            </div>
-          ))}
-        </>)}
-
-        {/* cesty pridania */}
-        <div style={{ fontSize: 10.5, letterSpacing: ".4px", color: C.textTer, fontWeight: 700, margin: "16px 0 8px" }}>AKO PRIDAŤ PRIATEĽA</div>
-        {cesty.map((c, i) => (
-          <div key={i} onClick={gate(c[4])} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, background: C.surface, border: `1px solid ${C.line}`, borderRadius: RADIUS.md, padding: `${SPACE.sm}px ${SPACE.gutter}px`, marginBottom: SPACE.xs, cursor: "pointer" }}>
-            <span style={{ width: 42, height: 42, borderRadius: RADIUS.sm, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, background: "rgba(var(--glass-rgb),.06)" }}>{c[0]}</span>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 14.5, fontWeight: 700 }}>{c[1]}</div>
-              <div style={{ fontSize: 12, color: C.textSec, marginTop: SPACE.xxs }}>{c[2]}</div>
-              <div style={{ fontSize: 10.5, color: C.textTer, marginTop: SPACE.xxs }}>{c[3]}</div>
-            </div>
-            <span style={{ color: C.textTer, fontSize: 16 }}>›</span>
-          </div>
-        ))}
-
-        {/* ochrana */}
-        <div style={{ display: "flex", alignItems: "flex-start", gap: SPACE.xs, fontSize: 11, color: C.textTer, lineHeight: 1.5, marginTop: SPACE.xs, padding: `${SPACE.sm}px ${SPACE.sm}px`, borderRadius: RADIUS.sm, background: "color-mix(in srgb, var(--a-info) 6%, transparent)", border: "1px solid color-mix(in srgb, var(--a-info) 20%, transparent)" }}>
-          <span style={{ display: "flex", flex: "none", marginTop: 1, color: "var(--a-info)" }}><Emo e="🛡" /></span><span>QR/odkaz vedie <b>len na žiadosť o priateľstvo</b> — nie na otvorený profil ani skutky. Priateľstvo je vždy vzájomné (so súhlasom) a <b>neodomyká</b> súkromnú časť.</span>
-        </div>
-      </div>
-
-      {qr === "pozvanka" && <MojQr zalozka="pozvanka" onClose={() => setQr(null)} />}
-      {qr === "osobny" && <MojQr zalozka="akcia" onClose={() => setQr(null)} />}
-    </div>
-  );
-}
-
-const spatBtn: React.CSSProperties = { width: 34, height: 34, borderRadius: RADIUS.round, background: C.surface2, border: `1px solid ${C.line}`, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: 17 };
