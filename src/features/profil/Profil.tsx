@@ -19,6 +19,7 @@ import type { Toast as ToastFn, WideProps, PrevodTuple, ZiadostPriatelstvo, Cest
 import { useProfilPrevody, useProfilMojeSkutky, useProfilKarma, useProfilStatistiky } from "@/data";
 import { MODULOVA_KARMA, DOZIVOTNE_ZISKANE } from "./mock";
 import { ProfilHlavny18, IdentitaKarta18, StitKarta18, MojeZaujmy } from "./ProfilHlavny";
+import { UpravOsobnyProfil } from "./UpravOsobnyProfil";
 
 /*
   ============================================================
@@ -45,18 +46,20 @@ export default function ModulProfil({ wide, walletReq = 0 }: ProfilProps) {
 
   const sub = (n: string) => { setSubNazov(n); setScreen("sub"); };
   const [qr, setQr] = useState(false); // Môj QR (karta 18 bod 4 príde samostatne)
+  const [uprava, setUprava] = useState(false); // Upraviť profil (karta 18 bod 3)
+  const upravaHarok = uprava && <UpravOsobnyProfil onClose={() => setUprava(false)} />;
   const qrModal = qr && <QrModal typ="identita" titul="Môj QR" odkaz={qrUrl("handle", "martin-k")} onClose={() => setQr(false)} toast={toast} />;
   const obal = (el: React.ReactNode) => obalSiroky(el, { wide, desktop, max: SIRKA.stlpec, maxDesktop: SIRKA.citanie });
 
   // DESKTOP — profesionálny 2-panel layout: bočná navigácia (identita + sekcie) + obsahový panel
-  if (desktop) return <>{qrModal}<ProfilDesktop screen={screen} subNazov={subNazov} setScreen={setScreen} onSub={sub} onQr={() => setQr(true)} /></>;
+  if (desktop) return <>{qrModal}{upravaHarok}<ProfilDesktop screen={screen} subNazov={subNazov} setScreen={setScreen} onSub={sub} onQr={() => setQr(true)} onUpravit={() => setUprava(true)} /></>;
 
   // MOBIL — pôvodný tok (dlaždice → pod-obrazovky cez ScreenSwitch)
   return (
     <div style={{ minHeight: "100%" }}>
       <ScreenSwitch k={screen}>
       {screen === "profil" && obal(<ProfilHlavny18 naWallet={() => setScreen("wallet")} naSub={sub} naNastavenia={() => setScreen("nastavenia")} naPriatelia={() => setScreen("priatelia")}
-        naUpravit={() => setScreen("nastavenia")} naQr={() => setQr(true)} />)}
+        naUpravit={() => setUprava(true)} naQr={() => setQr(true)} />)}
       {screen === "wallet" && obal(<Penazenka toast={toast} onBack={() => setScreen("profil")} />)}
       {screen === "firemny" && obalSiroky(<MojDeedFiremny onBack={() => setScreen("profil")} toast={toast} />, { wide, desktop, max: SIRKA.stlpec })}
       {screen === "sub" && obal(<SubScreen nazov={subNazov} toast={toast} onBack={() => setScreen("profil")} />)}
@@ -64,7 +67,7 @@ export default function ModulProfil({ wide, walletReq = 0 }: ProfilProps) {
       {screen === "nastavenia" && obal(<NastaveniaScreen toast={toast} onBack={() => setScreen("profil")} onNotif={() => setScreen("notif")} />)}
       {screen === "notif" && obal(<NotifObrazovka onBack={() => setScreen("nastavenia")} />)}
       </ScreenSwitch>
-      {qrModal}
+      {qrModal}{upravaHarok}
     </div>
   );
 }
@@ -80,8 +83,7 @@ const PROFIL_NAV: { key: string; nazov?: string; label: string; ikona: React.Rea
   { key: "nastavenia", label: "Nastavenia", ikona: <IkonaNastavenia size={18} /> },
 ];
 
-function ProfilDesktop({ screen, subNazov, setScreen, onSub, onQr }: { screen: string; subNazov: string | null; setScreen: (s: string) => void; onSub: (n: string) => void; onQr: () => void }) {
-  const naNastavenia = () => setScreen("nastavenia");
+function ProfilDesktop({ screen, subNazov, setScreen, onSub, onQr, onUpravit }: { screen: string; subNazov: string | null; setScreen: (s: string) => void; onSub: (n: string) => void; onQr: () => void; onUpravit: () => void }) {
   const jeAktivny = (it: (typeof PROFIL_NAV)[number]) => screen === it.key && (it.key !== "sub" || subNazov === it.nazov);
 
   let obsah: React.ReactNode;
@@ -107,7 +109,7 @@ function ProfilDesktop({ screen, subNazov, setScreen, onSub, onQr }: { screen: s
       </div>
       <div style={{ display: "flex", gap: SPACE.lg, alignItems: "flex-start" }}>
         <aside style={{ width: 300, flex: "0 0 300px", minWidth: 0, position: "sticky", top: SPACE.md, display: "flex", flexDirection: "column", gap: SPACE.sm }}>
-          <div className="deed-platba" style={{ color: "var(--ink)" }}><IdentitaKarta18 naUpravit={naNastavenia} naQr={onQr} /></div>
+          <div className="deed-platba" style={{ color: "var(--ink)" }}><IdentitaKarta18 naUpravit={onUpravit} naQr={onQr} /></div>
           <nav style={{ display: "flex", flexDirection: "column", gap: SPACE.xxs, background: C.surface, border: `1px solid ${C.line}`, borderRadius: RADIUS.md, padding: SPACE.xs }}>
             {PROFIL_NAV.map((it) => {
               const on = jeAktivny(it);

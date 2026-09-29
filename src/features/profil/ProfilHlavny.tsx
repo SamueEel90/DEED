@@ -12,6 +12,7 @@ import { toast } from "@/components/toast";
 import type { StitLevel } from "@/components/stit";
 import { Harok } from "@/features/zbierka/Zdielat";
 import { MOJA_KARMA, MOJE_SKUTKY_POCET } from "./mock";
+import { useOsobnyProfil } from "@/lib/osobnyProfil";
 import "@/styles/platba.css";
 
 export const STIT_SK: Record<StitLevel, string> = { Bronze: "Bronzový", Silver: "Strieborný", Gold: "Zlatý", Platinum: "Platinový", Legend: "Legenda" };
@@ -69,7 +70,9 @@ export function IdentitaKarta18({ naUpravit, naQr }: { naUpravit: () => void; na
   const [mojeFotky, zmenMojeFotky] = useFotkyEntity(klucEntity("ja", ja.ucetId || "demo"));
   const stit = stitUzivatela(!!ja.demo);
   const ini = `${(ja.meno || "?")[0]}${(ja.priezvisko || "")[0] ?? ""}`.toUpperCase();
-  const anonym = ja.rezim === "anonym";
+  const osobny = useOsobnyProfil();
+  const anonym = !osobny.verejny;
+  const mesto = osobny.mesto || (ja.mesto && ja.mesto !== "—" ? ja.mesto : "");
   return (
     <div style={{ ...karta, overflow: "hidden" }}>
       <div style={{ position: "relative", height: 150, background: mojeFotky.cover ? `url(${mojeFotky.cover}) center/cover` : "linear-gradient(135deg,#C9D5BC 0%,#DCD3BE 55%,#E2D7BF 100%)" }}>
@@ -85,7 +88,7 @@ export function IdentitaKarta18({ naUpravit, naQr }: { naUpravit: () => void; na
           </span>
           <div style={{ minWidth: 0, paddingBottom: 4 }}>
             <div style={{ fontSize: 21, fontWeight: 800, letterSpacing: "-.01em", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ja.celeMeno}</div>
-            {ja.mesto && ja.mesto !== "—" && <div style={{ fontSize: 13.5, color: "var(--ink3)", marginTop: 2 }}>{ja.mesto}</div>}
+            {mesto && <div style={{ fontSize: 13.5, color: "var(--ink3)", marginTop: 2 }}>{mesto}</div>}
           </div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 12, fontSize: 13, color: "var(--ink3)" }}>

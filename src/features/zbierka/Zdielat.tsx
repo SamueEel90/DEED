@@ -9,8 +9,9 @@ import { vibruj } from "./animacie";
 export const odkazZbierky = (id: string) => `https://deed.sk/z/${encodeURIComponent(id)}`;
 
 /** spoločný hárok modulu: mobil zdola, tablet 640 px / PC 560 px na stred, bez blur */
-export function Harok({ onClose, children, hlavicka, podHlavickou, paticka, plnaVyska }: {
+export function Harok({ onClose, children, hlavicka, podHlavickou, paticka, plnaVyska, zatvorText }: {
   onClose: () => void; children: ReactNode; hlavicka: ReactNode;
+  /** textové zatvorenie vpravo („Zrušiť", „Zavrieť") namiesto krížika */ zatvorText?: string;
   /** napr. kroky (Nastavenie · Spôsob · Zhrnutie) — pevne pod hlavičkou */ podHlavickou?: ReactNode;
   /** pevné tlačidlá dole — obsah nad nimi sa posúva */ paticka?: ReactNode;
   /** mobil: hárok vždy 92 % výšky (nie podľa obsahu) */ plnaVyska?: boolean;
@@ -35,9 +36,11 @@ export function Harok({ onClose, children, hlavicka, podHlavickou, paticka, plna
           {!wide && <div style={{ width: 40, height: 4, borderRadius: 4, background: "var(--handle)", margin: "0 auto 12px" }} />}
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             {hlavicka}
-            <button type="button" onClick={zavri} aria-label="Zavrieť" style={{ width: 44, height: 44, borderRadius: "50%", border: "none", background: "var(--btn)", color: "var(--ink)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flex: "none" }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg>
-            </button>
+            {zatvorText
+              ? <button type="button" onClick={zavri} style={{ border: "none", background: "transparent", color: "var(--ink3)", fontSize: 14.5, fontWeight: 700, cursor: "pointer", padding: "10px 0 10px 10px", flex: "none", fontFamily: "inherit" }}>{zatvorText}</button>
+              : <button type="button" onClick={zavri} aria-label="Zavrieť" style={{ width: 44, height: 44, borderRadius: "50%", border: "none", background: "var(--btn)", color: "var(--ink)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flex: "none" }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg>
+                </button>}
           </div>
           {podHlavickou}
         </div>

@@ -40,7 +40,7 @@ export interface ZaujemKategoria { oblast: string; label: string; emoji: string;
 export const ZAUJMY_KATALOG: ZaujemKategoria[] = [
   { oblast: "Komunita", label: "Komunita", emoji: "", kluce: ["Komunita"],
     podpolozky: ["Dobrovoľníctvo", "Susedská výpomoc", "Komunitné podujatia", "Seniori", "Deti a mládež", "Zbierky a dary"] },
-  { oblast: "Hudba",    label: "Hudba",    emoji: "", kluce: ["art", "hudba"],
+  { oblast: "Hudba",    label: "Hudba",    emoji: "", kluce: ["hudba"],
     podpolozky: ["Rock/tvrdšie", "Pop", "Rap/hip-hop", "Elektronická", "Tradičné", "Jazz/blues", "Klasická", "Svetová"] },
   { oblast: "Sport",    label: "Šport",    emoji: "", kluce: ["sport"],
     podpolozky: ["Tímové/loptové", "Raketové", "Beh a vytrvalosť", "Cyklistika", "Vodné športy", "Zimné športy", "Sila/fitness", "Bojové športy", "Outdoor/hory", "Precízne/mentálne", "Pohyb/tanec", "Iné"] },
@@ -48,7 +48,7 @@ export const ZAUJMY_KATALOG: ZaujemKategoria[] = [
     podpolozky: ["Výživa/strava", "Pohyb/telo", "Duševné zdravie", "Prevencia", "Závislosti", "Skupiny"] },
   { oblast: "Priroda",  label: "Príroda",  emoji: "", kluce: ["Priroda", "eko"],
     podpolozky: ["Akcie", "Životný štýl", "Ochrana prírody", "Udržateľnosť", "Eko pestovanie/záhrada"] },
-  { oblast: "Zvierata", label: "Zvieratá", emoji: "", kluce: ["Priroda", "eko", "zvierata"],
+  { oblast: "Zvierata", label: "Zvieratá", emoji: "", kluce: ["zvierata"],
     podpolozky: ["Útulky", "Adopcia", "Venčenie a dočasná opatera", "Veterinárna pomoc", "Voľne žijúce zvieratá", "Kastračné programy"] },
   { oblast: "Art",      label: "Umenie",   emoji: "", kluce: ["art"],
     podpolozky: ["Výtvarné", "Priestorové", "Fotografia", "Film/video", "Scénické", "Literatúra", "Dizajn/remeslá", "Digitálne"] },
