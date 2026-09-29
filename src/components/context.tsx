@@ -70,7 +70,8 @@ export const ViacContext = createContext<() => void>(() => {});
 export const useViac = () => useContext(ViacContext);
 
 // ---- MOTÍV (svetlý / tmavý režim) ----
-export const MotivContext = createContext<{ svetly: boolean; prepni: () => void }>({ svetly: false, prepni: () => {} });
+export type Tema = "svetla" | "tmava" | "system";
+export const MotivContext = createContext<{ svetly: boolean; prepni: () => void; tema: Tema; nastavTemu: (t: Tema) => void }>({ svetly: false, prepni: () => {}, tema: "system", nastavTemu: () => {} });
 export const useMotiv = () => useContext(MotivContext);
 
 // ============================================================

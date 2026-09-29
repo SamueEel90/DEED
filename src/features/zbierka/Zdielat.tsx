@@ -29,7 +29,7 @@ export function Harok({ onClose, children, hlavicka, podHlavickou, paticka, plna
       style={{ position: "fixed", inset: 0, zIndex: 150, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
       <div onClick={zavri} style={{ position: "absolute", inset: 0, background: "var(--scrim)", opacity: otv ? 1 : 0, transition: "opacity .32s ease" }} />
       <div style={{ ...(wide
-          ? { position: "relative", width: desktop ? 560 : 640, maxWidth: "calc(100vw - 32px)", maxHeight: "calc(100vh - 48px)", borderRadius: 28, transform: otv ? "none" : "translateY(24px)", opacity: otv ? 1 : 0 }
+          ? { position: "relative", width: desktop ? 560 : 640, maxWidth: "calc(100vw - 32px)", maxHeight: "calc(100vh / var(--pismo, 1) - 48px)", borderRadius: 28, transform: otv ? "none" : "translateY(24px)", opacity: otv ? 1 : 0 }
           : { position: "absolute", left: 0, right: 0, bottom: 0, ...(plnaVyska ? { height: "92%" } : { maxHeight: "92%" }), borderRadius: "28px 28px 0 0", transform: otv ? "none" : "translateY(105%)" }), // mobil zdola, tablet/PC v strede
         background: "var(--sheet)", color: "var(--ink)", display: "flex", flexDirection: "column", overflow: "hidden", transition: "transform .42s cubic-bezier(.2,.8,.2,1), opacity .32s ease" }}>
         <div style={{ flex: "none", padding: wide ? "18px 18px 0" : "10px 18px 0" }}>

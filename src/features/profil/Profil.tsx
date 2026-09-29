@@ -1,23 +1,18 @@
 import { useState, useEffect } from "react";
 import { SIRKA, C, GRAD, SPACE, RADIUS } from "@/theme";
-import { toast, Sheet, StitRiadok, DozivotnyChip, useScrollPamat, useMotiv, useLayout, useTvorbaGate, obalSiroky, IkonaNastavenia, IkonaSipVlavo, IkonaPenazenka, IkonaHviezda, IkonaFajka, IkonaDoska, IkonaUsmev, IkonaOsoba, IkonaPin, IkonaSlnko, IkonaMesiac, IkonaStit, IkonaInstitucia, IkonaObalka, IkonaFoto, FotoProfiluSheet, MenuSkupina, MenuPolozka, MenuPrepinac, SkeletonRiadky, EmptyState, ErrorState, ScreenSwitch } from "@/shared";
+import { toast, StitRiadok, DozivotnyChip, useScrollPamat, useLayout, useTvorbaGate, obalSiroky, IkonaNastavenia, IkonaSipVlavo, IkonaPenazenka, IkonaHviezda, IkonaFajka, IkonaDoska, IkonaUsmev, IkonaOsoba, SkeletonRiadky, EmptyState, ErrorState, ScreenSwitch } from "@/shared";
 import { MojDeedFiremny } from "@/features/rola/MojDeedFiremny";
-import { MojZamestnavatelSheet } from "@/features/rola/MojZamestnavatel";
-import { useVazbaOsoby } from "@/lib/zamestnanci";
 import { RetazDobraSheet } from "@/features/retaz/RetazDobra";
-import { IntroPruvodca } from "@/components/intro";
-import { signOut } from "@/lib/auth";
-import { usePouzivatel } from "@/lib/pouzivatel";
-import { klucEntity, useFotkyEntity } from "@/lib/fotoentity";
 import { useVrstva } from "@/lib/urlnav";
 import { Nastavenia as NotifNastavenia } from "@/features/notifikacie/Notifikacie";
-import type { Toast as ToastFn, WideProps, ZiadostPriatelstvo, CestaPriatelstva, RezimNastavenia } from "@/types";
+import type { Toast as ToastFn, WideProps, ZiadostPriatelstvo, CestaPriatelstva } from "@/types";
 import { useProfilMojeSkutky, useProfilKarma, useProfilStatistiky } from "@/data";
 import { MODULOVA_KARMA, DOZIVOTNE_ZISKANE } from "./mock";
 import { ProfilHlavny18, IdentitaKarta18, StitKarta18, MojeZaujmy } from "./ProfilHlavny";
 import { UpravOsobnyProfil } from "./UpravOsobnyProfil";
 import { MojQr } from "./MojQr";
 import { Penazenka18 } from "./Penazenka18";
+import { Nastavenia20 } from "./Nastavenia20";
 
 /*
   ============================================================
@@ -62,7 +57,7 @@ export default function ModulProfil({ wide, walletReq = 0 }: ProfilProps) {
       {screen === "firemny" && obalSiroky(<MojDeedFiremny onBack={() => setScreen("profil")} toast={toast} />, { wide, desktop, max: SIRKA.stlpec })}
       {screen === "sub" && obal(<SubScreen nazov={subNazov} toast={toast} onBack={() => setScreen("profil")} />)}
       {screen === "priatelia" && obal(<PriateliaScreen toast={toast} onBack={() => setScreen("profil")} />)}
-      {screen === "nastavenia" && obal(<NastaveniaScreen toast={toast} onBack={() => setScreen("profil")} onNotif={() => setScreen("notif")} />)}
+      {screen === "nastavenia" && obal(<Nastavenia20 onBack={() => setScreen("profil")} onNotif={() => setScreen("notif")} />)}
       {screen === "notif" && obal(<NotifObrazovka onBack={() => setScreen("nastavenia")} />)}
       </ScreenSwitch>
       {qrModal}{upravaHarok}
@@ -89,7 +84,7 @@ function ProfilDesktop({ screen, subNazov, setScreen, onSub, onQr, onUpravit }: 
   else if (screen === "firemny") obsah = <MojDeedFiremny onBack={() => setScreen("profil")} toast={toast} />;
   else if (screen === "sub") obsah = <SubScreen nazov={subNazov} toast={toast} desktop onBack={() => setScreen("profil")} />;
   else if (screen === "priatelia") obsah = <PriateliaScreen toast={toast} desktop onBack={() => setScreen("profil")} />;
-  else if (screen === "nastavenia") obsah = <NastaveniaScreen toast={toast} desktop onBack={() => setScreen("profil")} onNotif={() => setScreen("notif")} />;
+  else if (screen === "nastavenia") obsah = <Nastavenia20 desktop onBack={() => setScreen("profil")} onNotif={() => setScreen("notif")} />;
   else if (screen === "notif") obsah = <NotifObrazovka desktop onBack={() => setScreen("nastavenia")} />;
   else obsah = (
     <div style={{ padding: `${SPACE.md}px ${SPACE.md}px ${SPACE.lg}px` }}>
@@ -285,132 +280,6 @@ function PriateliaScreen({ toast, onBack, desktop }: PriateliaScreenProps) {
 
       {qr === "pozvanka" && <MojQr zalozka="pozvanka" onClose={() => setQr(null)} />}
       {qr === "osobny" && <MojQr zalozka="akcia" onClose={() => setQr(null)} />}
-    </div>
-  );
-}
-
-// ===================== NASTAVENIA =====================
-type NastaveniaScreenProps = { toast: ToastFn; onBack: () => void; onNotif: () => void; desktop?: boolean };
-
-function NastaveniaScreen({ toast, onBack, onNotif, desktop }: NastaveniaScreenProps) {
-  const { svetly, prepni } = useMotiv();
-  const ja = usePouzivatel();
-  const [fotka, setFotka] = useState(false);              // sheet „Fotky profilu"
-  const [mojeFotky, zmenMojeFotky] = useFotkyEntity(klucEntity("ja", ja.ucetId || "demo"));
-  const [jazyk, setJazyk] = useState("SK");
-  const [rezim, setRezim] = useState<RezimNastavenia>("verejny");  // verejný / anonym (§13.1 ochrana)
-  const [uroven, setUroven] = useState(true);             // zobrazovať moju úroveň (dá sa skryť)
-  const [gps, setGps] = useState(true);
-  const [ochrana, setOchrana] = useState(false);          // §13.1 anti-sociálny kredit (modal)
-  const [zamestnavatel, setZamestnavatel] = useState(false);  // väzba človek ↔ firma (obojstranná)
-  const vazbaFirmy = useVazbaOsoby(ja.celeMeno);
-  const [oAppke, setOAppke] = useState(false);            // O aplikácii · podpora
-  const [ako, setAko] = useState(false);                  // sprievodca „Ako DEED funguje"
-
-  return (
-    <div style={{ paddingBottom: SPACE.lg }}>
-      <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm, padding: "16px 18px 8px" }}>
-        {!desktop && <div onClick={onBack} style={spatBtn}><IkonaSipVlavo size={18} color={C.textSec} /></div>}
-        <h3 style={{ fontSize: 17, margin: 0 }}>Nastavenia</h3>
-      </div>
-      <div style={{ padding: "0 16px" }}>
-        <MenuSkupina nadpis="VZHĽAD" style={{ marginTop: SPACE.xs }}>
-          <MenuPolozka ikona={svetly ? <IkonaSlnko size={16} /> : <IkonaMesiac size={16} />} farba="var(--a-info)"
-            label="Téma" hodnota={svetly ? "Svetlá" : "Tmavá"} onClick={prepni} />
-          <MenuPolozka ikona={<span style={{ fontSize: 13, fontWeight: 800 }}>SK</span>} farba="var(--a-plum)"
-            label="Jazyk" hodnota={jazyk === "Auto" ? "Auto (podľa krajiny)" : jazyk}
-            onClick={() => setJazyk((j) => j === "SK" ? "EN" : j === "EN" ? "Auto" : "SK")} posledna />
-        </MenuSkupina>
-
-        <MenuSkupina nadpis="SÚKROMIE A PROFIL">
-          <MenuPolozka ikona={<IkonaFoto size={16} />} farba="var(--a-teal)"
-            label="Profilová a titulná fotka" popis="Nahraj z galérie alebo odfoť — EXIF/GPS sa odstráni"
-            hodnota={ja.foto && mojeFotky.cover ? "Obe" : ja.foto ? "Profilová" : mojeFotky.cover ? "Titulná" : "Bez fotky"}
-            onClick={() => setFotka(true)} />
-          <MenuPolozka ikona={<IkonaOsoba size={16} />} farba={rezim === "verejny" ? "var(--a-green)" : "var(--a-plum)"}
-            label="Režim profilu" hodnota={rezim === "verejny" ? "Verejný" : "Anonym"}
-            onClick={() => setRezim((r) => r === "verejny" ? "anonym" : "verejny")} />
-          <MenuPrepinac ikona={<IkonaHviezda size={16} />} farba="var(--a-gold)" label="Zobrazovať moju úroveň" on={uroven} onChange={() => setUroven((u) => !u)} />
-          <MenuPrepinac ikona={<IkonaPin size={16} />} farba="var(--a-info)" label="Poloha (GPS)" on={gps} onChange={() => setGps((g) => !g)} />
-          <MenuPolozka ikona={<IkonaStit size={16} />} farba="var(--a-green)" label="Ochrana osoby" popis="Si vidieť len tak, ako chceš" onClick={() => setOchrana(true)} posledna />
-        </MenuSkupina>
-
-        <MenuSkupina nadpis="NOTIFIKÁCIE">
-          <MenuPolozka ikona={<IkonaNastavenia size={16} />} farba="var(--a-info)" label="Nastavenie oznámení" popis="Ktoré upozornenia chceš dostávať" onClick={onNotif} posledna />
-        </MenuSkupina>
-
-        <MenuSkupina nadpis="ÚČET">
-          <MenuPolozka ikona={<IkonaInstitucia size={16} />} farba="var(--a-gold)" label="Zamestnávateľ (B2B)"
-            hodnota={vazbaFirmy?.stav === "potvrdeny" ? vazbaFirmy.firma
-              : vazbaFirmy?.stav === "pozvany" ? "Pozvánka čaká"
-              : vazbaFirmy?.stav === "ziadost" ? "Čaká na firmu" : "Nenastavený"}
-            onClick={() => setZamestnavatel(true)} />
-          <MenuPolozka ikona={<IkonaPenazenka size={16} />} farba="var(--a-info)" label="Peňaženka a bezpečnosť" popis="Biometria a overenie pri výbere hodnoty" onClick={() => toast("Peňaženka a bezpečnosť — čoskoro")} />
-          <MenuPolozka ikona={<IkonaObalka size={16} />} farba="var(--a-plum)" label="O aplikácii · podpora" onClick={() => setOAppke(true)} posledna />
-        </MenuSkupina>
-
-        <button onClick={() => { toast("Odhlásené"); void signOut(); }} style={{ width: "100%", height: 50, borderRadius: RADIUS.md, marginTop: SPACE.xs, border: "1px solid rgba(242,112,111,.4)", background: "rgba(242,112,111,.08)", color: "var(--a-danger)", fontWeight: 700, fontSize: 15, cursor: "pointer", fontFamily: "inherit" }}>Odhlásiť sa</button>
-      </div>
-
-      {/* väzba človek ↔ firma — obojstranná, dobrovoľná */}
-      {zamestnavatel && <MojZamestnavatelSheet osoba={ja.celeMeno} toast={toast} onClose={() => setZamestnavatel(false)} />}
-
-      {/* §13.1 — Ochrana osoby (anti-sociálny kredit) */}
-      {ochrana && (
-        <Sheet onClose={() => setOchrana(false)}>
-          <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm, marginBottom: SPACE.sm }}>
-            <span style={{ width: 38, height: 38, borderRadius: RADIUS.sm, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(61,214,140,.14)" }}><IkonaStit size={19} color="var(--a-green)" /></span>
-            <div><div style={{ fontSize: 16, fontWeight: 800 }}>Ochrana osoby</div><div style={{ fontSize: 11.5, color: C.textTer }}>Opak sociálneho kreditu</div></div>
-          </div>
-          <p style={{ fontSize: 13, color: C.textSec, lineHeight: 1.55, margin: "0 0 12px" }}>
-            Si vidieť len tak, ako chceš. Systém o tebe vie (aby si dostal odmeny), ale navonok ťa nikto nevie lustrovať. Voľba <b>verejný / anonym</b> je v sekcii vyššie.
-          </p>
-          {/* kontrolný náhľad */}
-          <div style={{ background: "color-mix(in srgb, var(--a-info) 7%, transparent)", border: "1px solid color-mix(in srgb, var(--a-info) 25%, transparent)", borderRadius: RADIUS.md, padding: `${SPACE.sm}px ${SPACE.gutter}px` }}>
-            <div style={{ fontSize: 10.5, fontWeight: 800, color: "var(--a-info)", letterSpacing: ".3px" }}>KONTROLNÝ NÁHĽAD (napr. polícia)</div>
-            {[["Karma", "jemne nad priemerom appky"], ["Skutky", "v norme komunity"], ["Dôveryhodnosť", "mierne nad priemerom"]].map((r, i) => (
-              <div key={i} style={{ display: "flex", justifyContent: "space-between", gap: SPACE.sm, padding: `${SPACE.xs}px 0`, fontSize: 12.5, borderBottom: i < 2 ? `1px solid ${C.line2}` : "none" }}>
-                <span style={{ color: C.textTer }}>{r[0]}</span><span style={{ fontWeight: 600, color: "var(--a-green)" }}>{r[1]}</span>
-              </div>
-            ))}
-          </div>
-          <div style={{ fontSize: 11.5, color: C.textTer, lineHeight: 1.5, marginTop: SPACE.sm }}>
-            Pri kontrole sa karta automaticky vyrovná „jemne nad priemer" — <b>nie je to vypínač</b>, takže sa nedá preukázať nízke skóre proti tebe. Princíp: <b style={{ color: C.text }}>za výšku odmena, za nulu nezničíme.</b>
-          </div>
-          <button onClick={() => setOchrana(false)} style={{ width: "100%", height: 48, borderRadius: RADIUS.md, marginTop: SPACE.md, border: "none", background: GRAD, color: "#fff", fontWeight: 700, fontSize: 15, cursor: "pointer", fontFamily: "inherit" }}>Rozumiem</button>
-        </Sheet>
-      )}
-
-      {/* O aplikácii · podpora */}
-      {oAppke && (
-        <Sheet onClose={() => setOAppke(false)} label="O aplikácii">
-          <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm, marginBottom: SPACE.sm }}>
-            <span style={{ width: 44, height: 44, borderRadius: RADIUS.sm, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", background: GRAD, color: "#fff", fontWeight: 800, fontSize: 20 }}>D⁺</span>
-            <div><div style={{ fontSize: 16, fontWeight: 800 }}>DEED — platforma dobra</div><div style={{ fontSize: 11.5, color: C.textTer }}>Skutky, nie reči.</div></div>
-          </div>
-          {([["Verzia", "pilot (pred-produkčná)"], ["Platby", "demo — žiadne reálne peniaze"], ["Komentáre", "nikdy (železné pravidlo)"]] as [string, string][]).map((r, i) => (
-            <div key={i} style={{ display: "flex", justifyContent: "space-between", gap: SPACE.sm, padding: `${SPACE.xs}px 0`, fontSize: 12.5, borderBottom: `1px solid ${C.line2}` }}>
-              <span style={{ color: C.textTer }}>{r[0]}</span><span style={{ fontWeight: 600 }}>{r[1]}</span>
-            </div>
-          ))}
-          <button onClick={() => { setOAppke(false); setAko(true); }} style={{ width: "100%", height: 48, borderRadius: RADIUS.md, marginTop: SPACE.md, border: "none", background: GRAD, color: "#fff", fontWeight: 700, fontSize: 15, cursor: "pointer", fontFamily: "inherit" }}>Ako DEED funguje — sprievodca</button>
-          <div style={{ fontSize: 11, color: C.textTer, textAlign: "center", marginTop: SPACE.sm, lineHeight: 1.5 }}>Spätnú väzbu a problémy nahlás cez vlajku 🚩 pri obsahu alebo autorovi projektu.</div>
-        </Sheet>
-      )}
-
-      {/* fotky profilu — tá istá cesta ako klik na avatar v identite */}
-      {fotka && (
-        <FotoProfiluSheet
-          titul="Fotky môjho profilu"
-          foto={ja.foto} nahrada={ja.iniciala}
-          onZmena={(url) => { ja.nastavFoto?.(url); toast(url ? "Profilová fotka uložená" : "Profilová fotka odstránená"); }}
-          cover={mojeFotky.cover}
-          onCover={(url) => { zmenMojeFotky({ cover: url }); toast(url ? "Titulná fotka uložená" : "Titulná fotka odstránená"); }}
-          onClose={() => setFotka(false)} />
-      )}
-
-      {/* sprievodca „Ako DEED funguje" (rovnaký ako pri prvom spustení) */}
-      {ako && <IntroPruvodca onClose={() => setAko(false)} />}
     </div>
   );
 }

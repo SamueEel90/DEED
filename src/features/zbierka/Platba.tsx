@@ -239,7 +239,7 @@ export function PlatobneOkno({ kanal, suma: sumaStart, nazov, registrovany, bonu
 
   const sirka = desktop ? 560 : wide ? 640 : undefined;
   const okno: CSSProperties = wide
-    ? { position: "relative", width: sirka, maxWidth: "calc(100vw - 32px)", maxHeight: "min(760px, calc(100vh - 48px))", borderRadius: 28,
+    ? { position: "relative", width: sirka, maxWidth: "calc(100vw - 32px)", maxHeight: "min(760px, calc(100vh / var(--pismo, 1) - 48px))", borderRadius: 28,
         transform: otvorene ? "none" : "translateY(24px)", opacity: otvorene ? 1 : 0 }
     : { position: "absolute", left: 0, right: 0, bottom: 0, maxHeight: "92%", borderRadius: "28px 28px 0 0", transform: otvorene ? "none" : "translateY(105%)" }; // mobil zdola, tablet/PC v strede
 
