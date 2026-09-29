@@ -43,11 +43,13 @@ function Volba({ on, onClick, t, s, ikona }: { on: boolean; onClick: () => void;
 const Radio = ({ on }: { on: boolean }) => <span aria-hidden="true" style={{ width: 22, height: 22, borderRadius: "50%", flex: "none", border: `2px solid ${on ? "var(--green)" : "var(--chkBd)"}`, display: "flex", alignItems: "center", justifyContent: "center" }}><span style={{ width: 11, height: 11, borderRadius: "50%", background: "var(--green)", opacity: on ? 1 : 0 }} /></span>;
 
 /** obrazovka, ktorá príde sprava (Späť vráti na Nastavenia) */
-export function ObrazovkaSprava({ titul, onBack, children, z = 135 }: { titul: string; onBack: () => void; children: ReactNode; z?: number }) {
+export function ObrazovkaSprava({ titul, onBack, children, z = 135, zavriet = 0 }: { titul: string; onBack: () => void; children: ReactNode; z?: number; /** zvýšenie = zasunúť a zavrieť (napr. po výbere) */ zavriet?: number }) {
   const [otv, setOtv] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => { const r = requestAnimationFrame(() => setOtv(true)); return () => cancelAnimationFrame(r); }, []);
   const spat = () => { setOtv(false); setTimeout(onBack, 380); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { if (zavriet > 0) { const t = setTimeout(spat, 200); return () => clearTimeout(t); } }, [zavriet]);
   // Esc zavrie len vrchnú vrstvu (hárok nad obrazovkou má vlastné Esc)
   useEffect(() => { const k = (e: KeyboardEvent) => { if (e.key !== "Escape") return; const vrch = [...document.querySelectorAll('[aria-modal="true"]')].pop(); if (vrch === ref.current) spat(); }; window.addEventListener("keydown", k); return () => window.removeEventListener("keydown", k); });
   return createPortal(

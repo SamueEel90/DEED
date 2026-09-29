@@ -23,10 +23,13 @@ export type NastaveniaAppky = {
   /** okruh počítať od polohy telefónu (Kde práve som) namiesto Moje miesto */
   odPolohy: boolean;
   /** nepovinné súhlasy (karta 24 · 2e) + záznam zmien (čas, verzia) */
+  /** karta 24 · 2g jazyk appky (názov vo vlastnom jazyku) · 2i započítať skutky firme (ESG, bez mena) */
+  jazyk: string;
+  esgFirme: boolean;
   suhlasy: { pers: boolean; stat: boolean; news: boolean; part: boolean; zaznam: { k: string; on: boolean; cas: string; verzia: string }[] };
 };
 const KLUC = "deed.nastavenia.appky";
-const ZAKLAD: NastaveniaAppky = { pismo: 100, obmedzAnim: false, vibracie: true, titulky: true, tichyCas: true, poloha: true, okruh: "mesto", biometria: false, hranicaPlatby: 50, kontakty: false, ukazky: true, tichyOd: "22:00", tichyDo: "7:00", oznamy: { master: true, zmeny: {}, strop: true, vecer: false }, odPolohy: false, suhlasy: { pers: true, stat: true, news: false, part: false, zaznam: [] } };
+const ZAKLAD: NastaveniaAppky = { pismo: 100, obmedzAnim: false, vibracie: true, titulky: true, tichyCas: true, poloha: true, okruh: "mesto", biometria: false, hranicaPlatby: 50, kontakty: false, ukazky: true, tichyOd: "22:00", tichyDo: "7:00", oznamy: { master: true, zmeny: {}, strop: true, vecer: false }, odPolohy: false, jazyk: "Slovenčina", esgFirme: true, suhlasy: { pers: true, stat: true, news: false, part: false, zaznam: [] } };
 let verzia = 0;
 const posluchaci = new Set<() => void>();
 

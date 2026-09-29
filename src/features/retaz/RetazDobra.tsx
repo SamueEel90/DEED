@@ -20,8 +20,7 @@ import { qrUrl } from "@/lib/qr";
     % + komu → QR s reťazou na zdieľanie (pod video, knihu).
 
   Pravidlá: % sa pri vzniku ZAFIXUJE (nemenné, záväzok). Reťazová
-  časť je oddelená od voľnej (user ju nevyberie pre seba). Generuje
-  Generosity Score — NIE nové DEED tokeny. QR = odkaz na skutok.
+  časť je oddelená od voľnej (user ju nevyberie pre seba). QR = odkaz na skutok.
   ============================================================
 */
 
@@ -56,7 +55,6 @@ export function RetazDobraSheet({ odmena = 130, mode = "skutok", odkaz = "https:
   const reazSuma = Math.round((odmena * pct) / 100);
   const ziadost = ZIADOSTI.find((z) => z.id === zid);
   const zoznam = q ? ZIADOSTI.filter((z) => norm(z.nazov + " " + z.lok).includes(norm(q))) : ZIADOSTI;
-  const gener = reazSuma > 0 ? Math.round(reazSuma / 2) + 5 : pct + 5; // Generosity Score (placeholder; NIE nové DEED)
 
   // potvrdenie → vytvor REÁLNU reťaz (% sa zafixuje pri vzniku) + dostaň slug pre /chain/{slug}
   async function potvrd() {
@@ -158,9 +156,6 @@ export function RetazDobraSheet({ odmena = 130, mode = "skutok", odkaz = "https:
         <Row k={honorar ? "Honorár" : "Tvoja odmena"} v={honorar ? "každý budúci príjem" : `${odmena} DEED`} />
         <Row k="Ide ďalej (zamknuté)" v={`${pct}%${honorar ? "" : ` · ${reazSuma} DEED`}`} accent="var(--a-green)" />
         <Row k="Príjemca" v={ziadost?.nazov} />
-        <div style={{ display: "flex", justifyContent: "space-between", paddingTop: SPACE.xs, fontSize: 13, fontWeight: 800 }}>
-          <span>Generosity Score</span><span style={{ color: C.gold }}>+{gener}</span>
-        </div>
       </div>
 
       {/* QR D+R */}
@@ -172,7 +167,7 @@ export function RetazDobraSheet({ odmena = 130, mode = "skutok", odkaz = "https:
       </div>
 
 
-      <button onClick={() => { toast?.(honorar ? "Reťaz na honorár aktívna — QR pripravený na zdieľanie" : "Skutok + reťaz zverejnené · QR zdieľané"); onDone?.({ pct, reazSuma, ziadost, gener }); onClose?.(); }}
+      <button onClick={() => { toast?.(honorar ? "Reťaz na honorár aktívna — QR pripravený na zdieľanie" : "Skutok + reťaz zverejnené · QR zdieľané"); onDone?.({ pct, reazSuma, ziadost }); onClose?.(); }}
         style={{ width: "100%", height: 50, borderRadius: RADIUS.md, border: "none", marginTop: SPACE.gutter, fontWeight: 700, fontSize: 15, fontFamily: "inherit", background: GRAD, color: "#fff", cursor: "pointer", boxShadow: "0 8px 26px color-mix(in srgb, var(--a-green) 32%, transparent)", display: "flex", alignItems: "center", justifyContent: "center", gap: SPACE.xs }}>
         <Zdielanie size={18} color="#fff" /> {honorar ? "Zdieľať QR reťaze" : "Zdieľať skutok + QR"}
       </button>

@@ -11,7 +11,7 @@ import { SpatTlacidlo } from "@/components/cesta";
 import { toast } from "@/components/toast";
 import { IntroPruvodca } from "@/components/intro";
 import { NahlasitSheet } from "@/components/nahlasit";
-import { MojZamestnavatelSheet } from "@/features/rola/MojZamestnavatel";
+import { JazykObrazovka, StiahnutUdajeObrazovka, ZamestnavatelObrazovka } from "./JazykUdajeFirma";
 import { Harok } from "@/features/zbierka/Zdielat";
 import { PotvrditPlatbuHarok, OkruhHarok, PrihlaseneZariadenia, EmailTelefonHeslo, ZablokovaniLudia, Suhlasy, DetailSuhlasu, hranicaText } from "./Bezpecnost24";
 import { zariadenia, useZmenyZariadeni } from "@/lib/zariadenia";
@@ -29,19 +29,11 @@ export function Nastavenia20({ onBack, onNotif, onUpravProfil, desktop }: { onBa
   const n = useNastaveniaAppky();
   const [tuk, setTuk] = useState(potvrditTuknutim);
   const vazba = useVazbaOsoby(ja.celeMeno);
-  const [harok, setHarok] = useState<null | "okruh" | "platba" | "zrusit" | "zamestnavatel" | "uvod" | "nahlasit">(null);
+  const [harok, setHarok] = useState<null | "okruh" | "platba" | "zrusit" | "uvod" | "nahlasit">(null);
   const [detail, setDetail] = useState<null | "pod" | "ud">(null); // OPRAVY 34: detail súhlasu (karta 24 · 2f)
-  const [obr, setObr] = useState<null | "zariadenia" | "kontakt" | "blokovani" | "suhlasy">(null); // obrazovky sprava (karta 24)
+  const [obr, setObr] = useState<null | "zariadenia" | "kontakt" | "blokovani" | "suhlasy" | "jazyk" | "udaje" | "firma">(null); // obrazovky sprava (karta 24)
   useZmenyZariadeni(); useZmenyBlokovania();
 
-  const stiahniUdaje = () => {
-    const data: Record<string, unknown> = { vytvorene: new Date().toISOString(), meno: ja.celeMeno };
-    try { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i)!; if (k.startsWith("deed.")) { const v = localStorage.getItem(k); try { data[k] = JSON.parse(v ?? "null"); } catch { data[k] = v; } } } } catch { /* LS */ }
-    const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }));
-    const a = document.createElement("a"); a.href = url; a.download = "moje-udaje-deed.json"; a.click();
-    window.setTimeout(() => URL.revokeObjectURL(url), 2000);
-    toast("Stiahnuté");
-  };
   const pismo = (d: number) => zmenNastavenia({ pismo: Math.min(150, Math.max(90, n.pismo + d)) });
   const pasik = (i: number) => 90 + i * 10 <= n.pismo;
 
@@ -64,7 +56,7 @@ export function Nastavenia20({ onBack, onNotif, onUpravProfil, desktop }: { onBa
                 style={{ minHeight: 44, padding: "4px 6px", borderRadius: 11, border: "none", cursor: "pointer", fontSize: 14.5, fontWeight: 700, fontFamily: "inherit", lineHeight: 1.2, ...(tema === k ? {} : { background: "transparent", color: "var(--d-ink3, var(--ink3))", boxShadow: "none" }) }}>{l}</button>))}
           </div>
         </div>
-        <Riadok d={IK.globe} t="Jazyk" hodnota="Slovenčina" onClick={coskoro} />
+        <Riadok d={IK.globe} t="Jazyk" hodnota={n.jazyk} onClick={() => setObr("jazyk")} />
       </Sekcia>
 
       <Sekcia nadpis="PRÍSTUPNOSŤ" k="g">
@@ -110,11 +102,11 @@ export function Nastavenia20({ onBack, onNotif, onUpravProfil, desktop }: { onBa
         <Riadok prvy d={IK.users} t="Hľadať priateľov v kontaktoch" s="čísla sa neukladajú, len ich odtlačok" prepinac={n.kontakty} onClick={() => zmenNastavenia({ kontakty: !n.kontakty })} />
         <Riadok d={IK.block} t="Zablokovaní ľudia" hodnota={String(zablokovani().length)} onClick={() => setObr("blokovani")} />
         <Riadok d={IK.file} t="Súhlasy" onClick={() => setObr("suhlasy")} />
-        <Riadok d={IK.download} t="Stiahnuť moje údaje" s="všetko o tebe v jednom súbore" onClick={stiahniUdaje} />
+        <Riadok d={IK.download} t="Stiahnuť moje údaje" s="všetko o tebe v jednom súbore" onClick={() => setObr("udaje")} />
       </Sekcia>
 
       <Sekcia nadpis="ÚČET" k="b">
-        <Riadok prvy d={IK.brief} t="Zamestnávateľ" hodnota={vazba?.stav === "potvrdeny" ? vazba.firma : vazba?.stav === "pozvany" ? "Pozvánka čaká" : vazba?.stav === "ziadost" ? "Čaká na firmu" : "Nenastavený"} onClick={() => setHarok("zamestnavatel")} />
+        <Riadok prvy d={IK.brief} t="Zamestnávateľ" hodnota={vazba?.stav === "potvrdeny" ? vazba.firma : vazba?.stav === "pozvany" ? "Pozvánka od firmy" : vazba?.stav === "ziadost" ? "Čaká na potvrdenie" : "Nenastavený"} onClick={() => setObr("firma")} />
         <Riadok d={IK.trash} t="Zrušiť účet" onClick={() => setHarok("zrusit")} />
       </Sekcia>
 
@@ -137,9 +129,11 @@ export function Nastavenia20({ onBack, onNotif, onUpravProfil, desktop }: { onBa
       {obr === "kontakt" && <EmailTelefonHeslo onBack={() => setObr(null)} />}
       {obr === "blokovani" && <ZablokovaniLudia onBack={() => setObr(null)} />}
       {obr === "suhlasy" && <Suhlasy onBack={() => setObr(null)} />}
+      {obr === "jazyk" && <JazykObrazovka onBack={() => setObr(null)} />}
+      {obr === "udaje" && <StiahnutUdajeObrazovka onBack={() => setObr(null)} />}
+      {obr === "firma" && <ZamestnavatelObrazovka onBack={() => setObr(null)} />}
       {detail && <DetailSuhlasu typ={detail} onBack={() => setDetail(null)} />}
       {harok === "zrusit" && <ZrusitUcet onClose={() => setHarok(null)} />}
-      {harok === "zamestnavatel" && <MojZamestnavatelSheet osoba={ja.celeMeno} toast={toast} onClose={() => setHarok(null)} />}
       {harok === "uvod" && <IntroPruvodca onClose={() => setHarok(null)} />}
       {harok === "nahlasit" && <NahlasitSheet co="Problém v appke" refId="appka" modul="appka" toast={toast} onClose={() => setHarok(null)} />}
     </div>

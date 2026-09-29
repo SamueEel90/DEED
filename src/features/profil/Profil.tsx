@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Emo } from "@/components/icons";
 import { SIRKA, C, GRAD, SPACE, RADIUS } from "@/theme";
 import { toast, StitRiadok, DozivotnyChip, useScrollPamat, useLayout, useTvorbaGate, obalSiroky, IkonaNastavenia, IkonaSipVlavo, IkonaPenazenka, IkonaHviezda, IkonaFajka, IkonaDoska, IkonaUsmev, IkonaOsoba, SkeletonRiadky, EmptyState, ErrorState, ScreenSwitch } from "@/shared";
 import { MojDeedFiremny } from "@/features/rola/MojDeedFiremny";
@@ -246,7 +247,7 @@ function PriateliaScreen({ toast, onBack, desktop }: PriateliaScreenProps) {
 
         {/* ochrana */}
         <div style={{ display: "flex", alignItems: "flex-start", gap: SPACE.xs, fontSize: 11, color: C.textTer, lineHeight: 1.5, marginTop: SPACE.xs, padding: `${SPACE.sm}px ${SPACE.sm}px`, borderRadius: RADIUS.sm, background: "color-mix(in srgb, var(--a-info) 6%, transparent)", border: "1px solid color-mix(in srgb, var(--a-info) 20%, transparent)" }}>
-          🛡 QR/odkaz vedie <b>len na žiadosť o priateľstvo</b> — nie na otvorený profil ani skutky. Priateľstvo je vždy vzájomné (so súhlasom) a <b>neodomyká</b> súkromnú časť.
+          <span style={{ display: "flex", flex: "none", marginTop: 1, color: "var(--a-info)" }}><Emo e="🛡" /></span><span>QR/odkaz vedie <b>len na žiadosť o priateľstvo</b> — nie na otvorený profil ani skutky. Priateľstvo je vždy vzájomné (so súhlasom) a <b>neodomyká</b> súkromnú časť.</span>
         </div>
       </div>
 

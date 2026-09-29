@@ -447,7 +447,6 @@ export interface RetazVysledok {
   pct: number;
   reazSuma: number;
   ziadost?: RetazZiadost;
-  gener: number;
 }
 
 /* FUN ZÓNA — FunZona.jsx (§13.2) */

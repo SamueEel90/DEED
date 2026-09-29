@@ -148,3 +148,4 @@ html.dark {
 /* vybraná téma: svetlá = biela so zelenou linkou, tmavá = #2F3A27 + rámik --sek-g (nie biely blok) */
 .deed-platba .seg-on { background: #fff; color: #1D211B; box-shadow: inset 0 0 0 1.5px var(--sek-g); }
 html.dark .deed-platba .seg-on { background: #2F3A27; color: var(--d-ink); }
+.deed-platba .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
