@@ -1,3 +1,4 @@
+import { Emo } from "@/components/icons";
 import { useState, useEffect, memo } from "react";
 import { SIRKA, SPACE, RADIUS } from "@/theme";
 import { Foto, MiniFotky, ModulHlavicka, PlatobnyModul, PlatbaModal, SplitQrSheet, QrModal, HladanieModal, toast, useGaleria, useLayout, useScrollPamat, useStrankaAkcie, FeedGrid, StatRiadok, FiltreStat, OkruhVyber, MoniBar, ProgresBox, BackHeader, obalSiroky, SegTabs, tint, Lupa, Zdielanie, IkonaVlajka, IkonaFoto, IkonaInstitucia, Srdce, EmptyState, ScreenSwitch, SwipeBack, ZoznamDarcov, FormatovanyText, Input } from "@/shared";
@@ -387,7 +388,7 @@ function FarnostFeed({ f, onPrispevok }: { f: Farnost; onPrispevok: (z: VieraFee
                   ) : (<>
                     <Foto src={o.fotky?.[0]} emoji={o.emoji ?? "📢"} w={58 * k} h={44 * k} radius={RADIUS.xs} sizes={`${58 * k}px`} alt={o.nazov} />
                     {o.fotky?.length && o.emoji ? (
-                      <span style={{ position: "absolute", bottom: -4, right: -4, fontSize: 12 * k, lineHeight: 1, filter: "drop-shadow(0 1px 2px rgba(0,0,0,.5))" }}>{o.emoji}</span>
+                      <span style={{ position: "absolute", bottom: -4, right: -4, fontSize: 12 * k, lineHeight: 1, filter: "drop-shadow(0 1px 2px rgba(0,0,0,.5))" }}><Emo e={o.emoji} /></span>
                     ) : null}
                   </>)}
                 </div>
@@ -424,7 +425,7 @@ function FararToggle({ on, onToggle }: { on: boolean; onToggle: () => void }) {
   return (
     <div {...pressable(onToggle, on ? "Vypnúť správcovský režim farára" : "Zapnúť účet farára")} aria-pressed={on}
       style={{ display: "flex", alignItems: "center", gap: SPACE.sm, marginTop: SPACE.sm, background: on ? tint(N.ind, .12) : N.card, border: `1px solid ${on ? N.indEdge : N.line}`, borderRadius: RADIUS.sm, padding: `${SPACE.sm}px ${SPACE.gutter}px`, cursor: "pointer" }}>
-      <span style={{ fontSize: 17, flex: "none" }}>🛡</span>
+      <span style={{ fontSize: 17, flex: "none", display: "flex" }}><Emo e="🛡" /></span>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 13, fontWeight: 700, color: on ? N.ind : N.txt }}>Účet farára (správca)</div>
         <div style={{ fontSize: 11, color: N.txt3, lineHeight: 1.4 }}>{on ? "Spravuješ farnosť — pridávaj oznamy a zbierky." : "Prepni na správu tvojej farnosti."}</div>
@@ -521,7 +522,7 @@ function VieraDetail({ z, farar, onBack, onProfil }: { z: VieraFeedItem; farar: 
   }
   // sekundárne: pridať do systémového kalendára (.ics) — spoľahlivé aj pri zavretej appke
   const doKalendara = () => { if (z.datum) stiahniIcs({ id: z.id, nazov: z.nazov ?? "Udalosť", datum: z.datum, miesto: z.lok, popis: cistyText(z.pribeh ?? z.popis ?? "").slice(0, 200) }, toast); };
-  const zdielajDetail = () => void zdielaj({ titul: z.nazov ?? "DEED", text: `${z.nazov ?? ""} — ${z.komunita || z.cirkev}`, url: aktualnaUrl() }, toast);
+  const zdielajDetail = () => void zdielaj({ titul: z.nazov ?? "DEED+", text: `${z.nazov ?? ""} — ${z.komunita || z.cirkev}`, url: aktualnaUrl() }, toast);
   const [ozvat, setOzvat] = useState(false); // „Zapojiť sa" → správa farnosti
   const [nahlasit, setNahlasit] = useState(false); // vlajka → nahlásenie obsahu
   const [mazem, setMazem] = useState(false); // farárske mazanie — 2. ťuk potvrdí
@@ -535,7 +536,7 @@ function VieraDetail({ z, farar, onBack, onProfil }: { z: VieraFeedItem; farar: 
   const ja = usePouzivatel();
   const darRef = `naboz-${z.id}`;
   function podpor(hodnota: number, text: string) { setSuma((s) => s + hodnota * 0.01); setLudia((l) => l + 1); pridajDar({ refId: darRef, suma: hodnota * 0.01, kanal: "deed", registrovany: ja.typ !== "pasivny" }); toast(text); }
-  function platbaHotova(s: number, volba?: VolbaDaru) { setSuma((x) => x + s * (platba === "DEED" ? 0.01 : 1)); setLudia((l) => l + 1); pridajDar({ refId: darRef, suma: s * (platba === "DEED" ? 0.01 : 1), kanal: platba === "EUR" ? "psp" : "deed", registrovany: ja.typ !== "pasivny", volba }); toast(`Odoslané ${platba === "EUR" ? s + " €" : platba === "EURC" ? s + " EURC" : s + " DEED"} · ${z.nazov}`); }
+  function platbaHotova(s: number, volba?: VolbaDaru) { setSuma((x) => x + s * (platba === "DEED" ? 0.01 : 1)); setLudia((l) => l + 1); pridajDar({ refId: darRef, suma: s * (platba === "DEED" ? 0.01 : 1), kanal: platba === "EUR" ? "psp" : "deed", registrovany: ja.typ !== "pasivny", volba }); toast(`Odoslané ${platba === "EUR" ? s + " €" : platba === "EURC" ? s + " EURC" : s + " DeeD"} · ${z.nazov}`); }
   // §delta bod 2: kontextová reakcia-srdiečko (kondolencia / modlím sa / blahoželáme) — odvodené z typu
   const reakcia = reakciaToast(z);
 
@@ -635,13 +636,13 @@ function VieraDetail({ z, farar, onBack, onProfil }: { z: VieraFeedItem; farar: 
               <PlatobnyModul zbalene
                 onShare={zdielajDetail}
                 upvotes={ludia} onUpvote={() => toast(reakcia)} reakcia="srdce"
-                onPodpor={(s: number) => podpor(s, `Ďakujeme za ${s} DEED pre ${z.nazov}`)}
+                onPodpor={(s: number) => podpor(s, `Ďakujeme za ${s} DeeD pre ${z.nazov}`)}
                 onKanal={(k: string) => setPlatba(k as Kanal)} accent={N.ind}
                 supLabel={z.ukat === "pohreb" ? "PRISPIEŤ — pohrebná zbierka (predĺžené okno ~týždeň)" : "PRISPIEŤ — klik a hneď odíde"}
                 oblubene={{ refId: z.id, typ: z.ntyp ?? "zbierka", modul: "nabozenstvo", nazov: z.nazov ?? "Zbierka", lok: z.lok, ciel: cielLocal ?? undefined, vyzbierane: suma }} toast={toast}
                 qr={{ label: "QR tejto zbierky", onClick: () => setQr(true) }}
                 {/* Split QR pri pohrebe/svadbe nastavuje LEN farár (rodine ↔ kostolu) */
-                ...(jeSplit && farar ? { retaz: { label: "Rozdeliť dar (Split QR)", popis: "Rodine ↔ kostolu — % sa zafixujú pri vzniku", onClick: () => setSplit(true) } } : {})} />
+                ...(jeSplit && farar ? { retaz: { label: "Rozdeliť dar (QR reťaze)", popis: "Rodine ↔ kostolu — % sa zafixujú pri vzniku", onClick: () => setSplit(true) } } : {})} />
             </div>
 
             {/* zoznam darcov — až pod pravidelnou podporou / reťazou dobra */}

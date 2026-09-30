@@ -43,7 +43,7 @@ export function UpgradePanel({ onClose, onAktivovat }: { onClose?: () => void; o
     { Ikona: IkonaPlus, col: "var(--a-green)", t: "Pridávaj skutky, žiadosti a zbierky" },
     { Ikona: IkonaPenazenka, col: "var(--a-green)", t: "Nastav pravidelnú podporu zbierky" },
     { Ikona: IkonaPlay, col: "var(--a-info)", t: "Komentuj a ukáž svoj talent" },
-    { Ikona: IkonaPenazenka, col: "var(--a-teal)", t: "Prispievaj aj v DEED z peňaženky" },
+    { Ikona: IkonaPenazenka, col: "var(--a-teal)", t: "Prispievaj aj v DeeD z peňaženky" },
     { Ikona: IkonaPohar, col: "var(--a-gold)", t: "Získavaj karmu, úrovne a odmeny" },
   ];
   return (
@@ -54,7 +54,7 @@ export function UpgradePanel({ onClose, onAktivovat }: { onClose?: () => void; o
         </div>
         <div style={{ fontSize: 18, fontWeight: 800, marginTop: SPACE.gutter }}>Toto je pre registrovaných</div>
         <div style={{ fontSize: 13.5, color: C.textSec, marginTop: SPACE.xs, lineHeight: 1.55, maxWidth: 320 }}>
-          Bez registrácie môžeš všetko prezerať a prispieť v EUR. Na pravidelnú podporu, DEED a vytváranie obsahu sa zaregistruj. Registrácia je zadarmo.
+          Bez registrácie môžeš všetko prezerať a prispieť v EUR. Na pravidelnú podporu, DeeD a vytváranie obsahu sa zaregistruj. Registrácia je zadarmo.
         </div>
       </div>
 

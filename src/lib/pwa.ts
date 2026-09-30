@@ -16,13 +16,13 @@ export function initPwa(): void {
   if (import.meta.env.DEV || typeof window === "undefined") return;
   const aktualizuj = registerSW({
     onNeedRefresh() {
-      sonnerToast("Nová verzia DEED je pripravená.", {
+      sonnerToast("Nová verzia DEED+ je pripravená.", {
         duration: 12000,
         action: { label: "Obnoviť", onClick: () => { void aktualizuj(true); } },
       });
     },
     onOfflineReady() {
-      sonnerToast("DEED je pripravený aj offline.", { duration: 3500 });
+      sonnerToast("DEED+ je pripravený aj offline.", { duration: 3500 });
     },
   });
 }

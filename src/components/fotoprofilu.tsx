@@ -44,7 +44,17 @@ export function FotoProfiluSheet({
 }) {
   return (
     <Sheet onClose={onClose} label={titul}>
-      <div style={{ display: "flex", alignItems: "center", gap: SPACE.gutter, marginBottom: SPACE.md }}>
+      <FotoProfiluObsah {...{ titul, popis, foto, nahrada, onZmena, cover, onCover, coverPopis }} />
+    </Sheet>
+  );
+}
+
+type ObsahProps = { titul: string; popis: string; foto?: string | null; nahrada?: ReactNode; onZmena?: (u: string | null) => void; cover?: string | null; onCover?: (u: string | null) => void; coverPopis: string; bezHlavicky?: boolean };
+/** obsah fotiek bez obalu — FotoProfiluSheet (Sheet) aj hárok nad Upraviť profil (OPRAVY 72) */
+export function FotoProfiluObsah({ titul, popis, foto, nahrada, onZmena, cover, onCover, coverPopis, bezHlavicky }: ObsahProps) {
+  return (
+    <>
+      {!bezHlavicky && <div style={{ display: "flex", alignItems: "center", gap: SPACE.gutter, marginBottom: SPACE.md }}>
         <span style={{ width: 66, height: 66, flex: "none", borderRadius: RADIUS.round, overflow: "hidden", background: C.surface2, border: `1px solid ${C.line}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, fontWeight: 800, color: C.textSec }}>
           {foto ? <img src={foto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} /> : nahrada}
         </span>
@@ -52,7 +62,7 @@ export function FotoProfiluSheet({
           <div style={{ fontSize: 16, fontWeight: 800 }}>{titul}</div>
           <div style={{ fontSize: 11.5, color: C.textTer, marginTop: 2, lineHeight: 1.45 }}>{popis}</div>
         </div>
-      </div>
+      </div>}
 
       {/* náhľady držia presne ten tvar, v akom sa fotka zobrazí na profile:
           profilovka v krúžku, titulná ako 16:9 pás — čo vidíš, to dostaneš */}
@@ -77,7 +87,7 @@ export function FotoProfiluSheet({
         <IkonaFoto size={13} color={C.textTer} />
         <span>Fotka sa pred uložením prekóduje — <b>EXIF aj GPS súradnice</b> sa odstránia a obrázok sa oreže na správny pomer.</span>
       </div>
-    </Sheet>
+    </>
   );
 }
 

@@ -65,7 +65,7 @@ export function QrModal({ typ = "skutok", titul, popis, odkaz = "https://deed.ap
     : reazPct != null && typeof prijemca === "string" ? `${reazPct} % → ${kratko(prijemca)}` : undefined);
 
   const kopiruj = () => { void kopirujLib(odkazReal, toast); };
-  const zdielaj = () => { void zdielajLib({ titul: (titul as string) || "DEED", url: odkazReal }, toast); };
+  const zdielaj = () => { void zdielajLib({ titul: (titul as string) || "DEED+", url: odkazReal }, toast); };
 
   const out = (ic: ReactNode, label: ReactNode, sub: ReactNode, onClick?: () => void) => (
     <button onClick={onClick} style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: SPACE.xxs, padding: `${SPACE.sm}px ${SPACE.xs}px`, borderRadius: RADIUS.sm, background: C.surface2, border: `1px solid ${C.line}`, color: C.text, cursor: "pointer", fontFamily: "inherit" }}>
@@ -96,7 +96,7 @@ export function QrModal({ typ = "skutok", titul, popis, odkaz = "https://deed.ap
         {rotujuci ? (
           <div style={{ display: "flex", alignItems: "center", gap: SPACE.xs, fontSize: 11.5, color: C.textTer }}>
             <span style={{ width: 22, height: 22, borderRadius: RADIUS.round, border: `2px solid ${tint(meta.col, .3)}`, borderTopColor: meta.col, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 800, color: meta.col, animation: "tocenie 1s linear infinite" }} />
-            obnoví sa o <b style={{ color: meta.col }}>{zb}s</b> · screenshot neplatný (anti-relay)
+            obnoví sa o <b style={{ color: meta.col }}>{zb}s</b> · snímka obrazovky neplatí
           </div>
         ) : (
           <div style={{ fontSize: 11, color: C.textTer, fontFamily: "monospace", maxWidth: "92%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{odkazReal}</div>

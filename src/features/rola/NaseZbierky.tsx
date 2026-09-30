@@ -13,6 +13,7 @@
 // Nedá sa prepínať za pochodu: strop je zaplatený a rozdelený medzi darcov,
 // ktorým bol sľúbený. Ďalší beh môže byť v inom režime.
 // ============================================================
+import { DeedZnacka } from "@/components/DeedZnacka";
 import { useState, type CSSProperties } from "react";
 import { C, SPACE, RADIUS } from "@/theme";
 import { Sheet, tint } from "@/shared";
@@ -192,7 +193,7 @@ function DetailZbierky({ firma, podpora, dorovnanie, toast, onSpat }: {
             </button>
           ) : (
             <div style={{ fontSize: 11, color: C.textTer, marginTop: SPACE.xs, lineHeight: 1.45 }}>
-              Dorovnanie sa dá založiť len pri bežiacej zbierke z DEED.
+              Dorovnanie sa dá založiť len pri bežiacej zbierke z <DeedZnacka />.
             </div>
           )}
           {z?.nasa && z?.aktivna && !archiv && (

@@ -14,10 +14,11 @@ const TMAVA = "rgba(20,18,14,.7)";
 const cislo = (n: number) => n.toLocaleString("sk-SK");
 
 // ---------------- 1 · Hlavička ----------------
-export function Hlavicka({ cisloZbierky, overena, onBack, spatNazov, onZavriet }: {
+export function Hlavicka({ cisloZbierky, overena, onBack, spatNazov, onZavriet, onMoznosti }: {
   cisloZbierky?: number; overena?: boolean; onBack: () => void;
   spatNazov?: string;        // kam vedie Späť — zatiaľ sa nezobrazuje (jednotné „‹ Späť")
   onZavriet?: () => void;    // krížik: zavrie celú cestu → feed na mieste, kde bola zbierka
+  onMoznosti?: () => void;   // ⋯ menu zbierky (Nahlásiť — OPRAVY 51)
 }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 10, minHeight: 52, padding: "6px 0 14px", boxSizing: "border-box" }}>
@@ -26,7 +27,7 @@ export function Hlavicka({ cisloZbierky, overena, onBack, spatNazov, onZavriet }
         <span style={{ padding: "5px 10px", borderRadius: 10, background: "var(--bSoft)", border: "1px solid var(--bBd)", color: "var(--blue)", fontSize: 13.5, fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>#{cislo(cisloZbierky)}</span>
       )}
       {overena && <span style={{ color: "var(--blue)", fontSize: 13.5, fontWeight: 700 }}>Overená</span>}
-      <span aria-label="Ďalšie možnosti" role="button" style={{ marginLeft: "auto", fontSize: 18, color: "var(--ink3)", letterSpacing: 1, cursor: "pointer", padding: "0 4px" }}>···</span>
+      <button type="button" aria-label="Ďalšie možnosti" onClick={onMoznosti} style={{ marginLeft: "auto", minWidth: 44, height: 44, border: "none", background: "transparent", fontSize: 18, color: "var(--ink3)", letterSpacing: 1, cursor: "pointer", padding: "0 4px", fontFamily: "inherit" }}>···</button>
       {onZavriet && <ZavrietTlacidlo onClick={onZavriet} />}
     </div>
   );

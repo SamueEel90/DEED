@@ -1,3 +1,5 @@
+import { Emo } from "@/components/icons";
+import { KonasAkoLista } from "@/features/profil/MojeStranky";
 import { useState, Children, type CSSProperties, type ReactNode, type ReactElement } from "react";
 import { SpatTlacidlo } from "@/components/cesta";
 import { C, GRAD, GRAD_ZELENY, glassTmavy, btn, SPACE, RADIUS } from "@/theme";
@@ -82,10 +84,12 @@ export function ModulHlavicka({ title, right, slogan = "Miesto, kde nerozhodujú
           </span>
         )}
         {/* logo = App ikona (D⁺); klik → QR logo na celú obrazovku (§ prianie vlastníka) */}
-        {!desktop && <Znacka size={34} />}
+        {!desktop && <Znacka size={34} text />}
         {/* h1 = názov modulu (SR navigácia po nadpisoch) — vizuál nezmenený */}
         <h1 style={{ fontSize: 20, fontWeight: 800, margin: 0, lineHeight: "inherit" }}>{title}</h1>
-        <span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: SPACE.sm }}>
+        {/* OPRAVY 75: stred lišty — Prezentácia + Konáš ako (len kto spravuje stránky); appkové menu sa nemení */}
+        <span style={{ flex: 1, minWidth: 0, display: "flex", justifyContent: "center" }}><KonasAkoLista /></span>
+        <span style={{ display: "flex", alignItems: "center", gap: SPACE.sm }}>
           {right}
         </span>
       </div>
@@ -112,7 +116,7 @@ export function vyberBox(active?: boolean): CSSProperties {
 export function Vyber({ emoji, title, desc, active, onClick }: { emoji?: ReactNode; title?: ReactNode; desc?: ReactNode; active?: boolean; onClick?: () => void }) {
   return (
     <div {...pressable(onClick)} style={vyberBox(active)}>
-      <div style={{ fontSize: 14, fontWeight: 700 }}>{emoji} {title}</div>
+      <div style={{ fontSize: 14, fontWeight: 700 }}><Emo e={emoji} /> {title}</div>
       {desc && <div style={{ fontSize: 12, color: C.textSec, marginTop: SPACE.xxs, lineHeight: 1.4 }}>{desc}</div>}
     </div>
   );

@@ -116,3 +116,41 @@ html.dark .deed-platba .zb-tvorca { background: linear-gradient(135deg, #27425A 
   .zb-pravy { position: sticky; top: 24px; display: flex; flex-direction: column; min-width: 0; }
   .zb-obsah .zb-pol { padding-left: 0 !important; padding-right: 0 !important; }
 }
+
+/* karta 18 · žiara za štítom v profile (len transform/opacity) */
+@keyframes pfZiara { 0%, 100% { opacity: .55; transform: scale(1); } 50% { opacity: 1; transform: scale(1.1); } }
+.pf-ziara { animation: pfZiara 3.4s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .pf-ziara { animation: none; } }
+
+/* karta 21 · jemné vysunutie nového bloku (len transform/opacity) */
+.deed-platba .pf-rise { animation: pfRise .3s ease-out both; }
+@keyframes pfRise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .deed-platba .pf-rise { animation: none; } }
+html.obmedz-anim .deed-platba .pf-rise { animation: none; }
+
+/* karta 22 · čiara skenera akcie (len transform) */
+.deed-platba .ak-ciara { animation: akSken 2s ease-in-out infinite alternate; }
+@keyframes akSken { from { transform: translateY(8px); } to { transform: translateY(calc(var(--akH, 170px) - 10px)); } }
+@media (prefers-reduced-motion: reduce) { .deed-platba .ak-ciara { animation: none; transform: translateY(calc(var(--akH, 170px) / 2)); } }
+html.obmedz-anim .deed-platba .ak-ciara { animation: none; transform: translateY(calc(var(--akH, 170px) / 2)); }
+
+/* ===== TMAVÝ REŽIM v2 (karta 25, farby.css) — farby sekcií nastavení: ikona, štvorček, linka karty ===== */
+:root      { --sek-b: #3D6B8E; --sek-bBg: #D8E1E6; --sek-bBd: #B9C7CF;  --sek-g: #4E7D37; --sek-gBg: #DCE3D0; --sek-gBd: #A9C08F;  --sek-o: #876712; --sek-oBg: #E9DEC5; --sek-oBd: #C9B27B;  --sek-r: #9A4F35; --sek-rBg: #EEDBD2; --sek-rBd: #D9A993; }
+html.dark  { --sek-b: #8DB3D2; --sek-bBg: rgba(141,179,210,.16); --sek-bBd: rgba(141,179,210,.42);  --sek-g: #9CC474; --sek-gBg: rgba(156,196,116,.15); --sek-gBd: rgba(156,196,116,.42);  --sek-o: #DDB65E; --sek-oBg: rgba(221,182,94,.16); --sek-oBd: rgba(221,182,94,.42);  --sek-r: #DE9B7E; --sek-rBg: rgba(222,155,126,.16); --sek-rBd: rgba(222,155,126,.42); }
+/* karta 25 · tmavý režim v2 (farby.css, varianta 2b): teplejší podklad, svetlejšie karty, viditeľný vypnutý prepínač */
+html.dark {
+  --c-bg: #161914; --page-grad: #161914;
+  --d-card: #232820; --d-cardBd: #333A2D; --d-sep: #2E3429;
+  --d-ink: #F1ECE1; --d-ink2: #CDC8BA; --d-ink3: #A6A395;
+  --d-trackOff: #3B4236; --d-knobOff: #CFC9BB;
+  --d-hl: inset 0 1px 0 rgba(241,236,225,.05);
+}
+/* vybraná téma: svetlá = biela so zelenou linkou, tmavá = #2F3A27 + rámik --sek-g (nie biely blok) */
+.deed-platba .seg-on { background: #fff; color: #1D211B; box-shadow: inset 0 0 0 1.5px var(--sek-g); }
+html.dark .deed-platba .seg-on { background: #2F3A27; color: var(--d-ink); }
+.deed-platba .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+/* karta 28 · svetielko na mape cesty daru (len transform/opacity) */
+.cd-ziara { animation: cdZiara 1.8s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+@keyframes cdZiara { 0%, 100% { opacity: .5; transform: scale(1); } 50% { opacity: 1; transform: scale(1.35); } }
+@media (prefers-reduced-motion: reduce) { .cd-ziara { animation: none; } }
+html.obmedz-anim .cd-ziara { animation: none; }

@@ -9,7 +9,7 @@
 // contentEditable; ak neskôr treba viac, vymení sa vnútro, API ostane).
 // ============================================================
 import { useEffect, useRef, useState } from "react";
-import type { CSSProperties } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { C, SPACE, RADIUS } from "@/theme";
 import { sanitizujHtml, textNaHtml, jeHtmlText } from "@/lib/richtext";
 
@@ -25,7 +25,7 @@ const NASTROJE: Array<{ id: string; label: string; titul: string; styl?: CSSProp
   { id: "mensie", label: "A-", titul: "Menšie písmo", styl: { fontSize: 11 } },
   { id: "insertUnorderedList", label: "•", titul: "Odrážky" },
   { id: "insertOrderedList", label: "1.", titul: "Číslovaný zoznam" },
-  { id: "odkaz", label: "🔗", titul: "Odkaz" },
+  { id: "odkaz", label: "", titul: "Odkaz" },
   { id: "emoji", label: "😊", titul: "Emoji" },
 ];
 const EMOJI = ["❤️", "🙏", "💛", "🤝", "✨", "🎉", "🏠", "🍲", "🧸", "🌱", "🐾", "👉"];
@@ -38,12 +38,16 @@ function zistiAktivne(el: HTMLElement | null): string[] | null {
   });
 }
 
-export function RichTextInput({ value, onChange, placeholder, minH = 110, ariaLabel, nastroje, maxZnakov }: {
+const IKONA_ODKAZ = <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7" /><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7" /></svg>;
+
+export function RichTextInput({ value, onChange, placeholder, minH = 110, ariaLabel, nastroje, maxZnakov, vpravo }: {
   value?: string; onChange?: (html: string) => void; placeholder?: string; minH?: number; ariaLabel?: string;
   /** ktoré nástroje ukázať (id z NASTROJE); bez neho všetky okrem emoji */
   nastroje?: string[];
   /** limit znakov (čistý text) — počítadlo; nad limitom sčervenie (uloženie stráži volajúci) */
   maxZnakov?: number;
+  /** doplnok vpravo v lište (napr. Diktovať) */
+  vpravo?: ReactNode;
 }) {
   const lista = NASTROJE.filter((n) => (nastroje ? nastroje.includes(n.id) : n.id !== "emoji"));
   const [emojiOtv, setEmojiOtv] = useState(false);
@@ -129,18 +133,19 @@ export function RichTextInput({ value, onChange, placeholder, minH = 110, ariaLa
   return (
     <div style={{ position: "relative" }}>
       {/* lišta nástrojov */}
-      <div role="toolbar" aria-label="Formátovanie textu" style={{ display: "flex", gap: SPACE.xxs, padding: `${SPACE.xxs}px ${SPACE.xs}px`, background: "rgba(var(--glass-rgb),.07)", border: `1px solid ${C.line}`, borderRadius: `${RADIUS.sm}px ${RADIUS.sm}px 0 0` }}>
+      <div role="toolbar" aria-label="Formátovanie textu" style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: SPACE.xxs, padding: `${SPACE.xxs}px ${SPACE.xs}px`, background: "rgba(var(--glass-rgb),.07)", border: `1px solid ${C.line}`, borderRadius: `${RADIUS.sm}px ${RADIUS.sm}px 0 0` }}>
         {lista.map((n) => (
           <button key={n.id} type="button" title={n.titul} aria-label={n.titul}
             onMouseDown={(e) => e.preventDefault() /* nepusti focus z editora */}
             onClick={() => nastroj(n.id)}
             aria-pressed={aktivne.includes(n.id) || (n.id === "emoji" && emojiOtv)}
             style={{ width: 30, height: 28, borderRadius: RADIUS.xs, border: "none",
-              background: aktivne.includes(n.id) || (n.id === "emoji" && emojiOtv) ? "var(--a-info)" : "transparent",
-              color: aktivne.includes(n.id) ? "#fff" : C.textSec, fontSize: 13, cursor: "pointer", fontFamily: "inherit", ...n.styl }}>
-            {n.label}
+              background: aktivne.includes(n.id) || (n.id === "emoji" && emojiOtv) ? "#3D6B8E" : "transparent",
+              color: aktivne.includes(n.id) ? "#fff" : C.textSec, fontSize: 13, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", ...n.styl }}>
+            {n.id === "odkaz" ? IKONA_ODKAZ : n.label}
           </button>
         ))}
+        {vpravo}
       </div>
       {emojiOtv && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 2, padding: `${SPACE.xxs}px ${SPACE.xs}px`, background: "rgba(var(--glass-rgb),.05)", borderLeft: `1px solid ${C.line}`, borderRight: `1px solid ${C.line}` }}>
@@ -152,16 +157,18 @@ export function RichTextInput({ value, onChange, placeholder, minH = 110, ariaLa
           ))}
         </div>
       )}
-      <div ref={ref} className="ftext" contentEditable spellCheck lang="sk" role="textbox" aria-multiline="true" aria-label={ariaLabel || placeholder}
-        onInput={emit} onBlur={emit} onPaste={paste} style={base} />
+      <div style={{ position: "relative" }}>
+        <div ref={ref} className="ftext" contentEditable spellCheck lang="sk" role="textbox" aria-multiline="true" aria-label={ariaLabel || placeholder}
+          onInput={emit} onBlur={emit} onPaste={paste} style={base} />
+        {prazdne && placeholder && (
+          <div aria-hidden style={{ position: "absolute", top: SPACE.md - 1, left: SPACE.md, right: SPACE.md, color: C.textTer, fontSize: 16, lineHeight: 1.5, pointerEvents: "none" }}>
+            {placeholder}
+          </div>
+        )}
+      </div>
       {maxZnakov && (
-        <div style={{ textAlign: "right", fontSize: 11.5, fontWeight: 700, marginTop: 4, color: znakov > maxZnakov ? "var(--a-danger)" : C.textTer }}>
+        <div style={{ textAlign: "right", fontSize: 11.5, fontWeight: 700, marginTop: 4, color: znakov > maxZnakov ? "#A34A2A" : C.textTer }}>
           {znakov > maxZnakov ? `Príliš dlhé — skráť text, inak sa neuloží · ` : ""}{znakov} / {maxZnakov}
-        </div>
-      )}
-      {prazdne && placeholder && (
-        <div aria-hidden style={{ position: "absolute", top: 34 + SPACE.md, left: SPACE.md, right: SPACE.md, color: C.textTer, fontSize: 14.5, lineHeight: 1.5, pointerEvents: "none" }}>
-          {placeholder}
         </div>
       )}
     </div>

@@ -1,0 +1,26 @@
+import type { Slovnik } from "../typy";
+// spoločné slová celej appky
+export const spolocne: Slovnik = {
+  "sp.spat": "Späť",
+  "sp.hotovo": "Hotovo",
+  "sp.zrusit": "Zrušiť",
+  "sp.ulozit": "Uložiť",
+  "sp.zavriet": "Zavrieť",
+  "sp.pokracovat": "Pokračovať",
+  "sp.viac": "viac",
+  "sp.menej": "Menej",
+  "sp.skryt": "Skryť",
+  "sp.ukazat": "Ukázať",
+  "sp.upravit": "Upraviť",
+  "sp.detail": "Detail",
+  "sp.hladat": "Hľadať",
+  "sp.moznosti": "Možnosti",
+  "sp.zdielat": "Zdieľať",
+  "sp.kopirovat": "Kopírovať",
+  "sp.skopirovane": "Skopírované",
+  "sp.ano": "Áno",
+  "sp.nie": "Nie",
+  "sp.skutkov": { one: "{n} skutok", few: "{n} skutky", many: "{n} skutku", other: "{n} skutkov" },
+  "obsah.prelozene": "Preložené · Zobraziť originál",
+  "obsah.zobrazitPreklad": "Zobraziť preklad",
+};

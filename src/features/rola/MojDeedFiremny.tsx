@@ -1,3 +1,6 @@
+import { Emo } from "@/components/icons";
+import { StityRad } from "@/components/stit";
+import { stityOblastiSubjektu } from "@/lib/stityOblasti";
 import { Fragment, useEffect, useMemo, useState, type ReactNode } from "react";
 import { C, SPACE, RADIUS, SIRKA } from "@/theme";
 import {
@@ -81,7 +84,7 @@ export function MojDeedFiremny({ onBack, toast }: { onBack: () => void; toast: (
   if (!pripravene) {
     return (
       <div>
-        <BackHeader onBack={onBack} title="Môj DEED firemný" />
+        <BackHeader onBack={onBack} title="Môj DEED+ firemný" />
         <div style={{ padding: "48px 0", textAlign: "center", color: C.textTer, fontSize: 14 }}>Načítavam údaje organizácie…</div>
       </div>
     );
@@ -93,9 +96,9 @@ function MojDeedFiremnyObsah({ onBack, toast, orgId }: { onBack: () => void; toa
   const { desktop } = useLayout();
   const ja = usePouzivatel(); // tvorca vystupuje pod vlastnou profilovou fotkou (nie logom)
   // rola + tier per rola — DEV: lokálny stav; produkcia: overený účet + fakturácia
-  const [pozicia, setPozicia] = useState<Pozicia>(nacitajPoziciu);
+  const [pozicia] = useState<Pozicia>(nacitajPoziciu);
   const [tiery, setTiery] = useState<Record<Pozicia, Tier>>(nacitajTiery);
-  const [drzitel, setDrzitel] = useState<boolean>(nacitajDrzitel);
+  const [drzitel] = useState<boolean>(nacitajDrzitel);
   const [logo, setLogo] = useState<string | null>(() => nacitajLogo(nacitajPoziciu()));
   const [tvarLoga, setTvarLoga] = useState(() => nacitajTvarLoga(nacitajPoziciu()));
   const [zdrojAvatara, setZdrojAvatara] = useState(() => nacitajZdrojAvatara(nacitajPoziciu()));
@@ -112,9 +115,7 @@ function MojDeedFiremnyObsah({ onBack, toast, orgId }: { onBack: () => void; toa
   const [fotky, zmenFotky] = useFotkyEntity(klucEntity("rola", pozicia));
 
   const tier = tiery[pozicia];
-  const prepniPoziciu = (p: Pozicia) => { setPozicia(p); ulozPoziciu(p); setLogo(nacitajLogo(p)); setTvarLoga(nacitajTvarLoga(p)); setZdrojAvatara(nacitajZdrojAvatara(p)); setOnas(nacitajOnas(p)); setKontakt(nacitajKontakt(p)); };
   const nastavTier = (t: Tier) => { const n = { ...tiery, [pozicia]: t }; setTiery(n); ulozTiery(n); };
-  const prepniDrzitela = () => { setDrzitel((d) => { ulozDrzitel(!d); return !d; }); };
 
   // Viditeľnosť nástrojov: vlastné + najviac 2 programy nad sebou (zamknuté).
   // Vyššie sa nezobrazujú vôbec — ZADARMO nevidí nástroje z T3/T4, T1 nevidí T4 atď.
@@ -180,11 +181,7 @@ function MojDeedFiremnyObsah({ onBack, toast, orgId }: { onBack: () => void; toa
 
   const telo = (
     <div style={{ padding: `${SPACE.sm}px ${SPACE.md}px 0` }}>
-      {/* ---- DEV panel — simulácia roly/tieru/držiteľa (v produkcii sa nezobrazuje) ---- */}
-      {(FLAGS.dev_role_switcher || FLAGS.dev_tier_switcher) && (
-        <DevPanel pozicia={pozicia} tier={tier} drzitel={drzitel}
-          onPozicia={prepniPoziciu} onTier={nastavTier} onDrzitel={prepniDrzitela} />
-      )}
+      {/* DEV simulácia sa presunula do profilu pod Moje stránky (OPRAVY 75, len testovacia verzia) */}
 
       {/* ==== HERO SUBJEKTU — cover, logo, meno + odznak, štatistiky, akcie ==== */}
       {zbalena ? (
@@ -205,16 +202,12 @@ function MojDeedFiremnyObsah({ onBack, toast, orgId }: { onBack: () => void; toa
       <EntityHero avatarTvar={fotoOsoby ? "kruh" : tvarLoga}
         avatar={avatarSrc
           ? <img src={avatarSrc} alt={subjekt.nazov} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-          : (pozicia === "tvorca" ? subjekt.emoji : subjekt.iniciacky)}
+          : (pozicia === "tvorca" ? subjekt.iniciacky : subjekt.iniciacky)}
         cover={coverSrc}
-        coverEl={<span style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 42, opacity: .4 }}>{subjekt.emoji}</span>}
+        coverEl={<span style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 42, opacity: .4 }}><Emo e={subjekt.emoji} /></span>}
         meno={subjekt.nazov} overene={subjekt.overena} overeneLabel="Overený subjekt — identita potvrdená"
         podtitul={<span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}><IkonaPin size={11} color={C.textTer} /> {subjekt.lok} · {rolaMeta.label}</span>}
-        vpravo={
-          <div style={{ textAlign: "center" }} title="Štít sa zaslúži skutkami — nedá sa kúpiť">
-            <Stit level={stit} size={desktop ? 88 : 64} detail subjekt={subjekt.nazov} />
-          </div>
-        }
+        vpravo={<StityRad variant="hlavicka" hlavny={stit} oblasti={stityOblastiSubjektu(subjekt.nazov, stit)} meno={subjekt.nazov} velkost={desktop ? 96 : 76} />}
         podMenom={<OnasKratky text={onas ?? subjekt.onas} />}
         stats={cislaSubjektu(pozicia, tier).map(([hodnota, label], i) => ({ hodnota, label, farba: i === 2 ? "var(--a-gold)" : undefined }))}
         akcie={<>
@@ -269,7 +262,7 @@ function MojDeedFiremnyObsah({ onBack, toast, orgId }: { onBack: () => void; toa
           ].sort((a, b) => a.t - b.t);
           zamk.forEach((z) => riadky.push({ k: z.k, tier: z.t, el: (posledna) => (
             <MenuPolozka key={z.k} posledna={posledna} zamknute farba="var(--c-textTer)"
-              ikona={z.ikona ?? <span style={{ fontSize: 15, opacity: .5 }}>{z.emoji}</span>}
+              ikona={z.ikona ?? <span style={{ fontSize: 15, opacity: .5 }}><Emo e={z.emoji} /></span>}
               label={z.nazov} chip={<TierChip label={`od ${TIER_LABEL[pozicia][z.t as Tier]}`} />}
               popis={`Dostupné od úrovne ${TIER_LABEL[pozicia][z.t as Tier]}`}
               onClick={gateTier(z.t as Tier, z.nazov, () => undefined)} />
@@ -332,7 +325,7 @@ function MojDeedFiremnyObsah({ onBack, toast, orgId }: { onBack: () => void; toa
 
   return (
     <div style={{ paddingBottom: SPACE.lg, color: C.text }}>
-      <BackHeader onBack={onBack} title="Môj DEED firemný" />
+      <BackHeader onBack={onBack} title="Môj DEED+ firemný" />
       {obalSiroky(telo, { desktop, maxDesktop: SIRKA.citanie })}
 
       {/* ---- ⋯ menu subjektu ---- */}
@@ -398,6 +391,18 @@ function MojDeedFiremnyObsah({ onBack, toast, orgId }: { onBack: () => void; toa
 }
 
 // ===================== DEV PANEL — simulácia roly/tieru/držiteľa =====================
+/** OPRAVY 75 · DEV simulácia pod Moje stránky v profile (len testovacia verzia) — stav v rola/stav.ts */
+export function DevSimulacia() {
+  const [pozicia, setPozicia] = useState<Pozicia>(nacitajPoziciu);
+  const [tiery, setTiery] = useState<Record<Pozicia, Tier>>(nacitajTiery);
+  const [drzitel, setDrzitel] = useState<boolean>(nacitajDrzitel);
+  if (!(FLAGS.dev_role_switcher || FLAGS.dev_tier_switcher)) return null;
+  return <DevPanel pozicia={pozicia} tier={tiery[pozicia]} drzitel={drzitel}
+    onPozicia={(p) => { setPozicia(p); ulozPoziciu(p); }}
+    onTier={(t) => { const n = { ...tiery, [pozicia]: t }; setTiery(n); ulozTiery(n); }}
+    onDrzitel={() => setDrzitel((d) => { ulozDrzitel(!d); return !d; })} />;
+}
+
 function DevPanel({ pozicia, tier, drzitel, onPozicia, onTier, onDrzitel }: {
   pozicia: Pozicia; tier: Tier; drzitel: boolean;
   onPozicia: (p: Pozicia) => void; onTier: (t: Tier) => void; onDrzitel: () => void;
@@ -423,7 +428,7 @@ function DevPanel({ pozicia, tier, drzitel, onPozicia, onTier, onDrzitel }: {
         <div style={{ padding: SPACE.sm, display: "grid", gap: SPACE.xs }}>
           <SegTabs options={POZICIE.map((p) => p.key)} value={pozicia} onChange={(k) => onPozicia(k as Pozicia)} ariaLabel="Rola (DEV)"
             style={{ display: "flex", gap: SPACE.xxs, padding: SPACE.xxs, borderRadius: RADIUS.sm, background: C.surface2, border: `1px solid ${C.line}` }}
-            render={(k, on) => { const p = POZICIE.find((x) => x.key === k)!; return <span style={seg(on, "var(--a-info)")}>{p.emoji} {p.label}</span>; }} />
+            render={(k, on) => { const p = POZICIE.find((x) => x.key === k)!; return <span style={seg(on, "var(--a-info)")}><Emo e={p.emoji} /> {p.label}</span>; }} />
           <div style={{ display: "flex", alignItems: "center", gap: SPACE.xs }}>
             <SegTabs options={["0", "1", "2", "3", "4"]} value={String(tier)} onChange={(t) => onTier(Number(t) as Tier)} ariaLabel="Úroveň (DEV)"
               style={{ flex: 1, display: "flex", gap: SPACE.xxs, padding: SPACE.xxs, borderRadius: RADIUS.sm, background: C.surface2, border: `1px solid ${C.line}` }}
@@ -560,7 +565,7 @@ function OrgZbierkySheet({ tier, toast, onPaywall, onSpravovat, onClose }: {
         return (
           <div key={z.id} style={{ background: C.surface2, border: `1px solid ${C.line}`, borderRadius: RADIUS.sm, padding: SPACE.sm, marginBottom: SPACE.xs }}>
             <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm }}>
-              <span style={{ width: 34, height: 34, borderRadius: RADIUS.xs, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 17, background: "rgba(var(--glass-rgb),.06)" }}>{z.emoji}</span>
+              <span style={{ width: 34, height: 34, borderRadius: RADIUS.xs, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 17, background: "rgba(var(--glass-rgb),.06)" }}><Emo e={z.emoji} /></span>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 14, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{z.nazov}</div>
                 <div style={{ fontSize: 11, color: C.textTer, marginTop: 2 }}>{z.darcovia} darcov</div>

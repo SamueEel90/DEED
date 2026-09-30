@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { StityRad } from "@/components/stit";
+import { stityOblastiSubjektu } from "@/lib/stityOblasti";
 import { CestaHlavicka } from "@/components/cesta";
 import { SIRKA, C, SPACE, RADIUS } from "@/theme";
 import {
@@ -6,7 +8,7 @@ import {
   EntityHero, BtnAkcia, BtnIkonka, KontextMenu, TabyProfil, MenuSkupina, DvaStlpce,
   IkonaMoznosti, IkonaQr, IkonaVlajka, IkonaOdkaz, Zvon, tint as tintVar,
   Foto, Sheet, ProgresBox, PlatobnyModul, PlatbaModal, ZoznamDarcov,
-  FotoProfiluSheet, KamerkaBadge, ZmenitPill, Stit, naStitLevel,
+  FotoProfiluSheet, KamerkaBadge, ZmenitPill, naStitLevel,
 } from "@/shared";
 import { pressable } from "@/components/pressable";
 import { FOTO_TEST_REZIM, klucEntity, useFotkyEntity } from "@/lib/fotoentity";
@@ -166,13 +168,9 @@ function OrgProfil({ s, onBack, toast, onKampan, onZavriet }: { s: CudziSubjektO
           cover={cover}
           onAvatar={smiemUpravit ? () => setFotky(true) : undefined}
           onCover={smiemUpravit ? () => setFotky(true) : undefined}
-          meno={meno} overene overeneLabel={`Overená charita · ${level}`}
+          meno={meno} overene overeneLabel="Overená charita"
           podtitul={s.lok || org.lok}
-          vpravo={
-            <div style={{ textAlign: "center" }} title="Štít sa zaslúži skutkami — nedá sa kúpiť">
-              <Stit level={naStitLevel(level)} size={desktop ? 88 : 64} detail subjekt={meno} />
-            </div>
-          }
+          vpravo={<StityRad variant="hlavicka" hlavny={naStitLevel(level)} oblasti={stityOblastiSubjektu(meno, naStitLevel(level))} meno={meno} velkost={desktop ? 96 : 76} />}
           podMenom={oNasKratky}
           stats={[
             { hodnota: org.stat.vyzbierane, label: "Vyzbierané" },
@@ -241,7 +239,7 @@ function KampanSheet({ k, org, toast, onClose }: { k: OrgKampan; org: string; to
     setSuma((s) => s + hodnota * 0.01);
     setLudia((l) => l + 1);
     pridajDar({ refId: darRef, suma: hodnota * 0.01, kanal: "deed", registrovany: ja.typ !== "pasivny" });
-    toast?.(`Ďakujeme za ${hodnota} DEED · ${k.nazov}`);
+    toast?.(`Ďakujeme za ${hodnota} DeeD · ${k.nazov}`);
   };
 
   return (
@@ -270,7 +268,7 @@ function KampanSheet({ k, org, toast, onClose }: { k: OrgKampan; org: string; to
           setSuma((x) => x + s * (platba === "DEED" ? 0.01 : 1));
           setLudia((l) => l + 1);
           pridajDar({ refId: darRef, suma: s * (platba === "DEED" ? 0.01 : 1), kanal: platba === "EUR" ? "psp" : "deed", registrovany: ja.typ !== "pasivny", volba });
-          toast?.(`Odoslané ${platba === "EUR" ? s + " €" : platba === "EURC" ? s + " EURC" : s + " DEED"} · ${k.nazov}`);
+          toast?.(`Odoslané ${platba === "EUR" ? s + " €" : platba === "EURC" ? s + " EURC" : s + " DeeD"} · ${k.nazov}`);
         }} />}
     </>
   );

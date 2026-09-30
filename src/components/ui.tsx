@@ -124,7 +124,7 @@ export function ProgresBox({ suma, ciel, ludia, live = true }: { suma: number; c
       {(ludia != null || live) && (
         <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11.5 }}>
           <span style={{ color: C.textSec }}>{ludia != null ? `👥 ${ludia} ľudí pomohlo` : ""}</span>
-          {live && <span style={{ color: C.greenL }}>● rastie live</span>}
+          {live && <span style={{ color: C.greenL }}>● rastie naživo</span>}
         </div>
       )}
     </div>

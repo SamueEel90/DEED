@@ -4,6 +4,7 @@
 // ukončená → dokladovanie podľa pásma (povinné minimum + navyše = karma)
 // Pravidlá a čísla: lib/zbierkaSprava.ts (SPRAVA_ZBIERKY_CFG, PASMA_DOKLADOV).
 // ============================================================
+import { Emo } from "@/components/icons";
 import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { C, SPACE, RADIUS } from "@/theme";
 import { Sheet, MoniBar, tint } from "@/shared";
@@ -104,7 +105,7 @@ export function SpravaZbierkySheet({ z, tier, toast, onPaywall, onClose }: {
     <Sheet onClose={onClose} label={`Spravovať — ${z.nazov}`}>
       {podakovanie ? (
         <div style={{ textAlign: "center", padding: `${SPACE.md}px 0 ${SPACE.sm}px` }}>
-          <div style={{ fontSize: 44, lineHeight: 1 }}>💚</div>
+          <div style={{ fontSize: 44, lineHeight: 1, color: "var(--a-green)" }}><Emo e="💚" /></div>
           <div style={{ fontSize: 21, fontWeight: 800, marginTop: SPACE.sm }}>Ďakujeme za doloženie!</div>
           <div style={{ fontSize: 13.5, color: C.textSec, lineHeight: 1.5, margin: `${SPACE.xs}px 0 ${SPACE.sm}px` }}>
             Všetkým darcom zbierky „{z.nazov}“ išlo oznámenie s tvojím dokladovaním a s poďakovaním za ich dar. Takto rastie dôvera k vašej organizácii.
@@ -117,7 +118,7 @@ export function SpravaZbierkySheet({ z, tier, toast, onPaywall, onClose }: {
       ) : (<>
       {/* hlavička */}
       <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm, marginBottom: SPACE.xs }}>
-        <span style={{ width: 40, height: 40, borderRadius: RADIUS.sm, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 19, background: "rgba(var(--glass-rgb),.06)" }}>{z.emoji}</span>
+        <span style={{ width: 40, height: 40, borderRadius: RADIUS.sm, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 19, background: "rgba(var(--glass-rgb),.06)" }}><Emo e={z.emoji} /></span>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 16, fontWeight: 800, lineHeight: 1.25 }}>{z.nazov}</div>
           <div style={{ fontSize: 11.5, color: C.textTer, marginTop: 2 }}>
@@ -241,7 +242,7 @@ function StavDokladovania({ s, vyzbierane, teraz, zmen, toast }: {
     lehota: `Na doloženie ti zostáva ${dni} ${dni === 1 ? "deň" : dni < 5 ? "dni" : "dní"}.`,
     vyzva: `Lehota uplynula. Dolož prosím do ${dni} ${dni === 1 ? "dňa" : "dní"} — inak sa zbierka zobrazí v zozname nedoložených.`,
     caka: "Na profile sa pri zbierke zobrazuje „čaká na doklady“. Keď doložíš, stav sa hneď zmení.",
-    zdovodnene: "Zdôvodnenie sme prijali — posudzuje ho DEED. Kým rozhodneme, doklady môžeš stále doplniť.",
+    zdovodnene: "Zdôvodnenie sme prijali — posudzuje ho DEED+. Kým rozhodneme, doklady môžeš stále doplniť.",
   }[faza];
   return (
     <>
@@ -249,7 +250,7 @@ function StavDokladovania({ s, vyzbierane, teraz, zmen, toast }: {
       {(faza === "vyzva" || faza === "caka") && (
         <div style={{ marginBottom: SPACE.sm }}>
           <textarea value={zdov} onChange={(e) => setZdov(e.target.value)} rows={2} placeholder="Nemáme doklady, pretože…" style={{ ...input, resize: "vertical" }} />
-          <button onClick={() => { if (zdov.trim().length < 20) { toast("Napíš zdôvodnenie aspoň jednou vetou"); return; } zmen({ zdovodnenieBezDokladov: zdov.trim() }); toast("Zdôvodnenie odoslané — posúdi ho DEED"); }}
+          <button onClick={() => { if (zdov.trim().length < 20) { toast("Napíš zdôvodnenie aspoň jednou vetou"); return; } zmen({ zdovodnenieBezDokladov: zdov.trim() }); toast("Zdôvodnenie odoslané — posúdi ho DEED+"); }}
             style={{ ...btnDruhy, marginTop: SPACE.xs }}>Poslať zdôvodnenie</button>
         </div>
       )}

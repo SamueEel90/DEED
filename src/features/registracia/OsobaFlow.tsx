@@ -7,6 +7,8 @@
 // Stavový automat (krok) v tomto súbore; univerzálne kroky
 // (telefón+SMS, zabezpečenie) sa preberajú z RegKit.
 // ============================================================
+import { DeedZnacka } from "@/components/DeedZnacka";
+import { Emo } from "@/components/icons";
 import { useEffect, useState } from "react";
 import { C, GRAD, infoBox, SPACE, RADIUS } from "@/theme";
 import { Vyber, Otazka, Oslava, Suhrn, FotoUpload } from "@/shared";
@@ -373,7 +375,7 @@ function KrokSekcie({ onBack, onNext }: { onBack: () => void; onNext: () => void
           key={m.id}
           on={!!sekcie[m.id]}
           onToggle={() => toggle(m.id)}
-          title={`${m.emoji} ${m.label}`}
+          title={m.label}
           desc={m.desc}
         />
       ))}
@@ -722,16 +724,16 @@ function KrokKyc({ ucet, toast, onBack, onNext }: KrokKycProps) {
         )
       }
     >
-      <Otazka>Over sa — odomkneš plné DEED</Otazka>
+      <Otazka>Over sa — odomkneš plné <DeedZnacka /></Otazka>
       <Vyber
-        emoji="📷"
+        emoji={<Emo e="📷" />}
         title="Overiť teraz (doklad + selfie)"
         desc="Klasické overenie cez Didit."
         active={sposob === "nove"}
         onClick={() => !overene && setSposob("nove")}
       />
       <Vyber
-        emoji="♻️"
+        emoji={<Emo e="♻" />}
         title="Použiť existujúce overenie (reusable / EUDI)"
         desc="Máš overenú digitálnu identitu."
         active={sposob === "reusable"}
@@ -775,7 +777,7 @@ function KrokKyc({ ucet, toast, onBack, onNext }: KrokKycProps) {
             ✓
           </span>
           <div style={{ fontSize: 13.5, fontWeight: 700, color: C.greenL }}>
-            Overené — odomyká DEED + peňaženku
+            Overené — odomyká <DeedZnacka /> aj peňaženku
           </div>
         </div>
       )}
@@ -832,7 +834,7 @@ function KrokVyhlasenie({ ucet, meno, toast, onBack, onHotovo }: KrokVyhlasenieP
     return (
       <Oslava
         emoji="🎉"
-        title="Vitaj v DEED"
+        title="Vitaj v DEED+"
         text="Tvoj účet je pripravený."
         onClose={zatvorOslavu}
       />
@@ -845,14 +847,14 @@ function KrokVyhlasenie({ ucet, meno, toast, onBack, onHotovo }: KrokVyhlasenieP
       step={9}
       total={9}
       onBack={onBack}
-      footer={<Patka onBack={onBack} onNext={dokonci} canNext={canNext} loading={loading} next="Vitaj v DEED →" />}
+      footer={<Patka onBack={onBack} onNext={dokonci} canNext={canNext} loading={loading} next="Vitaj v DEED+ →" />}
     >
       <Otazka>Bezpečnosť a čestné vyhlásenie</Otazka>
       <Prepinac
         on={briefing}
         onToggle={() => setBriefing((b) => !b)}
         title="Rozumiem a beriem na vedomie"
-        desc="DEED účet = digitálna identita. Chráň ho ako účet v banke — nikdy nezdieľaj PIN ani prístup."
+        desc="DEED+ účet = digitálna identita. Chráň ho ako účet v banke — nikdy nezdieľaj PIN ani prístup."
       />
       <Prepinac
         on={pravda}

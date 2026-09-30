@@ -18,7 +18,8 @@ import { RychleSumyEur, DeedDlazdice, VlastnaSuma, DaryVKrypte, type OtvorPlatbu
 import { PlatobneOkno, potvrditTuknutim, nastavPotvrditTuknutim } from "./Platba";
 import type { KanalPlatby } from "./Sumy";
 import { ZdielatRiadok, PravidelnaRiadok, OblubenePodporit, ZapojitFirmuRiadok, RetazRiadok, KartaDorovnava, Darcovia } from "./Riadky";
-import { ZdielatHarok } from "./Zdielat";
+import { ZdielatHarok, Harok } from "./Zdielat";
+import { NahlasitSheet } from "@/components/nahlasit";
 import { firmaAkoDarca } from "@/lib/podpory";
 import { PravidelnaHarok } from "./PravidelnaHarok";
 import { RetazDobraHarok } from "./RetazDobra";
@@ -83,6 +84,7 @@ export function ZbierkaModul({ zbierka, miesto: miestoProp, onBack, spatNazov, o
   const rootRef = useRef<HTMLDivElement>(null), koniecPruhu = useRef<HTMLDivElement>(null); // mikrodar: odkiaľ a kam letí svetielko
   const mikro = { root: rootRef, ciel: koniecPruhu };
   const [stavLok, setStavLok] = useState<StavKroku>({});
+  const [menu, setMenu] = useState<null | "menu" | "nahlasit">(null); // ⋯ zbierky (OPRAVY 51)
   const st = stav ?? stavLok;
   const zmenStav = (z: StavKroku) => { setStavLok((x) => ({ ...x, ...z })); onStav?.(z); };
   const [dev, setDevRaw] = useState<DevStav>(nacitajDev);
@@ -190,7 +192,7 @@ export function ZbierkaModul({ zbierka, miesto: miestoProp, onBack, spatNazov, o
   // karta 02 — hlavička, galéria, nadpis a text (všade okrem hárku Podporiť DEED)
   const vrch = miesto !== "podporitDeed" ? (
     <div className="zb-pol" style={{ padding: "4px 16px 0" }}>
-      <Hlavicka cisloZbierky={zbierka.cislo} overena={zbierka.overena} onBack={onBack} spatNazov={spatNazov} onZavriet={onZavriet} />
+      <Hlavicka cisloZbierky={zbierka.cislo} overena={zbierka.overena} onBack={onBack} spatNazov={spatNazov} onZavriet={onZavriet} onMoznosti={() => setMenu("menu")} />
       <Galeria media={zbierka.media ?? []} />
       <NadpisText nazov={zbierka.nazov} text={zbierka.popis} otvoreny={st.text as boolean | undefined} onOtvoreny={(v) => zmenStav({ text: v })} />
     </div>
@@ -204,6 +206,12 @@ export function ZbierkaModul({ zbierka, miesto: miestoProp, onBack, spatNazov, o
         cielInfo={realnyCiel ? undefined : `ukážkový ${DEV_CIEL.toLocaleString("sk-SK")} €`} dorovnava={dorovnanie?.firma}
         onDar={(suma) => pridajDar({ refId: zbierka.id, suma, kanal: "psp", registrovany, cezTvorcu })} />}
 
+
+      {menu === "menu" && <Harok onClose={() => setMenu(null)} hlavicka={<span style={{ flex: 1, fontSize: 20, fontWeight: 800 }}>Možnosti</span>}>
+        <button type="button" onClick={() => setMenu("nahlasit")} style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 56, padding: "0 16px", borderRadius: 16, border: "1px solid var(--cardBd)", background: "var(--card)", color: "var(--a-danger)", fontSize: 15.5, fontWeight: 700, fontFamily: "inherit", cursor: "pointer", textAlign: "left" }}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 21V4M5 4h11l-2 4 2 4H5" /></svg>Nahlásiť zbierku</button>
+      </Harok>}
+      {menu === "nahlasit" && <NahlasitSheet typ="Zbierka" co={zbierka.nazov} refId={zbierka.id} modul="zbierka" onClose={() => setMenu(null)} />}
 
       {platba && (
         <PlatobneOkno kanal={platba.kanal} suma={platba.suma} nazov={zbierka.nazov} registrovany={registrovany} pred={predDarom}

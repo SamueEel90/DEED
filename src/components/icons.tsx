@@ -235,3 +235,36 @@ export function IkonaOdznakOver({ size = 18, color = "var(--a-info)" }: { size?:
     </svg>
   );
 }
+
+// ---- Emoji z dát (mock, DB) → čiarová ikona. V UI sa emoji nezobrazujú (OPRAVY 35).
+// Ikona má veľkosť 1em, takže preberá font-size miesta, kde predtým stálo emoji.
+const EMO_CESTY: [RegExp, string][] = [
+  [/⛓|🔗/u, "M10 13a5 5 0 0 0 7.5.5l2-2a5 5 0 0 0-7-7l-1.2 1.1M14 11a5 5 0 0 0-7.5-.5l-2 2a5 5 0 0 0 7 7l1.2-1.1"],
+  [/♻/u, "M4 12a8 8 0 0 1 14-5.3M20 4v5h-5M20 12a8 8 0 0 1-14 5.3M4 20v-5h5"],
+  [/🛡/u, "M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"],
+  [/✅|✓|✔/u, "M20 6 9 17l-5-5"],
+  [/✨|⭐|🌟|★/u, "M12 3l2.6 5.6 6 .7-4.5 4.1 1.2 6L12 16.8 6.7 19.4l1.2-6L3.4 9.3l6-.7z"],
+  [/🎬|🎥|▶|📹/u, "M8 5v14l11-7z"],
+  [/🗓|📅|🎟|⛪|⛰|🏃|🚶|📆/u, "M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"],
+  [/🏠|🏡|🏘/u, "M3 11l9-8 9 8M5 10v10h14V10"],
+  [/📚|📖|🎓|✏/u, "M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5v14z"],
+  [/🎨|🎭|🎵|🎶|🎸/u, "M12 3a9 9 0 1 0 0 18c1 0 1.5-.8 1.5-1.6 0-1.3-1-1.6-1-2.9 0-1 .8-1.5 1.8-1.5H17a4 4 0 0 0 4-4c0-4.4-4-8-9-8z"],
+  [/🔥|🚨|🆘|⚠/u, "M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"],
+  [/📷|📸|🖼/u, "M4 7h3l2-3h6l2 3h3v13H4zM12 17a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"],
+  [/🏛|🏢|🏦|🏥|🏫/u, "M3 21h18M5 21V10M19 21V10M9 21V10M15 21V10M2 10l10-7 10 7"],
+  [/👥|👤|🙋|🤝|👪/u, "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M22 21v-2a4 4 0 0 0-3-3.9"],
+  [/🎁|📦|🎒|🧺/u, "M20 12v9H4v-9M2 7h20v5H2zM12 22V7"],
+  [/🍲|🍞|🥫|🍎|☕/u, "M4 11h16a8 8 0 0 1-16 0zM8 7c0-1 1-1.5 1-2.5M12 7c0-1 1-1.5 1-2.5"],
+  [/🌳|🌱|🌿|🌼|🐾|🐕|🐶|🐱/u, "M12 22V12M12 12C7 12 5 8 5 4c4 0 7 2 7 8zM12 12c5 0 7-4 7-8-4 0-7 2-7 8z"],
+  [/🩺|💊|❤️‍🩹|🧑‍⚕️/u, "M12 21s-7-4.4-9.3-9A5 5 0 0 1 12 6a5 5 0 0 1 9.3 6c-2.3 4.6-9.3 9-9.3 9zM9 12h6M12 9v6"],
+  [/🚀/u, "M5 19l3-3M14 4l6 6-8 8-6-6zM14 4c2-1 5-1 6 0 1 1 1 4 0 6"],
+  [/💶|💰|💵|€/u, "M17 6a7 7 0 1 0 0 12M4 10h9M4 14h9"],
+];
+const EMO_SRDCE = "M12 21s-7-4.4-9.3-9A5 5 0 0 1 12 6a5 5 0 0 1 9.3 6c-2.3 4.6-9.3 9-9.3 9z";
+/** emoji (reťazec) → čiarová ikona 1em; iný ReactNode (už ikona) prejde bez zmeny */
+export function Emo({ e }: { e?: ReactNode }) {
+  if (e == null || e === "") return null;
+  if (typeof e !== "string") return <>{e}</>;
+  const d = EMO_CESTY.find(([r]) => r.test(e))?.[1] ?? EMO_SRDCE;
+  return <svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ display: "inline-block", verticalAlign: "-0.125em", flex: "none" }}><path d={d} /></svg>;
+}

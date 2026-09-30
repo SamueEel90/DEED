@@ -1,3 +1,5 @@
+import { otvorPomoc } from "@/features/profil/Pomoc";
+import { DeedZnacka } from "@/components/DeedZnacka";
 import { useState } from "react";
 import { C, GRAD, glassTmavy, SPACE, RADIUS } from "@/theme";
 import { IkonaDomov, IkonaSrdceLine, IkonaCharita, IkonaKompas, IkonaMapa, IkonaPohar, IkonaOsoba, IkonaPenazenka, IkonaPlus, IkonaSlnko, IkonaMesiac, IkonaInstitucia, IkonaGraf } from "@/shared";
@@ -28,7 +30,7 @@ export type Modul = {
 };
 
 export const VSETKY_MODULY: Modul[] = [
-  { id: "good",    nazov: "Domov",   ikona: <IkonaDomov />,    popis: "Feed skutkov — DEED Good" },
+  { id: "good",    nazov: "Domov",   ikona: <IkonaDomov />,    popis: "Feed skutkov v okolí" },
   { id: "help",    nazov: "Help",    ikona: <IkonaSrdceLine />, popis: "Crowdfunding pre ľudí v núdzi" },
   { id: "charita", nazov: "Charita", ikona: <IkonaCharita />,  popis: "Zbierky, dobrovoľníctvo, adresár OZ" },
   { id: "nabozenstvo", nazov: "Viera", ikona: <IkonaInstitucia />, popis: "Adresár kostolov a farností · registrované cirkvi SR" },
@@ -198,11 +200,11 @@ export function ViacSheet({ taby, setTaby, aktivny, onModul, onPenazenka, onAko,
 
         {/* Peňaženka — 1. položka v menu (súkromie: cudzí nevidí zostatok na hlavnej obrazovke) */}
         {!uprava && onPenazenka && (
-          <div {...pressable(onPenazenka, "Peňaženka — zostatok DEED, poslať / prijať / kúpiť")} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, background: "color-mix(in srgb, var(--a-info) 8%, transparent)", border: "1px solid color-mix(in srgb, var(--a-info) 30%, transparent)", borderRadius: RADIUS.md, padding: `${SPACE.sm}px ${SPACE.sm}px`, marginBottom: SPACE.xs, cursor: "pointer" }}>
+          <div {...pressable(onPenazenka, "Peňaženka — zostatok DeeD, poslať / prijať / kúpiť")} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, background: "color-mix(in srgb, var(--a-info) 8%, transparent)", border: "1px solid color-mix(in srgb, var(--a-info) 30%, transparent)", borderRadius: RADIUS.md, padding: `${SPACE.sm}px ${SPACE.sm}px`, marginBottom: SPACE.xs, cursor: "pointer" }}>
             <span style={{ width: 38, height: 38, borderRadius: RADIUS.sm, background: "color-mix(in srgb, var(--a-info) 16%, transparent)", display: "flex", alignItems: "center", justifyContent: "center", flex: "0 0 auto", color: "var(--a-info)" }}><IkonaPenazenka size={20} color="var(--a-info)" /></span>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 13.5, fontWeight: 700 }}>Peňaženka <span style={{ fontSize: 9, fontWeight: 700, color: "var(--a-info)", border: "1px solid color-mix(in srgb, var(--a-info) 40%, transparent)", background: "color-mix(in srgb, var(--a-info) 10%, transparent)", borderRadius: RADIUS.sm, padding: "1px 7px", marginLeft: SPACE.xxs }}>súkromné</span></div>
-              <div style={{ fontSize: 11, color: C.textTer, marginTop: SPACE.xxs }}>Zostatok DEED · poslať / prijať / kúpiť</div>
+              <div style={{ fontSize: 11, color: C.textTer, marginTop: SPACE.xxs }}>Zostatok DeeD · poslať / prijať / kúpiť</div>
             </div>
             <span style={{ color: C.textTer, fontSize: 15 }}>›</span>
           </div>
@@ -245,14 +247,27 @@ export function ViacSheet({ taby, setTaby, aktivny, onModul, onPenazenka, onAko,
           );
         })}
 
-        {/* POMOC — sprievodca „Ako DEED funguje" + inštalácia na plochu */}
-        {!uprava && onAko && (
+        {/* POMOC — Časté otázky (OPRAVY 51) · sprievodca „Ako DEED funguje" · inštalácia na plochu */}
+        {!uprava && (
           <>
             <div style={{ fontSize: 10.5, letterSpacing: ".5px", color: C.textTer, fontWeight: 700, margin: `${SPACE.gutter}px ${SPACE.xxs}px ${SPACE.xs}px` }}>POMOC</div>
-            <div {...pressable(onAko, "Ako DEED funguje — krátky sprievodca")} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, background: "rgba(var(--glass-rgb),.05)", border: `1px solid ${C.line}`, borderRadius: RADIUS.md, padding: `${SPACE.sm}px ${SPACE.sm}px`, cursor: "pointer" }}>
+            <div {...pressable(() => { onClose(); otvorPomoc(); }, "Pomoc — časté otázky")} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, background: "rgba(var(--glass-rgb),.05)", border: `1px solid ${C.line}`, borderRadius: RADIUS.md, padding: `${SPACE.sm}px ${SPACE.sm}px`, marginBottom: SPACE.xs, cursor: "pointer" }}>
+              <span aria-hidden style={{ width: 38, height: 38, borderRadius: RADIUS.sm, background: "color-mix(in srgb, var(--a-green) 12%, transparent)", border: `1px solid ${C.line2}`, display: "flex", alignItems: "center", justifyContent: "center", flex: "0 0 auto", color: "var(--a-green)" }}>
+                <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM9.5 9.2a2.6 2.6 0 0 1 5 .8c0 1.7-2.5 2.2-2.5 3.8M12 17h.01" /></svg></span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 13.5, fontWeight: 700 }}>Pomoc</div>
+                <div style={{ fontSize: 11, color: C.textTer, marginTop: SPACE.xxs }}>časté otázky, napísať podpore</div>
+              </div>
+              <span style={{ color: C.textTer, fontSize: 15 }}>›</span>
+            </div>
+          </>
+        )}
+        {!uprava && onAko && (
+          <>
+            <div {...pressable(onAko, "Ako DEED+ funguje — krátky sprievodca")} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, background: "rgba(var(--glass-rgb),.05)", border: `1px solid ${C.line}`, borderRadius: RADIUS.md, padding: `${SPACE.sm}px ${SPACE.sm}px`, cursor: "pointer" }}>
               <span aria-hidden style={{ width: 38, height: 38, borderRadius: RADIUS.sm, background: "color-mix(in srgb, var(--a-green) 12%, transparent)", border: `1px solid ${C.line2}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 17, flex: "0 0 auto" }}>🌱</span>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 13.5, fontWeight: 700 }}>Ako DEED funguje</div>
+                <div style={{ fontSize: 13.5, fontWeight: 700 }}>Ako <DeedZnacka /> funguje</div>
                 <div style={{ fontSize: 11, color: C.textTer, marginTop: SPACE.xxs }}>Skutky bez komentárov · okruh · karma a overovanie</div>
               </div>
               <span style={{ color: C.textTer, fontSize: 15 }}>›</span>
@@ -299,11 +314,11 @@ function InstallRiadok() {
     ? instaluj
     : () => toast("iPhone/iPad: v Safari ťukni Zdieľať (□↑) a vyber Pridať na plochu.");
   return (
-    <div {...pressable(klik, "Pridať DEED na plochu")} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, background: "rgba(var(--glass-rgb),.05)", border: `1px solid ${C.line}`, borderRadius: RADIUS.md, padding: `${SPACE.sm}px ${SPACE.sm}px`, marginTop: SPACE.xs, cursor: "pointer" }}>
+    <div {...pressable(klik, "Pridať DEED+ na plochu")} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, background: "rgba(var(--glass-rgb),.05)", border: `1px solid ${C.line}`, borderRadius: RADIUS.md, padding: `${SPACE.sm}px ${SPACE.sm}px`, marginTop: SPACE.xs, cursor: "pointer" }}>
       <span aria-hidden style={{ width: 38, height: 38, borderRadius: RADIUS.sm, background: "color-mix(in srgb, var(--a-info) 12%, transparent)", border: `1px solid ${C.line2}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 17, flex: "0 0 auto" }}>📲</span>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 13.5, fontWeight: 700 }}>Pridať na plochu</div>
-        <div style={{ fontSize: 11, color: C.textTer, marginTop: SPACE.xxs }}>{dostupny ? "Nainštaluj DEED ako appku — rýchly štart z plochy" : "Návod pre iPhone/iPad (Safari)"}</div>
+        <div style={{ fontSize: 11, color: C.textTer, marginTop: SPACE.xxs }}>{dostupny ? "Nainštaluj DEED+ ako appku — rýchly štart z plochy" : "Návod pre iPhone/iPad (Safari)"}</div>
       </div>
       <span style={{ color: C.textTer, fontSize: 15 }}>›</span>
     </div>

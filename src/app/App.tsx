@@ -1,6 +1,8 @@
 import { useState, useEffect, useMemo, useRef, lazy, Suspense, type CSSProperties } from "react";
 import { LazyMotion, domAnimation, MotionConfig } from "motion/react";
 import { C } from "@/theme";
+import { aplikujNastavenia } from "@/lib/nastaveniaAppky";
+import type { Tema } from "@/components/context";
 import { GaleriaContext, ScrollContext, ScrollElContext, ViacContext, StrankaAkcieContext, UpgradeContext, UpgradePanel, Lightbox, DychajucePozadie, MotivContext, PortalContext, LayoutContext, DeedToaster, FeedSkeleton, PullToRefresh, StitRevealHost } from "@/shared";
 import type { StrankaAkcie } from "@/components/context";
 import { TabBar, ViacSheet, PridatFAB, nacitajTaby, ulozTaby, VSETKY_MODULY } from "@/components/TabBar";
@@ -23,10 +25,14 @@ import { LokalitaProvider } from "@/lib/lokalita";
 import { QueryProvider } from "@/app/QueryProvider";
 import { Registracia } from "@/features/registracia/Registracia";
 import { RetazPodstranka } from "@/features/retaz/RetazPodstranka";
+import { PridatSkutokHost } from "@/features/skutok/PridatSkutok";
+import { AkciaHost } from "@/features/skutok/Akcia";
+import { PomocHost } from "@/features/profil/Pomoc";
+import { PolohaOkruhu } from "@/features/profil/Bezpecnost24";
 
 // Code-splitting: každý modul = vlastný chunk, načíta sa až pri otvorení
 // (initial load = shell + prvý modul namiesto jedného veľkého bundle).
-const ModulGood = lazy(() => import("@/features/good/Good"));
+const ModulDomov = lazy(() => import("@/features/domov/Domov"));
 const ModulHelp = lazy(() => import("@/features/help/Help"));
 const ModulCharita = lazy(() => import("@/features/charita/Charita"));
 const ModulViera = lazy(() => import("@/features/viera/Viera"));
@@ -57,11 +63,13 @@ interface RozmeryOkna {
   h: number;
 }
 
+// zväčšené písmo (zoom na html) zmenšuje reálnu šírku v CSS px → rozloženie podľa nej
+const faktorPisma = () => parseFloat(document.documentElement.style.getPropertyValue("--pismo")) || 1;
 // aktuálne rozmery okna → responzívne rozhodovanie o rozložení
 export function useOkno(): RozmeryOkna {
   const [s, setS] = useState<RozmeryOkna>(() => ({
-    w: typeof window !== "undefined" ? window.innerWidth : 1024,
-    h: typeof window !== "undefined" ? window.innerHeight : 768,
+    w: typeof window !== "undefined" ? window.innerWidth / faktorPisma() : 1024,
+    h: typeof window !== "undefined" ? window.innerHeight / faktorPisma() : 768,
   }));
   useEffect(() => {
     // rAF-throttle: pri ťahaní okna max 1 setState na frame (bez neho re-renderuje
@@ -71,7 +79,7 @@ export function useOkno(): RozmeryOkna {
       if (raf) return;
       raf = requestAnimationFrame(() => {
         raf = 0;
-        setS({ w: window.innerWidth, h: window.innerHeight });
+        setS({ w: window.innerWidth / faktorPisma(), h: window.innerHeight / faktorPisma() });
       });
     };
     window.addEventListener("resize", onR);
@@ -105,18 +113,28 @@ export default function App() {
 
   // motív — SVETLÝ je primárny (default). Tmavý = trieda .dark na <html>.
   // :root je svetlý → prvé vykreslenie je svetlé bez dark-flashu.
-  const [svetly, setSvetly] = useState<boolean>(() => {
-    try { return localStorage.getItem("deed.motiv") !== "tmavy"; } catch { return true; }
+  // téma: Svetlá | Tmavá | Podľa telefónu (predvolené, karta 20)
+  const [tema, setTema] = useState<Tema>(() => {
+    try { const m = localStorage.getItem("deed.motiv"); return m === "svetly" ? "svetla" : m === "tmavy" ? "tmava" : "system"; } catch { return "system"; }
   });
+  const [systemTmavy, setSystemTmavy] = useState(() => typeof window !== "undefined" && window.matchMedia?.("(prefers-color-scheme: dark)").matches);
+  useEffect(() => {
+    const mq = window.matchMedia?.("(prefers-color-scheme: dark)");
+    if (!mq) return;
+    const f = () => setSystemTmavy(mq.matches);
+    mq.addEventListener("change", f); return () => mq.removeEventListener("change", f);
+  }, []);
+  const svetly = tema === "svetla" || (tema === "system" && !systemTmavy);
   useEffect(() => {
     try {
       document.documentElement.classList.toggle("dark", !svetly);
-      localStorage.setItem("deed.motiv", svetly ? "svetly" : "tmavy");
+      localStorage.setItem("deed.motiv", tema === "svetla" ? "svetly" : tema === "tmava" ? "tmavy" : "system");
       // PWA: systémová lišta (theme-color) sleduje motív appky (--c-bg svetlý/tmavý)
       document.querySelector('meta[name="theme-color"]')?.setAttribute("content", svetly ? "#F1ECE1" : "#14110B");
     } catch { /* private mode */ }
-  }, [svetly]);
-  const motiv = { svetly, prepni: () => setSvetly((s) => !s) };
+  }, [svetly, tema]);
+  useEffect(() => { aplikujNastavenia(); }, []); // veľkosť písma, animácie, vibrácie (karta 19/20)
+  const motiv = { svetly, prepni: () => setTema(svetly ? "tmava" : "svetla"), tema, nastavTemu: setTema };
 
   // appka na celú obrazovku — na šírke centrovaný stĺpec do 1180 px
   return (
@@ -319,7 +337,7 @@ export function Screens({ wide, desktop }: { wide?: boolean; desktop?: boolean }
             role="main" (nie <main>) — ref je zdieľaný ako HTMLDivElement (ScrollEl/PullToRefresh) */}
         <div role="main" ref={scrollRef} style={{ flex: 1, minWidth: 0, overflowY: "auto", minHeight: 0, paddingBottom: desktop ? 40 : 168 }}>
           <Suspense fallback={<FeedSkeleton count={4} />}>
-            {modul === "good" && <ModulGood wide={wide} otvorModul={prepni} otvorId={dlDetail?.modul === "good" ? dlDetail.ref : undefined} onOtvorene={() => setDlDetail(null)} />}
+            {modul === "good" && <ModulDomov wide={wide} otvorModul={prepni} otvorId={dlDetail?.modul === "good" ? dlDetail.ref : undefined} onOtvorene={() => setDlDetail(null)} />}
             {modul === "help" && <ModulHelp wide={wide} />}
             {modul === "charita" && <ModulCharita wide={wide} otvorModul={prepni} />}
             {modul === "nabozenstvo" && <ModulViera wide={wide} otvorModul={prepni} />}
@@ -347,6 +365,12 @@ export function Screens({ wide, desktop }: { wide?: boolean; desktop?: boolean }
 
         {/* intro sprievodca — prvé spustenie (raz) alebo „Ako DEED funguje" z menu */}
         {(intro || akoFunguje) && <IntroPruvodca onClose={zavriIntro} />}
+
+        {/* Pridať skutok — jeden komponent pre celú appku (karta 21) */}
+        <PridatSkutokHost />
+        <AkciaHost />
+        <PomocHost />
+        <PolohaOkruhu />
 
         {/* fullscreen galéria fotiek so swipovaním */}
         {galeria && <Lightbox fotky={galeria.fotky} index={galeria.index} onClose={() => setGaleria(null)} />}

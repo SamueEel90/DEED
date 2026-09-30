@@ -1,5 +1,5 @@
 // ============================================================
-// MODUL DOMOV (DEED Good) — MOCK dáta
+// MODUL DOMOV — MOCK dáta
 // Čisté dátové polia presunuté z Good.jsx (žiadne JSX → .ts).
 // KAT = farby kategórií, POLOZKY = feed skutkov, EVENTS = nástenka.
 // ============================================================
@@ -368,7 +368,7 @@ export const EVENTS: Udalost[] = [
   { id: "e1", top: true, when: "ŠTV 18:00", datum: oDen(4, 18), dom: "learn", km: 0, title: "Mentálny tréning — bezplatný stream", who: "Coach Peter", src: "Komunita", kat: "Ucenie",
     desc: "Online stream o zvládaní stresu a sústredení. Pre všetkých so záujmom o šport a psychiku. Bezplatné, stačí sa prihlásiť.", place: "Online · stream", cap: "neobmedzené" },
   { id: "e2", top: true, when: "PIA 20:00", datum: oDen(5, 20), dom: "art", km: 1.8, title: "Rocková noc v klube", who: "Music Club", src: "Partner", kat: "Komunita",
-    desc: "Živá kapela, lokálni interpreti. B2B partner pozýva členov komunity so záujmom o rock. Vstup so zľavou cez DEED.", place: "Music Club, Trenčín", cap: "120 miest" },
+    desc: "Živá kapela, lokálni interpreti. B2B partner pozýva členov komunity so záujmom o rock. Vstup so zľavou cez DeeD.", place: "Music Club, Trenčín", cap: "120 miest" },
   { id: "e3", top: true, when: "SO 09:00", datum: oDen(6, 9), dom: "sport", km: 0.9, title: "Beh pre zdravie", who: "Mesto Trenčín", src: "Mesto", kat: "Zdravie",
     desc: "Charitatívny beh mestom. Štartovné ide na detské ihriská. Trasy 5 a 10 km.", place: "Mierové námestie", cap: "500 bežcov" },
   { id: "e4", when: "SO 10:00", datum: oDen(6, 10), dom: "eko", km: 1.2, title: "Čistenie brehu Váhu", who: "Mesto Trenčín", src: "Mesto", kat: "Priroda",
@@ -380,7 +380,7 @@ export const EVENTS: Udalost[] = [
   { id: "e7", when: "ST 19:00", datum: oDen(3, 19), dom: "eko", km: 0.8, title: "Diskusia o ekológii mesta", who: "Mesto Trenčín", src: "Mesto", kat: "Priroda",
     desc: "Verejná diskusia o zeleni a triedení odpadu v meste. Príď povedať svoj názor.", place: "Mestský úrad", cap: "80 miest" },
   { id: "e8", when: "PIA 16:00", datum: oDen(5, 16), dom: "art", km: 1.1, title: "Workshop fotografie", who: "Coach Lucia", src: "Komunita", kat: "Zdravie",
-    desc: "Základy mobilnej fotografie. Vezmi si telefón. Platený workshop (cez DEED/EUR).", place: "Ateliér, centrum", cap: "12 miest" },
+    desc: "Základy mobilnej fotografie. Vezmi si telefón. Platený workshop (cez DeeD/EUR).", place: "Ateliér, centrum", cap: "12 miest" },
   { id: "e9", when: "ŠTV 17:00", datum: oDen(4, 17), dom: "mix", km: 1.4, title: "Burza detského oblečenia — zadarmo", who: "MC Lienka", src: "Komunita", kat: "Komunita",
     desc: "Prines, čo deti prerástli, a vyber si, čo potrebuješ. Všetko zadarmo. Rodiny v núdzi prednostne.", place: "Materské centrum, centrum", cap: "otvorené" },
   { id: "e10", top: true, when: "SO 14:00", datum: oDen(6, 14), dom: "zdravie", km: 0.6, title: "Deň žltej stužky — verejná zbierka", who: "Nádej pacientom", src: "Partner", kat: "Zdravie",

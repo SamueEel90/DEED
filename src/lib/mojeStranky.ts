@@ -1,0 +1,38 @@
+// OPRAVY 75 · Moje stránky (stránky, ktoré user spravuje), Konáš ako a Režim prezentácie.
+// Stránky sú zatiaľ ukážkové (demo účet), v produkcii prídu z overených rolí účtu.
+// Konáš ako určuje, pod kým ide dar, príspevok a skutok. Režim prezentácie skryje správu, role a DEV
+// a pamätá sa do ukončenia. Uložené lokálne (useSyncExternalStore + localStorage).
+import { useSyncExternalStore } from "react";
+import type { Pozicia } from "@/features/rola/stav";
+import { nastavDarcuFirmu } from "@/lib/devDarca";
+
+export type Stranka = { k: string; i: string; n: string; typ: "charita" | "firma" | "tvorca"; /** kľúč prekladu */ rola: string; pozicia: Pozicia; bg: string; c: string; /** [kľúč prekladu, počet] */ info: [string, number?][] };
+export const UKAZKOVE_STRANKY: Stranka[] = [
+  { k: "svetlo", i: "SP", n: "Svetlo pomoci o.z.", typ: "charita", rola: "stranky.rola.spravca", pozicia: "charita", bg: "var(--gSoft)", c: "var(--gInk)", info: [["stranky.info.zbierky", 3], ["stranky.info.ziadosti", 2]] },
+  { k: "pekaren", i: "PD", n: "Pekáreň Dobrota", typ: "firma", rola: "stranky.rola.majitel", pozicia: "b2b", bg: "var(--goldBg)", c: "var(--gold)", info: [["stranky.info.zamestnanci", 12], ["stranky.info.dorovnanie"]] },
+  { k: "tvorca", i: "MK", n: "Martin Konaľ", typ: "tvorca", rola: "stranky.rola.vlastnik", pozicia: "tvorca", bg: "var(--bSoft)", c: "var(--blue)", info: [["stranky.info.retaz", 1], ["stranky.info.qr"]] },
+];
+
+type Stav = { ako: string; prezentacia: boolean };
+const KLUC = "deed.mojeStranky";
+const ZAKLAD: Stav = { ako: "ja", prezentacia: false };
+const posl = new Set<() => void>();
+let ver = 0;
+function nacitaj(): Stav { try { return { ...ZAKLAD, ...(JSON.parse(localStorage.getItem(KLUC) ?? "null") ?? {}) }; } catch { return ZAKLAD; } }
+function uloz(s: Stav) { try { localStorage.setItem(KLUC, JSON.stringify(s)); } catch { /* LS */ } ver++; posl.forEach((f) => f()); }
+export function useMojeStranky(): Stav {
+  useSyncExternalStore((f) => { posl.add(f); return () => posl.delete(f); }, () => ver, () => 0);
+  return nacitaj();
+}
+/** konáš ako: „ja" alebo kľúč stránky; firma → dar ide ako firemný */
+export function nastavAko(k: string) {
+  uloz({ ...nacitaj(), ako: k, prezentacia: false });
+  nastavDarcuFirmu(UKAZKOVE_STRANKY.find((s) => s.k === k)?.typ === "firma");
+}
+export function prepniPrezentaciu() {
+  const s = nacitaj(), p = !s.prezentacia;
+  uloz({ ako: p ? "ja" : s.ako, prezentacia: p });
+  if (p) nastavDarcuFirmu(false);
+}
+/** testovacia verzia (npm run dev alebo VITE_TEST=1) — len tam sa kreslí DEV simulácia */
+export const TESTOVACIA = import.meta.env.DEV || import.meta.env.VITE_TEST === "1";

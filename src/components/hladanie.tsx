@@ -1,3 +1,4 @@
+import { Emo } from "@/components/icons";
 import { useState, useDeferredValue, useEffect, useRef } from "react";
 import { C, glassTmavy, SPACE, RADIUS, SIRKA } from "@/theme";
 import { tint } from "@/lib/ui";
@@ -19,7 +20,7 @@ export const HL_FILTRE = ["Všetko", "Osoby", "Firmy", "Školitelia", "Charity",
 // SÚKROMNÉ osoby tu zámerne NIE SÚ (ochrana pred lustráciou §11/§13).
 export const SUBJEKTY = [
   // firmy & partneri (fiktívne podniky / zamestnávatelia (mock dáta))
-  { id: "s-vital",  typ: "Firmy",      titul: "Vitalmarket — DEED partner",        podtitul: "Firma · ESG report · Trenčín",        emoji: "🏢", tag: "Firma" },
+  { id: "s-vital",  typ: "Firmy",      titul: "Vitalmarket — DEED+ partner",        podtitul: "Firma · ESG report · Trenčín",        emoji: "🏢", tag: "Firma" },
   { id: "s-nordika",  typ: "Firmy",      titul: "Nadácia Nordika",          podtitul: "Firma · matching kampaň",             emoji: "🏢", tag: "Firma" },
   { id: "s-elkotech", typ: "Firmy",      titul: "Elkotech Slovakia",                 podtitul: "Zamestnávateľ · firemné dobrovoľníctvo · Trenčín", emoji: "🏭", tag: "Firma" },
   { id: "s-sklarne", typ: "Firmy",      titul: "Sklárne Vážska",              podtitul: "Sklárne · podpora komunity · Trenčiansky kraj", emoji: "🏭", tag: "Firma" },
@@ -110,7 +111,7 @@ export function HladanieModal({ data = [], onPick, onSubjekt, onClose, akcent = 
   };
   const Riadok = (x: any) => (
     <div key={x.id} {...pressable(() => klik(x), x.titul)} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, padding: `${SPACE.sm}px ${SPACE.xs}px`, borderRadius: RADIUS.sm, cursor: "pointer", borderBottom: `1px solid ${C.line2}` }}>
-      <div style={{ width: 40, height: 40, borderRadius: RADIUS.sm, flex: "0 0 auto", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 19, background: tint(akcent, .14) }}>{x.emoji}</div>
+      <div style={{ width: 40, height: 40, borderRadius: RADIUS.sm, flex: "0 0 auto", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 19, background: tint(akcent, .14) }}><Emo e={x.emoji} /></div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 13.5, fontWeight: 600, lineHeight: 1.3, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{x.titul}</div>
         {x.podtitul && <div style={{ fontSize: 11.5, color: C.textTer, marginTop: SPACE.xxs, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{x.podtitul}</div>}

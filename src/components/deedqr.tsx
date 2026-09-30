@@ -27,12 +27,15 @@ function Retaz({ x, y, farba }: { x: number; y: number; farba: string }) {
   );
 }
 
-export function DeedQr({ data, odznak = "D+", retaz = false, suma, delenie, variant = "svetly", size = 260 }: {
+export function DeedQr({ data, odznak = "D+", retaz = false, suma, delenie, variant = "svetly", size = 260, bezOdznaku = false, farba }: {
   data: string; odznak?: DeedOdznak; retaz?: boolean; suma?: string | null; delenie?: string | null;
+  /** osobný QR (karta 18) — bez odznaku vľavo hore */ bezOdznaku?: boolean;
   variant?: DeedQrVariant; size?: number;
+  /** farba rámu a oporných štvorcov (pracovný QR = zlatá #C9A24A); predvolene zelená DEED */ farba?: string;
 }) {
   const inv = variant === "inverzny";
-  const ramik = inv ? "#ffffff" : ZELENA;
+  const zel = farba ?? ZELENA;
+  const ramik = inv ? "#ffffff" : zel;
   const pozadie = inv ? TMAVA : "#ffffff";
   const pillBg = inv ? "#ffffff" : TMAVA;
   const pillText = inv ? TMAVA : "#ffffff";
@@ -59,9 +62,9 @@ export function DeedQr({ data, odznak = "D+", retaz = false, suma, delenie, vari
       const x = QX + c * p, y = QY + r * p;
       findery.push(
         <g key={`f${r}-${c}`}>
-          <rect x={x} y={y} width={7 * p} height={7 * p} rx={1.6 * p} fill={ZELENA} />
+          <rect x={x} y={y} width={7 * p} height={7 * p} rx={1.6 * p} fill={zel} />
           <rect x={x + p} y={y + p} width={5 * p} height={5 * p} rx={1.1 * p} fill="#ffffff" />
-          <rect x={x + 2 * p} y={y + 2 * p} width={3 * p} height={3 * p} rx={0.7 * p} fill={ZELENA} />
+          <rect x={x + 2 * p} y={y + 2 * p} width={3 * p} height={3 * p} rx={0.7 * p} fill={zel} />
         </g>,
       );
     }
@@ -74,7 +77,7 @@ export function DeedQr({ data, odznak = "D+", retaz = false, suma, delenie, vari
   const delenieW = delenie ? Math.min(560, Math.max(260, 60 + delenie.length * 17)) : 0;
 
   return (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000" width={size} height={size} role="img" aria-label={`DEED QR ${odznak}${retaz ? " reťaz" : ""}`} style={{ display: "block", borderRadius: size * 0.04 }}>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000" width={size} height={size} role="img" aria-label={`DEED+ QR ${odznak}${retaz ? " reťaz" : ""}`} style={{ display: "block", borderRadius: size * 0.04 }}>
       <rect width={1000} height={1000} fill={pozadie} />
       <g transform="translate(-31.5,-12)">
         <rect x={64} y={72} width={14} height={880} rx={7} fill={ramik} />
@@ -84,9 +87,11 @@ export function DeedQr({ data, odznak = "D+", retaz = false, suma, delenie, vari
         {moduly}
         {findery}
         {/* odznak */}
-        <rect x={137} y={78} width={odznakW} height={66} rx={33} fill={pillBg} />
-        <text x={textX} y={121} textAnchor={retaz ? "start" : "middle"} fontFamily="Arial, Helvetica, sans-serif" fontSize={34} fontWeight="bold" fill={pillText}>{odznak}</text>
-        {retaz && <Retaz x={137 + odznakW - 50} y={111} farba={pillText} />}
+        {!bezOdznaku && <>
+          <rect x={137} y={78} width={odznakW} height={66} rx={33} fill={pillBg} />
+          <text x={textX} y={121} textAnchor={retaz ? "start" : "middle"} fontFamily="Arial, Helvetica, sans-serif" fontSize={34} fontWeight="bold" fill={pillText}>{odznak}</text>
+          {retaz && <Retaz x={137 + odznakW - 50} y={111} farba={pillText} />}
+        </>}
         {/* suma — potvrdenie príspevku */}
         {suma && (
           <g>

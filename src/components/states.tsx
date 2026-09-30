@@ -2,6 +2,7 @@
 // DEED · Stavové komponenty — loading (skeleton) / prázdne / chyba.
 // Jednotný vzhľad naprieč modulmi. Shimmer využíva @keyframes lesk (index.css).
 // ============================================================
+import { Emo } from "@/components/icons";
 import type { CSSProperties, ReactNode } from "react";
 import { C, GRAD, SPACE, RADIUS } from "@/theme";
 
@@ -97,7 +98,7 @@ export function EmptyState({
   text,
   action,
 }: {
-  emoji?: string;
+  emoji?: ReactNode;
   title: string;
   text?: string;
   action?: ReactNode;
@@ -114,7 +115,7 @@ export function EmptyState({
         gap: SPACE.xs,
       }}
     >
-      <div style={{ fontSize: 38, opacity: 0.9, marginBottom: SPACE.xxs }}>{emoji}</div>
+      <div style={{ fontSize: 38, opacity: 0.9, marginBottom: SPACE.xxs }}><Emo e={emoji} /></div>
       <div style={{ fontSize: 15, fontWeight: 700, color: C.text }}>{title}</div>
       {text && <div style={{ fontSize: 13, color: C.textTer, lineHeight: 1.5, maxWidth: 320 }}>{text}</div>}
       {action && <div style={{ marginTop: SPACE.sm }}>{action}</div>}

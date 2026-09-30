@@ -34,10 +34,10 @@ export function qrFinder(r: number, c: number, N: number): "dark" | "light" | nu
 // komu koľko ide. Beží nad platba_split (Σ=1.0, Fáza 4) — dnes namockované.
 export const QR_TYPY: Record<string, { rot: number; tag: string; popis: string; col: string }> = {
   identita:   { rot: 30, tag: "Identity Card", popis: "Overenie identity člena — rotujúci kód", col: "#8B7CFF" },
-  platba:     { rot: 0,  tag: "Platobný QR",   popis: "Pošli DEED / prepitné — statický kód",  col: "#43E0C8" },
+  platba:     { rot: 0,  tag: "Platobný QR",   popis: "Pošli DeeD / prepitné — statický kód",  col: "#43E0C8" },
   akcia:      { rot: 15, tag: "Akčný QR",      popis: "Overenie účasti (proof-of-presence)",    col: "#F0A85E" },
   skutok:     { rot: 0,  tag: "QR skutku",     popis: "Odkaz na skutok / reťaz dobra",          col: "#5BA8F0" },
-  rozdelenie: { rot: 0,  tag: "Split QR",      popis: "Reťaz dobra — rozdelenie platby na % pre viacerých príjemcov", col: "#2BD49B" },
+  rozdelenie: { rot: 0,  tag: "QR reťaze",     popis: "Reťaz dobra — rozdelenie platby na % pre viacerých príjemcov", col: "#2BD49B" },
 };
 
 // ============================================================

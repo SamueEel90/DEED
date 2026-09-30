@@ -1,3 +1,4 @@
+import { Emo } from "@/components/icons";
 import { C, SPACE, RADIUS } from "@/theme";
 import { Hlavicka, Zdielanie, obalSiroky, useLayout, pressable } from "@/shared";
 import { zdielaj, aktualnaUrl } from "@/lib/zdielanie";
@@ -39,7 +40,7 @@ export function FunZona({ onBack, toast }: FunZonaProps) {
         {FUN.map((f, i) => (
           <div key={i} style={{ background: C.surface2, border: `1px solid ${C.line}`, borderRadius: RADIUS.md, padding: SPACE.gutter, marginTop: SPACE.sm }}>
             <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm }}>
-              <span style={{ width: 40, height: 40, borderRadius: RADIUS.sm, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, background: "rgba(var(--glass-rgb),.06)" }}>{f.emoji}</span>
+              <span style={{ width: 40, height: 40, borderRadius: RADIUS.sm, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, background: "rgba(var(--glass-rgb),.06)" }}><Emo e={f.emoji} /></span>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 11, color: C.textTer }}>Užívateľ spravil:</div>
                 <div style={{ fontSize: 14, fontWeight: 700 }}>{f.trik}</div>
@@ -56,7 +57,7 @@ export function FunZona({ onBack, toast }: FunZonaProps) {
             <div style={{ display: "flex", alignItems: "center", gap: SPACE.xs, marginTop: SPACE.sm }}>
               <span style={{ fontSize: 11, color: C.greenL }}>✓ {f.fix}</span>
               <span {...pressable(() => toast?.("😂 +1"), "Pobavilo ma")} style={{ marginLeft: "auto", fontSize: 12, fontWeight: 700, color: C.textSec, cursor: "pointer" }}>😂 {f.lol.toLocaleString("sk")}</span>
-              <span {...pressable(() => zdielaj({ titul: "DEED Fun zóna", text: `${f.trik} — AI: „${f.verdikt}" 😂`, url: aktualnaUrl() }, toast), "Zdieľať úlovok")} style={{ display: "flex", alignItems: "center", gap: SPACE.xs, fontSize: 12, fontWeight: 700, color: "var(--a-info)", cursor: "pointer" }}><Zdielanie size={15} color="var(--a-info)" /> Zdieľať</span>
+              <span {...pressable(() => zdielaj({ titul: "DEED+ Fun zóna", text: `${f.trik} — AI: „${f.verdikt}" 😂`, url: aktualnaUrl() }, toast), "Zdieľať úlovok")} style={{ display: "flex", alignItems: "center", gap: SPACE.xs, fontSize: 12, fontWeight: 700, color: "var(--a-info)", cursor: "pointer" }}><Zdielanie size={15} color="var(--a-info)" /> Zdieľať</span>
             </div>
           </div>
         ))}

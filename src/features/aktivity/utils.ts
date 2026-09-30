@@ -56,6 +56,8 @@ export function vytvorPost({ kind, d, text, talent, free, fotky }: NovyPostSpec)
   const a = DOM[d];
   const id = 90000 + Date.now() % 100000 + (_seq++); // stabilne unikátne v rámci sedenia
   const t = (text || "").trim();
+  // opis môže byť HTML z RichTextInput — nadpis je vždy čistý text (prvý riadok, najviac 80 znakov)
+  const tCisty = t.replace(/<\/(p|h3|li)>/g, "\n").replace(/<[^>]+>/g, "").replace(/&nbsp;/g, " ").split("\n").map((x) => x.trim()).filter(Boolean)[0]?.slice(0, 80) ?? "";
   const fot = fotky?.filter(Boolean);
   const base = {
     id, dom: d, author: "Ty", ini: "TY", pfp: a.c, karma: "Nováčik",
@@ -69,7 +71,7 @@ export function vytvorPost({ kind, d, text, talent, free, fotky }: NovyPostSpec)
   }
   if (kind === "help") {
     return { ...base, type: "help", size: "req", helpers: 0, emoji: a.ic,
-      title: t || "Hľadám pomoc", desc: t || "Žiadosť o pomoc, ktorú si práve zverejnil(a)." };
+      title: tCisty || "Hľadám pomoc", desc: t || "Žiadosť o pomoc, ktorú si práve zverejnil(a)." };
   }
   // skutok / talent
   return { ...base, type: talent ? "talent" : "skutok", size: talent ? "big" : "med",
@@ -97,7 +99,7 @@ export function osoba(name: string, items: AktItem[]) {
     verified: mine.some((it) => it.verified),
     profi: mine.some((it) => it.profi),
     loc: (first.loc || "Trenčín").split(" · ")[0],
-    bio: BIOS[name] || (isMe ? "To si ty — tvoje skutky, talenty a žiadosti na jednom mieste." : "Člen komunity DEED. Koná dobro vo svojom okolí."),
+    bio: BIOS[name] || (isMe ? "To si ty — tvoje skutky, talenty a žiadosti na jednom mieste." : "Člen komunity DEED+. Koná dobro vo svojom okolí."),
     followers: isMe ? 0 : 40 + (h % 920),
     following: isMe ? 0 : 12 + (h % 130),
     skutky: mine.length,

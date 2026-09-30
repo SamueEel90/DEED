@@ -60,6 +60,9 @@ html.dark {
   box-sizing: border-box;
 }
 
+/* OPRAVY 73: Plus Jakarta Sans spája f + i do ligatúry „ﬁ" a bodka nad i zmizne (profil, filter) — vypnuté pre celú appku */
+html, body, button, input, textarea, select { font-variant-ligatures: no-common-ligatures; font-feature-settings: "liga" 0, "clig" 0; }
+
 body {
   margin: 0;
   background: var(--c-bg);
@@ -74,7 +77,7 @@ button, input, textarea {
 }
 
 #root {
-  min-height: 100vh;
+  min-height: calc(100vh / var(--pismo, 1));
 }
 
 /* appka = presná výška VIDITEĽNEJ oblasti (dvh rieši iOS dynamickú lištu);
@@ -82,11 +85,14 @@ button, input, textarea {
 .deed-app {
   height: 100vh;        /* fallback pre staršie prehliadače */
   height: 100dvh;
+  /* pri zväčšenom písme (zoom na html) sa vh násobí zoomom → vydeliť späť */
+  height: calc(100dvh / var(--pismo, 1));
 }
 /* spodný sheet sa nikdy nepretiahne cez viditeľnú oblasť — ak je obsah privysoký, scrolluje */
 .deed-sheet {
   max-height: 92vh;     /* fallback */
   max-height: 92dvh;
+  max-height: calc(92dvh / var(--pismo, 1));
 }
 
 ::selection {
@@ -209,4 +215,10 @@ button:active, [role="button"]:active {
 @keyframes darLesk {
   0%   { background-position: 180% 0; }
   100% { background-position: -80% 0; }
+}
+
+/* karta 19/20 · Obmedziť animácie — bez letov, iskier, žiary a pulzovania; hárky sa len objavia */
+html.obmedz-anim *, html.obmedz-anim *::before, html.obmedz-anim *::after {
+  animation-duration: 0.01ms !important; animation-iteration-count: 1 !important;
+  transition-duration: 0.15s !important; scroll-behavior: auto !important;
 }

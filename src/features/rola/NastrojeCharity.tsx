@@ -2,6 +2,7 @@
 // NÁSTROJE CHARITY (ZADARMO) — Video · Prehľad darcov · QR nástroje · Viditeľnosť súm
 // Dáta sú tie isté ako na verejnom profile (zbierkyOrg, videá, dary).
 // ============================================================
+import { Emo } from "@/components/icons";
 import { useState, type CSSProperties, type ReactNode } from "react";
 import { C, SPACE, RADIUS } from "@/theme";
 import { Sheet, Switch, tint } from "@/shared";
@@ -194,7 +195,7 @@ export function DarcoviaSheet({ tier, toast, onClose }: { tier: Tier; toast: (m:
         return (
           <div key={z.id} style={karta}>
             <div {...pressable(() => setOtvorena(open ? null : z.id), z.nazov)} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, cursor: "pointer" }}>
-              <span style={{ fontSize: 17 }}>{z.emoji}</span>
+              <span style={{ fontSize: 17 }}><Emo e={z.emoji} /></span>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 13, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{z.nazov}</div>
                 <div style={{ fontSize: 10.5, color: C.textTer }}>{n} {n === 1 ? "dar" : n < 5 && n > 0 ? "dary" : "darov"}{z.stav === "ukoncena" ? " · ukončená" : ""}</div>
@@ -204,13 +205,13 @@ export function DarcoviaSheet({ tier, toast, onClose }: { tier: Tier; toast: (m:
             </div>
             {open && (
               <div style={{ marginTop: SPACE.xs }}>
-                {z.darcovia > 0 && <div style={{ fontSize: 11.5, color: C.textTer, padding: `${SPACE.xxs}px 0` }}>{z.darcovia} starších darov ({eur(z.vyzbierane)}) — pred spustením v DEED, bez mien</div>}
+                {z.darcovia > 0 && <div style={{ fontSize: 11.5, color: C.textTer, padding: `${SPACE.xxs}px 0` }}>{z.darcovia} starších darov ({eur(z.vyzbierane)}) — pred spustením v DEED+, bez mien</div>}
                 {dary.length === 0 ? (z.darcovia ? null : <div style={{ fontSize: 12, color: C.textTer, padding: `${SPACE.xs}px 0` }}>Zatiaľ bez darov.</div>)
                   : dary.map((d) => (
                     <div key={d.id} style={{ display: "flex", alignItems: "baseline", gap: SPACE.xs, fontSize: 12.5, padding: `${SPACE.xxs}px 0`, borderTop: `1px solid ${C.line2}` }}>
                       <b style={{ fontWeight: 600, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{identitaDarcu(d, ja)}</b>
                       <span style={{ fontWeight: 800, color: ZELENA }}>{eur(d.suma)}</span>
-                      <span style={{ marginLeft: "auto", fontSize: 10.5, color: C.textTer, flex: "none" }}>{d.kanal === "deed" ? "DEED" : d.kanal === "sepa" ? "SEPA" : "karta"} · {relCas(d.cas)}</span>
+                      <span style={{ marginLeft: "auto", fontSize: 10.5, color: C.textTer, flex: "none" }}>{d.kanal === "deed" ? "DeeD" : d.kanal === "sepa" ? "SEPA" : "karta"} · {relCas(d.cas)}</span>
                     </div>
                   ))}
               </div>

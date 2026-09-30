@@ -1,3 +1,4 @@
+import { Emo } from "@/components/icons";
 import { PravidelnaHarok } from "@/features/zbierka/PravidelnaHarok";
 import { useEffect, useState } from "react";
 import { SPACE, RADIUS } from "@/theme";
@@ -100,7 +101,7 @@ export function FarskyProfil({ farnost, farar, jeDomovska, following, onToggleFo
 
   // počítadlo aj zoznam darcov rastú z JEDNÉHO miesta (konzistentné čísla)
   function podpor(hodnota: number, text: string) { setSuma((s) => s + hodnota * 0.01); setLudia((l) => l + 1); pridajDar({ refId: darRef, suma: hodnota * 0.01, kanal: "deed", registrovany: ja.typ !== "pasivny" }); toast(text); }
-  function platbaHotova(s: number, volba?: VolbaDaru) { setSuma((x) => x + s * (platba === "DEED" ? 0.01 : 1)); setLudia((l) => l + 1); pridajDar({ refId: darRef, suma: s * (platba === "DEED" ? 0.01 : 1), kanal: platba === "EUR" ? "psp" : "deed", registrovany: ja.typ !== "pasivny", volba }); toast(`Odoslané ${platba === "EUR" ? s + " €" : platba === "EURC" ? s + " EURC" : s + " DEED"} · ${farnost.nazov}`); }
+  function platbaHotova(s: number, volba?: VolbaDaru) { setSuma((x) => x + s * (platba === "DEED" ? 0.01 : 1)); setLudia((l) => l + 1); pridajDar({ refId: darRef, suma: s * (platba === "DEED" ? 0.01 : 1), kanal: platba === "EUR" ? "psp" : "deed", registrovany: ja.typ !== "pasivny", volba }); toast(`Odoslané ${platba === "EUR" ? s + " €" : platba === "EURC" ? s + " EURC" : s + " DeeD"} · ${farnost.nazov}`); }
 
   return (
     <div style={{ paddingBottom: SPACE.lg }}>
@@ -239,7 +240,7 @@ export function FarskyProfil({ farnost, farar, jeDomovska, following, onToggleFo
                 <PlatobnyModul zbalene
                   onShare={() => setQr("zdielat")}
                   upvotes={ludia} onUpvote={() => toast("❤")} reakcia="srdce"
-                  onPodpor={(s: number) => podpor(s, `Ďakujeme za ${s} DEED pre ${farnost.nazov}`)}
+                  onPodpor={(s: number) => podpor(s, `Ďakujeme za ${s} DeeD pre ${farnost.nazov}`)}
                   onKanal={(k: string) => setPlatba(k as Kanal)} accent={N.ind} supLabel="RÝCHLY DAR — klik a hneď odíde"
                   oblubene={{ refId: `farnost-${farnost.id}`, typ: "farnost", modul: "nabozenstvo", nazov: farnost.nazov, lok: farnost.obec }} toast={toast}
                   opakovana={{ label: "Opakovaný dar", onClick: () => setRecur(true) }}
@@ -416,7 +417,7 @@ function ModeraciaSheet({ fid, onClose, toast }: { fid: string; onClose: () => v
     <SheetPanel title="Moderácia príspevkov" onClose={onClose}>
       <div style={{ fontSize: 12, color: N.txt3, marginBottom: SPACE.md, lineHeight: 1.5 }}>Oznam farníka môžeš <b>upraviť</b> (preklep, zlý čas) alebo <b>zmazať</b> — odstráni sa z feedu aj z profilu.</div>
       {polozky.length === 0 ? (
-        <EmptyState emoji="🛡" title="Žiadne oznamy na moderáciu" text="Keď farníci pridajú oznamy, objavia sa tu." />
+        <EmptyState emoji={<Emo e="🛡" />} title="Žiadne oznamy na moderáciu" text="Keď farníci pridajú oznamy, objavia sa tu." />
       ) : polozky.map((it) => {
         const del = zmazane.has(it.id);
         const pyta = potvrd === it.id;

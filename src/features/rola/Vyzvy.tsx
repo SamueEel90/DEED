@@ -9,6 +9,7 @@
 // žrebovať počas behu, tvorca si vyberie moment, ktorý mu vyhovuje, a celá
 // dokázateľnosť padne. Motor to odmietne, tu to len nemá svietiť.
 // ============================================================
+import { DeedZnacka } from "@/components/DeedZnacka";
 import { useState, type CSSProperties } from "react";
 import { C, SPACE, RADIUS } from "@/theme";
 import { Sheet, tint } from "@/shared";
@@ -98,7 +99,7 @@ export function VyzvySheet({ tvorca, toast, onClose }: {
       <div style={{ fontSize: 16, fontWeight: 800 }}>🏆 Výzvy a žrebovanie</div>
       <div style={{ fontSize: 11.5, color: C.textTer, marginTop: 2, lineHeight: 1.45, marginBottom: SPACE.sm }}>
         Vyhlásiš, čo majú tvoji ľudia spraviť, a čo za to dostanú. Systém sám zistí,
-        kto to splnil. Odmenu dávaš ty, nie DEED.
+        kto to splnil. Odmenu dávaš ty, nie <DeedZnacka />.
       </div>
 
       <div style={{ ...karta, background: tint("var(--a-info)", .08), border: `1px solid ${tint("var(--a-info)", .3)}`, fontSize: 11.5, lineHeight: 1.5 }}>

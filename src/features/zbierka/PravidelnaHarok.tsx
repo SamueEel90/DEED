@@ -1,6 +1,7 @@
 // Pravidelná podpora (prototyp „Platba - pravidelna podpora") — rovnaký postup ako jednorazový dar:
 // Nastavenie → Spôsob → Zhrnutie → podrž a potvrď → Hotovo. Podporuje sa LEN táto zbierka.
 // Firma pravidelný dar nedorovnáva. EURC len registrovaný. Karta od 3 €, pod 3 € len SEPA.
+import { DeedZnacka } from "@/components/DeedZnacka";
 import { useState, type ReactNode } from "react";
 import { usePouzivatel } from "@/lib/pouzivatel";
 import { useRecurringCreate } from "@/data";
@@ -206,7 +207,7 @@ export function PravidelnaHarok({ refId, nazov, registrovany, onClose, zbierka =
           {!eurc && (
             <div onClick={() => setTip(!tip)} role="checkbox" aria-checked={tip} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0", borderBottom: "1px solid var(--cardBd)", cursor: "pointer" }}>
               <span style={{ width: 22, height: 22, borderRadius: 7, border: `1.5px solid ${tip ? "var(--green)" : "var(--chkBd)"}`, background: tip ? "var(--green)" : "transparent", color: "#fff", fontSize: 13, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", flex: "none" }}>{tip ? "✓" : ""}</span>
-              <span style={{ flex: 1 }}><span style={{ display: "block", fontSize: 14, fontWeight: 700 }}>Dar pre nás — chod DEED</span><span style={{ display: "block", fontSize: 12, color: "var(--ink3)" }}>dobrovoľné · ide platforme, nie príjemcovi</span></span>
+              <span style={{ flex: 1 }}><span style={{ display: "block", fontSize: 14, fontWeight: 700 }}>Dar pre nás — chod <DeedZnacka /></span><span style={{ display: "block", fontSize: 12, color: "var(--ink3)" }}>dobrovoľné · ide platforme, nie príjemcovi</span></span>
               <span style={{ fontSize: 14, fontWeight: 700, color: tip ? "var(--ink)" : "var(--ink4)", fontVariantNumeric: "tabular-nums" }}>{f(tipV, true)}</span>
             </div>)}
           <div style={{ display: "flex", justifyContent: "space-between", gap: 12, padding: "12px 0 10px", fontSize: 16, fontWeight: 800 }}><span>Spolu pri každej platbe</span><span style={{ fontVariantNumeric: "tabular-nums" }}>{f(spolu, true)}</span></div>

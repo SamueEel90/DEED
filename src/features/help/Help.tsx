@@ -1,3 +1,4 @@
+import { Emo } from "@/components/icons";
 import { useState, useEffect, memo, type ReactNode } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { SIRKA, C, inp, infoBox, btn, SPACE, RADIUS } from "@/theme";
@@ -11,7 +12,7 @@ import { pripravFeed, FEED_CFG } from "@/lib/feed";
 import { MEDIA_AR } from "@/lib/cardSize";
 import type { HelpFeedItem, Subjekt, Oblubeny, QrSplitRow } from "@/types";
 import { CudziProfil } from "@/features/cudzi-profil/CudziProfil";
-import { GoodBoard, GoodEvent } from "@/features/good/Good";
+import { DomovBoard, DomovEvent } from "@/features/domov/Domov";
 import { useHelpFeed, useQrSplitCreate, qk, repo } from "@/data";
 import { SplitConfigStep, splitOwnerPct, splitCielePayload, splitValid, splitPreQrModal, QrModal, SplitQrSheet, type SplitCiel } from "@/shared";
 import { qrUrl } from "@/lib/qr";
@@ -122,8 +123,8 @@ export default function ModulHelp({ wide }: { wide?: boolean }) {
       {screen === "offer" && obal(<OfferFlow onBack={() => setScreen("feed")} onZverejni={zverejni} />)}
       {screen === "request" && obal(<RequestFlow onBack={() => setScreen("feed")} onZverejni={zverejni} />)}
       {screen === "cudzi" && aktSubjekt && obal(<CudziProfil subjekt={aktSubjekt as any} toast={toast} onBack={() => setScreen("feed")} />)}
-      {screen === "board" && <GoodBoard onBack={() => setScreen("feed")} onEvent={(id) => { setAktEvent(id); setScreen("event"); }} />}
-      {screen === "event" && obal(<GoodEvent id={aktEvent} onBack={() => setScreen("board")} toast={toast} oslavuj={(s, komu) => toast(`Ďakujeme za ${s} pre ${komu}`)} />)}
+      {screen === "board" && <DomovBoard onBack={() => setScreen("feed")} onEvent={(id) => { setAktEvent(id); setScreen("event"); }} />}
+      {screen === "event" && obal(<DomovEvent id={aktEvent} onBack={() => setScreen("board")} toast={toast} oslavuj={(s, komu) => toast(`Ďakujeme za ${s} pre ${komu}`)} />)}
       </ScreenSwitch>
 
       {hladaj && (
@@ -142,7 +143,7 @@ export default function ModulHelp({ wide }: { wide?: boolean }) {
 
       {/* autorský Split QR po zverejnení — zdieľaj / vytlač / skenuj (§10 tri výstupy) */}
       {hotovyQr && (
-        <QrModal odznak="D++" typ="rozdelenie" titul={`Split QR · ${hotovyQr.titul}`}
+        <QrModal odznak="D++" typ="rozdelenie" titul={`QR reťaze · ${hotovyQr.titul}`}
           popis="Tvoj autorský QR — platby sa rozdelia podľa zafixovaných %. Zdieľaj alebo vytlač."
           odkaz={hotovyQr.odkaz ?? "https://deed.good/split/demo"} split={hotovyQr.split}
           onClose={() => setHotovyQr(null)} toast={toast} />
@@ -269,7 +270,7 @@ function HelpKartaBase({ z, wide, onClick }: { z: any; wide?: boolean; onClick: 
           <>
             {/* typ (Žiadosť/Ponuka/Charita) rieši FeedCard vľavo hore; tu ostáva len urgentnosť + sponzor (vpravo) */}
             {jeKriza && <KartaBadge pos={{ top: 10, right: 10 }} strong color="#fff" style={{ background: C.red, border: "none", boxShadow: "0 2px 10px rgba(0,0,0,.3)" }}>🔴 URGENTNÉ</KartaBadge>}
-            {z.sponzor && !jeKriza && <KartaBadge pos={{ top: 10, right: 10 }}>🛡 {z.sponzor.meno} · {z.sponzor.suma} €</KartaBadge>}
+            {z.sponzor && !jeKriza && <KartaBadge pos={{ top: 10, right: 10 }}>{z.sponzor.meno} · {z.sponzor.suma} €</KartaBadge>}
             <OblubeneHviezda polozka={oblubenyZHelp(z)} style={{ top: "auto", bottom: 10 }} />
           </>
         ),
@@ -279,7 +280,7 @@ function HelpKartaBase({ z, wide, onClick }: { z: any; wide?: boolean; onClick: 
         <>
           {z.overeny && <Overene size={15} label="Overená žiadosť" />}
           {z.odbornik && <span style={tagChip(C.purple)}>✓ odborník</span>}
-          {z.prisny && <span style={tagChip(C.red)}>🛡 zraniteľní</span>}
+          {z.prisny && <span style={tagChip(C.red)}>zraniteľní</span>}
           {z.typ === "charity" && !z.sponzor && <span style={tagChip(C.gold)}>hľadá pomoc</span>}
         </>
       }
@@ -312,13 +313,13 @@ function Detail({ z, onBack, onAutor }: { z: any; onBack: () => void; onAutor: (
     setSuma((s: number) => s + hodnota * 0.01); // DEED ~0,01€ ilustračne
     setLudia((l: number) => l + 1);
     pridajDar({ refId: darRef, suma: hodnota * 0.01, kanal: "deed", registrovany: ja.typ !== "pasivny" });
-    toast(`Odoslané: ${hodnota} ${kanal} · ⛓ ${hash()}`);
+    toast(`Odoslané: ${hodnota} ${kanal === "DEED" ? "DeeD" : kanal} · záznam platby ${hash()}`);
   }
   function platbaHotova(s: number, volba?: VolbaDaru) {
     setSuma((x: number) => x + s * (platba === "EUR" ? 1 : 0.01));
     setLudia((l: number) => l + 1);
     pridajDar({ refId: darRef, suma: s * (platba === "EUR" ? 1 : 0.01), kanal: platba === "EUR" ? "psp" : "deed", registrovany: ja.typ !== "pasivny", volba });
-    toast(`Odoslané: ${platba === "EUR" ? s + " €" : s + " DEED"} · ⛓ ${hash()}`);
+    toast(`Odoslané: ${platba === "EUR" ? s + " €" : s + " DeeD"} · záznam platby ${hash()}`);
   }
 
   const jePonuka = z.typ === "ponuka"; // ponuka pomoci → kontakt, nie darovanie
@@ -359,7 +360,7 @@ function Detail({ z, onBack, onAutor }: { z: any; onBack: () => void; onAutor: (
           <span style={{ background: "#fff", color: "#0B3D91", fontSize: 10, fontWeight: "bold", borderRadius: RADIUS.xs, padding: `${SPACE.xxs}px ${SPACE.xs}px` }}>{z.sponzor.meno}</span>
           <div style={{ fontSize: 11.5, color: C.textSec, lineHeight: 1.4 }}>
             <b>{z.sponzor.meno} pomohol sumou {z.sponzor.suma} €</b> · sponzor žiadosti<br />
-            <span style={{ color: C.textTer }}>transparentná suma · ⛓ blockchain dôkaz · ESG dopad (ESRS S3)</span>
+            <span style={{ color: C.textTer }}>transparentná suma · overiteľný záznam platby · ESG dopad (ESRS S3)</span>
           </div>
         </div>
       )}
@@ -457,7 +458,7 @@ function Add({ onBack, onOffer, onRequest }: { onBack: () => void; onOffer: () =
 function BigChoice({ emoji, title, desc, col, onClick }: { emoji: string; title: string; desc: string; col: string; onClick: () => void }) {
   return (
     <div onClick={onClick} style={{ border: `1px solid ${col}55`, background: `${col}14`, borderRadius: RADIUS.md, padding: SPACE.md, marginBottom: SPACE.gutter, cursor: "pointer" }}>
-      <div style={{ fontSize: 30 }}>{emoji}</div>
+      <div style={{ fontSize: 30 }}><Emo e={emoji} /></div>
       <div style={{ fontSize: 18, fontWeight: "bold", color: col, marginTop: SPACE.xs }}>{title}</div>
       <div style={{ fontSize: 13, color: C.textSec, marginTop: SPACE.xxs, lineHeight: 1.4 }}>{desc}</div>
     </div>
@@ -737,8 +738,8 @@ function RequestFlow({ onBack, onZverejni }: { onBack: () => void; onZverejni: (
           <input value={proxyAdresa} onChange={(e) => setProxyAdresa(e.target.value)} placeholder="ulica, mesto" style={{ ...inp(0), height: "auto", padding: SPACE.sm, fontSize: 15 }} />
 
           <Otazka>IBAN príjemcu (pre FIAT)</Otazka>
-          <Vyber emoji="✅" title="IBAN poznám" desc="Zadám a overím micro-depositom, že účet patrí príjemcovi." active={ibanCesta === "A"} onClick={() => { setIbanCesta("A"); setIbanOvereny(false); }} />
-          <Vyber emoji="⏳" title="IBAN nemám" desc="Doplním neskôr cez doplnenie žiadosti. Dovtedy beží len DEED, FIAT nepôjde." active={ibanCesta === "B"} onClick={() => { setIbanCesta("B"); setIban(""); setIbanOvereny(false); }} />
+          <Vyber emoji={<Emo e="✅" />} title="IBAN poznám" desc="Zadám a overím micro-depositom, že účet patrí príjemcovi." active={ibanCesta === "A"} onClick={() => { setIbanCesta("A"); setIbanOvereny(false); }} />
+          <Vyber emoji="⏳" title="IBAN nemám" desc="Doplním neskôr cez doplnenie žiadosti. Dovtedy beží len DeeD, FIAT nepôjde." active={ibanCesta === "B"} onClick={() => { setIbanCesta("B"); setIban(""); setIbanOvereny(false); }} />
 
           {ibanCesta === "A" && (
             <div style={{ marginTop: SPACE.sm }}>
@@ -751,7 +752,7 @@ function RequestFlow({ onBack, onZverejni }: { onBack: () => void; onZverejni: (
               <div style={{ fontSize: 11, color: C.textTer, marginTop: SPACE.xs }}>Overovaciu mikroplatbu posiela banka — potvrdí, že účet patrí príjemcovi.</div>
             </div>
           )}
-          {ibanCesta === "B" && <div style={{ ...infoBox, marginTop: SPACE.sm, background: tint(C.gold, .1), borderColor: tint(C.gold, .35), color: C.gold, fontSize: 12.5 }}>⏳ Kým sa nedoplní účet príjemcu, FIAT nepôjde — beží len DEED.</div>}
+          {ibanCesta === "B" && <div style={{ ...infoBox, marginTop: SPACE.sm, background: tint(C.gold, .1), borderColor: tint(C.gold, .35), color: C.gold, fontSize: 12.5 }}>⏳ Kým sa nedoplní účet príjemcu, FIAT nepôjde — beží len DeeD.</div>}
 
           <button onClick={() => { setKrok(0); setFin("wizard"); }} disabled={!proxyOk} style={{ ...btn(proxyOk ? "primary" : "disabled"), width: "100%", marginTop: SPACE.gutter }}>Pokračovať na žiadosť</button>
         </div>
@@ -888,7 +889,7 @@ function RequestFlow({ onBack, onZverejni }: { onBack: () => void; onZverejni: (
         {krok === 6 && (
           <>
             <Otazka>Ako chceš prijímať podporu?</Otazka>
-            {["DEED (wallet)", "EUR (euro na účet)"].map((k, i) => (
+            {["DeeD (peňaženka)", "EUR (euro na účet)"].map((k, i) => (
               <div key={i} style={{ ...vyberBox(false), display: "flex", justifyContent: "space-between" }}>
                 <span>{k}</span><span style={{ fontSize: 11, color: C.textTer }}>poplatok vopred</span>
               </div>
@@ -908,7 +909,7 @@ function RequestFlow({ onBack, onZverejni }: { onBack: () => void; onZverejni: (
             <Otazka>Potvrdenie</Otazka>
             <Suhrn rows={[
               ["Pre koho", preKohoLabel],
-              ...(preKoho === "zastupeni" ? [["Príjemca", `${proxyMeno || "—"}${ibanCesta === "B" ? " · IBAN neskôr (len DEED)" : ""}`] as [string, string]] : []),
+              ...(preKoho === "zastupeni" ? [["Príjemca", `${proxyMeno || "—"}${ibanCesta === "B" ? " · IBAN neskôr (len DeeD)" : ""}`] as [string, string]] : []),
               ["Témy", tagLabels(tagy)],
               ["Suma", `${sumaNum} € (pásmo ${p?.kod})`],
               ["Opis", popis.slice(0, 60) + (popis.length > 60 ? "…" : "")],

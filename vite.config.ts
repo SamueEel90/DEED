@@ -17,8 +17,8 @@ export default defineConfig({
       registerType: 'prompt',
       includeAssets: ['favicon.svg', 'icons/apple-touch-icon.png'],
       manifest: {
-        name: 'DEED — platforma dobra',
-        short_name: 'DEED',
+        name: 'DEED+ — platforma dobra',
+        short_name: 'DEED+',
         description: 'Miesto, kde nerozhodujú slová, ale skutky — dobré skutky, darcovstvo a vzájomná pomoc.',
         lang: 'sk',
         start_url: '/',

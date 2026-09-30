@@ -5,6 +5,7 @@
 // Pravidlo ako pri oznamoch: musí to zvládnuť človek, čo v živote nič
 // nepublikoval — dve otázky, náhľad, hotovo.
 // ============================================================
+import { DeedZnacka } from "@/components/DeedZnacka";
 import { useState, type CSSProperties } from "react";
 import { C, SPACE, RADIUS } from "@/theme";
 import { Sheet, tint } from "@/shared";
@@ -172,7 +173,7 @@ function Formular({ entita, autor, logo, uprava, toast, onHotovo, onSpat }: {
   const chyba = nadpis.trim().length < 3 ? "Napíšte, koho hľadáte — stačí pár slov."
     : dlzka < 10 && fotky.length === 0 ? "Napíšte aspoň vetu — čo treba robiť, kedy a kde. Alebo nahrajte hotový plagát ako fotku."
     : dlzka > OZNAM_CFG.maxTextPonuky ? `Text je dlhší, než sa do ponuky zmestí — skráťte ho o ${dlzka - OZNAM_CFG.maxTextPonuky} znakov.`
-    : !p.cezDeed && !p.email?.trim() && !p.adresa?.trim() ? "Nechajte aspoň jednu cestu, ako sa prihlásiť — cez DEED, e-mailom alebo poštou."
+    : !p.cezDeed && !p.email?.trim() && !p.adresa?.trim() ? "Nechajte aspoň jednu cestu, ako sa prihlásiť — cez DEED+, e-mailom alebo poštou."
     : null;
 
   const zverejni = () => {
@@ -242,7 +243,7 @@ function Formular({ entita, autor, logo, uprava, toast, onHotovo, onSpat }: {
         <div style={{ fontSize: 12, fontWeight: 800, color: C.textTer, letterSpacing: ".04em", margin: `${SPACE.md}px 0 ${SPACE.xxs}px` }}>AKO SA MÁ ČLOVEK PRIHLÁSIŤ</div>
         <label style={{ display: "flex", alignItems: "center", gap: SPACE.xs, fontSize: 13, color: C.textSec, cursor: "pointer", marginBottom: SPACE.xs }}>
           <input type="checkbox" checked={p.cezDeed ?? true} onChange={(e) => setP({ ...p, cezDeed: e.target.checked })} />
-          Cez DEED — klikne „Mám záujem" a vy uvidíte meno a kontakt
+          Cez <DeedZnacka /> — klikne „Mám záujem" a vy uvidíte meno a kontakt
         </label>
         <input value={p.email ?? ""} onChange={(e) => setP({ ...p, email: e.target.value })} inputMode="email"
           placeholder="Žiadosť e-mailom na… (nepovinné)" style={{ ...vstup, marginBottom: SPACE.xs }} />
@@ -302,7 +303,7 @@ function Zaujemcovia({ inzerat, onSpat }: { inzerat: Oznam; onSpat: () => void }
         <div key={z.id} style={karta}>
           <div style={{ display: "flex", alignItems: "center", gap: SPACE.xs }}>
             <div style={{ flex: 1, minWidth: 0, fontSize: 13.5, fontWeight: 700 }}>{z.meno}</div>
-            {z.stit && <span style={{ flex: "none", fontSize: 10, fontWeight: 800, color: "var(--a-gold)", background: tint("var(--a-gold)", .14), borderRadius: RADIUS.pill, padding: `1px ${SPACE.xs}px` }}>🛡 {z.stit}</span>}
+            {z.stit && <span style={{ flex: "none", fontSize: 10, fontWeight: 800, color: "var(--a-gold)", background: tint("var(--a-gold)", .14), borderRadius: RADIUS.pill, padding: `1px ${SPACE.xs}px` }}>{z.stit}</span>}
             {typeof z.karma === "number" && <span style={{ flex: "none", fontSize: 10.5, color: C.textTer }}>karma {z.karma}</span>}
           </div>
           <div style={{ fontSize: 12, color: C.textSec, marginTop: 2 }}>

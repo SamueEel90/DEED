@@ -1,4 +1,9 @@
+import { Emo } from "@/components/icons";
+import { StityRad, type StitLevel as StitLv } from "@/components/stit";
+import { stityOblastiSubjektu } from "@/lib/stityOblasti";
+const naStitLevelOpt = (k: string): StitLv | null => ((["Bronze", "Silver", "Gold", "Platinum", "Legend"] as string[]).includes(k) ? (k as StitLv) : null);
 import { useState, useMemo, useEffect, memo } from "react";
+import { FormatovanyText, RichTextInput } from "@/shared";
 import { ModulHlavicka, Hlavicka, PlatobnyModul, PlatbaModal, HladanieModal, toast, Oslava, useMotiv, useLayout, useScrollPamat, useStrankaAkcie, useTvorbaGate, Ticker, StatRiadok, FiltreStat, FeedStlpce, FeedGrid, FeedCard, TypBadge, BackChip, SwipeBack, obalSiroky, OkruhVyber, Lupa, IkonaMoznosti, Zdielanie, IkonaPlay, IkonaDoska, IkonaPin, IkonaObalka, FotoPrispevku, FotoVyber, FeedSkeleton, EmptyState, ErrorState, ScreenSwitch, EntityHero, BtnAkcia, Overene, KontextMenu, IkonaOdkaz, IkonaVlajka, FotoProfiluSheet } from "@/shared";
 import { FOTO_TEST_REZIM, klucEntity, useFotkyEntity } from "@/lib/fotoentity";
 import { SIRKA, C, GRAD, GRAD_ZELENY, SPACE, RADIUS } from "@/theme";
@@ -17,6 +22,8 @@ import { usePersonalizacia } from "@/lib/personalizacia";
 import { useLokalita } from "@/lib/lokalita";
 import { EVENTS, type AktItem } from "./mock";
 import { LS, load, save, obohatit, osoba, vytvorPost, type NovyPostSpec } from "./utils";
+import { otvorPridatSkutok } from "@/features/skutok/otvor";
+import type { Oblast } from "@/lib/mojeSkutky";
 
 /*
   ============================================================
@@ -34,6 +41,8 @@ import { LS, load, save, obohatit, osoba, vytvorPost, type NovyPostSpec } from "
 function DI({ children }: { children: React.ReactNode }) {
   return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: "block" }}>{children}</svg>;
 }
+// doména Aktivít → oblasť skutku (Pridať skutok s predvolenou oblasťou)
+const DOM_OBLAST: Record<string, Oblast> = { sport: "Šport", art: "Umenie", learn: "Učenie", eko: "Príroda", zdravie: "Zdravie" };
 const DOM_IKONA: Record<string, React.ReactNode> = {
   zdravie: <DI><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.29 1.51 4.04 3 5.5l7 7Z" /></DI>,
   learn: <DI><path d="M22 10 12 5 2 10l10 5 10-5Z" /><path d="M6 12v5c0 1 2 3 6 3s6-2 6-3v-5" /></DI>,
@@ -140,8 +149,8 @@ export default function ModulAktivity({ wide }: { wide?: boolean }) {
     } else if (it) {
       setDeltas((dd) => { const cur = dd[it.id] || {}; return { ...dd, [it.id]: { ...cur, support: (cur.support || 0) + 1 } }; });
     }
-    setTick({ who: "Ty", what: `práve podporil(a) ${amt} DEED →`, to: komu });
-    celebrate(amt >= 100 ? "Skvelé! Veľká podpora!" : "Ďakujeme!", `Tvoja podpora ${amt} DEED letí k ${komu}. Reťaz dobra pokračuje.`);
+    setTick({ who: "Ty", what: `práve podporil(a) ${amt} DeeD →`, to: komu });
+    celebrate(amt >= 100 ? "Skvelé! Veľká podpora!" : "Ďakujeme!", `Tvoja podpora ${amt} DeeD letí k ${komu}. Reťaz dobra pokračuje.`);
   }
 
   function vote(id: number, kind: string) {
@@ -266,7 +275,7 @@ function Home({ items, dom, view, pickDom, pickView, toast, open, openPerson, se
       <Ticker>
         {tick
           ? <>{tick.who} <b style={{ color: C.greenL }}>{tick.what}</b>{tick.to ? ` ${tick.to}` : ""}</>
-          : <>Cyklo TN <b style={{ color: C.greenL }}>práve dostal 100 DEED</b> → Marek</>}
+          : <>Cyklo TN <b style={{ color: C.greenL }}>práve dostal 100 DeeD</b> → Marek</>}
       </Ticker>
 
       {/* filter hore na stránke + štatistický riadok — na desktope na jednom riadku */}
@@ -283,7 +292,7 @@ function Home({ items, dom, view, pickDom, pickView, toast, open, openPerson, se
       ) : isLoading ? (
         <FeedSkeleton count={4} />
       ) : !feed.length ? (
-        <EmptyState emoji="✨" title="Zatiaľ tu nič nie je" text="V tejto kategórii zatiaľ nie sú príspevky." />
+        <EmptyState emoji={<Emo e="✨" />} title="Zatiaľ tu nič nie je" text="V tejto kategórii zatiaľ nie sú príspevky." />
       ) : desktop ? (
         <FeedGrid cols={3} cards={feed.map(boardCard)} />
       ) : (
@@ -451,7 +460,7 @@ function DeedDetail({ it, support, votes, vote, toast, home, openPerson }: any) 
           {it.verified && <span style={{ marginLeft: "auto", display: "inline-flex" }}><Overene size={15} label="Overené komunitou" /></span>}
         </div>
         <div style={{ ...titleS, marginTop: SPACE.sm, fontSize: 14 }}>{it.title}</div>
-        <p style={{ fontSize: 14.5, lineHeight: 1.6, marginTop: SPACE.xs, color: A.txt2 }}>{it.desc}</p>
+        <FormatovanyText text={it.desc} style={{ fontSize: 14.5, lineHeight: 1.6, marginTop: SPACE.xs, color: A.txt2 }} />
 
         {isCase && (
           <div style={{ textAlign: "center", padding: SPACE.sm, background: A.surface2, border: `1px solid ${a.bd}`, borderRadius: RADIUS.sm, marginTop: SPACE.xs }}>
@@ -504,7 +513,7 @@ function WorkshopDetail({ it, toast, celebrate, home, openPerson }: any) {
       </DetailHero>
       <div style={{ padding: `${SPACE.gutter}px ${SPACE.md}px` }}>
         <div style={{ ...titleS, fontSize: 15 }}>{it.title}</div>
-        <p style={{ fontSize: 14.5, lineHeight: 1.6, marginTop: SPACE.xs, color: A.txt2 }}>{it.desc}</p>
+        <FormatovanyText text={it.desc} style={{ fontSize: 14.5, lineHeight: 1.6, marginTop: SPACE.xs, color: A.txt2 }} />
 
         <div onClick={() => openPerson(it.author)} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, background: A.surface2, border: `1px solid ${A.line}`, borderRadius: RADIUS.sm, padding: SPACE.sm, marginTop: SPACE.gutter, cursor: "pointer" }}>
           <div style={{ width: 44, height: 44, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 16, color: "#fff", flex: "none", background: it.pfp }}>{it.ini}</div>
@@ -555,21 +564,21 @@ function HelpDetail({ it, toast, celebrate, home, openPerson }: any) {
           <div><div style={{ ...nameS, display: "flex", alignItems: "center", gap: SPACE.xs }}>{it.author} <span style={{ color: C.textTer, fontSize: 13 }}>›</span></div><div style={{ fontSize: 12, color: A.txt3 }}>{it.loc} · č. {it.num.toLocaleString("sk")}</div></div>
         </div>
         <div style={{ ...titleS, marginTop: SPACE.sm, fontSize: 14 }}>{it.title}</div>
-        <p style={{ fontSize: 14.5, lineHeight: 1.6, marginTop: SPACE.xs, color: A.txt2 }}>{it.desc}</p>
+        <FormatovanyText text={it.desc} style={{ fontSize: 14.5, lineHeight: 1.6, marginTop: SPACE.xs, color: A.txt2 }} />
         <InfoBox>{it.helpers} ľudí sa už zapojilo. Po prijatí sa otvorí chat, dohodnete sa. Po dokončení: hodnotenie + tip + reťaz dobra.</InfoBox>
         <Btn green onClick={gate(() => { celebrate("Ozval si sa!", `Otvorili sme chat s ${it.author}. Dohodnite si detaily.`); setTimeout(home, 1700); })}>✋ Môžem pomôcť</Btn>
         {/* podpora — pomôcť sa dá aj peniazmi (karta / SEPA prevod / peňaženka), nielen časom */}
         <PlatobnyModul
           onShare={() => zdielaj({ titul: it.title, text: it.title, url: aktualnaUrl() }, toast)}
           upvotes={it.helpers || 0} onUpvote={() => toast("Páči sa ti to")}
-          onPodpor={(s: number) => toast(`Ďakujeme za ${s} DEED pre ${it.author}`)}
+          onPodpor={(s: number) => toast(`Ďakujeme za ${s} DeeD pre ${it.author}`)}
           onKanal={(k: string) => setPlatba(k)} supLabel="PODPORIŤ — klik a hneď odíde"
           oblubene={{ refId: it.id, typ: "ziadost", modul: "aktivity", nazov: it.title, lok: it.loc }} toast={toast}
           qr={{ label: "QR tejto žiadosti", popis: "Zväčšiť · kopírovať · zdieľať", cta: "Zdieľať", onClick: () => zdielaj({ titul: it.title, text: it.title, url: aktualnaUrl() }, toast) }} />
       </div>
       {/* simulácia platby (EUR karta / SEPA prevod / DEED peňaženka) */}
       {platba && <PlatbaModal kanal={platba} komu={it.author} onClose={() => setPlatba(null)}
-        onDone={(s: number) => { setPlatba(null); toast(`Odoslané ${platba === "EUR" ? s + " €" : s + " DEED"} · ${it.author}`); }} />}
+        onDone={(s: number) => { setPlatba(null); toast(`Odoslané ${platba === "EUR" ? s + " €" : s + " DeeD"} · ${it.author}`); }} />}
     </div>
   );
 }
@@ -624,40 +633,35 @@ function Add({ dom, add, setAdd, toast, celebrate, home, createPost }: any) {
         <h2 style={{ fontSize: 18, margin: `${SPACE.xxs}px 0` }}>Čo chceš pridať?</h2>
         <div style={{ fontSize: 12, color: A.txt3 }}>Predvyplníme doménu, aby si klikal čo najmenej.</div>
         <div style={{ display: "flex", flexDirection: "column", gap: SPACE.sm, marginTop: SPACE.md }}>
-          <Ch ic="✅" t="Pridať skutok" s="spravil som niečo dobré (zabehol, zasadil, pomohol, vytvoril)" onClick={() => setAdd({ kind: "skutok", d })} />
+          <Ch ic={<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--a-green)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg>} t="Pridať skutok" s="spravil som niečo dobré (zabehol, zasadil, pomohol, vytvoril)" onClick={() => otvorPridatSkutok({ oblast: DOM_OBLAST[d] ?? "Šport" })} />
           <Ch ic="🎓" t="Pridať školenie / workshop" s="ponúkam pomoc — učím, vediem, školím" onClick={() => setAdd({ kind: "skolenie", d })} />
           <Ch ic="❓" t="Hľadám pomoc" s="potrebujem mentora, parťáka, dobrovoľníkov" onClick={() => setAdd({ kind: "help", d })} />
         </div>
-        <div style={{ padding: `${SPACE.gutter}px 0`, fontSize: 11, color: A.txt3, lineHeight: 1.5 }}>Talent (ukáž sa) pridáš tiež cez „Pridať skutok" → typ Talent. Video 45 s (do 1 min), KYC, automatický vodoznak + QR, AI moderácia.</div>
       </div>
     </div>
   );
 }
 
 function AddForm({ kind, d, a, pill, setAdd, toast, celebrate, home, createPost }: any) {
-  const isTalentable = kind === "skutok", isSkol = kind === "skolenie";
+  const isSkol = kind === "skolenie";
   const [text, setText] = useState("");
   const [fotky, setFotky] = useState<string[]>([]); // vybrané foto (data URL, náhľad) → na kartu príspevku
-  const [talent, setTalent] = useState(false); // skutok: false = skutok, true = talent
   const [free, setFree] = useState(true);      // školenie: true = zadarmo
   const [checks, setChecks] = useState<{ a: boolean; b: boolean }>({ a: false, b: false });
   const tg = (k: "a" | "b") => setChecks((c) => ({ ...c, [k]: !c[k] }));
 
-  const titles: Record<string, string> = { skutok: "Nový skutok", skolenie: "Nové školenie", help: "Hľadám pomoc" };
+  const titles: Record<string, string> = { skolenie: "Nové školenie", help: "Hľadám pomoc" };
   const fieldlbl: React.CSSProperties = { fontSize: 11, fontWeight: 700, color: A.txt2, marginTop: SPACE.gutter };
   const inp: React.CSSProperties = { width: "100%", background: A.surface2, border: `1px solid ${A.line}`, borderRadius: RADIUS.sm, padding: SPACE.gutter, color: A.txt, fontSize: 14, fontFamily: "inherit", resize: "none", marginTop: SPACE.xs, outline: "none" };
 
   function submit() {
-    if (!text.trim()) return toast(isSkol ? "Najprv zadaj názov workshopu" : kind === "help" ? "Najprv napíš, čo hľadáš" : "Najprv opíš svoj skutok");
-    if (isTalentable && !checks.a) return toast("Potvrď prvé vyhlásenie");
-    if (isTalentable && talent && !checks.b) return toast("Pri talente potvrď súhlas s vodoznakom");
+    if (!text.replace(/<[^>]+>/g, "").trim()) return toast(isSkol ? "Najprv zadaj názov workshopu" : "Najprv napíš, čo hľadáš");
     if (isSkol && (!checks.a || !checks.b)) return toast("Potvrď obe vyhlásenia (zodpovednosť + oprávnenie školiť)");
 
-    createPost({ kind, d, text, talent: isTalentable && talent, free: isSkol && free, fotky });
-    const ttl = kind === "skutok" ? (talent ? "Talent pridaný!" : "Skutok pridaný!") : isSkol ? "Workshop vytvorený!" : "Žiadosť zverejnená!";
+    createPost({ kind, d, text, talent: false, free: isSkol && free, fotky });
+    const ttl = isSkol ? "Workshop vytvorený!" : "Žiadosť zverejnená!";
     const body = kind === "help" ? "Tvoja žiadosť je navrchu feedu. Keď sa niekto ozve, otvorí sa chat."
-      : isSkol ? "Workshop sa práve zobrazil vo feede aj na Nástenke."
-      : "Práve sa zobrazil navrchu feedu. Ďakujeme, že konáš.";
+      : "Workshop sa práve zobrazil vo feede aj na Nástenke.";
     celebrate(ttl, body);
     setTimeout(home, 1500);
   }
@@ -668,17 +672,10 @@ function AddForm({ kind, d, a, pill, setAdd, toast, celebrate, home, createPost 
       <div style={{ padding: `${SPACE.xs}px ${SPACE.md}px ${SPACE.md}px` }}>
         <div style={pill()}>{a.ic} {a.label}</div>
 
-        {isTalentable && (<>
-          <div style={fieldlbl}>Typ</div>
-          <div style={{ display: "flex", gap: SPACE.xs, marginTop: SPACE.xs }}>
-            <Cbtn t="Skutok" s="popis + foto" active={!talent} onClick={() => setTalent(false)} />
-            <Cbtn t="Talent ▶" s="45 s video" tCol={a.c} active={talent} onClick={() => setTalent(true)} />
-          </div>
-        </>)}
-
-        <div style={fieldlbl}>{isSkol ? "Názov workshopu" : kind === "help" ? "Čo hľadáš" : "Popis skutku"}</div>
-        <textarea rows={3} value={text} onChange={(e) => setText(e.target.value)}
-          placeholder={isSkol ? "napr. Akvarel pre začiatočníkov" : kind === "help" ? "napr. Hľadám parťáka na beh..." : "napr. Vyčistili sme breh Váhu..."} style={inp} />
+        <div style={fieldlbl}>{isSkol ? "Názov workshopu" : "Čo hľadáš"}</div>
+        {isSkol
+          ? <input value={text} onChange={(e) => setText(e.target.value)} placeholder="napr. Akvarel pre začiatočníkov" aria-label="Názov workshopu" style={inp} />
+          : <div style={{ marginTop: SPACE.xs }}><RichTextInput value={text} onChange={setText} placeholder="napr. Hľadám parťáka na beh..." ariaLabel="Čo hľadáš" minH={90} /></div>}
 
         {isSkol && (<>
           <div style={fieldlbl}>Cena</div>
@@ -688,22 +685,20 @@ function AddForm({ kind, d, a, pill, setAdd, toast, celebrate, home, createPost 
           </div>
         </>)}
 
-        <div style={fieldlbl}>Foto{isTalentable && talent ? " / video" : ""}</div>
+        <div style={fieldlbl}>Foto</div>
         <div style={{ display: "flex", gap: SPACE.sm, marginTop: SPACE.xs, alignItems: "center" }}>
           <FotoVyber fotky={fotky} onZmena={setFotky} max={4} />
-          {isTalentable && talent && <Mslot onClick={() => toast("Video — vodoznak sa pridá automaticky")}><IkonaPlay size={20} /></Mslot>}
         </div>
 
-        <div style={{ background: A.greenBg, border: `1px solid ${A.greenBd}`, borderRadius: RADIUS.sm, padding: SPACE.gutter, marginTop: SPACE.gutter, fontSize: 13, lineHeight: 1.4 }}>🤖 <b>AI pomôže</b> — z popisu navrhne kategóriu, dôležitosť a skontroluje obsah. Pri talente: automatický vodoznak + QR, anti-deepfake.</div>
+        <div style={{ background: A.greenBg, border: `1px solid ${A.greenBd}`, borderRadius: RADIUS.sm, padding: SPACE.gutter, marginTop: SPACE.gutter, fontSize: 13, lineHeight: 1.4 }}>🤖 <b>AI pomôže</b> — z popisu navrhne kategóriu, dôležitosť a skontroluje obsah.</div>
 
-        {(isTalentable || isSkol) && (<>
+        {isSkol && (<>
           <div style={fieldlbl}>Potvrdenie</div>
           <Check on={checks.a} onClick={() => tg("a")}>Som to ja alebo blízka osoba s jej súhlasom, zodpovedám za obsah.</Check>
-          {isTalentable && talent && <Check on={checks.b} onClick={() => tg("b")}>Súhlasím s logom / vodoznakom DEED na videu.</Check>}
           {isSkol && <Check on={checks.b} onClick={() => tg("b")}>Čestne vyhlasujem, že mám oprávnenie toto školiť (vzdelanie/skúška/certifikát) a doklady viem predložiť k auditu.</Check>}
         </>)}
 
-        <Btn onClick={submit}>{kind === "help" ? "Zverejniť žiadosť" : isSkol ? "Vytvoriť workshop" : "Pridať skutok"}</Btn>
+        <Btn onClick={submit}>{kind === "help" ? "Zverejniť žiadosť" : "Vytvoriť workshop"}</Btn>
         <div style={{ textAlign: "center", padding: `${SPACE.gutter}px 0 0`, fontSize: 11, color: A.txt3 }}>Pred zverejnením prejde AI kontrolou. {isSkol ? "Lektor = KYC." : ""}</div>
       </div>
     </div>
@@ -716,9 +711,6 @@ function Ch({ ic, t, s, onClick }: any) {
       <div><div style={{ fontWeight: 700, fontSize: 14 }}>{t}</div><div style={{ fontSize: 11, color: A.txt3, marginTop: SPACE.xxs }}>{s}</div></div>
     </div>
   );
-}
-function Mslot({ children, onClick }: { children: React.ReactNode; onClick?: () => void }) {
-  return <div onClick={onClick} style={{ width: 64, height: 64, border: `1px dashed ${A.line}`, borderRadius: RADIUS.sm, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, color: C.textTer, cursor: "pointer" }}>{children}</div>;
 }
 function Check({ on, onClick, children }: { on: boolean; onClick?: () => void; children: React.ReactNode }) {
   return (
@@ -766,7 +758,6 @@ function OsobaProfil({ name, items, follows, toggleFollow, onOpen, toast, home }
   const acc = p.domains[0] ? DOM[p.domains[0]] : DOM.mix;
   const followers = p.followers + (sledujem ? 1 : 0);
 
-  const karmaCol = ({ Gold: A.gold, Silver: "#C9D2DE", Bronze: "#CD8B5E", "Nováčik": A.txt3 } as Record<string, string>)[p.karma] || A.txt3;
 
   return (
     <div style={{ paddingBottom: SPACE.lg }}>
@@ -784,7 +775,8 @@ function OsobaProfil({ name, items, follows, toggleFollow, onOpen, toast, home }
           coverEl={<span style={{ position: "absolute", inset: 0, background: `linear-gradient(160deg, ${tint(acc.c, .3)}, ${tint(acc.c, .06)})` }} />}
           meno={<>{p.name}{p.profi && <Wb bg={A.purpleBg} c={A.purple}>PROFI</Wb>}</>}
           overene={p.verified} overeneLabel="Overený člen — potvrdené komunitou"
-          podtitul={<><span style={{ color: karmaCol, fontWeight: 700 }}>◆ {p.karma}</span> · 📍 {p.loc}</>}
+          podtitul={<span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}><IkonaPin size={11} color={A.txt3} /> {p.loc.replace(/\s*\/\s*/g, " · ")}</span>}
+          vpravo={naStitLevelOpt(p.karma) && <StityRad variant="hlavicka" hlavny={naStitLevelOpt(p.karma)!} oblasti={stityOblastiSubjektu(p.name, naStitLevelOpt(p.karma)!)} meno={p.name} velkost={76} />}
           stats={[
             { hodnota: p.skutky, label: "skutkov" },
             { hodnota: followers.toLocaleString("sk"), label: "sledovateľov" },
@@ -836,7 +828,7 @@ function OsobaProfil({ name, items, follows, toggleFollow, onOpen, toast, home }
           const lbl = it.type === "talent" ? "Talent" : it.type === "workshop" ? "Workshop" : it.type === "help" ? "Hľadá pomoc" : it.type === "case" ? "Akcia" : "Skutok";
           return (
             <div key={it.id} onClick={() => onOpen(it.id)} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, padding: `${SPACE.sm}px ${SPACE.sm}px`, background: A.surface, border: `1px solid ${A.line2}`, borderRadius: RADIUS.sm, marginBottom: SPACE.xs, cursor: "pointer" }}>
-              <div style={{ width: 38, height: 38, borderRadius: RADIUS.xs, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 17, flex: "none", background: a.bg, border: `1px solid ${a.bd}` }}>{it.emoji}</div>
+              <div style={{ width: 38, height: 38, borderRadius: RADIUS.xs, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 17, flex: "none", background: a.bg, border: `1px solid ${a.bd}` }}><Emo e={it.emoji} /></div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 13.5, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{it.title}</div>
                 <div style={{ fontSize: 11, color: A.txt3, marginTop: SPACE.xxs }}><span style={{ color: a.c, fontWeight: 700 }}>{lbl}</span> · {a.label} · {it.time}</div>

@@ -1,5 +1,6 @@
 // KARTA 07 · Platobné okno — Suma → Spôsob → Zhrnutie → Podrž a zaplať → Spracovanie → (Hotovo = karta 09).
 // Hárok nad detailom (mobil zdola, tablet 640 px na stred, PC 560 px na stred). Bez blur. Platba sa do cesty Späť nezapisuje.
+import { DeedZnacka } from "@/components/DeedZnacka";
 import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { useLayout } from "@/components/context";
@@ -24,7 +25,7 @@ export const nastavPotvrditTuknutim = (v: boolean) => { try { localStorage.setIt
 
 const e2 = (n: number) => `${n.toLocaleString("sk-SK", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`;
 const eK = (n: number) => `${n.toLocaleString("sk-SK", { minimumFractionDigits: n % 1 ? 2 : 0, maximumFractionDigits: 2 })} €`;
-const jednotka = (k: KanalPlatby) => (k === "eur" ? "€" : k === "deed" ? "DEED" : "EURC");
+const jednotka = (k: KanalPlatby) => (k === "eur" ? "€" : k === "deed" ? "DeeD" : "EURC");
 const vSume = (n: number, k: KanalPlatby) => (k === "eur" ? eK(n) : `${n.toLocaleString("sk-SK", { maximumFractionDigits: 2 })} ${jednotka(k)}`);
 /** poplatok karty 1,4 % + 0,15 € (platí darca) */
 export const poplatokKarty = (s: number) => Math.round((s * 0.014 + 0.15) * 100) / 100;
@@ -97,11 +98,12 @@ export function PlatobneOkno({ kanal, suma: sumaStart, nazov, registrovany, bonu
   });
 
   const hlavicka = (
-    <div style={{ flex: "none", padding: "18px 18px 0" }}>
+    <div style={{ flex: "none", padding: wide ? "18px 18px 0" : "10px 18px 0" }}>
+      {!wide && <div style={{ width: 40, height: 4, borderRadius: 4, background: "var(--handle)", margin: "0 auto 12px" }} />}
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
         <span style={{ width: 46, height: 46, borderRadius: 13, background: "var(--bSoft)", color: "var(--blue)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: eur ? 19 : 13, fontWeight: 800, flex: "none" }}>{eur ? "€" : jednotka(kanal)}</span>
         <span style={{ flex: 1, minWidth: 0 }}>
-          <span style={{ display: "block", fontSize: 17, fontWeight: 800 }}>{eur ? "Platba v eurách" : kanal === "deed" ? "Platba v DEED" : "Platba v EURC"}</span>
+          <span style={{ display: "block", fontSize: 17, fontWeight: 800 }}>{eur ? "Platba v eurách" : kanal === "deed" ? "Platba v DeeD" : "Platba v EURC"}</span>
           <span style={{ display: "block", fontSize: 12.5, color: "var(--ink3)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{nazov} · {eur ? "karta / prevod" : "z peňaženky"}</span>
         </span>
         {krok !== "spracovanie" && (
@@ -193,7 +195,7 @@ export function PlatobneOkno({ kanal, suma: sumaStart, nazov, registrovany, bonu
               <span style={{ width: 22, height: 22, borderRadius: 7, border: `1.5px solid ${darDeed ? "var(--green)" : "var(--chkBd)"}`, background: darDeed ? "var(--green)" : "transparent", color: "#fff", fontSize: 13, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", flex: "none" }}>
                 {darDeed && <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg>}
               </span>
-              <span style={{ flex: 1 }}><span style={{ display: "block", fontSize: 14.5, fontWeight: 700 }}>Dar pre nás — chod DEED</span><span style={{ display: "block", fontSize: 12, color: "var(--ink3)" }}>dobrovoľné · ide platforme, nie príjemcovi</span></span>
+              <span style={{ flex: 1 }}><span style={{ display: "block", fontSize: 14.5, fontWeight: 700 }}>Dar pre nás — chod <DeedZnacka /></span><span style={{ display: "block", fontSize: 12, color: "var(--ink3)" }}>dobrovoľné · ide platforme, nie príjemcovi</span></span>
               <span style={{ fontSize: 14.5, fontWeight: 700, fontVariantNumeric: "tabular-nums", color: darDeed ? "var(--ink)" : "var(--ink4)" }}>{e2(DAR_PRE_NAS)}</span>
             </div>
           )}
@@ -238,9 +240,9 @@ export function PlatobneOkno({ kanal, suma: sumaStart, nazov, registrovany, bonu
 
   const sirka = desktop ? 560 : wide ? 640 : undefined;
   const okno: CSSProperties = wide
-    ? { position: "relative", width: sirka, maxWidth: "calc(100vw - 32px)", maxHeight: "min(760px, calc(100vh - 48px))", borderRadius: 28,
+    ? { position: "relative", width: sirka, maxWidth: "calc(100vw - 32px)", maxHeight: "min(760px, calc(100vh / var(--pismo, 1) - 48px))", borderRadius: 28,
         transform: otvorene ? "none" : "translateY(24px)", opacity: otvorene ? 1 : 0 }
-    : { position: "relative", width: "calc(100vw - 24px)", maxHeight: "calc(100dvh - 32px)", borderRadius: 28, transform: otvorene ? "none" : "translateY(24px)", opacity: otvorene ? 1 : 0 }; // aj mobil: okno v strede
+    : { position: "absolute", left: 0, right: 0, bottom: 0, maxHeight: "92%", borderRadius: "28px 28px 0 0", transform: otvorene ? "none" : "translateY(105%)" }; // mobil zdola, tablet/PC v strede
 
   return createPortal(
     <div className="deed-platba" role="dialog" aria-modal="true" aria-label="Platba"

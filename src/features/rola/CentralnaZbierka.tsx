@@ -16,6 +16,8 @@ import { nacitajProfil, ulozProfil, CENTRALNA_ID, VLASTNA_ZBIERKA_CFG, type Prof
 import { sucetDarov } from "@/lib/darcovia";
 import { formatujIban } from "./segmenty";
 import { SADY_EUR, SADY_EURC, type SadaEur, type SadaEurc } from "@/lib/sadyDarov";
+import { PravidelnaHarok } from "@/features/zbierka/PravidelnaHarok";
+import { jeNeregistrovany } from "@/lib/devDarca";
 
 export function CentralnaZbierkaSheet({ toast, onClose }: { toast: (m: string) => void; onClose: () => void }) {
   const s = SUBJEKTY.charita;
@@ -36,6 +38,7 @@ export function CentralnaZbierkaSheet({ toast, onClose }: { toast: (m: string) =
     setNovy("");
   };
   const [potvrdene, setPotvrdene] = useState(false);
+  const [pravidelna, setPravidelna] = useState(false);
   const spustena = nacitajCentralnu("charita");
   const logo = nacitajLogo("charita") ?? s.foto;
   const ibanOrg = nacitajIbanOrg("charita");
@@ -91,7 +94,7 @@ export function CentralnaZbierkaSheet({ toast, onClose }: { toast: (m: string) =
           sumyEur={SADY_EUR[sady.eur].sumy} sumyEurc={SADY_EURC[sady.eurc].sumy}
           onShare={() => undefined} upvotes={0} onUpvote={() => undefined}
           onPodpor={() => undefined} onKanal={() => undefined} toast={() => undefined}
-          opakovana={{ popis: "Sektor činnosti alebo celá organizácia · len pre registrovaných", onClick: () => undefined }} />
+          opakovana={{ popis: "Mesačne · kartou alebo prevodom · kedykoľvek zrušíš", onClick: () => setPravidelna(true) }} />
       </div>
 
       {nadpis("RÝCHLE SUMY — EURÁ")}
@@ -162,6 +165,7 @@ export function CentralnaZbierkaSheet({ toast, onClose }: { toast: (m: string) =
           background: potvrdene && vybrane.length ? "var(--a-green)" : "rgba(var(--glass-rgb),.15)", color: potvrdene && vybrane.length ? "#fff" : C.textTer, cursor: potvrdene && vybrane.length ? "pointer" : "default" }}>
         {spustena ? "Uložiť zmeny" : "Spustiť centrálnu zbierku"}
       </button>
+      {pravidelna && <PravidelnaHarok refId={CENTRALNA_ID} nazov={profil.nazov} zbierka={false} registrovany={!jeNeregistrovany()} onClose={() => setPravidelna(false)} />}
     </Sheet>
   );
 }

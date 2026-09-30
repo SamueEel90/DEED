@@ -34,7 +34,7 @@ export function BadgeSheet({ badgeId, nazov, onClose, toast }: { badgeId: string
     try {
       const r = await scan.mutateAsync({ badgeId, zakaznik: ucetId ?? null, suma: s });
       const komu = r.prijemca === "employee" ? "zamestnancovi na zmene" : "pobočke (nikto na zmene)";
-      toast?.(s > 0 ? `Dar ${s} DEED → ${komu}` : `Pochvala → ${komu}`);
+      toast?.(s > 0 ? `Dar ${s} DeeD → ${komu}` : `Pochvala → ${komu}`);
       onClose?.();
     } catch { toast?.("Nepodarilo sa odoslať"); }
   };
@@ -60,9 +60,9 @@ export function BadgeSheet({ badgeId, nazov, onClose, toast }: { badgeId: string
       </div>
       <Label>ALEBO POŠLI DAR</Label>
       <div style={{ display: "flex", gap: SPACE.xs, marginBottom: SPACE.sm }}>
-        {SUMY.map((s) => <button key={s} onClick={() => setSuma(s)} style={chip(suma === s)}>{s} DEED</button>)}
+        {SUMY.map((s) => <button key={s} onClick={() => setSuma(s)} style={chip(suma === s)}>{s} DeeD</button>)}
       </div>
-      <button disabled={suma <= 0 || scan.isPending} onClick={() => poslat(suma)} style={{ ...btn(true), width: "100%", opacity: suma > 0 ? 1 : .5, cursor: suma > 0 ? "pointer" : "not-allowed" }}>{scan.isPending ? "Odosielam…" : suma > 0 ? `Poslať ${suma} DEED` : "Vyber sumu"}</button>
+      <button disabled={suma <= 0 || scan.isPending} onClick={() => poslat(suma)} style={{ ...btn(true), width: "100%", opacity: suma > 0 ? 1 : .5, cursor: suma > 0 ? "pointer" : "not-allowed" }}>{scan.isPending ? "Odosielam…" : suma > 0 ? `Poslať ${suma} DeeD` : "Vyber sumu"}</button>
 
       {/* ZAMESTNANEC — zmena */}
       <Label>SOM ZAMESTNANEC — ZMENA</Label>

@@ -3,7 +3,8 @@
 // Čisté dátové polia vyňaté z Profil.tsx. Bez JSX.
 // ============================================================
 import type { PrevodTuple, MojSkutokTuple } from "@/types";
-import type { StitLevel } from "@/components/stit";
+import type { T } from "@/i18n";
+import { prelozObsah } from "@/i18n/obsah";
 
 /** Posledné prevody v peňaženke. */
 export const PREVODY: PrevodTuple[] = [
@@ -34,40 +35,78 @@ export const MOJE_SKUTKY: MojSkutokTuple[] = [
   ["Daroval som plazmu — už 20. raz", "+40", "#3DD6CE"],
 ];
 
-/** Podstránka „Karma a úrovne" — súhrnné riadky; modulové levely žijú
- *  v MODULOVA_KARMA ako štíty (DEED_Stity §2), nie textové riadky. */
+/** karma (repo.profil.karma) — len celkové číslo; séria dní zrušená (karta 26) */
 export const KARMA: MojSkutokTuple[] = [
-  ["Celková karma", "Gold · L7", "#E7C766"],
-  ["Generosity Score (reťaz dobra)", "+142 ♻", "#2BD49B"],
-  ["Séria dní v rade", "21 🔥", "#E7C766"],
+  ["Celková karma", "2 480", "var(--a-gold)"],
 ];
 
-/** Modulová karma (DEED_Stity §2–§4) — hladký štít + gravírovaný symbol
- *  modulu; titul je TEXT pri štíte („Hrdina srdca · Charita"), nie grafika.
- *  MVP 6 modulov; fáza 2 (Health/Gov/SOS/Kids) sa potvrdí pri module. */
-export const MODULOVA_KARMA: { symbol: string; label: string; level: StitLevel; titul?: string }[] = [
-  { symbol: "help", label: "Help", level: "Silver" },
-  { symbol: "charita", label: "Charita", level: "Gold", titul: "Hrdina srdca" },
-  { symbol: "sport", label: "Šport", level: "Bronze" },
-  { symbol: "art", label: "Art", level: "Bronze" },
-  { symbol: "learn", label: "Learn", level: "Silver" },
-  { symbol: "eco", label: "Eco", level: "Gold", titul: "Strážca prírody" },
-];
+/** karma vlastníka (vidí ju len on) a počet jeho skutkov — mock do Supabase */
+export const MOJA_KARMA = 2480;
+export const MOJE_SKUTKY_POCET = 48;
 
-/** Doživotné badge usera (mock) — id z katalógu DOZIVOTNE_BADGE (§5). */
-export const DOZIVOTNE_ZISKANE: string[] = ["svedok-dobra"];
-
-/** Podstránka „Štatistiky a umiestnenie". */
-export const STATISTIKY: MojSkutokTuple[] = [
-  ["Celkové umiestnenie", "#412 v meste", "#E7C766"],
-  ["Príroda", "#28 v štvrti", "#3DD68C"],
-  ["Tento mesiac", "+9 skutkov", "#5BA8F0"],
-  ["Celkovo darované", "840 €", "#3DD68C"],
-  ["Komunita", "#54 v meste", "#5BA8F0"],
-  ["Najlepšia séria", "21 dní v rade", "#E7C766"],
-  ["Sledujúci", "128 ľudí", "#A98BF0"],
-  ["Podporených ľudí", "37", "#2BD49B"],
-];
+/** Štatistiky (karta 27) — vidí len vlastník; žiadne umiestnenia ani porovnanie s inými. Mock do Supabase. */
+export type StatObdobie = {
+  skutkov: number; hodin: number; darovaneEur: number; ludi: number; zbierok: number; oblasti: number;
+  /** skutky po mesiacoch (len Tento rok), index 0 = január */
+  mesiace?: number[];
+  /** kde pomáhaš — oblasti štítov a počet skutkov */
+  kde: [string, number][];
+  /** tvoj dosah: overili · darov cez skutky a reťaz · pridali sa na pozvánku */
+  dosah: [number, number, number];
+};
+export type StatistikyData = { rok: StatObdobie; vsetko: StatObdobie; seria: { najdlhsia: number; teraz: number } };
+export const STATISTIKY: StatistikyData = {
+  rok: { skutkov: 48, hodin: 126, darovaneEur: 840, ludi: 37, zbierok: 12, oblasti: 6, mesiace: [2, 3, 5, 4, 6, 3, 7, 4, 9],
+    kde: [["EKO", 16], ["HELP", 11], ["LEARN", 9], ["ART", 6], ["HEALTH", 4], ["SPORT", 2]], dosah: [214, 63, 5] },
+  vsetko: { skutkov: 131, hodin: 342, darovaneEur: 2310, ludi: 94, zbierok: 27, oblasti: 7,
+    kde: [["EKO", 41], ["HELP", 33], ["LEARN", 22], ["ART", 15], ["HEALTH", 11], ["SPORT", 6], ["CARE", 3]], dosah: [580, 171, 12] },
+  seria: { najdlhsia: 21, teraz: 3 },
+};
 
 /** Témy / záujmy v nastaveniach. */
 export const TEMY: string[] = ["Šport", "Eko", "Zdravie", "Art", "Učenie", "Komunita", "Zvieratá", "Senior"];
+
+/** Peňaženka (karta 18 bod 5) — posledné pohyby: [deň, názov, popis, suma, príjem?, mena] — mock do Supabase */
+export const POHYBY: [string, string, string, string, boolean, "DEED" | "EURC"][] = [
+  ["Dnes", "Odmena za skutok", "Vyčistili sme skládku pri potoku", "+84 DeeD", true, "DEED"],
+  ["Dnes", "Mikrodar · Zbierka pre Sárku", "cez Mareka Tvorí", "−1,00 EURC", false, "EURC"],
+  ["Včera", "Mikrodar · Útulok Túlavá labka", "EURC", "−0,50 EURC", false, "EURC"],
+  ["Včera", "Dobitie kartou", "20 € → 400 DeeD", "+400 DeeD", true, "DEED"],
+  ["23. 9.", "Poslané · Jana N.", "poďakovanie za pomoc", "−50 DeeD", false, "DEED"],
+  ["23. 9.", "Reťaz dobra · Rodina po povodni", "časť odmeny ďalej", "−39 DeeD", false, "DEED"],
+  ["22. 9.", "Dobitie SEPA", "10 € → 10 EURC", "+10,00 EURC", true, "EURC"],
+  ["18. 9.", "Odmena za skutok", "Odviezol som suseda na dialýzu", "+30 DeeD", true, "DEED"],
+  ["18. 9.", "Mikrodar · Deň žltej stužky", "EURC", "−0,20 EURC", false, "EURC"],
+  ["12. 9.", "Podpora · Jozef M.", "poďakovanie", "−100 DeeD", false, "DEED"],
+  ["12. 9.", "Mikrodar · Rodina po požiari", "EURC", "−2,00 EURC", false, "EURC"],
+  ["5. 9.", "Odmena za darovanie krvi", "Daroval som plazmu", "+50 DeeD", true, "DEED"],
+  ["5. 9.", "Dobitie kartou", "10 € → 10 EURC", "+10,00 EURC", true, "EURC"],
+];
+/** výpisy v PDF po mesiacoch: [rok, mesiac 0–11, počet pohybov | null = priebežný · do dnes] (texty v i18n penazenka.*) */
+export const VYPISY: [number, number, number | null][] = [[2026, 8, null], [2026, 7, 14], [2026, 6, 9], [2026, 5, 11]];
+
+/** preklad jedného pohybu na zobrazenie (KARTA 31): deň, typ, popis rozhrania a suma podľa jazyka.
+ *  Obsah (popis skutku, názov zbierky) sa prekladá cez pamäť prekladov (bod 79b) — `p` = preklad obsahu
+ *  (predvolene bez odkazu; Peňaženka podáva pr.p z usePrekladObsahu kvôli odkazu Zobraziť originál). Mená ostávajú. */
+const POH_TYP: Record<string, string> = {
+  "Odmena za skutok": "penazenka.poh.odmenaSkutok", "Odmena za darovanie krvi": "penazenka.poh.odmenaKrv",
+  "Mikrodar": "penazenka.poh.mikrodar", "Dobitie kartou": "penazenka.poh.dobitieKartou", "Dobitie SEPA": "penazenka.poh.dobitieSepa",
+  "Poslané": "penazenka.poh.poslane", "Reťaz dobra": "penazenka.poh.retaz", "Podpora": "penazenka.poh.podpora",
+};
+const POH_POPIS: Record<string, string> = {
+  "poďakovanie za pomoc": "penazenka.poh.podakovaniePomoc", "poďakovanie": "penazenka.poh.podakovanie", "časť odmeny ďalej": "penazenka.poh.castOdmeny",
+};
+export function pohybZobraz(p: (typeof POHYBY)[number], t: T, pp: (s: string) => string = (s) => prelozObsah(s, t)): { den: string; nazov: string; popis: string; suma: string } {
+  const [den, nazov, popis, suma] = p;
+  const dm = /^(\d{1,2})\. (\d{1,2})\.$/.exec(den);
+  const denT = den === "Dnes" ? t("penazenka.poh.dnes") : den === "Včera" ? t("penazenka.poh.vcera") : dm ? t.datum(new Date(new Date().getFullYear(), +dm[2] - 1, +dm[1])) : den;
+  const [typ, ...zvysok] = nazov.split(" · ");
+  const nazovT = [POH_TYP[typ] ? t(POH_TYP[typ]) : typ, ...zvysok.map(pp)].join(" · ");
+  const prevod = /^(\d+) € → (\d+) (DeeD|EURC)$/.exec(popis);
+  const popisT = POH_POPIS[popis] ? t(POH_POPIS[popis]) : popis.startsWith("cez ") ? t("penazenka.poh.cez", { kto: popis.slice(4) })
+    : prevod ? `${t.eur(+prevod[1])} → ${t.cislo(+prevod[2])} ${prevod[3]}` : pp(popis);
+  const s = /^([+−-])([\d\s,]+) (DeeD|EURC)$/.exec(suma);
+  const n = s ? Number(s[2].replace(/\s/g, "").replace(",", ".")) : NaN;
+  const sumaT = s && !Number.isNaN(n) ? `${s[1]}${s[3] === "EURC" ? new Intl.NumberFormat(t.locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n) : t.cislo(n)} ${s[3]}` : suma;
+  return { den: denT, nazov: nazovT, popis: popisT, suma: sumaT };
+}

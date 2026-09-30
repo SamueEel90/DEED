@@ -7,7 +7,7 @@
 // `aktivity`/`b2b` ostávajú kurátorské do Fázy F (Aktivity) / dát o firmách.
 // ============================================================
 import type { RebricekPolozka, GoodPolozka } from "@/types";
-import { POLOZKY } from "@/features/good/mock";
+import { POLOZKY } from "@/features/domov/mock";
 
 /** Kľúče kategórií rebríčka (poradie zobrazenia rieši CATS v Top.tsx). */
 export type RebricekKluc = "b2b" | "darcovia" | "hrdinovia" | "aktivity" | "charity";
@@ -41,12 +41,12 @@ export const REBRICKY_MOCK: Record<RebricekKluc, RebricekPolozka[]> = {
     { meno: "Petrolia SK", info: "3 100 € · doprava pomoci", subjekt: { typ: "org", meno: "Petrolia SK", emoji: "🏢", lok: "Firma · logistika pomoci", level: "Bronze" } },
   ],
   darcovia: [
-    { meno: "Lukáš H.", info: "1 850 DEED tento mesiac", subjekt: { typ: "osoba", meno: "Lukáš H.", level: "Gold" } },
-    { meno: "Eva K.", info: "1 420 DEED", subjekt: { typ: "osoba", meno: "Eva K.", level: "Gold" } },
-    { meno: "Martin K.", info: "1 050 DEED · darca krvi", subjekt: { typ: "osoba", meno: "Martin K.", level: "Gold" } },
-    { meno: "Zuzana P.", info: "880 DEED", subjekt: { typ: "osoba", meno: "Zuzana P.", level: "Silver" } },
-    { meno: "Tomáš R.", info: "640 DEED", subjekt: { typ: "osoba", meno: "Tomáš R.", level: "Gold" } },
-    { meno: "Anonym", info: "510 DEED · potichu", subjekt: { typ: "osoba", meno: "Anonym", level: "Silver" } },
+    { meno: "Lukáš H.", info: "1 850 DeeD tento mesiac", subjekt: { typ: "osoba", meno: "Lukáš H.", level: "Gold" } },
+    { meno: "Eva K.", info: "1 420 DeeD", subjekt: { typ: "osoba", meno: "Eva K.", level: "Gold" } },
+    { meno: "Martin K.", info: "1 050 DeeD · darca krvi", subjekt: { typ: "osoba", meno: "Martin K.", level: "Gold" } },
+    { meno: "Zuzana P.", info: "880 DeeD", subjekt: { typ: "osoba", meno: "Zuzana P.", level: "Silver" } },
+    { meno: "Tomáš R.", info: "640 DeeD", subjekt: { typ: "osoba", meno: "Tomáš R.", level: "Gold" } },
+    { meno: "Anonym", info: "510 DeeD · potichu", subjekt: { typ: "osoba", meno: "Anonym", level: "Silver" } },
   ],
   // geo (lat/lng) = reprezentatívna poloha pre filter podľa okruhu (Štvrť ~5 km / Mesto ~15 km).
   // Bez geo (MUDr. Hraško) = celoslovenský → vždy v rebríčku. Anker = USER_LOK (48.894, 18.044).

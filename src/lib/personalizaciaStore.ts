@@ -35,22 +35,36 @@ function save(key: string, val: unknown) {
 //   Komunita/Pomoc sú profilové kategórie navyše (číselník ich nemá) → doplnené z domén
 //   Help/Charita. Zjednotenie slovníka + DB↔store most pre reálne účty ostáva Fáza 4.
 export interface ZaujemKategoria { oblast: string; label: string; emoji: string; kluce: string[]; podpolozky: string[]; }
+// 10 oblastí záujmov (karta 18) — v pevnom poradí po pároch, ako ich ukazuje profil.
+// Registrácia aj profil čítajú TENTO číselník (DB cis_zaujmy sa zjednotí pri Supabase).
 export const ZAUJMY_KATALOG: ZaujemKategoria[] = [
-  { oblast: "Priroda",  label: "Príroda",  emoji: "🌿", kluce: ["Priroda", "eko"],
-    podpolozky: ["Akcie", "Životný štýl", "Zvieratá/príroda", "Udržateľnosť", "Eko pestovanie/záhrada"] },
-  { oblast: "Komunita", label: "Komunita", emoji: "🤝", kluce: ["Komunita"],
+  { oblast: "Komunita", label: "Komunita", emoji: "", kluce: ["Komunita"],
     podpolozky: ["Dobrovoľníctvo", "Susedská výpomoc", "Komunitné podujatia", "Seniori", "Deti a mládež", "Zbierky a dary"] },
-  { oblast: "Zdravie",  label: "Zdravie",  emoji: "❤️", kluce: ["Zdravie", "zdravie"],
-    podpolozky: ["Výživa/strava", "Pohyb/telo", "Duševné zdravie", "Prevencia", "Závislosti", "Skupiny"] },
-  { oblast: "Ucenie",   label: "Učenie",   emoji: "📚", kluce: ["Ucenie", "learn"],
-    podpolozky: ["Jazyky", "IT/tech", "Financie/právo", "Remeslá/praktické", "Soft skills", "Veda", "Doučovanie", "Technické hobby"] },
-  { oblast: "Sport",    label: "Šport",    emoji: "🏃", kluce: ["sport"],
+  { oblast: "Hudba",    label: "Hudba",    emoji: "", kluce: ["hudba"],
+    podpolozky: ["Rock/tvrdšie", "Pop", "Rap/hip-hop", "Elektronická", "Tradičné", "Jazz/blues", "Klasická", "Svetová"] },
+  { oblast: "Sport",    label: "Šport",    emoji: "", kluce: ["sport"],
     podpolozky: ["Tímové/loptové", "Raketové", "Beh a vytrvalosť", "Cyklistika", "Vodné športy", "Zimné športy", "Sila/fitness", "Bojové športy", "Outdoor/hory", "Precízne/mentálne", "Pohyb/tanec", "Iné"] },
-  { oblast: "Art",      label: "Umenie",   emoji: "🎨", kluce: ["art"],
-    podpolozky: ["Výtvarné", "Priestorové", "Fotografia", "Film/video", "Scénické", "Literatúra", "Dizajn/remeslá", "Digitálne", "Hudba – rock", "Hudba – pop", "Hudba – rap/hip-hop", "Hudba – elektronická", "Hudba – klasická", "Hudba – jazz/blues"] },
-  { oblast: "Pomoc",    label: "Pomoc",    emoji: "🆘", kluce: ["Pomoc"],
+  { oblast: "Zdravie",  label: "Zdravie",  emoji: "", kluce: ["Zdravie", "zdravie"],
+    podpolozky: ["Výživa/strava", "Pohyb/telo", "Duševné zdravie", "Prevencia", "Závislosti", "Skupiny"] },
+  { oblast: "Priroda",  label: "Príroda",  emoji: "", kluce: ["Priroda", "eko"],
+    podpolozky: ["Akcie", "Životný štýl", "Ochrana prírody", "Udržateľnosť", "Eko pestovanie/záhrada"] },
+  { oblast: "Zvierata", label: "Zvieratá", emoji: "", kluce: ["zvierata"],
+    podpolozky: ["Útulky", "Adopcia", "Venčenie a dočasná opatera", "Veterinárna pomoc", "Voľne žijúce zvieratá", "Kastračné programy"] },
+  { oblast: "Art",      label: "Umenie",   emoji: "", kluce: ["art"],
+    podpolozky: ["Výtvarné", "Priestorové", "Fotografia", "Film/video", "Scénické", "Literatúra", "Dizajn/remeslá", "Digitálne"] },
+  { oblast: "Ucenie",   label: "Učenie",   emoji: "", kluce: ["Ucenie", "learn"],
+    podpolozky: ["Jazyky", "IT/tech", "Financie/právo", "Remeslá/praktické", "Soft skills", "Veda", "Doučovanie", "Technické hobby"] },
+  { oblast: "Pomoc",    label: "Pomoc",    emoji: "", kluce: ["Pomoc"],
     podpolozky: ["Finančná pomoc", "Materiálna pomoc", "Doučovanie/mentoring", "Sprevádzanie/asistencia", "Krízová pomoc", "Psychická podpora"] },
+  { oblast: "Viera",    label: "Viera",    emoji: "", kluce: ["viera"],
+    podpolozky: ["Omše a bohoslužby", "Farské akcie", "Modlitbové stretnutia", "Púte", "Mládež vo farnosti", "Farská charita", "Duchovná hudba"] },
 ];
+/** oblasť z DB/registrácie (label, staré „Eko") → kľúč katalógu */
+export function oblastKluc(o: string): string {
+  if (o === "Eko") return "Priroda";
+  return ZAUJMY_KATALOG.find((z) => z.oblast === o || z.label === o)?.oblast ?? o;
+}
+export const normalizujZaujmy = (zs: Zaujem[]): Zaujem[] => zs.map((z) => ({ ...z, oblast: oblastKluc(z.oblast), pod_polozka: z.pod_polozka === "Zvieratá/príroda" ? "Ochrana prírody" : z.pod_polozka }));
 const KLUCE_OBLASTI: Record<string, string[]> = Object.fromEntries(ZAUJMY_KATALOG.map((z) => [z.oblast, z.kluce]));
 
 /** Záujmy → množina kľúčov pre feed afinitu (Good `kat` + Aktivity `dom`). */

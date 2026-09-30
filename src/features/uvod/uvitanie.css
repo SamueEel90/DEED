@@ -1,0 +1,16 @@
+/* DEED · Úvod (onboarding) — animácie. Len transform / opacity. Vlož raz (napr. src/styles/uvitanie.css). */
+@keyframes uvSprite{to{transform:translateX(-100%)}}
+@keyframes uvHover{0%{transform:translate(0,0) rotate(0deg)}25%{transform:translate(10px,-8px) rotate(5deg)}50%{transform:translate(0,-14px) rotate(0deg)}75%{transform:translate(-10px,-8px) rotate(-5deg)}100%{transform:translate(0,0) rotate(0deg)}}
+@keyframes uvOrbit{from{transform:rotate(0deg) translateX(62px) rotate(0deg)}to{transform:rotate(360deg) translateX(62px) rotate(-360deg)}}
+@keyframes uvGlow{0%,100%{opacity:.55;transform:scale(1)}50%{opacity:1;transform:scale(1.12)}}
+@keyframes uvRise{0%{opacity:0;transform:translateY(14px) scale(.96)}100%{opacity:1;transform:none}}
+@keyframes uvRingIn{0%{opacity:0;transform:scale(.6)}100%{opacity:1;transform:scale(1)}}
+@keyframes uvTwinkle{0%,100%{opacity:.2;transform:scale(.7)}50%{opacity:1;transform:scale(1.15)}}
+@keyframes uvSpark{0%{opacity:0;transform:scale(.3)}30%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(1.9)}}
+@keyframes uvJoy{0%{transform:rotate(0deg) scale(1)}35%{transform:rotate(200deg) scale(1.3) translateY(-10px)}70%{transform:rotate(340deg) scale(.95)}85%{transform:rotate(370deg) scale(1.08)}100%{transform:rotate(360deg) scale(1)}}
+@keyframes uvHopA{0%{transform:translateY(0)}45%{transform:translateY(-54px)}100%{transform:translateY(0)}}
+@keyframes uvHopB{0%{transform:translateY(0)}45%{transform:translateY(-54px)}100%{transform:translateY(0)}}
+@keyframes uvPuffA{0%,78%{opacity:0;transform:scale(.4)}88%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(1.35) translateY(4px)}}
+@keyframes uvPuffB{0%,78%{opacity:0;transform:scale(.4)}88%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(1.35) translateY(4px)}}
+@keyframes uvFadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion: reduce){.uv, .uv *{animation:none !important;transition:none !important}}

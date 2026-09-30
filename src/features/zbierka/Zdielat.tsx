@@ -9,11 +9,13 @@ import { vibruj } from "./animacie";
 export const odkazZbierky = (id: string) => `https://deed.sk/z/${encodeURIComponent(id)}`;
 
 /** spoločný hárok modulu: mobil zdola, tablet 640 px / PC 560 px na stred, bez blur */
-export function Harok({ onClose, children, hlavicka, podHlavickou, paticka, plnaVyska }: {
+export function Harok({ onClose, children, hlavicka, podHlavickou, paticka, plnaVyska, zatvorText, z = 150 }: {
   onClose: () => void; children: ReactNode; hlavicka: ReactNode;
+  /** textové zatvorenie vpravo („Zrušiť", „Zavrieť") namiesto krížika */ zatvorText?: string;
   /** napr. kroky (Nastavenie · Spôsob · Zhrnutie) — pevne pod hlavičkou */ podHlavickou?: ReactNode;
   /** pevné tlačidlá dole — obsah nad nimi sa posúva */ paticka?: ReactNode;
   /** mobil: hárok vždy 92 % výšky (nie podľa obsahu) */ plnaVyska?: boolean;
+  /** vrstva (predvolene 150); vyššie, keď je hárok nad obrazovkou sprava otvorenou z iného hárku */ z?: number;
 }) {
   const { wide, desktop } = useLayout();
   const [otv, setOtv] = useState(false);
@@ -25,22 +27,25 @@ export function Harok({ onClose, children, hlavicka, podHlavickou, paticka, plna
   });
   return createPortal(
     <div className="deed-platba" role="dialog" aria-modal="true"
-      style={{ position: "fixed", inset: 0, zIndex: 150, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+      style={{ position: "fixed", inset: 0, zIndex: z, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
       <div onClick={zavri} style={{ position: "absolute", inset: 0, background: "var(--scrim)", opacity: otv ? 1 : 0, transition: "opacity .32s ease" }} />
       <div style={{ ...(wide
-          ? { position: "relative", width: desktop ? 560 : 640, maxWidth: "calc(100vw - 32px)", maxHeight: "calc(100vh - 48px)", borderRadius: 28, transform: otv ? "none" : "translateY(24px)", opacity: otv ? 1 : 0 }
-          : { position: "relative", width: "calc(100vw - 24px)", ...(plnaVyska ? { height: "calc(100dvh - 32px)" } : { maxHeight: "calc(100dvh - 32px)" }), borderRadius: 28, transform: otv ? "none" : "translateY(24px)", opacity: otv ? 1 : 0 }), // aj mobil: okno v strede
-        background: "var(--sheet)", color: "var(--ink)", display: "flex", flexDirection: "column", overflow: "hidden", transition: "transform .32s cubic-bezier(.2,.8,.2,1), opacity .32s ease" }}>
-        <div style={{ flex: "none", padding: "18px 18px 0" }}>
+          ? { position: "relative", width: desktop ? 560 : 640, maxWidth: "calc(100vw - 32px)", maxHeight: "calc(100vh / var(--pismo, 1) - 48px)", borderRadius: 28, transform: otv ? "none" : "translateY(24px)", opacity: otv ? 1 : 0 }
+          : { position: "absolute", left: 0, right: 0, bottom: 0, ...(plnaVyska ? { height: "92%" } : { maxHeight: "92%" }), borderRadius: "28px 28px 0 0", transform: otv ? "none" : "translateY(105%)" }), // mobil zdola, tablet/PC v strede
+        background: "var(--sheet)", color: "var(--ink)", display: "flex", flexDirection: "column", overflow: "hidden", transition: "transform .42s cubic-bezier(.2,.8,.2,1), opacity .32s ease" }}>
+        <div style={{ flex: "none", padding: wide ? "18px 18px 0" : "10px 18px 0" }}>
+          {!wide && <div style={{ width: 40, height: 4, borderRadius: 4, background: "var(--handle)", margin: "0 auto 12px" }} />}
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             {hlavicka}
-            <button type="button" onClick={zavri} aria-label="Zavrieť" style={{ width: 44, height: 44, borderRadius: "50%", border: "none", background: "var(--btn)", color: "var(--ink)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flex: "none" }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg>
-            </button>
+            {zatvorText
+              ? <button type="button" onClick={zavri} style={{ border: "none", boxShadow: "none", background: "transparent", color: "var(--ink3)", fontSize: 14.5, fontWeight: 700, cursor: "pointer", padding: "10px 0 10px 10px", flex: "none", fontFamily: "inherit" }}>{zatvorText}</button>
+              : <button type="button" onClick={zavri} aria-label="Zavrieť" style={{ width: 44, height: 44, borderRadius: "50%", border: "none", background: "var(--btn)", color: "var(--ink)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flex: "none" }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg>
+                </button>}
           </div>
           {podHlavickou}
         </div>
-        <div style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: paticka ? "14px 18px 18px" : "14px 18px max(22px, env(safe-area-inset-bottom))", display: "flex", flexDirection: "column", gap: 12 }}>{children}</div>
+        <div style={{ flex: 1, minHeight: 0, overflowY: "auto", overscrollBehavior: "contain", padding: paticka ? "14px 18px 18px" : "14px 18px max(22px, env(safe-area-inset-bottom))", display: "flex", flexDirection: "column", gap: 12 }}>{children}</div>
         {paticka && <div style={{ flex: "none", padding: "12px 18px max(22px, env(safe-area-inset-bottom))", borderTop: "1px solid var(--cardBd)", display: "flex", gap: 10, background: "var(--sheet)" }}>{paticka}</div>}
       </div>
     </div>,

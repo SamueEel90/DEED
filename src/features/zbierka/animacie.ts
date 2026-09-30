@@ -45,7 +45,7 @@ export function letSvetielko(root: HTMLElement, from: HTMLElement, to: HTMLEleme
       if (!stitok) return;
       const l = document.createElement('span');
       l.textContent = stitok;
-      Object.assign(l.style, { position: 'absolute', left: '0', top: '0', fontSize: '12.5px', fontWeight: '800', color: /DEED|EURC/.test(stitok) ? 'var(--blue)' : 'var(--green)', whiteSpace: 'nowrap', pointerEvents: 'none', zIndex: '50' });
+      Object.assign(l.style, { position: 'absolute', left: '0', top: '0', fontSize: '12.5px', fontWeight: '800', color: /DeeD|EURC/.test(stitok) ? 'var(--blue)' : 'var(--green)', whiteSpace: 'nowrap', pointerEvents: 'none', zIndex: '50' });
       root.appendChild(l);
       l.animate([{ transform: `translate(${x1 - 30}px,${y1 - 14}px)`, opacity: 0 }, { transform: `translate(${x1 - 30}px,${y1 - 30}px)`, opacity: 1, offset: .3 }, { transform: `translate(${x1 - 30}px,${y1 - 44}px)`, opacity: 0 }], { duration: 1100, easing: 'ease-out' }).onfinish = () => l.remove();
     };
