@@ -17,6 +17,7 @@ import { usePriatelia, prepniVidia, prepniIdem, oznacPriatela, type VidiaPriatel
 import { bezDiakritiky } from "./JazykUdaje";
 import { Prepinac } from "./nastUi";
 import { useT, tTeraz, type T, type Param } from "@/i18n";
+import { usePrekladObsahu } from "@/i18n/obsah";
 import "@/styles/platba.css";
 
 export type PriateliaTab = "priatelia" | "sledujem" | "podporujem";
@@ -74,6 +75,7 @@ export function Priatelia({ onBack, desktop, tab: tab0 = "priatelia" }: { onBack
   const { gate } = useTvorbaGate(); // pridávanie priateľa = iniciovanie vzťahu
   const t = useT();
   const st = usePriatelia();
+  const pr = usePrekladObsahu(); // 79b · obsah akcií priateľov
   const anonym = !useOsobnyProfil().verejny;
   const [tab, setTab] = useState<PriateliaTab>(tab0);
   const [ziadost, setZiadost] = useState(true);
@@ -128,8 +130,8 @@ export function Priatelia({ onBack, desktop, tab: tab0 = "priatelia" }: { onBack
                   <span style={{ width: 46, flex: "none", textAlign: "center", paddingTop: 2 }}><span style={{ display: "block", fontSize: 18, fontWeight: 800, lineHeight: 1 }}>{k.d}</span><span style={{ display: "block", fontSize: 11, fontWeight: 700, color: "var(--ink3)" }}>{t.mesiac(k.m, true).replace(/\.$/, "").toUpperCase()}</span></span>
                   <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 6 }}>
                     <span><span style={{ display: "inline-block", padding: "2px 8px", borderRadius: 8, fontSize: 11, fontWeight: 800, background: k.tbg, color: k.tc }}>{t(k.typ)}</span></span>
-                    <span style={{ fontSize: 15, fontWeight: 800, lineHeight: 1.3 }}>{k.t}</span>
-                    <span style={{ fontSize: 12.5, color: "var(--ink3)" }}>{k.s}</span>
+                    <span style={{ fontSize: 15, fontWeight: 800, lineHeight: 1.3 }}>{pr.p(k.t)}</span>
+                    <span style={{ fontSize: 12.5, color: "var(--ink3)" }}>{pr.p(k.s)}</span>
                     <span style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
                       <span style={{ display: "flex", flex: "none" }}>{k.av.map(([i, bg], j) => <span key={i} style={{ marginLeft: j ? -6 : 0, borderRadius: "50%", border: "2px solid var(--card)", display: "flex" }}>{avatar(i, bg, "50%", 22)}</span>)}</span>
                       <span style={{ minWidth: 0, fontSize: 12.5, color: "var(--ink2)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{idu(t, k.kto)}</span>
@@ -141,6 +143,7 @@ export function Priatelia({ onBack, desktop, tab: tab0 = "priatelia" }: { onBack
             })}
           </div>
           <div style={{ ...pozn, marginTop: 8, padding: "0 2px" }}>{t("priatelia.kamPozn")}</div>
+          {pr.odkaz}
         </section>
 
         <section>

@@ -5,6 +5,7 @@ import { MojeStranky, KonasAkoLista } from "./MojeStranky";
 import type { Stranka } from "@/lib/mojeStranky";
 import { sZnackou } from "@/components/DeedZnacka";
 import { useT } from "@/i18n";
+import { prelozObsah } from "@/i18n/obsah";
 import { useState } from "react";
 import { usePouzivatel } from "@/lib/pouzivatel";
 import { usePersonalizacia } from "@/lib/personalizacia";
@@ -176,7 +177,7 @@ export function MojeZaujmy() {
       <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) minmax(0,1fr)", gap: 8 }}>
         {ZAUJMY_KATALOG.map((z) => {
           const v = vybrane(z.oblast), a = v.length > 0;
-          const popis = cela(z.oblast) ? t("profil.zaujmy.cela") : a ? v.join(", ") : t("profil.zaujmy.nevybrate");
+          const popis = cela(z.oblast) ? t("profil.zaujmy.cela") : a ? v.map((x) => prelozObsah(x, t)).join(", ") : t("profil.zaujmy.nevybrate");
           return (
             <button key={z.oblast} type="button" onClick={() => setOtvorena(z.oblast)}
               style={{ display: "flex", alignItems: "center", gap: 10, minHeight: 58, padding: "8px 10px", borderRadius: 14, cursor: "pointer", textAlign: "left", fontFamily: "inherit", background: a ? "var(--gSoft)" : "var(--field)", border: `1.5px solid ${a ? "var(--gBd)" : "var(--cardBd)"}` }}>
@@ -205,7 +206,7 @@ export function MojeZaujmy() {
                   const cur = cela(o.oblast) ? o.podpolozky.slice() : vybrane(o.oblast).slice();
                   const nx = cur.includes(p) ? cur.filter((x) => x !== p) : [...cur, p];
                   nastav(o.oblast, nx.length === o.podpolozky.length ? ["*"] : nx);
-                }} style={{ display: "flex", alignItems: "center", minHeight: 40, padding: "0 14px", borderRadius: 20, fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", background: on ? "var(--gSoft)" : "var(--field)", border: `1.5px solid ${on ? "var(--gBd)" : "var(--cardBd)"}`, color: on ? "var(--gInk)" : "var(--ink2)" }}>{p}</button>);
+                }} style={{ display: "flex", alignItems: "center", minHeight: 40, padding: "0 14px", borderRadius: 20, fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", background: on ? "var(--gSoft)" : "var(--field)", border: `1.5px solid ${on ? "var(--gBd)" : "var(--cardBd)"}`, color: on ? "var(--gInk)" : "var(--ink2)" }}>{prelozObsah(p, t)}</button>);
             })}
           </div>
           <div style={{ fontSize: 12.5, lineHeight: 1.5, color: "var(--ink3)" }}>{t("profil.zaujmy.napoveda")}</div>

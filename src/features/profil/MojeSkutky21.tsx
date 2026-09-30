@@ -16,6 +16,7 @@ import { PruhySkutkov } from "@/features/skutok/Pruhy";
 import { MOJA_KARMA } from "./mock";
 import { ZAUJEM_OBLAST, type Oblast as OblastStitu } from "@/lib/stityOblasti";
 import { useT, tTeraz, type T } from "@/i18n";
+import { usePrekladObsahu } from "@/i18n/obsah";
 import "@/styles/platba.css";
 
 const Mes = (t: T, m: number) => { const x = t.mesiac(m); return x[0].toUpperCase() + x.slice(1); };
@@ -58,6 +59,7 @@ export function MojeSkutky21({ onBack, oblastStitu }: { onBack: () => void; /** 
   const [len, setLen] = useState<OblastStitu | undefined>(oblastStitu);
   useZmenySkutkov();
   const t = useT();
+  const pr = usePrekladObsahu();
   const { desktop } = useLayout();
   const session = useSession() as { demo?: boolean } | null;
   const nast = useNastaveniaAppky();
@@ -106,19 +108,19 @@ export function MojeSkutky21({ onBack, oblastStitu }: { onBack: () => void; /** 
         <button type="button" onClick={() => setOtv(o ? null : k.id)} aria-expanded={o}
           style={{ width: "100%", display: "flex", alignItems: "center", gap: 12, minHeight: 64, border: "none", background: "transparent", padding: 0, cursor: "pointer", textAlign: "left", fontFamily: "inherit", color: "var(--ink)" }}>
           <span aria-hidden="true" style={{ width: 44, height: 44, borderRadius: 12, flex: "none", ...img }} />
-          <span style={{ flex: 1, minWidth: 0, fontSize: 15, fontWeight: 700, lineHeight: 1.3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{k.nazov}</span>
+          <span style={{ flex: 1, minWidth: 0, fontSize: 15, fontWeight: 700, lineHeight: 1.3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{pr.p(k.nazov)}</span>
           <span role="img" aria-label={t(S[0])} style={{ width: 10, height: 10, borderRadius: "50%", flex: "none", background: S[3] }} />
           <span aria-hidden="true" style={{ display: "flex", flex: "none", color: "var(--ink3)", transform: o ? "rotate(180deg)" : "none", transition: "transform .25s ease" }}><Ik d="M6 9l6 6 6-6" /></span>
         </button>
         {o && <div className="pf-rise" style={{ padding: "0 0 14px", display: "flex", flexDirection: "column", gap: 10 }}>
           <span aria-hidden="true" style={{ height: 180, borderRadius: 14, ...img }} />
-          <div style={{ fontSize: 13, color: "var(--ink3)" }}>{datumTxt(t, k.datum)} · {oblastTxt(t, k.oblast)} · {k.miesto}</div>
+          <div style={{ fontSize: 13, color: "var(--ink3)" }}>{datumTxt(t, k.datum)} · {oblastTxt(t, k.oblast)} · {pr.p(k.miesto)}</div>
           <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
             <span style={{ flex: "none", whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 6, height: 30, padding: "0 10px", borderRadius: 9, fontSize: 13, fontWeight: 800, background: S[1], border: `1px solid ${S[2]}`, color: S[3] }}><Ik d={S[4]} s={14} />{t(S[0])}</span>
             <span style={{ marginLeft: "auto", fontSize: 14.5, fontWeight: 800, whiteSpace: "nowrap", color: k.stav === "ai" ? "var(--ink4)" : "var(--gInk)" }}>{karmaT}</span>
           </div>
           {k.ucastnici?.length ? <div style={{ fontSize: 13, color: "var(--ink2)" }}>{t("skutky.sTebou", { n: k.ucastnici.length })}</div> : null}
-          <div style={{ fontSize: 13, lineHeight: 1.45, color: "var(--ink2)" }}>{k.det}</div>
+          <div style={{ fontSize: 13, lineHeight: 1.45, color: "var(--ink2)" }}>{pr.p(k.det)}</div>
           {k.stav === "ai" && <button type="button" onClick={() => { doplnitPre.current = k.id; fotoRef.current?.click(); }} style={{ alignSelf: "flex-start", whiteSpace: "nowrap", height: 44, padding: "0 14px", borderRadius: 12, border: "1px solid var(--bBd)", background: "var(--bSoft)", fontSize: 14, fontWeight: 700, color: "var(--blue)", cursor: "pointer", fontFamily: "inherit" }}>{t("skutky.doplnitFotku")}</button>}
           {(k.stav === "ok" || k.stav === "mesto") && !k.osobny && <button type="button" onClick={() => setRetazPre(k)} style={{ alignSelf: "flex-start", whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 7, height: 44, padding: "0 14px", borderRadius: 12, border: "1px solid var(--gBd)", background: "var(--gSoft)", fontSize: 14, fontWeight: 700, color: "var(--gInk)", cursor: "pointer", fontFamily: "inherit" }}><Ik d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7" s={15} w={2} />{t("skutky.retaz")}</button>}
         </div>}
@@ -133,7 +135,7 @@ export function MojeSkutky21({ onBack, oblastStitu }: { onBack: () => void; /** 
           <span style={{ fontSize: 13.5, color: "var(--ink3)", whiteSpace: "nowrap" }}>{t("sp.skutkov", { n: zoz.length })}</span>
           <span aria-hidden="true" style={{ display: "flex", color: "var(--ink3)", transform: o ? "rotate(180deg)" : "none", transition: "transform .25s ease" }}><Ik d="M6 9l6 6 6-6" /></span>
         </button>
-        {o && <div style={{ borderTop: "1px solid var(--cardBd)" }}>{zoz.map(riadok)}</div>}
+        {o && <div style={{ borderTop: "1px solid var(--cardBd)" }}>{zoz.map(riadok)}{pr.odkaz && <div style={{ display: "flex", padding: "2px 0 8px" }}>{pr.odkaz}</div>}</div>}
       </div>);
   };
 
@@ -188,7 +190,7 @@ export function MojeSkutky21({ onBack, oblastStitu }: { onBack: () => void; /** 
         <div style={{ fontSize: 12.5, lineHeight: 1.5, color: "var(--ink4)", textAlign: "center" }}>{t("skutky.ukazkyPozn")}</div>
       </> : <>
         <h2 style={lbl}>{R} · {t.mesiac(M).toUpperCase()}{prazdne ? ` · ${t("skutky.zatialPrazdne")}` : ""}</h2>
-        {aktualne.length > 0 ? <div style={{ ...karta, padding: "0 12px" }}>{aktualne.map(riadok)}</div>
+        {aktualne.length > 0 ? <><div style={{ ...karta, padding: "0 12px" }}>{aktualne.map(riadok)}</div>{pr.odkaz}</>
           : <div style={{ ...karta, padding: "16px 14px", fontSize: 14, color: "var(--ink3)" }}>{prazdne ? t("skutky.prvySkutok") : q ? t("skutky.nicSmeNenasli") : t("skutky.mesiacNic")}</div>}
         {starsie.map(([mes, z]) => mesiacRiadok(R, mes, z))}
         {roky.some((r) => zoznam.some((x) => new Date(x.datum).getFullYear() === r)) && <h2 style={{ ...lbl, marginTop: 4 }}>{t("skutky.starsieRoky")}</h2>}
@@ -229,7 +231,7 @@ export function MojeSkutky21({ onBack, oblastStitu }: { onBack: () => void; /** 
       <input ref={fotoRef} type="file" accept="image/*" hidden onChange={(e) => { void doplnFotku(e.target.files); e.target.value = ""; }} />
 
       {retazPre && <Harok onClose={() => setRetazPre(null)} hlavicka={<h2 style={{ flex: 1, margin: 0, fontSize: 19, fontWeight: 800 }}>{t("skutky.retaz")}</h2>}>
-        <div style={{ fontSize: 15, fontWeight: 800 }}>{retazPre.nazov}</div>
+        <div style={{ fontSize: 15, fontWeight: 800 }}>{pr.p(retazPre.nazov)}</div>
         <div style={{ fontSize: 14, lineHeight: 1.5, color: "var(--ink2)" }}>{retazPre.retaz
           ? <>{t("skutky.retazZapecatena")} <b style={{ color: "var(--ink)", whiteSpace: "nowrap" }}>{t("skutky.retazPct", { pct: retazPre.retaz.pct })}</b> {t("skutky.retazIdeNa", { zbierka: retazPre.retaz.zbierka.nazov })}</>
           : t("skutky.retazNema")}</div>

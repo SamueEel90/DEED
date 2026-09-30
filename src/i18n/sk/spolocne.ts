@@ -21,4 +21,6 @@ export const spolocne: Slovnik = {
   "sp.ano": "Áno",
   "sp.nie": "Nie",
   "sp.skutkov": { one: "{n} skutok", few: "{n} skutky", many: "{n} skutku", other: "{n} skutkov" },
+  "obsah.prelozene": "Preložené · Zobraziť originál",
+  "obsah.zobrazitPreklad": "Zobraziť preklad",
 };

@@ -14,6 +14,7 @@ import { Blokacia24h } from "./Bezpecnost24";
 import { hodinNovehoZariadenia } from "@/lib/zariadenia";
 import { POHYBY, VYPISY, pohybZobraz } from "./mock";
 import { useT, tTeraz } from "@/i18n";
+import { usePrekladObsahu } from "@/i18n/obsah";
 import "@/styles/platba.css";
 
 type Mena = "DEED" | "EURC";
@@ -42,6 +43,7 @@ const brana = () => toast(tTeraz()("penazenka.brana"));
 
 export function Penazenka18({ onBack, desktop }: { onBack: () => void; desktop?: boolean }) {
   const t = useT();
+  const pr = usePrekladObsahu();
   const ja = usePouzivatel();
   const [mena, setMena] = useState<Mena>("DEED");
   const [deed, setDeed] = useState(1240);
@@ -123,7 +125,7 @@ export function Penazenka18({ onBack, desktop }: { onBack: () => void; desktop?:
       <div style={{ ...karta, padding: "0 14px" }}>
         {pohyby.map((p, i) => {
           const novyDen = i === 0 || pohyby[i - 1][0] !== p[0];
-          const pz = pohybZobraz(p, t);
+          const pz = pohybZobraz(p, t, pr.p);
           return (
             <div key={`${p[0]}-${p[1]}-${i}`}>
               {novyDen && <div style={{ padding: "10px 0 4px", fontSize: 11.5, fontWeight: 800, letterSpacing: ".05em", color: "var(--ink4)" }}>{pz.den}</div>}
@@ -135,6 +137,7 @@ export function Penazenka18({ onBack, desktop }: { onBack: () => void; desktop?:
             </div>);
         })}
       </div>
+      {pr.odkaz}
       {!viac && vsetkyPocet > 4 && <button type="button" onClick={() => setViac(true)} style={{ height: 48, borderRadius: 14, border: "1px solid var(--cardBd)", background: "var(--btn)", fontSize: 14.5, fontWeight: 700, color: "var(--ink)", cursor: "pointer", fontFamily: "inherit" }}>{t("penazenka.dalsiePohyby")}</button>}
 
       <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".06em", color: "var(--ink3)", marginTop: 8 }}>{t("penazenka.vypisyPdf")}</div>

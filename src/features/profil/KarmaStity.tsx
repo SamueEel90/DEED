@@ -11,6 +11,7 @@ import { usePouzivatel } from "@/lib/pouzivatel";
 import { mojeSkutky } from "@/lib/mojeSkutky";
 import { MOJA_KARMA } from "./mock";
 import { useT } from "@/i18n";
+import { usePrekladObsahu } from "@/i18n/obsah";
 import "@/styles/platba.css";
 
 const AKO: [string, string][] = [1, 2, 3, 4, 5, 6, 7].map((k) => [`karma.ako.${k}.t`, `karma.ako.${k}.s`]);
@@ -138,6 +139,7 @@ function DetailOblasti({ o, lv, onClose, naZoom, naSkutky }: { o: Oblast; lv?: S
   const idx = lv ? PORADIE.indexOf(lv) : -1;
   const skutky = mojeSkutky().filter((x) => ZAUJEM_OBLAST[x.oblast] === o).slice(0, 3);
   const t = useT();
+  const pr = usePrekladObsahu();
   const dat = (d: number) => t.datum(d);
   const zisk = (l: StitLevel) => (ZISKANE_DNA[l] !== undefined ? t.datum(ZISKANE_DNA[l]!, true) : "");
   return (
@@ -163,11 +165,12 @@ function DetailOblasti({ o, lv, onClose, naZoom, naSkutky }: { o: Oblast; lv?: S
         {skutky.length === 0 && <div style={{ minHeight: 52, display: "flex", alignItems: "center", fontSize: 14, color: "var(--ink3)" }}>{t("karma.ziadnySkutok")}</div>}
         {skutky.map((k, i) => (
           <div key={k.id} style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 52, borderTop: i ? "1px solid var(--cardBd)" : "none" }}>
-            <span style={{ flex: 1, minWidth: 0, fontSize: 14.5, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{k.nazov}</span>
+            <span style={{ flex: 1, minWidth: 0, fontSize: 14.5, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{pr.p(k.nazov)}</span>
             <span style={{ flex: "none", fontSize: 12, color: "var(--ink4, var(--ink3))" }}>{dat(k.datum)}</span>
           </div>))}
         {skutky.length > 0 && naSkutky && <button type="button" onClick={naSkutky} style={{ width: "100%", minHeight: 48, border: "none", borderTop: "1px solid var(--cardBd)", background: "none", boxShadow: "none", textAlign: "left", fontSize: 14, fontWeight: 800, color: "var(--green)", fontFamily: "inherit", cursor: "pointer" }}>{t("karma.vsetkySkutky", { o })}</button>}
       </div>
+      {skutky.length > 0 && pr.odkaz}
       <div style={{ fontSize: 12.5, lineHeight: 1.5, color: "var(--ink3)" }}>{t("karma.dalsiStupenInfo")}</div>
     </Harok>
   );

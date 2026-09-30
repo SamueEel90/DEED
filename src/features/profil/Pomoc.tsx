@@ -9,6 +9,7 @@ import { ObrazovkaSprava, nacitajKontakt, maskuj } from "./Bezpecnost24";
 import { NastKarta, Prepinac, oddelovac } from "./nastUi";
 import { lbl, pozn, Ik, hladPole, btn } from "./JazykUdaje";
 import { useT, tTeraz } from "@/i18n";
+import { usePrekladObsahu, maPreklad } from "@/i18n/obsah";
 
 export const VERZIA_APPKY = "0.9 (pilot)";
 const IK_FOTO = "M4 5h16v14H4zM4 15l4-4 4 4 3-3 5 5M15 9h.01";
@@ -93,6 +94,7 @@ export function NapisatPodpore({ onBack, z }: { onBack: () => void; z?: number }
   const [subor, setSubor] = useState<File | null>(null);
   const [hot, setHot] = useState<string | null>(null);
   const [spravy, setSpravy] = useState<Sprava[]>(nacitajSpravy);
+  const pr = usePrekladObsahu(); // 79b · obsah správ (ukážkové)
   const ok = !!tema && text.trim().length >= 10;
   const odosli = () => {
     if (!ok) return;
@@ -120,10 +122,11 @@ export function NapisatPodpore({ onBack, z }: { onBack: () => void; z?: number }
         <NastKarta k="g">
           {spravy.map((s, i) => (
             <div key={s.cislo} style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 62, padding: "10px 18px", borderTop: i ? oddelovac : "none" }}>
-              <span style={{ flex: 1, minWidth: 0 }}><span style={{ display: "block", fontSize: 15.5, fontWeight: 800 }}>{s.t}</span><span style={{ display: "block", fontSize: 13, color: "var(--d-ink3, var(--ink3))" }}>{TEMA_KLUC[s.tema] ? tr(TEMA_KLUC[s.tema]) : s.tema} · {s.kedy}</span></span>
+              <span style={{ flex: 1, minWidth: 0 }}><span style={{ display: "block", fontSize: 15.5, fontWeight: 800 }}>{pr.p(s.t)}</span><span style={{ display: "block", fontSize: 13, color: "var(--d-ink3, var(--ink3))" }}>{TEMA_KLUC[s.tema] ? tr(TEMA_KLUC[s.tema]) : s.tema} · {pr.p(s.kedy)}</span></span>
               <span style={{ padding: "3px 9px", borderRadius: 8, fontSize: 12, fontWeight: 800, whiteSpace: "nowrap", background: s.stav === "vyriešené" ? "var(--sek-gBg)" : "var(--sek-oBg)", color: s.stav === "vyriešené" ? "var(--sek-g)" : "var(--sek-o)" }}>{tr(s.stav === "vyriešené" ? "pomoc.stav.vyriesene" : "pomoc.stav.riesime")}</span>
             </div>))}
         </NastKarta>
+        {spravy.some((s) => maPreklad(s.t, tr)) && pr.odkaz}
       </div>
     </ObrazovkaSprava>
   );

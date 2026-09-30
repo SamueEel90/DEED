@@ -19,6 +19,7 @@ import { lbl, pozn, Ik, hladPole, btn, bezDiakritiky } from "./JazykUdaje";
 import { tokenQr } from "./MojQr";
 import "@/styles/platba.css";
 import { useT, tTeraz } from "@/i18n";
+import { usePrekladObsahu } from "@/i18n/obsah";
 
 export const IK_BUDOVA = "M3 21h18M5 21V7l7-4 7 4v14M9 9h1M14 9h1M9 13h1M14 13h1M10 21v-4h4v4";
 const IK_QR = "M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h2v2h-2zM18 14h2v2h-2zM14 18h2v2h-2zM18 18h2v2h-2z";
@@ -32,6 +33,8 @@ const riadokBtn = { width: "100%", display: "flex", alignItems: "center", gap: 1
 const tx = (t: ReactNode, s?: ReactNode) => <span style={{ flex: 1, minWidth: 0 }}><span style={{ display: "block", fontSize: 16, fontWeight: 700 }}>{t}</span>{s && <span style={{ display: "block", fontSize: 13, lineHeight: 1.4, color: "var(--d-ink3, var(--ink3))", marginTop: 2 }}>{s}</span>}</span>;
 const Sipka = () => <Ik d="M9 6l6 6-6 6" s={16} w={2.4} c="var(--d-ink3, var(--ink3))" />;
 const Nadpis = ({ children }: { children: ReactNode }) => <h2 style={lbl}>{children}</h2>;
+/** odkaz Zobraziť originál na konci sekcie (len v inom jazyku ako SK) — bod 79b */
+const Odkaz = ({ o }: { o: ReactNode }) => (o ? <div style={{ marginTop: 6 }}>{o}</div> : null);
 
 function Logo({ nazov, velke }: { nazov: string; velke?: boolean }) {
   const f: FirmaAdresar | undefined = firmaPodla(nazov);
@@ -173,6 +176,7 @@ function Prepojeny({ v, osoba, onOdpojene }: { v: Vazba; osoba: string; onOdpoje
   const [hodiny, setHodiny] = useState(false);
   const [navrh, setNavrh] = useState(false);
   const [benefit, setBenefit] = useState<number | null>(null);
+  const prOz = usePrekladObsahu(), prAk = usePrekladObsahu(), prOd = usePrekladObsahu(), prBe = usePrekladObsahu(), prDet = usePrekladObsahu();
   const oznamy = d.oznamy.filter((o) => !st.vybavene.includes(o.id));
   const akcie = [...d.akcie, ...(st.navrhy[v.firma] ?? [])];
   const odpojit = () => { odpoj(v.firma, osoba); onOdpojene(); toast(t("firma.odpojene")); };
@@ -190,13 +194,14 @@ function Prepojeny({ v, osoba, onOdpojene }: { v: Vazba; osoba: string; onOdpoje
         {oznamy.map((o, i) => (
           <div key={o.id} style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 64, padding: "12px 18px", borderTop: i ? oddelovac : "none" }}>
             <span aria-hidden="true" style={{ width: 8, height: 8, borderRadius: "50%", flex: "none", background: o.typ === "kontrola" ? "var(--sek-o)" : "var(--sek-g)" }} />
-            {tx(o.t, o.s)}
+            {tx(prOz.p(o.t), prOz.p(o.s))}
             {o.typ === "kontrola" && <span style={{ display: "flex", gap: 6, flex: "none" }}>
               <button type="button" onClick={() => { vybavOznam(o.id); toast(t("firma.overene")); }} style={{ minHeight: 44, padding: "0 14px", borderRadius: 12, border: "none", boxShadow: "none", background: "var(--gGrad)", color: "#fff", fontSize: 14, fontWeight: 800, fontFamily: "inherit", cursor: "pointer" }}>{t("firma.ano")}</button>
               <button type="button" onClick={odpojit} style={{ minHeight: 44, padding: "0 12px", borderRadius: 12, border: "1px solid var(--d-cardBd, var(--cardBd))", boxShadow: "none", background: "var(--btn)", color: "var(--d-ink, var(--ink))", fontSize: 14, fontWeight: 700, fontFamily: "inherit", cursor: "pointer" }}>{t("firma.uzNie")}</button>
             </span>}
           </div>))}
       </NastKarta>
+      <Odkaz o={prOz.odkaz} />
     </div>}
 
     <div>
@@ -204,9 +209,10 @@ function Prepojeny({ v, osoba, onOdpojene }: { v: Vazba; osoba: string; onOdpoje
       {akcie.length > 0 && <NastKarta k="b">
         {akcie.map((a, i) => (
           <div key={`${a.t}-${i}`} style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 66, padding: "12px 18px 12px 12px", borderTop: i ? oddelovac : "none" }}>
-            <Datum d={a.d} m={a.m} />{tx(a.t, a.s)}<Stitok t={a.stitok} />
+            <Datum d={a.d} m={a.m} />{tx(prAk.p(a.t), prAk.p(a.s))}<Stitok t={a.stitok} />
           </div>))}
       </NastKarta>}
+      {akcie.length > 0 && <Odkaz o={prAk.odkaz} />}
       <button type="button" onClick={() => setNavrh(true)} style={{ width: "100%", marginTop: 10, minHeight: 52, borderRadius: 16, border: "1.5px dashed var(--sek-gBd)", boxShadow: "none", background: "transparent", color: "var(--sek-g)", fontSize: 15.5, fontWeight: 800, fontFamily: "inherit", cursor: "pointer" }}>{t("firma.navrhnut")}</button>
       <div style={{ ...pozn, marginTop: 8 }}>{t("firma.navrhPozn")}</div>
     </div>
@@ -216,10 +222,11 @@ function Prepojeny({ v, osoba, onOdpojene }: { v: Vazba; osoba: string; onOdpoje
       <NastKarta k="g">
         {d.odmeny.map((o, i) => (
           <div key={o.za} style={{ padding: "14px 18px", borderTop: i ? oddelovac : "none", display: "flex", flexDirection: "column", gap: 8 }}>
-            <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>{tx(o.za, `${o.kedy} · ${o.zdroj}`)}<b style={{ fontSize: 15, color: "var(--sek-g)", whiteSpace: "nowrap" }}>{o.hodnota}</b></div>
-            {o.vdaka && <div style={{ padding: "10px 12px", borderRadius: 12, background: "var(--field)", fontSize: 13.5, lineHeight: 1.5, color: "var(--d-ink2, var(--ink2))" }}>{o.vdaka}</div>}
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>{tx(prOd.p(o.za), `${o.kedy} · ${prOd.p(o.zdroj)}`)}<b style={{ fontSize: 15, color: "var(--sek-g)", whiteSpace: "nowrap" }}>{prOd.p(o.hodnota)}</b></div>
+            {o.vdaka && <div style={{ padding: "10px 12px", borderRadius: 12, background: "var(--field)", fontSize: 13.5, lineHeight: 1.5, color: "var(--d-ink2, var(--ink2))" }}>{prOd.p(o.vdaka)}</div>}
           </div>))}
       </NastKarta>
+      <Odkaz o={prOd.odkaz} />
     </div>}
 
     <div>
@@ -228,8 +235,9 @@ function Prepojeny({ v, osoba, onOdpojene }: { v: Vazba; osoba: string; onOdpoje
         {d.benefity.map((b, i) => (
           <button key={b.t} type="button" onClick={() => setBenefit(i)} style={{ ...riadokBtn, borderTop: i ? oddelovac : "none" }}>
             <span aria-hidden="true" style={{ width: 38, height: 38, borderRadius: 11, background: "var(--sek-oBg)", color: "var(--sek-o)", display: "flex", alignItems: "center", justifyContent: "center", flex: "none" }}><Ik d={IK.gift} s={19} w={2} /></span>
-            {tx(b.t, b.s)}<Sipka /></button>))}
+            {tx(prBe.p(b.t), prBe.p(b.s))}<Sipka /></button>))}
       </NastKarta> : <div style={pozn}>{t("firma.benefityZiadne")}</div>}
+      {d.benefity.length > 0 && <Odkaz o={prBe.odkaz} />}
       <div style={{ ...pozn, marginTop: 8 }}>{t("firma.benefityPozn")}</div>
     </div>
 
@@ -270,9 +278,10 @@ function Prepojeny({ v, osoba, onOdpojene }: { v: Vazba; osoba: string; onOdpoje
     {qr && <PracovnyQr firma={v.firma} onClose={() => setQr(false)} />}
     {hodiny && d.vto && <MojeFiremneHodiny firma={v.firma} onBack={() => setHodiny(false)} />}
     {navrh && <NavrhAkcie firma={v.firma} onClose={() => setNavrh(false)} />}
-    {benefit !== null && d.benefity[benefit] && <Harok onClose={() => setBenefit(null)} hlavicka={<span style={{ flex: 1, fontSize: 20, fontWeight: 800 }}>{d.benefity[benefit].t}</span>}>
-      <div style={{ fontSize: 13.5, color: "var(--d-ink3, var(--ink3))" }}>{d.benefity[benefit].s}</div>
-      <div style={{ fontSize: 15, lineHeight: 1.6, color: "var(--d-ink2, var(--ink2))" }}>{d.benefity[benefit].detail}</div>
+    {benefit !== null && d.benefity[benefit] && <Harok onClose={() => setBenefit(null)} hlavicka={<span style={{ flex: 1, fontSize: 20, fontWeight: 800 }}>{prDet.p(d.benefity[benefit].t)}</span>}>
+      <div style={{ fontSize: 13.5, color: "var(--d-ink3, var(--ink3))" }}>{prDet.p(d.benefity[benefit].s)}</div>
+      <div style={{ fontSize: 15, lineHeight: 1.6, color: "var(--d-ink2, var(--ink2))" }}>{prDet.p(d.benefity[benefit].detail)}</div>
+      {prDet.odkaz}
     </Harok>}
   </>);
 }
@@ -359,6 +368,7 @@ function MojeFiremneHodiny({ firma, onBack }: { firma: string; onBack: () => voi
   const zost = vto.spolu - vto.vyuzite;
   const mesto = ja.mesto && ja.mesto !== "—" ? ja.mesto : "tvojom meste";
   const STAV_KLUC: Record<string, string> = { "čaká na schválenie": "firma.hodiny.stav.caka", "schválené firmou": "firma.hodiny.stav.schvalene", vyplatené: "firma.hodiny.stav.vyplatene" };
+  const prPr = usePrekladObsahu(), prHi = usePrekladObsahu(), prOb = usePrekladObsahu();
   const stavF = (s: string) => (s === "vyplatené" ? "g" : s === "schválené firmou" ? "g" : "o");
   return (
     <ObrazovkaSprava titul={t("firma.mojeHodiny")} onBack={onBack}>
@@ -371,23 +381,26 @@ function MojeFiremneHodiny({ firma, onBack }: { firma: string; onBack: () => voi
       <div>
         <Nadpis>{t("firma.hodiny.prihlasene")}</Nadpis>
         <NastKarta k="g">{vto.prihlasene.map((a, i) => (
-          <div key={a.t} style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 66, padding: "12px 18px 12px 12px", borderTop: i ? oddelovac : "none" }}><Datum d={a.d} m={a.m} />{tx(a.t, a.s)}<Stitok t="platené" /></div>))}
+          <div key={a.t} style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 66, padding: "12px 18px 12px 12px", borderTop: i ? oddelovac : "none" }}><Datum d={a.d} m={a.m} />{tx(prPr.p(a.t), prPr.p(a.s))}<Stitok t="platené" /></div>))}
         </NastKarta>
+        <Odkaz o={prPr.odkaz} />
       </div>
       <div>
         <Nadpis>{t("firma.hodiny.historia")}</Nadpis>
         <NastKarta k="g">{vto.historia.map((x, i) => (
           <div key={x.t + x.s} style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 64, padding: "12px 18px", borderTop: i ? oddelovac : "none" }}>
-            {tx(x.t, x.s)}
+            {tx(prHi.p(x.t), prHi.p(x.s))}
             <span style={{ textAlign: "right", flex: "none" }}><b style={{ display: "block", fontSize: 16, fontVariantNumeric: "tabular-nums" }}>{h(x.h)}</b><span style={{ fontSize: 12.5, fontWeight: 800, color: `var(--sek-${stavF(x.stav)})` }}>{t(STAV_KLUC[x.stav] ?? x.stav)}</span></span>
           </div>))}
         </NastKarta>
+        <Odkaz o={prHi.odkaz} />
         <div style={{ ...pozn, marginTop: 8 }}>{t("firma.hodiny.presne")}</div>
       </div>
       <div>
         <Nadpis>{t("firma.hodiny.kam")}</Nadpis>
         <NastKarta k="g" style={{ padding: "14px 18px 16px", display: "flex", flexDirection: "column", gap: 12 }}>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>{vto.oblasti.map((o) => <span key={o} style={{ padding: "6px 12px", borderRadius: 11, background: "var(--sek-gBg)", border: "1px solid var(--sek-gBd)", color: "var(--sek-g)", fontSize: 14, fontWeight: 800 }}>{o}</span>)}</div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>{vto.oblasti.map((o) => <span key={o} style={{ padding: "6px 12px", borderRadius: 11, background: "var(--sek-gBg)", border: "1px solid var(--sek-gBd)", color: "var(--sek-g)", fontSize: 14, fontWeight: 800 }}>{prOb.p(o)}</span>)}</div>
+          {prOb.odkaz}
           <div style={{ fontSize: 14, lineHeight: 1.5, color: "var(--d-ink2, var(--ink2))" }}>{t("firma.hodiny.overene")}</div>
           <button type="button" onClick={coskoro} style={btn(true)}>{mesto === "tvojom meste" ? t("firma.hodiny.najstOkolie") : t("firma.hodiny.najstV", { mesto: t.jazyk === "sk" && mesto === "Trenčín" ? "Trenčíne" : mesto })}</button>
         </NastKarta>

@@ -10,6 +10,7 @@ import { cistyText } from "@/lib/richtext";
 import { usePersonalizacia } from "@/lib/personalizacia";
 import { usePriatelia } from "@/lib/priatelia";
 import { useT, type T } from "@/i18n";
+import { usePrekladObsahu, maPreklad } from "@/i18n/obsah";
 import "@/styles/platba.css";
 
 const TRIDSAT_DNI = 30 * 24 * 3600 * 1000;
@@ -30,6 +31,7 @@ export function RozpracovanySkutok() {
   useZmenySkutkov();
   const k = koncept();
   const [zahodit, setZahodit] = useState(false);
+  const pr = usePrekladObsahu(); // 79b · názov konceptu, ak ho vieme preložiť
   if (!k || Date.now() - k.ulozene > TRIDSAT_DNI) return null;
   const chyba = t(`karty.chyba.${!k.nazov.trim() ? "nazov" : cistyText(k.popis).length < 10 ? "popis" : !k.oblast ? "oblast" : !k.miesto.trim() ? "miesto" : "odoslanie"}`);
   return (
@@ -38,8 +40,9 @@ export function RozpracovanySkutok() {
         <span style={{ width: 38, height: 38, borderRadius: 12, background: "var(--card)", color: "var(--gold)", display: "flex", alignItems: "center", justifyContent: "center", flex: "none" }}><Ik d="M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4" /></span>
         <span style={{ flex: 1, minWidth: 0 }}>
           <span style={{ display: "block", fontSize: 12, fontWeight: 800, letterSpacing: ".05em", color: "var(--gold)" }}>{t("karty.rozpracovany")}</span>
-          <span style={{ display: "block", fontSize: 15, fontWeight: 800, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{k.nazov.trim() || t("karty.bezNazvu")}</span>
+          <span style={{ display: "block", fontSize: 15, fontWeight: 800, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{k.nazov.trim() ? pr.p(k.nazov.trim()) : t("karty.bezNazvu")}</span>
           <span style={{ display: "block", fontSize: 12.5, color: "var(--ink3)" }}>{t("karty.ulozene", { kedy: pred(t, k.ulozene), co: chyba })}</span>
+          {maPreklad(k.nazov.trim(), t) && pr.odkaz}
         </span>
         <span style={{ display: "flex", flexDirection: "column", alignItems: "stretch", gap: 2, flex: "none" }}>
           <button type="button" onClick={() => otvorPridatSkutok({ koncept: true })} style={hlavne}>{t("karty.dokoncit")}</button>
@@ -97,6 +100,7 @@ const POD_SPOLU = 12;
 export function Podakovania({ ukazka }: { ukazka: boolean }) {
   const t = useT();
   const [vsetky, setVsetky] = useState(false);
+  const pr = usePrekladObsahu(); // 79b · citáty a názvy skutkov
   if (!ukazka) return null; // nový účet poďakovania ešte nemá
   return (
     <section aria-label={t("karty.pod.titul")} style={{ borderRadius: 22, background: "var(--card)", border: "1px solid var(--cardBd)", padding: "16px 14px 6px", display: "flex", flexDirection: "column" }}>
@@ -105,9 +109,10 @@ export function Podakovania({ ukazka }: { ukazka: boolean }) {
         <button key={p.i} type="button" onClick={() => toast(t("karty.pod.detail"))}
           style={{ display: "flex", gap: 12, padding: "12px 0", border: "none", borderTop: j ? "1px solid var(--cardBd)" : "none", background: "none", boxShadow: "none", textAlign: "left", fontFamily: "inherit", color: "var(--ink)", cursor: "pointer" }}>
           <span aria-hidden="true" style={{ width: 38, height: 38, borderRadius: "50%", background: p.bg, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 12.5, flex: "none" }}>{p.i}</span>
-          <span style={{ flex: 1, minWidth: 0 }}><span style={{ display: "block", fontSize: 14.5, lineHeight: 1.5 }}>{p.q}</span><span style={{ display: "block", fontSize: 12.5, color: "var(--ink3)", marginTop: 3 }}>{p.vek ? t("karty.pod.vek", { meno: p.kto, n: p.vek }) : p.kto} · {t(`karty.pod.${p.za}`, p.co ? { co: p.co } : undefined)} · {t.datum(p.d)}</span></span>
+          <span style={{ flex: 1, minWidth: 0 }}><span style={{ display: "block", fontSize: 14.5, lineHeight: 1.5 }}>{pr.p(p.q)}</span><span style={{ display: "block", fontSize: 12.5, color: "var(--ink3)", marginTop: 3 }}>{p.vek ? t("karty.pod.vek", { meno: p.kto, n: p.vek }) : pr.p(p.kto)} · {t(`karty.pod.${p.za}`, p.co ? { co: pr.p(p.co) } : undefined)} · {t.datum(p.d)}</span></span>
         </button>))}
       <button type="button" onClick={() => setVsetky(!vsetky)} aria-expanded={vsetky} style={{ alignSelf: "flex-start", minHeight: 44, border: "none", background: "none", boxShadow: "none", padding: 0, fontSize: 14, fontWeight: 700, color: "var(--green)", cursor: "pointer", fontFamily: "inherit" }}>{vsetky ? t("sp.menej") : t("karty.pod.vsetky")}</button>
+      {pr.odkaz}
     </section>
   );
 }

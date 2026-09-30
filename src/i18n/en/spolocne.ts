@@ -20,4 +20,6 @@ export const spolocne: Slovnik = {
   "sp.ano": "Yes",
   "sp.nie": "No",
   "sp.skutkov": { one: "{n} deed", other: "{n} deeds" },
+  "obsah.prelozene": "Translated · Show original",
+  "obsah.zobrazitPreklad": "Show translation",
 };
