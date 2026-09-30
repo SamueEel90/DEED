@@ -2,6 +2,7 @@
 // Aktivity, Charita, Môj QR, detail zbierky, oznam „AI sa pýta"). Otvára sa cez otvorPridatSkutok().
 // 6 krokov: Sám / So skupinou (→ bežný / skutok ako dar) · Opíš · AI kontroluje · Ešte pár otázok · Náhľad · Hotovo.
 // AI = existujúce ohodnot() (POST /api/score, verdikt ok / doplnit / zamietnut) — backend sa nemení.
+import { TESTOVACIA } from "@/lib/testovacia";
 import { DeedZnacka } from "@/components/DeedZnacka";
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { createPortal } from "react-dom";
@@ -296,7 +297,7 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
   const DEMO_MENA = ["Lucia H.", "Tomáš B.", "Jana N.", "Peťo K.", "Mária S.", "Ondrej V.", "Katka L.", "Miro D."];
   const naskenuj = () => {
     // skener QR „Na akciu" — overenie tokenu robí server; v DEV pribudne ukážkový účastník
-    if (!import.meta.env.DEV) { toast("Skener účastníkov pribudne s napojením na server."); return; }
+    if (!TESTOVACIA) { toast("Skener účastníkov pribudne s napojením na server."); return; }
     const n = DEMO_MENA.find((m) => !uc.some((u) => u.meno === m));
     if (n) { setUc((u) => [...u, { meno: n, overeny: true }]); vibruj(8); }
   };
@@ -595,7 +596,7 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
           <span style={{ width: 34, height: 34, borderRadius: 10, background: "var(--gSoft)", color: "var(--green)", display: "flex", alignItems: "center", justifyContent: "center", flex: "none" }}><Ik d={IK.potvrdil} s={17} /></span>
           <span style={{ flex: 1, minWidth: 0 }}><span style={{ display: "block", fontSize: 14, fontWeight: 700 }}>{potv === "ok" ? "Potvrdil ten, komu si pomohol" : "Potvrdenie od toho, komu si pomohol"}</span>
             <span style={{ display: "block", fontSize: 12.5, color: "var(--ink3)" }}>{potv === "ok" ? "najsilnejší dôkaz" : potv === "caka" ? "čaká na potvrdenie · odkaz odoslaný" : "naskenuje tvoj QR alebo ťukne na odkaz"}</span></span>
-          {potv !== "ok" && <button type="button" onClick={potv === "caka" && import.meta.env.DEV ? () => setPotv("ok") : poziadajPotvrdenie} style={{ flex: "none", height: 40, padding: "0 12px", borderRadius: 10, border: "1px solid var(--gBd)", background: "var(--gSoft)", fontSize: 13.5, fontWeight: 700, color: "var(--gInk)", cursor: "pointer", fontFamily: "inherit" }}>{potv === "caka" && import.meta.env.DEV ? "Simulovať" : potv === "caka" ? "Poslať znova" : "Požiadať"}</button>}
+          {potv !== "ok" && <button type="button" onClick={potv === "caka" && TESTOVACIA ? () => setPotv("ok") : poziadajPotvrdenie} style={{ flex: "none", height: 40, padding: "0 12px", borderRadius: 10, border: "1px solid var(--gBd)", background: "var(--gSoft)", fontSize: 13.5, fontWeight: 700, color: "var(--gInk)", cursor: "pointer", fontFamily: "inherit" }}>{potv === "caka" && TESTOVACIA ? "Simulovať" : potv === "caka" ? "Poslať znova" : "Požiadať"}</button>}
         </div>
         <button type="button" onClick={() => dokRef.current?.click()} style={{ height: 46, borderRadius: 13, border: "1.5px dashed var(--gBd)", background: "transparent", fontSize: 14, fontWeight: 700, color: "var(--green)", cursor: "pointer", fontFamily: "inherit" }}>+ Pridať doklad (PDF, blok, potvrdenie)</button>
         <input ref={dokRef} type="file" accept="application/pdf,image/*" hidden onChange={(e) => { pridajDoklad(e.target.files); e.target.value = ""; }} />

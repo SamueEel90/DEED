@@ -1,6 +1,7 @@
 // KARTA 18 · bod 4 — Môj QR: Na akciu · Overiť ma · Pozvánka.
 // Na akciu a Overiť ma: kód sa mení každých 15 s (snímka obrazovky neplatí), token sa tvorí v telefóne,
 // takže funguje aj bez signálu (účasť/overenie sa pripíše po pripojení). Pozvánka: statický odkaz na verejný profil.
+import { TESTOVACIA } from "@/lib/testovacia";
 import { sZnackou } from "@/components/DeedZnacka";
 import { useT } from "@/i18n";
 import { useEffect, useRef, useState } from "react";
@@ -126,7 +127,7 @@ export function MojQr({ zalozka = "akcia", onClose }: { zalozka?: ZalozkaQr; onC
             </div>
           )}
           <div role={zivy ? "button" : undefined} tabIndex={zivy ? 0 : undefined} aria-label={zivy ? tr("qr.zvacsitQr") : undefined}
-            onClick={zivy ? () => setVelky(true) : undefined} onDoubleClick={import.meta.env.DEV ? potvrdenie : undefined}
+            onClick={zivy ? () => setVelky(true) : undefined} onDoubleClick={TESTOVACIA ? potvrdenie : undefined}
             onKeyDown={(e) => { if (zivy && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); setVelky(true); } }}
             style={{ alignSelf: "center", position: "relative", borderRadius: 22, background: "#fff", padding: 8, lineHeight: 0, cursor: zivy ? "zoom-in" : "default" }}>
             <div style={{ opacity: blik ? .15 : 1, transition: "opacity .25s ease" }}><DeedQr data={data} bezOdznaku size={252} /></div>

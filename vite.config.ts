@@ -33,6 +33,8 @@ export default defineConfig({
         ],
       },
       workbox: {
+        // hlavný balík prerástol 2 MiB (preklady) — bez tohto build na Verceli padne
+        maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
         // SPA fallback nechaj len na navigácie (deep-linky /m /c /r … dostanú shell)
         navigateFallbackDenylist: [/^\/assets\//],
         runtimeCaching: [

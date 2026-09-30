@@ -1,5 +1,6 @@
 // <ZbierkaModul> — JEDEN komponent pre detail zbierky + platbu na všetkých miestach (karta 01).
 // Pripojené položky v pevnom poradí (nastavenie.ts), odpojené sa nevykresľujú vôbec.
+import { TESTOVACIA } from "@/lib/testovacia";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import type React from "react";
 import { C, SPACE, RADIUS } from "@/theme";
@@ -118,7 +119,7 @@ export function ZbierkaModul({ zbierka, miesto: miestoProp, onBack, spatNazov, o
   const pc = useSirokeOkno();
   // karta 13 — tvorca (na mieste tvorca vždy, na súkromnej len so splitom)
   const cezTvorcaMiesto = miesto === "tvorca" || (miesto === "sukromna" && dev.split);
-  const tvorca = cezTvorcaMiesto ? (zbierka.tvorca ?? (import.meta.env.DEV ? DEV_TVORCA : undefined)) : undefined;
+  const tvorca = cezTvorcaMiesto ? (zbierka.tvorca ?? (TESTOVACIA ? DEV_TVORCA : undefined)) : undefined;
   const cezTvorcu = tvorca?.id;
 
   const vykresli = (p: (typeof polozky)[number]) => {
@@ -202,7 +203,7 @@ export function ZbierkaModul({ zbierka, miesto: miestoProp, onBack, spatNazov, o
 
   return (
     <div ref={rootRef} className="deed-platba" style={{ position: "relative", minHeight: "100%", background: "var(--bg)", color: "var(--ink)", paddingBottom: SPACE.lg }}>
-      {import.meta.env.DEV && <DevPanel dev={dev} setDev={setDev} miestoPevne={!!miestoProp} registrovany={registrovany} ico={ico}
+      {TESTOVACIA && <DevPanel dev={dev} setDev={setDev} miestoPevne={!!miestoProp} registrovany={registrovany} ico={ico}
         cielInfo={realnyCiel ? undefined : `ukážkový ${DEV_CIEL.toLocaleString("sk-SK")} €`} dorovnava={dorovnanie?.firma}
         onDar={(suma) => pridajDar({ refId: zbierka.id, suma, kanal: "psp", registrovany, cezTvorcu })} />}
 
