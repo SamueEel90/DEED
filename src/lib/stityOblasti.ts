@@ -11,9 +11,9 @@ import type { T } from "@/i18n";
 
 export type Oblast = "ART" | "HEALTH" | "LEARN" | "SPORT" | "EKO" | "HELP" | "CARE" | "TEAM" | "PARTNER";
 /** poradie v mriežke Karma a štíty (PARTNER = štít firmy, u človeka sa nezobrazuje) */
-export const OBLASTI_USER: Oblast[] = ["ART", "HEALTH", "LEARN", "SPORT", "EKO", "HELP", "CARE", "TEAM"];
+export const OBLASTI_USER: Oblast[] = ["ART", "HEALTH", "LEARN", "SPORT", "EKO", "HELP"]; // OPRAVY 80: CARE, TEAM a PARTNER v osobnom profile nie sú
 /** assety od Martina hotové; ostatné „štít pripravujeme" */
-export const MA_ASSET: Record<Oblast, boolean> = { ART: true, HEALTH: true, LEARN: true, SPORT: true, EKO: true, HELP: false, CARE: false, TEAM: false, PARTNER: false };
+export const MA_ASSET: Record<Oblast, boolean> = { ART: true, HEALTH: true, LEARN: true, SPORT: true, EKO: true, HELP: true, CARE: false, TEAM: false, PARTNER: false };
 const SUBOR: Record<Oblast, string> = { ART: "Art", HEALTH: "Health", LEARN: "Learn", SPORT: "Sport", EKO: "Eko", HELP: "Help", CARE: "Care", TEAM: "Team", PARTNER: "Partner" };
 
 export const STIT_SK: Record<StitLevel, string> = { Bronze: "Bronzový", Silver: "Strieborný", Gold: "Zlatý", Platinum: "Platinový", Legend: "Legenda" };
@@ -35,7 +35,7 @@ export function oblastObr(o: Oblast, l: StitLevel, velkost: "m" | "v" = "m"): { 
 /** priradenie záujmov k oblastiam (karta 26; potvrdí Martin) · Viera bez karmy a bez štítu */
 export const ZAUJEM_OBLAST: Record<string, Oblast | null> = {
   Umenie: "ART", Hudba: "ART", Zdravie: "HEALTH", Učenie: "LEARN", Šport: "SPORT", Príroda: "EKO", Zvieratá: "EKO",
-  Komunita: "HELP", Pomoc: "HELP", Charita: "CARE", Viera: null,
+  Komunita: "HELP", Pomoc: "HELP", Charita: "HELP", Viera: null,
 };
 
 export type StitOblasti = { oblast: Oblast; level: StitLevel };
@@ -101,7 +101,7 @@ const hash = (s: string) => { let h = 2166136261; for (let i = 0; i < s.length; 
 /** vyvesené štíty oblastí iného subjektu (zoradené, najviac 5) — nikdy vyššie ako jeho hlavný štít */
 export function stityOblastiSubjektu(meno: string, hlavny: StitLevel, firma = false): StitOblasti[] {
   const h = hash(meno);
-  const pool: Oblast[] = ["ART", "HEALTH", "LEARN", "SPORT", "EKO"];
+  const pool: Oblast[] = ["ART", "HEALTH", "LEARN", "SPORT", "EKO", "HELP"];
   const pocet = h % 4 + (PORADIE.indexOf(hlavny) >= 2 ? 2 : 1);
   const max = PORADIE.indexOf(hlavny);
   const out: StitOblasti[] = [];
