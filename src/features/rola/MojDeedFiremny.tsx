@@ -1,4 +1,5 @@
 import { Emo } from "@/components/icons";
+import { TESTOVACIA } from "@/lib/testovacia";
 import { StityRad } from "@/components/stit";
 import { stityOblastiSubjektu } from "@/lib/stityOblasti";
 import { Fragment, useEffect, useMemo, useState, type ReactNode } from "react";
@@ -96,9 +97,9 @@ function MojDeedFiremnyObsah({ onBack, toast, orgId }: { onBack: () => void; toa
   const { desktop } = useLayout();
   const ja = usePouzivatel(); // tvorca vystupuje pod vlastnou profilovou fotkou (nie logom)
   // rola + tier per rola — DEV: lokálny stav; produkcia: overený účet + fakturácia
-  const [pozicia] = useState<Pozicia>(nacitajPoziciu);
+  const [pozicia, setPozicia] = useState<Pozicia>(nacitajPoziciu);
   const [tiery, setTiery] = useState<Record<Pozicia, Tier>>(nacitajTiery);
-  const [drzitel] = useState<boolean>(nacitajDrzitel);
+  const [drzitel, setDrzitel] = useState<boolean>(nacitajDrzitel);
   const [logo, setLogo] = useState<string | null>(() => nacitajLogo(nacitajPoziciu()));
   const [tvarLoga, setTvarLoga] = useState(() => nacitajTvarLoga(nacitajPoziciu()));
   const [zdrojAvatara, setZdrojAvatara] = useState(() => nacitajZdrojAvatara(nacitajPoziciu()));
@@ -115,7 +116,9 @@ function MojDeedFiremnyObsah({ onBack, toast, orgId }: { onBack: () => void; toa
   const [fotky, zmenFotky] = useFotkyEntity(klucEntity("rola", pozicia));
 
   const tier = tiery[pozicia];
+  const prepniPoziciu = (p: Pozicia) => { setPozicia(p); ulozPoziciu(p); setLogo(nacitajLogo(p)); setTvarLoga(nacitajTvarLoga(p)); setZdrojAvatara(nacitajZdrojAvatara(p)); setOnas(nacitajOnas(p)); setKontakt(nacitajKontakt(p)); };
   const nastavTier = (t: Tier) => { const n = { ...tiery, [pozicia]: t }; setTiery(n); ulozTiery(n); };
+  const prepniDrzitela = () => { setDrzitel((d) => { ulozDrzitel(!d); return !d; }); };
 
   // Viditeľnosť nástrojov: vlastné + najviac 2 programy nad sebou (zamknuté).
   // Vyššie sa nezobrazujú vôbec — ZADARMO nevidí nástroje z T3/T4, T1 nevidí T4 atď.
@@ -181,7 +184,11 @@ function MojDeedFiremnyObsah({ onBack, toast, orgId }: { onBack: () => void; toa
 
   const telo = (
     <div style={{ padding: `${SPACE.sm}px ${SPACE.md}px 0` }}>
-      {/* DEV simulácia sa presunula do profilu pod Moje stránky (OPRAVY 75, len testovacia verzia) */}
+      {/* ---- DEV panel — simulácia roly/tieru/držiteľa (OPRAVY 81: vrátený; aj pod Moje stránky v profile) ---- */}
+      {TESTOVACIA && (FLAGS.dev_role_switcher || FLAGS.dev_tier_switcher) && (
+        <DevPanel pozicia={pozicia} tier={tier} drzitel={drzitel}
+          onPozicia={prepniPoziciu} onTier={nastavTier} onDrzitel={prepniDrzitela} />
+      )}
 
       {/* ==== HERO SUBJEKTU — cover, logo, meno + odznak, štatistiky, akcie ==== */}
       {zbalena ? (

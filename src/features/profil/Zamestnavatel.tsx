@@ -1,6 +1,7 @@
 // OPRAVY 44–45 · Zamestnávateľ je v PROFILE (dlaždica + menu), nie v Nastaveniach. Karta 24 · 2i + PRAVIDLA-APPKY „Firma a zamestnanec".
 // Viac firiem naraz (čipy) · Pracovný QR · oznámenia od firmy · akcie, školenia a smeny + Navrhnúť firemnú akciu ·
 // moje odmeny · benefity · firemné hodiny (VTO) · skutky mimo firmy (Neukázať / Anonymne / S menom) · čo firma vidí.
+import { TESTOVACIA } from "@/lib/testovacia";
 import { DeedZnacka } from "@/components/DeedZnacka";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
@@ -91,7 +92,7 @@ export function Zamestnavatel({ onBack, desktop }: { onBack: () => void; desktop
       {akt?.stav === "ziadost" && <>
         <FirmaKarta nazov={akt.firma} pod={t("firma.ziadostPoslana")} />
         <button type="button" onClick={() => { odpoj(akt.firma, osoba); setVyber(null); toast(t("firma.ziadostZrusena")); }} style={btn(false)}>{t("firma.zrusitZiadost")}</button>
-        {import.meta.env.DEV && <button type="button" onClick={() => potvrd(akt.firma, osoba)} style={{ ...btn(false), minHeight: 44, fontSize: 13, fontWeight: 700 }}>{t("firma.ukazkaPotvrdila")}</button>}
+        {TESTOVACIA && <button type="button" onClick={() => potvrd(akt.firma, osoba)} style={{ ...btn(false), minHeight: 44, fontSize: 13, fontWeight: 700 }}>{t("firma.ukazkaPotvrdila")}</button>}
       </>}
       {akt?.stav === "potvrdeny" && <Prepojeny v={akt} osoba={osoba} onOdpojene={() => setVyber(null)} />}
     </div>
@@ -158,7 +159,7 @@ function Pripojit({ osoba, maFirmy, onHotovo }: { osoba: string; maFirmy: boolea
     </div>
     <button type="button" disabled={!kodOk} onClick={() => pripoj(kod)} style={btn(true, kodOk)}>{t("firma.pripojit")}</button>
     <button type="button" onClick={() => setSkener(true)} style={{ ...btn(false), display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}><Ik d="M4 8V4h4M16 4h4v4M20 16v4h-4M8 20H4v-4M7 12h10" />{t("firma.naskenovat")}</button>
-    {import.meta.env.DEV && <button type="button" onClick={() => { const f = maFirmy ? "Kaviareň Pod Hradom" : "Pekáreň Dobrota"; pozvi(f, osoba); onHotovo(f); }} style={{ ...btn(false), minHeight: 44, fontSize: 13, fontWeight: 700 }}>{t("firma.ukazkaPozvanka")}</button>}
+    {TESTOVACIA && <button type="button" onClick={() => { const f = maFirmy ? "Kaviareň Pod Hradom" : "Pekáreň Dobrota"; pozvi(f, osoba); onHotovo(f); }} style={{ ...btn(false), minHeight: 44, fontSize: 13, fontWeight: 700 }}>{t("firma.ukazkaPozvanka")}</button>}
     {skener && <SkenerFirmy onClose={() => setSkener(false)} onKod={(k) => { setSkener(false); setKod(k); pripoj(k); }} />}
   </>);
 }

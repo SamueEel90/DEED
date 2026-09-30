@@ -1,6 +1,7 @@
 // KARTA 24 · Nastavenia: Potvrdiť platbu, Predvolený okruh, Prihlásené zariadenia, E-mail / telefón / heslo,
 // Zablokovaní ľudia, Súhlasy (+ detail povinného súhlasu) a hlášky pri prihlásení (6. zariadenie, nové zariadenie,
 // 24 h obmedzenie). Overovanie kódov, zoznam zariadení a znenia súhlasov bude držať server — tu je appková časť.
+import { TESTOVACIA } from "@/lib/testovacia";
 import { Prepinac } from "./nastUi";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
@@ -183,7 +184,7 @@ export function PrihlaseneZariadenia({ onBack }: { onBack: () => void }) {
         {OCHRANA.map((i) => <Bod key={i}><b style={{ color: "var(--ink)" }}>{t(`bezpecnost.ochrana.${i}t`)}</b> {t(`bezpecnost.ochrana.${i}s`)}</Bod>)}
       </div>
       <div style={{ padding: "10px 12px", borderRadius: 13, background: "var(--field)", border: "1px solid var(--cardBd)", fontSize: 13, lineHeight: 1.5, color: "var(--ink2)" }}>{t("bezpecnost.zar.ozn1")} <b style={{ color: "var(--ink)" }}>{t("bezpecnost.nebolSom")}</b> {t("bezpecnost.zar.ozn2")}</div>
-      {import.meta.env.DEV && <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+      {TESTOVACIA && <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
         <button type="button" onClick={() => { naplnDoLimitu(); setDev("limit"); }} style={{ minHeight: 44, borderRadius: 12, border: "1.5px dashed var(--cardBd)", background: "transparent", fontSize: 13, color: "var(--ink3)", cursor: "pointer", fontFamily: "inherit" }}>{t("bezpecnost.dev6")}</button>
         <button type="button" onClick={() => setDev("nove")} style={{ minHeight: 44, borderRadius: 12, border: "1.5px dashed var(--cardBd)", background: "transparent", fontSize: 13, color: "var(--ink3)", cursor: "pointer", fontFamily: "inherit" }}>{t("bezpecnost.devNove")}</button>
       </div>}
@@ -262,7 +263,7 @@ export function EmailTelefonHeslo({ onBack }: { onBack: () => void }) {
             <span style={{ flex: 1, minWidth: 0 }}><span style={{ display: "block", fontSize: 13, color: "var(--ink3)" }}>{l}</span><span style={{ display: "block", fontSize: 16, fontWeight: 700, marginTop: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{v}</span>{s && <span style={{ display: "block", fontSize: 12.5, color: "var(--gInk)", marginTop: 1 }}>{s}</span>}</span>
             <span style={{ fontSize: 14.5, fontWeight: 700, color: "var(--green)" }}>{t("bezpecnost.zmenit")}</span></button>))}
       </div>
-      {import.meta.env.DEV && (
+      {TESTOVACIA && (
         <button type="button" role="switch" aria-checked={hodinNovehoZariadenia() > 0} onClick={() => nastavNoveZariadenie(!hodinNovehoZariadenia())} style={{ display: "flex", alignItems: "center", gap: 10, minHeight: 48, padding: "6px 12px", borderRadius: 13, border: "1.5px dashed var(--cardBd)", background: "transparent", cursor: "pointer", fontSize: 13, color: "var(--ink3)", fontFamily: "inherit", textAlign: "left" }}>
           <span style={{ flex: 1 }}>{t("bezpecnost.devLen")} <b style={{ color: "var(--ink2)" }}>{t("bezpecnost.devNoveZar")}</b></span><Prep on={hodinNovehoZariadenia() > 0} /></button>)}
       <div style={{ padding: "10px 12px", borderRadius: 13, background: "var(--field)", border: "1px solid var(--cardBd)", fontSize: 13, lineHeight: 1.5, color: "var(--ink2)" }}>{t("bezpecnost.kontakt.ozn1")} <b style={{ color: "var(--ink)" }}>{t("bezpecnost.nebolSom")}</b>{t("bezpecnost.kontakt.ozn2")}</div>

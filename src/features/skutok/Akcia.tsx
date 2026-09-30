@@ -1,6 +1,7 @@
 // KARTA 22 · Organizovaná akcia (celá obrazovka sprava): skener účastníkov → Začať akciu (čas + GPS)
 // → Akcia beží (okno pre meškajúcich, odstránenie krížikom) → Ukončiť akciu → Pridať skutok krok 2.
 // Vstupy: Pridať skutok → So skupinou → Akcia práve začína · Môj QR → Organizujem akciu.
+import { TESTOVACIA } from "@/lib/testovacia";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { BrowserQRCodeReader, type IScannerControls } from "@zxing/browser";
@@ -61,7 +62,7 @@ function AkciaObrazovka({ a, onZavrete }: { a: Akcia; onZavrete: () => void }) {
 
   const naskenuj = () => {
     if (!mozePridat) return;
-    if (import.meta.env.DEV) { const n = DEMO_MENA.find((m) => !a.uc.some((u) => u.meno === m)); if (n) pridaj(n); return; }
+    if (TESTOVACIA) { const n = DEMO_MENA.find((m) => !a.uc.some((u) => u.meno === m)); if (n) pridaj(n); return; }
     toast("Namier kameru na QR účastníka v jeho appke · Môj QR · Na akciu");
   };
   const zacat = () => {

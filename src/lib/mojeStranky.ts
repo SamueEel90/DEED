@@ -34,5 +34,5 @@ export function prepniPrezentaciu() {
   uloz({ ako: p ? "ja" : s.ako, prezentacia: p });
   if (p) nastavDarcuFirmu(false);
 }
-/** testovacia verzia (npm run dev alebo VITE_TEST=1) — len tam sa kreslí DEV simulácia */
-export const TESTOVACIA = import.meta.env.DEV || import.meta.env.VITE_TEST === "1";
+/** testovacia verzia (npm run dev, VITE_TEST=1 alebo ?dev) — OPRAVY 81 */
+export { TESTOVACIA } from "@/lib/testovacia";

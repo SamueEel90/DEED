@@ -59,7 +59,7 @@ export const STATISTIKY: StatistikyData = {
   rok: { skutkov: 48, hodin: 126, darovaneEur: 840, ludi: 37, zbierok: 12, oblasti: 6, mesiace: [2, 3, 5, 4, 6, 3, 7, 4, 9],
     kde: [["EKO", 16], ["HELP", 11], ["LEARN", 9], ["ART", 6], ["HEALTH", 4], ["SPORT", 2]], dosah: [214, 63, 5] },
   vsetko: { skutkov: 131, hodin: 342, darovaneEur: 2310, ludi: 94, zbierok: 27, oblasti: 7,
-    kde: [["EKO", 41], ["HELP", 33], ["LEARN", 22], ["ART", 15], ["HEALTH", 11], ["SPORT", 6], ["CARE", 3]], dosah: [580, 171, 12] },
+    kde: [["EKO", 41], ["HELP", 33], ["LEARN", 22], ["ART", 15], ["HEALTH", 11], ["SPORT", 6]], dosah: [580, 171, 12] },
   seria: { najdlhsia: 21, teraz: 3 },
 };
 
