@@ -11,7 +11,7 @@ import { OrezFotky } from "@/components/orezfotky";
 import { toast } from "@/components/toast";
 import { spracujLogo, spracujFotku, rozmeryFotky, LOGO_CFG, COVER_CFG, type LogoRezim, type LogoPozadie } from "@/lib/obrazok";
 import { nacitajProfil, profilZPamate, ulozKoncept, zverejniProfil, type ProfilStranky, type RamFotky, type TitulnaFotka, type VyrezFotky } from "@/lib/profilStranky";
-import { SIDLO_REGISTRA } from "./NastaveniaCharity";
+import { SIDLO_REGISTRA, ICO_REGISTRA } from "./NastaveniaCharity";
 import { nacitajKontakt, SIETE, MAX_TEL, MAX_EMAIL, chybaSiete, chybaWebu, chybaEmailu, chybaTel, type Kontakt } from "./kontakt";
 import { TYP_NAZOV, type Pozicia, type TvarLoga, type TypStranky } from "./stav";
 
@@ -26,7 +26,7 @@ export const RAMY: { k: RamFotky; t: string; g: string }[] = [
   { k: "zb", t: "Zeleno-bronzový", g: "linear-gradient(135deg,#1E3627 0%,#2F5A3C 26%,#B97D45 50%,#E6B784 62%,#9A6232 76%,#22402E 100%)" },
 ];
 /** údaje z registrácie (zamknuté) — TODO: napojiť na tabuľku organizacia (nazov, ico, sidlo) */
-// sídlo z Údajov organizácie (ten istý zdroj), IČO sa tu nevypisuje (Martin 1. 10. 2026)
+// IČO a sídlo z Údajov organizácie (ten istý zdroj, OPRAVY 108)
 
 /** profil pred prvým uložením = úplne prázdny (Martin 1. 10. 2026), zo registrácie len zamknuté sídlo */
 export function zakladnyProfil(p: Pozicia): ProfilStranky {
@@ -217,7 +217,7 @@ export function UpravitProfilCharity({ strankaId, pozicia, typ, nazov, inicialy,
   const kartaOnas = (
     <section style={karta} aria-label="Názov a O nás">
       {nadpis("Názov", "z registrácie, overený cez IČO", 14)}
-      <div style={zamknute}><Zamok />{nazov}</div>
+      <div style={zamknute}><Zamok />{nazov} · IČO {ICO_REGISTRA}</div>
       <span style={{ marginTop: 6 }}>{nadpis("O nás · hlavný text")}</span>
       <span style={{ fontSize: 13, color: "var(--ink2)", lineHeight: 1.45, marginTop: -4 }}>Toto ľudia uvidia hneď v hlavičke profilu. Kto ste a komu pomáhate, tak, aby to zaujalo. Najviac 12 riadkov.</span>
       <RichTextInput vzhlad="sprava" value={p.onas} onChange={(h) => zmen({ onas: h })} nastroje={NASTROJE} minH={130} chybaRam={dlhy}

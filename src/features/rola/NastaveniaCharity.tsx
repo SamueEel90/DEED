@@ -342,8 +342,9 @@ export function ObrSpravcovia({ mobil }: { mobil: boolean }) {
 // ============================================================
 type Ud = { mail: string; tel: string; dic: string; fmail: string; ina: boolean; adr: string };
 const UD0: Ud = { mail: "info@svetlopomoci.sk", tel: "+421 905 111 222", dic: "", fmail: "info@svetlopomoci.sk", ina: false, adr: "" };
-/** sídlo z registra — jeden zdroj pre Údaje organizácie aj Upraviť profil (OPRAVY 108). TODO: tabuľka organizacia.sidlo */
+/** IČO a sídlo z registra — jeden zdroj pre Údaje organizácie aj Upraviť profil (OPRAVY 108). TODO: tabuľka organizacia.sidlo */
 export const SIDLO_REGISTRA = "Palackého 14, 911 01 Trenčín";
+export const ICO_REGISTRA = "00 000 000";
 
 export function ObrUdaje({ mobil }: { mobil: boolean }) {
   const [ud, setUd] = usePamat<Ud>("ud", UD0);
@@ -351,7 +352,7 @@ export function ObrUdaje({ mobil }: { mobil: boolean }) {
   const v = <K extends keyof Ud>(k: K): Ud[K] => (d[k] ?? ud[k]) as Ud[K];
   const zmena = (Object.keys(d) as (keyof Ud)[]).some((k) => d[k] !== ud[k]);
   const set = (k: keyof Ud) => (e: React.ChangeEvent<HTMLInputElement>) => { const x = e.target.value; setD((c) => ({ ...c, [k]: x })); };
-  const REG: [string, string][] = [["Názov", "Svetlo pomoci o.z."], ["IČO", "42 318 657"], ["Právna forma", "Občianske združenie"], ["Sídlo", SIDLO_REGISTRA], ["Dátum vzniku", "14. 3. 2012"], ["Štatutár", "Martin Štofik · overený"]];
+  const REG: [string, string][] = [["Názov", "Svetlo pomoci o.z."], ["IČO", ICO_REGISTRA], ["Právna forma", "Občianske združenie"], ["Sídlo", SIDLO_REGISTRA], ["Dátum vzniku", "14. 3. 2012"], ["Štatutár", "Martin Štofik · overený"]];
   const Pole = ({ k, t, ph, typ = "text" }: { k: keyof Ud; t: React.ReactNode; ph?: string; typ?: string }) => (
     <label style={{ display: "flex", flexDirection: "column", gap: 6 }}><span style={{ fontSize: 13.5, fontWeight: 700, color: "var(--ink2)" }}>{t}</span><input type={typ} value={v(k) as string} onChange={set(k)} placeholder={ph} style={pole} /></label>);
   return (
