@@ -239,7 +239,7 @@ export function SpravaStranky({ onBack, typ: typStranky = "charita", strankaId =
   const prepniPin = (id: PolozkaSpravy) => {
     if (piny.includes(id)) { const n = piny.filter((x) => x !== id); setPiny(n); void ulozPiny(strankaId, n); }
     else if (piny.length < PIN_MAX) { const n = [...piny, id]; setPiny(n); void ulozPiny(strankaId, n); }
-    else toast("Najviac 6 pripnutých položiek.");
+    else toast(`Najviac ${PIN_MAX} pripnutých položiek.`);
   };
 
   const pinyTypu = piny.filter((id) => menu.vse.some((v) => v.id === id));
@@ -299,10 +299,13 @@ export function SpravaStranky({ onBack, typ: typStranky = "charita", strankaId =
         </div>
         {dev}
       </aside>
-      <main style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 14 }}>
+      {/* OPRAVY 93: obsah max 1600 px, na širšom monitore vycentrovaný (panel ostáva vľavo) */}
+      <div style={{ flex: 1, minWidth: 0 }}>
+      <main style={{ maxWidth: 1600, margin: "0 auto", minWidth: 0, display: "flex", flexDirection: "column", gap: 14 }}>
         {hlavicka}
         <div key={String(sub)} style={{ display: "flex", flexDirection: "column", gap: 14, animation: "spravaFade .2s ease both" }}>{obsah}</div>
       </main>
+      </div>
       {zoomEl}
     </div>
   );
@@ -456,6 +459,13 @@ function Prehlad({ tier: _tier, piny, prepniPin, otvorPolozku, otvor, nova, stit
   const VSE = menu.vse; // KARTA 36: na pripnutie len položky, ktoré typ má
   const [obd, setObd] = useState(0);
   const [graf, setGraf] = useState(false); // OPRAVY 92: graf darov pod číslami
+  // OPRAVY 93: šírka mriežky zbierok → koľko kariet sa zmestí do riadku
+  const zbRef = useRef<HTMLDivElement>(null);
+  const [zbSirka, setZbSirka] = useState(800);
+  useLayoutEffect(() => {
+    const el = zbRef.current; if (!el || mobil) return;
+    const ro = new ResizeObserver(() => setZbSirka(el.clientWidth)); ro.observe(el); return () => ro.disconnect();
+  }, [mobil, nova]);
   const [pinOtv, setPinOtv] = useState(false);
   const trebaRef = useRef<HTMLSpanElement>(null);
   // karta štítu a Čísla = výška karty charity v paneli, min. 180 px
@@ -495,24 +505,24 @@ function Prehlad({ tier: _tier, piny, prepniPin, otvorPolozku, otvor, nova, stit
       </div>
     </section>);
 
+  const pinyV = piny.map((id) => VSE.find((x) => x.id === id)).filter((v): v is (typeof VSE)[number] => !!v);
   const pinBar = (
     <section aria-label="Pripnuté" style={{ flex: "none", position: "relative", borderRadius: 18, background: "var(--card)", border: "1px solid var(--cardBd)", padding: 8 }}>
-      <div className="sc-lista" style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: mobil ? "nowrap" : "wrap", overflowX: mobil ? "auto" : undefined }}>
+      <div className="sc-lista" style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "nowrap", overflowX: mobil ? "auto" : undefined }}>
         <span style={{ flex: "none", padding: "0 8px 0 6px", fontSize: 12, fontWeight: 800, letterSpacing: ".07em", color: "var(--acc)" }}>PRIPNUTÉ</span>
         <button onClick={() => trebaRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })} style={{ flex: "none", whiteSpace: "nowrap", height: 44, padding: "0 12px 0 14px", borderRadius: 13, border: `1.5px solid ${ulohy.length ? "#C9A24A" : "var(--cardBd)"}`, background: ulohy.length ? "var(--warnBg)" : "var(--bg)", cursor: "pointer", display: "flex", alignItems: "center", gap: 8, fontSize: 14.5, fontWeight: 800, color: "var(--ink)" }}>
           Treba vybaviť<span style={{ minWidth: 24, height: 24, padding: "0 7px", borderRadius: 12, background: ulohy.length ? "#A34A2A" : "#85867B", color: "#fff", fontSize: 12.5, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>{ulohy.length}</span>
         </button>
-        {piny.map((id) => { const v = VSE.find((x) => x.id === id); if (!v) return null; return (
-          <button key={id} onClick={() => otvorPolozku(id)} className="sc-bdh" style={{ flex: "none", whiteSpace: "nowrap", height: 44, padding: "0 16px 0 12px", borderRadius: 13, border: "1px solid var(--cardBd)", background: "var(--bg)", cursor: "pointer", display: "flex", alignItems: "center", gap: 8, fontSize: 14.5, fontWeight: 700, color: "var(--ink)" }}>
-            <Ik d={v.d} s={18} />{v.t}
-          </button>); })}
-        <span style={{ flex: 1 }} />
+        {mobil
+          ? pinyV.map((v) => <PinTlacidlo key={v.id} v={v} onClick={() => otvorPolozku(v.id)} />)
+          : <PinyRiadok polozky={pinyV} otvor={otvorPolozku} />}
+        {mobil && <span style={{ flex: 1 }} />}
         <button onClick={() => setPinOtv((o) => !o)} aria-expanded={pinOtv} style={{ flex: "none", whiteSpace: "nowrap", height: 44, padding: "0 14px", border: "none", borderRadius: 13, background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", gap: 6, fontSize: 14, fontWeight: 800, color: "var(--green)" }}>
           <Ik d={IK.pin} s={17} c="currentColor" w={2.2} />Upraviť pripnuté
         </button>
       </div>
       {pinOtv && <div style={{ position: "absolute", right: 8, left: mobil ? 8 : undefined, top: 58, zIndex: 20, width: mobil ? undefined : 340, maxHeight: 420, overflowY: "auto", overscrollBehavior: "contain", padding: 8, borderRadius: 18, background: "var(--bg)", border: "1px solid var(--cardBd)", boxShadow: "0 16px 40px rgba(30,28,20,.2)", display: "flex", flexDirection: "column", gap: 2, animation: "spravaFade .15s ease both" }}>
-        <span style={{ padding: "8px 10px 6px", fontSize: 13, color: "var(--ink3)" }}>Pripnite si, čo používate najčastejšie. Najviac 6.</span>
+        <span style={{ padding: "8px 10px 6px", fontSize: 13, color: "var(--ink3)" }}>Pripnite si, čo používate najčastejšie. Najviac {PIN_MAX}.</span>
         {VSE.map((v) => { const on = piny.includes(v.id); return (
           <button key={v.id} role="checkbox" aria-checked={on} onClick={() => prepniPin(v.id)} style={{ minHeight: 46, padding: "0 10px", border: "none", borderRadius: 12, background: on ? "var(--gSoft)" : "transparent", cursor: "pointer", display: "flex", alignItems: "center", gap: 10, textAlign: "left" }}>
             <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}><span style={{ fontSize: 14.5, fontWeight: 700, color: "var(--ink)" }}>{v.t}</span><span style={{ fontSize: 12, color: "var(--ink3)" }}>{v.g}</span></span>
@@ -533,7 +543,7 @@ function Prehlad({ tier: _tier, piny, prepniPin, otvorPolozku, otvor, nova, stit
               <span style={{ display: "flex", alignItems: "flex-start", gap: 10 }}><span style={{ width: 10, height: 10, flex: "none", borderRadius: "50%", background: dot, marginTop: 6 }} /><span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}><b style={{ fontSize: 15.5 }}>{t}</b><span style={{ fontSize: 13, color: "var(--ink3)" }}>{s}</span></span></span>
               <button onClick={() => otvor(`x:${b}`)} style={{ ...zeleneTl, alignSelf: "flex-end" }}>{b}</button>
             </div>
-            : <div key={t} style={{ display: "flex", alignItems: "center", gap: 14, minHeight: 72, padding: "10px 0", borderTop: i ? "1px solid var(--cardBd)" : "none" }}>
+            : <div key={t} style={{ display: "flex", alignItems: "center", gap: 14, minHeight: 72, padding: "10px 0", borderTop: i ? "1px solid var(--cardBd)" : "none", maxWidth: 1100 }}>
               <span style={{ width: 10, height: 10, flex: "none", borderRadius: "50%", background: dot }} />
               <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}><b style={{ fontSize: 15.5 }}>{t}</b><span style={{ fontSize: 13, color: "var(--ink3)" }}>{s}</span></span>
               <button onClick={() => otvor(`x:${b}`)} style={zeleneTl}>{b}</button>
@@ -541,12 +551,17 @@ function Prehlad({ tier: _tier, piny, prepniPin, otvorPolozku, otvor, nova, stit
       </section>}
   </>);
 
+  // OPRAVY 93: karty 300–420 px, toľko, koľko sa zmestí do jedného riadku (max 4), potom „Všetky zbierky ›"
+  const naRiadok = mobil ? PH_ZBIERKY.length : Math.max(1, Math.min(4, Math.floor((zbSirka + 14) / (300 + 14))));
   const zbierky = !nova && (<>
-    <span style={nadpisSekcie}>BEŽIACE ZBIERKY</span>
-    <div className="sc-lista" style={mobil ? { display: "flex", gap: 10, overflowX: "auto", scrollSnapType: "x mandatory", scrollPaddingLeft: 14, margin: "0 -14px", padding: "0 14px" } : { display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 14 }}>
-      {PH_ZBIERKY.map((z) => (
+    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+      <span style={{ ...nadpisSekcie, flex: 1 }}>BEŽIACE ZBIERKY</span>
+      {!mobil && <button onClick={() => otvor("g_zbierky")} style={{ flex: "none", minHeight: 44, padding: "0 6px", border: "none", background: "transparent", cursor: "pointer", fontSize: 14, fontWeight: 800, color: "var(--green)" }}>Všetky zbierky ›</button>}
+    </div>
+    <div ref={zbRef} className="sc-lista" style={mobil ? { display: "flex", gap: 10, overflowX: "auto", scrollSnapType: "x mandatory", scrollPaddingLeft: 14, margin: "0 -14px", padding: "0 14px" } : { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 420px))", gap: 14 }}>
+      {PH_ZBIERKY.slice(0, naRiadok).map((z) => (
         <button key={z.t} onClick={() => otvor("g_zbierky")} style={{ flex: "none", width: mobil ? 290 : undefined, scrollSnapAlign: "start", ...karta, borderRadius: mobil ? 18 : 22, padding: 0, overflow: "hidden", cursor: "pointer", textAlign: "left", display: "flex", flexDirection: "column" }}>
-          <span style={{ display: "block", width: "100%", aspectRatio: mobil ? undefined : "16/6", height: mobil ? 110 : undefined, background: z.bg }} />
+          <span style={{ display: "block", width: "100%", aspectRatio: "16/9", background: z.bg }} />
           <span style={{ padding: "14px 18px 16px", display: "flex", flexDirection: "column", gap: 8, width: "100%", boxSizing: "border-box" }}>
             <b style={{ fontSize: 16, color: "var(--ink)" }}>{z.t}</b>
             <Pruh sc={z.c ? z.v / z.c : 1} />
@@ -599,6 +614,50 @@ function Prehlad({ tier: _tier, piny, prepniPin, otvorPolozku, otvor, nova, stit
       {pravy}
     </div>
   </>);
+}
+
+// ============================================================
+// OPRAVY 94 · Pripnuté — v lište toľko, koľko sa zmestí do riadku, zvyšok pod „+N ďalšie ›"
+// ============================================================
+type PinV = { id: PolozkaSpravy; t: string; d: string };
+function PinTlacidlo({ v, onClick, merat }: { v: PinV; onClick?: () => void; merat?: boolean }) {
+  return (
+    <button onClick={onClick} tabIndex={merat ? -1 : undefined} aria-hidden={merat || undefined} className="sc-bdh" style={{ flex: "none", whiteSpace: "nowrap", height: 44, padding: "0 16px 0 12px", borderRadius: 13, border: "1px solid var(--cardBd)", background: "var(--bg)", cursor: "pointer", display: "flex", alignItems: "center", gap: 8, fontSize: 14.5, fontWeight: 700, color: "var(--ink)" }}>
+      <Ik d={v.d} s={18} />{v.t}
+    </button>);
+}
+function PinyRiadok({ polozky, otvor }: { polozky: PinV[]; otvor: (id: PolozkaSpravy) => void }) {
+  const wrap = useRef<HTMLDivElement>(null), meraj = useRef<HTMLDivElement>(null), viacRef = useRef<HTMLButtonElement>(null);
+  const [n, setN] = useState(polozky.length);
+  const [otv, setOtv] = useState(false);
+  const kluc = polozky.map((p) => p.id).join(",");
+  useLayoutEffect(() => {
+    const w = wrap.current, m = meraj.current; if (!w || !m) return;
+    const spocitaj = () => {
+      const sirky = Array.from(m.children).map((c) => (c as HTMLElement).offsetWidth);
+      const k = 6, dost = w.clientWidth, viac = 130; // šírka „+N ďalšie ›"
+      const vsetky = sirky.reduce((s, x) => s + x + k, 0);
+      if (vsetky <= dost) { setN(sirky.length); return; }
+      let sum = 0, c = 0; for (const x of sirky) { if (sum + x + k + viac > dost) break; sum += x + k; c++; }
+      setN(c);
+    };
+    spocitaj(); const ro = new ResizeObserver(spocitaj); ro.observe(w); return () => ro.disconnect();
+  }, [kluc]);
+  const skryte = polozky.slice(n);
+  return (
+    <div ref={wrap} style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: 6, position: "relative" }}>
+      <div ref={meraj} aria-hidden="true" style={{ position: "absolute", visibility: "hidden", pointerEvents: "none", display: "flex", gap: 6, left: 0, top: 0 }}>
+        {polozky.map((v) => <PinTlacidlo key={v.id} v={v} merat />)}
+      </div>
+      {polozky.slice(0, n).map((v) => <PinTlacidlo key={v.id} v={v} onClick={() => otvor(v.id)} />)}
+      {skryte.length > 0 && <button ref={viacRef} onClick={() => setOtv((o) => !o)} aria-expanded={otv} style={{ flex: "none", whiteSpace: "nowrap", height: 44, padding: "0 14px", borderRadius: 13, border: "1px solid var(--cardBd)", background: "transparent", cursor: "pointer", fontSize: 14, fontWeight: 800, color: "var(--ink2)" }}>+{skryte.length} ďalšie ›</button>}
+      {otv && skryte.length > 0 && <div style={{ position: "absolute", top: 52, left: Math.max(0, (viacRef.current?.offsetLeft ?? 0) - 120), zIndex: 21, width: 280, padding: 8, borderRadius: 18, background: "var(--bg)", border: "1px solid var(--cardBd)", boxShadow: "0 16px 40px rgba(30,28,20,.2)", display: "flex", flexDirection: "column", gap: 2, animation: "spravaFade .15s ease both" }}>
+        {skryte.map((v) => (
+          <button key={v.id} onClick={() => { setOtv(false); otvor(v.id); }} style={{ minHeight: 46, padding: "0 10px", border: "none", borderRadius: 12, background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", gap: 10, textAlign: "left", fontSize: 14.5, fontWeight: 700, color: "var(--ink)" }} className="sc-hov">
+            <Ik d={v.d} s={18} />{v.t}
+          </button>))}
+      </div>}
+    </div>);
 }
 
 // ============================================================
