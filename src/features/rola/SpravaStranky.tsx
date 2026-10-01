@@ -247,10 +247,12 @@ export function SpravaStranky({ onBack, typ: typStranky = "charita", strankaId =
 
   // OPRAVY 121 · bod 9: rola prihláseného v tejto stránke (zatiaľ vždy hlavný správca — rolu doplní server zo správcov stránky)
   const rola: RolaStranky = "hlavny";
+  // OPRAVY 122 (2): centrálna zbierka charity — zatiaľ z ukážkových bežiacich zbierok (nová charita ju nemá); doplní server
+  const centralnaZbierka = !nova ? PH_ZBIERKY.filter((z) => /^Centrálna zbierka/.test(z.t)).map((z) => ({ id: `${strankaId}-centralna`, nazov: z.t, org: nazov, cislo: "" }))[0] ?? null : null;
   const [verejny, setVerejny] = useState(false); // OPRAVY 107: tlačidlo Verejný profil = skutočný verejný profil
   const otvor = (s: Sub) => { if (s === "x:Verejný profil") { setVerejny(true); return; }
     // OPRAVY 118/121: Pridať skutok = ten istý PridatSkutok, za charitu (organizacia: true)
-    if (s === "pridatSkutok") { if (!smieSkutokZaCharitu(rola)) { toast("Skutok za charitu pridá len správca alebo Organizátor."); return; } otvorPridatSkutok({ autor: nazov, organizacia: true, strankaId }); return; } if (s === sub) return; hist.current = [...hist.current, sub].slice(-30); setSub(s); };
+    if (s === "pridatSkutok") { if (!smieSkutokZaCharitu(rola)) { toast("Skutok za charitu pridá len správca alebo Organizátor."); return; } otvorPridatSkutok({ autor: nazov, organizacia: true, strankaId, centralna: centralnaZbierka }); return; } if (s === sub) return; hist.current = [...hist.current, sub].slice(-30); setSub(s); };
   const spat = () => {
     if (hist.current.length) { const h = [...hist.current]; const p = h.pop()!; hist.current = h; setSub(p); }
     else if (sub !== null) setSub(null);

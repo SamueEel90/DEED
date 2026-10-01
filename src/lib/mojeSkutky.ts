@@ -38,6 +38,8 @@ export interface MojSkutok {
   vytvoril?: string;
   /** záznam zmien z akcie za charitu (odobratí účastníci) — len vnútri charity */
   zaznam?: { cas: number; kto: string; co: string }[];
+  /** OPRAVY 122 (2): kam pôjdu peniaze zo skutku charity — zapečatené pri zverejnení (100 % na zbierku) */
+  peniaze?: "centralna" | "ina" | "bez";
 }
 
 export interface Ucastnik { meno: string; overeny: boolean }

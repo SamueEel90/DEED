@@ -16,6 +16,8 @@ export type PridatParams = {
   organizacia?: boolean;
   /** OPRAVY 121: id stránky charity (logo z uloženého profilu, úvod „Veríme vám" v účte stránky) */
   strankaId?: string;
+  /** OPRAVY 122 (2): centrálna zbierka charity (ak beží) — jedna z volieb „Kam pôjdu peniaze" */
+  centralna?: { id: string; nazov: string; org: string; cislo: string } | null;
   /** oznam „AI sa pýta · Odpovedať" → rovno krok otázok (so skutkom, ku ktorému sa AI pýta) */
   otazky?: string[];
   skutok?: { nazov: string; popis: string };
