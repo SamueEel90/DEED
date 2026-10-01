@@ -324,7 +324,7 @@ export function SpravaStranky({ onBack, typ: typStranky = "charita", strankaId =
       {hlavicka}
       <div key={String(sub)} style={{ padding: "14px 14px 28px", display: "flex", flexDirection: "column", gap: 14, animation: "spravaFade .2s ease both", width: "100%", maxWidth: tablet ? 880 : undefined, margin: tablet ? "0 auto" : undefined, boxSizing: "border-box" }}>
         {sub === null && <div style={{ display: "flex", gap: 10, alignItems: "stretch" }}>
-          <div style={{ flex: 1, minWidth: 0 }}><KartaCharity nazov={nazov} inicialy={inicialy} typ={typ} otvor={otvor} mobil /></div>
+          <div style={{ flex: tablet ? "0 1 560px" : 1, minWidth: 0 }}><KartaCharity nazov={nazov} inicialy={inicialy} typ={typ} otvor={otvor} mobil tablet={tablet} /></div>
           <KartaStitu stit={stit} sada={sada} onZoom={() => setZoom(true)} mobil />
         </div>}
         {obsah}
@@ -370,9 +370,20 @@ function Hlavicka({ titul, onSpat, otvor, mobil }: { titul: string; onSpat: () =
 // ============================================================
 // PANEL — karta charity, Nastavenia
 // ============================================================
-function KartaCharity({ nazov, inicialy, typ, otvor, mobil }: { nazov: string; inicialy: string; typ: TypStranky; otvor: (s: Sub) => void; mobil?: boolean }) {
+function KartaCharity({ nazov, inicialy, typ, otvor, mobil, tablet }: { nazov: string; inicialy: string; typ: TypStranky; otvor: (s: Sub) => void; mobil?: boolean; tablet?: boolean }) {
   const [otv, setOtv] = useState(true);
   const pct = 50;
+  // OPRAVY 100: tablet — 1 riadok (logo 44 · názov + percento + pruh pod textom · Upraviť vpravo), výšku určuje karta štítu
+  if (tablet) return (
+    <div style={{ height: "100%", boxSizing: "border-box", borderRadius: 18, background: "var(--cuBg)", border: "1.5px solid var(--cuBd)", boxShadow: "inset 0 1px 0 rgba(255,255,255,.45)", padding: "12px 16px", display: "flex", alignItems: "center", gap: 12 }}>
+      <span style={{ width: 44, height: 44, borderRadius: 11, background: "var(--white)", border: "1px solid var(--cardBd)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13.5, fontWeight: 800, color: "var(--gInk)", flex: "none" }}>{inicialy}</span>
+      <span style={{ flex: "0 1 auto", minWidth: 0, display: "flex", flexDirection: "column", gap: 6 }}>
+        <span><b style={{ display: "block", fontSize: 15, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{nazov}</b><span style={{ display: "block", fontSize: 12.5, color: "var(--cuInk2)" }}>{TYP_NAZOV[typ]} · profil hotový na {pct} %</span></span>
+        <Pruh sc={pct / 100} h={6} bg="rgba(168,116,80,.25)" />
+      </span>
+      <span style={{ flex: 1 }} />
+      <button onClick={() => otvor("x:Upraviť profil")} style={{ ...zeleneTl }}>Upraviť</button>
+    </div>);
   if (mobil) return (
     <div style={{ height: "100%", boxSizing: "border-box", borderRadius: 18, background: "var(--cuBg)", border: "1.5px solid var(--cuBd)", boxShadow: "inset 0 1px 0 rgba(255,255,255,.45)", padding: 12, display: "flex", flexDirection: "column", gap: 10 }}>
       <span style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
@@ -430,7 +441,7 @@ function MenuDlazdice({ otvor, nav, tablet, zbal, prepniZbal }: { otvor: (s: Sub
 const ZBAL_PREDVOLENE: Record<string, boolean> = { cisla: true, zbierky: true }; // ostatné zbalené
 const jeOtv = (z: Zbalenie, id: string) => z[id] ?? ZBAL_PREDVOLENE[id] ?? false;
 const pocet = (n: number, [a, b, c]: [string, string, string]) => `${n} ${n === 1 ? a : n >= 2 && n <= 4 ? b : c}`;
-function Sekcia({ id, nazov, suhrn, zbal, prepni, children }: { id: string; nazov: string; suhrn?: React.ReactNode; zbal: Zbalenie; prepni: (id: string) => void; children: React.ReactNode }) {
+function Sekcia({ id, nazov, suhrn, akcia, zbal, prepni, children }: { id: string; nazov: string; suhrn?: React.ReactNode; /** OPRAVY 100: ovládanie v riadku nadpisu (rozbalená sekcia) */ akcia?: React.ReactNode; zbal: Zbalenie; prepni: (id: string) => void; children: React.ReactNode }) {
   const otv = jeOtv(zbal, id);
   const sipka = <Ik d={IK.dole} s={18} w={2.4} style={{ transform: `rotate(${otv ? 180 : 0}deg)`, transition: "transform .2s ease" }} />;
   if (!otv) return (
@@ -439,6 +450,16 @@ function Sekcia({ id, nazov, suhrn, zbal, prepni, children }: { id: string; nazo
       {suhrn && <span style={{ fontSize: 13.5, fontWeight: 700, color: "var(--ink3)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{suhrn}</span>}
       {sipka}
     </button>);
+  if (akcia) return (<>
+    <div style={{ display: "flex", alignItems: "center", gap: 6, width: "100%", marginBottom: -6 }}>
+      <button onClick={() => prepni(id)} aria-expanded style={{ flex: 1, minWidth: "fit-content", minHeight: 44, padding: "0 4px", border: "none", background: "transparent", display: "flex", alignItems: "center", cursor: "pointer", textAlign: "left" }}>
+        <span style={{ ...nadpisSekcie, padding: 0 }}>{nazov.toUpperCase()}</span>
+      </button>
+      {akcia}
+      <button onClick={() => prepni(id)} tabIndex={-1} aria-hidden="true" style={{ flex: "none", width: 26, minHeight: 44, padding: 0, border: "none", background: "transparent", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>{sipka}</button>
+    </div>
+    {children}
+  </>);
   return (<>
     <button onClick={() => prepni(id)} aria-expanded style={{ minHeight: 44, padding: "0 4px", border: "none", background: "transparent", display: "flex", alignItems: "center", gap: 8, cursor: "pointer", textAlign: "left", width: "100%", marginBottom: -6 }}>
       <span style={{ ...nadpisSekcie, padding: 0, flex: 1 }}>{nazov.toUpperCase()}</span>{sipka}
@@ -512,19 +533,23 @@ function Prehlad({ tier: _tier, piny, prepniPin, otvorPolozku, otvor, nova, stit
   }, [mobil]);
   const ulohy = nova ? [] : ULOHY;
 
+  // OPRAVY 100: na mobile a tablete je prepínač období + ikona grafu v riadku nadpisu sekcie „ČÍSLA"
+  const obdPrepinac = (
+    <div role="tablist" aria-label="Obdobie" style={{ flex: "none", display: "flex", gap: 2, padding: 3, borderRadius: 12, background: "var(--btn)" }}>
+      {OBD.map((t, i) => { const on = i === obd; return (
+        <button key={t} role="tab" aria-selected={on} onClick={() => setObd(i)} style={{ height: mobil ? 44 : 28, minWidth: mobil ? 44 : undefined, padding: ph ? "0 6px" : "0 12px", border: "none", borderRadius: 9, cursor: "pointer", whiteSpace: "nowrap", fontSize: ph ? 12.5 : 13, fontWeight: on ? 800 : 700, background: on ? "var(--seg)" : "transparent", color: on ? "var(--ink)" : "var(--ink3)", boxShadow: on ? "0 1px 3px rgba(30,28,20,.14)" : "none" }}>{t}</button>); })}
+    </div>);
+  const grafTl = (
+    <button onClick={() => setGraf((g) => !g)} aria-label="Graf darov" aria-expanded={graf} title="Graf darov" style={{ flex: "none", width: mobil ? 44 : 34, height: mobil ? 44 : 34, borderRadius: 10, border: `1.5px solid ${graf ? "var(--cuBd)" : "var(--cardBd)"}`, background: graf ? "var(--accSoft)" : "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <Ik d="M4 20V10M10 20V4M16 20v-7M22 20H2" s={18} w={2} />
+    </button>);
+  const cislaAkcia = <>{obdPrepinac}{grafTl}</>;
   const cisla = (
     <section aria-label="Čísla" style={{ flex: 1, minWidth: 0, height: mobil ? undefined : vyska, boxSizing: "border-box", borderRadius: 18, background: "var(--card)", border: "1px solid var(--cardBd)", padding: mobil ? 12 : "10px 16px", display: "flex", flexDirection: "column", gap: mobil ? 10 : 4 }}>
-      <div style={{ flex: "none", display: "flex", alignItems: "center", gap: 10 }}>
-        {!mobil && <b style={{ flex: 1, fontSize: 15 }}>Čísla</b>}
-        {tablet && <span style={{ flex: 1 }} />}
-        <div role="tablist" aria-label="Obdobie" style={{ flex: ph ? 1 : "none", display: ph ? "grid" : "flex", gridTemplateColumns: "repeat(4,1fr)", gap: 2, padding: 3, borderRadius: 12, background: "var(--btn)" }}>
-          {OBD.map((t, i) => { const on = i === obd; return (
-            <button key={t} role="tab" aria-selected={on} onClick={() => setObd(i)} style={{ height: mobil ? 44 : 28, padding: "0 12px", border: "none", borderRadius: 9, cursor: "pointer", whiteSpace: "nowrap", fontSize: 13, fontWeight: on ? 800 : 700, background: on ? "var(--seg)" : "transparent", color: on ? "var(--ink)" : "var(--ink3)", boxShadow: on ? "0 1px 3px rgba(30,28,20,.14)" : "none" }}>{t}</button>); })}
-        </div>
-        <button onClick={() => setGraf((g) => !g)} aria-label="Graf darov" aria-expanded={graf} title="Graf darov" style={{ flex: "none", width: mobil ? 44 : 34, height: mobil ? 44 : 34, borderRadius: 10, border: `1.5px solid ${graf ? "var(--cuBd)" : "var(--cardBd)"}`, background: graf ? "var(--accSoft)" : "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <Ik d="M4 20V10M10 20V4M16 20v-7M22 20H2" s={18} w={2} />
-        </button>
-      </div>
+      {!mobil && <div style={{ flex: "none", display: "flex", alignItems: "center", gap: 10 }}>
+        <b style={{ flex: 1, fontSize: 15 }}>Čísla</b>
+        {obdPrepinac}{grafTl}
+      </div>}
       <div style={{ flex: 1, minHeight: 0, display: "grid", gridTemplateColumns: ph ? "repeat(2,minmax(0,1fr))" : "repeat(4,minmax(0,1fr))", gridAutoRows: mobil ? "auto" : "1fr", columnGap: 16 }}>
         {K8.map((k, i) => {
           const [v, d] = nova ? [N8[i], ""] : D8[obd][i];
@@ -647,7 +672,7 @@ function Prehlad({ tier: _tier, piny, prepniPin, otvorPolozku, otvor, nova, stit
     const retazS = <Sekcia id="retaz" nazov="Reťaz dobra" suhrn={nova ? "0 €" : "640 €"} zbal={zbal} prepni={prepniZbal}>{retazEl}</Sekcia>;
     const dorS = <Sekcia id="dorovnanie" nazov="Dorovnávané zbierky" suhrn={nova ? undefined : "1 beží"} zbal={zbal} prepni={prepniZbal}>{dorEl}</Sekcia>;
     return (<>
-      <Sekcia id="cisla" nazov="Čísla" suhrn={`Vyzbierané ${vyz} ${obdTxt}`} zbal={zbal} prepni={prepniZbal}>{cisla}</Sekcia>
+      <Sekcia id="cisla" nazov="Čísla" suhrn={`Vyzbierané ${vyz} ${obdTxt}`} akcia={cislaAkcia} zbal={zbal} prepni={prepniZbal}>{cisla}</Sekcia>
       <Sekcia id="graf" nazov="Graf darov" suhrn={`${(nova ? 0 : GRAF_CIEL[obd]).toLocaleString("sk-SK")} € ${obdTxt}`} zbal={zbal} prepni={prepniZbal}>{grafEl}</Sekcia>
       <Sekcia id="piny" nazov="Pripnuté" suhrn={pocet(pinyV.length, ["položka", "položky", "položiek"])} zbal={zbal} prepni={prepniZbal}>{pinBar}</Sekcia>
       {treba}{zbierky}
