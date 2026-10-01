@@ -22,7 +22,7 @@ export function Sidebar({ moduly, aktivny, onModul, onViac, onPenazenka }: {
     <nav aria-label="Hlavné moduly" className="sc-tokeny sc-side" style={{ width: 104, flex: "0 0 auto", height: "100%", display: "flex", flexDirection: "column", alignItems: "center", gap: 2, padding: "14px 0", background: "var(--panel)", borderRight: "1px solid var(--accLine)", zIndex: 20 }}>
       {/* logo — nové QR logo (klik → QR na celú obrazovku) */}
       <div style={{ flex: "none", display: "flex", justifyContent: "center", marginBottom: 6 }}>
-        <Znacka size={56} logoQr />
+        <Znacka size={60} logoQr />
       </div>
 
       {/* navigácia modulov */}
