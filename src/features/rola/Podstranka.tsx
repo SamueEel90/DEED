@@ -1,7 +1,7 @@
 import { Emo } from "@/components/icons";
 import { StityRad } from "@/components/stit";
 import { stityOblastiSubjektu } from "@/lib/stityOblasti";
-import { Fragment, useRef, useState, type CSSProperties } from "react";
+import { Fragment, useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { C, SPACE, RADIUS, SIRKA } from "@/theme";
 import {
   BackHeader, PlatobnyModul, PlatbaModal, ProgresBox, QrModal, naStitLevel, tint,
@@ -40,6 +40,10 @@ import { DokazBlok, MediaNahlad } from "./DokazBlok";
 import { nacitajViditelnost, nacitajTerminal, nacitajKryptoOrg, nacitajCentralnu, nacitajSady, nacitajOnas, nacitajTvarLoga, nacitajZdrojAvatara, nacitajLogo, nacitajPoziciu, type Pozicia, type Tier } from "./stav";
 import { OnasKratky } from "./OnasKratky";
 import { KontaktBlok, nacitajKontakt } from "./kontakt";
+import { nacitajProfil as nacitajProfilStranky, profilZPamate, type ProfilStranky } from "@/lib/profilStranky";
+import { Titulka } from "./titulka";
+import { FormatovanyText } from "@/components/formattext";
+import { cistyText } from "@/lib/richtext";
 import { verejneTaby, cislaSubjektu } from "./obsah";
 import { ZbierkaModul } from "@/features/zbierka/ZbierkaModul";
 import type { OrgPole, StitUroven } from "@/features/zbierka/Pole";
@@ -98,13 +102,23 @@ function PodporiliFirmy({ zbierkaId, onFirma }: { zbierkaId: string; onFirma: (f
   );
 }
 
-export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
+export function Podstranka({ pozicia, tier = 0, logo, toast, onBack, strankaId = pozicia === "charita" ? "svetlo" : undefined, profilNahlad, lista }: {
   pozicia: Pozicia; tier?: Tier; logo: string | null; toast: (m: string) => void; onBack: () => void;
+  /** OPRAVY 107: stránka, ktorej uložený profil (Upraviť profil) sa ukáže */
+  strankaId?: string;
+  /** Náhľad: neuložený koncept namiesto uloženého profilu */
+  profilNahlad?: ProfilStranky;
+  /** lišta hore (Náhľad / Profil uložený / Takto vidí váš profil…) namiesto hlavičky Späť */
+  lista?: ReactNode;
 }) {
   const { wide, desktop } = useLayout();
   const siroke = wide || desktop;   // tablet a PC → mriežka kariet ako vo feede
   const ja = usePouzivatel();
   const s = SUBJEKTY[pozicia];
+  // OPRAVY 107: uložený profil zo správy (lib/profilStranky); staré úložisko len záloha, kým nie je nič uložené
+  const [ulozeny, setUlozeny] = useState<ProfilStranky | null>(() => (strankaId ? profilZPamate(strankaId).ulozeny : null));
+  useEffect(() => { if (!strankaId) return; let ziva = true; void nacitajProfilStranky(strankaId).then((z) => { if (ziva) setUlozeny(z.ulozeny); }); return () => { ziva = false; }; }, [strankaId]);
+  const pr = profilNahlad ?? ulozeny;
   const stit = naStitLevel(ZASLUZENA[pozicia].badge);
   // tvorca vystupuje pod profilovou fotkou osoby, charita/B2B pod logom subjektu
   const fotoOsoby = pozicia === "tvorca" && nacitajZdrojAvatara(pozicia) === "foto"; // tvorca: fotka alebo logo značky
@@ -211,7 +225,7 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
   const [platba, setPlatba] = useState<Kanal | null>(null);
   useZmenyDarov(); // prekreslí sumy po každom dare
   const registrovany = ja.typ !== "pasivny";
-  const logoOrg = nacitajLogo(pozicia) ?? s.foto;
+  const logoOrg = (pr ? pr.logo : null) ?? nacitajLogo(pozicia) ?? s.foto;
   const profilCentralnej = nacitajProfil(CENTRALNA_ID) ?? { nazov: `${s.nazov} — celá organizácia`, popis: "" };
   const [platbaRef, setPlatbaRef] = useState<{ id: string; komu: string } | null>(null);
   // zápis daru → zoznam darcov + súčty (registrovaný so zvoleným menom, inak anonym)
@@ -684,9 +698,9 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
   );
 
   // O nás priamo pod hlavičkou — 2–3 riadky, zvyšok na „viac“
-  const oNasKratky = <OnasKratky text={onas} />;
+  const oNasKratky = pr ? <OnasProfil onas={pr.onas} onas2={pr.onas2} /> : <OnasKratky text={onas} />;
 
-  const oNasBlok = <KontaktBlok k={nacitajKontakt(pozicia)} vodorovne={siroke} />;
+  const oNasBlok = <KontaktBlok k={pr?.kontakt ?? nacitajKontakt(pozicia)} vodorovne={siroke} />;
 
   const terminalBlok = pozicia === "tvorca" && terminalOn && (
     <div {...pressable(() => toast("Priamy príspevok tvorcovi"), "Podporiť tvorcu")}
@@ -697,9 +711,13 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
 
   const telo = (
     <div style={{ padding: `0 ${SPACE.md}px` }}>
-      <EntityHero avatarTvar={fotoOsoby ? "kruh" : nacitajTvarLoga(pozicia)}
-        avatar={avatarSrc ? <img src={avatarSrc} alt={s.nazov} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : (pozicia === "tvorca" ? s.iniciacky : s.iniciacky)}
+      <EntityHero avatarTvar={fotoOsoby ? "kruh" : pr ? pr.tvar : nacitajTvarLoga(pozicia)}
+        avatarPozadie={pr && !fotoOsoby ? (pr.logo ? (pr.logoPozadie === "tmave" ? "#15171c" : pr.logoPozadie === "priehladne" ? undefined : "#fff") : "#fff") : undefined}
+        avatar={pr && !fotoOsoby
+          ? (pr.logo ? <img src={pr.logo} alt={s.nazov} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <span style={{ color: "var(--a-green)" }}>{s.iniciacky}</span>)
+          : avatarSrc ? <img src={avatarSrc} alt={s.nazov} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : s.iniciacky}
         cover={coverSrc}
+        coverVlastny={pr ? <Titulka cover={pr.cover} ram={pr.ram} radius={RADIUS.md} /> : undefined}
         coverEl={<span style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 46, opacity: .45 }}><Emo e={s.emoji} /></span>}
         meno={s.nazov} overene={s.overena} overeneLabel="Overený subjekt — identita potvrdená"
         podtitul={<span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}><IkonaPin size={11} color={C.textTer} /> {s.lok}</span>}
@@ -737,9 +755,9 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
 
   return (
     <div style={{ paddingBottom: SPACE.lg, color: C.text }}>
-      <BackHeader onBack={onBack}>
+      {lista ?? <BackHeader onBack={onBack}>
         <span style={{ fontSize: 12, color: C.textSec }}>{s.nazov}</span>
-      </BackHeader>
+      </BackHeader>}
       <div style={{ height: SPACE.sm }} />
       {obalSiroky(telo, { desktop, maxDesktop: SIRKA.plocha })}
 
@@ -767,6 +785,25 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
         odkaz={qrUrl("case", qrZbierka.id)} onClose={() => setQrZbierka(null)} toast={toast} />}
       {qr && <QrModal typ="skutok" titul={`QR — ${s.nazov}`} popis="Profil subjektu — QR aj embed odznak na vlastný web"
         odkaz={qrUrl("handle", s.nazov.toLowerCase().replace(/[^a-z0-9]+/g, "-"))} onClose={() => setQr(false)} toast={toast} />}
+    </div>
+  );
+}
+
+/** OPRAVY 107: O nás z Upraviť profil — hlavný text celý, pokračovanie po „viac" */
+function OnasProfil({ onas, onas2 }: { onas: string; onas2: string }) {
+  const [viac, setViac] = useState(false);
+  const maViac = !!cistyText(onas2).trim();
+  if (!cistyText(onas).trim() && !maViac) return null;
+  return (
+    <div style={{ fontSize: 13, lineHeight: 1.5, color: C.textSec }}>
+      <FormatovanyText text={onas} />
+      {maViac && viac && <div style={{ marginTop: 6 }}><FormatovanyText text={onas2} /></div>}
+      {maViac && (
+        <span {...pressable(() => setViac((v) => !v), viac ? "Zbaliť" : "Zobraziť viac")}
+          style={{ display: "inline-block", marginTop: 2, fontSize: 12.5, fontWeight: 700, color: "var(--a-green)", cursor: "pointer" }}>
+          {viac ? "menej" : "viac"}
+        </span>
+      )}
     </div>
   );
 }

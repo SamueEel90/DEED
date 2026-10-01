@@ -7,27 +7,21 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { RichTextInput } from "@/components/richtext";
+import { Titulka, RAMY, pomerFotky } from "./titulka";
 import { OrezFotky } from "@/components/orezfotky";
 import { toast } from "@/components/toast";
 import { spracujLogo, spracujFotku, rozmeryFotky, LOGO_CFG, COVER_CFG, type LogoRezim, type LogoPozadie } from "@/lib/obrazok";
 import { nacitajProfil, profilZPamate, ulozKoncept, zverejniProfil, type ProfilStranky, type RamFotky, type TitulnaFotka, type VyrezFotky } from "@/lib/profilStranky";
 import { SIDLO_REGISTRA, ICO_REGISTRA } from "./NastaveniaCharity";
 import { nacitajKontakt, SIETE, MAX_TEL, MAX_EMAIL, chybaSiete, chybaWebu, chybaEmailu, chybaTel, type Kontakt } from "./kontakt";
-import { TYP_NAZOV, type Pozicia, type TvarLoga, type TypStranky } from "./stav";
+import { type Pozicia, type Tier, type TvarLoga } from "./stav";
+import { Podstranka } from "./Podstranka";
 
+// IČO a sídlo z Údajov organizácie (ten istý zdroj, OPRAVY 108)
 // ---------- konštanty z karty 33 ----------
 const ONAS_RIADKY = 12;
 const ONAS_ZNAKY = 1500;
 const NASTROJE = ["bold", "italic", "nadpis", "vacsie", "mensie", "insertUnorderedList", "insertOrderedList", "odkaz", "diktovat", "tx", "spat"];
-export const RAMY: { k: RamFotky; t: string; g: string }[] = [
-  { k: "bez", t: "Bez rámu", g: "repeating-linear-gradient(45deg,#fff 0 4px,var(--card) 4px 8px)" },
-  { k: "br", t: "Bronzový", g: "linear-gradient(135deg,#4A2A14 0%,#7A4A24 22%,#B97D45 45%,#E6B784 58%,#A86E3A 72%,#6A3E1E 88%,#3E2210 100%)" },
-  { k: "bb", t: "Bordovo-bronzový", g: "linear-gradient(135deg,#4E1620 0%,#7A2430 26%,#B97D45 50%,#E6B784 62%,#9A6232 76%,#5E1A24 100%)" },
-  { k: "zb", t: "Zeleno-bronzový", g: "linear-gradient(135deg,#1E3627 0%,#2F5A3C 26%,#B97D45 50%,#E6B784 62%,#9A6232 76%,#22402E 100%)" },
-];
-/** údaje z registrácie (zamknuté) — TODO: napojiť na tabuľku organizacia (nazov, ico, sidlo) */
-// IČO a sídlo z Údajov organizácie (ten istý zdroj, OPRAVY 108)
-
 /** profil pred prvým uložením = úplne prázdny (Martin 1. 10. 2026), zo registrácie len zamknuté sídlo */
 export function zakladnyProfil(p: Pozicia): ProfilStranky {
   const k = nacitajKontakt(p);
@@ -39,37 +33,6 @@ export function zakladnyProfil(p: Pozicia): ProfilStranky {
   };
 }
 
-// ---------- titulná fotka: pomer 16 : 9 až 3 : 1, výrez ako čísla ----------
-export const pomerFotky = (w: number, h: number) => (w && h ? Math.max(16 / 9, Math.min(3, w / h)) : 16 / 9);
-/** poloha obrázka v ráme v % (rovnaká geometria ako OrezFotky → PC, tablet aj mobil vyzerajú rovnako) */
-function geometria(c: TitulnaFotka, ar: number) {
-  const r = c.w / c.h; // pomer obrázka
-  const v = c.vyrez;
-  if (v.rezim === "cela") {
-    const w = Math.min(1, r / ar), h = (w / r) * ar; // šírka v % rámu, výška v % rámu
-    return { w, h, l: (1 - w) / 2, t: (1 - h) / 2 };
-  }
-  const w = Math.max(1, r / ar) * v.zoom, h = (w / r) * ar;
-  return { w, h, l: -(w - 1) * v.x, t: -(h - 1) * v.y };
-}
-export function Titulka({ cover, ram, radius = 14, prazdne, zony, style }: { cover: TitulnaFotka | null; ram: RamFotky; radius?: number; prazdne?: ReactNode; zony?: boolean; style?: CSSProperties }) {
-  const ar = cover ? pomerFotky(cover.w, cover.h) : 16 / 9;
-  const g = cover && geometria(cover, ar);
-  const ramG = RAMY.find((x) => x.k === ram && x.k !== "bez")?.g;
-  return (
-    <div style={{ position: "relative", aspectRatio: String(ar), borderRadius: radius, overflow: "hidden", background: cover ? cover.priemer : "repeating-linear-gradient(135deg,var(--track) 0 12px,var(--btn) 12px 24px)", ...style }}>
-      {cover && g && <img src={cover.src} alt="" draggable={false} style={{ position: "absolute", left: `${g.l * 100}%`, top: `${g.t * 100}%`, width: `${g.w * 100}%`, height: `${g.h * 100}%`, maxWidth: "none", display: "block" }} />}
-      {!cover && prazdne}
-      {ramG && <>
-        <span aria-hidden="true" style={{ position: "absolute", inset: 0, zIndex: 3, pointerEvents: "none", borderRadius: radius, padding: 9, background: ramG, WebkitMask: "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)", WebkitMaskComposite: "xor", maskComposite: "exclude", boxShadow: "inset 0 0 0 1px rgba(255,255,255,.35)" }} />
-        <span aria-hidden="true" style={{ position: "absolute", inset: 9, zIndex: 3, pointerEvents: "none", borderRadius: Math.max(4, radius - 9), boxShadow: "inset 0 0 8px rgba(0,0,0,.35)" }} />
-      </>}
-      {zony && <>
-        <span aria-hidden="true" style={{ position: "absolute", zIndex: 4, left: 14, bottom: 12, width: 56, height: 56, borderRadius: 14, border: "1.5px dashed rgba(255,255,255,.8)", pointerEvents: "none" }} />
-        <span aria-hidden="true" style={{ position: "absolute", zIndex: 4, right: 14, bottom: 12, width: 44, height: 52, borderRadius: 10, border: "1.5px dashed rgba(255,255,255,.8)", pointerEvents: "none" }} />
-      </>}
-    </div>);
-}
 async function priemernaFarba(src: string): Promise<string> {
   return new Promise((ok) => {
     const i = new Image();
@@ -109,9 +72,9 @@ const Pridat = ({ onClick, children }: { onClick: () => void; children: ReactNod
 const cas = (iso: string) => new Date(iso).toLocaleTimeString("sk-SK", { hour: "2-digit", minute: "2-digit" });
 
 // ============================================================
-export function UpravitProfilCharity({ strankaId, pozicia, typ, nazov, inicialy, mobil, tablet, stit, stitObr, stitNazov, onZrusit, onHotovo, onUlozene }: {
-  strankaId: string; pozicia: Pozicia; typ: TypStranky; nazov: string; inicialy: string; mobil: boolean; tablet: boolean;
-  stit: string; stitObr: string; stitNazov: string;
+export function UpravitProfilCharity({ strankaId, pozicia, tier, nazov, inicialy, mobil, tablet, stit, onZrusit, onHotovo, onUlozene }: {
+  strankaId: string; pozicia: Pozicia; tier: Tier; nazov: string; inicialy: string; mobil: boolean; tablet: boolean;
+  stit: string;
   onZrusit: () => void; onHotovo: () => void; onUlozene: (p: ProfilStranky) => void;
 }) {
   const z0 = profilZPamate(strankaId);
@@ -184,17 +147,18 @@ export function UpravitProfilCharity({ strankaId, pozicia, typ, nazov, inicialy,
     return `Fotka má ${rozmer.w} × ${rozmer.h} px${rozmazana ? " — bude rozmazaná" : ""}${tvar ? `${rozmazana ? " a" : " —"} nemá tvar 16 : 9, časť sa oreže` : ""}. Najlepšia je fotka na šírku, aspoň 1600 × 900 px, bez textu.`;
   })();
 
-  // ---------- NÁHĽAD / PROFIL ULOŽENÝ ----------
+  // ---------- NÁHĽAD / PROFIL ULOŽENÝ = skutočný verejný profil s lištou (OPRAVY 107) ----------
   if (pohlad !== "uprava") return (
-    <VerejnyProfil p={p} nazov={nazov} inicialy={inicialy} typ={typ} mobil={mobil} stitObr={stitObr} stitNazov={stitNazov} stit={stit}
+    <VerejnyProfilOkno pozicia={pozicia} tier={tier} strankaId={strankaId} stit={stit} mobil={mobil}
+      profil={pohlad === "nahlad" ? p : undefined} ulozene={pohlad === "nahlad" ? "nie" : "ano"}
+      onZavri={() => (pohlad === "nahlad" ? setPohlad("uprava") : onHotovo())}
       lista={pohlad === "nahlad"
-        ? <><b style={{ flex: mobil ? "1 1 100%" : 1, minWidth: 0, fontSize: 14.5, color: "var(--cuInk, #5E4A12)" }}>Náhľad. Zatiaľ nič nie je uložené.</b>
+        ? <><b style={{ flex: mobil ? "1 1 100%" : 1, minWidth: 0, fontSize: 14.5, color: "#5E4A12" }}>Náhľad. Zatiaľ nič nie je uložené.</b>
             <button type="button" onClick={() => setPohlad("uprava")} style={tl("sive", 44)}>Späť na úpravu</button>
             <button type="button" onClick={() => void uloz()} disabled={!mozeUlozit} style={{ ...tl("zelene", 44), opacity: mozeUlozit ? 1 : 0.45 }}>Uložiť profil</button></>
         : <><b style={{ flex: mobil ? "1 1 100%" : 1, minWidth: 0, fontSize: 14.5, color: "var(--gInk)" }}>Profil uložený. Takto ho vidia ľudia.</b>
             <button type="button" onClick={() => setPohlad("uprava")} style={{ ...tl("obrys", 44), border: "none", color: "var(--gInk)", padding: "0 10px" }}>Upraviť</button>
-            <button type="button" onClick={onHotovo} style={tl("zelene", 44)}>Hotovo</button></>}
-      ulozene={pohlad === "ulozene"} />
+            <button type="button" onClick={onHotovo} style={tl("zelene", 44)}>Hotovo</button></>} />
   );
 
   // ---------- ÚPRAVA ----------
@@ -373,63 +337,22 @@ export function UpravitProfilCharity({ strankaId, pozicia, typ, nazov, inicialy,
 const PH_SIETE: Partial<Record<string, string>> = { facebook: "facebook.com/…", instagram: "instagram.com/…", youtube: "youtube.com/@…", tiktok: "tiktok.com/@…", linkedin: "linkedin.com/company/…", x: "x.com/…" };
 
 // ============================================================
-// VEREJNÝ PROFIL — Náhľad a Profil uložený (na celú obrazovku s lištou)
+// OPRAVY 107: Náhľad, Profil uložený aj tlačidlo Verejný profil = SKUTOČNÝ verejný profil (Podstranka)
+// na celú obrazovku, len s lištou hore. Druhý vzhľad verejného profilu neexistuje.
 // ============================================================
-function VerejnyProfil({ p, nazov, inicialy, typ, mobil, stitObr, stitNazov, lista, ulozene, stit }: {
-  p: ProfilStranky; nazov: string; inicialy: string; typ: TypStranky; mobil: boolean; stitObr: string; stitNazov: string; lista: ReactNode; ulozene: boolean; stit: string;
+export function VerejnyProfilOkno({ pozicia, tier, strankaId, stit, profil, lista, ulozene, mobil, onZavri }: {
+  pozicia: Pozicia; tier: Tier; strankaId: string; stit: string; profil?: ProfilStranky;
+  lista: ReactNode; ulozene?: "ano" | "nie" | "info"; mobil: boolean; onZavri: () => void;
 }) {
-  const [viac, setViac] = useState(false);
-  const maViac = useMemo(() => !!p.onas2.replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ").trim(), [p.onas2]);
-  const radius = p.tvar === "kruh" ? "50%" : "22%";
-  const logoPoz = p.logoPozadie === "tmave" ? "#15171c" : p.logoPozadie === "priehladne" ? "var(--card)" : "#fff";
-  const mesto = (p.kontakt.adresaVerejna || p.kontakt.sidlo).split(",").pop()?.replace(/\d{3}\s?\d{2}/, "").trim() || "";
-  useEffect(() => { document.querySelector(".sprava-verejny")?.scrollTo?.({ top: 0 }); }, []);
-  // portál do body — na celú obrazovku aj ponad bočný panel appky
-  return createPortal(
-    <div className="sprava-charity sprava-verejny" data-stit={stit} role="dialog" aria-modal="true" aria-label="Verejný profil" style={{ position: "fixed", inset: 0, zIndex: 200, display: "flex", flexDirection: "column", background: "var(--bg)", overflowY: "auto" }}>
-      <div style={{ position: "sticky", top: 0, zIndex: 5, flex: "none", padding: mobil ? "10px 12px" : "12px 24px", background: "#2A2E26" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", padding: "10px 14px", borderRadius: 14, background: ulozene ? "var(--gSoft)" : "var(--goldBg)", border: ulozene ? "1.5px solid var(--gBd)" : "1.5px dashed var(--goldBd)" }}>{lista}</div>
-      </div>
-      <div style={{ width: "100%", maxWidth: 1100, margin: "0 auto", boxSizing: "border-box", padding: mobil ? "14px 12px 40px" : "22px 32px 40px" }}>
-        <section style={{ borderRadius: 22, background: "var(--card)", border: "1px solid var(--cardBd)", overflow: "hidden" }}>
-          <div style={{ display: mobil ? "block" : "grid", gridTemplateColumns: "minmax(0,1.55fr) minmax(0,1fr)", gap: 14, padding: mobil ? 10 : 14 }}>
-            <Titulka cover={p.cover} ram={p.ram} radius={16} prazdne={<span style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700, color: "var(--ink3)" }}>bez titulnej fotky</span>} style={{ boxShadow: "0 6px 18px rgba(30,28,20,.14)" }} />
-            {!mobil && <div style={{ padding: "14px 18px", display: "flex", alignItems: "center", gap: 16, borderRadius: 16, background: "var(--field)", border: "1px solid var(--cardBd)" }}>
-              <img src={stitObr} alt="" style={{ width: 60, height: "auto", flex: "none", filter: "drop-shadow(0 6px 12px rgba(0,0,0,.25))" }} />
-              <span><span style={{ display: "block", fontSize: 12, fontWeight: 800, letterSpacing: ".08em", color: "#8A5A2B" }}>ŠTÍT</span><b style={{ display: "block", fontSize: 22 }}>{stitNazov}</b><span style={{ fontSize: 13.5, color: "var(--ink3)" }}>{TYP_NAZOV[typ]} · overená cez IČO</span></span>
-            </div>}
-          </div>
-          <div style={{ padding: mobil ? "0 16px 18px" : "0 28px 22px", display: "flex", flexDirection: "column", gap: 12 }}>
-            <div style={{ display: "flex", alignItems: "flex-end", gap: 16, marginTop: mobil ? -36 : -48, paddingLeft: mobil ? 8 : 18, minWidth: 0 }}>
-              <span style={{ position: "relative", zIndex: 5, width: mobil ? 76 : 112, height: mobil ? 76 : 112, flex: "none", borderRadius: radius, border: "5px solid var(--card)", overflow: "hidden", background: p.logo ? logoPoz : "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: mobil ? 24 : 34, fontWeight: 800, color: "var(--gInk)", boxShadow: "0 4px 14px rgba(30,28,20,.14)" }}>
-                {p.logo ? <img src={p.logo} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} /> : inicialy}
-              </span>
-              <span style={{ minWidth: 0, paddingBottom: 8 }}>
-                <span style={{ display: "block", fontSize: mobil ? 19 : 26, fontWeight: 800, lineHeight: 1.2 }}>{nazov}</span>
-                {mesto && <span style={{ fontSize: 15, color: "var(--ink3)" }}>{mesto}</span>}
-              </span>
-            </div>
-            {p.onas.replace(/<[^>]*>/g, "").trim() && <div className="ftext" style={{ fontSize: 15, lineHeight: 1.55, color: "var(--ink2)" }} dangerouslySetInnerHTML={{ __html: p.onas }} />}
-            {maViac && (viac
-              ? <div className="ftext" style={{ fontSize: 15, lineHeight: 1.55, color: "var(--ink2)" }} dangerouslySetInnerHTML={{ __html: p.onas2 }} />
-              : <button type="button" onClick={() => setViac(true)} style={{ alignSelf: "flex-start", minHeight: 44, border: "none", background: "transparent", padding: 0, cursor: "pointer", fontFamily: "inherit", fontSize: 15, fontWeight: 800, color: "var(--green)" }}>viac</button>)}
-            <KontaktVerejny k={p.kontakt} />
-          </div>
-        </section>
-      </div>
-    </div>, document.body);
-}
-function KontaktVerejny({ k }: { k: Kontakt }) {
-  const riadky: [string, string][] = [
-    ...(k.adresaVerejna.trim() ? [["Adresa", k.adresaVerejna] as [string, string]] : []),
-    ...k.telefony.filter((t) => t.cislo.trim()).map((t) => [t.popis || "Telefón", t.cislo] as [string, string]),
-    ...k.emaily.filter((e) => e.adresa.trim()).map((e, i) => [i === 0 ? "E-mail" : e.popis || "E-mail", e.adresa] as [string, string]),
-    ...(k.web.trim() ? [["Web", k.web] as [string, string]] : []),
-    ...SIETE.filter((s) => k.siete[s.k]?.trim()).map((s) => [s.label, k.siete[s.k]!] as [string, string]),
-  ];
-  if (!riadky.length) return null;
-  return (
-    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(220px,1fr))", gap: 8, marginTop: 4 }}>
-      {riadky.map(([t, v], i) => <span key={i} style={{ padding: "10px 12px", borderRadius: 14, background: "var(--field)", minWidth: 0 }}><span style={{ display: "block", fontSize: 12, color: "var(--ink3)" }}>{t}</span><b style={{ display: "block", fontSize: 14.5, overflowWrap: "anywhere" }}>{v}</b></span>)}
+  useEffect(() => { const k = (e: KeyboardEvent) => { if (e.key === "Escape") onZavri(); }; window.addEventListener("keydown", k); return () => window.removeEventListener("keydown", k); }, [onZavri]);
+  const druh = ulozene ?? "info";
+  const pas = (
+    <div className="sprava-charity" data-stit={stit} style={{ position: "sticky", top: 0, zIndex: 50, padding: mobil ? "10px 12px" : "12px 24px", background: "#2A2E26" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", padding: "10px 14px", borderRadius: 14,
+        background: druh === "ano" ? "var(--gSoft)" : druh === "nie" ? "var(--goldBg)" : "var(--bg)", border: druh === "ano" ? "1.5px solid var(--gBd)" : druh === "nie" ? "1.5px dashed var(--goldBd)" : "1.5px solid transparent" }}>{lista}</div>
     </div>);
+  return createPortal(
+    <div role="dialog" aria-modal="true" aria-label="Verejný profil" style={{ position: "fixed", inset: 0, zIndex: 200, overflowY: "auto", background: "var(--c-bg)" }}>
+      <Podstranka pozicia={pozicia} tier={tier} logo={null} toast={toast} onBack={onZavri} strankaId={strankaId} profilNahlad={profil} lista={pas} />
+    </div>, document.body);
 }

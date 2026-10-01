@@ -30,8 +30,6 @@ export const SPRAVA_ZBIERKY_CFG = {
   vyzvaDni: 3,
   /** 3 nedoložené zbierky = pozastavenie */
   strikesPozastavenie: 3,
-  /** max priebežných správ pre darcov počas zbierky (placeholder) */
-  maxSprav: 3,
   /** karma za dôkaz navyše (placeholder) */
   karmaNavyse: 5,
 };
@@ -39,13 +37,13 @@ export const SPRAVA_ZBIERKY_CFG = {
 export type Lehota = "30" | "priebezne" | "60";
 
 /** pásma podľa REÁLNE vyzbieranej sumy (nie cieľa) — povinné minimum dokladovania */
-export type Poziadavka = "text" | "foto" | "rozpis" | "uctenky" | "doklady100" | "potvrdenie" | "spravy";
+export type Poziadavka = "text" | "foto" | "rozpis" | "uctenky" | "doklady100" | "potvrdenie";
 export const PASMA_DOKLADOV: { do: number; label: string; povinne: Poziadavka[] }[] = [
   { do: 150, label: "do 150 €", povinne: ["text", "foto"] },
   { do: 500, label: "150 – 500 €", povinne: ["text", "foto"] },
   { do: 1500, label: "500 – 1 500 €", povinne: ["text", "foto", "rozpis"] },
   { do: 5000, label: "1 500 – 5 000 €", povinne: ["text", "foto", "rozpis", "uctenky"] },
-  { do: Infinity, label: "nad 5 000 €", povinne: ["text", "foto", "rozpis", "doklady100", "potvrdenie", "spravy"] },
+  { do: Infinity, label: "nad 5 000 €", povinne: ["text", "foto", "rozpis", "doklady100", "potvrdenie"] },
 ];
 export const POZIADAVKA_TEXT: Record<Poziadavka, string> = {
   text: "Text — na čo išli peniaze",
@@ -54,7 +52,6 @@ export const POZIADAVKA_TEXT: Record<Poziadavka, string> = {
   uctenky: "Účtenky k hlavným položkám (aspoň polovica sumy)",
   doklady100: "Doklady na celú sumu",
   potvrdenie: "Potvrdenie príjemcu o prevzatí",
-  spravy: "Aspoň 1 priebežná správa počas zbierky",
 };
 export const pasmoPre = (vyzbierane: number) => PASMA_DOKLADOV.findIndex((p) => vyzbierane <= p.do);
 
@@ -125,7 +122,6 @@ export function splnene(p: Poziadavka, s: StavZbierky, vyzbierane: number): bool
     case "uctenky": return vyzbierane > 0 && sumaDokladov(s, true) >= vyzbierane * 0.5;
     case "doklady100": return vyzbierane > 0 && sumaDokladov(s, true) >= vyzbierane * 0.99;
     case "potvrdenie": return s.doklady.some((d) => d.druh === "Potvrdenie o prevzatí");
-    case "spravy": return s.spravy.length >= 1;
   }
 }
 /** dôkaz navyše nad povinné minimum → +karma (poctivosť odmeňujeme) */

@@ -73,7 +73,6 @@ export function SpravaZbierkySheet({ z, tier, toast, onPaywall, onClose }: {
   const aktivna = s.stav === "aktivna";
   const [potvrdUkoncit, setPotvrdUkoncit] = useState(false);
   const [platba, setPlatba] = useState<null | { druh: "predlzenie" } | { druh: "top"; kluc: string }>(null);
-  const [sprava, setSprava] = useState("");
   const [podakovanie, setPodakovanie] = useState<null | { karma: number }>(null);
 
   const dalsiePredlzenie = CFG.predlzenia[s.predlzenia];
@@ -94,12 +93,7 @@ export function SpravaZbierkySheet({ z, tier, toast, onPaywall, onClose }: {
   };
 
   const ukonci = () => { zmen({ stav: "ukoncena", ukoncena: new Date().toISOString() }); setPotvrdUkoncit(false); toast("Zbierka ukončená — beží lehota na dokladovanie"); };
-  const poslatSpravu = () => {
-    if (sprava.trim().length < 10) { toast("Napíš aspoň krátku vetu"); return; }
-    zmen({ spravy: [...s.spravy, { text: sprava.trim(), datum: new Date().toISOString() }] });
-    pridajOznamDarcom({ zbierkaId: z.id, typ: "sprava", text: sprava.trim() });
-    setSprava(""); toast("Správa odoslaná všetkým darcom — pozri Oznámenia 🔔");
-  };
+
 
   return (
     <Sheet onClose={onClose} label={`Spravovať — ${z.nazov}`}>
@@ -155,19 +149,7 @@ export function SpravaZbierkySheet({ z, tier, toast, onPaywall, onClose }: {
             )}
           </Karta>
 
-          <Karta nadpis={`Správa pre darcov (${s.spravy.length}/${CFG.maxSprav})`} popis="Krátka novinka počas zbierky — príde všetkým darcom.">
-            {s.spravy.map((m, i) => (
-              <div key={i} style={{ fontSize: 12.5, padding: `${SPACE.xxs}px 0`, borderBottom: `1px solid ${C.line}` }}>
-                <span style={{ color: C.textTer, fontSize: 10.5 }}>{datum(m.datum)} · </span>{m.text}
-              </div>
-            ))}
-            {s.spravy.length < CFG.maxSprav && (
-              <>
-                <textarea value={sprava} onChange={(e) => setSprava(e.target.value)} rows={2} placeholder="Napr. Práčku sme už objednali, ďakujeme!" style={{ ...input, marginTop: SPACE.xs, resize: "vertical" }} />
-                <button onClick={poslatSpravu} style={{ ...btnDruhy, marginTop: SPACE.xs, color: ZELENA, borderColor: tint(ZELENA, .4) }}>Poslať darcom</button>
-              </>
-            )}
-          </Karta>
+          {/* OPRAVY 110: novinky darcom počas zbierky zrušené — charita píše darcom len 2× (výsledok, na čo išli peniaze), fáza B */}
 
           <Karta nadpis="Predĺžiť zbierku" popis={CFG.predlzenia.map((p, i) => `${i === 0 ? "Predĺženie" : "potom"} o ${p.dni} dní za ${eur(p.cena)}`).join(", ") + "."}>
             {dalsiePredlzenie ? (

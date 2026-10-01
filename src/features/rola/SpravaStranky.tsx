@@ -6,7 +6,7 @@
 // Len rozloženie, farby podľa štítu a témy, Späť všade, povolenia z jedného miesta (stav.ts).
 // Funkcie za tlačidlami NIE SÚ — každé tlačidlo otvorí obrazovku „Pripravujeme".
 // ============================================================
-import { UpravitProfilCharity, zakladnyProfil } from "./UpravitProfilCharity";
+import { UpravitProfilCharity, VerejnyProfilOkno, zakladnyProfil } from "./UpravitProfilCharity";
 import { nacitajProfil, profilZPamate, uplnostProfilu, type ProfilStranky } from "@/lib/profilStranky";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -238,7 +238,8 @@ export function SpravaStranky({ onBack, typ: typStranky = "charita", strankaId =
   useEffect(() => () => nastavStitSpravy(null), []);
   const korenRef = useRef<HTMLDivElement>(null);
 
-  const otvor = (s: Sub) => { if (s === sub) return; hist.current = [...hist.current, sub].slice(-30); setSub(s); };
+  const [verejny, setVerejny] = useState(false); // OPRAVY 107: tlačidlo Verejný profil = skutočný verejný profil
+  const otvor = (s: Sub) => { if (s === "x:Verejný profil") { setVerejny(true); return; } if (s === sub) return; hist.current = [...hist.current, sub].slice(-30); setSub(s); };
   const spat = () => {
     if (hist.current.length) { const h = [...hist.current]; const p = h.pop()!; hist.current = h; setSub(p); }
     else if (sub !== null) setSub(null);
@@ -272,8 +273,8 @@ export function SpravaStranky({ onBack, typ: typStranky = "charita", strankaId =
       : id === "zariadenia" ? <ObrZariadenia mobil={m} /> : id === "suhlasy" ? <ObrSuhlasy mobil={m} otvor={o} /> : id === "stiahnut" ? <ObrStiahnut mobil={m} />
       : id === "faq" ? <ObrFaq otvor={o} /> : id === "podpora" ? <ObrPodpora mobil={m} otvor={o} /> : id === "zrusit" ? <ObrZrusit mobil={m} otvor={o} tier={tier} nova={nova} /> : <Pripravujeme />;
   }
-  else if (sub === "profil") obsah = <UpravitProfilCharity strankaId={strankaId} pozicia={poz} typ={typ} nazov={nazov} inicialy={inicialy} mobil={!desktop} tablet={tablet}
-    stit={stit} stitObr={stitImg(stit, true, sada)} stitNazov={STITY[stit][0]} onUlozene={setProfil}
+  else if (sub === "profil") obsah = <UpravitProfilCharity strankaId={strankaId} pozicia={poz} tier={tier} nazov={nazov} inicialy={inicialy} mobil={!desktop} tablet={tablet}
+    stit={stit} onUlozene={setProfil}
     onZrusit={() => { hist.current = []; setSub(null); }} onHotovo={() => { hist.current = []; setSub(null); }} />;
   else if (sub.startsWith("x:")) obsah = <Pripravujeme />;
   else obsah = !typPovoli(sub as PolozkaSpravy, typ) ? <Pripravujeme /> : maPovolenie(sub as PolozkaSpravy, tier) ? <Pripravujeme /> : <Zamknute program={odProgramu(sub as PolozkaSpravy)} />;
@@ -286,7 +287,11 @@ export function SpravaStranky({ onBack, typ: typStranky = "charita", strankaId =
       onStit={(s) => { setStit(s); ulozStitCharity(s); }}
       onNova={() => { const n = !nova; setNova(n); ulozCharituNovu(n); }} />
   );
-  const zoomEl = zoom && <StitZoom stit={stit} sada={sada} onClose={() => setZoom(false)} />;
+  const zoomEl = <>{zoom && <StitZoom stit={stit} sada={sada} onClose={() => setZoom(false)} />}
+    {verejny && <VerejnyProfilOkno pozicia={poz} tier={tier} strankaId={strankaId} stit={stit} mobil={!desktop} onZavri={() => setVerejny(false)}
+      lista={<><span style={{ flex: !desktop ? "1 1 100%" : 1, minWidth: 0, fontSize: 15, fontWeight: 800, color: "var(--ink)" }}>Takto vidí váš profil každý návštevník</span>
+        <button type="button" onClick={() => setVerejny(false)} style={{ height: 42, padding: "0 16px", border: "none", borderRadius: 13, background: "var(--btn)", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 800, color: "var(--ink)" }}>Zavrieť</button>
+        <button type="button" onClick={() => { setVerejny(false); otvor("profil"); }} style={{ height: 42, padding: "0 16px", border: "none", borderRadius: 13, background: "var(--btn)", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 800, color: "var(--ink)" }}>Upraviť</button></>} />}</>;
 
   const hlavicka = <Hlavicka titul={titulok(sub, typ)} onSpat={spat} otvor={otvor} mobil={!desktop} />;
 
@@ -407,7 +412,8 @@ function KartaCharity({ nazov, inicialy, typ, otvor, mobil, tablet, uplnost }: {
     <div style={{ flex: "none", borderRadius: 18, background: "var(--cuBg)", border: "1.5px solid var(--cuBd)", boxShadow: "inset 0 1px 0 rgba(255,255,255,.45)", overflow: "hidden" }}>
       <button onClick={() => setOtv((o) => !o)} aria-expanded={otv} style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: 12, border: "none", background: "transparent", cursor: "pointer", textAlign: "left", color: "var(--ink)" }}>
         <span style={{ width: 40, height: 40, borderRadius: 10, overflow: "hidden", background: "var(--white)", border: "1px solid var(--cardBd)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 800, color: "var(--gInk)", flex: "none" }}>{inicialy}</span>
-        <span style={{ flex: 1, minWidth: 0 }}><span style={{ display: "block", fontSize: 14.5, fontWeight: 800, lineHeight: 1.25, overflowWrap: "anywhere" }}>{nazov}</span><span style={{ display: "block", fontSize: 12.5, color: "var(--cuInk2)" }}>{TYP_NAZOV[typ]}</span><span style={{ display: "block", fontSize: 12.5, color: "var(--cuInk2)" }}>Verejný profil · hotový na {pct} %</span></span>
+        {/* OPRAVY 111: názov 1 riadok (dlhý najviac 2), pod ním 1 riadok „typ · hotový na X %" */}
+        <span style={{ flex: 1, minWidth: 0 }}><span title={nazov} style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", fontSize: 14.5, fontWeight: 800, lineHeight: 1.25 }}>{nazov}</span><span style={{ display: "block", fontSize: 12.5, color: "var(--cuInk2)", lineHeight: 1.35 }}>{TYP_NAZOV[typ]} · <span style={{ whiteSpace: "nowrap" }}>hotový na {pct} %</span></span></span>
         <Ik d={IK.dole} s={18} w={2.4} style={{ transform: `rotate(${otv ? 180 : 0}deg)`, transition: "transform .2s ease" }} />
       </button>
       {otv && <div style={{ padding: "4px 12px 12px", display: "flex", flexDirection: "column", gap: 8, borderTop: "1px solid var(--accLine)" }}>
