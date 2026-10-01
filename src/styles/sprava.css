@@ -1,0 +1,61 @@
+/* KARTA 34 · Správa charity — farby 1:1 z prototypu „Sprava charity PC.dc.html" (<style>).
+   Všetko zúžené na .sprava-charity. Tmavý režim = html.dark (v prototype [data-tema="tmava"]).
+   Farba podľa štítu = atribút data-stit na koreni správy. */
+.sprava-charity,.sc-tokeny{--bg:#EFEAE1;--card:#E4DFD5;--cardBd:#D9D3C7;--ink:#1D211B;--ink2:#4A4C43;--ink3:#5B5D53;--ink4:#85867B;--btn:#DCD8CF;--field:#F6F3EC;--gSoft:#DCE3D0;--gBd:#A9C08F;--gInk:#3F6E2A;--green:#4E7D37;--blue:#3D6B8E;--panel:#F2EEE6;--seg:#FBF9F5;--track:#D3CDC1;--hov:#E7E2D8;--goldBg:#E2D7BF;--goldBd:#C9B27B;--gold:#876712;--cuBg:linear-gradient(135deg,#EADBCB,#E2CFBB);--cuBd:#CDA887;--cuInk:#4A3A2E;--cuInk2:#5B4636;--tBg:#D9E3E0;--tBd:#A8C1BC;--tInk:#2F5A55;--tInk2:#4A5F5B;--warnBg:#F2E6CC;--errBg:#F2E3DC;--white:#fff}
+.sprava-charity{background:var(--bg);color:var(--ink);font-variant-ligatures:no-common-ligatures}
+html.dark .sprava-charity,html.dark .sc-tokeny{--bg:#14110B;--card:#211D16;--cardBd:#3A342A;--ink:#EFE9DD;--ink2:#CFC7B8;--ink3:#A89F8F;--ink4:#857D6E;--btn:#2E2920;--field:#1A1711;--gSoft:#24321C;--gBd:#4A6B36;--gInk:#A9D18A;--blue:#7FA8C8;--panel:#1A1711;--seg:#3A342A;--track:#3A342A;--hov:#2E2920;--goldBg:#2E2715;--goldBd:#6B5A2A;--gold:#D9B65A;--cuBg:linear-gradient(135deg,#2E2219,#281E16);--cuBd:#6B4B33;--cuInk:#E3C9B2;--cuInk2:#C9AD95;--tBg:#18272A;--tBd:#3F5F5B;--tInk:#9CCBC3;--tInk2:#86A9A3;--warnBg:#3A2E14;--errBg:#3A1E16;--white:#2E2920;--green:#4B7A35;color:var(--ink)}
+
+.sprava-charity[data-stit="bronze"]{--cuBg:linear-gradient(135deg,#EADBCB,#E2CFBB);--cuBd:#CDA887;--cuInk:#4A3A2E;--cuInk2:#5B4636}
+html.dark .sprava-charity[data-stit="bronze"]{--cardBd:#4A3A2C;--cuBg:linear-gradient(135deg,#2E2219,#281E16);--cuBd:#6B4B33;--cuInk:#E3C9B2;--cuInk2:#C9AD95}
+.sprava-charity[data-stit="silver"]{--cuBg:linear-gradient(135deg,#E6E7E8,#D9DBDD);--cuBd:#B4B9BE;--cuInk:#33373B;--cuInk2:#4B5056}
+html.dark .sprava-charity[data-stit="silver"]{--cardBd:#3E4246;--cuBg:linear-gradient(135deg,#25272A,#202225);--cuBd:#4E5458;--cuInk:#E2E5E8;--cuInk2:#C3C8CC}
+.sprava-charity[data-stit="gold"]{--cuBg:linear-gradient(135deg,#EFE3C4,#E5D3A6);--cuBd:#C9A85A;--cuInk:#4A3A12;--cuInk2:#5E4A18}
+html.dark .sprava-charity[data-stit="gold"]{--cardBd:#4A4022;--cuBg:linear-gradient(135deg,#2E2715,#272111);--cuBd:#6B5A2A;--cuInk:#F1E2B8;--cuInk2:#D9C48E}
+.sprava-charity[data-stit="platinum"]{--cuBg:linear-gradient(135deg,#E3EAEE,#D5DFE5);--cuBd:#A9BBC6;--cuInk:#2C3A43;--cuInk2:#42535E}
+html.dark .sprava-charity[data-stit="platinum"]{--cardBd:#36444D;--cuBg:linear-gradient(135deg,#1C2429,#182024);--cuBd:#3F5361;--cuInk:#DCE7EE;--cuInk2:#B9CAD5}
+.sprava-charity[data-stit="legend"]{--cuBg:linear-gradient(135deg,#F0DADA,#E6C8C8);--cuBd:#C98A8C;--cuInk:#4A1E20;--cuInk2:#5E2A2C}
+html.dark .sprava-charity[data-stit="legend"]{--cardBd:#4A2A2B;--cuBg:linear-gradient(135deg,#2E1718,#271314);--cuBd:#6B3335;--cuInk:#F2D3D4;--cuInk2:#D9AEAF}
+
+/* OPRAVY 91: farba štítu pre celú appku (bočný panel aj správa) — data-stit na koreni appky */
+[data-stit="bronze"]{--accSoft:#EADBCB;--acc:#8A5A3A;--accLine:rgba(168,116,80,.45)}
+html.dark [data-stit="bronze"]{--accSoft:#2E2219;--acc:#C08A62}
+[data-stit="silver"]{--accSoft:#E3E6E9;--acc:#5F656B;--accLine:rgba(120,128,136,.45)}
+html.dark [data-stit="silver"]{--accSoft:#25272A;--acc:#A9B0B6}
+[data-stit="gold"]{--accSoft:#F3E6BC;--acc:#876712;--accLine:rgba(184,144,60,.5)}
+html.dark [data-stit="gold"]{--accSoft:#2E2715;--acc:#D9B65A}
+[data-stit="platinum"]{--accSoft:#E1EBF1;--acc:#4F6573;--accLine:rgba(110,140,160,.45)}
+html.dark [data-stit="platinum"]{--accSoft:#1C2429;--acc:#9DB6C6}
+[data-stit="legend"]{--accSoft:#F0D9D6;--acc:#8E2A2E;--accLine:rgba(160,50,55,.45)}
+html.dark [data-stit="legend"]{--accSoft:#2E1718;--acc:#D9787C}
+
+/* druhý blok prototypu (kov, karta štítu) — v tmavom režime ho prebije blok vyššie (vyššia špecifickosť), ako v prototype */
+.sprava-charity[data-stit="bronze"]{--cardBd:#D6BEA8;--mH:2px;--metal:linear-gradient(90deg,#7A4A2A,#D9A47A,#8A5A3A,#E8BC92,#7A4A2A);--cuBg:linear-gradient(135deg,#F1DCC8 0%,#E2C3A6 45%,#F3E1CF 60%,#D9B593 100%);--cuBd:#B98458;--stBg:linear-gradient(140deg,#F4E2D0,#DDB894 50%,#F2DCC6 62%,#CFA47C);--stInk:#2A1A10;--stInk2:#6B3F22}
+.sprava-charity[data-stit="silver"]{--cardBd:#C9CED3;--mH:3px;--metal:linear-gradient(90deg,#7C8288,#F1F3F5,#9AA0A6,#FFFFFF,#7C8288);--cuBg:linear-gradient(135deg,#F3F4F6 0%,#D8DCE0 45%,#FBFCFD 60%,#C9CED3 100%);--cuBd:#9EA5AC;--stBg:linear-gradient(140deg,#FAFBFC,#CDD2D7 50%,#F5F7F8 62%,#B9BFC5);--stInk:#1F2327;--stInk2:#4E555C}
+.sprava-charity[data-stit="gold"]{--cardBd:#D9C68C;--mH:4px;--metal:linear-gradient(90deg,#8A6510,#F6D77A,#B8891E,#FFF0B8,#8A6510);--cuBg:linear-gradient(135deg,#FBEDB8 0%,#EBCB6A 45%,#FFF3C9 60%,#DDB54E 100%);--cuBd:#C99A2E;--stBg:linear-gradient(140deg,#FFF4C8,#E9C35A 50%,#FFEFB0 62%,#D4A83A);--stInk:#2E2205;--stInk2:#5A4206}
+.sprava-charity[data-stit="platinum"]{--cardBd:#C2D0DA;--mH:5px;--metal:linear-gradient(90deg,#5E7484,#EAF4FA,#8FA7B6,#FFFFFF,#5E7484);--cuBg:linear-gradient(135deg,#EEF5F9 0%,#CCDCE6 45%,#F8FCFE 60%,#B7CCD9 100%);--cuBd:#8DA6B6;--stBg:linear-gradient(140deg,#F6FBFD,#C3D6E2 50%,#EFF6FA 62%,#A9C2D1);--stInk:#18242C;--stInk2:#3F5868}
+.sprava-charity[data-stit="legend"]{--cardBd:#D9B2B0;--mH:6px;--metal:linear-gradient(90deg,#6E1418,#E8A04A,#9E2A2E,#F7C978,#6E1418);--cuBg:linear-gradient(135deg,#F6D9CF 0%,#E3A18C 45%,#F9E3D2 60%,#D2846C 100%);--cuBd:#B2533F;--stBg:linear-gradient(140deg,#3E0F12,#8E2A2E 45%,#C9643A 62%,#5A1418);--stInk:#FBEFE4;--stInk2:#F2C98A}
+
+@keyframes leskStit{0%{transform:translateX(-130%)}100%{transform:translateX(130%)}}
+@keyframes spravaFade{from{opacity:0}to{opacity:1}}
+.sprava-charity button{font-family:inherit}
+.sprava-charity .sc-hov:hover{background:var(--hov)!important}
+.sprava-charity .sc-bdh:hover{border-color:var(--goldBd)!important}
+.sprava-charity .sc-lista{scrollbar-width:none}
+.sprava-charity .sc-lista::-webkit-scrollbar{display:none}
+html.obmedz-anim .sprava-charity .sc-lesk{display:none}
+@media (prefers-reduced-motion: reduce){.sprava-charity .sc-lesk{display:none}}
+
+/* OPRAVY 91 · hlavný bočný panel podľa prototypu */
+.sc-side .sc-side-ik svg{width:19px;height:19px;stroke-width:1.8}
+
+/* OPRAVY 92 · graf darov: jednorazové (--chA) + pravidelná podpora (--chB) podľa štítu */
+.sprava-charity[data-stit="bronze"]{--chA:#4E7D37;--chB:#A9C08F}
+.sprava-charity[data-stit="silver"]{--chA:#5F656B;--chB:#C2C8CE}
+.sprava-charity[data-stit="gold"]{--chA:#A87C12;--chB:#E6C25A}
+.sprava-charity[data-stit="platinum"]{--chA:#4F6573;--chB:#A9C2D1}
+.sprava-charity[data-stit="legend"]{--chA:#8E2A2E;--chB:#E3A18C}
+html.dark .sprava-charity[data-stit="bronze"]{--chA:#6E9F4E;--chB:#4A6B36}
+html.dark .sprava-charity[data-stit="silver"]{--chA:#A9B0B6;--chB:#5E656B}
+html.dark .sprava-charity[data-stit="gold"]{--chA:#D9B65A;--chB:#8A6E24}
+html.dark .sprava-charity[data-stit="platinum"]{--chA:#9DB6C6;--chB:#4F6573}
+html.dark .sprava-charity[data-stit="legend"]{--chA:#D9787C;--chB:#7A3436}

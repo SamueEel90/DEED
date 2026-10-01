@@ -40,7 +40,7 @@ export type ZbierkaData = {
   vyzbierane?: number;   // základ mimo živých darov (karta 04)
   ciel?: number;         // bez cieľa → míľniky
   ludia?: number;
-  rychleSumy?: number[];  // € dlaždice — sadu volí charita v nastaveniach zbierky (predvolene 10 / 25 / 50)
+  rychleSumy?: number[];  // € dlaždice — sadu volí charita v nastaveniach zbierky (predvolene 10 / 25 / 45)
   tvorca?: TvorcaData;    // karta 13 — zbierka otvorená cez QR tvorcu (alebo súkromná so splitom)
 };
 
@@ -165,7 +165,7 @@ export function ZbierkaModul({ zbierka, miesto: miestoProp, onBack, spatNazov, o
         <div key={p.kluc} className="zb-pol" style={{ padding: "0 16px" }}>
           {naDeed
             ? <DeedDlazdice refId={zbierka.id} registrovany={registrovany} mikro={mikro} cezTvorcu={cezTvorcu} />
-            : <RychleSumyEur sumy={p.hodnota === "eurDrobne" ? [1, 3, 5] : zbierka.rychleSumy ?? [10, 25, 50]}
+            : <RychleSumyEur sumy={p.hodnota === "eurDrobne" ? [1, 3, 5] : zbierka.rychleSumy ?? [10, 25, 45]}
                 doplnok={p.hodnota === "eurDrobne" || miesto === "sukromna" ? undefined : "sumy si volí charita"}
                 kDaru={dorovnanie ? (sm) => dorovnanieKDaru(dorovnanie, sm) : undefined} otvor={otvorPlatbu} />}
           <VlastnaSuma eur={vlastnaEur} deed={miesto === "deed" && registrovany} otvor={otvorPlatbu}

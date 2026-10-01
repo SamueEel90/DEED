@@ -309,7 +309,7 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
       cisla: [[ziad.vyzbierane, "vyzbierané"], [ziad.skutky, "skutkov"], [ziad.snami, "s nami"]], stit: naStitLevel(ziad.level) as StitUroven,
     } : undefined;
     return { id: z.id, nazov: z.nazov, popis: z.popis, overena: ziad.overeny, media: z.foto ? [{ typ: "foto", src: z.foto }] : [],
-      organizacia: org, vyzbierane: z.vyzbierane, ciel: z.ciel, ludia: z.darcovia, rychleSumy: [10, 25, 50] };
+      organizacia: org, vyzbierane: z.vyzbierane, ciel: z.ciel, ludia: z.darcovia, rychleSumy: [10, 25, 45] };
   };
   const kartaVlastnej = (id: string, profil: ProfilZbierky, otvorena: boolean) => {
     const dary = sucetDarov(id);

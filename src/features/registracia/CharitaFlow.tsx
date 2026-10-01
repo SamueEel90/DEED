@@ -6,6 +6,7 @@
 // Štatutár sa overuje ako osoba (KYC) — closed loop; org cez KYB (Didit).
 // ============================================================
 import { useEffect, useState } from "react";
+import { otvorSpravuPoRegistracii } from "@/lib/mojeStranky";
 import { C, GRAD, infoBox, SPACE, RADIUS } from "@/theme";
 import { Vyber, Otazka, Oslava, Suhrn } from "@/shared";
 import { setSession } from "@/lib/session";
@@ -20,7 +21,9 @@ import {
   KrokZabezpecenie,
 } from "./RegKit";
 import { DOBRO_TYPY, POBOCKA_REZIMY, BALIKY } from "./mock";
-import { ulozIbanOrg } from "@/features/rola/stav";
+import { ulozIbanOrg, ulozTypStranky, ulozInaCinnost, TYPY_STRANOK, TYP_NAZOV, TYP_SKRYTY, type TypStranky } from "@/features/rola/stav";
+import { inp } from "@/theme";
+import { NavBtns } from "@/components/layout";
 
 // charita akcent (fialová) — odlišuje organizačný tok od osobného
 const AKCENT = "var(--a-plum)";
@@ -62,7 +65,34 @@ async function ulozStavTicho(ucetId: string, stav: string) {
   }
 }
 
-export function CharitaFlow({ onHotovo, onSpat, toast, authId, email }: CharitaFlowProps) {
+// KARTA 36 · Výber typu organizácie — zatiaľ aktívna Charita / OZ a Iná organizácia, ostatné „Pripravujeme"
+const TYP_AKTIVNY: Partial<Record<TypStranky, true>> = { charita: true, ina: true };
+function KrokTypOrganizacie({ onBack, onHotovo, toast }: { onBack: () => void; onHotovo: (t: TypStranky) => void; toast?: (t: string) => void }) {
+  const [typ, setTyp] = useState<TypStranky | null>(null);
+  const [cinnost, setCinnost] = useState("");
+  const typy = TYPY_STRANOK.filter((t) => !TYP_SKRYTY[t] && t !== "firma" && t !== "tvorca");
+  const ok = typ === "charita" || (typ === "ina" && cinnost.trim().length > 2);
+  return (
+    <Shell title="Typ organizácie" onBack={onBack}>
+      <Otazka>Aká je vaša organizácia?</Otazka>
+      {typy.map((t) => (
+        <Vyber key={t} title={TYP_NAZOV[t]} desc={TYP_AKTIVNY[t] ? undefined : "Pripravujeme"} active={typ === t}
+          onClick={() => (TYP_AKTIVNY[t] ? setTyp(t) : toast?.(`${TYP_NAZOV[t]} — pripravujeme.`))} />
+      ))}
+      {typ === "ina" && (
+        <label style={{ display: "flex", flexDirection: "column", gap: SPACE.xs, marginTop: SPACE.sm }}>
+          <span style={{ fontSize: 13.5, fontWeight: 700 }}>Čím sa zaoberáte?</span>
+          <input value={cinnost} onChange={(e) => setCinnost(e.target.value)} style={inp()} />
+        </label>
+      )}
+      <NavBtns onBack={onBack} canNext={ok} onNext={() => { if (!ok || !typ) return; ulozTypStranky(typ); if (typ === "ina") ulozInaCinnost(cinnost.trim()); onHotovo(typ); }} />
+    </Shell>
+  );
+}
+
+export function CharitaFlow({ onHotovo, onSpat, toast, authId, email, resume }: CharitaFlowProps) {
+  // KARTA 36: najprv typ organizácie (pri obnove rozrobenej registrácie sa preskočí)
+  const [typVybrany, setTypVybrany] = useState<boolean>(!!resume);
   // ---- stavový automat ----
   //  "k1".."k8" — číslované 1..8 (auth-first: k1/k2 preskočené → štart k3)
   const [krok, setKrok] = useState(authId ? "k3" : "k1");
@@ -84,6 +114,8 @@ export function CharitaFlow({ onHotovo, onSpat, toast, authId, email }: CharitaF
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authId]);
+
+  if (!typVybrany) return <KrokTypOrganizacie onBack={onSpat} onHotovo={() => setTypVybrany(true)} toast={toast} />;
 
   // auth-first: kým sa org účet nevytvorí, drž jemný loader (k3 číta org!.id)
   if (authId && !org) {
@@ -844,6 +876,7 @@ function KrokBaliky({ org, nazov, toast, onBack, onHotovo }: KrokBalikyProps) {
   };
 
   const zatvorOslavu = () => {
+    otvorSpravuPoRegistracii(); // KARTA 34: prvá stránka po registrácii = Správa charity
     setSession({
       ucet_id: org.id,
       typ: "charita",
