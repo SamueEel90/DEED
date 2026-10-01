@@ -11,7 +11,7 @@ import { DeedQr } from "@/components/deedqr";
 import { zdielaj, kopiruj } from "@/lib/zdielanie";
 import { SADY_EURC, type SadaEurc } from "@/lib/sadyDarov";
 import { TESTOVACIA } from "@/lib/testovacia";
-import { nacitajKryptoOrg, ulozKryptoOrg, nacitajSady, ulozSady, type Tier } from "./stav";
+import { nacitajKryptoOrg, ulozKryptoOrg, nacitajSady, ulozSady, type Tier, type TypStranky, CENNIK_TYPU, TYP_NAZOV, TIER_LABEL, TIER_POPIS } from "./stav";
 
 // ---------- pamäť relácie (prežije prechody medzi obrazovkami) ----------
 const pamat = new Map<string, unknown>();
@@ -377,7 +377,59 @@ const POR: [string, [string, ...string[]][]][] = [
   ["Iskra a prehľady", [["Komu sme pomohli — výsledky", A, A, A, A], ["Upútavky na zbierky v Iskre", "", "", A, A], ["Prehľad darcov a súm", A, A, A, A], ["Ročný výpis činnosti", A, A, A, A], ["Export pre granty", "", "", "", A]]],
 ];
 const f2 = (n: number) => n.toLocaleString("sk-SK", { minimumFractionDigits: n % 1 ? 2 : 0, maximumFractionDigits: 2 }) + " €";
-export function ObrProgram({ mobil, tier, onTier, otvor }: { mobil: boolean; tier: Tier; onTier: (t: Tier) => void; otvor: (s: string) => void }) {
+/** KARTA 36: spolok — jedna cena (cenník charity, stĺpec Spolok) */
+const JEDNA_CENA: Partial<Record<TypStranky, { m: number; r: number; zlava: string; f: string[] } | null>> = {
+  spolok: { m: 10, r: 100, zlava: "−16,7 %", f: ["Profil, karma a štít", "2 zbierky naraz: stála na členské + 1", "Členské ako stála zbierka, zoznam kto zaplatil", "Skupina členov — správca pozve, člen prijme pozvanie", "Členovia pridávajú sami: brigáda, fotky, oznam", "Oznamy a inzerát", "1 Iskra mesačne"] },
+  farnost: null, // cenu dodá dizajn
+};
+/** program podľa typu: charita (4 programy) · jedna cena · B2B / tvorca (TIER_LABEL + TIER_POPIS z kódu) */
+export function ObrProgram(p: { mobil: boolean; typ?: TypStranky; tier: Tier; onTier: (t: Tier) => void; otvor: (s: string) => void }) {
+  const c = CENNIK_TYPU[p.typ ?? "charita"];
+  if (c === "jedna") return <ProgramJednaCena {...p} typ={p.typ!} />;
+  if (c === "b2b" || c === "tvorca") return <ProgramRola {...p} rola={c === "b2b" ? "b2b" : "tvorca"} />;
+  return <ProgramCharita {...p} />;
+}
+function ProgramJednaCena({ mobil, typ, otvor }: { mobil: boolean; typ: TypStranky; otvor: (s: string) => void }) {
+  const [roc, setRoc] = usePamat<boolean>("pr.roc", false);
+  const j = JEDNA_CENA[typ];
+  const cena = j ? (roc ? j.r : j.m) : 0;
+  return (<>
+    <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
+      <div style={{ ...krt, flex: 1, minWidth: mobil ? 0 : 260, padding: "14px 18px", display: "flex", flexDirection: "column", gap: 2 }}>
+        <span style={{ fontSize: 12.5, color: "var(--ink3)" }}>Váš program</span><b style={{ fontSize: 20 }}>{TYP_NAZOV[typ]}</b>
+      </div>
+      {j && <div style={{ flex: mobil ? "1 1 100%" : "none" }}><Segment volby={[[0, "Mesačne"], [1, `Na rok · ${j.zlava}`]]} hodnota={roc ? 1 : 0} onZmena={(v) => setRoc(v === 1)} tien /></div>}
+    </div>
+    <div style={{ ...krt, maxWidth: 420, borderRadius: 18, background: "var(--accSoft)", border: "1.5px solid var(--cuBd)", padding: 16, display: "flex", flexDirection: "column", gap: 12 }}>
+      <b style={{ fontSize: 17 }}>{TYP_NAZOV[typ]}</b>
+      {j ? <>
+        <div style={{ display: "flex", flexDirection: "column", gap: 2 }}><span style={{ display: "flex", alignItems: "baseline", gap: 4 }}><b style={{ fontSize: 26 }}>{f2(cena)}</b><span style={{ fontSize: 13, color: "var(--ink3)" }}>{roc ? "na rok, jednou platbou" : "mesačne"}</span></span>
+          <span style={{ fontSize: 12, color: "var(--ink3)" }}>bez DPH · s DPH {f2(Math.round(cena * 1.23 * 100) / 100)}{roc ? ` · ušetríte ${f2(j.m * 12 - j.r)}` : ""}</span></div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 7, paddingTop: 10, borderTop: "1px solid var(--cardBd)" }}>{j.f.map((x) => <span key={x} style={{ display: "flex", gap: 8, fontSize: 13.5, lineHeight: 1.35, color: "var(--ink2)" }}>{FAJKA()}{x}</span>)}</div>
+      </> : <span style={{ fontSize: 15, color: "var(--ink2)" }}>Pripravujeme</span>}
+    </div>
+    <span style={pozn}>Jedna cena, jedna pobočka, jedno mesto. Ceny sú bez DPH.</span>
+    <button onClick={() => otvor("n:udaje")} style={{ ...obrys(), alignSelf: "flex-start" }}>Fakturačné údaje</button>
+  </>);
+}
+function ProgramRola({ mobil, rola, tier, onTier }: { mobil: boolean; rola: "b2b" | "tvorca"; tier: Tier; onTier: (t: Tier) => void }) {
+  const [ch, setCh] = useState<number | null>(null);
+  const L = TIER_LABEL[rola], D = TIER_POPIS[rola];
+  return (<>
+    <div style={{ ...krt, padding: "14px 18px", display: "flex", flexDirection: "column", gap: 2 }}>
+      <span style={{ fontSize: 12.5, color: "var(--ink3)" }}>Váš program</span><b style={{ fontSize: 20 }}>{L[tier]}</b><span style={{ fontSize: 13, color: "var(--ink2)" }}>{D[tier]}</span>
+    </div>
+    <div style={{ display: "grid", gridTemplateColumns: mobil ? "minmax(0,1fr)" : "repeat(auto-fit,minmax(170px,1fr))", gap: 12 }}>
+      {L.map((n, i) => { const on = i === tier, pot = ch === i; return (
+        <div key={n} style={{ minWidth: 0, borderRadius: 18, background: on ? "var(--accSoft)" : "var(--card)", border: on ? "1.5px solid var(--cuBd)" : "1px solid var(--cardBd)", padding: 16, display: "flex", flexDirection: "column", gap: 10 }}>
+          <b style={{ fontSize: 17 }}>{n}</b><span style={{ flex: 1, fontSize: 13.5, lineHeight: 1.4, color: "var(--ink2)" }}>{D[i]}</span>
+          <button onClick={on ? undefined : pot ? () => { onTier(i as Tier); setCh(null); toast(`Program ${n} platí od dnes.`); } : () => setCh(i)} aria-disabled={on || undefined}
+            style={{ height: 46, borderRadius: 13, border: on ? "1.5px solid var(--cuBd)" : pot ? "none" : "1.5px solid var(--cardBd)", background: on ? "transparent" : pot ? ZELENA : "transparent", cursor: on ? "default" : "pointer", fontSize: 14.5, fontWeight: 800, color: on ? "var(--acc)" : pot ? "#fff" : "var(--ink)" }}>{on ? "Váš program" : pot ? "Potvrdiť zmenu" : `Prejsť na ${n}`}</button>
+        </div>); })}
+    </div>
+  </>);
+}
+function ProgramCharita({ mobil, tier, onTier, otvor }: { mobil: boolean; tier: Tier; onTier: (t: Tier) => void; otvor: (s: string) => void }) {
   const cur = Math.min(3, tier);
   const [roc, setRoc] = usePamat<boolean>("pr.roc", false);
   const [ch, setCh] = useState<number | null>(null);

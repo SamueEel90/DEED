@@ -161,15 +161,78 @@ export type PolozkaSpravy =
   | "zbierky" | "centralna" | "dorovnanie" | "segment" | "materialne"
   | "skutky" | "video" | "oznamy" | "nastenka" | "upoutavky"
   | "darcovia" | "sledujuci" | "dobrovolnici" | "podujatia" | "sponzoring" | "inzeraty"
-  | "qr" | "sektorqr" | "embed" | "prednost" | "statistiky" | "vypis" | "export";
+  | "qr" | "sektorqr" | "embed" | "prednost" | "statistiky" | "vypis" | "export"
+  // KARTA 36: pobočky (zatiaľ bez obrazovky) a nástroje firmy
+  | "pobocky" | "dorovnavanie" | "zamestnanci" | "esg" | "firemnyqr";
 export const POVOLENIA_CHARITY: Record<PolozkaSpravy, { od: Program }> = {
   zbierky: { od: "zadarmo" }, centralna: { od: "P1" }, dorovnanie: { od: "P1" }, segment: { od: "P2" }, materialne: { od: "P3" },
   skutky: { od: "zadarmo" }, video: { od: "zadarmo" }, oznamy: { od: "P1" }, nastenka: { od: "P1" }, upoutavky: { od: "P2" },
   darcovia: { od: "zadarmo" }, sledujuci: { od: "zadarmo" }, dobrovolnici: { od: "P2" }, podujatia: { od: "P2" }, sponzoring: { od: "P1" }, inzeraty: { od: "P1" },
   qr: { od: "zadarmo" }, sektorqr: { od: "P2" }, embed: { od: "P1" }, prednost: { od: "P3" }, statistiky: { od: "zadarmo" }, vypis: { od: "zadarmo" }, export: { od: "P3" },
+  pobocky: { od: "zadarmo" }, dorovnavanie: { od: "zadarmo" }, zamestnanci: { od: "zadarmo" }, esg: { od: "zadarmo" }, firemnyqr: { od: "zadarmo" },
 };
-/** má charita s týmto tierom položku? */
+/** má charita s týmto tierom položku? (program) */
 export const maPovolenie = (id: PolozkaSpravy, tier: Tier): boolean => tier >= PROGRAM_TIER[POVOLENIA_CHARITY[id].od];
+
+// ============================================================
+// KARTA 36 · Typy profilov — jedna správa pre všetkých. Typ len VYPÍNA položky, PRIDÁVA nástroje a mení slová.
+// Položka je viditeľná, keď ju povolí typ (nie je vo VYPNUTE) — program potom rozhodne, či je odomknutá.
+// ============================================================
+export type TypStranky = "charita" | "spolok" | "sport" | "umenie" | "skola" | "farnost" | "obec" | "nemocnica" | "firma" | "tvorca" | "ina";
+export const TYP_NAZOV: Record<TypStranky, string> = {
+  charita: "Charita / OZ", spolok: "Spolok", sport: "Športový klub", umenie: "Umelecký súbor", skola: "Škola", farnost: "Farnosť",
+  obec: "Obec / mesto", nemocnica: "Nemocnica", firma: "Firma", tvorca: "Tvorca", ina: "Iná organizácia",
+};
+/** poradie typov (registrácia, testovacia lišta) */
+export const TYPY_STRANOK: TypStranky[] = ["charita", "spolok", "sport", "umenie", "skola", "farnost", "obec", "nemocnica", "firma", "tvorca", "ina"];
+/** v appke skryté (pripravené na fázu 2) */
+export const TYP_SKRYTY: Partial<Record<TypStranky, true>> = { nemocnica: true };
+/** čo typ VYPÍNA */
+export const POVOLENIA_TYPU: Record<TypStranky, PolozkaSpravy[]> = {
+  charita: [], obec: [], nemocnica: [], ina: [],
+  spolok: ["segment", "sektorqr", "materialne", "pobocky"],
+  sport: ["segment", "materialne"],
+  umenie: ["segment", "materialne", "pobocky"],
+  skola: ["inzeraty"],
+  farnost: ["inzeraty", "segment", "sektorqr", "pobocky"],
+  // firma: zbierky pre seba a pravidelná podpora (centrálna) zatiaľ vypnuté
+  firma: ["zbierky", "centralna", "segment", "materialne"],
+  tvorca: ["segment", "materialne", "pobocky", "sektorqr"],
+};
+/** čo typ PRIDÁVA — vlastná skupina navrch menu (názov skupiny = TYP_NAZOV) */
+export const NASTROJE_TYPU: Record<TypStranky, PolozkaSpravy[]> = {
+  charita: [], spolok: [], sport: [], umenie: [], skola: [], farnost: [], obec: [], nemocnica: [], ina: [],
+  firma: ["dorovnavanie", "zamestnanci", "esg", "firemnyqr"],
+  tvorca: ["video"], // Iskra navrch, ďalšie nástroje dodá dizajn
+};
+/** povolí položku typ? */
+export const typPovoli = (id: PolozkaSpravy, typ: TypStranky): boolean => !POVOLENIA_TYPU[typ].includes(id);
+/** slová podľa typu — štruktúra, texty sa doplnia pri každom type */
+export type Slovo = "darcovia" | "akcie" | "sektory";
+export const SLOVA_TYPU: Record<TypStranky, Partial<Record<Slovo, string>>> = {
+  charita: {}, ina: {}, firma: {},
+  spolok: { darcovia: "členovia" }, sport: { darcovia: "členovia", akcie: "zápasy" }, umenie: { akcie: "vystúpenia" },
+  skola: { sektory: "triedy" }, farnost: { darcovia: "farníci" }, obec: { darcovia: "obyvatelia" },
+  nemocnica: { sektory: "oddelenia" }, tvorca: { darcovia: "podporovatelia" },
+};
+export const slovo = (typ: TypStranky, s: Slovo, zaklad: string): string => SLOVA_TYPU[typ][s] ?? zaklad;
+/** cenník podľa typu: charita (4 programy) · jedna cena · B2B · vlastný tvorcu */
+export type Cennik = "charita" | "jedna" | "b2b" | "tvorca";
+export const CENNIK_TYPU: Record<TypStranky, Cennik> = {
+  charita: "charita", sport: "charita", umenie: "charita", skola: "charita", obec: "charita", nemocnica: "charita", ina: "charita",
+  spolok: "jedna", farnost: "jedna", firma: "b2b", tvorca: "tvorca",
+};
+/** sada štítov podľa typu (zatiaľ všetci CARE, firma firemný — obrázky dodá dizajn) */
+export type StitSada = "care" | "firma";
+export const STIT_SADA_TYPU: Record<TypStranky, StitSada> = {
+  charita: "care", spolok: "care", sport: "care", umenie: "care", skola: "care", farnost: "care", obec: "care", nemocnica: "care", ina: "care", tvorca: "care",
+  firma: "firma",
+};
+// ---- DEV: typ testovanej stránky (testovacia lišta) a typ z registrácie ----
+export const nacitajTypStranky = (): TypStranky | null => nacitaj<TypStranky | null>(kluc("typStranky"), null);
+export const ulozTypStranky = (t: TypStranky) => uloz(kluc("typStranky"), t);
+/** registrácia „Iná organizácia" — čím sa zaoberá (aby sme vedeli, aký typ doplniť) */
+export const ulozInaCinnost = (t: string) => uloz(kluc("inaCinnost"), t);
 /** program, od ktorého položka je (na štítok a zamknutú obrazovku) */
 export const odProgramu = (id: PolozkaSpravy): Program => POVOLENIA_CHARITY[id].od;
 

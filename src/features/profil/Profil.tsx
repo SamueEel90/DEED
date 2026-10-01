@@ -1,14 +1,14 @@
 import { useState, useEffect } from "react";
 import { MojeStranky, KonasAkoLista } from "./MojeStranky";
 import type { Stranka } from "@/lib/mojeStranky";
-import { ulozPoziciu } from "@/features/rola/stav";
+import { ulozPoziciu, nacitajTypStranky, type TypStranky } from "@/features/rola/stav";
 import { useVazbyOsoby } from "@/lib/zamestnanci";
 import { useMojaFirma, dataFirmy } from "@/lib/mojaFirma";
 import { usePouzivatel } from "@/lib/pouzivatel";
 import { SIRKA, C, SPACE, RADIUS } from "@/theme";
 import { toast, useScrollPamat, useLayout, obalSiroky, IkonaNastavenia, IkonaPenazenka, IkonaHviezda, IkonaFajka, IkonaDoska, IkonaUsmev, IkonaOsoba, ScreenSwitch } from "@/shared";
 import { MojDeedFiremny } from "@/features/rola/MojDeedFiremny";
-import { SpravaCharity } from "@/features/rola/SpravaCharity";
+import { SpravaStranky } from "@/features/rola/SpravaStranky";
 import { UKAZKOVE_STRANKY, cakaOtvorenieSpravy, zrusOtvorenieSpravy } from "@/lib/mojeStranky";
 import { useVrstva } from "@/lib/urlnav";
 import { Nastavenia as NotifNastavenia } from "@/features/notifikacie/Notifikacie";
@@ -57,10 +57,12 @@ export default function ModulProfil({ wide, walletReq = 0 }: ProfilProps) {
 
   const [skOblast, setSkOblast] = useState<Oblast | undefined>(undefined); // Moje skutky s filtrom oblasti (z detailu oblasti)
   // OPRAVY 75: Moje stránky → Spravovať = rolový panel danej stránky (nahrádza „Môj DEED+ firemný" v Charite)
-  // KARTA 34: charita → Správa charity (kostra); tvorca a firma zatiaľ pôvodný rolový panel
+  // KARTA 36: Spravovať → jedna správa s typom stránky (charita, firma, tvorca …); MojDeedFiremny ostáva, len sa sem neprepína
   const [stranka, setStranka] = useState<Stranka>(UKAZKOVE_STRANKY[0]);
-  const spravovat = (s: Stranka) => { ulozPoziciu(s.pozicia); setStranka(s); setScreen(s.typ === "charita" ? "sprava" : "firemny"); };
-  const sprava = <SpravaCharity strankaId={stranka.k} nazov={stranka.n} inicialy={stranka.i} onBack={() => setScreen("profil")} />;
+  // typ správy: zo stránky, po registrácii z výberu typu organizácie (KARTA 36)
+  const [typSpravy, setTypSpravy] = useState<TypStranky>(() => (cakaOtvorenieSpravy() ? nacitajTypStranky() ?? "charita" : "charita"));
+  const spravovat = (s: Stranka) => { ulozPoziciu(s.pozicia); setStranka(s); setTypSpravy(s.typ); setScreen("sprava"); };
+  const sprava = <SpravaStranky key={`${stranka.k}-${typSpravy}`} typ={typSpravy} strankaId={stranka.k} nazov={stranka.n} inicialy={stranka.i} onBack={() => setScreen("profil")} />;
   const sub = (n: string) => { setSubNazov(n); setSkOblast(undefined); setScreen("sub"); };
   const skutkyOblasti = (o: Oblast) => { setSubNazov("Moje skutky"); setSkOblast(o); setScreen("sub"); };
   const spatZoSkutkov = () => { if (skOblast) { setSkOblast(undefined); setSubNazov("Karma a štíty"); } else setScreen("profil"); };
