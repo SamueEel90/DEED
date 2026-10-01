@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef, lazy, Suspense, type CSSProperties } from "react";
+import { cakaOtvorenieSpravy } from "@/lib/mojeStranky";
 import { LazyMotion, domAnimation, MotionConfig } from "motion/react";
 import { C } from "@/theme";
 import { aplikujNastavenia } from "@/lib/nastaveniaAppky";
@@ -171,9 +172,12 @@ export function Screens({ wide, desktop }: { wide?: boolean; desktop?: boolean }
   const [dl] = useState(() => precitajDeepLink());
   // modul z URL (/m/{id}) → refresh/priamy link drží obrazovku; inak Domov
   const [modul, setModul] = useState<ModulId>(() => {
+    if (cakaOtvorenieSpravy()) return "profil" as ModulId; // KARTA 34: po registrácii charity → Profil → Správa charity
     const m = typeof window !== "undefined" ? modulZCesty(window.location.pathname) : null;
     return m && VSETKY_MODULY.some((x) => x.id === m) ? (m as ModulId) : "good";
   });
+  // KARTA 34: registrácia charity skončila (session práve vznikla) → Profil, ten otvorí Správu charity
+  useEffect(() => { if (session && cakaOtvorenieSpravy()) setModul("profil"); }, [session]);
   const [taby, setTaby] = useState<string[]>(nacitajTaby);
   const [viac, setViac] = useState(false);
   const [galeria, setGaleria] = useState<{ fotky: string[]; index: number } | null>(null);

@@ -6,6 +6,7 @@
 // Štatutár sa overuje ako osoba (KYC) — closed loop; org cez KYB (Didit).
 // ============================================================
 import { useEffect, useState } from "react";
+import { otvorSpravuPoRegistracii } from "@/lib/mojeStranky";
 import { C, GRAD, infoBox, SPACE, RADIUS } from "@/theme";
 import { Vyber, Otazka, Oslava, Suhrn } from "@/shared";
 import { setSession } from "@/lib/session";
@@ -844,6 +845,7 @@ function KrokBaliky({ org, nazov, toast, onBack, onHotovo }: KrokBalikyProps) {
   };
 
   const zatvorOslavu = () => {
+    otvorSpravuPoRegistracii(); // KARTA 34: prvá stránka po registrácii = Správa charity
     setSession({
       ucet_id: org.id,
       typ: "charita",

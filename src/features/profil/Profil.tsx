@@ -8,6 +8,8 @@ import { usePouzivatel } from "@/lib/pouzivatel";
 import { SIRKA, C, SPACE, RADIUS } from "@/theme";
 import { toast, useScrollPamat, useLayout, obalSiroky, IkonaNastavenia, IkonaPenazenka, IkonaHviezda, IkonaFajka, IkonaDoska, IkonaUsmev, IkonaOsoba, ScreenSwitch } from "@/shared";
 import { MojDeedFiremny } from "@/features/rola/MojDeedFiremny";
+import { SpravaCharity } from "@/features/rola/SpravaCharity";
+import { UKAZKOVE_STRANKY, cakaOtvorenieSpravy, zrusOtvorenieSpravy } from "@/lib/mojeStranky";
 import { useVrstva } from "@/lib/urlnav";
 import { Nastavenia as NotifNastavenia } from "@/features/notifikacie/Notifikacie";
 import type { WideProps } from "@/types";
@@ -40,7 +42,9 @@ type ProfilProps = WideProps & { walletReq?: number };
 
 export default function ModulProfil({ wide, walletReq = 0 }: ProfilProps) {
   const { desktop } = useLayout();
-  const [screen, setScreen] = useState("profil"); // profil | wallet | sub | nastavenia | notif
+  // KARTA 34: po registrácii charity sa otvorí rovno Správa charity
+  const [screen, setScreen] = useState(() => (cakaOtvorenieSpravy() ? "sprava" : "profil")); // profil | wallet | sub | nastavenia | notif | sprava
+  useEffect(() => { zrusOtvorenieSpravy(); }, []); // príznak platí len raz
   const [subNazov, setSubNazov] = useState<string | null>(null);
   // pod-obrazovka = vrstva histórie → browser Back sa vráti na profil (nie von z appky)
   useVrstva(screen !== "profil", () => setScreen("profil"), screen);
@@ -53,7 +57,10 @@ export default function ModulProfil({ wide, walletReq = 0 }: ProfilProps) {
 
   const [skOblast, setSkOblast] = useState<Oblast | undefined>(undefined); // Moje skutky s filtrom oblasti (z detailu oblasti)
   // OPRAVY 75: Moje stránky → Spravovať = rolový panel danej stránky (nahrádza „Môj DEED+ firemný" v Charite)
-  const spravovat = (s: Stranka) => { ulozPoziciu(s.pozicia); setScreen("firemny"); };
+  // KARTA 34: charita → Správa charity (kostra); tvorca a firma zatiaľ pôvodný rolový panel
+  const [stranka, setStranka] = useState<Stranka>(UKAZKOVE_STRANKY[0]);
+  const spravovat = (s: Stranka) => { ulozPoziciu(s.pozicia); setStranka(s); setScreen(s.typ === "charita" ? "sprava" : "firemny"); };
+  const sprava = <SpravaCharity nazov={stranka.n} inicialy={stranka.i} onBack={() => setScreen("profil")} />;
   const sub = (n: string) => { setSubNazov(n); setSkOblast(undefined); setScreen("sub"); };
   const skutkyOblasti = (o: Oblast) => { setSubNazov("Moje skutky"); setSkOblast(o); setScreen("sub"); };
   const spatZoSkutkov = () => { if (skOblast) { setSkOblast(undefined); setSubNazov("Karma a štíty"); } else setScreen("profil"); };
@@ -66,6 +73,7 @@ export default function ModulProfil({ wide, walletReq = 0 }: ProfilProps) {
   const obal = (el: React.ReactNode) => obalSiroky(el, { wide, desktop, max: SIRKA.stlpec, maxDesktop: SIRKA.citanie });
 
   // DESKTOP — profesionálny 2-panel layout: bočná navigácia (identita + sekcie) + obsahový panel
+  if (desktop && screen === "sprava") return sprava;
   if (desktop) return <>{qrModal}{upravaHarok}<ProfilDesktop screen={screen} subNazov={subNazov} setScreen={setScreen} onSub={sub} onQr={() => setQr(true)} onUpravit={() => setUprava(true)} pTab={pTab} onPriatelia={priatelia} onStranka={spravovat} skOblast={skOblast} skutkyOblasti={skutkyOblasti} spatZoSkutkov={spatZoSkutkov} /></>;
 
   // MOBIL — pôvodný tok (dlaždice → pod-obrazovky cez ScreenSwitch)
@@ -75,6 +83,7 @@ export default function ModulProfil({ wide, walletReq = 0 }: ProfilProps) {
       {screen === "profil" && obal(<ProfilHlavny18 naWallet={() => setScreen("wallet")} naSub={sub} naNastavenia={() => setScreen("nastavenia")} naPriatelia={() => priatelia()} naPriatelia2={priatelia} naStranku={spravovat} naFirma={() => setScreen("firma")}
         naUpravit={() => setUprava(true)} naQr={() => setQr(true)} />)}
       {screen === "wallet" && obal(<Penazenka18 onBack={() => setScreen("profil")} />)}
+      {screen === "sprava" && sprava}
       {screen === "firemny" && obalSiroky(<MojDeedFiremny onBack={() => setScreen("profil")} toast={toast} />, { wide, desktop, max: SIRKA.stlpec })}
       {screen === "sub" && (subNazov === "Moje záujmy" ? obal(<ZaujmyObrazovka onBack={() => setScreen("profil")} />) : subNazov === "Moje skutky" ? <MojeSkutky21 key={skOblast ?? "vsetky"} oblastStitu={skOblast} onBack={spatZoSkutkov} /> : subNazov === "Karma a štíty" ? obal(<KarmaStity naSkutky={skutkyOblasti} onBack={() => setScreen("profil")} />) : obal(<Statistiky onBack={() => setScreen("profil")} />))}
       {screen === "priatelia" && obal(<Priatelia tab={pTab} onBack={() => setScreen("profil")} />)}

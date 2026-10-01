@@ -147,3 +147,40 @@ export const ulozOrgExtra = (z: OrgZbierka[]) => uloz(kluc("orgzbierky"), z);
 export interface Viditelnost { hlavicka: boolean; sumyDarov: boolean }
 export const nacitajViditelnost = (p: Pozicia): Viditelnost => nacitaj(kluc(`viditelnost.${p}`), { hlavicka: true, sumyDarov: true });
 export const ulozViditelnost = (p: Pozicia, v: Viditelnost) => uloz(kluc(`viditelnost.${p}`), v);
+
+// ============================================================
+// KARTA 34 · Správa charity — povolenia z JEDNÉHO miesta.
+// Program charity P1–P3 = tier 1–3 (logika tierov vyššie sa NEMENÍ, toto len číta tier).
+// Každá položka správy má `od` — od ktorého programu ju charita má. Komponent nič nepovoľuje natvrdo.
+// ============================================================
+export type Program = "zadarmo" | "P1" | "P2" | "P3";
+export const PROGRAM_TIER: Record<Program, Tier> = { zadarmo: 0, P1: 1, P2: 2, P3: 3 };
+/** názov programu podľa tieru (štítok „od Px", riadok Program v paneli) */
+export const PROGRAM_NAZOV: Record<Tier, string> = { 0: "Zadarmo", 1: "P1", 2: "P2", 3: "P3", 4: "P4" };
+export type PolozkaSpravy =
+  | "zbierky" | "centralna" | "dorovnanie" | "segment" | "materialne"
+  | "skutky" | "video" | "oznamy" | "nastenka" | "upoutavky"
+  | "darcovia" | "sledujuci" | "dobrovolnici" | "podujatia" | "sponzoring" | "inzeraty"
+  | "qr" | "sektorqr" | "embed" | "prednost" | "statistiky" | "vypis" | "export";
+export const POVOLENIA_CHARITY: Record<PolozkaSpravy, { od: Program }> = {
+  zbierky: { od: "zadarmo" }, centralna: { od: "P1" }, dorovnanie: { od: "P1" }, segment: { od: "P2" }, materialne: { od: "P3" },
+  skutky: { od: "zadarmo" }, video: { od: "zadarmo" }, oznamy: { od: "P1" }, nastenka: { od: "P1" }, upoutavky: { od: "P2" },
+  darcovia: { od: "zadarmo" }, sledujuci: { od: "zadarmo" }, dobrovolnici: { od: "P2" }, podujatia: { od: "P2" }, sponzoring: { od: "P1" }, inzeraty: { od: "P1" },
+  qr: { od: "zadarmo" }, sektorqr: { od: "P2" }, embed: { od: "P1" }, prednost: { od: "P3" }, statistiky: { od: "zadarmo" }, vypis: { od: "zadarmo" }, export: { od: "P3" },
+};
+/** má charita s týmto tierom položku? */
+export const maPovolenie = (id: PolozkaSpravy, tier: Tier): boolean => tier >= PROGRAM_TIER[POVOLENIA_CHARITY[id].od];
+/** program, od ktorého položka je (na štítok a zamknutú obrazovku) */
+export const odProgramu = (id: PolozkaSpravy): Program => POVOLENIA_CHARITY[id].od;
+
+// ---- štít charity (CARE) — v produkcii z karmy charity, v DEV prepínač ----
+export type StitCharity = "bronze" | "silver" | "gold" | "platinum" | "legend";
+export const nacitajStitCharity = (): StitCharity => nacitaj<StitCharity>(kluc("stit.charita"), "bronze");
+export const ulozStitCharity = (s: StitCharity) => uloz(kluc("stit.charita"), s);
+// ---- pripnuté položky v správe charity (max 6) — TODO: uložiť do účtu, kým nie je tabuľka, drží ich zariadenie ----
+export const PIN_MAX = 6;
+export const nacitajPinyCharity = (): PolozkaSpravy[] => nacitaj<PolozkaSpravy[]>(kluc("piny.charita"), ["zbierky", "skutky", "dobrovolnici"]);
+export const ulozPinyCharity = (p: PolozkaSpravy[]) => uloz(kluc("piny.charita"), p.slice(0, PIN_MAX));
+// ---- DEV: nová charita (nuly, prázdne stavy) alebo bežiaca ukážka ----
+export const nacitajCharituNovu = (): boolean => nacitaj(kluc("charita.nova"), false);
+export const ulozCharituNovu = (v: boolean) => uloz(kluc("charita.nova"), v);

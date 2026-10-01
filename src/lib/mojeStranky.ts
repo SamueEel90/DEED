@@ -36,3 +36,9 @@ export function prepniPrezentaciu() {
 }
 /** testovacia verzia (npm run dev, VITE_TEST=1 alebo ?dev) — OPRAVY 81 */
 export { TESTOVACIA } from "@/lib/testovacia";
+
+/** KARTA 34: koniec registrácie charity → appka otvorí Profil a v ňom Správu charity (jednorazový príznak) */
+const KLUC_SPRAVA = "deed.otvorSpravuCharity";
+export function otvorSpravuPoRegistracii() { try { sessionStorage.setItem(KLUC_SPRAVA, "1"); } catch { /* SS */ } }
+export function cakaOtvorenieSpravy(): boolean { try { return sessionStorage.getItem(KLUC_SPRAVA) === "1"; } catch { return false; } }
+export function zrusOtvorenieSpravy() { try { sessionStorage.removeItem(KLUC_SPRAVA); } catch { /* SS */ } }
