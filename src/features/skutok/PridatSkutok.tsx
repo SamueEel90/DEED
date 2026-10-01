@@ -428,7 +428,7 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
       pridajSkutokOrg(stranka, {
         id, nazov: nz, popis: popisHtml, oblast: oblast ?? "Pomoc", miesto: kde, datum: teraz(), stav: "ok", karma: null,
         det: "Ľuďom vo vašej lokalite a na váš profil.", fotky, ucastnici: sk ? uc.filter((u) => u.overeny).map((u) => u.meno) : undefined,
-        dar: dar ? darZ : undefined, za: pr.autor, vytvoril: ja.celeMeno || undefined, zaznam: pr.zAkcie?.zaznam,
+        dar: dar ? darZ : undefined, za: pr.autor, vytvoril: ja.celeMeno || undefined, zaznam: pr.zAkcie?.zaznam, seria: prav ? pvF : undefined,
       });
       const it: GoodPolozka = {
         id: teraz(), typ: "skutok", velkost: "med", kat: KAT[oblast ?? "Pomoc"] ?? "Komunita", autor: pr.autor || "Charita", num: 0, emoji: "",
@@ -636,6 +636,12 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
           <span style={{ fontSize: 12.5, fontWeight: 600, color: "var(--ink3)", lineHeight: 1.45 }}>Text z Wordu, Facebooku či Instagramu si tučné, kurzívu aj odrážky ponechá.</span>
           <span style={{ flex: "none", fontSize: 13, fontWeight: 800, color: "var(--ink3)", fontVariantNumeric: "tabular-nums" }}>{(zn1 + zn2).toLocaleString("sk-SK")} / 1 500</span>
         </div>
+        {/* OPRAVY 122 (1): „Robíme to pravidelne" ostáva, séria patrí stránke charity ("Chystáme sa" je skryté) */}
+        <Zaskrt on={prav} onClick={() => setPrav(!prav)}><b style={{ color: "var(--ink)" }}>Robíme to pravidelne</b></Zaskrt>
+        {prav && <>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>{["každý týždeň", "každý mesiac", "inak"].map((t) => <Cip key={t} on={pvF === t} onClick={() => setPvF(t)}>{t}</Cip>)}</div>
+          <div style={P.maly}>Nabudúce netreba písať celý text, stačí fotka. Na profile charity sa to spojí do série.</div>
+        </>}
       </div> : <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         <div style={P.lbl}>{plan ? "ČO SA CHYSTÁŠ UROBIŤ" : "ČO SI UROBIL"}</div>
         <input value={nz0} onChange={(e) => setNz0(e.target.value)} maxLength={70} placeholder="Názov, napr. Pitný režim pre susedu (nepovinné)" aria-label="Názov skutku" style={P.pole} />
