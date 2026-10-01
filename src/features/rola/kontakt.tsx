@@ -20,7 +20,7 @@ export const SIETE: { k: Siet; label: string; domeny: string[] }[] = [
   { k: "x", label: "X", domeny: ["x.com", "twitter.com"] }, // KARTA 33
 ];
 export const MAX_TEL = 3;
-export const MAX_EMAIL = 5;
+export const MAX_EMAIL = 3; // Martin 1. 10. 2026: najviac 3 e-maily (aj v starom hárku)
 
 export interface Kontakt {
   /** sídlo z registrácie (overené cez IČO) — needituje sa */

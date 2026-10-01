@@ -342,13 +342,16 @@ export function ObrSpravcovia({ mobil }: { mobil: boolean }) {
 // ============================================================
 type Ud = { mail: string; tel: string; dic: string; fmail: string; ina: boolean; adr: string };
 const UD0: Ud = { mail: "info@svetlopomoci.sk", tel: "+421 905 111 222", dic: "", fmail: "info@svetlopomoci.sk", ina: false, adr: "" };
+/** sídlo z registra — jeden zdroj pre Údaje organizácie aj Upraviť profil (OPRAVY 108). TODO: tabuľka organizacia.sidlo */
+export const SIDLO_REGISTRA = "Palackého 14, 911 01 Trenčín";
+
 export function ObrUdaje({ mobil }: { mobil: boolean }) {
   const [ud, setUd] = usePamat<Ud>("ud", UD0);
   const [d, setD] = useState<Partial<Ud>>({});
   const v = <K extends keyof Ud>(k: K): Ud[K] => (d[k] ?? ud[k]) as Ud[K];
   const zmena = (Object.keys(d) as (keyof Ud)[]).some((k) => d[k] !== ud[k]);
   const set = (k: keyof Ud) => (e: React.ChangeEvent<HTMLInputElement>) => { const x = e.target.value; setD((c) => ({ ...c, [k]: x })); };
-  const REG: [string, string][] = [["Názov", "Svetlo pomoci o.z."], ["IČO", "42 318 657"], ["Právna forma", "Občianske združenie"], ["Sídlo", "Hlavná 12, 911 01 Trenčín"], ["Dátum vzniku", "14. 3. 2012"], ["Štatutár", "Martin Štofik · overený"]];
+  const REG: [string, string][] = [["Názov", "Svetlo pomoci o.z."], ["IČO", "42 318 657"], ["Právna forma", "Občianske združenie"], ["Sídlo", SIDLO_REGISTRA], ["Dátum vzniku", "14. 3. 2012"], ["Štatutár", "Martin Štofik · overený"]];
   const Pole = ({ k, t, ph, typ = "text" }: { k: keyof Ud; t: React.ReactNode; ph?: string; typ?: string }) => (
     <label style={{ display: "flex", flexDirection: "column", gap: 6 }}><span style={{ fontSize: 13.5, fontWeight: 700, color: "var(--ink2)" }}>{t}</span><input type={typ} value={v(k) as string} onChange={set(k)} placeholder={ph} style={pole} /></label>);
   return (
@@ -371,7 +374,7 @@ export function ObrUdaje({ mobil }: { mobil: boolean }) {
         <div style={{ ...nad, marginTop: 10 }}>FAKTURAČNÉ ÚDAJE</div>
         <div style={{ ...krt, padding: 16, display: "flex", flexDirection: "column", gap: 12 }}>
           {Pole({ k: "dic", t: <>DIČ <span style={{ fontWeight: 600, color: "var(--ink3)" }}>· ak ho máte</span></>, ph: "napr. 2021234567" })}
-          <RiadokPrep i={0} minH={48} t="Fakturačná adresa = sídlo" s="Hlavná 12, 911 01 Trenčín" on={!v("ina")} onClick={() => setD((c) => ({ ...c, ina: !v("ina") }))} />
+          <RiadokPrep i={0} minH={48} t="Fakturačná adresa = sídlo" s={SIDLO_REGISTRA} on={!v("ina")} onClick={() => setD((c) => ({ ...c, ina: !v("ina") }))} />
           {v("ina") && <input value={v("adr")} onChange={set("adr")} placeholder="ulica, PSČ, mesto" aria-label="Fakturačná adresa" style={pole} />}
           {Pole({ k: "fmail", t: "E-mail na faktúry", typ: "email" })}
           <span style={pozn}>Na tieto údaje vystavíme faktúru za program. V programe Zadarmo neplatíte nič.</span>

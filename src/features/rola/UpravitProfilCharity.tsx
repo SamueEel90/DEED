@@ -11,14 +11,13 @@ import { OrezFotky } from "@/components/orezfotky";
 import { toast } from "@/components/toast";
 import { spracujLogo, spracujFotku, rozmeryFotky, LOGO_CFG, COVER_CFG, type LogoRezim, type LogoPozadie } from "@/lib/obrazok";
 import { nacitajProfil, profilZPamate, ulozKoncept, zverejniProfil, type ProfilStranky, type RamFotky, type TitulnaFotka, type VyrezFotky } from "@/lib/profilStranky";
-import { SUBJEKTY } from "./mock";
-import { nacitajKontakt, SIETE, MAX_TEL, chybaSiete, chybaWebu, chybaEmailu, chybaTel, type Kontakt } from "./kontakt";
-import { nacitajOnas, TYP_NAZOV, type Pozicia, type TvarLoga, type TypStranky } from "./stav";
+import { SIDLO_REGISTRA } from "./NastaveniaCharity";
+import { nacitajKontakt, SIETE, MAX_TEL, MAX_EMAIL, chybaSiete, chybaWebu, chybaEmailu, chybaTel, type Kontakt } from "./kontakt";
+import { TYP_NAZOV, type Pozicia, type TvarLoga, type TypStranky } from "./stav";
 
 // ---------- konštanty z karty 33 ----------
 const ONAS_RIADKY = 12;
 const ONAS_ZNAKY = 1500;
-const MAX_MAIL_KARTA = 3; // karta 33: e-maily najviac 3
 const NASTROJE = ["bold", "italic", "nadpis", "vacsie", "mensie", "insertUnorderedList", "insertOrderedList", "odkaz", "diktovat", "tx", "spat"];
 export const RAMY: { k: RamFotky; t: string; g: string }[] = [
   { k: "bez", t: "Bez rámu", g: "repeating-linear-gradient(45deg,#fff 0 4px,var(--card) 4px 8px)" },
@@ -27,14 +26,14 @@ export const RAMY: { k: RamFotky; t: string; g: string }[] = [
   { k: "zb", t: "Zeleno-bronzový", g: "linear-gradient(135deg,#1E3627 0%,#2F5A3C 26%,#B97D45 50%,#E6B784 62%,#9A6232 76%,#22402E 100%)" },
 ];
 /** údaje z registrácie (zamknuté) — TODO: napojiť na tabuľku organizacia (nazov, ico, sidlo) */
-const REGISTRACIA = { ico: "42 123 456", sidlo: "Palackého 14, 911 01 Trenčín" };
+// sídlo z Údajov organizácie (ten istý zdroj), IČO sa tu nevypisuje (Martin 1. 10. 2026)
 
-/** profil pred prvým uložením = dáta z registrácie a doterajší text O nás */
+/** profil pred prvým uložením = úplne prázdny (Martin 1. 10. 2026), zo registrácie len zamknuté sídlo */
 export function zakladnyProfil(p: Pozicia): ProfilStranky {
   const k = nacitajKontakt(p);
   return {
-    onas: nacitajOnas(p) ?? SUBJEKTY[p].onas, onas2: "",
-    kontakt: { ...k, sidlo: p === "charita" ? REGISTRACIA.sidlo : k.sidlo },
+    onas: "", onas2: "",
+    kontakt: { sidlo: p === "charita" ? SIDLO_REGISTRA : k.sidlo, adresaVerejna: "", telefony: [{ cislo: "", popis: "" }], emaily: [{ adresa: "", popis: "" }], web: "", siete: {} },
     logo: null, tvar: "stvorec", logoRezim: "cele", logoPozadie: "biele",
     cover: null, ram: "bez",
   };
@@ -218,7 +217,7 @@ export function UpravitProfilCharity({ strankaId, pozicia, typ, nazov, inicialy,
   const kartaOnas = (
     <section style={karta} aria-label="Názov a O nás">
       {nadpis("Názov", "z registrácie, overený cez IČO", 14)}
-      <div style={zamknute}><Zamok />{nazov} · IČO {REGISTRACIA.ico}</div>
+      <div style={zamknute}><Zamok />{nazov}</div>
       <span style={{ marginTop: 6 }}>{nadpis("O nás · hlavný text")}</span>
       <span style={{ fontSize: 13, color: "var(--ink2)", lineHeight: 1.45, marginTop: -4 }}>Toto ľudia uvidia hneď v hlavičke profilu. Kto ste a komu pomáhate, tak, aby to zaujalo. Najviac 12 riadkov.</span>
       <RichTextInput vzhlad="sprava" value={p.onas} onChange={(h) => zmen({ onas: h })} nastroje={NASTROJE} minH={130} chybaRam={dlhy}
@@ -266,7 +265,7 @@ export function UpravitProfilCharity({ strankaId, pozicia, typ, nazov, inicialy,
         </div>
         <Chyba t={chybaEmailu(m.adresa)} />
       </div>))}
-      {k.emaily.length < MAX_MAIL_KARTA && <Pridat onClick={() => zmenK({ emaily: [...k.emaily, { adresa: "", popis: "" }] })}>+ Pridať e-mail</Pridat>}
+      {k.emaily.length < MAX_EMAIL && <Pridat onClick={() => zmenK({ emaily: [...k.emaily, { adresa: "", popis: "" }] })}>+ Pridať e-mail</Pridat>}
       {nadpis("Web a sociálne siete", undefined, 14)}
       {[{ k: "web", label: "Web", ph: "www.vasastranka.sk" }, ...SIETE.map((x) => ({ k: x.k, label: x.label, ph: PH_SIETE[x.k] ?? `${x.domeny[0]}/…` }))].map((r) => {
         const v = r.k === "web" ? k.web : k.siete[r.k as keyof Kontakt["siete"]] ?? "";
