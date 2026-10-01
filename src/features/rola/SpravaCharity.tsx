@@ -12,9 +12,10 @@ import { toast } from "@/components/toast";
 import { useNastaveniaAppky, zmenNastavenia } from "@/lib/nastaveniaAppky";
 import { potvrditTuknutim, nastavPotvrditTuknutim } from "@/features/zbierka/Platba";
 import { TESTOVACIA } from "@/lib/testovacia";
+import { nacitajPiny, ulozPiny, pinyZPamate } from "@/lib/spravaPiny";
 import {
   FLAGS, nacitajTiery, ulozTiery, maPovolenie, odProgramu, PROGRAM_NAZOV, PIN_MAX,
-  nacitajStitCharity, ulozStitCharity, nacitajPinyCharity, ulozPinyCharity, nacitajCharituNovu, ulozCharituNovu,
+  nacitajStitCharity, ulozStitCharity, nacitajCharituNovu, ulozCharituNovu,
   type PolozkaSpravy, type StitCharity, type Tier,
 } from "./stav";
 
@@ -150,19 +151,22 @@ const Pruh = ({ sc, h = 8, bg = "var(--track)", c = "var(--green)" }: { sc: numb
 
 export interface SpravaCharityProps {
   onBack: () => void;
+  /** stránka charity (kľúč pre pripnuté v účte) */
+  strankaId?: string;
   /** názov a iniciály charity (Moje stránky / registrácia) */
   nazov?: string;
   inicialy?: string;
 }
 
-export function SpravaCharity({ onBack, nazov = "Svetlo pomoci o.z.", inicialy = "SP" }: SpravaCharityProps) {
+export function SpravaCharity({ onBack, strankaId = "svetlo", nazov = "Svetlo pomoci o.z.", inicialy = "SP" }: SpravaCharityProps) {
   const { desktop } = useLayout();
   const [sub, setSub] = useState<Sub>(null);
   const hist = useRef<Sub[]>([]);
   const [tier, setTier] = useState<Tier>(() => nacitajTiery().charita);
   const [stit, setStit] = useState<StitCharity>(nacitajStitCharity);
   const [nova, setNova] = useState<boolean>(nacitajCharituNovu);
-  const [piny, setPiny] = useState<PolozkaSpravy[]>(nacitajPinyCharity);
+  const [piny, setPiny] = useState<PolozkaSpravy[]>(() => pinyZPamate(strankaId));
+  useEffect(() => { let ziva = true; void nacitajPiny(strankaId).then((p) => { if (ziva) setPiny(p); }); return () => { ziva = false; }; }, [strankaId]);
   const [zoom, setZoom] = useState(false);
   const korenRef = useRef<HTMLDivElement>(null);
 
@@ -177,8 +181,8 @@ export function SpravaCharity({ onBack, nazov = "Svetlo pomoci o.z.", inicialy =
 
   const otvorPolozku = (id: PolozkaSpravy) => otvor(id === "zbierky" ? "g_zbierky" : id);
   const prepniPin = (id: PolozkaSpravy) => {
-    if (piny.includes(id)) { const n = piny.filter((x) => x !== id); setPiny(n); ulozPinyCharity(n); }
-    else if (piny.length < PIN_MAX) { const n = [...piny, id]; setPiny(n); ulozPinyCharity(n); }
+    if (piny.includes(id)) { const n = piny.filter((x) => x !== id); setPiny(n); void ulozPiny(strankaId, n); }
+    else if (piny.length < PIN_MAX) { const n = [...piny, id]; setPiny(n); void ulozPiny(strankaId, n); }
     else toast("Najviac 6 pripnutých položiek.");
   };
 
@@ -228,9 +232,6 @@ export function SpravaCharity({ onBack, nazov = "Svetlo pomoci o.z.", inicialy =
         <div style={{ flex: "none", marginTop: 8 }}>
           <TlacidloNastavenia on={sub === "nast"} onClick={() => otvor("nast")} />
         </div>
-        <button onClick={() => otvor("x:Program a platba")} style={{ flex: "none", display: "flex", alignItems: "center", gap: 10, minHeight: 44, padding: "10px 14px", borderRadius: 16, border: "1px dashed var(--cardBd)", background: "transparent", cursor: "pointer", fontSize: 13, color: "var(--ink3)", textAlign: "left" }}>
-          <span style={{ flex: 1 }}>Program <b style={{ color: "var(--ink2)" }}>{PROGRAM_NAZOV[tier]}</b></span><span style={{ fontWeight: 800, color: "var(--green)" }}>Zmeniť ›</span>
-        </button>
         {dev}
       </aside>
       <main style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 14 }}>

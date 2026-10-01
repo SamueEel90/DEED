@@ -60,7 +60,7 @@ export default function ModulProfil({ wide, walletReq = 0 }: ProfilProps) {
   // KARTA 34: charita → Správa charity (kostra); tvorca a firma zatiaľ pôvodný rolový panel
   const [stranka, setStranka] = useState<Stranka>(UKAZKOVE_STRANKY[0]);
   const spravovat = (s: Stranka) => { ulozPoziciu(s.pozicia); setStranka(s); setScreen(s.typ === "charita" ? "sprava" : "firemny"); };
-  const sprava = <SpravaCharity nazov={stranka.n} inicialy={stranka.i} onBack={() => setScreen("profil")} />;
+  const sprava = <SpravaCharity strankaId={stranka.k} nazov={stranka.n} inicialy={stranka.i} onBack={() => setScreen("profil")} />;
   const sub = (n: string) => { setSubNazov(n); setSkOblast(undefined); setScreen("sub"); };
   const skutkyOblasti = (o: Oblast) => { setSubNazov("Moje skutky"); setSkOblast(o); setScreen("sub"); };
   const spatZoSkutkov = () => { if (skOblast) { setSkOblast(undefined); setSubNazov("Karma a štíty"); } else setScreen("profil"); };
