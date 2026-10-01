@@ -21,7 +21,7 @@ const APP_SRC = "/brand/deed-appicon.svg";
 const QR_CIEL = "deed-help.vercel.app";
 
 /** OPRAVY 91: nové QR logo (bočný panel) — svetlý / tmavý variant */
-const LOGO_QR = "/brand/deed-logo-qr.png", LOGO_QR_TMAVE = "/brand/deed-logo-qr-inverzny.svg";
+const LOGO_QR = "/brand/deed-logo-qr.png";
 
 export function Znacka({ size = 40, force, style, text, logoQr }: {
   /** OPRAVY 91: nové QR logo deed-logo-qr (tmavý režim = inverzné), object-fit contain */
@@ -41,8 +41,12 @@ export function Znacka({ size = 40, force, style, text, logoQr }: {
     <>
       <span {...pressable(() => setFull(true), "Logo DEED+ — zobraziť QR kód na celú obrazovku")}
         style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flex: "0 0 auto", ...style }}>
-        {logoQr ? <img src={document.documentElement.classList.contains("dark") ? LOGO_QR_TMAVE : LOGO_QR} alt="DEED+ · môj QR" draggable={false}
-          style={{ width: size, height: size, display: "block", objectFit: "contain" }} />
+        {logoQr ? (
+          // OPRAVY 97: QR logo vždy na bielej dlaždici, v oboch režimoch ten istý PNG (dá sa naskenovať)
+          <span style={{ width: size, height: size, boxSizing: "border-box", padding: 4, borderRadius: 14, background: "#fff", boxShadow: "0 1px 3px rgba(0,0,0,.12)", display: "block" }}>
+            <img src={LOGO_QR} alt="DEED+ · môj QR" draggable={false} style={{ width: "100%", height: "100%", display: "block", objectFit: "contain" }} />
+          </span>
+        )
         : text ? <span style={{ fontSize: Math.round(size * 0.62), fontWeight: 800, letterSpacing: "-.01em", color: "var(--a-green)", lineHeight: 1 }}><DeedZnacka /></span> : <>
         {/* D⁺ QR vlajka = biely štvorec → jemne zaoblené rohy */}
         <img src={src} alt="DEED+" draggable={false}

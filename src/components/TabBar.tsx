@@ -107,10 +107,10 @@ export function PridatFAB({ akcia, wide, desktop }: { akcia: StrankaAkcia; wide?
 function Tab({ m, on, onClick }: { m?: Modul; on: boolean; onClick: () => void }) {
   return (
     <div {...pressable(onClick, m?.nazov)} aria-current={on ? "page" : undefined} className="dock-tab" style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: SPACE.xxs, cursor: "pointer", padding: `${SPACE.xxs}px 0 ${SPACE.xxs}px` }}>
-      <div className="dock-icon" style={{
+      <div className="dock-icon kov-ik" style={{
         width: 50, height: 32, borderRadius: RADIUS.md, display: "flex", alignItems: "center", justifyContent: "center",
         fontSize: 21, lineHeight: 1, transition: "transform .25s cubic-bezier(.34,1.56,.64,1)",
-        // OPRAVY 96: farba štítu — ikony var(--acc), aktívna položka var(--gSoft) + rámik var(--gBd)
+        // OPRAVY 96/98: ikony ako kov štítu (.kov-ik, gradient #kovIk), záloha var(--acc), aktívna položka var(--gSoft) + rámik var(--gBd)
         background: on ? "var(--gSoft)" : "transparent",
         border: on ? "1px solid var(--gBd)" : "1px solid transparent",
         color: "var(--acc, var(--green))",

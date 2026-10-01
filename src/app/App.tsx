@@ -331,6 +331,8 @@ export function Screens({ wide, desktop }: { wide?: boolean; desktop?: boolean }
       <UpgradeContext.Provider value={() => setUpgradeOpen(true)}>
       <StrankaAkcieContext.Provider value={setAkcie}>
       <div data-stit={stitAppky} style={{ height: "100%", display: "flex", flexDirection: desktop ? "row" : "column", position: "relative", overflow: "hidden", isolation: "isolate", background: C.bg }}>
+        {/* OPRAVY 98: kovový prechod pre ikony hlavného menu (Sidebar + TabBar), farby --kov1..3 podľa štítu */}
+        <svg width="0" height="0" aria-hidden="true" style={{ position: "absolute" }}><defs><linearGradient id="kovIk" x1="0" y1="0" x2="1" y2="1"><stop offset="0" style={{ stopColor: "var(--kov1, var(--acc))" }} /><stop offset=".5" style={{ stopColor: "var(--kov2, var(--acc))" }} /><stop offset="1" style={{ stopColor: "var(--kov3, var(--acc))" }} /></linearGradient></defs></svg>
         {/* dýchajúce pozadie vnútri appky (z-index -1 = pod obsahom) */}
         <DychajucePozadie silne />
 

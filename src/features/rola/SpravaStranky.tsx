@@ -171,6 +171,9 @@ const PRUHY = "repeating-linear-gradient(135deg,var(--track) 0 12px,var(--btn) 1
 const PH_ZBIERKY: { t: string; v: number; c: number; d: string; bg: string; dn: number }[] = [
   { t: "Strecha pre rodinu Horváthovú", v: 8420, c: 12000, d: "končí o 9 dní", bg: "url('/img/sprava/dom.jpg') center/cover no-repeat var(--track)", dn: 46 },
   { t: "Centrálna zbierka Svetla pomoci", v: 2180, c: 0, d: "otvorená", bg: PRUHY, dn: 0 },
+  // OPRAVY 99: ukážka (DEV) — 4 bežiace zbierky, aby bolo vidno bod 93 na širokom monitore
+  { t: "Invalidný vozík pre Ninu", v: 2960, c: 4000, d: "končí o 18 dní", bg: "url('/img/sprava/chrbtica.jpg') center/cover no-repeat var(--track)", dn: 25 },
+  { t: "Teplé jedlo na zimu", v: 4310, c: 5000, d: "končí o 4 dni", bg: PRUHY, dn: 75 },
 ];
 const ZB_LIST: { t: string; v: number; c: number; bg: string; s: string; konc: boolean }[] = [
   { t: "Strecha pre rodinu Horváthovú", v: 8420, c: 12000, bg: "url('/img/sprava/dom.jpg') center/cover no-repeat var(--track)", s: "186 darcov · končí o 9 dní", konc: false },
@@ -583,9 +586,9 @@ function Prehlad({ tier: _tier, piny, prepniPin, otvorPolozku, otvor, nova, stit
   </>);
 
   // OPRAVY 93: karty 300–420 px, toľko, koľko sa zmestí do jedného riadku (max 4), potom „Všetky zbierky ›"
-  const naRiadok = mobil ? PH_ZBIERKY.length : Math.max(1, Math.min(4, Math.floor((zbSirka + 14) / (300 + 14))));
+  const naRiadok = ph ? PH_ZBIERKY.length : tablet ? 2 : Math.max(1, Math.min(4, Math.floor((zbSirka + 14) / (300 + 14))));
   const zbMriezka = (
-    <div ref={zbRef} className="sc-lista" style={ph ? { display: "flex", gap: 10, overflowX: "auto", scrollSnapType: "x mandatory", scrollPaddingLeft: 14, margin: "0 -14px", padding: "0 14px" } : tablet ? { display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 14 } : { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 420px))", gap: 14 }}>
+    <div ref={zbRef} className="sc-lista" style={ph ? { display: "flex", gap: 10, overflowX: "auto", scrollSnapType: "x mandatory", scrollPaddingLeft: 14, margin: "0 -14px", padding: "0 14px" } : tablet ? { display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 14 } : { display: "grid", gridTemplateColumns: `repeat(${naRiadok}, minmax(0, 420px))`, gap: 14 }}>
       {PH_ZBIERKY.slice(0, naRiadok).map((z) => (
         <button key={z.t} onClick={() => otvor("g_zbierky")} style={{ flex: "none", width: ph ? 290 : undefined, scrollSnapAlign: "start", ...karta, borderRadius: mobil ? 18 : 22, padding: 0, overflow: "hidden", cursor: "pointer", textAlign: "left", display: "flex", flexDirection: "column" }}>
           <span style={{ display: "block", width: "100%", aspectRatio: "16/9", background: z.bg }} />

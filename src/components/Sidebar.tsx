@@ -48,7 +48,7 @@ function SideTab({ m, on, onClick }: { m: Modul; on: boolean; onClick: () => voi
       background: on ? "var(--gSoft)" : "transparent", border: on ? "1.5px solid var(--gBd)" : "1.5px solid transparent", borderBottom: "none",
       color: on ? "var(--gInk)" : "var(--ink2)",
     }}>
-      <span className="sc-side-ik" style={{ display: "flex", color: "var(--acc)" }}>{m.ikona}</span>
+      <span className="sc-side-ik kov-ik" style={{ display: "flex", color: "var(--acc)" }}>{m.ikona}</span>
       <span style={{ fontSize: 13, fontWeight: on ? 800 : 600, textAlign: "center", lineHeight: 1.2 }}>{m.nazov}</span>
     </div>
   );

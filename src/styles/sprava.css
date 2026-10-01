@@ -46,7 +46,7 @@ html.obmedz-anim .sprava-charity .sc-lesk{display:none}
 @media (prefers-reduced-motion: reduce){.sprava-charity .sc-lesk{display:none}}
 
 /* OPRAVY 91 · hlavný bočný panel podľa prototypu */
-.sc-side .sc-side-ik svg{width:19px;height:19px;stroke-width:1.8}
+.sc-side .sc-side-ik svg{width:19px;height:19px}
 
 /* OPRAVY 92 · graf darov: jednorazové (--chA) + pravidelná podpora (--chB) podľa štítu */
 .sprava-charity[data-stit="bronze"]{--chA:#4E7D37;--chB:#A9C08F}
@@ -59,3 +59,17 @@ html.dark .sprava-charity[data-stit="silver"]{--chA:#A9B0B6;--chB:#5E656B}
 html.dark .sprava-charity[data-stit="gold"]{--chA:#D9B65A;--chB:#8A6E24}
 html.dark .sprava-charity[data-stit="platinum"]{--chA:#9DB6C6;--chB:#4F6573}
 html.dark .sprava-charity[data-stit="legend"]{--chA:#D9787C;--chB:#7A3436}
+
+/* OPRAVY 98 · ikony hlavného menu ako kov štítu (Sidebar + TabBar) — hodnoty z prototypu */
+[data-stit="bronze"]{--kov1:#7A4A2A;--kov2:#C98A5E;--kov3:#8A5A3A}
+[data-stit="silver"]{--kov1:#5F656B;--kov2:#9AA0A6;--kov3:#4E555C}
+[data-stit="gold"]{--kov1:#8A6510;--kov2:#D9A928;--kov3:#9E7614}
+[data-stit="platinum"]{--kov1:#3F5868;--kov2:#7FA0B4;--kov3:#4F6573}
+[data-stit="legend"]{--kov1:#6E1418;--kov2:#C9643A;--kov3:#8E2A2E}
+html.dark [data-stit="bronze"]{--kov1:#C08A62;--kov2:#E8BC92;--kov3:#A86E46}
+html.dark [data-stit="silver"]{--kov1:#A9B0B6;--kov2:#E6E9EC;--kov3:#8A9198}
+html.dark [data-stit="gold"]{--kov1:#C99A2E;--kov2:#F6D77A;--kov3:#B8891E}
+html.dark [data-stit="platinum"]{--kov1:#6F93AA;--kov2:#B9D2E2;--kov3:#5E7E94}
+html.dark [data-stit="legend"]{--kov1:#C9643A;--kov2:#F2A27A;--kov3:#B2533F}
+.kov-ik svg{stroke:url(#kovIk)!important;stroke-width:2.2!important}
+.kov-ik svg [fill]:not([fill="none"]){fill:url(#kovIk)}
