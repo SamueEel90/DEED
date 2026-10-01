@@ -1,5 +1,7 @@
 import { useState, useEffect, useMemo, useRef, lazy, Suspense, type CSSProperties } from "react";
 import { cakaOtvorenieSpravy } from "@/lib/mojeStranky";
+import { useStitAppky } from "@/lib/stitAppky";
+import "@/styles/sprava.css";
 import { LazyMotion, domAnimation, MotionConfig } from "motion/react";
 import { C } from "@/theme";
 import { aplikujNastavenia } from "@/lib/nastaveniaAppky";
@@ -168,6 +170,7 @@ export default function App() {
 // ===================== MODULÁRNY ROUTER APPKY =====================
 export function Screens({ wide, desktop }: { wide?: boolean; desktop?: boolean }) {
   const session = useSession();
+  const stitAppky = useStitAppky(); // OPRAVY 91: farba štítu pre bočný panel (správa = štít stránky, inak osobný)
   // deep-link zachyť SYNCHRÓNNE pri prvom renderi — URL normalizácia (nižšie) by ho prepísala
   const [dl] = useState(() => precitajDeepLink());
   // modul z URL (/m/{id}) → refresh/priamy link drží obrazovku; inak Domov
@@ -327,7 +330,7 @@ export function Screens({ wide, desktop }: { wide?: boolean; desktop?: boolean }
       <ViacContext.Provider value={() => setViac(true)}>
       <UpgradeContext.Provider value={() => setUpgradeOpen(true)}>
       <StrankaAkcieContext.Provider value={setAkcie}>
-      <div style={{ height: "100%", display: "flex", flexDirection: desktop ? "row" : "column", position: "relative", overflow: "hidden", isolation: "isolate", background: C.bg }}>
+      <div data-stit={stitAppky} style={{ height: "100%", display: "flex", flexDirection: desktop ? "row" : "column", position: "relative", overflow: "hidden", isolation: "isolate", background: C.bg }}>
         {/* dýchajúce pozadie vnútri appky (z-index -1 = pod obsahom) */}
         <DychajucePozadie silne />
 

@@ -6,7 +6,7 @@ export type SadaEurc = "mikro" | "drobne" | "stredne" | "vacsie";
 export const SADY_EUR: Record<SadaEur, { label: string; sumy: number[] }> = {
   drobne: { label: "Drobné", sumy: [1, 3, 5] },
   stredne: { label: "Stredné", sumy: [5, 10, 20] },
-  vyssie: { label: "Vyššie", sumy: [10, 25, 50] },
+  vyssie: { label: "Vyššie", sumy: [10, 25, 45] }, // OPRAVY 90: 50 € by bolo na hranici platby bez overenia
 };
 export const SADY_EURC: Record<SadaEurc, { label: string; sumy: number[] }> = {
   mikro: { label: "Mikro", sumy: [0.1, 0.5, 1] },

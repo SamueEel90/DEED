@@ -9,11 +9,13 @@ import { toast } from "@/components/toast";
 import { DeedZnacka, sZnackou } from "@/components/DeedZnacka";
 import { DeedQr } from "@/components/deedqr";
 import { zdielaj, kopiruj } from "@/lib/zdielanie";
-import { SADY_EURC, type SadaEurc } from "@/lib/sadyDarov";
+import { SADY_EURC, SADY_EUR, type SadaEurc, type SadaEur } from "@/lib/sadyDarov";
 import { TESTOVACIA } from "@/lib/testovacia";
 import { nacitajKryptoOrg, ulozKryptoOrg, nacitajSady, ulozSady, type Tier, type TypStranky, CENNIK_TYPU, TYP_NAZOV, TIER_LABEL, TIER_POPIS } from "./stav";
 
 // ---------- pamäť relácie (prežije prechody medzi obrazovkami) ----------
+// TODO (OPRAVY 88): pred spustením uložiť do účtu charity — oznámenia, EURC, údaje, súhlasy, správcovia, zariadenia.
+// usePamat drží hodnoty len kým je appka otvorená; po zatvorení sa stratia.
 const pamat = new Map<string, unknown>();
 function usePamat<T>(kluc: string, zaklad: T): [T, (v: T | ((p: T) => T)) => void] {
   const [v, setV] = useState<T>(() => (pamat.has(kluc) ? (pamat.get(kluc) as T) : zaklad));
@@ -23,6 +25,8 @@ function usePamat<T>(kluc: string, zaklad: T): [T, (v: T | ((p: T) => T)) => voi
 /** hodnoty pre riadky v Nastaveniach (počty, EURC, program) */
 export const pocetSpravcov = () => ((pamat.get("spr") as Spravca[] | undefined) ?? SPR0).length;
 export const pocetZariadeni = () => ((pamat.get("zar") as Zar[] | undefined) ?? ZAR0).length;
+/** OPRAVY 89: riadok „Dary v eurách" ukazuje vybranú sadu */
+export const eurText = () => { const k = nacitajSady("charita").eur; return `${SADY_EUR[k].label} · ${SADY_EUR[k].sumy.join(" · ")} €`; };
 export const eurcText = () => ["nie", "pre všetky zbierky", "podľa zbierky"][(pamat.get("ek.p") as number | undefined) ?? (nacitajKryptoOrg("charita") ? 2 : 0)];
 
 // ---------- spoločné ----------
@@ -129,6 +133,28 @@ export function ObrOznamenia({ mobil }: { mobil: boolean }) {
       </div>
     </div>
   </>);
+}
+
+// ============================================================
+// 2a · Dary v eurách (OPRAVY 89) — ako Dary v EURC, len bez otázky áno/nie
+// ============================================================
+const SADY_EUR_PORADIE: SadaEur[] = ["drobne", "stredne", "vyssie"];
+export function ObrEur({ mobil }: { mobil: boolean }) {
+  const [sada, setSada] = useState<SadaEur>(() => nacitajSady("charita").eur);
+  const [rz, setRz] = usePamat<number>("eu.r", 1);
+  const vyber = (on: boolean): React.CSSProperties => ({ minHeight: 64, padding: "8px 10px", borderRadius: 14, cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 2, textAlign: "center", background: on ? "var(--gSoft)" : "var(--field)", border: `1.5px solid ${on ? "var(--gBd)" : "var(--cardBd)"}`, color: on ? "var(--gInk)" : "var(--ink)" });
+  return (
+    <section style={{ ...krt, borderRadius: 20, padding: "18px 20px", display: "flex", flexDirection: "column", gap: 12 }}>
+      <span style={{ fontSize: 15.5, fontWeight: 800 }}>Rýchle sumy v eurách</span>
+      <div role="radiogroup" style={{ display: "grid", gridTemplateColumns: mobil ? "minmax(0,1fr)" : "repeat(3,minmax(0,1fr))", gap: 8 }}>
+        {SADY_EUR_PORADIE.map((k) => (
+          <button key={k} role="radio" aria-checked={k === sada} onClick={() => { setSada(k); ulozSady("charita", { ...nacitajSady("charita"), eur: k }); }} style={vyber(k === sada)}>
+            <span style={{ fontSize: 15, fontWeight: 800 }}>{SADY_EUR[k].label}</span><span style={{ fontSize: 12.5, fontWeight: 600, color: "var(--ink3)" }}>{SADY_EUR[k].sumy.join(" · ")} €</span></button>))}
+      </div>
+      <Segment volby={[[0, "Rovnaké pri všetkých zbierkach"], [1, "Vyberiem pri každej zbierke"]]} hodnota={rz} onZmena={setRz} stlpce={mobil ? 1 : 2} />
+      <span style={pozn}>{rz === 0 ? "Tieto sumy budú pri každej zbierke rovnaké. Pri zbierke sa nedajú zmeniť." : "Toto sú predvolené sumy. Pri tvorbe zbierky ich môžete zmeniť."}</span>
+      <span style={pozn}>Sumy do 5 € idú len prevodom SEPA. Pri karte by ich zjedol poplatok. Vlastnú sumu môže darca napísať vždy.</span>
+    </section>);
 }
 
 // ============================================================

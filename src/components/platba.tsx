@@ -12,6 +12,19 @@ import { IkonaStit, IkonaFajka, Zdielanie, Palec, Srdce } from "@/components/ico
 import { VolbaDarcovstva } from "@/components/zoznamdarcov";
 import { Svetlusik } from "@/components/svetlusik";
 import { nacitajPredvolbu, ulozPredvolbu, type VolbaDaru } from "@/lib/darcovia";
+import PodrzTlacidlo from "@/features/zbierka/PodrzTlacidlo";
+
+// OPRAVY 90: platba nikdy jedným ťuknutím — vždy „Podrž a zaplať" (okrem prístupnosti „Potvrdzovať ťuknutím")
+const potvrdTuknutim = () => { try { return localStorage.getItem("deed.platba.potvrditTuknutim") === "1"; } catch { return false; } };
+function PotvrdPlatbu({ text, ok, onConfirm, style }: { text: string; ok: boolean; onConfirm: () => void; style: CSSProperties }) {
+  const [nap, setNap] = useState(false);
+  if (potvrdTuknutim()) return <button disabled={!ok} onClick={onConfirm} style={style}>Zaplatiť {text}</button>;
+  return (
+    <span className="deed-platba" style={{ display: "block" }}>
+      {nap && <span style={{ display: "block", marginBottom: 8, padding: "10px 12px", borderRadius: 12, background: "var(--gSoft)", border: "1px solid var(--gBd)", fontSize: 13, fontWeight: 600, color: "var(--gInk)" }}>Podrž tlačidlo, kým sa nenaplní.</span>}
+      <PodrzTlacidlo label={`Podrž a zaplať ${text}`} disabled={!ok} onConfirm={onConfirm} onHint={() => setNap(true)} />
+    </span>);
+}
 
 // ============================================================
 // SIMULÁCIA PLATBY — EUR (karta · platobná brána) / DEED (peňaženka · chain)
@@ -224,7 +237,7 @@ export function PlatbaModal({ kanal, komu, suma: sumaInit, lenSepa = false, spli
         </div>
         {tipSuma > 0 && <DarPreNas on={tip} label={tipLabel} onToggle={() => setTip((v) => !v)} />}
         <div style={{ display: "flex", alignItems: "center", gap: SPACE.xs, fontSize: 11, color: C.textTer, marginTop: SPACE.sm, lineHeight: 1.4 }}><IkonaStit size={13} color={C.green} /> Zabezpečené · 3‑D Secure · test 4242 4242 4242 4242</div>
-        <Lipni><button disabled={!kartaOk} onClick={zaplatit} style={btnP(kartaOk)}>Zaplatiť {spolu.toFixed(2)} €</button></Lipni>
+        <Lipni><PotvrdPlatbu text={`${spolu.toFixed(2)} €`} ok={kartaOk} onConfirm={zaplatit} style={btnP(kartaOk)} /></Lipni>
       </>)}
 
       {/* EUR · SEPA prevod */}
@@ -242,7 +255,7 @@ export function PlatbaModal({ kanal, komu, suma: sumaInit, lenSepa = false, spli
         </div>
         {tipSuma > 0 && <DarPreNas on={tip} label={tipLabel} onToggle={() => setTip((v) => !v)} />}
         <div style={{ display: "flex", alignItems: "center", gap: SPACE.xs, fontSize: 11, color: C.textTer, marginTop: SPACE.sm, lineHeight: 1.4 }}><IkonaStit size={13} color={C.green} /> Bankový prevod · SEPA · charita dostane celý dar · pripísanie do 1 prac. dňa</div>
-        <Lipni><button disabled={!sepaOk} onClick={zaplatit} style={btnP(sepaOk)}>Odoslať prevod {spolu.toFixed(2)} €</button></Lipni>
+        <Lipni><PotvrdPlatbu text={`${spolu.toFixed(2)} €`} ok={sepaOk} onConfirm={zaplatit} style={btnP(sepaOk)} /></Lipni>
       </>)}
 
       {krok === "detaily" && !jeEur && (<>
@@ -254,7 +267,7 @@ export function PlatbaModal({ kanal, komu, suma: sumaInit, lenSepa = false, spli
         </div>
         {tipSuma > 0 && <DarPreNas on={tip} label={tipLabel} onToggle={() => setTip((v) => !v)} />}
         <div style={{ display: "flex", alignItems: "center", gap: SPACE.xs, fontSize: 11, color: C.textTer, marginTop: SPACE.sm, lineHeight: 1.4 }}><IkonaStit size={13} color={C.teal} /> Wallet → wallet · okamžite · podpis na chaine</div>
-        <button onClick={zaplatit} style={btnP(true, GRAD_ZELENY)}>Potvrdiť platbu</button>
+        <PotvrdPlatbu text={`${sumaNum.toLocaleString("sk")} ${jed}`} ok onConfirm={zaplatit} style={btnP(true, GRAD_ZELENY)} />
       </>)}
 
       {krok === "spracovanie" && (

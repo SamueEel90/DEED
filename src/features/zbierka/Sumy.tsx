@@ -108,7 +108,7 @@ const KLUC_KRYPTO = "deed.zbierka.kryptoOtvorene";
 export function DaryVKrypte({ refId, otvor, mikro, cezTvorcu }: { refId: string; otvor: OtvorPlatbu; mikro: MikroCiel; cezTvorcu?: string }) {
   const [otvorene, setOtvorene] = useState(() => { try { return localStorage.getItem(KLUC_KRYPTO) !== "0"; } catch { return true; } });
   const prepni = () => { const v = !otvorene; setOtvorene(v); try { localStorage.setItem(KLUC_KRYPTO, v ? "1" : "0"); } catch { /* LS */ } };
-  const { blok, zacni } = useBlok(); // krypto má len registrovaný
+  void refId; void mikro; void cezTvorcu; // OPRAVY 90: EURC už nie je mikrodar (platí sa podržaním v okne)
   return (
     <>
       <button type="button" onClick={prepni} aria-expanded={otvorene}
@@ -119,12 +119,16 @@ export function DaryVKrypte({ refId, otvor, mikro, cezTvorcu }: { refId: string;
       </button>
       {otvorene && (
         <>
-          <div style={{ margin: "-4px 2px 8px", fontSize: 12.5, fontWeight: 600, color: "var(--ink3)" }}>klik a hneď odíde</div>
+          {/* OPRAVY 90: rýchla suma len vyberie sumu; platí sa vždy cez Podrž a zaplať v platobnom okne */}
           <div style={mriezka}>
-            {EURC_SUMY.map((v) => (
-              <MikrodarDlazdica key={v} suma={cislo(v)} jednotka="EURC" eur={v} najcastejsie={v === 1} root={mikro.root} ciel={mikro.ciel}
-                blokovane={blok} onOdoslane={zacni} onDoleteli={(eur) => pridajDar({ refId, suma: eur, kanal: "deed", registrovany: true, cezTvorcu })} />
-            ))}
+            {EURC_SUMY.map((v, i) => {
+              const [bg, bd] = EUR_FARBY[i];
+              return (
+                <button key={v} type="button" className="zb-dlazdica" onClick={() => otvor({ kanal: "eurc", suma: v })} style={dlazdica(bg, bd)}>
+                  <span style={{ fontSize: 20, fontWeight: 800, fontVariantNumeric: "tabular-nums" }}>{cislo(v)} <span style={{ fontSize: 12, fontWeight: 700 }}>EURC</span></span>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: "var(--ink3)", fontVariantNumeric: "tabular-nums" }}>= {eurTxt(v)}</span>
+                </button>);
+            })}
           </div>
           <button type="button" className="zb-karta" onClick={() => otvor({ kanal: "eurc" })}
             style={{ width: "100%", height: 56, marginTop: 10, borderRadius: 16, background: "var(--card)", border: "1px solid var(--cardBd)", cursor: "pointer", fontFamily: "inherit", fontSize: 15.5, fontWeight: 800, color: "var(--blue)" }}>
