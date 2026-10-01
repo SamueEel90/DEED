@@ -20,7 +20,9 @@ import { usePouzivatel } from "@/lib/pouzivatel";
 import { useSession } from "@/lib/session";
 import { cisloZbierky, najdiZbierku } from "@/lib/zbierky";
 import { verejneBeziace } from "@/lib/retaz";
+import { profilZPamate, nacitajProfil, uvodZPamate, nacitajUvod, potvrdUvod } from "@/lib/profilStranky";
 import { OBLASTI, normalizuj, pridajSkutok, upravSkutok, koncept as nacitajKoncept, ulozKoncept, nastavOhlasenie, ohlasenie as aktOhlasenie,
+  konceptOrg, ulozKonceptOrg, pridajSkutokOrg,
   type Oblast, type ZbierkaVolba, type Ucastnik, type MojSkutok } from "@/lib/mojeSkutky";
 import { otvorAkciu } from "@/lib/akcia";
 import { useVazbyOsoby } from "@/lib/zamestnanci";
@@ -120,7 +122,23 @@ function zbierky(): ZbierkaVolba[] {
   return verejneBeziace().map((z) => ({ id: z.id, nazov: z.nazov, org: z.org, cislo: cisloZbierky(z.id) }));
 }
 
-type Media = { src: string; video: boolean };
+type Media = { src: string; video: boolean; sek?: number };
+
+// OPRAVY 121 · skutok za charitu: limity ako pri zbierke (karta 37)
+const ORG_RIADKY = 12, ORG_ZNAKY = 1500, ORG_NAZOV = 80, ORG_FOTIEK = 8, ORG_VIDEO_S = 45;
+const ORG_NASTROJE = ["bold", "italic", "insertUnorderedList", "diktovat"];
+/** Pravidlá obsahu (kod/pravidla-obsahu-charity.md · Fotky a videá + Dôstojnosť) */
+const PRAVIDLA_ORG: [string, string][] = [
+  ["Súhlas zobrazených ľudí.", "Každá rozpoznateľná osoba na zábere súhlasila so zverejnením. Súhlas si uchovávate vy, pri spore ho máte vedieť predložiť."],
+  ["Deti len so súhlasom rodiča alebo zákonného zástupcu.", "Bez neho dieťa nefotíte, alebo mu zakryjete tvár."],
+  ["Vlastné zábery.", "Fotky a videá sú vaše alebo máte právo ich použiť. Žiadne obrázky z internetu, žiadne cudzie zábery vydávané za vlastnú činnosť."],
+  ["Súkromie prijímateľa.", "Nezverejňujte adresu, EČV, čísla dokladov ani iné údaje, podľa ktorých sa dá nájsť byt alebo dom človeka v núdzi. Polohové údaje z fotiek čistíme automaticky, ale text a záber strážite vy."],
+  ["Držte mieru.", "Fotka má ukazovať pomoc a výsledok, nie nešťastie v najhoršej chvíli."],
+  ["Dôstojnosť.", "Človek, ktorému pomáhate, nie je rekvizita. Ak si želá anonymitu, dostane ju. Zdravotný stav a podrobnosti o rodine len v rozsahu, s ktorým výslovne súhlasil."],
+];
+const PRED_ZVEREJNENIM = ["Píšete to tak, ako sa to naozaj stalo.", "Ľudia na fotkách o tom vedia a súhlasia, deti len so súhlasom rodiča.", "Žiadna politika, žiadna reklama. Toto je miesto pre skutky.", "Príbeh nech rozpráva pomoc, nie nešťastie."];
+const dlzkaVidea = (src: string) => new Promise<number>((ok) => { const v = document.createElement("video"); v.preload = "metadata"; v.onloadedmetadata = () => ok(v.duration || 0); v.onerror = () => ok(-1); v.src = src; });
+const fmtSek = (x: number) => `${Math.floor(x / 60)}:${String(Math.round(x % 60)).padStart(2, "0")}`;
 type Vysledok = { verdikt: "ok"; odp: ScoreOdpoved } | { verdikt: "zamietnut" } | null;
 
 // =====================================================================
@@ -137,6 +155,25 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
   const session = useSession();
   const qc = useQueryClient();
   const userId = session && "ucet_id" in session ? String(session.ucet_id) : "demo";
+  // OPRAVY 121: skutok za charitu — tá istá kostra, mení sa len to, čo je v bode 121 (o = vykanie)
+  const org = !!pr.organizacia;
+  const stranka = pr.strankaId ?? pr.autor ?? "charita";
+  const o = (ty: string, vy: string) => (org ? vy : ty);
+  const [orgLogo, setOrgLogo] = useState<string | null>(() => (org ? profilZPamate(stranka).ulozeny?.logo ?? null : null));
+  const [uvodOn, setUvodOn] = useState(() => org && !uvodZPamate(stranka, "skutok"));
+  useEffect(() => {
+    if (!org) return;
+    let ziva = true;
+    void nacitajProfil(stranka).then((z) => { if (ziva) setOrgLogo(z.ulozeny?.logo ?? null); });
+    void nacitajUvod(stranka).then((u) => { if (ziva) setUvodOn(!u.skutok); });
+    return () => { ziva = false; };
+  }, [org, stranka]);
+  const [po2Org, setPo2Org] = useState("");
+  const [riadky, setRiadky] = useState(0);
+  const [zn1, setZn1] = useState(0);
+  const [zn2, setZn2] = useState(0);
+  const [prvOrg, setPrvOrg] = useState(false);
+  const [chybaMed, setChybaMed] = useState("");
   const [otv, setOtv] = useState(false);
   useEffect(() => { const r = requestAnimationFrame(() => setOtv(true)); return () => cancelAnimationFrame(r); }, []);
 
@@ -150,7 +187,7 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
   const [dar, setDar] = useState(!!pr.zbierka || !!ohl?.dar.length || !!pr.zAkcie?.dar?.length);
   const [darZ, setDarZ] = useState<ZbierkaVolba[]>(predZbierka.length ? predZbierka : ohl?.dar ?? pr.zAkcie?.dar ?? []);
   const [darQ, setDarQ] = useState("");
-  const [kon, setKon] = useState(nacitajKoncept);
+  const [kon, setKon] = useState(() => (org ? konceptOrg(stranka) : nacitajKoncept()));
   // krok 2
   const [plan, setPlan] = useState(false);
   const [planKedy, setPlanKedy] = useState("");
@@ -197,6 +234,7 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
   const predRef = useRef<HTMLInputElement>(null);
   const poRef = useRef<HTMLInputElement>(null);
   const dokRef = useRef<HTMLInputElement>(null);
+  const vidRef = useRef<HTMLInputElement>(null);
   const liveT = useRef<number>(0);
   const recRef = useRef<{ stop: () => void } | null>(null);
 
@@ -211,11 +249,12 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
   const zavri = () => { setOtv(false); recRef.current?.stop(); setTimeout(pr.onClose, 280); };
   const skusZavriet = () => { if (kr >= 2 && kr <= 5 && rozpisane) return setZo(true); zavri(); };
   useEffect(() => {
-    const k = (e: KeyboardEvent) => { if (e.key === "Escape") { if (zo) setZo(false); else if (prv) setPrv(false); else skusZavriet(); } };
+    const k = (e: KeyboardEvent) => { if (e.key === "Escape") { if (zo) setZo(false); else if (prv) setPrv(false); else if (prvOrg) setPrvOrg(false); else skusZavriet(); } };
     window.addEventListener("keydown", k); return () => window.removeEventListener("keydown", k);
   });
   const ulozAkoKoncept = () => {
-    ulozKoncept({ sk, plan, nazov: nz0, popis: po, miesto: kde, kedy: plan ? planKedy : kedy, oblast, dar: dar ? darZ : [], ucastnici: uc, ulozene: teraz() });
+    const k = { sk, plan, nazov: nz0, popis: po, miesto: kde, kedy: plan ? planKedy : kedy, oblast, dar: dar ? darZ : [], ucastnici: uc, ulozene: teraz(), ...(org ? { popis2: po2Org } : {}) };
+    if (org) ulozKonceptOrg(stranka, k); else ulozKoncept(k);
     setZo(false); zavri();
   };
   const pokracujKoncept = () => {
@@ -224,7 +263,8 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
     if (kon.plan) setPlanKedy(kon.kedy); else setKedy(kon.kedy);
     setOblast(kon.oblast); setDar(kon.dar.length > 0); setDarZ(kon.dar); setUc(kon.ucastnici);
     setAiSt(cistyText(kon.popis).length > 10 ? "ok" : null);
-    ulozKoncept(null); setKon(null); setKr(2);
+    if (org) { setPo2Org(kon.popis2 ?? ""); ulozKonceptOrg(stranka, null); } else ulozKoncept(null);
+    setKon(null); setKr(2);
   };
 
   // profil → Rozpracovaný skutok → Dokončiť: rovno pokračovať v koncepte
@@ -264,6 +304,27 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
       try { const m = await nacitajObr(f); setMedia((s) => [...s, m].slice(0, 7)); } catch (e) { toast(e instanceof Error ? e.message : "Súbor sa nepodarilo načítať."); }
     }
   };
+  // OPRAVY 121: skutok za charitu — najviac 8 fotiek a 1 video do 45 s (ako pri zbierke)
+  const pridajMediaOrg = async (files: FileList | null) => {
+    if (!files) return;
+    setChybaMed("");
+    let fot = media.filter((m) => !m.video).length, vid = media.some((m) => m.video);
+    const nove: Media[] = [];
+    for (const f of Array.from(files)) {
+      if (f.type.startsWith("video/")) {
+        if (vid) { setChybaMed("Video môže byť len jedno. Najprv odstráňte to, ktoré tam je."); continue; }
+        const src = URL.createObjectURL(f); const d = await dlzkaVidea(src);
+        if (d < 0) { setChybaMed("Toto video sa nedá otvoriť. Skúste iný súbor."); continue; }
+        if (d > ORG_VIDEO_S + 0.5) { setChybaMed(`Video má ${fmtSek(d)}. Najviac je 45 sekúnd, skráťte ho v telefóne a skúste znova.`); continue; }
+        nove.push({ src, video: true, sek: d }); vid = true;
+      } else {
+        if (fot >= ORG_FOTIEK) { setChybaMed(`Pridali sme ${ORG_FOTIEK - media.filter((m) => !m.video).length}. Najviac je 8 fotiek.`); break; }
+        try { nove.push({ src: await spracujFotku(f, { pomer: null, maxSirka: 1568 }), video: false }); fot++; } catch (e) { setChybaMed(e instanceof Error ? e.message : "Súbor sa nepodarilo načítať."); }
+      }
+    }
+    if (nove.length) setMedia((m) => [...m, ...nove]);
+  };
+  const posunMedia = (i: number, kam: -1 | 1) => setMedia((m) => { const j = i + kam; if (j < 0 || j >= m.length) return m; const n = [...m]; [n[i], n[j]] = [n[j], n[i]]; return n; });
   const pridajPP = async (k: "pred" | "po", files: FileList | null) => {
     const f = files?.[0]; if (!f) return;
     try { const m = await spracujFotku(f, { pomer: null, maxSirka: 1568 }); (k === "pred" ? setPred : setPoF)(m); } catch (e) { toast(e instanceof Error ? e.message : "Fotku sa nepodarilo načítať."); }
@@ -280,7 +341,7 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
   };
 
   // ---- skupina B ----
-  const ucN = uc.length ? `${uc.length + 1} spolu s tebou` : "";
+  const ucN = uc.length ? `${uc.length + 1} spolu s ${org ? "vami" : "tebou"}` : "";
   const pozvi = async () => {
     const url = `https://deed.sk/skutok/${id}/pridaj-sa`;
     if (typeof navigator.share === "function") { try { await navigator.share({ title: "Bol si pri tom? Potvrď v DEED+", url }); } catch { return; } }
@@ -335,8 +396,14 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
     }
   };
   const aiText = () => cistyText(upravHtml(po));
-  const k2Ok = text.length > 10 && (!maMedia || su) && aiSt === "ok" && (!dar || dokaz || plan);
-  const k2Dalej = () => { if (k2Ok) void hodnot(1, opisPreAi(cistyText(aiU ? po : upravHtml(po)))); };
+  // OPRAVY 121: bez AI — chyba kroku nad Pokračovať (texty z prototypu Novy skutok PC)
+  const chybaOrg = !nz0.trim() ? "Doplňte názov skutku" : !text ? "Napíšte, čo ste urobili" : riadky > ORG_RIADKY ? "Skráťte text na 12 riadkov" : maMedia && !su ? "Potvrďte súhlas ľudí na fotkách a videách" : "";
+  const k2Ok = org ? !chybaOrg : text.length > 10 && (!maMedia || su) && aiSt === "ok" && (!dar || dokaz || plan);
+  const k2Dalej = () => {
+    if (!k2Ok) return;
+    if (org) { setNz(nz0.trim()); setPo2(po); if (!oblast) setOblast("Pomoc"); setPravda(false); setKr(5); return; }
+    void hodnot(1, opisPreAi(cistyText(aiU ? po : upravHtml(po))));
+  };
   const k4Dalej = () => {
     if (vysl?.verdikt === "zamietnut") return;
     if (otazky.length) {
@@ -354,6 +421,24 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
   const karma = odpAi?.skore != null ? Math.max(1, Math.round(odpAi.skore * KARMA_ZA_BOD)) : 3;
   const zverejni = () => {
     if (!pravda) return;
+    if (org) {
+      // OPRAVY 121: navonok autor charita, vnútri meno organizátora; bez karmy; ide ľuďom v lokalite charity a na jej profil
+      const fotky = media.filter((m) => !m.video).map((m) => m.src);
+      const popisHtml = po + (cistyText(po2Org) ? po2Org : "");
+      pridajSkutokOrg(stranka, {
+        id, nazov: nz, popis: popisHtml, oblast: oblast ?? "Pomoc", miesto: kde, datum: teraz(), stav: "ok", karma: null,
+        det: "Ľuďom vo vašej lokalite a na váš profil.", fotky, ucastnici: sk ? uc.filter((u) => u.overeny).map((u) => u.meno) : undefined,
+        dar: dar ? darZ : undefined, za: pr.autor, vytvoril: ja.celeMeno || undefined,
+      });
+      const it: GoodPolozka = {
+        id: teraz(), typ: "skutok", velkost: "med", kat: KAT[oblast ?? "Pomoc"] ?? "Komunita", autor: pr.autor || "Charita", num: 0, emoji: "",
+        fotky: fotky.length ? fotky : orgLogo ? [orgLogo] : [], titul: nz, popis: cistyText(popisHtml), lok: kde, overene: true, skore: 0, typSituacie: "normal", modul: "good", dni: 0, podpora: 0, lat: lok.lat, lng: lok.lng,
+      } as GoodPolozka;
+      qc.setQueryData<GoodPolozka[]>(qk.good.feed, (old = []) => [it, ...old]);
+      repo.good.vytvor(it, ja.ucetId).then((nid) => { if (nid) qc.invalidateQueries({ queryKey: qk.good.feed }); }).catch(() => {});
+      vibruj([10, 40, 10]);
+      setKr(6); return;
+    }
     if (plan) {
       nastavOhlasenie({ id, nazov: nz, popis: po2, kedy: planKedy, odkaz: planLink, stav: "plan", dar: dar ? darZ : [], sk });
       setKr(6); return;
@@ -388,12 +473,13 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
   };
 
   // ---- krok Späť ----
-  const krTit = ["Pridať skutok", "Opíš skutok", "Chvíľku", vysl?.verdikt === "zamietnut" ? "Hodnotenie" : "Ešte pár otázok", "Náhľad", "Hotovo"][kr - 1];
+  const krTit = ["Pridať skutok", o("Opíš skutok", "Opíšte skutok"), "Chvíľku", vysl?.verdikt === "zamietnut" ? "Hodnotenie" : "Ešte pár otázok", "Náhľad", "Hotovo"][kr - 1];
   const spat = () => {
     if (kr === 1) { if (k1 === "dar" && !pr.zbierka && pr.start !== "solo") return setK1(cesta === "s" ? "typ" : "skupina"); if (k1 === "skupina" && pr.start !== "skupina") return setK1("typ"); return zavri(); }
     if (kr === 6) return zavri();
     if (kr === 2) return rozpisane ? setZo(true) : setKr(1);
     if (kr === 3) return;
+    if (org) return setKr(2); // bez AI: z Náhľadu späť na opis
     setKr(kr === 4 ? 2 : 4);
   };
   const spatT = kr === 1 && k1 === "typ" ? "Zavrieť" : kr === 6 ? "Zavrieť" : kr === 1 && ((k1 === "dar" && (pr.zbierka || pr.start === "solo")) || (k1 === "skupina" && pr.start === "skupina")) ? "Zavrieť" : "Späť";
@@ -439,21 +525,21 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
           <button type="button" onClick={pokracujKoncept} style={{ flex: "none", height: 44, padding: "0 14px", borderRadius: 12, border: "none", background: "var(--ink)", color: "var(--bg)", fontSize: 14, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}>Pokračovať</button>
         </div>)}
       {k1 === "typ" && <>
-        {volbaKarta("Sám", "Urobil som niečo dobré, pre niekoho alebo pre seba.", IK.sam, () => { setCesta("s"); setK1("dar"); })}
-        {volbaKarta("So skupinou", "Spoločná akcia, brigáda alebo zbierka. Pridáš aj ostatných.", IK.skupina, () => setK1("skupina"))}
+        {volbaKarta("Sám", o("Urobil som niečo dobré, pre niekoho alebo pre seba.", "Urobili ste niečo dobré pre niekoho."), IK.sam, () => { setCesta("s"); setK1("dar"); })}
+        {volbaKarta("So skupinou", o("Spoločná akcia, brigáda alebo zbierka. Pridáš aj ostatných.", "Spoločná akcia, brigáda alebo zbierka. Pridáte aj ostatných."), IK.skupina, () => setK1("skupina"))}
       </>}
       {k1 === "skupina" && <>
         <div style={{ fontSize: 14.5, color: "var(--ink2)", lineHeight: 1.5 }}>Ako ste to robili?</div>
-        {volbaKarta("Akcia práve začína", "Naskenuješ účastníkov na mieste a spustíš čas. Všetci sú hneď overení.", IK.sken, () => { setCesta("a"); setK1("dar"); })}
-        {volbaKarta("Už sme pomohli", "Opíšeš skutok a pridáš pomocníkov skenom alebo pozvánkou.", IK.skupina, () => { setCesta("b"); setK1("dar"); }, "var(--bSoft)", "var(--blue)")}
+        {volbaKarta("Akcia práve začína", o("Naskenuješ účastníkov na mieste a spustíš čas. Všetci sú hneď overení.", "Dobrovoľníci na mieste naskenujú QR charity. Všetci sú hneď overení."), IK.sken, () => { setCesta("a"); setK1("dar"); })}
+        {volbaKarta("Už sme pomohli", o("Opíšeš skutok a pridáš pomocníkov skenom alebo pozvánkou.", "Opíšete skutok a pridáte pomocníkov skenom alebo pozvánkou."), IK.skupina, () => { setCesta("b"); setK1("dar"); }, "var(--bSoft)", "var(--blue)")}
         {pr.start !== "skupina" && spatNaVyber(() => setK1("typ"))}
       </>}
       {k1 === "dar" && <>
-        <div style={{ fontSize: 14.5, color: "var(--ink2)", lineHeight: 1.5 }}>Je to bežný skutok, alebo ho robíš pre zbierku?</div>
+        <div style={{ fontSize: 14.5, color: "var(--ink2)", lineHeight: 1.5 }}>{o("Je to bežný skutok, alebo ho robíš pre zbierku?", "Je to bežný skutok, alebo ho robíte pre zbierku?")}</div>
         <div style={{ borderRadius: 20, background: dar ? "var(--card)" : "var(--field)", border: `1.5px solid ${dar ? "var(--goldBd)" : "var(--cardBd)"}`, padding: "14px 16px", display: "flex", flexDirection: "column", gap: 10 }}>
           <button type="button" role="switch" aria-checked={dar} onClick={() => setDar(!dar)} style={{ display: "flex", alignItems: "center", gap: 12, cursor: "pointer", border: "none", background: "transparent", padding: 0, textAlign: "left", fontFamily: "inherit", color: "var(--ink)" }}>
             <span style={{ width: 44, height: 44, borderRadius: 13, background: "var(--goldBg)", color: "var(--gold)", display: "flex", alignItems: "center", justifyContent: "center", flex: "none" }}><Ik d={IK.dar} s={21} /></span>
-            <span style={{ flex: 1, minWidth: 0 }}><span style={{ display: "block", fontSize: 16, fontWeight: 800 }}>Skutok ako dar</span><span style={{ display: "block", fontSize: 13, color: "var(--ink3)", marginTop: 2, lineHeight: 1.4 }}>Nemáš peniaze na dar? Pomôž skutkom. Všetky odmeny pôjdu na zbierku.</span></span>
+            <span style={{ flex: 1, minWidth: 0 }}><span style={{ display: "block", fontSize: 16, fontWeight: 800 }}>Skutok ako dar</span><span style={{ display: "block", fontSize: 13, color: "var(--ink3)", marginTop: 2, lineHeight: 1.4 }}>{o("Nemáš peniaze na dar? Pomôž skutkom. Všetky odmeny pôjdu na zbierku.", "Pomôžte skutkom. Všetky odmeny pôjdu na zbierku.")}</span></span>
             <span aria-hidden="true" style={{ width: 48, height: 28, borderRadius: 14, background: dar ? "var(--green)" : "var(--chkBd)", position: "relative", flex: "none", transition: "background .2s ease" }}><span style={{ position: "absolute", top: 3, left: 3, width: 22, height: 22, borderRadius: "50%", background: "#fff", transform: dar ? "translateX(20px)" : "none", transition: "transform .2s ease" }} /></span>
           </button>
           {dar && <div className="pf-rise" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -462,19 +548,19 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
               <Ik d={IK.lupa} s={18} />
               <input value={darQ} onChange={(e) => setDarQ(e.target.value)} placeholder="Názov alebo číslo zbierky" aria-label="Hľadať zbierku" style={{ flex: 1, minWidth: 0, height: 44, border: "none", background: "transparent", fontSize: 16, color: "var(--ink)", outline: "none", fontFamily: "inherit" }} />
             </label>
-            {q && !viditelne.length && <div style={{ padding: "8px 2px", fontSize: 13, color: "var(--ink3)" }}>Nič sme nenašli. Skús iný názov alebo číslo, napr. 47 821.</div>}
+            {q && !viditelne.length && <div style={{ padding: "8px 2px", fontSize: 13, color: "var(--ink3)" }}>{o("Nič sme nenašli. Skús iný názov alebo číslo, napr. 47 821.", "Nič sme nenašli. Skúste iný názov alebo číslo, napr. 47 821.")}</div>}
             {viditelne.map((z) => { const i = darZ.findIndex((x) => x.id === z.id), c = i >= 0; return (
               <button type="button" role="checkbox" aria-checked={c} key={z.id} onClick={() => prepniZ(z)} style={{ display: "flex", alignItems: "center", gap: 10, minHeight: 52, padding: "6px 12px", borderRadius: 13, cursor: "pointer", background: c ? "var(--gSoft)" : "var(--field)", border: `1.5px solid ${c ? "var(--gBd)" : "var(--cardBd)"}`, textAlign: "left", fontFamily: "inherit", color: "var(--ink)" }}>
                 <span aria-hidden="true" style={{ width: 22, height: 22, borderRadius: 7, flex: "none", border: `2px solid ${c ? "var(--green)" : "var(--chkBd)"}`, background: c ? "var(--green)" : "transparent", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff" }}>{c && <Ik d={IK.fajka} s={13} w={3} />}</span>
                 <span style={{ flex: 1, minWidth: 0 }}><span style={{ display: "block", fontSize: 14.5, fontWeight: 700 }}>{z.nazov}</span><span style={{ display: "block", fontSize: 12.5, color: "var(--ink3)" }}><span style={{ whiteSpace: "nowrap" }}>#{z.cislo}</span> · {z.org}</span></span>
                 {c && <span style={{ flex: "none", padding: "3px 8px", borderRadius: 8, background: i === 0 ? "var(--goldBg)" : "var(--card)", color: i === 0 ? "var(--gold)" : "var(--ink3)", fontSize: 12, fontWeight: 800, whiteSpace: "nowrap" }}>{i === 0 ? "hlavná" : `${i + 1}. v poradí`}</span>}
               </button>); })}
-            <div style={{ fontSize: 13, lineHeight: 1.45, color: "var(--ink2)" }}>{!darZ.length ? "Vyber hlavnú zbierku. Ďalšie môžeš pridať do poradia." : "100 % odmien ide na hlavnú zbierku. Vybrať môžeš aj ďalšie, pôjdu na rad, keď sa hlavná naplní. Po zapečatení sa nedá zmeniť."}</div>
+            <div style={{ fontSize: 13, lineHeight: 1.45, color: "var(--ink2)" }}>{!darZ.length ? o("Vyber hlavnú zbierku. Ďalšie môžeš pridať do poradia.", "Vyberte hlavnú zbierku. Ďalšie môžete pridať do poradia.") : o("100 % odmien ide na hlavnú zbierku. Vybrať môžeš aj ďalšie, pôjdu na rad, keď sa hlavná naplní. Po zapečatení sa nedá zmeniť.", "100 % odmien ide na hlavnú zbierku. Vybrať môžete aj ďalšie, pôjdu na rad, keď sa hlavná naplní. Po zapečatení sa nedá zmeniť.")}</div>
             {darZ.length > 0 && <div style={{ display: "flex", flexDirection: "column", gap: 6, padding: "10px 12px", borderRadius: 13, background: "var(--field)", border: "1px solid var(--cardBd)", fontSize: 13, lineHeight: 1.5, color: "var(--ink2)" }}>
               <b style={{ color: "var(--ink)" }}>Ako fungujú ďalšie zbierky</b>
-              <span>Prvá je tvoja hlavná. Ak bude mať tvoj skutok veľký ohlas a hlavná zbierka sa naplní, odmeny pôjdu na ďalšiu v poradí. Pridať ich môžeš koľko chceš.</span>
-              <span>Ak sa hlavná nenaplní, nič sa nedeje. Nikto nevidí, že máš nastavené ďalšie zbierky.</span>
-              <span>Prepnutie urobí systém sám, nemusíš nič nastavovať. Na QR skutku vždy uvidíš, pre ktorú zbierku sa práve zbiera, a keď sa hlavná naplní, dáme ti vedieť.</span>
+              <span>{o("Prvá je tvoja hlavná. Ak bude mať tvoj skutok veľký ohlas a hlavná zbierka sa naplní, odmeny pôjdu na ďalšiu v poradí. Pridať ich môžeš koľko chceš.", "Prvá je vaša hlavná. Ak bude mať váš skutok veľký ohlas a hlavná zbierka sa naplní, odmeny pôjdu na ďalšiu v poradí. Pridať ich môžete koľko chcete.")}</span>
+              <span>{o("Ak sa hlavná nenaplní, nič sa nedeje. Nikto nevidí, že máš nastavené ďalšie zbierky.", "Ak sa hlavná nenaplní, nič sa nedeje. Nikto nevidí, že máte nastavené ďalšie zbierky.")}</span>
+              <span>{o("Prepnutie urobí systém sám, nemusíš nič nastavovať. Na QR skutku vždy uvidíš, pre ktorú zbierku sa práve zbiera, a keď sa hlavná naplní, dáme ti vedieť.", "Prepnutie urobí systém sám, nemusíte nič nastavovať. Na QR skutku vždy uvidíte, pre ktorú zbierku sa práve zbiera, a keď sa hlavná naplní, dáme vám vedieť.")}</span>
             </div>}
           </div>}
         </div>
@@ -484,17 +570,26 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
   } else if (kr === 2) {
     const pp = ([["Pred", pred, predRef, "linear-gradient(135deg,#C9C4B8,#9C968A)"], ["Po", poF, poRef, "linear-gradient(135deg,#B9C7CF,#7E97A8)"]] as const);
     obsah = telo(<>
-      <div role="radiogroup" aria-label="Stav skutku" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 4, padding: 4, borderRadius: 14, background: "var(--seg)" }}>
+      {org && uvodOn && <div className="pf-rise" style={{ borderRadius: 18, background: "var(--gSoft)", border: "1px solid var(--gBd)", padding: "16px 18px", display: "flex", flexDirection: "column", gap: 8 }}>
+        <div style={{ fontSize: 19, fontWeight: 800 }}>Veríme vám</div>
+        <div style={{ fontSize: 14.5, lineHeight: 1.55, color: "var(--ink2)" }}>Vaše skutky ani zbierky nekontroluje umelá inteligencia. Ako organizácia za svoj obsah zodpovedáte sami a my veríme, že píšete pravdu.</div>
+        <div style={{ fontSize: 14.5, lineHeight: 1.55, color: "var(--ink2)" }}>Preto sú u nás tresty za klamstvo a podvod prísne a bez výnimiek. Nepravdivý obsah stiahneme, zbierky pozastavíme a pri podvode organizácia stratí overenie aj účet.</div>
+        <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap", marginTop: 4 }}>
+          <button type="button" onClick={() => { setUvodOn(false); void potvrdUvod(stranka, "skutok"); }} style={{ height: 48, padding: "0 24px", borderRadius: 14, border: "none", background: "var(--green)", color: "#fff", fontSize: 15, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}>Rozumiem</button>
+          <button type="button" onClick={() => setPrvOrg(true)} style={{ height: 44, border: "none", background: "transparent", padding: 0, color: "var(--green)", fontSize: 14.5, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}>Pravidlá obsahu ›</button>
+        </div>
+      </div>}
+      {!org && <div role="radiogroup" aria-label="Stav skutku" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 4, padding: 4, borderRadius: 14, background: "var(--seg)" }}>
         {([["Už som to urobil", false], ["Chystám sa to urobiť", true]] as const).map(([t, v]) => (
           <button type="button" role="radio" aria-checked={plan === v} key={t} onClick={() => setPlan(v)} disabled={!!ohl && v}
             style={{ height: 44, borderRadius: 11, border: "none", cursor: "pointer", fontSize: 14, fontWeight: 700, fontFamily: "inherit", background: plan === v ? "var(--card)" : "transparent", color: plan === v ? "var(--ink)" : "var(--ink3)", opacity: ohl && v ? 0.45 : 1 }}>{t}</button>))}
-      </div>
+      </div>}
       <div style={{ display: "flex", gap: 10, alignItems: "center", padding: "10px 12px", borderRadius: 13, background: "var(--card)", border: "1px solid var(--cardBd)", fontSize: 13, lineHeight: 1.45, color: "var(--ink2)" }}>
-        <span style={{ color: "var(--green)", display: "flex", flex: "none" }}><Ik d={IK.zamok} /></span><span>Nič sa nezverejní, kým na konci neuvidíš náhľad a neťukneš <b style={{ color: "var(--ink)" }}>Pridať skutok</b>.</span>
+        <span style={{ color: "var(--green)", display: "flex", flex: "none" }}><Ik d={IK.zamok} /></span><span>{o("Nič sa nezverejní, kým na konci neuvidíš náhľad a neťukneš ", "Nič sa nezverejní, kým na konci neuvidíte náhľad a neťuknete ")}<b style={{ color: "var(--ink)" }}>Pridať skutok</b>.</span>
       </div>
 
       {sk && <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}><span style={P.lbl}>SPOLU SO MNOU BOLI</span><span style={{ fontSize: 13, fontWeight: 700, color: "var(--ink3)" }}>{ucN}</span></div>
+        <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}><span style={P.lbl}>{o("SPOLU SO MNOU BOLI", "SPOLU S NAMI BOLI")}</span><span style={{ fontSize: 13, fontWeight: 700, color: "var(--ink3)" }}>{ucN}</span></div>
         <div style={{ ...P.karta, borderRadius: 16, padding: "2px 12px" }}>
           {uc.map((u, i) => (
             <div key={u.meno} style={{ display: "flex", alignItems: "center", gap: 10, minHeight: 52, borderTop: i ? "1px solid var(--cardBd)" : "none" }}>
@@ -502,22 +597,45 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
               <span style={{ flex: 1, minWidth: 0 }}><span style={{ display: "block", fontSize: 14.5, fontWeight: 700 }}>{u.meno}</span><span style={{ display: "block", fontSize: 12.5, color: u.overeny ? "var(--gInk)" : "var(--gold)" }}>{u.overeny ? "overený skenom" : "čaká na potvrdenie"}</span></span>
               <button type="button" onClick={() => setUc((x) => x.filter((y) => y.meno !== u.meno))} aria-label={`Odstrániť ${u.meno}`} style={{ width: 44, height: 44, border: "none", borderRadius: 10, background: "transparent", color: "var(--ink3)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Ik d={IK.kriz} s={16} /></button>
             </div>))}
-          {!uc.length && <div style={{ padding: "14px 0", fontSize: 13.5, color: "var(--ink3)" }}>Zatiaľ nikto. Pridaj ľudí, ktorí pomáhali s tebou.</div>}
+          {!uc.length && <div style={{ padding: "14px 0", fontSize: 13.5, color: "var(--ink3)" }}>{o("Zatiaľ nikto. Pridaj ľudí, ktorí pomáhali s tebou.", "Zatiaľ nikto. Pridajte ľudí, ktorí pomáhali s vami.")}</div>}
         </div>
         {!pr.zAkcie ? <>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
             <button type="button" onClick={naskenuj} style={{ height: 46, borderRadius: 13, border: "1px solid var(--gBd)", background: "var(--gSoft)", fontSize: 14, fontWeight: 700, color: "var(--gInk)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 7, fontFamily: "inherit" }}><Ik d={IK.sken} s={16} />Naskenovať</button>
             <button type="button" onClick={pozvi} style={{ height: 46, borderRadius: 13, border: "1px solid var(--cardBd)", background: "var(--btn)", fontSize: 14, fontWeight: 700, color: "var(--ink)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 7, fontFamily: "inherit" }}><Ik d={IK.poslat} s={16} />Poslať pozvánku</button>
           </div>
-          <div style={P.maly}>Pomocníkov pridáš do 2 hodín po skutku. Kto dostane pozvánku, musí potvrdiť, že bol pri tom. Každý potom môže pridať aj svoje fotky.</div>
-          {mojeFirmy.length > 0 && <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+          <div style={P.maly}>{o("Pomocníkov pridáš", "Pomocníkov pridáte")} do 2 hodín po skutku. Kto dostane pozvánku, musí potvrdiť, že bol pri tom. Každý potom môže pridať aj svoje fotky.</div>
+          {mojeFirmy.length > 0 && !org && <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
             <button type="button" onClick={pozviKolegov} style={{ minHeight: 46, padding: "4px 8px", borderRadius: 13, border: "1px solid var(--sek-oBd)", background: "var(--goldBg)", fontSize: 13.5, fontWeight: 700, color: "var(--ink)", cursor: "pointer", fontFamily: "inherit", lineHeight: 1.25 }}>Pozvať kolegov z firmy</button>
             <button type="button" onClick={() => { navrhniAkciu(mojeFirmy[0], { t: nz0.trim() || "Spoločný skutok s kolegami", kedy: new Date().toISOString().slice(0, 10) }); toast(`Návrh sme poslali firme ${mojeFirmy[0]}`); }} style={{ minHeight: 46, padding: "4px 8px", borderRadius: 13, border: "1.5px dashed var(--sek-gBd)", background: "transparent", fontSize: 13.5, fontWeight: 700, color: "var(--sek-g)", cursor: "pointer", fontFamily: "inherit", lineHeight: 1.25 }}>Navrhnúť firme ako firemnú akciu</button>
           </div>}
         </> : <div style={P.maly}>Účastníci z akcie sú overení skenom na mieste. Čas a miesto sú vyplnené z akcie. Každý dostane odkaz a môže pridať svoje fotky k spoločnému skutku.</div>}
       </div>}
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      {org ? <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 2, marginTop: 2 }}><span style={{ fontSize: 21, fontWeight: 800 }}>Čo ste urobili</span><span style={{ fontSize: 14, color: "var(--ink3)" }}>Komu ste pomohli a ako. Pár viet stačí.</span></div>
+        <span style={{ fontSize: 15, fontWeight: 800, marginTop: 6 }}>Názov skutku</span>
+        <input value={nz0} onChange={(e) => setNz0(e.target.value.slice(0, ORG_NAZOV))} maxLength={ORG_NAZOV} placeholder="Napríklad: Teplé jedlo pre 300 ľudí" aria-label="Názov skutku" style={P.pole} />
+        <div style={{ display: "flex", justifyContent: "space-between", gap: 10, fontSize: 12.5, fontWeight: 700, color: "var(--ink3)" }}><span>Krátko a jasne: komu a čo.</span><span style={{ flex: "none", fontVariantNumeric: "tabular-nums" }}>{nz0.length} / {ORG_NAZOV}</span></div>
+        <span style={{ fontSize: 15, fontWeight: 800, marginTop: 8 }}>Text</span>
+        <span style={{ fontSize: 13, color: "var(--ink2)", marginTop: -4 }}>Toto ľudia uvidia hneď pod fotkou. Najviac 12 riadkov.</span>
+        <RichTextInput vzhlad="sprava" value={po} onChange={(h) => setPo(h)} nastroje={ORG_NASTROJE} minH={130} chybaRam={riadky > ORG_RIADKY}
+          ariaLabel="Text skutku" tvrdyLimit={Math.max(0, ORG_ZNAKY - zn2)} onRiadky={setRiadky} onZnaky={setZn1} />
+        {(() => { const f = riadky > ORG_RIADKY ? "#A34A2A" : riadky > 9 ? "#8A5A2B" : "var(--green)"; return (
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <span style={{ flex: 1, height: 6, borderRadius: 3, background: "var(--track, var(--seg))", overflow: "hidden" }}><span style={{ display: "block", height: "100%", width: "100%", borderRadius: 3, background: f, transformOrigin: "0 50%", transform: `scaleX(${Math.min(1, riadky / ORG_RIADKY)})`, transition: "transform .3s ease" }} /></span>
+            <span style={{ flex: "none", fontSize: 13, fontWeight: 800, color: f }}>{riadky} z {ORG_RIADKY} riadkov</span>
+          </div>); })()}
+        {riadky > ORG_RIADKY && <span style={{ fontSize: 13, fontWeight: 700, color: "#A34A2A", lineHeight: 1.45 }}>Text je dlhší ako 12 riadkov. Skráťte ho, alebo časť presuňte nižšie do „Viac o skutku“.</span>}
+        <span style={{ fontSize: 15, fontWeight: 800, marginTop: 8 }}>Viac o skutku <span style={{ fontWeight: 500, color: "var(--ink3)" }}>— nepovinné</span></span>
+        <span style={{ fontSize: 13, color: "var(--ink2)", marginTop: -4 }}>Ukáže sa po ťuknutí na „… viac“. Sem patria podrobnosti, poďakovanie, kto pomáhal.</span>
+        <RichTextInput vzhlad="sprava" value={po2Org} onChange={setPo2Org} nastroje={ORG_NASTROJE} minH={110}
+          ariaLabel="Viac o skutku" tvrdyLimit={Math.max(0, ORG_ZNAKY - zn1)} onZnaky={setZn2} />
+        <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
+          <span style={{ fontSize: 12.5, fontWeight: 600, color: "var(--ink3)", lineHeight: 1.45 }}>Text z Wordu, Facebooku či Instagramu si tučné, kurzívu aj odrážky ponechá.</span>
+          <span style={{ flex: "none", fontSize: 13, fontWeight: 800, color: "var(--ink3)", fontVariantNumeric: "tabular-nums" }}>{(zn1 + zn2).toLocaleString("sk-SK")} / 1 500</span>
+        </div>
+      </div> : <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         <div style={P.lbl}>{plan ? "ČO SA CHYSTÁŠ UROBIŤ" : "ČO SI UROBIL"}</div>
         <input value={nz0} onChange={(e) => setNz0(e.target.value)} maxLength={70} placeholder="Názov, napr. Pitný režim pre susedu (nepovinné)" aria-label="Názov skutku" style={P.pole} />
         <RichTextInput value={po} onChange={zmenPo} minH={130} ariaLabel="Opis skutku"
@@ -551,9 +669,39 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
               <button type="button" onClick={() => { setNz0(aiNavrhNazov); setPo(upravHtml(po)); setAiC(false); setAiU(true); }} style={{ height: 44, borderRadius: 12, border: "none", background: "var(--blue)", fontSize: 14, fontWeight: 800, color: "#fff", cursor: "pointer", fontFamily: "inherit" }}>Použiť návrh</button>
             </div>
           </div>)}
-      </div>
+      </div>}
 
-      {plan ? <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      {org ? <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 2, marginTop: 6 }}><span style={{ fontSize: 21, fontWeight: 800 }}>Fotky a video</span><span style={{ fontSize: 14, color: "var(--ink3)" }}>Skutočné fotky človeka alebo miesta, komu pomáhate. Tvár a hlas presvedčia viac než text.</span></div>
+        <div style={{ display: "flex", justifyContent: "space-between", gap: 10, fontSize: 13, fontWeight: 700, color: "var(--ink3)" }}><span style={{ fontSize: 15, fontWeight: 800, color: "var(--ink)" }}>Fotky a video skutku</span><span style={{ flex: "none" }}>{media.filter((m) => !m.video).length} / 8 fotiek · {(() => { const v = media.find((m) => m.video); return v ? `1 video ${fmtSek(v.sek ?? 0)}` : "bez videa"; })()}</span></div>
+        {media.length > 0 && <div style={{ display: "grid", gridTemplateColumns: wide ? "repeat(4,minmax(0,1fr))" : "repeat(2,minmax(0,1fr))", gap: 8 }}>
+          {media.map((m, i) => (
+            <span key={m.src} style={{ aspectRatio: "4 / 3", borderRadius: 12, position: "relative", overflow: "hidden", background: "var(--seg)", border: i === 0 ? "2px solid var(--green)" : "1px solid var(--cardBd)" }}>
+              {m.video ? <video src={m.src} muted style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <img src={m.src} alt={`Fotka ${i + 1}`} style={{ width: "100%", height: "100%", objectFit: "cover" }} />}
+              {i === 0 && <span style={{ position: "absolute", left: 6, top: 6, padding: "2px 7px", borderRadius: 7, background: "var(--green)", color: "#fff", fontSize: 11, fontWeight: 800, letterSpacing: ".05em" }}>HLAVNÉ</span>}
+              {m.video && <span style={{ position: "absolute", left: 6, bottom: 5, fontSize: 11, fontWeight: 800, color: "#fff", textShadow: "0 1px 3px rgba(0,0,0,.6)" }}>VIDEO · {fmtSek(m.sek ?? 0)}</span>}
+              <span style={{ position: "absolute", right: 4, bottom: 4, display: "flex", gap: 4 }}>
+                {i > 0 && <button type="button" onClick={() => posunMedia(i, -1)} aria-label="Posunúť dopredu" style={{ width: 32, height: 32, borderRadius: 9, border: "none", background: "rgba(29,33,27,.6)", color: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Ik d="M15 18l-6-6 6-6" s={15} w={2.4} /></button>}
+                {i < media.length - 1 && <button type="button" onClick={() => posunMedia(i, 1)} aria-label="Posunúť dozadu" style={{ width: 32, height: 32, borderRadius: 9, border: "none", background: "rgba(29,33,27,.6)", color: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Ik d={IK.sipka} s={15} w={2.4} /></button>}
+              </span>
+              <button type="button" onClick={() => setMedia((x) => x.filter((_, j) => j !== i))} aria-label={`Odstrániť ${m.video ? "video" : "fotku"} ${i + 1}`} style={{ position: "absolute", top: 2, right: 2, width: 32, height: 32, borderRadius: "50%", border: "none", background: "rgba(29,33,27,.6)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}><Ik d={IK.kriz} s={13} /></button>
+            </span>))}
+        </div>}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+          <button type="button" onClick={() => fotoRef.current?.click()} disabled={media.filter((m) => !m.video).length >= ORG_FOTIEK} style={{ minHeight: 64, padding: "8px 10px", borderRadius: 14, border: "1.5px dashed var(--gBd)", background: "transparent", color: "var(--green)", cursor: "pointer", fontFamily: "inherit", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 2, opacity: media.filter((m) => !m.video).length >= ORG_FOTIEK ? 0.45 : 1 }}><b style={{ fontSize: 14.5 }}>Pridať fotky</b><span style={{ fontSize: 12, color: "var(--ink3)" }}>aj viac naraz</span></button>
+          <button type="button" onClick={() => vidRef.current?.click()} disabled={media.some((m) => m.video)} style={{ minHeight: 64, padding: "8px 10px", borderRadius: 14, border: "1.5px dashed var(--gBd)", background: "transparent", color: "var(--green)", cursor: "pointer", fontFamily: "inherit", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 2, opacity: media.some((m) => m.video) ? 0.45 : 1 }}><b style={{ fontSize: 14.5 }}>Pridať video</b><span style={{ fontSize: 12, color: "var(--ink3)" }}>nepovinné · jedno, do 45 s</span></button>
+        </div>
+        <input ref={fotoRef} type="file" accept="image/*" multiple hidden onChange={(e) => { void pridajMediaOrg(e.target.files); e.target.value = ""; }} />
+        <input ref={vidRef} type="file" accept="video/*" hidden onChange={(e) => { void pridajMediaOrg(e.target.files); e.target.value = ""; }} />
+        {chybaMed && <div role="alert" style={{ fontSize: 13.5, fontWeight: 700, color: "#A34A2A", lineHeight: 1.45 }}>{chybaMed}</div>}
+        <div style={{ fontSize: 13, lineHeight: 1.5, color: "var(--ink2)" }}><b style={{ color: "var(--ink)" }}>Prvé je hlavné.</b> To ľudia uvidia ako prvé na vašom profile aj tam, kde pôsobíte. Poradie zmeníte šípkami. Fotky a video môžete pridávať aj neskôr.</div>
+        <div style={{ padding: "12px 14px", borderRadius: 14, background: "var(--gSoft)", border: "1px solid var(--gBd)", fontSize: 13.5, lineHeight: 1.5, color: "var(--ink2)" }}><b style={{ color: "var(--ink)" }}>Fotka nie je povinná.</b> Niekedy je lepšie nefotiť, napríklad človeka v ťažkej chvíli. Ak žiadnu nepridáte, pri skutku sa ukáže vaše logo.</div>
+        {maMedia && <>
+          <Zaskrt on={su} onClick={() => setSu(!su)} zarovnaj="flex-start">Na fotkách a videách mám súhlas zobrazených osôb, pri deťoch súhlas zákonného zástupcu. Zábery sú moje alebo mám právo ich použiť.</Zaskrt>
+          <div style={{ fontSize: 13, lineHeight: 1.5, color: "var(--ink3)" }}>Súhlas si uchovávate vy, pri spore ho máte vedieť predložiť. Nezverejňujte adresu, EČV ani doklady. Polohu z fotiek čistíme automaticky.{" "}
+            <button type="button" onClick={() => setPrvOrg(true)} style={{ border: "none", background: "transparent", padding: "10px 0", color: "var(--green)", fontWeight: 800, cursor: "pointer", fontFamily: "inherit", fontSize: 13 }}>Pravidlá obsahu ›</button></div>
+        </>}
+      </div> : plan ? <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         <div style={P.lbl}>KEDY</div>
         <input value={planKedy} onChange={(e) => setPlanKedy(e.target.value)} placeholder="napr. sobota 4. 10., 10:00" aria-label="Kedy" style={P.pole} />
         <div style={{ ...P.lbl, marginTop: 6 }}>ODKAZ NA PRENOS <span style={{ fontWeight: 600, letterSpacing: 0 }}>· nepovinné</span></div>
@@ -611,7 +759,8 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
         </div>
       </div>
     </>, <>
-      <div style={{ fontSize: 13, color: "var(--ink3)", textAlign: "center" }}>Ďalej ukážeme náhľad. Zverejníš až potom.</div>
+      {org && chybaOrg ? <div role="status" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, fontSize: 13.5, fontWeight: 700, color: "var(--gold)" }}><span aria-hidden="true" style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--gold)" }} />{chybaOrg}</div>
+        : <div style={{ fontSize: 13, color: "var(--ink3)", textAlign: "center" }}>{o("Ďalej ukážeme náhľad. Zverejníš až potom.", "Ďalej ukážeme náhľad. Zverejníte až potom.")}</div>}
       <button type="button" onClick={k2Dalej} aria-disabled={!k2Ok} style={{ ...P.hlavne, opacity: k2Ok ? 1 : 0.45 }}>Pokračovať na náhľad</button>
     </>);
   } else if (kr === 3) {
@@ -647,6 +796,51 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
         <div role="radiogroup" aria-label="Oblasť" style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>{OBLASTI.map((n) => <Cip key={n} on={oblast === n} onClick={() => setOblast(n)}>{n}</Cip>)}</div>
       </div>
     </>, !zle ? <button type="button" onClick={k4Dalej} style={P.hlavne}>{otazky.length && kolo === 1 ? "Odoslať odpovede" : "Pozrieť náhľad"}</button> : undefined);
+  } else if (kr === 5 && org) {
+    // OPRAVY 121 · Náhľad skutku za charitu: autor = charita (logo, názov), Kam pôjde, Pred zverejnením si overte
+    const foto = media.find((m) => !m.video)?.src;
+    const ini = (pr.autor || "Charita").split(/\s+/).map((x) => x[0]).join("").slice(0, 2).toUpperCase();
+    const logoEl = (sz: number, r: number) => orgLogo
+      ? <img src={orgLogo} alt="" style={{ width: sz, height: sz, borderRadius: r, objectFit: "cover", background: "#fff", border: "1px solid var(--gBd)", flex: "none" }} />
+      : <span aria-hidden="true" style={{ width: sz, height: sz, borderRadius: r, background: sz > 60 ? "#fff" : "var(--gSoft)", border: "1px solid var(--gBd)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: sz * 0.33, fontWeight: 800, color: "var(--gInk)", flex: "none" }}>{ini}</span>;
+    const viac = !!cistyText(po2Org);
+    obsah = telo(<>
+      <div style={{ display: "flex", flexDirection: "column", gap: 2 }}><span style={{ fontSize: 21, fontWeight: 800 }}>Náhľad</span><span style={{ fontSize: 14, color: "var(--ink3)" }}>Takto skutok uvidia ľudia vo vašej lokalite a na vašom profile.</span></div>
+      <div style={{ ...P.karta, borderRadius: 22, overflow: "hidden" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 16px" }}>
+          {logoEl(40, 20)}
+          <span style={{ flex: 1, minWidth: 0 }}><b style={{ display: "block", fontSize: 15 }}>{pr.autor || "Charita"}</b><span style={{ display: "block", fontSize: 13, color: "var(--ink3)" }}>{kde} · teraz</span></span>
+          <span style={{ padding: "4px 10px", borderRadius: 9, background: "var(--gSoft)", border: "1px solid var(--gBd)", fontSize: 12.5, fontWeight: 800, color: "var(--gInk)", whiteSpace: "nowrap" }}>{oblast ?? "Pomoc"}</span>
+        </div>
+        {dar && darZ[0] && <div style={{ margin: "-2px 16px 10px", display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", borderRadius: 12, background: "var(--goldBg)", border: "1px solid var(--goldBd)", fontSize: 13, fontWeight: 700 }}><span style={{ color: "var(--gold)", display: "flex" }}><Ik d={IK.dar} s={16} /></span>Skutok ako dar · {darZ[0].nazov}</div>}
+        <span role="img" aria-label={foto ? "Hlavná fotka" : "Logo charity"} style={{ display: "flex", alignItems: "center", justifyContent: "center", aspectRatio: "16 / 9", background: foto ? `center/cover no-repeat url(${foto})` : "var(--gSoft)" }}>{!foto && logoEl(120, 30)}</span>
+        <div style={{ padding: "14px 16px 16px", display: "flex", flexDirection: "column", gap: 6 }}>
+          <b style={{ fontSize: 18, lineHeight: 1.3 }}>{nz}</b>
+          <div className="ftext" style={{ fontSize: 15, lineHeight: 1.55, color: "var(--ink2)" }} dangerouslySetInnerHTML={{ __html: po2 }} />
+          {viac && <span style={{ fontSize: 14.5, fontWeight: 800, color: "var(--green)" }}>… viac</span>}
+        </div>
+      </div>
+      <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", borderRadius: 16, background: "var(--gSoft)", border: "1px solid var(--gBd)" }}>
+        <span style={{ flex: 1, minWidth: 0 }}><span style={{ display: "block", fontSize: 12, fontWeight: 800, letterSpacing: ".05em", color: "var(--ink3)" }}>KAM PÔJDE</span>
+          <span style={{ display: "block", fontSize: 16, fontWeight: 800, marginTop: 2 }}>Ľuďom vo vašej lokalite a na váš profil</span>
+          <span style={{ display: "block", fontSize: 13.5, lineHeight: 1.45, color: "var(--ink2)", marginTop: 2 }}>10 dní ho uvidia ľudia tam, kde pôsobíte. Keď ho podporia, ostane o 5 dní dlhšie. Potom ostane na vašom profile, kým ho nezmažete. Ak chcete, aby bol vidno dlhšie, môžete ho topovať.</span></span>
+      </div>
+      <div style={{ ...P.karta, borderRadius: 18, padding: "16px 18px", display: "flex", flexDirection: "column", gap: 10 }}>
+        <b style={{ fontSize: 16 }}>Pred zverejnením si overte</b>
+        {PRED_ZVEREJNENIM.map((t) => <div key={t} style={{ display: "flex", gap: 10, alignItems: "flex-start", fontSize: 15, lineHeight: 1.5, color: "var(--ink2)" }}><span style={{ color: "var(--green)", display: "flex", flex: "none", marginTop: 2 }}><Ik d={IK.fajka} s={18} w={2.6} /></span><span>{t}</span></div>)}
+      </div>
+      <Zaskrt on={pravda} onClick={() => setPravda(!pravda)} zarovnaj="flex-start">Obsah je pravdivý a súhlasím s náhľadom.</Zaskrt>
+    </>, <>
+      {!pravda && <div role="status" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, fontSize: 13.5, fontWeight: 700, color: "var(--gold)" }}><span aria-hidden="true" style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--gold)" }} />Potvrďte, že skutok je pravdivý</div>}
+      <button type="button" onClick={zverejni} aria-disabled={!pravda} style={{ ...P.hlavne, opacity: pravda ? 1 : 0.45 }}>Pridať skutok</button>
+      <button type="button" onClick={() => setZo(true)} style={{ height: 44, border: "none", background: "transparent", color: "var(--ink3)", fontSize: 14.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>Zahodiť</button>
+    </>);
+  } else if (kr === 6 && org) {
+    obsah = telo(<div className="pf-rise" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 14, padding: "10px 12px", textAlign: "center" }}>
+      <Svetlusik size={84} />
+      <div style={{ fontSize: 24, fontWeight: 800 }}>Skutok je zverejnený</div>
+      <div style={{ fontSize: 15.5, lineHeight: 1.55, color: "var(--ink2)" }}>„{nz}“ teraz uvidia ľudia vo vašej lokalite aj na vašom profile.</div>
+    </div>, <button type="button" onClick={zavri} style={{ width: "100%", height: 54, borderRadius: 16, border: "1px solid var(--cardBd)", background: "var(--btn)", fontSize: 16, fontWeight: 700, color: "var(--ink)", cursor: "pointer", fontFamily: "inherit" }}>Hotovo</button>);
   } else if (kr === 5) {
     const foto = poF || pred || media.find((m) => !m.video)?.src;
     obsah = telo(<>
@@ -759,9 +953,10 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
             <h2 style={{ margin: 0, fontSize: 19, fontWeight: 800 }}>{krTit}</h2>
             {kr !== 3 && <button type="button" onClick={spat} style={{ border: "none", background: "transparent", fontSize: 15, fontWeight: 700, color: "var(--ink3)", cursor: "pointer", padding: "10px 0 10px 12px", minHeight: 44, fontFamily: "inherit" }}>{spatT}</button>}
           </div>
-          <div aria-label={`Krok ${kr} zo 6`} role="progressbar" aria-valuemin={1} aria-valuemax={6} aria-valuenow={kr} style={{ alignSelf: "stretch", display: "grid", gridTemplateColumns: "repeat(6,1fr)", gap: 4 }}>
-            {[1, 2, 3, 4, 5, 6].map((i) => <span key={i} style={{ height: 4, borderRadius: 2, background: i <= kr ? "var(--green)" : "var(--pillBd)", transition: "background .3s ease" }} />)}
-          </div>
+          {(() => { const kroky = org ? [1, 2, 5, 6] : [1, 2, 3, 4, 5, 6]; const n = kroky.filter((i) => i <= kr).length; return ( // OPRAVY 121: bez AI 4 kroky
+          <div aria-label={`Krok ${n} z ${kroky.length}`} role="progressbar" aria-valuemin={1} aria-valuemax={kroky.length} aria-valuenow={n} style={{ alignSelf: "stretch", display: "grid", gridTemplateColumns: `repeat(${kroky.length},1fr)`, gap: 4 }}>
+            {kroky.map((i) => <span key={i} style={{ height: 4, borderRadius: 2, background: i <= kr ? "var(--green)" : "var(--pillBd)", transition: "background .3s ease" }} />)}
+          </div>); })()}
         </div>
         {obsah}
 
@@ -770,10 +965,22 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
           <div onClick={() => setZo(false)} style={{ position: "absolute", inset: 0, background: "var(--scrim)" }} />
           <div role="alertdialog" aria-label="Zavrieť rozpísaný skutok?" className="pf-rise" style={{ position: "relative", width: "100%", borderRadius: "28px 28px 0 0", background: "var(--sheet)", padding: "22px 20px max(28px, env(safe-area-inset-bottom))", display: "flex", flexDirection: "column", gap: 10 }}>
             <div style={{ fontSize: 19, fontWeight: 800 }}>Zavrieť rozpísaný skutok?</div>
-            <div style={{ fontSize: 14.5, lineHeight: 1.5, color: "var(--ink2)" }}>Ulož ho ako koncept a dokončíš ho neskôr. Nič sa nezverejní.</div>
+            <div style={{ fontSize: 14.5, lineHeight: 1.5, color: "var(--ink2)" }}>{o("Ulož ho ako koncept a dokončíš ho neskôr. Nič sa nezverejní.", "Uložte ho ako koncept a dokončíte ho neskôr. Nič sa nezverejní.")}</div>
             <button type="button" onClick={ulozAkoKoncept} style={{ ...P.hlavne, height: 54, borderRadius: 16, fontSize: 16 }}>Uložiť ako koncept</button>
             <button type="button" onClick={() => { setZo(false); zavri(); }} style={{ height: 50, borderRadius: 16, border: "1px solid var(--cardBd)", background: "var(--btn)", color: "var(--ink)", fontSize: 15, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>Zahodiť</button>
             <button type="button" onClick={() => setZo(false)} style={{ height: 44, border: "none", background: "transparent", color: "var(--ink3)", fontSize: 14.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>Pokračovať v písaní</button>
+          </div>
+        </div>}
+
+        {/* OPRAVY 121: Pravidlá obsahu (charita) */}
+        {prvOrg && <div style={{ position: "absolute", inset: 0, zIndex: 3, display: "flex", alignItems: "flex-end" }}>
+          <div onClick={() => setPrvOrg(false)} style={{ position: "absolute", inset: 0, background: "var(--scrim)" }} />
+          <div role="dialog" aria-label="Pravidlá obsahu" className="pf-rise" style={{ position: "relative", width: "100%", maxHeight: "92%", overflowY: "auto", borderRadius: "28px 28px 0 0", background: "var(--sheet)", padding: "18px 20px max(28px, env(safe-area-inset-bottom))", display: "flex", flexDirection: "column", gap: 12 }}>
+            <div style={{ fontSize: 20, fontWeight: 800 }}>Fotky a videá</div>
+            <div style={{ fontSize: 14.5, lineHeight: 1.5, color: "var(--ink2)" }}>Zverejnením fotky alebo videa potvrdzujete, že na to máte právo.</div>
+            {PRAVIDLA_ORG.map(([t, x]) => (
+              <div key={t} style={{ display: "flex", gap: 10, fontSize: 14.5, lineHeight: 1.5, color: "var(--ink2)" }}><span aria-hidden="true" style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--green)", flex: "none", marginTop: 8 }} /><span><b style={{ color: "var(--ink)" }}>{t}</b> {x}</span></div>))}
+            <button type="button" onClick={() => setPrvOrg(false)} style={{ ...P.hlavne, height: 54, borderRadius: 16, fontSize: 16, marginTop: 6 }}>Rozumiem</button>
           </div>
         </div>}
 

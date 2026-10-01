@@ -33,16 +33,23 @@ export interface MojSkutok {
   seria?: string;
   /** karta 21 · 11: čo uvidí firma (len prepojený so zamestnávateľom) */
   firma?: "neukazat" | "anonym" | "meno";
+  /** OPRAVY 121: skutok za charitu — navonok autor charita (za), vnútri meno organizátora (vytvoril) */
+  za?: string;
+  vytvoril?: string;
 }
 
 export interface Ucastnik { meno: string; overeny: boolean }
 export interface Koncept {
   sk: boolean; plan: boolean; nazov: string; popis: string; miesto: string; kedy: string;
   oblast: Oblast | null; dar: ZbierkaVolba[]; ucastnici: Ucastnik[]; ulozene: number;
+  /** OPRAVY 121: „Viac o skutku" (skutok za charitu) */
+  popis2?: string;
 }
 export interface Ohlasenie { id: string; nazov: string; popis: string; kedy: string; odkaz: string; stav: "plan" | "bezi"; dar: ZbierkaVolba[]; sk: boolean; retaz?: { zbierka: ZbierkaVolba; pct: number } }
 
-type Stav = { pridane: MojSkutok[]; koncept: Koncept | null; ohlasenie: Ohlasenie | null; upravy: Record<string, Partial<MojSkutok>> };
+type Stav = { pridane: MojSkutok[]; koncept: Koncept | null; ohlasenie: Ohlasenie | null; upravy: Record<string, Partial<MojSkutok>>;
+  /** OPRAVY 121: koncept a skutky za charitu — oddelene od osobných, podľa stránky */
+  konceptOrg?: Record<string, Koncept>; skutkyOrg?: Record<string, MojSkutok[]> };
 const KLUC = "deed.moje.skutky";
 const PRAZDNY: Stav = { pridane: [], koncept: null, ohlasenie: null, upravy: {} };
 let cache: Stav | null = null;
@@ -117,6 +124,16 @@ export function upravSkutok(id: string, z: Partial<MojSkutok>) {
 // ---------- koncept (jeden naraz) ----------
 export const koncept = () => nacitaj().koncept;
 export const ulozKoncept = (k: Koncept | null) => uloz({ koncept: k });
+
+// ---------- OPRAVY 121: skutok za charitu (koncept a zoznam podľa stránky, nie v osobnom denníku) ----------
+export const konceptOrg = (stranka: string): Koncept | null => nacitaj().konceptOrg?.[stranka] ?? null;
+export const ulozKonceptOrg = (stranka: string, k: Koncept | null) => {
+  const m = { ...(nacitaj().konceptOrg ?? {}) };
+  if (k) m[stranka] = k; else delete m[stranka];
+  uloz({ konceptOrg: m });
+};
+export const skutkyOrg = (stranka: string): MojSkutok[] => nacitaj().skutkyOrg?.[stranka] ?? [];
+export const pridajSkutokOrg = (stranka: string, x: MojSkutok) => uloz({ skutkyOrg: { ...(nacitaj().skutkyOrg ?? {}), [stranka]: [x, ...skutkyOrg(stranka)] } });
 
 // ---------- ohlásený skutok (Chystám sa to urobiť) ----------
 export const ohlasenie = () => nacitaj().ohlasenie;

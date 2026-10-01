@@ -247,8 +247,8 @@ export function SpravaStranky({ onBack, typ: typStranky = "charita", strankaId =
 
   const [verejny, setVerejny] = useState(false); // OPRAVY 107: tlačidlo Verejný profil = skutočný verejný profil
   const otvor = (s: Sub) => { if (s === "x:Verejný profil") { setVerejny(true); return; }
-    // OPRAVY 118: Pridať skutok = bežné pridanie skutku za stránku
-    if (s === "pridatSkutok") { otvorPridatSkutok({ autor: nazov }); return; } if (s === sub) return; hist.current = [...hist.current, sub].slice(-30); setSub(s); };
+    // OPRAVY 118/121: Pridať skutok = ten istý PridatSkutok, za charitu (organizacia: true)
+    if (s === "pridatSkutok") { otvorPridatSkutok({ autor: nazov, organizacia: true, strankaId }); return; } if (s === sub) return; hist.current = [...hist.current, sub].slice(-30); setSub(s); };
   const spat = () => {
     if (hist.current.length) { const h = [...hist.current]; const p = h.pop()!; hist.current = h; setSub(p); }
     else if (sub !== null) setSub(null);

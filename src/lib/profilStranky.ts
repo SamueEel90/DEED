@@ -70,3 +70,21 @@ export function uplnostProfilu(p: ProfilStranky | null, kontaktZRegistracie?: Ko
   const zoznam = ch.length <= 1 ? ch.join("") : `${ch.slice(0, -1).join(", ")} a ${ch[ch.length - 1]}`;
   return { pct, chyba: ch.length ? `Chýba ${zoznam}.` : "Profil je hotový." };
 }
+
+// ---- OPRAVY 121: úvod „Veríme vám" — raz pred prvým skutkom (a prvou zbierkou) charity, Rozumiem → už nikdy.
+// Ukladá sa do účtu stránky (profil_stranky.uvod, migrácia 0029), nie do prehliadača.
+export type UvodStranky = "skutok" | "zbierka";
+const uvodPamat = new Map<string, Partial<Record<UvodStranky, string>>>();
+export const uvodZPamate = (stranka: string, co: UvodStranky): boolean => !!uvodPamat.get(stranka)?.[co];
+export async function nacitajUvod(stranka: string): Promise<Partial<Record<UvodStranky, string>>> {
+  if (supabase) {
+    const { data, error } = await supabase.from("profil_stranky").select("uvod").eq("stranka", stranka).maybeSingle();
+    if (!error) { const u = (data?.uvod as Partial<Record<UvodStranky, string>> | null) ?? {}; uvodPamat.set(stranka, u); return u; }
+  }
+  return uvodPamat.get(stranka) ?? {};
+}
+export async function potvrdUvod(stranka: string, co: UvodStranky): Promise<void> {
+  const u = { ...(uvodPamat.get(stranka) ?? {}), [co]: new Date().toISOString() };
+  uvodPamat.set(stranka, u);
+  if (supabase) await supabase.from("profil_stranky").upsert({ stranka, uvod: u }, { onConflict: "stranka" });
+}
