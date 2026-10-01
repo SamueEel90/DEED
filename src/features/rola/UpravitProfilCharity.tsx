@@ -72,10 +72,12 @@ const Pridat = ({ onClick, children }: { onClick: () => void; children: ReactNod
 const cas = (iso: string) => new Date(iso).toLocaleTimeString("sk-SK", { hour: "2-digit", minute: "2-digit" });
 
 // ============================================================
-export function UpravitProfilCharity({ strankaId, pozicia, tier, nazov, inicialy, mobil, tablet, stit, onZrusit, onHotovo, onUlozene }: {
+export function UpravitProfilCharity({ strankaId, pozicia, tier, nazov, inicialy, mobil, tablet, stit, onZrusit, onHotovo, onUlozene, onZmena }: {
   strankaId: string; pozicia: Pozicia; tier: Tier; nazov: string; inicialy: string; mobil: boolean; tablet: boolean;
   stit: string;
   onZrusit: () => void; onHotovo: () => void; onUlozene: (p: ProfilStranky) => void;
+  /** OPRAVY 112: každá zmena hore — percento v karte charity rastie naživo */
+  onZmena?: (p: ProfilStranky) => void;
 }) {
   const z0 = profilZPamate(strankaId);
   const [p, setP] = useState<ProfilStranky>(() => z0.koncept ?? z0.ulozeny ?? zakladnyProfil(pozicia));
@@ -86,6 +88,8 @@ export function UpravitProfilCharity({ strankaId, pozicia, tier, nazov, inicialy
   useEffect(() => { let ziva = true; void nacitajProfil(strankaId).then((z) => { if (!ziva) return; if (!zmenene.current) { setP(z.koncept ?? z.ulozeny ?? zakladnyProfil(pozicia)); setKonceptCas(z.konceptCas); } setNacitane(true); }); return () => { ziva = false; }; }, [strankaId, pozicia]);
   const zmen = (z: Partial<ProfilStranky>) => { zmenene.current = true; setP((x) => ({ ...x, ...z })); };
   const zmenK = (z: Partial<Kontakt>) => { zmenene.current = true; setP((x) => ({ ...x, kontakt: { ...x.kontakt, ...z } })); };
+  useEffect(() => { if (zmenene.current) onZmena?.(p); // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [p]);
   // KONCEPT — automaticky 600 ms po poslednej zmene
   useEffect(() => {
     if (!zmenene.current || !nacitane) return;

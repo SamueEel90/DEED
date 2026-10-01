@@ -147,7 +147,7 @@ const STITY: Record<StitCharity, [string, string, string, string]> = {
   silver: ["Strieborný", "Ale to Zlato má iný lesk.", "Silver", "Striebro"],
   gold: ["Zlatý", "Ale tá Platina má iný lesk.", "Gold", "Zlato"],
   platinum: ["Platinový", "Ale Legenda má iný lesk.", "Platinum", "Platina"],
-  legend: ["Legendárny", "Najvyšší štít, aký charita môže mať.", "Legend", "Legenda"],
+  legend: ["Legenda", "Najvyšší štít, aký charita môže mať.", "Legend", "Legenda"],
 };
 /** sada štítov podľa typu (STIT_SADA_TYPU) — firemný štít zatiaľ nemá obrázky, používa CARE */
 const SADA_PRIECINOK: Record<StitSada, string> = { care: "care", firma: "care" };
@@ -191,7 +191,7 @@ const nadpisSekcie: React.CSSProperties = { flex: "none", fontSize: 12, fontWeig
 const karta: React.CSSProperties = { borderRadius: 22, background: "var(--card)", border: "1px solid var(--cardBd)" };
 const zeleneTl: React.CSSProperties = { flex: "none", height: 44, padding: "0 18px", border: "none", borderRadius: 13, background: "var(--green)", cursor: "pointer", fontSize: 14.5, fontWeight: 800, color: "#fff", whiteSpace: "nowrap" };
 const Pruh = ({ sc, h = 8, bg = "var(--track)", c = "var(--green)" }: { sc: number; h?: number; bg?: string; c?: string }) => (
-  <span style={{ display: "block", height: h, borderRadius: h / 2, background: bg, overflow: "hidden" }}><span style={{ display: "block", width: "100%", height: "100%", borderRadius: h / 2, background: c, transformOrigin: "0 50%", transform: `scaleX(${Math.min(1, sc)})` }} /></span>
+  <span style={{ display: "block", height: h, borderRadius: h / 2, background: bg, overflow: "hidden" }}><span style={{ display: "block", width: "100%", height: "100%", borderRadius: h / 2, background: c, transformOrigin: "0 50%", transform: `scaleX(${Math.min(1, sc)})`, transition: "transform .5s ease" }} /></span>
 );
 
 export interface SpravaStrankyProps {
@@ -226,13 +226,17 @@ export function SpravaStranky({ onBack, typ: typStranky = "charita", strankaId =
   const setTier = (t: Tier) => { const n = { ...nacitajTiery(), [poz]: t }; setTiery(n); ulozTiery(n); };
   const [stit, setStit] = useState<StitCharity>(nacitajStitCharity);
   const [nova, setNova] = useState<boolean>(nacitajCharituNovu);
+  // OPRAVY 109: testovacia lišta — Nová · pozvaná (prvých 50, P3 zadarmo) / Nová · zadarmo / Bežná
+  const [pozvana, setPozvana] = useState<boolean>(() => { try { return localStorage.getItem("deed.dev.pozvana") === "1"; } catch { return false; } });
   const [piny, setPiny] = useState<PolozkaSpravy[]>(() => pinyZPamate(strankaId));
   useEffect(() => { let ziva = true; void nacitajPiny(strankaId).then((p) => { if (ziva) setPiny(p); }); return () => { ziva = false; }; }, [strankaId]);
   const [zoom, setZoom] = useState(false);
   // KARTA 33: uložený profil stránky (percento v karte charity sa počíta z neho, nie z konceptu)
   const [profil, setProfil] = useState<ProfilStranky | null>(() => profilZPamate(strankaId).ulozeny);
-  useEffect(() => { let ziva = true; void nacitajProfil(strankaId).then((z) => { if (ziva) setProfil(z.ulozeny); }); return () => { ziva = false; }; }, [strankaId]);
-  const uplnost = uplnostProfilu(profil ?? zakladnyProfil(poz));
+  // OPRAVY 112: koncept (aj práve rozpracovaná úprava) — percento rastie naživo, nie až po Uložiť
+  const [koncept, setKoncept] = useState<ProfilStranky | null>(() => profilZPamate(strankaId).koncept);
+  useEffect(() => { let ziva = true; void nacitajProfil(strankaId).then((z) => { if (ziva) { setProfil(z.ulozeny); setKoncept(z.koncept); } }); return () => { ziva = false; }; }, [strankaId]);
+  const uplnost = uplnostProfilu(koncept ?? profil ?? zakladnyProfil(poz));
   // OPRAVY 91: bočný panel appky berie farbu štítu otvorenej stránky
   useEffect(() => { nastavStitSpravy(stit); }, [stit]);
   useEffect(() => () => nastavStitSpravy(null), []);
@@ -258,7 +262,13 @@ export function SpravaStranky({ onBack, typ: typStranky = "charita", strankaId =
   };
 
   const pinyTypu = piny.filter((id) => menu.vse.some((v) => v.id === id));
-  const spolocne = { tier, piny: pinyTypu, prepniPin, otvorPolozku, otvor, nova, stit, sada, menu, mobil: !desktop, tablet, zbal, prepniZbal };
+  // OPRAVY 109: úvod novej charity (kým nemá prvú zbierku); krok 1 = prvé Uložiť profil
+  const uvod = nova;
+  const krok1 = !!profil;
+  const glowUp = uvod && !krok1 && sub !== "profil";
+  const glowZb = uvod && krok1 && sub !== "profil" && sub !== "g_zbierky" && sub !== "x:Nová zbierka" && sub !== "x:Správa zbierky";
+  const navZobr = menu.nav.map((n) => ({ ...n, n: nova ? undefined : n.n })); // nová charita: Ľudia bez čísla
+  const spolocne = { tier, piny: pinyTypu, prepniPin, otvorPolozku, otvor, nova, stit, sada, menu, mobil: !desktop, tablet, zbal, prepniZbal, uvod, krok1, pozvana };
   let obsah: React.ReactNode;
   if (sub === null) obsah = <Prehlad {...spolocne} onZoom={() => setZoom(true)} />;
   else if (sub === "g_zbierky") obsah = <ObrZbierky {...spolocne} />;
@@ -274,18 +284,23 @@ export function SpravaStranky({ onBack, typ: typStranky = "charita", strankaId =
       : id === "faq" ? <ObrFaq otvor={o} /> : id === "podpora" ? <ObrPodpora mobil={m} otvor={o} /> : id === "zrusit" ? <ObrZrusit mobil={m} otvor={o} tier={tier} nova={nova} /> : <Pripravujeme />;
   }
   else if (sub === "profil") obsah = <UpravitProfilCharity strankaId={strankaId} pozicia={poz} tier={tier} nazov={nazov} inicialy={inicialy} mobil={!desktop} tablet={tablet}
-    stit={stit} onUlozene={setProfil}
-    onZrusit={() => { hist.current = []; setSub(null); }} onHotovo={() => { hist.current = []; setSub(null); }} />;
+    stit={stit} onUlozene={(pr) => { setProfil(pr); setKoncept(null); }}
+    onZmena={setKoncept} onZrusit={() => { hist.current = []; setSub(null); }} onHotovo={() => { hist.current = []; setSub(null); }} />;
   else if (sub.startsWith("x:")) obsah = <Pripravujeme />;
   else obsah = !typPovoli(sub as PolozkaSpravy, typ) ? <Pripravujeme /> : maPovolenie(sub as PolozkaSpravy, tier) ? <Pripravujeme /> : <Zamknute program={odProgramu(sub as PolozkaSpravy)} />;
 
   const aktivnaSkupina: string | null = sub === null ? null : sub === "nast" || (sub as string).startsWith("n:") ? "nast" : sub === "penazenka" || (sub as string).startsWith("g_") ? sub : (sub as string).startsWith("x:") || sub === "profil" ? null : SKUPINA_POLOZKY(sub as PolozkaSpravy, typ);
 
   const dev = TESTOVACIA && FLAGS.dev_tier_switcher && (
-    <DevSprava tier={tier} stit={stit} nova={nova} typ={typ} onTyp={setTyp}
+    <DevSprava tier={tier} stit={stit} stav={!nova ? "bezna" : pozvana ? "pozv" : "free"} typ={typ} onTyp={setTyp}
       onTier={setTier}
       onStit={(s) => { setStit(s); ulozStitCharity(s); }}
-      onNova={() => { const n = !nova; setNova(n); ulozCharituNovu(n); }} />
+      onStav={(k) => {
+        const n = k !== "bezna", pz = k === "pozv";
+        setNova(n); ulozCharituNovu(n); setPozvana(pz);
+        try { localStorage.setItem("deed.dev.pozvana", pz ? "1" : "0"); } catch { /* LS nedostupné */ }
+        setTier(k === "pozv" ? 3 : k === "free" ? 0 : 1);
+      }} />
   );
   const zoomEl = <>{zoom && <StitZoom stit={stit} sada={sada} onClose={() => setZoom(false)} />}
     {verejny && <VerejnyProfilOkno pozicia={poz} tier={tier} strankaId={strankaId} stit={stit} mobil={!desktop} onZavri={() => setVerejny(false)}
@@ -293,12 +308,12 @@ export function SpravaStranky({ onBack, typ: typStranky = "charita", strankaId =
         <button type="button" onClick={() => setVerejny(false)} style={{ height: 42, padding: "0 16px", border: "none", borderRadius: 13, background: "var(--btn)", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 800, color: "var(--ink)" }}>Zavrieť</button>
         <button type="button" onClick={() => { setVerejny(false); otvor("profil"); }} style={{ height: 42, padding: "0 16px", border: "none", borderRadius: 13, background: "var(--btn)", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 800, color: "var(--ink)" }}>Upraviť</button></>} />}</>;
 
-  const hlavicka = <Hlavicka titul={titulok(sub, typ)} onSpat={spat} otvor={otvor} mobil={!desktop} />;
+  const hlavicka = <Hlavicka titul={titulok(sub, typ)} onSpat={spat} otvor={otvor} mobil={!desktop} glowNova={glowZb} />;
 
   if (desktop) return (
     <div ref={korenRef} className="sprava-charity" data-stit={stit} style={{ minHeight: "100dvh", boxSizing: "border-box", padding: "20px 32px", display: "flex", gap: 24, alignItems: "flex-start" }}>
       <aside style={{ width: 244, flex: "none", display: "flex", flexDirection: "column", gap: 12, paddingRight: 16, borderRight: "2px solid", borderImage: "var(--metal) 1", position: "sticky", top: 20, alignSelf: "flex-start" }}>
-        <KartaCharity nazov={nazov} inicialy={inicialy} typ={typ} otvor={otvor} uplnost={uplnost} />
+        <KartaCharity nazov={nazov} inicialy={inicialy} typ={typ} otvor={otvor} uplnost={uplnost} profil={profil} glow={glowUp} />
         <button onClick={() => otvor("x:Verejný profil")} className="sc-bdh" style={{ flex: "none", height: 56, padding: "0 14px", borderRadius: 18, background: "var(--tBg)", border: "1px solid var(--tBd)", cursor: "pointer", display: "flex", alignItems: "center", gap: 11, textAlign: "left" }}>
           <OkoIk />
           <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}><span style={{ fontSize: 15, fontWeight: 800, color: "var(--tInk)" }}>Verejný profil</span><span style={{ fontSize: 12, color: "var(--tInk2)" }}>ako ho vidia darcovia</span></span>
@@ -310,8 +325,8 @@ export function SpravaStranky({ onBack, typ: typStranky = "charita", strankaId =
           <Ik d={IK.sipkaP} s={18} w={2.4} />
         </button>
         <nav aria-label="Správa stránky" style={{ flex: "none", display: "flex", flexDirection: "column", gap: 2, padding: "4px 0" }}>
-          {menu.nav.map((n) => { const on = aktivnaSkupina === n.k; return (
-            <button key={n.k} onClick={() => otvor(n.k)} aria-current={on ? "page" : undefined} className={on ? undefined : "sc-hov"} style={{ height: 48, padding: "0 14px", border: "none", borderRadius: 14, cursor: "pointer", display: "flex", alignItems: "center", gap: 12, textAlign: "left", background: on ? "var(--accSoft)" : "transparent", color: on ? "var(--acc)" : "var(--ink)" }}>
+          {navZobr.map((n) => { const on = aktivnaSkupina === n.k; const sv = glowZb && n.k === "g_zbierky"; return (
+            <button key={n.k} onClick={() => otvor(n.k)} aria-current={on ? "page" : undefined} className={on ? undefined : "sc-hov"} style={{ height: 48, padding: "0 14px", border: "none", borderRadius: 14, boxShadow: sv ? "0 0 0 3px var(--green), 0 0 18px rgba(78,125,55,.55)" : "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 12, textAlign: "left", background: on ? "var(--accSoft)" : "transparent", color: on ? "var(--acc)" : "var(--ink)" }}>
               <Ik d={n.d} /><span style={{ flex: 1, fontSize: 15, fontWeight: on ? 800 : 600, whiteSpace: "nowrap" }}>{n.t}</span>
               {n.n ? <span aria-label={`${n.n} čaká na potvrdenie`} style={{ minWidth: 24, height: 24, padding: "0 7px", borderRadius: 12, background: "#4B7A35", color: "#fff", fontSize: 12, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>{n.n}</span> : null}
             </button>); })}
@@ -338,11 +353,11 @@ export function SpravaStranky({ onBack, typ: typStranky = "charita", strankaId =
       {hlavicka}
       <div key={String(sub)} style={{ padding: "14px 14px 28px", display: "flex", flexDirection: "column", gap: 14, animation: "spravaFade .2s ease both", width: "100%", maxWidth: tablet ? 880 : undefined, margin: tablet ? "0 auto" : undefined, boxSizing: "border-box" }}>
         {sub === null && <div style={{ display: "flex", gap: 10, alignItems: "stretch" }}>
-          <div style={{ flex: tablet ? "0 1 560px" : 1, minWidth: 0 }}><KartaCharity nazov={nazov} inicialy={inicialy} typ={typ} otvor={otvor} mobil tablet={tablet} uplnost={uplnost} /></div>
+          <div style={{ flex: tablet ? "0 1 560px" : 1, minWidth: 0 }}><KartaCharity nazov={nazov} inicialy={inicialy} typ={typ} otvor={otvor} mobil tablet={tablet} uplnost={uplnost} profil={profil} glow={glowUp} /></div>
           <KartaStitu stit={stit} sada={sada} onZoom={() => setZoom(true)} mobil={!tablet} />{/* OPRAVY 102: tablet má štít ako PC (230 px, štít vľavo) */}
         </div>}
         {obsah}
-        {sub === null && <MenuDlazdice otvor={otvor} nav={menu.nav} tablet={tablet} zbal={zbal} prepniZbal={prepniZbal} />}
+        {sub === null && <MenuDlazdice otvor={otvor} nav={navZobr} tablet={tablet} zbal={zbal} prepniZbal={prepniZbal} glowZb={glowZb} />}
         {dev}
       </div>
       {zoomEl}
@@ -353,7 +368,8 @@ export function SpravaStranky({ onBack, typ: typStranky = "charita", strankaId =
 // ============================================================
 // HLAVIČKA — na každej obrazovke
 // ============================================================
-function Hlavicka({ titul, onSpat, otvor, mobil }: { titul: string; onSpat: () => void; otvor: (s: Sub) => void; mobil: boolean }) {
+function Hlavicka({ titul, onSpat, otvor, mobil, glowNova }: { titul: string; onSpat: () => void; otvor: (s: Sub) => void; mobil: boolean; glowNova?: boolean }) {
+  const nzSh = glowNova ? "0 0 0 3px var(--bg), 0 0 0 5px var(--green), 0 0 20px rgba(78,125,55,.6)" : "none"; // OPRAVY 109
   const spatEl = (
     <button onClick={onSpat} aria-label="Späť" className="sc-bdh" style={{ flex: "none", height: 44, padding: "0 14px 0 8px", borderRadius: 13, border: "1px solid var(--cardBd)", background: "var(--card)", cursor: "pointer", display: "flex", alignItems: "center", gap: 4, fontSize: 14.5, fontWeight: 800, color: "var(--ink)" }}>
       <Ik d={IK.sipkaL} w={2.4} />Späť
@@ -368,7 +384,7 @@ function Hlavicka({ titul, onSpat, otvor, mobil }: { titul: string; onSpat: () =
         <span style={{ fontSize: 17, fontWeight: 800, lineHeight: 1.2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "100%" }}>{titul}</span>{datum}
       </span>
       {kalEl}
-      <button onClick={() => otvor("x:Nová zbierka")} aria-label="Nová zbierka" style={{ flex: "none", width: 44, height: 44, border: "none", borderRadius: 13, background: "#4B7A35", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Ik d="M12 5v14M5 12h14" s={20} c="#fff" w={2.6} /></button>
+      <button onClick={() => otvor("x:Nová zbierka")} aria-label="Nová zbierka" style={{ flex: "none", width: 44, height: 44, border: "none", borderRadius: 13, boxShadow: nzSh, background: "#4B7A35", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Ik d="M12 5v14M5 12h14" s={20} c="#fff" w={2.6} /></button>
     </header>);
   return (
     <header style={{ flex: "none", display: "flex", alignItems: "center", gap: 14, paddingBottom: 14, background: "var(--metal) left bottom/100% var(--mH,3px) no-repeat" }}>
@@ -377,49 +393,65 @@ function Hlavicka({ titul, onSpat, otvor, mobil }: { titul: string; onSpat: () =
         <h1 style={{ margin: 0, fontSize: 22, fontWeight: 800, lineHeight: 1.15, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{titul}</h1>{datum}
       </span>
       {kalEl}
-      <button onClick={() => otvor("x:Nová zbierka")} style={{ ...zeleneTl, background: "#4B7A35", display: "flex", alignItems: "center", gap: 8 }}><Ik d="M12 5v14M5 12h14" s={17} c="currentColor" w={2.6} />Nová zbierka</button>
+      <button onClick={() => otvor("x:Nová zbierka")} style={{ ...zeleneTl, boxShadow: nzSh, background: "#4B7A35", display: "flex", alignItems: "center", gap: 8 }}><Ik d="M12 5v14M5 12h14" s={17} c="currentColor" w={2.6} />Nová zbierka</button>
     </header>);
 }
 
 // ============================================================
 // PANEL — karta charity, Nastavenia
 // ============================================================
-function KartaCharity({ nazov, inicialy, typ, otvor, mobil, tablet, uplnost }: { nazov: string; inicialy: string; typ: TypStranky; otvor: (s: Sub) => void; mobil?: boolean; tablet?: boolean; uplnost: { pct: number; chyba: string } }) {
+/** OPRAVY 113: logo v karte charity z uloženého profilu (tvar + pozadie), inak iniciály */
+function LogoKarty({ profil, inicialy, size }: { profil: ProfilStranky | null; inicialy: string; size: number }) {
+  const logo = profil?.logo;
+  const bg = !logo ? "var(--white)" : profil!.logoPozadie === "tmave" ? "#15171c" : profil!.logoPozadie === "priehladne" ? "transparent" : "#fff";
+  return (
+    <span style={{ width: size, height: size, borderRadius: profil?.tvar === "kruh" ? "50%" : Math.round(size / 4), overflow: "hidden", background: bg, border: "1px solid var(--cardBd)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: Math.round(size / 3.1), fontWeight: 800, color: "var(--gInk)", flex: "none" }}>
+      {logo ? <img src={logo} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} /> : inicialy}
+    </span>);
+}
+/** OPRAVY 109/113: Upraviť svieti len pred krokom 1 úvodu, inak sivé */
+const upravitTl = (glow: boolean): React.CSSProperties => glow
+  ? { background: "var(--green)", color: "#fff", boxShadow: "0 0 0 3px var(--green), 0 0 18px rgba(78,125,55,.55)" }
+  : { background: "var(--btn)", color: "var(--ink)", boxShadow: "none" };
+
+function KartaCharity({ nazov, inicialy, typ, otvor, mobil, tablet, uplnost, profil, glow }: { nazov: string; inicialy: string; typ: TypStranky; otvor: (s: Sub) => void; mobil?: boolean; tablet?: boolean; uplnost: { pct: number; chyba: string }; profil: ProfilStranky | null; glow: boolean }) {
   const [otv, setOtv] = useState(true);
-  const pct = uplnost.pct; // KARTA 33 bod 6: zo 4 vecí po 25 %, z uloženého profilu
+  const pct = uplnost.pct; // OPRAVY 112: počas úpravy z konceptu, inak z konceptu alebo uloženého profilu
+  // OPRAVY 111: „Charita / OZ · 50 %" — jeden riadok, nikdy sa nezalamuje (PC aj tablet)
+  const riadok = <span style={{ display: "block", fontSize: 12.5, color: "var(--cuInk2)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{TYP_NAZOV[typ]} · {pct} %</span>;
   // OPRAVY 100: tablet — 1 riadok (logo 44 · názov + percento + pruh pod textom · Upraviť vpravo), výšku určuje karta štítu
   if (tablet) return (
     <div style={{ height: "100%", boxSizing: "border-box", borderRadius: 18, background: "var(--cuBg)", border: "1.5px solid var(--cuBd)", boxShadow: "inset 0 1px 0 rgba(255,255,255,.45)", padding: "12px 16px", display: "flex", alignItems: "center", gap: 12 }}>
-      <span style={{ width: 44, height: 44, borderRadius: 11, background: "var(--white)", border: "1px solid var(--cardBd)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13.5, fontWeight: 800, color: "var(--gInk)", flex: "none" }}>{inicialy}</span>
+      <LogoKarty profil={profil} inicialy={inicialy} size={44} />
       <span style={{ flex: "0 1 auto", minWidth: 0, display: "flex", flexDirection: "column", gap: 6 }}>
-        <span><b style={{ display: "block", fontSize: 15, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{nazov}</b><span style={{ display: "block", fontSize: 12.5, color: "var(--cuInk2)" }}>{TYP_NAZOV[typ]} · profil hotový na {pct} %</span></span>
+        <span><b style={{ display: "block", fontSize: 15, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{nazov}</b>{riadok}</span>
         <Pruh sc={pct / 100} h={6} bg="rgba(168,116,80,.25)" />
       </span>
       <span style={{ flex: 1 }} />
-      <button onClick={() => otvor("profil")} style={{ ...zeleneTl }}>Upraviť</button>
+      <button onClick={() => otvor("profil")} style={{ ...zeleneTl, ...upravitTl(glow) }}>Upraviť</button>
     </div>);
   if (mobil) return (
     <div style={{ height: "100%", boxSizing: "border-box", borderRadius: 18, background: "var(--cuBg)", border: "1.5px solid var(--cuBd)", boxShadow: "inset 0 1px 0 rgba(255,255,255,.45)", padding: 12, display: "flex", flexDirection: "column", gap: 10 }}>
       <span style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
-        <span style={{ width: 40, height: 40, borderRadius: 10, background: "var(--white)", border: "1px solid var(--cardBd)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 800, color: "var(--gInk)", flex: "none" }}>{inicialy}</span>
+        <LogoKarty profil={profil} inicialy={inicialy} size={40} />
         <span style={{ minWidth: 0 }}><b style={{ display: "block", fontSize: 14.5, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{nazov}</b><span style={{ display: "block", fontSize: 12, color: "var(--cuInk2)" }}>{TYP_NAZOV[typ]} · profil hotový na {pct} %</span></span>
       </span>
       <Pruh sc={pct / 100} h={6} bg="rgba(168,116,80,.25)" />
       <span style={{ flex: 1 }} />
-      <button onClick={() => otvor("profil")} style={{ ...zeleneTl, width: "100%", padding: 0 }}>Upraviť profil</button>
+      <button onClick={() => otvor("profil")} style={{ ...zeleneTl, width: "100%", padding: 0, ...upravitTl(glow) }}>Upraviť profil</button>
     </div>);
   return (
-    <div style={{ flex: "none", borderRadius: 18, background: "var(--cuBg)", border: "1.5px solid var(--cuBd)", boxShadow: "inset 0 1px 0 rgba(255,255,255,.45)", overflow: "hidden" }}>
+    <div style={{ flex: "none", borderRadius: 18, background: "var(--cuBg)", border: "1.5px solid var(--cuBd)", boxShadow: "inset 0 1px 0 rgba(255,255,255,.45)" }}>
       <button onClick={() => setOtv((o) => !o)} aria-expanded={otv} style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: 12, border: "none", background: "transparent", cursor: "pointer", textAlign: "left", color: "var(--ink)" }}>
-        <span style={{ width: 40, height: 40, borderRadius: 10, overflow: "hidden", background: "var(--white)", border: "1px solid var(--cardBd)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 800, color: "var(--gInk)", flex: "none" }}>{inicialy}</span>
-        {/* OPRAVY 111: názov 1 riadok (dlhý najviac 2), pod ním 1 riadok „typ · hotový na X %" */}
-        <span style={{ flex: 1, minWidth: 0 }}><span title={nazov} style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", fontSize: 14.5, fontWeight: 800, lineHeight: 1.25 }}>{nazov}</span><span style={{ display: "block", fontSize: 12.5, color: "var(--cuInk2)", lineHeight: 1.35 }}>{TYP_NAZOV[typ]} · <span style={{ whiteSpace: "nowrap" }}>hotový na {pct} %</span></span></span>
-        <Ik d={IK.dole} s={18} w={2.4} style={{ transform: `rotate(${otv ? 180 : 0}deg)`, transition: "transform .2s ease" }} />
+        <LogoKarty profil={profil} inicialy={inicialy} size={40} />
+        {/* OPRAVY 111: názov najviac 2 riadky, pod ním 1 riadok „Charita / OZ · 50 %" */}
+        <span style={{ flex: 1, minWidth: 0 }}><span title={nazov} style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", fontSize: 14.5, fontWeight: 800, lineHeight: 1.25 }}>{nazov}</span>{riadok}</span>
+        <Ik d={IK.dole} s={18} w={2.4} style={{ flex: "none", transform: `rotate(${otv ? 180 : 0}deg)`, transition: "transform .2s ease" }} />
       </button>
       {otv && <div style={{ padding: "4px 12px 12px", display: "flex", flexDirection: "column", gap: 8, borderTop: "1px solid var(--accLine)" }}>
         <span style={{ marginTop: 8 }}><Pruh sc={pct / 100} h={6} bg="rgba(168,116,80,.25)" /></span>
         <span style={{ fontSize: 13, color: "var(--cuInk)" }}>{uplnost.chyba}</span>
-        <button onClick={() => otvor("profil")} style={{ height: 44, borderRadius: 12, border: "none", background: "var(--green)", color: "#fff", cursor: "pointer", fontSize: 13, fontWeight: 800 }}>Upraviť</button>
+        <button onClick={() => otvor("profil")} style={{ height: 44, borderRadius: 12, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 800, ...upravitTl(glow) }}>Upraviť</button>
       </div>}
     </div>);
 }
@@ -433,7 +465,7 @@ function TlacidloNastavenia({ on, onClick }: { on: boolean; onClick: () => void 
 }
 
 /** mobil: menu ako 6 dlaždíc + Nastavenia */
-function MenuDlazdice({ otvor, nav, tablet, zbal, prepniZbal }: { otvor: (s: Sub) => void; nav: Menu["nav"]; tablet: boolean; zbal: Zbalenie; prepniZbal: (id: string) => void }) {
+function MenuDlazdice({ otvor, nav, tablet, zbal, prepniZbal, glowZb }: { otvor: (s: Sub) => void; nav: Menu["nav"]; tablet: boolean; zbal: Zbalenie; prepniZbal: (id: string) => void; glowZb?: boolean }) {
   const dl: { k: Sub; t: string; d?: string; n?: number; teal?: boolean }[] = [
     { k: "x:Verejný profil", t: "Verejný profil", teal: true },
     ...nav.map((n) => ({ k: n.k as Sub, t: n.t, d: n.d, n: n.n })),
@@ -441,7 +473,7 @@ function MenuDlazdice({ otvor, nav, tablet, zbal, prepniZbal }: { otvor: (s: Sub
   return (<Sekcia id="menu" nazov="Správa stránky" suhrn={pocet(dl.length, ["položka", "položky", "položiek"])} zbal={zbal} prepni={prepniZbal}>
     <div style={{ display: "grid", gridTemplateColumns: "repeat(3,minmax(0,1fr))", gap: 8 }}>
       {dl.map((x) => (
-        <button key={String(x.k)} onClick={() => otvor(x.k)} style={{ position: "relative", minHeight: tablet ? 72 : 84, padding: "10px 6px", borderRadius: 16, background: x.teal ? "var(--tBg)" : "var(--card)", border: `1px solid ${x.teal ? "var(--tBd)" : "var(--cardBd)"}`, cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, fontSize: 13.5, fontWeight: 800, color: x.teal ? "var(--tInk)" : "var(--ink)", lineHeight: 1.25, textAlign: "center" }}>
+        <button key={String(x.k)} onClick={() => otvor(x.k)} style={{ position: "relative", boxShadow: glowZb && x.k === "g_zbierky" ? "0 0 0 3px var(--green), 0 0 18px rgba(78,125,55,.55)" : "none", minHeight: tablet ? 72 : 84, padding: "10px 6px", borderRadius: 16, background: x.teal ? "var(--tBg)" : "var(--card)", border: `1px solid ${x.teal ? "var(--tBd)" : "var(--cardBd)"}`, cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, fontSize: 13.5, fontWeight: 800, color: x.teal ? "var(--tInk)" : "var(--ink)", lineHeight: 1.25, textAlign: "center" }}>
           {x.teal ? <OkoIk /> : <Ik d={x.d!} />}{x.t}
           {x.n ? <span style={{ position: "absolute", top: 6, right: 6, minWidth: 22, height: 22, padding: "0 6px", borderRadius: 11, background: "#4B7A35", color: "#fff", fontSize: 11.5, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>{x.n}</span> : null}
         </button>))}
@@ -486,7 +518,7 @@ function Sekcia({ id, nazov, suhrn, akcia, zbal, prepni, children }: { id: strin
 // ============================================================
 // PREHĽAD
 // ============================================================
-type Spolocne = { tier: Tier; piny: PolozkaSpravy[]; prepniPin: (id: PolozkaSpravy) => void; otvorPolozku: (id: PolozkaSpravy) => void; otvor: (s: Sub) => void; nova: boolean; stit: StitCharity; sada: StitSada; menu: Menu; mobil: boolean; tablet: boolean; zbal: Zbalenie; prepniZbal: (id: string, otv?: boolean) => void };
+type Spolocne = { uvod: boolean; krok1: boolean; pozvana: boolean; tier: Tier; piny: PolozkaSpravy[]; prepniPin: (id: PolozkaSpravy) => void; otvorPolozku: (id: PolozkaSpravy) => void; otvor: (s: Sub) => void; nova: boolean; stit: StitCharity; sada: StitSada; menu: Menu; mobil: boolean; tablet: boolean; zbal: Zbalenie; prepniZbal: (id: string, otv?: boolean) => void };
 
 function KartaStitu({ stit, sada = "care", onZoom, mobil, vyska }: { stit: StitCharity; sada?: StitSada; onZoom: () => void; mobil?: boolean; vyska?: number }) {
   const [n, alt, en] = STITY[stit];
@@ -521,7 +553,7 @@ function StitZoom({ stit, sada, onClose }: { stit: StitCharity; sada: StitSada; 
     </div>, document.body);
 }
 
-function Prehlad({ tier: _tier, piny, prepniPin, otvorPolozku, otvor, nova, stit, sada, menu, mobil, tablet, zbal, prepniZbal, onZoom }: Spolocne & { onZoom: () => void }) {
+function Prehlad({ tier: _tier, piny, prepniPin, otvorPolozku, otvor, nova, stit, sada, menu, mobil, tablet, zbal, prepniZbal, onZoom, uvod, krok1, pozvana }: Spolocne & { onZoom: () => void }) {
   const VSE = menu.vse; // KARTA 36: na pripnutie len položky, ktoré typ má
   const ph = mobil && !tablet; // telefón (OPRAVY 96: tablet má časti ako PC)
   const [obd, setObd] = useState(0);
@@ -606,6 +638,48 @@ function Prehlad({ tier: _tier, piny, prepniPin, otvorPolozku, otvor, nova, stit
       </div>}
     </section>);
 
+  // ============ OPRAVY 109 · úvod novej charity (kým nemá prvú zbierku) ============
+  const [uP, setUP] = useState(false), [uR, setUR] = useState(false), [uD, setUD] = useState(false);
+  const uvodPanel = (
+    <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 14 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        <span style={{ fontSize: 30, fontWeight: 800, lineHeight: 1.15, textWrap: "balance" } as React.CSSProperties}>{krok1 ? "Profil je pripravený" : "Vitajte v DEEDGOOD"}</span>
+        <span style={{ fontSize: 15.5, lineHeight: 1.5, color: "var(--ink2)" }}>{krok1 ? "Zostáva posledný krok — prvá zbierka." : "Dva kroky a váš profil je pripravený pre darcov."}</span>
+      </div>
+      <section style={{ flex: "none", borderRadius: 20, background: pozvana ? "var(--gSoft)" : "var(--card)", border: pozvana ? "1.5px solid var(--gBd)" : "1px solid var(--cardBd)", padding: "16px 20px", display: "flex", flexDirection: ph ? "column" : "row", alignItems: ph ? "flex-start" : "center", gap: ph ? 8 : 16 }}>
+        <span style={{ flex: 1, minWidth: 0 }}>
+          <b style={{ display: "block", fontSize: 16, color: pozvana ? "var(--gInk)" : "var(--ink)" }}>{pozvana ? "Ste medzi prvými 50. Program P3 máte zadarmo do 31. 10. 2026." : "Máte program Zadarmo."}</b>
+          <span style={{ display: "block", marginTop: 4, fontSize: 13, lineHeight: 1.45, color: "var(--ink2)" }}>{pozvana ? "Potom si vyberiete program. Ak žiadny nevyberiete, zbierky pre ľudí dobehnú do konca. Centrálna a sektorové zbierky sa z profilu stiahnu." : "Jedna zbierka naraz, QR a prehľad darcov. Čo pridajú vyššie programy, vidíte v menu so štítkom."}</span>
+        </span>
+        <button onClick={() => otvor("n:program")} style={{ flex: "none", minHeight: 44, padding: 0, border: "none", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 800, color: pozvana ? "var(--gInk)" : "var(--green)", whiteSpace: "nowrap" }}>{pozvana ? "Čo je v P3 ›" : "Porovnať programy ›"}</button>
+      </section>
+    </div>);
+  const kroky: [string, string, string][] = krok1
+    ? [["2", "Vytvorte prvú zbierku", "Pre koho zbierate, koľko a na čo."]]
+    : [["1", "Doplňte profil", "Logo, titulná fotka, pár viet o vás a kontakt. Podľa toho vás darcovia spoznajú."], ["2", "Vytvorte prvú zbierku", "Pre koho zbierate, koľko a na čo."]];
+  const krokyEl = (<>
+    <section aria-label="Kroky" style={{ flex: "none", ...karta, padding: ph ? "4px 16px" : "6px 22px" }}>
+      {kroky.map(([n, t, d], i) => (
+        <div key={n} style={{ display: "flex", alignItems: "center", gap: ph ? 14 : 18, minHeight: ph ? 80 : 96, padding: "14px 0", borderTop: i ? "1px solid var(--cardBd)" : "none" }}>
+          <span style={{ width: 44, height: 44, flex: "none", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 17, fontWeight: 800, background: "var(--field)", color: "var(--ink)" }}>{n}</span>
+          <span style={{ flex: 1, minWidth: 0 }}><b style={{ display: "block", fontSize: 17 }}>{t}</b><span style={{ display: "block", marginTop: 3, fontSize: 13.5, lineHeight: 1.45, color: "var(--ink3)" }}>{d}</span></span>
+        </div>))}
+    </section>
+    <span style={{ flex: "none", fontSize: 12.5, fontWeight: 700, color: "var(--ink2)", padding: "0 4px", marginTop: -4 }}>{mobil ? "Všetko ostatné nájdete nižšie v Správe stránky." : "Všetko ostatné nájdete v menu vľavo."} Táto obrazovka zmizne po prvej zbierke.</span>
+  </>);
+  const sipka = (otv: boolean, c = "var(--acc)") => <Ik d={IK.dole} s={18} c={c} w={2.4} style={{ flex: "none", transform: `rotate(${otv ? 180 : 0}deg)`, transition: "transform .2s ease" }} />;
+  const pinUvod = (
+    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+      <button onClick={() => setUP((o) => !o)} aria-expanded={uP} style={{ ...karta, borderRadius: 18, minHeight: 52, padding: "0 16px", display: "flex", alignItems: "center", gap: 12, cursor: "pointer", textAlign: "left", width: "100%" }}>
+        <span style={{ flex: "none", fontSize: 12, fontWeight: 800, letterSpacing: ".07em", color: "var(--acc)" }}>PRIPNUTÉ</span>
+        <span style={{ flex: 1, minWidth: 0, fontSize: 13, color: "var(--ink3)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>skratky na to, čo používate najčastejšie</span>
+        {sipka(uP)}
+      </button>
+      {uP && pinBar}
+    </div>);
+  const uvodPc = uvod && !mobil; // na mobile/tablete sú Reťaz a Dorovnávané zbaliteľné sekcie (bod 95)
+  const rOtv = !uvodPc || uR, dOtv = !uvodPc || uD;
+
   const treba = (<>
     <span ref={trebaRef} style={{ ...nadpisSekcie, scrollMarginTop: 80 }}>TREBA VYBAVIŤ</span>
     {ulohy.length === 0
@@ -652,9 +726,9 @@ function Prehlad({ tier: _tier, piny, prepniPin, otvorPolozku, otvor, nova, stit
 
   const retazEl = (
       <section style={{ ...karta, padding: "16px 18px", display: "flex", flexDirection: "column", gap: 10 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}><Ik d={IK.retaz} c="#4E7D37" w={2} /><b style={{ flex: 1, fontSize: 16 }}>Reťaz dobra</b><span style={{ fontSize: 13, fontWeight: 800, color: "var(--gInk)" }}>{nova ? "0 €" : "640 €"}</span></div>
-        <span style={{ fontSize: 12.5, color: "var(--ink3)", marginTop: -4 }}>ľudia, ktorí sa pripojili k vašim zbierkam</span>
-        {nova
+        <div onClick={uvodPc ? () => setUR((o) => !o) : undefined} role={uvodPc ? "button" : undefined} aria-expanded={uvodPc ? rOtv : undefined} style={{ display: "flex", alignItems: "center", gap: 10, minHeight: uvodPc ? 24 : undefined, cursor: uvodPc ? "pointer" : "default" }}><Ik d={IK.retaz} c="#4E7D37" w={2} /><b style={{ flex: 1, fontSize: 16 }}>Reťaz dobra</b><span style={{ fontSize: 13, fontWeight: 800, color: "var(--gInk)" }}>{nova ? "0 €" : "640 €"}</span>{uvodPc && sipka(rOtv)}</div>
+        {rOtv && <span style={{ fontSize: 12.5, color: "var(--ink3)", marginTop: -4 }}>ľudia, ktorí sa pripojili k vašim zbierkam</span>}
+        {!rOtv ? null : nova
           ? <span style={{ paddingTop: 10, borderTop: "1px solid var(--cardBd)", fontSize: 13.5, lineHeight: 1.45, color: "var(--ink2)" }}>Zatiaľ sa nikto nepripojil. Keď niekto spustí zbierku pre vás, uvidíte ho tu.</span>
           : RETAZ.map(([i, n, z, v]) => (
             <div key={n} style={{ display: "flex", alignItems: "center", gap: 10, minHeight: 48, borderTop: "1px solid var(--cardBd)" }}>
@@ -665,9 +739,9 @@ function Prehlad({ tier: _tier, piny, prepniPin, otvorPolozku, otvor, nova, stit
       </section>);
   const dorEl = (
       <section style={{ borderRadius: 22, background: "var(--goldBg)", border: "1px solid var(--goldBd)", padding: "16px 18px", display: "flex", flexDirection: "column", gap: 10 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}><Ik d={IK.budova} c="var(--gold)" w={2} /><b style={{ flex: 1, fontSize: 16 }}>Dorovnávané zbierky</b><span style={{ fontSize: 13, fontWeight: 800, color: "var(--gold)" }}>{nova ? "" : "1 beží"}</span></div>
-        <span style={{ fontSize: 12.5, color: "var(--cuInk2)", marginTop: -4 }}>partneri, ktorí pridávajú k darom ľudí</span>
-        {nova
+        <div onClick={uvodPc ? () => setUD((o) => !o) : undefined} role={uvodPc ? "button" : undefined} aria-expanded={uvodPc ? dOtv : undefined} style={{ display: "flex", alignItems: "center", gap: 10, minHeight: uvodPc ? 24 : undefined, cursor: uvodPc ? "pointer" : "default" }}><Ik d={IK.budova} c="var(--gold)" w={2} /><b style={{ flex: 1, fontSize: 16 }}>Dorovnávané zbierky</b><span style={{ fontSize: 13, fontWeight: 800, color: "var(--gold)" }}>{nova ? "" : "1 beží"}</span>{uvodPc && sipka(dOtv, "var(--gold)")}</div>
+        {dOtv && <span style={{ fontSize: 12.5, color: "var(--cuInk2)", marginTop: -4 }}>partneri, ktorí pridávajú k darom ľudí</span>}
+        {!dOtv ? null : nova
           ? <span style={{ paddingTop: 10, borderTop: "1px solid rgba(135,103,18,.25)", fontSize: 13.5, lineHeight: 1.45, color: "var(--cuInk2)" }}>Zatiaľ žiadna firma nedorovnáva. Keď sa partner zapojí, uvidíte tu jeho rozpočet.</span>
           : <div style={{ display: "flex", flexDirection: "column", gap: 6, paddingTop: 10, borderTop: "1px solid rgba(135,103,18,.25)" }}>
             <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}><b style={{ flex: 1, fontSize: 14 }}>Pekáreň Dobrota s.r.o.</b><span style={{ fontSize: 12, fontWeight: 800, color: "var(--gold)" }}>1 : 1</span></div>
@@ -686,6 +760,10 @@ function Prehlad({ tier: _tier, piny, prepniPin, otvorPolozku, otvor, nova, stit
     const vyz = nova ? N8[0] : D8[obd][0][0];
     const retazS = <Sekcia id="retaz" nazov="Reťaz dobra" suhrn={nova ? "0 €" : "640 €"} zbal={zbal} prepni={prepniZbal}>{retazEl}</Sekcia>;
     const dorS = <Sekcia id="dorovnanie" nazov="Dorovnávané zbierky" suhrn={nova ? undefined : "1 beží"} zbal={zbal} prepni={prepniZbal}>{dorEl}</Sekcia>;
+    if (uvod) return (<>
+      {uvodPanel}{krokyEl}{pinUvod}{treba}
+      {tablet ? <div style={{ display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 14, alignItems: "start" }}><div style={{ display: "flex", flexDirection: "column", gap: 14 }}>{retazS}</div><div style={{ display: "flex", flexDirection: "column", gap: 14 }}>{dorS}</div></div> : <>{retazS}{dorS}</>}
+    </>);
     return (<>
       <Sekcia id="cisla" nazov="Čísla" suhrn={`Vyzbierané ${vyz} ${obdTxt}`} akcia={cislaAkcia} zbal={zbal} prepni={prepniZbal}>{cisla}</Sekcia>
       <Sekcia id="graf" nazov="Graf darov" suhrn={`${(nova ? 0 : GRAF_CIEL[obd]).toLocaleString("sk-SK")} € ${obdTxt}`} zbal={zbal} prepni={prepniZbal}>{grafEl}</Sekcia>
@@ -697,10 +775,11 @@ function Prehlad({ tier: _tier, piny, prepniPin, otvorPolozku, otvor, nova, stit
   return (<>
     <div style={{ flex: "none", display: "flex", alignItems: "flex-start", gap: 14 }}>
       <KartaStitu stit={stit} sada={sada} onZoom={onZoom} vyska={vyska} />
-      {cisla}
+      {uvod ? uvodPanel : cisla}
     </div>
-    {grafEl}
-    {pinBar}
+    {uvod && krokyEl}
+    {!uvod && grafEl}
+    {uvod ? pinUvod : pinBar}
     <div style={{ flex: "none", display: "grid", gridTemplateColumns: "minmax(0,1fr) 264px", gap: 20, alignItems: "start" }}>
       <div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 14 }}>{treba}{zbierky}</div>
       {pravy}
@@ -846,9 +925,19 @@ function Mriezka({ karty, mobil, ...s }: { karty: Karta[] } & Spolocne) {
 
 function ObrZbierky(s: Spolocne) {
   const [zt, setZt] = useState(0);
-  const { mobil, otvor, menu } = s;
+  const { mobil, otvor, menu, nova } = s;
   return (<>
-    {menu.mojeZbierky && <><div role="tablist" style={{ flex: "none", display: "flex", gap: 2, padding: 4, borderRadius: 14, background: "var(--card)", border: "1px solid var(--cardBd)", alignSelf: mobil ? "stretch" : "flex-start" }}>
+    {menu.mojeZbierky && nova && <>{/* OPRAVY 109: nová charita — žiadne ukážkové zbierky */}
+      <div role="tablist" style={{ flex: "none", display: "flex", gap: 2, padding: 4, borderRadius: 14, background: "var(--card)", border: "1px solid var(--cardBd)", alignSelf: mobil ? "stretch" : "flex-start" }}>
+        {["Bežiace · 0", "Ukončené · 0"].map((t, i) => { const on = i === zt; return (
+          <button key={t} role="tab" aria-selected={on} onClick={() => setZt(i)} style={{ flex: mobil ? 1 : "none", height: 40, minHeight: 40, padding: "0 18px", border: "none", borderRadius: 10, cursor: "pointer", whiteSpace: "nowrap", fontSize: 14.5, fontWeight: on ? 800 : 700, background: on ? "var(--seg)" : "transparent", color: on ? "var(--ink)" : "var(--ink3)", boxShadow: on ? "0 1px 3px rgba(30,28,20,.14)" : "none" }}>{t}</button>); })}
+      </div>
+      <section style={{ ...karta, padding: mobil ? "26px 18px" : "34px 24px", display: "flex", flexDirection: "column", alignItems: "center", gap: 8, textAlign: "center" }}>
+        <b style={{ fontSize: 16.5 }}>Zatiaľ nemáte žiadnu zbierku</b>
+        <span style={{ fontSize: 14, lineHeight: 1.45, color: "var(--ink2)" }}>Keď ju vytvoríte, uvidíte ju tu aj s tým, koľko prišlo a čo treba doložiť.</span>
+        <button onClick={() => otvor("x:Nová zbierka")} style={{ ...zeleneTl, marginTop: 10, display: "flex", alignItems: "center", gap: 8 }}><Ik d="M12 5v14M5 12h14" s={17} c="currentColor" w={2.6} />Nová zbierka</button>
+      </section></>}
+    {menu.mojeZbierky && !nova && <><div role="tablist" style={{ flex: "none", display: "flex", gap: 2, padding: 4, borderRadius: 14, background: "var(--card)", border: "1px solid var(--cardBd)", alignSelf: mobil ? "stretch" : "flex-start" }}>
       {["Bežiace · 2", "Ukončené · 1"].map((t, i) => { const on = i === zt; return (
         <button key={t} role="tab" aria-selected={on} onClick={() => setZt(i)} style={{ flex: mobil ? 1 : "none", height: 40, minHeight: 40, padding: "0 18px", border: "none", borderRadius: 10, cursor: "pointer", whiteSpace: "nowrap", fontSize: 14.5, fontWeight: on ? 800 : 700, background: on ? "var(--seg)" : "transparent", color: on ? "var(--ink)" : "var(--ink3)", boxShadow: on ? "0 1px 3px rgba(30,28,20,.14)" : "none" }}>{t}</button>); })}
     </div>
@@ -860,7 +949,7 @@ function ObrZbierky(s: Spolocne) {
           <span style={{ aspectRatio: "16/10", borderRadius: 12, background: z.bg }} />
           <span style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 3 }}><b style={{ fontSize: 16 }}>{z.t}</b><span style={{ fontSize: 13, color: "var(--ink3)" }}>{z.s}</span></span>
           <span style={{ display: "flex", flexDirection: "column", gap: 6, gridColumn: mobil ? "1 / -1" : undefined }}><Pruh sc={z.v / z.c} /><span style={{ fontSize: 13, color: "var(--ink3)" }}><b style={{ color: "var(--ink)" }}>{eur(z.v)}</b> z {eur(z.c)}</span></span>
-          <button onClick={() => otvor("x:Správa zbierky")} style={{ minHeight: 44, border: "none", background: "transparent", cursor: "pointer", whiteSpace: "nowrap", fontSize: 14.5, fontWeight: 800, color: "var(--green)", gridColumn: mobil ? "1 / -1" : undefined, justifySelf: mobil ? "end" : undefined }}>Spravovať ›</button>
+          <button onClick={() => otvor("x:Správa zbierky")} style={{ minHeight: 44, border: "none", background: "transparent", cursor: "pointer", whiteSpace: "nowrap", fontSize: 14.5, fontWeight: 800, color: "var(--green)", gridColumn: mobil ? "1 / -1" : undefined, justifySelf: mobil ? "end" : undefined }}>Spravovať zbierku ›</button>
         </div>))}
     </section></>}
     {menu.druhy.length > 0 && <>
@@ -988,7 +1077,8 @@ function Zamknute({ program }: { program: string }) {
 }
 
 // ---------- DEV (len testovacia verzia) ----------
-function DevSprava({ tier, stit, nova, typ, onTyp, onTier, onStit, onNova }: { tier: Tier; stit: StitCharity; nova: boolean; typ: TypStranky; onTyp: (t: TypStranky) => void; onTier: (t: Tier) => void; onStit: (s: StitCharity) => void; onNova: () => void }) {
+type StavDev = "pozv" | "free" | "bezna";
+function DevSprava({ tier, stit, stav, typ, onTyp, onTier, onStit, onStav }: { tier: Tier; stit: StitCharity; stav: StavDev; typ: TypStranky; onTyp: (t: TypStranky) => void; onTier: (t: Tier) => void; onStit: (s: StitCharity) => void; onStav: (s: StavDev) => void }) {
   const seg = (on: boolean): React.CSSProperties => ({ flex: 1, minHeight: 32, padding: "0 4px", borderRadius: 8, border: `1px solid ${on ? "var(--ink)" : "transparent"}`, background: on ? "var(--ink)" : "transparent", color: on ? "var(--bg)" : "var(--ink2)", fontSize: 11.5, fontWeight: 800, cursor: "pointer", whiteSpace: "nowrap" });
   return (
     <div aria-label="DEV" style={{ display: "flex", flexDirection: "column", gap: 6, padding: 10, borderRadius: 14, border: "1px dashed var(--ink4)", fontSize: 11.5, color: "var(--ink3)" }}>
@@ -1002,6 +1092,6 @@ function DevSprava({ tier, stit, nova, typ, onTyp, onTier, onStit, onNova }: { t
       <span>Štít</span>
       <div style={{ display: "flex", gap: 2, flexWrap: "wrap" }}>{(Object.keys(STITY) as StitCharity[]).map((k) => <button key={k} onClick={() => onStit(k)} style={seg(k === stit)}>{STITY[k][3]}</button>)}</div>
       <span>Stav</span>
-      <div style={{ display: "flex", gap: 2 }}><button onClick={() => nova && onNova()} style={seg(!nova)}>Bežná</button><button onClick={() => !nova && onNova()} style={seg(nova)}>Nová charita</button></div>
+      <div style={{ display: "flex", gap: 2, flexWrap: "wrap" }}>{([["pozv", "Nová · pozvaná"], ["free", "Nová · zadarmo"], ["bezna", "Bežná"]] as [StavDev, string][]).map(([k, t]) => <button key={k} onClick={() => onStav(k)} style={seg(k === stav)}>{t}</button>)}</div>
     </div>);
 }
