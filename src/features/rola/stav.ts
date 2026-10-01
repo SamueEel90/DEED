@@ -163,16 +163,22 @@ export type PolozkaSpravy =
   | "darcovia" | "sledujuci" | "dobrovolnici" | "podujatia" | "sponzoring" | "inzeraty"
   | "qr" | "sektorqr" | "embed" | "prednost" | "statistiky" | "vypis" | "export"
   // KARTA 36: pobočky (zatiaľ bez obrazovky) a nástroje firmy
-  | "pobocky" | "dorovnavanie" | "zamestnanci" | "esg" | "firemnyqr";
+  | "pobocky" | "dorovnavanie" | "zamestnanci" | "esg" | "firemnyqr"
+  // OPRAVY 118: Pridať skutok v Nástrojoch (od Zadarmo, bez limitu)
+  | "pridatSkutok";
 export const POVOLENIA_CHARITY: Record<PolozkaSpravy, { od: Program }> = {
   zbierky: { od: "zadarmo" }, centralna: { od: "P1" }, dorovnanie: { od: "P1" }, segment: { od: "P2" }, materialne: { od: "P3" },
   skutky: { od: "zadarmo" }, video: { od: "zadarmo" }, oznamy: { od: "P1" }, nastenka: { od: "P1" }, upoutavky: { od: "P2" },
   darcovia: { od: "zadarmo" }, sledujuci: { od: "zadarmo" }, dobrovolnici: { od: "P2" }, podujatia: { od: "P2" }, sponzoring: { od: "P1" }, inzeraty: { od: "P1" },
   qr: { od: "zadarmo" }, sektorqr: { od: "P2" }, embed: { od: "P1" }, prednost: { od: "P3" }, statistiky: { od: "zadarmo" }, vypis: { od: "zadarmo" }, export: { od: "P3" },
   pobocky: { od: "zadarmo" }, dorovnavanie: { od: "zadarmo" }, zamestnanci: { od: "zadarmo" }, esg: { od: "zadarmo" }, firemnyqr: { od: "zadarmo" },
+  pridatSkutok: { od: "zadarmo" },
 };
 /** má charita s týmto tierom položku? (program) */
 export const maPovolenie = (id: PolozkaSpravy, tier: Tier): boolean => tier >= PROGRAM_TIER[POVOLENIA_CHARITY[id].od];
+/** OPRAVY 118: ukazuje sa len svoj program + 2 vyššie (Zadarmo nevidí P3 ani P4) — všade: menu, dlaždice, skupiny, pripnuté */
+export const vidno = (od: Program, tier: Tier): boolean => PROGRAM_TIER[od] <= tier + 2;
+export const vidnoPolozku = (id: PolozkaSpravy, tier: Tier): boolean => vidno(POVOLENIA_CHARITY[id].od, tier);
 
 // ============================================================
 // KARTA 36 · Typy profilov — jedna správa pre všetkých. Typ len VYPÍNA položky, PRIDÁVA nástroje a mení slová.

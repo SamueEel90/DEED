@@ -6,6 +6,7 @@
 // Len rozloženie, farby podľa štítu a témy, Späť všade, povolenia z jedného miesta (stav.ts).
 // Funkcie za tlačidlami NIE SÚ — každé tlačidlo otvorí obrazovku „Pripravujeme".
 // ============================================================
+import { otvorPridatSkutok } from "@/features/skutok/otvor";
 import { UpravitProfilCharity, VerejnyProfilOkno, zakladnyProfil } from "./UpravitProfilCharity";
 import { nacitajProfil, profilZPamate, uplnostProfilu, type ProfilStranky } from "@/lib/profilStranky";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
@@ -20,7 +21,7 @@ import { nacitajPiny, ulozPiny, pinyZPamate, nacitajZbalenie, ulozZbalenie, zbal
 import { nastavStitSpravy } from "@/lib/stitAppky";
 import { ObrOznamenia, ObrEur, ObrEurc, ObrUcty, ObrSpravcovia, ObrUdaje, ObrProgram, ObrZariadenia, ObrSuhlasy, ObrStiahnut, ObrFaq, ObrPodpora, ObrZrusit, PROG, pocetSpravcov, pocetZariadeni, eurcText, eurText } from "./NastaveniaCharity";
 import {
-  FLAGS, nacitajTiery, ulozTiery, maPovolenie, odProgramu, PROGRAM_NAZOV, PIN_MAX,
+  FLAGS, nacitajTiery, ulozTiery, maPovolenie, vidnoPolozku, odProgramu, PROGRAM_NAZOV, PIN_MAX,
   nacitajStitCharity, ulozStitCharity, nacitajCharituNovu, ulozCharituNovu,
   type PolozkaSpravy, type StitCharity, type Tier, type Pozicia,
   type TypStranky, TYP_NAZOV, TYPY_STRANOK, TYP_SKRYTY, NASTROJE_TYPU, typPovoli, STIT_SADA_TYPU, type StitSada,
@@ -56,10 +57,10 @@ const P = (d: string, t: string, s: string, id: PolozkaSpravy): Karta => ({ d, t
 const G: Record<Exclude<Skupina, "g_zbierky" | "g_typ">, Karta[]> = {
   g_obsah: [
     P("M12 3l2.5 5.5L20 9l-4.5 4 1.5 6-5-3-5 3 1.5-6L4 9l5.5-.5z", "Skutky", "Takto sme pomohli · fotky pred a po, doklady", "skutky"),
-    P("M4 6h16v12H4zM10 9l5 3-5 3z", "Mám talent — video", "Video do 45 s s platobným modulom", "video"),
+    P("M4 6h16v12H4zM10 9l5 3-5 3z", "Iskra", "Video do 45 s s platobným modulom", "video"),
     P("M4 10v4h3l6 4V6L7 10z", "Oznamy", "Krátka správa pre tých, čo vás sledujú", "oznamy"),
     P("M4 6h16v14H4zM4 10h16M8 3v4M16 3v4", "Moja nástenka", "Udalosti na nástenke mesta", "nastenka"),
-    P("M5 4h14v16H5zM9 9l6 3-6 3z", "Upútavky v Talente", "Upútavka na zbierku medzi videami", "upoutavky"),
+    P("M5 4h14v16H5zM9 9l6 3-6 3z", "Upútavky v Iskre", "Upútavka na zbierku medzi Iskrami", "upoutavky"),
   ],
   g_ludia: [
     P("M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21c1.5-4 4.5-6 8-6s6.5 2 8 6", "Darcovia a sumy", "Zoznam darcov a hromadné poďakovanie", "darcovia"),
@@ -70,6 +71,7 @@ const G: Record<Exclude<Skupina, "g_zbierky" | "g_typ">, Karta[]> = {
     P("M9 7V4h6v3M4 7h16v13H4z", "Pracovné ponuky", "Hľadáme brigádnika, zamestnanca, pomoc", "inzeraty"),
   ],
   g_nastroje: [
+    P("M12 5v14M5 12h14", "Pridať skutok", "Koľko chcete · poslúži aj ako oznam pre sledujúcich", "pridatSkutok"),
     P("M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4z", "QR nástroje", "QR organizácie a zbierok · plagát, pokladnička", "qr"),
     P("M4 4h16v16H4z", "Sektorové QR", "QR pre celý sektor organizácie", "sektorqr"),
     P(IK.retaz, "Štít dôvery na web", "Odznak s odkazom na váš profil", "embed"),
@@ -111,9 +113,9 @@ const NAZOV_POLOZKY = Object.fromEntries([...VSE.map((v) => [v.id, v.id === "zbi
 
 /** KARTA 36: menu podľa typu — čo typ vypína, zmizne; nástroje typu idú navrch do vlastnej skupiny */
 type Menu = { typ: TypStranky; nav: { k: Skupina | "penazenka"; t: string; d: string; n?: number }[]; skupiny: Partial<Record<Skupina, Karta[]>>; mojeZbierky: boolean; druhy: Karta[]; vse: typeof VSE };
-function menuTypu(typ: TypStranky): Menu {
-  const navrch = NASTROJE_TYPU[typ];
-  const ok = (id: PolozkaSpravy) => typPovoli(id, typ) && !navrch.includes(id);
+function menuTypu(typ: TypStranky, tier: Tier): Menu {
+  const navrch = NASTROJE_TYPU[typ].filter((id) => vidnoPolozku(id, tier));
+  const ok = (id: PolozkaSpravy) => typPovoli(id, typ) && !navrch.includes(id) && vidnoPolozku(id, tier); // OPRAVY 118
   const kartaNavrch = (id: PolozkaSpravy): Karta | undefined => KARTY_TYPU[id] ?? [...DRUHY, ...G.g_obsah, ...G.g_ludia, ...G.g_nastroje].find((k) => k.id === id);
   const skupiny: Partial<Record<Skupina, Karta[]>> = {
     g_typ: navrch.map(kartaNavrch).filter((k): k is Karta => !!k),
@@ -219,10 +221,10 @@ export function SpravaStranky({ onBack, typ: typStranky = "charita", strankaId =
   const hist = useRef<Sub[]>([]);
   const [typ, setTyp] = useState<TypStranky>(typStranky); // DEV lišta ho vie prepnúť
   const poz = POZICIA_TYPU(typ);
-  const menu = menuTypu(typ);
   const sada = STIT_SADA_TYPU[typ];
   const [tiery, setTiery] = useState(nacitajTiery);
   const tier = tiery[poz];
+  const menu = menuTypu(typ, tier);
   const setTier = (t: Tier) => { const n = { ...nacitajTiery(), [poz]: t }; setTiery(n); ulozTiery(n); };
   const [stit, setStit] = useState<StitCharity>(nacitajStitCharity);
   const [nova, setNova] = useState<boolean>(nacitajCharituNovu);
@@ -243,7 +245,9 @@ export function SpravaStranky({ onBack, typ: typStranky = "charita", strankaId =
   const korenRef = useRef<HTMLDivElement>(null);
 
   const [verejny, setVerejny] = useState(false); // OPRAVY 107: tlačidlo Verejný profil = skutočný verejný profil
-  const otvor = (s: Sub) => { if (s === "x:Verejný profil") { setVerejny(true); return; } if (s === sub) return; hist.current = [...hist.current, sub].slice(-30); setSub(s); };
+  const otvor = (s: Sub) => { if (s === "x:Verejný profil") { setVerejny(true); return; }
+    // OPRAVY 118: Pridať skutok = bežné pridanie skutku za stránku
+    if (s === "pridatSkutok") { otvorPridatSkutok({ autor: nazov }); return; } if (s === sub) return; hist.current = [...hist.current, sub].slice(-30); setSub(s); };
   const spat = () => {
     if (hist.current.length) { const h = [...hist.current]; const p = h.pop()!; hist.current = h; setSub(p); }
     else if (sub !== null) setSub(null);
