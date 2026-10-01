@@ -6,6 +6,8 @@
 // Len rozloženie, farby podľa štítu a témy, Späť všade, povolenia z jedného miesta (stav.ts).
 // Funkcie za tlačidlami NIE SÚ — každé tlačidlo otvorí obrazovku „Pripravujeme".
 // ============================================================
+import { UpravitProfilCharity, zakladnyProfil } from "./UpravitProfilCharity";
+import { nacitajProfil, profilZPamate, uplnostProfilu, type ProfilStranky } from "@/lib/profilStranky";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import "@/styles/sprava.css";
@@ -133,8 +135,8 @@ const SKUPINA_POLOZKY = (id: PolozkaSpravy, typ: TypStranky = "charita"): Skupin
 
 // ---------- obrazovky ----------
 /** null = Prehľad · skupina · penazenka · nast · položka (PolozkaSpravy) · "x:Názov" = obrazovka Pripravujeme */
-type Sub = null | Skupina | "penazenka" | "nast" | PolozkaSpravy | `x:${string}` | `n:${string}`;
-const NAZVY: Record<string, string> = { g_zbierky: "Zbierky", g_obsah: "Obsah", g_ludia: "Ľudia", g_nastroje: "Nástroje a výkazy", penazenka: "Peňaženka", nast: "Nastavenia" };
+type Sub = null | Skupina | "penazenka" | "nast" | "profil" | PolozkaSpravy | `x:${string}` | `n:${string}`;
+const NAZVY: Record<string, string> = { g_zbierky: "Zbierky", g_obsah: "Obsah", g_ludia: "Ľudia", g_nastroje: "Nástroje a výkazy", penazenka: "Peňaženka", nast: "Nastavenia", profil: "Upraviť profil" };
 /** KARTA 35: obrazovky Nastavení */
 const NAST_OBR: Record<string, string> = { notif: "Čo chcete dostávať", eur: "Dary v eurách", krypto: "Dary v EURC", ucty: "Správa účtov", spravcovia: "Správcovia a prístupy", udaje: "Údaje organizácie", program: "Program a platba", zariadenia: "Prihlásené zariadenia", suhlasy: "Súhlasy", stiahnut: "Stiahnuť údaje charity", faq: "Časté otázky", podpora: "Napísať podpore", zrusit: "Zrušiť stránku charity" };
 const titulok = (s: Sub, typ: TypStranky) => (s === null ? "Prehľad" : s.startsWith("x:") ? s.slice(2) : s.startsWith("n:") ? NAST_OBR[s.slice(2)] ?? "Nastavenia" : s === "g_typ" ? TYP_NAZOV[typ] : NAZVY[s] ?? NAZOV_POLOZKY[s as PolozkaSpravy] ?? "Správa stránky");
@@ -227,6 +229,10 @@ export function SpravaStranky({ onBack, typ: typStranky = "charita", strankaId =
   const [piny, setPiny] = useState<PolozkaSpravy[]>(() => pinyZPamate(strankaId));
   useEffect(() => { let ziva = true; void nacitajPiny(strankaId).then((p) => { if (ziva) setPiny(p); }); return () => { ziva = false; }; }, [strankaId]);
   const [zoom, setZoom] = useState(false);
+  // KARTA 33: uložený profil stránky (percento v karte charity sa počíta z neho, nie z konceptu)
+  const [profil, setProfil] = useState<ProfilStranky | null>(() => profilZPamate(strankaId).ulozeny);
+  useEffect(() => { let ziva = true; void nacitajProfil(strankaId).then((z) => { if (ziva) setProfil(z.ulozeny); }); return () => { ziva = false; }; }, [strankaId]);
+  const uplnost = uplnostProfilu(profil ?? zakladnyProfil(poz));
   // OPRAVY 91: bočný panel appky berie farbu štítu otvorenej stránky
   useEffect(() => { nastavStitSpravy(stit); }, [stit]);
   useEffect(() => () => nastavStitSpravy(null), []);
@@ -266,10 +272,13 @@ export function SpravaStranky({ onBack, typ: typStranky = "charita", strankaId =
       : id === "zariadenia" ? <ObrZariadenia mobil={m} /> : id === "suhlasy" ? <ObrSuhlasy mobil={m} otvor={o} /> : id === "stiahnut" ? <ObrStiahnut mobil={m} />
       : id === "faq" ? <ObrFaq otvor={o} /> : id === "podpora" ? <ObrPodpora mobil={m} otvor={o} /> : id === "zrusit" ? <ObrZrusit mobil={m} otvor={o} tier={tier} nova={nova} /> : <Pripravujeme />;
   }
+  else if (sub === "profil") obsah = <UpravitProfilCharity strankaId={strankaId} pozicia={poz} typ={typ} nazov={nazov} inicialy={inicialy} mobil={!desktop} tablet={tablet}
+    stit={stit} stitObr={stitImg(stit, true, sada)} stitNazov={STITY[stit][0]} onUlozene={setProfil}
+    onZrusit={() => { hist.current = []; setSub(null); }} onHotovo={() => { hist.current = []; setSub(null); }} />;
   else if (sub.startsWith("x:")) obsah = <Pripravujeme />;
   else obsah = !typPovoli(sub as PolozkaSpravy, typ) ? <Pripravujeme /> : maPovolenie(sub as PolozkaSpravy, tier) ? <Pripravujeme /> : <Zamknute program={odProgramu(sub as PolozkaSpravy)} />;
 
-  const aktivnaSkupina: string | null = sub === null ? null : sub === "nast" || (sub as string).startsWith("n:") ? "nast" : sub === "penazenka" || (sub as string).startsWith("g_") ? sub : (sub as string).startsWith("x:") ? null : SKUPINA_POLOZKY(sub as PolozkaSpravy, typ);
+  const aktivnaSkupina: string | null = sub === null ? null : sub === "nast" || (sub as string).startsWith("n:") ? "nast" : sub === "penazenka" || (sub as string).startsWith("g_") ? sub : (sub as string).startsWith("x:") || sub === "profil" ? null : SKUPINA_POLOZKY(sub as PolozkaSpravy, typ);
 
   const dev = TESTOVACIA && FLAGS.dev_tier_switcher && (
     <DevSprava tier={tier} stit={stit} nova={nova} typ={typ} onTyp={setTyp}
@@ -284,7 +293,7 @@ export function SpravaStranky({ onBack, typ: typStranky = "charita", strankaId =
   if (desktop) return (
     <div ref={korenRef} className="sprava-charity" data-stit={stit} style={{ minHeight: "100dvh", boxSizing: "border-box", padding: "20px 32px", display: "flex", gap: 24, alignItems: "flex-start" }}>
       <aside style={{ width: 244, flex: "none", display: "flex", flexDirection: "column", gap: 12, paddingRight: 16, borderRight: "2px solid", borderImage: "var(--metal) 1", position: "sticky", top: 20, alignSelf: "flex-start" }}>
-        <KartaCharity nazov={nazov} inicialy={inicialy} typ={typ} otvor={otvor} />
+        <KartaCharity nazov={nazov} inicialy={inicialy} typ={typ} otvor={otvor} uplnost={uplnost} />
         <button onClick={() => otvor("x:Verejný profil")} className="sc-bdh" style={{ flex: "none", height: 56, padding: "0 14px", borderRadius: 18, background: "var(--tBg)", border: "1px solid var(--tBd)", cursor: "pointer", display: "flex", alignItems: "center", gap: 11, textAlign: "left" }}>
           <OkoIk />
           <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}><span style={{ fontSize: 15, fontWeight: 800, color: "var(--tInk)" }}>Verejný profil</span><span style={{ fontSize: 12, color: "var(--tInk2)" }}>ako ho vidia darcovia</span></span>
@@ -324,7 +333,7 @@ export function SpravaStranky({ onBack, typ: typStranky = "charita", strankaId =
       {hlavicka}
       <div key={String(sub)} style={{ padding: "14px 14px 28px", display: "flex", flexDirection: "column", gap: 14, animation: "spravaFade .2s ease both", width: "100%", maxWidth: tablet ? 880 : undefined, margin: tablet ? "0 auto" : undefined, boxSizing: "border-box" }}>
         {sub === null && <div style={{ display: "flex", gap: 10, alignItems: "stretch" }}>
-          <div style={{ flex: tablet ? "0 1 560px" : 1, minWidth: 0 }}><KartaCharity nazov={nazov} inicialy={inicialy} typ={typ} otvor={otvor} mobil tablet={tablet} /></div>
+          <div style={{ flex: tablet ? "0 1 560px" : 1, minWidth: 0 }}><KartaCharity nazov={nazov} inicialy={inicialy} typ={typ} otvor={otvor} mobil tablet={tablet} uplnost={uplnost} /></div>
           <KartaStitu stit={stit} sada={sada} onZoom={() => setZoom(true)} mobil={!tablet} />{/* OPRAVY 102: tablet má štít ako PC (230 px, štít vľavo) */}
         </div>}
         {obsah}
@@ -370,9 +379,9 @@ function Hlavicka({ titul, onSpat, otvor, mobil }: { titul: string; onSpat: () =
 // ============================================================
 // PANEL — karta charity, Nastavenia
 // ============================================================
-function KartaCharity({ nazov, inicialy, typ, otvor, mobil, tablet }: { nazov: string; inicialy: string; typ: TypStranky; otvor: (s: Sub) => void; mobil?: boolean; tablet?: boolean }) {
+function KartaCharity({ nazov, inicialy, typ, otvor, mobil, tablet, uplnost }: { nazov: string; inicialy: string; typ: TypStranky; otvor: (s: Sub) => void; mobil?: boolean; tablet?: boolean; uplnost: { pct: number; chyba: string } }) {
   const [otv, setOtv] = useState(true);
-  const pct = 50;
+  const pct = uplnost.pct; // KARTA 33 bod 6: zo 4 vecí po 25 %, z uloženého profilu
   // OPRAVY 100: tablet — 1 riadok (logo 44 · názov + percento + pruh pod textom · Upraviť vpravo), výšku určuje karta štítu
   if (tablet) return (
     <div style={{ height: "100%", boxSizing: "border-box", borderRadius: 18, background: "var(--cuBg)", border: "1.5px solid var(--cuBd)", boxShadow: "inset 0 1px 0 rgba(255,255,255,.45)", padding: "12px 16px", display: "flex", alignItems: "center", gap: 12 }}>
@@ -382,7 +391,7 @@ function KartaCharity({ nazov, inicialy, typ, otvor, mobil, tablet }: { nazov: s
         <Pruh sc={pct / 100} h={6} bg="rgba(168,116,80,.25)" />
       </span>
       <span style={{ flex: 1 }} />
-      <button onClick={() => otvor("x:Upraviť profil")} style={{ ...zeleneTl }}>Upraviť</button>
+      <button onClick={() => otvor("profil")} style={{ ...zeleneTl }}>Upraviť</button>
     </div>);
   if (mobil) return (
     <div style={{ height: "100%", boxSizing: "border-box", borderRadius: 18, background: "var(--cuBg)", border: "1.5px solid var(--cuBd)", boxShadow: "inset 0 1px 0 rgba(255,255,255,.45)", padding: 12, display: "flex", flexDirection: "column", gap: 10 }}>
@@ -392,7 +401,7 @@ function KartaCharity({ nazov, inicialy, typ, otvor, mobil, tablet }: { nazov: s
       </span>
       <Pruh sc={pct / 100} h={6} bg="rgba(168,116,80,.25)" />
       <span style={{ flex: 1 }} />
-      <button onClick={() => otvor("x:Upraviť profil")} style={{ ...zeleneTl, width: "100%", padding: 0 }}>Upraviť profil</button>
+      <button onClick={() => otvor("profil")} style={{ ...zeleneTl, width: "100%", padding: 0 }}>Upraviť profil</button>
     </div>);
   return (
     <div style={{ flex: "none", borderRadius: 18, background: "var(--cuBg)", border: "1.5px solid var(--cuBd)", boxShadow: "inset 0 1px 0 rgba(255,255,255,.45)", overflow: "hidden" }}>
@@ -403,8 +412,8 @@ function KartaCharity({ nazov, inicialy, typ, otvor, mobil, tablet }: { nazov: s
       </button>
       {otv && <div style={{ padding: "4px 12px 12px", display: "flex", flexDirection: "column", gap: 8, borderTop: "1px solid var(--accLine)" }}>
         <span style={{ marginTop: 8 }}><Pruh sc={pct / 100} h={6} bg="rgba(168,116,80,.25)" /></span>
-        <span style={{ fontSize: 13, color: "var(--cuInk)" }}>Chýba logo a titulná fotka.</span>
-        <button onClick={() => otvor("x:Upraviť profil")} style={{ height: 44, borderRadius: 12, border: "none", background: "var(--green)", color: "#fff", cursor: "pointer", fontSize: 13, fontWeight: 800 }}>Upraviť</button>
+        <span style={{ fontSize: 13, color: "var(--cuInk)" }}>{uplnost.chyba}</span>
+        <button onClick={() => otvor("profil")} style={{ height: 44, borderRadius: 12, border: "none", background: "var(--green)", color: "#fff", cursor: "pointer", fontSize: 13, fontWeight: 800 }}>Upraviť</button>
       </div>}
     </div>);
 }

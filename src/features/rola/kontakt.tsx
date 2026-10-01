@@ -10,13 +10,14 @@ import { SUBJEKTY } from "./mock";
 import type { Pozicia } from "./stav";
 import { sieteZRegistracie } from "./registracia";
 
-export type Siet = "facebook" | "instagram" | "youtube" | "tiktok" | "linkedin";
+export type Siet = "facebook" | "instagram" | "youtube" | "tiktok" | "linkedin" | "x";
 export const SIETE: { k: Siet; label: string; domeny: string[] }[] = [
   { k: "facebook", label: "Facebook", domeny: ["facebook.com", "fb.com"] },
   { k: "instagram", label: "Instagram", domeny: ["instagram.com"] },
   { k: "youtube", label: "YouTube", domeny: ["youtube.com", "youtu.be"] },
   { k: "tiktok", label: "TikTok", domeny: ["tiktok.com"] },
   { k: "linkedin", label: "LinkedIn", domeny: ["linkedin.com"] },
+  { k: "x", label: "X", domeny: ["x.com", "twitter.com"] }, // KARTA 33
 ];
 export const MAX_TEL = 3;
 export const MAX_EMAIL = 5;
