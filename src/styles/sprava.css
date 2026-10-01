@@ -47,3 +47,15 @@ html.obmedz-anim .sprava-charity .sc-lesk{display:none}
 
 /* OPRAVY 91 · hlavný bočný panel podľa prototypu */
 .sc-side .sc-side-ik svg{width:19px;height:19px;stroke-width:1.8}
+
+/* OPRAVY 92 · graf darov: jednorazové (--chA) + pravidelná podpora (--chB) podľa štítu */
+.sprava-charity[data-stit="bronze"]{--chA:#4E7D37;--chB:#A9C08F}
+.sprava-charity[data-stit="silver"]{--chA:#5F656B;--chB:#C2C8CE}
+.sprava-charity[data-stit="gold"]{--chA:#A87C12;--chB:#E6C25A}
+.sprava-charity[data-stit="platinum"]{--chA:#4F6573;--chB:#A9C2D1}
+.sprava-charity[data-stit="legend"]{--chA:#8E2A2E;--chB:#E3A18C}
+html.dark .sprava-charity[data-stit="bronze"]{--chA:#6E9F4E;--chB:#4A6B36}
+html.dark .sprava-charity[data-stit="silver"]{--chA:#A9B0B6;--chB:#5E656B}
+html.dark .sprava-charity[data-stit="gold"]{--chA:#D9B65A;--chB:#8A6E24}
+html.dark .sprava-charity[data-stit="platinum"]{--chA:#9DB6C6;--chB:#4F6573}
+html.dark .sprava-charity[data-stit="legend"]{--chA:#D9787C;--chB:#7A3436}

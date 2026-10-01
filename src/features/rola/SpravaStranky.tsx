@@ -455,6 +455,7 @@ function StitZoom({ stit, sada, onClose }: { stit: StitCharity; sada: StitSada; 
 function Prehlad({ tier: _tier, piny, prepniPin, otvorPolozku, otvor, nova, stit, sada, menu, mobil, onZoom }: Spolocne & { onZoom: () => void }) {
   const VSE = menu.vse; // KARTA 36: na pripnutie len položky, ktoré typ má
   const [obd, setObd] = useState(0);
+  const [graf, setGraf] = useState(false); // OPRAVY 92: graf darov pod číslami
   const [pinOtv, setPinOtv] = useState(false);
   const trebaRef = useRef<HTMLSpanElement>(null);
   // karta štítu a Čísla = výška karty charity v paneli, min. 180 px
@@ -476,6 +477,9 @@ function Prehlad({ tier: _tier, piny, prepniPin, otvorPolozku, otvor, nova, stit
           {OBD.map((t, i) => { const on = i === obd; return (
             <button key={t} role="tab" aria-selected={on} onClick={() => setObd(i)} style={{ height: mobil ? 44 : 28, padding: "0 12px", border: "none", borderRadius: 9, cursor: "pointer", whiteSpace: "nowrap", fontSize: 13, fontWeight: on ? 800 : 700, background: on ? "var(--seg)" : "transparent", color: on ? "var(--ink)" : "var(--ink3)", boxShadow: on ? "0 1px 3px rgba(30,28,20,.14)" : "none" }}>{t}</button>); })}
         </div>
+        <button onClick={() => setGraf((g) => !g)} aria-label="Graf darov" aria-expanded={graf} title="Graf darov" style={{ flex: "none", width: mobil ? 44 : 34, height: mobil ? 44 : 34, borderRadius: 10, border: `1.5px solid ${graf ? "var(--cuBd)" : "var(--cardBd)"}`, background: graf ? "var(--accSoft)" : "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <Ik d="M4 20V10M10 20V4M16 20v-7M22 20H2" s={18} w={2} />
+        </button>
       </div>
       <div style={{ flex: 1, minHeight: 0, display: "grid", gridTemplateColumns: mobil ? "repeat(2,minmax(0,1fr))" : "repeat(4,minmax(0,1fr))", gridAutoRows: mobil ? "auto" : "1fr", columnGap: 16 }}>
         {K8.map((k, i) => {
@@ -581,18 +585,84 @@ function Prehlad({ tier: _tier, piny, prepniPin, otvorPolozku, otvor, nova, stit
       </section>
     </div>);
 
-  if (mobil) return (<>{cisla}{pinBar}{treba}{zbierky}{pravy}</>);
+  const grafEl = graf && <GrafDarov obd={obd} nova={nova} mobil={mobil} onZavri={() => setGraf(false)} />;
+  if (mobil) return (<>{cisla}{grafEl}{pinBar}{treba}{zbierky}{pravy}</>);
   return (<>
     <div style={{ flex: "none", display: "flex", alignItems: "flex-start", gap: 14 }}>
       <KartaStitu stit={stit} sada={sada} onZoom={onZoom} vyska={vyska} />
       {cisla}
     </div>
+    {grafEl}
     {pinBar}
     <div style={{ flex: "none", display: "grid", gridTemplateColumns: "minmax(0,1fr) 264px", gap: 20, alignItems: "start" }}>
       <div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 14 }}>{treba}{zbierky}</div>
       {pravy}
     </div>
   </>);
+}
+
+// ============================================================
+// OPRAVY 92 · Graf darov (jednorazové + pravidelná podpora), súčet = Vyzbierané za obdobie
+// ============================================================
+const GRAF_NAD = ["Dary dnes po hodinách", "Dary za 7 dní", "Dary za 30 dní", "Dary za rok po mesiacoch"];
+const GRAF_X: string[][] = [["8", "10", "12", "14", "16", "18", "20", "22"], ["Po", "Ut", "St", "Št", "Pi", "So", "Ne"], Array.from({ length: 30 }, (_, i) => (i % 5 === 0 ? `${i + 1}.` : "")), ["jan", "feb", "mar", "apr", "máj", "jún", "júl", "aug", "sep", "okt", "nov", "dec"]];
+const GRAF_A0 = [[0, 12, 0, 30, 20, 46, 38, 0], [38, 52, 44, 70, 61, 88, 107], [40, 55, 48, 62, 58, 71, 66, 80, 74, 69, 85, 78, 92, 88, 70, 95, 84, 99, 90, 104, 97, 110, 101, 96, 115, 108, 120, 112, 118, 126], [820, 1040, 1210, 1380, 1290, 1560, 1440, 1720, 1940, 2210, 0, 0]];
+const GRAF_B0 = [[0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 19, 0, 0, 0, 0], Array.from({ length: 30 }, (_, i) => (i === 0 || i === 14 ? 240 : 0)), [380, 380, 395, 410, 410, 430, 445, 460, 470, 480, 0, 0]];
+const GRAF_CIEL = [146, 460, 1940, 18420]; // = Vyzbierané v paneli Čísla
+function grafData(ob: number, nova: boolean) {
+  const A0 = GRAF_A0[ob], B0 = GRAF_B0[ob];
+  const sum0 = A0.reduce((s, v) => s + v, 0) + B0.reduce((s, v) => s + v, 0), kf = GRAF_CIEL[ob] / sum0;
+  const A = A0.map((v) => (nova ? 0 : Math.round(v * kf))), B = B0.map((v) => (nova ? 0 : Math.round(v * kf)));
+  if (!nova) { const d = GRAF_CIEL[ob] - A.reduce((s, v) => s + v, 0) - B.reduce((s, v) => s + v, 0); A[A.indexOf(Math.max(...A))] += d; }
+  const mx = Math.max(4, ...A.map((v, i) => v + B[i])); // bez darov os 0 – 4 €
+  const r = mx / 4, p = Math.pow(10, Math.floor(Math.log10(r))), n = r / p;
+  const krok = (n <= 1 ? 1 : n <= 2 ? 2 : n <= 2.5 ? 2.5 : n <= 5 ? 5 : 10) * p;
+  return { A, B, krok, top: krok * 4, spolu: A.reduce((s, v) => s + v, 0) + B.reduce((s, v) => s + v, 0) };
+}
+function GrafDarov({ obd, nova, mobil, onZavri }: { obd: number; nova: boolean; mobil: boolean; onZavri: () => void }) {
+  const { A, B, krok, top, spolu } = grafData(obd, nova);
+  const X = GRAF_X[obd], gap = obd === 2 ? 3 : mobil ? 6 : 10;
+  const fmt = (v: number) => `${Math.round(v).toLocaleString("sk-SK")} €`;
+  const tip = (i: number) => `${X[i] || `${i + 1}.`} · ${fmt(A[i] + B[i])}${B[i] ? ` (z toho pravidelná ${fmt(B[i])})` : ""}`;
+  const [aktiv, setAktiv] = useState<number | null>(null);
+  return (
+    <section aria-label="Graf darov" style={{ flex: "none", borderRadius: 18, background: "var(--card)", border: "1px solid var(--cardBd)", padding: "16px 18px 12px", display: "flex", flexDirection: "column", gap: 12, animation: "spravaFade .2s ease both" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
+        <b style={{ fontSize: 15 }}>{GRAF_NAD[obd]}</b>
+        <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, color: "var(--ink3)" }}><span style={{ width: 10, height: 10, borderRadius: 3, background: "var(--chA)" }} />jednorazové</span>
+        <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, color: "var(--ink3)" }}><span style={{ width: 10, height: 10, borderRadius: 3, background: "var(--chB)" }} />pravidelná podpora</span>
+        <span style={{ flex: 1 }} />
+        <b style={{ fontSize: 15, color: "var(--gInk)" }}>{fmt(spolu)}</b>
+        <button onClick={onZavri} aria-label="Zavrieť graf" style={{ flex: "none", width: 44, height: 44, margin: -5, border: "none", borderRadius: 10, background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <Ik d="M6 6l12 12M18 6L6 18" s={16} c="var(--ink3)" w={2.4} />
+        </button>
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "auto minmax(0,1fr)", columnGap: 10 }}>
+        <div aria-hidden="true" style={{ height: 180, display: "flex", flexDirection: "column", justifyContent: "space-between", alignItems: "flex-end", fontSize: 11.5, fontWeight: 700, color: "var(--ink3)" }}>
+          {[4, 3, 2, 1, 0].map((k) => <span key={k} style={{ lineHeight: 0 }}>{fmt(krok * k)}</span>)}
+        </div>
+        <div style={{ position: "relative", height: 180, borderLeft: "1px solid var(--cardBd)", borderBottom: "1px solid var(--cardBd)" }}>
+          <div aria-hidden="true" style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", justifyContent: "space-between", pointerEvents: "none" }}>
+            {[0, 1, 2, 3, 4].map((k) => <span key={k} style={{ display: "block", borderTop: `1px dashed ${k === 4 ? "transparent" : "var(--cardBd)"}` }} />)}
+          </div>
+          <div role="list" style={{ position: "absolute", inset: 0, display: "flex", alignItems: "flex-end", gap, padding: "0 4px" }} onPointerLeave={() => setAktiv(null)}>
+            {A.map((a, i) => { const b = B[i] || 0, s2 = a + b; return (
+              <div key={i} role="listitem" aria-label={tip(i)} title={tip(i)} onPointerEnter={() => setAktiv(i)} onPointerDown={() => setAktiv(i)}
+                style={{ flex: 1, minWidth: 0, height: "100%", display: "flex", flexDirection: "column", justifyContent: "flex-end", cursor: "default", opacity: aktiv == null || aktiv === i ? 1 : 0.55 }}>
+                <span style={{ display: "flex", flexDirection: "column", height: "100%", borderRadius: "4px 4px 0 0", overflow: "hidden", transformOrigin: "50% 100%", transform: `scaleY(${(s2 / top).toFixed(3)})`, transition: "transform .35s ease" }}>
+                  <span style={{ display: "block", flexGrow: a || (s2 ? 0 : 1), flexBasis: 0, background: "var(--chA)" }} />
+                  <span style={{ display: "block", flexGrow: b, flexBasis: 0, background: "var(--chB)" }} />
+                </span>
+              </div>); })}
+          </div>
+        </div>
+        <span />
+        <div aria-hidden="true" style={{ display: "flex", gap, padding: "6px 4px 0", fontSize: 11.5, fontWeight: 700, color: "var(--ink3)" }}>
+          {X.map((x, i) => <span key={i} style={{ flex: 1, minWidth: 0, textAlign: "center", whiteSpace: "nowrap", overflow: "visible" }}>{x}</span>)}
+        </div>
+      </div>
+      <span aria-live="polite" style={{ fontSize: 12, color: aktiv != null ? "var(--ink)" : "var(--ink3)", fontWeight: aktiv != null ? 700 : 400, minHeight: 16 }}>{aktiv != null ? tip(aktiv) : "Podržte myš na stĺpci a uvidíte sumu. Os sa prispôsobí najvyššej hodnote."}</span>
+    </section>);
 }
 
 // ============================================================
