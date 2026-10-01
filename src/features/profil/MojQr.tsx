@@ -2,7 +2,6 @@
 // Na akciu a Overiť ma: kód sa mení každých 15 s (snímka obrazovky neplatí), token sa tvorí v telefóne,
 // takže funguje aj bez signálu (účasť/overenie sa pripíše po pripojení). Pozvánka: statický odkaz na verejný profil.
 import { TESTOVACIA } from "@/lib/testovacia";
-import { sZnackou } from "@/components/DeedZnacka";
 import { useT } from "@/i18n";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -159,7 +158,7 @@ export function MojQr({ zalozka = "akcia", onClose }: { zalozka?: ZalozkaQr; onC
               <button type="button" onClick={() => { const n = navigator as Navigator & { share?: (d: ShareData) => Promise<void> }; if (n.share) n.share({ title: ja.celeMeno, url: `https://${odkaz}` }).catch(() => {}); else { navigator.clipboard?.writeText(`https://${odkaz}`).catch(() => {}); setKop(true); window.setTimeout(() => setKop(false), 1600); } }}
                 style={{ height: 52, borderRadius: 16, border: "none", background: "var(--gGrad)", fontSize: 15, fontWeight: 800, color: "#fff", cursor: "pointer", fontFamily: "inherit" }}>{tr("sp.zdielat")}</button>
             </div>
-            <div style={{ fontSize: 12.5, lineHeight: 1.5, color: "var(--ink3)", textAlign: "center", padding: "0 8px" }}>{sZnackou(tr("qr.otvoriProfil"))}</div>
+            <div style={{ fontSize: 12.5, lineHeight: 1.5, color: "var(--ink3)", textAlign: "center", padding: "0 8px" }}>{tr("qr.otvoriProfil")}</div>
           </>}
         </div>
       </Harok>

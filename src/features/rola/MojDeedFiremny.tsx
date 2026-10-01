@@ -1,4 +1,5 @@
 import { Emo } from "@/components/icons";
+import { DeedZnacka } from "@/components/DeedZnacka";
 import { TESTOVACIA } from "@/lib/testovacia";
 import { StityRad } from "@/components/stit";
 import { stityOblastiSubjektu } from "@/lib/stityOblasti";
@@ -85,7 +86,7 @@ export function MojDeedFiremny({ onBack, toast }: { onBack: () => void; toast: (
   if (!pripravene) {
     return (
       <div>
-        <BackHeader onBack={onBack} title="Môj DEED+ firemný" />
+        <BackHeader onBack={onBack} title={<>Môj <DeedZnacka /> firemný</>} />
         <div style={{ padding: "48px 0", textAlign: "center", color: C.textTer, fontSize: 14 }}>Načítavam údaje organizácie…</div>
       </div>
     );
@@ -332,7 +333,7 @@ function MojDeedFiremnyObsah({ onBack, toast, orgId }: { onBack: () => void; toa
 
   return (
     <div style={{ paddingBottom: SPACE.lg, color: C.text }}>
-      <BackHeader onBack={onBack} title="Môj DEED+ firemný" />
+      <BackHeader onBack={onBack} title={<>Môj <DeedZnacka /> firemný</>} />
       {obalSiroky(telo, { desktop, maxDesktop: SIRKA.citanie })}
 
       {/* ---- ⋯ menu subjektu ---- */}

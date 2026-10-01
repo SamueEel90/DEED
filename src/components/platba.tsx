@@ -232,7 +232,7 @@ export function PlatbaModal({ kanal, komu, suma: sumaInit, lenSepa = false, spli
         <div style={{ background: "rgba(var(--glass-rgb),.05)", border: `1px solid ${C.line}`, borderRadius: RADIUS.sm, padding: `${SPACE.xxs}px ${SPACE.sm}px ${SPACE.xs}px` }}>
           <Riadok k="Suma" v={`${sumaNum.toFixed(2)} €`} />
           <Riadok k="Poplatok (1,4 % + 0,15 €)" v={`${poplatok.toFixed(2)} €`} />
-          {tipAplik > 0 && <Riadok k="Dar pre nás (chod DEED+)" v={`${tipSuma.toFixed(2)} €`} accent={C.green} />}
+          {tipAplik > 0 && <Riadok k={<>Dar pre nás (chod <DeedZnacka />)</>} v={`${tipSuma.toFixed(2)} €`} accent={C.green} />}
           <div style={{ display: "flex", justifyContent: "space-between", paddingTop: SPACE.xs, fontSize: 14, fontWeight: 800 }}><span>Spolu</span><span>{spolu.toFixed(2)} €</span></div>
         </div>
         {tipSuma > 0 && <DarPreNas on={tip} label={tipLabel} onToggle={() => setTip((v) => !v)} />}
@@ -248,9 +248,9 @@ export function PlatbaModal({ kanal, komu, suma: sumaInit, lenSepa = false, spli
         </>)}
         <div style={{ background: "rgba(var(--glass-rgb),.05)", border: `1px solid ${C.line}`, borderRadius: RADIUS.sm, padding: `${SPACE.xxs}px ${SPACE.sm}px ${SPACE.xs}px` }}>
           <Riadok k="Dar charite" v={`${sumaNum.toFixed(2)} €`} />
-          <Riadok k="Marža DEED+" v="0 € · neberieme nič" accent={C.green} />
+          <Riadok k={<>Marža <DeedZnacka /></>} v="0 € · neberieme nič" accent={C.green} />
           {split && <Riadok k="Poplatok partnera (split)" v={`${poplatok.toFixed(2)} €`} />}
-          {tipAplik > 0 && <Riadok k="Dar pre nás (chod DEED+)" v={`${tipSuma.toFixed(2)} €`} accent={C.green} />}
+          {tipAplik > 0 && <Riadok k={<>Dar pre nás (chod <DeedZnacka />)</>} v={`${tipSuma.toFixed(2)} €`} accent={C.green} />}
           <div style={{ display: "flex", justifyContent: "space-between", paddingTop: SPACE.xs, fontSize: 14, fontWeight: 800 }}><span>Spolu</span><span>{spolu.toFixed(2)} €</span></div>
         </div>
         {tipSuma > 0 && <DarPreNas on={tip} label={tipLabel} onToggle={() => setTip((v) => !v)} />}
@@ -262,7 +262,7 @@ export function PlatbaModal({ kanal, komu, suma: sumaInit, lenSepa = false, spli
         <div style={{ background: "rgba(var(--glass-rgb),.05)", border: `1px solid ${C.line}`, borderRadius: RADIUS.sm, padding: `${SPACE.xxs}px ${SPACE.sm}px ${SPACE.xs}px` }}>
           <Riadok k="Suma" v={`${sumaNum.toLocaleString("sk")} ${jed}`} />
           <Riadok k="Poplatok" v={`0 ${jed}`} accent={C.green} />
-          {tipAplik > 0 && <Riadok k="Dar pre nás (chod DEED+)" v={`${tipSuma.toLocaleString("sk")} ${jed}`} accent={C.green} />}
+          {tipAplik > 0 && <Riadok k={<>Dar pre nás (chod <DeedZnacka />)</>} v={`${tipSuma.toLocaleString("sk")} ${jed}`} accent={C.green} />}
           <div style={{ display: "flex", justifyContent: "space-between", paddingTop: SPACE.xs, fontSize: 13.5, fontWeight: 700 }}><span>Zostatok po platbe</span><span>{(PLATBA_ZOSTATOK - spolu).toLocaleString("sk")} {jed}</span></div>
         </div>
         {tipSuma > 0 && <DarPreNas on={tip} label={tipLabel} onToggle={() => setTip((v) => !v)} />}
@@ -285,7 +285,7 @@ export function PlatbaModal({ kanal, komu, suma: sumaInit, lenSepa = false, spli
         <div style={{ background: "rgba(var(--glass-rgb),.05)", border: `1px solid ${C.line}`, borderRadius: RADIUS.sm, padding: `${SPACE.xxs}px ${SPACE.sm}px ${SPACE.xs}px` }}>
           <Riadok k="Kanál" v={jeEur ? (jeSepa ? "SEPA prevod (EUR)" : "Karta (EUR)") : `Peňaženka (${jed})`} />
           {jeEur && <Riadok k="Poplatok" v={`${poplatok.toFixed(2)} €`} />}
-          {tipAplik > 0 && <Riadok k="Dar pre nás (chod DEED+)" v={tipLabel} accent={C.green} />}
+          {tipAplik > 0 && <Riadok k={<>Dar pre nás (chod <DeedZnacka />)</>} v={tipLabel} accent={C.green} />}
           <Riadok k={jeSepa ? "Referencia prevodu" : "ID transakcie"} v={res.id} />
           {!jeSepa && <Riadok k="Záznam platby" v={res.hash} accent={C.blueL} />}
           <Riadok k="Dátum" v={res.cas} />

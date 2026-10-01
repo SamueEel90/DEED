@@ -834,7 +834,7 @@ function KrokVyhlasenie({ ucet, meno, toast, onBack, onHotovo }: KrokVyhlasenieP
     return (
       <Oslava
         emoji="🎉"
-        title="Vitaj v DEED+"
+        title={<>Vitaj v <DeedZnacka /></>}
         text="Tvoj účet je pripravený."
         onClose={zatvorOslavu}
       />

@@ -5,6 +5,7 @@
 // (telefón+SMS+email, zabezpečenie) sa preberajú z RegKit.
 // Štatutár sa overuje ako osoba (KYC) — closed loop; org cez KYB (Didit).
 // ============================================================
+import { DeedZnacka } from "@/components/DeedZnacka";
 import { useEffect, useState } from "react";
 import { otvorSpravuPoRegistracii } from "@/lib/mojeStranky";
 import { C, GRAD, infoBox, SPACE, RADIUS } from "@/theme";
@@ -891,7 +892,7 @@ function KrokBaliky({ org, nazov, toast, onBack, onHotovo }: KrokBalikyProps) {
       <Oslava
         emoji="🎉"
         title="Ste overení"
-        text="Vitajte v DEED+."
+        text={<>Vitajte v <DeedZnacka />.</>}
         onClose={zatvorOslavu}
       />
     );

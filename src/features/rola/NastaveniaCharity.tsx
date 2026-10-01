@@ -68,7 +68,7 @@ function Segment<T extends string | number>({ volby, hodnota, onZmena, stlpce, t
 const Zoznam = ({ polozky, bodka }: { polozky: string[]; bodka?: boolean }) => (
   <div style={{ ...krt, padding: "4px 16px" }}>
     {polozky.map((x, i) => <div key={x} style={{ display: "flex", gap: 10, padding: "11px 0", borderTop: btn(i), fontSize: 13.5, lineHeight: 1.45, color: "var(--ink2)" }}>
-      {bodka ? <span style={{ width: 6, height: 6, flex: "none", borderRadius: "50%", background: "var(--acc)", marginTop: 8 }} /> : FAJKA()}<span>{sZnackou(x)}</span></div>)}
+      {bodka ? <span style={{ width: 6, height: 6, flex: "none", borderRadius: "50%", background: "var(--acc)", marginTop: 8 }} /> : FAJKA()}<span>{x}</span></div>)}
   </div>);
 const dvaStlpce = (mobil: boolean, a = "1fr", b = "1fr"): React.CSSProperties => ({ display: "grid", gridTemplateColumns: mobil ? "minmax(0,1fr)" : `minmax(0,${a}) minmax(0,${b})`, gap: 18, alignItems: "start" });
 const stlpec: React.CSSProperties = { minWidth: 0, display: "flex", flexDirection: "column", gap: 8 };
@@ -329,10 +329,10 @@ export function ObrSpravcovia({ mobil }: { mobil: boolean }) {
           {ako.map(([t, s], i) => (
             <div key={t} style={{ display: "flex", gap: 12, padding: "12px 0", borderTop: btn(i) }}>
               <span style={{ width: 26, height: 26, flex: "none", borderRadius: "50%", background: "var(--accSoft)", border: "1px solid var(--cuBd)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 800, color: "var(--acc)" }}>{i + 1}</span>
-              <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}><b style={{ fontSize: 14.5 }}>{t}</b><span style={{ fontSize: 13, lineHeight: 1.45, color: "var(--ink2)" }}>{sZnackou(s)}</span></span>
+              <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}><b style={{ fontSize: 14.5 }}>{t}</b><span style={{ fontSize: 13, lineHeight: 1.45, color: "var(--ink2)" }}>{s}</span></span>
             </div>))}
         </div>
-        <span style={pozn}>{cesta === 0 ? "Prijatie potvrdzuje on vo svojom účte, vy už nič nepotvrdzujete." : sZnackou("Registrovať sa v DEED+ nemusí. Bez registrácie môže robiť len správu vašej stránky. Inak vidí appku ako každý návštevník a môže prispievať. Nabudúce sa prihlási odtlačkom, Face ID alebo odkazom v e-maile. Žiadne SMS.")}</span>
+        <span style={pozn}>{cesta === 0 ? "Prijatie potvrdzuje on vo svojom účte, vy už nič nepotvrdzujete." : "Registrovať sa v DEED+ nemusí. Bez registrácie môže robiť len správu vašej stránky. Inak vidí appku ako každý návštevník a môže prispievať. Nabudúce sa prihlási odtlačkom, Face ID alebo odkazom v e-maile. Žiadne SMS."}</span>
       </div>
     </div>);
 }
@@ -678,7 +678,7 @@ export function ObrFaq({ otvor }: { otvor: (s: string) => void }) {
                   <b style={{ flex: 1, fontSize: 15, color: "var(--ink)" }}>{sZnackou(a)}</b>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--acc)" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true" style={{ flex: "none", transform: on ? "rotate(180deg)" : "none", transition: "transform .2s ease" }}><path d="M6 9l6 6 6-6" /></svg>
                 </button>
-                {on && <div style={{ padding: "0 28px 14px 0", fontSize: 14, lineHeight: 1.55, color: "var(--ink2)" }}>{sZnackou(b)}</div>}
+                {on && <div style={{ padding: "0 28px 14px 0", fontSize: 14, lineHeight: 1.55, color: "var(--ink2)" }}>{b}</div>}
               </div>); })}
           </div>
         </div>))}

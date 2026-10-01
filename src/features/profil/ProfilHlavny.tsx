@@ -3,7 +3,6 @@
 // Bez L-úrovní, percent, emoji a anglických názvov štítov.
 import { MojeStranky, KonasAkoLista } from "./MojeStranky";
 import type { Stranka } from "@/lib/mojeStranky";
-import { sZnackou } from "@/components/DeedZnacka";
 import { useT } from "@/i18n";
 import { prelozObsah } from "@/i18n/obsah";
 import { useState } from "react";
@@ -173,7 +172,7 @@ export function MojeZaujmy() {
         <span style={{ fontSize: 18, fontWeight: 800 }}>{t("profil.zaujmy.titul")}</span>
         <span style={{ fontSize: 12.5, color: "var(--ink3)", fontVariantNumeric: "tabular-nums" }}>{t("profil.zaujmy.pocet", { a: aktivne, n: ZAUJMY_KATALOG.length })}</span>
       </div>
-      <div style={{ fontSize: 13, lineHeight: 1.5, color: "var(--ink2)", marginTop: -6 }}>{sZnackou(t("profil.zaujmy.popis"))}</div>
+      <div style={{ fontSize: 13, lineHeight: 1.5, color: "var(--ink2)", marginTop: -6 }}>{t("profil.zaujmy.popis")}</div>
       <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) minmax(0,1fr)", gap: 8 }}>
         {ZAUJMY_KATALOG.map((z) => {
           const v = vybrane(z.oblast), a = v.length > 0;

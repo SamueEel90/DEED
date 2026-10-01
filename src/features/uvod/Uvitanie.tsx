@@ -1,7 +1,7 @@
 // DEED · Úvod (onboarding) — HOTOVÝ KÓD 1 : 1 z prototypu prototypy/Uvitanie.dc.html. Neprepisovať, len zapojiť.
 // Potrebuje: uvitanie.css, /svetlusik-let.png (10 snímok vedľa seba), /odznaky/{bronze,silver,gold,platinum,legend}.png (nové orezané štíty z balíka).
 // Farby = premenné appky (--bg, --card, --cardBd, --ink, --ink2, --ink3, --gSoft, --gBd, --gInk, --green, --btn). Rozmer plochy 390 × 844 (škáluj obalom).
-import { DeedZnacka, sZnackou } from "@/components/DeedZnacka";
+import { DeedZnacka } from "@/components/DeedZnacka";
 import { useEffect, useRef, useState } from 'react';
 import './uvitanie.css';
 
@@ -113,7 +113,7 @@ export function Uvitanie({ onHotovo }: { onHotovo: () => void }) {
         <div style={abs({ left: 0, right: 0, top: 452, padding: '0 32px', textAlign: 'center', opacity: legenda ? 0 : 1, transition: 'opacity .6s ease' })}>
           <div key={i} style={{ animation: 'uvFadeIn .5s ease-out both' }}>
             <div style={{ fontSize: 29, fontWeight: 800, lineHeight: 1.2, letterSpacing: '-.02em', textWrap: 'balance' } as React.CSSProperties}>{TEXTY[i][0]}</div>
-            <div style={{ marginTop: 14, fontSize: 16, lineHeight: 1.6, color: 'var(--ink2)', textWrap: 'pretty' } as React.CSSProperties}>{sZnackou(TEXTY[i][1])}</div>
+            <div style={{ marginTop: 14, fontSize: 16, lineHeight: 1.6, color: 'var(--ink2)', textWrap: 'pretty' } as React.CSSProperties}>{TEXTY[i][1]}</div>
             {i === 0 && <div style={{ marginTop: 10, fontSize: 13, lineHeight: 1.5, color: 'var(--ink3)' }}><DeedZnacka /> je skrátený názov DEEDGOOD. DeeD je mena, ktorú dostávaš za skutky.</div>}
           </div>
         </div>

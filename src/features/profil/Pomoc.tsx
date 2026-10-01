@@ -43,7 +43,7 @@ export function CasteOtazky({ onBack, onPodpora, z }: { onBack: () => void; onPo
                   <span style={{ flex: 1, fontSize: 15.5, fontWeight: 800 }}>{sZnackou(t)}</span>
                   <span style={{ display: "flex", transform: o ? "rotate(180deg)" : "none", transition: "transform .25s ease" }}><Ik d={IK_DOLE} s={16} w={2.4} c="var(--d-ink3, var(--ink3))" /></span>
                 </button>
-                {o && <div className="pf-rise" style={{ padding: "0 18px 14px", fontSize: 14.5, lineHeight: 1.55, color: "var(--d-ink2, var(--ink2))" }}>{sZnackou(a)}</div>}
+                {o && <div className="pf-rise" style={{ padding: "0 18px 14px", fontSize: 14.5, lineHeight: 1.55, color: "var(--d-ink2, var(--ink2))" }}>{a}</div>}
               </div>); })}
           </NastKarta>
         </div>))}
