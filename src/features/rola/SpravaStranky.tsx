@@ -7,6 +7,7 @@
 // Funkcie za tlačidlami NIE SÚ — každé tlačidlo otvorí obrazovku „Pripravujeme".
 // ============================================================
 import { otvorPridatSkutok } from "@/features/skutok/otvor";
+import { DeedZnacka } from "@/components/DeedZnacka";
 import { UpravitProfilCharity, VerejnyProfilOkno, zakladnyProfil } from "./UpravitProfilCharity";
 import { nacitajProfil, profilZPamate, uplnostProfilu, type ProfilStranky } from "@/lib/profilStranky";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
@@ -137,8 +138,8 @@ const SKUPINA_POLOZKY = (id: PolozkaSpravy, typ: TypStranky = "charita"): Skupin
 
 // ---------- obrazovky ----------
 /** null = Prehľad · skupina · penazenka · nast · položka (PolozkaSpravy) · "x:Názov" = obrazovka Pripravujeme */
-type Sub = null | Skupina | "penazenka" | "nast" | "profil" | PolozkaSpravy | `x:${string}` | `n:${string}`;
-const NAZVY: Record<string, string> = { g_zbierky: "Zbierky", g_obsah: "Obsah", g_ludia: "Ľudia", g_nastroje: "Nástroje a výkazy", penazenka: "Peňaženka", nast: "Nastavenia", profil: "Upraviť profil" };
+type Sub = null | Skupina | "penazenka" | "nast" | "profil" | "vsetko" | PolozkaSpravy | `x:${string}` | `n:${string}`;
+const NAZVY: Record<string, string> = { g_zbierky: "Zbierky", g_obsah: "Obsah", g_ludia: "Ľudia", g_nastroje: "Nástroje a výkazy", penazenka: "Peňaženka", nast: "Nastavenia", profil: "Upraviť profil", vsetko: "Všetko, čo DEED+ vie" };
 /** KARTA 35: obrazovky Nastavení */
 const NAST_OBR: Record<string, string> = { notif: "Čo chcete dostávať", eur: "Dary v eurách", krypto: "Dary v EURC", ucty: "Správa účtov", spravcovia: "Správcovia a prístupy", udaje: "Údaje organizácie", program: "Program a platba", zariadenia: "Prihlásené zariadenia", suhlasy: "Súhlasy", stiahnut: "Stiahnuť údaje charity", faq: "Časté otázky", podpora: "Napísať podpore", zrusit: "Zrušiť stránku charity" };
 const titulok = (s: Sub, typ: TypStranky) => (s === null ? "Prehľad" : s.startsWith("x:") ? s.slice(2) : s.startsWith("n:") ? NAST_OBR[s.slice(2)] ?? "Nastavenia" : s === "g_typ" ? TYP_NAZOV[typ] : NAZVY[s] ?? NAZOV_POLOZKY[s as PolozkaSpravy] ?? "Správa stránky");
@@ -277,6 +278,7 @@ export function SpravaStranky({ onBack, typ: typStranky = "charita", strankaId =
   if (sub === null) obsah = <Prehlad {...spolocne} onZoom={() => setZoom(true)} />;
   else if (sub === "g_zbierky") obsah = <ObrZbierky {...spolocne} />;
   else if (sub === "g_obsah" || sub === "g_ludia" || sub === "g_nastroje" || sub === "g_typ") obsah = <Mriezka karty={menu.skupiny[sub] ?? []} {...spolocne} />;
+  else if (sub === "vsetko") obsah = <ObrVsetko typ={typ} tier={tier} otvor={otvor} stlpce={desktop || tablet ? 2 : 1} />;
   else if (sub === "penazenka") obsah = <ObrPenazenka otvor={otvor} mobil={!desktop} />;
   else if (sub === "nast") obsah = <ObrNastavenia tier={tier} otvor={otvor} mobil={!wide} />;
   else if (sub.startsWith("n:")) {
@@ -293,7 +295,7 @@ export function SpravaStranky({ onBack, typ: typStranky = "charita", strankaId =
   else if (sub.startsWith("x:")) obsah = <Pripravujeme />;
   else obsah = !typPovoli(sub as PolozkaSpravy, typ) ? <Pripravujeme /> : maPovolenie(sub as PolozkaSpravy, tier) ? <Pripravujeme /> : <Zamknute program={odProgramu(sub as PolozkaSpravy)} />;
 
-  const aktivnaSkupina: string | null = sub === null ? null : sub === "nast" || (sub as string).startsWith("n:") ? "nast" : sub === "penazenka" || (sub as string).startsWith("g_") ? sub : (sub as string).startsWith("x:") || sub === "profil" ? null : SKUPINA_POLOZKY(sub as PolozkaSpravy, typ);
+  const aktivnaSkupina: string | null = sub === null ? null : sub === "nast" || (sub as string).startsWith("n:") ? "nast" : sub === "penazenka" || (sub as string).startsWith("g_") ? sub : (sub as string).startsWith("x:") || sub === "profil" || sub === "vsetko" ? null : SKUPINA_POLOZKY(sub as PolozkaSpravy, typ);
 
   const dev = TESTOVACIA && FLAGS.dev_tier_switcher && (
     <DevSprava tier={tier} stit={stit} stav={!nova ? "bezna" : pozvana ? "pozv" : "free"} typ={typ} onTyp={setTyp}
@@ -312,7 +314,7 @@ export function SpravaStranky({ onBack, typ: typStranky = "charita", strankaId =
         <button type="button" onClick={() => setVerejny(false)} style={{ height: 42, padding: "0 16px", border: "none", borderRadius: 13, background: "var(--btn)", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 800, color: "var(--ink)" }}>Zavrieť</button>
         <button type="button" onClick={() => { setVerejny(false); otvor("profil"); }} style={{ height: 42, padding: "0 16px", border: "none", borderRadius: 13, background: "var(--btn)", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 800, color: "var(--ink)" }}>Upraviť</button></>} />}</>;
 
-  const hlavicka = <Hlavicka titul={titulok(sub, typ)} onSpat={spat} otvor={otvor} mobil={!desktop} glowNova={glowZb} />;
+  const hlavicka = <Hlavicka titul={sub === "vsetko" ? <>Všetko, čo <DeedZnacka /> vie</> : titulok(sub, typ)} onSpat={spat} otvor={otvor} mobil={!desktop} glowNova={glowZb} />;
 
   if (desktop) return (
     <div ref={korenRef} className="sprava-charity" data-stit={stit} style={{ minHeight: "100dvh", boxSizing: "border-box", padding: "20px 32px", display: "flex", gap: 24, alignItems: "flex-start" }}>
@@ -335,6 +337,7 @@ export function SpravaStranky({ onBack, typ: typStranky = "charita", strankaId =
               {n.n ? <span aria-label={`${n.n} čaká na potvrdenie`} style={{ minWidth: 24, height: 24, padding: "0 7px", borderRadius: 12, background: "#4B7A35", color: "#fff", fontSize: 12, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>{n.n}</span> : null}
             </button>); })}
         </nav>
+        {tier < 4 && sub !== "vsetko" && <KartaVsetko onClick={() => otvor("vsetko")} />}
         <div style={{ flex: "none", marginTop: 8 }}>
           <TlacidloNastavenia on={aktivnaSkupina === "nast"} onClick={() => otvor("nast")} />
         </div>
@@ -362,7 +365,7 @@ export function SpravaStranky({ onBack, typ: typStranky = "charita", strankaId =
           <KartaStitu stit={stit} sada={sada} onZoom={() => setZoom(true)} mobil={!tablet} />{/* OPRAVY 102: tablet má štít ako PC (230 px, štít vľavo) */}
         </div>}
         {obsah}
-        {sub === null && <MenuDlazdice otvor={otvor} nav={navZobr} tablet={tablet} zbal={zbal} prepniZbal={prepniZbal} glowZb={glowZb} />}
+        {sub === null && <MenuDlazdice vsetko={tier < 4} otvor={otvor} nav={navZobr} tablet={tablet} zbal={zbal} prepniZbal={prepniZbal} glowZb={glowZb} />}
         {dev}
       </div>
       {zoomEl}
@@ -373,7 +376,7 @@ export function SpravaStranky({ onBack, typ: typStranky = "charita", strankaId =
 // ============================================================
 // HLAVIČKA — na každej obrazovke
 // ============================================================
-function Hlavicka({ titul, onSpat, otvor, mobil, glowNova }: { titul: string; onSpat: () => void; otvor: (s: Sub) => void; mobil: boolean; glowNova?: boolean }) {
+function Hlavicka({ titul, onSpat, otvor, mobil, glowNova }: { titul: React.ReactNode; onSpat: () => void; otvor: (s: Sub) => void; mobil: boolean; glowNova?: boolean }) {
   const nzSh = glowNova ? "0 0 0 3px var(--bg), 0 0 0 5px var(--green), 0 0 20px rgba(78,125,55,.6)" : "none"; // OPRAVY 109
   const spatEl = (
     <button onClick={onSpat} aria-label="Späť" className="sc-bdh" style={{ flex: "none", height: 44, padding: "0 14px 0 8px", borderRadius: 13, border: "1px solid var(--cardBd)", background: "var(--card)", cursor: "pointer", display: "flex", alignItems: "center", gap: 4, fontSize: 14.5, fontWeight: 800, color: "var(--ink)" }}>
@@ -461,6 +464,41 @@ function KartaCharity({ nazov, inicialy, typ, otvor, mobil, tablet, uplnost, pro
     </div>);
 }
 
+// ============================================================
+// OPRAVY 119 · Všetko, čo DEED+ vie — karta v menu a obrazovka na pozretie (aj P3 a P4, nič sa nezapína)
+// ============================================================
+function KartaVsetko({ onClick }: { onClick: () => void }) {
+  return (
+    <button onClick={onClick} className="sc-vsetko" style={{ flex: 1, width: "100%", padding: "14px 16px", borderRadius: 16, border: "1.5px solid var(--gBd)", background: "var(--gSoft)", cursor: "pointer", fontFamily: "inherit", textAlign: "left", display: "flex", flexDirection: "column", gap: 4 }}>
+      <span style={{ fontSize: 15, fontWeight: 800, color: "var(--ink)" }}>Všetko, čo <DeedZnacka /> vie</span>
+      <span style={{ fontSize: 13, lineHeight: 1.45, color: "var(--ink2)" }}>Pozrite si všetky nástroje až po P4 a čo by vám pomohlo.</span>
+      <span style={{ fontSize: 13.5, fontWeight: 800, color: "var(--green)" }}>Pozrieť ›</span>
+    </button>);
+}
+const MOJE_ZBIERKY: Karta = P(IK.zbierky, "Moje zbierky", "Zbierka pre konkrétneho človeka alebo rodinu", "zbierky");
+function ObrVsetko({ typ, tier, otvor, stlpce }: { typ: TypStranky; tier: Tier; otvor: (s: Sub) => void; stlpce: 1 | 2 }) {
+  const skupiny: [string, Karta[]][] = ([["Zbierky", [MOJE_ZBIERKY, ...DRUHY]], ["Obsah", G.g_obsah], ["Ľudia", G.g_ludia], ["Nástroje a výkazy", G.g_nastroje]] as [string, Karta[]][])
+    .map(([t, k]): [string, Karta[]] => [t, k.filter((x) => typPovoli(x.id, typ))]).filter(([, k]) => k.length > 0);
+  return (<>
+    <span style={{ flex: "none", fontSize: 14, lineHeight: 1.5, color: "var(--ink2)", maxWidth: 760 }}>Všetky nástroje DEED+ pre charity, od programu Zadarmo po P4. Je to len na pozretie, nič sa tu nezapína. Program zmeníte v Program a platba.</span>
+    {skupiny.map(([t, k]) => (
+      <div key={t} style={{ flex: "none", display: "flex", flexDirection: "column", gap: 10 }}>
+        <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".07em", color: "var(--acc)", padding: "6px 4px 0", textTransform: "uppercase" }}>{t}</span>
+        <div style={{ display: "grid", gridTemplateColumns: stlpce === 2 ? "repeat(2,minmax(0,1fr))" : "minmax(0,1fr)", gap: stlpce === 2 ? 12 : 10 }}>
+          {k.map((p) => { const ma = maPovolenie(p.id, tier); return (
+            <div key={p.id} style={{ borderRadius: 18, background: "var(--card)", border: "1px solid var(--cardBd)", padding: "14px 16px", display: "flex", alignItems: "center", gap: 14 }}>
+              <span style={{ width: 44, height: 44, flex: "none", borderRadius: 12, background: "var(--btn)", display: "flex", alignItems: "center", justifyContent: "center" }}><Ik d={p.d} /></span>
+              <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 3 }}><b style={{ fontSize: 15, color: "var(--ink)" }}>{p.t}</b>{p.s && <span style={{ fontSize: 13, lineHeight: 1.45, color: "var(--ink3)" }}>{p.s}</span>}</span>
+              <span style={{ flex: "none", whiteSpace: "nowrap", height: 24, padding: "0 10px", borderRadius: 12, border: `1px solid ${ma ? "var(--gBd)" : "var(--cardBd)"}`, background: ma ? "var(--gSoft)" : "transparent", fontSize: 12, fontWeight: 800, color: ma ? "var(--gInk)" : "var(--ink3)", display: "flex", alignItems: "center" }}>{ma ? "Máte" : `od ${odProgramu(p.id)}`}</span>
+            </div>); })}
+        </div>
+      </div>))}
+    <div style={{ flex: "none", display: "flex", gap: 10 }}>
+      <button onClick={() => otvor("n:program")} style={{ height: 48, padding: "0 22px", border: "none", borderRadius: 14, background: "#4B7A35", cursor: "pointer", fontFamily: "inherit", fontSize: 15, fontWeight: 800, color: "#fff" }}>Program a platba</button>
+    </div>
+  </>);
+}
+
 function TlacidloNastavenia({ on, onClick }: { on: boolean; onClick: () => void }) {
   return (
     <button onClick={onClick} className={on ? undefined : "sc-hov"} style={{ width: "100%", minHeight: 56, padding: "6px 14px", border: `1px solid ${on ? "var(--cuBd)" : "var(--cardBd)"}`, borderRadius: 16, cursor: "pointer", display: "flex", alignItems: "center", gap: 12, textAlign: "left", background: on ? "var(--accSoft)" : "var(--card)", color: on ? "var(--acc)" : "var(--ink)" }}>
@@ -470,7 +508,7 @@ function TlacidloNastavenia({ on, onClick }: { on: boolean; onClick: () => void 
 }
 
 /** mobil: menu ako 6 dlaždíc + Nastavenia */
-function MenuDlazdice({ otvor, nav, tablet, zbal, prepniZbal, glowZb }: { otvor: (s: Sub) => void; nav: Menu["nav"]; tablet: boolean; zbal: Zbalenie; prepniZbal: (id: string) => void; glowZb?: boolean }) {
+function MenuDlazdice({ vsetko, otvor, nav, tablet, zbal, prepniZbal, glowZb }: { vsetko: boolean; otvor: (s: Sub) => void; nav: Menu["nav"]; tablet: boolean; zbal: Zbalenie; prepniZbal: (id: string) => void; glowZb?: boolean }) {
   const dl: { k: Sub; t: string; d?: string; n?: number; teal?: boolean }[] = [
     { k: "x:Verejný profil", t: "Verejný profil", teal: true },
     ...nav.map((n) => ({ k: n.k as Sub, t: n.t, d: n.d, n: n.n })),
@@ -482,6 +520,7 @@ function MenuDlazdice({ otvor, nav, tablet, zbal, prepniZbal, glowZb }: { otvor:
           {x.teal ? <OkoIk /> : <Ik d={x.d!} />}{x.t}
           {x.n ? <span style={{ position: "absolute", top: 6, right: 6, minWidth: 22, height: 22, padding: "0 6px", borderRadius: 11, background: "#4B7A35", color: "#fff", fontSize: 11.5, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>{x.n}</span> : null}
         </button>))}
+      {vsetko && <div style={{ gridColumn: "1 / -1", display: "flex" }}><KartaVsetko onClick={() => otvor("vsetko")} /></div>}{/* OPRAVY 119: posledná dlaždica, celá šírka */}
     </div>
     <TlacidloNastavenia on={false} onClick={() => otvor("nast")} />
   </Sekcia>);

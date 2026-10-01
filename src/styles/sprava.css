@@ -40,6 +40,7 @@ html.dark [data-stit="legend"]{--accSoft:#2E1718;--acc:#D9787C}
 .sprava-charity button{font-family:inherit}
 .sprava-charity .sc-hov:hover{background:var(--hov)!important}
 .sprava-charity .sc-bdh:hover{border-color:var(--goldBd)!important}
+.sprava-charity .sc-vsetko:hover{border-color:var(--green)!important}
 .sprava-charity .sc-lista{scrollbar-width:none}
 .sprava-charity .sc-lista::-webkit-scrollbar{display:none}
 html.obmedz-anim .sprava-charity .sc-lesk{display:none}
