@@ -596,7 +596,7 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
       </div>
 
       {sk && <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}><span style={P.lbl}>{o("SPOLU SO MNOU BOLI", "SPOLU S NAMI BOLI")}</span><span style={{ fontSize: 13, fontWeight: 700, color: "var(--ink3)" }}>{ucN}</span></div>
+        <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}><span style={P.lbl}>{o("SPOLU SO MNOU BOLI", "DOBROVOĽNÍCI")}</span><span style={{ fontSize: 13, fontWeight: 700, color: "var(--ink3)" }}>{ucN}</span></div>
         <div style={{ ...P.karta, borderRadius: 16, padding: "2px 12px" }}>
           {uc.map((u, i) => (
             <div key={u.meno} style={{ display: "flex", alignItems: "center", gap: 10, minHeight: 52, borderTop: i ? "1px solid var(--cardBd)" : "none" }}>

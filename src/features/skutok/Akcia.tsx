@@ -98,7 +98,7 @@ function AkciaObrazovka({ a, onZavrete }: { a: Akcia; onZavrete: () => void }) {
   /** OPRAVY 121: organizátor odoberie účastníka — stratí pripojenie aj karmu, zapíše sa do záznamu zmien */
   const odober = (meno: string) => {
     const x = aRef.current;
-    nastavAkciu({ ...x, uc: x.uc.filter((u) => u.meno !== meno), ...(x.org ? { zaznam: [...(x.zaznam ?? []), { cas: Date.now(), kto: ja2, co: `odobral účastníka ${meno}` }] } : {}) });
+    nastavAkciu({ ...x, uc: x.uc.filter((u) => u.meno !== meno), ...(x.org ? { zaznam: [...(x.zaznam ?? []), { cas: Date.now(), kto: ja2, co: `odobral dobrovoľníka ${meno}` }] } : {}) });
   };
   const pocet = `${a.uc.length + 1} účastníkov`;
   const riadok = (meno: string, s: string, i: number, del?: () => void): ReactNode => (
@@ -150,9 +150,9 @@ function AkciaObrazovka({ a, onZavrete }: { a: Akcia; onZavrete: () => void }) {
           </div>}
           {mozePridat && (!org || TESTOVACIA) && <button type="button" onClick={naskenuj} style={{ height: 50, borderRadius: 15, border: "1px solid var(--gBd)", background: "var(--gSoft)", fontSize: 15, fontWeight: 800, color: "var(--gInk)", cursor: "pointer", fontFamily: "inherit" }}>{org ? "Simulovať príchod (DEV)" : a.stav === "bezi" ? "Naskenovať ďalšieho" : "Naskenovať účastníka"}</button>}
 
-          <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}><h2 style={{ margin: 0, fontSize: 12, fontWeight: 800, letterSpacing: ".06em", color: "var(--ink3)" }}>ÚČASTNÍCI</h2><span style={{ fontSize: 13, fontWeight: 700, color: "var(--ink3)" }}>{pocet}</span></div>
+          <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}><h2 style={{ margin: 0, fontSize: 12, fontWeight: 800, letterSpacing: ".06em", color: "var(--ink3)" }}>{org ? "ORGANIZÁTOR A DOBROVOĽNÍCI" : "ÚČASTNÍCI"}</h2><span style={{ fontSize: 13, fontWeight: 700, color: "var(--ink3)" }}>{org ? `${a.uc.length} ${a.uc.length === 1 ? "dobrovoľník" : a.uc.length >= 2 && a.uc.length <= 4 ? "dobrovoľníci" : "dobrovoľníkov"}` : pocet}</span></div>
           <div aria-live="polite" style={{ borderRadius: 16, background: "var(--card)", border: "1px solid var(--cardBd)", padding: "2px 12px" }}>
-            {riadok(`${ja2} · organizátor`, org ? "zakladáte akciu" : "zakladáš akciu", 0)}
+            {riadok(`${ja2} · organizátor`, org ? "vedúci skupiny · poverenie od charity" : "zakladáš akciu", 0)}
             {a.uc.map((u, i) => riadok(u.meno, org ? `príchod ${hm(u.prichod)} · sken QR charity${u.odchod ? ` · odchod ${hm(u.odchod)}` : ""}` : `overený skenom · ${u.neskor ? "pridaný neskôr" : "od začiatku"}`, i + 1, () => odober(u.meno)))}
             {!a.uc.length && <div style={{ padding: "14px 0", fontSize: 14, color: "var(--ink3)", borderTop: "1px solid var(--cardBd)" }}>{org ? "Zatiaľ nikto. Vy ako organizátor ste v zozname automaticky." : "Zatiaľ nikto. Ty ako organizátor si v zozname automaticky."}</div>}
           </div>
@@ -163,7 +163,7 @@ function AkciaObrazovka({ a, onZavrete }: { a: Akcia; onZavrete: () => void }) {
                 <button type="button" role="radio" aria-checked={on} key={m} onClick={() => zmenAkciu({ okno: m })} style={{ height: 44, borderRadius: 13, fontSize: 15, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", background: on ? "var(--gSoft)" : "var(--card)", border: `1.5px solid ${on ? "var(--gBd)" : "var(--cardBd)"}`, color: on ? "var(--gInk)" : "var(--ink)" }}>{m < 60 ? `${m} min` : `${m / 60} h`}</button>); })}
             </div>
           </>}
-          {a.stav === "bezi" && <div style={{ fontSize: 13, lineHeight: 1.5, color: "var(--ink3)" }}>{org ? "Účastníka môžete kedykoľvek odobrať krížikom, napríklad pri nevhodnom správaní. Stratí pripojenie k skutku aj karmu a zapíše sa to do záznamu zmien." : "Kto nič nerobil alebo robil problémy, toho odstráň krížikom. Nedostane karmu ani odmeny."}</div>}
+          {a.stav === "bezi" && <div style={{ fontSize: 13, lineHeight: 1.5, color: "var(--ink3)" }}>{org ? "Dobrovoľníka môžete kedykoľvek odobrať krížikom, napríklad pri nevhodnom správaní. Stratí pripojenie k skutku aj karmu a zapíše sa to do záznamu zmien." : "Kto nič nerobil alebo robil problémy, toho odstráň krížikom. Nedostane karmu ani odmeny."}</div>}
           {org && a.stav === "bezi" && <div style={{ fontSize: 13, lineHeight: 1.5, color: "var(--ink3)" }}>Odchod skenovať netreba. Keď je koniec, ukončíte akciu pre všetkých naraz. Kto chce potvrdenie o čase od–do, naskenuje QR aj pri odchode.</div>}
           {org && !!a.zaznam?.length && <>
             <h2 style={{ margin: 0, fontSize: 12, fontWeight: 800, letterSpacing: ".06em", color: "var(--ink3)" }}>ZÁZNAM ZMIEN</h2>

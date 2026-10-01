@@ -234,7 +234,7 @@ type Spravca = { id: number; n: string; k: string; r: number; caka: Stav; ja?: b
 const SPR0: Spravca[] = [{ id: 1, n: "Martin Štofik", k: "martin@svetlopomoci.sk", r: 0, caka: false, ja: true }];
 // poradie = ROLY_STRANKY v stav.ts (OPRAVY 121: pribudol Organizátor)
 const ROLY: [string, string][] = [["Hlavný správca", "všetko, aj účty, program a správcovia"], ["Správca", "zbierky, obsah, ľudia, výkazy · bez účtov a programu"], ["Pomocník", "len obsah: skutky, oznamy, nástenka · peniaze nevidí"],
-  ["Organizátor", "skutky a akcie za charitu, QR charity · peniaze, darcov ani nastavenia nevidí"]];
+  ["Organizátor", "vedúci skupiny s poverením od vás: skutky a akcie za charitu, QR charity · peniaze, darcov ani nastavenia nevidí"]];
 type Pozvanka = { id: number; r: number; do: string; url: string };
 export function ObrSpravcovia({ mobil }: { mobil: boolean }) {
   const [L, setL] = usePamat<Spravca[]>("spr", SPR0);

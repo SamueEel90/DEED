@@ -254,7 +254,8 @@ export const ulozCharituNovu = (v: boolean) => uloz(kluc("charita.nova"), v);
 
 // ============================================================
 // OPRAVY 121 · bod 9 — roly v správe stránky (poradie = Nastavenia → Správcovia a prístupy).
-// Organizátor pridáva skutky a akcie za charitu, nevidí peniaze, darcov ani nastavenia.
+// Organizátor = vedúci skupiny ako pri skutkoch ľudí, len s poverením od charity (OPRAVY 122). Ostatní sú dobrovoľníci.
+// Pridáva skutky a akcie za charitu, nevidí peniaze, darcov ani nastavenia.
 // Bez roly sa skutok za charitu (ani QR charity) vytvoriť nedá. Overenie roly robí server pri uložení.
 // ============================================================
 export type RolaStranky = "hlavny" | "spravca" | "pomocnik" | "organizator";
