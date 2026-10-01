@@ -42,8 +42,8 @@ export function Znacka({ size = 40, force, style, text, logoQr }: {
       <span {...pressable(() => setFull(true), "Logo DEED+ — zobraziť QR kód na celú obrazovku")}
         style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flex: "0 0 auto", ...style }}>
         {logoQr ? (
-          // OPRAVY 101: bez dlaždice a rámika, v oboch režimoch to isté PNG, tenký tieň vo farbe štítu
-          <img src={LOGO_QR} alt="DEED+ · môj QR" draggable={false} style={{ width: size, height: size, display: "block", objectFit: "contain", filter: "drop-shadow(0 0 2.5px var(--accLine))" }} />
+          // OPRAVY 101/105: bez dlaždice a rámika, v oboch režimoch to isté PNG, dvojvrstvová žiara vo farbe štítu
+          <img src={LOGO_QR} alt="DEED+ · môj QR" draggable={false} style={{ width: size, height: size, display: "block", objectFit: "contain", filter: "drop-shadow(0 0 4px var(--acc)) drop-shadow(0 0 14px var(--accLine))" }} />
         )
         : text ? <span style={{ fontSize: Math.round(size * 0.62), fontWeight: 800, letterSpacing: "-.01em", color: "var(--a-green)", lineHeight: 1 }}><DeedZnacka /></span> : <>
         {/* D⁺ QR vlajka = biely štvorec → jemne zaoblené rohy */}
