@@ -847,7 +847,7 @@ function KrokVyhlasenie({ ucet, meno, toast, onBack, onHotovo }: KrokVyhlasenieP
       step={9}
       total={9}
       onBack={onBack}
-      footer={<Patka onBack={onBack} onNext={dokonci} canNext={canNext} loading={loading} next="Vitaj v DEED+ →" />}
+      footer={<Patka onBack={onBack} onNext={dokonci} canNext={canNext} loading={loading} next={<>Vitaj v <DeedZnacka /> →</>} />}
     >
       <Otazka>Bezpečnosť a čestné vyhlásenie</Otazka>
       <Prepinac

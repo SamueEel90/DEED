@@ -72,7 +72,7 @@ const G: Record<Exclude<Skupina, "g_zbierky" | "g_typ">, Karta[]> = {
     P("M9 7V4h6v3M4 7h16v13H4z", "Pracovné ponuky", "Hľadáme brigádnika, zamestnanca, pomoc", "inzeraty"),
   ],
   g_nastroje: [
-    P("M12 5v14M5 12h14", "Pridať skutok", "Koľko chcete · poslúži aj ako oznam pre sledujúcich", "pridatSkutok"),
+    P("M12 5v14M5 12h14", "Pridať skutok", "Fotky a pár viet o tom, komu ste pomohli", "pridatSkutok"),
     P("M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4z", "QR nástroje", "QR organizácie a zbierok · plagát, pokladnička", "qr"),
     P("M4 4h16v16H4z", "Sektorové QR", "QR pre celý sektor organizácie", "sektorqr"),
     P(IK.retaz, "Štít dôvery na web", "Odznak s odkazom na váš profil", "embed"),

@@ -53,7 +53,7 @@ export function Patka({
 }: {
   onBack?: () => void;
   onNext?: () => void;
-  next?: string;
+  next?: ReactNode;
   canNext?: boolean;
   loading?: boolean;
 }) {
@@ -65,7 +65,7 @@ export function Patka({
         disabled={!canNext || loading}
         style={btn(canNext && !loading ? "primary" : "disabled")}
       >
-        {loading ? "Pracujem…" : sZnackou(next)}
+        {loading ? "Pracujem…" : typeof next === "string" ? sZnackou(next) : next}
       </button>
     </div>
   );

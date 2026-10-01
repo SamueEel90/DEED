@@ -579,7 +579,7 @@ export function ObrSuhlasy({ mobil, otvor }: { mobil: boolean; otvor: (s: string
         <div style={{ ...krt, padding: "0 16px" }}>
           {POV.map(([t, s, d], i) => (
             <div key={t} style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 72, padding: "10px 0", borderTop: btn(i) }}>
-              <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}><b style={{ fontSize: 15 }}>{t}</b><span style={{ fontSize: 13, color: "var(--ink3)" }}>{sZnackou(s)}</span><span style={{ fontSize: 12.5, fontWeight: 700, color: "var(--ink2)" }}>{d}</span></span>
+              <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}><b style={{ fontSize: 15 }}>{t}</b><span style={{ fontSize: 13, color: "var(--ink3)" }}>{s}</span><span style={{ fontSize: 12.5, fontWeight: 700, color: "var(--ink2)" }}>{d}</span></span>
               <button onClick={() => otvor(`x:${t}`)} style={{ ...obrys(), fontSize: 13.5 }}>Zobraziť</button>
             </div>))}
         </div>

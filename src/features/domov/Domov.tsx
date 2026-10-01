@@ -356,7 +356,7 @@ function MojDeedObsah({ onDetail, onBoard, toast }: { onDetail: (id: string | nu
             <div key={z.id} onClick={() => setSpravovana(z.id)}
               style={{ background: C.surface2, border: `1px solid ${C.line}`, borderRadius: RADIUS.sm, padding: SPACE.sm, marginBottom: SPACE.xs, cursor: "pointer" }}>
               <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm }}>
-                <span style={{ width: 34, height: 34, borderRadius: RADIUS.xs, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 17, background: "rgba(var(--glass-rgb),.06)" }}>{z.emoji || "🎯"}</span>
+                <span style={{ width: 34, height: 34, borderRadius: RADIUS.xs, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 17, background: "rgba(var(--glass-rgb),.06)" }}><IkonaTerc size={18} color="var(--a-green)" /></span>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 14, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{z.nazov}</div>
                   <div style={{ fontSize: 11.5, color: C.textTer, marginTop: 2 }}>{modulLabel[z.modul] || z.modul}{z.lok ? ` · ${z.lok}` : ""}</div>
@@ -546,7 +546,7 @@ function SpravaZbierky({ z, upravZbierku, toast, onClose }: {
     <Sheet onClose={onClose} label="Správa zbierky">
       {/* hlavička */}
       <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm, marginBottom: SPACE.sm }}>
-        <span style={{ width: 40, height: 40, borderRadius: RADIUS.sm, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, background: "rgba(var(--glass-rgb),.06)" }}>{z.emoji || "🎯"}</span>
+        <span style={{ width: 40, height: 40, borderRadius: RADIUS.sm, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, background: "rgba(var(--glass-rgb),.06)" }}><IkonaTerc size={20} color="var(--a-green)" /></span>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 16, fontWeight: 800, lineHeight: 1.25 }}>{z.nazov}</div>
           <div style={{ fontSize: 11.5, color: C.textTer, marginTop: 2 }}>Moja zbierka · spravovanie</div>
