@@ -1,4 +1,4 @@
-import { Emo, IkonaVlajka } from "@/components/icons";
+import { Emo, IkonaVlajka, IkonaTerc } from "@/components/icons";
 import { DeedZnacka } from "@/components/DeedZnacka";
 import { NahlasitSheet } from "@/components/nahlasit";
 import { useState, useEffect, useRef, memo } from "react";
@@ -349,7 +349,7 @@ function MojDeedObsah({ onDetail, onBoard, toast }: { onDetail: (id: string | nu
       <div style={{ padding: `${SPACE.xxs}px ${SPACE.md}px 0` }}>
         <SekciaLabel>MOJE ZBIERKY ({mojeZbierky.length})</SekciaLabel>
         {mojeZbierky.length === 0 ? (
-          <PrazdnyTip emoji="🎯" text="Keď vytvoríš zbierku alebo žiadosť (Domov, Help, Charita), objaví sa tu — vieš ju spravovať: ukončiť, podať vyúčtovacie doklady a poslať darcom poďakovanie." />
+          <PrazdnyTip ikona={<IkonaTerc size={22} color="var(--a-green)" />} text="Keď vytvoríš zbierku alebo žiadosť (Domov, Help, Charita), objaví sa tu — vieš ju spravovať: ukončiť, podať vyúčtovacie doklady a poslať darcom poďakovanie." />
         ) : mojeZbierky.map((z) => {
           const st = STAV_ZBIERKY[z.stav];
           return (
@@ -601,10 +601,10 @@ function SpravaZbierky({ z, upravZbierku, toast, onClose }: {
   );
 }
 
-function PrazdnyTip({ emoji, text }: { emoji: string; text: string }) {
+function PrazdnyTip({ emoji, ikona, text }: { emoji?: string; ikona?: React.ReactNode; text: string }) {
   return (
     <div style={{ display: "flex", gap: SPACE.sm, alignItems: "center", background: "rgba(var(--glass-rgb),.04)", border: `1px dashed ${C.line}`, borderRadius: RADIUS.sm, padding: `${SPACE.gutter}px ${SPACE.gutter}px`, marginBottom: SPACE.xs }}>
-      <span style={{ fontSize: 22, flex: "none" }}><Emo e={emoji} /></span>
+      <span style={{ fontSize: 22, flex: "none", display: "flex" }}>{ikona ?? (emoji ? <Emo e={emoji} /> : null)}</span>
       <span style={{ fontSize: 12.5, color: C.textSec, lineHeight: 1.5 }}>{text}</span>
     </div>
   );

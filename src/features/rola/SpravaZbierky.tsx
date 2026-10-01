@@ -4,7 +4,7 @@
 // ukončená → dokladovanie podľa pásma (povinné minimum + navyše = karma)
 // Pravidlá a čísla: lib/zbierkaSprava.ts (SPRAVA_ZBIERKY_CFG, PASMA_DOKLADOV).
 // ============================================================
-import { Emo } from "@/components/icons";
+import { Emo, IkonaOko } from "@/components/icons";
 import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { C, SPACE, RADIUS } from "@/theme";
 import { Sheet, MoniBar, tint } from "@/shared";
@@ -396,7 +396,7 @@ function Dokladovanie({ zbierkaId, s, zmen, vyzbierane, toast, aktivna, onZverej
       </div>
 
       <Zelene>Všetkým darcom príde správa o vašom dokladovaní s opätovným poďakovaním za dar.</Zelene>
-      <button onClick={() => setNahlad(true)} style={{ ...btnDruhy, marginBottom: SPACE.xs }}>👁 Náhľad — čo uvidí darca</button>
+      <button onClick={() => setNahlad(true)} style={{ ...btnDruhy, marginBottom: SPACE.xs, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}><IkonaOko size={16} /> Náhľad — čo uvidí darca</button>
       {nahlad && <OznamDarcoviSheet zbierkaId={zbierkaId} typ="dolozene" nahladStav={s} onClose={() => setNahlad(false)} />}
       <button onClick={zverejni} style={{ ...btnHlavny, opacity: !aktivna && !hotovo ? .55 : 1 }}>
         {s.zverejnene ? "Aktualizovať a poslať darcom" : aktivna ? "Zverejniť priebežne a poslať darcom" : "Zverejniť a poslať darcom"}
