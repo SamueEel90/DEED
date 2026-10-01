@@ -23,3 +23,20 @@ export async function ulozPiny(stranka: string, piny: PolozkaSpravy[]): Promise<
   if (!supabase) return;
   await supabase.from("sprava_piny").upsert({ stranka, piny: p, aktualizovane: new Date().toISOString() }, { onConflict: "pouzivatel,stranka" });
 }
+
+// ---- OPRAVY 95: zbalené sekcie Prehľadu (mobil + tablet) — v tom istom riadku účtu ako pripnuté (stĺpec zbalene, migrácia 0027) ----
+export type Zbalenie = Record<string, boolean>; // id sekcie → rozbalená?
+const pamatZ = new Map<string, Zbalenie>();
+export const zbalenieZPamate = (stranka: string): Zbalenie => pamatZ.get(stranka) ?? {};
+export async function nacitajZbalenie(stranka: string): Promise<Zbalenie> {
+  if (supabase) {
+    const { data, error } = await supabase.from("sprava_piny").select("zbalene").eq("stranka", stranka).maybeSingle();
+    if (!error) { const z = (data?.zbalene as Zbalenie | undefined) ?? {}; pamatZ.set(stranka, z); return z; }
+  }
+  return pamatZ.get(stranka) ?? {};
+}
+export async function ulozZbalenie(stranka: string, z: Zbalenie): Promise<void> {
+  pamatZ.set(stranka, z);
+  if (!supabase) return;
+  await supabase.from("sprava_piny").upsert({ stranka, zbalene: z, aktualizovane: new Date().toISOString() }, { onConflict: "pouzivatel,stranka" });
+}

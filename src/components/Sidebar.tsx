@@ -22,7 +22,7 @@ export function Sidebar({ moduly, aktivny, onModul, onViac, onPenazenka }: {
     <nav aria-label="Hlavné moduly" className="sc-tokeny sc-side" style={{ width: 104, flex: "0 0 auto", height: "100%", display: "flex", flexDirection: "column", alignItems: "center", gap: 2, padding: "14px 0", background: "var(--panel)", borderRight: "1px solid var(--accLine)", zIndex: 20 }}>
       {/* logo — nové QR logo (klik → QR na celú obrazovku) */}
       <div style={{ flex: "none", display: "flex", justifyContent: "center", marginBottom: 6 }}>
-        <Znacka size={56} logoQr />
+        <Znacka size={60} logoQr />
       </div>
 
       {/* navigácia modulov */}
@@ -48,7 +48,7 @@ function SideTab({ m, on, onClick }: { m: Modul; on: boolean; onClick: () => voi
       background: on ? "var(--gSoft)" : "transparent", border: on ? "1.5px solid var(--gBd)" : "1.5px solid transparent", borderBottom: "none",
       color: on ? "var(--gInk)" : "var(--ink2)",
     }}>
-      <span className="sc-side-ik" style={{ display: "flex", color: "var(--acc)" }}>{m.ikona}</span>
+      <span className="sc-side-ik kov-ik" style={{ display: "flex", color: "var(--acc)" }}>{m.ikona}</span>
       <span style={{ fontSize: 13, fontWeight: on ? 800 : 600, textAlign: "center", lineHeight: 1.2 }}>{m.nazov}</span>
     </div>
   );

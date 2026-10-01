@@ -71,7 +71,7 @@ export function TabBar({ taby, aktivny, onModul, wide }: {
   wide?: boolean;
 }) {
   return (
-    <nav aria-label="Hlavné moduly" style={{ position: "absolute", left: 0, right: 0, bottom: "calc(10px + env(safe-area-inset-bottom, 0px))", zIndex: 40, display: "flex", justifyContent: "center", padding: `0 ${SPACE.sm}px` }}>
+    <nav aria-label="Hlavné moduly" className="sc-tokeny" style={{ position: "absolute", left: 0, right: 0, bottom: "calc(10px + env(safe-area-inset-bottom, 0px))", zIndex: 40, display: "flex", justifyContent: "center", padding: `0 ${SPACE.sm}px` }}>
       <div style={{
         width: "100%", maxWidth: wide ? 620 : "none",
         display: "flex", alignItems: "stretch", borderRadius: RADIUS.xl, padding: `${SPACE.xs}px ${SPACE.xxs}px`,
@@ -107,15 +107,15 @@ export function PridatFAB({ akcia, wide, desktop }: { akcia: StrankaAkcia; wide?
 function Tab({ m, on, onClick }: { m?: Modul; on: boolean; onClick: () => void }) {
   return (
     <div {...pressable(onClick, m?.nazov)} aria-current={on ? "page" : undefined} className="dock-tab" style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: SPACE.xxs, cursor: "pointer", padding: `${SPACE.xxs}px 0 ${SPACE.xxs}px` }}>
-      <div className="dock-icon" style={{
+      <div className="dock-icon kov-ik" style={{
         width: 50, height: 32, borderRadius: RADIUS.md, display: "flex", alignItems: "center", justifyContent: "center",
-        fontSize: 21, lineHeight: 1, transition: "transform .25s cubic-bezier(.34,1.56,.64,1), background .25s ease, box-shadow .25s ease, filter .25s ease",
-        background: on ? "linear-gradient(135deg, color-mix(in srgb, var(--a-green) 30%, transparent), color-mix(in srgb, var(--a-teal) 24%, transparent))" : "transparent",
-        border: on ? "1px solid color-mix(in srgb, var(--a-green) 40%, transparent)" : "1px solid transparent",
-        boxShadow: on ? "0 4px 16px color-mix(in srgb, var(--a-green) 35%, transparent)" : "none",
-        color: on ? C.text : C.textSec,
+        fontSize: 21, lineHeight: 1, transition: "transform .25s cubic-bezier(.34,1.56,.64,1)",
+        // OPRAVY 96/98: ikony ako kov štítu (.kov-ik, gradient #kovIk), záloha var(--acc), aktívna položka var(--gSoft) + rámik var(--gBd)
+        background: on ? "var(--gSoft)" : "transparent",
+        border: on ? "1px solid var(--gBd)" : "1px solid transparent",
+        color: "var(--acc, var(--green))",
       }}>{m?.ikona}</div>
-      <span style={{ fontSize: 11.5, fontWeight: on ? 800 : 600, color: on ? C.greenL : C.textSec, letterSpacing: ".01em", transition: "color .25s ease" }}>{m?.nazov}</span>
+      <span style={{ fontSize: 11.5, fontWeight: on ? 800 : 600, color: on ? "var(--gInk)" : "var(--ink2)", letterSpacing: ".01em" }}>{m?.nazov}</span>
     </div>
   );
 }

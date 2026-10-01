@@ -240,8 +240,8 @@ export const odProgramu = (id: PolozkaSpravy): Program => POVOLENIA_CHARITY[id].
 export type StitCharity = "bronze" | "silver" | "gold" | "platinum" | "legend";
 export const nacitajStitCharity = (): StitCharity => nacitaj<StitCharity>(kluc("stit.charita"), "bronze");
 export const ulozStitCharity = (s: StitCharity) => uloz(kluc("stit.charita"), s);
-// ---- pripnuté položky v správe charity: najviac 6, ukladajú sa do účtu (src/lib/spravaPiny.ts) ----
-export const PIN_MAX = 6;
+// ---- pripnuté položky v správe stránky: najviac 12 (OPRAVY 94), ukladajú sa do účtu (src/lib/spravaPiny.ts) ----
+export const PIN_MAX = 12;
 // ---- DEV: nová charita (nuly, prázdne stavy) alebo bežiaca ukážka ----
 export const nacitajCharituNovu = (): boolean => nacitaj(kluc("charita.nova"), false);
 export const ulozCharituNovu = (v: boolean) => uloz(kluc("charita.nova"), v);
