@@ -13,6 +13,7 @@ import { useNastaveniaAppky, zmenNastavenia } from "@/lib/nastaveniaAppky";
 import { potvrditTuknutim, nastavPotvrditTuknutim } from "@/features/zbierka/Platba";
 import { TESTOVACIA } from "@/lib/testovacia";
 import { nacitajPiny, ulozPiny, pinyZPamate } from "@/lib/spravaPiny";
+import { ObrOznamenia, ObrEurc, ObrUcty, ObrSpravcovia, ObrUdaje, ObrProgram, ObrZariadenia, ObrSuhlasy, ObrStiahnut, ObrFaq, ObrPodpora, ObrZrusit, PROG, pocetSpravcov, pocetZariadeni, eurcText } from "./NastaveniaCharity";
 import {
   FLAGS, nacitajTiery, ulozTiery, maPovolenie, odProgramu, PROGRAM_NAZOV, PIN_MAX,
   nacitajStitCharity, ulozStitCharity, nacitajCharituNovu, ulozCharituNovu,
@@ -98,9 +99,11 @@ const SKUPINA_POLOZKY = (id: PolozkaSpravy): Skupina | null => (id === "zbierky"
 
 // ---------- obrazovky ----------
 /** null = Prehľad · skupina · penazenka · nast · položka (PolozkaSpravy) · "x:Názov" = obrazovka Pripravujeme */
-type Sub = null | Skupina | "penazenka" | "nast" | PolozkaSpravy | `x:${string}`;
+type Sub = null | Skupina | "penazenka" | "nast" | PolozkaSpravy | `x:${string}` | `n:${string}`;
 const NAZVY: Record<string, string> = { g_zbierky: "Zbierky", g_obsah: "Obsah", g_ludia: "Ľudia", g_nastroje: "Nástroje a výkazy", penazenka: "Peňaženka", nast: "Nastavenia" };
-const titulok = (s: Sub) => (s === null ? "Prehľad" : s.startsWith("x:") ? s.slice(2) : NAZVY[s] ?? NAZOV_POLOZKY[s as PolozkaSpravy] ?? "Správa stránky");
+/** KARTA 35: obrazovky Nastavení */
+const NAST_OBR: Record<string, string> = { notif: "Čo chcete dostávať", krypto: "Dary v EURC", ucty: "Správa účtov", spravcovia: "Správcovia a prístupy", udaje: "Údaje organizácie", program: "Program a platba", zariadenia: "Prihlásené zariadenia", suhlasy: "Súhlasy", stiahnut: "Stiahnuť údaje charity", faq: "Časté otázky", podpora: "Napísať podpore", zrusit: "Zrušiť stránku charity" };
+const titulok = (s: Sub) => (s === null ? "Prehľad" : s.startsWith("x:") ? s.slice(2) : s.startsWith("n:") ? NAST_OBR[s.slice(2)] ?? "Nastavenia" : NAZVY[s] ?? NAZOV_POLOZKY[s as PolozkaSpravy] ?? "Správa stránky");
 
 // ---------- štít ----------
 const STITY: Record<StitCharity, [string, string, string, string]> = {
@@ -193,10 +196,18 @@ export function SpravaCharity({ onBack, strankaId = "svetlo", nazov = "Svetlo po
   else if (sub === "g_obsah" || sub === "g_ludia" || sub === "g_nastroje") obsah = <Mriezka karty={G[sub]} {...spolocne} />;
   else if (sub === "penazenka") obsah = <ObrPenazenka otvor={otvor} mobil={!desktop} />;
   else if (sub === "nast") obsah = <ObrNastavenia tier={tier} otvor={otvor} mobil={!desktop} />;
+  else if (sub.startsWith("n:")) {
+    const m = !desktop, id = sub.slice(2), o = otvor as (s: string) => void;
+    obsah = id === "notif" ? <ObrOznamenia mobil={m} /> : id === "krypto" ? <ObrEurc mobil={m} /> : id === "ucty" ? <ObrUcty mobil={m} otvor={o} />
+      : id === "spravcovia" ? <ObrSpravcovia mobil={m} /> : id === "udaje" ? <ObrUdaje mobil={m} />
+      : id === "program" ? <ObrProgram mobil={m} tier={tier} otvor={o} onTier={(t) => { setTier(t); ulozTiery({ ...nacitajTiery(), charita: t }); }} />
+      : id === "zariadenia" ? <ObrZariadenia mobil={m} /> : id === "suhlasy" ? <ObrSuhlasy mobil={m} otvor={o} /> : id === "stiahnut" ? <ObrStiahnut mobil={m} />
+      : id === "faq" ? <ObrFaq otvor={o} /> : id === "podpora" ? <ObrPodpora mobil={m} otvor={o} /> : id === "zrusit" ? <ObrZrusit mobil={m} otvor={o} tier={tier} nova={nova} /> : <Pripravujeme />;
+  }
   else if (sub.startsWith("x:")) obsah = <Pripravujeme />;
   else obsah = maPovolenie(sub as PolozkaSpravy, tier) ? <Pripravujeme /> : <Zamknute program={odProgramu(sub as PolozkaSpravy)} />;
 
-  const aktivnaSkupina: string | null = sub === null ? null : sub === "nast" || sub === "penazenka" || (sub as string).startsWith("g_") ? sub : (sub as string).startsWith("x:") ? null : SKUPINA_POLOZKY(sub as PolozkaSpravy);
+  const aktivnaSkupina: string | null = sub === null ? null : sub === "nast" || (sub as string).startsWith("n:") ? "nast" : sub === "penazenka" || (sub as string).startsWith("g_") ? sub : (sub as string).startsWith("x:") ? null : SKUPINA_POLOZKY(sub as PolozkaSpravy);
 
   const dev = TESTOVACIA && FLAGS.dev_tier_switcher && (
     <DevSprava tier={tier} stit={stit} nova={nova}
@@ -230,7 +241,7 @@ export function SpravaCharity({ onBack, strankaId = "svetlo", nazov = "Svetlo po
             </button>); })}
         </nav>
         <div style={{ flex: "none", marginTop: 8 }}>
-          <TlacidloNastavenia on={sub === "nast"} onClick={() => otvor("nast")} />
+          <TlacidloNastavenia on={aktivnaSkupina === "nast"} onClick={() => otvor("nast")} />
         </div>
         {dev}
       </aside>
@@ -616,6 +627,7 @@ function ObrNastavenia({ tier, otvor, mobil }: { tier: Tier; otvor: (s: Sub) => 
   const [tichy, setTichy] = useState(true);
   const fz = Math.round((n.pismo - 90) / 10); // 0–6
   const pr = (t: string) => () => otvor(`x:${t}`);
+  const nn = (id: string) => () => otvor(`n:${id}`);
   const pristup: [string, string, boolean, () => void][] = [
     ["Obmedziť animácie", "bez letov, iskier a pulzovania", n.obmedzAnim, () => zmenNastavenia({ obmedzAnim: !n.obmedzAnim })],
     ["Vibrácie", "pri potvrdení a po dare", n.vibracie, () => zmenNastavenia({ vibracie: !n.vibracie })],
@@ -623,13 +635,13 @@ function ObrNastavenia({ tier, otvor, mobil }: { tier: Tier; otvor: (s: Sub) => 
     ["Potvrdzovať ťuknutím", "namiesto podržania, pri platbe dvakrát ťukni", tuk, () => { nastavPotvrditTuknutim(!tuk); setTuk(!tuk); }],
   ];
   const sekcie: [string, Riadok[]][] = [
-    ["OZNÁMENIA", [{ t: "Čo chcete dostávať", s: "nový dar, nový darca, lehota na doklady, správy", tap: pr("Čo chcete dostávať") }, { t: "Tichý čas", s: "22:00 – 7:00", prep: [tichy, () => setTichy((x) => !x)] }]],
-    ["PRÍJEM DAROV", [{ t: "Dary v EURC", v: "podľa zbierky", tap: pr("Dary v EURC") }, { t: "Transparentný účet", v: "SK31 … 4417", tap: pr("Transparentný účet") }]],
-    ["SPRÁVCOVIA", [{ t: "Správcovia a prístupy", s: "kto spravuje stránku, pozvať ďalšieho", v: "1", tap: pr("Správcovia a prístupy") }]],
-    ["ORGANIZÁCIA", [{ t: "Údaje organizácie", s: "IČO, sídlo, fakturačné údaje", tap: pr("Údaje organizácie") }, { t: "Program a platba", v: PROGRAM_NAZOV[tier], tap: pr("Program a platba") }]],
-    ["BEZPEČNOSŤ A ÚDAJE", [{ t: "Prihlásené zariadenia", v: "2", tap: pr("Prihlásené zariadenia") }, { t: "Súhlasy", tap: pr("Súhlasy") }, { t: "Stiahnuť údaje charity", s: "zbierky, darcovia a doklady v jednom súbore", tap: pr("Stiahnuť údaje charity") }]],
-    ["POMOC", [{ t: "Časté otázky", tap: pr("Časté otázky") }, { t: "Napísať podpore", tap: pr("Napísať podpore") }]],
-    ["STRÁNKA", [{ t: "Zrušiť stránku charity", red: true, tap: pr("Zrušiť stránku charity") }]],
+    ["OZNÁMENIA", [{ t: "Čo chcete dostávať", s: "dary, zbierky, doklady, ľudia, správy", tap: nn("notif") }, { t: "Tichý čas", s: "22:00 – 7:00", prep: [tichy, () => setTichy((x) => !x)] }]],
+    ["PRÍJEM DAROV", [{ t: "Dary v EURC", v: eurcText(), tap: nn("krypto") }, { t: "Správa účtov", s: "hlavný účet a účty zbierok", tap: nn("ucty") }]],
+    ["SPRÁVCOVIA", [{ t: "Správcovia a prístupy", s: "kto spravuje stránku, pozvať ďalšieho", v: String(pocetSpravcov()), tap: nn("spravcovia") }]],
+    ["ORGANIZÁCIA", [{ t: "Údaje organizácie", s: "IČO, sídlo, fakturačné údaje", tap: nn("udaje") }, { t: "Program a platba", v: PROG[Math.min(3, tier)][0], tap: nn("program") }]],
+    ["BEZPEČNOSŤ A ÚDAJE", [{ t: "Prihlásené zariadenia", v: String(pocetZariadeni()), tap: nn("zariadenia") }, { t: "Súhlasy", s: "čo organizácia odsúhlasila", tap: nn("suhlasy") }, { t: "Stiahnuť údaje charity", s: "zbierky, darcovia a doklady v jednom súbore", tap: nn("stiahnut") }]],
+    ["POMOC", [{ t: "Časté otázky", tap: nn("faq") }, { t: "Napísať podpore", tap: nn("podpora") }]],
+    ["STRÁNKA", [{ t: "Zrušiť stránku charity", red: true, tap: nn("zrusit") }]],
   ];
   const riadok = (r: Riadok, i: number) => (
     <button key={r.t} onClick={r.prep ? r.prep[1] : r.tap} role={r.prep ? "switch" : undefined} aria-checked={r.prep ? r.prep[0] : undefined}
