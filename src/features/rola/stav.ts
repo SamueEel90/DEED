@@ -251,3 +251,15 @@ export const PIN_MAX = 12;
 // ---- DEV: nová charita (nuly, prázdne stavy) alebo bežiaca ukážka ----
 export const nacitajCharituNovu = (): boolean => nacitaj(kluc("charita.nova"), false);
 export const ulozCharituNovu = (v: boolean) => uloz(kluc("charita.nova"), v);
+
+// ============================================================
+// OPRAVY 121 · bod 9 — roly v správe stránky (poradie = Nastavenia → Správcovia a prístupy).
+// Organizátor pridáva skutky a akcie za charitu, nevidí peniaze, darcov ani nastavenia.
+// Bez roly sa skutok za charitu (ani QR charity) vytvoriť nedá. Overenie roly robí server pri uložení.
+// ============================================================
+export type RolaStranky = "hlavny" | "spravca" | "pomocnik" | "organizator";
+export const ROLY_STRANKY: RolaStranky[] = ["hlavny", "spravca", "pomocnik", "organizator"];
+/** smie pridať skutok za charitu a ukázať QR charity */
+export const smieSkutokZaCharitu = (r: RolaStranky | null | undefined): boolean => r === "hlavny" || r === "spravca" || r === "organizator";
+/** vidí peniaze, darcov a nastavenia (Organizátor nie) */
+export const vidiPeniaze = (r: RolaStranky | null | undefined): boolean => r === "hlavny" || r === "spravca";
