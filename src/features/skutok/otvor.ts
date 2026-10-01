@@ -24,7 +24,9 @@ export type PridatParams = {
   /** ohlásený skutok „Dokončiť" → krok 2, text predvyplnený */
   dokoncit?: boolean;
   /** akcia skončila → krok 2 s účastníkmi, miestom a trvaním */
-  zAkcie?: { ucastnici: string[]; miesto: string; trvanie: string; dar?: { id: string; nazov: string; org: string; cislo: string }[] };
+  zAkcie?: { ucastnici: string[]; miesto: string; trvanie: string; dar?: { id: string; nazov: string; org: string; cislo: string }[];
+    /** OPRAVY 121: akcia za charitu — záznam zmien ide so skutkom (vnútri) */
+    zaznam?: { cas: number; kto: string; co: string }[] };
 };
 
 let aktualne: PridatParams | null = null;

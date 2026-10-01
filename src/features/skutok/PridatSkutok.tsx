@@ -428,7 +428,7 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
       pridajSkutokOrg(stranka, {
         id, nazov: nz, popis: popisHtml, oblast: oblast ?? "Pomoc", miesto: kde, datum: teraz(), stav: "ok", karma: null,
         det: "Ľuďom vo vašej lokalite a na váš profil.", fotky, ucastnici: sk ? uc.filter((u) => u.overeny).map((u) => u.meno) : undefined,
-        dar: dar ? darZ : undefined, za: pr.autor, vytvoril: ja.celeMeno || undefined,
+        dar: dar ? darZ : undefined, za: pr.autor, vytvoril: ja.celeMeno || undefined, zaznam: pr.zAkcie?.zaznam,
       });
       const it: GoodPolozka = {
         id: teraz(), typ: "skutok", velkost: "med", kat: KAT[oblast ?? "Pomoc"] ?? "Komunita", autor: pr.autor || "Charita", num: 0, emoji: "",
@@ -497,7 +497,7 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
   const krDBlok = dar && !darZ.length;
   const krDDalej = () => {
     if (krDBlok) return;
-    if (cesta === "a") { zavri(); otvorAkciu(dar ? darZ : undefined); return; }
+    if (cesta === "a") { zavri(); otvorAkciu(dar ? darZ : undefined, org ? { stranka, nazov: pr.autor || "Charita", organizator: ja.celeMeno || "", typ: "prichod" } : undefined); return; }
     setKr(2);
   };
 
@@ -594,7 +594,7 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
           {uc.map((u, i) => (
             <div key={u.meno} style={{ display: "flex", alignItems: "center", gap: 10, minHeight: 52, borderTop: i ? "1px solid var(--cardBd)" : "none" }}>
               <span aria-hidden="true" style={{ width: 34, height: 34, borderRadius: "50%", background: "var(--gSoft)", color: "var(--gInk)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12.5, fontWeight: 800, flex: "none" }}>{u.overeny ? u.meno.split(" ").map((x) => x[0]).join("").slice(0, 2) : "?"}</span>
-              <span style={{ flex: 1, minWidth: 0 }}><span style={{ display: "block", fontSize: 14.5, fontWeight: 700 }}>{u.meno}</span><span style={{ display: "block", fontSize: 12.5, color: u.overeny ? "var(--gInk)" : "var(--gold)" }}>{u.overeny ? "overený skenom" : "čaká na potvrdenie"}</span></span>
+              <span style={{ flex: 1, minWidth: 0 }}><span style={{ display: "block", fontSize: 14.5, fontWeight: 700 }}>{u.meno}</span><span style={{ display: "block", fontSize: 12.5, color: u.overeny ? "var(--gInk)" : "var(--gold)" }}>{u.overeny ? (org ? "pripojený skenom QR charity" : "overený skenom") : "čaká na potvrdenie"}</span></span>
               <button type="button" onClick={() => setUc((x) => x.filter((y) => y.meno !== u.meno))} aria-label={`Odstrániť ${u.meno}`} style={{ width: 44, height: 44, border: "none", borderRadius: 10, background: "transparent", color: "var(--ink3)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Ik d={IK.kriz} s={16} /></button>
             </div>))}
           {!uc.length && <div style={{ padding: "14px 0", fontSize: 13.5, color: "var(--ink3)" }}>{o("Zatiaľ nikto. Pridaj ľudí, ktorí pomáhali s tebou.", "Zatiaľ nikto. Pridajte ľudí, ktorí pomáhali s vami.")}</div>}
@@ -609,7 +609,8 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
             <button type="button" onClick={pozviKolegov} style={{ minHeight: 46, padding: "4px 8px", borderRadius: 13, border: "1px solid var(--sek-oBd)", background: "var(--goldBg)", fontSize: 13.5, fontWeight: 700, color: "var(--ink)", cursor: "pointer", fontFamily: "inherit", lineHeight: 1.25 }}>Pozvať kolegov z firmy</button>
             <button type="button" onClick={() => { navrhniAkciu(mojeFirmy[0], { t: nz0.trim() || "Spoločný skutok s kolegami", kedy: new Date().toISOString().slice(0, 10) }); toast(`Návrh sme poslali firme ${mojeFirmy[0]}`); }} style={{ minHeight: 46, padding: "4px 8px", borderRadius: 13, border: "1.5px dashed var(--sek-gBd)", background: "transparent", fontSize: 13.5, fontWeight: 700, color: "var(--sek-g)", cursor: "pointer", fontFamily: "inherit", lineHeight: 1.25 }}>Navrhnúť firme ako firemnú akciu</button>
           </div>}
-        </> : <div style={P.maly}>Účastníci z akcie sú overení skenom na mieste. Čas a miesto sú vyplnené z akcie. Každý dostane odkaz a môže pridať svoje fotky k spoločnému skutku.</div>}
+        </> : <div style={P.maly}>{org ? "Dobrovoľníci sa pripojili skenom QR charity na mieste. Čas a miesto sú vyplnené z akcie. Skutok aj karmu dostanú do svojho denníka." : "Účastníci z akcie sú overení skenom na mieste. Čas a miesto sú vyplnené z akcie. Každý dostane odkaz a môže pridať svoje fotky k spoločnému skutku."}</div>}
+        {org && uc.length > 0 && <div style={P.maly}>V texte môžete spomenúť ľudí, ktorí sa pripojili, napr. „Peter K. a Jana boli s nami“. Mená sú v tvare, aký si sami nastavili.</div>}
       </div>}
 
       {org ? <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>

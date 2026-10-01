@@ -36,6 +36,8 @@ export interface MojSkutok {
   /** OPRAVY 121: skutok za charitu — navonok autor charita (za), vnútri meno organizátora (vytvoril) */
   za?: string;
   vytvoril?: string;
+  /** záznam zmien z akcie za charitu (odobratí účastníci) — len vnútri charity */
+  zaznam?: { cas: number; kto: string; co: string }[];
 }
 
 export interface Ucastnik { meno: string; overeny: boolean }
