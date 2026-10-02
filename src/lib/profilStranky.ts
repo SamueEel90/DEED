@@ -72,19 +72,26 @@ export function uplnostProfilu(p: ProfilStranky | null, kontaktZRegistracie?: Ko
 }
 
 // ---- OPRAVY 121: úvod „Veríme vám" — raz pred prvým skutkom (a prvou zbierkou) charity, Rozumiem → už nikdy.
-// Ukladá sa do účtu stránky (profil_stranky.uvod, migrácia 0029), nie do prehliadača.
+// Ukladá sa do účtu stránky (profil_stranky.uvod, migrácia 0029); dočasne aj príznak v prehliadači (nižšie).
 export type UvodStranky = "skutok" | "zbierka";
 const uvodPamat = new Map<string, Partial<Record<UvodStranky, string>>>();
-export const uvodZPamate = (stranka: string, co: UvodStranky): boolean => !!uvodPamat.get(stranka)?.[co];
+// Dočasne (kým server neukladá profil_stranky.uvod spoľahlivo) aj príznak v prehliadači podľa strankaId —
+// jeden pre charitu, zdieľa ho Pridať skutok aj Nová zbierka (ten istý text „Veríme vám").
+const lsKluc = (stranka: string) => `deed.verimeVam.${stranka}`;
+const lsUvod = (stranka: string): string | null => { try { return localStorage.getItem(lsKluc(stranka)); } catch { return null; } };
+export const uvodZPamate = (stranka: string, co: UvodStranky): boolean => !!uvodPamat.get(stranka)?.[co] || !!lsUvod(stranka);
 export async function nacitajUvod(stranka: string): Promise<Partial<Record<UvodStranky, string>>> {
+  const lokal = lsUvod(stranka);
+  const spoj = (u: Partial<Record<UvodStranky, string>>) => (lokal ? { skutok: u.skutok ?? lokal, zbierka: u.zbierka ?? lokal } : u);
   if (supabase) {
     const { data, error } = await supabase.from("profil_stranky").select("uvod").eq("stranka", stranka).maybeSingle();
-    if (!error) { const u = (data?.uvod as Partial<Record<UvodStranky, string>> | null) ?? {}; uvodPamat.set(stranka, u); return u; }
+    if (!error) { const u = spoj({ ...(uvodPamat.get(stranka) ?? {}), ...((data?.uvod as Partial<Record<UvodStranky, string>> | null) ?? {}) }); uvodPamat.set(stranka, u); return u; }
   }
-  return uvodPamat.get(stranka) ?? {};
+  return spoj(uvodPamat.get(stranka) ?? {});
 }
 export async function potvrdUvod(stranka: string, co: UvodStranky): Promise<void> {
   const u = { ...(uvodPamat.get(stranka) ?? {}), [co]: new Date().toISOString() };
   uvodPamat.set(stranka, u);
+  try { localStorage.setItem(lsKluc(stranka), u[co]!); } catch { /* bez úložiska ostane v pamäti relácie */ }
   if (supabase) await supabase.from("profil_stranky").upsert({ stranka, uvod: u }, { onConflict: "stranka" });
 }
