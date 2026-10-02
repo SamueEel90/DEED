@@ -186,7 +186,7 @@ export default function ModulAktivity({ wide }: { wide?: boolean }) {
         <HladanieModal akcent={acc.c} placeholder="Hľadať aktivity, workshopy, lektorov…"
           data={items.map((it) => ({
             id: it.id, titul: it.title, podtitul: `${it.author} · ${it.loc || DOM[it.dom].label}`, kat: DOM[it.dom].label, emoji: it.emoji,
-            tag: it.type === "talent" ? "Talent" : it.type === "workshop" ? "Workshop" : it.type === "help" ? "Žiadosť" : DOM[it.dom].label,
+            tag: it.type === "talent" ? "Iskra" : it.type === "workshop" ? "Workshop" : it.type === "help" ? "Žiadosť" : DOM[it.dom].label,
           }))}
           onPick={(id: number) => open(id)}
           toast={toast} defaultFilter="Udalosti"
@@ -477,7 +477,7 @@ function DeedDetail({ it, support, votes, vote, toast, home, openPerson }: any) 
           onPodpor={(s: number) => support(s, it.author, it)}
           onKanal={(k: string) => setPlatba(k)} supLabel={supLabel}
           oblubene={{ refId: it.id, typ: isCase ? "ziadost" : isTalent ? "talent" : "skutok", modul: "aktivity", nazov: it.title, lok: it.loc }} toast={toast}
-          qr={{ label: `QR ${isCase ? "tejto akcie" : isTalent ? "tohto talentu" : "tohto skutku"}`, popis: "Zväčšiť · kopírovať · zdieľať", cta: "Zdieľať", onClick: () => zdielaj({ titul: it.title, text: it.title, url: aktualnaUrl() }, toast) }} />
+          qr={{ label: `QR ${isCase ? "tejto akcie" : isTalent ? "tejto Iskry" : "tohto skutku"}`, popis: "Zväčšiť · kopírovať · zdieľať", cta: "Zdieľať", onClick: () => zdielaj({ titul: it.title, text: it.title, url: aktualnaUrl() }, toast) }} />
 
         <div style={{ textAlign: "center", fontSize: 10, color: A.txt3, marginTop: SPACE.md }}>
           {myVote ? (myVote === "ok" ? "Označil(a) si tento skutok ako overený. Ďakujeme." : "Podal(a) si námietku — preverí ju AI + komunita.") : "Bol si pri tom? Komunita preveruje skutky."}
@@ -825,7 +825,7 @@ function OsobaProfil({ name, items, follows, toggleFollow, onOpen, toast, home }
           <div style={{ textAlign: "center", color: A.txt3, fontSize: 12, padding: `${SPACE.lg}px ${SPACE.sm}px`, lineHeight: 1.6 }}>Zatiaľ žiadne príspevky.</div>
         ) : p.items.map((it) => {
           const a = DOM[it.dom];
-          const lbl = it.type === "talent" ? "Talent" : it.type === "workshop" ? "Workshop" : it.type === "help" ? "Hľadá pomoc" : it.type === "case" ? "Akcia" : "Skutok";
+          const lbl = it.type === "talent" ? "Iskra" : it.type === "workshop" ? "Workshop" : it.type === "help" ? "Hľadá pomoc" : it.type === "case" ? "Akcia" : "Skutok";
           return (
             <div key={it.id} onClick={() => onOpen(it.id)} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, padding: `${SPACE.sm}px ${SPACE.sm}px`, background: A.surface, border: `1px solid ${A.line2}`, borderRadius: RADIUS.sm, marginBottom: SPACE.xs, cursor: "pointer" }}>
               <div style={{ width: 38, height: 38, borderRadius: RADIUS.xs, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 17, flex: "none", background: a.bg, border: `1px solid ${a.bd}` }}><Emo e={it.emoji} /></div>
