@@ -12,6 +12,7 @@ import { NovaZbierka } from "./NovaZbierka";
 import { zastavDiktovanie } from "@/lib/diktovanie";
 import { SpravaZbierky, type ZbierkaNaSpravu } from "./SpravaZbierky";
 import { CentralnaZbierkaSprava } from "./CentralnaSprava";
+import { SkutkyCharity } from "./SkutkyCharity";
 import { useZmenyZbierok, zbierkyStrankyZPamate, nacitajZbierkyStranky, konceptZbierkyZPamate, nacitajKonceptZbierky, cielCislo, jeIne, UCELY, KROKY_ZBIERKY, type SpustenaZbierka, type NovaZbierkaData } from "@/lib/novaZbierka";
 import { UpravitProfilCharity, VerejnyProfilOkno, zakladnyProfil } from "./UpravitProfilCharity";
 import { nacitajProfil, profilZPamate, uplnostProfilu, type ProfilStranky } from "@/lib/profilStranky";
@@ -328,6 +329,8 @@ export function SpravaStranky({ onBack, typ: typStranky = "charita", strankaId =
     onMojeZbierky={() => { hist.current = []; setSub("g_zbierky"); }} />;
   else if (sub === "x:Správa zbierky" && spravZb) obsah = <SpravaZbierky key={spravZb.id} z={spravZb} mobil={!wide} toast={toast} onZbierky={() => { hist.current = []; setSub("g_zbierky"); }} />;
   else if (sub.startsWith("x:")) obsah = <Pripravujeme />;
+  // Obsah → Skutky: zoznam skutkov charity + Pridať skutok (ten istý ako v Nástrojoch)
+  else if (sub === "skutky" && typPovoli("skutky", typ) && maPovolenie("skutky", tier)) obsah = <SkutkyCharity strankaId={strankaId} mobil={!desktop} onPridat={() => otvor("pridatSkutok")} />;
   // KARTA 39 · bod 3: centrálna zbierka (od P1)
   else if (sub === "centralna" && typPovoli("centralna", typ) && maPovolenie("centralna", tier)) obsah = <CentralnaZbierkaSprava strankaId={strankaId} nazov={nazov} inicialy={inicialy} hlavnyUcet={nacitajIbanOrg(poz) || HLAVNY_UCET} mobil={!desktop} tablet={tablet} toast={toast} />;
   else obsah = !typPovoli(sub as PolozkaSpravy, typ) ? <Pripravujeme /> : maPovolenie(sub as PolozkaSpravy, tier) ? <Pripravujeme /> : <Zamknute program={odProgramu(sub as PolozkaSpravy)} />;

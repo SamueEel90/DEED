@@ -413,13 +413,14 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
       const fotky = media.filter((m) => !m.video).map((m) => m.src);
       const popisHtml = po + (cistyText(po2Org) ? po2Org : "");
       const kamZ = kam === "centralna" ? pr.centralna ?? null : kam === "ina" ? inaZ : null;
+      const feedId = teraz();
       pridajSkutokOrg(stranka, {
-        id, nazov: nz, popis: popisHtml, oblast: oblast ?? "Pomoc", miesto: kde, datum: teraz(), stav: "ok", karma: null,
+        id, feedId, nazov: nz, popis: popisHtml, oblast: oblast ?? "Pomoc", miesto: kde, datum: teraz(), stav: "ok", karma: null,
         det: "Ľuďom vo vašej lokalite a na váš profil.", fotky, ucastnici: sk ? uc.filter((u) => u.overeny).map((u) => u.meno) : undefined,
         dar: kamZ ? [kamZ] : undefined, peniaze: kam ?? "bez", za: pr.autor, vytvoril: ja.celeMeno || undefined, zaznam: pr.zAkcie?.zaznam, seria: prav ? pvF : undefined,
       });
       const it: GoodPolozka = {
-        id: teraz(), typ: "skutok", velkost: "med", kat: KAT[oblast ?? "Pomoc"] ?? "Komunita", autor: pr.autor || "Charita", num: 0, emoji: "",
+        id: feedId, typ: "skutok", velkost: "med", kat: KAT[oblast ?? "Pomoc"] ?? "Komunita", autor: pr.autor || "Charita", num: 0, emoji: "",
         fotky: fotky.length ? fotky : orgLogo ? [orgLogo] : [], titul: nz, popis: cistyText(popisHtml), lok: kde, overene: true, skore: 0, typSituacie: "normal", modul: "good", dni: 0, podpora: 0, lat: lok.lat, lng: lok.lng,
       } as GoodPolozka;
       qc.setQueryData<GoodPolozka[]>(qk.good.feed, (old = []) => [it, ...old]);
