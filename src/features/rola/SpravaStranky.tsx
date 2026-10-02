@@ -8,6 +8,8 @@
 // ============================================================
 import { otvorPridatSkutok } from "@/features/skutok/otvor";
 import { DeedZnacka } from "@/components/DeedZnacka";
+import { NovaZbierka } from "./NovaZbierka";
+import { useZmenyZbierok, zbierkyStrankyZPamate, nacitajZbierkyStranky, konceptZbierkyZPamate, nacitajKonceptZbierky, cielCislo, KROKY_ZBIERKY, type SpustenaZbierka, type NovaZbierkaData } from "@/lib/novaZbierka";
 import { UpravitProfilCharity, VerejnyProfilOkno, zakladnyProfil } from "./UpravitProfilCharity";
 import { nacitajProfil, profilZPamate, uplnostProfilu, type ProfilStranky } from "@/lib/profilStranky";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
@@ -22,7 +24,7 @@ import { nacitajPiny, ulozPiny, pinyZPamate, nacitajZbalenie, ulozZbalenie, zbal
 import { nastavStitSpravy } from "@/lib/stitAppky";
 import { ObrOznamenia, ObrEur, ObrEurc, ObrUcty, ObrSpravcovia, ObrUdaje, ObrProgram, ObrZariadenia, ObrSuhlasy, ObrStiahnut, ObrFaq, ObrPodpora, ObrZrusit, PROG, pocetSpravcov, pocetZariadeni, eurcText, eurText } from "./NastaveniaCharity";
 import {
-  FLAGS, nacitajTiery, ulozTiery, maPovolenie, vidnoPolozku, smieSkutokZaCharitu, type RolaStranky, odProgramu, PROGRAM_NAZOV, PIN_MAX,
+  FLAGS, KONFIG, nacitajTiery, ulozTiery, maPovolenie, vidnoPolozku, smieSkutokZaCharitu, type RolaStranky, odProgramu, PROGRAM_NAZOV, PIN_MAX,
   nacitajStitCharity, ulozStitCharity, nacitajCharituNovu, ulozCharituNovu,
   type PolozkaSpravy, type StitCharity, type Tier, type Pozicia,
   type TypStranky, TYP_NAZOV, TYPY_STRANOK, TYP_SKRYTY, NASTROJE_TYPU, typPovoli, STIT_SADA_TYPU, type StitSada,
@@ -180,7 +182,13 @@ const PH_ZBIERKY: { t: string; v: number; c: number; d: string; bg: string; dn: 
   { t: "Invalidný vozík pre Ninu", v: 2960, c: 4000, d: "končí o 18 dní", bg: "url('/img/sprava/chrbtica.jpg') center/cover no-repeat var(--track)", dn: 25 },
   { t: "Teplé jedlo na zimu", v: 4310, c: 5000, d: "končí o 4 dni", bg: PRUHY, dn: 75 },
 ];
-const ZB_LIST: { t: string; v: number; c: number; bg: string; s: string; konc: boolean }[] = [
+type PhZbierka = { t: string; v: number; c: number; d: string; bg: string; dn: number };
+type ZbRiadok = { t: string; v: number; c: number; bg: string; s: string; konc: boolean };
+/** OPRAVY 114: spustená zbierka charity → karta v Prehľade a riadok v Moje zbierky */
+const fotoBg = (z: SpustenaZbierka) => { const f = z.media.find((m) => m.typ === "foto"); return f ? `url('${f.src}') center/cover no-repeat var(--track)` : "repeating-linear-gradient(135deg,var(--track) 0 12px,var(--btn) 12px 24px)"; };
+const naPh = (z: SpustenaZbierka): PhZbierka => ({ t: z.nazov, v: 0, c: z.cielTyp === "ciel" ? cielCislo(z) : 0, d: z.typ === "dlha" ? `beží ${z.mesiace} mesiacov` : "končí o 30 dní", bg: fotoBg(z), dn: 0 });
+const naRiadok = (z: SpustenaZbierka): ZbRiadok => ({ t: z.nazov, v: 0, c: z.cielTyp === "ciel" ? cielCislo(z) : 0, bg: fotoBg(z), s: `0 darcov · ${z.typ === "dlha" ? `beží ${z.mesiace} mesiacov` : "končí o 30 dní"}`, konc: false });
+const ZB_LIST: ZbRiadok[] = [
   { t: "Strecha pre rodinu Horváthovú", v: 8420, c: 12000, bg: "url('/img/sprava/dom.jpg') center/cover no-repeat var(--track)", s: "186 darcov · končí o 9 dní", konc: false },
   { t: "Invalidný vozík pre Ninu", v: 2960, c: 4000, bg: "url('/img/sprava/chrbtica.jpg') center/cover no-repeat var(--track)", s: "94 darcov · končí o 18 dní", konc: false },
   { t: "Teplé jedlo na zimu", v: 5400, c: 5000, bg: PRUHY, s: "ukončená 20. 9. 2026 · čaká na doklady", konc: true },
@@ -249,8 +257,17 @@ export function SpravaStranky({ onBack, typ: typStranky = "charita", strankaId =
   const rola: RolaStranky = "hlavny";
   // OPRAVY 122 (2): centrálna zbierka charity — zatiaľ z ukážkových bežiacich zbierok (nová charita ju nemá); doplní server
   const centralnaZbierka = !nova ? PH_ZBIERKY.filter((z) => /^Centrálna zbierka/.test(z.t)).map((z) => ({ id: `${strankaId}-centralna`, nazov: z.t, org: nazov, cislo: "" }))[0] ?? null : null;
+  // OPRAVY 114: spustené a rozpísaná zbierka stránky (z účtu)
+  useZmenyZbierok();
+  const vlastne = zbierkyStrankyZPamate(strankaId);
+  const rozpisana = konceptZbierkyZPamate(strankaId);
+  useEffect(() => { void nacitajZbierkyStranky(strankaId); void nacitajKonceptZbierky(strankaId); }, [strankaId]);
+  const beziacich = vlastne.length + (nova ? 0 : PH_ZBIERKY.filter((z) => !/^Centrálna zbierka/.test(z.t)).length); // limit je mimo centrálnej
+  const [limitOkno, setLimitOkno] = useState(false);
   const [verejny, setVerejny] = useState(false); // OPRAVY 107: tlačidlo Verejný profil = skutočný verejný profil
   const otvor = (s: Sub) => { if (s === "x:Verejný profil") { setVerejny(true); return; }
+    // KARTA 37 · bod 3: v programe Zadarmo beží jedna zbierka naraz (limit z stav.ts)
+    if (s === "x:Nová zbierka" && sub !== s && beziacich >= KONFIG.limitZbierok[tier]) { setLimitOkno(true); return; }
     // OPRAVY 118/121: Pridať skutok = ten istý PridatSkutok, za charitu (organizacia: true)
     if (s === "pridatSkutok") { if (!smieSkutokZaCharitu(rola)) { toast("Skutok za charitu pridá len správca alebo Organizátor."); return; } otvorPridatSkutok({ autor: nazov, organizacia: true, strankaId, centralna: centralnaZbierka }); return; } if (s === sub) return; hist.current = [...hist.current, sub].slice(-30); setSub(s); };
   const spat = () => {
@@ -277,7 +294,7 @@ export function SpravaStranky({ onBack, typ: typStranky = "charita", strankaId =
   const glowUp = uvod && !krok1 && sub !== "profil";
   const glowZb = uvod && krok1 && sub !== "profil" && sub !== "g_zbierky" && sub !== "x:Nová zbierka" && sub !== "x:Správa zbierky";
   const navZobr = menu.nav.map((n) => ({ ...n, n: nova ? undefined : n.n })); // nová charita: Ľudia bez čísla
-  const spolocne = { tier, piny: pinyTypu, prepniPin, otvorPolozku, otvor, nova, stit, sada, menu, mobil: !desktop, tablet, zbal, prepniZbal, uvod, krok1, pozvana };
+  const spolocne = { tier, piny: pinyTypu, prepniPin, otvorPolozku, otvor, nova, stit, sada, menu, mobil: !desktop, tablet, zbal, prepniZbal, uvod, krok1, pozvana, vlastne, rozpisana };
   let obsah: React.ReactNode;
   if (sub === null) obsah = <Prehlad {...spolocne} onZoom={() => setZoom(true)} />;
   else if (sub === "g_zbierky") obsah = <ObrZbierky {...spolocne} />;
@@ -296,6 +313,8 @@ export function SpravaStranky({ onBack, typ: typStranky = "charita", strankaId =
   else if (sub === "profil") obsah = <UpravitProfilCharity strankaId={strankaId} pozicia={poz} tier={tier} nazov={nazov} inicialy={inicialy} mobil={!desktop} tablet={tablet}
     stit={stit} onUlozene={(pr) => { setProfil(pr); setKoncept(null); }}
     onZmena={setKoncept} onZrusit={() => { hist.current = []; setSub(null); }} onHotovo={() => { hist.current = []; setSub(null); }} />;
+  else if (sub === "x:Nová zbierka") obsah = <NovaZbierka strankaId={strankaId} pozicia={poz} tier={tier} nazov={nazov} inicialy={inicialy} mobil={!desktop} tablet={tablet} stit={stit}
+    onMojeZbierky={() => { hist.current = []; setSub("g_zbierky"); }} />;
   else if (sub.startsWith("x:")) obsah = <Pripravujeme />;
   else obsah = !typPovoli(sub as PolozkaSpravy, typ) ? <Pripravujeme /> : maPovolenie(sub as PolozkaSpravy, tier) ? <Pripravujeme /> : <Zamknute program={odProgramu(sub as PolozkaSpravy)} />;
 
@@ -313,6 +332,15 @@ export function SpravaStranky({ onBack, typ: typStranky = "charita", strankaId =
       }} />
   );
   const zoomEl = <>{zoom && <StitZoom stit={stit} sada={sada} onClose={() => setZoom(false)} />}
+    {limitOkno && createPortal(<div className="sprava-charity" data-stit={stit} onClick={() => setLimitOkno(false)} style={{ position: "fixed", inset: 0, zIndex: 160, background: "rgba(29,33,27,.5)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+      <div onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-label="Jedna zbierka naraz" style={{ width: 480, maxWidth: "100%", boxSizing: "border-box", padding: "24px 26px", borderRadius: 22, background: "var(--bg)", border: "1px solid var(--cardBd)", boxShadow: "0 30px 70px rgba(0,0,0,.3)", display: "flex", flexDirection: "column", gap: 14 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}><span style={{ fontSize: 21, fontWeight: 800, color: "var(--ink)" }}>V programe Zadarmo beží jedna zbierka naraz</span><span style={{ fontSize: 14.5, lineHeight: 1.5, color: "var(--ink2)" }}>Ďalšiu zbierku spustíte s vyšším programom.</span></div>
+        <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", flexWrap: "wrap" }}>
+          <button onClick={() => setLimitOkno(false)} style={{ height: 48, padding: "0 20px", borderRadius: 14, border: "1.5px solid var(--cardBd)", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 15, fontWeight: 800, color: "var(--ink2)" }}>Zavrieť</button>
+          <button onClick={() => { setLimitOkno(false); otvor("n:program"); }} style={{ height: 48, padding: "0 22px", border: "none", borderRadius: 14, background: "#4B7A35", cursor: "pointer", fontFamily: "inherit", fontSize: 15, fontWeight: 800, color: "#fff" }}>Porovnať programy</button>
+        </div>
+      </div>
+    </div>, document.body)}
     {verejny && <VerejnyProfilOkno pozicia={poz} tier={tier} strankaId={strankaId} stit={stit} mobil={!desktop} onZavri={() => setVerejny(false)}
       lista={<><span style={{ flex: !desktop ? "1 1 100%" : 1, minWidth: 0, fontSize: 15, fontWeight: 800, color: "var(--ink)" }}>Takto vidí váš profil každý návštevník</span>
         <button type="button" onClick={() => setVerejny(false)} style={{ height: 42, padding: "0 16px", border: "none", borderRadius: 13, background: "var(--btn)", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 800, color: "var(--ink)" }}>Zavrieť</button>
@@ -566,7 +594,7 @@ function Sekcia({ id, nazov, suhrn, akcia, zbal, prepni, children }: { id: strin
 // ============================================================
 // PREHĽAD
 // ============================================================
-type Spolocne = { uvod: boolean; krok1: boolean; pozvana: boolean; tier: Tier; piny: PolozkaSpravy[]; prepniPin: (id: PolozkaSpravy) => void; otvorPolozku: (id: PolozkaSpravy) => void; otvor: (s: Sub) => void; nova: boolean; stit: StitCharity; sada: StitSada; menu: Menu; mobil: boolean; tablet: boolean; zbal: Zbalenie; prepniZbal: (id: string, otv?: boolean) => void };
+type Spolocne = { vlastne: SpustenaZbierka[]; rozpisana: NovaZbierkaData | null; uvod: boolean; krok1: boolean; pozvana: boolean; tier: Tier; piny: PolozkaSpravy[]; prepniPin: (id: PolozkaSpravy) => void; otvorPolozku: (id: PolozkaSpravy) => void; otvor: (s: Sub) => void; nova: boolean; stit: StitCharity; sada: StitSada; menu: Menu; mobil: boolean; tablet: boolean; zbal: Zbalenie; prepniZbal: (id: string, otv?: boolean) => void };
 
 function KartaStitu({ stit, sada = "care", onZoom, mobil, vyska }: { stit: StitCharity; sada?: StitSada; onZoom: () => void; mobil?: boolean; vyska?: number }) {
   const [n, alt, en] = STITY[stit];
@@ -601,7 +629,8 @@ function StitZoom({ stit, sada, onClose }: { stit: StitCharity; sada: StitSada; 
     </div>, document.body);
 }
 
-function Prehlad({ tier: _tier, piny, prepniPin, otvorPolozku, otvor, nova, stit, sada, menu, mobil, tablet, zbal, prepniZbal, onZoom, uvod, krok1, pozvana }: Spolocne & { onZoom: () => void }) {
+function Prehlad({ tier: _tier, piny, prepniPin, otvorPolozku, otvor, nova, stit, sada, menu, mobil, tablet, zbal, prepniZbal, onZoom, uvod, krok1, pozvana, vlastne }: Spolocne & { onZoom: () => void }) {
+  const PHZ: PhZbierka[] = [...vlastne.map(naPh), ...(nova ? [] : PH_ZBIERKY)]; // OPRAVY 114: spustené zbierky navrchu
   const VSE = menu.vse; // KARTA 36: na pripnutie len položky, ktoré typ má
   const ph = mobil && !tablet; // telefón (OPRAVY 96: tablet má časti ako PC)
   const [obd, setObd] = useState(0);
@@ -751,7 +780,7 @@ function Prehlad({ tier: _tier, piny, prepniPin, otvorPolozku, otvor, nova, stit
   const naRiadok = ph || tablet ? 2 : Math.max(1, Math.min(4, Math.floor((zbSirka + 14) / (300 + 14))));
   const zbMriezka = (
     <div ref={zbRef} className="sc-lista" style={ph ? { display: "flex", gap: 10, overflowX: "auto", scrollSnapType: "x mandatory", scrollPaddingLeft: 14, margin: "0 -14px", padding: "0 14px" } : tablet ? { display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 14 } : { display: "grid", gridTemplateColumns: `repeat(${naRiadok}, minmax(0, 420px))`, gap: 14 }}>
-      {PH_ZBIERKY.map((z) => ( // OPRAVY 103: všetky bežiace zbierky, limit určuje program (stav.ts), nie Prehľad
+      {PHZ.map((z) => ( // OPRAVY 103: všetky bežiace zbierky, limit určuje program (stav.ts), nie Prehľad
         <button key={z.t} onClick={() => otvor("g_zbierky")} style={{ flex: "none", width: ph ? 290 : undefined, scrollSnapAlign: "start", ...karta, borderRadius: mobil ? 18 : 22, padding: 0, overflow: "hidden", cursor: "pointer", textAlign: "left", display: "flex", flexDirection: "column" }}>
           <span style={{ display: "block", width: "100%", aspectRatio: "16/9", background: z.bg }} />
           <span style={{ padding: "14px 18px 16px", display: "flex", flexDirection: "column", gap: 8, width: "100%", boxSizing: "border-box" }}>
@@ -762,8 +791,8 @@ function Prehlad({ tier: _tier, piny, prepniPin, otvorPolozku, otvor, nova, stit
           </span>
         </button>))}
     </div>);
-  const zbierky = !nova && (mobil
-    ? <Sekcia id="zbierky" nazov="Bežiace zbierky" suhrn={pocet(PH_ZBIERKY.length, ["zbierka", "zbierky", "zbierok"])} zbal={zbal} prepni={prepniZbal}>{zbMriezka}</Sekcia>
+  const zbierky = PHZ.length > 0 && (mobil
+    ? <Sekcia id="zbierky" nazov="Bežiace zbierky" suhrn={pocet(PHZ.length, ["zbierka", "zbierky", "zbierok"])} zbal={zbal} prepni={prepniZbal}>{zbMriezka}</Sekcia>
     : <>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
         <span style={{ ...nadpisSekcie, flex: 1 }}>BEŽIACE ZBIERKY</span>
@@ -973,33 +1002,34 @@ function Mriezka({ karty, mobil, ...s }: { karty: Karta[] } & Spolocne) {
 
 function ObrZbierky(s: Spolocne) {
   const [zt, setZt] = useState(0);
-  const { mobil, otvor, menu, nova } = s;
+  const { mobil, otvor, menu, nova, vlastne, rozpisana } = s;
+  const list: ZbRiadok[] = [...vlastne.map(naRiadok), ...(nova ? [] : ZB_LIST)];
+  const nBez = list.filter((z) => !z.konc).length, nKon = list.filter((z) => z.konc).length;
   return (<>
-    {menu.mojeZbierky && nova && <>{/* OPRAVY 109: nová charita — žiadne ukážkové zbierky */}
-      <div role="tablist" style={{ flex: "none", display: "flex", gap: 2, padding: 4, borderRadius: 14, background: "var(--card)", border: "1px solid var(--cardBd)", alignSelf: mobil ? "stretch" : "flex-start" }}>
-        {["Bežiace · 0", "Ukončené · 0"].map((t, i) => { const on = i === zt; return (
-          <button key={t} role="tab" aria-selected={on} onClick={() => setZt(i)} style={{ flex: mobil ? 1 : "none", height: 40, minHeight: 40, padding: "0 18px", border: "none", borderRadius: 10, cursor: "pointer", whiteSpace: "nowrap", fontSize: 14.5, fontWeight: on ? 800 : 700, background: on ? "var(--seg)" : "transparent", color: on ? "var(--ink)" : "var(--ink3)", boxShadow: on ? "0 1px 3px rgba(30,28,20,.14)" : "none" }}>{t}</button>); })}
-      </div>
-      <section style={{ ...karta, padding: mobil ? "26px 18px" : "34px 24px", display: "flex", flexDirection: "column", alignItems: "center", gap: 8, textAlign: "center" }}>
+    {menu.mojeZbierky && <>{/* OPRAVY 109/114: nová charita bez ukážkových zbierok; spustené a rozpísaná zbierka z účtu */}
+    <div role="tablist" style={{ flex: "none", display: "flex", gap: 2, padding: 4, borderRadius: 14, background: "var(--card)", border: "1px solid var(--cardBd)", alignSelf: mobil ? "stretch" : "flex-start" }}>
+      {[`Bežiace · ${nBez}`, `Ukončené · ${nKon}`].map((t, i) => { const on = i === zt; return (
+        <button key={t} role="tab" aria-selected={on} onClick={() => setZt(i)} style={{ flex: mobil ? 1 : "none", height: 40, minHeight: 40, padding: "0 18px", border: "none", borderRadius: 10, cursor: "pointer", whiteSpace: "nowrap", fontSize: 14.5, fontWeight: on ? 800 : 700, background: on ? "var(--seg)" : "transparent", color: on ? "var(--ink)" : "var(--ink3)", boxShadow: on ? "0 1px 3px rgba(30,28,20,.14)" : "none" }}>{t}</button>); })}
+    </div>
+    {zt === 0 && rozpisana && <section style={{ ...karta, padding: mobil ? "14px" : "14px 20px", display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
+      <span style={{ flex: "1 1 240px", minWidth: 0, display: "flex", flexDirection: "column", gap: 3 }}><span style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".06em", color: "#8A5A2B" }}>ROZPÍSANÁ ZBIERKA</span><b style={{ fontSize: 16 }}>{rozpisana.nazov || "Bez názvu"}</b><span style={{ fontSize: 13, color: "var(--ink3)" }}>Krok {rozpisana.krok} z 6 · {KROKY_ZBIERKY[Math.min(5, Math.max(0, rozpisana.krok - 1))]} · uložené automaticky</span></span>
+      <button onClick={() => otvor("x:Nová zbierka")} style={{ ...zeleneTl, flex: "none" }}>Dokončiť</button>
+    </section>}
+    {list.length === 0 && !rozpisana ? <section style={{ ...karta, padding: mobil ? "26px 18px" : "34px 24px", display: "flex", flexDirection: "column", alignItems: "center", gap: 8, textAlign: "center" }}>
         <b style={{ fontSize: 16.5 }}>Zatiaľ nemáte žiadnu zbierku</b>
         <span style={{ fontSize: 14, lineHeight: 1.45, color: "var(--ink2)" }}>Keď ju vytvoríte, uvidíte ju tu aj s tým, koľko prišlo a čo treba doložiť.</span>
         <button onClick={() => otvor("x:Nová zbierka")} style={{ ...zeleneTl, marginTop: 10, display: "flex", alignItems: "center", gap: 8 }}><Ik d="M12 5v14M5 12h14" s={17} c="currentColor" w={2.6} />Nová zbierka</button>
-      </section></>}
-    {menu.mojeZbierky && !nova && <><div role="tablist" style={{ flex: "none", display: "flex", gap: 2, padding: 4, borderRadius: 14, background: "var(--card)", border: "1px solid var(--cardBd)", alignSelf: mobil ? "stretch" : "flex-start" }}>
-      {["Bežiace · 2", "Ukončené · 1"].map((t, i) => { const on = i === zt; return (
-        <button key={t} role="tab" aria-selected={on} onClick={() => setZt(i)} style={{ flex: mobil ? 1 : "none", height: 40, minHeight: 40, padding: "0 18px", border: "none", borderRadius: 10, cursor: "pointer", whiteSpace: "nowrap", fontSize: 14.5, fontWeight: on ? 800 : 700, background: on ? "var(--seg)" : "transparent", color: on ? "var(--ink)" : "var(--ink3)", boxShadow: on ? "0 1px 3px rgba(30,28,20,.14)" : "none" }}>{t}</button>); })}
-    </div>
-    <section style={{ borderRadius: 20, background: "var(--card)", border: "1px solid var(--cardBd)", padding: mobil ? "0 14px" : "0 20px" }}>
-      {ZB_LIST.filter((z) => z.konc === (zt === 1)).map((z, i) => (
+      </section> : list.some((z) => z.konc === (zt === 1)) && <section style={{ borderRadius: 20, background: "var(--card)", border: "1px solid var(--cardBd)", padding: mobil ? "0 14px" : "0 20px" }}>
+      {list.filter((z) => z.konc === (zt === 1)).map((z, i) => (
         <div key={z.t} style={mobil
           ? { display: "grid", gridTemplateColumns: "84px minmax(0,1fr)", gap: 12, alignItems: "center", padding: "12px 0", borderTop: i ? "1px solid var(--cardBd)" : "none" }
           : { display: "grid", gridTemplateColumns: "112px minmax(0,1fr) 200px auto", gap: 18, alignItems: "center", minHeight: 96, padding: "12px 0", borderTop: i ? "1px solid var(--cardBd)" : "none" }}>
           <span style={{ aspectRatio: "16/10", borderRadius: 12, background: z.bg }} />
           <span style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 3 }}><b style={{ fontSize: 16 }}>{z.t}</b><span style={{ fontSize: 13, color: "var(--ink3)" }}>{z.s}</span></span>
-          <span style={{ display: "flex", flexDirection: "column", gap: 6, gridColumn: mobil ? "1 / -1" : undefined }}><Pruh sc={z.v / z.c} /><span style={{ fontSize: 13, color: "var(--ink3)" }}><b style={{ color: "var(--ink)" }}>{eur(z.v)}</b> z {eur(z.c)}</span></span>
+          <span style={{ display: "flex", flexDirection: "column", gap: 6, gridColumn: mobil ? "1 / -1" : undefined }}><Pruh sc={z.c ? z.v / z.c : 0} /><span style={{ fontSize: 13, color: "var(--ink3)" }}><b style={{ color: "var(--ink)" }}>{eur(z.v)}</b>{z.c ? ` z ${eur(z.c)}` : " · otvorená"}</span></span>
           <button onClick={() => otvor("x:Správa zbierky")} style={{ minHeight: 44, border: "none", background: "transparent", cursor: "pointer", whiteSpace: "nowrap", fontSize: 14.5, fontWeight: 800, color: "var(--green)", gridColumn: mobil ? "1 / -1" : undefined, justifySelf: mobil ? "end" : undefined }}>Spravovať zbierku ›</button>
         </div>))}
-    </section></>}
+    </section>}</>}
     {menu.druhy.length > 0 && <>
       {menu.mojeZbierky && <span style={{ flex: "none", fontSize: 17, fontWeight: 800 }}>Ďalšie druhy zbierok</span>}
       <Mriezka karty={menu.druhy} {...s} />

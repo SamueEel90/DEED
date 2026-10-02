@@ -207,7 +207,7 @@ export function ObrUcty({ mobil, otvor }: { mobil: boolean; otvor: (s: string) =
         <div style={nad}>HLAVNÝ ÚČET</div>
         <div style={{ ...krt, padding: "16px 18px", display: "flex", flexDirection: "column", gap: 12 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>{ZAMOK}<span style={{ flex: 1, fontSize: 13, fontWeight: 700, color: "var(--ink3)" }}>overený pri registrácii</span></div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 2 }}><span style={{ fontSize: 13, color: "var(--ink3)" }}>Slovenská sporiteľňa</span><span style={{ fontSize: 18, fontWeight: 800, letterSpacing: ".02em", overflowWrap: "anywhere" }}>SK31 0900 0000 0051 2233 4417</span><span style={{ fontSize: 13, color: "var(--ink3)" }}>Svetlo pomoci o.z.</span></div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 2 }}><span style={{ fontSize: 13, color: "var(--ink3)" }}>Slovenská sporiteľňa</span><span style={{ fontSize: 18, fontWeight: 800, letterSpacing: ".02em", overflowWrap: "anywhere" }}>{HLAVNY_UCET}</span><span style={{ fontSize: 13, color: "var(--ink3)" }}>Svetlo pomoci o.z.</span></div>
           <span style={{ fontSize: 13, lineHeight: 1.5, color: "var(--ink2)" }}>Hlavný účet sa nedá zmeniť v appke. Na zmenu ho musíme znova overiť. Napíšte nám cez podporu.</span>
           <button onClick={() => otvor("n:podpora")} style={{ ...obrys(), alignSelf: "flex-start" }}>Zmeniť cez podporu</button>
         </div>
@@ -347,6 +347,8 @@ const UD0: Ud = { mail: "info@svetlopomoci.sk", tel: "+421 905 111 222", dic: ""
 /** IČO a sídlo z registra — jeden zdroj pre Údaje organizácie aj Upraviť profil (OPRAVY 108). TODO: tabuľka organizacia.sidlo */
 export const SIDLO_REGISTRA = "Palackého 14, 911 01 Trenčín";
 export const ICO_REGISTRA = "00 000 000";
+/** OPRAVY 114: hlavný účet organizácie z registrácie (jedno miesto — Účty aj Nová zbierka v Zadarmo) */
+export const HLAVNY_UCET = "SK31 0900 0000 0051 2233 4417";
 
 export function ObrUdaje({ mobil }: { mobil: boolean }) {
   const [ud, setUd] = usePamat<Ud>("ud", UD0);
