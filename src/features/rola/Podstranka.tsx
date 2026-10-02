@@ -21,6 +21,8 @@ import { PoDare, type PoDareData } from "@/components/podare";
 import { ZoznamDarcov } from "@/components/zoznamdarcov";
 import { NahladKarty, GaleriaZbierky } from "./KartaZbierky";
 import { OznamKartaNova } from "./NovyOznam";
+import type { ZbierkaPriAkcii } from "@/lib/oznamyNove";
+import { zbierkyStrankyZPamate } from "@/lib/novaZbierka";
 import { oznamyStranky, nacitajOznamyStranky, useZmenyOznamovCharity, bezi as oznamBezi, type OznamCharity } from "@/lib/oznamyNove";
 import { InzeratKarta, MamZaujem } from "./Inzeraty";
 import { DorovnaniePas, NoveDorovnanieSheet } from "./Dorovnanie";
@@ -342,6 +344,15 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack, strankaId =
     return { id: z.id, nazov: z.nazov, popis: z.popis, overena: ziad.overeny, media: z.foto ? [{ typ: "foto", src: z.foto }] : [],
       organizacia: org, vyzbierane: z.vyzbierane, ciel: z.ciel, ludia: z.darcovia, rychleSumy: [10, 25, 45] };
   };
+  // KARTA 40 · bod 10: Darovať pri ozname → tá istá zbierka (nový modul), ako keď ju otvorím z profilu
+  const darujPriAkcii = (zb: ZbierkaPriAkcii) => {
+    if (zb.centralna) { setNovyModul({ data: zVlastnej(CENTRALNA_ID, profilCentralnej), zoStrankyOrg: true }); return; }
+    const reg = najdiZbierku(zb.id);
+    if (reg) { const z = ziva(reg); setNovyModul({ data: zCudzej(z), zoStrankyOrg: z.ziadatel.meno === s.nazov, ziadatel: z.ziadatel }); return; }
+    const sp = strankaId ? zbierkyStrankyZPamate(strankaId).find((z) => z.id === zb.id) : undefined;
+    const pz: ProfilZbierky = sp ? { nazov: sp.nazov, popis: cistyText(sp.popis), fotky: sp.media.filter((m) => m.typ === "foto").map((m) => m.src) } : { nazov: zb.nazov, popis: "" };
+    setNovyModul({ data: { ...zVlastnej(zb.id, pz), vyzbierane: zb.vyzbierane, ciel: zb.ciel || undefined }, zoStrankyOrg: true });
+  };
   const kartaVlastnej = (id: string, profil: ProfilZbierky, otvorena: boolean) => {
     const dary = sucetDarov(id);
     return (
@@ -653,7 +664,7 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack, strankaId =
             <div key={o.id} style={{ marginBottom: SPACE.sm }}>
               {o.kategoria === "inzerat"
                 ? <InzeratKarta o={o} autor={s.nazov} logo={logoOrg} deti={<MamZaujem entita={pozicia} inzerat={o} toast={toast} />} />
-                : noveMapa.get(o.id) ? <OznamKartaNova o={noveMapa.get(o.id)!} autor={s.nazov} mesto={s.lok} inicialy={s.iniciacky} logo={logoOrg} /> : null}
+                : noveMapa.get(o.id) ? <OznamKartaNova o={noveMapa.get(o.id)!} autor={s.nazov} mesto={s.lok} inicialy={s.iniciacky} logo={logoOrg} onDarovat={darujPriAkcii} /> : null}
             </div>
           ))}
         </div>

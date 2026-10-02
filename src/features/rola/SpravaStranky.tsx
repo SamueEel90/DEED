@@ -14,6 +14,9 @@ import { SpravaZbierky, type ZbierkaNaSpravu } from "./SpravaZbierky";
 import { CentralnaZbierkaSprava } from "./CentralnaSprava";
 import { SkutkyCharity } from "./SkutkyCharity";
 import { OznamySprava } from "./NovyOznam";
+import type { ZbierkaPriAkcii } from "@/lib/oznamyNove";
+import { centralnaZPamate } from "@/lib/centralnaZbierka";
+import { CENTRALNA_ID } from "./vlastneZbierky";
 import { SUBJEKTY } from "./mock";
 import { useZmenyZbierok, zbierkyStrankyZPamate, nacitajZbierkyStranky, konceptZbierkyZPamate, nacitajKonceptZbierky, cielCislo, jeIne, UCELY, KROKY_ZBIERKY, type SpustenaZbierka, type NovaZbierkaData } from "@/lib/novaZbierka";
 import { UpravitProfilCharity, VerejnyProfilOkno, zakladnyProfil } from "./UpravitProfilCharity";
@@ -274,6 +277,12 @@ export function SpravaStranky({ onBack, typ: typStranky = "charita", strankaId =
   const vlastne = zbierkyStrankyZPamate(strankaId);
   const rozpisana = konceptZbierkyZPamate(strankaId);
   useEffect(() => { void nacitajZbierkyStranky(strankaId); void nacitajKonceptZbierky(strankaId); }, [strankaId]);
+  // KARTA 40 · bod 10: ponuka „Pri akcii zbierame na" — centrálna + bežiace zbierky (spustené z účtu, ukážkové mimo novej charity)
+  const zbierkyPreOznam: ZbierkaPriAkcii[] = !typPovoli("zbierky", typ) ? [] : [
+    ...(typPovoli("centralna", typ) && (centralnaZPamate(strankaId) || centralnaZbierka) ? [{ id: CENTRALNA_ID, nazov: `${nazov} — celá organizácia`, centralna: true, ciel: 0, vyzbierane: nova ? 0 : PH_ZBIERKY.find((z) => /^Centrálna zbierka/.test(z.t))?.v ?? 0, bg: PRUHY }] : []),
+    ...vlastne.map((z) => ({ id: z.id, nazov: z.nazov, ciel: z.cielTyp === "ciel" ? cielCislo(z) : 0, vyzbierane: 0, bg: fotoBg(z) })),
+    ...(nova ? [] : PH_ZBIERKY.filter((z) => !/^Centrálna zbierka/.test(z.t)).map((z) => { const r = naSpravu({ t: z.t, v: z.v, c: z.c, bg: z.bg, s: z.d, konc: false }); return { id: r.id, nazov: z.t, ciel: z.c, vyzbierane: z.v, bg: z.bg }; })),
+  ];
   const beziacich = vlastne.length + (nova ? 0 : PH_ZBIERKY.filter((z) => !/^Centrálna zbierka/.test(z.t)).length); // limit je mimo centrálnej
   const [limitOkno, setLimitOkno] = useState(false);
   const [spravZb, setSpravZb] = useState<ZbierkaNaSpravu | null>(null); // KARTA 38: ktorú zbierku spravujem
@@ -332,7 +341,7 @@ export function SpravaStranky({ onBack, typ: typStranky = "charita", strankaId =
   else if (sub === "x:Správa zbierky" && spravZb) obsah = <SpravaZbierky key={spravZb.id} z={spravZb} mobil={!wide} toast={toast} onZbierky={() => { hist.current = []; setSub("g_zbierky"); }} />;
   else if (sub.startsWith("x:")) obsah = <Pripravujeme />;
   // KARTA 40: Oznamy — v Zadarmo výzva na súrnu pomoc a dva zamknuté druhy (nie „Pripravujeme" ani zámok celej položky)
-  else if (sub === "oznamy" && typPovoli("oznamy", typ)) obsah = <OznamySprava strankaId={strankaId} tier={tier} nazov={nazov} inicialy={inicialy} mesto={SUBJEKTY[poz]?.lok ?? "Trenčín"} logo={profil?.logo ?? null} mobil={!desktop} tablet={tablet} toast={toast} onProfil={() => otvor("x:Verejný profil")} />;
+  else if (sub === "oznamy" && typPovoli("oznamy", typ)) obsah = <OznamySprava strankaId={strankaId} tier={tier} nazov={nazov} inicialy={inicialy} mesto={SUBJEKTY[poz]?.lok ?? "Trenčín"} logo={profil?.logo ?? null} mobil={!desktop} tablet={tablet} toast={toast} onProfil={() => otvor("x:Verejný profil")} zbierky={zbierkyPreOznam} />;
   // Obsah → Skutky: zoznam skutkov charity + Pridať skutok (ten istý ako v Nástrojoch)
   else if (sub === "skutky" && typPovoli("skutky", typ) && maPovolenie("skutky", tier)) obsah = <SkutkyCharity strankaId={strankaId} mobil={!desktop} onPridat={() => otvor("pridatSkutok")} />;
   // KARTA 39 · bod 3: centrálna zbierka (od P1)

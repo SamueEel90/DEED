@@ -30,6 +30,8 @@ export const OZNAMY_CFG = {
   odTieru: { oznam: 1, verejny: 1, vyzva: 0 } as Record<DruhOznamu, number>,
 };
 
+/** zbierka pri akcii — vyzbierané a cieľ v čase zverejnenia; k sume sa na karte pripočítajú dary z appky (darcovia.ts) */
+export interface ZbierkaPriAkcii { id: string; nazov: string; centralna?: boolean; ciel?: number; vyzbierane?: number; bg?: string }
 export interface Plagat { src: string; typ: "img" | "pdf"; nazov: string; w?: number; h?: number }
 export interface OznamCharity {
   id: string; stranka: string; druh: DruhOznamu; forma: FormaOznamu;
@@ -42,8 +44,8 @@ export interface OznamCharity {
   /** akcia: deň (YYYY-MM-DD) a čas (HH:MM, nepovinný); výzva: pomoc treba do (YYYY-MM-DD) */
   datum?: string; cas?: string; miesto?: string;
   pozvanie: Pozvanie; limit?: number;
-  /** „Pri akcii zbierame na …" — len odkaz */
-  zbierka?: { id: string; nazov: string };
+  /** „Pri akcii zbierame na …" — Nič · Centrálna · bežiaca zbierka (na ozname karta zbierky s pruhom a Darovať) */
+  zbierka?: ZbierkaPriAkcii;
   zverejnene: string; upravene?: string; zrusene?: string;
   /** zmena dátumu / miesta po zverejnení → správa prihláseným */
   zmenaPrihlasenym?: string;
