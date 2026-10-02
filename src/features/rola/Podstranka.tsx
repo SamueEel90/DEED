@@ -46,6 +46,8 @@ import { FormatovanyText } from "@/components/formattext";
 import { cistyText } from "@/lib/richtext";
 import { verejneTaby, cislaSubjektu } from "./obsah";
 import { ZbierkaModul } from "@/features/zbierka/ZbierkaModul";
+import { CudziProfil } from "@/features/cudzi-profil/CudziProfil";
+import type { Zbierka } from "@/lib/zbierky";
 import type { OrgPole, StitUroven } from "@/features/zbierka/Pole";
 import type { ZbierkaData } from "@/features/zbierka/ZbierkaModul";
 import { useScrollEl } from "@/components/context";
@@ -197,10 +199,12 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack, strankaId =
   const [onas] = useState(() => nacitajOnas(pozicia) ?? s.onas); // text zo správy (editor), inak pôvodný
   const [rozbalena, setRozbalena] = useState<string | null>(null);
   // detail zbierky = vždy nový modul (<ZbierkaModul>); Späť vráti profil na to isté miesto scrollu
-  const [novyModul, setNovyModulRaw] = useState<{ data: ZbierkaData; zoStrankyOrg: boolean } | null>(null);
+  const [novyModul, setNovyModulRaw] = useState<{ data: ZbierkaData; zoStrankyOrg: boolean; ziadatel?: Zbierka["ziadatel"] } | null>(null);
+  // OPRAVY 128: „Stránka organizácie ›" z poľa Za zbierku zodpovedá → verejný profil organizácie; Späť vráti na zbierku
+  const [profilOrg, setProfilOrg] = useState<Zbierka["ziadatel"] | null>(null);
   const scrollEl = useScrollEl();
   const scrollProfilu = useRef(0);
-  const setNovyModul = (m: { data: ZbierkaData; zoStrankyOrg: boolean } | null) => {
+  const setNovyModul = (m: { data: ZbierkaData; zoStrankyOrg: boolean; ziadatel?: Zbierka["ziadatel"] } | null) => {
     if (m) scrollProfilu.current = scrollEl?.current?.scrollTop ?? 0;
     setNovyModulRaw(m);
     const el = scrollEl?.current;
@@ -512,7 +516,7 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack, strankaId =
   };
   type Zbalena = ReturnType<typeof zbaluj>;
   const otvor = (x: Zbalena) => (x.z
-    ? setNovyModul({ data: zCudzej(x.z), zoStrankyOrg: x.z.ziadatel.meno === s.nazov })
+    ? setNovyModul({ data: zCudzej(x.z), zoStrankyOrg: x.z.ziadatel.meno === s.nazov, ziadatel: x.z.ziadatel })
     : x.klik ? setRozbalena(rozbalena === x.kluc ? null : x.kluc) : toast(`${x.titul} — detail`));
 
   // miniatúra položky (zbierka · video · emoji) — v riadku 44 px, v karte 16:9
@@ -751,7 +755,9 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack, strankaId =
     if (rolaFirmy) return <Podstranka pozicia={rolaFirmy} tier={3} logo={null} toast={toast} onBack={() => setFirmaProfil(null)} />;
   }
 
-  if (novyModul) return <ZbierkaModul zbierka={novyModul.data} zoStrankyOrg={novyModul.zoStrankyOrg} onBack={() => setNovyModul(null)} />;
+  if (novyModul && profilOrg) return <CudziProfil subjekt={{ typ: "org", meno: profilOrg.meno, lok: profilOrg.lok, level: profilOrg.level }} toast={toast} onBack={() => setProfilOrg(null)} />;
+  if (novyModul) return <ZbierkaModul zbierka={novyModul.data} zoStrankyOrg={novyModul.zoStrankyOrg} onBack={() => { setProfilOrg(null); setNovyModul(null); }}
+    onOtvorOrg={novyModul.ziadatel?.typ === "org" ? () => setProfilOrg(novyModul.ziadatel!) : undefined} />;
 
   return (
     <div style={{ paddingBottom: SPACE.lg, color: C.text }}>

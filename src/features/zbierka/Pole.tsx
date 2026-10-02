@@ -32,9 +32,10 @@ export function PoleOrganizacie({ org, nadpis, otvorene, onPrepni, onOtvorStrank
 }) {
   const typLabel = org.typ === "charita" ? "Charita" : "Overovateľ";
   return (
-    <div style={{ margin: "0 0 12px", borderRadius: 18, background: "var(--card)", border: `1px solid ${otvorene ? "var(--gBd)" : "var(--cardBd)"}`, overflow: "hidden" }}>
+    // OPRAVY 128: rámik pri focuse (klávesnica) okolo celej karty, nie len hornej časti (index.css · .zb-pole-org)
+    <div className="zb-pole-org" style={{ margin: "0 0 12px", borderRadius: 18, background: "var(--card)", border: `1px solid ${otvorene ? "var(--gBd)" : "var(--cardBd)"}`, overflow: "hidden" }}>
       <div style={{ display: "flex", alignItems: "center", paddingRight: 6 }}>
-      <button type="button" onClick={onPrepni} aria-expanded={otvorene}
+      <button type="button" onClick={(e) => { if (e.detail > 0) e.currentTarget.blur(); onPrepni(); }} aria-expanded={otvorene}
         style={{ flex: 1, minWidth: 0, minHeight: 62, display: "flex", alignItems: "center", gap: 12, padding: "12px 8px 12px 14px", border: "none", background: "transparent", cursor: "pointer", textAlign: "left", color: "var(--ink)", fontFamily: "inherit", boxShadow: "none" }}>
         {org.obrazok
           ? <span style={{ width: 44, height: 44, borderRadius: 12, flex: "none", background: `url(${org.obrazok}) center/cover no-repeat` }} />
@@ -63,8 +64,8 @@ export function PoleOrganizacie({ org, nadpis, otvorene, onPrepni, onOtvorStrank
           )}
           {onOtvorStranku && (
             <button type="button" onClick={onOtvorStranku}
-              style={{ marginTop: 10, padding: 0, border: "none", background: "transparent", boxShadow: "none", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 800, color: "var(--blue)" }}>
-              {org.typ === "charita" ? "Otvoriť stránku charity ›" : "Otvoriť stránku overovateľa ›"}
+              style={{ marginTop: 4, minHeight: 44, display: "flex", alignItems: "center", padding: 0, border: "none", background: "transparent", boxShadow: "none", cursor: "pointer", fontFamily: "inherit", fontSize: 14.5, fontWeight: 800, color: "var(--green)" }}>
+              {org.typ === "charita" ? "Stránka organizácie ›" : "Otvoriť stránku overovateľa ›"}
             </button>
           )}
         </div>
