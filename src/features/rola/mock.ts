@@ -196,7 +196,7 @@ export const SUBJEKTY: Record<Pozicia, SubjektMeta> = {
       // T3 (so zamestnancami): skutky tímu a oznamy do mesta
       { key: "tim", label: "Náš tím", odTieru: 3, polozky: [
         { emoji: "🙋", titul: "Dobrovoľnícky deň v útulku", popis: "6 zamestnancov · 24 hodín · Túlavá labka" },
-        { emoji: "📣", titul: "Zbierame zimné bundy", popis: "oznam do mesta · zberné miesto v predajni" },
+        { emoji: "oznam", titul: "Zbierame zimné bundy", popis: "oznam do mesta · zberné miesto v predajni" },
       ] },
       // T4: ESG výkaz a rozšírené štatistiky
       { key: "dopad", label: "Dopad", odTieru: 4, polozky: [
@@ -250,7 +250,7 @@ export const SPRAVA_CHARITA: SpravaItem[] = [
   { id: "segment", emoji: "🧩", nazov: "Sektorové zbierky a činnosti", popis: "Témy pre darcov · od AKCIE vlastná zbierka, účet a QR pre každý sektor", tierMin: 1, sekcia: "zbierky" },
   { id: "dorovnanie", emoji: "🤝", nazov: "Dorovnanie daru", popis: "Firma pridá k daru ľudí svoj diel · dar, nie sponzoring · peniaze vopred na váš účet", tierMin: 1, sekcia: "zbierky" },
   { id: "sponzoring", emoji: "🤝", nazov: "Sponzoring", popis: "Hľadáme sponzora s protiplnením · predvyplnená zmluva · logo sponzora na profile · oznam v meste · doklad o protiplnení · sponzorské zbierky bez limitu", tierMin: 1, sekcia: "akcie" },
-  { id: "oznamy", emoji: "📣", nazov: "Oznamy", popis: "Krátka správa na profil — čo je nové · vidia ju tí, čo vás sledujú", tierMin: 1, sekcia: "obsah" },
+  { id: "oznamy", emoji: "oznam", nazov: "Oznamy", popis: "Krátka správa na profil — čo je nové · vidia ju tí, čo vás sledujú", tierMin: 1, sekcia: "obsah" },
   { id: "inzeraty", emoji: "📌", nazov: "Pracovné ponuky", popis: "Hľadáme brigádnika, zamestnanca, pomoc · ZBIERKA 1 · AKCIA 5 · KAMPAŇ bez limitu", tierMin: 1, sekcia: "akcie" },
   { id: "embed", emoji: "🔗", nazov: "Štít dôvery na vlastný web", popis: "Odznak s odkazom na profil (embed)", tierMin: 1, sekcia: "nastroje" },
   // AKCIA (T2)
@@ -273,13 +273,13 @@ export const PANEL_TVORCA: PanelBlok[] = [
   { id: "vplyv", emoji: "🌊", nazov: "Môj vplyv", popis: "6 uzavretých prípadov", hodnota: "4 320 €", tierMin: 0, akcia: "Detail" },
   { id: "podporovatelia", emoji: "💚", nazov: "Podporovatelia", popis: "Priame príspevky cez môj profil", tierMin: 1, akcia: "Otvoriť" },
   { id: "akcie", emoji: "🎟", nazov: "Moje akcie", popis: "Workshop Kamera v teréne · so 14. 8. · 12/20 prihlásených", tierMin: 2, akcia: "Otvoriť" },
-  { id: "oznamy", emoji: "📣", nazov: "Moje oznamy", popis: "3 zverejnené · 1 koncept", tierMin: 1, akcia: "Otvoriť" },
+  { id: "oznamy", emoji: "oznam", nazov: "Moje oznamy", popis: "3 zverejnené · 1 koncept", tierMin: 1, akcia: "Otvoriť" },
 ];
 
 export const SPRAVA_TVORCA: SpravaItem[] = [
   { id: "podstranka", emoji: "✏️", nazov: "Upraviť podstránku", popis: "Bio, portfólio a odkazy na verejnom profile", tierMin: 0 },
   { id: "terminal", emoji: "💳", nazov: "Príspevky od podporovateľov", popis: "Priame príspevky na tvojom verejnom profile", tierMin: 1 },
-  { id: "oznamy", emoji: "📣", nazov: "Oznamy", popis: "Publikovanie oznamov komunite", tierMin: 1 },
+  { id: "oznamy", emoji: "oznam", nazov: "Oznamy", popis: "Publikovanie oznamov komunite", tierMin: 1 },
   { id: "akcie", emoji: "🎟", nazov: "Akcie", popis: "Workshopy a školenia — kapacita, vstupné QR, prihlášky", tierMin: 2 },
   { id: "smena", emoji: "⏱", nazov: "Overená smena", popis: "Overené dobrovoľnícke hodiny so živým počítadlom", tierMin: 2 },
   { id: "statistiky", emoji: "📊", nazov: "Štatistiky", popis: "Návštevy profilu a konverzie na dary", tierMin: 1 },

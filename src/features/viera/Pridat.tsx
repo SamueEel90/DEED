@@ -69,7 +69,7 @@ const UDALOST: Kat = {
   ],
 };
 const OZNAM: Kat = {
-  id: "oznam", emoji: "📢", titul: "Oznam", popis: "Dátum nemusí — objaví sa vo feede",
+  id: "oznam", emoji: "oznam", titul: "Oznam", popis: "Dátum nemusí — objaví sa vo feede",
   uzly: [
     { id: "o-zmena", emoji: "🔔", titul: "Zmenové (omša nebude / zmena programu)", popis: "Notifikácia default zapnutá · názov povinný (headline)", kto: "F",
       polia: ["Názov", "Text", "Platnosť od–do (voliteľné)"], feed: "farský · notif default ON" },
@@ -77,7 +77,7 @@ const OZNAM: Kat = {
       polia: ["Meno", "Dátumy + vek", "Verš", "Rozlúčka (kde + kedy)", "Foto", "Šablóna"], feed: "farský" },
     { id: "o-ohlasky", emoji: "💍", titul: "Ohlášky", popis: "Mená snúbencov · termín je priamo v ohláškach (žiadny odkaz na svadbu)", kto: "F",
       polia: ["Názov", "Mená snúbencov", "Dátum + čas sobáša", "Miesto", "Foto (so súhlasom)"], feed: "farský" },
-    { id: "o-vlastny", emoji: "📣", titul: "Vlastný oznam", popis: "Čokoľvek — zatvorený kostol, ples, zbierka šatstva… (catch-all)", kto: "F",
+    { id: "o-vlastny", emoji: "oznam", titul: "Vlastný oznam", popis: "Čokoľvek — zatvorený kostol, ples, zbierka šatstva… (catch-all)", kto: "F",
       polia: ["Názov", "Text", "Foto (voliteľné)", "Platnosť (dní)"], feed: "farský" },
     { id: "o-smutocny", emoji: "🤍", titul: "Oznámenie o úmrtí (parte)", popis: "Šablóna alebo vlastné parte · polia pod oznamom · reakcia = kondolencia · bez zbierky", kto: "U",
       polia: ["Meno", "Dátumy + vek", "Verš", "Rozlúčka (kde + kedy)", "Foto", "Šablóna"], feed: "farský" },

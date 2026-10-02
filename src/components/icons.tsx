@@ -239,6 +239,8 @@ export function IkonaOdznakOver({ size = 18, color = "var(--a-info)" }: { size?:
 // ---- Emoji z dát (mock, DB) → čiarová ikona. V UI sa emoji nezobrazujú (OPRAVY 35).
 // Ikona má veľkosť 1em, takže preberá font-size miesta, kde predtým stálo emoji.
 const EMO_CESTY: [RegExp, string][] = [
+  // KARTA 40: oznamy bez emoji — kľúč „oznam" = megafón
+  [/^oznam$/, "M3 11v3a1.5 1.5 0 0 0 1.5 1.5H6l4.5 4V6.5L6 10.5H4.5A1.5 1.5 0 0 0 3 12zM14 8.5a5 5 0 0 1 0 7M17 5.5a9 9 0 0 1 0 13"],
   [/⛓|🔗/u, "M10 13a5 5 0 0 0 7.5.5l2-2a5 5 0 0 0-7-7l-1.2 1.1M14 11a5 5 0 0 0-7.5-.5l-2 2a5 5 0 0 0 7 7l1.2-1.1"],
   [/♻/u, "M4 12a8 8 0 0 1 14-5.3M20 4v5h-5M20 12a8 8 0 0 1-14 5.3M4 20v-5h5"],
   [/🛡/u, "M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"],
