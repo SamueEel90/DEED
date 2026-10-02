@@ -40,16 +40,39 @@ function zDataUrl(dataUrl: string): { typ: "image/jpeg" | "image/png" | "image/w
   return { typ: m[1] as "image/jpeg" | "image/png" | "image/webp", dataBase64: m[2] };
 }
 
+/** OPRAVY 127: fotky pre AI zmenšiť na 1024 px, JPEG 0,7 — 3 fotky spolu pod 2 MB (Vercel berie telo najviac ~4,5 MB, inak 413) */
+const AI_FOTKA_PX = 1024, AI_FOTKA_KVALITA = 0.7;
+function preAi(dataUrl: string): Promise<string> {
+  return new Promise((ok) => {
+    try {
+      const img = new Image();
+      img.onload = () => {
+        try {
+          const k = Math.min(1, AI_FOTKA_PX / Math.max(img.naturalWidth, img.naturalHeight));
+          const c = document.createElement("canvas");
+          c.width = Math.max(1, Math.round(img.naturalWidth * k)); c.height = Math.max(1, Math.round(img.naturalHeight * k));
+          c.getContext("2d")?.drawImage(img, 0, 0, c.width, c.height);
+          ok(c.toDataURL("image/jpeg", AI_FOTKA_KVALITA));
+        } catch { ok(dataUrl); }
+      };
+      img.onerror = () => ok(dataUrl);
+      img.src = dataUrl;
+    } catch { ok(dataUrl); }
+  });
+}
+const NEDOSTUPNE = "Hodnotenie je momentálne nedostupné, skúste o chvíľu.";
+
 export async function ohodnot(vstup: {
   opis: string;
   miesto: string;
-  fotky: string[]; // dataURL-y (už zmenšené na 1568 px, JPEG)
+  fotky: string[]; // dataURL-y — pred odoslaním sa zmenšia na 1024 px, JPEG 0,7
   maVideo: boolean;
   anonymne: boolean;
   userId?: string;
   kolo: 1 | 2;
 }): Promise<ScoreOdpoved> {
   let r: Response;
+  const fotky = await Promise.all(vstup.fotky.map(preAi));
   try {
     r = await fetch("/api/score", {
       method: "POST",
@@ -57,7 +80,7 @@ export async function ohodnot(vstup: {
       body: JSON.stringify({
         opis: vstup.opis,
         miesto: vstup.miesto,
-        dokazy: vstup.fotky.map(zDataUrl),
+        dokazy: fotky.map(zDataUrl),
         maVideo: vstup.maVideo,
         anonymne: vstup.anonymne,
         userId: vstup.userId,
@@ -65,10 +88,14 @@ export async function ohodnot(vstup: {
       }),
     });
   } catch {
-    throw new ScoreChyba("nedostupne", "Hodnotenie je momentálne nedostupné, skús o chvíľu.");
+    throw new ScoreChyba("nedostupne", NEDOSTUPNE);
   }
   const data = await r.json().catch(() => ({}));
-  if (!r.ok) throw new ScoreChyba(data.chyba ?? "chyba", data.sprava ?? "Hodnotenie sa nepodarilo, skús znova.");
+  // OPRAVY 127: hláška podľa kódu — 503/504 (aj odpoveď, ktorá nie je JSON) = nedostupné, nie „nepodarilo sa"
+  if (!r.ok) {
+    if (r.status === 503 || r.status === 504 || r.status === 529) throw new ScoreChyba(data.chyba ?? "nedostupne", NEDOSTUPNE);
+    throw new ScoreChyba(data.chyba ?? `http_${r.status}`, data.sprava ?? "Hodnotenie sa nepodarilo, skús znova.");
+  }
   return data as ScoreOdpoved;
 }
 

@@ -175,6 +175,7 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
   const [zn2, setZn2] = useState(0);
   const [prvOrg, setPrvOrg] = useState(false);
   const [chybaMed, setChybaMed] = useState("");
+  const [aiChyba, setAiChyba] = useState<string | null>(null); // OPRAVY 127
   // OPRAVY 122 (2): pred zverejnením charita vyberie, kam pôjdu peniaze — po zverejnení zapečatené
   const [kam, setKam] = useState<null | "centralna" | "ina" | "bez">(null);
   const [inaZ, setInaZ] = useState<ZbierkaVolba | null>(null);
@@ -368,6 +369,7 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
   };
   const fotkyPreAi = () => [pred, poF, ...media.filter((m) => !m.video).map((m) => m.src)].filter((x): x is string => !!x).slice(0, MAX_FOTIEK_AI);
   const hodnot = async (k: 1 | 2, opis: string) => {
+    setAiChyba(null);
     setKr(3);
     const od = teraz();
     try {
@@ -381,7 +383,8 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
       else { setOtazky([]); setVysl({ verdikt: "ok", odp: v.verdikt === "ok" ? v : { ...v, pasmo: 0 } }); }
       setKolo(k); setKr(4);
     } catch (e) {
-      toast(e instanceof ScoreChyba ? e.message : "Hodnotenie sa nepodarilo, skús znova.");
+      // OPRAVY 127: výpadok AI nesmie zablokovať — späť na opis s ponukou uložiť koncept, nič sa nestratí
+      setAiChyba(e instanceof ScoreChyba ? e.message : "Hodnotenie sa nepodarilo, skús znova.");
       setKr(2);
     }
   };
@@ -757,6 +760,10 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
         </div>
       </div>
     </>, <>
+      {aiChyba && !org && <div role="alert" style={{ display: "flex", flexDirection: "column", gap: 8, padding: "10px 12px", borderRadius: 13, background: "var(--goldBg)", border: "1px solid var(--goldBd)" }}>
+        <span style={{ fontSize: 13.5, lineHeight: 1.45, color: "var(--ink2)" }}><b style={{ color: "var(--ink)" }}>{aiChyba}</b> Skutok si ulož ako koncept a dokončíš ho neskôr. Nič sa nestratí.</span>
+        <button type="button" onClick={ulozAkoKoncept} style={{ height: 44, borderRadius: 12, border: "1px solid var(--cardBd)", background: "var(--btn)", color: "var(--ink)", fontSize: 14.5, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}>Uložiť ako koncept</button>
+      </div>}
       {org && chybaOrg ? <div role="status" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, fontSize: 13.5, fontWeight: 700, color: "var(--gold)" }}><span aria-hidden="true" style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--gold)" }} />{chybaOrg}</div>
         : <div style={{ fontSize: 13, color: "var(--ink3)", textAlign: "center" }}>{o("Ďalej ukážeme náhľad. Zverejníš až potom.", "Ďalej ukážeme náhľad. Zverejníte až potom.")}</div>}
       <button type="button" onClick={k2Dalej} aria-disabled={!k2Ok} style={{ ...P.hlavne, opacity: k2Ok ? 1 : 0.45 }}>Pokračovať na náhľad</button>
