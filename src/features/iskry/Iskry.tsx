@@ -8,7 +8,7 @@
 // Živý pás (jeden pre celý prúd) + let daru so Svetlúšikmi (DarLet z odovzdania, naraz 1 let).
 // Pridať Iskru tu nie je — príde v časti 2.
 // ============================================================
-import { useEffect, useRef, useState, type CSSProperties, type PointerEvent as RPointerEvent } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type PointerEvent as RPointerEvent } from "react";
 import { DeedZnacka, sZnackou } from "@/components/DeedZnacka";
 import { toast } from "@/components/toast";
 import { TESTOVACIA } from "@/lib/testovacia";
@@ -81,6 +81,17 @@ function IskryPrud() {
   const posledny = useRef<{ id: string; t: number; x: number; y: number } | null>(null);
 
   const pc = usePcIskry();
+  // popis najviac 2 riadky, ťuk rozbalí; spodný blok nesiaha vyššie ako tlačidlo Darcovia (meria sa výška pravého stĺpca)
+  const [rozbaleny, setRozbaleny] = useState<string | null>(null);
+  const stlpecRef = useRef<HTMLDivElement | null>(null);
+  const hlavRef = useRef<HTMLDivElement | null>(null);
+  const [miesto, setMiesto] = useState({ stlpec: 316, volne: 9999 });
+  useLayoutEffect(() => {
+    const st = stlpecRef.current, hl = hlavRef.current, r = root.current; if (!st || !hl || !r) return;
+    // pri nízkej obrazovke ani pod hlavičku (názov, druhy, živý pás)
+    const f = () => setMiesto({ stlpec: st.offsetHeight, volne: r.clientHeight - hl.offsetHeight - 28 - 10 });
+    f(); const ro = new ResizeObserver(f); [st, hl, r].forEach((e) => ro.observe(e)); return () => ro.disconnect();
+  }, [druh]);
   const list = ISKRY_MOCK.filter((v) => druh === 0 || v.druh === druh);
   const akt = list[Math.min(idx, list.length - 1)];
 
@@ -200,16 +211,17 @@ function IskryPrud() {
                 {dva?.id === v.id && <svg key={dva.k} width="96" height="96" viewBox="0 0 24 24" aria-hidden="true" className="isk-dva" style={{ position: "absolute", left: dva.x - 48, top: dva.y - 48, zIndex: 4, pointerEvents: "none", filter: "drop-shadow(0 0 12px rgba(246,196,83,.9))" }}><path d={IK.iskra} fill={ZLATA} /></svg>}
 
                 {/* pravý stĺpec */}
-                <div style={{ position: "absolute", right: 12, bottom: "calc(150px + env(safe-area-inset-bottom, 0px))", display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
+                <div ref={i === 0 ? stlpecRef : undefined} style={{ position: "absolute", right: 12, bottom: "calc(150px + env(safe-area-inset-bottom, 0px))", display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
                   <button type="button" aria-label={`Darcovia, ${pocetD}`} onClick={() => setSheet({ typ: "darcovia", v })} style={stlpecBtn}><span style={kruh()}><Ik d={IK.darcovia} /></span><span style={{ fontSize: 12.5, fontWeight: 800 }}>{cis(pocetD)}</span></button>
                   <button type="button" aria-label="Iskra" aria-pressed={zap} onClick={() => prepniIskru(v.id)} style={stlpecBtn}><span style={kruh(zap)}><Ik d={IK.iskra} s={26} w={1.6} c={ZLATA} fill={zap ? ZLATA : "none"} /></span><span style={{ fontSize: 12.5, fontWeight: 800 }}>{cis(pocetIskier(v))}</span></button>
                   <button type="button" ref={(el) => { darBtn.current[v.id] = el; }} onClick={() => setSheet({ typ: "dar", v })} style={stlpecBtn}><span style={kruh(false, true)}><Ik d={IK.dar} w={2.2} /></span><span style={{ fontSize: 12.5, fontWeight: 800 }}>Darovať</span></button>
                   <button type="button" onClick={() => void zdielaj({ titul: `${v.autor} · Iskra v DEED+`, text: v.popis, url: `${aktualnaUrl().split("?")[0].replace(/\/[^/]*$/, "")}/iskra/${v.id}` }, toast)} style={stlpecBtn}><span style={kruh()}><Ik d={IK.zdielat} s={22} w={2.2} /></span><span style={{ fontSize: 12.5, fontWeight: 800 }}>Zdieľať</span></button>
                 </div>
 
-                {/* autor, popis, zbierka (bez pruhu) */}
-                <div style={{ position: "absolute", left: 14, right: 78, bottom: "calc(28px + env(safe-area-inset-bottom, 0px))", display: "flex", flexDirection: "column", gap: 10, color: "#fff" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                {/* autor, popis, zbierka (bez pruhu) — najvyššie po vrch tlačidla Darcovia (150 − 28 + výška stĺpca − 10 px medzera);
+                    pri nízkej obrazovke sa skracuje popis, autor a karta zbierky ostávajú celé */}
+                <div style={{ position: "absolute", left: 14, right: 78, bottom: "calc(28px + env(safe-area-inset-bottom, 0px))", maxHeight: Math.min(miesto.stlpec + 112, miesto.volne), display: "flex", flexDirection: "column", gap: 10, color: "#fff" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, flex: "none" }}>
                     <span style={{ width: 42, height: 42, flex: "none", borderRadius: v.org ? 12 : "50%", background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 800, color: "#3F6E2A" }}>{v.ini}</span>
                     <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}>
                       <b style={{ fontSize: 15.5, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{v.autor}</b>
@@ -217,8 +229,10 @@ function IskryPrud() {
                     </span>
                     <button type="button" aria-pressed={sled} onClick={() => prepniSledovanie(v.autor)} style={{ flex: "none", whiteSpace: "nowrap", minHeight: 32, padding: "0 12px", borderRadius: 16, border: "1.5px solid #fff", background: sled ? "transparent" : "#fff", cursor: "pointer", fontFamily: "inherit", fontSize: 12.5, fontWeight: 800, color: sled ? "#fff" : "#1D211B" }}>{sled ? "Sledujete" : "Sledovať"}</button>
                   </div>
-                  <span style={{ fontSize: 14.5, lineHeight: 1.45 }}>{v.popis}</span>
-                  {v.zbierka && <div style={{ display: "flex", flexDirection: "column", gap: 4, padding: "10px 12px", borderRadius: 14, background: "rgba(0,0,0,.45)", border: "1px solid rgba(255,255,255,.18)" }}>
+                  <button type="button" aria-expanded={rozbaleny === v.id} onClick={() => setRozbaleny(rozbaleny === v.id ? null : v.id)}
+                    style={{ flex: "0 1 auto", minHeight: 0, padding: 0, border: "none", background: "transparent", cursor: "pointer", textAlign: "left", fontFamily: "inherit", fontSize: 14.5, lineHeight: 1.45, color: "#fff",
+                      overflowY: rozbaleny === v.id ? "auto" : "hidden", overscrollBehavior: "contain", ...(rozbaleny === v.id ? {} : { display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }) }}>{v.popis}</button>
+                  {v.zbierka && <div style={{ flex: "none", display: "flex", flexDirection: "column", gap: 4, padding: "10px 12px", borderRadius: 14, background: "rgba(0,0,0,.45)", border: "1px solid rgba(255,255,255,.18)" }}>
                     <span style={{ fontSize: 12.5, opacity: 0.85 }}>{v.zbierka.pozn}</span><b style={{ fontSize: 14 }}>{v.zbierka.nazov}</b>
                   </div>}
                 </div>
@@ -230,7 +244,7 @@ function IskryPrud() {
         {aktualny && <DarLet key={kluc(aktualny)} dar={aktualny} poloha={poloha} onPas={(d) => ukazPas(darHlavne(d), darKam(d))} onKoniec={dalsi} />}
 
         {/* ---------- hlavička: názov, (oblasti), druh, živý pás ---------- */}
-        <div style={{ position: "absolute", left: 0, right: 0, top: 0, padding: "max(14px, env(safe-area-inset-top)) 14px 10px", display: "flex", flexDirection: "column", gap: 10, pointerEvents: "none" }}>
+        <div ref={hlavRef} style={{ position: "absolute", left: 0, right: 0, top: 0, padding: "max(14px, env(safe-area-inset-top)) 14px 10px", display: "flex", flexDirection: "column", gap: 10, pointerEvents: "none" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, pointerEvents: "auto" }}>
             <button type="button" onClick={zavriIskry} aria-label="Späť" style={{ width: 44, height: 44, marginLeft: -10, border: "none", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Ik d={IK.spat} s={24} w={2.4} /></button>
             <b style={{ flex: 1, fontSize: 20, color: "#fff" }}>Iskry</b>
