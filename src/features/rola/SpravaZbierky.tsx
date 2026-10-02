@@ -17,7 +17,7 @@ import { sucetDarov, useZmenyDarov } from "@/lib/darcovia";
 import { ZBIERKY, predvolenyStav } from "@/lib/zbierky";
 import {
   SPRAVA_ZBIERKY_CFG as CFG, PASMA_DOKLADOV, POZIADAVKA_TEXT, DRUHY_DOKLADU, OVERENY_SKEN,
-  nacitajStav, ulozStav, pasmoPre, sumaDokladov, splnene, navyse, percentoDolozenia, fazaDokladovania, dniDo, pridajDni,
+  nacitajStav, ulozStav, pasmoPre, sumaDokladov, splnene, navyse, percentoDolozenia, fazaDokladovania, dniDo, pridajDni, upozornenie90, UPOZORNENIE_90_TEXT, UPOZORNENIE_DNI,
   LEHOTA_TEXT, type StavZbierky, type Lehota, type DruhDokladu, type PolozkaDokladu,
 } from "@/lib/zbierkaSprava";
 import { FLAGS, TIER_LABEL, type Tier } from "./stav";
@@ -419,6 +419,8 @@ export interface ZbierkaNaSpravu {
   lehota?: Lehota; lehotaText?: string;
   /** deň začiatku (ISO) a koľko dní ešte beží (mock) */
   zaciatok?: string; zostavaDni?: number; ukoncena?: boolean;
+  /** KARTA 37 · bod 7: dlhodobá zbierka (od P1) — po 90 dňoch bez doloženia upozornenie */
+  dlha?: boolean;
 }
 const IKS = {
   fajka: "M5 12l5 5 9-10", dok: "M7 3h7l5 5v13H7zM14 3v5h5M10 13h6M10 17h6", kos: "M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13",
@@ -500,7 +502,7 @@ export function SpravaZbierky({ z, mobil, onZbierky, toast }: { z: ZbierkaNaSpra
   const vrch = (
     <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
       <button type="button" onClick={pohlad === "doklady" ? () => setPohlad("stav") : onZbierky} style={{ minHeight: 44, border: "none", background: "transparent", padding: 0, cursor: "pointer", fontFamily: "inherit", fontSize: 15, fontWeight: 800, color: "var(--green)" }}>‹ {pohlad === "doklady" ? "Späť na zbierku" : "Zbierky"}</button>
-      <span style={{ flex: 1 }} />{devTaby}
+      <span style={{ flex: 1 }} />{FLAGS.dev_tier_switcher && z.dlha && aktivna && <button type="button" onClick={() => zmen({ zaciatok: pridajDni(zac, -UPOZORNENIE_DNI), doklady: s.doklady.map((d) => ({ ...d, datum: pridajDni(d.datum, -UPOZORNENIE_DNI) })), ...(s.upozornenie90Zavrete ? { upozornenie90Zavrete: pridajDni(s.upozornenie90Zavrete, -UPOZORNENIE_DNI) } : {}) })} style={{ height: 36, padding: "0 12px", borderRadius: 10, border: "1px dashed var(--cardBd)", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 700, color: "var(--ink3)" }}>Posunúť o 90 dní (DEV)</button>}{devTaby}
     </div>);
   const dva = (deti: ReactNode, sl = "repeat(2,minmax(0,1fr))") => <div style={{ display: "grid", gridTemplateColumns: mobil ? "minmax(0,1fr)" : sl, gap: 16, alignItems: "start" }}>{deti}</div>;
 
@@ -509,7 +511,16 @@ export function SpravaZbierky({ z, mobil, onZbierky, toast }: { z: ZbierkaNaSpra
   if (aktivna) {
     const dalsie = CFG.predlzenia[s.predlzenia];
     const maxFeed = CFG.dlzkaDni + CFG.predlzenia.reduce((a, p) => a + p.dni, 0);
-    return (<>{vrch}{hlavicka}{dva(<>
+    const upoz = z.dlha && upozornenie90(s, zac, Math.max(teraz, Date.now()));
+    return (<>{vrch}{hlavicka}
+      {upoz && <section role="status" style={{ ...kartaS, background: "var(--goldBg)", border: "1.5px solid var(--goldBd)" }}>
+        <span style={{ ...textS, fontSize: 15, color: "var(--ink)" }}>{UPOZORNENIE_90_TEXT}</span>
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+          <button type="button" onClick={() => setPohlad("doklady")} style={tlZ}>Doložiť</button>
+          <button type="button" onClick={() => zmen({ upozornenie90Zavrete: new Date().toISOString() })} style={tlO}>Teraz nie</button>
+        </div>
+      </section>}
+      {dva(<>
       {!z.bezPredlzenia && <section style={kartaS}>
         <span style={nadpisS}>Predĺženie vo feede</span>
         <span style={textS}>30 dní vo feede je v cene. Na vašom profile zbierka beží aj bez predĺženia. Predĺženie platíte len vtedy, keď chcete, aby ju ľudia videli vo feede dlhšie.</span>

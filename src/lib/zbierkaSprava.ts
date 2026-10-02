@@ -92,6 +92,8 @@ export interface StavZbierky {
   stiahnuta?: string;
   /** KARTA 38: výsledok poslaný darcom automaticky pri ukončení (1. z 2 správ) */
   vysledokPoslany?: string;
+  /** KARTA 37 · bod 7: dlhodobá zbierka — kedy charita zavrela upozornenie po 90 dňoch bez doloženia („Teraz nie") */
+  upozornenie90Zavrete?: string;
   simVyzbierane?: number;    // DEV — simulácia sumy na test pásiem
 }
 
@@ -112,6 +114,15 @@ export function ulozStav(id: string, s: StavZbierky) {
 
 // ---- výpočty ----
 const DEN = 86400000;
+/** KARTA 37 · bod 7: upozornenie pre charitu (nie trest, nie darcom) vždy po 90 dňoch bez doloženia pri dlhodobej zbierke */
+export const UPOZORNENIE_DNI = 90;
+export const UPOZORNENIE_90_TEXT = "Prešli 3 mesiace od spustenia. Máte niečo nové na doloženie? Zbierka sa tým dostane na 24 hodín hore.";
+export function upozornenie90(s: StavZbierky, zaciatok: string, teraz: number): boolean {
+  const posledne = Math.max(Date.parse(zaciatok), ...s.doklady.map((d) => Date.parse(d.datum) || 0));
+  const obdobie = Math.floor((teraz - posledne) / (UPOZORNENIE_DNI * DEN));
+  if (obdobie < 1) return false;
+  return !(s.upozornenie90Zavrete && Date.parse(s.upozornenie90Zavrete) >= posledne + obdobie * UPOZORNENIE_DNI * DEN);
+}
 export const dniDo = (iso: string, teraz: number) => Math.ceil((new Date(iso).getTime() - teraz) / DEN);
 export const pridajDni = (iso: string | number, dni: number) => new Date(new Date(iso).getTime() + dni * DEN).toISOString();
 

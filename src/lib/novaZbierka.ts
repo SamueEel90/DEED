@@ -64,11 +64,16 @@ export const MAX_FOTIEK_ZB = 8, VIDEO_S_ZB = 45, NAZOV_ZB = 80, RIADKY_ZB = 12, 
 
 export const cielCislo = (d: NovaZbierkaData) => parseInt(d.ciel.replace(/\D/g, ""), 10) || 0;
 export const jeIne = (d: NovaZbierkaData) => d.ucel === UCELY.length - 1;
-export function lehotaZbierky(d: NovaZbierkaData): { text: string; kluc: LehotaKluc | null } {
+export function lehotaZbierky(d: NovaZbierkaData, dlha = d.typ === "dlha"): { text: string; kluc: LehotaKluc | null } {
   if (d.ucel == null) return { text: "", kluc: null };
-  if (jeIne(d)) return d.ineL != null ? { text: LEHOTY[d.ineL][0], kluc: LEHOTY[d.ineL][1] } : { text: "", kluc: null };
-  return { text: UCELY[d.ucel][1], kluc: UCELY[d.ucel][3] };
+  const zakl = jeIne(d) ? (d.ineL != null ? { text: LEHOTY[d.ineL][0], kluc: LEHOTY[d.ineL][1] } : { text: "", kluc: null }) : { text: UCELY[d.ucel][1], kluc: UCELY[d.ucel][3] };
+  // karta 37 · bod 7: dlhodobá zbierka má len záverečnú lehotu — 60 dní pri účeloch so 60, inak 30 (žiadne štvrťročne ani priebežne ako povinnosť)
+  if (dlha && zakl.text) return zakl.text.includes("60") ? { text: "záverečné do 60 dní od skončenia", kluc: "60" } : { text: "záverečné do 30 dní od skončenia", kluc: "30" };
+  return zakl;
 }
+/** karta 37 · bod 7 — texty dlhodobej zbierky */
+export const DLHA_FEED_TEXT = "Prvých 30 dní bude zbierka vo feede veľká. Potom tam ostane, kým chodia dary. Keď dary prestanú, ľudia ju nájdu na vašom profile. Pomôže priebežné doloženie, skutok, pri ktorom pôjdu peniaze na túto zbierku, alebo topovanie.";
+export const DLHA_PRIEBEZNE_TEXT = "Priebežne môžete dokladovať, kedy chcete. Zbierka sa tým dostane na 24 hodín hore, najviac raz za mesiac.";
 
 // ---- spustená zbierka ----
 export interface SpustenaZbierka extends NovaZbierkaData {

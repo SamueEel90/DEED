@@ -17,7 +17,7 @@ import { PROGRAM_TIER, nacitajIbanOrg, type Pozicia, type Tier } from "./stav";
 import { eurcText, HLAVNY_UCET } from "./NastaveniaCharity";
 import {
   prazdnaZbierka, konceptZbierkyZPamate, nacitajKonceptZbierky, ulozKonceptZbierky, spustiZbierku, lehotaZbierky, cielCislo, jeIne,
-  SADY, SADY_EURC, KROKY_ZBIERKY, UCELY, LEHOTY, MAX_FOTIEK_ZB, VIDEO_S_ZB, NAZOV_ZB, RIADKY_ZB, ZNAKY_ZB,
+  DLHA_FEED_TEXT, DLHA_PRIEBEZNE_TEXT, SADY, SADY_EURC, KROKY_ZBIERKY, UCELY, LEHOTY, MAX_FOTIEK_ZB, VIDEO_S_ZB, NAZOV_ZB, RIADKY_ZB, ZNAKY_ZB,
   type NovaZbierkaData, type MediumZbierky, type SpustenaZbierka,
 } from "@/lib/novaZbierka";
 import { uvodZPamate, nacitajUvod, potvrdUvod } from "@/lib/profilStranky";
@@ -197,7 +197,8 @@ export function NovaZbierka({ strankaId, pozicia, tier, nazov, inicialy, mobil, 
   useEffect(() => { d.media.forEach((m) => { if (m.typ === "foto" && m.w && m.w < 1200 && !male[m.id]) setMale((x) => ({ ...x, [m.id]: true })); }); }, [d.media, male]);
 
   // ---------- súhrn a odvodené údaje ----------
-  const leh = lehotaZbierky(d);
+  const dlha = !zadarmo && d.typ === "dlha";
+  const leh = lehotaZbierky(d, dlha);
   const maCiel = d.cielTyp === "ciel";
   const eurcOn = eurcRezim === "pre všetky zbierky" || (eurcRezim === "podľa zbierky" && d.eurc);
   const typT = zadarmo || d.typ === "kratka" ? "Krátkodobá · 30 dní" : `Dlhodobá · ${d.mesiace} mesiacov`;
@@ -382,7 +383,10 @@ export function NovaZbierka({ strankaId, pozicia, tier, nazov, inicialy, mobil, 
           { k: "kratka" as const, t: "Krátkodobá", s: "30 dní, na jednu konkrétnu vec" },
           { k: "dlha" as const, t: "Dlhodobá", s: zadarmo ? "vo vyššom programe" : "3 až 12 mesiacov", zamok: zadarmo },
         ]} />
-        {!zadarmo && d.typ === "dlha" && <Volby stlpce={3} vyska={48} value={d.mesiace} onChange={(m) => zmen({ mesiace: m })} moznosti={([3, 6, 12] as const).map((m) => ({ k: m, t: `${m} mesiacov` }))} />}
+        {dlha && <>
+          <Volby stlpce={3} vyska={48} value={d.mesiace} onChange={(m) => zmen({ mesiace: m })} moznosti={([3, 6, 12] as const).map((m) => ({ k: m, t: `${m} mesiacov` }))} />
+          <span style={{ padding: "12px 16px", borderRadius: 14, background: "var(--gSoft)", border: "1px solid var(--gBd)", fontSize: 14, lineHeight: 1.5, color: "var(--ink2)" }}>{DLHA_FEED_TEXT}</span>
+        </>}
         <Nadpis t="Suma" pecat />
         <Volby stlpce={2} value={d.cielTyp} onChange={(t) => zmen({ cielTyp: t })} moznosti={[{ k: "ciel" as const, t: "Cieľová suma", s: "viem, koľko potrebujem" }, { k: "otv" as const, t: "Otvorená", s: "bez cieľa, koľko sa vyzbiera" }]} />
         {maCiel && <label style={{ position: "relative", display: "block", maxWidth: ph ? undefined : 320 }}>
@@ -445,6 +449,7 @@ export function NovaZbierka({ strankaId, pozicia, tier, nazov, inicialy, mobil, 
             <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".06em", color: "var(--gInk)" }}>LEHOTA NA DOKLADY</span>
             <span style={{ fontSize: 20, fontWeight: 800 }}>{leh.text}</span>
             <span style={{ fontSize: 13.5, lineHeight: 1.5, color: "var(--ink2)" }}>{ph ? "Po spustení sa nedá zmeniť. Predĺžiť len na žiadosť so zdôvodnením, zadarmo." : "Po spustení sa nedá zmeniť, ani v správe zbierky. Predĺžiť ju môžete len na žiadosť so zdôvodnením, zadarmo."}</span>
+            {dlha && <span style={{ fontSize: 13.5, lineHeight: 1.5, color: "var(--ink2)" }}>{DLHA_PRIEBEZNE_TEXT}</span>}
           </div>
           {!ph && <div style={{ padding: "16px 18px", borderRadius: 16, background: "var(--field)", border: "1px solid var(--cardBd)", display: "flex", flexDirection: "column", gap: 6 }}>
             <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".06em", color: "var(--ink3)" }}>ČO DARCOVIA UVIDIA</span>
