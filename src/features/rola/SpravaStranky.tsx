@@ -13,6 +13,8 @@ import { zastavDiktovanie } from "@/lib/diktovanie";
 import { SpravaZbierky, type ZbierkaNaSpravu } from "./SpravaZbierky";
 import { CentralnaZbierkaSprava } from "./CentralnaSprava";
 import { SkutkyCharity } from "./SkutkyCharity";
+import { OznamySprava } from "./NovyOznam";
+import { SUBJEKTY } from "./mock";
 import { useZmenyZbierok, zbierkyStrankyZPamate, nacitajZbierkyStranky, konceptZbierkyZPamate, nacitajKonceptZbierky, cielCislo, jeIne, UCELY, KROKY_ZBIERKY, type SpustenaZbierka, type NovaZbierkaData } from "@/lib/novaZbierka";
 import { UpravitProfilCharity, VerejnyProfilOkno, zakladnyProfil } from "./UpravitProfilCharity";
 import { nacitajProfil, profilZPamate, uplnostProfilu, type ProfilStranky } from "@/lib/profilStranky";
@@ -329,6 +331,8 @@ export function SpravaStranky({ onBack, typ: typStranky = "charita", strankaId =
     onMojeZbierky={() => { hist.current = []; setSub("g_zbierky"); }} />;
   else if (sub === "x:Správa zbierky" && spravZb) obsah = <SpravaZbierky key={spravZb.id} z={spravZb} mobil={!wide} toast={toast} onZbierky={() => { hist.current = []; setSub("g_zbierky"); }} />;
   else if (sub.startsWith("x:")) obsah = <Pripravujeme />;
+  // KARTA 40: Oznamy — v Zadarmo výzva na súrnu pomoc a dva zamknuté druhy (nie „Pripravujeme" ani zámok celej položky)
+  else if (sub === "oznamy" && typPovoli("oznamy", typ)) obsah = <OznamySprava strankaId={strankaId} tier={tier} nazov={nazov} inicialy={inicialy} mesto={SUBJEKTY[poz]?.lok ?? "Trenčín"} logo={profil?.logo ?? null} mobil={!desktop} tablet={tablet} toast={toast} onProfil={() => otvor("x:Verejný profil")} />;
   // Obsah → Skutky: zoznam skutkov charity + Pridať skutok (ten istý ako v Nástrojoch)
   else if (sub === "skutky" && typPovoli("skutky", typ) && maPovolenie("skutky", tier)) obsah = <SkutkyCharity strankaId={strankaId} mobil={!desktop} onPridat={() => otvor("pridatSkutok")} />;
   // KARTA 39 · bod 3: centrálna zbierka (od P1)
@@ -993,7 +997,8 @@ function GrafDarov({ obd, nova, mobil, onZavri }: { obd: number; nova: boolean; 
 // MENU OBRAZOVKY
 // ============================================================
 function KartaPolozky({ k, tier, piny, prepniPin, otvorPolozku }: { k: Karta } & Pick<Spolocne, "tier" | "piny" | "prepniPin" | "otvorPolozku">) {
-  const zamok = !maPovolenie(k.id, tier);
+  // KARTA 40: Oznamy majú v Zadarmo výzvu na súrnu pomoc — karta bez štítka „od P1"
+  const zamok = !maPovolenie(k.id, tier) && k.id !== "oznamy";
   const pn = piny.includes(k.id);
   return (
     <div role="button" tabIndex={0} onClick={() => otvorPolozku(k.id)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); otvorPolozku(k.id); } }} className="sc-bdh"

@@ -36,7 +36,8 @@ import { CentralnaZbierkaSheet } from "./CentralnaZbierka";
 import { SpravaZbierkySheet } from "./SpravaZbierky";
 import { VideoSheet, DarcoviaSheet, QrNastrojeSheet, ViditelnostSheet } from "./NastrojeCharity";
 import { SektoroveZbierkySheet } from "./SektoroveZbierky";
-import { OznamySheet } from "./Oznamy";
+import { OznamySprava } from "./NovyOznam";
+import { createPortal } from "react-dom";
 import { InzeratySheet } from "./Inzeraty";
 import { DorovnanieSheet } from "./Dorovnanie";
 import { PocitadloVyberSheet } from "@/features/overlay/PocitadloVyber";
@@ -360,7 +361,14 @@ function MojDeedFiremnyObsah({ onBack, toast, orgId }: { onBack: () => void; toa
       {sheet === "darcovia" && <DarcoviaSheet tier={tier} toast={toast} onClose={() => setSheet(null)} />}
       {sheet === "qr" && <QrNastrojeSheet tier={tier} toast={toast} onClose={() => setSheet(null)} />}
       {sheet === "sumy" && <ViditelnostSheet toast={toast} onClose={() => setSheet(null)} />}
-      {sheet === "oznamy" && <OznamySheet entita={pozicia} autor={subjekt.nazov} logo={logo ?? subjekt.foto} toast={toast} onClose={() => setSheet(null)} />}
+      {/* KARTA 40: ten istý nový oznam ako v Správe charity (starý OznamySheet sa už nepoužíva) */}
+      {sheet === "oznamy" && createPortal(
+        <div className="sprava-charity" role="dialog" aria-modal="true" aria-label="Oznamy" style={{ position: "fixed", inset: 0, zIndex: 120, overflowY: "auto", background: "var(--bg)", color: "var(--ink)", padding: "max(16px, env(safe-area-inset-top)) 16px 120px" }}>
+          <div style={{ maxWidth: 1100, margin: "0 auto", display: "flex", flexDirection: "column", gap: 14 }}>
+            <button type="button" onClick={() => setSheet(null)} style={{ alignSelf: "flex-start", minHeight: 44, padding: "0 14px", borderRadius: 13, border: "1px solid var(--cardBd)", background: "var(--card)", cursor: "pointer", fontFamily: "inherit", fontSize: 14.5, fontWeight: 800, color: "var(--ink)" }}>‹ Späť</button>
+            <OznamySprava strankaId={pozicia} tier={tier} nazov={subjekt.nazov} inicialy={subjekt.iniciacky} mesto={subjekt.lok} logo={logo ?? subjekt.foto ?? null} mobil={!desktop} tablet={false} toast={toast} onProfil={() => { setSheet(null); setPodstranka(true); }} />
+          </div>
+        </div>, document.body)}
       {sheet === "zbierky" && pozicia === "b2b" && <NaseZbierkySheet firma={subjekt.nazov} toast={toast} onClose={() => setSheet(null)} />}
       {sheet === "zamestnanci" && pozicia === "b2b" && <ZamestnanciSheet firma={subjekt.nazov} toast={toast} onClose={() => setSheet(null)} />}
       {sheet === "dorovnanie" && <DorovnanieSheet entita={pozicia} toast={toast} onClose={() => setSheet(null)} />}
