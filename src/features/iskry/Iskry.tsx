@@ -25,12 +25,14 @@ import { useIskryOtvorene, zavriIskry } from "./otvor";
 import { DarLet, useDarRad, darHlavne, darKam, type Dar, type PolohaLetu } from "./DarLet";
 
 const ZLATA = "#F6C453";
+/** čitateľnosť na svetlom videu: tieň pod všetkým bielym textom a číslami */
+const TIEN = "0 1px 3px rgba(0,0,0,.7)";
 const IK = {
   darcovia: "M9 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM3 20c.8-3.2 3.2-5 6-5s5.2 1.8 6 5M16 5.5a3 3 0 0 1 0 5.5M18 15c1.6.6 2.6 2.4 3 5",
   iskra: "M12 2l2.2 6.8L21 11l-6.8 2.2L12 20l-2.2-6.8L3 11l6.8-2.2z",
   dar: "M20 12v9H4v-9M2 7h20v5H2zM12 21V7M12 7H7.5a2.5 2.5 0 1 1 0-5C11 2 12 7 12 7zM12 7h4.5a2.5 2.5 0 1 0 0-5C13 2 12 7 12 7z",
   zdielat: "M4 12v8h16v-8M16 6l-4-4-4 4M12 2v14",
-  spat: "M15 18l-6-6 6-6", hraj: "M8 5l12 7-12 7z", hore: "M6 15l6-6 6 6", dole: "M6 9l6 6 6-6",
+  spat: "M15 18l-6-6 6-6", celaOn: "M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5", celaOff: "M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5", hraj: "M8 5l12 7-12 7z", hore: "M6 15l6-6 6 6", dole: "M6 9l6 6 6-6",
 };
 const eur = (n: number) => `${n.toLocaleString("sk-SK", { maximumFractionDigits: 2 })} €`;
 const cis = (n: number) => n.toLocaleString("sk-SK", { minimumFractionDigits: n % 1 ? 2 : 0, maximumFractionDigits: 2 });
@@ -51,8 +53,8 @@ export function IskryHost() {
   return <IskryPrud />;
 }
 
-/** PC od 900 px: prúd ako telefón v strede (400 px), okolo tmavé pozadie; mobil a tablet = celá obrazovka */
-const MQ_PC_ISKRY = "(min-width: 900px)";
+/** KARTA 41 · bod 8: rozhoduje ovládanie, nie šírka — PC s myšou; všetko dotykové = celá obrazovka */
+const MQ_PC_ISKRY = "(hover: hover) and (pointer: fine)";
 function usePcIskry() {
   const [pc, setPc] = useState(() => window.matchMedia(MQ_PC_ISKRY).matches);
   useEffect(() => { const m = window.matchMedia(MQ_PC_ISKRY), f = () => setPc(m.matches); m.addEventListener("change", f); return () => m.removeEventListener("change", f); }, []);
@@ -81,6 +83,19 @@ function IskryPrud() {
   const posledny = useRef<{ id: string; t: number; x: number; y: number } | null>(null);
 
   const pc = usePcIskry();
+  // PC: Celá obrazovka (Fullscreen API) — tlačidlo vpravo hore aj kláves F; Esc / F / ťuk = späť
+  const dialogRef = useRef<HTMLDivElement | null>(null);
+  const [cela, setCela] = useState(() => !!document.fullscreenElement);
+  useEffect(() => { const f = () => setCela(!!document.fullscreenElement); document.addEventListener("fullscreenchange", f); return () => { document.removeEventListener("fullscreenchange", f); if (document.fullscreenElement) void document.exitFullscreen().catch(() => undefined); }; }, []);
+  const prepniCelu = () => { if (document.fullscreenElement) void document.exitFullscreen().catch(() => undefined); else void dialogRef.current?.requestFullscreen?.().catch(() => undefined); };
+  // po bokoch rozmazaná kópia videa — len keď video nevypĺňa celú šírku (tablet, PC)
+  const bgVideo = useRef<HTMLVideoElement | null>(null);
+  const [boky, setBoky] = useState(false);
+  useLayoutEffect(() => {
+    const o = dialogRef.current, r = root.current; if (!o || !r) return;
+    const f = () => setBoky(o.clientWidth - r.offsetWidth > 8); f();
+    const ro = new ResizeObserver(f); ro.observe(o); ro.observe(r); return () => ro.disconnect();
+  }, []);
   // popis najviac 2 riadky, ťuk rozbalí; spodný blok nesiaha vyššie ako tlačidlo Darcovia (meria sa výška pravého stĺpca)
   const [rozbaleny, setRozbaleny] = useState<string | null>(null);
   const stlpecRef = useRef<HTMLDivElement | null>(null);
@@ -103,7 +118,8 @@ function IskryPrud() {
   // Esc = zavrieť (PC), zablokovať posun stránky pod prúdom
   useEffect(() => {
     const k = (e: KeyboardEvent) => {
-      if (e.key === "Escape") { if (sheet) setSheet(null); else zavriIskry(); }
+      if (e.key === "Escape") { if (sheet) setSheet(null); else if (document.fullscreenElement) void document.exitFullscreen().catch(() => undefined); else zavriIskry(); }
+      else if ((e.key === "f" || e.key === "F") && pcRef.current && !sheet && !(e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLInputElement)) prepniCeluRef.current();
       else if ((e.key === "ArrowDown" || e.key === "ArrowUp") && !sheet) { e.preventDefault(); posunRef.current(e.key === "ArrowDown" ? 1 : -1); }
     };
     window.addEventListener("keydown", k);
@@ -120,7 +136,9 @@ function IskryPrud() {
       if (akt && id === akt.id && !sheet && viditelna) { el.muted = true; void el.play().catch(() => { /* autoplay zablokovaný — ostane poster */ }); }
       else el.pause();
     });
-  }, [akt, sheet, viditelna]);
+    const b = bgVideo.current;
+    if (b) { if (boky && akt?.src && !sheet && viditelna) { b.muted = true; void b.play().catch(() => undefined); } else b.pause(); }
+  }, [akt, sheet, viditelna, boky]);
   useEffect(() => () => { Object.values(videa.current).forEach((el) => el?.pause()); }, []);
 
   // ---- živý pás: dnes v Iskrách + dary v rade (každý 5 s) ----
@@ -137,6 +155,8 @@ function IskryPrud() {
   /** šípky (tlačidlá na PC aj klávesnica): o jedno video hore / dole */
   const posun = (o: 1 | -1) => { const el = sc.current; if (!el) return; const i = Math.max(0, Math.min(list.length - 1, Math.round(el.scrollTop / Math.max(1, el.clientHeight)) + o)); el.scrollTo({ top: i * el.clientHeight, behavior: "smooth" }); };
   const posunRef = useRef(posun); posunRef.current = posun; // eslint-disable-line react-hooks/refs
+  const pcRef = useRef(pc); pcRef.current = pc; // eslint-disable-line react-hooks/refs
+  const prepniCeluRef = useRef(prepniCelu); prepniCeluRef.current = prepniCelu; // eslint-disable-line react-hooks/refs
   const skoc = (id: string) => {
     let i = list.findIndex((x) => x.id === id);
     if (i < 0) { setDruh(0); i = ISKRY_MOCK.findIndex((x) => x.id === id); }
@@ -184,17 +204,24 @@ function IskryPrud() {
   useEffect(() => { if (!dva) return; const t = window.setTimeout(() => setDva(null), 800); return () => window.clearTimeout(t); }, [dva]);
 
   const kruh = (on?: boolean, zelene?: boolean): CSSProperties => ({ width: 50, height: 50, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center",
-    background: zelene ? "#4B7A35" : on ? "rgba(246,196,83,.25)" : "rgba(0,0,0,.35)", boxShadow: on ? `0 0 0 2px ${ZLATA}` : "none" });
+    background: zelene ? "#4B7A35" : on ? "rgba(246,196,83,.25)" : "rgba(0,0,0,.45)", boxShadow: on ? `0 0 0 2px ${ZLATA}` : "none" });
   const stlpecBtn: CSSProperties = { border: "none", background: "transparent", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, color: "#fff", padding: 0, fontFamily: "inherit", minWidth: 56 };
 
   const poloha = aktualny ? meraj() : undefined; // eslint-disable-line react-hooks/refs
 
   return (
-    <div role="dialog" aria-modal="true" aria-label="Iskry" onClick={(e) => { if (pc && e.target === e.currentTarget) zavriIskry(); }}
-      style={{ position: "fixed", inset: 0, zIndex: 140, zoom: bezZoomu(), background: pc ? "rgba(14,15,12,.85)" : "#0E0F0C", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Plus Jakarta Sans', sans-serif" } as CSSProperties}>
-      <div ref={root} style={pc
-        ? { position: "relative", width: 400, height: "min(calc(100% - 48px), 860px)", borderRadius: 28, overflow: "hidden", background: "#0E0F0C", boxShadow: "0 24px 60px rgba(0,0,0,.5)" }
-        : { position: "relative", width: "min(100%, max(390px, calc(100dvh * 0.56)))", height: "100%", overflow: "hidden", background: "#0E0F0C" }}>
+    <div ref={dialogRef} role="dialog" aria-modal="true" aria-label="Iskry" onClick={(e) => { if (pc && e.target === e.currentTarget) zavriIskry(); }}
+      style={{ position: "fixed", inset: 0, zIndex: 140, zoom: bezZoomu(), background: "#0E0F0C", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", fontFamily: "'Plus Jakarta Sans', sans-serif" } as CSSProperties}>
+      {/* po bokoch rozmazaná kópia aktuálneho videa (nie čierne pásy) */}
+      {boky && akt && <div aria-hidden="true" style={{ position: "absolute", inset: 0, pointerEvents: "none", overflow: "hidden" }}>
+        <div style={{ position: "absolute", inset: 0, background: akt.bg, filter: "blur(40px)", transform: "scale(1.2)" }} />
+        {akt.src && <video key={akt.id} ref={bgVideo} src={akt.src} muted loop playsInline preload="auto" onLoadedData={(e) => { e.currentTarget.style.opacity = "1"; }} onError={(e) => { e.currentTarget.style.opacity = "0"; }}
+          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", filter: "blur(40px)", transform: "scale(1.2)", opacity: 0, transition: "opacity .25s ease" }} />}
+        <div style={{ position: "absolute", inset: 0, background: "rgba(14,15,12,.45)" }} />
+      </div>}
+      {/* video 9 : 16 — telefón cez celú šírku, tablet a PC v strede; PC: výška okna − 48 px, rohy 20 */}
+      <div style={{ position: "relative", height: pc && !cela ? "calc(100% - 48px)" : "100%", aspectRatio: "9 / 16", maxWidth: "100%" }}>
+      <div ref={root} style={{ position: "absolute", inset: 0, overflow: "hidden", background: "#0E0F0C", borderRadius: pc && !cela ? 20 : 0, boxShadow: pc && !cela ? "0 24px 60px rgba(0,0,0,.5)" : "none", textShadow: TIEN }}>
         {/* ---------- prúd ---------- */}
         <div ref={sc} className="isk-scroll" onScroll={(e) => { const el = e.currentTarget; const i = Math.round(el.scrollTop / Math.max(1, el.clientHeight)); if (i !== idx) setIdx(i); }}
           style={{ position: "absolute", inset: 0, overflowY: "auto", scrollSnapType: "y mandatory", scrollbarWidth: "none", overscrollBehavior: "contain" }}>
@@ -206,9 +233,9 @@ function IskryPrud() {
                 {v.src && <video ref={(el) => { videa.current[v.id] = el; if (el) { el.muted = true; el.defaultMuted = true; } }} src={v.src} muted loop playsInline preload={Math.abs(i - idx) <= 1 ? "auto" : "metadata"}
                   onLoadedData={(e) => { e.currentTarget.style.opacity = "1"; }} onError={(e) => { e.currentTarget.style.opacity = "0"; }}
                   style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", opacity: 0, transition: "opacity .25s ease", pointerEvents: "none" }} />}
-                <span style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg,rgba(0,0,0,.45) 0%,rgba(0,0,0,0) 22%,rgba(0,0,0,0) 52%,rgba(0,0,0,.78) 100%)", pointerEvents: "none" }} />
+                <span style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg,rgba(0,0,0,.55) 0%,rgba(0,0,0,0) 28%,rgba(0,0,0,0) 50%,rgba(0,0,0,.85) 100%)", pointerEvents: "none" }} />
                 {/* vodoznak: DEED+ ako v appke + meno autora (pri zdieľaní von sa vypáli do videa — server) */}
-                <span aria-hidden="true" style={{ position: "absolute", left: 14, top: "33%", display: "flex", flexDirection: "column", gap: 1, opacity: 0.7, pointerEvents: "none", color: "#fff" }}>
+                <span aria-hidden="true" style={{ position: "absolute", left: 14, top: "33%", display: "flex", flexDirection: "column", gap: 1, opacity: 0.85, textShadow: TIEN, pointerEvents: "none", color: "#fff" }}>
                   <span style={{ fontSize: 18, fontWeight: 800, lineHeight: 1, color: "#8CC653" }}><DeedZnacka /></span>
                   <span style={{ fontSize: 10.5, fontWeight: 700 }}>{v.autor}</span>
                 </span>
@@ -227,12 +254,12 @@ function IskryPrud() {
                     pri nízkej obrazovke sa skracuje popis, autor a karta zbierky ostávajú celé */}
                 <div style={{ position: "absolute", left: 14, right: 78, bottom: "calc(28px + env(safe-area-inset-bottom, 0px))", maxHeight: Math.min(miesto.stlpec + 112, miesto.volne), display: "flex", flexDirection: "column", gap: 10, color: "#fff" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 10, flex: "none" }}>
-                    <span style={{ width: 42, height: 42, flex: "none", borderRadius: v.org ? 12 : "50%", background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 800, color: "#3F6E2A" }}>{v.ini}</span>
+                    <span style={{ width: 42, height: 42, flex: "none", borderRadius: v.org ? 12 : "50%", background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 800, color: "#3F6E2A", textShadow: "none" }}>{v.ini}</span>
                     <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}>
                       <b style={{ fontSize: 15.5, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{v.autor}</b>
                       <span style={{ fontSize: 12.5, opacity: 0.85, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{v.kto}</span>
                     </span>
-                    <button type="button" aria-pressed={sled} onClick={() => prepniSledovanie(v.autor)} style={{ flex: "none", whiteSpace: "nowrap", minHeight: 32, padding: "0 12px", borderRadius: 16, border: "1.5px solid #fff", background: sled ? "transparent" : "#fff", cursor: "pointer", fontFamily: "inherit", fontSize: 12.5, fontWeight: 800, color: sled ? "#fff" : "#1D211B" }}>{sled ? "Sledujete" : "Sledovať"}</button>
+                    <button type="button" aria-pressed={sled} onClick={() => prepniSledovanie(v.autor)} style={{ flex: "none", whiteSpace: "nowrap", minHeight: 32, padding: "0 12px", borderRadius: 16, border: "1.5px solid #fff", background: sled ? "transparent" : "#fff", cursor: "pointer", fontFamily: "inherit", fontSize: 12.5, fontWeight: 800, color: sled ? "#fff" : "#1D211B", textShadow: sled ? TIEN : "none" }}>{sled ? "Sledujete" : "Sledovať"}</button>
                   </div>
                   <button type="button" aria-expanded={rozbaleny === v.id} onClick={() => setRozbaleny(rozbaleny === v.id ? null : v.id)}
                     style={{ flex: "0 1 auto", minHeight: 0, padding: 0, border: "none", background: "transparent", cursor: "pointer", textAlign: "left", fontFamily: "inherit", fontSize: 14.5, lineHeight: 1.45, color: "#fff",
@@ -254,15 +281,16 @@ function IskryPrud() {
             <button type="button" onClick={zavriIskry} aria-label="Späť" style={{ width: 44, height: 44, marginLeft: -10, border: "none", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Ik d={IK.spat} s={24} w={2.4} /></button>
             <b style={{ flex: 1, fontSize: 20, color: "#fff" }}>Iskry</b>
             {TESTOVACIA && <button type="button" onClick={simuluj} style={{ minHeight: 32, padding: "0 10px", borderRadius: 10, border: "1px dashed rgba(255,255,255,.5)", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,.85)" }}>Cudzí dar (DEV)</button>}
-            <span style={{ fontSize: 12.5, fontWeight: 700, color: "rgba(255,255,255,.85)" }}>{list.length ? `${Math.min(idx, list.length - 1) + 1} / ${list.length}` : ""}</span>
+            <span style={{ fontSize: 12.5, fontWeight: 700, color: "rgba(255,255,255,.9)" }}>{list.length ? `${Math.min(idx, list.length - 1) + 1} / ${list.length}` : ""}</span>
+            {pc && <button type="button" onClick={prepniCelu} aria-label={cela ? "Zavrieť celú obrazovku" : "Celá obrazovka"} title={cela ? "Zavrieť celú obrazovku (F)" : "Celá obrazovka (F)"} style={{ width: 44, height: 44, marginRight: -8, border: "none", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", filter: "drop-shadow(0 1px 3px rgba(0,0,0,.7))" }}><Ik d={cela ? IK.celaOff : IK.celaOn} s={22} w={2.2} /></button>}
           </div>
           {ISKRY_CFG.zobrazOblasti && <div role="tablist" aria-label="Oblasť" style={{ display: "flex", gap: 4, padding: 4, borderRadius: 14, background: "rgba(0,0,0,.4)", pointerEvents: "auto" }}>
             {ISKRY_CFG.oblasti.map((t, i) => <button key={t} type="button" role="tab" aria-selected={oblast === i} onClick={() => setOblast(i)} style={{ flex: 1, height: 34, border: "none", borderRadius: 10, cursor: "pointer", fontFamily: "inherit", fontSize: 13.5, fontWeight: oblast === i ? 800 : 600, background: oblast === i ? "#fff" : "transparent", color: oblast === i ? "#1D211B" : "#fff" }}>{t}</button>)}
           </div>}
           <div ref={druhyRef} onScroll={merajOkraje} className="isk-scroll" role="tablist" aria-label="Druh" style={{ display: "flex", gap: 6, overflowX: "auto", scrollbarWidth: "none", pointerEvents: "auto",
-            ...((okraje.l || okraje.p) ? (() => { const m = `linear-gradient(90deg, ${okraje.l ? "transparent 0, #000 36px" : "#000 0"}, ${okraje.p ? "#000 calc(100% - 36px), transparent 100%" : "#000 100%"})`; return { maskImage: m, WebkitMaskImage: m }; })() : {}) }}>
+            ...(okraje.p ? (() => { const m = "linear-gradient(90deg, #000 calc(100% - 24px), transparent 100%)"; return { maskImage: m, WebkitMaskImage: m }; })() : {}) }}>
             {ISKRY_CFG.druhy.map((t, i) => <button key={t} type="button" role="tab" aria-selected={druh === i} onClick={(e) => { setDruh(i); setIdx(0); sc.current?.scrollTo({ top: 0 }); e.currentTarget.scrollIntoView({ inline: "nearest", block: "nearest", behavior: "smooth" }); }}
-              style={{ flex: "none", whiteSpace: "nowrap", minHeight: 32, padding: "0 12px", borderRadius: 16, border: "1px solid rgba(255,255,255,.4)", cursor: "pointer", fontFamily: "inherit", fontSize: 12.5, fontWeight: druh === i ? 800 : 600, background: druh === i ? "rgba(255,255,255,.9)" : "rgba(0,0,0,.3)", color: druh === i ? "#1D211B" : "#fff" }}>{t}</button>)}
+              style={{ flex: "none", whiteSpace: "nowrap", minHeight: 32, padding: "0 12px", borderRadius: 16, border: "1px solid rgba(255,255,255,.4)", cursor: "pointer", fontFamily: "inherit", fontSize: 12.5, fontWeight: druh === i ? 800 : 600, background: druh === i ? "rgba(255,255,255,.9)" : "rgba(0,0,0,.3)", color: druh === i ? "#1D211B" : "#fff", textShadow: druh === i ? "none" : TIEN }}>{t}</button>)}
           </div>
           {(pasDar || prepis) && <div ref={pasRef} role="button" tabIndex={0} aria-label="Dary v Iskrách" onClick={() => { if (pasDar && !prepis) skoc(pasDar.v.id); }} onKeyDown={(e) => { if (e.key === "Enter" && pasDar) skoc(pasDar.v.id); }}
             style={{ pointerEvents: "auto", cursor: "pointer", display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", borderRadius: 14, background: "rgba(14,15,12,.6)", border: "1px solid rgba(255,255,255,.16)", color: "#fff" }}>
@@ -286,11 +314,12 @@ function IskryPrud() {
         {sheet?.typ === "namietka" && <Harok onClose={() => setSheet(null)}><NamietkaObsah v={sheet.v} onHotovo={() => setSheet(null)} /></Harok>}
       </div>
 
-      {/* PC: šípky vpravo od telefónu (aj klávesy hore / dole) */}
-      {pc && <div style={{ position: "absolute", left: "calc(50% + 228px)", top: "50%", transform: "translateY(-50%)", display: "flex", flexDirection: "column", gap: 12 }}>
+      {/* PC: šípky mimo videa, 24 px od jeho pravého okraja (aj klávesy hore / dole) */}
+      {pc && <div style={{ position: "absolute", left: "calc(100% + 24px)", top: "50%", transform: "translateY(-50%)", display: "flex", flexDirection: "column", gap: 12 }}>
         {([["hore", -1, "Predchádzajúce video"], ["dole", 1, "Ďalšie video"]] as const).map(([d, o, t]) => { const off = o < 0 ? idx <= 0 : idx >= list.length - 1; return (
-          <button key={d} type="button" aria-label={t} disabled={off} onClick={() => posun(o)} style={{ width: 52, height: 52, borderRadius: "50%", border: "1px solid rgba(255,255,255,.22)", background: "rgba(255,255,255,.1)", cursor: off ? "default" : "pointer", opacity: off ? 0.35 : 1, display: "flex", alignItems: "center", justifyContent: "center" }}><Ik d={IK[d]} s={26} w={2.4} /></button>); })}
+          <button key={d} type="button" aria-label={t} disabled={off} onClick={() => posun(o)} style={{ width: 52, height: 52, borderRadius: "50%", border: "1px solid rgba(255,255,255,.22)", background: "rgba(0,0,0,.45)", cursor: off ? "default" : "pointer", opacity: off ? 0.35 : 1, display: "flex", alignItems: "center", justifyContent: "center" }}><Ik d={IK[d]} s={26} w={2.4} /></button>); })}
       </div>}
+      </div>
 
       {platba && (() => { const s = sucetDarov(refIskry(platba.v)); return (
         <PlatobneOkno kanal={platba.kanal} suma={platba.suma} nazov={platba.v.zbierka?.nazov ?? platba.v.autor} registrovany={registrovany}
@@ -302,7 +331,7 @@ function IskryPrud() {
 // ---------- hárok zdola (vo vnútri prúdu) ----------
 function Harok({ onClose, children }: { onClose: () => void; children: React.ReactNode }) {
   return (
-    <div onClick={onClose} style={{ position: "absolute", inset: 0, zIndex: 30, background: "rgba(0,0,0,.45)", display: "flex", alignItems: "flex-end" }}>
+    <div onClick={onClose} style={{ position: "absolute", inset: 0, zIndex: 30, background: "rgba(0,0,0,.45)", display: "flex", alignItems: "flex-end", textShadow: "none" }}>
       <div onClick={(e) => e.stopPropagation()} className="pf-rise" style={{ width: "100%", maxHeight: "86%", overflowY: "auto", borderRadius: "26px 26px 0 0", background: "#EFEAE1", color: "#1D211B", padding: "16px 18px max(30px, env(safe-area-inset-bottom))", display: "flex", flexDirection: "column", gap: 14 }}>
         <span aria-hidden="true" style={{ alignSelf: "center", width: 44, height: 5, borderRadius: 3, background: "#CFC9BC" }} />
         {children}
