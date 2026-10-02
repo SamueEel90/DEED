@@ -27,6 +27,10 @@ import { DarLet, useDarRad, darHlavne, darKam, type Dar, type PolohaLetu } from 
 const ZLATA = "#F6C453";
 /** čitateľnosť na svetlom videu: tieň pod všetkým bielym textom a číslami */
 const TIEN = "0 1px 3px rgba(0,0,0,.7)";
+/** mierka ovládania podľa výšky videa (844 = telefón) */
+const mierkaZ = (vyska: number) => Math.min(1.6, Math.max(1, Math.round((vyska / 844) * 100) / 100));
+/** vrstva ovládania sa zväčšuje celá naraz (tlačidlá vpravo, hlavička, druhy, pás, blok autora) */
+const VRSTVA: CSSProperties = { zoom: "var(--isk-m, 1)" } as CSSProperties;
 const IK = {
   darcovia: "M9 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM3 20c.8-3.2 3.2-5 6-5s5.2 1.8 6 5M16 5.5a3 3 0 0 1 0 5.5M18 15c1.6.6 2.6 2.4 3 5",
   iskra: "M12 2l2.2 6.8L21 11l-6.8 2.2L12 20l-2.2-6.8L3 11l6.8-2.2z",
@@ -106,10 +110,13 @@ function IskryPrud() {
   const merajOkraje = () => { const el = druhyRef.current; if (!el) return; const l = el.scrollLeft > 2, p = el.scrollLeft + el.clientWidth < el.scrollWidth - 2; setOkraje((o) => (o.l === l && o.p === p ? o : { l, p })); };
   useLayoutEffect(() => { merajOkraje(); const el = druhyRef.current; if (!el) return; const ro = new ResizeObserver(merajOkraje); ro.observe(el); return () => ro.disconnect(); }, []);
   const [miesto, setMiesto] = useState({ stlpec: 316, volne: 9999 });
+  // ovládanie rastie s videom: mierka = výška videa / 844, najmenej 1, najviac 1,6 (telefón = 1) — jedna premenná --isk-m
+  const [mierka, setMierka] = useState(1);
   useLayoutEffect(() => {
     const st = stlpecRef.current, hl = hlavRef.current, r = root.current; if (!st || !hl || !r) return;
     // pri nízkej obrazovke ani pod hlavičku (názov, druhy, živý pás)
-    const f = () => setMiesto({ stlpec: st.offsetHeight, volne: r.clientHeight - hl.offsetHeight - 28 - 10 });
+    // merané v obrazovkových px a prepočítané na jednotky vrstvy (vrstva je zväčšená o --isk-m)
+    const f = () => { const m = mierkaZ(r.clientHeight); setMierka(m); setMiesto({ stlpec: st.getBoundingClientRect().height / m, volne: (r.clientHeight - hl.getBoundingClientRect().height) / m - 28 - 10 }); };
     f(); const ro = new ResizeObserver(f); [st, hl, r].forEach((e) => ro.observe(e)); return () => ro.disconnect();
   }, [druh]);
   const list = ISKRY_MOCK.filter((v) => druh === 0 || v.druh === druh);
@@ -221,7 +228,7 @@ function IskryPrud() {
       </div>}
       {/* video 9 : 16 — telefón cez celú šírku, tablet a PC v strede; PC: výška okna − 48 px, rohy 20 */}
       <div style={{ position: "relative", height: pc && !cela ? "calc(100% - 48px)" : "100%", aspectRatio: "9 / 16", maxWidth: "100%" }}>
-      <div ref={root} style={{ position: "absolute", inset: 0, overflow: "hidden", background: "#0E0F0C", borderRadius: pc && !cela ? 20 : 0, boxShadow: pc && !cela ? "0 24px 60px rgba(0,0,0,.5)" : "none", textShadow: TIEN }}>
+      <div ref={root} style={{ ["--isk-m" as string]: mierka, position: "absolute", inset: 0, overflow: "hidden", background: "#0E0F0C", borderRadius: pc && !cela ? 20 : 0, boxShadow: pc && !cela ? "0 24px 60px rgba(0,0,0,.5)" : "none", textShadow: TIEN }}>
         {/* ---------- prúd ---------- */}
         <div ref={sc} className="isk-scroll" onScroll={(e) => { const el = e.currentTarget; const i = Math.round(el.scrollTop / Math.max(1, el.clientHeight)); if (i !== idx) setIdx(i); }}
           style={{ position: "absolute", inset: 0, overflowY: "auto", scrollSnapType: "y mandatory", scrollbarWidth: "none", overscrollBehavior: "contain" }}>
@@ -243,7 +250,7 @@ function IskryPrud() {
                 {dva?.id === v.id && <svg key={dva.k} width="96" height="96" viewBox="0 0 24 24" aria-hidden="true" className="isk-dva" style={{ position: "absolute", left: dva.x - 48, top: dva.y - 48, zIndex: 4, pointerEvents: "none", filter: "drop-shadow(0 0 12px rgba(246,196,83,.9))" }}><path d={IK.iskra} fill={ZLATA} /></svg>}
 
                 {/* pravý stĺpec */}
-                <div ref={i === 0 ? stlpecRef : undefined} style={{ position: "absolute", right: 12, bottom: "calc(150px + env(safe-area-inset-bottom, 0px))", display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
+                <div ref={i === 0 ? stlpecRef : undefined} style={{ ...VRSTVA, position: "absolute", right: 12, bottom: "calc(150px + env(safe-area-inset-bottom, 0px))", display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
                   <button type="button" aria-label={`Darcovia, ${pocetD}`} onClick={() => setSheet({ typ: "darcovia", v })} style={stlpecBtn}><span style={kruh()}><Ik d={IK.darcovia} /></span><span style={{ fontSize: 12.5, fontWeight: 800 }}>{cis(pocetD)}</span></button>
                   <button type="button" aria-label="Iskra" aria-pressed={zap} onClick={() => prepniIskru(v.id)} style={stlpecBtn}><span style={kruh(zap)}><Ik d={IK.iskra} s={26} w={1.6} c={ZLATA} fill={zap ? ZLATA : "none"} /></span><span style={{ fontSize: 12.5, fontWeight: 800 }}>{cis(pocetIskier(v))}</span></button>
                   <button type="button" ref={(el) => { darBtn.current[v.id] = el; }} onClick={() => setSheet({ typ: "dar", v })} style={stlpecBtn}><span style={kruh(false, true)}><Ik d={IK.dar} w={2.2} /></span><span style={{ fontSize: 12.5, fontWeight: 800 }}>Darovať</span></button>
@@ -252,17 +259,18 @@ function IskryPrud() {
 
                 {/* autor, popis, zbierka (bez pruhu) — najvyššie po vrch tlačidla Darcovia (150 − 28 + výška stĺpca − 10 px medzera);
                     pri nízkej obrazovke sa skracuje popis, autor a karta zbierky ostávajú celé */}
-                <div style={{ position: "absolute", left: 14, right: 78, bottom: "calc(28px + env(safe-area-inset-bottom, 0px))", maxHeight: Math.min(miesto.stlpec + 112, miesto.volne), display: "flex", flexDirection: "column", gap: 10, color: "#fff" }}>
+                <div style={{ ...VRSTVA, position: "absolute", left: 14, right: 78, bottom: "calc(28px + env(safe-area-inset-bottom, 0px))", maxHeight: Math.min(miesto.stlpec + 112, miesto.volne), display: "flex", flexDirection: "column", gap: 10, color: "#fff" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 10, flex: "none" }}>
                     <span style={{ width: 42, height: 42, flex: "none", borderRadius: v.org ? 12 : "50%", background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 800, color: "#3F6E2A", textShadow: "none" }}>{v.ini}</span>
                     <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}>
                       <b style={{ fontSize: 15.5, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{v.autor}</b>
                       <span style={{ fontSize: 12.5, opacity: 0.85, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{v.kto}</span>
                     </span>
-                    <button type="button" aria-pressed={sled} onClick={() => prepniSledovanie(v.autor)} style={{ flex: "none", whiteSpace: "nowrap", minHeight: 32, padding: "0 12px", borderRadius: 16, border: "1.5px solid #fff", background: sled ? "transparent" : "#fff", cursor: "pointer", fontFamily: "inherit", fontSize: 12.5, fontWeight: 800, color: sled ? "#fff" : "#1D211B", textShadow: sled ? TIEN : "none" }}>{sled ? "Sledujete" : "Sledovať"}</button>
+                    <button type="button" aria-pressed={sled} onClick={() => prepniSledovanie(v.autor)} style={{ flex: "none", minHeight: 44, padding: "6px 0", border: "none", background: "transparent", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center" }}>
+                      <span style={{ whiteSpace: "nowrap", height: 32, display: "flex", alignItems: "center", padding: "0 12px", borderRadius: 16, border: "1.5px solid #fff", background: sled ? "transparent" : "#fff", fontSize: 12.5, fontWeight: 800, color: sled ? "#fff" : "#1D211B", textShadow: sled ? TIEN : "none" }}>{sled ? "Sledujete" : "Sledovať"}</span></button>
                   </div>
                   <button type="button" aria-expanded={rozbaleny === v.id} onClick={() => setRozbaleny(rozbaleny === v.id ? null : v.id)}
-                    style={{ flex: "0 1 auto", minHeight: 0, padding: 0, border: "none", background: "transparent", cursor: "pointer", textAlign: "left", fontFamily: "inherit", fontSize: 14.5, lineHeight: 1.45, color: "#fff",
+                    style={{ flex: "0 1 auto", minHeight: 44, padding: 0, border: "none", background: "transparent", cursor: "pointer", textAlign: "left", fontFamily: "inherit", fontSize: 14.5, lineHeight: 1.45, color: "#fff",
                       overflowY: rozbaleny === v.id ? "auto" : "hidden", overscrollBehavior: "contain", ...(rozbaleny === v.id ? {} : { display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }) }}>{v.popis}</button>
                   {v.zbierka && <div style={{ flex: "none", display: "flex", flexDirection: "column", gap: 4, padding: "10px 12px", borderRadius: 14, background: "rgba(0,0,0,.45)", border: "1px solid rgba(255,255,255,.18)" }}>
                     <span style={{ fontSize: 12.5, opacity: 0.85 }}>{v.zbierka.pozn}</span><b style={{ fontSize: 14 }}>{v.zbierka.nazov}</b>
@@ -276,7 +284,7 @@ function IskryPrud() {
         {aktualny && <DarLet key={kluc(aktualny)} dar={aktualny} poloha={poloha} onPas={(d) => ukazPas(darHlavne(d), darKam(d))} onKoniec={dalsi} />}
 
         {/* ---------- hlavička: názov, (oblasti), druh, živý pás ---------- */}
-        <div ref={hlavRef} style={{ position: "absolute", left: 0, right: 0, top: 0, padding: "max(14px, env(safe-area-inset-top)) 14px 10px", display: "flex", flexDirection: "column", gap: 10, pointerEvents: "none" }}>
+        <div ref={hlavRef} style={{ ...VRSTVA, position: "absolute", left: 0, right: 0, top: 0, padding: "max(14px, env(safe-area-inset-top)) 14px 10px", display: "flex", flexDirection: "column", gap: 10, pointerEvents: "none" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, pointerEvents: "auto" }}>
             <button type="button" onClick={zavriIskry} aria-label="Späť" style={{ width: 44, height: 44, marginLeft: -10, border: "none", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Ik d={IK.spat} s={24} w={2.4} /></button>
             <b style={{ flex: 1, fontSize: 20, color: "#fff" }}>Iskry</b>
@@ -287,10 +295,11 @@ function IskryPrud() {
           {ISKRY_CFG.zobrazOblasti && <div role="tablist" aria-label="Oblasť" style={{ display: "flex", gap: 4, padding: 4, borderRadius: 14, background: "rgba(0,0,0,.4)", pointerEvents: "auto" }}>
             {ISKRY_CFG.oblasti.map((t, i) => <button key={t} type="button" role="tab" aria-selected={oblast === i} onClick={() => setOblast(i)} style={{ flex: 1, height: 34, border: "none", borderRadius: 10, cursor: "pointer", fontFamily: "inherit", fontSize: 13.5, fontWeight: oblast === i ? 800 : 600, background: oblast === i ? "#fff" : "transparent", color: oblast === i ? "#1D211B" : "#fff" }}>{t}</button>)}
           </div>}
-          <div ref={druhyRef} onScroll={merajOkraje} className="isk-scroll" role="tablist" aria-label="Druh" style={{ display: "flex", gap: 6, overflowX: "auto", scrollbarWidth: "none", pointerEvents: "auto",
+          <div ref={druhyRef} onScroll={merajOkraje} className="isk-scroll" role="tablist" aria-label="Druh" style={{ display: "flex", gap: 6, margin: "-6px 0", overflowX: "auto", scrollbarWidth: "none", pointerEvents: "auto",
             ...(okraje.p ? (() => { const m = "linear-gradient(90deg, #000 calc(100% - 24px), transparent 100%)"; return { maskImage: m, WebkitMaskImage: m }; })() : {}) }}>
             {ISKRY_CFG.druhy.map((t, i) => <button key={t} type="button" role="tab" aria-selected={druh === i} onClick={(e) => { setDruh(i); setIdx(0); sc.current?.scrollTo({ top: 0 }); e.currentTarget.scrollIntoView({ inline: "nearest", block: "nearest", behavior: "smooth" }); }}
-              style={{ flex: "none", whiteSpace: "nowrap", minHeight: 32, padding: "0 12px", borderRadius: 16, border: "1px solid rgba(255,255,255,.4)", cursor: "pointer", fontFamily: "inherit", fontSize: 12.5, fontWeight: druh === i ? 800 : 600, background: druh === i ? "rgba(255,255,255,.9)" : "rgba(0,0,0,.3)", color: druh === i ? "#1D211B" : "#fff", textShadow: druh === i ? "none" : TIEN }}>{t}</button>)}
+              style={{ flex: "none", minHeight: 44, padding: "6px 0", border: "none", background: "transparent", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center" }}>
+              <span style={{ whiteSpace: "nowrap", height: 32, display: "flex", alignItems: "center", padding: "0 12px", borderRadius: 16, border: "1px solid rgba(255,255,255,.4)", fontSize: 12.5, fontWeight: druh === i ? 800 : 600, background: druh === i ? "rgba(255,255,255,.9)" : "rgba(0,0,0,.3)", color: druh === i ? "#1D211B" : "#fff", textShadow: druh === i ? "none" : TIEN }}>{t}</span></button>)}
           </div>
           {(pasDar || prepis) && <div ref={pasRef} role="button" tabIndex={0} aria-label="Dary v Iskrách" onClick={() => { if (pasDar && !prepis) skoc(pasDar.v.id); }} onKeyDown={(e) => { if (e.key === "Enter" && pasDar) skoc(pasDar.v.id); }}
             style={{ pointerEvents: "auto", cursor: "pointer", display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", borderRadius: 14, background: "rgba(14,15,12,.6)", border: "1px solid rgba(255,255,255,.16)", color: "#fff" }}>
