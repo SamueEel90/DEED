@@ -34,12 +34,14 @@ export interface NovaZbierkaData {
   ucel: number | null;
   ineT: string;
   ineL: number | null;
+  /** súhlas ľudí na fotkách a videách (karta 37 · bod 8) */
+  suhlas?: boolean;
   /** posledný otvorený krok (rozpísaná zbierka pokračuje tam, kde skončila) */
   krok: number;
 }
 export const prazdnaZbierka = (): NovaZbierkaData => ({
   nazov: "", popis: "", popis2: "", media: [], typ: "kratka", mesiace: 6, cielTyp: "ciel", ciel: "", iban: "",
-  sada: 1, eurc: true, sadaE: 0, prav: false, ucel: null, ineT: "", ineL: null, krok: 1,
+  sada: 1, eurc: true, sadaE: 0, prav: false, ucel: null, ineT: "", ineL: null, suhlas: false, krok: 1,
 });
 
 // ---- texty a voľby z prototypu (Nova zbierka PC) ----

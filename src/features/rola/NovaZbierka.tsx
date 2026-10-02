@@ -20,6 +20,8 @@ import {
   SADY, SADY_EURC, KROKY_ZBIERKY, UCELY, LEHOTY, MAX_FOTIEK_ZB, VIDEO_S_ZB, NAZOV_ZB, RIADKY_ZB, ZNAKY_ZB,
   type NovaZbierkaData, type MediumZbierky, type SpustenaZbierka,
 } from "@/lib/novaZbierka";
+import { uvodZPamate, nacitajUvod, potvrdUvod } from "@/lib/profilStranky";
+import { VERIME_VAM, PRAVIDLA_ORG, PRAVIDLA_NADPIS, PRAVIDLA_UVOD, SUHLAS_FOTKY, SUHLAS_POZNAMKA, SUHLAS_CHYBA, PRED_SPUSTENIM_NADPIS, PRED_SPUSTENIM, PRAVDIVA_ZBIERKA } from "@/lib/pravidlaObsahu";
 
 // ---------- drobné UI ----------
 const Ik = ({ d, s = 18, c = "currentColor", w = 2 }: { d: string; s?: number; c?: string; w?: number }) =>
@@ -74,6 +76,30 @@ const Nadpis = ({ t, pecat, d }: { t: string; pecat?: boolean; d?: ReactNode }) 
   <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}><span style={{ fontSize: 15.5, fontWeight: 800, color: "var(--ink)" }}>{t}</span>{d}{pecat && <Pecat />}</div>);
 
 // ============================================================
+// zaškrtnutie (súhlas v kroku 2, pravdivosť v kroku 6)
+const Zaskrtnutie = ({ on, onClick, children }: { on: boolean; onClick: () => void; children: ReactNode }) => (
+  <button type="button" role="checkbox" aria-checked={on} onClick={onClick} style={{ minHeight: 60, padding: "12px 18px", borderRadius: 16, border: `1.5px solid ${on ? "var(--gBd)" : "var(--cardBd)"}`, background: "var(--field)", cursor: "pointer", fontFamily: "inherit", textAlign: "left", display: "flex", alignItems: "flex-start", gap: 14 }}>
+    <span style={{ width: 26, height: 26, flex: "none", borderRadius: 8, border: `2px solid ${on ? "var(--green)" : "#BDB6A8"}`, background: on ? "var(--green)" : "transparent", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center" }}>{on && <Ik d={I.fajka} s={15} w={3} />}</span>
+    <b style={{ fontSize: 15, lineHeight: 1.45, color: "var(--ink)", alignSelf: "center" }}>{children}</b>
+  </button>);
+const odkaz: CSSProperties = { border: "none", background: "transparent", padding: "10px 0", color: "var(--green)", fontWeight: 800, cursor: "pointer", fontFamily: "inherit", fontSize: "inherit" };
+
+/** Pravidlá obsahu — rovnaké body ako pri skutku za charitu (jeden zdroj) */
+function PravidlaObsahu({ ph, stit, onZavri }: { ph: boolean; stit: string; onZavri: () => void }) {
+  useEffect(() => { const k = (e: KeyboardEvent) => { if (e.key === "Escape") onZavri(); }; window.addEventListener("keydown", k); return () => window.removeEventListener("keydown", k); }, [onZavri]);
+  return createPortal(
+    <div className="sprava-charity" data-stit={stit} style={{ position: "fixed", inset: 0, zIndex: 80, display: "flex", alignItems: ph ? "flex-end" : "center", justifyContent: "center", padding: ph ? 0 : 24, background: "transparent", minHeight: 0 }}>
+      <div onClick={onZavri} style={{ position: "absolute", inset: 0, background: "rgba(20,18,14,.45)" }} />
+      <div role="dialog" aria-modal="true" aria-label="Pravidlá obsahu" className="pf-rise" style={{ position: "relative", width: "100%", maxWidth: ph ? undefined : 560, maxHeight: ph ? "90%" : "86vh", overflowY: "auto", borderRadius: ph ? "28px 28px 0 0" : 24, background: "var(--panel)", padding: ph ? "20px 20px max(28px, env(safe-area-inset-bottom))" : "26px 28px 28px", display: "flex", flexDirection: "column", gap: 12, color: "var(--ink)" }}>
+        <span style={{ fontSize: 21, fontWeight: 800 }}>{PRAVIDLA_NADPIS}</span>
+        <span style={{ fontSize: 14.5, lineHeight: 1.5, color: "var(--ink2)" }}>{PRAVIDLA_UVOD}</span>
+        {PRAVIDLA_ORG.map(([t, x]) => (
+          <div key={t} style={{ display: "flex", gap: 10, fontSize: 14.5, lineHeight: 1.5, color: "var(--ink2)" }}><span aria-hidden="true" style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--green)", flex: "none", marginTop: 8 }} /><span><b style={{ color: "var(--ink)" }}>{t}</b> {x}</span></div>))}
+        <button type="button" onClick={onZavri} style={{ height: 52, marginTop: 6, border: "none", borderRadius: 14, background: "var(--green)", color: "#fff", fontFamily: "inherit", fontSize: 16, fontWeight: 800, cursor: "pointer" }}>Rozumiem</button>
+      </div>
+    </div>, document.body);
+}
+
 export function NovaZbierka({ strankaId, pozicia, tier, nazov, inicialy, mobil, tablet, stit, onMojeZbierky }: {
   strankaId: string; pozicia: Pozicia; tier: Tier; nazov: string; inicialy: string; mobil: boolean; tablet: boolean; stit: string;
   /** „Moje zbierky" (hotovo) */
@@ -108,6 +134,10 @@ export function NovaZbierka({ strankaId, pozicia, tier, nazov, inicialy, mobil, 
   const [nahlad, setNahlad] = useState<null | "str" | "detail">(null);
   const [hotovo, setHotovo] = useState<SpustenaZbierka | null>(null);
   const [pozriet, setPozriet] = useState(false);
+  // karta 37 · bod 8: „Veríme vám" raz pred prvou zbierkou (rovnaké úložisko ako pri skutku za charitu)
+  const [uvodOn, setUvodOn] = useState(() => !uvodZPamate(strankaId, "zbierka") && !uvodZPamate(strankaId, "skutok"));
+  useEffect(() => { let ziva = true; void nacitajUvod(strankaId).then((u) => { if (ziva) setUvodOn(!u.zbierka && !u.skutok); }); return () => { ziva = false; }; }, [strankaId]);
+  const [pravidla, setPravidla] = useState(false);
   const fotoRef = useRef<HTMLInputElement>(null), vidRef = useRef<HTMLInputElement>(null);
   const hore = useRef<HTMLDivElement>(null);
   // pri zmene kroku hore na začiatok správy (hlavička ostane vidno), nie pri prvom otvorení
@@ -120,7 +150,7 @@ export function NovaZbierka({ strankaId, pozicia, tier, nazov, inicialy, mobil, 
   const iban = d.iban.replace(/\s/g, "");
   const chybaKroku = (n: number): string => {
     if (n === 1) { if (!d.nazov.trim()) return "Doplňte názov zbierky"; if (!cistyText(d.popis)) return "Napíšte hlavný text"; if (riadky > RIADKY_ZB) return "Hlavný text je dlhší ako 12 riadkov"; }
-    if (n === 2 && !fotiek) return "Pridajte aspoň jednu fotku";
+    if (n === 2) { if (!fotiek) return "Pridajte aspoň jednu fotku"; if (!d.suhlas) return SUHLAS_CHYBA; }
     if (n === 3) {
       if (d.cielTyp === "ciel" && !(cielCislo(d) > 0)) return "Zadajte cieľovú sumu";
       if (!zadarmo && (!/^SK\d{2}/i.test(iban) || iban.length !== 24)) return "Zadajte transparentný účet (IBAN má 24 znakov a začína SK)"; // Zadarmo: IBAN sa nekontroluje
@@ -265,7 +295,15 @@ export function NovaZbierka({ strankaId, pozicia, tier, nazov, inicialy, mobil, 
 
   if (k === 1) {
     const dlhy = riadky > RIADKY_ZB, f = dlhy ? "#A34A2A" : riadky > 9 ? "#8A5A2B" : "var(--green)";
-    obsah = <>{hlavicka("O čom je zbierka", "Napíšte to tak, ako by ste to povedali susedovi.")}
+    obsah = <>{uvodOn && <section className="pf-rise" style={{ borderRadius: 22, background: "var(--gSoft)", border: "1.5px solid var(--gBd)", padding: ph ? "18px 18px" : "22px 24px", display: "flex", flexDirection: "column", gap: 10 }}>
+        <span style={{ fontSize: 21, fontWeight: 800, color: "var(--ink)" }}>{VERIME_VAM.nadpis}</span>
+        {VERIME_VAM.odseky.map((t) => <span key={t} style={{ fontSize: 15, lineHeight: 1.55, color: "var(--ink2)" }}>{t}</span>)}
+        <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap", marginTop: 4 }}>
+          <button type="button" onClick={() => { setUvodOn(false); void potvrdUvod(strankaId, "zbierka"); }} style={{ height: 48, padding: "0 24px", border: "none", borderRadius: 14, background: "var(--green)", color: "#fff", fontFamily: "inherit", fontSize: 15.5, fontWeight: 800, cursor: "pointer" }}>Rozumiem</button>
+          <button type="button" onClick={() => setPravidla(true)} style={{ ...odkaz, fontSize: 14.5 }}>Pravidlá obsahu ›</button>
+        </div>
+      </section>}
+      {hlavicka("O čom je zbierka", "Napíšte to tak, ako by ste to povedali susedovi.")}
       <section style={panel}>
         <Nadpis t="Názov zbierky" pecat />
         <input value={d.nazov} onChange={(e) => zmen({ nazov: e.target.value.slice(0, NAZOV_ZB) })} maxLength={NAZOV_ZB} placeholder="Napríklad: Invalidný vozík pre Ninu" aria-label="Názov zbierky" style={pole} />
@@ -333,6 +371,8 @@ export function NovaZbierka({ strankaId, pozicia, tier, nazov, inicialy, mobil, 
           <span style={{ width: 24, height: 24, flex: "none", borderRadius: "50%", background: "var(--gSoft)", color: "var(--gInk)", fontSize: 13, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>i</span>
           <span><b style={{ color: "var(--ink)" }}>Prvé je hlavné.</b> To ľudia uvidia ako prvé vo feede aj na vašom profile. Viac fotiek naraz pretiahnete z počítača rovno sem, alebo ich v okne vyberiete s podržaným Ctrl (na Macu Cmd). Poradie zmeníte potiahnutím alebo šípkami. Tlačidlom Výrez nastavíte, ktorá časť fotky bude vidno. Fotky a video môžete pridávať aj po spustení zbierky.</span>
         </div>}
+      <Zaskrtnutie on={!!d.suhlas} onClick={() => zmen({ suhlas: !d.suhlas })}>{SUHLAS_FOTKY}</Zaskrtnutie>
+        <span style={{ fontSize: 14, lineHeight: 1.5, color: "var(--ink2)", marginTop: -4 }}>{SUHLAS_POZNAMKA}{" "}<button type="button" onClick={() => setPravidla(true)} style={odkaz}>Pravidlá obsahu ›</button></span>
       </section></>;
   } else if (k === 3) {
     obsah = <>{hlavicka("Suma a účet", "Koľko potrebujete, ako dlho a kam peniaze prídu.")}
@@ -431,10 +471,11 @@ export function NovaZbierka({ strankaId, pozicia, tier, nazov, inicialy, mobil, 
             <button type="button" onClick={() => zmen({ krok: n })} style={{ flex: "none", minHeight: 44, padding: "0 6px", border: "none", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 800, color: "var(--green)" }}>Upraviť</button>
           </div>))}
       </section>
-      <button type="button" role="checkbox" aria-checked={ok} onClick={() => setOk(!ok)} style={{ minHeight: 60, padding: "12px 18px", borderRadius: 16, border: `1.5px solid ${ok ? "var(--gBd)" : "transparent"}`, background: "var(--field)", cursor: "pointer", fontFamily: "inherit", textAlign: "left", display: "flex", alignItems: "center", gap: 14 }}>
-        <span style={{ width: 26, height: 26, flex: "none", borderRadius: 8, border: `2px solid ${ok ? "var(--green)" : "#BDB6A8"}`, background: ok ? "var(--green)" : "transparent", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center" }}>{ok && <Ik d={I.fajka} s={15} w={3} />}</span>
-        <b style={{ fontSize: 15, lineHeight: 1.45, color: "var(--ink)" }}>{ph ? "Skontroloval som údaje so zámkom. Po spustení sa nedajú zmeniť." : "Skontroloval som údaje so zámkom. Viem, že po spustení sa nedajú zmeniť."}</b>
-      </button></>;
+      <section style={{ ...panel, padding: ph ? "16px 18px" : "16px 20px", gap: 10 }}>
+        <b style={{ fontSize: 16, color: "var(--ink)" }}>{PRED_SPUSTENIM_NADPIS}</b>
+        {PRED_SPUSTENIM.map((t) => <div key={t} style={{ display: "flex", gap: 10, alignItems: "flex-start", fontSize: 15, lineHeight: 1.5, color: "var(--ink2)" }}><span style={{ color: "var(--green)", display: "flex", flex: "none", marginTop: 2 }}><Ik d={I.fajka} s={18} w={2.6} /></span><span>{t}</span></div>)}
+      </section>
+      <Zaskrtnutie on={ok} onClick={() => setOk(!ok)}>{PRAVDIVA_ZBIERKA}</Zaskrtnutie></>;
   }
 
   // ---------- spodná lišta ----------
@@ -447,8 +488,9 @@ export function NovaZbierka({ strankaId, pozicia, tier, nazov, inicialy, mobil, 
       : <div style={{ flex: ph ? 1 : "none", width: ph ? undefined : 280, ["--gGrad" as string]: "linear-gradient(90deg,#4B7A35,#8DB866)" }}><PodrzTlacidlo label="Podržte a zapečaťte" disabled={!!chyba} onConfirm={() => void zapecat()} /></div>;
   const spatEl = k > 1 ? <button type="button" onClick={spat} aria-label="Späť" style={{ flex: "none", height: 52, minWidth: 52, padding: ph ? 0 : "0 18px 0 12px", borderRadius: 14, border: "1.5px solid var(--cardBd)", background: ph ? "var(--field)" : "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 15, fontWeight: 800, color: "var(--ink)", display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}><Ik d={I.vlavo} s={18} w={2.4} />{!ph && "Späť"}</button> : null;
 
+  const pravidlaEl = pravidla ? <PravidlaObsahu ph={ph} stit={stit} onZavri={() => setPravidla(false)} /> : null;
   if (ph) return (<>
-    <div ref={hore} style={{ display: "flex", flexDirection: "column", gap: 16 }}>{stepper}{obsah}</div>
+    <div ref={hore} style={{ display: "flex", flexDirection: "column", gap: 16 }}>{stepper}{obsah}</div>{pravidlaEl}
     <div aria-hidden="true" style={{ height: chyba ? 120 : 90 }} />
     {createPortal(
       <div className="sprava-charity" data-stit={stit} style={{ position: "fixed", left: 12, right: 12, bottom: "calc(96px + env(safe-area-inset-bottom, 0px))", zIndex: 45, display: "flex", flexDirection: "column", gap: 8, padding: 10, borderRadius: 18, background: "var(--panel)", border: "1px solid var(--cardBd)", boxShadow: "0 8px 24px rgba(30,28,20,.16)" }}>
@@ -457,7 +499,7 @@ export function NovaZbierka({ strankaId, pozicia, tier, nazov, inicialy, mobil, 
       </div>, document.body)}
   </>);
   return (<>
-    <div ref={hore} style={{ display: "flex", flexDirection: "column", gap: 18, width: "100%", maxWidth: 980, margin: "0 auto" }}>{stepper}<div style={{ display: "flex", flexDirection: "column", gap: 16, width: "100%", maxWidth: 820, margin: "0 auto" }}>{obsah}</div></div>
+    <div ref={hore} style={{ display: "flex", flexDirection: "column", gap: 18, width: "100%", maxWidth: 980, margin: "0 auto" }}>{stepper}<div style={{ display: "flex", flexDirection: "column", gap: 16, width: "100%", maxWidth: 820, margin: "0 auto" }}>{obsah}</div></div>{pravidlaEl}
     <div style={{ position: "sticky", bottom: 0, zIndex: 4, marginTop: 4, padding: "14px 0 16px", display: "flex", alignItems: "center", gap: 14, background: "var(--bg)", borderTop: "1px solid var(--cardBd)" }}>
       {spatEl}<span style={{ flex: 1 }} />{chybaEl}{dalejEl}
     </div>

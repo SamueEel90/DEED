@@ -21,6 +21,7 @@ import { useSession } from "@/lib/session";
 import { cisloZbierky, najdiZbierku } from "@/lib/zbierky";
 import { verejneBeziace } from "@/lib/retaz";
 import { profilZPamate, nacitajProfil, uvodZPamate, nacitajUvod, potvrdUvod } from "@/lib/profilStranky";
+import { VERIME_VAM, PRAVIDLA_ORG, PRAVIDLA_NADPIS, PRAVIDLA_UVOD, SUHLAS_FOTKY, SUHLAS_POZNAMKA, PRED_ZVEREJNENIM } from "@/lib/pravidlaObsahu";
 import { OBLASTI, normalizuj, pridajSkutok, upravSkutok, koncept as nacitajKoncept, ulozKoncept, nastavOhlasenie, ohlasenie as aktOhlasenie,
   konceptOrg, ulozKonceptOrg, pridajSkutokOrg,
   type Oblast, type ZbierkaVolba, type Ucastnik, type MojSkutok } from "@/lib/mojeSkutky";
@@ -128,16 +129,7 @@ type Media = { src: string; video: boolean; sek?: number };
 // OPRAVY 121 · skutok za charitu: limity ako pri zbierke (karta 37)
 const ORG_RIADKY = 12, ORG_ZNAKY = 1500, ORG_NAZOV = 80, ORG_FOTIEK = 8, ORG_VIDEO_S = 45;
 const ORG_NASTROJE = ["bold", "italic", "insertUnorderedList", "diktovat"];
-/** Pravidlá obsahu (kod/pravidla-obsahu-charity.md · Fotky a videá + Dôstojnosť) */
-const PRAVIDLA_ORG: [string, string][] = [
-  ["Súhlas zobrazených ľudí.", "Každá rozpoznateľná osoba na zábere súhlasila so zverejnením. Súhlas si uchovávate vy, pri spore ho máte vedieť predložiť."],
-  ["Deti len so súhlasom rodiča alebo zákonného zástupcu.", "Bez neho dieťa nefotíte, alebo mu zakryjete tvár."],
-  ["Vlastné zábery.", "Fotky a videá sú vaše alebo máte právo ich použiť. Žiadne obrázky z internetu, žiadne cudzie zábery vydávané za vlastnú činnosť."],
-  ["Súkromie prijímateľa.", "Nezverejňujte adresu, EČV, čísla dokladov ani iné údaje, podľa ktorých sa dá nájsť byt alebo dom človeka v núdzi. Polohové údaje z fotiek čistíme automaticky, ale text a záber strážite vy."],
-  ["Držte mieru.", "Fotka má ukazovať pomoc a výsledok, nie nešťastie v najhoršej chvíli."],
-  ["Dôstojnosť.", "Človek, ktorému pomáhate, nie je rekvizita. Ak si želá anonymitu, dostane ju. Zdravotný stav a podrobnosti o rodine len v rozsahu, s ktorým výslovne súhlasil."],
-];
-const PRED_ZVEREJNENIM = ["Píšete to tak, ako sa to naozaj stalo.", "Ľudia na fotkách o tom vedia a súhlasia, deti len so súhlasom rodiča.", "Žiadna politika, žiadna reklama. Toto je miesto pre skutky.", "Príbeh nech rozpráva pomoc, nie nešťastie."];
+// Pravidlá obsahu, „Veríme vám“, súhlas a „Pred zverejnením“ — jeden zdroj so Zbierkou: @/lib/pravidlaObsahu
 const dlzkaVidea = (src: string) => new Promise<number>((ok) => { const v = document.createElement("video"); v.preload = "metadata"; v.onloadedmetadata = () => ok(v.duration || 0); v.onerror = () => ok(-1); v.src = src; });
 const fmtSek = (x: number) => `${Math.floor(x / 60)}:${String(Math.round(x % 60)).padStart(2, "0")}`;
 type Vysledok = { verdikt: "ok"; odp: ScoreOdpoved } | { verdikt: "zamietnut" } | null;
@@ -161,12 +153,12 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
   const stranka = pr.strankaId ?? pr.autor ?? "charita";
   const o = (ty: string, vy: string) => (org ? vy : ty);
   const [orgLogo, setOrgLogo] = useState<string | null>(() => (org ? profilZPamate(stranka).ulozeny?.logo ?? null : null));
-  const [uvodOn, setUvodOn] = useState(() => org && !uvodZPamate(stranka, "skutok"));
+  const [uvodOn, setUvodOn] = useState(() => org && !uvodZPamate(stranka, "skutok") && !uvodZPamate(stranka, "zbierka"));
   useEffect(() => {
     if (!org) return;
     let ziva = true;
     void nacitajProfil(stranka).then((z) => { if (ziva) setOrgLogo(z.ulozeny?.logo ?? null); });
-    void nacitajUvod(stranka).then((u) => { if (ziva) setUvodOn(!u.skutok); });
+    void nacitajUvod(stranka).then((u) => { if (ziva) setUvodOn(!u.skutok && !u.zbierka); });
     return () => { ziva = false; };
   }, [org, stranka]);
   const [po2Org, setPo2Org] = useState("");
@@ -567,9 +559,8 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
     const pp = ([["Pred", pred, predRef, "linear-gradient(135deg,#C9C4B8,#9C968A)"], ["Po", poF, poRef, "linear-gradient(135deg,#B9C7CF,#7E97A8)"]] as const);
     obsah = telo(<>
       {org && uvodOn && <div className="pf-rise" style={{ borderRadius: 18, background: "var(--gSoft)", border: "1px solid var(--gBd)", padding: "16px 18px", display: "flex", flexDirection: "column", gap: 8 }}>
-        <div style={{ fontSize: 19, fontWeight: 800 }}>Veríme vám</div>
-        <div style={{ fontSize: 14.5, lineHeight: 1.55, color: "var(--ink2)" }}>Vaše skutky ani zbierky nekontroluje umelá inteligencia. Ako organizácia za svoj obsah zodpovedáte sami a my veríme, že píšete pravdu.</div>
-        <div style={{ fontSize: 14.5, lineHeight: 1.55, color: "var(--ink2)" }}>Preto sú u nás tresty za klamstvo a podvod prísne a bez výnimiek. Nepravdivý obsah stiahneme, zbierky pozastavíme a pri podvode organizácia stratí overenie aj účet.</div>
+        <div style={{ fontSize: 19, fontWeight: 800 }}>{VERIME_VAM.nadpis}</div>
+        {VERIME_VAM.odseky.map((t) => <div key={t} style={{ fontSize: 14.5, lineHeight: 1.55, color: "var(--ink2)" }}>{t}</div>)}
         <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap", marginTop: 4 }}>
           <button type="button" onClick={() => { setUvodOn(false); void potvrdUvod(stranka, "skutok"); }} style={{ height: 48, padding: "0 24px", borderRadius: 14, border: "none", background: "var(--green)", color: "#fff", fontSize: 15, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}>Rozumiem</button>
           <button type="button" onClick={() => setPrvOrg(true)} style={{ height: 44, border: "none", background: "transparent", padding: 0, color: "var(--green)", fontSize: 14.5, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}>Pravidlá obsahu ›</button>
@@ -698,8 +689,8 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
         <div style={{ fontSize: 13, lineHeight: 1.5, color: "var(--ink2)" }}><b style={{ color: "var(--ink)" }}>Prvé je hlavné.</b> To ľudia uvidia ako prvé na vašom profile aj tam, kde pôsobíte. Poradie zmeníte šípkami. Fotky a video môžete pridávať aj neskôr.</div>
         <div style={{ padding: "12px 14px", borderRadius: 14, background: "var(--gSoft)", border: "1px solid var(--gBd)", fontSize: 13.5, lineHeight: 1.5, color: "var(--ink2)" }}><b style={{ color: "var(--ink)" }}>Fotka nie je povinná.</b> Niekedy je lepšie nefotiť, napríklad človeka v ťažkej chvíli. Ak žiadnu nepridáte, pri skutku sa ukáže vaše logo.</div>
         {maMedia && <>
-          <Zaskrt on={su} onClick={() => setSu(!su)} zarovnaj="flex-start">Na fotkách a videách mám súhlas zobrazených osôb, pri deťoch súhlas zákonného zástupcu. Zábery sú moje alebo mám právo ich použiť.</Zaskrt>
-          <div style={{ fontSize: 13, lineHeight: 1.5, color: "var(--ink3)" }}>Súhlas si uchovávate vy, pri spore ho máte vedieť predložiť. Nezverejňujte adresu, EČV ani doklady. Polohu z fotiek čistíme automaticky.{" "}
+          <Zaskrt on={su} onClick={() => setSu(!su)} zarovnaj="flex-start">{SUHLAS_FOTKY}</Zaskrt>
+          <div style={{ fontSize: 13, lineHeight: 1.5, color: "var(--ink3)" }}>{SUHLAS_POZNAMKA}{" "}
             <button type="button" onClick={() => setPrvOrg(true)} style={{ border: "none", background: "transparent", padding: "10px 0", color: "var(--green)", fontWeight: 800, cursor: "pointer", fontFamily: "inherit", fontSize: 13 }}>Pravidlá obsahu ›</button></div>
         </>}
       </div> : plan ? <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -1026,8 +1017,8 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
         {prvOrg && <div style={{ position: "absolute", inset: 0, zIndex: 3, display: "flex", alignItems: "flex-end" }}>
           <div onClick={() => setPrvOrg(false)} style={{ position: "absolute", inset: 0, background: "var(--scrim)" }} />
           <div role="dialog" aria-label="Pravidlá obsahu" className="pf-rise" style={{ position: "relative", width: "100%", maxHeight: "92%", overflowY: "auto", borderRadius: "28px 28px 0 0", background: "var(--sheet)", padding: "18px 20px max(28px, env(safe-area-inset-bottom))", display: "flex", flexDirection: "column", gap: 12 }}>
-            <div style={{ fontSize: 20, fontWeight: 800 }}>Fotky a videá</div>
-            <div style={{ fontSize: 14.5, lineHeight: 1.5, color: "var(--ink2)" }}>Zverejnením fotky alebo videa potvrdzujete, že na to máte právo.</div>
+            <div style={{ fontSize: 20, fontWeight: 800 }}>{PRAVIDLA_NADPIS}</div>
+            <div style={{ fontSize: 14.5, lineHeight: 1.5, color: "var(--ink2)" }}>{PRAVIDLA_UVOD}</div>
             {PRAVIDLA_ORG.map(([t, x]) => (
               <div key={t} style={{ display: "flex", gap: 10, fontSize: 14.5, lineHeight: 1.5, color: "var(--ink2)" }}><span aria-hidden="true" style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--green)", flex: "none", marginTop: 8 }} /><span><b style={{ color: "var(--ink)" }}>{t}</b> {x}</span></div>))}
             <button type="button" onClick={() => setPrvOrg(false)} style={{ ...P.hlavne, height: 54, borderRadius: 16, fontSize: 16, marginTop: 6 }}>Rozumiem</button>
