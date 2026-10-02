@@ -32,6 +32,7 @@ import { VolbaFirma } from "@/features/profil/Zamestnavatel";
 import { qk, repo } from "@/data";
 import type { GoodPolozka } from "@/types";
 import { usePridatSkutok, zavriPridatSkutok, type PridatParams } from "./otvor";
+import { zastavDiktovanie } from "@/lib/diktovanie";
 import "@/styles/platba.css";
 
 /** karma za bod skóre z AI (placeholder — presné pravidlo určí kalibrácia) */
@@ -203,7 +204,6 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
   const [aiSt, setAiSt] = useState<null | "beh" | "ok" | "zle">(ohl || pr.skutok ? "ok" : null);
   const [aiC, setAiC] = useState(false);
   const [aiU, setAiU] = useState(false);
-  const [mic, setMic] = useState(false);
   const [pred, setPred] = useState<string | null>(null);
   const [poF, setPoF] = useState<string | null>(null);
   const [media, setMedia] = useState<Media[]>([]);
@@ -240,7 +240,6 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
   const dokRef = useRef<HTMLInputElement>(null);
   const vidRef = useRef<HTMLInputElement>(null);
   const liveT = useRef<number>(0);
-  const recRef = useRef<{ stop: () => void } | null>(null);
 
   const text = useMemo(() => cistyText(po), [po]);
   const maMedia = media.length > 0 || !!pred || !!poF;
@@ -250,7 +249,7 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
   const rozpisane = !!(text || nz0.trim());
 
   // ---- zavretie ----
-  const zavri = () => { setOtv(false); recRef.current?.stop(); setTimeout(pr.onClose, 280); };
+  const zavri = () => { setOtv(false); zastavDiktovanie(); setTimeout(pr.onClose, 280); }; // OPRAVY 125: Zavrieť vždy, diktovanie hneď abort
   const skusZavriet = () => { if (kr >= 2 && kr <= 5 && rozpisane) return setZo(true); zavri(); };
   useEffect(() => {
     const k = (e: KeyboardEvent) => { if (e.key === "Escape") { if (zo) setZo(false); else if (prv) setPrv(false); else if (prvOrg) setPrvOrg(false); else skusZavriet(); } };
@@ -286,19 +285,6 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
   };
   const aiNavrhNazov = nz0.trim() ? nz0.trim()[0].toUpperCase() + nz0.trim().slice(1) : nazovZTextu(text);
 
-  // ---- diktovanie (systémové, sk-SK) ----
-  const diktuj = () => {
-    if (mic) { recRef.current?.stop(); setMic(false); return; }
-    const W = window as unknown as { SpeechRecognition?: new () => SpeechRec; webkitSpeechRecognition?: new () => SpeechRec };
-    const R = W.SpeechRecognition || W.webkitSpeechRecognition;
-    if (!R) { toast("Diktovanie tento prehliadač nepodporuje. Skús diktovanie na klávesnici telefónu."); return; }
-    const r = new R();
-    r.lang = "sk-SK"; r.interimResults = false; r.continuous = false;
-    r.onresult = (e) => { const t = Array.from(e.results).map((x) => x[0].transcript).join(" ").trim(); if (t) zmenPo(`${po}<p>${t.replace(/[<>&]/g, "")}</p>`); };
-    r.onend = () => setMic(false);
-    r.onerror = () => { setMic(false); toast("Diktovanie sa nepodarilo."); };
-    recRef.current = r; setMic(true); r.start();
-  };
 
   // ---- dôkazy ----
   const nacitajObr = async (f: File) => (f.type.startsWith("video/") ? { src: URL.createObjectURL(f), video: true } : { src: await spracujFotku(f, { pomer: null, maxSirka: 1568 }), video: false });
@@ -653,9 +639,7 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
         <div style={P.lbl}>{plan ? "ČO SA CHYSTÁŠ UROBIŤ" : "ČO SI UROBIL"}</div>
         <input value={nz0} onChange={(e) => setNz0(e.target.value)} maxLength={70} placeholder="Názov, napr. Pitný režim pre susedu (nepovinné)" aria-label="Názov skutku" style={P.pole} />
         <RichTextInput value={po} onChange={zmenPo} minH={130} ariaLabel="Opis skutku"
-          placeholder={plan ? "Opíš, čo sa chystáš urobiť a prečo. Píš ako vieš, AI ti text upraví do najlepšej podoby." : "Opíš, čo si urobil, pre koho a prečo. Píš ako vieš, AI ti text upraví do najlepšej podoby."}
-          vpravo={<button type="button" onClick={diktuj} aria-label="Diktovať hlasom" aria-pressed={mic} onMouseDown={(e) => e.preventDefault()}
-            style={{ marginLeft: "auto", height: 32, padding: "0 10px", border: "none", borderRadius: 8, background: mic ? "var(--gSoft)" : "transparent", color: mic ? "var(--gInk)" : "var(--ink2)", display: "flex", alignItems: "center", gap: 5, fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}><Ik d={IK.mic} s={15} />{mic ? "Počúvam…" : "Diktovať"}</button>} />
+          placeholder={plan ? "Opíš, čo sa chystáš urobiť a prečo. Píš ako vieš, AI ti text upraví do najlepšej podoby." : "Opíš, čo si urobil, pre koho a prečo. Píš ako vieš, AI ti text upraví do najlepšej podoby."} />
         <div style={P.maly}>Text môžeš vložiť aj z Wordu alebo inej appky. Tučné, nadpisy, odrážky a odkazy ostanú, ostatné formátovanie sa zjednotí so vzhľadom <DeedZnacka />.</div>
         {!plan && !ohl && <>
           <Zaskrt on={prav} onClick={() => setPrav(!prav)}><b style={{ color: "var(--ink)" }}>Robím to pravidelne</b></Zaskrt>
@@ -1059,7 +1043,4 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
   );
 }
 
-type SpeechRec = {
-  lang: string; interimResults: boolean; continuous: boolean; start: () => void; stop: () => void;
-  onresult: (e: { results: ArrayLike<ArrayLike<{ transcript: string }>> }) => void; onend: () => void; onerror: () => void;
-};
+

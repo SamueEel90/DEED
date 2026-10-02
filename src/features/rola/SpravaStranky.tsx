@@ -9,6 +9,7 @@
 import { otvorPridatSkutok } from "@/features/skutok/otvor";
 import { DeedZnacka } from "@/components/DeedZnacka";
 import { NovaZbierka } from "./NovaZbierka";
+import { zastavDiktovanie } from "@/lib/diktovanie";
 import { SpravaZbierky, type ZbierkaNaSpravu } from "./SpravaZbierky";
 import { useZmenyZbierok, zbierkyStrankyZPamate, nacitajZbierkyStranky, konceptZbierkyZPamate, nacitajKonceptZbierky, cielCislo, KROKY_ZBIERKY, type SpustenaZbierka, type NovaZbierkaData } from "@/lib/novaZbierka";
 import { UpravitProfilCharity, VerejnyProfilOkno, zakladnyProfil } from "./UpravitProfilCharity";
@@ -272,12 +273,13 @@ export function SpravaStranky({ onBack, typ: typStranky = "charita", strankaId =
   const [limitOkno, setLimitOkno] = useState(false);
   const [spravZb, setSpravZb] = useState<ZbierkaNaSpravu | null>(null); // KARTA 38: ktorú zbierku spravujem
   const [verejny, setVerejny] = useState(false); // OPRAVY 107: tlačidlo Verejný profil = skutočný verejný profil
-  const otvor = (s: Sub) => { if (s === "x:Verejný profil") { setVerejny(true); return; }
+  const otvor = (s: Sub) => { zastavDiktovanie(); if (s === "x:Verejný profil") { setVerejny(true); return; }
     // KARTA 37 · bod 3: v programe Zadarmo beží jedna zbierka naraz (limit z stav.ts)
     if (s === "x:Nová zbierka" && sub !== s && beziacich >= KONFIG.limitZbierok[tier]) { setLimitOkno(true); return; }
     // OPRAVY 118/121: Pridať skutok = ten istý PridatSkutok, za charitu (organizacia: true)
     if (s === "pridatSkutok") { if (!smieSkutokZaCharitu(rola)) { toast("Skutok za charitu pridá len správca alebo Organizátor."); return; } otvorPridatSkutok({ autor: nazov, organizacia: true, strankaId, centralna: centralnaZbierka }); return; } if (s === sub) return; hist.current = [...hist.current, sub].slice(-30); setSub(s); };
   const spat = () => {
+    zastavDiktovanie(); // OPRAVY 125: Späť funguje vždy, diktovanie hneď abort
     if (hist.current.length) { const h = [...hist.current]; const p = h.pop()!; hist.current = h; setSub(p); }
     else if (sub !== null) setSub(null);
     else onBack();

@@ -8,6 +8,7 @@
 // Bez knižnice (TipTap/Quill by pridali stovky kB — základ zvládne
 // contentEditable; ak neskôr treba viac, vymení sa vnútro, API ostane).
 // ============================================================
+import { useDiktovanie, diktovanieDostupne, VETA_MIKROFON } from "@/lib/diktovanie";
 import { useEffect, useRef, useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
 import { C, SPACE, RADIUS } from "@/theme";
@@ -35,8 +36,6 @@ const NASTROJE: Array<{ id: string; label: string; titul: string; styl?: CSSProp
 ];
 /** KARTA 33 · vzhľad editora v Správe stránky — popisky tlačidiel podľa prototypu */
 const POPIS_SPRAVA: Record<string, string> = { mensie: "A−", odkaz: "URL" };
-type SpeechRec = { lang: string; interimResults: boolean; continuous: boolean; start: () => void; stop: () => void;
-  onresult: ((e: { results: ArrayLike<ArrayLike<{ transcript: string }>> }) => void) | null; onend: (() => void) | null; onerror: (() => void) | null };
 const EMOJI = ["❤️", "🙏", "💛", "🤝", "✨", "🎉", "🏠", "🍲", "🧸", "🌱", "🐾", "👉"];
 
 /** zapnuté formátovanie pod kurzorom (null = kurzor nie je v editore) */
@@ -68,7 +67,10 @@ export function RichTextInput({ value, onChange, placeholder, minH = 110, ariaLa
   onZnaky?: (n: number) => void;
 }) {
   const sp = vzhlad === "sprava";
-  const lista = NASTROJE.filter((n) => (nastroje ? nastroje.includes(n.id) : n.id !== "emoji"));
+  const lista0 = NASTROJE.filter((n) => (nastroje ? nastroje.includes(n.id) : n.id !== "emoji"));
+  // OPRAVY 125: kde diktovanie nejde (iPhone v appke z plochy, prehliadač bez neho) → bez tlačidla, s vetou o mikrofóne
+  const bezDiktovania = lista0.some((n) => n.id === "diktovat") && !diktovanieDostupne();
+  const lista = bezDiktovania ? lista0.filter((n) => n.id !== "diktovat") : lista0;
   const [emojiOtv, setEmojiOtv] = useState(false);
   const [znakov, setZnakov] = useState(0);
   // ktoré formátovanie je práve zapnuté pod kurzorom — tlačidlo sa vysvieti
@@ -81,8 +83,9 @@ export function RichTextInput({ value, onChange, placeholder, minH = 110, ariaLa
   }, []);
   const posledne = useRef<string>(""); // čo sme naposledy emitli — nech externý echo nepremaže kurzor
   const [prazdne, setPrazdne] = useState(!value);
-  const [mic, setMic] = useState(false);
-  const recRef = useRef<SpeechRec | null>(null);
+  // OPRAVY 125: diktovanie len cez lib/diktovanie (jedno pre appku, poistka 8 s, abort pri zatvorení)
+  const dikt = useDiktovanie((t) => { try { ref.current?.focus(); prikaz("insertText", (prazdne ? "" : " ") + t); emit(); } catch { /* pole už nie je */ } });
+  const mic = dikt.mic;
   // riadky = počet rôznych výšok riadkov textu v editore (Range.getClientRects), prepočíta sa aj pri zmene šírky
   const merajRiadky = () => {
     const el = ref.current; if (!el || !onRiadky) return;
@@ -157,16 +160,7 @@ export function RichTextInput({ value, onChange, placeholder, minH = 110, ariaLa
     } else if (id === "spat") {
       prikaz("undo");
     } else if (id === "diktovat") {
-      if (mic) { recRef.current?.stop(); setMic(false); return; }
-      const W = window as unknown as { SpeechRecognition?: new () => SpeechRec; webkitSpeechRecognition?: new () => SpeechRec };
-      const R = W.SpeechRecognition || W.webkitSpeechRecognition;
-      if (!R) { toast("Diktovanie tento prehliadač nepodporuje. Skúste diktovanie na klávesnici telefónu."); return; }
-      const r = new R();
-      r.lang = "sk-SK"; r.interimResults = false; r.continuous = false;
-      r.onresult = (e) => { const t = Array.from(e.results).map((x) => x[0].transcript).join(" ").trim(); if (t) { ref.current?.focus(); prikaz("insertText", (prazdne ? "" : " ") + t); emit(); } };
-      r.onend = () => setMic(false);
-      r.onerror = () => setMic(false);
-      recRef.current = r; setMic(true); r.start();
+      dikt.prepni();
       return;
     } else if (id === "odkaz") {
       const url = window.prompt("Adresa odkazu (https://…):", "https://");
@@ -218,6 +212,7 @@ export function RichTextInput({ value, onChange, placeholder, minH = 110, ariaLa
               color: aktivne.includes(n.id) ? "#fff" : C.textSec, fontSize: 13, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", ...n.styl }}>
             {sp ? (n.id === "diktovat" && mic ? "Počúvam…" : POPIS_SPRAVA[n.id] ?? n.label) : n.id === "odkaz" ? IKONA_ODKAZ : n.label}
           </button>); })}
+        {bezDiktovania && <span style={{ marginLeft: "auto", padding: "0 6px", fontSize: 12.5, fontWeight: 600, lineHeight: 1.3, color: sp ? "var(--ink3)" : C.textTer }}>{VETA_MIKROFON}</span>}
         {vpravo}
       </div>
       {emojiOtv && (
