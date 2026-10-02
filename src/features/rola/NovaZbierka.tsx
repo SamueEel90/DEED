@@ -15,6 +15,7 @@ import PodrzTlacidlo from "@/features/zbierka/PodrzTlacidlo";
 import { potvrditTuknutim } from "@/features/zbierka/Platba";
 import { PROGRAM_TIER, nacitajIbanOrg, type Pozicia, type Tier } from "./stav";
 import { eurcText, HLAVNY_UCET } from "./NastaveniaCharity";
+import { OverenieUctu, useOverenieUctu } from "./OverenieUctu";
 import {
   prazdnaZbierka, konceptZbierkyZPamate, nacitajKonceptZbierky, ulozKonceptZbierky, spustiZbierku, lehotaZbierky, cielCislo, jeIne,
   DLHA_FEED_TEXT, DLHA_PRIEBEZNE_TEXT, SADY, SADY_EURC, KROKY_ZBIERKY, UCELY, LEHOTY, MAX_FOTIEK_ZB, VIDEO_S_ZB, NAZOV_ZB, RIADKY_ZB, ZNAKY_ZB,
@@ -148,6 +149,8 @@ export function NovaZbierka({ strankaId, pozicia, tier, nazov, inicialy, mobil, 
   const fotiek = d.media.filter((m) => m.typ === "foto").length;
   const video = d.media.find((m) => m.typ === "video");
   const iban = d.iban.replace(/\s/g, "");
+  // KARTA 39 · bod 2: vlastný účet (od P1) sa overuje overovacou platbou; kým nie je overený, zbierka sa nespustí
+  const overenie = useOverenieUctu(strankaId, zadarmo ? "" : d.iban);
   const chybaKroku = (n: number): string => {
     if (n === 1) { if (!d.nazov.trim()) return "Doplňte názov zbierky"; if (!cistyText(d.popis)) return "Napíšte hlavný text"; if (riadky > RIADKY_ZB) return "Hlavný text je dlhší ako 12 riadkov"; }
     if (n === 2) { if (!fotiek) return "Pridajte aspoň jednu fotku"; if (!d.suhlas) return SUHLAS_CHYBA; }
@@ -156,6 +159,7 @@ export function NovaZbierka({ strankaId, pozicia, tier, nazov, inicialy, mobil, 
       if (!zadarmo && (!/^SK\d{2}/i.test(iban) || iban.length !== 24)) return "Zadajte transparentný účet (IBAN má 24 znakov a začína SK)"; // Zadarmo: IBAN sa nekontroluje
     }
     if (n === 5) { if (d.ucel == null) return "Vyberte, na aký účel zbierate"; if (jeIne(d)) { if (!d.ineT.trim()) return "Napíšte, na čo zbierate"; if (d.ineL == null) return "Vyberte lehotu na doklady"; } }
+    if (n === 6 && !zadarmo && overenie?.stav !== "overeny") return "Účet zbierky ešte nie je overený";
     if (n === 6 && !ok) return "Potvrďte, že ste údaje skontrolovali";
     return "";
   };
@@ -207,7 +211,7 @@ export function NovaZbierka({ strankaId, pozicia, tier, nazov, inicialy, mobil, 
     ["Názov", d.nazov || "—", 1, true], ["Popis", cistyText(d.popis).slice(0, 140) || "—", 1, true],
     ["Fotky a video", `${fotiek} ${fotiek === 1 ? "fotka" : fotiek >= 2 && fotiek <= 4 ? "fotky" : "fotiek"} · ${video ? `video ${fmtSek(video.sek ?? 0)}` : "bez videa"} · hlavné: ${d.media[0] ? (d.media[0].typ === "video" ? "video" : "fotka 1") : "—"}`, 2, false],
     ["Ako dlho", typT, 3, true], ["Suma", maCiel ? fmtEur(cielCislo(d)) : "otvorená, bez cieľa", 3, true],
-    [zadarmo ? "Kam prídu peniaze" : "Transparentný účet", zadarmo ? `${hlavnyUcet} · hlavný účet` : d.iban || "—", 3, true],
+    [zadarmo ? "Kam prídu peniaze" : "Transparentný účet", zadarmo ? `${hlavnyUcet} · hlavný účet` : d.iban ? `${d.iban} · ${overenie?.stav === "overeny" ? "overený" : "čaká na overenie"}` : "—", 3, true],
     ["Rýchle sumy", `${SADY[d.sada][0]} · ${SADY[d.sada][1].join(" · ")} €`, 4, false],
     ...(eurcRezim === "nie" ? [] : [["Dary v EURC", eurcOn ? `áno · ${SADY_EURC[d.sadaE][0]} ${SADY_EURC[d.sadaE][1].map(cis).join(" · ")}` : "nie", 4, false] as [string, string, number, boolean]]),
     ...(zadarmo ? [] : [["Pravidelná podpora", d.prav ? "áno, sumu volí darca" : "nie", 4, false] as [string, string, number, boolean]]), ["Dokladovanie", dokladyT, 5, true],
@@ -401,6 +405,7 @@ export function NovaZbierka({ strankaId, pozicia, tier, nazov, inicialy, mobil, 
           <Nadpis t={ph ? "Transparentný účet" : "Transparentný účet zbierky"} pecat />
           <input value={d.iban} onChange={(e) => { const v = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 24); zmen({ iban: v.replace(/(.{4})/g, "$1 ").trim() }); }} placeholder="SK00 0000 0000 0000 0000 0000" aria-label="Transparentný účet zbierky" style={{ ...pole, maxWidth: ph ? undefined : 520 }} />
           <span style={{ ...pozn, marginTop: -6 }}>{ph ? "Pohyby na ňom vidí každý." : "Pohyby na ňom vidí každý. Pri zbierke ho ukážeme darcom."}</span>
+          <OverenieUctu stranka={strankaId} iban={d.iban} ph={ph} />
         </>}
       </section></>;
   } else if (k === 4) {
