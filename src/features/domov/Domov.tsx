@@ -1,3 +1,4 @@
+import { otvorIskry } from "@/features/iskry/otvor";
 import { Emo, IkonaVlajka, IkonaTerc } from "@/components/icons";
 import { DeedZnacka } from "@/components/DeedZnacka";
 import { NahlasitSheet } from "@/components/nahlasit";
@@ -208,7 +209,7 @@ function Home({ wide, toast, otvorModul, pohlad, setPohlad, radius, setRadius, o
   // štatistický riadok — počet vo zvolenom okruhu + klikateľný výber okruhu
   const statRiadok = (
     <StatRiadok pocet={feed.length} jednotka="skutkov" mesiac="9 480" miesto={nastavenia.odPolohy ? `${lokalita.mesto} · podľa polohy` : ja.mesto}
-      okruh={FEED_CFG.radiusy[radius].krat} onOkruh={() => setVyberOkruh(true)} />
+      okruh={FEED_CFG.radiusy[radius].krat} onOkruh={() => setVyberOkruh(true)} onIskry={otvorIskry} />
   );
 
   // „TOP DNES" — vodorovný pruh najvýznamnejších skutkov (rovnaký zdroj ako modul Top).

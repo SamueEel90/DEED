@@ -233,3 +233,16 @@ export function relCas(cas: number): string {
   const dni = Math.floor(h / 24);
   return dni === 1 ? "včera" : `pred ${dni} d.`;
 }
+
+/** KARTA 41 (DEV/mock) — cudzí dar „ako keby prišiel z enginu" (meno z POOL-u, súhlas podľa verzie).
+ *  V produkcii prídu cudzie dary zo servera (realtime), nie odtiaľto. */
+export function pridajCudziDarMock(refId: string, suma: number, anonym = false): DarRiadok {
+  const d = POOL[Math.floor(Math.random() * POOL.length)];
+  const riadok: DarRiadok = {
+    id: `dar-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, refId, cas: Date.now(), suma, kanal: suma < 1 ? "deed" : "psp",
+    registrovany: true, verzia: (anonym ? 4 : 2) as VerziaIdentity, zobrazSumu: !anonym, ...d,
+  };
+  sklad.set(refId, [riadok, ...riadkyPre(refId)]);
+  emit();
+  return riadok;
+}

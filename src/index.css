@@ -226,3 +226,11 @@ html.obmedz-anim *, html.obmedz-anim *::before, html.obmedz-anim *::after {
   animation-duration: 0.01ms !important; animation-iteration-count: 1 !important;
   transition-duration: 0.15s !important; scroll-behavior: auto !important;
 }
+
+/* KARTA 41 · Iskry — skrytý posuvník, dvojitý ťuk (zlatá iskra 0,8 s), crossfade pása */
+.isk-scroll::-webkit-scrollbar { display: none; }
+@keyframes iskDva { 0% { opacity: 0; transform: scale(.3); } 25% { opacity: 1; transform: scale(1.15); } 60% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: translateY(-40px) scale(.8); } }
+.isk-dva { animation: iskDva .8s cubic-bezier(.2,.8,.3,1) forwards; }
+@keyframes iskPas { from { opacity: 0; } to { opacity: 1; } }
+.isk-pas { animation: iskPas .22s ease both; }
+@media (prefers-reduced-motion: reduce) { .isk-dva { animation-duration: .01s; } .isk-pas { animation: none; } }
