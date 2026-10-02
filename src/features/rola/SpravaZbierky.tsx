@@ -661,11 +661,12 @@ function ZmenaUcelu({ ucel, zmena, onZiadost, onSchval }: { ucel?: string; zmena
 }
 
 // ---- Doklady (2 stĺpce: vľavo obsah, vpravo stav) ----
-function DokladyCharity({ zbierkaId, s, zmen, vyzbierane, teraz, mobil, toast }: {
-  zbierkaId: string; s: StavZbierky; zmen: (p: Partial<StavZbierky>) => void; vyzbierane: number; teraz: number; mobil: boolean; toast: (m: string) => void;
+/** KARTA 39 · bod 3: `nepovinne` = centrálna zbierka — dokladovanie dobrovoľné, bez povinného minima a lehoty */
+export function DokladyCharity({ zbierkaId, s, zmen, vyzbierane, teraz, mobil, toast, nepovinne }: {
+  zbierkaId: string; s: StavZbierky; zmen: (p: Partial<StavZbierky>) => void; vyzbierane: number; teraz: number; mobil: boolean; toast: (m: string) => void; nepovinne?: boolean;
 }) {
   const pasI = pasmoPre(vyzbierane), pas = PASMA_DOKLADOV[pasI];
-  const hotovo = pas.povinne.every((p) => splnene(p, s, vyzbierane));
+  const hotovo = nepovinne ? (s.doklady.length > 0 || !!s.text.trim() || s.fotky.length > 0) : pas.povinne.every((p) => splnene(p, s, vyzbierane));
   const pct = percentoDolozenia(s, vyzbierane);
   const [text, setText] = useState(s.text);
   const [form, setForm] = useState(false);
@@ -701,6 +702,7 @@ function DokladyCharity({ zbierkaId, s, zmen, vyzbierane, teraz, mobil, toast }:
   const zverejni = () => {
     if (!hotovo) return;
     zmen({ zverejnene: new Date().toISOString() });
+    if (nepovinne) { toast("Zverejnené. Darcovia to uvidia pri zbierke."); return; }
     pridajOznamDarcom({ zbierkaId, typ: "dolozene" }); // 2. a posledná správa darcom
     toast("Zverejnené. Darcom išla druhá a posledná správa.");
   };
@@ -762,21 +764,21 @@ function DokladyCharity({ zbierkaId, s, zmen, vyzbierane, teraz, mobil, toast }:
       <span style={{ display: "block", height: 8, borderRadius: 4, background: "var(--track)", overflow: "hidden" }}><span style={{ display: "block", height: "100%", width: "100%", background: "var(--green)", transformOrigin: "left", transform: `scaleX(${pct / 100})`, transition: "transform .5s ease" }} /></span>
       <span style={textS}>Darcovia vidia pri zbierke „doložené {pct} %“. Položka bez dokladu sa nepočíta.</span>
     </section>
-    <section style={kartaS}>
+    {!nepovinne && <section style={kartaS}>
       <span style={nadpisS}>Povinné minimum · {pas.label}</span>
       {pas.povinne.map((p) => { const ok = splnene(p, s, vyzbierane); return (
         <div key={p} style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 14, color: "var(--ink2)" }}>
           <span style={{ width: 22, height: 22, flex: "none", borderRadius: "50%", border: `2px solid ${ok ? "var(--green)" : "#BDB6A8"}`, background: ok ? "var(--green)" : "transparent", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center" }}>{ok && <IkS d={IKS.fajka} s={13} w={3} />}</span>{POZIADAVKA_TEXT[p]}
         </div>); })}
-    </section>
-    {ukoncena && (faza === "vyzva" || faza === "caka") && <section style={kartaS}>
+    </section>}
+    {!nepovinne && ukoncena && (faza === "vyzva" || faza === "caka") && <section style={kartaS}>
       <span style={nadpisS}>Nemáte doklady?</span>
       <span style={textS}>{faza === "vyzva" ? `Lehota uplynula. Doložte, prosím, do ${dniT(dni)}, alebo napíšte zdôvodnenie.` : "Pri zbierke sa ukazuje „čaká na doklady“. Doložte, alebo napíšte zdôvodnenie."}</span>
       <textarea value={zdov} onChange={(e) => setZdov(e.target.value)} rows={2} placeholder="Nemáme doklady, pretože…" aria-label="Zdôvodnenie" style={{ ...poleS, resize: "vertical" }} />
       <button type="button" onClick={() => { if (zdov.trim().length < 20) { toast("Napíšte zdôvodnenie aspoň jednou vetou."); return; } zmen({ zdovodnenieBezDokladov: zdov.trim() }); toast("Zdôvodnenie sme poslali. Posúdi ho DEED+."); }} style={tlO}>Poslať zdôvodnenie</button>
     </section>}
-    <button type="button" onClick={zverejni} aria-disabled={!hotovo} style={{ ...tlZ, alignSelf: "stretch", opacity: hotovo ? 1 : 0.5, cursor: hotovo ? "pointer" : "default" }}>{s.zverejnene ? "Aktualizovať a poslať darcom" : "Zverejniť a poslať darcom"}</button>
-    <span style={{ fontSize: 13, lineHeight: 1.45, color: "var(--ink3)" }}>{s.zverejnene ? `Zverejnené ${dnes(s.zverejnene)}.` : hotovo ? "Darcom pôjde druhá a posledná správa: na čo išli peniaze." : "Najprv doplňte povinné minimum. Darcom potom pôjde druhá a posledná správa."}</span>
+    <button type="button" onClick={zverejni} aria-disabled={!hotovo} style={{ ...tlZ, alignSelf: "stretch", opacity: hotovo ? 1 : 0.5, cursor: hotovo ? "pointer" : "default" }}>{nepovinne ? (s.zverejnene ? "Aktualizovať" : "Zverejniť") : s.zverejnene ? "Aktualizovať a poslať darcom" : "Zverejniť a poslať darcom"}</button>
+    <span style={{ fontSize: 13, lineHeight: 1.45, color: "var(--ink3)" }}>{s.zverejnene ? `Zverejnené ${dnes(s.zverejnene)}.` : nepovinne ? "Nepovinné. Darcovia uvidia pri zbierke, na čo išli peniaze." : hotovo ? "Darcom pôjde druhá a posledná správa: na čo išli peniaze." : "Najprv doplňte povinné minimum. Darcom potom pôjde druhá a posledná správa."}</span>
     {FLAGS.dev_tier_switcher && <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center", fontSize: 12, color: "var(--ink3)" }}>
       <b>DEV · vyzbierané:</b>
       {[undefined, 80, 300, 1000, 3000, 8000].map((v) => <button key={String(v)} type="button" onClick={() => zmen({ simVyzbierane: v })} style={{ minHeight: 32, padding: "0 10px", borderRadius: 16, border: `1px solid ${s.simVyzbierane === v ? "var(--green)" : "var(--cardBd)"}`, background: "transparent", fontFamily: "inherit", fontSize: 12, color: s.simVyzbierane === v ? "var(--green)" : "var(--ink3)", cursor: "pointer" }}>{v === undefined ? "skutočné" : eur(v)}</button>)}

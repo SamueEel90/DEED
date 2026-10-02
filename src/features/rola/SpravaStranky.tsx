@@ -11,6 +11,7 @@ import { DeedZnacka } from "@/components/DeedZnacka";
 import { NovaZbierka } from "./NovaZbierka";
 import { zastavDiktovanie } from "@/lib/diktovanie";
 import { SpravaZbierky, type ZbierkaNaSpravu } from "./SpravaZbierky";
+import { CentralnaZbierkaSprava } from "./CentralnaSprava";
 import { useZmenyZbierok, zbierkyStrankyZPamate, nacitajZbierkyStranky, konceptZbierkyZPamate, nacitajKonceptZbierky, cielCislo, jeIne, UCELY, KROKY_ZBIERKY, type SpustenaZbierka, type NovaZbierkaData } from "@/lib/novaZbierka";
 import { UpravitProfilCharity, VerejnyProfilOkno, zakladnyProfil } from "./UpravitProfilCharity";
 import { nacitajProfil, profilZPamate, uplnostProfilu, type ProfilStranky } from "@/lib/profilStranky";
@@ -24,12 +25,13 @@ import { potvrditTuknutim, nastavPotvrditTuknutim } from "@/features/zbierka/Pla
 import { TESTOVACIA } from "@/lib/testovacia";
 import { nacitajPiny, ulozPiny, pinyZPamate, nacitajZbalenie, ulozZbalenie, zbalenieZPamate, type Zbalenie } from "@/lib/spravaPiny";
 import { nastavStitSpravy } from "@/lib/stitAppky";
-import { ObrOznamenia, ObrEur, ObrEurc, ObrUcty, ObrSpravcovia, ObrUdaje, ObrProgram, ObrZariadenia, ObrSuhlasy, ObrStiahnut, ObrFaq, ObrPodpora, ObrZrusit, PROG, pocetSpravcov, pocetZariadeni, eurcText, eurText } from "./NastaveniaCharity";
+import { ObrOznamenia, ObrEur, ObrEurc, ObrUcty, ObrSpravcovia, ObrUdaje, ObrProgram, ObrZariadenia, ObrSuhlasy, ObrStiahnut, ObrFaq, ObrPodpora, ObrZrusit, PROG, pocetSpravcov, pocetZariadeni, eurcText, eurText, HLAVNY_UCET } from "./NastaveniaCharity";
 import {
   FLAGS, KONFIG, nacitajTiery, ulozTiery, maPovolenie, vidnoPolozku, smieSkutokZaCharitu, type RolaStranky, odProgramu, PROGRAM_NAZOV, PIN_MAX,
   nacitajStitCharity, ulozStitCharity, nacitajCharituNovu, ulozCharituNovu,
   type PolozkaSpravy, type StitCharity, type Tier, type Pozicia,
   type TypStranky, TYP_NAZOV, TYPY_STRANOK, TYP_SKRYTY, NASTROJE_TYPU, typPovoli, STIT_SADA_TYPU, type StitSada,
+  nacitajIbanOrg,
 } from "./stav";
 
 // ---------- ikony (cesty z prototypu) ----------
@@ -326,6 +328,8 @@ export function SpravaStranky({ onBack, typ: typStranky = "charita", strankaId =
     onMojeZbierky={() => { hist.current = []; setSub("g_zbierky"); }} />;
   else if (sub === "x:Správa zbierky" && spravZb) obsah = <SpravaZbierky key={spravZb.id} z={spravZb} mobil={!wide} toast={toast} onZbierky={() => { hist.current = []; setSub("g_zbierky"); }} />;
   else if (sub.startsWith("x:")) obsah = <Pripravujeme />;
+  // KARTA 39 · bod 3: centrálna zbierka (od P1)
+  else if (sub === "centralna" && typPovoli("centralna", typ) && maPovolenie("centralna", tier)) obsah = <CentralnaZbierkaSprava strankaId={strankaId} nazov={nazov} inicialy={inicialy} hlavnyUcet={nacitajIbanOrg(poz) || HLAVNY_UCET} mobil={!desktop} tablet={tablet} toast={toast} />;
   else obsah = !typPovoli(sub as PolozkaSpravy, typ) ? <Pripravujeme /> : maPovolenie(sub as PolozkaSpravy, tier) ? <Pripravujeme /> : <Zamknute program={odProgramu(sub as PolozkaSpravy)} />;
 
   const aktivnaSkupina: string | null = sub === null ? null : sub === "nast" || (sub as string).startsWith("n:") ? "nast" : sub === "penazenka" || (sub as string).startsWith("g_") ? sub : (sub as string).startsWith("x:") || sub === "profil" || sub === "vsetko" ? null : SKUPINA_POLOZKY(sub as PolozkaSpravy, typ);

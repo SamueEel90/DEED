@@ -46,6 +46,7 @@ import { FormatovanyText } from "@/components/formattext";
 import { cistyText } from "@/lib/richtext";
 import { verejneTaby, cislaSubjektu } from "./obsah";
 import { ZbierkaModul } from "@/features/zbierka/ZbierkaModul";
+import { centralnaZPamate, nacitajCentralnuZbierku, useZmenyCentralnej } from "@/lib/centralnaZbierka";
 import { CudziProfil } from "@/features/cudzi-profil/CudziProfil";
 import type { Zbierka } from "@/lib/zbierky";
 import type { OrgPole, StitUroven } from "@/features/zbierka/Pole";
@@ -221,7 +222,11 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack, strankaId =
   // pravidelná podpora = funkcia zbierky (charita od programu ZBIERKA/T1); môže aj neregistrovaný (s e-mailom)
   const [pravidelna, setPravidelna] = useState<{ id: string | null; nazov: string; sektor?: string } | null>(null);
   const maPravidelnu = pozicia === "charita" && tier >= 1;
-  const maCentralnu = pozicia === "charita" && tier >= 1 && nacitajCentralnu("charita");
+  // KARTA 39 · bod 3: centrálna zbierka zo správy (profil_stranky.centralna); staré úložisko len záloha
+  useZmenyCentralnej();
+  useEffect(() => { if (strankaId) void nacitajCentralnuZbierku(strankaId); }, [strankaId]);
+  const centr = strankaId ? centralnaZPamate(strankaId) : null;
+  const maCentralnu = pozicia === "charita" && tier >= 1 && (nacitajCentralnu("charita") || !!centr);
   const [zvoncek, setZvoncek] = useState(false);
   const [qr, setQr] = useState(false);
   const [menu, setMenu] = useState(false);
@@ -230,7 +235,9 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack, strankaId =
   useZmenyDarov(); // prekreslí sumy po každom dare
   const registrovany = ja.typ !== "pasivny";
   const logoOrg = (pr ? pr.logo : null) ?? nacitajLogo(pozicia) ?? s.foto;
-  const profilCentralnej = nacitajProfil(CENTRALNA_ID) ?? { nazov: `${s.nazov} — celá organizácia`, popis: "" };
+  const profilCentralnej: ProfilZbierky = centr
+    ? { nazov: `${s.nazov} — celá organizácia`, popis: cistyText(centr.popis), fotky: centr.media.filter((m) => m.typ === "foto").map((m) => m.src) }
+    : nacitajProfil(CENTRALNA_ID) ?? { nazov: `${s.nazov} — celá organizácia`, popis: "" };
   const [platbaRef, setPlatbaRef] = useState<{ id: string; komu: string } | null>(null);
   // zápis daru → zoznam darcov + súčty (registrovaný so zvoleným menom, inak anonym)
   const daruj = (refId: string, suma: number, kanal: "psp" | "sepa" | "deed", volba?: VolbaDaru, komu?: string) => {
