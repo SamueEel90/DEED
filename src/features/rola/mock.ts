@@ -240,7 +240,6 @@ export const PANEL_CHARITA: PanelBlok[] = [
 export const SPRAVA_CHARITA: SpravaItem[] = [
   // ZADARMO
   { id: "zbierky", emoji: "ciel", nazov: "Zbierky — vytvoriť a spravovať", popis: "Zbierka na 30 dní · predĺžiť, topovať, ukončiť · dokladovanie použitia", tierMin: 0, sekcia: "zbierky" },
-  { id: "skutok", emoji: "hviezda", nazov: "Pridať skutok", popis: "Do feedu mesta — takto sme pomohli, fotky pred/po a doklady", tierMin: 0, sekcia: "obsah" },
   { id: "video", emoji: "video", nazov: "Mám talent — video", popis: "Video do 45 s s platobným modulom · 1 / mesiac, ďalšie 10 €", tierMin: 0, sekcia: "obsah" },
   { id: "darcovia", emoji: "obalka", nazov: "Prehľad darcov a vyzbieraných súm", popis: "Zoznam darcov a hromadné poďakovanie", tierMin: 0, sekcia: "prehlady" },
   { id: "vypis", emoji: "dokument", nazov: "Ročný výpis činnosti", popis: "Podklad na výročnú schôdzu", tierMin: 0, sekcia: "prehlady" },
