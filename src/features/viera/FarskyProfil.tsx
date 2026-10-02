@@ -423,7 +423,7 @@ function ModeraciaSheet({ fid, onClose, toast }: { fid: string; onClose: () => v
         const pyta = potvrd === it.id;
         return (
           <div key={it.id} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, background: N.card, border: `1px solid ${pyta ? "var(--a-danger)" : N.line}`, borderRadius: RADIUS.sm, padding: `${SPACE.sm}px ${SPACE.gutter}px`, marginBottom: SPACE.xs, opacity: del ? .5 : 1 }}>
-            <span style={{ fontSize: 17, flex: "none" }}>{it.emoji ?? "📢"}</span>
+            <span style={{ fontSize: 17, flex: "none" }}><Emo e={it.emoji ?? "oznam"} /></span>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 13.5, fontWeight: 700, textDecoration: del ? "line-through" : "none", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it.nazov}</div>
               <div style={{ fontSize: 11, color: N.txt3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{pyta ? "⚠ Naozaj zmazať? Ťukni ešte raz na Zmazať" : it.popis}</div>

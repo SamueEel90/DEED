@@ -386,7 +386,7 @@ function FarnostFeed({ f, onPrispevok }: { f: Farnost; onPrispevok: (z: VieraFee
                   {o.smutocny ? (
                     <ParteMiniatura s={o.smutocny} w={52 * k} h={64 * k} />
                   ) : (<>
-                    <Foto src={o.fotky?.[0]} emoji={o.emoji ?? "📢"} w={58 * k} h={44 * k} radius={RADIUS.xs} sizes={`${58 * k}px`} alt={o.nazov} />
+                    <Foto src={o.fotky?.[0]} emoji={o.emoji ?? "oznam"} w={58 * k} h={44 * k} radius={RADIUS.xs} sizes={`${58 * k}px`} alt={o.nazov} />
                     {o.fotky?.length && o.emoji ? (
                       <span style={{ position: "absolute", bottom: -4, right: -4, fontSize: 12 * k, lineHeight: 1, filter: "drop-shadow(0 1px 2px rgba(0,0,0,.5))" }}><Emo e={o.emoji} /></span>
                     ) : null}

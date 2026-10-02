@@ -238,9 +238,50 @@ export function IkonaOdznakOver({ size = 18, color = "var(--a-info)" }: { size?:
 
 // ---- Emoji z dát (mock, DB) → čiarová ikona. V UI sa emoji nezobrazujú (OPRAVY 35).
 // Ikona má veľkosť 1em, takže preberá font-size miesta, kde predtým stálo emoji.
+/** Ikony podľa kľúča (bez emoji v dátach — pravidlo appky). `emoji: "darcek"` → <Emo e="darcek" /> */
+export const IKONY_KLUC: Record<string, string> = {
+  srdce: "M12 21s-7-4.4-9.3-9A5 5 0 0 1 12 6a5 5 0 0 1 9.3 6c-2.3 4.6-9.3 9-9.3 9z",
+  darcek: "M20 12v9H4v-9M2 7h20v5H2zM12 21V7M12 7H7.5a2.5 2.5 0 1 1 0-5C11 2 12 7 12 7zM12 7h4.5a2.5 2.5 0 1 0 0-5C13 2 12 7 12 7z",
+  jedlo: "M4 11h16a8 8 0 0 1-16 0zM8 7c0-1 1-1.5 1-2.5M12 7c0-1 1-1.5 1-2.5M16 7c0-1 1-1.5 1-2.5",
+  dom: "M3 11l9-8 9 8M5 10v10h14V10M10 20v-6h4v6",
+  video: "M3 7h12v10H3zM15 10l6-3v10l-6-3",
+  retaz: "M10 13a5 5 0 0 0 7.5.5l2-2a5 5 0 0 0-7-7l-1.2 1.1M14 11a5 5 0 0 0-7.5-.5l-2 2a5 5 0 0 0 7 7l1.2-1.1",
+  kalendar: "M4 6h16v14H4zM4 10h16M8 3v4M16 3v4",
+  pozor: "M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z",
+  hviezda: "M12 3l2.6 5.6 6 .7-4.5 4.1 1.2 6L12 16.8 6.7 19.4l1.2-6L3.4 9.3l6-.7z",
+  oslava: "M4 21h16M6 21v-8h12v8M9 13V9M15 13V9M12 13V8M9 6.5c0-1 .8-1.5.8-2.5M15 6.5c0-1 .8-1.5.8-2.5M12 5.5c0-1 .8-1.5.8-2.5",
+  ludia: "M9 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM3 20c.8-3.2 3.2-5 6-5s5.2 1.8 6 5M16 5.5a3 3 0 0 1 0 5.5M18 15c1.6.6 2.6 2.4 3 5",
+  graf: "M4 20V10M10 20V4M16 20v-7M22 20H2",
+  auto: "M5 17h14v-5l-2-5H7l-2 5zM5 12h14M7.5 17v2M16.5 17v2",
+  postel: "M3 18v-8M3 14h18v4M21 18v-4a3 3 0 0 0-3-3h-7v3M6 11.5a1.5 1.5 0 1 0 0-.01",
+  ciel: "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 12h.01",
+  euro: "M17 6a7 7 0 1 0 0 12M4 10h9M4 14h9",
+  obalka: "M3 6h18v12H3zM3 7l9 6 9-6",
+  dokument: "M7 3h7l5 5v13H7zM14 3v5h5M10 13h6M10 17h6",
+  qr: "M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h2v2h-2zM18 18h2v2h-2zM14 18h2",
+  dielce: "M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z",
+  pin: "M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11zM12 12.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5",
+  oko: "M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12zM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6",
+  vlna: "M2 12c2-3 4-3 6 0s4 3 6 0 4-3 6 0M2 17c2-3 4-3 6 0s4 3 6 0 4-3 6 0",
+  ceruzka: "M4 20h4L19 9l-4-4L4 16z",
+  karta: "M3 6h18v12H3zM3 10h18M7 15h4",
+  hodiny: "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 7v5l3 2",
+  pohar: "M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0zM7 6H4a3 3 0 0 0 3 4M17 6h3a3 3 0 0 1-3 4",
+  stit: "M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z",
+  budova: "M3 21h18M5 21V10M19 21V10M9 21v-6h6v6M2 10l10-6 10 6",
+  kostol: "M12 2v4M10 4h4M6 21V11l6-4 6 4v10M3 21h18M10 21v-4a2 2 0 0 1 4 0v4",
+  hudba: "M9 18V5l12-2v13M9 18a3 3 0 1 1-6 0 3 3 0 0 1 6 0zM21 16a3 3 0 1 1-6 0 3 3 0 0 1 6 0z",
+  zvon: "M6 16V11a6 6 0 0 1 12 0v5l2 2H4zM10 20a2 2 0 0 0 4 0",
+  svieca: "M9 10h6v11H9zM12 10V7M12 7c-1.2-1.2-1.2-2.8 0-4 1.2 1.2 1.2 2.8 0 4z",
+  prsten: "M12 21a6 6 0 1 0 0-12 6 6 0 0 0 0 12zM9.5 9 8 5h8l-1.5 4",
+  holubica: "M3 13c3 0 5-2 6-5l3 2c2-3 5-4 9-4-1 3-3 5-6 6l-2 5-3-3c-3 1-5 0-7-1z",
+  metla: "M14 3 9 13M5 13h8l2 8H3z",
+  modlitba: "M12 3v9M8 21l4-9 4 9M9 8h6",
+  hory: "M3 20l6-10 4 6 3-4 5 8z",
+  start: "M5 19l3-3M14 4l6 6-8 8-6-6zM14 4c2-1 5-1 6 0 1 1 1 4 0 6",
+  oznam: "M3 11v3a1.5 1.5 0 0 0 1.5 1.5H6l4.5 4V6.5L6 10.5H4.5A1.5 1.5 0 0 0 3 12zM14 8.5a5 5 0 0 1 0 7M17 5.5a9 9 0 0 1 0 13",
+};
 const EMO_CESTY: [RegExp, string][] = [
-  // KARTA 40: oznamy bez emoji — kľúč „oznam" = megafón
-  [/^oznam$/, "M3 11v3a1.5 1.5 0 0 0 1.5 1.5H6l4.5 4V6.5L6 10.5H4.5A1.5 1.5 0 0 0 3 12zM14 8.5a5 5 0 0 1 0 7M17 5.5a9 9 0 0 1 0 13"],
   [/⛓|🔗/u, "M10 13a5 5 0 0 0 7.5.5l2-2a5 5 0 0 0-7-7l-1.2 1.1M14 11a5 5 0 0 0-7.5-.5l-2 2a5 5 0 0 0 7 7l1.2-1.1"],
   [/♻/u, "M4 12a8 8 0 0 1 14-5.3M20 4v5h-5M20 12a8 8 0 0 1-14 5.3M4 20v-5h5"],
   [/🛡/u, "M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"],
@@ -267,6 +308,6 @@ const EMO_SRDCE = "M12 21s-7-4.4-9.3-9A5 5 0 0 1 12 6a5 5 0 0 1 9.3 6c-2.3 4.6-9
 export function Emo({ e }: { e?: ReactNode }) {
   if (e == null || e === "") return null;
   if (typeof e !== "string") return <>{e}</>;
-  const d = EMO_CESTY.find(([r]) => r.test(e))?.[1] ?? EMO_SRDCE;
+  const d = IKONY_KLUC[e] ?? EMO_CESTY.find(([r]) => r.test(e))?.[1] ?? EMO_SRDCE;
   return <svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ display: "inline-block", verticalAlign: "-0.125em", flex: "none" }}><path d={d} /></svg>;
 }

@@ -79,7 +79,7 @@ const IKONY: Record<string, ReactNode> = {
   akcia: <IkonaKalendar size={17} />, vto: <IkonaHodiny size={17} />, esg: <IkonaGraf size={17} />,
   odmeny: <IkonaDarcek size={17} />,
 };
-const ikonaPre = (id: string, fallback: string): ReactNode => IKONY[id] ?? <span style={{ fontSize: 16 }}>{fallback}</span>;
+const ikonaPre = (id: string, fallback: string): ReactNode => IKONY[id] ?? <span style={{ fontSize: 16 }}><Emo e={fallback} /></span>;
 
 /** Prihlásená charita sa najprv načíta z databázy (údaje z registrácie), potom sa ukáže správa. */
 export function MojDeedFiremny({ onBack, toast }: { onBack: () => void; toast: (m: string) => void }) {
@@ -247,7 +247,7 @@ function MojDeedFiremnyObsah({ onBack, toast, orgId }: { onBack: () => void; toa
             const blok = PANELY[pozicia].find((b) => b.id === BLOK_ZA_TAB[t.key]);
             riadky.push({ k: `tab-${t.key}`, tier: -1, el: (posledna) => (
               <MenuPolozka key={`tab-${t.key}`} posledna={posledna}
-                ikona={<span style={{ fontSize: 15 }}>{t.polozky[0]?.emoji ?? "📄"}</span>} farba="var(--a-plum)"
+                ikona={<span style={{ fontSize: 15 }}><Emo e={t.polozky[0]?.emoji ?? "dokument"} /></span>} farba="var(--a-plum)"
                 label={t.label} popis={popisTabu(t)} hodnota={String(t.polozky.length)}
                 onClick={() => (blok ? blokAkcia(blok) : setPodstranka(true))} />
             ) });
@@ -265,7 +265,7 @@ function MojDeedFiremnyObsah({ onBack, toast, orgId }: { onBack: () => void; toa
               label="Adresár firiem" popis="Overené firmy a ich podpora komunity" onClick={() => setSheet("adresarB2B")} />
           ) });
           const zamk = [
-            ...zamknuteTaby(pozicia, tier).map((t) => ({ k: `tab-${t.key}`, t: t.odTieru ?? 0, emoji: t.polozky[0]?.emoji ?? "📄", nazov: t.label, ikona: null as ReactNode })),
+            ...zamknuteTaby(pozicia, tier).map((t) => ({ k: `tab-${t.key}`, t: t.odTieru ?? 0, emoji: t.polozky[0]?.emoji ?? "dokument", nazov: t.label, ikona: null as ReactNode })),
             ...bloky.filter((b) => !Object.values(BLOK_ZA_TAB).includes(b.id) && tier < b.tierMin)
               .map((b) => ({ k: b.id, t: b.tierMin as number, emoji: b.emoji, nazov: b.nazov, ikona: ikonaPre(b.id, b.emoji) })),
           ].sort((a, b) => a.t - b.t);
@@ -296,7 +296,7 @@ function MojDeedFiremnyObsah({ onBack, toast, orgId }: { onBack: () => void; toa
             const zamknute = !it.povinne && tier < it.tierMin;
             return (
               <MenuPolozka key={it.id}
-                ikona={it.id === startId ? <span style={{ fontSize: 17 }}>🚀</span> : ikonaPre(it.id, it.emoji)}
+                ikona={it.id === startId ? <span style={{ fontSize: 17 }}><Emo e="start" /></span> : ikonaPre(it.id, it.emoji)}
                 farba={it.povinne ? "var(--a-green)" : "var(--a-info)"}
                 label={it.nazov}
                 chip={it.id === startId

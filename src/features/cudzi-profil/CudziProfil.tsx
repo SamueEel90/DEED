@@ -1,3 +1,4 @@
+import { Emo } from "@/components/icons";
 import { useState } from "react";
 import { StityRad } from "@/components/stit";
 import { stityOblastiSubjektu } from "@/lib/stityOblasti";
@@ -214,7 +215,7 @@ function OrgProfil({ s, onBack, toast, onKampan, onZavriet }: { s: CudziSubjektO
         <FotoProfiluSheet
           titul={`Fotky profilu · ${meno}`}
           popis="Profilová fotka a titulná fotka tohto profilu."
-          foto={vlastne.avatar ?? logo} nahrada={s.emoji ?? meno[0]}
+          foto={vlastne.avatar ?? logo} nahrada={s.emoji ? <Emo e={s.emoji} /> : meno[0]}
           onZmena={(url) => { zmenFotky({ avatar: url }); toast?.(url ? "Profilová fotka uložená" : "Profilová fotka vrátená na pôvodnú"); }}
           cover={vlastne.cover ?? cover}
           onCover={(url) => { zmenFotky({ cover: url }); toast?.(url ? "Titulná fotka uložená" : "Titulná fotka vrátená na pôvodnú"); }}
