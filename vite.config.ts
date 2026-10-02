@@ -12,9 +12,12 @@ export default defineConfig({
     // bez ANTHROPIC_API_KEY beží hodnotenie v MOCK režime)
     apiDevPlugin(),
     // PWA: manifest + service worker (precache shellu, runtime cache obrázkov/dlaždíc/API).
-    // registerType "prompt" → update ohlási sonner toast s tlačidlom Obnoviť (src/lib/pwa.ts).
+    // TESTOVANIE: registerType "autoUpdate" — nová verzia sa načíta sama pri ďalšom otvorení
+    // (s "prompt" čakala na ťuk Obnoviť v hláške na 12 s a testeri videli mix starého a nového).
+    // PRED OSTRÝM SPUSTENÍM vrátiť na 'prompt' a z workboxu zmazať skipWaiting + clientsClaim
+    // → update zase ohlási sonner toast s tlačidlom Obnoviť (src/lib/pwa.ts).
     VitePWA({
-      registerType: 'prompt',
+      registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'icons/apple-touch-icon.png'],
       manifest: {
         name: 'DEED+ — platforma dobra',
@@ -36,7 +39,11 @@ export default defineConfig({
         // hlavný balík prerástol 2 MiB (preklady) — bez tohto build na Verceli padne
         maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
         // SPA fallback nechaj len na navigácie (deep-linky /m /c /r … dostanú shell)
-        navigateFallbackDenylist: [/^\/assets\//],
+        navigateFallbackDenylist: [/^\/assets\//, /^\/video\//, /^\/img\//, /^\/api\//],
+        // TESTOVANIE (s autoUpdate): nový SW prevezme appku hneď, staré cache sa zmažú
+        skipWaiting: true,
+        clientsClaim: true,
+        cleanupOutdatedCaches: true,
         runtimeCaching: [
           {
             // content fotky (Unsplash) — cache-first s limitom, offline feed má obrázky
