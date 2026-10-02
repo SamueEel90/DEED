@@ -211,13 +211,11 @@ function IskryPrud() {
                 <div style={{ position: "absolute", left: 14, right: 78, bottom: "calc(28px + env(safe-area-inset-bottom, 0px))", display: "flex", flexDirection: "column", gap: 10, color: "#fff" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                     <span style={{ width: 42, height: 42, flex: "none", borderRadius: v.org ? 12 : "50%", background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 800, color: "#3F6E2A" }}>{v.ini}</span>
-                    <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 4 }}>
+                    <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}>
                       <b style={{ fontSize: 15.5, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{v.autor}</b>
                       <span style={{ fontSize: 12.5, opacity: 0.85, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{v.kto}</span>
-                      <span style={{ display: "flex" }}>
-                        <button type="button" aria-pressed={sled} onClick={() => prepniSledovanie(v.autor)} style={{ flex: "none", whiteSpace: "nowrap", minHeight: 32, padding: "0 12px", borderRadius: 16, border: "1.5px solid #fff", background: sled ? "transparent" : "#fff", cursor: "pointer", fontFamily: "inherit", fontSize: 12.5, fontWeight: 800, color: sled ? "#fff" : "#1D211B" }}>{sled ? "Sledujete" : "Sledovať"}</button>
-                      </span>
                     </span>
+                    <button type="button" aria-pressed={sled} onClick={() => prepniSledovanie(v.autor)} style={{ flex: "none", whiteSpace: "nowrap", minHeight: 32, padding: "0 12px", borderRadius: 16, border: "1.5px solid #fff", background: sled ? "transparent" : "#fff", cursor: "pointer", fontFamily: "inherit", fontSize: 12.5, fontWeight: 800, color: sled ? "#fff" : "#1D211B" }}>{sled ? "Sledujete" : "Sledovať"}</button>
                   </div>
                   <span style={{ fontSize: 14.5, lineHeight: 1.45 }}>{v.popis}</span>
                   {v.zbierka && <div style={{ display: "flex", flexDirection: "column", gap: 4, padding: "10px 12px", borderRadius: 14, background: "rgba(0,0,0,.45)", border: "1px solid rgba(255,255,255,.18)" }}>
