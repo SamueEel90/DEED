@@ -30,7 +30,7 @@ const IK = {
   iskra: "M12 2l2.2 6.8L21 11l-6.8 2.2L12 20l-2.2-6.8L3 11l6.8-2.2z",
   dar: "M20 12v9H4v-9M2 7h20v5H2zM12 21V7M12 7H7.5a2.5 2.5 0 1 1 0-5C11 2 12 7 12 7zM12 7h4.5a2.5 2.5 0 1 0 0-5C13 2 12 7 12 7z",
   zdielat: "M4 12v8h16v-8M16 6l-4-4-4 4M12 2v14",
-  spat: "M15 18l-6-6 6-6", hraj: "M8 5l12 7-12 7z",
+  spat: "M15 18l-6-6 6-6", hraj: "M8 5l12 7-12 7z", hore: "M6 15l6-6 6 6", dole: "M6 9l6 6 6-6",
 };
 const eur = (n: number) => `${n.toLocaleString("sk-SK", { maximumFractionDigits: 2 })} €`;
 const cis = (n: number) => n.toLocaleString("sk-SK", { minimumFractionDigits: n % 1 ? 2 : 0, maximumFractionDigits: 2 });
@@ -51,6 +51,16 @@ export function IskryHost() {
   return <IskryPrud />;
 }
 
+/** PC od 900 px: prúd ako telefón v strede (400 px), okolo tmavé pozadie; mobil a tablet = celá obrazovka */
+const MQ_PC_ISKRY = "(min-width: 900px)";
+function usePcIskry() {
+  const [pc, setPc] = useState(() => window.matchMedia(MQ_PC_ISKRY).matches);
+  useEffect(() => { const m = window.matchMedia(MQ_PC_ISKRY), f = () => setPc(m.matches); m.addEventListener("change", f); return () => m.removeEventListener("change", f); }, []);
+  return pc;
+}
+/** appka zväčšuje celé rozhranie (zoom na html podľa veľkosti písma) — v Iskrách to vraciame na 1 */
+const bezZoomu = () => 1 / (parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--pismo")) || 1);
+
 type Sheet = null | { typ: "dar" | "darcovia" | "namietka"; v: Iskra };
 
 function IskryPrud() {
@@ -70,12 +80,16 @@ function IskryPrud() {
   const videa = useRef<Record<string, HTMLVideoElement | null>>({});
   const posledny = useRef<{ id: string; t: number; x: number; y: number } | null>(null);
 
+  const pc = usePcIskry();
   const list = ISKRY_MOCK.filter((v) => druh === 0 || v.druh === druh);
   const akt = list[Math.min(idx, list.length - 1)];
 
   // Esc = zavrieť (PC), zablokovať posun stránky pod prúdom
   useEffect(() => {
-    const k = (e: KeyboardEvent) => { if (e.key === "Escape") { if (sheet) setSheet(null); else zavriIskry(); } };
+    const k = (e: KeyboardEvent) => {
+      if (e.key === "Escape") { if (sheet) setSheet(null); else zavriIskry(); }
+      else if ((e.key === "ArrowDown" || e.key === "ArrowUp") && !sheet) { e.preventDefault(); posunRef.current(e.key === "ArrowDown" ? 1 : -1); }
+    };
     window.addEventListener("keydown", k);
     const pred = document.body.style.overflow; document.body.style.overflow = "hidden";
     return () => { window.removeEventListener("keydown", k); document.body.style.overflow = pred; };
@@ -104,6 +118,9 @@ function IskryPrud() {
   const ukazPas = (hl: string, kam: string) => setPrepis({ hl, kam, k: Date.now() });
   const { aktualny, pridaj, pridajMoj, dalsi } = useDarRad((n) => ukazPas(`+${n} ${n >= 5 ? "darov" : "dary"} za minútu`, "Iskry"));
 
+  /** šípky (tlačidlá na PC aj klávesnica): o jedno video hore / dole */
+  const posun = (o: 1 | -1) => { const el = sc.current; if (!el) return; const i = Math.max(0, Math.min(list.length - 1, Math.round(el.scrollTop / Math.max(1, el.clientHeight)) + o)); el.scrollTo({ top: i * el.clientHeight, behavior: "smooth" }); };
+  const posunRef = useRef(posun); posunRef.current = posun; // eslint-disable-line react-hooks/refs
   const skoc = (id: string) => {
     let i = list.findIndex((x) => x.id === id);
     if (i < 0) { setDruh(0); i = ISKRY_MOCK.findIndex((x) => x.id === id); }
@@ -157,8 +174,11 @@ function IskryPrud() {
   const poloha = aktualny ? meraj() : undefined; // eslint-disable-line react-hooks/refs
 
   return (
-    <div role="dialog" aria-modal="true" aria-label="Iskry" style={{ position: "fixed", inset: 0, zIndex: 140, background: "#0E0F0C", display: "flex", justifyContent: "center", fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
-      <div ref={root} style={{ position: "relative", width: "min(100vw, max(390px, calc(100dvh * 0.56)))", height: "100dvh", overflow: "hidden", background: "#0E0F0C" }}>
+    <div role="dialog" aria-modal="true" aria-label="Iskry" onClick={(e) => { if (pc && e.target === e.currentTarget) zavriIskry(); }}
+      style={{ position: "fixed", inset: 0, zIndex: 140, zoom: bezZoomu(), background: pc ? "rgba(14,15,12,.85)" : "#0E0F0C", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Plus Jakarta Sans', sans-serif" } as CSSProperties}>
+      <div ref={root} style={pc
+        ? { position: "relative", width: 400, height: "min(calc(100% - 48px), 860px)", borderRadius: 28, overflow: "hidden", background: "#0E0F0C", boxShadow: "0 24px 60px rgba(0,0,0,.5)" }
+        : { position: "relative", width: "min(100%, max(390px, calc(100dvh * 0.56)))", height: "100%", overflow: "hidden", background: "#0E0F0C" }}>
         {/* ---------- prúd ---------- */}
         <div ref={sc} className="isk-scroll" onScroll={(e) => { const el = e.currentTarget; const i = Math.round(el.scrollTop / Math.max(1, el.clientHeight)); if (i !== idx) setIdx(i); }}
           style={{ position: "absolute", inset: 0, overflowY: "auto", scrollSnapType: "y mandatory", scrollbarWidth: "none", overscrollBehavior: "contain" }}>
@@ -247,6 +267,12 @@ function IskryPrud() {
         </Harok>}
         {sheet?.typ === "namietka" && <Harok onClose={() => setSheet(null)}><NamietkaObsah v={sheet.v} onHotovo={() => setSheet(null)} /></Harok>}
       </div>
+
+      {/* PC: šípky vpravo od telefónu (aj klávesy hore / dole) */}
+      {pc && <div style={{ position: "absolute", left: "calc(50% + 228px)", top: "50%", transform: "translateY(-50%)", display: "flex", flexDirection: "column", gap: 12 }}>
+        {([["hore", -1, "Predchádzajúce video"], ["dole", 1, "Ďalšie video"]] as const).map(([d, o, t]) => { const off = o < 0 ? idx <= 0 : idx >= list.length - 1; return (
+          <button key={d} type="button" aria-label={t} disabled={off} onClick={() => posun(o)} style={{ width: 52, height: 52, borderRadius: "50%", border: "1px solid rgba(255,255,255,.22)", background: "rgba(255,255,255,.1)", cursor: off ? "default" : "pointer", opacity: off ? 0.35 : 1, display: "flex", alignItems: "center", justifyContent: "center" }}><Ik d={IK[d]} s={26} w={2.4} /></button>); })}
+      </div>}
 
       {platba && (() => { const s = sucetDarov(refIskry(platba.v)); return (
         <PlatobneOkno kanal={platba.kanal} suma={platba.suma} nazov={platba.v.zbierka?.nazov ?? platba.v.autor} registrovany={registrovany}
