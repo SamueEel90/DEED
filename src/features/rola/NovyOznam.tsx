@@ -168,7 +168,7 @@ export function OznamySprava({ strankaId, tier, nazov, inicialy, mesto, logo, mo
     : druh === "vyzva" && !f.datum ? "Vyberte, do kedy treba pomoc"
     : druh === "vyzva" && (!/^\d{4}-\d{2}-\d{2}$/.test(f.datum) || f.datum < dnesIso() || f.datum > maxVyzva()) ? "Výzva môže trvať najviac 10 dní"
     : druh === "vyzva" && !f.potvrd ? "Potvrďte, že ide o súrnu situáciu"
-    : maMedia && !f.suhlas ? SUHLAS_CHYBA
+    : maMedia && !f.suhlas ? (sPlagatom ? "Potvrďte, že plagát môžete použiť" : SUHLAS_CHYBA)
     : f.pozvanie === "zavazne" && f.limit && !(parseInt(f.limit, 10) > 0) ? "Zadajte počet ľudí alebo nechajte bez limitu"
     : "";
 
@@ -268,7 +268,7 @@ export function OznamySprava({ strankaId, tier, nazov, inicialy, mesto, logo, mo
       {(druh === "oznam" || druh === "verejny") && <div style={{ display: "flex", flexDirection: "column", gap: 8 }}><span style={lbl}>Ako ho chcete ukázať</span>
         <div role="radiogroup" aria-label="Forma oznamu" style={{ display: "flex", flexWrap: "wrap", gap: 4, padding: 4, borderRadius: 14, background: "var(--btn)" }}>
           {([["text", "Text a fotky", "ako skutok"], ["plagat", "Vlastný plagát", "hotový návrh + krátky popis"]] as const).map(([k, t, s]) => { const on = f.forma === k; return (
-            <button key={k} type="button" role="radio" aria-checked={on} onClick={() => zmen({ forma: k })} style={{ flex: "1 1 180px", minHeight: 54, padding: "6px 10px", border: "none", borderRadius: 11, cursor: "pointer", fontFamily: "inherit", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 2, background: on ? "var(--field)" : "transparent", boxShadow: on ? "0 1px 3px rgba(30,28,20,.14)" : "none", color: "var(--ink)" }}><b style={{ fontSize: 14.5 }}>{t}</b><span style={{ fontSize: 12.5, color: "var(--ink3)" }}>{s}</span></button>); })}
+            <button key={k} type="button" role="radio" aria-checked={on} onClick={() => { if (f.forma !== k) zmen({ forma: k, suhlas: false }); }} style={{ flex: "1 1 180px", minHeight: 54, padding: "6px 10px", border: "none", borderRadius: 11, cursor: "pointer", fontFamily: "inherit", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 2, background: on ? "var(--field)" : "transparent", boxShadow: on ? "0 1px 3px rgba(30,28,20,.14)" : "none", color: "var(--ink)" }}><b style={{ fontSize: 14.5 }}>{t}</b><span style={{ fontSize: 12.5, color: "var(--ink3)" }}>{s}</span></button>); })}
         </div></div>}
       {sPlagatom && <div style={{ display: "flex", alignItems: "center", gap: 14, padding: 14, borderRadius: 16, border: `2px dashed ${plDrag ? "var(--green)" : "transparent"}`, background: plDrag ? "var(--gSoft)" : "transparent", flexWrap: "wrap" }}>
         <button type="button" onClick={() => plagatRef.current?.click()} style={{ flex: "none", minHeight: 48, padding: "0 18px", borderRadius: 14, border: "1.5px dashed var(--gBd)", background: "var(--field)", cursor: "pointer", fontFamily: "inherit", fontSize: 14.5, fontWeight: 800, color: "var(--gInk)" }}>{f.plagat ? "Zmeniť plagát" : "+ Nahrať plagát"}</button>
@@ -283,7 +283,9 @@ export function OznamySprava({ strankaId, tier, nazov, inicialy, mesto, logo, mo
           nastroje={["bold", "italic", "insertUnorderedList", "diktovat"]} maxZnakov={OZNAMY_CFG.textZnakov} tvrdyLimit={OZNAMY_CFG.textZnakov} />
       </div>
       {!sPlagatom && <GaleriaEditor media={f.media} onMedia={(m) => zmen({ media: m })} ph={ph} onVyrez={setVyrezId} nadpis="Fotky a video — nepovinné" dovetok=" Bez fotky sa ukáže logo charity." />}
-      {maMedia && <>
+      {/* plagát: namiesto súhlasu k fotkám a videám jedno zaškrtnutie o práve použiť plagát */}
+      {maMedia && sPlagatom && <Zaskrtnutie on={f.suhlas} onClick={() => zmen({ suhlas: !f.suhlas })}>Plagát je náš alebo máme právo ho použiť.</Zaskrtnutie>}
+      {maMedia && !sPlagatom && <>
         <Zaskrtnutie on={f.suhlas} onClick={() => zmen({ suhlas: !f.suhlas })}>{SUHLAS_FOTKY}</Zaskrtnutie>
         <span style={{ fontSize: 14, lineHeight: 1.5, color: "var(--ink2)", marginTop: -4 }}>{SUHLAS_POZNAMKA}{" "}<button type="button" onClick={() => setPravidla(true)} style={odkaz}>Pravidlá obsahu ›</button></span>
       </>}
