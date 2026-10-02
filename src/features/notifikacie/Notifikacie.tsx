@@ -51,6 +51,8 @@ function oznamyNaRiadky(oz: OznamDarcovi[]): Notifikacia[] {
     const den = dni <= 0 ? "Dnes" : dni === 1 ? "Včera" : `${d.getDate()}. ${d.getMonth() + 1}.`;
     return o.typ === "dolozene"
       ? { id: -(i + 1), kat: "zbierky", ikona: "dok", ton: "g", den, titul: `${org} doložila tvoj dar`, text: `${z?.nazov ?? "Zbierka"} · pozri, na čo išli peniaze`, cas: relCas(Date.parse(o.datum)), nove: !o.precitane }
+      : o.typ === "vysledok"
+      ? { id: -(i + 1), kat: "zbierky", ikona: "dok", ton: "g", den, titul: `Výsledok zbierky ${z?.nazov ?? ""}`.trim(), text: o.text ?? "", cas: relCas(Date.parse(o.datum)), nove: !o.precitane }
       : { id: -(i + 1), kat: "zbierky", ikona: "deed", ton: "b", den, titul: `Novinka: ${z?.nazov ?? "zbierka"}`, text: o.text ?? "", cas: relCas(Date.parse(o.datum)), nove: !o.precitane };
   });
 }

@@ -9,15 +9,15 @@ import { useSyncExternalStore } from "react";
 export const SPRAVA_ZBIERKY_CFG = {
   /** štandardná dĺžka zbierky (kalendárne dni) */
   dlzkaDni: 30,
-  /** predĺženie = platená alternatíva topovania; mŕtve zbierky sa nemajú umelo naťahovať.
-   *  Neplatí pre dlhodobé zbierky (liečba, segmenty charity). */
+  /** KARTA 38 · bod 3: predĺženie vo feede (30 dní je v cene) — rebrík 15 · 15 · 15 dní, najviac 75 dní vo feede.
+   *  Neplatí pre centrálnu, sektorové a dlhodobé zbierky. */
   predlzenia: [
-    { dni: 30, cena: 5 },
+    { dni: 15, cena: 5 },
     { dni: 15, cena: 15 },
     { dni: 15, cena: 40 },
   ],
-  /** topovanie = platená viditeľnosť, od programu ZBIERKA (T1); jedno z kritérií radenia */
-  topovanieOdTieru: 1,
+  /** topovanie = platená viditeľnosť, v každom programe aj Zadarmo (karta 38); jedno z kritérií radenia */
+  topovanieOdTieru: 0,
   topovanie: [
     { kluc: "mesto", nazov: "Mesto", cena: 5 },
     { kluc: "kraj", nazov: "Kraj", cena: 15 },
@@ -25,7 +25,9 @@ export const SPRAVA_ZBIERKY_CFG = {
   ],
   topovanieDni: 7,
   /** lehota na dokladovanie po ukončení (voľba charity pri zakladaní) */
-  lehoty: { "30": 30, priebezne: 30, "60": 60 } as Record<Lehota, number>,
+  lehoty: { "30": 30, priebezne: 30, "60": 60, stvrtrocne: 90 } as Record<Lehota, number>,
+  /** KARTA 38 · bod 4: zbierka skončená pred 30. dňom ostane vo feede do konca svojich 30 dní ako poďakovanie */
+  podakovanieDni: 30,
   /** po lehote: výzva — dolož do X dní, inak tabuľa hanby (alebo zdôvodnenie) */
   vyzvaDni: 3,
   /** 3 nedoložené zbierky = pozastavenie */
@@ -34,7 +36,9 @@ export const SPRAVA_ZBIERKY_CFG = {
   karmaNavyse: 5,
 };
 
-export type Lehota = "30" | "priebezne" | "60";
+/** lehoty dokladovania — zjednotené s kartou 37 (30 dní · 60 dní · priebežne + záverečná · štvrťročne) */
+export type Lehota = "30" | "priebezne" | "60" | "stvrtrocne";
+export const LEHOTA_TEXT: Record<Lehota, string> = { "30": "do 30 dní od skončenia", "60": "do 60 dní od skončenia", priebezne: "priebežne + záverečná", stvrtrocne: "štvrťročne" };
 
 /** pásma podľa REÁLNE vyzbieranej sumy (nie cieľa) — povinné minimum dokladovania */
 export type Poziadavka = "text" | "foto" | "rozpis" | "uctenky" | "doklady100" | "potvrdenie";
@@ -46,9 +50,9 @@ export const PASMA_DOKLADOV: { do: number; label: string; povinne: Poziadavka[] 
   { do: Infinity, label: "nad 5 000 €", povinne: ["text", "foto", "rozpis", "doklady100", "potvrdenie"] },
 ];
 export const POZIADAVKA_TEXT: Record<Poziadavka, string> = {
-  text: "Text — na čo išli peniaze",
+  text: "Text, na čo išli peniaze",
   foto: "Fotka alebo video použitia",
-  rozpis: "Rozpis položiek (čo, koľko)",
+  rozpis: "Rozpis položiek",
   uctenky: "Účtenky k hlavným položkám (aspoň polovica sumy)",
   doklady100: "Doklady na celú sumu",
   potvrdenie: "Potvrdenie príjemcu o prevzatí",
@@ -83,6 +87,11 @@ export interface StavZbierky {
   doklady: PolozkaDokladu[];
   spravy: SpravaDarcom[];
   zverejnene?: string;       // ISO — dokladovanie zverejnené a darcovia upovedomení
+  /** KARTA 38: začiatok zbierky (deň 1 z 30) a stiahnutie z feedu po skončení */
+  zaciatok?: string;
+  stiahnuta?: string;
+  /** KARTA 38: výsledok poslaný darcom automaticky pri ukončení (1. z 2 správ) */
+  vysledokPoslany?: string;
   simVyzbierane?: number;    // DEV — simulácia sumy na test pásiem
 }
 

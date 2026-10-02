@@ -18,7 +18,7 @@ import { ZBIERKY, predvolenyStav } from "@/lib/zbierky";
 import {
   SPRAVA_ZBIERKY_CFG as CFG, PASMA_DOKLADOV, POZIADAVKA_TEXT, DRUHY_DOKLADU, OVERENY_SKEN,
   nacitajStav, ulozStav, pasmoPre, sumaDokladov, splnene, navyse, percentoDolozenia, fazaDokladovania, dniDo, pridajDni,
-  type StavZbierky, type Lehota, type DruhDokladu, type PolozkaDokladu,
+  LEHOTA_TEXT, type StavZbierky, type Lehota, type DruhDokladu, type PolozkaDokladu,
 } from "@/lib/zbierkaSprava";
 import { FLAGS, TIER_LABEL, type Tier } from "./stav";
 import { pridajOznamDarcom } from "@/lib/oznamyDarcom";
@@ -403,4 +403,305 @@ function Dokladovanie({ zbierkaId, s, zmen, vyzbierane, toast, aktivna, onZverej
       </button>
     </div>
   );
+}
+
+// ============================================================
+// KARTA 38 · OPRAVY 123 — Správa zbierky charity (obsahová časť správy, nie hárok; mobil celá obrazovka).
+// Logika zo starého okna ostáva (lib/zbierkaSprava: stav, pásma, fázy, výpočty), nový je vzhľad:
+// Beží (predĺženie vo feede, topovanie, doklady, ukončiť) · Skončila (Podarilo sa, feed, doložiť) · Doklady.
+// Texty z prototypu Sprava charity PC → Zbierky → Spravovať, vykanie, bez emoji.
+// ============================================================
+/** zbierka, ktorú správa otvorila (mock riadok alebo spustená zbierka) */
+export interface ZbierkaNaSpravu {
+  id: string; nazov: string; bg: string; ciel: number; vyzbierane: number; darcovia: number;
+  /** centrálna, sektorová alebo dlhodobá — predĺženie vo feede sa neukáže */
+  bezPredlzenia?: boolean;
+  lehota?: Lehota; lehotaText?: string;
+  /** deň začiatku (ISO) a koľko dní ešte beží (mock) */
+  zaciatok?: string; zostavaDni?: number; ukoncena?: boolean;
+}
+const IKS = {
+  fajka: "M5 12l5 5 9-10", dok: "M7 3h7l5 5v13H7zM14 3v5h5M10 13h6M10 17h6", kos: "M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13",
+};
+const IkS = ({ d, s = 18, c = "currentColor", w = 2 }: { d: string; s?: number; c?: string; w?: number }) =>
+  <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth={w} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flex: "none" }}><path d={d} /></svg>;
+const kartaS: CSSProperties = { borderRadius: 22, background: "var(--card)", border: "1px solid var(--cardBd)", padding: "20px 22px", display: "flex", flexDirection: "column", gap: 12, minWidth: 0 };
+const nadpisS: CSSProperties = { fontSize: 17, fontWeight: 800, color: "var(--ink)" };
+const textS: CSSProperties = { fontSize: 14, lineHeight: 1.5, color: "var(--ink2)" };
+const tlZ: CSSProperties = { height: 48, padding: "0 20px", border: "none", borderRadius: 14, background: "#4B7A35", cursor: "pointer", fontFamily: "inherit", fontSize: 15, fontWeight: 800, color: "#fff", alignSelf: "flex-start" };
+const tlO: CSSProperties = { height: 48, padding: "0 20px", borderRadius: 14, border: "1.5px solid var(--cardBd)", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 15, fontWeight: 800, color: "var(--ink2)", alignSelf: "flex-start" };
+const poleS: CSSProperties = { padding: "12px 14px", borderRadius: 14, border: "1.5px solid #CFC9BC", background: "var(--field)", fontFamily: "inherit", fontSize: 15, lineHeight: 1.5, color: "var(--ink)", outline: "none", width: "100%", boxSizing: "border-box" };
+const dnes = (iso: string) => { const d = new Date(iso); return `${d.getDate()}. ${d.getMonth() + 1}. ${d.getFullYear()}`; };
+const dniT = (n: number) => `${n} ${n === 1 ? "deň" : n >= 2 && n <= 4 ? "dni" : "dní"}`;
+const DEN_MS = 86400000;
+
+export function SpravaZbierky({ z, mobil, onZbierky, toast }: { z: ZbierkaNaSpravu; mobil: boolean; onZbierky: () => void; toast: (m: string) => void }) {
+  const [teraz] = useState(() => Date.now());
+  const [s, setS] = useState<StavZbierky>(() => {
+    const u = nacitajStav(z.id);
+    if (u) return u;
+    const zac = z.zaciatok ?? pridajDni(teraz, -(CFG.dlzkaDni - (z.zostavaDni ?? CFG.dlzkaDni)));
+    return { stav: z.ukoncena ? "ukoncena" : "aktivna", zaciatok: zac, koniec: pridajDni(zac, CFG.dlzkaDni), ...(z.ukoncena ? { ukoncena: pridajDni(teraz, -1) } : {}), predlzenia: 0, lehota: z.lehota ?? "30", text: "", fotky: [], doklady: [], spravy: [] };
+  });
+  useEffect(() => { if (!nacitajStav(z.id)) ulozStav(z.id, s); }, [z.id, s]);
+  const zmen = (patch: Partial<StavZbierky>) => { setS((x) => { const n = { ...x, ...patch }; ulozStav(z.id, n); return n; }); };
+  useZmenyDarov();
+  const darov = sucetDarov(z.id);
+  const vyzbierane = s.simVyzbierane ?? z.vyzbierane + darov.suma;
+  const darcov = z.darcovia + darov.pocet;
+  const [pohlad, setPohlad] = useState<"stav" | "doklady">("stav");
+  const [conf, setConf] = useState(false);
+  const aktivna = s.stav === "aktivna";
+  const zac = s.zaciatok ?? pridajDni(s.koniec, -CFG.dlzkaDni);
+  const vFeede = Math.max(0, dniDo(s.koniec, teraz));
+  const topAktivny = s.top && dniDo(s.top.do, teraz) > 0 ? s.top : null;
+  const lehT = z.lehotaText ?? LEHOTA_TEXT[s.lehota];
+
+  // ---- akcie (logika zo starého okna) ----
+  const predlz = () => {
+    const p = CFG.predlzenia[s.predlzenia]; if (!p) return;
+    zmen({ koniec: pridajDni(s.koniec, p.dni), predlzenia: s.predlzenia + 1 });
+    toast(`Zbierka je vo feede o ${p.dni} dní dlhšie · ${eur(p.cena)}`);
+  };
+  const topuj = (kluc: string) => {
+    const t = CFG.topovanie.find((x) => x.kluc === kluc)!;
+    zmen({ top: { uroven: t.nazov, do: pridajDni(teraz, CFG.topovanieDni) } });
+    toast(`Topované: ${t.nazov} na ${CFG.topovanieDni} dní · ${eur(t.cena)}`);
+  };
+  const ukonci = () => {
+    const kedy = new Date().toISOString();
+    // KARTA 38 · bod 4: výsledok darcom posiela systém sám pri ukončení (1. z 2 správ), charita nič neschvaľuje
+    pridajOznamDarcom({ zbierkaId: z.id, typ: "vysledok", text: `Vyzbierali ste ${eur(vyzbierane)} od ${darcov} darcov. Ďakujeme.` });
+    zmen({ stav: "ukoncena", ukoncena: kedy, vysledokPoslany: kedy }); setConf(false);
+  };
+
+  // ---- hlavička (všetky stavy) ----
+  const denZ = Math.min(CFG.dlzkaDni, Math.max(1, Math.ceil(((s.ukoncena ? Date.parse(s.ukoncena) : teraz) - Date.parse(zac)) / DEN_MS)));
+  const meta = aktivna ? `Vo feede ešte ${dniT(vFeede)}${topAktivny ? ` · topované: ${topAktivny.uroven}` : ""}` : `Skončila ${dnes(s.ukoncena ?? s.koniec)}, ${denZ}. deň z ${CFG.dlzkaDni}`;
+  const hlavicka = (
+    <section style={{ ...kartaS, flexDirection: mobil ? "column" : "row", alignItems: mobil ? "stretch" : "center", gap: 18 }}>
+      <span style={{ width: mobil ? "100%" : 132, aspectRatio: "16 / 10", flex: "none", borderRadius: 14, background: z.bg }} />
+      <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 8 }}>
+        <span style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}><b style={{ fontSize: mobil ? 19 : 21, color: "var(--ink)" }}>{z.nazov}</b>
+          <span style={{ padding: "3px 10px", borderRadius: 9, background: aktivna ? "var(--gSoft)" : "var(--btn)", border: `1px solid ${aktivna ? "var(--gBd)" : "var(--cardBd)"}`, fontSize: 12.5, fontWeight: 800, color: aktivna ? "var(--gInk)" : "var(--ink2)" }}>{aktivna ? "Beží" : "Skončila"}</span></span>
+        <span style={{ display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}><b style={{ fontSize: 24, color: "var(--green)" }}>{eur(vyzbierane)}</b><span style={{ fontSize: 14, color: "var(--ink3)" }}>{z.ciel ? `z ${eur(z.ciel)} · ` : ""}{darcov} darcov</span></span>
+        <span style={{ display: "block", height: 8, borderRadius: 4, background: "var(--track)", overflow: "hidden" }}><span style={{ display: "block", height: "100%", width: "100%", background: "var(--green)", transformOrigin: "left", transform: `scaleX(${z.ciel ? Math.min(1, vyzbierane / z.ciel) : vyzbierane ? 1 : 0})`, transition: "transform .5s ease" }} /></span>
+        <span style={{ fontSize: 13.5, color: "var(--ink3)" }}>{meta}</span>
+      </span>
+    </section>);
+
+  // DEV: stav zbierky na test (ako prepínač v prototype)
+  const devTaby = FLAGS.dev_tier_switcher && (
+    <div role="tablist" aria-label="Stav zbierky (test)" style={{ display: "flex", gap: 4, padding: 4, borderRadius: 14, background: "var(--btn)" }}>
+      {([["bezi", "Beží"], ["skoncila", "Skončila"], ["doklady", "Doklady"]] as const).map(([k, t]) => { const on = k === "doklady" ? pohlad === "doklady" : pohlad === "stav" && (k === "bezi") === aktivna; return (
+        <button key={k} role="tab" aria-selected={on} onClick={() => { if (k === "doklady") setPohlad("doklady"); else { setPohlad("stav"); zmen(k === "bezi" ? { stav: "aktivna", ukoncena: undefined } : { stav: "ukoncena", ukoncena: s.ukoncena ?? new Date().toISOString(), vysledokPoslany: s.vysledokPoslany ?? new Date().toISOString() }); } }}
+          style={{ height: 36, padding: "0 14px", border: "none", borderRadius: 10, cursor: "pointer", fontFamily: "inherit", fontSize: 13.5, fontWeight: on ? 800 : 700, background: on ? "var(--seg)" : "transparent", color: on ? "var(--ink)" : "var(--ink3)" }}>{t}</button>); })}
+    </div>);
+  const vrch = (
+    <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+      <button type="button" onClick={pohlad === "doklady" ? () => setPohlad("stav") : onZbierky} style={{ minHeight: 44, border: "none", background: "transparent", padding: 0, cursor: "pointer", fontFamily: "inherit", fontSize: 15, fontWeight: 800, color: "var(--green)" }}>‹ {pohlad === "doklady" ? "Späť na zbierku" : "Zbierky"}</button>
+      <span style={{ flex: 1 }} />{devTaby}
+    </div>);
+  const dva = (deti: ReactNode, sl = "repeat(2,minmax(0,1fr))") => <div style={{ display: "grid", gridTemplateColumns: mobil ? "minmax(0,1fr)" : sl, gap: 16, alignItems: "start" }}>{deti}</div>;
+
+  if (pohlad === "doklady") return (<>{vrch}{hlavicka}<DokladyCharity zbierkaId={z.id} s={s} zmen={zmen} vyzbierane={vyzbierane} teraz={teraz} mobil={mobil} toast={toast} /></>);
+
+  if (aktivna) {
+    const dalsie = CFG.predlzenia[s.predlzenia];
+    const maxFeed = CFG.dlzkaDni + CFG.predlzenia.reduce((a, p) => a + p.dni, 0);
+    return (<>{vrch}{hlavicka}{dva(<>
+      {!z.bezPredlzenia && <section style={kartaS}>
+        <span style={nadpisS}>Predĺženie vo feede</span>
+        <span style={textS}>30 dní vo feede je v cene. Na vašom profile zbierka beží aj bez predĺženia. Predĺženie platíte len vtedy, keď chcete, aby ju ľudia videli vo feede dlhšie.</span>
+        {CFG.predlzenia.map((p, i) => { const zapl = i < s.predlzenia; return (
+          <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 44, padding: "0 14px", borderRadius: 12, background: zapl ? "var(--gSoft)" : "var(--field)", border: `1px solid ${zapl ? "var(--gBd)" : "transparent"}`, opacity: i <= s.predlzenia ? 1 : 0.5 }}>
+            <span style={{ flex: 1, fontSize: 14.5, fontWeight: 700, color: "var(--ink)" }}>{i === 0 ? `+${p.dni} dní` : `ďalších +${p.dni} dní`}</span>
+            <span style={{ fontSize: 14.5, fontWeight: 800, color: zapl ? "var(--gInk)" : "var(--ink)" }}>{zapl ? "zaplatené" : eur(p.cena)}</span>
+          </div>); })}
+        {dalsie ? <button type="button" onClick={predlz} style={tlZ}>Predĺžiť o {dalsie.dni} dní · {eur(dalsie.cena)}</button>
+          : <span style={textS}>Zbierka je vo feede najdlhšie, ako sa dá, {maxFeed} dní.</span>}
+      </section>}
+      <section style={kartaS}>
+        <span style={nadpisS}>Topovať</span>
+        <span style={textS}>Na {CFG.topovanieDni} dní bude zbierka vyššie vo feede. Je to len jedno z kritérií popri blízkosti a overení.</span>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3,minmax(0,1fr))", gap: 8 }}>
+          {CFG.topovanie.map((t) => { const on = topAktivny?.uroven === t.nazov; return (
+            <button key={t.kluc} type="button" onClick={() => topuj(t.kluc)} disabled={!!topAktivny && !on} aria-pressed={on} style={{ minHeight: 64, padding: 8, borderRadius: 14, cursor: topAktivny ? "default" : "pointer", fontFamily: "inherit", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 2, background: on ? "var(--gSoft)" : "var(--field)", border: `1.5px solid ${on ? "var(--green)" : "transparent"}`, color: "var(--ink)", opacity: topAktivny && !on ? 0.5 : 1 }}>
+              <b style={{ fontSize: 15 }}>{t.nazov}</b><span style={{ fontSize: 13.5, color: "var(--ink3)" }}>{eur(t.cena)} · {CFG.topovanieDni} dní</span>
+            </button>); })}
+        </div>
+        {topAktivny && <span style={{ fontSize: 13.5, fontWeight: 700, color: "var(--gInk)" }}>Topované: {topAktivny.uroven} na {CFG.topovanieDni} dní · {eur(CFG.topovanie.find((t) => t.nazov === topAktivny.uroven)?.cena ?? 0)} · do {dnes(topAktivny.do)}</span>}
+      </section>
+      <section style={kartaS}>
+        <span style={nadpisS}>Doklady</span>
+        <span style={textS}>Lehota je zapečatená: <b style={{ color: "var(--ink)" }}>{lehT}</b>. Doklady môžete pridávať aj teraz, počas zbierky.</span>
+        <button type="button" onClick={() => setPohlad("doklady")} style={tlO}>Pridať doklad</button>
+      </section>
+      <section style={kartaS}>
+        <span style={nadpisS}>Ukončiť zbierku</span>
+        <span style={textS}>Zbierku môžete ukončiť kedykoľvek, napríklad keď je cieľ splnený. Výsledok pošleme darcom sami.</span>
+        {!conf ? <button type="button" onClick={() => setConf(true)} style={tlO}>Ukončiť zbierku</button>
+          : <div style={{ display: "flex", flexDirection: "column", gap: 10, padding: "14px 16px", borderRadius: 14, background: "var(--field)" }}>
+            <span style={{ fontSize: 14.5, fontWeight: 700, color: "var(--ink)" }}>Naozaj ukončiť? Dary sa už nebudú dať posielať.</span>
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}><button type="button" onClick={() => setConf(false)} style={tlO}>Späť</button><button type="button" onClick={ukonci} style={tlZ}>Áno, ukončiť</button></div>
+          </div>}
+      </section>
+    </>)}</>);
+  }
+
+  // ---- SKONČILA ----
+  const koniecPodakovania = pridajDni(zac, CFG.podakovanieDni);
+  const dniPodakovania = dniDo(koniecPodakovania, teraz);
+  const voFeede = !s.stiahnuta && dniPodakovania > 0;
+  const { faza, dni } = fazaDokladovania(s, vyzbierane, Math.max(teraz, Date.now()));
+  return (<>{vrch}{hlavicka}
+    <section style={{ ...kartaS, background: "var(--gSoft)", border: "1.5px solid var(--gBd)", gap: 6 }}>
+      <span style={{ fontSize: 21, fontWeight: 800, color: "var(--ink)" }}>Podarilo sa</span>
+      <span style={textS}>Výsledok sme poslali všetkým darcom {dnes(s.vysledokPoslany ?? s.ukoncena ?? s.koniec)}: vyzbierali ste {eur(vyzbierane)} od {darcov} darcov.</span>
+    </section>
+    {dva(<>
+      <section style={kartaS}>
+        <span style={nadpisS}>{voFeede ? `Vo feede ešte ${dniT(dniPodakovania)} ako poďakovanie` : "Stiahnutá z feedu"}</span>
+        <span style={textS}>{voFeede ? "Zbierka skončila skôr, preto ostane vo feede do konca svojich 30 dní s nápisom Podarilo sa. Darcovia aj zbierka sú vidno. Stiahnuť ju môžete kedykoľvek." : "Zbierka je už len na vašom profile."}</span>
+        {voFeede && <button type="button" onClick={() => zmen({ stiahnuta: new Date().toISOString() })} style={tlO}>Stiahnuť z feedu</button>}
+      </section>
+      {faza === "dolozene" ? <section style={kartaS}>
+        <span style={nadpisS}>Doložené</span>
+        <span style={textS}>Doložené použitie: <b style={{ color: "var(--green)" }}>{percentoDolozenia(s, vyzbierane)} %</b>. Darcom išla druhá a posledná správa.</span>
+        <button type="button" onClick={() => setPohlad("doklady")} style={tlO}>Pozrieť doklady</button>
+      </section> : <section style={kartaS}>
+        <span style={nadpisS}>Doložte, na čo išli peniaze</span>
+        <span style={textS}>{faza === "lehota" ? <>Zostáva <b style={{ color: "var(--ink)" }}>{dniT(dni)}</b>. Keď doložíte, darcom pôjde druhá a posledná správa.</>
+          : faza === "vyzva" ? `Lehota uplynula. Doložte, prosím, do ${dniT(dni)}, inak sa pri zbierke ukáže „čaká na doklady“.`
+          : faza === "caka" ? "Pri zbierke sa na profile ukazuje „čaká na doklady“. Keď doložíte, zmení sa to hneď."
+          : "Zdôvodnenie sme prijali, posudzuje ho DEED+. Doklady môžete stále doplniť."}</span>
+        <button type="button" onClick={() => setPohlad("doklady")} style={tlZ}>Doložiť použitie</button>
+      </section>}
+    </>)}
+  </>);
+}
+
+// ---- Doklady (2 stĺpce: vľavo obsah, vpravo stav) ----
+function DokladyCharity({ zbierkaId, s, zmen, vyzbierane, teraz, mobil, toast }: {
+  zbierkaId: string; s: StavZbierky; zmen: (p: Partial<StavZbierky>) => void; vyzbierane: number; teraz: number; mobil: boolean; toast: (m: string) => void;
+}) {
+  const pasI = pasmoPre(vyzbierane), pas = PASMA_DOKLADOV[pasI];
+  const hotovo = pas.povinne.every((p) => splnene(p, s, vyzbierane));
+  const pct = percentoDolozenia(s, vyzbierane);
+  const [text, setText] = useState(s.text);
+  const [form, setForm] = useState(false);
+  const [druh, setDruh] = useState<DruhDokladu>("Faktúra");
+  const [nazov, setNazov] = useState("");
+  const [dodavatel, setDodavatel] = useState("");
+  const [suma, setSuma] = useState("");
+  const [sken, setSken] = useState<string | undefined>();
+  const [zdov, setZdov] = useState("");
+  const { faza, dni } = fazaDokladovania(s, vyzbierane, Math.max(teraz, Date.now()));
+  const ukoncena = s.stav === "ukoncena";
+
+  const pridajMedia = async (files: FileList | null, popis: "PRED" | "PO") => {
+    if (!files) return;
+    const nove = [...s.fotky];
+    for (const f of Array.from(files)) {
+      try { nove.push({ src: f.type.startsWith("video/") ? await ulozVideo(f, 45) : await spracujFotku(f, { pomer: 4 / 3, maxSirka: 1200 }), popis }); }
+      catch (e) { toast((e as Error).message); }
+    }
+    zmen({ fotky: nove });
+  };
+  const pridajPolozku = () => {
+    const sum = Number(suma.replace(/\s/g, "").replace(",", "."));
+    if (!nazov.trim()) { toast("Napíšte, čo sa kúpilo alebo na čo išli peniaze."); return; }
+    if (!sum || sum <= 0) { toast("Zadajte sumu v eurách."); return; }
+    zmen({ doklady: [...s.doklady, { id: `d${Date.now()}`, druh, nazov: nazov.trim(), dodavatel: dodavatel.trim(), suma: sum, datum: new Date().toISOString(), ...(sken ? { foto: sken } : {}) }] });
+    setNazov(""); setDodavatel(""); setSuma(""); setSken(undefined); setForm(false);
+  };
+  const priloz = async (id: string, files: FileList | null) => {
+    const f = files?.[0]; if (!f) return;
+    try { const u = await nacitajDoklad(f); zmen({ doklady: s.doklady.map((d) => (d.id === id ? { ...d, foto: u } : d)) }); } catch (e) { toast((e as Error).message); }
+  };
+  const zverejni = () => {
+    if (!hotovo) return;
+    zmen({ zverejnene: new Date().toISOString() });
+    pridajOznamDarcom({ zbierkaId, typ: "dolozene" }); // 2. a posledná správa darcom
+    toast("Zverejnené. Darcom išla druhá a posledná správa.");
+  };
+  const vlavo = (<div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 16 }}>
+    <section style={kartaS}>
+      <span style={nadpisS}>Na čo išli peniaze</span>
+      <textarea value={text} onChange={(e) => setText(e.target.value)} onBlur={() => { if (text !== s.text) zmen({ text }); }} rows={4} aria-label="Na čo išli peniaze"
+        placeholder="Napríklad: Kúpili sme strešnú krytinu a latovanie. V sobotu ich dobrovoľníci položili, rodina už býva v suchu." style={{ ...poleS, resize: "vertical" }} />
+    </section>
+    <section style={kartaS}>
+      <span style={nadpisS}>Fotky a video, ako ste pomohli</span>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3,minmax(0,1fr))", gap: 10 }}>
+        {s.fotky.map((f, i) => (
+          <span key={i} style={{ position: "relative", aspectRatio: "4 / 3", borderRadius: 12, overflow: "hidden", background: "var(--track)" }}>
+            <MediaNahlad src={f.src} popis={f.popis} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+            <button type="button" onClick={() => zmen({ fotky: s.fotky.map((x, j) => (j === i ? { ...x, popis: x.popis === "PRED" ? "PO" : "PRED" } : x)) })} aria-label={`Prepnúť PRED / PO, teraz ${f.popis}`}
+              style={{ position: "absolute", left: 6, top: 6, minHeight: 28, padding: "2px 8px", border: "none", borderRadius: 7, background: f.popis === "PRED" ? "rgba(29,33,27,.7)" : "var(--green)", fontFamily: "inherit", fontSize: 11.5, fontWeight: 800, color: "#fff", cursor: "pointer" }}>{f.popis}</button>
+            <button type="button" onClick={() => zmen({ fotky: s.fotky.filter((_, j) => j !== i) })} aria-label="Odstrániť" style={{ position: "absolute", right: 4, top: 4, width: 32, height: 32, border: "none", borderRadius: "50%", background: "rgba(29,33,27,.6)", color: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><IkS d={IKS.kos} s={15} /></button>
+          </span>))}
+        {(((s.fotky.length ? [] : [["+ PRED", "image/*", "PRED"]]) as [string, string, "PRED" | "PO"][]).concat([["+ PO", "image/*", "PO"], ["+ Video", "video/*", "PO"]])).map(([t, acc, popis]) => (
+          <label key={t} style={{ aspectRatio: "4 / 3", borderRadius: 12, border: "2px dashed #BDB6A8", background: "var(--field)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 800, color: "var(--gInk)", cursor: "pointer" }}>
+            {t}<input type="file" accept={acc} multiple={acc !== "video/*"} hidden onChange={(e) => { void pridajMedia(e.target.files, popis); e.target.value = ""; }} />
+          </label>))}
+      </div>
+      <span style={{ fontSize: 13, color: "var(--ink3)" }}>Ťuknite na štítok a prepnete PRED / PO. Video najviac 45 s.</span>
+    </section>
+    <section style={kartaS}>
+      <span style={nadpisS}>Rozpis a doklady</span>
+      {s.doklady.map((d, i) => (
+        <div key={d.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0", borderTop: i ? "1px solid var(--cardBd)" : "none" }}>
+          {d.foto && d.foto !== OVERENY_SKEN && !jePdf(d.foto)
+            ? <img src={d.foto} alt="" style={{ width: 40, height: 40, flex: "none", borderRadius: 10, objectFit: "cover" }} />
+            : <button type="button" onClick={jePdf(d.foto) ? () => void otvorDoklad(d.foto!) : undefined} aria-label={jePdf(d.foto) ? "Otvoriť doklad" : "Doklad"} style={{ width: 40, height: 40, flex: "none", border: "none", borderRadius: 10, background: "var(--btn)", color: "var(--ink2)", display: "flex", alignItems: "center", justifyContent: "center", cursor: jePdf(d.foto) ? "pointer" : "default" }}><IkS d={IKS.dok} s={18} /></button>}
+          <span style={{ flex: 1, minWidth: 0 }}><b style={{ display: "block", fontSize: 14.5 }}>{d.nazov}</b>
+            <span style={{ display: "block", fontSize: 13, color: "var(--ink3)" }}>{d.druh}{d.dodavatel ? ` · ${d.dodavatel}` : ""}</span>
+            {!d.foto && <label style={{ display: "inline-flex", alignItems: "center", minHeight: 32, fontSize: 13, fontWeight: 800, color: "var(--green)", cursor: "pointer" }}>Priložiť doklad<input type="file" accept="image/*,application/pdf,.pdf" hidden onChange={(e) => { void priloz(d.id, e.target.files); e.target.value = ""; }} /></label>}</span>
+          <b style={{ flex: "none", fontSize: 15, color: "var(--green)" }}>{eur(d.suma)}</b>
+          <button type="button" onClick={() => zmen({ doklady: s.doklady.filter((x) => x.id !== d.id) })} aria-label={`Odstrániť ${d.nazov}`} style={{ flex: "none", width: 36, height: 36, border: "none", background: "transparent", color: "var(--ink3)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><IkS d={IKS.kos} s={16} /></button>
+        </div>))}
+      {form ? <div style={{ display: "flex", flexDirection: "column", gap: 10, padding: 14, borderRadius: 14, background: "var(--field)" }}>
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>{DRUHY_DOKLADU.map((x) => { const on = x === druh; return <button key={x} type="button" aria-pressed={on} onClick={() => setDruh(x)} style={{ minHeight: 40, padding: "0 12px", borderRadius: 12, border: `1.5px solid ${on ? "var(--gBd)" : "var(--cardBd)"}`, background: on ? "var(--gSoft)" : "transparent", fontFamily: "inherit", fontSize: 13.5, fontWeight: 800, color: on ? "var(--gInk)" : "var(--ink2)", cursor: "pointer" }}>{x}</button>; })}</div>
+        <input value={nazov} onChange={(e) => setNazov(e.target.value)} placeholder="Čo sa kúpilo, napríklad strešná krytina" aria-label="Položka" style={poleS} />
+        <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 120px", gap: 10 }}>
+          <input value={dodavatel} onChange={(e) => setDodavatel(e.target.value)} placeholder="Dodávateľ" aria-label="Dodávateľ" style={poleS} />
+          <input value={suma} onChange={(e) => setSuma(e.target.value)} placeholder="€" inputMode="decimal" aria-label="Suma v eurách" style={{ ...poleS, textAlign: "right" }} />
+        </div>
+        <label style={{ ...tlO, display: "flex", alignItems: "center", gap: 8, alignSelf: "stretch", justifyContent: "center", color: sken ? "var(--gInk)" : "var(--ink2)", borderColor: sken ? "var(--gBd)" : "var(--cardBd)" }}>
+          {sken ? <><IkS d={IKS.fajka} s={16} w={2.6} />{jePdf(sken) ? "PDF priložené" : "Fotka dokladu priložená"}</> : "Priložiť doklad (foto alebo PDF)"}
+          <input type="file" accept="image/*,application/pdf,.pdf" hidden onChange={async (e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) { try { setSken(await nacitajDoklad(f)); } catch (er) { toast((er as Error).message); } } }} />
+        </label>
+        <span style={{ fontSize: 12.5, color: "var(--ink3)" }}>Osobné údaje príjemcu (meno, adresu) na doklade pred odfotením zakryte.</span>
+        <div style={{ display: "flex", gap: 10 }}><button type="button" onClick={() => setForm(false)} style={tlO}>Zrušiť</button><button type="button" onClick={pridajPolozku} style={tlZ}>Pridať položku</button></div>
+      </div> : <button type="button" onClick={() => setForm(true)} style={tlO}>+ Pridať položku s dokladom</button>}
+    </section>
+  </div>);
+  const vpravo = (<div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 16 }}>
+    <section style={kartaS}>
+      <span style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}><span style={nadpisS}>Doložené použitie</span><b style={{ fontSize: 24, color: "var(--green)" }}>{pct} %</b></span>
+      <span style={{ display: "block", height: 8, borderRadius: 4, background: "var(--track)", overflow: "hidden" }}><span style={{ display: "block", height: "100%", width: "100%", background: "var(--green)", transformOrigin: "left", transform: `scaleX(${pct / 100})`, transition: "transform .5s ease" }} /></span>
+      <span style={textS}>Darcovia vidia pri zbierke „doložené {pct} %“. Položka bez dokladu sa nepočíta.</span>
+    </section>
+    <section style={kartaS}>
+      <span style={nadpisS}>Povinné minimum · {pas.label}</span>
+      {pas.povinne.map((p) => { const ok = splnene(p, s, vyzbierane); return (
+        <div key={p} style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 14, color: "var(--ink2)" }}>
+          <span style={{ width: 22, height: 22, flex: "none", borderRadius: "50%", border: `2px solid ${ok ? "var(--green)" : "#BDB6A8"}`, background: ok ? "var(--green)" : "transparent", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center" }}>{ok && <IkS d={IKS.fajka} s={13} w={3} />}</span>{POZIADAVKA_TEXT[p]}
+        </div>); })}
+    </section>
+    {ukoncena && (faza === "vyzva" || faza === "caka") && <section style={kartaS}>
+      <span style={nadpisS}>Nemáte doklady?</span>
+      <span style={textS}>{faza === "vyzva" ? `Lehota uplynula. Doložte, prosím, do ${dniT(dni)}, alebo napíšte zdôvodnenie.` : "Pri zbierke sa ukazuje „čaká na doklady“. Doložte, alebo napíšte zdôvodnenie."}</span>
+      <textarea value={zdov} onChange={(e) => setZdov(e.target.value)} rows={2} placeholder="Nemáme doklady, pretože…" aria-label="Zdôvodnenie" style={{ ...poleS, resize: "vertical" }} />
+      <button type="button" onClick={() => { if (zdov.trim().length < 20) { toast("Napíšte zdôvodnenie aspoň jednou vetou."); return; } zmen({ zdovodnenieBezDokladov: zdov.trim() }); toast("Zdôvodnenie sme poslali. Posúdi ho DEED+."); }} style={tlO}>Poslať zdôvodnenie</button>
+    </section>}
+    <button type="button" onClick={zverejni} aria-disabled={!hotovo} style={{ ...tlZ, alignSelf: "stretch", opacity: hotovo ? 1 : 0.5, cursor: hotovo ? "pointer" : "default" }}>{s.zverejnene ? "Aktualizovať a poslať darcom" : "Zverejniť a poslať darcom"}</button>
+    <span style={{ fontSize: 13, lineHeight: 1.45, color: "var(--ink3)" }}>{s.zverejnene ? `Zverejnené ${dnes(s.zverejnene)}.` : hotovo ? "Darcom pôjde druhá a posledná správa: na čo išli peniaze." : "Najprv doplňte povinné minimum. Darcom potom pôjde druhá a posledná správa."}</span>
+    {FLAGS.dev_tier_switcher && <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center", fontSize: 12, color: "var(--ink3)" }}>
+      <b>DEV · vyzbierané:</b>
+      {[undefined, 80, 300, 1000, 3000, 8000].map((v) => <button key={String(v)} type="button" onClick={() => zmen({ simVyzbierane: v })} style={{ minHeight: 32, padding: "0 10px", borderRadius: 16, border: `1px solid ${s.simVyzbierane === v ? "var(--green)" : "var(--cardBd)"}`, background: "transparent", fontFamily: "inherit", fontSize: 12, color: s.simVyzbierane === v ? "var(--green)" : "var(--ink3)", cursor: "pointer" }}>{v === undefined ? "skutočné" : eur(v)}</button>)}
+    </div>}
+  </div>);
+  return <div style={{ display: "grid", gridTemplateColumns: mobil ? "minmax(0,1fr)" : "minmax(0,1.3fr) minmax(0,1fr)", gap: 16, alignItems: "start" }}>{vlavo}{vpravo}</div>;
 }
