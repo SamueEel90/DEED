@@ -1,5 +1,4 @@
 // KARTA 24 · 2g Jazyk · 2h Stiahnuť moje údaje — obrazovky sprava z Nastavení (OPRAVY 39). Zamestnávateľ je v profile (Zamestnavatel.tsx).
-import { sZnackou } from "@/components/DeedZnacka";
 import { useT } from "@/i18n";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
@@ -148,7 +147,7 @@ export function StiahnutUdajeObrazovka({ onBack, z }: { onBack: () => void; /** 
 
   return (
     <ObrazovkaSprava titul={t("nastavenia.udaje")} onBack={onBack} z={z}>
-      <div style={{ fontSize: 15, lineHeight: 1.55, color: "var(--d-ink2, var(--ink2))", padding: "0 6px" }}>{sZnackou(t("udaje.uvod"))}</div>
+      <div style={{ fontSize: 15, lineHeight: 1.55, color: "var(--d-ink2, var(--ink2))", padding: "0 6px" }}>{t("udaje.uvod")}</div>
       {stav === null || stav === "overenie" ? <>
         <div>
           <h2 style={lbl}>{t("udaje.coStiahnut")}</h2>

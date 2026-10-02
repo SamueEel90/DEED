@@ -263,7 +263,7 @@ function ZKontaktov({ odoslane, posli, naPozvanku, onClose }: { odoslane: string
   return (
     <Harok onClose={onClose} zatvorText={t("priatelia.zavriet")} hlavicka={nadpisH(t("priatelia.cesta.kontakty"))}>
       {!nast.kontakty ? (<>
-        <div style={{ fontSize: 14.5, lineHeight: 1.55, color: "var(--ink2)" }}>{sZnackou(t("priatelia.kontakty.info"))}</div>
+        <div style={{ fontSize: 14.5, lineHeight: 1.55, color: "var(--ink2)" }}>{t("priatelia.kontakty.info")}</div>
         <button type="button" onClick={() => zmenNastavenia({ kontakty: true })} style={velke}>{t("priatelia.kontakty.povolit")}</button>
         <div style={pozn}>{t("priatelia.kontakty.zrusit")}</div>
       </>) : (<>
@@ -321,7 +321,7 @@ function Pozvanka({ onClose }: { onClose: () => void }) {
         <button type="button" onClick={kopiruj} style={{ ...vedlajsie, color: "var(--ink)" }}>{kop ? t("priatelia.skopirovane") : t("priatelia.kopirovat")}</button>
       </div>
       <button type="button" onClick={zdielaj} style={velke}>{t("priatelia.zdielatPozvanku")}</button>
-      <div style={pozn}>{sZnackou(t("priatelia.pozvankaPozn"))}</div>
+      <div style={pozn}>{t("priatelia.pozvankaPozn")}</div>
     </Harok>);
 }
 

@@ -40,6 +40,7 @@ html.dark [data-stit="legend"]{--accSoft:#2E1718;--acc:#D9787C}
 .sprava-charity button{font-family:inherit}
 .sprava-charity .sc-hov:hover{background:var(--hov)!important}
 .sprava-charity .sc-bdh:hover{border-color:var(--goldBd)!important}
+.sprava-charity .sc-vsetko:hover{border-color:var(--green)!important}
 .sprava-charity .sc-lista{scrollbar-width:none}
 .sprava-charity .sc-lista::-webkit-scrollbar{display:none}
 html.obmedz-anim .sprava-charity .sc-lesk{display:none}
@@ -73,3 +74,10 @@ html.dark [data-stit="platinum"]{--kov1:#6F93AA;--kov2:#B9D2E2;--kov3:#5E7E94}
 html.dark [data-stit="legend"]{--kov1:#C9643A;--kov2:#F2A27A;--kov3:#B2533F}
 .kov-ik svg{stroke:url(#kovIk)!important;stroke-width:2.2!important}
 .kov-ik svg [fill]:not([fill="none"]){fill:url(#kovIk)}
+
+/* KARTA 33 · polia formulárov v Správe stránky (Upraviť profil) */
+.sprava-charity,.sc-tokeny{--fieldBd:#CFC9BC;--fieldLock:#EAE6DD}
+html.dark .sprava-charity,html.dark .sc-tokeny{--fieldBd:#4A4336;--fieldLock:#24201A}
+.sprava-charity [contenteditable]:focus-visible,.sprava-charity input:focus-visible{outline:2px solid var(--gBd);outline-offset:1px}
+.sprava-charity .ftext>:first-child{margin-top:0}
+.sprava-charity .ftext>:last-child{margin-bottom:0}

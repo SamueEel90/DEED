@@ -15,7 +15,7 @@ import { DokazBlok } from "@/features/rola/DokazBlok";
 const ZELENA = "var(--a-green)";
 
 export function OznamDarcoviSheet({ zbierkaId, typ, text, nahladStav, onClose }: {
-  zbierkaId: string; typ: "dolozene" | "sprava"; text?: string;
+  zbierkaId: string; typ: "dolozene" | "sprava" | "vysledok"; text?: string;
   /** náhľad zo správy — ešte nezverejnený stav */
   nahladStav?: StavZbierky; onClose: () => void;
 }) {
@@ -33,7 +33,7 @@ export function OznamDarcoviSheet({ zbierkaId, typ, text, nahladStav, onClose }:
   const org = z.ziadatel.meno;
 
   return (
-    <Sheet onClose={onClose} label={typ === "dolozene" ? "Doložené použitie zbierky" : "Novinka zo zbierky"}>
+    <Sheet onClose={onClose} label={typ === "dolozene" ? "Doložené použitie zbierky" : typ === "vysledok" ? "Výsledok zbierky" : "Novinka zo zbierky"}>
       {nahladStav && (
         <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: ".05em", color: C.textTer, textAlign: "center", border: `1px dashed ${C.line}`, borderRadius: RADIUS.sm, padding: SPACE.xxs, marginBottom: SPACE.sm }}>
           NÁHĽAD — TAKTO TO UVIDÍ DARCA

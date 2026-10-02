@@ -3,6 +3,7 @@
 // akcie priamo v ozname · agregácia malých darov do súhrnu (povinná).
 // Nastavenia: hlavný vypínač · každá položka V APPKE a NA DISPLEJ · zbalené kategórie · strop 3 denne ·
 // večerný súhrn · tichý čas. Tá istá obrazovka je aj v Nastavenia → Oznámenia (jeden komponent, dva vstupy).
+import { sZnackou } from "@/components/DeedZnacka";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import type { Notifikacia, NotifAkciaKod, NotifIkona, NotifTon } from "@/types";
@@ -50,6 +51,8 @@ function oznamyNaRiadky(oz: OznamDarcovi[]): Notifikacia[] {
     const den = dni <= 0 ? "Dnes" : dni === 1 ? "Včera" : `${d.getDate()}. ${d.getMonth() + 1}.`;
     return o.typ === "dolozene"
       ? { id: -(i + 1), kat: "zbierky", ikona: "dok", ton: "g", den, titul: `${org} doložila tvoj dar`, text: `${z?.nazov ?? "Zbierka"} · pozri, na čo išli peniaze`, cas: relCas(Date.parse(o.datum)), nove: !o.precitane }
+      : o.typ === "vysledok"
+      ? { id: -(i + 1), kat: "zbierky", ikona: "dok", ton: "g", den, titul: `Výsledok zbierky ${z?.nazov ?? ""}`.trim(), text: o.text ?? "", cas: relCas(Date.parse(o.datum)), nove: !o.precitane }
       : { id: -(i + 1), kat: "zbierky", ikona: "deed", ton: "b", den, titul: `Novinka: ${z?.nazov ?? "zbierka"}`, text: o.text ?? "", cas: relCas(Date.parse(o.datum)), nove: !o.precitane };
   });
 }
@@ -200,7 +203,7 @@ export function NastaveniaOznameni({ onBack }: { onBack: () => void }) {
   const dalsi = (x: string[], v: string) => x[(x.indexOf(v) + 1) % x.length];
   const lbl = { margin: 0, padding: "0 6px 8px", display: "flex", alignItems: "center", gap: 8, fontSize: 12.5, fontWeight: 800, letterSpacing: ".07em", color: "var(--d-ink3, var(--ink3))" } as const;
   const bodka = (k: Sek) => <span aria-hidden="true" style={{ width: 8, height: 8, borderRadius: "50%", background: sekFarba(k).c, flex: "none" }} />;
-  const txt = (t: string, s: string) => <span style={{ flex: 1, minWidth: 0 }}><span style={{ display: "block", fontSize: 16, fontWeight: 700 }}>{t}</span>{s && <span style={{ display: "block", fontSize: 13, lineHeight: 1.4, color: "var(--d-ink3, var(--ink3))", marginTop: 2 }}>{s}</span>}</span>;
+  const txt = (t: string, s: string) => <span style={{ flex: 1, minWidth: 0 }}><span style={{ display: "block", fontSize: 16, fontWeight: 700 }}>{sZnackou(t)}</span>{s && <span style={{ display: "block", fontSize: 13, lineHeight: 1.4, color: "var(--d-ink3, var(--ink3))", marginTop: 2 }}>{s}</span>}</span>;
   const riadokPrep = (d: string, t: string, s: string, on: boolean, onClick: () => void, prvy: boolean) => (
     <button type="button" role="switch" aria-checked={on} onClick={onClick} style={{ width: "100%", display: "flex", alignItems: "center", gap: 14, minHeight: 68, padding: "12px 18px", borderTop: prvy ? "none" : oddelovac, borderLeft: "none", borderRight: "none", borderBottom: "none", boxShadow: "none", background: "transparent", cursor: "pointer", textAlign: "left", fontFamily: "inherit", color: "var(--d-ink, var(--ink))" }}>
       <IkonaSek d={d} k="o" />{txt(t, s)}<Prep on={on} /></button>);

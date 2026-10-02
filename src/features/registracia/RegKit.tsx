@@ -4,6 +4,7 @@
 // Univerzálne kroky (telefón+SMS, zámok) sa podľa špecifikácie
 // stavajú RAZ a používa ich osoba aj charita (§4).
 // ============================================================
+import { sZnackou } from "@/components/DeedZnacka";
 import { useState, useId, type ReactNode, type CSSProperties } from "react";
 import { C, GRAD, btn, inp, infoBox, glassTmavy, SPACE, RADIUS } from "@/theme";
 import { Hlavicka, Otazka, IkonaFajka, IkonaSipDole, useLayout } from "@/shared";
@@ -52,7 +53,7 @@ export function Patka({
 }: {
   onBack?: () => void;
   onNext?: () => void;
-  next?: string;
+  next?: ReactNode;
   canNext?: boolean;
   loading?: boolean;
 }) {
@@ -64,7 +65,7 @@ export function Patka({
         disabled={!canNext || loading}
         style={btn(canNext && !loading ? "primary" : "disabled")}
       >
-        {loading ? "Pracujem…" : next}
+        {loading ? "Pracujem…" : typeof next === "string" ? sZnackou(next) : next}
       </button>
     </div>
   );

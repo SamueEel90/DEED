@@ -1,7 +1,7 @@
 import { Emo } from "@/components/icons";
 import { StityRad } from "@/components/stit";
 import { stityOblastiSubjektu } from "@/lib/stityOblasti";
-import { Fragment, useRef, useState, type CSSProperties } from "react";
+import { Fragment, useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { C, SPACE, RADIUS, SIRKA } from "@/theme";
 import {
   BackHeader, PlatobnyModul, PlatbaModal, ProgresBox, QrModal, naStitLevel, tint,
@@ -40,8 +40,15 @@ import { DokazBlok, MediaNahlad } from "./DokazBlok";
 import { nacitajViditelnost, nacitajTerminal, nacitajKryptoOrg, nacitajCentralnu, nacitajSady, nacitajOnas, nacitajTvarLoga, nacitajZdrojAvatara, nacitajLogo, nacitajPoziciu, type Pozicia, type Tier } from "./stav";
 import { OnasKratky } from "./OnasKratky";
 import { KontaktBlok, nacitajKontakt } from "./kontakt";
+import { nacitajProfil as nacitajProfilStranky, profilZPamate, type ProfilStranky } from "@/lib/profilStranky";
+import { Titulka } from "./titulka";
+import { FormatovanyText } from "@/components/formattext";
+import { cistyText } from "@/lib/richtext";
 import { verejneTaby, cislaSubjektu } from "./obsah";
 import { ZbierkaModul } from "@/features/zbierka/ZbierkaModul";
+import { centralnaZPamate, nacitajCentralnuZbierku, useZmenyCentralnej } from "@/lib/centralnaZbierka";
+import { CudziProfil } from "@/features/cudzi-profil/CudziProfil";
+import type { Zbierka } from "@/lib/zbierky";
 import type { OrgPole, StitUroven } from "@/features/zbierka/Pole";
 import type { ZbierkaData } from "@/features/zbierka/ZbierkaModul";
 import { useScrollEl } from "@/components/context";
@@ -98,13 +105,23 @@ function PodporiliFirmy({ zbierkaId, onFirma }: { zbierkaId: string; onFirma: (f
   );
 }
 
-export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
+export function Podstranka({ pozicia, tier = 0, logo, toast, onBack, strankaId = pozicia === "charita" ? "svetlo" : undefined, profilNahlad, lista }: {
   pozicia: Pozicia; tier?: Tier; logo: string | null; toast: (m: string) => void; onBack: () => void;
+  /** OPRAVY 107: stránka, ktorej uložený profil (Upraviť profil) sa ukáže */
+  strankaId?: string;
+  /** Náhľad: neuložený koncept namiesto uloženého profilu */
+  profilNahlad?: ProfilStranky;
+  /** lišta hore (Náhľad / Profil uložený / Takto vidí váš profil…) namiesto hlavičky Späť */
+  lista?: ReactNode;
 }) {
   const { wide, desktop } = useLayout();
   const siroke = wide || desktop;   // tablet a PC → mriežka kariet ako vo feede
   const ja = usePouzivatel();
   const s = SUBJEKTY[pozicia];
+  // OPRAVY 107: uložený profil zo správy (lib/profilStranky); staré úložisko len záloha, kým nie je nič uložené
+  const [ulozeny, setUlozeny] = useState<ProfilStranky | null>(() => (strankaId ? profilZPamate(strankaId).ulozeny : null));
+  useEffect(() => { if (!strankaId) return; let ziva = true; void nacitajProfilStranky(strankaId).then((z) => { if (ziva) setUlozeny(z.ulozeny); }); return () => { ziva = false; }; }, [strankaId]);
+  const pr = profilNahlad ?? ulozeny;
   const stit = naStitLevel(ZASLUZENA[pozicia].badge);
   // tvorca vystupuje pod profilovou fotkou osoby, charita/B2B pod logom subjektu
   const fotoOsoby = pozicia === "tvorca" && nacitajZdrojAvatara(pozicia) === "foto"; // tvorca: fotka alebo logo značky
@@ -183,10 +200,12 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
   const [onas] = useState(() => nacitajOnas(pozicia) ?? s.onas); // text zo správy (editor), inak pôvodný
   const [rozbalena, setRozbalena] = useState<string | null>(null);
   // detail zbierky = vždy nový modul (<ZbierkaModul>); Späť vráti profil na to isté miesto scrollu
-  const [novyModul, setNovyModulRaw] = useState<{ data: ZbierkaData; zoStrankyOrg: boolean } | null>(null);
+  const [novyModul, setNovyModulRaw] = useState<{ data: ZbierkaData; zoStrankyOrg: boolean; ziadatel?: Zbierka["ziadatel"] } | null>(null);
+  // OPRAVY 128: „Stránka organizácie ›" z poľa Za zbierku zodpovedá → verejný profil organizácie; Späť vráti na zbierku
+  const [profilOrg, setProfilOrg] = useState<Zbierka["ziadatel"] | null>(null);
   const scrollEl = useScrollEl();
   const scrollProfilu = useRef(0);
-  const setNovyModul = (m: { data: ZbierkaData; zoStrankyOrg: boolean } | null) => {
+  const setNovyModul = (m: { data: ZbierkaData; zoStrankyOrg: boolean; ziadatel?: Zbierka["ziadatel"] } | null) => {
     if (m) scrollProfilu.current = scrollEl?.current?.scrollTop ?? 0;
     setNovyModulRaw(m);
     const el = scrollEl?.current;
@@ -203,7 +222,11 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
   // pravidelná podpora = funkcia zbierky (charita od programu ZBIERKA/T1); môže aj neregistrovaný (s e-mailom)
   const [pravidelna, setPravidelna] = useState<{ id: string | null; nazov: string; sektor?: string } | null>(null);
   const maPravidelnu = pozicia === "charita" && tier >= 1;
-  const maCentralnu = pozicia === "charita" && tier >= 1 && nacitajCentralnu("charita");
+  // KARTA 39 · bod 3: centrálna zbierka zo správy (profil_stranky.centralna); staré úložisko len záloha
+  useZmenyCentralnej();
+  useEffect(() => { if (strankaId) void nacitajCentralnuZbierku(strankaId); }, [strankaId]);
+  const centr = strankaId ? centralnaZPamate(strankaId) : null;
+  const maCentralnu = pozicia === "charita" && tier >= 1 && (nacitajCentralnu("charita") || !!centr);
   const [zvoncek, setZvoncek] = useState(false);
   const [qr, setQr] = useState(false);
   const [menu, setMenu] = useState(false);
@@ -211,8 +234,10 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
   const [platba, setPlatba] = useState<Kanal | null>(null);
   useZmenyDarov(); // prekreslí sumy po každom dare
   const registrovany = ja.typ !== "pasivny";
-  const logoOrg = nacitajLogo(pozicia) ?? s.foto;
-  const profilCentralnej = nacitajProfil(CENTRALNA_ID) ?? { nazov: `${s.nazov} — celá organizácia`, popis: "" };
+  const logoOrg = (pr ? pr.logo : null) ?? nacitajLogo(pozicia) ?? s.foto;
+  const profilCentralnej: ProfilZbierky = centr
+    ? { nazov: `${s.nazov} — celá organizácia`, popis: cistyText(centr.popis), fotky: centr.media.filter((m) => m.typ === "foto").map((m) => m.src) }
+    : nacitajProfil(CENTRALNA_ID) ?? { nazov: `${s.nazov} — celá organizácia`, popis: "" };
   const [platbaRef, setPlatbaRef] = useState<{ id: string; komu: string } | null>(null);
   // zápis daru → zoznam darcov + súčty (registrovaný so zvoleným menom, inak anonym)
   const daruj = (refId: string, suma: number, kanal: "psp" | "sepa" | "deed", volba?: VolbaDaru, komu?: string) => {
@@ -498,7 +523,7 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
   };
   type Zbalena = ReturnType<typeof zbaluj>;
   const otvor = (x: Zbalena) => (x.z
-    ? setNovyModul({ data: zCudzej(x.z), zoStrankyOrg: x.z.ziadatel.meno === s.nazov })
+    ? setNovyModul({ data: zCudzej(x.z), zoStrankyOrg: x.z.ziadatel.meno === s.nazov, ziadatel: x.z.ziadatel })
     : x.klik ? setRozbalena(rozbalena === x.kluc ? null : x.kluc) : toast(`${x.titul} — detail`));
 
   // miniatúra položky (zbierka · video · emoji) — v riadku 44 px, v karte 16:9
@@ -684,9 +709,9 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
   );
 
   // O nás priamo pod hlavičkou — 2–3 riadky, zvyšok na „viac“
-  const oNasKratky = <OnasKratky text={onas} />;
+  const oNasKratky = pr ? <OnasProfil onas={pr.onas} onas2={pr.onas2} /> : <OnasKratky text={onas} />;
 
-  const oNasBlok = <KontaktBlok k={nacitajKontakt(pozicia)} vodorovne={siroke} />;
+  const oNasBlok = <KontaktBlok k={pr?.kontakt ?? nacitajKontakt(pozicia)} vodorovne={siroke} />;
 
   const terminalBlok = pozicia === "tvorca" && terminalOn && (
     <div {...pressable(() => toast("Priamy príspevok tvorcovi"), "Podporiť tvorcu")}
@@ -697,9 +722,13 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
 
   const telo = (
     <div style={{ padding: `0 ${SPACE.md}px` }}>
-      <EntityHero avatarTvar={fotoOsoby ? "kruh" : nacitajTvarLoga(pozicia)}
-        avatar={avatarSrc ? <img src={avatarSrc} alt={s.nazov} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : (pozicia === "tvorca" ? s.iniciacky : s.iniciacky)}
+      <EntityHero avatarTvar={fotoOsoby ? "kruh" : pr ? pr.tvar : nacitajTvarLoga(pozicia)}
+        avatarPozadie={pr && !fotoOsoby ? (pr.logo ? (pr.logoPozadie === "tmave" ? "#15171c" : pr.logoPozadie === "priehladne" ? undefined : "#fff") : "#fff") : undefined}
+        avatar={pr && !fotoOsoby
+          ? (pr.logo ? <img src={pr.logo} alt={s.nazov} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <span style={{ color: "var(--a-green)" }}>{s.iniciacky}</span>)
+          : avatarSrc ? <img src={avatarSrc} alt={s.nazov} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : s.iniciacky}
         cover={coverSrc}
+        coverVlastny={pr ? <Titulka cover={pr.cover} ram={pr.ram} radius={RADIUS.md} /> : undefined}
         coverEl={<span style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 46, opacity: .45 }}><Emo e={s.emoji} /></span>}
         meno={s.nazov} overene={s.overena} overeneLabel="Overený subjekt — identita potvrdená"
         podtitul={<span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}><IkonaPin size={11} color={C.textTer} /> {s.lok}</span>}
@@ -733,13 +762,15 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
     if (rolaFirmy) return <Podstranka pozicia={rolaFirmy} tier={3} logo={null} toast={toast} onBack={() => setFirmaProfil(null)} />;
   }
 
-  if (novyModul) return <ZbierkaModul zbierka={novyModul.data} zoStrankyOrg={novyModul.zoStrankyOrg} onBack={() => setNovyModul(null)} />;
+  if (novyModul && profilOrg) return <CudziProfil subjekt={{ typ: "org", meno: profilOrg.meno, lok: profilOrg.lok, level: profilOrg.level }} toast={toast} onBack={() => setProfilOrg(null)} />;
+  if (novyModul) return <ZbierkaModul zbierka={novyModul.data} zoStrankyOrg={novyModul.zoStrankyOrg} onBack={() => { setProfilOrg(null); setNovyModul(null); }}
+    onOtvorOrg={novyModul.ziadatel?.typ === "org" ? () => setProfilOrg(novyModul.ziadatel!) : undefined} />;
 
   return (
     <div style={{ paddingBottom: SPACE.lg, color: C.text }}>
-      <BackHeader onBack={onBack}>
+      {lista ?? <BackHeader onBack={onBack}>
         <span style={{ fontSize: 12, color: C.textSec }}>{s.nazov}</span>
-      </BackHeader>
+      </BackHeader>}
       <div style={{ height: SPACE.sm }} />
       {obalSiroky(telo, { desktop, maxDesktop: SIRKA.plocha })}
 
@@ -767,6 +798,25 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack }: {
         odkaz={qrUrl("case", qrZbierka.id)} onClose={() => setQrZbierka(null)} toast={toast} />}
       {qr && <QrModal typ="skutok" titul={`QR — ${s.nazov}`} popis="Profil subjektu — QR aj embed odznak na vlastný web"
         odkaz={qrUrl("handle", s.nazov.toLowerCase().replace(/[^a-z0-9]+/g, "-"))} onClose={() => setQr(false)} toast={toast} />}
+    </div>
+  );
+}
+
+/** OPRAVY 107: O nás z Upraviť profil — hlavný text celý, pokračovanie po „viac" */
+function OnasProfil({ onas, onas2 }: { onas: string; onas2: string }) {
+  const [viac, setViac] = useState(false);
+  const maViac = !!cistyText(onas2).trim();
+  if (!cistyText(onas).trim() && !maViac) return null;
+  return (
+    <div style={{ fontSize: 13, lineHeight: 1.5, color: C.textSec }}>
+      <FormatovanyText text={onas} />
+      {maViac && viac && <div style={{ marginTop: 6 }}><FormatovanyText text={onas2} /></div>}
+      {maViac && (
+        <span {...pressable(() => setViac((v) => !v), viac ? "Zbaliť" : "Zobraziť viac")}
+          style={{ display: "inline-block", marginTop: 2, fontSize: 12.5, fontWeight: 700, color: "var(--a-green)", cursor: "pointer" }}>
+          {viac ? "menej" : "viac"}
+        </span>
+      )}
     </div>
   );
 }

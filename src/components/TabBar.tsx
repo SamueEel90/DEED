@@ -1,5 +1,5 @@
 import { otvorPomoc } from "@/features/profil/Pomoc";
-import { DeedZnacka } from "@/components/DeedZnacka";
+import { DeedZnacka, sZnackou } from "@/components/DeedZnacka";
 import { useState } from "react";
 import { C, GRAD, glassTmavy, SPACE, RADIUS } from "@/theme";
 import { IkonaDomov, IkonaSrdceLine, IkonaCharita, IkonaKompas, IkonaMapa, IkonaPohar, IkonaOsoba, IkonaPenazenka, IkonaPlus, IkonaSlnko, IkonaMesiac, IkonaInstitucia, IkonaGraf } from "@/shared";
@@ -189,7 +189,7 @@ export function ViacSheet({ taby, setTaby, aktivny, onModul, onPenazenka, onAko,
               <div key={a.id} {...pressable(() => { a.onClick(); onClose(); }, a.label)} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, background: "rgba(var(--glass-rgb),.05)", border: `1px solid ${C.line}`, borderRadius: RADIUS.md, padding: `${SPACE.sm}px ${SPACE.sm}px`, marginBottom: SPACE.xs, cursor: "pointer" }}>
                 <span style={{ width: 38, height: 38, borderRadius: RADIUS.sm, background: "rgba(78,122,62,.12)", border: `1px solid ${C.line2}`, display: "flex", alignItems: "center", justifyContent: "center", flex: "0 0 auto", color: "var(--a-green)" }}>{a.ikona}</span>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 13.5, fontWeight: 700 }}>{a.label}</div>
+                  <div style={{ fontSize: 13.5, fontWeight: 700 }}>{sZnackou(a.label)}</div>
                   {a.popis && <div style={{ fontSize: 11, color: C.textTer, marginTop: SPACE.xxs }}>{a.popis}</div>}
                 </div>
                 <span style={{ color: C.textTer, fontSize: 15 }}>›</span>

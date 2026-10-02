@@ -93,11 +93,15 @@ export function BtnIkonka({ onClick, label, aktivne, farba = "var(--a-info)", te
 }
 
 // ---- ENTITY HERO — hlavička profilu subjektu (cover + avatar + akcie) ----
-export function EntityHero({ cover, coverEl, avatar, avatarTvar = "kruh", meno, overene, overeneLabel, podtitul, vpravo, podMenom, stats, akcie, onAvatar, onCover, coverLabel }: {
+export function EntityHero({ cover, coverEl, coverVlastny, avatarPozadie, avatar, avatarTvar = "kruh", meno, overene, overeneLabel, podtitul, vpravo, podMenom, stats, akcie, onAvatar, onCover, coverLabel }: {
   /** tvar loga/avatara — organizácia si môže zvoliť štvorec */
   avatarTvar?: "kruh" | "stvorec";
   /** URL cover fotky; alternatívne coverEl = vlastný element (gradient, Foto…) */
   cover?: string; coverEl?: ReactNode;
+  /** OPRAVY 107: titulná fotka s vlastným tvarom (výrez + rám z Upraviť profil) — bez pevnej výšky */
+  coverVlastny?: ReactNode;
+  /** pozadie loga (biele / tmavé / priehľadné z Upraviť profil) */
+  avatarPozadie?: string;
   /** avatar element (Foto/img/iniciálky) — vykreslí sa v krúžku cez okraj coveru */
   avatar: ReactNode;
   meno: ReactNode; overene?: boolean; overeneLabel?: string;
@@ -125,8 +129,8 @@ export function EntityHero({ cover, coverEl, avatar, avatarTvar = "kruh", meno, 
   return (
     <div style={{ position: "relative" }}>
       <div style={{ position: "relative" }}>
-        <div style={{ position: "relative", ...coverStyl, borderRadius: RADIUS.md, overflow: "hidden", background: `linear-gradient(135deg, ${tint("var(--a-info)", .22)}, ${tint("var(--a-plum)", .16)} 60%, ${tint("var(--a-gold)", .18)})` }}>
-          {cover ? <img src={cover} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} /> : coverEl}
+        <div style={coverVlastny ? { position: "relative", borderRadius: RADIUS.md, overflow: "hidden", isolation: "isolate" } : { position: "relative", ...coverStyl, borderRadius: RADIUS.md, overflow: "hidden", background: `linear-gradient(135deg, ${tint("var(--a-info)", .22)}, ${tint("var(--a-plum)", .16)} 60%, ${tint("var(--a-gold)", .18)})` }}>
+          {coverVlastny ?? (cover ? <img src={cover} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} /> : coverEl)}
           {onCover && <ZmenitPill label={coverLabel} onClick={onCover} style={{ right: "auto", left: 8 }} />}
         </div>
         {/* štít visí z pravej hrany titulnej fotky — mimo riadku s menom, aby meno malo celú šírku */}
@@ -141,7 +145,7 @@ export function EntityHero({ cover, coverEl, avatar, avatarTvar = "kruh", meno, 
             krúžku (span nižšie má overflow:hidden, inak by ho odrezal) */}
         <span style={{ position: "relative", flex: "none", display: "inline-flex" }}>
           <span {...(onAvatar ? pressable(onAvatar, "Profilová fotka") : {})}
-            style={{ width: av, height: av, borderRadius: avatarTvar === "stvorec" ? RADIUS.md : RADIUS.round, flex: "none", overflow: "hidden", border: `3px solid var(--c-bg)`, background: C.surface2, display: "flex", alignItems: "center", justifyContent: "center", fontSize: Math.round(av * .36), fontWeight: 800, cursor: onAvatar ? "pointer" : "default", boxShadow: "0 2px 10px rgba(0,0,0,.18)" }}>
+            style={{ width: av, height: av, borderRadius: avatarTvar === "stvorec" ? RADIUS.md : RADIUS.round, flex: "none", overflow: "hidden", border: `3px solid var(--c-bg)`, background: avatarPozadie ?? C.surface2, display: "flex", alignItems: "center", justifyContent: "center", fontSize: Math.round(av * .36), fontWeight: 800, cursor: onAvatar ? "pointer" : "default", boxShadow: "0 2px 10px rgba(0,0,0,.18)" }}>
             {avatar}
           </span>
           {onAvatar && <KamerkaBadge size={Math.round(av * .34)} />}

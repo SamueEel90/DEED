@@ -68,7 +68,7 @@ function Segment<T extends string | number>({ volby, hodnota, onZmena, stlpce, t
 const Zoznam = ({ polozky, bodka }: { polozky: string[]; bodka?: boolean }) => (
   <div style={{ ...krt, padding: "4px 16px" }}>
     {polozky.map((x, i) => <div key={x} style={{ display: "flex", gap: 10, padding: "11px 0", borderTop: btn(i), fontSize: 13.5, lineHeight: 1.45, color: "var(--ink2)" }}>
-      {bodka ? <span style={{ width: 6, height: 6, flex: "none", borderRadius: "50%", background: "var(--acc)", marginTop: 8 }} /> : FAJKA()}<span>{sZnackou(x)}</span></div>)}
+      {bodka ? <span style={{ width: 6, height: 6, flex: "none", borderRadius: "50%", background: "var(--acc)", marginTop: 8 }} /> : FAJKA()}<span>{x}</span></div>)}
   </div>);
 const dvaStlpce = (mobil: boolean, a = "1fr", b = "1fr"): React.CSSProperties => ({ display: "grid", gridTemplateColumns: mobil ? "minmax(0,1fr)" : `minmax(0,${a}) minmax(0,${b})`, gap: 18, alignItems: "start" });
 const stlpec: React.CSSProperties = { minWidth: 0, display: "flex", flexDirection: "column", gap: 8 };
@@ -207,7 +207,7 @@ export function ObrUcty({ mobil, otvor }: { mobil: boolean; otvor: (s: string) =
         <div style={nad}>HLAVNÝ ÚČET</div>
         <div style={{ ...krt, padding: "16px 18px", display: "flex", flexDirection: "column", gap: 12 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>{ZAMOK}<span style={{ flex: 1, fontSize: 13, fontWeight: 700, color: "var(--ink3)" }}>overený pri registrácii</span></div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 2 }}><span style={{ fontSize: 13, color: "var(--ink3)" }}>Slovenská sporiteľňa</span><span style={{ fontSize: 18, fontWeight: 800, letterSpacing: ".02em", overflowWrap: "anywhere" }}>SK31 0900 0000 0051 2233 4417</span><span style={{ fontSize: 13, color: "var(--ink3)" }}>Svetlo pomoci o.z.</span></div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 2 }}><span style={{ fontSize: 13, color: "var(--ink3)" }}>Slovenská sporiteľňa</span><span style={{ fontSize: 18, fontWeight: 800, letterSpacing: ".02em", overflowWrap: "anywhere" }}>{HLAVNY_UCET}</span><span style={{ fontSize: 13, color: "var(--ink3)" }}>Svetlo pomoci o.z.</span></div>
           <span style={{ fontSize: 13, lineHeight: 1.5, color: "var(--ink2)" }}>Hlavný účet sa nedá zmeniť v appke. Na zmenu ho musíme znova overiť. Napíšte nám cez podporu.</span>
           <button onClick={() => otvor("n:podpora")} style={{ ...obrys(), alignSelf: "flex-start" }}>Zmeniť cez podporu</button>
         </div>
@@ -232,7 +232,9 @@ export function ObrUcty({ mobil, otvor }: { mobil: boolean; otvor: (s: string) =
 type Stav = false | "prijatie" | "potvrdit";
 type Spravca = { id: number; n: string; k: string; r: number; caka: Stav; ja?: boolean; odkaz?: boolean };
 const SPR0: Spravca[] = [{ id: 1, n: "Martin Štofik", k: "martin@svetlopomoci.sk", r: 0, caka: false, ja: true }];
-const ROLY: [string, string][] = [["Hlavný správca", "všetko, aj účty, program a správcovia"], ["Správca", "zbierky, obsah, ľudia, výkazy · bez účtov a programu"], ["Pomocník", "len obsah: skutky, oznamy, nástenka · peniaze nevidí"]];
+// poradie = ROLY_STRANKY v stav.ts (OPRAVY 121: pribudol Organizátor)
+const ROLY: [string, string][] = [["Hlavný správca", "všetko, aj účty, program a správcovia"], ["Správca", "zbierky, obsah, ľudia, výkazy · bez účtov a programu"], ["Pomocník", "len obsah: skutky, oznamy, nástenka · peniaze nevidí"],
+  ["Organizátor", "vedúci skupiny s poverením od vás: skutky a akcie za charitu, QR charity · peniaze, darcov ani nastavenia nevidí"]];
 type Pozvanka = { id: number; r: number; do: string; url: string };
 export function ObrSpravcovia({ mobil }: { mobil: boolean }) {
   const [L, setL] = usePamat<Spravca[]>("spr", SPR0);
@@ -329,10 +331,10 @@ export function ObrSpravcovia({ mobil }: { mobil: boolean }) {
           {ako.map(([t, s], i) => (
             <div key={t} style={{ display: "flex", gap: 12, padding: "12px 0", borderTop: btn(i) }}>
               <span style={{ width: 26, height: 26, flex: "none", borderRadius: "50%", background: "var(--accSoft)", border: "1px solid var(--cuBd)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 800, color: "var(--acc)" }}>{i + 1}</span>
-              <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}><b style={{ fontSize: 14.5 }}>{t}</b><span style={{ fontSize: 13, lineHeight: 1.45, color: "var(--ink2)" }}>{sZnackou(s)}</span></span>
+              <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}><b style={{ fontSize: 14.5 }}>{t}</b><span style={{ fontSize: 13, lineHeight: 1.45, color: "var(--ink2)" }}>{s}</span></span>
             </div>))}
         </div>
-        <span style={pozn}>{cesta === 0 ? "Prijatie potvrdzuje on vo svojom účte, vy už nič nepotvrdzujete." : sZnackou("Registrovať sa v DEED+ nemusí. Bez registrácie môže robiť len správu vašej stránky. Inak vidí appku ako každý návštevník a môže prispievať. Nabudúce sa prihlási odtlačkom, Face ID alebo odkazom v e-maile. Žiadne SMS.")}</span>
+        <span style={pozn}>{cesta === 0 ? "Prijatie potvrdzuje on vo svojom účte, vy už nič nepotvrdzujete." : "Registrovať sa v DEED+ nemusí. Bez registrácie môže robiť len správu vašej stránky. Inak vidí appku ako každý návštevník a môže prispievať. Nabudúce sa prihlási odtlačkom, Face ID alebo odkazom v e-maile. Žiadne SMS."}</span>
       </div>
     </div>);
 }
@@ -342,13 +344,19 @@ export function ObrSpravcovia({ mobil }: { mobil: boolean }) {
 // ============================================================
 type Ud = { mail: string; tel: string; dic: string; fmail: string; ina: boolean; adr: string };
 const UD0: Ud = { mail: "info@svetlopomoci.sk", tel: "+421 905 111 222", dic: "", fmail: "info@svetlopomoci.sk", ina: false, adr: "" };
+/** IČO a sídlo z registra — jeden zdroj pre Údaje organizácie aj Upraviť profil (OPRAVY 108). TODO: tabuľka organizacia.sidlo */
+export const SIDLO_REGISTRA = "Palackého 14, 911 01 Trenčín";
+export const ICO_REGISTRA = "00 000 000";
+/** OPRAVY 114: hlavný účet organizácie z registrácie (jedno miesto — Účty aj Nová zbierka v Zadarmo) */
+export const HLAVNY_UCET = "SK31 0900 0000 0051 2233 4417";
+
 export function ObrUdaje({ mobil }: { mobil: boolean }) {
   const [ud, setUd] = usePamat<Ud>("ud", UD0);
   const [d, setD] = useState<Partial<Ud>>({});
   const v = <K extends keyof Ud>(k: K): Ud[K] => (d[k] ?? ud[k]) as Ud[K];
   const zmena = (Object.keys(d) as (keyof Ud)[]).some((k) => d[k] !== ud[k]);
   const set = (k: keyof Ud) => (e: React.ChangeEvent<HTMLInputElement>) => { const x = e.target.value; setD((c) => ({ ...c, [k]: x })); };
-  const REG: [string, string][] = [["Názov", "Svetlo pomoci o.z."], ["IČO", "42 318 657"], ["Právna forma", "Občianske združenie"], ["Sídlo", "Hlavná 12, 911 01 Trenčín"], ["Dátum vzniku", "14. 3. 2012"], ["Štatutár", "Martin Štofik · overený"]];
+  const REG: [string, string][] = [["Názov", "Svetlo pomoci o.z."], ["IČO", ICO_REGISTRA], ["Právna forma", "Občianske združenie"], ["Sídlo", SIDLO_REGISTRA], ["Dátum vzniku", "14. 3. 2012"], ["Štatutár", "Martin Štofik · overený"]];
   const Pole = ({ k, t, ph, typ = "text" }: { k: keyof Ud; t: React.ReactNode; ph?: string; typ?: string }) => (
     <label style={{ display: "flex", flexDirection: "column", gap: 6 }}><span style={{ fontSize: 13.5, fontWeight: 700, color: "var(--ink2)" }}>{t}</span><input type={typ} value={v(k) as string} onChange={set(k)} placeholder={ph} style={pole} /></label>);
   return (
@@ -371,7 +379,7 @@ export function ObrUdaje({ mobil }: { mobil: boolean }) {
         <div style={{ ...nad, marginTop: 10 }}>FAKTURAČNÉ ÚDAJE</div>
         <div style={{ ...krt, padding: 16, display: "flex", flexDirection: "column", gap: 12 }}>
           {Pole({ k: "dic", t: <>DIČ <span style={{ fontWeight: 600, color: "var(--ink3)" }}>· ak ho máte</span></>, ph: "napr. 2021234567" })}
-          <RiadokPrep i={0} minH={48} t="Fakturačná adresa = sídlo" s="Hlavná 12, 911 01 Trenčín" on={!v("ina")} onClick={() => setD((c) => ({ ...c, ina: !v("ina") }))} />
+          <RiadokPrep i={0} minH={48} t="Fakturačná adresa = sídlo" s={SIDLO_REGISTRA} on={!v("ina")} onClick={() => setD((c) => ({ ...c, ina: !v("ina") }))} />
           {v("ina") && <input value={v("adr")} onChange={set("adr")} placeholder="ulica, PSČ, mesto" aria-label="Fakturačná adresa" style={pole} />}
           {Pole({ k: "fmail", t: "E-mail na faktúry", typ: "email" })}
           <span style={pozn}>Na tieto údaje vystavíme faktúru za program. V programe Zadarmo neplatíte nič.</span>
@@ -387,17 +395,17 @@ export function ObrUdaje({ mobil }: { mobil: boolean }) {
 type Prog = [string, string, number, number, string[]];
 export const PROG: Prog[] = [
   ["Zadarmo", "P0", 0, 0, ["Profil, karma a štít", "1 zbierka naraz", "1 Iskra mesačne", "Prehľad darcov a ročný výpis"]],
-  ["Zbierka", "P1", 33, 336.6, ["5 zbierok naraz, mimo centrálnej", "Centrálna zbierka spoločnosti", "Pravidelná podpora", "Predĺženie zbierky nad 30 dní", "Sponzoring so zmluvou", "Oznamy a inzerát", "Štít dôvery na web"]],
+  ["Zbierka", "P1", 33, 336.6, ["5 zbierok naraz, mimo centrálnej", "Centrálna zbierka spoločnosti", "Pravidelná podpora", "Dlhodobá zbierka, 3 až 12 mesiacov", "Vlastný účet pre každú zbierku", "Spolufinancovanie", "Sponzoring so zmluvou", "Oznamy, oznam vo verejnom záujme a inzerát", "Štít dôvery na web"]],
   ["Akcia", "P2", 90, 918, ["10 zbierok naraz", "Benefičné podujatia a lístky", "Dobrovoľníci a QR dochádzka", "Sektorové zbierky podľa činnosti", "Upútavky v Iskre", "2 Iskry mesačne"]],
   ["Kampaň", "P3", 150, 1530, ["Zbierky bez limitu", "Sektorové QR", "Materiálne zbierky", "Prednosť vo vyhľadávaní", "Export pre granty", "4 Iskry mesačne"]],
 ];
 const A = "A";
 const POR: [string, [string, ...string[]][]][] = [
   ["Profil a dôvera", [["Profil — foto, logo, popis, odkaz na web", A, A, A, A], ["Karma a štít, Bronze až Legend", A, A, A, A], ["Zápis v adresári", A, A, A, A], ["QR identity — overená organizácia", A, A, A, A], ["Skutky do feedu mesta", A, A, A, A], ["Iskra — video do 45 s", "1 / mes.", "1 / mes.", "2 / mes.", "4 / mes."], ["Ďalšia Iskra nad kvótu", "10 €", "10 €", "10 €", "10 €"], ["Štít dôvery na vlastný web", "", A, A, A], ["Sektorové QR", "", "", "", A]]],
-  ["Zbierky", [["Krátka cieľová zbierka, do 30 dní", A, A, A, A], ["Súbežne otvorených zbierok, mimo centrálnej", "1", "5", "10", "bez limitu"], ["QR zbierky na zdieľanie", A, A, A, A], ["Dôkazy a správy", A, A, A, A], ["Centrálna zbierka spoločnosti", "", A, A, A], ["Predĺženie zbierky nad 30 dní", "", A, A, A], ["Sektorové zbierky podľa činnosti", "", "", A, A], ["Materiálne zbierky", "", "", "", A]]],
+  ["Zbierky", [["Krátka cieľová zbierka, do 30 dní", A, A, A, A], ["Súbežne otvorených zbierok, mimo centrálnej", "1", "5", "10", "bez limitu"], ["QR zbierky na zdieľanie", A, A, A, A], ["Dôkazy a správy", A, A, A, A], ["Centrálna zbierka spoločnosti", "", A, A, A], ["Predĺženie vo feede, +15 dní za 5 / 15 / 40 €", A, A, A, A], ["Dlhodobá zbierka, 3 až 12 mesiacov", "", A, A, A], ["Vlastný účet pre každú zbierku", "", A, A, A], ["Spolufinancovanie", "", A, A, A], ["Sektorové zbierky podľa činnosti", "", "", A, A], ["Materiálne zbierky", "", "", "", A]]],
   ["Príjem daru", [["Jednorazový dar — prevod, karta, DEED+", A, A, A, A], ["Rýchle sumy a vlastná suma", A, A, A, A], ["Pravidelná podpora — mesačný dar", "", A, A, A]]],
   ["Sponzoring", [["Hľadáme sponzora s protiplnením", "", A, A, A], ["Predvyplnená sponzorská zmluva", "", A, A, A], ["Logo sponzora na profile", "", A, A, A], ["Doklad o protiplnení pre sponzora", "", A, A, A], ["Sponzorských zbierok", "", "bez limitu", "bez limitu", "bez limitu"]]],
-  ["Prezentácia, oznamy a ľudia", [["Prezentácia činnosti a služieb", "", A, A, A], ["Oznamy na profile", "", A, A, A], ["Inzerát — zamestnanec, brigádnik, člen", "", "1", "5", "bez limitu"], ["Akcie na nástenku mesta", "", A, A, A], ["Benefičné podujatie s QR", "", "", A, A], ["Predaj lístkov, merchu a služieb", "", "", A, A], ["Predaj vlastných školení, provízia 10 %", "", "", A, A]]],
+  ["Prezentácia, oznamy a ľudia", [["Prezentácia činnosti a služieb", "", A, A, A], ["Oznamy na profile", "", A, A, A], ["Inzerát — zamestnanec, brigádnik, člen", "", "1", "5", "bez limitu"], ["Oznam vo verejnom záujme (nástenka mesta)", "", A, A, A], ["Výzva na súrnu pomoc", A, A, A, A], ["Benefičné podujatie s QR", "", "", A, A], ["Predaj lístkov, merchu a služieb", "", "", A, A], ["Predaj vlastných školení, provízia 10 %", "", "", A, A]]],
   ["Dobrovoľníctvo", [["Dobrovoľnícka výzva pre verejnosť", "", "", A, A], ["QR dochádzka — príchod a odchod", "", "", A, A], ["Náhradníci a chat s prihlásenými", "", "", A, A], ["Upozornenie dobrovoľníkom v okolí", "", "", A, A], ["Výkaz odrobených hodín", "", "", A, A]]],
   ["Dosah a pobočky", [["Dosah — štvrť, mesto, kraj", A, A, A, A], ["Pobočiek", "1", "5", "10", "bez limitu"], ["Prednosť vo vyhľadávaní", "", "", "", A]]],
   ["Iskra a prehľady", [["Komu sme pomohli — výsledky", A, A, A, A], ["Upútavky na zbierky v Iskre", "", "", A, A], ["Prehľad darcov a súm", A, A, A, A], ["Ročný výpis činnosti", A, A, A, A], ["Export pre granty", "", "", "", A]]],
@@ -575,7 +583,7 @@ export function ObrSuhlasy({ mobil, otvor }: { mobil: boolean; otvor: (s: string
         <div style={{ ...krt, padding: "0 16px" }}>
           {POV.map(([t, s, d], i) => (
             <div key={t} style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 72, padding: "10px 0", borderTop: btn(i) }}>
-              <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}><b style={{ fontSize: 15 }}>{t}</b><span style={{ fontSize: 13, color: "var(--ink3)" }}>{sZnackou(s)}</span><span style={{ fontSize: 12.5, fontWeight: 700, color: "var(--ink2)" }}>{d}</span></span>
+              <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}><b style={{ fontSize: 15 }}>{t}</b><span style={{ fontSize: 13, color: "var(--ink3)" }}>{s}</span><span style={{ fontSize: 12.5, fontWeight: 700, color: "var(--ink2)" }}>{d}</span></span>
               <button onClick={() => otvor(`x:${t}`)} style={{ ...obrys(), fontSize: 13.5 }}>Zobraziť</button>
             </div>))}
         </div>
@@ -674,7 +682,7 @@ export function ObrFaq({ otvor }: { otvor: (s: string) => void }) {
                   <b style={{ flex: 1, fontSize: 15, color: "var(--ink)" }}>{sZnackou(a)}</b>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--acc)" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true" style={{ flex: "none", transform: on ? "rotate(180deg)" : "none", transition: "transform .2s ease" }}><path d="M6 9l6 6 6-6" /></svg>
                 </button>
-                {on && <div style={{ padding: "0 28px 14px 0", fontSize: 14, lineHeight: 1.55, color: "var(--ink2)" }}>{sZnackou(b)}</div>}
+                {on && <div style={{ padding: "0 28px 14px 0", fontSize: 14, lineHeight: 1.55, color: "var(--ink2)" }}>{b}</div>}
               </div>); })}
           </div>
         </div>))}

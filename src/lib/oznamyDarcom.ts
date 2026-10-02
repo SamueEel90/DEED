@@ -10,7 +10,8 @@ import { useSyncExternalStore } from "react";
 export interface OznamDarcovi {
   id: string;
   zbierkaId: string;
-  typ: "dolozene" | "sprava";
+  /** „vysledok" = KARTA 38: výsledok zbierky, posiela systém sám pri ukončení (1. z 2 správ) */
+  typ: "dolozene" | "sprava" | "vysledok";
   text?: string;
   datum: string;      // ISO
   precitane?: boolean;

@@ -9,15 +9,15 @@ import { useSyncExternalStore } from "react";
 export const SPRAVA_ZBIERKY_CFG = {
   /** štandardná dĺžka zbierky (kalendárne dni) */
   dlzkaDni: 30,
-  /** predĺženie = platená alternatíva topovania; mŕtve zbierky sa nemajú umelo naťahovať.
-   *  Neplatí pre dlhodobé zbierky (liečba, segmenty charity). */
+  /** KARTA 38 · bod 3: predĺženie vo feede (30 dní je v cene) — rebrík 15 · 15 · 15 dní, najviac 75 dní vo feede.
+   *  Neplatí pre centrálnu, sektorové a dlhodobé zbierky. */
   predlzenia: [
-    { dni: 30, cena: 5 },
+    { dni: 15, cena: 5 },
     { dni: 15, cena: 15 },
     { dni: 15, cena: 40 },
   ],
-  /** topovanie = platená viditeľnosť, od programu ZBIERKA (T1); jedno z kritérií radenia */
-  topovanieOdTieru: 1,
+  /** topovanie = platená viditeľnosť, v každom programe aj Zadarmo (karta 38); jedno z kritérií radenia */
+  topovanieOdTieru: 0,
   topovanie: [
     { kluc: "mesto", nazov: "Mesto", cena: 5 },
     { kluc: "kraj", nazov: "Kraj", cena: 15 },
@@ -25,36 +25,37 @@ export const SPRAVA_ZBIERKY_CFG = {
   ],
   topovanieDni: 7,
   /** lehota na dokladovanie po ukončení (voľba charity pri zakladaní) */
-  lehoty: { "30": 30, priebezne: 30, "60": 60 } as Record<Lehota, number>,
+  lehoty: { "30": 30, priebezne: 30, "60": 60, stvrtrocne: 90 } as Record<Lehota, number>,
+  /** KARTA 38 · bod 4: zbierka skončená pred 30. dňom ostane vo feede do konca svojich 30 dní ako poďakovanie */
+  podakovanieDni: 30,
   /** po lehote: výzva — dolož do X dní, inak tabuľa hanby (alebo zdôvodnenie) */
   vyzvaDni: 3,
   /** 3 nedoložené zbierky = pozastavenie */
   strikesPozastavenie: 3,
-  /** max priebežných správ pre darcov počas zbierky (placeholder) */
-  maxSprav: 3,
   /** karma za dôkaz navyše (placeholder) */
   karmaNavyse: 5,
 };
 
-export type Lehota = "30" | "priebezne" | "60";
+/** lehoty dokladovania — zjednotené s kartou 37 (30 dní · 60 dní · priebežne + záverečná · štvrťročne) */
+export type Lehota = "30" | "priebezne" | "60" | "stvrtrocne";
+export const LEHOTA_TEXT: Record<Lehota, string> = { "30": "do 30 dní od skončenia", "60": "do 60 dní od skončenia", priebezne: "priebežne + záverečná", stvrtrocne: "štvrťročne" };
 
 /** pásma podľa REÁLNE vyzbieranej sumy (nie cieľa) — povinné minimum dokladovania */
-export type Poziadavka = "text" | "foto" | "rozpis" | "uctenky" | "doklady100" | "potvrdenie" | "spravy";
+export type Poziadavka = "text" | "foto" | "rozpis" | "uctenky" | "doklady100" | "potvrdenie";
 export const PASMA_DOKLADOV: { do: number; label: string; povinne: Poziadavka[] }[] = [
   { do: 150, label: "do 150 €", povinne: ["text", "foto"] },
   { do: 500, label: "150 – 500 €", povinne: ["text", "foto"] },
   { do: 1500, label: "500 – 1 500 €", povinne: ["text", "foto", "rozpis"] },
   { do: 5000, label: "1 500 – 5 000 €", povinne: ["text", "foto", "rozpis", "uctenky"] },
-  { do: Infinity, label: "nad 5 000 €", povinne: ["text", "foto", "rozpis", "doklady100", "potvrdenie", "spravy"] },
+  { do: Infinity, label: "nad 5 000 €", povinne: ["text", "foto", "rozpis", "doklady100", "potvrdenie"] },
 ];
 export const POZIADAVKA_TEXT: Record<Poziadavka, string> = {
-  text: "Text — na čo išli peniaze",
+  text: "Text, na čo išli peniaze",
   foto: "Fotka alebo video použitia",
-  rozpis: "Rozpis položiek (čo, koľko)",
+  rozpis: "Rozpis položiek",
   uctenky: "Účtenky k hlavným položkám (aspoň polovica sumy)",
   doklady100: "Doklady na celú sumu",
   potvrdenie: "Potvrdenie príjemcu o prevzatí",
-  spravy: "Aspoň 1 priebežná správa počas zbierky",
 };
 export const pasmoPre = (vyzbierane: number) => PASMA_DOKLADOV.findIndex((p) => vyzbierane <= p.do);
 
@@ -86,6 +87,18 @@ export interface StavZbierky {
   doklady: PolozkaDokladu[];
   spravy: SpravaDarcom[];
   zverejnene?: string;       // ISO — dokladovanie zverejnené a darcovia upovedomení
+  /** KARTA 38: začiatok zbierky (deň 1 z 30) a stiahnutie z feedu po skončení */
+  zaciatok?: string;
+  stiahnuta?: string;
+  /** KARTA 38: výsledok poslaný darcom automaticky pri ukončení (1. z 2 správ) */
+  vysledokPoslany?: string;
+  /** KARTA 37 · bod 7: dlhodobá zbierka — kedy charita zavrela upozornenie po 90 dňoch bez doloženia („Teraz nie") */
+  upozornenie90Zavrete?: string;
+  /** KARTA 39 · bod 1: posledné vytiahnutie dlhodobej hore (priebežné doloženie), ISO */
+  vytiahnute?: string;
+  /** KARTA 39 · bod 1: žiadosť o zmenu účelu (len dlhodobá) */
+  zmenaUcelu?: { ucel: string; zdovodnenie: string; podana: string; schvalena?: string };
+  simDary30?: number;        // DEV — simulácia darov za posledných 30 dní (živá / nie)
   simVyzbierane?: number;    // DEV — simulácia sumy na test pásiem
 }
 
@@ -106,6 +119,28 @@ export function ulozStav(id: string, s: StavZbierky) {
 
 // ---- výpočty ----
 const DEN = 86400000;
+/** KARTA 37 · bod 7: upozornenie pre charitu (nie trest, nie darcom) vždy po 90 dňoch bez doloženia pri dlhodobej zbierke */
+export const UPOZORNENIE_DNI = 90;
+export const UPOZORNENIE_90_TEXT = "Prešli 3 mesiace od spustenia. Máte niečo nové na doloženie? Zbierka sa tým dostane na 24 hodín hore.";
+export function upozornenie90(s: StavZbierky, zaciatok: string, teraz: number): boolean {
+  const posledne = Math.max(Date.parse(zaciatok), ...s.doklady.map((d) => Date.parse(d.datum) || 0));
+  const obdobie = Math.floor((teraz - posledne) / (UPOZORNENIE_DNI * DEN));
+  if (obdobie < 1) return false;
+  return !(s.upozornenie90Zavrete && Date.parse(s.upozornenie90Zavrete) >= posledne + obdobie * UPOZORNENIE_DNI * DEN);
+}
+/** KARTA 39 · bod 1: kde je dlhodobá zbierka vo feede (logika radenia je na serveri — toto je to isté pravidlo pre správu) */
+export type MiestoDlhodobej = "velka" | "hore" | "mala" | "profil";
+export function kdeJeDlhodoba(o: { zaciatok: string; dary30: number; vytiahnute?: string; teraz: number;
+  cfg: { velkaDni: number; prah: { dary: number; dni: number }; horeHodin: number; vytiahnutieKazdychDni: number } }) {
+  const { cfg, teraz } = o;
+  const vyt = o.vytiahnute ? Date.parse(o.vytiahnute) : 0;
+  const ziva = o.dary30 >= cfg.prah.dary;
+  const hore = vyt > 0 && teraz - vyt < cfg.horeHodin * 3600000;
+  const vPrvych = teraz - Date.parse(o.zaciatok) < cfg.velkaDni * DEN;
+  const miesto: MiestoDlhodobej = hore ? "hore" : vPrvych ? "velka" : ziva ? "mala" : "profil";
+  const dalsie = vyt ? vyt + cfg.vytiahnutieKazdychDni * DEN : 0;
+  return { miesto, ziva, mozeVytiahnut: !dalsie || teraz >= dalsie, dalsieVytiahnutie: dalsie && teraz < dalsie ? new Date(dalsie).toISOString() : null };
+}
 export const dniDo = (iso: string, teraz: number) => Math.ceil((new Date(iso).getTime() - teraz) / DEN);
 export const pridajDni = (iso: string | number, dni: number) => new Date(new Date(iso).getTime() + dni * DEN).toISOString();
 
@@ -125,7 +160,6 @@ export function splnene(p: Poziadavka, s: StavZbierky, vyzbierane: number): bool
     case "uctenky": return vyzbierane > 0 && sumaDokladov(s, true) >= vyzbierane * 0.5;
     case "doklady100": return vyzbierane > 0 && sumaDokladov(s, true) >= vyzbierane * 0.99;
     case "potvrdenie": return s.doklady.some((d) => d.druh === "Potvrdenie o prevzatí");
-    case "spravy": return s.spravy.length >= 1;
   }
 }
 /** dôkaz navyše nad povinné minimum → +karma (poctivosť odmeňujeme) */

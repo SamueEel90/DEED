@@ -42,6 +42,10 @@ export interface OpusBeh {
  * - nevalidný JSON → 1 opravné volanie s dovetkom „vráť VÝHRADNE platný JSON“
  *   → ak zlé aj potom, vyhodí NevalidnyVystup (handler loguje parseError)
  */
+/** OPRAVY 127: časový rozpočet celého hodnotenia (maxDuration 60 s − rezerva na log) a najkratšie zmysluplné volanie */
+const ROZPOCET_MS = 50_000;
+const MIN_VOLANIE_MS = 8_000;
+
 export async function ohodnotSkutok(
   cfg: ScoringConfig,
   systemPrompt: string,
@@ -62,10 +66,15 @@ export async function ohodnotSkutok(
     })),
   ];
 
+  // OPRAVY 127: celé hodnotenie (pokusy + opravné kolo) musí skončiť pred maxDuration funkcie vo vercel.json (60 s),
+  // inak Vercel vráti 504 bez JSON a appka ukáže „nepodarilo sa". Rezerva na zápis logu a fotiek.
+  const koniec = Date.now() + ROZPOCET_MS;
   const zavolaj = async (spravy: Anthropic.MessageParam[]): Promise<string> => {
     const pokusy = 1 + cfg.api.retry.pocet;
     let poslednaChyba: unknown;
     for (let i = 0; i < pokusy; i++) {
+      const zostava = koniec - Date.now();
+      if (zostava < MIN_VOLANIE_MS) throw new ApiNedostupne(`čas na hodnotenie vypršal${poslednaChyba ? `: ${String((poslednaChyba as Error).message ?? poslednaChyba)}` : ""}`);
       try {
         const odpoved = await klient.messages.create({
           model: cfg.api.model,
@@ -73,7 +82,7 @@ export async function ohodnotSkutok(
           ...(modelBerieTemperature(cfg.api.model) ? { temperature: cfg.api.temperature } : {}),
           system: systemPrompt,
           messages: spravy,
-        });
+        }, { timeout: Math.min(cfg.api.timeout_ms, zostava) });
         const text = odpoved.content
           .filter((b): b is Anthropic.TextBlock => b.type === "text")
           .map((b) => b.text)

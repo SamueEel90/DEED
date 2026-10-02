@@ -30,6 +30,15 @@ export const KONFIG = {
   lehotaDokladovaniaDni: 30,
   /** počet delegovaných správcov B2B podľa tieru (§3.1) */
   spravcoviaB2B: { 0: 1, 1: 1, 2: 1, 3: 2, 4: 5 } as Record<Tier, number>,
+  /** KARTA 39 · bod 1: dlhodobá zbierka vo feede. Prah „živá" sa bude počítať podľa aktívnych v oblasti — stupne doladíme s dátami. */
+  dlhodoba: {
+    /** prvých X dní veľká karta vo feede */
+    velkaDni: 30,
+    /** živá = aspoň `dary` darov za posledných `dni` dní (začiatok; neskôr podľa aktívnych v oblasti) */
+    prah: { dary: 3, dni: 30 },
+    /** priebežné doloženie vytiahne zbierku hore na X hodín, najviac raz za Y dní */
+    horeHodin: 24, vytiahnutieKazdychDni: 30,
+  },
 };
 
 // ---- tierová mriežka — mapovanie na existujúce cenníky (§0.2, žiadny nový cenník) ----
@@ -163,16 +172,22 @@ export type PolozkaSpravy =
   | "darcovia" | "sledujuci" | "dobrovolnici" | "podujatia" | "sponzoring" | "inzeraty"
   | "qr" | "sektorqr" | "embed" | "prednost" | "statistiky" | "vypis" | "export"
   // KARTA 36: pobočky (zatiaľ bez obrazovky) a nástroje firmy
-  | "pobocky" | "dorovnavanie" | "zamestnanci" | "esg" | "firemnyqr";
+  | "pobocky" | "dorovnavanie" | "zamestnanci" | "esg" | "firemnyqr"
+  // OPRAVY 118: Pridať skutok v Nástrojoch (od Zadarmo, bez limitu)
+  | "pridatSkutok";
 export const POVOLENIA_CHARITY: Record<PolozkaSpravy, { od: Program }> = {
   zbierky: { od: "zadarmo" }, centralna: { od: "P1" }, dorovnanie: { od: "P1" }, segment: { od: "P2" }, materialne: { od: "P3" },
   skutky: { od: "zadarmo" }, video: { od: "zadarmo" }, oznamy: { od: "P1" }, nastenka: { od: "P1" }, upoutavky: { od: "P2" },
   darcovia: { od: "zadarmo" }, sledujuci: { od: "zadarmo" }, dobrovolnici: { od: "P2" }, podujatia: { od: "P2" }, sponzoring: { od: "P1" }, inzeraty: { od: "P1" },
   qr: { od: "zadarmo" }, sektorqr: { od: "P2" }, embed: { od: "P1" }, prednost: { od: "P3" }, statistiky: { od: "zadarmo" }, vypis: { od: "zadarmo" }, export: { od: "P3" },
   pobocky: { od: "zadarmo" }, dorovnavanie: { od: "zadarmo" }, zamestnanci: { od: "zadarmo" }, esg: { od: "zadarmo" }, firemnyqr: { od: "zadarmo" },
+  pridatSkutok: { od: "zadarmo" },
 };
 /** má charita s týmto tierom položku? (program) */
 export const maPovolenie = (id: PolozkaSpravy, tier: Tier): boolean => tier >= PROGRAM_TIER[POVOLENIA_CHARITY[id].od];
+/** OPRAVY 118: ukazuje sa len svoj program + 2 vyššie (Zadarmo nevidí P3 ani P4) — všade: menu, dlaždice, skupiny, pripnuté */
+export const vidno = (od: Program, tier: Tier): boolean => PROGRAM_TIER[od] <= tier + 2;
+export const vidnoPolozku = (id: PolozkaSpravy, tier: Tier): boolean => vidno(POVOLENIA_CHARITY[id].od, tier);
 
 // ============================================================
 // KARTA 36 · Typy profilov — jedna správa pre všetkých. Typ len VYPÍNA položky, PRIDÁVA nástroje a mení slová.
@@ -245,3 +260,16 @@ export const PIN_MAX = 12;
 // ---- DEV: nová charita (nuly, prázdne stavy) alebo bežiaca ukážka ----
 export const nacitajCharituNovu = (): boolean => nacitaj(kluc("charita.nova"), false);
 export const ulozCharituNovu = (v: boolean) => uloz(kluc("charita.nova"), v);
+
+// ============================================================
+// OPRAVY 121 · bod 9 — roly v správe stránky (poradie = Nastavenia → Správcovia a prístupy).
+// Organizátor = vedúci skupiny ako pri skutkoch ľudí, len s poverením od charity (OPRAVY 122). Ostatní sú dobrovoľníci.
+// Pridáva skutky a akcie za charitu, nevidí peniaze, darcov ani nastavenia.
+// Bez roly sa skutok za charitu (ani QR charity) vytvoriť nedá. Overenie roly robí server pri uložení.
+// ============================================================
+export type RolaStranky = "hlavny" | "spravca" | "pomocnik" | "organizator";
+export const ROLY_STRANKY: RolaStranky[] = ["hlavny", "spravca", "pomocnik", "organizator"];
+/** smie pridať skutok za charitu a ukázať QR charity */
+export const smieSkutokZaCharitu = (r: RolaStranky | null | undefined): boolean => r === "hlavny" || r === "spravca" || r === "organizator";
+/** vidí peniaze, darcov a nastavenia (Organizátor nie) */
+export const vidiPeniaze = (r: RolaStranky | null | undefined): boolean => r === "hlavny" || r === "spravca";

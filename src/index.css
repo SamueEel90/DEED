@@ -150,6 +150,10 @@ input, textarea, button {
   outline-offset: 2px;
 }
 
+/* OPRAVY 128: pole „Za zbierku zodpovedá" — focus rámik okolo celej karty */
+.zb-pole-org :focus-visible { outline: none; }
+.zb-pole-org:has(:focus-visible) { outline: 2px solid var(--a-green); outline-offset: 2px; }
+
 /* bez modrého „blesku" pri ťuknutí na dotykových zariadeniach */
 button, a, [role="button"] {
   -webkit-tap-highlight-color: transparent;

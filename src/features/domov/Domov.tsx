@@ -1,4 +1,4 @@
-import { Emo, IkonaVlajka } from "@/components/icons";
+import { Emo, IkonaVlajka, IkonaTerc } from "@/components/icons";
 import { DeedZnacka } from "@/components/DeedZnacka";
 import { NahlasitSheet } from "@/components/nahlasit";
 import { useState, useEffect, useRef, memo } from "react";
@@ -349,14 +349,14 @@ function MojDeedObsah({ onDetail, onBoard, toast }: { onDetail: (id: string | nu
       <div style={{ padding: `${SPACE.xxs}px ${SPACE.md}px 0` }}>
         <SekciaLabel>MOJE ZBIERKY ({mojeZbierky.length})</SekciaLabel>
         {mojeZbierky.length === 0 ? (
-          <PrazdnyTip emoji="🎯" text="Keď vytvoríš zbierku alebo žiadosť (Domov, Help, Charita), objaví sa tu — vieš ju spravovať: ukončiť, podať vyúčtovacie doklady a poslať darcom poďakovanie." />
+          <PrazdnyTip ikona={<IkonaTerc size={22} color="var(--a-green)" />} text="Keď vytvoríš zbierku alebo žiadosť (Domov, Help, Charita), objaví sa tu — vieš ju spravovať: ukončiť, podať vyúčtovacie doklady a poslať darcom poďakovanie." />
         ) : mojeZbierky.map((z) => {
           const st = STAV_ZBIERKY[z.stav];
           return (
             <div key={z.id} onClick={() => setSpravovana(z.id)}
               style={{ background: C.surface2, border: `1px solid ${C.line}`, borderRadius: RADIUS.sm, padding: SPACE.sm, marginBottom: SPACE.xs, cursor: "pointer" }}>
               <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm }}>
-                <span style={{ width: 34, height: 34, borderRadius: RADIUS.xs, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 17, background: "rgba(var(--glass-rgb),.06)" }}>{z.emoji || "🎯"}</span>
+                <span style={{ width: 34, height: 34, borderRadius: RADIUS.xs, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 17, background: "rgba(var(--glass-rgb),.06)" }}><IkonaTerc size={18} color="var(--a-green)" /></span>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 14, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{z.nazov}</div>
                   <div style={{ fontSize: 11.5, color: C.textTer, marginTop: 2 }}>{modulLabel[z.modul] || z.modul}{z.lok ? ` · ${z.lok}` : ""}</div>
@@ -546,7 +546,7 @@ function SpravaZbierky({ z, upravZbierku, toast, onClose }: {
     <Sheet onClose={onClose} label="Správa zbierky">
       {/* hlavička */}
       <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm, marginBottom: SPACE.sm }}>
-        <span style={{ width: 40, height: 40, borderRadius: RADIUS.sm, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, background: "rgba(var(--glass-rgb),.06)" }}>{z.emoji || "🎯"}</span>
+        <span style={{ width: 40, height: 40, borderRadius: RADIUS.sm, flex: "none", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, background: "rgba(var(--glass-rgb),.06)" }}><IkonaTerc size={20} color="var(--a-green)" /></span>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 16, fontWeight: 800, lineHeight: 1.25 }}>{z.nazov}</div>
           <div style={{ fontSize: 11.5, color: C.textTer, marginTop: 2 }}>Moja zbierka · spravovanie</div>
@@ -601,10 +601,10 @@ function SpravaZbierky({ z, upravZbierku, toast, onClose }: {
   );
 }
 
-function PrazdnyTip({ emoji, text }: { emoji: string; text: string }) {
+function PrazdnyTip({ emoji, ikona, text }: { emoji?: string; ikona?: React.ReactNode; text: string }) {
   return (
     <div style={{ display: "flex", gap: SPACE.sm, alignItems: "center", background: "rgba(var(--glass-rgb),.04)", border: `1px dashed ${C.line}`, borderRadius: RADIUS.sm, padding: `${SPACE.gutter}px ${SPACE.gutter}px`, marginBottom: SPACE.xs }}>
-      <span style={{ fontSize: 22, flex: "none" }}><Emo e={emoji} /></span>
+      <span style={{ fontSize: 22, flex: "none", display: "flex" }}>{ikona ?? (emoji ? <Emo e={emoji} /> : null)}</span>
       <span style={{ fontSize: 12.5, color: C.textSec, lineHeight: 1.5 }}>{text}</span>
     </div>
   );
