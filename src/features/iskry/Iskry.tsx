@@ -85,6 +85,11 @@ function IskryPrud() {
   const [rozbaleny, setRozbaleny] = useState<string | null>(null);
   const stlpecRef = useRef<HTMLDivElement | null>(null);
   const hlavRef = useRef<HTMLDivElement | null>(null);
+  // druhy videí: vodorovný posun, pri okraji, kde ešte niečo je, stmavnutie (maska)
+  const druhyRef = useRef<HTMLDivElement | null>(null);
+  const [okraje, setOkraje] = useState({ l: false, p: false });
+  const merajOkraje = () => { const el = druhyRef.current; if (!el) return; const l = el.scrollLeft > 2, p = el.scrollLeft + el.clientWidth < el.scrollWidth - 2; setOkraje((o) => (o.l === l && o.p === p ? o : { l, p })); };
+  useLayoutEffect(() => { merajOkraje(); const el = druhyRef.current; if (!el) return; const ro = new ResizeObserver(merajOkraje); ro.observe(el); return () => ro.disconnect(); }, []);
   const [miesto, setMiesto] = useState({ stlpec: 316, volne: 9999 });
   useLayoutEffect(() => {
     const st = stlpecRef.current, hl = hlavRef.current, r = root.current; if (!st || !hl || !r) return;
@@ -254,8 +259,9 @@ function IskryPrud() {
           {ISKRY_CFG.zobrazOblasti && <div role="tablist" aria-label="Oblasť" style={{ display: "flex", gap: 4, padding: 4, borderRadius: 14, background: "rgba(0,0,0,.4)", pointerEvents: "auto" }}>
             {ISKRY_CFG.oblasti.map((t, i) => <button key={t} type="button" role="tab" aria-selected={oblast === i} onClick={() => setOblast(i)} style={{ flex: 1, height: 34, border: "none", borderRadius: 10, cursor: "pointer", fontFamily: "inherit", fontSize: 13.5, fontWeight: oblast === i ? 800 : 600, background: oblast === i ? "#fff" : "transparent", color: oblast === i ? "#1D211B" : "#fff" }}>{t}</button>)}
           </div>}
-          <div className="isk-scroll" role="tablist" aria-label="Druh" style={{ display: "flex", gap: 6, overflowX: "auto", scrollbarWidth: "none", pointerEvents: "auto" }}>
-            {ISKRY_CFG.druhy.map((t, i) => <button key={t} type="button" role="tab" aria-selected={druh === i} onClick={() => { setDruh(i); setIdx(0); sc.current?.scrollTo({ top: 0 }); }}
+          <div ref={druhyRef} onScroll={merajOkraje} className="isk-scroll" role="tablist" aria-label="Druh" style={{ display: "flex", gap: 6, overflowX: "auto", scrollbarWidth: "none", pointerEvents: "auto",
+            ...((okraje.l || okraje.p) ? (() => { const m = `linear-gradient(90deg, ${okraje.l ? "transparent 0, #000 36px" : "#000 0"}, ${okraje.p ? "#000 calc(100% - 36px), transparent 100%" : "#000 100%"})`; return { maskImage: m, WebkitMaskImage: m }; })() : {}) }}>
+            {ISKRY_CFG.druhy.map((t, i) => <button key={t} type="button" role="tab" aria-selected={druh === i} onClick={(e) => { setDruh(i); setIdx(0); sc.current?.scrollTo({ top: 0 }); e.currentTarget.scrollIntoView({ inline: "nearest", block: "nearest", behavior: "smooth" }); }}
               style={{ flex: "none", whiteSpace: "nowrap", minHeight: 32, padding: "0 12px", borderRadius: 16, border: "1px solid rgba(255,255,255,.4)", cursor: "pointer", fontFamily: "inherit", fontSize: 12.5, fontWeight: druh === i ? 800 : 600, background: druh === i ? "rgba(255,255,255,.9)" : "rgba(0,0,0,.3)", color: druh === i ? "#1D211B" : "#fff" }}>{t}</button>)}
           </div>
           {(pasDar || prepis) && <div ref={pasRef} role="button" tabIndex={0} aria-label="Dary v Iskrách" onClick={() => { if (pasDar && !prepis) skoc(pasDar.v.id); }} onKeyDown={(e) => { if (e.key === "Enter" && pasDar) skoc(pasDar.v.id); }}
