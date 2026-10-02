@@ -30,6 +30,15 @@ export const KONFIG = {
   lehotaDokladovaniaDni: 30,
   /** počet delegovaných správcov B2B podľa tieru (§3.1) */
   spravcoviaB2B: { 0: 1, 1: 1, 2: 1, 3: 2, 4: 5 } as Record<Tier, number>,
+  /** KARTA 39 · bod 1: dlhodobá zbierka vo feede. Prah „živá" sa bude počítať podľa aktívnych v oblasti — stupne doladíme s dátami. */
+  dlhodoba: {
+    /** prvých X dní veľká karta vo feede */
+    velkaDni: 30,
+    /** živá = aspoň `dary` darov za posledných `dni` dní (začiatok; neskôr podľa aktívnych v oblasti) */
+    prah: { dary: 3, dni: 30 },
+    /** priebežné doloženie vytiahne zbierku hore na X hodín, najviac raz za Y dní */
+    horeHodin: 24, vytiahnutieKazdychDni: 30,
+  },
 };
 
 // ---- tierová mriežka — mapovanie na existujúce cenníky (§0.2, žiadny nový cenník) ----

@@ -13,14 +13,16 @@ import { spracujFotku } from "@/lib/obrazok";
 import { nacitajDoklad, jePdf, otvorDoklad } from "@/lib/doklad";
 import { ulozVideo, jeVideo, VIDEO_CFG } from "@/lib/videoUloz";
 import { MediaNahlad } from "./DokazBlok";
-import { sucetDarov, useZmenyDarov } from "@/lib/darcovia";
+import { sucetDarov, useZmenyDarov, darcoviaPre } from "@/lib/darcovia";
+import { RichTextInput } from "@/components/richtext";
+import { cistyText } from "@/lib/richtext";
 import { ZBIERKY, predvolenyStav } from "@/lib/zbierky";
 import {
   SPRAVA_ZBIERKY_CFG as CFG, PASMA_DOKLADOV, POZIADAVKA_TEXT, DRUHY_DOKLADU, OVERENY_SKEN,
-  nacitajStav, ulozStav, pasmoPre, sumaDokladov, splnene, navyse, percentoDolozenia, fazaDokladovania, dniDo, pridajDni, upozornenie90, UPOZORNENIE_90_TEXT, UPOZORNENIE_DNI,
+  nacitajStav, ulozStav, pasmoPre, sumaDokladov, splnene, navyse, percentoDolozenia, fazaDokladovania, dniDo, pridajDni, upozornenie90, UPOZORNENIE_90_TEXT, UPOZORNENIE_DNI, kdeJeDlhodoba,
   LEHOTA_TEXT, type StavZbierky, type Lehota, type DruhDokladu, type PolozkaDokladu,
 } from "@/lib/zbierkaSprava";
-import { FLAGS, TIER_LABEL, type Tier } from "./stav";
+import { FLAGS, KONFIG, TIER_LABEL, type Tier } from "./stav";
 import { pridajOznamDarcom } from "@/lib/oznamyDarcom";
 import { OznamDarcoviSheet } from "@/features/notifikacie/OznamDarcovi";
 import type { OrgZbierka } from "./mock";
@@ -421,6 +423,8 @@ export interface ZbierkaNaSpravu {
   zaciatok?: string; zostavaDni?: number; ukoncena?: boolean;
   /** KARTA 37 · bod 7: dlhodobá zbierka (od P1) — po 90 dňoch bez doloženia upozornenie */
   dlha?: boolean;
+  /** KARTA 39: dĺžka dlhodobej (mesiace) a zapečatený účel */
+  mesiace?: number; ucel?: string;
 }
 const IKS = {
   fajka: "M5 12l5 5 9-10", dok: "M7 3h7l5 5v13H7zM14 3v5h5M10 13h6M10 17h6", kos: "M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13",
@@ -443,12 +447,20 @@ export function SpravaZbierky({ z, mobil, onZbierky, toast }: { z: ZbierkaNaSpra
     const u = nacitajStav(z.id);
     if (u) return u;
     const zac = z.zaciatok ?? pridajDni(teraz, -(CFG.dlzkaDni - (z.zostavaDni ?? CFG.dlzkaDni)));
-    return { stav: z.ukoncena ? "ukoncena" : "aktivna", zaciatok: zac, koniec: pridajDni(zac, CFG.dlzkaDni), ...(z.ukoncena ? { ukoncena: pridajDni(teraz, -1) } : {}), predlzenia: 0, lehota: z.lehota ?? "30", text: "", fotky: [], doklady: [], spravy: [] };
+    const koniec = z.dlha && z.mesiace ? (() => { const d = new Date(zac); d.setMonth(d.getMonth() + z.mesiace!); return d.toISOString(); })() : pridajDni(zac, CFG.dlzkaDni);
+    return { stav: z.ukoncena ? "ukoncena" : "aktivna", zaciatok: zac, koniec, ...(z.ukoncena ? { ukoncena: pridajDni(teraz, -1) } : {}), predlzenia: 0, lehota: z.lehota ?? "30", text: "", fotky: [], doklady: [], spravy: [] };
   });
   useEffect(() => { if (!nacitajStav(z.id)) ulozStav(z.id, s); }, [z.id, s]);
   const zmen = (patch: Partial<StavZbierky>) => { setS((x) => { const n = { ...x, ...patch }; ulozStav(z.id, n); return n; }); };
   useZmenyDarov();
   const darov = sucetDarov(z.id);
+  // KARTA 39 · bod 1: dlhodobá — pridaný doklad počas zbierky ju vytiahne hore na 24 h, najviac raz za 30 dní (doklad navyše sa pridá vždy)
+  const kde = z.dlha ? kdeJeDlhodoba({ zaciatok: s.zaciatok ?? s.koniec, dary30: s.simDary30 ?? darcoviaPre(z.id).filter((d) => Date.now() - d.cas < KONFIG.dlhodoba.prah.dni * DEN_MS).length, vytiahnute: s.vytiahnute, teraz: Math.max(teraz, Date.now()), cfg: KONFIG.dlhodoba }) : null;
+  const zmenDoklady = (patch: Partial<StavZbierky>) => {
+    const novy = !!patch.doklady && patch.doklady.length > s.doklady.length;
+    if (kde && s.stav === "aktivna" && novy && kde.mozeVytiahnut) { zmen({ ...patch, vytiahnute: new Date().toISOString() }); toast(`Zbierka je na ${KONFIG.dlhodoba.horeHodin} hodín hore vo feede`); }
+    else zmen(patch);
+  };
   const vyzbierane = s.simVyzbierane ?? z.vyzbierane + darov.suma;
   const darcov = z.darcovia + darov.pocet;
   const [pohlad, setPohlad] = useState<"stav" | "doklady">("stav");
@@ -479,7 +491,8 @@ export function SpravaZbierky({ z, mobil, onZbierky, toast }: { z: ZbierkaNaSpra
 
   // ---- hlavička (všetky stavy) ----
   const denZ = Math.min(CFG.dlzkaDni, Math.max(1, Math.ceil(((s.ukoncena ? Date.parse(s.ukoncena) : teraz) - Date.parse(zac)) / DEN_MS)));
-  const meta = aktivna ? `Vo feede ešte ${dniT(vFeede)}${topAktivny ? ` · topované: ${topAktivny.uroven}` : ""}` : `Skončila ${dnes(s.ukoncena ?? s.koniec)}, ${denZ}. deň z ${CFG.dlzkaDni}`;
+  const meta = aktivna && z.dlha ? `Dlhodobá · beží ešte ${dniT(Math.max(0, dniDo(s.koniec, teraz)))}${topAktivny ? ` · topované: ${topAktivny.uroven}` : ""}`
+    : aktivna ? `Vo feede ešte ${dniT(vFeede)}${topAktivny ? ` · topované: ${topAktivny.uroven}` : ""}` : `Skončila ${dnes(s.ukoncena ?? s.koniec)}, ${denZ}. deň z ${CFG.dlzkaDni}`;
   const hlavicka = (
     <section style={{ ...kartaS, flexDirection: mobil ? "column" : "row", alignItems: mobil ? "stretch" : "center", gap: 18 }}>
       <span style={{ width: mobil ? "100%" : 132, aspectRatio: "16 / 10", flex: "none", borderRadius: 14, background: z.bg }} />
@@ -506,7 +519,7 @@ export function SpravaZbierky({ z, mobil, onZbierky, toast }: { z: ZbierkaNaSpra
     </div>);
   const dva = (deti: ReactNode, sl = "repeat(2,minmax(0,1fr))") => <div style={{ display: "grid", gridTemplateColumns: mobil ? "minmax(0,1fr)" : sl, gap: 16, alignItems: "start" }}>{deti}</div>;
 
-  if (pohlad === "doklady") return (<>{vrch}{hlavicka}<DokladyCharity zbierkaId={z.id} s={s} zmen={zmen} vyzbierane={vyzbierane} teraz={teraz} mobil={mobil} toast={toast} /></>);
+  if (pohlad === "doklady") return (<>{vrch}{hlavicka}<DokladyCharity zbierkaId={z.id} s={s} zmen={zmenDoklady} vyzbierane={vyzbierane} teraz={teraz} mobil={mobil} toast={toast} /></>);
 
   if (aktivna) {
     const dalsie = CFG.predlzenia[s.predlzenia];
@@ -521,6 +534,9 @@ export function SpravaZbierky({ z, mobil, onZbierky, toast }: { z: ZbierkaNaSpra
         </div>
       </section>}
       {dva(<>
+      {kde && <KdeJeTeraz kde={kde} dary30={s.simDary30 ?? darcoviaPre(z.id).filter((d) => Date.now() - d.cas < KONFIG.dlhodoba.prah.dni * DEN_MS).length} simDary={s.simDary30} onSim={(n) => zmen({ simDary30: n })} onDolozit={() => setPohlad("doklady")} />}
+      {z.dlha && <ZmenaUcelu ucel={z.ucel} zmena={s.zmenaUcelu} onZiadost={(ucel, zdovodnenie) => zmen({ zmenaUcelu: { ucel, zdovodnenie, podana: new Date().toISOString() } })}
+        onSchval={() => { const zm = s.zmenaUcelu!; pridajOznamDarcom({ zbierkaId: z.id, typ: "sprava", text: `Zbierka „${z.nazov}“ mení účel na: ${zm.ucel}. ${cistyText(zm.zdovodnenie)}` }); zmen({ zmenaUcelu: { ...zm, schvalena: new Date().toISOString() } }); }} />}
       {!z.bezPredlzenia && <section style={kartaS}>
         <span style={nadpisS}>Predĺženie vo feede</span>
         <span style={textS}>30 dní vo feede je v cene. Na vašom profile zbierka beží aj bez predĺženia. Predĺženie platíte len vtedy, keď chcete, aby ju ľudia videli vo feede dlhšie.</span>
@@ -590,6 +606,58 @@ export function SpravaZbierky({ z, mobil, onZbierky, toast }: { z: ZbierkaNaSpra
       </section>}
     </>)}
   </>);
+}
+
+// ---- KARTA 39 · bod 1: Kde je zbierka teraz (dlhodobá) ----
+function KdeJeTeraz({ kde, dary30, simDary, onSim, onDolozit }: { kde: ReturnType<typeof kdeJeDlhodoba>; dary30: number; simDary?: number; onSim: (n: number | undefined) => void; onDolozit: () => void }) {
+  const K = KONFIG.dlhodoba;
+  const dar = (n: number) => `${n} ${n === 1 ? "dar" : n >= 2 && n <= 4 ? "dary" : "darov"}`;
+  const miestoT = { velka: `Vo feede ako veľká karta, prvých ${K.velkaDni} dní.`, hore: `Vo feede hore ako veľká karta, ${K.horeHodin} hodín po doložení.`, mala: "Vo feede ako malá karta.", profil: "Len na vašom profile, vo feede teraz nie je." }[kde.miesto];
+  const zivaT = kde.ziva ? `Zbierka je živá: ${dar(dary30)} za posledných ${K.prah.dni} dní, treba aspoň ${K.prah.dary}.` : `Zbierka nie je živá: ${dar(dary30)} za posledných ${K.prah.dni} dní, treba aspoň ${K.prah.dary}.`;
+  const vytT = kde.dalsieVytiahnutie ? `Priebežne doložiť a dostať sa na ${K.horeHodin} hodín hore môžete znova od ${dnes(kde.dalsieVytiahnutie)}.` : `Priebežne doložiť a dostať sa na ${K.horeHodin} hodín hore môžete teraz.`;
+  return (
+    <section style={kartaS}>
+      <span style={nadpisS}>Kde je zbierka teraz</span>
+      <span style={textS}><b style={{ color: "var(--ink)" }}>{miestoT}</b> {zivaT} {vytT}</span>
+      <button type="button" onClick={onDolozit} style={tlO}>Priebežne doložiť</button>
+      {FLAGS.dev_tier_switcher && <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", fontSize: 12.5, color: "var(--ink3)" }}>
+        <span>DEV · darov za 30 dní:</span>
+        {[undefined, 0, 2, 5].map((n) => <button key={String(n)} type="button" onClick={() => onSim(n)} style={{ minHeight: 32, padding: "0 10px", borderRadius: 9, border: `1px dashed ${simDary === n ? "var(--green)" : "var(--cardBd)"}`, background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 12.5, fontWeight: 700, color: "var(--ink2)" }}>{n == null ? "skutočné" : n}</button>)}
+      </div>}
+    </section>);
+}
+
+// ---- KARTA 39 · bod 1: Požiadať o zmenu účelu (len dlhodobá) ----
+function ZmenaUcelu({ ucel, zmena, onZiadost, onSchval }: { ucel?: string; zmena?: StavZbierky["zmenaUcelu"]; onZiadost: (ucel: string, zdovodnenie: string) => void; onSchval: () => void }) {
+  const [form, setForm] = useState(false);
+  const [novy, setNovy] = useState("");
+  const [zd, setZd] = useState("");
+  const chyba = !novy.trim() ? "Napíšte nový účel" : !cistyText(zd) ? "Napíšte zdôvodnenie" : "";
+  const [skus, setSkus] = useState(false);
+  return (
+    <section style={kartaS}>
+      <span style={nadpisS}>Účel zbierky</span>
+      {ucel && <span style={textS}>Zapečatený účel: <b style={{ color: "var(--ink)" }}>{zmena?.schvalena ? zmena.ucel : ucel}</b></span>}
+      {zmena && !zmena.schvalena ? <>
+        <span style={{ alignSelf: "flex-start", padding: "4px 10px", borderRadius: 9, background: "var(--goldBg)", border: "1px solid var(--goldBd)", fontSize: 13, fontWeight: 800, color: "var(--ink)" }}>Čaká na schválenie</span>
+        <span style={textS}>Nový účel: <b style={{ color: "var(--ink)" }}>{zmena.ucel}</b>. Žiadosť ste poslali {dnes(zmena.podana)}. Po schválení pošleme správu všetkým darcom skôr, než sa peniaze použijú inak.</span>
+        {FLAGS.dev_tier_switcher && <button type="button" onClick={onSchval} style={{ ...tlO, height: 40, fontSize: 13.5, borderStyle: "dashed" }}>Schváliť (DEV)</button>}
+      </> : zmena?.schvalena ? <span style={textS}>Zmenu účelu schválil DEED+ {dnes(zmena.schvalena)}. Všetci darcovia dostali správu.</span>
+      : !form ? <>
+        <span style={textS}>Ak potrebujete peniaze použiť na niečo iné, požiadajte o zmenu. Po schválení dostanú správu všetci darcovia.</span>
+        <button type="button" onClick={() => setForm(true)} style={tlO}>Požiadať o zmenu účelu</button>
+      </> : <>
+        <label style={{ display: "flex", flexDirection: "column", gap: 6 }}><b style={{ fontSize: 14.5, color: "var(--ink)" }}>Nový účel</b>
+          <input value={novy} onChange={(e) => setNovy(e.target.value.slice(0, 80))} placeholder="Napíšte, na čo pôjdu peniaze" aria-label="Nový účel" style={poleS} /></label>
+        <b style={{ fontSize: 14.5, color: "var(--ink)" }}>Zdôvodnenie</b>
+        <RichTextInput vzhlad="sprava" value={zd} onChange={setZd} minH={110} ariaLabel="Zdôvodnenie" nastroje={["bold", "italic", "insertUnorderedList", "diktovat"]} />
+        {skus && chyba && <span role="alert" style={{ fontSize: 13.5, fontWeight: 700, color: "#A34A2A" }}>{chyba}</span>}
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+          <button type="button" onClick={() => setForm(false)} style={tlO}>Zrušiť</button>
+          <button type="button" onClick={() => { setSkus(true); if (!chyba) { onZiadost(novy.trim(), zd); setForm(false); } }} style={tlZ}>Poslať žiadosť</button>
+        </div>
+      </>}
+    </section>);
 }
 
 // ---- Doklady (2 stĺpce: vľavo obsah, vpravo stav) ----

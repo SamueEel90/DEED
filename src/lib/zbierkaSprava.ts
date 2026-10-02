@@ -94,6 +94,11 @@ export interface StavZbierky {
   vysledokPoslany?: string;
   /** KARTA 37 · bod 7: dlhodobá zbierka — kedy charita zavrela upozornenie po 90 dňoch bez doloženia („Teraz nie") */
   upozornenie90Zavrete?: string;
+  /** KARTA 39 · bod 1: posledné vytiahnutie dlhodobej hore (priebežné doloženie), ISO */
+  vytiahnute?: string;
+  /** KARTA 39 · bod 1: žiadosť o zmenu účelu (len dlhodobá) */
+  zmenaUcelu?: { ucel: string; zdovodnenie: string; podana: string; schvalena?: string };
+  simDary30?: number;        // DEV — simulácia darov za posledných 30 dní (živá / nie)
   simVyzbierane?: number;    // DEV — simulácia sumy na test pásiem
 }
 
@@ -122,6 +127,19 @@ export function upozornenie90(s: StavZbierky, zaciatok: string, teraz: number): 
   const obdobie = Math.floor((teraz - posledne) / (UPOZORNENIE_DNI * DEN));
   if (obdobie < 1) return false;
   return !(s.upozornenie90Zavrete && Date.parse(s.upozornenie90Zavrete) >= posledne + obdobie * UPOZORNENIE_DNI * DEN);
+}
+/** KARTA 39 · bod 1: kde je dlhodobá zbierka vo feede (logika radenia je na serveri — toto je to isté pravidlo pre správu) */
+export type MiestoDlhodobej = "velka" | "hore" | "mala" | "profil";
+export function kdeJeDlhodoba(o: { zaciatok: string; dary30: number; vytiahnute?: string; teraz: number;
+  cfg: { velkaDni: number; prah: { dary: number; dni: number }; horeHodin: number; vytiahnutieKazdychDni: number } }) {
+  const { cfg, teraz } = o;
+  const vyt = o.vytiahnute ? Date.parse(o.vytiahnute) : 0;
+  const ziva = o.dary30 >= cfg.prah.dary;
+  const hore = vyt > 0 && teraz - vyt < cfg.horeHodin * 3600000;
+  const vPrvych = teraz - Date.parse(o.zaciatok) < cfg.velkaDni * DEN;
+  const miesto: MiestoDlhodobej = hore ? "hore" : vPrvych ? "velka" : ziva ? "mala" : "profil";
+  const dalsie = vyt ? vyt + cfg.vytiahnutieKazdychDni * DEN : 0;
+  return { miesto, ziva, mozeVytiahnut: !dalsie || teraz >= dalsie, dalsieVytiahnutie: dalsie && teraz < dalsie ? new Date(dalsie).toISOString() : null };
 }
 export const dniDo = (iso: string, teraz: number) => Math.ceil((new Date(iso).getTime() - teraz) / DEN);
 export const pridajDni = (iso: string | number, dni: number) => new Date(new Date(iso).getTime() + dni * DEN).toISOString();
