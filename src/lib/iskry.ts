@@ -2,7 +2,8 @@
 // KARTA 41 · Iskry — centrálny prúd (časť 1). Starý názov „Talent" = Iskra.
 // Zatiaľ jeden prúd pre celé Slovensko; filter oblastí je pripravený, ale skrytý (ZOBRAZ_OBLASTI).
 // Iskra = „páči sa mi" (zadarmo, len počet). Dary idú cez darcovia.ts (jediné miesto zápisu darov).
-// Mock: videá z prototypu „Iskra centralna mobil", stav (iskry, sledovanie, námietky) v pamäti relácie.
+// Mock: ukážkové videá v public/video/iskry/ (skutok.mp4 = výrez z nakup.mp4; husle, balony, prva-pomoc, florbal treba dodať),
+// texty z prototypu „Iskra centralna mobil", stav (iskry, sledovanie, námietky) v pamäti relácie.
 // TODO (server): prúd videí, počty Iskier, námietky a cudzie dary v reálnom čase prídu z API / realtime.
 // ============================================================
 import { useSyncExternalStore } from "react";
@@ -34,7 +35,7 @@ export interface Iskra {
   id: string; druh: DruhIskry;
   autor: string; kto: string; ini: string; org: boolean;
   popis: string;
-  /** video (ak je); bez neho sa ukáže pozadie (poster) */
+  /** video na výšku do 45 s; `bg` je poster, kým sa načíta (a ostane, keď súbor chýba) */
   src?: string; bg: string;
   /** zbierka pri videu — dar ide na ňu; bez nej ide autorovi */
   zbierka?: { id: string; nazov: string; pozn: string };
@@ -44,15 +45,15 @@ export const refIskry = (v: Iskra) => v.zbierka?.id ?? `iskra-${v.id}`;
 
 // ---- mock prúd (prototyp) ----
 export const ISKRY_MOCK: Iskra[] = [
-  { id: "emka", druh: 1, autor: "Emka, 6 rokov", kto: "Juh · Trenčín", ini: "EM", org: false, popis: "Vivaldi, Jar. Husle mi už sú malé, cvičím na sesterkiných.",
+  { id: "emka", src: "/video/iskry/husle.mp4", druh: 1, autor: "Emka, 6 rokov", kto: "Juh · Trenčín", ini: "EM", org: false, popis: "Vivaldi, Jar. Husle mi už sú malé, cvičím na sesterkiných.",
     zbierka: { id: "iskra-zb-husle", nazov: "Nové husle pre Emku", pozn: "Zbierka pri videu · 100 % na husle" }, iskry: 2140, bg: "linear-gradient(160deg,#8A5A2B,#2B1A0E)" },
-  { id: "balony", druh: 4, autor: "Svetlo pomoci o.z.", kto: "Charita · Trenčín", ini: "SP", org: true, popis: "Súťaž v nafukovaní balónov s deťmi z centra. Vyhral Maťo, balón mu ulietel aj s ním.",
+  { id: "balony", src: "/video/iskry/balony.mp4", druh: 4, autor: "Svetlo pomoci o.z.", kto: "Charita · Trenčín", ini: "SP", org: true, popis: "Súťaž v nafukovaní balónov s deťmi z centra. Vyhral Maťo, balón mu ulietel aj s ním.",
     iskry: 860, bg: "url('/img/sprava/dom.jpg') center/cover no-repeat #3a3530" },
-  { id: "hrasko", druh: 2, autor: "MUDr. Hraško", kto: "Tvorca · lekár · Trenčín", ini: "MH", org: false, popis: "Ako pomôcť človeku, ktorý sa dusí. 40 sekúnd, ktoré môžu zachrániť život.",
+  { id: "hrasko", src: "/video/iskry/prva-pomoc.mp4", druh: 2, autor: "MUDr. Hraško", kto: "Tvorca · lekár · Trenčín", ini: "MH", org: false, popis: "Ako pomôcť človeku, ktorý sa dusí. 40 sekúnd, ktoré môžu zachrániť život.",
     iskry: 5310, bg: "linear-gradient(160deg,#3D6B8E,#1D3A50)" },
-  { id: "florbal", druh: 3, autor: "TJ Sokol Opatová", kto: "Šport · Opatová", ini: "TJ", org: true, popis: "Žiačky vyhrali kraj vo florbale. Na majstrovstvá potrebujeme dopravu.",
+  { id: "florbal", src: "/video/iskry/florbal.mp4", druh: 3, autor: "TJ Sokol Opatová", kto: "Šport · Opatová", ini: "TJ", org: true, popis: "Žiačky vyhrali kraj vo florbale. Na majstrovstvá potrebujeme dopravu.",
     zbierka: { id: "iskra-zb-autobus", nazov: "Autobus na majstrovstvá", pozn: "Zbierka pri videu" }, iskry: 420, bg: "linear-gradient(160deg,#4E7D37,#22351A)" },
-  { id: "vah", druh: 5, autor: "Jana K.", kto: "Juh · skutok overený", ini: "JK", org: false, popis: "S deťmi sme vyčistili breh Váhu. 14 vriec odpadu a jeden starý bicykel.",
+  { id: "vah", src: "/video/iskry/skutok.mp4", druh: 5, autor: "Jana K.", kto: "Juh · skutok overený", ini: "JK", org: false, popis: "S deťmi sme vyčistili breh Váhu. 14 vriec odpadu a jeden starý bicykel.",
     zbierka: { id: "iskra-zb-nina", nazov: "Invalidný vozík pre Ninu", pozn: "Reťaz dobra · 50 % ide na zbierku" }, iskry: 98, bg: "url('/img/sprava/chrbtica.jpg') center/cover no-repeat #3a3530" },
 ];
 

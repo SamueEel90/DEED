@@ -81,7 +81,17 @@ function IskryPrud() {
     return () => { window.removeEventListener("keydown", k); document.body.style.overflow = pred; };
   }, [sheet]);
   // hrá len viditeľné video
-  useEffect(() => { Object.entries(videa.current).forEach(([id, el]) => { if (!el) return; if (akt && id === akt.id && !sheet) void el.play().catch(() => {}); else el.pause(); }); }, [akt, sheet]);
+  // hrá len viditeľné video (stlmené, samo); ostatné stoja. Appka v pozadí → stop.
+  const [viditelna, setViditelna] = useState(() => document.visibilityState === "visible");
+  useEffect(() => { const f = () => setViditelna(document.visibilityState === "visible"); document.addEventListener("visibilitychange", f); return () => document.removeEventListener("visibilitychange", f); }, []);
+  useEffect(() => {
+    Object.entries(videa.current).forEach(([id, el]) => {
+      if (!el) return;
+      if (akt && id === akt.id && !sheet && viditelna) { el.muted = true; void el.play().catch(() => { /* autoplay zablokovaný — ostane poster */ }); }
+      else el.pause();
+    });
+  }, [akt, sheet, viditelna]);
+  useEffect(() => () => { Object.values(videa.current).forEach((el) => el?.pause()); }, []);
 
   // ---- živý pás: dnes v Iskrách + dary v rade (každý 5 s) ----
   const od = polnoc();
@@ -156,7 +166,10 @@ function IskryPrud() {
             const zap = mojaIskra(v.id), sled = sledujemAutora(v.autor), pocetD = sucetDarov(refIskry(v)).pocet;
             return (
               <div key={v.id} onPointerUp={(e) => tuk(e, v)} style={{ position: "relative", height: "100%", scrollSnapAlign: "start", scrollSnapStop: "always", background: v.bg, overflow: "hidden", userSelect: "none", touchAction: "pan-y" }}>
-                {v.src && <video ref={(el) => { videa.current[v.id] = el; }} src={v.src} muted loop playsInline style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />}
+                {/* pozadie (v.bg) je poster, kým sa video načíta; video sa ukáže až s prvým snímkom, chýbajúci súbor = ostane poster */}
+                {v.src && <video ref={(el) => { videa.current[v.id] = el; if (el) { el.muted = true; el.defaultMuted = true; } }} src={v.src} muted loop playsInline preload={Math.abs(i - idx) <= 1 ? "auto" : "metadata"}
+                  onLoadedData={(e) => { e.currentTarget.style.opacity = "1"; }} onError={(e) => { e.currentTarget.style.opacity = "0"; }}
+                  style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", opacity: 0, transition: "opacity .25s ease", pointerEvents: "none" }} />}
                 <span style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg,rgba(0,0,0,.45) 0%,rgba(0,0,0,0) 22%,rgba(0,0,0,0) 52%,rgba(0,0,0,.78) 100%)", pointerEvents: "none" }} />
                 {/* vodoznak: DEED+ ako v appke + meno autora (pri zdieľaní von sa vypáli do videa — server) */}
                 <span aria-hidden="true" style={{ position: "absolute", left: 14, top: "33%", display: "flex", flexDirection: "column", gap: 1, opacity: 0.7, pointerEvents: "none", color: "#fff" }}>
