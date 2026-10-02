@@ -137,7 +137,7 @@ export function NovaZbierka({ strankaId, pozicia, tier, nazov, inicialy, mobil, 
   const spat = () => { if (k > 1) zmen({ krok: k - 1 }); };
   const zapecat = async () => {
     if (chyba) return;
-    const z = await spustiZbierku(strankaId, zadarmo ? { ...d, typ: "kratka", iban: "" } : d, zadarmo ? hlavnyUcet : d.iban);
+    const z = await spustiZbierku(strankaId, zadarmo ? { ...d, typ: "kratka", iban: "", prav: false } : d, zadarmo ? hlavnyUcet : d.iban);
     setHotovo(z);
   };
 
@@ -179,7 +179,7 @@ export function NovaZbierka({ strankaId, pozicia, tier, nazov, inicialy, mobil, 
     [zadarmo ? "Kam prídu peniaze" : "Transparentný účet", zadarmo ? `${hlavnyUcet} · hlavný účet` : d.iban || "—", 3, true],
     ["Rýchle sumy", `${SADY[d.sada][0]} · ${SADY[d.sada][1].join(" · ")} €`, 4, false],
     ...(eurcRezim === "nie" ? [] : [["Dary v EURC", eurcOn ? `áno · ${SADY_EURC[d.sadaE][0]} ${SADY_EURC[d.sadaE][1].map(cis).join(" · ")}` : "nie", 4, false] as [string, string, number, boolean]]),
-    ["Pravidelná podpora", d.prav ? "áno, sumu volí darca" : "nie", 4, false], ["Dokladovanie", dokladyT, 5, true],
+    ...(zadarmo ? [] : [["Pravidelná podpora", d.prav ? "áno, sumu volí darca" : "nie", 4, false] as [string, string, number, boolean]]), ["Dokladovanie", dokladyT, 5, true],
   ];
   const zbierkaData = (id = "nova"): ZbierkaData => ({
     id, nazov: d.nazov || "Názov zbierky", popis: (d.popis || "<p>Hlavný text zbierky</p>") + (cistyText(d.popis2) ? d.popis2 : ""), overena: true,
@@ -375,9 +375,12 @@ export function NovaZbierka({ strankaId, pozicia, tier, nazov, inicialy, mobil, 
           <Nadpis t="Rýchle sumy v EURC" />
           <Volby stlpce={ph ? 1 : 3} vyska={ph ? 52 : 62} value={d.sadaE} onChange={(i) => zmen({ sadaE: i })} moznosti={SADY_EURC.map(([t, a], i) => (ph ? { k: i, t, vpravo: a.map(cis).join(" · ") } : { k: i, t, s: a.map(cis).join(" · ") }))} />
         </>}
+        {/* OPRAVY 124: pravidelná podpora je až od P1 — v Zadarmo sa neukáže */}
+        {!zadarmo && <>
         <Nadpis t={ph ? "Pravidelná podpora" : "Pravidelná podpora pri tejto zbierke"} />
         <Volby stlpce={2} value={d.prav} onChange={(v) => zmen({ prav: v })} moznosti={[{ k: true, t: "Áno, ponúknuť", s: "darcovia môžu dávať každý mesiac" }, { k: false, t: "Nie", s: "len jednorazové dary" }]} />
         <span style={{ ...pozn, marginTop: -6 }}>{ph ? "Sumu si volí darca sám." : "Sumu pravidelnej podpory si volí darca sám, keď ju nastavuje. Vy len rozhodnete, či ju pri tejto zbierke ponúknete."}</span>
+        </>}
       </section></>;
   } else if (k === 5) {
     obsah = <>{hlavicka("Dokladovanie", ph ? "Vyberte účel. Lehotu na doklady nastavíme sami." : "Darcovia chcú vidieť, na čo išli ich peniaze. Podľa účelu nastavíme lehotu sami.")}
