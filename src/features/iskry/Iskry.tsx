@@ -486,40 +486,49 @@ export function ZdielatIskru({ v, onClose }: { v: Iskra; onClose: () => void }) 
   </>);
 }
 
-// Popis Iskry v zbalenom stave: 2 riadky, „… viac" hneď za textom.
-// Skryté meradlo nájde binárne najdlhšiu predponu, ktorá sa aj s „… viac" zmestí do 2 riadkov,
-// takže „… viac" sedí tesne za textom (nie plávajúce pri pravom okraji).
+// Popis Iskry v zbalenom stave: 2 riadky, „… viac" hneď za textom (OPRAVY 134).
+// Skryté meradlo nájde binárne najdlhšiu predponu, ktorá sa aj s tučným „… viac" zmestí do 2 riadkov.
+// Riadky sa rátajú cez getBoundingClientRect (výška textu / výška jedného riadku, zaokrúhlené) —
+// pod CSS zoomom na PC (bezZoomu) sa scrollHeight/clientHeight zaokrúhľujú inak. Meria sa znova
+// po načítaní písma. Popis s odsekmi (\n) má „… viac" vždy (rozbalený text má pre-line).
 function PopisDva({ text, fontSize, onRozbal }: { text: string; fontSize: number; onRozbal: () => void }) {
   const meradlo = useRef<HTMLSpanElement | null>(null);
-  const [stav, setStav] = useState<{ dlhy: boolean; cut: string }>({ dlhy: false, cut: text });
+  const plochy = text.replace(/\s*\n+\s*/g, " ").trim();
+  const odseky = /\n/.test(text.trim());
+  const [stav, setStav] = useState<{ dlhy: boolean; cut: string }>({ dlhy: odseky, cut: plochy });
   useLayoutEffect(() => {
     const el = meradlo.current; if (!el) return;
+    let zive = true;
     const esc = (t: string) => t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
     const meraj = () => {
-      el.textContent = text;
-      if (el.scrollHeight <= el.clientHeight + 1) { setStav({ dlhy: false, cut: text }); return; }
-      // „… viac" je tučné (širšie) — meriame s tučným suffixom, aby sa vo viditeľnom texte nezalomilo na 3. riadok
-      let lo = 0, hi = text.length, best = 0;
+      if (!zive || !el.isConnected) return;
+      el.textContent = "X";
+      const h1 = el.getBoundingClientRect().height;
+      if (!h1) return; // ešte nie je vykreslené
+      const riadky = (html: string) => { el.innerHTML = html; return Math.round(el.getBoundingClientRect().height / h1); };
+      if (!odseky && riadky(esc(plochy)) <= 2) { el.textContent = ""; setStav({ dlhy: false, cut: plochy }); return; }
+      let lo = 0, hi = plochy.length, best = 0;
       while (lo <= hi) {
         const mid = (lo + hi) >> 1;
-        el.innerHTML = esc(text.slice(0, mid).replace(/\s+$/, "")) + ' <b>… viac</b>';
-        if (el.scrollHeight <= el.clientHeight + 1) { best = mid; lo = mid + 1; } else hi = mid - 1;
+        if (riadky(esc(plochy.slice(0, mid).replace(/\s+$/, "")) + " <b>… viac</b>") <= 2) { best = mid; lo = mid + 1; } else hi = mid - 1;
       }
-      setStav({ dlhy: true, cut: text.slice(0, best).replace(/\s+$/, "") });
       el.textContent = "";
+      setStav({ dlhy: true, cut: plochy.slice(0, best).replace(/\s+$/, "") });
     };
     meraj();
+    void document.fonts?.ready.then(meraj);
     const ro = new ResizeObserver(meraj); ro.observe(el);
     window.addEventListener("resize", meraj);
-    return () => { ro.disconnect(); window.removeEventListener("resize", meraj); };
-  }, [text, fontSize]);
-  const meradloBox: CSSProperties = { display: "-webkit-box", WebkitBoxOrient: "vertical", WebkitLineClamp: 2, overflow: "hidden", fontSize, lineHeight: 1.45 };
-  const textBox: CSSProperties = { maxHeight: "2.9em", overflow: "hidden", fontSize, lineHeight: 1.45, whiteSpace: "normal" };
+    return () => { zive = false; ro.disconnect(); window.removeEventListener("resize", meraj); };
+  }, [plochy, odseky, fontSize]);
+  // meradlo bez orezania (počíta skutočné riadky), viditeľný text s rovnakým písmom a orezaním na 2 riadky
+  const pismo: CSSProperties = { fontSize, lineHeight: 1.45, whiteSpace: "normal", overflowWrap: "break-word" };
+  const viditelny: CSSProperties = { ...pismo, display: "-webkit-box", WebkitBoxOrient: "vertical", WebkitLineClamp: 2, overflow: "hidden" };
   return (
-    <button type="button" onClick={stav.dlhy ? onRozbal : undefined}
+    <button type="button" onClick={stav.dlhy ? onRozbal : undefined} aria-expanded={stav.dlhy ? false : undefined}
       style={{ position: "relative", flex: "0 1 auto", minHeight: 44, display: "block", width: "100%", padding: 0, border: "none", background: "transparent", cursor: stav.dlhy ? "pointer" : "default", textAlign: "left", fontFamily: "inherit", color: "#fff" }}>
-      <span ref={meradlo} aria-hidden="true" style={{ ...meradloBox, position: "absolute", left: 0, right: 0, top: 0, visibility: "hidden", pointerEvents: "none" }} />
-      <span style={textBox}>{stav.dlhy ? <>{stav.cut}{" "}<span style={{ fontWeight: 800 }}>… viac</span></> : text}</span>
+      <span ref={meradlo} aria-hidden="true" style={{ ...pismo, display: "block", position: "absolute", left: 0, right: 0, top: 0, visibility: "hidden", pointerEvents: "none" }} />
+      <span style={viditelny}>{stav.dlhy ? <>{stav.cut}{" "}<span style={{ fontWeight: 800 }}>… viac</span></> : plochy}</span>
     </button>
   );
 }
