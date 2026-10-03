@@ -135,11 +135,19 @@ function IskryPrud() {
   useLayoutEffect(() => { const el = sc.current; if (el && idx > 0) el.scrollTop = idx * el.clientHeight; }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const list = iskryVsetky().filter((v) => druh === 0 || v.druh === druh);
   const akt = list[Math.min(idx, list.length - 1)];
-  useLayoutEffect(() => {
+  // „… viac" sa ukáže len pri texte, ktorý sa do 2 riadkov nezmestí — meriame pri každej zmene šírky (mobil aj PC rovnako)
+  const merajPopis = () => {
     const n = new Set<string>();
     Object.entries(popisRef.current).forEach(([id, el]) => { if (el && el.scrollHeight > el.clientHeight + 1) n.add(id); });
     setDlhe((o) => (o.size === n.size && [...n].every((x) => o.has(x)) ? o : n));
-  }, [druh, mierka, miesto.video, rozbaleny]);
+  };
+  useLayoutEffect(() => {
+    merajPopis();
+    const ro = new ResizeObserver(merajPopis);
+    Object.values(popisRef.current).forEach((el) => { if (el) ro.observe(el); });
+    window.addEventListener("resize", merajPopis);
+    return () => { ro.disconnect(); window.removeEventListener("resize", merajPopis); };
+  }, [druh, mierka, miesto.video, rozbaleny]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Esc = zavrieť (PC), zablokovať posun stránky pod prúdom
   useEffect(() => {
@@ -294,10 +302,10 @@ function IskryPrud() {
                     <button type="button" aria-pressed={sled} onClick={() => prepniSledovanie(v.autor)} style={{ flex: "none", minHeight: Math.max(44, k(44)), padding: `${k(6)}px 0`, border: "none", background: "transparent", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center" }}>
                       <span style={{ whiteSpace: "nowrap", height: k(32), display: "flex", alignItems: "center", padding: `0 ${k(12)}px`, borderRadius: k(16), border: "1.5px solid #fff", background: sled ? "transparent" : "#fff", fontSize: k(12.5), fontWeight: 800, color: sled ? "#fff" : "#1D211B", textShadow: sled ? TIEN : "none" }}>{sled ? "Sledujete" : "Sledovať"}</span></button>
                   </div>
-                  {/* popis: 2 riadky + „… viac"; ťuk rozbalí celý (tmavé pozadie, najviac 45 % výšky videa, ďalej posúvanie), ďalší ťuk zbalí */}
+                  {/* popis: 2 riadky + „… viac"; ťuk (onClick, rovnako na mobile aj PC) rozbalí celý, „menej" zbalí a vráti na začiatok */}
                   {rozbaleny === v.id
-                    ? <button type="button" aria-expanded="true" onClick={() => setRozbaleny(null)}
-                        style={{ flex: "0 1 auto", minHeight: 44, maxHeight: miesto.video * 0.45, overflowY: "auto", overscrollBehavior: "contain", padding: `${k(10)}px ${k(12)}px`, borderRadius: k(14), border: "none", background: "rgba(0,0,0,.6)", cursor: "pointer", textAlign: "left", fontFamily: "inherit", fontSize: k(14.5), lineHeight: 1.45, color: "#fff", whiteSpace: "pre-line" }}>{v.popis}</button>
+                    ? <button type="button" aria-expanded="true" ref={(el) => { if (el) el.scrollTop = 0; }} onClick={() => setRozbaleny(null)}
+                        style={{ flex: "0 1 auto", minHeight: 44, maxHeight: miesto.video * 0.45, overflowY: "auto", overscrollBehavior: "contain", padding: `${k(10)}px ${k(12)}px`, borderRadius: k(14), border: "none", background: "rgba(0,0,0,.6)", cursor: "pointer", textAlign: "left", fontFamily: "inherit", fontSize: k(14.5), lineHeight: 1.45, color: "#fff", whiteSpace: "pre-line" }}>{v.popis}{" "}<span style={{ fontWeight: 800 }}>menej</span></button>
                     : <button type="button" aria-expanded={dlhe.has(v.id) ? "false" : undefined} onClick={() => { if (dlhe.has(v.id)) setRozbaleny(v.id); }}
                         style={{ flex: "0 1 auto", minHeight: 44, maxHeight: `${2 * 1.45}em`, display: "flex", overflow: "hidden", padding: 0, border: "none", background: "transparent", cursor: dlhe.has(v.id) ? "pointer" : "default", textAlign: "left", fontFamily: "inherit", fontSize: k(14.5), lineHeight: 1.45, color: "#fff" }}>
                         <span ref={(el) => { popisRef.current[v.id] = el; }} style={{ display: "block", overflow: "hidden" }}>
