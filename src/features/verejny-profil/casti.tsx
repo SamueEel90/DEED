@@ -2,6 +2,7 @@
 // Farby z tokenov správy charity (.sc-tokeny + data-stit) — tie isté ako v prototypoch.
 // Len transform/opacity, ťukacie plochy od 44 px, žiadne emoji, slovenský formát čísel.
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { pressable } from "@/components/pressable";
 import { StitObr } from "@/components/stit";
 import type { StitLevel } from "@/components/stit";
@@ -244,7 +245,7 @@ export function StitOkno({ p, onClose }: { p: TestProfil; onClose: () => void })
   const zavri = () => { setZobraz(false); setTimeout(onClose, 250); };
   useEffect(() => { const k = (e: KeyboardEvent) => { if (e.key === "Escape") zavri(); }; window.addEventListener("keydown", k); return () => window.removeEventListener("keydown", k); });
   return (
-    <>
+    <PortalVp stit={p.stit}>
       <div onClick={zavri} style={{ position: "fixed", inset: 0, zIndex: 80, background: "rgba(10,8,5,.6)", opacity: zobraz ? 1 : 0, transition: "opacity .25s ease" }} />
       <div role="dialog" aria-label="Štít DEED+ CARE" style={{ position: "fixed", left: "50%", top: "50%", zIndex: 81, width: "min(460px, calc(100% - 32px))", transform: `translate(-50%, -50%) scale(${zobraz ? 1 : 0.92})`, opacity: zobraz ? 1 : 0, transition: "opacity .25s ease, transform .25s ease", borderRadius: 28, background: "var(--cuBg)", border: "1.5px solid var(--cuBd)", boxShadow: "0 30px 80px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.5)", padding: "28px 30px 24px", display: "flex", flexDirection: "column", alignItems: "center", gap: 14, textAlign: "center" }}>
         <button type="button" onClick={zavri} aria-label="Zavrieť" style={{ position: "absolute", right: 14, top: 14, width: 44, height: 44, border: "none", borderRadius: 22, background: "rgba(0,0,0,.1)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -266,8 +267,13 @@ export function StitOkno({ p, onClose }: { p: TestProfil; onClose: () => void })
         </div>
         <a href="#" onClick={(e) => e.preventDefault()} style={{ fontSize: 14, fontWeight: 800, color: "var(--cuInk)", minHeight: 44, display: "flex", alignItems: "center" }}>Ako sa štít získava</a>
       </div>
-    </>
+    </PortalVp>
   );
+}
+
+/** okná profilu (štít, hárok) idú cez portál nad celú appku — nad ľavé menu aj dok — s farbami profilu */
+export function PortalVp({ stit, children }: { stit: string; children: ReactNode }) {
+  return createPortal(<div className="vp sc-tokeny" data-stit={stit.toLowerCase()} style={{ background: "transparent" }}>{children}</div>, document.body);
 }
 
 // ---------------- vrstva profilu vnútri appky (ľavé menu na PC aj dok na mobile ostávajú) ----------------
