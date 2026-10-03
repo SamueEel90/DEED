@@ -313,6 +313,8 @@ export interface Pouzivatel {
   /** Profilová fotka (data-URL alebo URL); null = zobrazí sa iniciála. */
   foto: string | null;
   mesto: string;
+  /** rod z profilu — len na tvar vety („Urobil / Urobila som"); bez neho mužský rod. TODO server: pole v profile */
+  rod?: "muz" | "zena";
   poradoveCislo: number | null;
   rezim: RezimZobrazenia;
   nick: string | null;
