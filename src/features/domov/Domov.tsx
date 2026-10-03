@@ -1,3 +1,4 @@
+import { otvorIskry } from "@/features/iskry/otvor";
 import { Emo, IkonaVlajka, IkonaTerc } from "@/components/icons";
 import { DeedZnacka } from "@/components/DeedZnacka";
 import { NahlasitSheet } from "@/components/nahlasit";
@@ -22,7 +23,7 @@ import type { GoodPolozka, Subjekt, Udalost, OkruhKod, Oblubeny, MojaZbierka, Mo
 import { useGoodFeed, useGoodUdalosti, useTopPrispevky } from "@/data";
 import { usePersonalizacia } from "@/lib/personalizacia";
 import { KAT, SRC_COL, NASTENKA_TEMY, TEMA_FARBA } from "./mock";
-import { otvorPridatSkutok } from "@/features/skutok/otvor";
+import { PridatVyber } from "@/features/iskry/PridatIskru";
 import { PruhySkutkov } from "@/features/skutok/Pruhy";
 import { useNastaveniaAppky } from "@/lib/nastaveniaAppky";
 
@@ -73,6 +74,7 @@ export default function ModulDomov({ wide, otvorModul, otvorId, onOtvorene }: { 
   const [verifyMode, setVerifyMode] = useState("ok");
   const [oslava, setOslava] = useState<{ suma: number; komu: string } | null>(null); // {suma, komu}
   const [hladaj, setHladaj] = useState(false);
+  const [pridatVyber, setPridatVyber] = useState(false); // KARTA 41b: zelené + → Skutok · Iskra
 
   const otvorProfil = (subjekt: Subjekt, odkial = "home") => { setAktSubjekt(subjekt); setPredtym(odkial); setScreen("cudzi"); };
 
@@ -97,6 +99,7 @@ export default function ModulDomov({ wide, otvorModul, otvorId, onOtvorene }: { 
 
   return (
     <div style={{ minHeight: "100%" }}>
+      {pridatVyber && <PridatVyber onClose={() => setPridatVyber(false)} />}
       <ScreenSwitch k={screen}>
       {screen === "home" && (
         <Home wide={wide} toast={toast} otvorModul={otvorModul}
@@ -104,7 +107,7 @@ export default function ModulDomov({ wide, otvorModul, otvorId, onOtvorene }: { 
           onDetail={(id) => { setAktId(id); setScreen("detail"); }}
           onHladaj={() => setHladaj(true)}
           onBoard={() => setScreen("board")}
-          onAdd={() => otvorPridatSkutok()} />
+          onAdd={() => setPridatVyber(true)} />
       )}
       {screen === "cudzi" && aktSubjekt && obal(
         <CudziProfil subjekt={aktSubjekt as any} toast={toast} onBack={() => setScreen(predtym)} />
@@ -208,7 +211,7 @@ function Home({ wide, toast, otvorModul, pohlad, setPohlad, radius, setRadius, o
   // štatistický riadok — počet vo zvolenom okruhu + klikateľný výber okruhu
   const statRiadok = (
     <StatRiadok pocet={feed.length} jednotka="skutkov" mesiac="9 480" miesto={nastavenia.odPolohy ? `${lokalita.mesto} · podľa polohy` : ja.mesto}
-      okruh={FEED_CFG.radiusy[radius].krat} onOkruh={() => setVyberOkruh(true)} />
+      okruh={FEED_CFG.radiusy[radius].krat} onOkruh={() => setVyberOkruh(true)} onIskry={otvorIskry} />
   );
 
   // „TOP DNES" — vodorovný pruh najvýznamnejších skutkov (rovnaký zdroj ako modul Top).

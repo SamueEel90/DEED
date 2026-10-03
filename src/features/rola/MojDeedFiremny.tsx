@@ -36,7 +36,8 @@ import { CentralnaZbierkaSheet } from "./CentralnaZbierka";
 import { SpravaZbierkySheet } from "./SpravaZbierky";
 import { VideoSheet, DarcoviaSheet, QrNastrojeSheet, ViditelnostSheet } from "./NastrojeCharity";
 import { SektoroveZbierkySheet } from "./SektoroveZbierky";
-import { OznamySheet } from "./Oznamy";
+import { OznamySprava } from "./NovyOznam";
+import { createPortal } from "react-dom";
 import { InzeratySheet } from "./Inzeraty";
 import { DorovnanieSheet } from "./Dorovnanie";
 import { PocitadloVyberSheet } from "@/features/overlay/PocitadloVyber";
@@ -78,7 +79,7 @@ const IKONY: Record<string, ReactNode> = {
   akcia: <IkonaKalendar size={17} />, vto: <IkonaHodiny size={17} />, esg: <IkonaGraf size={17} />,
   odmeny: <IkonaDarcek size={17} />,
 };
-const ikonaPre = (id: string, fallback: string): ReactNode => IKONY[id] ?? <span style={{ fontSize: 16 }}>{fallback}</span>;
+const ikonaPre = (id: string, fallback: string): ReactNode => IKONY[id] ?? <span style={{ fontSize: 16 }}><Emo e={fallback} /></span>;
 
 /** Prihlásená charita sa najprv načíta z databázy (údaje z registrácie), potom sa ukáže správa. */
 export function MojDeedFiremny({ onBack, toast }: { onBack: () => void; toast: (m: string) => void }) {
@@ -246,7 +247,7 @@ function MojDeedFiremnyObsah({ onBack, toast, orgId }: { onBack: () => void; toa
             const blok = PANELY[pozicia].find((b) => b.id === BLOK_ZA_TAB[t.key]);
             riadky.push({ k: `tab-${t.key}`, tier: -1, el: (posledna) => (
               <MenuPolozka key={`tab-${t.key}`} posledna={posledna}
-                ikona={<span style={{ fontSize: 15 }}>{t.polozky[0]?.emoji ?? "📄"}</span>} farba="var(--a-plum)"
+                ikona={<span style={{ fontSize: 15 }}><Emo e={t.polozky[0]?.emoji ?? "dokument"} /></span>} farba="var(--a-plum)"
                 label={t.label} popis={popisTabu(t)} hodnota={String(t.polozky.length)}
                 onClick={() => (blok ? blokAkcia(blok) : setPodstranka(true))} />
             ) });
@@ -264,7 +265,7 @@ function MojDeedFiremnyObsah({ onBack, toast, orgId }: { onBack: () => void; toa
               label="Adresár firiem" popis="Overené firmy a ich podpora komunity" onClick={() => setSheet("adresarB2B")} />
           ) });
           const zamk = [
-            ...zamknuteTaby(pozicia, tier).map((t) => ({ k: `tab-${t.key}`, t: t.odTieru ?? 0, emoji: t.polozky[0]?.emoji ?? "📄", nazov: t.label, ikona: null as ReactNode })),
+            ...zamknuteTaby(pozicia, tier).map((t) => ({ k: `tab-${t.key}`, t: t.odTieru ?? 0, emoji: t.polozky[0]?.emoji ?? "dokument", nazov: t.label, ikona: null as ReactNode })),
             ...bloky.filter((b) => !Object.values(BLOK_ZA_TAB).includes(b.id) && tier < b.tierMin)
               .map((b) => ({ k: b.id, t: b.tierMin as number, emoji: b.emoji, nazov: b.nazov, ikona: ikonaPre(b.id, b.emoji) })),
           ].sort((a, b) => a.t - b.t);
@@ -295,7 +296,7 @@ function MojDeedFiremnyObsah({ onBack, toast, orgId }: { onBack: () => void; toa
             const zamknute = !it.povinne && tier < it.tierMin;
             return (
               <MenuPolozka key={it.id}
-                ikona={it.id === startId ? <span style={{ fontSize: 17 }}>🚀</span> : ikonaPre(it.id, it.emoji)}
+                ikona={it.id === startId ? <span style={{ fontSize: 17 }}><Emo e="start" /></span> : ikonaPre(it.id, it.emoji)}
                 farba={it.povinne ? "var(--a-green)" : "var(--a-info)"}
                 label={it.nazov}
                 chip={it.id === startId
@@ -360,7 +361,14 @@ function MojDeedFiremnyObsah({ onBack, toast, orgId }: { onBack: () => void; toa
       {sheet === "darcovia" && <DarcoviaSheet tier={tier} toast={toast} onClose={() => setSheet(null)} />}
       {sheet === "qr" && <QrNastrojeSheet tier={tier} toast={toast} onClose={() => setSheet(null)} />}
       {sheet === "sumy" && <ViditelnostSheet toast={toast} onClose={() => setSheet(null)} />}
-      {sheet === "oznamy" && <OznamySheet entita={pozicia} autor={subjekt.nazov} logo={logo ?? subjekt.foto} toast={toast} onClose={() => setSheet(null)} />}
+      {/* KARTA 40: ten istý nový oznam ako v Správe charity (starý OznamySheet sa už nepoužíva) */}
+      {sheet === "oznamy" && createPortal(
+        <div className="sprava-charity" role="dialog" aria-modal="true" aria-label="Oznamy" style={{ position: "fixed", inset: 0, zIndex: 120, overflowY: "auto", background: "var(--bg)", color: "var(--ink)", padding: "max(16px, env(safe-area-inset-top)) 16px 120px" }}>
+          <div style={{ maxWidth: 1100, margin: "0 auto", display: "flex", flexDirection: "column", gap: 14 }}>
+            <button type="button" onClick={() => setSheet(null)} style={{ alignSelf: "flex-start", minHeight: 44, padding: "0 14px", borderRadius: 13, border: "1px solid var(--cardBd)", background: "var(--card)", cursor: "pointer", fontFamily: "inherit", fontSize: 14.5, fontWeight: 800, color: "var(--ink)" }}>‹ Späť</button>
+            <OznamySprava strankaId={pozicia} tier={tier} nazov={subjekt.nazov} inicialy={subjekt.iniciacky} mesto={subjekt.lok} logo={logo ?? subjekt.foto ?? null} mobil={!desktop} tablet={false} toast={toast} onProfil={() => { setSheet(null); setPodstranka(true); }} />
+          </div>
+        </div>, document.body)}
       {sheet === "zbierky" && pozicia === "b2b" && <NaseZbierkySheet firma={subjekt.nazov} toast={toast} onClose={() => setSheet(null)} />}
       {sheet === "zamestnanci" && pozicia === "b2b" && <ZamestnanciSheet firma={subjekt.nazov} toast={toast} onClose={() => setSheet(null)} />}
       {sheet === "dorovnanie" && <DorovnanieSheet entita={pozicia} toast={toast} onClose={() => setSheet(null)} />}

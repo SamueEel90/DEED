@@ -40,6 +40,11 @@ export interface MojSkutok {
   zaznam?: { cas: number; kto: string; co: string }[];
   /** OPRAVY 122 (2): kam pôjdu peniaze zo skutku charity — zapečatené pri zverejnení (100 % na zbierku) */
   peniaze?: "centralna" | "ina" | "bez";
+  /** Obsah → Skutky (charita): stiahnutý z profilu a feedu, ISO; upravený po zverejnení, ISO */
+  stiahnuty?: string;
+  upraveny?: string;
+  /** id položky vo feede (skutok za charitu) — úprava a stiahnutie ju zmenia aj tam */
+  feedId?: number;
 }
 
 export interface Ucastnik { meno: string; overeny: boolean }
@@ -138,6 +143,9 @@ export const ulozKonceptOrg = (stranka: string, k: Koncept | null) => {
 };
 export const skutkyOrg = (stranka: string): MojSkutok[] => nacitaj().skutkyOrg?.[stranka] ?? [];
 export const pridajSkutokOrg = (stranka: string, x: MojSkutok) => uloz({ skutkyOrg: { ...(nacitaj().skutkyOrg ?? {}), [stranka]: [x, ...skutkyOrg(stranka)] } });
+/** Obsah → Skutky: úprava zverejneného skutku charity (text) alebo stiahnutie */
+export const upravSkutokOrg = (stranka: string, id: string, z: Partial<MojSkutok>) =>
+  uloz({ skutkyOrg: { ...(nacitaj().skutkyOrg ?? {}), [stranka]: skutkyOrg(stranka).map((x) => (x.id === id ? { ...x, ...z } : x)) } });
 
 // ---------- ohlásený skutok (Chystám sa to urobiť) ----------
 export const ohlasenie = () => nacitaj().ohlasenie;

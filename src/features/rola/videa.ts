@@ -1,5 +1,5 @@
 // ============================================================
-// VIDEÁ CHARITY („Mám talent — video") — zoznam videí organizácie.
+// VIDEÁ CHARITY (Iskry, predtým „Mám talent — video") — zoznam videí organizácie.
 // Cenník: ZADARMO = 1 video mesačne, ďalšie 10 €; na profile je v ZADARMO
 // vidieť 1 video (ostatné ostávajú v správe). Mock: localStorage + IndexedDB.
 // ============================================================

@@ -226,7 +226,7 @@ export function Rebricky({ ocenenia = [], ludia = [], pred = null }: { ocenenia?
 //   [počet v okruhu] · [mesačná štatistika] · [poloha + výber okruhu]
 // rovnaký dizajn aj poloha (hneď pod rebríčkom) vo všetkých moduloch
 // ============================================================
-export function StatRiadok({ pocet, jednotka, mesiac, miesto, okruh = "2 km", onOkruh, inline }: { pocet?: ReactNode; jednotka?: string; mesiac?: ReactNode; miesto?: ReactNode; okruh?: ReactNode; onOkruh?: () => void; inline?: boolean }) {
+export function StatRiadok({ pocet, jednotka, mesiac, miesto, okruh = "2 km", onOkruh, inline, onIskry }: { pocet?: ReactNode; jednotka?: string; mesiac?: ReactNode; miesto?: ReactNode; okruh?: ReactNode; onOkruh?: () => void; inline?: boolean; /** KARTA 41: 4. políčko „Iskry" (len Domov) */ onIskry?: () => void }) {
   // segmentovaný panel: [počet v okruhu] · [mesačná štatistika] · [poloha + výber okruhu]
   // jednotná výška, vnútorné deliace čiary, jediný interaktívny segment = poloha
   // na desktope kompaktnejšie (menšie čísla/padding + obmedzená šírka), nech panel nie je „masívny"
@@ -262,6 +262,14 @@ export function StatRiadok({ pocet, jednotka, mesiac, miesto, okruh = "2 km", on
           </div>
           <div style={{ ...popis, color: C.textSec }}>{mestoLabel}</div>
         </div>
+        {/* segment 4 — KARTA 41: Iskry (ťuk otvorí centrálny prúd) */}
+        {onIskry && <div {...pressable(onIskry, "Iskry")} title="Iskry" style={{ flex: "none", minWidth: 0, padding: segPad, borderLeft: `1px solid ${C.line}`, cursor: "pointer", display: "flex", flexDirection: "column", justifyContent: "center" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: SPACE.xxs, minWidth: 0 }}>
+            <svg width={desktop ? 13 : 15} height={desktop ? 13 : 15} viewBox="0 0 24 24" aria-hidden="true" style={{ flex: "none" }}><path d="M12 2l2.2 6.8L21 11l-6.8 2.2L12 20l-2.2-6.8L3 11l6.8-2.2z" fill="#E0A82E" /></svg>
+            <span style={cislo}>Iskry</span>
+          </div>
+          <div style={popis}>videá</div>
+        </div>}
       </div>
     </div>
   );

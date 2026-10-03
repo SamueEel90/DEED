@@ -76,7 +76,7 @@ export function vytvorPost({ kind, d, text, talent, free, fotky }: NovyPostSpec)
   // skutok / talent
   return { ...base, type: talent ? "talent" : "skutok", size: talent ? "big" : "med",
     media: talent ? "video" : "foto", emoji: a.ic, likes: 0, verified: false,
-    importance: talent ? "Talent" : "Tvoj skutok",
+    importance: talent ? "Iskra" : "Tvoj skutok",
     title: t || (talent ? "Môj talent" : "Môj nový skutok"),
     desc: t || "Príspevok, ktorý si práve pridal(a). AI ho ohodnotí a zaradí." };
 }

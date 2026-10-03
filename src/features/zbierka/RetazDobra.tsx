@@ -43,6 +43,25 @@ const Tlacidlo = ({ label, onClick, druhe, disabled }: { label: string; onClick:
   <button type="button" onClick={onClick} disabled={disabled}
     style={{ height: 54, padding: "0 18px", borderRadius: 16, border: druhe ? "none" : "none", background: druhe ? "var(--btn)" : "var(--green)", color: druhe ? "var(--ink)" : "#fff", fontSize: 16, fontWeight: 800, cursor: disabled ? "not-allowed" : "pointer", opacity: disabled ? .4 : 1, fontFamily: "inherit" }}>{label}</button>);
 
+/** percentá Reťaze dobra — ten istý diel v platobnom module aj pri Pridať Iskru (KARTA 41b): 10 · 25 · 50 · 100 %, posuvník 5–100 po 5, „Z daru 10 € …" */
+export function PercentaRetaze({ pct, onPct }: { pct: number; onPct: (v: number) => void }) {
+  return (<>
+    <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
+      <span style={{ fontSize: 13, fontWeight: 700, color: "var(--ink2)" }}>Pošleš zbierke</span>
+      <span style={{ fontSize: 24, fontWeight: 800, color: "var(--gInk)", fontVariantNumeric: "tabular-nums" }}>{pct} %</span>
+    </div>
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 6 }}>
+      {[10, 25, 50, 100].map((p) => { const on = pct === p; return (
+        <button key={p} type="button" onClick={() => onPct(p)} style={{ height: 44, borderRadius: 12, border: `1.5px solid ${on ? "var(--green)" : "var(--fieldBd)"}`, background: on ? "var(--gSoft)" : "var(--field)", color: on ? "var(--gInk)" : "var(--ink)", fontSize: 14, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}>{p} %</button>); })}
+    </div>
+    <input type="range" min={5} max={100} step={5} value={pct} aria-label="Percento pre zbierku" onChange={(e) => onPct(+e.target.value)} style={{ width: "100%", height: 28, margin: 0, accentColor: "var(--green)" }} />
+    <div style={{ padding: "10px 12px", borderRadius: 12, background: "var(--field)", border: "1px solid var(--fieldBd)", fontSize: 13, lineHeight: 1.5, color: "var(--ink2)" }}>
+      {pct >= 100 ? <>Z daru 10 € pôjde celých <b style={{ color: "var(--ink)" }}>{e2(10)}</b> zbierke.</>
+        : <>Z daru 10 € pôjde <b style={{ color: "var(--ink)" }}>{e2(pct / 10)}</b> zbierke a <b style={{ color: "var(--ink)" }}>{e2(10 - pct / 10)}</b> tebe.</>}
+    </div>
+  </>);
+}
+
 export function RetazDobraHarok({ zbierka, onClose }: { zbierka: { id: string; nazov: string; org?: string; ciel?: number | null; vyzbierane?: number }; onClose: () => void }) {
   const zbierkaId = zbierka.id;
   // zbierka, z ktorej sa reťaz otvára, je v rade prvá (aj keď nie je v katalógu)
@@ -95,18 +114,7 @@ export function RetazDobraHarok({ zbierka, onClose }: { zbierka: { id: string; n
                 </span>
               </div>
               <Pruh z={zb} />
-              <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
-                <span style={{ fontSize: 13, fontWeight: 700, color: "var(--ink2)" }}>Pošleš zbierke</span>
-                <span style={{ fontSize: 24, fontWeight: 800, color: "var(--gInk)", fontVariantNumeric: "tabular-nums" }}>{x.pct} %</span>
-              </div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 6 }}>
-                {[10, 25, 50, 100].map((p) => { const on = x.pct === p; return (
-                  <button key={p} type="button" onClick={() => nastavPct(i, p)} style={{ height: 44, borderRadius: 12, border: `1.5px solid ${on ? "var(--green)" : "var(--fieldBd)"}`, background: on ? "var(--gSoft)" : "var(--field)", color: on ? "var(--gInk)" : "var(--ink)", fontSize: 14, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}>{p} %</button>); })}
-              </div>
-              <input type="range" min={5} max={100} step={5} value={x.pct} aria-label="Percento pre zbierku" onChange={(e) => nastavPct(i, +e.target.value)} style={{ width: "100%", height: 28, margin: 0, accentColor: "var(--green)" }} />
-              <div style={{ padding: "10px 12px", borderRadius: 12, background: "var(--field)", border: "1px solid var(--fieldBd)", fontSize: 13, lineHeight: 1.5, color: "var(--ink2)" }}>
-                Z daru 10 € pôjde <b style={{ color: "var(--ink)" }}>{e2(x.pct / 10)}</b> zbierke a <b style={{ color: "var(--ink)" }}>{e2(10 - x.pct / 10)}</b> tebe.
-              </div>
+              <PercentaRetaze pct={x.pct} onPct={(v) => nastavPct(i, v)} />
               {bezTerminu && <Info>Nemá cieľ ani termín. Zbierky za ňou začnú, až keď ju majiteľ uzavrie.</Info>}
             </div>
           );

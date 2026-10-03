@@ -413,13 +413,14 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
       const fotky = media.filter((m) => !m.video).map((m) => m.src);
       const popisHtml = po + (cistyText(po2Org) ? po2Org : "");
       const kamZ = kam === "centralna" ? pr.centralna ?? null : kam === "ina" ? inaZ : null;
+      const feedId = teraz();
       pridajSkutokOrg(stranka, {
-        id, nazov: nz, popis: popisHtml, oblast: oblast ?? "Pomoc", miesto: kde, datum: teraz(), stav: "ok", karma: null,
+        id, feedId, nazov: nz, popis: popisHtml, oblast: oblast ?? "Pomoc", miesto: kde, datum: teraz(), stav: "ok", karma: null,
         det: "Ľuďom vo vašej lokalite a na váš profil.", fotky, ucastnici: sk ? uc.filter((u) => u.overeny).map((u) => u.meno) : undefined,
         dar: kamZ ? [kamZ] : undefined, peniaze: kam ?? "bez", za: pr.autor, vytvoril: ja.celeMeno || undefined, zaznam: pr.zAkcie?.zaznam, seria: prav ? pvF : undefined,
       });
       const it: GoodPolozka = {
-        id: teraz(), typ: "skutok", velkost: "med", kat: KAT[oblast ?? "Pomoc"] ?? "Komunita", autor: pr.autor || "Charita", num: 0, emoji: "",
+        id: feedId, typ: "skutok", velkost: "med", kat: KAT[oblast ?? "Pomoc"] ?? "Komunita", autor: pr.autor || "Charita", num: 0, emoji: "",
         fotky: fotky.length ? fotky : orgLogo ? [orgLogo] : [], titul: nz, popis: cistyText(popisHtml), lok: kde, overene: true, skore: 0, typSituacie: "normal", modul: "good", dni: 0, podpora: 0, lat: lok.lat, lng: lok.lng,
       } as GoodPolozka;
       qc.setQueryData<GoodPolozka[]>(qk.good.feed, (old = []) => [it, ...old]);
@@ -866,9 +867,9 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
     obsah = telo(<div className="pf-rise" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 14, padding: "10px 12px", textAlign: "center" }}>
       <Svetlusik size={84} />
       <div style={{ fontSize: 24, fontWeight: 800 }}>Skutok je zverejnený</div>
-      <div style={{ fontSize: 15.5, lineHeight: 1.55, color: "var(--ink2)" }}>„{nz}“ teraz uvidia ľudia vo vašej lokalite aj na vašom profile.</div>
+      <div style={{ fontSize: 15.5, lineHeight: 1.55, color: "var(--ink2)" }}>Skutok „{nz}“ teraz uvidia ľudia vo vašej lokalite aj na vašom profile.</div>
       {(() => { const z = kam === "centralna" ? pr.centralna : kam === "ina" ? inaZ : null; const url = `https://deed.sk/s/${id}`; return <>
-        {z && <div style={{ alignSelf: "stretch", textAlign: "left", borderRadius: 18, background: "var(--goldBg)", border: "1px solid var(--goldBd)", padding: 14, fontSize: 14.5, lineHeight: 1.5, color: "var(--ink2)" }}><b style={{ color: "var(--ink)" }}>100 % príspevkov ide na {z.nazov}.</b> Zapečatené, nedá sa zmeniť.</div>}
+        {z && <div style={{ alignSelf: "stretch", textAlign: "left", borderRadius: 18, background: "var(--goldBg)", border: "1px solid var(--goldBd)", padding: 14, fontSize: 14.5, lineHeight: 1.5, color: "var(--ink2)" }}><b style={{ color: "var(--ink)" }}>{(kam === "centralna" ? `100 % príspevkov ide na centrálnu zbierku ${pr.autor ?? ""}`.trimEnd() : `100 % príspevkov ide na zbierku „${z.nazov}“`).replace(/\.?$/, ".")}</b> Zapečatené, nedá sa zmeniť.</div>}
         <div style={{ alignSelf: "stretch", textAlign: "left", borderRadius: 18, background: "var(--card)", border: "1px solid var(--cardBd)", padding: 14, display: "flex", gap: 14, alignItems: "center" }}>
           <span style={{ flex: "none" }}><DeedQr data={url} size={132} /></span>
           <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 8 }}>
@@ -876,7 +877,6 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
             <span style={{ fontSize: 13, lineHeight: 1.45, color: "var(--ink2)" }}>{z ? "Kto ho naskenuje, pošle príspevok rovno na zbierku." : "Kto ho naskenuje, otvorí skutok vašej charity."}</span>
             <span style={{ display: "flex", gap: 6 }}>
               <button type="button" onClick={async () => { if (typeof navigator.share === "function") { try { await navigator.share({ title: nz, url }); } catch { /* zrušené */ } return; } try { await navigator.clipboard.writeText(url); } catch { /* bez schránky */ } setQrSkop(true); setTimeout(() => setQrSkop(false), 1600); }} style={{ flex: 1, height: 44, borderRadius: 12, border: "none", background: "var(--gGrad)", color: "#fff", fontSize: 14, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}>{qrSkop ? "Skopírované" : "Zdieľať"}</button>
-              <button type="button" onClick={() => void stiahniDeedQr({ data: url, variant: "svetly", nazov: nz || "skutok" })} style={{ flex: 1, height: 44, borderRadius: 12, border: "1px solid var(--cardBd)", background: "var(--btn)", color: "var(--ink)", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>Uložiť</button>
             </span>
           </span>
         </div>

@@ -1,3 +1,4 @@
+import { Emo } from "@/components/icons";
 import { useState } from "react";
 import { StityRad } from "@/components/stit";
 import { stityOblastiSubjektu } from "@/lib/stityOblasti";
@@ -99,7 +100,7 @@ function OrgProfil({ s, onBack, toast, onKampan, onZavriet }: { s: CudziSubjektO
     <>
       <TabyProfil
         options={["vsetko", "kampane", "skutky", "talent"] as const}
-        labels={{ vsetko: "Všetko", kampane: "Kampane", skutky: "Skutky", talent: "Talent" }}
+        labels={{ vsetko: "Všetko", kampane: "Kampane", skutky: "Skutky", talent: "Iskry" }}
         badges={{ vsetko: kampane.length + akcie.length, kampane: kampane.length }}
         value={tab} onChange={setTab} ariaLabel="Sekcie profilu organizácie"
       />
@@ -127,7 +128,7 @@ function OrgProfil({ s, onBack, toast, onKampan, onZavriet }: { s: CudziSubjektO
         ))}
       </>)}
       {tab === "skutky" && <div style={{ padding: `${SPACE.lg}px 0`, textAlign: "center", color: C.textTer, fontSize: 13 }}>Skutky a vďakypočiny organizácie.</div>}
-      {tab === "talent" && <div style={{ padding: `${SPACE.lg}px 0`, textAlign: "center", color: C.textTer, fontSize: 13 }}>Videá a tematický Talent kanál.</div>}
+      {tab === "talent" && <div style={{ padding: `${SPACE.lg}px 0`, textAlign: "center", color: C.textTer, fontSize: 13 }}>Iskry, krátke videá.</div>}
     </>
   );
 
@@ -214,7 +215,7 @@ function OrgProfil({ s, onBack, toast, onKampan, onZavriet }: { s: CudziSubjektO
         <FotoProfiluSheet
           titul={`Fotky profilu · ${meno}`}
           popis="Profilová fotka a titulná fotka tohto profilu."
-          foto={vlastne.avatar ?? logo} nahrada={s.emoji ?? meno[0]}
+          foto={vlastne.avatar ?? logo} nahrada={s.emoji ? <Emo e={s.emoji} /> : meno[0]}
           onZmena={(url) => { zmenFotky({ avatar: url }); toast?.(url ? "Profilová fotka uložená" : "Profilová fotka vrátená na pôvodnú"); }}
           cover={vlastne.cover ?? cover}
           onCover={(url) => { zmenFotky({ cover: url }); toast?.(url ? "Titulná fotka uložená" : "Titulná fotka vrátená na pôvodnú"); }}
@@ -393,8 +394,8 @@ function OsobaProfil({ s, onBack, toast }: { s: CudziSubjektOsoba; onBack?: () =
               <div style={{ fontSize: 12, color: C.textTer, marginTop: SPACE.xxs }}>8 rokov praxe · od 15 €/h</div>
             </div>
           </MenuSkupina>
-          <MenuSkupina nadpis="TALENT">
-            <div {...pressable(() => toast?.("Talent kanál"), "Talent kanál")} style={{ height: 120, background: "linear-gradient(160deg, #1a1430, #2c2350)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+          <MenuSkupina nadpis="ISKRY">
+            <div {...pressable(() => toast?.("Iskry"), "Iskry")} style={{ height: 120, background: "linear-gradient(160deg, #1a1430, #2c2350)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
               <span style={{ width: 54, height: 54, borderRadius: RADIUS.round, background: "rgba(255,255,255,.14)", border: "1px solid rgba(255,255,255,.4)", display: "flex", alignItems: "center", justifyContent: "center" }}><IkonaPlay size={22} color="#fff" /></span>
             </div>
           </MenuSkupina>

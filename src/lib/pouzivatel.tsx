@@ -57,6 +57,8 @@ function odvod(data: UcetData | null, session: Session): Pouzivatel {
   const priezvisko = jeCharita ? "" : profil?.priezvisko || "";
   const celeMeno = (jeCharita ? meno : `${meno} ${priezvisko}`).trim();
   const mesto = lokalita?.mesto || profil?.mesto || organizacia?.sidlo || "—";
+  // rod sa v DB ešte neukladá — kým ho server nedoplní, ostáva mužský tvar
+  const rod = (profil as { rod?: "muz" | "zena" } | null)?.rod;
   const typ = ucet?.typ || ses?.typ || "aktivny";
   return {
     demo: false,
@@ -71,6 +73,7 @@ function odvod(data: UcetData | null, session: Session): Pouzivatel {
     // fotka: DB je zdroj pravdy, lokálna kópia drží posledný upload (offline/mock)
     foto: profil?.profilovka_url || nacitajFotoProfilu(ucet?.id || ses?.ucet_id) || null,
     mesto,
+    rod,
     poradoveCislo: ucet?.poradove_cislo ?? ses?.poradove_cislo ?? null,
     rezim: zobrazenie?.rezim || "anonym",
     nick: zobrazenie?.nick || null,

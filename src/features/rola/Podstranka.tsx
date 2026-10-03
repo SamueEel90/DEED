@@ -20,7 +20,10 @@ import { nastavCiste, sucetDarov, darcoviaPre, useZmenyDarov, pridajDar, type Vo
 import { PoDare, type PoDareData } from "@/components/podare";
 import { ZoznamDarcov } from "@/components/zoznamdarcov";
 import { NahladKarty, GaleriaZbierky } from "./KartaZbierky";
-import { OznamKarta } from "./Oznamy";
+import { OznamKartaNova } from "./NovyOznam";
+import type { ZbierkaPriAkcii } from "@/lib/oznamyNove";
+import { zbierkyStrankyZPamate } from "@/lib/novaZbierka";
+import { oznamyStranky, nacitajOznamyStranky, useZmenyOznamovCharity, bezi as oznamBezi, type OznamCharity } from "@/lib/oznamyNove";
 import { InzeratKarta, MamZaujem } from "./Inzeraty";
 import { DorovnaniePas, NoveDorovnanieSheet } from "./Dorovnanie";
 import { beziaceDorovnanieNaCiel, dorovnanieKDaru, useZmenyDorovnani } from "@/lib/dorovnanie";
@@ -177,10 +180,15 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack, strankaId =
   const sektory = useSegmenty();
   useZmenyProfilov();
   useZmenyOznamov();
-  const oznamy = tier >= 1 ? verejneOznamy(pozicia) : [];
+  // KARTA 40: oznamy = nový oznam (oznam · verejný · výzva); starý engine ostáva len pre pracovné ponuky
+  useZmenyOznamovCharity();
+  const klucOznamov = strankaId ?? pozicia;
+  useEffect(() => { void nacitajOznamyStranky(klucOznamov); }, [klucOznamov]);
+  const noveOznamy = oznamyStranky(klucOznamov).filter((o) => oznamBezi(o));
+  const noveMapa = new Map<string, OznamCharity>(noveOznamy.map((o) => [o.id, o]));
+  const oznamy = noveOznamy.map((o) => ({ id: o.id, entita: klucOznamov, kategoria: "oznam" as const, nadpis: o.nadpis, text: "", platnostDni: 0, vytvorene: Date.parse(o.zverejnene), pripnute: o.druh === "vyzva" }));
   const ponuky = tier >= 1 ? verejneOznamy(pozicia, "inzerat") : [];
-  // ponuky bývajú v tej istej záložke ako oznamy — sú platené, tak idú nad ne
-  // (pripnutý oznam si prvé miesto drží, to si charita zvolila sama)
+  // ponuky bývajú v tej istej záložke ako oznamy — sú platené, tak idú nad ne (výzva na súrnu pomoc ide úplne hore)
   const naste = [...oznamy.filter((o) => o.pripnute), ...ponuky, ...oznamy.filter((o) => !o.pripnute)];
   const sektoroveZbierky = pozicia === "charita" && tier >= VLASTNA_ZBIERKA_CFG.sektoroveOdTieru
     ? sektory.flatMap((sg) => {
@@ -335,6 +343,15 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack, strankaId =
     } : undefined;
     return { id: z.id, nazov: z.nazov, popis: z.popis, overena: ziad.overeny, media: z.foto ? [{ typ: "foto", src: z.foto }] : [],
       organizacia: org, vyzbierane: z.vyzbierane, ciel: z.ciel, ludia: z.darcovia, rychleSumy: [10, 25, 45] };
+  };
+  // KARTA 40 · bod 10: Darovať pri ozname → tá istá zbierka (nový modul), ako keď ju otvorím z profilu
+  const darujPriAkcii = (zb: ZbierkaPriAkcii) => {
+    if (zb.centralna) { setNovyModul({ data: zVlastnej(CENTRALNA_ID, profilCentralnej), zoStrankyOrg: true }); return; }
+    const reg = najdiZbierku(zb.id);
+    if (reg) { const z = ziva(reg); setNovyModul({ data: zCudzej(z), zoStrankyOrg: z.ziadatel.meno === s.nazov, ziadatel: z.ziadatel }); return; }
+    const sp = strankaId ? zbierkyStrankyZPamate(strankaId).find((z) => z.id === zb.id) : undefined;
+    const pz: ProfilZbierky = sp ? { nazov: sp.nazov, popis: cistyText(sp.popis), fotky: sp.media.filter((m) => m.typ === "foto").map((m) => m.src) } : { nazov: zb.nazov, popis: "" };
+    setNovyModul({ data: { ...zVlastnej(zb.id, pz), vyzbierane: zb.vyzbierane, ciel: zb.ciel || undefined }, zoStrankyOrg: true });
   };
   const kartaVlastnej = (id: string, profil: ProfilZbierky, otvorena: boolean) => {
     const dary = sucetDarov(id);
@@ -620,9 +637,9 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack, strankaId =
         <div key={o.id} {...pressable(() => naOznam(o.id), `${ponuka ? "Pracovná ponuka" : "Oznam"}: ${o.nadpis}`)}
           style={{ display: "flex", alignItems: "center", gap: SPACE.xs, cursor: "pointer", marginBottom: SPACE.xxs,
             background: tint(akcent, ponuka ? .12 : .07), border: `1px solid ${tint(akcent, ponuka ? .45 : .28)}`, borderRadius: RADIUS.sm, padding: SPACE.sm }}>
-          <span style={{ flex: "none", fontSize: 15 }}>{ponuka ? "💼" : o.pripnute ? "📌" : "📣"}</span>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={akcent} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flex: "none" }}><path d={ponuka ? "M9 7V4h6v3M4 7h16v13H4z" : "M4 10v4h3l6 4V6L7 10zM16 9a4 4 0 0 1 0 6"} /></svg>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: ".04em", color: ponuka ? akcent : C.textTer }}>{ponuka ? "PRACOVNÁ PONUKA" : "OZNAM"}</div>
+            <div style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: ".04em", color: ponuka ? akcent : C.textTer }}>{ponuka ? "PRACOVNÁ PONUKA" : noveMapa.get(o.id)?.druh === "vyzva" ? "SÚRNA POMOC" : noveMapa.get(o.id)?.druh === "verejny" ? "OZNAM VO VEREJNOM ZÁUJME" : "OZNAM"}</div>
             <div style={{ fontSize: ponuka ? 14.5 : 13.5, fontWeight: ponuka ? 800 : 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{o.nadpis}</div>
           </div>
           <span style={{ flex: "none", fontSize: 12, fontWeight: 800, color: akcent }}>{ponuka ? "Mám záujem ›" : "Čítať ›"}</span>
@@ -647,7 +664,7 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack, strankaId =
             <div key={o.id} style={{ marginBottom: SPACE.sm }}>
               {o.kategoria === "inzerat"
                 ? <InzeratKarta o={o} autor={s.nazov} logo={logoOrg} deti={<MamZaujem entita={pozicia} inzerat={o} toast={toast} />} />
-                : <OznamKarta o={o} autor={s.nazov} logo={logoOrg} />}
+                : noveMapa.get(o.id) ? <OznamKartaNova o={noveMapa.get(o.id)!} autor={s.nazov} mesto={s.lok} inicialy={s.iniciacky} logo={logoOrg} onDarovat={darujPriAkcii} /> : null}
             </div>
           ))}
         </div>

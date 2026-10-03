@@ -42,26 +42,26 @@ type Kat = { id: string; emoji: string; titul: string; popis: string; uzly: Uzol
 // prepínač VNÚTRI Zbierok farnosti; položky premenované. Pohreb/svadba idú VŽDY
 // cez registrovaných (rodina je KYC) — preto ich popis neregistrovaných nemá.
 const ZBIERKA: Kat = {
-  id: "zbierka", emoji: "💶", titul: "Zbierka", popis: "Jeden príjemca → celé jemu · dvaja a viac → bežec rozdelí",
+  id: "zbierka", emoji: "euro", titul: "Zbierka", popis: "Jeden príjemca → celé jemu · dvaja a viac → bežec rozdelí",
   uzly: [
-    { id: "z-farska", emoji: "🏛", titul: "Zbierky farnosti", popis: "Ľahká vetva (KYB) · 1 príjemca = 100 % — bez tagov, bez splitu · voliteľne naviazať na udalosť", kto: "F",
+    { id: "z-farska", emoji: "budova", titul: "Zbierky farnosti", popis: "Ľahká vetva (KYB) · 1 príjemca = 100 % — bez tagov, bez splitu · voliteľne naviazať na udalosť", kto: "F",
       polia: ["Názov", "Popis", "Cieľová suma €", "Foto/video", "Dĺžka"], akcie: ["Prispieť"], feed: "farský (+ Charita) · settlement € na farský účet" },
-    { id: "z-registrovany", emoji: "🔗", titul: "Zbierky pre veriacich — registrovaných", popis: "Pohreb, svadba, iné · jednorazový 6-miestny kód od príjemcu (PC-friendly, bez kamery) · obojstranné potvrdenie", kto: "F", qrMerge: true, split: "svadba",
+    { id: "z-registrovany", emoji: "retaz", titul: "Zbierky pre veriacich — registrovaných", popis: "Pohreb, svadba, iné · jednorazový 6-miestny kód od príjemcu (PC-friendly, bez kamery) · obojstranné potvrdenie", kto: "F", qrMerge: true, split: "svadba",
       polia: ["Názov", "Kód príjemcu (6-miestny)", "Split (rodina/kostol)", "Text (kto)", "Foto"], akcie: ["Prispieť"], feed: "iba farský" },
-    { id: "z-neregistrovany", emoji: "🧾", titul: "Zbierky pre veriacich — neregistrovaných", popis: "Plný sprievodca s overením účtu a úschovou darov", kto: "F", helpWizard: true,
+    { id: "z-neregistrovany", emoji: "dokument", titul: "Zbierky pre veriacich — neregistrovaných", popis: "Plný sprievodca s overením účtu a úschovou darov", kto: "F", helpWizard: true,
       polia: ["Názov", "Podmienky", "Opis", "IBAN overenie", "Téma", "Suma", "Doklady/escrow", "Foto", "Kanál"], akcie: ["Prispieť"], feed: "Help + zrkadlí do farského" },
   ],
 };
 const UDALOST: Kat = {
-  id: "udalost", emoji: "🗓", titul: "Udalosť", popis: "Má dátum/čas → kalendár + pripomienka",
+  id: "udalost", emoji: "kalendar", titul: "Udalosť", popis: "Má dátum/čas → kalendár + pripomienka",
   uzly: [
-    { id: "u-omsa", emoji: "⛪", titul: "Omša (z rozvrhu)", popis: "Čas z rozvrhu · auto-generuje omšovú zbierku", kto: "F", datum: true,
+    { id: "u-omsa", emoji: "kostol", titul: "Omša (z rozvrhu)", popis: "Čas z rozvrhu · auto-generuje omšovú zbierku", kto: "F", datum: true,
       polia: ["Názov", "Čas z rozvrhu", "Poznámka"], akcie: ["Prispieť", "Pripomeň"], feed: "farský · omša nemá RSVP" },
-    { id: "u-sviatok", emoji: "★", titul: "Sviatok / prikázaný sviatok", popis: "Dátum predvyplnený z cirkevného kalendára", kto: "F", datum: true,
+    { id: "u-sviatok", emoji: "hviezda", titul: "Sviatok / prikázaný sviatok", popis: "Dátum predvyplnený z cirkevného kalendára", kto: "F", datum: true,
       polia: ["Názov", "Dátum (z kalendára)", "Časy omší", "Poznámka"], akcie: ["Prispieť", "Pripomeň"], feed: "farský" },
-    { id: "u-put", emoji: "⛰", titul: "Púť", popis: "Voliteľná zbierka na dopravu + kapacita", kto: "F", datum: true,
+    { id: "u-put", emoji: "hory", titul: "Púť", popis: "Voliteľná zbierka na dopravu + kapacita", kto: "F", datum: true,
       polia: ["Názov", "Dátum", "Popis", "Foto", "Zbierka na dopravu (voliteľné)", "Kapacita"], akcie: ["Zúčastním sa", "Prispieť", "Pripomeň"], feed: "farský" },
-    { id: "u-akcia", emoji: "🎶", titul: "Akcia (koncert, ples, farský deň)", popis: "Vstupné / zbierka voliteľné", kto: "F", datum: true,
+    { id: "u-akcia", emoji: "hudba", titul: "Akcia (koncert, ples, farský deň)", popis: "Vstupné / zbierka voliteľné", kto: "F", datum: true,
       polia: ["Názov", "Dátum", "Popis", "Foto", "Vstupné/zbierka (voliteľné)"], akcie: ["Zúčastním sa", "Prispieť", "Pripomeň"], feed: "farský" },
     // Pohreb a Svadba už NIE sú Udalosti (Delta 2 bod 2 — duplicita): žijú ako Oznam
     // (úmrtie/parte, ohlášky) — nesú dátum → kalendár + pripomienka; peniaze =
@@ -69,32 +69,32 @@ const UDALOST: Kat = {
   ],
 };
 const OZNAM: Kat = {
-  id: "oznam", emoji: "📢", titul: "Oznam", popis: "Dátum nemusí — objaví sa vo feede",
+  id: "oznam", emoji: "oznam", titul: "Oznam", popis: "Dátum nemusí — objaví sa vo feede",
   uzly: [
-    { id: "o-zmena", emoji: "🔔", titul: "Zmenové (omša nebude / zmena programu)", popis: "Notifikácia default zapnutá · názov povinný (headline)", kto: "F",
+    { id: "o-zmena", emoji: "zvon", titul: "Zmenové (omša nebude / zmena programu)", popis: "Notifikácia default zapnutá · názov povinný (headline)", kto: "F",
       polia: ["Názov", "Text", "Platnosť od–do (voliteľné)"], feed: "farský · notif default ON" },
-    { id: "o-umrtie", emoji: "🕯", titul: "Oznámenie o úmrtí (parte)", popis: "Šablóna alebo vlastné parte · čistý oznam — zbierka sa pripája až na zverejnenom ozname cez Pridať zbierku", kto: "F",
+    { id: "o-umrtie", emoji: "svieca", titul: "Oznámenie o úmrtí (parte)", popis: "Šablóna alebo vlastné parte · čistý oznam — zbierka sa pripája až na zverejnenom ozname cez Pridať zbierku", kto: "F",
       polia: ["Meno", "Dátumy + vek", "Verš", "Rozlúčka (kde + kedy)", "Foto", "Šablóna"], feed: "farský" },
-    { id: "o-ohlasky", emoji: "💍", titul: "Ohlášky", popis: "Mená snúbencov · termín je priamo v ohláškach (žiadny odkaz na svadbu)", kto: "F",
+    { id: "o-ohlasky", emoji: "prsten", titul: "Ohlášky", popis: "Mená snúbencov · termín je priamo v ohláškach (žiadny odkaz na svadbu)", kto: "F",
       polia: ["Názov", "Mená snúbencov", "Dátum + čas sobáša", "Miesto", "Foto (so súhlasom)"], feed: "farský" },
-    { id: "o-vlastny", emoji: "📣", titul: "Vlastný oznam", popis: "Čokoľvek — zatvorený kostol, ples, zbierka šatstva… (catch-all)", kto: "F",
+    { id: "o-vlastny", emoji: "oznam", titul: "Vlastný oznam", popis: "Čokoľvek — zatvorený kostol, ples, zbierka šatstva… (catch-all)", kto: "F",
       polia: ["Názov", "Text", "Foto (voliteľné)", "Platnosť (dní)"], feed: "farský" },
-    { id: "o-smutocny", emoji: "🤍", titul: "Oznámenie o úmrtí (parte)", popis: "Šablóna alebo vlastné parte · polia pod oznamom · reakcia = kondolencia · bez zbierky", kto: "U",
+    { id: "o-smutocny", emoji: "srdce", titul: "Oznámenie o úmrtí (parte)", popis: "Šablóna alebo vlastné parte · polia pod oznamom · reakcia = kondolencia · bez zbierky", kto: "U",
       polia: ["Meno", "Dátumy + vek", "Verš", "Rozlúčka (kde + kedy)", "Foto", "Šablóna"], feed: "farský" },
-    { id: "o-spomienkovy", emoji: "🕯", titul: "Spomienkový oznam", popis: "Pamiatka — výročie úmrtia, nedožité jubileum · reakcia = kondolencia · vždy zadarmo", kto: "U",
+    { id: "o-spomienkovy", emoji: "svieca", titul: "Spomienkový oznam", popis: "Pamiatka — výročie úmrtia, nedožité jubileum · reakcia = kondolencia · vždy zadarmo", kto: "U",
       polia: ["Meno zosnulého", "Príležitosť", "Dátumy nar.–zom. (voliteľné)", "Text spomienky", "Obrázok (foto/sviečka/kríž/bez)"], feed: "farský" },
-    { id: "o-jubilejny", emoji: "🎂", titul: "Jubilejný", popis: "Blahoželanie jubilantovi · karta alebo vlastný obrázok", kto: "U",
+    { id: "o-jubilejny", emoji: "oslava", titul: "Jubilejný", popis: "Blahoželanie jubilantovi · karta alebo vlastný obrázok", kto: "U",
       polia: ["Meno jubilanta", "Dôvod/jubileum", "Dátum", "Text", "Foto"], feed: "farský" },
-    { id: "o-podakovanie", emoji: "🙏", titul: "Poďakovanie", popis: "Verejné poďakovanie · karta alebo vlastný obrázok", kto: "U",
+    { id: "o-podakovanie", emoji: "modlitba", titul: "Poďakovanie", popis: "Verejné poďakovanie · karta alebo vlastný obrázok", kto: "U",
       polia: ["Za čo", "Komu (voliteľné)", "Text", "Foto"], feed: "farský" },
-    { id: "o-modlitba", emoji: "🕊", titul: "Prosba o modlitbu", popis: "Reakcia = „modlím sa“ · vždy zadarmo · môže byť bez mena", kto: "U",
+    { id: "o-modlitba", emoji: "holubica", titul: "Prosba o modlitbu", popis: "Reakcia = „modlím sa“ · vždy zadarmo · môže byť bez mena", kto: "U",
       polia: ["Úmysel (za koho/čo)", "Text", "Bez mena", "Obrázok (predvolené/vlastné/bez)"], feed: "farský" },
   ],
 };
 const DOBRO: Kat = {
-  id: "dobro", emoji: "🙌", titul: "Dobrovoľníctvo", popis: "Výzva o ruky — event QR = karma za účasť",
+  id: "dobro", emoji: "ludia", titul: "Dobrovoľníctvo", popis: "Výzva o ruky — event QR = karma za účasť",
   uzly: [
-    { id: "d-brigada", emoji: "🧹", titul: "Brigáda", popis: "Event QR (proof-of-presence) → účastník dostane karmu", kto: "F", datum: true,
+    { id: "d-brigada", emoji: "metla", titul: "Brigáda", popis: "Event QR (proof-of-presence) → účastník dostane karmu", kto: "F", datum: true,
       polia: ["Názov", "Dátum", "Popis", "Koľko rúk treba", "Foto", "Event QR"], akcie: ["Zúčastním sa", "Pripomeň", "Prispieť"], feed: "farský · event QR → karma za účasť" },
   ],
 };
@@ -124,7 +124,7 @@ export function PridatSheet({ farar, farnost, onClose, toast }: {
           {uzol.id === "o-smutocny" || uzol.id === "o-umrtie" ? (
             /* dedikované parte (DEED_Oznamenie_o_Umrti_DEV.md) — šablóna/obrázok, povinné polia, TTL, BEZ zbierky (§0) */
             <SmutocnyForm farnost={farnost} autor={celeMeno || "Farník"} farar={farar}
-              onPublish={(it) => { if (farnost) pridajPrispevok(farnost.id, it); toast(farar ? "Oznámenie o úmrtí zverejnené 🕯" : "Oznámenie o úmrtí zverejnené (auto-publish · farár môže zmazať) 🕯"); onClose(); }} />
+              onPublish={(it) => { if (farnost) pridajPrispevok(farnost.id, it); toast(farar ? "Oznámenie o úmrtí zverejnené" : "Oznámenie o úmrtí zverejnené (auto-publish · farár môže zmazať)"); onClose(); }} />
           ) : userTyp ? (
             /* user oznamy (DEED_User_Oznamy_DEV.md) — jubilejný/poďakovanie/prosba, 2 režimy + obrázok */
             <UserOznamForm typ={userTyp} farnost={farnost} autor={celeMeno || "Farník"} poplatok={selfAdd.poplatok}
@@ -178,7 +178,7 @@ export function PridatSheet({ farar, farnost, onClose, toast }: {
       ) : !selfAdd.on ? (
         /* farnosť má self-add vypnutý (§2) — feed tvorí farár, oznam vybaví osobne */
         <div style={{ fontSize: 12.5, color: N.txt2, background: N.card, border: `1px solid ${N.line}`, borderRadius: RADIUS.sm, padding: SPACE.md, lineHeight: 1.55, textAlign: "center" }}>
-          <div style={{ fontSize: 26, marginBottom: SPACE.xs }}>🔕</div>
+          <div style={{ fontSize: 26, marginBottom: SPACE.xs }}><Emo e="zvon" /></div>
           <b>Farnosť má pridávanie oznamov farníkmi vypnuté.</b><br />
           Feed tvorí farár — ozvi sa mu a oznam (jubileum, poďakovanie, prosbu o modlitbu) pridá za teba.
         </div>
@@ -228,7 +228,7 @@ function BackRiadok({ onBack, label }: { onBack: () => void; label: string }) {
 function KontextPas({ farnost }: { farnost?: Farnost }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm, background: N.goldBg, border: `1px solid ${N.goldEdge}`, borderRadius: RADIUS.sm, padding: `${SPACE.sm}px ${SPACE.gutter}px`, marginBottom: SPACE.sm }}>
-      <span style={{ fontSize: 16 }}>🛠</span>
+      <span style={{ fontSize: 16 }}><Emo e="ceruzka" /></span>
       <div style={{ fontSize: 12, color: N.txt2 }}>Vystupuješ ako <b style={{ color: N.txt }}>{farnost?.nazov ?? "Farnosť"}</b> · správcovský panel</div>
     </div>
   );
@@ -323,7 +323,7 @@ function UzolForm({ uzol, farar, farnost, onSplit, onPublish, onHelp, toast }: {
       <div style={{ display: "flex", flexWrap: "wrap", gap: SPACE.xs, marginBottom: SPACE.md }}>
         {uzol.kto && <MetaChip>{`Tvorí: ${KTO_LABEL[uzol.kto] ?? uzol.kto}`}</MetaChip>}
         <MetaChip>{`Feed: ${uzol.feed}`}</MetaChip>
-        {uzol.datum && <MetaChip>🗓 kalendár + pripomienka</MetaChip>}
+        {uzol.datum && <MetaChip><Emo e="kalendar" /> kalendár + pripomienka</MetaChip>}
       </div>
 
       {/* NÁZOV — vždy prvé pole HORE (pred popisom); pri ohláškach/omši/sviatku predvyplnený */}
@@ -395,8 +395,8 @@ function UzolForm({ uzol, farar, farnost, onSplit, onPublish, onHelp, toast }: {
       {/* akcie, ktoré dostane user */}
       <div style={{ fontSize: 11, fontWeight: 700, color: N.txt3, letterSpacing: ".03em", margin: `${SPACE.md}px 0 ${SPACE.xs}px` }}>AKCIE PRE POUŽÍVATEĽA</div>
       <div style={{ display: "flex", flexWrap: "wrap", gap: SPACE.xs }}>
-        <MetaChip>❤ Srdiečko</MetaChip><MetaChip>↗ Zdieľať</MetaChip>
-        {(uzol.akcie ?? []).map((a) => <MetaChip key={a}>{a === "Prispieť" ? "💶 Prispieť" : a === "Zúčastním sa" ? "🗓 Zúčastním sa" : "🔔 Pripomeň"}</MetaChip>)}
+        <MetaChip><Emo e="srdce" /> Srdiečko</MetaChip><MetaChip>↗ Zdieľať</MetaChip>
+        {(uzol.akcie ?? []).map((a) => <MetaChip key={a}>{a === "Prispieť" ? <><Emo e="euro" /> Prispieť</> : a === "Zúčastním sa" ? <><Emo e="kalendar" /> Zúčastním sa</> : <><Emo e="zvon" /> Pripomeň</>}</MetaChip>)}
       </div>
 
       {/* farársky Split QR — pohreb/svadba/QR-merge */}
@@ -410,7 +410,7 @@ function UzolForm({ uzol, farar, farnost, onSplit, onPublish, onHelp, toast }: {
       {/* prepojenie príjemcu (bod 30) — čerstvé, jednorazové, na jednu zbierku */}
       {uzol.qrMerge && (
         <div style={{ marginTop: SPACE.sm, fontSize: 11.5, color: N.txt3, background: N.infoBg, border: `1px solid ${tint(N.info, .3)}`, borderRadius: RADIUS.sm, padding: SPACE.sm }}>
-          🔗 Prepojenie je vždy čerstvé a jednorazové — 6-miestny kód od príjemcu (registrovaný, KYC), obojstranné potvrdenie v appke. Farár NIKDY nevyberá z uloženého zoznamu QR.
+          <Emo e="retaz" /> Prepojenie je vždy čerstvé a jednorazové — 6-miestny kód od príjemcu (registrovaný, KYC), obojstranné potvrdenie v appke. Farár NIKDY nevyberá z uloženého zoznamu QR.
         </div>
       )}
 
@@ -426,14 +426,14 @@ function UzolForm({ uzol, farar, farnost, onSplit, onPublish, onHelp, toast }: {
               <div style={{ marginTop: SPACE.md, background: N.card, border: `1px solid ${N.line}`, borderRadius: RADIUS.md, padding: SPACE.gutter }}>
                 <div style={{ fontSize: 10.5, color: N.txt3, fontWeight: 700 }}>UKÁŽKA · hlavička</div>
                 <div style={{ fontSize: 13.5, fontWeight: 700, marginTop: SPACE.xxs }}>{farar ? `${farnost?.nazov ?? "Farský úrad"} · ✓ overená` : (celeMeno || "Tvoje meno")}</div>
-                {fotky.length > 0 && <div style={{ fontSize: 11, color: N.txt3, marginTop: SPACE.xxs }}>📎 {fotky.length} {fotky.length === 1 ? "príloha" : "prílohy"}</div>}
+                {fotky.length > 0 && <div style={{ fontSize: 11, color: N.txt3, marginTop: SPACE.xxs }}><Emo e="dokument" /> {fotky.length} {fotky.length === 1 ? "príloha" : "prílohy"}</div>}
                 <div style={{ fontSize: 13, color: N.txt2, marginTop: SPACE.xs, lineHeight: 1.5 }}>{text || <span style={{ color: N.txt3 }}>(text oznamu)</span>}</div>
               </div>
               <button onClick={() => {
                 // fallback: neprepísaný NÁZOV = predvyplnená hodnota z placeholderu
                 const eff = nazovPole && predvNazov && !(polia[nazovPole] ?? "").trim() ? { ...polia, [nazovPole]: predvNazov } : polia;
                 const it = postavPrispevok(uzol, { farar, farnost, autor: celeMeno || "Farník", text, polia: eff, fotky, autorTvar: tvar });
-                if (naviazat && udalostVazba.trim()) it.popis = `${it.popis} · 🎪 naviazané na: ${udalostVazba.trim()}`;
+                if (naviazat && udalostVazba.trim()) it.popis = `${it.popis} · naviazané na: ${udalostVazba.trim()}`;
                 onPublish(it);
               }} style={ctaStyle(N.green)}>Publikovať</button>
             </>
@@ -479,7 +479,7 @@ function PoleInput({ label, value, onChange, toast }: { label: string; value: st
         <button type="button" onClick={priloz}
           style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: SPACE.xs, height: 44, borderRadius: RADIUS.sm, fontFamily: "inherit", fontSize: 13, fontWeight: 700, cursor: "pointer",
             border: `1px ${value ? "solid" : "dashed"} ${value ? N.greenEdge : N.line}`, background: value ? N.greenBg : N.card, color: value ? N.green : N.txt2 }}>
-          {value ? "✓ " : t === "qr" ? "▦ " : "📎 "}{value ? "Priložené — klikni pre zmenu" : t === "qr" ? "Skenovať QR" : "Priložiť foto/video"}
+          {value ? "✓ " : t === "qr" ? <><Emo e="qr" /> </> : <><Emo e="dokument" /> </>}{value ? "Priložené — klikni pre zmenu" : t === "qr" ? "Skenovať QR" : "Priložiť foto/video"}
         </button>
       </div>
     );
@@ -494,7 +494,7 @@ function PoleInput({ label, value, onChange, toast }: { label: string; value: st
         <div style={{ fontSize: 10.5, color: N.txt3, lineHeight: 1.4, marginTop: SPACE.xxs }}>Príjemca si kód vygeneruje v appke („Pripojiť ma k zbierke"). Napíš ho — sken QR je len voliteľná skratka. Žiadna knižnica uložených QR.</div>
         {cislice.length === 6 && (
           <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm, background: N.greenBg, border: `1px solid ${N.greenEdge}`, borderRadius: RADIUS.sm, padding: `${SPACE.xs}px ${SPACE.sm}px`, marginTop: SPACE.xs, fontSize: 12 }}>
-            <span style={{ fontSize: 15 }}>👤</span>
+            <span style={{ fontSize: 15 }}><Emo e="ludia" /></span>
             <span style={{ color: N.txt }}><b>Mária Kováčová</b> · KYC ✓ — potvrdíš jedného kandidáta; jej padne notifikácia (obojstranný handshake)</span>
           </div>
         )}
