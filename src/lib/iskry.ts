@@ -77,7 +77,8 @@ export function pridajIskru(i: Omit<Iskra, "id" | "iskry" | "zverejnene">): Iskr
 /** odkaz Iskry (QR, zdieľanie) — appka ho otvorí v prúde na tomto videu; bez appky web stránka Iskry */
 export const odkazIskry = (id: string) => `https://deed.sk/i/${encodeURIComponent(id)}`;
 /** charita: videá „všetkým v Iskrách" mesačne v cene programu (Zadarmo 1 · P2 2 · P3 4), ďalšie za cenaNad € */
-export const KVOTA_ISKIER = { naProgram: [1, 1, 2, 4, 4] as number[], cenaNad: 10 };
+/** videá „všetkým v Iskrách" za mesiac podľa cenníka: Zadarmo 1 · P1 Zbierka 1 · P2 Akcia 2 · P3 Kampaň 4 · Spolok 1; ďalšie za cenaNad € (rovnako vo všetkých) */
+export const KVOTA_ISKIER = { naProgram: [1, 1, 2, 4, 1] as number[], cenaNad: 10 };
 const kvotaPouzita = new Map<string, number>(); // kľúč: stránka + mesiac
 const mesiac = () => new Date().toISOString().slice(0, 7);
 export const kvotaOstava = (stranka: string, tier: number) => Math.max(0, (KVOTA_ISKIER.naProgram[tier] ?? 1) - (kvotaPouzita.get(`${stranka}|${mesiac()}`) ?? 0));
