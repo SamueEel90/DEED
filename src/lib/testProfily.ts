@@ -144,6 +144,8 @@ export interface TestProfil {
   titulka: string;
   /** „Podporiť …" v module (4. pád, ak sa líši od mena) */
   podporit?: string;
+  /** O nás (návrh v2): nadpis, text a oblasti */
+  onas?: { nadpis: string; text: string; oblasti: string[] };
   /** pás dorovnania pod Naživo (firma, ktorá dar zdvojnásobí) */
   dorovnaniePas?: { ini: string; nadpis: string; text: string };
   /** kronika: súhrny rokov a záznamy z minulosti (k skutkom a ukončeným zbierkam s dátumom) */
@@ -325,16 +327,16 @@ const FIRMA: TestProfil = {
     { id: "fz-doucovanie", nazov: "Doučovanie v Tábori", popis: "Deväť detí, dvakrát týždenne. Platíme učiteľky.", mesto: "Prešov", foto: F.ucenie, vyzbierane: 740, ciel: 2000, ludia: 24, stav: "bezi", dorovnanie: `${DOROVNA} · ešte 1 260 €` },
     { id: "fz-polievka", nazov: "Polievka na Hlavnej", popis: "Večerná polievka pre 40 ľudí bez domova. Pečivo dávame my.", mesto: "Prešov", foto: F.polievka, vyzbierane: 1890, ludia: 72, stav: "dlhodoba", dorovnanie: `${DOROVNA} · pečivo každý deň` },
     { id: "fz-bundy", nazov: "Zimné bundy pre deti", popis: "Bundy pre deti z rodín v núdzi. Dorovnávame do výšky 2 000 €.", mesto: "Bratislava", foto: F.bundy, vyzbierane: 1870, ciel: 2600, ludia: 77, stav: "bezi", konciDni: 21, dorovnanie: `${DOROVNA} · ešte 130 €` },
-    { id: "fz-ihrisko", nazov: "Ihrisko na Račianskej", popis: "Nový povrch ihriska pre deti zo sídliska. Doplatili sme zvyšok.", mesto: "Bratislava", foto: F.sport, vyzbierane: 6400, ciel: 6400, ludia: 112, stav: "ukoncena", doklady: 7, skoncila: "30. 6.", spravaDarcom: "Ihrisko je hotové od júla. Chodí tam denne vyše 50 detí, povrch má záruku 10 rokov." },
+    { id: "fz-ihrisko", nazov: "Ihrisko na Račianskej", popis: "Nový povrch ihriska pre deti zo sídliska. Doplatili sme zvyšok.", mesto: "Bratislava", foto: F.sport, vyzbierane: 6400, ciel: 6400, ludia: 112, stav: "ukoncena", doklady: 7, skoncila: "30. 6.", spravaDarcom: "Ihrisko je hotové od júla. Chodí tam denne vyše 50 detí, povrch má záruku 10 rokov.", d: "30.", m: "JÚN", rok: 2026 },
   ],
   skutky: [
-    { id: "fs-vianocky", nazov: "Napiekli sme 400 vianočiek pre seniorov", popis: "nočná zmena · celý tím pekárne", mesto: "Bratislava", kedy: "Včera", foto: F.pecivo, dobrovolnici: 12 },
-    { id: "fs-vydajna", nazov: "96 hodín vo výdajni potravín", popis: "zamestnanci namiesto zmeny", mesto: "Bratislava", kedy: "28. 9.", foto: F.dobrovolnici, dobrovolnici: 12 },
-    { id: "fs-pecivo-jedalen", nazov: "Pečivo do jedálne každé ráno", popis: "40 raňajok denne · celý september", mesto: "Trenčín", kedy: "30. 9.", foto: F.pekaren, dobrovolnici: 3 },
-    { id: "fs-strecha", nazov: "Doplatili sme krytinu Horváthovcom", popis: "dorovnanie zbierky 1 : 1", mesto: "Trenčín", kedy: "29. 9.", foto: F.strecha },
-    { id: "fs-pec", nazov: "Kúpili sme pec do jedálne na Hlavnej", popis: "montáž aj zaškolenie", mesto: "Prešov", kedy: "12. 9.", foto: F.polievka, dobrovolnici: 4 },
-    { id: "fs-florbal", nazov: "18 detí hrá florbal zadarmo", popis: "celá sezóna · tréningy aj výstroj", mesto: "Prešov", kedy: "5. 9.", foto: F.sport },
-    { id: "fs-ihrisko", nazov: "Otvorili sme ihrisko na Račianskej", popis: "s deťmi zo sídliska", mesto: "Bratislava", kedy: "1. 7.", foto: F.komunita, dobrovolnici: 9 },
+    { id: "fs-vianocky", nazov: "Napiekli sme 400 vianočiek pre seniorov", popis: "nočná zmena · celý tím pekárne", mesto: "Bratislava", kedy: "Včera", foto: F.pecivo, dobrovolnici: 12, d: "2.", m: "OKT", rok: 2026 },
+    { id: "fs-vydajna", nazov: "96 hodín vo výdajni potravín", popis: "zamestnanci namiesto zmeny", mesto: "Bratislava", kedy: "28. 9.", foto: F.dobrovolnici, dobrovolnici: 12, d: "28.", m: "SEP", rok: 2026 },
+    { id: "fs-pecivo-jedalen", nazov: "Pečivo do jedálne každé ráno", popis: "40 raňajok denne · celý september", mesto: "Trenčín", kedy: "30. 9.", foto: F.pekaren, dobrovolnici: 3, d: "30.", m: "SEP", rok: 2026 },
+    { id: "fs-strecha", nazov: "Doplatili sme krytinu Horváthovcom", popis: "dorovnanie zbierky 1 : 1", mesto: "Trenčín", kedy: "29. 9.", foto: F.strecha, d: "29.", m: "SEP", rok: 2026 },
+    { id: "fs-pec", nazov: "Kúpili sme pec do jedálne na Hlavnej", popis: "montáž aj zaškolenie", mesto: "Prešov", kedy: "12. 9.", foto: F.polievka, dobrovolnici: 4, d: "12.", m: "SEP", rok: 2026 },
+    { id: "fs-florbal", nazov: "18 detí hrá florbal zadarmo", popis: "celá sezóna · tréningy aj výstroj", mesto: "Prešov", kedy: "5. 9.", foto: F.sport, d: "5.", m: "SEP", rok: 2026 },
+    { id: "fs-ihrisko", nazov: "Otvorili sme ihrisko na Račianskej", popis: "s deťmi zo sídliska", mesto: "Bratislava", kedy: "1. 7.", foto: F.komunita, dobrovolnici: 9, d: "1.", m: "JÚL", rok: 2026 },
   ],
   oznamy: [
     { id: "fo-pecivo", druh: "vyzva", nadpis: "Hľadáme vodiča na rozvoz pečiva do výdajní", stitok: "VÝZVA NA SÚRNU POMOC", text: "Do 10. 10. · Račianska 4, ráno 5 – 8", mesto: "Bratislava", den: "10.", mesiac: "OKT", tlacidlo: "Prihlásiť sa", pod: "4 ľudia už pomáhajú" },
@@ -355,6 +357,7 @@ const FIRMA: TestProfil = {
     { id: "fd6", meno: "Anonymný darca", iniciala: "A", mesto: "Prešov", naCo: "Fond Dobroty", suma: 50, pred: "pred 3 h" },
   ],
   titulka: U("photo-1509440159596-0249088772ff", 1200),
+  onas: { nadpis: "Pečieme od roku 2009", text: "Pečieme od roku 2009. Časť z každého bochníka ide tam, kde je najbližšie treba: dorovnávame zbierky charít, vozíme pečivo do jedální a naši ľudia pomáhajú namiesto zmeny.", oblasti: ["Deti a šport", "Seniori", "Komunita v regióne"] },
 };
 
 // ============================================================
