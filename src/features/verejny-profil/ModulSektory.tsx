@@ -17,7 +17,8 @@ type Kde = "mesto" | "najviac";
 export function ModulSektory({ profil, lok, domace }: { profil: TestProfil; lok: Lokalita; domace: Mesto }) {
   const mesto = mestoTextu(lok, domace);
   const dlazdice: (TestSektor & { centralna?: boolean })[] = [{ ...profil.centralna, centralna: true }, ...profil.sektory];
-  const [otv, setOtv] = useState<string>(dlazdice[0].id);
+  // KARTA 43 ZMENA: modul je zbalený — dlaždice bez platby, platba sa rozbalí až po ťuku na dlaždicu (ďalší ťuk ju zbalí)
+  const [otv, setOtv] = useState<string | null>(null);
   return (
     <div style={{ ...karta, padding: 16, display: "grid", gap: 14 }}>
       <div>
@@ -28,7 +29,7 @@ export function ModulSektory({ profil, lok, domace }: { profil: TestProfil; lok:
         {dlazdice.map((s) => {
           const vybrane = otv === s.id;
           return (
-            <button key={s.id} {...pressable()} onClick={() => setOtv(s.id)} aria-pressed={vybrane}
+            <button key={s.id} {...pressable()} onClick={() => setOtv((o) => (o === s.id ? null : s.id))} aria-expanded={vybrane}
               style={{ textAlign: "left", minHeight: 44, padding: 12, borderRadius: 14, cursor: "pointer",
                 background: vybrane ? "var(--gSoft)" : "var(--field)",
                 border: `1px solid ${vybrane ? "var(--gBd)" : "var(--cardBd)"}` }}>
@@ -39,7 +40,7 @@ export function ModulSektory({ profil, lok, domace }: { profil: TestProfil; lok:
           );
         })}
       </div>
-      <Zvacsena s={dlazdice.find((d) => d.id === otv)!} profil={profil} lok={lok} domace={domace} />
+      {otv && <Zvacsena key={otv} s={dlazdice.find((d) => d.id === otv)!} profil={profil} lok={lok} domace={domace} />}
     </div>
   );
 }

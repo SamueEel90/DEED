@@ -11,14 +11,12 @@ import {
   SkutokKarta, StitOkno, ZbierkaKarta, karta, nadpisSekcie, useDomaceMesto, useMobil,
 } from "./casti";
 import { ModulSektory } from "./ModulSektory";
-import { ZbierkaModul } from "@/features/zbierka/ZbierkaModul";
-import { naZbierkaData } from "./casti";
 
 type Filter = "vsetko" | "zbierky" | "skutky" | "iskry" | "oznamy" | "praca";
 const FILTRE: [Filter, string][] = [["vsetko", "Všetko"], ["zbierky", "Zbierky"], ["skutky", "Skutky"], ["iskry", "Iskry"], ["oznamy", "Oznamy"], ["praca", "Práca"]];
 
-export function Kronika({ profil, rezim, onDetail, onBack }: {
-  profil: TestProfil; rezim: "vsade" | "detail";
+export function Kronika({ profil, onDetail, onBack }: {
+  profil: TestProfil;
   onDetail: (z: TestZbierka) => void; onBack: () => void;
 }) {
   const mobil = useMobil();
@@ -75,8 +73,7 @@ export function Kronika({ profil, rezim, onDetail, onBack }: {
         <div style={{ fontSize: 13, color: "var(--ink3)" }}>{bezice.length} zbierky · {oznamy.length} oznamy · {praca.length} ponuky práce</div>
       </div>
       {(filter === "vsetko" || filter === "zbierky") && bezice.filter((z) => ok(z.nazov)).map((z, i) => (
-        <ZbierkaKarta key={z.id} z={z} velka={i === 0} onOtvor={rezim === "detail" ? () => onDetail(z) : undefined}
-          podMnou={rezim === "vsade" ? <VlozenyModul z={z} profil={profil} /> : undefined} />
+        <ZbierkaKarta key={z.id} z={z} velka={i === 0} onOtvor={() => onDetail(z)} />
       ))}
       {(filter === "vsetko" || filter === "oznamy") && oznamy.filter((o) => ok(o.nadpis)).map((o) => <OznamRiadok key={o.id} o={o} />)}
       {(filter === "vsetko" || filter === "praca") && praca.filter((p) => ok(p.nazov)).map((p) => <PracaRiadok key={p.id} p={p} />)}
@@ -90,8 +87,8 @@ export function Kronika({ profil, rezim, onDetail, onBack }: {
     <div style={{ display: "grid", gap: 20 }}>
       {teraz}
       <Rok rok="2026" cisla={[["18 940 €", "vyzbierané"], ["5 z 6", "zbierok doložených"], ["31", "skutkov"], ["486", "darcov"]]}>
-        {rok2026.map((z) => <ZbierkaKarta key={z.id} z={z} podMnou={rezim === "vsade" ? <VlozenyModul z={z} profil={profil} /> : undefined} />)}
-        {skutky2026.map((sk) => <SkutokKarta key={sk.id} s={sk} podMnou={rezim === "vsade" ? <VlozenySkutokModul s={sk} profil={profil} /> : undefined} />)}
+        {rok2026.map((z) => <ZbierkaKarta key={z.id} z={z} onOtvor={() => onDetail(z)} />)}
+        {skutky2026.map((sk) => <SkutokKarta key={sk.id} s={sk} />)}
         {!rok2026.length && !skutky2026.length && <Prazdne />}
       </Rok>
     </div>
@@ -148,22 +145,6 @@ export function Kronika({ profil, rezim, onDetail, onBack }: {
   );
 }
 
-// vsade: celý ZbierkaModul vložený pod kartou (bez hlavičky, galérie a DEV panela)
-function VlozenyModul({ z, profil }: { z: TestZbierka; profil: TestProfil }) {
-  return (
-    <div style={{ marginTop: 12, borderTop: "1px solid var(--cardBd)", paddingTop: 6 }}>
-      <ZbierkaModul vlozeny zbierka={naZbierkaData(z, profil)} miesto="charita" zoStrankyOrg onBack={() => {}} />
-    </div>
-  );
-}
-// vsade: podpora skutku — Help modul (drobná podpora, vlastná suma, Podporiť DEED+)
-function VlozenySkutokModul({ s, profil }: { s: { id: string; nazov: string }; profil: TestProfil }) {
-  return (
-    <div style={{ borderTop: "1px solid var(--cardBd)", paddingTop: 6 }}>
-      <ZbierkaModul vlozeny zbierka={{ id: s.id, nazov: s.nazov, organizacia: { meno: profil.meno, typ: "charita", mesto: profil.mesto, cisla: [], stit: profil.stit as never } }} miesto="deed" zoStrankyOrg onBack={() => {}} />
-    </div>
-  );
-}
 
 function Rok({ rok, cisla, children }: { rok: string; cisla: [string, string][]; children: React.ReactNode }) {
   return (

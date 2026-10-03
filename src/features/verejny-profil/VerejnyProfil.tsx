@@ -1,11 +1,11 @@
 // KARTA 43 · verejné profily (test). Jedna obrazovka, návrh podľa typu:
 //   charita → Kronika · firma → Výklad (v2) · tvorca → Pirát (v4).
-// Režim modulu (všade / len v detaile) je DEV prepínač v Mojom profile (rezimModulu()).
+// KARTA 43 ZMENA: režim „vsade" zrušený — platobný modul sa otvorí len po ťuku na zbierku/skutok.
 // VerejnyProfilView sa dá vložiť priamo (feed, „Stránka organizácie", adresár),
 // VerejnyProfilHost je celoobrazovková vrstva otváraná zo store (tlačidlo v Správe, QR).
 import { useState } from "react";
 import { ZbierkaModul } from "@/features/zbierka/ZbierkaModul";
-import { najdiTestProfil, rezimModulu, type TestProfil, type TestZbierka } from "@/lib/testProfily";
+import { najdiTestProfil, type TestProfil, type TestZbierka } from "@/lib/testProfily";
 import { useVerejnyProfilOtvoreny, verejnyProfilKluc, zavriVerejnyProfil } from "./otvor";
 import { naZbierkaData } from "./casti";
 import { Kronika } from "./Kronika";
@@ -17,7 +17,6 @@ export function VerejnyProfilView({ kluc, onBack }: { kluc: string; onBack: () =
   const profil = najdiTestProfil(kluc);
   const [detail, setDetail] = useState<TestZbierka | null>(null);
   if (!profil) return null;
-  const rezim = rezimModulu();
 
   if (detail) return (
     <div className="sc-tokeny" data-stit={profil.stit.toLowerCase()} style={{ background: "var(--bg)", minHeight: "100%" }}>
@@ -27,9 +26,9 @@ export function VerejnyProfilView({ kluc, onBack }: { kluc: string; onBack: () =
     </div>
   );
 
-  if (profil.typ === "firma") return <Vyklad profil={profil} rezim={rezim} onDetail={setDetail} onBack={onBack} />;
-  if (profil.typ === "tvorca") return <Pirat profil={profil} rezim={rezim} onDetail={setDetail} onBack={onBack} />;
-  return <Kronika profil={profil} rezim={rezim} onDetail={setDetail} onBack={onBack} />;
+  if (profil.typ === "firma") return <Vyklad profil={profil} onDetail={setDetail} onBack={onBack} />;
+  if (profil.typ === "tvorca") return <Pirat profil={profil} onDetail={setDetail} onBack={onBack} />;
+  return <Kronika profil={profil} onDetail={setDetail} onBack={onBack} />;
 }
 
 /** celoobrazovková vrstva otváraná zo store (otvorVerejnyProfil) — tlačidlo v Správe, QR, zdieľaný odkaz */

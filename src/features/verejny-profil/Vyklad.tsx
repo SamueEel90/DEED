@@ -5,19 +5,18 @@ import { useMemo, useRef, useState } from "react";
 import { pressable } from "@/components/pressable";
 import { StitObr } from "@/components/stit";
 import type { StitLevel } from "@/components/stit";
-import { ZbierkaModul } from "@/features/zbierka/ZbierkaModul";
 import { eur, vLokalite, type Lokalita, type Mesto, type TestProfil, type TestZbierka } from "@/lib/testProfily";
 import {
   IkonaSipka, IkonaZdielat, LokalitaPrepinac, NazivoBlok, Overenie, OznamRiadok, PracaRiadok,
-  SkutokKarta, StitOkno, ZbierkaKarta, karta, nadpisSekcie, naZbierkaData, useDomaceMesto, useMobil, vMeste,
+  SkutokKarta, StitOkno, ZbierkaKarta, karta, nadpisSekcie, useDomaceMesto, useMobil, vMeste,
 } from "./casti";
 import { ModulSektory } from "./ModulSektory";
 
 type Tab = "zbierky" | "oznamy" | "doklady" | "skutky" | "historia" | "onas";
 const TABY: [Tab, string][] = [["zbierky", "Zbierky"], ["oznamy", "Oznamy"], ["doklady", "Sľúbili a splnili"], ["skutky", "Skutky"], ["historia", "História"], ["onas", "O nás"]];
 
-export function Vyklad({ profil, rezim, onDetail, onBack }: {
-  profil: TestProfil; rezim: "vsade" | "detail"; onDetail: (z: TestZbierka) => void; onBack: () => void;
+export function Vyklad({ profil, onDetail, onBack }: {
+  profil: TestProfil; onDetail: (z: TestZbierka) => void; onBack: () => void;
 }) {
   const mobil = useMobil();
   const domace = useDomaceMesto(profil);
@@ -32,18 +31,12 @@ export function Vyklad({ profil, rezim, onDetail, onBack }: {
   const bezice = zbierky.filter((z) => z.stav !== "ukoncena");
   const dolozene = zbierky.filter((z) => z.stav === "ukoncena");
 
-  const embed = (z: TestZbierka) => rezim === "vsade"
-    ? <div style={{ marginTop: 12, borderTop: "1px solid var(--cardBd)", paddingTop: 6 }}><ZbierkaModul vlozeny zbierka={naZbierkaData(z, profil)} miesto="charita" zoStrankyOrg onBack={() => {}} /></div>
-    : undefined;
-  const embedSkutok = (id: string, nazov: string) => rezim === "vsade"
-    ? <div style={{ borderTop: "1px solid var(--cardBd)", paddingTop: 6 }}><ZbierkaModul vlozeny zbierka={{ id, nazov, organizacia: { meno: profil.meno, typ: "charita", mesto: profil.mesto, cisla: [], stit: profil.stit as never } }} miesto="deed" zoStrankyOrg onBack={() => {}} /></div>
-    : undefined;
 
   const sekcia = (() => {
     switch (tab) {
       case "zbierky": return (
         <Sekcia titulok="Teraz potrebujeme">
-          {bezice.map((z, i) => <ZbierkaKarta key={z.id} z={z} velka={i === 0} onOtvor={rezim === "detail" ? () => onDetail(z) : undefined} podMnou={embed(z)} />)}
+          {bezice.map((z, i) => <ZbierkaKarta key={z.id} z={z} velka={i === 0} onOtvor={() => onDetail(z)} />)}
           {!bezice.length && <Prazdne />}
         </Sekcia>
       );
@@ -56,13 +49,13 @@ export function Vyklad({ profil, rezim, onDetail, onBack }: {
       );
       case "doklady": return (
         <Sekcia titulok="Sľúbili sme. Splnili sme.">
-          {dolozene.map((z) => <ZbierkaKarta key={z.id} z={z} velka onOtvor={rezim === "detail" ? () => onDetail(z) : undefined} podMnou={embed(z)} />)}
+          {dolozene.map((z) => <ZbierkaKarta key={z.id} z={z} velka onOtvor={() => onDetail(z)} />)}
           {!dolozene.length && <Prazdne />}
         </Sekcia>
       );
       case "skutky": return (
         <Sekcia titulok="Takto sme pomohli">
-          {skutky.map((s) => <SkutokKarta key={s.id} s={s} podMnou={embedSkutok(s.id, s.nazov)} />)}
+          {skutky.map((s) => <SkutokKarta key={s.id} s={s} />)}
           {!skutky.length && <Prazdne />}
         </Sekcia>
       );

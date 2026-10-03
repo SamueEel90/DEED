@@ -155,7 +155,3 @@ html.dark .deed-platba .seg-on { background: #2F3A27; color: var(--d-ink); }
 @media (prefers-reduced-motion: reduce) { .cd-ziara { animation: none; } }
 html.obmedz-anim .cd-ziara { animation: none; }
 
-/* KARTA 43 · vložený modul (?modul=vsade) — vždy jeden stĺpec, plná šírka karty, bez sticky a bez vnútorného paddingu */
-.zb-obsah--vlozeny { display: flex !important; flex-direction: column !important; grid-template-columns: none !important; max-width: none !important; width: 100% !important; margin: 0 !important; padding: 0 !important; gap: 0 !important; }
-.zb-obsah--vlozeny .zb-pravy { position: static !important; top: auto !important; }
-.zb-obsah--vlozeny .zb-pol { padding-left: 0 !important; padding-right: 0 !important; }

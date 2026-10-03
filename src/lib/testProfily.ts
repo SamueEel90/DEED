@@ -403,17 +403,6 @@ export function vLokalite<T extends { mesto: Mesto }>(zoznam: T[], lok: Lokalita
 /** mesto, ktoré sa použije v texte modulu — pri „Celé Slovensko" sa mesto nepíše */
 export const mestoTextu = (lok: Lokalita, domace: Mesto): Mesto => (lok === "Celé Slovensko" ? domace : lok);
 
-// ---- režim platobného modulu (DEV prepínač v Mojom profile, nie v adrese) ----
-export type RezimModulu = "vsade" | "detail";
-const KLUC_REZIM = "deed.dev.verejnyModul";
-/** „všade" (modul pri každej zbierke, predvolené) · „detail" (len v detaile) */
-export function rezimModulu(): RezimModulu {
-  try { return localStorage.getItem(KLUC_REZIM) === "detail" ? "detail" : "vsade"; } catch { return "vsade"; }
-}
-export function nastavRezimModulu(r: RezimModulu) {
-  try { localStorage.setItem(KLUC_REZIM, r); } catch { /* LS */ }
-}
-
 // ---- čísla ----
 export const eur = (n: number) => `${n.toLocaleString("sk-SK")} €`;
 export const pct = (vyzbierane: number, ciel?: number) => (ciel && ciel > 0 ? Math.min(100, Math.round((vyzbierane / ciel) * 100)) : 0);

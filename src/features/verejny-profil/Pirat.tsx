@@ -13,8 +13,8 @@ import {
 } from "./casti";
 import { ModulSektory } from "./ModulSektory";
 
-export function Pirat({ profil, rezim, onDetail, onBack }: {
-  profil: TestProfil; rezim: "vsade" | "detail"; onDetail: (z: TestZbierka) => void; onBack: () => void;
+export function Pirat({ profil, onDetail, onBack }: {
+  profil: TestProfil; onDetail: (z: TestZbierka) => void; onBack: () => void;
 }) {
   const mobil = useMobil();
   const domace = useDomaceMesto(profil);
@@ -34,7 +34,7 @@ export function Pirat({ profil, rezim, onDetail, onBack }: {
 
   const obr = [
     <ObrTvar key="tvar" profil={profil} lok={lok} mestoText={mestoText} />,
-    <ObrPotreby key="potreby" zbierky={zbierky} mestoText={mestoText} rezim={rezim} onDetail={onDetail} />,
+    <ObrPotreby key="potreby" zbierky={zbierky} mestoText={mestoText} onDetail={onDetail} />,
     <ObrDokaz key="dokaz" dolozene={dolozene} mestoText={mestoText} />,
     <ObrLudia key="ludia" darcovia={darcovia} mestoText={mestoText} onPodpor={() => (mobil ? setHarok(true) : null)} />,
     <ObrOznamy key="oznamy" oznamy={oznamy} praca={praca} mestoText={mestoText} />,
@@ -91,7 +91,7 @@ export function Pirat({ profil, rezim, onDetail, onBack }: {
       {!mobil && (
         <div style={{ width: 440, flexShrink: 0, borderLeft: "1px solid var(--cardBd)", background: "var(--panel)", overflowY: "auto", padding: 18 }}>
           <ModulSektory profil={profil} lok={lok} domace={domace} />
-          {rezim === "detail" && zbierky[0] && (
+          {zbierky[0] && (
             <button {...pressable()} onClick={() => onDetail(zbierky[0])} style={{ marginTop: 14, width: "100%", minHeight: 44, borderRadius: 12, border: "1px solid var(--cardBd)", background: "var(--card)", color: "var(--ink2)", fontSize: 13.5, fontWeight: 700, cursor: "pointer" }}>Chceš vidieť každý doklad? Vyber konkrétnu zbierku ›</button>
           )}
         </div>
@@ -134,7 +134,7 @@ function ObrTvar({ profil, lok, mestoText }: { profil: TestProfil; lok: Lokalita
 }
 
 // ---- obrazovka 2 · čo teraz potrebujú ----
-function ObrPotreby({ zbierky, mestoText, rezim, onDetail }: { zbierky: TestZbierka[]; mestoText: string; rezim: "vsade" | "detail"; onDetail: (z: TestZbierka) => void }) {
+function ObrPotreby({ zbierky, mestoText, onDetail }: { zbierky: TestZbierka[]; mestoText: string; onDetail: (z: TestZbierka) => void }) {
   const prva = zbierky[0];
   return (
     <div style={{ display: "grid", gap: 14 }}>
