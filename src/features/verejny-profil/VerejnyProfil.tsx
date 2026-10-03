@@ -9,6 +9,7 @@ import { useVerejnyProfilOtvoreny, verejnyProfilKluc, verejnyProfilRezim, zavriV
 import { naZbierkaData } from "./casti";
 import { Kronika } from "./Kronika";
 import { Vyklad } from "./Vyklad";
+import { Pirat } from "./Pirat";
 
 export function VerejnyProfilHost() {
   const otv = useVerejnyProfilOtvoreny();
@@ -39,6 +40,6 @@ function VerejnyProfilObsah({ profil, rezim, onDetail, onBack }: {
   profil: TestProfil; rezim: "vsade" | "detail"; onDetail: (z: TestZbierka) => void; onBack: () => void;
 }) {
   if (profil.typ === "firma") return <Vyklad profil={profil} rezim={rezim} onDetail={onDetail} onBack={onBack} />;
-  // tvorca (Pirát) zatiaľ cez Kroniku, kým nie je hotový
+  if (profil.typ === "tvorca") return <Pirat profil={profil} rezim={rezim} onDetail={onDetail} onBack={onBack} />;
   return <Kronika profil={profil} rezim={rezim} onDetail={onDetail} onBack={onBack} />;
 }
