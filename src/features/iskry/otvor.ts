@@ -27,7 +27,10 @@ export function useIskryOtvorene(): boolean {
 
 // ---- KARTA 41b · Pridať Iskru (jeden diel pre človeka aj charitu, otvára sa zo zeleného +) ----
 let pridat = false;
-export function otvorPridatIskru() { pridat = true; zmena(); }
+let pridatAko: string | null = null;
+/** ako = kľúč stránky (napr. zo Správy charity); bez neho rozhoduje „Konáš ako" */
+export function otvorPridatIskru(ako?: string) { pridat = true; pridatAko = ako ?? null; zmena(); }
+export const pridatIskruAko = (): string | null => pridatAko;
 export function zavriPridatIskru() { pridat = false; zmena(); }
 export function usePridatIskruOtvorene(): boolean {
   useSyncExternalStore((f) => { posluchaci.add(f); return () => posluchaci.delete(f); }, () => verzia);

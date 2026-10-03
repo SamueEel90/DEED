@@ -27,7 +27,7 @@ import { PercentaRetaze } from "@/features/zbierka/RetazDobra";
 import PodrzTlacidlo from "@/features/zbierka/PodrzTlacidlo";
 import { potvrditTuknutim } from "@/features/zbierka/Platba";
 import { otvorPridatSkutok } from "@/features/skutok/otvor";
-import { otvorIskry, usePridatIskruOtvorene, zavriPridatIskru, otvorPridatIskru } from "./otvor";
+import { otvorIskry, usePridatIskruOtvorene, zavriPridatIskru, otvorPridatIskru, pridatIskruAko } from "./otvor";
 import { ZdielatIskru } from "./Iskry";
 import "@/styles/sprava.css";
 
@@ -67,7 +67,8 @@ function PridatIskru() {
   const ja = usePouzivatel();
   const lok = useLokalita();
   const st = useMojeStranky();
-  const stranka = UKAZKOVE_STRANKY.find((x) => x.k === st.ako && x.typ === "charita") ?? null;
+  const ako = pridatIskruAko() ?? st.ako; // zo Správy charity vždy za charitu
+  const stranka = UKAZKOVE_STRANKY.find((x) => x.k === ako && x.typ === "charita") ?? null;
   const org = !!stranka;
   const o = (ty: string, vy: string) => (org ? vy : ty);
   const autor = org ? stranka!.n : `${ja.meno || "Ty"}${ja.priezvisko ? ` ${ja.priezvisko[0].toUpperCase()}.` : ""}`;

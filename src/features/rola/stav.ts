@@ -174,7 +174,9 @@ export type PolozkaSpravy =
   // KARTA 36: pobočky (zatiaľ bez obrazovky) a nástroje firmy
   | "pobocky" | "dorovnavanie" | "zamestnanci" | "esg" | "firemnyqr"
   // OPRAVY 118: Pridať skutok v Nástrojoch (od Zadarmo, bez limitu)
-  | "pridatSkutok";
+  | "pridatSkutok"
+  // KARTA 42: Kalendár — na telefóne z hlavičky do Nástroje a výkazy
+  | "kalendar";
 export const POVOLENIA_CHARITY: Record<PolozkaSpravy, { od: Program }> = {
   zbierky: { od: "zadarmo" }, centralna: { od: "P1" }, dorovnanie: { od: "P1" }, segment: { od: "P2" }, materialne: { od: "P3" },
   skutky: { od: "zadarmo" }, video: { od: "zadarmo" }, oznamy: { od: "P1" }, nastenka: { od: "P1" }, upoutavky: { od: "P2" },
@@ -182,6 +184,7 @@ export const POVOLENIA_CHARITY: Record<PolozkaSpravy, { od: Program }> = {
   qr: { od: "zadarmo" }, sektorqr: { od: "P2" }, embed: { od: "P1" }, prednost: { od: "P3" }, statistiky: { od: "zadarmo" }, vypis: { od: "zadarmo" }, export: { od: "P3" },
   pobocky: { od: "zadarmo" }, dorovnavanie: { od: "zadarmo" }, zamestnanci: { od: "zadarmo" }, esg: { od: "zadarmo" }, firemnyqr: { od: "zadarmo" },
   pridatSkutok: { od: "zadarmo" },
+  kalendar: { od: "zadarmo" },
 };
 /** má charita s týmto tierom položku? (program) */
 export const maPovolenie = (id: PolozkaSpravy, tier: Tier): boolean => tier >= PROGRAM_TIER[POVOLENIA_CHARITY[id].od];
