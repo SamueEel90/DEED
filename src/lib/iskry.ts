@@ -53,13 +53,13 @@ export const refIskry = (v: Iskra) => v.zbierka?.id ?? `iskra-${v.id}`;
 
 // ---- mock prúd (prototyp) ----
 export const ISKRY_MOCK: Iskra[] = [
-  { id: "emka", src: "/video/iskry/husle.mp4", druh: 1, autor: "Emka, 6 rokov", kto: "Juh · Trenčín", ini: "EM", org: false, popis: "Vivaldi, Jar. Husle mi už sú malé, cvičím na sesterkiných.",
+  { id: "emka", src: "/video/iskry/husle.mp4", druh: 1, autor: "Emka, 6 rokov", kto: "Juh · Trenčín", ini: "EM", org: false, popis: "Vivaldi, Jar. Husle mi už sú malé, cvičím na sesterkiných. Pani učiteľka hovorí, že by som mala mať celé, nie trištvrťové. Cvičím každý deň po škole, aj v sobotu. Na jar hrám na koncerte v Piaristickom kostole. Ďakujem každému, kto mi pomôže.",
     zbierka: { id: "iskra-zb-husle", nazov: "Nové husle pre Emku", pozn: "Zbierka pri videu · 100 % na husle" }, iskry: 2140, bg: "linear-gradient(160deg,#8A5A2B,#2B1A0E)" },
   { id: "balony", src: "/video/iskry/balony.mp4", druh: 4, autor: "Svetlo pomoci o.z.", kto: "Charita · Trenčín", ini: "SP", org: true, popis: "Súťaž v nafukovaní balónov s deťmi z centra. Vyhral Maťo, balón mu ulietel aj s ním.",
     iskry: 860, bg: "url('/img/sprava/dom.jpg') center/cover no-repeat #3a3530" },
-  { id: "hrasko", src: "/video/iskry/prva-pomoc.mp4", druh: 2, autor: "MUDr. Hraško", kto: "Tvorca · lekár · Trenčín", ini: "MH", org: false, popis: "Ako pomôcť človeku, ktorý sa dusí. 40 sekúnd, ktoré môžu zachrániť život.",
+  { id: "hrasko", src: "/video/iskry/prva-pomoc.mp4", druh: 2, autor: "MUDr. Hraško", kto: "Tvorca · lekár · Trenčín", ini: "MH", org: false, popis: "Ako pomôcť človeku, ktorý sa dusí. 40 sekúnd, ktoré môžu zachrániť život. Najprv sa opýtaj, či môže kašľať. Ak nie, päť úderov medzi lopatky a potom päť stlačení nad pupkom. Opakuj, kým predmet nevyjde alebo kým nepríde záchranka. Pri dieťati do roka je postup iný, ukážem ho v ďalšom videu.",
     iskry: 5310, bg: "linear-gradient(160deg,#3D6B8E,#1D3A50)" },
-  { id: "florbal", src: "/video/iskry/florbal.mp4", druh: 3, autor: "TJ Sokol Opatová", kto: "Šport · Opatová", ini: "TJ", org: true, popis: "Žiačky vyhrali kraj vo florbale. Na majstrovstvá potrebujeme dopravu.",
+  { id: "florbal", src: "/video/iskry/florbal.mp4", druh: 3, autor: "TJ Sokol Opatová", kto: "Šport · Opatová", ini: "TJ", org: true, popis: "Žiačky vyhrali kraj vo florbale. Na majstrovstvá potrebujeme dopravu. Turnaj je v Žiline a trvá tri dni.\nAutobus pre 16 hráčok a dvoch trénerov stojí 640 €. Ubytovanie a stravu nám platí zväz. Každé euro navyše pôjde na nové dresy.",
     zbierka: { id: "iskra-zb-autobus", nazov: "Autobus na majstrovstvá", pozn: "Zbierka pri videu" }, iskry: 420, bg: "linear-gradient(160deg,#4E7D37,#22351A)" },
   { id: "vah", src: "/video/iskry/skutok.mp4", druh: 5, autor: "Jana K.", kto: "Juh · skutok overený", ini: "JK", org: false, popis: "S deťmi sme vyčistili breh Váhu. 14 vriec odpadu a jeden starý bicykel.",
     zbierka: { id: "iskra-zb-nina", nazov: "Invalidný vozík pre Ninu", pozn: "Reťaz dobra · 50 % ide na zbierku" }, iskry: 98, bg: "url('/img/sprava/chrbtica.jpg') center/cover no-repeat #3a3530" },
