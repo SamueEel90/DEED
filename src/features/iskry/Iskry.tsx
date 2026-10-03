@@ -1,7 +1,7 @@
 // ============================================================
 // KARTA 41 · Iskry — centrálny prúd (časť 1). Prototyp: „Iskra centralna mobil".
 // Videá do 45 s na celú výšku, posun hore / dole (scroll-snap, vždy jedno celé, hrá len viditeľné).
-// Druh: Všetko · Talent · Vedomosti · Šport · Zábava · Skutky. Filter oblastí pripravený, skrytý.
+// Druh: Všetko · Talent · Vedomosti · Šport · Zábava · Skutky · Zbierky (OPRAVY 135: Zbierky sa nemiešajú, len po ťuku). Filter oblastí pripravený, skrytý.
 // Pravý stĺpec: Darcovia · Iskra (= páči sa mi) · Darovať · Zdieľať. Dvojitý ťuk = Iskra (len zapne).
 // Darovať: mikro dar EURC / DeeD, SEPA, karta, vlastná suma — rýchly dar 1 ťukom len prihlásený
 // s uloženou platbou, inak bežné platobné okno. Overujem / Namietam len prihlásený.
@@ -17,8 +17,10 @@ import { jeNeregistrovany, sledujDarcu } from "@/lib/devDarca";
 import { darcoviaPre, sucetDarov, pridajDar, pridajCudziDarMock, identitaDarcu, zobrazenaSuma, relCas, useZmenyDarov, type DarRiadok, type KanalDaru } from "@/lib/darcovia";
 import {
   ISKRY_CFG, iskryVsetky, odkazIskry, DOVODY_NAMIETKY, refIskry, useZmenyIskier, pocetIskier, mojaIskra, prepniIskru, zapniIskru,
-  sledujemAutora, prepniSledovanie, overujemIskru, prepniOverenie, namietkaIskry, podajNamietku, type Iskra,
+  sledujemAutora, prepniSledovanie, overujemIskru, prepniOverenie, namietkaIskry, podajNamietku, iskryVDruhu, zbierkaIskry, type Iskra,
 } from "@/lib/iskry";
+import { ZbierkaModul } from "@/features/zbierka/ZbierkaModul";
+import { naZbierkaData } from "@/features/verejny-profil/casti";
 import { PlatobneOkno } from "@/features/zbierka/Platba";
 import type { KanalPlatby } from "@/features/zbierka/Sumy";
 import { useIskryOtvorene, zavriIskry, startIskry, zabudniStartIskry } from "./otvor";
@@ -40,7 +42,7 @@ const IK = {
   iskra: "M12 2l2.2 6.8L21 11l-6.8 2.2L12 20l-2.2-6.8L3 11l6.8-2.2z",
   dar: "M20 12v9H4v-9M2 7h20v5H2zM12 21V7M12 7H7.5a2.5 2.5 0 1 1 0-5C11 2 12 7 12 7zM12 7h4.5a2.5 2.5 0 1 0 0-5C13 2 12 7 12 7z",
   zdielat: "M4 12v8h16v-8M16 6l-4-4-4 4M12 2v14",
-  spat: "M15 18l-6-6 6-6", celaOn: "M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5", celaOff: "M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5", hraj: "M8 5l12 7-12 7z", hore: "M6 15l6-6 6 6", dole: "M6 9l6 6 6-6",
+  spat: "M15 18l-6-6 6-6", celaOn: "M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5", celaOff: "M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5", hraj: "M8 5l12 7-12 7z", plus: "M12 5v14M5 12h14", fajka: "M5 12l5 5 9-10", hore: "M6 15l6-6 6 6", dole: "M6 9l6 6 6-6",
 };
 const eur = (n: number) => `${n.toLocaleString("sk-SK", { maximumFractionDigits: 2 })} €`;
 const cis = (n: number) => n.toLocaleString("sk-SK", { minimumFractionDigits: n % 1 ? 2 : 0, maximumFractionDigits: 2 });
@@ -78,12 +80,16 @@ function IskryPrud() {
   useZmenyIskier(); useZmenyDarov();
   const [registrovany, setRegistrovany] = useState(() => !jeNeregistrovany());
   useEffect(() => sledujDarcu(() => setRegistrovany(!jeNeregistrovany())), []);
-  const [druh, setDruh] = useState(0);
+  // odkaz na video druhu Zbierky otvorí prúd rovno v Zbierkach
+  const [druh, setDruh] = useState(() => { const s = startIskry(); return s && iskryVsetky().find((x) => x.id === s)?.druh === ISKRY_CFG.druhZbierky ? ISKRY_CFG.druhZbierky : 0; });
   const [oblast, setOblast] = useState(3); // pripravené (Krajina = celé Slovensko), skryté kým nie je obsah
   // odkaz /iskra/{id}: prúd začne na tomto videu
   const [startId] = useState(() => startIskry());
   useEffect(() => { zabudniStartIskry(); }, []);
-  const [idx, setIdx] = useState(() => Math.max(0, startId ? iskryVsetky().findIndex((x) => x.id === startId) : 0));
+  const [idx, setIdx] = useState(() => Math.max(0, startId ? iskryVDruhu(druh).findIndex((x) => x.id === startId) : 0));
+  // OPRAVY 135: zbierka pri videu (ťuk na kartu / Darovať) a profil firmy (Ďakujeme firme) — Späť vráti do prúdu
+  const [zbOkno, setZbOkno] = useState<Iskra | null>(null);
+  const [orgProfil, setOrgProfil] = useState<string | null>(null);
   const [profil, setProfil] = useState<Iskra | null>(null);
   const [qrVelky, setQrVelky] = useState<Iskra | null>(null);
   const [sheet, setSheet] = useState<Sheet>(null);
@@ -130,13 +136,13 @@ function IskryPrud() {
     f(); const ro = new ResizeObserver(f); [st, hl, r].forEach((e) => ro.observe(e)); return () => ro.disconnect();
   }, [druh, mierka]);
   useLayoutEffect(() => { const el = sc.current; if (el && idx > 0) el.scrollTop = idx * el.clientHeight; }, []); // eslint-disable-line react-hooks/exhaustive-deps
-  const list = iskryVsetky().filter((v) => druh === 0 || v.druh === druh);
+  const list = iskryVDruhu(druh);
   const akt = list[Math.min(idx, list.length - 1)];
 
   // Esc = zavrieť (PC), zablokovať posun stránky pod prúdom
   useEffect(() => {
     const k = (e: KeyboardEvent) => {
-      if (e.key === "Escape") { if (profilRef.current) setProfil(null); else if (sheet) setSheet(null); else if (document.fullscreenElement) void document.exitFullscreen().catch(() => undefined); else zavriIskry(); }
+      if (e.key === "Escape") { if (vrchRef.current) { setZbOkno(null); setOrgProfil(null); } else if (profilRef.current) setProfil(null); else if (sheet) setSheet(null); else if (document.fullscreenElement) void document.exitFullscreen().catch(() => undefined); else zavriIskry(); }
       else if ((e.key === "f" || e.key === "F") && pcRef.current && !sheet && !(e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLInputElement)) prepniCeluRef.current();
       else if ((e.key === "ArrowDown" || e.key === "ArrowUp") && !sheet) { e.preventDefault(); posunRef.current(e.key === "ArrowDown" ? 1 : -1); }
     };
@@ -151,12 +157,12 @@ function IskryPrud() {
   useEffect(() => {
     Object.entries(videa.current).forEach(([id, el]) => {
       if (!el) return;
-      if (akt && id === akt.id && !sheet && !profil && viditelna) { el.muted = true; void el.play().catch(() => { /* autoplay zablokovaný — ostane poster */ }); }
+      if (akt && id === akt.id && !sheet && !profil && !zbOkno && !orgProfil && viditelna) { el.muted = true; void el.play().catch(() => { /* autoplay zablokovaný — ostane poster */ }); }
       else el.pause();
     });
     const b = bgVideo.current;
-    if (b) { if (boky && akt?.src && !sheet && !profil && viditelna) { b.muted = true; void b.play().catch(() => undefined); } else b.pause(); }
-  }, [akt, sheet, profil, viditelna, boky]);
+    if (b) { if (boky && akt?.src && !sheet && !profil && !zbOkno && !orgProfil && viditelna) { b.muted = true; void b.play().catch(() => undefined); } else b.pause(); }
+  }, [akt, sheet, profil, zbOkno, orgProfil, viditelna, boky]);
   useEffect(() => () => { Object.values(videa.current).forEach((el) => el?.pause()); }, []);
 
   // ---- živý pás: dnes v Iskrách + dary v rade (každý 5 s) ----
@@ -175,10 +181,11 @@ function IskryPrud() {
   const posunRef = useRef(posun); posunRef.current = posun; // eslint-disable-line react-hooks/refs
   const pcRef = useRef(pc); pcRef.current = pc; // eslint-disable-line react-hooks/refs
   const profilRef = useRef(profil); profilRef.current = profil; // eslint-disable-line react-hooks/refs
+  const vrchRef = useRef(false); vrchRef.current = !!(zbOkno || orgProfil); // eslint-disable-line react-hooks/refs
   const prepniCeluRef = useRef(prepniCelu); prepniCeluRef.current = prepniCelu; // eslint-disable-line react-hooks/refs
   const skoc = (id: string) => {
     let i = list.findIndex((x) => x.id === id);
-    if (i < 0) { setDruh(0); i = iskryVsetky().findIndex((x) => x.id === id); }
+    if (i < 0) { const d = iskryVsetky().find((x) => x.id === id)?.druh === ISKRY_CFG.druhZbierky ? ISKRY_CFG.druhZbierky : 0; setDruh(d); i = iskryVDruhu(d).findIndex((x) => x.id === id); }
     window.setTimeout(() => { const el = sc.current; if (el) el.scrollTo({ top: i * el.clientHeight, behavior: "smooth" }); }, 30);
   };
 
@@ -263,7 +270,10 @@ function IskryPrud() {
                 <div ref={i === 0 ? stlpecRef : undefined} style={{ position: "absolute", right: k(12), bottom: `calc(${k(150)}px + env(safe-area-inset-bottom, 0px))`, display: "flex", flexDirection: "column", alignItems: "center", gap: k(12) }}>
                   <button type="button" aria-label={`Darcovia, ${pocetD}`} onClick={() => setSheet({ typ: "darcovia", v })} style={stlpecBtn}><span style={kruh()}><Ik d={IK.darcovia} s={k(24)} /></span><span style={cislo}>{cis(pocetD)}</span></button>
                   <button type="button" aria-label="Iskra" aria-pressed={zap} onClick={() => prepniIskru(v.id)} style={stlpecBtn}><span style={kruh(zap)}><Ik d={IK.iskra} s={k(26)} w={1.6} c={ZLATA} fill={zap ? ZLATA : "none"} /></span><span style={cislo}>{cis(pocetIskier(v))}</span></button>
-                  {!v.bezDarov && <button type="button" ref={(el) => { darBtn.current[v.id] = el; }} onClick={() => setSheet({ typ: "dar", v })} style={stlpecBtn}><span style={kruh(false, true)}><Ik d={IK.dar} s={k(24)} w={2.2} /></span><span style={cislo}>Darovať</span></button>}
+                  {/* Zbierky: pri výzve Darovať = platobný modul tej zbierky (100 % na zbierku); pri poďakovaní namiesto neho Sledovať stránku */}
+                  {v.zb && v.zb.typ !== "vyzva"
+                    ? <button type="button" aria-pressed={sled} onClick={() => prepniSledovanie(v.autor)} style={stlpecBtn}><span style={kruh(sled)}><Ik d={sled ? IK.fajka : IK.plus} s={k(24)} w={2.4} /></span><span style={cislo}>{sled ? "Sledujete" : "Sledovať"}</span></button>
+                    : !v.bezDarov && <button type="button" ref={(el) => { darBtn.current[v.id] = el; }} onClick={() => (v.zb ? setZbOkno(v) : setSheet({ typ: "dar", v }))} style={stlpecBtn}><span style={kruh(false, true)}><Ik d={IK.dar} s={k(24)} w={2.2} /></span><span style={cislo}>Darovať</span></button>}
                   <button type="button" onClick={() => { if (document.fullscreenElement) void document.exitFullscreen().catch(() => undefined); setSheet({ typ: "zdielat", v }); }} style={stlpecBtn}><span style={kruh()}><Ik d={IK.zdielat} s={k(22)} w={2.2} /></span><span style={cislo}>Zdieľať</span></button>
                 </div>
 
@@ -290,6 +300,7 @@ function IskryPrud() {
                   {v.zbierka && <div style={{ flex: "none", display: "flex", flexDirection: "column", gap: k(4), padding: `${k(10)}px ${k(12)}px`, borderRadius: k(14), background: "rgba(0,0,0,.45)", border: "1px solid rgba(255,255,255,.18)" }}>
                     <span style={{ fontSize: k(12.5), opacity: 0.85 }}>{v.zbierka.pozn}</span><b style={{ fontSize: k(14) }}>{v.zbierka.nazov}</b>
                   </div>}
+                  {v.zb && <KartaZbierky v={v} k={k} onZbierka={() => setZbOkno(v)} onFirma={(m) => setOrgProfil(m)} />}
                 </div>
               </div>);
           })}
@@ -329,8 +340,13 @@ function IskryPrud() {
             </span>
           </div>}
           {/* KARTA 41b · QR Iskry pod pásom: malý, inverzný, ~35 %; ťuk = QR na celú obrazovku + Kopírovať odkaz */}
-          {akt && <button type="button" onClick={() => setQrVelky(akt)} aria-label="QR tejto Iskry" style={{ pointerEvents: "auto", alignSelf: "flex-start", marginLeft: 2, minWidth: 44, minHeight: 44, padding: 0, border: "none", background: "transparent", cursor: "pointer", opacity: 0.35, lineHeight: 0 }}>
-            <DeedQr data={odkazIskry(akt.id)} odznak={akt.org ? "D++" : "D+"} retaz={akt.retazPct != null} variant="inverzny" size={56} /></button>}
+          {akt && <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+            <button type="button" onClick={() => setQrVelky(akt)} aria-label="QR tejto Iskry" style={{ pointerEvents: "auto", marginLeft: 2, minWidth: 44, minHeight: 44, padding: 0, border: "none", background: "transparent", cursor: "pointer", opacity: 0.35, lineHeight: 0 }}>
+              <DeedQr data={odkazIskry(akt.id)} odznak={akt.org ? "D++" : "D+"} retaz={akt.retazPct != null} variant="inverzny" size={56} /></button>
+            {/* OPRAVY 135: typ videa zbierky — štítok vľavo hore */}
+            {akt.zb && <span style={{ height: 28, display: "flex", alignItems: "center", padding: "0 12px", borderRadius: 14, fontSize: 12.5, fontWeight: 800, letterSpacing: ".02em", textShadow: "none",
+              background: akt.zb.typ === "vyzva" ? "#4B7A35" : "rgba(255,255,255,.92)", color: akt.zb.typ === "vyzva" ? "#fff" : "#1D211B" }}>{akt.zb.stitok}</span>}
+          </div>}
         </div>
 
         {/* ---------- okná zdola ---------- */}
@@ -350,6 +366,16 @@ function IskryPrud() {
         {/* profil autora (ťuk na meno alebo logo) — Späť vráti do prúdu na to isté video */}
         {profil && <div style={{ position: "absolute", inset: 0, zIndex: 40, overflowY: "auto", background: "var(--c-bg, #F1ECE1)", color: "var(--ink, #1D211B)", textShadow: "none", zoom: 1 / bezZoomu() } as CSSProperties}>
           <CudziProfil subjekt={profil.org ? { typ: "org", meno: profil.autor, lok: profil.kto.split(" · ").pop() } : { typ: "osoba", meno: profil.autor }} toast={toast} onBack={() => setProfil(null)} />
+        </div>}
+        {/* OPRAVY 135: zbierka pri videu (výzva = platba do nej, ďakujeme = doklady) a profil firmy — Späť vráti na to isté video */}
+        {(zbOkno || orgProfil) && <div style={{ position: "absolute", inset: 0, zIndex: 41, overflowY: "auto", background: "var(--c-bg, #F1ECE1)", color: "var(--ink, #1D211B)", textShadow: "none", zoom: 1 / bezZoomu() } as CSSProperties}>
+          {orgProfil ? <CudziProfil subjekt={{ typ: "org", meno: orgProfil }} toast={toast} onBack={() => setOrgProfil(null)} />
+            : zbOkno && (() => { const d = zbierkaIskry(zbOkno); if (!d) return null; return (
+              <div className="sc-tokeny" data-stit={d.profil.stit.toLowerCase()} style={{ position: "fixed", inset: 0, overflowY: "auto", background: "var(--bg)" }}>
+                <div style={{ maxWidth: 1240, margin: "0 auto", padding: 14 }}>
+                  <ZbierkaModul zbierka={naZbierkaData(d.z, d.profil)} onBack={() => setZbOkno(null)} spatNazov="Späť do Iskier" />
+                </div>
+              </div>); })()}
         </div>}
       </div>
 
@@ -484,6 +510,38 @@ export function ZdielatIskru({ v, onClose }: { v: Iskra; onClose: () => void }) 
       <button type="button" onClick={() => setVelky(false)} style={{ minHeight: 48, padding: "0 26px", borderRadius: 14, border: "none", background: "#fff", color: "#1D211B", fontSize: 15.5, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}>Zavrieť</button>
     </div>, document.body)}
   </>);
+}
+
+// ---------- OPRAVY 135 · karta zbierky pod videom druhu Zbierky ----------
+// výzva: pruh a „X € z Y € · N ľudí", ťuk = zbierka · ďakujeme: „Doložené · X € · N ľudí", ťuk = doklady · firme: logo a meno firmy, ťuk = jej profil
+function KartaZbierky({ v, k, onZbierka, onFirma }: { v: Iskra; k: (n: number) => number; onZbierka: () => void; onFirma: (meno: string) => void }) {
+  const d = zbierkaIskry(v); if (!d || !v.zb) return null;
+  const { z, firma } = d, s = sucetDarov(z.id);
+  // ukončená zbierka = doložený stav, živé dary sa už nepripočítavajú
+  const konci = z.stav === "ukoncena", suma = konci ? z.vyzbierane : z.vyzbierane + s.suma, ludia = konci ? z.ludia : z.ludia + s.pocet;
+  const ludiaT = `${cis(ludia)} ${ludia === 1 ? "človek" : ludia >= 2 && ludia <= 4 ? "ľudia" : "ľudí"}`;
+  const ram: CSSProperties = { flex: "none", display: "flex", flexDirection: "column", gap: k(6), width: "100%", minHeight: 44, padding: `${k(10)}px ${k(12)}px`, borderRadius: k(14), background: "rgba(0,0,0,.45)", border: "1px solid rgba(255,255,255,.18)", cursor: "pointer", textAlign: "left", fontFamily: "inherit", color: "#fff" };
+  if (v.zb.typ === "firme" && firma) return (
+    <button type="button" onClick={() => onFirma(firma.meno)} style={{ ...ram, flexDirection: "row", alignItems: "center", gap: k(10) }}>
+      <span style={{ width: k(38), height: k(38), flex: "none", borderRadius: k(10), background: "#fff", color: "#3F6E2A", display: "flex", alignItems: "center", justifyContent: "center", fontSize: k(13), fontWeight: 800, textShadow: "none" }}>{firma.iniciala}</span>
+      <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: k(2) }}>
+        <b style={{ fontSize: k(14) }}>{firma.meno.replace(/\s+s\.\s?r\.\s?o\.$/, "")}</b>
+        <span style={{ fontSize: k(12.5), opacity: 0.85 }}>Dorovnáva zbierku {z.nazov}</span>
+      </span>
+      <span aria-hidden="true" style={{ fontSize: k(18), opacity: 0.8 }}>›</span>
+    </button>);
+  if (v.zb.typ === "dakujeme") return (
+    <button type="button" onClick={onZbierka} style={ram}>
+      <b style={{ fontSize: k(14) }}>{z.nazov}</b>
+      <span style={{ fontSize: k(12.5), opacity: 0.9 }}>Doložené · {eur(suma)} · {ludiaT}{z.doklady ? " · doklady ›" : ""}</span>
+    </button>);
+  const p = z.ciel ? Math.min(1, suma / z.ciel) : 0;
+  return (
+    <button type="button" onClick={onZbierka} style={ram}>
+      <b style={{ fontSize: k(14) }}>{z.nazov}</b>
+      {z.ciel ? <span aria-hidden="true" style={{ display: "block", height: k(6), borderRadius: k(3), background: "rgba(255,255,255,.25)", overflow: "hidden" }}><span style={{ display: "block", height: "100%", width: "100%", background: "#8DB866", transformOrigin: "left", transform: `scaleX(${p})` }} /></span> : null}
+      <span style={{ fontSize: k(12.5), opacity: 0.9, fontVariantNumeric: "tabular-nums" }}>{z.ciel ? `${eur(suma)} z ${eur(z.ciel)}` : eur(suma)} · {ludiaT}</span>
+    </button>);
 }
 
 // Popis Iskry v zbalenom stave: 2 riadky, „… viac" hneď za textom (OPRAVY 134).

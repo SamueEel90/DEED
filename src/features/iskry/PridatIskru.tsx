@@ -22,6 +22,7 @@ import { nacitajTiery } from "@/features/rola/stav";
 import { CENTRALNA_ID } from "@/features/rola/vlastneZbierky";
 import { verejneBeziace, zbierkaVRetazi, type ZbierkaVRetazi } from "@/lib/retaz";
 import { normalizuj } from "@/lib/mojeSkutky";
+import { najdiTestProfil, eur as eurT, type TestZbierka } from "@/lib/testProfily";
 import { ISKRY_CFG, KVOTA_ISKIER, kvotaOstava, minKvotu, odkazIskry, pridajIskru, type DruhIskry, type Iskra } from "@/lib/iskry";
 import { Harok } from "@/features/zbierka/Zdielat";
 import { PercentaRetaze } from "@/features/zbierka/RetazDobra";
@@ -33,7 +34,7 @@ import { ZdielatIskru } from "./Iskry";
 import "@/styles/sprava.css";
 
 const MAX_S = 60, ODPORUCANE_S = 45, POPIS_MAX = 150;
-type Pen = "ja" | "retaz" | "centralna" | "ina" | "bez";
+type Pen = "ja" | "retaz" | "centralna" | "ina" | "bez" | "zbierka";
 const Ik = ({ d, s = 22, w = 2.2, c = "currentColor", fill = "none" }: { d: string; s?: number; w?: number; c?: string; fill?: string }) =>
   <svg width={s} height={s} viewBox="0 0 24 24" fill={fill} stroke={c} strokeWidth={w} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={d} /></svg>;
 const IK = { spat: "M15 18l-6-6 6-6", hraj: "M8 5l12 7-12 7z", qr: "M4 8V4h4M20 8V4h-4M4 16v4h4M20 16v4h-4M8 12h8", lupa: "M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14zM20 20l-3.5-3.5",
@@ -77,6 +78,11 @@ function PridatIskru() {
   const autor = org ? stranka!.n : `${ja.meno || "Ty"}${ja.priezvisko ? ` ${ja.priezvisko[0].toUpperCase()}.` : ""}`;
   const ini = (org ? stranka!.i : autor.split(/\s+/).map((x) => x[0]).join("").slice(0, 2)).toUpperCase();
   const tier = nacitajTiery().charita;
+  // OPRAVY 135: druh „Zbierky" len pre toho, kto vedie bežiacu zbierku (charita, firma, tvorca) — video k vlastnej zbierke
+  const vedie = UKAZKOVE_STRANKY.find((x) => x.k === ako) ?? null;
+  const mojeZb: TestZbierka[] = vedie ? (najdiTestProfil(vedie.k)?.zbierky ?? []).filter((z) => z.stav !== "ukoncena") : [];
+  const DZ = ISKRY_CFG.druhZbierky;
+  const [vlastnaZb, setVlastnaZb] = useState<TestZbierka | null>(null);
 
   const [k, setK] = useState(1);
   const [video, setVideo] = useState<{ url: string; s: number | null } | null>(null);
@@ -105,7 +111,8 @@ function PridatIskru() {
   const ukazZb = pen === "ina" || pen === "retaz";
   const centralnaN = org ? `Centrálna zbierka ${stranka!.n}` : "";
 
-  const chyba = k === 1 ? (!video ? o("Nahraj video", "Nahrajte video") : popisT.length < 5 ? o("Napíš, čo je na videu", "Napíšte, čo je na videu") : druh == null ? o("Vyber druh", "Vyberte druh") : "")
+  const chyba = k === 1 ? (!video ? o("Nahraj video", "Nahrajte video") : popisT.length < 5 ? o("Napíš, čo je na videu", "Napíšte, čo je na videu") : druh == null ? o("Vyber druh", "Vyberte druh") : druh === DZ && !vlastnaZb ? o("Vyber zbierku", "Vyberte zbierku") : "")
+    : k === 2 && druh === DZ ? ""
     : k === 2 ? (!pen ? o("Vyber, kam pôjdu peniaze", "Vyberte, kam pôjdu peniaze") : ukazZb && !zb ? o("Vyber zbierku", "Vyberte zbierku") : "")
     : k === 4 ? (!ok1 ? o("Potvrď, že video je tvoje", "Potvrďte, že video je vaše") : "") : "";
 
@@ -129,11 +136,20 @@ function PridatIskru() {
     v.src = url;
   };
 
-  const zbNazov = pen === "centralna" ? centralnaN : ukazZb && zb ? zb.nazov : "";
-  const zbPozn = pen === "centralna" ? "100 % na centrálnu zbierku" : pen === "retaz" ? `Reťaz dobra · ${pct} % ide na zbierku` : pen === "ina" ? "100 % ide na zbierku" : "";
+  const zbNazov = druh === DZ && vlastnaZb ? vlastnaZb.nazov : pen === "centralna" ? centralnaN : ukazZb && zb ? zb.nazov : "";
+  const zbPozn = druh === DZ ? "100 % ide na zbierku" : pen === "centralna" ? "100 % na centrálnu zbierku" : pen === "retaz" ? `Reťaz dobra · ${pct} % ide na zbierku` : pen === "ina" ? "100 % ide na zbierku" : "";
 
   const zverejni = () => {
-    if (chyba || !video || druh == null || !pen) return;
+    if (chyba || !video || druh == null) return;
+    if (druh === DZ) {
+      if (!vedie || !vlastnaZb) return;
+      if (org && ok2 && kvota > 0) minKvotu(stranka!.k);
+      const typT = vedie.typ === "charita" ? "Charita" : vedie.typ === "firma" ? "Firma" : "Tvorca";
+      const n = pridajIskru({ druh, autor: vedie.n, kto: `${typT} · ${vlastnaZb.mesto}`, ini: vedie.i, org: vedie.typ !== "tvorca", popis: popisT, src: video.url, bg: "#1D211B",
+        zb: { typ: "vyzva", stitok: "Výzva", stranka: vedie.k, zbierkaId: vlastnaZb.id }, lenStranka: org && !ok2 });
+      setHotovo(n); return;
+    }
+    if (!pen) return;
     const vsetkym = !org || ok2;
     if (org && ok2 && kvota > 0) minKvotu(stranka!.k);
     if (org && ok2 && kvota <= 0) toast(`Video nad rámec programu · ${KVOTA_ISKIER.cenaNad} €`);
@@ -191,9 +207,26 @@ function PridatIskru() {
         nastroje={["diktovat"]} maxZnakov={POPIS_MAX} tvrdyLimit={POPIS_MAX} /></div>
     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}><span style={lbl}>Druh</span>
       <div role="radiogroup" aria-label="Druh" style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-        {ISKRY_CFG.druhy.slice(1).map((t, i) => { const on = druh === i + 1; return (
-          <button key={t} type="button" role="radio" aria-checked={on} onClick={() => setDruh((i + 1) as DruhIskry)} style={{ minHeight: 44, padding: "0 16px", borderRadius: 22, cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: on ? 800 : 600, background: on ? "#2F5E3A" : "transparent", border: `1.5px solid ${on ? "#2F5E3A" : "var(--fieldBd)"}`, color: on ? "#fff" : "var(--ink)" }}>{t}</button>); })}
+        {ISKRY_CFG.druhy.slice(1).map((t, i) => { const on = druh === i + 1; if (i + 1 === DZ && !mojeZb.length) return null; return (
+          <button key={t} type="button" role="radio" aria-checked={on} onClick={() => { setDruh((i + 1) as DruhIskry); if (i + 1 !== DZ) setVlastnaZb(null); }} style={{ minHeight: 44, padding: "0 16px", borderRadius: 22, cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: on ? 800 : 600, background: on ? "#2F5E3A" : "transparent", border: `1.5px solid ${on ? "#2F5E3A" : "var(--fieldBd)"}`, color: on ? "#fff" : "var(--ink)" }}>{t}</button>); })}
       </div></div>
+    {druh === DZ && <div className="pf-rise" style={{ display: "flex", flexDirection: "column", gap: 8, padding: 14, borderRadius: 16, background: "var(--card)" }}>
+      <b style={{ fontSize: 14.5 }}>Ku ktorej zbierke je video</b>
+      <span style={{ fontSize: 13, lineHeight: 1.45, color: "var(--ink3)" }}>{o("Len tvoje bežiace zbierky. Video sa ukáže v Iskrách len pod Zbierkami.", "Len vaše bežiace zbierky. Video sa ukáže v Iskrách len pod Zbierkami.")}</span>
+      <div role="radiogroup" aria-label="Zbierka" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        {mojeZb.map((z) => { const on = vlastnaZb?.id === z.id; return (
+          <button key={z.id} type="button" role="radio" aria-checked={on} onClick={() => setVlastnaZb(z)} style={{ ...vyber(on), display: "flex", alignItems: "flex-start", gap: 12, minHeight: 56, padding: "10px 12px", borderRadius: 12, cursor: "pointer", textAlign: "left", fontFamily: "inherit", color: "var(--ink)" }}>
+            {radio(on)}<span style={{ display: "flex", flexDirection: "column", gap: 2 }}><b style={{ fontSize: 14 }}>{z.nazov}</b><span style={{ fontSize: 12.5, color: "var(--ink3)" }}>{z.mesto} · {z.ciel ? `${eurT(z.vyzbierane)} z ${eurT(z.ciel)}` : eurT(z.vyzbierane)}</span></span>
+          </button>); })}
+      </div>
+    </div>}
+  </>);
+  else if (k === 2 && druh === DZ) obsah = (<>
+    <span style={{ fontSize: 14.5, lineHeight: 1.5, color: "var(--ink2)" }}>Pod videom bude tlačidlo Darovať. Celý dar pôjde na zbierku.</span>
+    <div style={{ display: "flex", flexDirection: "column", gap: 4, padding: 14, borderRadius: 16, background: "var(--gSoft)", border: "1.5px solid var(--gBd)" }}>
+      <span style={{ fontSize: 13, color: "var(--ink3)" }}>100 % ide na zbierku</span><b style={{ fontSize: 15 }}>{vlastnaZb?.nazov}</b>
+    </div>
+    <div style={{ padding: "12px 14px", borderRadius: 14, background: "var(--goldBg)", border: "1px solid var(--goldBd)", fontSize: 13.5, lineHeight: 1.5, color: "var(--ink2)" }}><b style={{ color: "var(--ink)" }}>Po zverejnení sa to zapečatí.</b> Kam idú peniaze, sa už nedá zmeniť.</div>
   </>);
   else if (k === 2) {
     const P: [Pen, string, string][] = org
