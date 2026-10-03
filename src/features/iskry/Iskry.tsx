@@ -113,9 +113,6 @@ function IskryPrud() {
   // popis najviac 2 riadky, ťuk rozbalí; spodný blok nesiaha vyššie ako tlačidlo Darcovia (meria sa výška pravého stĺpca)
   const [rozbaleny, setRozbaleny] = useState<string | null>(null);
   useEffect(() => { setRozbaleny(null); }, [idx, druh]);
-  // „… viac" len pri popise, ktorý sa do 2 riadkov nezmestí
-  const popisRef = useRef<Record<string, HTMLSpanElement | null>>({});
-  const [dlhe, setDlhe] = useState<Set<string>>(() => new Set());
   const stlpecRef = useRef<HTMLDivElement | null>(null);
   const hlavRef = useRef<HTMLDivElement | null>(null);
   // druhy videí: vodorovný posun, pri okraji, kde ešte niečo je, stmavnutie (maska)
@@ -135,19 +132,6 @@ function IskryPrud() {
   useLayoutEffect(() => { const el = sc.current; if (el && idx > 0) el.scrollTop = idx * el.clientHeight; }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const list = iskryVsetky().filter((v) => druh === 0 || v.druh === druh);
   const akt = list[Math.min(idx, list.length - 1)];
-  // „… viac" sa ukáže len pri texte, ktorý sa do 2 riadkov nezmestí — meriame pri každej zmene šírky (mobil aj PC rovnako)
-  const merajPopis = () => {
-    const n = new Set<string>();
-    Object.entries(popisRef.current).forEach(([id, el]) => { if (el && el.scrollHeight > el.clientHeight + 1) n.add(id); });
-    setDlhe((o) => (o.size === n.size && [...n].every((x) => o.has(x)) ? o : n));
-  };
-  useLayoutEffect(() => {
-    merajPopis();
-    const ro = new ResizeObserver(merajPopis);
-    Object.values(popisRef.current).forEach((el) => { if (el) ro.observe(el); });
-    window.addEventListener("resize", merajPopis);
-    return () => { ro.disconnect(); window.removeEventListener("resize", merajPopis); };
-  }, [druh, mierka, miesto.video, rozbaleny]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Esc = zavrieť (PC), zablokovať posun stránky pod prúdom
   useEffect(() => {
@@ -298,18 +282,11 @@ function IskryPrud() {
                     <button type="button" aria-pressed={sled} onClick={() => prepniSledovanie(v.autor)} style={{ flex: "none", minHeight: Math.max(44, k(44)), padding: `${k(6)}px 0`, border: "none", background: "transparent", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center" }}>
                       <span style={{ whiteSpace: "nowrap", height: k(32), display: "flex", alignItems: "center", padding: `0 ${k(12)}px`, borderRadius: k(16), border: "1.5px solid #fff", background: sled ? "transparent" : "#fff", fontSize: k(12.5), fontWeight: 800, color: sled ? "#fff" : "#1D211B", textShadow: sled ? TIEN : "none" }}>{sled ? "Sledujete" : "Sledovať"}</span></button>
                   </div>
-                  {/* popis: 2 riadky + „… viac"; ťuk (onClick, rovnako na mobile aj PC) rozbalí celý, „menej" zbalí a vráti na začiatok */}
+                  {/* popis: 2 riadky, „… viac" hneď za textom (ťuk rozbalí); „menej" zbalí a vráti na začiatok */}
                   {rozbaleny === v.id
                     ? <button type="button" aria-expanded="true" ref={(el) => { if (el) el.scrollTop = 0; }} onClick={() => setRozbaleny(null)}
                         style={{ flex: "0 1 auto", minHeight: 44, maxHeight: miesto.video * 0.45, overflowY: "auto", overscrollBehavior: "contain", padding: `${k(10)}px ${k(12)}px`, borderRadius: k(14), border: "none", background: "rgba(0,0,0,.6)", cursor: "pointer", textAlign: "left", fontFamily: "inherit", fontSize: k(14.5), lineHeight: 1.45, color: "#fff", whiteSpace: "pre-line" }}>{v.popis}{" "}<span style={{ fontWeight: 800 }}>menej</span></button>
-                    : <button type="button" aria-expanded={dlhe.has(v.id) ? "false" : undefined} onClick={() => { if (dlhe.has(v.id)) setRozbaleny(v.id); }}
-                        style={{ flex: "0 1 auto", minHeight: 44, maxHeight: `${2 * 1.45}em`, display: "flex", overflow: "hidden", padding: 0, border: "none", background: "transparent", cursor: dlhe.has(v.id) ? "pointer" : "default", textAlign: "left", fontFamily: "inherit", fontSize: k(14.5), lineHeight: 1.45, color: "#fff" }}>
-                        <span ref={(el) => { popisRef.current[v.id] = el; }} style={{ display: "block", overflow: "hidden" }}>
-                          {dlhe.has(v.id) && <><span aria-hidden="true" style={{ float: "right", height: "calc(100% - 1.45em)" }} />
-                            <span style={{ float: "right", clear: "both", fontWeight: 800 }}>… viac</span></>}
-                          {v.popis}
-                        </span>
-                      </button>}
+                    : <PopisDva text={v.popis} fontSize={k(14.5)} onRozbal={() => setRozbaleny(v.id)} />}
                   {v.zbierka && <div style={{ flex: "none", display: "flex", flexDirection: "column", gap: k(4), padding: `${k(10)}px ${k(12)}px`, borderRadius: k(14), background: "rgba(0,0,0,.45)", border: "1px solid rgba(255,255,255,.18)" }}>
                     <span style={{ fontSize: k(12.5), opacity: 0.85 }}>{v.zbierka.pozn}</span><b style={{ fontSize: k(14) }}>{v.zbierka.nazov}</b>
                   </div>}
@@ -507,4 +484,42 @@ export function ZdielatIskru({ v, onClose }: { v: Iskra; onClose: () => void }) 
       <button type="button" onClick={() => setVelky(false)} style={{ minHeight: 48, padding: "0 26px", borderRadius: 14, border: "none", background: "#fff", color: "#1D211B", fontSize: 15.5, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}>Zavrieť</button>
     </div>, document.body)}
   </>);
+}
+
+// Popis Iskry v zbalenom stave: 2 riadky, „… viac" hneď za textom.
+// Skryté meradlo nájde binárne najdlhšiu predponu, ktorá sa aj s „… viac" zmestí do 2 riadkov,
+// takže „… viac" sedí tesne za textom (nie plávajúce pri pravom okraji).
+function PopisDva({ text, fontSize, onRozbal }: { text: string; fontSize: number; onRozbal: () => void }) {
+  const meradlo = useRef<HTMLSpanElement | null>(null);
+  const [stav, setStav] = useState<{ dlhy: boolean; cut: string }>({ dlhy: false, cut: text });
+  useLayoutEffect(() => {
+    const el = meradlo.current; if (!el) return;
+    const esc = (t: string) => t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    const meraj = () => {
+      el.textContent = text;
+      if (el.scrollHeight <= el.clientHeight + 1) { setStav({ dlhy: false, cut: text }); return; }
+      // „… viac" je tučné (širšie) — meriame s tučným suffixom, aby sa vo viditeľnom texte nezalomilo na 3. riadok
+      let lo = 0, hi = text.length, best = 0;
+      while (lo <= hi) {
+        const mid = (lo + hi) >> 1;
+        el.innerHTML = esc(text.slice(0, mid).replace(/\s+$/, "")) + ' <b>… viac</b>';
+        if (el.scrollHeight <= el.clientHeight + 1) { best = mid; lo = mid + 1; } else hi = mid - 1;
+      }
+      setStav({ dlhy: true, cut: text.slice(0, best).replace(/\s+$/, "") });
+      el.textContent = "";
+    };
+    meraj();
+    const ro = new ResizeObserver(meraj); ro.observe(el);
+    window.addEventListener("resize", meraj);
+    return () => { ro.disconnect(); window.removeEventListener("resize", meraj); };
+  }, [text, fontSize]);
+  const meradloBox: CSSProperties = { display: "-webkit-box", WebkitBoxOrient: "vertical", WebkitLineClamp: 2, overflow: "hidden", fontSize, lineHeight: 1.45 };
+  const textBox: CSSProperties = { maxHeight: "2.9em", overflow: "hidden", fontSize, lineHeight: 1.45, whiteSpace: "normal" };
+  return (
+    <button type="button" onClick={stav.dlhy ? onRozbal : undefined}
+      style={{ position: "relative", flex: "0 1 auto", minHeight: 44, display: "block", width: "100%", padding: 0, border: "none", background: "transparent", cursor: stav.dlhy ? "pointer" : "default", textAlign: "left", fontFamily: "inherit", color: "#fff" }}>
+      <span ref={meradlo} aria-hidden="true" style={{ ...meradloBox, position: "absolute", left: 0, right: 0, top: 0, visibility: "hidden", pointerEvents: "none" }} />
+      <span style={textBox}>{stav.dlhy ? <>{stav.cut}{" "}<span style={{ fontWeight: 800 }}>… viac</span></> : text}</span>
+    </button>
+  );
 }
