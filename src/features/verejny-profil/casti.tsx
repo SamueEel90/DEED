@@ -7,6 +7,9 @@ import { StitObr } from "@/components/stit";
 import type { StitLevel } from "@/components/stit";
 import { LOKALITY, eur, pct, type Lokalita, type Mesto, type TestOznam, type TestPraca, type TestProfil, type TestSkutok, type TestZbierka } from "@/lib/testProfily";
 import { useLokalita } from "@/lib/lokalita";
+import { useLayout } from "@/components/context";
+import "@/styles/verejnyProfil.css";
+import { vrstvaProfiluPripoj } from "./otvor";
 
 export const MOBIL = "(max-width: 759px)";
 export function useMobil(): boolean {
@@ -27,8 +30,8 @@ export function useDomaceMesto(profil: TestProfil): Mesto {
 export const karta: CSSProperties = { background: "var(--card)", border: "1px solid var(--cardBd)", borderRadius: 16 };
 export const nadpisSekcie: CSSProperties = { fontSize: 11, fontWeight: 800, letterSpacing: ".08em", color: "var(--ink4)", textTransform: "uppercase" };
 
-// ---------------- lokalita: „Si v Prešove ⌄" ----------------
-export function LokalitaPrepinac({ lok, onLok, domace }: { lok: Lokalita; onLok: (l: Lokalita) => void; domace: Mesto }) {
+// ---------------- lokalita: „Si v Prešove ⌄" (prototyp v4 Pirát) ----------------
+export function LokalitaPrepinac({ lok, onLok, domace, sidlo }: { lok: Lokalita; onLok: (l: Lokalita) => void; domace: Mesto; sidlo?: Mesto }) {
   const [otv, setOtv] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -37,24 +40,26 @@ export function LokalitaPrepinac({ lok, onLok, domace }: { lok: Lokalita; onLok:
     document.addEventListener("mousedown", f); return () => document.removeEventListener("mousedown", f);
   }, [otv]);
   const text = lok === "Celé Slovensko" ? "Celé Slovensko" : `Si v ${vMeste(lok)}`;
+  const pod = (l: Lokalita) => l === "Celé Slovensko" ? "všetky pobočky spolu" : l === domace ? "podľa tvojej polohy" : l === sidlo ? "sídlo organizácie" : "pobočka";
+  const poradie: Lokalita[] = [domace, ...LOKALITY.filter((l) => l !== domace && l !== "Celé Slovensko"), "Celé Slovensko"];
   return (
-    <div ref={ref} style={{ position: "relative" }}>
-      <button {...pressable()} onClick={() => setOtv((o) => !o)} aria-expanded={otv}
-        style={{ minHeight: 44, display: "flex", alignItems: "center", gap: 8, padding: "0 14px", borderRadius: 999, background: "var(--card)", border: "1px solid var(--cardBd)", color: "var(--ink)", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
-        <IkonaPin />
+    <div ref={ref} style={{ position: "relative", flex: "none" }}>
+      <button type="button" onClick={() => setOtv((o) => !o)} aria-expanded={otv}
+        style={{ height: 44, padding: "0 16px", border: "none", borderRadius: 14, background: "#fff", cursor: "pointer", display: "flex", alignItems: "center", gap: 8, fontSize: 14.5, fontWeight: 800, color: "#1D211B", whiteSpace: "nowrap" }}>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3F6E2A" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11zM12 12a2 2 0 1 0 0-4 2 2 0 0 0 0 4z" /></svg>
         {text}
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"
-          style={{ transform: `rotate(${otv ? 180 : 0}deg)`, transition: "transform .3s ease" }}><path d="m6 9 6 6 6-6" /></svg>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5B5D53" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ transform: `rotate(${otv ? 180 : 0}deg)`, transition: "transform .3s ease" }}><path d="m6 9 6 6 6-6" /></svg>
       </button>
       {otv && (
-        <div role="menu" style={{ position: "absolute", top: "calc(100% + 6px)", left: 0, zIndex: 40, minWidth: 200, padding: 6, borderRadius: 14, background: "var(--panel)", border: "1px solid var(--cardBd)", boxShadow: "0 18px 40px rgba(0,0,0,.25)" }}>
-          {[domace, ...LOKALITY.filter((l) => l !== domace)].map((l) => (
-            <button key={l} {...pressable()} role="menuitem" onClick={() => { onLok(l); setOtv(false); }}
-              style={{ display: "block", width: "100%", minHeight: 44, textAlign: "left", padding: "0 12px", borderRadius: 10, border: "none", background: l === lok ? "var(--gSoft)" : "transparent", color: l === lok ? "var(--gInk)" : "var(--ink)", fontSize: 14, fontWeight: l === lok ? 800 : 600, cursor: "pointer" }}>
-              {l}
+        <span role="menu" style={{ position: "absolute", left: 0, top: 52, zIndex: 40, width: 260, padding: 6, borderRadius: 16, background: "#fff", boxShadow: "0 18px 40px rgba(0,0,0,.35)", display: "flex", flexDirection: "column" }}>
+          {poradie.map((l) => (
+            <button key={l} type="button" role="menuitem" onClick={() => { onLok(l); setOtv(false); }}
+              style={{ height: 48, padding: "0 12px", border: "none", borderRadius: 11, background: l === lok ? "#EEF3E7" : "transparent", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "flex-start", justifyContent: "center", textAlign: "left" }}>
+              <b style={{ fontSize: 14.5, color: "#1D211B" }}>{l}</b>
+              <span style={{ fontSize: 12, color: "#5B5D53" }}>{pod(l)}</span>
             </button>
           ))}
-        </div>
+        </span>
       )}
     </div>
   );
@@ -217,26 +222,68 @@ export function Overenie({ p }: { p: TestProfil }) {
   );
 }
 
-// ---------------- okno štítu ----------------
-export function StitOkno({ p, onClose }: { p: TestProfil; onClose: () => void }) {
-  useEffect(() => { const k = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); }; window.addEventListener("keydown", k); return () => window.removeEventListener("keydown", k); }, [onClose]);
+// ---------------- štít CARE s leskom (prototypy v2 / v3 / v4) ----------------
+export const stitSrc = (stit: string) => `/stity/care/${stit.toLowerCase()}.webp`;
+export function StitCare({ stit, w, h, lesk, tien = "drop-shadow(0 8px 12px rgba(0,0,0,.4))" }: { stit: string; w: number; h: number; lesk?: boolean; tien?: string }) {
+  const src = stitSrc(stit);
+  const maska: CSSProperties = { WebkitMaskImage: `url(${src})`, maskImage: `url(${src})`, WebkitMaskSize: "contain", maskSize: "contain", WebkitMaskRepeat: "no-repeat", maskRepeat: "no-repeat", WebkitMaskPosition: "center", maskPosition: "center" };
   return (
-    <div onClick={onClose} style={{ position: "fixed", inset: 0, zIndex: 80, background: "rgba(10,9,6,.72)", display: "grid", placeItems: "center", padding: 20 }}>
-      <div onClick={(e) => e.stopPropagation()} style={{ ...karta, width: "min(360px, 100%)", padding: 22, display: "grid", gap: 14, justifyItems: "center", textAlign: "center" }}>
-        <StitObr level={p.stit as StitLevel} h={120} tien />
-        <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: ".08em", color: "var(--ink4)" }}>ŠTÍT DEED+ CARE</div>
-        <div style={{ fontSize: 22, fontWeight: 800, color: "var(--ink)" }}>{nazovStitu(p.stit)}</div>
-        <div style={{ fontSize: 13, lineHeight: 1.5, color: "var(--ink2)" }}>Úroveň dôvery. Rastie s tým, ako organizácia dokladá, na čo išli peniaze.</div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, width: "100%" }}>
-          {p.stitCisla.map(([h, t]) => (
-            <div key={t}><div style={{ fontSize: 16, fontWeight: 800, color: "var(--ink)" }}>{h}</div><div style={{ fontSize: 11, color: "var(--ink4)" }}>{t}</div></div>
-          ))}
-        </div>
-        <button {...pressable()} onClick={onClose} style={{ minHeight: 44, width: "100%", borderRadius: 12, border: "1px solid var(--cardBd)", background: "var(--btn)", color: "var(--ink)", fontSize: 14, fontWeight: 800, cursor: "pointer" }}>Zavrieť</button>
-      </div>
-    </div>
+    <span role="img" aria-label={`Štít DEED+ CARE · ${nazovStitu(stit)}`} style={{ position: "relative", width: w, height: h, display: "block" }}>
+      <img src={src} alt="" draggable={false} style={{ width: "100%", height: "100%", objectFit: "contain", filter: tien }} />
+      <span aria-hidden="true" style={{ position: "absolute", inset: 0, overflow: "hidden", ...maska }}>
+        {lesk && <span style={{ position: "absolute", top: 0, bottom: 0, left: 0, width: "100%", background: "linear-gradient(105deg,rgba(255,255,255,0) 35%,rgba(255,255,255,.8) 50%,rgba(255,255,255,0) 65%)", transform: "translateX(-130%)", animation: "vpLesk 1.5s ease .4s 1 both" }} />}
+      </span>
+    </span>
   );
 }
+
+// ---------------- okno štítu (prototyp: karta --cuBg, 460 px, štít s leskom) ----------------
+export function StitOkno({ p, onClose }: { p: TestProfil; onClose: () => void }) {
+  const [zobraz, setZobraz] = useState(false);
+  useEffect(() => { const r = requestAnimationFrame(() => setZobraz(true)); return () => cancelAnimationFrame(r); }, []);
+  const zavri = () => { setZobraz(false); setTimeout(onClose, 250); };
+  useEffect(() => { const k = (e: KeyboardEvent) => { if (e.key === "Escape") zavri(); }; window.addEventListener("keydown", k); return () => window.removeEventListener("keydown", k); });
+  return (
+    <>
+      <div onClick={zavri} style={{ position: "fixed", inset: 0, zIndex: 80, background: "rgba(10,8,5,.6)", opacity: zobraz ? 1 : 0, transition: "opacity .25s ease" }} />
+      <div role="dialog" aria-label="Štít DEED+ CARE" style={{ position: "fixed", left: "50%", top: "50%", zIndex: 81, width: "min(460px, calc(100% - 32px))", transform: `translate(-50%, -50%) scale(${zobraz ? 1 : 0.92})`, opacity: zobraz ? 1 : 0, transition: "opacity .25s ease, transform .25s ease", borderRadius: 28, background: "var(--cuBg)", border: "1.5px solid var(--cuBd)", boxShadow: "0 30px 80px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.5)", padding: "28px 30px 24px", display: "flex", flexDirection: "column", alignItems: "center", gap: 14, textAlign: "center" }}>
+        <button type="button" onClick={zavri} aria-label="Zavrieť" style={{ position: "absolute", right: 14, top: 14, width: 44, height: 44, border: "none", borderRadius: 22, background: "rgba(0,0,0,.1)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" style={{ color: "var(--cuInk)" }}><path d="M6 6l12 12M18 6L6 18" /></svg>
+        </button>
+        <StitCare key={zobraz ? "o" : "z"} stit={p.stit} w={150} h={184} lesk={zobraz} tien="drop-shadow(0 10px 16px rgba(60,40,10,.35))" />
+        <span style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".1em", color: "var(--cuInk2)" }}>ŠTÍT DEED+ CARE</span>
+          <b style={{ fontSize: 26, color: "var(--cuInk)" }}>{nazovStitu(p.stit)}</b>
+        </span>
+        <span style={{ fontSize: 14.5, lineHeight: 1.5, color: "var(--cuInk2)", textWrap: "pretty", maxWidth: 360 } as CSSProperties}>Úroveň dôvery. Rastie s tým, ako {p.typ === "charita" ? "charita" : p.typ === "firma" ? "firma" : "tvorca"} dokladá, na čo išli peniaze.</span>
+        <div style={{ alignSelf: "stretch", display: "grid", gridTemplateColumns: "repeat(3,minmax(0,1fr))", gap: 8, padding: "14px 0", borderTop: "1px solid rgba(0,0,0,.14)", borderBottom: "1px solid rgba(0,0,0,.14)" }}>
+          {p.stitCisla.map(([v, t]) => (
+            <span key={t} style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+              <b style={{ fontSize: 22, color: "var(--cuInk)", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>{v}</b>
+              <span style={{ fontSize: 12.5, color: "var(--cuInk2)" }}>{t}</span>
+            </span>
+          ))}
+        </div>
+        <a href="#" onClick={(e) => e.preventDefault()} style={{ fontSize: 14, fontWeight: 800, color: "var(--cuInk)", minHeight: 44, display: "flex", alignItems: "center" }}>Ako sa štít získava</a>
+      </div>
+    </>
+  );
+}
+
+// ---------------- vrstva profilu vnútri appky (ľavé menu na PC aj dok na mobile ostávajú) ----------------
+/** výška, ktorú na mobile zaberá plávajúci dok appky (dok je nad vrstvou) */
+export const DOK = 96;
+export function VrstvaProfilu({ children }: { children: ReactNode }) {
+  const { desktop } = useLayout();
+  useEffect(() => vrstvaProfiluPripoj(), []); // kým je profil na obrazovke, plávajúce „+" stránky sa skryje
+  return <div style={{ position: "fixed", top: 0, right: 0, bottom: 0, left: desktop ? 104 : 0, zIndex: 30, overflowY: "auto", WebkitOverflowScrolling: "touch" } as CSSProperties}>{children}</div>;
+}
+
+/** text s kovovým prechodom podľa štítu (Teraz, roky) */
+export const kovText: CSSProperties = { background: "var(--metal)", WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent" };
+/** porovnanie bez diakritiky (hľadanie v kronike) */
+export const norm = (x?: string) => (x || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+export const MESIACE = ["JAN", "FEB", "MAR", "APR", "MÁJ", "JÚN", "JÚL", "AUG", "SEP", "OKT", "NOV", "DEC"];
 export const nazovStitu = (s: string): string => ({ Bronze: "Bronzový", Silver: "Strieborný", Gold: "Zlatý", Platinum: "Platinový", Legend: "Legenda" })[s] ?? s;
 
 // ---------------- prevod testovacej zbierky na ZbierkaData (detail) ----------------
