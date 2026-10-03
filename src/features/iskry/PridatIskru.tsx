@@ -15,6 +15,7 @@ import { DeedQr } from "@/components/deedqr";
 import { DeedZnacka } from "@/components/DeedZnacka";
 import { usePouzivatel } from "@/lib/pouzivatel";
 import { useLokalita } from "@/lib/lokalita";
+import { useNastaveniaAppky } from "@/lib/nastaveniaAppky";
 import { jeNeregistrovany } from "@/lib/devDarca";
 import { useMojeStranky, UKAZKOVE_STRANKY } from "@/lib/mojeStranky";
 import { nacitajTiery } from "@/features/rola/stav";
@@ -41,6 +42,7 @@ const IK = { spat: "M15 18l-6-6 6-6", hraj: "M8 5l12 7-12 7z", qr: "M4 8V4h4M20 
 // ---------- zelené + → výber (Skutok · Iskra) ----------
 export function PridatVyber({ onClose }: { onClose: () => void }) {
   const st = useMojeStranky();
+  const { rod } = usePouzivatel(); // bez rodu v profile ostáva mužský tvar
   const org = UKAZKOVE_STRANKY.find((x) => x.k === st.ako && x.typ === "charita");
   const o = (ty: string, vy: string) => (org ? vy : ty);
   const riadok = (ik: string, t: string, s: string, on: () => void) => (
@@ -50,7 +52,7 @@ export function PridatVyber({ onClose }: { onClose: () => void }) {
     </button>);
   return (
     <Harok onClose={onClose} hlavicka={<span style={{ flex: 1, fontSize: 18, fontWeight: 800 }}>{o("Čo chceš pridať?", "Čo chcete pridať?")}</span>}>
-      {riadok(IK.skutok, "Skutok", o("Urobil som niečo dobré.", "Urobili ste niečo dobré."), () => otvorPridatSkutok())}
+      {riadok(IK.skutok, "Skutok", o(`${rod === "zena" ? "Urobila" : "Urobil"} som niečo dobré.`, "Urobili ste niečo dobré."), () => otvorPridatSkutok())}
       {riadok(IK.iskra, "Iskra", "Krátke video do 45 s.", () => otvorPridatIskru())}
     </Harok>);
 }
@@ -66,6 +68,7 @@ function PridatIskru() {
   const { wide } = useLayout();
   const ja = usePouzivatel();
   const lok = useLokalita();
+  const mestoPovolene = useNastaveniaAppky().poloha; // bez povolenej polohy mesto nepíšeme
   const st = useMojeStranky();
   const ako = pridatIskruAko() ?? st.ako; // zo Správy charity vždy za charitu
   const stranka = UKAZKOVE_STRANKY.find((x) => x.k === ako && x.typ === "charita") ?? null;
@@ -90,6 +93,7 @@ function PridatIskru() {
   const [hotovo, setHotovo] = useState<Iskra | null>(null);
   const [zdielat, setZdielat] = useState(false);
   const subRef = useRef<HTMLInputElement>(null), kamRef = useRef<HTMLInputElement>(null), telo = useRef<HTMLDivElement>(null);
+  const hladajRef = useRef<HTMLInputElement>(null); // „Hľadať zbierku" zo skenera dá fokus do poľa
   useEffect(() => { telo.current?.scrollTo({ top: 0 }); }, [k, hotovo]);
   useEffect(() => () => { if (video && !hotovo) URL.revokeObjectURL(video.url); }, []); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { const f = (e: KeyboardEvent) => { if (e.key === "Escape" && !zdielat && !sken) zavri(); }; window.addEventListener("keydown", f); return () => window.removeEventListener("keydown", f); });
@@ -135,7 +139,7 @@ function PridatIskru() {
     if (org && ok2 && kvota <= 0) toast(`Video nad rámec programu · ${KVOTA_ISKIER.cenaNad} €`);
     const zbierka = pen === "centralna" ? { id: CENTRALNA_ID, nazov: centralnaN, pozn: zbPozn }
       : (pen === "ina" || pen === "retaz") && zb ? { id: zb.id, nazov: zb.nazov, pozn: zbPozn } : undefined;
-    const n = pridajIskru({ druh, autor, kto: org ? `Charita · ${lok.mesto}` : lok.mesto, ini, org, popis: popisT, src: video.url, bg: "#1D211B",
+    const n = pridajIskru({ druh, autor, kto: org ? ["Charita", mestoPovolene ? lok.mesto : ""].filter(Boolean).join(" · ") : (mestoPovolene ? lok.mesto : ""), ini, org, popis: popisT, src: video.url, bg: "#1D211B",
       zbierka, bezDarov: pen === "bez", retazPct: pen === "retaz" ? pct : undefined, lenStranka: org && !vsetkym });
     setHotovo(n);
   };
@@ -211,7 +215,7 @@ function PridatIskru() {
           <div style={{ display: "flex", gap: 8 }}>
             <label style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: 8, minHeight: 46, padding: "0 12px", borderRadius: 12, border: "1.5px solid var(--fieldBd)", background: "var(--field)", color: "var(--ink3)" }}>
               <Ik d={IK.lupa} s={18} />
-              <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={o("Hľadať zbierku alebo meno", "Hľadať zbierku alebo charitu")} aria-label="Hľadať zbierku" style={{ flex: 1, minWidth: 0, height: 42, border: "none", background: "transparent", fontFamily: "inherit", fontSize: 15, color: "var(--ink)", outline: "none" }} />
+              <input ref={hladajRef} value={q} onChange={(e) => setQ(e.target.value)} placeholder={o("Hľadať zbierku alebo meno", "Hľadať zbierku alebo charitu")} aria-label="Hľadať zbierku" style={{ flex: 1, minWidth: 0, height: 42, border: "none", background: "transparent", fontFamily: "inherit", fontSize: 15, color: "var(--ink)", outline: "none" }} />
             </label>
             <button type="button" onClick={() => setSken(true)} aria-label="Naskenovať QR zbierky" style={{ flex: "none", width: 46, height: 46, borderRadius: 12, border: "1.5px solid var(--fieldBd)", background: "var(--field)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--ink)" }}><Ik d={IK.qr} s={20} w={2} /></button>
           </div>
@@ -291,7 +295,8 @@ function PridatIskru() {
         <div ref={telo} style={{ flex: 1, minHeight: 0, overflowY: "auto", overscrollBehavior: "contain", padding: "6px 18px 18px", display: "flex", flexDirection: "column", gap: 16 }}>{obsah}</div>
         <div style={{ flex: "none", padding: "12px 18px max(22px, env(safe-area-inset-bottom))", display: "flex", flexDirection: "column", gap: 8, borderTop: "1px solid var(--cardBd)", background: "var(--bg)" }}>{pata}</div>
       </div>
-      {sken && <SkenZbierky onClose={() => setSken(false)} onZbierka={(z) => { setZb(z); setSken(false); }} />}
+      {sken && <SkenZbierky onClose={() => setSken(false)} onZbierka={(z) => { setZb(z); setSken(false); }}
+        onHladat={() => { setSken(false); window.setTimeout(() => hladajRef.current?.focus(), 120); }} />}
       {zdielat && hotovo && <ZdielatIskru v={hotovo} onClose={() => setZdielat(false)} />}
     </div>);
   return createPortal(okno, document.body);
@@ -310,9 +315,11 @@ function ZbierkaRiadok({ z, on, onClick }: { z: ZbierkaVRetazi; on: boolean; onC
 }
 
 /** QR zbierky (deed.sk/z/{id}) — kamera; bez kamery hláška. Nájdená zbierka sa hneď vyberie. */
-function SkenZbierky({ onClose, onZbierka }: { onClose: () => void; onZbierka: (z: ZbierkaVRetazi) => void }) {
+function SkenZbierky({ onClose, onZbierka, onHladat }: { onClose: () => void; onZbierka: (z: ZbierkaVRetazi) => void; onHladat: () => void }) {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const [bezKamery, setBezKamery] = useState(false);
+  /** null = kamera beží · "nie" = nie je dostupná · "zamietnuta" = človek ju nepovolil */
+  const [chyba, setChyba] = useState<null | "nie" | "zamietnuta">(null);
+  const [ako, setAko] = useState(false); // web nevie otvoriť nastavenia telefónu — ukážeme postup
   useEffect(() => {
     let zrusene = false, hotovo = false;
     let stop: (() => void) | null = null;
@@ -325,12 +332,24 @@ function SkenZbierky({ onClose, onZbierka }: { onClose: () => void; onZbierka: (
         const z = m ? zbierkaVRetazi(decodeURIComponent(m[1])) : null;
         if (z) { hotovo = true; ctrl.stop(); onZbierka(z); } else toast("Toto nie je QR zbierky.");
       }).then((c) => { stop = () => c.stop(); if (zrusene) c.stop(); });
-    }).catch(() => { if (!zrusene) setBezKamery(true); });
+    }).catch((e: unknown) => {
+      if (zrusene) return;
+      const n = (e as { name?: string } | null)?.name;
+      setChyba(n === "NotAllowedError" || n === "SecurityError" ? "zamietnuta" : "nie");
+    });
     return () => { zrusene = true; try { stop?.(); } catch { /* už stojí */ } };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
   return (
-    <Harok onClose={onClose} z={160} hlavicka={<span style={{ flex: 1, fontSize: 17, fontWeight: 800 }}>Naskenovať QR zbierky</span>}>
-      {bezKamery ? <span style={{ fontSize: 14, lineHeight: 1.5, color: "var(--ink2)" }}>Kamera nie je dostupná. Zbierku nájdete aj podľa názvu.</span>
-        : <video ref={videoRef} muted playsInline style={{ width: "100%", aspectRatio: "1 / 1", objectFit: "cover", borderRadius: 18, background: "#000" }} />}
+    <Harok onClose={onClose} z={160} hlavicka={<span style={{ flex: 1, fontSize: 17, fontWeight: 800 }}>{chyba ? "Kamera nie je dostupná" : "Naskenovať QR zbierky"}</span>}>
+      {!chyba
+        ? <video ref={videoRef} muted playsInline style={{ width: "100%", aspectRatio: "1 / 1", objectFit: "cover", borderRadius: 18, background: "#000" }} />
+        : <>
+          <span style={{ fontSize: 14.5, lineHeight: 1.5, color: "var(--ink2)" }}>{chyba === "zamietnuta" ? "Povoľ kameru v nastaveniach telefónu, alebo nájdi zbierku podľa názvu." : "Zbierku nájdeš aj podľa názvu."}</span>
+          {ako && <span style={{ fontSize: 13.5, lineHeight: 1.5, color: "var(--ink3)" }}>iPhone: Nastavenia → Safari → Kamera → Povoliť. Android: ťuk na ikonu vedľa adresy → Povolenia → Kamera.</span>}
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            {chyba === "zamietnuta" && <button type="button" onClick={() => setAko(true)} style={{ flex: 1, minHeight: 48, borderRadius: 14, border: "1.5px solid var(--fieldBd)", background: "var(--field)", cursor: "pointer", fontFamily: "inherit", fontSize: 15, fontWeight: 800, color: "var(--ink)" }}>Otvoriť nastavenia</button>}
+            <button type="button" onClick={onHladat} style={{ flex: 1, minHeight: 48, borderRadius: 14, border: "none", background: "#4B7A35", cursor: "pointer", fontFamily: "inherit", fontSize: 15, fontWeight: 800, color: "#fff" }}>Hľadať zbierku</button>
+          </div>
+        </>}
     </Harok>);
 }
