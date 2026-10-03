@@ -10,7 +10,7 @@
 // ============================================================
 import { createPortal } from "react-dom";
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type PointerEvent as RPointerEvent } from "react";
-import { DeedZnacka, sZnackou } from "@/components/DeedZnacka";
+import { sZnackou } from "@/components/DeedZnacka";
 import { toast } from "@/components/toast";
 import { TESTOVACIA } from "@/lib/testovacia";
 import { jeNeregistrovany, sledujDarcu } from "@/lib/devDarca";
@@ -271,11 +271,7 @@ function IskryPrud() {
                   onLoadedData={(e) => { e.currentTarget.style.opacity = "1"; }} onError={(e) => { e.currentTarget.style.opacity = "0"; }}
                   style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", opacity: 0, transition: "opacity .25s ease", pointerEvents: "none" }} />}
                 <span style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg,rgba(0,0,0,.55) 0%,rgba(0,0,0,0) 28%,rgba(0,0,0,0) 50%,rgba(0,0,0,.85) 100%)", pointerEvents: "none" }} />
-                {/* vodoznak: DEED+ ako v appke + meno autora (pri zdieľaní von sa vypáli do videa — server) */}
-                <span aria-hidden="true" style={{ position: "absolute", left: 14, top: "33%", display: "flex", flexDirection: "column", gap: 1, opacity: 0.85, textShadow: TIEN, pointerEvents: "none", color: "#fff" }}>
-                  <span style={{ fontSize: 18, fontWeight: 800, lineHeight: 1, color: "#8CC653" }}><DeedZnacka /></span>
-                  <span style={{ fontSize: 10.5, fontWeight: 700 }}>{v.autor}</span>
-                </span>
+                {/* KARTA 41b bod 6: starý vodoznak (DEED+ a meno v strede vľavo) zrušený — nahradil ho QR vľavo hore; meno ostáva len v riadku autora dole */}
                 {i !== idx && <span aria-hidden="true" style={{ position: "absolute", left: "50%", top: "44%", width: 72, height: 72, margin: "-36px 0 0 -36px", borderRadius: "50%", background: "rgba(0,0,0,.35)", display: "flex", alignItems: "center", justifyContent: "center" }}><Ik d={IK.hraj} s={28} fill="#fff" w={0} /></span>}
                 {dva?.id === v.id && <svg key={dva.k} width="96" height="96" viewBox="0 0 24 24" aria-hidden="true" className="isk-dva" style={{ position: "absolute", left: dva.x - 48, top: dva.y - 48, zIndex: 4, pointerEvents: "none", filter: "drop-shadow(0 0 12px rgba(246,196,83,.9))" }}><path d={IK.iskra} fill={ZLATA} /></svg>}
 
@@ -356,8 +352,8 @@ function IskryPrud() {
             </span>
           </div>}
           {/* KARTA 41b · QR Iskry pod pásom: malý, inverzný, ~35 %; ťuk = QR na celú obrazovku + Kopírovať odkaz */}
-          {akt && <button type="button" onClick={() => setQrVelky(akt)} aria-label="QR tejto Iskry" style={{ pointerEvents: "auto", alignSelf: "flex-end", minWidth: 44, minHeight: 44, padding: 0, border: "none", background: "transparent", cursor: "pointer", opacity: 0.35, lineHeight: 0 }}>
-            <DeedQr data={odkazIskry(akt.id)} odznak={akt.org ? "D++" : "D+"} retaz={akt.retazPct != null} variant="inverzny" size={52} /></button>}
+          {akt && <button type="button" onClick={() => setQrVelky(akt)} aria-label="QR tejto Iskry" style={{ pointerEvents: "auto", alignSelf: "flex-start", marginLeft: 2, minWidth: 44, minHeight: 44, padding: 0, border: "none", background: "transparent", cursor: "pointer", opacity: 0.35, lineHeight: 0 }}>
+            <DeedQr data={odkazIskry(akt.id)} odznak={akt.org ? "D++" : "D+"} retaz={akt.retazPct != null} variant="inverzny" size={56} /></button>}
         </div>
 
         {/* ---------- okná zdola ---------- */}
