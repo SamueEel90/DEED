@@ -150,6 +150,9 @@ input, textarea, button {
   outline-offset: 2px;
 }
 
+/* OPRAVY Iskry bod 1: v prehrávači Isker žiadny zelený rámik po ťuku (dotykový povrch; klávesnica má šípky/F/Esc) */
+.isk-dialog :focus-visible { outline: none; }
+
 /* OPRAVY 128: pole „Za zbierku zodpovedá" — focus rámik okolo celej karty */
 .zb-pole-org :focus-visible { outline: none; }
 .zb-pole-org:has(:focus-visible) { outline: 2px solid var(--a-green); outline-offset: 2px; }

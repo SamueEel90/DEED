@@ -231,7 +231,7 @@ function IskryPrud() {
   const poloha = aktualny ? meraj() : undefined; // eslint-disable-line react-hooks/refs
 
   return (
-    <div ref={dialogRef} role="dialog" aria-modal="true" aria-label="Iskry" onClick={(e) => { if (pc && e.target === e.currentTarget) zavriIskry(); }}
+    <div ref={dialogRef} className="isk-dialog" role="dialog" aria-modal="true" aria-label="Iskry" onClick={(e) => { if (pc && e.target === e.currentTarget) zavriIskry(); }}
       style={{ position: "fixed", inset: 0, zIndex: 140, zoom: bezZoomu(), background: "#0E0F0C", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", fontFamily: "'Plus Jakarta Sans', sans-serif" } as CSSProperties}>
       {/* po bokoch rozmazaná kópia aktuálneho videa (nie čierne pásy) */}
       {boky && akt && <div aria-hidden="true" style={{ position: "absolute", inset: 0, pointerEvents: "none", overflow: "hidden" }}>
