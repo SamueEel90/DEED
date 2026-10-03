@@ -16,7 +16,7 @@ import { TESTOVACIA } from "@/lib/testovacia";
 import { jeNeregistrovany, sledujDarcu } from "@/lib/devDarca";
 import { darcoviaPre, sucetDarov, pridajDar, pridajCudziDarMock, identitaDarcu, zobrazenaSuma, relCas, useZmenyDarov, type DarRiadok, type KanalDaru } from "@/lib/darcovia";
 import {
-  ISKRY_CFG, iskryVsetky, odkazIskry, DOVODY_NAMIETKY, refIskry, useZmenyIskier, pocetIskier, mojaIskra, prepniIskru, zapniIskru,
+  ISKRY_CFG, iskryVsetky, nacitajPrud, odkazIskry, DOVODY_NAMIETKY, refIskry, useZmenyIskier, pocetIskier, mojaIskra, prepniIskru, zapniIskru,
   sledujemAutora, prepniSledovanie, overujemIskru, prepniOverenie, namietkaIskry, podajNamietku, type Iskra,
 } from "@/lib/iskry";
 import { PlatobneOkno } from "@/features/zbierka/Platba";
@@ -134,6 +134,16 @@ function IskryPrud() {
   }, [druh, mierka]);
   useLayoutEffect(() => { const el = sc.current; if (el && idx > 0) el.scrollTop = idx * el.clientHeight; }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const list = iskryVsetky().filter((v) => druh === 0 || v.druh === druh);
+  // prúd zo servera (0034) príde až po otvorení — odkaz /i/{id} na serverovú Iskru sa naň posunie, keď sa načíta
+  useEffect(() => { nacitajPrud(); }, []);
+  const startCaka = useRef(!!startId && iskryVsetky().findIndex((x) => x.id === startId) < 0);
+  useEffect(() => {
+    if (!startCaka.current || !startId) return;
+    const i = list.findIndex((x) => x.id === startId);
+    if (i < 0) return;
+    startCaka.current = false;
+    window.setTimeout(() => { const el = sc.current; if (el) el.scrollTop = i * el.clientHeight; }, 30);
+  });
   const akt = list[Math.min(idx, list.length - 1)];
   useLayoutEffect(() => {
     const n = new Set<string>();

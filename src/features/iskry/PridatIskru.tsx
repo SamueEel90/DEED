@@ -22,7 +22,8 @@ import { nacitajTiery } from "@/features/rola/stav";
 import { CENTRALNA_ID } from "@/features/rola/vlastneZbierky";
 import { verejneBeziace, zbierkaVRetazi, type ZbierkaVRetazi } from "@/lib/retaz";
 import { normalizuj } from "@/lib/mojeSkutky";
-import { ISKRY_CFG, KVOTA_ISKIER, kvotaOstava, minKvotu, odkazIskry, pridajIskru, type DruhIskry, type Iskra } from "@/lib/iskry";
+import { ISKRY_CFG, KVOTA_ISKIER, kvotaOstava, minKvotu, odkazIskry, pridajIskru, pridajHotovuIskru, type DruhIskry, type Iskra } from "@/lib/iskry";
+import { ISKRA_MAX_MB, nacitajKvotuIskier, zverejniIskruNaServeri, type KvotaIskier } from "@/lib/iskryServer";
 import { Harok } from "@/features/zbierka/Zdielat";
 import { PercentaRetaze } from "@/features/zbierka/RetazDobra";
 import PodrzTlacidlo from "@/features/zbierka/PodrzTlacidlo";
@@ -79,7 +80,12 @@ function PridatIskru() {
   const tier = nacitajTiery().charita;
 
   const [k, setK] = useState(1);
-  const [video, setVideo] = useState<{ url: string; s: number | null } | null>(null);
+  const [video, setVideo] = useState<{ url: string; s: number | null; f: File } | null>(null);
+  const [odosiela, setOdosiela] = useState(false);
+  // kvóta zo servera (iskra_kvota, 0034) má prednosť pred lokálnym odhadom — program stránky pozná len server
+  const [kvotaSrv, setKvotaSrv] = useState<KvotaIskier | null>(null);
+  const strankaK = stranka?.k ?? null;
+  useEffect(() => { if (!strankaK) return; let ziva = true; void nacitajKvotuIskier(strankaK).then((x) => { if (ziva) setKvotaSrv(x); }); return () => { ziva = false; }; }, [strankaK]);
   const [vch, setVch] = useState<string | null>(null);
   const [popis, setPopis] = useState("");
   const [druh, setDruh] = useState<DruhIskry | null>(null);
@@ -101,7 +107,8 @@ function PridatIskru() {
 
   // len prihlásený
   const neprihlaseny = jeNeregistrovany();
-  const kvota = org ? kvotaOstava(stranka!.k, tier) : 0;
+  const kvota = !org ? 0 : kvotaSrv ? kvotaSrv.ostava : kvotaOstava(stranka!.k, tier);
+  const kvotaLimit = kvotaSrv?.limit ?? KVOTA_ISKIER.naProgram[tier] ?? 1;
   const popisT = cistyText(popis);
   const ukazZb = pen === "ina" || pen === "retaz";
   const centralnaN = org ? `Centrálna zbierka ${stranka!.n}` : "";
@@ -117,31 +124,50 @@ function PridatIskru() {
   const onVideo = (f: File | undefined) => {
     if (!f) return;
     if (!f.type.startsWith("video/")) { setVch(o("Toto nie je video. Vyber súbor MP4 alebo MOV.", "Toto nie je video. Vyberte súbor MP4 alebo MOV.")); return; }
+    const mb = f.size / 1024 / 1024;
+    if (mb > ISKRA_MAX_MB) { setVch(`Video má ${Math.round(mb)} MB. Najviac je ${ISKRA_MAX_MB} MB, ${o("skráť ho alebo ho nahraj v nižšej kvalite.", "skráťte ho alebo ho nahrajte v nižšej kvalite.")}`); return; }
     const url = URL.createObjectURL(f);
     const v = document.createElement("video"); v.preload = "metadata";
     v.onloadedmetadata = () => {
       const s = Math.round(v.duration);
       if (v.duration > MAX_S + 0.5) { URL.revokeObjectURL(url); setVch(`Video má ${s} s. Najviac je 1 minúta, ${o("skráť ho.", "skráťte ho.")}`); return; }
       if (video) URL.revokeObjectURL(video.url);
-      setVideo({ url, s }); setVch(v.duration > ODPORUCANE_S + 0.5 ? `Video má ${s} s. Odporúčame do 45 s, ale ešte je to v poriadku.` : null);
+      setVideo({ url, s, f }); setVch(v.duration > ODPORUCANE_S + 0.5 ? `Video má ${s} s. Odporúčame do 45 s, ale ešte je to v poriadku.` : null);
     };
-    v.onerror = () => { if (video) URL.revokeObjectURL(video.url); setVideo({ url, s: null }); setVch(null); };
+    v.onerror = () => { if (video) URL.revokeObjectURL(video.url); setVideo({ url, s: null, f }); setVch(null); };
     v.src = url;
   };
 
   const zbNazov = pen === "centralna" ? centralnaN : ukazZb && zb ? zb.nazov : "";
   const zbPozn = pen === "centralna" ? "100 % na centrálnu zbierku" : pen === "retaz" ? `Reťaz dobra · ${pct} % ide na zbierku` : pen === "ina" ? "100 % ide na zbierku" : "";
 
-  const zverejni = () => {
-    if (chyba || !video || druh == null || !pen) return;
+  const CHYBY_SERVERA: Record<string, string> = {
+    velke_video: `Video je väčšie ako ${ISKRA_MAX_MB} MB.`, zly_typ: "Tento formát videa nevieme uložiť. Použite MP4 alebo MOV.",
+    nie_spravca: "Za túto stránku zverejňuje Iskry iný účet.", upload: "Video sa nepodarilo nahrať. Skúste to znova.",
+  };
+  const zverejni = async () => {
+    if (chyba || !video || druh == null || !pen || odosiela) return;
     const vsetkym = !org || ok2;
-    if (org && ok2 && kvota > 0) minKvotu(stranka!.k);
-    if (org && ok2 && kvota <= 0) toast(`Video nad rámec programu · ${KVOTA_ISKIER.cenaNad} €`);
     const zbierka = pen === "centralna" ? { id: CENTRALNA_ID, nazov: centralnaN, pozn: zbPozn }
       : (pen === "ina" || pen === "retaz") && zb ? { id: zb.id, nazov: zb.nazov, pozn: zbPozn } : undefined;
-    const n = pridajIskru({ druh, autor, kto: org ? ["Charita", mestoPovolene ? lok.mesto : ""].filter(Boolean).join(" · ") : (mestoPovolene ? lok.mesto : ""), ini, org, popis: popisT, src: video.url, bg: "#1D211B",
-      zbierka, bezDarov: pen === "bez", retazPct: pen === "retaz" ? pct : undefined, lenStranka: org && !vsetkym });
-    setHotovo(n);
+    const kto = org ? ["Charita", mestoPovolene ? lok.mesto : ""].filter(Boolean).join(" · ") : (mestoPovolene ? lok.mesto : "");
+    const spolocne = { druh, autor, kto, ini, popis: popisT, zbierka, bezDarov: pen === "bez", retazPct: pen === "retaz" ? pct : undefined, lenStranka: org && !vsetkym };
+    setOdosiela(true);
+    try {
+      // živá DB: nahratie + zverejnenie na serveri (kvótu počíta server); bez DB len v relácii
+      const srv = await zverejniIskruNaServeri(video.f, { ...spolocne, stranka: org ? stranka!.k : null, dlzkaS: video.s });
+      if (srv) {
+        if (srv.nadKvotu) toast(`Video nad rámec programu · ${KVOTA_ISKIER.cenaNad} €`);
+        URL.revokeObjectURL(video.url);
+        setHotovo(pridajHotovuIskru(srv.iskra));
+        return;
+      }
+      if (org && ok2 && kvota > 0) minKvotu(stranka!.k);
+      if (org && ok2 && kvota <= 0) toast(`Video nad rámec programu · ${KVOTA_ISKIER.cenaNad} €`);
+      setHotovo(pridajIskru({ ...spolocne, org, src: video.url, bg: "#1D211B" }));
+    } catch (e) {
+      toast(CHYBY_SERVERA[(e as Error).message] ?? "Iskru sa nepodarilo zverejniť. Skúste to znova.");
+    } finally { setOdosiela(false); }
   };
 
   // ---------- vzhľad ----------
@@ -257,7 +283,7 @@ function PridatIskru() {
       </section>
       {zaskrt(ok1, o("Video je moje alebo mám právo ho použiť", "Video je naše alebo máme právo ho použiť"), "Ľudia na videu súhlasia, deti len so súhlasom rodiča.", () => setOk1(!ok1))}
       {org && zaskrt(ok2, "Ukázať video všetkým v Iskrách",
-        ostava ? `Uvidia ho aj ľudia, ktorí vás nesledujú. V programe máte ${KVOTA_ISKIER.naProgram[tier] ?? 1} ${(KVOTA_ISKIER.naProgram[tier] ?? 1) === 1 ? "takéto video" : "takéto videá"} mesačne zadarmo, tento mesiac vám ešte ${kvota === 1 ? "ostáva" : `ostávajú ${kvota}`}. Ďalšie stojí ${KVOTA_ISKIER.cenaNad} €. Bez zaškrtnutia bude video len na vašej stránke.`
+        ostava ? `Uvidia ho aj ľudia, ktorí vás nesledujú. V programe máte ${kvotaLimit} ${kvotaLimit === 1 ? "takéto video" : "takéto videá"} mesačne zadarmo, tento mesiac vám ešte ${kvota === 1 ? "ostáva" : `ostávajú ${kvota}`}. Ďalšie stojí ${KVOTA_ISKIER.cenaNad} €. Bez zaškrtnutia bude video len na vašej stránke.`
           : `Uvidia ho aj ľudia, ktorí vás nesledujú. Tento mesiac ste už použili. Toto video stojí ${KVOTA_ISKIER.cenaNad} €. Bez zaškrtnutia bude video len na vašej stránke.`, () => setOk2(!ok2))}
     </>);
   }
@@ -273,8 +299,8 @@ function PridatIskru() {
       {chyba && <span role="status" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, fontSize: 13.5, fontWeight: 700, color: "var(--gold)" }}><span aria-hidden="true" style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--gold)" }} />{chyba}</span>}
       {k < 4 ? <button type="button" aria-disabled={!!chyba} onClick={() => { if (!chyba) setK(k + 1); }} style={tlHl(!!chyba)}>Pokračovať</button>
         : <>
-          {tuk ? <button type="button" onDoubleClick={zverejni} aria-disabled={!!chyba} style={tlHl(!!chyba)}>{o("Dvakrát klikni a zverejni", "Dvakrát kliknite a zverejnite")}</button>
-            : <div style={{ ["--gGrad" as string]: "linear-gradient(90deg,#4B7A35,#8DB866)" }}><PodrzTlacidlo label={o("Podrž a zverejni", "Podržte a zverejnite")} disabled={!!chyba} onConfirm={zverejni} /></div>}
+          {tuk ? <button type="button" onDoubleClick={() => void zverejni()} aria-disabled={!!chyba || odosiela} style={tlHl(!!chyba || odosiela)}>{odosiela ? "Nahrávam video…" : o("Dvakrát klikni a zverejni", "Dvakrát kliknite a zverejnite")}</button>
+            : <div style={{ ["--gGrad" as string]: "linear-gradient(90deg,#4B7A35,#8DB866)" }}><PodrzTlacidlo label={odosiela ? "Nahrávam video…" : o("Podrž a zverejni", "Podržte a zverejnite")} disabled={!!chyba || odosiela} onConfirm={() => void zverejni()} /></div>}
           <span style={{ fontSize: 13, lineHeight: 1.45, color: "var(--ink3)", textAlign: "center" }}>{o("Po zverejnení ju hneď uvidia ľudia v Iskrách. Pred zverejnením si ju poriadne pozri.", "Po zverejnení ju hneď uvidia ľudia v Iskrách. Pred zverejnením si ju poriadne pozrite.")}</span>
         </>}
     </>;
