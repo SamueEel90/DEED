@@ -37,6 +37,8 @@ export type ZbierkaData = {
   overena?: boolean;
   media?: Medium[];    // poradie volí autor (predvolene video prvé)
   organizacia?: OrgPole; // kto za zbierku zodpovedá / kto ju overil (karta 03)
+  /** karta 03: overovateľ zbierky a pri split dare ostatné charity — každý vlastný riadok s jedným štítom */
+  dalsieOrg?: OrgPole[];
   vyzbierane?: number;   // základ mimo živých darov (karta 04)
   ciel?: number;         // bez cieľa → míľniky
   ludia?: number;
@@ -65,9 +67,14 @@ function useSirokeOkno() {
 
 // ---- DEV simulácia (len lokálne, v produkcii miesto a stav dodá appka) ----
 const KLUC_DEV = "deed.dev.zbierkaModul";
-type DevStav = { miesto: Miesto; maCiel: boolean; dorovnanie: boolean; split: boolean; tempoSilna: boolean };
+type DevStav = { miesto: Miesto; maCiel: boolean; dorovnanie: boolean; split: boolean; tempoSilna: boolean; dalsieOrg: boolean };
 const DEV_CIEL = 2200;
-const DEV_ZAKLAD: DevStav = { miesto: "charita", maCiel: true, dorovnanie: false, split: false, tempoSilna: false };
+const DEV_ZAKLAD: DevStav = { miesto: "charita", maCiel: true, dorovnanie: false, split: false, tempoSilna: false, dalsieOrg: false };
+/** DEV ukážka: overovateľ + druhá charita (split dar) — kým ich nedodá server */
+const DEV_DALSIE_ORG: OrgPole[] = [
+  { meno: "Mesto Trenčín", typ: "overovatel", mesto: "Trenčín", veta: "Zbierku sme overili na mieste.", cisla: [], stit: "Gold" },
+  { meno: "Svetlo pomoci o.z.", typ: "charita", mesto: "Trenčín · Juh", veta: "Pomáhame rodinám v núdzi v Trenčianskom kraji.", cisla: [["12 400 €", "vyzbierané"], ["38", "skutkov"]], stit: "Silver" },
+];
 function nacitajDev(): DevStav {
   try { const s = localStorage.getItem(KLUC_DEV); return s ? { ...DEV_ZAKLAD, ...JSON.parse(s) } : DEV_ZAKLAD; } catch { return DEV_ZAKLAD; }
 }
@@ -127,9 +134,10 @@ export function ZbierkaModul({ zbierka, miesto: miestoProp, onBack, spatNazov, o
     if (p.kluc === "poleZodpoveda") {
       if (!zbierka.organizacia || zoStrankyOrg) return null;
       const org: OrgPole = { ...zbierka.organizacia, typ: miesto === "sukromna" ? "overovatel" : "charita" };
+      const dalsie = zbierka.dalsieOrg ?? (TESTOVACIA && dev.dalsieOrg ? DEV_DALSIE_ORG : []);
       return (
         <div key={p.kluc} className="zb-pol" style={{ padding: "0 16px" }}>
-          <PoleOrganizacie org={org} nadpis={String(p.hodnota)} otvorene={!!st.pole}
+          <PoleOrganizacie org={org} dalsie={dalsie} nadpis={String(p.hodnota)} otvorene={!!st.pole}
             onPrepni={() => zmenStav({ pole: !st.pole })} onOtvorStranku={onOtvorOrg} />
         </div>
       );
@@ -282,6 +290,7 @@ function DevPanel({ dev, setDev, miestoPevne, registrovany, ico, cielInfo, onDar
             <div style={{ fontSize: 10.5, fontWeight: 400, color: C.textTer }}>skutočný stav zbierky · zapína ho firma cez „Zapojiť firmu do dorovnania"</div>
           </div>
           {dev.miesto === "sukromna" && riadok("Súkromnú splitol tvorca", dev.split, (v) => setDev({ split: v }))}
+          {riadok("Overovateľ a druhá charita (split dar)", dev.dalsieOrg, (v) => setDev({ dalsieOrg: v }))}
           <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: SPACE.xxs, padding: `${SPACE.xxs}px 0` }}>
             <span style={{ flex: 1, fontSize: 12, fontWeight: 700 }}>Tempo darov (výpočet ešte nie je)</span>
             {STUPNE.map((n, i) => <span key={n} {...pressable(() => nastavDevTempo(i as Stupen), n)} style={chip(tempo === i)}>{n}</span>)}
