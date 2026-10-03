@@ -124,12 +124,14 @@ type Form = { druh: DruhOznamu | null; forma: FormaOznamu; nadpis: string; text:
   datum: string; cas: string; miesto: string; pozvanie: Pozvanie; limit: string; suhlas: boolean; potvrd: boolean;
   /** „Pri akcii zbierame na": "" = Nič, inak id zbierky z ponuky */
   zbierka: string };
-const prazdny = (zadarmo: boolean): Form => ({ druh: zadarmo ? null : "oznam", forma: "text", nadpis: "", text: "", media: [], datum: "", cas: "", miesto: "", pozvanie: "bez", limit: "", suhlas: false, potvrd: false, zbierka: "" });
+const prazdny = (zadarmo: boolean, start?: DruhOznamu): Form => ({ druh: start ?? (zadarmo ? null : "oznam"), forma: "text", nadpis: "", text: "", media: [], datum: "", cas: "", miesto: "", pozvanie: "bez", limit: "", suhlas: false, potvrd: false, zbierka: "" });
 
-export function OznamySprava({ strankaId, tier, nazov, inicialy, mesto, logo, mobil, tablet, toast, onProfil, zbierky = [] }: {
+export function OznamySprava({ strankaId, tier, nazov, inicialy, mesto, logo, mobil, tablet, toast, onProfil, zbierky = [], start }: {
   strankaId: string; tier: number; nazov: string; inicialy: string; mesto: string; logo?: string | null; mobil: boolean; tablet: boolean; toast: (m: string) => void; onProfil?: () => void;
   /** ponuka „Pri akcii zbierame na" — centrálna a bežiace zbierky charity (prázdne = výber sa neukáže) */
   zbierky?: ZbierkaPriAkcii[];
+  /** KARTA 42: druh predvolený pri otvorení (Zadarmo z hárku Pridať → rovno výzva na súrnu pomoc) */
+  start?: DruhOznamu;
 }) {
   useZmenyOznamovCharity();
   useEffect(() => { void nacitajOznamyStranky(strankaId); }, [strankaId]);
@@ -137,7 +139,7 @@ export function OznamySprava({ strankaId, tier, nazov, inicialy, mesto, logo, mo
   const zadarmo = tier < 1;
   const zamknuty = (d: DruhOznamu) => tier < OZNAMY_CFG.odTieru[d];
   const [pohlad, setPohlad] = useState<"novy" | "sprava">("novy");
-  const [f, setF] = useState<Form>(() => prazdny(zadarmo));
+  const [f, setF] = useState<Form>(() => prazdny(zadarmo, start));
   const zmen = (z: Partial<Form>) => setF((x) => ({ ...x, ...z }));
   useEffect(() => { if (f.druh && zamknuty(f.druh)) zmen({ druh: null }); }, [tier]); // eslint-disable-line react-hooks/exhaustive-deps
   const [uprava, setUprava] = useState<OznamCharity | null>(null);

@@ -15,7 +15,7 @@ import { SpravaZbierky, type ZbierkaNaSpravu } from "./SpravaZbierky";
 import { CentralnaZbierkaSprava } from "./CentralnaSprava";
 import { SkutkyCharity } from "./SkutkyCharity";
 import { OznamySprava } from "./NovyOznam";
-import type { ZbierkaPriAkcii } from "@/lib/oznamyNove";
+import type { ZbierkaPriAkcii, DruhOznamu } from "@/lib/oznamyNove";
 import { centralnaZPamate } from "@/lib/centralnaZbierka";
 import { CENTRALNA_ID } from "./vlastneZbierky";
 import { SUBJEKTY } from "./mock";
@@ -291,7 +291,9 @@ export function SpravaStranky({ onBack, typ: typStranky = "charita", strankaId =
   const [limitOkno, setLimitOkno] = useState(false);
   const [spravZb, setSpravZb] = useState<ZbierkaNaSpravu | null>(null); // KARTA 38: ktorú zbierku spravujem
   const [verejny, setVerejny] = useState(false); // OPRAVY 107: tlačidlo Verejný profil = skutočný verejný profil
-  const otvor = (s: Sub) => { zastavDiktovanie(); if (s === "x:Verejný profil") { setVerejny(true); return; }
+  // KARTA 42: Zadarmo → z hárku Pridať sa Oznamy otvoria rovno na výzve na súrnu pomoc
+  const [oznamStart, setOznamStart] = useState<DruhOznamu | undefined>(undefined);
+  const otvor = (s: Sub, oznamDruh?: DruhOznamu) => { zastavDiktovanie(); setOznamStart(oznamDruh); if (s === "x:Verejný profil") { setVerejny(true); return; }
     // KARTA 37 · bod 3: v programe Zadarmo beží jedna zbierka naraz (limit z stav.ts)
     if (s === "x:Nová zbierka" && sub !== s && beziacich >= KONFIG.limitZbierok[tier]) { setLimitOkno(true); return; }
     // OPRAVY 118/121: Pridať skutok = ten istý PridatSkutok, za charitu (organizacia: true)
@@ -350,7 +352,7 @@ export function SpravaStranky({ onBack, typ: typStranky = "charita", strankaId =
   else if (sub === "x:Správa zbierky" && spravZb) obsah = <SpravaZbierky key={spravZb.id} z={spravZb} mobil={!wide} toast={toast} onZbierky={() => { hist.current = []; setSub("g_zbierky"); }} />;
   else if (sub.startsWith("x:")) obsah = <Pripravujeme />;
   // KARTA 40: Oznamy — v Zadarmo výzva na súrnu pomoc a dva zamknuté druhy (nie „Pripravujeme" ani zámok celej položky)
-  else if (sub === "oznamy" && typPovoli("oznamy", typ)) obsah = <OznamySprava strankaId={strankaId} tier={tier} nazov={nazov} inicialy={inicialy} mesto={SUBJEKTY[poz]?.lok ?? "Trenčín"} logo={profil?.logo ?? null} mobil={!desktop} tablet={tablet} toast={toast} onProfil={() => otvor("x:Verejný profil")} zbierky={zbierkyPreOznam} />;
+  else if (sub === "oznamy" && typPovoli("oznamy", typ)) obsah = <OznamySprava strankaId={strankaId} tier={tier} nazov={nazov} inicialy={inicialy} mesto={SUBJEKTY[poz]?.lok ?? "Trenčín"} logo={profil?.logo ?? null} mobil={!desktop} tablet={tablet} toast={toast} onProfil={() => otvor("x:Verejný profil")} zbierky={zbierkyPreOznam} start={oznamStart} />;
   // Obsah → Skutky: zoznam skutkov charity + Pridať skutok (ten istý ako v Nástrojoch)
   else if (sub === "skutky" && typPovoli("skutky", typ) && maPovolenie("skutky", tier)) obsah = <SkutkyCharity strankaId={strankaId} mobil={!desktop} onPridat={() => otvor("pridatSkutok")} />;
   // KARTA 39 · bod 3: centrálna zbierka (od P1)
@@ -442,7 +444,7 @@ export function SpravaStranky({ onBack, typ: typStranky = "charita", strankaId =
       </div>
       {zoomEl}
       {pridat && <HarokPridat stit={stit} tier={tier} typ={typ} onClose={() => setPridat(false)}
-        onVolba={(k) => { setPridat(false); if (k === "zbierka") otvor("x:Nová zbierka"); else if (k === "skutok") otvor("pridatSkutok"); else if (k === "iskra") otvorPridatIskru(strankaId); else otvor("oznamy"); }} />}
+        onVolba={(k) => { setPridat(false); if (k === "zbierka") otvor("x:Nová zbierka"); else if (k === "skutok") otvor("pridatSkutok"); else if (k === "iskra") otvorPridatIskru(strankaId); else otvor("oznamy", tier < 1 ? "vyzva" : undefined); }} />}
     </div>
   );
 }
@@ -627,24 +629,26 @@ function SpodnyHarok({ stit, nadpis, onClose, children, bezHlavicky }: { stit: S
 }
 
 /** + → Pridať: Nová zbierka · Skutok · Iskra · Oznam (štítok podľa programu) */
-const PRIDAT_VOLBY: { k: "zbierka" | "skutok" | "iskra" | "oznam"; t: string; s: string; d: string; id: PolozkaSpravy }[] = [
+const PRIDAT_VOLBY: { k: "zbierka" | "skutok" | "iskra" | "oznam"; t: string; s: string; /** text v Zadarmo (položka sa otvorí, štítok „od Px" sa neukáže) */ sZadarmo?: string; d: string; id: PolozkaSpravy }[] = [
   { k: "zbierka", t: "Nová zbierka", s: "Krátkodobá 30 dní alebo dlhodobá", d: IK.zbierky, id: "zbierky" },
   { k: "skutok", t: "Skutok", s: "Takto sme pomohli · aj s dobrovoľníkmi", d: "M12 3l2.5 5.5L20 9l-4.5 4 1.5 6-5-3-5 3 1.5-6L4 9l5.5-.5z", id: "pridatSkutok" },
   { k: "iskra", t: "Iskra", s: "Video do 45 s", d: "M4 6h16v12H4zM10 9l5 3-5 3z", id: "video" },
-  { k: "oznam", t: "Oznam", s: "Pre sledujúcich alebo na nástenku mesta", d: "M4 10v4h3l6 4V6L7 10z", id: "oznamy" },
+  { k: "oznam", t: "Oznam", s: "Krátka správa pre sledujúcich", sZadarmo: "Len výzva na súrnu pomoc", d: "M4 10v4h3l6 4V6L7 10z", id: "oznamy" },
 ];
 function HarokPridat({ stit, tier, typ, onClose, onVolba }: { stit: StitCharity; tier: Tier; typ: TypStranky; onClose: () => void; onVolba: (k: (typeof PRIDAT_VOLBY)[number]["k"]) => void }) {
   return (
     <SpodnyHarok stit={stit} nadpis="Pridať" onClose={onClose}>
       {PRIDAT_VOLBY.filter((v) => typPovoli(v.id, typ) && vidnoPolozku(v.id, tier)).map((v) => {
-        const zamok = !maPovolenie(v.id, tier); // Oznam v Zadarmo: štítok od P1, ale výzva na súrnu pomoc sa dá (karta 40)
+        // Oznam v Zadarmo: bez štítku „od P1" — otvorí sa rovno výzva na súrnu pomoc (karta 40), inak by štítok protirečil
+        const zamok = !maPovolenie(v.id, tier) && !v.sZadarmo;
+        const popis = v.sZadarmo && !maPovolenie(v.id, tier) ? v.sZadarmo : v.s;
         return (
           <button key={v.k} onClick={() => onVolba(v.k)} style={{ flex: "none", minHeight: 60, padding: "8px 12px", borderRadius: 15, border: "1px solid var(--cardBd)", background: "var(--bg)", cursor: "pointer", display: "flex", alignItems: "center", gap: 12, textAlign: "left" }}>
             <span style={{ width: 40, height: 40, flex: "none", borderRadius: 11, background: zamok ? "var(--btn)" : "var(--gSoft)", display: "flex", alignItems: "center", justifyContent: "center" }}><Ik d={v.d} c={zamok ? "var(--acc)" : "var(--gInk)"} /></span>
             <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 1 }}>
               <span style={{ display: "flex", alignItems: "center", gap: 6 }}><b style={{ fontSize: 15, color: "var(--ink)" }}>{v.t}</b>
                 {zamok && <span style={{ height: 20, padding: "0 7px", borderRadius: 10, border: "1px solid var(--cardBd)", fontSize: 11, fontWeight: 800, color: "var(--ink3)", display: "flex", alignItems: "center" }}>od {odProgramu(v.id)}</span>}</span>
-              <span style={{ fontSize: 12.5, color: "var(--ink3)" }}>{v.s}</span>
+              <span style={{ fontSize: 12.5, color: "var(--ink3)" }}>{popis}</span>
             </span>
           </button>); })}
     </SpodnyHarok>);
