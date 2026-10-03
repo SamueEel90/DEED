@@ -291,7 +291,7 @@ function IskryPrud() {
                     <button type="button" aria-label={`Profil: ${v.autor}`} onClick={() => setProfil(v)} style={{ flex: 1, minWidth: 0, minHeight: 44, display: "flex", alignItems: "center", gap: k(10), padding: 0, border: "none", background: "transparent", cursor: "pointer", fontFamily: "inherit", color: "#fff", textAlign: "left" }}>
                       <span style={{ width: k(42), height: k(42), flex: "none", borderRadius: v.org ? k(12) : "50%", background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: k(14), fontWeight: 800, color: "#3F6E2A", textShadow: "none" }}>{v.ini}</span>
                       <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: k(2) }}>
-                        <b style={{ fontSize: k(15.5), whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{v.autor}</b>
+                        <b style={{ fontSize: k(15.5), display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", lineHeight: 1.2, wordBreak: "break-word" }}>{v.autor}</b>
                         <span style={{ fontSize: k(12.5), opacity: 0.85, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{v.kto}</span>
                       </span>
                     </button>
