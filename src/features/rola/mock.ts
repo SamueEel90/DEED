@@ -240,7 +240,7 @@ export const PANEL_CHARITA: PanelBlok[] = [
 export const SPRAVA_CHARITA: SpravaItem[] = [
   // ZADARMO
   { id: "zbierky", emoji: "ciel", nazov: "Zbierky — vytvoriť a spravovať", popis: "Zbierka na 30 dní · predĺžiť, topovať, ukončiť · dokladovanie použitia", tierMin: 0, sekcia: "zbierky" },
-  { id: "video", emoji: "video", nazov: "Mám talent — video", popis: "Video do 45 s s platobným modulom · 1 / mesiac, ďalšie 10 €", tierMin: 0, sekcia: "obsah" },
+  { id: "video", emoji: "video", nazov: "Iskry", popis: "Video do 45 s", tierMin: 0, sekcia: "obsah" },
   { id: "darcovia", emoji: "obalka", nazov: "Prehľad darcov a vyzbieraných súm", popis: "Zoznam darcov a hromadné poďakovanie", tierMin: 0, sekcia: "prehlady" },
   { id: "vypis", emoji: "dokument", nazov: "Ročný výpis činnosti", popis: "Podklad na výročnú schôdzu", tierMin: 0, sekcia: "prehlady" },
   { id: "qr", emoji: "qr", nazov: "QR nástroje", popis: "QR overenej organizácie a QR zbierok — plagát, pokladnička", tierMin: 0, sekcia: "nastroje" },
@@ -256,7 +256,7 @@ export const SPRAVA_CHARITA: SpravaItem[] = [
   { id: "podujatia", emoji: "kalendar", nazov: "Benefičné podujatia a predaj", popis: "Podujatie s QR a potvrdením účasti · predaj lístkov, merchu a služieb · školenia (provízia 10 %)", tierMin: 2, sekcia: "akcie" },
   { id: "dobrovolnici", emoji: "ludia", nazov: "Dobrovoľníctvo", popis: "Výzva pre verejnosť · QR dochádzka (prah 60 %) · náhradníci a chat · upozornenie v okolí · výkaz hodín", tierMin: 2, sekcia: "akcie" },
 
-  { id: "upoutavky", emoji: "video", nazov: "Upútavky na zbierky v Talente", popis: "2 videá / mesiac · až 10 súbežných zbierok · 5 inzerátov", tierMin: 2, sekcia: "obsah" },
+  { id: "upoutavky", emoji: "video", nazov: "Upútavky v Iskrách", popis: "2 videá / mesiac · až 10 súbežných zbierok · 5 inzerátov", tierMin: 2, sekcia: "obsah" },
   // KAMPAŇ (T3)
   { id: "sektorove-qr", emoji: "qr", nazov: "Sektorové QR", popis: "QR pre celý sektor organizácie", tierMin: 3, sekcia: "nastroje" },
   { id: "materialne", emoji: "darcek", nazov: "Materiálne zbierky", popis: "Zbierka vecí namiesto peňazí (fáza 2)", tierMin: 3, sekcia: "zbierky" },

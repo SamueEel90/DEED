@@ -96,7 +96,7 @@ export function VideoSheet({ tier, toast, onClose }: { tier: Tier; toast: (m: st
 
   return (
     <Sheet onClose={onClose} label="Video organizácie">
-      <Hlavicka nadpis="Mám talent — video" popis={<>Video do {VIDEO_ORG_CFG.maxSekund} s. Keď ho spojíš so zbierkou, pod videom je rovno platobný modul. V programe {TIER_LABEL.charita[tier]}: {vCene} {vCene === 1 ? "video" : "videá"} mesačne v cene, každé ďalšie {VIDEO_ORG_CFG.cenaDalsie} €{naProfileMax <= 1 ? " · na profile je vidieť 1 video, ostatné ostávajú tu v správe" : ""}.</>} />
+      <Hlavicka nadpis="Iskry" popis={<>Video do {VIDEO_ORG_CFG.maxSekund} s. Keď ho spojíš so zbierkou, pod videom je rovno platobný modul. V programe {TIER_LABEL.charita[tier]}: {vCene} {vCene === 1 ? "video" : "videá"} mesačne v cene, každé ďalšie {VIDEO_ORG_CFG.cenaDalsie} €{naProfileMax <= 1 ? " · na profile je vidieť 1 video, ostatné ostávajú tu v správe" : ""}.</>} />
 
       <div style={{ ...karta, borderStyle: "dashed" }}>
         <div style={{ fontSize: 12, color: C.textSec, marginBottom: SPACE.xs }}>Tento mesiac: <b style={{ color: C.text }}>{tentoMesiac} / {vCene}</b> v cene</div>
