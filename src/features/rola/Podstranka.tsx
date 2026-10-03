@@ -49,6 +49,7 @@ import { FormatovanyText } from "@/components/formattext";
 import { cistyText } from "@/lib/richtext";
 import { verejneTaby, cislaSubjektu } from "./obsah";
 import { ZbierkaModul } from "@/features/zbierka/ZbierkaModul";
+import type { StavKroku } from "@/lib/cesta";
 import { centralnaZPamate, nacitajCentralnuZbierku, useZmenyCentralnej } from "@/lib/centralnaZbierka";
 import { CudziProfil } from "@/features/cudzi-profil/CudziProfil";
 import type { Zbierka } from "@/lib/zbierky";
@@ -211,6 +212,7 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack, strankaId =
   const [novyModul, setNovyModulRaw] = useState<{ data: ZbierkaData; zoStrankyOrg: boolean; ziadatel?: Zbierka["ziadatel"] } | null>(null);
   // OPRAVY 128: „Stránka organizácie ›" z poľa Za zbierku zodpovedá → verejný profil organizácie; Späť vráti na zbierku
   const [profilOrg, setProfilOrg] = useState<Zbierka["ziadatel"] | null>(null);
+  const [stavModulu, setStavModulu] = useState<StavKroku>({}); // prežije otvorenie profilu organizácie
   const scrollEl = useScrollEl();
   const scrollProfilu = useRef(0);
   const setNovyModul = (m: { data: ZbierkaData; zoStrankyOrg: boolean; ziadatel?: Zbierka["ziadatel"] } | null) => {
@@ -780,7 +782,9 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack, strankaId =
   }
 
   if (novyModul && profilOrg) return <CudziProfil subjekt={{ typ: "org", meno: profilOrg.meno, lok: profilOrg.lok, level: profilOrg.level }} toast={toast} onBack={() => setProfilOrg(null)} />;
-  if (novyModul) return <ZbierkaModul zbierka={novyModul.data} zoStrankyOrg={novyModul.zoStrankyOrg} onBack={() => { setProfilOrg(null); setNovyModul(null); }}
+  // KARTA 03: Späť z profilu organizácie vráti zbierku s rozbalenou kartou „Za zbierku zodpovedá" → stav modulu držíme tu
+  if (novyModul) return <ZbierkaModul zbierka={novyModul.data} zoStrankyOrg={novyModul.zoStrankyOrg} onBack={() => { setProfilOrg(null); setNovyModul(null); setStavModulu({}); }}
+    stav={stavModulu} onStav={(z) => setStavModulu((x) => ({ ...x, ...z }))}
     onOtvorOrg={novyModul.ziadatel?.typ === "org" ? () => setProfilOrg(novyModul.ziadatel!) : undefined} />;
 
   return (
