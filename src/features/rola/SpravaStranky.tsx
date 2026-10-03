@@ -21,6 +21,8 @@ import { CENTRALNA_ID } from "./vlastneZbierky";
 import { SUBJEKTY } from "./mock";
 import { useZmenyZbierok, zbierkyStrankyZPamate, nacitajZbierkyStranky, konceptZbierkyZPamate, nacitajKonceptZbierky, cielCislo, jeIne, UCELY, KROKY_ZBIERKY, type SpustenaZbierka, type NovaZbierkaData } from "@/lib/novaZbierka";
 import { UpravitProfilCharity, VerejnyProfilOkno, zakladnyProfil } from "./UpravitProfilCharity";
+import { otvorVerejnyProfil } from "@/features/verejny-profil/otvor";
+import { najdiTestProfil } from "@/lib/testProfily";
 import { nacitajProfil, profilZPamate, uplnostProfilu, type ProfilStranky } from "@/lib/profilStranky";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -293,7 +295,7 @@ export function SpravaStranky({ onBack, typ: typStranky = "charita", strankaId =
   const [verejny, setVerejny] = useState(false); // OPRAVY 107: tlačidlo Verejný profil = skutočný verejný profil
   // KARTA 42: Zadarmo → z hárku Pridať sa Oznamy otvoria rovno na výzve na súrnu pomoc
   const [oznamStart, setOznamStart] = useState<DruhOznamu | undefined>(undefined);
-  const otvor = (s: Sub, oznamDruh?: DruhOznamu) => { zastavDiktovanie(); setOznamStart(oznamDruh); if (s === "x:Verejný profil") { setVerejny(true); return; }
+  const otvor = (s: Sub, oznamDruh?: DruhOznamu) => { zastavDiktovanie(); setOznamStart(oznamDruh); if (s === "x:Verejný profil") { if (najdiTestProfil(strankaId)) otvorVerejnyProfil(strankaId); else setVerejny(true); return; }
     // KARTA 37 · bod 3: v programe Zadarmo beží jedna zbierka naraz (limit z stav.ts)
     if (s === "x:Nová zbierka" && sub !== s && beziacich >= KONFIG.limitZbierok[tier]) { setLimitOkno(true); return; }
     // OPRAVY 118/121: Pridať skutok = ten istý PridatSkutok, za charitu (organizacia: true)

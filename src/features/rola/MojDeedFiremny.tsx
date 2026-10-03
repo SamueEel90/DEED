@@ -32,6 +32,7 @@ import { UpravProfilSheet } from "./UpravProfil";
 import { useRegistraciaCharity, ulozDoRegistracie } from "./registracia";
 import { OnasKratky } from "./OnasKratky";
 import { jeNeregistrovany, nastavNeregistrovany, darujemAkoFirma, nastavDarcuFirmu } from "@/lib/devDarca";
+import { rezimModulu, nastavRezimModulu } from "@/lib/testProfily";
 import { CentralnaZbierkaSheet } from "./CentralnaZbierka";
 import { SpravaZbierkySheet } from "./SpravaZbierky";
 import { VideoSheet, DarcoviaSheet, QrNastrojeSheet, ViditelnostSheet } from "./NastrojeCharity";
@@ -426,6 +427,7 @@ function DevPanel({ pozicia, tier, drzitel, onPozicia, onTier, onDrzitel }: {
   const [open, setOpen] = useState(true);
   const [neregistrovany, setNeregistrovany] = useState(jeNeregistrovany);
   const [akoFirma, setAkoFirma] = useState(darujemAkoFirma);
+  const [vsadeModul, setVsadeModul] = useState(() => rezimModulu() === "vsade"); // KARTA 43: modul pri každej zbierke vo verejnom profile
   const seg = (on: boolean, farba: string): React.CSSProperties => ({
     flex: 1, height: 32, display: "flex", alignItems: "center", justifyContent: "center", gap: 5,
     borderRadius: RADIUS.xs, cursor: "pointer", fontSize: 12, fontWeight: on ? 800 : 600,
@@ -478,6 +480,14 @@ function DevPanel({ pozicia, tier, drzitel, onPozicia, onTier, onDrzitel }: {
               </div>
             </div>
             <Switch on={akoFirma} onChange={() => { nastavDarcuFirmu(!akoFirma); setAkoFirma(!akoFirma); }} ariaLabel="Darujem ako firma" />
+          </div>
+          {/* KARTA 43: verejný profil — modul pri každej zbierke (všade) vs. len v detaile */}
+          <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm, padding: `${SPACE.xxs}px ${SPACE.xxs}px` }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 12, fontWeight: 700 }}>Modul pri každej zbierke: {vsadeModul ? "všade" : "len v detaile"}</div>
+              <div style={{ fontSize: 10.5, color: C.textTer }}>{vsadeModul ? "Vo verejnom profile je platobný modul rovno pod každou zbierkou aj skutkom" : "Vo verejnom profile je len náhľad, modul sa otvorí v detaile"}</div>
+            </div>
+            <Switch on={vsadeModul} onChange={() => { const n = !vsadeModul; nastavRezimModulu(n ? "vsade" : "detail"); setVsadeModul(n); }} ariaLabel="Modul pri každej zbierke" />
           </div>
         </div>
       )}

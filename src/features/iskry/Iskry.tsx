@@ -10,7 +10,7 @@
 // ============================================================
 import { createPortal } from "react-dom";
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type PointerEvent as RPointerEvent } from "react";
-import { DeedZnacka, sZnackou } from "@/components/DeedZnacka";
+import { sZnackou } from "@/components/DeedZnacka";
 import { toast } from "@/components/toast";
 import { TESTOVACIA } from "@/lib/testovacia";
 import { jeNeregistrovany, sledujDarcu } from "@/lib/devDarca";
@@ -113,9 +113,6 @@ function IskryPrud() {
   // popis najviac 2 riadky, ťuk rozbalí; spodný blok nesiaha vyššie ako tlačidlo Darcovia (meria sa výška pravého stĺpca)
   const [rozbaleny, setRozbaleny] = useState<string | null>(null);
   useEffect(() => { setRozbaleny(null); }, [idx, druh]);
-  // „… viac" len pri popise, ktorý sa do 2 riadkov nezmestí
-  const popisRef = useRef<Record<string, HTMLSpanElement | null>>({});
-  const [dlhe, setDlhe] = useState<Set<string>>(() => new Set());
   const stlpecRef = useRef<HTMLDivElement | null>(null);
   const hlavRef = useRef<HTMLDivElement | null>(null);
   // druhy videí: vodorovný posun, pri okraji, kde ešte niečo je, stmavnutie (maska)
@@ -145,11 +142,6 @@ function IskryPrud() {
     window.setTimeout(() => { const el = sc.current; if (el) el.scrollTop = i * el.clientHeight; }, 30);
   });
   const akt = list[Math.min(idx, list.length - 1)];
-  useLayoutEffect(() => {
-    const n = new Set<string>();
-    Object.entries(popisRef.current).forEach(([id, el]) => { if (el && el.scrollHeight > el.clientHeight + 1) n.add(id); });
-    setDlhe((o) => (o.size === n.size && [...n].every((x) => o.has(x)) ? o : n));
-  }, [druh, mierka, miesto.video, rozbaleny]);
 
   /** šípky (tlačidlá na PC aj klávesnica): o jedno video hore / dole */
   const posun = (o: 1 | -1) => { const el = sc.current; if (!el) return; const i = Math.max(0, Math.min(list.length - 1, Math.round(el.scrollTop / Math.max(1, el.clientHeight)) + o)); el.scrollTo({ top: i * el.clientHeight, behavior: "smooth" }); };
@@ -252,7 +244,7 @@ function IskryPrud() {
   const poloha = aktualny ? meraj() : undefined; // eslint-disable-line react-hooks/refs
 
   return (
-    <div ref={dialogRef} role="dialog" aria-modal="true" aria-label="Iskry" onClick={(e) => { if (pc && e.target === e.currentTarget) zavriIskry(); }}
+    <div ref={dialogRef} className="isk-dialog" role="dialog" aria-modal="true" aria-label="Iskry" onClick={(e) => { if (pc && e.target === e.currentTarget) zavriIskry(); }}
       style={{ position: "fixed", inset: 0, zIndex: 140, zoom: bezZoomu(), background: "#0E0F0C", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", fontFamily: "'Plus Jakarta Sans', sans-serif" } as CSSProperties}>
       {/* po bokoch rozmazaná kópia aktuálneho videa (nie čierne pásy) */}
       {boky && akt && <div aria-hidden="true" style={{ position: "absolute", inset: 0, pointerEvents: "none", overflow: "hidden" }}>
@@ -276,11 +268,7 @@ function IskryPrud() {
                   onLoadedData={(e) => { e.currentTarget.style.opacity = "1"; }} onError={(e) => { e.currentTarget.style.opacity = "0"; }}
                   style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", opacity: 0, transition: "opacity .25s ease", pointerEvents: "none" }} />}
                 <span style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg,rgba(0,0,0,.55) 0%,rgba(0,0,0,0) 28%,rgba(0,0,0,0) 50%,rgba(0,0,0,.85) 100%)", pointerEvents: "none" }} />
-                {/* vodoznak: DEED+ ako v appke + meno autora (pri zdieľaní von sa vypáli do videa — server) */}
-                <span aria-hidden="true" style={{ position: "absolute", left: 14, top: "33%", display: "flex", flexDirection: "column", gap: 1, opacity: 0.85, textShadow: TIEN, pointerEvents: "none", color: "#fff" }}>
-                  <span style={{ fontSize: 18, fontWeight: 800, lineHeight: 1, color: "#8CC653" }}><DeedZnacka /></span>
-                  <span style={{ fontSize: 10.5, fontWeight: 700 }}>{v.autor}</span>
-                </span>
+                {/* KARTA 41b bod 6: starý vodoznak (DEED+ a meno v strede vľavo) zrušený — nahradil ho QR vľavo hore; meno ostáva len v riadku autora dole */}
                 {i !== idx && <span aria-hidden="true" style={{ position: "absolute", left: "50%", top: "44%", width: 72, height: 72, margin: "-36px 0 0 -36px", borderRadius: "50%", background: "rgba(0,0,0,.35)", display: "flex", alignItems: "center", justifyContent: "center" }}><Ik d={IK.hraj} s={28} fill="#fff" w={0} /></span>}
                 {dva?.id === v.id && <svg key={dva.k} width="96" height="96" viewBox="0 0 24 24" aria-hidden="true" className="isk-dva" style={{ position: "absolute", left: dva.x - 48, top: dva.y - 48, zIndex: 4, pointerEvents: "none", filter: "drop-shadow(0 0 12px rgba(246,196,83,.9))" }}><path d={IK.iskra} fill={ZLATA} /></svg>}
 
@@ -300,25 +288,18 @@ function IskryPrud() {
                     <button type="button" aria-label={`Profil: ${v.autor}`} onClick={() => setProfil(v)} style={{ flex: 1, minWidth: 0, minHeight: 44, display: "flex", alignItems: "center", gap: k(10), padding: 0, border: "none", background: "transparent", cursor: "pointer", fontFamily: "inherit", color: "#fff", textAlign: "left" }}>
                       <span style={{ width: k(42), height: k(42), flex: "none", borderRadius: v.org ? k(12) : "50%", background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: k(14), fontWeight: 800, color: "#3F6E2A", textShadow: "none" }}>{v.ini}</span>
                       <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: k(2) }}>
-                        <b style={{ fontSize: k(15.5), whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{v.autor}</b>
+                        <b style={{ fontSize: k(15.5), display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", lineHeight: 1.2, wordBreak: "break-word" }}>{v.autor}</b>
                         <span style={{ fontSize: k(12.5), opacity: 0.85, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{v.kto}</span>
                       </span>
                     </button>
                     <button type="button" aria-pressed={sled} onClick={() => prepniSledovanie(v.autor)} style={{ flex: "none", minHeight: Math.max(44, k(44)), padding: `${k(6)}px 0`, border: "none", background: "transparent", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center" }}>
                       <span style={{ whiteSpace: "nowrap", height: k(32), display: "flex", alignItems: "center", padding: `0 ${k(12)}px`, borderRadius: k(16), border: "1.5px solid #fff", background: sled ? "transparent" : "#fff", fontSize: k(12.5), fontWeight: 800, color: sled ? "#fff" : "#1D211B", textShadow: sled ? TIEN : "none" }}>{sled ? "Sledujete" : "Sledovať"}</span></button>
                   </div>
-                  {/* popis: 2 riadky + „… viac"; ťuk rozbalí celý (tmavé pozadie, najviac 45 % výšky videa, ďalej posúvanie), ďalší ťuk zbalí */}
+                  {/* popis: 2 riadky, „… viac" hneď za textom (ťuk rozbalí); „menej" zbalí a vráti na začiatok */}
                   {rozbaleny === v.id
-                    ? <button type="button" aria-expanded="true" onClick={() => setRozbaleny(null)}
-                        style={{ flex: "0 1 auto", minHeight: 44, maxHeight: miesto.video * 0.45, overflowY: "auto", overscrollBehavior: "contain", padding: `${k(10)}px ${k(12)}px`, borderRadius: k(14), border: "none", background: "rgba(0,0,0,.6)", cursor: "pointer", textAlign: "left", fontFamily: "inherit", fontSize: k(14.5), lineHeight: 1.45, color: "#fff", whiteSpace: "pre-line" }}>{v.popis}</button>
-                    : <button type="button" aria-expanded={dlhe.has(v.id) ? "false" : undefined} onClick={() => { if (dlhe.has(v.id)) setRozbaleny(v.id); }}
-                        style={{ flex: "0 1 auto", minHeight: 44, maxHeight: `${2 * 1.45}em`, display: "flex", overflow: "hidden", padding: 0, border: "none", background: "transparent", cursor: dlhe.has(v.id) ? "pointer" : "default", textAlign: "left", fontFamily: "inherit", fontSize: k(14.5), lineHeight: 1.45, color: "#fff" }}>
-                        <span ref={(el) => { popisRef.current[v.id] = el; }} style={{ display: "block", overflow: "hidden" }}>
-                          {dlhe.has(v.id) && <><span aria-hidden="true" style={{ float: "right", height: "calc(100% - 1.45em)" }} />
-                            <span style={{ float: "right", clear: "both", fontWeight: 800 }}>… viac</span></>}
-                          {v.popis}
-                        </span>
-                      </button>}
+                    ? <button type="button" aria-expanded="true" ref={(el) => { if (el) el.scrollTop = 0; }} onClick={() => setRozbaleny(null)}
+                        style={{ flex: "0 1 auto", minHeight: 44, maxHeight: miesto.video * 0.45, overflowY: "auto", overscrollBehavior: "contain", padding: `${k(10)}px ${k(12)}px`, borderRadius: k(14), border: "none", background: "rgba(0,0,0,.6)", cursor: "pointer", textAlign: "left", fontFamily: "inherit", fontSize: k(14.5), lineHeight: 1.45, color: "#fff", whiteSpace: "pre-line" }}>{v.popis}{" "}<span style={{ fontWeight: 800 }}>menej</span></button>
+                    : <PopisDva text={v.popis} fontSize={k(14.5)} onRozbal={() => setRozbaleny(v.id)} />}
                   {v.zbierka && <div style={{ flex: "none", display: "flex", flexDirection: "column", gap: k(4), padding: `${k(10)}px ${k(12)}px`, borderRadius: k(14), background: "rgba(0,0,0,.45)", border: "1px solid rgba(255,255,255,.18)" }}>
                     <span style={{ fontSize: k(12.5), opacity: 0.85 }}>{v.zbierka.pozn}</span><b style={{ fontSize: k(14) }}>{v.zbierka.nazov}</b>
                   </div>}
@@ -361,8 +342,8 @@ function IskryPrud() {
             </span>
           </div>}
           {/* KARTA 41b · QR Iskry pod pásom: malý, inverzný, ~35 %; ťuk = QR na celú obrazovku + Kopírovať odkaz */}
-          {akt && <button type="button" onClick={() => setQrVelky(akt)} aria-label="QR tejto Iskry" style={{ pointerEvents: "auto", alignSelf: "flex-end", minWidth: 44, minHeight: 44, padding: 0, border: "none", background: "transparent", cursor: "pointer", opacity: 0.35, lineHeight: 0 }}>
-            <DeedQr data={odkazIskry(akt.id)} odznak={akt.org ? "D++" : "D+"} retaz={akt.retazPct != null} variant="inverzny" size={52} /></button>}
+          {akt && <button type="button" onClick={() => setQrVelky(akt)} aria-label="QR tejto Iskry" style={{ pointerEvents: "auto", alignSelf: "flex-start", marginLeft: 2, minWidth: 44, minHeight: 44, padding: 0, border: "none", background: "transparent", cursor: "pointer", opacity: 0.35, lineHeight: 0 }}>
+            <DeedQr data={odkazIskry(akt.id)} odznak={akt.org ? "D++" : "D+"} retaz={akt.retazPct != null} variant="inverzny" size={56} /></button>}
         </div>
 
         {/* ---------- okná zdola ---------- */}
@@ -516,4 +497,42 @@ export function ZdielatIskru({ v, onClose }: { v: Iskra; onClose: () => void }) 
       <button type="button" onClick={() => setVelky(false)} style={{ minHeight: 48, padding: "0 26px", borderRadius: 14, border: "none", background: "#fff", color: "#1D211B", fontSize: 15.5, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}>Zavrieť</button>
     </div>, document.body)}
   </>);
+}
+
+// Popis Iskry v zbalenom stave: 2 riadky, „… viac" hneď za textom.
+// Skryté meradlo nájde binárne najdlhšiu predponu, ktorá sa aj s „… viac" zmestí do 2 riadkov,
+// takže „… viac" sedí tesne za textom (nie plávajúce pri pravom okraji).
+function PopisDva({ text, fontSize, onRozbal }: { text: string; fontSize: number; onRozbal: () => void }) {
+  const meradlo = useRef<HTMLSpanElement | null>(null);
+  const [stav, setStav] = useState<{ dlhy: boolean; cut: string }>({ dlhy: false, cut: text });
+  useLayoutEffect(() => {
+    const el = meradlo.current; if (!el) return;
+    const esc = (t: string) => t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    const meraj = () => {
+      el.textContent = text;
+      if (el.scrollHeight <= el.clientHeight + 1) { setStav({ dlhy: false, cut: text }); return; }
+      // „… viac" je tučné (širšie) — meriame s tučným suffixom, aby sa vo viditeľnom texte nezalomilo na 3. riadok
+      let lo = 0, hi = text.length, best = 0;
+      while (lo <= hi) {
+        const mid = (lo + hi) >> 1;
+        el.innerHTML = esc(text.slice(0, mid).replace(/\s+$/, "")) + ' <b>… viac</b>';
+        if (el.scrollHeight <= el.clientHeight + 1) { best = mid; lo = mid + 1; } else hi = mid - 1;
+      }
+      setStav({ dlhy: true, cut: text.slice(0, best).replace(/\s+$/, "") });
+      el.textContent = "";
+    };
+    meraj();
+    const ro = new ResizeObserver(meraj); ro.observe(el);
+    window.addEventListener("resize", meraj);
+    return () => { ro.disconnect(); window.removeEventListener("resize", meraj); };
+  }, [text, fontSize]);
+  const meradloBox: CSSProperties = { display: "-webkit-box", WebkitBoxOrient: "vertical", WebkitLineClamp: 2, overflow: "hidden", fontSize, lineHeight: 1.45 };
+  const textBox: CSSProperties = { maxHeight: "2.9em", overflow: "hidden", fontSize, lineHeight: 1.45, whiteSpace: "normal" };
+  return (
+    <button type="button" onClick={stav.dlhy ? onRozbal : undefined}
+      style={{ position: "relative", flex: "0 1 auto", minHeight: 44, display: "block", width: "100%", padding: 0, border: "none", background: "transparent", cursor: stav.dlhy ? "pointer" : "default", textAlign: "left", fontFamily: "inherit", color: "#fff" }}>
+      <span ref={meradlo} aria-hidden="true" style={{ ...meradloBox, position: "absolute", left: 0, right: 0, top: 0, visibility: "hidden", pointerEvents: "none" }} />
+      <span style={textBox}>{stav.dlhy ? <>{stav.cut}{" "}<span style={{ fontWeight: 800 }}>… viac</span></> : text}</span>
+    </button>
+  );
 }
