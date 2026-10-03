@@ -1,16 +1,38 @@
-// KARTA 43 · verejné profily (test). Host otvára návrh podľa typu profilu:
+// KARTA 43 · verejné profily (test). Jedna obrazovka, návrh podľa typu:
 //   charita → Kronika · firma → Výklad (v2) · tvorca → Pirát (v4).
-// Režim modulu z URL (?modul=vsade predvolene / ?modul=detail). V detaile ťuk
-// na zbierku otvorí ZbierkaModul; vo vsade je modul rovno v karte.
+// Režim modulu (všade / len v detaile) je DEV prepínač v Mojom profile (rezimModulu()).
+// VerejnyProfilView sa dá vložiť priamo (feed, „Stránka organizácie", adresár),
+// VerejnyProfilHost je celoobrazovková vrstva otváraná zo store (tlačidlo v Správe, QR).
 import { useState } from "react";
 import { ZbierkaModul } from "@/features/zbierka/ZbierkaModul";
-import { najdiTestProfil, type TestProfil, type TestZbierka } from "@/lib/testProfily";
-import { useVerejnyProfilOtvoreny, verejnyProfilKluc, verejnyProfilRezim, zavriVerejnyProfil } from "./otvor";
+import { najdiTestProfil, rezimModulu, type TestProfil, type TestZbierka } from "@/lib/testProfily";
+import { useVerejnyProfilOtvoreny, verejnyProfilKluc, zavriVerejnyProfil } from "./otvor";
 import { naZbierkaData } from "./casti";
 import { Kronika } from "./Kronika";
 import { Vyklad } from "./Vyklad";
 import { Pirat } from "./Pirat";
 
+/** vložiteľný verejný profil podľa kľúča stránky (svetlo · pekaren · tvorca) */
+export function VerejnyProfilView({ kluc, onBack }: { kluc: string; onBack: () => void }) {
+  const profil = najdiTestProfil(kluc);
+  const [detail, setDetail] = useState<TestZbierka | null>(null);
+  if (!profil) return null;
+  const rezim = rezimModulu();
+
+  if (detail) return (
+    <div className="sc-tokeny" data-stit={profil.stit.toLowerCase()} style={{ background: "var(--bg)", minHeight: "100%" }}>
+      <div style={{ maxWidth: 1240, margin: "0 auto", padding: 14 }}>
+        <ZbierkaModul zbierka={naZbierkaData(detail, profil)} zoStrankyOrg onBack={() => setDetail(null)} spatNazov="Späť na profil" />
+      </div>
+    </div>
+  );
+
+  if (profil.typ === "firma") return <Vyklad profil={profil} rezim={rezim} onDetail={setDetail} onBack={onBack} />;
+  if (profil.typ === "tvorca") return <Pirat profil={profil} rezim={rezim} onDetail={setDetail} onBack={onBack} />;
+  return <Kronika profil={profil} rezim={rezim} onDetail={setDetail} onBack={onBack} />;
+}
+
+/** celoobrazovková vrstva otváraná zo store (otvorVerejnyProfil) — tlačidlo v Správe, QR, zdieľaný odkaz */
 export function VerejnyProfilHost() {
   const otv = useVerejnyProfilOtvoreny();
   if (!otv) return null;
@@ -19,27 +41,10 @@ export function VerejnyProfilHost() {
 
 function VerejnyProfilVrstva() {
   const kluc = verejnyProfilKluc();
-  const profil = kluc ? najdiTestProfil(kluc) : undefined;
-  const [detail, setDetail] = useState<TestZbierka | null>(null);
-  if (!profil) return null;
-  const rezim = verejnyProfilRezim();
-
-  const obsah = detail ? (
-    <div className="sc-tokeny" data-stit={profil.stit.toLowerCase()} style={{ background: "var(--bg)", minHeight: "100%" }}>
-      <div style={{ maxWidth: 1240, margin: "0 auto", padding: 14 }}>
-        <ZbierkaModul zbierka={naZbierkaData(detail, profil)} zoStrankyOrg onBack={() => setDetail(null)} spatNazov="Späť na profil" />
-      </div>
+  if (!kluc) return null;
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 70, overflowY: "auto", WebkitOverflowScrolling: "touch" }}>
+      <VerejnyProfilView kluc={kluc} onBack={zavriVerejnyProfil} />
     </div>
-  ) : (
-    <VerejnyProfilObsah profil={profil} rezim={rezim} onDetail={setDetail} onBack={zavriVerejnyProfil} />
   );
-  return <div style={{ position: "fixed", inset: 0, zIndex: 70, overflowY: "auto", WebkitOverflowScrolling: "touch" }}>{obsah}</div>;
-}
-
-function VerejnyProfilObsah({ profil, rezim, onDetail, onBack }: {
-  profil: TestProfil; rezim: "vsade" | "detail"; onDetail: (z: TestZbierka) => void; onBack: () => void;
-}) {
-  if (profil.typ === "firma") return <Vyklad profil={profil} rezim={rezim} onDetail={onDetail} onBack={onBack} />;
-  if (profil.typ === "tvorca") return <Pirat profil={profil} rezim={rezim} onDetail={onDetail} onBack={onBack} />;
-  return <Kronika profil={profil} rezim={rezim} onDetail={onDetail} onBack={onBack} />;
 }

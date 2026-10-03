@@ -304,18 +304,18 @@ const FIRMA: TestProfil = {
 };
 
 // ============================================================
-// 3 · TVORCA — Marek Hudák · hudobník (Trenčín, koncerty aj v PO a BA)
+// 3 · TVORCA — Martin Konaľ · hudobník (Trenčín, koncerty aj v PO a BA)
 // ============================================================
 const TVORCA: TestProfil = {
-  k: "marek", typ: "tvorca", meno: "Marek Hudák", iniciala: "MH",
+  k: "tvorca", typ: "tvorca", meno: "Martin Konaľ", iniciala: "MK",
   veta: "Hrám na husliach. Na každom koncerte vyberám na jednu konkrétnu vec.",
   mesto: "Trenčín", stit: "Silver", odRoku: 2025,
   stitky: ["Trenčín", "od 2025", "Overený tvorca"],
   ico: "52 147 963", ucet: "SK31 0200 0000 0012 3456 7890",
-  sidlo: "Trenčín", kontakt: "marek@hudak.sk",
+  sidlo: "Trenčín", kontakt: "martin@konal.sk",
   cisla: [["18 700 €", "vyzbierané"], ["7", "zbierok"], ["41", "koncertov"]],
   stitCisla: [["96 %", "doložené"], ["41", "skutkov"], ["6 480", "sledujúcich"]],
-  centralna: sektor("c-marek", "Marek pomáha", "centralna", F.husle, 9400, 512, {
+  centralna: sektor("c-marek", "Martin pomáha", "centralna", F.husle, 9400, 512, {
     "Trenčín": { dlazdica: "Trenčín: 620 € v septembri", minulyMesiac: "V Trenčíne v septembri: 400 € deti · 220 € zvieratá", uvidis: "Uvidíš, komu peniaze z koncertov išli", rozpis: [["deti", 65], ["zvieratá", 35]] },
     "Prešov": { dlazdica: "Prešov: 380 € v septembri", minulyMesiac: "V Prešove v septembri: 380 € hudba do nemocnice", uvidis: "Uvidíš, komu peniaze z koncertov išli", rozpis: [["nemocnice", 100]] },
     "Bratislava": { dlazdica: "Bratislava: 840 € v septembri", minulyMesiac: "V Bratislave v septembri: 500 € deti · 340 € zvieratá", uvidis: "Uvidíš, komu peniaze z koncertov išli", rozpis: [["deti", 60], ["zvieratá", 40]] },
@@ -367,7 +367,7 @@ const TVORCA: TestProfil = {
   ],
   darcovia: [
     { id: "td1", meno: "Simona P.", iniciala: "SP", mesto: "Trenčín", naCo: "Husle pre jedenásť detí", suma: 10, pred: "pred 6 min" },
-    { id: "td2", meno: "Anonymný darca", iniciala: "A", mesto: "Trenčín", naCo: "Marek pomáha", suma: 5, pred: "pred 24 min" },
+    { id: "td2", meno: "Anonymný darca", iniciala: "A", mesto: "Trenčín", naCo: "Martin pomáha", suma: 5, pred: "pred 24 min" },
     { id: "td3", meno: "Richard K.", iniciala: "RK", mesto: "Prešov", naCo: "Hudba do hospicu v Prešove", suma: 25, pred: "pred 41 min" },
     { id: "td4", meno: "Eva M.", iniciala: "EM", mesto: "Bratislava", naCo: "Deti z domova na koncert", suma: 50, pred: "pred 1 h" },
     { id: "td5", meno: "Anonymný darca", iniciala: "A", mesto: "Bratislava", naCo: "Zvieratá", pred: "pred 2 h" },
@@ -377,6 +377,16 @@ const TVORCA: TestProfil = {
 
 export const TEST_PROFILY: TestProfil[] = [CHARITA, FIRMA, TVORCA];
 export const najdiTestProfil = (k: string): TestProfil | undefined => TEST_PROFILY.find((p) => p.k === k);
+/** verejný odkaz na zdieľanie: /p/svetlo · /p/pekaren · /p/martin → kľúč profilu */
+const SLUG_KLUC: Record<string, string> = { svetlo: "svetlo", pekaren: "pekaren", martin: "tvorca" };
+export const slugNaKluc = (slug: string): string | undefined => SLUG_KLUC[slug];
+export const klucNaSlug = (k: string): string => (k === "tvorca" ? "martin" : k);
+/** stránka/organizácia (feed, adresár, „Stránka organizácie") podľa mena → testovací profil */
+export function testProfilPreMeno(meno?: string | null): TestProfil | undefined {
+  if (!meno) return undefined;
+  const m = meno.trim().toLowerCase();
+  return TEST_PROFILY.find((p) => p.meno.toLowerCase() === m);
+}
 export const testProfilPodlaTypu = (t: TypProfilu): TestProfil => TEST_PROFILY.find((p) => p.typ === t) ?? CHARITA;
 
 // ---- lokalita ----
@@ -389,14 +399,15 @@ export function vLokalite<T extends { mesto: Mesto }>(zoznam: T[], lok: Lokalita
 /** mesto, ktoré sa použije v texte modulu — pri „Celé Slovensko" sa mesto nepíše */
 export const mestoTextu = (lok: Lokalita, domace: Mesto): Mesto => (lok === "Celé Slovensko" ? domace : lok);
 
-// ---- režim platobného modulu (len test, bez tlačidla pre ľudí) ----
+// ---- režim platobného modulu (DEV prepínač v Mojom profile, nie v adrese) ----
 export type RezimModulu = "vsade" | "detail";
-/** ?modul=vsade (predvolené na test) · ?modul=detail */
+const KLUC_REZIM = "deed.dev.verejnyModul";
+/** „všade" (modul pri každej zbierke, predvolené) · „detail" (len v detaile) */
 export function rezimModulu(): RezimModulu {
-  try {
-    const v = new URLSearchParams(window.location.search).get("modul");
-    return v === "detail" ? "detail" : "vsade";
-  } catch { return "vsade"; }
+  try { return localStorage.getItem(KLUC_REZIM) === "detail" ? "detail" : "vsade"; } catch { return "vsade"; }
+}
+export function nastavRezimModulu(r: RezimModulu) {
+  try { localStorage.setItem(KLUC_REZIM, r); } catch { /* LS */ }
 }
 
 // ---- čísla ----
