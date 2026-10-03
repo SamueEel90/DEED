@@ -141,6 +141,15 @@ function IskryPrud() {
     setDlhe((o) => (o.size === n.size && [...n].every((x) => o.has(x)) ? o : n));
   }, [druh, mierka, miesto.video, rozbaleny]);
 
+  /** šípky (tlačidlá na PC aj klávesnica): o jedno video hore / dole */
+  const posun = (o: 1 | -1) => { const el = sc.current; if (!el) return; const i = Math.max(0, Math.min(list.length - 1, Math.round(el.scrollTop / Math.max(1, el.clientHeight)) + o)); el.scrollTo({ top: i * el.clientHeight, behavior: "smooth" }); };
+  // refy pre klávesový efekt nižšie — aktuálne hodnoty sa zapisujú po rendri, nie počas neho
+  const posunRef = useRef(posun);
+  const pcRef = useRef(pc);
+  const profilRef = useRef(profil);
+  const prepniCeluRef = useRef(prepniCelu);
+  useLayoutEffect(() => { posunRef.current = posun; pcRef.current = pc; profilRef.current = profil; prepniCeluRef.current = prepniCelu; });
+
   // Esc = zavrieť (PC), zablokovať posun stránky pod prúdom
   useEffect(() => {
     const k = (e: KeyboardEvent) => {
@@ -178,12 +187,6 @@ function IskryPrud() {
   const ukazPas = (hl: string, kam: string) => setPrepis({ hl, kam, k: Date.now() });
   const { aktualny, pridaj, pridajMoj, dalsi } = useDarRad((n) => ukazPas(`+${n} ${n >= 5 ? "darov" : "dary"} za minútu`, "Iskry"));
 
-  /** šípky (tlačidlá na PC aj klávesnica): o jedno video hore / dole */
-  const posun = (o: 1 | -1) => { const el = sc.current; if (!el) return; const i = Math.max(0, Math.min(list.length - 1, Math.round(el.scrollTop / Math.max(1, el.clientHeight)) + o)); el.scrollTo({ top: i * el.clientHeight, behavior: "smooth" }); };
-  const posunRef = useRef(posun); posunRef.current = posun; // eslint-disable-line react-hooks/refs
-  const pcRef = useRef(pc); pcRef.current = pc; // eslint-disable-line react-hooks/refs
-  const profilRef = useRef(profil); profilRef.current = profil; // eslint-disable-line react-hooks/refs
-  const prepniCeluRef = useRef(prepniCelu); prepniCeluRef.current = prepniCelu; // eslint-disable-line react-hooks/refs
   const skoc = (id: string) => {
     let i = list.findIndex((x) => x.id === id);
     if (i < 0) { setDruh(0); i = iskryVsetky().findIndex((x) => x.id === id); }

@@ -25,7 +25,7 @@ export const vyber = (on: boolean): CSSProperties => ({ background: on ? "var(--
 export const panel: CSSProperties = { borderRadius: 22, background: "var(--card)", border: "1px solid var(--cardBd)", padding: "20px 22px", display: "flex", flexDirection: "column", gap: 14 };
 export const pole: CSSProperties = { height: 52, padding: "0 16px", borderRadius: 14, background: "var(--field)", border: "1.5px solid var(--cardBd)", fontFamily: "inherit", fontSize: 16, fontWeight: 700, color: "var(--ink)", outline: "none", width: "100%", boxSizing: "border-box" };
 export const pozn: CSSProperties = { fontSize: 13, fontWeight: 600, lineHeight: 1.45, color: "var(--ink3)" };
-export const fmtEur = (n: number) => `${n.toLocaleString("sk-SK").replace(/ /g, " ")} €`;
+export const fmtEur = (n: number) => `${n.toLocaleString("sk-SK").replace(/\u00A0/g, " ")} €`;
 export const fmtSek = (s: number) => `${Math.floor(s / 60)}:${String(Math.round(s % 60)).padStart(2, "0")}`;
 export const cis = (n: number) => String(n).replace(".", ",");
 export const cistyText = (h: string) => { const d = document.createElement("div"); d.innerHTML = h || ""; return (d.textContent || "").replace(/\s+/g, " ").trim(); };
