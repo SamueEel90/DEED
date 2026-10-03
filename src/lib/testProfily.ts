@@ -381,11 +381,15 @@ export const najdiTestProfil = (k: string): TestProfil | undefined => TEST_PROFI
 const SLUG_KLUC: Record<string, string> = { svetlo: "svetlo", pekaren: "pekaren", martin: "tvorca" };
 export const slugNaKluc = (slug: string): string | undefined => SLUG_KLUC[slug];
 export const klucNaSlug = (k: string): string => (k === "tvorca" ? "martin" : k);
-/** stránka/organizácia (feed, adresár, „Stránka organizácie") podľa mena → testovací profil */
+/** stránka/organizácia (feed, adresár, „Stránka organizácie") podľa mena → testovací profil.
+ *  Voľnejšie párovanie: bez právnych prípon (o.z. · s.r.o. · n.o. · o.p.s.), zhoda aj keď jedno obsahuje druhé. */
+const holeMeno = (m: string) => m.toLowerCase().replace(/\./g, " ").replace(/\s+/g, " ").trim()
+  .replace(/\b(o\s?z|s\s?r\s?o|n\s?o|o\s?p\s?s|a\s?s)\b/g, "").replace(/\s+/g, " ").trim();
 export function testProfilPreMeno(meno?: string | null): TestProfil | undefined {
   if (!meno) return undefined;
-  const m = meno.trim().toLowerCase();
-  return TEST_PROFILY.find((p) => p.meno.toLowerCase() === m);
+  const m = holeMeno(meno);
+  if (!m) return undefined;
+  return TEST_PROFILY.find((p) => holeMeno(p.meno) === m);
 }
 export const testProfilPodlaTypu = (t: TypProfilu): TestProfil => TEST_PROFILY.find((p) => p.typ === t) ?? CHARITA;
 
