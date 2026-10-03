@@ -30,6 +30,7 @@ import { Registracia } from "@/features/registracia/Registracia";
 import { RetazPodstranka } from "@/features/retaz/RetazPodstranka";
 import { PridatSkutokHost } from "@/features/skutok/PridatSkutok";
 import { IskryHost } from "@/features/iskry/Iskry";
+import { PridatIskruHost } from "@/features/iskry/PridatIskru";
 import { AkciaHost } from "@/features/skutok/Akcia";
 import { PomocHost } from "@/features/profil/Pomoc";
 import { PolohaOkruhu } from "@/features/profil/Bezpecnost24";
@@ -380,6 +381,7 @@ export function Screens({ wide, desktop }: { wide?: boolean; desktop?: boolean }
         <PridatSkutokHost />
         {/* KARTA 41: centrálny prúd Iskier (Domov → 4. políčko) */}
         <IskryHost />
+        <PridatIskruHost />
         <AkciaHost />
         <PomocHost />
         <PolohaOkruhu />

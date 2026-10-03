@@ -16,7 +16,7 @@ import { TESTOVACIA } from "@/lib/testovacia";
 import { jeNeregistrovany, sledujDarcu } from "@/lib/devDarca";
 import { darcoviaPre, sucetDarov, pridajDar, pridajCudziDarMock, identitaDarcu, zobrazenaSuma, relCas, useZmenyDarov, type DarRiadok, type KanalDaru } from "@/lib/darcovia";
 import {
-  ISKRY_CFG, ISKRY_MOCK, DOVODY_NAMIETKY, refIskry, useZmenyIskier, pocetIskier, mojaIskra, prepniIskru, zapniIskru,
+  ISKRY_CFG, iskryVsetky, odkazIskry, DOVODY_NAMIETKY, refIskry, useZmenyIskier, pocetIskier, mojaIskra, prepniIskru, zapniIskru,
   sledujemAutora, prepniSledovanie, overujemIskru, prepniOverenie, namietkaIskry, podajNamietku, type Iskra,
 } from "@/lib/iskry";
 import { PlatobneOkno } from "@/features/zbierka/Platba";
@@ -73,7 +73,6 @@ const bezZoomu = () => 1 / (parseFloat(getComputedStyle(document.documentElement
 
 type Sheet = null | { typ: "dar" | "darcovia" | "namietka" | "zdielat"; v: Iskra };
 /** odkaz Iskry — otvorí prúd na tomto videu */
-const odkazIskry = (id: string) => `${window.location.origin}/iskra/${encodeURIComponent(id)}`;
 
 function IskryPrud() {
   useZmenyIskier(); useZmenyDarov();
@@ -84,8 +83,9 @@ function IskryPrud() {
   // odkaz /iskra/{id}: prúd začne na tomto videu
   const [startId] = useState(() => startIskry());
   useEffect(() => { zabudniStartIskry(); }, []);
-  const [idx, setIdx] = useState(() => Math.max(0, startId ? ISKRY_MOCK.findIndex((x) => x.id === startId) : 0));
+  const [idx, setIdx] = useState(() => Math.max(0, startId ? iskryVsetky().findIndex((x) => x.id === startId) : 0));
   const [profil, setProfil] = useState<Iskra | null>(null);
+  const [qrVelky, setQrVelky] = useState<Iskra | null>(null);
   const [sheet, setSheet] = useState<Sheet>(null);
   const [platba, setPlatba] = useState<{ v: Iskra; kanal: KanalPlatby; suma?: number } | null>(null);
   const [dva, setDva] = useState<{ id: string; x: number; y: number; k: number } | null>(null);
@@ -133,7 +133,7 @@ function IskryPrud() {
     f(); const ro = new ResizeObserver(f); [st, hl, r].forEach((e) => ro.observe(e)); return () => ro.disconnect();
   }, [druh, mierka]);
   useLayoutEffect(() => { const el = sc.current; if (el && idx > 0) el.scrollTop = idx * el.clientHeight; }, []); // eslint-disable-line react-hooks/exhaustive-deps
-  const list = ISKRY_MOCK.filter((v) => druh === 0 || v.druh === druh);
+  const list = iskryVsetky().filter((v) => druh === 0 || v.druh === druh);
   const akt = list[Math.min(idx, list.length - 1)];
   useLayoutEffect(() => {
     const n = new Set<string>();
@@ -169,7 +169,7 @@ function IskryPrud() {
 
   // ---- živý pás: dnes v Iskrách + dary v rade (každý 5 s) ----
   const od = polnoc();
-  const dnes = ISKRY_MOCK.flatMap((v) => darcoviaPre(refIskry(v)).filter((r) => r.cas >= od).map((r) => ({ r, v }))).sort((a, b) => b.r.cas - a.r.cas);
+  const dnes = iskryVsetky().flatMap((v) => darcoviaPre(refIskry(v)).filter((r) => r.cas >= od).map((r) => ({ r, v }))).sort((a, b) => b.r.cas - a.r.cas);
   const dnesSuma = dnes.reduce((a, x) => a + x.r.suma, 0);
   useEffect(() => { const t = window.setInterval(() => setTick((x) => x + 1), ISKRY_CFG.pasMs); return () => window.clearInterval(t); }, []);
   useEffect(() => { if (!prepis) return; const t = window.setTimeout(() => setPrepis(null), ISKRY_CFG.pasMs); return () => window.clearTimeout(t); }, [prepis]);
@@ -186,7 +186,7 @@ function IskryPrud() {
   const prepniCeluRef = useRef(prepniCelu); prepniCeluRef.current = prepniCelu; // eslint-disable-line react-hooks/refs
   const skoc = (id: string) => {
     let i = list.findIndex((x) => x.id === id);
-    if (i < 0) { setDruh(0); i = ISKRY_MOCK.findIndex((x) => x.id === id); }
+    if (i < 0) { setDruh(0); i = iskryVsetky().findIndex((x) => x.id === id); }
     window.setTimeout(() => { const el = sc.current; if (el) el.scrollTo({ top: i * el.clientHeight, behavior: "smooth" }); }, 30);
   };
 
@@ -275,7 +275,7 @@ function IskryPrud() {
                 <div ref={i === 0 ? stlpecRef : undefined} style={{ position: "absolute", right: k(12), bottom: `calc(${k(150)}px + env(safe-area-inset-bottom, 0px))`, display: "flex", flexDirection: "column", alignItems: "center", gap: k(12) }}>
                   <button type="button" aria-label={`Darcovia, ${pocetD}`} onClick={() => setSheet({ typ: "darcovia", v })} style={stlpecBtn}><span style={kruh()}><Ik d={IK.darcovia} s={k(24)} /></span><span style={cislo}>{cis(pocetD)}</span></button>
                   <button type="button" aria-label="Iskra" aria-pressed={zap} onClick={() => prepniIskru(v.id)} style={stlpecBtn}><span style={kruh(zap)}><Ik d={IK.iskra} s={k(26)} w={1.6} c={ZLATA} fill={zap ? ZLATA : "none"} /></span><span style={cislo}>{cis(pocetIskier(v))}</span></button>
-                  <button type="button" ref={(el) => { darBtn.current[v.id] = el; }} onClick={() => setSheet({ typ: "dar", v })} style={stlpecBtn}><span style={kruh(false, true)}><Ik d={IK.dar} s={k(24)} w={2.2} /></span><span style={cislo}>Darovať</span></button>
+                  {!v.bezDarov && <button type="button" ref={(el) => { darBtn.current[v.id] = el; }} onClick={() => setSheet({ typ: "dar", v })} style={stlpecBtn}><span style={kruh(false, true)}><Ik d={IK.dar} s={k(24)} w={2.2} /></span><span style={cislo}>Darovať</span></button>}
                   <button type="button" onClick={() => { if (document.fullscreenElement) void document.exitFullscreen().catch(() => undefined); setSheet({ typ: "zdielat", v }); }} style={stlpecBtn}><span style={kruh()}><Ik d={IK.zdielat} s={k(22)} w={2.2} /></span><span style={cislo}>Zdieľať</span></button>
                 </div>
 
@@ -347,6 +347,9 @@ function IskryPrud() {
               <span style={{ fontSize: 12, opacity: 0.85, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{prepis ? prepis.kam : pasDar ? `${darKam(darZRiadku(pasDar.r, pasDar.v))} · ${relCas(pasDar.r.cas)}` : ""}</span>
             </span>
           </div>}
+          {/* KARTA 41b · QR Iskry pod pásom: malý, inverzný, ~35 %; ťuk = QR na celú obrazovku + Kopírovať odkaz */}
+          {akt && <button type="button" onClick={() => setQrVelky(akt)} aria-label="QR tejto Iskry" style={{ pointerEvents: "auto", alignSelf: "flex-end", minWidth: 44, minHeight: 44, padding: 0, border: "none", background: "transparent", cursor: "pointer", opacity: 0.35, lineHeight: 0 }}>
+            <DeedQr data={odkazIskry(akt.id)} odznak={akt.org ? "D++" : "D+"} retaz={akt.retazPct != null} variant="inverzny" size={52} /></button>}
         </div>
 
         {/* ---------- okná zdola ---------- */}
@@ -355,6 +358,14 @@ function IskryPrud() {
           <DarovatObsah v={sheet.v} registrovany={registrovany} onRychly={(k, s, sp) => rychly(sheet.v, k, s, sp)} onVlastna={() => { setSheet(null); setPlatba({ v: sheet.v, kanal: "eur" }); }} onNamietam={() => setSheet({ typ: "namietka", v: sheet.v })} />
         </Harok>}
         {sheet?.typ === "namietka" && <Harok onClose={() => setSheet(null)}><NamietkaObsah v={sheet.v} onHotovo={() => setSheet(null)} /></Harok>}
+        {qrVelky && <div role="dialog" aria-modal="true" aria-label="QR tejto Iskry" onClick={() => setQrVelky(null)} style={{ position: "absolute", inset: 0, zIndex: 45, background: "rgba(14,15,12,.92)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16, padding: 16, textShadow: "none", cursor: "zoom-out" }}>
+          <span style={{ background: "#fff", padding: 14, borderRadius: 22, lineHeight: 0 }}><DeedQr data={odkazIskry(qrVelky.id)} odznak={qrVelky.org ? "D++" : "D+"} retaz={qrVelky.retazPct != null} size={Math.min(320, Math.round((root.current?.clientWidth ?? 360) * 0.75))} /></span>
+          <b style={{ color: "#fff", fontSize: 15 }}>{qrVelky.autor}</b>
+          <span style={{ display: "flex", gap: 10 }}>
+            <button type="button" onClick={(e) => { e.stopPropagation(); void kopiruj(odkazIskry(qrVelky.id), toast); }} style={{ minHeight: 48, padding: "0 20px", borderRadius: 14, border: "none", background: "#fff", color: "#1D211B", fontSize: 15, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}>Kopírovať odkaz</button>
+            <button type="button" onClick={() => setQrVelky(null)} style={{ minHeight: 48, padding: "0 20px", borderRadius: 14, border: "1.5px solid rgba(255,255,255,.5)", background: "transparent", color: "#fff", fontSize: 15, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}>Zavrieť</button>
+          </span>
+        </div>}
         {/* profil autora (ťuk na meno alebo logo) — Späť vráti do prúdu na to isté video */}
         {profil && <div style={{ position: "absolute", inset: 0, zIndex: 40, overflowY: "auto", background: "var(--c-bg, #F1ECE1)", color: "var(--ink, #1D211B)", textShadow: "none", zoom: 1 / bezZoomu() } as CSSProperties}>
           <CudziProfil subjekt={profil.org ? { typ: "org", meno: profil.autor, lok: profil.kto.split(" · ").pop() } : { typ: "osoba", meno: profil.autor }} toast={toast} onBack={() => setProfil(null)} />
@@ -455,7 +466,7 @@ function DarcoviaObsah({ v }: { v: Iskra }) {
 // ---------- KARTA 41 · Zdieľať Iskru — náš hárok zdola (ten istý diel ako zdieľanie v appke) ----------
 // QR tejto Iskry (zväčšiť, stiahnuť) · Kopírovať odkaz · Stiahnuť video s vodoznakom (server) · Ďalšie možnosti (systémové zdieľanie).
 // TODO (server): video s vypáleným vodoznakom DEED+ a menom autora.
-function ZdielatIskru({ v, onClose }: { v: Iskra; onClose: () => void }) {
+export function ZdielatIskru({ v, onClose }: { v: Iskra; onClose: () => void }) {
   const url = odkazIskry(v.id);
   const [velky, setVelky] = useState(false);
   const male: CSSProperties = { minHeight: 44, padding: "0 12px", borderRadius: 12, background: "var(--bg)", border: "1px solid var(--cardBd)", color: "var(--ink)", fontSize: 13.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" };
@@ -473,13 +484,13 @@ function ZdielatIskru({ v, onClose }: { v: Iskra; onClose: () => void }) {
       </span>
     </>}>
       <div style={{ display: "flex", gap: 14, alignItems: "center", padding: 12, borderRadius: 16, background: "var(--card)", border: "1px solid var(--cardBd)" }}>
-        <button type="button" onClick={() => setVelky(true)} aria-label="Zväčšiť QR" style={{ background: "#fff", padding: 8, borderRadius: 12, flex: "none", lineHeight: 0, border: "none", cursor: "zoom-in" }}><DeedQr data={url} size={132} /></button>
+        <button type="button" onClick={() => setVelky(true)} aria-label="Zväčšiť QR" style={{ background: "#fff", padding: 8, borderRadius: 12, flex: "none", lineHeight: 0, border: "none", cursor: "zoom-in" }}><DeedQr data={url} odznak={v.org ? "D++" : "D+"} retaz={v.retazPct != null} size={132} /></button>
         <span style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
           <b style={{ fontSize: 15 }}>QR tejto Iskry</b>
           <span style={{ fontSize: 13, lineHeight: 1.45, color: "var(--ink2)" }}>Kto ho naskenuje, otvorí toto video a môže hneď darovať.</span>
           <span style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
             <button type="button" onClick={() => setVelky(true)} style={male}>Zväčšiť</button>
-            <button type="button" onClick={() => void stiahniDeedQr({ data: url, variant: "svetly", nazov: `iskra-${v.id}` })} style={male}>Stiahnuť</button>
+            <button type="button" onClick={() => void stiahniDeedQr({ data: url, odznak: v.org ? "D++" : "D+", retaz: v.retazPct != null, variant: "svetly", nazov: `iskra-${v.id}` })} style={male}>Stiahnuť</button>
           </span>
         </span>
       </div>

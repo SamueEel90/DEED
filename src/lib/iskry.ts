@@ -40,6 +40,14 @@ export interface Iskra {
   /** zbierka pri videu — dar ide na ňu; bez nej ide autorovi */
   zbierka?: { id: string; nazov: string; pozn: string };
   iskry: number;
+  /** KARTA 41b: Bez peňazí → pri videu nie je Darovať */
+  bezDarov?: boolean;
+  /** Reťaz dobra: koľko % z daru ide na zbierku (zvyšok autorovi) — pre QR (reťaz) */
+  retazPct?: number;
+  /** charita bez „Ukázať všetkým v Iskrách" → len na stránke charity (prúd ju ukáže len autorovi) */
+  lenStranka?: boolean;
+  /** zverejnené (ISO) — posun do vyššej oblasti po 12 h */
+  zverejnene?: string;
 }
 export const refIskry = (v: Iskra) => v.zbierka?.id ?? `iskra-${v.id}`;
 
@@ -56,6 +64,24 @@ export const ISKRY_MOCK: Iskra[] = [
   { id: "vah", src: "/video/iskry/skutok.mp4", druh: 5, autor: "Jana K.", kto: "Juh · skutok overený", ini: "JK", org: false, popis: "S deťmi sme vyčistili breh Váhu. 14 vriec odpadu a jeden starý bicykel.",
     zbierka: { id: "iskra-zb-nina", nazov: "Invalidný vozík pre Ninu", pozn: "Reťaz dobra · 50 % ide na zbierku" }, iskry: 98, bg: "url('/img/sprava/chrbtica.jpg') center/cover no-repeat #3a3530" },
 ];
+
+// ---- KARTA 41b · pridané Iskry (relácia; TODO server: nahratie videa, uloženie, kvóta charity) ----
+const pridane: Iskra[] = [];
+/** celý prúd: najnovšie pridané hore, potom ukážkové */
+export const iskryVsetky = (): Iskra[] => [...pridane, ...ISKRY_MOCK];
+export const najdiIskru = (id: string): Iskra | undefined => iskryVsetky().find((x) => x.id === id);
+export function pridajIskru(i: Omit<Iskra, "id" | "iskry" | "zverejnene">): Iskra {
+  const n: Iskra = { ...i, id: `i-${Date.now().toString(36)}`, iskry: 0, zverejnene: new Date().toISOString() };
+  pridane.unshift(n); zmena(); return n;
+}
+/** odkaz Iskry (QR, zdieľanie) — appka ho otvorí v prúde na tomto videu; bez appky web stránka Iskry */
+export const odkazIskry = (id: string) => `https://deed.sk/i/${encodeURIComponent(id)}`;
+/** charita: videá „všetkým v Iskrách" mesačne v cene programu (Zadarmo 1 · P2 2 · P3 4), ďalšie za cenaNad € */
+export const KVOTA_ISKIER = { naProgram: [1, 1, 2, 4, 4] as number[], cenaNad: 10 };
+const kvotaPouzita = new Map<string, number>(); // kľúč: stránka + mesiac
+const mesiac = () => new Date().toISOString().slice(0, 7);
+export const kvotaOstava = (stranka: string, tier: number) => Math.max(0, (KVOTA_ISKIER.naProgram[tier] ?? 1) - (kvotaPouzita.get(`${stranka}|${mesiac()}`) ?? 0));
+export function minKvotu(stranka: string) { const k = `${stranka}|${mesiac()}`; kvotaPouzita.set(k, (kvotaPouzita.get(k) ?? 0) + 1); }
 
 // ---- stav relácie ----
 const moje = new Set<string>();      // moje Iskry

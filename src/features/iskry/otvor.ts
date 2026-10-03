@@ -11,9 +11,9 @@ export function otvorIskry(id?: string) { otvorene = true; startId = id ?? null;
 /** Iskra, na ktorej má prúd začať (číta sa bez mazania — StrictMode volá inicializáciu dvakrát) */
 export const startIskry = (): string | null => startId;
 export function zabudniStartIskry() { startId = null; }
-// odkaz /iskra/{id} (zdieľanie, QR) → appka sa otvorí rovno v prúde na tomto videu
+// odkaz /i/{id} (QR Iskry, deed.sk/i/…) aj /iskra/{id} (zdieľanie, QR) → appka sa otvorí rovno v prúde na tomto videu
 if (typeof window !== "undefined") {
-  const m = window.location.pathname.match(/^\/iskra\/([^/?#]+)/);
+  const m = window.location.pathname.match(/^\/(?:i|iskra)\/([^/?#]+)/);
   if (m) {
     otvorene = true; startId = decodeURIComponent(m[1]);
     try { window.history.replaceState(null, "", window.location.origin + "/"); } catch { /* sandbox */ }
@@ -23,4 +23,13 @@ export function zavriIskry() { otvorene = false; zmena(); }
 export function useIskryOtvorene(): boolean {
   useSyncExternalStore((f) => { posluchaci.add(f); return () => posluchaci.delete(f); }, () => verzia);
   return otvorene;
+}
+
+// ---- KARTA 41b · Pridať Iskru (jeden diel pre človeka aj charitu, otvára sa zo zeleného +) ----
+let pridat = false;
+export function otvorPridatIskru() { pridat = true; zmena(); }
+export function zavriPridatIskru() { pridat = false; zmena(); }
+export function usePridatIskruOtvorene(): boolean {
+  useSyncExternalStore((f) => { posluchaci.add(f); return () => posluchaci.delete(f); }, () => verzia);
+  return pridat;
 }
