@@ -30,3 +30,11 @@ export function useVerejnyProfilOtvoreny(): boolean {
   useSyncExternalStore((f) => { posluchaci.add(f); return () => posluchaci.delete(f); }, () => verzia);
   return otvorene;
 }
+
+// koľko vrstiev profilu je práve na obrazovke (Host aj vložený z feedu) — appka vtedy skryje plávajúce „+"
+let vrstvy = 0;
+export function vrstvaProfiluPripoj(): () => void { vrstvy++; zmena(); return () => { vrstvy--; zmena(); }; }
+export function useVrstvaProfiluOtvorena(): boolean {
+  useSyncExternalStore((f) => { posluchaci.add(f); return () => posluchaci.delete(f); }, () => verzia);
+  return vrstvy > 0;
+}

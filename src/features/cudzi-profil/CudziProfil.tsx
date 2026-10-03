@@ -27,6 +27,7 @@ import { pridajDar, type VolbaDaru } from "@/lib/darcovia";
 import { usePouzivatel } from "@/lib/pouzivatel";
 import { testProfilPreMeno } from "@/lib/testProfily";
 import { VerejnyProfilView } from "@/features/verejny-profil/VerejnyProfil";
+import { VrstvaProfilu } from "@/features/verejny-profil/casti";
 import type { Kanal } from "@/types";
 
 /*
@@ -59,11 +60,7 @@ export function CudziProfil({ subjekt = {} as CudziSubjekt, onBack, toast, onKam
   // KARTA 43: tri testovacie stránky (Svetlo pomoci, Pekáreň Dobrota, Martin Konaľ) otvoria
   // svoj verejný profil (Kronika / Výklad / Pirát) aj z feedu, zbierky a adresára.
   const testProfil = testProfilPreMeno(subjekt.meno);
-  if (testProfil) return (
-    <div style={{ position: "relative", minHeight: "100dvh" }}>
-      <VerejnyProfilView kluc={testProfil.k} onBack={onZavriet ?? onBack ?? (() => {})} />
-    </div>
-  );
+  if (testProfil) return <VrstvaProfilu><VerejnyProfilView kluc={testProfil.k} onBack={onZavriet ?? onBack ?? (() => {})} /></VrstvaProfilu>;
   const inner = subjekt.typ === "org"
     ? <OrgProfil s={subjekt} onBack={onBack} toast={toast} onKampan={onKampan} onZavriet={onZavriet} />
     : <OsobaProfil s={subjekt as CudziSubjektOsoba} onBack={onBack} toast={toast} />;

@@ -32,6 +32,7 @@ import { PridatSkutokHost } from "@/features/skutok/PridatSkutok";
 import { IskryHost } from "@/features/iskry/Iskry";
 import { PridatIskruHost } from "@/features/iskry/PridatIskru";
 import { VerejnyProfilHost } from "@/features/verejny-profil/VerejnyProfil";
+import { useVrstvaProfiluOtvorena } from "@/features/verejny-profil/otvor";
 import { AkciaHost } from "@/features/skutok/Akcia";
 import { PomocHost } from "@/features/profil/Pomoc";
 import { PolohaOkruhu } from "@/features/profil/Bezpecnost24";
@@ -172,6 +173,7 @@ export default function App() {
 
 // ===================== MODULÁRNY ROUTER APPKY =====================
 export function Screens({ wide, desktop }: { wide?: boolean; desktop?: boolean }) {
+  const vrstvaProfilu = useVrstvaProfiluOtvorena(); // KARTA 43: počas verejného profilu bez plávajúceho „+"
   const session = useSession();
   const stitAppky = useStitAppky(); // OPRAVY 91: farba štítu pre bočný panel (správa = štít stránky, inak osobný)
   // deep-link zachyť SYNCHRÓNNE pri prvom renderi — URL normalizácia (nižšie) by ho prepísala
@@ -361,11 +363,14 @@ export function Screens({ wide, desktop }: { wide?: boolean; desktop?: boolean }
           </Suspense>
         </div>
 
+        {/* KARTA 43: verejný profil — vrstva v obsahu appky (ľavé menu a dok ostávajú nad ňou) */}
+        <VerejnyProfilHost />
+
         {/* plávajúci glass dock — moduly (len mobil/tablet; desktop má bočný panel) */}
         {!desktop && <TabBar taby={taby} aktivny={modul} wide={wide} onModul={prepni} />}
 
         {/* plávajúce „+ Pridať" — primárna akcia stránky (ostáva aj na desktope, vpravo dole) */}
-        {akcie.pridat && <PridatFAB akcia={akcie.pridat} wide={wide} desktop={desktop} />}
+        {akcie.pridat && !vrstvaProfilu && <PridatFAB akcia={akcie.pridat} wide={wide} desktop={desktop} />}
 
         {viac && (
           <ViacSheet taby={taby} setTaby={setTaby} aktivny={modul} moduly={moduly} strankaAkcie={akcie.extra} strankaFiltre={akcie.filtre}
@@ -383,7 +388,6 @@ export function Screens({ wide, desktop }: { wide?: boolean; desktop?: boolean }
         {/* KARTA 41: centrálny prúd Iskier (Domov → 4. políčko) */}
         <IskryHost />
         <PridatIskruHost />
-        <VerejnyProfilHost />
         <AkciaHost />
         <PomocHost />
         <PolohaOkruhu />

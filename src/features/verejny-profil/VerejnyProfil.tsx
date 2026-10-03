@@ -1,13 +1,13 @@
 // KARTA 43 · verejné profily (test). Jedna obrazovka, návrh podľa typu:
 //   charita → Kronika · firma → Výklad (v2) · tvorca → Pirát (v4).
-// Režim modulu (všade / len v detaile) je DEV prepínač v Mojom profile (rezimModulu()).
+// KARTA 43 ZMENA: režim „vsade" zrušený — platobný modul sa otvorí len po ťuku na zbierku/skutok.
 // VerejnyProfilView sa dá vložiť priamo (feed, „Stránka organizácie", adresár),
 // VerejnyProfilHost je celoobrazovková vrstva otváraná zo store (tlačidlo v Správe, QR).
 import { useState } from "react";
 import { ZbierkaModul } from "@/features/zbierka/ZbierkaModul";
-import { najdiTestProfil, rezimModulu, type TestProfil, type TestZbierka } from "@/lib/testProfily";
+import { najdiTestProfil, type TestProfil, type TestZbierka } from "@/lib/testProfily";
 import { useVerejnyProfilOtvoreny, verejnyProfilKluc, zavriVerejnyProfil } from "./otvor";
-import { naZbierkaData } from "./casti";
+import { VrstvaProfilu, naZbierkaData } from "./casti";
 import { Kronika } from "./Kronika";
 import { Vyklad } from "./Vyklad";
 import { Pirat } from "./Pirat";
@@ -17,7 +17,6 @@ export function VerejnyProfilView({ kluc, onBack }: { kluc: string; onBack: () =
   const profil = najdiTestProfil(kluc);
   const [detail, setDetail] = useState<TestZbierka | null>(null);
   if (!profil) return null;
-  const rezim = rezimModulu();
 
   if (detail) return (
     <div className="sc-tokeny" data-stit={profil.stit.toLowerCase()} style={{ background: "var(--bg)", minHeight: "100%" }}>
@@ -27,12 +26,13 @@ export function VerejnyProfilView({ kluc, onBack }: { kluc: string; onBack: () =
     </div>
   );
 
-  if (profil.typ === "firma") return <Vyklad profil={profil} rezim={rezim} onDetail={setDetail} onBack={onBack} />;
-  if (profil.typ === "tvorca") return <Pirat profil={profil} rezim={rezim} onDetail={setDetail} onBack={onBack} />;
-  return <Kronika profil={profil} rezim={rezim} onDetail={setDetail} onBack={onBack} />;
+  if (profil.typ === "firma") return <Vyklad profil={profil} onDetail={setDetail} onBack={onBack} />;
+  if (profil.typ === "tvorca") return <Pirat profil={profil} onDetail={setDetail} onBack={onBack} />;
+  return <Kronika profil={profil} onDetail={setDetail} onBack={onBack} />;
 }
 
-/** celoobrazovková vrstva otváraná zo store (otvorVerejnyProfil) — tlačidlo v Správe, QR, zdieľaný odkaz */
+/** vrstva vnútri appky otváraná zo store (otvorVerejnyProfil) — tlačidlo v Správe, QR, zdieľaný odkaz.
+ *  Kreslí sa v obsahu appky: ľavé menu (PC) aj dok (mobil) ostávajú nad ňou. */
 export function VerejnyProfilHost() {
   const otv = useVerejnyProfilOtvoreny();
   if (!otv) return null;
@@ -42,9 +42,5 @@ export function VerejnyProfilHost() {
 function VerejnyProfilVrstva() {
   const kluc = verejnyProfilKluc();
   if (!kluc) return null;
-  return (
-    <div style={{ position: "fixed", inset: 0, zIndex: 70, overflowY: "auto", WebkitOverflowScrolling: "touch" }}>
-      <VerejnyProfilView kluc={kluc} onBack={zavriVerejnyProfil} />
-    </div>
-  );
+  return <VrstvaProfilu><VerejnyProfilView kluc={kluc} onBack={zavriVerejnyProfil} /></VrstvaProfilu>;
 }

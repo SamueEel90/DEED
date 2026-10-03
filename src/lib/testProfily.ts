@@ -52,6 +52,8 @@ export interface TestZbierka {
   spravaDarcom?: string;      // „Splnili sme" — citát pre darcov
   skoncila?: string;          // dátum ukončenia
   zodpoveda?: string;         // tvorca: charita, ktorá za zbierku zodpovedá
+  /** ukončená zbierka v kronike: „22." · „SEP" · 2026 */
+  d?: string; m?: string; rok?: number;
 }
 
 export interface TestSkutok {
@@ -62,6 +64,8 @@ export interface TestSkutok {
   kedy: string;               // „Včera", „29. 9."
   foto: string;
   dobrovolnici?: number;
+  /** dátum v kronike: „29." · „SEP" · 2026 */
+  d?: string; m?: string; rok?: number;
 }
 
 export interface TestOznam {
@@ -98,6 +102,21 @@ export interface TestDarca {
   pred: string;               // „pred 2 h"
 }
 
+/** ďalší záznam kroniky (história pred testovacími položkami) */
+export interface KronikaPolozka {
+  id: string;
+  typ: "zb" | "sk" | "is" | "oz";
+  d: string; m: string; rok: number;
+  mesto: Mesto;
+  nazov: string;
+  s: string;                  // „380 € · od 27 darcov" · „prvá etapa · 9 dobrovoľníkov"
+  q?: string;                 // SPLNILI SME — správa darcom (doložená zbierka)
+  dok?: string;               // „6 DOKLADOV" alebo stav „SPRÁVA DARCOM DO 22. 10."
+  foto: string;
+}
+/** súhrn roka v kronike */
+export interface KronikaRok { rok: number; nZaz: number; sum: [string, string][] }
+
 export interface TestProfil {
   k: string;
   typ: TypProfilu;
@@ -121,6 +140,17 @@ export interface TestProfil {
   oznamy: TestOznam[];        // presne 4
   praca: TestPraca[];         // presne 2
   darcovia: TestDarca[];
+  /** titulná fotka profilu */
+  titulka: string;
+  /** „Podporiť …" v module (4. pád, ak sa líši od mena) */
+  podporit?: string;
+  /** O nás (návrh v2): nadpis, text a oblasti */
+  onas?: { nadpis: string; text: string; oblasti: string[] };
+  /** pás dorovnania pod Naživo (firma, ktorá dar zdvojnásobí) */
+  dorovnaniePas?: { ini: string; nadpis: string; text: string };
+  /** kronika: súhrny rokov a záznamy z minulosti (k skutkom a ukončeným zbierkam s dátumom) */
+  roky?: KronikaRok[];
+  kronika?: KronikaPolozka[];
 }
 
 // ---- fotky (tie isté ukážkové ako inde v appke) ----
@@ -195,16 +225,16 @@ const CHARITA: TestProfil = {
     { id: "z-doucovanie-tabor", nazov: "Doučovanie v Tábori", popis: "Deväť detí z Tábora chodí na doučovanie dvakrát týždenne. Platíme učiteľky a pomôcky.", mesto: "Prešov", cast: "Tábor", foto: F.ucenie, vyzbierane: 740, ciel: 2000, ludia: 24, stav: "bezi" },
     { id: "z-polievka-hlavna", nazov: "Polievka na Hlavnej", popis: "Každý večer uvaríme polievku pre 40 ľudí bez domova na Hlavnej ulici.", mesto: "Prešov", foto: F.polievka, vyzbierane: 1890, ludia: 72, stav: "dlhodoba" },
     { id: "z-bundy-deti", nazov: "Zimné bundy pre deti", popis: "Bundy, čiapky a rukavice pre deti z rodín v núdzi pred zimou.", mesto: "Bratislava", foto: F.bundy, vyzbierane: 1870, ciel: 2600, ludia: 77, stav: "bezi", konciDni: 21 },
-    { id: "z-ovocie-vydajna", nazov: "Ovocie do výdajne", popis: "Čerstvé ovocie do výdajne potravín, každý týždeň.", mesto: "Trenčín", foto: F.ovocie, vyzbierane: 380, ciel: 380, ludia: 27, stav: "ukoncena", doklady: 4, skoncila: "22. 9.", spravaDarcom: "Ovocie sme rozdelili 27 rodinám. Posledný týždeň ostalo aj na výdajňu v Opatovej." },
+    { id: "z-ovocie-vydajna", nazov: "Ovocie do výdajne", popis: "Čerstvé ovocie do výdajne potravín, každý týždeň.", mesto: "Trenčín", foto: F.ovocie, vyzbierane: 380, ciel: 380, ludia: 27, stav: "ukoncena", doklady: 4, skoncila: "22. 9.", spravaDarcom: "Ovocie sme rozdelili 27 rodinám. Posledný týždeň ostalo aj na výdajňu v Opatovej.", d: "22.", m: "SEP", rok: 2026 },
   ],
   skutky: [
-    { id: "sk-300jedal", nazov: "300 teplých jedál za 2 hodiny", popis: "Mierové námestie · dobrovoľníci z mesta", mesto: "Trenčín", kedy: "Včera", foto: F.jedlo, dobrovolnici: 14 },
-    { id: "sk-strecha", nazov: "Opravili sme strechu Horváthovcom", popis: "prvá etapa · krov a laty", mesto: "Trenčín", kedy: "29. 9.", foto: F.strecha, dobrovolnici: 9 },
-    { id: "sk-nakup-sihot", nazov: "Nákup pre 12 seniorov zo Sihote", popis: "každý piatok · nákup a odvoz domov", mesto: "Trenčín", kedy: "20. 9.", foto: F.seniori, dobrovolnici: 6 },
-    { id: "sk-obedy-sekcov", nazov: "Obedy pre 20 seniorov zo Sekčova", popis: "každý deň o 11:00", mesto: "Prešov", kedy: "18. 9.", foto: F.jedlo, dobrovolnici: 5 },
-    { id: "sk-dvor", nazov: "Upratali sme dvor jedálne", popis: "Hlavná 12 · celé sobotné doobedie", mesto: "Prešov", kedy: "14. 9.", foto: F.dobrovolnici, dobrovolnici: 11 },
-    { id: "sk-tasky", nazov: "31 školských tašiek", popis: "rozdávali sme priamo v škole", mesto: "Bratislava", kedy: "2. 9.", foto: F.tasky, dobrovolnici: 8 },
-    { id: "sk-vecera", nazov: "Vianočná večera pre 60 ľudí", popis: "naše prvé Vianoce vo výdajni", mesto: "Bratislava", kedy: "24. 12. 2025", foto: F.vianoce, dobrovolnici: 17 },
+    { id: "sk-300jedal", nazov: "300 teplých jedál za 2 hodiny", popis: "Mierové námestie · dobrovoľníci z mesta", mesto: "Trenčín", kedy: "Včera", foto: F.jedlo, dobrovolnici: 14, d: "2.", m: "OKT", rok: 2026 },
+    { id: "sk-strecha", nazov: "Opravili sme strechu Horváthovcom", popis: "prvá etapa · krov a laty", mesto: "Trenčín", kedy: "29. 9.", foto: F.strecha, dobrovolnici: 9, d: "29.", m: "SEP", rok: 2026 },
+    { id: "sk-nakup-sihot", nazov: "Nákup pre 12 seniorov zo Sihote", popis: "každý piatok · nákup a odvoz domov", mesto: "Trenčín", kedy: "20. 9.", foto: F.seniori, dobrovolnici: 6, d: "20.", m: "SEP", rok: 2026 },
+    { id: "sk-obedy-sekcov", nazov: "Obedy pre 20 seniorov zo Sekčova", popis: "každý deň o 11:00", mesto: "Prešov", kedy: "18. 9.", foto: F.jedlo, dobrovolnici: 5, d: "18.", m: "SEP", rok: 2026 },
+    { id: "sk-dvor", nazov: "Upratali sme dvor jedálne", popis: "Hlavná 12 · celé sobotné doobedie", mesto: "Prešov", kedy: "14. 9.", foto: F.dobrovolnici, dobrovolnici: 11, d: "14.", m: "SEP", rok: 2026 },
+    { id: "sk-tasky", nazov: "31 školských tašiek", popis: "rozdávali sme priamo v škole", mesto: "Bratislava", kedy: "2. 9.", foto: F.tasky, dobrovolnici: 8, d: "2.", m: "SEP", rok: 2026 },
+    { id: "sk-vecera", nazov: "Vianočná večera pre 60 ľudí", popis: "naše prvé Vianoce", mesto: "Bratislava", kedy: "24. 12. 2023", foto: F.vianoce, dobrovolnici: 17, d: "24.", m: "DEC", rok: 2023 },
   ],
   oznamy: [
     { id: "o-deky", druh: "vyzva", nadpis: "Hľadáme deky do nocľahárne", stitok: "VÝZVA NA SÚRNU POMOC", text: "Do 8. 10. · Mierové nám. 1, každý deň 9 – 17", mesto: "Trenčín", den: "8.", mesiac: "OKT", tlacidlo: "Prihlásiť sa", pod: "23 ľudí už pomáha" },
@@ -227,6 +257,31 @@ const CHARITA: TestProfil = {
     { id: "d8", meno: "Zuzana H.", iniciala: "ZH", mesto: "Trenčín", naCo: "Strecha pre rodinu Horváthovú", suma: 50, pred: "pred 35 min" },
     { id: "d9", meno: "Martin B.", iniciala: "MB", mesto: "Bratislava", naCo: "Zimné bundy pre deti", suma: 10, pred: "pred 12 min" },
     { id: "d10", meno: "Anonymný darca", iniciala: "A", mesto: "Bratislava", naCo: "Celá činnosť", suma: 5, pred: "pred 48 min" },
+  ],
+  titulka: U("photo-1542601906990-b4d3fb778b09", 1200),
+  dorovnaniePas: { ini: "PD", nadpis: "Pekáreň Dobrota zdvojnásobí tvoj dar", text: "1 : 1 · najviac 300 € · ešte 4 380 €" },
+  // kronika z prototypu „Verejny profil charity PC v3 Kronika" (tá istá charita, sídlo Trenčín)
+  roky: [
+    { rok: 2026, nZaz: 37, sum: [["18 940 €", "vyzbierané"], ["5 z 6", "zbierok doložených"], ["31", "skutkov"], ["486", "darcov"]] },
+    { rok: 2025, nZaz: 47, sum: [["14 210 €", "vyzbierané"], ["5 z 5", "zbierok doložených"], ["42", "skutkov"], ["612", "darcov"]] },
+    { rok: 2024, nZaz: 29, sum: [["7 480 €", "vyzbierané"], ["3 z 3", "zbierok doložených"], ["26", "skutkov"], ["233", "darcov"]] },
+    { rok: 2023, nZaz: 10, sum: [["1 920 €", "vyzbierané"], ["1 z 1", "zbierka doložená"], ["9", "skutkov"], ["52", "darcov"]] },
+  ],
+  kronika: [
+    { id: "k-skolske", typ: "zb", d: "25.", m: "AUG", rok: 2026, mesto: "Trenčín", nazov: "Školské potreby", s: "450 € · od 31 darcov", q: "31 detí prišlo prvý deň do školy s novou taškou. Zvyšných 38 € sme dali na desiaty na celý september.", dok: "6 DOKLADOV", foto: U("photo-1507842217343-583bb7270b66") },
+    { id: "k-sarka", typ: "is", d: "14.", m: "JÚL", rok: 2026, mesto: "Trenčín", nazov: "Sárka vstala", s: "1 204 iskier · 0:38", foto: U("photo-1576091160399-112ba8d25d1d") },
+    { id: "k-noclah", typ: "zb", d: "28.", m: "FEB", rok: 2026, mesto: "Trenčín", nazov: "Zimná nocľaháreň", s: "4 000 € · od 96 darcov", q: "Kúpili sme 40 postelí, perie a 80 diek. Nocľaháreň bola celú zimu plná a nikto nemusel spať vonku.", dok: "14 DOKLADOV", foto: U("photo-1519681393784-d120267933ba") },
+    { id: "k-piatky", typ: "sk", d: "9.", m: "JAN", rok: 2026, mesto: "Trenčín", nazov: "Prvých 150 piatkov varenia", s: "Mierové námestie · 14 dobrovoľníkov", foto: U("photo-1542838132-92c53300491e") },
+    { id: "k-bundy25", typ: "zb", d: "20.", m: "DEC", rok: 2025, mesto: "Trenčín", nazov: "Zimné bundy pre deti", s: "1 870 € · od 77 darcov", q: "77 detí dostalo pred Vianocami teplú bundu. Rozdávali sme ich priamo v škole, spolu s rodičmi.", dok: "8 DOKLADOV", foto: U("photo-1519681393784-d120267933ba") },
+    { id: "k-beh25", typ: "oz", d: "14.", m: "OKT", rok: 2025, mesto: "Trenčín", nazov: "Beh pre Svetlo 2025: 412 bežcov", s: "Ostrov, Trenčín · vyzbierali 3 140 €", foto: U("photo-1517649763962-0c623066013b") },
+    { id: "k-opatova", typ: "zb", d: "30.", m: "SEP", rok: 2025, mesto: "Trenčín", nazov: "Strecha pre pani Máriu z Opatovej", s: "5 600 € · od 130 darcov", q: "Pani Mária má pred zimou novú strechu. Pokrývači z Opatovej prácu darovali, platili sme len materiál.", dok: "11 DOKLADOV", foto: U("photo-1632759145351-1d592919f522") },
+    { id: "k-emka", typ: "is", d: "3.", m: "MÁJ", rok: 2025, mesto: "Trenčín", nazov: "Emka a husle", s: "2 310 iskier · 0:42", foto: U("photo-1501386761578-eac5c94b800a") },
+    { id: "k-kuchyna", typ: "zb", d: "15.", m: "APR", rok: 2025, mesto: "Trenčín", nazov: "Kuchyňa pre výdajňu", s: "2 900 € · od 64 darcov", q: "Výdajňa má profesionálnu kuchyňu. Varíme 300 porcií namiesto 120.", dok: "9 DOKLADOV", foto: U("photo-1556909114-f6e7ad7d3136") },
+    { id: "k-balicky", typ: "zb", d: "22.", m: "DEC", rok: 2024, mesto: "Trenčín", nazov: "Vianočné balíčky", s: "2 480 € · od 91 darcov", q: "140 balíčkov pre seniorov a rodiny. Každý sme odniesli osobne.", dok: "5 DOKLADOV", foto: U("photo-1542601906990-b4d3fb778b09") },
+    { id: "k-dodavka", typ: "zb", d: "30.", m: "AUG", rok: 2024, mesto: "Trenčín", nazov: "Dodávka na rozvoz jedla", s: "3 900 € · od 104 darcov", q: "Kúpili sme ojazdenú dodávku. Jedlo vozíme aj do Opatovej a Zlatoviec.", dok: "4 DOKLADY", foto: U("photo-1542838132-92c53300491e") },
+    { id: "k-sporak", typ: "sk", d: "10.", m: "MAR", rok: 2024, mesto: "Trenčín", nazov: "Varíme na novom sporáku", s: "zbierka Hrnce a sporák · 1 100 €", foto: U("photo-1556909114-f6e7ad7d3136") },
+    { id: "k-polievka23", typ: "zb", d: "30.", m: "NOV", rok: 2023, mesto: "Trenčín", nazov: "Polievka pre Mierové námestie", s: "1 920 € · od 52 darcov", q: "Naša prvá zbierka. Kúpili sme dva veľké hrnce, varič a suroviny na celú zimu.", dok: "3 DOKLADY", foto: U("photo-1542601906990-b4d3fb778b09") },
+    { id: "k-zaciatok", typ: "sk", d: "18.", m: "NOV", rok: 2023, mesto: "Trenčín", nazov: "Tu sme začali", s: "jeden hrniec polievky na Mierovom námestí", foto: U("photo-1542601906990-b4d3fb778b09") },
   ],
 };
 
@@ -272,16 +327,16 @@ const FIRMA: TestProfil = {
     { id: "fz-doucovanie", nazov: "Doučovanie v Tábori", popis: "Deväť detí, dvakrát týždenne. Platíme učiteľky.", mesto: "Prešov", foto: F.ucenie, vyzbierane: 740, ciel: 2000, ludia: 24, stav: "bezi", dorovnanie: `${DOROVNA} · ešte 1 260 €` },
     { id: "fz-polievka", nazov: "Polievka na Hlavnej", popis: "Večerná polievka pre 40 ľudí bez domova. Pečivo dávame my.", mesto: "Prešov", foto: F.polievka, vyzbierane: 1890, ludia: 72, stav: "dlhodoba", dorovnanie: `${DOROVNA} · pečivo každý deň` },
     { id: "fz-bundy", nazov: "Zimné bundy pre deti", popis: "Bundy pre deti z rodín v núdzi. Dorovnávame do výšky 2 000 €.", mesto: "Bratislava", foto: F.bundy, vyzbierane: 1870, ciel: 2600, ludia: 77, stav: "bezi", konciDni: 21, dorovnanie: `${DOROVNA} · ešte 130 €` },
-    { id: "fz-ihrisko", nazov: "Ihrisko na Račianskej", popis: "Nový povrch ihriska pre deti zo sídliska. Doplatili sme zvyšok.", mesto: "Bratislava", foto: F.sport, vyzbierane: 6400, ciel: 6400, ludia: 112, stav: "ukoncena", doklady: 7, skoncila: "30. 6.", spravaDarcom: "Ihrisko je hotové od júla. Chodí tam denne vyše 50 detí, povrch má záruku 10 rokov." },
+    { id: "fz-ihrisko", nazov: "Ihrisko na Račianskej", popis: "Nový povrch ihriska pre deti zo sídliska. Doplatili sme zvyšok.", mesto: "Bratislava", foto: F.sport, vyzbierane: 6400, ciel: 6400, ludia: 112, stav: "ukoncena", doklady: 7, skoncila: "30. 6.", spravaDarcom: "Ihrisko je hotové od júla. Chodí tam denne vyše 50 detí, povrch má záruku 10 rokov.", d: "30.", m: "JÚN", rok: 2026 },
   ],
   skutky: [
-    { id: "fs-vianocky", nazov: "Napiekli sme 400 vianočiek pre seniorov", popis: "nočná zmena · celý tím pekárne", mesto: "Bratislava", kedy: "Včera", foto: F.pecivo, dobrovolnici: 12 },
-    { id: "fs-vydajna", nazov: "96 hodín vo výdajni potravín", popis: "zamestnanci namiesto zmeny", mesto: "Bratislava", kedy: "28. 9.", foto: F.dobrovolnici, dobrovolnici: 12 },
-    { id: "fs-pecivo-jedalen", nazov: "Pečivo do jedálne každé ráno", popis: "40 raňajok denne · celý september", mesto: "Trenčín", kedy: "30. 9.", foto: F.pekaren, dobrovolnici: 3 },
-    { id: "fs-strecha", nazov: "Doplatili sme krytinu Horváthovcom", popis: "dorovnanie zbierky 1 : 1", mesto: "Trenčín", kedy: "29. 9.", foto: F.strecha },
-    { id: "fs-pec", nazov: "Kúpili sme pec do jedálne na Hlavnej", popis: "montáž aj zaškolenie", mesto: "Prešov", kedy: "12. 9.", foto: F.polievka, dobrovolnici: 4 },
-    { id: "fs-florbal", nazov: "18 detí hrá florbal zadarmo", popis: "celá sezóna · tréningy aj výstroj", mesto: "Prešov", kedy: "5. 9.", foto: F.sport },
-    { id: "fs-ihrisko", nazov: "Otvorili sme ihrisko na Račianskej", popis: "s deťmi zo sídliska", mesto: "Bratislava", kedy: "1. 7.", foto: F.komunita, dobrovolnici: 9 },
+    { id: "fs-vianocky", nazov: "Napiekli sme 400 vianočiek pre seniorov", popis: "nočná zmena · celý tím pekárne", mesto: "Bratislava", kedy: "Včera", foto: F.pecivo, dobrovolnici: 12, d: "2.", m: "OKT", rok: 2026 },
+    { id: "fs-vydajna", nazov: "96 hodín vo výdajni potravín", popis: "zamestnanci namiesto zmeny", mesto: "Bratislava", kedy: "28. 9.", foto: F.dobrovolnici, dobrovolnici: 12, d: "28.", m: "SEP", rok: 2026 },
+    { id: "fs-pecivo-jedalen", nazov: "Pečivo do jedálne každé ráno", popis: "40 raňajok denne · celý september", mesto: "Trenčín", kedy: "30. 9.", foto: F.pekaren, dobrovolnici: 3, d: "30.", m: "SEP", rok: 2026 },
+    { id: "fs-strecha", nazov: "Doplatili sme krytinu Horváthovcom", popis: "dorovnanie zbierky 1 : 1", mesto: "Trenčín", kedy: "29. 9.", foto: F.strecha, d: "29.", m: "SEP", rok: 2026 },
+    { id: "fs-pec", nazov: "Kúpili sme pec do jedálne na Hlavnej", popis: "montáž aj zaškolenie", mesto: "Prešov", kedy: "12. 9.", foto: F.polievka, dobrovolnici: 4, d: "12.", m: "SEP", rok: 2026 },
+    { id: "fs-florbal", nazov: "18 detí hrá florbal zadarmo", popis: "celá sezóna · tréningy aj výstroj", mesto: "Prešov", kedy: "5. 9.", foto: F.sport, d: "5.", m: "SEP", rok: 2026 },
+    { id: "fs-ihrisko", nazov: "Otvorili sme ihrisko na Račianskej", popis: "s deťmi zo sídliska", mesto: "Bratislava", kedy: "1. 7.", foto: F.komunita, dobrovolnici: 9, d: "1.", m: "JÚL", rok: 2026 },
   ],
   oznamy: [
     { id: "fo-pecivo", druh: "vyzva", nadpis: "Hľadáme vodiča na rozvoz pečiva do výdajní", stitok: "VÝZVA NA SÚRNU POMOC", text: "Do 10. 10. · Račianska 4, ráno 5 – 8", mesto: "Bratislava", den: "10.", mesiac: "OKT", tlacidlo: "Prihlásiť sa", pod: "4 ľudia už pomáhajú" },
@@ -301,6 +356,8 @@ const FIRMA: TestProfil = {
     { id: "fd5", meno: "Katarína D.", iniciala: "KD", mesto: "Trenčín", naCo: "Seniori", pred: "pred 2 h" },
     { id: "fd6", meno: "Anonymný darca", iniciala: "A", mesto: "Prešov", naCo: "Fond Dobroty", suma: 50, pred: "pred 3 h" },
   ],
+  titulka: U("photo-1509440159596-0249088772ff", 1200),
+  onas: { nadpis: "Pečieme od roku 2009", text: "Pečieme od roku 2009. Časť z každého bochníka ide tam, kde je najbližšie treba: dorovnávame zbierky charít, vozíme pečivo do jedální a naši ľudia pomáhajú namiesto zmeny.", oblasti: ["Deti a šport", "Seniori", "Komunita v regióne"] },
 };
 
 // ============================================================
@@ -373,6 +430,8 @@ const TVORCA: TestProfil = {
     { id: "td5", meno: "Anonymný darca", iniciala: "A", mesto: "Bratislava", naCo: "Zvieratá", pred: "pred 2 h" },
     { id: "td6", meno: "Ján H.", iniciala: "JH", mesto: "Trenčín", naCo: "Krmivo pre útulok v Trenčíne", suma: 10, pred: "pred 3 h" },
   ],
+  titulka: U("photo-1511671782779-c97d3d27a1d4", 1200),
+  podporit: "Martina Konaľa",
 };
 
 export const TEST_PROFILY: TestProfil[] = [CHARITA, FIRMA, TVORCA];
@@ -403,17 +462,9 @@ export function vLokalite<T extends { mesto: Mesto }>(zoznam: T[], lok: Lokalita
 /** mesto, ktoré sa použije v texte modulu — pri „Celé Slovensko" sa mesto nepíše */
 export const mestoTextu = (lok: Lokalita, domace: Mesto): Mesto => (lok === "Celé Slovensko" ? domace : lok);
 
-// ---- režim platobného modulu (DEV prepínač v Mojom profile, nie v adrese) ----
-export type RezimModulu = "vsade" | "detail";
-const KLUC_REZIM = "deed.dev.verejnyModul";
-/** „všade" (modul pri každej zbierke, predvolené) · „detail" (len v detaile) */
-export function rezimModulu(): RezimModulu {
-  try { return localStorage.getItem(KLUC_REZIM) === "detail" ? "detail" : "vsade"; } catch { return "vsade"; }
-}
-export function nastavRezimModulu(r: RezimModulu) {
-  try { localStorage.setItem(KLUC_REZIM, r); } catch { /* LS */ }
-}
-
 // ---- čísla ----
 export const eur = (n: number) => `${n.toLocaleString("sk-SK")} €`;
 export const pct = (vyzbierane: number, ciel?: number) => (ciel && ciel > 0 ? Math.min(100, Math.round((vyzbierane / ciel) * 100)) : 0);
+
+/** slovenský tvar podľa počtu: tvar(3, ["zbierka", "zbierky", "zbierok"]) → „3 zbierky" */
+export const tvar = (n: number, [jeden, dva, pat]: [string, string, string]) => `${n.toLocaleString("sk-SK")} ${n === 1 ? jeden : n >= 2 && n <= 4 ? dva : pat}`;
