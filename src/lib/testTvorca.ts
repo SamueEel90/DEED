@@ -25,8 +25,9 @@ export interface TvorcaData {
   streamy: { n: string; d: string; dl: string; s: string; foto: string }[];
   iskry: { st: string; n: string; m: string; foto: string; vyzva?: boolean }[];
   rady: { druh: string; n: string; o: string; cta: string; foto: string }[];
-  yt: { n: string; dl: string; kde: string; foto: string }[];
-  siete: string[];
+  /** url = odkaz von (zatiaľ testovací, domovská stránka platformy) */
+  yt: { n: string; dl: string; kde: string; foto: string; url: string }[];
+  siete: { n: string; url: string }[];
   platene: { id: string; druh: string; n: string; o: string; cena: number; foto: string }[];
   skolenie?: { n: string; o: string; kedy: string; kde: string; cena: number; miesta: string };
   zbierky: { n: string; v: number; ciel: number; kto: string; foto: string }[];
@@ -59,10 +60,10 @@ export const TVORCA_DATA: TvorcaData = {
     { druh: "ČLÁNOK", n: "Ako nahrať pieseň na mobil", o: "Tri triky, ktoré znejú ako štúdio.", cta: "Čítať · 6 min", foto: U("photo-1598488035139-bdbb2231ce04") },
   ],
   yt: [
-    { n: "Celý koncert na Ostrove 2026", dl: "1:12:40", kde: "YouTube", foto: U("photo-1501281668745-f7f57925c3b4") },
-    { n: "Ako som postavil domáce štúdio za 600 €", dl: "24:15", kde: "YouTube", foto: U("photo-1598488035139-bdbb2231ce04") },
+    { n: "Celý koncert na Ostrove 2026", dl: "1:12:40", kde: "YouTube", foto: U("photo-1501281668745-f7f57925c3b4"), url: "https://www.youtube.com" },
+    { n: "Ako som postavil domáce štúdio za 600 €", dl: "24:15", kde: "YouTube", foto: U("photo-1598488035139-bdbb2231ce04"), url: "https://www.youtube.com" },
   ],
-  siete: ["YouTube", "Spotify", "Instagram", "Bandcamp"],
+  siete: [{ n: "YouTube", url: "https://www.youtube.com" }, { n: "Spotify", url: "https://open.spotify.com" }, { n: "Instagram", url: "https://www.instagram.com" }, { n: "Bandcamp", url: "https://bandcamp.com" }],
   platene: [
     { id: "pl-mix", druh: "KURZ · 6 VIDEÍ", n: "Miešanie zvuku pre začiatočníkov", o: "Od mikrofónu po hotovú nahrávku doma.", cena: 9, foto: U("photo-1598488035139-bdbb2231ce04") },
     { id: "pl-koncert", druh: "ČLÁNOK · 12 MIN", n: "Ako ozvučiť malý koncert za 200 €", o: "Zoznam vecí, zapojenie a chyby, ktoré som robil.", cena: 3, foto: U("photo-1501386761578-eac5c94b800a") },

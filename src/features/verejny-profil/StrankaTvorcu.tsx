@@ -13,6 +13,7 @@ import { otvorIskry } from "@/features/iskry/otvor";
 import { DOK, PortalVp } from "./casti";
 import { TESTOVACIA } from "@/lib/testovacia";
 import { ModulPlatby } from "./ModulProfilu";
+import { Citacka, OdchodHarok, Prehravac } from "./ObsahTvorcu";
 import { PRUH } from "./charitaCasti";
 
 const PC = "(min-width: 1200px)";
@@ -43,6 +44,9 @@ export function StrankaTvorcu({ profil, onBack, onStream }: { profil: TestProfil
   const [odom, setOdom] = useState<Record<string, boolean>>({});
   const [prih, setPrih] = useState(false);
   const [pod, setPod] = useState(false);
+  // KARTA 47 · obsah: čítačka / náš prehrávač (stránka ostáva pod nimi skrytá, Späť vráti na to isté miesto) · hárok pred odchodom von
+  const [obsah, setObsah] = useState<{ druh: "citacka" | "video"; nadpis: string; foto?: string } | null>(null);
+  const [von, setVon] = useState<{ kam: string; url: string } | null>(null);
   const [sh, setSh] = useState(false), [shVidno, setShVidno] = useState(false);
   const otvorHarok = () => { setSh(true); requestAnimationFrame(() => requestAnimationFrame(() => setShVidno(true))); };
   const zavriHarok = () => { setShVidno(false); window.setTimeout(() => setSh(false), 320); };
@@ -133,7 +137,7 @@ export function StrankaTvorcu({ profil, onBack, onStream }: { profil: TestProfil
     <Nadpis t="RADY ZADARMO" s={pc ? "čítaj a pozeraj hneď" : undefined} />
     <div style={{ display: "grid", gridTemplateColumns: `repeat(${pc ? 3 : 1},minmax(0,1fr))`, gap: 12 }}>
       {d.rady.map((r) => (
-        <button key={r.n} type="button" style={{ ...tlBez, borderRadius: 20, overflow: "hidden", ...karta, display: "flex", flexDirection: "column", color: "var(--ink)" }}>
+        <button key={r.n} type="button" onClick={() => setObsah({ druh: r.druh === "VIDEO" ? "video" : "citacka", nadpis: r.n, foto: r.foto })} style={{ ...tlBez, borderRadius: 20, overflow: "hidden", ...karta, display: "flex", flexDirection: "column", color: "var(--ink)" }}>
           <span style={{ position: "relative", display: "block", width: "100%", height: pc ? 120 : 150, background: bgU(r.foto) }}>
             <span style={{ position: "absolute", left: 10, top: 10, height: 24, padding: "0 9px", borderRadius: 12, background: "#fff", color: "#1D211B", fontSize: 10.5, fontWeight: 800, letterSpacing: ".05em", display: "flex", alignItems: "center" }}>ZADARMO · {r.druh}</span>
           </span>
@@ -148,7 +152,7 @@ export function StrankaTvorcu({ profil, onBack, onStream }: { profil: TestProfil
     <Nadpis t="DLHŠIE VIDEÁ A INDE" s="otvorí sa až po ťuku" />
     {d.yt.length > 0 && <div style={{ display: "grid", gridTemplateColumns: `repeat(${pc ? 2 : 1},minmax(0,1fr))`, gap: 12 }}>
       {d.yt.map((v) => (
-        <button key={v.n} type="button" style={{ ...tlBez, borderRadius: 20, overflow: "hidden", ...karta, color: "var(--ink)", display: "block" }}>
+        <button key={v.n} type="button" onClick={() => setVon({ kam: v.kde, url: v.url })} style={{ ...tlBez, borderRadius: 20, overflow: "hidden", ...karta, color: "var(--ink)", display: "block" }}>
           <span style={{ position: "relative", display: "block", width: "100%", aspectRatio: "16/9", background: bgU(v.foto) }}>
             <Hraj w={56} h={40} r={12} s={18} a={0.7} />
             <span style={{ position: "absolute", right: 8, bottom: 8, height: 22, padding: "0 7px", borderRadius: 6, background: "rgba(10,8,5,.75)", color: "#fff", fontSize: 11.5, fontWeight: 700, display: "flex", alignItems: "center", fontVariantNumeric: "tabular-nums" }}>{v.dl}</span>
@@ -157,7 +161,7 @@ export function StrankaTvorcu({ profil, onBack, onStream }: { profil: TestProfil
         </button>))}
     </div>}
     {d.siete.length > 0 && <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-      {d.siete.map((s) => <button key={s} type="button" style={{ ...tlBez, height: 44, padding: "0 14px", borderRadius: 22, ...karta, display: "flex", alignItems: "center", gap: 6, fontSize: 13.5, fontWeight: 800, color: "var(--ink)" }}>{s} <span style={{ color: "var(--ink3)" }}>↗</span></button>)}
+      {d.siete.map((s) => <button key={s.n} type="button" onClick={() => setVon({ kam: s.n, url: s.url })} style={{ ...tlBez, height: 44, padding: "0 14px", borderRadius: 22, ...karta, display: "flex", alignItems: "center", gap: 6, fontSize: 13.5, fontWeight: 800, color: "var(--ink)" }}>{s.n} <span style={{ color: "var(--ink3)" }}>↗</span></button>)}
     </div>}
     <span style={{ fontSize: 12, lineHeight: 1.45, color: "var(--ink3)" }}>Odkazy vedú von z DEED+. Video sa načíta až po ťuku, dovtedy cudzia stránka nič nevie.</span>
   </>;
@@ -176,7 +180,7 @@ export function StrankaTvorcu({ profil, onBack, onStream }: { profil: TestProfil
               <span style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: ".06em", color: "var(--gold)" }}>{x.druh}</span>
               <b style={{ fontSize: 15.5, lineHeight: 1.3 }}>{x.n}</b>
               <span style={{ fontSize: 12.5, color: "var(--ink3)" }}>{x.o}</span>
-              <button type="button" onClick={() => { if (TESTOVACIA) setOdom((o) => ({ ...o, [x.id]: true })); }}
+              <button type="button" onClick={() => { if (on) setObsah({ druh: "citacka", nadpis: x.n, foto: x.foto }); else if (TESTOVACIA) setOdom((o) => ({ ...o, [x.id]: true })); }}
                 style={{ alignSelf: "flex-start", marginTop: 4, height: 44, padding: "0 14px", borderRadius: 12, border: on ? "1px solid var(--gBd)" : "1.5px solid var(--gold)", background: on ? "var(--gSoft)" : "transparent", cursor: "pointer", fontSize: 13.5, fontWeight: 800, color: on ? "var(--gInk)" : "var(--gold)", whiteSpace: "nowrap", boxShadow: "none", fontFamily: "inherit" }}>
                 {on ? "Odomknuté · otvoriť" : `Odomknúť za ${x.cena} €`}
               </button>
@@ -235,7 +239,7 @@ export function StrankaTvorcu({ profil, onBack, onStream }: { profil: TestProfil
   const ludiaPod = `${d.podporaPocet.toLocaleString("sk-SK")} ľudí už podporuje`;
   const kov = <span style={{ display: "block", height: "var(--mH)", background: "var(--metal)" }} />;
 
-  if (pc) return (
+  const strankaPc = pc && (
     <div className="vp sc-tokeny" data-stit={stit} style={{ position: "relative", height: "100%", overflowY: "auto" }}>
       {titulka}{kov}
       <div style={{ padding: "22px 32px 120px", display: "grid", gridTemplateColumns: "minmax(0,1fr) 400px", gap: 32, alignItems: "start" }}>
@@ -260,7 +264,7 @@ export function StrankaTvorcu({ profil, onBack, onStream }: { profil: TestProfil
     </div>
   );
 
-  return (
+  const strankaM = !pc && (
     <div className="vp sc-tokeny" data-stit={stit} style={{ position: "relative", height: "100%" }}>
       <div style={{ position: "absolute", inset: 0, overflowY: "auto", WebkitOverflowScrolling: "touch" } as CSSProperties}>
         {titulka}{kov}
@@ -276,6 +280,18 @@ export function StrankaTvorcu({ profil, onBack, onStream }: { profil: TestProfil
         Podporiť {krstne}a<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.6" strokeLinecap="round" aria-hidden="true"><path d="M6 15l6-6 6 6" /></svg>
       </button>
       {sh && <Harok stit={profil.stit} nadpis={`Podporiť ${krstne}a`} vidno={shVidno} onClose={zavriHarok}>{modul}</Harok>}
+    </div>
+  );
+
+  return (
+    <div style={{ position: "relative", height: "100%" }}>
+      <div aria-hidden={!!obsah} style={obsah ? { position: "absolute", inset: 0, visibility: "hidden", pointerEvents: "none" } : { height: "100%" }}>{strankaPc || strankaM}</div>
+      {obsah && <div className="vp sc-tokeny" data-stit={stit} style={{ position: "absolute", inset: 0 }}>
+        {obsah.druh === "video"
+          ? <Prehravac pc={pc} nadpis={obsah.nadpis} autor={profil.meno} onBack={() => setObsah(null)} />
+          : <Citacka pc={pc} nadpis={obsah.nadpis} autor={profil.meno} foto={obsah.foto} onBack={() => setObsah(null)} />}
+      </div>}
+      {von && <OdchodHarok pc={pc} stit={profil.stit} kam={von.kam} url={von.url} onClose={() => setVon(null)} />}
     </div>
   );
 }
