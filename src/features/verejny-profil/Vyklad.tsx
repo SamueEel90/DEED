@@ -7,7 +7,7 @@
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { eur, pct, tvar, vLokalite, type Lokalita, type Mesto, type TestProfil, type TestZbierka } from "@/lib/testProfily";
 import { DOK, LokalitaPrepinac, MESIACE, StitCare, StitOkno, nazovStitu, useDomaceMesto, useMobil } from "./casti";
-import { ModulSektory } from "./ModulSektory";
+import { PodporaProfilu } from "./PodporaProfilu";
 
 const GRAD = "linear-gradient(135deg,#4B7A35,#6E9F4E)";
 const PRUH = "linear-gradient(90deg,#4B7A35,#8DB866)";
@@ -153,7 +153,7 @@ export function Vyklad({ profil, onDetail, onBack }: { profil: TestProfil; onDet
   const modul = (
     <section style={{ position: "relative", borderRadius: 24, overflow: "hidden", background: "var(--panel)", border: "1px solid var(--cardBd)" }}>
       <span style={{ display: "block", height: "var(--mH)", background: "var(--metal)" }} />
-      <div style={{ padding: mobil ? 16 : 22 }}><ModulSektory profil={profil} lok={lok} domace={domace} onZbierky={() => skoc("zb")} /></div>
+      <div style={{ padding: mobil ? 16 : 22 }}><div style={{ display: "flex", flexDirection: "column", gap: 12 }}><PodporaProfilu profil={profil} lok={lok} domace={domace} rez={mobil ? "mob" : "pc"} /></div></div>
     </section>
   );
 

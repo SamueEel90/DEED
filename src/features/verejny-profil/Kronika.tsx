@@ -7,11 +7,11 @@
 // Štítky, štít a overenie sú v okne štítu (bod 137). Rozbalený je len aktuálny rok. Z ISKIER: Iskry / Zbierky.
 // Zbaliť aj Späť z detailu, Iskier či hárku vráti na to isté miesto (pamäť posunu na úrovni stránky).
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
-import { eur, pct, tvar, vLokalite, type Lokalita, type TestProfil, type TestSektor, type TestZbierka } from "@/lib/testProfily";
+import { eur, pct, tvar, vLokalite, type Lokalita, type TestProfil, type TestZbierka } from "@/lib/testProfily";
 import { ISKRY_CFG, iskraViditelna, iskryVsetky, useZmenyIskier, zbierkaIskry, type Iskra } from "@/lib/iskry";
 import { otvorIskry } from "@/features/iskry/otvor";
-import { DOK, LokalitaPrepinac, MESIACE, StitCare, StitOkno, kovText, nazovStitu, norm, useDomaceMesto, useMobil, vMeste } from "./casti";
-import { ModulProfilu } from "./ModulProfilu";
+import { DOK, LokalitaPrepinac, MESIACE, StitCare, StitOkno, kovText, nazovStitu, norm, useDomaceMesto, useMobil } from "./casti";
+import { PodporaProfilu } from "./PodporaProfilu";
 
 type Typ = "zb" | "sk" | "is" | "oz" | "pr";
 type Rez = "pc" | "tab" | "mob";
@@ -52,7 +52,6 @@ export function Kronika({ profil, onDetail, onBack }: { profil: TestProfil; onDe
   const [stitOtv, setStitOtv] = useState(false);
   const [live, setLive] = useState(0);
   const [liveOp, setLiveOp] = useState(1);
-  const [mod, setMod] = useState<number | null>(null);
   const [zivo, setZivo] = useState(p0?.zivo ?? false);
   const [isk, setIsk] = useState(p0?.isk ?? 0);
   const rokyData = profil.roky ?? [];
@@ -60,7 +59,6 @@ export function Kronika({ profil, onDetail, onBack }: { profil: TestProfil; onDe
   const aRef = useRef<HTMLElement | null>(null);       // PC: vizitka (vlastný posun)
   const scRef = useRef<HTMLDivElement | null>(null);   // PC: kronika · tablet / mobil: celá stránka
   const barRef = useRef<HTMLDivElement | null>(null);
-  const dlRef = useRef<HTMLDivElement | null>(null);   // nadpis dlaždíc (Zbaliť sa vracia sem)
   const rf = useRef<Record<string, HTMLElement | null>>({});
   const stit = profil.stit.toLowerCase();
 
@@ -77,14 +75,12 @@ export function Kronika({ profil, onDetail, onBack }: { profil: TestProfil; onDe
 
   // ---- dáta podľa mesta ----
   const sk = lok === "Celé Slovensko";
-  const mestoV = sk ? "celom Slovensku" : vMeste(lok);
   const zbierky = vLokalite(profil.zbierky, lok, domace);
   const bezice = zbierky.filter((z) => z.stav !== "ukoncena");
   const oznamy = vLokalite(profil.oznamy, lok, domace);
   const praca = vLokalite(profil.praca, lok, domace);
   const darcovia = sk ? profil.darcovia : profil.darcovia.filter((d) => d.mesto === lok);
   const dnes = darcovia.reduce((s, d) => s + (d.suma ?? 0), 0);
-  const sektory: TestSektor[] = [profil.centralna, ...profil.sektory].slice(0, 4);
 
   // Naživo: posledný dar sa strieda každých 5 s (prechod cez opacity)
   useEffect(() => {
@@ -156,15 +152,6 @@ export function Kronika({ profil, onDetail, onBack }: { profil: TestProfil; onDe
       c.scrollTo({ top: Math.max(0, odhore(el, c) - bar - 12), behavior: "smooth" });
     });
   };
-  /** Zbaliť: zatvor modul a vráť stránku na dlaždice („Tipy na pravidelný dar") */
-  const zbal = () => {
-    setMod(null);
-    requestAnimationFrame(() => {
-      const box = (rez === "pc" ? aRef.current : scRef.current), el = dlRef.current; if (!box || !el) return;
-      box.scrollTo({ top: Math.max(0, odhore(el, box) - 56), behavior: "smooth" });
-    });
-  };
-
   // ================= časti =================
   const tlTmave: CSSProperties = { height: 44, border: "none", borderRadius: 14, background: "rgba(10,8,5,.5)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flex: "none" };
   const hornaLista = (
@@ -242,30 +229,7 @@ export function Kronika({ profil, onDetail, onBack }: { profil: TestProfil; onDe
     </div>
   );
 
-  // ---- TIPY NA PRAVIDELNÝ DAR: 4 dlaždice (farba podľa poradia) → modul pod nimi ----
-  const tipyNadpis = (
-    <span ref={(el) => { dlRef.current = el as unknown as HTMLDivElement; }} style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: ".1em", color: "var(--acc)", paddingTop: rez === "mob" ? 6 : 4 }}>TIPY NA PRAVIDELNÝ DAR <span style={{ fontWeight: 600, letterSpacing: 0, color: "var(--ink3)" }}>· aj jednorazovo, zrušíš kedykoľvek</span></span>
-  );
-  const dlazdice = (
-    <div style={{ display: "grid", gridTemplateColumns: rez === "tab" ? "repeat(4,minmax(0,1fr))" : "repeat(2,minmax(0,1fr))", gap: rez === "mob" ? 8 : 10 }}>
-      {sektory.map((d, i) => {
-        const on = mod === i;
-        const sumaT = d.mesiac != null ? `${eur(d.mesiac)} tento mesiac` : d.mesta[sk ? domace : (lok as keyof typeof d.mesta)]?.dlazdica;
-        return (
-          <button key={d.id} type="button" onClick={() => setMod(on ? null : i)} aria-expanded={on}
-            style={{ position: "relative", height: rez === "tab" ? 136 : rez === "mob" ? 108 : 124, padding: 0, borderRadius: rez === "mob" ? 16 : 18, border: on ? `3px solid var(--h${i})` : `1.5px solid var(--h${i})`, background: bg(d.foto), overflow: "hidden", cursor: "pointer", textAlign: "left", display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
-            <span style={{ position: "absolute", left: 0, right: 0, top: 0, height: 6, background: `var(--h${i})`, zIndex: 1 }} />
-            <span style={{ position: "absolute", inset: 0, background: `linear-gradient(180deg,rgba(10,8,5,0) ${rez === "mob" ? 20 : 25}%,rgba(10,8,5,${rez === "pc" ? ".82" : ".85"}) 100%)` }} />
-            <span style={{ position: "relative", padding: rez === "mob" ? "9px 11px" : "10px 12px", display: "flex", flexDirection: "column", gap: rez === "mob" ? 1 : 2, color: "#fff" }}>
-              <span style={{ fontSize: rez === "mob" ? 10 : 10.5, fontWeight: 800, letterSpacing: ".08em", opacity: 0.85 }}>{i ? `SEKTOR ${i}` : "CENTRÁLNA"}</span>
-              <b style={{ fontSize: rez === "tab" ? 15 : rez === "mob" ? 14.5 : 15.5, lineHeight: 1.2 }}>{d.nazov}</b>
-              <span style={{ fontSize: rez === "pc" ? 12.5 : 12, fontVariantNumeric: "tabular-nums", opacity: 0.9 }}>{sumaT}</span>
-            </span>
-          </button>);
-      })}
-    </div>
-  );
-  const modul = mod != null && sektory[mod] && <ModulProfilu key={sektory[mod].id} profil={profil} sektor={sektory[mod]} poradie={mod} mestoV={mestoV} onZbal={zbal} />;
+  const podpora = <PodporaProfilu profil={profil} lok={lok} domace={domace} rez={rez} />;
 
   // ---- lepkavá lišta: hľadanie + filtre (+ tablet / mobil rady rokov) ----
   const lista = (
@@ -572,9 +536,7 @@ export function Kronika({ profil, onDetail, onBack }: { profil: TestProfil; onDe
                 </span>
               </>}
           {tab ? nazivoTab : nazivoMob}
-          {tipyNadpis}
-          {dlazdice}
-          {modul && (tab ? <div style={{ width: "100%", maxWidth: 560, alignSelf: "center" }}>{modul}</div> : modul)}
+          {podpora}
         </div>
         {lista}
         <div style={{ padding: tab ? "24px 28px 0" : "20px 16px 0", display: "flex", flexDirection: "column", gap: tab ? 40 : 30 }}>
@@ -602,9 +564,7 @@ export function Kronika({ profil, onDetail, onBack }: { profil: TestProfil; onDe
             <b style={{ fontSize: 30, lineHeight: 1.1, letterSpacing: "-.01em" }}>{profil.meno}</b>
             <span style={{ fontSize: 15, lineHeight: 1.5, color: "var(--ink2)", textWrap: "pretty" } as CSSProperties}>{profil.veta}</span>
           </span>
-          {tipyNadpis}
-          {dlazdice}
-          {modul}
+          {podpora}
         </div>
       </aside>
 

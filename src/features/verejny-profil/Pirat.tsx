@@ -7,7 +7,7 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { eur, pct, tvar, vLokalite, type Lokalita, type Mesto, type TestProfil, type TestZbierka } from "@/lib/testProfily";
 import { DOK, LokalitaPrepinac, MESIACE, PortalVp, StitCare, StitOkno, nazovStitu, useDomaceMesto, useMobil, vMeste } from "./casti";
-import { ModulSektory } from "./ModulSektory";
+import { PodporaProfilu } from "./PodporaProfilu";
 import { iskryVsetky, useZmenyIskier } from "@/lib/iskry";
 
 const BODY = ["Tvár", "Čo teraz potrebujú", "Dôkaz", "Ľudia, ktorí dali", "Oznamy a práca", "Koniec"];
@@ -279,7 +279,7 @@ export function Pirat({ profil, onDetail, onBack }: { profil: TestProfil; onDeta
             </button>
           </span>
           <div style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "4px 16px 28px" }}>
-            <ModulSektory profil={profil} lok={lok} domace={domace} onZbierky={() => { zavriHarok(); skoc(1); }} />
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}><PodporaProfilu profil={profil} lok={lok} domace={domace} rez="mob" /></div>
           </div>
         </div>
       </PortalVp>}
@@ -297,7 +297,7 @@ export function Pirat({ profil, onDetail, onBack }: { profil: TestProfil; onDeta
       </div>
       <aside ref={modRef} style={{ width: 460, flex: "none", overflowY: "auto", background: "var(--panel)", borderLeft: "1px solid var(--accLine)", display: "flex", flexDirection: "column" }}>
         <span style={{ display: "block", flex: "none", height: "var(--mH)", background: "var(--metal)" }} />
-        <div style={{ padding: "22px 22px 26px" }}><ModulSektory profil={profil} lok={lok} domace={domace} onZbierky={() => skoc(1)} /></div>
+        <div style={{ padding: "22px 22px 26px" }}><div style={{ display: "flex", flexDirection: "column", gap: 12 }}><PodporaProfilu profil={profil} lok={lok} domace={domace} rez="pc" /></div></div>
       </aside>
       {okno}
     </div>
