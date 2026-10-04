@@ -1,9 +1,10 @@
 // KARTA 43 · verejné profily (test). Jedna obrazovka, návrh podľa typu:
-//   charita → Kronika · firma → Výklad (v2) · tvorca → Pirát (v4).
+//   charita → Kronika / Výklad / Pirát (KARTA 45, testovací prepínač) · firma → stránka firmy (KARTA 46) · tvorca → stránka tvorcu (KARTA 47).
+//   kľúč „stream:{id}" (odkaz /z/{zbierka}?s={stream}) → stránka streamu na zbierku (KARTA 47).
 // KARTA 43 ZMENA: režim „vsade" zrušený — platobný modul sa otvorí len po ťuku na zbierku/skutok.
 // VerejnyProfilView sa dá vložiť priamo (feed, „Stránka organizácie", adresár),
 // VerejnyProfilHost je celoobrazovková vrstva otváraná zo store (tlačidlo v Správe, QR).
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ZbierkaModul } from "@/features/zbierka/ZbierkaModul";
 import { najdiTestProfil, type TestProfil, type TestZbierka } from "@/lib/testProfily";
 import { useVerejnyProfilOtvoreny, verejnyProfilKluc, zavriVerejnyProfil } from "./otvor";
@@ -12,13 +13,24 @@ import { TESTOVACIA } from "@/lib/testovacia";
 import { Kronika } from "./Kronika";
 import { VykladCharita } from "./VykladCharita";
 import { PiratCharita } from "./PiratCharita";
-import { Vyklad } from "./Vyklad";
-import { Pirat } from "./Pirat";
+import { StrankaFirmy } from "./StrankaFirmy";
+import { StrankaTvorcu } from "./StrankaTvorcu";
+import { StreamZbierka } from "./StreamZbierka";
 
 /** vložiteľný verejný profil podľa kľúča stránky (svetlo · pekaren · tvorca) */
 export function VerejnyProfilView({ kluc, onBack }: { kluc: string; onBack: () => void }) {
-  const profil = najdiTestProfil(kluc);
+  const zStreamu = kluc.startsWith("stream:") ? kluc.slice(7) : null;
+  const profil = najdiTestProfil(zStreamu ? "tvorca" : kluc);
   const [detail, setDetail] = useState<TestZbierka | null>(null);
+  const [stream, setStream] = useState<string | null>(null);
+  // stránka streamu otvorená z profilu tvorcu: krok späť v prehliadači (alebo gesto) vráti na tvorcu
+  useEffect(() => {
+    if (!stream) return;
+    try { window.history.pushState({ deedStream: stream }, ""); } catch { /* sandbox */ }
+    const f = () => setStream(null);
+    window.addEventListener("popstate", f);
+    return () => window.removeEventListener("popstate", f);
+  }, [stream]);
   const [podanie] = usePodanie(); // KARTA 45: charita v 3 podaniach (testovací prepínač na profile)
   if (!profil) return null;
 
@@ -30,8 +42,9 @@ export function VerejnyProfilView({ kluc, onBack }: { kluc: string; onBack: () =
     </div>
   );
 
-  if (profil.typ === "firma") return <Vyklad profil={profil} onDetail={setDetail} onBack={onBack} />;
-  if (profil.typ === "tvorca") return <Pirat profil={profil} onDetail={setDetail} onBack={onBack} />;
+  if (profil.typ === "firma") return <StrankaFirmy profil={profil} onDetail={setDetail} onBack={onBack} />; // KARTA 46
+  if (zStreamu || stream) return <StreamZbierka profil={profil} streamId={(zStreamu || stream)!} />; // KARTA 47
+  if (profil.typ === "tvorca") return <StrankaTvorcu profil={profil} onBack={onBack} onStream={setStream} />; // KARTA 47
   const prepinac = TESTOVACIA ? <PrepinacPodania /> : undefined;
   if (podanie === "pirat") return <PiratCharita profil={profil} onDetail={setDetail} onBack={onBack} prepinac={TESTOVACIA ? <PrepinacPodania tmavy /> : undefined} />;
   if (podanie === "vyklad") return <VykladCharita profil={profil} onDetail={setDetail} onBack={onBack} prepinac={prepinac} />;

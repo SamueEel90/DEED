@@ -4,6 +4,7 @@
 // Režim modulu (všade / len v detaile) je v DEV paneli v Mojom profile, nie v adrese.
 import { useSyncExternalStore } from "react";
 import { slugNaKluc } from "@/lib/testProfily";
+import { STREAMY } from "@/lib/testTvorca";
 
 let otvorene = false;
 let kluc: string | null = null;
@@ -22,6 +23,15 @@ if (typeof window !== "undefined") {
   if (m) {
     const k = slugNaKluc(decodeURIComponent(m[1]));
     if (k) { otvorene = true; kluc = k; }
+    try { window.history.replaceState(null, "", window.location.origin + "/"); } catch { /* sandbox */ }
+  }
+}
+// KARTA 47 · /z/{zbierka}?s={stream} — QR / odkaz zo streamu tvorcu → rovno stránka streamu na zbierku.
+if (typeof window !== "undefined") {
+  const m = window.location.pathname.match(/^\/z\/([^/?#]+)/);
+  const s = new URLSearchParams(window.location.search).get("s");
+  if (m && s && STREAMY[s] && STREAMY[s].zbierka === decodeURIComponent(m[1])) {
+    otvorene = true; kluc = `stream:${s}`;
     try { window.history.replaceState(null, "", window.location.origin + "/"); } catch { /* sandbox */ }
   }
 }

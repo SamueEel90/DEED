@@ -137,12 +137,12 @@ function spojPary(r: DarRiadok[]): Par[] {
 }
 const sumaVZozname = (r: DarRiadok) => (r.firma || (r.registrovany && r.zobrazSumu)) && r.suma > DARCOVIA_CFG.prahSumy ? eK(r.suma) : null;
 
-export function Darcovia({ refId, nadpis = "DARCOVIA", cezTvorcu }: { refId: string; nadpis?: string; cezTvorcu?: string }) {
+export function Darcovia({ refId, nadpis = "DARCOVIA", cezTvorcu, bezDorovnania }: { refId: string; nadpis?: string; cezTvorcu?: string; /** KARTA 46 · modul bez dorovnania firmy: bez zlatých riadkov firmy */ bezDorovnania?: boolean }) {
   const vsetky = useDarcovia(refId);
   const dary = cezTvorcu ? vsetky.filter((r) => r.cezTvorcu === cezTvorcu) : vsetky;
   const ja = usePouzivatel();
   const [vsetci, setVsetci] = useState(false);
-  const pary = spojPary(dary);
+  const pary = spojPary(dary).map((p) => (bezDorovnania ? { ...p, firma: undefined } : p));
   const zobraz = vsetci ? pary : pary.slice(0, 10);
   return (
     <div style={{ marginTop: 12, borderRadius: 18, background: "var(--card)", border: "1px solid var(--cardBd)", padding: "14px 16px 6px" }}>

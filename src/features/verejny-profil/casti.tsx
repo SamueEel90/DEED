@@ -67,11 +67,11 @@ export const vMeste = (m: Mesto): string => ({ "Trenčín": "Trenčíne", "Preš
 
 // ---------------- štít CARE s leskom (prototypy v2 / v3 / v4) ----------------
 export const stitSrc = (stit: string) => `/stity/care/${stit.toLowerCase()}.webp`;
-export function StitCare({ stit, w, h, lesk, tien = "drop-shadow(0 8px 12px rgba(0,0,0,.4))" }: { stit: string; w: number; h: number; lesk?: boolean; tien?: string }) {
-  const src = stitSrc(stit);
+export function StitCare({ stit, w, h, lesk, tien = "drop-shadow(0 8px 12px rgba(0,0,0,.4))", firma }: { stit: string; w: number; h: number; lesk?: boolean; tien?: string; /** KARTA 46 · štít firmy (odznaky/{stit}.png) */ firma?: boolean }) {
+  const src = firma ? `/odznaky/${stit.toLowerCase()}.png` : stitSrc(stit);
   const maska: CSSProperties = { WebkitMaskImage: `url(${src})`, maskImage: `url(${src})`, WebkitMaskSize: "contain", maskSize: "contain", WebkitMaskRepeat: "no-repeat", maskRepeat: "no-repeat", WebkitMaskPosition: "center", maskPosition: "center" };
   return (
-    <span role="img" aria-label={`Štít DEED+ CARE · ${nazovStitu(stit)}`} style={{ position: "relative", width: w, height: h, display: "block" }}>
+    <span role="img" aria-label={`${firma ? "Štít firmy" : "Štít DEED+ CARE"} · ${nazovStitu(stit)}`} style={{ position: "relative", width: w, height: h, display: "block" }}>
       <img src={src} alt="" draggable={false} style={{ width: "100%", height: "100%", objectFit: "contain", filter: tien }} />
       <span aria-hidden="true" style={{ position: "absolute", inset: 0, overflow: "hidden", ...maska }}>
         {lesk && <span style={{ position: "absolute", top: 0, bottom: 0, left: 0, width: "100%", background: "linear-gradient(105deg,rgba(255,255,255,0) 35%,rgba(255,255,255,.8) 50%,rgba(255,255,255,0) 65%)", transform: "translateX(-130%)", animation: "vpLesk 1.5s ease .4s 1 both" }} />}
