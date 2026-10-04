@@ -37,7 +37,7 @@ const S_DETAILOM = ["good", "help", "charita", "nabozenstvo"];
 const CASTI_PLATBY = [
   ["zdieľanie", /Zdieľať|zdieľa/i],
   ["sumy alebo podpora", /DEED|EUR|PODPOR|PRISPIE/i],
-  ["obľúbené", /Obľúben|Uložiť/i],
+  ["sledovať", /Sledova|Sleduješ|Uložiť/i], // OPRAVY 141: Obľúbené → Sledovať / Sleduješ
   ["QR", /QR/],
 ];
 

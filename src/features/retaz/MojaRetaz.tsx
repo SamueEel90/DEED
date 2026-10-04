@@ -219,11 +219,11 @@ function IconBtn({ children, label, disabled, onClick }: { children: React.React
 
 // ============================================================
 // §5.2 Picker príjemcov — bottom-sheet, karty bez odchodu z procesu
-// Obľúbené · Nedávne · Odporúčané · Vyhľadávanie · Sken QR
+// Sledované · Nedávne · Odporúčané · Vyhľadávanie · Sken QR
 // ============================================================
 type PickTab = "oblubene" | "nedavne" | "odporucane" | "hladat";
 const TABY: { id: PickTab; label: string }[] = [
-  { id: "oblubene", label: "⭐ Obľúbené" },
+  { id: "oblubene", label: "Sledované" },
   { id: "odporucane", label: "Odporúčané" },
   { id: "nedavne", label: "Nedávne" },
   { id: "hladat", label: "Hľadať" },

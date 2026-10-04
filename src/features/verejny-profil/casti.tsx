@@ -27,7 +27,7 @@ export function useDomaceMesto(profil: TestProfil): Mesto {
 }
 
 // ---------------- lokalita: „Si v Prešove ⌄" (prototyp v4 Pirát) ----------------
-export function LokalitaPrepinac({ lok, onLok, domace, sidlo }: { lok: Lokalita; onLok: (l: Lokalita) => void; domace: Mesto; sidlo?: Mesto }) {
+export function LokalitaPrepinac({ lok, onLok, domace, sidlo, tmavy }: { lok: Lokalita; onLok: (l: Lokalita) => void; domace: Mesto; sidlo?: Mesto; /** Kronika v6: tmavé polopriehľadné tlačidlo na titulke */ tmavy?: boolean }) {
   const [otv, setOtv] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -41,10 +41,12 @@ export function LokalitaPrepinac({ lok, onLok, domace, sidlo }: { lok: Lokalita;
   return (
     <div ref={ref} style={{ position: "relative", flex: "none" }}>
       <button type="button" onClick={() => setOtv((o) => !o)} aria-expanded={otv}
-        style={{ height: 44, padding: "0 16px", border: "none", borderRadius: 14, background: "#fff", cursor: "pointer", display: "flex", alignItems: "center", gap: 8, fontSize: 14.5, fontWeight: 800, color: "#1D211B", whiteSpace: "nowrap" }}>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3F6E2A" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11zM12 12a2 2 0 1 0 0-4 2 2 0 0 0 0 4z" /></svg>
+        style={tmavy
+          ? { height: 44, padding: "0 14px", border: "none", borderRadius: 14, background: "rgba(10,8,5,.5)", cursor: "pointer", display: "flex", alignItems: "center", gap: 6, fontSize: 14, fontWeight: 800, color: "#fff", whiteSpace: "nowrap" }
+          : { height: 44, padding: "0 16px", border: "none", borderRadius: 14, background: "#fff", cursor: "pointer", display: "flex", alignItems: "center", gap: 8, fontSize: 14.5, fontWeight: 800, color: "#1D211B", whiteSpace: "nowrap" }}>
+        {!tmavy && <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3F6E2A" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11zM12 12a2 2 0 1 0 0-4 2 2 0 0 0 0 4z" /></svg>}
         {text}
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5B5D53" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ transform: `rotate(${otv ? 180 : 0}deg)`, transition: "transform .3s ease" }}><path d="m6 9 6 6 6-6" /></svg>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={tmavy ? "#fff" : "#5B5D53"} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ transform: `rotate(${otv ? 180 : 0}deg)`, transition: "transform .3s ease" }}><path d="m6 9 6 6 6-6" /></svg>
       </button>
       {otv && (
         <span role="menu" style={{ position: "absolute", left: 0, top: 52, zIndex: 40, width: 260, padding: 6, borderRadius: 16, background: "#fff", boxShadow: "0 18px 40px rgba(0,0,0,.35)", display: "flex", flexDirection: "column" }}>
@@ -79,7 +81,9 @@ export function StitCare({ stit, w, h, lesk, tien = "drop-shadow(0 8px 12px rgba
 }
 
 // ---------------- okno štítu (prototyp: karta --cuBg, 460 px, štít s leskom) ----------------
-export function StitOkno({ p, onClose }: { p: TestProfil; onClose: () => void }) {
+export function StitOkno({ p, onClose, v6, mobil }: { p: TestProfil; onClose: () => void;
+  /** OPRAVY 137/139 (Kronika v6): štítky, „· 99 % doložené" a overenie (sídlo, IČO, účet, kontakt) sú v okne; mobil = hárok zdola */
+  v6?: boolean; mobil?: boolean }) {
   const [zobraz, setZobraz] = useState(false);
   useEffect(() => { const r = requestAnimationFrame(() => setZobraz(true)); return () => cancelAnimationFrame(r); }, []);
   const zavri = () => { setZobraz(false); setTimeout(onClose, 250); };
@@ -87,16 +91,25 @@ export function StitOkno({ p, onClose }: { p: TestProfil; onClose: () => void })
   return (
     <PortalVp stit={p.stit}>
       <div onClick={zavri} style={{ position: "fixed", inset: 0, zIndex: 80, background: "rgba(10,8,5,.6)", opacity: zobraz ? 1 : 0, transition: "opacity .25s ease" }} />
-      <div role="dialog" aria-label="Štít DEED+ CARE" style={{ position: "fixed", left: "50%", top: "50%", zIndex: 81, width: "min(460px, calc(100% - 32px))", transform: `translate(-50%, -50%) scale(${zobraz ? 1 : 0.92})`, opacity: zobraz ? 1 : 0, transition: "opacity .25s ease, transform .25s ease", borderRadius: 28, background: "var(--cuBg)", border: "1.5px solid var(--cuBd)", boxShadow: "0 30px 80px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.5)", padding: "28px 30px 24px", display: "flex", flexDirection: "column", alignItems: "center", gap: 14, textAlign: "center" }}>
+      <div role="dialog" aria-label="Štít DEED+ CARE" style={v6 && mobil
+        ? { position: "fixed", left: 12, right: 12, bottom: 12, zIndex: 81, maxHeight: "calc(100% - 24px)", overflowY: "auto", transform: `translateY(${zobraz ? 0 : 40}px)`, opacity: zobraz ? 1 : 0, transition: "opacity .25s ease, transform .3s ease", borderRadius: 28, background: "var(--cuBg)", border: "1.5px solid var(--cuBd)", boxShadow: "0 20px 60px rgba(0,0,0,.5)", padding: "22px 20px 18px", display: "flex", flexDirection: "column", alignItems: "center", gap: 10, textAlign: "center" }
+        : { position: "fixed", left: "50%", top: "50%", zIndex: 81, width: v6 ? "min(480px, calc(100% - 32px))" : "min(460px, calc(100% - 32px))", maxHeight: "calc(100% - 32px)", overflowY: "auto", transform: `translate(-50%, -50%) scale(${zobraz ? 1 : 0.92})`, opacity: zobraz ? 1 : 0, transition: "opacity .25s ease, transform .25s ease", borderRadius: 28, background: "var(--cuBg)", border: "1.5px solid var(--cuBd)", boxShadow: "0 30px 80px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.5)", padding: v6 ? "26px 30px 22px" : "28px 30px 24px", display: "flex", flexDirection: "column", alignItems: "center", gap: v6 ? 12 : 14, textAlign: "center" }}>
         <button type="button" onClick={zavri} aria-label="Zavrieť" style={{ position: "absolute", right: 14, top: 14, width: 44, height: 44, border: "none", borderRadius: 22, background: "rgba(0,0,0,.1)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" style={{ color: "var(--cuInk)" }}><path d="M6 6l12 12M18 6L6 18" /></svg>
         </button>
-        <StitCare key={zobraz ? "o" : "z"} stit={p.stit} w={150} h={184} lesk={zobraz} tien="drop-shadow(0 10px 16px rgba(60,40,10,.35))" />
+        {v6
+          ? <StitCare key={zobraz ? "o" : "z"} stit={p.stit} w={mobil ? 96 : 130} h={mobil ? 118 : 160} lesk={zobraz} />
+          : <StitCare key={zobraz ? "o" : "z"} stit={p.stit} w={150} h={184} lesk={zobraz} tien="drop-shadow(0 10px 16px rgba(60,40,10,.35))" />}
+        {v6 ? <>
+          {!mobil && <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".1em", color: "var(--cuInk2)" }}>ŠTÍT DEED+ CARE</span>}
+          <b style={{ fontSize: mobil ? 21 : 26, color: "var(--cuInk)" }}>{nazovStitu(p.stit)} · {p.stitCisla[0][0]} doložené</b>
+        </> : <>
         <span style={{ display: "flex", flexDirection: "column", gap: 4 }}>
           <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".1em", color: "var(--cuInk2)" }}>ŠTÍT DEED+ CARE</span>
           <b style={{ fontSize: 26, color: "var(--cuInk)" }}>{nazovStitu(p.stit)}</b>
         </span>
         <span style={{ fontSize: 14.5, lineHeight: 1.5, color: "var(--cuInk2)", textWrap: "pretty", maxWidth: 360 } as CSSProperties}>Úroveň dôvery. Rastie s tým, ako {p.typ === "charita" ? "charita" : p.typ === "firma" ? "firma" : "tvorca"} dokladá, na čo išli peniaze.</span>
+        </>}
         <div style={{ alignSelf: "stretch", display: "grid", gridTemplateColumns: "repeat(3,minmax(0,1fr))", gap: 8, padding: "14px 0", borderTop: "1px solid rgba(0,0,0,.14)", borderBottom: "1px solid rgba(0,0,0,.14)" }}>
           {p.stitCisla.map(([v, t]) => (
             <span key={t} style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
@@ -105,7 +118,20 @@ export function StitOkno({ p, onClose }: { p: TestProfil; onClose: () => void })
             </span>
           ))}
         </div>
-        <a href="#" onClick={(e) => e.preventDefault()} style={{ fontSize: 14, fontWeight: 800, color: "var(--cuInk)", minHeight: 44, display: "flex", alignItems: "center" }}>Ako sa štít získava</a>
+        {v6 && <>
+          <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: 6 }}>
+            {[[...new Set(p.zbierky.map((z) => z.mesto))].join(" · "), `od ${p.odRoku}`, p.typ === "charita" ? "Overená organizácia" : p.typ === "firma" ? "Overená firma" : "Overený tvorca"].map((c) => (
+              <span key={c} style={{ height: mobil ? 28 : 30, padding: mobil ? "0 11px" : "0 12px", borderRadius: 15, border: "1px solid var(--cuBd)", display: "flex", alignItems: "center", fontSize: mobil ? 12.5 : 13, fontWeight: 800, color: "var(--cuInk)" }}>{c}</span>))}
+          </div>
+          <div style={{ alignSelf: "stretch", display: "flex", flexDirection: "column", textAlign: "left" }}>
+            {([["Sídlo", p.sidlo], ["IČO", p.ico], ["Transparentný účet", p.ucet], ["Kontakt", p.kontakt]] as [string, string][]).map(([k, v]) => (
+              <div key={k} style={mobil ? { display: "flex", flexDirection: "column", gap: 1, padding: "6px 0", borderTop: "1px solid rgba(0,0,0,.12)" } : { display: "flex", justifyContent: "space-between", gap: 12, padding: "7px 0", borderTop: "1px solid rgba(0,0,0,.12)" }}>
+                <span style={{ fontSize: mobil ? 11.5 : 12.5, fontWeight: 700, color: "var(--cuInk2)" }}>{k}</span>
+                <span style={{ fontSize: 13, fontWeight: 800, color: "var(--cuInk)", textAlign: mobil ? "left" : "right" }}>{v}</span>
+              </div>))}
+          </div>
+        </>}
+        {!(v6 && mobil) && <a href="#" onClick={(e) => e.preventDefault()} style={{ fontSize: 14, fontWeight: 800, color: "var(--cuInk)", minHeight: 44, display: "flex", alignItems: "center" }}>Ako sa štít získava</a>}
       </div>
     </PortalVp>
   );
@@ -144,4 +170,99 @@ export function naZbierkaData(z: TestZbierka, profil: TestProfil): ZbierkaData {
       veta: profil.veta, cisla: [], stit: (profil.stit as StitLevel),
     },
   };
+}
+
+// ============================================================
+// KARTA 45 · „Hľadáme ľudí" = modrý plagát (nie oznam). PC celý, tablet a mobil zbalený (ťuk rozbalí).
+// ============================================================
+import type { TestPraca } from "@/lib/testProfily";
+const PLAGAT_BG = "linear-gradient(160deg,#2C5576 0%,#3D6B8E 60%,#4F7FA3 100%)";
+function PlagatUdaje({ j }: { j: TestPraca }) {
+  return (<>
+    <div style={{ display: "grid", gridTemplateColumns: "auto minmax(0,1fr)", gap: "4px 12px", fontSize: 13.5, padding: "8px 0", borderTop: "1px solid rgba(255,255,255,.22)", borderBottom: "1px solid rgba(255,255,255,.22)" }}>
+      <span style={{ opacity: 0.75 }}>Kde</span><b>{j.kde}</b>
+      <span style={{ opacity: 0.75 }}>Kedy</span><b>{j.kedy}</b>
+      <span style={{ opacity: 0.75 }}>Odmena</span><b>{j.odmena}</b>
+    </div>
+    <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
+      <button type="button" style={{ height: 46, padding: "0 20px", border: "none", borderRadius: 14, background: "#fff", cursor: "pointer", fontSize: 15, fontWeight: 800, color: "#2C5576", boxShadow: "none" }}>Mám záujem</button>
+      <span style={{ fontSize: 12.5, opacity: 0.85 }}>{j.zaujem}</span>
+    </span>
+  </>);
+}
+export function PlagatPrace({ praca, zbaleny, nadpis = true }: { praca: TestPraca[]; zbaleny?: boolean; nadpis?: boolean }) {
+  const [otv, setOtv] = useState<Record<string, boolean>>({});
+  if (!praca.length) return null;
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 10, paddingTop: 6 }}>
+      {nadpis && <span style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: ".1em", color: "var(--blue)" }}>HĽADÁME ĽUDÍ</span>}
+      {praca.map((j) => zbaleny ? (
+        <article key={j.id} style={{ position: "relative", borderRadius: 20, overflow: "hidden", background: PLAGAT_BG, color: "#fff", display: "flex", flexDirection: "column", boxShadow: "0 10px 24px rgba(30,60,90,.25)" }}>
+          <button type="button" onClick={() => setOtv((o) => ({ ...o, [j.id]: !o[j.id] }))} aria-expanded={!!otv[j.id]}
+            style={{ minHeight: 64, padding: "12px 10px 12px 16px", border: "none", background: "transparent", boxShadow: "none", cursor: "pointer", textAlign: "left", color: "#fff", display: "flex", alignItems: "center", gap: 10, fontFamily: "inherit" }}>
+            <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 3 }}>
+              <span style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: ".08em", opacity: 0.85 }}>{j.stitok} · {j.pod}</span>
+              <b style={{ fontSize: 17, lineHeight: 1.2 }}>{j.nazov}</b>
+            </span>
+            <span style={{ flex: "none", width: 36, height: 36, borderRadius: 18, background: "rgba(255,255,255,.15)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" style={{ transform: `rotate(${otv[j.id] ? 180 : 0}deg)`, transition: "transform .25s ease" }}><path d="M6 9l6 6 6-6" /></svg>
+            </span>
+          </button>
+          {otv[j.id] && <div style={{ padding: "0 16px 16px", display: "flex", flexDirection: "column", gap: 10 }}>
+            <span style={{ fontSize: 14, lineHeight: 1.45, opacity: 0.92 }}>{j.opis}</span>
+            <PlagatUdaje j={j} />
+          </div>}
+        </article>
+      ) : (
+        <article key={j.id} style={{ position: "relative", borderRadius: 22, overflow: "hidden", background: PLAGAT_BG, color: "#fff", padding: "18px 18px 16px", display: "flex", flexDirection: "column", gap: 10, boxShadow: "0 12px 28px rgba(30,60,90,.28)" }}>
+          <span aria-hidden="true" style={{ position: "absolute", right: -30, top: -30, width: 130, height: 130, borderRadius: "50%", border: "16px solid rgba(255,255,255,.08)" }} />
+          <span style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+            <span style={{ height: 26, padding: "0 10px", borderRadius: 13, background: "#fff", color: "#2C5576", fontSize: 11, fontWeight: 800, letterSpacing: ".06em", display: "flex", alignItems: "center", whiteSpace: "nowrap" }}>{j.stitok}</span>
+            <span style={{ fontSize: 12.5, fontWeight: 700, opacity: 0.85 }}>{j.pod}</span>
+          </span>
+          <b style={{ position: "relative", fontSize: 24, lineHeight: 1.15, letterSpacing: "-.01em" }}>{j.nazov}</b>
+          <span style={{ fontSize: 14, lineHeight: 1.45, opacity: 0.92 }}>{j.opis}</span>
+          <PlagatUdaje j={j} />
+        </article>
+      ))}
+    </div>
+  );
+}
+
+/** KARTA 45 · dlhý príbeh zbierky: N riadkov + „Čítať celý príbeh ›" (ťuk rozbalí celý text) */
+export function PribehText({ text, riadky = 6, fs = 14.5, farba = "var(--ink2)", odkaz = "var(--green)" }: { text: string; riadky?: number; fs?: number; farba?: string; odkaz?: string }) {
+  const [cely, setCely] = useState(false);
+  return (<>
+    <span style={{ display: "-webkit-box", WebkitBoxOrient: "vertical", WebkitLineClamp: cely ? "unset" : riadky, overflow: "hidden", fontSize: fs, lineHeight: 1.5, color: farba } as CSSProperties}>{text}</span>
+    {!cely && <span role="button" tabIndex={0} onClick={(e) => { e.stopPropagation(); setCely(true); }} onKeyDown={(e) => { if (e.key === "Enter") { e.stopPropagation(); setCely(true); } }}
+      style={{ alignSelf: "flex-start", minHeight: 44, margin: "-12px 0", display: "flex", alignItems: "center", fontSize: 13.5, fontWeight: 800, color: odkaz, cursor: "pointer" }}>Čítať celý príbeh ›</span>}
+  </>);
+}
+
+// ============================================================
+// KARTA 45 · testovací prepínač podania charity (Kronika · Výklad · Pirát) — len testovacia verzia, pamätá sa lokálne
+// ============================================================
+export type Podanie = "kronika" | "vyklad" | "pirat";
+const KLUC_PODANIE = "deed.dev.podanieCharity";
+const podaniePosl = new Set<() => void>();
+export function nacitajPodanie(): Podanie { try { const v = localStorage.getItem(KLUC_PODANIE) as Podanie | null; return v && PODANIA.some(([k]) => k === v) ? v : "kronika"; } catch { return "kronika"; } }
+export function usePodanie(): [Podanie, (p: Podanie) => void] {
+  const [p, setP] = useState<Podanie>(nacitajPodanie);
+  useEffect(() => { const f = () => setP(nacitajPodanie()); podaniePosl.add(f); return () => { podaniePosl.delete(f); }; }, []);
+  return [p, (n: Podanie) => { try { localStorage.setItem(KLUC_PODANIE, n); } catch { /* LS */ } podaniePosl.forEach((f) => f()); }];
+}
+export const PODANIA: [Podanie, string][] = [["kronika", "Kronika"], ["vyklad", "Výklad"], ["pirat", "Pirát"]];
+export function PrepinacPodania({ tmavy, style }: { tmavy?: boolean; style?: CSSProperties }) {
+  const [p, setP] = usePodanie();
+  const vol = PODANIA;
+  return (
+    <div role="group" aria-label="Zobrazenie profilu (test)" style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", ...style }}>
+      <span style={{ fontSize: 12.5, fontWeight: 800, color: tmavy ? "rgba(255,255,255,.8)" : "var(--ink3)", marginRight: 2 }}>Zobrazenie:</span>
+      {vol.map(([k, t]) => {
+        const on = p === k;
+        return <button key={k} type="button" aria-pressed={on} onClick={() => setP(k)}
+          style={{ height: 44, padding: "0 14px", borderRadius: 22, border: `1.5px solid ${on ? "var(--green)" : tmavy ? "rgba(255,255,255,.35)" : "var(--cardBd)"}`, background: on ? "var(--green)" : tmavy ? "rgba(0,0,0,.25)" : "var(--card)", color: on ? "#fff" : tmavy ? "#fff" : "var(--ink2)", fontSize: 14, fontWeight: 800, cursor: "pointer", fontFamily: "inherit", boxShadow: "none" }}>{t}</button>;
+      })}
+    </div>
+  );
 }

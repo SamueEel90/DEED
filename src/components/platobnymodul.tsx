@@ -60,7 +60,7 @@ export interface PlatobnyModulProps {
   /** v čom príjemca berie krypto: EURC (charita, Viera) · DEED (ostatní) · „nie" */
   krypto?: "EURC" | "DEED" | "nie";
   // --- 4.–7. riadky ---
-  /** Položka do „Môj DEED → Obľúbené". Bez nej má riadok len „Podporiť DEED". */
+  /** Položka do „Môj DEED → Sledované". Bez nej má riadok len „Podporiť DEED". */
   oblubene?: Oblubeny;
   toast?: (m: string) => void;
   /** Skryje riadok Obľúbené + Podporiť DEED (napr. vnorený modul v Split QR sheete). */

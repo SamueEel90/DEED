@@ -1,6 +1,8 @@
 // Pravidelná podpora (prototyp „Platba - pravidelna podpora") — rovnaký postup ako jednorazový dar:
 // Nastavenie → Spôsob → Zhrnutie → podrž a potvrď → Hotovo. Podporuje sa LEN táto zbierka.
 // Firma pravidelný dar nedorovnáva. EURC len registrovaný. Karta od 3 €, pod 3 € len SEPA.
+// OPRAVY 142: neregistrovaný bez e-mailu — len SEPA inkaso (IBAN + meno majiteľa), len mesačne, najviac 100 €,
+// vždy Anonymný darca, zruší ho vo svojom bankovníctve. Registrovaný ako doteraz, bez limitu.
 import { DeedZnacka } from "@/components/DeedZnacka";
 import { useState, type ReactNode } from "react";
 import { usePouzivatel } from "@/lib/pouzivatel";
@@ -15,6 +17,8 @@ import { Identita, potvrditTuknutim, poplatokKarty } from "./Platba";
 type Krok = "nastavenie" | "sposob" | "zhrnutie" | "spracovanie" | "hotovo";
 type Perioda = "tyzdenne" | "mesacne" | "rocne";
 type Sposob = "karta" | "sepa";
+/** OPRAVY 142: bez účtu najviac 100 € mesačne */
+const HOST_MAX_EUR = 100;
 
 const KLUC = "deed.pravidelne";
 type Zaznam = { refId: string; suma: number; mena: "EUR" | "EURC"; perioda: Perioda; od: number };
@@ -32,8 +36,10 @@ const bodka = (on: boolean) => (
   <span style={{ flex: "none", width: 22, height: 22, borderRadius: "50%", border: `1.5px solid ${on ? "var(--green)" : "var(--chkBd)"}`, background: on ? "var(--green)" : "transparent", color: "#fff", fontSize: 12, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>{on ? "✓" : ""}</span>);
 const pole = { height: 50, padding: "0 14px", borderRadius: 13, border: "1px solid var(--fieldBd)", background: "var(--field)", fontSize: 15.5, color: "var(--ink)", outline: "none", fontFamily: "inherit", minWidth: 0 } as const;
 
-export function PravidelnaHarok({ refId, nazov, registrovany, onClose, zbierka = true }: {
+export function PravidelnaHarok({ refId, nazov, registrovany, onClose, zbierka = true, suma: sumaOd }: {
   refId: string; nazov: string; registrovany: boolean; onClose: () => void;
+  /** OPRAVY 139: tip „X € / mes." z profilu charity otvorí hárok s vyplnenou sumou */
+  suma?: number;
   /** false = farnosť / organizácia (nie konkrétna zbierka) — bez riadku o dokladoch */
   zbierka?: boolean;
 }) {
@@ -42,7 +48,7 @@ export function PravidelnaHarok({ refId, nazov, registrovany, onClose, zbierka =
   const [dnes] = useState(() => new Date());
   const [krok, setKrok] = useState<Krok>("nastavenie");
   const [mena, setMena] = useState<"EUR" | "EURC">("EUR");
-  const [suma, setSuma] = useState(10);
+  const [suma, setSuma] = useState(sumaOd ?? 10);
   const [vlastna, setVlastna] = useState<string | null>(null);
   const [perioda, setPerioda] = useState<Perioda>("mesacne");
   const [sposob, setSposob] = useState<Sposob>("karta");
@@ -50,16 +56,18 @@ export function PravidelnaHarok({ refId, nazov, registrovany, onClose, zbierka =
   const [tip, setTip] = useState(false);
   const [napoveda, setNapoveda] = useState(false);
   const [hlaska, setHlaska] = useState("");
-  // neregistrovaný vypĺňa platobné údaje a e-mail — bez nich sa pravidelný dar nenastaví
+  // neregistrovaný vypĺňa len mandát SEPA (IBAN + meno majiteľa) — bez e-mailu (OPRAVY 142)
   const [karta, setKarta] = useState(""), [exp, setExp] = useState(""), [cvc, setCvc] = useState("");
-  const [iban, setIban] = useState(""), [majitel, setMajitel] = useState(""), [email, setEmail] = useState("");
+  const [iban, setIban] = useState(""), [majitel, setMajitel] = useState("");
   const [ukazChyby, setUkazChyby] = useState(false);
   const podrz = !potvrditTuknutim();
 
   const eurc = registrovany && mena === "EURC";
   const eur = vlastna != null ? Math.round((parseFloat(vlastna.replace(",", ".")) || 0) * 100) / 100 : suma;
   const mala = eur > 0 && eur < KARTA_OD_EUR;
-  const sp: Sposob | "eurc" = eurc ? "eurc" : mala ? "sepa" : sposob;
+  const host = !registrovany;
+  const nadLimit = host && eur > HOST_MAX_EUR;
+  const sp: Sposob | "eurc" = eurc ? "eurc" : mala || host ? "sepa" : sposob;
   const poplatok = sp === "karta" ? poplatokKarty(eur) : 0;
   const zle = {
     karta: sp === "karta" && karta.replace(/\D/g, "").length < 15,
@@ -67,7 +75,6 @@ export function PravidelnaHarok({ refId, nazov, registrovany, onClose, zbierka =
     cvc: sp === "karta" && cvc.length < 3,
     iban: sp === "sepa" && !/^[A-Z]{2}\d{2}[A-Z0-9]{11,30}$/.test(iban.replace(/\s/g, "")),
     majitel: sp === "sepa" && majitel.trim().length < 3,
-    email: !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.trim()),
   };
   const chybaUdaje = !registrovany && !eurc && Object.values(zle).some(Boolean);
   const tipV = Math.max(0.5, Math.round(eur * 0.1 * 2) / 2);
@@ -79,7 +86,7 @@ export function PravidelnaHarok({ refId, nazov, registrovany, onClose, zbierka =
   const poznamka = perioda === "tyzdenne" ? `Prvá platba dnes ${fD(dnes)}, potom ${DNI[dnes.getDay()]}.`
     : perioda === "mesacne" ? `Prvá platba dnes ${fD(dnes)}, potom každého ${dnes.getDate()}. v mesiaci.`
     : `Prvá platba dnes ${fD(dnes, true)}, potom každý rok ${fD(dnes)}.`;
-  const zrusenie = registrovany ? "Zrušíš ho kedykoľvek v Profil → Pravidelné dary." : "Zrušíš ho kedykoľvek odkazom v e-maile, ktorý ti pošleme.";
+  const zrusenie = registrovany ? "Zrušíš ho kedykoľvek v Profil → Pravidelné dary." : "Zrušíš ho kedykoľvek vo svojom bankovníctve (inkaso / súhlasy).";
   const kroky: Krok[] = eurc ? ["nastavenie", "zhrnutie"] : ["nastavenie", "sposob", "zhrnutie"];
   const ki = kroky.indexOf(krok);
   const labelSposob = { karta: registrovany ? "Karta Visa •••• 4242" : "Platobná karta", sepa: registrovany ? "SEPA inkaso · SK31 •••• 4421" : "SEPA inkaso", eurc: "Peňaženka EURC" }[sp];
@@ -103,7 +110,7 @@ export function PravidelnaHarok({ refId, nazov, registrovany, onClose, zbierka =
     window.setTimeout(() => { setKrok("hotovo"); try { navigator.vibrate?.([10, 40, 16]); } catch { /* bez vibrácie */ } }, 1800);
   };
   const dalej = () => {
-    if (krok === "nastavenie") { if (eur > 0) setKrok(eurc ? "zhrnutie" : "sposob"); }
+    if (krok === "nastavenie") { if (eur > 0 && !nadLimit) setKrok(eurc ? "zhrnutie" : "sposob"); }
     else if (krok === "sposob") { if (chybaUdaje) { setUkazChyby(true); return; } setKrok("zhrnutie"); }
   };
   const spat = () => { if (ki > 0) { setKrok(kroky[ki - 1]); setNapoveda(false); } };
@@ -134,11 +141,15 @@ export function PravidelnaHarok({ refId, nazov, registrovany, onClose, zbierka =
                 style={{ flex: 1, minWidth: 0, border: "none", outline: "none", background: "transparent", fontSize: 20, fontWeight: 800, color: "var(--ink)", fontVariantNumeric: "tabular-nums", fontFamily: "inherit" }} />
               <span style={{ fontSize: 16, fontWeight: 700, color: "var(--ink3)" }}>{eurc ? "EURC" : "€"}</span>
             </div>}
-        {nadpis("AKO ČASTO")}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 8 }}>
-          {(["tyzdenne", "mesacne", "rocne"] as const).map((k) => (
-            <button key={k} type="button" onClick={() => setPerioda(k)} style={{ ...vyber(perioda === k), height: 48, borderRadius: 14, cursor: "pointer", fontSize: 15, fontWeight: 700, fontFamily: "inherit" }}>{SLOVO[k]}</button>))}
-        </div>
+        {nadLimit && <div role="status" style={{ fontSize: 13, fontWeight: 600, lineHeight: 1.45, color: "#A34A2A", padding: "0 4px" }}>Bez účtu najviac {HOST_MAX_EUR} € mesačne. S účtom bez tohto limitu.</div>}
+        {/* bez účtu len mesačne — ostatné voľby skryté */}
+        {registrovany && <>
+          {nadpis("AKO ČASTO")}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 8 }}>
+            {(["tyzdenne", "mesacne", "rocne"] as const).map((k) => (
+              <button key={k} type="button" onClick={() => setPerioda(k)} style={{ ...vyber(perioda === k), height: 48, borderRadius: 14, cursor: "pointer", fontSize: 15, fontWeight: 700, fontFamily: "inherit" }}>{SLOVO[k]}</button>))}
+          </div>
+        </>}
         <div style={{ display: "flex", gap: 10, alignItems: "flex-start", padding: "12px 14px", borderRadius: 14, background: "var(--card)", border: "1px solid var(--cardBd)" }}>
           <svg style={{ flex: "none", marginTop: 2 }} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--ink2)" strokeWidth="1.8" strokeLinecap="round"><rect x="3.5" y="5" width="17" height="15" rx="2.5" /><path d="M3.5 10h17M8 3v4M16 3v4" /></svg>
           <span style={{ fontSize: 13.5, lineHeight: 1.45, color: "var(--ink2)", fontVariantNumeric: "tabular-nums" }}>{poznamka}</span>
@@ -151,20 +162,20 @@ export function PravidelnaHarok({ refId, nazov, registrovany, onClose, zbierka =
         <div style={{ fontSize: 14, color: "var(--ink2)" }}>Ako sa bude platiť <b style={{ color: "var(--ink)", fontVariantNumeric: "tabular-nums" }}>{f(eur)} {SLOVO[perioda]}</b></div>
         {([["karta", registrovany ? "Karta Visa •••• 4242" : "Platobná karta", "poplatok 1,4 % + 0,15 € pri každej platbe"],
            ["sepa", registrovany ? "SEPA inkaso · SK31 •••• 4421" : "SEPA inkaso z tvojho účtu", "bez poplatku · pripísanie do 1 prac. dňa"]] as const).map(([k, t, d]) => {
-          const zak = k === "karta" && mala, on = sp === k;
+          const zak = k === "karta" && (mala || host), on = sp === k;
           return (
             <button key={k} type="button" onClick={() => { if (!zak) setSposob(k); }} style={{ ...vyber(on), display: "flex", alignItems: "center", gap: 14, padding: "14px 16px", borderRadius: 18, textAlign: "left", cursor: zak ? "not-allowed" : "pointer", opacity: zak ? .45 : 1, color: "var(--ink)", fontFamily: "inherit" }}>
               {k === "karta"
                 ? <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><rect x="2.5" y="5" width="19" height="14" rx="2.5" /><path d="M2.5 10h19M6.5 15h4" /></svg>
                 : <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M3 10l9-6 9 6M5 10v8M9.5 10v8M14.5 10v8M19 10v8M3 20h18" /></svg>}
-              <span style={{ flex: 1, minWidth: 0 }}><span style={{ display: "block", fontSize: 15.5, fontWeight: 800 }}>{t}</span><span style={{ display: "block", fontSize: 12.5, color: "var(--ink3)", marginTop: 1 }}>{d}</span></span>
+              <span style={{ flex: 1, minWidth: 0 }}><span style={{ display: "block", fontSize: 15.5, fontWeight: 800 }}>{t}</span><span style={{ display: "block", fontSize: 12.5, color: "var(--ink3)", marginTop: 1 }}>{k === "karta" && host ? "Kartou len s účtom. Inkaso zrušíš vo svojej banke." : d}</span></span>
               {bodka(on)}
             </button>);
         })}
-        {mala && <div style={{ fontSize: 12.5, lineHeight: 1.45, color: "var(--ink3)", padding: "0 4px" }}>Pri sume pod 3 € ponúkame len prevod, lebo poplatok za kartu by pri každej platbe zjedol veľkú časť daru.</div>}
+        {mala && !host && <div style={{ fontSize: 12.5, lineHeight: 1.45, color: "var(--ink3)", padding: "0 4px" }}>Pri sume pod 3 € ponúkame len prevod, lebo poplatok za kartu by pri každej platbe zjedol veľkú časť daru.</div>}
         {!registrovany && <>
           {nadpis("TVOJE ÚDAJE")}
-          {sp === "karta" ? <>
+          {sp === "karta" && !host ? <>
             <input value={karta} onChange={(e) => setKarta(e.target.value.replace(/\D/g, "").slice(0, 19).replace(/(\d{4})(?=\d)/g, "$1 "))}
               placeholder="Číslo karty" inputMode="numeric" autoComplete="cc-number" style={ram(zle.karta)} />
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
@@ -177,10 +188,7 @@ export function PravidelnaHarok({ refId, nazov, registrovany, onClose, zbierka =
               placeholder="IBAN" autoComplete="off" style={ram(zle.iban)} />
             <input value={majitel} onChange={(e) => setMajitel(e.target.value)} placeholder="Meno majiteľa účtu" autoComplete="name" style={ram(zle.majitel)} />
           </>}
-          <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="E-mail" inputMode="email" autoComplete="email" style={ram(zle.email)} />
-          {ukazChyby && chybaUdaje && <div style={{ fontSize: 13, fontWeight: 600, color: "#A34A2A" }}>
-            {sp === "karta" ? "Doplň údaje karty a e-mail. Bez nich pravidelný dar nenastavíme." : "Doplň IBAN, meno majiteľa účtu a e-mail. Bez nich pravidelný dar nenastavíme."}</div>}
-          <div style={{ fontSize: 12.5, lineHeight: 1.45, color: "var(--ink3)", padding: "0 4px" }}>Na e-mail ti pošleme potvrdenie, odkaz na zrušenie a správu, ak by platba neprešla.</div>
+          {ukazChyby && chybaUdaje && <div style={{ fontSize: 13, fontWeight: 600, color: "#A34A2A" }}>Doplň IBAN a meno majiteľa účtu. Bez nich pravidelný dar nenastavíme.</div>}
         </>}
       </>
     );
@@ -212,7 +220,7 @@ export function PravidelnaHarok({ refId, nazov, registrovany, onClose, zbierka =
             </div>)}
           <div style={{ display: "flex", justifyContent: "space-between", gap: 12, padding: "12px 0 10px", fontSize: 16, fontWeight: 800 }}><span>Spolu pri každej platbe</span><span style={{ fontVariantNumeric: "tabular-nums" }}>{f(spolu, true)}</span></div>
         </div>
-        <div style={{ fontSize: 12.5, lineHeight: 1.5, color: "var(--ink3)", padding: "0 4px" }}>{zrusenie} Ak platba neprejde, dáme ti vedieť v appke aj e-mailom.</div>
+        <div style={{ fontSize: 12.5, lineHeight: 1.5, color: "var(--ink3)", padding: "0 4px" }}>{zrusenie}{registrovany ? " Ak platba neprejde, dáme ti vedieť v appke." : ""}</div>
         {napoveda && <div style={{ padding: "10px 12px", borderRadius: 12, background: "var(--gSoft)", border: "1px solid var(--gBd)", fontSize: 13, fontWeight: 600, color: "var(--gInk)" }}>Pravidelný dar potvrdíš podržaním tlačidla.</div>}
       </>
     );
@@ -240,7 +248,7 @@ export function PravidelnaHarok({ refId, nazov, registrovany, onClose, zbierka =
         {!registrovany && (
           <div style={{ padding: "14px 16px", borderRadius: 16, background: "var(--gSoft)", border: "1px solid var(--gBd)", display: "flex", flexDirection: "column", gap: 5 }}>
             <div style={{ fontSize: 15, fontWeight: 800 }}>Chceš, aby sa ti dary pripisovali?</div>
-            <div style={{ fontSize: 13, lineHeight: 1.45, color: "var(--ink2)" }}>Zaregistruj sa a pravidelný dar sa ti pripíše. V zozname potom môže byť tvoje meno a pribudne ti karma.</div>
+            <div style={{ fontSize: 13, lineHeight: 1.45, color: "var(--ink2)" }}>S účtom ho uvidíš a zmeníš v Profile. V zozname potom môže byť tvoje meno a pribudne ti karma.</div>
             <div style={{ fontSize: 14, fontWeight: 800, color: "var(--green)" }}>Zaregistrovať sa ›</div>
           </div>)}
         <div style={{ fontSize: 13, lineHeight: 1.5, color: "var(--ink3)", textAlign: "center" }}>{zrusenie}</div>
@@ -255,7 +263,7 @@ export function PravidelnaHarok({ refId, nazov, registrovany, onClose, zbierka =
   const paticka = krok === "spracovanie" ? null : (
     <>
       {(krok === "sposob" || krok === "zhrnutie") && tlacidlo("Späť", spat, true)}
-      {krok === "nastavenie" || krok === "sposob" ? tlacidlo("Pokračovať", dalej, false, eur <= 0 || (krok === "sposob" && chybaUdaje))
+      {krok === "nastavenie" || krok === "sposob" ? tlacidlo("Pokračovať", dalej, false, eur <= 0 || nadLimit || (krok === "sposob" && chybaUdaje))
         : krok === "zhrnutie" ? <div style={{ flex: 2, display: "flex", flexDirection: "column" }}>{podrz ? <PodrzTlacidlo label={potvrdLabel} onConfirm={potvrd} onHint={() => setNapoveda(true)} /> : tlacidlo(potvrdLabel, potvrd)}</div>
         : tlacidlo("Hotovo", onClose)}
     </>

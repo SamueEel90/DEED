@@ -183,7 +183,7 @@ export interface Podpora {
 }
 
 /** Obľúbený príspevok (bookmark). Uložený lokálne (deed.me.oblubene) —
- *  zobrazí sa v „Môj DEED → Obľúbené"; klik otvorí detail príslušného modulu. */
+ *  zobrazí sa v „Môj DEED → Sledované"; klik otvorí detail príslušného modulu. */
 export interface Oblubeny {
   refId: number | string;
   typ: string;   // engine typ (skutok/ziadost/charita/ponuka/udalost…)

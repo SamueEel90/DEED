@@ -7,8 +7,11 @@ import { useState } from "react";
 import { ZbierkaModul } from "@/features/zbierka/ZbierkaModul";
 import { najdiTestProfil, type TestProfil, type TestZbierka } from "@/lib/testProfily";
 import { useVerejnyProfilOtvoreny, verejnyProfilKluc, zavriVerejnyProfil } from "./otvor";
-import { VrstvaProfilu, naZbierkaData } from "./casti";
+import { VrstvaProfilu, naZbierkaData, PrepinacPodania, usePodanie } from "./casti";
+import { TESTOVACIA } from "@/lib/testovacia";
 import { Kronika } from "./Kronika";
+import { VykladCharita } from "./VykladCharita";
+import { PiratCharita } from "./PiratCharita";
 import { Vyklad } from "./Vyklad";
 import { Pirat } from "./Pirat";
 
@@ -16,6 +19,7 @@ import { Pirat } from "./Pirat";
 export function VerejnyProfilView({ kluc, onBack }: { kluc: string; onBack: () => void }) {
   const profil = najdiTestProfil(kluc);
   const [detail, setDetail] = useState<TestZbierka | null>(null);
+  const [podanie] = usePodanie(); // KARTA 45: charita v 3 podaniach (testovací prepínač na profile)
   if (!profil) return null;
 
   if (detail) return (
@@ -28,7 +32,10 @@ export function VerejnyProfilView({ kluc, onBack }: { kluc: string; onBack: () =
 
   if (profil.typ === "firma") return <Vyklad profil={profil} onDetail={setDetail} onBack={onBack} />;
   if (profil.typ === "tvorca") return <Pirat profil={profil} onDetail={setDetail} onBack={onBack} />;
-  return <Kronika profil={profil} onDetail={setDetail} onBack={onBack} />;
+  const prepinac = TESTOVACIA ? <PrepinacPodania /> : undefined;
+  if (podanie === "pirat") return <PiratCharita profil={profil} onDetail={setDetail} onBack={onBack} prepinac={TESTOVACIA ? <PrepinacPodania tmavy /> : undefined} />;
+  if (podanie === "vyklad") return <VykladCharita profil={profil} onDetail={setDetail} onBack={onBack} prepinac={prepinac} />;
+  return <Kronika profil={profil} onDetail={setDetail} onBack={onBack} prepinac={prepinac} />;
 }
 
 /** vrstva vnútri appky otváraná zo store (otvorVerejnyProfil) — tlačidlo v Správe, QR, zdieľaný odkaz.

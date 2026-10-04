@@ -25,6 +25,7 @@ import { otvorVerejnyProfil } from "@/features/verejny-profil/otvor";
 import { najdiTestProfil } from "@/lib/testProfily";
 import { nacitajProfil, profilZPamate, uplnostProfilu, type ProfilStranky } from "@/lib/profilStranky";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { cakaProgramPoRegistracii } from "@/lib/mojeStranky";
 import { createPortal } from "react-dom";
 import "@/styles/sprava.css";
 import { useLayout, useMotiv } from "@/components/context";
@@ -157,7 +158,7 @@ const SKUPINA_POLOZKY = (id: PolozkaSpravy, typ: TypStranky = "charita"): Skupin
 type Sub = null | Skupina | "penazenka" | "nast" | "profil" | "vsetko" | PolozkaSpravy | `x:${string}` | `n:${string}`;
 const NAZVY: Record<string, string> = { g_zbierky: "Zbierky", g_obsah: "Obsah", g_ludia: "Ľudia", g_nastroje: "Nástroje a výkazy", penazenka: "Peňaženka", nast: "Nastavenia", profil: "Upraviť profil", vsetko: "Všetko, čo DEED+ vie" };
 /** KARTA 35: obrazovky Nastavení */
-const NAST_OBR: Record<string, string> = { notif: "Čo chcete dostávať", eur: "Dary v eurách", krypto: "Dary v EURC", ucty: "Správa účtov", spravcovia: "Správcovia a prístupy", udaje: "Údaje organizácie", program: "Program a platba", zariadenia: "Prihlásené zariadenia", suhlasy: "Súhlasy", stiahnut: "Stiahnuť údaje charity", faq: "Časté otázky", podpora: "Napísať podpore", zrusit: "Zrušiť stránku charity" };
+const NAST_OBR: Record<string, string> = { notif: "Čo chcete dostávať", eur: "Dary v eurách", krypto: "Dary v EURC", ucty: "Správa účtov", spravcovia: "Správcovia a prístupy", udaje: "Údaje organizácie", program: "Program a predplatné", zariadenia: "Prihlásené zariadenia", suhlasy: "Súhlasy", stiahnut: "Stiahnuť údaje charity", faq: "Časté otázky", podpora: "Napísať podpore", zrusit: "Zrušiť stránku charity" };
 const titulok = (s: Sub, typ: TypStranky) => (s === null ? "Prehľad" : s.startsWith("x:") ? s.slice(2) : s.startsWith("n:") ? NAST_OBR[s.slice(2)] ?? "Nastavenia" : s === "g_typ" ? TYP_NAZOV[typ] : NAZVY[s] ?? NAZOV_POLOZKY[s as PolozkaSpravy] ?? "Správa stránky");
 
 // ---------- štít ----------
@@ -243,7 +244,7 @@ export function SpravaStranky({ onBack, typ: typStranky = "charita", strankaId =
   const tablet = wide && !desktop; // OPRAVY 96: tablet 760–1179 px má vlastné rozloženie
   const telefon = !desktop && !tablet; // KARTA 42: telefón pod 760 px — nové rozloženie
   const [pridat, setPridat] = useState(false); // KARTA 42: + → hárok Pridať
-  const [sub, setSub] = useState<Sub>(null);
+  const [sub, setSub] = useState<Sub>(() => (cakaProgramPoRegistracii() ? "n:program" : null)); // KARTA 44: koniec registrácie → Program a predplatné
   // OPRAVY 95: zbalené sekcie Prehľadu (mobil + tablet), pamätá sa v účte správcu ako Pripnuté
   const [zbal, setZbal] = useState<Zbalenie>(() => zbalenieZPamate(strankaId));
   useEffect(() => { let ziva = true; void nacitajZbalenie(strankaId).then((z) => { if (ziva) setZbal(z); }); return () => { ziva = false; }; }, [strankaId]);
@@ -311,7 +312,8 @@ export function SpravaStranky({ onBack, typ: typStranky = "charita", strankaId =
 
   const otvorPolozku = (id: PolozkaSpravy) => otvor(id === "zbierky" ? "g_zbierky" : id);
   // pri zmene typu (DEV) späť na Prehľad, nech nezostane otvorená vypnutá položka
-  useEffect(() => { hist.current = []; setSub(null); }, [typ]);
+  const typPred = useRef(typ);
+  useEffect(() => { if (typPred.current === typ) return; typPred.current = typ; hist.current = []; setSub(null); }, [typ]);
   const prepniPin = (id: PolozkaSpravy) => {
     if (piny.includes(id)) { const n = piny.filter((x) => x !== id); setPiny(n); void ulozPiny(strankaId, n); }
     else if (piny.length < PIN_MAX) { const n = [...piny, id]; setPiny(n); void ulozPiny(strankaId, n); }
@@ -561,7 +563,7 @@ function ObrVsetko({ typ, tier, otvor, stlpce }: { typ: TypStranky; tier: Tier; 
   const skupiny: [string, Karta[]][] = ([["Zbierky", [MOJE_ZBIERKY, ...DRUHY]], ["Obsah", G.g_obsah], ["Ľudia", G.g_ludia], ["Nástroje a výkazy", G.g_nastroje]] as [string, Karta[]][])
     .map(([t, k]): [string, Karta[]] => [t, k.filter((x) => typPovoli(x.id, typ))]).filter(([, k]) => k.length > 0);
   return (<>
-    <span style={{ flex: "none", fontSize: 14, lineHeight: 1.5, color: "var(--ink2)", maxWidth: 760 }}>Všetky nástroje DEED+ pre charity, od programu Zadarmo po P4. Je to len na pozretie, nič sa tu nezapína. Program zmeníte v Program a platba.</span>
+    <span style={{ flex: "none", fontSize: 14, lineHeight: 1.5, color: "var(--ink2)", maxWidth: 760 }}>Všetky nástroje DEED+ pre charity, od programu Zadarmo po P4. Je to len na pozretie, nič sa tu nezapína. Program zmeníte v Program a predplatné.</span>
     {skupiny.map(([t, k]) => (
       <div key={t} style={{ flex: "none", display: "flex", flexDirection: "column", gap: 10 }}>
         <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".07em", color: "var(--acc)", padding: "6px 4px 0", textTransform: "uppercase" }}>{t}</span>
@@ -575,7 +577,7 @@ function ObrVsetko({ typ, tier, otvor, stlpce }: { typ: TypStranky; tier: Tier; 
         </div>
       </div>))}
     <div style={{ flex: "none", display: "flex", gap: 10 }}>
-      <button onClick={() => otvor("n:program")} style={{ height: 48, padding: "0 22px", border: "none", borderRadius: 14, background: "#4B7A35", cursor: "pointer", fontFamily: "inherit", fontSize: 15, fontWeight: 800, color: "#fff" }}>Program a platba</button>
+      <button onClick={() => otvor("n:program")} style={{ height: 48, padding: "0 22px", border: "none", borderRadius: 14, background: "#4B7A35", cursor: "pointer", fontFamily: "inherit", fontSize: 15, fontWeight: 800, color: "#fff" }}>Program a predplatné</button>
     </div>
   </>);
 }
@@ -1283,7 +1285,7 @@ function ObrNastavenia({ tier, otvor, mobil }: { tier: Tier; otvor: (s: Sub) => 
     ["OZNÁMENIA", [{ t: "Čo chcete dostávať", s: "dary, zbierky, doklady, ľudia, správy", tap: nn("notif") }, { t: "Tichý čas", s: "22:00 – 7:00", prep: [tichy, () => setTichy((x) => !x)] }]],
     ["PRÍJEM DAROV", [{ t: "Dary v eurách", v: eurText(), tap: nn("eur") }, { t: "Dary v EURC", v: eurcText(), tap: nn("krypto") }, { t: "Správa účtov", s: "hlavný účet a účty zbierok", tap: nn("ucty") }]],
     ["SPRÁVCOVIA", [{ t: "Správcovia a prístupy", s: "kto spravuje stránku, pozvať ďalšieho", v: String(pocetSpravcov()), tap: nn("spravcovia") }]],
-    ["ORGANIZÁCIA", [{ t: "Údaje organizácie", s: "IČO, sídlo, fakturačné údaje", tap: nn("udaje") }, { t: "Program a platba", v: PROG[Math.min(3, tier)][0], tap: nn("program") }]],
+    ["ORGANIZÁCIA", [{ t: "Údaje organizácie", s: "IČO, sídlo, fakturačné údaje", tap: nn("udaje") }, { t: "Program a predplatné", v: PROG[Math.min(3, tier)][0], tap: nn("program") }]],
     ["BEZPEČNOSŤ A ÚDAJE", [{ t: "Prihlásené zariadenia", v: String(pocetZariadeni()), tap: nn("zariadenia") }, { t: "Súhlasy", s: "čo organizácia odsúhlasila", tap: nn("suhlasy") }, { t: "Stiahnuť údaje charity", s: "zbierky, darcovia a doklady v jednom súbore", tap: nn("stiahnut") }]],
     ["POMOC", [{ t: "Časté otázky", tap: nn("faq") }, { t: "Napísať podpore", tap: nn("podpora") }]],
     ["STRÁNKA", [{ t: "Zrušiť stránku charity", red: true, tap: nn("zrusit") }]],

@@ -1,0 +1,7 @@
+/* OPRAVY 142/4 · Svetlúšik namiesto „i" — mávnutie (sprite 10 snímok × 30 px) a poskok o 4 px každé 3,2 s */
+@keyframes svInfoMav{0%,62%,100%{transform:translateX(0)}64%{transform:translateX(-30px)}66%{transform:translateX(-60px)}68%{transform:translateX(-90px)}70%{transform:translateX(-120px)}72%{transform:translateX(-150px)}74%{transform:translateX(-180px)}76%{transform:translateX(-210px)}78%{transform:translateX(-240px)}80%{transform:translateX(-270px)}82%{transform:translateX(0)}84%{transform:translateX(-60px)}86%{transform:translateX(-120px)}88%{transform:translateX(-180px)}90%{transform:translateX(-240px)}92%{transform:translateX(0)}}
+@keyframes svInfoHop{0%,60%,96%,100%{transform:translateY(0)}72%{transform:translateY(-4px)}84%{transform:translateY(-2px)}}
+.sv-info-hop{animation:svInfoHop 3.2s ease-in-out infinite}
+.sv-info-mav{animation:svInfoMav 3.2s steps(1) infinite}
+@media (prefers-reduced-motion:reduce){.sv-info-hop,.sv-info-mav{animation:none}}
+html.obmedz-anim .sv-info-hop,html.obmedz-anim .sv-info-mav{animation:none}

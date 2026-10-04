@@ -47,7 +47,7 @@ export function PravidelnaRiadok({ registrovany, onClick }: { registrovany: bool
   return <Riadok onClick={onClick} bg="var(--gCard)" bd="var(--gBd)" ikonaBg="var(--gSoft)" ikonaFarba="var(--green)" nadpisFarba="var(--green)" nadpis="Pravidelná podpora"
     popis={registrovany ? "Mesačne · kartou alebo prevodom · kedykoľvek zrušíš" : "Mesačne · vyplníš platobné údaje · kedykoľvek zrušíš"}
     ikona={<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3l3 3-3 3M4 11V9a3 3 0 0 1 3-3h13M7 21l-3-3 3-3M20 13v2a3 3 0 0 1-3 3H4" /></svg>}
-    vpravo={<span style={{ flex: "none", padding: "9px 14px", borderRadius: 12, background: "#4B7A35", color: "#fff", fontSize: 13.5, fontWeight: 800 }}>Nastaviť</span>} />;
+    vpravo={<span style={{ flex: "none", padding: "9px 14px", borderRadius: 12, background: "var(--hcF, #4B7A35)", color: "#fff", fontSize: 13.5, fontWeight: 800 }}>Nastaviť</span>} />;
 }
 export function OblubenePodporit({ polozka, onPodporit }: { polozka: Oblubeny; onPodporit: () => void }) {
   const { jeOblubene, toggleOblubene } = usePersonalizacia();
@@ -56,7 +56,7 @@ export function OblubenePodporit({ polozka, onPodporit }: { polozka: Oblubeny; o
     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 10 }}>
       <button type="button" className="zb-karta" onClick={() => toggleOblubene(polozka)} aria-pressed={on} style={{ ...male, color: on ? "var(--gold)" : "var(--ink2)" }}>
         <svg key={String(on)} className={on ? "zb-hviezda" : undefined} width="16" height="16" viewBox="0 0 24 24" fill={on ? "currentColor" : "none"} stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"><path d="M12 3l2.8 5.7 6.2.9-4.5 4.4 1 6.2L12 17.3 6.5 20.2l1-6.2L3 9.6l6.2-.9z" /></svg>
-        Obľúbené
+        {on ? "Sleduješ" : "Sledovať"}
       </button>
       <button type="button" className="zb-karta" onClick={onPodporit} style={{ ...male, color: "var(--green)" }}>
         <span style={{ width: 18, height: 18, borderRadius: 5, background: "var(--green)", color: "#fff", fontSize: 11, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>D</span>

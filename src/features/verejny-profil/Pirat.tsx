@@ -7,7 +7,8 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { eur, pct, tvar, vLokalite, type Lokalita, type Mesto, type TestProfil, type TestZbierka } from "@/lib/testProfily";
 import { DOK, LokalitaPrepinac, MESIACE, PortalVp, StitCare, StitOkno, nazovStitu, useDomaceMesto, useMobil, vMeste } from "./casti";
-import { ModulSektory } from "./ModulSektory";
+import { PodporaProfilu } from "./PodporaProfilu";
+import { iskryVsetky, useZmenyIskier } from "@/lib/iskry";
 
 const BODY = ["Tvár", "Čo teraz potrebujú", "Dôkaz", "Ľudia, ktorí dali", "Oznamy a práca", "Koniec"];
 const bg = (f: string) => `url('${f}') center/cover no-repeat #3a3530`;
@@ -29,6 +30,10 @@ export function Pirat({ profil, onDetail, onBack }: { profil: TestProfil; onDeta
   const scRef = useRef<HTMLDivElement | null>(null);
   const modRef = useRef<HTMLDivElement | null>(null);
   const stit = profil.stit.toLowerCase();
+  // OPRAVY 138/5: pás ISKRA hore = najnovšia Iskra tvorcu; bez Iskry sa pás neukáže (pozadie ostane titulka)
+  useZmenyIskier();
+  const iskra = iskryVsetky().find((v) => v.autor === profil.meno) ?? null;
+  const iskraNazov = iskra ? (iskra.zb ? profil.zbierky.find((z) => z.id === iskra.zb!.zbierkaId)?.nazov : iskra.zbierka?.nazov) ?? iskra.popis.split(/(?<=\.)\s/)[0] : "";
 
   // ---- dáta podľa mesta ----
   const sk = lok === "Celé Slovensko";
@@ -72,8 +77,17 @@ export function Pirat({ profil, onDetail, onBack }: { profil: TestProfil; onDeta
   const lab = (t: string) => <span style={{ fontSize: 13, fontWeight: 800, letterSpacing: ".1em", color: "var(--acc)" }}>{t}</span>;
 
   const s1 = (
-    <section key={0} aria-label={BODY[0]} style={{ position: "relative", height: "100%", scrollSnapAlign: "start", scrollSnapStop: "always", background: bg(profil.titulka) }}>
+    <section key={0} aria-label={BODY[0]} style={{ position: "relative", height: "100%", scrollSnapAlign: "start", scrollSnapStop: "always", background: iskra ? iskra.bg : bg(profil.titulka) }}>
       <span style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg,rgba(10,8,5,.55) 0%,rgba(10,8,5,0) 22%,rgba(10,8,5,0) 42%,rgba(10,8,5,.9) 100%)" }} />
+      {iskra && <div style={{ position: "absolute", left: mobil ? 16 : 36, right: mobil ? 52 : 36, top: mobil ? 76 : 92, display: "flex", flexDirection: "column", gap: 8 }}>
+        <span style={{ display: "block", height: 4, borderRadius: 2, background: "rgba(255,255,255,.28)", overflow: "hidden" }}>
+          <span style={{ display: "block", width: "100%", height: "100%", background: "#fff", transformOrigin: "0 50%", animation: "vpIskra 38s linear infinite" }} />
+        </span>
+        <span style={{ display: "flex", alignItems: "center", gap: 8, color: "#fff", fontSize: 13.5, fontWeight: 700, minWidth: 0 }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="#F6D77A" aria-hidden="true" style={{ flex: "none" }}><path d="M12 2l2.2 7.2L22 12l-7.8 2.8L12 22l-2.2-7.2L2 12l7.8-2.8z" /></svg>
+          <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>ISKRA · {iskraNazov}</span>
+        </span>
+      </div>}
       <div style={{ position: "absolute", left: mobil ? 16 : 40, right: mobil ? 52 : 220, bottom: mobil ? PAS + 120 : 96, display: "flex", flexDirection: "column", gap: mobil ? 12 : 14, color: "#fff" }}>
         <span style={{ display: "flex", alignItems: "center", gap: 14 }}>
           <span style={{ flex: "none", width: mobil ? 54 : 64, height: mobil ? 54 : 64, borderRadius: 18, background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: mobil ? 19 : 22, fontWeight: 800, color: "#3F6E2A" }}>{profil.iniciala}</span>
@@ -92,7 +106,7 @@ export function Pirat({ profil, onDetail, onBack }: { profil: TestProfil; onDeta
         </span>
       </div>
       <button type="button" onClick={() => setStitOtv(true)} aria-label={`Štít DEED+ CARE · ${nazovStitu(profil.stit)} · zobraziť podrobnosti`}
-        style={{ position: "absolute", right: mobil ? 12 : 44, bottom: mobil ? undefined : 96, top: mobil ? 84 : undefined, width: mobil ? 96 : 140, height: mobil ? 116 : 170, padding: 0, border: "none", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        style={{ position: "absolute", right: mobil ? 12 : 44, bottom: mobil ? undefined : 96, top: mobil ? (iskra ? 124 : 84) : undefined, width: mobil ? 96 : 140, height: mobil ? 116 : 170, padding: 0, border: "none", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
         <span style={{ position: "absolute", inset: -10, borderRadius: "50%", background: "radial-gradient(circle,var(--kov2) 0%,rgba(0,0,0,0) 62%)", opacity: 0.55 }} />
         <StitCare stit={profil.stit} w={mobil ? 88 : 128} h={mobil ? 108 : 156} lesk tien="drop-shadow(0 10px 14px rgba(0,0,0,.45))" />
       </button>
@@ -237,7 +251,7 @@ export function Pirat({ profil, onDetail, onBack }: { profil: TestProfil; onDeta
     </div>
   );
   const obrazovky = (
-    <div ref={scRef} onScroll={onSc} style={{ position: "absolute", left: 0, right: 0, top: 0, bottom: mobil ? DOK : 0, overflowY: "auto", scrollSnapType: "y mandatory" }}>
+    <div ref={scRef} onScroll={onSc} style={{ position: "absolute", left: 0, right: 0, top: 0, bottom: mobil ? DOK : 0, overflowY: "auto", scrollSnapType: "y mandatory", overscrollBehavior: "contain", WebkitOverflowScrolling: "touch" } as CSSProperties}>
       {s1}{s2}{s3}{s4}{s5}{s6}
     </div>
   );
@@ -264,8 +278,8 @@ export function Pirat({ profil, onDetail, onBack }: { profil: TestProfil; onDeta
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--ink2)" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
             </button>
           </span>
-          <div style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "4px 16px 28px" }}>
-            <ModulSektory profil={profil} lok={lok} domace={domace} onZbierky={() => { zavriHarok(); skoc(1); }} />
+          <div style={{ flex: 1, minHeight: 0, overflowY: "auto", overscrollBehavior: "contain", padding: "4px 16px 28px" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}><PodporaProfilu profil={profil} lok={lok} domace={domace} rez="mob" /></div>
           </div>
         </div>
       </PortalVp>}
@@ -283,7 +297,7 @@ export function Pirat({ profil, onDetail, onBack }: { profil: TestProfil; onDeta
       </div>
       <aside ref={modRef} style={{ width: 460, flex: "none", overflowY: "auto", background: "var(--panel)", borderLeft: "1px solid var(--accLine)", display: "flex", flexDirection: "column" }}>
         <span style={{ display: "block", flex: "none", height: "var(--mH)", background: "var(--metal)" }} />
-        <div style={{ padding: "22px 22px 26px" }}><ModulSektory profil={profil} lok={lok} domace={domace} onZbierky={() => skoc(1)} /></div>
+        <div style={{ padding: "22px 22px 26px" }}><div style={{ display: "flex", flexDirection: "column", gap: 12 }}><PodporaProfilu profil={profil} lok={lok} domace={domace} rez="pc" /></div></div>
       </aside>
       {okno}
     </div>

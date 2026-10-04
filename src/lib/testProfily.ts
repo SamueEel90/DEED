@@ -33,6 +33,12 @@ export interface TestSektor {
     /** rozpis minulého mesiaca: [na čo, percentá] */
     rozpis: [string, number][];
   }>;
+  /** OPRAVY 139 (Kronika v6): dlaždica „X € tento mesiac", veta pod Reťazou dobra ({m} = mesto),
+   *  tipy na pravidelný dar (suma / mes. + čo za ňu) a počet ľudí, ktorí podporujú mesačne — zadá charita v Správe */
+  mesiac?: number;
+  kam?: string;
+  tipy?: [number, string][];
+  mesacne?: number;
 }
 
 export interface TestZbierka {
@@ -52,6 +58,8 @@ export interface TestZbierka {
   spravaDarcom?: string;      // „Splnili sme" — citát pre darcov
   skoncila?: string;          // dátum ukončenia
   zodpoveda?: string;         // tvorca: charita, ktorá za zbierku zodpovedá
+  /** KARTA 45 · dlhý príbeh zbierky (na profile 6 riadkov + „Čítať celý príbeh ›") */
+  pribeh?: string;
   /** ukončená zbierka v kronike: „22." · „SEP" · 2026 */
   d?: string; m?: string; rok?: number;
 }
@@ -90,6 +98,13 @@ export interface TestPraca {
   den: string;
   mesiac: string;
   pod: string;                // „prihlásiť sa do 15. 10."
+  /** KARTA 45 · plagát „Hľadáme ľudí": štítok druhu, opis, Kde / Kedy / Odmena, počet záujemcov */
+  stitok?: string;            // „BRIGÁDA" · „POLOVIČNÝ ÚVÄZOK"
+  opis?: string;
+  kde?: string;
+  kedy?: string;
+  odmena?: string;
+  zaujem?: string;            // „3 ľudia už majú záujem"
 }
 
 export interface TestDarca {
@@ -142,6 +157,10 @@ export interface TestProfil {
   darcovia: TestDarca[];
   /** titulná fotka profilu */
   titulka: string;
+  /** 2. pád mena („Všetky Iskry Svetla pomoci") */
+  menoGen?: string;
+  /** 3. pád mena („Darovať Svetlu pomoci") */
+  menoDat?: string;
   /** „Podporiť …" v module (4. pád, ak sa líši od mena) */
   podporit?: string;
   /** O nás (návrh v2): nadpis, text a oblasti */
@@ -182,14 +201,15 @@ const sektor = (
   id: string, nazov: string, druh: "centralna" | "sektor", foto: string,
   vyzbierane: number, darcovia: number,
   mesta: Record<Mesto, { dlazdica: string; minulyMesiac: string; uvidis: string; rozpis: [string, number][] }>,
-): TestSektor => ({ id, nazov, druh, foto, vyzbierane, darcovia, mesta });
+  v6?: Pick<TestSektor, "mesiac" | "kam" | "tipy" | "mesacne">,
+): TestSektor => ({ id, nazov, druh, foto, vyzbierane, darcovia, mesta, ...v6 });
 
 // ============================================================
 // 1 · CHARITA — Svetlo pomoci o.z. (sídlo Trenčín)
 // ============================================================
 const CHARITA: TestProfil = {
-  k: "svetlo", typ: "charita", meno: "Svetlo pomoci o.z.", iniciala: "SP",
-  veta: "Varíme, opravujeme, sprevádzame. Rodiny, seniori a ľudia bez domova.",
+  k: "svetlo", typ: "charita", meno: "Svetlo pomoci o.z.", iniciala: "SP", menoGen: "Svetla pomoci", menoDat: "Svetlu pomoci",
+  veta: "Varíme, opravujeme, sprevádzame. Rodiny, seniori a ľudia bez domova v Trenčíne, Prešove a Bratislave.",
   mesto: "Trenčín", stit: "Gold", odRoku: 2023,
   stitky: ["Trenčín", "od 2023", "Overená organizácia · IČO"],
   ico: "12 345 678", ucet: "SK12 0900 0000 0051 2345 4521",
@@ -200,26 +220,27 @@ const CHARITA: TestProfil = {
     "Trenčín": { dlazdica: "Trenčín: 940 € v septembri", minulyMesiac: "V Trenčíne v septembri: 520 € jedlo · 280 € opravy · 140 € doprava", uvidis: "Uvidíš rozpis každý mesiac", rozpis: [["jedlo", 55], ["opravy", 30], ["doprava", 15]] },
     "Prešov": { dlazdica: "Prešov: 680 € v septembri", minulyMesiac: "V Prešove v septembri: 410 € jedlo · 180 € opravy · 90 € doprava", uvidis: "Uvidíš rozpis každý mesiac", rozpis: [["jedlo", 62], ["opravy", 25], ["doprava", 13]] },
     "Bratislava": { dlazdica: "Bratislava: 1 120 € v septembri", minulyMesiac: "V Bratislave v septembri: 600 € jedlo · 320 € oblečenie · 200 € doprava", uvidis: "Uvidíš rozpis každý mesiac", rozpis: [["jedlo", 54], ["oblečenie", 28], ["doprava", 18]] },
-  }),
+  }, { mesiac: 3120, mesacne: 143, kam: "Kam treba najviac. Minulý mesiac v {m}: 1 200 teplých jedál, 2 opravy striech, 40 diek do nocľahárne.", tipy: [[5, "2 teplé obedy každý týždeň"], [10, "nákup pre seniora"], [20, "noc v teple 4× do mesiaca"]] }),
   sektory: [
     sektor("s-seniori", "Seniori", "sektor", F.seniori, 8400, 96, {
       "Trenčín": { dlazdica: "Trenčín: nákup pre 12", minulyMesiac: "V Trenčíne sme každý piatok nakúpili 12 seniorom zo Sihote.", uvidis: "Uvidíš mená ulíc a počet seniorov", rozpis: [["nákupy", 70], ["doprava", 30]] },
       "Prešov": { dlazdica: "Prešov: obedy pre 20", minulyMesiac: "V Prešove sme rozviezli obed 20 seniorom zo Sekčova, každý deň.", uvidis: "Uvidíš, koľko obedov sme rozviezli", rozpis: [["jedlo", 75], ["doprava", 25]] },
       "Bratislava": { dlazdica: "Bratislava: 8 seniorov", minulyMesiac: "V Bratislave sme sprevádzali 8 seniorov k lekárovi.", uvidis: "Uvidíš, kam sme seniorov odviezli", rozpis: [["doprava", 60], ["lieky", 40]] },
-    }),
+    }, { mesiac: 1480, mesacne: 61, kam: "Nákupy, lieky a obedy pre seniorov. Minulý mesiac v {m}: 312 obedov a 48 nákupov pre 22 seniorov.", tipy: [[5, "obed pre seniora každý týždeň"], [10, "lieky na mesiac"], [20, "2 nákupy domov"]] }),
     sektor("s-deti", "Deti", "sektor", F.bundy, 6100, 142, {
       "Trenčín": { dlazdica: "Trenčín: 14 detí", minulyMesiac: "V Trenčíne chodí 14 detí na doučovanie dvakrát týždenne.", uvidis: "Uvidíš, koľko detí doučujeme", rozpis: [["doučovanie", 65], ["pomôcky", 35]] },
       "Prešov": { dlazdica: "Prešov: 9 detí", minulyMesiac: "V Prešove sme doučovali 9 detí z Tábora.", uvidis: "Uvidíš, koľko detí doučujeme", rozpis: [["doučovanie", 60], ["pomôcky", 40]] },
       "Bratislava": { dlazdica: "Bratislava: 31 tašiek", minulyMesiac: "V Bratislave dostalo 31 detí školskú tašku s pomôckami.", uvidis: "Uvidíš fotky z rozdávania", rozpis: [["pomôcky", 80], ["doprava", 20]] },
-    }),
+    }, { mesiac: 940, mesacne: 38, kam: "Doučovanie, školské potreby a krúžky. Minulý mesiac v {m}: 31 tašiek a 64 hodín doučovania.", tipy: [[5, "zošity a perá na mesiac"], [10, "4 hodiny doučovania"], [20, "krúžok na mesiac"]] }),
     sektor("s-bezdomovci", "Ľudia bez domova", "sektor", F.bezdomovci, 9800, 203, {
       "Trenčín": { dlazdica: "Trenčín: 120 obedov denne", minulyMesiac: "V Trenčíne sme vydali 120 teplých obedov denne na Mierovom námestí.", uvidis: "Uvidíš, koľko porcií sme vydali", rozpis: [["jedlo", 70], ["hygiena", 20], ["deky", 10]] },
       "Prešov": { dlazdica: "Prešov: 40 ľudí", minulyMesiac: "V Prešove prišlo po polievku na Hlavnú 40 ľudí denne.", uvidis: "Uvidíš, koľko ľudí prišlo", rozpis: [["jedlo", 75], ["hygiena", 25]] },
       "Bratislava": { dlazdica: "Bratislava: nová výdajňa", minulyMesiac: "V Bratislave sme otvorili výdajňu a vydali prvých 600 porcií.", uvidis: "Uvidíš, ako výdajňa funguje", rozpis: [["jedlo", 60], ["vybavenie", 40]] },
-    }),
+    }, { mesiac: 1210, mesacne: 54, kam: "Nocľaháreň, polievka a sprchy. Minulý mesiac v {m}: 620 nocí pod strechou a 900 polievok.", tipy: [[5, "10 teplých polievok"], [10, "2 noci v nocľahárni"], [20, "sprcha a čisté veci 8×"]] }),
   ],
   zbierky: [
-    { id: "z-strecha-horvath", nazov: "Strecha pre rodinu Horváthovú", popis: "V noci im zhorela strecha nad hlavou. Dve deti, babka a zima pred dverami. Prvú etapu sme už opravili, chýba krytina.", mesto: "Trenčín", cast: "Zlatovce", foto: F.poziar, vyzbierane: 8420, ciel: 12000, ludia: 148, stav: "bezi", konciDni: 9, dorovnanie: "Pekáreň Dobrota pridá k daru rovnakú sumu" },
+    { id: "z-strecha-horvath", nazov: "Strecha pre rodinu Horváthovú", popis: "V noci im zhorela strecha nad hlavou. Dve deti, babka a zima pred dverami. Prvú etapu sme už opravili, chýba krytina.", mesto: "Trenčín", cast: "Zlatovce", foto: F.poziar, vyzbierane: 8420, ciel: 12000, ludia: 148, stav: "bezi", konciDni: 9, dorovnanie: "Pekáreň Dobrota pridá k daru rovnakú sumu",
+      pribeh: "V noci z 2. na 3. októbra im od komína chytila strecha. Pani Horváthová stihla vyniesť deti, Tomáša (7) a Emu (4), aj babku, ktorá chodí o barle. Hasiči dom zachránili, strecha nie. Rodina teraz spí u susedov v jednej izbe. Prvú etapu sme už spravili: dobrovoľníci z Opatovej odpratali zhorené trámy a pokrývač Jozef zadarmo postavil nový krov. Chýba krytina, laty a odkvapy, spolu 3 580 €. Ak ich vyzbierame do 13. októbra, Horváthovci budú spať doma ešte pred prvým mrazom. Každý doklad tu zverejníme do 30 dní." },
     { id: "z-vozik-nina", nazov: "Invalidný vozík pre Ninu", popis: "Nina má 7 rokov a starý vozík jej je malý. Nový zvládne aj školský dvor.", mesto: "Trenčín", foto: F.vozik, vyzbierane: 2960, ciel: 4000, ludia: 61, stav: "dlhodoba" },
     { id: "z-strecha-maria", nazov: "Strecha pre pani Máriu", popis: "Pani Mária má 81 rokov a býva sama. Cez strechu jej tečie do kuchyne a zima je za dverami.", mesto: "Prešov", cast: "Sekčov", foto: F.strecha, vyzbierane: 1260, ciel: 3400, ludia: 38, stav: "bezi", konciDni: 12 },
     { id: "z-doucovanie-tabor", nazov: "Doučovanie v Tábori", popis: "Deväť detí z Tábora chodí na doučovanie dvakrát týždenne. Platíme učiteľky a pomôcky.", mesto: "Prešov", cast: "Tábor", foto: F.ucenie, vyzbierane: 740, ciel: 2000, ludia: 24, stav: "bezi" },
@@ -243,8 +264,10 @@ const CHARITA: TestProfil = {
     { id: "o-vydajna", druh: "oznam", nadpis: "Nová výdajňa otvorená", stitok: "OZNAM", text: "Račianska 4, Bratislava · pondelok až piatok 13 – 17", mesto: "Bratislava", den: "1.", mesiac: "OKT", tlacidlo: "Pozrieť", pod: "prvý týždeň prišlo 180 ľudí" },
   ],
   praca: [
-    { id: "p-vodic", nazov: "Vodič na rozvoz jedál", druh: "brigadnik", text: "Piatky 10 – 14 · dohoda · 6 € na hodinu", mesto: "Trenčín", den: "15.", mesiac: "OKT", pod: "prihlásiť sa do 15. 10." },
-    { id: "p-koordinator", nazov: "Koordinátorka dobrovoľníkov", druh: "zamestnanec", text: "Prešov · polovičný úväzok · od 1. 12. · 690 € mesačne", mesto: "Prešov", den: "31.", mesiac: "OKT", pod: "prihlásiť sa do 31. 10." },
+    { id: "p-vodic", nazov: "Vodič na rozvoz jedál", druh: "brigadnik", text: "Piatky 10 – 14 · dohoda · 6 € na hodinu", mesto: "Trenčín", den: "15.", mesiac: "OKT", pod: "prihlásiť sa do 15. 10.",
+      stitok: "BRIGÁDA", opis: "Rozvezieš obedy seniorom zo Sihote a Opatovej. Auto máme, stačí vodičák B a dobrá nálada.", kde: "Trenčín · Mierové nám. 1", kedy: "piatky 10 – 14", odmena: "6 € na hodinu · dohoda", zaujem: "3 ľudia už majú záujem" },
+    { id: "p-koordinator", nazov: "Koordinátorka dobrovoľníkov", druh: "zamestnanec", text: "Prešov · polovičný úväzok · od 1. 11. · 680 € mesačne", mesto: "Prešov", den: "25.", mesiac: "OKT", pod: "prihlásiť sa do 25. 10.",
+      stitok: "POLOVIČNÝ ÚVÄZOK", opis: "Dáš dokopy 40 dobrovoľníkov v Prešove: rozpisy, nábor a starostlivosť, aby sa k nám radi vracali.", kde: "Prešov · Hlavná 12", kedy: "od 1. 11. · 20 h týždenne", odmena: "680 € mesačne", zaujem: "1 človek už má záujem" },
   ],
   darcovia: [
     { id: "d1", meno: "Peter K.", iniciala: "PK", mesto: "Prešov", naCo: "Strecha pre pani Máriu", suma: 10, pred: "pred 3 min" },
@@ -259,6 +282,7 @@ const CHARITA: TestProfil = {
     { id: "d10", meno: "Anonymný darca", iniciala: "A", mesto: "Bratislava", naCo: "Celá činnosť", suma: 5, pred: "pred 48 min" },
   ],
   titulka: U("photo-1542601906990-b4d3fb778b09", 1200),
+  onas: { nadpis: "O nás", text: "Začali sme v novembri 2023 jedným hrncom polievky na Mierovom námestí. Dnes varíme, opravujeme strechy a sprevádzame seniorov v Trenčíne, Prešove a Bratislave. Každé euro dokladujeme.", oblasti: [] },
   dorovnaniePas: { ini: "PD", nadpis: "Pekáreň Dobrota zdvojnásobí tvoj dar", text: "1 : 1 · najviac 300 € · ešte 4 380 €" },
   // kronika z prototypu „Verejny profil charity PC v3 Kronika" (tá istá charita, sídlo Trenčín)
   roky: [

@@ -22,6 +22,7 @@ import { nacitajTiery } from "@/features/rola/stav";
 import { CENTRALNA_ID } from "@/features/rola/vlastneZbierky";
 import { verejneBeziace, zbierkaVRetazi, type ZbierkaVRetazi } from "@/lib/retaz";
 import { normalizuj } from "@/lib/mojeSkutky";
+import { najdiTestProfil, TEST_PROFILY, eur as eurT, type TestProfil, type TestZbierka } from "@/lib/testProfily";
 import { ISKRY_CFG, KVOTA_ISKIER, kvotaOstava, minKvotu, odkazIskry, pridajIskru, pridajHotovuIskru, type DruhIskry, type Iskra } from "@/lib/iskry";
 import { ISKRA_MAX_MB, nacitajKvotuIskier, zverejniIskruNaServeri, type KvotaIskier } from "@/lib/iskryServer";
 import { Harok } from "@/features/zbierka/Zdielat";
@@ -34,7 +35,7 @@ import { ZdielatIskru } from "./Iskry";
 import "@/styles/sprava.css";
 
 const MAX_S = 60, ODPORUCANE_S = 45, POPIS_MAX = 150;
-type Pen = "ja" | "retaz" | "centralna" | "ina" | "bez";
+type Pen = "ja" | "retaz" | "centralna" | "ina" | "bez" | "zbierka";
 const Ik = ({ d, s = 22, w = 2.2, c = "currentColor", fill = "none" }: { d: string; s?: number; w?: number; c?: string; fill?: string }) =>
   <svg width={s} height={s} viewBox="0 0 24 24" fill={fill} stroke={c} strokeWidth={w} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={d} /></svg>;
 const IK = { spat: "M15 18l-6-6 6-6", hraj: "M8 5l12 7-12 7z", qr: "M4 8V4h4M20 8V4h-4M4 16v4h4M20 16v4h-4M8 12h8", lupa: "M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14zM20 20l-3.5-3.5",
@@ -78,6 +79,19 @@ function PridatIskru() {
   const autor = org ? stranka!.n : `${ja.meno || "Ty"}${ja.priezvisko ? ` ${ja.priezvisko[0].toUpperCase()}.` : ""}`;
   const ini = (org ? stranka!.i : autor.split(/\s+/).map((x) => x[0]).join("").slice(0, 2)).toUpperCase();
   const tier = nacitajTiery().charita;
+  // OPRAVY 135: druh „Zbierky" len pre toho, kto vedie bežiacu zbierku (charita, firma, tvorca) — video k vlastnej zbierke
+  const vedie = UKAZKOVE_STRANKY.find((x) => x.k === ako) ?? null;
+  const vsetkyZb: TestZbierka[] = vedie ? (najdiTestProfil(vedie.k)?.zbierky ?? []) : [];
+  const mojeZb = vsetkyZb.filter((z) => z.stav !== "ukoncena");
+  // OPRAVY 138/2: Ďakujeme = ukončené zbierky za posledných 90 dní; Ďakujeme firme = firmy, ktoré pri zbierke stránky dorovnávali (bežiace aj ukončené)
+  const ukonceneZb = vsetkyZb.filter((z) => z.stav === "ukoncena" && z.rok && z.m && z.d && Date.now() - new Date(z.rok, MES.indexOf(z.m), parseInt(z.d, 10)).getTime() <= 90 * 864e5);
+  const firmy: { f: TestProfil; zb: TestZbierka[] }[] = TEST_PROFILY.filter((f) => f.typ === "firma" && f.k !== vedie?.k)
+    .map((f) => ({ f, zb: vsetkyZb.filter((z) => !!z.dorovnanie && z.dorovnanie.includes(f.meno.replace(/\s+s\.\s?r\.\s?o\.$/, ""))) })).filter((x) => x.zb.length);
+  const DZ = ISKRY_CFG.druhZbierky;
+  const [vlastnaZb, setVlastnaZb] = useState<TestZbierka | null>(null);
+  const [vidTyp, setVidTyp] = useState<"vyzva" | "dakujeme" | "firme" | null>(null);
+  const [priebeh, setPriebeh] = useState(false); // štítok Výzva / Priebeh — stránka si zvolí
+  const [firmaK, setFirmaK] = useState<string | null>(null);
 
   const [k, setK] = useState(1);
   const [video, setVideo] = useState<{ url: string; s: number | null; f: File } | null>(null);
@@ -113,7 +127,8 @@ function PridatIskru() {
   const ukazZb = pen === "ina" || pen === "retaz";
   const centralnaN = org ? `Centrálna zbierka ${stranka!.n}` : "";
 
-  const chyba = k === 1 ? (!video ? o("Nahraj video", "Nahrajte video") : popisT.length < 5 ? o("Napíš, čo je na videu", "Napíšte, čo je na videu") : druh == null ? o("Vyber druh", "Vyberte druh") : "")
+  const chyba = k === 1 ? (!video ? o("Nahraj video", "Nahrajte video") : popisT.length < 5 ? o("Napíš, čo je na videu", "Napíšte, čo je na videu") : druh == null ? o("Vyber druh", "Vyberte druh") : druh === DZ && !vidTyp ? o("Vyber, aké video", "Vyberte, aké video") : druh === DZ && vidTyp === "firme" && !firmaK ? o("Vyber firmu", "Vyberte firmu") : druh === DZ && !vlastnaZb ? o("Vyber zbierku", "Vyberte zbierku") : "")
+    : k === 2 && druh === DZ ? ""
     : k === 2 ? (!pen ? o("Vyber, kam pôjdu peniaze", "Vyberte, kam pôjdu peniaze") : ukazZb && !zb ? o("Vyber zbierku", "Vyberte zbierku") : "")
     : k === 4 ? (!ok1 ? o("Potvrď, že video je tvoje", "Potvrďte, že video je vaše") : "") : "";
 
@@ -138,15 +153,26 @@ function PridatIskru() {
     v.src = url;
   };
 
-  const zbNazov = pen === "centralna" ? centralnaN : ukazZb && zb ? zb.nazov : "";
-  const zbPozn = pen === "centralna" ? "100 % na centrálnu zbierku" : pen === "retaz" ? `Reťaz dobra · ${pct} % ide na zbierku` : pen === "ina" ? "100 % ide na zbierku" : "";
+  const zbNazov = druh === DZ && vlastnaZb ? vlastnaZb.nazov : pen === "centralna" ? centralnaN : ukazZb && zb ? zb.nazov : "";
+  const zbPozn = druh === DZ ? (vidTyp === "vyzva" ? "100 % ide na zbierku" : vidTyp === "firme" ? "Ďakujeme firme" : "Ďakujeme") : pen === "centralna" ? "100 % na centrálnu zbierku" : pen === "retaz" ? `Reťaz dobra · ${pct} % ide na zbierku` : pen === "ina" ? "100 % ide na zbierku" : "";
 
   const CHYBY_SERVERA: Record<string, string> = {
     velke_video: `Video je väčšie ako ${ISKRA_MAX_MB} MB.`, zly_typ: "Tento formát videa nevieme uložiť. Použite MP4 alebo MOV.",
     nie_spravca: "Za túto stránku zverejňuje Iskry iný účet.", upload: "Video sa nepodarilo nahrať. Skúste to znova.",
   };
   const zverejni = async () => {
-    if (chyba || !video || druh == null || !pen || odosiela) return;
+    if (chyba || !video || druh == null || odosiela) return;
+    // druh Zbierky zatiaľ len v appke — server (0034) ho ešte nepozná (druh 1–5, bez poľa zb)
+    if (druh === DZ) {
+      if (!vedie || !vlastnaZb) return;
+      if (org && ok2 && kvota > 0) minKvotu(stranka!.k);
+      const typT = vedie.typ === "charita" ? "Charita" : vedie.typ === "firma" ? "Firma" : "Tvorca";
+      const n = pridajIskru({ druh, autor: vedie.n, kto: `${typT} · ${vlastnaZb.mesto}`, ini: vedie.i, org: vedie.typ !== "tvorca", popis: popisT, src: video.url, bg: "#1D211B",
+        zb: { typ: vidTyp ?? "vyzva", stitok: vidTyp === "dakujeme" ? "Ďakujeme" : vidTyp === "firme" ? "Ďakujeme firme" : priebeh ? "Priebeh" : "Výzva", stranka: vedie.k, zbierkaId: vlastnaZb.id, firma: vidTyp === "firme" ? firmaK ?? undefined : undefined },
+        lenStranka: org && !ok2 });
+      setHotovo(n); return;
+    }
+    if (!pen) return;
     const vsetkym = !org || ok2;
     const zbierka = pen === "centralna" ? { id: CENTRALNA_ID, nazov: centralnaN, pozn: zbPozn }
       : (pen === "ina" || pen === "retaz") && zb ? { id: zb.id, nazov: zb.nazov, pozn: zbPozn } : undefined;
@@ -217,9 +243,18 @@ function PridatIskru() {
         nastroje={["diktovat"]} maxZnakov={POPIS_MAX} tvrdyLimit={POPIS_MAX} /></div>
     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}><span style={lbl}>Druh</span>
       <div role="radiogroup" aria-label="Druh" style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-        {ISKRY_CFG.druhy.slice(1).map((t, i) => { const on = druh === i + 1; return (
-          <button key={t} type="button" role="radio" aria-checked={on} onClick={() => setDruh((i + 1) as DruhIskry)} style={{ minHeight: 44, padding: "0 16px", borderRadius: 22, cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: on ? 800 : 600, background: on ? "#2F5E3A" : "transparent", border: `1.5px solid ${on ? "#2F5E3A" : "var(--fieldBd)"}`, color: on ? "#fff" : "var(--ink)" }}>{t}</button>); })}
+        {ISKRY_CFG.druhy.slice(1).map((t, i) => { const on = druh === i + 1; if (i + 1 === DZ && !mojeZb.length && !ukonceneZb.length) return null; return (
+          <button key={t} type="button" role="radio" aria-checked={on} onClick={() => { setDruh((i + 1) as DruhIskry); if (i + 1 !== DZ) { setVlastnaZb(null); setVidTyp(null); setFirmaK(null); } }} style={{ minHeight: 44, padding: "0 16px", borderRadius: 22, cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: on ? 800 : 600, background: on ? "#2F5E3A" : "transparent", border: `1.5px solid ${on ? "#2F5E3A" : "var(--fieldBd)"}`, color: on ? "#fff" : "var(--ink)" }}>{t}</button>); })}
       </div></div>
+    {druh === DZ && <ZbierkyVyber o={o} vidTyp={vidTyp} onTyp={(t) => { setVidTyp(t); setVlastnaZb(null); setFirmaK(null); }} priebeh={priebeh} onPriebeh={setPriebeh}
+      bezice={mojeZb} ukoncene={ukonceneZb} firmy={firmy} firmaK={firmaK} onFirma={(f) => { setFirmaK(f); setVlastnaZb(null); }} zbierka={vlastnaZb} onZbierka={setVlastnaZb} radio={radio} vyber={vyber} />}
+  </>);
+  else if (k === 2 && druh === DZ) obsah = (<>
+    <span style={{ fontSize: 14.5, lineHeight: 1.5, color: "var(--ink2)" }}>{vidTyp === "vyzva" ? "Pod videom bude tlačidlo Darovať. Celý dar pôjde na zbierku." : o("Je to poďakovanie, pod videom nebude Darovať, ale Sledovať tvoju stránku.", "Je to poďakovanie, pod videom nebude Darovať, ale Sledovať vašu stránku.")}</span>
+    <div style={{ display: "flex", flexDirection: "column", gap: 4, padding: 14, borderRadius: 16, background: "var(--gSoft)", border: "1.5px solid var(--gBd)" }}>
+      <span style={{ fontSize: 13, color: "var(--ink3)" }}>{zbPozn}{vidTyp === "firme" && firmaK ? ` · ${(najdiTestProfil(firmaK)?.meno ?? "").replace(/\s+s\.\s?r\.\s?o\.$/, "")}` : ""}</span><b style={{ fontSize: 15 }}>{vlastnaZb?.nazov}</b>
+    </div>
+    <div style={{ padding: "12px 14px", borderRadius: 14, background: "var(--goldBg)", border: "1px solid var(--goldBd)", fontSize: 13.5, lineHeight: 1.5, color: "var(--ink2)" }}><b style={{ color: "var(--ink)" }}>Po zverejnení sa to zapečatí.</b> Kam idú peniaze, sa už nedá zmeniť.</div>
   </>);
   else if (k === 2) {
     const P: [Pen, string, string][] = org
@@ -326,6 +361,57 @@ function PridatIskru() {
       {zdielat && hotovo && <ZdielatIskru v={hotovo} onClose={() => setZdielat(false)} />}
     </div>);
   return createPortal(okno, document.body);
+}
+
+const MES = ["JAN", "FEB", "MAR", "APR", "MÁJ", "JÚN", "JÚL", "AUG", "SEP", "OKT", "NOV", "DEC"];
+
+// ---------- OPRAVY 138/2 · druh Zbierky: „Aké video?" (3 veľké voľby, 56 px) a výber zbierky / firmy ----------
+function ZbierkyVyber({ o, vidTyp, onTyp, priebeh, onPriebeh, bezice, ukoncene, firmy, firmaK, onFirma, zbierka, onZbierka, radio, vyber }: {
+  o: (ty: string, vy: string) => string; vidTyp: "vyzva" | "dakujeme" | "firme" | null; onTyp: (t: "vyzva" | "dakujeme" | "firme") => void;
+  priebeh: boolean; onPriebeh: (p: boolean) => void; bezice: TestZbierka[]; ukoncene: TestZbierka[]; firmy: { f: TestProfil; zb: TestZbierka[] }[];
+  firmaK: string | null; onFirma: (k: string) => void; zbierka: TestZbierka | null; onZbierka: (z: TestZbierka) => void;
+  radio: (on: boolean) => ReactNode; vyber: (on: boolean) => CSSProperties;
+}) {
+  const TYPY: ["vyzva" | "dakujeme" | "firme", string, string, number][] = [
+    ["vyzva", "Výzva alebo priebeh", "K bežiacej zbierke", bezice.length],
+    ["dakujeme", "Ďakujeme", "K ukončenej zbierke za posledných 90 dní", ukoncene.length],
+    ["firme", "Ďakujeme firme", "Firme, ktorá pri zbierke dorovnávala alebo sponzorovala", firmy.length],
+  ];
+  const meno = (f: TestProfil) => f.meno.replace(/\s+s\.\s?r\.\s?o\.$/, "");
+  const zoznam = vidTyp === "vyzva" ? bezice : vidTyp === "dakujeme" ? ukoncene : vidTyp === "firme" && firmaK ? (firmy.find((x) => x.f.k === firmaK)?.zb ?? []) : [];
+  const riadok = (on: boolean, t: string, s: string, tap: () => void, key: string) => (
+    <button key={key} type="button" role="radio" aria-checked={on} onClick={tap} style={{ ...vyber(on), display: "flex", alignItems: "flex-start", gap: 12, minHeight: 56, padding: "10px 12px", borderRadius: 12, cursor: "pointer", textAlign: "left", fontFamily: "inherit", color: "var(--ink)" }}>
+      {radio(on)}<span style={{ display: "flex", flexDirection: "column", gap: 2 }}><b style={{ fontSize: 14 }}>{t}</b><span style={{ fontSize: 12.5, color: "var(--ink3)" }}>{s}</span></span>
+    </button>);
+  const sumaZb = (z: TestZbierka) => z.stav === "ukoncena" ? `skončila ${z.skoncila ?? ""} · ${eurT(z.vyzbierane)}` : z.ciel ? `${eurT(z.vyzbierane)} z ${eurT(z.ciel)}` : eurT(z.vyzbierane);
+  return (
+    <div className="pf-rise" style={{ display: "flex", flexDirection: "column", gap: 10, padding: 14, borderRadius: 16, background: "var(--card)" }}>
+      <b style={{ fontSize: 15 }}>Aké video?</b>
+      <div role="radiogroup" aria-label="Aké video" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        {TYPY.map(([k, t, s, n]) => { const on = vidTyp === k, off = !n; return (
+          <button key={k} type="button" role="radio" aria-checked={on} aria-disabled={off} onClick={() => { if (!off) onTyp(k); }}
+            style={{ ...vyber(on), display: "flex", alignItems: "center", gap: 12, minHeight: 56, padding: "8px 14px", borderRadius: 14, cursor: off ? "default" : "pointer", textAlign: "left", fontFamily: "inherit", color: "var(--ink)", opacity: off ? 0.5 : 1 }}>
+            {radio(on)}<span style={{ display: "flex", flexDirection: "column", gap: 2 }}><b style={{ fontSize: 15 }}>{t}</b><span style={{ fontSize: 12.5, color: "var(--ink3)" }}>{off ? (k === "firme" ? o("Žiadna firma zatiaľ pri tvojich zbierkach nepomáhala", "Žiadna firma zatiaľ pri vašich zbierkach nepomáhala") : "Žiadna takáto zbierka") : s}</span></span>
+          </button>); })}
+      </div>
+      {vidTyp === "vyzva" && <div role="radiogroup" aria-label="Štítok" style={{ display: "flex", gap: 2, padding: 3, borderRadius: 12, background: "var(--field)", border: "1px solid var(--cardBd)" }}>
+        {([["Výzva", false], ["Priebeh", true]] as const).map(([t, p]) => <button key={t} type="button" role="radio" aria-checked={priebeh === p} onClick={() => onPriebeh(p)}
+          style={{ flex: 1, minHeight: 44, border: "none", borderRadius: 10, cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: priebeh === p ? 800 : 600, background: priebeh === p ? "var(--card)" : "transparent", color: "var(--ink)" }}>{t}</button>)}
+      </div>}
+      {vidTyp === "firme" && <>
+        <b style={{ fontSize: 14.5 }}>Ktorá firma pomohla</b>
+        <div role="radiogroup" aria-label="Firma" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {firmy.map(({ f, zb }) => riadok(firmaK === f.k, meno(f), `pri ${zb.length === 1 ? "zbierke " + zb[0].nazov : zb.length + " zbierkach"}`, () => onFirma(f.k), f.k))}
+        </div>
+      </>}
+      {zoznam.length > 0 && <>
+        <b style={{ fontSize: 14.5 }}>Ku ktorej zbierke je video</b>
+        <div role="radiogroup" aria-label="Zbierka" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {zoznam.map((z) => riadok(zbierka?.id === z.id, z.nazov, `${z.mesto} · ${sumaZb(z)}`, () => onZbierka(z), z.id))}
+        </div>
+        <span style={{ fontSize: 13, lineHeight: 1.45, color: "var(--ink3)" }}>Video sa ukáže v Iskrách len pod Zbierkami.</span>
+      </>}
+    </div>);
 }
 
 const tlHl = (off: boolean): CSSProperties => ({ minHeight: 54, border: "none", borderRadius: 16, cursor: off ? "default" : "pointer", fontFamily: "inherit", fontSize: 16, fontWeight: 800, color: "#fff", background: "#4B7A35", opacity: off ? 0.45 : 1 });
