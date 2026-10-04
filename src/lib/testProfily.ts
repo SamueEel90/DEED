@@ -280,6 +280,7 @@ const CHARITA: TestProfil = {
     { id: "d10", meno: "Anonymný darca", iniciala: "A", mesto: "Bratislava", naCo: "Celá činnosť", suma: 5, pred: "pred 48 min" },
   ],
   titulka: U("photo-1542601906990-b4d3fb778b09", 1200),
+  onas: { nadpis: "O nás", text: "Začali sme v novembri 2023 jedným hrncom polievky na Mierovom námestí. Dnes varíme, opravujeme strechy a sprevádzame seniorov v Trenčíne, Prešove a Bratislave. Každé euro dokladujeme.", oblasti: [] },
   dorovnaniePas: { ini: "PD", nadpis: "Pekáreň Dobrota zdvojnásobí tvoj dar", text: "1 : 1 · najviac 300 € · ešte 4 380 €" },
   // kronika z prototypu „Verejny profil charity PC v3 Kronika" (tá istá charita, sídlo Trenčín)
   roky: [

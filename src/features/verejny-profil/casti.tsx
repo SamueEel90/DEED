@@ -245,15 +245,16 @@ export function PribehText({ text, riadky = 6, fs = 14.5, farba = "var(--ink2)",
 export type Podanie = "kronika" | "vyklad" | "pirat";
 const KLUC_PODANIE = "deed.dev.podanieCharity";
 const podaniePosl = new Set<() => void>();
-export function nacitajPodanie(): Podanie { try { const v = localStorage.getItem(KLUC_PODANIE); return v === "vyklad" || v === "pirat" ? v : "kronika"; } catch { return "kronika"; } }
+export function nacitajPodanie(): Podanie { try { const v = localStorage.getItem(KLUC_PODANIE) as Podanie | null; return v && PODANIA.some(([k]) => k === v) ? v : "kronika"; } catch { return "kronika"; } }
 export function usePodanie(): [Podanie, (p: Podanie) => void] {
   const [p, setP] = useState<Podanie>(nacitajPodanie);
   useEffect(() => { const f = () => setP(nacitajPodanie()); podaniePosl.add(f); return () => { podaniePosl.delete(f); }; }, []);
   return [p, (n: Podanie) => { try { localStorage.setItem(KLUC_PODANIE, n); } catch { /* LS */ } podaniePosl.forEach((f) => f()); }];
 }
+export const PODANIA: [Podanie, string][] = [["kronika", "Kronika"], ["vyklad", "Výklad"]];
 export function PrepinacPodania({ tmavy, style }: { tmavy?: boolean; style?: CSSProperties }) {
   const [p, setP] = usePodanie();
-  const vol: [Podanie, string][] = [["kronika", "Kronika"], ["vyklad", "Výklad"], ["pirat", "Pirát"]];
+  const vol = PODANIA;
   return (
     <div role="group" aria-label="Zobrazenie profilu (test)" style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", ...style }}>
       <span style={{ fontSize: 12.5, fontWeight: 800, color: tmavy ? "rgba(255,255,255,.8)" : "var(--ink3)", marginRight: 2 }}>Zobrazenie:</span>
