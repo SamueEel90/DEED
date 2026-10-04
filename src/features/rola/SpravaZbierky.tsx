@@ -26,6 +26,8 @@ import { FLAGS, KONFIG, TIER_LABEL, type Tier } from "./stav";
 import { pridajOznamDarcom } from "@/lib/oznamyDarcom";
 import { OznamDarcoviSheet } from "@/features/notifikacie/OznamDarcovi";
 import type { OrgZbierka } from "./mock";
+import { TextovePolia, GaleriaEditor } from "./obsahZbierky";
+import type { MediumZbierky } from "@/lib/novaZbierka";
 
 const ZELENA = "var(--a-green)";
 const eur = (n: number) => `${n.toLocaleString("sk")} €`;
@@ -668,7 +670,12 @@ export function DokladyCharity({ zbierkaId, s, zmen, vyzbierane, teraz, mobil, t
   const pasI = pasmoPre(vyzbierane), pas = PASMA_DOKLADOV[pasI];
   const hotovo = nepovinne ? (s.doklady.length > 0 || !!s.text.trim() || s.fotky.length > 0) : pas.povinne.every((p) => splnene(p, s, vyzbierane));
   const pct = percentoDolozenia(s, vyzbierane);
+  // 5. 10. · jeden textový editor (TextovePolia) a jedna galéria (GaleriaEditor) ako všade, bez PRED / PO
   const [text, setText] = useState(s.text);
+  const [text2, setText2] = useState(s.text2 ?? "");
+  useEffect(() => { const t = window.setTimeout(() => { if (text !== s.text || text2 !== (s.text2 ?? "")) zmen({ text, text2 }); }, 600); return () => window.clearTimeout(t); }, [text, text2]); // eslint-disable-line react-hooks/exhaustive-deps
+  const media: MediumZbierky[] = s.fotky.map((f, i) => ({ id: i + 1, typ: f.typ ?? (jeVideo(f.src) ? "video" : "foto"), src: f.src, sek: f.sek, popis: f.popis === "PRED" || f.popis === "PO" ? "" : f.popis }));
+  const naMedia = (m: MediumZbierky[]) => zmen({ fotky: m.map((x) => ({ src: x.src, popis: x.popis ?? "", typ: x.typ, sek: x.sek })) });
   const [form, setForm] = useState(false);
   const [druh, setDruh] = useState<DruhDokladu>("Faktúra");
   const [nazov, setNazov] = useState("");
@@ -679,15 +686,6 @@ export function DokladyCharity({ zbierkaId, s, zmen, vyzbierane, teraz, mobil, t
   const { faza, dni } = fazaDokladovania(s, vyzbierane, Math.max(teraz, Date.now()));
   const ukoncena = s.stav === "ukoncena";
 
-  const pridajMedia = async (files: FileList | null, popis: "PRED" | "PO") => {
-    if (!files) return;
-    const nove = [...s.fotky];
-    for (const f of Array.from(files)) {
-      try { nove.push({ src: f.type.startsWith("video/") ? await ulozVideo(f, 45) : await spracujFotku(f, { pomer: 4 / 3, maxSirka: 1200 }), popis }); }
-      catch (e) { toast((e as Error).message); }
-    }
-    zmen({ fotky: nove });
-  };
   const pridajPolozku = () => {
     const sum = Number(suma.replace(/\s/g, "").replace(",", "."));
     if (!nazov.trim()) { toast("Napíšte, čo sa kúpilo alebo na čo išli peniaze."); return; }
@@ -709,26 +707,11 @@ export function DokladyCharity({ zbierkaId, s, zmen, vyzbierane, teraz, mobil, t
   const vlavo = (<div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 16 }}>
     <section style={kartaS}>
       <span style={nadpisS}>Na čo išli peniaze</span>
-      <textarea value={text} onChange={(e) => setText(e.target.value)} onBlur={() => { if (text !== s.text) zmen({ text }); }} rows={4} aria-label="Na čo išli peniaze"
-        placeholder="Napríklad: Kúpili sme strešnú krytinu a latovanie. V sobotu ich dobrovoľníci položili, rodina už býva v suchu." style={{ ...poleS, resize: "vertical" }} />
+      <TextovePolia popis={text} popis2={text2} onPopis={setText} onPopis2={setText2} ph={mobil}
+        popisHlavneho="Toto darcovia uvidia hneď. Najviac 12 riadkov." />
     </section>
-    <section style={kartaS}>
-      <span style={nadpisS}>Fotky a video, ako ste pomohli</span>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3,minmax(0,1fr))", gap: 10 }}>
-        {s.fotky.map((f, i) => (
-          <span key={i} style={{ position: "relative", aspectRatio: "4 / 3", borderRadius: 12, overflow: "hidden", background: "var(--track)" }}>
-            <MediaNahlad src={f.src} popis={f.popis} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
-            <button type="button" onClick={() => zmen({ fotky: s.fotky.map((x, j) => (j === i ? { ...x, popis: x.popis === "PRED" ? "PO" : "PRED" } : x)) })} aria-label={`Prepnúť PRED / PO, teraz ${f.popis}`}
-              style={{ position: "absolute", left: 6, top: 6, minHeight: 28, padding: "2px 8px", border: "none", borderRadius: 7, background: f.popis === "PRED" ? "rgba(29,33,27,.7)" : "var(--green)", fontFamily: "inherit", fontSize: 11.5, fontWeight: 800, color: "#fff", cursor: "pointer" }}>{f.popis}</button>
-            <button type="button" onClick={() => zmen({ fotky: s.fotky.filter((_, j) => j !== i) })} aria-label="Odstrániť" style={{ position: "absolute", right: 4, top: 4, width: 32, height: 32, border: "none", borderRadius: "50%", background: "rgba(29,33,27,.6)", color: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><IkS d={IKS.kos} s={15} /></button>
-          </span>))}
-        {(((s.fotky.length ? [] : [["+ PRED", "image/*", "PRED"]]) as [string, string, "PRED" | "PO"][]).concat([["+ PO", "image/*", "PO"], ["+ Video", "video/*", "PO"]])).map(([t, acc, popis]) => (
-          <label key={t} style={{ aspectRatio: "4 / 3", borderRadius: 12, border: "2px dashed #BDB6A8", background: "var(--field)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 800, color: "var(--gInk)", cursor: "pointer" }}>
-            {t}<input type="file" accept={acc} multiple={acc !== "video/*"} hidden onChange={(e) => { void pridajMedia(e.target.files, popis); e.target.value = ""; }} />
-          </label>))}
-      </div>
-      <span style={{ fontSize: 13, color: "var(--ink3)" }}>Ťuknite na štítok a prepnete PRED / PO. Video najviac 45 s.</span>
-    </section>
+    <GaleriaEditor media={media} onMedia={naMedia} ph={mobil} nadpis="Fotky a video, ako ste pomohli" popisNapoveda="Napríklad: Pred opravou, Po oprave"
+      dovetok=" Doklady môžete pridávať aj neskôr." />
     <section style={kartaS}>
       <span style={nadpisS}>Rozpis a doklady</span>
       {s.doklady.map((d, i) => (

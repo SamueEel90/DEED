@@ -70,7 +70,8 @@ export interface PolozkaDokladu {
   datum: string;       // ISO
   foto?: string;       // sken/fotka dokladu (data-URL)
 }
-export interface FotkaPouzitia { src: string; popis: string }  // popis: PRED / PO / voľný
+/** fotka / video dokladu použitia — 5. 10.: popis = voľný popis fotky (najviac 80 znakov), žiadne PRED / PO */
+export interface FotkaPouzitia { src: string; popis: string; typ?: "foto" | "video"; sek?: number }
 export interface SpravaDarcom { text: string; datum: string }
 
 export interface StavZbierky {
@@ -83,6 +84,8 @@ export interface StavZbierky {
   zdovodnenie60?: string;
   zdovodnenieBezDokladov?: string;
   text: string;
+  /** 5. 10. · pokračovanie textu „Na čo išli peniaze" (TextovePolia, po „… viac") */
+  text2?: string;
   fotky: FotkaPouzitia[];
   doklady: PolozkaDokladu[];
   spravy: SpravaDarcom[];
