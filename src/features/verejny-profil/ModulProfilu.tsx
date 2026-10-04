@@ -1,7 +1,7 @@
 // OPRAVY 139 · Kronika v6 — platobný modul pri centrálnej zbierke a sektoroch = časti nášho ZbierkaModul,
 // v poradí podľa prototypu „Platobny modul profil" (= Platba - dorovnanie firmy v2):
 // KartaStavu bez cieľa · KartaDorovnava + „daruješ 20 € → …" · Zdieľať · QR + Páči sa mi · DROBNÁ PODPORA ·
-// DARY V EURÁCH · VLASTNÁ SUMA · DARY V KRYPTE · MESAČNE TO ZNAMENÁ (tipy charity) · Pravidelná podpora ·
+// DARY V EURÁCH · VLASTNÁ SUMA · DARY V KRYPTE · Pravidelná podpora · MESAČNE TO ZNAMENÁ (tipy, KARTA 46 pod ňou) ·
 // Sledovať + Podporiť DEED · Reťaz dobra · „Kam treba najviac…" · Darcovia. refId = centrálna / sektorová zbierka.
 // Nad modulom zväčšený náhľad dlaždice („POSIELAŠ DO · …", ikona i), modul sa prefarbí podľa poradia (data-hier).
 import { useEffect, useRef, useState, type CSSProperties } from "react";
@@ -25,19 +25,27 @@ const bg = (f: string) => `url('${f}') center/cover no-repeat #3a3530`;
 const eurT = (n: number) => `${n.toLocaleString("sk-SK")} €`;
 
 /** náhľad dlaždice nad modulom + modul + Zbaliť */
-export function ModulProfilu({ profil, sektor, poradie, mestoV, onZbal }: {
+export function ModulProfilu({ profil, sektor, poradie, mestoV, onZbal, dorovnanie = true, uvidisOdkaz, typ: typP, typ2: typ2P, info: infoP, meno }: {
   profil: TestProfil; sektor: TestSektor; poradie: number;
   /** „v Trenčíne" → „Trenčíne" (pre vetu „Minulý mesiac v …") */
   mestoV: string;
   onZbal: () => void;
+  /** KARTA 46 · false = skryť všetko o dorovnaní firmy (firma nedorovnáva vlastný fond) */
+  dorovnanie?: boolean;
+  /** KARTA 46 · odkaz pod zelenou vetou („Pozrieť v zbierke … ›") */
+  uvidisOdkaz?: { text: string; onClick?: () => void };
+  /** texty náhľadu (firma: „FOND DOBROTY", vlastné vysvetlenie Svetlúšika) */
+  typ?: string; typ2?: string; info?: string;
+  /** meno pod názvom náhľadu (firma: krátke meno bez s.r.o.) */
+  meno?: string;
 }) {
   const [info, setInfo] = useState(false);
   const sek = poradie > 0;
-  const typ = sek ? `SEKTOR ${poradie}` : "CENTRÁLNA ZBIERKA";
-  const typ2 = sek ? "peniaze idú len na túto tému" : "celá činnosť, použijú ich, kde treba najviac";
-  const infoText = sek
+  const typ = typP ?? (sek ? `SEKTOR ${poradie}` : "CENTRÁLNA ZBIERKA");
+  const typ2 = typ2P ?? (sek ? "peniaze idú len na túto tému" : "celá činnosť, použijú ich, kde treba najviac");
+  const infoText = infoP ?? (sek
     ? "Sektorová zbierka je na jednu tému, ktorú charita robí dlhodobo. Nemá cieľ ani koniec. Dokladovanie je dobrovoľné, ale peniaze idú len na túto tému. Ak chceš vidieť každý doklad, vyber konkrétnu zbierku."
-    : "Centrálna zbierka je na chod celej organizácie. Dokladovanie je dobrovoľné a peniaze sa použijú tam, kde treba najviac. Ak chceš vidieť každý doklad, vyber konkrétnu zbierku alebo sektor.";
+    : "Centrálna zbierka je na chod celej organizácie. Dokladovanie je dobrovoľné a peniaze sa použijú tam, kde treba najviac. Ak chceš vidieť každý doklad, vyber konkrétnu zbierku alebo sektor.");
   return (
     <div data-hier={String(poradie)} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
       <div style={{ borderRadius: 22, overflow: "hidden", border: "2px solid var(--hc)", background: "var(--card)" }}>
@@ -48,26 +56,26 @@ export function ModulProfilu({ profil, sektor, poradie, mestoV, onZbal }: {
         <div style={{ padding: "12px 8px 14px 16px", display: "flex", alignItems: "flex-start", gap: 8 }}>
           <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 3 }}>
             <b style={{ fontSize: 20, lineHeight: 1.2 }}>{sektor.nazov}</b>
-            <span style={{ fontSize: 13, lineHeight: 1.4, color: "var(--ink3)" }}>{profil.meno} · {typ2}</span>
+            <span style={{ fontSize: 13, lineHeight: 1.4, color: "var(--ink3)" }}>{meno ?? profil.meno} · {typ2}</span>
           </span>
           <SvetlusikInfo otv={info} onPrepni={() => setInfo((x) => !x)} />
         </div>
         {info && <SvetlusikKarta style={{ margin: "0 12px 12px" }}>{infoText}</SvetlusikKarta>}
       </div>
-      <Modul profil={profil} sektor={sektor} mestoV={mestoV} />
+      <Modul profil={profil} sektor={sektor} mestoV={mestoV} sDorovnanim={dorovnanie} uvidisOdkaz={uvidisOdkaz} />
       <button type="button" onClick={onZbal} style={{ height: 44, border: "none", background: "transparent", cursor: "pointer", fontSize: 13.5, fontWeight: 800, color: "var(--ink3)" }}>Zbaliť ⌃</button>
     </div>
   );
 }
 
-function Modul({ profil, sektor, mestoV }: { profil: TestProfil; sektor: TestSektor; mestoV: string }) {
+function Modul({ profil, sektor, mestoV, sDorovnanim, uvidisOdkaz }: { profil: TestProfil; sektor: TestSektor; mestoV: string; sDorovnanim: boolean; uvidisOdkaz?: { text: string; onClick?: () => void } }) {
   const refId = sektor.id;
   const rootRef = useRef<HTMLDivElement>(null), koniecPruhu = useRef<HTMLDivElement>(null);
   const mikro = { root: rootRef, ciel: koniecPruhu };
   const [registrovany, setRegistrovany] = useState(() => !jeNeregistrovany());
   useEffect(() => sledujDarcu(() => setRegistrovany(!jeNeregistrovany())), []);
   useZmenyDorovnani();
-  const dorovnanie = dorovnanieNaDar(refId);
+  const dorovnanie = sDorovnanim ? dorovnanieNaDar(refId) : null;
   const zaklad = sektor.mesiac ?? sektor.vyzbierane;
   const kam = sektor.druh === "centralna" ? "celej činnosti" : `sektora ${sektor.nazov}`;
   const nazov = `${sektor.nazov} · ${profil.meno}`;
@@ -96,8 +104,9 @@ function Modul({ profil, sektor, mestoV }: { profil: TestProfil; sektor: TestSek
       <RychleSumyEur sumy={[10, 25, 45]} doplnok="sumy si volí charita" kDaru={dorovnanie ? (s) => dorovnanieKDaru(dorovnanie, s) : undefined} otvor={otvor} />
       <VlastnaSuma eur deed={registrovany} otvor={otvor} firma={dorovnanie ? `${dorovnanie.firma} ${dorovnanie.pomer === 1 ? "zdvojnásobí" : "dorovná"}` : undefined} />
       <DaryVKrypte refId={refId} otvor={otvor} mikro={mikro} />
+      <PravidelnaRiadok registrovany={registrovany} onClick={() => { setTipSuma(undefined); setHarok("pravidelna"); }} />
       {!!sektor.tipy?.length && <>
-        <div style={{ margin: "20px 2px 10px", display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8, fontSize: 12.5, fontWeight: 700, letterSpacing: ".05em", color: "var(--ink3)" }}>
+        <div style={{ margin: "12px 2px 8px", display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8, fontSize: 12.5, fontWeight: 700, letterSpacing: ".05em", color: "var(--ink3)" }}>
           <span>MESAČNE TO ZNAMENÁ</span>
           {sektor.mesacne != null && <span style={{ fontWeight: 600, letterSpacing: 0, color: "var(--green)" }}>{sektor.mesacne.toLocaleString("sk-SK")} {sektor.mesacne === 1 ? "človek podporuje" : sektor.mesacne >= 2 && sektor.mesacne <= 4 ? "ľudia podporujú" : "ľudí podporuje"} mesačne</span>}
         </div>
@@ -111,11 +120,12 @@ function Modul({ profil, sektor, mestoV }: { profil: TestProfil; sektor: TestSek
             </button>))}
         </div>
       </>}
-      <PravidelnaRiadok registrovany={registrovany} onClick={() => { setTipSuma(undefined); setHarok("pravidelna"); }} />
       <OblubenePodporit polozka={{ refId, typ: "charita", modul: "charity", nazov }} onPodporit={() => setHarok("podporit")} />
       <RetazRiadok onClick={() => setHarok("retaz")} />
-      {veta && <div style={{ marginTop: 12, padding: "12px 14px", borderRadius: 18, background: "var(--gSoft)", border: "1px solid var(--gBd)", fontSize: 14, lineHeight: 1.5, color: "var(--ink)", textWrap: "pretty" } as CSSProperties}>{veta}</div>}
-      <div style={{ marginTop: 14 }}><Darcovia refId={refId} /></div>
+      {veta && <div style={{ marginTop: 12, padding: "12px 14px", borderRadius: 18, background: "var(--gSoft)", border: "1px solid var(--gBd)", fontSize: 14, lineHeight: 1.5, color: "var(--ink)", textWrap: "pretty" } as CSSProperties}>{veta}
+        {uvidisOdkaz && <button type="button" onClick={uvidisOdkaz.onClick} style={{ display: "block", minHeight: 44, margin: "-6px 0 -12px", padding: 0, border: "none", background: "transparent", boxShadow: "none", cursor: "pointer", textAlign: "left", fontSize: 13.5, fontWeight: 800, color: "var(--green)", fontFamily: "inherit" }}>{uvidisOdkaz.text} ›</button>}
+      </div>}
+      <div style={{ marginTop: 14 }}><Darcovia refId={refId} bezDorovnania={!sDorovnanim} /></div>
 
       {platba && <PlatobneOkno kanal={platba.kanal} suma={platba.suma} nazov={nazov} registrovany={registrovany} pred={pred}
         bonus={dorovnanie ? (s) => dorovnanieKDaru(dorovnanie, s) : undefined} firma={dorovnanie?.firma}
