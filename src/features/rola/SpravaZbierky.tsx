@@ -5,7 +5,8 @@
 // Pravidlá a čísla: lib/zbierkaSprava.ts (SPRAVA_ZBIERKY_CFG, PASMA_DOKLADOV).
 // ============================================================
 import { Emo, IkonaOko } from "@/components/icons";
-import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { C, SPACE, RADIUS } from "@/theme";
 import { Sheet, MoniBar, tint } from "@/shared";
 import { pressable } from "@/components/pressable";
@@ -484,12 +485,35 @@ export function SpravaZbierky({ z, mobil, onZbierky, toast }: { z: ZbierkaNaSpra
     zmen({ top: { uroven: t.nazov, do: pridajDni(teraz, CFG.topovanieDni) } });
     toast(`Topované: ${t.nazov} na ${CFG.topovanieDni} dní · ${eur(t.cena)}`);
   };
-  const ukonci = () => {
+  // 5. 10. · ukončenie: hárok (prečo, čo sa stane, podrž 1,5 s) → 15 minút sa dá vrátiť, výsledok darcom odíde až potom
+  const ukonci = (dovod: string) => {
     const kedy = new Date().toISOString();
-    // KARTA 38 · bod 4: výsledok darcom posiela systém sám pri ukončení (1. z 2 správ), charita nič neschvaľuje
-    pridajOznamDarcom({ zbierkaId: z.id, typ: "vysledok", text: `Vyzbierali ste ${eur(vyzbierane)} od ${darcov} darcov. Ďakujeme.` });
-    zmen({ stav: "ukoncena", ukoncena: kedy, vysledokPoslany: kedy }); setConf(false);
+    pasVidel.current = false;
+    zmen({ stav: "ukoncena", ukoncena: kedy, vratitDo: new Date(Date.now() + VRATIT_MIN * 60000).toISOString(), dovodUkoncenia: dovod, vysledokPoslany: undefined }); setConf(false);
   };
+  const pasVidel = useRef(false); // pás „Zbierka je ukončená" sa po ukončení raz posunie do obrazovky
+  const vratit = () => zmen({ stav: "aktivna", ukoncena: undefined, vratitDo: undefined, dovodUkoncenia: undefined });
+  // KARTA 38 · bod 4: výsledok darcom posiela systém sám (1. z 2 správ) — po uplynutí 15 minút na vrátenie
+  const [, tik] = useState(0);
+  useEffect(() => {
+    if (s.stav !== "ukoncena" || !s.vratitDo || s.vysledokPoslany) return;
+    const zostava = Date.parse(s.vratitDo) - Date.now();
+    const posli = () => { pridajOznamDarcom({ zbierkaId: z.id, typ: "vysledok", text: `Vyzbierali ste ${eur(vyzbierane)} od ${darcov} darcov. Ďakujeme.` }); zmen({ vysledokPoslany: new Date().toISOString(), vratitDo: undefined }); };
+    if (zostava <= 0) { posli(); return; }
+    const t = window.setTimeout(posli, zostava); const t2 = window.setInterval(() => tik((x) => x + 1), 30000);
+    return () => { window.clearTimeout(t); window.clearInterval(t2); };
+  }, [s.stav, s.vratitDo, s.vysledokPoslany]); // eslint-disable-line react-hooks/exhaustive-deps
+  const vratitPas = s.stav === "ukoncena" && s.vratitDo && !s.vysledokPoslany && Date.parse(s.vratitDo) > Date.now() && (() => {
+    const d = new Date(s.vratitDo!); const hod = `${d.getHours()}:${String(d.getMinutes()).padStart(2, "0")}`;
+    return (
+      <div role="status" ref={(el) => { if (el && !pasVidel.current) { pasVidel.current = true; el.scrollIntoView({ behavior: "smooth", block: "center" }); } }} style={{ borderRadius: 18, background: "#1D211B", color: "#fff", padding: "14px 16px", display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+        <span style={{ flex: 1, minWidth: 220, display: "flex", flexDirection: "column", gap: 2 }}>
+          <b style={{ fontSize: 15.5 }}>Zbierka je ukončená</b>
+          <span style={{ fontSize: 13, opacity: 0.8 }}>Výsledok pošleme {darcov} darcom o {VRATIT_MIN} minút ({hod}). Dovtedy to môžete vrátiť.</span>
+        </span>
+        <button type="button" onClick={vratit} style={{ height: 46, padding: "0 18px", border: "none", borderRadius: 14, background: "#fff", cursor: "pointer", fontFamily: "inherit", fontSize: 15, fontWeight: 800, color: "#1D211B" }}>Vrátiť späť</button>
+      </div>);
+  })();
 
   // ---- hlavička (všetky stavy) ----
   const denZ = Math.min(CFG.dlzkaDni, Math.max(1, Math.ceil(((s.ukoncena ? Date.parse(s.ukoncena) : teraz) - Date.parse(zac)) / DEN_MS)));
@@ -521,7 +545,7 @@ export function SpravaZbierky({ z, mobil, onZbierky, toast }: { z: ZbierkaNaSpra
     </div>);
   const dva = (deti: ReactNode, sl = "repeat(2,minmax(0,1fr))") => <div style={{ display: "grid", gridTemplateColumns: mobil ? "minmax(0,1fr)" : sl, gap: 16, alignItems: "start" }}>{deti}</div>;
 
-  if (pohlad === "doklady") return (<>{vrch}{hlavicka}<DokladyCharity zbierkaId={z.id} s={s} zmen={zmenDoklady} vyzbierane={vyzbierane} teraz={teraz} mobil={mobil} toast={toast} /></>);
+  if (pohlad === "doklady") return (<>{vrch}{vratitPas}{hlavicka}<DokladyCharity zbierkaId={z.id} s={s} zmen={zmenDoklady} vyzbierane={vyzbierane} teraz={teraz} mobil={mobil} toast={toast} /></>);
 
   if (aktivna) {
     const dalsie = CFG.predlzenia[s.predlzenia];
@@ -568,13 +592,10 @@ export function SpravaZbierky({ z, mobil, onZbierky, toast }: { z: ZbierkaNaSpra
       </section>
       <section style={kartaS}>
         <span style={nadpisS}>Ukončiť zbierku</span>
-        <span style={textS}>Zbierku môžete ukončiť kedykoľvek, napríklad keď je cieľ splnený. Výsledok pošleme darcom sami.</span>
-        {!conf ? <button type="button" onClick={() => setConf(true)} style={tlO}>Ukončiť zbierku</button>
-          : <div style={{ display: "flex", flexDirection: "column", gap: 10, padding: "14px 16px", borderRadius: 14, background: "var(--field)" }}>
-            <span style={{ fontSize: 14.5, fontWeight: 700, color: "var(--ink)" }}>Naozaj ukončiť? Dary sa už nebudú dať posielať.</span>
-            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}><button type="button" onClick={() => setConf(false)} style={tlO}>Späť</button><button type="button" onClick={ukonci} style={tlZ}>Áno, ukončiť</button></div>
-          </div>}
+        <span style={textS}>Ukončiť môžete kedykoľvek, napríklad keď je cieľ splnený. Dary sa potom zastavia.</span>
+        <button type="button" onClick={() => setConf(true)} style={tlO}>Ukončiť zbierku…</button>
       </section>
+      {conf && <UkoncitHarok mobil={mobil} vyzbierane={vyzbierane} darcov={darcov} lehota={lehT} onUkonci={ukonci} onZavri={() => setConf(false)} />}
     </>)}</>);
   }
 
@@ -583,11 +604,11 @@ export function SpravaZbierky({ z, mobil, onZbierky, toast }: { z: ZbierkaNaSpra
   const dniPodakovania = dniDo(koniecPodakovania, teraz);
   const voFeede = !s.stiahnuta && dniPodakovania > 0;
   const { faza, dni } = fazaDokladovania(s, vyzbierane, Math.max(teraz, Date.now()));
-  return (<>{vrch}{hlavicka}
-    <section style={{ ...kartaS, background: "var(--gSoft)", border: "1.5px solid var(--gBd)", gap: 6 }}>
+  return (<>{vrch}{vratitPas}{hlavicka}
+    {!vratitPas && <section style={{ ...kartaS, background: "var(--gSoft)", border: "1.5px solid var(--gBd)", gap: 6 }}>
       <span style={{ fontSize: 21, fontWeight: 800, color: "var(--ink)" }}>Podarilo sa</span>
       <span style={textS}>Výsledok sme poslali všetkým darcom {dnes(s.vysledokPoslany ?? s.ukoncena ?? s.koniec)}: vyzbierali ste {eur(vyzbierane)} od {darcov} darcov.</span>
-    </section>
+    </section>}
     {dva(<>
       <section style={kartaS}>
         <span style={nadpisS}>{voFeede ? `Vo feede ešte ${dniT(dniPodakovania)} ako poďakovanie` : "Stiahnutá z feedu"}</span>
@@ -608,6 +629,50 @@ export function SpravaZbierky({ z, mobil, onZbierky, toast }: { z: ZbierkaNaSpra
       </section>}
     </>)}
   </>);
+}
+
+const VRATIT_MIN = 15;
+const DOVODY_UKONCENIA = ["Cieľ je splnený", "Už to nepotrebujeme", "Iný dôvod"];
+/** 5. 10. · hárok „Ukončiť zbierku?" (PC v strede, mobil zdola): Prečo končíte → Čo sa stane → Podrž a ukonči (1,5 s) · Nechať bežať */
+function UkoncitHarok({ mobil, vyzbierane, darcov, lehota, onUkonci, onZavri }: { mobil: boolean; vyzbierane: number; darcov: number; lehota: string; onUkonci: (dovod: string) => void; onZavri: () => void }) {
+  const [vidno, setVidno] = useState(false);
+  const [dovod, setDovod] = useState<number | null>(null);
+  const [drz, setDrz] = useState(false);
+  const tm = useRef<number | undefined>(undefined);
+  useEffect(() => { const r = requestAnimationFrame(() => requestAnimationFrame(() => setVidno(true))); return () => { cancelAnimationFrame(r); window.clearTimeout(tm.current); }; }, []);
+  const zavri = () => { setVidno(false); window.setTimeout(onZavri, 260); };
+  useEffect(() => { const k = (e: KeyboardEvent) => { if (e.key === "Escape") zavri(); }; window.addEventListener("keydown", k); return () => window.removeEventListener("keydown", k); });
+  const zacni = () => { if (dovod == null) return; setDrz(true); window.clearTimeout(tm.current); tm.current = window.setTimeout(() => { setDrz(false); onUkonci(DOVODY_UKONCENIA[dovod]); }, 1500); };
+  const pusti = () => { window.clearTimeout(tm.current); setDrz(false); };
+  const sekcia: CSSProperties = { fontSize: 14, fontWeight: 800, color: "var(--ink3)", letterSpacing: ".04em" };
+  const karta: CSSProperties = { position: "fixed", zIndex: 91, background: "var(--bg)", color: "var(--ink)", boxShadow: "0 30px 80px rgba(0,0,0,.45)", padding: 22, display: "flex", flexDirection: "column", gap: 14, maxHeight: "92vh", overflowY: "auto" };
+  return createPortal(
+    <div className="sprava-charity" style={{ background: "transparent", minHeight: 0 }}>
+      <div onClick={zavri} style={{ position: "fixed", inset: 0, zIndex: 90, background: "rgba(10,8,5,.6)", opacity: vidno ? 1 : 0, transition: "opacity .25s ease" }} />
+      <div role="dialog" aria-modal="true" aria-label="Ukončiť zbierku" style={mobil
+        ? { ...karta, left: 0, right: 0, bottom: 0, borderRadius: "26px 26px 0 0", paddingBottom: "max(24px, env(safe-area-inset-bottom))", transform: `translateY(${vidno ? "0%" : "105%"})`, transition: "transform .32s cubic-bezier(.2,.8,.2,1)" }
+        : { ...karta, left: "50%", top: "50%", width: "min(520px, calc(100% - 32px))", borderRadius: 26, opacity: vidno ? 1 : 0, transform: `translate(-50%, -50%) scale(${vidno ? 1 : 0.94})`, transition: "opacity .25s ease, transform .3s ease" }}>
+        <b style={{ fontSize: 21 }}>Ukončiť zbierku?</b>
+        <span style={sekcia}>PREČO KONČÍTE</span>
+        <div role="radiogroup" aria-label="Prečo končíte" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {DOVODY_UKONCENIA.map((t, i) => { const on = dovod === i; return (
+            <button key={t} type="button" role="radio" aria-checked={on} onClick={() => setDovod(i)} style={{ minHeight: 50, padding: "0 16px", borderRadius: 14, border: on ? "2px solid var(--green)" : "1px solid var(--cardBd)", background: on ? "var(--gSoft)" : "var(--field)", cursor: "pointer", textAlign: "left", fontFamily: "inherit", fontSize: 15, fontWeight: 800, color: "var(--ink)" }}>{t}</button>); })}
+        </div>
+        <span style={sekcia}>ČO SA STANE</span>
+        <div style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 14, lineHeight: 1.45, color: "var(--ink2)" }}>
+          <span>· Dary sa zastavia. Vyzbierali ste <b style={{ color: "var(--ink)" }}>{eur(vyzbierane)}</b> od {darcov} darcov.</span>
+          <span>· Darcom pošleme výsledok o {VRATIT_MIN} minút. Dovtedy to môžete vrátiť.</span>
+          <span>· Začne plynúť lehota na doklady: {lehota}.</span>
+        </div>
+        <button type="button" aria-disabled={dovod == null} onPointerDown={zacni} onPointerUp={pusti} onPointerLeave={pusti} onPointerCancel={pusti}
+          onKeyDown={(e) => { if ((e.key === "Enter" || e.key === " ") && !e.repeat) { e.preventDefault(); zacni(); } }} onKeyUp={(e) => { if (e.key === "Enter" || e.key === " ") pusti(); }} onContextMenu={(e) => e.preventDefault()}
+          style={{ position: "relative", height: 58, border: "none", borderRadius: 16, background: "#7A3A2C", overflow: "hidden", cursor: dovod == null ? "default" : "pointer", touchAction: "none", userSelect: "none", opacity: dovod == null ? 0.45 : 1, fontFamily: "inherit" } as CSSProperties}>
+          <span style={{ position: "absolute", inset: 0, background: "#A34A2A", transformOrigin: "0 50%", transform: `scaleX(${drz ? 1 : 0})`, transition: `transform ${drz ? "1.5s" : ".2s"} linear` }} />
+          <span style={{ position: "relative", fontSize: 16, fontWeight: 800, color: "#fff" }}>Podrž a ukonči zbierku</span>
+        </button>
+        <button type="button" onClick={zavri} style={{ height: 44, border: "none", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 14.5, fontWeight: 800, color: "var(--ink3)" }}>Nechať bežať</button>
+      </div>
+    </div>, document.body);
 }
 
 // ---- KARTA 39 · bod 1: Kde je zbierka teraz (dlhodobá) ----
@@ -677,6 +742,15 @@ export function DokladyCharity({ zbierkaId, s, zmen, vyzbierane, teraz, mobil, t
   const media: MediumZbierky[] = s.fotky.map((f, i) => ({ id: i + 1, typ: f.typ ?? (jeVideo(f.src) ? "video" : "foto"), src: f.src, sek: f.sek, popis: f.popis === "PRED" || f.popis === "PO" ? "" : f.popis }));
   const naMedia = (m: MediumZbierky[]) => zmen({ fotky: m.map((x) => ({ src: x.src, popis: x.popis ?? "", typ: x.typ, sek: x.sek })) });
   const [form, setForm] = useState(false);
+  // 5. 10. · zmazanie položky: pás „Položka odstránená · Vrátiť" na 5 s
+  const [zmazane, setZmazane] = useState<PolozkaDokladu[] | null>(null);
+  const zmazTm = useRef<number | undefined>(undefined);
+  useEffect(() => () => window.clearTimeout(zmazTm.current), []);
+  const zmazPolozku = (id: string) => {
+    setZmazane(s.doklady); zmen({ doklady: s.doklady.filter((x) => x.id !== id) });
+    window.clearTimeout(zmazTm.current); zmazTm.current = window.setTimeout(() => setZmazane(null), 5000);
+  };
+  const vratPolozku = () => { window.clearTimeout(zmazTm.current); if (zmazane) zmen({ doklady: zmazane }); setZmazane(null); };
   const [druh, setDruh] = useState<DruhDokladu>("Faktúra");
   const [nazov, setNazov] = useState("");
   const [dodavatel, setDodavatel] = useState("");
@@ -723,8 +797,12 @@ export function DokladyCharity({ zbierkaId, s, zmen, vyzbierane, teraz, mobil, t
             <span style={{ display: "block", fontSize: 13, color: "var(--ink3)" }}>{d.druh}{d.dodavatel ? ` · ${d.dodavatel}` : ""}</span>
             {!d.foto && <label style={{ display: "inline-flex", alignItems: "center", minHeight: 32, fontSize: 13, fontWeight: 800, color: "var(--green)", cursor: "pointer" }}>Priložiť doklad<input type="file" accept="image/*,application/pdf,.pdf" hidden onChange={(e) => { void priloz(d.id, e.target.files); e.target.value = ""; }} /></label>}</span>
           <b style={{ flex: "none", fontSize: 15, color: "var(--green)" }}>{eur(d.suma)}</b>
-          <button type="button" onClick={() => zmen({ doklady: s.doklady.filter((x) => x.id !== d.id) })} aria-label={`Odstrániť ${d.nazov}`} style={{ flex: "none", width: 36, height: 36, border: "none", background: "transparent", color: "var(--ink3)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><IkS d={IKS.kos} s={16} /></button>
+          <button type="button" onClick={() => zmazPolozku(d.id)} aria-label={`Odstrániť ${d.nazov}`} style={{ flex: "none", width: 36, height: 36, border: "none", background: "transparent", color: "var(--ink3)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><IkS d={IKS.kos} s={16} /></button>
         </div>))}
+      {zmazane && <div role="status" style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderRadius: 14, background: "#1D211B", color: "#fff" }}>
+        <span style={{ flex: 1, fontSize: 14 }}>Položka odstránená</span>
+        <button type="button" onClick={vratPolozku} style={{ height: 44, padding: "0 14px", border: "none", borderRadius: 12, background: "#fff", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 800, color: "#1D211B" }}>Vrátiť</button>
+      </div>}
       {form ? <div style={{ display: "flex", flexDirection: "column", gap: 10, padding: 14, borderRadius: 14, background: "var(--field)" }}>
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>{DRUHY_DOKLADU.map((x) => { const on = x === druh; return <button key={x} type="button" aria-pressed={on} onClick={() => setDruh(x)} style={{ minHeight: 40, padding: "0 12px", borderRadius: 12, border: `1.5px solid ${on ? "var(--gBd)" : "var(--cardBd)"}`, background: on ? "var(--gSoft)" : "transparent", fontFamily: "inherit", fontSize: 13.5, fontWeight: 800, color: on ? "var(--gInk)" : "var(--ink2)", cursor: "pointer" }}>{x}</button>; })}</div>
         <input value={nazov} onChange={(e) => setNazov(e.target.value)} placeholder="Čo sa kúpilo, napríklad strešná krytina" aria-label="Položka" style={poleS} />
