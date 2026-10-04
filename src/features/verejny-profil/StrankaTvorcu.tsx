@@ -4,11 +4,14 @@
 // Poradie: Titulka · čísla · NAŽIVO (len keď vysiela) · MINULÉ STREAMY · MOJE ISKRY · RADY ZADARMO · DLHŠIE VIDEÁ A INDE
 // · UČÍM · ONLINE ŠKOLENIE · POMÁHAM CEZ CHARITY · KONCERTY A AKCIE. Podpora = náš modul bez dorovnania (ModulPlatby).
 // Prázdna sekcia sa neukáže. Cudzí prehrávač sa nenačíta, kým človek neťukne.
+// Odomknúť / Prihlásiť sa: kým nie je obrazovka nákupu (súhlas so sprístupnením hneď a stratou odstúpenia do 14 dní),
+// odomkne sa okamžite len v testovacej verzii. Okno na dary sa na nákup nepoužíva.
 import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import type { TestProfil } from "@/lib/testProfily";
 import { TVORCA_DATA, STREAM_ZBIERKY } from "@/lib/testTvorca";
 import { otvorIskry } from "@/features/iskry/otvor";
 import { DOK, PortalVp } from "./casti";
+import { TESTOVACIA } from "@/lib/testovacia";
 import { ModulPlatby } from "./ModulProfilu";
 import { PRUH } from "./charitaCasti";
 
@@ -154,7 +157,7 @@ export function StrankaTvorcu({ profil, onBack, onStream }: { profil: TestProfil
         </button>))}
     </div>}
     {d.siete.length > 0 && <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-      {d.siete.map((s) => <button key={s} type="button" style={{ ...tlBez, height: 40, padding: "0 14px", borderRadius: 20, ...karta, display: "flex", alignItems: "center", gap: 6, fontSize: 13.5, fontWeight: 800, color: "var(--ink)" }}>{s} <span style={{ color: "var(--ink3)" }}>↗</span></button>)}
+      {d.siete.map((s) => <button key={s} type="button" style={{ ...tlBez, height: 44, padding: "0 14px", borderRadius: 22, ...karta, display: "flex", alignItems: "center", gap: 6, fontSize: 13.5, fontWeight: 800, color: "var(--ink)" }}>{s} <span style={{ color: "var(--ink3)" }}>↗</span></button>)}
     </div>}
     <span style={{ fontSize: 12, lineHeight: 1.45, color: "var(--ink3)" }}>Odkazy vedú von z DEED+. Video sa načíta až po ťuku, dovtedy cudzia stránka nič nevie.</span>
   </>;
@@ -173,8 +176,8 @@ export function StrankaTvorcu({ profil, onBack, onStream }: { profil: TestProfil
               <span style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: ".06em", color: "var(--gold)" }}>{x.druh}</span>
               <b style={{ fontSize: 15.5, lineHeight: 1.3 }}>{x.n}</b>
               <span style={{ fontSize: 12.5, color: "var(--ink3)" }}>{x.o}</span>
-              <button type="button" onClick={() => setOdom((o) => ({ ...o, [x.id]: true }))}
-                style={{ alignSelf: "flex-start", marginTop: 4, height: 40, padding: "0 14px", borderRadius: 12, border: on ? "1px solid var(--gBd)" : "1.5px solid var(--gold)", background: on ? "var(--gSoft)" : "transparent", cursor: "pointer", fontSize: 13.5, fontWeight: 800, color: on ? "var(--gInk)" : "var(--gold)", whiteSpace: "nowrap", boxShadow: "none", fontFamily: "inherit" }}>
+              <button type="button" onClick={() => { if (TESTOVACIA) setOdom((o) => ({ ...o, [x.id]: true })); }}
+                style={{ alignSelf: "flex-start", marginTop: 4, height: 44, padding: "0 14px", borderRadius: 12, border: on ? "1px solid var(--gBd)" : "1.5px solid var(--gold)", background: on ? "var(--gSoft)" : "transparent", cursor: "pointer", fontSize: 13.5, fontWeight: 800, color: on ? "var(--gInk)" : "var(--gold)", whiteSpace: "nowrap", boxShadow: "none", fontFamily: "inherit" }}>
                 {on ? "Odomknuté · otvoriť" : `Odomknúť za ${x.cena} €`}
               </button>
             </span>
@@ -196,7 +199,7 @@ export function StrankaTvorcu({ profil, onBack, onStream }: { profil: TestProfil
         <svg style={{ flex: "none" }} width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h2M18 14h2v2M14 18v2h6" /></svg>
         <span style={{ fontSize: 13, lineHeight: 1.45 }}>Na začiatku naskenuješ QR. Potvrdí, že si bol, a dostaneš osvedčenie a karmu.</span>
       </span>
-      <button type="button" onClick={() => setPrih(true)} style={{ height: 50, border: "none", borderRadius: 14, background: "#fff", cursor: "pointer", fontSize: 15.5, fontWeight: 800, color: "#2F5E3A", boxShadow: "none", fontFamily: "inherit" }}>{prih ? "Prihlásený · QR dostaneš v deň školenia" : `Prihlásiť sa · ${eurT(s.cena)}`}</button>
+      <button type="button" onClick={() => { if (TESTOVACIA) setPrih(true); }} style={{ height: 50, border: "none", borderRadius: 14, background: "#fff", cursor: "pointer", fontSize: 15.5, fontWeight: 800, color: "#2F5E3A", boxShadow: "none", fontFamily: "inherit" }}>{prih ? "Prihlásený · QR dostaneš v deň školenia" : `Prihlásiť sa · ${eurT(s.cena)}`}</button>
     </article>
   );
 
