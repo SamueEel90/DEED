@@ -170,6 +170,36 @@ export interface TestProfil {
   /** kronika: súhrny rokov a záznamy z minulosti (k skutkom a ukončeným zbierkam s dátumom) */
   roky?: KronikaRok[];
   kronika?: KronikaPolozka[];
+  /** KARTA 46 · stránka firmy (B2B): dorovnania, regióny, stena vďaky, ľudia, Kúp a pomôž, Fond, práca, o firme */
+  b2b?: B2BData;
+}
+
+/** KARTA 46 · dáta stránky firmy (B2B) — prototyp „B2B - Pekaren Dobrota" */
+export interface B2BData {
+  /** krátke meno firmy na titulke („Pekáreň Dobrota") */
+  kratko: string;
+  vetaMob: string;
+  /** DOROVNALI SME · NAŽIVO */
+  dorSum: string;
+  dorCisla: [string, string][];
+  /** živý pás: [suma, veta] — každých 5 s ďalší */
+  live: [string, string][];
+  regiony: { mesto: Mesto; foto: string; suma: string; zbierok: string; kto: string }[];
+  /** TERAZ DOROVNÁVAME: zbierky charít (štítok, názov, suma, cieľ, ešte X €) */
+  dorZb: { st: string; nazov: string; vyzbierane: number; ciel: number; este: string; foto: string; zbierkaId?: string }[];
+  /** STENA VĎAKY: poďakovania charít (Iskry druhu Zbierky · Ďakujeme firme) */
+  vdaka: { q: string; kto: string; foto: string; iskraId?: string }[];
+  zamCisla: [string, string][];
+  /** skutky zamestnancov — mená len so súhlasom S menom */
+  zamSk: { mesto: string; nazov: string; kto: string; foto: string }[];
+  kup: { kod: string; percento: number; nadpis: string; text: string; web: string; predajne: string };
+  fondText: string;
+  fondInfo: string;
+  praca: TestPraca[];
+  onas: string;
+  fakty: [string, string][];
+  stitCisla: [string, string][];
+  stitky: string[];
 }
 
 // ---- fotky (tie isté ukážkové ako inde v appke) ----
@@ -315,34 +345,71 @@ const CHARITA: TestProfil = {
 const DOROVNA = "Pekáreň Dobrota dorovnáva 1 : 1";
 const FIRMA: TestProfil = {
   k: "pekaren", typ: "firma", meno: "Pekáreň Dobrota s.r.o.", iniciala: "PD",
-  veta: "Pečieme od roku 2009. Časť z každého bochníka ide tam, kde je najbližšie treba.",
+  b2b: {
+    kratko: "Pekáreň Dobrota", vetaMob: "Časť z každého bochníka ide tam, kde predávame.",
+    dorSum: "12 480 €", dorCisla: [["1 312", "darov zdvojených"], ["7", "charít"], ["4 380 €", "ešte v rozpočte"]],
+    live: [["+20 €", "Lucia B. dala 10 €, pekáreň pridala 10 € · Strecha pre Horváthovcov"], ["+50 €", "Anonymný darca 25 €, pekáreň 25 € · Vozík pre Ninu"], ["+10 €", "Marek T. 5 €, pekáreň 5 € · Doučovanie v Tábori"]],
+    regiony: [
+      { mesto: "Trenčín", foto: U("photo-1519681393784-d120267933ba"), suma: "5 840 €", zbierok: "· 6 zbierok", kto: "Svetlo pomoci, ZŠ Hodžova, Klub Dukla" },
+      { mesto: "Prešov", foto: U("photo-1542601906990-b4d3fb778b09"), suma: "3 960 €", zbierok: "· 4 zbierky", kto: "Svetlo pomoci, Detský domov Prešov" },
+      { mesto: "Bratislava", foto: U("photo-1503454537195-1dcabb73ffb9"), suma: "2 680 €", zbierok: "· 3 zbierky", kto: "Nocľaháreň Mea Culpa, Seniori Rača" },
+    ],
+    dorZb: [
+      { st: "TRENČÍN · SVETLO POMOCI", nazov: "Strecha pre rodinu Horváthovú", vyzbierane: 8420, ciel: 12000, este: "1 840 €", foto: "/img/dom-strecha.jpg", zbierkaId: "fz-strecha-horvath" },
+      { st: "PREŠOV · DETSKÝ DOMOV", nazov: "Doučovanie v Tábori", vyzbierane: 640, ciel: 1500, este: "860 €", foto: U("photo-1503454537195-1dcabb73ffb9"), zbierkaId: "fz-doucovanie" },
+    ],
+    vdaka: [
+      { q: "Vďaka pekárni sme mali o polovicu kratšiu zbierku", kto: "Svetlo pomoci · 0:38", foto: "/img/dom-strecha.jpg", iskraId: "zb-pekaren" },
+      { q: "Každé ráno nám vozia chlieb pre 60 ľudí", kto: "Nocľaháreň Mea Culpa · 0:41", foto: U("photo-1542838132-92c53300491e") },
+      { q: "Nové dresy, ďakujeme", kto: "Klub Dukla Trenčín · 0:22", foto: U("photo-1517649763962-0c623066013b") },
+      { q: "Seniori sa tešia na piatky", kto: "Seniori Rača · 0:35", foto: U("photo-1516307365426-bea591f05011") },
+    ],
+    zamCisla: [["23", "zamestnancov pomáha"], ["108 h", "dobrovoľníctva"], ["41", "skutkov"]],
+    zamSk: [
+      { mesto: "TRENČÍN", nazov: "Napiekli sme 400 vianočiek pre seniorov", kto: "Jana K., Peter M. a 6 ďalších", foto: U("photo-1509440159596-0249088772ff") },
+      { mesto: "PREŠOV", nazov: "Upratali sme dvor jedálne", kto: "Tím predajne Hlavná", foto: U("photo-1556909114-f6e7ad7d3136") },
+      { mesto: "BRATISLAVA", nazov: "Raňajky v nocľahárni každý piatok", kto: "Marek T. a 3 ďalší", foto: U("photo-1542838132-92c53300491e") },
+    ],
+    kup: { kod: "DOBROTA5", percento: 5, nadpis: "Z každého nákupu ide 5 % do Fondu Dobroty", text: "Na webe alebo pri pokladni povedz kód. Uvidíš, kam išli tvoje centy.", web: "Na web Pekárne Dobrota", predajne: "Predajne: Bratislava · Trenčín · Prešov" },
+    fondText: "Peniaze z fondu rozdeľujeme charitám v regiónoch, kde predávame. Každé euro doložené.",
+    fondInfo: "Fond Dobroty spravuje pekáreň. Každý mesiac ho rozdelí overeným charitám v mestách, kde predáva, a zverejní, komu a koľko. Ak chceš poslať priamo charite, vyber zbierku vyššie.",
+    praca: [
+      { id: "fp-pekar", nazov: "Pekár/ka na nočnú zmenu", druh: "zamestnanec", text: "", mesto: "Bratislava", den: "20.", mesiac: "OKT", pod: "do 20. 10.", stitok: "TRVALÝ POMER", opis: "Kváskový chlieb, žiadne polotovary. Zaučíme ťa, stačí chuť a spoľahlivosť.", kde: "Bratislava · Rača", kedy: "nočné zmeny 22 – 6", odmena: "od 1 250 € v hrubom" },
+      { id: "fp-vodic", nazov: "Vodič rozvozu", druh: "brigadnik", text: "", mesto: "Trenčín", den: "30.", mesiac: "OKT", pod: "do 30. 10.", stitok: "BRIGÁDA", opis: "Ranný rozvoz do predajní a výdajní charít. Auto máme.", kde: "Trenčín", kedy: "po – pi 4:30 – 8:30", odmena: "7 € na hodinu" },
+    ],
+    onas: "Rodinná pekáreň od roku 2009, 86 ľudí, 3 predajne. Pečieme kváskový chlieb a od roku 2024 vraciame časť z každého bochníka tam, kde predávame.",
+    fakty: [["Obchodné meno", "Pekáreň Dobrota s.r.o."], ["IČO", "00 000 001"], ["Sídlo", "Hlavná 5, Bratislava"], ["Web", "pekarendobrota.sk"]],
+    stitCisla: [["100 %", "dorovnaní vyplatených"], ["7", "charít"], ["3", "regióny"]],
+    stitky: ["Bratislava · sídlo", "v DEED+ od 2024", "Overená firma · IČO"],
+  },
+  veta: "Pečieme od roku 2009. Časť z každého bochníka ide tam, kde predávame.",
   mesto: "Bratislava", stit: "Gold", odRoku: 2024,
   stitky: ["Bratislava", "od 2024", "Overená firma · IČO"],
   ico: "36 987 654", ucet: "SK70 1100 0000 0029 1234 5678",
   sidlo: "Račianska 4, Bratislava", kontakt: "dobro@pekarendobrota.sk",
   cisla: [["61 300 €", "darované"], ["12", "podporených zbierok"], ["24", "skutky zamestnancov"]],
   stitCisla: [["100 %", "doložené"], ["24", "skutkov"], ["842", "sledujúcich"]],
-  centralna: sektor("c-pekaren", "Fond Dobroty", "centralna", F.pecivo, 18200, 310, {
+  centralna: sektor("c-pekaren", "Kde treba najviac", "centralna", F.pecivo, 18200, 96, {
     "Trenčín": { dlazdica: "Trenčín: 1 400 € v septembri", minulyMesiac: "V Trenčíne v septembri: 800 € jedlo · 600 € opravy", uvidis: "Uvidíš, ktoré zbierky sme dorovnali", rozpis: [["jedlo", 57], ["opravy", 43]] },
     "Prešov": { dlazdica: "Prešov: 1 100 € v septembri", minulyMesiac: "V Prešove v septembri: 700 € jedlo · 400 € doučovanie", uvidis: "Uvidíš, ktoré zbierky sme dorovnali", rozpis: [["jedlo", 64], ["doučovanie", 36]] },
     "Bratislava": { dlazdica: "Bratislava: 2 300 € v septembri", minulyMesiac: "V Bratislave v septembri: 1 200 € pečivo do výdajní · 700 € oblečenie · 400 € šport", uvidis: "Uvidíš, ktoré zbierky sme dorovnali", rozpis: [["pečivo", 52], ["oblečenie", 30], ["šport", 18]] },
-  }),
+  }, { mesiac: 2860, mesacne: 58, kam: "Fond rozdeľujeme charitám v Trenčíne, Prešove a Bratislave. Minulý mesiac: 4 zbierky, 1 760 € a 600 bochníkov.", tipy: [[5, "10 bochníkov do výdajne"], [10, "desiata pre triedu"], [20, "raňajky v nocľahárni na týždeň"]] }),
   sektory: [
-    sektor("f-sport", "Deti a šport", "sektor", F.sport, 7200, 118, {
+    sektor("f-sport", "Deti a šport", "sektor", F.sport, 7200, 41, {
       "Trenčín": { dlazdica: "Trenčín: 2 kluby", minulyMesiac: "V Trenčíne sme platili dres a štartovné dvom detským klubom.", uvidis: "Uvidíš, ktoré kluby sme podporili", rozpis: [["dresy", 55], ["štartovné", 45]] },
       "Prešov": { dlazdica: "Prešov: 18 detí", minulyMesiac: "V Prešove chodí 18 detí na florbal zadarmo.", uvidis: "Uvidíš, koľko detí hrá", rozpis: [["tréningy", 70], ["výstroj", 30]] },
       "Bratislava": { dlazdica: "Bratislava: nové ihrisko", minulyMesiac: "V Bratislave sme doplatili povrch ihriska na Račianskej.", uvidis: "Uvidíš fotky z ihriska", rozpis: [["stavba", 85], ["vybavenie", 15]] },
-    }),
-    sektor("f-seniori", "Seniori", "sektor", F.seniori, 5400, 87, {
+    }, { mesiac: 940, mesacne: 22, kam: "Dresy, lopty a desiaty pre detské kluby v našich mestách.", tipy: [[5, "desiata na tréning"], [10, "lopta pre klub"], [20, "dres pre dieťa"]] }),
+    sektor("f-seniori", "Seniori", "sektor", F.seniori, 5400, 53, {
       "Trenčín": { dlazdica: "Trenčín: 40 raňajok denne", minulyMesiac: "V Trenčíne sme vozili pečivo do jedálne, 40 raňajok denne.", uvidis: "Uvidíš, koľko pečiva sme odviezli", rozpis: [["pečivo", 80], ["doprava", 20]] },
       "Prešov": { dlazdica: "Prešov: obedy pre 20", minulyMesiac: "V Prešove sme dorovnali rozvoz obedov pre 20 seniorov.", uvidis: "Uvidíš, koľko obedov sme dorovnali", rozpis: [["jedlo", 75], ["doprava", 25]] },
       "Bratislava": { dlazdica: "Bratislava: 400 vianočiek", minulyMesiac: "V Bratislave sme napiekli 400 vianočiek pre domovy seniorov.", uvidis: "Uvidíš, kam sme ich odviezli", rozpis: [["pečenie", 70], ["doprava", 30]] },
-    }),
-    sektor("f-komunita", "Komunita v regióne", "sektor", F.komunita, 4800, 64, {
+    }, { mesiac: 1120, mesacne: 31, kam: "Čerstvé pečivo a nákupy pre osamelých seniorov.", tipy: [[5, "pečivo na týždeň"], [10, "nákup domov"], [20, "obedy na týždeň"]] }),
+    sektor("f-komunita", "Komunita v regióne", "sektor", F.komunita, 4800, 37, {
       "Trenčín": { dlazdica: "Trenčín: 3 akcie", minulyMesiac: "V Trenčíne sme pečivom zasponzorovali tri mestské akcie.", uvidis: "Uvidíš, na akých akciách sme boli", rozpis: [["pečivo", 65], ["réžia", 35]] },
       "Prešov": { dlazdica: "Prešov: nová pec v jedálni", minulyMesiac: "V Prešove sme kúpili pec do jedálne na Hlavnej.", uvidis: "Uvidíš, čo sme kúpili", rozpis: [["vybavenie", 90], ["montáž", 10]] },
       "Bratislava": { dlazdica: "Bratislava: 12 zamestnancov", minulyMesiac: "V Bratislave odpracovali naši ľudia 96 hodín vo výdajni.", uvidis: "Uvidíš, koľko hodín sme odpracovali", rozpis: [["dobrovoľníctvo", 100]] },
-    }),
+    }, { mesiac: 800, mesacne: 19, kam: "Lavičky, ihriská a susedské akcie v mestách, kde pečieme.", tipy: [[5, "kvetináč na sídlisko"], [10, "vstup na akciu pre rodinu"], [20, "kus lavičky"]] }),
   ],
   zbierky: [
     { id: "fz-strecha-horvath", nazov: "Strecha pre rodinu Horváthovú", popis: "Zbierka Svetla pomoci. Dorovnávame každé euro až do 300 € na darcu.", mesto: "Trenčín", foto: F.poziar, vyzbierane: 8420, ciel: 12000, ludia: 148, stav: "bezi", konciDni: 9, dorovnanie: `${DOROVNA} · ešte 1 380 €` },

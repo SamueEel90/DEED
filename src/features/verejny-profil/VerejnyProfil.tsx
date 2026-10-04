@@ -1,5 +1,5 @@
 // KARTA 43 · verejné profily (test). Jedna obrazovka, návrh podľa typu:
-//   charita → Kronika · firma → Výklad (v2) · tvorca → Pirát (v4).
+//   charita → Kronika / Výklad / Pirát (KARTA 45, testovací prepínač) · firma → stránka firmy (KARTA 46) · tvorca → Pirát (v4).
 // KARTA 43 ZMENA: režim „vsade" zrušený — platobný modul sa otvorí len po ťuku na zbierku/skutok.
 // VerejnyProfilView sa dá vložiť priamo (feed, „Stránka organizácie", adresár),
 // VerejnyProfilHost je celoobrazovková vrstva otváraná zo store (tlačidlo v Správe, QR).
@@ -12,7 +12,7 @@ import { TESTOVACIA } from "@/lib/testovacia";
 import { Kronika } from "./Kronika";
 import { VykladCharita } from "./VykladCharita";
 import { PiratCharita } from "./PiratCharita";
-import { Vyklad } from "./Vyklad";
+import { StrankaFirmy } from "./StrankaFirmy";
 import { Pirat } from "./Pirat";
 
 /** vložiteľný verejný profil podľa kľúča stránky (svetlo · pekaren · tvorca) */
@@ -30,7 +30,7 @@ export function VerejnyProfilView({ kluc, onBack }: { kluc: string; onBack: () =
     </div>
   );
 
-  if (profil.typ === "firma") return <Vyklad profil={profil} onDetail={setDetail} onBack={onBack} />;
+  if (profil.typ === "firma") return <StrankaFirmy profil={profil} onDetail={setDetail} onBack={onBack} />; // KARTA 46
   if (profil.typ === "tvorca") return <Pirat profil={profil} onDetail={setDetail} onBack={onBack} />;
   const prepinac = TESTOVACIA ? <PrepinacPodania /> : undefined;
   if (podanie === "pirat") return <PiratCharita profil={profil} onDetail={setDetail} onBack={onBack} prepinac={TESTOVACIA ? <PrepinacPodania tmavy /> : undefined} />;
