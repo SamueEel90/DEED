@@ -39,6 +39,18 @@ export { TESTOVACIA } from "@/lib/testovacia";
 
 /** KARTA 34: koniec registrácie charity → appka otvorí Profil a v ňom Správu charity (jednorazový príznak) */
 const KLUC_SPRAVA = "deed.otvorSpravuCharity";
-export function otvorSpravuPoRegistracii() { try { sessionStorage.setItem(KLUC_SPRAVA, "1"); } catch { /* SS */ } }
-export function cakaOtvorenieSpravy(): boolean { try { return sessionStorage.getItem(KLUC_SPRAVA) === "1"; } catch { return false; } }
+/** KARTA 44: ciel „program" = Správa rovno na Program a predplatné */
+export function otvorSpravuPoRegistracii(ciel: "prehlad" | "program" = "prehlad") { try { sessionStorage.setItem(KLUC_SPRAVA, ciel === "program" ? "program" : "1"); } catch { /* SS */ } }
+export function cakaOtvorenieSpravy(): boolean { try { return !!sessionStorage.getItem(KLUC_SPRAVA); } catch { return false; } }
+export function cakaProgramPoRegistracii(): boolean { try { return sessionStorage.getItem(KLUC_SPRAVA) === "program"; } catch { return false; } }
+
+/** KARTA 44: koniec registrácie osoby → appka otvorí Profil (jednorazový príznak) */
+const KLUC_PROFIL = "deed.otvorProfil";
+export function otvorProfilPoRegistracii() { try { sessionStorage.setItem(KLUC_PROFIL, "1"); } catch { /* SS */ } }
+export function vezmiOtvorenieProfilu(): boolean { try { const a = sessionStorage.getItem(KLUC_PROFIL) === "1"; sessionStorage.removeItem(KLUC_PROFIL); return a; } catch { return false; } }
+
+/** KARTA 44: organizácia sa pridáva z osobného účtu — po prihlásení / registrácii osoby pokračuj registráciou organizácie */
+const KLUC_ORG = "deed.reg.org";
+export function cakajRegistraciuOrg(a: boolean) { try { if (a) sessionStorage.setItem(KLUC_ORG, "1"); else sessionStorage.removeItem(KLUC_ORG); } catch { /* SS */ } }
+export function cakaRegistraciaOrg(): boolean { try { return sessionStorage.getItem(KLUC_ORG) === "1"; } catch { return false; } }
 export function zrusOtvorenieSpravy() { try { sessionStorage.removeItem(KLUC_SPRAVA); } catch { /* SS */ } }

@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef, lazy, Suspense, type CSSProperties } from "react";
-import { cakaOtvorenieSpravy } from "@/lib/mojeStranky";
+import { cakaOtvorenieSpravy, vezmiOtvorenieProfilu, cakaRegistraciaOrg, cakajRegistraciuOrg } from "@/lib/mojeStranky";
 import { useStitAppky } from "@/lib/stitAppky";
 import "@/styles/sprava.css";
 import { LazyMotion, domAnimation, MotionConfig } from "motion/react";
@@ -187,6 +187,16 @@ export function Screens({ wide, desktop }: { wide?: boolean; desktop?: boolean }
   });
   // KARTA 34: registrácia charity skončila (session práve vznikla) → Profil, ten otvorí Správu charity
   useEffect(() => { if (session && cakaOtvorenieSpravy()) setModul("profil"); }, [session]);
+  // KARTA 44: koniec registrácie osoby → Profil; organizácia sa pridáva z osobného účtu → po prihlásení vrstva registrácie organizácie
+  const [orgReg, setOrgReg] = useState(false);
+  const [profilKluc, setProfilKluc] = useState(0);
+  useEffect(() => {
+    if (!session) return;
+    if (vezmiOtvorenieProfilu()) setModul("profil");
+    if (cakaRegistraciaOrg() && !("demo" in session && session.demo)) setOrgReg(true);
+  }, [session]);
+  // KARTA 44: Úvod sa ukáže pred registráciou (raz); kto ho videl, ide rovno na registráciu
+  const [uvodVideny, setUvodVideny] = useState(() => { try { return !!localStorage.getItem("deed.intro.v1"); } catch { return true; } });
   const [taby, setTaby] = useState<string[]>(nacitajTaby);
   const [viac, setViac] = useState(false);
   const [galeria, setGaleria] = useState<{ fotky: string[]; index: number } | null>(null);
@@ -225,16 +235,13 @@ export function Screens({ wide, desktop }: { wide?: boolean; desktop?: boolean }
   useVrstva(!!galeria, () => setGaleria(null));
   useVrstva(upgradeOpen, () => setUpgradeOpen(false));
   useVrstva(aktivacia, () => setAktivacia(false));
+  useVrstva(orgReg, () => { setOrgReg(false); cakajRegistraciuOrg(false); });
   useVrstva(!!badgeSheet, () => setBadgeSheet(null));
   useVrstva(!!splitSheet, () => setSplitSheet(null));
   useVrstva(!!chainSheet, () => setChainSheet(null));
   useVrstva(intro || akoFunguje, () => { setIntro(false); setAkoFunguje(false); });
 
-  // prvé spustenie: po prihlásení/registrácii ukáž intro sprievodcu (raz)
-  useEffect(() => {
-    if (!session) return;
-    try { if (!localStorage.getItem("deed.intro.v1")) setIntro(true); } catch { /* private mode */ }
-  }, [session]);
+  // KARTA 44: po prihlásení sa sprievodca už sám neotvára (Úvod beží pred registráciou, ďalej len cez „Ako funguje DEED+")
 
   // obnova hesla: klik na odkaz z emailu → Supabase PASSWORD_RECOVERY → obrazovka nového hesla
   useEffect(() => subscribeRecovery(() => setObnovaHesla(true)), []);
@@ -311,6 +318,12 @@ export function Screens({ wide, desktop }: { wide?: boolean; desktop?: boolean }
   // §1 — bez prihlásenia zobraz registráciu (príp. resume rozrobeného onboardingu);
   // po dokončení flow zavolá setSession → useSession re-renderuje → appka.
   if (!session) {
+    if (!uvodVideny && !resumeInfo) {
+      return (
+        <div style={{ height: "100%", position: "relative" }}>
+          <IntroPruvodca onClose={() => { try { localStorage.setItem("deed.intro.v1", "1"); } catch { /* private mode */ } setUvodVideny(true); }} />
+        </div>);
+    }
     return <Registracia onHotovo={() => {}} resume={resumeInfo ?? undefined} />;
   }
 
@@ -357,7 +370,7 @@ export function Screens({ wide, desktop }: { wide?: boolean; desktop?: boolean }
             {modul === "help" && <ModulHelp wide={wide} />}
             {modul === "charita" && <ModulCharita wide={wide} otvorModul={prepni} />}
             {modul === "nabozenstvo" && <ModulViera wide={wide} otvorModul={prepni} />}
-            {modul === "profil" && <ModulProfil wide={wide} walletReq={walletReq} />}
+            {modul === "profil" && <ModulProfil key={profilKluc} wide={wide} walletReq={walletReq} />}
             {modul === "vyzva" && <ModulAktivity wide={wide} />}
             {modul === "mapa" && <ModulMapa wide={wide} />}
             {modul === "top" && <ModulTop wide={wide} />}
@@ -412,6 +425,16 @@ export function Screens({ wide, desktop }: { wide?: boolean; desktop?: boolean }
             onClose={() => setUpgradeOpen(false)}
             onAktivovat={() => { setUpgradeOpen(false); setAktivacia(true); }}
           />
+        )}
+
+        {/* KARTA 44: registrácia organizácie z osobného účtu (po prihlásení / registrácii osoby) */}
+        {orgReg && (
+          <div style={{ position: "absolute", inset: 0, zIndex: 80, background: C.bg }}>
+            <Registracia start="organizacia" onHotovo={() => {
+              setOrgReg(false); cakajRegistraciuOrg(false);
+              if (cakaOtvorenieSpravy()) { if (modul !== "profil") pushModul("profil"); setModul("profil"); setProfilKluc((k) => k + 1); }
+            }} />
+          </div>
         )}
 
         {/* overlay aktívnej registrácie (po kliku „Stať sa aktívnym") */}

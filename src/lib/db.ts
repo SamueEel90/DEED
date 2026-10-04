@@ -67,6 +67,8 @@ export async function spustiKyc(ucetId: string, sposob = "nove") {
 export async function najdiIco(ico: string): Promise<RegistrIcoVysledok> {
   await cakaj(700);
   const cislo = (ico || "").replace(/\D/g, "");
+  // ukážkové IČO z prototypu registrácie (karta 44)
+  if (cislo === "12345678") return { ico: cislo, nazov: "Svetlo pomoci o.z.", sidlo: "Mierové nám. 1, Trenčín", datum_vzniku: "2023-03-14", pravna_forma: "Občianske združenie" };
   return {
     ico: cislo || ico,
     nazov: "OZ Pomoc " + (cislo.slice(-3) || "001"),
@@ -155,6 +157,28 @@ export async function nastavZabezpecenie(ucetId: string, { pin, biometria = fals
     .update({ pin_hash, biometria, stav_registracie: "udaje", aktualizovane: teraz() })
     .eq("id", ucetId);
   if (error) throw error;
+}
+
+// KARTA 44 · telefón overený SMS je kľúč účtu (1 telefón = 1 účet). Pri 1b vzniká účet až po e-maile a hesle,
+// telefón sa preto zapíše dodatočne. Server (Samuel): unique na telefon + RLS na update vlastného účtu.
+export async function ulozOverenyTelefon(ucetId: string, telefon: string) {
+  const tel = (telefon || "").replace(/\s+/g, "");
+  const { error } = await db().from("ucet").update({ telefon: tel, telefon_overeny: true, aktualizovane: teraz() }).eq("id", ucetId);
+  if (error) throw error;
+}
+
+// KARTA 44 · organizácia sa pridáva z osobného účtu: nový ucet typu charita bez vlastného prihlásenia,
+// prepojený na osobu (správca / štatutár). Server (Samuel): ucet bez telefónu a auth_id + RLS pre správcu.
+export async function vytvorOrganizaciuPodOsobou(osobaUcetId: string, typ = "charita") {
+  const c = db();
+  const { data, error } = await c
+    .from("ucet")
+    .insert({ typ, telefon_overeny: false, email_overeny: false, stav_registracie: "kyb" })
+    .select("id, typ, poradove_cislo, stav_registracie")
+    .single();
+  if (error) throw error;
+  await prepojStatutara(data.id, osobaUcetId, "správca (registroval)");
+  return data;
 }
 
 export async function dokonciRegistraciu(ucetId: string) {

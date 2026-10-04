@@ -1,0 +1,16 @@
+/* KARTA 44 · registrácia 1b — animácie z prototypu (Registracia - navrhy.dc.html), len transform/opacity.
+   Mená s predponou rg, aby sa nebili s Úvodom (uvitanie.css). Farby berie .deed-platba, tu len --panel. */
+.deed-reg { --panel: #F2EEE6; font-family: 'Plus Jakarta Sans', -apple-system, sans-serif; }
+html.dark .deed-reg { --panel: #1A1711; }
+.deed-reg input::placeholder { color: var(--ink4); font-weight: 500; }
+@keyframes rgGlow { 0%, 100% { opacity: .75; transform: scale(1) } 50% { opacity: 1; transform: scale(1.08) } }
+@keyframes rgHover { 0%, 100% { transform: translateY(0) } 50% { transform: translateY(-10px) } }
+@keyframes rgSprite { from { transform: translateX(0) } to { transform: translateX(-100%) } }
+@keyframes rgJoy { 0%, 100% { transform: translateY(0) scale(1) rotate(0) } 20% { transform: translateY(-26px) scale(1.12) rotate(-8deg) } 40% { transform: translateY(0) scale(.96) rotate(0) } 55% { transform: translateY(-14px) scale(1.06) rotate(8deg) } 70% { transform: translateY(0) scale(1) } }
+@keyframes rgSpark { 0% { opacity: 0; transform: scale(.2) } 25% { opacity: 1; transform: scale(1) } 100% { opacity: 0; transform: scale(.4) translateY(-22px) } }
+@keyframes rgBub { 0% { opacity: 0; transform: translateY(8px) scale(.96) } 100% { opacity: 1; transform: none } }
+@keyframes rgVstup { 0% { opacity: 0; transform: translateY(10px) } 100% { opacity: 1; transform: translateY(0) } }
+@keyframes rgToc { to { transform: rotate(360deg) } }
+.deed-reg .rg-sprite { animation: rgSprite .55s steps(10) infinite; }
+.deed-reg .rg-vstup { animation: rgVstup .35s ease both; }
+@media (prefers-reduced-motion: reduce) { .deed-reg *, .deed-reg *::before { animation: none !important; transition: none !important; } }

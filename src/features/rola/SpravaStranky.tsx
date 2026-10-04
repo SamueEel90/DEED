@@ -25,6 +25,7 @@ import { otvorVerejnyProfil } from "@/features/verejny-profil/otvor";
 import { najdiTestProfil } from "@/lib/testProfily";
 import { nacitajProfil, profilZPamate, uplnostProfilu, type ProfilStranky } from "@/lib/profilStranky";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { cakaProgramPoRegistracii } from "@/lib/mojeStranky";
 import { createPortal } from "react-dom";
 import "@/styles/sprava.css";
 import { useLayout, useMotiv } from "@/components/context";
@@ -243,7 +244,7 @@ export function SpravaStranky({ onBack, typ: typStranky = "charita", strankaId =
   const tablet = wide && !desktop; // OPRAVY 96: tablet 760–1179 px má vlastné rozloženie
   const telefon = !desktop && !tablet; // KARTA 42: telefón pod 760 px — nové rozloženie
   const [pridat, setPridat] = useState(false); // KARTA 42: + → hárok Pridať
-  const [sub, setSub] = useState<Sub>(null);
+  const [sub, setSub] = useState<Sub>(() => (cakaProgramPoRegistracii() ? "n:program" : null)); // KARTA 44: koniec registrácie → Program a predplatné
   // OPRAVY 95: zbalené sekcie Prehľadu (mobil + tablet), pamätá sa v účte správcu ako Pripnuté
   const [zbal, setZbal] = useState<Zbalenie>(() => zbalenieZPamate(strankaId));
   useEffect(() => { let ziva = true; void nacitajZbalenie(strankaId).then((z) => { if (ziva) setZbal(z); }); return () => { ziva = false; }; }, [strankaId]);
@@ -311,7 +312,8 @@ export function SpravaStranky({ onBack, typ: typStranky = "charita", strankaId =
 
   const otvorPolozku = (id: PolozkaSpravy) => otvor(id === "zbierky" ? "g_zbierky" : id);
   // pri zmene typu (DEV) späť na Prehľad, nech nezostane otvorená vypnutá položka
-  useEffect(() => { hist.current = []; setSub(null); }, [typ]);
+  const typPred = useRef(typ);
+  useEffect(() => { if (typPred.current === typ) return; typPred.current = typ; hist.current = []; setSub(null); }, [typ]);
   const prepniPin = (id: PolozkaSpravy) => {
     if (piny.includes(id)) { const n = piny.filter((x) => x !== id); setPiny(n); void ulozPiny(strankaId, n); }
     else if (piny.length < PIN_MAX) { const n = [...piny, id]; setPiny(n); void ulozPiny(strankaId, n); }

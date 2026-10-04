@@ -31,7 +31,8 @@ type Rezim = "login" | "register";
 // onAuthed — po úspešnom logine (ktorý potrebuje onboarding) alebo registrácii:
 // pokračuje na „Kto si?" / do rozrobeného flow. Login onboardnutého usera
 // nastaví session priamo (resolveSession) a appka sa zobrazí reaktívne.
-export function AuthPage({ onAuthed, onGuest, onPasivny, uvodnyRezim = "login" }: { onAuthed: (authId: string, email: string, typ?: TypUctu) => void; onGuest?: () => void; onPasivny?: () => void; uvodnyRezim?: Rezim }) {
+// KARTA 44: onRegistrovat = registrácia beží v toku 1b (Registracia.tsx) — prepínač Prihlásenie / Registrácia sa skryje
+export function AuthPage({ onAuthed, onGuest, onPasivny, onRegistrovat, uvodnyRezim = "login" }: { onAuthed: (authId: string, email: string, typ?: TypUctu) => void; onGuest?: () => void; onPasivny?: () => void; onRegistrovat?: () => void; uvodnyRezim?: Rezim }) {
   const [rezim, setRezim] = useState<Rezim>(uvodnyRezim);
   const [email, setEmail] = useState("");
   const [heslo, setHeslo] = useState("");
@@ -117,7 +118,7 @@ export function AuthPage({ onAuthed, onGuest, onPasivny, uvodnyRezim = "login" }
         </div>
 
         {/* prepínač Prihlásenie / Registrácia */}
-        <div style={{ display: "flex", padding: SPACE.xxs, borderRadius: RADIUS.md, background: C.surface2, border: `1px solid ${C.line}`, marginBottom: SPACE.lg }}>
+        {!onRegistrovat && <div style={{ display: "flex", padding: SPACE.xxs, borderRadius: RADIUS.md, background: C.surface2, border: `1px solid ${C.line}`, marginBottom: SPACE.lg }}>
           {([["login", "Prihlásenie"], ["register", "Registrácia"]] as const).map(([r, label]) => {
             const on = rezim === r;
             return (
@@ -129,7 +130,7 @@ export function AuthPage({ onAuthed, onGuest, onPasivny, uvodnyRezim = "login" }
               }}>{label}</button>
             );
           })}
-        </div>
+        </div>}
 
         {/* formulár — Enter v ľubovoľnom poli odošle (submit) */}
         <form onSubmit={(e) => { e.preventDefault(); submit(); }} noValidate>
@@ -206,7 +207,7 @@ export function AuthPage({ onAuthed, onGuest, onPasivny, uvodnyRezim = "login" }
         {/* prepnutie režimu + hosť */}
         <div style={{ textAlign: "center", marginTop: SPACE.lg, fontSize: 13, color: C.textSec }}>
           {jeLogin ? "Nemáš účet? " : "Už máš účet? "}
-          <button type="button" onClick={() => prepniRezim(jeLogin ? "register" : "login")} style={{ ...linkBtn, fontSize: 13, fontWeight: 800, color: C.green }}>
+          <button type="button" onClick={() => (onRegistrovat && jeLogin ? onRegistrovat() : prepniRezim(jeLogin ? "register" : "login"))} style={{ ...linkBtn, fontSize: 13, fontWeight: 800, color: C.green }}>
             {jeLogin ? "Zaregistruj sa" : "Prihlás sa"}
           </button>
         </div>
