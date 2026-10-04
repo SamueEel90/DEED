@@ -171,3 +171,97 @@ export function naZbierkaData(z: TestZbierka, profil: TestProfil): ZbierkaData {
     },
   };
 }
+
+// ============================================================
+// KARTA 45 · „Hľadáme ľudí" = modrý plagát (nie oznam). PC celý, tablet a mobil zbalený (ťuk rozbalí).
+// ============================================================
+import type { TestPraca } from "@/lib/testProfily";
+const PLAGAT_BG = "linear-gradient(160deg,#2C5576 0%,#3D6B8E 60%,#4F7FA3 100%)";
+function PlagatUdaje({ j }: { j: TestPraca }) {
+  return (<>
+    <div style={{ display: "grid", gridTemplateColumns: "auto minmax(0,1fr)", gap: "4px 12px", fontSize: 13.5, padding: "8px 0", borderTop: "1px solid rgba(255,255,255,.22)", borderBottom: "1px solid rgba(255,255,255,.22)" }}>
+      <span style={{ opacity: 0.75 }}>Kde</span><b>{j.kde}</b>
+      <span style={{ opacity: 0.75 }}>Kedy</span><b>{j.kedy}</b>
+      <span style={{ opacity: 0.75 }}>Odmena</span><b>{j.odmena}</b>
+    </div>
+    <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
+      <button type="button" style={{ height: 46, padding: "0 20px", border: "none", borderRadius: 14, background: "#fff", cursor: "pointer", fontSize: 15, fontWeight: 800, color: "#2C5576", boxShadow: "none" }}>Mám záujem</button>
+      <span style={{ fontSize: 12.5, opacity: 0.85 }}>{j.zaujem}</span>
+    </span>
+  </>);
+}
+export function PlagatPrace({ praca, zbaleny, nadpis = true }: { praca: TestPraca[]; zbaleny?: boolean; nadpis?: boolean }) {
+  const [otv, setOtv] = useState<Record<string, boolean>>({});
+  if (!praca.length) return null;
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 10, paddingTop: 6 }}>
+      {nadpis && <span style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: ".1em", color: "var(--blue)" }}>HĽADÁME ĽUDÍ</span>}
+      {praca.map((j) => zbaleny ? (
+        <article key={j.id} style={{ position: "relative", borderRadius: 20, overflow: "hidden", background: PLAGAT_BG, color: "#fff", display: "flex", flexDirection: "column", boxShadow: "0 10px 24px rgba(30,60,90,.25)" }}>
+          <button type="button" onClick={() => setOtv((o) => ({ ...o, [j.id]: !o[j.id] }))} aria-expanded={!!otv[j.id]}
+            style={{ minHeight: 64, padding: "12px 10px 12px 16px", border: "none", background: "transparent", boxShadow: "none", cursor: "pointer", textAlign: "left", color: "#fff", display: "flex", alignItems: "center", gap: 10, fontFamily: "inherit" }}>
+            <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 3 }}>
+              <span style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: ".08em", opacity: 0.85 }}>{j.stitok} · {j.pod}</span>
+              <b style={{ fontSize: 17, lineHeight: 1.2 }}>{j.nazov}</b>
+            </span>
+            <span style={{ flex: "none", width: 36, height: 36, borderRadius: 18, background: "rgba(255,255,255,.15)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" style={{ transform: `rotate(${otv[j.id] ? 180 : 0}deg)`, transition: "transform .25s ease" }}><path d="M6 9l6 6 6-6" /></svg>
+            </span>
+          </button>
+          {otv[j.id] && <div style={{ padding: "0 16px 16px", display: "flex", flexDirection: "column", gap: 10 }}>
+            <span style={{ fontSize: 14, lineHeight: 1.45, opacity: 0.92 }}>{j.opis}</span>
+            <PlagatUdaje j={j} />
+          </div>}
+        </article>
+      ) : (
+        <article key={j.id} style={{ position: "relative", borderRadius: 22, overflow: "hidden", background: PLAGAT_BG, color: "#fff", padding: "18px 18px 16px", display: "flex", flexDirection: "column", gap: 10, boxShadow: "0 12px 28px rgba(30,60,90,.28)" }}>
+          <span aria-hidden="true" style={{ position: "absolute", right: -30, top: -30, width: 130, height: 130, borderRadius: "50%", border: "16px solid rgba(255,255,255,.08)" }} />
+          <span style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+            <span style={{ height: 26, padding: "0 10px", borderRadius: 13, background: "#fff", color: "#2C5576", fontSize: 11, fontWeight: 800, letterSpacing: ".06em", display: "flex", alignItems: "center", whiteSpace: "nowrap" }}>{j.stitok}</span>
+            <span style={{ fontSize: 12.5, fontWeight: 700, opacity: 0.85 }}>{j.pod}</span>
+          </span>
+          <b style={{ position: "relative", fontSize: 24, lineHeight: 1.15, letterSpacing: "-.01em" }}>{j.nazov}</b>
+          <span style={{ fontSize: 14, lineHeight: 1.45, opacity: 0.92 }}>{j.opis}</span>
+          <PlagatUdaje j={j} />
+        </article>
+      ))}
+    </div>
+  );
+}
+
+/** KARTA 45 · dlhý príbeh zbierky: N riadkov + „Čítať celý príbeh ›" (ťuk rozbalí celý text) */
+export function PribehText({ text, riadky = 6, fs = 14.5, farba = "var(--ink2)", odkaz = "var(--green)" }: { text: string; riadky?: number; fs?: number; farba?: string; odkaz?: string }) {
+  const [cely, setCely] = useState(false);
+  return (<>
+    <span style={{ display: "-webkit-box", WebkitBoxOrient: "vertical", WebkitLineClamp: cely ? "unset" : riadky, overflow: "hidden", fontSize: fs, lineHeight: 1.5, color: farba } as CSSProperties}>{text}</span>
+    {!cely && <span role="button" tabIndex={0} onClick={(e) => { e.stopPropagation(); setCely(true); }} onKeyDown={(e) => { if (e.key === "Enter") { e.stopPropagation(); setCely(true); } }}
+      style={{ alignSelf: "flex-start", minHeight: 44, margin: "-12px 0", display: "flex", alignItems: "center", fontSize: 13.5, fontWeight: 800, color: odkaz, cursor: "pointer" }}>Čítať celý príbeh ›</span>}
+  </>);
+}
+
+// ============================================================
+// KARTA 45 · testovací prepínač podania charity (Kronika · Výklad · Pirát) — len testovacia verzia, pamätá sa lokálne
+// ============================================================
+export type Podanie = "kronika" | "vyklad" | "pirat";
+const KLUC_PODANIE = "deed.dev.podanieCharity";
+const podaniePosl = new Set<() => void>();
+export function nacitajPodanie(): Podanie { try { const v = localStorage.getItem(KLUC_PODANIE); return v === "vyklad" || v === "pirat" ? v : "kronika"; } catch { return "kronika"; } }
+export function usePodanie(): [Podanie, (p: Podanie) => void] {
+  const [p, setP] = useState<Podanie>(nacitajPodanie);
+  useEffect(() => { const f = () => setP(nacitajPodanie()); podaniePosl.add(f); return () => { podaniePosl.delete(f); }; }, []);
+  return [p, (n: Podanie) => { try { localStorage.setItem(KLUC_PODANIE, n); } catch { /* LS */ } podaniePosl.forEach((f) => f()); }];
+}
+export function PrepinacPodania({ tmavy, style }: { tmavy?: boolean; style?: CSSProperties }) {
+  const [p, setP] = usePodanie();
+  const vol: [Podanie, string][] = [["kronika", "Kronika"], ["vyklad", "Výklad"], ["pirat", "Pirát"]];
+  return (
+    <div role="group" aria-label="Zobrazenie profilu (test)" style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", ...style }}>
+      <span style={{ fontSize: 12.5, fontWeight: 800, color: tmavy ? "rgba(255,255,255,.8)" : "var(--ink3)", marginRight: 2 }}>Zobrazenie:</span>
+      {vol.map(([k, t]) => {
+        const on = p === k;
+        return <button key={k} type="button" aria-pressed={on} onClick={() => setP(k)}
+          style={{ height: 44, padding: "0 14px", borderRadius: 22, border: `1.5px solid ${on ? "var(--green)" : tmavy ? "rgba(255,255,255,.35)" : "var(--cardBd)"}`, background: on ? "var(--green)" : tmavy ? "rgba(0,0,0,.25)" : "var(--card)", color: on ? "#fff" : tmavy ? "#fff" : "var(--ink2)", fontSize: 14, fontWeight: 800, cursor: "pointer", fontFamily: "inherit", boxShadow: "none" }}>{t}</button>;
+      })}
+    </div>
+  );
+}

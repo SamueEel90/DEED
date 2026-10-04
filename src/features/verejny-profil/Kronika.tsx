@@ -10,7 +10,7 @@ import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type 
 import { eur, pct, tvar, vLokalite, type Lokalita, type TestProfil, type TestZbierka } from "@/lib/testProfily";
 import { ISKRY_CFG, iskraViditelna, iskryVsetky, useZmenyIskier, zbierkaIskry, type Iskra } from "@/lib/iskry";
 import { otvorIskry } from "@/features/iskry/otvor";
-import { DOK, LokalitaPrepinac, MESIACE, StitCare, StitOkno, kovText, nazovStitu, norm, useDomaceMesto, useMobil } from "./casti";
+import { DOK, LokalitaPrepinac, MESIACE, PlagatPrace, PribehText, StitCare, StitOkno, kovText, nazovStitu, norm, useDomaceMesto, useMobil } from "./casti";
 import { PodporaProfilu } from "./PodporaProfilu";
 
 type Typ = "zb" | "sk" | "is" | "oz" | "pr";
@@ -38,7 +38,7 @@ function useTablet() {
   return t;
 }
 
-export function Kronika({ profil, onDetail, onBack }: { profil: TestProfil; onDetail: (z: TestZbierka) => void; onBack: () => void }) {
+export function Kronika({ profil, onDetail, onBack, prepinac }: { profil: TestProfil; onDetail: (z: TestZbierka) => void; onBack: () => void; /** KARTA 45: testovací prepínač podania */ prepinac?: ReactNode }) {
   useZmenyIskier();
   const mobil = useMobil();
   const tablet = useTablet();
@@ -78,7 +78,8 @@ export function Kronika({ profil, onDetail, onBack }: { profil: TestProfil; onDe
   const zbierky = vLokalite(profil.zbierky, lok, domace);
   const bezice = zbierky.filter((z) => z.stav !== "ukoncena");
   const oznamy = vLokalite(profil.oznamy, lok, domace);
-  const praca = vLokalite(profil.praca, lok, domace);
+  // KARTA 45: „Hľadáme ľudí" = plagát pri module (nie oznam), ukazujú sa všetky ponuky
+  const praca = profil.praca;
   const darcovia = sk ? profil.darcovia : profil.darcovia.filter((d) => d.mesto === lok);
   const dnes = darcovia.reduce((s, d) => s + (d.suma ?? 0), 0);
 
@@ -104,11 +105,6 @@ export function Kronika({ profil, onDetail, onBack }: { profil: TestProfil; onDe
       dBg: o.druh === "vyzva" ? "#8E3B2F" : o.druh === "akcia" ? "#2F5E3A" : "#876712",
       st: o.stitok, stc: o.druh === "vyzva" ? "var(--red)" : o.druh === "akcia" ? "var(--green)" : "var(--gold)",
       n: o.nadpis, s: o.text, btn: o.tlacidlo, pocet: o.pod,
-    })),
-    ...praca.map((p): Ozn & { k: number } => ({
-      id: p.id, typ: "pr", den: p.den, mes: p.mesiac, k: poradieDatumu(p.mesiac, p.den), dBg: "#3D6B8E",
-      st: `HĽADÁME · ${p.druh === "brigadnik" ? "BRIGÁDNIK" : "ZAMESTNANEC"}`, stc: "var(--blue)",
-      n: p.nazov, s: p.text, btn: "Mám záujem", pocet: p.pod,
     })),
   ].sort((a, b) => a.k - b.k).filter((o) => ok(o.typ, `${o.n} ${o.s} ${o.st}`, "akt"));
 
@@ -229,7 +225,7 @@ export function Kronika({ profil, onDetail, onBack }: { profil: TestProfil; onDe
     </div>
   );
 
-  const podpora = <PodporaProfilu profil={profil} lok={lok} domace={domace} rez={rez} />;
+  const podpora = <><PodporaProfilu profil={profil} lok={lok} domace={domace} rez={rez} /><PlagatPrace praca={praca} zbaleny={rez !== "pc"} /></>;
 
   // ---- lepkavá lišta: hľadanie + filtre (+ tablet / mobil rady rokov) ----
   const lista = (
@@ -285,7 +281,7 @@ export function Kronika({ profil, onDetail, onBack }: { profil: TestProfil; onDe
       <div style={{ padding: rez === "tab" ? "18px 20px" : "22px 24px", display: "flex", flexDirection: "column", gap: rez === "tab" ? 9 : 11 }}>
         <span style={{ fontSize: rez === "tab" ? 11 : 11.5, fontWeight: 800, letterSpacing: ".08em", color: "var(--ink3)" }}>{stZb(velka)}</span>
         <b style={{ fontSize: rez === "tab" ? 21 : 23, lineHeight: 1.2 }}>{velka.nazov}</b>
-        <span style={{ fontSize: rez === "tab" ? 14 : 14.5, lineHeight: rez === "tab" ? 1.5 : 1.55, color: "var(--ink2)" }}>{velka.popis}</span>
+        {velka.pribeh ? <PribehText text={velka.pribeh} /> : <span style={{ fontSize: rez === "tab" ? 14 : 14.5, lineHeight: rez === "tab" ? 1.5 : 1.55, color: "var(--ink2)" }}>{velka.popis}</span>}
         {velka.ciel != null && <span style={{ display: "block", height: rez === "tab" ? 8 : 9, borderRadius: 5, background: "var(--track)", overflow: "hidden", marginTop: rez === "tab" ? 0 : 2 }}><span style={{ display: "block", width: "100%", height: "100%", borderRadius: 5, background: PRUH, transformOrigin: "0 50%", transform: `scaleX(${pct(velka.vyzbierane, velka.ciel) / 100})` }} /></span>}
         <span style={{ display: "flex", alignItems: "baseline", gap: 8, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}><b style={{ fontSize: rez === "tab" ? 19 : 21 }}>{eur(velka.vyzbierane)}</b><span style={{ fontSize: rez === "tab" ? 13.5 : 14, color: "var(--ink3)" }}>{velka.ciel ? `z ${eur(velka.ciel)} · ` : ""}{velka.ludia} ľudí</span></span>
         {velka.dorovnanie && <span style={{ fontSize: rez === "tab" ? 13 : 13.5, color: "var(--gold)", fontWeight: 700 }}>{velka.dorovnanie}</span>}
@@ -353,7 +349,7 @@ export function Kronika({ profil, onDetail, onBack }: { profil: TestProfil; onDe
     </div>
   );
   const oznamyBlok = aktOz.length > 0 && <>
-    <span style={{ fontSize: rez === "mob" ? 11.5 : 12, fontWeight: 800, letterSpacing: ".1em", color: "var(--acc)", paddingTop: rez === "pc" ? 8 : 6 }}>OZNAMY A PRÁCA</span>
+    <span style={{ fontSize: rez === "mob" ? 11.5 : 12, fontWeight: 800, letterSpacing: ".1em", color: "var(--acc)", paddingTop: rez === "pc" ? 8 : 6 }}>OZNAMY</span>
     <div style={{ display: rez === "mob" ? "flex" : "grid", flexDirection: "column", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: rez === "pc" ? 14 : 12 }}>
       {aktOz.map((o) => {
         const [dw, dh, df] = rez === "pc" ? [68, 78, 28] : rez === "tab" ? [58, 68, 24] : [54, 62, 22];
@@ -375,9 +371,7 @@ export function Kronika({ profil, onDetail, onBack }: { profil: TestProfil; onDe
       })}
     </div>
   </>;
-  const pocty = rez === "mob"
-    ? `${tvar(bezice.length, ["zbierka", "zbierky", "zbierok"])} · ${tvar(oznamy.length + praca.length, ["oznam", "oznamy", "oznamov"])}`
-    : `${tvar(bezice.length, ["zbierka", "zbierky", "zbierok"])} · ${tvar(oznamy.length, ["oznam", "oznamy", "oznamov"])} · ${tvar(praca.length, ["ponuka práce", "ponuky práce", "ponúk práce"])}`;
+  const pocty = `${tvar(bezice.length, ["zbierka", "zbierky", "zbierok"])} · ${tvar(oznamy.length, ["oznam", "oznamy", "oznamov"])}${praca.length ? ` · hľadáme ${tvar(praca.length, ["človeka", "ľudí", "ľudí"])}` : ""}`;
   const aktualne = (
     <section ref={(el) => { rf.current.akt = el; }} style={{ display: "flex", flexDirection: "column", gap: rez === "pc" ? 18 : rez === "tab" ? 16 : 12 }}>
       {rez === "pc"
@@ -517,15 +511,16 @@ export function Kronika({ profil, onDetail, onBack }: { profil: TestProfil; onDe
         {kovCiara}
         <div style={{ padding: tab ? "0 28px 22px" : "0 16px 18px", display: "flex", flexDirection: "column", gap: tab ? 16 : 12 }}>
           {tab
-            ? <div style={{ display: "flex", alignItems: "flex-end", gap: 18, marginTop: -46, position: "relative" }}>
+            && <div style={{ display: "flex", alignItems: "flex-end", gap: 18, marginTop: -46, position: "relative" }}>
                 {logo(92, 26, 30, "var(--bg)")}
                 <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 4, paddingBottom: 4 }}>
                   <b style={{ fontSize: 28, lineHeight: 1.1 }}>{profil.meno}</b>
                   <span style={{ fontSize: 14.5, lineHeight: 1.45, color: "var(--ink2)" }}>{profil.veta}</span>
                 </span>
                 {stitTlacidlo(100, 118, 92, 112)}
-              </div>
-            : <>
+              </div>}
+          {tab && prepinac}
+          {!tab && <>
                 <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginTop: -40, position: "relative" }}>
                   {logo(76, 22, 25, "var(--bg)")}
                   {stitTlacidlo(88, 104, 84, 102, { marginTop: -20 })}
@@ -534,6 +529,7 @@ export function Kronika({ profil, onDetail, onBack }: { profil: TestProfil; onDe
                   <b style={{ fontSize: 25, lineHeight: 1.15 }}>{profil.meno}</b>
                   <span style={{ fontSize: 14.5, lineHeight: 1.5, color: "var(--ink2)", textWrap: "pretty" } as CSSProperties}>{profil.veta}</span>
                 </span>
+                {prepinac}
               </>}
           {tab ? nazivoTab : nazivoMob}
           {podpora}
@@ -564,6 +560,7 @@ export function Kronika({ profil, onDetail, onBack }: { profil: TestProfil; onDe
             <b style={{ fontSize: 30, lineHeight: 1.1, letterSpacing: "-.01em" }}>{profil.meno}</b>
             <span style={{ fontSize: 15, lineHeight: 1.5, color: "var(--ink2)", textWrap: "pretty" } as CSSProperties}>{profil.veta}</span>
           </span>
+          {prepinac}
           {podpora}
         </div>
       </aside>
