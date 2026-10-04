@@ -1,7 +1,7 @@
 // KARTA 44 · registrácia osoby 1b: Plán → Telefón → Kód z SMS → Heslo a odomknutie → Platba → Údaje → Doklad a selfie
 // → Ako ťa uvidia → Záujmy → Ešte dve potvrdenia → Hotovo („Do môjho profilu").
 // Telefón + SMS sa nikdy nepreskočí. KYC hneď v registrácii, karta a IBAN pred overením (kto odpadne, nestojí nás Didit).
-// Kapitoly hore: Účet · Overenie · Ty. Svetlúšik hovorí len v Overení a Záujmoch (v platbe nehovorí).
+// Kapitoly hore: Účet · Overenie · Ty. Svetlúšik má 3 bubliny: Platba (prečo karta), Overenie, Záujmy.
 import { useEffect, useRef, useState } from "react";
 import { setSession } from "@/lib/session";
 import { signUp } from "@/lib/auth";
@@ -10,7 +10,7 @@ import { ulozZaujmy as ulozZaujmyLokalne, zaujemZOblasti } from "@/lib/personali
 import { otvorProfilPoRegistracii, cakajRegistraciuOrg } from "@/lib/mojeStranky";
 import { overIban } from "@/features/rola/segmenty";
 import type { Zaujem } from "@/types";
-import { Obrazovka, Nadpis, Svetlo, Bublina, Poznamka, Pole, KodPolia, Volby, Prepinace, Cipy, KycKarty, PlanKapitol, Odomknute, kapitoly, naServeri, pockaj, vibruj, IK, clenCislo } from "./RegB";
+import { Obrazovka, Nadpis, Svetlo, Bublina, Pole, KodPolia, Volby, Prepinace, Cipy, KycKarty, PlanKapitol, Odomknute, kapitoly, naServeri, pockaj, vibruj, IK, clenCislo } from "./RegB";
 
 export type KrokOsoby = "plan" | "telefon" | "kod" | "heslo" | "platba" | "udaje" | "overenie" | "zobrazenie" | "zaujmy" | "vyhlasenie" | "hotovo";
 const PORADIE: KrokOsoby[] = ["plan", "telefon", "kod", "heslo", "platba", "udaje", "overenie", "zobrazenie", "zaujmy", "vyhlasenie", "hotovo"];
@@ -246,7 +246,7 @@ export function OsobaB({ start = "plan", onSpat, onHotovo, authId: authIdVst, em
         <Pole label="Číslo účtu (IBAN)" value={iban} onChange={(v) => setIban(v.toUpperCase().replace(/[^A-Z0-9 ]/g, "").slice(0, 34))} ok={ibanOk}
           hint="Sem ti pošleme peniaze z Help, výplatu z peňaženky alebo vrátenie daru." placeholder="SK31 1100 0000 0026 1234 5678" autoComplete="off" />
         <Volby volby={[{ t: "Apple Pay", s: "karta z telefónu, jedným dotykom", ik: IK.karta }, { t: "Iná karta", s: "číslo karty, platnosť a CVC", ik: IK.karta2 }]} vybrane={platba} onVyber={setPlatba} />
-        <Poznamka>Teraz ti nič nestrhneme. Kartu overíme platbou 0 € a jej údaje vidí len banka, nie DEED+.</Poznamka>
+        <Bublina>Teraz ti nič nestrhneme. Kartu overíme platbou 0 € a jej údaje vidí len banka, nie DEED+.</Bublina>
       </Obrazovka>);
     case "udaje": return (
       <Obrazovka {...zak} cta="Pokračovať" onCta={ulozUdaje} ctaOff={!udajeOk}>

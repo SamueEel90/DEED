@@ -14,7 +14,7 @@ import { ulozKrok } from "./OsobaB";
 
 export type KrokOrg = "ucet" | "plan" | "ico" | "statutar" | "stanovy" | "profil" | "moznosti" | "nahlad" | "hotovo";
 const PORADIE: KrokOrg[] = ["ucet", "plan", "ico", "statutar", "stanovy", "profil", "moznosti", "nahlad", "hotovo"];
-const KAP: [string, KrokOrg[]][] = [["Účet", ["ucet"]], ["Organizácia", ["ico"]], ["Overenie", ["statutar", "stanovy"]], ["Profil", ["profil", "moznosti", "nahlad"]]];
+const KAP: [string, KrokOrg[]][] = [["Organizácia", ["ico"]], ["Overenie", ["statutar", "stanovy"]], ["Profil", ["profil", "moznosti", "nahlad"]]];
 const SEKTORY = ["Sociálne", "Deti", "Zdravie", "Seniori"];
 const datum = (iso: string) => { const d = new Date(iso); return isNaN(+d) ? iso : `${d.getDate()}. ${d.getMonth() + 1}. ${d.getFullYear()}`; };
 const inicialy = (n: string) => n.replace(/\b(o\.\s?z\.|n\.\s?o\.|s\.\s?r\.\s?o\.)/gi, "").trim().split(/\s+/).slice(0, 2).map((s) => s.charAt(0).toUpperCase()).join("");
