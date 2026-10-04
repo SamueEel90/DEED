@@ -6,7 +6,7 @@
 // Pôvodný Vyklad.tsx ostáva Pekárni (firma).
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { eur, pct, tvar, type Lokalita, type TestProfil, type TestZbierka } from "@/lib/testProfily";
-import { DOK, LokalitaPrepinac, PlagatPrace, PrepinacPodania, PribehText, StitCare, StitOkno, nazovStitu, useDomaceMesto } from "./casti";
+import { DOK, LokalitaPrepinac, PlagatPrace, PrepinacPodania, klikKarta, PribehText, StitCare, StitOkno, nazovStitu, useDomaceMesto } from "./casti";
 import { PodporaProfilu } from "./PodporaProfilu";
 import { GRAD, PRUH, MalaZbierka, OznamKarta, RokyOs, ZIskier, bgF, sekciaNadpis, stZb, useCharitaData } from "./charitaCasti";
 
@@ -117,7 +117,7 @@ export function VykladCharita({ profil, onDetail, onBack, prepinac }: { profil: 
   // ---- zbierky ----
   const v = d.velka;
   const velka = v && (
-    <article style={{ display: "grid", gridTemplateColumns: pc ? "minmax(0,1fr) minmax(0,1.1fr)" : "1fr", borderRadius: 24, overflow: "hidden", background: "var(--card)", border: "1px solid var(--cardBd)" }}>
+    <article {...klikKarta(() => onDetail(v), v.nazov)} style={{ display: "grid", gridTemplateColumns: pc ? "minmax(0,1fr) minmax(0,1.1fr)" : "1fr", borderRadius: 24, overflow: "hidden", background: "var(--card)", border: "1px solid var(--cardBd)", cursor: "pointer" }}>
       <span style={{ position: "relative", display: "block", minHeight: pc ? 300 : 190, background: bgF(v.foto) }}>
         {v.konciDni != null && <span style={{ position: "absolute", left: 12, top: 12, height: 28, padding: "0 11px", borderRadius: 14, background: "#8E3B2F", color: "#fff", fontSize: 11.5, fontWeight: 800, letterSpacing: ".05em", display: "flex", alignItems: "center", whiteSpace: "nowrap" }}>KONČÍ O {tvar(v.konciDni, ["DEŇ", "DNI", "DNÍ"])}</span>}
       </span>
@@ -128,7 +128,6 @@ export function VykladCharita({ profil, onDetail, onBack, prepinac }: { profil: 
         {v.ciel != null && <span style={{ display: "block", height: 8, borderRadius: 4, background: "var(--track)", overflow: "hidden" }}><span style={{ display: "block", width: "100%", height: "100%", background: PRUH, transformOrigin: "0 50%", transform: `scaleX(${pct(v.vyzbierane, v.ciel) / 100})` }} /></span>}
         <span style={{ display: "flex", alignItems: "baseline", gap: 8, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}><b style={{ fontSize: 19 }}>{eur(v.vyzbierane)}</b><span style={{ fontSize: 13.5, color: "var(--ink3)" }}>{v.ciel ? `z ${eur(v.ciel)} · ` : ""}{v.ludia} ľudí</span></span>
         {v.dorovnanie && <span style={{ fontSize: 13, color: "var(--gold)", fontWeight: 700 }}>{v.dorovnanie}</span>}
-        <button type="button" onClick={() => onDetail(v)} style={{ alignSelf: "flex-start", height: 48, padding: "0 22px", border: "none", borderRadius: 14, background: GRAD, cursor: "pointer", fontSize: 15.5, fontWeight: 800, color: "#fff", fontFamily: "inherit" }}>Pozrieť a darovať</button>
       </div>
     </article>
   );

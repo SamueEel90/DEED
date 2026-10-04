@@ -229,6 +229,14 @@ export function PlagatPrace({ praca, zbaleny, nadpis = true }: { praca: TestPrac
   );
 }
 
+/** doplnky 4. 10. · ťuk kdekoľvek na kartu zbierky / skutku = detail (bez tlačidla „Pozrieť a darovať"). Klávesnica: Enter / medzera. */
+export function klikKarta(fn: () => void, nazov?: string) {
+  return {
+    role: "button" as const, tabIndex: 0, "aria-label": nazov, onClick: fn,
+    onKeyDown: (e: { key: string; target: EventTarget; currentTarget: EventTarget; preventDefault: () => void }) => { if ((e.key === "Enter" || e.key === " ") && e.target === e.currentTarget) { e.preventDefault(); fn(); } },
+  };
+}
+
 /** KARTA 45 · dlhý príbeh zbierky: N riadkov + „Čítať celý príbeh ›" (ťuk rozbalí celý text) */
 export function PribehText({ text, riadky = 6, fs = 14.5, farba = "var(--ink2)", odkaz = "var(--green)" }: { text: string; riadky?: number; fs?: number; farba?: string; odkaz?: string }) {
   const [cely, setCely] = useState(false);

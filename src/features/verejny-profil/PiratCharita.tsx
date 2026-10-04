@@ -7,7 +7,7 @@
 // Pôvodný Pirat.tsx ostáva tvorcovi (Martin Konaľ).
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { eur, tvar, type Lokalita, type TestProfil, type TestZbierka } from "@/lib/testProfily";
-import { DOK, LokalitaPrepinac, PlagatPrace, PrepinacPodania, PribehText, StitCare, StitOkno, kovText, nazovStitu, useDomaceMesto, usePodanie, vMeste } from "./casti";
+import { DOK, LokalitaPrepinac, PlagatPrace, PrepinacPodania, klikKarta, PribehText, StitCare, StitOkno, kovText, nazovStitu, useDomaceMesto, usePodanie, vMeste } from "./casti";
 import { PodporaProfilu } from "./PodporaProfilu";
 import { GRAD, PRUH, MalaZbierka, OznamKarta, ZIskier, bgF, useCharitaData } from "./charitaCasti";
 
@@ -109,8 +109,8 @@ export function PiratCharita({ profil, onDetail, onBack, prepinac }: { profil: T
 
   // ================= PC =================
   if (pc) {
-    const tmavy = (foto: string, sila: [number, number, number], obsah: ReactNode) => (
-      <section style={{ ...snap, background: "#0E0C08" }}>
+    const tmavy = (foto: string, sila: [number, number, number], obsah: ReactNode, klik?: () => void, nazov?: string) => (
+      <section {...(klik ? klikKarta(klik, nazov) : {})} style={{ ...snap, background: "#0E0C08", cursor: klik ? "pointer" : undefined }}>
         <span style={{ position: "absolute", inset: 0, background: bgF(foto) }} />
         <span style={{ position: "absolute", inset: 0, background: `linear-gradient(90deg,rgba(10,8,5,${sila[0]}) 0%,rgba(10,8,5,${sila[1]}) ${sila[2]}%,rgba(10,8,5,.1) 100%)` }} />
         {obsah}
@@ -153,8 +153,7 @@ export function PiratCharita({ profil, onDetail, onBack, prepinac }: { profil: T
                 {v.ciel != null && <span style={{ display: "block", height: 10, borderRadius: 5, background: "rgba(255,255,255,.2)", overflow: "hidden" }}><span style={{ display: "block", width: "100%", height: "100%", background: PRUH, transformOrigin: "0 50%", transform: `scaleX(${Math.min(1, v.vyzbierane / v.ciel)})` }} /></span>}
                 <span style={{ display: "flex", alignItems: "baseline", gap: 10, fontVariantNumeric: "tabular-nums" }}><b style={{ fontSize: 30 }}>{eur(v.vyzbierane)}</b><span style={{ fontSize: 16, opacity: 0.85 }}>{v.ciel ? `z ${eur(v.ciel)} · ` : ""}{v.ludia} ľudí</span></span>
                 {v.dorovnanie && <span style={{ fontSize: 15, fontWeight: 700, color: "#F6D77A" }}>{v.dorovnanie}</span>}
-                <button type="button" onClick={() => onDetail(v)} style={{ ...btnZ, alignSelf: "flex-start", height: 56, padding: "0 28px", borderRadius: 16, fontSize: 17 }}>Pozrieť a darovať</button>
-              </div>)}
+              </div>, () => onDetail(v), v.nazov)}
             {svetla(<><b style={velkyNadpis(52)}>Z Iskier</b><ZIskier profil={profil} cesty={d.iskryCesty} w={210} h={374} wVs={112} /></>, { gap: 20 })}
             {svetla(<>
               <b style={velkyNadpis(52)}>Ďalšie zbierky a oznamy</b>
@@ -209,7 +208,7 @@ export function PiratCharita({ profil, onDetail, onBack, prepinac }: { profil: T
   </>);
   const stitok = (t: string, farba: string, bottom: number) => <span style={{ position: "absolute", left: 16, bottom, height: 30, padding: "0 12px", borderRadius: 15, background: farba, color: "#fff", fontSize: 12, fontWeight: 800, letterSpacing: ".05em", display: "flex", alignItems: "center", whiteSpace: "nowrap" }}>{t}</span>;
   const spodok = DOK + 70; // nad zeleným pásom a dolnou lištou appky
-  const obr = (obsah: ReactNode) => <section style={{ ...snap, background: "var(--bg)" }}><div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column" }}>{obsah}</div></section>;
+  const obr = (obsah: ReactNode, klik?: () => void, nazov?: string) => <section {...(klik ? klikKarta(klik, nazov) : {})} style={{ ...snap, background: "var(--bg)", cursor: klik ? "pointer" : undefined }}><div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column" }}>{obsah}</div></section>;
   const textPlocha = (obsah: ReactNode, pad = "16px 18px", gap = 9, ov: "hidden" | "visible" = "hidden") => <div style={{ flex: 1, minHeight: 0, padding: pad, paddingBottom: spodok, display: "flex", flexDirection: "column", gap, overflow: ov }}>{obsah}</div>;
   const plocha = (obsah: ReactNode, top: number, gap = 12) => <div style={{ position: "absolute", inset: 0, padding: `${top}px 16px ${spodok}px`, display: "flex", flexDirection: "column", gap, overflow: "hidden" }}>{obsah}</div>;
   const [p1, p2] = profil.praca;
@@ -249,9 +248,8 @@ export function PiratCharita({ profil, onDetail, onBack, prepinac }: { profil: T
             {v.ciel != null && <span style={{ display: "block", flex: "none", height: 8, borderRadius: 4, background: "var(--track)", overflow: "hidden" }}><span style={{ display: "block", width: "100%", height: "100%", background: PRUH, transformOrigin: "0 50%", transform: `scaleX(${Math.min(1, v.vyzbierane / v.ciel)})` }} /></span>}
             <span style={{ display: "flex", alignItems: "baseline", gap: 8, fontVariantNumeric: "tabular-nums" }}><b style={{ fontSize: 21 }}>{eur(v.vyzbierane)}</b><span style={{ fontSize: 13.5, color: "var(--ink3)" }}>{v.ciel ? `z ${eur(v.ciel)} · ` : ""}{v.ludia} ľudí</span></span>
             {v.dorovnanie && <span style={{ fontSize: 13, color: "var(--gold)", fontWeight: 700 }}>{v.dorovnanie}</span>}
-            <button type="button" onClick={() => onDetail(v)} style={{ ...btnZ, flex: "none", height: 48, borderRadius: 14, fontSize: 15.5 }}>Pozrieť a darovať</button>
           </>)}
-        </>)}
+        </>, () => onDetail(v), v.nazov)}
         <section style={{ ...snap, background: "var(--bg)" }}>{plocha(<><b style={velkyNadpis(34)}>Z Iskier</b><ZIskier profil={profil} cesty={d.iskryCesty} w={150} h={268} wVs={112} /></>, 104)}</section>
         <section style={{ ...snap, background: "var(--bg)" }}>{plocha(<>
           <b style={velkyNadpis(30, { lineHeight: 1.05 })}>Ďalšie zbierky</b>

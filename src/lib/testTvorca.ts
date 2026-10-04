@@ -1,7 +1,7 @@
 // KARTA 47 · testovacie dáta stránky tvorcu (Martin Konaľ) a stránky streamu na zbierku.
 // 1 : 1 podľa prototypov „Tvorca - Martin Konal" a „Stream - QR na zbierku". Prázdny zoznam = sekcia sa neukáže.
 // Na serveri: obsah tvorcu zadá tvorca v Správe, stream a súčty počíta server (parameter s v odkaze).
-import type { TestSektor } from "./testProfily";
+import type { Mesto, TestSektor } from "./testProfily";
 
 const U = (id: string) => `https://images.unsplash.com/${id}?auto=format&fit=crop&w=1000&q=70`;
 
@@ -30,7 +30,8 @@ export interface TvorcaData {
   siete: { n: string; url: string }[];
   platene: { id: string; druh: string; n: string; o: string; cena: number; foto: string }[];
   skolenie?: { n: string; o: string; kedy: string; kde: string; cena: number; miesta: string };
-  zbierky: { n: string; v: number; ciel: number; kto: string; foto: string }[];
+  /** zbierky, cez ktoré tvorca pomáha (ludia = testovací počet darcov) */
+  zbierky: { id: string; n: string; v: number; ciel: number; ludia: number; mesto: Mesto; kto: string; foto: string }[];
   akcie: { d: string; m: string; n: string; s: string }[];
   /** podpora tvorcu = náš platobný modul bez dorovnania */
   podpora: TestSektor;
@@ -71,8 +72,8 @@ export const TVORCA_DATA: TvorcaData = {
   ],
   skolenie: { n: "Zvuk na akcii: od kábla po mix", o: "Dve hodiny naživo. Ukážem celé zapojenie a odpoviem na otázky.", kedy: "sobota 18. 10. · 10:00 – 12:00", kde: "online · odkaz príde v appke", cena: 15, miesta: "12 z 20 miest" },
   zbierky: [
-    { n: "Husle pre Emku", v: 640, ciel: 900, kto: "ZUŠ Trenčín", foto: U("photo-1501386761578-eac5c94b800a") },
-    { n: "Zvuková technika pre nocľaháreň", v: 420, ciel: 1200, kto: "Svetlo pomoci o.z.", foto: U("photo-1598488035139-bdbb2231ce04") },
+    { id: "tv-husle-emka", n: "Husle pre Emku", v: 640, ciel: 900, ludia: 41, mesto: "Trenčín", kto: "ZUŠ Trenčín", foto: U("photo-1501386761578-eac5c94b800a") },
+    { id: "tv-zvuk-noclaharen", n: "Zvuková technika pre nocľaháreň", v: 420, ciel: 1200, ludia: 27, mesto: "Trenčín", kto: "Svetlo pomoci o.z.", foto: U("photo-1598488035139-bdbb2231ce04") },
   ],
   akcie: [
     { d: "11.", m: "OKT", n: "Benefičný koncert pre Emku", s: "Klub Lúč, Trenčín · 19:00 · vstupné ide na zbierku" },

@@ -50,7 +50,7 @@ export function VerejnyProfilView({ kluc, onBack }: { kluc: string; onBack: () =
   if (profil.typ === "tvorca") return (
     <div style={{ position: "relative", height: "100%" }}>
       <div aria-hidden={!!stream} style={stream ? { position: "absolute", inset: 0, visibility: "hidden", pointerEvents: "none" } : { height: "100%" }}>
-        <StrankaTvorcu profil={profil} onBack={onBack} onStream={setStream} />
+        <StrankaTvorcu profil={profil} onBack={onBack} onStream={setStream} onDetail={setDetail} />
       </div>
       {stream && <div style={{ position: "absolute", inset: 0 }}>
         <StreamZbierka profil={profil} streamId={stream} onBack={() => { const krok = pridanyKrok.current; pridanyKrok.current = false; setStream(null); if (krok) { try { window.history.back(); } catch { /* sandbox */ } } }} />

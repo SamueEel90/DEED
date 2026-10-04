@@ -7,10 +7,10 @@
 // Zaplatiť a odomknúť / prihlásiť sa (do 50 €): pod položkou sa rozbalí NakupPanel. Kým nie je platba na serveri,
 // podržanie odomkne len v testovacej verzii. Okno na dary sa na nákup nepoužíva.
 import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
-import type { TestProfil } from "@/lib/testProfily";
+import type { TestProfil, TestZbierka } from "@/lib/testProfily";
 import { TVORCA_DATA, STREAM_ZBIERKY } from "@/lib/testTvorca";
 import { otvorIskry } from "@/features/iskry/otvor";
-import { DOK, PortalVp } from "./casti";
+import { DOK, PortalVp, klikKarta } from "./casti";
 import { TESTOVACIA } from "@/lib/testovacia";
 import { ModulPlatby } from "./ModulProfilu";
 import { Citacka, NAKUP_MAX, NakupPanel, OdchodHarok, Prehravac } from "./ObsahTvorcu";
@@ -35,7 +35,7 @@ function Nadpis({ t, s }: { t: string; s?: string }) {
   return <span style={{ display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap", paddingTop: 12 }}><b style={{ fontSize: 12, letterSpacing: ".1em", color: "var(--acc)" }}>{t}</b>{s && <span style={{ fontSize: 13, color: "var(--ink3)" }}>{s}</span>}</span>;
 }
 
-export function StrankaTvorcu({ profil, onBack, onStream }: { profil: TestProfil; onBack: () => void; onStream: (streamId: string) => void }) {
+export function StrankaTvorcu({ profil, onBack, onStream, onDetail }: { profil: TestProfil; onBack: () => void; onStream: (streamId: string) => void; /** ťuk na kartu zbierky = detail s modulom */ onDetail: (z: TestZbierka) => void }) {
   const pc = usePc();
   const d = TVORCA_DATA;
   const stit = profil.stit.toLowerCase();
@@ -90,18 +90,17 @@ export function StrankaTvorcu({ profil, onBack, onStream }: { profil: TestProfil
 
   const z = d.naZivo, zz = z ? STREAM_ZBIERKY[z.zbierka] : undefined;
   const naZivo = z && zz && (
-    <article style={{ borderRadius: 22, overflow: "hidden", background: "#1D211B", color: "#fff", display: pc ? "grid" : "flex", gridTemplateColumns: "minmax(0,1.2fr) minmax(0,1fr)", flexDirection: "column" }}>
-      <button type="button" onClick={() => onStream(z.id)} aria-label={`Pozrieť stream · ${zz.nazov}`} style={{ ...tlBez, position: "relative", display: "block", width: "100%", ...(pc ? { minHeight: 230 } : { aspectRatio: "16/9" }), background: `url('${z.nahlad}') center/cover #111` }}>
+    <article {...klikKarta(() => onStream(z.id), `Pozrieť stream · ${zz.nazov}`)} style={{ borderRadius: 22, overflow: "hidden", background: "#1D211B", color: "#fff", display: pc ? "grid" : "flex", gridTemplateColumns: "minmax(0,1.2fr) minmax(0,1fr)", flexDirection: "column", cursor: "pointer" }}>
+      <span style={{ position: "relative", display: "block", width: "100%", ...(pc ? { minHeight: 230 } : { aspectRatio: "16/9" }), background: `url('${z.nahlad}') center/cover #111` }}>
         <span style={{ position: "absolute", inset: 0, background: "rgba(10,8,5,.3)" }} />
         <span style={{ position: "absolute", left: 12, top: 12, height: 26, padding: "0 10px", borderRadius: 13, background: "#E5483A", color: "#fff", fontSize: 11, fontWeight: 800, letterSpacing: ".06em", display: "flex", alignItems: "center", gap: 6, whiteSpace: "nowrap" }}><span style={{ width: 7, height: 7, borderRadius: "50%", background: "#fff", animation: "vpPulz 1.2s ease infinite" }} />NAŽIVO · {z.divaci.toLocaleString("sk-SK")}</span>
         <Hraj />
-      </button>
+      </span>
       <div style={{ padding: "16px 18px", display: "flex", flexDirection: "column", gap: 8 }}>
         <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: ".1em", color: "#F6D77A" }}>VYSIELAM PRE ZBIERKU</span>
         <b style={{ fontSize: 20, lineHeight: 1.2 }}>{zz.nazov}</b>
         <span style={{ fontSize: 13, opacity: 0.8 }}>Za zbierku zodpovedá {zz.charita}</span>
         <span style={{ display: "flex", alignItems: "baseline", gap: 8, fontVariantNumeric: "tabular-nums" }}><b style={{ fontSize: 26, whiteSpace: "nowrap" }}>{eurT(z.suma)}</b><span style={{ fontSize: 13.5, opacity: 0.8, whiteSpace: "nowrap" }}>počas streamu · {z.ludia} ľudí</span></span>
-        <button type="button" onClick={() => onStream(z.id)} style={{ height: 48, border: "none", borderRadius: 14, background: PRUH, cursor: "pointer", fontSize: 15.5, fontWeight: 800, color: "#fff", boxShadow: "none", fontFamily: "inherit" }}>Pozrieť a darovať</button>
       </div>
     </article>
   );
@@ -218,7 +217,7 @@ export function StrankaTvorcu({ profil, onBack, onStream }: { profil: TestProfil
     <Nadpis t="POMÁHAM CEZ CHARITY" />
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
       {d.zbierky.map((x) => (
-        <article key={x.n} style={{ display: "flex", gap: 12, alignItems: "center", padding: 10, borderRadius: 18, ...karta }}>
+        <article key={x.n} {...klikKarta(() => onDetail({ id: x.id, nazov: x.n, popis: "", mesto: x.mesto, foto: x.foto, vyzbierane: x.v, ciel: x.ciel, ludia: x.ludia, stav: "bezi", zodpoveda: x.kto }), x.n)} style={{ display: "flex", gap: 12, alignItems: "center", padding: 10, borderRadius: 18, ...karta, cursor: "pointer" }}>
           <span style={{ flex: "none", width: 80, height: 80, borderRadius: 14, background: bgU(x.foto) }} />
           <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 5 }}>
             <b style={{ fontSize: 15, lineHeight: 1.25 }}>{x.n}</b>
