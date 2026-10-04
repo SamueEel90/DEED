@@ -149,8 +149,8 @@ export function SpravaZbierkySheet({ z, tier, toast, onPaywall, onClose }: {
               ))}
             </div>
             {s.lehota === "60" && (
-              <textarea defaultValue={s.zdovodnenie60 ?? ""} onBlur={(e) => zmen({ zdovodnenie60: e.target.value })} rows={2}
-                placeholder="Prečo potrebuješ 60 dní? (napr. faktúra od dodávateľa príde až po montáži)" style={{ ...input, marginTop: SPACE.xs, resize: "vertical" }} />
+              <RichTextInput value={s.zdovodnenie60 ?? ""} onChange={(h) => zmen({ zdovodnenie60: h })} minH={70} ariaLabel="Zdôvodnenie" nastroje={["bold", "italic", "insertUnorderedList", "diktovat"]}
+                placeholder="Prečo potrebuješ 60 dní? (napr. faktúra od dodávateľa príde až po montáži)" />
             )}
           </Karta>
 
@@ -236,8 +236,8 @@ function StavDokladovania({ s, vyzbierane, teraz, zmen, toast }: {
       <Zelene>{text}</Zelene>
       {(faza === "vyzva" || faza === "caka") && (
         <div style={{ marginBottom: SPACE.sm }}>
-          <textarea value={zdov} onChange={(e) => setZdov(e.target.value)} rows={2} placeholder="Nemáme doklady, pretože…" style={{ ...input, resize: "vertical" }} />
-          <button onClick={() => { if (zdov.trim().length < 20) { toast("Napíš zdôvodnenie aspoň jednou vetou"); return; } zmen({ zdovodnenieBezDokladov: zdov.trim() }); toast("Zdôvodnenie odoslané — posúdi ho DEED+"); }}
+          <RichTextInput value={zdov} onChange={setZdov} minH={70} placeholder="Nemáme doklady, pretože…" ariaLabel="Zdôvodnenie" nastroje={["bold", "italic", "insertUnorderedList", "diktovat"]} />
+          <button onClick={() => { if (cistyText(zdov).length < 20) { toast("Napíš zdôvodnenie aspoň jednou vetou"); return; } zmen({ zdovodnenieBezDokladov: zdov }); toast("Zdôvodnenie odoslané — posúdi ho DEED+"); }}
             style={{ ...btnDruhy, marginTop: SPACE.xs }}>Poslať zdôvodnenie</button>
         </div>
       )}
@@ -335,8 +335,8 @@ function Dokladovanie({ zbierkaId, s, zmen, vyzbierane, toast, aktivna, onZverej
 
       {/* text */}
       <div style={{ fontSize: 12, fontWeight: 800, color: C.textTer, letterSpacing: ".04em", marginBottom: SPACE.xxs }}>NA ČO IŠLI PENIAZE</div>
-      <textarea defaultValue={s.text} onBlur={(e) => zmen({ text: e.target.value })} rows={3}
-        placeholder="Napr. Kúpili sme práčku a chladničku, v utorok ich doviezli pani Anne domov." style={{ ...input, resize: "vertical", marginBottom: SPACE.sm }} />
+      <RichTextInput value={s.text} onChange={(h) => zmen({ text: h })} minH={90} ariaLabel="Na čo išli peniaze" nastroje={["bold", "italic", "insertUnorderedList", "diktovat"]}
+        placeholder="Napr. Kúpili sme práčku a chladničku, v utorok ich doviezli pani Anne domov." />
 
       {/* fotky použitia */}
       <div style={{ fontSize: 12, fontWeight: 800, color: C.textTer, letterSpacing: ".04em", marginBottom: SPACE.xxs }}>FOTKY A VIDEO — AKO SME POMOHLI</div>
@@ -835,8 +835,8 @@ export function DokladyCharity({ zbierkaId, s, zmen, vyzbierane, teraz, mobil, t
     {!nepovinne && ukoncena && (faza === "vyzva" || faza === "caka") && <section style={kartaS}>
       <span style={nadpisS}>Nemáte doklady?</span>
       <span style={textS}>{faza === "vyzva" ? `Lehota uplynula. Doložte, prosím, do ${dniT(dni)}, alebo napíšte zdôvodnenie.` : "Pri zbierke sa ukazuje „čaká na doklady“. Doložte, alebo napíšte zdôvodnenie."}</span>
-      <textarea value={zdov} onChange={(e) => setZdov(e.target.value)} rows={2} placeholder="Nemáme doklady, pretože…" aria-label="Zdôvodnenie" style={{ ...poleS, resize: "vertical" }} />
-      <button type="button" onClick={() => { if (zdov.trim().length < 20) { toast("Napíšte zdôvodnenie aspoň jednou vetou."); return; } zmen({ zdovodnenieBezDokladov: zdov.trim() }); toast("Zdôvodnenie sme poslali. Posúdi ho DEED+."); }} style={tlO}>Poslať zdôvodnenie</button>
+      <RichTextInput vzhlad="sprava" value={zdov} onChange={setZdov} minH={90} placeholder="Nemáme doklady, pretože…" ariaLabel="Zdôvodnenie" nastroje={["bold", "italic", "insertUnorderedList", "diktovat"]} />
+      <button type="button" onClick={() => { if (cistyText(zdov).length < 20) { toast("Napíšte zdôvodnenie aspoň jednou vetou."); return; } zmen({ zdovodnenieBezDokladov: zdov }); toast("Zdôvodnenie sme poslali. Posúdi ho DEED+."); }} style={tlO}>Poslať zdôvodnenie</button>
     </section>}
     <button type="button" onClick={zverejni} aria-disabled={!hotovo} style={{ ...tlZ, alignSelf: "stretch", opacity: hotovo ? 1 : 0.5, cursor: hotovo ? "pointer" : "default" }}>{nepovinne ? (s.zverejnene ? "Aktualizovať" : "Zverejniť") : s.zverejnene ? "Aktualizovať a poslať darcom" : "Zverejniť a poslať darcom"}</button>
     <span style={{ fontSize: 13, lineHeight: 1.45, color: "var(--ink3)" }}>{s.zverejnene ? `Zverejnené ${dnes(s.zverejnene)}.` : nepovinne ? "Nepovinné. Darcovia uvidia pri zbierke, na čo išli peniaze." : hotovo ? "Darcom pôjde druhá a posledná správa: na čo išli peniaze." : "Najprv doplňte povinné minimum. Darcom potom pôjde druhá a posledná správa."}</span>

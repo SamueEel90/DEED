@@ -6,6 +6,8 @@ import { Emo } from "@/components/icons";
 import { useState, type CSSProperties, type ReactNode } from "react";
 import { C, SPACE, RADIUS } from "@/theme";
 import { Sheet, Switch, tint } from "@/shared";
+import { RichTextInput } from "@/components/richtext";
+import { cistyText } from "@/lib/richtext";
 import { pressable } from "@/components/pressable";
 import { QrModal } from "@/components/qr";
 import { DeedQr, stiahniDeedQr, type DeedOdznak, type DeedQrVariant } from "@/components/deedqr";
@@ -168,10 +170,10 @@ export function DarcoviaSheet({ tier, toast, onClose }: { tier: Tier; toast: (m:
   const [text, setText] = useState("");
 
   const podakuj = () => {
-    if (text.trim().length < 10) { toast("Napíš aspoň krátku vetu poďakovania"); return; }
+    if (cistyText(text).length < 10) { toast("Napíš aspoň krátku vetu poďakovania"); return; }
     const ciele = riadky.filter((r) => (r.dary.length || r.z.darcovia) && (komu === "vsetci" || r.z.id === komu));
     if (!ciele.length) { toast("Zatiaľ tu nie sú darcovia, ktorým by prišlo poďakovanie"); return; }
-    ciele.forEach((r) => pridajOznamDarcom({ zbierkaId: r.z.id, typ: "sprava", text: text.trim() }));
+    ciele.forEach((r) => pridajOznamDarcom({ zbierkaId: r.z.id, typ: "sprava", text: cistyText(text) }));
     setText(""); toast(`Poďakovanie odoslané darcom (${ciele.reduce((a, r) => a + r.dary.length + r.z.darcovia, 0)} darov) 🔔`);
   };
 
@@ -227,7 +229,7 @@ export function DarcoviaSheet({ tier, toast, onClose }: { tier: Tier; toast: (m:
           <Cip on={komu === "vsetci"} onClick={() => setKomu("vsetci")}>Všetkým darcom</Cip>
           {zbierky.map((z) => <Cip key={z.id} on={komu === z.id} onClick={() => setKomu(z.id)}>{z.nazov.length > 22 ? z.nazov.slice(0, 21) + "…" : z.nazov}</Cip>)}
         </div>
-        <textarea value={text} onChange={(e) => setText(e.target.value)} rows={3} placeholder="Ďakujeme, že ste s nami. Vďaka vám…" style={{ ...input, resize: "vertical", marginBottom: SPACE.xs }} />
+        <div style={{ marginBottom: SPACE.xs }}><RichTextInput value={text} onChange={setText} minH={90} placeholder="Ďakujeme, že ste s nami. Vďaka vám…" ariaLabel="Poďakovanie darcom" nastroje={["bold", "italic", "insertUnorderedList", "diktovat"]} /></div>
         <button onClick={podakuj} style={btnHlavny}>Poslať poďakovanie</button>
       </div>
     </Sheet>

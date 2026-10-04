@@ -96,7 +96,7 @@ function AkoSaPrihlasit({ o }: { o: Oznam }) {
         </div>
       )}
       {p.adresa && <div style={{ fontSize: 12.5, marginBottom: 2 }}><span style={{ color: C.textTer }}>Poštou: </span>{p.adresa}</div>}
-      {p.doklady && <div style={{ fontSize: 12, color: C.textSec, marginTop: 4, whiteSpace: "pre-wrap", lineHeight: 1.45 }}>{p.doklady}</div>}
+      {p.doklady && cistyText(p.doklady) && <FormatovanyText text={p.doklady} style={{ fontSize: 12, color: C.textSec, marginTop: 4, lineHeight: 1.45 }} />}
     </div>
   );
 }
@@ -249,8 +249,8 @@ function Formular({ entita, autor, logo, uprava, toast, onHotovo, onSpat }: {
           placeholder="Žiadosť e-mailom na… (nepovinné)" style={{ ...vstup, marginBottom: SPACE.xs }} />
         <input value={p.adresa ?? ""} onChange={(e) => setP({ ...p, adresa: e.target.value })}
           placeholder="Žiadosť poštou na adresu… (nepovinné)" style={{ ...vstup, marginBottom: SPACE.xs }} />
-        <textarea value={p.doklady ?? ""} onChange={(e) => setP({ ...p, doklady: e.target.value })} rows={3} maxLength={500}
-          placeholder="Čo má priložiť? (životopis, doklad o vzdelaní, čestné vyhlásenie…)" style={{ ...vstup, resize: "vertical" }} />
+        <RichTextInput value={p.doklady ?? ""} onChange={(h) => setP({ ...p, doklady: h })} minH={80} tvrdyLimit={500} maxZnakov={500}
+          placeholder="Čo má priložiť? (životopis, doklad o vzdelaní, čestné vyhlásenie…)" ariaLabel="Čo má priložiť" nastroje={["bold", "italic", "insertUnorderedList", "diktovat"]} />
 
         <div style={{ fontSize: 12.5, fontWeight: 700, color: C.textSec, margin: `${SPACE.sm}px 0 4px` }}>Dokument výberového konania <span style={{ fontWeight: 400, color: C.textTer }}>— PDF, ak ho už máte</span></div>
         {p.priloha ? (
@@ -309,7 +309,7 @@ function Zaujemcovia({ inzerat, onSpat }: { inzerat: Oznam; onSpat: () => void }
           <div style={{ fontSize: 12, color: C.textSec, marginTop: 2 }}>
             {[z.telefon, z.email].filter(Boolean).join(" · ") || "kontakt neuviedol"}
           </div>
-          {z.poznamka && <div style={{ fontSize: 12, color: C.textSec, marginTop: 4, lineHeight: 1.45 }}>{z.poznamka}</div>}
+          {z.poznamka && <FormatovanyText text={z.poznamka} style={{ fontSize: 12, color: C.textSec, marginTop: 4, lineHeight: 1.45 }} />}
           <div style={{ fontSize: 10.5, color: C.textTer, marginTop: 4 }}>ozval sa {new Date(z.kedy).toLocaleDateString("sk-SK")}</div>
         </div>
       ))}
@@ -445,7 +445,7 @@ export function MamZaujem({ entita, inzerat, toast }: { entita: string; inzerat:
       meno: meno.trim(),
       telefon: telefon.trim() || undefined,
       email: email.trim() || undefined,
-      poznamka: poznamka.trim() || undefined,
+      poznamka: cistyText(poznamka) ? poznamka : undefined,
       stit: soStitom ? ja.tier : undefined,
     });
     if (!novy) { toast("Ponuku sa nepodarilo nájsť"); return; }
@@ -484,8 +484,8 @@ export function MamZaujem({ entita, inzerat, toast }: { entita: string; inzerat:
       <input value={meno} onChange={(e) => setMeno(e.target.value)} placeholder="Meno" style={{ ...vstup, marginBottom: SPACE.xs }} />
       <input value={telefon} onChange={(e) => setTelefon(e.target.value)} inputMode="tel" placeholder="Telefón (nepovinné)" style={{ ...vstup, marginBottom: SPACE.xs }} />
       <input value={email} onChange={(e) => setEmail(e.target.value)} inputMode="email" placeholder="E-mail (nepovinné)" style={{ ...vstup, marginBottom: SPACE.xs }} />
-      <textarea value={poznamka} onChange={(e) => setPoznamka(e.target.value)} rows={2} maxLength={200}
-        placeholder="Chcete niečo odkázať? (nepovinné)" style={{ ...vstup, resize: "vertical", marginBottom: SPACE.xs }} />
+      <div style={{ marginBottom: SPACE.xs }}><RichTextInput value={poznamka} onChange={setPoznamka} minH={70} tvrdyLimit={200} maxZnakov={200}
+        placeholder="Chcete niečo odkázať? (nepovinné)" ariaLabel="Odkaz pre organizáciu" nastroje={["bold", "italic", "insertUnorderedList", "diktovat"]} /></div>
       <label style={{ display: "flex", alignItems: "center", gap: SPACE.xs, fontSize: 12, color: C.textSec, cursor: "pointer" }}>
         <input type="checkbox" checked={soStitom} onChange={(e) => setSoStitom(e.target.checked)} />
         Priložiť môj štít a karmu {ja.tier ? <span style={{ color: C.textTer }}>({ja.tier})</span> : null}
