@@ -35,7 +35,7 @@ import { potvrditTuknutim, nastavPotvrditTuknutim } from "@/features/zbierka/Pla
 import { TESTOVACIA } from "@/lib/testovacia";
 import { nacitajPiny, ulozPiny, pinyZPamate, nacitajZbalenie, ulozZbalenie, zbalenieZPamate, type Zbalenie } from "@/lib/spravaPiny";
 import { nastavStitSpravy } from "@/lib/stitAppky";
-import { ObrOznamenia, ObrEur, ObrEurc, ObrUcty, ObrSpravcovia, ObrUdaje, ObrProgram, ObrZariadenia, ObrSuhlasy, ObrStiahnut, ObrFaq, ObrPodpora, ObrZrusit, PROG, pocetSpravcov, pocetZariadeni, eurcText, eurText, HLAVNY_UCET } from "./NastaveniaCharity";
+import { ObrOznamenia, ObrEur, ObrEurc, ObrUcty, ObrSpravcovia, ObrUdaje, ObrProgram, ObrFaktury, ObrZariadenia, ObrSuhlasy, ObrStiahnut, ObrFaq, ObrPodpora, ObrZrusit, PROG, pocetSpravcov, pocetZariadeni, eurcText, eurText, HLAVNY_UCET } from "./NastaveniaCharity";
 import {
   FLAGS, KONFIG, nacitajTiery, ulozTiery, maPovolenie, vidnoPolozku, smieSkutokZaCharitu, type RolaStranky, odProgramu, PROGRAM_NAZOV, PIN_MAX,
   nacitajStitCharity, ulozStitCharity, nacitajCharituNovu, ulozCharituNovu,
@@ -158,7 +158,7 @@ const SKUPINA_POLOZKY = (id: PolozkaSpravy, typ: TypStranky = "charita"): Skupin
 type Sub = null | Skupina | "penazenka" | "nast" | "profil" | "vsetko" | PolozkaSpravy | `x:${string}` | `n:${string}`;
 const NAZVY: Record<string, string> = { g_zbierky: "Zbierky", g_obsah: "Obsah", g_ludia: "Ľudia", g_nastroje: "Nástroje a výkazy", penazenka: "Peňaženka", nast: "Nastavenia", profil: "Upraviť profil", vsetko: "Všetko, čo DEED+ vie" };
 /** KARTA 35: obrazovky Nastavení */
-const NAST_OBR: Record<string, string> = { notif: "Čo chcete dostávať", eur: "Dary v eurách", krypto: "Dary v EURC", ucty: "Správa účtov", spravcovia: "Správcovia a prístupy", udaje: "Údaje organizácie", program: "Program a predplatné", zariadenia: "Prihlásené zariadenia", suhlasy: "Súhlasy", stiahnut: "Stiahnuť údaje charity", faq: "Časté otázky", podpora: "Napísať podpore", zrusit: "Zrušiť stránku charity" };
+const NAST_OBR: Record<string, string> = { notif: "Čo chcete dostávať", eur: "Dary v eurách", krypto: "Dary v EURC", ucty: "Správa účtov", spravcovia: "Správcovia a prístupy", udaje: "Údaje organizácie", program: "Program a predplatné", faktury: "Faktúry", zariadenia: "Prihlásené zariadenia", suhlasy: "Súhlasy", stiahnut: "Stiahnuť údaje charity", faq: "Časté otázky", podpora: "Napísať podpore", zrusit: "Zrušiť stránku charity" };
 const titulok = (s: Sub, typ: TypStranky) => (s === null ? "Prehľad" : s.startsWith("x:") ? s.slice(2) : s.startsWith("n:") ? NAST_OBR[s.slice(2)] ?? "Nastavenia" : s === "g_typ" ? TYP_NAZOV[typ] : NAZVY[s] ?? NAZOV_POLOZKY[s as PolozkaSpravy] ?? "Správa stránky");
 
 // ---------- štít ----------
@@ -344,6 +344,7 @@ export function SpravaStranky({ onBack, typ: typStranky = "charita", strankaId =
     const m = !wide, id = sub.slice(2), o = otvor as (s: string) => void; // tablet: Nastavenia v 2 stĺpcoch ako PC
     obsah = id === "notif" ? <ObrOznamenia mobil={m} /> : id === "eur" ? <ObrEur mobil={m} /> : id === "krypto" ? <ObrEurc mobil={m} /> : id === "ucty" ? <ObrUcty mobil={m} otvor={o} />
       : id === "spravcovia" ? <ObrSpravcovia mobil={m} /> : id === "udaje" ? <ObrUdaje mobil={m} />
+      : id === "faktury" ? <ObrFaktury mobil={m} tier={tier} otvor={o} />
       : id === "program" ? <ObrProgram mobil={m} typ={typ} tier={tier} otvor={o} onTier={setTier} />
       : id === "zariadenia" ? <ObrZariadenia mobil={m} /> : id === "suhlasy" ? <ObrSuhlasy mobil={m} otvor={o} /> : id === "stiahnut" ? <ObrStiahnut mobil={m} />
       : id === "faq" ? <ObrFaq otvor={o} /> : id === "podpora" ? <ObrPodpora mobil={m} otvor={o} /> : id === "zrusit" ? <ObrZrusit mobil={m} otvor={o} tier={tier} nova={nova} /> : <Pripravujeme />;
@@ -353,7 +354,7 @@ export function SpravaStranky({ onBack, typ: typStranky = "charita", strankaId =
     onZmena={setKoncept} onZrusit={() => { hist.current = []; setSub(null); }} onHotovo={() => { hist.current = []; setSub(null); }} />;
   else if (sub === "x:Nová zbierka") obsah = <NovaZbierka strankaId={strankaId} pozicia={poz} tier={tier} nazov={nazov} inicialy={inicialy} mobil={!desktop} tablet={tablet} stit={stit}
     onMojeZbierky={() => { hist.current = []; setSub("g_zbierky"); }} />;
-  else if (sub === "x:Správa zbierky" && spravZb) obsah = <SpravaZbierky key={spravZb.id} z={spravZb} mobil={!wide} toast={toast} onZbierky={() => { hist.current = []; setSub("g_zbierky"); }} />;
+  else if (sub === "x:Správa zbierky" && spravZb) obsah = <SpravaZbierky key={spravZb.id} z={spravZb} mobil={!wide} toast={toast} onZbierky={() => { hist.current = []; setSub("g_zbierky"); }} onUdaje={() => otvor("n:udaje")} />;
   else if (sub.startsWith("x:")) obsah = <Pripravujeme />;
   // KARTA 40: Oznamy — v Zadarmo výzva na súrnu pomoc a dva zamknuté druhy (nie „Pripravujeme" ani zámok celej položky)
   else if (sub === "oznamy" && typPovoli("oznamy", typ)) obsah = <OznamySprava strankaId={strankaId} tier={tier} nazov={nazov} inicialy={inicialy} mesto={SUBJEKTY[poz]?.lok ?? "Trenčín"} logo={profil?.logo ?? null} mobil={!desktop} tablet={tablet} toast={toast} onProfil={() => otvor("x:Verejný profil")} zbierky={zbierkyPreOznam} start={oznamStart} />;

@@ -29,6 +29,8 @@ import { OznamDarcoviSheet } from "@/features/notifikacie/OznamDarcovi";
 import type { OrgZbierka } from "./mock";
 import { TextovePolia, GaleriaEditor } from "./obsahZbierky";
 import type { MediumZbierky } from "@/lib/novaZbierka";
+import type { FakturaOrg } from "@/lib/fakturyOrg";
+import { PlatbaOrganizacie, Zaplatene } from "./PlatbaOrganizacie";
 
 const ZELENA = "var(--a-green)";
 const eur = (n: number) => `${n.toLocaleString("sk")} €`;
@@ -83,16 +85,16 @@ export function SpravaZbierkySheet({ z, tier, toast, onPaywall, onClose }: {
   const dalsiePredlzenie = CFG.predlzenia[s.predlzenia];
   const topAktivny = s.top && dniDo(s.top.do, teraz) > 0 ? s.top : null;
 
-  const zaplat = () => {
+  const zaplat = (fa: FakturaOrg) => {
     if (!platba) return;
     if (platba.druh === "predlzenie" && dalsiePredlzenie) {
       zmen({ koniec: pridajDni(s.koniec, dalsiePredlzenie.dni), predlzenia: s.predlzenia + 1 });
-      toast(`Zbierka predĺžená o ${dalsiePredlzenie.dni} dní · ${eur(dalsiePredlzenie.cena)} (demo platba)`);
+      toast(`Zaplatené: predĺžené o ${dalsiePredlzenie.dni} dní · faktúra FA ${fa.cislo}`);
     }
     if (platba.druh === "top") {
       const t = CFG.topovanie.find((x) => x.kluc === platba.kluc)!;
       zmen({ top: { uroven: t.nazov, do: pridajDni(teraz, CFG.topovanieDni) } });
-      toast(`Topovanie ${t.nazov} na ${CFG.topovanieDni} dní · ${eur(t.cena)} (demo platba)`);
+      toast(`Topované: ${t.nazov} na ${CFG.topovanieDni} dní · faktúra FA ${fa.cislo}`);
     }
     setPlatba(null);
   };
@@ -159,10 +161,7 @@ export function SpravaZbierkySheet({ z, tier, toast, onPaywall, onClose }: {
           <Karta nadpis="Predĺžiť zbierku" popis={CFG.predlzenia.map((p, i) => `${i === 0 ? "Predĺženie" : "potom"} o ${p.dni} dní za ${eur(p.cena)}`).join(", ") + "."}>
             {dalsiePredlzenie ? (
               platba?.druh === "predlzenie" ? (
-                <div style={{ display: "flex", gap: SPACE.xs }}>
-                  <button onClick={zaplat} style={btnHlavny}>Zaplatiť {eur(dalsiePredlzenie.cena)}</button>
-                  <button onClick={() => setPlatba(null)} style={{ ...btnDruhy, width: 110 }}>Späť</button>
-                </div>
+                <PlatbaOrganizacie co={`Predĺžiť vo feede o ${dalsiePredlzenie.dni} dní`} cena={dalsiePredlzenie.cena} onZaplatene={(fa) => zaplat(fa)} onZrus={() => setPlatba(null)} />
               ) : (
                 <button onClick={() => setPlatba({ druh: "predlzenie" })} style={{ ...btnDruhy, color: ZELENA, borderColor: tint(ZELENA, .4) }}>
                   +{dalsiePredlzenie.dni} dní za {eur(dalsiePredlzenie.cena)}
@@ -181,14 +180,14 @@ export function SpravaZbierkySheet({ z, tier, toast, onPaywall, onClose }: {
             ) : topAktivny ? (
               <div style={{ fontSize: 12.5, color: ZELENA, fontWeight: 700 }}>⬆ {topAktivny.uroven} · do {datum(topAktivny.do)}</div>
             ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: SPACE.xs }}>
               <div style={{ display: "flex", gap: SPACE.xs }}>
-                {CFG.topovanie.map((t) => (
-                  platba?.druh === "top" && platba.kluc === t.kluc
-                    ? <button key={t.kluc} onClick={zaplat} style={{ ...btnHlavny, flex: 1, height: 52, fontSize: 12.5 }}>Zaplatiť {eur(t.cena)}</button>
-                    : <button key={t.kluc} onClick={() => setPlatba({ druh: "top", kluc: t.kluc })} style={{ ...btnDruhy, flex: 1, height: 52, fontSize: 12.5 }}>
-                        <div style={{ fontWeight: 800, color: C.text }}>{t.nazov}</div><div style={{ fontSize: 11 }}>{eur(t.cena)} / týždeň</div>
-                      </button>
-                ))}
+                {CFG.topovanie.map((t) => { const on = platba?.druh === "top" && platba.kluc === t.kluc; return (
+                  <button key={t.kluc} onClick={() => setPlatba({ druh: "top", kluc: t.kluc })} aria-pressed={on} style={{ ...btnDruhy, flex: 1, height: 52, fontSize: 12.5, ...(on ? { border: "2px solid var(--green)" } : {}) }}>
+                    <div style={{ fontWeight: 800, color: C.text }}>{t.nazov}</div><div style={{ fontSize: 11 }}>{eur(t.cena)} / týždeň</div>
+                  </button>); })}
+              </div>
+              {platba?.druh === "top" && (() => { const t = CFG.topovanie.find((x) => x.kluc === platba.kluc)!; return <PlatbaOrganizacie co={`Topovať · ${t.nazov} · ${CFG.topovanieDni} dní`} cena={t.cena} onZaplatene={(fa) => zaplat(fa)} onZrus={() => setPlatba(null)} />; })()}
               </div>
             )}
           </Karta>
@@ -444,7 +443,7 @@ const dnes = (iso: string) => { const d = new Date(iso); return `${d.getDate()}.
 const dniT = (n: number) => `${n} ${n === 1 ? "deň" : n >= 2 && n <= 4 ? "dni" : "dní"}`;
 const DEN_MS = 86400000;
 
-export function SpravaZbierky({ z, mobil, onZbierky, toast }: { z: ZbierkaNaSpravu; mobil: boolean; onZbierky: () => void; toast: (m: string) => void }) {
+export function SpravaZbierky({ z, mobil, onZbierky, toast, onUdaje }: { z: ZbierkaNaSpravu; mobil: boolean; onZbierky: () => void; toast: (m: string) => void; onUdaje?: () => void }) {
   const [teraz] = useState(() => Date.now());
   const [s, setS] = useState<StavZbierky>(() => {
     const u = nacitajStav(z.id);
@@ -474,16 +473,19 @@ export function SpravaZbierky({ z, mobil, onZbierky, toast }: { z: ZbierkaNaSpra
   const topAktivny = s.top && dniDo(s.top.do, teraz) > 0 ? s.top : null;
   const lehT = z.lehotaText ?? LEHOTA_TEXT[s.lehota];
 
-  // ---- akcie (logika zo starého okna) ----
-  const predlz = () => {
+  // ---- platby organizácie (5. 10. · C): výber → zhrnutie → Podrž a zaplať → potvrdenie s faktúrou ----
+  const [topSel, setTopSel] = useState<string | null>(null);
+  const [predSel, setPredSel] = useState(false);
+  const [hotovo, setHotovo] = useState<{ T?: { text: string; fa: FakturaOrg }; P?: { text: string; fa: FakturaOrg } }>({});
+  const predlz = (fa: FakturaOrg) => {
     const p = CFG.predlzenia[s.predlzenia]; if (!p) return;
     zmen({ koniec: pridajDni(s.koniec, p.dni), predlzenia: s.predlzenia + 1 });
-    toast(`Zbierka je vo feede o ${p.dni} dní dlhšie · ${eur(p.cena)}`);
+    setPredSel(false); setHotovo((h) => ({ ...h, P: { text: `Zaplatené: predĺžené o ${p.dni} dní`, fa } }));
   };
-  const topuj = (kluc: string) => {
+  const topuj = (kluc: string, fa: FakturaOrg) => {
     const t = CFG.topovanie.find((x) => x.kluc === kluc)!;
     zmen({ top: { uroven: t.nazov, do: pridajDni(teraz, CFG.topovanieDni) } });
-    toast(`Topované: ${t.nazov} na ${CFG.topovanieDni} dní · ${eur(t.cena)}`);
+    setTopSel(null); setHotovo((h) => ({ ...h, T: { text: `Topované: ${t.nazov} na ${CFG.topovanieDni} dní`, fa } }));
   };
   // 5. 10. · ukončenie: hárok (prečo, čo sa stane, podrž 1,5 s) → 15 minút sa dá vrátiť, výsledok darcom odíde až potom
   const ukonci = (dovod: string) => {
@@ -565,25 +567,30 @@ export function SpravaZbierky({ z, mobil, onZbierky, toast }: { z: ZbierkaNaSpra
         onSchval={() => { const zm = s.zmenaUcelu!; pridajOznamDarcom({ zbierkaId: z.id, typ: "sprava", text: `Zbierka „${z.nazov}“ mení účel na: ${zm.ucel}. ${cistyText(zm.zdovodnenie)}` }); zmen({ zmenaUcelu: { ...zm, schvalena: new Date().toISOString() } }); }} />}
       {!z.bezPredlzenia && <section style={kartaS}>
         <span style={nadpisS}>Predĺženie vo feede</span>
-        <span style={textS}>30 dní vo feede je v cene. Na vašom profile zbierka beží aj bez predĺženia. Predĺženie platíte len vtedy, keď chcete, aby ju ľudia videli vo feede dlhšie.</span>
-        {CFG.predlzenia.map((p, i) => { const zapl = i < s.predlzenia; return (
-          <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 44, padding: "0 14px", borderRadius: 12, background: zapl ? "var(--gSoft)" : "var(--field)", border: `1px solid ${zapl ? "var(--gBd)" : "transparent"}`, opacity: i <= s.predlzenia ? 1 : 0.5 }}>
-            <span style={{ flex: 1, fontSize: 14.5, fontWeight: 700, color: "var(--ink)" }}>{i === 0 ? `+${p.dni} dní` : `ďalších +${p.dni} dní`}</span>
-            <span style={{ fontSize: 14.5, fontWeight: 800, color: zapl ? "var(--gInk)" : "var(--ink)" }}>{zapl ? "zaplatené" : eur(p.cena)}</span>
-          </div>); })}
-        {dalsie ? <button type="button" onClick={predlz} style={tlZ}>Predĺžiť o {dalsie.dni} dní · {eur(dalsie.cena)}</button>
-          : <span style={textS}>Zbierka je vo feede najdlhšie, ako sa dá, {maxFeed} dní.</span>}
+        <span style={textS}>{CFG.dlzkaDni} dní vo feede je v cene, ostáva {dniT(vFeede)}. Na profile zbierka beží aj bez predĺženia. Predlžuje sa vždy o {CFG.predlzenia[0].dni} dní, zaplatíte v ďalšom kroku.</span>
+        {s.predlzenia > 0 && <span style={{ fontSize: 13.5, fontWeight: 800, color: "var(--gInk)" }}>Zaplatené: +{CFG.predlzenia.slice(0, s.predlzenia).reduce((a, p) => a + p.dni, 0)} dní vo feede{dalsie ? "" : ` · viac sa nedá, najviac ${maxFeed} dní`}</span>}
+        {dalsie && <button type="button" onClick={() => setPredSel(true)} aria-pressed={predSel} style={{ minHeight: 64, padding: "0 18px", borderRadius: 14, border: predSel ? "2px solid var(--green)" : "1px solid var(--cardBd)", background: predSel ? "var(--gSoft)" : "var(--field)", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, color: "var(--ink)", textAlign: "left" }}>
+          <span style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 2 }}>
+            <b style={{ fontSize: 15.5 }}>{s.predlzenia ? `Ďalších +${dalsie.dni} dní` : `+${dalsie.dni} dní`}</b>
+            <span style={{ fontSize: 12.5, color: "var(--ink3)" }}>{CFG.predlzenia[s.predlzenia + 1] ? `ďalšie predĺženie bude za ${eur(CFG.predlzenia[s.predlzenia + 1].cena)}` : "posledné možné predĺženie"}</span>
+          </span>
+          <b style={{ fontSize: 18, fontVariantNumeric: "tabular-nums" }}>{eur(dalsie.cena)}</b>
+        </button>}
+        {dalsie && predSel && <PlatbaOrganizacie co={`Predĺžiť vo feede o ${dalsie.dni} dní`} cena={dalsie.cena} onZaplatene={predlz} onZrus={() => setPredSel(false)} onUdaje={onUdaje} />}
+        {hotovo.P && !predSel && <Zaplatene text={hotovo.P.text} fa={hotovo.P.fa} />}
       </section>}
       <section style={kartaS}>
         <span style={nadpisS}>Topovať</span>
-        <span style={textS}>Na {CFG.topovanieDni} dní bude zbierka vyššie vo feede. Je to len jedno z kritérií popri blízkosti a overení.</span>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3,minmax(0,1fr))", gap: 8 }}>
-          {CFG.topovanie.map((t) => { const on = topAktivny?.uroven === t.nazov; return (
-            <button key={t.kluc} type="button" onClick={() => topuj(t.kluc)} disabled={!!topAktivny && !on} aria-pressed={on} style={{ minHeight: 64, padding: 8, borderRadius: 14, cursor: topAktivny ? "default" : "pointer", fontFamily: "inherit", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 2, background: on ? "var(--gSoft)" : "var(--field)", border: `1.5px solid ${on ? "var(--green)" : "transparent"}`, color: "var(--ink)", opacity: topAktivny && !on ? 0.5 : 1 }}>
-              <b style={{ fontSize: 15 }}>{t.nazov}</b><span style={{ fontSize: 13.5, color: "var(--ink3)" }}>{eur(t.cena)} · {CFG.topovanieDni} dní</span>
+        <span style={textS}>Na {CFG.topovanieDni} dní bude zbierka vyššie vo feede. Vyberte, kde. Zaplatíte až v ďalšom kroku.</span>
+        <div role="radiogroup" aria-label="Kde topovať" style={{ display: "grid", gridTemplateColumns: "repeat(3,minmax(0,1fr))", gap: 8 }}>
+          {CFG.topovanie.map((t) => { const on = topAktivny ? topAktivny.uroven === t.nazov : topSel === t.kluc; const dis = !!topAktivny; return (
+            <button key={t.kluc} type="button" role="radio" aria-checked={on} aria-disabled={dis || undefined} onClick={() => { if (!dis) setTopSel(t.kluc); }} style={{ minHeight: 64, padding: 8, borderRadius: 14, cursor: dis ? "default" : "pointer", fontFamily: "inherit", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 2, background: on ? "var(--gSoft)" : "var(--field)", border: on ? "2px solid var(--green)" : "1px solid var(--cardBd)", color: "var(--ink)", opacity: dis && !on ? 0.5 : 1 }}>
+              <b style={{ fontSize: 15 }}>{t.nazov}</b><span style={{ fontSize: 13, color: "var(--ink3)" }}>{eur(t.cena)} · {CFG.topovanieDni} dní</span>
             </button>); })}
         </div>
-        {topAktivny && <span style={{ fontSize: 13.5, fontWeight: 700, color: "var(--gInk)" }}>Topované: {topAktivny.uroven} na {CFG.topovanieDni} dní · {eur(CFG.topovanie.find((t) => t.nazov === topAktivny.uroven)?.cena ?? 0)} · do {dnes(topAktivny.do)}</span>}
+        {topSel && !topAktivny && (() => { const t = CFG.topovanie.find((x) => x.kluc === topSel)!; return <PlatbaOrganizacie co={`Topovať · ${t.nazov} · ${CFG.topovanieDni} dní`} cena={t.cena} onZaplatene={(fa) => topuj(t.kluc, fa)} onZrus={() => setTopSel(null)} onUdaje={onUdaje} />; })()}
+        {hotovo.T ? <Zaplatene text={hotovo.T.text} fa={hotovo.T.fa} />
+          : topAktivny && <span style={{ fontSize: 13.5, fontWeight: 700, color: "var(--gInk)" }}>Topované: {topAktivny.uroven} na {CFG.topovanieDni} dní · do {dnes(topAktivny.do)}</span>}
       </section>
       <section style={kartaS}>
         <span style={nadpisS}>Doklady</span>
