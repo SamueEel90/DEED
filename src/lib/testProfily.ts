@@ -159,6 +159,8 @@ export interface TestProfil {
   titulka: string;
   /** 2. pád mena („Všetky Iskry Svetla pomoci") */
   menoGen?: string;
+  /** 3. pád mena („Darovať Svetlu pomoci") */
+  menoDat?: string;
   /** „Podporiť …" v module (4. pád, ak sa líši od mena) */
   podporit?: string;
   /** O nás (návrh v2): nadpis, text a oblasti */
@@ -206,7 +208,7 @@ const sektor = (
 // 1 · CHARITA — Svetlo pomoci o.z. (sídlo Trenčín)
 // ============================================================
 const CHARITA: TestProfil = {
-  k: "svetlo", typ: "charita", meno: "Svetlo pomoci o.z.", iniciala: "SP", menoGen: "Svetla pomoci",
+  k: "svetlo", typ: "charita", meno: "Svetlo pomoci o.z.", iniciala: "SP", menoGen: "Svetla pomoci", menoDat: "Svetlu pomoci",
   veta: "Varíme, opravujeme, sprevádzame. Rodiny, seniori a ľudia bez domova v Trenčíne, Prešove a Bratislave.",
   mesto: "Trenčín", stit: "Gold", odRoku: 2023,
   stitky: ["Trenčín", "od 2023", "Overená organizácia · IČO"],

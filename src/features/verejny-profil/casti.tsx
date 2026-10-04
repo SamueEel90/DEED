@@ -251,7 +251,7 @@ export function usePodanie(): [Podanie, (p: Podanie) => void] {
   useEffect(() => { const f = () => setP(nacitajPodanie()); podaniePosl.add(f); return () => { podaniePosl.delete(f); }; }, []);
   return [p, (n: Podanie) => { try { localStorage.setItem(KLUC_PODANIE, n); } catch { /* LS */ } podaniePosl.forEach((f) => f()); }];
 }
-export const PODANIA: [Podanie, string][] = [["kronika", "Kronika"], ["vyklad", "Výklad"]];
+export const PODANIA: [Podanie, string][] = [["kronika", "Kronika"], ["vyklad", "Výklad"], ["pirat", "Pirát"]];
 export function PrepinacPodania({ tmavy, style }: { tmavy?: boolean; style?: CSSProperties }) {
   const [p, setP] = usePodanie();
   const vol = PODANIA;

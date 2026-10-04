@@ -176,10 +176,10 @@ export function RokyOs({ roky, onDetail }: { roky: { t: string; sum: [string, st
 }
 
 /** malá karta zbierky (fotka 80 px, štítok, názov, pruh, suma) */
-export function MalaZbierka({ z, onDetail }: { z: TestZbierka; onDetail: (z: TestZbierka) => void }) {
+export function MalaZbierka({ z, onDetail, t = 80 }: { z: TestZbierka; onDetail: (z: TestZbierka) => void; t?: number }) {
   return (
     <button type="button" onClick={() => onDetail(z)} style={{ display: "flex", gap: 12, alignItems: "center", padding: 10, borderRadius: 18, background: "var(--card)", border: "1px solid var(--cardBd)", cursor: "pointer", textAlign: "left", color: "var(--ink)", fontFamily: "inherit" }}>
-      <span style={{ flex: "none", width: 80, height: 80, borderRadius: 14, background: bgF(z.foto) }} />
+      <span style={{ flex: "none", width: t, height: t, borderRadius: 14, background: bgF(z.foto) }} />
       <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 5 }}>
         <span style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: ".08em", color: "var(--ink3)" }}>{stZb(z)}</span>
         <b style={{ fontSize: 15, lineHeight: 1.25 }}>{z.nazov}</b>

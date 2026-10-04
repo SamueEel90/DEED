@@ -9,7 +9,7 @@ import { ModulProfilu } from "./ModulProfilu";
 const bg = (f: string) => `url('${f}') center/cover no-repeat #3a3530`;
 export type RezPodpory = "pc" | "tab" | "mob";
 
-export function PodporaProfilu({ profil, lok, domace, rez, stlpce = rez === "tab" ? 4 : 2, nadpis = "TIPY NA PRAVIDELNÝ DAR", vyska }: {
+export function PodporaProfilu({ profil, lok, domace, rez, stlpce = rez === "tab" ? 4 : 2, nadpis = "TIPY NA PRAVIDELNÝ DAR", vyska, mod: modP, onMod }: {
   profil: TestProfil; lok: Lokalita; domace: Mesto; rez: RezPodpory;
   /** počet dlaždíc v rade (tablet 4, inak 2) */
   stlpce?: number;
@@ -17,8 +17,12 @@ export function PodporaProfilu({ profil, lok, domace, rez, stlpce = rez === "tab
   nadpis?: string;
   /** výška dlaždice (Výklad PC 118, mobil 104) */
   vyska?: number;
+  /** KARTA 45 · Pirát: otvorený modul riadi rodič (ťuk na „Darovať na celú činnosť" / sektor) */
+  mod?: number | null; onMod?: (i: number | null) => void;
 }) {
-  const [mod, setMod] = useState<number | null>(null);
+  const [modVl, setModVl] = useState<number | null>(null);
+  const mod = onMod ? (modP ?? null) : modVl;
+  const setMod = (i: number | null) => (onMod ? onMod(i) : setModVl(i));
   const nadpisRef = useRef<HTMLSpanElement | null>(null);
   const sk = lok === "Celé Slovensko";
   const mestoV = sk ? "celom Slovensku" : vMeste(lok);

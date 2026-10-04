@@ -11,6 +11,7 @@ import { VrstvaProfilu, naZbierkaData, PrepinacPodania, usePodanie } from "./cas
 import { TESTOVACIA } from "@/lib/testovacia";
 import { Kronika } from "./Kronika";
 import { VykladCharita } from "./VykladCharita";
+import { PiratCharita } from "./PiratCharita";
 import { Vyklad } from "./Vyklad";
 import { Pirat } from "./Pirat";
 
@@ -32,6 +33,7 @@ export function VerejnyProfilView({ kluc, onBack }: { kluc: string; onBack: () =
   if (profil.typ === "firma") return <Vyklad profil={profil} onDetail={setDetail} onBack={onBack} />;
   if (profil.typ === "tvorca") return <Pirat profil={profil} onDetail={setDetail} onBack={onBack} />;
   const prepinac = TESTOVACIA ? <PrepinacPodania /> : undefined;
+  if (podanie === "pirat") return <PiratCharita profil={profil} onDetail={setDetail} onBack={onBack} prepinac={TESTOVACIA ? <PrepinacPodania tmavy /> : undefined} />;
   if (podanie === "vyklad") return <VykladCharita profil={profil} onDetail={setDetail} onBack={onBack} prepinac={prepinac} />;
   return <Kronika profil={profil} onDetail={setDetail} onBack={onBack} prepinac={prepinac} />;
 }
