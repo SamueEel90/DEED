@@ -47,10 +47,17 @@ export function StreamZbierka({ profil, streamId, onBack, onTvorca }: { profil: 
   const bodka = po ? "#85867B" : "#E5483A", bodkaAnim = po ? "none" : "vpPulz 1.2s ease infinite";
   const [ls, lt] = st.live[live % st.live.length];
 
-  const tlHore: CSSProperties = { alignSelf: "flex-start", justifySelf: "start", height: 44, padding: onBack ? "0 14px 0 8px" : "0 14px", border: "1px solid var(--cardBd)", borderRadius: 14, background: "var(--card)", cursor: "pointer", display: "flex", alignItems: "center", gap: 4, fontSize: 14, fontWeight: 800, color: "var(--ink)", boxShadow: "none", fontFamily: "inherit" };
-  const hore = onBack
-    ? <button type="button" onClick={onBack} aria-label="Späť" style={tlHore}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6" /></svg>Späť</button>
-    : onTvorca ? <button type="button" onClick={onTvorca} style={tlHore}>{st.tvorca} ›</button> : null;
+  // Späť vľavo hore (vždy): z appky „‹ Späť" na to isté miesto · cez QR / odkaz „‹ {tvorca}" otvorí profil tvorcu
+  const spat = onBack ?? onTvorca;
+  const hore = spat && (
+    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+      <button type="button" onClick={spat} aria-label={onBack ? "Späť" : `${st.tvorca} · profil tvorcu`} style={{ height: 44, padding: "0 14px 0 8px", border: "1px solid var(--cardBd)", borderRadius: 14, background: "var(--card)", cursor: "pointer", display: "flex", alignItems: "center", gap: 4, fontSize: 14.5, fontWeight: 800, color: "var(--ink)", boxShadow: "none", fontFamily: "inherit" }}>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6" /></svg>{onBack ? "Späť" : st.tvorca}
+      </button>
+      <span style={{ flex: 1 }} />
+      <span style={{ fontSize: 12, color: "var(--ink3)" }}>{onBack ? "na profil tvorcu, kde si bol" : "otvorí stránku tvorcu v DEED+"}</span>
+    </div>
+  );
 
   const pas = (
     <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderRadius: 16, background: "#1D211B", color: "#fff" }}>
@@ -59,7 +66,7 @@ export function StreamZbierka({ profil, streamId, onBack, onTvorca }: { profil: 
         <b style={{ fontSize: 14 }}>{po ? `${st.tvorcaKratko} vysielal pre túto zbierku` : `${st.tvorca} vysiela naživo`}</b>
         <span style={{ fontSize: 12, opacity: 0.75 }}>{po ? `${st.platforma} · ${st.datum} · ${st.dlzka}` : `${st.platforma} · sleduje ${st.divaci.toLocaleString("sk-SK")} ľudí`}</span>
       </span>
-      <button type="button" style={{ flex: "none", height: 40, padding: "0 14px", border: "none", borderRadius: 12, background: "rgba(255,255,255,.12)", display: "flex", alignItems: "center", fontSize: 13, fontWeight: 800, color: "#fff", whiteSpace: "nowrap", cursor: "pointer", boxShadow: "none", fontFamily: "inherit" }}>{po ? `Záznam na ${st.platforma}` : "Späť na stream"} ↗</button>
+      <button type="button" style={{ flex: "none", height: 44, padding: "0 14px", border: "none", borderRadius: 12, background: "rgba(255,255,255,.12)", display: "flex", alignItems: "center", fontSize: 13, fontWeight: 800, color: "#fff", whiteSpace: "nowrap", cursor: "pointer", boxShadow: "none", fontFamily: "inherit" }}>{po ? `Záznam na ${st.platforma}` : "Späť na stream"} ↗</button>
     </div>
   );
 

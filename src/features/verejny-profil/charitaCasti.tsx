@@ -1,6 +1,6 @@
 // KARTA 45 · spoločné dáta a diely pre Výklad a Pirát charity (rovnaké dáta ako Kronika, iné podanie).
 // Dáta: testProfily.ts (Svetlo pomoci). Iskry z lib/iskry (2 cesty: Iskry · Zbierky).
-import { useEffect, useState, type CSSProperties } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 import { eur, tvar, vLokalite, type Lokalita, type Mesto, type TestProfil, type TestZbierka } from "@/lib/testProfily";
 import { ISKRY_CFG, iskraViditelna, iskryVsetky, useZmenyIskier, zbierkaIskry, type Iskra } from "@/lib/iskry";
 import { otvorIskry } from "@/features/iskry/otvor";
@@ -91,18 +91,39 @@ export function IskryTaby({ isk, onIsk, fs = 14.5 }: { isk: number; onIsk: (i: n
     </div>);
 }
 
+/** karta „Všetky … ›" na konci radu videí: mobil a tablet nikdy, PC (≥ 1200) len keď rad pretečie (scrollWidth > clientWidth).
+ *  navyse = šírka karty + medzera (pri meraní sa odpočíta, keď už karta v rade je). */
+export function useVsetkyNaKonci(navyse: number, zmena: unknown) {
+  const ref = useRef<HTMLDivElement | null>(null);
+  const [ukaz, setUkaz] = useState(false);
+  const ukazRef = useRef(false);
+  ukazRef.current = ukaz;
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const q = window.matchMedia("(min-width: 1200px)");
+    const f = () => setUkaz(q.matches && el.scrollWidth - (ukazRef.current ? navyse : 0) > el.clientWidth + 1);
+    f();
+    const ro = new ResizeObserver(f); ro.observe(el);
+    q.addEventListener("change", f);
+    return () => { ro.disconnect(); q.removeEventListener("change", f); };
+  }, [navyse, zmena]);
+  return [ref, ukaz] as const;
+}
+
 /** Z ISKIER: nadpis, prepínač a vodorovný rad videí */
 export function ZIskier({ profil, cesty, w, h, wVs, nadpis = true }: { profil: TestProfil; cesty: Iskra[][]; w: number; h: number; wVs: number; nadpis?: boolean }) {
   const [isk, setIsk] = useState(0);
   const tu = cesty[isk];
+  const [radRef, vsetky] = useVsetkyNaKonci(wVs + 10, `${isk}:${tu.length}`);
   if (!cesty[0].length && !cesty[1].length) return null;
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 10, paddingTop: 8 }}>
       {nadpis && <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".1em", color: "var(--acc)" }}>Z ISKIER</span>}
       <IskryTaby isk={isk} onIsk={setIsk} />
-      <div style={{ display: "flex", gap: 10, overflowX: "auto", paddingBottom: 2 }}>
+      <div ref={radRef} style={{ display: "flex", gap: 10, overflowX: "auto", paddingBottom: 2 }}>
         {tu.map((v) => <KartaIskry key={v.id} v={v} w={w} h={h} />)}
-        {tu.length > 0 && <button type="button" onClick={() => otvorIskry(tu[0].id)} style={{ flex: "none", width: wVs, height: h, borderRadius: 18, border: "1.5px dashed var(--cardBd)", background: "transparent", display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center", padding: 10, fontSize: 13.5, fontWeight: 800, color: "var(--green)", cursor: "pointer", fontFamily: "inherit" }}>
+        {tu.length > 0 && vsetky && <button type="button" onClick={() => otvorIskry(tu[0].id)} style={{ flex: "none", width: wVs, height: h, borderRadius: 18, border: "1.5px dashed var(--cardBd)", background: "transparent", display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center", padding: 10, fontSize: 13.5, fontWeight: 800, color: "var(--green)", cursor: "pointer", fontFamily: "inherit" }}>
           {isk ? "Všetky videá k zbierkam ›" : `Všetky Iskry ${profil.menoGen ?? profil.meno} ›`}</button>}
         {!tu.length && <span style={{ fontSize: 14, color: "var(--ink3)", padding: "6px 2px" }}>{isk ? "Zatiaľ tu nie je žiadne video k zbierkam." : "Zatiaľ tu nie je žiadna Iskra."}</span>}
       </div>
