@@ -30,6 +30,7 @@ import { Registracia } from "@/features/registracia/Registracia";
 import { RetazPodstranka } from "@/features/retaz/RetazPodstranka";
 import { PridatSkutokHost } from "@/features/skutok/PridatSkutok";
 import { IskryHost } from "@/features/iskry/Iskry";
+import { zavriIskry } from "@/features/iskry/otvor";
 import { PridatIskruHost } from "@/features/iskry/PridatIskru";
 import { VerejnyProfilHost } from "@/features/verejny-profil/VerejnyProfil";
 import { useVrstvaProfiluOtvorena } from "@/features/verejny-profil/otvor";
@@ -345,7 +346,8 @@ export function Screens({ wide, desktop }: { wide?: boolean; desktop?: boolean }
         <PullToRefresh scrollRef={scrollRef} />
 
         {/* desktop: ľavá bočná navigácia (nahrádza spodný dok) */}
-        {desktop && <Sidebar moduly={moduly} aktivny={modul} onModul={prepni} onViac={() => setViac(true)} onPenazenka={() => { prepni("profil"); setWalletReq((n) => n + 1); }} />}
+        {/* OPRAVY 138/4: menu funguje aj nad Iskrami (zbierka / profil otvorený z Iskier) — ťuk Iskry zavrie */}
+        {desktop && <Sidebar moduly={moduly} aktivny={modul} onModul={(m) => { zavriIskry(); prepni(m); }} onViac={() => { zavriIskry(); setViac(true); }} onPenazenka={() => { zavriIskry(); prepni("profil"); setWalletReq((n) => n + 1); }} />}
 
         {/* obsah aktívneho modulu — scroll vo vnútri. Mobil/tablet: miesto pre dok + FAB (~168px); desktop: len odsadenie pre FAB.
             role="main" (nie <main>) — ref je zdieľaný ako HTMLDivElement (ScrollEl/PullToRefresh) */}

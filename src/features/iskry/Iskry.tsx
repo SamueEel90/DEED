@@ -24,6 +24,7 @@ import { naZbierkaData } from "@/features/verejny-profil/casti";
 import { PlatobneOkno } from "@/features/zbierka/Platba";
 import type { KanalPlatby } from "@/features/zbierka/Sumy";
 import { useIskryOtvorene, zavriIskry, startIskry, zabudniStartIskry } from "./otvor";
+import { useLayout } from "@/components/context";
 import { Harok as SpolocnyHarok } from "@/features/zbierka/Zdielat";
 import { DeedQr, stiahniDeedQr } from "@/components/deedqr";
 import { CudziProfil } from "@/features/cudzi-profil/CudziProfil";
@@ -103,6 +104,8 @@ function IskryPrud() {
   const posledny = useRef<{ id: string; t: number; x: number; y: number } | null>(null);
 
   const pc = usePcIskry();
+  // OPRAVY 138/4: na PC pri otvorenej zbierke, profile alebo autorovi ostane vľavo ľavé menu appky (104 px), nie prázdny pás
+  const { desktop } = useLayout();
   // PC: Celá obrazovka (Fullscreen API) — tlačidlo vpravo hore aj kláves F; Esc / F / ťuk = späť
   const dialogRef = useRef<HTMLDivElement | null>(null);
   const [cela, setCela] = useState(() => !!document.fullscreenElement);
@@ -239,7 +242,7 @@ function IskryPrud() {
 
   return (
     <div ref={dialogRef} className="isk-dialog" role="dialog" aria-modal="true" aria-label="Iskry" onClick={(e) => { if (pc && e.target === e.currentTarget) zavriIskry(); }}
-      style={{ position: "fixed", inset: 0, zIndex: 140, zoom: bezZoomu(), background: "#0E0F0C", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", fontFamily: "'Plus Jakarta Sans', sans-serif" } as CSSProperties}>
+      style={{ position: "fixed", top: 0, right: 0, bottom: 0, left: desktop && (profil || zbOkno || orgProfil) ? 104 : 0, zIndex: 140, zoom: bezZoomu(), background: "#0E0F0C", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", fontFamily: "'Plus Jakarta Sans', sans-serif" } as CSSProperties}>
       {/* po bokoch rozmazaná kópia aktuálneho videa (nie čierne pásy) */}
       {boky && akt && <div aria-hidden="true" style={{ position: "absolute", inset: 0, pointerEvents: "none", overflow: "hidden" }}>
         <div style={{ position: "absolute", inset: 0, background: akt.bg, filter: "blur(40px)", transform: "scale(1.2)" }} />
@@ -371,7 +374,7 @@ function IskryPrud() {
         {(zbOkno || orgProfil) && <div style={{ position: "absolute", inset: 0, zIndex: 41, overflowY: "auto", background: "var(--c-bg, #F1ECE1)", color: "var(--ink, #1D211B)", textShadow: "none", zoom: 1 / bezZoomu() } as CSSProperties}>
           {orgProfil ? <CudziProfil subjekt={{ typ: "org", meno: orgProfil }} toast={toast} onBack={() => setOrgProfil(null)} />
             : zbOkno && (() => { const d = zbierkaIskry(zbOkno); if (!d) return null; return (
-              <div className="sc-tokeny" data-stit={d.profil.stit.toLowerCase()} style={{ position: "fixed", inset: 0, overflowY: "auto", background: "var(--bg)" }}>
+              <div className="sc-tokeny" data-stit={d.profil.stit.toLowerCase()} style={{ position: "fixed", top: 0, right: 0, bottom: 0, left: desktop ? 104 : 0, overflowY: "auto", background: "var(--bg)" }}>
                 <div style={{ maxWidth: 1240, margin: "0 auto", padding: 14 }}>
                   <ZbierkaModul zbierka={naZbierkaData(d.z, d.profil)} onBack={() => setZbOkno(null)} spatNazov="Späť do Iskier" />
                 </div>
