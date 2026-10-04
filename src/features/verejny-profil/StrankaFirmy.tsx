@@ -178,7 +178,7 @@ export function StrankaFirmy({ profil, onDetail, onBack }: { profil: TestProfil;
   const fondEl = <>
     <span style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: ".1em", color: "var(--acc)", paddingTop: pc ? 0 : 6 }}>FOND DOBROTY · DARUJ S NAMI</span>
     <span style={{ fontSize: 13, lineHeight: 1.45, color: "var(--ink3)" }}>{b.fondText}</span>
-    <div ref={dlRef} style={{ scrollMarginTop: 56, display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 10 }}>
+    <div ref={dlRef} style={{ scrollMarginTop: 56, display: mod == null ? "grid" : "none", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 10 }}>
       {fond.map((d, i) => {
         const on = mod === i;
         return (

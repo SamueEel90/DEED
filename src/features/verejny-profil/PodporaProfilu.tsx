@@ -1,6 +1,6 @@
 // OPRAVY 139 / 141 · jedna podpora na všetkých verejných profiloch (Kronika, Výklad, Pirát):
 // „TIPY NA PRAVIDELNÝ DAR" → 4 dlaždice (centrálna + 3 sektory, farba podľa poradia) → ťuk rozbalí pod nimi
-// náš platobný modul (ModulProfilu). Zbaliť ⌃ zatvorí modul a vráti stránku na dlaždice.
+// náš platobný modul (ModulProfilu). 5. 10.: po výbere sa ostatné dlaždice skryjú, Zbaliť ⌃ vráti všetky 4.
 import { useRef, useState } from "react";
 import { eur, type Lokalita, type Mesto, type TestProfil, type TestSektor } from "@/lib/testProfily";
 import { vMeste } from "./casti";
@@ -35,7 +35,7 @@ export function PodporaProfilu({ profil, lok, domace, rez, stlpce = rez === "tab
   return (
     <>
       <span ref={nadpisRef} style={{ scrollMarginTop: 56, fontSize: 11.5, fontWeight: 800, letterSpacing: ".1em", color: "var(--acc)", paddingTop: rez === "mob" ? 6 : 4 }}>{nadpis}{nadpis === "TIPY NA PRAVIDELNÝ DAR" && <> <span style={{ fontWeight: 600, letterSpacing: 0, color: "var(--ink3)" }}>· aj jednorazovo, zrušíš kedykoľvek</span></>}</span>
-      <div style={{ display: "grid", gridTemplateColumns: `repeat(${stlpce},minmax(0,1fr))`, gap: rez === "mob" ? 8 : 10 }}>
+      {mod == null && <div style={{ display: "grid", gridTemplateColumns: `repeat(${stlpce},minmax(0,1fr))`, gap: rez === "mob" ? 8 : 10 }}>
         {sektory.map((d, i) => {
           const on = mod === i;
           const sumaT = d.mesiac != null ? `${eur(d.mesiac)} tento mesiac` : d.mesta[sk ? domace : (lok as Mesto)]?.dlazdica;
@@ -51,7 +51,7 @@ export function PodporaProfilu({ profil, lok, domace, rez, stlpce = rez === "tab
               </span>
             </button>);
         })}
-      </div>
+      </div>}
       {modul && (rez === "tab" ? <div style={{ width: "100%", maxWidth: 560, alignSelf: "center" }}>{modul}</div> : modul)}
     </>
   );
