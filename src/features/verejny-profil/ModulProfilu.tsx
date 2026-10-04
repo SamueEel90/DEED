@@ -17,6 +17,7 @@ import { ZdielatHarok } from "@/features/zbierka/Zdielat";
 import { PravidelnaHarok } from "@/features/zbierka/PravidelnaHarok";
 import { PodporitDeedHarok } from "@/features/zbierka/PodporitDeed";
 import { RetazDobraHarok } from "@/features/zbierka/RetazDobra";
+import { SvetlusikInfo, SvetlusikKarta } from "@/components/SvetlusikInfo";
 import "@/styles/platba.css";
 import "@/styles/animacie.css";
 
@@ -49,11 +50,9 @@ export function ModulProfilu({ profil, sektor, poradie, mestoV, onZbal }: {
             <b style={{ fontSize: 20, lineHeight: 1.2 }}>{sektor.nazov}</b>
             <span style={{ fontSize: 13, lineHeight: 1.4, color: "var(--ink3)" }}>{profil.meno} · {typ2}</span>
           </span>
-          <button type="button" onClick={() => setInfo((x) => !x)} aria-expanded={info} aria-label="Ako to funguje" style={{ flex: "none", width: 44, height: 44, padding: 0, border: "none", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <span style={{ width: 24, height: 24, borderRadius: "50%", background: info ? "var(--hcF)" : "var(--ink4)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "Georgia,serif", fontStyle: "italic", fontSize: 15, fontWeight: 700, lineHeight: 1 }}>i</span>
-          </button>
+          <SvetlusikInfo otv={info} onPrepni={() => setInfo((x) => !x)} />
         </div>
-        {info && <div style={{ margin: "0 12px 12px", padding: "12px 14px", borderRadius: 14, background: "var(--gSoft)", fontSize: 13.5, lineHeight: 1.5, color: "var(--ink)", textWrap: "pretty" } as CSSProperties}>{infoText}</div>}
+        {info && <SvetlusikKarta style={{ margin: "0 12px 12px" }}>{infoText}</SvetlusikKarta>}
       </div>
       <Modul profil={profil} sektor={sektor} mestoV={mestoV} />
       <button type="button" onClick={onZbal} style={{ height: 44, border: "none", background: "transparent", cursor: "pointer", fontSize: 13.5, fontWeight: 800, color: "var(--ink3)" }}>Zbaliť ⌃</button>
