@@ -916,7 +916,7 @@ function SheetAdresar({ domovska, oblubene, onDomov, onFollow, onProfil, onClose
                       <div style={{ display: "flex", flexDirection: "column", gap: SPACE.xs }}>
                         <button onClick={() => setPotvrdDom(f.id)} disabled={dom} style={adrBtn(N.ind, !dom)}>{dom ? "✓ toto je tvoja domovská" : "🏠 Nastaviť ako domovskú"}</button>
                         <div style={{ display: "flex", gap: SPACE.sm }}>
-                          <button onClick={() => onFollow(f.id)} style={{ ...adrBtn(foll ? N.green : N.txt2, false), flex: 1 }}>{foll ? "✓ Sledujem" : "+ Pridať k obľúbeným"}</button>
+                          <button onClick={() => onFollow(f.id)} style={{ ...adrBtn(foll ? N.green : N.txt2, false), flex: 1 }}>{foll ? "✓ Sledujem" : "+ Sledovať"}</button>
                           <button onClick={() => onProfil(f)} style={{ ...adrBtn(N.txt2, false), flex: 1 }}>Otvoriť profil ›</button>
                         </div>
                       </div>
@@ -932,7 +932,7 @@ function SheetAdresar({ domovska, oblubene, onDomov, onFollow, onProfil, onClose
               V cirkvi <b>{cirkev.meno}</b> zatiaľ nemáme farnosť{obec ? ` pri „${obec}"` : ""}.<br />Napíš inú obec alebo skús neskôr — adresár sa plní, ako sa farnosti registrujú.
             </div>
           )}
-          <div style={{ fontSize: 10.5, color: N.txt3, textAlign: "center", padding: `${SPACE.md}px 0` }}>Domovská = súhlas o vierovyznaní (A9). Obľúbené len pridávajú obsah do feedu (aj iné vyznanie cez hľadanie — medzináboženská solidarita).</div>
+          <div style={{ fontSize: 10.5, color: N.txt3, textAlign: "center", padding: `${SPACE.md}px 0` }}>Domovská = súhlas o vierovyznaní (A9). Sledované len pridávajú obsah do feedu (aj iné vyznanie cez hľadanie — medzináboženská solidarita).</div>
         </>
       )}
     </SheetPanel>

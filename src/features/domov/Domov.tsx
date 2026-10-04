@@ -842,8 +842,8 @@ export function DomovDetail({ it, toast, oslavuj, onBack, onVerify, onAutor }: G
           <MoznostRiadok ikona={<IkonaDoska size={17} color={C.textSec} />} label="Kopírovať odkaz"
             onClick={() => { setMoznosti(false); void kopiruj(aktualnaUrl(), toast); }} />
           <MoznostRiadok ikona={<IkonaUlozit size={17} color={jeOblubene(it.id) ? "var(--a-gold)" : C.textSec} />}
-            label={jeOblubene(it.id) ? "Odobrať z obľúbených" : "Uložiť do obľúbených"}
-            onClick={() => { const bolo = jeOblubene(it.id); toggleOblubene(oblubenyZGood(it)); toast(bolo ? "Odobrané z obľúbených" : "Pridané do obľúbených ★"); setMoznosti(false); }} />
+            label={jeOblubene(it.id) ? "Prestať sledovať" : "Sledovať"}
+            onClick={() => { const bolo = jeOblubene(it.id); toggleOblubene(oblubenyZGood(it)); toast(bolo ? "Už nesleduješ" : "Sleduješ"); setMoznosti(false); }} />
           <MoznostRiadok ikona={<span style={{ fontSize: 15 }}>▦</span>} label="Zobraziť QR skutku"
             onClick={() => { setMoznosti(false); setQr(true); }} />
           <MoznostRiadok ikona={<IkonaVlajka size={17} color="var(--a-danger)" />} label="Nahlásiť skutok"
