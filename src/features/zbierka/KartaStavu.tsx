@@ -49,7 +49,7 @@ function Pruh({ podiel, vyska, blik, koniec }: { podiel: number; vyska: number; 
     <>
     <div style={{ height: vyska, borderRadius: 10, background: "var(--track)", overflow: "hidden" }}>
       <div key={blik} className={`zb-pruh${blik ? " zb-blik" : ""}`}
-        style={{ height: "100%", borderRadius: 10, background: "linear-gradient(90deg, #4B7A35, #8DB866)", transformOrigin: "0 50%", transform: `scaleX(${p})` }} />
+        style={{ height: "100%", borderRadius: 10, background: "var(--hcPruh, linear-gradient(90deg, #4B7A35, #8DB866))", transformOrigin: "0 50%", transform: `scaleX(${p})` }} />
     </div>
     {/* koniec pruhu — sem letí svetielko pri mikrodare (animacie.ts, [data-bar-end]) */}
     <div style={{ position: "relative", height: 0 }}><div ref={koniec} data-bar-end style={{ position: "absolute", top: -vyska / 2, left: `${Math.max(0, Math.min(1, podiel)) * 100}%`, width: 0, height: 0 }} /></div>

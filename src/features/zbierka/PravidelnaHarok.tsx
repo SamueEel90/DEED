@@ -32,8 +32,10 @@ const bodka = (on: boolean) => (
   <span style={{ flex: "none", width: 22, height: 22, borderRadius: "50%", border: `1.5px solid ${on ? "var(--green)" : "var(--chkBd)"}`, background: on ? "var(--green)" : "transparent", color: "#fff", fontSize: 12, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>{on ? "✓" : ""}</span>);
 const pole = { height: 50, padding: "0 14px", borderRadius: 13, border: "1px solid var(--fieldBd)", background: "var(--field)", fontSize: 15.5, color: "var(--ink)", outline: "none", fontFamily: "inherit", minWidth: 0 } as const;
 
-export function PravidelnaHarok({ refId, nazov, registrovany, onClose, zbierka = true }: {
+export function PravidelnaHarok({ refId, nazov, registrovany, onClose, zbierka = true, suma: sumaOd }: {
   refId: string; nazov: string; registrovany: boolean; onClose: () => void;
+  /** OPRAVY 139: tip „X € / mes." z profilu charity otvorí hárok s vyplnenou sumou */
+  suma?: number;
   /** false = farnosť / organizácia (nie konkrétna zbierka) — bez riadku o dokladoch */
   zbierka?: boolean;
 }) {
@@ -42,7 +44,7 @@ export function PravidelnaHarok({ refId, nazov, registrovany, onClose, zbierka =
   const [dnes] = useState(() => new Date());
   const [krok, setKrok] = useState<Krok>("nastavenie");
   const [mena, setMena] = useState<"EUR" | "EURC">("EUR");
-  const [suma, setSuma] = useState(10);
+  const [suma, setSuma] = useState(sumaOd ?? 10);
   const [vlastna, setVlastna] = useState<string | null>(null);
   const [perioda, setPerioda] = useState<Perioda>("mesacne");
   const [sposob, setSposob] = useState<Sposob>("karta");
