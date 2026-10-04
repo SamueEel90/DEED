@@ -8,7 +8,7 @@ import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 
 import { eur, pct, tvar, type Lokalita, type TestProfil, type TestZbierka } from "@/lib/testProfily";
 import { DOK, LokalitaPrepinac, PlagatPrace, PrepinacPodania, klikKarta, PribehText, StitCare, StitOkno, nazovStitu, useDomaceMesto } from "./casti";
 import { PodporaProfilu } from "./PodporaProfilu";
-import { GRAD, PRUH, MalaZbierka, OznamKarta, RokyOs, ZIskier, bgF, sekciaNadpis, stZb, useCharitaData } from "./charitaCasti";
+import { GRAD, PRUH, type PolCh, MalaZbierka, OznamKarta, RokyOs, ZIskier, bgF, sekciaNadpis, stZb, useCharitaData } from "./charitaCasti";
 
 const PC = "(min-width: 1200px)";
 function usePc() {
@@ -19,7 +19,7 @@ function usePc() {
 const TABY = ["Darovať", "Zbierky", "Iskry", "Oznamy a práca", "História", "O nás"];
 const tlTmave: CSSProperties = { height: 44, border: "none", borderRadius: 14, background: "rgba(10,8,5,.5)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "none" };
 
-export function VykladCharita({ profil, onDetail, onBack, prepinac }: { profil: TestProfil; onDetail: (z: TestZbierka) => void; onBack: () => void; prepinac?: ReactNode }) {
+export function VykladCharita({ profil, onDetail, onZaznam, onBack, prepinac }: { profil: TestProfil; onDetail: (z: TestZbierka) => void; onZaznam: (p: PolCh) => void; onBack: () => void; prepinac?: ReactNode }) {
   const pc = usePc();
   const domace = useDomaceMesto(profil);
   const [lok, setLok] = useState<Lokalita>(domace);
@@ -144,7 +144,7 @@ export function VykladCharita({ profil, onDetail, onBack, prepinac }: { profil: 
   const historia = (<>
     <span ref={kotva(4)} style={sekciaNadpis}>HISTÓRIA · ROKY</span>
     {!pc && <div style={{ display: "flex", flexDirection: "column", gap: 6, padding: "12px 14px", borderRadius: 18, background: "var(--card)", border: "1px solid var(--cardBd)" }}>{odZac}{celkom(17)}</div>}
-    <RokyOs roky={d.roky} onDetail={onDetail} />
+    <RokyOs roky={d.roky} onZaznam={onZaznam} />
   </>);
   const fakty: [string, string][] = [["Sídlo", profil.sidlo], ["IČO", profil.ico], ["Transparentný účet", profil.ucet], ["Kontakt", profil.kontakt]];
   const onas = (<>

@@ -16,6 +16,10 @@ import { PiratCharita } from "./PiratCharita";
 import { StrankaFirmy } from "./StrankaFirmy";
 import { StrankaTvorcu } from "./StrankaTvorcu";
 import { StreamZbierka } from "./StreamZbierka";
+import { DetailSkutku, DetailUkoncenej } from "./DetailyKroniky";
+import type { PolCh } from "./charitaCasti";
+import { otvorIskry } from "@/features/iskry/otvor";
+import { iskryVsetky } from "@/lib/iskry";
 
 /** vložiteľný verejný profil podľa kľúča stránky (svetlo · pekaren · tvorca) */
 export function VerejnyProfilView({ kluc, onBack }: { kluc: string; onBack: () => void }) {
@@ -23,6 +27,13 @@ export function VerejnyProfilView({ kluc, onBack }: { kluc: string; onBack: () =
   const profil = najdiTestProfil(zStreamu ? "tvorca" : kluc);
   const [detail, setDetail] = useState<TestZbierka | null>(null);
   const [stream, setStream] = useState<string | null>(null);
+  // doplnky 4. 10.: záznam z kroniky / rokov — skutok, akcia, ukončená zbierka (bez platby), Iskra = Iskry na tom videu
+  const [zaznam, setZaznam] = useState<PolCh | null>(null);
+  const pc = usePc1200();
+  const otvorZaznam = (p: PolCh) => {
+    if (p.typ === "is") { const id = p.id.replace(/^k-/, ""); otvorIskry(iskryVsetky().some((v) => v.id === id) ? id : undefined); return; }
+    setZaznam(p);
+  };
   // stránka streamu otvorená z profilu tvorcu: krok späť v prehliadači (alebo gesto) vráti na tvorcu
   const pridanyKrok = useRef(false);
   useEffect(() => {
@@ -43,6 +54,14 @@ export function VerejnyProfilView({ kluc, onBack }: { kluc: string; onBack: () =
     </div>
   );
 
+  if (zaznam) return (
+    <div className="vp sc-tokeny" data-stit={profil.stit.toLowerCase()} style={{ height: "100%" }}>
+      {zaznam.typ === "zb"
+        ? <DetailUkoncenej pc={pc} profil={profil} p={zaznam} onBack={() => setZaznam(null)} />
+        : <DetailSkutku pc={pc} profil={profil} p={zaznam} onBack={() => setZaznam(null)} />}
+    </div>
+  );
+
   if (profil.typ === "firma") return <StrankaFirmy profil={profil} onDetail={setDetail} onBack={onBack} />; // KARTA 46
   // KARTA 47 · stream cez QR / odkaz: vľavo hore „{tvorca} ›" otvorí profil tvorcu
   if (zStreamu) return <StreamZbierka profil={profil} streamId={zStreamu} onTvorca={() => otvorVerejnyProfil("tvorca")} />;
@@ -59,8 +78,8 @@ export function VerejnyProfilView({ kluc, onBack }: { kluc: string; onBack: () =
   );
   const prepinac = TESTOVACIA ? <PrepinacPodania /> : undefined;
   if (podanie === "pirat") return <PiratCharita profil={profil} onDetail={setDetail} onBack={onBack} prepinac={TESTOVACIA ? <PrepinacPodania tmavy /> : undefined} />;
-  if (podanie === "vyklad") return <VykladCharita profil={profil} onDetail={setDetail} onBack={onBack} prepinac={prepinac} />;
-  return <Kronika profil={profil} onDetail={setDetail} onBack={onBack} prepinac={prepinac} />;
+  if (podanie === "vyklad") return <VykladCharita profil={profil} onDetail={setDetail} onZaznam={otvorZaznam} onBack={onBack} prepinac={prepinac} />;
+  return <Kronika profil={profil} onDetail={setDetail} onZaznam={otvorZaznam} onBack={onBack} prepinac={prepinac} />;
 }
 
 /** vrstva vnútri appky otváraná zo store (otvorVerejnyProfil) — tlačidlo v Správe, QR, zdieľaný odkaz.
@@ -75,4 +94,10 @@ function VerejnyProfilVrstva() {
   const kluc = verejnyProfilKluc();
   if (!kluc) return null;
   return <VrstvaProfilu><VerejnyProfilView kluc={kluc} onBack={zavriVerejnyProfil} /></VrstvaProfilu>;
+}
+
+function usePc1200() {
+  const [p, setP] = useState(() => typeof window !== "undefined" && window.matchMedia("(min-width: 1200px)").matches);
+  useEffect(() => { const q = window.matchMedia("(min-width: 1200px)"), f = () => setP(q.matches); q.addEventListener("change", f); return () => q.removeEventListener("change", f); }, []);
+  return p;
 }

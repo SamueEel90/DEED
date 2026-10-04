@@ -165,7 +165,7 @@ export function PiratCharita({ profil, onDetail, onBack, prepinac }: { profil: T
               {celkomKarta(30, "18px 20px")}
               <div style={{ display: "flex", flexDirection: "column" }}>
                 {d.roky.map((k) => (
-                  <div key={k.t} style={{ display: "flex", alignItems: "baseline", gap: 24, padding: "16px 0", borderTop: "1px solid var(--cardBd)" }}>
+                  <div key={k.t} {...klikKarta(() => setPodanie("kronika"), `Rok ${k.t} v kronike`)} style={{ display: "flex", alignItems: "baseline", gap: 24, padding: "16px 0", borderTop: "1px solid var(--cardBd)", cursor: "pointer" }}>
                     <b style={{ flex: "none", width: 150, fontSize: 44, lineHeight: 1, fontVariantNumeric: "tabular-nums", ...kovText }}>{k.t}</b>
                     <span style={{ flex: 1, display: "grid", gridTemplateColumns: "repeat(4,minmax(0,1fr))", gap: 10 }}>{k.sum.map(([val, t]) => <span key={t} style={{ display: "flex", flexDirection: "column" }}><b style={{ fontSize: 19, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>{val}</b><span style={{ fontSize: 12.5, color: "var(--ink3)" }}>{t}</span></span>)}</span>
                   </div>))}
@@ -281,7 +281,7 @@ export function PiratCharita({ profil, onDetail, onBack, prepinac }: { profil: T
           {celkomKarta(19, "12px 14px")}
           <div style={{ display: "flex", flexDirection: "column" }}>
             {d.roky.map((k) => (
-              <div key={k.t} style={{ display: "flex", alignItems: "baseline", gap: 14, padding: "10px 0", borderTop: "1px solid var(--cardBd)" }}>
+              <div key={k.t} {...klikKarta(() => setPodanie("kronika"), `Rok ${k.t} v kronike`)} style={{ display: "flex", alignItems: "baseline", gap: 14, padding: "10px 0", borderTop: "1px solid var(--cardBd)", cursor: "pointer", minHeight: 44 }}>
                 <b style={{ flex: "none", width: 80, fontSize: 30, lineHeight: 1, fontVariantNumeric: "tabular-nums", ...kovText }}>{k.t}</b>
                 <span style={{ flex: 1, display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4px 8px" }}>{k.sum.map(([val, t]) => <span key={t} style={{ fontSize: 12, color: "var(--ink3)" }}><b style={{ fontSize: 14, color: "var(--ink)", fontVariantNumeric: "tabular-nums" }}>{val}</b> {t}</span>)}</span>
               </div>))}

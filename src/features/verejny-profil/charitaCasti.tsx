@@ -147,7 +147,7 @@ export function OznamKarta({ o }: { o: OznCh }) {
 }
 
 /** roky ako časová os (mobilná podoba kroniky): rozbalený len prvý rok */
-export function RokyOs({ roky, onDetail }: { roky: { t: string; sum: [string, string][]; pol: PolCh[] }[]; onDetail: (z: TestZbierka) => void }) {
+export function RokyOs({ roky, onZaznam }: { roky: { t: string; sum: [string, string][]; pol: PolCh[] }[]; /** doplnky 4. 10.: ťuk na záznam = detail bez platby / Iskry */ onZaznam: (p: PolCh) => void }) {
   const [otv, setOtv] = useState<Record<string, boolean>>(() => (roky[0] ? { [roky[0].t]: true } : {}));
   return (<>
     {roky.map((k, i) => {
@@ -168,13 +168,13 @@ export function RokyOs({ roky, onDetail }: { roky: { t: string; sum: [string, st
             {k.pol.map((p) => {
               const chip = p.typ === "zb" ? (p.q ? "UKONČENÁ · DOLOŽENÉ" : "UKONČENÁ · SPRÁVA SA PÍŠE") : p.typ === "is" ? "ISKRA" : p.typ === "oz" ? "AKCIA" : "SKUTOK";
               const chipC = p.typ === "zb" ? (p.q ? "var(--green)" : "var(--ink3)") : p.typ === "is" ? "var(--gold)" : p.typ === "oz" ? "var(--blue)" : "var(--green)";
-              const klik = p.typ === "zb" && p.zbierka ? () => onDetail(p.zbierka!) : undefined;
+              const klik = () => onZaznam(p);
               return (
                 <div key={p.id} style={{ display: "grid", gridTemplateColumns: "40px 14px minmax(0,1fr)", columnGap: 8 }}>
                   <span style={{ paddingTop: 16, display: "flex", flexDirection: "column", alignItems: "flex-end" }}><b style={{ fontSize: 16, lineHeight: 1.05, fontVariantNumeric: "tabular-nums" }}>{p.d}</b><span style={{ fontSize: 10, fontWeight: 800, letterSpacing: ".06em", color: "var(--ink3)" }}>{p.m}</span></span>
                   <span style={{ position: "relative", display: "flex", justifyContent: "center" }}><span style={{ position: "absolute", top: 0, bottom: 0, width: 2, background: "var(--accLine)" }} /><span style={{ position: "relative", marginTop: 20, width: 10, height: 10, borderRadius: "50%", background: "var(--bg)", border: "2px solid var(--acc)" }} /></span>
                   <div style={{ padding: "6px 0", minWidth: 0 }}>
-                    <button type="button" onClick={klik} style={{ width: "100%", borderRadius: 16, overflow: "hidden", background: "var(--card)", border: "1px solid var(--cardBd)", display: "flex", flexDirection: "column", padding: 0, cursor: klik ? "pointer" : "default", textAlign: "left", color: "var(--ink)", fontFamily: "inherit" }}>
+                    <button type="button" onClick={klik} style={{ width: "100%", borderRadius: 16, overflow: "hidden", background: "var(--card)", border: "1px solid var(--cardBd)", display: "flex", flexDirection: "column", padding: 0, cursor: "pointer", textAlign: "left", color: "var(--ink)", fontFamily: "inherit" }}>
                       {p.typ === "zb" && <span style={{ display: "block", width: "100%", height: 110, background: bgF(p.foto) }} />}
                       <span style={{ padding: "11px 12px", display: "flex", gap: 10, alignItems: "center" }}>
                         {p.typ !== "zb" && <span style={{ flex: "none", width: 52, height: 52, borderRadius: 12, background: bgF(p.foto) }} />}
