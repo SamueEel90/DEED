@@ -12,6 +12,7 @@ import { ISKRY_CFG, iskraViditelna, iskryVsetky, useZmenyIskier, zbierkaIskry, t
 import { otvorIskry } from "@/features/iskry/otvor";
 import { DOK, LokalitaPrepinac, MESIACE, PlagatPrace, PrepinacPodania, klikKarta, PribehText, StitCare, StitOkno, kovText, nazovStitu, norm, useDomaceMesto, useMobil } from "./casti";
 import { PodporaProfilu } from "./PodporaProfilu";
+import { useVsetkyNaKonci } from "./charitaCasti";
 
 type Typ = "zb" | "sk" | "is" | "oz" | "pr";
 type Rez = "pc" | "tab" | "mob";
@@ -306,6 +307,7 @@ export function Kronika({ profil, onDetail, onBack, prepinac }: { profil: TestPr
   );
   // Z ISKIER — prepínač 2 ciest a vodorovný rad videí 9 : 16
   const vw = rez === "pc" ? [140, 248, 112] : rez === "tab" ? [132, 234, 106] : [116, 206, 93];
+  const [radIskier, vsetkyIskry] = useVsetkyNaKonci(vw[2] + 10, `${isk}:${iskryTu.length}:${rez}`); // doplnky 4. 10.: mobil a tablet nikdy, PC len pri pretečení
   const kartaIskry = (v: Iskra) => {
     const d = zbierkaIskry(v);
     const nazov = d && v.zb?.typ !== "firme" ? d.z.nazov : v.zb?.typ === "firme" && d?.firma ? `${d.firma.meno.replace(/\s+s\.\s?r\.\s?o\.$/, "")} pomohla` : v.popis.split(/(?<=\.)\s/)[0];
@@ -337,9 +339,9 @@ export function Kronika({ profil, onDetail, onBack, prepinac }: { profil: TestPr
             <b style={{ fontSize: rez === "pc" ? 14.5 : rez === "tab" ? 14 : 13.5 }}>{t}</b><span style={{ fontSize: 11.5, fontWeight: 600, opacity: 0.85 }}>{s}</span></button>;
         })}
       </div>
-      <div style={{ display: "flex", gap: 10, overflowX: "auto", paddingBottom: 2 }}>
+      <div ref={radIskier} style={{ display: "flex", gap: 10, overflowX: "auto", paddingBottom: 2 }}>
         {iskryTu.map(kartaIskry)}
-        {iskryTu.length > 0 && <button type="button" onClick={() => otvorIskry(iskryTu[0].id)} style={{ flex: "none", width: vw[2], height: vw[1], borderRadius: 18, border: "1.5px dashed var(--cardBd)", background: "transparent", display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center", padding: 10, fontSize: 13.5, fontWeight: 800, color: "var(--green)", cursor: "pointer" }}>
+        {iskryTu.length > 0 && vsetkyIskry && <button type="button" onClick={() => otvorIskry(iskryTu[0].id)} style={{ flex: "none", width: vw[2], height: vw[1], borderRadius: 18, border: "1.5px dashed var(--cardBd)", background: "transparent", display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center", padding: 10, fontSize: 13.5, fontWeight: 800, color: "var(--green)", cursor: "pointer" }}>
           {isk ? "Všetky videá k zbierkam ›" : `Všetky Iskry ${profil.menoGen ?? profil.meno} ›`}</button>}
         {!iskryTu.length && <span style={{ fontSize: 14, color: "var(--ink3)", padding: "6px 2px" }}>{isk ? "Zatiaľ tu nie je žiadne video k zbierkam." : "Zatiaľ tu nie je žiadna Iskra."}</span>}
       </div>
