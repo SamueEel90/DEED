@@ -1,12 +1,12 @@
 // Doplnky 4. 10. (karta 45 · 5b) · detaily z kroniky (Kronika, História vo Výklade, roky) — len na čítanie, BEZ platobného modulu
 // (modul je len v Aktuálne). Ťuk na skutok = detail skutku ako vo feede (fotka, text, kto pomáhal, Páči sa mi, Zdieľať).
 // Ťuk na ukončenú zbierku = Zbierka skončila, Splnili sme, správa a doklady, darcovia. Návrh obrazoviek zatiaľ nie je.
-import type { CSSProperties } from "react";
+import { useState, type CSSProperties } from "react";
 import type { TestProfil, TestZbierka } from "@/lib/testProfily";
 import { eur } from "@/lib/testProfily";
-import { zdielaj } from "@/lib/zdielanie";
 import { toast } from "@/shared";
-import { ZdielatRiadok, Darcovia } from "@/features/zbierka/Riadky";
+import { Darcovia } from "@/features/zbierka/Riadky";
+import { DeedDetail } from "@/features/aktivity/Aktivity";
 import { PRUH, type PolCh } from "./charitaCasti";
 
 const sekcia: CSSProperties = { fontSize: 12, fontWeight: 800, letterSpacing: ".1em", color: "var(--acc)", paddingTop: 6 };
@@ -27,27 +27,26 @@ function Obal({ pc, onBack, children }: { pc: boolean; onBack: () => void; child
 const Foto = ({ src }: { src: string }) => <span style={{ display: "block", width: "100%", aspectRatio: "16/9", borderRadius: 22, background: `url('${src}') center/cover no-repeat #3a3530` }} />;
 const datum = (p: PolCh) => `${p.d} ${p.m.toLocaleLowerCase("sk-SK")} ${p.rok}`;
 
-/** detail skutku (aj minulej akcie) z kroniky */
-export function DetailSkutku({ pc, profil, p, onBack }: { pc: boolean; profil: TestProfil; p: PolCh; onBack: () => void }) {
+/** detail skutku (aj minulej akcie) z kroniky = ten istý DeedDetail ako vo feede Aktivít, staré roky bez podpory */
+export function DetailSkutku({ profil, p, onBack }: { pc: boolean; profil: TestProfil; p: PolCh; onBack: () => void }) {
   const sk = profil.skutky.find((s) => s.id === p.id);
-  const popis = sk?.popis ?? p.s;
-  const mesto = sk?.mesto ?? profil.mesto;
+  const [hlasy, setHlasy] = useState<Record<number, string>>({});
+  const num = Math.abs([...p.id].reduce((a, ch) => (a * 31 + ch.charCodeAt(0)) | 0, 7)) % 100000;
+  const it = {
+    id: num, num, dom: "zdravie", type: "skutok", emoji: "", verified: true, likes: 0,
+    author: profil.meno, ini: profil.iniciala, pfp: "#4B7A35",
+    loc: `${sk?.mesto ?? profil.mesto} · ${datum(p)}`,
+    title: p.nazov, desc: sk?.popis ?? p.s, fotky: [p.foto],
+    pomahali: sk?.dobrovolnici ? `${profil.meno} · ${sk.dobrovolnici} dobrovoľníkov` : profil.meno,
+    split: sk?.split,
+  };
   return (
-    <Obal pc={pc} onBack={onBack}>
-      <Foto src={p.foto} />
-      <span style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: ".08em", color: p.typ === "oz" ? "var(--blue)" : "var(--green)" }}>{p.typ === "oz" ? "AKCIA" : "SKUTOK"} · {datum(p).toLocaleUpperCase("sk-SK")} · {mesto.toLocaleUpperCase("sk-SK")}</span>
-      <b style={{ fontSize: pc ? 30 : 24, lineHeight: 1.15 }}>{p.nazov}</b>
-      <span style={{ fontSize: 15.5, lineHeight: 1.6, color: "var(--ink2)" }}>{popis}</span>
-      <span style={sekcia}>KTO POMÁHAL</span>
-      <div style={{ ...karta, display: "flex", alignItems: "center", gap: 12 }}>
-        <span style={{ flex: "none", width: 40, height: 40, borderRadius: 12, background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 800, color: "#3F6E2A" }}>{profil.iniciala}</span>
-        <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
-          <b style={{ fontSize: 15 }}>{profil.meno}</b>
-          {sk?.dobrovolnici ? <span style={{ fontSize: 13, color: "var(--ink3)" }}>{sk.dobrovolnici} dobrovoľníkov</span> : null}
-        </span>
+    <div style={{ height: "100%", overflowY: "auto", background: "var(--c-bg)", WebkitOverflowScrolling: "touch" } as CSSProperties}>
+      <div style={{ maxWidth: 760, margin: "0 auto", paddingBottom: 120 }}>
+        <DeedDetail it={it} bezPodpory support={() => {}} votes={hlasy} vote={(id: number, v: string) => setHlasy((h) => ({ ...h, [id]: v }))}
+          toast={toast} home={onBack} openPerson={() => {}} />
       </div>
-      <ZdielatRiadok onZdielat={() => void zdielaj({ titul: p.nazov, text: `${p.nazov} · ${profil.meno}`, url: window.location.origin }, toast)} />
-    </Obal>
+    </div>
   );
 }
 

@@ -76,6 +76,8 @@ export interface TestSkutok {
   kedy: string;               // „Včera", „29. 9."
   foto: string;
   dobrovolnici?: number;
+  /** 5. 10. · komu išla podpora (split), bez splitu sa riadok „Podpora išla" neukáže */
+  split?: { komu: string; pct: number }[];
   /** dátum v kronike: „29." · „SEP" · 2026 */
   d?: string; m?: string; rok?: number;
 }
@@ -283,12 +285,12 @@ const CHARITA: TestProfil = {
     { id: "z-ovocie-vydajna", nazov: "Ovocie do výdajne", popis: "Čerstvé ovocie do výdajne potravín, každý týždeň.", mesto: "Trenčín", foto: F.ovocie, vyzbierane: 380, ciel: 380, ludia: 27, stav: "ukoncena", doklady: 4, skoncila: "22. 9.", spravaDarcom: "Ovocie sme rozdelili 27 rodinám. Posledný týždeň ostalo aj na výdajňu v Opatovej.", d: "22.", m: "SEP", rok: 2026 },
   ],
   skutky: [
-    { id: "sk-300jedal", nazov: "300 teplých jedál za 2 hodiny", popis: "Mierové námestie · dobrovoľníci z mesta", mesto: "Trenčín", kedy: "Včera", foto: F.jedlo, dobrovolnici: 14, d: "2.", m: "OKT", rok: 2026 },
+    { id: "sk-300jedal", nazov: "300 teplých jedál za 2 hodiny", popis: "Mierové námestie · dobrovoľníci z mesta", mesto: "Trenčín", kedy: "Včera", foto: F.jedlo, dobrovolnici: 14, d: "2.", m: "OKT", rok: 2026, split: [{ komu: "Svetlo pomoci", pct: 70 }, { komu: "Nocľaháreň Mea Culpa", pct: 30 }] },
     { id: "sk-strecha", nazov: "Opravili sme strechu Horváthovcom", popis: "prvá etapa · krov a laty", mesto: "Trenčín", kedy: "29. 9.", foto: F.strecha, dobrovolnici: 9, d: "29.", m: "SEP", rok: 2026 },
     { id: "sk-nakup-sihot", nazov: "Nákup pre 12 seniorov zo Sihote", popis: "každý piatok · nákup a odvoz domov", mesto: "Trenčín", kedy: "20. 9.", foto: F.seniori, dobrovolnici: 6, d: "20.", m: "SEP", rok: 2026 },
     { id: "sk-obedy-sekcov", nazov: "Obedy pre 20 seniorov zo Sekčova", popis: "každý deň o 11:00", mesto: "Prešov", kedy: "18. 9.", foto: F.jedlo, dobrovolnici: 5, d: "18.", m: "SEP", rok: 2026 },
     { id: "sk-dvor", nazov: "Upratali sme dvor jedálne", popis: "Hlavná 12 · celé sobotné doobedie", mesto: "Prešov", kedy: "14. 9.", foto: F.dobrovolnici, dobrovolnici: 11, d: "14.", m: "SEP", rok: 2026 },
-    { id: "sk-tasky", nazov: "31 školských tašiek", popis: "rozdávali sme priamo v škole", mesto: "Bratislava", kedy: "2. 9.", foto: F.tasky, dobrovolnici: 8, d: "2.", m: "SEP", rok: 2026 },
+    { id: "sk-tasky", nazov: "31 školských tašiek", popis: "rozdávali sme priamo v škole", mesto: "Bratislava", kedy: "2. 9.", foto: F.tasky, dobrovolnici: 8, d: "2.", m: "SEP", rok: 2026, split: [{ komu: "Svetlo pomoci", pct: 60 }, { komu: "ZŠ Hodžova", pct: 40 }] },
     { id: "sk-vecera", nazov: "Vianočná večera pre 60 ľudí", popis: "naše prvé Vianoce", mesto: "Bratislava", kedy: "24. 12. 2023", foto: F.vianoce, dobrovolnici: 17, d: "24.", m: "DEC", rok: 2023 },
   ],
   oznamy: [
