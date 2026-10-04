@@ -1,6 +1,6 @@
 // KARTA 45 · Svetlo pomoci · Pirát 1 : 1 podľa „Svetlo - Pirat.dc.html" (rovnaké dáta ako Kronika, iné podanie).
-// Obrazovky na celú výšku (scroll-snap y mandatory, snap-stop always, overscroll contain), bodky vpravo:
-// Kto sme · Kam treba najviac · Teraz treba · Z Iskier · Ďalšie zbierky · Hľadáme ľudí (len mobil) · Čo sme dokázali · Overenie.
+// ZMENA 4. 10.: plynulý posun bez scroll-snap a bez bodiek. Na celú výšku len prvá obrazovka (Kto sme), ostatné sekcie podľa obsahu
+// (PC: Kam treba najviac a Teraz treba aspoň 720 px). Poradie: Kto sme · Kam treba najviac · Teraz treba · Z Iskier · Ďalšie zbierky · Hľadáme ľudí (len mobil) · Čo sme dokázali · Overenie.
 // PC (≥ 1200): text vľavo na tmavom prechode cez fotku, modul stále vpravo (440 px).
 // Mobil a tablet: fotka hore (36–52 %), text na pevnej ploche pod ňou, žiadne vnorené rolovanie. Darovanie =
 //   zelený pás „Darovať · {vybrané} ⌃" nad dolnou lištou → hárok zdola (86 %) s Tipmi a modulom.
@@ -18,7 +18,9 @@ function usePc() {
   return p;
 }
 const tlTmave: CSSProperties = { height: 44, border: "none", borderRadius: 14, background: "rgba(10,8,5,.5)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "none" };
-const snap: CSSProperties = { position: "relative", height: "100%", flex: "none", scrollSnapAlign: "start", scrollSnapStop: "always", overflow: "hidden" };
+/** prvá obrazovka (Kto sme) na celú výšku; ostatné sekcie majú výšku podľa obsahu */
+const prva: CSSProperties = { position: "relative", height: "100%", flex: "none", overflow: "hidden" };
+const sekcia: CSSProperties = { position: "relative", flex: "none", overflow: "hidden" };
 const velkyNadpis = (fs: number, extra?: CSSProperties): CSSProperties => ({ fontSize: fs, lineHeight: 1, letterSpacing: "-.02em", alignSelf: "flex-start", ...kovText, ...extra });
 const btnZ: CSSProperties = { border: "none", cursor: "pointer", fontWeight: 800, color: "#fff", background: GRAD, fontFamily: "inherit" };
 
@@ -44,8 +46,6 @@ export function PiratCharita({ profil, onDetail, onBack, prepinac }: { profil: T
   const otvorModul = (i: number) => { setMod(i); if (!pc) setSh(true); };
   const vybrane = mod != null ? sekt[mod]?.nazov : "vyber, na čo";
 
-  const OBR = ["Kto sme", "Kam treba najviac", "Teraz treba", "Z Iskier", "Ďalšie zbierky", ...(pc ? [] : ["Hľadáme ľudí"]), "Čo sme dokázali", "Overenie", ...(!pc && prepinac ? ["Testovacie"] : [])];
-  const naObr = (i: number) => { const box = snapRef.current; if (box) box.scrollTo({ top: i * box.clientHeight, behavior: "smooth" }); };
 
   // ---- spoločné kúsky ----
   const horna = (
@@ -99,28 +99,23 @@ export function PiratCharita({ profil, onDetail, onBack, prepinac }: { profil: T
     <div key={k} style={{ display: "flex", justifyContent: "space-between", gap: 10, padding: pad, borderTop: "1px solid var(--cardBd)" }}><span style={{ fontSize: fsK, fontWeight: 700, color: "var(--ink3)" }}>{k}</span><span style={{ fontSize: fsV, fontWeight: 800, textAlign: "right", overflowWrap: "anywhere" }}>{v}</span></div>));
   const kronika = (fs: string) => <button type="button" onClick={() => setPodanie("kronika")} style={{ alignSelf: "flex-start", minHeight: 44, padding: 0, border: "none", background: "transparent", boxShadow: "none", cursor: "pointer", fontSize: fs, fontWeight: 800, color: "var(--green)", fontFamily: "inherit" }}>{pc ? "Celá kronika so zbierkami a dokladmi ›" : "Celá kronika ›"}</button>;
   const v = d.velka;
-  const bodky = (
-    <div style={{ position: "absolute", right: pc ? 8 : 0, top: "50%", transform: "translateY(-50%)", zIndex: 8, display: "flex", flexDirection: "column", gap: 2 }}>
-      {OBR.map((t, i) => <button key={t} type="button" onClick={() => naObr(i)} aria-label={t} style={{ width: 44, height: 30, border: "none", background: "transparent", boxShadow: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><span style={{ width: 9, height: 9, borderRadius: "50%", background: "rgba(255,255,255,.85)", boxShadow: "0 0 0 2px rgba(10,8,5,.35)" }} /></button>)}
-    </div>
-  );
   const okno = stitOtv && <StitOkno p={profil} v6 mobil={!pc} onClose={() => setStitOtv(false)} />;
   const podpora = (rez: "pc" | "mob", vys: number) => <PodporaProfilu profil={profil} lok={lok} domace={domace} rez={rez} vyska={vys} mod={mod} onMod={setMod} />;
 
   // ================= PC =================
   if (pc) {
-    const tmavy = (foto: string, sila: [number, number, number], obsah: ReactNode, klik?: () => void, nazov?: string) => (
-      <section {...(klik ? klikKarta(klik, nazov) : {})} style={{ ...snap, background: "#0E0C08", cursor: klik ? "pointer" : undefined }}>
+    const tmavy = (foto: string, sila: [number, number, number], obsah: ReactNode, klik?: () => void, nazov?: string, celaVyska = false) => (
+      <section {...(klik ? klikKarta(klik, nazov) : {})} style={{ ...(celaVyska ? prva : { ...sekcia, minHeight: 720 }), background: "#0E0C08", cursor: klik ? "pointer" : undefined }}>
         <span style={{ position: "absolute", inset: 0, background: bgF(foto) }} />
         <span style={{ position: "absolute", inset: 0, background: `linear-gradient(90deg,rgba(10,8,5,${sila[0]}) 0%,rgba(10,8,5,${sila[1]}) ${sila[2]}%,rgba(10,8,5,.1) 100%)` }} />
         {obsah}
       </section>);
     const svetla = (obsah: ReactNode, style?: CSSProperties) => (
-      <section style={{ ...snap, background: "var(--bg)" }}><div style={{ position: "absolute", inset: 0, padding: 56, display: "flex", flexDirection: "column", ...style }}>{obsah}</div></section>);
+      <section style={{ ...sekcia, background: "var(--bg)" }}><div style={{ position: "relative", padding: 56, display: "flex", flexDirection: "column", ...style }}>{obsah}</div></section>);
     return (
       <div className="vp sc-tokeny" data-stit={stit} style={{ position: "relative", height: "100%", display: "flex", overflow: "hidden" }}>
         <div style={{ position: "relative", flex: 1, minWidth: 0, height: "100%" }}>
-          <div ref={snapRef} style={{ position: "relative", height: "100%", overflowY: "auto", scrollSnapType: "y mandatory", overscrollBehavior: "contain", display: "flex", flexDirection: "column" }}>
+          <div ref={snapRef} style={{ position: "relative", height: "100%", overflowY: "auto", overscrollBehavior: "contain", display: "flex", flexDirection: "column" }}>
             {tmavy(profil.titulka, [0.92, 0.7, 45], <>
               {horna}
               <div style={{ position: "absolute", left: 56, bottom: 72, width: 560, display: "flex", flexDirection: "column", gap: 18, color: "#fff" }}>
@@ -132,9 +127,9 @@ export function PiratCharita({ profil, onDetail, onBack, prepinac }: { profil: T
                 <span style={{ fontSize: 20, lineHeight: 1.45, opacity: 0.92 }}>{veta1} {zaRoky}, každé euro doložené.</span>
                 {nazivo(true)}
                 {prepinac}
-                <span style={{ fontSize: 14, fontWeight: 700, opacity: 0.8 }}>Posuň dole · {OBR.length} obrazoviek</span>
+                <span style={{ fontSize: 14, fontWeight: 700, opacity: 0.8 }}>Posuň dole</span>
               </div>
-            </>)}
+            </>, undefined, undefined, true)}
             {tmavy(c.foto, [0.94, 0.72, 50],
               <div style={{ position: "absolute", left: 56, bottom: 64, width: 580, display: "flex", flexDirection: "column", gap: 14, color: "#fff" }}>
                 <span style={{ alignSelf: "flex-start", height: 32, padding: "0 14px", borderRadius: 16, background: "#4B7A35", fontSize: 13, fontWeight: 800, letterSpacing: ".05em", display: "flex", alignItems: "center" }}>KAM TREBA NAJVIAC · CENTRÁLNA</span>
@@ -172,8 +167,8 @@ export function PiratCharita({ profil, onDetail, onBack, prepinac }: { profil: T
               </div>
               {kronika("15px")}
             </>, { gap: 18 })}
-            <section style={{ ...snap, background: "var(--bg)" }}>
-              <div style={{ position: "absolute", inset: 0, padding: 56, display: "grid", gridTemplateColumns: "260px minmax(0,1fr)", gap: 40, alignItems: "center" }}>
+            <section style={{ ...sekcia, background: "var(--bg)" }}>
+              <div style={{ position: "relative", padding: 56, display: "grid", gridTemplateColumns: "260px minmax(0,1fr)", gap: 40, alignItems: "center" }}>
                 {stitTl(240, 290, 230, 280, -10, 0.5)}
                 <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
                   <b style={velkyNadpis(52)}>Overenie</b>
@@ -186,7 +181,6 @@ export function PiratCharita({ profil, onDetail, onBack, prepinac }: { profil: T
               </div>
             </section>
           </div>
-          {bodky}
         </div>
         <aside style={{ width: 440, flex: "none", overflowY: "auto", background: "var(--panel)", borderLeft: "1px solid var(--accLine)", padding: "22px 22px 40px", display: "flex", flexDirection: "column", gap: 12 }}>
           <b style={{ fontSize: 22 }}>Darovať {profil.menoDat ?? meno}</b>
@@ -199,8 +193,8 @@ export function PiratCharita({ profil, onDetail, onBack, prepinac }: { profil: T
   }
 
   // ================= MOBIL a TABLET =================
-  const foto = (f: string, vys: string, stitok?: ReactNode) => (<>
-    <div style={{ position: "relative", flex: "none", height: `calc((100% - ${DOK}px) * ${parseFloat(vys) / 100})`, background: bgF(f) }}>
+  const foto = (f: string, vys: string | number, stitok?: ReactNode) => (<>
+    <div style={{ position: "relative", flex: "none", height: typeof vys === "number" ? vys : `calc((100% - ${DOK}px) * ${parseFloat(vys) / 100})`, background: bgF(f) }}>
       <span style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg,rgba(10,8,5,.45) 0%,rgba(10,8,5,0) 35%)" }} />
       {stitok}
     </div>
@@ -208,14 +202,14 @@ export function PiratCharita({ profil, onDetail, onBack, prepinac }: { profil: T
   </>);
   const stitok = (t: string, farba: string, bottom: number) => <span style={{ position: "absolute", left: 16, bottom, height: 30, padding: "0 12px", borderRadius: 15, background: farba, color: "#fff", fontSize: 12, fontWeight: 800, letterSpacing: ".05em", display: "flex", alignItems: "center", whiteSpace: "nowrap" }}>{t}</span>;
   const spodok = DOK + 70; // nad zeleným pásom a dolnou lištou appky
-  const obr = (obsah: ReactNode, klik?: () => void, nazov?: string) => <section {...(klik ? klikKarta(klik, nazov) : {})} style={{ ...snap, background: "var(--bg)", cursor: klik ? "pointer" : undefined }}><div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column" }}>{obsah}</div></section>;
-  const textPlocha = (obsah: ReactNode, pad = "16px 18px", gap = 9, ov: "hidden" | "visible" = "hidden") => <div style={{ flex: 1, minHeight: 0, padding: pad, paddingBottom: spodok, display: "flex", flexDirection: "column", gap, overflow: ov }}>{obsah}</div>;
-  const plocha = (obsah: ReactNode, top: number, gap = 12) => <div style={{ position: "absolute", inset: 0, padding: `${top}px 16px ${spodok}px`, display: "flex", flexDirection: "column", gap, overflow: "hidden" }}>{obsah}</div>;
+  const obr = (obsah: ReactNode, klik?: () => void, nazov?: string, celaVyska = false) => <section {...(klik ? klikKarta(klik, nazov) : {})} style={{ ...(celaVyska ? prva : sekcia), background: "var(--bg)", cursor: klik ? "pointer" : undefined }}><div style={celaVyska ? { position: "absolute", inset: 0, display: "flex", flexDirection: "column" } : { position: "relative", display: "flex", flexDirection: "column" }}>{obsah}</div></section>;
+  const textPlocha = (obsah: ReactNode, pad = "16px 18px", gap = 9, ov: "hidden" | "visible" = "hidden", dole = 24) => <div style={{ flex: 1, minHeight: 0, padding: pad, paddingBottom: dole, display: "flex", flexDirection: "column", gap, overflow: ov }}>{obsah}</div>;
+  const plocha = (obsah: ReactNode, gap = 12, dole = 24) => <div style={{ position: "relative", padding: `32px 16px ${dole}px`, display: "flex", flexDirection: "column", gap, overflow: "hidden" }}>{obsah}</div>;
   const [p1, p2] = profil.praca;
 
   return (
     <div className="vp sc-tokeny" data-stit={stit} style={{ position: "relative", height: "100%", overflow: "hidden" }}>
-      <div ref={snapRef} style={{ position: "absolute", inset: 0, overflowY: "auto", scrollSnapType: "y mandatory", overscrollBehavior: "contain", WebkitOverflowScrolling: "touch", display: "flex", flexDirection: "column" }}>
+      <div ref={snapRef} style={{ position: "absolute", inset: 0, overflowY: "auto", overscrollBehavior: "contain", WebkitOverflowScrolling: "touch", display: "flex", flexDirection: "column" }}>
         {obr(<>
           {foto(profil.titulka, "52%")}
           {textPlocha(<>
@@ -227,10 +221,10 @@ export function PiratCharita({ profil, onDetail, onBack, prepinac }: { profil: T
             <b style={{ fontSize: 30, lineHeight: 1.05, letterSpacing: "-.02em" }}>{meno}</b>
             <span style={{ fontSize: 15, lineHeight: 1.45, color: "var(--ink2)" }}>{veta1} {zaRoky}.</span>
             {nazivo(false)}
-          </>, "16px 18px", 9, "visible")}
-        </>)}
+          </>, "16px 18px", 9, "visible", spodok)}
+        </>, undefined, undefined, true)}
         {obr(<>
-          {foto(c.foto, "36%", stitok("KAM TREBA NAJVIAC", "#4B7A35", 12))}
+          {foto(c.foto, 240, stitok("KAM TREBA NAJVIAC", "#4B7A35", 12))}
           {textPlocha(<>
             <b style={{ fontSize: 24, lineHeight: 1.1 }}>{c.nazov}</b>
             <span style={{ flex: "none", display: "-webkit-box", WebkitBoxOrient: "vertical", WebkitLineClamp: 3, overflow: "hidden", fontSize: 14, lineHeight: 1.45, color: "var(--ink2)" } as CSSProperties}>{kam}</span>
@@ -241,7 +235,7 @@ export function PiratCharita({ profil, onDetail, onBack, prepinac }: { profil: T
           </>, "14px 16px", 8)}
         </>)}
         {v && obr(<>
-          {foto(v.foto, "52%", stitok(`TERAZ TREBA${v.konciDni != null ? ` · KONČÍ O ${tvar(v.konciDni, ["DEŇ", "DNI", "DNÍ"])}` : ""}`, "#8E3B2F", 14))}
+          {foto(v.foto, 280, stitok(`TERAZ TREBA${v.konciDni != null ? ` · KONČÍ O ${tvar(v.konciDni, ["DEŇ", "DNI", "DNÍ"])}` : ""}`, "#8E3B2F", 14))}
           {textPlocha(<>
             <b style={{ fontSize: 25, lineHeight: 1.15 }}>{v.nazov}</b>
             <span style={{ flex: "none", display: "-webkit-box", WebkitBoxOrient: "vertical", WebkitLineClamp: 3, overflow: "hidden", fontSize: 14, lineHeight: 1.45, color: "var(--ink2)" } as CSSProperties}>{v.pribeh ?? v.popis}</span>
@@ -250,8 +244,8 @@ export function PiratCharita({ profil, onDetail, onBack, prepinac }: { profil: T
             {v.dorovnanie && <span style={{ fontSize: 13, color: "var(--gold)", fontWeight: 700 }}>{v.dorovnanie}</span>}
           </>)}
         </>, () => onDetail(v), v.nazov)}
-        <section style={{ ...snap, background: "var(--bg)" }}>{plocha(<><b style={velkyNadpis(34)}>Z Iskier</b><ZIskier profil={profil} cesty={d.iskryCesty} w={150} h={268} wVs={112} /></>, 104)}</section>
-        <section style={{ ...snap, background: "var(--bg)" }}>{plocha(<>
+        <section style={{ ...sekcia, background: "var(--bg)" }}>{plocha(<><b style={velkyNadpis(34)}>Z Iskier</b><ZIskier profil={profil} cesty={d.iskryCesty} w={150} h={268} wVs={112} /></>)}</section>
+        <section style={{ ...sekcia, background: "var(--bg)" }}>{plocha(<>
           <b style={velkyNadpis(30, { lineHeight: 1.05 })}>Ďalšie zbierky</b>
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>{d.male.map((z) => <MalaZbierka key={z.id} z={z} onDetail={onDetail} t={64} />)}</div>
           {d.oznamy.length > 0 && <span style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: ".1em", color: "var(--acc)", paddingTop: 4 }}>NAJBLIŽŠIE</span>}
@@ -260,8 +254,8 @@ export function PiratCharita({ profil, onDetail, onBack, prepinac }: { profil: T
               <span style={{ flex: "none", width: 44, height: 50, borderRadius: 12, background: o.dBg, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", color: "#fff" }}><b style={{ fontSize: 17, lineHeight: 1 }}>{o.den}</b><span style={{ fontSize: 9.5, fontWeight: 800 }}>{o.mes}</span></span>
               <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}><span style={{ fontSize: 10, fontWeight: 800, letterSpacing: ".06em", color: o.stc }}>{o.st}</span><b style={{ fontSize: 14, lineHeight: 1.25 }}>{o.n}</b></span>
             </div>))}
-        </>, 96, 10)}</section>
-        {p1 && <section style={{ ...snap, background: "var(--bg)" }}>{plocha(<>
+        </>, 10)}</section>
+        {p1 && <section style={{ ...sekcia, background: "var(--bg)" }}>{plocha(<>
           <b style={{ fontSize: 30, lineHeight: 1.05, color: "var(--blue)" }}>Hľadáme ľudí</b>
           <article style={{ position: "relative", borderRadius: 22, overflow: "hidden", background: "linear-gradient(160deg,#2C5576 0%,#3D6B8E 60%,#4F7FA3 100%)", color: "#fff", padding: 18, display: "flex", flexDirection: "column", gap: 10 }}>
             <span style={{ alignSelf: "flex-start", height: 26, padding: "0 10px", borderRadius: 13, background: "#fff", color: "#2C5576", fontSize: 11, fontWeight: 800, letterSpacing: ".06em", display: "flex", alignItems: "center" }}>{p1.stitok}</span>
@@ -275,8 +269,8 @@ export function PiratCharita({ profil, onDetail, onBack, prepinac }: { profil: T
           {p2 && <button type="button" style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", borderRadius: 16, border: "1.5px solid var(--blue)", background: "transparent", boxShadow: "none", cursor: "pointer", textAlign: "left", color: "var(--ink)", fontFamily: "inherit" }}>
             <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}><span style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: ".06em", color: "var(--blue)" }}>{p2.stitok} · {p2.mesto.toLocaleUpperCase("sk-SK")}</span><b style={{ fontSize: 15 }}>{p2.nazov}</b><span style={{ fontSize: 12.5, color: "var(--ink3)" }}>{p2.kedy} · {p2.odmena}</span></span>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg></button>}
-        </>, 104, 10)}</section>}
-        <section style={{ ...snap, background: "var(--bg)" }}>{plocha(<>
+        </>, 10)}</section>}
+        <section style={{ ...sekcia, background: "var(--bg)" }}>{plocha(<>
           <b style={velkyNadpis(30, { lineHeight: 1.05 })}>Čo sme dokázali</b>
           {celkomKarta(19, "12px 14px")}
           <div style={{ display: "flex", flexDirection: "column" }}>
@@ -287,19 +281,18 @@ export function PiratCharita({ profil, onDetail, onBack, prepinac }: { profil: T
               </div>))}
           </div>
           {kronika("14px")}
-        </>, 104)}</section>
-        <section style={{ ...snap, background: "var(--bg)" }}>
-          <div style={{ position: "absolute", inset: 0, padding: `104px 18px ${spodok}px`, display: "flex", flexDirection: "column", alignItems: "center", gap: 12, textAlign: "center", overflow: "hidden" }}>
+        </>)}</section>
+        <section style={{ ...sekcia, background: "var(--bg)" }}>
+          <div style={{ position: "relative", padding: `32px 18px ${prepinac ? 24 : spodok}px`, display: "flex", flexDirection: "column", alignItems: "center", gap: 12, textAlign: "center", overflow: "hidden" }}>
             {stitTl(150, 180, 144, 176, -10, 0.5)}
             <b style={{ fontSize: 24 }}>{nazovStitu(profil.stit)} štít · 99 % doložené</b>
             <span style={{ fontSize: 14.5, lineHeight: 1.5, color: "var(--ink2)" }}>IČO, transparentný účet a štatutár overení. Ťukni na štít.</span>
             <div style={{ alignSelf: "stretch", display: "flex", flexDirection: "column", textAlign: "left" }}>{faktyEl(12.5, 13, "8px 0")}</div>
           </div>
         </section>
-        {prepinac && <section style={{ ...snap, background: "var(--bg)" }}>{plocha(<PrepinacPodania pas />, 104)}</section>}
+        {prepinac && <section style={{ ...sekcia, background: "var(--bg)" }}>{plocha(<PrepinacPodania pas />, 12, spodok)}</section>}
       </div>
       {horna}
-      {bodky}
 
       <button type="button" onClick={() => setSh(true)} aria-haspopup="dialog" style={{ position: "absolute", left: 14, right: 14, bottom: DOK - 8, zIndex: 20, height: 56, border: "none", borderRadius: 18, background: "var(--gGrad, linear-gradient(90deg,#4B7A35,#8DB866))", boxShadow: "0 10px 26px rgba(0,0,0,.35)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, fontSize: 16.5, fontWeight: 800, color: "#fff", fontFamily: "inherit" }}>
         Darovať · {vybrane}<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.6" strokeLinecap="round" aria-hidden="true"><path d="M6 15l6-6 6 6" /></svg>
