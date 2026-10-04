@@ -1,6 +1,6 @@
 // KARTA 02 · Hlavička, galéria, nadpis a text zbierky.
 // Galéria = natívny scroll-snap (žiadna knižnica). Animácie len transform/opacity.
-import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { pressable } from "@/components/pressable";
 import { useLayout } from "@/components/context";
@@ -8,7 +8,8 @@ import { useVideoUrl } from "@/lib/videoUloz";
 import { FormatovanyText } from "@/components/formattext";
 import { SpatTlacidlo, ZavrietTlacidlo } from "@/components/cesta";
 
-export type Medium = { typ: "video"; src: string } | { typ: "foto"; src: string };
+/** 5. 10. · popis = nepovinný popis fotky (najviac 80 znakov): darca ho vidí pod fotkou na celej obrazovke, čítačka ako alt */
+export type Medium = ({ typ: "video"; src: string } | { typ: "foto"; src: string }) & { popis?: string };
 
 const TMAVA = "rgba(20,18,14,.7)";
 const cislo = (n: number) => n.toLocaleString("sk-SK");
@@ -69,32 +70,49 @@ function VideoNahlad({ src, onDlzka }: { src: string; onDlzka: (s: number) => vo
 }
 
 // ---------------- 2 · Galéria ----------------
-export function Galeria({ media }: { media: Medium[] }) {
+export function Galeria({ media, vyska: vyskaP, radius: radiusP, okraj, prekrytie, bezBodiek }: {
+  media: Medium[];
+  /** 5. 10. · galéria aj v náhľade „Posielaš do …" (iná výška, rám, bez okraja) */
+  vyska?: number; radius?: number | string; okraj?: string;
+  /** štítky nad fotkou (napr. „Posielaš do · …"), neklikateľné */
+  prekrytie?: ReactNode;
+  bezBodiek?: boolean;
+}) {
   const { wide, desktop } = useLayout();
   const ref = useRef<HTMLDivElement>(null);
   const [index, setIndex] = useState(0);
   const [sekundy, setSekundy] = useState<number | null>(null);
   const [cela, setCela] = useState(false);
+  const [nad, setNad] = useState(false); // PC: šípky ‹ › pri prechode myšou
   if (!media.length) return null; // bez médií nič prázdne
 
-  const vyska = desktop ? 330 : wide ? 280 : 240;
-  const radius = desktop ? 22 : wide ? 24 : 0;
+  const vyska = vyskaP ?? (desktop ? 330 : wide ? 280 : 240);
+  const radius = radiusP ?? (desktop ? 22 : wide ? 24 : 0);
   const viac = media.length > 1;
   const naScroll = () => { const el = ref.current; if (el) setIndex(Math.round(el.scrollLeft / Math.max(1, el.clientWidth))); };
+  const posun = (o: number) => { const el = ref.current; if (el) el.scrollTo({ left: Math.max(0, Math.min(media.length - 1, index + o)) * el.clientWidth, behavior: "smooth" }); };
+  const sipka = (o: number) => (
+    <button type="button" onClick={(e) => { e.stopPropagation(); posun(o); }} aria-label={o < 0 ? "Predchádzajúca fotka" : "Ďalšia fotka"}
+      style={{ position: "absolute", top: "50%", [o < 0 ? "left" : "right"]: 8, width: 44, height: 44, marginTop: -22, borderRadius: 22, border: "none", background: "rgba(20,18,14,.6)", color: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "none", opacity: nad && (o < 0 ? index > 0 : index < media.length - 1) ? 1 : 0, pointerEvents: nad ? "auto" : "none", transition: "opacity .2s ease" } as CSSProperties}>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={o < 0 ? "M15 18l-6-6 6-6" : "M9 6l6 6-6 6"} /></svg>
+    </button>
+  );
 
   return (
     <>
-      <div style={{ position: "relative", margin: wide ? "0 0 16px" : "0 -16px 14px", height: vyska, background: "#2A2620", overflow: "hidden", borderRadius: radius }}>
+      <div onMouseEnter={() => setNad(true)} onMouseLeave={() => setNad(false)} style={{ position: "relative", margin: okraj ?? (wide ? "0 0 16px" : "0 -16px 14px"), height: vyska, background: "#2A2620", overflow: "hidden", borderRadius: radius }}>
         <div ref={ref} className="zb-snap" onScroll={naScroll} onClick={() => setCela(true)} role="button" aria-label="Otvoriť galériu na celú obrazovku" style={{ cursor: "zoom-in" }}>
           {media.map((m, i) => (
             <div key={i}>
               {m.typ === "foto"
-                ? <span style={{ position: "absolute", inset: 0, background: `url(${m.src}) center/cover no-repeat` }} />
+                ? <span role="img" aria-label={m.popis || undefined} style={{ position: "absolute", inset: 0, background: `url(${m.src}) center/cover no-repeat` }} />
                 : <VideoNahlad src={m.src} onDlzka={setSekundy} />}
             </div>
           ))}
         </div>
-        {viac && <div style={{ position: "absolute", left: 0, right: 0, top: 10, pointerEvents: "none" }}><Bodky pocet={media.length} aktivna={index} /></div>}
+        {prekrytie && <div style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>{prekrytie}</div>}
+        {viac && desktop && <>{sipka(-1)}{sipka(1)}</>}
+        {viac && !bezBodiek && <div style={{ position: "absolute", left: 0, right: 0, top: 10, pointerEvents: "none" }}><Bodky pocet={media.length} aktivna={index} /></div>}
         <div style={{ position: "absolute", left: 12, bottom: 12, display: "flex", gap: 6, pointerEvents: "none" }}>
           {viac && (
             <span style={{ padding: "3px 9px", borderRadius: 7, background: TMAVA, color: "#fff", fontSize: 12, fontWeight: 700, display: "flex", alignItems: "center", gap: 5, fontVariantNumeric: "tabular-nums" }}>
@@ -142,10 +160,11 @@ function CelaObrazovka({ media, start, onClose }: { media: Medium[]; start: numb
       <div className="zb-fs-media" style={{ position: "relative", flex: 1, overflow: "hidden", animation: `zbFsScale .32s ${krivka} both` }}>
         <div ref={ref} className="zb-snap" onScroll={naScroll}>
           {media.map((m, i) => <div key={i}>{m.typ === "foto"
-            ? <span style={{ position: "absolute", inset: 0, background: `url(${m.src}) center/contain no-repeat` }} />
+            ? <span role="img" aria-label={m.popis || undefined} style={{ position: "absolute", inset: 0, background: `url(${m.src}) center/contain no-repeat` }} />
             : <VideoCele src={m.src} aktivne={i === index} />}</div>)}
         </div>
       </div>
+      {media[index]?.popis && <div style={{ flex: "none", padding: "12px 20px 0", textAlign: "center", color: "#F1ECE1", fontSize: 15, lineHeight: 1.45 }}>{media[index].popis}</div>}
       <div style={{ flex: "none", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, color: "#A9A395", fontSize: 12.5, fontWeight: 600, paddingTop: 10 }}>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><rect x="7" y="2.5" width="10" height="19" rx="2" /><path d="M3 9a9 9 0 0 1 4-5M21 15a9 9 0 0 1-4 5" /></svg>
         Potiahni prstom · otoč telefón pre celú šírku

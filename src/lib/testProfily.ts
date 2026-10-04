@@ -37,6 +37,8 @@ export interface TestSektor {
    *  tipy na pravidelný dar (suma / mes. + čo za ňu) a počet ľudí, ktorí podporujú mesačne — zadá charita v Správe */
   mesiac?: number;
   kam?: string;
+  /** 5. 10. · galéria (GaleriaEditor): všetky fotky a video, popis = nepovinný popis fotky */
+  galeria?: { typ: "foto" | "video"; src: string; popis?: string }[];
   tipy?: [number, string][];
   mesacne?: number;
 }
@@ -60,6 +62,8 @@ export interface TestZbierka {
   zodpoveda?: string;         // tvorca: charita, ktorá za zbierku zodpovedá
   /** KARTA 45 · dlhý príbeh zbierky (na profile 6 riadkov + „Čítať celý príbeh ›") */
   pribeh?: string;
+  /** 5. 10. · galéria zbierky (GaleriaEditor) */
+  galeria?: { typ: "foto" | "video"; src: string; popis?: string }[];
   /** ukončená zbierka v kronike: „22." · „SEP" · 2026 */
   d?: string; m?: string; rok?: number;
 }
@@ -231,7 +235,7 @@ const sektor = (
   id: string, nazov: string, druh: "centralna" | "sektor", foto: string,
   vyzbierane: number, darcovia: number,
   mesta: Record<Mesto, { dlazdica: string; minulyMesiac: string; uvidis: string; rozpis: [string, number][] }>,
-  v6?: Pick<TestSektor, "mesiac" | "kam" | "tipy" | "mesacne">,
+  v6?: Pick<TestSektor, "mesiac" | "kam" | "tipy" | "mesacne" | "galeria">,
 ): TestSektor => ({ id, nazov, druh, foto, vyzbierane, darcovia, mesta, ...v6 });
 
 // ============================================================
@@ -250,7 +254,7 @@ const CHARITA: TestProfil = {
     "Trenčín": { dlazdica: "Trenčín: 940 € v septembri", minulyMesiac: "V Trenčíne v septembri: 520 € jedlo · 280 € opravy · 140 € doprava", uvidis: "Uvidíš rozpis každý mesiac", rozpis: [["jedlo", 55], ["opravy", 30], ["doprava", 15]] },
     "Prešov": { dlazdica: "Prešov: 680 € v septembri", minulyMesiac: "V Prešove v septembri: 410 € jedlo · 180 € opravy · 90 € doprava", uvidis: "Uvidíš rozpis každý mesiac", rozpis: [["jedlo", 62], ["opravy", 25], ["doprava", 13]] },
     "Bratislava": { dlazdica: "Bratislava: 1 120 € v septembri", minulyMesiac: "V Bratislave v septembri: 600 € jedlo · 320 € oblečenie · 200 € doprava", uvidis: "Uvidíš rozpis každý mesiac", rozpis: [["jedlo", 54], ["oblečenie", 28], ["doprava", 18]] },
-  }, { mesiac: 3120, mesacne: 143, kam: "Kam treba najviac. Minulý mesiac v {m}: 1 200 teplých jedál, 2 opravy striech, 40 diek do nocľahárne.", tipy: [[5, "2 teplé obedy každý týždeň"], [10, "nákup pre seniora"], [20, "noc v teple 4× do mesiaca"]] }),
+  }, { mesiac: 3120, mesacne: 143, galeria: [{ typ: "foto", src: F.jedlo, popis: "Piatkové varenie na Mierovom námestí" }, { typ: "foto", src: F.strecha, popis: "Oprava strechy v Zlatovciach" }, { typ: "foto", src: F.bundy, popis: "Deky do nocľahárne" }, { typ: "foto", src: F.seniori, popis: "Nákup pre seniora" }, { typ: "video", src: "/video/nakup.mp4" }], kam: "Kam treba najviac. Minulý mesiac v {m}: 1 200 teplých jedál, 2 opravy striech, 40 diek do nocľahárne.", tipy: [[5, "2 teplé obedy každý týždeň"], [10, "nákup pre seniora"], [20, "noc v teple 4× do mesiaca"]] }),
   sektory: [
     sektor("s-seniori", "Seniori", "sektor", F.seniori, 8400, 96, {
       "Trenčín": { dlazdica: "Trenčín: nákup pre 12", minulyMesiac: "V Trenčíne sme každý piatok nakúpili 12 seniorom zo Sihote.", uvidis: "Uvidíš mená ulíc a počet seniorov", rozpis: [["nákupy", 70], ["doprava", 30]] },
@@ -269,7 +273,7 @@ const CHARITA: TestProfil = {
     }, { mesiac: 1210, mesacne: 54, kam: "Nocľaháreň, polievka a sprchy. Minulý mesiac v {m}: 620 nocí pod strechou a 900 polievok.", tipy: [[5, "10 teplých polievok"], [10, "2 noci v nocľahárni"], [20, "sprcha a čisté veci 8×"]] }),
   ],
   zbierky: [
-    { id: "z-strecha-horvath", nazov: "Strecha pre rodinu Horváthovú", popis: "V noci im zhorela strecha nad hlavou. Dve deti, babka a zima pred dverami. Prvú etapu sme už opravili, chýba krytina.", mesto: "Trenčín", cast: "Zlatovce", foto: F.poziar, vyzbierane: 8420, ciel: 12000, ludia: 148, stav: "bezi", konciDni: 9, dorovnanie: "Pekáreň Dobrota pridá k daru rovnakú sumu",
+    { id: "z-strecha-horvath", nazov: "Strecha pre rodinu Horváthovú", popis: "V noci im zhorela strecha nad hlavou. Dve deti, babka a zima pred dverami. Prvú etapu sme už opravili, chýba krytina.", mesto: "Trenčín", cast: "Zlatovce", foto: F.poziar, vyzbierane: 8420, ciel: 12000, ludia: 148, stav: "bezi", konciDni: 9, dorovnanie: "Pekáreň Dobrota pridá k daru rovnakú sumu", galeria: [{ typ: "foto", src: F.poziar, popis: "Noc po požiari" }, { typ: "foto", src: F.strecha, popis: "Pred opravou" }, { typ: "foto", src: F.dobrovolnici, popis: "Dobrovoľníci z Opatovej" }],
       pribeh: "V noci z 2. na 3. októbra im od komína chytila strecha. Pani Horváthová stihla vyniesť deti, Tomáša (7) a Emu (4), aj babku, ktorá chodí o barle. Hasiči dom zachránili, strecha nie. Rodina teraz spí u susedov v jednej izbe. Prvú etapu sme už spravili: dobrovoľníci z Opatovej odpratali zhorené trámy a pokrývač Jozef zadarmo postavil nový krov. Chýba krytina, laty a odkvapy, spolu 3 580 €. Ak ich vyzbierame do 13. októbra, Horváthovci budú spať doma ešte pred prvým mrazom. Každý doklad tu zverejníme do 30 dní." },
     { id: "z-vozik-nina", nazov: "Invalidný vozík pre Ninu", popis: "Nina má 7 rokov a starý vozík jej je malý. Nový zvládne aj školský dvor.", mesto: "Trenčín", foto: F.vozik, vyzbierane: 2960, ciel: 4000, ludia: 61, stav: "dlhodoba" },
     { id: "z-strecha-maria", nazov: "Strecha pre pani Máriu", popis: "Pani Mária má 81 rokov a býva sama. Cez strechu jej tečie do kuchyne a zima je za dverami.", mesto: "Prešov", cast: "Sekčov", foto: F.strecha, vyzbierane: 1260, ciel: 3400, ludia: 38, stav: "bezi", konciDni: 12 },

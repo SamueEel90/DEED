@@ -10,6 +10,7 @@ import { pridajDar, darcoviaPre } from "@/lib/darcovia";
 import { dorovnanieNaDar, dorovnanieKDaru, useZmenyDorovnani } from "@/lib/dorovnanie";
 import type { TestProfil, TestSektor } from "@/lib/testProfily";
 import { KartaStavu } from "@/features/zbierka/KartaStavu";
+import { Galeria } from "@/features/zbierka/Vrch";
 import { RychleSumyEur, DeedDlazdice, VlastnaSuma, DaryVKrypte, type OtvorPlatbu, type KanalPlatby } from "@/features/zbierka/Sumy";
 import { PlatobneOkno } from "@/features/zbierka/Platba";
 import { ZdielatRiadok, PravidelnaRiadok, OblubenePodporit, RetazRiadok, KartaDorovnava, Darcovia } from "@/features/zbierka/Riadky";
@@ -51,10 +52,11 @@ export function ModulProfilu({ profil, sektor, poradie, mestoV, onZbal, dorovnan
   return (
     <div data-hier={hier ?? String(poradie)} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
       <div style={{ borderRadius: 22, overflow: "hidden", border: "2px solid var(--hc)", background: "var(--card)" }}>
-        <div style={{ position: "relative", height: 150, background: bg(sektor.foto) }}>
+        {/* 5. 10. · fotka nad modulom = galéria tej zbierky (mobil posun prstom, PC šípky, ťuk = celá obrazovka s popisom) */}
+        <Galeria media={sektor.galeria?.length ? sektor.galeria : [{ typ: "foto", src: sektor.foto }]} vyska={150} radius={0} okraj="0" prekrytie={<>
           <span style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg,rgba(10,8,5,.25) 0%,rgba(10,8,5,0) 45%)" }} />
           <span style={{ position: "absolute", left: 12, top: 12, height: 28, padding: "0 12px", borderRadius: 14, background: "var(--hcF)", color: "#fff", fontSize: 11.5, fontWeight: 800, letterSpacing: ".06em", display: "flex", alignItems: "center", whiteSpace: "nowrap" }}>POSIELAŠ DO · {typ}</span>
-        </div>
+        </>} bezBodiek />
         <div style={{ padding: "12px 8px 14px 16px", display: "flex", alignItems: "flex-start", gap: 8 }}>
           <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 3 }}>
             <b style={{ fontSize: 20, lineHeight: 1.2 }}>{sektor.nazov}</b>

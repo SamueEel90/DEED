@@ -163,7 +163,7 @@ import type { ZbierkaData } from "@/features/zbierka/ZbierkaModul";
 export function naZbierkaData(z: TestZbierka, profil: TestProfil): ZbierkaData {
   return {
     id: z.id, nazov: z.nazov, popis: z.popis, overena: true,
-    media: [{ typ: "foto", src: z.foto }],
+    media: z.galeria?.length ? z.galeria : [{ typ: "foto", src: z.foto }], // 5. 10.: galéria zbierky aj v detaile
     vyzbierane: z.vyzbierane, ciel: z.ciel, ludia: z.ludia,
     organizacia: {
       meno: z.zodpoveda ?? profil.meno, typ: "charita", mesto: z.mesto,

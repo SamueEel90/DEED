@@ -13,7 +13,7 @@ export type Vyber = number | TestZbierka | null;
 
 /** konkrétna zbierka v náhľade „Posielaš do …" — neutrálny rám (data-hier="z"), modul ako pri sektore */
 export function zbierkaAkoSektor(z: TestZbierka): TestSektor {
-  return { id: z.id, nazov: z.nazov, druh: "sektor", foto: z.foto, vyzbierane: z.vyzbierane, darcovia: z.ludia, mesta: {} as TestSektor["mesta"] };
+  return { id: z.id, nazov: z.nazov, druh: "sektor", foto: z.foto, galeria: z.galeria, vyzbierane: z.vyzbierane, darcovia: z.ludia, mesta: {} as TestSektor["mesta"] };
 }
 export function ModulZbierky({ profil, z, onZbal }: { profil: TestProfil; z: TestZbierka; onZbal: () => void }) {
   const kedy = z.stav === "dlhodoba" ? "dlhodobá" : z.konciDni != null ? `končí o ${tvar(z.konciDni, ["deň", "dni", "dní"])}` : null;
