@@ -345,7 +345,7 @@ function IskryPrud() {
               <DeedQr data={odkazIskry(akt.id)} odznak={akt.org ? "D++" : "D+"} retaz={akt.retazPct != null} variant="inverzny" size={56} /></button>
             {/* OPRAVY 135: typ videa zbierky — štítok vľavo hore */}
             {akt.zb && <span style={{ height: 28, display: "flex", alignItems: "center", padding: "0 12px", borderRadius: 14, fontSize: 12.5, fontWeight: 800, letterSpacing: ".02em", textShadow: "none",
-              background: akt.zb.typ === "vyzva" ? "#4B7A35" : "rgba(255,255,255,.92)", color: akt.zb.typ === "vyzva" ? "#fff" : "#1D211B" }}>{akt.zb.stitok}</span>}
+              ...farbaStitku(akt.zb) }}>{akt.zb.stitok}</span>}
           </div>}
         </div>
 
@@ -510,6 +510,12 @@ export function ZdielatIskru({ v, onClose }: { v: Iskra; onClose: () => void }) 
       <button type="button" onClick={() => setVelky(false)} style={{ minHeight: 48, padding: "0 26px", borderRadius: 14, border: "none", background: "#fff", color: "#1D211B", fontSize: 15.5, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}>Zavrieť</button>
     </div>, document.body)}
   </>);
+}
+
+/** OPRAVY 138/3: Výzva zelená, Priebeh biela, poďakovania zlaté (odlíšiť poďakovanie od prosby) */
+function farbaStitku(zb: NonNullable<Iskra["zb"]>): CSSProperties {
+  if (zb.typ !== "vyzva") return { background: ZLATA, color: "#1D211B" };
+  return zb.stitok === "Priebeh" ? { background: "rgba(255,255,255,.92)", color: "#1D211B" } : { background: "#4B7A35", color: "#fff" };
 }
 
 // ---------- OPRAVY 135 · karta zbierky pod videom druhu Zbierky ----------
