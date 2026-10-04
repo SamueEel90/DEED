@@ -6,7 +6,7 @@
 // Pôvodný Vyklad.tsx ostáva Pekárni (firma).
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { eur, pct, tvar, type Lokalita, type TestProfil, type TestZbierka } from "@/lib/testProfily";
-import { DOK, LokalitaPrepinac, PlagatPrace, PribehText, StitCare, StitOkno, nazovStitu, useDomaceMesto } from "./casti";
+import { DOK, LokalitaPrepinac, PlagatPrace, PrepinacPodania, PribehText, StitCare, StitOkno, nazovStitu, useDomaceMesto } from "./casti";
 import { PodporaProfilu } from "./PodporaProfilu";
 import { GRAD, PRUH, MalaZbierka, OznamKarta, RokyOs, ZIskier, bgF, sekciaNadpis, stZb, useCharitaData } from "./charitaCasti";
 
@@ -181,13 +181,13 @@ export function VykladCharita({ profil, onDetail, onBack, prepinac }: { profil: 
   return (
     <div ref={scRef} className="vp sc-tokeny" data-stit={stit} style={{ position: "relative", height: "100%", overflowY: "auto", WebkitOverflowScrolling: "touch" }}>
       {titulka}{kov}{pas}
-      {prepinac && <div style={{ padding: "12px 16px 0" }}>{prepinac}</div>}
       {taby}
       <div style={{ padding: "18px 16px 0", display: "flex", flexDirection: "column", gap: 14 }}>
         <span ref={kotva(0)} />
         <PodporaProfilu profil={profil} lok={lok} domace={domace} rez="mob" nadpis="DAROVAŤ · TIPY NA PRAVIDELNÝ DAR" vyska={104} />
         <PlagatPrace praca={profil.praca} zbaleny />
         {zbierky}{iskry}{oznamy}{historia}{onas}
+        {prepinac && <PrepinacPodania pas />}
       </div>
       <div style={{ height: DOK + 24 }} />
       {okno}

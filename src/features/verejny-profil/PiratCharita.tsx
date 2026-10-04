@@ -7,7 +7,7 @@
 // Pôvodný Pirat.tsx ostáva tvorcovi (Martin Konaľ).
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { eur, tvar, type Lokalita, type TestProfil, type TestZbierka } from "@/lib/testProfily";
-import { DOK, LokalitaPrepinac, PlagatPrace, PribehText, StitCare, StitOkno, kovText, nazovStitu, useDomaceMesto, usePodanie, vMeste } from "./casti";
+import { DOK, LokalitaPrepinac, PlagatPrace, PrepinacPodania, PribehText, StitCare, StitOkno, kovText, nazovStitu, useDomaceMesto, usePodanie, vMeste } from "./casti";
 import { PodporaProfilu } from "./PodporaProfilu";
 import { GRAD, PRUH, MalaZbierka, OznamKarta, ZIskier, bgF, useCharitaData } from "./charitaCasti";
 
@@ -44,7 +44,7 @@ export function PiratCharita({ profil, onDetail, onBack, prepinac }: { profil: T
   const otvorModul = (i: number) => { setMod(i); if (!pc) setSh(true); };
   const vybrane = mod != null ? sekt[mod]?.nazov : "vyber, na čo";
 
-  const OBR = ["Kto sme", "Kam treba najviac", "Teraz treba", "Z Iskier", "Ďalšie zbierky", ...(pc ? [] : ["Hľadáme ľudí"]), "Čo sme dokázali", "Overenie"];
+  const OBR = ["Kto sme", "Kam treba najviac", "Teraz treba", "Z Iskier", "Ďalšie zbierky", ...(pc ? [] : ["Hľadáme ľudí"]), "Čo sme dokázali", "Overenie", ...(!pc && prepinac ? ["Testovacie"] : [])];
   const naObr = (i: number) => { const box = snapRef.current; if (box) box.scrollTo({ top: i * box.clientHeight, behavior: "smooth" }); };
 
   // ---- spoločné kúsky ----
@@ -218,7 +218,7 @@ export function PiratCharita({ profil, onDetail, onBack, prepinac }: { profil: T
     <div className="vp sc-tokeny" data-stit={stit} style={{ position: "relative", height: "100%", overflow: "hidden" }}>
       <div ref={snapRef} style={{ position: "absolute", inset: 0, overflowY: "auto", scrollSnapType: "y mandatory", overscrollBehavior: "contain", WebkitOverflowScrolling: "touch", display: "flex", flexDirection: "column" }}>
         {obr(<>
-          {foto(profil.titulka, "52%", prepinac && <div style={{ position: "absolute", left: 12, right: 12, top: "calc(max(12px, env(safe-area-inset-top)) + 52px)" }}>{prepinac}</div>)}
+          {foto(profil.titulka, "52%")}
           {textPlocha(<>
             <span style={{ display: "flex", alignItems: "center", gap: 12, marginTop: -62, position: "relative" }}>
               <span style={{ width: 72, height: 72, borderRadius: 22, background: "#fff", border: "3px solid var(--bg)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, fontWeight: 800, color: "#3F6E2A", boxShadow: "0 8px 20px rgba(0,0,0,.3)" }}>{profil.iniciala}</span>
@@ -298,6 +298,7 @@ export function PiratCharita({ profil, onDetail, onBack, prepinac }: { profil: T
             <div style={{ alignSelf: "stretch", display: "flex", flexDirection: "column", textAlign: "left" }}>{faktyEl(12.5, 13, "8px 0")}</div>
           </div>
         </section>
+        {prepinac && <section style={{ ...snap, background: "var(--bg)" }}>{plocha(<PrepinacPodania pas />, 104)}</section>}
       </div>
       {horna}
       {bodky}

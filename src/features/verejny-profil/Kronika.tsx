@@ -10,7 +10,7 @@ import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type 
 import { eur, pct, tvar, vLokalite, type Lokalita, type TestProfil, type TestZbierka } from "@/lib/testProfily";
 import { ISKRY_CFG, iskraViditelna, iskryVsetky, useZmenyIskier, zbierkaIskry, type Iskra } from "@/lib/iskry";
 import { otvorIskry } from "@/features/iskry/otvor";
-import { DOK, LokalitaPrepinac, MESIACE, PlagatPrace, PribehText, StitCare, StitOkno, kovText, nazovStitu, norm, useDomaceMesto, useMobil } from "./casti";
+import { DOK, LokalitaPrepinac, MESIACE, PlagatPrace, PrepinacPodania, PribehText, StitCare, StitOkno, kovText, nazovStitu, norm, useDomaceMesto, useMobil } from "./casti";
 import { PodporaProfilu } from "./PodporaProfilu";
 
 type Typ = "zb" | "sk" | "is" | "oz" | "pr";
@@ -519,7 +519,6 @@ export function Kronika({ profil, onDetail, onBack, prepinac }: { profil: TestPr
                 </span>
                 {stitTlacidlo(100, 118, 92, 112)}
               </div>}
-          {tab && prepinac}
           {!tab && <>
                 <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginTop: -40, position: "relative" }}>
                   {logo(76, 22, 25, "var(--bg)")}
@@ -529,7 +528,6 @@ export function Kronika({ profil, onDetail, onBack, prepinac }: { profil: TestPr
                   <b style={{ fontSize: 25, lineHeight: 1.15 }}>{profil.meno}</b>
                   <span style={{ fontSize: 14.5, lineHeight: 1.5, color: "var(--ink2)", textWrap: "pretty" } as CSSProperties}>{profil.veta}</span>
                 </span>
-                {prepinac}
               </>}
           {tab ? nazivoTab : nazivoMob}
           {podpora}
@@ -538,6 +536,7 @@ export function Kronika({ profil, onDetail, onBack, prepinac }: { profil: TestPr
         <div style={{ padding: tab ? "24px 28px 0" : "20px 16px 0", display: "flex", flexDirection: "column", gap: tab ? 40 : 30 }}>
           {aktualne}
           {kapitolyEl}
+          {prepinac && <PrepinacPodania pas />}
         </div>
         <div style={{ height: DOK + 24 }} />
         {okno}

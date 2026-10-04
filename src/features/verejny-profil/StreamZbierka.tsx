@@ -9,7 +9,7 @@ import { STREAMY, STREAM_ZBIERKY } from "@/lib/testTvorca";
 import { jeNeregistrovany, sledujDarcu } from "@/lib/devDarca";
 import { usePouzivatel } from "@/lib/pouzivatel";
 import { TESTOVACIA } from "@/lib/testovacia";
-import { DOK, PribehText } from "./casti";
+import { DOK, PribehText, TestovaciPas } from "./casti";
 import { ModulPlatby } from "./ModulProfilu";
 import { PRUH } from "./charitaCasti";
 
@@ -128,15 +128,14 @@ export function StreamZbierka({ profil, streamId, onBack, onTvorca }: { profil: 
   );
 
   const modul = <ModulPlatby profil={{ ...profil, meno: zb.charita }} sektor={zb.modul} dorovnanie={false} nazov={zb.nazov} />;
-  const prepinac = TESTOVACIA && (
-    <div role="group" aria-label="Stav streamu (test)" style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-      <span style={{ fontSize: 12.5, fontWeight: 800, color: "var(--ink3)", marginRight: 2 }}>Test:</span>
-      {([["Vysiela naživo", false], ["Stream skončil", true]] as const).map(([t, v]) => {
-        const on = po === v;
-        return <button key={t} type="button" aria-pressed={on} onClick={() => { setPo(v); setHra(false); }} style={{ height: 44, padding: "0 14px", borderRadius: 22, border: on ? "none" : "1.5px solid #4E7D37", background: on ? "#1D211B" : "#fff", color: on ? "#fff" : "#3F6E2A", fontSize: 14, fontWeight: 800, cursor: "pointer", fontFamily: "inherit", boxShadow: "none" }}>{t}</button>;
-      })}
-    </div>
-  );
+  const stavy = ([["Vysiela naživo", false], ["Stream skončil", true]] as const).map(([t, v]) => {
+    const on = po === v;
+    return <button key={t} type="button" aria-pressed={on} onClick={() => { setPo(v); setHra(false); }} style={{ height: 44, padding: "0 14px", borderRadius: 22, border: on ? "none" : "1.5px solid #4E7D37", background: on ? "#1D211B" : "#fff", color: on ? "#fff" : "#3F6E2A", fontSize: 14, fontWeight: 800, cursor: "pointer", fontFamily: "inherit", boxShadow: "none" }}>{t}</button>;
+  });
+  // testovacie voľby: PC pod obsahom vľavo, mobil a tablet sivý pás úplne dole
+  const prepinac = TESTOVACIA && (pc
+    ? <div role="group" aria-label="Stav streamu (test)" style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}><span style={{ fontSize: 12.5, fontWeight: 800, color: "var(--ink3)", marginRight: 2 }}>Test:</span>{stavy}</div>
+    : <TestovaciPas nazov="Stav streamu">{stavy}</TestovaciPas>);
 
   if (pc) return (
     <div className="vp sc-tokeny" data-stit={profil.stit.toLowerCase()} style={{ position: "relative", height: "100%", overflowY: "auto", background: "var(--bg)" }}>
