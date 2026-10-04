@@ -2,12 +2,26 @@
 // „TIPY NA PRAVIDELNÝ DAR" → 4 dlaždice (centrálna + 3 sektory, farba podľa poradia) → ťuk rozbalí pod nimi
 // náš platobný modul (ModulProfilu). 5. 10.: po výbere sa ostatné dlaždice skryjú, Zbaliť ⌃ vráti všetky 4.
 import { useRef, useState } from "react";
-import { eur, type Lokalita, type Mesto, type TestProfil, type TestSektor } from "@/lib/testProfily";
+import { eur, tvar, type Lokalita, type Mesto, type TestProfil, type TestSektor, type TestZbierka } from "@/lib/testProfily";
 import { vMeste } from "./casti";
 import { ModulProfilu } from "./ModulProfilu";
 
 const bg = (f: string) => `url('${f}') center/cover no-repeat #3a3530`;
 export type RezPodpory = "pc" | "tab" | "mob";
+/** 5. 10. · čo je vybraté na darovanie: index dlaždice (0 centrálna, 1–3 sektory) alebo konkrétna zbierka (PC Pirát / Výklad) */
+export type Vyber = number | TestZbierka | null;
+
+/** konkrétna zbierka v náhľade „Posielaš do …" — neutrálny rám (data-hier="z"), modul ako pri sektore */
+export function zbierkaAkoSektor(z: TestZbierka): TestSektor {
+  return { id: z.id, nazov: z.nazov, druh: "sektor", foto: z.foto, vyzbierane: z.vyzbierane, darcovia: z.ludia, mesta: {} as TestSektor["mesta"] };
+}
+export function ModulZbierky({ profil, z, onZbal }: { profil: TestProfil; z: TestZbierka; onZbal: () => void }) {
+  const kedy = z.stav === "dlhodoba" ? "dlhodobá" : z.konciDni != null ? `končí o ${tvar(z.konciDni, ["deň", "dni", "dní"])}` : null;
+  return <ModulProfilu key={z.id} profil={profil} sektor={zbierkaAkoSektor(z)} poradie={0} hier="z" mestoV="" onZbal={onZbal}
+    typ={`ZBIERKA · ${z.mesto.toLocaleUpperCase("sk-SK")}`} typ2={["jeden prípad", kedy, "doložené do 30 dní"].filter(Boolean).join(" · ")}
+    info="Konkrétna zbierka má cieľ a koniec. Charita doloží každý doklad do 30 dní po skončení a uvidíš ho tu."
+    meno={z.zodpoveda ?? profil.meno} />;
+}
 
 export function PodporaProfilu({ profil, lok, domace, rez, stlpce = rez === "tab" ? 4 : 2, nadpis = "TIPY NA PRAVIDELNÝ DAR", vyska, mod: modP, onMod }: {
   profil: TestProfil; lok: Lokalita; domace: Mesto; rez: RezPodpory;
@@ -18,11 +32,11 @@ export function PodporaProfilu({ profil, lok, domace, rez, stlpce = rez === "tab
   /** výška dlaždice (Výklad PC 118, mobil 104) */
   vyska?: number;
   /** KARTA 45 · Pirát: otvorený modul riadi rodič (ťuk na „Darovať na celú činnosť" / sektor) */
-  mod?: number | null; onMod?: (i: number | null) => void;
+  mod?: Vyber; onMod?: (i: Vyber) => void;
 }) {
-  const [modVl, setModVl] = useState<number | null>(null);
+  const [modVl, setModVl] = useState<Vyber>(null);
   const mod = onMod ? (modP ?? null) : modVl;
-  const setMod = (i: number | null) => (onMod ? onMod(i) : setModVl(i));
+  const setMod = (i: Vyber) => (onMod ? onMod(i) : setModVl(i));
   const nadpisRef = useRef<HTMLSpanElement | null>(null);
   const sk = lok === "Celé Slovensko";
   const mestoV = sk ? "celom Slovensku" : vMeste(lok);
@@ -31,7 +45,8 @@ export function PodporaProfilu({ profil, lok, domace, rez, stlpce = rez === "tab
     setMod(null);
     requestAnimationFrame(() => nadpisRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
   };
-  const modul = mod != null && sektory[mod] && <ModulProfilu key={sektory[mod].id} profil={profil} sektor={sektory[mod]} poradie={mod} mestoV={mestoV} onZbal={zbal} />;
+  const modul = mod != null && typeof mod === "object" ? <ModulZbierky profil={profil} z={mod} onZbal={zbal} />
+    : typeof mod === "number" && sektory[mod] && <ModulProfilu key={sektory[mod].id} profil={profil} sektor={sektory[mod]} poradie={mod} mestoV={mestoV} onZbal={zbal} />;
   return (
     <>
       <span ref={nadpisRef} style={{ scrollMarginTop: 56, fontSize: 11.5, fontWeight: 800, letterSpacing: ".1em", color: "var(--acc)", paddingTop: rez === "mob" ? 6 : 4 }}>{nadpis}{nadpis === "TIPY NA PRAVIDELNÝ DAR" && <> <span style={{ fontWeight: 600, letterSpacing: 0, color: "var(--ink3)" }}>· aj jednorazovo, zrušíš kedykoľvek</span></>}</span>

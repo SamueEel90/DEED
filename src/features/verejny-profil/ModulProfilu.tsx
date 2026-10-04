@@ -25,7 +25,7 @@ const bg = (f: string) => `url('${f}') center/cover no-repeat #3a3530`;
 const eurT = (n: number) => `${n.toLocaleString("sk-SK")} €`;
 
 /** náhľad dlaždice nad modulom + modul + Zbaliť */
-export function ModulProfilu({ profil, sektor, poradie, mestoV, onZbal, dorovnanie = true, uvidisOdkaz, typ: typP, typ2: typ2P, info: infoP, meno }: {
+export function ModulProfilu({ profil, sektor, poradie, mestoV, onZbal, dorovnanie = true, uvidisOdkaz, typ: typP, typ2: typ2P, info: infoP, meno, hier }: {
   profil: TestProfil; sektor: TestSektor; poradie: number;
   /** „v Trenčíne" → „Trenčíne" (pre vetu „Minulý mesiac v …") */
   mestoV: string;
@@ -38,6 +38,8 @@ export function ModulProfilu({ profil, sektor, poradie, mestoV, onZbal, dorovnan
   typ?: string; typ2?: string; info?: string;
   /** meno pod názvom náhľadu (firma: krátke meno bez s.r.o.) */
   meno?: string;
+  /** 5. 10. · farba rámu: „z" = konkrétna zbierka (neutrálny sivý rám), inak podľa poradia */
+  hier?: string;
 }) {
   const [info, setInfo] = useState(false);
   const sek = poradie > 0;
@@ -47,7 +49,7 @@ export function ModulProfilu({ profil, sektor, poradie, mestoV, onZbal, dorovnan
     ? "Sektorová zbierka je na jednu tému, ktorú charita robí dlhodobo. Nemá cieľ ani koniec. Dokladovanie je dobrovoľné, ale peniaze idú len na túto tému. Ak chceš vidieť každý doklad, vyber konkrétnu zbierku."
     : "Centrálna zbierka je na chod celej organizácie. Dokladovanie je dobrovoľné a peniaze sa použijú tam, kde treba najviac. Ak chceš vidieť každý doklad, vyber konkrétnu zbierku alebo sektor.");
   return (
-    <div data-hier={String(poradie)} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+    <div data-hier={hier ?? String(poradie)} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
       <div style={{ borderRadius: 22, overflow: "hidden", border: "2px solid var(--hc)", background: "var(--card)" }}>
         <div style={{ position: "relative", height: 150, background: bg(sektor.foto) }}>
           <span style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg,rgba(10,8,5,.25) 0%,rgba(10,8,5,0) 45%)" }} />

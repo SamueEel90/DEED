@@ -2,13 +2,14 @@
 // ZMENA 4. 10.: plynulý posun bez scroll-snap a bez bodiek. Na celú výšku len prvá obrazovka (Kto sme), ostatné sekcie podľa obsahu
 // (PC: Kam treba najviac a Teraz treba aspoň 720 px). Poradie: Kto sme · Kam treba najviac · Teraz treba · Z Iskier · Ďalšie zbierky · Hľadáme ľudí (len mobil) · Čo sme dokázali · Overenie.
 // PC (≥ 1200): text vľavo na tmavom prechode cez fotku, modul stále vpravo (440 px).
-// Mobil a tablet: fotka hore (36–52 %), text na pevnej ploche pod ňou, žiadne vnorené rolovanie. Darovanie =
-//   zelený pás „Darovať · {vybrané} ⌃" nad dolnou lištou → hárok zdola (86 %) s Tipmi a modulom.
+// Mobil a tablet: fotka hore, text pod ňou. 5. 10.: bez lepkavého pásu — „Darovať na …" na obrazovke Kam treba najviac
+//   otvorí hárok zdola (86 %) rovno s tou zbierkou; zatvorenie hárku zruší výber. Ťuk na sektor prepne obrazovku na sektor.
+// PC: ťuk na sektor / Teraz treba / zbierku = vpravo náhľad „Posielaš do …" + modul, pravý stĺpec sa vyroluje hore.
 // Pôvodný Pirat.tsx ostáva tvorcovi (Martin Konaľ).
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { eur, tvar, type Lokalita, type TestProfil, type TestZbierka } from "@/lib/testProfily";
 import { DOK, LokalitaPrepinac, PlagatPrace, PrepinacPodania, klikKarta, PribehText, StitCare, StitOkno, kovText, nazovStitu, useDomaceMesto, usePodanie, vMeste } from "./casti";
-import { PodporaProfilu } from "./PodporaProfilu";
+import { PodporaProfilu, type Vyber } from "./PodporaProfilu";
 import { GRAD, PRUH, MalaZbierka, OznamKarta, ZIskier, bgF, useCharitaData } from "./charitaCasti";
 
 const PC = "(min-width: 1200px)";
@@ -28,7 +29,8 @@ export function PiratCharita({ profil, onDetail, onBack, prepinac }: { profil: T
   const pc = usePc();
   const domace = useDomaceMesto(profil);
   const [lok, setLok] = useState<Lokalita>(domace);
-  const [mod, setMod] = useState<number | null>(null);
+  const [mod, setMod] = useState<Vyber>(null);
+  const aRef = useRef<HTMLElement | null>(null);
   const [sh, setSh] = useState(false);
   const [stitOtv, setStitOtv] = useState(false);
   const [, setPodanie] = usePodanie();
@@ -41,10 +43,19 @@ export function PiratCharita({ profil, onDetail, onBack, prepinac }: { profil: T
   const rokov = new Date().getFullYear() - profil.odRoku;
   const zaRoky = `Za ${tvar(rokov, ["rok", "roky", "rokov"])} ${profil.cisla[0][0]} a ${profil.cisla[2][0]} skutkov`;
   const c = profil.centralna;
-  const kam = (c.kam ?? "").replace("{m}", lok === "Celé Slovensko" ? "celom Slovensku" : vMeste(lok));
   const sekt = [c, ...profil.sektory];
-  const otvorModul = (i: number) => { setMod(i); if (!pc) setSh(true); };
-  const vybrane = mod != null ? sekt[mod]?.nazov : "vyber, na čo";
+  // 5. 10. · Kam treba najviac: obrazovka ukazuje vybratý sektor (inak centrálnu), ostatné 3 ako riadky „ALEBO VYBER INÉ"
+  const cur = typeof mod === "number" ? mod : 0;
+  const cs = sekt[cur] ?? c;
+  const kam = (cs.kam ?? "").replace("{m}", lok === "Celé Slovensko" ? "celom Slovensku" : vMeste(lok));
+  // PC: čo ťukneš vľavo, je vpravo pripravené na darovanie — pravý stĺpec sa vyroluje hore na „Posielaš do …"
+  const hore = () => requestAnimationFrame(() => aRef.current?.scrollTo({ top: 0, behavior: "smooth" }));
+  const vyber = (v: Vyber) => { setMod(v); if (pc) hore(); };
+  /** „Darovať na …": PC vpravo, mobil hárok zdola rovno s tou zbierkou */
+  const darovatNa = (i: number) => { setMod(i); if (pc) hore(); else setSh(true); };
+  /** konkrétna zbierka: PC vpravo v náhľade, mobil detail na celú obrazovku */
+  const zbierkaKlik = (z: TestZbierka) => (pc ? vyber(z) : onDetail(z));
+  const zavriHarok = () => { setSh(false); setMod(null); };
 
 
   // ---- spoločné kúsky ----
@@ -77,10 +88,10 @@ export function PiratCharita({ profil, onDetail, onBack, prepinac }: { profil: T
   );
   const sekRiadky = (h: number, fs: number) => (
     <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-      {profil.sektory.map((s, i) => (
-        <button key={s.id} type="button" onClick={() => otvorModul(i + 1)} style={{ height: h, padding: "0 12px 0 0", borderRadius: 14, border: "1px solid var(--cardBd)", background: "var(--card)", overflow: "hidden", cursor: "pointer", display: "flex", alignItems: "center", gap: 12, textAlign: "left", color: "var(--ink)", fontFamily: "inherit", boxShadow: "none" }}>
-          <span style={{ flex: "none", width: 6, alignSelf: "stretch", background: `var(--h${i + 1})` }} />
-          <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}><span style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: ".08em", color: "var(--ink3)" }}>SEKTOR {i + 1}</span><b style={{ fontSize: fs }}>{s.nazov}</b></span>
+      {sekt.map((s, i) => i === cur ? null : (
+        <button key={s.id} type="button" onClick={() => vyber(i)} style={{ height: h, padding: "0 12px 0 0", borderRadius: 14, border: "1px solid var(--cardBd)", background: "var(--card)", overflow: "hidden", cursor: "pointer", display: "flex", alignItems: "center", gap: 12, textAlign: "left", color: "var(--ink)", fontFamily: "inherit", boxShadow: "none" }}>
+          <span style={{ flex: "none", width: 6, alignSelf: "stretch", background: `var(--h${i})` }} />
+          <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}><span style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: ".08em", color: "var(--ink3)" }}>{i ? `SEKTOR ${i}` : "CENTRÁLNA"}</span><b style={{ fontSize: fs }}>{s.nazov}</b></span>
           <span style={{ fontSize: 12.5, color: "var(--ink3)", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>{s.mesiac != null ? `${eur(s.mesiac)} tento mesiac` : ""}</span>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg>
         </button>))}
@@ -130,14 +141,14 @@ export function PiratCharita({ profil, onDetail, onBack, prepinac }: { profil: T
                 <span style={{ fontSize: 14, fontWeight: 700, opacity: 0.8 }}>Posuň dole</span>
               </div>
             </>, undefined, undefined, true)}
-            {tmavy(c.foto, [0.94, 0.72, 50],
+            {tmavy(cs.foto, [0.94, 0.72, 50],
               <div style={{ position: "absolute", left: 56, bottom: 64, width: 580, display: "flex", flexDirection: "column", gap: 14, color: "#fff" }}>
-                <span style={{ alignSelf: "flex-start", height: 32, padding: "0 14px", borderRadius: 16, background: "#4B7A35", fontSize: 13, fontWeight: 800, letterSpacing: ".05em", display: "flex", alignItems: "center" }}>KAM TREBA NAJVIAC · CENTRÁLNA</span>
-                <b style={{ fontSize: 52, lineHeight: 1.05, letterSpacing: "-.02em" }}>{c.nazov} {profil.menoGen ?? meno}</b>
+                <span style={{ alignSelf: "flex-start", height: 32, padding: "0 14px", borderRadius: 16, background: "#4B7A35", fontSize: 13, fontWeight: 800, letterSpacing: ".05em", display: "flex", alignItems: "center" }}>{cur ? `SEKTOR ${cur} · PENIAZE IDÚ LEN NA TÚTO TÉMU` : "KAM TREBA NAJVIAC · CENTRÁLNA"}</span>
+                <b style={{ fontSize: 52, lineHeight: 1.05, letterSpacing: "-.02em" }}>{cur ? cs.nazov : `${c.nazov} ${profil.menoGen ?? meno}`}</b>
                 <span style={{ fontSize: 17, lineHeight: 1.55, opacity: 0.92 }}>{kam}</span>
-                <span style={{ display: "flex", alignItems: "baseline", gap: 10, fontVariantNumeric: "tabular-nums" }}><b style={{ fontSize: 30 }}>{eur(c.mesiac ?? c.vyzbierane)}</b><span style={{ fontSize: 16, opacity: 0.85 }}>tento mesiac · {c.darcovia} ľudí pomohlo</span></span>
-                <button type="button" onClick={() => otvorModul(0)} style={{ ...btnZ, alignSelf: "flex-start", height: 56, padding: "0 28px", borderRadius: 16, fontSize: 17 }}>Darovať na celú činnosť</button>
-                <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".1em", color: "#F6D77A", paddingTop: 6 }}>ALEBO VYBER SEKTOR</span>
+                <span style={{ display: "flex", alignItems: "baseline", gap: 10, fontVariantNumeric: "tabular-nums" }}><b style={{ fontSize: 30 }}>{eur(cs.mesiac ?? cs.vyzbierane)}</b><span style={{ fontSize: 16, opacity: 0.85 }}>tento mesiac · {cs.darcovia} ľudí pomohlo</span></span>
+                <button type="button" onClick={() => darovatNa(cur)} style={{ ...btnZ, alignSelf: "flex-start", height: 56, padding: "0 28px", borderRadius: 16, fontSize: 17 }}>Darovať na {cur ? cs.nazov : "celú činnosť"}</button>
+                <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".1em", color: "#F6D77A", paddingTop: 6 }}>ALEBO VYBER INÉ</span>
                 {sekRiadky(52, 15.5)}
               </div>)}
             {v && tmavy(v.foto, [0.92, 0.65, 50],
@@ -148,11 +159,11 @@ export function PiratCharita({ profil, onDetail, onBack, prepinac }: { profil: T
                 {v.ciel != null && <span style={{ display: "block", height: 10, borderRadius: 5, background: "rgba(255,255,255,.2)", overflow: "hidden" }}><span style={{ display: "block", width: "100%", height: "100%", background: PRUH, transformOrigin: "0 50%", transform: `scaleX(${Math.min(1, v.vyzbierane / v.ciel)})` }} /></span>}
                 <span style={{ display: "flex", alignItems: "baseline", gap: 10, fontVariantNumeric: "tabular-nums" }}><b style={{ fontSize: 30 }}>{eur(v.vyzbierane)}</b><span style={{ fontSize: 16, opacity: 0.85 }}>{v.ciel ? `z ${eur(v.ciel)} · ` : ""}{v.ludia} ľudí</span></span>
                 {v.dorovnanie && <span style={{ fontSize: 15, fontWeight: 700, color: "#F6D77A" }}>{v.dorovnanie}</span>}
-              </div>, () => onDetail(v), v.nazov)}
+              </div>, () => vyber(v), `${v.nazov} · darovať`)}
             {svetla(<><b style={velkyNadpis(52)}>Z Iskier</b><ZIskier profil={profil} cesty={d.iskryCesty} w={210} h={374} wVs={112} /></>, { gap: 20 })}
             {svetla(<>
               <b style={velkyNadpis(52)}>Ďalšie zbierky a oznamy</b>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 12 }}>{d.male.map((z) => <MalaZbierka key={z.id} z={z} onDetail={onDetail} />)}</div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 12 }}>{d.male.map((z) => <MalaZbierka key={z.id} z={z} onDetail={zbierkaKlik} />)}</div>
               {d.oznamy.length > 0 && <div style={{ display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 12 }}>{d.oznamy.slice(0, 2).map((o) => <OznamKarta key={o.id} o={o} />)}</div>}
             </>, { gap: 16, overflow: "hidden" })}
             {svetla(<>
@@ -182,7 +193,7 @@ export function PiratCharita({ profil, onDetail, onBack, prepinac }: { profil: T
             </section>
           </div>
         </div>
-        <aside style={{ width: 440, flex: "none", overflowY: "auto", background: "var(--panel)", borderLeft: "1px solid var(--accLine)", padding: "22px 22px 40px", display: "flex", flexDirection: "column", gap: 12 }}>
+        <aside ref={aRef} style={{ width: 440, flex: "none", overflowY: "auto", background: "var(--panel)", borderLeft: "1px solid var(--accLine)", padding: "22px 22px 40px", display: "flex", flexDirection: "column", gap: 12 }}>
           <b style={{ fontSize: 22 }}>Darovať {profil.menoDat ?? meno}</b>
           {podpora("pc", 118)}
           <PlagatPrace praca={profil.praca} />
@@ -201,7 +212,7 @@ export function PiratCharita({ profil, onDetail, onBack, prepinac }: { profil: T
     <span style={{ display: "block", flex: "none", height: "var(--mH)", background: "var(--metal)" }} />
   </>);
   const stitok = (t: string, farba: string, bottom: number) => <span style={{ position: "absolute", left: 16, bottom, height: 30, padding: "0 12px", borderRadius: 15, background: farba, color: "#fff", fontSize: 12, fontWeight: 800, letterSpacing: ".05em", display: "flex", alignItems: "center", whiteSpace: "nowrap" }}>{t}</span>;
-  const spodok = DOK + 70; // nad zeleným pásom a dolnou lištou appky
+  const spodok = DOK + 24; // nad dolnou lištou appky (5. 10.: lepkavý pás Darovať zrušený)
   const obr = (obsah: ReactNode, klik?: () => void, nazov?: string, celaVyska = false) => <section {...(klik ? klikKarta(klik, nazov) : {})} style={{ ...(celaVyska ? prva : sekcia), background: "var(--bg)", cursor: klik ? "pointer" : undefined }}><div style={celaVyska ? { position: "absolute", inset: 0, display: "flex", flexDirection: "column" } : { position: "relative", display: "flex", flexDirection: "column" }}>{obsah}</div></section>;
   const textPlocha = (obsah: ReactNode, pad = "16px 18px", gap = 9, ov: "hidden" | "visible" = "hidden", dole = 24) => <div style={{ flex: 1, minHeight: 0, padding: pad, paddingBottom: dole, display: "flex", flexDirection: "column", gap, overflow: ov }}>{obsah}</div>;
   const plocha = (obsah: ReactNode, gap = 12, dole = 24) => <div style={{ position: "relative", padding: `32px 16px ${dole}px`, display: "flex", flexDirection: "column", gap, overflow: "hidden" }}>{obsah}</div>;
@@ -224,13 +235,13 @@ export function PiratCharita({ profil, onDetail, onBack, prepinac }: { profil: T
           </>, "16px 18px", 9, "visible", spodok)}
         </>, undefined, undefined, true)}
         {obr(<>
-          {foto(c.foto, 240, stitok("KAM TREBA NAJVIAC", "#4B7A35", 12))}
+          {foto(cs.foto, 240, stitok(cur ? `SEKTOR ${cur} · LEN NA TÚTO TÉMU` : "KAM TREBA NAJVIAC", cur ? `var(--h${cur})` : "#4B7A35", 12))}
           {textPlocha(<>
-            <b style={{ fontSize: 24, lineHeight: 1.1 }}>{c.nazov}</b>
+            <b style={{ fontSize: 24, lineHeight: 1.1 }}>{cs.nazov}</b>
             <span style={{ flex: "none", display: "-webkit-box", WebkitBoxOrient: "vertical", WebkitLineClamp: 3, overflow: "hidden", fontSize: 14, lineHeight: 1.45, color: "var(--ink2)" } as CSSProperties}>{kam}</span>
-            <span style={{ display: "flex", alignItems: "baseline", gap: 8, fontVariantNumeric: "tabular-nums" }}><b style={{ fontSize: 20 }}>{eur(c.mesiac ?? c.vyzbierane)}</b><span style={{ fontSize: 13, color: "var(--ink3)" }}>tento mesiac</span></span>
-            <button type="button" onClick={() => otvorModul(0)} style={{ ...btnZ, flex: "none", height: 48, borderRadius: 14, fontSize: 15.5 }}>Darovať na celú činnosť</button>
-            <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: ".1em", color: "var(--acc)", paddingTop: 2 }}>ALEBO SEKTOR</span>
+            <span style={{ display: "flex", alignItems: "baseline", gap: 8, fontVariantNumeric: "tabular-nums" }}><b style={{ fontSize: 20 }}>{eur(cs.mesiac ?? cs.vyzbierane)}</b><span style={{ fontSize: 13, color: "var(--ink3)" }}>tento mesiac</span></span>
+            <button type="button" onClick={() => darovatNa(cur)} style={{ ...btnZ, flex: "none", height: 48, borderRadius: 14, fontSize: 15.5 }}>Darovať na {cur ? cs.nazov : "celú činnosť"}</button>
+            <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: ".1em", color: "var(--acc)", paddingTop: 2 }}>ALEBO INÉ</span>
             {sekRiadky(44, 14)}
           </>, "14px 16px", 8)}
         </>)}
@@ -247,7 +258,7 @@ export function PiratCharita({ profil, onDetail, onBack, prepinac }: { profil: T
         <section style={{ ...sekcia, background: "var(--bg)" }}>{plocha(<><b style={velkyNadpis(34)}>Z Iskier</b><ZIskier profil={profil} cesty={d.iskryCesty} w={150} h={268} wVs={112} /></>)}</section>
         <section style={{ ...sekcia, background: "var(--bg)" }}>{plocha(<>
           <b style={velkyNadpis(30, { lineHeight: 1.05 })}>Ďalšie zbierky</b>
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>{d.male.map((z) => <MalaZbierka key={z.id} z={z} onDetail={onDetail} t={64} />)}</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>{d.male.map((z) => <MalaZbierka key={z.id} z={z} onDetail={zbierkaKlik} t={64} />)}</div>
           {d.oznamy.length > 0 && <span style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: ".1em", color: "var(--acc)", paddingTop: 4 }}>NAJBLIŽŠIE</span>}
           {d.oznamy.slice(0, 2).map((o) => (
             <div key={o.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderTop: "1px solid var(--cardBd)" }}>
@@ -294,14 +305,11 @@ export function PiratCharita({ profil, onDetail, onBack, prepinac }: { profil: T
       </div>
       {horna}
 
-      <button type="button" onClick={() => setSh(true)} aria-haspopup="dialog" style={{ position: "absolute", left: 14, right: 14, bottom: DOK - 8, zIndex: 20, height: 56, border: "none", borderRadius: 18, background: "var(--gGrad, linear-gradient(90deg,#4B7A35,#8DB866))", boxShadow: "0 10px 26px rgba(0,0,0,.35)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, fontSize: 16.5, fontWeight: 800, color: "#fff", fontFamily: "inherit" }}>
-        Darovať · {vybrane}<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.6" strokeLinecap="round" aria-hidden="true"><path d="M6 15l6-6 6 6" /></svg>
-      </button>
-      <div onClick={() => setSh(false)} style={{ position: "absolute", inset: 0, zIndex: 25, background: "rgba(10,8,5,.55)", opacity: sh ? 1 : 0, pointerEvents: sh ? "auto" : "none", transition: "opacity .25s ease" }} />
+      <div onClick={zavriHarok} style={{ position: "absolute", inset: 0, zIndex: 25, background: "rgba(10,8,5,.55)", opacity: sh ? 1 : 0, pointerEvents: sh ? "auto" : "none", transition: "opacity .25s ease" }} />
       <div role="dialog" aria-label="Darovať" aria-hidden={!sh} style={{ position: "absolute", left: 0, right: 0, bottom: 0, zIndex: 26, height: "86%", borderRadius: "26px 26px 0 0", background: "var(--bg)", boxShadow: "0 -20px 50px rgba(0,0,0,.4)", transform: `translateY(${sh ? "0%" : "105%"})`, transition: "transform .32s cubic-bezier(.2,.8,.2,1)", display: "flex", flexDirection: "column" }}>
         <div style={{ flex: "none", display: "flex", alignItems: "center", padding: "8px 8px 4px 18px" }}>
           <b style={{ flex: 1, fontSize: 17 }}>Darovať {profil.menoDat ?? meno}</b>
-          <button type="button" onClick={() => setSh(false)} aria-label="Zavrieť" style={{ width: 44, height: 44, border: "none", borderRadius: 22, background: "var(--card)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--ink)" }}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg></button>
+          <button type="button" onClick={zavriHarok} aria-label="Zavrieť" style={{ width: 44, height: 44, border: "none", borderRadius: 22, background: "var(--card)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--ink)" }}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg></button>
         </div>
         <div style={{ flex: 1, minHeight: 0, overflowY: "auto", overscrollBehavior: "contain", padding: `6px 16px ${DOK + 24}px`, display: "flex", flexDirection: "column", gap: 12 }}>
           {podpora("mob", 100)}

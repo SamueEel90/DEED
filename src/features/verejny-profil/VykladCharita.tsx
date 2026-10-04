@@ -7,7 +7,7 @@
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { eur, pct, tvar, type Lokalita, type TestProfil, type TestZbierka } from "@/lib/testProfily";
 import { DOK, LokalitaPrepinac, PlagatPrace, PrepinacPodania, klikKarta, PribehText, StitCare, StitOkno, nazovStitu, useDomaceMesto } from "./casti";
-import { PodporaProfilu } from "./PodporaProfilu";
+import { PodporaProfilu, type Vyber } from "./PodporaProfilu";
 import { GRAD, PRUH, type PolCh, MalaZbierka, OznamKarta, RokyOs, ZIskier, bgF, sekciaNadpis, stZb, useCharitaData } from "./charitaCasti";
 
 const PC = "(min-width: 1200px)";
@@ -26,6 +26,14 @@ export function VykladCharita({ profil, onDetail, onZaznam, onBack, prepinac }: 
   const [tab, setTab] = useState(0);
   const [stitOtv, setStitOtv] = useState(false);
   const d = useCharitaData(profil, lok, domace);
+  // 5. 10. · PC: ťuk na zbierku vľavo = vpravo náhľad „Posielaš do · Zbierka …" + modul, pravý stĺpec sa vyroluje hore.
+  //   Mobil: detail zbierky na celú obrazovku.
+  const [mod, setMod] = useState<Vyber>(null);
+  const aRef = useRef<HTMLElement | null>(null);
+  const zbierkaKlik = (z: TestZbierka) => {
+    if (!pc) { onDetail(z); return; }
+    setMod(z); requestAnimationFrame(() => aRef.current?.scrollTo({ top: 0, behavior: "smooth" }));
+  };
   const scRef = useRef<HTMLDivElement | null>(null);
   const sek = useRef<(HTMLElement | null)[]>([]);
   const stit = profil.stit.toLowerCase();
@@ -117,7 +125,7 @@ export function VykladCharita({ profil, onDetail, onZaznam, onBack, prepinac }: 
   // ---- zbierky ----
   const v = d.velka;
   const velka = v && (
-    <article {...klikKarta(() => onDetail(v), v.nazov)} style={{ display: "grid", gridTemplateColumns: pc ? "minmax(0,1fr) minmax(0,1.1fr)" : "1fr", borderRadius: 24, overflow: "hidden", background: "var(--card)", border: "1px solid var(--cardBd)", cursor: "pointer" }}>
+    <article {...klikKarta(() => zbierkaKlik(v), v.nazov)} style={{ display: "grid", gridTemplateColumns: pc ? "minmax(0,1fr) minmax(0,1.1fr)" : "1fr", borderRadius: 24, overflow: "hidden", background: "var(--card)", border: "1px solid var(--cardBd)", cursor: "pointer" }}>
       <span style={{ position: "relative", display: "block", minHeight: pc ? 300 : 190, background: bgF(v.foto) }}>
         {v.konciDni != null && <span style={{ position: "absolute", left: 12, top: 12, height: 28, padding: "0 11px", borderRadius: 14, background: "#8E3B2F", color: "#fff", fontSize: 11.5, fontWeight: 800, letterSpacing: ".05em", display: "flex", alignItems: "center", whiteSpace: "nowrap" }}>KONČÍ O {tvar(v.konciDni, ["DEŇ", "DNI", "DNÍ"])}</span>}
       </span>
@@ -134,7 +142,7 @@ export function VykladCharita({ profil, onDetail, onZaznam, onBack, prepinac }: 
   const zbierky = (<>
     <span ref={kotva(1)} style={sekciaNadpis}>ZBIERKY · AKTUÁLNE</span>
     {velka}
-    {d.male.length > 0 && <div style={{ display: "grid", gridTemplateColumns: `repeat(${pc ? 2 : 1},minmax(0,1fr))`, gap: 12 }}>{d.male.map((z) => <MalaZbierka key={z.id} z={z} onDetail={onDetail} />)}</div>}
+    {d.male.length > 0 && <div style={{ display: "grid", gridTemplateColumns: `repeat(${pc ? 2 : 1},minmax(0,1fr))`, gap: 12 }}>{d.male.map((z) => <MalaZbierka key={z.id} z={z} onDetail={zbierkaKlik} />)}</div>}
   </>);
   const iskry = <><span ref={kotva(2)} /><ZIskier profil={profil} cesty={d.iskryCesty} w={pc ? 140 : 116} h={pc ? 248 : 206} wVs={112} /></>;
   const oznamy = d.oznamy.length > 0 && <>
@@ -167,8 +175,8 @@ export function VykladCharita({ profil, onDetail, onZaznam, onBack, prepinac }: 
             <span ref={kotva(0)} />
             {zbierky}{iskry}{oznamy}{historia}{onas}
           </div>
-          <aside style={{ position: "sticky", top: 76, display: "flex", flexDirection: "column", gap: 12 }}>
-            <PodporaProfilu profil={profil} lok={lok} domace={domace} rez="pc" vyska={118} />
+          <aside ref={aRef} style={{ position: "sticky", top: 76, maxHeight: "calc(100vh - 96px)", overflowY: "auto", overscrollBehavior: "contain", display: "flex", flexDirection: "column", gap: 12 }}>
+            <PodporaProfilu profil={profil} lok={lok} domace={domace} rez="pc" vyska={118} mod={mod} onMod={setMod} />
             <PlagatPrace praca={profil.praca} />
           </aside>
         </div>
