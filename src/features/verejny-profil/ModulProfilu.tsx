@@ -68,7 +68,13 @@ export function ModulProfilu({ profil, sektor, poradie, mestoV, onZbal, dorovnan
   );
 }
 
-function Modul({ profil, sektor, mestoV, sDorovnanim, uvidisOdkaz }: { profil: TestProfil; sektor: TestSektor; mestoV: string; sDorovnanim: boolean; uvidisOdkaz?: { text: string; onClick?: () => void } }) {
+/** KARTA 47 · samotný platobný modul bez náhľadu dlaždice a bez Zbaliť (tvorca: podpora v stĺpci / hárku, stream: hneď otvorený).
+ *  nazov = názov platby (inak „{sektor} · {profil}"). */
+export function ModulPlatby(p: { profil: TestProfil; sektor: TestSektor; mestoV?: string; dorovnanie?: boolean; uvidisOdkaz?: { text: string; onClick?: () => void }; nazov?: string }) {
+  return <Modul profil={p.profil} sektor={p.sektor} mestoV={p.mestoV ?? ""} sDorovnanim={p.dorovnanie ?? true} uvidisOdkaz={p.uvidisOdkaz} nazovPlatby={p.nazov} />;
+}
+
+function Modul({ profil, sektor, mestoV, sDorovnanim, uvidisOdkaz, nazovPlatby }: { profil: TestProfil; sektor: TestSektor; mestoV: string; sDorovnanim: boolean; uvidisOdkaz?: { text: string; onClick?: () => void }; nazovPlatby?: string }) {
   const refId = sektor.id;
   const rootRef = useRef<HTMLDivElement>(null), koniecPruhu = useRef<HTMLDivElement>(null);
   const mikro = { root: rootRef, ciel: koniecPruhu };
@@ -78,7 +84,7 @@ function Modul({ profil, sektor, mestoV, sDorovnanim, uvidisOdkaz }: { profil: T
   const dorovnanie = sDorovnanim ? dorovnanieNaDar(refId) : null;
   const zaklad = sektor.mesiac ?? sektor.vyzbierane;
   const kam = sektor.druh === "centralna" ? "celej činnosti" : `sektora ${sektor.nazov}`;
-  const nazov = `${sektor.nazov} · ${profil.meno}`;
+  const nazov = nazovPlatby ?? `${sektor.nazov} · ${profil.meno}`;
 
   const [platba, setPlatba] = useState<{ kanal: KanalPlatby; suma?: number } | null>(null);
   const stav = () => {

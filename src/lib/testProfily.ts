@@ -1,5 +1,5 @@
 // KARTA 43 — spoločné testovacie dáta pre tri verejné profily (charita · firma · tvorca).
-// Jediný zdroj pre všetky tri návrhy: Kronika (charita), Výklad (firma), Pirát (tvorca).
+// Jediný zdroj pre všetky tri návrhy: Kronika (charita), stránka firmy, stránka tvorcu (obsah tvorcu: testTvorca.ts).
 // Každý profil má presne: 1 centrálnu zbierku + 3 sektory + 7 zbierok + 7 skutkov + 4 oznamy + 2 ponuky práce.
 // Každá položka má mesto (Trenčín · Prešov · Bratislava), profil sa otvára v meste človeka.
 // Nič z toho nejde do DB — je to test „aký vznikne chaos", v produkcii dáta prídu zo servera.
@@ -456,8 +456,8 @@ const FIRMA: TestProfil = {
 // ============================================================
 const TVORCA: TestProfil = {
   k: "tvorca", typ: "tvorca", meno: "Martin Konaľ", iniciala: "MK",
-  veta: "Hrám na husliach. Na každom koncerte vyberám na jednu konkrétnu vec.",
-  mesto: "Trenčín", stit: "Silver", odRoku: 2025,
+  veta: "Gitarista a zvukár. Hrám, učím a z každého koncertu idem pomáhať.", // KARTA 47
+  mesto: "Trenčín", stit: "Gold", odRoku: 2025, // KARTA 47: zlatý štít ako v prototype
   stitky: ["Trenčín", "od 2025", "Overený tvorca"],
   ico: "52 147 963", ucet: "SK31 0200 0000 0012 3456 7890",
   sidlo: "Trenčín", kontakt: "martin@konal.sk",
