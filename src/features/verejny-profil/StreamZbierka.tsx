@@ -22,7 +22,8 @@ function usePc() {
 const eurT = (n: number) => `${n.toLocaleString("sk-SK")} €`;
 const karta: CSSProperties = { background: "var(--card)", border: "1px solid var(--cardBd)" };
 
-export function StreamZbierka({ profil, streamId }: { profil: TestProfil; streamId: string }) {
+/** onBack = prišiel z appky (Späť vráti, odkiaľ prišiel) · onTvorca = prišiel cez QR / odkaz („{tvorca} ›" otvorí profil tvorcu) */
+export function StreamZbierka({ profil, streamId, onBack, onTvorca }: { profil: TestProfil; streamId: string; onBack?: () => void; onTvorca?: () => void }) {
   const pc = usePc();
   const st = STREAMY[streamId];
   const zb = st ? STREAM_ZBIERKY[st.zbierka] : undefined;
@@ -45,6 +46,11 @@ export function StreamZbierka({ profil, streamId }: { profil: TestProfil; stream
   const mojeMeno = `${ja.meno} ${(ja.priezvisko || "").slice(0, 1)}.`.trim();
   const bodka = po ? "#85867B" : "#E5483A", bodkaAnim = po ? "none" : "vpPulz 1.2s ease infinite";
   const [ls, lt] = st.live[live % st.live.length];
+
+  const tlHore: CSSProperties = { alignSelf: "flex-start", justifySelf: "start", height: 44, padding: onBack ? "0 14px 0 8px" : "0 14px", border: "1px solid var(--cardBd)", borderRadius: 14, background: "var(--card)", cursor: "pointer", display: "flex", alignItems: "center", gap: 4, fontSize: 14, fontWeight: 800, color: "var(--ink)", boxShadow: "none", fontFamily: "inherit" };
+  const hore = onBack
+    ? <button type="button" onClick={onBack} aria-label="Späť" style={tlHore}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6" /></svg>Späť</button>
+    : onTvorca ? <button type="button" onClick={onTvorca} style={tlHore}>{st.tvorca} ›</button> : null;
 
   const pas = (
     <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderRadius: 16, background: "#1D211B", color: "#fff" }}>
@@ -135,7 +141,7 @@ export function StreamZbierka({ profil, streamId }: { profil: TestProfil; stream
   if (pc) return (
     <div className="vp sc-tokeny" data-stit={profil.stit.toLowerCase()} style={{ position: "relative", height: "100%", overflowY: "auto", background: "var(--bg)" }}>
       <div style={{ maxWidth: 1160, margin: "0 auto", padding: "24px 32px 80px", display: "flex", flexDirection: "column", gap: 18 }}>
-        {pas}
+        {hore}{pas}
         <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 440px", gap: 28, alignItems: "start" }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>{prehravac}{zbierka}{prepinac}</div>
           <aside style={{ position: "sticky", top: 20, display: "flex", flexDirection: "column", gap: 12 }}>{pocitadlo}{ukazes}{modul}</aside>
@@ -146,7 +152,7 @@ export function StreamZbierka({ profil, streamId }: { profil: TestProfil; stream
   return (
     <div className="vp sc-tokeny" data-stit={profil.stit.toLowerCase()} style={{ position: "relative", height: "100%", overflowY: "auto", WebkitOverflowScrolling: "touch", background: "var(--bg)" } as CSSProperties}>
       <div style={{ padding: `max(14px, env(safe-area-inset-top)) 14px ${DOK + 24}px`, display: "grid", gridTemplateColumns: "minmax(0,1fr)", gridAutoRows: "max-content", alignContent: "start", gap: 12 }}>
-        {pas}{pocitadlo}{prehravac}{zbierka}{ukazes}{modul}{prepinac}
+        {hore}{pas}{pocitadlo}{prehravac}{zbierka}{ukazes}{modul}{prepinac}
       </div>
     </div>
   );
