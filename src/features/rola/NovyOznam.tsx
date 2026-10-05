@@ -124,7 +124,11 @@ type Form = { druh: DruhOznamu | null; forma: FormaOznamu; nadpis: string; text:
   datum: string; cas: string; miesto: string; pozvanie: Pozvanie; limit: string; suhlas: boolean; potvrd: boolean;
   /** „Pri akcii zbierame na": "" = Nič, inak id zbierky z ponuky */
   zbierka: string };
-const prazdny = (zadarmo: boolean, start?: DruhOznamu): Form => ({ druh: start ?? (zadarmo ? null : "oznam"), forma: "text", nadpis: "", text: "", media: [], datum: "", cas: "", miesto: "", pozvanie: "bez", limit: "", suhlas: false, potvrd: false, zbierka: "" });
+/** KARTA 49: predvyplnenie nového oznamu (Poďakovať firme z Dorovnania daru) — použije sa raz pri najbližšom otvorení */
+let predvyplnene: { nadpis: string; text: string; zbierka?: string } | null = null;
+export const predvyplnOznam = (p: { nadpis: string; text: string; zbierka?: string }) => { predvyplnene = p; };
+const prazdny = (zadarmo: boolean, start?: DruhOznamu): Form => { const p = predvyplnene; predvyplnene = null; return { ...prazdny0(zadarmo, start), ...(p ? { nadpis: p.nadpis, text: p.text, zbierka: p.zbierka ?? "" } : {}) }; };
+const prazdny0 = (zadarmo: boolean, start?: DruhOznamu): Form => ({ druh: start ?? (zadarmo ? null : "oznam"), forma: "text", nadpis: "", text: "", media: [], datum: "", cas: "", miesto: "", pozvanie: "bez", limit: "", suhlas: false, potvrd: false, zbierka: "" });
 
 export function OznamySprava({ strankaId, tier, nazov, inicialy, mesto, logo, mobil, tablet, toast, onProfil, zbierky = [], start }: {
   strankaId: string; tier: number; nazov: string; inicialy: string; mesto: string; logo?: string | null; mobil: boolean; tablet: boolean; toast: (m: string) => void; onProfil?: () => void;

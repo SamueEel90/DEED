@@ -13,6 +13,7 @@ import { NovaZbierka } from "./NovaZbierka";
 import { zastavDiktovanie } from "@/lib/diktovanie";
 import { SpravaZbierky, type ZbierkaNaSpravu } from "./SpravaZbierky";
 import { SpravaCentralnej } from "./SpravaCentralnej";
+import { SpravaDorovnania } from "./SpravaDorovnania";
 import { SkutkyCharity } from "./SkutkyCharity";
 import { OznamySprava } from "./NovyOznam";
 import type { ZbierkaPriAkcii, DruhOznamu } from "@/lib/oznamyNove";
@@ -367,6 +368,9 @@ export function SpravaStranky({ onBack, typ: typStranky = "charita", strankaId =
   else if (sub === "oznamy" && typPovoli("oznamy", typ)) obsah = <OznamySprava strankaId={strankaId} tier={tier} nazov={nazov} inicialy={inicialy} mesto={SUBJEKTY[poz]?.lok ?? "Trenčín"} logo={profil?.logo ?? null} mobil={!desktop} tablet={tablet} toast={toast} onProfil={() => otvor("x:Verejný profil")} zbierky={zbierkyPreOznam} start={oznamStart} />;
   // Obsah → Skutky: zoznam skutkov charity + Pridať skutok (ten istý ako v Nástrojoch)
   else if (sub === "skutky" && typPovoli("skutky", typ) && maPovolenie("skutky", tier)) obsah = <SkutkyCharity strankaId={strankaId} mobil={!desktop} onPridat={() => otvor("pridatSkutok")} />;
+  // KARTA 49: Dorovnanie daru (pohľad charity)
+  else if (sub === "dorovnanie" && typPovoli("dorovnanie", typ) && maPovolenie("dorovnanie", tier)) obsah = <SpravaDorovnania nadpis={false} entita={poz} hlavnyUcet={nacitajIbanOrg(poz) || HLAVNY_UCET} mobil={!wide} toast={toast} onZbierky={() => { hist.current = []; setSub("g_zbierky"); }} onOznamy={() => otvor("oznamy")}
+    testCiele={{ strecha: naSpravu(ZB_LIST[0]).id, vozik: naSpravu(ZB_LIST[1]).id, ovocie: naSpravu(ZB_LIST[2]).id, skolske: naSpravu(ZB_LIST[3]).id, seniori: `${strankaId}-sek-seniori`, deti: `${strankaId}-sek-deti` }} />;
   // KARTA 39 · bod 3: centrálna zbierka (od P1)
   else if (sub === "centralna" && typPovoli("centralna", typ) && maPovolenie("centralna", tier)) obsah = <SpravaCentralnej strankaId={strankaId} nazov={nazov} hlavnyUcet={nacitajIbanOrg(poz) || HLAVNY_UCET} tier={tier} mobil={!wide} toast={toast} onZbierky={() => { hist.current = []; setSub("g_zbierky"); }} onDorovnanie={() => otvor("dorovnanie")} onDarcovia={() => otvor("darcovia")} />;
   else obsah = !typPovoli(sub as PolozkaSpravy, typ) ? <Pripravujeme /> : maPovolenie(sub as PolozkaSpravy, tier) ? <Pripravujeme /> : <Zamknute program={odProgramu(sub as PolozkaSpravy)} />;

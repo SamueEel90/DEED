@@ -25,7 +25,10 @@ import type { ZbierkaPriAkcii } from "@/lib/oznamyNove";
 import { zbierkyStrankyZPamate } from "@/lib/novaZbierka";
 import { oznamyStranky, nacitajOznamyStranky, useZmenyOznamovCharity, bezi as oznamBezi, type OznamCharity } from "@/lib/oznamyNove";
 import { InzeratKarta, MamZaujem } from "./Inzeraty";
-import { DorovnaniePas, NoveDorovnanieSheet } from "./Dorovnanie";
+import { DorovnaniePas } from "./Dorovnanie";
+import { DorovnanieFirmyHarok } from "@/features/zbierka/DorovnanieFirmy";
+import { firmaAkoDarca } from "@/lib/podpory";
+import { smieDorovnat } from "@/lib/dorovnanie";
 import { beziaceDorovnanieNaCiel, dorovnanieKDaru, useZmenyDorovnani } from "@/lib/dorovnanie";
 import { rovnakaFirma } from "@/lib/firma";
 import { verejneOznamy, useZmenyOznamov } from "@/lib/oznamy";
@@ -317,7 +320,7 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack, strankaId =
           onKanal={(k: string) => { setPlatbaRef({ id, komu: s.nazov }); setPlatba(k as Kanal); }}
           oblubene={{ refId: id, typ: "zbierka", modul: "charity", nazov: profil.nazov, lok: s.lok }} toast={toast}
           opakovana={maPravidelnu ? { popis: "Mesačne · kartou alebo prevodom · kedykoľvek zrušíš", onClick: () => setPravidelna({ id: id === CENTRALNA_ID ? "z-centralna" : id, nazov: profil.nazov, sektor: sektoroveZbierky.find((z) => z.id === id)?.nazov }) } : undefined}
-          dorovnanie={dorovnanie ? undefined : { onClick: () => setNoveDorovnanie({ id, nazov: s.nazov }) }}
+          dorovnanie={dorovnanie || !smieDorovnat(pozicia, firmaAkoDarca() ?? "") ? undefined : { onClick: () => setNoveDorovnanie({ id, nazov: s.nazov }) }}
           bonus={dorovnanie ? { firma: dorovnanie.firma, kDaru: (sm: number) => dorovnanieKDaru(dorovnanie, sm) } : undefined}
           qr={{ label: "QR tejto zbierky", popis: "Sken → dar za 2 kliky · zdieľanie", onClick: () => (id === CENTRALNA_ID ? setQr(true) : setQrZbierka({ id, nazov: profil.nazov })) }} />
         <GaleriaZbierky profil={profil} />
@@ -509,7 +512,7 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack, strankaId =
                     onKanal={(k: string) => { setPlatbaRef({ id: z.id, komu: z.komu }); setPlatba(k as Kanal); }}
                     oblubene={{ refId: z.id, typ: "zbierka", modul: "charity", nazov: z.nazov, lok: z.lok }} toast={toast}
                     opakovana={maPravidelnu ? { popis: "Mesačne · kartou alebo prevodom · kedykoľvek zrušíš", onClick: () => setPravidelna({ id: z.id, nazov: z.nazov }) } : undefined}
-                    dorovnanie={beziaceDorovnanieNaCiel(z.id) ? undefined : { onClick: () => setNoveDorovnanie({ id: z.id, nazov: z.nazov }) }}
+                    dorovnanie={beziaceDorovnanieNaCiel(z.id) || !smieDorovnat(pozicia, firmaAkoDarca() ?? "") ? undefined : { onClick: () => setNoveDorovnanie({ id: z.id, nazov: z.nazov }) }}
                     bonus={(() => { const dv = beziaceDorovnanieNaCiel(z.id); return dv ? { firma: dv.firma, kDaru: (sm: number) => dorovnanieKDaru(dv, sm) } : undefined; })()}
                     qr={{ label: "QR tejto zbierky", popis: "Skenovať · kopírovať · zdieľať", onClick: () => setQrZbierka({ id: z.id, nazov: z.nazov }) }} />
                 ) : null}
@@ -813,7 +816,7 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack, strankaId =
       {pravidelna && <PravidelnaHarok refId={pravidelna.id ?? CENTRALNA_ID} nazov={pravidelna.nazov} registrovany={!jeNeregistrovany()}
         zbierka={pravidelna.id !== CENTRALNA_ID && pravidelna.id !== "z-centralna"} onClose={() => setPravidelna(null)} />}
       {noveDorovnanie && (
-        <NoveDorovnanieSheet entita={pozicia} cielId={noveDorovnanie.id} cielNazov={noveDorovnanie.nazov} toast={toast} onClose={() => setNoveDorovnanie(null)} />
+        <DorovnanieFirmyHarok zbierkaId={noveDorovnanie.id} zbierkaNazov={noveDorovnanie.nazov} firma={firmaAkoDarca() ?? "Vaša firma"} onClose={() => setNoveDorovnanie(null)} />
       )}
       {qrZbierka && <QrModal odznak={odznakZbierky(qrZbierka.id)} typ="skutok" titul={`QR — ${qrZbierka.nazov}`} popis="Sken otvorí túto zbierku — daj ho na web, do správy alebo na plagát"
         odkaz={qrUrl("case", qrZbierka.id)} onClose={() => setQrZbierka(null)} toast={toast} />}

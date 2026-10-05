@@ -467,29 +467,27 @@ export function smieDorovnat(entita: string, firma: string): boolean {
 export function naplnTestovacieDorovnania(entita: string, ciele: { strecha: string; vozik: string; ovocie: string; skolske: string; seniori: string; deti: string }) {
   if (nacitajDorovnania(entita).length) return;
   const H = 3600000, D = 24 * H, t = Date.now(), dt = (s: string) => Date.parse(s);
-  /** n dorovnaných darov rovnomerne od „od" po teraz; dorovnané spolu presne „sum" */
-  const zazn = (n: number, sum: number, pomer: number, od: number, mena: string[]): ZaznamDorovnania[] => {
-    const out: ZaznamDorovnania[] = []; let zost = sum;
-    for (let i = 0; i < n; i++) {
-      const dar = [20, 50, 25, 10, 40, 20][i % 6];
-      const k = i === n - 1 ? zost : Math.min(Math.round(dar * pomer * 100) / 100, zost);
-      zost -= Math.max(0, k);
-      out.push({ id: `zt-${od}-${i}`, dar, dorovnane: Math.max(0, Math.round(k * 100) / 100), kedy: od + (i + 1) * Math.max(H, (t - od) / (n + 1)), darca: mena[i % mena.length] });
-    }
-    return out;
+  /** n dorovnaných darov rovnomerne od „od" po „po"; dorovnané spolu presne „sum" (pomerne k darom) */
+  const zazn = (n: number, sum: number, _pomer: number, od: number, mena: string[], po = t): ZaznamDorovnania[] => {
+    const dary = Array.from({ length: n }, (_, i) => [20, 50, 25, 10, 40, 20][i % 6]);
+    const spolu = dary.reduce((x, y) => x + y, 0); let zost = sum;
+    return dary.map((dar, i) => {
+      const k = i === n - 1 ? zost : Math.round(sum * dar / spolu * 100) / 100; zost = Math.round((zost - k) * 100) / 100;
+      return { id: `zt-${od}-${i}`, dar, dorovnane: k, kedy: od + (i + 1) * ((po - od) / (n + 1)), darca: mena[i % mena.length] };
+    });
   };
   const zakl = { entita, firmaLogo: undefined, stropDaru: 0, lenZamestnanci: false, zvysok: "zbierke" as const, kanal: "karta" as KanalDorovnania };
   const L: Dorovnanie[] = [
     { ...zakl, id: "dv-t-g", ciel: ciele.seniori, cielNazov: "Sektor Seniori", firma: "Elektro Mráz s.r.o.", pomer: 1, strop: 1500, stropDaru: 100, od: t, do: dt("2026-12-31T22:00:00Z"), kanal: "sepa", uhrada: "mimo", stav: "zapecatene", zapecatene: t - 6 * H, oznamene: t - 6 * H, zaznamy: [] },
     { ...zakl, id: "dv-t-c", ciel: ciele.vozik, cielNazov: "Invalidný vozík pre Ninu", firma: "Autoservis Kováč s.r.o.", pomer: 1, strop: 2000, stropDaru: 200, od: t, do: dt("2026-11-30T22:00:00Z"), kanal: "sepa", uhrada: "deed", stav: "zapecatene", zapecatene: t - 4 * H, oznamene: t - 4 * H, zaznamy: [] },
     { ...zakl, id: "dv-t-e", ciel: ciele.ovocie, cielNazov: "Ovocie do výdajne", firma: "Kaviareň Pod Hradom", pomer: 0.5, strop: 300, stropDaru: 50, od: dt("2026-09-01T08:00:00Z"), do: dt("2026-09-22T20:00:00Z"), zvysok: "firme", uhrada: "deed", stav: "pozastavene", zapecatene: dt("2026-09-01T08:00:00Z"), zaplatene: dt("2026-09-01T09:00:00Z"), pozastavene: dt("2026-09-22T20:00:00Z"),
-      zaznamy: zazn(27, 210, 0.5, dt("2026-09-01T08:00:00Z"), ["Lucia S.", "Anonymný darca"]).map((z) => ({ ...z, kedy: Math.min(z.kedy, dt("2026-09-21T18:00:00Z")) })), vratenie: { suma: 90, do: dt("2026-10-06T20:00:00Z"), vs: vsVratenia("dv-t-e") } },
+      zaznamy: zazn(27, 210, 0.5, dt("2026-09-01T08:00:00Z"), ["Lucia S.", "Anonymný darca"], dt("2026-09-21T18:00:00Z")), vratenie: { suma: 90, do: dt("2026-10-06T20:00:00Z"), vs: vsVratenia("dv-t-e") } },
     { ...zakl, id: "dv-t-a", ciel: ciele.strecha, cielNazov: "Strecha pre rodinu Horváthovú", firma: "Pekáreň Dobrota s.r.o.", pomer: 1, strop: 1000, stropDaru: 300, od: dt("2026-10-02T08:00:00Z"), do: dt("2026-10-27T21:00:00Z"), uhrada: "deed", stav: "aktivne", zapecatene: dt("2026-10-02T08:00:00Z"), zaplatene: dt("2026-10-02T09:00:00Z"),
       zaznamy: zazn(41, 820, 1, dt("2026-10-02T08:00:00Z"), ["Anonymný darca", "Zuzana H.", "Jana K."]) },
     { ...zakl, id: "dv-t-b", ciel: ciele.deti, cielNazov: "Sektor Deti", firma: "Stavebniny Opatová s.r.o.", pomer: 0.5, strop: 500, stropDaru: 100, od: dt("2026-09-18T08:00:00Z"), do: dt("2026-12-31T22:00:00Z"), zvysok: "firme", lenZamestnanci: true, kanal: "sepa", uhrada: "deed", stav: "aktivne", zapecatene: dt("2026-09-18T08:00:00Z"), zaplatene: dt("2026-09-18T09:00:00Z"),
       zaznamy: zazn(14, 140, 0.5, dt("2026-09-18T08:00:00Z"), ["Eva R.", "Peter M."]) },
     { ...zakl, id: "dv-t-d", ciel: ciele.skolske, cielNazov: "Školské potreby", firma: "Pekáreň Dobrota s.r.o.", pomer: 1, strop: 600, stropDaru: 50, od: dt("2026-08-01T08:00:00Z"), do: dt("2026-08-25T20:00:00Z"), uhrada: "deed", stav: "vycerpane", zapecatene: dt("2026-08-01T08:00:00Z"), zaplatene: dt("2026-08-01T09:00:00Z"), ukoncene: dt("2026-08-19T12:00:00Z"),
-      zaznamy: zazn(48, 600, 1, dt("2026-08-01T08:00:00Z"), ["Anonymný darca", "Mária V."]).map((z) => ({ ...z, kedy: Math.min(z.kedy, dt("2026-08-19T11:00:00Z")) })) },
+      zaznamy: zazn(48, 600, 1, dt("2026-08-01T08:00:00Z"), ["Anonymný darca", "Mária V."], dt("2026-08-19T11:00:00Z")) },
   ];
   void D;
   uloz(entita, L);
