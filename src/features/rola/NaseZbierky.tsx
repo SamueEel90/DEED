@@ -27,7 +27,7 @@ import {
   useDorovnaniaFirmy, dolejStrop, vycerpane, zostatok, popisPomeru, casAutomatu,
   bezi as beziDorovnanie, type Dorovnanie,
 } from "@/lib/dorovnanie";
-import { NoveDorovnanieSheet } from "./Dorovnanie";
+import { DorovnanieFirmyHarok } from "@/features/zbierka/DorovnanieFirmy";
 
 const ZLATA = "var(--a-gold)";
 const eur = (n: number) => `${n.toLocaleString("sk-SK", { maximumFractionDigits: 2 })} €`;
@@ -110,8 +110,7 @@ function DetailZbierky({ firma, podpora, dorovnanie, toast, onSpat }: {
   );
 
   if (nove && z) return (
-    <NoveDorovnanieSheet entita="charita" cielId={podpora.zbierkaId} cielNazov={z.nazov}
-      toast={toast} onClose={() => setNove(false)} />
+    <DorovnanieFirmyHarok zbierkaId={podpora.zbierkaId} zbierkaNazov={z.nazov} firma={firma} onClose={() => setNove(false)} />
   );
 
   return (<>

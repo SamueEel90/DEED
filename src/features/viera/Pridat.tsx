@@ -103,12 +103,14 @@ const KATEGORIE = [ZBIERKA, UDALOST, OZNAM, DOBRO];
 // user smie tvoriť len tieto oznamy (auto-publish, farár môže zmazať)
 const USER_UZLY = OZNAM.uzly.filter((u) => u.kto === "U");
 
-export function PridatSheet({ farar, farnost, onClose, toast }: {
+export function PridatSheet({ farar, farnost, onClose, toast, start }: {
   farar: boolean; farnost?: Farnost; onClose: () => void; toast: (m: string) => void;
+  /** KARTA 50: Správa farnosti → + Pridať otvorí rovno kategóriu alebo položku stromu (id kategórie / uzla) */
+  start?: { kat: string; uzol?: string };
 }) {
   const { celeMeno } = usePouzivatel();
-  const [kat, setKat] = useState<Kat | null>(null);
-  const [uzol, setUzol] = useState<Uzol | null>(null);
+  const [kat, setKat] = useState<Kat | null>(() => KATEGORIE.find((k) => k.id === start?.kat) ?? null);
+  const [uzol, setUzol] = useState<Uzol | null>(() => KATEGORIE.find((k) => k.id === start?.kat)?.uzly.find((u) => u.id === start?.uzol) ?? null);
   const [split, setSplit] = useState<"pohreb" | "svadba" | null>(null);
   // self-add nastavenie farnosti (DEED_User_Oznamy_DEV.md §2) — ON/OFF + voliteľný poplatok
   const selfAdd = farnost ? nacitajSelfAdd(farnost.id) : { on: true, poplatok: 0 };

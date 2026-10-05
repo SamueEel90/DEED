@@ -8,6 +8,8 @@ import { LOKALITY, type Lokalita, type Mesto, type TestProfil, type TestZbierka 
 import { useLokalita } from "@/lib/lokalita";
 import { useLayout } from "@/components/context";
 import "@/styles/verejnyProfil.css";
+import { useTestStav, zmenTestStav } from "@/lib/testStav";
+import type { Vzhlad } from "@/lib/vzhladStranky";
 import { vrstvaProfiluPripoj } from "./otvor";
 
 export const MOBIL = "(max-width: 759px)";
@@ -177,25 +179,25 @@ export function naZbierkaData(z: TestZbierka, profil: TestProfil): ZbierkaData {
 // ============================================================
 import type { TestPraca } from "@/lib/testProfily";
 const PLAGAT_BG = "linear-gradient(160deg,#2C5576 0%,#3D6B8E 60%,#4F7FA3 100%)";
-function PlagatUdaje({ j }: { j: TestPraca }) {
+function PlagatUdaje({ j }: { j: TestPraca }) { // KARTA 50: farnosť (Omše a služba) — vlastné tlačidlo a 3. riadok
   return (<>
     <div style={{ display: "grid", gridTemplateColumns: "auto minmax(0,1fr)", gap: "4px 12px", fontSize: 13.5, padding: "8px 0", borderTop: "1px solid rgba(255,255,255,.22)", borderBottom: "1px solid rgba(255,255,255,.22)" }}>
       <span style={{ opacity: 0.75 }}>Kde</span><b>{j.kde}</b>
       <span style={{ opacity: 0.75 }}>Kedy</span><b>{j.kedy}</b>
-      <span style={{ opacity: 0.75 }}>Odmena</span><b>{j.odmena}</b>
+      <span style={{ opacity: 0.75 }}>{j.tretiRiadok ?? "Odmena"}</span><b>{j.odmena}</b>
     </div>
     <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
-      <button type="button" style={{ height: 46, padding: "0 20px", border: "none", borderRadius: 14, background: "#fff", cursor: "pointer", fontSize: 15, fontWeight: 800, color: "#2C5576", boxShadow: "none" }}>Mám záujem</button>
+      <button type="button" style={{ height: 46, padding: "0 20px", border: "none", borderRadius: 14, background: "#fff", cursor: "pointer", fontSize: 15, fontWeight: 800, color: "#2C5576", boxShadow: "none" }}>{j.tlacidlo ?? "Mám záujem"}</button>
       <span style={{ fontSize: 12.5, opacity: 0.85 }}>{j.zaujem}</span>
     </span>
   </>);
 }
-export function PlagatPrace({ praca, zbaleny, nadpis = true }: { praca: TestPraca[]; zbaleny?: boolean; nadpis?: boolean }) {
+export function PlagatPrace({ praca, zbaleny, nadpis = true, titul = "HĽADÁME ĽUDÍ" }: { praca: TestPraca[]; zbaleny?: boolean; nadpis?: boolean; /** KARTA 50 · farnosť „OMŠE A SLUŽBA" */ titul?: string }) {
   const [otv, setOtv] = useState<Record<string, boolean>>({});
   if (!praca.length) return null;
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 10, paddingTop: 6 }}>
-      {nadpis && <span style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: ".1em", color: "var(--blue)" }}>HĽADÁME ĽUDÍ</span>}
+      {nadpis && <span style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: ".1em", color: "var(--blue)" }}>{titul}</span>}
       {praca.map((j) => zbaleny ? (
         <article key={j.id} style={{ position: "relative", borderRadius: 20, overflow: "hidden", background: PLAGAT_BG, color: "#fff", display: "flex", flexDirection: "column", boxShadow: "0 10px 24px rgba(30,60,90,.25)" }}>
           <button type="button" onClick={() => setOtv((o) => ({ ...o, [j.id]: !o[j.id] }))} aria-expanded={!!otv[j.id]}
@@ -248,17 +250,9 @@ export function PribehText({ text, riadky = 6, fs = 14.5, farba = "var(--ink2)",
 }
 
 // ============================================================
-// KARTA 45 · testovací prepínač podania charity (Kronika · Výklad · Pirát) — len testovacia verzia, pamätá sa lokálne
+// KARTA 45 · podania charity (Kronika · Výklad · Pirát) · KARTA 50: výber v Správe → Upraviť profil → Vzhľad stránky
 // ============================================================
-export type Podanie = "kronika" | "vyklad" | "pirat";
-const KLUC_PODANIE = "deed.dev.podanieCharity";
-const podaniePosl = new Set<() => void>();
-export function nacitajPodanie(): Podanie { try { const v = localStorage.getItem(KLUC_PODANIE) as Podanie | null; return v && PODANIA.some(([k]) => k === v) ? v : "kronika"; } catch { return "kronika"; } }
-export function usePodanie(): [Podanie, (p: Podanie) => void] {
-  const [p, setP] = useState<Podanie>(nacitajPodanie);
-  useEffect(() => { const f = () => setP(nacitajPodanie()); podaniePosl.add(f); return () => { podaniePosl.delete(f); }; }, []);
-  return [p, (n: Podanie) => { try { localStorage.setItem(KLUC_PODANIE, n); } catch { /* LS */ } podaniePosl.forEach((f) => f()); }];
-}
+export type Podanie = Vzhlad; // KARTA 50: vzhľad vyberá správca (lib/vzhladStranky), nie prepínač na profile
 export const PODANIA: [Podanie, string][] = [["kronika", "Kronika"], ["vyklad", "Výklad"], ["pirat", "Pirát"]];
 /** testovacie voľby na mobile a tablete: sivý pás úplne dole stránky (pod posledným obsahom, nad dolnou lištou appky).
  *  Len v testovacej verzii — volajúci ho ukáže iba pri TESTOVACIA. */
@@ -271,26 +265,39 @@ export function TestovaciPas({ nazov, children, style }: { nazov: string; childr
   );
 }
 
-export function PrepinacPodania({ tmavy, style, pas }: { tmavy?: boolean; style?: CSSProperties; /** mobil a tablet: sivý pás dole stránky */ pas?: boolean }) {
-  const [p, setP] = usePodanie();
-  const vol = PODANIA;
-  if (pas) return (
-    <TestovaciPas nazov="Zobrazenie" style={style}>
-      {vol.map(([k, t]) => {
-        const on = p === k;
-        return <button key={k} type="button" aria-pressed={on} onClick={() => setP(k)}
-          style={{ height: 44, padding: "0 16px", borderRadius: 22, border: `1.5px solid ${on ? "var(--green)" : "var(--cardBd)"}`, background: on ? "var(--green)" : "var(--card)", color: on ? "#fff" : "var(--ink2)", fontSize: 14, fontWeight: 800, cursor: "pointer", fontFamily: "inherit", boxShadow: "none" }}>{t}</button>;
-      })}
-    </TestovaciPas>
-  );
+/** OPRAVY 147 · jeden testovací prepínač pre všetky verejné profily a správy (KARTA 50: bez výberu vzhľadu — ten je v Správe → Upraviť profil)
+ *  Profil vyplnený / prázdny + ďalšie riadky od volajúceho (Správa: typ, program, štít, stav, rola).
+ *  pas = mobil a tablet: sivý pás „TESTOVACIE · …" úplne dole; inak (PC) riadok v hlavičke. Len pri TESTOVACIA (rozhoduje volajúci). */
+/** jeden riadok testovacích volieb (čipy ≥44 px) — v PrepinacPodania aj v riadkoch od volajúceho */
+export function TestVolba<K extends string | number>({ nazov, volby, hodnota, onVolba, pas, tmavy }: { nazov: string; volby: [K, string][]; hodnota: K; onVolba: (k: K) => void; pas?: boolean; tmavy?: boolean }) {
   return (
-    <div role="group" aria-label="Zobrazenie profilu (test)" style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", ...style }}>
-      <span style={{ fontSize: 12.5, fontWeight: 800, color: tmavy ? "rgba(255,255,255,.8)" : "var(--ink3)", marginRight: 2 }}>Zobrazenie:</span>
-      {vol.map(([k, t]) => {
-        const on = p === k;
-        return <button key={k} type="button" aria-pressed={on} onClick={() => setP(k)}
-          style={{ height: 44, padding: "0 14px", borderRadius: 22, border: `1.5px solid ${on ? "var(--green)" : tmavy ? "rgba(255,255,255,.35)" : "var(--cardBd)"}`, background: on ? "var(--green)" : tmavy ? "rgba(0,0,0,.25)" : "var(--card)", color: on ? "#fff" : tmavy ? "#fff" : "var(--ink2)", fontSize: 14, fontWeight: 800, cursor: "pointer", fontFamily: "inherit", boxShadow: "none" }}>{t}</button>;
-      })}
-    </div>
-  );
+    <div role="group" aria-label={nazov} style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+      <span style={{ fontSize: 12.5, fontWeight: 800, color: tmavy ? "rgba(255,255,255,.8)" : "var(--ink3)", marginRight: 2, minWidth: pas ? 74 : undefined }}>{nazov}:</span>
+      {volby.map(([k, t]) => { const on = k === hodnota; return <button key={String(k)} type="button" aria-pressed={on} onClick={() => onVolba(k)}
+        style={{ height: 44, padding: `0 ${pas ? 16 : 14}px`, borderRadius: 22, border: `1.5px solid ${on ? "var(--green)" : tmavy ? "rgba(255,255,255,.35)" : "var(--cardBd)"}`, background: on ? "var(--green)" : tmavy ? "rgba(0,0,0,.25)" : "var(--card)", color: on ? "#fff" : tmavy ? "#fff" : "var(--ink2)", fontSize: 14, fontWeight: 800, cursor: "pointer", fontFamily: "inherit", boxShadow: "none", whiteSpace: "nowrap" }}>{t}</button>; })}
+    </div>);
+}
+export function PrepinacPodania({ tmavy, style, pas, sektor = "charita", children, bezProfilu }: {
+  tmavy?: boolean; style?: CSSProperties; /** mobil a tablet: sivý pás dole stránky */ pas?: boolean;
+  /** typ stránky — voľby podania podľa sektora (charita: Kronika · Výklad · Pirát; ostatné zatiaľ jedno podanie) */
+  sektor?: string; children?: ReactNode; /** bez riadku Profil (napr. Správa, kde je Stav stránky) */ bezProfilu?: boolean;
+}) {
+  const ts = useTestStav();
+  void sektor;
+  const riadky = (<>
+    {!bezProfilu && <TestVolba nazov="Profil" pas={pas} tmavy={tmavy} volby={[["v", "Vyplnený"], ["p", "Prázdny"]]} hodnota={ts.prazdny ? "p" : "v"} onVolba={(k) => zmenTestStav({ prazdny: k === "p" })} />}
+    {!bezProfilu && <TestVolba nazov="Rola" pas={pas} tmavy={tmavy} volby={[["navstevnik", "Návštevník"], ["hlavny", "Hlavný správca"], ["spravca", "Správca"], ["pomocnik", "Pomocník"], ["organizator", "Organizátor"]]} hodnota={ts.rolaProfil} onVolba={(k) => zmenTestStav({ rolaProfil: k })} />}
+    {!bezProfilu && <TestVolba nazov="Program" pas={pas} tmavy={tmavy} volby={[["-", "Podľa stránky"], ["0", "Zadarmo"], ["1", "P1"], ["2", "P2"], ["3", "P3"], ["4", "P4"]]} hodnota={ts.program === null ? "-" : String(ts.program)} onVolba={(k) => zmenTestStav({ program: k === "-" ? null : (Number(k) as 0 | 1 | 2 | 3 | 4) })} />}
+    {children}
+  </>);
+  if (pas) return (
+    <div role="group" aria-label="Testovacie" style={{ display: "flex", flexDirection: "column", gap: 10, padding: "12px 14px 14px", borderRadius: 18, background: "rgba(128,128,120,.2)", border: "1px solid rgba(128,128,120,.35)", ...style }}>
+      <span style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: ".08em", color: "var(--ink3)" }}>TESTOVACIE · Stav</span>
+      {riadky}
+    </div>);
+  return (
+    <div role="group" aria-label="Testovacie" style={{ display: "flex", alignItems: "center", gap: "8px 16px", flexWrap: "wrap", ...style }}>
+      <span style={{ height: 24, padding: "0 9px", borderRadius: 12, background: "rgba(128,128,120,.25)", fontSize: 11, fontWeight: 800, letterSpacing: ".06em", color: tmavy ? "#fff" : "var(--ink3)", display: "flex", alignItems: "center" }}>TESTOVACIE</span>
+      {riadky}
+    </div>);
 }

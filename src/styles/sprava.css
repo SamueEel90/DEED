@@ -81,3 +81,11 @@ html.dark .sprava-charity,html.dark .sc-tokeny{--fieldBd:#4A4336;--fieldLock:#24
 .sprava-charity [contenteditable]:focus-visible,.sprava-charity input:focus-visible{outline:2px solid var(--gBd);outline-offset:1px}
 .sprava-charity .ftext>:first-child{margin-top:0}
 .sprava-charity .ftext>:last-child{margin-bottom:0}
+/* KARTA 48 · farby centrálnej a sektorov podľa poradia (0 centrálna, 1–3 sektory) — ako na verejnom profile */
+.sprava-charity,.sc-tokeny{--h0:#4E7D37;--h1:#2F7A78;--h2:#7A4E86;--h3:#B0652A}
+html.dark .sprava-charity,html.dark .sc-tokeny{--h0:#6E9F4E;--h1:#6FB8B4;--h2:#B78BC4;--h3:#E09A5E}
+.sprava-charity [data-hier],.sc-tokeny [data-hier]{--green:var(--hc);--gInk:var(--hc);--gSoft:color-mix(in srgb,var(--hc) 14%,transparent);--gBd:color-mix(in srgb,var(--hc) 50%,transparent)}
+.sprava-charity [data-hier="0"],.sc-tokeny [data-hier="0"]{--hc:var(--h0);--hcF:#4B7A35}.sprava-charity [data-hier="1"],.sc-tokeny [data-hier="1"]{--hc:var(--h1);--hcF:#2F7A78}.sprava-charity [data-hier="2"],.sc-tokeny [data-hier="2"]{--hc:var(--h2);--hcF:#7A4E86}.sprava-charity [data-hier="3"],.sc-tokeny [data-hier="3"]{--hc:var(--h3);--hcF:#A65A22}
+/* KARTA 49 · červená (odmietnuť, po lehote, ukončiť) */
+.sprava-charity,.sc-tokeny{--red:#8E3B2F}
+html.dark .sprava-charity,html.dark .sc-tokeny{--red:#E08A7A}

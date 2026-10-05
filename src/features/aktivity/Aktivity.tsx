@@ -1,4 +1,5 @@
 import { Emo } from "@/components/icons";
+import { cisloObjektu } from "@/lib/cisloObjektu";
 import { StityRad, type StitLevel as StitLv } from "@/components/stit";
 import { stityOblastiSubjektu } from "@/lib/stityOblasti";
 const naStitLevelOpt = (k: string): StitLv | null => ((["Bronze", "Silver", "Gold", "Platinum", "Legend"] as string[]).includes(k) ? (k as StitLv) : null);
@@ -566,7 +567,7 @@ function HelpDetail({ it, toast, celebrate, home, openPerson }: any) {
       <div style={{ padding: `${SPACE.gutter}px ${SPACE.md}px` }}>
         <div onClick={() => openPerson(it.author)} style={{ ...rowTopS, cursor: "pointer" }}>
           <div style={pfpS(it.pfp)}>{it.ini}</div>
-          <div><div style={{ ...nameS, display: "flex", alignItems: "center", gap: SPACE.xs }}>{it.author} <span style={{ color: C.textTer, fontSize: 13 }}>›</span></div><div style={{ fontSize: 12, color: A.txt3 }}>{it.loc} · č. {it.num.toLocaleString("sk")}</div></div>
+          <div><div style={{ ...nameS, display: "flex", alignItems: "center", gap: SPACE.xs }}>{it.author} <span style={{ color: C.textTer, fontSize: 13 }}>›</span></div><div style={{ fontSize: 12, color: A.txt3 }}>{it.loc} · {cisloObjektu("S", String(it.id))}</div></div>
         </div>
         <div style={{ ...titleS, marginTop: SPACE.sm, fontSize: 14 }}>{it.title}</div>
         <FormatovanyText text={it.desc} style={{ fontSize: 14.5, lineHeight: 1.6, marginTop: SPACE.xs, color: A.txt2 }} />

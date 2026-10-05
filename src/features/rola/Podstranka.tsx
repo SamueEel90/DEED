@@ -1,4 +1,7 @@
 import { Emo } from "@/components/icons";
+import { TESTOVACIA } from "@/lib/testovacia";
+import { useTestStav, vyprazdni } from "@/lib/testStav";
+import { PrepinacPodania } from "@/features/verejny-profil/casti";
 import { StityRad } from "@/components/stit";
 import { stityOblastiSubjektu } from "@/lib/stityOblasti";
 import { Fragment, useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
@@ -25,7 +28,10 @@ import type { ZbierkaPriAkcii } from "@/lib/oznamyNove";
 import { zbierkyStrankyZPamate } from "@/lib/novaZbierka";
 import { oznamyStranky, nacitajOznamyStranky, useZmenyOznamovCharity, bezi as oznamBezi, type OznamCharity } from "@/lib/oznamyNove";
 import { InzeratKarta, MamZaujem } from "./Inzeraty";
-import { DorovnaniePas, NoveDorovnanieSheet } from "./Dorovnanie";
+import { DorovnaniePas } from "./Dorovnanie";
+import { DorovnanieFirmyHarok } from "@/features/zbierka/DorovnanieFirmy";
+import { firmaAkoDarca } from "@/lib/podpory";
+import { smieDorovnat } from "@/lib/dorovnanie";
 import { beziaceDorovnanieNaCiel, dorovnanieKDaru, useZmenyDorovnani } from "@/lib/dorovnanie";
 import { rovnakaFirma } from "@/lib/firma";
 import { verejneOznamy, useZmenyOznamov } from "@/lib/oznamy";
@@ -109,7 +115,7 @@ function PodporiliFirmy({ zbierkaId, onFirma }: { zbierkaId: string; onFirma: (f
   );
 }
 
-export function Podstranka({ pozicia, tier = 0, logo, toast, onBack, strankaId = pozicia === "charita" ? "svetlo" : undefined, profilNahlad, lista }: {
+export function Podstranka({ pozicia, tier: tierStranky = 0, logo, toast, onBack, strankaId = pozicia === "charita" ? "svetlo" : undefined, profilNahlad, lista, sektor }: {
   pozicia: Pozicia; tier?: Tier; logo: string | null; toast: (m: string) => void; onBack: () => void;
   /** OPRAVY 107: stránka, ktorej uložený profil (Upraviť profil) sa ukáže */
   strankaId?: string;
@@ -117,15 +123,20 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack, strankaId =
   profilNahlad?: ProfilStranky;
   /** lišta hore (Náhľad / Profil uložený / Takto vidí váš profil…) namiesto hlavičky Späť */
   lista?: ReactNode;
+  /** OPRAVY 147: typ stránky pre testovací prepínač (farnosť, klub, spolok…) */
+  sektor?: string;
 }) {
   const { wide, desktop } = useLayout();
+  const ts = useTestStav(); // OPRAVY 147: testovací prázdny profil
+  const tier: Tier = TESTOVACIA && ts.program !== null ? ts.program : tierStranky; // OPRAVY 147: testovací program
   const siroke = wide || desktop;   // tablet a PC → mriežka kariet ako vo feede
   const ja = usePouzivatel();
   const s = SUBJEKTY[pozicia];
   // OPRAVY 107: uložený profil zo správy (lib/profilStranky); staré úložisko len záloha, kým nie je nič uložené
   const [ulozeny, setUlozeny] = useState<ProfilStranky | null>(() => (strankaId ? profilZPamate(strankaId).ulozeny : null));
   useEffect(() => { if (!strankaId) return; let ziva = true; void nacitajProfilStranky(strankaId).then((z) => { if (ziva) setUlozeny(z.ulozeny); }); return () => { ziva = false; }; }, [strankaId]);
-  const pr = profilNahlad ?? ulozeny;
+  const pr0 = profilNahlad ?? ulozeny;
+  const pr = ts.prazdny && pr0 ? vyprazdni(pr0) : pr0;
   const stit = naStitLevel(ZASLUZENA[pozicia].badge);
   // tvorca vystupuje pod profilovou fotkou osoby, charita/B2B pod logom subjektu
   const fotoOsoby = pozicia === "tvorca" && nacitajZdrojAvatara(pozicia) === "foto"; // tvorca: fotka alebo logo značky
@@ -135,10 +146,11 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack, strankaId =
   // „Všetko" — virtuálny tab navrchu (pred Kampane/Skutky/Talent…): zoskupí položky zo všetkých sekcií
   // len to, čo má entita v aktuálnom programe — ten istý výpočet ako prehľad v správe
   const eurSk = (n: number) => `${n.toLocaleString("sk-SK", { maximumFractionDigits: 2 })} €`;
-  const mojeTabyZaklad = verejneTaby(pozicia, tier);
+  const mojeTabyZaklad = verejneTaby(pozicia, tier).map((t) => (ts.prazdny ? { ...t, polozky: [] } : t));
   // Zbierky, ktoré si firma pripla tým, že na ne dala — bežiace sú „Podporujeme",
   // ukončené a stiahnuté spadnú do „Komu sme pomohli" (história ostáva navždy).
-  const podpory = usePodporyFirmy(pozicia === "b2b" ? s.nazov : "");
+  const podpory0 = usePodporyFirmy(pozicia === "b2b" ? s.nazov : "");
+  const podpory = ts.prazdny ? [] : podpory0;
   // zbierka môže byť naša (register zbierok) alebo z profilu cudzej organizácie
   // (modul Charita) — firma daruje kam chce, tak musíme vedieť pomenovať oboje
   const kZbierke = (id: string) => {
@@ -317,7 +329,7 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack, strankaId =
           onKanal={(k: string) => { setPlatbaRef({ id, komu: s.nazov }); setPlatba(k as Kanal); }}
           oblubene={{ refId: id, typ: "zbierka", modul: "charity", nazov: profil.nazov, lok: s.lok }} toast={toast}
           opakovana={maPravidelnu ? { popis: "Mesačne · kartou alebo prevodom · kedykoľvek zrušíš", onClick: () => setPravidelna({ id: id === CENTRALNA_ID ? "z-centralna" : id, nazov: profil.nazov, sektor: sektoroveZbierky.find((z) => z.id === id)?.nazov }) } : undefined}
-          dorovnanie={dorovnanie ? undefined : { onClick: () => setNoveDorovnanie({ id, nazov: s.nazov }) }}
+          dorovnanie={dorovnanie || !smieDorovnat(pozicia, firmaAkoDarca() ?? "") ? undefined : { onClick: () => setNoveDorovnanie({ id, nazov: s.nazov }) }}
           bonus={dorovnanie ? { firma: dorovnanie.firma, kDaru: (sm: number) => dorovnanieKDaru(dorovnanie, sm) } : undefined}
           qr={{ label: "QR tejto zbierky", popis: "Sken → dar za 2 kliky · zdieľanie", onClick: () => (id === CENTRALNA_ID ? setQr(true) : setQrZbierka({ id, nazov: profil.nazov })) }} />
         <GaleriaZbierky profil={profil} />
@@ -509,7 +521,7 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack, strankaId =
                     onKanal={(k: string) => { setPlatbaRef({ id: z.id, komu: z.komu }); setPlatba(k as Kanal); }}
                     oblubene={{ refId: z.id, typ: "zbierka", modul: "charity", nazov: z.nazov, lok: z.lok }} toast={toast}
                     opakovana={maPravidelnu ? { popis: "Mesačne · kartou alebo prevodom · kedykoľvek zrušíš", onClick: () => setPravidelna({ id: z.id, nazov: z.nazov }) } : undefined}
-                    dorovnanie={beziaceDorovnanieNaCiel(z.id) ? undefined : { onClick: () => setNoveDorovnanie({ id: z.id, nazov: z.nazov }) }}
+                    dorovnanie={beziaceDorovnanieNaCiel(z.id) || !smieDorovnat(pozicia, firmaAkoDarca() ?? "") ? undefined : { onClick: () => setNoveDorovnanie({ id: z.id, nazov: z.nazov }) }}
                     bonus={(() => { const dv = beziaceDorovnanieNaCiel(z.id); return dv ? { firma: dv.firma, kDaru: (sm: number) => dorovnanieKDaru(dv, sm) } : undefined; })()}
                     qr={{ label: "QR tejto zbierky", popis: "Skenovať · kopírovať · zdieľať", onClick: () => setQrZbierka({ id: z.id, nazov: z.nazov }) }} />
                 ) : null}
@@ -792,8 +804,10 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack, strankaId =
       {lista ?? <BackHeader onBack={onBack}>
         <span style={{ fontSize: 12, color: C.textSec }}>{s.nazov}</span>
       </BackHeader>}
+      {TESTOVACIA && desktop && <PrepinacPodania sektor={sektor ?? pozicia} style={{ maxWidth: SIRKA.plocha, margin: "12px auto 0", padding: "0 24px", boxSizing: "border-box" }} />}
       <div style={{ height: SPACE.sm }} />
       {obalSiroky(telo, { desktop, maxDesktop: SIRKA.plocha })}
+      {TESTOVACIA && !desktop && <PrepinacPodania pas sektor={sektor ?? pozicia} style={{ margin: "16px 14px 0" }} />}
 
       {menu && (
         <KontextMenu onClose={() => setMenu(false)} polozky={[
@@ -813,7 +827,7 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack, strankaId =
       {pravidelna && <PravidelnaHarok refId={pravidelna.id ?? CENTRALNA_ID} nazov={pravidelna.nazov} registrovany={!jeNeregistrovany()}
         zbierka={pravidelna.id !== CENTRALNA_ID && pravidelna.id !== "z-centralna"} onClose={() => setPravidelna(null)} />}
       {noveDorovnanie && (
-        <NoveDorovnanieSheet entita={pozicia} cielId={noveDorovnanie.id} cielNazov={noveDorovnanie.nazov} toast={toast} onClose={() => setNoveDorovnanie(null)} />
+        <DorovnanieFirmyHarok zbierkaId={noveDorovnanie.id} zbierkaNazov={noveDorovnanie.nazov} firma={firmaAkoDarca() ?? "Vaša firma"} onClose={() => setNoveDorovnanie(null)} />
       )}
       {qrZbierka && <QrModal odznak={odznakZbierky(qrZbierka.id)} typ="skutok" titul={`QR — ${qrZbierka.nazov}`} popis="Sken otvorí túto zbierku — daj ho na web, do správy alebo na plagát"
         odkaz={qrUrl("case", qrZbierka.id)} onClose={() => setQrZbierka(null)} toast={toast} />}

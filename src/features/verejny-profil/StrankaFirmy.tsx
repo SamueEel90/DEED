@@ -3,6 +3,8 @@
 // Mobil a tablet: všetko pod sebou. Poradie: Titulka · DOROVNALI SME · NAŽIVO · POMÁHAME V REGIÓNOCH (región človeka prvý)
 // · TERAZ DOROVNÁVAME · STENA VĎAKY · NAŠI ĽUDIA POMÁHAJÚ · KÚP A POMÔŽ · FOND DOBROTY (ModulProfilu bez dorovnania)
 // · HĽADÁME ĽUDÍ (zbalený aj na PC, „Mzda") · O FIRME. Prázdna sekcia sa neukáže.
+import { TESTOVACIA } from "@/lib/testovacia";
+import { PrepinacPodania } from "./casti";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { eur, type TestProfil, type TestZbierka } from "@/lib/testProfily";
 import { otvorIskry } from "@/features/iskry/otvor";
@@ -224,6 +226,7 @@ export function StrankaFirmy({ profil, onDetail, onBack }: { profil: TestProfil;
   if (pc) return (
     <div className="vp sc-tokeny" data-stit={stit} style={{ position: "relative", height: "100%", overflowY: "auto" }}>
       {titulka}{kov}
+      {TESTOVACIA && <PrepinacPodania sektor="firma" style={{ padding: "12px 32px 0" }} />}
       <div style={{ padding: "24px 32px 120px", display: "grid", gridTemplateColumns: "minmax(0,1fr) 400px", gap: 32, alignItems: "start" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 14, minWidth: 0 }}>
           {dorovnali}{regionyEl}{dorZb}{vdaka}{ludia}{onas}
@@ -242,6 +245,7 @@ export function StrankaFirmy({ profil, onDetail, onBack }: { profil: TestProfil;
         {dorovnali}{regionyEl}{dorZb}{vdaka}{ludia}{kup}
         <span style={{ display: "block", paddingTop: 6 }} />
         {fondEl}{prace}{onas}
+        {TESTOVACIA && <PrepinacPodania pas sektor="firma" />}
       </div>
       {okno}
     </div>

@@ -1,5 +1,7 @@
 // <ZbierkaModul> — JEDEN komponent pre detail zbierky + platbu na všetkých miestach (karta 01).
 // Pripojené položky v pevnom poradí (nastavenie.ts), odpojené sa nevykresľujú vôbec.
+import { smieDorovnat } from "@/lib/dorovnanie";
+import { cisloObjektu } from "@/lib/cisloObjektu";
 import { TESTOVACIA } from "@/lib/testovacia";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import type React from "react";
@@ -33,7 +35,7 @@ import "@/styles/animacie.css";
 
 export type ZbierkaData = {
   id: string; nazov: string; popis?: string;
-  cislo?: number;      // verejné číslo zbierky (#47 821) — len keď ho zbierka má
+  cislo?: number;      // zbierka má verejné číslo (KARTA 48: zobrazí sa ako Z-123 456 789 0 z id / VS)
   overena?: boolean;
   media?: Medium[];    // poradie volí autor (predvolene video prvé)
   organizacia?: OrgPole; // kto za zbierku zodpovedá / kto ju overil (karta 03)
@@ -192,7 +194,7 @@ export function ZbierkaModul({ zbierka, miesto: miestoProp, onBack, spatNazov, o
     if (p.kluc === "pravidelna") return obal(<PravidelnaRiadok registrovany={registrovany} onClick={() => setHarok("pravidelna")} />);
     if (p.kluc === "oblubene") return obal(<OblubenePodporit polozka={{ refId: zbierka.id, typ: "charita", modul: "charity", nazov: zbierka.nazov, ciel: zbierka.ciel }}
       onPodporit={() => setHarok("podporit")} />);
-    if (p.kluc === "zapojitFirmu") return obal(<ZapojitFirmuRiadok firma={firmaAkoDarca() ?? "Vaša firma"} onClick={() => setHarok("firma")} />);
+    if (p.kluc === "zapojitFirmu") return !smieDorovnat("charita", firmaAkoDarca() ?? "") ? null : obal(<ZapojitFirmuRiadok firma={firmaAkoDarca() ?? "Vaša firma"} onClick={() => setHarok("firma")} />);
     if (p.kluc === "retazNastavit") return obal(<RetazRiadok onClick={() => setHarok("retaz")} />);
     if (p.kluc === "darcovia") return obal(<Darcovia refId={zbierka.id} cezTvorcu={cezTvorcu} nadpis={tvorca ? `DARCOVIA CEZ ${tvorca.menoAkuzativ.toLocaleUpperCase("sk-SK")}` : undefined} />);
     if (p.kluc === "krypto") return <div key={p.kluc} className="zb-pol" style={{ padding: "0 16px" }}><DaryVKrypte refId={zbierka.id} otvor={otvorPlatbu} mikro={mikro} cezTvorcu={cezTvorcu} /></div>;
@@ -201,7 +203,7 @@ export function ZbierkaModul({ zbierka, miesto: miestoProp, onBack, spatNazov, o
   // karta 02 — hlavička, galéria, nadpis a text (všade okrem hárku Podporiť DEED)
   const vrch = miesto !== "podporitDeed" ? (
     <div className="zb-pol" style={{ padding: "4px 16px 0" }}>
-      <Hlavicka cisloZbierky={zbierka.cislo} overena={zbierka.overena} onBack={onBack} spatNazov={spatNazov} onZavriet={onZavriet} onMoznosti={() => setMenu("menu")} />
+      <Hlavicka cisloZbierky={zbierka.cislo != null ? cisloObjektu("Z", zbierka.id) : undefined} overena={zbierka.overena} onBack={onBack} spatNazov={spatNazov} onZavriet={onZavriet} onMoznosti={() => setMenu("menu")} />
       <Galeria media={zbierka.media ?? []} />
       <NadpisText nazov={zbierka.nazov} text={zbierka.popis} otvoreny={st.text as boolean | undefined} onOtvoreny={(v) => zmenStav({ text: v })} />
     </div>

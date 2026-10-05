@@ -31,9 +31,9 @@ export function useFakturyOrg(): FakturaOrg[] {
 
 // ---------------- PDF (jednoduchá testovacia faktúra, Helvetica so slovenskými znakmi) ----------------
 // znaky mimo WinAnsi namapované cez /Differences na voľné kódy 0x80+ (glyfy sú v základnom písme Helvetica)
-const NAVYSE: [string, string][] = [["č", "ccaron"], ["Č", "Ccaron"], ["ľ", "lcaron"], ["Ľ", "Lcaron"], ["ť", "tcaron"], ["Ť", "Tcaron"], ["ň", "ncaron"], ["Ň", "Ncaron"], ["ď", "dcaron"], ["Ď", "Dcaron"], ["ĺ", "lacute"], ["Ĺ", "Lacute"], ["ŕ", "racute"], ["Ŕ", "Racute"], ["€", "Euro"], ["•", "bullet"], ["–", "endash"], ["„", "quotedblbase"], ["“", "quotedblleft"], ["š", "scaron"], ["Š", "Scaron"], ["ž", "zcaron"], ["Ž", "Zcaron"]];
+export const NAVYSE: [string, string][] = [["č", "ccaron"], ["Č", "Ccaron"], ["ľ", "lcaron"], ["Ľ", "Lcaron"], ["ť", "tcaron"], ["Ť", "Tcaron"], ["ň", "ncaron"], ["Ň", "Ncaron"], ["ď", "dcaron"], ["Ď", "Dcaron"], ["ĺ", "lacute"], ["Ĺ", "Lacute"], ["ŕ", "racute"], ["Ŕ", "Racute"], ["€", "Euro"], ["•", "bullet"], ["–", "endash"], ["„", "quotedblbase"], ["“", "quotedblleft"], ["š", "scaron"], ["Š", "Scaron"], ["ž", "zcaron"], ["Ž", "Zcaron"]];
 const KOD = new Map(NAVYSE.map(([ch], i) => [ch, 0x80 + i]));
-function bajty(t: string): number[] {
+export function bajty(t: string): number[] {
   const out: number[] = [];
   for (const ch of t.replace(/[\u00A0\u202F]/g, " ")) {
     const k = KOD.get(ch);
@@ -42,7 +42,7 @@ function bajty(t: string): number[] {
   }
   return out;
 }
-const esc = (b: number[]) => b.map((c) => (c === 40 || c === 41 || c === 92 ? `\\${String.fromCharCode(c)}` : c < 32 || c > 126 ? `\\${c.toString(8).padStart(3, "0")}` : String.fromCharCode(c))).join("");
+export const esc = (b: number[]) => b.map((c) => (c === 40 || c === 41 || c === 92 ? `\\${String.fromCharCode(c)}` : c < 32 || c > 126 ? `\\${c.toString(8).padStart(3, "0")}` : String.fromCharCode(c))).join("");
 const euro = (n: number) => `${n.toLocaleString("sk-SK", { minimumFractionDigits: n % 1 ? 2 : 0, maximumFractionDigits: 2 })} €`;
 const den = (iso: string) => { const d = new Date(iso); return `${d.getDate()}. ${d.getMonth() + 1}. ${d.getFullYear()}`; };
 

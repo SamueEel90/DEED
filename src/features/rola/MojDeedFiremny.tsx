@@ -39,7 +39,8 @@ import { SektoroveZbierkySheet } from "./SektoroveZbierky";
 import { OznamySprava } from "./NovyOznam";
 import { createPortal } from "react-dom";
 import { InzeratySheet } from "./Inzeraty";
-import { DorovnanieSheet } from "./Dorovnanie";
+import { SpravaDorovnaniaOkno } from "./SpravaDorovnania";
+import { HLAVNY_UCET } from "./NastaveniaCharity";
 import { PocitadloVyberSheet } from "@/features/overlay/PocitadloVyber";
 import { VyzvySheet } from "./Vyzvy";
 import { NaseZbierkySheet } from "./NaseZbierky";
@@ -371,7 +372,7 @@ function MojDeedFiremnyObsah({ onBack, toast, orgId }: { onBack: () => void; toa
         </div>, document.body)}
       {sheet === "zbierky" && pozicia === "b2b" && <NaseZbierkySheet firma={subjekt.nazov} toast={toast} onClose={() => setSheet(null)} />}
       {sheet === "zamestnanci" && pozicia === "b2b" && <ZamestnanciSheet firma={subjekt.nazov} toast={toast} onClose={() => setSheet(null)} />}
-      {sheet === "dorovnanie" && <DorovnanieSheet entita={pozicia} toast={toast} onClose={() => setSheet(null)} />}
+      {sheet === "dorovnanie" && <SpravaDorovnaniaOkno entita={pozicia} hlavnyUcet={HLAVNY_UCET} toast={toast} onClose={() => setSheet(null)} />}
       {sheet === "inzeraty" && <InzeratySheet entita={pozicia} autor={subjekt.nazov} logo={logo ?? subjekt.foto} tier={tier} toast={toast} onPaywall={setPaywall} onClose={() => setSheet(null)} />}
       {sheet === "segment" && <SektoroveZbierkySheet tier={tier} toast={toast} onPaywall={setPaywall} onClose={() => setSheet(null)} />}
       {sheet === "terminal" && <TerminalSheet toast={toast} onClose={() => setSheet(null)} />}
