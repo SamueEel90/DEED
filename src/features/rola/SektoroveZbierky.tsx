@@ -73,7 +73,7 @@ export function SektoroveZbierkySheet({ tier, toast, onPaywall, onClose }: {
       const id = sektorZbierkaId(uprava.id);
       ulozProfil(id, { ...p, iban, spustena: true, vytvorena: nacitajProfil(id)?.vytvorena ?? new Date().toISOString() });
       if (!segmenty.find((x) => x.id === uprava.id)?.zbierkaId) {
-        const n: OrgZbierka = { id, nazov: p.nazov, emoji: "🧩", ciel: 0, vyzbierane: 0, stav: "aktivna", darcovia: 0 };
+        const n: OrgZbierka = { id, nazov: p.nazov, emoji: "", ciel: 0, vyzbierane: 0, stav: "aktivna", darcovia: 0 };
         const nove = [...extra.filter((z) => z.id !== id), n];
         setExtra(nove); ulozOrgExtra(nove);
         toast("Zbierka sektora spustená");
@@ -89,14 +89,14 @@ export function SektoroveZbierkySheet({ tier, toast, onPaywall, onClose }: {
 
   return (
     <Sheet onClose={onClose} label="Sektorové zbierky a činnosti">
-      <div style={{ fontSize: 16, fontWeight: 800 }}>🧩 Sektorové zbierky a činnosti</div>
+      <div style={{ fontSize: 16, fontWeight: 800 }}>Sektorové zbierky a činnosti</div>
       <div style={{ fontSize: 11.5, color: C.textTer, marginTop: 2, lineHeight: 1.45, marginBottom: SPACE.sm }}>
         Oblasti vašej práce zo registrácie. Darca si ich vyberie pri pravidelnej podpore. Od programu {TIER_LABEL.charita[VLASTNA_ZBIERKA_CFG.sektoroveOdTieru as Tier]} môže mať každý sektor aj samostatnú zbierku s vlastným účtom a QR.
       </div>
 
       {!odomknute && (
         <div style={{ ...karta, borderStyle: "dashed", background: tint(ZELENA, .06), borderColor: tint(ZELENA, .3) }}>
-          <div style={{ fontSize: 13.5, fontWeight: 800, marginBottom: 2 }}>🔒 Od programu {TIER_LABEL.charita[VLASTNA_ZBIERKA_CFG.sektoroveOdTieru as Tier]}</div>
+          <div style={{ fontSize: 13.5, fontWeight: 800, marginBottom: 2 }}>Od programu {TIER_LABEL.charita[VLASTNA_ZBIERKA_CFG.sektoroveOdTieru as Tier]}</div>
           <div style={{ fontSize: 11.5, color: C.textSec, lineHeight: 1.45, marginBottom: SPACE.xs }}>
             V nižšom programe je sektor len téma pravidelnej podpory — dary idú na hlavný účet a použitie negarantujeme. So samostatnou zbierkou a účtom ho vieme doložiť.
           </div>
@@ -142,7 +142,7 @@ export function SektoroveZbierkySheet({ tier, toast, onPaywall, onClose }: {
             ) : (
               <>
                 <button onClick={() => zaloz(sg)} style={{ ...btnDruhy, marginTop: SPACE.xs }}>
-                  {odomknute ? "Vytvoriť zbierku pre sektor" : "🔒 Vytvoriť zbierku pre sektor"}
+                  {odomknute ? "Vytvoriť zbierku pre sektor" : `Vytvoriť zbierku pre sektor · od programu ${TIER_LABEL.charita[VLASTNA_ZBIERKA_CFG.sektoroveOdTieru as Tier]}`}
                 </button>
                 {!sg.zRegistracie && (
                   <span {...pressable(() => zmazSektor(sg), `Odstrániť ${sg.nazov}`)} style={{ display: "inline-block", marginTop: SPACE.xxs, fontSize: 11, fontWeight: 700, color: C.textTer, cursor: "pointer" }}>Odstrániť sektor</span>

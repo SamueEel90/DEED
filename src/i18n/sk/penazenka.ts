@@ -46,7 +46,7 @@ export const penazenka: Slovnik = {
   "penazenka.dalsiePohyby": "Ďalšie pohyby",
   "penazenka.vypisyPdf": "VÝPISY V PDF",
   "penazenka.stiahnute": "Stiahnuté",
-  "penazenka.vypisPoznamka": "Výpis obsahuje pohyby DeeD aj EURC za daný mesiac. Doklady o daroch nájdeš v Moje dary.",
+  "penazenka.vypisPoznamka": "Výpis obsahuje pohyby DeeD aj EURC za daný mesiac. Potvrdenia o dare nájdeš v Moje dary.",
   "penazenka.vypisPriebezny": "priebežný · do dnes",
   "penazenka.pohybov": { one: "{n} pohyb", few: "{n} pohyby", many: "{n} pohybu", other: "{n} pohybov" },
   "penazenka.vypisTitul": "Výpis {mesiac}",

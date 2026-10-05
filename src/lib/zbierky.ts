@@ -5,6 +5,7 @@
 // Položka na profile nesie ID zbierky, nikdy vlastnú kópiu textu.
 // ============================================================
 
+import { cisloObjektu } from "./cisloObjektu";
 import { nacitajStav, pridajDni, OVERENY_SKEN, type StavZbierky } from "@/lib/zbierkaSprava";
 
 export type ZbierkaStav = "aktivna" | "ukoncena";
@@ -247,10 +248,5 @@ export function odznakZbierky(id?: string | null): "D+" | "D++" {
   return z && z.komu.trim() !== z.ziadatel.meno.trim() ? "D++" : "D+";
 }
 
-/** verejné číslo zbierky („47 821") — kým ho nedá databáza, odvodené z id (vždy rovnaké) */
-export function cisloZbierky(id: string): string {
-  let h = 0;
-  for (const c of id) h = (h * 31 + c.charCodeAt(0)) >>> 0;
-  const n = 45000 + (h % 5000);
-  return `${Math.floor(n / 1000)} ${String(n % 1000).padStart(3, "0")}`;
-}
+/** KARTA 48 · verejné číslo zbierky = VS („Z-123 456 789 0", Luhn) — kým ho nedá databáza, odvodené z id (vždy rovnaké) */
+export function cisloZbierky(id: string): string { return cisloObjektu("Z", id); }

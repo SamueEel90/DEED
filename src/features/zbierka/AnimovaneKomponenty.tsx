@@ -102,7 +102,7 @@ export function PodakovaniePoDare(p: PodProps) {
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}><span style={{ width: 26, height: 26, borderRadius: '50%', background: 'radial-gradient(circle,#FFE7A3 0%,#F6B73C 38%,rgba(246,183,60,0) 72%)' }} /><span style={{ fontSize: 15.5, fontWeight: 800 }}>Tvoj dar čaká na meno</span></div>
           <div style={{ fontSize: 13.5, lineHeight: 1.45, color: 'var(--ink2)' }}>Za tento dar by si mal <b style={{ color: 'var(--gInk)' }}>+{Math.max(1, Math.round(p.eur))} karmy</b> a v zozname by stálo tvoje meno. Zatiaľ je tam Anonymný darca.</div>
           <button onClick={p.onRegistrovat} style={{ alignSelf: 'flex-start', border: 'none', background: 'none', padding: 0, cursor: 'pointer', fontSize: 14, fontWeight: 800, color: 'var(--gInk)' }}>Zaregistrovať sa a pripísať dar ›</button>
-          {p.kodPripisania && <div style={{ fontSize: 12.5, color: 'var(--ink2)' }}>Neskôr ho pripíšeš kódom z dokladu: <b style={{ fontVariantNumeric: 'tabular-nums' }}>{p.kodPripisania}</b></div>}
+          {p.kodPripisania && <div style={{ fontSize: 12.5, color: 'var(--ink2)' }}>Neskôr ho pripíšeš kódom z potvrdenia o dare: <b style={{ fontVariantNumeric: 'tabular-nums' }}>{p.kodPripisania}</b></div>}
         </div>
       )}
       <button onClick={p.onHotovo} style={{ height: 54, borderRadius: 16, border: 'none', background: 'linear-gradient(90deg,#4B7A35,#8DB866)', color: '#fff', fontSize: 16, fontWeight: 800, cursor: 'pointer' }}>Hotovo</button>

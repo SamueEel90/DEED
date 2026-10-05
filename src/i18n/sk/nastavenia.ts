@@ -333,7 +333,7 @@ export const nastavenia: Slovnik = {
   "udaje.co.sk": "Skutky a denník",
   "udaje.co.sk.s": "texty, fotky, videá, doklady",
   "udaje.co.da": "Dary a zbierky",
-  "udaje.co.da.s": "kam si daroval, doklady o daroch",
+  "udaje.co.da.s": "kam si daroval, potvrdenia o dare",
   "udaje.co.pe": "Peňaženka",
   "udaje.co.pe.s": "pohyby DeeD a EURC, výpisy",
   "udaje.co.sp": "Správy a komentáre",
