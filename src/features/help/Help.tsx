@@ -263,13 +263,12 @@ function HelpKartaBase({ z, wide, onClick }: { z: any; wide?: boolean; onClick: 
   const jeKriza = z.typSituacie === "kriza";
   const accent = jeZiadost ? (z.sponzor ? C.gold : C.red) : jePonuka ? C.purple : C.gold;
   return (
-    <FeedCard wide={wide} onClick={onClick} label={z.nazov} typ={typKluc(z.typ)} accent={jeKriza ? C.red : accent} ring={jeKriza ? C.red : undefined}
+    <FeedCard wide={wide} onClick={onClick} label={z.nazov} typ={typKluc(z.typ)} stav={jeKriza ? { surne: true } : undefined} accent={jeKriza ? C.red : accent} ring={jeKriza ? C.red : undefined}
       media={{
         fotky: z.fotky, emoji: z.ikona, h: 230,
         overlay: (
           <>
             {/* typ (Žiadosť/Ponuka/Charita) rieši FeedCard vľavo hore; tu ostáva len urgentnosť + sponzor (vpravo) */}
-            {jeKriza && <KartaBadge pos={{ top: 10, right: 10 }} strong color="#fff" style={{ background: C.red, border: "none", boxShadow: "0 2px 10px rgba(0,0,0,.3)" }}>🔴 URGENTNÉ</KartaBadge>}
             {z.sponzor && !jeKriza && <KartaBadge pos={{ top: 10, right: 10 }}>{z.sponzor.meno} · {z.sponzor.suma} €</KartaBadge>}
             <OblubeneHviezda polozka={oblubenyZHelp(z)} style={{ top: "auto", bottom: 10 }} />
           </>

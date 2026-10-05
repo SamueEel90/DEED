@@ -1,7 +1,7 @@
 import { useState, memo } from "react";
 import { DeedZnacka } from "@/components/DeedZnacka";
 import { SIRKA, C, SPACE, RADIUS } from "@/theme";
-import { ModulHlavicka, HladanieModal, OblubeneHviezda, toast, useLayout, useScrollPamat, useStrankaAkcie, useTvorbaGate, Ticker, StatRiadok, FiltreStat, FeedStlpce, FeedGrid, FeedCard, KartaBadge, obalSiroky, OkruhVyber, SegTabs, tint, Lupa, IkonaPlay, IkonaDoska, IkonaKriz, IkonaInstitucia, Overene, FeedSkeleton, SkeletonRiadky, EmptyState, ErrorState, ScreenSwitch, SwipeBack } from "@/shared";
+import { ModulHlavicka, HladanieModal, OblubeneHviezda, toast, useLayout, useScrollPamat, useStrankaAkcie, useTvorbaGate, Ticker, StatRiadok, FiltreStat, FeedStlpce, FeedGrid, FeedCard, DoplnokDorovnanie, obalSiroky, OkruhVyber, SegTabs, tint, Lupa, IkonaPlay, IkonaDoska, IkonaKriz, IkonaInstitucia, Overene, FeedSkeleton, SkeletonRiadky, EmptyState, ErrorState, ScreenSwitch, SwipeBack } from "@/shared";
 import { pripravFeed, FEED_CFG } from "@/lib/feed";
 import { Zvoncek } from "@/features/notifikacie/Notifikacie";
 import type { CharitaFeedItem, CharitaLevel, Subjekt, Oblubeny } from "@/types";
@@ -249,8 +249,9 @@ function CharitaFeed({ wide, toast, onDetail, onHladaj, onSheet, onBoard, onFire
       if (pr) return (
         <CharitaKarta key={it.id} wide={wide} onClick={() => onDetail(zd)}
           fotky={it.fotky} emoji="💛" accent={K.gold}
-          badgeL={it.badgeL ? { t: it.badgeL, col: K.gold } : undefined}
-          nazov={it.nazov} overena={it.overena} tag={it.tag} tagCol={K.gold}
+          typ="charita" stav={it.konciDni != null ? { konciDni: it.konciDni } : undefined}
+          doplnky={it.dorovnanie ? <DoplnokDorovnanie ini={it.dorovnanie.ini} text={it.dorovnanie.text} /> : undefined} zFirmy={it.zFirmy}
+          nazov={it.nazov} overena={it.overena}
           popis={<span style={{ display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{pr.kratky}</span>}
           pribehOdkaz={{ text: `Celý príbeh na stránke ${it.orgNazov ?? "organizácie"} ›`, onClick: () => otvorPribeh(it.pribehZbierky!) }}
           vyzbierane={it.vyzbierane} ciel={it.ciel} oblubena={oblubenyZo(zd)} />
@@ -258,8 +259,9 @@ function CharitaFeed({ wide, toast, onDetail, onHladaj, onSheet, onBoard, onFire
       return (
         <CharitaKarta key={it.id} wide={wide} onClick={() => onDetail(zd)}
           fotky={it.fotky} emoji="💛" accent={K.gold}
-          badgeL={it.badgeL ? { t: it.badgeL, col: K.gold } : undefined}
-          nazov={it.nazov} overena={it.overena} tag={it.tag} tagCol={K.gold}
+          typ="charita" stav={it.konciDni != null ? { konciDni: it.konciDni } : undefined}
+          doplnky={it.dorovnanie ? <DoplnokDorovnanie ini={it.dorovnanie.ini} text={it.dorovnanie.text} /> : undefined} zFirmy={it.zFirmy}
+          nazov={it.nazov} overena={it.overena}
           popis={it.popis} vyzbierane={it.vyzbierane} ciel={it.ciel} oblubena={oblubenyZo(zd)} />
       );
     }
@@ -351,23 +353,18 @@ function CharitaFeed({ wide, toast, onDetail, onHladaj, onSheet, onBoard, onFire
 // tu len mapujeme obsah Charity do slotov.
 // memo: re-render len pri zmene dát karty (oblubena/vyzbierane/…); inline onClick sa ignoruje
 const CharitaKarta = memo(CharitaKartaBase, rovnakeOkremFunkcii);
-function CharitaKartaBase({ wide, onClick, fotky, emoji, accent, badgeL, badgeR, nazov, overena, tag, tagCol, popis, vyzbierane, ciel, oblubena, pribehOdkaz }: any) {
+// KARTA 55 · F (2a): druh = štítok na fotke + ľavý okraj, stav vpravo hore, doplnky pod názvom. Kategória nie je štítok.
+function CharitaKartaBase({ wide, onClick, fotky, emoji, typ, stav, doplnky, zFirmy, nazov, overena, popis, vyzbierane, ciel, oblubena, pribehOdkaz }: any) {
   return (
-    <FeedCard wide={wide} onClick={onClick} label={nazov} accent={accent}
+    <FeedCard wide={wide} onClick={onClick} label={nazov} typ={typ} stav={stav} doplnky={doplnky}
       media={{
         fotky, emoji,
-        overlay: (
-          <>
-            {badgeL && <KartaBadge pos={{ top: 10, left: 10 }} strong color={badgeL.col} style={badgeL.bg ? { background: badgeL.bg } : undefined}>{badgeL.t}</KartaBadge>}
-            {badgeR && <KartaBadge pos={{ top: 10, right: 10 }} color={badgeR.col} style={badgeR.bg ? { background: badgeR.bg } : undefined}>{badgeR.t}</KartaBadge>}
-            {oblubena && <OblubeneHviezda polozka={oblubena} style={{ top: "auto", bottom: 10 }} />}
-          </>
-        ),
+        overlay: oblubena ? <OblubeneHviezda polozka={oblubena} style={{ top: "auto", bottom: 10 }} /> : undefined,
       }}
       title={nazov}
-      titleChips={<>{overena && <Overena />}{tag && <span style={tagChip(tagCol)}>{tag}</span>}</>}
+      titleChips={overena ? <Overena /> : undefined}
       text={popis}
-      progress={ciel ? { vyzbierane, ciel } : undefined}
+      progress={ciel ? { vyzbierane, ciel, zFirmy } : undefined}
       footer={pribehOdkaz ? (
         <button type="button" onClick={(e) => { e.stopPropagation(); pribehOdkaz.onClick(); }}
           style={{ display: "flex", alignItems: "center", minHeight: 44, marginTop: 6, padding: 0, border: "none", background: "transparent", color: "var(--gInk)", fontSize: 14, fontWeight: 800, fontFamily: "inherit", cursor: "pointer", textAlign: "left", boxShadow: "none" }}>{pribehOdkaz.text}</button>
@@ -386,32 +383,28 @@ function ZbierkyUrgent({ wide, onDetail }: { wide?: boolean; onDetail: (z?: Zbie
     vyzbierane: ZBIERKA.suma, ciel: ZBIERKA.ciel, ludia: ZBIERKA.ludia,
   };
   return <CharitaKarta wide={wide} onClick={() => onDetail(detail)} fotky={ZBIERKA.fotky} emoji="" accent={K.gold}
-    badgeL={{ t: "URGENTNÉ", col: K.gold }} badgeR={{ t: "Nordika · 500\u00a0€", col: K.diamond, bg: tint("var(--a-info)", .18) }}
+    typ="ziadost" stav={{ surne: true }} doplnky={<DoplnokDorovnanie ini="NO" text="Nordika pridala 500 €" />}
     nazov="Rodina Kováčová" overena popis="V noci nám zhorel dom, ostali sme bez strechy s dvomi deťmi. Potrebujeme pomoc."
     vyzbierane={1430} ciel={2200} oblubena={oblubenyZo(detail)} />;
 }
 function ZbierkyTop({ wide, onDetail }: { wide?: boolean; onDetail: (z?: ZbierkaDetail) => void }) {
   return <CharitaKarta wide={wide} onClick={() => onDetail(D_MOTYLIK)} emoji="⭐" accent={K.blue}
-    badgeL={{ t: "⭐ TOP", col: K.diamond, bg: tint("var(--a-info)", .18) }}
-    nazov="Motýlik" tag="HOSPIC" tagBg={tint("var(--a-info)", .12)} tagCol={K.diamond}
+    typ="charita" nazov="Motýlik"
     popis="Detský hospic — pomôžte nám zabezpečiť mobilnú paliatívnu starostlivosť pre rodiny."
     vyzbierane={8200} ciel={15000} oblubena={oblubenyZo(D_MOTYLIK)} />;
 }
 function ZbierkyMala({ wide, onDetail }: { wide?: boolean; onDetail: (z?: ZbierkaDetail) => void }) {
   return <CharitaKarta wide={wide} onClick={() => onDetail(D_ZOFIA)} fotky={ZOFIA_FOTKY} emoji="🩺" accent={K.green}
-    badgeR={{ t: "D+", col: K.green, bg: tint("var(--a-green)", .18) }}
-    nazov="Žofia K." overena popis="Po úraze tri mesiace bez príjmu, potrebujem na lieky."
+    typ="ziadost" nazov="Žofia K." overena popis="Po úraze tri mesiace bez príjmu, potrebujem na lieky."
     vyzbierane={520} ciel={800} oblubena={oblubenyZo(D_ZOFIA)} />;
 }
 function ZapojSa({ wide, onDetail }: { wide?: boolean; onDetail: (z?: ZbierkaDetail) => void }) {
   return <CharitaKarta wide={wide} onClick={() => onDetail(D_STROMOSVET)} emoji="🌳" accent={K.green}
-    badgeL={{ t: "DOBROVOĽNÍCTVO", col: K.green, bg: tint("var(--a-green)", .18) }}
-    nazov="Stromosvet" popis="Hľadá 10 dobrovoľníkov · výsadba stromov · sobota, Brezina" oblubena={oblubenyZo(D_STROMOSVET)} />;
+    typ="hladame" nazov="Stromosvet" popis="Hľadá 10 dobrovoľníkov · výsadba stromov · sobota, Brezina" oblubena={oblubenyZo(D_STROMOSVET)} />;
 }
 function Material({ wide, onDetail }: { wide?: boolean; onDetail: (z?: ZbierkaDetail) => void }) {
   return <CharitaKarta wide={wide} onClick={() => onDetail(D_ZELENA)} emoji={IKONA_RECYKLACIA} accent={K.blue}
-    badgeL={{ t: "MATERIÁL", col: K.diamond, bg: tint("var(--a-info)", .18) }}
-    nazov="Zelená plus" popis="Triedenie a zber šatstva pre útulok · streda, Juh" oblubena={oblubenyZo(D_ZELENA)} />;
+    typ="akcia" nazov="Zelená plus" popis="Triedenie a zber šatstva pre útulok · streda, Juh" oblubena={oblubenyZo(D_ZELENA)} />;
 }
 
 function Overena() {

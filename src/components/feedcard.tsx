@@ -12,7 +12,8 @@ import { tint } from "@/lib/ui";
 import { pressable } from "@/components/pressable";
 import { FotoPrispevku, Video } from "@/components/media";
 import { MoniBar } from "@/components/layout";
-import { IkonaPin } from "@/components/icons";
+import { IkonaPin, IkonaRetaz, IkonaHodiny } from "@/components/icons";
+import { druhF, DRUH_NAZOV, type Druh } from "@/lib/druhy";
 import { MEDIA_AR } from "@/lib/cardSize";
 
 // ---- glass odznak na médiu (jednotný pre všetky moduly) ----
@@ -35,13 +36,13 @@ export function KartaBadge({ pos, color = "#fff", strong, children, style }: {
 //   Skutok · Žiadosť · Ponuka · Charita
 // Nahrádza roztrúsené kategórie (Komunita/Zdravie/Príroda…) a tag vľavo hore.
 // ============================================================
-export type TypKluc = "skutok" | "ziadost" | "ponuka" | "charita";
-export const TYP_PRISPEVKU: Record<TypKluc, { label: string; bg: string; fg: string }> = {
-  skutok:  { label: "Skutok",  bg: "var(--a-green)",  fg: "#fff" },     // dobrý skutok
-  ziadost: { label: "Žiadosť", bg: "var(--a-danger)", fg: "#fff" },     // prosba o pomoc
-  ponuka:  { label: "Ponuka",  bg: "var(--a-info)",   fg: "#fff" },     // ponuka pomoci/služby
-  charita: { label: "Charita", bg: "var(--a-gold)",   fg: "#2a1e00" },  // zbierka / charitatívna kampaň
-};
+// KARTA 55 · F (2a): typ = DRUH (Zbierka · Žiadosť · Skutok · Ponuka · Akcia · Hľadáme), farby v styles/druhy.css.
+// Kľúč „charita" ostáva kvôli volajúcim, zobrazí sa ako Zbierka.
+export type TypKluc = "skutok" | "ziadost" | "ponuka" | "charita" | "akcia" | "hladame";
+const TYP_DRUH: Record<TypKluc, Druh> = { skutok: "skutok", ziadost: "ziadost", ponuka: "ponuka", charita: "zbierka", akcia: "akcia", hladame: "hladame" };
+export const druhTypu = (t: TypKluc): Druh => TYP_DRUH[t];
+export const TYP_PRISPEVKU: Record<TypKluc, { label: string; bg: string; fg: string }> = Object.fromEntries(
+  (Object.keys(TYP_DRUH) as TypKluc[]).map((k) => [k, { label: DRUH_NAZOV[TYP_DRUH[k]], bg: druhF(TYP_DRUH[k]), fg: "#fff" }])) as Record<TypKluc, { label: string; bg: string; fg: string }>;
 
 // normalizuje rôzne modulové „typ" hodnoty na 4 kľúče (skutok/žiadosť/ponuka/charita)
 export function typKluc(typ?: string): TypKluc | undefined {
@@ -50,24 +51,54 @@ export function typKluc(typ?: string): TypKluc | undefined {
     case "ziadost": return "ziadost";
     case "ponuka": return "ponuka";
     case "charita":
-    case "charity": return "charita";
+    case "charity":
+    case "zbierka": return "charita";
+    case "akcia": return "akcia";
+    case "hladame": return "hladame";
     default: return undefined;
   }
 }
 
-// jasný farebný štítok typu — plný (nie glass), aby bol čitateľný na hocijakej fotke
+// znak druhu 2a — plný štítok 26 px vo farbe druhu, 11,5 / 800, biely text (na fotke vľavo hore, bez fotky nad názvom)
 export function TypBadge({ typ, pos, inline }: {
   typ: TypKluc; pos?: Partial<Record<"top" | "left" | "right" | "bottom", number>>; inline?: boolean;
 }) {
   const t = TYP_PRISPEVKU[typ];
   return (
     <span style={{
-      ...(inline ? { display: "inline-flex" } : { position: "absolute", zIndex: 2, ...(pos ?? { top: 10, left: 10 }) }),
-      alignItems: "center", gap: SPACE.xxs, fontSize: 11, fontWeight: FW.black, letterSpacing: ".02em",
-      padding: `${SPACE.xxs}px ${SPACE.sm}px`, borderRadius: RADIUS.xs, background: t.bg, color: t.fg,
-      boxShadow: inline ? "none" : "0 2px 8px rgba(0,0,0,.3)", border: "1px solid rgba(255,255,255,.28)", whiteSpace: "nowrap",
+      ...(inline ? { display: "inline-flex" } : { display: "flex", position: "absolute", zIndex: 2, ...(pos ?? { top: 10, left: 10 }) }),
+      alignItems: "center", height: 26, padding: "0 9px", borderRadius: 7, fontSize: 11.5, fontWeight: 800, letterSpacing: ".06em",
+      textTransform: "uppercase", background: t.bg, color: t.fg, whiteSpace: "nowrap",
     }}>{t.label}</span>
   );
+}
+
+/** stav vpravo hore na fotke: SÚRNE (#B5483A) · KONČÍ O N DNÍ (tmavý) */
+export type StavKarty = { surne: true } | { konciDni: number };
+export function StavBadge({ stav, inline }: { stav: StavKarty; inline?: boolean }) {
+  const surne = "surne" in stav;
+  const n = surne ? 0 : stav.konciDni;
+  const t = surne ? "Súrne" : `Končí o ${n} ${n === 1 ? "deň" : n >= 2 && n <= 4 ? "dni" : "dní"}`;
+  return (
+    <span style={{
+      ...(inline ? { display: "inline-flex" } : { display: "flex", position: "absolute", zIndex: 2, top: 10, right: 10 }),
+      alignItems: "center", height: 26, padding: "0 9px", borderRadius: 7, fontSize: 11.5, fontWeight: 800, letterSpacing: ".06em",
+      textTransform: "uppercase", background: surne ? "var(--dr-surne)" : "var(--dr-stav)", color: "#fff", whiteSpace: "nowrap",
+    }}>{t}</span>
+  );
+}
+
+// ---- doplnky pod názvom (2a): dorovnanie (zlaté, logo firmy a pomer) · delenie (reťaz) · online zbierka (hodiny) ----
+const doplnokSt: CSSProperties = { display: "inline-flex", alignItems: "center", gap: 7, minHeight: 30, padding: "3px 10px 3px 4px", borderRadius: 9, fontSize: 12.5, fontWeight: 800, lineHeight: 1.25, maxWidth: "100%" };
+export function DoplnokDorovnanie({ ini, text }: { ini: string; text: ReactNode }) {
+  return <span style={{ ...doplnokSt, background: "var(--goldBg, rgba(201,162,74,.14))", border: "1px solid var(--goldBd, rgba(201,162,74,.45))", color: "var(--goldInk, #8A6414)" }}>
+    <span style={{ width: 22, height: 22, borderRadius: 5, background: "#fff", color: "#8A6414", fontSize: 9.5, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", flex: "none" }}>{ini}</span>{text}</span>;
+}
+export function DoplnokDelenie({ text }: { text: ReactNode }) {
+  return <span style={{ ...doplnokSt, paddingLeft: 8, border: "1px solid var(--cardBd, rgba(127,127,127,.3))", color: "var(--ink, inherit)" }}><IkonaRetaz size={15} />{text}</span>;
+}
+export function DoplnokOnline({ text }: { text: ReactNode }) {
+  return <span style={{ ...doplnokSt, paddingLeft: 8, border: "1px solid var(--cardBd, rgba(127,127,127,.3))", color: "var(--ink, inherit)" }}><IkonaHodiny size={15} color="var(--dr-skutok-t)" />{text}</span>;
 }
 
 // ---- ▶ kruh pre mock-video (bez reálneho src) ----
@@ -114,8 +145,12 @@ export type FeedCardProps = {
   onClick?: () => void;
   /** aria label karty (default: string titul) */
   label?: string;
-  /** typ príspevku → jasný štítok (Skutok/Žiadosť/Ponuka/Charita) vľavo hore (alebo inline bez fotky) */
+  /** typ príspevku = druh (2a) → štítok vľavo hore na fotke (bez fotky nad názvom) + ľavý okraj 5 px vo farbe druhu */
   typ?: TypKluc;
+  /** stav vpravo hore na fotke (SÚRNE / KONČÍ O N DNÍ) */
+  stav?: StavKarty;
+  /** doplnky pod názvom: DoplnokDorovnanie · DoplnokDelenie · DoplnokOnline */
+  doplnky?: ReactNode;
   /** ľavý accent pás (žiadosť=červená, doména…) */
   accent?: string;
   /** zvýrazňujúci prstenec (TOP/URGENT) — farba ringu */
@@ -132,12 +167,12 @@ export type FeedCardProps = {
   /** popis/príbeh */
   text?: ReactNode;
   /** progres zbierky → jednotný MoniBar */
-  progress?: { vyzbierane?: number; ciel?: number; ludia?: number };
+  progress?: { vyzbierane?: number; ciel?: number; ludia?: number; /** diel firmy (dorovnanie) zlatou v pruhu */ zFirmy?: number };
   /** pätička podľa typu (❓ hľadá pomoc / ★ rating workshopu…) */
   footer?: ReactNode;
 };
 
-export function FeedCard({ wide, onClick, label, typ, accent, ring, autor, media = {}, predTitulom, title, titleChips, subtitle, text, progress, footer }: FeedCardProps) {
+export function FeedCard({ wide, onClick, label, typ, stav, doplnky, accent, ring, autor, media = {}, predTitulom, title, titleChips, subtitle, text, progress, footer }: FeedCardProps) {
   const maMedia = !!(media.video || media.play || (media.fotky && media.fotky.length));
   const mobileH = media.h ?? 235;
   // médium: foto/video → 16:9 na tablete/PC, fixná výška na mobile; len-emoji → kompaktná výška ak je daná
@@ -150,7 +185,7 @@ export function FeedCard({ wide, onClick, label, typ, accent, ring, autor, media
       background: C.surface2,
       border: wide ? `1px solid ${C.line}` : "none",
       borderBottom: `1px solid ${wide ? C.line : C.line2}`,
-      borderLeft: accent ? `3px solid ${accent}` : undefined,
+      borderLeft: typ ? `5px solid ${druhF(druhTypu(typ))}` : accent ? `3px solid ${accent}` : undefined,
       borderRadius: wide ? RADIUS.md : 0,
       marginLeft: wide ? 0 : -SPACE.md, marginRight: wide ? 0 : -SPACE.md,
       marginBottom: wide ? 0 : SPACE.sm,
@@ -195,6 +230,7 @@ export function FeedCard({ wide, onClick, label, typ, accent, ring, autor, media
           {media.play && <KartaBadge pos={{ top: 10, right: 10 }}>▶ video</KartaBadge>}
           {/* typ príspevku vľavo hore — jednotné rozdelenie naprieč appkou */}
           {typ && <TypBadge typ={typ} />}
+          {stav && <StavBadge stav={stav} />}
           {media.overlay}
         </div>
       )}
@@ -202,7 +238,7 @@ export function FeedCard({ wide, onClick, label, typ, accent, ring, autor, media
       {/* titul + text + progres + pätička */}
       <div style={{ padding: `${SPACE.sm}px ${SPACE.gutter}px ${SPACE.gutter}px` }}>
         {/* bez fotky niet kam dať štítok na médium → ukáž typ inline nad titulom */}
-        {typ && !maMedia && <div style={{ marginBottom: SPACE.xs }}><TypBadge typ={typ} inline /></div>}
+        {(typ || stav) && !maMedia && <div style={{ marginBottom: SPACE.xs, display: "flex", gap: 6, flexWrap: "wrap" }}>{typ && <TypBadge typ={typ} inline />}{stav && <StavBadge stav={stav} inline />}</div>}
         {predTitulom}
         {(title != null || titleChips != null) && (
           <div style={{ fontSize: 16, fontWeight: FW.bold, lineHeight: 1.36, display: "flex", alignItems: "flex-start", gap: SPACE.xs, flexWrap: "wrap" }}>
@@ -210,9 +246,10 @@ export function FeedCard({ wide, onClick, label, typ, accent, ring, autor, media
             {titleChips}
           </div>
         )}
+        {doplnky && <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: SPACE.xs }}>{doplnky}</div>}
         {subtitle && <div style={{ fontSize: 11.5, color: C.textTer, marginTop: SPACE.xxs }}>{subtitle}</div>}
         {text && <div style={{ fontSize: 13, color: C.textSec, lineHeight: 1.5, marginTop: SPACE.xs }}>{text}</div>}
-        {progress?.ciel ? <div style={{ marginTop: SPACE.sm }}><MoniBar vyzbierane={progress.vyzbierane || 0} ciel={progress.ciel} ludia={progress.ludia} mini /></div> : null}
+        {progress?.ciel ? <div style={{ marginTop: SPACE.sm }}><MoniBar vyzbierane={progress.vyzbierane || 0} ciel={progress.ciel} ludia={progress.ludia} zFirmy={progress.zFirmy} mini /></div> : null}
         {footer}
       </div>
     </div>
