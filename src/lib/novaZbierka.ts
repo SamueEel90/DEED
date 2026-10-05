@@ -119,6 +119,16 @@ export async function nacitajZbierkyStranky(stranka: string): Promise<SpustenaZb
   return zbierkyStrankyZPamate(stranka);
 }
 
+/** KARTA 48 · úprava spustenej zbierky v Správe (Ukladá sa samo): len text pre darcov, galéria a rýchle sumy.
+ *  Cieľ, účel, účet a lehota ostávajú zapečatené. */
+export async function upravZbierku(stranka: string, id: string, p: Pick<NovaZbierkaData, "popis" | "popis2" | "media" | "sada" | "eurc" | "sadaE">): Promise<void> {
+  const l = zbierkyStrankyZPamate(stranka);
+  const z = l.find((x) => x.id === id); if (!z) return;
+  const n = { ...z, ...p };
+  spustene.set(stranka, l.map((x) => (x.id === id ? n : x))); zmena();
+  if (supabase) await supabase.from("zbierka").update({ nastavenie: n }).eq("id", id);
+}
+
 /** Zapečatiť a spustiť — po spustení sa názov, text, dĺžka, suma, účet, účel a lehota nedajú meniť (karta 37 · bod 4) */
 export async function spustiZbierku(stranka: string, d: NovaZbierkaData, ucet: string): Promise<SpustenaZbierka> {
   const teraz = new Date().toISOString();

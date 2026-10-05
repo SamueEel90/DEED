@@ -57,7 +57,7 @@ export const obsahSektora = (id: string): CentralnaZbierka | null => obsah.get(i
 export function ulozObsahSektora(id: string, c: CentralnaZbierka) { obsah.set(id, c); zmena(); }
 export function pridajSektor(c: { nazov: string; stanovy: string }): SektorCharity | null {
   if (sektory.length >= SEKTORY_MAX || sektory.some((s) => s.nazov === c.nazov)) return null;
-  const slug = `svetlo-pomoci-${c.nazov.toLowerCase().normalize("NFD").replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "")}`;
+  const slug = `svetlo-pomoci-${c.nazov.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "")}`;
   const s: SektorCharity = { id: `sek-${Date.now()}`, nazov: c.nazov, stanovy: c.stanovy, foto: "", slug };
   sektory = [...sektory, s];
   obsah.set(s.id, { popis: "", popis2: "", media: [], sada: 1, eurc: true, sadaE: 0, ucet: null });

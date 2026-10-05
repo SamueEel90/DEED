@@ -69,6 +69,8 @@ export interface PolozkaDokladu {
   suma: number;
   datum: string;       // ISO
   foto?: string;       // sken/fotka dokladu (data-URL)
+  /** KARTA 48: doklad skontroloval DEED+ (na profile len „Overené DEED+", doklady sa nezverejňujú) */
+  overene?: boolean;
 }
 /** fotka / video dokladu použitia — 5. 10.: popis = voľný popis fotky (najviac 80 znakov), žiadne PRED / PO */
 export interface FotkaPouzitia { src: string; popis: string; typ?: "foto" | "video"; sek?: number }
@@ -107,7 +109,12 @@ export interface StavZbierky {
   zmenaUcelu?: { ucel: string; zdovodnenie: string; podana: string; schvalena?: string };
   simDary30?: number;        // DEV — simulácia darov za posledných 30 dní (živá / nie)
   simVyzbierane?: number;    // DEV — simulácia sumy na test pásiem
+  /** KARTA 48: text pre darcov, galéria a rýchle sumy upravené v Správe (Ukladá sa samo) */
+  obsah?: ObsahZbierky;
+  /** KARTA 48: doklady odoslané na overenie DEED+ (ISO) */
+  odoslaneNaOverenie?: string;
 }
+export interface ObsahZbierky { popis: string; popis2: string; media: import("./novaZbierka").MediumZbierky[]; sada: number; eurc: boolean; sadaE: number }
 
 // ---- úložisko + reaktivita ----
 const KLUC = (id: string) => `deed.zbierka.sprava.${id}`;

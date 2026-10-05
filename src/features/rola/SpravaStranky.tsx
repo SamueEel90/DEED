@@ -21,7 +21,7 @@ import { useSektory, cislaSektora, nastavVyberCentralnej, CENTRALNA_CISLA, NULA,
 import { cistyText } from "@/lib/richtext";
 import { CENTRALNA_ID } from "./vlastneZbierky";
 import { SUBJEKTY } from "./mock";
-import { useZmenyZbierok, zbierkyStrankyZPamate, nacitajZbierkyStranky, konceptZbierkyZPamate, nacitajKonceptZbierky, cielCislo, jeIne, UCELY, KROKY_ZBIERKY, type SpustenaZbierka, type NovaZbierkaData } from "@/lib/novaZbierka";
+import { upravZbierku, useZmenyZbierok, zbierkyStrankyZPamate, nacitajZbierkyStranky, konceptZbierkyZPamate, nacitajKonceptZbierky, cielCislo, jeIne, UCELY, KROKY_ZBIERKY, type SpustenaZbierka, type NovaZbierkaData } from "@/lib/novaZbierka";
 import { UpravitProfilCharity, VerejnyProfilOkno, zakladnyProfil } from "./UpravitProfilCharity";
 import { otvorVerejnyProfil } from "@/features/verejny-profil/otvor";
 import { najdiTestProfil } from "@/lib/testProfily";
@@ -200,16 +200,16 @@ const PH_ZBIERKY: { t: string; v: number; c: number; d: string; bg: string; dn: 
   { t: "Teplé jedlo na zimu", v: 4310, c: 5000, d: "končí o 4 dni", bg: PRUHY, dn: 75 },
 ];
 type PhZbierka = { t: string; v: number; c: number; d: string; bg: string; dn: number };
-type ZbRiadok = { t: string; v: number; c: number; bg: string; s: string; konc: boolean; id?: string; lehotaText?: string; lehota?: "30" | "60" | "priebezne" | "stvrtrocne"; bezPredlzenia?: boolean; dlha?: boolean; zaciatok?: string; mesiace?: number; ucel?: string; mesto?: string; darcovia?: number; zostava?: number; overene?: boolean };
+type ZbRiadok = { t: string; v: number; c: number; bg: string; s: string; konc: boolean; id?: string; lehotaText?: string; lehota?: "30" | "60" | "priebezne" | "stvrtrocne"; bezPredlzenia?: boolean; dlha?: boolean; zaciatok?: string; mesiace?: number; ucel?: string; mesto?: string; darcovia?: number; zostava?: number; overene?: boolean; zdroj?: SpustenaZbierka };
 /** KARTA 38: riadok Moje zbierky → zbierka na správu (počet darcov a dni z textu riadku pri ukážkových zbierkach) */
 const naSpravu = (z: ZbRiadok): ZbierkaNaSpravu => {
   const darc = z.darcovia ?? Number(/(\d[\d\s]*) darcov/.exec(z.s)?.[1].replace(/\s/g, "") ?? 0), dni = z.zostava ?? Number(/končí o (\d+)/.exec(z.s)?.[1] ?? 30);
-  return { id: z.id ?? `ukazka-${z.t.toLowerCase().normalize("NFD").replace(/[^a-z0-9]+/g, "-")}`, nazov: z.t, bg: z.bg, ciel: z.c, vyzbierane: z.v, darcovia: darc, zostavaDni: dni, ukoncena: z.konc, lehotaText: z.lehotaText, lehota: z.lehota, bezPredlzenia: z.bezPredlzenia || /^Centrálna/.test(z.t), dlha: z.dlha, zaciatok: z.zaciatok, mesiace: z.mesiace, ucel: z.ucel };
+  return { id: z.id ?? `ukazka-${z.t.toLowerCase().normalize("NFD").replace(/[^a-z0-9]+/g, "-")}`, nazov: z.t, bg: z.bg, ciel: z.c, vyzbierane: z.v, darcovia: darc, zostavaDni: dni, ukoncena: z.konc, lehotaText: z.lehotaText, lehota: z.lehota, bezPredlzenia: z.bezPredlzenia || /^Centrálna/.test(z.t), dlha: z.dlha, zaciatok: z.zaciatok, mesiace: z.mesiace, ucel: z.ucel, mesto: z.mesto, ...(z.zdroj ? { popis: z.zdroj.popis, popis2: z.zdroj.popis2, media: z.zdroj.media, sada: z.zdroj.sada, eurc: z.zdroj.eurc, sadaE: z.zdroj.sadaE, ucet: z.zdroj.ucet } : {}) };
 };
 /** OPRAVY 114: spustená zbierka charity → karta v Prehľade a riadok v Moje zbierky */
 const fotoBg = (z: SpustenaZbierka) => { const f = z.media.find((m) => m.typ === "foto"); return f ? `url('${f.src}') center/cover no-repeat var(--track)` : "repeating-linear-gradient(135deg,var(--track) 0 12px,var(--btn) 12px 24px)"; };
 const naPh = (z: SpustenaZbierka): PhZbierka => ({ t: z.nazov, v: 0, c: z.cielTyp === "ciel" ? cielCislo(z) : 0, d: z.typ === "dlha" ? `beží ${z.mesiace} mesiacov` : "končí o 30 dní", bg: fotoBg(z), dn: 0 });
-const naRiadok = (z: SpustenaZbierka): ZbRiadok => ({ id: z.id, lehotaText: z.lehota ? (/^\d/.test(z.lehota) ? `do ${z.lehota}` : z.lehota) : undefined, lehota: z.lehotaKluc ?? "30", bezPredlzenia: z.typ === "dlha", dlha: z.typ === "dlha", zaciatok: z.spustena, mesiace: z.mesiace, ucel: z.ucel != null ? (jeIne(z) ? z.ineT : UCELY[z.ucel][0]) : undefined, t: z.nazov, v: 0, c: z.cielTyp === "ciel" ? cielCislo(z) : 0, bg: fotoBg(z), s: `0 darcov · ${z.typ === "dlha" ? `beží ${z.mesiace} mesiacov` : "končí o 30 dní"}`, konc: false });
+const naRiadok = (z: SpustenaZbierka): ZbRiadok => ({ id: z.id, zdroj: z, lehotaText: z.lehota ? (/^\d/.test(z.lehota) ? `do ${z.lehota}` : z.lehota) : undefined, lehota: z.lehotaKluc ?? "30", bezPredlzenia: z.typ === "dlha", dlha: z.typ === "dlha", zaciatok: z.spustena, mesiace: z.mesiace, ucel: z.ucel != null ? (jeIne(z) ? z.ineT : UCELY[z.ucel][0]) : undefined, t: z.nazov, v: 0, c: z.cielTyp === "ciel" ? cielCislo(z) : 0, bg: fotoBg(z), s: `0 darcov · ${z.typ === "dlha" ? `beží ${z.mesiace} mesiacov` : "končí o 30 dní"}`, konc: false });
 // KARTA 48 · testovacie zbierky 1 : 1 podľa prototypu „Zbierky zoznam"
 const ZB_LIST: ZbRiadok[] = [
   { t: "Strecha pre rodinu Horváthovú", mesto: "Trenčín", v: 8420, c: 12000, darcovia: 148, zostava: 9, bg: "url('/img/sprava/dom.jpg') center/cover no-repeat var(--track)", s: "končí o 9 dní · 148 darcov", konc: false },
@@ -358,7 +358,7 @@ export function SpravaStranky({ onBack, typ: typStranky = "charita", strankaId =
     onZmena={setKoncept} onZrusit={() => { hist.current = []; setSub(null); }} onHotovo={() => { hist.current = []; setSub(null); }} />;
   else if (sub === "x:Nová zbierka") obsah = <NovaZbierka strankaId={strankaId} pozicia={poz} tier={tier} nazov={nazov} inicialy={inicialy} mobil={!desktop} tablet={tablet} stit={stit}
     onMojeZbierky={() => { hist.current = []; setSub("g_zbierky"); }} />;
-  else if (sub === "x:Správa zbierky" && spravZb) obsah = <SpravaZbierky key={spravZb.id} z={spravZb} mobil={!wide} toast={toast} onZbierky={() => { hist.current = []; setSub("g_zbierky"); }} onUdaje={() => otvor("n:udaje")} />;
+  else if (sub === "x:Správa zbierky" && spravZb) obsah = <SpravaZbierky key={spravZb.id} tier={tier} onDorovnanie={() => otvor("dorovnanie")} z={{ ...spravZb, organizacia: nazov, onObsah: vlastne.some((x) => x.id === spravZb.id) ? (o) => void upravZbierku(strankaId, spravZb.id, o) : undefined }} mobil={!wide} toast={toast} onZbierky={() => { hist.current = []; setSub("g_zbierky"); }} onUdaje={() => otvor("n:udaje")} />;
   else if (sub.startsWith("x:")) obsah = <Pripravujeme />;
   // KARTA 40: Oznamy — v Zadarmo výzva na súrnu pomoc a dva zamknuté druhy (nie „Pripravujeme" ani zámok celej položky)
   else if (sub === "oznamy" && typPovoli("oznamy", typ)) obsah = <OznamySprava strankaId={strankaId} tier={tier} nazov={nazov} inicialy={inicialy} mesto={SUBJEKTY[poz]?.lok ?? "Trenčín"} logo={profil?.logo ?? null} mobil={!desktop} tablet={tablet} toast={toast} onProfil={() => otvor("x:Verejný profil")} zbierky={zbierkyPreOznam} start={oznamStart} />;
