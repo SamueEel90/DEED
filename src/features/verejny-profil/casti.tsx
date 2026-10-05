@@ -163,7 +163,7 @@ import type { ZbierkaData } from "@/features/zbierka/ZbierkaModul";
 export function naZbierkaData(z: TestZbierka, profil: TestProfil): ZbierkaData {
   return {
     id: z.id, nazov: z.nazov, popis: z.popis, overena: true,
-    media: [{ typ: "foto", src: z.foto }],
+    media: z.galeria?.length ? z.galeria : [{ typ: "foto", src: z.foto }], // 5. 10.: galéria zbierky aj v detaile
     vyzbierane: z.vyzbierane, ciel: z.ciel, ludia: z.ludia,
     organizacia: {
       meno: z.zodpoveda ?? profil.meno, typ: "charita", mesto: z.mesto,
@@ -229,6 +229,14 @@ export function PlagatPrace({ praca, zbaleny, nadpis = true }: { praca: TestPrac
   );
 }
 
+/** doplnky 4. 10. · ťuk kdekoľvek na kartu zbierky / skutku = detail (bez tlačidla „Pozrieť a darovať"). Klávesnica: Enter / medzera. */
+export function klikKarta(fn: () => void, nazov?: string) {
+  return {
+    role: "button" as const, tabIndex: 0, "aria-label": nazov, onClick: fn,
+    onKeyDown: (e: { key: string; target: EventTarget; currentTarget: EventTarget; preventDefault: () => void }) => { if ((e.key === "Enter" || e.key === " ") && e.target === e.currentTarget) { e.preventDefault(); fn(); } },
+  };
+}
+
 /** KARTA 45 · dlhý príbeh zbierky: N riadkov + „Čítať celý príbeh ›" (ťuk rozbalí celý text) */
 export function PribehText({ text, riadky = 6, fs = 14.5, farba = "var(--ink2)", odkaz = "var(--green)" }: { text: string; riadky?: number; fs?: number; farba?: string; odkaz?: string }) {
   const [cely, setCely] = useState(false);
@@ -252,9 +260,29 @@ export function usePodanie(): [Podanie, (p: Podanie) => void] {
   return [p, (n: Podanie) => { try { localStorage.setItem(KLUC_PODANIE, n); } catch { /* LS */ } podaniePosl.forEach((f) => f()); }];
 }
 export const PODANIA: [Podanie, string][] = [["kronika", "Kronika"], ["vyklad", "Výklad"], ["pirat", "Pirát"]];
-export function PrepinacPodania({ tmavy, style }: { tmavy?: boolean; style?: CSSProperties }) {
+/** testovacie voľby na mobile a tablete: sivý pás úplne dole stránky (pod posledným obsahom, nad dolnou lištou appky).
+ *  Len v testovacej verzii — volajúci ho ukáže iba pri TESTOVACIA. */
+export function TestovaciPas({ nazov, children, style }: { nazov: string; children: ReactNode; style?: CSSProperties }) {
+  return (
+    <div role="group" aria-label={`Testovacie · ${nazov}`} style={{ display: "flex", flexDirection: "column", gap: 10, padding: "12px 14px 14px", borderRadius: 18, background: "rgba(128,128,120,.2)", border: "1px solid rgba(128,128,120,.35)", ...style }}>
+      <span style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: ".08em", color: "var(--ink3)" }}>TESTOVACIE · {nazov}</span>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>{children}</div>
+    </div>
+  );
+}
+
+export function PrepinacPodania({ tmavy, style, pas }: { tmavy?: boolean; style?: CSSProperties; /** mobil a tablet: sivý pás dole stránky */ pas?: boolean }) {
   const [p, setP] = usePodanie();
   const vol = PODANIA;
+  if (pas) return (
+    <TestovaciPas nazov="Zobrazenie" style={style}>
+      {vol.map(([k, t]) => {
+        const on = p === k;
+        return <button key={k} type="button" aria-pressed={on} onClick={() => setP(k)}
+          style={{ height: 44, padding: "0 16px", borderRadius: 22, border: `1.5px solid ${on ? "var(--green)" : "var(--cardBd)"}`, background: on ? "var(--green)" : "var(--card)", color: on ? "#fff" : "var(--ink2)", fontSize: 14, fontWeight: 800, cursor: "pointer", fontFamily: "inherit", boxShadow: "none" }}>{t}</button>;
+      })}
+    </TestovaciPas>
+  );
   return (
     <div role="group" aria-label="Zobrazenie profilu (test)" style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", ...style }}>
       <span style={{ fontSize: 12.5, fontWeight: 800, color: tmavy ? "rgba(255,255,255,.8)" : "var(--ink3)", marginRight: 2 }}>Zobrazenie:</span>

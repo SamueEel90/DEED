@@ -9,7 +9,7 @@ import { STREAMY, STREAM_ZBIERKY } from "@/lib/testTvorca";
 import { jeNeregistrovany, sledujDarcu } from "@/lib/devDarca";
 import { usePouzivatel } from "@/lib/pouzivatel";
 import { TESTOVACIA } from "@/lib/testovacia";
-import { DOK, PribehText } from "./casti";
+import { DOK, PribehText, TestovaciPas } from "./casti";
 import { ModulPlatby } from "./ModulProfilu";
 import { PRUH } from "./charitaCasti";
 
@@ -22,7 +22,8 @@ function usePc() {
 const eurT = (n: number) => `${n.toLocaleString("sk-SK")} €`;
 const karta: CSSProperties = { background: "var(--card)", border: "1px solid var(--cardBd)" };
 
-export function StreamZbierka({ profil, streamId }: { profil: TestProfil; streamId: string }) {
+/** onBack = prišiel z appky (Späť vráti, odkiaľ prišiel) · onTvorca = prišiel cez QR / odkaz („{tvorca} ›" otvorí profil tvorcu) */
+export function StreamZbierka({ profil, streamId, onBack, onTvorca }: { profil: TestProfil; streamId: string; onBack?: () => void; onTvorca?: () => void }) {
   const pc = usePc();
   const st = STREAMY[streamId];
   const zb = st ? STREAM_ZBIERKY[st.zbierka] : undefined;
@@ -46,6 +47,18 @@ export function StreamZbierka({ profil, streamId }: { profil: TestProfil; stream
   const bodka = po ? "#85867B" : "#E5483A", bodkaAnim = po ? "none" : "vpPulz 1.2s ease infinite";
   const [ls, lt] = st.live[live % st.live.length];
 
+  // Späť vľavo hore (vždy): z appky „‹ Späť" na to isté miesto · cez QR / odkaz „‹ {tvorca}" otvorí profil tvorcu
+  const spat = onBack ?? onTvorca;
+  const hore = spat && (
+    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+      <button type="button" onClick={spat} aria-label={onBack ? "Späť" : `${st.tvorca} · profil tvorcu`} style={{ height: 44, padding: "0 14px 0 8px", border: "1px solid var(--cardBd)", borderRadius: 14, background: "var(--card)", cursor: "pointer", display: "flex", alignItems: "center", gap: 4, fontSize: 14.5, fontWeight: 800, color: "var(--ink)", boxShadow: "none", fontFamily: "inherit" }}>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6" /></svg>{onBack ? "Späť" : st.tvorca}
+      </button>
+      <span style={{ flex: 1 }} />
+      <span style={{ fontSize: 12, color: "var(--ink3)" }}>{onBack ? "na profil tvorcu, kde si bol" : "otvorí stránku tvorcu v DEED+"}</span>
+    </div>
+  );
+
   const pas = (
     <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderRadius: 16, background: "#1D211B", color: "#fff" }}>
       <span style={{ flex: "none", width: 10, height: 10, borderRadius: "50%", background: bodka, animation: bodkaAnim }} />
@@ -53,7 +66,7 @@ export function StreamZbierka({ profil, streamId }: { profil: TestProfil; stream
         <b style={{ fontSize: 14 }}>{po ? `${st.tvorcaKratko} vysielal pre túto zbierku` : `${st.tvorca} vysiela naživo`}</b>
         <span style={{ fontSize: 12, opacity: 0.75 }}>{po ? `${st.platforma} · ${st.datum} · ${st.dlzka}` : `${st.platforma} · sleduje ${st.divaci.toLocaleString("sk-SK")} ľudí`}</span>
       </span>
-      <button type="button" style={{ flex: "none", height: 40, padding: "0 14px", border: "none", borderRadius: 12, background: "rgba(255,255,255,.12)", display: "flex", alignItems: "center", fontSize: 13, fontWeight: 800, color: "#fff", whiteSpace: "nowrap", cursor: "pointer", boxShadow: "none", fontFamily: "inherit" }}>{po ? `Záznam na ${st.platforma}` : "Späť na stream"} ↗</button>
+      <button type="button" style={{ flex: "none", height: 44, padding: "0 14px", border: "none", borderRadius: 12, background: "rgba(255,255,255,.12)", display: "flex", alignItems: "center", fontSize: 13, fontWeight: 800, color: "#fff", whiteSpace: "nowrap", cursor: "pointer", boxShadow: "none", fontFamily: "inherit" }}>{po ? `Záznam na ${st.platforma}` : "Späť na stream"} ↗</button>
     </div>
   );
 
@@ -122,20 +135,19 @@ export function StreamZbierka({ profil, streamId }: { profil: TestProfil; stream
   );
 
   const modul = <ModulPlatby profil={{ ...profil, meno: zb.charita }} sektor={zb.modul} dorovnanie={false} nazov={zb.nazov} />;
-  const prepinac = TESTOVACIA && (
-    <div role="group" aria-label="Stav streamu (test)" style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-      <span style={{ fontSize: 12.5, fontWeight: 800, color: "var(--ink3)", marginRight: 2 }}>Test:</span>
-      {([["Vysiela naživo", false], ["Stream skončil", true]] as const).map(([t, v]) => {
-        const on = po === v;
-        return <button key={t} type="button" aria-pressed={on} onClick={() => { setPo(v); setHra(false); }} style={{ height: 44, padding: "0 14px", borderRadius: 22, border: on ? "none" : "1.5px solid #4E7D37", background: on ? "#1D211B" : "#fff", color: on ? "#fff" : "#3F6E2A", fontSize: 14, fontWeight: 800, cursor: "pointer", fontFamily: "inherit", boxShadow: "none" }}>{t}</button>;
-      })}
-    </div>
-  );
+  const stavy = ([["Vysiela naživo", false], ["Stream skončil", true]] as const).map(([t, v]) => {
+    const on = po === v;
+    return <button key={t} type="button" aria-pressed={on} onClick={() => { setPo(v); setHra(false); }} style={{ height: 44, padding: "0 14px", borderRadius: 22, border: on ? "none" : "1.5px solid #4E7D37", background: on ? "#1D211B" : "#fff", color: on ? "#fff" : "#3F6E2A", fontSize: 14, fontWeight: 800, cursor: "pointer", fontFamily: "inherit", boxShadow: "none" }}>{t}</button>;
+  });
+  // testovacie voľby: PC pod obsahom vľavo, mobil a tablet sivý pás úplne dole
+  const prepinac = TESTOVACIA && (pc
+    ? <div role="group" aria-label="Stav streamu (test)" style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}><span style={{ fontSize: 12.5, fontWeight: 800, color: "var(--ink3)", marginRight: 2 }}>Test:</span>{stavy}</div>
+    : <TestovaciPas nazov="Stav streamu">{stavy}</TestovaciPas>);
 
   if (pc) return (
     <div className="vp sc-tokeny" data-stit={profil.stit.toLowerCase()} style={{ position: "relative", height: "100%", overflowY: "auto", background: "var(--bg)" }}>
       <div style={{ maxWidth: 1160, margin: "0 auto", padding: "24px 32px 80px", display: "flex", flexDirection: "column", gap: 18 }}>
-        {pas}
+        {hore}{pas}
         <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 440px", gap: 28, alignItems: "start" }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>{prehravac}{zbierka}{prepinac}</div>
           <aside style={{ position: "sticky", top: 20, display: "flex", flexDirection: "column", gap: 12 }}>{pocitadlo}{ukazes}{modul}</aside>
@@ -146,7 +158,7 @@ export function StreamZbierka({ profil, streamId }: { profil: TestProfil; stream
   return (
     <div className="vp sc-tokeny" data-stit={profil.stit.toLowerCase()} style={{ position: "relative", height: "100%", overflowY: "auto", WebkitOverflowScrolling: "touch", background: "var(--bg)" } as CSSProperties}>
       <div style={{ padding: `max(14px, env(safe-area-inset-top)) 14px ${DOK + 24}px`, display: "grid", gridTemplateColumns: "minmax(0,1fr)", gridAutoRows: "max-content", alignContent: "start", gap: 12 }}>
-        {pas}{pocitadlo}{prehravac}{zbierka}{ukazes}{modul}{prepinac}
+        {hore}{pas}{pocitadlo}{prehravac}{zbierka}{ukazes}{modul}{prepinac}
       </div>
     </div>
   );

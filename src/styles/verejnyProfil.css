@@ -27,5 +27,8 @@ html.dark .vp{--t2:#2A1F1B;--t2Bd:#5A3A31;--t3:#33231E;--t3Bd:#7A4A3E;--fieldBd:
 .vp{--h0:#4E7D37;--h1:#2F7A78;--h2:#7A4E86;--h3:#B0652A}
 html.dark .vp{--h0:#6E9F4E;--h1:#6FB8B4;--h2:#B78BC4;--h3:#E09A5E}
 .vp [data-hier]{--green:var(--hc);--gInk:var(--hc);--gSoft:color-mix(in srgb,var(--hc) 14%,transparent);--gBd:color-mix(in srgb,var(--hc) 50%,transparent);--t2:color-mix(in srgb,var(--hc) 10%,var(--card));--t2Bd:color-mix(in srgb,var(--hc) 30%,transparent);--t3:color-mix(in srgb,var(--hc) 18%,var(--card));--t3Bd:color-mix(in srgb,var(--hc) 45%,transparent);--gGrad:linear-gradient(90deg,var(--hcF),color-mix(in srgb,var(--hc) 55%,white));--gCard:color-mix(in srgb,var(--hc) 10%,var(--card));--hcPruh:linear-gradient(90deg,var(--hcF),color-mix(in srgb,var(--hc) 55%,white))}
-.vp [data-hier="0"]{--hc:var(--h0);--hcF:#4B7A35}.vp [data-hier="1"]{--hc:var(--h1);--hcF:#2F7A78}.vp [data-hier="2"]{--hc:var(--h2);--hcF:#7A4E86}.vp [data-hier="3"]{--hc:var(--h3);--hcF:#A65A22}
+.vp [data-hier="z"]{--hc:#5B5D53;--hcF:#3A3C35}html.dark .vp [data-hier="z"]{--hc:#A89F8F;--hcF:#4A4C43}.vp [data-hier="0"]{--hc:var(--h0);--hcF:#4B7A35}.vp [data-hier="1"]{--hc:var(--h1);--hcF:#2F7A78}.vp [data-hier="2"]{--hc:var(--h2);--hcF:#7A4E86}.vp [data-hier="3"]{--hc:var(--h3);--hcF:#A65A22}
 @keyframes vpPulz{0%,100%{opacity:1}50%{opacity:.35}}
+
+/* 5. 10. · galéria v náhľade „Posielaš do …" (mimo .deed-platba) */
+.vp .zb-snap{display:flex;height:100%;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;overscroll-behavior-x:contain;scrollbar-width:none}.vp .zb-snap::-webkit-scrollbar{display:none}.vp .zb-snap>*{flex:none;width:100%;height:100%;position:relative;scroll-snap-align:start;scroll-snap-stop:always}

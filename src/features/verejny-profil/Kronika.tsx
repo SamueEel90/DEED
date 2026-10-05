@@ -10,8 +10,9 @@ import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type 
 import { eur, pct, tvar, vLokalite, type Lokalita, type TestProfil, type TestZbierka } from "@/lib/testProfily";
 import { ISKRY_CFG, iskraViditelna, iskryVsetky, useZmenyIskier, zbierkaIskry, type Iskra } from "@/lib/iskry";
 import { otvorIskry } from "@/features/iskry/otvor";
-import { DOK, LokalitaPrepinac, MESIACE, PlagatPrace, PribehText, StitCare, StitOkno, kovText, nazovStitu, norm, useDomaceMesto, useMobil } from "./casti";
+import { DOK, LokalitaPrepinac, MESIACE, PlagatPrace, PrepinacPodania, klikKarta, PribehText, StitCare, StitOkno, kovText, nazovStitu, norm, useDomaceMesto, useMobil } from "./casti";
 import { PodporaProfilu } from "./PodporaProfilu";
+import { useVsetkyNaKonci } from "./charitaCasti";
 
 type Typ = "zb" | "sk" | "is" | "oz" | "pr";
 type Rez = "pc" | "tab" | "mob";
@@ -38,7 +39,7 @@ function useTablet() {
   return t;
 }
 
-export function Kronika({ profil, onDetail, onBack, prepinac }: { profil: TestProfil; onDetail: (z: TestZbierka) => void; onBack: () => void; /** KARTA 45: testovací prepínač podania */ prepinac?: ReactNode }) {
+export function Kronika({ profil, onDetail, onZaznam, onBack, prepinac }: { profil: TestProfil; onDetail: (z: TestZbierka) => void; /** doplnky 4. 10.: ťuk na záznam v rokoch (skutok, ukončená zbierka, Iskra, akcia) — bez platobného modulu */ onZaznam: (p: Pol) => void; onBack: () => void; /** KARTA 45: testovací prepínač podania */ prepinac?: ReactNode }) {
   useZmenyIskier();
   const mobil = useMobil();
   const tablet = useTablet();
@@ -260,7 +261,7 @@ export function Kronika({ profil, onDetail, onBack, prepinac }: { profil: TestPr
   // ---- Aktuálne ----
   const stZb = (z: TestZbierka) => [z.mesto.toLocaleUpperCase("sk-SK"), z.stav === "dlhodoba" ? "DLHODOBÁ" : z.cast ? z.cast.toLocaleUpperCase("sk-SK") : z.konciDni != null ? `KONČÍ O ${tvar(z.konciDni, ["DEŇ", "DNI", "DNÍ"])}` : null].filter(Boolean).join(" · ");
   const velkaKarta = velka && (rez === "mob" ? (
-    <article style={{ borderRadius: 22, overflow: "hidden", background: "var(--card)", border: "1px solid var(--cardBd)" }}>
+    <article {...klikKarta(() => detail(velka), velka.nazov)} style={{ borderRadius: 22, overflow: "hidden", background: "var(--card)", border: "1px solid var(--cardBd)", cursor: "pointer" }}>
       <span style={{ position: "relative", display: "block", height: 190, background: bg(velka.foto) }}>
         {velka.konciDni != null && <span style={{ position: "absolute", left: 12, top: 12, height: 28, padding: "0 11px", borderRadius: 14, background: "#8E3B2F", color: "#fff", fontSize: 11.5, fontWeight: 800, letterSpacing: ".05em", display: "flex", alignItems: "center" }}>KONČÍ O {tvar(velka.konciDni, ["DEŇ", "DNI", "DNÍ"])}</span>}
       </span>
@@ -270,11 +271,10 @@ export function Kronika({ profil, onDetail, onBack, prepinac }: { profil: TestPr
         {velka.ciel != null && <span style={{ display: "block", height: 8, borderRadius: 4, background: "var(--track)", overflow: "hidden" }}><span style={{ display: "block", width: "100%", height: "100%", background: PRUH, transformOrigin: "0 50%", transform: `scaleX(${pct(velka.vyzbierane, velka.ciel) / 100})` }} /></span>}
         <span style={{ display: "flex", alignItems: "baseline", gap: 8, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}><b style={{ fontSize: 19 }}>{eur(velka.vyzbierane)}</b><span style={{ fontSize: 13.5, color: "var(--ink3)" }}>{velka.ciel ? `z ${eur(velka.ciel)} · ` : ""}{velka.ludia} ľudí</span></span>
         {velka.dorovnanie && <span style={{ fontSize: 13, color: "var(--gold)", fontWeight: 700 }}>{velka.dorovnanie}</span>}
-        <button type="button" onClick={() => detail(velka)} style={{ height: 48, border: "none", borderRadius: 14, background: GRAD, cursor: "pointer", fontSize: 15.5, fontWeight: 800, color: "#fff" }}>Pozrieť a darovať</button>
       </div>
     </article>
   ) : (
-    <article style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) minmax(0,1.1fr)", borderRadius: 24, overflow: "hidden", background: "var(--card)", border: "1px solid var(--cardBd)" }}>
+    <article {...klikKarta(() => detail(velka), velka.nazov)} style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) minmax(0,1.1fr)", borderRadius: 24, overflow: "hidden", background: "var(--card)", border: "1px solid var(--cardBd)", cursor: "pointer" }}>
       <span style={{ position: "relative", minHeight: rez === "tab" ? 280 : 290, background: bg(velka.foto) }}>
         {velka.konciDni != null && <span style={{ position: "absolute", left: rez === "tab" ? 12 : 14, top: rez === "tab" ? 12 : 14, height: rez === "tab" ? 28 : 30, padding: rez === "tab" ? "0 11px" : "0 12px", borderRadius: 15, background: "#8E3B2F", color: "#fff", fontSize: rez === "tab" ? 11.5 : 12, fontWeight: 800, letterSpacing: ".05em", display: "flex", alignItems: "center", whiteSpace: "nowrap" }}>KONČÍ O {tvar(velka.konciDni, ["DEŇ", "DNI", "DNÍ"])}</span>}
       </span>
@@ -285,8 +285,6 @@ export function Kronika({ profil, onDetail, onBack, prepinac }: { profil: TestPr
         {velka.ciel != null && <span style={{ display: "block", height: rez === "tab" ? 8 : 9, borderRadius: 5, background: "var(--track)", overflow: "hidden", marginTop: rez === "tab" ? 0 : 2 }}><span style={{ display: "block", width: "100%", height: "100%", borderRadius: 5, background: PRUH, transformOrigin: "0 50%", transform: `scaleX(${pct(velka.vyzbierane, velka.ciel) / 100})` }} /></span>}
         <span style={{ display: "flex", alignItems: "baseline", gap: 8, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}><b style={{ fontSize: rez === "tab" ? 19 : 21 }}>{eur(velka.vyzbierane)}</b><span style={{ fontSize: rez === "tab" ? 13.5 : 14, color: "var(--ink3)" }}>{velka.ciel ? `z ${eur(velka.ciel)} · ` : ""}{velka.ludia} ľudí</span></span>
         {velka.dorovnanie && <span style={{ fontSize: rez === "tab" ? 13 : 13.5, color: "var(--gold)", fontWeight: 700 }}>{velka.dorovnanie}</span>}
-        <span style={{ flex: 1 }} />
-        <button type="button" onClick={() => detail(velka)} style={{ alignSelf: "flex-start", height: rez === "tab" ? 48 : 50, padding: rez === "tab" ? "0 22px" : "0 24px", border: "none", borderRadius: rez === "tab" ? 14 : 15, background: GRAD, cursor: "pointer", whiteSpace: "nowrap", fontSize: rez === "tab" ? 15.5 : 16, fontWeight: 800, color: "#fff" }}>Pozrieť a darovať</button>
       </div>
     </article>
   ));
@@ -309,6 +307,7 @@ export function Kronika({ profil, onDetail, onBack, prepinac }: { profil: TestPr
   );
   // Z ISKIER — prepínač 2 ciest a vodorovný rad videí 9 : 16
   const vw = rez === "pc" ? [140, 248, 112] : rez === "tab" ? [132, 234, 106] : [116, 206, 93];
+  const [radIskier, vsetkyIskry] = useVsetkyNaKonci(vw[2] + 10, `${isk}:${iskryTu.length}:${rez}`); // doplnky 4. 10.: mobil a tablet nikdy, PC len pri pretečení
   const kartaIskry = (v: Iskra) => {
     const d = zbierkaIskry(v);
     const nazov = d && v.zb?.typ !== "firme" ? d.z.nazov : v.zb?.typ === "firme" && d?.firma ? `${d.firma.meno.replace(/\s+s\.\s?r\.\s?o\.$/, "")} pomohla` : v.popis.split(/(?<=\.)\s/)[0];
@@ -340,9 +339,9 @@ export function Kronika({ profil, onDetail, onBack, prepinac }: { profil: TestPr
             <b style={{ fontSize: rez === "pc" ? 14.5 : rez === "tab" ? 14 : 13.5 }}>{t}</b><span style={{ fontSize: 11.5, fontWeight: 600, opacity: 0.85 }}>{s}</span></button>;
         })}
       </div>
-      <div style={{ display: "flex", gap: 10, overflowX: "auto", paddingBottom: 2 }}>
+      <div ref={radIskier} style={{ display: "flex", gap: 10, overflowX: "auto", paddingBottom: 2 }}>
         {iskryTu.map(kartaIskry)}
-        {iskryTu.length > 0 && <button type="button" onClick={() => otvorIskry(iskryTu[0].id)} style={{ flex: "none", width: vw[2], height: vw[1], borderRadius: 18, border: "1.5px dashed var(--cardBd)", background: "transparent", display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center", padding: 10, fontSize: 13.5, fontWeight: 800, color: "var(--green)", cursor: "pointer" }}>
+        {iskryTu.length > 0 && vsetkyIskry && <button type="button" onClick={() => otvorIskry(iskryTu[0].id)} style={{ flex: "none", width: vw[2], height: vw[1], borderRadius: 18, border: "1.5px dashed var(--cardBd)", background: "transparent", display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center", padding: 10, fontSize: 13.5, fontWeight: 800, color: "var(--green)", cursor: "pointer" }}>
           {isk ? "Všetky videá k zbierkam ›" : `Všetky Iskry ${profil.menoGen ?? profil.meno} ›`}</button>}
         {!iskryTu.length && <span style={{ fontSize: 14, color: "var(--ink3)", padding: "6px 2px" }}>{isk ? "Zatiaľ tu nie je žiadne video k zbierkam." : "Zatiaľ tu nie je žiadna Iskra."}</span>}
       </div>
@@ -396,9 +395,9 @@ export function Kronika({ profil, onDetail, onBack, prepinac }: { profil: TestPr
     const link = p.q ? "Správa a doklady ›" : "Priebežné doklady ›";
     const chip = p.typ === "zb" ? (p.q ? "UKONČENÁ · DOLOŽENÉ" : "UKONČENÁ · SPRÁVA SA PÍŠE") : p.typ === "is" ? "ISKRA" : p.typ === "oz" ? "AKCIA" : "SKUTOK";
     const chipC = p.typ === "zb" ? (p.q ? "var(--green)" : "var(--ink3)") : p.typ === "is" ? "var(--gold)" : p.typ === "oz" ? "var(--blue)" : "var(--green)";
-    const klik = p.typ === "zb" && p.zbierka ? () => detail(p.zbierka!) : undefined;
+    const klik = () => { uloz(); onZaznam(p); }; // žiadny riadok nie je mŕtvy
     if (rez === "mob") return (
-      <button type="button" onClick={klik} style={{ width: "100%", borderRadius: 16, overflow: "hidden", background: "var(--card)", border: "1px solid var(--cardBd)", display: "flex", flexDirection: "column", padding: 0, cursor: klik ? "pointer" : "default", textAlign: "left", color: "var(--ink)" }}>
+      <button type="button" onClick={klik} style={{ width: "100%", borderRadius: 16, overflow: "hidden", background: "var(--card)", border: "1px solid var(--cardBd)", display: "flex", flexDirection: "column", padding: 0, cursor: "pointer", textAlign: "left", color: "var(--ink)" }}>
         {p.typ === "zb" && <span style={{ display: "block", width: "100%", height: 110, background: bg(p.foto) }} />}
         <span style={{ padding: "11px 12px", display: "flex", gap: 10, alignItems: "center" }}>
           {p.typ !== "zb" && <span style={{ flex: "none", width: 52, height: 52, borderRadius: 12, background: bg(p.foto) }} />}
@@ -412,7 +411,7 @@ export function Kronika({ profil, onDetail, onBack, prepinac }: { profil: TestPr
       </button>
     );
     if (p.typ === "zb") return rez === "tab" ? (
-      <button type="button" onClick={klik} style={{ width: "100%", display: "grid", gridTemplateColumns: "150px minmax(0,1fr)", borderRadius: 18, overflow: "hidden", background: "var(--card)", border: "1px solid var(--cardBd)", padding: 0, cursor: klik ? "pointer" : "default", textAlign: "left", color: "var(--ink)" }}>
+      <button type="button" onClick={klik} style={{ width: "100%", display: "grid", gridTemplateColumns: "150px minmax(0,1fr)", borderRadius: 18, overflow: "hidden", background: "var(--card)", border: "1px solid var(--cardBd)", padding: 0, cursor: "pointer", textAlign: "left", color: "var(--ink)" }}>
         <span style={{ minHeight: 150, background: bg(p.foto) }} />
         <div style={{ padding: "14px 16px", display: "flex", flexDirection: "column", gap: 6 }}>
           {stav && <span style={{ height: 24, alignSelf: "flex-start", padding: "0 9px", borderRadius: 12, background: stavBg, color: stavC, fontSize: 10.5, fontWeight: 800, letterSpacing: ".04em", display: "flex", alignItems: "center", whiteSpace: "nowrap" }}>{stav}</span>}
@@ -423,7 +422,7 @@ export function Kronika({ profil, onDetail, onBack, prepinac }: { profil: TestPr
         </div>
       </button>
     ) : (
-      <button type="button" onClick={klik} style={{ width: "100%", display: "grid", gridTemplateColumns: "190px minmax(0,1fr)", borderRadius: 20, overflow: "hidden", background: "var(--card)", border: "1px solid var(--cardBd)", padding: 0, cursor: klik ? "pointer" : "default", textAlign: "left", color: "var(--ink)" }}>
+      <button type="button" onClick={klik} style={{ width: "100%", display: "grid", gridTemplateColumns: "190px minmax(0,1fr)", borderRadius: 20, overflow: "hidden", background: "var(--card)", border: "1px solid var(--cardBd)", padding: 0, cursor: "pointer", textAlign: "left", color: "var(--ink)" }}>
         <span style={{ minHeight: 170, background: bg(p.foto) }} />
         <div style={{ padding: "16px 20px", display: "flex", flexDirection: "column", gap: 8 }}>
           <span style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
@@ -442,7 +441,7 @@ export function Kronika({ profil, onDetail, onBack, prepinac }: { profil: TestPr
     );
     const t = rez === "tab" ? 64 : 72;
     return (
-      <article style={{ display: "flex", alignItems: "center", gap: rez === "tab" ? 12 : 14, padding: rez === "tab" ? 10 : 12, borderRadius: rez === "tab" ? 16 : 18, background: "var(--card)", border: "1px solid var(--cardBd)" }}>
+      <article {...klikKarta(klik, p.nazov)} style={{ display: "flex", alignItems: "center", gap: rez === "tab" ? 12 : 14, padding: rez === "tab" ? 10 : 12, borderRadius: rez === "tab" ? 16 : 18, background: "var(--card)", border: "1px solid var(--cardBd)", cursor: "pointer" }}>
         <span style={{ flex: "none", width: t, height: t, borderRadius: rez === "tab" ? 12 : 14, background: bg(p.foto) }} />
         <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 3 }}>
           <span style={{ fontSize: rez === "tab" ? 11 : 11.5, fontWeight: 800, letterSpacing: ".08em", color: chipC }}>{chip}</span>
@@ -519,7 +518,6 @@ export function Kronika({ profil, onDetail, onBack, prepinac }: { profil: TestPr
                 </span>
                 {stitTlacidlo(100, 118, 92, 112)}
               </div>}
-          {tab && prepinac}
           {!tab && <>
                 <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginTop: -40, position: "relative" }}>
                   {logo(76, 22, 25, "var(--bg)")}
@@ -529,7 +527,6 @@ export function Kronika({ profil, onDetail, onBack, prepinac }: { profil: TestPr
                   <b style={{ fontSize: 25, lineHeight: 1.15 }}>{profil.meno}</b>
                   <span style={{ fontSize: 14.5, lineHeight: 1.5, color: "var(--ink2)", textWrap: "pretty" } as CSSProperties}>{profil.veta}</span>
                 </span>
-                {prepinac}
               </>}
           {tab ? nazivoTab : nazivoMob}
           {podpora}
@@ -538,6 +535,7 @@ export function Kronika({ profil, onDetail, onBack, prepinac }: { profil: TestPr
         <div style={{ padding: tab ? "24px 28px 0" : "20px 16px 0", display: "flex", flexDirection: "column", gap: tab ? 40 : 30 }}>
           {aktualne}
           {kapitolyEl}
+          {prepinac && <PrepinacPodania pas />}
         </div>
         <div style={{ height: DOK + 24 }} />
         {okno}

@@ -7,7 +7,7 @@ import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { eur, type TestProfil, type TestZbierka } from "@/lib/testProfily";
 import { otvorIskry } from "@/features/iskry/otvor";
 import { toast } from "@/shared";
-import { DOK, PortalVp, StitCare, nazovStitu, useDomaceMesto } from "./casti";
+import { DOK, PortalVp, StitCare, klikKarta, nazovStitu, useDomaceMesto } from "./casti";
 import { ModulProfilu } from "./ModulProfilu";
 import { GRAD, PRUH, bgF } from "./charitaCasti";
 
@@ -114,7 +114,7 @@ export function StrankaFirmy({ profil, onDetail, onBack }: { profil: TestProfil;
     <Nadpis t="TERAZ DOROVNÁVAME" s={pc ? "tvoj dar sa zdvojnásobí" : undefined} />
     <div style={{ display: "grid", gridTemplateColumns: `repeat(${pc ? 2 : 1},minmax(0,1fr))`, gap: 12 }}>
       {b.dorZb.map((z) => (
-        <article key={z.nazov} style={{ borderRadius: 22, overflow: "hidden", background: "var(--card)", border: "1px solid var(--goldBd)", display: "flex", flexDirection: "column" }}>
+        <article key={z.nazov} {...klikKarta(() => detailZb(z.zbierkaId), z.nazov)} style={{ borderRadius: 22, overflow: "hidden", background: "var(--card)", border: "1px solid var(--goldBd)", display: "flex", flexDirection: "column", cursor: "pointer" }}>
           <span style={{ position: "relative", display: "block", height: 150, background: bgX(z.foto) }}>
             <span style={{ position: "absolute", left: 12, top: 12, height: 28, padding: "0 11px", borderRadius: 14, background: "#F6C453", color: "#1D211B", fontSize: 11.5, fontWeight: 800, letterSpacing: ".05em", display: "flex", alignItems: "center", whiteSpace: "nowrap" }}>DOROVNÁVAME 1 : 1</span>
           </span>
@@ -124,7 +124,6 @@ export function StrankaFirmy({ profil, onDetail, onBack }: { profil: TestProfil;
             <span style={{ display: "block", height: 7, borderRadius: 4, background: "var(--track)", overflow: "hidden" }}><span style={{ display: "block", width: "100%", height: "100%", background: PRUH, transformOrigin: "0 50%", transform: `scaleX(${Math.min(1, z.vyzbierane / z.ciel)})` }} /></span>
             <span style={{ fontSize: 13.5, color: "var(--ink3)", fontVariantNumeric: "tabular-nums" }}><b style={{ color: "var(--ink)", fontSize: 16 }}>{eur(z.vyzbierane)}</b> z {eur(z.ciel)}</span>
             <span style={{ fontSize: 13, fontWeight: 700, color: "var(--gold)" }}>Pekáreň pridá rovnakú sumu · ešte {z.este}</span>
-            <button type="button" onClick={() => detailZb(z.zbierkaId)} style={{ height: 46, border: "none", borderRadius: 14, background: GRAD, cursor: "pointer", fontSize: 15, fontWeight: 800, color: "#fff", fontFamily: "inherit" }}>Darovať a zdvojnásobiť</button>
           </div>
         </article>))}
     </div>
@@ -179,7 +178,7 @@ export function StrankaFirmy({ profil, onDetail, onBack }: { profil: TestProfil;
   const fondEl = <>
     <span style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: ".1em", color: "var(--acc)", paddingTop: pc ? 0 : 6 }}>FOND DOBROTY · DARUJ S NAMI</span>
     <span style={{ fontSize: 13, lineHeight: 1.45, color: "var(--ink3)" }}>{b.fondText}</span>
-    <div ref={dlRef} style={{ scrollMarginTop: 56, display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 10 }}>
+    <div ref={dlRef} style={{ scrollMarginTop: 56, display: mod == null ? "grid" : "none", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 10 }}>
       {fond.map((d, i) => {
         const on = mod === i;
         return (

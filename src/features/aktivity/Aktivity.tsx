@@ -434,7 +434,10 @@ function Detail({ it, liked, like, support, votes, vote, toast, celebrate, home,
   return <DeedDetail it={it} liked={liked} like={like} support={support} votes={votes} vote={vote} toast={toast} home={home} openPerson={openPerson} />;
 }
 
-function DeedDetail({ it, support, votes, vote, toast, home, openPerson }: any) {
+/** detail skutku — ten istý vo feede Aktivít aj na verejných profiloch (kronika, roky).
+ *  5. 10.: bezPodpory = staré roky (bez drobnej podpory a darov, ostane Zdieľať a Páči sa mi);
+ *  it.split = komu išla podpora („Podpora išla: …"), bez splitu sa riadok neukáže; it.pomahali = kto pomáhal (profil charity). */
+export function DeedDetail({ it, support, votes, vote, toast, home, openPerson, bezPodpory = false }: any) {
   const a = DOM[it.dom];
   const [platba, setPlatba] = useState<string | null>(null); // "EUR" | "DEED"
   const isTalent = it.type === "talent", isCase = it.type === "case";
@@ -461,6 +464,8 @@ function DeedDetail({ it, support, votes, vote, toast, home, openPerson }: any) 
         </div>
         <div style={{ ...titleS, marginTop: SPACE.sm, fontSize: 14 }}>{it.title}</div>
         <FormatovanyText text={it.desc} style={{ fontSize: 14.5, lineHeight: 1.6, marginTop: SPACE.xs, color: A.txt2 }} />
+        {it.pomahali && <div style={{ fontSize: 13.5, marginTop: SPACE.xs, color: A.txt2 }}>Pomáhali: <b style={{ color: A.txt }}>{it.pomahali}</b></div>}
+        {it.split?.length > 0 && <div style={{ fontSize: 13.5, lineHeight: 1.5, marginTop: SPACE.xs, color: A.txt2 }}>Podpora išla: <b style={{ color: A.txt }}>{it.split.map((s: { komu: string; pct: number }) => `${s.komu} ${s.pct} %`).join(" · ")}</b></div>}
 
         {isCase && (
           <div style={{ textAlign: "center", padding: SPACE.sm, background: A.surface2, border: `1px solid ${a.bd}`, borderRadius: RADIUS.sm, marginTop: SPACE.xs }}>
@@ -475,9 +480,9 @@ function DeedDetail({ it, support, votes, vote, toast, home, openPerson }: any) 
           onShare={() => zdielaj({ titul: it.title, text: it.title, url: aktualnaUrl() }, toast)}
           upvotes={Math.floor((it.likes || 0) / 3)} onUpvote={() => toast("Páči sa ti to")}
           onPodpor={(s: number) => support(s, it.author, it)}
-          onKanal={(k: string) => setPlatba(k)} supLabel={supLabel}
+          onKanal={(k: string) => setPlatba(k)} supLabel={supLabel} bezDaru={bezPodpory} bezOblubenych={bezPodpory}
           oblubene={{ refId: it.id, typ: isCase ? "ziadost" : isTalent ? "talent" : "skutok", modul: "aktivity", nazov: it.title, lok: it.loc }} toast={toast}
-          qr={{ label: `QR ${isCase ? "tejto akcie" : isTalent ? "tejto Iskry" : "tohto skutku"}`, popis: "Zväčšiť · kopírovať · zdieľať", cta: "Zdieľať", onClick: () => zdielaj({ titul: it.title, text: it.title, url: aktualnaUrl() }, toast) }} />
+          qr={bezPodpory ? undefined : { label: `QR ${isCase ? "tejto akcie" : isTalent ? "tejto Iskry" : "tohto skutku"}`, popis: "Zväčšiť · kopírovať · zdieľať", cta: "Zdieľať", onClick: () => zdielaj({ titul: it.title, text: it.title, url: aktualnaUrl() }, toast) }} />
 
         <div style={{ textAlign: "center", fontSize: 10, color: A.txt3, marginTop: SPACE.md }}>
           {myVote ? (myVote === "ok" ? "Označil(a) si tento skutok ako overený. Ďakujeme." : "Podal(a) si námietku — preverí ju AI + komunita.") : "Bol si pri tom? Komunita preveruje skutky."}

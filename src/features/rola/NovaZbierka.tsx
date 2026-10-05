@@ -109,7 +109,7 @@ export function NovaZbierka({ strankaId, pozicia, tier, nazov, inicialy, mobil, 
   ];
   const zbierkaData = (id = "nova"): ZbierkaData => ({
     id, nazov: d.nazov || "Názov zbierky", popis: (d.popis || "<p>Hlavný text zbierky</p>") + (cistyText(d.popis2) ? d.popis2 : ""), overena: true,
-    media: d.media.map((m) => ({ typ: m.typ, src: m.src })), vyzbierane: 0, ciel: maCiel ? cielCislo(d) : undefined, ludia: 0, rychleSumy: SADY[d.sada][1],
+    media: d.media.map((m) => ({ typ: m.typ, src: m.src, popis: m.popis })), vyzbierane: 0, ciel: maCiel ? cielCislo(d) : undefined, ludia: 0, rychleSumy: SADY[d.sada][1],
   });
 
   // ============ VÝREZ FOTKY ============

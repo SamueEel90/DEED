@@ -4,6 +4,8 @@
 // Uložiť / Odoslať / Pridať sú sivé, kým nie je čo uložiť. Žiadne SMS.
 // Stav obrazoviek drží appka počas relácie (pamat) — do účtu sa zatiaľ neukladá (backend príde neskôr).
 // ============================================================
+import { RichTextInput } from "@/components/richtext";
+import { cistyText } from "@/lib/richtext";
 import { useEffect, useState } from "react";
 import { toast } from "@/components/toast";
 import { DeedZnacka, sZnackou } from "@/components/DeedZnacka";
@@ -11,6 +13,7 @@ import { DeedQr } from "@/components/deedqr";
 import { zdielaj, kopiruj } from "@/lib/zdielanie";
 import { SADY_EURC, SADY_EUR, type SadaEurc, type SadaEur } from "@/lib/sadyDarov";
 import { TESTOVACIA } from "@/lib/testovacia";
+import { useFakturyOrg, otvorFakturu, type FakturaOrg } from "@/lib/fakturyOrg";
 import { nacitajKryptoOrg, ulozKryptoOrg, nacitajSady, ulozSady, type Tier, type TypStranky, CENNIK_TYPU, TYP_NAZOV, TIER_LABEL, TIER_POPIS } from "./stav";
 
 // ---------- pamäť relácie (prežije prechody medzi obrazovkami) ----------
@@ -350,13 +353,23 @@ export const ICO_REGISTRA = "00 000 000";
 /** OPRAVY 114: hlavný účet organizácie z registrácie (jedno miesto — Účty aj Nová zbierka v Zadarmo) */
 export const HLAVNY_UCET = "SK31 0900 0000 0051 2233 4417";
 
+/** 5. 10. (C3) · fakturačné údaje pre faktúru za platbu DEED+; null = chýbajú (platba sa nespustí) */
+export function fakturacneUdaje(): { nazov: string; ico: string; adresa: string; dic?: string; email: string } | null {
+  const u = { ...UD0, ...((pamat.get("ud") as Partial<Ud> | undefined) ?? {}) };
+  const adresa = u.ina ? u.adr.trim() : SIDLO_REGISTRA;
+  const email = u.fmail.trim();
+  if (!adresa || !/^\S+@\S+\.\S+$/.test(email)) return null;
+  return { nazov: NAZOV_REGISTRA, ico: ICO_REGISTRA, adresa, dic: u.dic.trim() || undefined, email };
+}
+export const NAZOV_REGISTRA = "Svetlo pomoci o.z.";
+
 export function ObrUdaje({ mobil }: { mobil: boolean }) {
   const [ud, setUd] = usePamat<Ud>("ud", UD0);
   const [d, setD] = useState<Partial<Ud>>({});
   const v = <K extends keyof Ud>(k: K): Ud[K] => (d[k] ?? ud[k]) as Ud[K];
   const zmena = (Object.keys(d) as (keyof Ud)[]).some((k) => d[k] !== ud[k]);
   const set = (k: keyof Ud) => (e: React.ChangeEvent<HTMLInputElement>) => { const x = e.target.value; setD((c) => ({ ...c, [k]: x })); };
-  const REG: [string, string][] = [["Názov", "Svetlo pomoci o.z."], ["IČO", ICO_REGISTRA], ["Právna forma", "Občianske združenie"], ["Sídlo", SIDLO_REGISTRA], ["Dátum vzniku", "14. 3. 2012"], ["Štatutár", "Martin Štofik · overený"]];
+  const REG: [string, string][] = [["Názov", NAZOV_REGISTRA], ["IČO", ICO_REGISTRA], ["Právna forma", "Občianske združenie"], ["Sídlo", SIDLO_REGISTRA], ["Dátum vzniku", "14. 3. 2012"], ["Štatutár", "Martin Štofik · overený"]];
   const Pole = ({ k, t, ph, typ = "text" }: { k: keyof Ud; t: React.ReactNode; ph?: string; typ?: string }) => (
     <label style={{ display: "flex", flexDirection: "column", gap: 6 }}><span style={{ fontSize: 13.5, fontWeight: 700, color: "var(--ink2)" }}>{t}</span><input type={typ} value={v(k) as string} onChange={set(k)} placeholder={ph} style={pole} /></label>);
   return (
@@ -473,7 +486,8 @@ function ProgramCharita({ mobil, tier, onTier, otvor }: { mobil: boolean; tier: 
     ? (ch > cur ? "Vyšší program platí hneď. Doplatíte len rozdiel za zvyšok obdobia." : "Nižší program začne platiť od ďalšieho obdobia. Dovtedy máte všetko, za čo ste zaplatili. Zbierky nad limit dobehnú, nové otvoríte až v limite.")
     : (roc ? "Na rok zaplatíte jednou platbou a máte 15 % zľavu. " : "Mesačne platíte každý mesiac, kedykoľvek zrušíte. ") + "Ceny sú bez DPH. Program môžete zmeniť kedykoľvek.";
   const VZDY = ["SEPA prevod je zadarmo. Celá suma príde na váš účet do 1 pracovného dňa. Výnimka: dar rozdelený cez Reťaz dobra, tam si poplatok účtuje poskytovateľ platobných služieb a strhne sa z daru. Nie je to poplatok DEED+.", "Pri platbe kartou platí poplatok darca navrch. Vy dostanete celý dar.", "Topovanie zbierky si môžete kúpiť zvlášť v každom programe.", "Karma sa nedá kúpiť. Program mení len to, čo máte zapnuté."];
-  const PLATBA: [string, string, string][] = [["Spôsob platby", cur ? "faktúra prevodom" : "zatiaľ nič neplatíte", "x:Spôsob platby"], ["Faktúry", cur ? "3 faktúry · posledná 1. 10. 2026" : "zatiaľ žiadne", "x:Faktúry"], ["Fakturačné údaje", "IČO, DIČ, adresa, e-mail na faktúry", "n:udaje"]];
+  const fa = vsetkyFaktury(useFakturyOrg(), cur);
+  const PLATBA: [string, string, string][] = [["Spôsob platby", cur ? "faktúra prevodom" : "zatiaľ nič neplatíte", "x:Spôsob platby"], ["Faktúry", fa.length ? `${fa.length} ${fa.length === 1 ? "faktúra" : fa.length < 5 ? "faktúry" : "faktúr"} · posledná ${denFa(fa[0].datum)}` : "zatiaľ žiadne", "n:faktury"], ["Fakturačné údaje", "IČO, DIČ, adresa, e-mail na faktúry", "n:udaje"]];
   return (<>
     <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
       <div style={{ ...krt, flex: 1, minWidth: mobil ? 0 : 260, padding: "14px 18px", display: "flex", flexDirection: "column", gap: 2 }}>
@@ -532,6 +546,36 @@ function ProgramCharita({ mobil, tier, onTier, otvor }: { mobil: boolean; tier: 
       </div>
     </div>
   </>);
+}
+
+// ============================================================
+// 6b · Faktúry (5. 10. · C3): každá platba DEED+ má faktúru (program, topovanie, predĺženie, doplnky). Dar faktúru nemá.
+// ============================================================
+const denFa = (iso: string) => { const d = new Date(iso); return `${d.getDate()}. ${d.getMonth() + 1}. ${d.getFullYear()}`; };
+/** testovacie faktúry za program (platený program = 3 mesačné platby) + faktúry zaplatené v tejto relácii, najnovšie hore */
+function vsetkyFaktury(platby: FakturaOrg[], cur: number): FakturaOrg[] {
+  const ud = fakturacneUdaje() ?? { nazov: NAZOV_REGISTRA, ico: ICO_REGISTRA, adresa: SIDLO_REGISTRA, email: UD0.fmail };
+  const program: FakturaOrg[] = cur ? [10, 9, 8].map((m, i) => ({ cislo: `2026/${1042 - i}`, co: `Program ${PROG[cur][0]} · mesačne`, suma: PROG[cur][2], datum: new Date(2026, m - 1, 1, 9).toISOString(), sposob: "faktúra prevodom", odberatel: ud })) : [];
+  return [...platby, ...program];
+}
+export function ObrFaktury({ mobil, tier, otvor }: { mobil: boolean; tier: Tier; otvor: (s: string) => void }) {
+  const fa = vsetkyFaktury(useFakturyOrg(), Math.min(3, tier));
+  const ud = fakturacneUdaje();
+  return (
+    <div style={{ ...stlpec, maxWidth: mobil ? undefined : 760, gap: 12 }}>
+      {fa.length ? <div style={{ ...krt, padding: "0 16px" }}>
+        {fa.map((f, i) => (
+          <button key={f.cislo} type="button" onClick={() => otvorFakturu(f)} aria-label={`Faktúra FA ${f.cislo}, PDF`} style={{ width: "100%", display: "flex", alignItems: "center", gap: 12, minHeight: 60, padding: "8px 0", border: "none", borderTop: btn(i), background: "transparent", cursor: "pointer", textAlign: "left", fontFamily: "inherit" }}>
+            <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}>
+              <span style={{ fontSize: 15, fontWeight: 800, color: "var(--ink)" }}>FA {f.cislo}</span>
+              <span style={{ fontSize: 12.5, color: "var(--ink3)" }}>{f.co} · {denFa(f.datum)}</span>
+            </span>
+            <b style={{ fontSize: 15, color: "var(--ink)", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>{f.suma.toLocaleString("sk-SK")} €</b>{SIPKA}
+          </button>))}
+      </div> : <div style={{ ...krt, padding: 16, fontSize: 15, color: "var(--ink2)" }}>Zatiaľ žiadne faktúry.</div>}
+      <span style={pozn}>{ud ? `Každá faktúra príde aj e-mailom na ${ud.email}. ` : "Chýbajú fakturačné údaje, bez nich platba nezačne. "}Faktúra je ku každej platbe DEED+: program, topovanie, predĺženie, doplnky. Dar faktúru nemá.</span>
+      <button type="button" onClick={() => otvor("n:udaje")} style={{ ...obrys(), alignSelf: "flex-start" }}>{ud ? "Fakturačné údaje" : "Doplniť fakturačné údaje"}</button>
+    </div>);
 }
 
 // ============================================================
@@ -705,8 +749,8 @@ export function ObrPodpora({ mobil, otvor }: { mobil: boolean; otvor: (s: string
   const [tx, setTx] = useState("");
   const [pr, setPr] = useState(0);
   const [L, setL] = usePamat<Msg[]>("po.L", [{ t: "Výplata na účet neprišla", d: "odoslané 24. 9. 2026", s: "vyriešené" }]);
-  const ok = tm >= 0 && tx.trim().length > 5;
-  const odosli = () => { if (!ok) return; setL((a) => [{ t: tx.trim().slice(0, 60), d: `${TEMY[tm]} · odoslané dnes`, s: "riešime" }, ...a]); setTm(-1); setTx(""); setPr(0); setZb(""); toast("Správu sme dostali. Odpovieme do 1 pracovného dňa."); };
+  const ok = tm >= 0 && cistyText(tx).length > 5;
+  const odosli = () => { if (!ok) return; setL((a) => [{ t: cistyText(tx).slice(0, 60), d: `${TEMY[tm]} · odoslané dnes`, s: "riešime" }, ...a]); setTm(-1); setTx(""); setPr(0); setZb(""); toast("Správu sme dostali. Odpovieme do 1 pracovného dňa."); };
   return (
     <div style={dvaStlpce(mobil, "1.3fr", "1fr")}>
       <div style={stlpec}>
@@ -718,7 +762,7 @@ export function ObrPodpora({ mobil, otvor }: { mobil: boolean; otvor: (s: string
           <label style={{ display: "flex", flexDirection: "column", gap: 6 }}><span style={{ fontSize: 13.5, fontWeight: 700, color: "var(--ink2)" }}>Týka sa to zbierky? <span style={{ fontWeight: 600, color: "var(--ink3)" }}>· nepovinné</span></span>
             <select value={zb} onChange={(e) => setZb(e.target.value)} style={{ ...pole, padding: "0 12px" }}><option value="">Nie</option><option value="1">Strecha pre rodinu Horváthovú</option><option value="2">Invalidný vozík pre Ninu</option><option value="3">Teplé jedlo na zimu</option></select></label>
           <label style={{ display: "flex", flexDirection: "column", gap: 6 }}><span style={{ fontSize: 13.5, fontWeight: 700, color: "var(--ink2)" }}>Čo sa stalo</span>
-            <textarea value={tx} onChange={(e) => setTx(e.target.value)} rows={6} placeholder="Napíšte to vlastnými slovami. Čím viac podrobností, tým rýchlejšie pomôžeme." style={{ ...pole, height: "auto", padding: "12px 14px", lineHeight: 1.5, resize: "vertical" }} /></label>
+            <RichTextInput vzhlad="sprava" value={tx} onChange={setTx} minH={150} placeholder="Napíšte to vlastnými slovami. Čím viac podrobností, tým rýchlejšie pomôžeme." ariaLabel="Čo sa stalo" nastroje={["bold", "italic", "insertUnorderedList", "diktovat"]} /></label>
           <label style={{ display: "flex", alignItems: "center", gap: 10, minHeight: 48, padding: "0 14px", borderRadius: 12, border: "1.5px dashed #BDB6A8", cursor: "pointer", color: "var(--gInk)" }}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M21 12l-8.5 8.5a5 5 0 0 1-7-7L14 5a3.5 3.5 0 0 1 5 5l-8.5 8.5a2 2 0 0 1-3-3L15 8" /></svg>
             <b style={{ flex: 1, fontSize: 14.5 }}>{pr ? `Priložené: ${pr} ${pr === 1 ? "súbor" : pr < 5 ? "súbory" : "súborov"}` : "Priložiť snímku obrazovky alebo doklad"}</b>
@@ -782,7 +826,7 @@ export function ObrZrusit({ mobil, otvor, tier, nova }: { mobil: boolean; otvor:
         <div style={{ ...krt, padding: 16, display: "flex", flexDirection: "column", gap: 12 }}>
           <button onClick={() => otvor("n:stiahnut")} style={{ ...obrys(), height: 46, fontSize: 14.5 }}>Najprv stiahnuť údaje charity</button>
           <label style={{ display: "flex", flexDirection: "column", gap: 6 }}><span style={{ fontSize: 13.5, fontWeight: 700, color: "var(--ink2)" }}>Prečo odchádzate? <span style={{ fontWeight: 600, color: "var(--ink3)" }}>· nepovinné, pomôže nám</span></span>
-            <textarea value={dov} onChange={(e) => setDov(e.target.value)} rows={3} style={{ ...pole, height: "auto", padding: "12px 14px", lineHeight: 1.5, resize: "vertical" }} /></label>
+            <RichTextInput vzhlad="sprava" value={dov} onChange={setDov} minH={90} ariaLabel="Prečo odchádzate" nastroje={["bold", "italic", "insertUnorderedList", "diktovat"]} /></label>
           <label style={{ display: "flex", flexDirection: "column", gap: 6 }}><span style={{ fontSize: 13.5, fontWeight: 700, color: "var(--ink2)" }}>Na potvrdenie napíšte ZRUŠIŤ</span>
             <input value={txt} onChange={(e) => { setTxt(e.target.value); setK2(false); }} autoComplete="off" style={{ ...pole, fontSize: 16, fontWeight: 800, letterSpacing: ".06em", borderColor: txt.trim().toUpperCase() === "ZRUŠIŤ" ? "var(--green)" : "var(--cardBd)" }} /></label>
           <button onClick={zrus} aria-disabled={!ok} style={{ height: 52, border: "none", borderRadius: 14, background: ok ? CERVENA : SIVA, cursor: ok ? "pointer" : "default", fontSize: 15.5, fontWeight: 800, color: "#fff" }}>{k2 && ok ? "Naozaj zrušiť stránku" : "Zrušiť stránku charity"}</button>

@@ -10,6 +10,7 @@ import { pridajDar, darcoviaPre } from "@/lib/darcovia";
 import { dorovnanieNaDar, dorovnanieKDaru, useZmenyDorovnani } from "@/lib/dorovnanie";
 import type { TestProfil, TestSektor } from "@/lib/testProfily";
 import { KartaStavu } from "@/features/zbierka/KartaStavu";
+import { Galeria } from "@/features/zbierka/Vrch";
 import { RychleSumyEur, DeedDlazdice, VlastnaSuma, DaryVKrypte, type OtvorPlatbu, type KanalPlatby } from "@/features/zbierka/Sumy";
 import { PlatobneOkno } from "@/features/zbierka/Platba";
 import { ZdielatRiadok, PravidelnaRiadok, OblubenePodporit, RetazRiadok, KartaDorovnava, Darcovia } from "@/features/zbierka/Riadky";
@@ -25,7 +26,7 @@ const bg = (f: string) => `url('${f}') center/cover no-repeat #3a3530`;
 const eurT = (n: number) => `${n.toLocaleString("sk-SK")} €`;
 
 /** náhľad dlaždice nad modulom + modul + Zbaliť */
-export function ModulProfilu({ profil, sektor, poradie, mestoV, onZbal, dorovnanie = true, uvidisOdkaz, typ: typP, typ2: typ2P, info: infoP, meno }: {
+export function ModulProfilu({ profil, sektor, poradie, mestoV, onZbal, dorovnanie = true, uvidisOdkaz, typ: typP, typ2: typ2P, info: infoP, meno, hier }: {
   profil: TestProfil; sektor: TestSektor; poradie: number;
   /** „v Trenčíne" → „Trenčíne" (pre vetu „Minulý mesiac v …") */
   mestoV: string;
@@ -38,6 +39,8 @@ export function ModulProfilu({ profil, sektor, poradie, mestoV, onZbal, dorovnan
   typ?: string; typ2?: string; info?: string;
   /** meno pod názvom náhľadu (firma: krátke meno bez s.r.o.) */
   meno?: string;
+  /** 5. 10. · farba rámu: „z" = konkrétna zbierka (neutrálny sivý rám), inak podľa poradia */
+  hier?: string;
 }) {
   const [info, setInfo] = useState(false);
   const sek = poradie > 0;
@@ -47,12 +50,13 @@ export function ModulProfilu({ profil, sektor, poradie, mestoV, onZbal, dorovnan
     ? "Sektorová zbierka je na jednu tému, ktorú charita robí dlhodobo. Nemá cieľ ani koniec. Dokladovanie je dobrovoľné, ale peniaze idú len na túto tému. Ak chceš vidieť každý doklad, vyber konkrétnu zbierku."
     : "Centrálna zbierka je na chod celej organizácie. Dokladovanie je dobrovoľné a peniaze sa použijú tam, kde treba najviac. Ak chceš vidieť každý doklad, vyber konkrétnu zbierku alebo sektor.");
   return (
-    <div data-hier={String(poradie)} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+    <div data-hier={hier ?? String(poradie)} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
       <div style={{ borderRadius: 22, overflow: "hidden", border: "2px solid var(--hc)", background: "var(--card)" }}>
-        <div style={{ position: "relative", height: 150, background: bg(sektor.foto) }}>
+        {/* 5. 10. · fotka nad modulom = galéria tej zbierky (mobil posun prstom, PC šípky, ťuk = celá obrazovka s popisom) */}
+        <Galeria media={sektor.galeria?.length ? sektor.galeria : [{ typ: "foto", src: sektor.foto }]} vyska={150} radius={0} okraj="0" prekrytie={<>
           <span style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg,rgba(10,8,5,.25) 0%,rgba(10,8,5,0) 45%)" }} />
           <span style={{ position: "absolute", left: 12, top: 12, height: 28, padding: "0 12px", borderRadius: 14, background: "var(--hcF)", color: "#fff", fontSize: 11.5, fontWeight: 800, letterSpacing: ".06em", display: "flex", alignItems: "center", whiteSpace: "nowrap" }}>POSIELAŠ DO · {typ}</span>
-        </div>
+        </>} bezBodiek />
         <div style={{ padding: "12px 8px 14px 16px", display: "flex", alignItems: "flex-start", gap: 8 }}>
           <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 3 }}>
             <b style={{ fontSize: 20, lineHeight: 1.2 }}>{sektor.nazov}</b>

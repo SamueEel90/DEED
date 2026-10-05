@@ -137,7 +137,7 @@ function spojPary(r: DarRiadok[]): Par[] {
 }
 const sumaVZozname = (r: DarRiadok) => (r.firma || (r.registrovany && r.zobrazSumu)) && r.suma > DARCOVIA_CFG.prahSumy ? eK(r.suma) : null;
 
-export function Darcovia({ refId, nadpis = "DARCOVIA", cezTvorcu, bezDorovnania }: { refId: string; nadpis?: string; cezTvorcu?: string; /** KARTA 46 · modul bez dorovnania firmy: bez zlatých riadkov firmy */ bezDorovnania?: boolean }) {
+export function Darcovia({ refId, nadpis = "DARCOVIA", cezTvorcu, bezDorovnania, skoncena }: { refId: string; nadpis?: string; cezTvorcu?: string; /** KARTA 46 · modul bez dorovnania firmy: bez zlatých riadkov firmy */ bezDorovnania?: boolean; /** ukončená zbierka: bez „rastie naživo" */ skoncena?: boolean }) {
   const vsetky = useDarcovia(refId);
   const dary = cezTvorcu ? vsetky.filter((r) => r.cezTvorcu === cezTvorcu) : vsetky;
   const ja = usePouzivatel();
@@ -148,9 +148,9 @@ export function Darcovia({ refId, nadpis = "DARCOVIA", cezTvorcu, bezDorovnania 
     <div style={{ marginTop: 12, borderRadius: 18, background: "var(--card)", border: "1px solid var(--cardBd)", padding: "14px 16px 6px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
         <span style={{ fontSize: 12.5, fontWeight: 700, letterSpacing: ".05em", color: "var(--ink3)" }}>{nadpis}</span>
-        <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, fontWeight: 700, color: "var(--green)" }}>
+        {!skoncena && <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, fontWeight: 700, color: "var(--green)" }}>
           <span className="zb-pulz" style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--green)" }} />rastie naživo
-        </span>
+        </span>}
       </div>
       {pary.length === 0 && <div style={{ fontSize: 13.5, color: "var(--ink3)", padding: "12px 0" }}>Zatiaľ tu nie je žiadny dar.</div>}
       {zobraz.map(({ darca, firma }, i) => (

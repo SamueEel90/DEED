@@ -8,7 +8,9 @@ import { useSyncExternalStore } from "react";
 import { supabase } from "./supabase";
 import type { Vyrez } from "@/components/orezfotky";
 
-export type MediumZbierky = { id: number; typ: "foto" | "video"; src: string; sek?: number; w?: number; vyrez?: Vyrez };
+/** 5. 10. · popis = nepovinný popis fotky (najviac 80 znakov), darca ho vidí pod fotkou na celej obrazovke, čítačka ako alt */
+export type MediumZbierky = { id: number; typ: "foto" | "video"; src: string; sek?: number; w?: number; vyrez?: Vyrez; popis?: string };
+export const POPIS_FOTKY_MAX = 80;
 export type TypZbierky = "kratka" | "dlha";
 /** lehoty dokladovania (karta 37 · bod 5) — žiadny „mesačný update" */
 export type LehotaKluc = "30" | "60" | "priebezne" | "stvrtrocne";

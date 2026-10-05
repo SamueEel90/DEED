@@ -1,6 +1,6 @@
 // KARTA 45 · spoločné dáta a diely pre Výklad a Pirát charity (rovnaké dáta ako Kronika, iné podanie).
 // Dáta: testProfily.ts (Svetlo pomoci). Iskry z lib/iskry (2 cesty: Iskry · Zbierky).
-import { useEffect, useState, type CSSProperties } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 import { eur, tvar, vLokalite, type Lokalita, type Mesto, type TestProfil, type TestZbierka } from "@/lib/testProfily";
 import { ISKRY_CFG, iskraViditelna, iskryVsetky, useZmenyIskier, zbierkaIskry, type Iskra } from "@/lib/iskry";
 import { otvorIskry } from "@/features/iskry/otvor";
@@ -91,18 +91,39 @@ export function IskryTaby({ isk, onIsk, fs = 14.5 }: { isk: number; onIsk: (i: n
     </div>);
 }
 
+/** karta „Všetky … ›" na konci radu videí: mobil a tablet nikdy, PC (≥ 1200) len keď rad pretečie (scrollWidth > clientWidth).
+ *  navyse = šírka karty + medzera (pri meraní sa odpočíta, keď už karta v rade je). */
+export function useVsetkyNaKonci(navyse: number, zmena: unknown) {
+  const ref = useRef<HTMLDivElement | null>(null);
+  const [ukaz, setUkaz] = useState(false);
+  const ukazRef = useRef(false);
+  ukazRef.current = ukaz;
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const q = window.matchMedia("(min-width: 1200px)");
+    const f = () => setUkaz(q.matches && el.scrollWidth - (ukazRef.current ? navyse : 0) > el.clientWidth + 1);
+    f();
+    const ro = new ResizeObserver(f); ro.observe(el);
+    q.addEventListener("change", f);
+    return () => { ro.disconnect(); q.removeEventListener("change", f); };
+  }, [navyse, zmena]);
+  return [ref, ukaz] as const;
+}
+
 /** Z ISKIER: nadpis, prepínač a vodorovný rad videí */
 export function ZIskier({ profil, cesty, w, h, wVs, nadpis = true }: { profil: TestProfil; cesty: Iskra[][]; w: number; h: number; wVs: number; nadpis?: boolean }) {
   const [isk, setIsk] = useState(0);
   const tu = cesty[isk];
+  const [radRef, vsetky] = useVsetkyNaKonci(wVs + 10, `${isk}:${tu.length}`);
   if (!cesty[0].length && !cesty[1].length) return null;
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 10, paddingTop: 8 }}>
       {nadpis && <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".1em", color: "var(--acc)" }}>Z ISKIER</span>}
       <IskryTaby isk={isk} onIsk={setIsk} />
-      <div style={{ display: "flex", gap: 10, overflowX: "auto", paddingBottom: 2 }}>
+      <div ref={radRef} style={{ display: "flex", gap: 10, overflowX: "auto", paddingBottom: 2 }}>
         {tu.map((v) => <KartaIskry key={v.id} v={v} w={w} h={h} />)}
-        {tu.length > 0 && <button type="button" onClick={() => otvorIskry(tu[0].id)} style={{ flex: "none", width: wVs, height: h, borderRadius: 18, border: "1.5px dashed var(--cardBd)", background: "transparent", display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center", padding: 10, fontSize: 13.5, fontWeight: 800, color: "var(--green)", cursor: "pointer", fontFamily: "inherit" }}>
+        {tu.length > 0 && vsetky && <button type="button" onClick={() => otvorIskry(tu[0].id)} style={{ flex: "none", width: wVs, height: h, borderRadius: 18, border: "1.5px dashed var(--cardBd)", background: "transparent", display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center", padding: 10, fontSize: 13.5, fontWeight: 800, color: "var(--green)", cursor: "pointer", fontFamily: "inherit" }}>
           {isk ? "Všetky videá k zbierkam ›" : `Všetky Iskry ${profil.menoGen ?? profil.meno} ›`}</button>}
         {!tu.length && <span style={{ fontSize: 14, color: "var(--ink3)", padding: "6px 2px" }}>{isk ? "Zatiaľ tu nie je žiadne video k zbierkam." : "Zatiaľ tu nie je žiadna Iskra."}</span>}
       </div>
@@ -126,7 +147,7 @@ export function OznamKarta({ o }: { o: OznCh }) {
 }
 
 /** roky ako časová os (mobilná podoba kroniky): rozbalený len prvý rok */
-export function RokyOs({ roky, onDetail }: { roky: { t: string; sum: [string, string][]; pol: PolCh[] }[]; onDetail: (z: TestZbierka) => void }) {
+export function RokyOs({ roky, onZaznam }: { roky: { t: string; sum: [string, string][]; pol: PolCh[] }[]; /** doplnky 4. 10.: ťuk na záznam = detail bez platby / Iskry */ onZaznam: (p: PolCh) => void }) {
   const [otv, setOtv] = useState<Record<string, boolean>>(() => (roky[0] ? { [roky[0].t]: true } : {}));
   return (<>
     {roky.map((k, i) => {
@@ -147,13 +168,13 @@ export function RokyOs({ roky, onDetail }: { roky: { t: string; sum: [string, st
             {k.pol.map((p) => {
               const chip = p.typ === "zb" ? (p.q ? "UKONČENÁ · DOLOŽENÉ" : "UKONČENÁ · SPRÁVA SA PÍŠE") : p.typ === "is" ? "ISKRA" : p.typ === "oz" ? "AKCIA" : "SKUTOK";
               const chipC = p.typ === "zb" ? (p.q ? "var(--green)" : "var(--ink3)") : p.typ === "is" ? "var(--gold)" : p.typ === "oz" ? "var(--blue)" : "var(--green)";
-              const klik = p.typ === "zb" && p.zbierka ? () => onDetail(p.zbierka!) : undefined;
+              const klik = () => onZaznam(p);
               return (
                 <div key={p.id} style={{ display: "grid", gridTemplateColumns: "40px 14px minmax(0,1fr)", columnGap: 8 }}>
                   <span style={{ paddingTop: 16, display: "flex", flexDirection: "column", alignItems: "flex-end" }}><b style={{ fontSize: 16, lineHeight: 1.05, fontVariantNumeric: "tabular-nums" }}>{p.d}</b><span style={{ fontSize: 10, fontWeight: 800, letterSpacing: ".06em", color: "var(--ink3)" }}>{p.m}</span></span>
                   <span style={{ position: "relative", display: "flex", justifyContent: "center" }}><span style={{ position: "absolute", top: 0, bottom: 0, width: 2, background: "var(--accLine)" }} /><span style={{ position: "relative", marginTop: 20, width: 10, height: 10, borderRadius: "50%", background: "var(--bg)", border: "2px solid var(--acc)" }} /></span>
                   <div style={{ padding: "6px 0", minWidth: 0 }}>
-                    <button type="button" onClick={klik} style={{ width: "100%", borderRadius: 16, overflow: "hidden", background: "var(--card)", border: "1px solid var(--cardBd)", display: "flex", flexDirection: "column", padding: 0, cursor: klik ? "pointer" : "default", textAlign: "left", color: "var(--ink)", fontFamily: "inherit" }}>
+                    <button type="button" onClick={klik} style={{ width: "100%", borderRadius: 16, overflow: "hidden", background: "var(--card)", border: "1px solid var(--cardBd)", display: "flex", flexDirection: "column", padding: 0, cursor: "pointer", textAlign: "left", color: "var(--ink)", fontFamily: "inherit" }}>
                       {p.typ === "zb" && <span style={{ display: "block", width: "100%", height: 110, background: bgF(p.foto) }} />}
                       <span style={{ padding: "11px 12px", display: "flex", gap: 10, alignItems: "center" }}>
                         {p.typ !== "zb" && <span style={{ flex: "none", width: 52, height: 52, borderRadius: 12, background: bgF(p.foto) }} />}

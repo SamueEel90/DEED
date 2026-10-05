@@ -70,7 +70,8 @@ export interface PolozkaDokladu {
   datum: string;       // ISO
   foto?: string;       // sken/fotka dokladu (data-URL)
 }
-export interface FotkaPouzitia { src: string; popis: string }  // popis: PRED / PO / voľný
+/** fotka / video dokladu použitia — 5. 10.: popis = voľný popis fotky (najviac 80 znakov), žiadne PRED / PO */
+export interface FotkaPouzitia { src: string; popis: string; typ?: "foto" | "video"; sek?: number }
 export interface SpravaDarcom { text: string; datum: string }
 
 export interface StavZbierky {
@@ -83,6 +84,8 @@ export interface StavZbierky {
   zdovodnenie60?: string;
   zdovodnenieBezDokladov?: string;
   text: string;
+  /** 5. 10. · pokračovanie textu „Na čo išli peniaze" (TextovePolia, po „… viac") */
+  text2?: string;
   fotky: FotkaPouzitia[];
   doklady: PolozkaDokladu[];
   spravy: SpravaDarcom[];
@@ -92,6 +95,10 @@ export interface StavZbierky {
   stiahnuta?: string;
   /** KARTA 38: výsledok poslaný darcom automaticky pri ukončení (1. z 2 správ) */
   vysledokPoslany?: string;
+  /** 5. 10. · ukončenie sa dá 15 minút vrátiť; výsledok darcom odíde až potom (ISO čas) */
+  vratitDo?: string;
+  /** 5. 10. · prečo charita ukončila (Cieľ je splnený · Už to nepotrebujeme · Iný dôvod) */
+  dovodUkoncenia?: string;
   /** KARTA 37 · bod 7: dlhodobá zbierka — kedy charita zavrela upozornenie po 90 dňoch bez doloženia („Teraz nie") */
   upozornenie90Zavrete?: string;
   /** KARTA 39 · bod 1: posledné vytiahnutie dlhodobej hore (priebežné doloženie), ISO */

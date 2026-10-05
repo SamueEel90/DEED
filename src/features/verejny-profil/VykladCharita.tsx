@@ -6,9 +6,9 @@
 // Pôvodný Vyklad.tsx ostáva Pekárni (firma).
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { eur, pct, tvar, type Lokalita, type TestProfil, type TestZbierka } from "@/lib/testProfily";
-import { DOK, LokalitaPrepinac, PlagatPrace, PribehText, StitCare, StitOkno, nazovStitu, useDomaceMesto } from "./casti";
-import { PodporaProfilu } from "./PodporaProfilu";
-import { GRAD, PRUH, MalaZbierka, OznamKarta, RokyOs, ZIskier, bgF, sekciaNadpis, stZb, useCharitaData } from "./charitaCasti";
+import { DOK, LokalitaPrepinac, PlagatPrace, PrepinacPodania, klikKarta, PribehText, StitCare, StitOkno, nazovStitu, useDomaceMesto } from "./casti";
+import { PodporaProfilu, type Vyber } from "./PodporaProfilu";
+import { GRAD, PRUH, type PolCh, MalaZbierka, OznamKarta, RokyOs, ZIskier, bgF, sekciaNadpis, stZb, useCharitaData } from "./charitaCasti";
 
 const PC = "(min-width: 1200px)";
 function usePc() {
@@ -19,13 +19,21 @@ function usePc() {
 const TABY = ["Darovať", "Zbierky", "Iskry", "Oznamy a práca", "História", "O nás"];
 const tlTmave: CSSProperties = { height: 44, border: "none", borderRadius: 14, background: "rgba(10,8,5,.5)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "none" };
 
-export function VykladCharita({ profil, onDetail, onBack, prepinac }: { profil: TestProfil; onDetail: (z: TestZbierka) => void; onBack: () => void; prepinac?: ReactNode }) {
+export function VykladCharita({ profil, onDetail, onZaznam, onBack, prepinac }: { profil: TestProfil; onDetail: (z: TestZbierka) => void; onZaznam: (p: PolCh) => void; onBack: () => void; prepinac?: ReactNode }) {
   const pc = usePc();
   const domace = useDomaceMesto(profil);
   const [lok, setLok] = useState<Lokalita>(domace);
   const [tab, setTab] = useState(0);
   const [stitOtv, setStitOtv] = useState(false);
   const d = useCharitaData(profil, lok, domace);
+  // 5. 10. · PC: ťuk na zbierku vľavo = vpravo náhľad „Posielaš do · Zbierka …" + modul, pravý stĺpec sa vyroluje hore.
+  //   Mobil: detail zbierky na celú obrazovku.
+  const [mod, setMod] = useState<Vyber>(null);
+  const aRef = useRef<HTMLElement | null>(null);
+  const zbierkaKlik = (z: TestZbierka) => {
+    if (!pc) { onDetail(z); return; }
+    setMod(z); requestAnimationFrame(() => aRef.current?.scrollTo({ top: 0, behavior: "smooth" }));
+  };
   const scRef = useRef<HTMLDivElement | null>(null);
   const sek = useRef<(HTMLElement | null)[]>([]);
   const stit = profil.stit.toLowerCase();
@@ -117,7 +125,7 @@ export function VykladCharita({ profil, onDetail, onBack, prepinac }: { profil: 
   // ---- zbierky ----
   const v = d.velka;
   const velka = v && (
-    <article style={{ display: "grid", gridTemplateColumns: pc ? "minmax(0,1fr) minmax(0,1.1fr)" : "1fr", borderRadius: 24, overflow: "hidden", background: "var(--card)", border: "1px solid var(--cardBd)" }}>
+    <article {...klikKarta(() => zbierkaKlik(v), v.nazov)} style={{ display: "grid", gridTemplateColumns: pc ? "minmax(0,1fr) minmax(0,1.1fr)" : "1fr", borderRadius: 24, overflow: "hidden", background: "var(--card)", border: "1px solid var(--cardBd)", cursor: "pointer" }}>
       <span style={{ position: "relative", display: "block", minHeight: pc ? 300 : 190, background: bgF(v.foto) }}>
         {v.konciDni != null && <span style={{ position: "absolute", left: 12, top: 12, height: 28, padding: "0 11px", borderRadius: 14, background: "#8E3B2F", color: "#fff", fontSize: 11.5, fontWeight: 800, letterSpacing: ".05em", display: "flex", alignItems: "center", whiteSpace: "nowrap" }}>KONČÍ O {tvar(v.konciDni, ["DEŇ", "DNI", "DNÍ"])}</span>}
       </span>
@@ -128,14 +136,13 @@ export function VykladCharita({ profil, onDetail, onBack, prepinac }: { profil: 
         {v.ciel != null && <span style={{ display: "block", height: 8, borderRadius: 4, background: "var(--track)", overflow: "hidden" }}><span style={{ display: "block", width: "100%", height: "100%", background: PRUH, transformOrigin: "0 50%", transform: `scaleX(${pct(v.vyzbierane, v.ciel) / 100})` }} /></span>}
         <span style={{ display: "flex", alignItems: "baseline", gap: 8, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}><b style={{ fontSize: 19 }}>{eur(v.vyzbierane)}</b><span style={{ fontSize: 13.5, color: "var(--ink3)" }}>{v.ciel ? `z ${eur(v.ciel)} · ` : ""}{v.ludia} ľudí</span></span>
         {v.dorovnanie && <span style={{ fontSize: 13, color: "var(--gold)", fontWeight: 700 }}>{v.dorovnanie}</span>}
-        <button type="button" onClick={() => onDetail(v)} style={{ alignSelf: "flex-start", height: 48, padding: "0 22px", border: "none", borderRadius: 14, background: GRAD, cursor: "pointer", fontSize: 15.5, fontWeight: 800, color: "#fff", fontFamily: "inherit" }}>Pozrieť a darovať</button>
       </div>
     </article>
   );
   const zbierky = (<>
     <span ref={kotva(1)} style={sekciaNadpis}>ZBIERKY · AKTUÁLNE</span>
     {velka}
-    {d.male.length > 0 && <div style={{ display: "grid", gridTemplateColumns: `repeat(${pc ? 2 : 1},minmax(0,1fr))`, gap: 12 }}>{d.male.map((z) => <MalaZbierka key={z.id} z={z} onDetail={onDetail} />)}</div>}
+    {d.male.length > 0 && <div style={{ display: "grid", gridTemplateColumns: `repeat(${pc ? 2 : 1},minmax(0,1fr))`, gap: 12 }}>{d.male.map((z) => <MalaZbierka key={z.id} z={z} onDetail={zbierkaKlik} />)}</div>}
   </>);
   const iskry = <><span ref={kotva(2)} /><ZIskier profil={profil} cesty={d.iskryCesty} w={pc ? 140 : 116} h={pc ? 248 : 206} wVs={112} /></>;
   const oznamy = d.oznamy.length > 0 && <>
@@ -145,7 +152,7 @@ export function VykladCharita({ profil, onDetail, onBack, prepinac }: { profil: 
   const historia = (<>
     <span ref={kotva(4)} style={sekciaNadpis}>HISTÓRIA · ROKY</span>
     {!pc && <div style={{ display: "flex", flexDirection: "column", gap: 6, padding: "12px 14px", borderRadius: 18, background: "var(--card)", border: "1px solid var(--cardBd)" }}>{odZac}{celkom(17)}</div>}
-    <RokyOs roky={d.roky} onDetail={onDetail} />
+    <RokyOs roky={d.roky} onZaznam={onZaznam} />
   </>);
   const fakty: [string, string][] = [["Sídlo", profil.sidlo], ["IČO", profil.ico], ["Transparentný účet", profil.ucet], ["Kontakt", profil.kontakt]];
   const onas = (<>
@@ -168,8 +175,8 @@ export function VykladCharita({ profil, onDetail, onBack, prepinac }: { profil: 
             <span ref={kotva(0)} />
             {zbierky}{iskry}{oznamy}{historia}{onas}
           </div>
-          <aside style={{ position: "sticky", top: 76, display: "flex", flexDirection: "column", gap: 12 }}>
-            <PodporaProfilu profil={profil} lok={lok} domace={domace} rez="pc" vyska={118} />
+          <aside ref={aRef} style={{ position: "sticky", top: 76, maxHeight: "calc(100vh - 96px)", overflowY: "auto", overscrollBehavior: "contain", display: "flex", flexDirection: "column", gap: 12 }}>
+            <PodporaProfilu profil={profil} lok={lok} domace={domace} rez="pc" vyska={118} mod={mod} onMod={setMod} />
             <PlagatPrace praca={profil.praca} />
           </aside>
         </div>
@@ -181,13 +188,13 @@ export function VykladCharita({ profil, onDetail, onBack, prepinac }: { profil: 
   return (
     <div ref={scRef} className="vp sc-tokeny" data-stit={stit} style={{ position: "relative", height: "100%", overflowY: "auto", WebkitOverflowScrolling: "touch" }}>
       {titulka}{kov}{pas}
-      {prepinac && <div style={{ padding: "12px 16px 0" }}>{prepinac}</div>}
       {taby}
       <div style={{ padding: "18px 16px 0", display: "flex", flexDirection: "column", gap: 14 }}>
         <span ref={kotva(0)} />
         <PodporaProfilu profil={profil} lok={lok} domace={domace} rez="mob" nadpis="DAROVAŤ · TIPY NA PRAVIDELNÝ DAR" vyska={104} />
         <PlagatPrace praca={profil.praca} zbaleny />
         {zbierky}{iskry}{oznamy}{historia}{onas}
+        {prepinac && <PrepinacPodania pas />}
       </div>
       <div style={{ height: DOK + 24 }} />
       {okno}
