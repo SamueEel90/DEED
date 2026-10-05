@@ -1,4 +1,7 @@
 import { Emo } from "@/components/icons";
+import { TESTOVACIA } from "@/lib/testovacia";
+import { useTestStav, vyprazdni } from "@/lib/testStav";
+import { PrepinacPodania } from "@/features/verejny-profil/casti";
 import { StityRad } from "@/components/stit";
 import { stityOblastiSubjektu } from "@/lib/stityOblasti";
 import { Fragment, useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
@@ -112,7 +115,7 @@ function PodporiliFirmy({ zbierkaId, onFirma }: { zbierkaId: string; onFirma: (f
   );
 }
 
-export function Podstranka({ pozicia, tier = 0, logo, toast, onBack, strankaId = pozicia === "charita" ? "svetlo" : undefined, profilNahlad, lista }: {
+export function Podstranka({ pozicia, tier = 0, logo, toast, onBack, strankaId = pozicia === "charita" ? "svetlo" : undefined, profilNahlad, lista, sektor }: {
   pozicia: Pozicia; tier?: Tier; logo: string | null; toast: (m: string) => void; onBack: () => void;
   /** OPRAVY 107: stránka, ktorej uložený profil (Upraviť profil) sa ukáže */
   strankaId?: string;
@@ -120,15 +123,19 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack, strankaId =
   profilNahlad?: ProfilStranky;
   /** lišta hore (Náhľad / Profil uložený / Takto vidí váš profil…) namiesto hlavičky Späť */
   lista?: ReactNode;
+  /** OPRAVY 147: typ stránky pre testovací prepínač (farnosť, klub, spolok…) */
+  sektor?: string;
 }) {
   const { wide, desktop } = useLayout();
+  const ts = useTestStav(); // OPRAVY 147: testovací prázdny profil
   const siroke = wide || desktop;   // tablet a PC → mriežka kariet ako vo feede
   const ja = usePouzivatel();
   const s = SUBJEKTY[pozicia];
   // OPRAVY 107: uložený profil zo správy (lib/profilStranky); staré úložisko len záloha, kým nie je nič uložené
   const [ulozeny, setUlozeny] = useState<ProfilStranky | null>(() => (strankaId ? profilZPamate(strankaId).ulozeny : null));
   useEffect(() => { if (!strankaId) return; let ziva = true; void nacitajProfilStranky(strankaId).then((z) => { if (ziva) setUlozeny(z.ulozeny); }); return () => { ziva = false; }; }, [strankaId]);
-  const pr = profilNahlad ?? ulozeny;
+  const pr0 = profilNahlad ?? ulozeny;
+  const pr = ts.prazdny && pr0 ? vyprazdni(pr0) : pr0;
   const stit = naStitLevel(ZASLUZENA[pozicia].badge);
   // tvorca vystupuje pod profilovou fotkou osoby, charita/B2B pod logom subjektu
   const fotoOsoby = pozicia === "tvorca" && nacitajZdrojAvatara(pozicia) === "foto"; // tvorca: fotka alebo logo značky
@@ -138,10 +145,11 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack, strankaId =
   // „Všetko" — virtuálny tab navrchu (pred Kampane/Skutky/Talent…): zoskupí položky zo všetkých sekcií
   // len to, čo má entita v aktuálnom programe — ten istý výpočet ako prehľad v správe
   const eurSk = (n: number) => `${n.toLocaleString("sk-SK", { maximumFractionDigits: 2 })} €`;
-  const mojeTabyZaklad = verejneTaby(pozicia, tier);
+  const mojeTabyZaklad = verejneTaby(pozicia, tier).map((t) => (ts.prazdny ? { ...t, polozky: [] } : t));
   // Zbierky, ktoré si firma pripla tým, že na ne dala — bežiace sú „Podporujeme",
   // ukončené a stiahnuté spadnú do „Komu sme pomohli" (história ostáva navždy).
-  const podpory = usePodporyFirmy(pozicia === "b2b" ? s.nazov : "");
+  const podpory0 = usePodporyFirmy(pozicia === "b2b" ? s.nazov : "");
+  const podpory = ts.prazdny ? [] : podpory0;
   // zbierka môže byť naša (register zbierok) alebo z profilu cudzej organizácie
   // (modul Charita) — firma daruje kam chce, tak musíme vedieť pomenovať oboje
   const kZbierke = (id: string) => {
@@ -795,8 +803,10 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack, strankaId =
       {lista ?? <BackHeader onBack={onBack}>
         <span style={{ fontSize: 12, color: C.textSec }}>{s.nazov}</span>
       </BackHeader>}
+      {TESTOVACIA && desktop && <PrepinacPodania sektor={sektor ?? pozicia} style={{ maxWidth: SIRKA.plocha, margin: "12px auto 0", padding: "0 24px", boxSizing: "border-box" }} />}
       <div style={{ height: SPACE.sm }} />
       {obalSiroky(telo, { desktop, maxDesktop: SIRKA.plocha })}
+      {TESTOVACIA && !desktop && <PrepinacPodania pas sektor={sektor ?? pozicia} style={{ margin: "16px 14px 0" }} />}
 
       {menu && (
         <KontextMenu onClose={() => setMenu(false)} polozky={[

@@ -39,6 +39,8 @@ import { toast } from "@/components/toast";
 import { useNastaveniaAppky, zmenNastavenia } from "@/lib/nastaveniaAppky";
 import { potvrditTuknutim, nastavPotvrditTuknutim } from "@/features/zbierka/Platba";
 import { TESTOVACIA } from "@/lib/testovacia";
+import { useTestStav, zmenTestStav } from "@/lib/testStav";
+import { PrepinacPodania, TestVolba } from "@/features/verejny-profil/casti";
 import { nacitajPiny, ulozPiny, pinyZPamate, nacitajZbalenie, ulozZbalenie, zbalenieZPamate, type Zbalenie } from "@/lib/spravaPiny";
 import { nastavStitSpravy } from "@/lib/stitAppky";
 import { ObrOznamenia, ObrEur, ObrEurc, ObrUcty, ObrSpravcovia, ObrUdaje, ObrProgram, ObrFaktury, ObrZariadenia, ObrSuhlasy, ObrStiahnut, ObrFaq, ObrPodpora, ObrZrusit, PROG, pocetSpravcov, pocetZariadeni, eurcText, eurText, HLAVNY_UCET } from "./NastaveniaCharity";
@@ -284,7 +286,8 @@ export function SpravaStranky({ onBack, typ: typStranky = "charita", strankaId =
   const korenRef = useRef<HTMLDivElement>(null);
 
   // OPRAVY 121 · bod 9: rola prihláseného v tejto stránke (zatiaľ vždy hlavný správca — rolu doplní server zo správcov stránky)
-  const rola: RolaStranky = "hlavny";
+  const ts = useTestStav(); // OPRAVY 147: rola sa dá prepnúť v testovacom páse
+  const rola: RolaStranky = TESTOVACIA ? ts.rola : "hlavny";
   // OPRAVY 122 (2): centrálna zbierka charity — zatiaľ z ukážkových bežiacich zbierok (nová charita ju nemá); doplní server
   const centralnaZbierka = !nova ? PH_ZBIERKY.filter((z) => /^Centrálna zbierka/.test(z.t)).map((z) => ({ id: `${strankaId}-centralna`, nazov: z.t, org: nazov, cislo: "" }))[0] ?? null : null;
   // OPRAVY 114: spustené a rozpísaná zbierka stránky (z účtu)
@@ -377,16 +380,19 @@ export function SpravaStranky({ onBack, typ: typStranky = "charita", strankaId =
 
   const aktivnaSkupina: string | null = sub === null ? null : sub === "nast" || (sub as string).startsWith("n:") ? "nast" : sub === "penazenka" || (sub as string).startsWith("g_") ? sub : (sub as string).startsWith("x:") || sub === "profil" || sub === "vsetko" ? null : SKUPINA_POLOZKY(sub as PolozkaSpravy, typ);
 
+  // OPRAVY 147: jeden testovací prepínač (PrepinacPodania) — PC v hlavičke, mobil a tablet sivý pás úplne dole
   const dev = TESTOVACIA && FLAGS.dev_tier_switcher && (
-    <DevSprava tier={tier} stit={stit} stav={!nova ? "bezna" : pozvana ? "pozv" : "free"} typ={typ} onTyp={setTyp}
-      onTier={setTier}
-      onStit={(s) => { setStit(s); ulozStitCharity(s); }}
-      onStav={(k) => {
-        const n = k !== "bezna", pz = k === "pozv";
-        setNova(n); ulozCharituNovu(n); setPozvana(pz);
-        try { localStorage.setItem("deed.dev.pozvana", pz ? "1" : "0"); } catch { /* LS nedostupné */ }
-        setTier(k === "pozv" ? 3 : k === "free" ? 0 : 1);
-      }} />
+    <PrepinacPodania pas={!desktop} sektor={typ} bezProfilu style={desktop ? { padding: "2px 2px 4px" } : { marginTop: 14 }}>
+      <DevSprava pas={!desktop} tier={tier} stit={stit} stav={!nova ? "bezna" : pozvana ? "pozv" : "free"} typ={typ} onTyp={setTyp} rola={rola}
+        onTier={setTier}
+        onStit={(s) => { setStit(s); ulozStitCharity(s); }}
+        onStav={(k) => {
+          const n = k !== "bezna", pz = k === "pozv";
+          setNova(n); ulozCharituNovu(n); setPozvana(pz);
+          try { localStorage.setItem("deed.dev.pozvana", pz ? "1" : "0"); } catch { /* LS nedostupné */ }
+          setTier(k === "pozv" ? 3 : k === "free" ? 0 : 1);
+        }} />
+    </PrepinacPodania>
   );
   const zoomEl = <>{zoom && <StitZoom stit={stit} sada={sada} onClose={() => setZoom(false)} />}
     {limitOkno && createPortal(<div className="sprava-charity" data-stit={stit} onClick={() => setLimitOkno(false)} style={{ position: "fixed", inset: 0, zIndex: 160, background: "rgba(29,33,27,.5)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
@@ -398,7 +404,7 @@ export function SpravaStranky({ onBack, typ: typStranky = "charita", strankaId =
         </div>
       </div>
     </div>, document.body)}
-    {verejny && <VerejnyProfilOkno pozicia={poz} tier={tier} strankaId={strankaId} stit={stit} mobil={!desktop} onZavri={() => setVerejny(false)}
+    {verejny && <VerejnyProfilOkno pozicia={poz} sektor={typ} tier={tier} strankaId={strankaId} stit={stit} mobil={!desktop} onZavri={() => setVerejny(false)}
       lista={<><span style={{ flex: !desktop ? "1 1 100%" : 1, minWidth: 0, fontSize: 15, fontWeight: 800, color: "var(--ink)" }}>Takto vidí váš profil každý návštevník</span>
         <button type="button" onClick={() => setVerejny(false)} style={{ height: 42, padding: "0 16px", border: "none", borderRadius: 13, background: "var(--btn)", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 800, color: "var(--ink)" }}>Zavrieť</button>
         <button type="button" onClick={() => { setVerejny(false); otvor("profil"); }} style={{ height: 42, padding: "0 16px", border: "none", borderRadius: 13, background: "var(--btn)", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 800, color: "var(--ink)" }}>Upraviť</button></>} />}</>;
@@ -430,12 +436,12 @@ export function SpravaStranky({ onBack, typ: typStranky = "charita", strankaId =
         <div style={{ flex: "none", marginTop: 8 }}>
           <TlacidloNastavenia on={aktivnaSkupina === "nast"} onClick={() => otvor("nast")} />
         </div>
-        {dev}
       </aside>
       {/* OPRAVY 93: obsah max 1600 px, na širšom monitore vycentrovaný (panel ostáva vľavo) */}
       <div style={{ flex: 1, minWidth: 0 }}>
       <main style={{ maxWidth: 1600, margin: "0 auto", minWidth: 0, display: "flex", flexDirection: "column", gap: 14 }}>
         {hlavicka}
+        {dev}
         <div key={String(sub)} style={{ display: "flex", flexDirection: "column", gap: 14, animation: "spravaFade .2s ease both" }}>{obsah}</div>
       </main>
       </div>
@@ -1444,20 +1450,12 @@ function Zamknute({ program }: { program: string }) {
 
 // ---------- DEV (len testovacia verzia) ----------
 type StavDev = "pozv" | "free" | "bezna";
-function DevSprava({ tier, stit, stav, typ, onTyp, onTier, onStit, onStav }: { tier: Tier; stit: StitCharity; stav: StavDev; typ: TypStranky; onTyp: (t: TypStranky) => void; onTier: (t: Tier) => void; onStit: (s: StitCharity) => void; onStav: (s: StavDev) => void }) {
-  const seg = (on: boolean): React.CSSProperties => ({ flex: 1, minHeight: 32, padding: "0 4px", borderRadius: 8, border: `1px solid ${on ? "var(--ink)" : "transparent"}`, background: on ? "var(--ink)" : "transparent", color: on ? "var(--bg)" : "var(--ink2)", fontSize: 11.5, fontWeight: 800, cursor: "pointer", whiteSpace: "nowrap" });
-  return (
-    <div aria-label="DEV" style={{ display: "flex", flexDirection: "column", gap: 6, padding: 10, borderRadius: 14, border: "1px dashed var(--ink4)", fontSize: 11.5, color: "var(--ink3)" }}>
-      <b style={{ fontSize: 11, letterSpacing: ".07em" }}>DEV · len testovacia verzia</b>
-      <label style={{ display: "flex", flexDirection: "column", gap: 4 }}><span>Typ stránky</span>
-        <select value={typ} onChange={(e) => onTyp(e.target.value as TypStranky)} style={{ minHeight: 36, borderRadius: 8, border: "1px solid var(--cardBd)", background: "var(--field)", color: "var(--ink)", fontFamily: "inherit", fontSize: 12.5, fontWeight: 700, padding: "0 6px" }}>
-          {TYPY_STRANOK.filter((t) => !TYP_SKRYTY[t]).map((t) => <option key={t} value={t}>{TYP_NAZOV[t]}</option>)}
-        </select></label>
-      <span>Program</span>
-      <div style={{ display: "flex", gap: 2 }}>{([0, 1, 2, 3, 4] as Tier[]).map((t) => <button key={t} onClick={() => onTier(t)} style={seg(t === tier)}>{PROGRAM_NAZOV[t]}</button>)}</div>
-      <span>Štít</span>
-      <div style={{ display: "flex", gap: 2, flexWrap: "wrap" }}>{(Object.keys(STITY) as StitCharity[]).map((k) => <button key={k} onClick={() => onStit(k)} style={seg(k === stit)}>{STITY[k][3]}</button>)}</div>
-      <span>Stav</span>
-      <div style={{ display: "flex", gap: 2, flexWrap: "wrap" }}>{([["pozv", "Nová · pozvaná"], ["free", "Nová · zadarmo"], ["bezna", "Bežná"]] as [StavDev, string][]).map(([k, t]) => <button key={k} onClick={() => onStav(k)} style={seg(k === stav)}>{t}</button>)}</div>
-    </div>);
+function DevSprava({ pas, tier, stit, stav, typ, rola, onTyp, onTier, onStit, onStav }: { pas: boolean; tier: Tier; stit: StitCharity; stav: StavDev; typ: TypStranky; rola: RolaStranky; onTyp: (t: TypStranky) => void; onTier: (t: Tier) => void; onStit: (s: StitCharity) => void; onStav: (s: StavDev) => void }) {
+  return (<>
+    <TestVolba pas={pas} nazov="Typ" volby={TYPY_STRANOK.filter((t) => !TYP_SKRYTY[t]).map((t) => [t, TYP_NAZOV[t]] as [TypStranky, string])} hodnota={typ} onVolba={onTyp} />
+    <TestVolba pas={pas} nazov="Program" volby={([0, 1, 2, 3, 4] as Tier[]).map((t) => [t, PROGRAM_NAZOV[t]] as [Tier, string])} hodnota={tier} onVolba={onTier} />
+    <TestVolba pas={pas} nazov="Štít" volby={(Object.keys(STITY) as StitCharity[]).map((k) => [k, STITY[k][3]] as [StitCharity, string])} hodnota={stit} onVolba={onStit} />
+    <TestVolba pas={pas} nazov="Stav" volby={[["pozv", "Nová · pozvaná"], ["free", "Nová · zadarmo"], ["bezna", "Bežná"]] as [StavDev, string][]} hodnota={stav} onVolba={onStav} />
+    <TestVolba pas={pas} nazov="Rola" volby={[["hlavny", "Hlavný správca"], ["spravca", "Správca"], ["pomocnik", "Pomocník"], ["organizator", "Organizátor"]] as [RolaStranky, string][]} hodnota={rola} onVolba={(r) => zmenTestStav({ rola: r })} />
+  </>);
 }

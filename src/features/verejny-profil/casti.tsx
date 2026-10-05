@@ -8,6 +8,7 @@ import { LOKALITY, type Lokalita, type Mesto, type TestProfil, type TestZbierka 
 import { useLokalita } from "@/lib/lokalita";
 import { useLayout } from "@/components/context";
 import "@/styles/verejnyProfil.css";
+import { useTestStav, zmenTestStav } from "@/lib/testStav";
 import { vrstvaProfiluPripoj } from "./otvor";
 
 export const MOBIL = "(max-width: 759px)";
@@ -271,26 +272,40 @@ export function TestovaciPas({ nazov, children, style }: { nazov: string; childr
   );
 }
 
-export function PrepinacPodania({ tmavy, style, pas }: { tmavy?: boolean; style?: CSSProperties; /** mobil a tablet: sivý pás dole stránky */ pas?: boolean }) {
-  const [p, setP] = usePodanie();
-  const vol = PODANIA;
-  if (pas) return (
-    <TestovaciPas nazov="Zobrazenie" style={style}>
-      {vol.map(([k, t]) => {
-        const on = p === k;
-        return <button key={k} type="button" aria-pressed={on} onClick={() => setP(k)}
-          style={{ height: 44, padding: "0 16px", borderRadius: 22, border: `1.5px solid ${on ? "var(--green)" : "var(--cardBd)"}`, background: on ? "var(--green)" : "var(--card)", color: on ? "#fff" : "var(--ink2)", fontSize: 14, fontWeight: 800, cursor: "pointer", fontFamily: "inherit", boxShadow: "none" }}>{t}</button>;
-      })}
-    </TestovaciPas>
-  );
+/** OPRAVY 147 · jeden testovací prepínač pre všetky verejné profily a správy: Zobrazenie (len kde je viac podaní — charita)
+ *  + Profil vyplnený / prázdny + ďalšie riadky od volajúceho (Správa: typ, program, štít, stav, rola).
+ *  pas = mobil a tablet: sivý pás „TESTOVACIE · …" úplne dole; inak (PC) riadok v hlavičke. Len pri TESTOVACIA (rozhoduje volajúci). */
+/** jeden riadok testovacích volieb (čipy ≥44 px) — v PrepinacPodania aj v riadkoch od volajúceho */
+export function TestVolba<K extends string | number>({ nazov, volby, hodnota, onVolba, pas, tmavy }: { nazov: string; volby: [K, string][]; hodnota: K; onVolba: (k: K) => void; pas?: boolean; tmavy?: boolean }) {
   return (
-    <div role="group" aria-label="Zobrazenie profilu (test)" style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", ...style }}>
-      <span style={{ fontSize: 12.5, fontWeight: 800, color: tmavy ? "rgba(255,255,255,.8)" : "var(--ink3)", marginRight: 2 }}>Zobrazenie:</span>
-      {vol.map(([k, t]) => {
-        const on = p === k;
-        return <button key={k} type="button" aria-pressed={on} onClick={() => setP(k)}
-          style={{ height: 44, padding: "0 14px", borderRadius: 22, border: `1.5px solid ${on ? "var(--green)" : tmavy ? "rgba(255,255,255,.35)" : "var(--cardBd)"}`, background: on ? "var(--green)" : tmavy ? "rgba(0,0,0,.25)" : "var(--card)", color: on ? "#fff" : tmavy ? "#fff" : "var(--ink2)", fontSize: 14, fontWeight: 800, cursor: "pointer", fontFamily: "inherit", boxShadow: "none" }}>{t}</button>;
-      })}
-    </div>
-  );
+    <div role="group" aria-label={nazov} style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+      <span style={{ fontSize: 12.5, fontWeight: 800, color: tmavy ? "rgba(255,255,255,.8)" : "var(--ink3)", marginRight: 2, minWidth: pas ? 74 : undefined }}>{nazov}:</span>
+      {volby.map(([k, t]) => { const on = k === hodnota; return <button key={String(k)} type="button" aria-pressed={on} onClick={() => onVolba(k)}
+        style={{ height: 44, padding: `0 ${pas ? 16 : 14}px`, borderRadius: 22, border: `1.5px solid ${on ? "var(--green)" : tmavy ? "rgba(255,255,255,.35)" : "var(--cardBd)"}`, background: on ? "var(--green)" : tmavy ? "rgba(0,0,0,.25)" : "var(--card)", color: on ? "#fff" : tmavy ? "#fff" : "var(--ink2)", fontSize: 14, fontWeight: 800, cursor: "pointer", fontFamily: "inherit", boxShadow: "none", whiteSpace: "nowrap" }}>{t}</button>; })}
+    </div>);
+}
+export const PODANIA_SEKTORA: Record<string, [Podanie, string][]> = { charita: PODANIA };
+export function PrepinacPodania({ tmavy, style, pas, sektor = "charita", children, bezProfilu }: {
+  tmavy?: boolean; style?: CSSProperties; /** mobil a tablet: sivý pás dole stránky */ pas?: boolean;
+  /** typ stránky — voľby podania podľa sektora (charita: Kronika · Výklad · Pirát; ostatné zatiaľ jedno podanie) */
+  sektor?: string; children?: ReactNode; /** bez riadku Profil (napr. Správa, kde je Stav stránky) */ bezProfilu?: boolean;
+}) {
+  const [p, setP] = usePodanie();
+  const ts = useTestStav();
+  const vol = PODANIA_SEKTORA[sektor] ?? [];
+  const riadky = (<>
+    {vol.length > 1 && <TestVolba nazov="Zobrazenie" pas={pas} tmavy={tmavy} volby={vol} hodnota={p} onVolba={setP} />}
+    {!bezProfilu && <TestVolba nazov="Profil" pas={pas} tmavy={tmavy} volby={[["v", "Vyplnený"], ["p", "Prázdny"]]} hodnota={ts.prazdny ? "p" : "v"} onVolba={(k) => zmenTestStav({ prazdny: k === "p" })} />}
+    {children}
+  </>);
+  if (pas) return (
+    <div role="group" aria-label="Testovacie" style={{ display: "flex", flexDirection: "column", gap: 10, padding: "12px 14px 14px", borderRadius: 18, background: "rgba(128,128,120,.2)", border: "1px solid rgba(128,128,120,.35)", ...style }}>
+      <span style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: ".08em", color: "var(--ink3)" }}>TESTOVACIE · {vol.length > 1 ? "Zobrazenie a stav" : "Stav"}</span>
+      {riadky}
+    </div>);
+  return (
+    <div role="group" aria-label="Testovacie" style={{ display: "flex", alignItems: "center", gap: "8px 16px", flexWrap: "wrap", ...style }}>
+      <span style={{ height: 24, padding: "0 9px", borderRadius: 12, background: "rgba(128,128,120,.25)", fontSize: 11, fontWeight: 800, letterSpacing: ".06em", color: tmavy ? "#fff" : "var(--ink3)", display: "flex", alignItems: "center" }}>TESTOVACIE</span>
+      {riadky}
+    </div>);
 }

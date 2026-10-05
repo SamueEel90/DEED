@@ -344,7 +344,8 @@ const PH_SIETE: Partial<Record<string, string>> = { facebook: "facebook.com/…"
 // OPRAVY 107: Náhľad, Profil uložený aj tlačidlo Verejný profil = SKUTOČNÝ verejný profil (Podstranka)
 // na celú obrazovku, len s lištou hore. Druhý vzhľad verejného profilu neexistuje.
 // ============================================================
-export function VerejnyProfilOkno({ pozicia, tier, strankaId, stit, profil, lista, ulozene, mobil, onZavri }: {
+export function VerejnyProfilOkno({ pozicia, tier, strankaId, stit, profil, lista, ulozene, mobil, onZavri, sektor }: {
+  /** OPRAVY 147: typ stránky (testovací prepínač) */ sektor?: string;
   pozicia: Pozicia; tier: Tier; strankaId: string; stit: string; profil?: ProfilStranky;
   lista: ReactNode; ulozene?: "ano" | "nie" | "info"; mobil: boolean; onZavri: () => void;
 }) {
@@ -357,6 +358,6 @@ export function VerejnyProfilOkno({ pozicia, tier, strankaId, stit, profil, list
     </div>);
   return createPortal(
     <div role="dialog" aria-modal="true" aria-label="Verejný profil" style={{ position: "fixed", inset: 0, zIndex: 200, overflowY: "auto", background: "var(--c-bg)" }}>
-      <Podstranka pozicia={pozicia} tier={tier} logo={null} toast={toast} onBack={onZavri} strankaId={strankaId} profilNahlad={profil} lista={pas} />
+      <Podstranka pozicia={pozicia} tier={tier} logo={null} toast={toast} onBack={onZavri} strankaId={strankaId} profilNahlad={profil} lista={pas} sektor={sektor} />
     </div>, document.body);
 }

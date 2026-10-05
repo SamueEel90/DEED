@@ -6,6 +6,8 @@
 // Prázdna sekcia sa neukáže. Cudzí prehrávač sa nenačíta, kým človek neťukne.
 // Zaplatiť a odomknúť / prihlásiť sa (do 50 €): pod položkou sa rozbalí NakupPanel. Kým nie je platba na serveri,
 // podržanie odomkne len v testovacej verzii. Okno na dary sa na nákup nepoužíva.
+import { useTestStav, vyprazdni } from "@/lib/testStav";
+import { PrepinacPodania } from "./casti";
 import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import type { TestProfil, TestZbierka } from "@/lib/testProfily";
 import { TVORCA_DATA, STREAM_ZBIERKY } from "@/lib/testTvorca";
@@ -37,7 +39,8 @@ function Nadpis({ t, s }: { t: string; s?: string }) {
 
 export function StrankaTvorcu({ profil, onBack, onStream, onDetail }: { profil: TestProfil; onBack: () => void; onStream: (streamId: string) => void; /** ťuk na kartu zbierky = detail s modulom */ onDetail: (z: TestZbierka) => void }) {
   const pc = usePc();
-  const d = TVORCA_DATA;
+  const ts = useTestStav();
+  const d = ts.prazdny ? { ...vyprazdni(TVORCA_DATA), naZivo: undefined, skolenie: undefined } : TVORCA_DATA; // OPRAVY 147: testovací prázdny profil
   const stit = profil.stit.toLowerCase();
   const krstne = profil.meno.split(" ")[0];
   const [sled, setSled] = useState(false);
@@ -248,6 +251,7 @@ export function StrankaTvorcu({ profil, onBack, onStream, onDetail }: { profil: 
   const strankaPc = pc && (
     <div className="vp sc-tokeny" data-stit={stit} style={{ position: "relative", height: "100%", overflowY: "auto" }}>
       {titulka}{kov}
+      {TESTOVACIA && <PrepinacPodania sektor="tvorca" style={{ padding: "12px 32px 0" }} />}
       <div style={{ padding: "22px 32px 120px", display: "grid", gridTemplateColumns: "minmax(0,1fr) 400px", gap: 32, alignItems: "start" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 12, minWidth: 0 }}>
           {cisla}{naZivo}{streamy}{iskry}{rady}{yt}{platene}{charity}{akcie}
@@ -279,6 +283,7 @@ export function StrankaTvorcu({ profil, onBack, onStream, onDetail }: { profil: 
           {cisla}{naZivo}{streamy}{iskry}{rady}{yt}{platene}
           {skolenie && <><Nadpis t="ONLINE ŠKOLENIE" />{skolenie}</>}
           {charity}{akcie}
+          {TESTOVACIA && <PrepinacPodania pas sektor="tvorca" />}
         </div>
       </div>
       <button type="button" onClick={otvorHarok}

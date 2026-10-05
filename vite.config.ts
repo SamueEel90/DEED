@@ -4,8 +4,15 @@ import { VitePWA } from 'vite-plugin-pwa'
 import { fileURLToPath, URL } from 'node:url'
 import { apiDevPlugin } from './scripts/apiDevPlugin'
 
+// OPRAVY 147: testovacia verzia na Verceli aj bez ručnej premennej — vetva platby-modul a každý preview
+// deploy dostanú VITE_TEST=1 (testovacie pásy a prepínače). Premenná VITE_TEST vo Verceli má prednosť.
+// Ostrá produkcia (iná vetva, VERCEL_ENV=production) ostáva bez nich; ?dev v adrese ostáva ako záloha.
+const VETVY_TEST = ['platby-modul']
+const testNaVerceli = !process.env.VITE_TEST && (VETVY_TEST.includes(process.env.VERCEL_GIT_COMMIT_REF ?? '') || process.env.VERCEL_ENV === 'preview')
+
 // https://vite.dev/config/
 export default defineConfig({
+  define: testNaVerceli ? { 'import.meta.env.VITE_TEST': JSON.stringify('1') } : {},
   plugins: [
     react(),
     // /api/score endpointy aj v dev/preview serveri (lokálne bez `vercel dev`;
