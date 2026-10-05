@@ -248,7 +248,8 @@ export function FeedCard({ wide, onClick, label, typ, stav, doplnky, accent, rin
         )}
         {doplnky && <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: SPACE.xs }}>{doplnky}</div>}
         {subtitle && <div style={{ fontSize: 11.5, color: C.textTer, marginTop: SPACE.xxs }}>{subtitle}</div>}
-        {text && <div style={{ fontSize: 13, color: C.textSec, lineHeight: 1.5, marginTop: SPACE.xs }}>{text}</div>}
+        {/* KARTA 55 · F: krátky text pod názvom, najviac 3 riadky */}
+        {text && <div style={{ fontSize: 13, color: C.textSec, lineHeight: 1.5, marginTop: SPACE.xs, display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{text}</div>}
         {progress?.ciel ? <div style={{ marginTop: SPACE.sm }}><MoniBar vyzbierane={progress.vyzbierane || 0} ciel={progress.ciel} ludia={progress.ludia} zFirmy={progress.zFirmy} mini /></div> : null}
         {footer}
       </div>
