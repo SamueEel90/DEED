@@ -5,7 +5,7 @@
 // VerejnyProfilView sa dá vložiť priamo (feed, „Stránka organizácie", adresár),
 // VerejnyProfilHost je celoobrazovková vrstva otváraná zo store (tlačidlo v Správe, QR).
 import { useTestStav, vyprazdni } from "@/lib/testStav";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { ZbierkaModul } from "@/features/zbierka/ZbierkaModul";
 import { najdiTestProfil, type TestProfil, type TestZbierka } from "@/lib/testProfily";
 import { otvorVerejnyProfil, useVerejnyProfilOtvoreny, verejnyProfilKluc, zavriVerejnyProfil } from "./otvor";
@@ -58,44 +58,49 @@ export function VerejnyProfilView({ kluc, onBack }: { kluc: string; onBack: () =
   if (!profil0) return null;
   const profil = ts.prazdny ? vyprazdni(profil0) : profil0;
 
-  if (detail) return (
+  // OPRAVY 148: žiadny testovací pás na verejnej stránke (testuje sa v Správe). Vzhľad pri všetkých typoch —
+  // firma a tvorca majú zatiaľ jedno vlastné podanie; keď správca vyberie vzhľad, ukáže sa podanie charity s ich dátami.
+  const zakladStranka = (): ReactNode => {
+    const podania = podanie === "pirat" ? <PiratCharita profil={profil} onDetail={setDetail} onBack={onBack} onKronika={() => setPrepis("kronika")} />
+      : podanie === "vyklad" ? <VykladCharita profil={profil} onDetail={setDetail} onZaznam={otvorZaznam} onBack={onBack} />
+      : <Kronika profil={profil} onDetail={setDetail} onZaznam={otvorZaznam} onBack={onBack} />;
+    const vlastneVzhlady = (profil.typ === "firma" || profil.typ === "tvorca") && maVybranyVzhlad(profil.k);
+    if (vlastneVzhlady && !zStreamu) return podania;
+    if (profil.typ === "firma") return <StrankaFirmy profil={profil} onDetail={setDetail} onBack={onBack} />; // KARTA 46
+    // KARTA 47 · stream cez QR / odkaz: vľavo hore „{tvorca} ›" otvorí profil tvorcu
+    if (zStreamu) return <StreamZbierka profil={profil} streamId={zStreamu} onTvorca={() => otvorVerejnyProfil("tvorca")} />;
+    // KARTA 47 · stream z profilu tvorcu: profil ostáva pod ním (skrytý), „Späť" vráti na to isté miesto
+    if (profil.typ === "tvorca") return (
+      <div style={{ position: "relative", height: "100%" }}>
+        <div aria-hidden={!!stream} style={stream ? { position: "absolute", inset: 0, visibility: "hidden", pointerEvents: "none" } : { height: "100%" }}>
+          <StrankaTvorcu profil={profil} onBack={onBack} onStream={setStream} onDetail={setDetail} />
+        </div>
+        {stream && <div style={{ position: "absolute", inset: 0 }}>
+          <StreamZbierka profil={profil} streamId={stream} onBack={() => { const krok = pridanyKrok.current; pridanyKrok.current = false; setStream(null); if (krok) { try { window.history.back(); } catch { /* sandbox */ } } }} />
+        </div>}
+      </div>
+    );
+    return podania;
+  };
+  // bod 149 · detail zbierky / záznam sa otvorí NAD profilom (profil ostane pod ním) → Zbaliť a späť vráti na tú istú kartu a posun
+  const vrstva = detail ? (
     <div className="sc-tokeny" data-stit={profil.stit.toLowerCase()} style={{ background: "var(--bg)", minHeight: "100%" }}>
       <div style={{ maxWidth: 1240, margin: "0 auto", padding: 14 }}>
         <ZbierkaModul zbierka={naZbierkaData(detail, profil)} zoStrankyOrg onBack={() => setDetail(null)} spatNazov="Späť na profil" />
       </div>
     </div>
-  );
-
-  if (zaznam) return (
+  ) : zaznam ? (
     <div className="vp sc-tokeny" data-stit={profil.stit.toLowerCase()} style={{ height: "100%" }}>
       {zaznam.typ === "zb"
         ? <DetailUkoncenej pc={pc} profil={profil} p={zaznam} onBack={() => setZaznam(null)} />
         : <DetailSkutku pc={pc} profil={profil} p={zaznam} onBack={() => setZaznam(null)} />}
     </div>
-  );
-
-  // OPRAVY 148: žiadny testovací pás na verejnej stránke (testuje sa v Správe). Vzhľad pri všetkých typoch —
-  // firma a tvorca majú zatiaľ jedno vlastné podanie; keď správca vyberie vzhľad, ukáže sa podanie charity s ich dátami.
-  const podania = podanie === "pirat" ? <PiratCharita profil={profil} onDetail={setDetail} onBack={onBack} onKronika={() => setPrepis("kronika")} />
-    : podanie === "vyklad" ? <VykladCharita profil={profil} onDetail={setDetail} onZaznam={otvorZaznam} onBack={onBack} />
-    : <Kronika profil={profil} onDetail={setDetail} onZaznam={otvorZaznam} onBack={onBack} />;
-  const vlastneVzhlady = (profil.typ === "firma" || profil.typ === "tvorca") && maVybranyVzhlad(profil.k);
-  if (vlastneVzhlady && !zStreamu) return podania;
-  if (profil.typ === "firma") return <StrankaFirmy profil={profil} onDetail={setDetail} onBack={onBack} />; // KARTA 46
-  // KARTA 47 · stream cez QR / odkaz: vľavo hore „{tvorca} ›" otvorí profil tvorcu
-  if (zStreamu) return <StreamZbierka profil={profil} streamId={zStreamu} onTvorca={() => otvorVerejnyProfil("tvorca")} />;
-  // KARTA 47 · stream z profilu tvorcu: profil ostáva pod ním (skrytý), „Späť" vráti na to isté miesto
-  if (profil.typ === "tvorca") return (
+  ) : null;
+  return (
     <div style={{ position: "relative", height: "100%" }}>
-      <div aria-hidden={!!stream} style={stream ? { position: "absolute", inset: 0, visibility: "hidden", pointerEvents: "none" } : { height: "100%" }}>
-        <StrankaTvorcu profil={profil} onBack={onBack} onStream={setStream} onDetail={setDetail} />
-      </div>
-      {stream && <div style={{ position: "absolute", inset: 0 }}>
-        <StreamZbierka profil={profil} streamId={stream} onBack={() => { const krok = pridanyKrok.current; pridanyKrok.current = false; setStream(null); if (krok) { try { window.history.back(); } catch { /* sandbox */ } } }} />
-      </div>}
-    </div>
-  );
-  return podania;
+      <div aria-hidden={vrstva ? true : undefined} style={vrstva ? { position: "absolute", inset: 0, visibility: "hidden", pointerEvents: "none" } : { height: "100%" }}>{zakladStranka()}</div>
+      {vrstva && <div style={{ position: "absolute", inset: 0, overflowY: detail ? "auto" : undefined }}>{vrstva}</div>}
+    </div>);
 }
 
 /** vrstva vnútri appky otváraná zo store (otvorVerejnyProfil) — tlačidlo v Správe, QR, zdieľaný odkaz.

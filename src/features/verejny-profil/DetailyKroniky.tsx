@@ -1,6 +1,7 @@
 // Doplnky 4. 10. (karta 45 · 5b) · detaily z kroniky (Kronika, História vo Výklade, roky) — len na čítanie, BEZ platobného modulu
 // (modul je len v Aktuálne). Ťuk na skutok = detail skutku ako vo feede (fotka, text, kto pomáhal, Páči sa mi, Zdieľať).
 // Ťuk na ukončenú zbierku = Zbierka skončila, Splnili sme, správa a doklady, darcovia. Návrh obrazoviek zatiaľ nie je.
+import { ZbalitASpat } from "@/features/zbierka/ZmensenyModul";
 import { useState, type CSSProperties } from "react";
 import type { TestProfil, TestZbierka } from "@/lib/testProfily";
 import { eur } from "@/lib/testProfily";
@@ -20,6 +21,7 @@ function Obal({ pc, onBack, children }: { pc: boolean; onBack: () => void; child
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6" /></svg>Späť
         </button>
         {children}
+        <ZbalitASpat onClick={onBack} />{/* bod 149 */}
       </div>
     </div>
   );

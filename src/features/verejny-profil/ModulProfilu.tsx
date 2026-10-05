@@ -4,6 +4,7 @@
 // DARY V EURÁCH · VLASTNÁ SUMA · DARY V KRYPTE · Pravidelná podpora · MESAČNE TO ZNAMENÁ (tipy, KARTA 46 pod ňou) ·
 // Sledovať + Podporiť DEED · Reťaz dobra · „Kam treba najviac…" · Darcovia. refId = centrálna / sektorová zbierka.
 // Nad modulom zväčšený náhľad dlaždice („POSIELAŠ DO · …", ikona i), modul sa prefarbí podľa poradia (data-hier).
+import { SpatNaZbierky, ZbalitASpat, ZmensenyModul } from "@/features/zbierka/ZmensenyModul";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { jeNeregistrovany, sledujDarcu } from "@/lib/devDarca";
 import { pridajDar, darcoviaPre } from "@/lib/darcovia";
@@ -51,6 +52,7 @@ export function ModulProfilu({ profil, sektor, poradie, mestoV, onZbal, dorovnan
     : "Centrálna zbierka je na chod celej organizácie. Dokladovanie je dobrovoľné a peniaze sa použijú tam, kde treba najviac. Ak chceš vidieť každý doklad, vyber konkrétnu zbierku alebo sektor.");
   return (
     <div data-hier={hier ?? String(poradie)} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+      <SpatNaZbierky onClick={onZbal} />{/* bod 149 · Späť hore v module */}
       <div style={{ borderRadius: 22, overflow: "hidden", border: "2px solid var(--hc)", background: "var(--card)" }}>
         {/* 5. 10. · fotka nad modulom = galéria tej zbierky (mobil posun prstom, PC šípky, ťuk = celá obrazovka s popisom) */}
         <Galeria media={sektor.galeria?.length ? sektor.galeria : [{ typ: "foto", src: sektor.foto }]} vyska={150} radius={0} okraj="0" prekrytie={<>
@@ -66,8 +68,8 @@ export function ModulProfilu({ profil, sektor, poradie, mestoV, onZbal, dorovnan
         </div>
         {info && <SvetlusikKarta style={{ margin: "0 12px 12px" }}>{infoText}</SvetlusikKarta>}
       </div>
-      <Modul profil={profil} sektor={sektor} mestoV={mestoV} sDorovnanim={dorovnanie} uvidisOdkaz={uvidisOdkaz} />
-      <button type="button" onClick={onZbal} style={{ height: 44, border: "none", background: "transparent", cursor: "pointer", fontSize: 13.5, fontWeight: 800, color: "var(--ink3)" }}>Zbaliť ⌃</button>
+      <ZmensenyModul><Modul profil={profil} sektor={sektor} mestoV={mestoV} sDorovnanim={dorovnanie} uvidisOdkaz={uvidisOdkaz} /></ZmensenyModul>
+      <ZbalitASpat onClick={onZbal} />
     </div>
   );
 }

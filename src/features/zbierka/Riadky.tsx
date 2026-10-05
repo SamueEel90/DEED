@@ -1,5 +1,7 @@
 // Riadky detailu zbierky: Zdieľať · QR + Páči sa mi (karta 00/06), karta 12 (pravidelná podpora,
 // obľúbené + Podporiť DEED+, zapojiť firmu, reťaz dobra), karta 10 (darcovia), karta 11 (karta Dorovnáva pre darcu).
+import { useLayout } from "@/components/context";
+import { SipkaKruh } from "./ZmensenyModul";
 import { DeedZnacka } from "@/components/DeedZnacka";
 import { useState, type CSSProperties, type ReactNode } from "react";
 import { usePersonalizacia } from "@/lib/personalizacia";
@@ -142,8 +144,10 @@ export function Darcovia({ refId, nadpis = "DARCOVIA", cezTvorcu, bezDorovnania,
   const dary = cezTvorcu ? vsetky.filter((r) => r.cezTvorcu === cezTvorcu) : vsetky;
   const ja = usePouzivatel();
   const [vsetci, setVsetci] = useState(false);
+  const { wide } = useLayout();
+  const [desat, setDesat] = useState(false); // bod 149 · mobil: 4, šípka ⌄ → 10, ⌃ späť na 4
   const pary = spojPary(dary).map((p) => (bezDorovnania ? { ...p, firma: undefined } : p));
-  const zobraz = vsetci ? pary : pary.slice(0, 10);
+  const zobraz = !wide ? pary.slice(0, desat ? 10 : 4) : vsetci ? pary : pary.slice(0, 10);
   return (
     <div style={{ marginTop: 12, borderRadius: 18, background: "var(--card)", border: "1px solid var(--cardBd)", padding: "14px 16px 6px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
@@ -169,7 +173,8 @@ export function Darcovia({ refId, nadpis = "DARCOVIA", cezTvorcu, bezDorovnania,
           )}
         </div>
       ))}
-      {pary.length > 10 && (
+      {!wide && pary.length > 4 && <div style={{ display: "flex", justifyContent: "center", padding: "6px 0 10px" }}><SipkaKruh s={44} hore={desat} onClick={() => setDesat((d) => !d)} label={desat ? "Ukázať menej darcov" : "Ukázať viac darcov"} /></div>}
+      {wide && pary.length > 10 && (
         <button type="button" onClick={() => setVsetci(!vsetci)}
           style={{ width: "100%", height: 46, margin: "6px 0 10px", borderRadius: 13, border: "1px solid var(--cardBd)", background: "var(--bg)", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 800, color: "var(--green)" }}>
           {vsetci ? "Zbaliť" : `Zobraziť všetkých ${pary.length}`}
