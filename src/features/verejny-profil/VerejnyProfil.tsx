@@ -9,7 +9,9 @@ import { useEffect, useRef, useState } from "react";
 import { ZbierkaModul } from "@/features/zbierka/ZbierkaModul";
 import { najdiTestProfil, type TestProfil, type TestZbierka } from "@/lib/testProfily";
 import { otvorVerejnyProfil, useVerejnyProfilOtvoreny, verejnyProfilKluc, zavriVerejnyProfil } from "./otvor";
-import { VrstvaProfilu, naZbierkaData, PrepinacPodania, usePodanie } from "./casti";
+import { VrstvaProfilu, naZbierkaData, PrepinacPodania } from "./casti";
+import { useVzhlad, type Vzhlad } from "@/lib/vzhladStranky";
+import { nacitajTiery } from "@/features/rola/stav";
 import { TESTOVACIA } from "@/lib/testovacia";
 import { Kronika } from "./Kronika";
 import { VykladCharita } from "./VykladCharita";
@@ -44,8 +46,15 @@ export function VerejnyProfilView({ kluc, onBack }: { kluc: string; onBack: () =
     window.addEventListener("popstate", f);
     return () => window.removeEventListener("popstate", f);
   }, [stream]);
-  const [podanie] = usePodanie(); // KARTA 45: charita v 3 podaniach (testovací prepínač na profile)
   const ts = useTestStav(); // OPRAVY 147: testovací prázdny profil
+  // KARTA 50 · §1: vzhľad vyberá správca v Správe → Upraviť profil (Zadarmo = vzhľad z configu); návštevník ho neprepína.
+  // „Celá kronika" v Pirátovi otvorí Kroniku len pre tohto návštevníka (nič sa neukladá).
+  const [tiery] = useState(nacitajTiery);
+  const typP = profil0?.typ;
+  const tierStranky = TESTOVACIA && ts.program !== null ? ts.program : typP === "charita" ? tiery.charita : typP === "firma" ? tiery.b2b : tiery.tvorca;
+  const vzhlad = useVzhlad(profil0?.k ?? kluc, tierStranky === 0);
+  const [prepis, setPrepis] = useState<Vzhlad | null>(null);
+  const podanie = prepis ?? vzhlad;
   if (!profil0) return null;
   const profil = ts.prazdny ? vyprazdni(profil0) : profil0;
 
@@ -79,8 +88,8 @@ export function VerejnyProfilView({ kluc, onBack }: { kluc: string; onBack: () =
       </div>}
     </div>
   );
-  const prepinac = TESTOVACIA ? <PrepinacPodania /> : undefined;
-  if (podanie === "pirat") return <PiratCharita profil={profil} onDetail={setDetail} onBack={onBack} prepinac={TESTOVACIA ? <PrepinacPodania tmavy /> : undefined} />;
+  const prepinac = TESTOVACIA ? <PrepinacPodania /> : undefined; // OPRAVY 147: testovacie stavy (bez vzhľadu)
+  if (podanie === "pirat") return <PiratCharita profil={profil} onDetail={setDetail} onBack={onBack} onKronika={() => setPrepis("kronika")} prepinac={TESTOVACIA ? <PrepinacPodania tmavy /> : undefined} />;
   if (podanie === "vyklad") return <VykladCharita profil={profil} onDetail={setDetail} onZaznam={otvorZaznam} onBack={onBack} prepinac={prepinac} />;
   return <Kronika profil={profil} onDetail={setDetail} onZaznam={otvorZaznam} onBack={onBack} prepinac={prepinac} />;
 }

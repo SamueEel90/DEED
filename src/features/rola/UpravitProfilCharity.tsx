@@ -4,6 +4,7 @@
 // organizácie (lib/profilStranky, migrácia 0028), na profile sa ukáže až po „Uložiť profil".
 // Editor, orez, logo a kontakt = existujúce RichTextInput, OrezFotky, lib/obrazok, kontakt.tsx.
 // ============================================================
+import { useVerejnyProfilOtvoreny } from "@/features/verejny-profil/otvor";
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { RichTextInput } from "@/components/richtext";
@@ -72,13 +73,15 @@ const Pridat = ({ onClick, children }: { onClick: () => void; children: ReactNod
 const cas = (iso: string) => new Date(iso).toLocaleTimeString("sk-SK", { hour: "2-digit", minute: "2-digit" });
 
 // ============================================================
-export function UpravitProfilCharity({ strankaId, pozicia, tier, nazov, inicialy, mobil, tablet, stit, onZrusit, onHotovo, onUlozene, onZmena }: {
+export function UpravitProfilCharity({ strankaId, pozicia, tier, nazov, inicialy, mobil, tablet, stit, onZrusit, onHotovo, onUlozene, onZmena, vzhlad }: {
+  /** KARTA 50: blok Vzhľad stránky — prvý pod nadpisom */ vzhlad?: ReactNode;
   strankaId: string; pozicia: Pozicia; tier: Tier; nazov: string; inicialy: string; mobil: boolean; tablet: boolean;
   stit: string;
   onZrusit: () => void; onHotovo: () => void; onUlozene: (p: ProfilStranky) => void;
   /** OPRAVY 112: každá zmena hore — percento v karte charity rastie naživo */
   onZmena?: (p: ProfilStranky) => void;
 }) {
+  const vpOtvoreny = useVerejnyProfilOtvoreny(); // KARTA 50: „Pozrieť verejný profil" — spodná lišta úpravy sa skryje
   const z0 = profilZPamate(strankaId);
   const [p, setP] = useState<ProfilStranky>(() => z0.koncept ?? z0.ulozeny ?? zakladnyProfil(pozicia));
   const [konceptCas, setKonceptCas] = useState<string | null>(z0.konceptCas);
@@ -319,11 +322,12 @@ export function UpravitProfilCharity({ strankaId, pozicia, tier, nazov, inicialy
   if (mobil && !tablet) return (
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
       {hlavicka}
+      {vzhlad}
       {kartaLogo}{kartaFotka}{kartaOnas}{kartaKontakt}
       <div style={{ display: "flex", justifyContent: "center" }}><button type="button" onClick={onZrusit} style={tl("obrys", 44)}>Zrušiť</button></div>
       <div aria-hidden="true" style={{ height: 70 }} />
       {/* spodná lišta: Náhľad · Uložiť profil — nad spodným menu appky (portál, aby ju menu neprekrylo) */}
-      {createPortal(
+      {!vpOtvoreny && createPortal(
         <div className="sprava-charity" data-stit={stit} style={{ position: "fixed", left: 12, right: 12, bottom: "calc(96px + env(safe-area-inset-bottom, 0px))", zIndex: 45, display: "flex", gap: 10, padding: 8, borderRadius: 18, background: "var(--panel)", border: "1px solid var(--cardBd)", boxShadow: "0 8px 24px rgba(30,28,20,.16)" }}>
           <button type="button" onClick={() => setPohlad("nahlad")} style={{ ...tl("sive", 50), flex: 1 }}>Náhľad</button>
           <button type="button" onClick={() => void uloz()} disabled={!mozeUlozit} style={{ ...tl("zelene", 50), flex: 2, opacity: mozeUlozit ? 1 : 0.45 }}>Uložiť profil</button>
@@ -333,7 +337,7 @@ export function UpravitProfilCharity({ strankaId, pozicia, tier, nazov, inicialy
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
       {hlavicka}
       <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1.15fr) minmax(0,1fr)", gap: 14, alignItems: "start" }}>
-        <div style={{ display: "flex", flexDirection: "column", gap: 14, minWidth: 0 }}>{kartaOnas}{kartaKontakt}</div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 14, minWidth: 0 }}>{vzhlad}{kartaOnas}{kartaKontakt}</div>
         <div style={{ display: "flex", flexDirection: "column", gap: 14, minWidth: 0 }}>{kartaLogo}{kartaFotka}</div>
       </div>
     </div>);

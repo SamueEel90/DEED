@@ -8,7 +8,7 @@
 // Pôvodný Pirat.tsx ostáva tvorcovi (Martin Konaľ).
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { eur, tvar, type Lokalita, type TestProfil, type TestZbierka } from "@/lib/testProfily";
-import { DOK, LokalitaPrepinac, PlagatPrace, PrepinacPodania, klikKarta, PribehText, StitCare, StitOkno, kovText, nazovStitu, useDomaceMesto, usePodanie, vMeste } from "./casti";
+import { DOK, LokalitaPrepinac, PlagatPrace, PrepinacPodania, klikKarta, PribehText, StitCare, StitOkno, kovText, nazovStitu, useDomaceMesto, vMeste } from "./casti";
 import { PodporaProfilu, type Vyber } from "./PodporaProfilu";
 import { GRAD, PRUH, MalaZbierka, OznamKarta, ZIskier, bgF, useCharitaData } from "./charitaCasti";
 
@@ -25,7 +25,7 @@ const sekcia: CSSProperties = { position: "relative", flex: "none", overflow: "h
 const velkyNadpis = (fs: number, extra?: CSSProperties): CSSProperties => ({ fontSize: fs, lineHeight: 1, letterSpacing: "-.02em", alignSelf: "flex-start", ...kovText, ...extra });
 const btnZ: CSSProperties = { border: "none", cursor: "pointer", fontWeight: 800, color: "#fff", background: GRAD, fontFamily: "inherit" };
 
-export function PiratCharita({ profil, onDetail, onBack, prepinac }: { profil: TestProfil; onDetail: (z: TestZbierka) => void; onBack: () => void; prepinac?: ReactNode }) {
+export function PiratCharita({ profil, onDetail, onBack, prepinac, onKronika }: { profil: TestProfil; onDetail: (z: TestZbierka) => void; onBack: () => void; prepinac?: ReactNode; /** „Celá kronika" — Kronika len pre tohto návštevníka */ onKronika?: () => void }) {
   const pc = usePc();
   const domace = useDomaceMesto(profil);
   const [lok, setLok] = useState<Lokalita>(domace);
@@ -33,7 +33,7 @@ export function PiratCharita({ profil, onDetail, onBack, prepinac }: { profil: T
   const aRef = useRef<HTMLElement | null>(null);
   const [sh, setSh] = useState(false);
   const [stitOtv, setStitOtv] = useState(false);
-  const [, setPodanie] = usePodanie();
+  const setPodanie = (_k: "kronika") => onKronika?.();
   const d = useCharitaData(profil, lok, domace);
   const snapRef = useRef<HTMLDivElement | null>(null);
   const stit = profil.stit.toLowerCase();
