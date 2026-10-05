@@ -1,10 +1,12 @@
 // Doplnky 4. 10. (karta 45 · 5b) · detaily z kroniky (Kronika, História vo Výklade, roky) — len na čítanie, BEZ platobného modulu
 // (modul je len v Aktuálne). Ťuk na skutok = detail skutku ako vo feede (fotka, text, kto pomáhal, Páči sa mi, Zdieľať).
 // Ťuk na ukončenú zbierku = Zbierka skončila, Splnili sme, správa a doklady, darcovia. Návrh obrazoviek zatiaľ nie je.
-import { ZbalitASpat } from "@/features/zbierka/ZmensenyModul";
+import { ZbalitASpat, ZmensenyModul } from "@/features/zbierka/ZmensenyModul";
+import { ModulPlatby } from "./ModulProfilu";
+import { zbierkaAkoSektor } from "./PodporaProfilu";
 import { useState, type CSSProperties } from "react";
 import type { TestProfil, TestZbierka } from "@/lib/testProfily";
-import { eur } from "@/lib/testProfily";
+import { eur, jeFarnost } from "@/lib/testProfily";
 import { toast } from "@/shared";
 import { Darcovia } from "@/features/zbierka/Riadky";
 import { DeedDetail } from "@/features/aktivity/Aktivity";
@@ -34,6 +36,10 @@ export function DetailSkutku({ profil, p, onBack }: { pc: boolean; profil: TestP
   const sk = profil.skutky.find((s) => s.id === p.id);
   const [hlasy, setHlasy] = useState<Record<number, string>>({});
   const num = Math.abs([...p.id].reduce((a, ch) => (a * 31 + ch.charCodeAt(0)) | 0, 7)) % 100000;
+  const zb = sk?.podpora?.na === "zbierka" ? profil.zbierky.find((z) => z.id === (sk.podpora as { zbierkaId: string }).zbierkaId) : undefined;
+  const modul = !p.rok || !sk?.podpora ? null
+    : sk.podpora.na === "centralna" ? { nadpis: `PODPORIŤ · ${profil.centralna.nazov.toLocaleUpperCase("sk-SK")}`, sektor: profil.centralna, nazov: `${profil.centralna.nazov} · ${profil.meno}` }
+    : zb ? { nadpis: "PODPORIŤ ZBIERKU · 100 % IDE NA ŇU", sektor: zbierkaAkoSektor(zb), nazov: zb.nazov } : null;
   const it = {
     id: num, num, dom: "zdravie", type: "skutok", emoji: "", verified: true, likes: 0,
     author: profil.meno, ini: profil.iniciala, pfp: "#4B7A35",
@@ -47,6 +53,14 @@ export function DetailSkutku({ profil, p, onBack }: { pc: boolean; profil: TestP
       <div style={{ maxWidth: 760, margin: "0 auto", paddingBottom: 120 }}>
         <DeedDetail it={it} bezPodpory support={() => {}} votes={hlasy} vote={(id: number, v: string) => setHlasy((h) => ({ ...h, [id]: v }))}
           toast={toast} home={onBack} openPerson={() => {}} />
+        {/* bod 150 · skutok s platobným modulom (bod 122): na centrálnu / na zbierku (100 % tam) / bez modulu */}
+        <div style={{ padding: "0 16px", display: "flex", flexDirection: "column", gap: 12 }}>
+          {modul && <>
+            <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".1em", color: "var(--acc)", paddingTop: 8 }}>{modul.nadpis}</span>
+            <ZmensenyModul><ModulPlatby profil={profil} sektor={modul.sektor} nazov={modul.nazov} dorovnanie={!jeFarnost(profil)} /></ZmensenyModul>
+          </>}
+          <ZbalitASpat onClick={onBack} />
+        </div>
       </div>
     </div>
   );

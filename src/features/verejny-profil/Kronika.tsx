@@ -332,7 +332,7 @@ export function Kronika({ profil, onDetail, onZaznam, onBack, prepinac }: { prof
   };
   const zIskier = (iskryCesty[0].length + iskryCesty[1].length) > 0 && (
     <div style={{ display: "flex", flexDirection: "column", gap: 10, paddingTop: 8 }}>
-      <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".1em", color: "var(--acc)" }}>Z ISKIER</span>
+      <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".1em", color: "var(--acc)" }}>VIDEÁ Z ISKIER</span>
       <div role="tablist" aria-label="Iskry" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, padding: 4, borderRadius: 16, background: "var(--card)", border: "1px solid var(--cardBd)" }}>
         {([["Iskry", "skutky · talenty · rady"], ["Zbierky", "výzvy · ďakujeme"]] as const).map(([t, s], i) => {
           const on = isk === i;

@@ -161,7 +161,7 @@ export function PiratCharita({ profil, onDetail, onBack, prepinac, onKronika }: 
                 <span style={{ display: "flex", alignItems: "baseline", gap: 10, fontVariantNumeric: "tabular-nums" }}><b style={{ fontSize: 30 }}>{eur(v.vyzbierane)}</b><span style={{ fontSize: 16, opacity: 0.85 }}>{v.ciel ? `z ${eur(v.ciel)} · ` : ""}{v.ludia} ľudí</span></span>
                 {v.dorovnanie && <span style={{ fontSize: 15, fontWeight: 700, color: "#F6D77A" }}>{v.dorovnanie}</span>}
               </div>, () => vyber(v), `${v.nazov} · darovať`)}
-            {svetla(<><b style={velkyNadpis(52)}>Z Iskier</b><ZIskier profil={profil} cesty={d.iskryCesty} w={210} h={374} wVs={112} /></>, { gap: 20 })}
+            {svetla(<><b style={velkyNadpis(52)}>Videá z Iskier</b><ZIskier profil={profil} cesty={d.iskryCesty} w={210} h={374} wVs={112} /></>, { gap: 20 })}
             {svetla(<>
               <b style={velkyNadpis(52)}>Ďalšie zbierky a oznamy</b>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 12 }}>{d.male.map((z) => <MalaZbierka key={z.id} z={z} onDetail={zbierkaKlik} />)}</div>
@@ -256,7 +256,7 @@ export function PiratCharita({ profil, onDetail, onBack, prepinac, onKronika }: 
             {v.dorovnanie && <span style={{ fontSize: 13, color: "var(--gold)", fontWeight: 700 }}>{v.dorovnanie}</span>}
           </>)}
         </>, () => onDetail(v), v.nazov)}
-        <section style={{ ...sekcia, background: "var(--bg)" }}>{plocha(<><b style={velkyNadpis(34)}>Z Iskier</b><ZIskier profil={profil} cesty={d.iskryCesty} w={150} h={268} wVs={112} /></>)}</section>
+        <section style={{ ...sekcia, background: "var(--bg)" }}>{plocha(<><b style={velkyNadpis(34)}>Videá z Iskier</b><ZIskier profil={profil} cesty={d.iskryCesty} w={150} h={268} wVs={112} /></>)}</section>
         <section style={{ ...sekcia, background: "var(--bg)" }}>{plocha(<>
           <b style={velkyNadpis(30, { lineHeight: 1.05 })}>Ďalšie zbierky</b>
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>{d.male.map((z) => <MalaZbierka key={z.id} z={z} onDetail={zbierkaKlik} t={64} />)}</div>

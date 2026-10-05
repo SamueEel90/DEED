@@ -119,7 +119,7 @@ export function ZIskier({ profil, cesty, w, h, wVs, nadpis = true }: { profil: T
   if (!cesty[0].length && !cesty[1].length) return null;
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 10, paddingTop: 8 }}>
-      {nadpis && <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".1em", color: "var(--acc)" }}>Z ISKIER</span>}
+      {nadpis && <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".1em", color: "var(--acc)" }}>VIDEÁ Z ISKIER</span>}
       <IskryTaby isk={isk} onIsk={setIsk} />
       <div ref={radRef} style={{ display: "flex", gap: 10, overflowX: "auto", paddingBottom: 2 }}>
         {tu.map((v) => <KartaIskry key={v.id} v={v} w={w} h={h} />)}
