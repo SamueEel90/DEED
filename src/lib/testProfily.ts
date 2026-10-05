@@ -68,6 +68,8 @@ export interface TestZbierka {
   galeria?: { typ: "foto" | "video"; src: string; popis?: string }[];
   /** ukončená zbierka v kronike: „22." · „SEP" · 2026 */
   d?: string; m?: string; rok?: number;
+  /** KARTA 55 · príbeh: krátky text (feed, max 3 riadky), citát, kategória, diel firmy v pruhu, Príbeh týždňa */
+  kratky?: string; citat?: { text: string; kto: string }; kategoria?: string; zFirmy?: number; pribehTyzdna?: boolean;
 }
 
 export interface TestSkutok {
@@ -84,6 +86,8 @@ export interface TestSkutok {
   podpora?: { na: "centralna" } | { na: "zbierka"; zbierkaId: string };
   /** dátum v kronike: „29." · „SEP" · 2026 */
   d?: string; m?: string; rok?: number;
+  /** KARTA 55 · 1 – 2 vety, čo sa stalo (Čo sme dokázali) */
+  coSaStalo?: string;
 }
 
 export interface TestOznam {
@@ -285,19 +289,23 @@ const CHARITA: TestProfil = {
     }, { mesiac: 1210, mesacne: 54, kam: "Nocľaháreň, polievka a sprchy. Minulý mesiac v {m}: 620 nocí pod strechou a 900 polievok.", tipy: [[5, "10 teplých polievok"], [10, "2 noci v nocľahárni"], [20, "sprcha a čisté veci 8×"]] }),
   ],
   zbierky: [
-    { id: "z-strecha-horvath", nazov: "Strecha pre rodinu Horváthovú", popis: "V noci im zhorela strecha nad hlavou. Dve deti, babka a zima pred dverami. Prvú etapu sme už opravili, chýba krytina.", mesto: "Trenčín", cast: "Zlatovce", foto: F.poziar, vyzbierane: 8420, ciel: 12000, ludia: 148, stav: "bezi", konciDni: 9, dorovnanie: "Pekáreň Dobrota pridá k daru rovnakú sumu", galeria: [{ typ: "foto", src: F.poziar, popis: "Noc po požiari" }, { typ: "foto", src: F.strecha, popis: "Pred opravou" }, { typ: "foto", src: F.dobrovolnici, popis: "Dobrovoľníci z Opatovej" }],
+    { id: "z-strecha-horvath", nazov: "Strecha pre rodinu Horváthovú", popis: "V noci im zhorela strecha nad hlavou. Dve deti, babka a zima pred dverami. Prvú etapu sme už opravili, chýba krytina.", mesto: "Trenčín", cast: "Zlatovce", foto: F.poziar, vyzbierane: 8420, ciel: 12000, ludia: 148, stav: "bezi", konciDni: 9, dorovnanie: "Pekáreň Dobrota pridá k daru rovnakú sumu", pribehTyzdna: true, kategoria: "RODINY", zFirmy: 2060,
+      kratky: "V noci z 2. na 3. októbra im od komína chytila strecha. Pani Horváthová stihla vyniesť deti, Tomáša (7) a Emu (4), aj babku, ktorá chodí o barlách. Hasiči dom zachránili, strecha nie. Krov už stojí, dobrovoľníci z Opatovej ho postavili za jeden víkend. Chýba krytina a laty, aby sa rodina mohla pred zimou vrátiť domov.",
+      citat: { text: "Ema sa každý večer pýta, kedy pôjdeme spať domov.", kto: "Jana Horváthová, mama" }, galeria: [{ typ: "foto", src: F.poziar, popis: "Noc po požiari" }, { typ: "foto", src: F.strecha, popis: "Pred opravou" }, { typ: "foto", src: F.dobrovolnici, popis: "Dobrovoľníci z Opatovej" }],
       pribeh: "V noci z 2. na 3. októbra im od komína chytila strecha. Pani Horváthová stihla vyniesť deti, Tomáša (7) a Emu (4), aj babku, ktorá chodí o barle. Hasiči dom zachránili, strecha nie. Rodina teraz spí u susedov v jednej izbe. Prvú etapu sme už spravili: dobrovoľníci z Opatovej odpratali zhorené trámy a pokrývač Jozef zadarmo postavil nový krov. Chýba krytina, laty a odkvapy, spolu 3 580 €. Ak ich vyzbierame do 13. októbra, Horváthovci budú spať doma ešte pred prvým mrazom. Každý doklad tu zverejníme do 30 dní." },
-    { id: "z-vozik-nina", nazov: "Invalidný vozík pre Ninu", popis: "Nina má 7 rokov a starý vozík jej je malý. Nový zvládne aj školský dvor.", mesto: "Trenčín", foto: F.vozik, vyzbierane: 2960, ciel: 4000, ludia: 61, stav: "dlhodoba" },
+    { id: "z-vozik-nina", nazov: "Invalidný vozík pre Ninu", popis: "Nina má 7 rokov a starý vozík jej je malý. Nový zvládne aj školský dvor.", mesto: "Trenčín", foto: F.vozik, vyzbierane: 2960, ciel: 4000, ludia: 61, stav: "dlhodoba", kategoria: "ZDRAVIE",
+      kratky: "Nina má 9 rokov a svalovú dystrofiu. Starý vozík už sama neutlačí a do školy ju vozí mama. Ľahký vozík jej vráti cestu do triedy aj na ihrisko.", citat: { text: "Chcem chodiť do školy sama ako ostatní.", kto: "Nina" } },
     { id: "z-strecha-maria", nazov: "Strecha pre pani Máriu", popis: "Pani Mária má 81 rokov a býva sama. Cez strechu jej tečie do kuchyne a zima je za dverami.", mesto: "Prešov", cast: "Sekčov", foto: F.strecha, vyzbierane: 1260, ciel: 3400, ludia: 38, stav: "bezi", konciDni: 12 },
-    { id: "z-doucovanie-tabor", nazov: "Doučovanie v Tábori", popis: "Deväť detí z Tábora chodí na doučovanie dvakrát týždenne. Platíme učiteľky a pomôcky.", mesto: "Prešov", cast: "Tábor", foto: F.ucenie, vyzbierane: 740, ciel: 2000, ludia: 24, stav: "bezi" },
+    { id: "z-doucovanie-tabor", nazov: "Doučovanie v Tábori", popis: "Deväť detí z Tábora chodí na doučovanie dvakrát týždenne. Platíme učiteľky a pomôcky.", mesto: "Prešov", cast: "Tábor", foto: F.ucenie, vyzbierane: 740, ciel: 2000, ludia: 24, stav: "bezi", kategoria: "DETI",
+      kratky: "V osade Tábor chodí do školy 40 detí a polovica neprejde do ďalšieho ročníka. Dve učiteľky ich doučujú zadarmo každý utorok a štvrtok. Zbierka zaplatí zošity, desiatu a autobus.", citat: { text: "Keď dostanú desiatu, vydržia sedieť až do konca.", kto: "učiteľka Mária" } },
     { id: "z-polievka-hlavna", nazov: "Polievka na Hlavnej", popis: "Každý večer uvaríme polievku pre 40 ľudí bez domova na Hlavnej ulici.", mesto: "Prešov", foto: F.polievka, vyzbierane: 1890, ludia: 72, stav: "dlhodoba" },
     { id: "z-bundy-deti", nazov: "Zimné bundy pre deti", popis: "Bundy, čiapky a rukavice pre deti z rodín v núdzi pred zimou.", mesto: "Bratislava", foto: F.bundy, vyzbierane: 1870, ciel: 2600, ludia: 77, stav: "bezi", konciDni: 21 },
     { id: "z-ovocie-vydajna", nazov: "Ovocie do výdajne", popis: "Čerstvé ovocie do výdajne potravín, každý týždeň.", mesto: "Trenčín", foto: F.ovocie, vyzbierane: 380, ciel: 380, ludia: 27, stav: "ukoncena", doklady: 4, skoncila: "22. 9.", spravaDarcom: "Ovocie sme rozdelili 27 rodinám. Posledný týždeň ostalo aj na výdajňu v Opatovej.", d: "22.", m: "SEP", rok: 2026 },
   ],
   skutky: [
-    { id: "sk-300jedal", nazov: "300 teplých jedál za 2 hodiny", popis: "Mierové námestie · dobrovoľníci z mesta", mesto: "Trenčín", kedy: "Včera", foto: F.jedlo, dobrovolnici: 14, d: "2.", m: "OKT", rok: 2026, podpora: { na: "centralna" }, split: [{ komu: "Svetlo pomoci", pct: 70 }, { komu: "Nocľaháreň Mea Culpa", pct: 30 }] },
-    { id: "sk-strecha", nazov: "Opravili sme strechu Horváthovcom", popis: "prvá etapa · krov a laty", mesto: "Trenčín", kedy: "29. 9.", foto: F.strecha, dobrovolnici: 9, d: "29.", m: "SEP", rok: 2026, podpora: { na: "zbierka", zbierkaId: "z-strecha-horvath" } },
-    { id: "sk-nakup-sihot", nazov: "Nákup pre 12 seniorov zo Sihote", popis: "každý piatok · nákup a odvoz domov", mesto: "Trenčín", kedy: "20. 9.", foto: F.seniori, dobrovolnici: 6, d: "20.", m: "SEP", rok: 2026, podpora: { na: "centralna" } },
+    { id: "sk-300jedal", nazov: "300 teplých jedál za 2 hodiny", popis: "Mierové námestie · dobrovoľníci z mesta", mesto: "Trenčín", kedy: "Včera", foto: F.jedlo, dobrovolnici: 14, d: "2.", m: "OKT", rok: 2026, podpora: { na: "centralna" }, coSaStalo: "Po zatvorení jedálne na Hlavnej sme varili na námestí. Prišli aj ľudia, ktorí sa hanbili prísť do výdajne.", split: [{ komu: "Svetlo pomoci", pct: 70 }, { komu: "Nocľaháreň Mea Culpa", pct: 30 }] },
+    { id: "sk-strecha", nazov: "Opravili sme strechu Horváthovcom", popis: "prvá etapa · krov a laty", mesto: "Trenčín", kedy: "29. 9.", foto: F.strecha, dobrovolnici: 9, d: "29.", m: "SEP", rok: 2026, podpora: { na: "zbierka", zbierkaId: "z-strecha-horvath" }, coSaStalo: "Za jeden víkend stál nový krov. Teraz zbierame na krytinu." },
+    { id: "sk-nakup-sihot", nazov: "Nákup pre 12 seniorov zo Sihote", popis: "každý piatok · nákup a odvoz domov", mesto: "Trenčín", kedy: "20. 9.", foto: F.seniori, dobrovolnici: 6, d: "20.", m: "SEP", rok: 2026, podpora: { na: "centralna" }, coSaStalo: "Každý piatok nakúpime a odvezieme domov. Pani Anna nám vždy upečie koláč." },
     { id: "sk-obedy-sekcov", nazov: "Obedy pre 20 seniorov zo Sekčova", popis: "každý deň o 11:00", mesto: "Prešov", kedy: "18. 9.", foto: F.jedlo, dobrovolnici: 5, d: "18.", m: "SEP", rok: 2026 },
     { id: "sk-dvor", nazov: "Upratali sme dvor jedálne", popis: "Hlavná 12 · celé sobotné doobedie", mesto: "Prešov", kedy: "14. 9.", foto: F.dobrovolnici, dobrovolnici: 11, d: "14.", m: "SEP", rok: 2026 },
     { id: "sk-tasky", nazov: "31 školských tašiek", popis: "rozdávali sme priamo v škole", mesto: "Bratislava", kedy: "2. 9.", foto: F.tasky, dobrovolnici: 8, d: "2.", m: "SEP", rok: 2026, split: [{ komu: "Svetlo pomoci", pct: 60 }, { komu: "ZŠ Hodžova", pct: 40 }] },
@@ -306,12 +314,16 @@ const CHARITA: TestProfil = {
   oznamy: [
     { id: "o-deky", druh: "vyzva", nadpis: "Hľadáme deky do nocľahárne", stitok: "VÝZVA NA SÚRNU POMOC", text: "Do 8. 10. · Mierové nám. 1, každý deň 9 – 17", mesto: "Trenčín", den: "8.", mesiac: "OKT", tlacidlo: "Prihlásiť sa", pod: "23 ľudí už pomáha" },
     { id: "o-beh", druh: "akcia", nadpis: "Beh pre Svetlo", stitok: "AKCIA · SOBOTA 10:00", text: "Ostrov, Trenčín · 5 km, aj pre rodiny s deťmi", mesto: "Trenčín", den: "12.", mesiac: "OKT", tlacidlo: "Zúčastním sa", pod: "zúčastní sa 64 ľudí" },
+    { id: "o-kuchyna", druh: "oznam", nadpis: "Varíme v novej kuchyni", stitok: "OZNAM", text: "od pondelka 6:00 · Hodžova 12", mesto: "Trenčín", den: "14.", mesiac: "OKT", tlacidlo: "Pozrieť", pod: "polievka každé ráno" },
+    { id: "o-dvere", druh: "oznam", nadpis: "Príďte sa pozrieť do výdajne", stitok: "DEŇ OTVORENÝCH DVERÍ", text: "piatok 14 – 18 · Mierové nám. 1", mesto: "Trenčín", den: "17.", mesiac: "OKT", tlacidlo: "Prídem", pod: "káva a koláč pre každého" },
     { id: "o-upratovanie", druh: "akcia", nadpis: "Upratovanie dvora pri jedálni", stitok: "AKCIA · SOBOTA 9:00", text: "Hlavná 12, Prešov · rukavice dáme", mesto: "Prešov", den: "18.", mesiac: "OKT", tlacidlo: "Zúčastním sa", pod: "zúčastní sa 11 ľudí" },
     { id: "o-vydajna", druh: "oznam", nadpis: "Nová výdajňa otvorená", stitok: "OZNAM", text: "Račianska 4, Bratislava · pondelok až piatok 13 – 17", mesto: "Bratislava", den: "1.", mesiac: "OKT", tlacidlo: "Pozrieť", pod: "prvý týždeň prišlo 180 ľudí" },
   ],
   praca: [
     { id: "p-vodic", nazov: "Vodič na rozvoz jedál", druh: "brigadnik", text: "Piatky 10 – 14 · dohoda · 6 € na hodinu", mesto: "Trenčín", den: "15.", mesiac: "OKT", pod: "prihlásiť sa do 15. 10.",
       stitok: "BRIGÁDA", opis: "Rozvezieš obedy seniorom zo Sihote a Opatovej. Auto máme, stačí vodičák B a dobrá nálada.", kde: "Trenčín · Mierové nám. 1", kedy: "piatky 10 – 14", odmena: "6 € na hodinu · dohoda", zaujem: "3 ľudia už majú záujem" },
+    { id: "p-kuchar", nazov: "Kuchár do novej kuchyne", druh: "brigadnik", text: "Hodžova 12 · aspoň 1 deň v týždni, 6 – 9", mesto: "Trenčín", den: "25.", mesiac: "OKT", pod: "prihlásiť sa do 25. 10.",
+      stitok: "DOBROVOĽNÍK", opis: "Ráno uvaríš 120 porcií polievky s ďalšími tromi ľuďmi. Recepty máme, nauč nás aj svoje.", kde: "Hodžova 12", kedy: "aspoň 1 deň v týždni, 6 – 9", odmena: "karma a raňajky", zaujem: "5 ľudí už má záujem" },
     { id: "p-koordinator", nazov: "Koordinátorka dobrovoľníkov", druh: "zamestnanec", text: "Prešov · polovičný úväzok · od 1. 11. · 680 € mesačne", mesto: "Prešov", den: "25.", mesiac: "OKT", pod: "prihlásiť sa do 25. 10.",
       stitok: "POLOVIČNÝ ÚVÄZOK", opis: "Dáš dokopy 40 dobrovoľníkov v Prešove: rozpisy, nábor a starostlivosť, aby sa k nám radi vracali.", kde: "Prešov · Hlavná 12", kedy: "od 1. 11. · 20 h týždenne", odmena: "680 € mesačne", zaujem: "1 človek už má záujem" },
   ],
@@ -343,7 +355,7 @@ const CHARITA: TestProfil = {
     { id: "k-noclah", typ: "zb", d: "28.", m: "FEB", rok: 2026, mesto: "Trenčín", nazov: "Zimná nocľaháreň", s: "4 000 € · od 96 darcov", q: "Kúpili sme 40 postelí, perie a 80 diek. Nocľaháreň bola celú zimu plná a nikto nemusel spať vonku.", dok: "14 DOKLADOV", foto: U("photo-1519681393784-d120267933ba") },
     { id: "k-piatky", typ: "sk", d: "9.", m: "JAN", rok: 2026, mesto: "Trenčín", nazov: "Prvých 150 piatkov varenia", s: "Mierové námestie · 14 dobrovoľníkov", foto: U("photo-1542838132-92c53300491e") },
     { id: "k-bundy25", typ: "zb", d: "20.", m: "DEC", rok: 2025, mesto: "Trenčín", nazov: "Zimné bundy pre deti", s: "1 870 € · od 77 darcov", q: "77 detí dostalo pred Vianocami teplú bundu. Rozdávali sme ich priamo v škole, spolu s rodičmi.", dok: "8 DOKLADOV", foto: U("photo-1519681393784-d120267933ba") },
-    { id: "k-beh25", typ: "oz", d: "14.", m: "OKT", rok: 2025, mesto: "Trenčín", nazov: "Beh pre Svetlo 2025: 412 bežcov", s: "Ostrov, Trenčín · vyzbierali 3 140 €", foto: U("photo-1517649763962-0c623066013b") },
+    { id: "k-beh25", typ: "oz", d: "14.", m: "OKT", rok: 2025, mesto: "Trenčín", nazov: "Beh pre Svetlo 2025: 412 bežcov", s: "Ostrov, Trenčín · vyzbierali 3 140 €", q: "Bežalo 412 ľudí, najmladší mal 4 roky. Štartovné išlo na nocľaháreň.", foto: U("photo-1517649763962-0c623066013b") },
     { id: "k-opatova", typ: "zb", d: "30.", m: "SEP", rok: 2025, mesto: "Trenčín", nazov: "Strecha pre pani Máriu z Opatovej", s: "5 600 € · od 130 darcov", q: "Pani Mária má pred zimou novú strechu. Pokrývači z Opatovej prácu darovali, platili sme len materiál.", dok: "11 DOKLADOV", foto: U("photo-1632759145351-1d592919f522") },
     { id: "k-emka", typ: "is", d: "3.", m: "MÁJ", rok: 2025, mesto: "Trenčín", nazov: "Emka a husle", s: "2 310 iskier · 0:42", foto: U("photo-1501386761578-eac5c94b800a") },
     { id: "k-kuchyna", typ: "zb", d: "15.", m: "APR", rok: 2025, mesto: "Trenčín", nazov: "Kuchyňa pre výdajňu", s: "2 900 € · od 64 darcov", q: "Výdajňa má profesionálnu kuchyňu. Varíme 300 porcií namiesto 120.", dok: "9 DOKLADOV", foto: U("photo-1556909114-f6e7ad7d3136") },
