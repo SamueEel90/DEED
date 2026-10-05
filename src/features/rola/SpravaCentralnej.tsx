@@ -73,9 +73,9 @@ export function SpravaCentralnej({ strankaId, nazov, hlavnyUcet, tier, mobil, to
   const zmen = (p: Partial<CentralnaZbierka>) => { zmenene.current = true; setD((x) => ({ ...x, ...p })); };
 
   // ---- doklady (dobrovoľné) ----
+  function novyStav(id: string): StavZbierky { return { stav: "aktivna", koniec: new Date(Date.now() + 3650 * 86400000).toISOString(), predlzenia: 0, lehota: "30", text: "", fotky: [], doklady: TESTOVACIA && id.endsWith("-centralna") ? DOKLADY_TEST : [], spravy: [] }; }
   const [stav, setStav] = useState<StavZbierky>(() => nacitajStav(idZbierky) ?? novyStav(idZbierky));
   useEffect(() => { setStav(nacitajStav(idZbierky) ?? novyStav(idZbierky)); }, [idZbierky]); // eslint-disable-line react-hooks/exhaustive-deps
-  function novyStav(id: string): StavZbierky { return { stav: "aktivna", koniec: new Date(Date.now() + 3650 * 86400000).toISOString(), predlzenia: 0, lehota: "30", text: "", fotky: [], doklady: TESTOVACIA && id.endsWith("-centralna") ? DOKLADY_TEST : [], spravy: [] }; }
   const zmenStav = (p: Partial<StavZbierky>) => setStav((x) => { const n = { ...x, ...p }; ulozStav(idZbierky, n); return n; });
 
   // ---- čísla a dary ----
