@@ -6,11 +6,13 @@ import { useSyncExternalStore } from "react";
 import type { Pozicia } from "@/features/rola/stav";
 import { nastavDarcuFirmu } from "@/lib/devDarca";
 
-export type Stranka = { k: string; i: string; n: string; typ: "charita" | "firma" | "tvorca"; /** kľúč prekladu */ rola: string; pozicia: Pozicia; bg: string; c: string; /** [kľúč prekladu, počet] */ info: [string, number?][] };
+export type Stranka = { k: string; i: string; n: string; typ: "charita" | "firma" | "tvorca" | "farnost"; /** kľúč prekladu */ rola: string; pozicia: Pozicia; bg: string; c: string; /** [kľúč prekladu, počet] */ info: [string, number?][] };
 export const UKAZKOVE_STRANKY: Stranka[] = [
   { k: "svetlo", i: "SP", n: "Svetlo pomoci o.z.", typ: "charita", rola: "stranky.rola.spravca", pozicia: "charita", bg: "var(--gSoft)", c: "var(--gInk)", info: [["stranky.info.zbierky", 3], ["stranky.info.ziadosti", 2]] },
   { k: "pekaren", i: "PD", n: "Pekáreň Dobrota", typ: "firma", rola: "stranky.rola.majitel", pozicia: "b2b", bg: "var(--goldBg)", c: "var(--gold)", info: [["stranky.info.zamestnanci", 12], ["stranky.info.dorovnanie"]] },
   { k: "tvorca", i: "MK", n: "Martin Konaľ", typ: "tvorca", rola: "stranky.rola.vlastnik", pozicia: "tvorca", bg: "var(--bSoft)", c: "var(--blue)", info: [["stranky.info.retaz", 1], ["stranky.info.qr"]] },
+  // KARTA 50 · §1: farnosť = ďalšia stránka (rovnako pribudnú ďalšie segmenty: stránka + voľba v Konáš ako + Spravovať › jeho Správa)
+  { k: "farnost", i: "FT", n: "Farnosť Trenčín — mesto", typ: "farnost", rola: "stranky.rola.farar", pozicia: "charita", bg: "var(--btn)", c: "var(--ink)", info: [["stranky.info.zbierky", 2], ["stranky.info.oznamyFarnikov", 2]] },
 ];
 
 type Stav = { ako: string; prezentacia: boolean };
