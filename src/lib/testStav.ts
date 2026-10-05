@@ -4,8 +4,13 @@ import { useEffect, useState } from "react";
 
 const KLUC = "deed.dev.testStav";
 export type TestRola = "hlavny" | "spravca" | "pomocnik" | "organizator";
-export interface TestStav { prazdny: boolean; /** rola prihláseného v Správe (kým ju nepošle server) */ rola: TestRola }
-const ZAKLAD: TestStav = { prazdny: false, rola: "hlavny" };
+export interface TestStav {
+  prazdny: boolean;
+  /** rola prihláseného v Správe (kým ju nepošle server) */ rola: TestRola;
+  /** kto si pozerá verejný profil (návštevník alebo niekto zo správy stránky) */ rolaProfil: "navstevnik" | TestRola;
+  /** program na verejnom profile; null = podľa stránky */ program: 0 | 1 | 2 | 3 | 4 | null;
+}
+const ZAKLAD: TestStav = { prazdny: false, rola: "hlavny", rolaProfil: "navstevnik", program: null };
 const posl = new Set<() => void>();
 export function nacitajTestStav(): TestStav {
   try { return { ...ZAKLAD, ...(JSON.parse(localStorage.getItem(KLUC) ?? "{}") as Partial<TestStav>) }; } catch { return ZAKLAD; }

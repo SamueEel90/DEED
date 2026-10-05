@@ -115,7 +115,7 @@ function PodporiliFirmy({ zbierkaId, onFirma }: { zbierkaId: string; onFirma: (f
   );
 }
 
-export function Podstranka({ pozicia, tier = 0, logo, toast, onBack, strankaId = pozicia === "charita" ? "svetlo" : undefined, profilNahlad, lista, sektor }: {
+export function Podstranka({ pozicia, tier: tierStranky = 0, logo, toast, onBack, strankaId = pozicia === "charita" ? "svetlo" : undefined, profilNahlad, lista, sektor }: {
   pozicia: Pozicia; tier?: Tier; logo: string | null; toast: (m: string) => void; onBack: () => void;
   /** OPRAVY 107: stránka, ktorej uložený profil (Upraviť profil) sa ukáže */
   strankaId?: string;
@@ -128,6 +128,7 @@ export function Podstranka({ pozicia, tier = 0, logo, toast, onBack, strankaId =
 }) {
   const { wide, desktop } = useLayout();
   const ts = useTestStav(); // OPRAVY 147: testovací prázdny profil
+  const tier: Tier = TESTOVACIA && ts.program !== null ? ts.program : tierStranky; // OPRAVY 147: testovací program
   const siroke = wide || desktop;   // tablet a PC → mriežka kariet ako vo feede
   const ja = usePouzivatel();
   const s = SUBJEKTY[pozicia];

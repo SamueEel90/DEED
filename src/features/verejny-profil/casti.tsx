@@ -296,6 +296,8 @@ export function PrepinacPodania({ tmavy, style, pas, sektor = "charita", childre
   const riadky = (<>
     {vol.length > 1 && <TestVolba nazov="Zobrazenie" pas={pas} tmavy={tmavy} volby={vol} hodnota={p} onVolba={setP} />}
     {!bezProfilu && <TestVolba nazov="Profil" pas={pas} tmavy={tmavy} volby={[["v", "Vyplnený"], ["p", "Prázdny"]]} hodnota={ts.prazdny ? "p" : "v"} onVolba={(k) => zmenTestStav({ prazdny: k === "p" })} />}
+    {!bezProfilu && <TestVolba nazov="Rola" pas={pas} tmavy={tmavy} volby={[["navstevnik", "Návštevník"], ["hlavny", "Hlavný správca"], ["spravca", "Správca"], ["pomocnik", "Pomocník"], ["organizator", "Organizátor"]]} hodnota={ts.rolaProfil} onVolba={(k) => zmenTestStav({ rolaProfil: k })} />}
+    {!bezProfilu && <TestVolba nazov="Program" pas={pas} tmavy={tmavy} volby={[["-", "Podľa stránky"], ["0", "Zadarmo"], ["1", "P1"], ["2", "P2"], ["3", "P3"], ["4", "P4"]]} hodnota={ts.program === null ? "-" : String(ts.program)} onVolba={(k) => zmenTestStav({ program: k === "-" ? null : (Number(k) as 0 | 1 | 2 | 3 | 4) })} />}
     {children}
   </>);
   if (pas) return (
