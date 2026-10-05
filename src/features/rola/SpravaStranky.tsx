@@ -41,6 +41,7 @@ import { potvrditTuknutim, nastavPotvrditTuknutim } from "@/features/zbierka/Pla
 import { TESTOVACIA } from "@/lib/testovacia";
 import { SEKTORY_S_VZHLADOM } from "@/lib/vzhladStranky";
 import { VzhladStranky } from "./VzhladStranky";
+import { SpravaFarnosti } from "./SpravaFarnosti";
 import { useTestStav, zmenTestStav } from "@/lib/testStav";
 import { PrepinacPodania, TestVolba } from "@/features/verejny-profil/casti";
 import { nacitajPiny, ulozPiny, pinyZPamate, nacitajZbalenie, ulozZbalenie, zbalenieZPamate, type Zbalenie } from "@/lib/spravaPiny";
@@ -251,7 +252,21 @@ export interface SpravaStrankyProps {
 /** typ → rola s tierom (program): firma = B2B, tvorca = tvorca, ostatní = charita */
 const POZICIA_TYPU = (t: TypStranky): Pozicia => (t === "firma" ? "b2b" : t === "tvorca" ? "tvorca" : "charita");
 
-export function SpravaStranky({ onBack, typ: typStranky = "charita", strankaId = "svetlo", nazov = "Svetlo pomoci o.z.", inicialy = "SP" }: SpravaStrankyProps) {
+export function SpravaStranky(props: SpravaStrankyProps) {
+  const [typ, setTyp] = useState<TypStranky>(props.typ ?? "charita"); // DEV lišta ho vie prepnúť
+  const { desktop } = useLayout();
+  const ts = useTestStav();
+  // KARTA 50 · §2: farnosť má vlastnú Správu (rovnaká kostra, položky farnosti) — bez štítu, programov, dokladov a dorovnania
+  if (typ === "farnost") return <SpravaFarnosti onBack={props.onBack} strankaId={props.strankaId ?? "farnost"}
+    test={TESTOVACIA && FLAGS.dev_tier_switcher ? (
+      <PrepinacPodania pas={!desktop} sektor="farnost" bezProfilu style={desktop ? { padding: "2px 2px 4px" } : { marginTop: 14 }}>
+        <TestVolba pas={!desktop} nazov="Typ" volby={TYPY_STRANOK.filter((t) => !TYP_SKRYTY[t]).map((t) => [t, TYP_NAZOV[t]] as [TypStranky, string])} hodnota={typ} onVolba={setTyp} />
+        <TestVolba pas={!desktop} nazov="Rola" volby={[["hlavny", "Hlavný správca"], ["spravca", "Správca"], ["pomocnik", "Pomocník"], ["organizator", "Organizátor"]] as [RolaStranky, string][]} hodnota={ts.rola} onVolba={(r) => zmenTestStav({ rola: r })} />
+      </PrepinacPodania>) : null} />;
+  return <SpravaStrankyTypu {...props} typ={typ} onTyp={setTyp} />;
+}
+
+function SpravaStrankyTypu({ onBack, typ, onTyp: setTyp, strankaId = "svetlo", nazov = "Svetlo pomoci o.z.", inicialy = "SP" }: SpravaStrankyProps & { typ: TypStranky; onTyp: (t: TypStranky) => void }) {
   const { desktop, wide } = useLayout();
   const tablet = wide && !desktop; // OPRAVY 96: tablet 760–1179 px má vlastné rozloženie
   const telefon = !desktop && !tablet; // KARTA 42: telefón pod 760 px — nové rozloženie
@@ -262,7 +277,6 @@ export function SpravaStranky({ onBack, typ: typStranky = "charita", strankaId =
   useEffect(() => { let ziva = true; void nacitajZbalenie(strankaId).then((z) => { if (ziva) setZbal(z); }); return () => { ziva = false; }; }, [strankaId]);
   const prepniZbal = (id: string, otv?: boolean) => setZbal((z) => { const n = { ...z, [id]: otv ?? !jeOtv(z, id) }; void ulozZbalenie(strankaId, n); return n; });
   const hist = useRef<Sub[]>([]);
-  const [typ, setTyp] = useState<TypStranky>(typStranky); // DEV lišta ho vie prepnúť
   const poz = POZICIA_TYPU(typ);
   const sada = STIT_SADA_TYPU[typ];
   const [tiery, setTiery] = useState(nacitajTiery);

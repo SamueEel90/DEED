@@ -479,7 +479,8 @@ const maskUcet = (u: string) => { const x = u.replace(/\s/g, ""); return x.lengt
 const inic = (t: string) => t.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join("").toUpperCase();
 const slugZ = (t: string) => t.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 
-export function SpravaZbierky({ z, mobil, onZbierky, toast, onUdaje, onDorovnanie, tier = 0 }: { z: ZbierkaNaSpravu; mobil: boolean; onZbierky: () => void; toast: (m: string) => void; onUdaje?: () => void; onDorovnanie?: () => void; tier?: number }) {
+export function SpravaZbierky({ z, mobil, onZbierky, toast, onUdaje, onDorovnanie, tier = 0, bezDokladov }: { z: ZbierkaNaSpravu; mobil: boolean; onZbierky: () => void; toast: (m: string) => void; onUdaje?: () => void; onDorovnanie?: () => void; tier?: number;
+  /** KARTA 50: farnosť nič nedokladá — bez záložky Doklady, lehoty a „doložené"; výsledok napíše v ohláškach */ bezDokladov?: boolean }) {
   const [teraz] = useState(() => Date.now());
   const ukazka = TESTOVACIA && z.id.startsWith("ukazka-strecha");
   const [s, setS] = useState<StavZbierky>(() => {
@@ -562,7 +563,7 @@ export function SpravaZbierky({ z, mobil, onZbierky, toast, onUdaje, onDorovnani
   // ---- hlavička: stav, názov, suma ----
   const denZ = Math.min(CFG.dlzkaDni, Math.max(1, Math.ceil(((s.ukoncena ? Date.parse(s.ukoncena) : teraz) - Date.parse(zac)) / DEN_MS)));
   const stavS = aktivna ? (z.dlha ? `beží ešte ${dniT(Math.max(0, dniDo(s.koniec, teraz)))}` : `končí o ${dniT(vFeede)}`) + (topAktivny ? ` · topované: ${topAktivny.uroven}` : "")
-    : `skončila ${dnes(s.ukoncena ?? s.koniec)}, ${denZ}. deň z ${CFG.dlzkaDni} · lehota na doklady ${lehT}`;
+    : `skončila ${dnes(s.ukoncena ?? s.koniec)}, ${denZ}. deň z ${CFG.dlzkaDni}${bezDokladov ? "" : ` · lehota na doklady ${lehT}`}`;
   const foto = ob.media.find((m) => m.typ === "foto")?.src;
   const hlavicka = (
     <div style={{ borderRadius: 22, background: "var(--card)", border: "1px solid var(--cardBd)", padding: mobil ? "14px 16px" : "16px 20px", display: "flex", alignItems: "center", gap: mobil ? 12 : 16, flexWrap: "wrap" }}>
@@ -641,7 +642,7 @@ export function SpravaZbierky({ z, mobil, onZbierky, toast, onUdaje, onDorovnani
     {voFeede && <button type="button" onClick={() => zmen({ stiahnuta: new Date().toISOString() })} style={obrysK}>Stiahnuť z feedu</button>}
   </section>;
   const ako = <AkoDarovat sada={ob.sada} eurc={ob.eurc} sadaE={ob.sadaE} onZmena={zmenOb} />;
-  const zap = <Zapecatene riadky={[["Cieľ", z.ciel ? eur(z.ciel) : "bez cieľa"], ["Účel", z.ucel ?? (ukazka ? UKAZKA_STRECHA.ucel : "—")], ["Účet", maskUcet(z.ucet ?? (ukazka ? UKAZKA_STRECHA.ucet : HLAVNY_UCET))], ["Lehota na doklady", z.lehotaText ?? (s.lehota === "30" ? "30 dní po skončení" : lehT)]]} />;
+  const zap = <Zapecatene riadky={[["Cieľ", z.ciel ? eur(z.ciel) : "bez cieľa"], ["Účel", z.ucel ?? (ukazka ? UKAZKA_STRECHA.ucel : "—")], ["Účet", maskUcet(z.ucet ?? (ukazka ? UKAZKA_STRECHA.ucet : HLAVNY_UCET))], ...(bezDokladov ? [] : [["Lehota na doklady", z.lehotaText ?? (s.lehota === "30" ? "30 dní po skončení" : lehT)] as [string, string]])]} />;
   const qr = <QrKarta nazov={z.nazov} slug={z.slug ?? slugZ(z.nazov)} cislo={cisloObjektu("Z", z.id, z.vs)} organizacia={z.organizacia} toast={toast} />;
   const vlavo = <>{stavKarta}{textKarta}{galeria}</>;
   const vpravo = <>{predlzenie}{topovat}{dlhaKarty}{feedPodakovanie}{ako}{zap}{qr}</>;
@@ -661,6 +662,10 @@ export function SpravaZbierky({ z, mobil, onZbierky, toast, onUdaje, onDorovnani
       <span style={textK}>Ukončiť môžete kedykoľvek, napríklad keď je cieľ splnený. Dary sa potom zastavia.</span>
       <button type="button" onClick={() => setConf(true)} style={obrysK}>Ukončiť zbierku…</button>
     </section>
+    : bezDokladov ? <section style={{ ...kartaK, gap: 8 }}>
+        <span style={nadpisK}>Zbierka je ukončená</span>
+        <span style={textK}>Výsledok napíšte farníkom v ohláškach.</span>
+      </section>
     : <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       <section style={{ ...kartaK, gap: 8 }}>
         <span style={nadpisK}>Zbierka je ukončená</span>
@@ -690,12 +695,12 @@ export function SpravaZbierky({ z, mobil, onZbierky, toast, onUdaje, onDorovnani
         <button type="button" onClick={() => zmen({ upozornenie90Zavrete: new Date().toISOString() })} style={tlO}>Teraz nie</button>
       </div>
     </section>}
-    <Taby akt={tab} onTab={setTab} />
+    <Taby akt={tab} onTab={setTab} skryte={bezDokladov ? [1] : []} />
     {tab === 0 && stlpce(vlavo, vpravo)}
-    {tab === 1 && <DokladyCharity zbierkaId={z.id} s={s} zmen={zmenDoklady} vyzbierane={vyzbierane} teraz={teraz} mobil={mobil} toast={toast} />}
+    {tab === 1 && !bezDokladov && <DokladyCharity zbierkaId={z.id} s={s} zmen={zmenDoklady} vyzbierane={vyzbierane} teraz={teraz} mobil={mobil} toast={toast} />}
     {tab === 2 && <Statistiky d={stat} tier={tier} mobil={mobil} toast={toast} />}
     {tab === 3 && ukoncenie}
-    {conf && <UkoncitHarok mobil={mobil} vyzbierane={vyzbierane} darcov={darcov} lehota={lehT} onUkonci={ukonci} onZavri={() => setConf(false)} />}
+    {conf && <UkoncitHarok mobil={mobil} vyzbierane={vyzbierane} darcov={darcov} lehota={bezDokladov ? null : lehT} onUkonci={ukonci} onZavri={() => setConf(false)} />}
     {testovacie}
   </>);
 }
@@ -703,7 +708,7 @@ export function SpravaZbierky({ z, mobil, onZbierky, toast, onUdaje, onDorovnani
 const VRATIT_MIN = 15;
 const DOVODY_UKONCENIA = ["Cieľ je splnený", "Už to nepotrebujeme", "Iný dôvod"];
 /** 5. 10. · hárok „Ukončiť zbierku?" (PC v strede, mobil zdola): Prečo končíte → Čo sa stane → Podrž a ukonči (1,5 s) · Nechať bežať */
-function UkoncitHarok({ mobil, vyzbierane, darcov, lehota, onUkonci, onZavri }: { mobil: boolean; vyzbierane: number; darcov: number; lehota: string; onUkonci: (dovod: string) => void; onZavri: () => void }) {
+function UkoncitHarok({ mobil, vyzbierane, darcov, lehota, onUkonci, onZavri }: { mobil: boolean; vyzbierane: number; darcov: number; lehota: string | null; onUkonci: (dovod: string) => void; onZavri: () => void }) {
   const [vidno, setVidno] = useState(false);
   const [dovod, setDovod] = useState<number | null>(null);
   const [drz, setDrz] = useState(false);
@@ -731,7 +736,7 @@ function UkoncitHarok({ mobil, vyzbierane, darcov, lehota, onUkonci, onZavri }: 
         <div style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 14, lineHeight: 1.45, color: "var(--ink2)" }}>
           <span>· Dary sa zastavia. Vyzbierali ste <b style={{ color: "var(--ink)" }}>{eur(vyzbierane)}</b> od {darcov} darcov.</span>
           <span>· Darcom pošleme výsledok o {VRATIT_MIN} minút. Dovtedy to môžete vrátiť.</span>
-          <span>· Začne plynúť lehota na doklady: {lehota}.</span>
+          {lehota && <span>· Začne plynúť lehota na doklady: {lehota}.</span>}
         </div>
         <button type="button" aria-disabled={dovod == null} onPointerDown={zacni} onPointerUp={pusti} onPointerLeave={pusti} onPointerCancel={pusti}
           onKeyDown={(e) => { if ((e.key === "Enter" || e.key === " ") && !e.repeat) { e.preventDefault(); zacni(); } }} onKeyUp={(e) => { if (e.key === "Enter" || e.key === " ") pusti(); }} onContextMenu={(e) => e.preventDefault()}

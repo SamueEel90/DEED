@@ -33,10 +33,10 @@ export function DorovnaniePas({ ini, firma, pomer, pod, onClick }: { ini: string
 }
 
 export const TABY = ["Nastavenie", "Doklady", "Štatistiky", "Ukončenie"] as const;
-export function Taby({ akt, onTab, odsadenie = 12 }: { akt: number; onTab: (i: number) => void; odsadenie?: number }) {
+export function Taby({ akt, onTab, odsadenie = 12, skryte = [] }: { akt: number; onTab: (i: number) => void; odsadenie?: number; /** KARTA 50: farnosť bez záložky Doklady */ skryte?: number[] }) {
   return (
     <div role="tablist" style={{ display: "flex", gap: 2, borderBottom: "1px solid var(--cardBd)", overflowX: "auto" }}>
-      {TABY.map((t, i) => { const on = akt === i; return (
+      {TABY.map((t, i) => { if (skryte.includes(i)) return null; const on = akt === i; return (
         <button key={t} type="button" role="tab" aria-selected={on} onClick={() => onTab(i)} style={{ flex: "none", height: 48, padding: `0 ${odsadenie}px`, border: "none", borderBottom: `3px solid ${on ? "var(--green)" : "transparent"}`, background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 15, fontWeight: 800, whiteSpace: "nowrap", color: on ? "var(--ink)" : "var(--ink3)", boxShadow: "none" }}>{t}</button>); })}
     </div>);
 }
