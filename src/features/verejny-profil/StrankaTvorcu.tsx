@@ -7,7 +7,6 @@
 // Zaplatiť a odomknúť / prihlásiť sa (do 50 €): pod položkou sa rozbalí NakupPanel. Kým nie je platba na serveri,
 // podržanie odomkne len v testovacej verzii. Okno na dary sa na nákup nepoužíva.
 import { useTestStav, vyprazdni } from "@/lib/testStav";
-import { PrepinacPodania } from "./casti";
 import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import type { TestProfil, TestZbierka } from "@/lib/testProfily";
 import { TVORCA_DATA, STREAM_ZBIERKY } from "@/lib/testTvorca";
@@ -251,7 +250,6 @@ export function StrankaTvorcu({ profil, onBack, onStream, onDetail }: { profil: 
   const strankaPc = pc && (
     <div className="vp sc-tokeny" data-stit={stit} style={{ position: "relative", height: "100%", overflowY: "auto" }}>
       {titulka}{kov}
-      {TESTOVACIA && <PrepinacPodania sektor="tvorca" style={{ padding: "12px 32px 0" }} />}
       <div style={{ padding: "22px 32px 120px", display: "grid", gridTemplateColumns: "minmax(0,1fr) 400px", gap: 32, alignItems: "start" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 12, minWidth: 0 }}>
           {cisla}{naZivo}{streamy}{iskry}{rady}{yt}{platene}{charity}{akcie}
@@ -283,7 +281,6 @@ export function StrankaTvorcu({ profil, onBack, onStream, onDetail }: { profil: 
           {cisla}{naZivo}{streamy}{iskry}{rady}{yt}{platene}
           {skolenie && <><Nadpis t="ONLINE ŠKOLENIE" />{skolenie}</>}
           {charity}{akcie}
-          {TESTOVACIA && <PrepinacPodania pas sektor="tvorca" />}
         </div>
       </div>
       <button type="button" onClick={otvorHarok}

@@ -13,10 +13,10 @@ export const VZHLADY: { k: Vzhlad; t: string; s: string; bg: string }[] = [
 ];
 /** CONFIG · vzhľad v programe Zadarmo (určuje DEED, správca ho nemení) */
 export const VZHLAD_ZADARMO: Vzhlad = "kronika";
-/** sektory, ktoré majú viac vzhľadov (ostatné zatiaľ jeden) */
-export const SEKTORY_S_VZHLADOM = ["charita", "farnost"];
+/** OPRAVY 148: blok Vzhľad stránky pri všetkých typoch; kým sektor nemá vlastné 3 podania, prepne vzhľad charity s jeho dátami */
 
 const pamat = new Map<string, Vzhlad>();
+export const maVybranyVzhlad = (stranka: string) => pamat.has(stranka);
 let ver = 0;
 const posl = new Set<() => void>();
 const zmena = () => { ver++; posl.forEach((f) => f()); };

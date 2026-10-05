@@ -39,7 +39,6 @@ import { toast } from "@/components/toast";
 import { useNastaveniaAppky, zmenNastavenia } from "@/lib/nastaveniaAppky";
 import { potvrditTuknutim, nastavPotvrditTuknutim } from "@/features/zbierka/Platba";
 import { TESTOVACIA } from "@/lib/testovacia";
-import { SEKTORY_S_VZHLADOM } from "@/lib/vzhladStranky";
 import { VzhladStranky } from "./VzhladStranky";
 import { SpravaFarnosti } from "./SpravaFarnosti";
 import { useTestStav, zmenTestStav } from "@/lib/testStav";
@@ -259,7 +258,7 @@ export function SpravaStranky(props: SpravaStrankyProps) {
   // KARTA 50 · §2: farnosť má vlastnú Správu (rovnaká kostra, položky farnosti) — bez štítu, programov, dokladov a dorovnania
   if (typ === "farnost") return <SpravaFarnosti onBack={props.onBack} strankaId={props.strankaId ?? "farnost"}
     test={TESTOVACIA && FLAGS.dev_tier_switcher ? (
-      <PrepinacPodania pas={!desktop} sektor="farnost" bezProfilu style={desktop ? { padding: "2px 2px 4px" } : { marginTop: 14 }}>
+      <PrepinacPodania pas={!desktop} sektor="farnost" style={desktop ? { padding: "2px 2px 4px" } : { marginTop: 14 }}>
         <TestVolba pas={!desktop} nazov="Typ" volby={TYPY_STRANOK.filter((t) => !TYP_SKRYTY[t]).map((t) => [t, TYP_NAZOV[t]] as [TypStranky, string])} hodnota={typ} onVolba={setTyp} />
         <TestVolba pas={!desktop} nazov="Rola" volby={[["hlavny", "Hlavný správca"], ["spravca", "Správca"], ["pomocnik", "Pomocník"], ["organizator", "Organizátor"]] as [RolaStranky, string][]} hodnota={ts.rola} onVolba={(r) => zmenTestStav({ rola: r })} />
       </PrepinacPodania>) : null} />;
@@ -379,7 +378,7 @@ function SpravaStrankyTypu({ onBack, typ, onTyp: setTyp, strankaId = "svetlo", n
   else if (sub === "profil") obsah = <UpravitProfilCharity strankaId={strankaId} pozicia={poz} tier={tier} nazov={nazov} inicialy={inicialy} mobil={!desktop} tablet={tablet}
     stit={stit} onUlozene={(pr) => { setProfil(pr); setKoncept(null); }}
     onZmena={setKoncept} onZrusit={() => { hist.current = []; setSub(null); }} onHotovo={() => { hist.current = []; setSub(null); }}
-    vzhlad={SEKTORY_S_VZHLADOM.includes(typ) ? <VzhladStranky strankaId={strankaId} zadarmo={tier === 0} kto={slovo(typ, "darcovia", "darcovia")} onPozriet={() => otvor("x:Verejný profil")} /> : undefined} />;
+    vzhlad={<VzhladStranky strankaId={strankaId} zadarmo={tier === 0} kto={slovo(typ, "darcovia", "darcovia")} onPozriet={() => otvor("x:Verejný profil")} />} />;
   else if (sub === "x:Nová zbierka") obsah = <NovaZbierka strankaId={strankaId} pozicia={poz} tier={tier} nazov={nazov} inicialy={inicialy} mobil={!desktop} tablet={tablet} stit={stit}
     onMojeZbierky={() => { hist.current = []; setSub("g_zbierky"); }} />;
   else if (sub === "x:Správa zbierky" && spravZb) obsah = <SpravaZbierky key={spravZb.id} tier={tier} onDorovnanie={() => otvor("dorovnanie")} z={{ ...spravZb, organizacia: nazov, onObsah: vlastne.some((x) => x.id === spravZb.id) ? (o) => void upravZbierku(strankaId, spravZb.id, o) : undefined }} mobil={!wide} toast={toast} onZbierky={() => { hist.current = []; setSub("g_zbierky"); }} onUdaje={() => otvor("n:udaje")} />;
@@ -399,7 +398,7 @@ function SpravaStrankyTypu({ onBack, typ, onTyp: setTyp, strankaId = "svetlo", n
 
   // OPRAVY 147: jeden testovací prepínač (PrepinacPodania) — PC v hlavičke, mobil a tablet sivý pás úplne dole
   const dev = TESTOVACIA && FLAGS.dev_tier_switcher && (
-    <PrepinacPodania pas={!desktop} sektor={typ} bezProfilu style={desktop ? { padding: "2px 2px 4px" } : { marginTop: 14 }}>
+    <PrepinacPodania pas={!desktop} sektor={typ} style={desktop ? { padding: "2px 2px 4px" } : { marginTop: 14 }}>
       <DevSprava pas={!desktop} tier={tier} stit={stit} stav={!nova ? "bezna" : pozvana ? "pozv" : "free"} typ={typ} onTyp={setTyp} rola={rola}
         onTier={setTier}
         onStit={(s) => { setStit(s); ulozStitCharity(s); }}
