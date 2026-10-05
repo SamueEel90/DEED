@@ -5,7 +5,7 @@
 // Mobil a tablet (< 1200): titulka 300 px, Naživo, záložky, Darovať ako prvá sekcia, plagát zbalený.
 // Pôvodný Vyklad.tsx ostáva Pekárni (firma).
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
-import { eur, pct, tvar, type Lokalita, type TestProfil, type TestZbierka } from "@/lib/testProfily";
+import { eur, pct, tvar, type Lokalita, type TestProfil, type TestZbierka, jeFarnost } from "@/lib/testProfily";
 import { DOK, LokalitaPrepinac, PlagatPrace, PrepinacPodania, klikKarta, PribehText, StitCare, StitOkno, nazovStitu, useDomaceMesto } from "./casti";
 import { PodporaProfilu, type Vyber } from "./PodporaProfilu";
 import { GRAD, PRUH, type PolCh, MalaZbierka, OznamKarta, RokyOs, ZIskier, bgF, sekciaNadpis, stZb, useCharitaData } from "./charitaCasti";
@@ -57,7 +57,7 @@ export function VykladCharita({ profil, onDetail, onZaznam, onBack, prepinac }: 
       <button type="button" aria-label="Zdieľať · QR" style={{ ...tlTmave, width: 44 }}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 12v8h16v-8M16 6l-4-4-4 4M12 2v14" /></svg></button>
     </div>
   );
-  const stitTl = (w: number, h: number, sw: number, sh: number) => (
+  const stitTl = (w: number, h: number, sw: number, sh: number) => jeFarnost(profil) ? null : ( // KARTA 50: farnosť štít nemá
     <button type="button" onClick={() => setStitOtv(true)} aria-label={`Štít DEED+ CARE · ${nazovStitu(profil.stit)} · podrobnosti a overenie`} style={{ position: "relative", flex: "none", width: w, height: h, padding: 0, border: "none", background: "transparent", boxShadow: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
       <span style={{ position: "absolute", inset: -6, borderRadius: "50%", background: "radial-gradient(circle,var(--kov2) 0%,rgba(0,0,0,0) 62%)", opacity: 0.55 }} />
       <StitCare stit={profil.stit} w={sw} h={sh} lesk />
@@ -177,7 +177,7 @@ export function VykladCharita({ profil, onDetail, onZaznam, onBack, prepinac }: 
           </div>
           <aside ref={aRef} style={{ position: "sticky", top: 76, maxHeight: "calc(100vh - 96px)", overflowY: "auto", overscrollBehavior: "contain", display: "flex", flexDirection: "column", gap: 12 }}>
             <PodporaProfilu profil={profil} lok={lok} domace={domace} rez="pc" vyska={118} mod={mod} onMod={setMod} />
-            <PlagatPrace praca={profil.praca} />
+            <PlagatPrace praca={profil.praca} titul={profil.pracaNadpis} />
           </aside>
         </div>
       </div>
@@ -192,7 +192,7 @@ export function VykladCharita({ profil, onDetail, onZaznam, onBack, prepinac }: 
       <div style={{ padding: "18px 16px 0", display: "flex", flexDirection: "column", gap: 14 }}>
         <span ref={kotva(0)} />
         <PodporaProfilu profil={profil} lok={lok} domace={domace} rez="mob" nadpis="DAROVAŤ · TIPY NA PRAVIDELNÝ DAR" vyska={104} />
-        <PlagatPrace praca={profil.praca} zbaleny />
+        <PlagatPrace praca={profil.praca} zbaleny titul={profil.pracaNadpis} />
         {zbierky}{iskry}{oznamy}{historia}{onas}
         {prepinac && <PrepinacPodania pas />}
       </div>

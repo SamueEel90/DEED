@@ -7,7 +7,7 @@
 // Štítky, štít a overenie sú v okne štítu (bod 137). Rozbalený je len aktuálny rok. Z ISKIER: Iskry / Zbierky.
 // Zbaliť aj Späť z detailu, Iskier či hárku vráti na to isté miesto (pamäť posunu na úrovni stránky).
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
-import { eur, pct, tvar, vLokalite, type Lokalita, type TestProfil, type TestZbierka } from "@/lib/testProfily";
+import { eur, pct, tvar, vLokalite, type Lokalita, type TestProfil, type TestZbierka, jeFarnost } from "@/lib/testProfily";
 import { ISKRY_CFG, iskraViditelna, iskryVsetky, useZmenyIskier, zbierkaIskry, type Iskra } from "@/lib/iskry";
 import { otvorIskry } from "@/features/iskry/otvor";
 import { DOK, LokalitaPrepinac, MESIACE, PlagatPrace, PrepinacPodania, klikKarta, PribehText, StitCare, StitOkno, kovText, nazovStitu, norm, useDomaceMesto, useMobil } from "./casti";
@@ -26,7 +26,7 @@ const poradieDatumu = (m: string, d: string) => MESIACE.indexOf(m) * 100 + (pars
 const TAB = "(min-width: 760px) and (max-width: 1199px)";
 
 /** záznam časovej osi kroniky */
-interface Pol { id: string; typ: "zb" | "sk" | "is" | "oz"; d: string; m: string; rok: number; nazov: string; s: string; q?: string; dok?: string; foto: string; zbierka?: TestZbierka }
+interface Pol { id: string; typ: "zb" | "sk" | "is" | "oz"; d: string; m: string; rok: number; nazov: string; s: string; q?: string; dok?: string; foto: string; zbierka?: TestZbierka; bezDokladov?: boolean }
 /** oznam alebo ponuka práce v „Aktuálne" */
 interface Ozn { id: string; typ: "oz" | "pr"; den: string; mes: string; dBg: string; st: string; stc: string; n: string; s: string; btn: string; pocet: string }
 
@@ -114,7 +114,7 @@ export function Kronika({ profil, onDetail, onZaznam, onBack, prepinac }: { prof
     ...vLokalite(profil.skutky, lok, domace).filter((s) => s.rok).map((s): Pol => ({ id: s.id, typ: "sk", d: s.d!, m: s.m!, rok: s.rok!, nazov: s.nazov, s: `${s.popis}${s.dobrovolnici ? ` · ${s.dobrovolnici} dobrovoľníkov` : ""}`, foto: s.foto })),
     ...zbierky.filter((z) => z.stav === "ukoncena" && z.rok).map((z): Pol => ({ id: z.id, typ: "zb", d: z.d!, m: z.m!, rok: z.rok!, nazov: z.nazov, s: `${eur(z.vyzbierane)} · od ${z.ludia} darcov`, q: z.spravaDarcom, dok: z.doklady ? dokladov(z.doklady) : undefined, foto: z.foto, zbierka: z })),
     ...vLokalite(profil.kronika ?? [], lok, domace).map((k): Pol => ({ ...k })),
-  ].sort((a, b) => b.rok - a.rok || poradieDatumu(b.m, b.d) - poradieDatumu(a.m, a.d));
+  ].sort((a, b) => b.rok - a.rok || poradieDatumu(b.m, b.d) - poradieDatumu(a.m, a.d)).map((p) => (jeFarnost(profil) ? { ...p, bezDokladov: true, dok: undefined } : p)); // KARTA 50: farnosť nedokladá
   const roky = rokyData.length ? rokyData : [...new Set(vsetkyPol.map((p) => p.rok))].sort((a, b) => b - a).map((rok) => ({ rok, nZaz: 0, sum: [] as [string, string][] }));
   const kapitoly = roky.map((r, i) => {
     const t = String(r.rok);
@@ -171,7 +171,7 @@ export function Kronika({ profil, onDetail, onZaznam, onBack, prepinac }: { prof
   );
   const kovCiara = <span style={{ display: "block", flex: "none", height: "var(--mH)", background: "var(--metal)" }} />;
   const logo = (s: number, r: number, fs: number, okraj: string) => <span style={{ flex: "none", width: s, height: s, borderRadius: r, background: "#fff", border: `3px solid ${okraj}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: fs, fontWeight: 800, color: "#3F6E2A", boxShadow: rez === "mob" ? "0 8px 20px rgba(0,0,0,.3)" : "0 8px 24px rgba(0,0,0,.3)" }}>{profil.iniciala}</span>;
-  const stitTlacidlo = (w: number, h: number, sw: number, sh: number, style?: CSSProperties) => (
+  const stitTlacidlo = (w: number, h: number, sw: number, sh: number, style?: CSSProperties) => jeFarnost(profil) ? null : ( // KARTA 50: farnosť štít nemá
     <button type="button" onClick={() => setStitOtv(true)} aria-label={`Štít DEED+ CARE · ${nazovStitu(profil.stit)} · podrobnosti a overenie`}
       style={{ position: "relative", width: w, height: h, padding: 0, border: "none", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flex: "none", ...style }}>
       <span style={{ position: "absolute", inset: -6, borderRadius: "50%", background: "radial-gradient(circle,var(--kov2) 0%,rgba(0,0,0,0) 62%)", opacity: 0.5 }} />
@@ -226,7 +226,7 @@ export function Kronika({ profil, onDetail, onZaznam, onBack, prepinac }: { prof
     </div>
   );
 
-  const podpora = <><PodporaProfilu profil={profil} lok={lok} domace={domace} rez={rez} /><PlagatPrace praca={praca} zbaleny={rez !== "pc"} /></>;
+  const podpora = <><PodporaProfilu profil={profil} lok={lok} domace={domace} rez={rez} /><PlagatPrace praca={praca} zbaleny={rez !== "pc"} titul={profil.pracaNadpis} /></>;
 
   // ---- lepkavá lišta: hľadanie + filtre (+ tablet / mobil rady rokov) ----
   const lista = (
@@ -312,6 +312,7 @@ export function Kronika({ profil, onDetail, onZaznam, onBack, prepinac }: { prof
     const d = zbierkaIskry(v);
     const nazov = d && v.zb?.typ !== "firme" ? d.z.nazov : v.zb?.typ === "firme" && d?.firma ? `${d.firma.meno.replace(/\s+s\.\s?r\.\s?o\.$/, "")} pomohla` : v.popis.split(/(?<=\.)\s/)[0];
     const m = !v.zb ? `${v.iskry.toLocaleString("sk-SK")} iskier`
+      : v.zb.typ === "dakujeme" && d && jeFarnost(profil) ? `ďakujeme ${d.z.ludia} darcom`
       : v.zb.typ === "dakujeme" && d ? (d.z.doklady ? `doložené · ${tvar(d.z.doklady, ["doklad", "doklady", "dokladov"])}` : `doložené · ${eur(d.z.vyzbierane)}`)
       : v.zb.typ === "firme" ? `dorovnanie · ${d?.z.nazov ?? ""}`
       : d ? (d.z.ciel ? `${eur(d.z.vyzbierane)} z ${eur(d.z.ciel)}` : eur(d.z.vyzbierane)) : "";
@@ -370,7 +371,7 @@ export function Kronika({ profil, onDetail, onZaznam, onBack, prepinac }: { prof
       })}
     </div>
   </>;
-  const pocty = `${tvar(bezice.length, ["zbierka", "zbierky", "zbierok"])} · ${tvar(oznamy.length, ["oznam", "oznamy", "oznamov"])}${praca.length ? ` · hľadáme ${tvar(praca.length, ["človeka", "ľudí", "ľudí"])}` : ""}`;
+  const pocty = `${tvar(bezice.length, ["zbierka", "zbierky", "zbierok"])} · ${tvar(oznamy.length, ["oznam", "oznamy", "oznamov"])}${praca.length && !jeFarnost(profil) ? ` · hľadáme ${tvar(praca.length, ["človeka", "ľudí", "ľudí"])}` : ""}`;
   const aktualne = (
     <section ref={(el) => { rf.current.akt = el; }} style={{ display: "flex", flexDirection: "column", gap: rez === "pc" ? 18 : rez === "tab" ? 16 : 12 }}>
       {rez === "pc"
@@ -391,9 +392,9 @@ export function Kronika({ profil, onDetail, onZaznam, onBack, prepinac }: { prof
   // ---- roky (rozbalený len aktuálny, staršie ťukom) ----
   const polozka = (p: Pol): ReactNode => {
     const stavBg = p.q ? "#2F5E3A" : "var(--btn)", stavC = p.q ? "#fff" : "var(--ink2)";
-    const stav = p.q ? `DOLOŽENÉ · ${p.dok ?? ""}`.replace(/ · $/, "") : p.dok;
-    const link = p.q ? "Správa a doklady ›" : "Priebežné doklady ›";
-    const chip = p.typ === "zb" ? (p.q ? "UKONČENÁ · DOLOŽENÉ" : "UKONČENÁ · SPRÁVA SA PÍŠE") : p.typ === "is" ? "ISKRA" : p.typ === "oz" ? "AKCIA" : "SKUTOK";
+    const stav = p.bezDokladov ? undefined : p.q ? `DOLOŽENÉ · ${p.dok ?? ""}`.replace(/ · $/, "") : p.dok;
+    const link = p.bezDokladov ? "Ako to dopadlo ›" : p.q ? "Správa a doklady ›" : "Priebežné doklady ›";
+    const chip = p.typ === "zb" ? (p.bezDokladov ? "UKONČENÁ" : p.q ? "UKONČENÁ · DOLOŽENÉ" : "UKONČENÁ · SPRÁVA SA PÍŠE") : p.typ === "is" ? "ISKRA" : p.typ === "oz" ? "AKCIA" : "SKUTOK";
     const chipC = p.typ === "zb" ? (p.q ? "var(--green)" : "var(--ink3)") : p.typ === "is" ? "var(--gold)" : p.typ === "oz" ? "var(--blue)" : "var(--green)";
     const klik = () => { uloz(); onZaznam(p); }; // žiadny riadok nie je mŕtvy
     if (rez === "mob") return (

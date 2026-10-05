@@ -12,7 +12,7 @@ export const MESTA: Mesto[] = ["Trenčín", "Prešov", "Bratislava"];
 export type Lokalita = Mesto | "Celé Slovensko";
 export const LOKALITY: Lokalita[] = [...MESTA, "Celé Slovensko"];
 
-export type TypProfilu = "charita" | "firma" | "tvorca";
+export type TypProfilu = "charita" | "firma" | "tvorca" | "farnost";
 
 /** dlaždica centrálnej zbierky alebo sektora — texty sú podľa mesta človeka */
 export interface TestSektor {
@@ -41,6 +41,8 @@ export interface TestSektor {
   galeria?: { typ: "foto" | "video"; src: string; popis?: string }[];
   tipy?: [number, string][];
   mesacne?: number;
+  /** KARTA 50 · farnosť: dlaždice sú zbierky, nie sektory — štítok dlaždice, riadok pod názvom a texty náhľadu modulu */
+  stitok?: string; dlazdicaText?: string; typ?: string; typ2?: string; info?: string;
 }
 
 export interface TestZbierka {
@@ -111,6 +113,8 @@ export interface TestPraca {
   kedy?: string;
   odmena?: string;
   zaujem?: string;            // „3 ľudia už majú záujem"
+  /** KARTA 50 · farnosť (Omše a služba): text tlačidla a názov tretieho riadku (namiesto „Mám záujem" a „Odmena") */
+  tlacidlo?: string; tretiRiadok?: string;
 }
 
 export interface TestDarca {
@@ -178,7 +182,11 @@ export interface TestProfil {
   kronika?: KronikaPolozka[];
   /** KARTA 46 · stránka firmy (B2B): dorovnania, regióny, stena vďaky, ľudia, Kúp a pomôž, Fond, práca, o firme */
   b2b?: B2BData;
+  /** KARTA 50 · nadpis sekcie práce („HĽADÁME ĽUDÍ" · farnosť „OMŠE A SLUŽBA") */
+  pracaNadpis?: string;
 }
+/** KARTA 50 · farnosť: bez štítu, bez dokladov a „doložené", bez dorovnania firmy */
+export const jeFarnost = (p: Pick<TestProfil, "typ">) => p.typ === "farnost";
 
 /** KARTA 46 · dáta stránky firmy (B2B) — prototyp „B2B - Pekaren Dobrota" */
 export interface B2BData {
@@ -531,10 +539,88 @@ const TVORCA: TestProfil = {
   podporit: "Martina Konaľa",
 };
 
-export const TEST_PROFILY: TestProfil[] = [CHARITA, FIRMA, TVORCA];
+// ============================================================
+// 4 · FARNOSŤ — Farnosť Trenčín — mesto (KARTA 50, prototypy „Farnost - Kronika / Vyklad / Pirat")
+// Bez štítu, dokladov a dorovnania. Dlaždice: všeobecná podpora + 3 zbierky farnosti.
+// ============================================================
+const FO = {
+  kostol: U("photo-1611859732483-07bd0d5e3c50"), organ: U("photo-1507842217343-583bb7270b66"), misie: U("photo-1488521787991-ed7bbaae773c"),
+  pohreb: U("photo-1490750967868-88aa4486c946"), omsa: U("photo-1438032005730-c779502df39b"), spev: U("photo-1501386761578-eac5c94b800a"),
+  put: U("photo-1517649763962-0c623066013b"), balicky: U("photo-1542601906990-b4d3fb778b09"), deti: U("photo-1503454537195-1dcabb73ffb9"),
+};
+const vsade = (dlazdica: string, minulyMesiac: string): TestSektor["mesta"] => ({
+  "Trenčín": { dlazdica, minulyMesiac, uvidis: "Ako to dopadlo, napíšeme v ohláškach", rozpis: [] },
+  "Prešov": { dlazdica, minulyMesiac, uvidis: "Ako to dopadlo, napíšeme v ohláškach", rozpis: [] },
+  "Bratislava": { dlazdica, minulyMesiac, uvidis: "Ako to dopadlo, napíšeme v ohláškach", rozpis: [] },
+});
+const ZB_FARNOST = { typ2: "peniaze idú len na tento účel", info: "Zbierka farnosti má jeden účel." };
+const FARNOST: TestProfil = {
+  k: "farnost", typ: "farnost", meno: "Farnosť Trenčín — mesto", iniciala: "FT", menoGen: "farnosti Trenčín — mesto", menoDat: "farnosti Trenčín — mesto", podporit: "farnosť",
+  veta: "Sme tu pre mesto od roku 1069. Kostol Narodenia Panny Márie, kaplnka sv. Anny a cintorín nad mestom.",
+  mesto: "Trenčín", stit: "Gold", odRoku: 2023,
+  stitky: ["Trenčín · RKC", "na DEED+ od 2023", "Overená farnosť"],
+  ico: "", ucet: "SK12 0900 0000 0051 2345 4521", sidlo: "Marka Aurela 6, Trenčín", kontakt: "fara@trencin-mesto.sk",
+  cisla: [["42 550 €", "vyzbierané"], ["15", "zbierok"], ["108", "skutkov"]],
+  stitCisla: [["21", "zbierok"], ["63", "skutkov"], ["1 240", "sledujúcich"]],
+  centralna: { ...sektor("f-podpora", "Všeobecná podpora farnosti", "centralna", FO.kostol, 5100, 214, vsade("2 380 € tento mesiac", "V októbri: kúrenie, svetlo a drobné opravy kostola"),
+    { mesiac: 2380, mesacne: 38, kam: "Na chod farnosti: kúrenie, svetlo, opravy a pomoc ľuďom vo farnosti.", tipy: [[5, ""], [10, ""], [20, ""]] }), stitok: "STÁLE" },
+  sektory: [
+    { ...sektor("f-organ", "Oprava organu", "sektor", FO.organ, 4120, 96, vsade("4 120 € z 9 000 €", "Organár z Bardejova začal rozoberať prvé píšťaly"), { tipy: [[5, ""], [10, ""], [20, ""]], mesacne: 0 }), stitok: "ZBIERKA", dlazdicaText: "4 120 € z 9 000 €", typ: "ZBIERKA", ...ZB_FARNOST },
+    { ...sektor("f-misie", "Misie", "sektor", FO.misie, 820, 64, vsade("820 € · Misijná nedeľa", "Peniaze sme poslali na misie"), { tipy: [[5, ""], [10, ""], [20, ""]], mesacne: 0 }), stitok: "ZBIERKA", dlazdicaText: "820 € · Misijná nedeľa", typ: "ZBIERKA", ...ZB_FARNOST },
+    { ...sektor("f-pohreb", "Rozlúčka s pani Annou", "sektor", FO.pohreb, 1260, 41, vsade("1 260 € · rodine 90 %", "Rodine pani Anny 90 %, farnosti 10 %"), { tipy: [[5, ""], [10, ""], [20, ""]], mesacne: 0 }), stitok: "POHREB", dlazdicaText: "1 260 € · rodine 90 %", typ: "POHREB", ...ZB_FARNOST },
+  ],
+  zbierky: [
+    { id: "zf-organ", nazov: "Oprava organu", popis: "Organ z roku 1896 dohral. Organár z Bardejova ho opraví za 9 000 €, prácu robí za polovicu.", mesto: "Trenčín", cast: "farský kostol", foto: FO.organ, vyzbierane: 4120, ciel: 9000, ludia: 96, stav: "bezi", konciDni: 12, dorovnanie: "organár prácu robí za polovicu",
+      pribeh: "Organ z roku 1896 dohral. Mechy prepúšťajú, tretina píšťal nehrá a na Vianoce by sme spievali bez neho. Organár z Bardejova ho opraví za 9 000 €, prácu robí za polovicu. Ak vyzbierame do 17. októbra, stihne to do Vianoc. Ako postupuje oprava, napíšeme v ohláškach." },
+    { id: "zf-pohreb", nazov: "Rozlúčka s pani Annou Kováčovou", popis: "Pohreb v piatok o 10:00. Rodine pani Anny ide 90 %, farnosti 10 %.", mesto: "Trenčín", cast: "rodine 90 %", foto: FO.pohreb, vyzbierane: 1260, ludia: 41, stav: "bezi", konciDni: 9 },
+    { id: "zf-misie", nazov: "Misijná nedeľa", popis: "Zbierka na misie z Misijnej nedele.", mesto: "Trenčín", foto: FO.misie, vyzbierane: 820, ludia: 64, stav: "ukoncena", skoncila: "28. 9.", spravaDarcom: "Ďakujeme všetkým, peniaze sme poslali na misie.", d: "28.", m: "SEP", rok: 2026 },
+  ],
+  skutky: [
+    { id: "skf-brigada", nazov: "Brigáda na cintoríne", popis: "22 farníkov · 4 hodiny", mesto: "Trenčín", kedy: "13. 9.", foto: FO.pohreb, dobrovolnici: 22, d: "13.", m: "SEP", rok: 2026 },
+    { id: "skf-prijimanie", nazov: "Prvé sväté prijímanie 42 detí", popis: "farský kostol", mesto: "Trenčín", kedy: "10. 5. 2024", foto: FO.deti, d: "10.", m: "MÁJ", rok: 2024 },
+    { id: "skf-deed", nazov: "Farnosť na DEED+", popis: "prvé ohlášky v appke", mesto: "Trenčín", kedy: "18. 11. 2023", foto: FO.kostol, d: "18.", m: "NOV", rok: 2023 },
+  ],
+  oznamy: [
+    { id: "of-ohlasky", druh: "oznam", nadpis: "Ohlášky na tento týždeň", stitok: "OHLÁŠKY · 27. NEDEĽA", text: "Ruženec denne 17:30 · v piatok prvopiatková spoveď od 16:00", mesto: "Trenčín", den: "5.", mesiac: "OKT", tlacidlo: "Čítať", pod: "412 farníkov si prečítalo" },
+    { id: "of-zmena", druh: "vyzva", nadpis: "V stredu ranná omša nebude", stitok: "ZMENA PROGRAMU", text: "Večerná omša o 18:00 v kaplnke sv. Anny", mesto: "Trenčín", den: "8.", mesiac: "OKT", tlacidlo: "Pripomenúť", pod: "poslané sledujúcim" },
+    { id: "of-brigada", druh: "akcia", nadpis: "Upratovanie fary a záhrady", stitok: "BRIGÁDA · SOBOTA 9:00", text: "Marka Aurela 6 · rukavice a náradie máme", mesto: "Trenčín", den: "11.", mesiac: "OKT", tlacidlo: "Prídem", pod: "prídu 9 ľudia" },
+  ],
+  pracaNadpis: "OMŠE A SLUŽBA",
+  praca: [
+    { id: "pf-omse", nazov: "Kedy sú omše", druh: "zamestnanec", text: "", mesto: "Trenčín", den: "1.", mesiac: "OKT", pod: "rozvrh platí od 1. 10.",
+      stitok: "SVÄTÉ OMŠE", opis: "Nedeľa 7:30 · 10:30 veľká omša · 18:00. Pondelok až streda 6:30, štvrtok a piatok 18:00, sobota 7:00 a 18:00 vigília.", kde: "Kostol Narodenia Panny Márie", kedy: "v utorok aj kaplnka sv. Anny 18:00", odmena: "október: ruženec denne 17:30", zaujem: "zmeny vždy v ohláškach", tlacidlo: "Pripomínať omše", tretiRiadok: "Poznámka" },
+    { id: "pf-sluzba", nazov: "Lektori a miništranti", druh: "brigadnik", text: "", mesto: "Trenčín", den: "19.", mesiac: "OKT", pod: "prihlásiť sa do 19. 10.",
+      stitok: "SLUŽBA", opis: "Čítanie na nedeľnej omši a služba pri oltári. Naučíme ťa všetko, stačí prísť na nácvik.", kde: "farský kostol", kedy: "nedeľa 10:30", odmena: "nácvik v sobotu 10:00", zaujem: "4 ľudia už majú záujem", tlacidlo: "Mám záujem", tretiRiadok: "Poznámka" },
+  ],
+  darcovia: [
+    { id: "fd1", meno: "Mária K.", iniciala: "MK", mesto: "Trenčín", naCo: "Farnosť", suma: 10, pred: "pred 12 min" },
+    { id: "fd2", meno: "Anonymný darca", iniciala: "A", mesto: "Trenčín", naCo: "Oprava organu", suma: 20, pred: "pred 40 min" },
+    { id: "fd3", meno: "Rodina Hrušková", iniciala: "RH", mesto: "Trenčín", naCo: "Rozlúčka s pani Annou", suma: 50, pred: "pred 1 h" },
+  ],
+  titulka: U("photo-1611859732483-07bd0d5e3c50", 1200),
+  onas: { nadpis: "O farnosti", text: "Najstaršia trenčianska farnosť pri farskom kostole nad mestom. Spravujeme historický kostol, kaplnku sv. Anny a cintorín.", oblasti: [] },
+  roky: [
+    { rok: 2026, nZaz: 23, sum: [["21 900 €", "vyzbierané"], ["5", "zbierok"], ["18", "skutkov"], ["612", "darcov"]] },
+    { rok: 2025, nZaz: 28, sum: [["19 400 €", "vyzbierané"], ["4", "zbierky"], ["24", "skutkov"], ["540", "darcov"]] },
+    { rok: 2024, nZaz: 17, sum: [["12 600 €", "vyzbierané"], ["2", "zbierky"], ["15", "skutkov"], ["388", "darcov"]] },
+    { rok: 2023, nZaz: 7, sum: [["3 200 €", "vyzbierané"], ["1", "zbierka"], ["6", "skutkov"], ["120", "darcov"]] },
+  ],
+  kronika: [
+    { id: "kf-lavice", typ: "zb", d: "15.", m: "AUG", rok: 2026, mesto: "Trenčín", nazov: "Nové lavice do kaplnky sv. Anny", s: "3 400 € · od 88 darcov", q: "12 nových dubových lavíc. Staré sme darovali farnosti v Opatovej.", foto: FO.omsa },
+    { id: "kf-spevokol", typ: "is", d: "6.", m: "JÚL", rok: 2026, mesto: "Trenčín", nazov: "Detský spevokol na púti v Šaštíne", s: "1 120 iskier · 0:40", foto: FO.spev },
+    { id: "kf-balicky", typ: "zb", d: "30.", m: "APR", rok: 2026, mesto: "Trenčín", nazov: "Veľkonočné balíčky pre seniorov", s: "960 € · od 52 darcov", q: "120 balíčkov sme odniesli osobne seniorom z farnosti.", foto: FO.balicky },
+    { id: "kf-kurenie", typ: "zb", d: "20.", m: "DEC", rok: 2025, mesto: "Trenčín", nazov: "Vykurovanie kostola", s: "4 800 € · od 140 darcov", q: "Nový kotol. V zime je v kostole 16 °C namiesto 8 °C.", foto: FO.kostol },
+    { id: "kf-put", typ: "oz", d: "15.", m: "AUG", rok: 2025, mesto: "Trenčín", nazov: "Púť do Šaštína: 140 pútnikov", s: "dva autobusy z farnosti", foto: FO.put },
+    { id: "kf-veza", typ: "zb", d: "30.", m: "MÁJ", rok: 2025, mesto: "Trenčín", nazov: "Oprava veže", s: "8 200 € · od 210 darcov", q: "Veža má nový plech a hodiny opäť bijú.", foto: FO.omsa },
+    { id: "kf-betlehem", typ: "zb", d: "22.", m: "DEC", rok: 2024, mesto: "Trenčín", nazov: "Betlehem pred kostolom", s: "1 400 € · od 61 darcov", q: "Drevený betlehem vyrezali stolári z farnosti, platili sme len drevo.", foto: FO.balicky },
+    { id: "kf-ozvucenie", typ: "zb", d: "30.", m: "NOV", rok: 2023, mesto: "Trenčín", nazov: "Nový ozvučovací systém", s: "3 200 € · od 120 darcov", q: "Prvá zbierka cez DEED+. V zadných laviciach je konečne počuť.", foto: FO.omsa },
+  ],
+};
+
+export const TEST_PROFILY: TestProfil[] = [CHARITA, FIRMA, TVORCA, FARNOST];
 export const najdiTestProfil = (k: string): TestProfil | undefined => TEST_PROFILY.find((p) => p.k === k);
 /** verejný odkaz na zdieľanie: /p/svetlo · /p/pekaren · /p/martin → kľúč profilu */
-const SLUG_KLUC: Record<string, string> = { svetlo: "svetlo", pekaren: "pekaren", martin: "tvorca" };
+const SLUG_KLUC: Record<string, string> = { svetlo: "svetlo", pekaren: "pekaren", martin: "tvorca", farnost: "farnost" };
 export const slugNaKluc = (slug: string): string | undefined => SLUG_KLUC[slug];
 export const klucNaSlug = (k: string): string => (k === "tvorca" ? "martin" : k);
 /** stránka/organizácia (feed, adresár, „Stránka organizácie") podľa mena → testovací profil.
@@ -545,7 +631,7 @@ export function testProfilPreMeno(meno?: string | null): TestProfil | undefined 
   if (!meno) return undefined;
   const m = holeMeno(meno);
   if (!m) return undefined;
-  return TEST_PROFILY.find((p) => holeMeno(p.meno) === m);
+  return TEST_PROFILY.find((p) => p.typ !== "farnost" && holeMeno(p.meno) === m); // KARTA 50: farnosti z modulu Viera ostávajú zatiaľ na FarskyProfil
 }
 export const testProfilPodlaTypu = (t: TypProfilu): TestProfil => TEST_PROFILY.find((p) => p.typ === t) ?? CHARITA;
 

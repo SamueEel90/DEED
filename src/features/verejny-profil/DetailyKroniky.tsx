@@ -69,10 +69,12 @@ export function DetailUkoncenej({ pc, profil, p, onBack }: { pc: boolean; profil
         <span style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: ".1em", color: "var(--green)" }}>SPLNILI SME</span>
         <span style={{ fontSize: 15.5, lineHeight: 1.55 }}>„{z.spravaDarcom}“</span>
       </div>}
-      <span style={sekcia}>SPRÁVA A DOKLADY</span>
-      <div style={{ ...karta, display: "flex", alignItems: "center", gap: 10 }}>
-        <span style={{ height: 26, padding: "0 10px", borderRadius: 13, background: z.doklady ? "#2F5E3A" : "var(--btn)", color: z.doklady ? "#fff" : "var(--ink2)", fontSize: 11, fontWeight: 800, letterSpacing: ".04em", display: "flex", alignItems: "center", whiteSpace: "nowrap" }}>{z.doklady ? `DOLOŽENÉ · ${z.doklady} ${z.doklady === 1 ? "DOKLAD" : z.doklady < 5 ? "DOKLADY" : "DOKLADOV"}` : "SPRÁVA SA PÍŠE"}</span>
-      </div>
+      {!p.bezDokladov && <>
+        <span style={sekcia}>SPRÁVA A DOKLADY</span>
+        <div style={{ ...karta, display: "flex", alignItems: "center", gap: 10 }}>
+          <span style={{ height: 26, padding: "0 10px", borderRadius: 13, background: z.doklady ? "#2F5E3A" : "var(--btn)", color: z.doklady ? "#fff" : "var(--ink2)", fontSize: 11, fontWeight: 800, letterSpacing: ".04em", display: "flex", alignItems: "center", whiteSpace: "nowrap" }}>{z.doklady ? `DOLOŽENÉ · ${z.doklady} ${z.doklady === 1 ? "DOKLAD" : z.doklady < 5 ? "DOKLADY" : "DOKLADOV"}` : "SPRÁVA SA PÍŠE"}</span>
+        </div>
+      </>}
       <div style={{ marginTop: 4 }}><Darcovia refId={z.id} bezDorovnania skoncena /></div>
     </Obal>
   );

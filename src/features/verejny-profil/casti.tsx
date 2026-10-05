@@ -179,25 +179,25 @@ export function naZbierkaData(z: TestZbierka, profil: TestProfil): ZbierkaData {
 // ============================================================
 import type { TestPraca } from "@/lib/testProfily";
 const PLAGAT_BG = "linear-gradient(160deg,#2C5576 0%,#3D6B8E 60%,#4F7FA3 100%)";
-function PlagatUdaje({ j }: { j: TestPraca }) {
+function PlagatUdaje({ j }: { j: TestPraca }) { // KARTA 50: farnosť (Omše a služba) — vlastné tlačidlo a 3. riadok
   return (<>
     <div style={{ display: "grid", gridTemplateColumns: "auto minmax(0,1fr)", gap: "4px 12px", fontSize: 13.5, padding: "8px 0", borderTop: "1px solid rgba(255,255,255,.22)", borderBottom: "1px solid rgba(255,255,255,.22)" }}>
       <span style={{ opacity: 0.75 }}>Kde</span><b>{j.kde}</b>
       <span style={{ opacity: 0.75 }}>Kedy</span><b>{j.kedy}</b>
-      <span style={{ opacity: 0.75 }}>Odmena</span><b>{j.odmena}</b>
+      <span style={{ opacity: 0.75 }}>{j.tretiRiadok ?? "Odmena"}</span><b>{j.odmena}</b>
     </div>
     <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
-      <button type="button" style={{ height: 46, padding: "0 20px", border: "none", borderRadius: 14, background: "#fff", cursor: "pointer", fontSize: 15, fontWeight: 800, color: "#2C5576", boxShadow: "none" }}>Mám záujem</button>
+      <button type="button" style={{ height: 46, padding: "0 20px", border: "none", borderRadius: 14, background: "#fff", cursor: "pointer", fontSize: 15, fontWeight: 800, color: "#2C5576", boxShadow: "none" }}>{j.tlacidlo ?? "Mám záujem"}</button>
       <span style={{ fontSize: 12.5, opacity: 0.85 }}>{j.zaujem}</span>
     </span>
   </>);
 }
-export function PlagatPrace({ praca, zbaleny, nadpis = true }: { praca: TestPraca[]; zbaleny?: boolean; nadpis?: boolean }) {
+export function PlagatPrace({ praca, zbaleny, nadpis = true, titul = "HĽADÁME ĽUDÍ" }: { praca: TestPraca[]; zbaleny?: boolean; nadpis?: boolean; /** KARTA 50 · farnosť „OMŠE A SLUŽBA" */ titul?: string }) {
   const [otv, setOtv] = useState<Record<string, boolean>>({});
   if (!praca.length) return null;
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 10, paddingTop: 6 }}>
-      {nadpis && <span style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: ".1em", color: "var(--blue)" }}>HĽADÁME ĽUDÍ</span>}
+      {nadpis && <span style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: ".1em", color: "var(--blue)" }}>{titul}</span>}
       {praca.map((j) => zbaleny ? (
         <article key={j.id} style={{ position: "relative", borderRadius: 20, overflow: "hidden", background: PLAGAT_BG, color: "#fff", display: "flex", flexDirection: "column", boxShadow: "0 10px 24px rgba(30,60,90,.25)" }}>
           <button type="button" onClick={() => setOtv((o) => ({ ...o, [j.id]: !o[j.id] }))} aria-expanded={!!otv[j.id]}

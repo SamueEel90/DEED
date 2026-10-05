@@ -52,7 +52,7 @@ export function VerejnyProfilView({ kluc, onBack }: { kluc: string; onBack: () =
   const [tiery] = useState(nacitajTiery);
   const typP = profil0?.typ;
   const tierStranky = TESTOVACIA && ts.program !== null ? ts.program : typP === "charita" ? tiery.charita : typP === "firma" ? tiery.b2b : tiery.tvorca;
-  const vzhlad = useVzhlad(profil0?.k ?? kluc, tierStranky === 0);
+  const vzhlad = useVzhlad(profil0?.k ?? kluc, typP !== "farnost" && tierStranky === 0); // farnosť: jeden platený program, výber má vždy
   const [prepis, setPrepis] = useState<Vzhlad | null>(null);
   const podanie = prepis ?? vzhlad;
   if (!profil0) return null;

@@ -1,7 +1,7 @@
 // KARTA 45 · spoločné dáta a diely pre Výklad a Pirát charity (rovnaké dáta ako Kronika, iné podanie).
 // Dáta: testProfily.ts (Svetlo pomoci). Iskry z lib/iskry (2 cesty: Iskry · Zbierky).
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
-import { eur, tvar, vLokalite, type Lokalita, type Mesto, type TestProfil, type TestZbierka } from "@/lib/testProfily";
+import { eur, tvar, vLokalite, type Lokalita, type Mesto, type TestProfil, type TestZbierka, jeFarnost } from "@/lib/testProfily";
 import { ISKRY_CFG, iskraViditelna, iskryVsetky, useZmenyIskier, zbierkaIskry, type Iskra } from "@/lib/iskry";
 import { otvorIskry } from "@/features/iskry/otvor";
 import { MESIACE, kovText } from "./casti";
@@ -13,7 +13,7 @@ export const bgF = (f: string) => `url('${f}') center/cover no-repeat #3a3530`;
 const poradieDatumu = (m: string, d: string) => MESIACE.indexOf(m) * 100 + (parseInt(d, 10) || 0);
 const dokladov = (n: number) => tvar(n, ["DOKLAD", "DOKLADY", "DOKLADOV"]);
 
-export interface PolCh { id: string; typ: "zb" | "sk" | "is" | "oz"; d: string; m: string; rok: number; nazov: string; s: string; q?: string; dok?: string; foto: string; zbierka?: TestZbierka }
+export interface PolCh { id: string; typ: "zb" | "sk" | "is" | "oz"; d: string; m: string; rok: number; nazov: string; s: string; q?: string; dok?: string; foto: string; zbierka?: TestZbierka; /** KARTA 50 · farnosť nedokladá */ bezDokladov?: boolean }
 export interface OznCh { id: string; den: string; mes: string; dBg: string; st: string; stc: string; n: string; s: string; btn: string; pocet: string }
 
 /** dáta charity v meste človeka — rovnaké pre Výklad aj Pirát */
@@ -42,7 +42,7 @@ export function useCharitaData(profil: TestProfil, lok: Lokalita, domace: Mesto)
     ...vLokalite(profil.skutky, lok, domace).filter((s) => s.rok).map((s): PolCh => ({ id: s.id, typ: "sk", d: s.d!, m: s.m!, rok: s.rok!, nazov: s.nazov, s: `${s.popis}${s.dobrovolnici ? ` · ${s.dobrovolnici} dobrovoľníkov` : ""}`, foto: s.foto })),
     ...zbierky.filter((z) => z.stav === "ukoncena" && z.rok).map((z): PolCh => ({ id: z.id, typ: "zb", d: z.d!, m: z.m!, rok: z.rok!, nazov: z.nazov, s: `${eur(z.vyzbierane)} · od ${z.ludia} darcov`, q: z.spravaDarcom, dok: z.doklady ? dokladov(z.doklady) : undefined, foto: z.foto, zbierka: z })),
     ...vLokalite(profil.kronika ?? [], lok, domace).map((k): PolCh => ({ ...k })),
-  ].sort((a, b) => b.rok - a.rok || poradieDatumu(b.m, b.d) - poradieDatumu(a.m, a.d));
+  ].sort((a, b) => b.rok - a.rok || poradieDatumu(b.m, b.d) - poradieDatumu(a.m, a.d)).map((p) => (jeFarnost(profil) ? { ...p, bezDokladov: true, dok: undefined } : p));
   const roky = (profil.roky ?? []).map((r) => ({ ...r, t: String(r.rok), pol: pol.filter((p) => p.rok === r.rok) }));
   const mojeIskry = iskryVsetky().filter((v) => v.autor === profil.meno && iskraViditelna(v));
   const iskryCesty: Iskra[][] = [mojeIskry.filter((v) => v.druh !== ISKRY_CFG.druhZbierky), mojeIskry.filter((v) => v.druh === ISKRY_CFG.druhZbierky)];
@@ -166,7 +166,7 @@ export function RokyOs({ roky, onZaznam }: { roky: { t: string; sum: [string, st
           </button>
           {exp && <div style={{ display: "flex", flexDirection: "column" }}>
             {k.pol.map((p) => {
-              const chip = p.typ === "zb" ? (p.q ? "UKONČENÁ · DOLOŽENÉ" : "UKONČENÁ · SPRÁVA SA PÍŠE") : p.typ === "is" ? "ISKRA" : p.typ === "oz" ? "AKCIA" : "SKUTOK";
+              const chip = p.typ === "zb" ? (p.bezDokladov ? "UKONČENÁ" : p.q ? "UKONČENÁ · DOLOŽENÉ" : "UKONČENÁ · SPRÁVA SA PÍŠE") : p.typ === "is" ? "ISKRA" : p.typ === "oz" ? "AKCIA" : "SKUTOK";
               const chipC = p.typ === "zb" ? (p.q ? "var(--green)" : "var(--ink3)") : p.typ === "is" ? "var(--gold)" : p.typ === "oz" ? "var(--blue)" : "var(--green)";
               const klik = () => onZaznam(p);
               return (
@@ -182,7 +182,7 @@ export function RokyOs({ roky, onZaznam }: { roky: { t: string; sum: [string, st
                           <span style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: ".06em", color: chipC }}>{chip}</span>
                           <b style={{ fontSize: 14.5, lineHeight: 1.3 }}>{p.nazov}</b>
                           <span style={{ fontSize: 12.5, color: "var(--ink3)", fontVariantNumeric: "tabular-nums" }}>{p.s}</span>
-                          {p.typ === "zb" && <span style={{ fontSize: 12.5, fontWeight: 800, color: "var(--green)" }}>{p.q ? "Správa a doklady ›" : "Priebežné doklady ›"}</span>}
+                          {p.typ === "zb" && <span style={{ fontSize: 12.5, fontWeight: 800, color: "var(--green)" }}>{p.bezDokladov ? "Ako to dopadlo ›" : p.q ? "Správa a doklady ›" : "Priebežné doklady ›"}</span>}
                         </span>
                       </span>
                     </button>

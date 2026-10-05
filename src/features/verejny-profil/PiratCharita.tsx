@@ -7,7 +7,7 @@
 // PC: ťuk na sektor / Teraz treba / zbierku = vpravo náhľad „Posielaš do …" + modul, pravý stĺpec sa vyroluje hore.
 // Pôvodný Pirat.tsx ostáva tvorcovi (Martin Konaľ).
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
-import { eur, tvar, type Lokalita, type TestProfil, type TestZbierka } from "@/lib/testProfily";
+import { eur, tvar, type Lokalita, type TestProfil, type TestZbierka, jeFarnost } from "@/lib/testProfily";
 import { DOK, LokalitaPrepinac, PlagatPrace, PrepinacPodania, klikKarta, PribehText, StitCare, StitOkno, kovText, nazovStitu, useDomaceMesto, vMeste } from "./casti";
 import { PodporaProfilu, type Vyber } from "./PodporaProfilu";
 import { GRAD, PRUH, MalaZbierka, OznamKarta, ZIskier, bgF, useCharitaData } from "./charitaCasti";
@@ -37,6 +37,7 @@ export function PiratCharita({ profil, onDetail, onBack, prepinac, onKronika }: 
   const d = useCharitaData(profil, lok, domace);
   const snapRef = useRef<HTMLDivElement | null>(null);
   const stit = profil.stit.toLowerCase();
+  const farnost = jeFarnost(profil); // KARTA 50
 
   const meno = profil.meno.replace(/\s+o\.\s?z\.$/, "");
   const veta1 = profil.veta.split(/(?<=\.)\s/)[0];
@@ -69,7 +70,7 @@ export function PiratCharita({ profil, onDetail, onBack, prepinac, onKronika }: 
       <button type="button" aria-label="Zdieľať · QR" style={{ ...tlTmave, width: 44 }}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 12v8h16v-8M16 6l-4-4-4 4M12 2v14" /></svg></button>
     </div>
   );
-  const stitTl = (w: number, h: number, sw: number, sh2: number, inset = -6, op = 0.55) => (
+  const stitTl = (w: number, h: number, sw: number, sh2: number, inset = -6, op = 0.55) => farnost ? null : ( // KARTA 50: farnosť štít nemá
     <button type="button" onClick={() => setStitOtv(true)} aria-label={`Štít DEED+ CARE · ${nazovStitu(profil.stit)}`} style={{ position: "relative", flex: "none", width: w, height: h, padding: 0, border: "none", background: "transparent", boxShadow: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
       <span style={{ position: "absolute", inset, borderRadius: "50%", background: "radial-gradient(circle,var(--kov2) 0%,rgba(0,0,0,0) 62%)", opacity: op }} />
       <StitCare stit={profil.stit} w={sw} h={sh2} lesk />
@@ -91,8 +92,8 @@ export function PiratCharita({ profil, onDetail, onBack, prepinac, onKronika }: 
       {sekt.map((s, i) => i === cur ? null : (
         <button key={s.id} type="button" onClick={() => vyber(i)} style={{ height: h, padding: "0 12px 0 0", borderRadius: 14, border: "1px solid var(--cardBd)", background: "var(--card)", overflow: "hidden", cursor: "pointer", display: "flex", alignItems: "center", gap: 12, textAlign: "left", color: "var(--ink)", fontFamily: "inherit", boxShadow: "none" }}>
           <span style={{ flex: "none", width: 6, alignSelf: "stretch", background: `var(--h${i})` }} />
-          <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}><span style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: ".08em", color: "var(--ink3)" }}>{i ? `SEKTOR ${i}` : "CENTRÁLNA"}</span><b style={{ fontSize: fs }}>{s.nazov}</b></span>
-          <span style={{ fontSize: 12.5, color: "var(--ink3)", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>{s.mesiac != null ? `${eur(s.mesiac)} tento mesiac` : ""}</span>
+          <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}><span style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: ".08em", color: "var(--ink3)" }}>{s.stitok ?? (i ? `SEKTOR ${i}` : "CENTRÁLNA")}</span><b style={{ fontSize: fs }}>{s.nazov}</b></span>
+          <span style={{ fontSize: 12.5, color: "var(--ink3)", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>{s.dlazdicaText ?? (s.mesiac != null ? `${eur(s.mesiac)} tento mesiac` : "")}</span>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg>
         </button>))}
     </div>
@@ -135,7 +136,7 @@ export function PiratCharita({ profil, onDetail, onBack, prepinac, onKronika }: 
                   {stitTl(84, 100, 84, 102, -6, 0.6)}
                 </span>
                 <b style={{ fontSize: 64, lineHeight: 1, letterSpacing: "-.03em" }}>{meno}</b>
-                <span style={{ fontSize: 20, lineHeight: 1.45, opacity: 0.92 }}>{veta1} {zaRoky}, každé euro doložené.</span>
+                <span style={{ fontSize: 20, lineHeight: 1.45, opacity: 0.92 }}>{veta1} {zaRoky}{farnost ? "" : ", každé euro doložené"}.</span>
                 {nazivo(true)}
                 {prepinac}
                 <span style={{ fontSize: 14, fontWeight: 700, opacity: 0.8 }}>Posuň dole</span>
@@ -143,11 +144,11 @@ export function PiratCharita({ profil, onDetail, onBack, prepinac, onKronika }: 
             </>, undefined, undefined, true)}
             {tmavy(cs.foto, [0.94, 0.72, 50],
               <div style={{ position: "absolute", left: 56, bottom: 64, width: 580, display: "flex", flexDirection: "column", gap: 14, color: "#fff" }}>
-                <span style={{ alignSelf: "flex-start", height: 32, padding: "0 14px", borderRadius: 16, background: "#4B7A35", fontSize: 13, fontWeight: 800, letterSpacing: ".05em", display: "flex", alignItems: "center" }}>{cur ? `SEKTOR ${cur} · PENIAZE IDÚ LEN NA TÚTO TÉMU` : "KAM TREBA NAJVIAC · CENTRÁLNA"}</span>
+                <span style={{ alignSelf: "flex-start", height: 32, padding: "0 14px", borderRadius: 16, background: "#4B7A35", fontSize: 13, fontWeight: 800, letterSpacing: ".05em", display: "flex", alignItems: "center" }}>{cur ? (farnost ? `${cs.stitok ?? "ZBIERKA"} · PENIAZE IDÚ LEN NA TENTO ÚČEL` : `SEKTOR ${cur} · PENIAZE IDÚ LEN NA TÚTO TÉMU`) : farnost ? "KAM TREBA NAJVIAC · VŠEOBECNÁ PODPORA" : "KAM TREBA NAJVIAC · CENTRÁLNA"}</span>
                 <b style={{ fontSize: 52, lineHeight: 1.05, letterSpacing: "-.02em" }}>{cur ? cs.nazov : `${c.nazov} ${profil.menoGen ?? meno}`}</b>
                 <span style={{ fontSize: 17, lineHeight: 1.55, opacity: 0.92 }}>{kam}</span>
                 <span style={{ display: "flex", alignItems: "baseline", gap: 10, fontVariantNumeric: "tabular-nums" }}><b style={{ fontSize: 30 }}>{eur(cs.mesiac ?? cs.vyzbierane)}</b><span style={{ fontSize: 16, opacity: 0.85 }}>tento mesiac · {cs.darcovia} ľudí pomohlo</span></span>
-                <button type="button" onClick={() => darovatNa(cur)} style={{ ...btnZ, alignSelf: "flex-start", height: 56, padding: "0 28px", borderRadius: 16, fontSize: 17 }}>Darovať na {cur ? cs.nazov : "celú činnosť"}</button>
+                <button type="button" onClick={() => darovatNa(cur)} style={{ ...btnZ, alignSelf: "flex-start", height: 56, padding: "0 28px", borderRadius: 16, fontSize: 17 }}>Darovať na {cur ? cs.nazov : farnost ? "farnosť" : "celú činnosť"}</button>
                 <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".1em", color: "#F6D77A", paddingTop: 6 }}>ALEBO VYBER INÉ</span>
                 {sekRiadky(52, 15.5)}
               </div>)}
@@ -183,7 +184,7 @@ export function PiratCharita({ profil, onDetail, onBack, prepinac, onKronika }: 
                 {stitTl(240, 290, 230, 280, -10, 0.5)}
                 <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
                   <b style={velkyNadpis(52)}>Overenie</b>
-                  <b style={{ fontSize: 24 }}>{nazovStitu(profil.stit)} štít · 99 % doložené</b>
+                  {!farnost && <b style={{ fontSize: 24 }}>{nazovStitu(profil.stit)} štít · 99 % doložené</b>}
                   <div style={{ display: "flex", flexDirection: "column", gap: 10, padding: "16px 18px", borderRadius: 20, background: "var(--card)", border: "1px solid var(--cardBd)" }}>
                     {profil.onas && <span style={{ fontSize: 15, lineHeight: 1.55, color: "var(--ink2)", textWrap: "pretty" } as CSSProperties}>{profil.onas.text}</span>}
                     {faktyEl(13, 13.5, "8px 0")}
@@ -196,7 +197,7 @@ export function PiratCharita({ profil, onDetail, onBack, prepinac, onKronika }: 
         <aside ref={aRef} style={{ width: 440, flex: "none", overflowY: "auto", background: "var(--panel)", borderLeft: "1px solid var(--accLine)", padding: "22px 22px 40px", display: "flex", flexDirection: "column", gap: 12 }}>
           <b style={{ fontSize: 22 }}>Darovať {profil.menoDat ?? meno}</b>
           {podpora("pc", 118)}
-          <PlagatPrace praca={profil.praca} />
+          <PlagatPrace praca={profil.praca} titul={profil.pracaNadpis} />
         </aside>
         {okno}
       </div>
@@ -235,12 +236,12 @@ export function PiratCharita({ profil, onDetail, onBack, prepinac, onKronika }: 
           </>, "16px 18px", 9, "visible", spodok)}
         </>, undefined, undefined, true)}
         {obr(<>
-          {foto(cs.foto, 240, stitok(cur ? `SEKTOR ${cur} · LEN NA TÚTO TÉMU` : "KAM TREBA NAJVIAC", cur ? `var(--h${cur})` : "#4B7A35", 12))}
+          {foto(cs.foto, 240, stitok(cur ? (farnost ? `${cs.stitok ?? "ZBIERKA"} · LEN NA TENTO ÚČEL` : `SEKTOR ${cur} · LEN NA TÚTO TÉMU`) : "KAM TREBA NAJVIAC", cur ? `var(--h${cur})` : "#4B7A35", 12))}
           {textPlocha(<>
             <b style={{ fontSize: 24, lineHeight: 1.1 }}>{cs.nazov}</b>
             <span style={{ flex: "none", display: "-webkit-box", WebkitBoxOrient: "vertical", WebkitLineClamp: 3, overflow: "hidden", fontSize: 14, lineHeight: 1.45, color: "var(--ink2)" } as CSSProperties}>{kam}</span>
             <span style={{ display: "flex", alignItems: "baseline", gap: 8, fontVariantNumeric: "tabular-nums" }}><b style={{ fontSize: 20 }}>{eur(cs.mesiac ?? cs.vyzbierane)}</b><span style={{ fontSize: 13, color: "var(--ink3)" }}>tento mesiac</span></span>
-            <button type="button" onClick={() => darovatNa(cur)} style={{ ...btnZ, flex: "none", height: 48, borderRadius: 14, fontSize: 15.5 }}>Darovať na {cur ? cs.nazov : "celú činnosť"}</button>
+            <button type="button" onClick={() => darovatNa(cur)} style={{ ...btnZ, flex: "none", height: 48, borderRadius: 14, fontSize: 15.5 }}>Darovať na {cur ? cs.nazov : farnost ? "farnosť" : "celú činnosť"}</button>
             <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: ".1em", color: "var(--acc)", paddingTop: 2 }}>ALEBO INÉ</span>
             {sekRiadky(44, 14)}
           </>, "14px 16px", 8)}
@@ -267,18 +268,18 @@ export function PiratCharita({ profil, onDetail, onBack, prepinac, onKronika }: 
             </div>))}
         </>, 10)}</section>
         {p1 && <section style={{ ...sekcia, background: "var(--bg)" }}>{plocha(<>
-          <b style={{ fontSize: 30, lineHeight: 1.05, color: "var(--blue)" }}>Hľadáme ľudí</b>
+          <b style={{ fontSize: 30, lineHeight: 1.05, color: "var(--blue)" }}>{farnost ? "Omše a služba" : "Hľadáme ľudí"}</b>
           <article style={{ position: "relative", borderRadius: 22, overflow: "hidden", background: "linear-gradient(160deg,#2C5576 0%,#3D6B8E 60%,#4F7FA3 100%)", color: "#fff", padding: 18, display: "flex", flexDirection: "column", gap: 10 }}>
             <span style={{ alignSelf: "flex-start", height: 26, padding: "0 10px", borderRadius: 13, background: "#fff", color: "#2C5576", fontSize: 11, fontWeight: 800, letterSpacing: ".06em", display: "flex", alignItems: "center" }}>{p1.stitok}</span>
             <b style={{ fontSize: 24, lineHeight: 1.15 }}>{p1.nazov}</b>
             <span style={{ fontSize: 14, lineHeight: 1.45, opacity: 0.92 }}>{p1.opis}</span>
             <div style={{ display: "grid", gridTemplateColumns: "auto minmax(0,1fr)", gap: "4px 12px", fontSize: 13.5, padding: "8px 0", borderTop: "1px solid rgba(255,255,255,.22)", borderBottom: "1px solid rgba(255,255,255,.22)" }}>
-              <span style={{ opacity: 0.75 }}>Kde</span><b>{p1.kde}</b><span style={{ opacity: 0.75 }}>Kedy</span><b>{p1.kedy}</b><span style={{ opacity: 0.75 }}>Odmena</span><b>{p1.odmena}</b>
+              <span style={{ opacity: 0.75 }}>Kde</span><b>{p1.kde}</b><span style={{ opacity: 0.75 }}>Kedy</span><b>{p1.kedy}</b><span style={{ opacity: 0.75 }}>{p1.tretiRiadok ?? "Odmena"}</span><b>{p1.odmena}</b>
             </div>
-            <button type="button" style={{ height: 46, border: "none", borderRadius: 14, background: "#fff", cursor: "pointer", fontSize: 15, fontWeight: 800, color: "#2C5576", boxShadow: "none", fontFamily: "inherit" }}>Mám záujem</button>
+            <button type="button" style={{ height: 46, border: "none", borderRadius: 14, background: "#fff", cursor: "pointer", fontSize: 15, fontWeight: 800, color: "#2C5576", boxShadow: "none", fontFamily: "inherit" }}>{p1.tlacidlo ?? "Mám záujem"}</button>
           </article>
           {p2 && <button type="button" style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", borderRadius: 16, border: "1.5px solid var(--blue)", background: "transparent", boxShadow: "none", cursor: "pointer", textAlign: "left", color: "var(--ink)", fontFamily: "inherit" }}>
-            <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}><span style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: ".06em", color: "var(--blue)" }}>{p2.stitok} · {p2.mesto.toLocaleUpperCase("sk-SK")}</span><b style={{ fontSize: 15 }}>{p2.nazov}</b><span style={{ fontSize: 12.5, color: "var(--ink3)" }}>{p2.kedy} · {p2.odmena}</span></span>
+            <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}><span style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: ".06em", color: "var(--blue)" }}>{p2.stitok} · {farnost ? p2.pod.toLocaleUpperCase("sk-SK") : p2.mesto.toLocaleUpperCase("sk-SK")}</span><b style={{ fontSize: 15 }}>{p2.nazov}</b><span style={{ fontSize: 12.5, color: "var(--ink3)" }}>{p2.kedy} · {p2.odmena}</span></span>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg></button>}
         </>, 10)}</section>}
         <section style={{ ...sekcia, background: "var(--bg)" }}>{plocha(<>
@@ -296,8 +297,8 @@ export function PiratCharita({ profil, onDetail, onBack, prepinac, onKronika }: 
         <section style={{ ...sekcia, background: "var(--bg)" }}>
           <div style={{ position: "relative", padding: `32px 18px ${prepinac ? 24 : spodok}px`, display: "flex", flexDirection: "column", alignItems: "center", gap: 12, textAlign: "center", overflow: "hidden" }}>
             {stitTl(150, 180, 144, 176, -10, 0.5)}
-            <b style={{ fontSize: 24 }}>{nazovStitu(profil.stit)} štít · 99 % doložené</b>
-            <span style={{ fontSize: 14.5, lineHeight: 1.5, color: "var(--ink2)" }}>IČO, transparentný účet a štatutár overení. Ťukni na štít.</span>
+            {!farnost && <b style={{ fontSize: 24 }}>{nazovStitu(profil.stit)} štít · 99 % doložené</b>}
+            <span style={{ fontSize: 14.5, lineHeight: 1.5, color: "var(--ink2)" }}>{farnost ? "Farnosť a transparentný účet overené." : "IČO, transparentný účet a štatutár overení. Ťukni na štít."}</span>
             <div style={{ alignSelf: "stretch", display: "flex", flexDirection: "column", textAlign: "left" }}>{faktyEl(12.5, 13, "8px 0")}</div>
           </div>
         </section>
