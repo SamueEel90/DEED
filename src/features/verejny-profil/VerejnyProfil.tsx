@@ -61,7 +61,7 @@ export function VerejnyProfilView({ kluc, onBack }: { kluc: string; onBack: () =
   // OPRAVY 148: žiadny testovací pás na verejnej stránke (testuje sa v Správe). Vzhľad pri všetkých typoch —
   // firma a tvorca majú zatiaľ jedno vlastné podanie; keď správca vyberie vzhľad, ukáže sa podanie charity s ich dátami.
   const zakladStranka = (): ReactNode => {
-    const podania = podanie === "pirat" ? <PiratCharita profil={profil} onDetail={setDetail} onBack={onBack} onKronika={() => setPrepis("kronika")} />
+    const podania = podanie === "pirat" ? <PiratCharita profil={profil} onDetail={setDetail} onZaznam={otvorZaznam} onBack={onBack} onKronika={() => setPrepis("kronika")} />
       : podanie === "vyklad" ? <VykladCharita profil={profil} onDetail={setDetail} onZaznam={otvorZaznam} onBack={onBack} />
       : <Kronika profil={profil} onDetail={setDetail} onZaznam={otvorZaznam} onBack={onBack} />;
     const vlastneVzhlady = (profil.typ === "firma" || profil.typ === "tvorca") && maVybranyVzhlad(profil.k);
