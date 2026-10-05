@@ -12,7 +12,7 @@ import { DeedZnacka } from "@/components/DeedZnacka";
 import { NovaZbierka } from "./NovaZbierka";
 import { zastavDiktovanie } from "@/lib/diktovanie";
 import { SpravaZbierky, type ZbierkaNaSpravu } from "./SpravaZbierky";
-import { CentralnaZbierkaSprava } from "./CentralnaSprava";
+import { SpravaCentralnej } from "./SpravaCentralnej";
 import { SkutkyCharity } from "./SkutkyCharity";
 import { OznamySprava } from "./NovyOznam";
 import type { ZbierkaPriAkcii, DruhOznamu } from "@/lib/oznamyNove";
@@ -365,7 +365,7 @@ export function SpravaStranky({ onBack, typ: typStranky = "charita", strankaId =
   // Obsah → Skutky: zoznam skutkov charity + Pridať skutok (ten istý ako v Nástrojoch)
   else if (sub === "skutky" && typPovoli("skutky", typ) && maPovolenie("skutky", tier)) obsah = <SkutkyCharity strankaId={strankaId} mobil={!desktop} onPridat={() => otvor("pridatSkutok")} />;
   // KARTA 39 · bod 3: centrálna zbierka (od P1)
-  else if (sub === "centralna" && typPovoli("centralna", typ) && maPovolenie("centralna", tier)) obsah = <CentralnaZbierkaSprava strankaId={strankaId} nazov={nazov} inicialy={inicialy} hlavnyUcet={nacitajIbanOrg(poz) || HLAVNY_UCET} mobil={!desktop} tablet={tablet} toast={toast} />;
+  else if (sub === "centralna" && typPovoli("centralna", typ) && maPovolenie("centralna", tier)) obsah = <SpravaCentralnej strankaId={strankaId} nazov={nazov} hlavnyUcet={nacitajIbanOrg(poz) || HLAVNY_UCET} tier={tier} mobil={!wide} toast={toast} onZbierky={() => { hist.current = []; setSub("g_zbierky"); }} onDorovnanie={() => otvor("dorovnanie")} onDarcovia={() => otvor("darcovia")} />;
   else obsah = !typPovoli(sub as PolozkaSpravy, typ) ? <Pripravujeme /> : maPovolenie(sub as PolozkaSpravy, tier) ? <Pripravujeme /> : <Zamknute program={odProgramu(sub as PolozkaSpravy)} />;
 
   const aktivnaSkupina: string | null = sub === null ? null : sub === "nast" || (sub as string).startsWith("n:") ? "nast" : sub === "penazenka" || (sub as string).startsWith("g_") ? sub : (sub as string).startsWith("x:") || sub === "profil" || sub === "vsetko" ? null : SKUPINA_POLOZKY(sub as PolozkaSpravy, typ);

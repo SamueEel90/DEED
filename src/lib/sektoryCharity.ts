@@ -72,6 +72,20 @@ export function zmazSektor(id: string): () => void {
   return () => { sektory = pred; zmena(); };
 }
 
+export function premenujSektor(id: string, nazov: string) { sektory = sektory.map((s) => (s.id === id ? { ...s, nazov } : s)); zmena(); }
+
+/** žiadosť o zmenu účtu centrálnej / sektora — ide DEED+ na schválenie (do 2 pracovných dní) */
+export interface ZiadostUcet { dovod: string; iban: string; podana: string }
+const ziadosti = new Map<string, ZiadostUcet>();
+export const ziadostUctu = (kluc: string) => ziadosti.get(kluc) ?? null;
+export function poziadajOZmenuUctu(kluc: string, z: Omit<ZiadostUcet, "podana">) { ziadosti.set(kluc, { ...z, podana: new Date().toISOString() }); zmena(); }
+
+/** zavretá centrálna (Ukončenie) — 15 minút sa dá vrátiť, potom správa pravidelným darcom (server) */
+let centralnaZavreta: { kedy: string; vratitDo: string; dovod: string } | null = null;
+export const zavretaCentralna = () => centralnaZavreta;
+export function zavriCentralnu(dovod: string) { centralnaZavreta = { kedy: new Date().toISOString(), vratitDo: new Date(Date.now() + 15 * 60000).toISOString(), dovod }; zmena(); }
+export function otvorCentralnu() { centralnaZavreta = null; zmena(); }
+
 /** ktorú položku otvoriť v Správe centrálnej a sektorov (0 = centrálna, 1… = sektor podľa poradia) */
 let vyber = 0;
 export const vyberCentralnej = () => vyber;
