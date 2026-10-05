@@ -20,6 +20,8 @@ import { poleZOrg } from "@/features/zbierka/Pole";
 import { useCesta } from "@/lib/cesta";
 import { otvorPridatSkutok } from "@/features/skutok/otvor";
 import { usePouzivatel } from "@/lib/pouzivatel";
+import { pribehZbierky, useZmenyPribehov } from "@/lib/pribehZbierky";
+import { otvorPribeh } from "@/features/verejny-profil/otvor";
 
 // čiarová ikona recyklácie (namiesto emoji) — karta Materiál
 const IKONA_RECYKLACIA = <svg width="44" height="44" color="var(--a-info)" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M7 19H4.8a1.8 1.8 0 0 1-1.6-2.7L4.5 14M11 19h8.2a1.8 1.8 0 0 0 1.6-2.7l-1.3-2.3M14 16l-3 3 3 3M8.3 13.3 7.2 9.2 3.1 10.3M9.5 7.7l1.6-2.8a1.8 1.8 0 0 1 3.1 0l1.4 2.4M19.5 11.5l-1.1 4.1-4.1-1.1" /></svg>;
@@ -222,6 +224,7 @@ type FeedProps = {
 };
 
 function CharitaFeed({ wide, toast, onDetail, onHladaj, onSheet, onBoard, onFiremny }: FeedProps) {
+  useZmenyPribehov();
   const { desktop } = useLayout();
   const { data: FEED_ITEMS = [], isLoading, isError, refetch } = useCharitaFeed();
   // zvolený rádius — Feed algoritmus (Časť B): filter podľa okruhu + adaptívny
@@ -241,6 +244,17 @@ function CharitaFeed({ wide, toast, onDetail, onHladaj, onSheet, onBoard, onFire
     if (it.comp === "zapoj") return <ZapojSa key={it.id} wide={wide} onDetail={onDetail} />;
     if (it.comp === "data") {
       const zd = zoItem(it);
+      // KARTA 55 · E: zverejnený príbeh → pod fotkou krátky text (max 3 riadky) a odkaz na stránku Príbeh
+      const pr = it.pribehZbierky ? pribehZbierky(it.pribehZbierky) : null;
+      if (pr) return (
+        <CharitaKarta key={it.id} wide={wide} onClick={() => onDetail(zd)}
+          fotky={it.fotky} emoji="💛" accent={K.gold}
+          badgeL={it.badgeL ? { t: it.badgeL, col: K.gold } : undefined}
+          nazov={it.nazov} overena={it.overena} tag={it.tag} tagCol={K.gold}
+          popis={<span style={{ display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{pr.kratky}</span>}
+          pribehOdkaz={{ text: `Celý príbeh na stránke ${it.orgNazov ?? "organizácie"} ›`, onClick: () => otvorPribeh(it.pribehZbierky!) }}
+          vyzbierane={it.vyzbierane} ciel={it.ciel} oblubena={oblubenyZo(zd)} />
+      );
       return (
         <CharitaKarta key={it.id} wide={wide} onClick={() => onDetail(zd)}
           fotky={it.fotky} emoji="💛" accent={K.gold}
@@ -337,7 +351,7 @@ function CharitaFeed({ wide, toast, onDetail, onHladaj, onSheet, onBoard, onFire
 // tu len mapujeme obsah Charity do slotov.
 // memo: re-render len pri zmene dát karty (oblubena/vyzbierane/…); inline onClick sa ignoruje
 const CharitaKarta = memo(CharitaKartaBase, rovnakeOkremFunkcii);
-function CharitaKartaBase({ wide, onClick, fotky, emoji, accent, badgeL, badgeR, nazov, overena, tag, tagCol, popis, vyzbierane, ciel, oblubena }: any) {
+function CharitaKartaBase({ wide, onClick, fotky, emoji, accent, badgeL, badgeR, nazov, overena, tag, tagCol, popis, vyzbierane, ciel, oblubena, pribehOdkaz }: any) {
   return (
     <FeedCard wide={wide} onClick={onClick} label={nazov} accent={accent}
       media={{
@@ -354,6 +368,10 @@ function CharitaKartaBase({ wide, onClick, fotky, emoji, accent, badgeL, badgeR,
       titleChips={<>{overena && <Overena />}{tag && <span style={tagChip(tagCol)}>{tag}</span>}</>}
       text={popis}
       progress={ciel ? { vyzbierane, ciel } : undefined}
+      footer={pribehOdkaz ? (
+        <button type="button" onClick={(e) => { e.stopPropagation(); pribehOdkaz.onClick(); }}
+          style={{ display: "flex", alignItems: "center", minHeight: 44, marginTop: 6, padding: 0, border: "none", background: "transparent", color: "var(--gInk)", fontSize: 14, fontWeight: 800, fontFamily: "inherit", cursor: "pointer", textAlign: "left", boxShadow: "none" }}>{pribehOdkaz.text}</button>
+      ) : undefined}
     />
   );
 }

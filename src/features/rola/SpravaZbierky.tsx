@@ -38,6 +38,7 @@ import { TextovePolia, GaleriaEditor } from "./obsahZbierky";
 import type { MediumZbierky } from "@/lib/novaZbierka";
 import type { FakturaOrg } from "@/lib/fakturyOrg";
 import { PlatbaOrganizacie, Zaplatene } from "./PlatbaOrganizacie";
+import { PribehEditor } from "./PribehEditor";
 
 const ZELENA = "var(--a-green)";
 const eur = (n: number) => `${n.toLocaleString("sk")} €`;
@@ -695,11 +696,12 @@ export function SpravaZbierky({ z, mobil, onZbierky, toast, onUdaje, onDorovnani
         <button type="button" onClick={() => zmen({ upozornenie90Zavrete: new Date().toISOString() })} style={tlO}>Teraz nie</button>
       </div>
     </section>}
-    <Taby akt={tab} onTab={setTab} skryte={bezDokladov ? [1] : []} />
+    <Taby akt={tab} onTab={setTab} skryte={bezDokladov ? [1] : []} pribeh />
     {tab === 0 && stlpce(vlavo, vpravo)}
     {tab === 1 && !bezDokladov && <DokladyCharity zbierkaId={z.id} s={s} zmen={zmenDoklady} vyzbierane={vyzbierane} teraz={teraz} mobil={mobil} toast={toast} />}
     {tab === 2 && <Statistiky d={stat} tier={tier} mobil={mobil} toast={toast} />}
     {tab === 3 && ukoncenie}
+    {tab === 4 && <PribehEditor z={z} mobil={mobil} toast={toast} />}
     {conf && <UkoncitHarok mobil={mobil} vyzbierane={vyzbierane} darcov={darcov} lehota={bezDokladov ? null : lehT} onUkonci={ukonci} onZavri={() => setConf(false)} />}
     {testovacie}
   </>);

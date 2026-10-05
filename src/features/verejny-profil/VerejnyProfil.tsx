@@ -23,11 +23,15 @@ import { DetailSkutku, DetailUkoncenej } from "./DetailyKroniky";
 import type { PolCh } from "./charitaCasti";
 import { otvorIskry } from "@/features/iskry/otvor";
 import { iskryVsetky } from "@/lib/iskry";
+import { pribehZbierky, orgPribehu, useZmenyPribehov } from "@/lib/pribehZbierky";
+import { PribehZbierky } from "./PribehZbierky";
 
 /** vložiteľný verejný profil podľa kľúča stránky (svetlo · pekaren · tvorca) */
 export function VerejnyProfilView({ kluc, onBack }: { kluc: string; onBack: () => void }) {
   const zStreamu = kluc.startsWith("stream:") ? kluc.slice(7) : null;
-  const profil0 = najdiTestProfil(zStreamu ? "tvorca" : kluc);
+  // KARTA 55 · E: „pribeh:{zbierka}" (odkaz z feedu) → stránka Príbeh; „{Organizácia} ›" otvorí jej profil
+  const zPribehu = kluc.startsWith("pribeh:") ? kluc.slice(7) : null;
+  const profil0 = najdiTestProfil(zStreamu ? "tvorca" : zPribehu ? orgPribehu(zPribehu) : kluc);
   const [detail, setDetail] = useState<TestZbierka | null>(null);
   const [stream, setStream] = useState<string | null>(null);
   // doplnky 4. 10.: záznam z kroniky / rokov — skutok, akcia, ukončená zbierka (bez platby), Iskra = Iskry na tom videu
@@ -46,6 +50,7 @@ export function VerejnyProfilView({ kluc, onBack }: { kluc: string; onBack: () =
     window.addEventListener("popstate", f);
     return () => window.removeEventListener("popstate", f);
   }, [stream]);
+  useZmenyPribehov();
   const ts = useTestStav(); // OPRAVY 147: testovací prázdny profil
   // KARTA 50 · §1: vzhľad vyberá správca v Správe → Upraviť profil (Zadarmo = vzhľad z configu); návštevník ho neprepína.
   // „Celá kronika" v Pirátovi otvorí Kroniku len pre tohto návštevníka (nič sa neukladá).
@@ -57,6 +62,10 @@ export function VerejnyProfilView({ kluc, onBack }: { kluc: string; onBack: () =
   const podanie = prepis ?? vzhlad;
   if (!profil0) return null;
   const profil = ts.prazdny ? vyprazdni(profil0) : profil0;
+  if (zPribehu) {
+    const zb = profil0.zbierky.find((x) => x.id === zPribehu), pr = pribehZbierky(zPribehu);
+    if (zb && pr) return <PribehZbierky profil={profil0} z={zb} p={pr} onBack={onBack} onOrg={() => otvorVerejnyProfil(profil0.k)} />;
+  }
 
   // OPRAVY 148: žiadny testovací pás na verejnej stránke (testuje sa v Správe). Vzhľad pri všetkých typoch —
   // firma a tvorca majú zatiaľ jedno vlastné podanie; keď správca vyberie vzhľad, ukáže sa podanie charity s ich dátami.
@@ -83,7 +92,11 @@ export function VerejnyProfilView({ kluc, onBack }: { kluc: string; onBack: () =
     return podania;
   };
   // bod 149 · detail zbierky / záznam sa otvorí NAD profilom (profil ostane pod ním) → Zbaliť a späť vráti na tú istú kartu a posun
-  const vrstva = detail ? (
+  // KARTA 55 · E: zbierka so zverejneným príbehom otvorí stránku Príbeh zbierky (inak modul zbierky ako doteraz)
+  const pribeh = detail ? pribehZbierky(detail.id) : null;
+  const vrstva = detail && pribeh ? (
+    <PribehZbierky profil={profil} z={detail} p={pribeh} spatText="Späť na profil" onBack={() => setDetail(null)} />
+  ) : detail ? (
     <div className="sc-tokeny" data-stit={profil.stit.toLowerCase()} style={{ background: "var(--bg)", minHeight: "100%" }}>
       <div style={{ maxWidth: 1240, margin: "0 auto", padding: 14 }}>
         <ZbierkaModul zbierka={naZbierkaData(detail, profil)} zoStrankyOrg onBack={() => setDetail(null)} spatNazov="Späť na profil" />
@@ -99,7 +112,7 @@ export function VerejnyProfilView({ kluc, onBack }: { kluc: string; onBack: () =
   return (
     <div style={{ position: "relative", height: "100%" }}>
       <div aria-hidden={vrstva ? true : undefined} style={vrstva ? { position: "absolute", inset: 0, visibility: "hidden", pointerEvents: "none" } : { height: "100%" }}>{zakladStranka()}</div>
-      {vrstva && <div style={{ position: "absolute", inset: 0, overflowY: detail ? "auto" : undefined }}>{vrstva}</div>}
+      {vrstva && <div style={{ position: "absolute", inset: 0, overflowY: detail && !pribeh ? "auto" : undefined }}>{vrstva}</div>}
     </div>);
 }
 
