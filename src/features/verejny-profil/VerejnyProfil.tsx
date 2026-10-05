@@ -5,10 +5,11 @@
 // VerejnyProfilView sa dá vložiť priamo (feed, „Stránka organizácie", adresár),
 // VerejnyProfilHost je celoobrazovková vrstva otváraná zo store (tlačidlo v Správe, QR).
 import { useTestStav, vyprazdni } from "@/lib/testStav";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { ZbierkaModul } from "@/features/zbierka/ZbierkaModul";
 import { najdiTestProfil, type TestProfil, type TestZbierka } from "@/lib/testProfily";
-import { otvorVerejnyProfil, useVerejnyProfilOtvoreny, verejnyProfilKluc, zavriVerejnyProfil } from "./otvor";
+import { otvorVerejnyProfil, useVerejnyProfilOtvoreny, verejnyProfilKluc, zavriVerejnyProfil, vrstvaProfiluPripoj } from "./otvor";
 import { VrstvaProfilu, naZbierkaData } from "./casti";
 import { useVzhlad, maVybranyVzhlad, type Vzhlad } from "@/lib/vzhladStranky";
 import { nacitajTiery } from "@/features/rola/stav";
@@ -114,6 +115,17 @@ export function VerejnyProfilView({ kluc, onBack }: { kluc: string; onBack: () =
       <div aria-hidden={vrstva ? true : undefined} style={vrstva ? { position: "absolute", inset: 0, visibility: "hidden", pointerEvents: "none" } : { height: "100%" }}>{zakladStranka()}</div>
       {vrstva && <div style={{ position: "absolute", inset: 0, overflowY: detail && !pribeh ? "auto" : undefined }}>{vrstva}</div>}
     </div>);
+}
+
+/** OPRAVY 154: verejný profil otvorený zo Správy (charita, farnosť, firma, tvorca, klub, spolok) — okno NAD Správou
+ *  ako VerejnyProfilOkno (portál, celá obrazovka), „Späť" vráti do Správy na to isté miesto. */
+export function VerejnyProfilVSprave({ kluc, onZavri }: { kluc: string; onZavri: () => void }) {
+  useEffect(() => vrstvaProfiluPripoj(), []);
+  useEffect(() => { const k = (e: KeyboardEvent) => { if (e.key === "Escape") onZavri(); }; window.addEventListener("keydown", k); return () => window.removeEventListener("keydown", k); }, [onZavri]);
+  return createPortal(
+    <div role="dialog" aria-modal="true" aria-label="Verejný profil" style={{ position: "fixed", inset: 0, zIndex: 200, overflowY: "auto", background: "var(--c-bg)", WebkitOverflowScrolling: "touch" } as CSSProperties}>
+      <VerejnyProfilView kluc={kluc} onBack={onZavri} />
+    </div>, document.body);
 }
 
 /** vrstva vnútri appky otváraná zo store (otvorVerejnyProfil) — tlačidlo v Správe, QR, zdieľaný odkaz.

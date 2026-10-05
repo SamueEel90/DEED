@@ -27,7 +27,7 @@ import { CENTRALNA_ID } from "./vlastneZbierky";
 import { SUBJEKTY } from "./mock";
 import { upravZbierku, useZmenyZbierok, zbierkyStrankyZPamate, nacitajZbierkyStranky, konceptZbierkyZPamate, nacitajKonceptZbierky, cielCislo, jeIne, UCELY, KROKY_ZBIERKY, type SpustenaZbierka, type NovaZbierkaData } from "@/lib/novaZbierka";
 import { UpravitProfilCharity, VerejnyProfilOkno, zakladnyProfil } from "./UpravitProfilCharity";
-import { otvorVerejnyProfil } from "@/features/verejny-profil/otvor";
+import { VerejnyProfilVSprave } from "@/features/verejny-profil/VerejnyProfil";
 import { najdiTestProfil } from "@/lib/testProfily";
 import { nacitajProfil, profilZPamate, uplnostProfilu, type ProfilStranky } from "@/lib/profilStranky";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
@@ -257,11 +257,13 @@ export function SpravaStranky(props: SpravaStrankyProps) {
   const ts = useTestStav();
   // KARTA 50 · §2: farnosť má vlastnú Správu (rovnaká kostra, položky farnosti) — bez štítu, programov, dokladov a dorovnania
   if (typ === "farnost") return <SpravaFarnosti onBack={props.onBack} strankaId={props.strankaId ?? "farnost"}
-    test={TESTOVACIA && FLAGS.dev_tier_switcher ? (
-      <PrepinacPodania pas={!desktop} sektor="farnost" style={desktop ? { padding: "2px 2px 4px" } : { marginTop: 14 }}>
-        <TestVolba pas={!desktop} nazov="Typ" volby={TYPY_STRANOK.filter((t) => !TYP_SKRYTY[t]).map((t) => [t, TYP_NAZOV[t]] as [TypStranky, string])} hodnota={typ} onVolba={setTyp} />
-        <TestVolba pas={!desktop} nazov="Rola" volby={[["hlavny", "Hlavný správca"], ["spravca", "Správca"], ["pomocnik", "Pomocník"], ["organizator", "Organizátor"]] as [RolaStranky, string][]} hodnota={ts.rola} onVolba={(r) => zmenTestStav({ rola: r })} />
-      </PrepinacPodania>) : null} />;
+    test={TESTOVACIA && FLAGS.dev_tier_switcher ? (onPozriet: () => void) => (
+      <PrepinacPodania pas={!desktop} sektor="farnost" style={desktop ? { padding: "2px 2px 4px" } : { marginTop: 14 }}
+        vzhlad={{ stranka: props.strankaId ?? "farnost", onPozriet }}
+        dalsie={<>
+          <TestVolba pas={!desktop} nazov="Typ" volby={TYPY_STRANOK.filter((t) => !TYP_SKRYTY[t]).map((t) => [t, TYP_NAZOV[t]] as [TypStranky, string])} hodnota={typ} onVolba={setTyp} />
+          <TestVolba pas={!desktop} nazov="Rola" volby={[["hlavny", "Hlavný správca"], ["spravca", "Správca"], ["pomocnik", "Pomocník"], ["organizator", "Organizátor"]] as [RolaStranky, string][]} hodnota={ts.rola} onVolba={(r) => zmenTestStav({ rola: r })} />
+        </>} />) : undefined} />;
   return <SpravaStrankyTypu {...props} typ={typ} onTyp={setTyp} />;
 }
 
@@ -320,9 +322,10 @@ function SpravaStrankyTypu({ onBack, typ, onTyp: setTyp, strankaId = "svetlo", n
   const [limitOkno, setLimitOkno] = useState(false);
   const [spravZb, setSpravZb] = useState<ZbierkaNaSpravu | null>(null); // KARTA 38: ktorú zbierku spravujem
   const [verejny, setVerejny] = useState(false); // OPRAVY 107: tlačidlo Verejný profil = skutočný verejný profil
+  const [verejnyTest, setVerejnyTest] = useState(false); // OPRAVY 154: testovací profil (Kronika/Výklad/Pirát) v okne nad Správou
   // KARTA 42: Zadarmo → z hárku Pridať sa Oznamy otvoria rovno na výzve na súrnu pomoc
   const [oznamStart, setOznamStart] = useState<DruhOznamu | undefined>(undefined);
-  const otvor = (s: Sub, oznamDruh?: DruhOznamu) => { zastavDiktovanie(); setOznamStart(oznamDruh); if (s === "x:Verejný profil") { if (najdiTestProfil(strankaId)) otvorVerejnyProfil(strankaId); else setVerejny(true); return; }
+  const otvor = (s: Sub, oznamDruh?: DruhOznamu) => { zastavDiktovanie(); setOznamStart(oznamDruh); if (s === "x:Verejný profil") { if (najdiTestProfil(strankaId)) setVerejnyTest(true); else setVerejny(true); return; }
     // KARTA 37 · bod 3: v programe Zadarmo beží jedna zbierka naraz (limit z stav.ts)
     if (s === "x:Nová zbierka" && sub !== s && beziacich >= KONFIG.limitZbierok[tier]) { setLimitOkno(true); return; }
     // OPRAVY 118/121: Pridať skutok = ten istý PridatSkutok, za charitu (organizacia: true)
@@ -398,7 +401,12 @@ function SpravaStrankyTypu({ onBack, typ, onTyp: setTyp, strankaId = "svetlo", n
 
   // OPRAVY 147: jeden testovací prepínač (PrepinacPodania) — PC v hlavičke, mobil a tablet sivý pás úplne dole
   const dev = TESTOVACIA && FLAGS.dev_tier_switcher && (
-    <PrepinacPodania pas={!desktop} sektor={typ} style={desktop ? { padding: "2px 2px 4px" } : { marginTop: 14 }}>
+    <PrepinacPodania pas={!desktop} sektor={typ} style={desktop ? { padding: "2px 2px 4px" } : { marginTop: 14 }}
+      vzhlad={{ stranka: strankaId, onPozriet: () => otvor("x:Verejný profil") }}
+      dalsie={<>
+        <TestVolba pas={!desktop} nazov="Typ" volby={TYPY_STRANOK.filter((t) => !TYP_SKRYTY[t]).map((t) => [t, TYP_NAZOV[t]] as [TypStranky, string])} hodnota={typ} onVolba={setTyp} />
+        <TestVolba pas={!desktop} nazov="Rola" volby={[["hlavny", "Hlavný správca"], ["spravca", "Správca"], ["pomocnik", "Pomocník"], ["organizator", "Organizátor"]] as [RolaStranky, string][]} hodnota={rola} onVolba={(r) => zmenTestStav({ rola: r })} />
+      </>}>
       <DevSprava pas={!desktop} tier={tier} stit={stit} stav={!nova ? "bezna" : pozvana ? "pozv" : "free"} typ={typ} onTyp={setTyp} rola={rola}
         onTier={setTier}
         onStit={(s) => { setStit(s); ulozStitCharity(s); }}
@@ -420,6 +428,7 @@ function SpravaStrankyTypu({ onBack, typ, onTyp: setTyp, strankaId = "svetlo", n
         </div>
       </div>
     </div>, document.body)}
+    {verejnyTest && <VerejnyProfilVSprave kluc={strankaId} onZavri={() => setVerejnyTest(false)} />}
     {verejny && <VerejnyProfilOkno pozicia={poz} sektor={typ} tier={tier} strankaId={strankaId} stit={stit} mobil={!desktop} onZavri={() => setVerejny(false)}
       lista={<><span style={{ flex: !desktop ? "1 1 100%" : 1, minWidth: 0, fontSize: 15, fontWeight: 800, color: "var(--ink)" }}>Takto vidí váš profil každý návštevník</span>
         <button type="button" onClick={() => setVerejny(false)} style={{ height: 42, padding: "0 16px", border: "none", borderRadius: 13, background: "var(--btn)", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 800, color: "var(--ink)" }}>Zavrieť</button>
@@ -1468,10 +1477,9 @@ function Zamknute({ program }: { program: string }) {
 type StavDev = "pozv" | "free" | "bezna";
 function DevSprava({ pas, tier, stit, stav, typ, rola, onTyp, onTier, onStit, onStav }: { pas: boolean; tier: Tier; stit: StitCharity; stav: StavDev; typ: TypStranky; rola: RolaStranky; onTyp: (t: TypStranky) => void; onTier: (t: Tier) => void; onStit: (s: StitCharity) => void; onStav: (s: StavDev) => void }) {
   return (<>
-    <TestVolba pas={pas} nazov="Typ" volby={TYPY_STRANOK.filter((t) => !TYP_SKRYTY[t]).map((t) => [t, TYP_NAZOV[t]] as [TypStranky, string])} hodnota={typ} onVolba={onTyp} />
+    {/* OPRAVY 153: Typ a Rola sú pod „Ďalšie testovacie ›" */}
     <TestVolba pas={pas} nazov="Program" volby={([0, 1, 2, 3, 4] as Tier[]).map((t) => [t, PROGRAM_NAZOV[t]] as [Tier, string])} hodnota={tier} onVolba={onTier} />
     <TestVolba pas={pas} nazov="Štít" volby={(Object.keys(STITY) as StitCharity[]).map((k) => [k, STITY[k][3]] as [StitCharity, string])} hodnota={stit} onVolba={onStit} />
     <TestVolba pas={pas} nazov="Stav" volby={[["pozv", "Nová · pozvaná"], ["free", "Nová · zadarmo"], ["bezna", "Bežná"]] as [StavDev, string][]} hodnota={stav} onVolba={onStav} />
-    <TestVolba pas={pas} nazov="Rola" volby={[["hlavny", "Hlavný správca"], ["spravca", "Správca"], ["pomocnik", "Pomocník"], ["organizator", "Organizátor"]] as [RolaStranky, string][]} hodnota={rola} onVolba={(r) => zmenTestStav({ rola: r })} />
   </>);
 }
