@@ -43,7 +43,8 @@ export type KanalDorovnania = "karta" | "krypto" | "sepa";
 export const AUTOMAT_MS = 48 * 3600 * 1000;
 
 export type StavDorovnania =
-  | "zapecatene"      // SEPA: uhradené a zapečatené, čaká na potvrdenie charity (max 48 h)
+  | "zapecatene"      // uhradené a zapečatené, čaká na potvrdenie charity (cez DEED najviac 48 h, mimo DEED kým nepotvrdí)
+  | "potvrdene"       // KARTA 49: charita potvrdila, že peniaze prišli — čaká, kým dorovnanie spustí
   | "aktivne"         // peniaze sú u charity, dorovnanie beží
   | "pozastavene"     // zbierka aj dary stoja; čaká sa na vysporiadanie zvyšku
   | "vycerpane"       // strop minutý
@@ -114,7 +115,21 @@ export interface Dorovnanie {
   pozastavene?: number;
   /** ako sa naložilo so zvyškom a kedy — bez toho sa dorovnanie nedá ukončiť */
   vysporiadane?: { suma: number; kam: "zbierke" | "firme"; kedy: number; referencia?: string };
+  // ---- KARTA 49 · pohľad charity ----
+  /** ako firma platila: cez DEED (platbu vidíme → po 48 h sa spustí samo) alebo prevod mimo DEED (nikdy samo) */
+  uhrada?: "deed" | "mimo";
+  /** kedy firma oznámila platbu / kedy sme ju spárovali (od toho beží 24 h na odmietnutie a 48 h automat) */
+  oznamene?: number;
+  /** charita odmietla — dôvod vidí len DEED, firma nie */
+  odmietnutie?: { dovod: string; kedy: number };
+  /** charita ťukla „Neprišli" — firma dostala správu, pri platbe cez DEED ju preverí DEED+ */
+  neprisli?: number;
+  /** vrátenie zvyšku firme = vlastný doklad D- typu „vratenie"; VS = číslo tohto dokladu, nikdy číslo zbierky */
+  vratenie?: VratenieZvysku;
+  /** charita dala firme vedieť, že sa rozpočet míňa */
+  upozornenaFirma?: number;
 }
+export interface VratenieZvysku { suma: number; do: number; vs: string; cez?: "deed" | "mimo"; doklad?: string; kedy?: number }
 
 const KLUC = (entita: string) => `deed.dorovnania.${entita}`;
 let verzia = 0;
@@ -127,8 +142,9 @@ export function nacitajDorovnania(entita: string): Dorovnanie[] {
   try { v = JSON.parse(localStorage.getItem(KLUC(entita)) ?? "[]") as Dorovnanie[]; } catch { return []; }
   // tichý súhlas: čo čaká na potvrdenie dlhšie než 48 h, nabehne samo
   const teraz = Date.now();
-  const po = v.map((d) => (d.stav === "zapecatene" && teraz >= d.zapecatene + AUTOMAT_MS
-    ? { ...d, stav: "aktivne" as StavDorovnania, zaplatene: d.zapecatene + AUTOMAT_MS, automaticky: true }
+  // KARTA 49: samo sa spustí len platba cez DEED (vidíme ju); prevod mimo DEED nikdy
+  const po = v.map((d) => (d.stav === "zapecatene" && d.uhrada !== "mimo" && teraz >= (d.oznamene ?? d.zapecatene) + AUTOMAT_MS
+    ? { ...d, stav: "aktivne" as StavDorovnania, zaplatene: (d.oznamene ?? d.zapecatene) + AUTOMAT_MS, automaticky: true }
     : d));
   if (po.some((d, i) => d !== v[i])) {
     try { localStorage.setItem(KLUC(entita), JSON.stringify(po)); } catch { /* LS nedostupné */ }
@@ -138,7 +154,7 @@ export function nacitajDorovnania(entita: string): Dorovnanie[] {
 
 /** kedy najneskôr nabehne (SEPA, tichý súhlas) — null, ak už beží alebo je po ňom */
 export const automatOd = (d: Dorovnanie) =>
-  d.stav === "zapecatene" ? d.zapecatene + AUTOMAT_MS : null;
+  d.stav === "zapecatene" && d.uhrada !== "mimo" ? (d.oznamene ?? d.zapecatene) + AUTOMAT_MS : null;
 
 /** „o 41 h" / „o 12 min" — koľko ostáva do automatického spustenia */
 export function casAutomatu(d: Dorovnanie, teraz = Date.now()): string {
@@ -258,14 +274,12 @@ export function useDorovnania(entita: string): Dorovnanie[] {
 
 // ---- kroky ----
 /** firma nastavila a zapečatila — parametre sa už nedajú zmeniť */
-export function zapecat(n: Omit<Dorovnanie, "id" | "stav" | "zapecatene" | "zaznamy">): Dorovnanie {
+export function zapecat(n: Omit<Dorovnanie, "id" | "stav" | "zapecatene" | "zaznamy" | "oznamene">): Dorovnanie {
   const teraz = Date.now();
-  // karta a EURC idú cez nášho procesora — príjem vieme overiť sami, čakať netreba
-  const hned = n.kanal === "karta" || n.kanal === "krypto";
+  // KARTA 49: príjem potvrdzuje charita VŽDY — aj pri karte. Platba cez DEED sa po 48 h spustí sama.
   const novy: Dorovnanie = {
     ...n, id: `dv-${teraz}-${Math.random().toString(36).slice(2, 6)}`, zaznamy: [], zapecatene: teraz,
-    stav: hned ? "aktivne" : "zapecatene",
-    ...(hned ? { zaplatene: teraz } : {}),
+    stav: "zapecatene", uhrada: n.uhrada ?? "deed", oznamene: teraz,
     // tvorcovské sa pýta tvorcu — peniaze môžu byť zaplatené, ale beh čaká na neho
     ...(n.lenTvorca ? { suhlasTvorcu: "caka" as const } : {}),
   };
@@ -275,9 +289,11 @@ export function zapecat(n: Omit<Dorovnanie, "id" | "stav" | "zapecatene" | "zazn
 function zmen(entita: string, id: string, patch: Partial<Dorovnanie>) {
   uloz(entita, nacitajDorovnania(entita).map((d) => (d.id === id ? { ...d, ...patch } : d)));
 }
-/** charita potvrdila, že peniaze prišli na jej účet → odvtedy sa smie sľubovať darcom */
+/** charita potvrdila, že peniaze prišli na jej účet → čaká na „Spustiť dorovnanie" */
 export const potvrdPlatbu = (entita: string, id: string) =>
-  zmen(entita, id, { stav: "aktivne", zaplatene: Date.now() });
+  zmen(entita, id, { stav: "potvrdene", zaplatene: Date.now() });
+/** KARTA 49: Spustiť dorovnanie — beží hneď */
+export const spustiDorovnanie = (entita: string, id: string) => zmen(entita, id, { stav: "aktivne" });
 /** len kým firma nezaplatila */
 export const odmietni = (entita: string, id: string) => zmen(entita, id, { stav: "odmietnute", ukoncene: Date.now() });
 export const zrus = (entita: string, id: string) => zmen(entita, id, { stav: "zrusene", ukoncene: Date.now() });
@@ -357,3 +373,124 @@ export const nazovPomeru = (pomer: number) =>
 
 /** koľko bude mať príjemca z daru 20 € — príklad pod voľbu */
 export const priklad = (pomer: number, dar = 20) => dar + dar * pomer;
+
+
+// ============================================================
+// KARTA 49 · Správa charity → Dorovnanie daru
+// ============================================================
+/** okno na odmietnutie: 24 h od oznámenia platby */
+export const ODMIETNUT_MS = 24 * 3600 * 1000;
+const VRATIT_DNI = 7;
+export type StavCharity = "cakaMimo" | "cakaDeed" | "potvrdene" | "vratit" | "bezi" | "minute" | "kon" | "odm";
+export function stavCharity(d: Dorovnanie): StavCharity {
+  if (d.stav === "zapecatene") return d.uhrada === "mimo" ? "cakaMimo" : "cakaDeed";
+  if (d.stav === "potvrdene") return "potvrdene";
+  if (d.stav === "pozastavene") return d.vratenie && !d.vratenie.kedy ? "vratit" : "kon";
+  if (d.stav === "aktivne") return "bezi";
+  if (d.stav === "vycerpane") return "minute";
+  if (d.stav === "odmietnute" || d.stav === "zrusene") return "odm";
+  return "kon";
+}
+/** ešte sa dá odmietnuť? (do 24 h od oznámenia platby) */
+export const daSaOdmietnut = (d: Dorovnanie, teraz = Date.now()) => teraz - (d.oznamene ?? d.zapecatene) < ODMIETNUT_MS;
+export const hodinDoKoncaOdmietnutia = (d: Dorovnanie, teraz = Date.now()) => Math.max(1, Math.ceil(((d.oznamene ?? d.zapecatene) + ODMIETNUT_MS - teraz) / 3600000));
+/** VS vratného dokladu (D- rada dokladov, 9 + Luhn) — TESTOVACIE odvodené z id, číslo dá server */
+function vsVratenia(id: string): string {
+  let h = 2166136261; const k = `vratenie:${id}`;
+  for (let i = 0; i < k.length; i++) { h ^= k.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; }
+  const n = String(200000000 + (h % 100000000));
+  let sum = 0;
+  for (let i = 0; i < 9; i++) { let c = n.charCodeAt(8 - i) - 48; if (i % 2 === 0) { c *= 2; if (c > 9) c -= 9; } sum += c; }
+  return n + ((10 - (sum % 10)) % 10);
+}
+const noveVratenie = (d: Dorovnanie, suma: number): VratenieZvysku => ({ suma: Math.round(suma * 100) / 100, do: Date.now() + VRATIT_DNI * 86400000, vs: vsVratenia(d.id) });
+/** odmietnutie (len do 24 h) — dôvod povinný, vidí ho len DEED; firme sa vráti celá suma */
+export function odmietniDorovnanie(entita: string, id: string, dovod: string): boolean {
+  const d = nacitajDorovnania(entita).find((x) => x.id === id);
+  if (!d || !dovod.trim() || !daSaOdmietnut(d)) return false;
+  zmen(entita, id, { stav: "pozastavene", pozastavene: Date.now(), odmietnutie: { dovod: dovod.trim(), kedy: Date.now() }, vratenie: noveVratenie(d, d.strop) });
+  return true;
+}
+/** „Neprišli" (len po 24 h) — firma dostane správu; pri platbe cez DEED ju preverí DEED+ */
+export function peniazeNeprisli(entita: string, id: string): boolean {
+  const d = nacitajDorovnania(entita).find((x) => x.id === id);
+  if (!d || daSaOdmietnut(d)) return false;
+  zmen(entita, id, { stav: "odmietnute", neprisli: Date.now(), ukoncene: Date.now() });
+  return true;
+}
+/** Ukončiť zbierku a dorovnanie — predčasne, firme sa vráti celý nevyčerpaný zvyšok */
+export function ukonciDorovnanie(entita: string, id: string) {
+  const d = nacitajDorovnania(entita).find((x) => x.id === id);
+  if (!d) return;
+  const z = zostatok(d);
+  if (z <= 0) { zmen(entita, id, { stav: "ukoncene", ukoncene: Date.now() }); return; }
+  zmen(entita, id, { stav: "pozastavene", pozastavene: Date.now(), vratenie: noveVratenie(d, z) });
+}
+/** zvyšok vrátený (cez DEED podržaním, alebo mimo DEED s dokladom o úhrade) → prípad sa uzavrie */
+export function vratZvysok(entita: string, id: string, cez: "deed" | "mimo", doklad?: string): boolean {
+  const d = nacitajDorovnania(entita).find((x) => x.id === id);
+  if (!d?.vratenie || (cez === "mimo" && !doklad)) return false;
+  const kedy = Date.now();
+  zmen(entita, id, { vratenie: { ...d.vratenie, cez, doklad, kedy }, vysporiadane: { suma: d.vratenie.suma, kam: "firme", kedy, referencia: d.vratenie.vs },
+    stav: d.odmietnutie ? "odmietnute" : "ukoncene", ukoncene: kedy });
+  return true;
+}
+export const upozorniFirmu = (entita: string, id: string) => zmen(entita, id, { upozornenaFirma: Date.now() });
+
+// ---- od koho charita prijíma dorovnanie (obmedzené firmy dorovnanie vôbec neuvidia; firma nevie, že je obmedzená) ----
+/** číselník odvetví, ktoré sa dajú obmedziť (config) */
+export const ODVETVIA_OBMEDZENIA = ["Kasína a herne", "Stávkové kancelárie", "Obsah pre dospelých"];
+export interface ObmedzenieDorovnania { zapnute: boolean; odvetvia: string[]; firmy: string[] }
+const obmedzenia = new Map<string, ObmedzenieDorovnania>();
+export const obmedzenieDorovnania = (entita: string): ObmedzenieDorovnania => obmedzenia.get(entita) ?? { zapnute: false, odvetvia: [...ODVETVIA_OBMEDZENIA], firmy: [] };
+export function ulozObmedzenie(entita: string, o: ObmedzenieDorovnania) { obmedzenia.set(entita, o); verzia++; posluchaci.forEach((f) => f()); }
+/** register firiem DEED (TESTOVACÍ výrez; odvetvie z registrácie firmy) */
+export const REGISTER_FIRIEM: { nazov: string; odvetvie: string; mesto: string }[] = [
+  { nazov: "Herňa Eldorádo s.r.o.", odvetvie: "Kasína a herne", mesto: "Košice" },
+  { nazov: "Stávky Plus a.s.", odvetvie: "Stávkové kancelárie", mesto: "Bratislava" },
+  { nazov: "Kaviareň Pod Hradom", odvetvie: "Gastro", mesto: "Trenčín" },
+  { nazov: "Autoservis Kováč s.r.o.", odvetvie: "Služby", mesto: "Trenčín" },
+  { nazov: "Elektro Mráz s.r.o.", odvetvie: "Obchod", mesto: "Trenčín" },
+  { nazov: "Stavebniny Opatová s.r.o.", odvetvie: "Stavebníctvo", mesto: "Trenčín" },
+  { nazov: "Pekáreň Dobrota s.r.o.", odvetvie: "Gastro", mesto: "Trenčín" },
+];
+/** smie táto firma dorovnávať zbierky tejto charity? (ponuka sa obmedzenej firme neukáže) */
+export function smieDorovnat(entita: string, firma: string): boolean {
+  const o = obmedzenieDorovnania(entita);
+  if (!o.zapnute) return true;
+  if (o.firmy.some((f) => rovnakaFirma(f, firma))) return false;
+  const odv = REGISTER_FIRIEM.find((f) => rovnakaFirma(f.nazov, firma))?.odvetvie;
+  return !(odv && o.odvetvia.includes(odv));
+}
+
+/** TESTOVACIE: dorovnania 1 : 1 podľa prototypu „Sprava charity - Dorovnanie daru" (len keď entita nemá žiadne) */
+export function naplnTestovacieDorovnania(entita: string, ciele: { strecha: string; vozik: string; ovocie: string; skolske: string; seniori: string; deti: string }) {
+  if (nacitajDorovnania(entita).length) return;
+  const H = 3600000, D = 24 * H, t = Date.now(), dt = (s: string) => Date.parse(s);
+  /** n dorovnaných darov rovnomerne od „od" po teraz; dorovnané spolu presne „sum" */
+  const zazn = (n: number, sum: number, pomer: number, od: number, mena: string[]): ZaznamDorovnania[] => {
+    const out: ZaznamDorovnania[] = []; let zost = sum;
+    for (let i = 0; i < n; i++) {
+      const dar = [20, 50, 25, 10, 40, 20][i % 6];
+      const k = i === n - 1 ? zost : Math.min(Math.round(dar * pomer * 100) / 100, zost);
+      zost -= Math.max(0, k);
+      out.push({ id: `zt-${od}-${i}`, dar, dorovnane: Math.max(0, Math.round(k * 100) / 100), kedy: od + (i + 1) * Math.max(H, (t - od) / (n + 1)), darca: mena[i % mena.length] });
+    }
+    return out;
+  };
+  const zakl = { entita, firmaLogo: undefined, stropDaru: 0, lenZamestnanci: false, zvysok: "zbierke" as const, kanal: "karta" as KanalDorovnania };
+  const L: Dorovnanie[] = [
+    { ...zakl, id: "dv-t-g", ciel: ciele.seniori, cielNazov: "Sektor Seniori", firma: "Elektro Mráz s.r.o.", pomer: 1, strop: 1500, stropDaru: 100, od: t, do: dt("2026-12-31T22:00:00Z"), kanal: "sepa", uhrada: "mimo", stav: "zapecatene", zapecatene: t - 6 * H, oznamene: t - 6 * H, zaznamy: [] },
+    { ...zakl, id: "dv-t-c", ciel: ciele.vozik, cielNazov: "Invalidný vozík pre Ninu", firma: "Autoservis Kováč s.r.o.", pomer: 1, strop: 2000, stropDaru: 200, od: t, do: dt("2026-11-30T22:00:00Z"), kanal: "sepa", uhrada: "deed", stav: "zapecatene", zapecatene: t - 4 * H, oznamene: t - 4 * H, zaznamy: [] },
+    { ...zakl, id: "dv-t-e", ciel: ciele.ovocie, cielNazov: "Ovocie do výdajne", firma: "Kaviareň Pod Hradom", pomer: 0.5, strop: 300, stropDaru: 50, od: dt("2026-09-01T08:00:00Z"), do: dt("2026-09-22T20:00:00Z"), zvysok: "firme", uhrada: "deed", stav: "pozastavene", zapecatene: dt("2026-09-01T08:00:00Z"), zaplatene: dt("2026-09-01T09:00:00Z"), pozastavene: dt("2026-09-22T20:00:00Z"),
+      zaznamy: zazn(27, 210, 0.5, dt("2026-09-01T08:00:00Z"), ["Lucia S.", "Anonymný darca"]).map((z) => ({ ...z, kedy: Math.min(z.kedy, dt("2026-09-21T18:00:00Z")) })), vratenie: { suma: 90, do: dt("2026-10-06T20:00:00Z"), vs: vsVratenia("dv-t-e") } },
+    { ...zakl, id: "dv-t-a", ciel: ciele.strecha, cielNazov: "Strecha pre rodinu Horváthovú", firma: "Pekáreň Dobrota s.r.o.", pomer: 1, strop: 1000, stropDaru: 300, od: dt("2026-10-02T08:00:00Z"), do: dt("2026-10-27T21:00:00Z"), uhrada: "deed", stav: "aktivne", zapecatene: dt("2026-10-02T08:00:00Z"), zaplatene: dt("2026-10-02T09:00:00Z"),
+      zaznamy: zazn(41, 820, 1, dt("2026-10-02T08:00:00Z"), ["Anonymný darca", "Zuzana H.", "Jana K."]) },
+    { ...zakl, id: "dv-t-b", ciel: ciele.deti, cielNazov: "Sektor Deti", firma: "Stavebniny Opatová s.r.o.", pomer: 0.5, strop: 500, stropDaru: 100, od: dt("2026-09-18T08:00:00Z"), do: dt("2026-12-31T22:00:00Z"), zvysok: "firme", lenZamestnanci: true, kanal: "sepa", uhrada: "deed", stav: "aktivne", zapecatene: dt("2026-09-18T08:00:00Z"), zaplatene: dt("2026-09-18T09:00:00Z"),
+      zaznamy: zazn(14, 140, 0.5, dt("2026-09-18T08:00:00Z"), ["Eva R.", "Peter M."]) },
+    { ...zakl, id: "dv-t-d", ciel: ciele.skolske, cielNazov: "Školské potreby", firma: "Pekáreň Dobrota s.r.o.", pomer: 1, strop: 600, stropDaru: 50, od: dt("2026-08-01T08:00:00Z"), do: dt("2026-08-25T20:00:00Z"), uhrada: "deed", stav: "vycerpane", zapecatene: dt("2026-08-01T08:00:00Z"), zaplatene: dt("2026-08-01T09:00:00Z"), ukoncene: dt("2026-08-19T12:00:00Z"),
+      zaznamy: zazn(48, 600, 1, dt("2026-08-01T08:00:00Z"), ["Anonymný darca", "Mária V."]).map((z) => ({ ...z, kedy: Math.min(z.kedy, dt("2026-08-19T11:00:00Z")) })) },
+  ];
+  void D;
+  uloz(entita, L);
+}

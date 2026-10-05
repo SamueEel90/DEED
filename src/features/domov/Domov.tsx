@@ -1,4 +1,5 @@
 import { otvorIskry } from "@/features/iskry/otvor";
+import { cisloObjektu } from "@/lib/cisloObjektu";
 import { Emo, IkonaVlajka, IkonaTerc } from "@/components/icons";
 import { DeedZnacka } from "@/components/DeedZnacka";
 import { NahlasitSheet } from "@/components/nahlasit";
@@ -827,7 +828,7 @@ export function DomovDetail({ it, toast, oslavuj, onBack, onVerify, onAutor }: G
         onDone={(s: number, volba?: VolbaDaru) => { zaznamenajPodporu(s, platba); pridajDar({ refId: darRef, suma: s * (platba === "EUR" ? 1 : 0.01), kanal: platba === "EUR" ? "psp" : "deed", registrovany: ja.typ !== "pasivny", volba }); toast(`Odoslané ${platba === "EUR" ? s + " €" : s + " DeeD"} · ${it.autor}`); oslavuj(platba === "EUR" ? Math.round(s * 100) : s, it.autor); }} />}
 
       {/* univerzálny QR skutku (§10) — reálne skenovateľný odkaz na živé interné ID */}
-      {qr && <QrModal typ="skutok" titul={`QR skutku č. ${it.num.toLocaleString("sk")}`} popis={it.titul.slice(0, 38) + "…"}
+      {qr && <QrModal typ="skutok" titul={`QR skutku ${cisloObjektu("S", String(it.id))}`} popis={it.titul.slice(0, 38) + "…"}
         qrCiel={{ druh: "case", ref: String(it.id), modul: "good" }} onClose={() => setQr(false)} toast={toast} />}
 
       {/* split QR (influencer) — rozdelenie platby medzi príjemcov */}
@@ -899,7 +900,7 @@ export function DomovVerify({ it, mode, toast, onBack }: { it: GoodPolozka; mode
       <Hlavicka title={ok ? "Overujem skutok" : "Námietka k skutku"} onBack={onBack} titleColor={ok ? "var(--a-green)" : "var(--a-danger)"} />
       <div style={{ padding: `${SPACE.xxs}px ${SPACE.md}px ${SPACE.gutter}px` }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: C.surface, border: `1px solid ${C.line}`, borderRadius: RADIUS.sm, padding: SPACE.gutter, fontSize: 13 }}>
-          <div><b>{it.autor}</b><div style={{ fontSize: 12, color: C.textTer }}>{it.titul.slice(0, 30)}… · č. {it.num.toLocaleString("sk")}</div></div>
+          <div><b>{it.autor}</b><div style={{ fontSize: 12, color: C.textTer }}>{it.titul.slice(0, 30)}… · {cisloObjektu("S", String(it.id))}</div></div>
         </div>
         <div style={{ background: ok ? "#0f2417" : "#2a1414", border: `1px solid ${ok ? "#2E7D52" : "#7A3030"}`, borderRadius: RADIUS.sm, padding: SPACE.gutter, marginTop: SPACE.gutter, fontSize: 12, lineHeight: 1.4, color: ok ? "#C2E6D4" : "#F0B0AC" }}>
           {ok ? "Potvrdzujem, že som bol pri tom a skutok sa naozaj stal. Nepravdivé overenie môže mať následky." : "Námietka sa preveruje. Falošná námietka v zlej viere = rovnaká sankcia ako podvod."} <span style={{ fontSize: 11, color: C.textTer }}>[právna veta]</span>

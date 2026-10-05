@@ -103,6 +103,7 @@ export function Zapecatene({ riadky }: { riadky: [string, string][] }) {
 export function QrKarta({ nazov, slug, cislo, organizacia, toast }: { nazov: string; slug: string; cislo?: string; organizacia?: string; toast: (m: string) => void }) {
   const odkaz = `https://deed.sk/z/${slug}`;
   const [pdf, setPdf] = useState(false);
+  const [skop, setSkop] = useState(false);
   return (
     <section style={kartaK}>
       <span style={nadpisK}>QR na plagát a pokladničku</span>
@@ -110,6 +111,11 @@ export function QrKarta({ nazov, slug, cislo, organizacia, toast }: { nazov: str
       <div style={{ display: "flex", gap: 14, alignItems: "center", flexWrap: "wrap" }}>
         <span style={{ flex: "none", width: 96, height: 96, borderRadius: 14, background: "#fff", padding: 6, boxSizing: "border-box", display: "flex" }}><DeedQr data={odkaz} size={84} variant="svetly" /></span>
         <span style={{ flex: 1, minWidth: 180, display: "flex", flexDirection: "column", gap: 8 }}>
+          {cislo && <span style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+            <button type="button" onClick={async () => { const ok = await kopiruj(cislo.replace(/^[A-Z]-/, "").replace(/\s/g, "")); if (ok) { setSkop(true); window.setTimeout(() => setSkop(false), 1600); } else toast("Číslo sa nepodarilo skopírovať"); }} aria-label={`Číslo zbierky ${cislo}, skopírovať`}
+              style={{ alignSelf: "flex-start", minHeight: 44, padding: 0, border: "none", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 16, fontWeight: 800, color: skop ? "var(--gInk)" : "var(--ink)", fontVariantNumeric: "tabular-nums", boxShadow: "none" }}>{skop ? "Skopírované" : cislo}</button>
+            <span style={{ fontSize: 12.5, color: "var(--ink3)" }}>Číslo zbierky = variabilný symbol · ťuk skopíruje</span>
+          </span>}
           <span style={{ fontSize: 13.5, color: "var(--ink3)", overflowWrap: "anywhere" }}>deed.sk/z/{slug}</span>
           <span style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             <button type="button" aria-busy={pdf} onClick={async () => { if (pdf) return; setPdf(true); try { await stiahniPlagat({ nazov, odkaz, cislo, organizacia }); } catch (e) { toast((e as Error).message); } finally { setPdf(false); } }} style={obrysK}>Stiahnuť plagát (PDF)</button>
@@ -117,10 +123,6 @@ export function QrKarta({ nazov, slug, cislo, organizacia, toast }: { nazov: str
           </span>
         </span>
       </div>
-      {cislo && <button type="button" onClick={async () => { const ok = await kopiruj(cislo.replace(/^[A-Z]-/, "").replace(/\s/g, "")); toast(ok ? "Číslo zbierky je skopírované" : "Číslo sa nepodarilo skopírovať"); }} aria-label={`Číslo zbierky ${cislo}, skopírovať`}
-        style={{ alignSelf: "flex-start", minHeight: 44, padding: 0, border: "none", background: "transparent", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "baseline", gap: 8, color: "var(--ink)", boxShadow: "none" }}>
-        <span style={{ fontSize: 12.5, color: "var(--ink3)" }}>Číslo zbierky · variabilný symbol</span><b style={{ fontSize: 14.5, fontVariantNumeric: "tabular-nums", letterSpacing: ".02em" }}>{cislo}</b>
-      </button>}
     </section>);
 }
 
