@@ -97,6 +97,10 @@ Vymeniť mock repozitáre za Supabase — bez zásahu do UI.
   7. **Verejné pohľady bez security definer** — `v_vyzbierane`, `v_top_darcovia`, `prispevok_feed`, `profil_stranky_verejny` prerobiť na serverové funkcie, aby `get_advisors` = 0 (Martin 6. 10.; dovtedy vracajú len verejné stĺpce).
   8. **Voľba darcu pri QR splite** — dar cez QR split zatiaľ ide ako anonymný (predvoľba, 0061); doplniť výber zobrazenia ako pri bežnom dare (Martin 6. 10.).
   9. **Profily podľa mena → ID a čísla** — deep linky profilov cez ID + verejné čísla U-/C- namiesto mena (Blok 1, Martin 6. 10.).
+- **Karty Fázy 4 zo Zadania 5 (hygiena, Martin 6. 10. 2026):**
+  1. **Stránkovanie Help, Charita, Aktivity + Top hrdinovia z ledgera** — ostatné feedy cez `feed_stranka` (0063) ako Domov (dnes len strop 50); Top hrdinovia počítať z ledgera, nie načítaním všetkých skutkov Domova.
+  2. **Editor príbehu zbierky → Storage** — fotky v `pribeh_zbierky` cez `bezDataUrl` ako ostatné (0064 ho zatiaľ nepokrýva).
+  3. **Hlavný balík pod 2 MB** — ďalšie delenie (lazy moduly `features/rola`, `verejny-profil`, `zbierka`, `profil`); potom vrátiť `maximumFileSizeToCacheInBytes` vo `vite.config.ts` na predvolené 2 MiB.
 - **Hotovo, keď:** appka beží na reálnych dátach prihláseného používateľa, mock už len ako fallback pre vývoj.
 
 ### Fáza 5 — Produkčná pripravenosť
