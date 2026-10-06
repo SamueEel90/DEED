@@ -134,15 +134,17 @@ export async function spustiZbierku(stranka: string, d: NovaZbierkaData, ucet: s
   const teraz = new Date().toISOString();
   const leh = lehotaZbierky(d);
   const z: SpustenaZbierka = { ...d, id: `zb-${Date.now().toString(36)}`, stranka, spustena: teraz, ucet, lehota: leh.text, lehotaKluc: leh.kluc };
-  spustene.set(stranka, [z, ...zbierkyStrankyZPamate(stranka)]);
-  koncepty.set(stranka, null);
-  zmena();
   if (supabase) {
-    await supabase.from("zbierka").insert({
+    // Zadanie 3 · 3.6: DB pustí zapečatenie len s účtom overeným pre túto stránku (0044) — inak chyba, nič sa nespustí
+    const { error } = await supabase.from("zbierka").insert({
       id: z.id, nazov: d.nazov, modul: "charity", typ: "zbierka", ciel: d.cielTyp === "ciel" ? cielCislo(d) : null,
       stav: "aktivna", stranka, nastavenie: z, zapecatena: teraz,
     });
+    if (error) throw new Error(error.message);
     await supabase.from("profil_stranky").upsert({ stranka, koncept_zbierky: null, koncept_zbierky_cas: null }, { onConflict: "stranka" });
   }
+  spustene.set(stranka, [z, ...zbierkyStrankyZPamate(stranka)]);
+  koncepty.set(stranka, null);
+  zmena();
   return z;
 }

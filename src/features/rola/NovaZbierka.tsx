@@ -5,6 +5,7 @@
 // Editor, výrez a detail zbierky = existujúce RichTextInput, OrezFotky, ZbierkaModul, PodrzTlacidlo.
 // Hranice programov z stav.ts (PROGRAM_TIER), nič napevno. Texty z prototypu Nova zbierka PC.
 // ============================================================
+import { toast } from "@/components/toast";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { OrezFotky } from "@/components/orezfotky";
@@ -87,8 +88,10 @@ export function NovaZbierka({ strankaId, pozicia, tier, nazov, inicialy, mobil, 
   const spat = () => { if (k > 1) zmen({ krok: k - 1 }); };
   const zapecat = async () => {
     if (chyba) return;
-    const z = await spustiZbierku(strankaId, zadarmo ? { ...d, typ: "kratka", iban: "", prav: false } : d, zadarmo ? hlavnyUcet : d.iban);
-    setHotovo(z);
+    try {
+      const z = await spustiZbierku(strankaId, zadarmo ? { ...d, typ: "kratka", iban: "", prav: false } : d, zadarmo ? hlavnyUcet : d.iban);
+      setHotovo(z);
+    } catch (e) { toast(e instanceof Error ? e.message : "Zbierku sa nepodarilo spustiť."); }
   };
 
   // ---------- súhrn a odvodené údaje ----------
