@@ -176,5 +176,13 @@ insert into t select '4.5 badge_aggregate k >= 5', (select count(*) from public.
   and (select min(pochval) from public.badge_aggregate('f1000000-0000-4000-8000-000000000001')) >= 5;
 reset role;
 
+-- ---------- security definer pohľady: len verejné stĺpce ----------
+insert into public.profil_stranky (stranka, centralna) values ('svetlo', '{"popis":"x","ucet":"SK0000000000000000000099"}')
+  on conflict (stranka) do update set centralna = excluded.centralna;
+set role anon;
+insert into t select 'verejny profil stranky bez IBAN', not exists (select 1 from public.profil_stranky_verejny where centralna ? 'ucet');
+insert into t select 'feed bez presneho GPS', not exists (select 1 from public.prispevok_feed where lat is not null and lat <> round(lat::numeric, 2)::double precision);
+reset role;
+
 select ok, c from t order by ok, c;
 rollback;
