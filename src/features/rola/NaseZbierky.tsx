@@ -275,9 +275,9 @@ function DetailZbierky({ firma, nazov, podpora, dorovnanie, toast, onSpat }: {
       <PlatbaModal kanal="EUR" suma={platba} komu={`doliatie dorovnania · ${z?.nazov ?? ""}`}
         onClose={() => setPlatba(0)}
         onDone={() => {
-          const ok = dolejStrop(d.entita, d.id, platba);
+          const suma = platba;
           setPlatba(0); setDoliatie("");
-          toast(ok ? `Strop doliaty o ${eur(platba)}` : "Doliatie sa nepodarilo");
+          void dolejStrop(d.entita, d.id, suma).then((ok) => { if (ok) toast(`Strop doliaty o ${eur(suma)}`); });
         }} />
     )}
   </>);

@@ -7,7 +7,8 @@
 // `platba` / view `v_vypis` (0014_payment_engine.sql).
 // ============================================================
 import { useSyncExternalStore } from "react";
-import { dorovnanieNaDar, zapisDar as zapisDorovnanie } from "./dorovnanie";
+import { dorovnanieNaDar, dorovnanieKDaru, zapisDar as zapisDorovnanie } from "./dorovnanie";
+import { supabase } from "./supabase";
 import { pridajPodporu, firmaAkoDarca } from "./podpory";
 
 // ---- CONFIG (spec §6) — všetky čísla ŠTARTOVACIE, žijú tu, nie v kóde ----
@@ -166,18 +167,22 @@ export function pridajDar(vstup: {
   // ani si ich nepripínajú. Cirkevná charita ide cez modul Charita ako každá iná.
   if (/^(farnost|naboz)-/.test(vstup.refId)) return riadok;
 
-  // 1) beží dorovnanie → firma pridá svoj diel hneď za darcov dar
+  // 1) beží dorovnanie → firma pridá svoj diel hneď za darcov dar.
+  //    Zadanie 3 · 3.3: koľko a či vôbec, rozhodne server (rpc dorovnanie_dar) a presunie peniaze
+  //    z viazaného účtu; tu je len náhľad do textu „firma pridala". Riadok firmy sa zapíše
+  //    so sumou, ktorú vrátil server. Bez databázy sa nedorovnáva nič.
   let dorovnane = 0;
   let dorovnalaFirma: string | undefined;
-  const dv = dorovnanieNaDar(vstup.refId, vstup.cezTvorcu);
+  const dv = supabase ? dorovnanieNaDar(vstup.refId, vstup.cezTvorcu) : null;
   if (dv) {
-    dorovnane = zapisDorovnanie(dv.entita, dv.id, vstup.suma, Date.now(), vstup.cezTvorcu);
-    if (dorovnane > 0) {
-      dorovnalaFirma = dv.firma;
-      pridajDar({ refId: vstup.refId, suma: dorovnane, kanal: vstup.kanal, registrovany: true,
-        volba: { verzia: 4, zobrazSumu: true }, firma: dv.firma, cezTvorcu: vstup.cezTvorcu });
-      pridajPodporu(dv.firmaUcet, vstup.refId, dorovnane, dv.firma);
-    }
+    dorovnane = dorovnanieKDaru(dv, vstup.suma, Date.now(), vstup.cezTvorcu);
+    if (dorovnane > 0) dorovnalaFirma = dv.firma;
+    void zapisDorovnanie(vstup.refId, vstup.suma, vstup.cezTvorcu, riadok.id).then((r) => {
+      if (r.dorovnane <= 0) return;
+      pridajDar({ refId: vstup.refId, suma: r.dorovnane, kanal: vstup.kanal, registrovany: true,
+        volba: { verzia: 4, zobrazSumu: true }, firma: r.firma ?? dv.firma, cezTvorcu: vstup.cezTvorcu });
+      pridajPodporu(r.firmaUcet ?? dv.firmaUcet, vstup.refId, r.dorovnane, r.firma ?? dv.firma);
+    });
   }
   // 2) daruje firma → zbierka jej naskočí na podstránku („dar = pripnutie")
   const firmaDarca = firmaAkoDarca();

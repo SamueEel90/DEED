@@ -78,11 +78,15 @@ export function DorovnanieFirmyHarok({ zbierkaId, zbierkaNazov, firmaUcet, firma
     setPecati(true);
     neskor(() => {
       const od = Date.now();
-      zapecat({ entita: "charita", ciel: zbierkaId, cielNazov: zbierkaNazov, firmaUcet, firma, pomer, strop: rozpocet, stropDaru, od, do: doKedy,
-        zvysok, lenZamestnanci: lenZam || undefined, kanal });
-      pripniVyclenene(firmaUcet, zbierkaId, rozpocet, firma);
-      try { navigator.vibrate?.([10, 40, 16]); } catch { /* bez vibrácie */ }
-      setPecati(false); setKrok("zapecatene");
+      // Zadanie 3 · 3.3: zapečatí server (overí cieľ, firmu, pomer, obmedzenia); pri chybe ostávame v kontrole
+      void zapecat({ entita: "charita", ciel: zbierkaId, cielNazov: zbierkaNazov, firmaUcet, firma, pomer, strop: rozpocet, stropDaru, od, do: doKedy,
+        zvysok, lenZamestnanci: lenZam || undefined, kanal }).then((d) => {
+        setPecati(false);
+        if (!d) return;
+        pripniVyclenene(firmaUcet, zbierkaId, rozpocet, firma);
+        try { navigator.vibrate?.([10, 40, 16]); } catch { /* bez vibrácie */ }
+        setKrok("zapecatene");
+      });
     }, 1100);
   };
 

@@ -87,6 +87,13 @@ Vymeniť mock repozitáre za Supabase — bez zásahu do UI.
 - Seed reálnych/realistických dát + RLS politiky pre čítanie.
 - Poradie napájania: **Good → Charita → Top → Profil/Peňaženka → Notifikácie → Aktivity → Help → Mapa**.
 - **TODO (Zadanie 1 · Blok 1, migrácia `0035_identita.sql`):** registrácia organizácie/firmy musí volať `rpc zaloz_stranku(p_id, p_typ, p_nazov)` — patrí do karty, ktorá spustí vznik stránok z registrácie (miesto: `src/lib/db.ts` pri `vytvorUcet`). Dovtedy stránky stoja na testovacích org. účtoch z 0035.
+- **Karty Fázy 4 z inventúry localStorage (Zadanie 3, Martin 6. 10. 2026)** — každá ako samostatná karta, obchodný stav ide z localStorage do DB (zoznam kľúčov: `docs/localstorage.md`, časť C):
+  1. **Podpory firiem** (`deed.podpory`, `deed.rola.nazov.b2b`) — čo firma podporila, sumy z ledgera (pohyby z účtu firmy).
+  2. **Pravidelné dary** (`deed.pravidelne`) — `opakovana_platba` (0016).
+  3. **Moje skutky s karmou** (`deed.moje.skutky`) — `prispevok`; skóre a karma už zapisuje server (0039).
+  4. **Dochádzka** (`deed.akcia`) — `dochadzka` / TOTP (0015).
+  5. **Registrované organizácie** (`deed.mojeStranky`, `deed.reg.org`) — `stranka` + `zaloz_stranku` (0035).
+  6. **Profily podľa mena → ID a čísla** — deep linky profilov cez ID + verejné čísla U-/C- namiesto mena (Blok 1, Martin 6. 10.).
 - **Hotovo, keď:** appka beží na reálnych dátach prihláseného používateľa, mock už len ako fallback pre vývoj.
 
 ### Fáza 5 — Produkčná pripravenosť

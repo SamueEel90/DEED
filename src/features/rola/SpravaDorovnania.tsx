@@ -9,7 +9,7 @@ import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 
 import { createPortal } from "react-dom";
 import {
   useDorovnania, stavCharity, vycerpane, zostatok, automatOd, daSaOdmietnut, hodinDoKoncaOdmietnutia, potvrdPlatbu, spustiDorovnanie,
-  odmietniDorovnanie, peniazeNeprisli, ukonciDorovnanie, vratZvysok, upozorniFirmu, obmedzenieDorovnania, ulozObmedzenie, naplnTestovacieDorovnania,
+  odmietniDorovnanie, peniazeNeprisli, ukonciDorovnanie, vratZvysok, upozorniFirmu, obmedzenieDorovnania, ulozObmedzenie, nacitajObmedzenie, naplnTestovacieDorovnania,
   ODVETVIA_OBMEDZENIA, REGISTER_FIRIEM, type Dorovnanie, type StavCharity,
 } from "@/lib/dorovnanie";
 import { darcoviaPre, relCas } from "@/lib/darcovia";
@@ -85,7 +85,7 @@ export function SpravaDorovnania({ entita, hlavnyUcet, mobil, toast, onZbierky, 
   /** TESTOVACIE: id zbierok pre ukážkové dorovnania podľa prototypu */
   testCiele?: Parameters<typeof naplnTestovacieDorovnania>[1];
 }) {
-  useEffect(() => { if (TESTOVACIA && testCiele) naplnTestovacieDorovnania(entita, testCiele); }, [entita]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (TESTOVACIA && testCiele) void naplnTestovacieDorovnania(entita, testCiele); }, [entita]); // eslint-disable-line react-hooks/exhaustive-deps
   const L = useDorovnania(entita);
   const [sel, setSel] = useState<string | null>(null);
   const [selM, setSelM] = useState<string | null>(null);
@@ -94,7 +94,8 @@ export function SpravaDorovnania({ entita, hlavnyUcet, mobil, toast, onZbierky, 
 
   // ---- od koho prijímate ----
   const [obm, setObm] = useState(() => obmedzenieDorovnania(entita));
-  const zmenObm = (o: typeof obm) => { setObm(o); ulozObmedzenie(entita, o); };
+  useEffect(() => { void nacitajObmedzenie(entita).then(setObm); }, [entita]);
+  const zmenObm = (o: typeof obm) => { const pred = obm; setObm(o); void ulozObmedzenie(entita, o).then((ok) => { if (!ok) setObm(pred); }); };
   const [q, setQ] = useState("");
   const qq = q.trim().toLowerCase();
   const navrhy = qq.length < 2 ? [] : REGISTER_FIRIEM.filter((f) => !obm.firmy.some((u) => rovnakaFirma(u, f.ucet)) && f.nazov.toLowerCase().includes(qq)).slice(0, 4);
@@ -216,7 +217,7 @@ function Detail({ d, entita, hlavnyUcet, toast, onOznamy }: { d: Dorovnanie; ent
   const zbC = cisloObjektu("Z", d.ciel);
   const vs = d.vratenie ? `D-${d.vratenie.vs.slice(0, 3)} ${d.vratenie.vs.slice(3, 6)} ${d.vratenie.vs.slice(6, 9)} ${d.vratenie.vs.slice(9)}` : "";
   const okno = do24 ? `Odmietnuť môžete do 24 hodín od oznámenia platby, ešte ${hodinDoKoncaOdmietnutia(d)} h.` : "Ak peniaze ani po 24 hodinách neprišli, ťuknite na Neprišli.";
-  const zacni = () => { setDrz(true); window.clearTimeout(tm.current); tm.current = window.setTimeout(() => { setDrz(false); if (vratZvysok(entita, d.id, "deed")) toast(`Vrátené ${eur(d.vratenie?.suma ?? 0)}. Firma dostane potvrdenie o vrátení.`); }, 900); };
+  const zacni = () => { setDrz(true); window.clearTimeout(tm.current); tm.current = window.setTimeout(() => { setDrz(false); void vratZvysok(entita, d.id, "deed").then((ok) => { if (ok) toast(`Vrátené ${eur(d.vratenie?.suma ?? 0)}. Firma dostane potvrdenie o vrátení.`); }); }, 900); };
   const pusti = () => { window.clearTimeout(tm.current); setDrz(false); };
 
   const potvrdenie = (cez: boolean) => (
@@ -227,9 +228,9 @@ function Detail({ d, entita, hlavnyUcet, toast, onOznamy }: { d: Dorovnanie; ent
         : `Firma oznámila prevod ${eur(d.strop)} na váš účet ${hlavnyUcet}, mimo DEED. Prevod môže trvať do 1 pracovného dňa. Túto platbu nevidíme, preto sa dorovnanie samo nespustí.`}</span>
       {!odm ? <>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <button type="button" onClick={() => { potvrdPlatbu(entita, d.id); }} style={tlZ}>Peniaze prišli</button>
+          <button type="button" onClick={() => { void potvrdPlatbu(entita, d.id); }} style={tlZ}>Peniaze prišli</button>
           {do24 ? <button type="button" onClick={() => setOdm(true)} style={tlR}>Odmietnuť</button>
-            : <button type="button" onClick={() => { if (peniazeNeprisli(entita, d.id)) toast(cez ? "Firme sme dali vedieť. Platbu preverí DEED+." : "Firme sme dali vedieť."); }} style={tlO}>Neprišli</button>}
+            : <button type="button" onClick={() => { void peniazeNeprisli(entita, d.id).then((ok) => { if (ok) toast(cez ? "Firme sme dali vedieť. Platbu preverí DEED+." : "Firme sme dali vedieť."); }); }} style={tlO}>Neprišli</button>}
         </div>
         <span style={{ fontSize: 12.5, color: "var(--ink3)" }}>{okno}</span>
       </> : <div style={{ display: "flex", flexDirection: "column", gap: 10, paddingTop: 10, borderTop: "1px solid var(--cardBd)" }}>
@@ -241,7 +242,7 @@ function Detail({ d, entita, hlavnyUcet, toast, onOznamy }: { d: Dorovnanie; ent
         </div>
         {dovodE && <span role="alert" style={{ fontSize: 13, fontWeight: 700, color: "var(--red)" }}>Napíšte dôvod, prečo dorovnanie odmietate.</span>}
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <button type="button" onClick={() => { if (!cistyText(dovod).trim()) { setDovodE(true); return; } if (odmietniDorovnanie(entita, d.id, cistyText(dovod))) setOdm(false); else toast("Odmietnuť sa dá len do 24 hodín od oznámenia platby."); }} style={{ ...tlZ, background: "var(--red)" }}>Odmietnuť</button>
+          <button type="button" onClick={() => { if (!cistyText(dovod).trim()) { setDovodE(true); return; } void odmietniDorovnanie(entita, d.id, cistyText(dovod)).then((ok) => { if (ok) setOdm(false); }); }} style={{ ...tlZ, background: "var(--red)" }}>Odmietnuť</button>
           <button type="button" onClick={() => setOdm(false)} style={tlO}>Späť</button>
         </div>
       </div>}
@@ -277,7 +278,7 @@ function Detail({ d, entita, hlavnyUcet, toast, onOznamy }: { d: Dorovnanie; ent
         </label>
         {dkE && <span role="alert" style={{ fontSize: 13, fontWeight: 700, color: "var(--red)" }}>Najprv priložte doklad o úhrade.</span>}
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <button type="button" onClick={() => { if (!doklad) { setDkE(true); return; } if (vratZvysok(entita, d.id, "mimo", doklad.src)) toast("Prípad je uzavretý. Firma dostane potvrdenie o vrátení."); }} style={tlZ}>Odoslať a uzavrieť</button>
+          <button type="button" onClick={() => { if (!doklad) { setDkE(true); return; } void vratZvysok(entita, d.id, "mimo", doklad.src).then((ok) => { if (ok) toast("Prípad je uzavretý. Firma dostane potvrdenie o vrátení."); }); }} style={tlZ}>Odoslať a uzavrieť</button>
           <button type="button" onClick={() => setVr(null)} style={tlO}>Späť</button>
         </div>
       </>}
@@ -316,14 +317,14 @@ function Detail({ d, entita, hlavnyUcet, toast, onOznamy }: { d: Dorovnanie; ent
       {st === "potvrdene" && <section style={karta}>
         <b style={{ fontSize: 16 }}>Peniaze sú na účte</b>
         <span style={txt}>Spustite dorovnanie. Od tej chvíle {d.firma} pridáva k darom ľudí podľa zapečatených podmienok.</span>
-        <div><button type="button" onClick={() => spustiDorovnanie(entita, d.id)} style={tlZ}>Spustiť dorovnanie</button></div>
+        <div><button type="button" onClick={() => { void spustiDorovnanie(entita, d.id); }} style={tlZ}>Spustiť dorovnanie</button></div>
       </section>}
       {st === "vratit" && vratenie}
       {st8 && <section style={karta}>
         <b style={{ fontSize: 16 }}>Rozpočet sa míňa</b>
         <span style={txt}>{d.firma} ostáva {eur(ost)} z {eur(d.strop)}. Firma môže rozpočet doliať, podmienky ostanú rovnaké.</span>
         {d.upozornenaFirma ? <span style={{ fontSize: 14, fontWeight: 700, color: "var(--gInk)" }}>Firma dostala upozornenie v appke aj e-mailom.</span>
-          : <button type="button" onClick={() => upozorniFirmu(entita, d.id)} style={{ ...tlZ, alignSelf: "flex-start" }}>Dať firme vedieť</button>}
+          : <button type="button" onClick={() => { void upozorniFirmu(entita, d.id); }} style={{ ...tlZ, alignSelf: "flex-start" }}>Dať firme vedieť</button>}
       </section>}
       {(st === "minute" || st === "kon") && min > 0 && <section style={{ ...karta, border: "1px solid var(--cardBd)" }}>
         <b style={{ fontSize: 16 }}>Poďakujte firme</b>
@@ -371,7 +372,7 @@ function Detail({ d, entita, hlavnyUcet, toast, onOznamy }: { d: Dorovnanie; ent
           <b style={{ fontSize: 16 }}>Ukončiť {d.cielNazov}?</b>
           <span style={txt}>Skončí zbierka aj dorovnanie. Firme vrátite celý nevyčerpaný zvyšok {eur(ost)}. Firma platila za dorovnanie darov, nie dar pre vás.</span>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <button type="button" onClick={() => { ukonciDorovnanie(entita, d.id); const z = nacitajStav(d.ciel); if (z && z.stav === "aktivna") ulozStav(d.ciel, { ...z, stav: "ukoncena", ukoncena: new Date().toISOString(), dovodUkoncenia: "Ukončené s dorovnaním" }); setUk(false); }} style={{ ...tlZ, background: "var(--red)" }}>Ukončiť</button>
+            <button type="button" onClick={() => { void ukonciDorovnanie(entita, d.id).then((ok) => { if (!ok) return; const z = nacitajStav(d.ciel); if (z && z.stav === "aktivna") ulozStav(d.ciel, { ...z, stav: "ukoncena", ukoncena: new Date().toISOString(), dovodUkoncenia: "Ukončené s dorovnaním" }); }); setUk(false); }} style={{ ...tlZ, background: "var(--red)" }}>Ukončiť</button>
             <button type="button" onClick={() => setUk(false)} style={tlO}>Späť</button>
           </div>
         </section>)}
