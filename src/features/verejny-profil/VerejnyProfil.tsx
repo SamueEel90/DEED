@@ -108,7 +108,7 @@ function VerejnyProfilObsah({ kluc, onBack }: { kluc: string; onBack: () => void
   ) : detail ? (
     <div className="sc-tokeny" data-stit={profil.stit.toLowerCase()} style={{ background: "var(--bg)", minHeight: "100%" }}>
       <div style={{ maxWidth: 1240, margin: "0 auto", padding: 14 }}>
-        <ZbierkaModul zbierka={naZbierkaData(detail, profil)} zoStrankyOrg onBack={() => setDetail(null)} spatNazov="Späť na profil" />
+        <ZbierkaModul zbierka={naZbierkaData(detail, profil)} zoStrankyOrg onBack={() => setDetail(null)} spatNazov="Späť na stránku" />
       </div>
     </div>
   ) : zaznam ? (
