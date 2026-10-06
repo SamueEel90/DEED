@@ -91,11 +91,11 @@ export interface Repo {
     /** Reťaz dobra: vytvor reťaz (% zafixované) → { chain_id, slug }. */
     chainCreate(v: ChainVstup): Promise<ChainVysledok | null>;
     /** Odznak: zamestnanec sa prihlási na zmenu. */
-    badgeBind(badgeId: string, employeeId: string, hodiny?: number): Promise<void>;
+    badgeBind(badgeId: string, hodiny?: number): Promise<void>;
     /** Odznak: zamestnanec sa odhlási. */
     badgeUnbind(badgeId: string): Promise<void>;
     /** Odznak: zákazník naskenuje → pochvala/dar (NULL → pobočka). */
-    badgeScan(badgeId: string, zakaznik?: string | null, suma?: number): Promise<BadgeScanVysledok>;
+    badgeScan(badgeId: string, suma?: number): Promise<BadgeScanVysledok>;
     /** QR Split: vytvor QR (vlastník + N organizácií, % zafixované). */
     qrSplitCreate(v: QrSplitCreateVstup): Promise<QrSplitRow | null>;
     /** QR Split: platba cez QR → rozdelí podľa pomeru. */

@@ -4,7 +4,6 @@ import { C, GRAD, GRAD_ZELENY, SPACE, RADIUS } from "@/theme";
 import { Sheet, DeedQr, IkonaFajka, IkonaDoska, Lupa, Zdielanie, tint, pressable } from "@/shared";
 import type { RetazMode, RetazKrok, RetazVysledok } from "@/types";
 import { useRetazZiadosti, useChainCreate } from "@/data";
-import { usePouzivatel } from "@/lib/pouzivatel";
 import { qrUrl } from "@/lib/qr";
 
 /*
@@ -42,7 +41,6 @@ interface RetazDobraSheetProps {
 // mode: "skutok" (Cesta A) | "honorar" (Cesta B)
 export function RetazDobraSheet({ odmena = 130, mode = "skutok", odkaz = "https://deed.app/s/120042", onClose, onDone, toast }: RetazDobraSheetProps) {
   const { data: ZIADOSTI = [] } = useRetazZiadosti();
-  const { ucetId } = usePouzivatel();
   const chain = useChainCreate();
   const honorar = mode === "honorar";
   const [krok, setKrok] = useState<RetazKrok>("nastav"); // nastav | hotovo
@@ -61,7 +59,7 @@ export function RetazDobraSheet({ odmena = 130, mode = "skutok", odkaz = "https:
     if (!ziadost) return;
     setVyrabam(true);
     try {
-      const r = await chain.mutateAsync({ caseId: null, darca: ucetId ?? null, pct, ciel: ziadost.nazov, sumaZaklad: odmena, mena: "DEED" });
+      const r = await chain.mutateAsync({ caseId: null, pct, ciel: ziadost.nazov, sumaZaklad: odmena, mena: "DEED" });
       setSlug(r?.slug ?? null);
     } catch { /* offline/mock → fallback vizuál QR */ }
     setVyrabam(false);

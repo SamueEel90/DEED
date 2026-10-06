@@ -6,7 +6,6 @@ import { C, SPACE, RADIUS, GRAD_ZELENY } from "@/theme";
 import { tint } from "@/lib/ui";
 import { useScan } from "@/data";
 import { deviceId } from "@/lib/zariadenie";
-import { usePouzivatel } from "@/lib/pouzivatel";
 import { Sheet } from "@/components/sheet";
 import { Lupa, IkonaFajka, IkonaKriz } from "@/components/icons";
 
@@ -26,7 +25,6 @@ const VERDIKT_TXT: Record<Verdikt, { t: string; d: string; col: string }> = {
 };
 
 export function QrSkener({ onClose, toast }: { onClose?: () => void; toast?: (t: string) => void }) {
-  const { ucetId } = usePouzivatel();
   const skenuj = useScan();
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const controlsRef = useRef<IScannerControls | null>(null);
@@ -44,7 +42,7 @@ export function QrSkener({ onClose, toast }: { onClose?: () => void; toast?: (t:
     hotovoRef.current = true;
     stopCam();
     try {
-      const r = await skenuj.mutateAsync({ token: t, deviceId: deviceId(), userId: ucetId ?? null });
+      const r = await skenuj.mutateAsync({ token: t, deviceId: deviceId() });
       setVerdikt(r.vysledok as Verdikt);
     } catch {
       setVerdikt("fake");

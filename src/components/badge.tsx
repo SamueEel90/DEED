@@ -23,7 +23,7 @@ export function BadgeSheet({ badgeId, nazov, onClose, toast }: { badgeId: string
 
   const prihlasit = async () => {
     if (!ucetId) { toast?.("Prihlás sa do účtu, aby si sa nahlásil na zmenu"); return; }
-    try { await bind.mutateAsync({ badgeId, employeeId: ucetId }); toast?.("Prihlásený na zmenu — pochvaly idú tebe"); onClose?.(); }
+    try { await bind.mutateAsync({ badgeId }); toast?.("Prihlásený na zmenu — pochvaly idú tebe"); onClose?.(); }
     catch { toast?.("Nepodarilo sa prihlásiť"); }
   };
   const odhlasit = async () => {
@@ -32,7 +32,7 @@ export function BadgeSheet({ badgeId, nazov, onClose, toast }: { badgeId: string
   };
   const poslat = async (s: number) => {
     try {
-      const r = await scan.mutateAsync({ badgeId, zakaznik: ucetId ?? null, suma: s });
+      const r = await scan.mutateAsync({ badgeId, suma: s });
       const komu = r.prijemca === "employee" ? "zamestnancovi na zmene" : "pobočke (nikto na zmene)";
       toast?.(s > 0 ? `Dar ${s} DeeD → ${komu}` : `Pochvala → ${komu}`);
       onClose?.();

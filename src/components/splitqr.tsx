@@ -53,7 +53,7 @@ interface SplitQrSheetProps {
 }
 
 export function SplitQrSheet({ titul = "Skutok", caseId = null, zdroj = "osobny", odkaz = "https://deed.good/split/demo", variant, onClose, toast }: SplitQrSheetProps) {
-  const { ucetId, celeMeno } = usePouzivatel();
+  const { celeMeno } = usePouzivatel();
   const influencer = celeMeno && celeMeno.trim() ? celeMeno : "Ty (tvorca)";
   const owner = variant?.ownerLabel ?? influencer;
   const create = useQrSplitCreate();
@@ -73,7 +73,7 @@ export function SplitQrSheet({ titul = "Skutok", caseId = null, zdroj = "osobny"
     setVyrabam(true);
     try {
       const row = await create.mutateAsync({
-        caseId: jeUuid(caseId) ? caseId : null, owner: ucetId, ownerText: owner,
+        caseId: jeUuid(caseId) ? caseId : null, ownerText: owner,
         ownerPodiel: +(splitOwnerPct(ciele) / 100).toFixed(5),
         ciele: splitCielePayload(ciele), zdroj, mena: "DEED",
       });
@@ -122,13 +122,13 @@ export function SplitQrSheet({ titul = "Skutok", caseId = null, zdroj = "osobny"
 export function SplitLanding({ splitId, onClose, toast }: { splitId: string; onClose?: () => void; toast?: (m: string) => void }) {
   const { data, isLoading } = useQrSplitGet(splitId);
   const pay = useQrSplitPay();
-  const { ucetId, celeMeno } = usePouzivatel();
+  const { celeMeno } = usePouzivatel();
   const [platba, setPlatba] = useState<string | null>(null);
 
   const posli = (suma: number, kanal: string) => {
     if (!data?.slug) { toast?.("Demo režim — platba sa nezapíše"); return; }
     pay.mutate({ slug: data.slug, idem: idemKluc(data.slug), suma, kanal,
-      mena: kanal === "fiat" ? "EUR" : "DEED", odosielatel: ucetId, odosielatelText: celeMeno },
+      mena: kanal === "fiat" ? "EUR" : "DEED", odosielatelText: celeMeno },
       { onSuccess: () => toast?.(`Odoslané cez QR · ${data.owner_podiel * 100}% ${data.owner_text ?? "tvorcovi"}, zvyšok organizáciám`) });
   };
 

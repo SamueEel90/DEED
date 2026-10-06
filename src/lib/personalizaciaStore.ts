@@ -180,8 +180,7 @@ export async function pridajPodporuDB(p: {
     p_mena: mena,
     p_kanal: kanal,
     p_case_id: p.refId,                                            // uuid prípadu → príjemca = jeho autor
-    p_odosielatel: p.ucetId ?? null,
-    p_odosielatel_text: p.darca,
+    p_meno_darcu: p.darca,                                         // darca = prihlásený účet (4.1)
     p_prijemca_text: p.prijemca ?? null,
     p_meta: { vyzbierane: p.vyzbierane ?? null, ciel: p.ciel ?? null },
   });

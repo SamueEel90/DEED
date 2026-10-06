@@ -99,7 +99,7 @@ export function PravidelnaHarok({ refId, nazov, registrovany, onClose, zbierka =
     setKrok("spracovanie");
     const mn = eurc ? "EURC" : "EUR";
     if (ja.ucetId && !ja.demo) {
-      try { await rec.mutateAsync({ rozsah: "request", darca: ja.ucetId, suma: eur, mena: mn, perioda, caseId: refId, charitaUcet: null, viazaneNaZbierku: true }); } catch { /* ukážka pokračuje */ }
+      try { await rec.mutateAsync({ rozsah: "request", suma: eur, mena: mn, perioda, caseId: refId, charitaUcet: null, viazaneNaZbierku: true }); } catch { /* ukážka pokračuje */ }
     }
     const predtym = nacitaj().filter((z) => z.refId === refId).length;
     uloz({ refId, suma: eur, mena: mn, perioda, od: Date.now() });

@@ -44,7 +44,7 @@ export function MojeQrKody({ onClose, toast }: { onClose?: () => void; toast?: (
     setVyrabam(true);
     try {
       await create.mutateAsync({
-        caseId: jeUuid(post.id) ? post.id : null, owner: ucetId, ownerText: celeMeno,
+        caseId: jeUuid(post.id) ? post.id : null, ownerText: celeMeno,
         ownerPodiel: +(splitOwnerPct(ciele) / 100).toFixed(5), ciele: splitCielePayload(ciele), zdroj: "osobny", mena: "DEED",
       });
       toast?.("QR vytvorený · % zafixované");

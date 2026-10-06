@@ -96,7 +96,7 @@ export default function ModulHelp({ wide }: { wide?: boolean }) {
         // autorský QR split (ak autor nastavil rozdelenie pri tvorbe)
         if (novyId && split && split.length) {
           createSplit.mutate({
-            caseId: novyId, owner: ja.ucetId, ownerText: ja.celeMeno,
+            caseId: novyId, ownerText: ja.celeMeno,
             ownerPodiel: +(splitOwnerPct(split) / 100).toFixed(5),
             ciele: splitCielePayload(split), zdroj: "autor", mena: "DEED",
           }, { onSuccess: (row) => ukazQr(row), onError: () => ukazQr() });
