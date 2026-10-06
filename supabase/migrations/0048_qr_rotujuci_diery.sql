@@ -53,7 +53,7 @@ begin
   end if;
   v_counter := floor(extract(epoch from now()) / v_step)::bigint;
   v_data := p_event::text || '.' || v_counter::text;
-  v_sig := encode(extensions.hmac(convert_to(v_data, 'UTF8'), v_secret, 'sha256'), 'hex');
+  v_sig := encode(hmac(convert_to(v_data, 'UTF8'), v_secret, 'sha256'), 'hex');
   return 'DEED1.' || p_event::text || '.' || v_counter::text || '.' || left(v_sig, 16);
 end;
 $fn$;
@@ -109,7 +109,7 @@ begin
   end if;
 
   v_data := v_event::text || '.' || v_counter::text;
-  v_calc := left(encode(extensions.hmac(convert_to(v_data, 'UTF8'), v_secret, 'sha256'), 'hex'), 16);
+  v_calc := left(encode(hmac(convert_to(v_data, 'UTF8'), v_secret, 'sha256'), 'hex'), 16);
   if v_calc <> v_sig then
     insert into public.scan_log (event_id, user_id, device_id, counter, vysledok) values (v_event, v_user, p_device, v_counter, 'fake');
     return jsonb_build_object('vysledok', 'fake');
