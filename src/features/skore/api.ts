@@ -64,6 +64,12 @@ function preAi(dataUrl: string): Promise<string> {
     } catch { ok(dataUrl); }
   });
 }
+/** Chyby, ktoré opraví používateľ (zlý vstup, veľké fotky) — všetko ostatné = AI je teraz nedostupná. */
+const CHYBY_VSTUPU = new Set(["zly_vstup", "velky_dokaz", "vela_dokazov", "zly_dokaz"]);
+/** AI je prísada, nie zámka: true = výpadok, limit, bez kľúča — skutok sa uloží a ohodnotí neskôr. */
+export function jeVypadokAi(e: unknown): boolean {
+  return !(e instanceof ScoreChyba && CHYBY_VSTUPU.has(e.kod));
+}
 const NEDOSTUPNE = "Hodnotenie je momentálne nedostupné, skúste o chvíľu.";
 const VELKE_FOTKY = "Fotky sú príliš veľké — zmenšite ich (spolu najviac 3 MB).";
 // Zadanie 5 · 5.3: Vercel prijme telo najviac 4,5 MB — väčšie sa vôbec neposiela (inak padne pred serverom)
@@ -107,6 +113,8 @@ export async function ohodnot(vstup: {
     if (r.status === 503 || r.status === 504 || r.status === 529) throw new ScoreChyba(data.chyba ?? "nedostupne", NEDOSTUPNE);
     throw new ScoreChyba(data.chyba ?? `http_${r.status}`, data.sprava ?? "Hodnotenie sa nepodarilo, skús znova.");
   }
+  // 200 bez verdiktu (napr. SPA fallback namiesto funkcie) = hodnotenie nebeží
+  if (!data || typeof data.verdikt !== "string") throw new ScoreChyba("nedostupne", NEDOSTUPNE);
   return data as ScoreOdpoved;
 }
 
