@@ -605,12 +605,8 @@ const FARNOST: TestProfil = {
     { id: "of-brigada", druh: "akcia", nadpis: "Upratovanie fary a záhrady", stitok: "BRIGÁDA · SOBOTA 9:00", text: "Marka Aurela 6 · rukavice a náradie máme", mesto: "Trenčín", den: "11.", mesiac: "OKT", tlacidlo: "Prídem", pod: "prídu 9 ľudia" },
   ],
   pracaNadpis: "OMŠE A SLUŽBA",
-  praca: [
-    { id: "pf-omse", nazov: "Kedy sú omše", druh: "zamestnanec", text: "", mesto: "Trenčín", den: "1.", mesiac: "OKT", pod: "rozvrh platí od 1. 10.",
-      stitok: "SVÄTÉ OMŠE", opis: "Nedeľa 7:30 · 10:30 veľká omša · 18:00. Pondelok až streda 6:30, štvrtok a piatok 18:00, sobota 7:00 a 18:00 vigília.", kde: "Kostol Narodenia Panny Márie", kedy: "v utorok aj kaplnka sv. Anny 18:00", odmena: "október: ruženec denne 17:30", zaujem: "zmeny vždy v ohláškach", tlacidlo: "Pripomínať omše", tretiRiadok: "Poznámka" },
-    { id: "pf-sluzba", nazov: "Lektori a miništranti", druh: "brigadnik", text: "", mesto: "Trenčín", den: "19.", mesiac: "OKT", pod: "prihlásiť sa do 19. 10.",
-      stitok: "SLUŽBA", opis: "Čítanie na nedeľnej omši a služba pri oltári. Naučíme ťa všetko, stačí prísť na nácvik.", kde: "farský kostol", kedy: "nedeľa 10:30", odmena: "nácvik v sobotu 10:00", zaujem: "4 ľudia už majú záujem", tlacidlo: "Mám záujem", tretiRiadok: "Poznámka" },
-  ],
+  // KONTROLA 19/3: omše a služba nie sú platená práca (modrá PracaKarta) — dostanú nové miesto v 56C (riadok Dnes, blok Pomôž)
+  praca: [],
   darcovia: [
     { id: "fd1", meno: "Mária K.", iniciala: "MK", mesto: "Trenčín", naCo: "Farnosť", suma: 10, pred: "pred 12 min" },
     { id: "fd2", meno: menoBezMena("viera"), iniciala: "A", mesto: "Trenčín", naCo: "Oprava organu", suma: 20, pred: "pred 40 min" },
