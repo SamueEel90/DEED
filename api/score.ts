@@ -84,11 +84,14 @@ function zlozUserText(v: ScoreRequest & { dokazy: DokazVstup[] }): string {
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "POST") { chyba(res, 405, "zla_metoda", "Použi POST."); return; }
 
-  // MOCK režim (bez API kľúča): SCORING_MOCK=1, alebo chýbajúci kľúč MIMO produkcie.
-  // V produkcii bez kľúča NIKDY nemockuje — falošné skóre nesmie ujsť do ostrého behu.
+  // MOCK režim (bez API kľúča): SCORING_MOCK=1, alebo chýbajúci kľúč MIMO ostrej produkcie.
+  // Na Verceli je NODE_ENV vždy „production" — testovacie nasadenie (vetva platby-modul a každý preview,
+  // rovnako ako VITE_TEST vo vite.config.ts) bez kľúča preto tiež beží na simulátore.
+  // V ostrej produkcii bez kľúča NIKDY nemockuje — falošné skóre nesmie ujsť do ostrého behu.
+  const testNasadenie = process.env.VERCEL_ENV === "preview" || ["platby-modul"].includes(process.env.VERCEL_GIT_COMMIT_REF ?? "");
   const mockRezim =
     process.env.SCORING_MOCK === "1" ||
-    (!process.env.ANTHROPIC_API_KEY && process.env.NODE_ENV !== "production");
+    (!process.env.ANTHROPIC_API_KEY && (process.env.NODE_ENV !== "production" || testNasadenie));
   if (!mockRezim && !process.env.ANTHROPIC_API_KEY) {
     chyba(res, 503, "nedostupne", "Hodnotenie je momentálne nedostupné, skús o chvíľu.");
     return;
