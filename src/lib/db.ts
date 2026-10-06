@@ -22,12 +22,6 @@ function db() {
 const cakaj = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 const teraz = () => new Date().toISOString();
 
-// PIN/heslo hash (DEMO: SHA-256 cez Web Crypto; v produkcii server-side argon2/bcrypt)
-async function hashPin(pin: string): Promise<string> {
-  const data = new TextEncoder().encode("deed:" + pin);
-  const buf = await crypto.subtle.digest("SHA-256", data);
-  return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("");
-}
 
 // zoskupí ploché riadky číselníka podľa kľúča, zachová poradie
 function zoskup(rows: any[], kluc: string, polozkaKluc: string): Ciselnik[] {
@@ -111,36 +105,12 @@ export async function spustiKyb(orgUcetId: string, { stanovyRef }: { stanovyRef?
 // UNIVERZÁLNY ZÁKLAD — telefón/účet/zámok (§4) — osoba aj charita
 // ============================================================
 
-/** Zadanie 1 · Blok 1 · bod 4: registrácia s telefónom, ktorý už má účet, NIKDY nevráti ten účet
- *  (inak by ho prevzal ktokoľvek, kto pozná číslo). Človek sa musí prihlásiť. */
-export const UCET_EXISTUJE = "Účet s týmto číslom existuje — prihláste sa.";
-export class UcetExistujeChyba extends Error { constructor() { super(UCET_EXISTUJE); this.name = "UcetExistujeChyba"; } }
-
 // TODO (Zadanie 1 · Blok 1, migrácia 0035_identita.sql): registrácia organizácie / firmy zatiaľ
 // NEvolá rpc zaloz_stranku(p_id, p_typ, p_nazov). Karta, ktorá spustí vznik stránok z registrácie,
 // ju musí zavolať po vytvorení účtu — vznikne stranka + účet organizácie (typ 'charita'/'firma')
 // a volajúci sa zapíše do statutar ako správca. Dovtedy majú stránky len testovacie org. účty z 0035.
-// Vytvorí účet po overení telefónu. Existujúce číslo = chyba (DB: unique ucet.telefon).
-export async function vytvorUcet({ typ = "aktivny", telefon, email = null }: { typ?: string; telefon: string; email?: string | null }) {
-  const tel = (telefon || "").replace(/\s+/g, ""); // normalizuj — bez medzier (stabilný unique kľúč)
-  if (!supabase) return vytvorUcetMock(tel, typ); // mock režim: rovnaké pravidlo, bez DB
-  // Zadanie 3 · 3.2: účet s overeným telefónom zakladá server — len ak telefón prešiel otp_over
-  const { data, error } = await db().rpc("ucet_s_telefonom", { p_typ: typ, p_telefon: tel, p_email: email }).single();
-  if (error) {
-    if (error.code === "23505") throw new UcetExistujeChyba(); // unique_violation na telefóne
-    throw error;
-  }
-  return data;
-}
-
-// mock registrácia bez DB — telefóny drží len pamäť relácie, existujúce číslo = chyba
-const mockTelefony = new Map<string, string>();
-function vytvorUcetMock(tel: string, typ: string) {
-  if (mockTelefony.has(tel)) throw new UcetExistujeChyba();
-  const id = (() => { try { return crypto.randomUUID(); } catch { return `mock-${Date.now()}`; } })();
-  mockTelefony.set(tel, id);
-  return { id, typ, poradove_cislo: null, stav_registracie: "zabezpecenie" };
-}
+// Registrácia je len auth-first (session najprv — OsobaB, vytvorUcetAuth). Starý tok „telefón bez
+// prihlásenia" (RegKit, rpc ucet_s_telefonom) je od 6. 10. 2026 zrušený: po RLS (0055) by nič nezapísal.
 
 // Auth-first vytvorenie účtu (Fáza 5) — identitu rieši Supabase Auth, telefón-OTP
 // a PIN sa preskakujú. Idempotentné na auth_id (resume po refreshi/abandonovaní).
@@ -190,12 +160,10 @@ export async function ulozStav(ucetId: string, stav: string) {
 }
 
 // Zámok účtu — PIN/heslo (hash) + biometria (§4.2)
+// Zadanie 4 · 4.4: PIN hashuje (bcrypt) a overuje LEN server; pin_hash appka nevidí. Účet = prihlásený.
 export async function nastavZabezpecenie(ucetId: string, { pin, biometria = false }: { pin?: string; biometria?: boolean }) {
-  const pin_hash = pin ? await hashPin(pin) : null;
-  const { error } = await db()
-    .from("ucet")
-    .update({ pin_hash, biometria, stav_registracie: "udaje", aktualizovane: teraz() })
-    .eq("id", ucetId);
+  void ucetId;
+  const { error } = await db().rpc("nastav_zabezpecenie", { p_pin: pin ?? null, p_biometria: biometria });
   if (error) throw error;
 }
 
@@ -210,16 +178,14 @@ export async function ulozOverenyTelefon(ucetId: string, telefon: string) {
 
 // KARTA 44 · organizácia sa pridáva z osobného účtu: nový ucet typu charita bez vlastného prihlásenia,
 // prepojený na osobu (správca / štatutár). Server (Samuel): ucet bez telefónu a auth_id + RLS pre správcu.
+// Zadanie 4 · 4.3: organizačný účet + prvý správca (prihlásený) vznikajú naraz na serveri (rpc zaloz_organizaciu);
+// priamy insert do ucet appka pre cudzí/organizačný účet nesmie (RLS).
 export async function vytvorOrganizaciuPodOsobou(osobaUcetId: string, typ = "charita") {
-  const c = db();
-  const { data, error } = await c
-    .from("ucet")
-    .insert({ typ, telefon_overeny: false, email_overeny: false, stav_registracie: "kyb" })
-    .select("id, typ, poradove_cislo, stav_registracie")
-    .single();
+  void osobaUcetId;   // správca = prihlásený účet zo session
+  const { data, error } = await db().rpc("zaloz_organizaciu", { p_typ: typ });
   if (error) throw error;
-  await prepojStatutara(data.id, osobaUcetId, "správca (registroval)");
-  return data;
+  const u = data as { id: string; typ: string; poradove_cislo: number | null; stav_registracie: string };
+  return { id: u.id, typ: u.typ, poradove_cislo: u.poradove_cislo, stav_registracie: u.stav_registracie };
 }
 
 export async function dokonciRegistraciu(ucetId: string) {
@@ -409,4 +375,18 @@ export async function nacitajCiselnikSektorov(): Promise<Ciselnik[]> {
     .order("poradie", { ascending: true });
   if (error) throw error;
   return zoskup(data || [], "sektor", "pod_segment");
+}
+
+// ============================================================
+// REBRÍČKY — súhlas byť v Top (0061). Predvolene vypnutý; rátajú sa len dary s menom.
+// ============================================================
+export async function nacitajVRebricku(ucetId: string): Promise<boolean> {
+  if (!supabase || !ucetId) return false;
+  const { data } = await db().from("ucet").select("v_rebricku").eq("id", ucetId).maybeSingle();
+  return !!(data as { v_rebricku?: boolean } | null)?.v_rebricku;
+}
+export async function nastavVRebricku(zapnute: boolean): Promise<void> {
+  if (!supabase) return;
+  const { error } = await db().rpc("nastav_v_rebricku", { p_zapnute: zapnute });
+  if (error) throw error;
 }

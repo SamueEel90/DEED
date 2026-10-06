@@ -11,7 +11,7 @@ import type { QrSplitRow, QrSplitDetail, QrSplitListItem, QrSplitCiel } from "@/
 // ---- QR Split (produkčný QR systém, 0018) ----
 export interface QrSplitCreateVstup {
   caseId?: string | null;
-  owner?: string | null;         // owner ucet id (NULL = demo/seed)
+  // vlastník = prihlásený účet (server zo session, 4.1)
   ownerText?: string | null;     // denorm. meno vlastníka
   ownerPodiel: number;           // % vlastníkovi (0..1), zafixované
   ciele: QrSplitCiel[];          // organizácie/žiadosti
@@ -24,8 +24,7 @@ export interface QrSplitPayVstup {
   suma: number;
   mena?: "DEED" | "EUR";
   kanal?: string;                // 'deed' | 'fiat' | 'sms' | 'sepa'
-  odosielatel?: string | null;
-  odosielatelText?: string | null;
+  odosielatelText?: string | null;   // meno na zobrazenie; darca = prihlásený (4.1)
 }
 export interface QrSplitPayVysledok { platba_id: string; qr_split_id: string; stav: string; suma: number }
 
@@ -37,8 +36,7 @@ export interface ScanVysledok {
 }
 export interface ScanVstup {
   token: string;
-  deviceId: string;
-  userId?: string | null;
+  // zariadenie = účet (server zo session, Zadanie 4 · 4.5); poloha je povinná, ak akcia má miesto
   lat?: number | null;
   lng?: number | null;
 }
@@ -46,7 +44,6 @@ export interface ScanVstup {
 // ---- Reťaz dobra (chain QR) ----
 export interface ChainVstup {
   caseId?: string | null;
-  darca?: string | null;
   pct: number;             // % ZAFIXOVANÉ pri vzniku
   ciel: string;            // cieľová žiadosť (názov)
   sumaZaklad?: number | null;
@@ -129,18 +126,31 @@ export const qrSupabase = {
   async scan(v: ScanVstup): Promise<ScanVysledok> {
     if (!supabase) return { vysledok: "ok" };  // offline/mock: demo úspech
     const { data, error } = await supabase.rpc("scan_validate", {
-      p_token: v.token, p_device: v.deviceId, p_user: v.userId ?? null,
+      p_token: v.token,
       p_lat: v.lat ?? null, p_lng: v.lng ?? null,
     });
     if (error) throw error;
     return (data as ScanVysledok) ?? { vysledok: "fake" };
   },
 
+  /** Organizátor pri štarte akcie uloží jej polohu (od nej sa meria polomer skenov). */
+  async eventPoloha(eventId: string, lat: number, lng: number): Promise<void> {
+    if (!supabase) return;
+    const { error } = await supabase.rpc("event_poloha", { p_event: eventId, p_lat: lat, p_lng: lng });
+    if (error) throw error;
+  },
+  /** Organizátor ukončí akciu pre všetkých — server spočíta splnenie podľa prahu prítomnosti. */
+  async eventUkonci(eventId: string): Promise<void> {
+    if (!supabase) return;
+    const { error } = await supabase.rpc("event_ukonci", { p_event: eventId });
+    if (error) throw error;
+  },
+
   // ---- Reťaz dobra (Fáza 5) — % zafixované pri vzniku ----
   async chainCreate(v: ChainVstup): Promise<ChainVysledok | null> {
     if (!supabase) return null;
     const { data, error } = await supabase.rpc("chain_create", {
-      p_case: v.caseId ?? null, p_darca: v.darca ?? null, p_pct: v.pct,
+      p_case: v.caseId ?? null, p_pct: v.pct,
       p_ciel: v.ciel, p_suma_zaklad: v.sumaZaklad ?? null, p_mena: v.mena ?? "DEED",
     });
     if (error) throw error;
@@ -149,9 +159,9 @@ export const qrSupabase = {
 
   // ---- Odznak (Fáza 5) — shift-binding ----
   /** Zamestnanec sa prihlási na zmenu. */
-  async badgeBind(badgeId: string, employeeId: string, hodiny = 12): Promise<void> {
+  async badgeBind(badgeId: string, hodiny = 12): Promise<void> {
     if (!supabase) return;
-    const { error } = await supabase.rpc("badge_bind", { p_badge: badgeId, p_employee: employeeId, p_hodiny: hodiny });
+    const { error } = await supabase.rpc("badge_bind", { p_badge: badgeId, p_hodiny: hodiny });
     if (error) throw error;
   },
   /** Zamestnanec sa odhlási (koniec zmeny). */
@@ -161,9 +171,9 @@ export const qrSupabase = {
     if (error) throw error;
   },
   /** Zákazník naskenuje odznak → pochvala/dar aktuálne prihlásenému (NULL → pobočka). */
-  async badgeScan(badgeId: string, zakaznik?: string | null, suma = 0): Promise<BadgeScanVysledok> {
+  async badgeScan(badgeId: string, suma = 0): Promise<BadgeScanVysledok> {
     if (!supabase) return { prijemca: "pobocka", employee: null };
-    const { data, error } = await supabase.rpc("badge_scan", { p_badge: badgeId, p_zakaznik: zakaznik ?? null, p_suma: suma });
+    const { data, error } = await supabase.rpc("badge_scan", { p_badge: badgeId, p_suma: suma });
     if (error) throw error;
     return (data as BadgeScanVysledok) ?? { prijemca: "pobocka", employee: null };
   },
@@ -173,7 +183,7 @@ export const qrSupabase = {
   async qrSplitCreate(v: QrSplitCreateVstup): Promise<QrSplitRow | null> {
     if (!supabase) return null;
     const { data, error } = await supabase.rpc("qr_split_create", {
-      p_case: v.caseId ?? null, p_owner: v.owner ?? null, p_owner_text: v.ownerText ?? null,
+      p_case: v.caseId ?? null, p_owner_text: v.ownerText ?? null,
       p_owner_podiel: v.ownerPodiel, p_ciele: v.ciele, p_zdroj: v.zdroj ?? "osobny", p_mena: v.mena ?? "DEED",
     });
     if (error) throw error;
@@ -184,7 +194,7 @@ export const qrSupabase = {
     if (!supabase) return null;
     const { data, error } = await supabase.rpc("qr_split_pay", {
       p_slug: v.slug, p_idem: v.idem, p_suma: v.suma, p_mena: v.mena ?? "DEED", p_kanal: v.kanal ?? "deed",
-      p_odosielatel: v.odosielatel ?? null, p_odosielatel_text: v.odosielatelText ?? null,
+      p_meno_darcu: v.odosielatelText ?? null,
     });
     if (error) throw error;
     return (data as QrSplitPayVysledok) ?? null;
@@ -199,7 +209,8 @@ export const qrSupabase = {
   /** Správca QR: zoznam mojich QR + pomer + koľko organizáciám. Len podľa účtu (Zadanie 1 · Blok 1). */
   async qrSplitList(owner: string | null): Promise<QrSplitListItem[]> {
     if (!supabase || !owner) return [];
-    const { data, error } = await supabase.rpc("qr_split_list", { p_owner: owner });
+    // Zadanie 4 · 4.1: server vráti QR prihláseného účtu (owner slúži len na to, či vôbec čítať)
+    const { data, error } = await supabase.rpc("qr_split_list");
     if (error) throw error;
     return (data as QrSplitListItem[]) ?? [];
   },

@@ -1,7 +1,7 @@
 // ============================================================
 // DEED · Payment Engine — Supabase repozitár   [Fáza 2]
 // `poslat` = jediná zapisovacia cesta (RPC platba_create, idempotentná).
-// `vypis`/`zostatok` = pohľady v_vypis/v_zostatok. `batchClose` = demo trigger.
+// `vypis`/`zostatok` = pohľady v_vypis/v_zostatok. Dávku zúčtuje len cron (0054), appka nie.
 // UI volá cez hooky (data/hooks.ts) — nikdy priamo.
 // ============================================================
 import { supabase } from "@/lib/supabase";
@@ -19,8 +19,8 @@ export interface PlatbaVstup {
   mena: "DEED" | "EUR";
   kanal: "deed" | "fiat" | "sms" | "sepa";
   caseId?: string | null;          // interné ID prípadu (prispevok.id)
-  odosielatel?: string | null;     // ucet.id darcu
-  odosielatelText?: string | null; // denormalizovaný darca (demo)
+  // darca = prihlásený účet — server ho berie zo session (Zadanie 4 · 4.1), appka ho neposiela
+  odosielatelText?: string | null; // meno darcu len na zobrazenie
   prijemcaUcet?: string | null;
   prijemcaText?: string | null;
   obeRegistrovane?: boolean;
@@ -30,8 +30,7 @@ export interface PlatbaVstup {
 }
 
 export interface RecurringVstup {
-  rozsah: "request" | "segment" | "charita";  // táto žiadosť / segment / celá charita
-  darca: string;
+  rozsah: "request" | "segment" | "charita";  // táto žiadosť / segment / celá charita (darca = prihlásený, 4.1)
   suma: number;
   mena: "DEED" | "EUR" | "EURC"; // charita a Viera: krypto v EURC
   perioda: "tyzdenne" | "mesacne" | "rocne";
@@ -76,14 +75,6 @@ export interface VypisRiadok {
   cas: string;
 }
 
-export interface BatchVysledok {
-  id: string;
-  pocet: number;
-  suma_spolu: number;
-  settle_hash: string | null;
-  stav: string;
-}
-
 function idem(): string {
   try { return crypto.randomUUID(); } catch { return `idem-${Date.now()}-${Math.round(Math.random() * 1e9)}`; }
 }
@@ -98,8 +89,8 @@ export const platbySupabase = {
       p_mena: v.mena,
       p_kanal: v.kanal,
       p_case_id: v.caseId ?? null,
-      p_odosielatel: v.odosielatel ?? null,
-      p_odosielatel_text: v.odosielatelText ?? null,
+      // Zadanie 4 · 4.1: darca = prihlásený účet (server ho berie zo session), posiela sa len meno na zobrazenie
+      p_meno_darcu: v.odosielatelText ?? null,
       p_prijemca_ucet: v.prijemcaUcet ?? null,
       p_prijemca_text: v.prijemcaText ?? null,
       p_obe_registrovane: v.obeRegistrovane ?? false,
@@ -117,7 +108,7 @@ export const platbySupabase = {
   async recurringCreate(v: RecurringVstup): Promise<{ id: string; dalsia_platba: string } | null> {
     if (!supabase) return null;
     const { data, error } = await supabase.rpc("recurring_create", {
-      p_rozsah: v.rozsah, p_darca: v.darca, p_suma: v.suma, p_mena: v.mena, p_perioda: v.perioda,
+      p_rozsah: v.rozsah, p_suma: v.suma, p_mena: v.mena, p_perioda: v.perioda,
       p_case: v.caseId ?? null, p_charita: v.charitaUcet ?? null, p_segment: null,
       p_viazane: v.viazaneNaZbierku ?? v.rozsah === "request",
     });
@@ -141,13 +132,5 @@ export const platbySupabase = {
     const { data, error } = await supabase.from("v_zostatok").select("zostatok_deed").eq("ucet_id", ucetId).maybeSingle();
     if (error) throw error;
     return data ? Number(data.zostatok_deed) : 0;
-  },
-
-  /** Demo trigger: zúčtuj 24h batch teraz (cron robí to isté denne). */
-  async batchClose(): Promise<BatchVysledok | null> {
-    if (!supabase) return null;
-    const { data, error } = await supabase.rpc("platba_batch_close", {});
-    if (error) throw error;
-    return (data as BatchVysledok) ?? null;
   },
 };

@@ -94,13 +94,14 @@ Vymeniť mock repozitáre za Supabase — bez zásahu do UI.
   4. **Dochádzka** (`deed.akcia`) — `dochadzka` / TOTP (0015).
   5. **Registrované organizácie** (`deed.mojeStranky`, `deed.reg.org`) — `stranka` + `zaloz_stranku` (0035).
   6. **Moja firma — oznamy a návrhy akcií** (`deed.mojaFirma`) — vybavené oznamy firmy zamestnancovi a návrhy firemných akcií do DB (Martin 6. 10.).
-  7. **Profily podľa mena → ID a čísla** — deep linky profilov cez ID + verejné čísla U-/C- namiesto mena (Blok 1, Martin 6. 10.).
+  7. **Verejné pohľady bez security definer** — `v_vyzbierane`, `v_top_darcovia`, `prispevok_feed`, `profil_stranky_verejny` prerobiť na serverové funkcie, aby `get_advisors` = 0 (Martin 6. 10.; dovtedy vracajú len verejné stĺpce).
+  8. **Profily podľa mena → ID a čísla** — deep linky profilov cez ID + verejné čísla U-/C- namiesto mena (Blok 1, Martin 6. 10.).
 - **Hotovo, keď:** appka beží na reálnych dátach prihláseného používateľa, mock už len ako fallback pre vývoj.
 
 ### Fáza 5 — Produkčná pripravenosť
 Z appky spraviť nasaditeľný produkt.
 
-- [x] **Auth (email/heslo):** reálny Supabase Auth ako identitná vrstva. Migrácia `0012` (`ucet.auth_id` → `auth.users`). `lib/auth.ts` (signUp/signIn/signOut/**resolveSession** reconciliation/**subscribeAuth**). AuthPage robí reálny signUp/signInWithPassword (busy/chyba). Onboarding je **auth-first** (OsobaFlow/CharitaFlow preskočia telefón-OTP+PIN, vytvoria `auth_id`-naviazaný `ucet`; pasívny tiež dostane reálny ucet). App **auth-boot gate** (splash → resolveSession → app / resume onboarding / login; stale session sa čistí). Logout = `supabase.auth.signOut()`+`clearSession`. Demo/hosť zachované. Živo overené (signup→ucet link→lookup OK). **⚠ Vyžaduje dashboard krok: Authentication → Email → vypnúť „Confirm email" pre dev** (inak signup nevráti session). *Pozn.: upgrade-overlay `start="aktivny"` ostáva zatiaľ legacy telefón tok — follow-up.*
+- [x] **Auth (email/heslo):** reálny Supabase Auth ako identitná vrstva. Migrácia `0012` (`ucet.auth_id` → `auth.users`). `lib/auth.ts` (signUp/signIn/signOut/**resolveSession** reconciliation/**subscribeAuth**). AuthPage robí reálny signUp/signInWithPassword (busy/chyba). Onboarding je **auth-first** (OsobaFlow/CharitaFlow preskočia telefón-OTP+PIN, vytvoria `auth_id`-naviazaný `ucet`; pasívny tiež dostane reálny ucet). App **auth-boot gate** (splash → resolveSession → app / resume onboarding / login; stale session sa čistí). Logout = `supabase.auth.signOut()`+`clearSession`. Demo/hosť zachované. Živo overené (signup→ucet link→lookup OK). **⚠ Vyžaduje dashboard krok: Authentication → Email → vypnúť „Confirm email" pre dev** (inak signup nevráti session). *Pozn.: starý telefón tok bez prihlásenia (RegKit, `ucet_s_telefonom`) zrušený 6. 10. 2026 (0060) — registrácia je len auth-first.*
 - **RLS & bezpečnosť (ĎALŠIE KOLO):** nahradiť 25× `test_all_access (using true)` owner-only politikami: `ucet` `using (auth_id = auth.uid())`, child tabuľky cez `ucet_id in (select id from ucet where auth_id = auth.uid())`, obsah (prispevok/udalost/adresar_charita…) public SELECT. Po RLS znova zapnúť „Confirm email" a presunúť tvorbu `ucet` server-side. Audit `get_advisors` (dnes hlási očakávaných 25 warnings).
 - [x] **Kvalita — tooling:** ESLint 10 (flat config) + Prettier + `tsc --noEmit`
   a lint v CI (`.github/workflows/ci.yml`, `npm run verify`). Odstránený mŕtvy kód
@@ -110,7 +111,7 @@ Z appky spraviť nasaditeľný produkt.
   v CI aj cez `npm run verify`.
 - **Kvalita — unit testy:** Vitest + React Testing Library. Zatiaľ neexistujú;
   zvyšok sa overuje manuálne (`.claude/skills/verify/SKILL.md`).
-- **Lint backlog (199 warningov, 0 errorov — stav 6. 10. 2026):** 83× `@typescript-eslint/no-explicit-any`
+- **Lint backlog (193 warningov, 0 errorov — stav 6. 10. 2026):** 77× `@typescript-eslint/no-explicit-any`
   (hranice k Supabase/3rd-party, vyrieši sa so sprísnením `noImplicitAny` vo Fáze 5), 0× `no-unused-vars`
   a ~116× React-Compiler pravidlá z `eslint-plugin-react-hooks` v7
   (`refs`, `set-state-in-effect`, `purity`, `static-components`) — samostatný krok s vizuálnym QA. Dnes `warn`;

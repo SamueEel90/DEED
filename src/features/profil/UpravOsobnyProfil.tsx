@@ -1,13 +1,14 @@
 // KARTA 18 · bod 3 — Upraviť profil (osoba) + Ochrana osoby.
 // Poradie: Fotky · Meno (zamknuté) · Ako sa ukážeš pri dare · Miesto, kde sa zdržiavam · O mne · Súkromie · [Uložiť].
 // Uložiť je zašednuté, kým nie je zmena alebo chýba ulica či mesto.
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { usePouzivatel } from "@/lib/pouzivatel";
 import { nacitajPredvolbu, ulozPredvolbu, type VerziaIdentity } from "@/lib/darcovia";
 import { nacitajOsobny, ulozOsobny, type OsobnyProfil } from "@/lib/osobnyProfil";
 import { klucEntity, useFotkyEntity } from "@/lib/fotoentity";
 import { FotoProfiluObsah } from "@/components/fotoprofilu";
 import { toast } from "@/components/toast";
+import { nacitajVRebricku, nastavVRebricku } from "@/lib/db";
 import { Harok } from "@/features/zbierka/Zdielat";
 import { useT } from "@/i18n";
 import "@/styles/platba.css";
@@ -40,8 +41,16 @@ export function UpravOsobnyProfil({ onClose }: { onClose: () => void }) {
       verzia: (p.verzia === 5 ? 1 : p.verzia) as VerziaIdentity };
   });
   const [e, setE] = useState<Stav>(povodny);
+  // 0061: súhlas byť v rebríčkoch žije na serveri (predvolene vypnutý)
+  const [rebricekPovodny, setRebricekPovodny] = useState(false);
+  const [rebricek, setRebricek] = useState(false);
+  useEffect(() => {
+    let zive = true;
+    void nacitajVRebricku(ja.ucetId || "").then((v) => { if (zive) { setRebricekPovodny(v); setRebricek(v); } });
+    return () => { zive = false; };
+  }, [ja.ucetId]);
   const set = <K extends keyof Stav>(k: K, v: Stav[K]) => setE((x) => ({ ...x, [k]: v }));
-  const zmena = JSON.stringify(e) !== JSON.stringify(povodny);
+  const zmena = JSON.stringify(e) !== JSON.stringify(povodny) || rebricek !== rebricekPovodny;
   const moze = zmena && e.ulica.trim().length > 0 && e.mesto.trim().length > 0;
 
   const meno = ja.meno || tr("upravit.clen"), priezv = ja.priezvisko || "";
@@ -56,6 +65,7 @@ export function UpravOsobnyProfil({ onClose }: { onClose: () => void }) {
     const { verzia, ...osobny } = e;
     ulozOsobny(osobny);
     ulozPredvolbu({ ...nacitajPredvolbu(), verzia });
+    if (rebricek !== rebricekPovodny) void nastavVRebricku(rebricek).catch(() => toast(tr("upravit.vRebricku.chyba")));
     toast(tr("upravit.ulozeny"));
     onClose();
   };
@@ -129,6 +139,7 @@ export function UpravOsobnyProfil({ onClose }: { onClose: () => void }) {
             {nadpis(tr("upravit.sukromie"))}
             <Riadok t={tr("upravit.verejny")} s={e.verejny ? tr("upravit.verejny.on") : tr("upravit.verejny.off")} on={e.verejny} onClick={() => set("verejny", !e.verejny)} />
             <Riadok hore t={tr("upravit.ukazStit")} s={tr("upravit.ukazStit.s")} on={e.ukazStit} onClick={() => set("ukazStit", !e.ukazStit)} />
+            <Riadok hore t={tr("upravit.vRebricku")} s={rebricek ? tr("upravit.vRebricku.on") : tr("upravit.vRebricku.off")} on={rebricek} onClick={() => setRebricek(!rebricek)} />
             <div onClick={() => setOchrana(true)} role="button" style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 56, cursor: "pointer", borderTop: "1px solid var(--cardBd)" }}>
               <span style={{ width: 34, height: 34, borderRadius: 10, background: "var(--gSoft)", color: "var(--green)", display: "flex", alignItems: "center", justifyContent: "center", flex: "none" }}><Stit /></span>
               <span style={{ flex: 1, minWidth: 0 }}><span style={{ display: "block", fontSize: 15, fontWeight: 700 }}>{tr("upravit.ochrana")}</span><span style={{ display: "block", fontSize: 12.5, color: "var(--ink3)" }}>{tr("upravit.ochrana.s")}</span></span>

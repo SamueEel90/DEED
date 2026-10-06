@@ -30,6 +30,6 @@ done
 for t in $(ls supabase/tests/*.sql 2>/dev/null | sort); do
   echo "→ test $(basename "$t")"
   out=$(psql -v ON_ERROR_STOP=1 -q -A -d "$DB" -f "$t")
-  if echo "$out" | grep -Eq '^f\|'; then echo "$out" | grep -E '^f\|'; echo "Test zlyhal: $t"; exit 1; fi
+  if echo "$out" | grep -Eq '^(f|)\|'; then echo "$out" | grep -E '^(f|)\|'; echo "Test zlyhal (f alebo prázdny výsledok): $t"; exit 1; fi
 done
 echo "Čistá DB zo všetkých migrácií: OK"

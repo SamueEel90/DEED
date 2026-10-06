@@ -32,7 +32,7 @@ import { PREVODY, MOJE_SKUTKY, KARMA, STATISTIKY, type StatistikyData } from "@/
 import { REBRICKY_MOCK, topPrispevky, type RebricekKluc } from "@/features/top/mock";
 import { MAPA_UDALOSTI } from "@/features/mapa/mock";
 import { qrUrl, type QrCiel, type QrStatic, type QrResolved } from "@/lib/qr";
-import type { PlatbaVstup, PlatbaRiadok, VypisRiadok, BatchVysledok, RecurringVstup } from "./platby.supabase";
+import type { PlatbaVstup, PlatbaRiadok, VypisRiadok, RecurringVstup } from "./platby.supabase";
 import type { ScanVstup, ScanVysledok, ChainVstup, ChainVysledok, BadgeScanVysledok, QrSplitCreateVstup, QrSplitPayVstup, QrSplitPayVysledok } from "./qr.supabase";
 import type { QrSplitRow, QrSplitDetail, QrSplitListItem } from "@/types";
 
@@ -88,14 +88,18 @@ export interface Repo {
     eventToken(eventId: string, step?: number, mod?: string, nazov?: string): Promise<string | null>;
     /** Validuj sken rotujúceho QR + zapíš dochádzku. */
     scan(v: ScanVstup): Promise<ScanVysledok>;
+    /** Organizátor: poloha akcie pri štarte. */
+    eventPoloha(eventId: string, lat: number, lng: number): Promise<void>;
+    /** Organizátor: koniec akcie pre všetkých (splnenie počíta server). */
+    eventUkonci(eventId: string): Promise<void>;
     /** Reťaz dobra: vytvor reťaz (% zafixované) → { chain_id, slug }. */
     chainCreate(v: ChainVstup): Promise<ChainVysledok | null>;
     /** Odznak: zamestnanec sa prihlási na zmenu. */
-    badgeBind(badgeId: string, employeeId: string, hodiny?: number): Promise<void>;
+    badgeBind(badgeId: string, hodiny?: number): Promise<void>;
     /** Odznak: zamestnanec sa odhlási. */
     badgeUnbind(badgeId: string): Promise<void>;
     /** Odznak: zákazník naskenuje → pochvala/dar (NULL → pobočka). */
-    badgeScan(badgeId: string, zakaznik?: string | null, suma?: number): Promise<BadgeScanVysledok>;
+    badgeScan(badgeId: string, suma?: number): Promise<BadgeScanVysledok>;
     /** QR Split: vytvor QR (vlastník + N organizácií, % zafixované). */
     qrSplitCreate(v: QrSplitCreateVstup): Promise<QrSplitRow | null>;
     /** QR Split: platba cez QR → rozdelí podľa pomeru. */
@@ -114,8 +118,6 @@ export interface Repo {
     vypis(filter: { ucetId: string; smer?: "dal" | "dostal" }): Promise<VypisRiadok[]>;
     /** Reálny DEED zostatok peňaženky. */
     zostatok(ucetId: string): Promise<number>;
-    /** Demo trigger: zúčtuj 24h batch teraz. */
-    batchClose(): Promise<BatchVysledok | null>;
   };
 }
 
@@ -176,6 +178,8 @@ export const mockRepo: Repo = {
     resolve: () => Promise.resolve(null),
     eventToken: () => Promise.resolve(null),          // offline → vizuálny reseed fallback (QrModal)
     scan: () => Promise.resolve({ vysledok: "ok" as const }),
+    eventPoloha: () => Promise.resolve(),
+    eventUkonci: () => Promise.resolve(),
     chainCreate: () => Promise.resolve(null),
     badgeBind: () => Promise.resolve(),
     badgeUnbind: () => Promise.resolve(),
@@ -191,7 +195,6 @@ export const mockRepo: Repo = {
     recurringCreate: () => Promise.resolve(null),
     vypis: () => Promise.resolve([]),
     zostatok: () => Promise.resolve(0),
-    batchClose: () => Promise.resolve(null),
   },
 };
 

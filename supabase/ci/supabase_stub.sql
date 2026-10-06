@@ -22,10 +22,12 @@ create table storage.objects (id uuid primary key default gen_random_uuid(), buc
 alter table storage.objects enable row level security;
 create or replace function storage.foldername(name text) returns text[] language sql as $$ select string_to_array(name, '/') $$;
 create publication supabase_realtime;
-create extension if not exists pgcrypto;
+create extension if not exists pgcrypto with schema extensions;   -- ako v Supabase (extensions.hmac, crypt…)
 -- Supabase dáva rolám API prístup ku všetkému v public (obmedzuje sa cez RLS a revoke v migráciách)
 grant usage on schema public, auth, storage to anon, authenticated, service_role;
 alter default privileges in schema public grant all on tables to anon, authenticated, service_role;
 alter default privileges in schema public grant all on sequences to anon, authenticated, service_role;
 alter default privileges in schema public grant all on functions to anon, authenticated, service_role;
 grant select on auth.users to service_role;
+-- search_path ako v Supabase (rozšírenia v schéme extensions sú viditeľné bez prefixu); platí pre ďalšie spojenia
+do $$ begin execute format('alter database %I set search_path = "$user", public, extensions', current_database()); end $$;

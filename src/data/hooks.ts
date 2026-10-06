@@ -128,11 +128,11 @@ export const useScan = () => useMutation({ mutationFn: (v: ScanVstup) => repo.qr
 /** Vytvor reťaz dobra (% zafixované) → { chain_id, slug }. */
 export const useChainCreate = () => useMutation({ mutationFn: (v: ChainVstup) => repo.qr.chainCreate(v) });
 /** Odznak: prihlásenie zamestnanca na zmenu. */
-export const useBadgeBind = () => useMutation({ mutationFn: (v: { badgeId: string; employeeId: string; hodiny?: number }) => repo.qr.badgeBind(v.badgeId, v.employeeId, v.hodiny) });
+export const useBadgeBind = () => useMutation({ mutationFn: (v: { badgeId: string; hodiny?: number }) => repo.qr.badgeBind(v.badgeId, v.hodiny) });
 /** Odznak: odhlásenie zo zmeny. */
 export const useBadgeUnbind = () => useMutation({ mutationFn: (badgeId: string) => repo.qr.badgeUnbind(badgeId) });
 /** Odznak: zákaznícky sken → pochvala/dar (NULL → pobočka). */
-export const useBadgeScan = () => useMutation({ mutationFn: (v: { badgeId: string; zakaznik?: string | null; suma?: number }) => repo.qr.badgeScan(v.badgeId, v.zakaznik, v.suma) });
+export const useBadgeScan = () => useMutation({ mutationFn: (v: { badgeId: string; suma?: number }) => repo.qr.badgeScan(v.badgeId, v.suma) });
 
 // ---- QR Split (Fáza 6) — produkčný QR systém ----
 /** Zoznam mojich QR (správca QR). Reálny účet → ucetId; demo → meno. */
@@ -169,11 +169,9 @@ export function usePoslatPlatbu() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (v: PlatbaVstup) => repo.platby.poslat(v),
-    onSuccess: (_r, v) => {
-      if (v.odosielatel) {
-        qc.invalidateQueries({ queryKey: qk.platby.vypis(v.odosielatel) });
-        qc.invalidateQueries({ queryKey: qk.platby.zostatok(v.odosielatel) });
-      }
+    onSuccess: () => {
+      // darca = prihlásený účet (4.1) → obnov výpis a zostatok
+      qc.invalidateQueries({ queryKey: ["platby"] });
       qc.invalidateQueries({ queryKey: qk.charita.feed });
     },
   });
@@ -197,6 +195,6 @@ export function useRecurringCreate() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (v: RecurringVstup) => repo.platby.recurringCreate(v),
-    onSuccess: (_r, v) => { qc.invalidateQueries({ queryKey: qk.platby.vypis(v.darca) }); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["platby", "vypis"] }); },
   });
 }

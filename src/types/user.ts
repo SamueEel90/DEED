@@ -36,7 +36,6 @@ export interface Ucet {
   email?: string | null;
   email_overeny?: boolean;
   poradove_cislo?: number | null;
-  pin_hash?: string | null;
   biometria?: boolean;
   stav_registracie?: StavRegistracie;
   aktualizovane?: IsoDateTime;
@@ -183,6 +182,8 @@ export interface Podpora {
   vyzbierane?: number;
   ciel?: number;
   cas?: IsoDateTime;
+  /** voľba zobrazenia pri tomto dare (1–5, 4 = anonym); bez nej platí predvoľba darcu */
+  zobrazenie?: 1 | 2 | 3 | 4 | 5;
 }
 
 /** Obľúbený príspevok (bookmark). Uložený lokálne (deed.me.oblubene) —

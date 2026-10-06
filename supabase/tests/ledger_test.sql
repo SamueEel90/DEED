@@ -18,10 +18,11 @@ insert into public.prispevok (id, modul, typ, titul, autor_ucet_id, ciel) values
  ('20000000-0000-0000-0000-000000000001','charity','charita','Test zbierka','7e570000-0000-0000-0000-00000000000b', 1000),
  ('20000000-0000-0000-0000-000000000002','charity','charita','Druhá zbierka','7e570000-0000-0000-0000-00000000000c', 1000),
  ('20000000-0000-0000-0000-000000000003','charity','charita','Zbierka A','7e570000-0000-0000-0000-00000000000a', 1000);
+update public.ucet set v_rebricku = true where id = '7e570000-0000-0000-0000-00000000000a';   -- A súhlasí s rebríčkom (0061)
 set role authenticated;
 select set_config('request.jwt.claim.sub','7e57a000-0000-0000-0000-00000000000a', false);
 -- 3 · split 100 € kartou: 50 % autor (vlastník, nepočíta sa) + 50 % zbierka 2
-select (public.platba_create('s1', 100, 'EUR', 'fiat', '20000000-0000-0000-0000-000000000001', '7e570000-0000-0000-0000-00000000000a', 'Jozef A', null, null, false, 0, '{}',
+select (public.platba_create('s1', 100, 'EUR', 'fiat', '20000000-0000-0000-0000-000000000001', 'Jozef A', null, null, false, 0, '{"zobrazenie":1}',
   '[{"prijemca_ucet":"7e570000-0000-0000-0000-00000000000b","podiel":0.5,"fixny":false},{"case_id":"20000000-0000-0000-0000-000000000002","podiel":0.5,"fixny":true}]')).id is not null;
 reset role;
 insert into t select 'split: podiely = cista suma',
@@ -37,40 +38,40 @@ insert into t select 'split: zbierka 2 = polovica cistej (orezane na cent)', (se
 set role authenticated;
 select set_config('request.jwt.claim.sub','7e57a000-0000-0000-0000-00000000000a', false);
 -- podiel bez príjemcu
-do $$ begin perform public.platba_create('s2', 100, 'EUR', 'fiat', null, null, null, null, null, false, 0, '{}', '[{"prijemca_text":"Niekto","podiel":1}]');
+do $$ begin perform public.platba_create('s2', 100, 'EUR', 'fiat', null, null, null, null, false, 0, '{}', '[{"prijemca_text":"Niekto","podiel":1}]');
   insert into t values ('split bez prijemcu odmietnuty', false);
 exception when others then insert into t values ('split bez prijemcu odmietnuty: '||sqlerrm, true); end $$;
 -- 4 · 0,10 € kartou
-do $$ begin perform public.platba_create('m1', 0.10, 'EUR', 'fiat', '20000000-0000-0000-0000-000000000002', null, null);
+do $$ begin perform public.platba_create('m1', 0.10, 'EUR', 'fiat', '20000000-0000-0000-0000-000000000002', null);
   insert into t values ('0,10 kartou odmietnute', false);
 exception when others then insert into t values ('0,10 kartou odmietnute: '||sqlerrm, true); end $$;
 -- DEED do mínusu
-do $$ begin perform public.platba_create('d1', 999999, 'DEED', 'deed', '20000000-0000-0000-0000-000000000002', '7e570000-0000-0000-0000-00000000000a', null);
+do $$ begin perform public.platba_create('d1', 999999, 'DEED', 'deed', '20000000-0000-0000-0000-000000000002', null);
   insert into t values ('DEED do minusu odmietnute', false);
 exception when others then insert into t values ('DEED do minusu odmietnute: '||sqlerrm, true); end $$;
 -- mena vs kanál
-do $$ begin perform public.platba_create('k1', 5, 'DEED', 'fiat', '20000000-0000-0000-0000-000000000002', null, null);
+do $$ begin perform public.platba_create('k1', 5, 'DEED', 'fiat', '20000000-0000-0000-0000-000000000002', null);
   insert into t values ('mena-kanal odmietnute', false);
 exception when others then insert into t values ('mena-kanal odmietnute: '||sqlerrm, true); end $$;
 -- 5 · dvojitý tap
-select (public.platba_create('tap', 10, 'DEED', 'deed', '20000000-0000-0000-0000-000000000001', '7e570000-0000-0000-0000-00000000000a', null)).id is not null;
-select (public.platba_create('tap', 10, 'DEED', 'deed', '20000000-0000-0000-0000-000000000001', '7e570000-0000-0000-0000-00000000000a', null)).id is not null;
+select (public.platba_create('tap', 10, 'DEED', 'deed', '20000000-0000-0000-0000-000000000001', null)).id is not null;
+select (public.platba_create('tap', 10, 'DEED', 'deed', '20000000-0000-0000-0000-000000000001', null)).id is not null;
 reset role;
 insert into t select 'dvojity tap = 1 platba', (select count(*) from platba where idem_kluc='tap') = 1 and (select count(*) from pohyb p join platba pl on pl.id=p.platba_id where pl.idem_kluc='tap' and p.typ='dar') = 1;
 set role authenticated;
 select set_config('request.jwt.claim.sub','7e57a000-0000-0000-0000-00000000000a', false);
-do $$ begin perform public.platba_create('tap', 11, 'DEED', 'deed', '20000000-0000-0000-0000-000000000001', '7e570000-0000-0000-0000-00000000000a', null);
+do $$ begin perform public.platba_create('tap', 11, 'DEED', 'deed', '20000000-0000-0000-0000-000000000001', null);
   insert into t values ('rovnaky kluc ina suma = chyba', false);
 exception when others then insert into t values ('rovnaky kluc ina suma = chyba: '||sqlerrm, true); end $$;
 -- iný darca, ten istý kľúč = iná platba
 select set_config('request.jwt.claim.sub','7e57a000-0000-0000-0000-00000000000b', false);
-select (public.platba_create('tap', 10, 'DEED', 'deed', '20000000-0000-0000-0000-000000000002', '7e570000-0000-0000-0000-00000000000b', null)).id is not null;
+select (public.platba_create('tap', 10, 'DEED', 'deed', '20000000-0000-0000-0000-000000000002', null)).id is not null;
 reset role;
 insert into t select 'kluc per odosielatel', (select count(*) from platba where idem_kluc='tap') = 2;
 -- 6 · escrow: firma = Jozef A (DEED), vklad 100, uvoľní 30, vráti zvyšok
 set role authenticated;
 select set_config('request.jwt.claim.sub','7e57a000-0000-0000-0000-00000000000a', false);
-create temp table es as select (public.escrow_create('20000000-0000-0000-0000-000000000002', 'matching', 100, 'DEED', '7e570000-0000-0000-0000-00000000000a')).id;
+create temp table es as select (public.escrow_create('20000000-0000-0000-0000-000000000002', 'matching', 100, 'DEED')).id;
 reset role;
 insert into t select 'escrow vytvor: zbierka este nic', coalesce((select vyzbierane_deed from v_vyzbierane where case_id='20000000-0000-0000-0000-000000000002'),0) = 10;
 -- (10 = dar B cez „tap"; poplatok DEED 0, platí ho darca navrch)
@@ -104,9 +105,29 @@ exception when others then insert into t values ('pohyb nemenny: '||sqlerrm, tru
 -- vlastný účet → vlastná zbierka
 set role authenticated;
 select set_config('request.jwt.claim.sub','7e57a000-0000-0000-0000-00000000000a', false);
-do $$ begin perform public.platba_create('self', 5, 'DEED', 'deed', '20000000-0000-0000-0000-000000000003', '7e570000-0000-0000-0000-00000000000a', null);
+do $$ begin perform public.platba_create('self', 5, 'DEED', 'deed', '20000000-0000-0000-0000-000000000003', null);
   insert into t values ('dar sam sebe odmietnuty', false);
 exception when others then insert into t values ('dar sam sebe odmietnuty: '||sqlerrm, true); end $$;
+-- Zadanie 4 · 4.1: identita LEN zo session
+reset role;
+set role anon;
+select set_config('request.jwt.claim.sub','', false);
+do $$ begin perform public.platba_create('anon1', 5, 'EUR', 'fiat', '20000000-0000-0000-0000-000000000002', null);
+  insert into t values ('4.1 neprihlaseny neposle platbu', false);
+exception when insufficient_privilege or sqlstate '28000' then insert into t values ('4.1 neprihlaseny neposle platbu', true); end $$;
+reset role;
+set role authenticated;
+select set_config('request.jwt.claim.sub','7e57a000-0000-0000-0000-00000000000b', false);
+do $$ begin perform public.escrow_uvolni((select id from es), 1);
+  insert into t values ('4.1 B neuvolni escrow A', false);
+exception when sqlstate '42501' then insert into t values ('4.1 B neuvolni escrow A', true); end $$;
+do $$ begin perform public.platba_zapis('zap1', 5, 'DEED', 'deed', '20000000-0000-0000-0000-000000000002', '7e570000-0000-0000-0000-00000000000a', null);
+  insert into t values ('4.1 platba_zapis z klienta zakazana', false);
+exception when insufficient_privilege then insert into t values ('4.1 platba_zapis z klienta zakazana', true); end $$;
+select (public.platba_create('b-ja', 1, 'DEED', 'deed', '20000000-0000-0000-0000-000000000002', null)).id is not null;
+reset role;
+insert into t select '4.1 odosielatel = prihlaseny', odosielatel = '7e570000-0000-0000-0000-00000000000b' from platba where idem_kluc = 'b-ja';
+set role authenticated;
 -- dobitie z testovacej pokladne
 select set_config('request.jwt.claim.sub','7e57a000-0000-0000-0000-00000000000a', false);
 select public.testovacie_dobitie(50) > 0;
@@ -125,6 +146,12 @@ insert into t select 'ziadne sirotske riadky podpory (suma bez platby)', not exi
 insert into t select 'rebricek z ledgera: EUR dar darcu A', (select eur from v_top_darcovia where ucet_id = '7e570000-0000-0000-0000-00000000000a') = (select cista_suma from platba where idem_kluc = 's1');
 insert into t select 'ziadny ne-systemovy ucet v minuse', not exists (select 1 from ucet u where typ <> 'system' and (public.zostatok(u.id,'DEED') < 0 or public.zostatok(u.id,'EUR') < 0));
 \pset tuples_only off
+-- 0061 · rebríček: len so súhlasom a len dary s menom; anonymný dar bez mena
+insert into t select 'rebricek: anonymny dar nema meno', not exists (select 1 from platba where zobrazenie = 4 and odosielatel_text is not null);
+insert into t select 'rebricek: B bez suhlasu nie je v Top', not exists (select 1 from v_top_darcovia where ucet_id = '7e570000-0000-0000-0000-00000000000b');
+insert into t select 'rebricek: anonymne dary A sa nepocitaju', (select deed from v_top_darcovia where ucet_id = '7e570000-0000-0000-0000-00000000000a') = 0;
+insert into t select 'rebricek: meno = zvolene pri dare', (select meno from v_top_darcovia where ucet_id = '7e570000-0000-0000-0000-00000000000a') = 'Jozef A';
+
 select ok, c from t order by ok, c;
 
 rollback;

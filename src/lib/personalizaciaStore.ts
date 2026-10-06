@@ -163,7 +163,8 @@ export async function nacitajPodporyDB(filter: { ucetId?: string | null }): Prom
  *  system-of-record; AFTER INSERT trigger zrkadlí riadok do `podpora`, takže
  *  `nacitajPodporyDB`/charita mappery čítajú ďalej bez zmeny. (Fáza 2.) */
 export async function pridajPodporuDB(p: {
-  darca: string; ucetId?: string | null; refId: number | string;
+  /** meno na zobrazenie podľa voľby darcu; null = anonymný dar (0061: meno sa nezapíše nikam) */
+  darca: string | null; zobrazenie: number; ucetId?: string | null; refId: number | string;
   prijemca?: string; suma?: number; kanal?: string; vyzbierane?: number; ciel?: number;
 }): Promise<void> {
   if (!supabase) return;
@@ -180,10 +181,9 @@ export async function pridajPodporuDB(p: {
     p_mena: mena,
     p_kanal: kanal,
     p_case_id: p.refId,                                            // uuid prípadu → príjemca = jeho autor
-    p_odosielatel: p.ucetId ?? null,
-    p_odosielatel_text: p.darca,
+    p_meno_darcu: p.darca,                                         // darca = prihlásený účet (4.1); meno len podľa voľby
     p_prijemca_text: p.prijemca ?? null,
-    p_meta: { vyzbierane: p.vyzbierane ?? null, ciel: p.ciel ?? null },
+    p_meta: { vyzbierane: p.vyzbierane ?? null, ciel: p.ciel ?? null, zobrazenie: p.zobrazenie },
   });
   if (error) throw error;
 }

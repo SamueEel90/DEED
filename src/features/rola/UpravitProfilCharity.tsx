@@ -212,6 +212,7 @@ export function UpravitProfilCharity({ strankaId, pozicia, tier, nazov, inicialy
   const kartaKontakt = (
     <section style={karta} aria-label="Kontakt">
       {nadpis("Kontakt")}
+      <span style={{ ...poznamka, marginTop: -4 }}>Všetko v tejto časti je verejné. Uvidí to každý návštevník vášho profilu.</span>
       {nadpis("Sídlo", "z registrácie, overené cez IČO", 14)}
       <div style={zamknute}><Zamok />{k.sidlo}</div>
       {nadpis("Adresa pre verejnosť", "ak sa líši od sídla (výdajňa, kancelária)", 14)}
@@ -226,7 +227,7 @@ export function UpravitProfilCharity({ strankaId, pozicia, tier, nazov, inicialy
         <Chyba t={chybaTel(t.cislo)} />
       </div>))}
       {k.telefony.length < MAX_TEL && <Pridat onClick={() => zmenK({ telefony: [...k.telefony, { cislo: "", popis: "" }] })}>+ Pridať telefón</Pridat>}
-      {nadpis("E-mail", "hlavný, ďalšie s popisom", 14)}
+      {nadpis("E-mail", "adresu uvidí každý návštevník", 14)}
       {k.emaily.map((m, i) => (<div key={`e${i}`} style={{ display: "contents" }}>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
           {i === 0 && <span style={{ width: 70, flex: "none", fontSize: 13.5, fontWeight: 700, color: "var(--ink2)" }}>Hlavný</span>}
