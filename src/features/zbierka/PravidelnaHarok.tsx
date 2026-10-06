@@ -12,7 +12,8 @@ import { KARTA_OD_EUR } from "./nastavenie";
 import { Harok } from "./Zdielat";
 import PodrzTlacidlo from "./PodrzTlacidlo";
 import { Svetlusik } from "./Svetlusik";
-import { Identita, potvrditTuknutim, poplatokKarty } from "./Platba";
+import { Identita, potvrditTuknutim } from "./Platba";
+import { usePoplatok, usePopisSadzby } from "@/lib/poplatky";
 
 type Krok = "nastavenie" | "sposob" | "zhrnutie" | "spracovanie" | "hotovo";
 type Perioda = "tyzdenne" | "mesacne" | "rocne";
@@ -68,7 +69,9 @@ export function PravidelnaHarok({ refId, nazov, registrovany, onClose, zbierka =
   const host = !registrovany;
   const nadLimit = host && eur > HOST_MAX_EUR;
   const sp: Sposob | "eurc" = eurc ? "eurc" : mala || host ? "sepa" : sposob;
-  const poplatok = sp === "karta" ? poplatokKarty(eur) : 0;
+  // Zadanie 3 · 3.4: poplatok zo servera (rovnaký výpočet ako pri platbe)
+  const poplatok = usePoplatok(sp === "karta" ? "fiat" : null, eur).poplatok;
+  const popisKarty = usePopisSadzby("fiat");
   const zle = {
     karta: sp === "karta" && karta.replace(/\D/g, "").length < 15,
     exp: sp === "karta" && !(/^(0[1-9]|1[0-2]) \/ \d{2}$/.test(exp)),
@@ -160,7 +163,7 @@ export function PravidelnaHarok({ refId, nazov, registrovany, onClose, zbierka =
     obsah = (
       <>
         <div style={{ fontSize: 14, color: "var(--ink2)" }}>Ako sa bude platiť <b style={{ color: "var(--ink)", fontVariantNumeric: "tabular-nums" }}>{f(eur)} {SLOVO[perioda]}</b></div>
-        {([["karta", registrovany ? "Karta Visa •••• 4242" : "Platobná karta", "poplatok 1,4 % + 0,15 € pri každej platbe"],
+        {([["karta", registrovany ? "Karta Visa •••• 4242" : "Platobná karta", `poplatok ${popisKarty} pri každej platbe`],
            ["sepa", registrovany ? "SEPA inkaso · SK31 •••• 4421" : "SEPA inkaso z tvojho účtu", "bez poplatku · pripísanie do 1 prac. dňa"]] as const).map(([k, t, d]) => {
           const zak = k === "karta" && (mala || host), on = sp === k;
           return (

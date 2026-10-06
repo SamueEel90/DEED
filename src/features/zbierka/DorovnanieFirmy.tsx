@@ -6,7 +6,8 @@ import { pripniVyclenene } from "@/lib/podpory";
 import { Harok } from "./Zdielat";
 import PodrzTlacidlo from "./PodrzTlacidlo";
 import { Svetlusik } from "./Svetlusik";
-import { potvrditTuknutim, poplatokKarty } from "./Platba";
+import { potvrditTuknutim } from "./Platba";
+import { usePoplatok } from "@/lib/poplatky";
 
 const STROP_MAX = 300, STROP_MIN = 50, DEN = 86400000;
 const eS = (n: number) => `${n.toLocaleString("sk-SK", { maximumFractionDigits: 2 })} €`;
@@ -66,7 +67,8 @@ export function DorovnanieFirmyHarok({ zbierkaId, zbierkaNazov, firmaUcet, firma
   const neskor = (f: () => void, ms: number) => { casy.current.push(window.setTimeout(f, ms)); };
 
   const rozpocet = Math.max(0, parseInt(rozpocetIn.replace(/\s/g, ""), 10) || 0);
-  const poplatok = kanal === "karta" ? poplatokKarty(rozpocet) : 0;
+  // Zadanie 3 · 3.4: poplatok zo servera (rovnaký výpočet ako pri platbe)
+  const poplatok = usePoplatok(kanal === "karta" ? "fiat" : null, rozpocet).poplatok;
   const stropNad = (parseInt(stropIn, 10) || 0) > STROP_MAX;
   const pokryje = rozpocet > 0 ? `pokryje približne ${Math.floor(rozpocet / Math.min(20 * pomer, stropDaru)).toLocaleString("sk-SK")} darov po 20 €` : "zadajte sumu";
   const sepa = kanal === "sepa";
@@ -193,7 +195,7 @@ export function DorovnanieFirmyHarok({ zbierkaId, zbierkaNazov, firmaUcet, firma
             {(rozpocet >= 1000 ? (["sepa", "karta"] as const) : (["karta", "sepa"] as const)).map((k) => {
               const on = kanal === k;
               const [t, d] = k === "karta"
-                ? ["Karta", `dorovnanie beží hneď po zapečatení · poplatok ${e2(poplatokKarty(rozpocet))}`]
+                ? ["Karta", `dorovnanie beží hneď po zapečatení · poplatok ${e2(poplatok)}`]
                 : ["SEPA prevod", "bez poplatku · beží, keď charita potvrdí príjem (najneskôr do 48 h)"];
               return (
                 <button key={k} type="button" onClick={() => setKanal(k)} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 16, background: on ? "var(--goldBg)" : "var(--card)", border: `1.5px solid ${on ? "var(--goldBd)" : "var(--cardBd)"}`, textAlign: "left", cursor: "pointer", color: "var(--ink)", fontFamily: "inherit" }}>

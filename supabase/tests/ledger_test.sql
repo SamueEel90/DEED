@@ -27,8 +27,11 @@ reset role;
 insert into t select 'split: podiely = cista suma',
   (select sum(suma) from pohyb where platba_id = pl.id and typ='dar') = pl.cista_suma
   and (select sum(suma) from platba_split where platba_id = pl.id) = pl.cista_suma
-  and pl.cista_suma + (select coalesce(sum(suma),0) from pohyb where platba_id=pl.id and typ='poplatok') + round(pl.suma*0.014+0.15,2) = pl.suma
+  and pl.cista_suma = pl.suma                                   -- 0043: darca platí poplatok navrch
   from platba pl where idem_kluc='s1';
+-- 0043 · akceptácia 3.4: poplatok zobrazený pred platbou = poplatok strhnutý
+insert into t select 'poplatok nahlad = strhnuty (karta, split)',
+  (public.poplatok_nahlad('fiat', 100, true)->>'poplatok')::numeric = pl.poplatok from platba pl where idem_kluc='s1';
 insert into t select 'split: zbierka 1 nedostala podiel vlastnika', not exists (select 1 from v_vyzbierane where case_id='20000000-0000-0000-0000-000000000001');
 insert into t select 'split: zbierka 2 = polovica cistej (orezane na cent)', (select vyzbierane_eur from v_vyzbierane where case_id='20000000-0000-0000-0000-000000000002') = (select trunc(cista_suma/2,2) from platba where idem_kluc='s1');
 set role authenticated;
@@ -69,13 +72,13 @@ set role authenticated;
 select set_config('request.jwt.claim.sub','7e57a000-0000-0000-0000-00000000000a', false);
 create temp table es as select (public.escrow_create('20000000-0000-0000-0000-000000000002', 'matching', 100, 'DEED', '7e570000-0000-0000-0000-00000000000a')).id;
 reset role;
-insert into t select 'escrow vytvor: zbierka este nic', coalesce((select vyzbierane_deed from v_vyzbierane where case_id='20000000-0000-0000-0000-000000000002'),0) = 9.7;
--- (9.7 = dar B cez „tap")
+insert into t select 'escrow vytvor: zbierka este nic', coalesce((select vyzbierane_deed from v_vyzbierane where case_id='20000000-0000-0000-0000-000000000002'),0) = 10;
+-- (10 = dar B cez „tap"; poplatok DEED 0, platí ho darca navrch)
 set role authenticated;
 select set_config('request.jwt.claim.sub','7e57a000-0000-0000-0000-00000000000a', false);
 select (public.escrow_uvolni((select id from es), 30)).zostatok;
 reset role;
-insert into t select 'escrow uvolni: zbierka +30 raz', (select vyzbierane_deed from v_vyzbierane where case_id='20000000-0000-0000-0000-000000000002') = 39.7;
+insert into t select 'escrow uvolni: zbierka +30 raz', (select vyzbierane_deed from v_vyzbierane where case_id='20000000-0000-0000-0000-000000000002') = 40;
 set role authenticated;
 select set_config('request.jwt.claim.sub','7e57a000-0000-0000-0000-00000000000a', false);
 select (public.escrow_vrat((select id from es))).stav;
@@ -85,7 +88,7 @@ insert into t select 'escrow zostatok 0', (select zostatok from v_escrow where i
 -- 7 · refund (server)
 create temp table pred as select vyzbierane_deed v, pocet_darov n from v_vyzbierane where case_id='20000000-0000-0000-0000-000000000002';
 select (public.platba_refund((select id from platba where idem_kluc='tap' and odosielatel='7e570000-0000-0000-0000-00000000000b'))).stav;
-insert into t select 'refund vrati vyzbierane a pocet', v.vyzbierane_deed = p.v - 9.7 and v.pocet_darov = p.n - 1 from v_vyzbierane v, pred p where v.case_id='20000000-0000-0000-0000-000000000002';
+insert into t select 'refund vrati vyzbierane a pocet', v.vyzbierane_deed = p.v - 10 and v.pocet_darov = p.n - 1 from v_vyzbierane v, pred p where v.case_id='20000000-0000-0000-0000-000000000002';
 insert into t select 'refund vrati darcovi', public.zostatok('7e570000-0000-0000-0000-00000000000b','DEED') >= 1230;
 create temp table s1 as select id from platba where idem_kluc='s1';
 grant select on s1 to public;

@@ -8,7 +8,7 @@ import { KURZ_DEED_ZA_EUR, KURZ_EURC_ZA_EUR } from "@/lib/kurz";
 import { SpatTlacidlo } from "@/components/cesta";
 import { toast } from "@/components/toast";
 import { Harok } from "@/features/zbierka/Zdielat";
-import { poplatokKarty } from "@/features/zbierka/Platba";
+import { usePoplatok } from "@/lib/poplatky";
 import { MojQr } from "./MojQr";
 import { Blokacia24h } from "./Bezpecnost24";
 import { hodinNovehoZariadenia } from "@/lib/zariadenia";
@@ -167,7 +167,8 @@ function DobitHarok({ mena, onClose, onDobite }: { mena: Mena; onClose: () => vo
   const t = useT();
   const [eur, setEur] = useState(20);
   const [sposob, setSposob] = useState<"sepa" | "karta">("karta");
-  const spolu = sposob === "karta" ? eur + poplatokKarty(eur) : eur;
+  const poplatok = usePoplatok(sposob === "karta" ? "fiat" : null, eur).poplatok; // 3.4: zo servera
+  const spolu = eur + poplatok;
   const dostanes = mena === "DEED" ? `${t.cislo(eur * KURZ_DEED_ZA_EUR)} DeeD` : `${e2(eur * KURZ_EURC_ZA_EUR, t.locale)} EURC`;
   return (
     <Harok onClose={onClose} zatvorText={t("sp.zrusit")} hlavicka={

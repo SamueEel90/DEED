@@ -1,5 +1,6 @@
 // KARTA 07 · Platobné okno — Suma → Spôsob → Zhrnutie → Podrž a zaplať → Spracovanie → (Hotovo = karta 09).
 // Hárok nad detailom (mobil zdola, tablet 640 px na stred, PC 560 px na stred). Bez blur. Platba sa do cesty Späť nezapisuje.
+import { usePoplatok } from "@/lib/poplatky";
 import { DeedZnacka } from "@/components/DeedZnacka";
 import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react";
 import { createPortal } from "react-dom";
@@ -27,8 +28,6 @@ const e2 = (n: number) => `${n.toLocaleString("sk-SK", { minimumFractionDigits: 
 const eK = (n: number) => `${n.toLocaleString("sk-SK", { minimumFractionDigits: n % 1 ? 2 : 0, maximumFractionDigits: 2 })} €`;
 const jednotka = (k: KanalPlatby) => (k === "eur" ? "€" : k === "deed" ? "DeeD" : "EURC");
 const vSume = (n: number, k: KanalPlatby) => (k === "eur" ? eK(n) : `${n.toLocaleString("sk-SK", { maximumFractionDigits: 2 })} ${jednotka(k)}`);
-/** poplatok karty 1,4 % + 0,15 € (platí darca) */
-export const poplatokKarty = (s: number) => Math.round((s * 0.014 + 0.15) * 100) / 100;
 
 type Krok = "suma" | "sposob" | "zhrnutie" | "spracovanie" | "hotovo";
 /** stav zbierky tesne pred darom — pre poďakovanie a hlášku (karta 09) */
@@ -57,7 +56,9 @@ export function PlatobneOkno({ kanal, suma: sumaStart, nazov, registrovany, bonu
   const pod1 = eur && suma > 0 && suma < MIN_DAR_EUR;
   const mozeDalej = suma > 0 && !pod1;
   const eurHodnota = eur ? suma : kanal === "deed" ? suma / 100 : suma;
-  const poplatok = eur && sposob === "karta" ? poplatokKarty(suma) : 0;
+  // Zadanie 3 · 3.4: poplatok si appka pýta od servera (ten istý výpočet strhne platba) — platí ho darca navrch
+  const pop = usePoplatok(eur && sposob ? (sposob === "karta" ? "fiat" : "sepa") : null, suma);
+  const poplatok = pop.poplatok;
   const dar = eur && darDeed ? DAR_PRE_NAS : 0;
   const spolu = Math.round((suma + poplatok + dar) * 100) / 100;
   const dorovna = eur && bonus ? bonus(suma) : 0;
@@ -189,7 +190,7 @@ export function PlatobneOkno({ kanal, suma: sumaStart, nazov, registrovany, bonu
         <RiadokPlatby kanal={kanal} sposob={sposob} registrovany={registrovany} />
         <div style={{ borderRadius: 16, background: "var(--card)", border: "1px solid var(--cardBd)", padding: "4px 16px" }}>
           <Riadok l="Suma" v={vSume(suma, kanal)} />
-          {poplatok > 0 && <Riadok l="Poplatok (1,4 % + 0,15 €)" v={e2(poplatok)} />}
+          {poplatok > 0 && <Riadok l={`Poplatok (${pop.popis})`} v={e2(poplatok)} />}
           {eur && (
             <div onClick={() => setDarDeed(!darDeed)} role="checkbox" aria-checked={darDeed} style={{ display: "flex", alignItems: "center", gap: 12, padding: "11px 0", borderBottom: "1px solid var(--cardBd)", cursor: "pointer" }}>
               <span style={{ width: 22, height: 22, borderRadius: 7, border: `1.5px solid ${darDeed ? "var(--green)" : "var(--chkBd)"}`, background: darDeed ? "var(--green)" : "transparent", color: "#fff", fontSize: 13, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", flex: "none" }}>

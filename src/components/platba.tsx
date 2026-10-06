@@ -4,7 +4,7 @@ import { LEN_SEPA_DO } from "@/lib/sadyDarov";
 import type { CSSProperties, ReactNode } from "react";
 import { C, GRAD, GRAD_ZELENY, SPACE, RADIUS } from "@/theme";
 import { tint } from "@/lib/ui";
-import { navrhniTip, SEPA_SPLIT_POPLATOK } from "@/lib/poplatky";
+import { navrhniTip, usePoplatok, usePopisSadzby } from "@/lib/poplatky";
 import { useUpgrade } from "@/components/context";
 import { usePouzivatel } from "@/lib/pouzivatel";
 import { Sheet } from "@/components/sheet";
@@ -114,7 +114,11 @@ export function PlatbaModal({ kanal, komu, suma: sumaInit, lenSepa = false, spli
   // „Dar pre nás" (chod DEED+) — vo VŠETKÝCH kanáloch, jednotky = mena kanála
   const tipSuma = navrhniTip(sumaNum);
   // SEPA: priama zadarmo, splitovaná s poplatkom partnera
-  const poplatok = !jeEur ? 0 : jeSepa ? (split ? SEPA_SPLIT_POPLATOK : 0) : Math.round((sumaNum * 0.014 + 0.15) * 100) / 100;
+  // Zadanie 3 · 3.4: poplatok zo servera (rovnaký výpočet ako pri platbe) — platí ho darca navrch
+  const pop = usePoplatok(jeEur ? (jeSepa ? "sepa" : "fiat") : null, sumaNum, split);
+  const poplatok = pop.poplatok;
+  const popisKarty = usePopisSadzby("fiat");
+  const popSepa = usePoplatok(jeEur ? "sepa" : null, Math.max(sumaNum, 1), split);
   const tipAplik = tip ? tipSuma : 0;
   const spolu = Math.round((sumaNum + poplatok + tipAplik) * 100) / 100;
   const malo = !jeEur && spolu > PLATBA_ZOSTATOK;
@@ -201,8 +205,8 @@ export function PlatbaModal({ kanal, komu, suma: sumaInit, lenSepa = false, spli
         <BonusPas bonus={bonus} suma={sumaNum} />
         <div style={{ fontSize: 12.5, color: C.textTer, margin: `${SPACE.xxs}px 0 ${SPACE.sm}px` }}>Vyber spôsob platby pre {sumaNum.toFixed(2)} €</div>
         {[
-          { id: "karta" as const, ic: "💳", t: "Platobná karta", d: "Visa · Mastercard · okamžite · 3‑D Secure", fee: `poplatok 1,4 % + 0,15 €` },
-          { id: "sepa" as const, ic: "🏦", t: "Bankový prevod (SEPA)", d: "IBAN · pripísanie do 1 prac. dňa", fee: split ? `poplatok ${SEPA_SPLIT_POPLATOK.toLocaleString("sk", { minimumFractionDigits: 2 })} € (split)` : "bez poplatku" },
+          { id: "karta" as const, ic: "💳", t: "Platobná karta", d: "Visa · Mastercard · okamžite · 3‑D Secure", fee: `poplatok ${popisKarty}` },
+          { id: "sepa" as const, ic: "🏦", t: "Bankový prevod (SEPA)", d: "IBAN · pripísanie do 1 prac. dňa", fee: popSepa.poplatok > 0 ? `poplatok ${popSepa.popis}` : popSepa.popis || "bez poplatku" },
         ].map((m) => (
           <button key={m.id} onClick={() => { setMetoda(m.id); setKrok("detaily"); }} style={{ width: "100%", display: "flex", alignItems: "center", gap: SPACE.sm, textAlign: "left", padding: `${SPACE.sm}px ${SPACE.gutter}px`, marginBottom: SPACE.sm, borderRadius: RADIUS.md, cursor: "pointer", fontFamily: "inherit", background: C.surface2, border: `1px solid ${C.line}`, color: C.text }}>
             <span style={{ fontSize: 22, flex: "none" }}>{m.ic}</span>
@@ -231,7 +235,7 @@ export function PlatbaModal({ kanal, komu, suma: sumaInit, lenSepa = false, spli
         </>)}
         <div style={{ background: "rgba(var(--glass-rgb),.05)", border: `1px solid ${C.line}`, borderRadius: RADIUS.sm, padding: `${SPACE.xxs}px ${SPACE.sm}px ${SPACE.xs}px` }}>
           <Riadok k="Suma" v={`${sumaNum.toFixed(2)} €`} />
-          <Riadok k="Poplatok (1,4 % + 0,15 €)" v={`${poplatok.toFixed(2)} €`} />
+          <Riadok k={`Poplatok (${pop.popis})`} v={`${poplatok.toFixed(2)} €`} />
           {tipAplik > 0 && <Riadok k={<>Dar pre nás (chod <DeedZnacka />)</>} v={`${tipSuma.toFixed(2)} €`} accent={C.green} />}
           <div style={{ display: "flex", justifyContent: "space-between", paddingTop: SPACE.xs, fontSize: 14, fontWeight: 800 }}><span>Spolu</span><span>{spolu.toFixed(2)} €</span></div>
         </div>
