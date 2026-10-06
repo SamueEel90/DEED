@@ -5,14 +5,14 @@
 // Editor, orez, logo a kontakt = existujúce RichTextInput, OrezFotky, lib/obrazok, kontakt.tsx.
 // ============================================================
 import { useVerejnyProfilOtvoreny } from "@/features/verejny-profil/otvor";
-import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { RichTextInput } from "@/components/richtext";
 import { Titulka, RAMY, pomerFotky } from "./titulka";
 import { OrezFotky } from "@/components/orezfotky";
 import { toast } from "@/components/toast";
 import { spracujLogo, spracujFotku, rozmeryFotky, LOGO_CFG, COVER_CFG, type LogoRezim, type LogoPozadie } from "@/lib/obrazok";
-import { nacitajProfil, profilZPamate, ulozKoncept, zverejniProfil, type ProfilStranky, type RamFotky, type TitulnaFotka, type VyrezFotky } from "@/lib/profilStranky";
+import { nacitajProfil, profilZPamate, ulozKoncept, zverejniProfil, type ProfilStranky, type VyrezFotky } from "@/lib/profilStranky";
 import { SIDLO_REGISTRA, ICO_REGISTRA } from "./NastaveniaCharity";
 import { nacitajKontakt, SIETE, MAX_TEL, MAX_EMAIL, chybaSiete, chybaWebu, chybaEmailu, chybaTel, type Kontakt } from "./kontakt";
 import { type Pozicia, type Tier, type TvarLoga } from "./stav";

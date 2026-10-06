@@ -23,7 +23,6 @@ import { SvetlusikInfo, SvetlusikKarta } from "@/components/SvetlusikInfo";
 import "@/styles/platba.css";
 import "@/styles/animacie.css";
 
-const bg = (f: string) => `url('${f}') center/cover no-repeat #3a3530`;
 const eurT = (n: number) => `${n.toLocaleString("sk-SK")} €`;
 
 /** náhľad dlaždice nad modulom + modul + Zbaliť */

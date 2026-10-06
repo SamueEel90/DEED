@@ -17,7 +17,6 @@ import { useVsetkyNaKonci } from "./charitaCasti";
 type Typ = "zb" | "sk" | "is" | "oz" | "pr";
 type Rez = "pc" | "tab" | "mob";
 const FILTRE: [string, Typ | null][] = [["Všetko", null], ["Zbierky", "zb"], ["Skutky", "sk"], ["Iskry", "is"], ["Oznamy", "oz"], ["Práca", "pr"]];
-const GRAD = "linear-gradient(135deg,#4B7A35,#6E9F4E)";
 const PRUH = "linear-gradient(90deg,#4B7A35,#8DB866)";
 const ZLATA = "#F6C453";
 const bg = (f: string) => `url('${f}') center/cover no-repeat #3a3530`;

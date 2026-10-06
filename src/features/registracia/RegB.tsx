@@ -1,7 +1,7 @@
 // KARTA 44 · stavebnice registrácie 1b (osoba aj charita) — 1 : 1 podľa prototypu „Registracia - navrhy.dc.html", stĺpec 1b.
 // Obrazovka = hlava (Späť + kapitoly) · obsah (vstup .35 s) · päta (zelené tlačidlo 58 px + druhá voľba 44 px).
 // Svetlúšik: veľký so žiarou (Vitaj, Hotovo s radosťou a iskrami) alebo bublina (najviac 3 na registráciu).
-import { useEffect, useId, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useId, useRef, type CSSProperties, type ReactNode } from "react";
 import { USE_SUPABASE } from "@/lib/supabase";
 import "@/styles/platba.css";
 import "@/styles/registracia.css";

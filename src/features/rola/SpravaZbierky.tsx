@@ -805,11 +805,9 @@ function ZmenaUcelu({ ucel, zmena, onZiadost, onSchval }: { ucel?: string; zmena
 
 // ---- Doklady (2 stĺpce: vľavo obsah, vpravo stav) ----
 /** KARTA 39 · bod 3: `nepovinne` = centrálna zbierka — dokladovanie dobrovoľné, bez povinného minima a lehoty */
-export function DokladyCharity({ zbierkaId, s, zmen, vyzbierane, teraz, mobil, toast, nepovinne }: {
+export function DokladyCharity({ s, zmen, vyzbierane, teraz, mobil, toast, nepovinne }: {
   zbierkaId: string; s: StavZbierky; zmen: (p: Partial<StavZbierky>) => void; vyzbierane: number; teraz: number; mobil: boolean; toast: (m: string) => void; nepovinne?: boolean;
 }) {
-  const pasI = pasmoPre(vyzbierane), pas = PASMA_DOKLADOV[pasI];
-  const hotovo = nepovinne ? (s.doklady.length > 0 || !!s.text.trim() || s.fotky.length > 0) : pas.povinne.every((p) => splnene(p, s, vyzbierane));
   const pct = percentoDolozenia(s, vyzbierane);
   // 5. 10. · jeden textový editor (TextovePolia) a jedna galéria (GaleriaEditor) ako všade, bez PRED / PO
   const [text, setText] = useState(s.text);

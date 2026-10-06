@@ -15,7 +15,7 @@ export type Medium = ({ typ: "video"; src: string } | { typ: "foto"; src: string
 const TMAVA = "rgba(20,18,14,.7)";
 
 // ---------------- 1 · Hlavička ----------------
-export function Hlavicka({ cisloZbierky, overena, onBack, spatNazov, onZavriet, onMoznosti }: {
+export function Hlavicka({ cisloZbierky, overena, onBack, onZavriet, onMoznosti }: {
   /** KARTA 48: verejné číslo zbierky „Z-123 456 789 0" (= variabilný symbol), ťuk = skopírovať */
   cisloZbierky?: string; overena?: boolean; onBack: () => void;
   spatNazov?: string;        // kam vedie Späť — zatiaľ sa nezobrazuje (jednotné „‹ Späť")

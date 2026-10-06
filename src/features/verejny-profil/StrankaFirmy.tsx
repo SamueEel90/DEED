@@ -10,7 +10,7 @@ import { otvorIskry } from "@/features/iskry/otvor";
 import { toast } from "@/shared";
 import { DOK, PortalVp, StitCare, klikKarta, nazovStitu, useDomaceMesto } from "./casti";
 import { ModulProfilu } from "./ModulProfilu";
-import { GRAD, PRUH, bgF } from "./charitaCasti";
+import { PRUH, bgF } from "./charitaCasti";
 
 const PC = "(min-width: 1200px)";
 function usePc() {

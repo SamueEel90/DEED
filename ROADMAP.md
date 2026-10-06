@@ -101,10 +101,10 @@ Z appky spraviť nasaditeľný produkt.
   v CI aj cez `npm run verify`.
 - **Kvalita — unit testy:** Vitest + React Testing Library. Zatiaľ neexistujú;
   zvyšok sa overuje manuálne (`.claude/skills/verify/SKILL.md`).
-- **Lint backlog (245 warningov, 0 errorov — stav 6. 10. 2026):** 83× `@typescript-eslint/no-explicit-any`
-  (hranice k Supabase/3rd-party, súvisí so sprísnením `noImplicitAny`), 46× `no-unused-vars`
-  a ~110× React-Compiler pravidlá z `eslint-plugin-react-hooks` v7
-  (`refs`, `set-state-in-effect`, `purity`, `static-components`). Dnes `warn`;
+- **Lint backlog (199 warningov, 0 errorov — stav 6. 10. 2026):** 83× `@typescript-eslint/no-explicit-any`
+  (hranice k Supabase/3rd-party, vyrieši sa so sprísnením `noImplicitAny` vo Fáze 5), 0× `no-unused-vars`
+  a ~116× React-Compiler pravidlá z `eslint-plugin-react-hooks` v7
+  (`refs`, `set-state-in-effect`, `purity`, `static-components`) — samostatný krok s vizuálnym QA. Dnes `warn`;
   číslo sa má s každou zmenou znižovať. Po dočistení prepnúť na `error` v `eslint.config.js`.
 - **Výkon:** code-splitting modulov (lazy import), rozpočet na bundle, optimalizácia obrázkov/CDN.
 - **Observabilita:** error tracking (napr. Sentry), základná analytika.

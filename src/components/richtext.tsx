@@ -13,7 +13,6 @@ import { useEffect, useRef, useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
 import { C, SPACE, RADIUS } from "@/theme";
 import { sanitizujHtml, textNaHtml, jeHtmlText } from "@/lib/richtext";
-import { toast } from "@/components/toast";
 
 function prikaz(cmd: string, arg?: string) {
   document.execCommand(cmd, false, arg);

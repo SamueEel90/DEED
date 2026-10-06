@@ -45,7 +45,7 @@ import { najdiKampan } from "@/features/cudzi-profil/orgy";
 import type { Dokaz } from "@/lib/zbierky";
 import { najdiZbierku, kryptoZbierky, odznakZbierky } from "@/lib/zbierky";
 import { DokazBlok, MediaNahlad } from "./DokazBlok";
-import { nacitajViditelnost, nacitajTerminal, nacitajKryptoOrg, nacitajCentralnu, nacitajSady, nacitajOnas, nacitajTvarLoga, nacitajZdrojAvatara, nacitajLogo, nacitajPoziciu, type Pozicia, type Tier } from "./stav";
+import { nacitajViditelnost, nacitajTerminal, nacitajKryptoOrg, nacitajCentralnu, nacitajSady, nacitajOnas, nacitajTvarLoga, nacitajZdrojAvatara, nacitajLogo, type Pozicia, type Tier } from "./stav";
 import { OnasKratky } from "./OnasKratky";
 import { KontaktBlok, nacitajKontakt } from "./kontakt";
 import { nacitajProfil as nacitajProfilStranky, profilZPamate, type ProfilStranky } from "@/lib/profilStranky";
@@ -57,7 +57,6 @@ import { ZbierkaModul } from "@/features/zbierka/ZbierkaModul";
 import type { StavKroku } from "@/lib/cesta";
 import { centralnaZPamate, nacitajCentralnuZbierku, useZmenyCentralnej } from "@/lib/centralnaZbierka";
 import { CudziProfil } from "@/features/cudzi-profil/CudziProfil";
-import type { Zbierka } from "@/lib/zbierky";
 import type { OrgPole, StitUroven } from "@/features/zbierka/Pole";
 import type { ZbierkaData } from "@/features/zbierka/ZbierkaModul";
 import { useScrollEl } from "@/components/context";
@@ -114,7 +113,7 @@ function PodporiliFirmy({ zbierkaId, onFirma }: { zbierkaId: string; onFirma: (f
   );
 }
 
-export function Podstranka({ pozicia, tier: tierStranky = 0, logo, toast, onBack, strankaId = pozicia === "charita" ? "svetlo" : undefined, profilNahlad, lista, sektor }: {
+export function Podstranka({ pozicia, tier: tierStranky = 0, logo, toast, onBack, strankaId = pozicia === "charita" ? "svetlo" : undefined, profilNahlad, lista }: {
   pozicia: Pozicia; tier?: Tier; logo: string | null; toast: (m: string) => void; onBack: () => void;
   /** OPRAVY 107: stránka, ktorej uložený profil (Upraviť profil) sa ukáže */
   strankaId?: string;
