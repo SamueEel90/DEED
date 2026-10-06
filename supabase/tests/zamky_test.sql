@@ -184,5 +184,21 @@ insert into t select 'verejny profil stranky bez IBAN', not exists (select 1 fro
 insert into t select 'feed bez presneho GPS', not exists (select 1 from public.prispevok_feed where lat is not null and lat <> round(lat::numeric, 2)::double precision);
 reset role;
 
+-- ---------- 5.4 · feed po stránkach, 5.7 · feed ako stĺpec ----------
+insert into public.prispevok (modul, typ, titul, autor_ucet_id, lat, lng, vytvorene)
+  select 'good', 'skutok', 'Strana ' || g, '7e570000-0000-0000-0000-0000000000e1', 48.894567, 18.044321, now() - make_interval(mins => g)
+    from generate_series(1, 70) g;
+set role anon;
+create temp table st1 as select * from public.feed_stranka('domov', 48.894, 18.044, 5);
+insert into t select '5.4 prva stranka najviac 50', (select count(*) from st1) = 50;
+insert into t select '5.4 druha stranka bez prekryvu', not exists (
+  select 1 from public.feed_stranka('domov', 48.894, 18.044, 5, (select min(vytvorene) from st1), (select id from st1 order by vytvorene, id limit 1)) x
+   where x.id in (select id from st1));
+insert into t select '5.4 okruh v SQL (Bratislava nevidi Trencin)', not exists (select 1 from public.feed_stranka('domov', 48.1486, 17.1077, 5) where titul like 'Strana %');
+insert into t select '5.4 bez presneho GPS', not exists (select 1 from st1 where lat <> round(lat::numeric, 2)::double precision);
+insert into t select '5.4 limit sa neda zvysit', (select count(*) from public.feed_stranka('domov', null, null, null, null, null, 1000)) <= 50;
+reset role;
+insert into t select '5.7 feed je stlpec s constraintom', exists (select 1 from pg_constraint where conname = 'prispevok_feed_check');
+
 select ok, c from t order by ok, c;
 rollback;

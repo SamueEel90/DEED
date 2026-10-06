@@ -426,7 +426,7 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
         id: feedId, typ: "skutok", velkost: "med", kat: KAT[oblast ?? "Pomoc"] ?? "Komunita", autor: pr.autor || "Charita", num: 0, emoji: "",
         fotky: fotky.length ? fotky : orgLogo ? [orgLogo] : [], titul: nz, popis: cistyText(popisHtml), lok: kde, overene: true, skore: 0, typSituacie: "normal", modul: "good", dni: 0, podpora: 0, lat: lok.lat, lng: lok.lng,
       } as GoodPolozka;
-      qc.setQueryData<GoodPolozka[]>(qk.good.feed, (old = []) => [it, ...old]);
+      qc.setQueriesData<GoodPolozka[]>({ queryKey: qk.good.feed }, (old = []) => [it, ...old]);
       repo.good.vytvor(it, ja.ucetId).then((nid) => { if (nid) qc.invalidateQueries({ queryKey: qk.good.feed }); }).catch(() => {});
       vibruj([10, 40, 10]);
       setKr(6); return;
@@ -451,7 +451,7 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
         fotky, titul: nz, popis: po2, lok: kde, overene: true, skore: odpAi?.skore ?? 0, typSituacie: "normal", modul: "good", dni: 0, podpora: 0, lat: lok.lat, lng: lok.lng,
         scoreRunId: odpAi?.runId, // skóre/overené/karma do DB píše server z behu AI, nie klient
       } as GoodPolozka;
-      qc.setQueryData<GoodPolozka[]>(qk.good.feed, (old = []) => [it, ...old]);
+      qc.setQueriesData<GoodPolozka[]>({ queryKey: qk.good.feed }, (old = []) => [it, ...old]);
       repo.good.vytvor(it, ja.ucetId).then((nid) => { if (nid) qc.invalidateQueries({ queryKey: qk.good.feed }); }).catch(() => {});
     }
     vibruj([10, 40, 10]);

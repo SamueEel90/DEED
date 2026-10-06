@@ -59,7 +59,8 @@ export const aktivitySupabase = {
       .from("prispevok_feed") // 0037: vyzbierané z ledgera
       .select("*")
       .eq("feed", "aktivity")   // 5.7: stĺpec, nie kľúč v jsonb
-      .order("cislo", { ascending: false });
+      .order("cislo", { ascending: false })
+      .limit(50);                // 5.4: nikdy celá tabuľka
     if (error) throw error;
     return (data || []).map(naAktivitaItem);
   },

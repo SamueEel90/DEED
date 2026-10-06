@@ -46,7 +46,7 @@ function Riadok({ s, strankaId, mobil }: { s: MojSkutok; strankaId: string; mobi
   const foto = s.fotky[0];
   // feed: úprava a stiahnutie hneď aj v okolí (v appke); TODO server: úprava / skrytie položky v DB
   const qc = useQueryClient();
-  const vofeede = (f: (x: GoodPolozka) => GoodPolozka | null) => { if (s.feedId == null) return; qc.setQueryData<GoodPolozka[]>(qk.good.feed, (old = []) => old.flatMap((x) => (x.id === s.feedId ? (f(x) ? [f(x)!] : []) : [x]))); };
+  const vofeede = (f: (x: GoodPolozka) => GoodPolozka | null) => { if (s.feedId == null) return; qc.setQueriesData<GoodPolozka[]>({ queryKey: qk.good.feed }, (old = []) => old.flatMap((x) => (x.id === s.feedId ? (f(x) ? [f(x)!] : []) : [x]))); };
   const ok = nazov.trim().length > 0 && cistyText(popis).length > 0;
   return (
     <section style={karta}>

@@ -70,7 +70,8 @@ export const charitaSupabase = {
       .from("prispevok_feed") // 0037: vyzbierané z ledgera
       .select("*")
       .eq("feed", "charita")   // 5.7: stĺpec, nie kľúč v jsonb
-      .order("skore", { ascending: false });
+      .order("skore", { ascending: false })
+      .limit(50);               // 5.4: nikdy celá tabuľka
     if (error) throw error;
     return (data || []).map(naCharitaItem);
   },
