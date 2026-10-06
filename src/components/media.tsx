@@ -1,11 +1,10 @@
 import { Emo } from "@/components/icons";
 import { useState, useEffect, useRef } from "react";
 import type { CSSProperties } from "react";
-import { C, GRAD, glass, glassTmavy, SPACE, RADIUS } from "@/theme";
+import { C, GRAD, glassTmavy, SPACE, RADIUS } from "@/theme";
 import { useGaleria } from "@/components/context";
 import { CelaGaleria } from "@/components/celaGaleria";
 import { pressable } from "@/components/pressable";
-import { Hmat } from "@/components/ui";
 
 // ---- FOTO s fallbackom na emoji ----
 // Pipeline: Unsplash URL → srcset 400/800/1200 (mobil neťahá veľký asset) +
@@ -154,12 +153,3 @@ export function Lightbox({ fotky, index = 0, popisy, onClose }: { fotky: string[
   return <CelaGaleria media={fotky.map((src, i) => ({ typ: "foto" as const, src, popis: popisy?.[i] }))} start={index} onClose={onClose} />;
 }
 
-function sipka(strana: "left" | "right"): CSSProperties {
-  return {
-    position: "absolute", top: "50%", [strana]: 14, transform: "translateY(-50%)",
-    width: 42, height: 42, borderRadius: RADIUS.round,
-    background: "rgba(255,255,255,.07)", backdropFilter: "blur(10px)", WebkitBackdropFilter: "blur(10px)",
-    border: "1px solid rgba(255,255,255,.16)", color: "#fff", fontSize: 26,
-    display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", lineHeight: 1, paddingBottom: SPACE.xxs,
-  } as CSSProperties;
-}

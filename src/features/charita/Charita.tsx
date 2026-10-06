@@ -11,7 +11,7 @@ import { DomovBoard, DomovEvent } from "@/features/domov/Domov";
 import { useCharitaFeed, useCharitaAdresar, useCharitaZbierka } from "@/data";
 import { useLokalita } from "@/lib/lokalita";
 import { ZOFIA_FOTKY, HLADAJ_DATA } from "./mock";
-import { tagChip, rovnakeOkremFunkcii } from "@/lib/ui";
+import { rovnakeOkremFunkcii } from "@/lib/ui";
 import { pressable } from "@/components/pressable";
 import { useVrstva } from "@/lib/urlnav";
 import { MojDeedFiremny } from "@/features/rola/MojDeedFiremny";

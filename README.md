@@ -192,9 +192,9 @@ Appka je **funkčný produktový prototyp**, nie hotový produkt. Konkrétne:
   (`npm run smoke`) — overí, že sa moduly a detaily vykreslia bez chýb.
   Všetko ostatné sa overuje manuálne, postup je
   v [.claude/skills/verify/SKILL.md](.claude/skills/verify/SKILL.md).
-- **142 lint warningov** — prevažne `any` na hraniciach k Supabase a nové
+- **259 lint warningov** (stav 6. 10. 2026, 0 errorov) — prevažne `any` na hraniciach k Supabase a nové
   React-Compiler odporúčania. Nie sú to chyby v bežiacej appke; rozpis
-  a plán je v [ROADMAP.md](ROADMAP.md).
+  a plán je v [ROADMAP.md](ROADMAP.md). Číslo sa má s každou zmenou znižovať, nie rásť.
 
 Plán ďalších krokov: [ROADMAP.md](ROADMAP.md).
 

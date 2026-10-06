@@ -19,7 +19,6 @@ function usePc() {
   return p;
 }
 const tlTmave: CSSProperties = { height: 44, border: "none", borderRadius: 14, background: "rgba(10,8,5,.5)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "none" };
-const PLAGAT = "linear-gradient(160deg,#2C5576 0%,#3D6B8E 60%,#4F7FA3 100%)";
 const bgX = (f: string) => (f.startsWith("url(") ? f : bgF(f));
 
 function Nadpis({ t, s }: { t: string; s?: string }) {
@@ -33,7 +32,6 @@ export function StrankaFirmy({ profil, onDetail, onBack }: { profil: TestProfil;
   const stit = profil.stit.toLowerCase();
   const [stitOtv, setStitOtv] = useState(false);
   const [mod, setMod] = useState<number | null>(null);
-  const [pOtv, setPOtv] = useState<Record<string, boolean>>({});
   const [live, setLive] = useState(0), [liveOp, setLiveOp] = useState(1);
   const dlRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {

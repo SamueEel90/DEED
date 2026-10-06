@@ -1,8 +1,6 @@
 // KARTA 02 · Hlavička, galéria, nadpis a text zbierky.
 // Galéria = natívny scroll-snap (žiadna knižnica). Animácie len transform/opacity.
-import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
-import { createPortal } from "react-dom";
-import { pressable } from "@/components/pressable";
+import { useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { useLayout } from "@/components/context";
 import { useVideoUrl } from "@/lib/videoUloz";
 import { FormatovanyText } from "@/components/formattext";

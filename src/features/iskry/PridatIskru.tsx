@@ -110,7 +110,6 @@ function PridatIskru() {
   const hladajRef = useRef<HTMLInputElement>(null); // „Hľadať zbierku" zo skenera dá fokus do poľa
   useEffect(() => { telo.current?.scrollTo({ top: 0 }); }, [k, hotovo]);
   useEffect(() => () => { if (video && !hotovo) URL.revokeObjectURL(video.url); }, []); // eslint-disable-line react-hooks/exhaustive-deps
-  useEffect(() => { const f = (e: KeyboardEvent) => { if (e.key === "Escape" && !zdielat && !sken) zavri(); }; window.addEventListener("keydown", f); return () => window.removeEventListener("keydown", f); });
 
   // len prihlásený
   const neprihlaseny = jeNeregistrovany();
@@ -125,6 +124,7 @@ function PridatIskru() {
     : k === 4 ? (!ok1 ? o("Potvrď, že video je tvoje", "Potvrďte, že video je vaše") : "") : "";
 
   const zavri = () => { zavriPridatIskru(); };
+  useEffect(() => { const f = (e: KeyboardEvent) => { if (e.key === "Escape" && !zdielat && !sken) zavri(); }; window.addEventListener("keydown", f); return () => window.removeEventListener("keydown", f); });
   // Hotovo: Pozrieť aj Zavrieť (aj šípka späť) otvoria prúd rovno na novom videu
   const doPrudu = () => { const id = hotovo?.id; zavriPridatIskru(); if (id) otvorIskry(id); };
   const spat = () => { if (hotovo) return doPrudu(); if (k > 1) setK(k - 1); else zavri(); };

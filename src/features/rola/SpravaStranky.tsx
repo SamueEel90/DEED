@@ -407,7 +407,7 @@ function SpravaStrankyTypu({ onBack, typ, onTyp: setTyp, strankaId = "svetlo", n
         <TestVolba pas={!desktop} nazov="Typ" volby={TYPY_STRANOK.filter((t) => !TYP_SKRYTY[t]).map((t) => [t, TYP_NAZOV[t]] as [TypStranky, string])} hodnota={typ} onVolba={setTyp} />
         <TestVolba pas={!desktop} nazov="Rola" volby={[["hlavny", "Hlavný správca"], ["spravca", "Správca"], ["pomocnik", "Pomocník"], ["organizator", "Organizátor"]] as [RolaStranky, string][]} hodnota={rola} onVolba={(r) => zmenTestStav({ rola: r })} />
       </>}>
-      <DevSprava pas={!desktop} tier={tier} stit={stit} stav={!nova ? "bezna" : pozvana ? "pozv" : "free"} typ={typ} onTyp={setTyp} rola={rola}
+      <DevSprava pas={!desktop} tier={tier} stit={stit} stav={!nova ? "bezna" : pozvana ? "pozv" : "free"}
         onTier={setTier}
         onStit={(s) => { setStit(s); ulozStitCharity(s); }}
         onStav={(k) => {
@@ -1475,7 +1475,7 @@ function Zamknute({ program }: { program: string }) {
 
 // ---------- DEV (len testovacia verzia) ----------
 type StavDev = "pozv" | "free" | "bezna";
-function DevSprava({ pas, tier, stit, stav, typ, rola, onTyp, onTier, onStit, onStav }: { pas: boolean; tier: Tier; stit: StitCharity; stav: StavDev; typ: TypStranky; rola: RolaStranky; onTyp: (t: TypStranky) => void; onTier: (t: Tier) => void; onStit: (s: StitCharity) => void; onStav: (s: StavDev) => void }) {
+function DevSprava({ pas, tier, stit, stav, onTier, onStit, onStav }: { pas: boolean; tier: Tier; stit: StitCharity; stav: StavDev; onTier: (t: Tier) => void; onStit: (s: StitCharity) => void; onStav: (s: StavDev) => void }) {
   return (<>
     {/* OPRAVY 153: Typ a Rola sú pod „Ďalšie testovacie ›" */}
     <TestVolba pas={pas} nazov="Program" volby={([0, 1, 2, 3, 4] as Tier[]).map((t) => [t, PROGRAM_NAZOV[t]] as [Tier, string])} hodnota={tier} onVolba={onTier} />

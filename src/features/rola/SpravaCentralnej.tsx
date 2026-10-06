@@ -42,6 +42,8 @@ const statTest = (jeS: boolean, nazov: string): DataStatistik => ({
   dary: [["Lucia B.", "10 € · cez QR plagát · pred 4 min", "10 €"], ["Anonymný darca", "mesačne · priamo na profile", "25 €"], ["Pekáreň Dobrota", "dorovnanie k daru Lucie B.", "10 €"], ["Martin Konaľ", "split 20 % · z podpory fanúšikov", "6 €"]],
 });
 
+function novyStav(id: string): StavZbierky { return { stav: "aktivna", koniec: new Date(Date.now() + 3650 * 86400000).toISOString(), predlzenia: 0, lehota: "30", text: "", fotky: [], doklady: TESTOVACIA && id.endsWith("-centralna") ? DOKLADY_TEST : [], spravy: [] }; }
+
 export function SpravaCentralnej({ strankaId, nazov, hlavnyUcet, tier, mobil, toast, onZbierky, onDorovnanie, onDarcovia }: {
   strankaId: string; nazov: string; hlavnyUcet: string; tier: number; mobil: boolean; toast: (m: string) => void;
   onZbierky: () => void; onDorovnanie?: () => void; onDarcovia?: () => void;
@@ -75,7 +77,6 @@ export function SpravaCentralnej({ strankaId, nazov, hlavnyUcet, tier, mobil, to
   // ---- doklady (dobrovoľné) ----
   const [stav, setStav] = useState<StavZbierky>(() => nacitajStav(idZbierky) ?? novyStav(idZbierky));
   useEffect(() => { setStav(nacitajStav(idZbierky) ?? novyStav(idZbierky)); }, [idZbierky]); // eslint-disable-line react-hooks/exhaustive-deps
-  function novyStav(id: string): StavZbierky { return { stav: "aktivna", koniec: new Date(Date.now() + 3650 * 86400000).toISOString(), predlzenia: 0, lehota: "30", text: "", fotky: [], doklady: TESTOVACIA && id.endsWith("-centralna") ? DOKLADY_TEST : [], spravy: [] }; }
   const zmenStav = (p: Partial<StavZbierky>) => setStav((x) => { const n = { ...x, ...p }; ulozStav(idZbierky, n); return n; });
 
   // ---- čísla a dary ----

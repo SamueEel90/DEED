@@ -142,6 +142,8 @@ function IskryPrud() {
   const list = iskryVDruhu(druh);
   const akt = list[Math.min(idx, list.length - 1)];
 
+  // aktuálne hodnoty pre klávesnicu (poslucháč sa registruje raz) — zapisujú sa po vykreslení (efekt nižšie), nie počas neho
+  const posunRef = useRef<(o: 1 | -1) => void>(() => undefined), pcRef = useRef(pc), profilRef = useRef(profil), vrchRef = useRef(false), prepniCeluRef = useRef(prepniCelu);
   // Esc = zavrieť (PC), zablokovať posun stránky pod prúdom
   useEffect(() => {
     const k = (e: KeyboardEvent) => {
@@ -181,11 +183,10 @@ function IskryPrud() {
 
   /** šípky (tlačidlá na PC aj klávesnica): o jedno video hore / dole */
   const posun = (o: 1 | -1) => { const el = sc.current; if (!el) return; const i = Math.max(0, Math.min(list.length - 1, Math.round(el.scrollTop / Math.max(1, el.clientHeight)) + o)); el.scrollTo({ top: i * el.clientHeight, behavior: "smooth" }); };
-  const posunRef = useRef(posun); posunRef.current = posun; // eslint-disable-line react-hooks/refs
-  const pcRef = useRef(pc); pcRef.current = pc; // eslint-disable-line react-hooks/refs
-  const profilRef = useRef(profil); profilRef.current = profil; // eslint-disable-line react-hooks/refs
-  const vrchRef = useRef(false); vrchRef.current = !!(zbOkno || orgProfil); // eslint-disable-line react-hooks/refs
-  const prepniCeluRef = useRef(prepniCelu); prepniCeluRef.current = prepniCelu; // eslint-disable-line react-hooks/refs
+  useEffect(() => { // synchronizácia ref-ov pre klávesnicu
+    posunRef.current = posun; pcRef.current = pc; profilRef.current = profil;
+    vrchRef.current = !!(zbOkno || orgProfil); prepniCeluRef.current = prepniCelu;
+  });
   const skoc = (id: string) => {
     let i = list.findIndex((x) => x.id === id);
     if (i < 0) { const d = iskryVsetky().find((x) => x.id === id)?.druh === ISKRY_CFG.druhZbierky ? ISKRY_CFG.druhZbierky : 0; setDruh(d); i = iskryVDruhu(d).findIndex((x) => x.id === id); }

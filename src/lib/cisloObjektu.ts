@@ -1,4 +1,4 @@
-// KARTA 48 · bod 4 · verejné číslo objektu = variabilný symbol (podklad „Číslovanie" v1.1).
+// KARTA 48 · bod 4 · verejné číslo objektu = variabilný symbol (podklad „Číslovanie" v1.3).
 // 9 číslic sekvencia + 1 kontrolná (Luhn) = 10 číslic. Pre ľudí s prefixom podľa typu: Z-123 456 789 0.
 // Číslo prideľuje server (atomická sekvencia, nikdy sa nerecykluje). Kým ho objekt nemá,
 // appka zobrazí TESTOVACIE číslo odvodené z id (rovnaké id = rovnaké číslo).

@@ -9,7 +9,7 @@ import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 
 import { createPortal } from "react-dom";
 import { useLayout } from "@/components/context";
 import { ZbierkaModul } from "@/features/zbierka/ZbierkaModul";
-import { najdiTestProfil, type TestProfil, type TestZbierka } from "@/lib/testProfily";
+import { najdiTestProfil, type TestZbierka } from "@/lib/testProfily";
 import { otvorVerejnyProfil, useVerejnyProfilOtvoreny, verejnyProfilKluc, zavriVerejnyProfil, vrstvaProfiluPripoj } from "./otvor";
 import { VrstvaProfilu, naZbierkaData } from "./casti";
 import { useVzhlad, maVybranyVzhlad, type Vzhlad } from "@/lib/vzhladStranky";

@@ -187,7 +187,7 @@ export function NovaZbierka({ strankaId, pozicia, tier, nazov, inicialy, mobil, 
     </div>);
 
   const hlavicka = (t: string, s: string) => <div style={{ display: "flex", flexDirection: "column", gap: 4 }}><span style={{ fontSize: ph ? 22 : 26, fontWeight: 800, color: "var(--ink)" }}>{t}</span><span style={{ fontSize: 15, lineHeight: 1.45, color: "var(--ink3)" }}>{s}</span></div>;
-  let obsah: ReactNode = null;
+  let obsah: ReactNode;
 
   if (k === 1) {
     obsah = <>{uvodOn && <section className="pf-rise" style={{ borderRadius: 22, background: "var(--gSoft)", border: "1.5px solid var(--gBd)", padding: ph ? "18px 18px" : "22px 24px", display: "flex", flexDirection: "column", gap: 10 }}>
@@ -226,7 +226,7 @@ export function NovaZbierka({ strankaId, pozicia, tier, nazov, inicialy, mobil, 
         <Nadpis t="Suma" pecat />
         <Volby stlpce={2} value={d.cielTyp} onChange={(t) => zmen({ cielTyp: t })} moznosti={[{ k: "ciel" as const, t: "Cieľová suma", s: "viem, koľko potrebujem" }, { k: "otv" as const, t: "Otvorená", s: "bez cieľa, koľko sa vyzbiera" }]} />
         {maCiel && <label style={{ position: "relative", display: "block", maxWidth: ph ? undefined : 320 }}>
-          <input value={cielCislo(d) ? cielCislo(d).toLocaleString("sk-SK").replace(/ /g, " ") : ""} onChange={(e) => zmen({ ciel: e.target.value.replace(/\D/g, "").slice(0, 7) })} inputMode="numeric" placeholder="Napríklad 4 000" aria-label="Cieľová suma v eurách" style={{ ...pole, paddingRight: 40 }} />
+          <input value={cielCislo(d) ? cielCislo(d).toLocaleString("sk-SK").replace(/\u00A0/g, " ") : ""} onChange={(e) => zmen({ ciel: e.target.value.replace(/\D/g, "").slice(0, 7) })} inputMode="numeric" placeholder="Napríklad 4 000" aria-label="Cieľová suma v eurách" style={{ ...pole, paddingRight: 40 }} />
           <span style={{ position: "absolute", right: 16, top: 15, fontSize: 16, fontWeight: 800, color: "var(--ink3)" }}>€</span>
         </label>}
         {zadarmo ? <>
