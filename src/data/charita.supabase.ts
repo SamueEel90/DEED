@@ -67,7 +67,7 @@ export const charitaSupabase = {
     if (!supabase) return [];
     // len kurátorský charita-page feed (riadky s `data.comp`)
     const { data, error } = await supabase
-      .from("prispevok")
+      .from("prispevok_feed") // 0037: vyzbierané z ledgera
       .select("*")
       .not("data->>comp", "is", null)
       .order("skore", { ascending: false });
@@ -90,7 +90,7 @@ export const charitaSupabase = {
     if (!supabase) throw new Error("Supabase nie je nakonfigurovaný");
     // hlavná zbierka (detail) je uložená v urgent riadku → data.zbierka
     const { data, error } = await supabase
-      .from("prispevok")
+      .from("prispevok_feed") // 0037: vyzbierané z ledgera
       .select("data")
       .eq("data->>comp", "urgent")
       .limit(1)

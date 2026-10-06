@@ -49,7 +49,7 @@ async function darcoviaLive(): Promise<RebricekPolozka[]> {
 /** Top Hrdinovia — autori skutkov (Domov) podľa podpory (živé z `prispevok`). */
 async function hrdinoviaLive(): Promise<RebricekPolozka[]> {
   const { data, error } = await supabase!
-    .from("prispevok")
+    .from("prispevok_feed")  // 0037: vyzbierané/počet darov z ledgera
     .select("id, autor_ucet_id, autor_nazov, autor_karma, podpora_count, overene, typ, lat, lng")
     .is("data->>comp", null)
     .is("data->>akt", null)   // len Domov skutky (Aktivity majú vlastný rebríček)
@@ -122,7 +122,7 @@ async function charityLive(): Promise<RebricekPolozka[]> {
  *  topované → počet podpôr. Mapované cez `naGoodPolozka` → identická karta ako Domov. */
 async function prispevkyLive(): Promise<GoodPolozka[]> {
   const { data, error } = await supabase!
-    .from("prispevok")
+    .from("prispevok_feed")  // 0037: vyzbierané/počet darov z ledgera
     .select("*")
     .eq("typ", "skutok")
     .is("data->>comp", null)

@@ -290,14 +290,6 @@ export async function ulozSuhlas(ucetId: string, druh: string, hodnota = true, d
   if (error) throw error;
 }
 
-// Pasívny dar (§2) — host bez účtu: ucetId = null
-export async function pridajDar({ ucetId = null, sumaEur, kanal, prijemca = null, zobrazenie = "anonym" }: { ucetId?: string | null; sumaEur: number; kanal: string; prijemca?: string | null; zobrazenie?: string }) {
-  const { error } = await db()
-    .from("dar")
-    .insert({ ucet_id: ucetId, suma_eur: sumaEur, kanal, prijemca, zobrazenie });
-  if (error) throw error;
-}
-
 // ============================================================
 // CHARITA / OZ
 // ============================================================

@@ -41,9 +41,12 @@ export const splitValid = (ciele: SplitCiel[], minPct: number = SPLIT_MIN): bool
   return ciele.length >= 1 && owner >= minPct && ciele.every((c) => c.pct >= minPct);
 };
 
-/** ciele → payload pre qr_split_create (podiel 0..1, organizácie = fixny). 0 % sa nepridá. */
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+/** ciele → payload pre qr_split_create (podiel 0..1, organizácie = fixny). 0 % sa nepridá.
+ *  Zadanie 2 (0037): príjemca = účet autora prípadu (case_id); názov je len popis. Cieľ bez prípadu
+ *  v DB (mock) server odmietne — podiel by nemal komu prísť. */
 export const splitCielePayload = (ciele: SplitCiel[]) =>
-  ciele.filter((c) => c.pct > 0).map((c) => ({ prijemca_text: c.komu, podiel: +(c.pct / 100).toFixed(5), fixny: true }));
+  ciele.filter((c) => c.pct > 0).map((c) => ({ ...(UUID.test(c.id) ? { case_id: c.id } : {}), prijemca_text: c.komu, podiel: +(c.pct / 100).toFixed(5), fixny: true }));
 
 /** split rozpis pre QrModal (vlastník + organizácie). 0 % sa nepridá. */
 export const splitPreQrModal = (ownerLabel: string, ciele: SplitCiel[]) =>

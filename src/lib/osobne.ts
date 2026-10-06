@@ -82,23 +82,25 @@ export async function prepniRsvp(refId: string, modul = "nabozenstvo"): Promise<
   return !idem;
 }
 
-// ============ PEŇAŽENKA (mock zostatok DEED) ============
+// ============ PEŇAŽENKA — zostatok DEED z ledgera (migrácia 0037) ============
+// V DB: v_zostatok (kredit − debet z tabuľky pohyb) a Dobiť = pohyb z testovacej pokladne.
+// Bez DB (demo): lokálne číslo v localStorage.
 const ZOSTATOK_LS = "deed.wallet.zostatok";
 const VYCHODZI_ZOSTATOK = 1240;
 
 export async function nacitajZostatok(): Promise<number> {
   if (maDB()) {
-    const { data, error } = await supabase!.from("penazenka").select("zostatok_deed").maybeSingle();
-    if (!error) return data ? Number(data.zostatok_deed) : VYCHODZI_ZOSTATOK;
+    const { data, error } = await supabase!.from("v_zostatok").select("zostatok_deed").maybeSingle();
+    if (!error && data) return Number(data.zostatok_deed);
   }
   const n = Number(lsGet<number>(ZOSTATOK_LS, VYCHODZI_ZOSTATOK));
-  return Number.isFinite(n) && n > 0 ? n : VYCHODZI_ZOSTATOK;
+  return Number.isFinite(n) && n >= 0 ? n : VYCHODZI_ZOSTATOK;
 }
 
-/** Dobitie (mock kúpa DEED kartou) — pripíše a vráti nový zostatok. */
+/** Dobitie v testovacej verzii — pohyb z testovacej pokladne, vráti nový zostatok. */
 export async function dobitPenazenku(deed: number): Promise<number> {
   if (maDB()) {
-    const { data, error } = await supabase!.rpc("penazenka_dobit", { p_deed: deed });
+    const { data, error } = await supabase!.rpc("testovacie_dobitie", { p_deed: deed });
     if (!error && data != null) return Number(data);
   }
   const nove = (await nacitajZostatok()) + deed;

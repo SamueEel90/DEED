@@ -167,6 +167,9 @@ export async function pridajPodporuDB(p: {
   prijemca?: string; suma?: number; kanal?: string; vyzbierane?: number; ciel?: number;
 }): Promise<void> {
   if (!supabase) return;
+  // Zadanie 2 (ledger, 0037): dar musí mať príjemcu s účtom — v DB je ním autor prípadu.
+  // Prípad, ktorý v DB nie je (mock/demo id), sa do ledgera nezapisuje; ostáva len v UI.
+  if (!jeUuid(p.refId)) return;
   const kanal = KANAL_DO_DB[p.kanal || "DEED"] || "deed";        // DEED→deed, EUR→fiat
   const mena = kanal === "deed" ? "DEED" : "EUR";
   let idemKluc: string;
@@ -176,7 +179,7 @@ export async function pridajPodporuDB(p: {
     p_suma: p.suma ?? 0,
     p_mena: mena,
     p_kanal: kanal,
-    p_case_id: jeUuid(p.refId) ? p.refId : null,                 // uuid prípadu alebo NULL
+    p_case_id: p.refId,                                            // uuid prípadu → príjemca = jeho autor
     p_odosielatel: p.ucetId ?? null,
     p_odosielatel_text: p.darca,
     p_prijemca_text: p.prijemca ?? null,
@@ -241,7 +244,8 @@ function riadokNaZbierka(r: any): MojaZbierka {
 /** Načíta moje zbierky z DB (owner = auth.uid() cez RLS). */
 export async function nacitajZbierkyDB(): Promise<MojaZbierka[]> {
   if (!supabase) return [];
-  const { data, error } = await supabase.from("zbierka").select("*").order("vytvorene", { ascending: false });
+  // 0037: vyzbierané nie je zapísané číslo — pohľad zbierka_moja ho počíta z ledgera
+  const { data, error } = await supabase.from("zbierka_moja").select("*").order("vytvorene", { ascending: false });
   if (error) throw error;
   return (data || []).map(riadokNaZbierka);
 }
@@ -251,7 +255,7 @@ export async function vytvorZbierkuDB(z: MojaZbierka): Promise<void> {
   if (!supabase) return;
   const { error } = await supabase.from("zbierka").insert({
     id: z.id, nazov: z.nazov, modul: z.modul, typ: z.typ ?? null, emoji: z.emoji ?? null,
-    lok: z.lok ?? null, ciel: z.ciel ?? null, vyzbierane: z.vyzbierane ?? 0, stav: z.stav,
+    lok: z.lok ?? null, ciel: z.ciel ?? null, stav: z.stav,
     dakovna_sprava: z.dakovnaSprava ?? null,
     dakovne_video: z.dakovneVideoUrl ?? (z.dakovneVideo ? "ano" : null),
     doklady: z.doklady ?? [],
@@ -266,7 +270,6 @@ export async function upravZbierkuDB(id: string, patch: Partial<MojaZbierka>): P
   if (patch.stav !== undefined) row.stav = patch.stav;
   if (patch.doklady !== undefined) row.doklady = patch.doklady;
   if (patch.dakovnaSprava !== undefined) row.dakovna_sprava = patch.dakovnaSprava;
-  if (patch.vyzbierane !== undefined) row.vyzbierane = patch.vyzbierane;
   if (patch.dakovneVideoUrl !== undefined) row.dakovne_video = patch.dakovneVideoUrl;
   else if (patch.dakovneVideo !== undefined) row.dakovne_video = patch.dakovneVideo ? "ano" : null;
   const { error } = await supabase.from("zbierka").update(row).eq("id", id);

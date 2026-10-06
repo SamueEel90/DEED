@@ -100,7 +100,7 @@ export const goodSupabase = {
     // bespoke karty z modulu Charita preliali do Domova. Poradie/filter rieši
     // feed.ts (pripravFeed) na klientovi.
     const { data, error } = await supabase
-      .from("prispevok")
+      .from("prispevok_feed") // 0037: vyzbierané z ledgera
       .select("*")
       .is("data->>comp", null)
       .is("data->>akt", null)   // vylúč Aktivity (Fáza F) — majú vlastný modul/feed
@@ -131,7 +131,6 @@ export const goodSupabase = {
       skore: it.skore ?? 0,
       overene: !!it.overene,
       ciel: it.ciel ?? null,
-      vyzbierane: it.vyzbierane ?? null,
     }).select("id").single();
     if (error) throw error;
     return (data?.id as string) ?? null;

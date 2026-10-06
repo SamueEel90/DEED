@@ -56,7 +56,7 @@ export const aktivitySupabase = {
     // len Aktivity riadky (data.akt=true). Poradie/okruh/typ rieši klient
     // (obohatit + pripravFeed); tu len stabilné poradie podľa cisla.
     const { data, error } = await supabase
-      .from("prispevok")
+      .from("prispevok_feed") // 0037: vyzbierané z ledgera
       .select("*")
       .not("data->>akt", "is", null)
       .order("cislo", { ascending: false });

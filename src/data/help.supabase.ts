@@ -59,7 +59,7 @@ export const helpSupabase = {
     if (!supabase) return null;
     const fotky = await nahrajFotky(it.fotky ?? []); // data URL → Storage (passthrough ak zlyhá)
     // Help-specifické polia idú do `data` (diskriminátor help:true); engine polia do stĺpcov.
-    // autor_nazov = titul žiadosti (denormalizácia podľa naHelpItem), suma→vyzbierane, ludia→pomocnici.
+    // autor_nazov = titul žiadosti (denormalizácia podľa naHelpItem), ludia→pomocnici; suma sa nezapisuje — vyzbierané počíta ledger (0037).
     const { data, error } = await supabase.from("prispevok").insert({
       autor_ucet_id: autorUcetId ?? null,
       autor_nazov: it.nazov,
@@ -78,7 +78,6 @@ export const helpSupabase = {
       skore: it.skore ?? 0,
       overene: !!it.overeny,
       ciel: it.ciel ?? null,
-      vyzbierane: it.suma ?? null,
       pomocnici: it.ludia ?? null,
       data: { help: true, id: it.id, typ: it.typ, velkost: it.velkost, odbornik: it.odbornik ?? false, sponzor: it.sponzor ?? false, avatar: it.avatar ?? null },
     }).select("id").single();
@@ -90,7 +89,7 @@ export const helpSupabase = {
     // len Help riadky (data.help=true). Okruh/prah/zoradenie rieši klient (pripravFeed);
     // tu len stabilné poradie podľa skóre.
     const { data, error } = await supabase
-      .from("prispevok")
+      .from("prispevok_feed") // 0037: vyzbierané z ledgera
       .select("*")
       .not("data->>help", "is", null)
       .order("skore", { ascending: false });

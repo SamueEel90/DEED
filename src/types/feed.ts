@@ -518,6 +518,8 @@ export interface QrTypKonfig {
 /** Riadok príjemcu (organizácie/žiadosti) v QR splite. */
 export interface QrSplitCiel {
   prijemca_ucet?: string | null;
+  /** prípad v DB, ktorého autor je príjemca (0037) */
+  case_id?: string | null;
   prijemca_text?: string | null;
   podiel: number;   // 0..1
   fixny?: boolean;
