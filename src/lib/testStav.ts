@@ -20,6 +20,8 @@ export function zmenTestStav(p: Partial<TestStav>) {
   try { localStorage.setItem(KLUC, JSON.stringify({ ...nacitajTestStav(), ...p })); } catch { /* LS */ }
   posl.forEach((f) => f());
 }
+/** odber zmien testovacieho stavu mimo Reactu (napr. zoznam darov sa prekreslí pri Vyplnený / Prázdny) */
+export function naZmenuTestStavu(f: () => void): () => void { posl.add(f); return () => { posl.delete(f); }; }
 export function useTestStav(): TestStav {
   const [s, setS] = useState(nacitajTestStav);
   useEffect(() => { const f = () => setS(nacitajTestStav()); posl.add(f); return () => { posl.delete(f); }; }, []);

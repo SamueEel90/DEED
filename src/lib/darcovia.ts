@@ -10,6 +10,7 @@ import { createContext, useContext, useSyncExternalStore } from "react";
 import { dorovnanieNaDar, dorovnanieKDaru, zapisDar as zapisDorovnanie } from "./dorovnanie";
 import { supabase } from "./supabase";
 import { pridajPodporu, firmaAkoDarca } from "./podpory";
+import { ukazkyTeraz, naZmenuTestStavu } from "./testStav";
 
 // ---- CONFIG (spec §6) — všetky čísla ŠTARTOVACIE, žijú tu, nie v kóde ----
 export const DARCOVIA_CFG = {
@@ -117,11 +118,29 @@ function seed(refId: string): DarRiadok[] {
 const ciste = new Set<string>();
 export function nastavCiste(ids: string[]) { ids.forEach((i) => ciste.add(i)); }
 
-function riadkyPre(refId: string): DarRiadok[] {
+// sklad = len skutočné (simulované) dary; vymyslené dary (seed) len pri ukážkach — testovacia verzia
+// a „Profil: Vyplnený". Pri „Prázdny" a mimo testovacej verzie žiadne vymyslené mená (pravidlo placebo).
+const skladSeed = new Map<string, DarRiadok[]>();
+const zlozene = new Map<string, { r: DarRiadok[]; z: DarRiadok[] }>();
+naZmenuTestStavu(emit);
+function realneDary(refId: string): DarRiadok[] {
   let r = sklad.get(refId);
-  if (!r) { r = ciste.has(refId) ? [] : seed(refId); sklad.set(refId, r); }
+  if (!r) { r = []; sklad.set(refId, r); }
   return r;
 }
+function riadkyPre(refId: string): DarRiadok[] {
+  const r = realneDary(refId);
+  if (ciste.has(refId) || !ukazkyTeraz()) return r;
+  let s = skladSeed.get(refId);
+  if (!s) { s = seed(refId); skladSeed.set(refId, s); }
+  const c = zlozene.get(refId);
+  if (c && c.r === r) return c.z; // stabilná referencia pre useSyncExternalStore
+  const z = [...r, ...s];
+  zlozene.set(refId, { r, z });
+  return z;
+}
+/** kľúče zbierok so skutočnými darmi podľa začiatku (omšové okná farnosti) */
+export function refIdySDarmi(zaciatok: string): string[] { return [...sklad.keys()].filter((k) => k.startsWith(zaciatok) && (sklad.get(k)?.length ?? 0) > 0); }
 
 /** súčet a počet darov zbierky (eurá; EURC 1 : 1) — jeden zdroj pre ukazovateľ aj hlavičku */
 export function sucetDarov(refId: string): { suma: number; pocet: number } {
@@ -158,7 +177,7 @@ export function pridajDar(vstup: {
     ...(vstup.firma ? { firma: vstup.firma } : {}),
     ...(vstup.cezTvorcu ? { cezTvorcu: vstup.cezTvorcu } : {}),
   };
-  sklad.set(vstup.refId, [riadok, ...riadkyPre(vstup.refId)]);
+  sklad.set(vstup.refId, [riadok, ...realneDary(vstup.refId)]);
   emit();
   // dar od firmy (dorovnanie alebo firemný dar) sa ďalej nespracúva — inak by
   // dorovnanie dorovnávalo samo seba
@@ -195,7 +214,7 @@ export function pridajDar(vstup: {
 /** Spätné skrytie identity vlastného daru. V zozname darcov TLAČIDLO NIE JE —
  *  darca si identitu volí v profile a pri platbe; v zozname sa dalo kliknúť omylom. */
 export function prepniNaAnonym(refId: string, id: string) {
-  const nove = riadkyPre(refId).map((r) => (r.id === id ? { ...r, verzia: 4 as VerziaIdentity, zobrazSumu: false } : r));
+  const nove = realneDary(refId).map((r) => (r.id === id ? { ...r, verzia: 4 as VerziaIdentity, zobrazSumu: false } : r));
   sklad.set(refId, nove);
   emit();
 }
@@ -261,7 +280,7 @@ export function pridajCudziDarMock(refId: string, suma: number, anonym = false):
     id: `dar-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, refId, cas: Date.now(), suma, kanal: suma < 1 ? "deed" : "psp",
     registrovany: true, verzia: (anonym ? 4 : 2) as VerziaIdentity, zobrazSumu: !anonym, ...d,
   };
-  sklad.set(refId, [riadok, ...riadkyPre(refId)]);
+  sklad.set(refId, [riadok, ...realneDary(refId)]);
   emit();
   return riadok;
 }
