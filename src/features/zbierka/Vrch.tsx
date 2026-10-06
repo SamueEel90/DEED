@@ -9,6 +9,7 @@ import { FormatovanyText } from "@/components/formattext";
 import { SpatTlacidlo, ZavrietTlacidlo } from "@/components/cesta";
 import { kopiruj } from "@/lib/zdielanie";
 import { toast } from "@/components/toast";
+import { CelaGaleria } from "@/components/celaGaleria";
 
 /** 5. 10. · popis = nepovinný popis fotky (najviac 80 znakov): darca ho vidí pod fotkou na celej obrazovke, čítačka ako alt */
 export type Medium = ({ typ: "video"; src: string } | { typ: "foto"; src: string }) & { popis?: string };
@@ -131,65 +132,8 @@ export function Galeria({ media, vyska: vyskaP, radius: radiusP, okraj, prekryti
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" /></svg>
         </span>
       </div>
-      {cela && <CelaObrazovka media={media} start={index} onClose={(i) => { setCela(false); setIndex(i); const el = ref.current; if (el) el.scrollLeft = i * el.clientWidth; }} />}
+      {cela && <CelaGaleria media={media} start={index} onClose={(i) => { setCela(false); setIndex(i); const el = ref.current; if (el) el.scrollLeft = i * el.clientWidth; }} />}
     </>
-  );
-}
-
-// ---------------- celá obrazovka (otočenie telefónu = natívne, médium je contain) ----------------
-function CelaObrazovka({ media, start, onClose }: { media: Medium[]; start: number; onClose: (index: number) => void }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [index, setIndex] = useState(start);
-  useLayoutEffect(() => { const el = ref.current; if (el) el.scrollLeft = start * el.clientWidth; }, [start]);
-  useEffect(() => {
-    const esc = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(index); };
-    window.addEventListener("keydown", esc);
-    const prev = document.body.style.overflow; document.body.style.overflow = "hidden";
-    return () => { window.removeEventListener("keydown", esc); document.body.style.overflow = prev; };
-  }, [index, onClose]);
-  const naScroll = () => { const el = ref.current; if (el) setIndex(Math.round(el.scrollLeft / Math.max(1, el.clientWidth))); };
-  const krivka = "cubic-bezier(.2,.8,.2,1)";
-
-  return createPortal(
-    <div className="deed-platba" role="dialog" aria-label="Galéria"
-      style={{ position: "fixed", inset: 0, zIndex: 200, background: "#0B0A08", display: "flex", flexDirection: "column", animation: "zbFsIn .28s ease both" }}>
-      <div style={{ flex: "none", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "max(10px, env(safe-area-inset-top)) 16px 10px", color: "#F1ECE1" }}>
-        <span style={{ fontSize: 14, fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>{media.length > 1 ? `${index + 1} / ${media.length}` : ""}</span>
-        <button type="button" onClick={() => onClose(index)} aria-label="Zavrieť"
-          style={{ width: 40, height: 40, borderRadius: "50%", border: "none", background: "rgba(241,236,225,.14)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#F1ECE1" strokeWidth="2.2" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg>
-        </button>
-      </div>
-      <div className="zb-fs-media" style={{ position: "relative", flex: 1, overflow: "hidden", animation: `zbFsScale .32s ${krivka} both` }}>
-        <div ref={ref} className="zb-snap" onScroll={naScroll}>
-          {media.map((m, i) => <div key={i}>{m.typ === "foto"
-            ? <span role="img" aria-label={m.popis || undefined} style={{ position: "absolute", inset: 0, background: `url(${m.src}) center/contain no-repeat` }} />
-            : <VideoCele src={m.src} aktivne={i === index} />}</div>)}
-        </div>
-      </div>
-      {media[index]?.popis && <div style={{ flex: "none", padding: "12px 20px 0", textAlign: "center", color: "#F1ECE1", fontSize: 15, lineHeight: 1.45 }}>{media[index].popis}</div>}
-      <div style={{ flex: "none", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, color: "#A9A395", fontSize: 12.5, fontWeight: 600, paddingTop: 10 }}>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><rect x="7" y="2.5" width="10" height="19" rx="2" /><path d="M3 9a9 9 0 0 1 4-5M21 15a9 9 0 0 1-4 5" /></svg>
-        Potiahni prstom · otoč telefón pre celú šírku
-      </div>
-      <div style={{ flex: "none", padding: "12px 0 max(34px, env(safe-area-inset-bottom))" }}>
-        {media.length > 1 && <Bodky pocet={media.length} aktivna={index} />}
-      </div>
-    </div>,
-    document.body,
-  );
-}
-
-/** video na celej obrazovke: ťuk na prehrať spustí prehrávanie; pri odscrollovaní sa zastaví */
-function VideoCele({ src, aktivne }: { src: string; aktivne: boolean }) {
-  const url = useVideoUrl(src);
-  const [hra, setHra] = useState(false);
-  // mimo obrazovky sa video odpojí (zastaví)
-  if (hra && aktivne && url) return <video src={url} controls autoPlay playsInline style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain", background: "#000" }} />;
-  return (
-    <div {...pressable(() => setHra(true), "Prehrať video")} style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-      <PlayKruh size={72} />
-    </div>
   );
 }
 

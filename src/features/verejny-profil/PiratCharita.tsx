@@ -1,5 +1,5 @@
 // KARTA 55 · D — Pirát v2 „celé obrazovky, história ako cesta", 1 : 1 podľa „Svetlo - Pirat v2.dc.html".
-// PC sekcie po 820 px: 1 titulka (meno 112 px, štít, Naživo vpravo hore, Posuň ⌄) · 2 Teraz (hlavná zbierka, ťuk na celú plochu) ·
+// PC sekcie po 820 px: 1 titulka (meno 112 px, štít, Naživo vpravo hore; „Posuň ⌄" zmazané, OPRAVY 155/6) · 2 Teraz (hlavná zbierka, ťuk na celú plochu) ·
 //   3 Kam poslať (4 stĺpce, vybraný flex 2,4, modul hneď vedľa v stĺpci 420 px s vlastným posunom) ·
 //   4 Naša cesta (prerušovaná zlatá krivka, zastávky = posledné skutky a ukončené zbierky + DNES) · 5 Ďalšie teraz (karty 2a) · 6 Videá z Iskier.
 // Mobil: rovnaké sekcie pod sebou; Kam poslať = 4 pásy (vybraný 220 px), modul pod nimi zmenšený (B, bod 151/3); cesta zvislá.
@@ -59,9 +59,8 @@ export function PiratCharita({ profil, onDetail, onZaznam, onBack }: { profil: T
           </span>
           <b style={{ fontSize: pc ? 112 : 60, lineHeight: 0.92, letterSpacing: "-.045em", color: "#fff" }}>{meno}</b>
           <span style={{ fontSize: pc ? 22 : 16, lineHeight: 1.4, color: "#E8E1D3", maxWidth: 620 }}>{profil.veta}</span>
-          {mob && <span style={{ alignSelf: "center", fontSize: 14, fontWeight: 700, color: "#E8E1D3" }}>Posuň ⌄</span>}
         </div>
-        {pc && <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 14, flex: "none" }}>{stitEl(150, 176)}<span style={{ fontSize: 14, fontWeight: 700, color: "#E8E1D3" }}>Posuň ⌄</span></div>}
+        {pc && <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 14, flex: "none" }}>{stitEl(150, 176)}</div>}
       </div>
     </section>);
 
@@ -114,6 +113,7 @@ export function PiratCharita({ profil, onDetail, onZaznam, onBack }: { profil: T
             <span style={{ position: "absolute", left: 22, right: 22, bottom: 24, display: "flex", flexDirection: "column", gap: 6 }}>
               <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".12em", color: "#E8E1D3" }}>{stS(s, i)}</span>
               <b style={{ fontSize: 30, lineHeight: 1.05, letterSpacing: "-.02em", color: "#fff" }}>{nS(s, i)}</b>
+              {on && s.popis && <span style={{ fontSize: 16, lineHeight: 1.5, color: "#F1ECE1", maxWidth: 520 }}>{s.popis}</span>}
               <span style={{ fontSize: 15, color: "#E8E1D3" }}>{sumaS(s)}</span>
               {on && <b style={{ fontSize: 15, color: "#fff", paddingTop: 4 }}>Modul je vedľa ›</b>}
             </span>
@@ -125,12 +125,13 @@ export function PiratCharita({ profil, onDetail, onZaznam, onBack }: { profil: T
     <section style={{ display: "flex", flexDirection: "column", gap: 12, padding: "28px 16px 16px", borderTop: "1px solid var(--cardBd)" }}>
       <b style={{ fontSize: 34, letterSpacing: "-.03em" }}>Kam poslať</b>
       {sektory.map((s, i) => { const on = sel === i; return (
-        <button key={s.id} type="button" data-hier={String(i)} aria-expanded={on} onClick={() => setSel(on ? -1 : i)} style={{ height: on ? 220 : 120, flex: "none", position: "relative", borderRadius: 20, overflow: "hidden", background: bgF(s.foto), cursor: "pointer", outline: on ? "3px solid var(--hc)" : "none", outlineOffset: -3, transition: "height .4s ease", border: "none", padding: 0, textAlign: "left", fontFamily: "inherit", boxShadow: "none" }}>
+        <button key={s.id} type="button" data-hier={String(i)} aria-expanded={on} onClick={() => setSel(on ? -1 : i)} style={{ height: on ? 290 : 120, flex: "none", position: "relative", borderRadius: 20, overflow: "hidden", background: bgF(s.foto), cursor: "pointer", outline: on ? "3px solid var(--hc)" : "none", outlineOffset: -3, transition: "height .4s ease", border: "none", padding: 0, textAlign: "left", fontFamily: "inherit", boxShadow: "none" }}>
           <span style={{ position: "absolute", inset: 0, background: "linear-gradient(90deg,rgba(10,8,5,.88) 0%,rgba(10,8,5,.2) 100%)" }} />
           <span style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 7, background: "var(--hcF)" }} />
           <span style={{ position: "absolute", left: 20, right: 16, bottom: 14, display: "flex", flexDirection: "column", gap: 3 }}>
             <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: ".12em", color: "#E8E1D3" }}>{stS(s, i)}</span>
             <b style={{ fontSize: 22, color: "#fff" }}>{nS(s, i)}</b>
+            {on && s.popis && <span style={{ fontSize: 14, lineHeight: 1.45, color: "#F1ECE1" }}>{s.popis}</span>}
             <span style={{ fontSize: 13.5, color: "#E8E1D3" }}>{sumaS(s)}</span>
           </span>
         </button>); })}

@@ -199,7 +199,7 @@ export function Screens({ wide, desktop }: { wide?: boolean; desktop?: boolean }
   const [uvodVideny, setUvodVideny] = useState(() => { try { return !!localStorage.getItem("deed.intro.v1"); } catch { return true; } });
   const [taby, setTaby] = useState<string[]>(nacitajTaby);
   const [viac, setViac] = useState(false);
-  const [galeria, setGaleria] = useState<{ fotky: string[]; index: number } | null>(null);
+  const [galeria, setGaleria] = useState<{ fotky: string[]; index: number; popisy?: (string | undefined)[] } | null>(null);
   const [walletReq, setWalletReq] = useState(0); // ☰ → Peňaženka: otvor peňaženku v Profile
   const [akcie, setAkcie] = useState<StrankaAkcie>({}); // kontextové akcie aktuálneho modulu (Pridať / Ukáž talent / Nástenka)
   const [upgradeOpen, setUpgradeOpen] = useState(false); // pasívny → „Staň sa aktívnym" panel
@@ -327,7 +327,7 @@ export function Screens({ wide, desktop }: { wide?: boolean; desktop?: boolean }
     return <Registracia onHotovo={() => {}} resume={resumeInfo ?? undefined} />;
   }
 
-  const otvorGaleriu = (fotky: string[], index = 0) => setGaleria({ fotky, index });
+  const otvorGaleriu = (fotky: string[], index = 0, popisy?: (string | undefined)[]) => setGaleria({ fotky, index, popisy });
   // moduly cez ScrollContext odscrollujú appku hore (napr. pri otvorení detailu)
   const scrollHore = () => { if (scrollRef.current) scrollRef.current.scrollTop = 0; };
 
@@ -408,7 +408,7 @@ export function Screens({ wide, desktop }: { wide?: boolean; desktop?: boolean }
         <PolohaOkruhu />
 
         {/* fullscreen galéria fotiek so swipovaním */}
-        {galeria && <Lightbox fotky={galeria.fotky} index={galeria.index} onClose={() => setGaleria(null)} />}
+        {galeria && <Lightbox fotky={galeria.fotky} index={galeria.index} popisy={galeria.popisy} onClose={() => setGaleria(null)} />}
 
         {/* odznak (shift-binding) — otvorené po naskenovaní /badge/{slug} */}
         {badgeSheet && <BadgeSheet badgeId={badgeSheet} onClose={() => setBadgeSheet(null)} toast={toast} />}

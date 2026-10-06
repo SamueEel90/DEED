@@ -258,9 +258,8 @@ function DevPanel({ dev, setDev, miestoPevne, registrovany, ico, cielInfo, onDar
   dev: DevStav; setDev: (z: Partial<DevStav>) => void; miestoPevne: boolean; registrovany: boolean; ico: boolean;
   cielInfo?: string; onDar: (suma: number) => void; dorovnava?: string;
 }) {
-  // predvolene zbalený, nech detail vyzerá ako v appke; stav sa pamätá
-  const [skryty, setSkrytyRaw] = useState(() => { try { return localStorage.getItem("deed.dev.zbierkaPanel") !== "1"; } catch { return true; } });
-  const setSkryty = (v: boolean) => { setSkrytyRaw(v); try { localStorage.setItem("deed.dev.zbierkaPanel", v ? "0" : "1"); } catch { /* LS */ } };
+  // OPRAVY 155/5: pri každom otvorení zbalený do malého „DEV ›", otvorí sa až ťukom (stav sa nepamätá)
+  const [skryty, setSkryty] = useState(true);
   const tempo = useDevTempo();
   const [tuk, setTuk] = useState(potvrditTuknutim);
   const chip = (on: boolean): CSSProperties => ({ padding: `${SPACE.xxs}px ${SPACE.sm}px`, borderRadius: RADIUS.pill, fontSize: 11.5, fontWeight: 700, cursor: "pointer",
@@ -271,6 +270,9 @@ function DevPanel({ dev, setDev, miestoPevne, registrovany, ico, cielInfo, onDar
       <Switch on={on} onChange={zmen} ariaLabel={label} />
     </div>
   );
+  if (skryty) return (
+    <button type="button" onClick={() => setSkryty(false)} aria-label="Otvoriť DEV panel detailu zbierky"
+      style={{ margin: SPACE.md, alignSelf: "flex-start", minHeight: 44, padding: "0 14px", borderRadius: RADIUS.sm, border: "1px dashed var(--a-plum)", background: "transparent", color: "var(--a-plum)", fontSize: 12, fontWeight: 800, letterSpacing: ".04em", cursor: "pointer", fontFamily: "inherit", boxShadow: "none" }}>DEV ›</button>);
   return (
     <div style={{ margin: SPACE.md, padding: SPACE.sm, borderRadius: RADIUS.sm, border: "1px dashed var(--a-plum)", fontSize: 12 }}>
       <div style={{ display: "flex", alignItems: "center", gap: SPACE.xs }}>

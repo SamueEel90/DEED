@@ -43,6 +43,8 @@ export interface TestSektor {
   mesacne?: number;
   /** KARTA 50 · farnosť: dlaždice sú zbierky, nie sektory — štítok dlaždice, riadok pod názvom a texty náhľadu modulu */
   stitok?: string; dlazdicaText?: string; typ?: string; typ2?: string; info?: string;
+  /** OPRAVY 155/4: popis sektora (2 až 4 vety) — Pirát pod názvom vybraného sektora a hore v module */
+  popis?: string;
 }
 
 export interface TestZbierka {
@@ -251,8 +253,10 @@ const sektor = (
   id: string, nazov: string, druh: "centralna" | "sektor", foto: string,
   vyzbierane: number, darcovia: number,
   mesta: Record<Mesto, { dlazdica: string; minulyMesiac: string; uvidis: string; rozpis: [string, number][] }>,
-  v6?: Pick<TestSektor, "mesiac" | "kam" | "tipy" | "mesacne" | "galeria">,
-): TestSektor => ({ id, nazov, druh, foto, vyzbierane, darcovia, mesta, ...v6 });
+  v6?: Pick<TestSektor, "mesiac" | "kam" | "tipy" | "mesacne" | "galeria" | "popis">,
+): TestSektor => ({ id, nazov, druh, foto, vyzbierane, darcovia, mesta, popis: POPIS_SEKTORA, ...v6 });
+// OPRAVY 155/4: testovací popis — rovnaký pri každom sektore (charita ho zadá v Správe)
+const POPIS_SEKTORA = "Peniaze z tejto časti idú len na túto tému. Každý mesiac zverejníme, na čo sa minuli a komu pomohli. Pomôže aj malý pravidelný dar.";
 
 // ============================================================
 // 1 · CHARITA — Svetlo pomoci o.z. (sídlo Trenčín)

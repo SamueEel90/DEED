@@ -3,7 +3,7 @@ import { createContext, useContext, useEffect, useRef, type ReactNode, type RefO
 // ============================================================
 // GALÉRIA — kontext: ktorýkoľvek modul otvorí fullscreen prezeranie
 // ============================================================
-export const GaleriaContext = createContext<(fotky: string[], index?: number) => void>(() => {});
+export const GaleriaContext = createContext<(fotky: string[], index?: number, popisy?: (string | undefined)[]) => void>(() => {});
 export const useGaleria = () => useContext(GaleriaContext);
 
 // ============================================================

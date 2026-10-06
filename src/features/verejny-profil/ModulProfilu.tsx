@@ -63,6 +63,7 @@ export function ModulProfilu({ profil, sektor, poradie, mestoV, onZbal, dorovnan
           <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 3 }}>
             <b style={{ fontSize: 20, lineHeight: 1.2 }}>{sektor.nazov}</b>
             <span style={{ fontSize: 13, lineHeight: 1.4, color: "var(--ink3)" }}>{meno ?? profil.meno} · {typ2}</span>
+            {sektor.popis && <span style={{ fontSize: 14, lineHeight: 1.5, color: "var(--ink2)", marginTop: 4 }}>{sektor.popis}</span>}{/* OPRAVY 155/4 */}
           </span>
           <SvetlusikInfo otv={info} onPrepni={() => setInfo((x) => !x)} />
         </div>

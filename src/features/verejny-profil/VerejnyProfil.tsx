@@ -7,6 +7,7 @@
 import { useTestStav, vyprazdni } from "@/lib/testStav";
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { createPortal } from "react-dom";
+import { useLayout } from "@/components/context";
 import { ZbierkaModul } from "@/features/zbierka/ZbierkaModul";
 import { najdiTestProfil, type TestProfil, type TestZbierka } from "@/lib/testProfily";
 import { otvorVerejnyProfil, useVerejnyProfilOtvoreny, verejnyProfilKluc, zavriVerejnyProfil, vrstvaProfiluPripoj } from "./otvor";
@@ -96,7 +97,7 @@ export function VerejnyProfilView({ kluc, onBack }: { kluc: string; onBack: () =
   // KARTA 55 · E: zbierka so zverejneným príbehom otvorí stránku Príbeh zbierky (inak modul zbierky ako doteraz)
   const pribeh = detail ? pribehZbierky(detail.id) : null;
   const vrstva = detail && pribeh ? (
-    <PribehZbierky profil={profil} z={detail} p={pribeh} spatText="Späť na profil" onBack={() => setDetail(null)} />
+    <PribehZbierky profil={profil} z={detail} p={pribeh} spatText={profil.meno.replace(/\s+o\.\s?z\.$/i, "")} onBack={() => setDetail(null)} />
   ) : detail ? (
     <div className="sc-tokeny" data-stit={profil.stit.toLowerCase()} style={{ background: "var(--bg)", minHeight: "100%" }}>
       <div style={{ maxWidth: 1240, margin: "0 auto", padding: 14 }}>
@@ -120,10 +121,12 @@ export function VerejnyProfilView({ kluc, onBack }: { kluc: string; onBack: () =
 /** OPRAVY 154: verejný profil otvorený zo Správy (charita, farnosť, firma, tvorca, klub, spolok) — okno NAD Správou
  *  ako VerejnyProfilOkno (portál, celá obrazovka), „Späť" vráti do Správy na to isté miesto. */
 export function VerejnyProfilVSprave({ kluc, onZavri }: { kluc: string; onZavri: () => void }) {
+  // OPRAVY 155/7: z-index 70 — nad Správou, ale POD oknami profilu (štít 80, platba 150, Iskry 160, galéria 1000)
+  const { desktop } = useLayout();
   useEffect(() => vrstvaProfiluPripoj(), []);
   useEffect(() => { const k = (e: KeyboardEvent) => { if (e.key === "Escape") onZavri(); }; window.addEventListener("keydown", k); return () => window.removeEventListener("keydown", k); }, [onZavri]);
   return createPortal(
-    <div role="dialog" aria-modal="true" aria-label="Verejný profil" style={{ position: "fixed", inset: 0, zIndex: 200, overflowY: "auto", background: "var(--c-bg)", WebkitOverflowScrolling: "touch" } as CSSProperties}>
+    <div role="dialog" aria-modal="true" aria-label="Verejný profil" style={{ position: "fixed", top: 0, right: 0, bottom: 0, left: desktop ? 104 : 0, zIndex: 70, overflowY: "auto", background: "var(--c-bg)", WebkitOverflowScrolling: "touch" } as CSSProperties}>
       <VerejnyProfilView kluc={kluc} onBack={onZavri} />
     </div>, document.body);
 }

@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import type { CSSProperties } from "react";
 import { C, GRAD, glass, glassTmavy, SPACE, RADIUS } from "@/theme";
 import { useGaleria } from "@/components/context";
+import { CelaGaleria } from "@/components/celaGaleria";
 import { pressable } from "@/components/pressable";
 import { Hmat } from "@/components/ui";
 
@@ -148,110 +149,9 @@ export function MiniFotky({ fotky }: { fotky?: string[] }) {
   );
 }
 
-// ---- LIGHTBOX — celá obrazovka + swipe (dotyk, myš, šípky, klávesnica) ----
-export function Lightbox({ fotky, index = 0, onClose }: { fotky: string[]; index?: number; onClose: () => void }) {
-  const [i, setI] = useState(index);
-  const [dx, setDx] = useState(0);
-  const drag = useRef<{ x: number; t: number; presun: boolean } | null>(null);
-  const boloPotiahnute = useRef(false); // click po drag-u nesmie zavrieť galériu
-  const rootRef = useRef<HTMLDivElement>(null);
-
-  // a11y: focus skočí do galérie a po zatvorení sa vráti na pôvodný prvok
-  useEffect(() => {
-    const predtym = document.activeElement as HTMLElement | null;
-    rootRef.current?.focus();
-    return () => predtym?.focus?.();
-  }, []);
-
-  useEffect(() => {
-    const klavesy = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-      if (e.key === "ArrowRight") setI((x) => Math.min(x + 1, fotky.length - 1));
-      if (e.key === "ArrowLeft") setI((x) => Math.max(x - 1, 0));
-    };
-    window.addEventListener("keydown", klavesy);
-    return () => window.removeEventListener("keydown", klavesy);
-  }, [fotky.length, onClose]);
-
-  const zaciatok = (x: number) => { drag.current = { x, t: Date.now(), presun: false }; };
-  const pohyb = (x: number) => {
-    if (!drag.current) return;
-    const d = x - drag.current.x;
-    if (Math.abs(d) > 4) drag.current.presun = true;
-    setDx(d);
-  };
-  const koniec = () => {
-    if (!drag.current) return;
-    boloPotiahnute.current = drag.current.presun;
-    const svihnutie = Date.now() - drag.current.t < 260 && Math.abs(dx) > 28;
-    const prah = 60;
-    if ((dx < -prah || (svihnutie && dx < 0)) && i < fotky.length - 1) setI(i + 1);
-    else if ((dx > prah || (svihnutie && dx > 0)) && i > 0) setI(i - 1);
-    drag.current = null;
-    setDx(0);
-  };
-
-  return (
-    <div
-      ref={rootRef} role="dialog" aria-modal="true" aria-label="Galéria fotiek" tabIndex={-1}
-      style={{ position: "fixed", inset: 0, background: "rgba(4,6,12,.88)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)",
-        zIndex: 1000, display: "flex", flexDirection: "column", userSelect: "none", touchAction: "none", outline: "none", animation: "fadeUp .18s ease" }}
-      onMouseDown={(e) => zaciatok(e.clientX)}
-      onMouseMove={(e) => drag.current && pohyb(e.clientX)}
-      onMouseUp={koniec}
-      onMouseLeave={() => drag.current && koniec()}
-      onTouchStart={(e) => zaciatok(e.touches[0].clientX)}
-      onTouchMove={(e) => pohyb(e.touches[0].clientX)}
-      onTouchEnd={koniec}
-    >
-      {/* horná lišta */}
-      <div style={{ display: "flex", alignItems: "center", padding: `${SPACE.md}px 18px` }}>
-        <span role="status" aria-live="polite" style={{ ...glass(12, .07), fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,.85)", borderRadius: RADIUS.lg, padding: `${SPACE.xxs}px ${SPACE.sm}px` }}>{i + 1} / {fotky.length}</span>
-        <span {...pressable(onClose, "Zavrieť galériu")} onMouseDown={(e) => e.stopPropagation()} onTouchStart={(e) => e.stopPropagation()}
-          style={{ ...glass(12, .07), position: "relative", marginLeft: "auto", width: 36, height: 36, borderRadius: RADIUS.round, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, cursor: "pointer", color: "rgba(255,255,255,.9)" }}><Hmat o={4} />✕</span>
-      </div>
-
-      {/* pás fotiek */}
-      <div style={{ flex: 1, overflow: "hidden", position: "relative" }}>
-        <div style={{
-          display: "flex", height: "100%",
-          transform: `translateX(calc(${-i * 100}% + ${dx}px))`,
-          transition: dx !== 0 ? "none" : "transform .3s cubic-bezier(.22,.9,.3,1)",
-        }}>
-          {fotky.map((f, k) => (
-            <div key={k}
-              onClick={(e) => { if (!boloPotiahnute.current && e.target === e.currentTarget) onClose(); }}
-              style={{ flex: "0 0 100%", display: "flex", alignItems: "center", justifyContent: "center", padding: `0 ${SPACE.sm}px` }}>
-              <Foto src={f} emoji="🖼" h="auto"
-                style={{ maxWidth: "100%", maxHeight: "100%", width: "auto", objectFit: "contain", pointerEvents: "none", borderRadius: RADIUS.md, boxShadow: "0 24px 80px rgba(0,0,0,.55)" }} />
-            </div>
-          ))}
-        </div>
-
-        {/* šípky pre desktop */}
-        {i > 0 && (
-          <span {...pressable(() => setI(i - 1), "Predchádzajúca fotka")} onMouseDown={(e) => e.stopPropagation()} onTouchStart={(e) => e.stopPropagation()}
-            style={sipka("left")}>‹</span>
-        )}
-        {i < fotky.length - 1 && (
-          <span {...pressable(() => setI(i + 1), "Ďalšia fotka")} onMouseDown={(e) => e.stopPropagation()} onTouchStart={(e) => e.stopPropagation()}
-            style={sipka("right")}>›</span>
-        )}
-      </div>
-
-      {/* bodky */}
-      <div style={{ display: "flex", justifyContent: "center", gap: SPACE.xs, padding: `${SPACE.md}px 0 ${SPACE.lg}px` }}>
-        {fotky.map((_, k) => (
-          <span key={k} {...pressable(() => setI(k), `Fotka ${k + 1}`)} aria-current={k === i ? "true" : undefined} onMouseDown={(e) => e.stopPropagation()} onTouchStart={(e) => e.stopPropagation()}
-            style={{ position: "relative", width: k === i ? 22 : 7, height: 7, borderRadius: 4, cursor: "pointer", transition: "all .25s ease",
-              background: k === i ? GRAD : "rgba(255,255,255,.25)" }}><Hmat o={5} /></span>
-        ))}
-      </div>
-      <div style={{ textAlign: "center", fontSize: 11, color: "rgba(255,255,255,.35)", paddingBottom: SPACE.gutter, marginTop: -SPACE.xs }}>
-        ← swipni alebo potiahni myšou →
-      </div>
-    </div>
-  );
+// ---- LIGHTBOX — OPRAVY 155/2: jedna galéria na celú obrazovku pre celú appku (CelaGaleria) ----
+export function Lightbox({ fotky, index = 0, popisy, onClose }: { fotky: string[]; index?: number; popisy?: (string | undefined)[]; onClose: () => void }) {
+  return <CelaGaleria media={fotky.map((src, i) => ({ typ: "foto" as const, src, popis: popisy?.[i] }))} start={index} onClose={onClose} />;
 }
 
 function sipka(strana: "left" | "right"): CSSProperties {

@@ -12,6 +12,7 @@ import { ZbalitASpat, ZmensenyModul } from "@/features/zbierka/ZmensenyModul";
 import { ModulPlatby } from "./ModulProfilu";
 import { zbierkaAkoSektor } from "./PodporaProfilu";
 import { bgF } from "./charitaCasti";
+import { CelaGaleria } from "@/components/celaGaleria";
 
 const PC = "(min-width: 1100px)";
 function usePc() {
@@ -26,6 +27,7 @@ export function PribehZbierky({ profil, z, p, spatText = "Späť do feedu", onBa
   profil: TestProfil; z: TestZbierka; p: Pribeh; spatText?: string; onBack: () => void; onOrg?: () => void;
 }) {
   const pc = usePc();
+  const [cela, setCela] = useState<number | null>(null); // OPRAVY 155/2: fotka na celú obrazovku
   const farnost = jeFarnost(profil);
   const zF = z.zFirmy ?? 0, pp = pct(z.vyzbierane, z.ciel), pF = z.ciel ? Math.min(100 - pp, Math.round(zF / z.ciel * 100)) : 0, pL = Math.max(0, pp - pF);
   const st = z.stav === "dlhodoba" ? "DLHODOBÁ" : z.konciDni != null ? `KONČÍ O ${tvar(z.konciDni, ["DEŇ", "DNI", "DNÍ"])}` : z.stav === "ukoncena" ? "UKONČENÁ" : null;
@@ -71,9 +73,10 @@ export function PribehZbierky({ profil, z, p, spatText = "Späť do feedu", onBa
   const foto = p.media.filter((m) => m.typ === "foto");
   const galeria = foto.length > 0 && (
     <div style={pc ? { display: "grid", gridTemplateColumns: `repeat(${Math.min(3, foto.length)},minmax(0,1fr))`, gap: 12 } : { display: "flex", gap: 10, overflowX: "auto", margin: "0 -16px", padding: "0 16px" }}>
-      {foto.map((m) => (
+      {foto.map((m, i) => (
         <figure key={m.id} style={{ margin: 0, display: "flex", flexDirection: "column", gap: 8, flex: pc ? undefined : "none", width: pc ? undefined : 240 }}>
-          <span role="img" aria-label={m.popis ?? ""} style={{ display: "block", aspectRatio: "4/3", borderRadius: 18, background: bgF(m.src) }} />
+          <button type="button" onClick={() => setCela(i)} aria-label={m.popis ? `Zväčšiť fotku: ${m.popis}` : "Zväčšiť fotku"}
+            style={{ display: "block", width: "100%", aspectRatio: "4/3", borderRadius: 18, background: bgF(m.src), border: "none", padding: 0, cursor: "zoom-in", boxShadow: "none" }} />
           {m.popis && <figcaption style={{ fontSize: 13.5, color: "var(--ink3)" }}>{m.popis}</figcaption>}
         </figure>))}
     </div>);
@@ -105,6 +108,11 @@ export function PribehZbierky({ profil, z, p, spatText = "Späť do feedu", onBa
     {citat}{galeria}
     {zaver && <FormatovanyText text={zaver} style={textSt} />}
     {priebeh}
+    {/* OPRAVY 155/3: Späť aj dole pod Priebehom — vráti na to isté miesto */}
+    <button type="button" onClick={onBack} style={{ width: "100%", height: 52, borderRadius: 14, border: "1.5px solid var(--cardBd)", background: "var(--btn)", color: "var(--ink)", cursor: "pointer", fontFamily: "inherit", fontSize: 15, fontWeight: 800, boxShadow: "none", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6" /></svg>{spatText}
+    </button>
+    {cela !== null && <CelaGaleria media={foto.map((m) => ({ typ: "foto" as const, src: m.src, popis: m.popis }))} start={cela} onClose={() => setCela(null)} />}
   </>;
 
   return (
