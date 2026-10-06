@@ -15,7 +15,7 @@ import { pressable } from "@/components/pressable";
 import { Sheet } from "@/components/sheet";
 import { Switch } from "@/components/ui";
 import {
-  DARCOVIA_CFG, useDarcovia, identitaDarcu, zobrazenaSuma, relCas,
+  DARCOVIA_CFG, useDarcovia, identitaDarcu, zobrazenaSuma, relCas, useSektorDarcu, menoBezMena, volbaBezMena,
   
   type DarRiadok, type VolbaDaru, type VerziaIdentity,
 } from "@/lib/darcovia";
@@ -23,11 +23,12 @@ import {
 // ---- jeden riadok zoznamu ----
 function Riadok({ r, prvy, skrytSumy }: { r: DarRiadok; prvy?: boolean; skrytSumy?: boolean }) {
   const ja = usePouzivatel();
+  const sektor = useSektorDarcu();
   const suma = skrytSumy ? null : zobrazenaSuma(r);
   return (
     <div style={{ display: "flex", alignItems: "baseline", gap: SPACE.xs, padding: `${SPACE.xs}px 0`, borderBottom: `1px solid ${C.line2}`, fontSize: 12.5, ...(prvy ? { animation: "fadeUp .3s ease" } : {}) }}>
       <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-        <b style={{ fontWeight: 600, color: r.firma ? "var(--a-gold)" : r.moj ? C.greenL : C.text }}>{identitaDarcu(r, ja)}</b>
+        <b style={{ fontWeight: 600, color: r.firma ? "var(--a-gold)" : r.moj ? C.greenL : C.text }}>{identitaDarcu(r, ja, sektor)}</b>
         <span style={{ color: C.textSec }}>{r.firma ? " dorovnala " : ` daroval${suma ? " " : ""}`}</span>
         {suma && <b style={{ fontWeight: 700, color: r.firma ? "var(--a-gold)" : C.greenL }}>{suma}</b>}
       </span>
@@ -83,13 +84,14 @@ export function VolbaDarcovstva({ volba, onZmena, sumaEur }: {
   volba: VolbaDaru; onZmena: (v: VolbaDaru) => void; sumaEur: number;
 }) {
   const ja = usePouzivatel();
+  const sektor = useSektorDarcu();
   const registrovany = ja.typ !== "pasivny";
 
   if (!registrovany) {
     // akvizičný háčik bez vnucovania: chce viac → registrácia
     return (
       <div style={{ background: "rgba(var(--glass-rgb),.05)", border: `1px solid ${C.line}`, borderRadius: RADIUS.sm, padding: `${SPACE.sm}px ${SPACE.gutter}px`, marginBottom: SPACE.sm, fontSize: 11.5, color: C.textSec, lineHeight: 1.45 }}>
-        V zozname darcov sa zobrazíš ako <b>Anonymný darca</b>. Chceš darovať pod menom či prezývkou? Stačí bezplatná registrácia.
+        V zozname darcov sa zobrazíš ako <b>{menoBezMena(sektor)}</b>. Chceš darovať pod menom či prezývkou? Stačí bezplatná registrácia.
       </div>
     );
   }
@@ -102,7 +104,7 @@ export function VolbaDarcovstva({ volba, onZmena, sumaEur }: {
     { v: 1, label: ja.celeMeno },
     ...(maMesto ? [{ v: 5 as VerziaIdentity, label: `${ja.celeMeno}, ${ja.mesto}` }] : []),
     ...(ja.nick ? [{ v: 3 as VerziaIdentity, label: ja.nick }] : []),
-    { v: 4, label: "Anonym" },
+    { v: 4, label: volbaBezMena(sektor) },
   ];
   const podPrahom = sumaEur > 0 && sumaEur < DARCOVIA_CFG.prahSumy;
 

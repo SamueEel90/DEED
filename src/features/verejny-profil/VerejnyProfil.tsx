@@ -27,9 +27,16 @@ import { otvorIskry } from "@/features/iskry/otvor";
 import { iskryVsetky } from "@/lib/iskry";
 import { pribehZbierky, orgPribehu, useZmenyPribehov } from "@/lib/pribehZbierky";
 import { PribehZbierky } from "./PribehZbierky";
+import { SektorDarcuKontext } from "@/lib/darcovia";
 
 /** vložiteľný verejný profil podľa kľúča stránky (svetlo · pekaren · tvorca) */
-export function VerejnyProfilView({ kluc, onBack }: { kluc: string; onBack: () => void }) {
+/** OPRAVY 159: profil farnosti = sektor Viera (darca bez mena = „Bohu známy darca") */
+export function VerejnyProfilView(p: { kluc: string; onBack: () => void }) {
+  const k = p.kluc.startsWith("stream:") ? "tvorca" : p.kluc.startsWith("pribeh:") ? orgPribehu(p.kluc.slice(7)) : p.kluc;
+  return <SektorDarcuKontext.Provider value={najdiTestProfil(k)?.typ === "farnost" ? "viera" : "ine"}><VerejnyProfilObsah {...p} /></SektorDarcuKontext.Provider>;
+}
+
+function VerejnyProfilObsah({ kluc, onBack }: { kluc: string; onBack: () => void }) {
   const zStreamu = kluc.startsWith("stream:") ? kluc.slice(7) : null;
   // KARTA 55 · E: „pribeh:{zbierka}" (odkaz z feedu) → stránka Príbeh; „{Organizácia} ›" otvorí jej profil
   const zPribehu = kluc.startsWith("pribeh:") ? kluc.slice(7) : null;

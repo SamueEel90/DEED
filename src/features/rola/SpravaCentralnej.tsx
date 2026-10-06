@@ -14,7 +14,7 @@ import {
   CENTRALNA_CISLA, CENTRALNA_SLUG, NULA, SEKTORY_MAX, SEKTORY_OD_TIERU, STANOVY_CINNOSTI, type SektorCharity,
 } from "@/lib/sektoryCharity";
 import { nacitajStav, ulozStav, OVERENY_SKEN, type StavZbierky } from "@/lib/zbierkaSprava";
-import { sucetDarov, darcoviaPre, identitaDarcu, relCas, zobrazenaSuma, useZmenyDarov } from "@/lib/darcovia";
+import { sucetDarov, darcoviaPre, identitaDarcu, relCas, zobrazenaSuma, useZmenyDarov, useSektorDarcu } from "@/lib/darcovia";
 import { beziaceDorovnanieNaCiel, zostatok } from "@/lib/dorovnanie";
 import { TESTOVACIA } from "@/lib/testovacia";
 import { cisloObjektu } from "@/lib/cisloObjektu";
@@ -83,7 +83,8 @@ export function SpravaCentralnej({ strankaId, nazov, hlavnyUcet, tier, mobil, to
   const c = TESTOVACIA ? (sek ? cislaSektora(sek.id) : CENTRALNA_CISLA) : NULA;
   const darov = sucetDarov(idZbierky);
   const mesiac = c.mesiac + darov.suma, spolu = c.spolu + darov.suma;
-  const realne: [string, string, string][] = darcoviaPre(idZbierky).slice(0, 3).map((r) => [identitaDarcu(r), relCas(r.cas), zobrazenaSuma(r) ?? ""]);
+  const sektor = useSektorDarcu();
+  const realne: [string, string, string][] = darcoviaPre(idZbierky).slice(0, 3).map((r) => [identitaDarcu(r, undefined, sektor), relCas(r.cas), zobrazenaSuma(r) ?? ""]);
   const dary = realne.length ? realne : TESTOVACIA ? DARY_TEST : [];
   const nazovPol = sek ? sek.nazov : "Celá činnosť";
   const chip = sek ? `SEKTOR ${typ}` : "CENTRÁLNA ZBIERKA";

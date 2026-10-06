@@ -5,6 +5,7 @@
 // Nič z toho nejde do DB — je to test „aký vznikne chaos", v produkcii dáta prídu zo servera.
 import { U } from "@/theme";
 import type { StitUroven } from "@/features/zbierka/Pole";
+import { menoBezMena } from "./darcovia";
 
 export type Mesto = "Trenčín" | "Prešov" | "Bratislava";
 export const MESTA: Mesto[] = ["Trenčín", "Prešov", "Bratislava"];
@@ -612,7 +613,7 @@ const FARNOST: TestProfil = {
   ],
   darcovia: [
     { id: "fd1", meno: "Mária K.", iniciala: "MK", mesto: "Trenčín", naCo: "Farnosť", suma: 10, pred: "pred 12 min" },
-    { id: "fd2", meno: "Anonymný darca", iniciala: "A", mesto: "Trenčín", naCo: "Oprava organu", suma: 20, pred: "pred 40 min" },
+    { id: "fd2", meno: menoBezMena("viera"), iniciala: "A", mesto: "Trenčín", naCo: "Oprava organu", suma: 20, pred: "pred 40 min" },
     { id: "fd3", meno: "Rodina Hrušková", iniciala: "RH", mesto: "Trenčín", naCo: "Rozlúčka s pani Annou", suma: 50, pred: "pred 1 h" },
   ],
   titulka: U("photo-1611859732483-07bd0d5e3c50", 1200),

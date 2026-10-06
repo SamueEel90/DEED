@@ -20,6 +20,7 @@ import { VzhladStranky } from "./VzhladStranky";
 import { TlacidloNastavenia } from "./spravaCasti";
 import type { MediumZbierky } from "@/lib/novaZbierka";
 import "@/styles/sprava.css";
+import { SektorDarcuKontext } from "@/lib/darcovia";
 
 type Sub = "prehlad" | "zbierky" | "omse" | "oznamy" | "ludia" | "penazenka" | "nastroje" | "profil" | "nast" | "zbierka";
 const IC: Record<string, string> = {
@@ -78,7 +79,12 @@ const kicker: CSSProperties = { flex: "none", fontSize: 12, fontWeight: 800, let
 const tlZ: CSSProperties = { flex: "none", minHeight: 44, padding: "0 14px", border: "none", borderRadius: 12, background: "#4B7A35", cursor: "pointer", fontFamily: "inherit", fontSize: 13.5, fontWeight: 800, color: "#fff" };
 const odkaz: CSSProperties = { alignSelf: "flex-start", minHeight: 44, padding: 0, border: "none", background: "transparent", boxShadow: "none", cursor: "pointer", fontFamily: "inherit", fontSize: 13.5, fontWeight: 800, color: "var(--green)" };
 
-export function SpravaFarnosti({ onBack, strankaId, test: testPas }: { onBack: () => void; strankaId: string; /** testovací pás (OPRAVY 147, 153: dostane „Pozrieť profil ›") */ test?: (onPozriet: () => void) => ReactNode }) {
+/** OPRAVY 159: Správa farnosti = sektor Viera (výpisy darov: „Bohu známy darca") */
+export function SpravaFarnosti(p: Parameters<typeof SpravaFarnostiObsah>[0]) {
+  return <SektorDarcuKontext.Provider value="viera"><SpravaFarnostiObsah {...p} /></SektorDarcuKontext.Provider>;
+}
+
+function SpravaFarnostiObsah({ onBack, strankaId, test: testPas }: { onBack: () => void; strankaId: string; /** testovací pás (OPRAVY 147, 153: dostane „Pozrieť profil ›") */ test?: (onPozriet: () => void) => ReactNode }) {
   const { desktop, wide } = useLayout();
   const tablet = wide && !desktop;
   const f = FARNOSTI[0]; // ukážková farnosť (Trenčín — mesto); v produkcii zo stránky

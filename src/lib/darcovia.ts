@@ -6,7 +6,7 @@
 // enginu po PRIPÍSANÍ platby (PSP / AIS / on-chain) — tabuľka
 // `platba` / view `v_vypis` (0014_payment_engine.sql).
 // ============================================================
-import { useSyncExternalStore } from "react";
+import { createContext, useContext, useSyncExternalStore } from "react";
 import { dorovnanieNaDar, dorovnanieKDaru, zapisDar as zapisDorovnanie } from "./dorovnanie";
 import { supabase } from "./supabase";
 import { pridajPodporu, firmaAkoDarca } from "./podpory";
@@ -200,13 +200,27 @@ export function prepniNaAnonym(refId: string, id: string) {
   emit();
 }
 
+// ---- OPRAVY 159: darca bez mena podľa sektora — vo Viere „Bohu známy darca", inde „Anonymný darca" ----
+export type SektorDarcu = "viera" | "ine";
+/** Jediné miesto textu darcu bez mena (neregistrovaný aj voľba Neukázať meno). */
+export function menoBezMena(sektor: SektorDarcu = "ine"): string {
+  return sektor === "viera" ? "Bohu známy darca" : "Anonymný darca";
+}
+/** Voľba „bez mena" pri výbere zobrazenia (mimo Viery krátko „Anonym", ako doteraz). */
+export function volbaBezMena(sektor: SektorDarcu = "ine"): string {
+  return sektor === "viera" ? menoBezMena(sektor) : "Anonym";
+}
+/** Sektor pre zoznamy darcov a platobné okno — Viera (modul, farnosť, Správa farnosti) ho nastaví na „viera". */
+export const SektorDarcuKontext = createContext<SektorDarcu>("ine");
+export const useSektorDarcu = () => useContext(SektorDarcuKontext);
+
 // ---- render helpre (zoznam len ZOBRAZUJE — všetky pravidlá sú tu) ----
 export interface JaIdentita { meno?: string; priezvisko?: string; celeMeno?: string; nick?: string | null; mesto?: string }
 
 /** Identita riadku podľa verzie. Vlastné dary sa renderujú z AKTUÁLNEHO profilu (nezapekajú sa). */
-export function identitaDarcu(r: DarRiadok, ja?: JaIdentita): string {
+export function identitaDarcu(r: DarRiadok, ja?: JaIdentita, sektor: SektorDarcu = "ine"): string {
   if (r.firma) return r.firma;                  // dorovnanie — firma sa podpisuje vždy
-  if (!r.registrovany) return "Anonymný darca"; // bez mesta, bez čohokoľvek
+  if (!r.registrovany) return menoBezMena(sektor); // bez mesta, bez čohokoľvek
   const zdroj = r.moj && ja
     ? { meno: ja.celeMeno || ja.meno || "Člen", inicialovo: `${ja.meno || "Člen"} ${(ja.priezvisko || "")[0]?.toUpperCase() ?? ""}${(ja.priezvisko || "")[0] ? "." : ""}`.trim(), nick: ja.nick || undefined, mesto: ja.mesto, mestoVerejne: false }
     : r;
@@ -214,7 +228,7 @@ export function identitaDarcu(r: DarRiadok, ja?: JaIdentita): string {
   const zaklad = r.verzia === 1 ? (zdroj.meno || "Darca")
     : r.verzia === 2 ? (zdroj.inicialovo || zdroj.meno || "Darca")
     : r.verzia === 3 ? (zdroj.nick || zdroj.inicialovo || "Darca")
-    : "Anonym";
+    : volbaBezMena(sektor);
   // mesto = profilové nastavenie, platí pre verzie 1–3 aj 4 (spec §2)
   const mesto = zdroj.mestoVerejne && zdroj.mesto && zdroj.mesto !== "—" ? ` · ${zdroj.mesto}` : "";
   return zaklad + mesto;
