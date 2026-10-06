@@ -55,3 +55,25 @@ jobs:
           name: dist
           path: dist
           retention-days: 5
+
+  # Zadanie 5 · 5.2: čistá Postgres DB zo VŠETKÝCH migrácií v poradí + DB testy.
+  db:
+    name: čistá DB z migrácií
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Postgres 16 + pg_cron
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q postgresql-16 postgresql-16-cron
+          echo "shared_preload_libraries = 'pg_cron'" | sudo tee -a /etc/postgresql/16/main/postgresql.conf
+          echo "cron.database_name = 'deed_ci'" | sudo tee -a /etc/postgresql/16/main/postgresql.conf
+          sudo systemctl restart postgresql
+          sudo -u postgres psql -q -c "alter user postgres password 'postgres'"
+      - name: Migrácie a DB testy
+        env:
+          PGHOST: localhost
+          PGUSER: postgres
+          PGPASSWORD: postgres
+        run: bash scripts/db-z-migracii.sh
