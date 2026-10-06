@@ -3,7 +3,7 @@
 import { ZbalitASpat, ZmensenyModul } from "./ZmensenyModul";
 import { smieDorovnat } from "@/lib/dorovnanie";
 import { cisloObjektu } from "@/lib/cisloObjektu";
-import { TESTOVACIA } from "@/lib/testovacia";
+import { TESTOVACIA, TESTOVACIE_ZOSTAVENIE } from "@/lib/testovacia";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import type React from "react";
 import { C, SPACE, RADIUS } from "@/theme";
@@ -214,7 +214,7 @@ export function ZbierkaModul({ zbierka, miesto: miestoProp, onBack, spatNazov, o
 
   return (
     <div ref={rootRef} className="deed-platba" style={{ position: "relative", minHeight: "100%", background: "var(--bg)", color: "var(--ink)", paddingBottom: SPACE.lg }}>
-      {TESTOVACIA && <DevPanel dev={dev} setDev={setDev} miestoPevne={!!miestoProp} registrovany={registrovany} ico={ico}
+      {TESTOVACIE_ZOSTAVENIE && <DevPanel dev={dev} setDev={setDev} miestoPevne={!!miestoProp} registrovany={registrovany} ico={ico}
         cielInfo={realnyCiel ? undefined : `ukážkový ${DEV_CIEL.toLocaleString("sk-SK")} €`} dorovnava={dorovnanie?.firma}
         onDar={(suma) => pridajDar({ refId: zbierka.id, suma, kanal: "psp", registrovany, cezTvorcu })} />}
 
@@ -258,8 +258,9 @@ function DevPanel({ dev, setDev, miestoPevne, registrovany, ico, cielInfo, onDar
   dev: DevStav; setDev: (z: Partial<DevStav>) => void; miestoPevne: boolean; registrovany: boolean; ico: boolean;
   cielInfo?: string; onDar: (suma: number) => void; dorovnava?: string;
 }) {
-  // OPRAVY 155/5: pri každom otvorení zbalený do malého „DEV ›", otvorí sa až ťukom (stav sa nepamätá)
-  const [skryty, setSkryty] = useState(true);
+  // OPRAVY 156/1: predvolene zbalený do malého „DEV ›" v rohu, otvorí sa ťukom; stav si pamätá (len testovací prepínač, nie dáta charity)
+  const [skryty, setSkrytyRaw] = useState(() => { try { return localStorage.getItem("deed.dev.zbierkaPanel2") !== "otvoreny"; } catch { return true; } });
+  const setSkryty = (v: boolean) => { setSkrytyRaw(v); try { localStorage.setItem("deed.dev.zbierkaPanel2", v ? "zbaleny" : "otvoreny"); } catch { /* bez úložiska */ } };
   const tempo = useDevTempo();
   const [tuk, setTuk] = useState(potvrditTuknutim);
   const chip = (on: boolean): CSSProperties => ({ padding: `${SPACE.xxs}px ${SPACE.sm}px`, borderRadius: RADIUS.pill, fontSize: 11.5, fontWeight: 700, cursor: "pointer",
@@ -271,8 +272,10 @@ function DevPanel({ dev, setDev, miestoPevne, registrovany, ico, cielInfo, onDar
     </div>
   );
   if (skryty) return (
+    <div style={{ display: "flex", justifyContent: "flex-end", padding: `${SPACE.xs}px ${SPACE.md}px 0` }}>
     <button type="button" onClick={() => setSkryty(false)} aria-label="Otvoriť DEV panel detailu zbierky"
-      style={{ margin: SPACE.md, alignSelf: "flex-start", minHeight: 44, padding: "0 14px", borderRadius: RADIUS.sm, border: "1px dashed var(--a-plum)", background: "transparent", color: "var(--a-plum)", fontSize: 12, fontWeight: 800, letterSpacing: ".04em", cursor: "pointer", fontFamily: "inherit", boxShadow: "none" }}>DEV ›</button>);
+      style={{ minHeight: 44, padding: "0 14px", borderRadius: RADIUS.sm, border: "1px dashed var(--a-plum)", background: "transparent", color: "var(--a-plum)", fontSize: 12, fontWeight: 800, letterSpacing: ".04em", cursor: "pointer", fontFamily: "inherit", boxShadow: "none" }}>DEV ›</button>
+    </div>);
   return (
     <div style={{ margin: SPACE.md, padding: SPACE.sm, borderRadius: RADIUS.sm, border: "1px dashed var(--a-plum)", fontSize: 12 }}>
       <div style={{ display: "flex", alignItems: "center", gap: SPACE.xs }}>

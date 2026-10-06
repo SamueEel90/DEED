@@ -13,4 +13,6 @@ function zAdresy(): boolean {
     return localStorage.getItem(KLUC) === "1";
   } catch { return false; }
 }
+/** OPRAVY 156/1: len testovacie zostavenie (npm run dev alebo Vercel s VITE_TEST=1) — bez ?dev */
+export const TESTOVACIE_ZOSTAVENIE: boolean = import.meta.env.DEV || import.meta.env.VITE_TEST === "1";
 export const TESTOVACIA: boolean = import.meta.env.DEV || import.meta.env.VITE_TEST === "1" || zAdresy();
