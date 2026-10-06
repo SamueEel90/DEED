@@ -46,7 +46,7 @@ export default defineConfig({
         // hlavný balík prerástol 2 MiB (preklady) — bez tohto build na Verceli padne
         maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
         // SPA fallback nechaj len na navigácie (deep-linky /m /c /r … dostanú shell)
-        navigateFallbackDenylist: [/^\/assets\//, /^\/video\//, /^\/img\//, /^\/api\//],
+        navigateFallbackDenylist: [/^\/assets\//, /^\/video\//, /^\/img\//, /^\/api\//, /^\/i\//], // /i/{id} = web stránka Iskry (api/iskra.ts)
         // TESTOVANIE (s autoUpdate): nový SW prevezme appku hneď, staré cache sa zmažú
         skipWaiting: true,
         clientsClaim: true,

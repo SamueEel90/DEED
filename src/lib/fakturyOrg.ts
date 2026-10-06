@@ -35,7 +35,7 @@ export const NAVYSE: [string, string][] = [["č", "ccaron"], ["Č", "Ccaron"], [
 const KOD = new Map(NAVYSE.map(([ch], i) => [ch, 0x80 + i]));
 export function bajty(t: string): number[] {
   const out: number[] = [];
-  for (const ch of t.replace(/\u00A0|\u202F/g, " ")) {
+  for (const ch of t.replace(/[\u00A0\u202F]/g, " ")) {
     const k = KOD.get(ch);
     if (k != null) out.push(k);
     else { const c = ch.charCodeAt(0); out.push(c < 256 ? c : 63); }

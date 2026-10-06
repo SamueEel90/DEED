@@ -7,6 +7,7 @@
 // TODO (server): prúd videí, počty Iskier, námietky a cudzie dary v reálnom čase prídu z API / realtime.
 // ============================================================
 import { useSyncExternalStore } from "react";
+import { nacitajIskryZoServera } from "./iskryServer";
 import { najdiTestProfil, type TestProfil, type TestZbierka } from "@/lib/testProfily";
 
 export const ISKRY_CFG = {
@@ -100,17 +101,32 @@ export const ISKRY_MOCK: Iskra[] = [
     zb: { typ: "firme", stitok: "Ďakujeme firme", stranka: "svetlo", zbierkaId: "z-strecha-horvath", firma: "pekaren" } },
 ];
 
-// ---- KARTA 41b · pridané Iskry (relácia; TODO server: nahratie videa, uloženie, kvóta charity) ----
+// ---- KARTA 41b · pridané Iskry: zo servera (0034, iskryServer.ts), bez DB len v relácii ----
 const pridane: Iskra[] = [];
-/** celý prúd: najnovšie pridané hore, potom ukážkové */
-export const iskryVsetky = (): Iskra[] => [...pridane, ...ISKRY_MOCK];
+let zoServera: Iskra[] = [];
+let serverNacitany = false;
+/** prúd zo servera — načíta sa raz pri prvom otvorení prúdu; bez DB ostanú len pridané v relácii + ukážkové */
+export function nacitajPrud() {
+  if (serverNacitany) return;
+  serverNacitany = true;
+  void nacitajIskryZoServera().then((l) => { if (l) { zoServera = l; zmena(); } });
+}
+/** celý prúd: najnovšie pridané hore, potom zo servera, potom ukážkové */
+export const iskryVsetky = (): Iskra[] => {
+  const ids = new Set(pridane.map((x) => x.id));
+  return [...pridane, ...zoServera.filter((x) => !ids.has(x.id)), ...ISKRY_MOCK];
+};
 export const najdiIskru = (id: string): Iskra | undefined => iskryVsetky().find((x) => x.id === id);
 export function pridajIskru(i: Omit<Iskra, "id" | "iskry" | "zverejnene">): Iskra {
   const n: Iskra = { ...i, id: `i-${Date.now().toString(36)}`, iskry: 0, zverejnene: new Date().toISOString() };
   pridane.unshift(n); zmena(); return n;
 }
-/** odkaz Iskry (QR, zdieľanie) — appka ho otvorí v prúde na tomto videu; bez appky web stránka Iskry */
-export const odkazIskry = (id: string) => `https://deed.sk/i/${encodeURIComponent(id)}`;
+/** Iskra, ktorú už zverejnil server (iskryServer.zverejniIskruNaServeri) */
+export function pridajHotovuIskru(n: Iskra): Iskra { pridane.unshift(n); zmena(); return n; }
+/** verejná adresa appky — VITE_VEREJNA_URL (napr. https://deed.sk, keď bude doména), inak tá, na ktorej appka beží */
+const VEREJNA_URL = (import.meta.env.VITE_VEREJNA_URL || (typeof window !== "undefined" ? window.location.origin : "https://deed.sk")).replace(/\/$/, "");
+/** odkaz Iskry (QR, zdieľanie) — web stránka Iskry (api/iskra.ts); z nej „Otvoriť v DEED" otvorí prúd na tomto videu */
+export const odkazIskry = (id: string) => `${VEREJNA_URL}/i/${encodeURIComponent(id)}`;
 /** charita: videá „všetkým v Iskrách" mesačne v cene programu (Zadarmo 1 · P2 2 · P3 4), ďalšie za cenaNad € */
 /** videá „všetkým v Iskrách" za mesiac podľa cenníka: Zadarmo 1 · P1 Zbierka 1 · P2 Akcia 2 · P3 Kampaň 4 · Spolok 1; ďalšie za cenaNad € (rovnako vo všetkých) */
 export const KVOTA_ISKIER = { naProgram: [1, 1, 2, 4, 1] as number[], cenaNad: 10 };

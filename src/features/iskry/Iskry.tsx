@@ -16,7 +16,7 @@ import { TESTOVACIA } from "@/lib/testovacia";
 import { jeNeregistrovany, sledujDarcu } from "@/lib/devDarca";
 import { darcoviaPre, sucetDarov, pridajDar, pridajCudziDarMock, identitaDarcu, zobrazenaSuma, relCas, useZmenyDarov, type DarRiadok, type KanalDaru } from "@/lib/darcovia";
 import {
-  ISKRY_CFG, iskryVsetky, odkazIskry, DOVODY_NAMIETKY, refIskry, useZmenyIskier, pocetIskier, mojaIskra, prepniIskru, zapniIskru,
+  ISKRY_CFG, iskryVsetky, nacitajPrud, odkazIskry, DOVODY_NAMIETKY, refIskry, useZmenyIskier, pocetIskier, mojaIskra, prepniIskru, zapniIskru,
   sledujemAutora, prepniSledovanie, overujemIskru, prepniOverenie, namietkaIskry, podajNamietku, iskryVDruhu, zbierkaIskry, type Iskra,
 } from "@/lib/iskry";
 import { ZbierkaModul } from "@/features/zbierka/ZbierkaModul";
@@ -140,10 +140,28 @@ function IskryPrud() {
   }, [druh, mierka]);
   useLayoutEffect(() => { const el = sc.current; if (el && idx > 0) el.scrollTop = idx * el.clientHeight; }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const list = iskryVDruhu(druh);
+  // prúd zo servera (0034) príde až po otvorení — odkaz /i/{id} na serverovú Iskru sa naň posunie, keď sa načíta
+  useEffect(() => { nacitajPrud(); }, []);
+  const startCaka = useRef(!!startId && iskryVsetky().findIndex((x) => x.id === startId) < 0);
+  useEffect(() => {
+    if (!startCaka.current || !startId) return;
+    const i = list.findIndex((x) => x.id === startId);
+    if (i < 0) return;
+    startCaka.current = false;
+    window.setTimeout(() => { const el = sc.current; if (el) el.scrollTop = i * el.clientHeight; }, 30);
+  });
   const akt = list[Math.min(idx, list.length - 1)];
 
-  // aktuálne hodnoty pre klávesnicu (poslucháč sa registruje raz) — zapisujú sa po vykreslení (efekt nižšie), nie počas neho
-  const posunRef = useRef<(o: 1 | -1) => void>(() => undefined), pcRef = useRef(pc), profilRef = useRef(profil), vrchRef = useRef(false), prepniCeluRef = useRef(prepniCelu);
+  /** šípky (tlačidlá na PC aj klávesnica): o jedno video hore / dole */
+  const posun = (o: 1 | -1) => { const el = sc.current; if (!el) return; const i = Math.max(0, Math.min(list.length - 1, Math.round(el.scrollTop / Math.max(1, el.clientHeight)) + o)); el.scrollTo({ top: i * el.clientHeight, behavior: "smooth" }); };
+  // refy pre klávesový efekt nižšie — aktuálne hodnoty sa zapisujú po rendri, nie počas neho
+  const posunRef = useRef(posun);
+  const pcRef = useRef(pc);
+  const profilRef = useRef(profil);
+  const vrchRef = useRef(false);
+  const prepniCeluRef = useRef(prepniCelu);
+  useLayoutEffect(() => { posunRef.current = posun; pcRef.current = pc; profilRef.current = profil; vrchRef.current = !!(zbOkno || orgProfil); prepniCeluRef.current = prepniCelu; });
+
   // Esc = zavrieť (PC), zablokovať posun stránky pod prúdom
   useEffect(() => {
     const k = (e: KeyboardEvent) => {
@@ -181,12 +199,6 @@ function IskryPrud() {
   const ukazPas = (hl: string, kam: string) => setPrepis({ hl, kam, k: Date.now() });
   const { aktualny, pridaj, pridajMoj, dalsi } = useDarRad((n) => ukazPas(`+${n} ${n >= 5 ? "darov" : "dary"} za minútu`, "Iskry"));
 
-  /** šípky (tlačidlá na PC aj klávesnica): o jedno video hore / dole */
-  const posun = (o: 1 | -1) => { const el = sc.current; if (!el) return; const i = Math.max(0, Math.min(list.length - 1, Math.round(el.scrollTop / Math.max(1, el.clientHeight)) + o)); el.scrollTo({ top: i * el.clientHeight, behavior: "smooth" }); };
-  useEffect(() => { // synchronizácia ref-ov pre klávesnicu
-    posunRef.current = posun; pcRef.current = pc; profilRef.current = profil;
-    vrchRef.current = !!(zbOkno || orgProfil); prepniCeluRef.current = prepniCelu;
-  });
   const skoc = (id: string) => {
     let i = list.findIndex((x) => x.id === id);
     if (i < 0) { const d = iskryVsetky().find((x) => x.id === id)?.druh === ISKRY_CFG.druhZbierky ? ISKRY_CFG.druhZbierky : 0; setDruh(d); i = iskryVDruhu(d).findIndex((x) => x.id === id); }
