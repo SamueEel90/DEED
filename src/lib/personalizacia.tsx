@@ -6,6 +6,7 @@
 // ============================================================
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { usePouzivatel } from "./pouzivatel";
+import { nacitajPredvolbu, identitaDarcu } from "./darcovia";
 import { USE_SUPABASE } from "./supabase";
 import {
   nacitajLokalne, ulozZaujmy, ulozSledovani, ulozPodpory, ulozOblubene, ulozZbierky,
@@ -55,7 +56,7 @@ const PersonalizaciaContext = createContext<PersonalizaciaApi>(prazdny);
 export const usePersonalizacia = () => useContext(PersonalizaciaContext);
 
 export function PersonalizaciaProvider({ children }: { children: ReactNode }) {
-  const { demo, celeMeno, ucetId } = usePouzivatel();
+  const { demo, celeMeno, ucetId, meno, priezvisko, nick, mesto } = usePouzivatel();
   const [zaujmy, setZaujmyStav] = useState<Zaujem[]>([]);
   const [sledovani, setSledovani] = useState<Sledovanie[]>([]);
   const [podpory, setPodpory] = useState<Podpora[]>([]);
@@ -173,8 +174,13 @@ export function PersonalizaciaProvider({ children }: { children: ReactNode }) {
       });
       // reálny účet → perzistuj ako event do `podpora` (demo ostáva ephemerálne)
       if (USE_SUPABASE && !demo && ucetId) {
+        // 0061: meno ide do platby len podľa voľby darcu pri tomto dare (anonym = žiadne meno)
+        const zobrazenie = p.zobrazenie ?? nacitajPredvolbu().verzia;
+        const darca = zobrazenie === 4 ? null
+          : identitaDarcu({ id: "", refId: String(p.refId), cas: 0, suma: 0, kanal: "deed", registrovany: true, verzia: zobrazenie, zobrazSumu: false, moj: true },
+              { meno, priezvisko, celeMeno, nick, mesto });
         pridajPodporuDB({
-          darca: celeMeno, ucetId, refId: p.refId, prijemca: p.komu,
+          darca, zobrazenie, ucetId, refId: p.refId, prijemca: p.komu,
           suma: p.suma, kanal: p.kanal, vyzbierane: p.vyzbierane, ciel: p.ciel,
         }).catch(() => { /* sieťová chyba — UI stav ostáva */ });
       }
@@ -198,7 +204,7 @@ export function PersonalizaciaProvider({ children }: { children: ReactNode }) {
       if (USE_SUPABASE) upravZbierkuDB(id, patch).catch(() => { /* sieť — UI stav ostáva */ });
     },
     nacitavam: !hydratovane,
-  }), [zaujmy, sledovani, podpory, oblubene, mojeZbierky, hydratovane, demo, celeMeno, ucetId]);
+  }), [zaujmy, sledovani, podpory, oblubene, mojeZbierky, hydratovane, demo, celeMeno, ucetId, meno, priezvisko, nick, mesto]);
 
   return <PersonalizaciaContext.Provider value={api}>{children}</PersonalizaciaContext.Provider>;
 }

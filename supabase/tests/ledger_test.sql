@@ -18,10 +18,11 @@ insert into public.prispevok (id, modul, typ, titul, autor_ucet_id, ciel) values
  ('20000000-0000-0000-0000-000000000001','charity','charita','Test zbierka','7e570000-0000-0000-0000-00000000000b', 1000),
  ('20000000-0000-0000-0000-000000000002','charity','charita','Druhá zbierka','7e570000-0000-0000-0000-00000000000c', 1000),
  ('20000000-0000-0000-0000-000000000003','charity','charita','Zbierka A','7e570000-0000-0000-0000-00000000000a', 1000);
+update public.ucet set v_rebricku = true where id = '7e570000-0000-0000-0000-00000000000a';   -- A súhlasí s rebríčkom (0061)
 set role authenticated;
 select set_config('request.jwt.claim.sub','7e57a000-0000-0000-0000-00000000000a', false);
 -- 3 · split 100 € kartou: 50 % autor (vlastník, nepočíta sa) + 50 % zbierka 2
-select (public.platba_create('s1', 100, 'EUR', 'fiat', '20000000-0000-0000-0000-000000000001', 'Jozef A', null, null, false, 0, '{}',
+select (public.platba_create('s1', 100, 'EUR', 'fiat', '20000000-0000-0000-0000-000000000001', 'Jozef A', null, null, false, 0, '{"zobrazenie":1}',
   '[{"prijemca_ucet":"7e570000-0000-0000-0000-00000000000b","podiel":0.5,"fixny":false},{"case_id":"20000000-0000-0000-0000-000000000002","podiel":0.5,"fixny":true}]')).id is not null;
 reset role;
 insert into t select 'split: podiely = cista suma',
@@ -145,6 +146,12 @@ insert into t select 'ziadne sirotske riadky podpory (suma bez platby)', not exi
 insert into t select 'rebricek z ledgera: EUR dar darcu A', (select eur from v_top_darcovia where ucet_id = '7e570000-0000-0000-0000-00000000000a') = (select cista_suma from platba where idem_kluc = 's1');
 insert into t select 'ziadny ne-systemovy ucet v minuse', not exists (select 1 from ucet u where typ <> 'system' and (public.zostatok(u.id,'DEED') < 0 or public.zostatok(u.id,'EUR') < 0));
 \pset tuples_only off
+-- 0061 · rebríček: len so súhlasom a len dary s menom; anonymný dar bez mena
+insert into t select 'rebricek: anonymny dar nema meno', not exists (select 1 from platba where zobrazenie = 4 and odosielatel_text is not null);
+insert into t select 'rebricek: B bez suhlasu nie je v Top', not exists (select 1 from v_top_darcovia where ucet_id = '7e570000-0000-0000-0000-00000000000b');
+insert into t select 'rebricek: anonymne dary A sa nepocitaju', (select deed from v_top_darcovia where ucet_id = '7e570000-0000-0000-0000-00000000000a') = 0;
+insert into t select 'rebricek: meno = zvolene pri dare', (select meno from v_top_darcovia where ucet_id = '7e570000-0000-0000-0000-00000000000a') = 'Jozef A';
+
 select ok, c from t order by ok, c;
 
 rollback;

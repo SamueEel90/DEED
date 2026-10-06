@@ -182,6 +182,8 @@ export interface Podpora {
   vyzbierane?: number;
   ciel?: number;
   cas?: IsoDateTime;
+  /** voľba zobrazenia pri tomto dare (1–5, 4 = anonym); bez nej platí predvoľba darcu */
+  zobrazenie?: 1 | 2 | 3 | 4 | 5;
 }
 
 /** Obľúbený príspevok (bookmark). Uložený lokálne (deed.me.oblubene) —

@@ -376,3 +376,17 @@ export async function nacitajCiselnikSektorov(): Promise<Ciselnik[]> {
   if (error) throw error;
   return zoskup(data || [], "sektor", "pod_segment");
 }
+
+// ============================================================
+// REBRÍČKY — súhlas byť v Top (0061). Predvolene vypnutý; rátajú sa len dary s menom.
+// ============================================================
+export async function nacitajVRebricku(ucetId: string): Promise<boolean> {
+  if (!supabase || !ucetId) return false;
+  const { data } = await db().from("ucet").select("v_rebricku").eq("id", ucetId).maybeSingle();
+  return !!(data as { v_rebricku?: boolean } | null)?.v_rebricku;
+}
+export async function nastavVRebricku(zapnute: boolean): Promise<void> {
+  if (!supabase) return;
+  const { error } = await db().rpc("nastav_v_rebricku", { p_zapnute: zapnute });
+  if (error) throw error;
+}

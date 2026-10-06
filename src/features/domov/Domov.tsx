@@ -754,8 +754,9 @@ export function DomovDetail({ it, toast, oslavuj, onBack, onVerify, onAutor }: G
   const maProgres = (jeZiadost && it.ciel) || jeCharita;
 
   // zaznamenaj podporu do zdieľaného store (snapshot progresu k momentu podpory)
-  const zaznamenajPodporu = (suma: number, kanal: string = "DEED") =>
-    pridajPodporu({ refId: it.id, typ: it.typ, modul: it.modul || "good", suma, kanal, komu: it.autor, vyzbierane: it.vyzbierane, ciel: it.ciel });
+  const zaznamenajPodporu = (suma: number, kanal: string = "DEED", volba?: VolbaDaru) =>
+    pridajPodporu({ refId: it.id, typ: it.typ, modul: it.modul || "good", suma, kanal, komu: it.autor, vyzbierane: it.vyzbierane, ciel: it.ciel,
+      ...(volba ? { zobrazenie: ja.typ === "pasivny" ? 4 : volba.verzia } : ja.typ === "pasivny" ? { zobrazenie: 4 as const } : {}) });
 
   function podpor(suma: number) {
     zaznamenajPodporu(suma);
@@ -825,7 +826,7 @@ export function DomovDetail({ it, toast, oslavuj, onBack, onVerify, onAutor }: G
 
       {/* simulácia platby (EUR karta / DEED peňaženka) */}
       {platba && <PlatbaModal kanal={platba} komu={it.autor} onClose={() => setPlatba(null)}
-        onDone={(s: number, volba?: VolbaDaru) => { zaznamenajPodporu(s, platba); pridajDar({ refId: darRef, suma: s * (platba === "EUR" ? 1 : 0.01), kanal: platba === "EUR" ? "psp" : "deed", registrovany: ja.typ !== "pasivny", volba }); toast(`Odoslané ${platba === "EUR" ? s + " €" : s + " DeeD"} · ${it.autor}`); oslavuj(platba === "EUR" ? Math.round(s * 100) : s, it.autor); }} />}
+        onDone={(s: number, volba?: VolbaDaru) => { zaznamenajPodporu(s, platba, volba); pridajDar({ refId: darRef, suma: s * (platba === "EUR" ? 1 : 0.01), kanal: platba === "EUR" ? "psp" : "deed", registrovany: ja.typ !== "pasivny", volba }); toast(`Odoslané ${platba === "EUR" ? s + " €" : s + " DeeD"} · ${it.autor}`); oslavuj(platba === "EUR" ? Math.round(s * 100) : s, it.autor); }} />}
 
       {/* univerzálny QR skutku (§10) — reálne skenovateľný odkaz na živé interné ID */}
       {qr && <QrModal typ="skutok" titul={`QR skutku ${cisloObjektu("S", String(it.id))}`} popis={it.titul.slice(0, 38) + "…"}
