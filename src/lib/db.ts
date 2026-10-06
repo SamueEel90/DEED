@@ -233,7 +233,7 @@ export async function nacitajUcetData(ucetId: string): Promise<UcetData> {
   const c = db();
   const [u, p, z, l] = await Promise.all([
     c.from("ucet").select("id, typ, poradove_cislo, email").eq("id", ucetId).maybeSingle(),
-    c.from("profil").select("meno, druhe_meno, priezvisko, titul, mesto, profilovka_url").eq("ucet_id", ucetId).maybeSingle(),
+    c.from("profil").select("meno, druhe_meno, priezvisko, titul, mesto, profilovka_url, rod").eq("ucet_id", ucetId).maybeSingle(),
     c.from("zobrazenie").select("rezim, nick").eq("ucet_id", ucetId).maybeSingle(),
     c.from("lokalita").select("mesto, region, stvrt").eq("ucet_id", ucetId).maybeSingle(),
   ]);
@@ -296,6 +296,14 @@ export async function ulozZaujmy(ucetId: string, polozky: { oblast: string; pod_
       .insert(polozky.map((p) => ({ ucet_id: ucetId, oblast: p.oblast, pod_polozka: p.pod_polozka, vlastny: !!p.vlastny })));
     if (error) throw error;
   }
+}
+
+/** IBAN osoby na výplaty (krok Platba v registrácii) — vlastná tabuľka, vidí ho len majiteľ (0049) */
+export async function ulozVyplatnyUcet(ucetId: string, iban: string) {
+  const { error } = await db()
+    .from("vyplatny_ucet")
+    .upsert({ ucet_id: ucetId, iban: iban.replace(/\s/g, "").toUpperCase() }, { onConflict: "ucet_id" });
+  if (error) throw error;
 }
 
 export async function ulozLokalitu(ucetId: string, lok: Record<string, unknown>) {

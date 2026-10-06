@@ -2,7 +2,7 @@
 // KARTA 35 · Správa charity — Nastavenia (fáza B). 12 obrazoviek podľa prototypu
 // „Sprava charity PC.dc.html" → Nastavenia. Vykanie, Späť rieši hlavička správy.
 // Uložiť / Odoslať / Pridať sú sivé, kým nie je čo uložiť. Žiadne SMS.
-// Stav obrazoviek drží appka počas relácie (pamat) — do účtu sa zatiaľ neukladá (backend príde neskôr).
+// Stav obrazoviek sa ukladá do účtu stránky (nastavenia_stranky, migrácia 0050) — lib/nastaveniaStranky.
 // ============================================================
 import { RichTextInput } from "@/components/richtext";
 import { cistyText } from "@/lib/richtext";
@@ -14,16 +14,18 @@ import { zdielaj, kopiruj } from "@/lib/zdielanie";
 import { SADY_EURC, SADY_EUR, type SadaEurc, type SadaEur } from "@/lib/sadyDarov";
 import { TESTOVACIA } from "@/lib/testovacia";
 import { useFakturyOrg, otvorFakturu, type FakturaOrg } from "@/lib/fakturyOrg";
+import { maNastavenie, citajNastavenie, zapisNastavenie, useZmenyNastaveni } from "@/lib/nastaveniaStranky";
 import { nacitajKryptoOrg, ulozKryptoOrg, nacitajSady, ulozSady, type Tier, type TypStranky, CENNIK_TYPU, TYP_NAZOV, TIER_LABEL, TIER_POPIS } from "./stav";
 
-// ---------- pamäť relácie (prežije prechody medzi obrazovkami) ----------
-// TODO (OPRAVY 88): pred spustením uložiť do účtu charity — oznámenia, EURC, údaje, súhlasy, správcovia, zariadenia.
-// usePamat drží hodnoty len kým je appka otvorená; po zatvorení sa stratia.
-const pamat = new Map<string, unknown>();
+// ---------- nastavenia v účte stránky (OPRAVY 88 · migrácia 0050) ----------
+// Oznámenia, EURC, údaje, súhlasy, správcovia, zariadenia… — jeden záznam na stránku, ukladá sa samo.
+// Správa stránky ich načíta pri otvorení (nacitajNastavenia). Bez DB len v pamäti relácie.
+const pamat = { has: maNastavenie, get: citajNastavenie };
 function usePamat<T>(kluc: string, zaklad: T): [T, (v: T | ((p: T) => T)) => void] {
-  const [v, setV] = useState<T>(() => (pamat.has(kluc) ? (pamat.get(kluc) as T) : zaklad));
-  const set = (n: T | ((p: T) => T)) => setV((p) => { const x = typeof n === "function" ? (n as (p: T) => T)(p) : n; pamat.set(kluc, x); return x; });
-  return [v, set];
+  useZmenyNastaveni();
+  const aktualna = () => (maNastavenie(kluc) ? (citajNastavenie(kluc) as T) : zaklad);
+  const set = (n: T | ((p: T) => T)) => zapisNastavenie(kluc, typeof n === "function" ? (n as (p: T) => T)(aktualna()) : n);
+  return [aktualna(), set];
 }
 /** hodnoty pre riadky v Nastaveniach (počty, EURC, program) */
 export const pocetSpravcov = () => ((pamat.get("spr") as Spravca[] | undefined) ?? SPR0).length;

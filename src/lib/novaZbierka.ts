@@ -82,6 +82,8 @@ export interface SpustenaZbierka extends NovaZbierkaData {
   id: string; stranka: string; spustena: string;
   /** účet, kam prídu peniaze (Zadarmo: hlavný účet organizácie z registrácie) */
   ucet: string; lehota: string; lehotaKluc: LehotaKluc | null;
+  /** verejné číslo zbierky = VS (10 číslic s Luhnom) — prideľuje server (zbierka.vs, migrácia 0049); v nastavenie sa neukladá */
+  vs?: string;
 }
 
 // ---- pamäť relácie + odber zmien ----
@@ -110,9 +112,9 @@ export async function ulozKonceptZbierky(stranka: string, d: NovaZbierkaData | n
 
 export async function nacitajZbierkyStranky(stranka: string): Promise<SpustenaZbierka[]> {
   if (supabase) {
-    const { data, error } = await supabase.from("zbierka").select("id, nastavenie, zapecatena").eq("stranka", stranka).order("vytvorene", { ascending: false });
+    const { data, error } = await supabase.from("zbierka").select("id, vs, nastavenie, zapecatena").eq("stranka", stranka).order("vytvorene", { ascending: false });
     if (!error && data) {
-      const l = data.map((r) => r.nastavenie as SpustenaZbierka).filter(Boolean);
+      const l = data.filter((r) => r.nastavenie).map((r) => ({ ...(r.nastavenie as SpustenaZbierka), vs: (r.vs as string | null) ?? undefined }));
       spustene.set(stranka, l); zmena(); return l;
     }
   }
@@ -126,7 +128,9 @@ export async function upravZbierku(stranka: string, id: string, p: Pick<NovaZbie
   const z = l.find((x) => x.id === id); if (!z) return;
   const n = { ...z, ...p };
   spustene.set(stranka, l.map((x) => (x.id === id ? n : x))); zmena();
-  if (supabase) await supabase.from("zbierka").update({ nastavenie: n }).eq("id", id);
+  // vs je stĺpec zbierky, nie súčasť zapečateného nastavenia — inak by ho zámok 0041 bral ako zmenu
+  const { vs: _vs, ...nastavenie } = n;
+  if (supabase) await supabase.from("zbierka").update({ nastavenie }).eq("id", id);
 }
 
 /** Zapečatiť a spustiť — po spustení sa názov, text, dĺžka, suma, účet, účel a lehota nedajú meniť (karta 37 · bod 4) */
@@ -136,11 +140,12 @@ export async function spustiZbierku(stranka: string, d: NovaZbierkaData, ucet: s
   const z: SpustenaZbierka = { ...d, id: `zb-${Date.now().toString(36)}`, stranka, spustena: teraz, ucet, lehota: leh.text, lehotaKluc: leh.kluc };
   if (supabase) {
     // Zadanie 3 · 3.6: DB pustí zapečatenie len s účtom overeným pre túto stránku (0044) — inak chyba, nič sa nespustí
-    const { error } = await supabase.from("zbierka").insert({
+    const { data, error } = await supabase.from("zbierka").insert({
       id: z.id, nazov: d.nazov, modul: "charity", typ: "zbierka", ciel: d.cielTyp === "ciel" ? cielCislo(d) : null,
       stav: "aktivna", stranka, nastavenie: z, zapecatena: teraz,
-    });
+    }).select("vs").single();
     if (error) throw new Error(error.message);
+    if (data?.vs) z.vs = data.vs as string; // číslo zbierky pridelil server (0049)
     await supabase.from("profil_stranky").upsert({ stranka, koncept_zbierky: null, koncept_zbierky_cas: null }, { onConflict: "stranka" });
   }
   spustene.set(stranka, [z, ...zbierkyStrankyZPamate(stranka)]);

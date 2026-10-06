@@ -153,7 +153,11 @@ export function OsobaB({ start = "plan", onSpat, onHotovo, authId: authIdVst, em
 
   // ---- Platba: karta sa len overí platbou 0 € (platobná brána ešte nie je → simulácia), IBAN na výplaty
   const ibanOk = !!overIban(iban);
-  const overKartu = async () => { setBusy(true); await pockaj(900); setBusy(false); vibruj(8); ides("udaje"); };
+  const overKartu = async () => {
+    // IBAN sa uloží do účtu (0049); overenie karty 0 € je zatiaľ simulácia (platobná brána ešte nie je)
+    if (!(await server(() => db.ulozVyplatnyUcet(ucet!.id, overIban(iban)!)))) return;
+    setBusy(true); await pockaj(900); setBusy(false); vibruj(8); ides("udaje");
+  };
 
   // ---- Údaje
   const rokN = Number(rok), rokOk = /^\d{4}$/.test(rok) && rokN >= 1900 && rokN <= new Date().getFullYear() - 15;

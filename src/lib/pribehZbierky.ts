@@ -1,7 +1,8 @@
 // KARTA 55 · E — Príbeh zbierky: celá stránka prípadu (dobrovoľné, môže ho mať každá zbierka).
 // Správa zbierky → záložka Príbeh ukladá KONCEPT samo; na stránke sa ukáže až po „Zverejniť príbeh".
 // Príbeh týždňa = jeden príbeh navrchu profilu organizácie (zapnutie vypne iný).
-// Tabuľka pribeh_zbierky (zbierka, koncept, zverejneny, tyzdna) — migrácia Samuel. Nič do prehliadača;
+// Tabuľka pribeh_zbierky (zbierka, stranka, koncept, zverejneny, tyzdna) — migrácia 0047. Koncept číta len správca
+// (RLS), verejnosť číta pohľad pribeh_zbierky_verejny. Nič do prehliadača;
 // bez DB spojenia appka drží príbehy v pamäti relácie.
 import { useSyncExternalStore } from "react";
 import { supabase } from "./supabase";
@@ -63,23 +64,29 @@ export function pribehNaUpravu(id: string): { pribeh: Pribeh; koncept: boolean; 
 }
 export async function nacitajPribeh(id: string): Promise<void> {
   if (!supabase) return;
-  const { data, error } = await supabase.from("pribeh_zbierky").select("koncept, zverejneny, org, tyzdna").eq("zbierka", kluc(id)).maybeSingle();
-  if (error || !data) return;
-  pamat.set(kluc(id), { koncept: (data.koncept as Pribeh | null) ?? null, zverejneny: (data.zverejneny as Pribeh | null) ?? null, org: String(data.org ?? "") });
-  if (data.tyzdna && data.org) tyzdna = { ...tyzdna, [String(data.org)]: kluc(id) };
+  const k = kluc(id);
+  const [ver, sprava] = await Promise.all([
+    supabase.from("pribeh_zbierky_verejny").select("zverejneny, stranka, tyzdna").eq("zbierka", k).maybeSingle(),
+    supabase.from("pribeh_zbierky").select("koncept, zverejneny, stranka, tyzdna").eq("zbierka", k).maybeSingle(), // len správca (RLS)
+  ]);
+  const data = sprava.data ?? (ver.data ? { ...ver.data, koncept: null } : null);
+  if (!data) return;
+  const org = String(data.stranka ?? "");
+  pamat.set(k, { koncept: (data.koncept as Pribeh | null) ?? null, zverejneny: (data.zverejneny as Pribeh | null) ?? null, org });
+  if (data.tyzdna && org) tyzdna = { ...tyzdna, [org]: k };
   zmena();
 }
 /** ukladá sa samo (koncept) */
 export function ulozKonceptPribehu(id: string, org: string, p: Pribeh) {
   const k = kluc(id), z = pamat.get(k);
   pamat.set(k, { koncept: p, zverejneny: z?.zverejneny ?? null, org }); zmena();
-  if (supabase) void supabase.from("pribeh_zbierky").upsert({ zbierka: k, org, koncept: p }, { onConflict: "zbierka" });
+  if (supabase) void supabase.from("pribeh_zbierky").upsert({ zbierka: k, stranka: org, koncept: p }, { onConflict: "zbierka" });
 }
 /** Zverejniť príbeh — koncept ide na stránku */
 export function zverejniPribeh(id: string, org: string) {
   const k = kluc(id), z = pamat.get(k); const p = z?.koncept ?? z?.zverejneny; if (!p) return;
   pamat.set(k, { koncept: null, zverejneny: p, org }); zmena();
-  if (supabase) void supabase.from("pribeh_zbierky").upsert({ zbierka: k, org, koncept: null, zverejneny: p }, { onConflict: "zbierka" });
+  if (supabase) void supabase.from("pribeh_zbierky").upsert({ zbierka: k, stranka: org, koncept: null, zverejneny: p }, { onConflict: "zbierka" });
 }
 /** 5 · Priebeh: nový zápis ide do konceptu; ak je príbeh zverejnený, ukáže sa hneď aj na stránke (vráti true = darcom ide upozornenie) */
 export function pridajZapisPriebehu(id: string, org: string, zapis: ZapisPriebehu): boolean {
@@ -88,7 +95,7 @@ export function pridajZapisPriebehu(id: string, org: string, zapis: ZapisPriebeh
   const koncept = z?.koncept ? pridaj(z.koncept) : z?.zverejneny ? null : { ...prazdnyPribeh(), priebeh: [zapis] };
   const zverejneny = pridaj(z?.zverejneny);
   pamat.set(k, { koncept, zverejneny, org }); zmena();
-  if (supabase) void supabase.from("pribeh_zbierky").upsert({ zbierka: k, org, koncept, zverejneny }, { onConflict: "zbierka" });
+  if (supabase) void supabase.from("pribeh_zbierky").upsert({ zbierka: k, stranka: org, koncept, zverejneny }, { onConflict: "zbierka" });
   return !!zverejneny;
 }
 /** Príbeh týždňa organizácie (len jeden naraz) */
@@ -99,7 +106,7 @@ export function nastavPribehTyzdna(id: string, org: string, zap: boolean): strin
   const pred = tyzdna[org] ?? null;
   const n = { ...tyzdna }; if (zap) n[org] = kluc(id); else if (pred === kluc(id)) delete n[org];
   tyzdna = n; zmena();
-  if (supabase) void supabase.from("pribeh_zbierky").upsert({ zbierka: kluc(id), org, tyzdna: zap }, { onConflict: "zbierka" });
+  if (supabase) void supabase.from("pribeh_zbierky").upsert({ zbierka: kluc(id), stranka: org, tyzdna: zap }, { onConflict: "zbierka" });
   return zap && pred && pred !== kluc(id) ? pred : null;
 }
 /** testovací profil, pri ktorom príbeh vznikol (verejný odkaz /p/{org}) */
