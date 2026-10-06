@@ -17,6 +17,7 @@ import { cisloObjektu } from "@/lib/cisloObjektu";
 import { SpravaZbierky, type ZbierkaNaSpravu } from "./SpravaZbierky";
 import { TextovePolia, GaleriaEditor } from "./obsahZbierky";
 import { VzhladStranky } from "./VzhladStranky";
+import { TlacidloNastavenia } from "./spravaCasti";
 import type { MediumZbierky } from "@/lib/novaZbierka";
 import "@/styles/sprava.css";
 
@@ -380,7 +381,7 @@ export function SpravaFarnosti({ onBack, strankaId, test: testPas }: { onBack: (
 
   // ================= PC =================
   if (desktop) {
-    const nav: Sub[] = ["prehlad", "zbierky", "omse", "oznamy", "ludia", "penazenka", "nastroje", "profil", "nast"];
+    const nav: Sub[] = ["prehlad", "zbierky", "omse", "oznamy", "ludia", "penazenka", "nastroje", "profil"]; // Nastavenia ako tlačidlo pod Verejným profilom (OPRAVY 157)
     const aktivna = sub === "zbierka" ? "zbierky" : sub;
     return (
       <div className="sprava-charity" data-stit="silver" style={{ minHeight: "100dvh", boxSizing: "border-box", padding: "20px 32px", display: "flex", gap: 24, alignItems: "flex-start" }}>
@@ -394,6 +395,7 @@ export function SpravaFarnosti({ onBack, strankaId, test: testPas }: { onBack: (
             <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}><span style={{ fontSize: 15, fontWeight: 800, color: "var(--tInk)" }}>Verejný profil</span><span style={{ fontSize: 12, color: "var(--tInk2)" }}>ako ho vidia farníci</span></span>
             <span aria-hidden="true" style={{ fontSize: 18, color: "var(--tInk)" }}>›</span>
           </button>
+          <TlacidloNastavenia on={aktivna === "nast"} onClick={() => go("nast")} />
           <nav aria-label="Správa farnosti" style={{ flex: "none", display: "flex", flexDirection: "column", gap: 2, padding: "4px 0" }}>
             {nav.map((k) => { const on = aktivna === k; return (
               <button key={k} type="button" onClick={() => go(k)} aria-current={on ? "page" : undefined} className={on ? undefined : "sc-hov"} style={{ height: 48, padding: "0 14px", border: "none", borderRadius: 14, cursor: "pointer", display: "flex", alignItems: "center", gap: 12, textAlign: "left", fontFamily: "inherit", boxShadow: "none", background: on ? "var(--accSoft)" : "transparent", color: on || k === "prehlad" ? "var(--ink)" : "var(--ink2)" }}>
