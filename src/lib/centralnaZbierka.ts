@@ -3,6 +3,7 @@
 // Na celú činnosť · nikdy vo verejnom feede · stále hore na stránke charity · nie je zapečatená.
 // DB: profil_stranky.centralna (migrácia 0032). Bez DB drží appka údaje v pamäti relácie.
 // ============================================================
+import { bezDataUrl } from "./uploadFoto";
 import { useSyncExternalStore } from "react";
 import { supabase } from "./supabase";
 import type { MediumZbierky } from "./novaZbierka";
@@ -39,5 +40,5 @@ export async function nacitajCentralnuZbierku(stranka: string): Promise<Centraln
 }
 export async function ulozCentralnuZbierku(stranka: string, c: CentralnaZbierka): Promise<void> {
   pamat.set(stranka, c); zmena();
-  if (supabase) await supabase.from("profil_stranky").upsert({ stranka, centralna: c, centralna_cas: new Date().toISOString() }, { onConflict: "stranka" });
+  if (supabase) await supabase.from("profil_stranky").upsert({ stranka, centralna: await bezDataUrl(c, "stranky"), centralna_cas: new Date().toISOString() }, { onConflict: "stranka" });
 }

@@ -4,6 +4,7 @@
 // (stĺpce stranka, nastavenie, zapecatena — migrácia 0030). Nič do prehliadača (localStorage).
 // Bez DB spojenia (mock/offline) drží appka všetko v pamäti relácie.
 // ============================================================
+import { bezDataUrl } from "./uploadFoto";
 import { useSyncExternalStore } from "react";
 import { supabase } from "./supabase";
 import type { Vyrez } from "@/components/orezfotky";
@@ -107,7 +108,7 @@ export async function nacitajKonceptZbierky(stranka: string): Promise<NovaZbierk
 /** volá sa automaticky 600 ms po poslednej zmene */
 export async function ulozKonceptZbierky(stranka: string, d: NovaZbierkaData | null): Promise<void> {
   koncepty.set(stranka, d); zmena();
-  if (supabase) await supabase.from("profil_stranky").upsert({ stranka, koncept_zbierky: d, koncept_zbierky_cas: d ? new Date().toISOString() : null }, { onConflict: "stranka" });
+  if (supabase) await supabase.from("profil_stranky").upsert({ stranka, koncept_zbierky: await bezDataUrl(d, "zbierky"), koncept_zbierky_cas: d ? new Date().toISOString() : null }, { onConflict: "stranka" });
 }
 
 export async function nacitajZbierkyStranky(stranka: string): Promise<SpustenaZbierka[]> {
@@ -130,15 +131,16 @@ export async function upravZbierku(stranka: string, id: string, p: Pick<NovaZbie
   spustene.set(stranka, l.map((x) => (x.id === id ? n : x))); zmena();
   // vs je stĺpec zbierky, nie súčasť zapečateného nastavenia — inak by ho zámok 0041 bral ako zmenu
   const { vs: _vs, ...nastavenie } = n;
-  if (supabase) await supabase.from("zbierka").update({ nastavenie }).eq("id", id);
+  if (supabase) await supabase.from("zbierka").update({ nastavenie: await bezDataUrl(nastavenie, "zbierky") }).eq("id", id);
 }
 
 /** Zapečatiť a spustiť — po spustení sa názov, text, dĺžka, suma, účet, účel a lehota nedajú meniť (karta 37 · bod 4) */
 export async function spustiZbierku(stranka: string, d: NovaZbierkaData, ucet: string): Promise<SpustenaZbierka> {
   const teraz = new Date().toISOString();
   const leh = lehotaZbierky(d);
-  const z: SpustenaZbierka = { ...d, id: `zb-${Date.now().toString(36)}`, stranka, spustena: teraz, ucet, lehota: leh.text, lehotaKluc: leh.kluc };
+  let z: SpustenaZbierka = { ...d, id: `zb-${Date.now().toString(36)}`, stranka, spustena: teraz, ucet, lehota: leh.text, lehotaKluc: leh.kluc };
   if (supabase) {
+    z = await bezDataUrl(z, "zbierky");   // 5.5: fotky do Storage, v zbierka.nastavenie len URL
     // Zadanie 3 · 3.6: DB pustí zapečatenie len s účtom overeným pre túto stránku (0044) — inak chyba, nič sa nespustí
     const { data, error } = await supabase.from("zbierka").insert({
       id: z.id, nazov: d.nazov, modul: "charity", typ: "zbierka", ciel: d.cielTyp === "ciel" ? cielCislo(d) : null,

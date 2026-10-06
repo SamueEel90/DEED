@@ -1,6 +1,7 @@
 // KARTA 33 · OPRAVY 106 — profil stránky (Upraviť profil): KONCEPT a ULOŽENÝ profil v účte organizácie
 // (tabuľka profil_stranky, migrácia 0028). Nič z toho nejde do prehliadača (localStorage).
 // Bez DB spojenia (mock/offline) appka drží profil len v pamäti relácie.
+import { bezDataUrl } from "./uploadFoto";
 import { supabase } from "./supabase";
 import type { Kontakt } from "@/features/rola/kontakt";
 import type { TvarLoga } from "@/features/rola/stav";
@@ -44,7 +45,7 @@ export async function nacitajProfil(stranka: string): Promise<ProfilZaznam> {
 export async function ulozKoncept(stranka: string, p: ProfilStranky): Promise<string> {
   const cas = new Date().toISOString();
   pamat.set(stranka, { ...profilZPamate(stranka), koncept: p, konceptCas: cas });
-  if (supabase) await supabase.from("profil_stranky").upsert({ stranka, koncept: p, koncept_cas: cas }, { onConflict: "stranka" });
+  if (supabase) await supabase.from("profil_stranky").upsert({ stranka, koncept: await bezDataUrl(p, "stranky"), koncept_cas: cas }, { onConflict: "stranka" });
   return cas;
 }
 
@@ -52,7 +53,7 @@ export async function ulozKoncept(stranka: string, p: ProfilStranky): Promise<st
 export async function zverejniProfil(stranka: string, p: ProfilStranky): Promise<void> {
   const cas = new Date().toISOString();
   pamat.set(stranka, { koncept: null, konceptCas: null, ulozeny: p });
-  if (supabase) await supabase.from("profil_stranky").upsert({ stranka, ulozeny: p, ulozeny_cas: cas, koncept: null, koncept_cas: null }, { onConflict: "stranka" });
+  if (supabase) await supabase.from("profil_stranky").upsert({ stranka, ulozeny: await bezDataUrl(p, "stranky"), ulozeny_cas: cas, koncept: null, koncept_cas: null }, { onConflict: "stranka" });
 }
 
 // ---- percento profilu (karta 33 bod 6) — zo 4 vecí po 25 %, z ULOŽENÉHO profilu ----

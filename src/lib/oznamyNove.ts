@@ -7,6 +7,7 @@
 // TODO (server): oznámenie sledujúcim po 5 min, správy prihláseným (zmena, zrušenie, pripomienka),
 // nástenka mesta a kalendár (len kto má povolené akcie mesta / štvrte alebo sleduje charitu).
 // ============================================================
+import { bezDataUrl } from "./uploadFoto";
 import { useSyncExternalStore } from "react";
 import { supabase } from "./supabase";
 import type { MediumZbierky } from "./novaZbierka";
@@ -79,7 +80,7 @@ async function zapis(o: OznamCharity) {
   const l = pamat.get(o.stranka) ?? [];
   pamat.set(o.stranka, l.some((x) => x.id === o.id) ? l.map((x) => (x.id === o.id ? o : x)) : [o, ...l]);
   zmena();
-  if (supabase) await supabase.from("oznam_charity").upsert({ id: o.id, stranka: o.stranka, druh: o.druh, data: o, zverejnene: o.zverejnene, zrusene: o.zrusene ?? null }, { onConflict: "id" });
+  if (supabase) await supabase.from("oznam_charity").upsert({ id: o.id, stranka: o.stranka, druh: o.druh, data: await bezDataUrl(o, "oznamy"), zverejnene: o.zverejnene, zrusene: o.zrusene ?? null }, { onConflict: "id" });
 }
 
 // ---- pravidlá ----

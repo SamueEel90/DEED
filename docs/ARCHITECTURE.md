@@ -175,7 +175,7 @@ Bez `ANTHROPIC_API_KEY` beží hodnotenie v mock režime — appka funguje ďale
 
 ## 8. Databáza
 
-`supabase/migrations/` — 63 migrácií (stav 6. 10. 2026, posledná `0063`), aplikujú sa
+`supabase/migrations/` — 64 migrácií (stav 6. 10. 2026, posledná `0064`), aplikujú sa
 v poradí podľa názvu súboru (číslo je poradie, nie dátum; číslovanie má medzery —
 `0024`, `0051`, `0052` neexistujú, `0038` je rezervovaná — a doplnkové migrácie typu `0014c`, `0018b`).
 Pokrývajú registráciu, obsahovú doménu, QR systém, payment engine, escrow, badge/chain,

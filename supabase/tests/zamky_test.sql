@@ -200,5 +200,17 @@ insert into t select '5.4 limit sa neda zvysit', (select count(*) from public.fe
 reset role;
 insert into t select '5.7 feed je stlpec s constraintom', exists (select 1 from pg_constraint where conname = 'prispevok_feed_check');
 
+-- ---------- 5.5 · fotky do Storage ----------
+do $$ begin
+  insert into public.oznam_charity (id, stranka, druh, data, zverejnene) values ('test-oznam-foto', 'svetlo', 'oznam', '{"plagat":"data:image/jpeg;base64,AAAA"}', now());
+  insert into t values ('5.5 oznam s data URL odmietnuty', false);
+exception when sqlstate '22023' then insert into t values ('5.5 oznam s data URL odmietnuty', true); end $$;
+insert into public.oznam_charity (id, stranka, druh, data, zverejnene) values ('test-oznam-url', 'svetlo', 'oznam', '{"plagat":"https://x.supabase.co/storage/v1/object/public/prispevky/u/oznamy/a.jpg"}', now());
+insert into t select '5.5 oznam s URL prejde', exists (select 1 from public.oznam_charity where id = 'test-oznam-url');
+do $$ begin
+  update public.profil_stranky set centralna = '{"media":[{"src":"data:image/png;base64,BBBB"}]}' where stranka = 'svetlo';
+  insert into t values ('5.5 profil stranky bez data URL', false);
+exception when sqlstate '22023' then insert into t values ('5.5 profil stranky bez data URL', true); end $$;
+
 select ok, c from t order by ok, c;
 rollback;
