@@ -36,7 +36,6 @@ export interface Ucet {
   email?: string | null;
   email_overeny?: boolean;
   poradove_cislo?: number | null;
-  pin_hash?: string | null;
   biometria?: boolean;
   stav_registracie?: StavRegistracie;
   aktualizovane?: IsoDateTime;

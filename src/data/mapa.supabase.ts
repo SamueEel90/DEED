@@ -11,7 +11,7 @@ export const mapaSupabase = {
   async body(): Promise<MapaBod[]> {
     if (!supabase) return [];
     const [pr, ud] = await Promise.all([
-      supabase.from("prispevok").select("lat,lng,modul,typ").not("lat", "is", null),
+      supabase.from("prispevok_feed").select("lat,lng,modul,typ").not("lat", "is", null),
       supabase.from("udalost").select("lat,lng").not("lat", "is", null),
     ]);
     if (pr.error) throw pr.error;

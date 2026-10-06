@@ -93,5 +93,30 @@ reset role;
 insert into t select '4.3 overeny ucet zalozi stranku sebe', exists (select 1 from public.stranka s join public.statutar st on st.org_ucet_id = s.ucet_id
   where s.id = 'overena-nova' and st.osoba_ucet_id = '7e570000-0000-0000-0000-0000000000e1');
 
+-- ---------- 4.4 · PIN a GPS ----------
+update public.prispevok set lat = 48.894567, lng = 18.044321 where id = '20000000-0000-0000-0000-0000000000e1';
+set role authenticated;
+select set_config('request.jwt.claim.sub', '7e57a000-0000-0000-0000-0000000000e1', false);
+select public.nastav_zabezpecenie('4821', false);
+do $$ begin perform pin_hash from public.ucet limit 1;
+  insert into t values ('4.4 pin_hash sa z klienta neda SELECT-nut', false);
+exception when insufficient_privilege then insert into t values ('4.4 pin_hash sa z klienta neda SELECT-nut', true); end $$;
+do $$ begin update public.ucet set pin_hash = 'x' where id = '7e570000-0000-0000-0000-0000000000e1';
+  insert into t values ('4.4 pin_hash sa z klienta neda zapisat', false);
+exception when insufficient_privilege then insert into t values ('4.4 pin_hash sa z klienta neda zapisat', true); end $$;
+insert into t select '4.4 spravny PIN prejde', public.over_pin('4821');
+insert into t select '4.4 zly PIN neprejde', not public.over_pin('0000');
+do $$ begin perform lat from public.prispevok limit 1;
+  insert into t values ('4.4 presne GPS z prispevok nie', false);
+exception when insufficient_privilege then insert into t values ('4.4 presne GPS z prispevok nie', true); end $$;
+insert into t select '4.4 feed vracia polohu zaokruhlenu', lat = 48.89 and lng = 18.04 from public.prispevok_feed where id = '20000000-0000-0000-0000-0000000000e1';
+do $$ declare i int; begin
+  for i in 1..5 loop perform public.over_pin('1111'); end loop;
+  perform public.over_pin('4821');
+  insert into t values ('4.4 po 5 zlych pokusoch zamok', false);
+exception when sqlstate '54000' then insert into t values ('4.4 po 5 zlych pokusoch zamok', true); end $$;
+reset role;
+insert into t select '4.4 pin je bcrypt', pin_hash like '$2%' from public.ucet where id = '7e570000-0000-0000-0000-0000000000e1';
+
 select ok, c from t order by ok, c;
 rollback;

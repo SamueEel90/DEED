@@ -22,12 +22,6 @@ function db() {
 const cakaj = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 const teraz = () => new Date().toISOString();
 
-// PIN/heslo hash (DEMO: SHA-256 cez Web Crypto; v produkcii server-side argon2/bcrypt)
-async function hashPin(pin: string): Promise<string> {
-  const data = new TextEncoder().encode("deed:" + pin);
-  const buf = await crypto.subtle.digest("SHA-256", data);
-  return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("");
-}
 
 // zoskupí ploché riadky číselníka podľa kľúča, zachová poradie
 function zoskup(rows: any[], kluc: string, polozkaKluc: string): Ciselnik[] {
@@ -190,12 +184,10 @@ export async function ulozStav(ucetId: string, stav: string) {
 }
 
 // Zámok účtu — PIN/heslo (hash) + biometria (§4.2)
+// Zadanie 4 · 4.4: PIN hashuje (bcrypt) a overuje LEN server; pin_hash appka nevidí. Účet = prihlásený.
 export async function nastavZabezpecenie(ucetId: string, { pin, biometria = false }: { pin?: string; biometria?: boolean }) {
-  const pin_hash = pin ? await hashPin(pin) : null;
-  const { error } = await db()
-    .from("ucet")
-    .update({ pin_hash, biometria, stav_registracie: "udaje", aktualizovane: teraz() })
-    .eq("id", ucetId);
+  void ucetId;
+  const { error } = await db().rpc("nastav_zabezpecenie", { p_pin: pin ?? null, p_biometria: biometria });
   if (error) throw error;
 }
 
