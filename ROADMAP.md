@@ -95,7 +95,8 @@ Vymeniť mock repozitáre za Supabase — bez zásahu do UI.
   5. **Registrované organizácie** (`deed.mojeStranky`, `deed.reg.org`) — `stranka` + `zaloz_stranku` (0035).
   6. **Moja firma — oznamy a návrhy akcií** (`deed.mojaFirma`) — vybavené oznamy firmy zamestnancovi a návrhy firemných akcií do DB (Martin 6. 10.).
   7. **Verejné pohľady bez security definer** — `v_vyzbierane`, `v_top_darcovia`, `prispevok_feed`, `profil_stranky_verejny` prerobiť na serverové funkcie, aby `get_advisors` = 0 (Martin 6. 10.; dovtedy vracajú len verejné stĺpce).
-  8. **Profily podľa mena → ID a čísla** — deep linky profilov cez ID + verejné čísla U-/C- namiesto mena (Blok 1, Martin 6. 10.).
+  8. **Voľba darcu pri QR splite** — dar cez QR split zatiaľ ide ako anonymný (predvoľba, 0061); doplniť výber zobrazenia ako pri bežnom dare (Martin 6. 10.).
+  9. **Profily podľa mena → ID a čísla** — deep linky profilov cez ID + verejné čísla U-/C- namiesto mena (Blok 1, Martin 6. 10.).
 - **Hotovo, keď:** appka beží na reálnych dátach prihláseného používateľa, mock už len ako fallback pre vývoj.
 
 ### Fáza 5 — Produkčná pripravenosť
