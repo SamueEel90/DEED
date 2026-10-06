@@ -32,5 +32,66 @@ insert into t select '4.2 dobehnute 3 zameskane obdobia, raz', (select count(*) 
 insert into t select '4.2 skoncena zbierka sa nestrhne', not exists (select 1 from platba where meta->>'recurring' = '7e5e0000-0000-0000-0000-0000000000a2')
   and (select stav from opakovana_platba where id = '7e5e0000-0000-0000-0000-0000000000a2') = 'ukonceny';
 
+-- ---------- 4.3 · RLS ----------
+insert into t select '4.3 ziadna test_all_access', not exists (select 1 from pg_policies where policyname = 'test_all_access');
+update public.ucet set telefon = '+421900000001' where id = '7e570000-0000-0000-0000-0000000000e2';
+insert into public.lokalita (ucet_id, region, mesto, lat, lng) values ('7e570000-0000-0000-0000-0000000000e2', 'TN', 'Trenčín', 48.89, 18.04);
+insert into public.organizacia (ucet_id, nazov, bankovy_ucet) values ('7e570000-0000-0000-0000-0000000000e2', 'Cudzia o.z.', 'SK0000000000000000000001');
+-- anonym (anon kľúč, bez prihlásenia)
+set role anon;
+select set_config('request.jwt.claim.sub', '', false);
+insert into t select '4.3 anon necita ucet', not exists (select 1 from public.ucet);
+insert into t select '4.3 anon necita lokalitu', not exists (select 1 from public.lokalita);
+insert into t select '4.3 anon necita IBAN', not exists (select 1 from public.organizacia);
+insert into t select '4.3 anon necita platby', not exists (select 1 from public.platba);
+insert into t select '4.3 anon cita verejne prispevky', exists (select 1 from public.prispevok where id = '20000000-0000-0000-0000-0000000000e1');
+do $$ begin
+  update public.prispevok set titul = 'X' where id = '20000000-0000-0000-0000-0000000000e1';
+  insert into t select '4.3 anon nezmeni prispevok', (select titul from public.prispevok where id = '20000000-0000-0000-0000-0000000000e1') = 'Beží';
+exception when others then insert into t values ('4.3 anon nezmeni prispevok', true); end $$;
+do $$ begin perform public.zaloz_stranku('cudzia-charita', 'charita', 'Cudzia');
+  insert into t values ('4.3 anon nezalozi stranku', false);
+exception when others then insert into t values ('4.3 anon nezalozi stranku', true); end $$;
+do $$ begin perform public.recurring_tick();
+  insert into t values ('4.3 anon nezavola cron', false);
+exception when insufficient_privilege then insert into t values ('4.3 anon nezavola cron', true); end $$;
+reset role;
+-- prihlásený A (neoverený, cudzí obsah)
+set role authenticated;
+select set_config('request.jwt.claim.sub', '7e57a000-0000-0000-0000-0000000000e1', false);
+insert into t select '4.3 A vidi len svoj ucet', (select count(*) from public.ucet where typ <> 'system') = 1
+  and exists (select 1 from public.ucet where id = '7e570000-0000-0000-0000-0000000000e1');
+insert into t select '4.3 A necita telefon B', not exists (select 1 from public.ucet where telefon = '+421900000001');
+insert into t select '4.3 A necita GPS ani IBAN B', not exists (select 1 from public.lokalita) and not exists (select 1 from public.organizacia);
+insert into t select '4.3 A nevidi platby B', not exists (select 1 from public.platba where odosielatel <> '7e570000-0000-0000-0000-0000000000e1');
+update public.prispevok set titul = 'Ukradnuté' where id = '20000000-0000-0000-0000-0000000000e1';
+do $$ begin perform public.zaloz_stranku('moja-nova', 'charita', 'Nová');
+  insert into t values ('4.3 neovereny ucet nezalozi stranku', false);
+exception when sqlstate '42501' then insert into t values ('4.3 neovereny ucet nezalozi stranku', true); end $$;
+do $$ begin insert into public.stranka (id, ucet_id, typ, nazov) values ('obsadena', '7e570000-0000-0000-0000-0000000000e2', 'charita', 'Cudzia');
+  insert into t values ('4.3 stranka sa neda vlozit priamo', false);
+exception when others then insert into t values ('4.3 stranka sa neda vlozit priamo', true); end $$;
+do $$ begin insert into public.statutar (org_ucet_id, osoba_ucet_id, opravnenie) values ('7e570000-0000-0000-0000-0000000000e2', '7e570000-0000-0000-0000-0000000000e1', 'ja');
+  insert into t values ('4.3 A sa neprida za statutara cudzej org', false);
+exception when others then insert into t values ('4.3 A sa neprida za statutara cudzej org', true); end $$;
+do $$ begin insert into public.balik (org_ucet_id, plan) values ((select (public.zaloz_organizaciu('charita')).id), 'premium');
+  insert into t values ('4.3 platený balík si appka nezapíše', false);
+exception when others then insert into t values ('4.3 platený balík si appka nezapíše', true); end $$;
+select (public.zaloz_organizaciu('charita')).id is not null;
+insert into t select '4.3 zaloz_organizaciu: som spravca', exists (select 1 from public.statutar where osoba_ucet_id = '7e570000-0000-0000-0000-0000000000e1');
+insert into t select '4.3 v_zostatok len moj (invoker)', (select count(*) from public.v_zostatok) = 1;
+reset role;
+insert into t select '4.3 A nezmenil cudzi prispevok', (select titul from public.prispevok where id = '20000000-0000-0000-0000-0000000000e1') = 'Beží';
+insert into t select '4.3 v_zostatok a v_vypis su security_invoker',
+  (select bool_and(coalesce(reloptions::text like '%security_invoker=true%', false)) from pg_class where relname in ('v_zostatok', 'v_vypis'));
+-- overený účet si stránku založí
+update public.ucet set stav_registracie = 'hotovo', email_overeny = true where id = '7e570000-0000-0000-0000-0000000000e1';
+set role authenticated;
+select set_config('request.jwt.claim.sub', '7e57a000-0000-0000-0000-0000000000e1', false);
+select (public.zaloz_stranku('overena-nova', 'charita', 'Nová')).id = 'overena-nova';
+reset role;
+insert into t select '4.3 overeny ucet zalozi stranku sebe', exists (select 1 from public.stranka s join public.statutar st on st.org_ucet_id = s.ucet_id
+  where s.id = 'overena-nova' and st.osoba_ucet_id = '7e570000-0000-0000-0000-0000000000e1');
+
 select ok, c from t order by ok, c;
 rollback;

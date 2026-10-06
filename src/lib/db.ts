@@ -210,16 +210,14 @@ export async function ulozOverenyTelefon(ucetId: string, telefon: string) {
 
 // KARTA 44 · organizácia sa pridáva z osobného účtu: nový ucet typu charita bez vlastného prihlásenia,
 // prepojený na osobu (správca / štatutár). Server (Samuel): ucet bez telefónu a auth_id + RLS pre správcu.
+// Zadanie 4 · 4.3: organizačný účet + prvý správca (prihlásený) vznikajú naraz na serveri (rpc zaloz_organizaciu);
+// priamy insert do ucet appka pre cudzí/organizačný účet nesmie (RLS).
 export async function vytvorOrganizaciuPodOsobou(osobaUcetId: string, typ = "charita") {
-  const c = db();
-  const { data, error } = await c
-    .from("ucet")
-    .insert({ typ, telefon_overeny: false, email_overeny: false, stav_registracie: "kyb" })
-    .select("id, typ, poradove_cislo, stav_registracie")
-    .single();
+  void osobaUcetId;   // správca = prihlásený účet zo session
+  const { data, error } = await db().rpc("zaloz_organizaciu", { p_typ: typ });
   if (error) throw error;
-  await prepojStatutara(data.id, osobaUcetId, "správca (registroval)");
-  return data;
+  const u = data as { id: string; typ: string; poradove_cislo: number | null; stav_registracie: string };
+  return { id: u.id, typ: u.typ, poradove_cislo: u.poradove_cislo, stav_registracie: u.stav_registracie };
 }
 
 export async function dokonciRegistraciu(ucetId: string) {

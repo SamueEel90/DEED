@@ -12,6 +12,9 @@ create temp table t(c text, ok boolean);
 grant all on t to public;
 create temp table v(k text primary key, j jsonb);
 grant all on v to public;
+-- čísla účtov firiem (appka ich pozná z registra; klient cudzí účet z tabuľky nečíta — 0049)
+create temp table fc as select id, cislo from public.ucet where typ = 'firma';
+grant select on fc to public;
 
 set role authenticated;
 select set_config('request.jwt.claim.sub','7e57a000-0000-0000-0000-0000000000d1', false);
@@ -20,22 +23,22 @@ select set_config('request.jwt.claim.sub','7e57a000-0000-0000-0000-0000000000d1'
 select public.dorovnanie_ciel_pridaj('test-ciel', 'svetlo', 'Testovací cieľ');
 -- neexistujúci cieľ sa nedá
 do $$ begin
-  perform public.dorovnanie_zapecat(jsonb_build_object('firmaUcet', (select cislo from ucet where id='f1000000-0000-4000-8000-000000000001'), 'ciel', 'nikde', 'pomer', 1, 'strop', 100, 'do', extract(epoch from now() + interval '10 days') * 1000));
+  perform public.dorovnanie_zapecat(jsonb_build_object('firmaUcet', (select cislo from fc where id='f1000000-0000-4000-8000-000000000001'), 'ciel', 'nikde', 'pomer', 1, 'strop', 100, 'do', extract(epoch from now() + interval '10 days') * 1000));
   insert into t values ('neexistujuci ciel odmietnuty', false);
 exception when others then insert into t values ('neexistujuci ciel odmietnuty', sqlerrm like 'Cieľ%');
 end $$;
 -- zlý pomer
 do $$ begin
-  perform public.dorovnanie_zapecat(jsonb_build_object('firmaUcet', (select cislo from ucet where id='f1000000-0000-4000-8000-000000000001'), 'ciel', 'test-ciel', 'pomer', 3, 'strop', 100, 'do', extract(epoch from now() + interval '10 days') * 1000));
+  perform public.dorovnanie_zapecat(jsonb_build_object('firmaUcet', (select cislo from fc where id='f1000000-0000-4000-8000-000000000001'), 'ciel', 'test-ciel', 'pomer', 3, 'strop', 100, 'do', extract(epoch from now() + interval '10 days') * 1000));
   insert into t values ('zly pomer odmietnuty', false);
 exception when others then insert into t values ('zly pomer odmietnuty', sqlerrm like 'Neplatný pomer%');
 end $$;
 
 -- A · úhrada cez DEED: hneď na viazanom účte, po 48 h samo aktívne
-insert into v select 'a', public.dorovnanie_zapecat(jsonb_build_object('firmaUcet', (select cislo from ucet where id='f1000000-0000-4000-8000-000000000001'),
+insert into v select 'a', public.dorovnanie_zapecat(jsonb_build_object('firmaUcet', (select cislo from fc where id='f1000000-0000-4000-8000-000000000001'),
   'ciel', 'test-ciel', 'pomer', 1, 'strop', 100, 'stropDaru', 30, 'uhrada', 'deed', 'kanal', 'karta', 'do', extract(epoch from now() + interval '10 days') * 1000));
 -- B · úhrada mimo DEED: bez pohybov, čaká na potvrdenie charity
-insert into v select 'b', public.dorovnanie_zapecat(jsonb_build_object('firmaUcet', (select cislo from ucet where id='f1000000-0000-4000-8000-000000000002'),
+insert into v select 'b', public.dorovnanie_zapecat(jsonb_build_object('firmaUcet', (select cislo from fc where id='f1000000-0000-4000-8000-000000000002'),
   'ciel', 'test-ciel', 'pomer', 2, 'strop', 50, 'uhrada', 'mimo', 'kanal', 'sepa', 'do', extract(epoch from now() + interval '10 days') * 1000));
 reset role;
 
