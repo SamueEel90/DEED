@@ -66,21 +66,21 @@ export function ZamestnanciSheet({ firma, toast, onClose }: {
         </div>
         <div style={{ display: "flex", gap: SPACE.sm, marginTop: SPACE.xs }}>
           {cakaNaNas && (<>
-            <span {...pressable(() => { potvrd(firma, x.osoba); toast(`${x.meno ?? x.osoba} je pripojený`); }, "Potvrdiť")}
+            <span {...pressable(() => { void potvrd(firma, x.osoba).then((ok) => { if (ok) toast(`${x.meno ?? x.osoba} je pripojený`); }); }, "Potvrdiť")}
               style={akcia("var(--a-green)")}>✓ Potvrdiť</span>
-            <span {...pressable(() => { odmietni(firma, x.osoba); toast("Žiadosť odmietnutá"); }, "Odmietnuť")}
+            <span {...pressable(() => { void odmietni(firma, x.osoba).then((ok) => { if (ok) toast("Žiadosť odmietnutá"); }); }, "Odmietnuť")}
               style={{ ...akcia(C.textTer), marginLeft: "auto" }}>Odmietnuť</span>
           </>)}
           {cakaNaNeho && (
-            <span {...pressable(() => { odmietni(firma, x.osoba); toast("Pozvánka zrušená"); }, "Zrušiť pozvánku")}
+            <span {...pressable(() => { void odmietni(firma, x.osoba).then((ok) => { if (ok) toast("Pozvánka zrušená"); }); }, "Zrušiť pozvánku")}
               style={{ ...akcia(C.textTer), marginLeft: "auto" }}>Zrušiť pozvánku</span>
           )}
           {x.stav === "potvrdeny" && (
-            <span {...pressable(() => { odpoj(firma, x.osoba); toast(`${x.meno ?? x.osoba} odpojený — doterajšie dorovnania ostávajú`); }, "Odpojiť")}
+            <span {...pressable(() => { void odpoj(firma, x.osoba).then((ok) => { if (ok) toast(`${x.meno ?? x.osoba} odpojený — doterajšie dorovnania ostávajú`); }); }, "Odpojiť")}
               style={{ ...akcia(C.textTer), marginLeft: "auto" }}>Odpojiť</span>
           )}
           {(x.stav === "odmietnuty" || x.stav === "odpojeny") && (
-            <span {...pressable(() => { pozvi(firma, x.osoba); toast(`Pozvánka pre ${x.meno ?? x.osoba} odoslaná`); }, "Pozvať znova")}
+            <span {...pressable(() => { void pozvi(firma, x.osoba).then((ok) => { if (ok) toast(`Pozvánka pre ${x.meno ?? x.osoba} odoslaná`); }); }, "Pozvať znova")}
               style={{ ...akcia("var(--a-info)"), marginLeft: "auto" }}>Pozvať znova</span>
           )}
         </div>
@@ -111,9 +111,8 @@ export function ZamestnanciSheet({ firma, toast, onClose }: {
       <button style={{ ...btnHlavny, opacity: platneCislo(cislo) ? 1 : .45, marginBottom: SPACE.sm }}
         onClick={() => {
           if (!platneCislo(cislo)) { toast("Zadajte číslo účtu z vizitky"); return; }
-          pozvi(firma, cislo.trim());
-          toast(`Pozvánka pre ${cislo.trim()} odoslaná — platí, až keď ju prijme`);
-          setCislo("");
+          const c = cislo.trim();
+          void pozvi(firma, c).then((ok) => { if (ok) { toast(`Pozvánka pre ${c} odoslaná — platí, až keď ju prijme`); setCislo(""); } });
         }}>Poslať pozvánku</button>
 
       {cakaju.length > 0 && (<>{nadpis("ČAKÁ")}{cakaju.map(riadok)}</>)}

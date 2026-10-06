@@ -455,7 +455,7 @@ export const obmedzenieDorovnania = (entita: string): ObmedzenieDorovnania => ob
 export function ulozObmedzenie(entita: string, o: ObmedzenieDorovnania) { obmedzenia.set(entita, o); verzia++; posluchaci.forEach((f) => f()); }
 /** register firiem DEED (TESTOVACÍ výrez; odvetvie z registrácie firmy) — účty firiem z lib/firma */
 export const REGISTER_FIRIEM: { ucet: string; nazov: string; odvetvie: string; mesto: string }[] = ["firma-herna", "firma-stavky", "firma-kaviaren", "firma-autoservis", "firma-elektro", "firma-stavebniny", "firma-pekaren"]
-  .map((id) => UCTY_FIRIEM.find((f) => f.id === id)!)
+  .map((k) => UCTY_FIRIEM.find((f) => f.kluc === k)!)
   .map((f) => ({ ucet: uctFirmy(f.id), nazov: f.nazov, odvetvie: f.odvetvie ?? "", mesto: f.mesto ?? "" }));
 /** smie táto firma dorovnávať zbierky tejto charity? (ponuka sa obmedzenej firme neukáže) */
 export function smieDorovnat(entita: string, firma: string /* číslo účtu firmy */): boolean {

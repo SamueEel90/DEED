@@ -94,8 +94,8 @@ export function Zamestnavatel({ onBack, desktop }: { onBack: () => void; desktop
       {akt?.stav === "pozvany" && <Pozvanka v={akt} osoba={osoba} />}
       {akt?.stav === "ziadost" && <>
         <FirmaKarta ucet={akt.firmaUcet} nazov={akt.firma} pod={t("firma.ziadostPoslana")} />
-        <button type="button" onClick={() => { odpoj(akt.firmaUcet, osoba); setVyber(null); toast(t("firma.ziadostZrusena")); }} style={btn(false)}>{t("firma.zrusitZiadost")}</button>
-        {TESTOVACIA && <button type="button" onClick={() => potvrd(akt.firmaUcet, osoba, ja.celeMeno)} style={{ ...btn(false), minHeight: 44, fontSize: 13, fontWeight: 700 }}>{t("firma.ukazkaPotvrdila")}</button>}
+        <button type="button" onClick={() => { void odpoj(akt.firmaUcet, osoba).then((ok) => { if (ok) { setVyber(null); toast(t("firma.ziadostZrusena")); } }); }} style={btn(false)}>{t("firma.zrusitZiadost")}</button>
+        {TESTOVACIA && <button type="button" onClick={() => { void potvrd(akt.firmaUcet, osoba, ja.celeMeno); }} style={{ ...btn(false), minHeight: 44, fontSize: 13, fontWeight: 700 }}>{t("firma.ukazkaPotvrdila")}</button>}
       </>}
       {akt?.stav === "potvrdeny" && <Prepojeny v={akt} osoba={osoba} onOdpojene={() => setVyber(null)} />}
     </div>
@@ -110,8 +110,8 @@ function Pozvanka({ v, osoba }: { v: Vazba; osoba: string }) {
     <Nadpis>{t("firma.pozvanka")}</Nadpis>
     <FirmaKarta ucet={v.firmaUcet} nazov={v.firma} pod={t("firma.pozyva")}>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-        <button type="button" onClick={() => { odmietni(v.firmaUcet, osoba); toast(t("firma.odmietnuta")); }} style={btn(false)}>{t("firma.odmietnut")}</button>
-        <button type="button" onClick={() => { potvrd(v.firmaUcet, osoba, ja.celeMeno); toast(t("firma.prepojeneS", { firma: v.firma })); }} style={btn(true)}>{t("firma.prijat")}</button>
+        <button type="button" onClick={() => { void odmietni(v.firmaUcet, osoba).then((ok) => { if (ok) toast(t("firma.odmietnuta")); }); }} style={btn(false)}>{t("firma.odmietnut")}</button>
+        <button type="button" onClick={() => { void potvrd(v.firmaUcet, osoba, ja.celeMeno).then((ok) => { if (ok) toast(t("firma.prepojeneS", { firma: v.firma })); }); }} style={btn(true)}>{t("firma.prijat")}</button>
       </div>
       <div style={{ fontSize: 12.5, color: "var(--d-ink3, var(--ink3))" }}>{t("firma.nepoznas")}</div>
     </FirmaKarta>
@@ -127,7 +127,7 @@ function Pripojit({ osoba, maFirmy, onHotovo }: { osoba: string; maFirmy: boolea
   const qq = bezDiakritiky(q.trim()), qCisla = q.replace(/\D/g, "");
   const vysledky = qq.length >= 2 ? FIRMY_ADRESAR.filter((f) => bezDiakritiky(f.nazov).includes(qq) || (qCisla.length >= 3 && (f.ico ?? "").replace(/\s/g, "").includes(qCisla))) : [];
   const kodOk = kod.replace(/-/g, "").length >= 6;
-  const ziadaj = (firma: string) => { poziadaj(firma, osoba, ja.celeMeno); onHotovo(firma); };
+  const ziadaj = (firma: string) => { void poziadaj(firma, osoba, ja.celeMeno).then((ok) => { if (ok) onHotovo(firma); }); };
   const pripoj = (k: string) => {
     const f = firmaPodlaKodu(k);
     if (!f) { toast(t("firma.kodNepozname")); return; }
@@ -165,7 +165,7 @@ function Pripojit({ osoba, maFirmy, onHotovo }: { osoba: string; maFirmy: boolea
     </div>
     <button type="button" disabled={!kodOk} onClick={() => pripoj(kod)} style={btn(true, kodOk)}>{t("firma.pripojit")}</button>
     <button type="button" onClick={() => setSkener(true)} style={{ ...btn(false), display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}><Ik d="M4 8V4h4M16 4h4v4M20 16v4h-4M8 20H4v-4M7 12h10" />{t("firma.naskenovat")}</button>
-    {TESTOVACIA && <button type="button" onClick={() => { const f = firma(maFirmy ? "firma-kaviaren" : "firma-pekaren"); pozvi(f, osoba); onHotovo(f); }} style={{ ...btn(false), minHeight: 44, fontSize: 13, fontWeight: 700 }}>{t("firma.ukazkaPozvanka")}</button>}
+    {TESTOVACIA && <button type="button" onClick={() => { const f = firma(maFirmy ? "firma-kaviaren" : "firma-pekaren"); void pozvi(f, osoba).then((ok) => { if (ok) onHotovo(f); }); }} style={{ ...btn(false), minHeight: 44, fontSize: 13, fontWeight: 700 }}>{t("firma.ukazkaPozvanka")}</button>}
     {skener && <SkenerFirmy onClose={() => setSkener(false)} onKod={(k) => { setSkener(false); setKod(k); pripoj(k); }} />}
   </>);
 }
@@ -186,7 +186,7 @@ function Prepojeny({ v, osoba, onOdpojene }: { v: Vazba; osoba: string; onOdpoje
   const prOz = usePrekladObsahu(), prAk = usePrekladObsahu(), prOd = usePrekladObsahu(), prBe = usePrekladObsahu(), prDet = usePrekladObsahu();
   const oznamy = d.oznamy.filter((o) => !st.vybavene.includes(o.id));
   const akcie = [...d.akcie, ...(st.navrhy[v.firmaUcet] ?? [])];
-  const odpojit = () => { odpoj(v.firmaUcet, osoba); onOdpojene(); toast(t("firma.odpojene")); };
+  const odpojit = () => { void odpoj(v.firmaUcet, osoba).then((ok) => { if (ok) { onOdpojene(); toast(t("firma.odpojene")); } }); };
 
   return (<>
     <FirmaKarta ucet={v.firmaUcet} nazov={v.firma} pod={t("firma.prepojeneOd", { datum: datum(v.potvrdene ?? v.kedy) })} />
