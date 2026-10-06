@@ -196,10 +196,10 @@ export const qrSupabase = {
     if (error) throw error;
     return (data as QrSplitDetail) ?? null;
   },
-  /** Správca QR: zoznam mojich QR + pomer + koľko organizáciám. Demo → podľa mena. */
-  async qrSplitList(owner: string | null, ownerText?: string | null): Promise<QrSplitListItem[]> {
-    if (!supabase) return [];
-    const { data, error } = await supabase.rpc("qr_split_list", { p_owner: owner ?? null, p_owner_text: ownerText ?? null });
+  /** Správca QR: zoznam mojich QR + pomer + koľko organizáciám. Len podľa účtu (Zadanie 1 · Blok 1). */
+  async qrSplitList(owner: string | null): Promise<QrSplitListItem[]> {
+    if (!supabase || !owner) return [];
+    const { data, error } = await supabase.rpc("qr_split_list", { p_owner: owner });
     if (error) throw error;
     return (data as QrSplitListItem[]) ?? [];
   },

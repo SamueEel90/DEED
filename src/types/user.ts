@@ -301,6 +301,8 @@ export type Session = SessionRegistrovany | SessionDemo | null;
 export interface Pouzivatel {
   demo: boolean;
   ucetId: Uuid | null;
+  /** verejné číslo účtu U-… = kľúč osoby vo väzbách (lib/identita); bez účtu číslo zariadenia, nikdy meno */
+  cisloUctu: string;
   typ: TypUctu;
   /** Smie vytvárať/pridávať obsah? Pasívny divák-darca = false (len prezerá + prispieva). */
   mozeTvorit: boolean;

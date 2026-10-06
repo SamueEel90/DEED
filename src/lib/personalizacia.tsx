@@ -97,17 +97,18 @@ export function PersonalizaciaProvider({ children }: { children: ReactNode }) {
   }, [demo]);
 
   // Fáza D — „Čo podporujem" zo Supabase (agregát `podpora`). Overlay nad lokálny/seed
-  // stav: demo číta podľa mena (Martin K.), reálny účet podľa ucet_id. Bez DB → no-op.
+  // stav. Zadanie 1 · Blok 1: LEN podľa ucet_id — demo bez účtu ostáva na lokálnom stave
+  // (čítanie podľa mena by zlialo dary dvoch ľudí s rovnakým menom). Bez DB → no-op.
   useEffect(() => {
     if (!USE_SUPABASE) return;
-    const filter = demo ? { darca: celeMeno } : { ucetId };
-    if (!filter.darca && !filter.ucetId) return;
+    const filter = { ucetId };
+    if (!filter.ucetId) return;
     let zrusene = false;
     nacitajPodporyDB(filter)
       .then((rows) => { if (!zrusene) setPodpory(rows); })
       .catch(() => { /* DB nedostupná → ostáva lokálny stav */ });
     return () => { zrusene = true; };
-  }, [demo, celeMeno, ucetId]);
+  }, [ucetId]);
 
   // Obľúbené zo Supabase (owner-only cez auth.uid — anon session). Bez DB → no-op.
   // Session sa po prvej návšteve cachuje (supabase-js localStorage), takže race

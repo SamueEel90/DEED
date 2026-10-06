@@ -2,7 +2,8 @@
 // Prototyp „Sprava farnosti.dc.html" (PC + mobil). Jeden program „Farnosť", jedna cena → žiadne zámky „od P…".
 // Bez štítu (neutrálna strieborná linka), bez dokladov, lehôt a „doložené", bez dorovnania firmy.
 // Dáta farnosti z modulu Viera (mock.ts, stav.ts — localStorage + zrkadlo naboz_stav). Čísla a zoznamy bez zdroja sú TESTOVACIE.
-import { useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
+import { pripojTestovaciuStranku } from "@/lib/stranka";
 import { createPortal } from "react-dom";
 import { useLayout } from "@/components/context";
 import { toast } from "@/components/toast";
@@ -103,6 +104,7 @@ export function SpravaFarnosti({ onBack, strankaId, test: testPas }: { onBack: (
   const otvorZb = (z: ZbF) => { setZb(z); go("zbierka"); };
   // OPRAVY 154: verejný profil sa otvorí v okne NAD Správou (predtým sa otváral pod jej vrstvou a nebolo ho vidieť)
   const [verejnyOtv, setVerejnyOtv] = useState(false);
+  useEffect(() => { void pripojTestovaciuStranku(strankaId); }, [strankaId]); // 0035: tester = správca testovacej stránky
   const verejny = () => setVerejnyOtv(true);
   const test = testPas?.(verejny);
   const verejnyEl = verejnyOtv ? <VerejnyProfilVSprave kluc={strankaId} onZavri={() => setVerejnyOtv(false)} /> : null;

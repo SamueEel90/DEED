@@ -217,7 +217,7 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
   const [pravda, setPravda] = useState(false);
   // karta 21 · 11: riadok Firma (len prepojený so zamestnávateľom; firemná akcia je vždy s menom, riadok sa neukáže)
   const nast = useNastaveniaAppky();
-  const mojeFirmy = useVazbyOsoby(ja.celeMeno).filter((v) => v.stav === "potvrdeny").map((v) => v.firma);
+  const mojeFirmy = useVazbyOsoby(ja.cisloUctu).filter((v) => v.stav === "potvrdeny").map((v) => v.firma);
   const [firmaV, setFirmaV] = useState<FirmaVolba>(nast.firmaPredvolba);
   // hotovo
   const [id] = useState(() => `m${teraz()}`);

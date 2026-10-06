@@ -103,7 +103,7 @@ export interface Repo {
     /** QR Split: landing (príspevok + pomer + súčty). */
     qrSplitGet(id: string): Promise<QrSplitDetail | null>;
     /** QR Split: zoznam mojich QR (správca). Demo → podľa mena (ownerText). */
-    qrSplitList(owner: string | null, ownerText?: string | null): Promise<QrSplitListItem[]>;
+    qrSplitList(owner: string | null): Promise<QrSplitListItem[]>;
   };
   platby: {
     /** Pošli platbu cez engine (idempotentne, split-aware). Vráti `platba` riadok (null pri mocku). */

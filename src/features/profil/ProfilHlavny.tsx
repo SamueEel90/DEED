@@ -221,7 +221,7 @@ export function ProfilHlavny18(a: ProfilAkcie) {
   const otvorViac = useViac();
   const { sledovani, podpory } = usePersonalizacia();
   const ja = usePouzivatel();
-  const firmy = useVazbyOsoby(ja.celeMeno);
+  const firmy = useVazbyOsoby(ja.cisloUctu);
   const firmaPod = firmy.some((v) => v.stav === "potvrdeny") ? firmy.filter((v) => v.stav === "potvrdeny").map((v) => v.firma).join(", ") : firmy.length ? t("profil.firma.caka") : t("profil.firma.prepoj");
   const { zaujmy } = usePersonalizacia();
   const zaujmyN = ZAUJMY_KATALOG.filter((z) => zaujmy.some((x) => x.oblast === z.oblast)).length;

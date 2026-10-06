@@ -91,24 +91,34 @@ export async function spustiKyb(orgUcetId: string, { stanovyRef }: { stanovyRef?
 // UNIVERZÁLNY ZÁKLAD — telefón/účet/zámok (§4) — osoba aj charita
 // ============================================================
 
-// Vytvorí (alebo obnoví) účet po overení telefónu. Podporuje priebežné ukladanie (§11).
-export async function vytvorUcet({ typ = "aktivny", telefon, email = null }: { typ?: string; telefon: string; email?: string | null }) {
-  const c = db();
-  const tel = (telefon || "").replace(/\s+/g, ""); // normalizuj — bez medzier (stabilný unique kľúč + resume)
-  const { data: ex } = await c
-    .from("ucet")
-    .select("id, typ, poradove_cislo, stav_registracie")
-    .eq("telefon", tel)
-    .maybeSingle();
-  if (ex) return { ...ex, obnovene: true };
+/** Zadanie 1 · Blok 1 · bod 4: registrácia s telefónom, ktorý už má účet, NIKDY nevráti ten účet
+ *  (inak by ho prevzal ktokoľvek, kto pozná číslo). Človek sa musí prihlásiť. */
+export const UCET_EXISTUJE = "Účet s týmto číslom existuje — prihláste sa.";
+export class UcetExistujeChyba extends Error { constructor() { super(UCET_EXISTUJE); this.name = "UcetExistujeChyba"; } }
 
-  const { data, error } = await c
+// Vytvorí účet po overení telefónu. Existujúce číslo = chyba (DB: unique ucet.telefon).
+export async function vytvorUcet({ typ = "aktivny", telefon, email = null }: { typ?: string; telefon: string; email?: string | null }) {
+  const tel = (telefon || "").replace(/\s+/g, ""); // normalizuj — bez medzier (stabilný unique kľúč)
+  if (!supabase) return vytvorUcetMock(tel, typ); // mock režim: rovnaké pravidlo, bez DB
+  const { data, error } = await db()
     .from("ucet")
     .insert({ typ, telefon: tel, telefon_overeny: true, email, email_overeny: !!email, stav_registracie: "zabezpecenie" })
     .select("id, typ, poradove_cislo, stav_registracie")
     .single();
-  if (error) throw error;
+  if (error) {
+    if (error.code === "23505") throw new UcetExistujeChyba(); // unique_violation na telefóne
+    throw error;
+  }
   return data;
+}
+
+// mock registrácia bez DB — telefóny drží len pamäť relácie, existujúce číslo = chyba
+const mockTelefony = new Map<string, string>();
+function vytvorUcetMock(tel: string, typ: string) {
+  if (mockTelefony.has(tel)) throw new UcetExistujeChyba();
+  const id = (() => { try { return crypto.randomUUID(); } catch { return `mock-${Date.now()}`; } })();
+  mockTelefony.set(tel, id);
+  return { id, typ, poradove_cislo: null, stav_registracie: "zabezpecenie" };
 }
 
 // Auth-first vytvorenie účtu (Fáza 5) — identitu rieši Supabase Auth, telefón-OTP
@@ -121,6 +131,15 @@ export async function vytvorUcetAuth({ authId, typ = "aktivny", email = null, st
     .select("id, typ, poradove_cislo, stav_registracie")
     .eq("auth_id", authId)
     .maybeSingle();
+  // Zadanie 1 · Blok 1: účet založený anonymnej session (obľúbené a pod. — 0035 zaisti_ucet) sa pri
+  // registrácii TOHO ISTÉHO auth používateľa doplní, nie zduplikuje. Cudzí účet sa sem nedostane (kľúč = auth_id).
+  if (ex && ex.stav_registracie === "anonym") {
+    const { data: up, error: upErr } = await c.from("ucet")
+      .update({ typ, email, email_overeny: !!email, stav_registracie: stav })
+      .eq("id", ex.id).select("id, typ, poradove_cislo, stav_registracie").single();
+    if (upErr) throw upErr;
+    return up;
+  }
   if (ex) return { ...ex, obnovene: true };
 
   const { data, error } = await c

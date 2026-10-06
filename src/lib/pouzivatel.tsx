@@ -8,17 +8,19 @@ import { createContext, useCallback, useContext, useEffect, useState, type React
 import { nacitajUcetData } from "./db";
 import { nacitajFotoProfilu, ulozFotoProfilu } from "./fotoprofilu";
 import { jeNeregistrovany, sledujDarcu } from "./devDarca";
+import { cisloUctu, ulozMojeCislo } from "./identita";
 
 // demo identita podľa DEV prepínača: registrovaný (plný účet) / neregistrovaný (host, len EUR)
 const demoStav = (): Pouzivatel => (jeNeregistrovany()
-  ? { ...DEMO, typ: "pasivny", mozeTvorit: false, mozeDeed: false, foto: nacitajFotoProfilu(null) }
-  : { ...DEMO, foto: nacitajFotoProfilu(null) });
+  ? { ...DEMO, cisloUctu: cisloUctu(null), typ: "pasivny", mozeTvorit: false, mozeDeed: false, foto: nacitajFotoProfilu(null) }
+  : { ...DEMO, cisloUctu: cisloUctu(null), foto: nacitajFotoProfilu(null) });
 import type { Pouzivatel, Session, UcetData } from "@/types";
 
 // DEMO identita = presne to, čo appka zobrazovala doteraz (admin/preskočiť)
 const DEMO: Pouzivatel = {
   demo: true,
   ucetId: null,
+  cisloUctu: "",
   typ: "demo",
   mozeTvorit: true, // demo = plný náhľad (admin / „pozrieť appku")
   mozeDeed: true,
@@ -63,6 +65,7 @@ function odvod(data: UcetData | null, session: Session): Pouzivatel {
   return {
     demo: false,
     ucetId: ucet?.id || ses?.ucet_id || null,
+    cisloUctu: cisloUctu(ucet?.id || ses?.ucet_id),
     typ,
     mozeTvorit: typ !== "pasivny", // pasívny len prezerá + prispieva
     mozeDeed: typ !== "pasivny", // pasívny prispieva len v EUR (DEED vyžaduje účet)
@@ -92,6 +95,7 @@ function seed(session: Session): Pouzivatel {
   return {
     demo: false,
     ucetId: ses?.ucet_id || null,
+    cisloUctu: cisloUctu(ses?.ucet_id),
     typ,
     mozeTvorit: typ !== "pasivny", // pasívny len prezerá + prispieva
     mozeDeed: typ !== "pasivny", // pasívny prispieva len v EUR (DEED vyžaduje účet)
@@ -141,8 +145,8 @@ export function PouzivatelProvider({ session, children }: { session: Session; ch
     refresh();
   }, [session, refresh]);
 
-  // Meno prihláseného sa odkladá do localStorage: engine dorovnaní musí vedieť,
-  // či darca je zamestnancom firmy, a k React kontextu sa nedostane.
+  // Meno prihláseného sa odkladá do localStorage len na ZOBRAZENIE (záznam dorovnania).
+  // Či je darca zamestnancom firmy, sa NIKDY neurčuje podľa mena — kľúčom je číslo účtu nižšie.
   // Platí pre KAŽDÚ identitu vrátane demo — inak by zamestnanecké dorovnanie
   // v prototype nikdy nenabehlo (demo cesta odvod() neprechádza).
   useEffect(() => {
@@ -152,6 +156,8 @@ export function PouzivatelProvider({ session, children }: { session: Session; ch
       else localStorage.removeItem("deed.ja.meno");
     } catch { /* LS nedostupné */ }
   }, [stav.celeMeno, stav.meno]);
+  // Zadanie 1 · Blok 1: kľúč osoby pre engine (zamestnanec firmy, dorovnanie) = číslo účtu, nie meno
+  useEffect(() => { ulozMojeCislo(stav.cisloUctu); }, [stav.cisloUctu]);
 
   return <PouzivatelContext.Provider value={{ ...stav, refresh, nastavFoto }}>{children}</PouzivatelContext.Provider>;
 }

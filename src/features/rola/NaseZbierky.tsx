@@ -83,15 +83,16 @@ function DetailZbierky({ firma, podpora, dorovnanie, toast, onSpat }: {
   const d = dorovnanie;
   const archiv = !!podpora.archivovane;
 
-  // ---- naši ľudia: záznamy dorovnania nesú meno darcu (staré ho nemajú) ----
+  // ---- naši ľudia: Zadanie 1 · Blok 1 — zoskupené podľa ČÍSLA ÚČTU darcu, meno je len popis
+  //      (dvaja „Jozef Novák" sú dva riadky; staré záznamy bez čísla účtu ostávajú každý zvlášť) ----
   const nasi = zamestnanciFirmy(firma);
-  const podlaLudi = new Map<string, { suma: number; dorovnane: number; pocet: number }>();
+  const podlaLudi = new Map<string, { meno: string; suma: number; dorovnane: number; pocet: number }>();
   (d?.zaznamy ?? []).forEach((zz) => {
-    const kto = zz.darca?.trim() || "Darca bez mena";
-    const p = podlaLudi.get(kto) ?? { suma: 0, dorovnane: 0, pocet: 0 };
-    podlaLudi.set(kto, { suma: p.suma + zz.dar, dorovnane: p.dorovnane + zz.dorovnane, pocet: p.pocet + 1 });
+    const kluc = zz.darcaUcet || `zaznam:${zz.id}`;
+    const p = podlaLudi.get(kluc) ?? { meno: zz.darca?.trim() || "Darca bez mena", suma: 0, dorovnane: 0, pocet: 0 };
+    podlaLudi.set(kluc, { ...p, suma: p.suma + zz.dar, dorovnane: p.dorovnane + zz.dorovnane, pocet: p.pocet + 1 });
   });
-  const ludia = [...podlaLudi.entries()].sort((a, b) => b[1].suma - a[1].suma);
+  const ludia = [...podlaLudi.values()].map((p) => [p.meno, p] as const).sort((a, b) => b[1].suma - a[1].suma);
   const daliLudia = (d?.zaznamy ?? []).reduce((s, zz) => s + zz.dar, 0);
   const daliMy = podpora.suma;
   const vycleneneNerozdane = d ? zostatok(d) : 0;

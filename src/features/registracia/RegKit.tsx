@@ -8,7 +8,7 @@ import { sZnackou } from "@/components/DeedZnacka";
 import { useState, useId, type ReactNode, type CSSProperties } from "react";
 import { C, GRAD, btn, inp, infoBox, glassTmavy, SPACE, RADIUS } from "@/theme";
 import { Hlavicka, Otazka, IkonaFajka, IkonaSipDole, useLayout } from "@/shared";
-import { vytvorUcet, nastavZabezpecenie, posliOtp } from "@/lib/db";
+import { vytvorUcet, nastavZabezpecenie, posliOtp, UcetExistujeChyba, UCET_EXISTUJE } from "@/lib/db";
 
 // ---- škrupina kroku: hlavička + scroll obsah + sticky pätička ----
 export function Shell({
@@ -282,10 +282,10 @@ export function KrokTelefonSms({
     setLoading(true);
     try {
       const ucet: any = await vytvorUcet({ typ, telefon: tel.trim(), email: vyzadujEmail ? email.trim() : null });
-      if (ucet.obnovene) toast?.("Účet obnovený — pokračuješ tam, kde si skončil.");
       onHotovo(ucet);
     } catch (e: any) {
-      toast?.("Chyba: " + e.message);
+      // Zadanie 1 · Blok 1 · bod 4: existujúce číslo → prihlásenie, nie cudzí účet
+      toast?.(e instanceof UcetExistujeChyba ? UCET_EXISTUJE : "Chyba: " + e.message);
       setLoading(false);
     }
   };

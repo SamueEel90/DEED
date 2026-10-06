@@ -19,8 +19,8 @@ const karta: CSSProperties = {
 export function PocitadloVyberSheet({ toast, onClose }: {
   toast: (m: string) => void; onClose: () => void;
 }) {
-  const { ucetId, celeMeno } = usePouzivatel();
-  const { data: splity = [], isLoading } = useQrSplitList(ucetId ?? null, celeMeno ?? null);
+  const { ucetId } = usePouzivatel();
+  const { data: splity = [], isLoading } = useQrSplitList(ucetId ?? null);
   const [vybrany, setVybrany] = useState<{ splitId: string; nazov?: string } | null>(null);
 
   if (vybrany) return (

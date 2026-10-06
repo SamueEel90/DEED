@@ -22,6 +22,7 @@
 import { useSyncExternalStore } from "react";
 import { rovnakaFirma } from "./firma";
 import { somZamestnanec, menoDarcu } from "./zamestnanci";
+import { mojeCisloUctu } from "./identita";
 
 export const DOROVNANIE_CFG = {
   /** ponuka pomerov vo formulári firmy — koľkonásobok daru firma pridá */
@@ -61,6 +62,8 @@ export interface ZaznamDorovnania {
   /** kto dar dal — kvôli firemnému prehľadu „naši ľudia v tejto zbierke".
    *  Píše sa len meno prihláseného darcu; staré záznamy ho nemajú. */
   darca?: string;
+  /** Zadanie 1 · Blok 1: číslo účtu darcu (U-…) — kľúč; `darca` je len meno na zobrazenie */
+  darcaUcet?: string;
 }
 
 export interface Dorovnanie {
@@ -348,8 +351,8 @@ export function zapisDar(entita: string, id: string, dar: number, teraz = Date.n
   if (!d) return 0;
   const pridane = dorovnanieKDaru(d, dar, teraz, cezTvorcu);
   if (pridane <= 0) return 0;
-  const darca = menoDarcu().trim();
-  const zaznamy = [...d.zaznamy, { id: `zd-${teraz}`, dar, dorovnane: pridane, kedy: teraz, ...(darca ? { darca } : {}) }];
+  const darca = menoDarcu().trim(), darcaUcet = mojeCisloUctu();
+  const zaznamy = [...d.zaznamy, { id: `zd-${teraz}`, dar, dorovnane: pridane, kedy: teraz, ...(darca ? { darca } : {}), ...(darcaUcet ? { darcaUcet } : {}) }];
   const minute = zaznamy.reduce((s, z) => s + z.dorovnane, 0) >= d.strop;
   zmen(entita, id, { zaznamy, ...(minute ? { stav: "vycerpane" as StavDorovnania, ukoncene: teraz } : {}) });
   return pridane;

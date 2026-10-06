@@ -13,6 +13,7 @@
 // ============================================================
 import { useSyncExternalStore } from "react";
 import { rovnakaFirma } from "./firma";
+import { mojeCisloUctu, rovnakeCislo } from "./identita";
 
 export type StavVazby =
   | "pozvany"     // firma pozvala, čaká sa na človeka
@@ -23,8 +24,10 @@ export type StavVazby =
 
 export interface Vazba {
   firma: string;
-  /** meno človeka (v produkcii jeho účet, nie meno) */
+  /** Zadanie 1 · Blok 1: kľúč človeka = verejné číslo jeho účtu (U-…), NIKDY meno (lib/identita) */
   osoba: string;
+  /** meno len na zobrazenie (doplní ho človek pri žiadosti alebo prijatí pozvánky) */
+  meno?: string;
   stav: StavVazby;
   /** kto to začal — kvôli textom („pozvali ste" vs „požiadal vás") */
   zaciatok: "firma" | "osoba";
@@ -49,7 +52,7 @@ function uloz(v: Vazba[]) {
   try { localStorage.setItem(KLUC, JSON.stringify(v)); } catch { /* LS nedostupné */ }
   emit();
 }
-const rovnakaOsoba = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
+const rovnakaOsoba = (a: string, b: string) => rovnakeCislo(a, b);
 const najdiIndex = (v: Vazba[], firma: string, osoba: string) =>
   v.findIndex((x) => rovnakaFirma(x.firma, firma) && rovnakaOsoba(x.osoba, osoba));
 
@@ -69,17 +72,17 @@ function zapis(firma: string, osoba: string, zmena: Partial<Vazba>, novy?: Vazba
   return z;
 }
 
-/** firma pozýva človeka */
+/** firma pozýva človeka podľa čísla jeho účtu (z vizitky / QR) */
 export const pozvi = (firma: string, osoba: string) =>
   zapis(firma, osoba, { stav: "pozvany", zaciatok: "firma", kedy: Date.now(), ukoncene: undefined });
 
-/** človek žiada o pripojenie k firme */
-export const poziadaj = (firma: string, osoba: string) =>
-  zapis(firma, osoba, { stav: "ziadost", zaciatok: "osoba", kedy: Date.now(), ukoncene: undefined });
+/** človek žiada o pripojenie k firme (osoba = jeho číslo účtu, meno len na zobrazenie) */
+export const poziadaj = (firma: string, osoba: string, meno?: string) =>
+  zapis(firma, osoba, { stav: "ziadost", zaciatok: "osoba", kedy: Date.now(), ukoncene: undefined, ...(meno ? { meno } : {}) });
 
-/** druhá strana súhlasí — až tým väzba platí */
-export const potvrd = (firma: string, osoba: string) =>
-  zapis(firma, osoba, { stav: "potvrdeny", potvrdene: Date.now() });
+/** druhá strana súhlasí — až tým väzba platí (človek pri prijatí doplní svoje meno na zobrazenie) */
+export const potvrd = (firma: string, osoba: string, meno?: string) =>
+  zapis(firma, osoba, { stav: "potvrdeny", potvrdene: Date.now(), ...(meno ? { meno } : {}) });
 
 export const odmietni = (firma: string, osoba: string) =>
   zapis(firma, osoba, { stav: "odmietnuty", ukoncene: Date.now() });
@@ -122,12 +125,12 @@ export function useVazbaOsoby(osoba: string): Vazba | null {
   return vazbaOsoby(osoba);
 }
 
-/** meno prihláseného človeka — odkladá ho lib/pouzivatel, engine k nemu inak nemá prístup */
+/** meno prihláseného človeka — LEN na zobrazenie v zázname dorovnania, nikdy na väzbu */
 export function menoDarcu(): string {
   try { return localStorage.getItem("deed.ja.meno") ?? ""; } catch { return ""; }
 }
-/** je práve prihlásený človek potvrdeným zamestnancom tejto firmy? */
+/** je práve prihlásený človek potvrdeným zamestnancom tejto firmy? — podľa čísla účtu, nie mena */
 export const somZamestnanec = (firma: string): boolean => {
-  const ja = menoDarcu();
+  const ja = mojeCisloUctu();
   return !!ja && jeZamestnanec(firma, ja);
 };

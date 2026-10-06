@@ -9,6 +9,10 @@ import { C, SPACE, RADIUS } from "@/theme";
 import { Sheet, tint } from "@/shared";
 import { pressable } from "@/components/pressable";
 import { pozvi, potvrd, odmietni, odpoj, useVazbyFirmy, type Vazba } from "@/lib/zamestnanci";
+import { normCislo } from "@/lib/identita";
+import { platnyVs } from "@/lib/cisloObjektu";
+/** U + 10 číslic s kontrolnou číslicou (Číslovanie v1.3) */
+const platneCislo = (c: string) => { const n = normCislo(c); return /^U\d{10}$/.test(n) && platnyVs(n.slice(1)); };
 import { usePouzivatel } from "@/lib/pouzivatel";
 
 const karta: CSSProperties = {
@@ -32,7 +36,7 @@ export function ZamestnanciSheet({ firma, toast, onClose }: {
 }) {
   const ja = usePouzivatel();
   const vazby = useVazbyFirmy(firma);
-  const [meno, setMeno] = useState("");
+  const [cislo, setCislo] = useState(""); // Zadanie 1 · Blok 1: pozvánka podľa čísla účtu, nie mena
 
   const cakaju = vazby.filter((x) => x.stav === "ziadost" || x.stav === "pozvany");
   const pripojeni = vazby.filter((x) => x.stav === "potvrdeny");
@@ -46,10 +50,10 @@ export function ZamestnanciSheet({ firma, toast, onClose }: {
         <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm }}>
           <span style={{ width: 32, height: 32, borderRadius: "50%", flex: "none", display: "grid", placeItems: "center",
             background: tint("var(--a-info)", .16), color: "var(--a-info)", fontSize: 13, fontWeight: 800 }}>
-            {x.osoba.trim()[0]?.toUpperCase() ?? "?"}
+            {(x.meno ?? "?").trim()[0]?.toUpperCase() ?? "?"}
           </span>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 13.5, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{x.osoba}</div>
+            <div style={{ fontSize: 13.5, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{x.meno ?? "Pozvaný účet"} <span style={{ fontWeight: 600, color: C.textTer }}>· {x.osoba}</span></div>
             <div style={{ fontSize: 11, color: C.textTer, marginTop: 1 }}>
               {cakaNaNas ? `požiadal o pripojenie · ${datum(x.kedy)}`
                 : cakaNaNeho ? `pozvánka odoslaná · ${datum(x.kedy)} · čaká sa na neho`
@@ -61,7 +65,7 @@ export function ZamestnanciSheet({ firma, toast, onClose }: {
         </div>
         <div style={{ display: "flex", gap: SPACE.sm, marginTop: SPACE.xs }}>
           {cakaNaNas && (<>
-            <span {...pressable(() => { potvrd(firma, x.osoba); toast(`${x.osoba} je pripojený`); }, "Potvrdiť")}
+            <span {...pressable(() => { potvrd(firma, x.osoba); toast(`${x.meno ?? x.osoba} je pripojený`); }, "Potvrdiť")}
               style={akcia("var(--a-green)")}>✓ Potvrdiť</span>
             <span {...pressable(() => { odmietni(firma, x.osoba); toast("Žiadosť odmietnutá"); }, "Odmietnuť")}
               style={{ ...akcia(C.textTer), marginLeft: "auto" }}>Odmietnuť</span>
@@ -71,11 +75,11 @@ export function ZamestnanciSheet({ firma, toast, onClose }: {
               style={{ ...akcia(C.textTer), marginLeft: "auto" }}>Zrušiť pozvánku</span>
           )}
           {x.stav === "potvrdeny" && (
-            <span {...pressable(() => { odpoj(firma, x.osoba); toast(`${x.osoba} odpojený — doterajšie dorovnania ostávajú`); }, "Odpojiť")}
+            <span {...pressable(() => { odpoj(firma, x.osoba); toast(`${x.meno ?? x.osoba} odpojený — doterajšie dorovnania ostávajú`); }, "Odpojiť")}
               style={{ ...akcia(C.textTer), marginLeft: "auto" }}>Odpojiť</span>
           )}
           {(x.stav === "odmietnuty" || x.stav === "odpojeny") && (
-            <span {...pressable(() => { pozvi(firma, x.osoba); toast(`Pozvánka pre ${x.osoba} odoslaná`); }, "Pozvať znova")}
+            <span {...pressable(() => { pozvi(firma, x.osoba); toast(`Pozvánka pre ${x.meno ?? x.osoba} odoslaná`); }, "Pozvať znova")}
               style={{ ...akcia("var(--a-info)"), marginLeft: "auto" }}>Pozvať znova</span>
           )}
         </div>
@@ -96,19 +100,19 @@ export function ZamestnanciSheet({ firma, toast, onClose }: {
       </div>
 
       <div style={{ fontSize: 12.5, fontWeight: 700, color: C.textSec, marginBottom: 4 }}>Pozvať zamestnanca</div>
-      <input value={meno} onChange={(e) => setMeno(e.target.value)} placeholder="Meno a priezvisko" style={{ ...vstup, marginBottom: 4 }} />
+      <input value={cislo} onChange={(e) => setCislo(e.target.value)} placeholder="Číslo účtu z vizitky, napríklad U-123 456 789 0" aria-label="Číslo účtu zamestnanca" style={{ ...vstup, marginBottom: 4 }} />
       <div style={{ fontSize: 10.5, color: C.textTer, lineHeight: 1.45, marginBottom: SPACE.xs }}>
-        V prototype sa pozvánka páruje podľa presného mena v DEED+. (Ostro to pôjde cez e-mail alebo firemný QR.)
+        Pozvánka sa páruje podľa čísla účtu z vizitky (Môj profil · QR), nikdy podľa mena — dvaja ľudia s rovnakým menom sa nepomýlia.
         {" "}
-        <span {...pressable(() => setMeno(ja.celeMeno), "Pozvať seba")}
-          style={{ fontWeight: 800, color: "var(--a-info)", cursor: "pointer" }}>Pozvať seba ({ja.celeMeno})</span>
+        <span {...pressable(() => setCislo(ja.cisloUctu), "Pozvať seba")}
+          style={{ fontWeight: 800, color: "var(--a-info)", cursor: "pointer" }}>Pozvať seba ({ja.cisloUctu})</span>
       </div>
-      <button style={{ ...btnHlavny, opacity: meno.trim().length < 3 ? .45 : 1, marginBottom: SPACE.sm }}
+      <button style={{ ...btnHlavny, opacity: platneCislo(cislo) ? 1 : .45, marginBottom: SPACE.sm }}
         onClick={() => {
-          if (meno.trim().length < 3) { toast("Zadajte meno zamestnanca"); return; }
-          pozvi(firma, meno.trim());
-          toast(`Pozvánka pre ${meno.trim()} odoslaná — platí, až keď ju prijme`);
-          setMeno("");
+          if (!platneCislo(cislo)) { toast("Zadajte číslo účtu z vizitky"); return; }
+          pozvi(firma, cislo.trim());
+          toast(`Pozvánka pre ${cislo.trim()} odoslaná — platí, až keď ju prijme`);
+          setCislo("");
         }}>Poslať pozvánku</button>
 
       {cakaju.length > 0 && (<>{nadpis("ČAKÁ")}{cakaju.map(riadok)}</>)}

@@ -28,7 +28,7 @@ export function ZrusitUcet({ onClose }: { onClose: () => void }) {
   const datum = (d: Date) => t.datum(d, true);
   const ja = usePouzivatel();
   const kontakt = nacitajKontakt();
-  const firmy = useVazbyOsoby(ja.celeMeno).filter((v) => v.stav === "potvrdeny");
+  const firmy = useVazbyOsoby(ja.cisloUctu).filter((v) => v.stav === "potvrdeny");
   const [krok, setKrok] = useState<1 | 2 | 3>(1);
   const [hotove, setHotove] = useState<Record<string, boolean>>({});
   const [anonym, setAnonym] = useState(false);

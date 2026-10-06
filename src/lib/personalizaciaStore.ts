@@ -116,7 +116,7 @@ export function importLegacyFollows(): Sledovanie[] {
 // ============================================================
 // PODPORY — Supabase vrstva (Fáza D). „Čo podporujem" = agregát eventov
 // z tabuľky `podpora` (group by príjemca). Zápis = nový event (in-app dar).
-// Demo (Martin K.) číta podľa `darca_nazov`; reálny účet podľa `ucet_id`.
+// Zadanie 1 · Blok 1: číta sa LEN podľa `ucet_id`; `darca_nazov` je zobrazovací snapshot, nikdy kľúč.
 // ============================================================
 // SMS ako kanál daru sa už neponúka; z DB ho mapujeme len kvôli starým riadkom.
 const KANAL_Z_DB: Record<string, string> = { deed: "DEED", fiat: "EUR", sms: "EUR" };
@@ -151,14 +151,10 @@ function agregujPodpory(rows: any[]): Podpora[] {
   return [...mapa.values()];
 }
 
-/** Načíta „Čo podporujem" z DB — podľa mena; reálny účet: podľa ucet_id. */
-export async function nacitajPodporyDB(filter: { ucetId?: string | null; darca?: string | null }): Promise<Podpora[]> {
-  if (!supabase) return [];
-  let q = supabase.from("podpora").select("*").order("cas", { ascending: false });
-  if (filter.ucetId) q = q.eq("ucet_id", filter.ucetId);
-  else if (filter.darca) q = q.eq("darca_nazov", filter.darca);
-  else return [];
-  const { data, error } = await q;
+/** Načíta „Čo podporujem" z DB — len podľa ucet_id (bez účtu nič). */
+export async function nacitajPodporyDB(filter: { ucetId?: string | null }): Promise<Podpora[]> {
+  if (!supabase || !filter.ucetId) return [];
+  const { data, error } = await supabase.from("podpora").select("*").eq("ucet_id", filter.ucetId).order("cas", { ascending: false });
   if (error) throw error;
   return agregujPodpory(data || []);
 }

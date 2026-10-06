@@ -21,7 +21,7 @@ export async function ulozPiny(stranka: string, piny: PolozkaSpravy[]): Promise<
   const p = piny.slice(0, PIN_MAX);
   pamat.set(stranka, p);
   if (!supabase) return;
-  await supabase.from("sprava_piny").upsert({ stranka, piny: p, aktualizovane: new Date().toISOString() }, { onConflict: "pouzivatel,stranka" });
+  await supabase.from("sprava_piny").upsert({ stranka, piny: p, aktualizovane: new Date().toISOString() }, { onConflict: "ucet_id,stranka" });
 }
 
 // ---- OPRAVY 95: zbalené sekcie Prehľadu (mobil + tablet) — v tom istom riadku účtu ako pripnuté (stĺpec zbalene, migrácia 0027) ----
@@ -38,5 +38,5 @@ export async function nacitajZbalenie(stranka: string): Promise<Zbalenie> {
 export async function ulozZbalenie(stranka: string, z: Zbalenie): Promise<void> {
   pamatZ.set(stranka, z);
   if (!supabase) return;
-  await supabase.from("sprava_piny").upsert({ stranka, zbalene: z, aktualizovane: new Date().toISOString() }, { onConflict: "pouzivatel,stranka" });
+  await supabase.from("sprava_piny").upsert({ stranka, zbalene: z, aktualizovane: new Date().toISOString() }, { onConflict: "ucet_id,stranka" });
 }

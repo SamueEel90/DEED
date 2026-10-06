@@ -1,7 +1,7 @@
 // ============================================================
 // DEED · Top (rebríčky) — Supabase repozitár (Fáza C)
 // Živý agregát z reálnych dát:
-//   • darcovia  ← `podpora`        (group by darca_nazov, súčet DEED)
+//   • darcovia  ← `podpora`        (group by ucet_id, súčet DEED; meno = len snapshot na zobrazenie)
 //   • hrdinovia ← `prispevok`      (Domov skutky podľa podpory autora)
 //   • charity   ← `adresar_charita`(podľa levelu overenia)
 // Kurátorské do času ďalších fáz:
@@ -25,17 +25,21 @@ const LVL_W: Record<string, number> = { Legend: 4, Gold: 3, Silver: 2, Bronze: 1
 
 /** Top Darcovia — súčet DEED darov na darcu (živé z `podpora`). */
 async function darcoviaLive(): Promise<RebricekPolozka[]> {
-  const { data, error } = await supabase!.from("podpora").select("darca_nazov, suma, kanal");
+  // Zadanie 1 · Blok 1: zoskupené podľa ucet_id — dvaja „Jozef Novák" sú dva riadky.
+  // Dary bez účtu (seed/anonym) sa nesčítavajú do jedného človeka podľa mena.
+  const { data, error } = await supabase!.from("podpora").select("id, ucet_id, darca_nazov, suma, kanal");
   if (error) throw error;
-  const sumy = new Map<string, number>();
+  const sumy = new Map<string, { meno: string; deed: number }>();
   for (const r of data || []) {
     if (r.kanal !== "deed" || !r.darca_nazov) continue;
-    sumy.set(r.darca_nazov, (sumy.get(r.darca_nazov) || 0) + Number(r.suma || 0));
+    const kluc = r.ucet_id ? `u:${r.ucet_id}` : `r:${r.id}`;
+    const x = sumy.get(kluc) ?? { meno: r.darca_nazov, deed: 0 };
+    sumy.set(kluc, { ...x, deed: x.deed + Number(r.suma || 0) });
   }
-  return [...sumy.entries()]
-    .sort((a, b) => b[1] - a[1])
+  return [...sumy.values()]
+    .sort((a, b) => b.deed - a.deed)
     .slice(0, 6)
-    .map(([meno, deed]) => ({
+    .map(({ meno, deed }) => ({
       meno,
       info: `${sk(deed)} DeeD`,
       subjekt: { typ: "osoba", meno, level: (deed >= 1000 ? "Gold" : "Silver") as Karma },
@@ -46,28 +50,31 @@ async function darcoviaLive(): Promise<RebricekPolozka[]> {
 async function hrdinoviaLive(): Promise<RebricekPolozka[]> {
   const { data, error } = await supabase!
     .from("prispevok")
-    .select("autor_nazov, autor_karma, podpora_count, overene, typ, lat, lng")
+    .select("id, autor_ucet_id, autor_nazov, autor_karma, podpora_count, overene, typ, lat, lng")
     .is("data->>comp", null)
     .is("data->>akt", null)   // len Domov skutky (Aktivity majú vlastný rebríček)
     .is("data->>help", null)  // vylúč Help (Fáza G) — typ=skutok ich aj tak nezahŕňa, ale buď explicitný
     .eq("typ", "skutok")
     .not("autor_nazov", "is", null);
   if (error) throw error;
-  type Agg = { podpora: number; pocet: number; overene: number; karma?: string; lat?: number; lng?: number };
+  // Zadanie 1 · Blok 1: autor = autor_ucet_id; príspevok bez účtu (seed) je vlastný riadok, nie zlúčený podľa mena
+  type Agg = { meno: string; podpora: number; pocet: number; overene: number; karma?: string; lat?: number; lng?: number };
   const agg = new Map<string, Agg>();
   for (const r of data || []) {
-    const a: Agg = agg.get(r.autor_nazov) || { podpora: 0, pocet: 0, overene: 0, karma: r.autor_karma || undefined };
+    const kluc = r.autor_ucet_id ? `u:${r.autor_ucet_id}` : `p:${r.id}`;
+    const a: Agg = agg.get(kluc) || { meno: r.autor_nazov, podpora: 0, pocet: 0, overene: 0, karma: r.autor_karma || undefined };
     a.podpora += Number(r.podpora_count || 0);
     a.pocet += 1;
     a.overene += r.overene ? 1 : 0;
     if (!a.karma && r.autor_karma) a.karma = r.autor_karma;
     if (a.lat == null && r.lat != null) { a.lat = r.lat; a.lng = r.lng ?? undefined; } // reprezentatívna poloha (okruh)
-    agg.set(r.autor_nazov, a);
+    agg.set(kluc, a);
   }
-  return [...agg.entries()]
-    .sort((a, b) => b[1].podpora - a[1].podpora)
+  return [...agg.values()]
+    .sort((a, b) => b.podpora - a.podpora)
     .slice(0, 6)
-    .map(([meno, a]) => {
+    .map((a) => {
+      const meno = a.meno;
       const org = jeOrg(meno);
       const info = a.pocet > 1 ? `${a.pocet} skutkov · ${a.podpora} podpôr` : `${a.podpora} podporovateľov`;
       return {

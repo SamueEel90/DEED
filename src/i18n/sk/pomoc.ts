@@ -174,6 +174,7 @@ export const pomoc: Slovnik = {
   "firma.kodPh": "napr. PEKA-2931",
   "firma.kodAria": "Kód od firmy",
   "firma.kodPozn": "Kód ti dá personálne alebo ho nájdeš na firemnom QR v práci.",
+  "firma.mojeCislo": "Firma ťa môže pozvať aj sama — povedz jej číslo svojho účtu: {cislo}. Podľa mena ťa nepozve, aby si sa nepomýlil s menovcom.",
   "firma.pripojit": "Pripojiť sa k firme",
   "firma.naskenovat": "Naskenovať firemný QR",
   "firma.ukazkaPozvanka": "Ukážka: pozvánka od firmy",

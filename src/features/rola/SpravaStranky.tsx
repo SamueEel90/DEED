@@ -6,6 +6,7 @@
 // Len rozloženie, farby podľa štítu a témy, Späť všade, povolenia z jedného miesta (stav.ts).
 // Funkcie za tlačidlami NIE SÚ — každé tlačidlo otvorí obrazovku „Pripravujeme".
 // ============================================================
+import { pripojTestovaciuStranku } from "@/lib/stranka";
 import { otvorPridatSkutok } from "@/features/skutok/otvor";
 import { otvorPridatIskru } from "@/features/iskry/otvor";
 import { DeedZnacka } from "@/components/DeedZnacka";
@@ -269,6 +270,7 @@ export function SpravaStranky(props: SpravaStrankyProps) {
 
 function SpravaStrankyTypu({ onBack, typ, onTyp: setTyp, strankaId = "svetlo", nazov = "Svetlo pomoci o.z.", inicialy = "SP" }: SpravaStrankyProps & { typ: TypStranky; onTyp: (t: TypStranky) => void }) {
   const { desktop, wide } = useLayout();
+  useEffect(() => { void pripojTestovaciuStranku(strankaId); }, [strankaId]); // 0035: tester = správca testovacej stránky
   const tablet = wide && !desktop; // OPRAVY 96: tablet 760–1179 px má vlastné rozloženie
   const telefon = !desktop && !tablet; // KARTA 42: telefón pod 760 px — nové rozloženie
   const [pridat, setPridat] = useState(false); // KARTA 42: + → hárok Pridať

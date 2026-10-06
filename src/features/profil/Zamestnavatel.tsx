@@ -67,7 +67,7 @@ const Datum = ({ d, m: mSk }: { d: number; m: string }) => { const tr = useT(); 
 export function Zamestnavatel({ onBack, desktop }: { onBack: () => void; desktop?: boolean }) {
   const t = useT();
   const ja = usePouzivatel();
-  const osoba = ja.celeMeno;
+  const osoba = ja.cisloUctu; // Zadanie 1 · Blok 1: väzba na číslo účtu, meno len na zobrazenie
   const vazby = useVazbyOsoby(osoba);
   const [vyber, setVyber] = useState<string | "nova" | null>(null);
   const akt: Vazba | undefined = vyber === "nova" ? undefined : vazby.find((v) => v.firma === vyber) ?? vazby[0];
@@ -92,7 +92,7 @@ export function Zamestnavatel({ onBack, desktop }: { onBack: () => void; desktop
       {akt?.stav === "ziadost" && <>
         <FirmaKarta nazov={akt.firma} pod={t("firma.ziadostPoslana")} />
         <button type="button" onClick={() => { odpoj(akt.firma, osoba); setVyber(null); toast(t("firma.ziadostZrusena")); }} style={btn(false)}>{t("firma.zrusitZiadost")}</button>
-        {TESTOVACIA && <button type="button" onClick={() => potvrd(akt.firma, osoba)} style={{ ...btn(false), minHeight: 44, fontSize: 13, fontWeight: 700 }}>{t("firma.ukazkaPotvrdila")}</button>}
+        {TESTOVACIA && <button type="button" onClick={() => potvrd(akt.firma, osoba, ja.celeMeno)} style={{ ...btn(false), minHeight: 44, fontSize: 13, fontWeight: 700 }}>{t("firma.ukazkaPotvrdila")}</button>}
       </>}
       {akt?.stav === "potvrdeny" && <Prepojeny v={akt} osoba={osoba} onOdpojene={() => setVyber(null)} />}
     </div>
@@ -102,12 +102,13 @@ export function Zamestnavatel({ onBack, desktop }: { onBack: () => void; desktop
 // ---------------- nepripojený: pozvánka / nájdi firmu / kód / QR ----------------
 function Pozvanka({ v, osoba }: { v: Vazba; osoba: string }) {
   const t = useT();
+  const ja = usePouzivatel();
   return (<div>
     <Nadpis>{t("firma.pozvanka")}</Nadpis>
     <FirmaKarta nazov={v.firma} pod={t("firma.pozyva")}>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
         <button type="button" onClick={() => { odmietni(v.firma, osoba); toast(t("firma.odmietnuta")); }} style={btn(false)}>{t("firma.odmietnut")}</button>
-        <button type="button" onClick={() => { potvrd(v.firma, osoba); toast(t("firma.prepojeneS", { firma: v.firma })); }} style={btn(true)}>{t("firma.prijat")}</button>
+        <button type="button" onClick={() => { potvrd(v.firma, osoba, ja.celeMeno); toast(t("firma.prepojeneS", { firma: v.firma })); }} style={btn(true)}>{t("firma.prijat")}</button>
       </div>
       <div style={{ fontSize: 12.5, color: "var(--d-ink3, var(--ink3))" }}>{t("firma.nepoznas")}</div>
     </FirmaKarta>
@@ -116,13 +117,14 @@ function Pozvanka({ v, osoba }: { v: Vazba; osoba: string }) {
 
 function Pripojit({ osoba, maFirmy, onHotovo }: { osoba: string; maFirmy: boolean; onHotovo: (firma: string) => void }) {
   const t = useT();
+  const ja = usePouzivatel();
   const [q, setQ] = useState("");
   const [kod, setKod] = useState("");
   const [skener, setSkener] = useState(false);
   const qq = bezDiakritiky(q.trim()), qCisla = q.replace(/\D/g, "");
   const vysledky = qq.length >= 2 ? FIRMY_ADRESAR.filter((f) => bezDiakritiky(f.nazov).includes(qq) || (qCisla.length >= 3 && (f.ico ?? "").replace(/\s/g, "").includes(qCisla))) : [];
   const kodOk = kod.replace(/-/g, "").length >= 6;
-  const ziadaj = (firma: string) => { poziadaj(firma, osoba); onHotovo(firma); };
+  const ziadaj = (firma: string) => { poziadaj(firma, osoba, ja.celeMeno); onHotovo(firma); };
   const pripoj = (k: string) => {
     const f = firmaPodlaKodu(k, FIRMY_ADRESAR.map((x) => x.nazov));
     if (!f) { toast(t("firma.kodNepozname")); return; }
@@ -156,6 +158,7 @@ function Pripojit({ osoba, maFirmy, onHotovo }: { osoba: string; maFirmy: boolea
       <input value={kod} onChange={(e) => setKod(e.target.value.toUpperCase().replace(/[^A-Z0-9-]/g, "").slice(0, 12))} placeholder={t("firma.kodPh")} aria-label={t("firma.kodAria")} autoComplete="off"
         style={{ width: "100%", height: 52, padding: "0 16px", borderRadius: 14, background: "var(--field)", border: "1.5px solid var(--fieldBd)", fontSize: 17, fontWeight: 700, letterSpacing: ".06em", color: "var(--d-ink, var(--ink))", outline: "none", fontFamily: "inherit" }} />
       <div style={{ ...pozn, marginTop: 8 }}>{t("firma.kodPozn")}</div>
+      <div style={{ ...pozn, marginTop: 8 }}>{t("firma.mojeCislo", { cislo: osoba })}</div>
     </div>
     <button type="button" disabled={!kodOk} onClick={() => pripoj(kod)} style={btn(true, kodOk)}>{t("firma.pripojit")}</button>
     <button type="button" onClick={() => setSkener(true)} style={{ ...btn(false), display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}><Ik d="M4 8V4h4M16 4h4v4M20 16v4h-4M8 20H4v-4M7 12h10" />{t("firma.naskenovat")}</button>

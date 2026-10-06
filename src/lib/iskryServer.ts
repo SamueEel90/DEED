@@ -16,7 +16,7 @@ export const ISKRA_TYPY = ["video/mp4", "video/quicktime", "video/webm"];
 interface IskraRiadok {
   id: string; stranka: string | null; druh: number; autor: string; kto: string; ini: string; popis: string;
   video: string; plagat: string | null; zbierka: Iskra["zbierka"] | null; bez_darov: boolean;
-  retaz_pct: number | null; len_stranka: boolean; iskry: number; zverejnene: string; autor_uid: string;
+  retaz_pct: number | null; len_stranka: boolean; iskry: number; zverejnene: string; /** 0035: autor = účet, nie auth uid */ autor_ucet: string;
 }
 
 export interface KvotaIskier { tier: number; limit: number; pouzite: number; ostava: number; cenaNad: number }
@@ -35,6 +35,12 @@ export function naIskru(r: IskraRiadok): Iskra {
 async function uid(): Promise<string | null> {
   if (!supabase) return null;
   return (await supabase.auth.getSession()).data.session?.user?.id ?? null;
+}
+/** Zadanie 1 · Blok 1: môj účet (jediný prevod auth → účet je v DB, funkcia moj_ucet) */
+async function mojUcet(): Promise<string | null> {
+  if (!supabase || !(await uid())) return null;
+  const { data, error } = await supabase.rpc("moj_ucet");
+  return error ? null : ((data as string | null) ?? null);
 }
 
 /** je kam ukladať? (živá DB + session, aj anonymná) */
@@ -109,11 +115,11 @@ export async function zverejniIskruNaServeri(subor: File, d: ZverejnenieIskry): 
 /** prúd zo servera (najnovšie hore). Iskry „len na stránke" vidí v prúde len autor. Bez DB null. */
 export async function nacitajIskryZoServera(limit = 60): Promise<Iskra[] | null> {
   if (!supabase) return null;
-  const ja = await uid();
+  const ja = await mojUcet();
   const { data, error } = await supabase.from("iskra").select("*").is("zmazane", null)
     .order("zverejnene", { ascending: false }).limit(limit);
   if (error || !data) return null;
-  return (data as IskraRiadok[]).filter((r) => !r.len_stranka || r.autor_uid === ja).map(naIskru);
+  return (data as IskraRiadok[]).filter((r) => !r.len_stranka || r.autor_ucet === ja).map(naIskru);
 }
 
 /** mesačná kvóta stránky zo servera; bez DB/session alebo pri chybe null (appka použije lokálny odhad) */

@@ -136,11 +136,12 @@ export const useBadgeScan = () => useMutation({ mutationFn: (v: { badgeId: strin
 
 // ---- QR Split (Fáza 6) — produkčný QR systém ----
 /** Zoznam mojich QR (správca QR). Reálny účet → ucetId; demo → meno. */
-export const useQrSplitList = (owner: string | null, ownerText?: string | null) =>
+/** Zadanie 1 · Blok 1: zoznam mojich QR len podľa účtu (bez účtu nič, nikdy podľa mena) */
+export const useQrSplitList = (owner: string | null) =>
   useQuery({
-    queryKey: qk.qr.splitList(owner ?? ownerText ?? ""),
-    queryFn: () => repo.qr.qrSplitList(owner ?? null, ownerText ?? null),
-    enabled: !!(owner || ownerText),
+    queryKey: qk.qr.splitList(owner ?? ""),
+    queryFn: () => repo.qr.qrSplitList(owner ?? null),
+    enabled: !!owner,
   });
 /** Landing: detail QR (príspevok + pomer + súčty). */
 export const useQrSplitGet = (id: string | null) =>

@@ -173,6 +173,7 @@ export const pomoc: Slovnik = {
   "firma.kodPh": "e.g. PEKA-2931",
   "firma.kodAria": "Company code",
   "firma.kodPozn": "HR gives you the code, or you'll find it on the company QR at work.",
+  "firma.mojeCislo": "The company can also invite you — give them your account number: {cislo}. They can't invite you by name, so nobody mixes you up with a namesake.",
   "firma.pripojit": "Join company",
   "firma.naskenovat": "Scan company QR",
   "firma.ukazkaPozvanka": "Demo: invite from a company",

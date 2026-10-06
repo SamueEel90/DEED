@@ -26,7 +26,7 @@ export function MojeQrKody({ onClose, toast }: { onClose?: () => void; toast?: (
   // počítadlo do streamu sa viaže na konkrétny QR (split), nie na zbierku
   const [pocitadlo, setPocitadlo] = useState<{ splitId: string; nazov?: string } | null>(null);
   const { ucetId, celeMeno } = usePouzivatel();
-  const { data: moje = [], isLoading } = useQrSplitList(ucetId, celeMeno);
+  const { data: moje = [], isLoading } = useQrSplitList(ucetId);
   const { data: POSTY = [] } = useGoodFeed();
   const create = useQrSplitCreate();
 
