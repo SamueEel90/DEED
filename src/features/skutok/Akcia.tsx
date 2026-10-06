@@ -12,7 +12,7 @@ import { useAkcia, nastavAkciu, zmenAkciu, cas, type Akcia } from "@/lib/akcia";
 import { vibruj } from "@/features/zbierka/animacie";
 import { otvorPridatSkutok } from "./otvor";
 import { DeedQr } from "@/components/deedqr";
-import { useEventToken } from "@/data";
+import { useEventToken, repo } from "@/data";
 import { profilZPamate } from "@/lib/profilStranky";
 import "@/styles/platba.css";
 
@@ -80,13 +80,19 @@ function AkciaObrazovka({ a, onZavrete }: { a: Akcia; onZavrete: () => void }) {
     if (!a.uc.length) return;
     const start = () => nastavAkciu({ ...aRef.current, stav: "bezi", start: Date.now(), miesto: aRef.current.miesto || lok.mesto });
     if (!navigator.geolocation) { toast("Bez polohy akciu nespustíš. Zapni ju v nastaveniach telefónu."); return; }
-    navigator.geolocation.getCurrentPosition(start, () => toast("Bez polohy akciu nespustíš. Zapni ju v nastaveniach telefónu."), { timeout: 10000 });
+    navigator.geolocation.getCurrentPosition((pos) => {
+      // Zadanie 4 · 4.5: akcia za charitu — poloha akcie na server (od nej sa meria polomer skenov)
+      const x = aRef.current;
+      if (x.org && x.id) void repo.qr.eventPoloha(x.id, pos.coords.latitude, pos.coords.longitude).catch(() => toast("Polohu akcie sa nepodarilo uložiť."));
+      start();
+    }, () => toast("Bez polohy akciu nespustíš. Zapni ju v nastaveniach telefónu."), { timeout: 10000 });
   };
   const ukoncit = () => {
     const min = Math.max(1, Math.round(el / 60));
     const trvanie = min >= 60 ? `${Math.floor(min / 60)} h ${min % 60} min` : `${min} min`;
     const x = aRef.current;
     nastavAkciu(null);
+    if (x.org && x.id) void repo.qr.eventUkonci(x.id).catch(() => undefined);   // splnenie podľa prahu počíta server (4.5)
     if (x.org) { // koniec ukončí organizátor pre všetkých naraz (odchod skenovať netreba)
       otvorPridatSkutok({ start: "skupina", organizacia: true, strankaId: x.org.stranka, autor: x.org.nazov, zAkcie: { ucastnici: x.uc.map((u) => u.meno), miesto: x.miesto || lok.mesto, trvanie, dar: x.dar, zaznam: x.zaznam } });
       return;

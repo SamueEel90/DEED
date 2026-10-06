@@ -5,7 +5,6 @@ import type { IScannerControls } from "@zxing/browser";
 import { C, SPACE, RADIUS, GRAD_ZELENY } from "@/theme";
 import { tint } from "@/lib/ui";
 import { useScan } from "@/data";
-import { deviceId } from "@/lib/zariadenie";
 import { Sheet } from "@/components/sheet";
 import { Lupa, IkonaFajka, IkonaKriz } from "@/components/icons";
 
@@ -42,7 +41,12 @@ export function QrSkener({ onClose, toast }: { onClose?: () => void; toast?: (t:
     hotovoRef.current = true;
     stopCam();
     try {
-      const r = await skenuj.mutateAsync({ token: t, deviceId: deviceId() });
+      // Zadanie 4 · 4.5: poloha ide so skenom (server overí polomer akcie); bez nej server vráti „Mimo miesta"
+      const poloha = await new Promise<GeolocationPosition | null>((res) => {
+        if (!navigator.geolocation) { res(null); return; }
+        navigator.geolocation.getCurrentPosition(res, () => res(null), { timeout: 8000, enableHighAccuracy: true });
+      });
+      const r = await skenuj.mutateAsync({ token: t, lat: poloha?.coords.latitude ?? null, lng: poloha?.coords.longitude ?? null });
       setVerdikt(r.vysledok as Verdikt);
     } catch {
       setVerdikt("fake");

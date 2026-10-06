@@ -36,7 +36,7 @@ export interface ScanVysledok {
 }
 export interface ScanVstup {
   token: string;
-  deviceId: string;
+  // zariadenie = účet (server zo session, Zadanie 4 · 4.5); poloha je povinná, ak akcia má miesto
   lat?: number | null;
   lng?: number | null;
 }
@@ -126,11 +126,24 @@ export const qrSupabase = {
   async scan(v: ScanVstup): Promise<ScanVysledok> {
     if (!supabase) return { vysledok: "ok" };  // offline/mock: demo úspech
     const { data, error } = await supabase.rpc("scan_validate", {
-      p_token: v.token, p_device: v.deviceId,
+      p_token: v.token,
       p_lat: v.lat ?? null, p_lng: v.lng ?? null,
     });
     if (error) throw error;
     return (data as ScanVysledok) ?? { vysledok: "fake" };
+  },
+
+  /** Organizátor pri štarte akcie uloží jej polohu (od nej sa meria polomer skenov). */
+  async eventPoloha(eventId: string, lat: number, lng: number): Promise<void> {
+    if (!supabase) return;
+    const { error } = await supabase.rpc("event_poloha", { p_event: eventId, p_lat: lat, p_lng: lng });
+    if (error) throw error;
+  },
+  /** Organizátor ukončí akciu pre všetkých — server spočíta splnenie podľa prahu prítomnosti. */
+  async eventUkonci(eventId: string): Promise<void> {
+    if (!supabase) return;
+    const { error } = await supabase.rpc("event_ukonci", { p_event: eventId });
+    if (error) throw error;
   },
 
   // ---- Reťaz dobra (Fáza 5) — % zafixované pri vzniku ----

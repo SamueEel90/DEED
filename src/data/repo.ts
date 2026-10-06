@@ -88,6 +88,10 @@ export interface Repo {
     eventToken(eventId: string, step?: number, mod?: string, nazov?: string): Promise<string | null>;
     /** Validuj sken rotujúceho QR + zapíš dochádzku. */
     scan(v: ScanVstup): Promise<ScanVysledok>;
+    /** Organizátor: poloha akcie pri štarte. */
+    eventPoloha(eventId: string, lat: number, lng: number): Promise<void>;
+    /** Organizátor: koniec akcie pre všetkých (splnenie počíta server). */
+    eventUkonci(eventId: string): Promise<void>;
     /** Reťaz dobra: vytvor reťaz (% zafixované) → { chain_id, slug }. */
     chainCreate(v: ChainVstup): Promise<ChainVysledok | null>;
     /** Odznak: zamestnanec sa prihlási na zmenu. */
@@ -174,6 +178,8 @@ export const mockRepo: Repo = {
     resolve: () => Promise.resolve(null),
     eventToken: () => Promise.resolve(null),          // offline → vizuálny reseed fallback (QrModal)
     scan: () => Promise.resolve({ vysledok: "ok" as const }),
+    eventPoloha: () => Promise.resolve(),
+    eventUkonci: () => Promise.resolve(),
     chainCreate: () => Promise.resolve(null),
     badgeBind: () => Promise.resolve(),
     badgeUnbind: () => Promise.resolve(),
