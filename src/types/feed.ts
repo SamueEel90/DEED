@@ -243,6 +243,8 @@ export interface Sponzor {
 /** Položka Help feedu (MOCK_FEED). */
 export interface HelpFeedItem extends FeedEngineMeta, Partial<GeoBod> {
   id: number;
+  /** OPRAVY 156/2: pracovná ponuka / dobrovoľník cez inzerát → modrá PracaKarta */
+  praca?: import("@/components/PracaKarta").PracaUdaje;
   typ: HelpTyp;
   nazov: string;
   pribeh: string;

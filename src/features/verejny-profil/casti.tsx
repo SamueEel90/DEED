@@ -178,55 +178,14 @@ export function naZbierkaData(z: TestZbierka, profil: TestProfil): ZbierkaData {
 // KARTA 45 · „Hľadáme ľudí" = modrý plagát (nie oznam). PC celý, tablet a mobil zbalený (ťuk rozbalí).
 // ============================================================
 import type { TestPraca } from "@/lib/testProfily";
-const PLAGAT_BG = "linear-gradient(160deg,#2C5576 0%,#3D6B8E 60%,#4F7FA3 100%)";
-function PlagatUdaje({ j }: { j: TestPraca }) { // KARTA 50: farnosť (Omše a služba) — vlastné tlačidlo a 3. riadok
-  return (<>
-    <div style={{ display: "grid", gridTemplateColumns: "auto minmax(0,1fr)", gap: "4px 12px", fontSize: 13.5, padding: "8px 0", borderTop: "1px solid rgba(255,255,255,.22)", borderBottom: "1px solid rgba(255,255,255,.22)" }}>
-      <span style={{ opacity: 0.75 }}>Kde</span><b>{j.kde}</b>
-      <span style={{ opacity: 0.75 }}>Kedy</span><b>{j.kedy}</b>
-      <span style={{ opacity: 0.75 }}>{j.tretiRiadok ?? "Odmena"}</span><b>{j.odmena}</b>
-    </div>
-    <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
-      <button type="button" style={{ height: 46, padding: "0 20px", border: "none", borderRadius: 14, background: "#fff", cursor: "pointer", fontSize: 15, fontWeight: 800, color: "#2C5576", boxShadow: "none" }}>{j.tlacidlo ?? "Mám záujem"}</button>
-      <span style={{ fontSize: 12.5, opacity: 0.85 }}>{j.zaujem}</span>
-    </span>
-  </>);
-}
+import { PracaKarta } from "@/components/PracaKarta";
+// OPRAVY 156/2: každá karta = spoločná PracaKarta (components/PracaKarta)
 export function PlagatPrace({ praca, zbaleny, nadpis = true, titul = "HĽADÁME ĽUDÍ" }: { praca: TestPraca[]; zbaleny?: boolean; nadpis?: boolean; /** KARTA 50 · farnosť „OMŠE A SLUŽBA" */ titul?: string }) {
-  const [otv, setOtv] = useState<Record<string, boolean>>({});
   if (!praca.length) return null;
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 10, paddingTop: 6 }}>
       {nadpis && <span style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: ".1em", color: "var(--blue)" }}>{titul}</span>}
-      {praca.map((j) => zbaleny ? (
-        <article key={j.id} style={{ position: "relative", borderRadius: 20, overflow: "hidden", background: PLAGAT_BG, color: "#fff", display: "flex", flexDirection: "column", boxShadow: "0 10px 24px rgba(30,60,90,.25)" }}>
-          <button type="button" onClick={() => setOtv((o) => ({ ...o, [j.id]: !o[j.id] }))} aria-expanded={!!otv[j.id]}
-            style={{ minHeight: 64, padding: "12px 10px 12px 16px", border: "none", background: "transparent", boxShadow: "none", cursor: "pointer", textAlign: "left", color: "#fff", display: "flex", alignItems: "center", gap: 10, fontFamily: "inherit" }}>
-            <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 3 }}>
-              <span style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: ".08em", opacity: 0.85 }}>{j.stitok} · {j.pod}</span>
-              <b style={{ fontSize: 17, lineHeight: 1.2 }}>{j.nazov}</b>
-            </span>
-            <span style={{ flex: "none", width: 36, height: 36, borderRadius: 18, background: "rgba(255,255,255,.15)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" style={{ transform: `rotate(${otv[j.id] ? 180 : 0}deg)`, transition: "transform .25s ease" }}><path d="M6 9l6 6 6-6" /></svg>
-            </span>
-          </button>
-          {otv[j.id] && <div style={{ padding: "0 16px 16px", display: "flex", flexDirection: "column", gap: 10 }}>
-            <span style={{ fontSize: 14, lineHeight: 1.45, opacity: 0.92 }}>{j.opis}</span>
-            <PlagatUdaje j={j} />
-          </div>}
-        </article>
-      ) : (
-        <article key={j.id} style={{ position: "relative", borderRadius: 22, overflow: "hidden", background: PLAGAT_BG, color: "#fff", padding: "18px 18px 16px", display: "flex", flexDirection: "column", gap: 10, boxShadow: "0 12px 28px rgba(30,60,90,.28)" }}>
-          <span aria-hidden="true" style={{ position: "absolute", right: -30, top: -30, width: 130, height: 130, borderRadius: "50%", border: "16px solid rgba(255,255,255,.08)" }} />
-          <span style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-            <span style={{ height: 26, padding: "0 10px", borderRadius: 13, background: "#fff", color: "#2C5576", fontSize: 11, fontWeight: 800, letterSpacing: ".06em", display: "flex", alignItems: "center", whiteSpace: "nowrap" }}>{j.stitok}</span>
-            <span style={{ fontSize: 12.5, fontWeight: 700, opacity: 0.85 }}>{j.pod}</span>
-          </span>
-          <b style={{ position: "relative", fontSize: 24, lineHeight: 1.15, letterSpacing: "-.01em" }}>{j.nazov}</b>
-          <span style={{ fontSize: 14, lineHeight: 1.45, opacity: 0.92 }}>{j.opis}</span>
-          <PlagatUdaje j={j} />
-        </article>
-      ))}
+      {praca.map((j) => <PracaKarta key={j.id} j={j} zbaleny={zbaleny} />)}
     </div>
   );
 }

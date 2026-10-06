@@ -3,6 +3,7 @@
 // Mobil a tablet: všetko pod sebou. Poradie: Titulka · DOROVNALI SME · NAŽIVO · POMÁHAME V REGIÓNOCH (región človeka prvý)
 // · TERAZ DOROVNÁVAME · STENA VĎAKY · NAŠI ĽUDIA POMÁHAJÚ · KÚP A POMÔŽ · FOND DOBROTY (ModulProfilu bez dorovnania)
 // · HĽADÁME ĽUDÍ (zbalený aj na PC, „Mzda") · O FIRME. Prázdna sekcia sa neukáže.
+import { PracaKarta } from "@/components/PracaKarta";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { eur, type TestProfil, type TestZbierka } from "@/lib/testProfily";
 import { otvorIskry } from "@/features/iskry/otvor";
@@ -199,23 +200,7 @@ export function StrankaFirmy({ profil, onDetail, onBack }: { profil: TestProfil;
   const prace = b.praca.length > 0 && <>
     <Nadpis t="HĽADÁME ĽUDÍ" />
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-      {b.praca.map((j) => {
-        const on = !!pOtv[j.id];
-        return (
-          <article key={j.id} style={{ position: "relative", borderRadius: 20, overflow: "hidden", background: PLAGAT, color: "#fff", display: "flex", flexDirection: "column" }}>
-            <button type="button" onClick={() => setPOtv((o) => ({ ...o, [j.id]: !on }))} aria-expanded={on} style={{ minHeight: 64, padding: "12px 10px 12px 16px", border: "none", background: "transparent", boxShadow: "none", cursor: "pointer", textAlign: "left", color: "#fff", display: "flex", alignItems: "center", gap: 10, fontFamily: "inherit" }}>
-              <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 3 }}><span style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: ".08em", opacity: 0.85 }}>{j.stitok} · {j.pod}</span><b style={{ fontSize: 17, lineHeight: 1.2 }}>{j.nazov}</b></span>
-              <span style={{ flex: "none", width: 36, height: 36, borderRadius: 18, background: "rgba(255,255,255,.15)", display: "flex", alignItems: "center", justifyContent: "center" }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true" style={{ transform: `rotate(${on ? 180 : 0}deg)`, transition: "transform .25s ease" }}><path d="M6 9l6 6 6-6" /></svg></span>
-            </button>
-            {on && <div style={{ padding: "0 16px 16px", display: "flex", flexDirection: "column", gap: 10 }}>
-              <span style={{ fontSize: 14, lineHeight: 1.45, opacity: 0.92 }}>{j.opis}</span>
-              <div style={{ display: "grid", gridTemplateColumns: "auto minmax(0,1fr)", gap: "4px 12px", fontSize: 13.5, padding: "8px 0", borderTop: "1px solid rgba(255,255,255,.22)", borderBottom: "1px solid rgba(255,255,255,.22)" }}>
-                <span style={{ opacity: 0.75 }}>Kde</span><b>{j.kde}</b><span style={{ opacity: 0.75 }}>Kedy</span><b>{j.kedy}</b><span style={{ opacity: 0.75 }}>Mzda</span><b>{j.odmena}</b>
-              </div>
-              <button type="button" style={{ alignSelf: "flex-start", height: 46, padding: "0 20px", border: "none", borderRadius: 14, background: "#fff", cursor: "pointer", fontSize: 15, fontWeight: 800, color: "#2C5576", boxShadow: "none", fontFamily: "inherit" }}>Mám záujem</button>
-            </div>}
-          </article>);
-      })}
+      {b.praca.map((j) => <PracaKarta key={j.id} j={{ ...j, tretiRiadok: "Mzda" }} zbaleny />)}{/* OPRAVY 156/2 */}
     </div>
   </>;
   const okno = stitOtv && <OknoStituFirmy profil={profil} mobil={!pc} onClose={() => setStitOtv(false)} />;

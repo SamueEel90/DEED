@@ -20,6 +20,7 @@ import { poleZOrg } from "@/features/zbierka/Pole";
 import { useCesta } from "@/lib/cesta";
 import { otvorPridatSkutok } from "@/features/skutok/otvor";
 import { usePouzivatel } from "@/lib/pouzivatel";
+import { PracaKarta } from "@/components/PracaKarta";
 import { pribehZbierky, useZmenyPribehov } from "@/lib/pribehZbierky";
 import { otvorPribeh } from "@/features/verejny-profil/otvor";
 
@@ -398,9 +399,11 @@ function ZbierkyMala({ wide, onDetail }: { wide?: boolean; onDetail: (z?: Zbierk
     typ="ziadost" nazov="Žofia K." overena popis="Po úraze tri mesiace bez príjmu, potrebujem na lieky."
     vyzbierane={520} ciel={800} oblubena={oblubenyZo(D_ZOFIA)} />;
 }
+// OPRAVY 156/2: dobrovoľník cez inzerát = modrá PracaKarta (rovnaká ako na profiloch)
+export const PRACA_STROMOSVET = { id: "praca-stromosvet", stitok: "DOBROVOĽNÍK", pod: "Stromosvet · do piatka", nazov: "Výsadba stromov v Brezine",
+  opis: "Hľadáme 10 dobrovoľníkov na jesennú výsadbu. Náradie a rukavice máme, stačí prísť.", kde: "Brezina, Trenčín", kedy: "sobota 9 – 13", odmena: "obed", zaujem: "4 ľudia už majú záujem" };
 function ZapojSa({ wide, onDetail }: { wide?: boolean; onDetail: (z?: ZbierkaDetail) => void }) {
-  return <CharitaKarta wide={wide} onClick={() => onDetail(D_STROMOSVET)} emoji="🌳" accent={K.green}
-    typ="hladame" nazov="Stromosvet" popis="Hľadá 10 dobrovoľníkov · výsadba stromov · sobota, Brezina" oblubena={oblubenyZo(D_STROMOSVET)} />;
+  return <PracaKarta j={PRACA_STROMOSVET} onClick={() => onDetail(D_STROMOSVET)} style={{ marginBottom: wide ? 0 : SPACE.sm }} />;
 }
 function Material({ wide, onDetail }: { wide?: boolean; onDetail: (z?: ZbierkaDetail) => void }) {
   return <CharitaKarta wide={wide} onClick={() => onDetail(D_ZELENA)} emoji={IKONA_RECYKLACIA} accent={K.blue}

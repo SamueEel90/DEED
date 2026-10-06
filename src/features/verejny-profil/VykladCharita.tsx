@@ -8,6 +8,7 @@ import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { eur, pct, tvar, jeFarnost, type Lokalita, type TestProfil, type TestSektor, type TestZbierka } from "@/lib/testProfily";
 import { cisloObjektu } from "@/lib/cisloObjektu";
 import { druhF, druhT, type Druh } from "@/lib/druhy";
+import { PracaKarta } from "@/components/PracaKarta";
 import { DOK, LokalitaPrepinac, StitCare, StitOkno, klikKarta, nazovStitu, useDomaceMesto } from "./casti";
 import { ModulProfilu } from "./ModulProfilu";
 import { type PolCh, ZIskier, bgF, useCharitaData } from "./charitaCasti";
@@ -192,19 +193,7 @@ export function VykladCharita({ profil, onDetail, onZaznam, onBack }: { profil: 
   // ---- Hľadáme ľudí ----
   const prace = profil.praca;
   const praceNadpis = profil.pracaNadpis ? profil.pracaNadpis.charAt(0) + profil.pracaNadpis.slice(1).toLocaleLowerCase("sk-SK") : "Hľadáme ľudí";
-  const praca = (j: typeof prace[number]) => (
-    <div key={j.id} style={{ borderRadius: mob ? 20 : 22, background: "var(--card)", border: "1px solid var(--cardBd)", borderLeft: `5px solid ${druhF("hladame")}`, padding: mob ? 16 : "20px 22px", display: "flex", flexDirection: "column", gap: mob ? 10 : 12 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}><span style={{ height: mob ? 24 : 26, padding: `0 ${mob ? 9 : 10}px`, borderRadius: mob ? 8 : 9, background: druhF("hladame"), color: "#fff", fontSize: mob ? 11 : 11.5, fontWeight: 800, letterSpacing: ".06em", display: "flex", alignItems: "center" }}>{j.stitok}</span><span style={{ fontSize: mob ? 12 : 12.5, color: "var(--ink3)" }}>{j.pod}</span></div>
-      <b style={{ fontSize: mob ? 20 : 23, lineHeight: 1.15, letterSpacing: "-.02em" }}>{j.nazov}</b>
-      <span style={{ fontSize: mob ? 14.5 : 15, lineHeight: mob ? 1.5 : 1.55, color: "var(--ink2)" }}>{j.opis}</span>
-      {mob ? <span style={{ fontSize: 13, color: "var(--ink3)" }}>{j.kedy} · <b style={{ color: "var(--gInk)" }}>{j.odmena}</b></span>
-        : <div style={{ display: "flex", flexDirection: "column", borderRadius: 14, background: "var(--field)", border: "1px solid var(--cardBd)" }}>
-          {([["Kde", j.kde], ["Kedy", j.kedy], [j.tretiRiadok ?? "Odmena", j.odmena]] as [string, string | undefined][]).map(([k, v], i) => (
-            <div key={k} style={{ display: "flex", justifyContent: "space-between", gap: 10, padding: "10px 14px", borderTop: i ? "1px solid var(--cardBd)" : "none" }}><span style={{ fontSize: 13, color: "var(--ink3)" }}>{k}</span><b style={{ fontSize: 13.5, textAlign: "right", color: i === 2 ? "var(--gInk)" : undefined }}>{v}</b></div>))}
-        </div>}
-      <button type="button" style={{ height: 52, borderRadius: 16, border: "none", background: "#4E7D37", color: "#fff", cursor: "pointer", fontSize: 15.5, fontWeight: 800, fontFamily: "inherit", boxShadow: "none" }}>{j.tlacidlo ?? "Mám záujem"}</button>
-      {pc && j.zaujem && <span style={{ fontSize: 12.5, color: "var(--ink3)", textAlign: "center" }}>{j.zaujem}</span>}
-    </div>);
+  const praca = (j: typeof prace[number]) => <PracaKarta key={j.id} j={j} />; // OPRAVY 156/2
   const hladame = prace.length > 0 && (
     <div style={{ marginTop: mob ? 28 : 56, padding: mob ? "24px 16px" : "44px 40px", background: "var(--panel)", borderTop: "1px solid var(--cardBd)", borderBottom: "1px solid var(--cardBd)", display: "flex", flexDirection: "column", gap: mob ? 12 : 20 }}>
       <div style={{ display: "flex", alignItems: "baseline", gap: 16, flexWrap: "wrap" }}><b style={{ fontSize: mob ? 26 : 44, letterSpacing: mob ? "-.02em" : "-.03em" }}>{praceNadpis}</b>{pc && !farnost && <span style={{ fontSize: 16, color: "var(--ink3)" }}>{tvar(prace.length, ["ponuka", "ponuky", "ponúk"])} · prihlásiš sa jedným ťukom</span>}</div>

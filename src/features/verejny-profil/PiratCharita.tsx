@@ -4,8 +4,9 @@
 //   4 Naša cesta (prerušovaná zlatá krivka, zastávky = posledné skutky a ukončené zbierky + DNES) · 5 Ďalšie teraz (karty 2a) · 6 Videá z Iskier.
 // Mobil: rovnaké sekcie pod sebou; Kam poslať = 4 pásy (vybraný 220 px), modul pod nimi zmenšený (B, bod 151/3); cesta zvislá.
 import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
-import { eur, pct, tvar, jeFarnost, type Lokalita, type TestProfil, type TestSektor, type TestZbierka } from "@/lib/testProfily";
+import { eur, pct, tvar, jeFarnost, type Lokalita, type TestProfil, type TestSektor, type TestZbierka, type TestPraca } from "@/lib/testProfily";
 import { druhF, type Druh } from "@/lib/druhy";
+import { PracaKarta } from "@/components/PracaKarta";
 import { DOK, StitCare, StitOkno, klikKarta, nazovStitu, useDomaceMesto } from "./casti";
 import { ModulProfilu } from "./ModulProfilu";
 import { type PolCh, ZIskier, bgF, useCharitaData } from "./charitaCasti";
@@ -179,13 +180,13 @@ export function PiratCharita({ profil, onDetail, onZaznam, onBack }: { profil: T
   })());
 
   // ---- 5 · Ďalšie teraz (karty 2a): bežiace zbierky, súrne výzvy, akcie, hľadáme ----
-  type Karta = { id: string; druh: Druh; t: string; meta: string; foto?: string; stav?: [string, string]; suma?: { v: number; ciel?: number }; tap?: () => void };
+  type Karta = { id: string; druh: Druh; t: string; meta: string; foto?: string; stav?: [string, string]; suma?: { v: number; ciel?: number }; tap?: () => void; /** OPRAVY 156/2: pracovná ponuka = modrá PracaKarta */ praca?: TestPraca };
   const karty: Karta[] = [
     ...d.bezice.filter((z) => z !== hlavna).map((z): Karta => ({ id: z.id, druh: "zbierka", t: z.nazov, meta: [z.mesto, z.stav === "dlhodoba" ? "dlhodobá" : z.kategoria ? z.kategoria.charAt(0) + z.kategoria.slice(1).toLocaleLowerCase("sk-SK") : z.cast].filter(Boolean).join(" · "), foto: z.foto, suma: { v: z.vyzbierane, ciel: z.ciel }, tap: () => onDetail(z) })),
     ...profil.oznamy.filter((o) => o.mesto === lok || lok === "Celé Slovensko").filter((o) => o.druh !== "oznam").map((o): Karta => ({ id: o.id, druh: o.druh === "vyzva" ? "hladame" : "akcia", t: o.nadpis, meta: `${o.text.split(" · ")[0]} · ${o.pod}`, foto: o.druh === "vyzva" ? profil.sektory[2]?.foto : profil.centralna.foto, stav: o.druh === "vyzva" ? ["SÚRNE", "var(--dr-surne)"] : undefined })),
-    ...profil.praca.map((j): Karta => ({ id: j.id, druh: "hladame", t: j.nazov, meta: [j.kedy, j.odmena].filter(Boolean).join(" · ") })),
+    ...profil.praca.map((j): Karta => ({ id: j.id, druh: "hladame", t: j.nazov, meta: "", praca: j })),
   ].slice(0, 5);
-  const karta = (k: Karta) => (
+  const karta = (k: Karta) => k.praca ? <PracaKarta key={k.id} j={k.praca} style={{ flex: mob ? "none" : undefined, width: mob ? 280 : undefined }} /> : (
     <div key={k.id} {...(k.tap ? klikKarta(k.tap, k.t) : {})} style={{ flex: mob ? "none" : undefined, width: mob ? 260 : undefined, borderRadius: 20, overflow: "hidden", background: "var(--card)", border: "1px solid var(--cardBd)", borderLeft: `5px solid ${druhF(k.druh)}`, display: "flex", flexDirection: "column", cursor: k.tap ? "pointer" : undefined }}>
       {k.foto && <div style={{ position: "relative", aspectRatio: "4/3", background: bgF(k.foto) }}>{stitok(DRUH_TXT[k.druh], druhF(k.druh), { top: 10, left: 10 })}{k.stav && stitok(k.stav[0], k.stav[1], { top: 10, right: 10 })}</div>}
       <div style={{ padding: "12px 16px 16px", display: "flex", flexDirection: "column", gap: 7 }}>

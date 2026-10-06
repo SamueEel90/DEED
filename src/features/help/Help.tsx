@@ -1,3 +1,4 @@
+import { PracaKarta } from "@/components/PracaKarta";
 import { Emo } from "@/components/icons";
 import { useState, useEffect, memo, type ReactNode } from "react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -258,6 +259,7 @@ function Seg({ on, col, label, Ikona, onClick }: { on: boolean; col: string; lab
 // memo: re-render len pri zmene položky/wide (inline onClick sa ignoruje)
 const HelpKarta = memo(HelpKartaBase, rovnakeOkremFunkcii);
 function HelpKartaBase({ z, wide, onClick }: { z: any; wide?: boolean; onClick: () => void }) {
+  if (z.praca) return <PracaKarta j={z.praca} onClick={onClick} style={{ marginBottom: wide ? 0 : SPACE.sm }} />; // OPRAVY 156/2
   const jeZiadost = z.typ === "ziadost";
   const jePonuka = z.typ === "ponuka";
   const jeKriza = z.typSituacie === "kriza";

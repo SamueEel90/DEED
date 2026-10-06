@@ -327,7 +327,7 @@ const CHARITA: TestProfil = {
     { id: "p-vodic", nazov: "Vodič na rozvoz jedál", druh: "brigadnik", text: "Piatky 10 – 14 · dohoda · 6 € na hodinu", mesto: "Trenčín", den: "15.", mesiac: "OKT", pod: "prihlásiť sa do 15. 10.",
       stitok: "BRIGÁDA", opis: "Rozvezieš obedy seniorom zo Sihote a Opatovej. Auto máme, stačí vodičák B a dobrá nálada.", kde: "Trenčín · Mierové nám. 1", kedy: "piatky 10 – 14", odmena: "6 € na hodinu · dohoda", zaujem: "3 ľudia už majú záujem" },
     { id: "p-kuchar", nazov: "Kuchár do novej kuchyne", druh: "brigadnik", text: "Hodžova 12 · aspoň 1 deň v týždni, 6 – 9", mesto: "Trenčín", den: "25.", mesiac: "OKT", pod: "prihlásiť sa do 25. 10.",
-      stitok: "DOBROVOĽNÍK", opis: "Ráno uvaríš 120 porcií polievky s ďalšími tromi ľuďmi. Recepty máme, nauč nás aj svoje.", kde: "Hodžova 12", kedy: "aspoň 1 deň v týždni, 6 – 9", odmena: "karma a raňajky", zaujem: "5 ľudí už má záujem" },
+      stitok: "DOBROVOĽNÍK", opis: "Ráno uvaríš 120 porcií polievky s ďalšími tromi ľuďmi. Recepty máme, nauč nás aj svoje.", kde: "Hodžova 12", kedy: "aspoň 1 deň v týždni, 6 – 9", odmena: "raňajky", zaujem: "5 ľudí už má záujem" },
     { id: "p-koordinator", nazov: "Koordinátorka dobrovoľníkov", druh: "zamestnanec", text: "Prešov · polovičný úväzok · od 1. 11. · 680 € mesačne", mesto: "Prešov", den: "25.", mesiac: "OKT", pod: "prihlásiť sa do 25. 10.",
       stitok: "POLOVIČNÝ ÚVÄZOK", opis: "Dáš dokopy 40 dobrovoľníkov v Prešove: rozpisy, nábor a starostlivosť, aby sa k nám radi vracali.", kde: "Prešov · Hlavná 12", kedy: "od 1. 11. · 20 h týždenne", odmena: "680 € mesačne", zaujem: "1 človek už má záujem" },
   ],
