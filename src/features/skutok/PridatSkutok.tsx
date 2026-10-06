@@ -18,7 +18,6 @@ import { ohodnot, ScoreChyba, type ScoreOdpoved } from "@/features/skore/api";
 import { spracujFotku } from "@/lib/obrazok";
 import { useLokalita } from "@/lib/lokalita";
 import { usePouzivatel } from "@/lib/pouzivatel";
-import { useSession } from "@/lib/session";
 import { cisloZbierky, najdiZbierku } from "@/lib/zbierky";
 import { verejneBeziace } from "@/lib/retaz";
 import { profilZPamate, nacitajProfil, uvodZPamate, nacitajUvod, potvrdUvod } from "@/lib/profilStranky";
@@ -147,9 +146,9 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
   const { wide, desktop } = useLayout();
   const ja = usePouzivatel();
   const lok = useLokalita();
-  const session = useSession();
   const qc = useQueryClient();
-  const userId = session && "ucet_id" in session ? String(session.ucet_id) : "demo";
+  // Zadanie 5 · 5.3: kto hodnotí a ktoré je to kolo, zistí server (session + runId prvého kola)
+  const prvaRunId = useRef<string | undefined>(undefined);
   // OPRAVY 121: skutok za charitu — tá istá kostra, mení sa len to, čo je v bode 121 (o = vykanie)
   const org = !!pr.organizacia;
   const stranka = pr.strankaId ?? pr.autor ?? "charita";
@@ -368,7 +367,8 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
     setKr(3);
     const od = teraz();
     try {
-      const v = await ohodnot({ opis, miesto: kde, fotky: fotkyPreAi(), maVideo: media.some((m) => m.video), anonymne: false, userId, kolo: k });
+      const v = await ohodnot({ opis, miesto: kde, fotky: fotkyPreAi(), maVideo: media.some((m) => m.video), anonymne: false, predchRunId: k === 2 ? prvaRunId.current : undefined });
+      if (v.verdikt === "doplnit") prvaRunId.current = v.runId;
       await new Promise((r) => setTimeout(r, Math.max(0, 1400 - (teraz() - od)))); // Svetlúšik aspoň chvíľu
       const t = (v.ucesanyText ?? "").split(/\n?---/)[0].trim() || aiText();
       setPo2(t); setNz(aiNavrhNazov.length ? aiNavrhNazov : nazovZTextu(t));

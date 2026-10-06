@@ -46,6 +46,9 @@ export interface ScoringConfig {
     retry: { pocet: number; pauza_ms: number; poznamka?: string };
     denny_strop_volani: number;
     denny_strop_poznamka?: string;
+    limit_na_ucet_den: number;
+    limit_bez_uctu_den: number;
+    limit_poznamka?: string;
   };
   otazky: { max_pocet: number; max_kola: number; ton?: string };
 }
@@ -87,9 +90,8 @@ export interface ScoreRequest {
   /** user priložil video — do API sa NEposiela, len informácia do promptu (doplnok §1) */
   maVideo?: boolean;
   anonymne: boolean;
-  userId?: string;
-  /** 1 = prvé kolo, 2 = po doplnení (max jedno druhé kolo — doplnok §6) */
-  kolo?: 1 | 2;
+  /** Zadanie 5 · 5.3: druhé kolo = runId prvého kola s verdiktom „doplnit"; kolo určí server, nie klient */
+  predchRunId?: string;
 }
 
 /** POST /api/score response (spec v1 §3.2). */
@@ -111,6 +113,8 @@ export interface ScoreResponse {
   injectionFlag?: boolean;
   configVersion: string;
   runId: string;
+  /** kolo, ktoré určil server (1, alebo 2 po platnom doplnení) */
+  kolo: 1 | 2;
   /** true = odpoveď zo simulátora (bez API kľúča) — NIE reálne hodnotenie Opusom */
   mock?: boolean;
 }
@@ -131,7 +135,7 @@ export interface LogZaznam {
   configVersion: string;
   kolo: number;
   verdikt?: Verdikt | null;
-  vstup: { opis: string; miesto: string; anonymne: boolean; dokazyMeta: DokazMeta };
+  vstup: { opis: string; miesto: string; anonymne: boolean; dokazyMeta: DokazMeta; predchRunId?: string };
   surovyVystup?: unknown;
   dopocitane?: { skore: number; pasmo: Pasmo } | null;
   trvanieMs: number;

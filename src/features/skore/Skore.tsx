@@ -12,7 +12,6 @@ import { useRef, useState } from "react";
 import { C, SPACE, RADIUS } from "@/theme";
 import { ModulHlavicka, Button, Input, Switch, Card, toast, obalSiroky, useLayout, IkonaFoto, IkonaKriz, IkonaGraf, IkonaFajka } from "@/shared";
 import { spracujFotku } from "@/lib/obrazok";
-import { useSession } from "@/lib/session";
 import type { WideProps } from "@/types";
 import { ohodnot, nacitajLog, stiahniCsv, ScoreChyba, type ScoreOdpoved, type LogRiadok } from "./api";
 
@@ -33,8 +32,8 @@ type Faza =
 
 export default function Skore({ wide }: WideProps) {
   const { desktop } = useLayout();
-  const session = useSession();
-  const userId = session && "ucet_id" in session ? String(session.ucet_id) : "demo";
+  // Zadanie 5 · 5.3: kto hodnotí a ktoré je to kolo, zistí server (session + runId prvého kola)
+  const [prvaRunId, setPrvaRunId] = useState<string | undefined>(undefined);
 
   const [tab, setTab] = useState<"test" | "kalibracia">("test");
 
@@ -66,8 +65,9 @@ export default function Skore({ wide }: WideProps) {
   async function odosli(kolo: 1 | 2, finalnyOpis: string) {
     setPosielam(true);
     try {
-      const v = await ohodnot({ opis: finalnyOpis, miesto, fotky, maVideo, anonymne, userId, kolo });
+      const v = await ohodnot({ opis: finalnyOpis, miesto, fotky, maVideo, anonymne, predchRunId: kolo === 2 ? prvaRunId : undefined });
       if (v.verdikt === "doplnit") {
+        setPrvaRunId(v.runId);
         setOpis(finalnyOpis); // odpovede na otázky sa budú pripájať k tomuto opisu
         setOdpovede((v.otazky ?? []).map(() => ""));
         setFaza({ krok: "doplnit", otazky: v.otazky ?? [] });

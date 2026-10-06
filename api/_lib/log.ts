@@ -54,6 +54,54 @@ export async function pocetBehovDnes(): Promise<number> {
   return count ?? 0;
 }
 
+/** Zadanie 5 · 5.3 — kto volá: účet zo session (Bearer token Supabase), nikdy userId od klienta.
+ *  Bez prihlásenia = hash IP (surová IP sa nikam neukladá). */
+export async function ktoVola(authHeader: string | undefined, ip: string): Promise<{ kluc: string; prihlaseny: boolean }> {
+  const s = db();
+  const token = (authHeader || "").replace(/^Bearer\s+/i, "").trim();
+  if (s && token) {
+    const { data } = await s.auth.getUser(token);
+    const authId = data?.user?.id;
+    if (authId) {
+      const { data: u } = await s.from("ucet").select("id").eq("auth_id", authId).maybeSingle();
+      if (u?.id) return { kluc: String(u.id), prihlaseny: true };
+    }
+  }
+  const { createHash } = await import("node:crypto");
+  const sol = process.env.SCORING_IP_SALT || "deed";
+  return { kluc: "ip:" + createHash("sha256").update(sol + ":" + (ip || "?")).digest("hex").slice(0, 16), prihlaseny: false };
+}
+
+/** Počet behov tohto volajúceho od polnoci UTC (limit per účet / per IP). */
+export async function pocetBehovDnesPre(kluc: string): Promise<number> {
+  const s = db();
+  const dnes = new Date().toISOString().slice(0, 10);
+  if (!s) return pamatovyLog.filter((z) => z.ts.startsWith(dnes) && z.userId === kluc).length;
+  const zaciatokDna = new Date();
+  zaciatokDna.setUTCHours(0, 0, 0, 0);
+  const { count, error } = await s.from("scoring_log").select("id", { count: "exact", head: true })
+    .eq("user_id", kluc).gte("ts", zaciatokDna.toISOString());
+  if (error) { console.error("[scoring] limit na účet:", error.message); return 0; }
+  return count ?? 0;
+}
+
+/** Kolo určuje server: 2 len ak predchRunId je prvé kolo TOHO ISTÉHO volajúceho s verdiktom „doplnit",
+ *  nie staršie ako hodina a ešte nepoužité. Inak 1. */
+export async function koloPodlaServera(kluc: string, predchRunId: string | undefined): Promise<1 | 2> {
+  if (!predchRunId) return 1;
+  const hodinaSpat = Date.now() - 3600_000;
+  const s = db();
+  if (!s) {
+    const p = pamatovyLog.find((z) => z.runId === predchRunId);
+    const pouzite = pamatovyLog.some((z) => z.vstup.predchRunId === predchRunId);
+    return p && p.userId === kluc && p.kolo === 1 && p.verdikt === "doplnit" && Date.parse(p.ts) > hodinaSpat && !pouzite ? 2 : 1;
+  }
+  const { data: p } = await s.from("scoring_log").select("user_id, kolo, verdikt, ts").eq("run_id", predchRunId).maybeSingle();
+  if (!p || p.user_id !== kluc || p.kolo !== 1 || p.verdikt !== "doplnit" || Date.parse(p.ts) <= hodinaSpat) return 1;
+  const { count } = await s.from("scoring_log").select("id", { count: "exact", head: true }).eq("vstup->>predchRunId", predchRunId);
+  return (count ?? 0) > 0 ? 1 : 2;
+}
+
 /** Zapíše jeden beh do logu. Chyba logu NIKDY nezhodí odpoveď userovi. */
 export async function zapisBeh(z: LogZaznam): Promise<void> {
   const s = db();

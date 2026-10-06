@@ -4,6 +4,8 @@
 // (spec v1 §2: Kerckhoff — mechanika verejná, parametre nie).
 // ============================================================
 
+import { supabase } from "@/lib/supabase";
+
 export type Verdikt = "ok" | "doplnit" | "zamietnut";
 
 export interface ScoreOdpoved {
@@ -24,6 +26,8 @@ export interface ScoreOdpoved {
   injectionFlag?: boolean;
   configVersion: string;
   runId: string;
+  /** kolo, ktoré určil server */
+  kolo?: 1 | 2;
   /** true = simulátor bez API kľúča (backend v mock režime) */
   mock?: boolean;
 }
@@ -61,6 +65,9 @@ function preAi(dataUrl: string): Promise<string> {
   });
 }
 const NEDOSTUPNE = "Hodnotenie je momentálne nedostupné, skúste o chvíľu.";
+const VELKE_FOTKY = "Fotky sú príliš veľké — zmenšite ich (spolu najviac 3 MB).";
+// Zadanie 5 · 5.3: Vercel prijme telo najviac 4,5 MB — väčšie sa vôbec neposiela (inak padne pred serverom)
+const MAX_TELO_B = 4 * 1024 * 1024;
 
 export async function ohodnot(vstup: {
   opis: string;
@@ -68,31 +75,35 @@ export async function ohodnot(vstup: {
   fotky: string[]; // dataURL-y — pred odoslaním sa zmenšia na 1024 px, JPEG 0,7
   maVideo: boolean;
   anonymne: boolean;
-  userId?: string;
-  kolo: 1 | 2;
+  /** druhé kolo: runId prvého kola s verdiktom „doplnit" (kolo aj limit určí server zo session) */
+  predchRunId?: string;
 }): Promise<ScoreOdpoved> {
   let r: Response;
   const fotky = await Promise.all(vstup.fotky.map(preAi));
+  const telo = JSON.stringify({
+    opis: vstup.opis,
+    miesto: vstup.miesto,
+    dokazy: fotky.map(zDataUrl),
+    maVideo: vstup.maVideo,
+    anonymne: vstup.anonymne,
+    ...(vstup.predchRunId ? { predchRunId: vstup.predchRunId } : {}),
+  });
+  if (telo.length > MAX_TELO_B) throw new ScoreChyba("velky_dokaz", VELKE_FOTKY);
+  // kto volá, zistí server zo session (Bearer token), nie z poľa v požiadavke
+  const hlavicky: Record<string, string> = { "Content-Type": "application/json" };
   try {
-    r = await fetch("/api/score", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        opis: vstup.opis,
-        miesto: vstup.miesto,
-        dokazy: fotky.map(zDataUrl),
-        maVideo: vstup.maVideo,
-        anonymne: vstup.anonymne,
-        userId: vstup.userId,
-        kolo: vstup.kolo,
-      }),
-    });
+    const t = supabase ? (await supabase.auth.getSession()).data.session?.access_token : undefined;
+    if (t) hlavicky.Authorization = `Bearer ${t}`;
+  } catch { /* bez session = limit bez prihlásenia */ }
+  try {
+    r = await fetch("/api/score", { method: "POST", headers: hlavicky, body: telo });
   } catch {
     throw new ScoreChyba("nedostupne", NEDOSTUPNE);
   }
   const data = await r.json().catch(() => ({}));
   // OPRAVY 127: hláška podľa kódu — 503/504 (aj odpoveď, ktorá nie je JSON) = nedostupné, nie „nepodarilo sa"
   if (!r.ok) {
+    if (r.status === 413) throw new ScoreChyba("velky_dokaz", VELKE_FOTKY);
     if (r.status === 503 || r.status === 504 || r.status === 529) throw new ScoreChyba(data.chyba ?? "nedostupne", NEDOSTUPNE);
     throw new ScoreChyba(data.chyba ?? `http_${r.status}`, data.sprava ?? "Hodnotenie sa nepodarilo, skús znova.");
   }
