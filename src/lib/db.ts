@@ -105,36 +105,12 @@ export async function spustiKyb(orgUcetId: string, { stanovyRef }: { stanovyRef?
 // UNIVERZÁLNY ZÁKLAD — telefón/účet/zámok (§4) — osoba aj charita
 // ============================================================
 
-/** Zadanie 1 · Blok 1 · bod 4: registrácia s telefónom, ktorý už má účet, NIKDY nevráti ten účet
- *  (inak by ho prevzal ktokoľvek, kto pozná číslo). Človek sa musí prihlásiť. */
-export const UCET_EXISTUJE = "Účet s týmto číslom existuje — prihláste sa.";
-export class UcetExistujeChyba extends Error { constructor() { super(UCET_EXISTUJE); this.name = "UcetExistujeChyba"; } }
-
 // TODO (Zadanie 1 · Blok 1, migrácia 0035_identita.sql): registrácia organizácie / firmy zatiaľ
 // NEvolá rpc zaloz_stranku(p_id, p_typ, p_nazov). Karta, ktorá spustí vznik stránok z registrácie,
 // ju musí zavolať po vytvorení účtu — vznikne stranka + účet organizácie (typ 'charita'/'firma')
 // a volajúci sa zapíše do statutar ako správca. Dovtedy majú stránky len testovacie org. účty z 0035.
-// Vytvorí účet po overení telefónu. Existujúce číslo = chyba (DB: unique ucet.telefon).
-export async function vytvorUcet({ typ = "aktivny", telefon, email = null }: { typ?: string; telefon: string; email?: string | null }) {
-  const tel = (telefon || "").replace(/\s+/g, ""); // normalizuj — bez medzier (stabilný unique kľúč)
-  if (!supabase) return vytvorUcetMock(tel, typ); // mock režim: rovnaké pravidlo, bez DB
-  // Zadanie 3 · 3.2: účet s overeným telefónom zakladá server — len ak telefón prešiel otp_over
-  const { data, error } = await db().rpc("ucet_s_telefonom", { p_typ: typ, p_telefon: tel, p_email: email }).single();
-  if (error) {
-    if (error.code === "23505") throw new UcetExistujeChyba(); // unique_violation na telefóne
-    throw error;
-  }
-  return data;
-}
-
-// mock registrácia bez DB — telefóny drží len pamäť relácie, existujúce číslo = chyba
-const mockTelefony = new Map<string, string>();
-function vytvorUcetMock(tel: string, typ: string) {
-  if (mockTelefony.has(tel)) throw new UcetExistujeChyba();
-  const id = (() => { try { return crypto.randomUUID(); } catch { return `mock-${Date.now()}`; } })();
-  mockTelefony.set(tel, id);
-  return { id, typ, poradove_cislo: null, stav_registracie: "zabezpecenie" };
-}
+// Registrácia je len auth-first (session najprv — OsobaB, vytvorUcetAuth). Starý tok „telefón bez
+// prihlásenia" (RegKit, rpc ucet_s_telefonom) je od 6. 10. 2026 zrušený: po RLS (0055) by nič nezapísal.
 
 // Auth-first vytvorenie účtu (Fáza 5) — identitu rieši Supabase Auth, telefón-OTP
 // a PIN sa preskakujú. Idempotentné na auth_id (resume po refreshi/abandonovaní).
