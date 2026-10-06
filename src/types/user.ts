@@ -122,8 +122,9 @@ export interface RegistrIcoVysledok {
 
 /** Výsledok OTP (posliOtp) — DEMO SMS. */
 export interface OtpVysledok {
-  kod: string;
-  demo: true;
+  /** testovací kód — vracia ho LEN server v mock režime (ostrý režim kód nevracia) */
+  kod: string | null;
+  demo: boolean;
 }
 
 /** Štatutár organizácie (tabuľka "statutar"). */

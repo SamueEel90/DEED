@@ -47,20 +47,41 @@ function zoskup(rows: any[], kluc: string, polozkaKluc: string): Ciselnik[] {
 // MOCK VENDORI
 // ============================================================
 
-// SMS OTP — DEMO: žiadna reálna SMS; kód vrátime, nech ho UI zobrazí.
-export async function posliOtp(_telefon: string): Promise<OtpVysledok> {
-  await cakaj(450);
-  const kod = String(Math.floor(100000 + Math.random() * 900000));
-  return { kod, demo: true };
+// Zadanie 3 · 3.2: SMS kód vzniká LEN na serveri. S DB: rpc otp_posli / otp_over (0040);
+// bez DB: /api/otp. V mock režime server vráti pevný testovací kód, nikdy ho negeneruje prehliadač.
+type OtpOdpoved = { kod?: string | null; demo?: boolean; ok?: boolean; sprava?: string };
+async function apiOtp(telo: { telefon: string; kod?: string }): Promise<OtpOdpoved> {
+  const r = await fetch("/api/otp", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(telo) });
+  const d = (await r.json().catch(() => ({}))) as OtpOdpoved;
+  if (!r.ok) throw new Error(d.sprava ?? "SMS sa nepodarilo poslať.");
+  return d;
+}
+export async function posliOtp(telefon: string): Promise<OtpVysledok> {
+  if (supabase) {
+    const { data, error } = await supabase.rpc("otp_posli", { p_telefon: telefon });
+    if (error) throw error;
+    const o = (data ?? {}) as OtpOdpoved;
+    return { kod: o.kod ?? null, demo: !!o.demo };
+  }
+  const d = await apiOtp({ telefon });
+  return { kod: d.kod ?? null, demo: !!d.demo };
+}
+/** overí SMS kód na serveri — true = sedí (chybný pokus sa zaráta, max 5) */
+export async function overOtp(telefon: string, kod: string): Promise<boolean> {
+  if (supabase) {
+    const { data, error } = await supabase.rpc("otp_over", { p_telefon: telefon, p_kod: kod });
+    if (error) throw error;
+    return data === true;
+  }
+  return (await apiOtp({ telefon, kod })).ok === true;
 }
 
-// KYC osoby (Didit) — DEMO: vždy "sedí" po krátkej chvíli. Ukladá len výsledok.
-export async function spustiKyc(ucetId: string, sposob = "nove") {
+// KYC osoby (Didit) — výsledok zapisuje LEN server (rpc kyc_spusti, dnes mock vendor „sedí").
+export async function spustiKyc(_ucetId: string, sposob = "nove") {
   await cakaj(1100);
-  const vysledok = "sedi";
-  const { error } = await db().from("kyc").insert({ ucet_id: ucetId, vendor: "mock", vysledok, sposob });
+  const { data, error } = await db().rpc("kyc_spusti", { p_sposob: sposob });
   if (error) throw error;
-  return { vysledok };
+  return { vysledok: data as string };
 }
 
 // KYB charity — DEMO register: IČO → vymyslené firemné údaje
@@ -78,13 +99,12 @@ export async function najdiIco(ico: string): Promise<RegistrIcoVysledok> {
   };
 }
 
+// KYB — výsledok zapisuje LEN server (rpc kyb_spusti, volajúci musí byť správca organizácie)
 export async function spustiKyb(orgUcetId: string, { stanovyRef }: { stanovyRef?: string | null } = {}) {
   await cakaj(1100);
-  const { error } = await db()
-    .from("kyb")
-    .insert({ org_ucet_id: orgUcetId, vendor: "mock", vysledok: "overena", stanovy_ref: stanovyRef || null, aml: "clean" });
+  const { data, error } = await db().rpc("kyb_spusti", { p_org: orgUcetId, p_stanovy: stanovyRef || null });
   if (error) throw error;
-  return { vysledok: "overena" };
+  return { vysledok: data as string };
 }
 
 // ============================================================
@@ -104,11 +124,8 @@ export class UcetExistujeChyba extends Error { constructor() { super(UCET_EXISTU
 export async function vytvorUcet({ typ = "aktivny", telefon, email = null }: { typ?: string; telefon: string; email?: string | null }) {
   const tel = (telefon || "").replace(/\s+/g, ""); // normalizuj — bez medzier (stabilný unique kľúč)
   if (!supabase) return vytvorUcetMock(tel, typ); // mock režim: rovnaké pravidlo, bez DB
-  const { data, error } = await db()
-    .from("ucet")
-    .insert({ typ, telefon: tel, telefon_overeny: true, email, email_overeny: !!email, stav_registracie: "zabezpecenie" })
-    .select("id, typ, poradove_cislo, stav_registracie")
-    .single();
+  // Zadanie 3 · 3.2: účet s overeným telefónom zakladá server — len ak telefón prešiel otp_over
+  const { data, error } = await db().rpc("ucet_s_telefonom", { p_typ: typ, p_telefon: tel, p_email: email }).single();
   if (error) {
     if (error.code === "23505") throw new UcetExistujeChyba(); // unique_violation na telefóne
     throw error;
@@ -185,8 +202,9 @@ export async function nastavZabezpecenie(ucetId: string, { pin, biometria = fals
 // KARTA 44 · telefón overený SMS je kľúč účtu (1 telefón = 1 účet). Pri 1b vzniká účet až po e-maile a hesle,
 // telefón sa preto zapíše dodatočne. Server (Samuel): unique na telefon + RLS na update vlastného účtu.
 export async function ulozOverenyTelefon(ucetId: string, telefon: string) {
-  const tel = (telefon || "").replace(/\s+/g, "");
-  const { error } = await db().from("ucet").update({ telefon: tel, telefon_overeny: true, aktualizovane: teraz() }).eq("id", ucetId);
+  // Zadanie 3 · 3.2: telefon_overeny zapisuje len server (ak telefón prešiel otp_over); ucetId = môj účet
+  void ucetId;
+  const { error } = await db().rpc("zapis_overeny_telefon", { p_telefon: (telefon || "").replace(/\s+/g, "") });
   if (error) throw error;
 }
 

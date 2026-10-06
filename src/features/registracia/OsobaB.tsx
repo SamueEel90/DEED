@@ -51,7 +51,7 @@ export function OsobaB({ start = "plan", onSpat, onHotovo, authId: authIdVst, em
   const [authId, setAuthId] = useState<string | null>(authIdVst ?? null);
   const [busy, setBusy] = useState(false);
   // údaje držané len v pamäti počas toku
-  const [tel, setTel] = useState(""), [kod, setKod] = useState(""), [demoKod, setDemoKod] = useState<string | null>(null), [odpocet, setOdpocet] = useState(0);
+  const [tel, setTel] = useState(""), [kod, setKod] = useState(""), [odpocet, setOdpocet] = useState(0);
   const posielania = useRef<number[]>([]);
   const [email, setEmail] = useState(emailVst ?? ""), [heslo, setHeslo] = useState(""), [tvar, setTvar] = useState(true), [pin, setPin] = useState("");
   const [chyba, setChyba] = useState<string | null>(null);
@@ -110,14 +110,17 @@ export function OsobaB({ start = "plan", onSpat, onHotovo, authId: authIdVst, em
     try {
       const r = await db.posliOtp("+421" + telCislo);
       posielania.current.push(teraz);
-      setDemoKod(r.kod); setKod(""); setOdpocet(60); ides("kod");
-      // DEMO: SMS neodchádza — kód sa „vyplní sám" ako pri skutočnej SMS
-      window.setTimeout(() => setKod(r.kod), 900);
+      setKod(""); setOdpocet(60); ides("kod");
+      // DEMO: SMS neodchádza — testovací kód poslal server a „vyplní sa sám" ako pri skutočnej SMS
+      if (r.kod) { const k = r.kod; window.setTimeout(() => setKod(k), 900); }
     } catch (e: any) { toast("Chyba pri odoslaní SMS: " + (e?.message || e)); }
     finally { setBusy(false); }
   };
-  const overKod = () => {
-    if (kod !== demoKod) { setChyba("Kód nesedí. Skontroluj SMS."); return; }
+  const overKod = async () => {
+    // Zadanie 3 · 3.2: kód overuje server
+    let ok: boolean;
+    try { ok = await db.overOtp("+421" + telCislo, kod); } catch (e) { setChyba(e instanceof Error ? e.message : "Kód sa nepodarilo overiť."); return; }
+    if (!ok) { setChyba("Kód nesedí. Skontroluj SMS."); return; }
     vibruj(8);
     // návrat existujúceho auth usera: heslo už má → telefón zapíš a pokračuj platbou
     if (ucet) { void (naServeri ? db.ulozOverenyTelefon(ucet.id, "+421" + telCislo).catch(() => { /* best-effort */ }) : null); ides("platba"); return; }

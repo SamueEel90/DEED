@@ -8,7 +8,7 @@ import { sZnackou } from "@/components/DeedZnacka";
 import { useState, useId, type ReactNode, type CSSProperties } from "react";
 import { C, GRAD, btn, inp, infoBox, glassTmavy, SPACE, RADIUS } from "@/theme";
 import { Hlavicka, Otazka, IkonaFajka, IkonaSipDole, useLayout } from "@/shared";
-import { vytvorUcet, nastavZabezpecenie, posliOtp, UcetExistujeChyba, UCET_EXISTUJE } from "@/lib/db";
+import { vytvorUcet, nastavZabezpecenie, posliOtp, overOtp, UcetExistujeChyba, UCET_EXISTUJE } from "@/lib/db";
 
 // ---- škrupina kroku: hlavička + scroll obsah + sticky pätička ----
 export function Shell({
@@ -275,12 +275,14 @@ export function KrokTelefonSms({
   };
 
   const over = async () => {
-    if (kod !== demoKod) {
-      toast?.("Nesprávny kód (DEMO: " + demoKod + ")");
-      return;
-    }
     setLoading(true);
     try {
+      // Zadanie 3 · 3.2: kód overuje server
+      if (!(await overOtp(tel, kod))) {
+        toast?.(demoKod ? "Nesprávny kód (DEMO: " + demoKod + ")" : "Nesprávny kód.");
+        setLoading(false);
+        return;
+      }
       const ucet: any = await vytvorUcet({ typ, telefon: tel.trim(), email: vyzadujEmail ? email.trim() : null });
       onHotovo(ucet);
     } catch (e: any) {

@@ -12,6 +12,7 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import scoreHandler from "../api/score";
 import scoreLogHandler from "../api/score-log";
 import iskraHandler from "../api/iskra";
+import otpHandler from "../api/otp";
 
 const MAX_TELO_B = 20 * 1024 * 1024; // 3 fotky v base64 sa zmestia s rezervou
 
@@ -52,7 +53,7 @@ function apiMiddleware() {
     // /i/{id} → /api/iskra?id={id} (rewrite ako vo vercel.json)
     const iskra = url.pathname.match(/^\/i\/([^/]+)$/);
     if (iskra) { url.pathname = "/api/iskra"; url.searchParams.set("id", decodeURIComponent(iskra[1])); }
-    const handlery: Record<string, typeof scoreHandler> = { "/api/score": scoreHandler, "/api/score-log": scoreLogHandler, "/api/iskra": iskraHandler };
+    const handlery: Record<string, typeof scoreHandler> = { "/api/score": scoreHandler, "/api/score-log": scoreLogHandler, "/api/iskra": iskraHandler, "/api/otp": otpHandler };
     if (!handlery[url.pathname]) { next(); return; }
 
     const vreq = req as IncomingMessage & { query: Record<string, string>; body?: unknown };
