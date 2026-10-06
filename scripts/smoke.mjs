@@ -31,7 +31,8 @@ const MODULY = [
 ];
 
 /** Moduly s feedom, kde vieme otvoriť detail a skontrolovať platobný modul. */
-const S_DETAILOM = ["good", "help", "charita", "nabozenstvo"];
+// TODO: vrátiť pri nasadení Farnosť v3 — "nabozenstvo" (stránka farnosti sa celá mení, Martin 6. 10. 2026).
+const S_DETAILOM = ["good", "help", "charita"];
 
 /** Časti, ktoré musí vykresliť <PlatobnyModul> v každom detaile. */
 const CASTI_PLATBY = [
