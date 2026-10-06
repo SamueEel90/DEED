@@ -182,6 +182,8 @@ export interface KategoriaKonfig {
 /** Položka feedu v module Good (POLOZKY). */
 export interface GoodPolozka extends FeedKartaZaklad {
   id: number | string;   // mock = number; Supabase = uuid
+  /** Zadanie 3 · 3.1: run_id behu AI (/api/score) — skóre, overené a karmu z neho doplní server */
+  scoreRunId?: string;
   typ: GoodTyp;
   velkost: Velkost;
   kat: Kategoria;

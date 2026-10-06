@@ -80,6 +80,19 @@ export async function zapisBeh(z: LogZaznam): Promise<void> {
   if (error) console.error("[scoring] zápis logu zlyhal:", error.message);
 }
 
+/** Zadanie 3 · 3.1: server sám zapíše skóre, overené a karmu do príspevku s týmto run_id
+ *  (ak už existuje; inak ich pri vytvorení doplní trigger z logu — migrácia 0039). */
+export async function zapisSkoreDoPrispevku(runId: string, dopocitane: { skore: number; pasmo: number } | null | undefined): Promise<void> {
+  const s = db();
+  if (!s || !dopocitane) return;
+  const { error } = await s.from("prispevok").update({
+    skore: dopocitane.skore,
+    overene: dopocitane.pasmo >= 1,
+    karma: Math.max(1, Math.round(dopocitane.skore * 10)),
+  }).eq("score_run_id", runId);
+  if (error) console.error("[scoring] zápis skóre do príspevku zlyhal:", error.message);
+}
+
 /** Uloží fotky behu vedľa logu (bucket scoring-dokazy/{runId}/{i}.jpg|png|webp). */
 export async function ulozDokazy(runId: string, dokazy: DokazVstup[]): Promise<void> {
   const s = db();

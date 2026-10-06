@@ -17,7 +17,7 @@ import { zlozSystemPrompt } from "./_lib/prompt";
 import { dopocitaj, NevalidnyVystup } from "./_lib/vypocet";
 import { ApiNedostupne, ohodnotSkutok } from "./_lib/opus";
 import { mockOhodnot } from "./_lib/mock";
-import { pocetBehovDnes, ulozDokazy, zapisBeh } from "./_lib/log";
+import { pocetBehovDnes, ulozDokazy, zapisBeh, zapisSkoreDoPrispevku } from "./_lib/log";
 
 const cfg = config as unknown as ScoringConfig;
 
@@ -169,6 +169,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }),
     ulozDokazy(runId, vstup.dokazy),
   ]);
+  // Zadanie 3 · 3.1: skóre do príspevku zapisuje server (log musí byť zapísaný skôr — trigger 0039 z neho číta)
+  if (dopocitane) await zapisSkoreDoPrispevku(runId, dopocitane);
 
   // odpoveď frontendu — bez interných polí (zamietnutieDovod ostáva v logu,
   // userovi ide neutrálna hláška bez návodu čo opraviť; spec v1 §5)

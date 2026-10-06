@@ -447,6 +447,7 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
       const it: GoodPolozka = {
         id: teraz(), typ: "skutok", velkost: pasmo >= 3 ? "big" : "medium", kat: KAT[s.oblast] ?? "Komunita", autor: pr.autor || ja.celeMeno || "Ty", num: 0, emoji: "",
         fotky, titul: nz, popis: po2, lok: kde, overene: true, skore: odpAi?.skore ?? 0, typSituacie: "normal", modul: "good", dni: 0, podpora: 0, lat: lok.lat, lng: lok.lng,
+        scoreRunId: odpAi?.runId, // skóre/overené/karma do DB píše server z behu AI, nie klient
       } as GoodPolozka;
       qc.setQueryData<GoodPolozka[]>(qk.good.feed, (old = []) => [it, ...old]);
       repo.good.vytvor(it, ja.ucetId).then((nid) => { if (nid) qc.invalidateQueries({ queryKey: qk.good.feed }); }).catch(() => {});

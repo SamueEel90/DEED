@@ -128,8 +128,8 @@ export const goodSupabase = {
       lok: it.lok ?? null,
       narodne: !!it.narodne,
       typ_situacie: it.typSituacie ?? "normal",
-      skore: it.skore ?? 0,
-      overene: !!it.overene,
+      // Zadanie 3 · 3.1: skóre, overené a karmu klient nezapisuje — doplní ich DB z behu AI (0039)
+      score_run_id: it.scoreRunId ?? null,
       ciel: it.ciel ?? null,
     }).select("id").single();
     if (error) throw error;

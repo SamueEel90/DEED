@@ -75,8 +75,7 @@ export const helpSupabase = {
       lok: it.lok ?? null,
       narodne: !!it.narodne,
       typ_situacie: it.typSituacie ?? "normal",
-      skore: it.skore ?? 0,
-      overene: !!it.overeny,
+      // Zadanie 3 · 3.1: skóre a overené zapisuje len server (0039); žiadosť začína neoverená
       ciel: it.ciel ?? null,
       pomocnici: it.ludia ?? null,
       data: { help: true, id: it.id, typ: it.typ, velkost: it.velkost, odbornik: it.odbornik ?? false, sponzor: it.sponzor ?? false, avatar: it.avatar ?? null },
