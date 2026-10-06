@@ -52,6 +52,8 @@ export interface Profil {
   titul?: string | null;
   mesto?: string | null;
   profilovka_url?: string | null;
+  /** rod na tvar vety „Urobil / Urobila som" (migrácia 0049); null = mužský tvar */
+  rod?: "muz" | "zena" | null;
   aktualizovane?: IsoDateTime;
 }
 
@@ -274,7 +276,7 @@ export interface Ciselnik {
 /** Agregovaný výsledok načítania účtu (nacitajUcetData). */
 export interface UcetData {
   ucet: Pick<Ucet, "id" | "typ" | "poradove_cislo" | "email"> | null;
-  profil: Pick<Profil, "meno" | "druhe_meno" | "priezvisko" | "titul" | "mesto" | "profilovka_url"> | null;
+  profil: Pick<Profil, "meno" | "druhe_meno" | "priezvisko" | "titul" | "mesto" | "profilovka_url" | "rod"> | null;
   zobrazenie: Pick<Zobrazenie, "rezim" | "nick"> | null;
   lokalita: Pick<Lokalita, "mesto" | "region" | "stvrt"> | null;
   organizacia: Pick<Organizacia, "nazov" | "sidlo"> | null;
@@ -316,7 +318,7 @@ export interface Pouzivatel {
   /** Profilová fotka (data-URL alebo URL); null = zobrazí sa iniciála. */
   foto: string | null;
   mesto: string;
-  /** rod z profilu — len na tvar vety („Urobil / Urobila som"); bez neho mužský rod. TODO server: pole v profile */
+  /** rod z profilu — len na tvar vety („Urobil / Urobila som"); bez neho mužský rod (profil.rod, migrácia 0049) */
   rod?: "muz" | "zena";
   poradoveCislo: number | null;
   rezim: RezimZobrazenia;
