@@ -32,7 +32,7 @@ import { PREVODY, MOJE_SKUTKY, KARMA, STATISTIKY, type StatistikyData } from "@/
 import { REBRICKY_MOCK, topPrispevky, type RebricekKluc } from "@/features/top/mock";
 import { MAPA_UDALOSTI } from "@/features/mapa/mock";
 import { qrUrl, type QrCiel, type QrStatic, type QrResolved } from "@/lib/qr";
-import type { PlatbaVstup, PlatbaRiadok, VypisRiadok, BatchVysledok, RecurringVstup } from "./platby.supabase";
+import type { PlatbaVstup, PlatbaRiadok, VypisRiadok, RecurringVstup } from "./platby.supabase";
 import type { ScanVstup, ScanVysledok, ChainVstup, ChainVysledok, BadgeScanVysledok, QrSplitCreateVstup, QrSplitPayVstup, QrSplitPayVysledok } from "./qr.supabase";
 import type { QrSplitRow, QrSplitDetail, QrSplitListItem } from "@/types";
 
@@ -114,8 +114,6 @@ export interface Repo {
     vypis(filter: { ucetId: string; smer?: "dal" | "dostal" }): Promise<VypisRiadok[]>;
     /** Reálny DEED zostatok peňaženky. */
     zostatok(ucetId: string): Promise<number>;
-    /** Demo trigger: zúčtuj 24h batch teraz. */
-    batchClose(): Promise<BatchVysledok | null>;
   };
 }
 
@@ -191,7 +189,6 @@ export const mockRepo: Repo = {
     recurringCreate: () => Promise.resolve(null),
     vypis: () => Promise.resolve([]),
     zostatok: () => Promise.resolve(0),
-    batchClose: () => Promise.resolve(null),
   },
 };
 

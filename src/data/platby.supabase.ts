@@ -1,7 +1,7 @@
 // ============================================================
 // DEED · Payment Engine — Supabase repozitár   [Fáza 2]
 // `poslat` = jediná zapisovacia cesta (RPC platba_create, idempotentná).
-// `vypis`/`zostatok` = pohľady v_vypis/v_zostatok. `batchClose` = demo trigger.
+// `vypis`/`zostatok` = pohľady v_vypis/v_zostatok. Dávku zúčtuje len cron (0048), appka nie.
 // UI volá cez hooky (data/hooks.ts) — nikdy priamo.
 // ============================================================
 import { supabase } from "@/lib/supabase";
@@ -75,14 +75,6 @@ export interface VypisRiadok {
   cas: string;
 }
 
-export interface BatchVysledok {
-  id: string;
-  pocet: number;
-  suma_spolu: number;
-  settle_hash: string | null;
-  stav: string;
-}
-
 function idem(): string {
   try { return crypto.randomUUID(); } catch { return `idem-${Date.now()}-${Math.round(Math.random() * 1e9)}`; }
 }
@@ -140,13 +132,5 @@ export const platbySupabase = {
     const { data, error } = await supabase.from("v_zostatok").select("zostatok_deed").eq("ucet_id", ucetId).maybeSingle();
     if (error) throw error;
     return data ? Number(data.zostatok_deed) : 0;
-  },
-
-  /** Demo trigger: zúčtuj 24h batch teraz (cron robí to isté denne). */
-  async batchClose(): Promise<BatchVysledok | null> {
-    if (!supabase) return null;
-    const { data, error } = await supabase.rpc("platba_batch_close", {});
-    if (error) throw error;
-    return (data as BatchVysledok) ?? null;
   },
 };
