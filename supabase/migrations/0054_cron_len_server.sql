@@ -1,5 +1,5 @@
 -- ============================================================
--- 0048 · Zadanie 4 · 4.2 — cron funkcie zvonka nevolateľné
+-- 0054 · Zadanie 4 · 4.2 — cron funkcie zvonka nevolateľné
 -- ------------------------------------------------------------
 -- platba_batch_close, recurring_tick, badge_auto_unbind, dorovnania_obnov spúšťa len interný
 -- scheduler (pg_cron beží ako vlastník) alebo service_role. anon/authenticated ich nezavolajú.

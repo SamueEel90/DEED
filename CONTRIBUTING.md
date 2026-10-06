@@ -103,6 +103,12 @@ zbytočne prepisované veci:
 Komponent nikdy nečíta mock pole priamo ani nevolá `supabase.from(...)`.
 Vždy cez hook z `@/data`. Detaily v [ARCHITECTURE §3](docs/ARCHITECTURE.md#3-dátová-vrstva--jediný-švík).
 
+### Migrácie
+
+Pred založením novej migrácie vždy `git pull` a číslo ber až po ňom (najvyššie číslo v `supabase/migrations/` + 1).
+Pushnutá migrácia sa nikdy nemení — každá zmena je nová migrácia. Čistú DB zo všetkých migrácií overíš
+`bash scripts/db-z-migracii.sh` (beží aj v CI a spadne na kolízii čísel).
+
 ### Navigácia
 
 Každý sheet, detail a overlay, ktorý sa dá zavrieť, musí registrovať vrstvu:

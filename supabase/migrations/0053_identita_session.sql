@@ -1,5 +1,5 @@
 -- ============================================================
--- 0047 · Zadanie 4 · 4.1 — identita volajúceho LEN zo session (auth.uid() → moj_ucet())
+-- 0053 · Zadanie 4 · 4.1 — identita volajúceho LEN zo session (auth.uid() → moj_ucet())
 -- ------------------------------------------------------------
 -- Vzor: iskra_zverejni (0034). Žiadna RPC pre appku neberie identitu z parametra:
 --   platba_create, qr_split_pay, qr_split_create, qr_split_list, recurring_create, chain_create,

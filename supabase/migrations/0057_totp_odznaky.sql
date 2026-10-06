@@ -1,5 +1,5 @@
 -- ============================================================
--- 0051 · Zadanie 4 · 4.5 — TOTP a odznaky proti farmeniu
+-- 0057 · Zadanie 4 · 4.5 — TOTP a odznaky proti farmeniu
 -- ------------------------------------------------------------
 -- Akcia (event_secret) patrí organizátorovi:
 --   · event_secret_create: len vlastník akcie (ak je akcia príspevok, jeho autor/správca; inak ten,
@@ -10,6 +10,8 @@
 -- scan_validate: zariadenie = účet (nie reťazec od klienta) → jeden platný sken na účet a okno.
 --   Akcia s polohou: sken bez GPS alebo ďalej než polomer = out_of_radius (nič sa nezapíše).
 -- Splnené = podiel prítomnosti na trvaní akcie ≥ prah_pct (počíta event_ukonci), nie dva skeny.
+-- Zachované zo Samuelovej 0048 (rotujúci QR): krok kódu 5–60 s, limit 20 skenov za minútu na účet ('limit'),
+--   jeden úspešný sken na účet a okno (index scan_once_user), organizátor vidí dochádzku a skeny svojej akcie.
 -- Odznak: na zmenu sa prihlási len potvrdený zamestnanec firmy (väzba 0045); badge_create len správca
 --   firmy; badge_aggregate len správca a len skupiny s k ≥ 5 pochvalami (k-anonymita).
 -- ============================================================
@@ -49,7 +51,7 @@ begin
     raise exception 'Akciu môže viesť len jej organizátor.' using errcode = '42501', detail = 'cudzia_akcia';
   end if;
   insert into public.event_secret (event_id, secret, step, mod, nazov, organizator)
-    values (p_event, gen_random_bytes(32), greatest(coalesce(p_step,15), 5), coalesce(p_mod,'threshold'), p_nazov, coalesce(v_autor, v_ja))
+    values (p_event, gen_random_bytes(32), greatest(5, least(60, coalesce(p_step, 15))), coalesce(p_mod,'threshold'), p_nazov, coalesce(v_autor, v_ja))
     on conflict (event_id) do update
       set step = excluded.step, mod = excluded.mod, nazov = coalesce(excluded.nazov, public.event_secret.nazov);   -- secret sa nerotuje
   return p_event;
@@ -111,6 +113,10 @@ declare
   v_dev text := 'ucet:' || v_ja::text;            -- zariadenie = účet (nie reťazec od klienta)
   v_gps point := case when p_lat is not null and p_lng is not null then point(p_lng, p_lat) end;
 begin
+  -- limit pokusov: 20 za minútu na účet (0048)
+  if (select count(*) from public.scan_log where user_id = v_ja and cas > now() - interval '1 minute') >= 20 then
+    return jsonb_build_object('vysledok', 'limit');
+  end if;
   parts := string_to_array(coalesce(p_token,''), '.');
   if array_length(parts,1) <> 4 or parts[1] <> 'DEED1' then return jsonb_build_object('vysledok','fake'); end if;
   begin
@@ -138,10 +144,14 @@ begin
     insert into public.scan_log (event_id,user_id,device_id,counter,vysledok,gps) values (v_event,v_ja,v_dev,v_counter,'out_of_radius',v_gps);
     return jsonb_build_object('vysledok','out_of_radius');
   end if;
-  insert into public.scan_log (event_id,user_id,device_id,counter,vysledok,gps)
-    values (v_event,v_ja,v_dev,v_counter,'ok',v_gps)
-    on conflict (event_id, device_id, counter) where vysledok = 'ok' do nothing
-    returning id into v_logid;
+  -- atomický anti-replay: jeden ok na (akcia, účet, okno) — obidva unikátne indexy (scan_once, scan_once_user)
+  begin
+    insert into public.scan_log (event_id,user_id,device_id,counter,vysledok,gps)
+      values (v_event,v_ja,v_dev,v_counter,'ok',v_gps)
+      returning id into v_logid;
+  exception when unique_violation then
+    v_logid := null;
+  end;
   if v_logid is null then
     insert into public.scan_log (event_id,user_id,device_id,counter,vysledok) values (v_event,v_ja,v_dev,v_counter,'replay');
     return jsonb_build_object('vysledok','replay');

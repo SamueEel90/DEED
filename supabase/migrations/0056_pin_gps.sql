@@ -1,5 +1,5 @@
 -- ============================================================
--- 0050 · Zadanie 4 · 4.4 — PIN a citlivé údaje
+-- 0056 · Zadanie 4 · 4.4 — PIN a citlivé údaje
 -- ------------------------------------------------------------
 -- PIN: pomalý hash bcrypt (pgcrypto crypt + gen_salt('bf', 10)) LEN na serveri. Appka posiela PIN
 --   cez rpc nastav_zabezpecenie / over_pin, ucet.pin_hash z klienta neprečíta ani nezapíše
@@ -51,7 +51,7 @@ grant execute on function public.nastav_zabezpecenie(text, boolean), public.over
 -- staré SHA-256 hashe preč (bcrypt začína „$2")
 update public.ucet set pin_hash = null where pin_hash is not null and pin_hash not like '$2%';
 
--- stĺpcové práva: pin_hash appka nečíta ani nepíše (ostatné stĺpce podľa RLS z 0049)
+-- stĺpcové práva: pin_hash appka nečíta ani nepíše (ostatné stĺpce podľa RLS z 0055)
 do $$ declare v_cols text;
 begin
   revoke select, insert, update on public.ucet from anon, authenticated;

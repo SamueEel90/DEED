@@ -1,7 +1,7 @@
 // ============================================================
 // DEED · Payment Engine — Supabase repozitár   [Fáza 2]
 // `poslat` = jediná zapisovacia cesta (RPC platba_create, idempotentná).
-// `vypis`/`zostatok` = pohľady v_vypis/v_zostatok. Dávku zúčtuje len cron (0048), appka nie.
+// `vypis`/`zostatok` = pohľady v_vypis/v_zostatok. Dávku zúčtuje len cron (0054), appka nie.
 // UI volá cez hooky (data/hooks.ts) — nikdy priamo.
 // ============================================================
 import { supabase } from "@/lib/supabase";

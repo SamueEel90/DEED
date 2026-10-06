@@ -1,5 +1,5 @@
 -- ============================================================
--- 0049 · Zadanie 4 · 4.3 — RLS so skutočnými pravidlami (koniec test_all_access)
+-- 0055 · Zadanie 4 · 4.3 — RLS so skutočnými pravidlami (koniec test_all_access)
 -- ------------------------------------------------------------
 -- Pravidlá:
 --   · osobné údaje (ucet, profil, zobrazenie, lokalita, záujmy, súhlasy, sledovanie): len vlastník

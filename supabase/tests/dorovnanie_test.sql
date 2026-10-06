@@ -12,7 +12,7 @@ create temp table t(c text, ok boolean);
 grant all on t to public;
 create temp table v(k text primary key, j jsonb);
 grant all on v to public;
--- čísla účtov firiem (appka ich pozná z registra; klient cudzí účet z tabuľky nečíta — 0049)
+-- čísla účtov firiem (appka ich pozná z registra; klient cudzí účet z tabuľky nečíta — 0055)
 create temp table fc as select id, cislo from public.ucet where typ = 'firma';
 grant select on fc to public;
 

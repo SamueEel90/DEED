@@ -1,8 +1,8 @@
 -- ============================================================
--- 0052 · Zadanie 4 · 4.3 (get_advisors) — pevný search_path funkcií, v_escrow cez RLS volajúceho
+-- 0058 · Zadanie 4 · 4.3 (get_advisors) — pevný search_path funkcií, v_escrow cez RLS volajúceho
 -- ------------------------------------------------------------
 -- Advisor „function_search_path_mutable": každá funkcia v public dostane pevný search_path.
--- v_escrow: security_invoker (escrow vidí len sponzor podľa RLS z 0049).
+-- v_escrow: security_invoker (escrow vidí len sponzor podľa RLS z 0055).
 -- Zámerne ostávajú security definer pohľady s verejnými súčtami (v_vyzbierane, v_top_darcovia,
 -- prispevok_feed so zaokrúhlenou polohou, profil_stranky_verejny) — viď správa pre Martina.
 -- ============================================================
