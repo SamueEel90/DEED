@@ -1,7 +1,7 @@
 // ============================================================
 // DEED · Top (rebríčky) — Supabase repozitár (Fáza C)
 // Živý agregát z reálnych dát:
-//   • darcovia  ← `podpora`        (group by ucet_id, súčet DEED; meno = len snapshot na zobrazenie)
+//   • darcovia  ← `v_top_darcovia` (ledger, 0037: group by účet, súčet DEED; meno = len snapshot na zobrazenie)
 //   • hrdinovia ← `prispevok`      (Domov skutky podľa podpory autora)
 //   • charity   ← `adresar_charita`(podľa levelu overenia)
 // Kurátorské do času ďalších fáz:
@@ -23,27 +23,20 @@ const jeOrg = (meno: string): boolean => ORG_RE.test(meno || "");
 
 const LVL_W: Record<string, number> = { Legend: 4, Gold: 3, Silver: 2, Bronze: 1 };
 
-/** Top Darcovia — súčet DEED darov na darcu (živé z `podpora`). */
+/** Top Darcovia — súčet DEED darov na darcu, LEN z ledgera (pohľad v_top_darcovia, migrácia 0037). */
 async function darcoviaLive(): Promise<RebricekPolozka[]> {
-  // Zadanie 1 · Blok 1: zoskupené podľa ucet_id — dvaja „Jozef Novák" sú dva riadky.
-  // Dary bez účtu (seed/anonym) sa nesčítavajú do jedného človeka podľa mena.
-  const { data, error } = await supabase!.from("podpora").select("id, ucet_id, darca_nazov, suma, kanal");
+  // Zadanie 1 · Blok 1: zoskupené podľa účtu — dvaja „Jozef Novák" sú dva riadky.
+  // Zadanie 2: čo sa započítava, musí byť pohyb v ledgeri — žiadne čítanie z `podpora`.
+  const { data, error } = await supabase!.from("v_top_darcovia").select("ucet_id, meno, deed").gt("deed", 0).order("deed", { ascending: false }).limit(12);
   if (error) throw error;
-  const sumy = new Map<string, { meno: string; deed: number }>();
-  for (const r of data || []) {
-    if (r.kanal !== "deed" || !r.darca_nazov) continue;
-    const kluc = r.ucet_id ? `u:${r.ucet_id}` : `r:${r.id}`;
-    const x = sumy.get(kluc) ?? { meno: r.darca_nazov, deed: 0 };
-    sumy.set(kluc, { ...x, deed: x.deed + Number(r.suma || 0) });
-  }
-  return [...sumy.values()]
-    .sort((a, b) => b.deed - a.deed)
+  return (data || [])
+    .filter((r) => !!r.meno)
     .slice(0, 6)
-    .map(({ meno, deed }) => ({
-      meno,
-      info: `${sk(deed)} DeeD`,
-      subjekt: { typ: "osoba", meno, level: (deed >= 1000 ? "Gold" : "Silver") as Karma },
-    }));
+    .map((r) => {
+      const deed = Number(r.deed);
+      const meno = r.meno as string;
+      return { meno, info: `${sk(deed)} DeeD`, subjekt: { typ: "osoba", meno, level: (deed >= 1000 ? "Gold" : "Silver") as Karma } };
+    });
 }
 
 /** Top Hrdinovia — autori skutkov (Domov) podľa podpory (živé z `prispevok`). */

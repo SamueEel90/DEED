@@ -20,6 +20,10 @@
 -- (centrálna zbierka). Prelev uzavretého okna do centrálnej je len zobrazovacia agregácia
 -- (filter pohybov podľa času/okna nad tým istým objektom), NIE nový pohyb. Peniaze tečú raz.
 --
+-- PRAVIDLO (Martin 6. 10.): čo sa kdekoľvek započítava (rebríček, počítadlá, karma), musí byť pohyb
+-- v ledgeri. Sirotský riadok (suma bez pohybu) buď dostane otvárací pohyb z testovacej pokladne,
+-- alebo sa zmaže — tretia možnosť nie je. Rebríček darcov = v_top_darcovia (len ledger).
+--
 -- Spúšťa sa po 0036. Platby ostávajú simulované — stavia sa štruktúra.
 -- ============================================================
 begin;
@@ -170,37 +174,104 @@ insert into public.pohyb (doklad, poradie, typ, ucet_debet, ucet_kredit, suma, m
     from public.ucet u
    where u.typ in ('pasivny','aktivny') and u.stav_registracie <> 'testovaci';
 
--- 5c · existujúce platby → pohyby (príjemca: účet príjemcu, podiely splitu, autor prípadu; inak „nepriradené")
+-- 5c · existujúce platby → pohyby (príjemca: účet príjemcu, podiely splitu, autor prípadu; inak „nepriradené").
+--      Darca s účtom je vždy debetom daru (aj pri EUR: najprv EUR prídu cez procesor na neho) → rebríček a výpis z ledgera.
 update public.platba_split ps set prijemca = public.ucet_systemu('nepriradene') where ps.prijemca is null;
 alter table public.platba add column if not exists doklad text unique;
 update public.platba set doklad = public.novy_doklad() where doklad is null;
+alter table public.platba add column if not exists idem_scope uuid;
+update public.platba set idem_scope = coalesce(odosielatel, '00000000-0000-0000-0000-000000000000') where idem_scope is null;
+alter table public.podpora add column if not exists platba_id uuid references public.platba(id) on delete set null;
 
+create function pg_temp.zdroj(p public.platba) returns uuid language sql stable as $$
+  select coalesce(p.odosielatel, case when p.kanal = 'deed' then public.ucet_systemu('nepriradene') else public.ucet_systemu('procesor') end)
+$$;
+
+-- príchod EUR cez procesor na účet darcu (podiely + marža; poplatok procesora ostáva procesoru)
+insert into public.pohyb (doklad, poradie, typ, ucet_debet, ucet_kredit, suma, mena, kanal, platba_id, case_id, cas)
+  select p.doklad, 0, 'dobitie', public.ucet_systemu('procesor'), p.odosielatel, p.cista_suma + p.marza + p.tip, p.mena, p.kanal, p.id, p.case_id, p.cas
+    from public.platba p
+   where p.stav in ('credited','settled') and p.kanal <> 'deed' and p.odosielatel is not null and p.cista_suma + p.marza + p.tip > 0;
 -- podiely splitu (z čistej sumy)
 insert into public.pohyb (doklad, poradie, typ, ucet_debet, ucet_kredit, suma, mena, kanal, platba_id, case_id, pre_zbierku, cas)
   select p.doklad, row_number() over (partition by p.id order by ps.id)::smallint, 'dar',
-         case when p.kanal = 'deed' then coalesce(p.odosielatel, public.ucet_systemu('nepriradene')) else public.ucet_systemu('procesor') end,
-         ps.prijemca, ps.suma, p.mena, p.kanal, p.id, p.case_id, ps.fixny and p.case_id is not null, p.cas
+         pg_temp.zdroj(p), ps.prijemca, ps.suma, p.mena, p.kanal, p.id, p.case_id, ps.fixny and p.case_id is not null, p.cas
     from public.platba p join public.platba_split ps on ps.platba_id = p.id
-   where p.stav in ('credited','settled') and ps.suma > 0
-     and ps.prijemca <> case when p.kanal = 'deed' then coalesce(p.odosielatel, public.ucet_systemu('nepriradene')) else public.ucet_systemu('procesor') end;
+   where p.stav in ('credited','settled') and ps.suma > 0 and ps.prijemca <> pg_temp.zdroj(p);
 -- platby bez splitu
 insert into public.pohyb (doklad, poradie, typ, ucet_debet, ucet_kredit, suma, mena, kanal, platba_id, case_id, pre_zbierku, cas)
-  select p.doklad, 1, 'dar',
-         case when p.kanal = 'deed' then coalesce(p.odosielatel, public.ucet_systemu('nepriradene')) else public.ucet_systemu('procesor') end,
+  select p.doklad, 1, 'dar', pg_temp.zdroj(p),
          coalesce(p.prijemca_ucet, pr.autor_ucet_id, public.ucet_systemu('nepriradene')),
          p.cista_suma, p.mena, p.kanal, p.id, p.case_id, p.case_id is not null, p.cas
     from public.platba p left join public.prispevok pr on pr.id = p.case_id
    where p.stav in ('credited','settled') and p.cista_suma > 0
      and not exists (select 1 from public.platba_split ps where ps.platba_id = p.id)
-     and coalesce(p.prijemca_ucet, pr.autor_ucet_id, public.ucet_systemu('nepriradene'))
-         <> case when p.kanal = 'deed' then coalesce(p.odosielatel, public.ucet_systemu('nepriradene')) else public.ucet_systemu('procesor') end;
--- marža histórie
+     and coalesce(p.prijemca_ucet, pr.autor_ucet_id, public.ucet_systemu('nepriradene')) <> pg_temp.zdroj(p);
+-- marža a tip histórie
 insert into public.pohyb (doklad, poradie, typ, ucet_debet, ucet_kredit, suma, mena, kanal, platba_id, case_id, cas)
-  select p.doklad, 0, 'poplatok',
-         case when p.kanal = 'deed' then coalesce(p.odosielatel, public.ucet_systemu('nepriradene')) else public.ucet_systemu('procesor') end,
-         public.ucet_systemu('platforma'), p.marza, p.mena, p.kanal, p.id, p.case_id, p.cas
+  select p.doklad, 0, 'poplatok', pg_temp.zdroj(p), public.ucet_systemu('platforma'), p.marza, p.mena, p.kanal, p.id, p.case_id, p.cas
     from public.platba p
    where p.stav in ('credited','settled') and p.marza > 0;
+insert into public.pohyb (doklad, poradie, typ, ucet_debet, ucet_kredit, suma, mena, kanal, platba_id, case_id, cas)
+  select p.doklad, 99, 'dar', pg_temp.zdroj(p), public.ucet_systemu('platforma'), p.tip, p.mena, p.kanal, p.id, p.case_id, p.cas
+    from public.platba p
+   where p.stav in ('credited','settled') and p.tip > 0;
+
+-- 5e · SIROTSKÉ RIADKY (Martin 6. 10.): čokoľvek so sumou bez pohybu buď dostane otvárací pohyb
+--      z testovacej pokladne, alebo sa zmaže — tretia možnosť nie je. Riadky „Čo podporujem"
+--      bez platby → testovacia platba + pohyby (pokladňa → darca → príjemca), označené testovacie.
+-- riadky, ktoré kedysi vytvoril trigger z platby, sa najprv naviažu na svoju platbu (nie sú siroty)
+update public.podpora po set platba_id = pl.id
+  from public.platba pl
+ where po.platba_id is null and po.cas = pl.cas and po.suma = round(pl.suma, 2)
+   and po.ucet_id is not distinct from pl.odosielatel and po.prispevok_id is not distinct from pl.case_id;
+create temp table sirota on commit drop as
+  select po.id, po.ucet_id, nullif(trim(po.darca_nazov), '') as darca, po.prispevok_id, nullif(trim(po.prijemca), '') as prijemca,
+         round(po.suma, 2) as suma, po.kanal, po.cas, po.vyzbierane, po.ciel,
+         null::uuid as darca_ucet, null::uuid as prijemca_ucet, gen_random_uuid() as platba_id
+    from public.podpora po
+   where po.platba_id is null and po.suma > 0;
+delete from public.podpora po where po.platba_id is null and not (po.suma > 0);   -- nulové riadky nemajú čo prevádzať
+-- darca: jeho účet, inak testovací účet podľa mena v riadku („Anonym" / bez mena = anonymný dar bez darcu)
+create temp table sirota_darca on commit drop as
+  select meno, gen_random_uuid() as id from (select distinct darca as meno from sirota
+   where ucet_id is null and darca is not null and darca <> 'Anonym') x;
+insert into public.ucet (id, typ, stav_registracie) select id, 'aktivny', 'testovaci' from sirota_darca;
+update sirota s set darca_ucet = coalesce(s.ucet_id, (select d.id from sirota_darca d where d.meno = s.darca));
+-- príjemca: autor prípadu (bez účtu → testovací účet), inak testovací účet podľa mena príjemcu
+create temp table sirota_autor on commit drop as
+  select x.prispevok_id, gen_random_uuid() as id, x.typ from (
+    select distinct pr.id as prispevok_id, case when pr.modul = 'charity' then 'charita' else 'aktivny' end as typ
+      from sirota s join public.prispevok pr on pr.id = s.prispevok_id where pr.autor_ucet_id is null) x;
+insert into public.ucet (id, typ, stav_registracie) select id, typ, 'testovaci' from sirota_autor;
+update public.prispevok pr set autor_ucet_id = a.id from sirota_autor a where a.prispevok_id = pr.id;
+create temp table sirota_prijemca on commit drop as
+  select meno, gen_random_uuid() as id from (select distinct coalesce(prijemca, 'Neznámy príjemca') as meno from sirota where prispevok_id is null) x;
+insert into public.ucet (id, typ, stav_registracie) select id, 'charita', 'testovaci' from sirota_prijemca;
+update sirota s set prijemca_ucet = coalesce(
+  (select pr.autor_ucet_id from public.prispevok pr where pr.id = s.prispevok_id),
+  (select r.id from sirota_prijemca r where r.meno = coalesce(s.prijemca, 'Neznámy príjemca')));
+
+alter table public.platba disable trigger trg_platba_do_podpory;    -- riadok podpory už existuje, len sa naviaže
+insert into public.platba (id, case_id, odosielatel, odosielatel_text, prijemca_ucet, prijemca_text, suma, mena, kanal,
+                           poplatok, marza, cista_suma, stav, idem_kluc, idem_scope, meta, credited_at, settled_at, cas, doklad)
+  select s.platba_id, s.prispevok_id, s.darca_ucet, s.darca, s.prijemca_ucet, s.prijemca, s.suma,
+         case when s.kanal = 'deed' then 'DEED' else 'EUR' end, s.kanal, 0, 0, s.suma, 'settled',
+         'sirota:' || s.id, coalesce(s.darca_ucet, '00000000-0000-0000-0000-000000000000'),
+         jsonb_build_object('testovaci', true, 'vyzbierane', s.vyzbierane, 'ciel', s.ciel), s.cas, s.cas, s.cas, public.novy_doklad()
+    from sirota s;
+alter table public.platba enable trigger trg_platba_do_podpory;
+-- pokladňa → darca (aby mal z čoho dať) …
+insert into public.pohyb (doklad, poradie, typ, ucet_debet, ucet_kredit, suma, mena, kanal, platba_id, case_id, testovaci, cas)
+  select pl.doklad, 0, 'dobitie', public.ucet_systemu('testovacia_pokladna'), s.darca_ucet, s.suma, pl.mena, pl.kanal, pl.id, s.prispevok_id, true, s.cas
+    from sirota s join public.platba pl on pl.id = s.platba_id where s.darca_ucet is not null;
+-- … darca (alebo pri anonymnom dare priamo pokladňa) → príjemca
+insert into public.pohyb (doklad, poradie, typ, ucet_debet, ucet_kredit, suma, mena, kanal, platba_id, case_id, pre_zbierku, testovaci, cas)
+  select pl.doklad, 1, 'dar', coalesce(s.darca_ucet, public.ucet_systemu('testovacia_pokladna')), s.prijemca_ucet, s.suma, pl.mena, pl.kanal,
+         pl.id, s.prispevok_id, s.prispevok_id is not null, true, s.cas
+    from sirota s join public.platba pl on pl.id = s.platba_id
+   where s.prijemca_ucet <> coalesce(s.darca_ucet, public.ucet_systemu('testovacia_pokladna'));
+update public.podpora po set platba_id = s.platba_id from sirota s where s.id = po.id;
 
 -- 5d · seed vyzbierané → otváracie dary z testovacej pokladne (rozdelené na pôvodný počet darov,
 --      zvyšok centov prvému; odpočíta sa to, čo už prišlo cez platby)
@@ -320,6 +391,28 @@ create view public.v_vypis as
    where p.ucet_kredit = public.moj_ucet();
 grant select on public.v_vypis to authenticated;
 
+-- rebríček darcov LEN z ledgera: dary z účtu človeka (mínus vrátené), meno = posledný snapshot z jeho platby
+create or replace view public.v_top_darcovia as
+  with d as (
+    select p.ucet_debet as ucet_id, p.mena, p.suma
+      from public.pohyb p
+      join public.ucet u on u.id = p.ucet_debet and u.typ in ('pasivny','aktivny')
+      join public.ucet k on k.id = p.ucet_kredit and k.typ <> 'system'
+     where p.typ = 'dar' and p.storno_pre is null
+    union all
+    select r.ucet_kredit, r.mena, -r.suma
+      from public.pohyb r join public.pohyb o on o.id = r.storno_pre
+      join public.ucet k on k.id = o.ucet_kredit and k.typ <> 'system'
+     where o.typ = 'dar'
+  )
+  select d.ucet_id,
+         round(coalesce(sum(d.suma) filter (where d.mena = 'DEED'), 0), 4) as deed,
+         round(coalesce(sum(d.suma) filter (where d.mena = 'EUR'), 0), 2)  as eur,
+         (select pl.odosielatel_text from public.platba pl
+           where pl.odosielatel = d.ucet_id and pl.odosielatel_text is not null order by pl.cas desc limit 1) as meno
+    from d group by d.ucet_id;
+grant select on public.v_top_darcovia to anon, authenticated;
+
 -- ---------- 9 · počítadlá na prípadoch sa už nepíšu → pohľad pre feed ----------
 -- prispevok_feed = prispevok + vyzbierané (EUR) a počet darov z ledgera
 alter table public.prispevok drop column if exists vyzbierane;
@@ -373,14 +466,11 @@ alter table public.platba_split add column if not exists case_id uuid references
 alter table public.qr_split_ciel add column if not exists case_id uuid references public.prispevok(id);
 
 -- ---------- 11 · idempotencia per odosielateľ ----------
-alter table public.platba add column if not exists idem_scope uuid;
-update public.platba set idem_scope = coalesce(odosielatel, '00000000-0000-0000-0000-000000000000') where idem_scope is null;
 alter table public.platba alter column idem_scope set not null;
 alter table public.platba drop constraint if exists platba_idem_kluc_key;
 alter table public.platba add constraint platba_idem_uniq unique (idem_scope, idem_kluc);
 
--- projekcia „Čo podporujem" pozná svoju platbu (refund ju vie stiahnuť)
-alter table public.podpora add column if not exists platba_id uuid references public.platba(id) on delete set null;
+-- projekcia „Čo podporujem" pozná svoju platbu (refund ju vie stiahnuť); bez platby riadok nevznikne
 create or replace function public.platba_do_podpory() returns trigger
 language plpgsql set search_path = public as $fn$
 begin
@@ -422,6 +512,7 @@ declare
   v_credited timestamptz; v_settled timestamptz;
   v_zdroj uuid; v_doklad text; v_prijemca uuid; v_sum_podiel numeric := 0; v_sum_suma numeric := 0;
   v_podiely jsonb := '[]'::jsonb; e jsonb; i int := 0; v_n int; v_suma_podielu numeric; v_ucet uuid; v_case uuid;
+  v_prijem numeric(14,4) := 0;
 begin
   if p_suma is null or p_suma <= 0 then raise exception 'Suma musí byť kladná.' using errcode = '22023', detail = 'suma_neplatna'; end if;
   if not exists (select 1 from public.kanal_mena where kanal = p_kanal and mena = p_mena) then
@@ -467,8 +558,12 @@ begin
     if public.zostatok(v_zdroj, 'DEED') < v_suma + v_tip then
       raise exception 'Na účte nie je dosť DeeD.' using errcode = '23514', detail = 'nedostatok_deed';
     end if;
+  elsif p_odosielatel is not null then
+    -- EUR od darcu s účtom: prídu cez procesor na jeho účet a od neho idú ďalej (rebríček a výpis čítajú ledger)
+    v_zdroj := p_odosielatel;
+    v_prijem := v_suma + v_tip - (v_poplatok - v_marza);
   else
-    v_zdroj := public.ucet_systemu('procesor');
+    v_zdroj := public.ucet_systemu('procesor');      -- anonymný EUR dar: bez darcu
   end if;
 
   -- 2.3 podiely: povinný príjemca, z čistej sumy, na cent, zvyšok prvému
@@ -544,7 +639,11 @@ begin
     return v_row;
   end if;
 
-  -- pohyby: podiely, marža, tip
+  -- pohyby: príchod EUR na účet darcu, podiely, marža, tip
+  if v_prijem > 0 then
+    insert into public.pohyb (doklad, poradie, typ, ucet_debet, ucet_kredit, suma, mena, kanal, platba_id, case_id)
+      values (v_doklad, 0, 'dobitie', public.ucet_systemu('procesor'), v_zdroj, v_prijem, p_mena, p_kanal, v_row.id, p_case_id);
+  end if;
   for e in select * from jsonb_array_elements(v_podiely) loop
     i := i + 1;
     if (e->>'suma')::numeric > 0 then

@@ -9,18 +9,20 @@ insert into auth.users (id) values ('7e57a000-0000-0000-0000-00000000000a'), ('7
 insert into public.ucet (id, auth_id, typ, stav_registracie) values
  ('7e570000-0000-0000-0000-00000000000a','7e57a000-0000-0000-0000-00000000000a','aktivny','hotovo'),
  ('7e570000-0000-0000-0000-00000000000b','7e57a000-0000-0000-0000-00000000000b','aktivny','hotovo');
+insert into public.ucet (id, typ, stav_registracie) values ('7e570000-0000-0000-0000-00000000000c','charita','hotovo');
 \pset tuples_only on
 create temp table t(c text, ok boolean);
 grant all on t to public;
--- prípad s autorom = Jozef B (účet), organizácie pre split
+-- prípady: 1 = autor B, 2 = organizácia C, 3 = autor A
 insert into public.prispevok (id, modul, typ, titul, autor_ucet_id, ciel) values
  ('20000000-0000-0000-0000-000000000001','charity','charita','Test zbierka','7e570000-0000-0000-0000-00000000000b', 1000),
- ('20000000-0000-0000-0000-000000000002','charity','charita','Druhá zbierka','7e570000-0000-0000-0000-00000000000a', 1000);
+ ('20000000-0000-0000-0000-000000000002','charity','charita','Druhá zbierka','7e570000-0000-0000-0000-00000000000c', 1000),
+ ('20000000-0000-0000-0000-000000000003','charity','charita','Zbierka A','7e570000-0000-0000-0000-00000000000a', 1000);
 set role authenticated;
 select set_config('request.jwt.claim.sub','7e57a000-0000-0000-0000-00000000000a', false);
 -- 3 · split 100 € kartou: 50 % autor (vlastník, nepočíta sa) + 50 % zbierka 2
-select public.platba_create('s1', 100, 'EUR', 'fiat', '20000000-0000-0000-0000-000000000001', '7e570000-0000-0000-0000-00000000000a', 'Jozef A', null, null, false, 0, '{}',
-  '[{"prijemca_ucet":"7e570000-0000-0000-0000-00000000000b","podiel":0.5,"fixny":false},{"case_id":"20000000-0000-0000-0000-000000000002","podiel":0.5,"fixny":true}]') is not null;
+select (public.platba_create('s1', 100, 'EUR', 'fiat', '20000000-0000-0000-0000-000000000001', '7e570000-0000-0000-0000-00000000000a', 'Jozef A', null, null, false, 0, '{}',
+  '[{"prijemca_ucet":"7e570000-0000-0000-0000-00000000000b","podiel":0.5,"fixny":false},{"case_id":"20000000-0000-0000-0000-000000000002","podiel":0.5,"fixny":true}]')).id is not null;
 reset role;
 insert into t select 'split: podiely = cista suma',
   (select sum(suma) from pohyb where platba_id = pl.id and typ='dar') = pl.cista_suma
@@ -99,7 +101,7 @@ exception when others then insert into t values ('pohyb nemenny: '||sqlerrm, tru
 -- vlastný účet → vlastná zbierka
 set role authenticated;
 select set_config('request.jwt.claim.sub','7e57a000-0000-0000-0000-00000000000a', false);
-do $$ begin perform public.platba_create('self', 5, 'DEED', 'deed', '20000000-0000-0000-0000-000000000002', '7e570000-0000-0000-0000-00000000000a', null);
+do $$ begin perform public.platba_create('self', 5, 'DEED', 'deed', '20000000-0000-0000-0000-000000000003', '7e570000-0000-0000-0000-00000000000a', null);
   insert into t values ('dar sam sebe odmietnuty', false);
 exception when others then insert into t values ('dar sam sebe odmietnuty: '||sqlerrm, true); end $$;
 -- dobitie z testovacej pokladne
@@ -116,6 +118,8 @@ insert into t select 'v_zostatok len moj', (select count(*) from v_zostatok) = 1
 reset role;
 -- 1 · súčet = 0
 insert into t select 'sucet pohybov = 0 per mena', bool_and(s = 0) from (select mena, sum(z) s from (select mena, suma z from pohyb union all select mena, -suma from pohyb) x group by mena) y;
+insert into t select 'ziadne sirotske riadky podpory (suma bez platby)', not exists (select 1 from podpora where platba_id is null);
+insert into t select 'rebricek z ledgera: EUR dar darcu A', (select eur from v_top_darcovia where ucet_id = '7e570000-0000-0000-0000-00000000000a') = (select cista_suma from platba where idem_kluc = 's1');
 insert into t select 'ziadny ne-systemovy ucet v minuse', not exists (select 1 from ucet u where typ <> 'system' and (public.zostatok(u.id,'DEED') < 0 or public.zostatok(u.id,'EUR') < 0));
 \pset tuples_only off
 select ok, c from t order by ok, c;
