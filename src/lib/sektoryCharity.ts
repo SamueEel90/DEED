@@ -4,6 +4,7 @@
 // Zatiaľ v pamäti relácie (žiadne úložisko prehliadača); čísla sú TESTOVACIE, na serveri ich počíta server.
 import { useSyncExternalStore } from "react";
 import type { CentralnaZbierka } from "./centralnaZbierka";
+import { ukazkyTeraz, useTestStav } from "./testStav";
 
 const U = (id: string) => `https://images.unsplash.com/${id}?auto=format&fit=crop&w=800&q=70`;
 
@@ -50,13 +51,17 @@ const pocuvaj = new Set<() => void>();
 const zmena = () => { verzia++; pocuvaj.forEach((f) => f()); };
 export const useZmenySektorov = () => useSyncExternalStore((f) => { pocuvaj.add(f); return () => pocuvaj.delete(f); }, () => verzia);
 
-export const nacitajSektory = (): SektorCharity[] => sektory;
-export function useSektory(): SektorCharity[] { useZmenySektorov(); return sektory; }
+/** Profil: Prázdny (testovacie) = bez troch ukážkových sektorov, len tie, ktoré správca naozaj pridá */
+const TEST_ID = new Set(TEST.map((s) => s.id));
+const viditelne = (): SektorCharity[] => (ukazkyTeraz() ? sektory : sektory.filter((s) => !TEST_ID.has(s.id)));
+export const nacitajSektory = (): SektorCharity[] => viditelne();
+export function useSektory(): SektorCharity[] { useZmenySektorov(); useTestStav(); return viditelne(); }
 export const cislaSektora = (id: string): CislaPolozky => cisla.get(id) ?? NULA;
 export const obsahSektora = (id: string): CentralnaZbierka | null => obsah.get(id) ?? null;
 export function ulozObsahSektora(id: string, c: CentralnaZbierka) { obsah.set(id, c); zmena(); }
 export function pridajSektor(c: { nazov: string; stanovy: string }): SektorCharity | null {
-  if (sektory.length >= SEKTORY_MAX || sektory.some((s) => s.nazov === c.nazov)) return null;
+  const v = viditelne();
+  if (v.length >= SEKTORY_MAX || v.some((s) => s.nazov === c.nazov)) return null;
   const slug = `svetlo-pomoci-${c.nazov.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "")}`;
   const s: SektorCharity = { id: `sek-${Date.now()}`, nazov: c.nazov, stanovy: c.stanovy, foto: "", slug };
   sektory = [...sektory, s];

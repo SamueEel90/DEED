@@ -1,6 +1,7 @@
 // OPRAVY 147 · testovacie stavy pre verejné profily a správy (len testovacia verzia, pamätá sa lokálne v prehliadači testera).
 // Profil: vyplnený / prázdny · Rola v Správe stránky (prázdne zoznamy = sekcie sa neukážu, ako u novej stránky).
 import { useEffect, useState } from "react";
+import { TESTOVACIA } from "./testovacia";
 
 const KLUC = "deed.dev.testStav";
 export type TestRola = "hlavny" | "spravca" | "pomocnik" | "organizator";
@@ -35,3 +36,8 @@ export function vyprazdni<T>(o: T, hlbka = 2): T {
   }
   return out as T;
 }
+
+/** Ukážkové dáta v Správe stránky: len testovacia verzia a len pri „Profil: Vyplnený".
+ *  „Prázdny" = Správa ukáže iba skutočné dáta stránky (čo sa naozaj vytvorí a uloží), bez ukážok. */
+export const ukazkyTeraz = (): boolean => TESTOVACIA && !nacitajTestStav().prazdny;
+export function useUkazky(): boolean { const ts = useTestStav(); return TESTOVACIA && !ts.prazdny; }

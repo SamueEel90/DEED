@@ -311,7 +311,9 @@ function SpravaStrankyTypu({ onBack, typ, onTyp: setTyp, strankaId = "svetlo", n
   const ts = useTestStav(); // OPRAVY 147: rola sa dá prepnúť v testovacom páse
   const rola: RolaStranky = TESTOVACIA ? ts.rola : "hlavny";
   // OPRAVY 122 (2): centrálna zbierka charity — zatiaľ z ukážkových bežiacich zbierok (nová charita ju nemá); doplní server
-  const centralnaZbierka = !nova ? PH_ZBIERKY.filter((z) => /^Centrálna zbierka/.test(z.t)).map((z) => ({ id: `${strankaId}-centralna`, nazov: z.t, org: nazov, cislo: "" }))[0] ?? null : null;
+  // Profil: Prázdny (testovacie) = Správa bez ukážok, ako nová stránka, ale bez úvodných krokov
+  const bezUkazok = nova || (TESTOVACIA && ts.prazdny);
+  const centralnaZbierka = !bezUkazok ? PH_ZBIERKY.filter((z) => /^Centrálna zbierka/.test(z.t)).map((z) => ({ id: `${strankaId}-centralna`, nazov: z.t, org: nazov, cislo: "" }))[0] ?? null : null;
   // OPRAVY 114: spustené a rozpísaná zbierka stránky (z účtu)
   useZmenyZbierok();
   const vlastne = zbierkyStrankyZPamate(strankaId);
@@ -319,11 +321,11 @@ function SpravaStrankyTypu({ onBack, typ, onTyp: setTyp, strankaId = "svetlo", n
   useEffect(() => { void nacitajZbierkyStranky(strankaId); void nacitajKonceptZbierky(strankaId); }, [strankaId]);
   // KARTA 40 · bod 10: ponuka „Pri akcii zbierame na" — centrálna + bežiace zbierky (spustené z účtu, ukážkové mimo novej charity)
   const zbierkyPreOznam: ZbierkaPriAkcii[] = !typPovoli("zbierky", typ) ? [] : [
-    ...(typPovoli("centralna", typ) && (centralnaZPamate(strankaId) || centralnaZbierka) ? [{ id: CENTRALNA_ID, nazov: `${nazov} — celá organizácia`, centralna: true, ciel: 0, vyzbierane: nova ? 0 : PH_ZBIERKY.find((z) => /^Centrálna zbierka/.test(z.t))?.v ?? 0, bg: PRUHY }] : []),
+    ...(typPovoli("centralna", typ) && (centralnaZPamate(strankaId) || centralnaZbierka) ? [{ id: CENTRALNA_ID, nazov: `${nazov} — celá organizácia`, centralna: true, ciel: 0, vyzbierane: bezUkazok ? 0 : PH_ZBIERKY.find((z) => /^Centrálna zbierka/.test(z.t))?.v ?? 0, bg: PRUHY }] : []),
     ...vlastne.map((z) => ({ id: z.id, nazov: z.nazov, ciel: z.cielTyp === "ciel" ? cielCislo(z) : 0, vyzbierane: 0, bg: fotoBg(z) })),
-    ...(nova ? [] : PH_ZBIERKY.filter((z) => !/^Centrálna zbierka/.test(z.t)).map((z) => { const r = naSpravu({ t: z.t, v: z.v, c: z.c, bg: z.bg, s: z.d, konc: false }); return { id: r.id, nazov: z.t, ciel: z.c, vyzbierane: z.v, bg: z.bg }; })),
+    ...(bezUkazok ? [] : PH_ZBIERKY.filter((z) => !/^Centrálna zbierka/.test(z.t)).map((z) => { const r = naSpravu({ t: z.t, v: z.v, c: z.c, bg: z.bg, s: z.d, konc: false }); return { id: r.id, nazov: z.t, ciel: z.c, vyzbierane: z.v, bg: z.bg }; })),
   ];
-  const beziacich = vlastne.length + (nova ? 0 : PH_ZBIERKY.filter((z) => !/^Centrálna zbierka/.test(z.t)).length); // limit je mimo centrálnej
+  const beziacich = vlastne.length + (bezUkazok ? 0 : PH_ZBIERKY.filter((z) => !/^Centrálna zbierka/.test(z.t)).length); // limit je mimo centrálnej
   const [limitOkno, setLimitOkno] = useState(false);
   const [spravZb, setSpravZb] = useState<ZbierkaNaSpravu | null>(null); // KARTA 38: ktorú zbierku spravujem
   const [verejny, setVerejny] = useState(false); // OPRAVY 107: tlačidlo Verejný profil = skutočný verejný profil
@@ -360,8 +362,8 @@ function SpravaStrankyTypu({ onBack, typ, onTyp: setTyp, strankaId = "svetlo", n
   const krok1 = !!profil;
   const glowUp = uvod && !krok1 && sub !== "profil";
   const glowZb = uvod && krok1 && sub !== "profil" && sub !== "g_zbierky" && sub !== "x:Nová zbierka" && sub !== "x:Správa zbierky";
-  const navZobr = menu.nav.map((n) => ({ ...n, n: nova ? undefined : n.n })); // nová charita: Ľudia bez čísla
-  const spolocne = { strankaId, entita: poz as string, tier, piny: pinyTypu, prepniPin, otvorPolozku, otvor, nova, stit, sada, menu, mobil: !desktop, tablet, zbal, prepniZbal, uvod, krok1, pozvana, vlastne, rozpisana, spravuj: (z: ZbierkaNaSpravu) => { setSpravZb(z); otvor("x:Správa zbierky"); } };
+  const navZobr = menu.nav.map((n) => ({ ...n, n: bezUkazok ? undefined : n.n })); // nová charita: Ľudia bez čísla
+  const spolocne = { strankaId, entita: poz as string, tier, piny: pinyTypu, prepniPin, otvorPolozku, otvor, nova: bezUkazok, stit, sada, menu, mobil: !desktop, tablet, zbal, prepniZbal, uvod, krok1, pozvana, vlastne, rozpisana, spravuj: (z: ZbierkaNaSpravu) => { setSpravZb(z); otvor("x:Správa zbierky"); } };
   // KARTA 42 · telefón: karta charity v jednom riadku + 6 dlaždíc správy hneď pod ňou (bez nadpisu, nezbaľuje sa)
   const hornaCast = telefon ? <>
     <KartaRiadok nazov={nazov} inicialy={inicialy} profil={profil} pct={uplnost.pct} stit={stit} sada={sada} glow={glowUp} onClick={() => otvor("profil")} />

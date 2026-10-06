@@ -16,7 +16,7 @@ import {
 import { nacitajStav, ulozStav, OVERENY_SKEN, type StavZbierky } from "@/lib/zbierkaSprava";
 import { sucetDarov, darcoviaPre, identitaDarcu, relCas, zobrazenaSuma, useZmenyDarov, useSektorDarcu } from "@/lib/darcovia";
 import { beziaceDorovnanieNaCiel, zostatok } from "@/lib/dorovnanie";
-import { TESTOVACIA } from "@/lib/testovacia";
+import { useUkazky, ukazkyTeraz } from "@/lib/testStav";
 import { cisloObjektu } from "@/lib/cisloObjektu";
 import { overIban, formatujIban } from "./segmenty";
 import { TextovePolia, GaleriaEditor } from "./obsahZbierky";
@@ -42,7 +42,7 @@ const statTest = (jeS: boolean, nazov: string): DataStatistik => ({
   dary: [["Lucia B.", "10 € · cez QR plagát · pred 4 min", "10 €"], ["Anonymný darca", "mesačne · priamo na profile", "25 €"], ["Pekáreň Dobrota", "dorovnanie k daru Lucie B.", "10 €"], ["Martin Konaľ", "split 20 % · z podpory fanúšikov", "6 €"]],
 });
 
-function novyStav(id: string): StavZbierky { return { stav: "aktivna", koniec: new Date(Date.now() + 3650 * 86400000).toISOString(), predlzenia: 0, lehota: "30", text: "", fotky: [], doklady: TESTOVACIA && id.endsWith("-centralna") ? DOKLADY_TEST : [], spravy: [] }; }
+function novyStav(id: string): StavZbierky { return { stav: "aktivna", koniec: new Date(Date.now() + 3650 * 86400000).toISOString(), predlzenia: 0, lehota: "30", text: "", fotky: [], doklady: ukazkyTeraz() && id.endsWith("-centralna") ? DOKLADY_TEST : [], spravy: [] }; }
 
 export function SpravaCentralnej({ strankaId, nazov, hlavnyUcet, tier, mobil, toast, onZbierky, onDorovnanie, onDarcovia }: {
   strankaId: string; nazov: string; hlavnyUcet: string; tier: number; mobil: boolean; toast: (m: string) => void;
@@ -80,12 +80,13 @@ export function SpravaCentralnej({ strankaId, nazov, hlavnyUcet, tier, mobil, to
   const zmenStav = (p: Partial<StavZbierky>) => setStav((x) => { const n = { ...x, ...p }; ulozStav(idZbierky, n); return n; });
 
   // ---- čísla a dary ----
-  const c = TESTOVACIA ? (sek ? cislaSektora(sek.id) : CENTRALNA_CISLA) : NULA;
+  const ukazky = useUkazky(); // Profil: Prázdny = bez ukážkových čísel, darov a dokladov
+  const c = ukazky ? (sek ? cislaSektora(sek.id) : CENTRALNA_CISLA) : NULA;
   const darov = sucetDarov(idZbierky);
   const mesiac = c.mesiac + darov.suma, spolu = c.spolu + darov.suma;
   const sektor = useSektorDarcu();
   const realne: [string, string, string][] = darcoviaPre(idZbierky).slice(0, 3).map((r) => [identitaDarcu(r, undefined, sektor), relCas(r.cas), zobrazenaSuma(r) ?? ""]);
-  const dary = realne.length ? realne : TESTOVACIA ? DARY_TEST : [];
+  const dary = realne.length ? realne : ukazky ? DARY_TEST : [];
   const nazovPol = sek ? sek.nazov : "Celá činnosť";
   const chip = sek ? `SEKTOR ${typ}` : "CENTRÁLNA ZBIERKA";
   const podnadpis = sek ? "jedna téma · peniaze idú len sem · bez cieľa a konca" : "na celú činnosť · stále hore na profile · nikdy vo verejnom feede";
@@ -96,7 +97,7 @@ export function SpravaCentralnej({ strankaId, nazov, hlavnyUcet, tier, mobil, to
   // ---- dorovnanie ----
   const dor = beziaceDorovnanieNaCiel(sek ? idZbierky : `${strankaId}-centralna`);
   const dorPas = dor ? <DorovnaniePas ini={inic(dor.firma)} firma={dor.firma} pomer={`1 : ${dor.pomer}`} pod={`ešte ${eur(zostatok(dor))}${dor.doVycerpania ? " · do vyčerpania" : ` · do ${dnes(new Date(dor.do).toISOString())}`}`} onClick={onDorovnanie} />
-    : TESTOVACIA ? <DorovnaniePas ini="PD" firma="Pekáreň Dobrota" pomer="1 : 1" pod="ešte 4 380 € · do 27. 10. 2026" onClick={onDorovnanie} /> : null;
+    : ukazky ? <DorovnaniePas ini="PD" firma="Pekáreň Dobrota" pomer="1 : 1" pod="ešte 4 380 € · do 27. 10. 2026" onClick={onDorovnanie} /> : null;
 
   // ---- účet: zamknutý, zmena len žiadosťou ----
   const [ucOtv, setUcOtv] = useState(false);
@@ -228,7 +229,7 @@ export function SpravaCentralnej({ strankaId, nazov, hlavnyUcet, tier, mobil, to
     </div>}
     {tab === 0 && stlpce(vlavo, vpravo)}
     {tab === 1 && <DokladyCharity zbierkaId={idZbierky} s={stav} zmen={zmenStav} vyzbierane={spolu} teraz={Date.now()} mobil={mobil} toast={toast} nepovinne />}
-    {tab === 2 && <Statistiky d={TESTOVACIA ? statTest(!!sek, nazovPol) : { obdobie: "tento mesiac", od: "", dni: Array.from({ length: 30 }, () => 0), cez: [["Priamo na profile", mesiac, ""]], split: [], darcovia: [[String(c.mesacne), "dáva mesačne"]], dary: realne }} tier={tier} mobil={mobil} toast={toast} />}
+    {tab === 2 && <Statistiky d={ukazky ? statTest(!!sek, nazovPol) : { obdobie: "tento mesiac", od: "", dni: Array.from({ length: 30 }, () => 0), cez: [["Priamo na profile", mesiac, ""]], split: [], darcovia: [[String(c.mesacne), "dáva mesačne"]], dary: realne }} tier={tier} mobil={mobil} toast={toast} />}
     {tab === 3 && ukoncenie}
     {harok && <ZavrietHarok mobil={mobil} sektor={sek?.nazov ?? null} mesacne={c.mesacne} onPotvrd={potvrd} onZavri={() => setHarok(false)} />}
   </>);
