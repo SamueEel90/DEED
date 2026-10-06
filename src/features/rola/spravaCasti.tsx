@@ -32,11 +32,13 @@ export function DorovnaniePas({ ini, firma, pomer, pod, onClick }: { ini: string
     </button>);
 }
 
-export const TABY = ["Nastavenie", "Doklady", "Štatistiky", "Ukončenie"] as const;
-export function Taby({ akt, onTab, odsadenie = 12, skryte = [] }: { akt: number; onTab: (i: number) => void; odsadenie?: number; /** KARTA 50: farnosť bez záložky Doklady */ skryte?: number[] }) {
+// KARTA 55 · E: záložka Príbeh (index 4) sa ukazuje hneď za Nastavením; indexy ostatných ostávajú
+export const TABY = ["Nastavenie", "Doklady", "Štatistiky", "Ukončenie", "Príbeh"] as const;
+const PORADIE_TABOV = [0, 4, 1, 2, 3];
+export function Taby({ akt, onTab, odsadenie = 12, skryte = [], pribeh = false }: { akt: number; onTab: (i: number) => void; odsadenie?: number; /** KARTA 50: farnosť bez záložky Doklady */ skryte?: number[]; /** KARTA 55: záložka Príbeh */ pribeh?: boolean }) {
   return (
     <div role="tablist" style={{ display: "flex", gap: 2, borderBottom: "1px solid var(--cardBd)", overflowX: "auto" }}>
-      {TABY.map((t, i) => { if (skryte.includes(i)) return null; const on = akt === i; return (
+      {PORADIE_TABOV.map((i) => { const t = TABY[i]; if (skryte.includes(i) || (i === 4 && !pribeh)) return null; const on = akt === i; return (
         <button key={t} type="button" role="tab" aria-selected={on} onClick={() => onTab(i)} style={{ flex: "none", height: 48, padding: `0 ${odsadenie}px`, border: "none", borderBottom: `3px solid ${on ? "var(--green)" : "transparent"}`, background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 15, fontWeight: 800, whiteSpace: "nowrap", color: on ? "var(--ink)" : "var(--ink3)", boxShadow: "none" }}>{t}</button>); })}
     </div>);
 }

@@ -4,6 +4,7 @@
 // DARY V EURÁCH · VLASTNÁ SUMA · DARY V KRYPTE · Pravidelná podpora · MESAČNE TO ZNAMENÁ (tipy, KARTA 46 pod ňou) ·
 // Sledovať + Podporiť DEED · Reťaz dobra · „Kam treba najviac…" · Darcovia. refId = centrálna / sektorová zbierka.
 // Nad modulom zväčšený náhľad dlaždice („POSIELAŠ DO · …", ikona i), modul sa prefarbí podľa poradia (data-hier).
+import { SpatNaZbierky, ZbalitASpat, ZmensenyModul } from "@/features/zbierka/ZmensenyModul";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { jeNeregistrovany, sledujDarcu } from "@/lib/devDarca";
 import { pridajDar, darcoviaPre } from "@/lib/darcovia";
@@ -51,6 +52,7 @@ export function ModulProfilu({ profil, sektor, poradie, mestoV, onZbal, dorovnan
     : "Centrálna zbierka je na chod celej organizácie. Dokladovanie je dobrovoľné a peniaze sa použijú tam, kde treba najviac. Ak chceš vidieť každý doklad, vyber konkrétnu zbierku alebo sektor.");
   return (
     <div data-hier={hier ?? String(poradie)} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+      <SpatNaZbierky onClick={onZbal} />{/* bod 149 · Späť hore v module */}
       <div style={{ borderRadius: 22, overflow: "hidden", border: "2px solid var(--hc)", background: "var(--card)" }}>
         {/* 5. 10. · fotka nad modulom = galéria tej zbierky (mobil posun prstom, PC šípky, ťuk = celá obrazovka s popisom) */}
         <Galeria media={sektor.galeria?.length ? sektor.galeria : [{ typ: "foto", src: sektor.foto }]} vyska={150} radius={0} okraj="0" prekrytie={<>
@@ -66,8 +68,8 @@ export function ModulProfilu({ profil, sektor, poradie, mestoV, onZbal, dorovnan
         </div>
         {info && <SvetlusikKarta style={{ margin: "0 12px 12px" }}>{infoText}</SvetlusikKarta>}
       </div>
-      <Modul profil={profil} sektor={sektor} mestoV={mestoV} sDorovnanim={dorovnanie} uvidisOdkaz={uvidisOdkaz} />
-      <button type="button" onClick={onZbal} style={{ height: 44, border: "none", background: "transparent", cursor: "pointer", fontSize: 13.5, fontWeight: 800, color: "var(--ink3)" }}>Zbaliť ⌃</button>
+      <ZmensenyModul><Modul profil={profil} sektor={sektor} mestoV={mestoV} sDorovnanim={dorovnanie} uvidisOdkaz={uvidisOdkaz} /></ZmensenyModul>
+      <ZbalitASpat onClick={onZbal} />
     </div>
   );
 }
@@ -100,6 +102,7 @@ function Modul({ profil, sektor, mestoV, sDorovnanim, uvidisOdkaz, nazovPlatby }
   const [harok, setHarok] = useState<null | "pravidelna" | "zdielat" | "podporit" | "retaz">(null);
   const [tipSuma, setTipSuma] = useState<number | undefined>(undefined);
   const k20 = dorovnanie ? dorovnanieKDaru(dorovnanie, 20) : 0;
+  // bod 151 · veta „Kam treba najviac. Minulý mesiac…" sa v module neukazuje (ostáva len pri odkaze firmy „Pozrieť v zbierke")
   const veta = sektor.kam?.replace("{m}", mestoV);
 
   return (
@@ -132,7 +135,7 @@ function Modul({ profil, sektor, mestoV, sDorovnanim, uvidisOdkaz, nazovPlatby }
       </>}
       <OblubenePodporit polozka={{ refId, typ: "charita", modul: "charity", nazov }} onPodporit={() => setHarok("podporit")} />
       <RetazRiadok onClick={() => setHarok("retaz")} />
-      {veta && <div style={{ marginTop: 12, padding: "12px 14px", borderRadius: 18, background: "var(--gSoft)", border: "1px solid var(--gBd)", fontSize: 14, lineHeight: 1.5, color: "var(--ink)", textWrap: "pretty" } as CSSProperties}>{veta}
+      {veta && uvidisOdkaz && <div style={{ marginTop: 12, padding: "12px 14px", borderRadius: 18, background: "var(--gSoft)", border: "1px solid var(--gBd)", fontSize: 14, lineHeight: 1.5, color: "var(--ink)", textWrap: "pretty" } as CSSProperties}>{veta}
         {uvidisOdkaz && <button type="button" onClick={uvidisOdkaz.onClick} style={{ display: "block", minHeight: 44, margin: "-6px 0 -12px", padding: 0, border: "none", background: "transparent", boxShadow: "none", cursor: "pointer", textAlign: "left", fontSize: 13.5, fontWeight: 800, color: "var(--green)", fontFamily: "inherit" }}>{uvidisOdkaz.text} ›</button>}
       </div>}
       <div style={{ marginTop: 14 }}><Darcovia refId={refId} bezDorovnania={!sDorovnanim} /></div>

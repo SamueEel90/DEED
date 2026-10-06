@@ -307,6 +307,14 @@ export interface CharitaFeedItem extends FeedEngineMeta, Partial<GeoBod> {
   tag?: string;
   badgeL?: string;
   lok?: string;
+  /** KARTA 55 · E: zbierka organizácie so stránkou Príbeh (odkaz „Celý príbeh na stránke … ›", len keď je zverejnený) */
+  pribehZbierky?: string;
+  /** KARTA 55 · F (2a): stav a dorovnanie na karte */
+  konciDni?: number;
+  dorovnanie?: { ini: string; text: string };
+  zFirmy?: number;
+  /** názov organizácie v odkaze na príbeh */
+  orgNazov?: string;
 }
 
 /** Položka adresára charít & OZ ako tuple: [skratka, názov, popis, level, ponuky]. */

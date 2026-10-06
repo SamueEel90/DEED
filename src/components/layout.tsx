@@ -279,8 +279,9 @@ export function StatRiadok({ pocet, jednotka, mesiac, miesto, okruh = "2 km", on
 // JEDNOTNÝ BAR ZBIERKY — „X € z Y €" + zelený progres (rovnaký všade)
 // mini = kompaktný do kariet · inak väčší do detailov
 // ============================================================
-export function MoniBar({ vyzbierane = 0, ciel = 0, ludia, mini }: { vyzbierane?: number; ciel?: number; ludia?: number; mini?: boolean }) {
+export function MoniBar({ vyzbierane = 0, ciel = 0, ludia, mini, zFirmy }: { vyzbierane?: number; ciel?: number; ludia?: number; mini?: boolean; /** KARTA 55 · F: diel firmy (dorovnanie) zlatou */ zFirmy?: number }) {
   const pct = ciel ? Math.min(100, Math.round((vyzbierane / ciel) * 100)) : 0;
+  const pF = zFirmy && ciel ? Math.min(pct, Math.round((zFirmy / ciel) * 100)) : 0;
   const h = mini ? 6 : 9;
   return (
     <div>
@@ -289,7 +290,9 @@ export function MoniBar({ vyzbierane = 0, ciel = 0, ludia, mini }: { vyzbierane?
         <span style={{ color: C.textTer }}>{pct} %</span>
       </div>
       <div style={{ height: h, background: "rgba(var(--glass-rgb),.1)", borderRadius: 99, overflow: "hidden", marginTop: SPACE.xs }}>
-        <div style={{ height: "100%", width: `${pct}%`, background: GRAD_ZELENY, borderRadius: 99, boxShadow: "0 0 10px rgba(43,212,155,.45)", transition: "width .6s ease" }} />
+        {pF ? <div style={{ height: "100%", width: `${pct}%`, display: "flex", borderRadius: 99, overflow: "hidden" }}>
+          <span style={{ flex: `${pct - pF} 0 0`, background: GRAD_ZELENY }} /><span style={{ flex: `${pF} 0 0`, background: "var(--gold, #C9A24A)" }} />
+        </div> : <div style={{ height: "100%", width: `${pct}%`, background: GRAD_ZELENY, borderRadius: 99, boxShadow: "0 0 10px rgba(43,212,155,.45)", transition: "width .6s ease" }} />}
       </div>
       {ludia != null && <div style={{ fontSize: 11, color: C.textTer, marginTop: SPACE.xxs }}>👥 {ludia} pomohlo</div>}
     </div>

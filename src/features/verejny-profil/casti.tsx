@@ -9,7 +9,7 @@ import { useLokalita } from "@/lib/lokalita";
 import { useLayout } from "@/components/context";
 import "@/styles/verejnyProfil.css";
 import { useTestStav, zmenTestStav } from "@/lib/testStav";
-import type { Vzhlad } from "@/lib/vzhladStranky";
+import { ulozVzhlad, useVzhlad, type Vzhlad } from "@/lib/vzhladStranky";
 import { vrstvaProfiluPripoj } from "./otvor";
 
 export const MOBIL = "(max-width: 759px)";
@@ -277,18 +277,32 @@ export function TestVolba<K extends string | number>({ nazov, volby, hodnota, on
         style={{ height: 44, padding: `0 ${pas ? 16 : 14}px`, borderRadius: 22, border: `1.5px solid ${on ? "var(--green)" : tmavy ? "rgba(255,255,255,.35)" : "var(--cardBd)"}`, background: on ? "var(--green)" : tmavy ? "rgba(0,0,0,.25)" : "var(--card)", color: on ? "#fff" : tmavy ? "#fff" : "var(--ink2)", fontSize: 14, fontWeight: 800, cursor: "pointer", fontFamily: "inherit", boxShadow: "none", whiteSpace: "nowrap" }}>{t}</button>; })}
     </div>);
 }
-export function PrepinacPodania({ tmavy, style, pas, sektor = "charita", children, bezProfilu }: {
+function VzhladVolba({ stranka, pas, tmavy }: { stranka: string; pas?: boolean; tmavy?: boolean }) {
+  const v = useVzhlad(stranka, false);
+  return <TestVolba nazov="Vzhľad" pas={pas} tmavy={tmavy} volby={PODANIA} hodnota={v} onVolba={(k) => void ulozVzhlad(stranka, k)} />;
+}
+export function PrepinacPodania({ tmavy, style, pas, sektor = "charita", children, bezProfilu, vzhlad, dalsie }: {
   tmavy?: boolean; style?: CSSProperties; /** mobil a tablet: sivý pás dole stránky */ pas?: boolean;
   /** typ stránky — voľby podania podľa sektora (charita: Kronika · Výklad · Pirát; ostatné zatiaľ jedno podanie) */
   sektor?: string; children?: ReactNode; /** bez riadku Profil (napr. Správa, kde je Stav stránky) */ bezProfilu?: boolean;
+  /** OPRAVY 153: riadok „Vzhľad: Kronika · Výklad · Pirát" + „Pozrieť profil ›" (ťuk na čip = ulozVzhlad) */
+  vzhlad?: { stranka: string; onPozriet: () => void };
+  /** OPRAVY 153: Typ a Rola pod zatvoreným „Ďalšie testovacie ›" */
+  dalsie?: ReactNode;
 }) {
   const ts = useTestStav();
   void sektor;
+  const [otvorDalsie, setOtvorDalsie] = useState(false);
+  const tlTest: CSSProperties = { height: 44, padding: "0 16px", borderRadius: 22, border: `1.5px solid ${tmavy ? "rgba(255,255,255,.35)" : "var(--cardBd)"}`, background: tmavy ? "rgba(0,0,0,.25)" : "var(--card)", color: tmavy ? "#fff" : "var(--ink)", fontSize: 14, fontWeight: 800, cursor: "pointer", fontFamily: "inherit", boxShadow: "none", whiteSpace: "nowrap" };
   const riadky = (<>
+    {vzhlad && <div style={{ display: "flex", alignItems: "center", gap: "6px 12px", flexWrap: "wrap" }}>
+      <VzhladVolba stranka={vzhlad.stranka} pas={pas} tmavy={tmavy} />
+      <button type="button" onClick={vzhlad.onPozriet} style={tlTest}>Pozrieť profil ›</button>
+    </div>}
     {!bezProfilu && <TestVolba nazov="Profil" pas={pas} tmavy={tmavy} volby={[["v", "Vyplnený"], ["p", "Prázdny"]]} hodnota={ts.prazdny ? "p" : "v"} onVolba={(k) => zmenTestStav({ prazdny: k === "p" })} />}
-    {!bezProfilu && <TestVolba nazov="Rola" pas={pas} tmavy={tmavy} volby={[["navstevnik", "Návštevník"], ["hlavny", "Hlavný správca"], ["spravca", "Správca"], ["pomocnik", "Pomocník"], ["organizator", "Organizátor"]]} hodnota={ts.rolaProfil} onVolba={(k) => zmenTestStav({ rolaProfil: k })} />}
-    {!bezProfilu && <TestVolba nazov="Program" pas={pas} tmavy={tmavy} volby={[["-", "Podľa stránky"], ["0", "Zadarmo"], ["1", "P1"], ["2", "P2"], ["3", "P3"], ["4", "P4"]]} hodnota={ts.program === null ? "-" : String(ts.program)} onVolba={(k) => zmenTestStav({ program: k === "-" ? null : (Number(k) as 0 | 1 | 2 | 3 | 4) })} />}
     {children}
+    {dalsie && <button type="button" aria-expanded={otvorDalsie} onClick={() => setOtvorDalsie((x) => !x)} style={{ ...tlTest, alignSelf: "flex-start", border: "none", background: "transparent", padding: "0 4px", color: tmavy ? "rgba(255,255,255,.8)" : "var(--ink3)" }}>{otvorDalsie ? "Ďalšie testovacie ⌃" : "Ďalšie testovacie ›"}</button>}
+    {dalsie && otvorDalsie && dalsie}
   </>);
   if (pas) return (
     <div role="group" aria-label="Testovacie" style={{ display: "flex", flexDirection: "column", gap: 10, padding: "12px 14px 14px", borderRadius: 18, background: "rgba(128,128,120,.2)", border: "1px solid rgba(128,128,120,.35)", ...style }}>

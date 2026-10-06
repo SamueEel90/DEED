@@ -34,6 +34,12 @@ export const FEED_ITEMS: CharitaFeedItem[] = [
   { id: "material", comp: "material", typ: "skutok",  modul: "charity", kat: "Komunita", skore: 4,   typSituacie: "normal", lat: 48.875, lng: 18.030, dni: 2, podpora: 5 },
 
   // dátovo riadené karty (comp: "data") — reálne lokálne charity z okolia Trenčína
+  // KARTA 55 · E: zbierka so zverejneným príbehom (Svetlo pomoci) → odkaz „Celý príbeh na stránke Svetlo pomoci ›"
+  { id: "strecha-svetlo", comp: "data", typ: "charita", modul: "charity", kat: "Pomoc", skore: 7, typSituacie: "normal", lat: 48.889, lng: 18.050, dni: 0, podpora: 148,
+    nazov: "Strecha pre rodinu Horváthovú", lok: "Trenčín · Zlatovce", overena: true, tag: "Rodiny",
+    popis: "V noci im zhorela strecha nad hlavou. Dve deti, babka a zima pred dverami. Chýba krytina.",
+    vyzbierane: 8420, ciel: 12000, fotky: ["/img/dom-strecha.jpg"], pribehZbierky: "z-strecha-horvath", orgNazov: "Svetlo pomoci",
+    konciDni: 9, dorovnanie: { ini: "PD", text: "Pekáreň Dobrota pridá 1 : 1" }, zFirmy: 2060 },
   { id: "hospic", comp: "data", typ: "charita", modul: "charity", kat: "Zdravie", skore: 6.5, typSituacie: "normal", lat: 48.895, lng: 18.047, dni: 0, podpora: 34,
     nazov: "Hospic Pod Brezinou", lok: "Trenčín · centrum", overena: true, badgeL: "🕊 PALIATÍVA", tag: "Zdravie",
     popis: "Zbierka na polohovacie lôžka pre paliatívne oddelenie. Dôstojnosť do poslednej chvíle.",

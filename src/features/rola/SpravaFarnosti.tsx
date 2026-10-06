@@ -11,7 +11,7 @@ import { nacitajStav, ulozStav } from "@/features/viera/stav";
 import { nacitajSelfAdd, ulozSelfAdd } from "@/features/viera/UserOznamy";
 import { PridatSheet } from "@/features/viera/Pridat";
 import { Kalendar } from "@/features/viera/Kalendar";
-import { otvorVerejnyProfil } from "@/features/verejny-profil/otvor";
+import { VerejnyProfilVSprave } from "@/features/verejny-profil/VerejnyProfil";
 import { cisloObjektu } from "@/lib/cisloObjektu";
 import { SpravaZbierky, type ZbierkaNaSpravu } from "./SpravaZbierky";
 import { TextovePolia, GaleriaEditor } from "./obsahZbierky";
@@ -76,7 +76,7 @@ const kicker: CSSProperties = { flex: "none", fontSize: 12, fontWeight: 800, let
 const tlZ: CSSProperties = { flex: "none", minHeight: 44, padding: "0 14px", border: "none", borderRadius: 12, background: "#4B7A35", cursor: "pointer", fontFamily: "inherit", fontSize: 13.5, fontWeight: 800, color: "#fff" };
 const odkaz: CSSProperties = { alignSelf: "flex-start", minHeight: 44, padding: 0, border: "none", background: "transparent", boxShadow: "none", cursor: "pointer", fontFamily: "inherit", fontSize: 13.5, fontWeight: 800, color: "var(--green)" };
 
-export function SpravaFarnosti({ onBack, strankaId, test }: { onBack: () => void; strankaId: string; /** testovací pás (OPRAVY 147) */ test?: ReactNode }) {
+export function SpravaFarnosti({ onBack, strankaId, test: testPas }: { onBack: () => void; strankaId: string; /** testovací pás (OPRAVY 147, 153: dostane „Pozrieť profil ›") */ test?: (onPozriet: () => void) => ReactNode }) {
   const { desktop, wide } = useLayout();
   const tablet = wide && !desktop;
   const f = FARNOSTI[0]; // ukážková farnosť (Trenčín — mesto); v produkcii zo stránky
@@ -101,7 +101,11 @@ export function SpravaFarnosti({ onBack, strankaId, test }: { onBack: () => void
 
   const go = (k: Sub) => { setSpat(sub === "zbierka" ? spat : sub); setSub(k); setPridat(false); };
   const otvorZb = (z: ZbF) => { setZb(z); go("zbierka"); };
-  const verejny = () => otvorVerejnyProfil(strankaId);
+  // OPRAVY 154: verejný profil sa otvorí v okne NAD Správou (predtým sa otváral pod jej vrstvou a nebolo ho vidieť)
+  const [verejnyOtv, setVerejnyOtv] = useState(false);
+  const verejny = () => setVerejnyOtv(true);
+  const test = testPas?.(verejny);
+  const verejnyEl = verejnyOtv ? <VerejnyProfilVSprave kluc={strankaId} onZavri={() => setVerejnyOtv(false)} /> : null;
   const mobil = !desktop;
 
   // ---------------- časti ----------------
@@ -353,6 +357,7 @@ export function SpravaFarnosti({ onBack, strankaId, test }: { onBack: () => void
       <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 1 }}><b style={{ fontSize: mobil ? 14.5 : 15, color: "var(--ink)" }}>{t}</b><span style={{ fontSize: mobil ? 12 : 12.5, color: "var(--ink3)" }}>{s}</span></span>
     </button>));
   const vrstvy = <>
+    {verejnyEl}
     {pridat && createPortal(<div className="sprava-charity" data-stit="silver" style={{ minHeight: 0, background: "transparent" }}>
       <div onClick={() => setPridat(false)} style={{ position: "fixed", inset: 0, zIndex: 140, background: "rgba(20,17,11,.45)" }} />
       <div role="dialog" aria-modal="true" aria-label="Pridať do farnosti" style={mobil

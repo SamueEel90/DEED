@@ -13,6 +13,8 @@ const posluchaci = new Set<() => void>();
 const zmena = () => { verzia++; posluchaci.forEach((f) => f()); };
 
 export function otvorVerejnyProfil(k: string) { otvorene = true; kluc = k; zmena(); }
+/** KARTA 55 · E: odkaz z feedu „Celý príbeh na stránke … ›" — stránka Príbeh nad feedom, „Späť do feedu" vráti na to isté miesto */
+export function otvorPribeh(zbierkaId: string) { otvorVerejnyProfil(`pribeh:${zbierkaId}`); }
 export function zavriVerejnyProfil() { otvorene = false; zmena(); }
 /** kľúč profilu, ktorý je otvorený (číta sa bez mazania — StrictMode volá inicializáciu dvakrát) */
 export const verejnyProfilKluc = (): string | null => kluc;

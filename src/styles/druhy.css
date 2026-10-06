@@ -1,0 +1,6 @@
+/* KARTA 55 · F — jednotný znak druhu (návrh 2a) pre celú appku: štítok na fotke (pozadie), ľavý okraj karty, text druhu.
+   Zbierka · Žiadosť · Skutok · Ponuka · Akcia · Hľadáme. Zlatá len pre dorovnanie, červená len pre súrne. */
+:root{--dr-zbierka:#2F7A78;--dr-ziadost:#A65A22;--dr-skutok:#4E7D37;--dr-ponuka:#3D6B8E;--dr-akcia:#7A4E86;--dr-hladame:#6E6552;
+  --dr-zbierka-t:#2F7A78;--dr-ziadost-t:#A65A22;--dr-skutok-t:#4E7D37;--dr-ponuka-t:#3D6B8E;--dr-akcia-t:#7A4E86;--dr-hladame-t:#6E6552;
+  --dr-surne:#B5483A;--dr-stav:rgba(20,17,11,.78)}
+html.dark{--dr-zbierka-t:#6FB8B4;--dr-ziadost-t:#E09A5E;--dr-skutok-t:#8DB866;--dr-ponuka-t:#7FA6C6;--dr-akcia-t:#B78BC4;--dr-hladame-t:#CFC2A3}

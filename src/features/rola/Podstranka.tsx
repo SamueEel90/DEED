@@ -1,7 +1,6 @@
 import { Emo } from "@/components/icons";
 import { TESTOVACIA } from "@/lib/testovacia";
 import { useTestStav, vyprazdni } from "@/lib/testStav";
-import { PrepinacPodania } from "@/features/verejny-profil/casti";
 import { StityRad } from "@/components/stit";
 import { stityOblastiSubjektu } from "@/lib/stityOblasti";
 import { Fragment, useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
@@ -804,10 +803,8 @@ export function Podstranka({ pozicia, tier: tierStranky = 0, logo, toast, onBack
       {lista ?? <BackHeader onBack={onBack}>
         <span style={{ fontSize: 12, color: C.textSec }}>{s.nazov}</span>
       </BackHeader>}
-      {TESTOVACIA && desktop && <PrepinacPodania sektor={sektor ?? pozicia} style={{ maxWidth: SIRKA.plocha, margin: "12px auto 0", padding: "0 24px", boxSizing: "border-box" }} />}
       <div style={{ height: SPACE.sm }} />
       {obalSiroky(telo, { desktop, maxDesktop: SIRKA.plocha })}
-      {TESTOVACIA && !desktop && <PrepinacPodania pas sektor={sektor ?? pozicia} style={{ margin: "16px 14px 0" }} />}
 
       {menu && (
         <KontextMenu onClose={() => setMenu(false)} polozky={[

@@ -1,5 +1,6 @@
 // <ZbierkaModul> — JEDEN komponent pre detail zbierky + platbu na všetkých miestach (karta 01).
 // Pripojené položky v pevnom poradí (nastavenie.ts), odpojené sa nevykresľujú vôbec.
+import { ZbalitASpat, ZmensenyModul } from "./ZmensenyModul";
 import { smieDorovnat } from "@/lib/dorovnanie";
 import { cisloObjektu } from "@/lib/cisloObjektu";
 import { TESTOVACIA } from "@/lib/testovacia";
@@ -244,8 +245,10 @@ export function ZbierkaModul({ zbierka, miesto: miestoProp, onBack, spatNazov, o
       {/* karta 15 — mobil: jeden stĺpec v pevnom poradí · PC (≥ 1024): vľavo obsah, vpravo modul 420 px (sticky) */}
       <div className="zb-obsah">
         <div className="zb-lavy">{vrch}{pc && lave.map(vykresli)}</div>
-        <div className="zb-pravy">{(pc ? prave : polozky).map(vykresli)}</div>
+        <div className="zb-pravy">{pc ? prave.map(vykresli) : <ZmensenyModul>{polozky.map(vykresli)}</ZmensenyModul>}</div>
       </div>
+      {/* bod 149 · dole vždy „Zbaliť a späť" (vráti na tú istú kartu a posun) */}
+      {miesto !== "podporitDeed" && <div style={{ padding: "8px 16px 0", maxWidth: pc ? 420 : undefined, marginLeft: pc ? "auto" : undefined }}><ZbalitASpat onClick={onBack} /></div>}
     </div>
   );
 }
