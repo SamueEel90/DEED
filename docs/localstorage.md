@@ -30,7 +30,7 @@ Stĺpec „DB" hovorí, či už existuje serverová verzia (localStorage je poto
 
 | Kľúč | Čo je to | Kam / kedy |
 |---|---|---|
-| `deed.mojaFirma` | oznamy firmy zamestnancovi (vybavené), návrhy akcií | nie je v zozname Fázy 4 — otázka na Martina |
+| `deed.mojaFirma` | oznamy firmy zamestnancovi (vybavené), návrhy akcií | Fáza 4 · karta 6 |
 | `deed.podpory`, `deed.rola.nazov.b2b` | čo firma podporila (sumy) | Fáza 4 · karta 1 — z ledgera (pohyby z účtu firmy) |
 | `deed.pravidelne` | pravidelné dary | Fáza 4 · karta 2 — `opakovana_platba` (0016) |
 | `deed.moje.skutky` | moje skutky vrátane karmy | Fáza 4 · karta 3 — `prispevok` (skóre/karma už server, 0039) |

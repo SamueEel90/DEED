@@ -93,7 +93,8 @@ Vymeniť mock repozitáre za Supabase — bez zásahu do UI.
   3. **Moje skutky s karmou** (`deed.moje.skutky`) — `prispevok`; skóre a karma už zapisuje server (0039).
   4. **Dochádzka** (`deed.akcia`) — `dochadzka` / TOTP (0015).
   5. **Registrované organizácie** (`deed.mojeStranky`, `deed.reg.org`) — `stranka` + `zaloz_stranku` (0035).
-  6. **Profily podľa mena → ID a čísla** — deep linky profilov cez ID + verejné čísla U-/C- namiesto mena (Blok 1, Martin 6. 10.).
+  6. **Moja firma — oznamy a návrhy akcií** (`deed.mojaFirma`) — vybavené oznamy firmy zamestnancovi a návrhy firemných akcií do DB (Martin 6. 10.).
+  7. **Profily podľa mena → ID a čísla** — deep linky profilov cez ID + verejné čísla U-/C- namiesto mena (Blok 1, Martin 6. 10.).
 - **Hotovo, keď:** appka beží na reálnych dátach prihláseného používateľa, mock už len ako fallback pre vývoj.
 
 ### Fáza 5 — Produkčná pripravenosť
