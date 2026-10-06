@@ -7,6 +7,7 @@
 // Funkcie za tlačidlami NIE SÚ — každé tlačidlo otvorí obrazovku „Pripravujeme".
 // ============================================================
 import { pripojTestovaciuStranku } from "@/lib/stranka";
+import { nacitajNastavenia } from "@/lib/nastaveniaStranky";
 import { otvorPridatSkutok } from "@/features/skutok/otvor";
 import { otvorPridatIskru } from "@/features/iskry/otvor";
 import { DeedZnacka } from "@/components/DeedZnacka";
@@ -213,7 +214,7 @@ type ZbRiadok = { t: string; v: number; c: number; bg: string; s: string; konc: 
 /** KARTA 38: riadok Moje zbierky → zbierka na správu (počet darcov a dni z textu riadku pri ukážkových zbierkach) */
 const naSpravu = (z: ZbRiadok): ZbierkaNaSpravu => {
   const darc = z.darcovia ?? Number(/(\d[\d\s]*) darcov/.exec(z.s)?.[1].replace(/\s/g, "") ?? 0), dni = z.zostava ?? Number(/končí o (\d+)/.exec(z.s)?.[1] ?? 30);
-  return { id: z.id ?? `ukazka-${z.t.toLowerCase().normalize("NFD").replace(/[^a-z0-9]+/g, "-")}`, nazov: z.t, bg: z.bg, ciel: z.c, vyzbierane: z.v, darcovia: darc, zostavaDni: dni, ukoncena: z.konc, lehotaText: z.lehotaText, lehota: z.lehota, bezPredlzenia: z.bezPredlzenia || /^Centrálna/.test(z.t), dlha: z.dlha, zaciatok: z.zaciatok, mesiace: z.mesiace, ucel: z.ucel, mesto: z.mesto, ...(z.zdroj ? { popis: z.zdroj.popis, popis2: z.zdroj.popis2, media: z.zdroj.media, sada: z.zdroj.sada, eurc: z.zdroj.eurc, sadaE: z.zdroj.sadaE, ucet: z.zdroj.ucet } : {}) };
+  return { id: z.id ?? `ukazka-${z.t.toLowerCase().normalize("NFD").replace(/[^a-z0-9]+/g, "-")}`, nazov: z.t, bg: z.bg, ciel: z.c, vyzbierane: z.v, darcovia: darc, zostavaDni: dni, ukoncena: z.konc, lehotaText: z.lehotaText, lehota: z.lehota, bezPredlzenia: z.bezPredlzenia || /^Centrálna/.test(z.t), dlha: z.dlha, zaciatok: z.zaciatok, mesiace: z.mesiace, ucel: z.ucel, mesto: z.mesto, ...(z.zdroj ? { popis: z.zdroj.popis, popis2: z.zdroj.popis2, media: z.zdroj.media, sada: z.zdroj.sada, eurc: z.zdroj.eurc, sadaE: z.zdroj.sadaE, ucet: z.zdroj.ucet, vs: z.zdroj.vs } : {}) };
 };
 /** OPRAVY 114: spustená zbierka charity → karta v Prehľade a riadok v Moje zbierky */
 const fotoBg = (z: SpustenaZbierka) => { const f = z.media.find((m) => m.typ === "foto"); return f ? `url('${f.src}') center/cover no-repeat var(--track)` : "repeating-linear-gradient(135deg,var(--track) 0 12px,var(--btn) 12px 24px)"; };
@@ -270,7 +271,8 @@ export function SpravaStranky(props: SpravaStrankyProps) {
 
 function SpravaStrankyTypu({ onBack, typ, onTyp: setTyp, strankaId = "svetlo", nazov = "Svetlo pomoci o.z.", inicialy = "SP" }: SpravaStrankyProps & { typ: TypStranky; onTyp: (t: TypStranky) => void }) {
   const { desktop, wide } = useLayout();
-  useEffect(() => { void pripojTestovaciuStranku(strankaId); }, [strankaId]); // 0035: tester = správca testovacej stránky
+  // 0035: tester = správca testovacej stránky; potom nastavenia stránky z účtu (0050)
+  useEffect(() => { void pripojTestovaciuStranku(strankaId).then(() => nacitajNastavenia(strankaId)); }, [strankaId]);
   const tablet = wide && !desktop; // OPRAVY 96: tablet 760–1179 px má vlastné rozloženie
   const telefon = !desktop && !tablet; // KARTA 42: telefón pod 760 px — nové rozloženie
   const [pridat, setPridat] = useState(false); // KARTA 42: + → hárok Pridať
@@ -1348,7 +1350,7 @@ function ObrZbierky(s: Spolocne) {
       </section>}
       {list.map((z) => (
         <RiadokZb key={z.id ?? z.t} id={z.id ?? z.t} foto={z.bg} stit={`${(z.mesto ?? "Trenčín").toLocaleUpperCase("sk-SK")}${z.dlha ? " · DLHODOBÁ" : ""}`} nazov={z.t} pod={z.s} suma={eur(z.v)}
-          cislo={cisloObjektu("Z", naSpravu(z).id)} stav={stavZbierky(z, naSpravu(z).id)} onClick={() => spravuj(naSpravu(z))} />))}
+          cislo={cisloObjektu("Z", naSpravu(z).id, naSpravu(z).vs)} stav={stavZbierky(z, naSpravu(z).id)} onClick={() => spravuj(naSpravu(z))} />))}
       {list.length === 0 && !rozpisana && <section style={{ ...karta, padding: "26px 18px", display: "flex", flexDirection: "column", alignItems: "center", gap: 8, textAlign: "center" }}>
         <b style={{ fontSize: 16.5 }}>Zatiaľ nemáte žiadnu zbierku</b>
         <span style={{ fontSize: 14, lineHeight: 1.45, color: "var(--ink2)" }}>Keď ju vytvoríte, uvidíte ju tu aj s tým, koľko prišlo a čo treba doložiť.</span>

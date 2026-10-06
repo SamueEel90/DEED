@@ -59,8 +59,8 @@ function odvod(data: UcetData | null, session: Session): Pouzivatel {
   const priezvisko = jeCharita ? "" : profil?.priezvisko || "";
   const celeMeno = (jeCharita ? meno : `${meno} ${priezvisko}`).trim();
   const mesto = lokalita?.mesto || profil?.mesto || organizacia?.sidlo || "—";
-  // rod sa v DB ešte neukladá — kým ho server nedoplní, ostáva mužský tvar
-  const rod = (profil as { rod?: "muz" | "zena" } | null)?.rod;
+  // rod z profilu (0049); kým ho človek nevyplní, ostáva mužský tvar
+  const rod = profil?.rod ?? undefined;
   const typ = ucet?.typ || ses?.typ || "aktivny";
   return {
     demo: false,
