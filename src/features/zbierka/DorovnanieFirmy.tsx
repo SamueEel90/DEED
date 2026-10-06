@@ -44,7 +44,8 @@ function HlavneTlacidlo({ label, podrz, onConfirm, disabled, zelene }: { label: 
   );
 }
 
-export function DorovnanieFirmyHarok({ zbierkaId, zbierkaNazov, firma, onClose }: { zbierkaId: string; zbierkaNazov: string; firma: string; onClose: () => void }) {
+/** firmaUcet = číslo účtu firmy (identita, lib/firma) · firma = názov len na zobrazenie */
+export function DorovnanieFirmyHarok({ zbierkaId, zbierkaNazov, firmaUcet, firma, onClose }: { zbierkaId: string; zbierkaNazov: string; firmaUcet: string; firma: string; onClose: () => void }) {
   const [krok, setKrok] = useState<Krok>("formular");
   const [dnes] = useState(() => Date.now());
   const [pomer, setPomer] = useState(DOROVNANIE_CFG.pomer);
@@ -75,9 +76,9 @@ export function DorovnanieFirmyHarok({ zbierkaId, zbierkaNazov, firma, onClose }
     setPecati(true);
     neskor(() => {
       const od = Date.now();
-      zapecat({ entita: "charita", ciel: zbierkaId, cielNazov: zbierkaNazov, firma, pomer, strop: rozpocet, stropDaru, od, do: doKedy,
+      zapecat({ entita: "charita", ciel: zbierkaId, cielNazov: zbierkaNazov, firmaUcet, firma, pomer, strop: rozpocet, stropDaru, od, do: doKedy,
         zvysok, lenZamestnanci: lenZam || undefined, kanal });
-      pripniVyclenene(firma, zbierkaId, rozpocet);
+      pripniVyclenene(firmaUcet, zbierkaId, rozpocet, firma);
       try { navigator.vibrate?.([10, 40, 16]); } catch { /* bez vibrácie */ }
       setPecati(false); setKrok("zapecatene");
     }, 1100);

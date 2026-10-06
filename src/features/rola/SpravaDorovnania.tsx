@@ -14,6 +14,7 @@ import {
 } from "@/lib/dorovnanie";
 import { darcoviaPre, relCas } from "@/lib/darcovia";
 import { cisloObjektu } from "@/lib/cisloObjektu";
+import { rovnakaFirma, nazovFirmy } from "@/lib/firma";
 import { nacitajStav, ulozStav } from "@/lib/zbierkaSprava";
 import { nacitajDoklad } from "@/lib/doklad";
 import { TESTOVACIA } from "@/lib/testovacia";
@@ -96,7 +97,7 @@ export function SpravaDorovnania({ entita, hlavnyUcet, mobil, toast, onZbierky, 
   const zmenObm = (o: typeof obm) => { setObm(o); ulozObmedzenie(entita, o); };
   const [q, setQ] = useState("");
   const qq = q.trim().toLowerCase();
-  const navrhy = qq.length < 2 ? [] : REGISTER_FIRIEM.filter((f) => !obm.firmy.includes(f.nazov) && f.nazov.toLowerCase().includes(qq)).slice(0, 4);
+  const navrhy = qq.length < 2 ? [] : REGISTER_FIRIEM.filter((f) => !obm.firmy.some((u) => rovnakaFirma(u, f.ucet)) && f.nazov.toLowerCase().includes(qq)).slice(0, 4);
   const obmPopis = obm.zapnute
     ? `Neprijímate od ${obm.odvetvia.length ? `${obm.odvetvia.length} ${obm.odvetvia.length === 1 ? "odvetvia" : "odvetví"}` : "žiadneho odvetvia"}${obm.firmy.length ? ` a ${obm.firmy.length} ${obm.firmy.length === 1 ? "firmy" : "firiem"}` : ""}. Ostatné firmy môžu dorovnávať.`
     : "Dorovnávať môže každá firma s IČO. Do 24 hodín od jej platby môžete dorovnanie odmietnuť.";
@@ -122,12 +123,12 @@ export function SpravaDorovnania({ entita, hlavnyUcet, mobil, toast, onZbierky, 
           <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".08em", color: "var(--ink3)" }}>NEPRIJÍMAŤ OD FIRIEM</span>
           <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Zadajte názov alebo IČO firmy" aria-label="Hľadať firmu" style={{ height: 48, padding: "0 14px", borderRadius: 13, border: "1.5px solid var(--cardBd)", background: "var(--field)", color: "var(--ink)", fontFamily: "inherit", fontSize: 14, outline: "none" }} />
           {navrhy.map((f) => (
-            <button key={f.nazov} type="button" onClick={() => { zmenObm({ ...obm, firmy: [...obm.firmy, f.nazov] }); setQ(""); }} style={{ display: "flex", alignItems: "center", gap: 10, minHeight: 48, padding: "0 12px", borderRadius: 13, border: "1px solid var(--cardBd)", background: "var(--field)", cursor: "pointer", textAlign: "left", color: "var(--ink)", fontFamily: "inherit", boxShadow: "none" }}>
+            <button key={f.ucet} type="button" onClick={() => { zmenObm({ ...obm, firmy: [...obm.firmy, f.ucet] }); setQ(""); }} style={{ display: "flex", alignItems: "center", gap: 10, minHeight: 48, padding: "0 12px", borderRadius: 13, border: "1px solid var(--cardBd)", background: "var(--field)", cursor: "pointer", textAlign: "left", color: "var(--ink)", fontFamily: "inherit", boxShadow: "none" }}>
               <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 1 }}><b style={{ fontSize: 14 }}>{f.nazov}</b><span style={{ fontSize: 12, color: "var(--ink3)" }}>{f.odvetvie} · {f.mesto}</span></span>
               <span style={{ flex: "none", fontSize: 13.5, fontWeight: 800, color: "var(--red)" }}>Nechcem</span>
             </button>))}
           {obm.firmy.length > 0 && <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-            {obm.firmy.map((m) => <button key={m} type="button" onClick={() => zmenObm({ ...obm, firmy: obm.firmy.filter((x) => x !== m) })} aria-label={`Odobrať ${m}`} style={{ display: "flex", alignItems: "center", gap: 8, minHeight: 44, padding: "0 8px 0 14px", borderRadius: 22, border: "1.5px solid var(--cardBd)", background: "var(--field)", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 700, color: "var(--ink)", boxShadow: "none" }}>{m}<span aria-hidden="true" style={{ width: 24, height: 24, borderRadius: 12, background: "var(--btn)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, color: "var(--ink2)" }}>×</span></button>)}
+            {obm.firmy.map((m) => <button key={m} type="button" onClick={() => zmenObm({ ...obm, firmy: obm.firmy.filter((x) => x !== m) })} aria-label={`Odobrať ${nazovFirmy(m)}`} style={{ display: "flex", alignItems: "center", gap: 8, minHeight: 44, padding: "0 8px 0 14px", borderRadius: 22, border: "1.5px solid var(--cardBd)", background: "var(--field)", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 700, color: "var(--ink)", boxShadow: "none" }}>{nazovFirmy(m)}<span aria-hidden="true" style={{ width: 24, height: 24, borderRadius: 12, background: "var(--btn)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, color: "var(--ink2)" }}>×</span></button>)}
           </div>}
         </div>
         <span style={{ fontSize: 12.5, lineHeight: 1.5, color: "var(--ink3)" }}>Týmto firmám sa pri vašich zbierkach dorovnanie neponúkne. Firma nevidí, že ste ju obmedzili.</span>

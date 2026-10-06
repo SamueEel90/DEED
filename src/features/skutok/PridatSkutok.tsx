@@ -217,7 +217,8 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
   const [pravda, setPravda] = useState(false);
   // karta 21 · 11: riadok Firma (len prepojený so zamestnávateľom; firemná akcia je vždy s menom, riadok sa neukáže)
   const nast = useNastaveniaAppky();
-  const mojeFirmy = useVazbyOsoby(ja.cisloUctu).filter((v) => v.stav === "potvrdeny").map((v) => v.firma);
+  const mojeVazby = useVazbyOsoby(ja.cisloUctu).filter((v) => v.stav === "potvrdeny");
+  const mojeFirmy = mojeVazby.map((v) => v.firma); // názvy len na zobrazenie; väzba ide cez v.firmaUcet
   const [firmaV, setFirmaV] = useState<FirmaVolba>(nast.firmaPredvolba);
   // hotovo
   const [id] = useState(() => `m${teraz()}`);
@@ -595,7 +596,7 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
           <div style={P.maly}>{o("Pomocníkov pridáš", "Pomocníkov pridáte")} do 2 hodín po skutku. Kto dostane pozvánku, musí potvrdiť, že bol pri tom. Každý potom môže pridať aj svoje fotky.</div>
           {mojeFirmy.length > 0 && !org && <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
             <button type="button" onClick={pozviKolegov} style={{ minHeight: 46, padding: "4px 8px", borderRadius: 13, border: "1px solid var(--sek-oBd)", background: "var(--goldBg)", fontSize: 13.5, fontWeight: 700, color: "var(--ink)", cursor: "pointer", fontFamily: "inherit", lineHeight: 1.25 }}>Pozvať kolegov z firmy</button>
-            <button type="button" onClick={() => { navrhniAkciu(mojeFirmy[0], { t: nz0.trim() || "Spoločný skutok s kolegami", kedy: new Date().toISOString().slice(0, 10) }); toast(`Návrh sme poslali firme ${mojeFirmy[0]}`); }} style={{ minHeight: 46, padding: "4px 8px", borderRadius: 13, border: "1.5px dashed var(--sek-gBd)", background: "transparent", fontSize: 13.5, fontWeight: 700, color: "var(--sek-g)", cursor: "pointer", fontFamily: "inherit", lineHeight: 1.25 }}>Navrhnúť firme ako firemnú akciu</button>
+            <button type="button" onClick={() => { navrhniAkciu(mojeVazby[0].firmaUcet, { t: nz0.trim() || "Spoločný skutok s kolegami", kedy: new Date().toISOString().slice(0, 10) }); toast(`Návrh sme poslali firme ${mojeFirmy[0]}`); }} style={{ minHeight: 46, padding: "4px 8px", borderRadius: 13, border: "1.5px dashed var(--sek-gBd)", background: "transparent", fontSize: 13.5, fontWeight: 700, color: "var(--sek-g)", cursor: "pointer", fontFamily: "inherit", lineHeight: 1.25 }}>Navrhnúť firme ako firemnú akciu</button>
           </div>}
         </> : <div style={P.maly}>{org ? "Dobrovoľníci sa pripojili skenom QR charity na mieste. Čas a miesto sú vyplnené z akcie. Skutok aj karmu dostanú do svojho denníka." : "Účastníci z akcie sú overení skenom na mieste. Čas a miesto sú vyplnené z akcie. Každý dostane odkaz a môže pridať svoje fotky k spoločnému skutku."}</div>}
         {org && uc.length > 0 && <div style={P.maly}>V texte môžete spomenúť ľudí, ktorí sa pripojili, napr. „Peter K. a Jana boli s nami“. Mená sú v tvare, aký si sami nastavili.</div>}

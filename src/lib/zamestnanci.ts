@@ -12,7 +12,7 @@
 // Mock: localStorage. V produkcii je to tabuľka väzieb s pozvánkovým kódom.
 // ============================================================
 import { useSyncExternalStore } from "react";
-import { rovnakaFirma } from "./firma";
+import { rovnakaFirma, nazovFirmy } from "./firma";
 import { mojeCisloUctu, rovnakeCislo } from "./identita";
 
 export type StavVazby =
@@ -23,6 +23,9 @@ export type StavVazby =
   | "odpojeny";   // väzba bola ukončená
 
 export interface Vazba {
+  /** Zadanie 1 · Blok 1: kľúč firmy = číslo jej účtu (U-…, lib/firma), NIKDY názov */
+  firmaUcet: string;
+  /** názov firmy len na zobrazenie (z jej účtu v čase vzniku väzby) */
   firma: string;
   /** Zadanie 1 · Blok 1: kľúč človeka = verejné číslo jeho účtu (U-…), NIKDY meno (lib/identita) */
   osoba: string;
@@ -46,7 +49,8 @@ export function useZmenyVazieb() {
 }
 
 export function nacitaj(): Vazba[] {
-  try { return JSON.parse(localStorage.getItem(KLUC) ?? "[]") as Vazba[]; } catch { return []; }
+  // staré záznamy viazané na názov firmy (pred Blokom 1) sa nečítajú — väzba bez účtu firmy neplatí
+  try { return (JSON.parse(localStorage.getItem(KLUC) ?? "[]") as Vazba[]).filter((x) => !!x.firmaUcet); } catch { return []; }
 }
 function uloz(v: Vazba[]) {
   try { localStorage.setItem(KLUC, JSON.stringify(v)); } catch { /* LS nedostupné */ }
@@ -54,7 +58,7 @@ function uloz(v: Vazba[]) {
 }
 const rovnakaOsoba = (a: string, b: string) => rovnakeCislo(a, b);
 const najdiIndex = (v: Vazba[], firma: string, osoba: string) =>
-  v.findIndex((x) => rovnakaFirma(x.firma, firma) && rovnakaOsoba(x.osoba, osoba));
+  v.findIndex((x) => rovnakaFirma(x.firmaUcet, firma) && rovnakaOsoba(x.osoba, osoba));
 
 /** živá väzba = tá, ktorá ešte nie je uzavretá */
 const ziva = (x: Vazba) => x.stav === "pozvany" || x.stav === "ziadost" || x.stav === "potvrdeny";
@@ -67,12 +71,13 @@ function zapis(firma: string, osoba: string, zmena: Partial<Vazba>, novy?: Vazba
     uloz(v.map((x, j) => (j === i ? upraveny : x)));
     return upraveny;
   }
-  const z = novy ?? { firma, osoba, stav: "pozvany" as StavVazby, zaciatok: "firma" as const, kedy: Date.now(), ...zmena };
+  const z = novy ?? { firmaUcet: firma, firma: nazovFirmy(firma), osoba, stav: "pozvany" as StavVazby, zaciatok: "firma" as const, kedy: Date.now(), ...zmena };
   uloz([z, ...v]);
   return z;
 }
 
-/** firma pozýva človeka podľa čísla jeho účtu (z vizitky / QR) */
+/** firma (číslo jej účtu) pozýva človeka podľa čísla jeho účtu (z vizitky / QR).
+ *  Vo všetkých funkciách nižšie je `firma` = číslo účtu firmy, nie názov. */
 export const pozvi = (firma: string, osoba: string) =>
   zapis(firma, osoba, { stav: "pozvany", zaciatok: "firma", kedy: Date.now(), ukoncene: undefined });
 
@@ -94,11 +99,11 @@ export const odpoj = (firma: string, osoba: string) =>
 /** väzby firmy — čakajúce hore, potvrdení pod nimi */
 export function vazbyFirmy(firma: string): Vazba[] {
   const poradie: Record<StavVazby, number> = { ziadost: 0, pozvany: 1, potvrdeny: 2, odmietnuty: 3, odpojeny: 4 };
-  return nacitaj().filter((x) => rovnakaFirma(x.firma, firma)).sort((a, b) => poradie[a.stav] - poradie[b.stav] || b.kedy - a.kedy);
+  return nacitaj().filter((x) => rovnakaFirma(x.firmaUcet, firma)).sort((a, b) => poradie[a.stav] - poradie[b.stav] || b.kedy - a.kedy);
 }
 /** potvrdení zamestnanci — nad nimi beží zamestnanecké dorovnanie */
 export const zamestnanci = (firma: string): Vazba[] =>
-  nacitaj().filter((x) => rovnakaFirma(x.firma, firma) && x.stav === "potvrdeny");
+  nacitaj().filter((x) => rovnakaFirma(x.firmaUcet, firma) && x.stav === "potvrdeny");
 
 /** väzba človeka — jedna živá naraz (kto robí u dvoch firiem, rieši sa neskôr) */
 export const vazbaOsoby = (osoba: string): Vazba | null =>
@@ -114,7 +119,7 @@ export function useVazbyOsoby(osoba: string): Vazba[] {
 
 /** je tento človek potvrdeným zamestnancom firmy? (podklad pre dorovnanie) */
 export const jeZamestnanec = (firma: string, osoba: string): boolean =>
-  nacitaj().some((x) => rovnakaFirma(x.firma, firma) && rovnakaOsoba(x.osoba, osoba) && x.stav === "potvrdeny");
+  nacitaj().some((x) => rovnakaFirma(x.firmaUcet, firma) && rovnakaOsoba(x.osoba, osoba) && x.stav === "potvrdeny");
 
 export function useVazbyFirmy(firma: string): Vazba[] {
   useZmenyVazieb();

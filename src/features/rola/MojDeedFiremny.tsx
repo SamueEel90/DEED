@@ -50,6 +50,7 @@ import { ZBIERKY, predvolenyStav } from "@/lib/zbierky";
 import { nacitajStav, percentoDolozenia, fazaDokladovania, useZmenySpravy } from "@/lib/zbierkaSprava";
 import { KontaktBlok, nacitajKontakt, ulozKontakt } from "./kontakt";
 import { verejneTaby, zamknuteTaby, popisTabu, BLOK_ZA_TAB, zbierkyOrg, cislaSubjektu } from "./obsah";
+import { DEV_FIRMA, rovnakaFirma } from "@/lib/firma";
 
 /*
   ============================================================
@@ -370,8 +371,8 @@ function MojDeedFiremnyObsah({ onBack, toast, orgId }: { onBack: () => void; toa
             <OznamySprava strankaId={pozicia} tier={tier} nazov={subjekt.nazov} inicialy={subjekt.iniciacky} mesto={subjekt.lok} logo={logo ?? subjekt.foto ?? null} mobil={!desktop} tablet={false} toast={toast} onProfil={() => { setSheet(null); setPodstranka(true); }} />
           </div>
         </div>, document.body)}
-      {sheet === "zbierky" && pozicia === "b2b" && <NaseZbierkySheet firma={subjekt.nazov} toast={toast} onClose={() => setSheet(null)} />}
-      {sheet === "zamestnanci" && pozicia === "b2b" && <ZamestnanciSheet firma={subjekt.nazov} toast={toast} onClose={() => setSheet(null)} />}
+      {sheet === "zbierky" && pozicia === "b2b" && <NaseZbierkySheet firma={DEV_FIRMA} nazov={subjekt.nazov} toast={toast} onClose={() => setSheet(null)} />}
+      {sheet === "zamestnanci" && pozicia === "b2b" && <ZamestnanciSheet firma={DEV_FIRMA} toast={toast} onClose={() => setSheet(null)} />}
       {sheet === "dorovnanie" && <SpravaDorovnaniaOkno entita={pozicia} hlavnyUcet={HLAVNY_UCET} toast={toast} onClose={() => setSheet(null)} />}
       {sheet === "inzeraty" && <InzeratySheet entita={pozicia} autor={subjekt.nazov} logo={logo ?? subjekt.foto} tier={tier} toast={toast} onPaywall={setPaywall} onClose={() => setSheet(null)} />}
       {sheet === "segment" && <SektoroveZbierkySheet tier={tier} toast={toast} onPaywall={setPaywall} onClose={() => setSheet(null)} />}
@@ -635,9 +636,9 @@ function AdresarB2BSheet({ vlastneLogo, toast, onClose }: { vlastneLogo: string 
       <div style={{ fontSize: 11.5, color: C.textTer, marginBottom: SPACE.sm }}>Overené firmy a ich podpora komunity</div>
       {FIRMY_ADRESAR.map((f) => {
         // logo v riadku (PATCH 2 §6) — vlastná firma berie nahraté logo zo správy; fallback iniciálky
-        const logoRiadku = f.iniciacky === SUBJEKTY.b2b.iniciacky ? (vlastneLogo ?? f.logo) : f.logo;
+        const logoRiadku = rovnakaFirma(f.ucet, DEV_FIRMA) ? (vlastneLogo ?? f.logo) : f.logo;
         return (
-        <div key={f.nazov} {...pressable(() => toast(`${f.nazov} — verejný profil firmy`), f.nazov)}
+        <div key={f.ucet} {...pressable(() => toast(`${f.nazov} — verejný profil firmy`), f.nazov)}
           style={{ display: "flex", alignItems: "center", gap: SPACE.sm, padding: `${SPACE.sm}px ${SPACE.xxs}px`, borderBottom: `1px solid ${C.line}`, cursor: "pointer" }}>
           <span style={{ width: 38, height: 38, borderRadius: "50%", flex: "none", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 800, background: tint("var(--a-info)", .1), color: "var(--a-info)" }}>
             {logoRiadku ? <img src={logoRiadku} alt={f.nazov} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : f.iniciacky}

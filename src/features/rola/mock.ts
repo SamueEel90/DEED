@@ -7,6 +7,7 @@
 import { U, AV } from "@/theme";
 import type { Pozicia, Tier } from "./stav";
 import type { Dokaz } from "@/lib/zbierky";
+import { DEV_FIRMA, firma } from "@/lib/firma";
 
 // blok rolového panela — rovnaká anatómia ako karty userovho „Môj DEED"
 export interface PanelBlok {
@@ -74,6 +75,8 @@ export const ZASLUZENA: Record<Pozicia, { badge: "Bronze" | "Silver" | "Gold" | 
 // štruktúra pre všetky subjekty; 3 čísla per rola sú fixné zo špecifikácie ----
 export interface SubjektMeta {
   nazov: string;
+  /** firma: číslo účtu firmy (identita, lib/firma) — názov je len na zobrazenie */
+  firmaUcet?: string;
   emoji: string;          // fallback identity bez loga
   iniciacky: string;      // fallback do krúžku (adresár, avatar)
   /** titulná (cover) fotka profilu */
@@ -166,6 +169,7 @@ export const SUBJEKTY: Record<Pozicia, SubjektMeta> = {
     ],
   },
   b2b: {
+    firmaUcet: DEV_FIRMA,
     nazov: "Pekáreň Dobrota s.r.o.", emoji: "jedlo", iniciacky: "PD", lok: "Trenčín", overena: true,
     cover: U("photo-1578985545062-69928b1d9587"), foto: U("photo-1628428799437-d886d7d2e9b2"),
     cisla: [["2 400 €", "Darované"], ["5", "Skutky"], ["2 roky", "S nami"]],
@@ -209,14 +213,15 @@ export const SUBJEKTY: Record<Pozicia, SubjektMeta> = {
 // ---- B2B adresár (PATCH 2 §5) — výkladná skriňa + anti-greenwashing.
 // Riadok = logo/iniciálky, štít, odvetvie, mesto, súčet podpory. Radenie
 // dôvera+blízkosť; poradie sa NIKDY nepredáva. Tvorca adresár nemá. ----
-export interface FirmaAdresar { iniciacky: string; nazov: string; odvetvie: string; mesto: string; stit: "Bronze" | "Silver" | "Gold" | "Platinum" | "Legend"; podpora: string; logo?: string; ico?: string }
+/** ucet = číslo účtu firmy (identita, lib/firma); nazov len na zobrazenie */
+export interface FirmaAdresar { ucet: string; iniciacky: string; nazov: string; odvetvie: string; mesto: string; stit: "Bronze" | "Silver" | "Gold" | "Platinum" | "Legend"; podpora: string; logo?: string; ico?: string }
 export const FIRMY_ADRESAR: FirmaAdresar[] = [
-  { iniciacky: "ND", nazov: "Nordika SK", odvetvie: "Retail", mesto: "celé SR", stit: "Gold", podpora: "12 400 €", ico: "35 811 204" },
-  { iniciacky: "PD", nazov: "Pekáreň Dobrota", odvetvie: "Gastro", mesto: "Trenčín", stit: "Bronze", podpora: "2 400 €", logo: U("photo-1628428799437-d886d7d2e9b2"), ico: "47 123 456" },
-  { iniciacky: "IT", nazov: "ITech Solutions", odvetvie: "IT", mesto: "Bratislava", stit: "Silver", podpora: "5 100 €", ico: "50 234 118" },
-  { iniciacky: "ZS", nazov: "Zelená stavba", odvetvie: "Stavebníctvo", mesto: "Žilina", stit: "Silver", podpora: "3 750 €", ico: "36 555 201" },
-  { iniciacky: "KH", nazov: "Kaviareň Pod Hradom", odvetvie: "Gastro", mesto: "Trenčín", stit: "Bronze", podpora: "380 €", ico: "54 210 339" },
-  { iniciacky: "KV", nazov: "Kvety Viola", odvetvie: "Služby", mesto: "Trenčín", stit: "Bronze", podpora: "640 €", ico: "53 901 772" },
+  { ucet: firma("firma-nordika"), iniciacky: "ND", nazov: "Nordika SK", odvetvie: "Retail", mesto: "celé SR", stit: "Gold", podpora: "12 400 €", ico: "35 811 204" },
+  { ucet: firma("firma-pekaren"), iniciacky: "PD", nazov: "Pekáreň Dobrota", odvetvie: "Gastro", mesto: "Trenčín", stit: "Bronze", podpora: "2 400 €", logo: U("photo-1628428799437-d886d7d2e9b2"), ico: "47 123 456" },
+  { ucet: firma("firma-itech"), iniciacky: "IT", nazov: "ITech Solutions", odvetvie: "IT", mesto: "Bratislava", stit: "Silver", podpora: "5 100 €", ico: "50 234 118" },
+  { ucet: firma("firma-zelena-stavba"), iniciacky: "ZS", nazov: "Zelená stavba", odvetvie: "Stavebníctvo", mesto: "Žilina", stit: "Silver", podpora: "3 750 €", ico: "36 555 201" },
+  { ucet: firma("firma-kaviaren"), iniciacky: "KH", nazov: "Kaviareň Pod Hradom", odvetvie: "Gastro", mesto: "Trenčín", stit: "Bronze", podpora: "380 €", ico: "54 210 339" },
+  { ucet: firma("firma-kvety"), iniciacky: "KV", nazov: "Kvety Viola", odvetvie: "Služby", mesto: "Trenčín", stit: "Bronze", podpora: "640 €", ico: "53 901 772" },
 ];
 
 // ---- CHARITA (§1) ----

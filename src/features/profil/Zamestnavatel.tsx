@@ -10,6 +10,8 @@ import { usePouzivatel } from "@/lib/pouzivatel";
 import { poziadaj, potvrd, pozvi, odmietni, odpoj, useVazbyOsoby, type Vazba } from "@/lib/zamestnanci";
 import { dataFirmy, useMojaFirma, vybavOznam, navrhniAkciu, firmaPodlaKodu, MIN_ROZPAD, type FirmaVolba, type FirmaAkcia } from "@/lib/mojaFirma";
 import { FIRMY_ADRESAR, type FirmaAdresar } from "@/features/rola/mock";
+import { rovnakaFirma, firma } from "@/lib/firma";
+import { normCislo } from "@/lib/identita";
 import { Harok } from "@/features/zbierka/Zdielat";
 import { toast } from "@/components/toast";
 import { SpatTlacidlo } from "@/components/cesta";
@@ -28,7 +30,8 @@ const ZLATA = "#C9A24A";
 const PERIODA = 15;
 const coskoro = () => toast(tTeraz()("firma.coskoro"));
 const datum = (ms: number) => tTeraz().datum(ms, true);
-const firmaPodla = (nazov: string) => FIRMY_ADRESAR.find((f) => f.nazov === nazov);
+/** záznam firmy v adresári podľa čísla jej účtu (Blok 1: nikdy podľa názvu) */
+const firmaPodla = (ucet: string) => FIRMY_ADRESAR.find((f) => rovnakaFirma(f.ucet, ucet));
 const h = (x: number) => `${tTeraz().cislo(x)} h`;
 const riadokBtn = { width: "100%", display: "flex", alignItems: "center", gap: 14, minHeight: 68, padding: "12px 18px", border: "none", boxShadow: "none", background: "transparent", cursor: "pointer", textAlign: "left", fontFamily: "inherit", color: "var(--d-ink, var(--ink))" } as const;
 const tx = (t: ReactNode, s?: ReactNode) => <span style={{ flex: 1, minWidth: 0 }}><span style={{ display: "block", fontSize: 16, fontWeight: 700 }}>{t}</span>{s && <span style={{ display: "block", fontSize: 13, lineHeight: 1.4, color: "var(--d-ink3, var(--ink3))", marginTop: 2 }}>{s}</span>}</span>;
@@ -37,18 +40,18 @@ const Nadpis = ({ children }: { children: ReactNode }) => <h2 style={lbl}>{child
 /** odkaz Zobraziť originál na konci sekcie (len v inom jazyku ako SK) — bod 79b */
 const Odkaz = ({ o }: { o: ReactNode }) => (o ? <div style={{ marginTop: 6 }}>{o}</div> : null);
 
-function Logo({ nazov, velke }: { nazov: string; velke?: boolean }) {
-  const f: FirmaAdresar | undefined = firmaPodla(nazov);
+function Logo({ ucet, nazov, velke }: { ucet: string; nazov: string; velke?: boolean }) {
+  const f: FirmaAdresar | undefined = firmaPodla(ucet);
   const s = velke ? 52 : 34;
   const [zle, setZle] = useState(false);
   return f?.logo && !zle
     ? <img src={f.logo} alt="" onError={() => setZle(true)} style={{ width: s, height: s, borderRadius: velke ? 12 : 10, objectFit: "cover", flex: "none", background: "#fff" }} />
     : <span aria-hidden="true" style={{ width: s, height: s, borderRadius: velke ? 12 : 10, background: velke ? "#fff" : "var(--sek-oBg)", color: "var(--sek-o)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: velke ? 16 : 12, fontWeight: 800, flex: "none" }}>{f?.iniciacky ?? nazov.slice(0, 2).toUpperCase()}</span>;
 }
-const FirmaKarta = ({ nazov, pod, children }: { nazov: string; pod: ReactNode; children?: ReactNode }) => (
+const FirmaKarta = ({ ucet, nazov, pod, children }: { ucet: string; nazov: string; pod: ReactNode; children?: ReactNode }) => (
   <div style={{ padding: "16px 18px", borderRadius: 20, background: "var(--goldBg)", border: "1px solid var(--sek-oBd)", boxShadow: "var(--d-hl, none)", display: "flex", flexDirection: "column", gap: 14 }}>
     <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-      <Logo nazov={nazov} velke />
+      <Logo ucet={ucet} nazov={nazov} velke />
       <span style={{ flex: 1, minWidth: 0 }}><span style={{ display: "block", fontSize: 17, fontWeight: 800, color: "var(--d-ink, var(--ink))" }}>{nazov}</span><span style={{ display: "block", fontSize: 13.5, lineHeight: 1.45, color: "var(--d-ink2, var(--ink2))", marginTop: 2 }}>{pod}</span></span>
     </div>
     {children}
@@ -70,7 +73,7 @@ export function Zamestnavatel({ onBack, desktop }: { onBack: () => void; desktop
   const osoba = ja.cisloUctu; // Zadanie 1 · Blok 1: väzba na číslo účtu, meno len na zobrazenie
   const vazby = useVazbyOsoby(osoba);
   const [vyber, setVyber] = useState<string | "nova" | null>(null);
-  const akt: Vazba | undefined = vyber === "nova" ? undefined : vazby.find((v) => v.firma === vyber) ?? vazby[0];
+  const akt: Vazba | undefined = vyber === "nova" ? undefined : vazby.find((v) => rovnakaFirma(v.firmaUcet, vyber)) ?? vazby[0];
 
   return (
     <div className="deed-platba" style={{ padding: "0 16px 30px", display: "flex", flexDirection: "column", gap: 16, color: "var(--d-ink, var(--ink))" }}>
@@ -80,19 +83,19 @@ export function Zamestnavatel({ onBack, desktop }: { onBack: () => void; desktop
       </div>
       {vazby.length > 0 && (
         <div role="tablist" aria-label={t("firma.mojeFirmy")} style={{ display: "flex", gap: 8, overflowX: "auto", margin: "0 -16px", padding: "0 16px 2px", scrollbarWidth: "none" }}>
-          {vazby.map((v) => { const on = akt?.firma === v.firma; return (
-            <button key={v.firma} type="button" role="tab" aria-selected={on} onClick={() => setVyber(v.firma)}
+          {vazby.map((v) => { const on = rovnakaFirma(akt?.firmaUcet, v.firmaUcet); return (
+            <button key={v.firmaUcet} type="button" role="tab" aria-selected={on} onClick={() => setVyber(v.firmaUcet)}
               style={{ display: "flex", alignItems: "center", gap: 8, minHeight: 44, padding: "0 14px 0 6px", borderRadius: 14, flex: "none", border: `1px solid ${on ? "var(--sek-oBd)" : "var(--d-cardBd, var(--cardBd))"}`, boxShadow: "none", background: on ? "var(--goldBg)" : "var(--d-card, var(--card))", color: "var(--d-ink, var(--ink))", fontSize: 14.5, fontWeight: 800, fontFamily: "inherit", cursor: "pointer", whiteSpace: "nowrap" }}>
-              <Logo nazov={v.firma} />{v.firma}{v.stav !== "potvrdeny" && <span style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--sek-o)" }} aria-label={t("firma.caka")} />}</button>); })}
+              <Logo ucet={v.firmaUcet} nazov={v.firma} />{v.firma}{v.stav !== "potvrdeny" && <span style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--sek-o)" }} aria-label={t("firma.caka")} />}</button>); })}
           <button type="button" role="tab" aria-selected={vyber === "nova"} onClick={() => setVyber("nova")}
             style={{ minHeight: 44, padding: "0 14px", borderRadius: 14, flex: "none", border: `1px dashed ${vyber === "nova" ? "var(--sek-g)" : "var(--d-cardBd, var(--cardBd))"}`, boxShadow: "none", background: "transparent", color: "var(--sek-g)", fontSize: 14.5, fontWeight: 800, fontFamily: "inherit", cursor: "pointer", whiteSpace: "nowrap" }}>{t("firma.dalsia")}</button>
         </div>)}
       {!akt && <Pripojit osoba={osoba} maFirmy={vazby.length > 0} onHotovo={(f) => setVyber(f)} />}
       {akt?.stav === "pozvany" && <Pozvanka v={akt} osoba={osoba} />}
       {akt?.stav === "ziadost" && <>
-        <FirmaKarta nazov={akt.firma} pod={t("firma.ziadostPoslana")} />
-        <button type="button" onClick={() => { odpoj(akt.firma, osoba); setVyber(null); toast(t("firma.ziadostZrusena")); }} style={btn(false)}>{t("firma.zrusitZiadost")}</button>
-        {TESTOVACIA && <button type="button" onClick={() => potvrd(akt.firma, osoba, ja.celeMeno)} style={{ ...btn(false), minHeight: 44, fontSize: 13, fontWeight: 700 }}>{t("firma.ukazkaPotvrdila")}</button>}
+        <FirmaKarta ucet={akt.firmaUcet} nazov={akt.firma} pod={t("firma.ziadostPoslana")} />
+        <button type="button" onClick={() => { odpoj(akt.firmaUcet, osoba); setVyber(null); toast(t("firma.ziadostZrusena")); }} style={btn(false)}>{t("firma.zrusitZiadost")}</button>
+        {TESTOVACIA && <button type="button" onClick={() => potvrd(akt.firmaUcet, osoba, ja.celeMeno)} style={{ ...btn(false), minHeight: 44, fontSize: 13, fontWeight: 700 }}>{t("firma.ukazkaPotvrdila")}</button>}
       </>}
       {akt?.stav === "potvrdeny" && <Prepojeny v={akt} osoba={osoba} onOdpojene={() => setVyber(null)} />}
     </div>
@@ -105,10 +108,10 @@ function Pozvanka({ v, osoba }: { v: Vazba; osoba: string }) {
   const ja = usePouzivatel();
   return (<div>
     <Nadpis>{t("firma.pozvanka")}</Nadpis>
-    <FirmaKarta nazov={v.firma} pod={t("firma.pozyva")}>
+    <FirmaKarta ucet={v.firmaUcet} nazov={v.firma} pod={t("firma.pozyva")}>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-        <button type="button" onClick={() => { odmietni(v.firma, osoba); toast(t("firma.odmietnuta")); }} style={btn(false)}>{t("firma.odmietnut")}</button>
-        <button type="button" onClick={() => { potvrd(v.firma, osoba, ja.celeMeno); toast(t("firma.prepojeneS", { firma: v.firma })); }} style={btn(true)}>{t("firma.prijat")}</button>
+        <button type="button" onClick={() => { odmietni(v.firmaUcet, osoba); toast(t("firma.odmietnuta")); }} style={btn(false)}>{t("firma.odmietnut")}</button>
+        <button type="button" onClick={() => { potvrd(v.firmaUcet, osoba, ja.celeMeno); toast(t("firma.prepojeneS", { firma: v.firma })); }} style={btn(true)}>{t("firma.prijat")}</button>
       </div>
       <div style={{ fontSize: 12.5, color: "var(--d-ink3, var(--ink3))" }}>{t("firma.nepoznas")}</div>
     </FirmaKarta>
@@ -126,7 +129,7 @@ function Pripojit({ osoba, maFirmy, onHotovo }: { osoba: string; maFirmy: boolea
   const kodOk = kod.replace(/-/g, "").length >= 6;
   const ziadaj = (firma: string) => { poziadaj(firma, osoba, ja.celeMeno); onHotovo(firma); };
   const pripoj = (k: string) => {
-    const f = firmaPodlaKodu(k, FIRMY_ADRESAR.map((x) => x.nazov));
+    const f = firmaPodlaKodu(k);
     if (!f) { toast(t("firma.kodNepozname")); return; }
     setKod(""); ziadaj(f);
   };
@@ -144,10 +147,10 @@ function Pripojit({ osoba, maFirmy, onHotovo }: { osoba: string; maFirmy: boolea
       {hladPole(q, setQ, t("firma.najdiPh"))}
       {vysledky.length > 0 && <NastKarta k="b" style={{ marginTop: 10 }}>
         {vysledky.map((f, i) => (
-          <div key={f.nazov} style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 68, padding: "12px 18px", borderTop: i ? oddelovac : "none" }}>
-            <Logo nazov={f.nazov} />
+          <div key={f.ucet} style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 68, padding: "12px 18px", borderTop: i ? oddelovac : "none" }}>
+            <Logo ucet={f.ucet} nazov={f.nazov} />
             {tx(f.nazov, t("firma.ico", { mesto: f.mesto, ico: f.ico ?? "" }))}
-            <button type="button" onClick={() => ziadaj(f.nazov)} style={{ minHeight: 44, padding: "0 14px", borderRadius: 12, border: "1px solid var(--sek-bBd)", boxShadow: "none", background: "var(--sek-bBg)", color: "var(--sek-b)", fontSize: 14, fontWeight: 800, fontFamily: "inherit", cursor: "pointer", flex: "none" }}>{t("firma.poziadat")}</button>
+            <button type="button" onClick={() => ziadaj(f.ucet)} style={{ minHeight: 44, padding: "0 14px", borderRadius: 12, border: "1px solid var(--sek-bBd)", boxShadow: "none", background: "var(--sek-bBg)", color: "var(--sek-b)", fontSize: 14, fontWeight: 800, fontFamily: "inherit", cursor: "pointer", flex: "none" }}>{t("firma.poziadat")}</button>
           </div>))}
       </NastKarta>}
       {qq.length >= 2 && !vysledky.length && <div style={{ ...pozn, marginTop: 10 }}>{t("firma.nenasli.a")} <DeedZnacka />{t("firma.nenasli.b")}</div>}
@@ -162,7 +165,7 @@ function Pripojit({ osoba, maFirmy, onHotovo }: { osoba: string; maFirmy: boolea
     </div>
     <button type="button" disabled={!kodOk} onClick={() => pripoj(kod)} style={btn(true, kodOk)}>{t("firma.pripojit")}</button>
     <button type="button" onClick={() => setSkener(true)} style={{ ...btn(false), display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}><Ik d="M4 8V4h4M16 4h4v4M20 16v4h-4M8 20H4v-4M7 12h10" />{t("firma.naskenovat")}</button>
-    {TESTOVACIA && <button type="button" onClick={() => { const f = maFirmy ? "Kaviareň Pod Hradom" : "Pekáreň Dobrota"; pozvi(f, osoba); onHotovo(f); }} style={{ ...btn(false), minHeight: 44, fontSize: 13, fontWeight: 700 }}>{t("firma.ukazkaPozvanka")}</button>}
+    {TESTOVACIA && <button type="button" onClick={() => { const f = firma(maFirmy ? "firma-kaviaren" : "firma-pekaren"); pozvi(f, osoba); onHotovo(f); }} style={{ ...btn(false), minHeight: 44, fontSize: 13, fontWeight: 700 }}>{t("firma.ukazkaPozvanka")}</button>}
     {skener && <SkenerFirmy onClose={() => setSkener(false)} onKod={(k) => { setSkener(false); setKod(k); pripoj(k); }} />}
   </>);
 }
@@ -175,18 +178,18 @@ function Prepojeny({ v, osoba, onOdpojene }: { v: Vazba; osoba: string; onOdpoje
   const t = useT();
   const n = useNastaveniaAppky();
   const st = useMojaFirma();
-  const d = dataFirmy(v.firma);
+  const d = dataFirmy(v.firmaUcet);
   const [qr, setQr] = useState(false);
   const [hodiny, setHodiny] = useState(false);
   const [navrh, setNavrh] = useState(false);
   const [benefit, setBenefit] = useState<number | null>(null);
   const prOz = usePrekladObsahu(), prAk = usePrekladObsahu(), prOd = usePrekladObsahu(), prBe = usePrekladObsahu(), prDet = usePrekladObsahu();
   const oznamy = d.oznamy.filter((o) => !st.vybavene.includes(o.id));
-  const akcie = [...d.akcie, ...(st.navrhy[v.firma] ?? [])];
-  const odpojit = () => { odpoj(v.firma, osoba); onOdpojene(); toast(t("firma.odpojene")); };
+  const akcie = [...d.akcie, ...(st.navrhy[v.firmaUcet] ?? [])];
+  const odpojit = () => { odpoj(v.firmaUcet, osoba); onOdpojene(); toast(t("firma.odpojene")); };
 
   return (<>
-    <FirmaKarta nazov={v.firma} pod={t("firma.prepojeneOd", { datum: datum(v.potvrdene ?? v.kedy) })} />
+    <FirmaKarta ucet={v.firmaUcet} nazov={v.firma} pod={t("firma.prepojeneOd", { datum: datum(v.potvrdene ?? v.kedy) })} />
     <button type="button" onClick={() => setQr(true)} style={{ ...riadokBtn, borderRadius: 20, border: "1px solid var(--sek-oBd)", background: "var(--d-card, var(--card))", boxShadow: "var(--d-hl, none)" }}>
       <span aria-hidden="true" style={{ width: 52, height: 52, borderRadius: 12, border: `2.5px solid ${ZLATA}`, background: "#fff", color: "#1D211B", display: "flex", alignItems: "center", justifyContent: "center", flex: "none" }}><Ik d={IK_QR} s={30} w={2} /></span>
       {tx(t("firma.pracovnyQr"), t("firma.pracovnyQrS"))}<Sipka />
@@ -279,9 +282,9 @@ function Prepojeny({ v, osoba, onOdpojene }: { v: Vazba; osoba: string; onOdpoje
     <button type="button" onClick={odpojit} style={btn(false)}>{t("firma.odpojit")}</button>
     <div style={pozn}>{t("firma.odpojitPozn")}</div>
 
-    {qr && <PracovnyQr firma={v.firma} onClose={() => setQr(false)} />}
-    {hodiny && d.vto && <MojeFiremneHodiny firma={v.firma} onBack={() => setHodiny(false)} />}
-    {navrh && <NavrhAkcie firma={v.firma} onClose={() => setNavrh(false)} />}
+    {qr && <PracovnyQr firma={v.firmaUcet} nazov={v.firma} onClose={() => setQr(false)} />}
+    {hodiny && d.vto && <MojeFiremneHodiny firma={v.firmaUcet} onBack={() => setHodiny(false)} />}
+    {navrh && <NavrhAkcie firma={v.firmaUcet} onClose={() => setNavrh(false)} />}
     {benefit !== null && d.benefity[benefit] && <Harok onClose={() => setBenefit(null)} hlavicka={<span style={{ flex: 1, fontSize: 20, fontWeight: 800 }}>{prDet.p(d.benefity[benefit].t)}</span>}>
       <div style={{ fontSize: 13.5, color: "var(--d-ink3, var(--ink3))" }}>{prDet.p(d.benefity[benefit].s)}</div>
       <div style={{ fontSize: 15, lineHeight: 1.6, color: "var(--d-ink2, var(--ink2))" }}>{prDet.p(d.benefity[benefit].detail)}</div>
@@ -328,7 +331,8 @@ function NavrhAkcie({ firma, onClose }: { firma: string; onClose: () => void }) 
 }
 
 // ---------------- Pracovný QR (celá obrazovka, biele pozadie) ----------------
-function PracovnyQr({ firma, onClose }: { firma: string; onClose: () => void }) {
+/** firma = číslo účtu firmy · nazov len na zobrazenie */
+function PracovnyQr({ firma, nazov, onClose }: { firma: string; nazov: string; onClose: () => void }) {
   const tr = useT();
   const ja = usePouzivatel();
   const [sek, setSek] = useState(PERIODA);
@@ -350,12 +354,12 @@ function PracovnyQr({ firma, onClose }: { firma: string; onClose: () => void }) 
     return () => { window.clearInterval(t); zamok?.release().catch(() => {}); window.removeEventListener("keydown", k); };
   }, [onClose]);
   // pracovný QR = user + firma (rezim „praca:<firma>"); osobný Môj QR sa s firmou nikdy nespája
-  const data = tokenQr(ja.ucetId || ja.celeMeno, `praca-${bezDiakritiky(firma).replace(/[^a-z0-9]+/g, "-")}`, okno);
+  const data = tokenQr(ja.ucetId || ja.cisloUctu, `praca-${normCislo(firma)}`, okno);
   const velkost = Math.min(window.innerWidth - 48, window.innerHeight - 260, 460);
   return createPortal(
-    <div ref={ref} onClick={onClose} role="dialog" aria-modal="true" aria-label={tr("firma.qr.aria", { firma })}
+    <div ref={ref} onClick={onClose} role="dialog" aria-modal="true" aria-label={tr("firma.qr.aria", { firma: nazov })}
       style={{ position: "fixed", inset: 0, zIndex: 210, background: "#fff", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 18, cursor: "zoom-out", fontFamily: "'Plus Jakarta Sans', sans-serif", color: "#1D211B", animation: "zbFsIn .25s ease both" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10 }}><Logo nazov={firma} /><b style={{ fontSize: 18 }}>{firmaPodla(firma)?.nazov ?? firma}</b></div>
+      <div style={{ display: "flex", alignItems: "center", gap: 10 }}><Logo ucet={firma} nazov={nazov} /><b style={{ fontSize: 18 }}>{nazov}</b></div>
       <div style={{ opacity: blik ? 0.15 : 1, transition: "opacity .25s ease", lineHeight: 0 }}><DeedQr data={data} bezOdznaku farba={ZLATA} size={velkost} /></div>
       <b style={{ fontSize: 17 }}>{tr("firma.qr.pracovny", { meno: ja.celeMeno })}</b>
       <div style={{ width: velkost, maxWidth: "80vw", height: 5, borderRadius: 3, background: "#EDE6D3", overflow: "hidden" }}>

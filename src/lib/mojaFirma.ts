@@ -7,6 +7,7 @@
 // ============================================================
 import { useSyncExternalStore } from "react";
 import { tTeraz } from "@/i18n";
+import { UCTY_FIRIEM, cisloFirmy, firma, rovnakaFirma } from "./firma";
 
 export type FirmaVolba = "neukazat" | "anonym" | "meno";
 export const VOLBA_TXT: Record<FirmaVolba, string> = { neukazat: "Neukázať", anonym: "Anonymne", meno: "S menom" };
@@ -27,10 +28,11 @@ export type Odmena = { za: string; hodnota: string; kedy: string; zdroj: string;
 export type VtoAkcia = { d: number; m: string; t: string; s: string };
 export type VtoHistoria = { t: string; s: string; h: number; stav: "čaká na schválenie" | "schválené firmou" | "vyplatené" };
 export type Vto = { rok: number; spolu: number; vyuzite: number; obnovi: string; prihlasene: VtoAkcia[]; historia: VtoHistoria[]; oblasti: string[]; sukromne: number };
-export type FirmaData = { benefity: Benefit[]; oznamy: FirmaOznam[]; akcie: FirmaAkcia[]; odmeny: Odmena[]; vto?: Vto; kodPrefix?: string };
+export type FirmaData = { benefity: Benefit[]; oznamy: FirmaOznam[]; akcie: FirmaAkcia[]; odmeny: Odmena[]; vto?: Vto };
 
+/** kľúč = číslo účtu firmy (lib/firma), nie názov */
 const DATA: Record<string, FirmaData> = {
-  "Pekáreň Dobrota": {
+  [firma("firma-pekaren")]: {
     benefity: [
       { t: "Sobota pre útulok", s: "firemná akcia · 4. 10. · prihlásených 12", detail: "Firma pozýva zamestnancov na spoločnú sobotu v útulku Túlavá labka. Účasť potvrdíš pracovným QR na mieste, hodiny sa ti započítajú do firemných hodín." },
       { t: "Deň dobrovoľníctva", s: "jeden platený deň v roku na skutok", detail: "Jeden pracovný deň v roku môžeš venovať skutku. Termín si dohodneš s vedúcim." },
@@ -59,9 +61,8 @@ const DATA: Record<string, FirmaData> = {
       ],
       oblasti: ["Deti", "Zvieratá"], sukromne: 1,
     },
-    kodPrefix: "PEKA",
   },
-  "Kaviareň Pod Hradom": {
+  [firma("firma-kaviaren")]: {
     benefity: [{ t: "Káva zadarmo po skutku", s: "raz týždenne po potvrdenom skutku", detail: "Po potvrdenom skutku s menom dostaneš kávu zadarmo. Platí raz týždenne." }],
     oznamy: [{ id: "kh-benefit", typ: "benefit", t: "Nový benefit: káva zadarmo po skutku", s: "včera" }],
     akcie: [{ d: 6, m: "OKT", t: "Večerná smena", s: "kaviareň · 16:00 – 22:00", stitok: "potvrdené", typ: "smena" }],
@@ -69,7 +70,7 @@ const DATA: Record<string, FirmaData> = {
   },
 };
 const PRAZDNE: FirmaData = { benefity: [], oznamy: [], akcie: [], odmeny: [] };
-export const dataFirmy = (nazov: string): FirmaData => DATA[nazov] ?? PRAZDNE;
+export const dataFirmy = (ucet: string): FirmaData => Object.entries(DATA).find(([k]) => rovnakaFirma(k, ucet))?.[1] ?? PRAZDNE;
 
 // ---- odpovede usera (lokálne) ----
 const KLUC = "deed.mojaFirma";
@@ -92,10 +93,12 @@ export const navrhniAkciu = (firma: string, a: { t: string; kedy: string }) => {
   const akcia: FirmaAkcia = { d: isNaN(dt.getTime()) ? 0 : dt.getDate(), m: isNaN(dt.getTime()) ? "" : m[dt.getMonth()], t: a.t, s: tTeraz()("firma.navrh.s"), stitok: "navrhnuté", typ: "akcia" };
   uloz({ ...s, navrhy: { ...s.navrhy, [firma]: [...(s.navrhy[firma] ?? []), akcia] } });
 };
-/** pilot: kód „PEKA-2931" → firma podľa prefixu (v produkcii overí server) */
-export const firmaPodlaKodu = (kod: string, firmy: string[]): string | undefined => {
-  const bez = (x: string) => x.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z]/g, "");
+/** pilot: kód „PEKA-2931" → číslo účtu firmy podľa prefixu z jej účtu (v produkcii overí server).
+ *  Zadanie 1 · Blok 1: žiadne hádanie podľa začiatku názvu firmy. */
+export const firmaPodlaKodu = (kod: string): string | undefined => {
+  const bez = (x: string) => x.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z]/g, "");
   const p = bez(kod.split("-")[0]);
   if (p.length < 3) return undefined;
-  return Object.entries(DATA).find(([, d]) => d.kodPrefix && bez(d.kodPrefix) === p)?.[0] ?? firmy.find((f) => bez(f).startsWith(p));
+  const f = UCTY_FIRIEM.find((x) => x.kodPrefix && bez(x.kodPrefix) === p);
+  return f ? cisloFirmy(f.id) : undefined;
 };

@@ -130,7 +130,7 @@ function ProfilDesktop({ screen, subNazov, setScreen, onSub, onQr, onUpravit, pT
   const ja = usePouzivatel();
   const vazby = useVazbyOsoby(ja.celeMeno);
   const mf = useMojaFirma();
-  const firmaCaka = vazby.some((v) => v.stav === "pozvany") || vazby.some((v) => v.stav === "potvrdeny" && dataFirmy(v.firma).oznamy.some((o) => o.typ === "kontrola" && !mf.vybavene.includes(o.id)));
+  const firmaCaka = vazby.some((v) => v.stav === "pozvany") || vazby.some((v) => v.stav === "potvrdeny" && dataFirmy(v.firmaUcet).oznamy.some((o) => o.typ === "kontrola" && !mf.vybavene.includes(o.id)));
   const jeAktivny = (it: (typeof PROFIL_NAV)[number]) => screen === it.key && (it.key !== "sub" || subNazov === it.nazov);
   const dl = useDlazdice();
   const [uprava, setUprava] = useState(false);

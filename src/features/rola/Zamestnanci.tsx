@@ -31,6 +31,7 @@ const btnHlavny: CSSProperties = {
 const akcia = (farba: string): CSSProperties => ({ fontSize: 11.5, fontWeight: 800, color: farba, cursor: "pointer" });
 const datum = (ms: number) => new Date(ms).toLocaleDateString("sk-SK", { day: "numeric", month: "numeric" });
 
+/** firma = číslo účtu firmy (identita, lib/firma), nie názov */
 export function ZamestnanciSheet({ firma, toast, onClose }: {
   firma: string; toast: (m: string) => void; onClose: () => void;
 }) {

@@ -24,7 +24,7 @@ import type { KanalPlatby } from "./Sumy";
 import { ZdielatRiadok, PravidelnaRiadok, OblubenePodporit, ZapojitFirmuRiadok, RetazRiadok, KartaDorovnava, Darcovia } from "./Riadky";
 import { ZdielatHarok, Harok } from "./Zdielat";
 import { NahlasitSheet } from "@/components/nahlasit";
-import { firmaAkoDarca } from "@/lib/podpory";
+import { firmaPreDorovnanie } from "@/lib/podpory";
 import { PravidelnaHarok } from "./PravidelnaHarok";
 import { RetazDobraHarok } from "./RetazDobra";
 import { DorovnanieFirmyHarok } from "./DorovnanieFirmy";
@@ -195,7 +195,7 @@ export function ZbierkaModul({ zbierka, miesto: miestoProp, onBack, spatNazov, o
     if (p.kluc === "pravidelna") return obal(<PravidelnaRiadok registrovany={registrovany} onClick={() => setHarok("pravidelna")} />);
     if (p.kluc === "oblubene") return obal(<OblubenePodporit polozka={{ refId: zbierka.id, typ: "charita", modul: "charity", nazov: zbierka.nazov, ciel: zbierka.ciel }}
       onPodporit={() => setHarok("podporit")} />);
-    if (p.kluc === "zapojitFirmu") return !smieDorovnat("charita", firmaAkoDarca() ?? "") ? null : obal(<ZapojitFirmuRiadok firma={firmaAkoDarca() ?? "Vaša firma"} onClick={() => setHarok("firma")} />);
+    if (p.kluc === "zapojitFirmu") return !smieDorovnat("charita", firmaPreDorovnanie().ucet) ? null : obal(<ZapojitFirmuRiadok firma={firmaPreDorovnanie().nazov} onClick={() => setHarok("firma")} />);
     if (p.kluc === "retazNastavit") return obal(<RetazRiadok onClick={() => setHarok("retaz")} />);
     if (p.kluc === "darcovia") return obal(<Darcovia refId={zbierka.id} cezTvorcu={cezTvorcu} nadpis={tvorca ? `DARCOVIA CEZ ${tvorca.menoAkuzativ.toLocaleUpperCase("sk-SK")}` : undefined} />);
     if (p.kluc === "krypto") return <div key={p.kluc} className="zb-pol" style={{ padding: "0 16px" }}><DaryVKrypte refId={zbierka.id} otvor={otvorPlatbu} mikro={mikro} cezTvorcu={cezTvorcu} /></div>;
@@ -235,7 +235,7 @@ export function ZbierkaModul({ zbierka, miesto: miestoProp, onBack, spatNazov, o
       )}
 
       {harok === "pravidelna" && <PravidelnaHarok refId={zbierka.id} nazov={zbierka.nazov} registrovany={registrovany} onClose={() => setHarok(null)} />}
-      {harok === "firma" && <DorovnanieFirmyHarok zbierkaId={zbierka.id} zbierkaNazov={zbierka.nazov} firma={firmaAkoDarca() ?? "Vaša firma"} onClose={() => setHarok(null)} />}
+      {harok === "firma" && <DorovnanieFirmyHarok zbierkaId={zbierka.id} zbierkaNazov={zbierka.nazov} firmaUcet={firmaPreDorovnanie().ucet} firma={firmaPreDorovnanie().nazov} onClose={() => setHarok(null)} />}
       {harok === "zdielat" && <ZdielatHarok id={zbierka.id} nazov={zbierka.nazov} organizacia={zbierka.organizacia?.meno}
         obrazok={zbierka.media?.find((m) => m.typ === "foto")?.src} onClose={() => setHarok(null)} />}
       {harok === "podporit" && <PodporitDeedHarok registrovany={registrovany} onClose={() => setHarok(null)} />}

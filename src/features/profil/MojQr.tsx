@@ -97,7 +97,7 @@ export function MojQr({ zalozka = "akcia", onClose }: { zalozka?: ZalozkaQr; onC
     try { navigator.vibrate?.([8, 40, 12]); } catch { /* bez vibrácie */ }
     setOk(true); window.setTimeout(() => setOk(false), 2200);
   };
-  const data = zivy ? tokenQr(ja.ucetId || handle, z, okno) : `https://${odkaz}`;
+  const data = zivy ? tokenQr(ja.ucetId || ja.cisloUctu, z, okno) : `https://${odkaz}`;
   const zalozkaBtn = (k: ZalozkaQr, t: string) => (
     <button key={k} type="button" onClick={() => prepni(k)} style={{ height: 42, borderRadius: 10, border: "none", cursor: "pointer", fontSize: 14.5, fontWeight: 700, fontFamily: "inherit", background: z === k ? "#fff" : "transparent", color: z === k ? "#1D211B" : "var(--ink3)" }}>{t}</button>);
 

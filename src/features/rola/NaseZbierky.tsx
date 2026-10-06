@@ -71,8 +71,8 @@ const zivé = (d: Dorovnanie, teraz: number) =>
 // ============================================================
 // DETAIL ZBIERKY — pracovná plocha jednej zbierky
 // ============================================================
-function DetailZbierky({ firma, podpora, dorovnanie, toast, onSpat }: {
-  firma: string; podpora: Podpora; dorovnanie?: Dorovnanie;
+function DetailZbierky({ firma, nazov, podpora, dorovnanie, toast, onSpat }: {
+  firma: string; nazov: string; podpora: Podpora; dorovnanie?: Dorovnanie;
   toast: (m: string) => void; onSpat: () => void;
 }) {
   const [teraz] = useState(() => Date.now());
@@ -111,7 +111,7 @@ function DetailZbierky({ firma, podpora, dorovnanie, toast, onSpat }: {
   );
 
   if (nove && z) return (
-    <DorovnanieFirmyHarok zbierkaId={podpora.zbierkaId} zbierkaNazov={z.nazov} firma={firma} onClose={() => setNove(false)} />
+    <DorovnanieFirmyHarok zbierkaId={podpora.zbierkaId} zbierkaNazov={z.nazov} firmaUcet={firma} firma={nazov} onClose={() => setNove(false)} />
   );
 
   return (<>
@@ -286,8 +286,9 @@ function DetailZbierky({ firma, podpora, dorovnanie, toast, onSpat }: {
 // ============================================================
 // ZOZNAM — rozcestník, každý riadok vedie do detailu
 // ============================================================
-export function NaseZbierkySheet({ firma, toast, onClose }: {
-  firma: string; toast: (m: string) => void; onClose: () => void;
+/** firma = číslo účtu firmy (identita) · nazov = len na zobrazenie */
+export function NaseZbierkySheet({ firma, nazov, toast, onClose }: {
+  firma: string; nazov: string; toast: (m: string) => void; onClose: () => void;
 }) {
   const [otvorena, setOtvorena] = useState<string | null>(null);
   const podpory = usePodporyFirmy(firma);
@@ -304,7 +305,7 @@ export function NaseZbierkySheet({ firma, toast, onClose }: {
 
   const otvorenaPodpora = podpory.find((p) => p.zbierkaId === otvorena);
   if (otvorenaPodpora) return (
-    <DetailZbierky firma={firma} podpora={otvorenaPodpora} dorovnanie={dorovnanieKu(otvorenaPodpora.zbierkaId)}
+    <DetailZbierky firma={firma} nazov={nazov} podpora={otvorenaPodpora} dorovnanie={dorovnanieKu(otvorenaPodpora.zbierkaId)}
       toast={toast} onSpat={() => setOtvorena(null)} />
   );
 

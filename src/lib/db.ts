@@ -96,6 +96,10 @@ export async function spustiKyb(orgUcetId: string, { stanovyRef }: { stanovyRef?
 export const UCET_EXISTUJE = "Účet s týmto číslom existuje — prihláste sa.";
 export class UcetExistujeChyba extends Error { constructor() { super(UCET_EXISTUJE); this.name = "UcetExistujeChyba"; } }
 
+// TODO (Zadanie 1 · Blok 1, migrácia 0035_identita.sql): registrácia organizácie / firmy zatiaľ
+// NEvolá rpc zaloz_stranku(p_id, p_typ, p_nazov). Karta, ktorá spustí vznik stránok z registrácie,
+// ju musí zavolať po vytvorení účtu — vznikne stranka + účet organizácie (typ 'charita'/'firma')
+// a volajúci sa zapíše do statutar ako správca. Dovtedy majú stránky len testovacie org. účty z 0035.
 // Vytvorí účet po overení telefónu. Existujúce číslo = chyba (DB: unique ucet.telefon).
 export async function vytvorUcet({ typ = "aktivny", telefon, email = null }: { typ?: string; telefon: string; email?: string | null }) {
   const tel = (telefon || "").replace(/\s+/g, ""); // normalizuj — bez medzier (stabilný unique kľúč)

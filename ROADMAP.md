@@ -86,6 +86,7 @@ Vymeniť mock repozitáre za Supabase — bez zásahu do UI.
 - Implementovať Supabase repozitáre (`*.supabase.ts`), prepnúť selektor; realtime tam, kde dáva zmysel (notifikácie, tickery).
 - Seed reálnych/realistických dát + RLS politiky pre čítanie.
 - Poradie napájania: **Good → Charita → Top → Profil/Peňaženka → Notifikácie → Aktivity → Help → Mapa**.
+- **TODO (Zadanie 1 · Blok 1, migrácia `0035_identita.sql`):** registrácia organizácie/firmy musí volať `rpc zaloz_stranku(p_id, p_typ, p_nazov)` — patrí do karty, ktorá spustí vznik stránok z registrácie (miesto: `src/lib/db.ts` pri `vytvorUcet`). Dovtedy stránky stoja na testovacích org. účtoch z 0035.
 - **Hotovo, keď:** appka beží na reálnych dátach prihláseného používateľa, mock už len ako fallback pre vývoj.
 
 ### Fáza 5 — Produkčná pripravenosť

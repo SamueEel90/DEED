@@ -27,7 +27,7 @@ export function DorovnaniePas({ d, onFirma }: { d: Dorovnanie; onFirma?: () => v
   const zost = zostatok(d);
   const minute = zost <= 0;
   // štít firmy je v adresári (v produkcii príde s profilom firmy)
-  const zaznam = FIRMY_ADRESAR.find((f) => rovnakaFirma(f.nazov, d.firma));
+  const zaznam = FIRMY_ADRESAR.find((f) => rovnakaFirma(f.ucet, d.firmaUcet));
   const logo = d.firmaLogo ?? zaznam?.logo;
   const ram = tint(ZLATA, minute ? .25 : .45);
 

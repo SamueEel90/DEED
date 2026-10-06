@@ -20,7 +20,7 @@
 // a aj SEPA sa páruje automaticky podľa VS.
 // ============================================================
 import { useSyncExternalStore } from "react";
-import { rovnakaFirma } from "./firma";
+import { rovnakaFirma, firma as uctFirmy, UCTY_FIRIEM } from "./firma";
 import { somZamestnanec, menoDarcu } from "./zamestnanci";
 import { mojeCisloUctu } from "./identita";
 
@@ -73,6 +73,9 @@ export interface Dorovnanie {
   /** čoho sa drží: konkrétna zbierka / sektor / celá organizácia */
   ciel: string;
   cielNazov: string;
+  /** Zadanie 1 · Blok 1: kľúč firmy = číslo jej účtu (U-…, lib/firma), NIKDY názov */
+  firmaUcet: string;
+  /** názov firmy len na zobrazenie */
   firma: string;
   firmaProfil?: string;
   firmaLogo?: string;
@@ -143,6 +146,8 @@ export function useZmenyDorovnani(): number { return useSyncExternalStore(subscr
 export function nacitajDorovnania(entita: string): Dorovnanie[] {
   let v: Dorovnanie[];
   try { v = JSON.parse(localStorage.getItem(KLUC(entita)) ?? "[]") as Dorovnanie[]; } catch { return []; }
+  // staré záznamy viazané na názov firmy (pred Blokom 1) sa nečítajú
+  v = v.filter((d) => !!d.firmaUcet);
   // tichý súhlas: čo čaká na potvrdenie dlhšie než 48 h, nabehne samo
   const teraz = Date.now();
   // KARTA 49: samo sa spustí len platba cez DEED (vidíme ju); prevod mimo DEED nikdy
@@ -182,7 +187,7 @@ export const zostatok = (d: Dorovnanie) => Math.max(0, d.strop - vycerpane(d));
  *  ostatným darcom sa nič nesľubuje ani nezobrazuje. */
 export function dorovnanieKDaru(d: Dorovnanie, dar: number, teraz = Date.now(), cezTvorcu?: string): number {
   if (!bezi(d, teraz) || dar <= 0) return 0;
-  if (d.lenZamestnanci && !somZamestnanec(d.firma)) return 0;
+  if (d.lenZamestnanci && !somZamestnanec(d.firmaUcet)) return 0;
   // dar, ktorý neprišiel cez QR toho tvorcu, sa nedorovnáva — to je celý zmysel
   if (d.lenTvorca && d.lenTvorca !== cezTvorcu) return 0;
   return Math.min(Math.round(dar * d.pomer * 100) / 100, d.stropDaru ?? Infinity, zostatok(d));
@@ -191,7 +196,7 @@ export function dorovnanieKDaru(d: Dorovnanie, dar: number, teraz = Date.now(), 
 /** platí toto dorovnanie pre práve prihláseného darcu? (texty, bežec, prepočet)
  *  Pri tvorcovskom sa pýtame aj na to, či darca prišiel cez toho tvorcu. */
 export const platiPreMna = (d: Dorovnanie, cezTvorcu?: string): boolean =>
-  (!d.lenZamestnanci || somZamestnanec(d.firma))
+  (!d.lenZamestnanci || somZamestnanec(d.firmaUcet))
   && (!d.lenTvorca || d.lenTvorca === cezTvorcu);
 
 export const bezi = (d: Dorovnanie, teraz = Date.now()) =>
@@ -259,10 +264,10 @@ function vsetkyEntity(): string[] {
 
 
 /** dorovnania jednej firmy naprieč charitami — pohľad z jej vlastnej správy */
-export function dorovnaniaFirmy(firma: string): Dorovnanie[] {
+export function dorovnaniaFirmy(firma: string /* číslo účtu firmy */): Dorovnanie[] {
   return vsetkyEntity()
     .flatMap((e) => nacitajDorovnania(e))
-    .filter((d) => rovnakaFirma(d.firma, firma))
+    .filter((d) => rovnakaFirma(d.firmaUcet, firma))
     .sort((a, b) => b.zapecatene - a.zapecatene);
 }
 export function useDorovnaniaFirmy(firma: string): Dorovnanie[] {
@@ -443,26 +448,21 @@ export const upozorniFirmu = (entita: string, id: string) => zmen(entita, id, { 
 // ---- od koho charita prijíma dorovnanie (obmedzené firmy dorovnanie vôbec neuvidia; firma nevie, že je obmedzená) ----
 /** číselník odvetví, ktoré sa dajú obmedziť (config) */
 export const ODVETVIA_OBMEDZENIA = ["Kasína a herne", "Stávkové kancelárie", "Obsah pre dospelých"];
+/** firmy = čísla účtov firiem (nie názvy) */
 export interface ObmedzenieDorovnania { zapnute: boolean; odvetvia: string[]; firmy: string[] }
 const obmedzenia = new Map<string, ObmedzenieDorovnania>();
 export const obmedzenieDorovnania = (entita: string): ObmedzenieDorovnania => obmedzenia.get(entita) ?? { zapnute: false, odvetvia: [...ODVETVIA_OBMEDZENIA], firmy: [] };
 export function ulozObmedzenie(entita: string, o: ObmedzenieDorovnania) { obmedzenia.set(entita, o); verzia++; posluchaci.forEach((f) => f()); }
-/** register firiem DEED (TESTOVACÍ výrez; odvetvie z registrácie firmy) */
-export const REGISTER_FIRIEM: { nazov: string; odvetvie: string; mesto: string }[] = [
-  { nazov: "Herňa Eldorádo s.r.o.", odvetvie: "Kasína a herne", mesto: "Košice" },
-  { nazov: "Stávky Plus a.s.", odvetvie: "Stávkové kancelárie", mesto: "Bratislava" },
-  { nazov: "Kaviareň Pod Hradom", odvetvie: "Gastro", mesto: "Trenčín" },
-  { nazov: "Autoservis Kováč s.r.o.", odvetvie: "Služby", mesto: "Trenčín" },
-  { nazov: "Elektro Mráz s.r.o.", odvetvie: "Obchod", mesto: "Trenčín" },
-  { nazov: "Stavebniny Opatová s.r.o.", odvetvie: "Stavebníctvo", mesto: "Trenčín" },
-  { nazov: "Pekáreň Dobrota s.r.o.", odvetvie: "Gastro", mesto: "Trenčín" },
-];
+/** register firiem DEED (TESTOVACÍ výrez; odvetvie z registrácie firmy) — účty firiem z lib/firma */
+export const REGISTER_FIRIEM: { ucet: string; nazov: string; odvetvie: string; mesto: string }[] = ["firma-herna", "firma-stavky", "firma-kaviaren", "firma-autoservis", "firma-elektro", "firma-stavebniny", "firma-pekaren"]
+  .map((id) => UCTY_FIRIEM.find((f) => f.id === id)!)
+  .map((f) => ({ ucet: uctFirmy(f.id), nazov: f.nazov, odvetvie: f.odvetvie ?? "", mesto: f.mesto ?? "" }));
 /** smie táto firma dorovnávať zbierky tejto charity? (ponuka sa obmedzenej firme neukáže) */
-export function smieDorovnat(entita: string, firma: string): boolean {
+export function smieDorovnat(entita: string, firma: string /* číslo účtu firmy */): boolean {
   const o = obmedzenieDorovnania(entita);
   if (!o.zapnute) return true;
   if (o.firmy.some((f) => rovnakaFirma(f, firma))) return false;
-  const odv = REGISTER_FIRIEM.find((f) => rovnakaFirma(f.nazov, firma))?.odvetvie;
+  const odv = REGISTER_FIRIEM.find((f) => rovnakaFirma(f.ucet, firma))?.odvetvie;
   return !(odv && o.odvetvia.includes(odv));
 }
 
@@ -481,15 +481,15 @@ export function naplnTestovacieDorovnania(entita: string, ciele: { strecha: stri
   };
   const zakl = { entita, firmaLogo: undefined, stropDaru: 0, lenZamestnanci: false, zvysok: "zbierke" as const, kanal: "karta" as KanalDorovnania };
   const L: Dorovnanie[] = [
-    { ...zakl, id: "dv-t-g", ciel: ciele.seniori, cielNazov: "Sektor Seniori", firma: "Elektro Mráz s.r.o.", pomer: 1, strop: 1500, stropDaru: 100, od: t, do: dt("2026-12-31T22:00:00Z"), kanal: "sepa", uhrada: "mimo", stav: "zapecatene", zapecatene: t - 6 * H, oznamene: t - 6 * H, zaznamy: [] },
-    { ...zakl, id: "dv-t-c", ciel: ciele.vozik, cielNazov: "Invalidný vozík pre Ninu", firma: "Autoservis Kováč s.r.o.", pomer: 1, strop: 2000, stropDaru: 200, od: t, do: dt("2026-11-30T22:00:00Z"), kanal: "sepa", uhrada: "deed", stav: "zapecatene", zapecatene: t - 4 * H, oznamene: t - 4 * H, zaznamy: [] },
-    { ...zakl, id: "dv-t-e", ciel: ciele.ovocie, cielNazov: "Ovocie do výdajne", firma: "Kaviareň Pod Hradom", pomer: 0.5, strop: 300, stropDaru: 50, od: dt("2026-09-01T08:00:00Z"), do: dt("2026-09-22T20:00:00Z"), zvysok: "firme", uhrada: "deed", stav: "pozastavene", zapecatene: dt("2026-09-01T08:00:00Z"), zaplatene: dt("2026-09-01T09:00:00Z"), pozastavene: dt("2026-09-22T20:00:00Z"),
+    { ...zakl, id: "dv-t-g", ciel: ciele.seniori, cielNazov: "Sektor Seniori", firmaUcet: uctFirmy("firma-elektro"), firma: "Elektro Mráz s.r.o.", pomer: 1, strop: 1500, stropDaru: 100, od: t, do: dt("2026-12-31T22:00:00Z"), kanal: "sepa", uhrada: "mimo", stav: "zapecatene", zapecatene: t - 6 * H, oznamene: t - 6 * H, zaznamy: [] },
+    { ...zakl, id: "dv-t-c", ciel: ciele.vozik, cielNazov: "Invalidný vozík pre Ninu", firmaUcet: uctFirmy("firma-autoservis"), firma: "Autoservis Kováč s.r.o.", pomer: 1, strop: 2000, stropDaru: 200, od: t, do: dt("2026-11-30T22:00:00Z"), kanal: "sepa", uhrada: "deed", stav: "zapecatene", zapecatene: t - 4 * H, oznamene: t - 4 * H, zaznamy: [] },
+    { ...zakl, id: "dv-t-e", ciel: ciele.ovocie, cielNazov: "Ovocie do výdajne", firmaUcet: uctFirmy("firma-kaviaren"), firma: "Kaviareň Pod Hradom", pomer: 0.5, strop: 300, stropDaru: 50, od: dt("2026-09-01T08:00:00Z"), do: dt("2026-09-22T20:00:00Z"), zvysok: "firme", uhrada: "deed", stav: "pozastavene", zapecatene: dt("2026-09-01T08:00:00Z"), zaplatene: dt("2026-09-01T09:00:00Z"), pozastavene: dt("2026-09-22T20:00:00Z"),
       zaznamy: zazn(27, 210, 0.5, dt("2026-09-01T08:00:00Z"), ["Lucia S.", "Anonymný darca"], dt("2026-09-21T18:00:00Z")), vratenie: { suma: 90, do: dt("2026-10-06T20:00:00Z"), vs: vsVratenia("dv-t-e") } },
-    { ...zakl, id: "dv-t-a", ciel: ciele.strecha, cielNazov: "Strecha pre rodinu Horváthovú", firma: "Pekáreň Dobrota s.r.o.", pomer: 1, strop: 1000, stropDaru: 300, od: dt("2026-10-02T08:00:00Z"), do: dt("2026-10-27T21:00:00Z"), uhrada: "deed", stav: "aktivne", zapecatene: dt("2026-10-02T08:00:00Z"), zaplatene: dt("2026-10-02T09:00:00Z"),
+    { ...zakl, id: "dv-t-a", ciel: ciele.strecha, cielNazov: "Strecha pre rodinu Horváthovú", firmaUcet: uctFirmy("firma-pekaren"), firma: "Pekáreň Dobrota s.r.o.", pomer: 1, strop: 1000, stropDaru: 300, od: dt("2026-10-02T08:00:00Z"), do: dt("2026-10-27T21:00:00Z"), uhrada: "deed", stav: "aktivne", zapecatene: dt("2026-10-02T08:00:00Z"), zaplatene: dt("2026-10-02T09:00:00Z"),
       zaznamy: zazn(41, 820, 1, dt("2026-10-02T08:00:00Z"), ["Anonymný darca", "Zuzana H.", "Jana K."]) },
-    { ...zakl, id: "dv-t-b", ciel: ciele.deti, cielNazov: "Sektor Deti", firma: "Stavebniny Opatová s.r.o.", pomer: 0.5, strop: 500, stropDaru: 100, od: dt("2026-09-18T08:00:00Z"), do: dt("2026-12-31T22:00:00Z"), zvysok: "firme", lenZamestnanci: true, kanal: "sepa", uhrada: "deed", stav: "aktivne", zapecatene: dt("2026-09-18T08:00:00Z"), zaplatene: dt("2026-09-18T09:00:00Z"),
+    { ...zakl, id: "dv-t-b", ciel: ciele.deti, cielNazov: "Sektor Deti", firmaUcet: uctFirmy("firma-stavebniny"), firma: "Stavebniny Opatová s.r.o.", pomer: 0.5, strop: 500, stropDaru: 100, od: dt("2026-09-18T08:00:00Z"), do: dt("2026-12-31T22:00:00Z"), zvysok: "firme", lenZamestnanci: true, kanal: "sepa", uhrada: "deed", stav: "aktivne", zapecatene: dt("2026-09-18T08:00:00Z"), zaplatene: dt("2026-09-18T09:00:00Z"),
       zaznamy: zazn(14, 140, 0.5, dt("2026-09-18T08:00:00Z"), ["Eva R.", "Peter M."]) },
-    { ...zakl, id: "dv-t-d", ciel: ciele.skolske, cielNazov: "Školské potreby", firma: "Pekáreň Dobrota s.r.o.", pomer: 1, strop: 600, stropDaru: 50, od: dt("2026-08-01T08:00:00Z"), do: dt("2026-08-25T20:00:00Z"), uhrada: "deed", stav: "vycerpane", zapecatene: dt("2026-08-01T08:00:00Z"), zaplatene: dt("2026-08-01T09:00:00Z"), ukoncene: dt("2026-08-19T12:00:00Z"),
+    { ...zakl, id: "dv-t-d", ciel: ciele.skolske, cielNazov: "Školské potreby", firmaUcet: uctFirmy("firma-pekaren"), firma: "Pekáreň Dobrota s.r.o.", pomer: 1, strop: 600, stropDaru: 50, od: dt("2026-08-01T08:00:00Z"), do: dt("2026-08-25T20:00:00Z"), uhrada: "deed", stav: "vycerpane", zapecatene: dt("2026-08-01T08:00:00Z"), zaplatene: dt("2026-08-01T09:00:00Z"), ukoncene: dt("2026-08-19T12:00:00Z"),
       zaznamy: zazn(48, 600, 1, dt("2026-08-01T08:00:00Z"), ["Anonymný darca", "Mária V."], dt("2026-08-19T11:00:00Z")) },
   ];
   void D;

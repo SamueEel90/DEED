@@ -76,7 +76,7 @@ export function Zvoncek({ color = "var(--c-textSec)", toast }: { color?: string;
   const ja = usePouzivatel();
   const firmy = useVazbyOsoby(ja.cisloUctu).filter((v) => v.stav === "potvrdeny");
   const mf = useMojaFirma();
-  const odFirmy: Notifikacia[] = firmy.flatMap((v, fi) => dataFirmy(v.firma).oznamy.filter((o) => !mf.vybavene.includes(o.id)).map((o, i) => ({
+  const odFirmy: Notifikacia[] = firmy.flatMap((v, fi) => dataFirmy(v.firmaUcet).oznamy.filter((o) => !mf.vybavene.includes(o.id)).map((o, i) => ({
     id: 900000 + fi * 50 + i, kat: "firma" as const, den: "Dnes", cas: v.firma, ikona: o.typ === "kontrola" ? "otaz" as const : o.typ === "akcia" ? "kal" as const : "srd" as const,
     ton: o.typ === "kontrola" ? "gold" as const : "g" as const, titul: o.t, text: `${v.firma} · ${o.s}`, nove: o.typ === "kontrola" })));
   const vsetky = [...oznamyNaRiadky(oznamy), ...odFirmy, ...zakladne];

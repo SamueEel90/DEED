@@ -29,10 +29,10 @@ import { oznamyStranky, nacitajOznamyStranky, useZmenyOznamovCharity, bezi as oz
 import { InzeratKarta, MamZaujem } from "./Inzeraty";
 import { DorovnaniePas } from "./Dorovnanie";
 import { DorovnanieFirmyHarok } from "@/features/zbierka/DorovnanieFirmy";
-import { firmaAkoDarca } from "@/lib/podpory";
+import { firmaPreDorovnanie } from "@/lib/podpory";
 import { smieDorovnat } from "@/lib/dorovnanie";
 import { beziaceDorovnanieNaCiel, dorovnanieKDaru, useZmenyDorovnani } from "@/lib/dorovnanie";
-import { rovnakaFirma } from "@/lib/firma";
+import { rovnakaFirma, DEV_FIRMA } from "@/lib/firma";
 import { verejneOznamy, useZmenyOznamov } from "@/lib/oznamy";
 import { nacitajProfil, useZmenyProfilov, CENTRALNA_ID, VLASTNA_ZBIERKA_CFG, fotkyZbierky, type ProfilZbierky } from "./vlastneZbierky";
 import { jeVideo } from "@/lib/videoUloz";
@@ -95,14 +95,14 @@ function ziva<T extends { id: string; vyzbierane: number; darcovia: number }>(z:
 
 /** Firmy, ktoré na zbierku dali — v zbierke je vidieť, kto a koľko.
  *  Archív (stiahnutie z firemnej stránky) sem nezasahuje: dar patrí zbierke. */
-function PodporiliFirmy({ zbierkaId, onFirma }: { zbierkaId: string; onFirma: (firma: string) => void }) {
+function PodporiliFirmy({ zbierkaId, onFirma }: { zbierkaId: string; /** číslo účtu firmy */ onFirma: (firma: string) => void }) {
   const podpory = usePodporyZbierky(zbierkaId);
   if (!podpory.length) return null;
   const eur = (n: number) => `${n.toLocaleString("sk-SK", { maximumFractionDigits: 2 })} €`;
   return (
     <div style={{ display: "flex", flexWrap: "wrap", gap: SPACE.xs, marginBottom: SPACE.sm }}>
       {podpory.map((x) => (
-        <span key={x.firma} {...pressable(() => onFirma(x.firma), `Profil ${x.firma}`)}
+        <span key={x.firmaUcet} {...pressable(() => onFirma(x.firmaUcet), `Profil ${x.firma}`)}
           style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 11.5, fontWeight: 700, cursor: "pointer",
             color: "var(--a-gold)", background: tint("var(--a-gold)", .12), border: `1px solid ${tint("var(--a-gold)", .35)}`,
             borderRadius: RADIUS.pill, padding: `3px ${SPACE.sm}px` }}>
@@ -147,7 +147,7 @@ export function Podstranka({ pozicia, tier: tierStranky = 0, logo, toast, onBack
   const mojeTabyZaklad = verejneTaby(pozicia, tier).map((t) => (ts.prazdny ? { ...t, polozky: [] } : t));
   // Zbierky, ktoré si firma pripla tým, že na ne dala — bežiace sú „Podporujeme",
   // ukončené a stiahnuté spadnú do „Komu sme pomohli" (história ostáva navždy).
-  const podpory0 = usePodporyFirmy(pozicia === "b2b" ? s.nazov : "");
+  const podpory0 = usePodporyFirmy(pozicia === "b2b" ? DEV_FIRMA : "");
   const podpory = ts.prazdny ? [] : podpory0;
   // zbierka môže byť naša (register zbierok) alebo z profilu cudzej organizácie
   // (modul Charita) — firma daruje kam chce, tak musíme vedieť pomenovať oboje
@@ -234,7 +234,7 @@ export function Podstranka({ pozicia, tier: tierStranky = 0, logo, toast, onBack
   const [otvorenyOznam, setOtvorenyOznam] = useState<string | null>(null);   // klik na oznam otvorí len ten jeden
   useZmenyDorovnani();                                                        // bežec sa má prekresliť, keď firma dorovná
   const [noveDorovnanie, setNoveDorovnanie] = useState<{ id: string; nazov: string } | null>(null);
-  const [firmaProfil, setFirmaProfil] = useState<string | null>(null);   // profil dorovnávajúcej firmy — v appke, nie v novom okne  // firma vstupuje do zbierky
+  const [firmaProfil, setFirmaProfil] = useState<string | null>(null);   // číslo účtu firmy, ktorej profil je otvorený; profil dorovnávajúcej firmy — v appke, nie v novom okne  // firma vstupuje do zbierky
   const [poDare, setPoDare] = useState<PoDareData | null>(null);        // obrazovka po dare namiesto sivého toastu
   const [, setProfilZiad] = useState<string | null>(null);
   const [zbalenaCentralna, setZbalenaCentralna] = useState(false);
@@ -310,7 +310,7 @@ export function Podstranka({ pozicia, tier: tierStranky = 0, logo, toast, onBack
       <>
         {dorovnanie && (
           <div style={{ marginBottom: SPACE.sm }}>
-            <DorovnaniePas d={dorovnanie} onFirma={() => setFirmaProfil(dorovnanie.firma)} />
+            <DorovnaniePas d={dorovnanie} onFirma={() => setFirmaProfil(dorovnanie.firmaUcet)} />
             {dorovnanieKDaru(dorovnanie, 20) > 0 && (
               <div style={{ fontSize: 12, fontWeight: 800, color: "var(--a-gold)", textAlign: "center", marginTop: SPACE.xxs }}>
                 daruješ 20 € → k príjemcovi ide {20 + dorovnanieKDaru(dorovnanie, 20)} €
@@ -327,7 +327,7 @@ export function Podstranka({ pozicia, tier: tierStranky = 0, logo, toast, onBack
           onKanal={(k: string) => { setPlatbaRef({ id, komu: s.nazov }); setPlatba(k as Kanal); }}
           oblubene={{ refId: id, typ: "zbierka", modul: "charity", nazov: profil.nazov, lok: s.lok }} toast={toast}
           opakovana={maPravidelnu ? { popis: "Mesačne · kartou alebo prevodom · kedykoľvek zrušíš", onClick: () => setPravidelna({ id: id === CENTRALNA_ID ? "z-centralna" : id, nazov: profil.nazov, sektor: sektoroveZbierky.find((z) => z.id === id)?.nazov }) } : undefined}
-          dorovnanie={dorovnanie || !smieDorovnat(pozicia, firmaAkoDarca() ?? "") ? undefined : { onClick: () => setNoveDorovnanie({ id, nazov: s.nazov }) }}
+          dorovnanie={dorovnanie || !smieDorovnat(pozicia, firmaPreDorovnanie().ucet) ? undefined : { onClick: () => setNoveDorovnanie({ id, nazov: s.nazov }) }}
           bonus={dorovnanie ? { firma: dorovnanie.firma, kDaru: (sm: number) => dorovnanieKDaru(dorovnanie, sm) } : undefined}
           qr={{ label: "QR tejto zbierky", popis: "Sken → dar za 2 kliky · zdieľanie", onClick: () => (id === CENTRALNA_ID ? setQr(true) : setQrZbierka({ id, nazov: profil.nazov })) }} />
         <GaleriaZbierky profil={profil} />
@@ -500,7 +500,7 @@ export function Podstranka({ pozicia, tier: tierStranky = 0, logo, toast, onBack
                   const dv = beziaceDorovnanieNaCiel(z.id)!;
                   return (
                     <div style={{ marginBottom: SPACE.sm }}>
-                      <DorovnaniePas d={dv} onFirma={() => setFirmaProfil(dv.firma)} />
+                      <DorovnaniePas d={dv} onFirma={() => setFirmaProfil(dv.firmaUcet)} />
                       {dorovnanieKDaru(dv, 20) > 0 && (
                         <div style={{ fontSize: 12, fontWeight: 800, color: "var(--a-gold)", textAlign: "center", marginTop: SPACE.xxs }}>
                           daruješ 20 € → k príjemcovi ide {20 + dorovnanieKDaru(dv, 20)} €
@@ -519,7 +519,7 @@ export function Podstranka({ pozicia, tier: tierStranky = 0, logo, toast, onBack
                     onKanal={(k: string) => { setPlatbaRef({ id: z.id, komu: z.komu }); setPlatba(k as Kanal); }}
                     oblubene={{ refId: z.id, typ: "zbierka", modul: "charity", nazov: z.nazov, lok: z.lok }} toast={toast}
                     opakovana={maPravidelnu ? { popis: "Mesačne · kartou alebo prevodom · kedykoľvek zrušíš", onClick: () => setPravidelna({ id: z.id, nazov: z.nazov }) } : undefined}
-                    dorovnanie={beziaceDorovnanieNaCiel(z.id) || !smieDorovnat(pozicia, firmaAkoDarca() ?? "") ? undefined : { onClick: () => setNoveDorovnanie({ id: z.id, nazov: z.nazov }) }}
+                    dorovnanie={beziaceDorovnanieNaCiel(z.id) || !smieDorovnat(pozicia, firmaPreDorovnanie().ucet) ? undefined : { onClick: () => setNoveDorovnanie({ id: z.id, nazov: z.nazov }) }}
                     bonus={(() => { const dv = beziaceDorovnanieNaCiel(z.id); return dv ? { firma: dv.firma, kDaru: (sm: number) => dorovnanieKDaru(dv, sm) } : undefined; })()}
                     qr={{ label: "QR tejto zbierky", popis: "Skenovať · kopírovať · zdieľať", onClick: () => setQrZbierka({ id: z.id, nazov: z.nazov }) }} />
                 ) : null}
@@ -787,7 +787,7 @@ export function Podstranka({ pozicia, tier: tierStranky = 0, logo, toast, onBack
   // profil dorovnávajúcej firmy — verejná stránka toho istého druhu, v appke;
   // späť sa vráti sem, nikam sa neodchádza z DEED
   if (firmaProfil) {
-    const rolaFirmy = (Object.keys(SUBJEKTY) as Pozicia[]).find((r) => rovnakaFirma(SUBJEKTY[r].nazov, firmaProfil));
+    const rolaFirmy = (Object.keys(SUBJEKTY) as Pozicia[]).find((r) => rovnakaFirma(SUBJEKTY[r].firmaUcet, firmaProfil));
     if (rolaFirmy) return <Podstranka pozicia={rolaFirmy} tier={3} logo={null} toast={toast} onBack={() => setFirmaProfil(null)} />;
   }
 
@@ -823,7 +823,7 @@ export function Podstranka({ pozicia, tier: tierStranky = 0, logo, toast, onBack
       {pravidelna && <PravidelnaHarok refId={pravidelna.id ?? CENTRALNA_ID} nazov={pravidelna.nazov} registrovany={!jeNeregistrovany()}
         zbierka={pravidelna.id !== CENTRALNA_ID && pravidelna.id !== "z-centralna"} onClose={() => setPravidelna(null)} />}
       {noveDorovnanie && (
-        <DorovnanieFirmyHarok zbierkaId={noveDorovnanie.id} zbierkaNazov={noveDorovnanie.nazov} firma={firmaAkoDarca() ?? "Vaša firma"} onClose={() => setNoveDorovnanie(null)} />
+        <DorovnanieFirmyHarok zbierkaId={noveDorovnanie.id} zbierkaNazov={noveDorovnanie.nazov} firmaUcet={firmaPreDorovnanie().ucet} firma={firmaPreDorovnanie().nazov} onClose={() => setNoveDorovnanie(null)} />
       )}
       {qrZbierka && <QrModal odznak={odznakZbierky(qrZbierka.id)} typ="skutok" titul={`QR — ${qrZbierka.nazov}`} popis="Sken otvorí túto zbierku — daj ho na web, do správy alebo na plagát"
         odkaz={qrUrl("case", qrZbierka.id)} onClose={() => setQrZbierka(null)} toast={toast} />}

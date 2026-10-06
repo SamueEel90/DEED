@@ -176,12 +176,12 @@ export function pridajDar(vstup: {
       dorovnalaFirma = dv.firma;
       pridajDar({ refId: vstup.refId, suma: dorovnane, kanal: vstup.kanal, registrovany: true,
         volba: { verzia: 4, zobrazSumu: true }, firma: dv.firma, cezTvorcu: vstup.cezTvorcu });
-      pridajPodporu(dv.firma, vstup.refId, dorovnane);
+      pridajPodporu(dv.firmaUcet, vstup.refId, dorovnane, dv.firma);
     }
   }
   // 2) daruje firma → zbierka jej naskočí na podstránku („dar = pripnutie")
   const firmaDarca = firmaAkoDarca();
-  if (firmaDarca) pridajPodporu(firmaDarca, vstup.refId, vstup.suma);
+  if (firmaDarca) pridajPodporu(firmaDarca.ucet, vstup.refId, vstup.suma, firmaDarca.nazov);
 
   return dorovnane > 0 ? { ...riadok, dorovnane, dorovnalaFirma } : riadok;
 }
