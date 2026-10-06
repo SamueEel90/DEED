@@ -28,7 +28,8 @@ export const pozn: CSSProperties = { fontSize: 13, fontWeight: 600, lineHeight: 
 export const fmtEur = (n: number) => `${n.toLocaleString("sk-SK").replace(/\u00A0/g, " ")} €`;
 export const fmtSek = (s: number) => `${Math.floor(s / 60)}:${String(Math.round(s % 60)).padStart(2, "0")}`;
 export const cis = (n: number) => String(n).replace(".", ",");
-export const cistyText = (h: string) => { const d = document.createElement("div"); d.innerHTML = h || ""; return (d.textContent || "").replace(/\s+/g, " ").trim(); };
+// Zadanie 5 · 5.1: DOMParser = inertný dokument (innerHTML na živom dokumente spustí <img onerror> aj na odpojenom prvku)
+export const cistyText = (h: string) => { const d = new DOMParser().parseFromString(h || "", "text/html").body; return (d.textContent || "").replace(/\s+/g, " ").trim(); };
 export const dlzkaVidea = (src: string) => new Promise<number>((ok) => { const v = document.createElement("video"); v.preload = "metadata"; v.onloadedmetadata = () => ok(v.duration || 0); v.onerror = () => ok(-1); v.src = src; });
 export const sirkaFotky = (src: string) => new Promise<number>((ok) => { const i = new Image(); i.onload = () => ok(i.naturalWidth); i.onerror = () => ok(0); i.src = src; });
 export const NASTROJE = ["bold", "italic", "insertUnorderedList", "diktovat"];

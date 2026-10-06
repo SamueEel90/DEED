@@ -12,7 +12,7 @@ Stĺpec „DB" hovorí, či už existuje serverová verzia (localStorage je poto
 | `deed.nastavenia.appky`, `deed.platba.potvrditTuknutim`, `deed.dar.predvolba`, `deed.dar.mesto`, `deed.okruh.poloha` | predvoľby |
 | `deed.zbierka.kryptoOtvorene`, `deed.otvorSpravuCharity`, `deed.otvorProfil`, `deed.reg.krok` | navigácia, rozpísaný krok |
 | `deed.oznamy.precitane` | prečítané oznámenia |
-| `deed.dev.*`, `deed.skore.admintoken` | DEV prepínače, admin token kalibrácie |
+| `deed.dev.*` | DEV prepínače (admin token kalibrácie je od 5.1 len v pamäti) |
 | `deed.session`, `deed.device.v1`, `deed.zariadenie.od`, `deed.ja.lokalneId`, `deed.ja.cisloUctu`, `deed.ja.meno` | relácia, id zariadenia, cache údajov zo servera |
 
 ## B · Obchodný stav — so serverovou verziou (localStorage len demo bez DB)

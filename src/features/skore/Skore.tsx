@@ -248,12 +248,12 @@ function Nahlad({ v, onPotvrd, onZahod }: { v: ScoreOdpoved; onPotvrd: () => voi
 
 // ---- kalibrácia (Martin): tabuľka behov + CSV export (spec v1 §6) ----
 function Kalibracia() {
-  const [token, setToken] = useState<string>(() => { try { return localStorage.getItem("deed.skore.admintoken") ?? ""; } catch { return ""; } });
+  // Zadanie 5 · 5.1: admin token len v pamäti tejto obrazovky (localStorage by cez XSS unikol); starý záznam sa zmaže
+  const [token, setToken] = useState<string>(() => { try { localStorage.removeItem("deed.skore.admintoken"); } catch { /* private mode */ } return ""; });
   const [behy, setBehy] = useState<LogRiadok[] | null>(null);
   const [nacitavam, setNacitavam] = useState(false);
 
   async function nacitaj() {
-    try { localStorage.setItem("deed.skore.admintoken", token); } catch { /* private mode */ }
     setNacitavam(true);
     try { setBehy(await nacitajLog(token)); }
     catch (e) { toast(e instanceof Error ? e.message : "Log sa nepodarilo načítať."); }

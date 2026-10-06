@@ -7,6 +7,7 @@
 // ============================================================
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { RichTextInput } from "@/components/richtext";
+import { sanitizujHtml } from "@/lib/richtext";
 import { OrezFotky } from "@/components/orezfotky";
 import { spracujFotku } from "@/lib/obrazok";
 import PodrzTlacidlo from "@/features/zbierka/PodrzTlacidlo";
@@ -107,7 +108,7 @@ export function OznamKartaNova({ o, autor, mesto, inicialy, logo, onProfil, onUc
       <div style={{ padding: "12px 14px 14px", display: "flex", flexDirection: "column", gap: 6 }}>
         <b style={{ fontSize: 16.5, lineHeight: 1.3, color: "var(--ink)", textDecoration: o.zrusene ? "line-through" : "none" }}>{o.nadpis.trim() || "Nadpis oznamu"}</b>
         <span style={{ fontSize: 13.5, color: "var(--ink3)" }}>{kedyText(o)}</span>
-        {cistyText(o.text) && <div style={{ fontSize: 14.5, lineHeight: 1.5, color: "var(--ink2)" }} dangerouslySetInnerHTML={{ __html: o.text }} />}
+        {cistyText(o.text) && <div style={{ fontSize: 14.5, lineHeight: 1.5, color: "var(--ink2)" }} dangerouslySetInnerHTML={{ __html: sanitizujHtml(o.text) }} />}
         {o.zbierka && o.druh !== "vyzva" && <ZbierkaPriAkciiKarta z={o.zbierka} zrusene={!!o.zrusene} onDarovat={onDarovat ? () => onDarovat(o.zbierka!) : undefined} />}
         {o.pozvanie !== "bez" && o.druh !== "vyzva" && !o.zrusene && <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 6, flexWrap: "wrap" }}>
           <button type="button" onClick={onUcast} aria-pressed={mojaUcast} style={{ flex: "none", whiteSpace: "nowrap", minHeight: 46, padding: "0 18px", border: "none", borderRadius: 13, background: mojaUcast ? "var(--gSoft)" : "#4B7A35", cursor: "pointer", fontFamily: "inherit", fontSize: 15, fontWeight: 800, color: mojaUcast ? "var(--gInk)" : "#fff" }}>{o.pozvanie === "zavazne" ? (mojaUcast ? "Prihlásený" : "Prihlásiť sa") : mojaUcast ? "Zúčastníte sa" : "Zúčastním sa"}</button>

@@ -9,6 +9,7 @@ import { createPortal } from "react-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { useLayout } from "@/components/context";
 import { RichTextInput } from "@/components/richtext";
+import { sanitizujHtml } from "@/lib/richtext";
 import { DeedQr, stiahniDeedQr } from "@/components/deedqr";
 import { toast } from "@/components/toast";
 import { Svetlusik } from "@/features/zbierka/Svetlusik";
@@ -83,7 +84,8 @@ const Poznamka = ({ farba, children }: { farba: "gold" | "blue" | "green"; child
 };
 
 // ---------- text ----------
-const cistyText = (html: string) => { const d = document.createElement("div"); d.innerHTML = html; return (d.textContent || "").replace(/\s+/g, " ").trim(); };
+// Zadanie 5 · 5.1: inertný parser, nie innerHTML na živom dokumente
+const cistyText = (html: string) => { const d = new DOMParser().parseFromString(html, "text/html").body; return (d.textContent || "").replace(/\s+/g, " ").trim(); };
 const VULGAR = /hovn|nasr|kokot|pič|jeb|srač|debil|kurv|chuj|zmrd/i;
 /** názov od AI: max 50 znakov, vždy celé slová */
 function nazovZTextu(t: string): string {
@@ -95,7 +97,7 @@ function nazovZTextu(t: string): string {
 /** „Ukáž, ako to upraví AI" — len úprava textu (nie hodnotenie). Zachová značky HTML, opraví len text. */
 function upravHtml(html: string): string {
   const d = document.createElement("div");
-  d.innerHTML = html;
+  d.innerHTML = sanitizujHtml(html);
   const bloky = Array.from(d.querySelectorAll("p, li, h3")) as HTMLElement[];
   (bloky.length ? bloky : [d]).forEach((b) => {
     const w = document.createTreeWalker(b, NodeFilter.SHOW_TEXT);
@@ -657,7 +659,7 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
           <div className="pf-rise" style={{ borderRadius: 16, background: "var(--card)", border: "1px solid var(--bBd)", padding: "12px 14px", display: "flex", flexDirection: "column", gap: 8 }}>
             <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".06em", color: "var(--blue)" }}>NÁVRH OD AI · TAKTO TO BUDE VYZERAŤ</div>
             <div style={{ fontSize: 16, fontWeight: 800, lineHeight: 1.3 }}>{aiNavrhNazov}</div>
-            <div className="ftext" style={{ fontSize: 15, lineHeight: 1.55, color: "var(--ink2)" }} dangerouslySetInnerHTML={{ __html: upravHtml(po) }} />
+            <div className="ftext" style={{ fontSize: 15, lineHeight: 1.55, color: "var(--ink2)" }} dangerouslySetInnerHTML={{ __html: sanitizujHtml(upravHtml(po)) }} />
             <div style={{ fontSize: 12, color: "var(--ink4)" }}>Opravené: veľké písmeno, bodka, medzery · bez výkričníkov{nz0.trim() ? "" : " · doplnený názov"}</div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
               <button type="button" onClick={() => setAiC(false)} style={{ height: 44, borderRadius: 12, border: "1px solid var(--cardBd)", background: "var(--btn)", fontSize: 14, fontWeight: 700, color: "var(--ink)", cursor: "pointer", fontFamily: "inherit" }}>Nechať môj</button>
@@ -846,7 +848,7 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
         <span role="img" aria-label={foto ? "Hlavná fotka" : "Logo charity"} style={{ display: "flex", alignItems: "center", justifyContent: "center", aspectRatio: "16 / 9", background: foto ? `center/cover no-repeat url(${foto})` : "var(--gSoft)" }}>{!foto && logoEl(120, 30)}</span>
         <div style={{ padding: "14px 16px 16px", display: "flex", flexDirection: "column", gap: 6 }}>
           <b style={{ fontSize: 18, lineHeight: 1.3 }}>{nz}</b>
-          <div className="ftext" style={{ fontSize: 15, lineHeight: 1.55, color: "var(--ink2)" }} dangerouslySetInnerHTML={{ __html: po2 }} />
+          <div className="ftext" style={{ fontSize: 15, lineHeight: 1.55, color: "var(--ink2)" }} dangerouslySetInnerHTML={{ __html: sanitizujHtml(po2) }} />
           {viac && <span style={{ fontSize: 14.5, fontWeight: 800, color: "var(--green)" }}>… viac</span>}
         </div>
       </div>
