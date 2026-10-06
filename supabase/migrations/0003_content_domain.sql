@@ -1,5 +1,5 @@
 -- ============================================================
--- DEED · Obsahová doména (feed) — schéma v1   [DRAFT — NEAPLIKOVANÉ]
+-- DEED · Obsahová doména (feed) — schéma v1   [APLIKOVANÉ — stavajú na nej ďalšie migrácie]
 -- ------------------------------------------------------------
 -- Rozširuje identitu (0001) o OBSAH: príspevky, udalosti, podpory,
 -- sledovanie, notifikácie, adresár charít. Autor = ucet(id).

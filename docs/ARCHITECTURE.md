@@ -175,11 +175,20 @@ Bez `ANTHROPIC_API_KEY` beží hodnotenie v mock režime — appka funguje ďale
 
 ## 8. Databáza
 
-`supabase/migrations/` — 26 migrácií, aplikujú sa v poradí podľa čísla
-(číslo je poradie, nie dátum; číslovanie má medzery a doplnkové
-migrácie typu `0014c`, `0018b`). Pokrývajú registráciu, obsahovú doménu, QR
-systém, payment engine, escrow, badge/chain, osobné funkcie, storage
-príspevkov, zbierky a scoring log.
+`supabase/migrations/` — 47 migrácií (stav 6. 10. 2026, posledná `0046`), aplikujú sa
+v poradí podľa názvu súboru (číslo je poradie, nie dátum; číslovanie má medzery —
+`0024` neexistuje, `0038` je rezervovaná — a doplnkové migrácie typu `0014c`, `0018b`).
+Pokrývajú registráciu, obsahovú doménu, QR systém, payment engine, escrow, badge/chain,
+osobné funkcie, storage príspevkov, zbierky, scoring log, identitu, ledger, overenia,
+poplatky, väzby zamestnancov a dorovnanie.
+
+- **Pravidlo:** pushnutá migrácia sa nikdy nemení, každá zmena = nová migrácia.
+- **CI** (`.github/workflows/ci.yml`, job `db`) postaví čistú Postgres DB zo všetkých
+  migrácií v poradí (`scripts/db-z-migracii.sh`) a pustí DB testy zo `supabase/tests/`.
+  Spadne aj na kolízii čísel (dve migrácie s rovnakým číslom).
+- Minimálne prostredie Supabase pre CI (roly, `auth`, `storage`) je v
+  `supabase/ci/supabase_stub.sql` — v ostrej Supabase sa nespúšťa.
+- Lokálne: `PGHOST=… PGUSER=… bash scripts/db-z-migracii.sh` (Postgres 16 s `pg_cron`).
 
 ---
 
