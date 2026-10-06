@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [master, main]
+    branches: [master, main, platby-modul]
   pull_request:
 
 # Nový push do tej istej vetvy zruší predchádzajúci beh.
