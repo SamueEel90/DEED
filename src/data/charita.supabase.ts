@@ -69,7 +69,7 @@ export const charitaSupabase = {
     const { data, error } = await supabase
       .from("prispevok_feed") // 0037: vyzbierané z ledgera
       .select("*")
-      .not("data->>comp", "is", null)
+      .eq("feed", "charita")   // 5.7: stĺpec, nie kľúč v jsonb
       .order("skore", { ascending: false });
     if (error) throw error;
     return (data || []).map(naCharitaItem);
@@ -92,7 +92,8 @@ export const charitaSupabase = {
     const { data, error } = await supabase
       .from("prispevok_feed") // 0037: vyzbierané z ledgera
       .select("data")
-      .eq("data->>comp", "urgent")
+      .eq("feed", "charita")
+      .eq("data->>comp", "urgent")   // druh karty v rámci feedu charity
       .limit(1)
       .maybeSingle();
     if (error) throw error;

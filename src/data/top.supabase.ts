@@ -44,9 +44,7 @@ async function hrdinoviaLive(): Promise<RebricekPolozka[]> {
   const { data, error } = await supabase!
     .from("prispevok_feed")  // 0037: vyzbierané/počet darov z ledgera
     .select("id, autor_ucet_id, autor_nazov, autor_karma, podpora_count, overene, typ, lat, lng")
-    .is("data->>comp", null)
-    .is("data->>akt", null)   // len Domov skutky (Aktivity majú vlastný rebríček)
-    .is("data->>help", null)  // vylúč Help (Fáza G) — typ=skutok ich aj tak nezahŕňa, ale buď explicitný
+    .eq("feed", "domov")      // 5.7: len Domov skutky (Aktivity, Help aj kurátorská Charita majú vlastný feed)
     .eq("typ", "skutok")
     .not("autor_nazov", "is", null);
   if (error) throw error;
@@ -118,9 +116,7 @@ async function prispevkyLive(): Promise<GoodPolozka[]> {
     .from("prispevok_feed")  // 0037: vyzbierané/počet darov z ledgera
     .select("*")
     .eq("typ", "skutok")
-    .is("data->>comp", null)
-    .is("data->>akt", null)
-    .is("data->>help", null)
+    .eq("feed", "domov")
     .order("skore", { ascending: false })
     .order("topovane", { ascending: false })
     .order("podpora_count", { ascending: false })

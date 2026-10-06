@@ -102,9 +102,7 @@ export const goodSupabase = {
     const { data, error } = await supabase
       .from("prispevok_feed") // 0037: vyzbierané z ledgera
       .select("*")
-      .is("data->>comp", null)
-      .is("data->>akt", null)   // vylúč Aktivity (Fáza F) — majú vlastný modul/feed
-      .is("data->>help", null)  // vylúč Help (Fáza G) — má vlastný modul/feed
+      .eq("feed", "domov")      // 5.7: Aktivity, Help aj kurátorská Charita majú vlastný feed (stĺpec, nie jsonb)
       .order("vytvorene", { ascending: false });
     if (error) throw error;
     return (data || []).map(naGoodPolozka);
