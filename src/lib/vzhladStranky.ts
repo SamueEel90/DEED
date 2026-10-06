@@ -1,6 +1,7 @@
 // KARTA 50 · §1 Vzhľad stránky (všetky sektory): Kronika · Výklad · Pirát vyberá správca v Správe → Upraviť profil.
 // Na verejnom profile prepínač nie je. Zadarmo má jeden vzhľad z configu, platený program si vyberie sám.
-// Ukladá sa hneď do účtu stránky (profil_stranky.vzhlad, migrácia — Samuel). Nič do prehliadača;
+// Ukladá sa hneď do účtu stránky (profil_stranky.vzhlad, migrácia 0047). Číta sa z verejného pohľadu
+// profil_stranky_verejny (pri Zadarmo vráti server null). Nič do prehliadača;
 // bez DB spojenia (mock/offline) drží appka výber len v pamäti relácie.
 import { useEffect, useSyncExternalStore } from "react";
 import { supabase } from "./supabase";
@@ -26,7 +27,7 @@ const nacitane = new Set<string>();
 export async function nacitajVzhlad(stranka: string): Promise<Vzhlad | null> {
   if (supabase && !nacitane.has(stranka)) {
     nacitane.add(stranka);
-    const { data, error } = await supabase.from("profil_stranky").select("vzhlad").eq("stranka", stranka).maybeSingle();
+    const { data, error } = await supabase.from("profil_stranky_verejny").select("vzhlad").eq("stranka", stranka).maybeSingle();
     if (!error && jeVzhlad(data?.vzhlad) && !pamat.has(stranka)) { pamat.set(stranka, data.vzhlad); zmena(); }
   }
   return pamat.get(stranka) ?? null;
