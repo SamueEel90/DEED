@@ -3,9 +3,10 @@
 // takže funguje aj bez signálu (účasť/overenie sa pripíše po pripojení). Pozvánka: statický odkaz na verejný profil.
 import { TESTOVACIA } from "@/lib/testovacia";
 import { useT } from "@/i18n";
-import { useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { QrSkener } from "@/components/qrskener";
+// skener (@zxing) = vlastný chunk, načíta sa až pri otvorení kamery (Zadanie 5 · 5.6)
+const QrSkener = lazy(() => import("@/components/qrskener").then((m) => ({ default: m.QrSkener })));
 import { toast } from "@/components/toast";
 import { usePouzivatel } from "@/lib/pouzivatel";
 import { DeedQr } from "@/components/deedqr";
@@ -162,7 +163,7 @@ export function MojQr({ zalozka = "akcia", onClose }: { zalozka?: ZalozkaQr; onC
           </>}
         </div>
       </Harok>
-      {skener && <QrSkener onClose={() => setSkener(false)} toast={toast} />}
+      {skener && <Suspense fallback={null}><QrSkener onClose={() => setSkener(false)} toast={toast} /></Suspense>}
       {zoomFoto && <ZvacsenaFotka onClose={() => setZoomFoto(false)} />}
       {velky && zivy && createPortal(
         <div onClick={() => setVelky(false)} role="dialog" aria-modal="true" aria-label={tr("qr.celaObrazovkaAria")}

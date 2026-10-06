@@ -92,10 +92,13 @@ export default defineConfig({
         // eager vendor knižnice do samostatných chunkov — menia sa zriedka,
         // ostávajú v cache aj po deployi app kódu. vaul/radix NEcháme prirodzene
         // splitnúť so sheetmi (lazy), nech nezaťažujú initial load.
+        // Zadanie 5 · 5.6: supabase klient (auth + postgrest) samostatne; QR skener (@zxing) a mapa
+        // (leaflet, d3-geo) sa načítavajú až dynamicky, preto tu nie sú — vznikne im vlastný chunk sám.
         manualChunks: {
           react: ['react', 'react-dom'],
           motion: ['motion'],
           data: ['@tanstack/react-query'],
+          supabase: ['@supabase/supabase-js'],
         },
       },
     },
