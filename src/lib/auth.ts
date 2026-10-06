@@ -22,6 +22,7 @@ export interface AuthVysledok {
 // (napr. "email rate limit exceeded" obsahuje "email" — netreba ho hlásiť ako neplatný).
 function prelozChybu(message?: string): string {
   const m = (message || "").toLowerCase();
+  if (m.startsWith("priveľa pokusov")) return message as string;   // zámok prihlásenia zo servera (0042)
   if (m.includes("invalid login") || m.includes("invalid credentials")) return "Nesprávny email alebo heslo.";
   if (m.includes("already registered") || m.includes("already been registered") || m.includes("user already")) return "Tento email už je zaregistrovaný — prihlás sa.";
   if (m.includes("rate limit") || m.includes("over_email_send") || m.includes("too many")) return "Priveľa emailových pokusov — počkaj chvíľu. (Tip: v Supabase vypni Confirm email pre vývoj.)";

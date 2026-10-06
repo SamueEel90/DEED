@@ -18,12 +18,8 @@ import type { TypUctu } from "@/types";
 import { PotvrdNoveZariadenie, LimitZariadeni } from "@/features/profil/Bezpecnost24";
 import { zariadenia, odKedy, MAX_ZARIADENI } from "@/lib/zariadenia";
 
-// 5 zlých pokusov o prihlásenie → 15 minút čakanie (lokálne; server to stráži tiež)
-const KLUC_POKUSY = "deed.prihlasenie.pokusy";
-const pokusy = (): { n: number; do: number } => { try { return JSON.parse(localStorage.getItem(KLUC_POKUSY) || '{"n":0,"do":0}'); } catch { return { n: 0, do: 0 }; } };
-const zamknuteMin = () => { const p = pokusy(); return p.do > Date.now() ? Math.ceil((p.do - Date.now()) / 60000) : 0; };
-const zlyPokus = () => { const p = pokusy(), n = p.n + 1; try { localStorage.setItem(KLUC_POKUSY, JSON.stringify(n >= 5 ? { n: 0, do: Date.now() + 15 * 60000 } : { n, do: 0 })); } catch { /* LS */ } };
-const vynulujPokusy = () => { try { localStorage.removeItem(KLUC_POKUSY); } catch { /* LS */ } };
+// 5 zlých pokusov o prihlásenie → 15 minút čakanie. Zadanie 3 · 3.5: počíta to LEN server
+// (Auth hook, migrácia 0042) — appka zobrazí jeho hlášku, sama nič nepočíta.
 const jeNoveZariadenie = () => { try { return !localStorage.getItem("deed.zariadenie.od"); } catch { return false; } };
 
 type Rezim = "login" | "register";
@@ -72,11 +68,8 @@ export function AuthPage({ onAuthed, onGuest, onPasivny, onRegistrovat, uvodnyRe
     setChyba(null);
     try {
       if (jeLogin) {
-        const cakaj = zamknuteMin();
-        if (cakaj) { setChyba(`Priveľa pokusov. Skús to o ${cakaj} minút.`); return; }
         const r = await signIn(email, heslo);
-        if (!r.ok) { zlyPokus(); setChyba(zamknuteMin() ? "Priveľa pokusov. Skús to o 15 minút." : r.chyba ?? "Prihlásenie zlyhalo."); return; }
-        vynulujPokusy();
+        if (!r.ok) { setChyba(r.chyba ?? "Prihlásenie zlyhalo."); return; }
         const dokonci = async () => {
           const res = await resolveSession();
           if (res.kind === "app") return; // setSession → appka sa zobrazí reaktívne
