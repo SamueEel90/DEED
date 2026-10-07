@@ -3,6 +3,7 @@
 //   3 Kam poslať (4 stĺpce, vybraný flex 2,4, modul hneď vedľa v stĺpci 420 px s vlastným posunom) ·
 //   4 Naša cesta (prerušovaná zlatá krivka, zastávky = posledné skutky a ukončené zbierky + DNES) · 5 Ďalšie teraz (karty 2a) · 6 Videá z Iskier.
 // Mobil: rovnaké sekcie pod sebou; Kam poslať = 4 pásy (vybraný 220 px), modul pod nimi zmenšený (B, bod 151/3); cesta zvislá.
+import { useOtvorHlavnuZQr } from "./otvor";
 import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { eur, pct, tvar, jeFarnost, type Lokalita, type TestProfil, type TestSektor, type TestZbierka, type TestPraca } from "@/lib/testProfily";
 import { druhF, type Druh } from "@/lib/druhy";
@@ -31,6 +32,7 @@ export function PiratCharita({ profil, onDetail, onZaznam, onBack }: { profil: T
   const [lok] = useState<Lokalita>(domace);
   const [stitOtv, setStitOtv] = useState(false);
   const [sel, setSel] = useState(-1);
+  useOtvorHlavnuZQr(profil.k, profil.typ === "farnost", () => setSel(0)); // OPRAVY 162
   const d = useCharitaData(profil, lok, domace);
   const stit = profil.stit.toLowerCase();
   const farnost = jeFarnost(profil);

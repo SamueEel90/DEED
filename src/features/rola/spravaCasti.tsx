@@ -107,8 +107,12 @@ export function Zapecatene({ riadky }: { riadky: [string, string][] }) {
 }
 
 /** QR na plagát a pokladničku + verejné číslo zbierky (ťuk = skopírovať) */
-export function QrKarta({ nazov, slug, cislo, organizacia, toast }: { nazov: string; slug: string; cislo?: string; organizacia?: string; toast: (m: string) => void }) {
-  const odkaz = `https://deed.sk/z/${slug}`;
+export function QrKarta({ nazov, slug, cislo, organizacia, toast, odkaz: odkazP, nadpis = "QR na plagát a pokladničku", popis = "Na profile je QR v module pri Zdieľať · QR. Tu je verzia na tlač.", stav }: {
+  nazov: string; slug: string; cislo?: string; organizacia?: string; toast: (m: string) => void;
+  /** OPRAVY 162 · QR farnosti: vlastný odkaz (jeden QR z registrácie), nadpis, veta a stav („Teraz vedie na …") */
+  odkaz?: string; nadpis?: string; popis?: string; stav?: { t: string; zelena: boolean };
+}) {
+  const odkaz = odkazP ?? `https://deed.sk/z/${slug}`;
   const [pdf, setPdf] = useState(false);
   const [skop, setSkop] = useState(false);
   // KARTA 56D §5: tlačidlá ukážu výsledok na sebe
@@ -116,8 +120,9 @@ export function QrKarta({ nazov, slug, cislo, organizacia, toast }: { nazov: str
   const ukaz = (k: "pdf" | "odkaz") => { setHotovo(k); window.setTimeout(() => setHotovo((x) => (x === k ? null : x)), 2200); };
   return (
     <section style={kartaK}>
-      <span style={nadpisK}>QR na plagát a pokladničku</span>
-      <span style={{ fontSize: 13, color: "var(--ink3)", marginTop: -6 }}>Na profile je QR v module pri Zdieľať · QR. Tu je verzia na tlač.</span>
+      <span style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}><span style={nadpisK}>{nadpis}</span>
+        {stav && <span style={{ height: 26, padding: "0 10px", borderRadius: 13, background: stav.zelena ? "var(--gSoft)" : "var(--field)", color: stav.zelena ? "var(--gInk)" : "var(--ink2)", border: "1px solid var(--cardBd)", fontSize: 12.5, fontWeight: 800, display: "flex", alignItems: "center" }}>{stav.t}</span>}</span>
+      <span style={{ fontSize: 13, lineHeight: 1.45, color: "var(--ink3)", marginTop: -6 }}>{popis}</span>
       <div style={{ display: "flex", gap: 14, alignItems: "center", flexWrap: "wrap" }}>
         <span style={{ flex: "none", width: 96, height: 96, borderRadius: 14, background: "#fff", padding: 6, boxSizing: "border-box", display: "flex" }}><DeedQr data={odkaz} size={84} variant="svetly" /></span>
         <span style={{ flex: 1, minWidth: 180, display: "flex", flexDirection: "column", gap: 8 }}>
@@ -126,7 +131,7 @@ export function QrKarta({ nazov, slug, cislo, organizacia, toast }: { nazov: str
               style={{ alignSelf: "flex-start", minHeight: 44, padding: 0, border: "none", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 16, fontWeight: 800, color: skop ? "var(--gInk)" : "var(--ink)", fontVariantNumeric: "tabular-nums", boxShadow: "none" }}>{skop ? "Skopírované ✓" : cislo}</button>
             <span style={{ fontSize: 12.5, color: "var(--ink3)" }}>Číslo zbierky = variabilný symbol · ťuk skopíruje</span>
           </span>}
-          <span style={{ fontSize: 13.5, color: "var(--ink3)", overflowWrap: "anywhere" }}>deed.sk/z/{slug}</span>
+          <span style={{ fontSize: 13.5, color: "var(--ink3)", overflowWrap: "anywhere" }}>{odkaz.replace(/^https:\/\//, "").replace(/\?qr=1$/, "")}</span>
           <span style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             <button type="button" aria-busy={pdf} onClick={async () => { if (pdf) return; setPdf(true); try { await stiahniPlagat({ nazov, odkaz, cislo, organizacia }); ukaz("pdf"); } catch (e) { toast((e as Error).message); } finally { setPdf(false); } }} style={{ ...obrysK, ...(hotovo === "pdf" ? { borderColor: "var(--green)", color: "var(--gInk)" } : {}) }}>{hotovo === "pdf" ? "Stiahnuté ✓" : "Stiahnuť plagát (PDF)"}</button>
             <button type="button" onClick={async () => { const ok = await kopiruj(odkaz); if (ok) ukaz("odkaz"); else toast("Odkaz sa nepodarilo skopírovať"); }} style={{ ...obrysK, ...(hotovo === "odkaz" ? { borderColor: "var(--green)", color: "var(--gInk)" } : {}) }}>{hotovo === "odkaz" ? "Odkaz skopírovaný ✓" : "Kopírovať odkaz"}</button>

@@ -5,6 +5,7 @@ import { useRef, useState } from "react";
 import { eur, tvar, jeFarnost, type Lokalita, type Mesto, type TestProfil, type TestSektor, type TestZbierka } from "@/lib/testProfily";
 import { vMeste } from "./casti";
 import { ModulProfilu } from "./ModulProfilu";
+import { useOtvorHlavnuZQr } from "./otvor";
 
 const bg = (f: string) => `url('${f}') center/cover no-repeat #3a3530`;
 export type RezPodpory = "pc" | "tab" | "mob";
@@ -38,6 +39,7 @@ export function PodporaProfilu({ profil, lok, domace, rez, stlpce = rez === "tab
   const [modVl, setModVl] = useState<Vyber>(null);
   const mod = onMod ? (modP ?? null) : modVl;
   const setMod = (i: Vyber) => (onMod ? onMod(i) : setModVl(i));
+  useOtvorHlavnuZQr(profil.k, jeFarnost(profil), () => setMod(0)); // OPRAVY 162
   const nadpisRef = useRef<HTMLSpanElement | null>(null);
   const sk = lok === "Celé Slovensko";
   const mestoV = sk ? "celom Slovensku" : vMeste(lok);

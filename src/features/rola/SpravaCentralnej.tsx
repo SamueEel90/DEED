@@ -17,6 +17,7 @@ import { prazdnaCentralna, prazdnaHlavna, nazovHlavnej, HLAVNA_NAZOV_MAX, centra
 import { cistyText } from "@/lib/richtext";
 import { stiahniPlagat } from "@/lib/plagatPdf";
 import { KartaModulu } from "@/features/verejny-profil/ModulProfilu";
+import { odkazQrStranky } from "@/features/verejny-profil/otvor";
 import { useOmsoveOkno, suhrnHlavnej } from "@/lib/omsoveOkno";
 import { usePouzivatel } from "@/lib/pouzivatel";
 import {
@@ -187,7 +188,11 @@ export function SpravaCentralnej({ strankaId, nazov, hlavnyUcet, tier, mobil, to
       <input value={sek.nazov} maxLength={30} onChange={(e) => premenujSektor(sek.id, e.target.value)} onBlur={(e) => { if (!e.target.value.trim()) premenujSektor(sek.id, STANOVY_CINNOSTI.find((x) => x.stanovy === sek.stanovy)?.nazov ?? "Sektor"); }} aria-label="Názov sektora"
         style={{ height: 48, padding: "0 14px", borderRadius: 12, border: "1.5px solid var(--cardBd)", background: "var(--field)", fontFamily: "inherit", fontSize: 15, fontWeight: 700, color: "var(--ink)", outline: "none", width: "100%", boxSizing: "border-box" }} />
     </section>);
-  const qr = <QrKarta nazov={sek ? `${nazov} · ${sek.nazov}` : nazov} slug={sek ? sek.slug : farnost ? strankaId : CENTRALNA_SLUG} cislo={cisloObjektu("Z", idZbierky)} organizacia={sek ? undefined : undefined} toast={toast} />;
+  // OPRAVY 162: farnosť — ten istý QR farnosti z registrácie (po spustení vedie rovno na hlavnú zbierku)
+  const qr = farnost
+    ? <QrKarta nazov={nazov} slug={strankaId} odkaz={odkazQrStranky(strankaId)} cislo={cisloObjektu("Z", idZbierky)} toast={toast} nadpis="QR farnosti"
+        popis="Ten istý QR, ktorý ste dostali pri registrácii. Teraz vedie rovno na hlavnú zbierku. Ak už visí na kostole, netreba ho meniť." />
+    : <QrKarta nazov={sek ? `${nazov} · ${sek.nazov}` : nazov} slug={sek ? sek.slug : CENTRALNA_SLUG} cislo={cisloObjektu("Z", idZbierky)} toast={toast} />;
   // farnosť pred spustením: namiesto QR karta „ešte nebeží" + Spustiť (bez Z-čísla a odkazu)
   const spustit = () => { const n = { ...d, spustena: new Date().toISOString() }; zmenene.current = false; setD(n); void ulozCentralnuZbierku(strankaId, n); setUlozene(true); };
   // KARTA 56D §5: kontrola pred spustením — ťuk na chýbajúce posunie na pole
@@ -231,7 +236,7 @@ export function SpravaCentralnej({ strankaId, nazov, hlavnyUcet, tier, mobil, to
   const [plagat, setPlagat] = useState<"" | "busy" | "ok">("");
   const stiahniHned = async () => {
     if (plagat === "busy") return; setPlagat("busy");
-    try { await stiahniPlagat({ nazov: nazovPol, odkaz: `https://deed.sk/z/${strankaId}`, cislo: cisloObjektu("Z", idZbierky), organizacia: nazov }); setPlagat("ok"); window.setTimeout(() => setPlagat(""), 2200); }
+    try { await stiahniPlagat({ nazov: nazovPol, odkaz: odkazQrStranky(strankaId), cislo: cisloObjektu("Z", idZbierky), organizacia: nazov }); setPlagat("ok"); window.setTimeout(() => setPlagat(""), 2200); }
     catch (e) { setPlagat(""); toast((e as Error).message); }
   };
   const bezi = farnost && (

@@ -15,7 +15,8 @@ import { Kalendar } from "@/features/viera/Kalendar";
 import { NahladFarnosti, nahladPopis } from "./NahladFarnosti";
 import { useVzhlad } from "@/lib/vzhladStranky";
 import { VzhladStranky } from "./VzhladStranky";
-import { TlacidloNastavenia, LogoKarty } from "./spravaCasti";
+import { TlacidloNastavenia, LogoKarty, QrKarta } from "./spravaCasti";
+import { odkazQrStranky } from "@/features/verejny-profil/otvor";
 import { UpravitProfilCharity } from "./UpravitProfilCharity";
 import { NovaZbierka } from "./NovaZbierka";
 import { SpravaZbierkyFarnosti, stitokZbierkyF, fotoZbierky } from "./SpravaZbierkyFarnosti";
@@ -476,7 +477,11 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
     </section>);
   const nastrojeL = riadky([["QR na tlač do kostola", "pokladnička, nástenka, lavice · sken otvorí dar", "Tlačiť"], ["Štatistiky", "dary podľa omší, zbierok a mesiacov", "Otvoriť"], ["Ročný výpis", "podklad pre farskú radu a ekonómov", "Stiahnuť"]].map(([t, s, b]) => ({ t, s, b, tap: pripravujeme })));
   const nastaveniaL = riadky([["Vzhľad a prístupnosť", "téma, jazyk, veľkosť písma"], ["Oznámenia", "nový dar, oznam od farníka"], ["Príjem darov", "EURC, transparentný účet"], ["Správcovia", "kto má prístup k Správe farnosti"], ["Program a predplatné", "program Farnosť · jedna cena · faktúry"]].map(([t, s]) => ({ t, s })));
-  const nastroje = <>{nadpis("Nástroje", "QR do kostola, viditeľnosť súm, výkazy")}{viditKarta}{nastrojeL}</>;
+  // OPRAVY 162: hore karta QR farnosti — jeden QR z registrácie, stav podľa hlavnej zbierky
+  const qrFarnosti = <QrKarta nazov={meno} slug={strankaId} odkaz={odkazQrStranky(strankaId)} organizacia={meno} toast={toast} nadpis="QR farnosti"
+    stav={bezi ? { t: "Teraz vedie na hlavnú zbierku", zelena: true } : { t: "Teraz vedie na profil farnosti", zelena: false }}
+    popis="Jeden QR na dvere kostola. Dostali ste ho pri registrácii a nikdy sa nemení. Keď spustíte hlavnú zbierku, ten istý QR povedie rovno na ňu. Netreba nič tlačiť znova." />;
+  const nastroje = <>{nadpis("Nástroje", "QR do kostola, viditeľnosť súm, výkazy")}{qrFarnosti}{viditKarta}{nastrojeL}</>;
   const nastavenia = <>{nadpis("Nastavenia", "Ako pri charite, bez programov a faktúr za vyššie programy")}{nastaveniaL}</>;
 
   // KARTA 56D §4: Upraviť profil = modul z charity (profil_stranky: koncept sa ukladá sám, Uložiť zverejní)
@@ -499,7 +504,7 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
   const hlavnaSprava = <SpravaCentralnej strankaId={strankaId} nazov={meno} hlavnyUcet={hlavnyUcet} tier={4} mobil={mobil} toast={toast}
     onZbierky={() => setSub("zbierky")} farnost={{ ostatneBezia, onZmazana: () => { setZmazana(true); go("zbierky"); }, onHotovo: () => go("prehlad") }} />;
   const obsah: Record<Sub, ReactNode> = { prehlad, zbierky, omse, oznamy, ludia, penazenka, nastroje, profil, nahlad, hlavna: hlavnaSprava, zbierka: zbierkaEl, nova: novaEl, nast: mobil ? <>
-    <span style={{ ...kicker, letterSpacing: ".07em", padding: "4px 2px 0" }}>NÁSTROJE</span>{viditKarta}{nastrojeL}
+    <span style={{ ...kicker, letterSpacing: ".07em", padding: "4px 2px 0" }}>NÁSTROJE</span>{qrFarnosti}{viditKarta}{nastrojeL}
     <span style={{ ...kicker, letterSpacing: ".07em", padding: "4px 2px 0" }}>NASTAVENIA</span>{nastaveniaL}
   </> : nastavenia };
 
