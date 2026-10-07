@@ -19,6 +19,7 @@ import { TlacidloNastavenia, LogoKarty } from "./spravaCasti";
 import { UpravitProfilCharity } from "./UpravitProfilCharity";
 import { NovaZbierka } from "./NovaZbierka";
 import { SpravaZbierkyFarnosti, stitokZbierkyF, fotoZbierky } from "./SpravaZbierkyFarnosti";
+import { ZbierkaPreVeriacich } from "./ZbierkaPreVeriacich";
 import { cielCislo, nacitajZbierkyStranky, useZmenyZbierok, zbierkyStrankyZPamate, type SpustenaZbierka } from "@/lib/novaZbierka";
 import "@/styles/sprava.css";
 import { SektorDarcuKontext, darcoviaPre, nastavCiste, sucetDarov, useZmenyDarov } from "@/lib/darcovia";
@@ -101,7 +102,8 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
   const [zbBlok, setZbBlok] = useState(false);
   const [noveOk, setNoveOk] = useState<string | null>(null);
   const [zbOtv, setZbOtv] = useState<string | null>(null);
-  const go = (k: Sub) => { setSub(k); setPridat(false); setPinOtv(false); };
+  const [pz, setPz] = useState(false); // OPRAVY 161: postup zbierky pre veriacich
+  const go = (k: Sub) => { if (k === "oznamy") setOznamyV(vlastnePrispevkyVsetky(strankaId)); setSub(k); setPridat(false); setPinOtv(false); };
 
   // KARTA 56D §1: profil stránky (profil_stranky) — karta vľavo, percento, „Dokončiť profil"
   const [prof, setProf] = useState(() => profilZPamate(strankaId));
@@ -135,8 +137,7 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
   const hlavnySuhrn = suhrnHlavnej(strankaId, hlavnaRef);
   const hlavnyUcet = najdiTestProfil(strankaId)?.ucet || "hlavný účet farnosti z registrácie";
   useZmenyZbierok();
-  // KARTA 56D §0: zbierky farnosti z účtu nikdy nemajú vymyslené dary (ani pri „Profil: Vyplnený")
-  useEffect(() => { void nacitajZbierkyStranky(strankaId).then((l) => nastavCiste(l.map((z) => z.id))); }, [strankaId]);
+  useEffect(() => { void nacitajZbierkyStranky(strankaId); }, [strankaId]);
   const dalsie = zbierkyStrankyZPamate(strankaId);
   const oknoSuma = om.dary.reduce((a, r) => a + r.suma, 0);
   const oknoLudi = new Set(om.dary.map((r) => (r.moj ? "ja" : r.id))).size;
@@ -350,8 +351,10 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}><b style={{ flex: 1, fontSize: 19 }}>Akú zbierku pridávate?</b>
         <button type="button" onClick={() => setZbVyber(false)} aria-label="Zavrieť" style={{ width: 44, height: 44, borderRadius: 12, border: "1px solid var(--cardBd)", background: "var(--field)", cursor: "pointer", fontSize: 18, color: "var(--ink2)", boxShadow: "none" }}>×</button></div>
       {volbaZb(IC.kostol, "Zbierka farnosti", "na opravu, misie, lavice · peniaze idú na účet hlavnej zbierky", () => { sprava(""); if (!bezi) { setZbBlok(true); return; } go("nova"); })}
-      {volbaZb(IC.ludia, "Zbierka pre veriacich", "pohreb, svadba, iné · peniaze idú rodine, podiel farnosti na účet farnosti · nezávisí od hlavnej zbierky", () => { sprava(""); pripravujeme(); })}
+      {volbaZb(IC.ludia, "Zbierka pre veriacich", "pohreb, svadba, iné · peniaze idú rodine, podiel farnosti na účet farnosti · nezávisí od hlavnej zbierky", () => { sprava(""); setPz(true); })}
     </section>}
+    {pz && <ZbierkaPreVeriacich stranka={strankaId} menoFarnosti={meno} ucetFarnosti={hlavnyUcet} mobil={mobil} toast={toast} onZavri={() => setPz(false)}
+      onHotovo={(_z, t) => { setPz(false); setNoveOk(t); window.scrollTo({ top: 0, behavior: "smooth" }); }} />}
     {noveOk && sprava2(noveOk, () => setNoveOk(null), true)}
     {zbBlok && !bezi && <div role="alert" style={{ flex: "none", borderRadius: 18, background: "var(--goldBg)", border: "2px solid #C9A24A", padding: "16px 18px", display: "flex", flexDirection: "column", gap: 10 }}>
       <b style={{ fontSize: 16.5 }}>Najprv treba spustiť hlavnú zbierku</b>
@@ -492,7 +495,7 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
   const zbOtvorena = dalsie.find((z) => z.id === zbOtv);
   const zbierkaEl = zbOtvorena ? <SpravaZbierkyFarnosti key={zbOtvorena.id} stranka={strankaId} z={zbOtvorena} mobil={mobil} toast={toast} onSpat={() => go("zbierky")} /> : null;
   const novaEl = <NovaZbierka strankaId={strankaId} pozicia="charita" tier={4} nazov={meno} inicialy={meno.split(/\s+/).map((w) => w[0] ?? "").join("").slice(0, 2).toUpperCase()} mobil={mobil} tablet={tablet} stit="silver"
-    onMojeZbierky={() => go("zbierky")} farnost={{ ucet: hlavnyUcet, onSpustena: (z) => { nastavCiste([z.id]); go("zbierky"); setNoveOk(`Zbierka „${z.nazov}“ beží. Nájdete ju nižšie v Ďalších zbierkach.`); } }} />;
+    onMojeZbierky={() => go("zbierky")} farnost={{ ucet: hlavnyUcet, onSpustena: (z) => { go("zbierky"); setNoveOk(`Zbierka „${z.nazov}“ beží. Nájdete ju nižšie v Ďalších zbierkach.`); } }} />;
   const hlavnaSprava = <SpravaCentralnej strankaId={strankaId} nazov={meno} hlavnyUcet={hlavnyUcet} tier={4} mobil={mobil} toast={toast}
     onZbierky={() => setSub("zbierky")} farnost={{ ostatneBezia, onZmazana: () => { setZmazana(true); go("zbierky"); }, onHotovo: () => go("prehlad") }} />;
   const obsah: Record<Sub, ReactNode> = { prehlad, zbierky, omse, oznamy, ludia, penazenka, nastroje, profil, nahlad, hlavna: hlavnaSprava, zbierka: zbierkaEl, nova: novaEl, nast: mobil ? <>
