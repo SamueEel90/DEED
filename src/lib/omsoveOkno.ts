@@ -29,6 +29,7 @@ export interface OmsoveOkno {
   /** refId darov okna */ id: string;
   /** začiatok (pondelok 0:00) a koniec (nasledujúci pondelok 0:00), ms */ od: number; do: number;
   /** nedeľa okna „12. 10." */ nedela: string;
+  /** pondelok okna „6. 10." */ pondelok: string;
 }
 function oknoPre(stranka: string, t: number): OmsoveOkno {
   const lok = new Date(t + posunTz(t));
@@ -38,7 +39,7 @@ function oknoPre(stranka: string, t: number): OmsoveOkno {
   const iso = `${ned.getUTCFullYear()}-${String(ned.getUTCMonth() + 1).padStart(2, "0")}-${String(ned.getUTCDate()).padStart(2, "0")}`;
   const od = polnoc(pon.getUTCFullYear(), pon.getUTCMonth(), pon.getUTCDate());
   const nasl = new Date(pon.getTime() + 7 * DEN);
-  return { id: `${stranka}-omsa-${iso}`, od, do: polnoc(nasl.getUTCFullYear(), nasl.getUTCMonth(), nasl.getUTCDate()), nedela: `${ned.getUTCDate()}. ${ned.getUTCMonth() + 1}.` };
+  return { id: `${stranka}-omsa-${iso}`, od, do: polnoc(nasl.getUTCFullYear(), nasl.getUTCMonth(), nasl.getUTCDate()), nedela: `${ned.getUTCDate()}. ${ned.getUTCMonth() + 1}.`, pondelok: `${pon.getUTCDate()}. ${pon.getUTCMonth() + 1}.` };
 }
 
 // ---- TESTOVACIE „Zavrieť týždeň": posun o týždeň dopredu (len testovacia verzia, pamätá sa v prehliadači) ----
@@ -88,9 +89,9 @@ export function useOmsoveOkno(stranka: string): { okno: OmsoveOkno; dary: DarRia
   return { okno, dary: darcoviaPre(okno.id), uzavrete: uzavreteOkna(stranka) };
 }
 
-/** „zatvorí sa o 2 d 5 h" / „o 3 h 20 min" */
+/** „zatvorí sa o 5 dní 8 h" / „o 3 h 20 min" */
 export function doZatvorenia(okno: OmsoveOkno, stranka: string): string {
   const ms = Math.max(0, okno.do - teraz(stranka));
   const d = Math.floor(ms / DEN), h = Math.floor((ms % DEN) / 3600000), min = Math.floor((ms % 3600000) / 60000);
-  return d > 0 ? `${d} d ${h} h` : h > 0 ? `${h} h ${min} min` : `${min} min`;
+  return d > 0 ? `${d} ${d === 1 ? "deň" : d < 5 ? "dni" : "dní"} ${h} h` : h > 0 ? `${h} h ${min} min` : `${min} min`;
 }

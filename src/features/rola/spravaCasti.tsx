@@ -5,6 +5,7 @@ import { DeedQr } from "@/components/deedqr";
 import { kopiruj } from "@/lib/zdielanie";
 import { SADY, SADY_EURC } from "@/lib/novaZbierka";
 import { stiahniPlagat } from "@/lib/plagatPdf";
+import { menoBezMena, useSektorDarcu } from "@/lib/darcovia";
 
 export const kartaK: CSSProperties = { borderRadius: 22, background: "var(--card)", border: "1px solid var(--cardBd)", padding: "20px 22px", display: "flex", flexDirection: "column", gap: 12, minWidth: 0 };
 export const nadpisK: CSSProperties = { fontSize: 16, fontWeight: 800, color: "var(--ink)" };
@@ -45,12 +46,14 @@ export function Taby({ akt, onTab, odsadenie = 12, skryte = [], pribeh = false }
 
 /** Stav zbierky / Tento mesiac: tri čísla + posledné dary */
 export function CislaKarta({ nadpis, cisla, dary, children }: { nadpis: string; cisla: [string, string][]; dary: [string, string, string][]; children?: ReactNode }) {
+  const sektor = useSektorDarcu();
   return (
     <section style={kartaK}>
       <span style={nadpisK}>{nadpis}</span>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3,minmax(0,1fr))", gap: 12 }}>
         {cisla.map(([v, t]) => <span key={t} style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}><b style={{ fontSize: 24, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>{v}</b><span style={drobneK}>{t}</span></span>)}
       </div>
+      {dary.length === 0 && <span style={drobneK}>Zatiaľ žiadne dary. Prvé sa ukážu tu, bez mena ako {menoBezMena(sektor)}.</span>}
       {dary.length > 0 && <div style={{ display: "flex", flexDirection: "column" }}>
         <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".08em", color: "var(--ink3)", paddingBottom: 4 }}>POSLEDNÉ DARY</span>
         {dary.map(([m, k, s], i) => <div key={i} style={{ display: "flex", alignItems: "baseline", gap: 8, padding: "8px 0", borderTop: "1px solid var(--cardBd)", fontSize: 14 }}><span style={{ flex: 1, minWidth: 0, fontWeight: 700 }}>{m}</span><span style={{ fontSize: 12.5, color: "var(--ink3)", textAlign: "right" }}>{k}</span><b style={{ color: "var(--gInk)", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>{s}</b></div>)}
@@ -151,6 +154,7 @@ function Rozmazane({ on, children }: { on: boolean; children: ReactNode }) {
 }
 export function Statistiky({ d, tier, mobil, toast }: { d: DataStatistik; tier: number; mobil: boolean; toast: (m: string) => void }) {
   const zamknute = tier < STAT_VSETKO_OD;
+  const sektor = useSektorDarcu();
   const sum = d.cez.reduce((a, c) => a + c[1], 0) || 1, max = d.cez[0]?.[1] || 1, maxD = Math.max(1, ...d.dni);
   const cez = (
     <section style={kartaK}>
@@ -183,7 +187,8 @@ export function Statistiky({ d, tier, mobil, toast }: { d: DataStatistik; tier: 
           <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}><b>{m}</b><span style={drobneK}>{k}</span></span>
           <b style={{ color: "var(--gInk)", fontVariantNumeric: "tabular-nums" }}>{s}</b>
         </div>)}
-        <span style={{ display: "block", fontSize: 12, color: "var(--ink3)", paddingTop: 6 }}>Mená len tých, ktorí ich dovolili ukázať. Ostatní sú Anonymný darca.</span>
+        {!d.dary.length && <span style={{ display: "block", fontSize: 13, color: "var(--ink3)", padding: "7px 0", borderTop: "1px solid var(--cardBd)" }}>Zatiaľ žiadne dary. Prvé sa ukážu tu, bez mena ako {menoBezMena(sektor)}.</span>}
+        <span style={{ display: "block", fontSize: 12, color: "var(--ink3)", paddingTop: 6 }}>Mená len tých, ktorí ich dovolili ukázať. Ostatní sú {menoBezMena(sektor)}.</span>
       </Rozmazane>
     </section>);
   const dni = (

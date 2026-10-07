@@ -23,7 +23,9 @@ import "@/styles/sprava.css";
 import { SektorDarcuKontext, darcoviaPre, useZmenyDarov } from "@/lib/darcovia";
 import { SpravaCentralnej } from "./SpravaCentralnej";
 import { centralnaZPamate, hlavnaBezi, nacitajCentralnuZbierku, useZmenyCentralnej } from "@/lib/centralnaZbierka";
-import { suhrnHlavnej, useOmsoveOkno } from "@/lib/omsoveOkno";
+import { suhrnHlavnej, useOmsoveOkno, menaOkna, doZatvorenia, zavriTyzdenTest } from "@/lib/omsoveOkno";
+import { TESTOVACIA } from "@/lib/testovacia";
+import { usePouzivatel } from "@/lib/pouzivatel";
 import { useUkazky } from "@/lib/testStav";
 import { najdiTestProfil } from "@/lib/testProfily";
 
@@ -127,6 +129,8 @@ function SpravaFarnostiObsah({ onBack, strankaId, test: testPas }: { onBack: () 
   const zbierkyF = ukazky ? ZBIERKY : [];
   const ostatneBezia = zbierkyF.some((z) => !z.ukoncena);
   const hlavnySuhrn = suhrnHlavnej(strankaId, hlavnaRef);
+  const oknoSuma = om.dary.reduce((a, r) => a + r.suma, 0);
+  const oknoLudi = new Set(om.dary.map((r) => (r.moj ? "ja" : r.id))).size;
 
   const go = (k: Sub) => { setSpat(sub === "zbierka" || sub === "hlavna" ? spat : sub); setSub(k); setPridat(false); };
   const otvorZb = (z: ZbF) => { setZb(z); go("zbierka"); };
@@ -197,12 +201,12 @@ function SpravaFarnostiObsah({ onBack, strankaId, test: testPas }: { onBack: () 
   const obOd = zaciatokObdobia(ob);
   const vsetkyDary = [...darcoviaPre(hlavnaRef), ...om.dary, ...om.uzavrete.flatMap((o) => darcoviaPre(o.id))];
   const vyzbObd = vsetkyDary.filter((r) => r.cas >= obOd).reduce((a, r) => a + r.suma, 0);
-  const oknoSuma = om.dary.reduce((a, r) => a + r.suma, 0);
   const posledna = om.uzavrete[0];
+  const poslPocet = posledna ? darcoviaPre(posledna.id).length : 0;
   const OBD_T = ["dnes", "za 7 dní", "za 30 dní", "od januára"];
   const ramce: [string, string, string][] = ukazky
-    ? [["Vyzbierané · hlavná", D[ob][0][0], `cez DEED · ${OBD_T[ob]}`], ["Na najbližšiu omšu", "146 €", `nedeľa ${om.okno.nedela} · cez DEED`], ["Posledná omšová", "212 €", "5. 10. · spoločný dar farníkov"]]
-    : [["Vyzbierané · hlavná", eur(vyzbObd), `cez DEED · ${OBD_T[ob]}`], ["Na najbližšiu omšu", eur(oknoSuma), `nedeľa ${om.okno.nedela} · cez DEED`], ["Posledná omšová", posledna ? eur(posledna.suma) : "—", posledna ? `${posledna.nedela} · spoločný dar farníkov` : "zatiaľ žiadna"]];
+    ? [["Vyzbierané · hlavná", D[ob][0][0], `cez DEED · ${OBD_T[ob]}`], ["Na najbližšiu omšu", "186 €", `nedeľa ${om.okno.nedela} · 23 ľudí`], ["Posledná omšová", "146 €", "nedeľa 5. 10. · 21 darov"]]
+    : [["Vyzbierané · hlavná", eur(vyzbObd), `cez DEED · ${OBD_T[ob]}`], ["Na najbližšiu omšu", eur(oknoSuma), `nedeľa ${om.okno.nedela} · ${oknoLudi} ${oknoLudi === 1 ? "človek" : oknoLudi < 5 && oknoLudi > 1 ? "ľudia" : "ľudí"}`], ["Posledná omšová", posledna ? eur(posledna.suma) : "—", posledna ? `nedeľa ${posledna.nedela} · ${poslPocet} ${poslPocet === 1 ? "dar" : poslPocet < 5 ? "dary" : "darov"}` : "zatiaľ žiadna"]];
   const ramec = ([k, v, s]: [string, string, string], zelena = false) => (
     <div key={k} style={{ ...karta, borderRadius: mobil ? 16 : 18, padding: mobil ? "10px 12px" : "12px 16px", display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
       <span style={{ fontSize: mobil ? 12 : 12.5, fontWeight: 700, color: "var(--ink3)" }}>{k}</span>
@@ -219,6 +223,7 @@ function SpravaFarnostiObsah({ onBack, strankaId, test: testPas }: { onBack: () 
         {!mobil && <span aria-hidden="true" />}
         {ramec(["Sledujúci", ukazky ? "1 240" : "0", ukazky ? "+42 za mesiac" : "dostávajú ohlášky a oznamy"])}
       </div>
+      <span style={{ fontSize: 12, color: "var(--ink3)" }}>Počet darov a pravidelná podpora sú v Nástroje → Štatistiky.</span>
     </div>);
   // Dnes a zajtra — z rozvrhu omší (mock.ts / uložený rozvrh)
   const den = new Date().getDay();
@@ -241,7 +246,7 @@ function SpravaFarnostiObsah({ onBack, strankaId, test: testPas }: { onBack: () 
       <span style={{ flex: "none", width: mobil ? 56 : 64, height: mobil ? 56 : 64, borderRadius: mobil ? 12 : 14, background: `url('${fotoH ?? f.foto}') center/cover no-repeat #3a3530` }} />
       <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 3 }}>
         <span style={{ fontSize: mobil ? 10.5 : 11, fontWeight: 800, letterSpacing: ".08em", color: "var(--ink3)" }}>HLAVNÁ ZBIERKA · STÁLE</span>
-        <b style={{ fontSize: mobil ? 15 : 16, lineHeight: 1.25 }}>Hlavná zbierka farnosti</b>
+        <b style={{ fontSize: mobil ? 15 : 16, lineHeight: 1.25 }}>Podporiť farnosť</b>
         <span style={{ fontSize: mobil ? 12 : 13, color: "var(--ink3)" }}>Na najbližšiu omšu: {om.dary.length ? nDarov(om.dary.length) : "zatiaľ nikto"} · nedeľa {om.okno.nedela}</span>
       </span>
       <span style={{ flex: "none", display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2 }}>
@@ -255,10 +260,32 @@ function SpravaFarnostiObsah({ onBack, strankaId, test: testPas }: { onBack: () 
       <span aria-hidden="true" style={{ flex: "none", width: 44, height: 44, borderRadius: 14, background: "var(--gSoft)", color: "var(--gInk)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, fontWeight: 700 }}>+</span>
       <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 3 }}>
         <b style={{ fontSize: mobil ? 15 : 16, color: "var(--green)" }}>Pridať hlavnú zbierku farnosti</b>
-        <span style={{ fontSize: mobil ? 12 : 13, lineHeight: 1.4, color: "var(--ink3)" }}>{hlavna ? "Rozpracovaná, ešte nebeží. Dokončite ju a spustite." : "Na chod farnosti. Všetky ďalšie zbierky farnosti posielajú peniaze na jej účet."}</span>
+        <span style={{ fontSize: mobil ? 12 : 13, lineHeight: 1.4, color: "var(--ink3)" }}>{hlavna ? "Rozpracovaná, ešte nebeží. Dokončite ju a spustite." : "Stála zbierka farnosti na účte farnosti, bez cieľa a konca, aj mesačne. Ostatné zbierky (omšová, oprava organu, misie) majú vlastné počítadlo, ale peniaze z nich prídu na ten istý účet. Preto ju treba založiť ako prvú."}</span>
       </span>
     </button>);
   const hlavnaEl = bezi ? hlavnaRiadok : pridatHlavnu;
+  const ja = usePouzivatel();
+  const nedOmse = (rozvrh.weeklyPattern.find((x) => x.dayOfWeek === 0)?.masses ?? []).map((m) => cas(m.time));
+  const menaO = menaOkna(om.dary, ja);
+  const oknoKarta = (
+    <section style={{ ...karta, borderRadius: mobil ? 18 : 22, padding: mobil ? "12px 14px" : "16px 20px", display: "flex", flexDirection: "column", gap: 8 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+        <b style={{ flex: 1, minWidth: 0, fontSize: mobil ? 15 : 16 }}>Nedeľa {om.okno.nedela}{nedOmse.length ? ` · ${nedOmse.join(" · ")}` : ""}</b>
+        <span style={{ height: 24, padding: "0 9px", borderRadius: 12, background: "#4B7A35", color: "#fff", fontSize: 11, fontWeight: 800, letterSpacing: ".04em", display: "flex", alignItems: "center" }}>BEŽÍ</span>
+      </div>
+      <span style={{ fontSize: 12.5, color: "var(--ink3)" }}>vzniklo samo z rozvrhu omší · len na čítanie</span>
+      <span style={{ fontSize: 13.5, color: "var(--ink2)" }}>Okno pondelok {om.okno.pondelok} 0:00 – nedeľa {om.okno.nedela} 23:59 · zatvorí sa o {doZatvorenia(om.okno, strankaId)}</span>
+      <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}><b style={{ fontSize: 22, fontVariantNumeric: "tabular-nums" }}>{eur(oknoSuma)}</b><span style={{ fontSize: 13, color: "var(--ink3)" }}>od {oknoLudi} {oknoLudi === 1 ? "človeka" : "ľudí"} · cez DEED</span></div>
+      <span style={{ fontSize: 13.5, lineHeight: 1.5, color: "var(--ink2)" }}>Na profile: {menaO || "zatiaľ nikto"}{menaO ? " (bez súm)" : ""}. Bez mena = <b>Bohu známy darca</b>. Po zatvorení okna mená zmiznú a do hlavnej zbierky pribudne jeden riadok „spoločný dar farníkov“.</span>
+      {om.uzavrete.length > 0 && <div style={{ display: "flex", flexDirection: "column", borderTop: "1px solid var(--cardBd)", paddingTop: 6 }}>
+        <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".06em", color: "var(--ink3)", padding: "4px 0" }}>Uzavreté týždne v hlavnej zbierke</span>
+        {om.uzavrete.slice(0, 6).map((o, i) => <div key={o.id} style={{ display: "flex", alignItems: "center", gap: 10, minHeight: 48, borderTop: i ? "1px solid var(--cardBd)" : "none" }}>
+          <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 1 }}><b style={{ fontSize: 14 }}>Omšová zbierka {o.nedela}</b><span style={{ fontSize: 12.5, color: "var(--ink3)" }}>spoločný dar farníkov{i === 0 ? " · 1 darca v štatistike" : ""}</span></span>
+          <b style={{ flex: "none", fontSize: 14, fontVariantNumeric: "tabular-nums" }}>{eur(o.suma)}</b>
+        </div>)}
+      </div>}
+      {TESTOVACIA && <button type="button" onClick={() => { zavriTyzdenTest(strankaId); toast("Týždeň zavretý (test). Začalo nové prázdne okno."); }} style={{ ...odkaz, color: "var(--ink3)" }}>Zavrieť týždeň (test)</button>}
+    </section>);
 
   const prehlad = mobil ? <>
     <button type="button" onClick={() => go("profil")} style={{ flex: "none", borderRadius: 18, background: "var(--cuBg)", border: "1.5px solid var(--cuBd)", padding: "10px 12px", display: "flex", alignItems: "center", gap: 12, cursor: "pointer", textAlign: "left", fontFamily: "inherit", boxShadow: "none" }}>
@@ -296,13 +323,18 @@ function SpravaFarnostiObsah({ onBack, strankaId, test: testPas }: { onBack: () 
 
   const zbierky = <>
     {nadpis("Zbierky", "Ťuk na riadok otvorí Správu zbierky, rovnakú ako pri charite")}
-    <span style={mobil ? { ...kicker, letterSpacing: ".07em", padding: "4px 2px 0" } : kicker}>{mobil ? "HLAVNÁ ZBIERKA · STÁLE" : "HLAVNÁ ZBIERKA FARNOSTI · STÁLE"}</span>
+    <span style={mobil ? { ...kicker, letterSpacing: ".07em", padding: "4px 2px 0" } : kicker}>{mobil ? "HLAVNÁ ZBIERKA · JEDEN ÚČET" : "HLAVNÁ ZBIERKA FARNOSTI · JEDEN ÚČET"}</span>
     {hlavnaEl}
+    {bezi && <span style={{ fontSize: 12.5, lineHeight: 1.5, color: "var(--ink3)" }}>Suma hlavnej zbierky <b>už obsahuje</b> všetky ostatné zbierky farnosti. Na profile sa nikdy neukazuje súčet dvoch čísel. Sumy sú len dary cez DEED, hotovosť z kostola sem nevstupuje.</span>}
+    {bezi && <>
+      <span style={mobil ? { ...kicker, letterSpacing: ".07em", padding: "4px 2px 0" } : kicker}>NA NAJBLIŽŠIU OMŠU · TÝŽDENNÉ OKNO</span>
+      {oknoKarta}
+    </>}
     {zbierkyF.length > 0 && <>
-      <span style={mobil ? { ...kicker, letterSpacing: ".07em", padding: "4px 2px 0" } : kicker}>ZBIERKY</span>
+      <span style={mobil ? { ...kicker, letterSpacing: ".07em", padding: "4px 2px 0" } : kicker}>{mobil ? "ÚČELOVÉ ZBIERKY" : "ÚČELOVÉ ZBIERKY · POČÍTADLO OSTÁVA VEREJNÉ NAVŽDY"}</span>
       <div style={{ display: "flex", flexDirection: "column", gap: mobil ? 12 : 10 }}>{zbierkyF.map(zbRiadok)}</div>
     </>}
-    {!mobil && <span style={{ fontSize: 12.5, lineHeight: 1.5, color: "var(--ink3)" }}>Všetky zbierky farnosti idú na účet hlavnej zbierky, každá má vlastné meno a počítadlo. „Na najbližšiu omšu" nie je samostatná zbierka, ale týždeň hlavnej zbierky (pondelok až nedeľa).</span>}
+    {!mobil && <span style={{ fontSize: 12.5, lineHeight: 1.5, color: "var(--ink3)" }}>Omšová zbierka vzniká sama z rozvrhu omší. Pri pohrebe a svadbe ide dar rodine a časť farnosti podľa rozdelenia, ktoré nastavíte.</span>}
   </>;
 
   const rozvrhKarta = (
