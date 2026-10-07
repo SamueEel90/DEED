@@ -172,15 +172,8 @@ export async function pridajPodporuDB(p: {
   const mena = kanal === "deed" ? "DEED" : "EUR";
   let idemKluc: string;
   try { idemKluc = crypto.randomUUID(); } catch { idemKluc = `dar-${Date.now()}-${Math.round(Math.random() * 1e9)}`; }
-  // Karta 56E · 0065: zbierka stránky s rozdelením (zbierka s overovateľom) — podiely vytvorí server zo splitu zbierky.
-  // Zbierka bez rozdelenia vráti 'bez_rozdelenia' — tie ešte do ledgera nejdú (hlásené Martinovi).
-  if (/^zb-/.test(String(p.refId))) {
-    const { error } = await supabase.rpc("zbierka_dar", {
-      p_zbierka: String(p.refId), p_idem: idemKluc, p_suma: p.suma ?? 0, p_mena: mena, p_kanal: kanal, p_meno_darcu: p.darca,
-    });
-    if (error && error.details !== "bez_rozdelenia") throw error;
-    return;
-  }
+  // zbierky stránok (zb-…) zapisuje do ledgera zápis daru (lib/darZbierky, 0066)
+  if (/^zb-/.test(String(p.refId))) return;
   // Zadanie 2 (ledger, 0037): dar musí mať príjemcu s účtom — v DB je ním autor prípadu.
   // Prípad, ktorý v DB nie je (mock/demo id), sa do ledgera nezapisuje; ostáva len v UI.
   if (!jeUuid(p.refId)) return;

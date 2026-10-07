@@ -270,7 +270,8 @@ export function Podstranka({ pozicia, tier: tierStranky = 0, logo, toast, onBack
 
     // dorovnanie firmy aj pripnutie zbierky rieši zápis daru (lib/darcovia) —
     // platí to rovnako pre Charitu, Help, Vieru aj cudzí profil
-    const { dorovnane = 0, dorovnalaFirma } = pridajDar({ refId, suma, kanal, registrovany, volba });
+    const objekt = strankaId ? { stranka: strankaId, hlavna: refId === CENTRALNA_ID, nazov: komu ?? s.nazov } : undefined;
+    const { dorovnane = 0, dorovnalaFirma } = pridajDar({ refId, suma, kanal, registrovany, volba, objekt });
 
     setPoDare({
       suma, dorovnane, firma: dorovnalaFirma,

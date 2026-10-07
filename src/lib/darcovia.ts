@@ -10,6 +10,7 @@ import { createContext, useContext, useSyncExternalStore } from "react";
 import { dorovnanieNaDar, dorovnanieKDaru, zapisDar as zapisDorovnanie } from "./dorovnanie";
 import { supabase } from "./supabase";
 import { pridajPodporu, firmaAkoDarca } from "./podpory";
+import { zapisDarZbierky, type ObjektZbierky } from "./darZbierky";
 import { ukazkyTeraz, naZmenuTestStavu } from "./testStav";
 
 // ---- CONFIG (spec §6) — všetky čísla ŠTARTOVACIE, žijú tu, nie v kóde ----
@@ -171,6 +172,8 @@ export function pridajDar(vstup: {
   refId: string; suma: number; kanal: KanalDaru; registrovany: boolean; volba?: VolbaDaru; firma?: string;
   /** dar prišiel cez QR (split) tohto tvorcu — rozhoduje o tvorcovskom dorovnaní */
   cezTvorcu?: string;
+  /** hlavná / sektorová zbierka stránky (nemá id „zb-…") — kvôli zápisu do ledgera (0066) */
+  objekt?: ObjektZbierky;
 }): DarRiadok & { dorovnane?: number; dorovnalaFirma?: string } {
   const reg = vstup.registrovany;
   const volba = reg ? (vstup.volba ?? nacitajPredvolbu()) : { verzia: 4 as VerziaIdentity, zobrazSumu: false };
@@ -183,6 +186,8 @@ export function pridajDar(vstup: {
   };
   sklad.set(vstup.refId, [riadok, ...realneDary(vstup.refId)]);
   emit();
+  // 0066: dar na zbierku stránky → pohyby v ledgeri (podiely rozhodne server). Neprihlásený / bez DB = nič.
+  if (!vstup.firma && reg) void zapisDarZbierky(vstup.refId, vstup.suma, vstup.kanal, vstup.objekt).catch(() => { /* chyba servera — dar ostáva len v UI */ });
   // dar od firmy (dorovnanie alebo firemný dar) sa ďalej nespracúva — inak by
   // dorovnanie dorovnávalo samo seba
   if (vstup.firma) return riadok;
