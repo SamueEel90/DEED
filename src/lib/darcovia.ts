@@ -116,6 +116,7 @@ function seed(refId: string): DarRiadok[] {
 
 // zbierky na ukážku klientovi: začínajú bez vymyslených darov — pribúdajú len skutočné (simulované) platby
 const ciste = new Set<string>();
+const OMSA_REF = /-omsa-\d{4}-\d{2}-\d{2}$/;
 export function nastavCiste(ids: string[]) { ids.forEach((i) => ciste.add(i)); }
 
 // sklad = len skutočné (simulované) dary; vymyslené dary (seed) len pri ukážkach — testovacia verzia
@@ -130,7 +131,8 @@ function realneDary(refId: string): DarRiadok[] {
 }
 function riadkyPre(refId: string): DarRiadok[] {
   const r = realneDary(refId);
-  if (ciste.has(refId) || !ukazkyTeraz()) return r;
+  // KARTA 56D: omšové okno farnosti (týždenný kľúč …-omsa-RRRR-MM-DD) nikdy nemá vymyslené dary
+  if (ciste.has(refId) || !ukazkyTeraz() || OMSA_REF.test(refId)) return r;
   let s = skladSeed.get(refId);
   if (!s) { s = seed(refId); skladSeed.set(refId, s); }
   const c = zlozene.get(refId);

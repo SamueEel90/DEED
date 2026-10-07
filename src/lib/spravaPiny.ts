@@ -4,21 +4,23 @@ import { supabase } from "./supabase";
 import { PIN_MAX, type PolozkaSpravy } from "@/features/rola/stav";
 
 export const PINY_ZACIATOK: PolozkaSpravy[] = ["zbierky", "skutky", "dobrovolnici"];
-const pamat = new Map<string, PolozkaSpravy[]>(); // mock/offline + okamžité zobrazenie pri návrate na obrazovku
+const pamat = new Map<string, string[]>(); // mock/offline + okamžité zobrazenie pri návrate na obrazovku
+// KARTA 56D: Správa farnosti má vlastné položky (sekcie) a štart bez pinov — preto zaciatok a typ položky ako parameter
+const zac = <T extends string>(z?: readonly T[]): T[] => [...(z ?? (PINY_ZACIATOK as readonly string[] as readonly T[]))];
 
 /** pripnuté z účtu (alebo štart, keď ešte nič neuložil) */
-export async function nacitajPiny(stranka: string): Promise<PolozkaSpravy[]> {
+export async function nacitajPiny<T extends string = PolozkaSpravy>(stranka: string, zaciatok?: readonly T[]): Promise<T[]> {
   if (supabase) {
     const { data, error } = await supabase.from("sprava_piny").select("piny").eq("stranka", stranka).maybeSingle();
-    if (!error) { const p = (data?.piny as PolozkaSpravy[] | undefined) ?? PINY_ZACIATOK; pamat.set(stranka, p); return p; }
+    if (!error) { const p = (data?.piny as T[] | undefined) ?? zac(zaciatok); pamat.set(stranka, p); return p; }
   }
-  return pamat.get(stranka) ?? PINY_ZACIATOK;
+  return (pamat.get(stranka) as T[] | undefined) ?? zac(zaciatok);
 }
 /** posledné známe piny (synchronne, na prvé vykreslenie) */
-export const pinyZPamate = (stranka: string): PolozkaSpravy[] => pamat.get(stranka) ?? PINY_ZACIATOK;
+export const pinyZPamate = <T extends string = PolozkaSpravy>(stranka: string, zaciatok?: readonly T[]): T[] => (pamat.get(stranka) as T[] | undefined) ?? zac(zaciatok);
 
-export async function ulozPiny(stranka: string, piny: PolozkaSpravy[]): Promise<void> {
-  const p = piny.slice(0, PIN_MAX);
+export async function ulozPiny<T extends string = PolozkaSpravy>(stranka: string, piny: T[], max = PIN_MAX): Promise<void> {
+  const p = piny.slice(0, max);
   pamat.set(stranka, p);
   if (!supabase) return;
   await supabase.from("sprava_piny").upsert({ stranka, piny: p, aktualizovane: new Date().toISOString() }, { onConflict: "ucet_id,stranka" });

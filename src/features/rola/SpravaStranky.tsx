@@ -48,7 +48,7 @@ import { PrepinacPodania, TestVolba } from "@/features/verejny-profil/casti";
 import { nacitajPiny, ulozPiny, pinyZPamate, nacitajZbalenie, ulozZbalenie, zbalenieZPamate, type Zbalenie } from "@/lib/spravaPiny";
 import { nastavStitSpravy } from "@/lib/stitAppky";
 import { ObrOznamenia, ObrEur, ObrEurc, ObrUcty, ObrSpravcovia, ObrUdaje, ObrProgram, ObrFaktury, ObrZariadenia, ObrSuhlasy, ObrStiahnut, ObrFaq, ObrPodpora, ObrZrusit, PROG, pocetSpravcov, pocetZariadeni, eurcText, eurText, HLAVNY_UCET } from "./NastaveniaCharity";
-import { TlacidloNastavenia } from "./spravaCasti";
+import { TlacidloNastavenia, LogoKarty } from "./spravaCasti";
 import {
   FLAGS, KONFIG, nacitajTiery, ulozTiery, slovo, maPovolenie, vidnoPolozku, smieSkutokZaCharitu, type RolaStranky, odProgramu, PROGRAM_NAZOV, PIN_MAX,
   nacitajStitCharity, ulozStitCharity, nacitajCharituNovu, ulozCharituNovu,
@@ -259,7 +259,7 @@ export function SpravaStranky(props: SpravaStrankyProps) {
   const { desktop } = useLayout();
   const ts = useTestStav();
   // KARTA 50 · §2: farnosť má vlastnú Správu (rovnaká kostra, položky farnosti) — bez štítu, programov, dokladov a dorovnania
-  if (typ === "farnost") return <SpravaFarnosti onBack={props.onBack} strankaId={props.strankaId ?? "farnost"}
+  if (typ === "farnost") return <SpravaFarnosti onBack={props.onBack} strankaId={props.strankaId ?? "farnost"} nazov={props.nazov}
     test={TESTOVACIA && FLAGS.dev_tier_switcher ? (onPozriet: () => void) => (
       <PrepinacPodania pas={!desktop} sektor="farnost" style={desktop ? { padding: "2px 2px 4px" } : { marginTop: 14 }}
         vzhlad={{ stranka: props.strankaId ?? "farnost", onPozriet }}
@@ -540,14 +540,6 @@ function Hlavicka({ titul, onSpat, otvor, mobil, glowNova, telefon, onPridat }: 
 // PANEL — karta charity, Nastavenia
 // ============================================================
 /** OPRAVY 113: logo v karte charity z uloženého profilu (tvar + pozadie), inak iniciály */
-function LogoKarty({ profil, inicialy, size }: { profil: ProfilStranky | null; inicialy: string; size: number }) {
-  const logo = profil?.logo;
-  const bg = !logo ? "var(--white)" : profil!.logoPozadie === "tmave" ? "#15171c" : profil!.logoPozadie === "priehladne" ? "transparent" : "#fff";
-  return (
-    <span style={{ width: size, height: size, borderRadius: profil?.tvar === "kruh" ? "50%" : Math.round(size / 4), overflow: "hidden", background: bg, border: "1px solid var(--cardBd)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: Math.round(size / 3.1), fontWeight: 800, color: "var(--gInk)", flex: "none" }}>
-      {logo ? <img src={logo} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} /> : inicialy}
-    </span>);
-}
 /** OPRAVY 109/113: Upraviť svieti len pred krokom 1 úvodu, inak sivé */
 const upravitTl = (glow: boolean): React.CSSProperties => glow
   ? { background: "var(--green)", color: "#fff", boxShadow: "0 0 0 3px var(--green), 0 0 18px rgba(78,125,55,.55)" }

@@ -6,6 +6,7 @@ import { kopiruj } from "@/lib/zdielanie";
 import { SADY, SADY_EURC } from "@/lib/novaZbierka";
 import { stiahniPlagat } from "@/lib/plagatPdf";
 import { menoBezMena, useSektorDarcu } from "@/lib/darcovia";
+import type { ProfilStranky } from "@/lib/profilStranky";
 
 export const kartaK: CSSProperties = { borderRadius: 22, background: "var(--card)", border: "1px solid var(--cardBd)", padding: "20px 22px", display: "flex", flexDirection: "column", gap: 12, minWidth: 0 };
 export const nadpisK: CSSProperties = { fontSize: 16, fontWeight: 800, color: "var(--ink)" };
@@ -218,4 +219,14 @@ export function TlacidloNastavenia({ on, onClick }: { on: boolean; onClick: () =
       <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="var(--acc)" strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flex: "none" }}><path d={NAST_D} /></svg>
       <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}><span style={{ fontSize: 15, fontWeight: on ? 800 : 600 }}>Nastavenia</span><span style={{ fontSize: 12, fontWeight: 500, color: "var(--ink3)" }}>aplikácie a účtu</span></span>
     </button>);
+}
+
+/** logo stránky v karte vľavo (charita, farnosť) — bez loga iniciály */
+export function LogoKarty({ profil, inicialy, size }: { profil: ProfilStranky | null; inicialy: string; size: number }) {
+  const logo = profil?.logo;
+  const bg = !logo ? "var(--white)" : profil!.logoPozadie === "tmave" ? "#15171c" : profil!.logoPozadie === "priehladne" ? "transparent" : "#fff";
+  return (
+    <span style={{ width: size, height: size, borderRadius: profil?.tvar === "kruh" ? "50%" : Math.round(size / 4), overflow: "hidden", background: bg, border: "1px solid var(--cardBd)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: Math.round(size / 3.1), fontWeight: 800, color: "var(--gInk)", flex: "none" }}>
+      {logo ? <img src={logo} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} /> : inicialy}
+    </span>);
 }
