@@ -7,7 +7,7 @@ import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 
 import { pridajPrispevok } from "@/features/viera/mock";
 import {
   useKalendar, zmenKalendar, zmenKostol, zmazVlastnu, novyKostol, omseDna, polozkyDna, maZmenu, druhPolozky, jeObrad, casKodu,
-  dniTyzdna, rozsahTyzdna, iso, dvt, pekny, minuty, CAS_OK, normCas, posunTyzdna, kostolKal, DRUHY, SKUPINY_OMSI, VEREJNE_VOLBY, VLASTNE_PREFIX,
+  dniTyzdna, rozsahTyzdna, iso, dvt, pekny, minuty, CAS_OK, normCas, dokonciCas, casNeexistuje, posunTyzdna, kostolKal, DRUHY, SKUPINY_OMSI, VEREJNE_VOLBY, VLASTNE_PREFIX,
   DNI_K, DNI_D, MES_G, MES_N, nazovOmse, type KalKostol, type KalendarFarnosti, type PolozkaDna, type Skupina, type Verej,
 } from "@/lib/kalendarFarnosti";
 
@@ -25,16 +25,16 @@ const GRUPY: Skupina[] = ["Bohoslužby", "Modlitby", "Obrady", "Vaše vlastné"]
 const novyId = () => `p${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
 const vSvetle = () => !document.documentElement.classList.contains("dark");
 
-/** čas: ťuk označí, prepíše sa; zlý alebo prázdny sa po odídení vráti na predošlý */
+/** čas: ťuk označí, prepíše sa; opravuje sa sám (56H §2); zlý alebo prázdny sa po odídení vráti na predošlý */
 function CasPole({ value, onCommit, onChyba, velky, label = "Čas, ťuknite a prepíšte", farba }: { value: string; onCommit: (v: string) => void; onChyba?: (zly: boolean) => void; velky?: boolean; label?: string; farba?: string }) {
   const [draft, setDraft] = useState<string | null>(null);
-  const zly = draft != null && draft !== "" && !CAS_OK(draft);
+  const zly = draft != null && casNeexistuje(draft);
   useEffect(() => { onChyba?.(zly); }, [zly]); // eslint-disable-line react-hooks/exhaustive-deps
   return (
     <input value={draft ?? value} inputMode="numeric" maxLength={5} aria-label={label} aria-invalid={zly || undefined}
       onFocus={(e) => { const el = e.target; setTimeout(() => { try { el.select(); } catch { /* */ } }, 0); }}
       onChange={(e) => setDraft(normCas(e.target.value))}
-      onBlur={() => { if (draft != null && CAS_OK(draft)) onCommit(pekny(draft)); setDraft(null); }}
+      onBlur={() => { const d = draft == null ? null : dokonciCas(draft); if (d != null && CAS_OK(d)) onCommit(pekny(d)); setDraft(null); }}
       onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
       style={{ width: 84, height: 44, flex: "none", padding: "0 6px", boxSizing: "border-box", textAlign: "center", borderRadius: 12, border: `${zly ? 2 : 1}px solid ${zly ? "var(--cRed)" : "var(--cardBd)"}`, background: velky ? "var(--card)" : "var(--field)", fontFamily: "inherit", fontSize: velky ? 17 : 15, fontWeight: velky ? 800 : 700, color: farba ?? "var(--ink)", fontVariantNumeric: "tabular-nums", outline: "none" }} />);
 }
@@ -48,6 +48,15 @@ function riadkyDna(k: KalKostol, d: Date): Riadok[] {
   ].sort((a, b) => minuty(a.t) - minuty(b.t));
 }
 
+
+/** KARTA 56G §3: oznam ZMENA OMŠE — v Oznamoch do konca toho dňa.
+ *  Notifikácia sledujúcim: PLACEBO — karta 56G (sledovanie stránky ešte nemá tabuľku). */
+function poslatZmenuOmse(strankaId: string, meno: string, veta: string, d: Date) {
+  const teraz = Date.now(), koniec = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1).getTime();
+  pridajPrispevok(strankaId, { id: `naboz-zmena-${teraz}`, comp: "data", typ: "skutok", modul: "charity", kat: "Komunita", ntyp: "oznam", skore: 6, typSituacie: "normal", dni: 0, podpora: 0,
+    farnostId: strankaId, cirkev: "", komunita: meno, overena: true, nazov: veta, tag: "Zmena omše", popis: "poslané sledujúcim · zmizne po tomto dni",
+    vytvorene: teraz, platnostDni: Math.max(0.01, (koniec - teraz) / 864e5) });
+}
 
 /** KARTA 56F/56G · Týždeň: 7 riadkov, šípky ‹ ›, ťuk na deň — v Omšiach aj pripnutý v Prehľade (jeden vzhľad) */
 export function TyzdenKarta({ k, off, setOff, den, onDen, mobil, kostolV = "", pozn = true }: { k: KalKostol; off: number; setOff: (o: number) => void; den: string | null; onDen: (key: string) => void; mobil: boolean; kostolV?: string; pozn?: boolean }) {
@@ -235,14 +244,7 @@ export function OmseKalendar({ strankaId, meno, kostoly, mobil, toast, start }: 
   const [zlyDen, setZlyDen] = useState<Record<string, boolean>>({});
   const dD = den ? new Date(Number(den.slice(0, 4)), Number(den.slice(5, 7)) - 1, Number(den.slice(8, 10))) : null;
   const pridajPolozku = (typ: string) => { if (!den) return; const x = druhPolozky(typ); zmenK((y) => ({ ...y, extra: { ...y.extra, [den]: [...(y.extra[den] ?? []), { id: novyId(), typ, t: x.cas, m: "" }] } })); };
-  // KARTA 56G §3: oznam ZMENA OMŠE — v Oznamoch do konca toho dňa. Notifikácia sledujúcim: PLACEBO — karta 56G (sledovanie stránky nemá tabuľku).
-  const poslatZmenu = (veta: string, d: Date) => {
-    const koniec = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1).getTime();
-    pridajPrispevok(strankaId, { id: `naboz-zmena-${Date.now()}`, comp: "data", typ: "skutok", modul: "charity", kat: "Komunita", ntyp: "oznam", skore: 6, typSituacie: "normal", dni: 0, podpora: 0,
-      farnostId: strankaId, cirkev: "", komunita: meno, overena: true, nazov: veta, tag: "Zmena omše", popis: "poslané sledujúcim · zmizne po tomto dni",
-      vytvorene: Date.now(), platnostDni: Math.max(0.01, (koniec - Date.now()) / 864e5) });
-    toast("Poslané · oznam je aj v Oznamoch");
-  };
+  const poslatZmenu = (veta: string, d: Date) => { poslatZmenuOmse(strankaId, meno, veta, d); toast("Poslané · oznam je aj v Oznamoch"); };
   const zmenPolozku = (id: string, p: Partial<PolozkaDna>) => { if (!den) return; zmenK((y) => ({ ...y, extra: { ...y.extra, [den]: (y.extra[den] ?? []).map((q) => (q.id === id ? { ...q, ...p } : q)) } })); };
   const denPanel = den && dD && (
     <section aria-label="Úprava dňa" style={{ ...karta, border: "2px solid var(--green)", padding: mobil ? "14px 14px" : "16px 20px", display: "flex", flexDirection: "column", gap: 10 }}>

@@ -83,7 +83,17 @@ export const jeObrad = (typ: string) => druhPolozky(typ).skupina === "Obrady";
 
 // ---- čas ----
 export const CAS_OK = (v: string) => /^([01]?\d|2[0-3]):[0-5]\d$/.test(v);
-export const normCas = (v: string) => v.replace(/[.,]/g, ":").replace(/[^0-9:]/g, "").slice(0, 5);
+/** KARTA 56H §2: čas sa opravuje sám pri písaní — „15,00" / „15.00" → 15:00, „1500" → 15:00, „15," → „15:" */
+export const normCas = (v: string) => {
+  let x = v.replace(/[,.\-h ]/g, ":").replace(/[^0-9:]/g, "").replace(/:+/g, ":");
+  if (/^\d:\d{3}$/.test(x)) x = x.replace(":", ""); // „1:50" + „0" → „1500"
+  if (/^\d{3,4}$/.test(x)) x = `${x.slice(0, -2)}:${x.slice(-2)}`;
+  return x.slice(0, 5);
+};
+/** po odídení z poľa: „15" → 15:00, „15:" → 15:00 */
+export const dokonciCas = (v: string) => (/^\d{1,2}$/.test(v) ? `${v}:00` : /^\d{1,2}:$/.test(v) ? `${v}00` : v);
+/** červená hláška len pri neexistujúcom čase (nie pri rozpísanom) */
+export const casNeexistuje = (v: string) => !!v && !CAS_OK(dokonciCas(v)) && !/^(\d{1,2}|([01]?\d|2[0-3]):[0-5]?)$/.test(v);
 export const minuty = (t: string) => { const [a, b] = t.split(":").map(Number); return a * 60 + b; };
 /** „06:30" → „6:30" */
 export const pekny = (t: string) => (CAS_OK(t) ? `${Number(t.split(":")[0])}:${t.split(":")[1]}` : t);

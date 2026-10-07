@@ -14,7 +14,7 @@ import PodrzTlacidlo from "@/features/zbierka/PodrzTlacidlo";
 import { GaleriaEditor, cistyText, NASTROJE } from "./obsahZbierky";
 import { pridajPrispevok, vlastnePrispevky, zmazPrispevok, type VieraFeedItem } from "@/features/viera/mock";
 import { FormularOznamu, VyberSablony, Plagat, prazdneUdaje, prvaVolba, chybaOznamu, popisOznamu, type DruhOznamu, type UdajeOznamu, type VolbaSablony } from "@/features/viera/Sablony";
-import { useKalendar, kostolKal, zmenKostol, CAS_OK, normCas, pekny, dniTyzdna, rozsahTyzdna, DNI_D, MES_G, dvt } from "@/lib/kalendarFarnosti";
+import { useKalendar, kostolKal, zmenKostol, CAS_OK, normCas, dokonciCas, casNeexistuje, pekny, dniTyzdna, rozsahTyzdna, DNI_D, MES_G, dvt } from "@/lib/kalendarFarnosti";
 import { plagatTyzdna } from "./OmseKalendar";
 
 type Druh = 0 | 1 | 2; // Krátky oznam · Udalosť · Oznámenie
@@ -124,7 +124,7 @@ export function OznamyFarnosti({ strankaId, meno, kostol, mobil, toast, hore }: 
   const novy = () => { setN(""); setTxt(""); setPlati(0); setUsp(0); setDat(""); setCas(""); setMiesto(""); setMedia([]); setPlagat(undefined); setPozv(0); setOsp(0); zmenOdr(0); setHotovo(null); };
 
   // ---- čo chýba ----
-  const casZly = !!cas.trim() && cas.length >= 4 && !CAS_OK(cas);
+  const casZly = casNeexistuje(cas);
   const ch: string[] = [];
   if (dr === 2 && osp === 0) {
     if (!u.meno.trim()) ch.push("meno");
@@ -211,7 +211,7 @@ export function OznamyFarnosti({ strankaId, meno, kostol, mobil, toast, hore }: 
           <input value={n} onChange={(e) => setN(e.target.value.slice(0, 80))} placeholder={dr === 1 ? "napr. Púť do Šaštína" : dr === 2 ? "napr. Zomrel pán Ján Novák" : "napr. V piatok nebude spovedanie"} style={pole} /></label>}
         {dr === 1 && <div style={{ display: "grid", gridTemplateColumns: mobil ? "1fr" : "repeat(3,minmax(0,1fr))", gap: 10 }}>
           <label style={{ display: "flex", flexDirection: "column", gap: 6 }}><span style={{ ...lbl, fontSize: 14 }}>Dátum</span><input type="date" value={dat} onChange={(e) => setDat(e.target.value)} aria-label="Dátum" style={pole} /></label>
-          <label style={{ display: "flex", flexDirection: "column", gap: 6 }}><span style={{ ...lbl, fontSize: 14 }}>Čas</span><input value={cas} inputMode="numeric" maxLength={5} onChange={(e) => setCas(normCas(e.target.value))} placeholder="napr. 15:00" aria-label="Čas" aria-invalid={casZly || undefined} style={{ ...pole, border: `${casZly ? 2 : 1}px solid ${casZly ? "var(--cRed)" : "var(--cardBd)"}` }} /></label>
+          <label style={{ display: "flex", flexDirection: "column", gap: 6 }}><span style={{ ...lbl, fontSize: 14 }}>Čas</span><input value={cas} inputMode="numeric" maxLength={5} onChange={(e) => setCas(normCas(e.target.value))} onBlur={() => setCas((c) => dokonciCas(c))} placeholder="napr. 15:00" aria-label="Čas" aria-invalid={casZly || undefined} style={{ ...pole, border: `${casZly ? 2 : 1}px solid ${casZly ? "var(--cRed)" : "var(--cardBd)"}` }} /></label>
           <label style={{ display: "flex", flexDirection: "column", gap: 6 }}><span style={{ ...lbl, fontSize: 14 }}>Miesto</span><input value={miesto} onChange={(e) => setMiesto(e.target.value.slice(0, 60))} placeholder="napr. pred kostolom" aria-label="Miesto" style={pole} /></label>
           {casZly && <span role="alert" style={{ gridColumn: "1 / -1", fontSize: 12.5, fontWeight: 700, color: "var(--cRed)" }}>Takýto čas neexistuje. Píšte hodiny:minúty, napríklad 15:00.</span>}
         </div>}
