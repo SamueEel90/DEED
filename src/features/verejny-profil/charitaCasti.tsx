@@ -22,8 +22,9 @@ export function useCharitaData(profil: TestProfil, lok: Lokalita, domace: Mesto)
   const sk = lok === "Celé Slovensko";
   const zbierky = vLokalite(profil.zbierky, lok, domace);
   const bezice = zbierky.filter((z) => z.stav !== "ukoncena");
-  const darcovia = sk ? profil.darcovia : profil.darcovia.filter((d) => d.mesto === lok);
-  const dnes = darcovia.reduce((s, d) => s + (d.suma ?? 0), 0);
+  const darcovia0 = sk ? profil.darcovia : profil.darcovia.filter((d) => d.mesto === lok);
+  const dnes = darcovia0.reduce((s, d) => s + (d.suma ?? 0), 0);
+  const darcovia = jeFarnost(profil) ? darcovia0.map((d) => ({ ...d, suma: undefined })) : darcovia0; // KARTA 56B · §5: vo Viere mená bez súm
   const [live, setLive] = useState(0);
   const [liveOp, setLiveOp] = useState(1);
   useEffect(() => {

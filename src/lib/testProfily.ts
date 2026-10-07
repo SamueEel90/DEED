@@ -581,7 +581,7 @@ const FARNOST: TestProfil = {
   ico: "", ucet: "SK12 0900 0000 0051 2345 4521", sidlo: "Marka Aurela 6, Trenčín", kontakt: "fara@trencin-mesto.sk",
   cisla: [["42 550 €", "vyzbierané"], ["15", "zbierok"], ["108", "skutkov"]],
   stitCisla: [["21", "zbierok"], ["63", "skutkov"], ["1 240", "sledujúcich"]],
-  centralna: { ...sektor("f-podpora", "Všeobecná podpora farnosti", "centralna", FO.kostol, 5100, 214, vsade("2 380 € tento mesiac", "V októbri: kúrenie, svetlo a drobné opravy kostola"),
+  centralna: { ...sektor("f-podpora", "Podporiť farnosť", "centralna", FO.kostol, 5100, 214, vsade("2 380 € tento mesiac", "V októbri: kúrenie, svetlo a drobné opravy kostola"),
     { mesiac: 2380, mesacne: 38, kam: "Na chod farnosti: kúrenie, svetlo, opravy a pomoc ľuďom vo farnosti.", tipy: [[5, ""], [10, ""], [20, ""]] }), stitok: "STÁLE" },
   sektory: [
     { ...sektor("f-organ", "Oprava organu", "sektor", FO.organ, 4120, 96, vsade("4 120 € z 9 000 €", "Organár z Bardejova začal rozoberať prvé píšťaly"), { tipy: [[5, ""], [10, ""], [20, ""]], mesacne: 0 }), stitok: "ZBIERKA", dlazdicaText: "4 120 € z 9 000 €", typ: "ZBIERKA", ...ZB_FARNOST },

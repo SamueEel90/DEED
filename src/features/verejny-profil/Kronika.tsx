@@ -80,8 +80,9 @@ export function Kronika({ profil, onDetail, onZaznam, onBack, prepinac }: { prof
   const oznamy = vLokalite(profil.oznamy, lok, domace);
   // KARTA 45: „Hľadáme ľudí" = plagát pri module (nie oznam), ukazujú sa všetky ponuky
   const praca = profil.praca;
-  const darcovia = sk ? profil.darcovia : profil.darcovia.filter((d) => d.mesto === lok);
-  const dnes = darcovia.reduce((s, d) => s + (d.suma ?? 0), 0);
+  const darcovia0 = sk ? profil.darcovia : profil.darcovia.filter((d) => d.mesto === lok);
+  const dnes = darcovia0.reduce((s, d) => s + (d.suma ?? 0), 0);
+  const darcovia = jeFarnost(profil) ? darcovia0.map((d) => ({ ...d, suma: undefined })) : darcovia0; // KARTA 56B · §5: vo Viere mená bez súm
 
   // Naživo: posledný dar sa strieda každých 5 s (prechod cez opacity)
   useEffect(() => {
