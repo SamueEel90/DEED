@@ -2,8 +2,8 @@
 // menu profilu na PC/tablete ide v rovnakom poradí. Nastavenia sa skryť nedajú. Rozbalené sekcie vidí len vlastník.
 import { useSyncExternalStore } from "react";
 
-export type DlazdicaId = "wallet" | "nastavenia" | "skutky" | "priatelia" | "karma" | "stat" | "firma" | "zaujmy";
-export const POVODNE: DlazdicaId[] = ["wallet", "nastavenia", "skutky", "priatelia", "karma", "stat", "firma", "zaujmy"];
+export type DlazdicaId = "wallet" | "nastavenia" | "skutky" | "priatelia" | "karma" | "stat" | "firma" | "zaujmy" | "sukromne";
+export const POVODNE: DlazdicaId[] = ["wallet", "nastavenia", "skutky", "priatelia", "karma", "stat", "firma", "zaujmy", "sukromne"];
 /** dlaždice, ktoré majú sekciu na rozbalenie pod mriežkou (hodnota = kľúč prekladu) */
 export const MA_ROZBALENIE: Partial<Record<DlazdicaId, string>> = {
   zaujmy: "dlazdice.rozb.zaujmy", stat: "dlazdice.rozb.stat", wallet: "dlazdice.rozb.wallet",

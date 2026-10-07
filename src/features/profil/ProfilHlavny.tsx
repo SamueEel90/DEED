@@ -52,6 +52,7 @@ const IK = {
   priatelia: "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M22 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8",
   stity: "M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z",
   stat: "M4 20V10M10 20V4M16 20v-7M22 20H2",
+  srdce: "M12 21s-7-4.4-9.3-9A5 5 0 0 1 12 6a5 5 0 0 1 9.3 6c-2.3 4.6-9.3 9-9.3 9z",
   ozubene: "M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z",
 };
 /** ikony oblastí záujmov (z prototypu) */
@@ -234,6 +235,8 @@ export function ProfilHlavny18(a: ProfilAkcie) {
     { id: "stat", t: t("dlazdice.stat"), s: t("dlazdice.stat.s", { n: 9 }), ikona: <Ik d={IK.stat} />, bg: "var(--gSoft)", c: "var(--green)", onClick: () => a.naSub("Štatistiky") },
     { id: "firma", t: t("dlazdice.firma"), s: firmaPod, ikona: <Ik d={IK.budova} />, bg: "var(--sek-oBg)", c: "var(--sek-o)", onClick: a.naFirma, skryt: firmy.length === 0 },
     { id: "zaujmy", t: t("dlazdice.zaujmy"), s: t("profil.zaujmy.pocet", { a: zaujmyN, n: ZAUJMY_KATALOG.length }), ikona: <Ik d={IK.osoba} />, bg: "var(--gSoft)", c: "var(--green)", onClick: () => a.naSub("Moje záujmy") },
+    // OPRAVY 164
+    { id: "sukromne", t: t("dlazdice.sukromne"), s: t("dlazdice.sukromne.s"), ikona: <Ik d={IK.srdce} />, bg: "var(--gSoft)", c: "var(--green)", onClick: () => a.naSub("Súkromné zbierky") },
   ];
   const sekcie = { zaujmy: <MojeZaujmy />, stat: <StatVSkratke onOtvor={() => a.naSub("Štatistiky")} />, wallet: <PoslednePohyby onOtvor={a.naWallet} /> };
   const pocty: [number, string][] = [[sledovani.length, "sledujem"], [podpory.length, "podporujem"], [MOJE_SKUTKY_POCET, "skutkov"]];

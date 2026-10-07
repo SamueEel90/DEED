@@ -52,6 +52,8 @@ export const profil: Slovnik = {
   "dlazdice.stat.s": "this month +{n}",
   "dlazdice.firma": "Employer",
   "dlazdice.zaujmy": "My interests",
+  "dlazdice.sukromne": "Private collections",
+  "dlazdice.sukromne.s": "funeral, wedding, celebration",
   "dlazdice.upravit": "Edit tiles",
   "dlazdice.obnovene": "Original tiles restored",
   "dlazdice.obnovit": "Restore original",
