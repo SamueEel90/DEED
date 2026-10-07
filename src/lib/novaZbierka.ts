@@ -41,7 +41,21 @@ export interface NovaZbierkaData {
   suhlas?: boolean;
   /** posledný otvorený krok (rozpísaná zbierka pokračuje tam, kde skončila) */
   krok: number;
+  /** KARTA 56D §6 · OPRAVY 161: zbierka farnosti (na účet hlavnej) alebo zbierka pre veriacich (pohreb, svadba, iné) */
+  farnost?: ZbierkaFarnosti;
 }
+/** KARTA 56D §6 · OPRAVY 161 — druh zbierky vo farnosti. Pre veriacich: príjemca (overený skenom), oznámenie a rozdelenie. */
+export interface ZbierkaFarnosti {
+  druh: "farnost" | "pohreb" | "svadba" | "ine";
+  /** zbierka pre veriacich: podiel farnosti v % (0 – 3, po 0,5) a najviac 100 € */
+  podiel?: number;
+  /** príjemca peňazí (pozostalý, snúbenec …) — účet z jeho overeného profilu */
+  prijemca?: { meno: string; overeny: string };
+  /** oznámenie na stránke farnosti (parte / svadobné oznámenie / oznámenie), ku ktorému je zbierka pripojená */
+  oznamenie?: { meno: string; rodena?: string; roky?: string; kedy?: string; kde?: string; kto?: string; vlastne?: string };
+}
+/** podiel farnosti pri zbierke pre veriacich: najviac 3 % a najviac 100 € (OPRAVY 161) */
+export const PODIEL_MAX = 3, PODIEL_KROK = 0.5, PODIEL_STROP_EUR = 100;
 export const prazdnaZbierka = (): NovaZbierkaData => ({
   nazov: "", popis: "", popis2: "", media: [], typ: "kratka", mesiace: 6, cielTyp: "ciel", ciel: "", iban: "",
   sada: 1, eurc: true, sadaE: 0, prav: false, ucel: null, ineT: "", ineL: null, suhlas: false, krok: 1,
@@ -85,6 +99,8 @@ export interface SpustenaZbierka extends NovaZbierkaData {
   ucet: string; lehota: string; lehotaKluc: LehotaKluc | null;
   /** verejné číslo zbierky = VS (10 číslic s Luhnom) — prideľuje server (zbierka.vs, migrácia 0049); v nastavenie sa neukladá */
   vs?: string;
+  /** životný cyklus zo stĺpca zbierka.stav (nie z nastavenia) — KARTA 56D: ukončená = ZRUŠENÁ */
+  stav?: "aktivna" | "ukoncena" | "vyuctovana";
 }
 
 // ---- pamäť relácie + odber zmien ----
@@ -113,9 +129,9 @@ export async function ulozKonceptZbierky(stranka: string, d: NovaZbierkaData | n
 
 export async function nacitajZbierkyStranky(stranka: string): Promise<SpustenaZbierka[]> {
   if (supabase) {
-    const { data, error } = await supabase.from("zbierka").select("id, vs, nastavenie, zapecatena").eq("stranka", stranka).order("vytvorene", { ascending: false });
+    const { data, error } = await supabase.from("zbierka").select("id, vs, nastavenie, zapecatena, stav").eq("stranka", stranka).order("vytvorene", { ascending: false });
     if (!error && data) {
-      const l = data.filter((r) => r.nastavenie).map((r) => ({ ...(r.nastavenie as SpustenaZbierka), vs: (r.vs as string | null) ?? undefined }));
+      const l = data.filter((r) => r.nastavenie).map((r) => ({ ...(r.nastavenie as SpustenaZbierka), vs: (r.vs as string | null) ?? undefined, stav: (r.stav as SpustenaZbierka["stav"]) ?? "aktivna" }));
       spustene.set(stranka, l); zmena(); return l;
     }
   }
@@ -129,13 +145,13 @@ export async function upravZbierku(stranka: string, id: string, p: Pick<NovaZbie
   const z = l.find((x) => x.id === id); if (!z) return;
   const n = { ...z, ...p };
   spustene.set(stranka, l.map((x) => (x.id === id ? n : x))); zmena();
-  // vs je stĺpec zbierky, nie súčasť zapečateného nastavenia — inak by ho zámok 0041 bral ako zmenu
-  const { vs: _vs, ...nastavenie } = n;
+  // vs a stav sú stĺpce zbierky, nie súčasť zapečateného nastavenia — inak by ich zámok 0041 bral ako zmenu
+  const { vs: _vs, stav: _stav, ...nastavenie } = n;
   if (supabase) await supabase.from("zbierka").update({ nastavenie: await bezDataUrl(nastavenie, "zbierky") }).eq("id", id);
 }
 
 /** Zapečatiť a spustiť — po spustení sa názov, text, dĺžka, suma, účet, účel a lehota nedajú meniť (karta 37 · bod 4) */
-export async function spustiZbierku(stranka: string, d: NovaZbierkaData, ucet: string): Promise<SpustenaZbierka> {
+export async function spustiZbierku(stranka: string, d: NovaZbierkaData, ucet: string, modul = "charity"): Promise<SpustenaZbierka> {
   const teraz = new Date().toISOString();
   const leh = lehotaZbierky(d);
   let z: SpustenaZbierka = { ...d, id: `zb-${Date.now().toString(36)}`, stranka, spustena: teraz, ucet, lehota: leh.text, lehotaKluc: leh.kluc };
@@ -143,7 +159,7 @@ export async function spustiZbierku(stranka: string, d: NovaZbierkaData, ucet: s
     z = await bezDataUrl(z, "zbierky");   // 5.5: fotky do Storage, v zbierka.nastavenie len URL
     // Zadanie 3 · 3.6: DB pustí zapečatenie len s účtom overeným pre túto stránku (0044) — inak chyba, nič sa nespustí
     const { data, error } = await supabase.from("zbierka").insert({
-      id: z.id, nazov: d.nazov, modul: "charity", typ: "zbierka", ciel: d.cielTyp === "ciel" ? cielCislo(d) : null,
+      id: z.id, nazov: d.nazov, modul, typ: "zbierka", ciel: d.cielTyp === "ciel" ? cielCislo(d) : null,
       stav: "aktivna", stranka, nastavenie: z, zapecatena: teraz,
     }).select("vs").single();
     if (error) throw new Error(error.message);
@@ -154,4 +170,10 @@ export async function spustiZbierku(stranka: string, d: NovaZbierkaData, ucet: s
   koncepty.set(stranka, null);
   zmena();
   return z;
+}
+
+/** KARTA 56D §6: ukončiť zbierku — dary sa zastavia, počítadlo ostáva na profile. Stav je životný cyklus (zámok 0041 ho dovoľuje). */
+export async function ukonciZbierku(stranka: string, id: string): Promise<void> {
+  spustene.set(stranka, zbierkyStrankyZPamate(stranka).map((x) => (x.id === id ? { ...x, stav: "ukoncena" as const } : x))); zmena();
+  if (supabase) { const { error } = await supabase.from("zbierka").update({ stav: "ukoncena" }).eq("id", id); if (error) throw new Error(error.message); }
 }

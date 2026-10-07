@@ -17,8 +17,11 @@ import { useVzhlad } from "@/lib/vzhladStranky";
 import { VzhladStranky } from "./VzhladStranky";
 import { TlacidloNastavenia, LogoKarty } from "./spravaCasti";
 import { UpravitProfilCharity } from "./UpravitProfilCharity";
+import { NovaZbierka } from "./NovaZbierka";
+import { SpravaZbierkyFarnosti, stitokZbierkyF, fotoZbierky } from "./SpravaZbierkyFarnosti";
+import { cielCislo, nacitajZbierkyStranky, useZmenyZbierok, zbierkyStrankyZPamate, type SpustenaZbierka } from "@/lib/novaZbierka";
 import "@/styles/sprava.css";
-import { SektorDarcuKontext, darcoviaPre, nastavCiste, useZmenyDarov } from "@/lib/darcovia";
+import { SektorDarcuKontext, darcoviaPre, nastavCiste, sucetDarov, useZmenyDarov } from "@/lib/darcovia";
 import { SpravaCentralnej } from "./SpravaCentralnej";
 import { centralnaZPamate, hlavnaBezi, nacitajCentralnuZbierku, nazovHlavnej, useZmenyCentralnej } from "@/lib/centralnaZbierka";
 import { suhrnHlavnej, useOmsoveOkno, menaOkna, doZatvorenia, zavriTyzdenTest } from "@/lib/omsoveOkno";
@@ -28,9 +31,9 @@ import { najdiTestProfil } from "@/lib/testProfily";
 import { cistyNazov, nacitajProfil, profilZPamate, uplnostProfilu, type ProfilStranky } from "@/lib/profilStranky";
 import { nacitajPiny, pinyZPamate, ulozPiny } from "@/lib/spravaPiny";
 
-type Sub = "prehlad" | "zbierky" | "omse" | "oznamy" | "ludia" | "penazenka" | "nastroje" | "profil" | "nast" | "hlavna" | "nahlad";
+type Sub = "prehlad" | "zbierky" | "omse" | "oznamy" | "ludia" | "penazenka" | "nastroje" | "profil" | "nast" | "hlavna" | "nahlad" | "zbierka" | "nova";
 /** sekcie, ktoré sa dajú pripnúť v Prehľade (najviac 6) */
-type Pin = Exclude<Sub, "prehlad" | "hlavna" | "nahlad">;
+type Pin = Exclude<Sub, "prehlad" | "hlavna" | "nahlad" | "zbierka" | "nova">;
 const PINY: Pin[] = ["zbierky", "omse", "oznamy", "ludia", "penazenka", "nastroje", "profil", "nast"];
 const PIN_MAX_F = 6;
 const IC: Record<string, string> = {
@@ -40,9 +43,9 @@ const IC: Record<string, string> = {
   prehlad: "M3 13h4v7H3zM10 8h4v12h-4zM17 4h4v16h-4z", profil: "M4 20h4L18 10l-4-4L4 16zM13 7l4 4",
   nast: "M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1",
   verejny: "M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12zM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z",
-  pin: "M9 4h6l-1 6 3 3H7l3-3zM12 13v7", dole: "M6 9l6 6 6-6",
+  pin: "M9 4h6l-1 6 3 3H7l3-3zM12 13v7", dole: "M6 9l6 6 6-6", kostol: "M4 21h16M5 21V10M19 21V10M9 21V10M15 21V10M3 10l9-6 9 6z",
 };
-const TIT: Record<Sub, string> = { prehlad: "Prehľad", zbierky: "Zbierky", omse: "Omše a kalendár", oznamy: "Oznamy", ludia: "Ľudia", penazenka: "Peňaženka", nastroje: "Nástroje", profil: "Upraviť profil", nast: "Nastavenia", hlavna: "Hlavná zbierka", nahlad: "Náhľad profilu" };
+const TIT: Record<Sub, string> = { prehlad: "Prehľad", zbierky: "Zbierky", omse: "Omše a kalendár", oznamy: "Oznamy", ludia: "Ľudia", penazenka: "Peňaženka", nastroje: "Nástroje", profil: "Upraviť profil", nast: "Nastavenia", hlavna: "Hlavná zbierka", nahlad: "Náhľad profilu", zbierka: "Správa zbierky", nova: "Nová zbierka" };
 const Ik = ({ d, s = 20, c = "var(--acc)", w = 1.9, style }: { d: string; s?: number; c?: string; w?: number; style?: CSSProperties }) =>
   <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth={w} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flex: "none", ...style }}><path d={d} /></svg>;
 const eur = (n: number) => `${n.toLocaleString("sk-SK")} €`;
@@ -93,6 +96,11 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
   const [kal, setKal] = useState(false);
   const [kartaOtv, setKartaOtv] = useState(true);
   const [zmazana, setZmazana] = useState(false); // KARTA 56D §5: hláška po zmazaní hlavnej zbierky, na mieste v Zbierkach
+  // KARTA 56D §6: výber druhu zbierky, „najprv hlavná", hláška po spustení a otvorená zbierka
+  const [zbVyber, setZbVyber] = useState(false);
+  const [zbBlok, setZbBlok] = useState(false);
+  const [noveOk, setNoveOk] = useState<string | null>(null);
+  const [zbOtv, setZbOtv] = useState<string | null>(null);
   const go = (k: Sub) => { setSub(k); setPridat(false); setPinOtv(false); };
 
   // KARTA 56D §1: profil stránky (profil_stranky) — karta vľavo, percento, „Dokončiť profil"
@@ -125,6 +133,11 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
   const bezi = hlavnaBezi(strankaId);
   const om = useOmsoveOkno(strankaId);
   const hlavnySuhrn = suhrnHlavnej(strankaId, hlavnaRef);
+  const hlavnyUcet = najdiTestProfil(strankaId)?.ucet || "hlavný účet farnosti z registrácie";
+  useZmenyZbierok();
+  // KARTA 56D §0: zbierky farnosti z účtu nikdy nemajú vymyslené dary (ani pri „Profil: Vyplnený")
+  useEffect(() => { void nacitajZbierkyStranky(strankaId).then((l) => nastavCiste(l.map((z) => z.id))); }, [strankaId]);
+  const dalsie = zbierkyStrankyZPamate(strankaId);
   const oknoSuma = om.dary.reduce((a, r) => a + r.suma, 0);
   const oknoLudi = new Set(om.dary.map((r) => (r.moj ? "ja" : r.id))).size;
 
@@ -234,31 +247,34 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
         <button type="button" onClick={() => setPinOtv(false)} style={{ height: 46, marginTop: 6, border: "none", borderRadius: 13, background: "var(--green)", cursor: "pointer", fontFamily: "inherit", fontSize: 14.5, fontWeight: 800, color: "#fff", boxShadow: "none" }}>Hotovo</button>
       </div>}
     </section>);
+  // KARTA 56D §6: karta hlavnej zbierky — zmenšenina fotky · HLAVNÁ ZBIERKA · AKTÍVNA · názov · Ďalší krok
   const fotoH = hlavna?.media.find((m) => m.typ === "foto")?.src;
   const nDarov = (n: number) => `${n} ${n === 1 ? "dar" : n < 5 ? "dary" : "darov"}`;
+  const chipF = (t: string, bg: string, r = 8) => <span style={{ height: 26, padding: "0 10px", borderRadius: r, background: bg, color: "#fff", fontSize: 12, fontWeight: 800, letterSpacing: ".08em", display: "flex", alignItems: "center", whiteSpace: "nowrap" }}>{t}</span>;
+  const nahladFoto = (src?: string) => <span style={{ flex: "none", width: mobil ? 72 : 96, height: mobil ? 52 : 64, borderRadius: 12, background: src ? `url('${src}') center/cover no-repeat var(--field)` : "var(--field)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, color: "var(--ink3)" }}>{src ? "" : "bez fotky"}</span>;
   const hlavnaRiadok = (
-    <button key="hlavna" type="button" onClick={() => go("hlavna")} style={{ display: "flex", alignItems: "center", gap: mobil ? 12 : 14, padding: mobil ? 10 : 12, borderRadius: 18, background: "var(--card)", border: "2px solid var(--gBd)", cursor: "pointer", textAlign: "left", fontFamily: "inherit", color: "var(--ink)", boxShadow: "none", width: "100%" }}>
-      <span style={{ flex: "none", width: mobil ? 56 : 64, height: mobil ? 56 : 64, borderRadius: mobil ? 12 : 14, background: fotoH ? `url('${fotoH}') center/cover no-repeat var(--field)` : "var(--field)" }} />
-      <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 3 }}>
-        <span style={{ fontSize: mobil ? 10.5 : 11, fontWeight: 800, letterSpacing: ".08em", color: "var(--ink3)" }}>HLAVNÁ ZBIERKA · STÁLE</span>
-        <b style={{ fontSize: mobil ? 15 : 16, lineHeight: 1.25 }}>{nazovHlavnej(hlavna)}</b>
-        <span style={{ fontSize: mobil ? 12 : 13, color: "var(--ink3)" }}>Na najbližšiu omšu: {om.dary.length ? nDarov(om.dary.length) : "zatiaľ nikto"} · nedeľa {om.okno.nedela}</span>
+    <button key="hlavna" type="button" onClick={() => go("hlavna")} style={{ flex: "none", borderRadius: 22, border: "2px solid var(--green)", background: "var(--card)", cursor: "pointer", display: "flex", alignItems: "center", gap: mobil ? 12 : 18, padding: mobil ? "12px 14px" : "18px 22px", textAlign: "left", fontFamily: "inherit", color: "var(--ink)", boxShadow: "none", width: "100%" }}>
+      {nahladFoto(fotoH)}
+      <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 6 }}>
+        <span style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>{chipF("HLAVNÁ ZBIERKA", "var(--green)")}{chipF("AKTÍVNA", "#4B7A35")}</span>
+        <b style={{ fontSize: mobil ? 17 : 20, lineHeight: 1.2 }}>{nazovHlavnej(hlavna)}</b>
+        <span style={{ fontSize: 14, color: "var(--ink3)" }}>{hlavnySuhrn.darcov ? nDarov(hlavnySuhrn.darcov) : "zatiaľ žiadne dary"} · stála, aj mesačne</span>
+        {!hlavnySuhrn.darcov && <span style={{ fontSize: 14, color: "var(--ink)" }}><b>Ďalší krok:</b> stiahnite QR plagát a dajte ho do kostola ›</span>}
       </span>
       <span style={{ flex: "none", display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2 }}>
-        <b style={{ fontSize: mobil ? 14.5 : 16, fontVariantNumeric: "tabular-nums" }}>{eur(hlavnySuhrn.suma)}</b>
-        <span style={{ fontSize: 11.5, color: "var(--ink3)" }}>cez DEED</span>
+        <b style={{ fontSize: mobil ? 18 : 24, fontVariantNumeric: "tabular-nums" }}>{eur(hlavnySuhrn.suma)}</b>
+        <span style={{ fontSize: 12, color: "var(--ink3)" }}>cez DEED</span>
       </span>
       {!mobil && <span aria-hidden="true" style={{ flex: "none", fontSize: 20, color: "var(--ink3)" }}>›</span>}
     </button>);
   const pridatHlavnu = (
-    <button key="pridat-hlavnu" type="button" onClick={() => go("hlavna")} style={{ display: "flex", alignItems: "center", gap: 14, minHeight: 76, padding: mobil ? "12px 14px" : "14px 18px", borderRadius: 18, background: "transparent", border: "2px dashed var(--gBd)", cursor: "pointer", textAlign: "left", fontFamily: "inherit", color: "var(--ink)", boxShadow: "none", width: "100%" }}>
-      <span aria-hidden="true" style={{ flex: "none", width: 44, height: 44, borderRadius: 14, background: "var(--gSoft)", color: "var(--gInk)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, fontWeight: 700 }}>+</span>
-      <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 3 }}>
-        <b style={{ fontSize: mobil ? 15 : 16, color: "var(--green)" }}>Pridať hlavnú zbierku farnosti</b>
-        <span style={{ fontSize: mobil ? 12 : 13, lineHeight: 1.4, color: "var(--ink3)" }}>{hlavna ? "Rozpracovaná, ešte nebeží. Dokončite ju a spustite." : "Stála zbierka farnosti na účte farnosti, bez cieľa a konca, aj mesačne. Ostatné zbierky (omšová, oprava organu, misie) majú vlastné počítadlo, ale peniaze z nich prídu na ten istý účet. Preto ju treba založiť ako prvú."}</span>
+    <button key="pridat-hlavnu" type="button" onClick={() => go("hlavna")} style={{ flex: "none", minHeight: 120, borderRadius: 22, border: "2px dashed var(--cuBd)", background: "var(--card)", cursor: "pointer", display: "flex", alignItems: "center", gap: 18, padding: mobil ? "16px 16px" : "20px 24px", textAlign: "left", fontFamily: "inherit", color: "var(--ink)", boxShadow: "none", width: "100%" }}>
+      <span aria-hidden="true" style={{ flex: "none", width: 52, height: 52, borderRadius: 16, background: "var(--gSoft)", color: "var(--gInk)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, fontWeight: 700 }}>+</span>
+      <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 4 }}>
+        <b style={{ fontSize: mobil ? 16 : 18, color: "var(--green)" }}>Pridať hlavnú zbierku</b>
+        <span style={{ fontSize: 14, lineHeight: 1.5, color: "var(--ink2)" }}>{hlavna ? "Rozpracovaná, ešte nebeží. Dokončite ju a spustite." : "Stála zbierka bez cieľa a konca, aj mesačne. Všetky ďalšie zbierky posielajú peniaze na jej účet. Preto ju treba založiť ako prvú."}</span>
       </span>
     </button>);
-  const hlavnaEl = bezi ? hlavnaRiadok : pridatHlavnu;
   const nedOmse = (rozvrh.weeklyPattern.find((x) => x.dayOfWeek === 0)?.masses ?? []).map((m) => cas(m.time));
   const menaO = menaOkna(om.dary, ja);
   const oknoKarta = (
@@ -297,20 +313,66 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
     {trebaVybavit}{cisla}
   </> : <>{cisla}{pripnute}{trebaVybavit}</>;
 
+  // KARTA 56D §6 · OPRAVY 161: ďalšie zbierky stránky (zbierka farnosti / pre veriacich) — z účtu (tabuľka zbierka)
+  const sprava = (m: string) => { setZbVyber(false); setZbBlok(false); setNoveOk(null); setZmazana(false); return m; };
+  const dalsieRiadok = (z: SpustenaZbierka) => {
+    const [chip, bg] = stitokZbierkyF(z);
+    const s0 = sucetDarov(z.id);
+    const veriaci = z.farnost && z.farnost.druh !== "farnost";
+    const ciel = z.cielTyp === "ciel" ? cielCislo(z) : 0;
+    const pod = s0.pocet ? nDarov(s0.pocet) : "zatiaľ žiadne dary";
+    return (
+      <button key={z.id} type="button" onClick={() => { sprava(""); setZbOtv(z.id); go("zbierka"); }} style={{ flex: "none", borderRadius: 20, border: "1px solid var(--cardBd)", background: "var(--card)", display: "flex", alignItems: "center", gap: mobil ? 12 : 16, padding: mobil ? "10px 12px" : "12px 18px 12px 12px", cursor: "pointer", textAlign: "left", fontFamily: "inherit", color: "var(--ink)", boxShadow: "none", width: "100%" }}>
+        {nahladFoto(fotoZbierky(z))}
+        <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 4 }}>
+          <span style={{ alignSelf: "flex-start" }}>{chipF(chip, bg, 7)}</span>
+          <b style={{ fontSize: mobil ? 16 : 18 }}>{z.nazov || "Nová zbierka"}</b>
+          <span style={{ fontSize: 13.5, color: "var(--ink3)" }}>{veriaci ? `${pod} · rodine ${100 - (z.farnost?.podiel ?? 0)} % · farnosti ${(z.farnost?.podiel ?? 0).toLocaleString("sk-SK")} %` : `${ciel ? `cieľ ${eur(ciel)} · ` : ""}${pod}`}</span>
+        </span>
+        <span style={{ flex: "none", display: "flex", flexDirection: "column", alignItems: "flex-end" }}><b style={{ fontSize: mobil ? 17 : 20, fontVariantNumeric: "tabular-nums" }}>{eur(s0.suma)}</b><span style={{ fontSize: 12, color: "var(--ink3)" }}>cez DEED</span></span>
+        {!mobil && <span aria-hidden="true" style={{ flex: "none", fontSize: 20, color: "var(--ink3)" }}>›</span>}
+      </button>);
+  };
+  const sprava2 = (t: string, zav: () => void, zelena: boolean) => (
+    <div role="status" style={{ flex: "none", borderRadius: 18, background: zelena ? "var(--gSoft)" : "var(--card)", border: `2px solid ${zelena ? "var(--green)" : "var(--cardBd)"}`, padding: "14px 18px", display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+      <b style={{ flex: 1, minWidth: 220, fontSize: 16, color: zelena ? "var(--gInk)" : "var(--ink)" }}>{t}</b>
+      <button type="button" onClick={zav} style={{ height: 44, padding: "0 16px", borderRadius: 12, border: `1px solid ${zelena ? "var(--gBd)" : "var(--cardBd)"}`, background: zelena ? "transparent" : "var(--field)", cursor: "pointer", fontFamily: "inherit", fontSize: 14.5, fontWeight: 800, color: zelena ? "var(--gInk)" : "var(--ink)", boxShadow: "none" }}>Rozumiem</button>
+    </div>);
+  const volbaZb = (ik: string, t: string, s: string, tap: () => void) => (
+    <button type="button" onClick={tap} style={{ minHeight: 84, padding: "14px 18px", borderRadius: 18, border: "1.5px solid var(--cardBd)", background: "var(--field)", cursor: "pointer", display: "flex", alignItems: "center", gap: 16, textAlign: "left", fontFamily: "inherit", color: "var(--ink)", boxShadow: "none" }}>
+      <span style={{ flex: "none", width: 52, height: 52, borderRadius: 15, background: "var(--gSoft)", display: "flex", alignItems: "center", justifyContent: "center" }}><Ik d={ik} s={24} c="var(--gInk)" /></span>
+      <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 3 }}><b style={{ fontSize: 17 }}>{t}</b><span style={{ fontSize: 14, lineHeight: 1.45, color: "var(--ink3)" }}>{s}</span></span>
+      <span aria-hidden="true" style={{ fontSize: 22, color: "var(--ink3)" }}>›</span>
+    </button>);
   const zbierky = <>
-    {nadpis("Zbierky", "Ťuk na riadok otvorí Správu zbierky, rovnakú ako pri charite")}
-    {zmazana && !hlavna && <div role="status" style={{ flex: "none", borderRadius: 18, background: "var(--card)", border: "2px solid var(--cardBd)", padding: "14px 18px", display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-      <b style={{ flex: 1, minWidth: 220, fontSize: 16 }}>Hlavná zbierka je zmazaná. Novú pridáte ťuknutím nižšie.</b>
-      <button type="button" onClick={() => setZmazana(false)} style={{ height: 44, padding: "0 16px", borderRadius: 12, border: "1px solid var(--cardBd)", background: "var(--field)", cursor: "pointer", fontFamily: "inherit", fontSize: 14.5, fontWeight: 800, color: "var(--ink)", boxShadow: "none" }}>Rozumiem</button>
+    {nadpis("Zbierky", "Ťuk na riadok otvorí Správu zbierky")}
+    {zbVyber && <section style={{ flex: "none", borderRadius: 22, background: "var(--card)", border: "2px solid var(--green)", padding: "18px 20px", display: "flex", flexDirection: "column", gap: 12 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10 }}><b style={{ flex: 1, fontSize: 19 }}>Akú zbierku pridávate?</b>
+        <button type="button" onClick={() => setZbVyber(false)} aria-label="Zavrieť" style={{ width: 44, height: 44, borderRadius: 12, border: "1px solid var(--cardBd)", background: "var(--field)", cursor: "pointer", fontSize: 18, color: "var(--ink2)", boxShadow: "none" }}>×</button></div>
+      {volbaZb(IC.kostol, "Zbierka farnosti", "na opravu, misie, lavice · peniaze idú na účet hlavnej zbierky", () => { sprava(""); if (!bezi) { setZbBlok(true); return; } go("nova"); })}
+      {volbaZb(IC.ludia, "Zbierka pre veriacich", "pohreb, svadba, iné · peniaze idú rodine, podiel farnosti na účet farnosti · nezávisí od hlavnej zbierky", () => { sprava(""); pripravujeme(); })}
+    </section>}
+    {noveOk && sprava2(noveOk, () => setNoveOk(null), true)}
+    {zbBlok && !bezi && <div role="alert" style={{ flex: "none", borderRadius: 18, background: "var(--goldBg)", border: "2px solid #C9A24A", padding: "16px 18px", display: "flex", flexDirection: "column", gap: 10 }}>
+      <b style={{ fontSize: 16.5 }}>Najprv treba spustiť hlavnú zbierku</b>
+      <span style={{ fontSize: 14.5, lineHeight: 1.5, color: "var(--ink2)" }}>Všetky ďalšie zbierky posielajú peniaze na jej účet. Keď hlavná zbierka beží, môžete pridávať ďalšie.</span>
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        <button type="button" onClick={() => { setZbBlok(false); go("hlavna"); }} style={{ height: 50, padding: "0 20px", border: "none", borderRadius: 14, background: "var(--green)", cursor: "pointer", fontFamily: "inherit", fontSize: 15.5, fontWeight: 800, color: "#fff", boxShadow: "none" }}>Pridať hlavnú zbierku</button>
+        <button type="button" onClick={() => setZbBlok(false)} style={{ height: 50, padding: "0 18px", borderRadius: 14, border: "1px solid var(--cardBd)", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 15, fontWeight: 800, color: "var(--ink2)", boxShadow: "none" }}>Zavrieť</button>
+      </div>
     </div>}
-    <span style={mobil ? { ...kicker, letterSpacing: ".07em", padding: "4px 2px 0" } : kicker}>{mobil ? "HLAVNÁ ZBIERKA · JEDEN ÚČET" : "HLAVNÁ ZBIERKA FARNOSTI · JEDEN ÚČET"}</span>
-    {hlavnaEl}
-    {bezi && <span style={{ fontSize: 12.5, lineHeight: 1.5, color: "var(--ink3)" }}>Suma hlavnej zbierky <b>už obsahuje</b> všetky ostatné zbierky farnosti. Na profile sa nikdy neukazuje súčet dvoch čísel. Sumy sú len dary cez DEED, hotovosť z kostola sem nevstupuje.</span>}
+    {zmazana && !hlavna && sprava2("Hlavná zbierka je zmazaná. Novú pridáte ťuknutím nižšie.", () => setZmazana(false), false)}
+    <span style={mobil ? { ...kicker, letterSpacing: ".07em", padding: "4px 2px 0" } : kicker}>HLAVNÁ ZBIERKA · JEDEN ÚČET</span>
+    {bezi && hlavnaRiadok}
     {bezi && <>
       <span style={mobil ? { ...kicker, letterSpacing: ".07em", padding: "4px 2px 0" } : kicker}>NA NAJBLIŽŠIU OMŠU · TÝŽDENNÉ OKNO</span>
       {oknoKarta}
     </>}
-    {!mobil && <span style={{ fontSize: 12.5, lineHeight: 1.5, color: "var(--ink3)" }}>Omšová zbierka vzniká sama z rozvrhu omší. Pri pohrebe a svadbe ide dar rodine a časť farnosti podľa rozdelenia, ktoré nastavíte.</span>}
+    {dalsie.length > 0 && <>
+      <span style={mobil ? { ...kicker, letterSpacing: ".07em", padding: "8px 2px 0" } : { ...kicker, paddingTop: 8 }}>ĎALŠIE ZBIERKY</span>
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>{dalsie.map(dalsieRiadok)}</div>
+    </>}
+    {!bezi && pridatHlavnu}
   </>;
 
   const rozvrhKarta = (
@@ -425,10 +487,15 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
       <span style={{ fontSize: 14, color: "var(--ink3)" }}>{nahladPopis(vz)}</span>
     </div>} />;
 
-  const ostatneBezia = false; // účelové zbierky farnosti (KARTA 56D §6)
-  const hlavnaSprava = <SpravaCentralnej strankaId={strankaId} nazov={meno} hlavnyUcet={najdiTestProfil(strankaId)?.ucet || "hlavný účet farnosti z registrácie"} tier={4} mobil={mobil} toast={toast}
+  // KARTA 56B: hlavnú zbierku nejde zmazať, kým beží zbierka farnosti (na jej účet). Zbierky pre veriacich od nej nezávisia (OPRAVY 161).
+  const ostatneBezia = dalsie.some((z) => (z.farnost?.druh ?? "farnost") === "farnost" && z.stav !== "ukoncena" && z.stav !== "vyuctovana");
+  const zbOtvorena = dalsie.find((z) => z.id === zbOtv);
+  const zbierkaEl = zbOtvorena ? <SpravaZbierkyFarnosti key={zbOtvorena.id} stranka={strankaId} z={zbOtvorena} mobil={mobil} toast={toast} onSpat={() => go("zbierky")} /> : null;
+  const novaEl = <NovaZbierka strankaId={strankaId} pozicia="charita" tier={4} nazov={meno} inicialy={meno.split(/\s+/).map((w) => w[0] ?? "").join("").slice(0, 2).toUpperCase()} mobil={mobil} tablet={tablet} stit="silver"
+    onMojeZbierky={() => go("zbierky")} farnost={{ ucet: hlavnyUcet, onSpustena: (z) => { nastavCiste([z.id]); go("zbierky"); setNoveOk(`Zbierka „${z.nazov}“ beží. Nájdete ju nižšie v Ďalších zbierkach.`); } }} />;
+  const hlavnaSprava = <SpravaCentralnej strankaId={strankaId} nazov={meno} hlavnyUcet={hlavnyUcet} tier={4} mobil={mobil} toast={toast}
     onZbierky={() => setSub("zbierky")} farnost={{ ostatneBezia, onZmazana: () => { setZmazana(true); go("zbierky"); }, onHotovo: () => go("prehlad") }} />;
-  const obsah: Record<Sub, ReactNode> = { prehlad, zbierky, omse, oznamy, ludia, penazenka, nastroje, profil, nahlad, hlavna: hlavnaSprava, nast: mobil ? <>
+  const obsah: Record<Sub, ReactNode> = { prehlad, zbierky, omse, oznamy, ludia, penazenka, nastroje, profil, nahlad, hlavna: hlavnaSprava, zbierka: zbierkaEl, nova: novaEl, nast: mobil ? <>
     <span style={{ ...kicker, letterSpacing: ".07em", padding: "4px 2px 0" }}>NÁSTROJE</span>{viditKarta}{nastrojeL}
     <span style={{ ...kicker, letterSpacing: ".07em", padding: "4px 2px 0" }}>NASTAVENIA</span>{nastaveniaL}
   </> : nastavenia };
@@ -437,7 +504,7 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
   // KARTA 56D §2: tlačidlo v hlavičke podľa sekcie; inde ponuka 4 položiek
   const akcia = (k: Akcia) => {
     setPridat(false);
-    if (k === "zbierka") { if (!bezi) { toast("Najprv spustite hlavnú zbierku. Všetky ďalšie zbierky posielajú peniaze na jej účet."); go("zbierky"); return; } setStart({ kat: "zbierka" }); return; }
+    if (k === "zbierka") { go("zbierky"); setZbVyber(true); window.scrollTo({ top: 0, behavior: "smooth" }); return; }
     if (k === "oznam") { setStart({ kat: "oznam" }); return; }
     if (k === "udalost") { setStart({ kat: "udalost" }); return; }
     setKal(true);
@@ -465,12 +532,12 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
 
   const titul = TIT[sub];
   const spatTl = (onClick: () => void) => <button type="button" onClick={onClick} aria-label="Späť" style={{ flex: "none", height: 44, padding: mobil ? "0 12px 0 8px" : "0 14px 0 8px", borderRadius: 13, border: "1px solid var(--cardBd)", background: "var(--card)", cursor: "pointer", fontFamily: "inherit", fontSize: mobil ? 14 : 15, fontWeight: 800, color: "var(--ink)", boxShadow: "none" }}>‹ Späť</button>;
-  const nazpat = () => { if (sub === "hlavna") setSub("zbierky"); else if (sub === "prehlad") onBack(); else setSub("prehlad"); };
+  const nazpat = () => { if (sub === "hlavna" || sub === "zbierka" || sub === "nova") setSub("zbierky"); else if (sub === "prehlad") onBack(); else setSub("prehlad"); };
 
   // ================= PC =================
   if (desktop) {
     const nav: Sub[] = ["prehlad", "zbierky", "omse", "oznamy", "ludia", "penazenka", "nastroje", "profil"]; // Nastavenia ako tlačidlo pod Verejným profilom (OPRAVY 157)
-    const aktivna = sub === "hlavna" ? "zbierky" : sub;
+    const aktivna = sub === "hlavna" || sub === "zbierka" || sub === "nova" ? "zbierky" : sub;
     return (
       <div className="sprava-charity" data-stit="silver" style={{ minHeight: "100dvh", boxSizing: "border-box", padding: "20px 32px", display: "flex", gap: 24, alignItems: "flex-start" }}>
         <aside style={{ width: 244, flex: "none", display: "flex", flexDirection: "column", gap: 12, paddingRight: 16, borderRight: "2px solid", borderImage: "var(--metal) 1", position: "sticky", top: 20, alignSelf: "flex-start", minHeight: "calc(100dvh - 40px)", boxSizing: "border-box" }}>
@@ -508,7 +575,7 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
                 <h1 style={{ margin: 0, fontSize: 22, fontWeight: 800, lineHeight: 1.15, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{titul}</h1>
                 <span style={{ fontSize: 13, color: "var(--ink3)" }}>{dnesText()}</span>
               </span>
-              {sub !== "profil" && sub !== "hlavna" && sub !== "nahlad" && <button type="button" onClick={pridatTl} style={{ ...tlZ, height: 44, padding: "0 18px", borderRadius: 13, fontSize: 15 }}>{PRIDAT_T[sub] ?? "+ Pridať"}</button>}
+              {!["profil", "hlavna", "nahlad", "zbierka", "nova"].includes(sub) && <button type="button" onClick={pridatTl} style={{ ...tlZ, height: 44, padding: "0 18px", borderRadius: 13, fontSize: 15 }}>{PRIDAT_T[sub] ?? "+ Pridať"}</button>}
             </header>
             {test}
             <div key={sub} style={{ display: "flex", flexDirection: "column", gap: 14, animation: "spravaFade .2s ease both" }}>{obsah[sub]}</div>

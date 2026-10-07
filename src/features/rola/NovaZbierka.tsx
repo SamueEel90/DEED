@@ -4,6 +4,9 @@
 // Platby · Dokladovanie · Kontrola → Podržte a zapečaťte → Zbierka beží.
 // Editor, výrez a detail zbierky = existujúce RichTextInput, OrezFotky, ZbierkaModul, PodrzTlacidlo.
 // Hranice programov z stav.ts (PROGRAM_TIER), nič napevno. Texty z prototypu Nova zbierka PC.
+// KARTA 56D §6 · farnosť (prop `farnost`, prototyp „Nova zbierka farnosti" = ZbierkyZakladny): 5 krokov
+// Obsah · Fotky a video · Suma a účet · Platby · Kontrola — bez dĺžky, dokladovania, pravidelnej podpory a štítu;
+// účet zamknutý „Na účet hlavnej zbierky"; náhľad „Na stránke farnosti" bez cudzích zbierok.
 // ============================================================
 import { toast } from "@/components/toast";
 import { useEffect, useRef, useState, type ReactNode } from "react";
@@ -25,15 +28,18 @@ import { VERIME_VAM, SUHLAS_FOTKY, SUHLAS_POZNAMKA, SUHLAS_CHYBA, PRED_SPUSTENIM
 
 import { Ik, I, Zamok, vyber, panel, pole, pozn, fmtEur, fmtSek, cis, cistyText, Media, Volby, Nadpis, Zaskrtnutie, odkaz, PravidlaObsahu, TextovePolia, GaleriaEditor } from "./obsahZbierky";
 
-export function NovaZbierka({ strankaId, pozicia, tier, nazov, inicialy, mobil, tablet, stit, onMojeZbierky }: {
+export function NovaZbierka({ strankaId, pozicia, tier, nazov, inicialy, mobil, tablet, stit, onMojeZbierky, farnost }: {
   strankaId: string; pozicia: Pozicia; tier: Tier; nazov: string; inicialy: string; mobil: boolean; tablet: boolean; stit: string;
   /** „Moje zbierky" (hotovo) */
   onMojeZbierky: () => void;
+  /** KARTA 56D §6: zbierka farnosti — účet hlavnej zbierky, po zapečatení späť do Zbierok */
+  farnost?: { ucet: string; onSpustena: (z: SpustenaZbierka) => void };
 }) {
   const ph = mobil && !tablet;
-  const zadarmo = tier < PROGRAM_TIER.P1;
+  const zadarmo = !!farnost || tier < PROGRAM_TIER.P1; // farnosť: jeden účet (hlavnej zbierky), bez dlhodobej a pravidelnej
+  const KROKY = farnost ? [1, 2, 3, 4, 6] : [1, 2, 3, 4, 5, 6];
   const eurcRezim = eurcText(); // "nie" | "pre všetky zbierky" | "podľa zbierky"
-  const hlavnyUcet = nacitajIbanOrg(pozicia) || HLAVNY_UCET;
+  const hlavnyUcet = farnost?.ucet || nacitajIbanOrg(pozicia) || HLAVNY_UCET;
   const [d, setD] = useState<NovaZbierkaData>(() => konceptZbierkyZPamate(strankaId) ?? prazdnaZbierka());
   const zmenene = useRef(false);
   const [nacitane, setNacitane] = useState(false);
@@ -46,7 +52,8 @@ export function NovaZbierka({ strankaId, pozicia, tier, nazov, inicialy, mobil, 
     return () => window.clearTimeout(t);
   }, [d, strankaId, nacitane]);
 
-  const k = Math.min(6, Math.max(1, d.krok));
+  const k = KROKY.includes(d.krok) ? d.krok : KROKY.find((n) => n > d.krok) ?? 6;
+  const ki = KROKY.indexOf(k);
   const [riadky, setRiadky] = useState(0);
   const [ok, setOk] = useState(false);
   const [vyrezId, setVyrezId] = useState<number | null>(null);
@@ -75,21 +82,22 @@ export function NovaZbierka({ strankaId, pozicia, tier, nazov, inicialy, mobil, 
       if (d.cielTyp === "ciel" && !(cielCislo(d) > 0)) return "Zadajte cieľovú sumu";
       if (!zadarmo && (!/^SK\d{2}/i.test(iban) || iban.length !== 24)) return "Zadajte transparentný účet (IBAN má 24 znakov a začína SK)"; // Zadarmo: IBAN sa nekontroluje
     }
-    if (n === 5) { if (d.ucel == null) return "Vyberte, na aký účel zbierate"; if (jeIne(d)) { if (!d.ineT.trim()) return "Napíšte, na čo zbierate"; if (d.ineL == null) return "Vyberte lehotu na doklady"; } }
+    if (n === 5 && !farnost) { if (d.ucel == null) return "Vyberte, na aký účel zbierate"; if (jeIne(d)) { if (!d.ineT.trim()) return "Napíšte, na čo zbierate"; if (d.ineL == null) return "Vyberte lehotu na doklady"; } }
     if (n === 6 && !zadarmo && overenie?.stav !== "overeny") return "Účet zbierky ešte nie je overený";
     if (n === 6 && !ok) return "Potvrďte, že ste údaje skontrolovali";
     return "";
   };
   const chyba = chybaKroku(k);
-  const hotoveDo = [1, 2, 3, 4, 5].findIndex((n) => chybaKroku(n));
-  const maxK = hotoveDo === -1 ? 6 : hotoveDo + 1;
+  const hotoveDo = KROKY.slice(0, -1).findIndex((n) => chybaKroku(n));
+  const maxK = hotoveDo === -1 ? 6 : KROKY[hotoveDo];
   const naKrok = (n: number) => { if (n <= maxK) zmen({ krok: n }); };
-  const dalej = () => { if (!chyba && k < 6) zmen({ krok: k + 1 }); };
-  const spat = () => { if (k > 1) zmen({ krok: k - 1 }); };
+  const dalej = () => { if (!chyba && ki < KROKY.length - 1) zmen({ krok: KROKY[ki + 1] }); };
+  const spat = () => { if (ki > 0) zmen({ krok: KROKY[ki - 1] }); };
   const zapecat = async () => {
     if (chyba) return;
     try {
-      const z = await spustiZbierku(strankaId, zadarmo ? { ...d, typ: "kratka", iban: "", prav: false } : d, zadarmo ? hlavnyUcet : d.iban);
+      const z = await spustiZbierku(strankaId, zadarmo ? { ...d, typ: "kratka", iban: "", prav: false, ...(farnost ? { ucel: null, farnost: { druh: "farnost" as const } } : {}) } : d, zadarmo ? hlavnyUcet : d.iban, farnost ? "nabozenstvo" : undefined);
+      if (farnost) { farnost.onSpustena(z); return; }
       setHotovo(z);
     } catch (e) { toast(e instanceof Error ? e.message : "Zbierku sa nepodarilo spustiť."); }
   };
@@ -101,7 +109,13 @@ export function NovaZbierka({ strankaId, pozicia, tier, nazov, inicialy, mobil, 
   const eurcOn = eurcRezim === "pre všetky zbierky" || (eurcRezim === "podľa zbierky" && d.eurc);
   const typT = zadarmo || d.typ === "kratka" ? "Krátkodobá · 30 dní" : `Dlhodobá · ${d.mesiace} mesiacov`;
   const dokladyT = d.ucel != null ? `${jeIne(d) ? d.ineT.trim() || "Iné" : UCELY[d.ucel][0]} · ${leh.text || "—"}` : "—";
-  const suhrn: [string, string, number, boolean][] = [
+  const suhrn: [string, string, number, boolean][] = farnost ? [
+    ["Názov", d.nazov || "—", 1, true], ["Popis", cistyText(d.popis).slice(0, 140) || "—", 1, true],
+    ["Fotky a video", `${fotiek} ${fotiek === 1 ? "fotka" : fotiek >= 2 && fotiek <= 4 ? "fotky" : "fotiek"} · ${video ? `video ${fmtSek(video.sek ?? 0)}` : "bez videa"}`, 2, false],
+    ["Suma", maCiel ? fmtEur(cielCislo(d)) : "otvorená, bez cieľa", 3, true], ["Kam prídu peniaze", "Na účet hlavnej zbierky", 3, true],
+    ["Rýchle sumy", `${SADY[d.sada][0]} · ${SADY[d.sada][1].join(" · ")} €`, 4, false],
+    ...(eurcRezim === "nie" ? [] : [["Dary v EURC", eurcOn ? `áno · ${SADY_EURC[d.sadaE][0]} ${SADY_EURC[d.sadaE][1].map(cis).join(" · ")}` : "nie", 4, false] as [string, string, number, boolean]]),
+  ] : [
     ["Názov", d.nazov || "—", 1, true], ["Popis", cistyText(d.popis).slice(0, 140) || "—", 1, true],
     ["Fotky a video", `${fotiek} ${fotiek === 1 ? "fotka" : fotiek >= 2 && fotiek <= 4 ? "fotky" : "fotiek"} · ${video ? `video ${fmtSek(video.sek ?? 0)}` : "bez videa"} · hlavné: ${d.media[0] ? (d.media[0].typ === "video" ? "video" : "fotka 1") : "—"}`, 2, false],
     ["Ako dlho", typT, 3, true], ["Suma", maCiel ? fmtEur(cielCislo(d)) : "otvorená, bez cieľa", 3, true],
@@ -155,17 +169,18 @@ export function NovaZbierka({ strankaId, pozicia, tier, nazov, inicialy, mobil, 
       <div ref={hore} style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
         <button type="button" onClick={() => setNahlad(null)} style={{ height: 44, padding: "0 14px 0 8px", borderRadius: 13, border: "1px solid var(--cardBd)", background: "var(--card)", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 4, fontSize: 14.5, fontWeight: 800, color: "var(--ink)" }}><Ik d={I.vlavo} s={18} w={2.4} />Späť na kontrolu</button>
         <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".07em", color: "var(--acc)" }}>NÁHĽAD</span>
-        <div role="tablist" style={{ display: "flex", gap: 2, padding: 4, borderRadius: 14, background: "var(--card)", border: "1px solid var(--cardBd)", flex: ph ? "1 1 100%" : "none" }}>{tab("str", "Na stránke charity")}{tab("detail", "Detail zbierky")}</div>
+        <div role="tablist" style={{ display: "flex", gap: 2, padding: 4, borderRadius: 14, background: "var(--card)", border: "1px solid var(--cardBd)", flex: ph ? "1 1 100%" : "none" }}>{tab("str", farnost ? "Na stránke farnosti" : "Na stránke charity")}{tab("detail", "Detail zbierky")}</div>
         {!ph && <span style={{ fontSize: 14, color: "var(--ink3)" }}>Takto zbierku uvidí darca</span>}
       </div>
       {nahlad === "str" ? <section style={{ ...panel }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}><span style={{ width: 40, height: 40, borderRadius: 12, background: "var(--gSoft)", border: "1px solid var(--gBd)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 800, color: "var(--gInk)" }}>{inicialy}</span>
-          <span style={{ display: "flex", flexDirection: "column" }}><b style={{ fontSize: 15 }}>{nazov}</b><span style={{ fontSize: 12.5, color: "var(--ink3)" }}>Charita · overená</span></span></div>
+          <span style={{ display: "flex", flexDirection: "column" }}><b style={{ fontSize: 15 }}>{nazov}</b><span style={{ fontSize: 12.5, color: "var(--ink3)" }}>{farnost ? "Farnosť · overená" : "Charita · overená"}</span></span></div>
         <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".06em", color: "var(--ink3)" }}>ZBIERKY</span>
         <div style={{ display: "grid", gridTemplateColumns: ph ? "minmax(0,1fr)" : "repeat(3,minmax(0,1fr))", gap: 12 }}>
-          {kartaMini(d.nazov || "Názov zbierky", typT === "Krátkodobá · 30 dní" ? "ešte 30 dní" : `ešte ${d.mesiace} mesiacov`, maCiel ? `0 / ${fmtEur(cielCislo(d))}` : "0 € · otvorená", hl ? <Media m={hl} /> : null, true)}
-          {kartaMini("Strecha pre rodinu Horváthovú", "ešte 9 dní", "8 420 / 12 000 €", <img src="/img/sprava/dom.jpg" alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />)}
-          {kartaMini("Centrálna zbierka Svetla pomoci", "na celú činnosť", "2 180 € · otvorená", <span style={{ display: "block", width: "100%", height: "100%", background: "repeating-linear-gradient(135deg,var(--track) 0 12px,var(--btn) 12px 24px)" }} />)}
+          {kartaMini(d.nazov || "Názov zbierky", farnost ? "zbierka farnosti" : typT === "Krátkodobá · 30 dní" ? "ešte 30 dní" : `ešte ${d.mesiace} mesiacov`, maCiel ? `0 / ${fmtEur(cielCislo(d))}` : "0 € · otvorená", hl ? <Media m={hl} /> : null, true)}
+          {/* KARTA 56D §6: farnosť — len nová zbierka, žiadne cudzie (ukážkové) */}
+          {!farnost && kartaMini("Strecha pre rodinu Horváthovú", "ešte 9 dní", "8 420 / 12 000 €", <img src="/img/sprava/dom.jpg" alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />)}
+          {!farnost && kartaMini("Centrálna zbierka Svetla pomoci", "na celú činnosť", "2 180 € · otvorená", <span style={{ display: "block", width: "100%", height: "100%", background: "repeating-linear-gradient(135deg,var(--track) 0 12px,var(--btn) 12px 24px)" }} />)}
         </div>
         <span style={pozn}>Kliknite na svoju zbierku a otvorí sa detail, ktorý uvidí darca.</span>
       </section> : <ZbierkaModul zbierka={zbierkaData()} miesto="charita" zoStrankyOrg onBack={() => setNahlad(null)} spatNazov="Späť na kontrolu" />}
@@ -176,17 +191,17 @@ export function NovaZbierka({ strankaId, pozicia, tier, nazov, inicialy, mobil, 
   const stepper = (
     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
       {!ph && <div style={{ display: "flex", justifyContent: "flex-end" }}><span style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 13, fontWeight: 700, color: "var(--ink2)" }}><span style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--green)" }} />Rozpísané sa ukladá samo</span></div>}
-      <div role="list" aria-label="Kroky" style={{ display: "grid", gridTemplateColumns: "repeat(6,minmax(0,1fr))", gap: ph ? 5 : 10 }}>
-        {KROKY_ZBIERKY.map((t, i) => { const n = i + 1, akt = n === k, hot = n < k, moze = n <= maxK; return (
+      <div role="list" aria-label="Kroky" style={{ display: "grid", gridTemplateColumns: `repeat(${KROKY.length},minmax(0,1fr))`, gap: ph ? 5 : 10 }}>
+        {KROKY.map((n, i) => { const t = KROKY_ZBIERKY[n - 1], akt = n === k, hot = n < k, moze = n <= maxK; return (
           <button key={t} role="listitem" type="button" onClick={() => naKrok(n)} aria-current={akt ? "step" : undefined} style={{ border: "none", background: "transparent", padding: 0, cursor: moze ? "pointer" : "default", fontFamily: "inherit", display: "flex", flexDirection: "column", gap: 8, textAlign: "left", minHeight: ph ? 12 : 44 }}>
             <span style={{ height: 4, borderRadius: 2, background: n <= k ? "var(--green)" : "var(--track)", transition: "background .3s ease" }} />
             {!ph && <span style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
-              <span style={{ width: 24, height: 24, flex: "none", borderRadius: "50%", background: akt ? "var(--ink)" : hot ? "var(--green)" : "var(--track)", color: akt || hot ? "#fff" : "var(--ink3)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 800 }}>{hot ? <Ik d={I.fajka} s={13} w={3} /> : n}</span>
+              <span style={{ width: 24, height: 24, flex: "none", borderRadius: "50%", background: akt ? "var(--ink)" : hot ? "var(--green)" : "var(--track)", color: akt || hot ? "#fff" : "var(--ink3)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 800 }}>{hot ? <Ik d={I.fajka} s={13} w={3} /> : i + 1}</span>
               <span style={{ fontSize: 14, fontWeight: akt ? 800 : 700, color: akt ? "var(--ink)" : "var(--ink3)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{t}</span>
             </span>}
           </button>); })}
       </div>
-      {ph && <span style={{ fontSize: 13, fontWeight: 700, color: "var(--ink2)" }}>Krok {k} z 6 · {KROKY_ZBIERKY[k - 1]}</span>}
+      {ph && <span style={{ fontSize: 13, fontWeight: 700, color: "var(--ink2)" }}>Krok {ki + 1} z {KROKY.length} · {KROKY_ZBIERKY[k - 1]}</span>}
     </div>);
 
   const hlavicka = (t: string, s: string) => <div style={{ display: "flex", flexDirection: "column", gap: 4 }}><span style={{ fontSize: ph ? 22 : 26, fontWeight: 800, color: "var(--ink)" }}>{t}</span><span style={{ fontSize: 15, lineHeight: 1.45, color: "var(--ink3)" }}>{s}</span></div>;
@@ -215,9 +230,9 @@ export function NovaZbierka({ strankaId, pozicia, tier, nazov, inicialy, mobil, 
         <span style={{ fontSize: 14, lineHeight: 1.5, color: "var(--ink2)", marginTop: -4 }}>{SUHLAS_POZNAMKA}{" "}<button type="button" onClick={() => setPravidla(true)} style={odkaz}>Pravidlá obsahu ›</button></span>
       </GaleriaEditor></>;
   } else if (k === 3) {
-    obsah = <>{hlavicka("Suma a účet", "Koľko potrebujete, ako dlho a kam peniaze prídu.")}
+    obsah = <>{hlavicka("Suma a účet", farnost ? "Koľko potrebujete a kam peniaze prídu." : "Koľko potrebujete, ako dlho a kam peniaze prídu.")}
       <section style={panel}>
-        <Nadpis t={ph ? "Ako dlho bude bežať" : "Ako dlho bude zbierka bežať"} pecat />
+        {!farnost && <><Nadpis t={ph ? "Ako dlho bude bežať" : "Ako dlho bude zbierka bežať"} pecat />
         <Volby stlpce={2} value={zadarmo ? "kratka" : d.typ} onChange={(t) => zmen({ typ: t })} moznosti={[
           { k: "kratka" as const, t: "Krátkodobá", s: "30 dní, na jednu konkrétnu vec" },
           { k: "dlha" as const, t: "Dlhodobá", s: zadarmo ? "vo vyššom programe" : "3 až 12 mesiacov", zamok: zadarmo },
@@ -225,14 +240,18 @@ export function NovaZbierka({ strankaId, pozicia, tier, nazov, inicialy, mobil, 
         {dlha && <>
           <Volby stlpce={3} vyska={48} value={d.mesiace} onChange={(m) => zmen({ mesiace: m })} moznosti={([3, 6, 12] as const).map((m) => ({ k: m, t: `${m} mesiacov` }))} />
           <span style={{ padding: "12px 16px", borderRadius: 14, background: "var(--gSoft)", border: "1px solid var(--gBd)", fontSize: 14, lineHeight: 1.5, color: "var(--ink2)" }}>{DLHA_FEED_TEXT}</span>
-        </>}
+        </>}</>}
         <Nadpis t="Suma" pecat />
         <Volby stlpce={2} value={d.cielTyp} onChange={(t) => zmen({ cielTyp: t })} moznosti={[{ k: "ciel" as const, t: "Cieľová suma", s: "viem, koľko potrebujem" }, { k: "otv" as const, t: "Otvorená", s: "bez cieľa, koľko sa vyzbiera" }]} />
         {maCiel && <label style={{ position: "relative", display: "block", maxWidth: ph ? undefined : 320 }}>
           <input value={cielCislo(d) ? cielCislo(d).toLocaleString("sk-SK").replace(/\u00A0/g, " ") : ""} onChange={(e) => zmen({ ciel: e.target.value.replace(/\D/g, "").slice(0, 7) })} inputMode="numeric" placeholder="Napríklad 4 000" aria-label="Cieľová suma v eurách" style={{ ...pole, paddingRight: 40 }} />
           <span style={{ position: "absolute", right: 16, top: 15, fontSize: 16, fontWeight: 800, color: "var(--ink3)" }}>€</span>
         </label>}
-        {zadarmo ? <>
+        {farnost ? <>
+          <Nadpis t="Kam prídu peniaze" />
+          <div style={{ ...pole, display: "flex", alignItems: "center", gap: 10, background: "var(--btn)", color: "var(--ink2)", maxWidth: ph ? undefined : 520 }}><Zamok s={15} /><span>Na účet hlavnej zbierky</span></div>
+          <span style={{ ...pozn, marginTop: -6 }}>Všetky zbierky farnosti idú na jeden účet. Každá má vlastné počítadlo.</span>
+        </> : zadarmo ? <>
           <Nadpis t="Kam prídu peniaze" />
           <div style={{ ...pole, display: "flex", alignItems: "center", gap: 10, background: "var(--btn)", color: "var(--ink2)", maxWidth: ph ? undefined : 520 }}><Zamok s={15} /><span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{hlavnyUcet}</span></div>
           <span style={{ ...pozn, marginTop: -6 }}>Hlavný účet organizácie z registrácie. Vlastný účet pre každú zbierku je vo vyššom programe.</span>
@@ -300,7 +319,7 @@ export function NovaZbierka({ strankaId, pozicia, tier, nazov, inicialy, mobil, 
   } else {
     obsah = <>{hlavicka(ph ? "Kontrola" : "Kontrola pred spustením", ph ? "Údaje so zámkom sa po spustení nedajú zmeniť." : "Údaje so zámkom sa po spustení nedajú zmeniť, ani vami, ani nami. Najprv si pozrite, ako bude zbierka vyzerať.")}
       <div style={{ display: "grid", gridTemplateColumns: ph ? "minmax(0,1fr)" : "repeat(2,minmax(0,1fr))", gap: 12 }}>
-        {(ph ? [["detail", "Pozrieť, ako ju uvidí darca", "aj s platbou", I.oko]] : [["str", "Na stránke charity", "karta zbierky medzi ostatnými", I.karta], ["detail", "Detail zbierky", "čo darca uvidí po otvorení, aj s platbou", I.oko]]).map(([t, n, s, ic]) => (
+        {(ph ? [["detail", "Pozrieť, ako ju uvidí darca", "aj s platbou", I.oko]] : [["str", farnost ? "Na stránke farnosti" : "Na stránke charity", "karta zbierky medzi ostatnými", I.karta], ["detail", "Detail zbierky", "čo darca uvidí po otvorení, aj s platbou", I.oko]]).map(([t, n, s, ic]) => (
           <button key={t} type="button" onClick={() => setNahlad(t as "str" | "detail")} style={{ minHeight: 76, padding: "14px 18px", borderRadius: 18, border: "1.5px solid var(--gBd)", background: "var(--gSoft)", cursor: "pointer", fontFamily: "inherit", textAlign: "left", display: "flex", alignItems: "center", gap: 14 }}>
             <span style={{ width: 44, height: 44, flex: "none", borderRadius: 12, background: "var(--field)", color: "var(--gInk)", display: "flex", alignItems: "center", justifyContent: "center" }}><Ik d={ic} s={20} /></span>
             <span style={{ display: "flex", flexDirection: "column", gap: 2 }}><b style={{ fontSize: 16, color: "var(--gInk)" }}>{n}</b><span style={{ fontSize: 12.5, fontWeight: 700, color: "var(--gInk)" }}>{s}</span></span>
@@ -326,12 +345,12 @@ export function NovaZbierka({ strankaId, pozicia, tier, nazov, inicialy, mobil, 
   // ---------- spodná lišta ----------
   const tuk = potvrditTuknutim();
   const chybaEl = chyba ? <span role="status" style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, fontWeight: 700, color: "#8A5A2B", minWidth: 0 }}><span style={{ width: 8, height: 8, flex: "none", borderRadius: "50%", background: "#C9A24A" }} />{chyba}</span> : null;
-  const dalejEl = k < 6
+  const dalejEl = ki < KROKY.length - 1
     ? <button type="button" onClick={dalej} aria-disabled={!!chyba} style={{ flex: ph ? 1 : "none", height: 52, padding: "0 24px", border: "none", borderRadius: 14, background: chyba ? "#CFC9BC" : "var(--green)", color: chyba ? "#6B6C62" : "#fff", cursor: chyba ? "default" : "pointer", fontFamily: "inherit", fontSize: 16, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>Pokračovať{!ph && <Ik d={I.vpravo} s={17} w={2.4} />}</button>
     : tuk
       ? <button type="button" onDoubleClick={() => void zapecat()} aria-disabled={!!chyba} style={{ flex: ph ? 1 : "none", height: 52, padding: "0 24px", border: "none", borderRadius: 14, background: chyba ? "#CFC9BC" : "var(--green)", color: chyba ? "#6B6C62" : "#fff", cursor: chyba ? "default" : "pointer", fontFamily: "inherit", fontSize: 16, fontWeight: 800 }}>Dvakrát kliknite a zapečaťte</button>
       : <div style={{ flex: ph ? 1 : "none", width: ph ? undefined : 280, ["--gGrad" as string]: "linear-gradient(90deg,#4B7A35,#8DB866)" }}><PodrzTlacidlo label="Podržte a zapečaťte" disabled={!!chyba} onConfirm={() => void zapecat()} /></div>;
-  const spatEl = k > 1 ? <button type="button" onClick={spat} aria-label="Späť" style={{ flex: "none", height: 52, minWidth: 52, padding: ph ? 0 : "0 18px 0 12px", borderRadius: 14, border: "1.5px solid var(--cardBd)", background: ph ? "var(--field)" : "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 15, fontWeight: 800, color: "var(--ink)", display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}><Ik d={I.vlavo} s={18} w={2.4} />{!ph && "Späť"}</button> : null;
+  const spatEl = ki > 0 ? <button type="button" onClick={spat} aria-label="Späť" style={{ flex: "none", height: 52, minWidth: 52, padding: ph ? 0 : "0 18px 0 12px", borderRadius: 14, border: "1.5px solid var(--cardBd)", background: ph ? "var(--field)" : "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 15, fontWeight: 800, color: "var(--ink)", display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}><Ik d={I.vlavo} s={18} w={2.4} />{!ph && "Späť"}</button> : null;
 
   const pravidlaEl = pravidla ? <PravidlaObsahu ph={ph} stit={stit} onZavri={() => setPravidla(false)} /> : null;
   if (ph) return (<>

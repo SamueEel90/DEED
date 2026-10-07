@@ -206,7 +206,7 @@ export function SpravaCentralnej({ strankaId, nazov, hlavnyUcet, tier, mobil, to
   const spZacni = () => { if (!mozeSpustit) return; setSpDrz(true); window.clearTimeout(spTm.current); spTm.current = window.setTimeout(() => { setSpDrz(false); spustit(); }, 1500); };
   const spPusti = () => { window.clearTimeout(spTm.current); setSpDrz(false); };
   const nebezi = (
-    <section style={{ ...kartaK, border: "2px solid var(--green)" }}>
+    <section key="spustit" style={{ ...kartaK, border: "2px solid var(--green)" }}>
       <b style={{ fontSize: 18 }}>Spustiť hlavnú zbierku</b>
       <span style={textK}>Pred spustením musí byť vyplnené:</span>
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -235,7 +235,7 @@ export function SpravaCentralnej({ strankaId, nazov, hlavnyUcet, tier, mobil, to
     catch (e) { setPlagat(""); toast((e as Error).message); }
   };
   const bezi = farnost && (
-    <section role="status" style={{ ...kartaK, background: "var(--gSoft)", border: "2px solid var(--green)" }}>
+    <section key="bezi" role="status" style={{ ...kartaK, background: "var(--gSoft)", border: "2px solid var(--green)" }}>
       <span style={{ display: "flex", alignItems: "center", gap: 12 }}>
         <span aria-hidden="true" style={{ flex: "none", width: 44, height: 44, borderRadius: "50%", background: "var(--green)", display: "flex", alignItems: "center", justifyContent: "center" }}><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12l5 5 9-10" /></svg></span>
         <b style={{ fontSize: 19, color: "var(--gInk)" }}>Hlavná zbierka beží</b>
