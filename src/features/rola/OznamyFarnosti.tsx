@@ -85,6 +85,16 @@ function PlagatPole({ src, onSrc, toast, popis }: { src?: string; onSrc: (s: str
     </div>);
 }
 
+/** KARTA 56H §4: vlastný plagát celý, bez orezu (contain, aj na výšku) */
+export function ObrazokPlagatu({ src, bg = "#2F3A2A" }: { src: string; bg?: string }) {
+  return <img src={src} alt="Plagát" style={{ display: "block", width: "100%", height: "auto", maxHeight: 640, objectFit: "contain", background: bg }} />;
+}
+/** fotky 16 : 9 (cover); bez fotky iniciály farnosti */
+export function ObrazokOznamu({ src, inic, bg = "#2F3A2A" }: { src?: string; inic: string; bg?: string }) {
+  return <span role={src ? "img" : undefined} aria-label={src ? "Fotka" : undefined} style={{ display: "flex", alignItems: "center", justifyContent: "center", aspectRatio: "16 / 9", background: src ? `url('${src}') center/cover no-repeat ${bg}` : bg }}>
+    {!src && <span style={{ width: 72, height: 72, borderRadius: 18, background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, fontWeight: 800, color: "#4B7A35" }}>{inic}</span>}
+  </span>;
+}
 const fmtDatum = (iso: string) => { if (!iso) return ""; const [y, m, d] = iso.split("-").map(Number); const dt = new Date(y, m - 1, d); return `${["Ne", "Po", "Ut", "St", "Št", "Pi", "So"][dt.getDay()]} ${d}. ${m}.`; };
 
 export function OznamyFarnosti({ strankaId, meno, mobil, toast, hore }: { strankaId: string; meno: string; mobil: boolean; toast: (m: string) => void; /** obsah pod zoznamom (Od farníkov) */ hore?: number }) {
@@ -127,7 +137,8 @@ export function OznamyFarnosti({ strankaId, meno, mobil, toast, hore }: { strank
   const chip = dr === 1 ? "UDALOSŤ" : dr === 2 ? ODRUHY[odr][2] : "OZNAM";
   const nadpisN = n.trim() || (dr === 2 ? u.meno.trim() || "Meno" : dr === 1 ? "Nadpis udalosti" : "Nadpis oznamu");
   const kedyT = dr === 1 ? [fmtDatum(dat), CAS_OK(cas) ? pekny(cas) : "", miesto.trim()].filter(Boolean).join(" · ") : dr === 2 && osp === 0 ? popisOznamu(u).split(" · ").slice(1).join(" · ") : "";
-  const obrazok = dr === 1 ? (usp === 1 ? plagat : media.find((m) => m.typ === "foto")?.src) : dr === 2 && osp === 1 ? plagat : undefined;
+  const jePlagat = (dr === 1 && usp === 1) || (dr === 2 && osp === 1);
+  const obrazok = jePlagat ? plagat : dr === 1 ? media.find((m) => m.typ === "foto")?.src : undefined; // prvá fotka z galérie
   const nahlad = (
     <section aria-label="Náhľad oznamu" style={{ ...karta, overflow: "hidden", minWidth: 0 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px" }}>
@@ -137,13 +148,13 @@ export function OznamyFarnosti({ strankaId, meno, mobil, toast, hore }: { strank
       </div>
       {dr === 2 && osp === 0 && u.meno.trim() && (u.zena != null || u.druh !== "parte")
         ? <div style={{ display: "flex", justifyContent: "center", padding: 12, background: "var(--field)" }}><Plagat u={u} volba={volba} vz={vz} sirka={280} /></div>
-        : dr !== 0 && (obrazok
-          ? <img src={obrazok} alt="" style={{ display: "block", width: "100%", maxHeight: 420, objectFit: dr === 1 && usp === 0 ? "cover" : "contain", background: "#fff" }} />
-          : <span style={{ display: "flex", alignItems: "center", justifyContent: "center", aspectRatio: "16 / 9", background: "var(--gSoft)" }}><span style={{ width: 72, height: 72, borderRadius: 18, background: "#fff", border: "1px solid var(--gBd)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, fontWeight: 800, color: "var(--gInk)" }}>{iniciy(meno)}</span></span>)}
+        : dr !== 0 && (obrazok && jePlagat
+          ? <ObrazokPlagatu src={obrazok} />
+          : <ObrazokOznamu src={obrazok} inic={iniciy(meno)} />)}
       <div style={{ padding: "12px 14px 14px", display: "flex", flexDirection: "column", gap: 6 }}>
         <b style={{ fontSize: 16.5, lineHeight: 1.3 }}>{nadpisN}</b>
-        {kedyT && <span style={{ fontSize: 13.5, color: "var(--ink3)" }}>{kedyT}</span>}
-        {dr !== 2 && cistyText(txt) && <div style={{ fontSize: 14.5, lineHeight: 1.5, color: "var(--ink2)", whiteSpace: "pre-line" }}>{cistyText(txt)}</div>}
+        {dr !== 2 && cistyText(txt) && <div style={{ fontSize: 14.5, lineHeight: 1.5, color: "var(--ink2)", whiteSpace: "pre-line", display: "-webkit-box", WebkitLineClamp: 6, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{cistyText(txt)}</div>}
+        {kedyT && <span style={{ fontSize: 14, fontWeight: 700, color: "var(--ink2)" }}>{kedyT}</span>}
         {dr === 1 && pozv > 0 && <span style={{ alignSelf: "flex-start", marginTop: 6, minHeight: 44, padding: "0 18px", borderRadius: 13, background: "#4B7A35", color: "#fff", fontSize: 15, fontWeight: 800, display: "flex", alignItems: "center" }}>{pozv === 2 ? "Prihlásiť sa" : "Zúčastním sa"}</span>}
       </div>
     </section>);
@@ -158,7 +169,7 @@ export function OznamyFarnosti({ strankaId, meno, mobil, toast, hore }: { strank
       pridajPrispevok(strankaId, { ...zaklad, ntyp: "oznam", tag: "Oznam", nazov: n.trim(), popis: cistyText(txt), platnostDni: PLATI[plati][1] });
     } else if (dr === 1) {
       const kedy = [pekny(cas), miesto.trim()].filter(Boolean).join(" · ");
-      pridajPrispevok(strankaId, { ...zaklad, ntyp: "udalost", tag: "Udalosť", nazov: n.trim(), popis: [kedy, cistyText(txt)].filter(Boolean).join(" · "), datum: dat, rsvp: pozv > 0,
+      pridajPrispevok(strankaId, { ...zaklad, ntyp: "udalost", tag: "Udalosť", nazov: n.trim(), popis: [kedy, cistyText(txt)].filter(Boolean).join(" · "), datum: dat, rsvp: pozv > 0, plagat: usp === 1 || undefined,
         fotky: usp === 1 ? (plagat ? [plagat] : undefined) : media.filter((m) => m.typ === "foto").map((m) => m.src) });
       zmenKostol(strankaId, "0", (k) => ({ ...k, extra: { ...k.extra, [dat]: [...(k.extra[dat] ?? []), { id: `u${teraz}`, typ: "udalost", t: pekny(cas), m: n.trim() }] } }));
       kalendar = true;
@@ -166,7 +177,7 @@ export function OznamyFarnosti({ strankaId, meno, mobil, toast, hore }: { strank
       const d = ODRUHY[odr][1], vl = osp === 1;
       pridajPrispevok(strankaId, { ...zaklad, ntyp: "oznam", tag: d === "ine" ? "Jubileum" : "Oznam", ukat: d === "parte" ? "pohreb" : d === "svadba" ? "svadba" : undefined,
         nazov: vl ? n.trim() : `${ODRUHY[odr][0]} · ${u.meno.trim()}`, popis: vl ? n.trim() : popisOznamu(u), datum: vl ? undefined : u.kedyD || undefined,
-        fotky: vl ? (plagat ? [plagat] : undefined) : u.foto ? [u.foto] : undefined,
+        fotky: vl ? (plagat ? [plagat] : undefined) : u.foto ? [u.foto] : undefined, plagat: vl || undefined,
         reakciaTyp: d === "parte" ? "kondolencia" : d === "svadba" ? "blahozelanie" : undefined,
         smutocny: d === "parte" ? { mode: vl ? "image" : "template", imageUrl: vl ? plagat : undefined, meno: vl ? n.trim() : u.meno.trim(), rodena: !vl && u.zena && u.rod.trim() ? u.rod.trim() : undefined,
           datumNar: vl ? "" : u.nar, datumUmr: vl ? "" : u.umr, rozluckaMiesto: vl ? "" : u.kde.trim(), rozluckaDatum: vl ? "" : u.kedyD, rozluckaCas: vl ? "" : u.kedyC, foto: vl ? undefined : u.foto,
@@ -191,7 +202,8 @@ export function OznamyFarnosti({ strankaId, meno, mobil, toast, hore }: { strank
         <b style={{ flex: 1, minWidth: 200, fontSize: 16, color: "var(--gInk)" }}>{hotovo}</b>
         <button type="button" onClick={novy} style={{ minHeight: 44, padding: "0 16px", borderRadius: 12, border: "1.5px solid var(--gBd)", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 14.5, fontWeight: 800, color: "var(--gInk)", boxShadow: "none" }}>Napísať ďalší</button>
       </div> : <>
-        {dr === 1 && <div style={{ display: "flex", flexDirection: "column", gap: 8 }}><span style={lbl}>Ako ho chcete ukázať</span><Segment label="Ako ho chcete ukázať" vol={[[0, "Text a fotky"], [1, "Vlastný plagát"]]} cur={usp} set={(v) => setUsp(v as 0 | 1)} /></div>}
+        {dr === 1 && <div style={{ display: "flex", flexDirection: "column", gap: 8 }}><span style={lbl}>Ako ho chcete ukázať</span><Segment label="Ako ho chcete ukázať" vol={[[0, "Text a fotky"], [1, "Vlastný plagát"]]} cur={usp} set={(v) => setUsp(v as 0 | 1)} />
+          <span style={{ fontSize: 13, color: "var(--ink3)" }}>{usp === 1 ? "Plagát sa ukáže celý, nič sa neoreže. Hodí sa na pozvánku, oznámenie alebo plagát." : "Fotky sa ukážu na šírku (16 : 9). Pozvánku alebo plagát dajte radšej ako Vlastný plagát."}</span></div>}
         {dr === 2 && <>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}><span style={lbl}>Druh oznámenia</span><Segment label="Druh oznámenia" vol={ODRUHY.map(([t], i) => [i, t] as [number, string])} cur={odr} set={zmenOdr} /></div>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}><span style={lbl}>Ako ho chcete ukázať</span><Segment label="Ako ho chcete ukázať" vol={[[0, "Zo šablóny"], [1, "Vlastný plagát"]]} cur={osp} set={(v) => setOsp(v as 0 | 1)} /></div>
@@ -253,7 +265,7 @@ export function OznamyFarnosti({ strankaId, meno, mobil, toast, hore }: { strank
     {mobil ? <>{lavy}{pravy}</> : (
       <div style={{ flex: "none", display: "grid", gridTemplateColumns: "minmax(0,1.4fr) minmax(0,1fr)", gap: 14, alignItems: "start" }}>
         <div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 14 }}>{lavy}</div>
-        <div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 10 }}>{pravy}</div>
+        <div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 10, position: "sticky", top: 12 }}>{pravy}</div>
       </div>)}
     {zverejnene}
   </>;

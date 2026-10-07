@@ -32,6 +32,7 @@ export type VieraFeedItem = CharitaFeedItem & {
   platnostDni?: number;    // TTL — default 7 dní, nastaviteľné; pri úmrtí min. do rozlúčky + 3 dni
   spoplatnene?: boolean;   // user oznam v platenom self-add režime (nikdy prosba/smútočné — simónia)
   autorTvar?: boolean;     // farárov oznam s tvárou v hlavičke (delta bod 20 — „akože hovorí on")
+  plagat?: boolean;        // KARTA 56H §4: vlastný plagát — ukázať celý, bez orezu (contain, aj na výšku)
   linkedZbierka?: boolean; // parte režim 2 — pripojená pohrebná zbierka (samostatná entita; tu len flag + ciel)
 };
 

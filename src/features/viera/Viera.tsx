@@ -557,9 +557,9 @@ function VieraDetail({ z, farar, onBack, onProfil }: { z: VieraFeedItem; farar: 
           Oznamy (bod 25): portrét aj landscape — obrázok CELÝ (contain), neoreže sa do pruhu. */}
       {maFoto && (
         <div style={{ padding: `0 ${SPACE.md}px` }}>
-          {z.ntyp === "oznam" ? (
+          {z.ntyp === "oznam" || z.plagat ? (
             <img src={fotky[0]} alt={z.nazov} onClick={() => otvorGaleriu(fotky, 0)}
-              style={{ display: "block", width: "100%", height: "auto", maxHeight: 420, objectFit: "contain", background: "#111", borderRadius: 14, cursor: "zoom-in" }} />
+              style={{ display: "block", width: "100%", height: "auto", maxHeight: z.plagat ? 640 : 420, objectFit: "contain", background: "#111", borderRadius: 14, cursor: "zoom-in" }} />
           ) : (
             <div style={{ position: "relative", ...(wide ? { width: "100%", aspectRatio: MEDIA_AR } : {}) }}>
               <Foto src={fotky[0]} emoji={z.emoji || "⛪"} h={wide ? "100%" : 200} w={wide ? "100%" : undefined} radius={14} onClick={() => otvorGaleriu(fotky, 0)} prednost alt={z.nazov} />
