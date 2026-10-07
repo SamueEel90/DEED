@@ -184,7 +184,7 @@ export function VykladCharita({ profil, onDetail, onZaznam, onBack }: { profil: 
     </div>);
   const modul = sel >= 0 && sektory[sel] && (
     <ModulProfilu key={sektory[sel].id} profil={profil} sektor={sektory[sel]} poradie={sel} mestoV="" onZbal={() => setSel(-1)} dorovnanie={!farnost}
-      typ={sektory[sel].typ ?? (farnost && !sel ? "VŠEOBECNÁ PODPORA" : undefined)} typ2={sektory[sel].typ2} info={sektory[sel].info} />);
+      typ={sektory[sel].typ} typ2={sektory[sel].typ2} info={sektory[sel].info} hlavna={farnost && !sel} />);
   const podporit = <>
     {kicker(pc ? `PODPORIŤ ${meno.toLocaleUpperCase("sk-SK")} · AJ PRAVIDELNE` : "PODPORIŤ · AJ PRAVIDELNE", { paddingTop: mob ? 16 : 6 })}
     {dlazdice}{modul}

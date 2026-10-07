@@ -581,8 +581,9 @@ const FARNOST: TestProfil = {
   ico: "", ucet: "SK12 0900 0000 0051 2345 4521", sidlo: "Marka Aurela 6, Trenčín", kontakt: "fara@trencin-mesto.sk",
   cisla: [["42 550 €", "vyzbierané"], ["15", "zbierok"], ["108", "skutkov"]],
   stitCisla: [["21", "zbierok"], ["63", "skutkov"], ["1 240", "sledujúcich"]],
-  centralna: { ...sektor("f-podpora", "Podporiť farnosť", "centralna", FO.kostol, 5100, 214, vsade("2 380 € tento mesiac", "V októbri: kúrenie, svetlo a drobné opravy kostola"),
-    { mesiac: 2380, mesacne: 38, kam: "Na chod farnosti: kúrenie, svetlo, opravy a pomoc ľuďom vo farnosti.", tipy: [[5, ""], [10, ""], [20, ""]] }), stitok: "STÁLE" },
+  // OPRAVY 160: názov a text hlavnej zbierky zadá farár v Správe (spustená hlavná zbierka z účtu ich prepíše)
+  centralna: { ...sektor("f-podpora", "Hlavná zbierka", "centralna", FO.kostol, 5100, 214, vsade("2 380 € tento mesiac", "V októbri: kúrenie, svetlo a drobné opravy kostola"),
+    { mesiac: 2380, mesacne: 38, kam: "Na chod farnosti: kúrenie, svetlo, opravy a pomoc ľuďom vo farnosti.", tipy: [[5, ""], [10, ""], [20, ""]], popis: "Na kúrenie, svetlo, kostol a všetko, čo farnosť robí." }), stitok: "STÁLE" },
   sektory: [
     { ...sektor("f-organ", "Oprava organu", "sektor", FO.organ, 4120, 96, vsade("4 120 € z 9 000 €", "Organár z Bardejova začal rozoberať prvé píšťaly"), { tipy: [[5, ""], [10, ""], [20, ""]], mesacne: 0 }), stitok: "ZBIERKA", dlazdicaText: "4 120 € z 9 000 €", typ: "ZBIERKA", ...ZB_FARNOST },
     { ...sektor("f-misie", "Misie", "sektor", FO.misie, 820, 64, vsade("820 € · Misijná nedeľa", "Peniaze sme poslali na misie"), { tipy: [[5, ""], [10, ""], [20, ""]], mesacne: 0 }), stitok: "ZBIERKA", dlazdicaText: "820 € · Misijná nedeľa", typ: "ZBIERKA", ...ZB_FARNOST },

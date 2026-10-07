@@ -20,7 +20,7 @@ import { UpravitProfilCharity } from "./UpravitProfilCharity";
 import "@/styles/sprava.css";
 import { SektorDarcuKontext, darcoviaPre, nastavCiste, useZmenyDarov } from "@/lib/darcovia";
 import { SpravaCentralnej } from "./SpravaCentralnej";
-import { centralnaZPamate, hlavnaBezi, nacitajCentralnuZbierku, useZmenyCentralnej } from "@/lib/centralnaZbierka";
+import { centralnaZPamate, hlavnaBezi, nacitajCentralnuZbierku, nazovHlavnej, useZmenyCentralnej } from "@/lib/centralnaZbierka";
 import { suhrnHlavnej, useOmsoveOkno, menaOkna, doZatvorenia, zavriTyzdenTest } from "@/lib/omsoveOkno";
 import { TESTOVACIA } from "@/lib/testovacia";
 import { usePouzivatel } from "@/lib/pouzivatel";
@@ -92,6 +92,7 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
   const [start, setStart] = useState<{ kat: string; uzol?: string } | null>(null);
   const [kal, setKal] = useState(false);
   const [kartaOtv, setKartaOtv] = useState(true);
+  const [zmazana, setZmazana] = useState(false); // KARTA 56D §5: hláška po zmazaní hlavnej zbierky, na mieste v Zbierkach
   const go = (k: Sub) => { setSub(k); setPridat(false); setPinOtv(false); };
 
   // KARTA 56D §1: profil stránky (profil_stranky) — karta vľavo, percento, „Dokončiť profil"
@@ -240,7 +241,7 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
       <span style={{ flex: "none", width: mobil ? 56 : 64, height: mobil ? 56 : 64, borderRadius: mobil ? 12 : 14, background: fotoH ? `url('${fotoH}') center/cover no-repeat var(--field)` : "var(--field)" }} />
       <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 3 }}>
         <span style={{ fontSize: mobil ? 10.5 : 11, fontWeight: 800, letterSpacing: ".08em", color: "var(--ink3)" }}>HLAVNÁ ZBIERKA · STÁLE</span>
-        <b style={{ fontSize: mobil ? 15 : 16, lineHeight: 1.25 }}>Podporiť farnosť</b>
+        <b style={{ fontSize: mobil ? 15 : 16, lineHeight: 1.25 }}>{nazovHlavnej(hlavna)}</b>
         <span style={{ fontSize: mobil ? 12 : 13, color: "var(--ink3)" }}>Na najbližšiu omšu: {om.dary.length ? nDarov(om.dary.length) : "zatiaľ nikto"} · nedeľa {om.okno.nedela}</span>
       </span>
       <span style={{ flex: "none", display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2 }}>
@@ -298,6 +299,10 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
 
   const zbierky = <>
     {nadpis("Zbierky", "Ťuk na riadok otvorí Správu zbierky, rovnakú ako pri charite")}
+    {zmazana && !hlavna && <div role="status" style={{ flex: "none", borderRadius: 18, background: "var(--card)", border: "2px solid var(--cardBd)", padding: "14px 18px", display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+      <b style={{ flex: 1, minWidth: 220, fontSize: 16 }}>Hlavná zbierka je zmazaná. Novú pridáte ťuknutím nižšie.</b>
+      <button type="button" onClick={() => setZmazana(false)} style={{ height: 44, padding: "0 16px", borderRadius: 12, border: "1px solid var(--cardBd)", background: "var(--field)", cursor: "pointer", fontFamily: "inherit", fontSize: 14.5, fontWeight: 800, color: "var(--ink)", boxShadow: "none" }}>Rozumiem</button>
+    </div>}
     <span style={mobil ? { ...kicker, letterSpacing: ".07em", padding: "4px 2px 0" } : kicker}>{mobil ? "HLAVNÁ ZBIERKA · JEDEN ÚČET" : "HLAVNÁ ZBIERKA FARNOSTI · JEDEN ÚČET"}</span>
     {hlavnaEl}
     {bezi && <span style={{ fontSize: 12.5, lineHeight: 1.5, color: "var(--ink3)" }}>Suma hlavnej zbierky <b>už obsahuje</b> všetky ostatné zbierky farnosti. Na profile sa nikdy neukazuje súčet dvoch čísel. Sumy sú len dary cez DEED, hotovosť z kostola sem nevstupuje.</span>}
@@ -422,7 +427,7 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
 
   const ostatneBezia = false; // účelové zbierky farnosti (KARTA 56D §6)
   const hlavnaSprava = <SpravaCentralnej strankaId={strankaId} nazov={meno} hlavnyUcet={najdiTestProfil(strankaId)?.ucet || "hlavný účet farnosti z registrácie"} tier={4} mobil={mobil} toast={toast}
-    onZbierky={() => setSub("zbierky")} farnost={{ ostatneBezia, onZmazana: () => setSub("zbierky") }} />;
+    onZbierky={() => setSub("zbierky")} farnost={{ ostatneBezia, onZmazana: () => { setZmazana(true); go("zbierky"); }, onHotovo: () => go("prehlad") }} />;
   const obsah: Record<Sub, ReactNode> = { prehlad, zbierky, omse, oznamy, ludia, penazenka, nastroje, profil, nahlad, hlavna: hlavnaSprava, nast: mobil ? <>
     <span style={{ ...kicker, letterSpacing: ".07em", padding: "4px 2px 0" }}>NÁSTROJE</span>{viditKarta}{nastrojeL}
     <span style={{ ...kicker, letterSpacing: ".07em", padding: "4px 2px 0" }}>NASTAVENIA</span>{nastaveniaL}

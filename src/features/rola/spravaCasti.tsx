@@ -111,6 +111,9 @@ export function QrKarta({ nazov, slug, cislo, organizacia, toast }: { nazov: str
   const odkaz = `https://deed.sk/z/${slug}`;
   const [pdf, setPdf] = useState(false);
   const [skop, setSkop] = useState(false);
+  // KARTA 56D §5: tlačidlá ukážu výsledok na sebe
+  const [hotovo, setHotovo] = useState<"pdf" | "odkaz" | null>(null);
+  const ukaz = (k: "pdf" | "odkaz") => { setHotovo(k); window.setTimeout(() => setHotovo((x) => (x === k ? null : x)), 2200); };
   return (
     <section style={kartaK}>
       <span style={nadpisK}>QR na plagát a pokladničku</span>
@@ -120,13 +123,13 @@ export function QrKarta({ nazov, slug, cislo, organizacia, toast }: { nazov: str
         <span style={{ flex: 1, minWidth: 180, display: "flex", flexDirection: "column", gap: 8 }}>
           {cislo && <span style={{ display: "flex", flexDirection: "column", gap: 2 }}>
             <button type="button" onClick={async () => { const ok = await kopiruj(cislo.replace(/^[A-Z]-/, "").replace(/\s/g, "")); if (ok) { setSkop(true); window.setTimeout(() => setSkop(false), 1600); } else toast("Číslo sa nepodarilo skopírovať"); }} aria-label={`Číslo zbierky ${cislo}, skopírovať`}
-              style={{ alignSelf: "flex-start", minHeight: 44, padding: 0, border: "none", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 16, fontWeight: 800, color: skop ? "var(--gInk)" : "var(--ink)", fontVariantNumeric: "tabular-nums", boxShadow: "none" }}>{skop ? "Skopírované" : cislo}</button>
+              style={{ alignSelf: "flex-start", minHeight: 44, padding: 0, border: "none", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 16, fontWeight: 800, color: skop ? "var(--gInk)" : "var(--ink)", fontVariantNumeric: "tabular-nums", boxShadow: "none" }}>{skop ? "Skopírované ✓" : cislo}</button>
             <span style={{ fontSize: 12.5, color: "var(--ink3)" }}>Číslo zbierky = variabilný symbol · ťuk skopíruje</span>
           </span>}
           <span style={{ fontSize: 13.5, color: "var(--ink3)", overflowWrap: "anywhere" }}>deed.sk/z/{slug}</span>
           <span style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <button type="button" aria-busy={pdf} onClick={async () => { if (pdf) return; setPdf(true); try { await stiahniPlagat({ nazov, odkaz, cislo, organizacia }); } catch (e) { toast((e as Error).message); } finally { setPdf(false); } }} style={obrysK}>Stiahnuť plagát (PDF)</button>
-            <button type="button" onClick={async () => { const ok = await kopiruj(odkaz); toast(ok ? "Odkaz je skopírovaný" : "Odkaz sa nepodarilo skopírovať"); }} style={obrysK}>Kopírovať odkaz</button>
+            <button type="button" aria-busy={pdf} onClick={async () => { if (pdf) return; setPdf(true); try { await stiahniPlagat({ nazov, odkaz, cislo, organizacia }); ukaz("pdf"); } catch (e) { toast((e as Error).message); } finally { setPdf(false); } }} style={{ ...obrysK, ...(hotovo === "pdf" ? { borderColor: "var(--green)", color: "var(--gInk)" } : {}) }}>{hotovo === "pdf" ? "Stiahnuté ✓" : "Stiahnuť plagát (PDF)"}</button>
+            <button type="button" onClick={async () => { const ok = await kopiruj(odkaz); if (ok) ukaz("odkaz"); else toast("Odkaz sa nepodarilo skopírovať"); }} style={{ ...obrysK, ...(hotovo === "odkaz" ? { borderColor: "var(--green)", color: "var(--gInk)" } : {}) }}>{hotovo === "odkaz" ? "Odkaz skopírovaný ✓" : "Kopírovať odkaz"}</button>
           </span>
         </span>
       </div>

@@ -5,7 +5,7 @@
 // Sledovať + Podporiť DEED · Reťaz dobra · „Kam treba najviac…" · Darcovia. refId = centrálna / sektorová zbierka.
 // Nad modulom zväčšený náhľad dlaždice („POSIELAŠ DO · …", ikona i), modul sa prefarbí podľa poradia (data-hier).
 import { SpatNaZbierky, ZbalitASpat, ZmensenyModul } from "@/features/zbierka/ZmensenyModul";
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { jeNeregistrovany, sledujDarcu } from "@/lib/devDarca";
 import { pridajDar, darcoviaPre } from "@/lib/darcovia";
 import { dorovnanieNaDar, dorovnanieKDaru, useZmenyDorovnani } from "@/lib/dorovnanie";
@@ -25,8 +25,36 @@ import "@/styles/animacie.css";
 
 const eurT = (n: number) => `${n.toLocaleString("sk-SK")} €`;
 
+/** OPRAVY 160/5: karta nad modulom (fotka so štítkom, názov, riadok pod ním, text) — ten istý komponent na profile
+ *  aj v Správe („Takto to uvidia ľudia na profile"). Bez fotky ukáže miesto „Tu bude titulná fotka". */
+export function KartaModulu({ galeria, stitok, nazov, riadok, popis, info }: {
+  galeria: { typ: "foto" | "video"; src: string; popis?: string }[]; stitok: string; nazov: string; riadok: string; popis?: string;
+  /** ikona i a vysvetlenie (Svetlúšik) */ info?: ReactNode;
+}) {
+  const [otv, setOtv] = useState(false);
+  const stitokEl = <span style={{ position: "absolute", left: 12, top: 12, height: 28, padding: "0 12px", borderRadius: 14, background: "var(--hcF)", color: "#fff", fontSize: 11.5, fontWeight: 800, letterSpacing: ".06em", display: "flex", alignItems: "center", whiteSpace: "nowrap" }}>{stitok}</span>;
+  return (
+    <div style={{ borderRadius: 22, overflow: "hidden", border: "2px solid var(--hc)", background: "var(--card)" }}>
+      {/* 5. 10. · fotka nad modulom = galéria tej zbierky (mobil posun prstom, PC šípky, ťuk = celá obrazovka s popisom) */}
+      {galeria.length ? <Galeria media={galeria} vyska={150} radius={0} okraj="0" prekrytie={<>
+        <span style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg,rgba(10,8,5,.25) 0%,rgba(10,8,5,0) 45%)" }} />
+        {stitokEl}
+      </>} bezBodiek />
+        : <div style={{ position: "relative", height: 150, background: "var(--field)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, color: "var(--ink3)" }}>Tu bude titulná fotka{stitokEl}</div>}
+      <div style={{ padding: "12px 8px 14px 16px", display: "flex", alignItems: "flex-start", gap: 8 }}>
+        <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 3 }}>
+          <b style={{ fontSize: 20, lineHeight: 1.2 }}>{nazov}</b>
+          <span style={{ fontSize: 13, lineHeight: 1.4, color: "var(--ink3)" }}>{riadok}</span>
+          {popis && <span style={{ fontSize: 14, lineHeight: 1.5, color: "var(--ink2)", marginTop: 4, whiteSpace: "pre-line" }}>{popis}</span>}{/* OPRAVY 155/4 */}
+        </span>
+        {info && <SvetlusikInfo otv={otv} onPrepni={() => setOtv((x) => !x)} />}
+      </div>
+      {info && otv && <SvetlusikKarta style={{ margin: "0 12px 12px" }}>{info}</SvetlusikKarta>}
+    </div>);
+}
+
 /** náhľad dlaždice nad modulom + modul + Zbaliť */
-export function ModulProfilu({ profil, sektor, poradie, mestoV, onZbal, dorovnanie = true, uvidisOdkaz, typ: typP, typ2: typ2P, info: infoP, meno, hier }: {
+export function ModulProfilu({ profil, sektor, poradie, mestoV, onZbal, dorovnanie = true, uvidisOdkaz, typ: typP, typ2: typ2P, info: infoP, meno, hier, hlavna }: {
   profil: TestProfil; sektor: TestSektor; poradie: number;
   /** „v Trenčíne" → „Trenčíne" (pre vetu „Minulý mesiac v …") */
   mestoV: string;
@@ -41,8 +69,9 @@ export function ModulProfilu({ profil, sektor, poradie, mestoV, onZbal, dorovnan
   meno?: string;
   /** 5. 10. · farba rámu: „z" = konkrétna zbierka (neutrálny sivý rám), inak podľa poradia */
   hier?: string;
+  /** OPRAVY 160/6 · hlavná zbierka (Viera): štítok „HLAVNÁ ZBIERKA", pod názvom len meno stránky, text = text farára */
+  hlavna?: boolean;
 }) {
-  const [info, setInfo] = useState(false);
   const sek = poradie > 0;
   const typ = typP ?? (sek ? `SEKTOR ${poradie}` : "CENTRÁLNA ZBIERKA");
   const typ2 = typ2P ?? (sek ? "peniaze idú len na túto tému" : "celá činnosť, použijú ich, kde treba najviac");
@@ -52,22 +81,9 @@ export function ModulProfilu({ profil, sektor, poradie, mestoV, onZbal, dorovnan
   return (
     <div data-hier={hier ?? String(poradie)} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
       <SpatNaZbierky onClick={onZbal} />{/* bod 149 · Späť hore v module */}
-      <div style={{ borderRadius: 22, overflow: "hidden", border: "2px solid var(--hc)", background: "var(--card)" }}>
-        {/* 5. 10. · fotka nad modulom = galéria tej zbierky (mobil posun prstom, PC šípky, ťuk = celá obrazovka s popisom) */}
-        <Galeria media={sektor.galeria?.length ? sektor.galeria : [{ typ: "foto", src: sektor.foto }]} vyska={150} radius={0} okraj="0" prekrytie={<>
-          <span style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg,rgba(10,8,5,.25) 0%,rgba(10,8,5,0) 45%)" }} />
-          <span style={{ position: "absolute", left: 12, top: 12, height: 28, padding: "0 12px", borderRadius: 14, background: "var(--hcF)", color: "#fff", fontSize: 11.5, fontWeight: 800, letterSpacing: ".06em", display: "flex", alignItems: "center", whiteSpace: "nowrap" }}>POSIELAŠ DO · {typ}</span>
-        </>} bezBodiek />
-        <div style={{ padding: "12px 8px 14px 16px", display: "flex", alignItems: "flex-start", gap: 8 }}>
-          <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 3 }}>
-            <b style={{ fontSize: 20, lineHeight: 1.2 }}>{sektor.nazov}</b>
-            <span style={{ fontSize: 13, lineHeight: 1.4, color: "var(--ink3)" }}>{meno ?? profil.meno} · {typ2}</span>
-            {sektor.popis && <span style={{ fontSize: 14, lineHeight: 1.5, color: "var(--ink2)", marginTop: 4 }}>{sektor.popis}</span>}{/* OPRAVY 155/4 */}
-          </span>
-          <SvetlusikInfo otv={info} onPrepni={() => setInfo((x) => !x)} />
-        </div>
-        {info && <SvetlusikKarta style={{ margin: "0 12px 12px" }}>{infoText}</SvetlusikKarta>}
-      </div>
+      <KartaModulu galeria={sektor.galeria?.length ? sektor.galeria : [{ typ: "foto", src: sektor.foto }]} stitok={hlavna ? "HLAVNÁ ZBIERKA" : `POSIELAŠ DO · ${typ}`}
+        nazov={sektor.nazov} riadok={hlavna ? meno ?? profil.meno : `${meno ?? profil.meno} · ${typ2}`} popis={sektor.popis}
+        info={hlavna ? "Hlavná zbierka je na celú činnosť. Peniaze sa použijú tam, kde treba najviac." : infoText} />
       <ZmensenyModul><Modul profil={profil} sektor={sektor} mestoV={mestoV} sDorovnanim={dorovnanie} uvidisOdkaz={uvidisOdkaz} /></ZmensenyModul>
       <ZbalitASpat onClick={onZbal} />
     </div>

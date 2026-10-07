@@ -102,7 +102,7 @@ export function PiratCharita({ profil, onDetail, onZaznam, onBack }: { profil: T
   const sumaS = (s: TestSektor) => s.dlazdicaText ?? (s.mesiac != null ? `${eur(s.mesiac)} tento mesiac` : eur(s.vyzbierane));
   const modul = sel >= 0 && sektory[sel] && (
     <ModulProfilu key={sektory[sel].id} profil={profil} sektor={sektory[sel]} poradie={sel} mestoV="" onZbal={() => setSel(-1)} dorovnanie={!farnost}
-      typ={sektory[sel].typ ?? (farnost && !sel ? "VŠEOBECNÁ PODPORA" : undefined)} typ2={sektory[sel].typ2} info={sektory[sel].info} />);
+      typ={sektory[sel].typ} typ2={sektory[sel].typ2} info={sektory[sel].info} hlavna={farnost && !sel} />);
   const kamPoslat = pc ? (
     <section style={{ height: 820, display: "flex", flexDirection: "column", padding: "48px 48px 40px", gap: 20, borderTop: "1px solid var(--cardBd)", boxSizing: "border-box" }}>
       <div style={{ display: "flex", alignItems: "baseline", gap: 16 }}><b style={{ fontSize: 52, letterSpacing: "-.035em" }}>Kam poslať</b><span style={{ fontSize: 17, color: "var(--ink3)" }}>{farnost ? "farnosť alebo jedna zbierka · aj pravidelne" : "celá činnosť alebo jedna téma · aj pravidelne"}</span></div>

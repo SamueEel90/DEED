@@ -21,9 +21,15 @@ export interface CentralnaZbierka {
   ucet: string | null;
   /** KARTA 56B · hlavná zbierka farnosti: kedy bola spustená (ISO). Charita: nepoužíva sa (centrálna beží od P1). */
   spustena?: string | null;
+  /** OPRAVY 160/2 · názov hlavnej zbierky (najviac 40 znakov) — všade, aj na profile; prázdny = „Hlavná zbierka" */
+  nazov?: string;
 }
+export const HLAVNA_NAZOV_MAX = 40;
+export const nazovHlavnej = (c?: Pick<CentralnaZbierka, "nazov"> | null) => c?.nazov?.trim() || "Hlavná zbierka";
 export const CENTRALNA_TEXT = "<p>Podporte našu činnosť ako celok. Peniaze idú tam, kde sú práve najviac potrebné.</p>";
 export const prazdnaCentralna = (): CentralnaZbierka => ({ popis: CENTRALNA_TEXT, popis2: "", media: [], sada: 1, eurc: true, sadaE: 0, ucet: null });
+/** OPRAVY 160/3 · hlavná zbierka (Viera) začína prázdna — bez predvyplneného textu charity */
+export const prazdnaHlavna = (): CentralnaZbierka => ({ ...prazdnaCentralna(), popis: "", nazov: "" });
 
 const pamat = new Map<string, CentralnaZbierka>();
 let verzia = 0;
