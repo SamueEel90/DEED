@@ -5,6 +5,9 @@ import { DeedQr } from "@/components/deedqr";
 import { kopiruj } from "@/lib/zdielanie";
 import { SADY, SADY_EURC } from "@/lib/novaZbierka";
 import { stiahniPlagat } from "@/lib/plagatPdf";
+import { menoBezMena, useSektorDarcu } from "@/lib/darcovia";
+import type { ProfilStranky } from "@/lib/profilStranky";
+import { RAMY } from "./titulka";
 
 export const kartaK: CSSProperties = { borderRadius: 22, background: "var(--card)", border: "1px solid var(--cardBd)", padding: "20px 22px", display: "flex", flexDirection: "column", gap: 12, minWidth: 0 };
 export const nadpisK: CSSProperties = { fontSize: 16, fontWeight: 800, color: "var(--ink)" };
@@ -45,12 +48,14 @@ export function Taby({ akt, onTab, odsadenie = 12, skryte = [], pribeh = false }
 
 /** Stav zbierky / Tento mesiac: tri čísla + posledné dary */
 export function CislaKarta({ nadpis, cisla, dary, children }: { nadpis: string; cisla: [string, string][]; dary: [string, string, string][]; children?: ReactNode }) {
+  const sektor = useSektorDarcu();
   return (
     <section style={kartaK}>
       <span style={nadpisK}>{nadpis}</span>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3,minmax(0,1fr))", gap: 12 }}>
         {cisla.map(([v, t]) => <span key={t} style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}><b style={{ fontSize: 24, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>{v}</b><span style={drobneK}>{t}</span></span>)}
       </div>
+      {dary.length === 0 && <span style={drobneK}>Zatiaľ žiadne dary. Prvé sa ukážu tu, bez mena ako {menoBezMena(sektor)}.</span>}
       {dary.length > 0 && <div style={{ display: "flex", flexDirection: "column" }}>
         <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".08em", color: "var(--ink3)", paddingBottom: 4 }}>POSLEDNÉ DARY</span>
         {dary.map(([m, k, s], i) => <div key={i} style={{ display: "flex", alignItems: "baseline", gap: 8, padding: "8px 0", borderTop: "1px solid var(--cardBd)", fontSize: 14 }}><span style={{ flex: 1, minWidth: 0, fontWeight: 700 }}>{m}</span><span style={{ fontSize: 12.5, color: "var(--ink3)", textAlign: "right" }}>{k}</span><b style={{ color: "var(--gInk)", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>{s}</b></div>)}
@@ -102,26 +107,34 @@ export function Zapecatene({ riadky }: { riadky: [string, string][] }) {
 }
 
 /** QR na plagát a pokladničku + verejné číslo zbierky (ťuk = skopírovať) */
-export function QrKarta({ nazov, slug, cislo, organizacia, toast }: { nazov: string; slug: string; cislo?: string; organizacia?: string; toast: (m: string) => void }) {
-  const odkaz = `https://deed.sk/z/${slug}`;
+export function QrKarta({ nazov, slug, cislo, organizacia, toast, odkaz: odkazP, nadpis = "QR na plagát a pokladničku", popis = "Na profile je QR v module pri Zdieľať · QR. Tu je verzia na tlač.", stav }: {
+  nazov: string; slug: string; cislo?: string; organizacia?: string; toast: (m: string) => void;
+  /** OPRAVY 162 · QR farnosti: vlastný odkaz (jeden QR z registrácie), nadpis, veta a stav („Teraz vedie na …") */
+  odkaz?: string; nadpis?: string; popis?: string; stav?: { t: string; zelena: boolean };
+}) {
+  const odkaz = odkazP ?? `https://deed.sk/z/${slug}`;
   const [pdf, setPdf] = useState(false);
   const [skop, setSkop] = useState(false);
+  // KARTA 56D §5: tlačidlá ukážu výsledok na sebe
+  const [hotovo, setHotovo] = useState<"pdf" | "odkaz" | null>(null);
+  const ukaz = (k: "pdf" | "odkaz") => { setHotovo(k); window.setTimeout(() => setHotovo((x) => (x === k ? null : x)), 2200); };
   return (
     <section style={kartaK}>
-      <span style={nadpisK}>QR na plagát a pokladničku</span>
-      <span style={{ fontSize: 13, color: "var(--ink3)", marginTop: -6 }}>Na profile je QR v module pri Zdieľať · QR. Tu je verzia na tlač.</span>
+      <span style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}><span style={nadpisK}>{nadpis}</span>
+        {stav && <span style={{ height: 26, padding: "0 10px", borderRadius: 13, background: stav.zelena ? "var(--gSoft)" : "var(--field)", color: stav.zelena ? "var(--gInk)" : "var(--ink2)", border: "1px solid var(--cardBd)", fontSize: 12.5, fontWeight: 800, display: "flex", alignItems: "center" }}>{stav.t}</span>}</span>
+      <span style={{ fontSize: 13, lineHeight: 1.45, color: "var(--ink3)", marginTop: -6 }}>{popis}</span>
       <div style={{ display: "flex", gap: 14, alignItems: "center", flexWrap: "wrap" }}>
         <span style={{ flex: "none", width: 96, height: 96, borderRadius: 14, background: "#fff", padding: 6, boxSizing: "border-box", display: "flex" }}><DeedQr data={odkaz} size={84} variant="svetly" /></span>
         <span style={{ flex: 1, minWidth: 180, display: "flex", flexDirection: "column", gap: 8 }}>
           {cislo && <span style={{ display: "flex", flexDirection: "column", gap: 2 }}>
             <button type="button" onClick={async () => { const ok = await kopiruj(cislo.replace(/^[A-Z]-/, "").replace(/\s/g, "")); if (ok) { setSkop(true); window.setTimeout(() => setSkop(false), 1600); } else toast("Číslo sa nepodarilo skopírovať"); }} aria-label={`Číslo zbierky ${cislo}, skopírovať`}
-              style={{ alignSelf: "flex-start", minHeight: 44, padding: 0, border: "none", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 16, fontWeight: 800, color: skop ? "var(--gInk)" : "var(--ink)", fontVariantNumeric: "tabular-nums", boxShadow: "none" }}>{skop ? "Skopírované" : cislo}</button>
+              style={{ alignSelf: "flex-start", minHeight: 44, padding: 0, border: "none", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 16, fontWeight: 800, color: skop ? "var(--gInk)" : "var(--ink)", fontVariantNumeric: "tabular-nums", boxShadow: "none" }}>{skop ? "Skopírované ✓" : cislo}</button>
             <span style={{ fontSize: 12.5, color: "var(--ink3)" }}>Číslo zbierky = variabilný symbol · ťuk skopíruje</span>
           </span>}
-          <span style={{ fontSize: 13.5, color: "var(--ink3)", overflowWrap: "anywhere" }}>deed.sk/z/{slug}</span>
+          <span style={{ fontSize: 13.5, color: "var(--ink3)", overflowWrap: "anywhere" }}>{odkaz.replace(/^https:\/\//, "").replace(/\?qr=1$/, "")}</span>
           <span style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <button type="button" aria-busy={pdf} onClick={async () => { if (pdf) return; setPdf(true); try { await stiahniPlagat({ nazov, odkaz, cislo, organizacia }); } catch (e) { toast((e as Error).message); } finally { setPdf(false); } }} style={obrysK}>Stiahnuť plagát (PDF)</button>
-            <button type="button" onClick={async () => { const ok = await kopiruj(odkaz); toast(ok ? "Odkaz je skopírovaný" : "Odkaz sa nepodarilo skopírovať"); }} style={obrysK}>Kopírovať odkaz</button>
+            <button type="button" aria-busy={pdf} onClick={async () => { if (pdf) return; setPdf(true); try { await stiahniPlagat({ nazov, odkaz, cislo, organizacia }); ukaz("pdf"); } catch (e) { toast((e as Error).message); } finally { setPdf(false); } }} style={{ ...obrysK, ...(hotovo === "pdf" ? { borderColor: "var(--green)", color: "var(--gInk)" } : {}) }}>{hotovo === "pdf" ? "Stiahnuté ✓" : "Stiahnuť plagát (PDF)"}</button>
+            <button type="button" onClick={async () => { const ok = await kopiruj(odkaz); if (ok) ukaz("odkaz"); else toast("Odkaz sa nepodarilo skopírovať"); }} style={{ ...obrysK, ...(hotovo === "odkaz" ? { borderColor: "var(--green)", color: "var(--gInk)" } : {}) }}>{hotovo === "odkaz" ? "Odkaz skopírovaný ✓" : "Kopírovať odkaz"}</button>
           </span>
         </span>
       </div>
@@ -151,6 +164,7 @@ function Rozmazane({ on, children }: { on: boolean; children: ReactNode }) {
 }
 export function Statistiky({ d, tier, mobil, toast }: { d: DataStatistik; tier: number; mobil: boolean; toast: (m: string) => void }) {
   const zamknute = tier < STAT_VSETKO_OD;
+  const sektor = useSektorDarcu();
   const sum = d.cez.reduce((a, c) => a + c[1], 0) || 1, max = d.cez[0]?.[1] || 1, maxD = Math.max(1, ...d.dni);
   const cez = (
     <section style={kartaK}>
@@ -183,7 +197,8 @@ export function Statistiky({ d, tier, mobil, toast }: { d: DataStatistik; tier: 
           <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}><b>{m}</b><span style={drobneK}>{k}</span></span>
           <b style={{ color: "var(--gInk)", fontVariantNumeric: "tabular-nums" }}>{s}</b>
         </div>)}
-        <span style={{ display: "block", fontSize: 12, color: "var(--ink3)", paddingTop: 6 }}>Mená len tých, ktorí ich dovolili ukázať. Ostatní sú Anonymný darca.</span>
+        {!d.dary.length && <span style={{ display: "block", fontSize: 13, color: "var(--ink3)", padding: "7px 0", borderTop: "1px solid var(--cardBd)" }}>Zatiaľ žiadne dary. Prvé sa ukážu tu, bez mena ako {menoBezMena(sektor)}.</span>}
+        <span style={{ display: "block", fontSize: 12, color: "var(--ink3)", paddingTop: 6 }}>Mená len tých, ktorí ich dovolili ukázať. Ostatní sú {menoBezMena(sektor)}.</span>
       </Rozmazane>
     </section>);
   const dni = (
@@ -203,4 +218,27 @@ export function Statistiky({ d, tier, mobil, toast }: { d: DataStatistik; tier: 
       <div style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0 }}>{vlavo}</div>
       <div style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0 }}>{vpravo}</div>
     </div>);
+}
+
+const NAST_D = "M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1";
+/** OPRAVY 157: Nastavenia · aplikácie a účtu — v každej Správe hneď pod Verejný profil (nad Prehľadom) */
+export function TlacidloNastavenia({ on, onClick }: { on: boolean; onClick: () => void }) {
+  return (
+    <button type="button" onClick={onClick} className={on ? undefined : "sc-hov"} style={{ flex: "none", width: "100%", minHeight: 56, padding: "6px 14px", border: `1px solid ${on ? "var(--cuBd)" : "var(--cardBd)"}`, borderRadius: 16, cursor: "pointer", display: "flex", alignItems: "center", gap: 12, textAlign: "left", fontFamily: "inherit", boxShadow: "none", background: on ? "var(--accSoft)" : "var(--card)", color: on ? "var(--acc)" : "var(--ink)" }}>
+      <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="var(--acc)" strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flex: "none" }}><path d={NAST_D} /></svg>
+      <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}><span style={{ fontSize: 15, fontWeight: on ? 800 : 600 }}>Nastavenia</span><span style={{ fontSize: 12, fontWeight: 500, color: "var(--ink3)" }}>aplikácie a účtu</span></span>
+    </button>);
+}
+
+/** logo stránky v karte vľavo (charita, farnosť) — bez loga iniciály */
+export function LogoKarty({ profil, inicialy, size }: { profil: ProfilStranky | null; inicialy: string; size: number }) {
+  const logo = profil?.logo;
+  const bg = !logo ? "var(--white)" : profil!.logoPozadie === "tmave" ? "#15171c" : profil!.logoPozadie === "priehladne" ? "transparent" : "#fff";
+  // KARTA 56D §4: „Nemám logo" = iniciály s rámikom (rámik ako pri titulnej fotke)
+  const znak = !logo && profil?.bezLoga ? (profil.inicialy ?? "").toUpperCase() : "";
+  const ram = znak && profil?.ramLoga && profil.ramLoga !== "bez" ? RAMY.find((r) => r.k === profil.ramLoga)?.g : undefined;
+  return (
+    <span style={{ width: size, height: size, borderRadius: profil?.tvar === "kruh" ? "50%" : Math.round(size / 4), overflow: "hidden", background: ram ? `linear-gradient(#fff,#fff) padding-box, ${ram} border-box` : bg, border: ram ? "2px solid transparent" : "1px solid var(--cardBd)", boxSizing: "border-box", display: "flex", alignItems: "center", justifyContent: "center", fontSize: Math.round(size / 3.1), fontWeight: 800, color: znak ? "#14110B" : "var(--gInk)", flex: "none" }}>
+      {logo ? <img src={logo} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} /> : znak || inicialy}
+    </span>);
 }

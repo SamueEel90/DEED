@@ -90,8 +90,9 @@ export function PravidlaObsahu({ ph, stit, onZavri }: { ph: boolean; stit: strin
 
 
 /** TEXTOVÉ POLIA — hlavný text (najviac 12 riadkov) + pokračovanie po „… viac", spolu 1 500 znakov */
-export function TextovePolia({ popis, popis2, onPopis, onPopis2, ph, pecat, onRiadky, popisHlavneho = "Toto ľudia uvidia hneď. Napíšte, komu a na čo idú peniaze, tak, aby to zaujalo. Najviac 12 riadkov." }: {
+export function TextovePolia({ popis, popis2, onPopis, onPopis2, ph, pecat, onRiadky, popisHlavneho = "Toto ľudia uvidia hneď. Napíšte, komu a na čo idú peniaze, tak, aby to zaujalo. Najviac 12 riadkov.", placeholder }: {
   popis: string; popis2: string; onPopis: (h: string) => void; onPopis2: (h: string) => void; ph: boolean; pecat?: boolean; onRiadky?: (n: number) => void; popisHlavneho?: string;
+  /** OPRAVY 160/3 · text v prázdnom hlavnom poli */ placeholder?: string;
 }) {
   const [riadky, setRiadky] = useState(0);
   const [zn1, setZn1] = useState(0);
@@ -100,7 +101,7 @@ export function TextovePolia({ popis, popis2, onPopis, onPopis2, ph, pecat, onRi
   return (<>
         <Nadpis t="Hlavný text" pecat={pecat} />
     <span style={{ fontSize: 13.5, lineHeight: 1.45, color: "var(--ink2)", marginTop: -6 }}>{ph ? "Toto ľudia uvidia hneď. Najviac 12 riadkov." : popisHlavneho}</span>
-    <RichTextInput vzhlad="sprava" value={popis} onChange={onPopis} nastroje={NASTROJE} minH={150} chybaRam={dlhy}
+    <RichTextInput vzhlad="sprava" value={popis} onChange={onPopis} nastroje={NASTROJE} minH={150} chybaRam={dlhy} placeholder={placeholder}
       ariaLabel="Hlavný text" tvrdyLimit={Math.max(0, ZNAKY_ZB - zn2)} onRiadky={(n) => { setRiadky(n); onRiadky?.(n); }} onZnaky={setZn1} />
     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
       <span style={{ flex: 1, height: 6, borderRadius: 3, background: "var(--track)", overflow: "hidden" }}><span style={{ display: "block", height: "100%", borderRadius: 3, background: f, transformOrigin: "0 50%", transform: `scaleX(${Math.min(1, riadky / RIADKY_ZB)})`, transition: "transform .3s ease" }} /></span>

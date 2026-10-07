@@ -5,6 +5,7 @@
 // Nič z toho nejde do DB — je to test „aký vznikne chaos", v produkcii dáta prídu zo servera.
 import { U } from "@/theme";
 import type { StitUroven } from "@/features/zbierka/Pole";
+import { menoBezMena } from "./darcovia";
 
 export type Mesto = "Trenčín" | "Prešov" | "Bratislava";
 export const MESTA: Mesto[] = ["Trenčín", "Prešov", "Bratislava"];
@@ -580,8 +581,9 @@ const FARNOST: TestProfil = {
   ico: "", ucet: "SK12 0900 0000 0051 2345 4521", sidlo: "Marka Aurela 6, Trenčín", kontakt: "fara@trencin-mesto.sk",
   cisla: [["42 550 €", "vyzbierané"], ["15", "zbierok"], ["108", "skutkov"]],
   stitCisla: [["21", "zbierok"], ["63", "skutkov"], ["1 240", "sledujúcich"]],
-  centralna: { ...sektor("f-podpora", "Všeobecná podpora farnosti", "centralna", FO.kostol, 5100, 214, vsade("2 380 € tento mesiac", "V októbri: kúrenie, svetlo a drobné opravy kostola"),
-    { mesiac: 2380, mesacne: 38, kam: "Na chod farnosti: kúrenie, svetlo, opravy a pomoc ľuďom vo farnosti.", tipy: [[5, ""], [10, ""], [20, ""]] }), stitok: "STÁLE" },
+  // OPRAVY 160: názov a text hlavnej zbierky zadá farár v Správe (spustená hlavná zbierka z účtu ich prepíše)
+  centralna: { ...sektor("f-podpora", "Hlavná zbierka", "centralna", FO.kostol, 5100, 214, vsade("2 380 € tento mesiac", "V októbri: kúrenie, svetlo a drobné opravy kostola"),
+    { mesiac: 2380, mesacne: 38, kam: "Na chod farnosti: kúrenie, svetlo, opravy a pomoc ľuďom vo farnosti.", tipy: [[5, ""], [10, ""], [20, ""]], popis: "Na kúrenie, svetlo, kostol a všetko, čo farnosť robí." }), stitok: "STÁLE" },
   sektory: [
     { ...sektor("f-organ", "Oprava organu", "sektor", FO.organ, 4120, 96, vsade("4 120 € z 9 000 €", "Organár z Bardejova začal rozoberať prvé píšťaly"), { tipy: [[5, ""], [10, ""], [20, ""]], mesacne: 0 }), stitok: "ZBIERKA", dlazdicaText: "4 120 € z 9 000 €", typ: "ZBIERKA", ...ZB_FARNOST },
     { ...sektor("f-misie", "Misie", "sektor", FO.misie, 820, 64, vsade("820 € · Misijná nedeľa", "Peniaze sme poslali na misie"), { tipy: [[5, ""], [10, ""], [20, ""]], mesacne: 0 }), stitok: "ZBIERKA", dlazdicaText: "820 € · Misijná nedeľa", typ: "ZBIERKA", ...ZB_FARNOST },
@@ -604,15 +606,11 @@ const FARNOST: TestProfil = {
     { id: "of-brigada", druh: "akcia", nadpis: "Upratovanie fary a záhrady", stitok: "BRIGÁDA · SOBOTA 9:00", text: "Marka Aurela 6 · rukavice a náradie máme", mesto: "Trenčín", den: "11.", mesiac: "OKT", tlacidlo: "Prídem", pod: "prídu 9 ľudia" },
   ],
   pracaNadpis: "OMŠE A SLUŽBA",
-  praca: [
-    { id: "pf-omse", nazov: "Kedy sú omše", druh: "zamestnanec", text: "", mesto: "Trenčín", den: "1.", mesiac: "OKT", pod: "rozvrh platí od 1. 10.",
-      stitok: "SVÄTÉ OMŠE", opis: "Nedeľa 7:30 · 10:30 veľká omša · 18:00. Pondelok až streda 6:30, štvrtok a piatok 18:00, sobota 7:00 a 18:00 vigília.", kde: "Kostol Narodenia Panny Márie", kedy: "v utorok aj kaplnka sv. Anny 18:00", odmena: "október: ruženec denne 17:30", zaujem: "zmeny vždy v ohláškach", tlacidlo: "Pripomínať omše", tretiRiadok: "Poznámka" },
-    { id: "pf-sluzba", nazov: "Lektori a miništranti", druh: "brigadnik", text: "", mesto: "Trenčín", den: "19.", mesiac: "OKT", pod: "prihlásiť sa do 19. 10.",
-      stitok: "SLUŽBA", opis: "Čítanie na nedeľnej omši a služba pri oltári. Naučíme ťa všetko, stačí prísť na nácvik.", kde: "farský kostol", kedy: "nedeľa 10:30", odmena: "nácvik v sobotu 10:00", zaujem: "4 ľudia už majú záujem", tlacidlo: "Mám záujem", tretiRiadok: "Poznámka" },
-  ],
+  // KONTROLA 19/3: omše a služba nie sú platená práca (modrá PracaKarta) — dostanú nové miesto v 56C (riadok Dnes, blok Pomôž)
+  praca: [],
   darcovia: [
     { id: "fd1", meno: "Mária K.", iniciala: "MK", mesto: "Trenčín", naCo: "Farnosť", suma: 10, pred: "pred 12 min" },
-    { id: "fd2", meno: "Anonymný darca", iniciala: "A", mesto: "Trenčín", naCo: "Oprava organu", suma: 20, pred: "pred 40 min" },
+    { id: "fd2", meno: menoBezMena("viera"), iniciala: "A", mesto: "Trenčín", naCo: "Oprava organu", suma: 20, pred: "pred 40 min" },
     { id: "fd3", meno: "Rodina Hrušková", iniciala: "RH", mesto: "Trenčín", naCo: "Rozlúčka s pani Annou", suma: 50, pred: "pred 1 h" },
   ],
   titulka: U("photo-1611859732483-07bd0d5e3c50", 1200),

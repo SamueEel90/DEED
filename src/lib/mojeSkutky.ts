@@ -45,6 +45,8 @@ export interface MojSkutok {
   upraveny?: string;
   /** id položky vo feede (skutok za charitu) — úprava a stiahnutie ju zmenia aj tam */
   feedId?: number;
+  /** uložený bez hodnotenia (AI nedostupná) — podklady na dodatočné ohodnotenie (features/skutok/dohodnotenie.ts) */
+  caka?: { opis: string; text: string; miesto: string; maVideo: boolean; dokaz: boolean; autor: string; ucetId: string | null; lat?: number; lng?: number };
 }
 
 export interface Ucastnik { meno: string; overeny: boolean }

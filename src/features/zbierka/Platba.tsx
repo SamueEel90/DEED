@@ -6,7 +6,7 @@ import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from
 import { createPortal } from "react-dom";
 import { useLayout } from "@/components/context";
 import { usePouzivatel } from "@/lib/pouzivatel";
-import { nacitajPredvolbu, ulozPredvolbu, type VerziaIdentity, type VolbaDaru } from "@/lib/darcovia";
+import { nacitajPredvolbu, ulozPredvolbu, useSektorDarcu, menoBezMena, volbaBezMena, type VerziaIdentity, type VolbaDaru } from "@/lib/darcovia";
 import { toast } from "@/components/toast";
 import PodrzTlacidlo from "./PodrzTlacidlo";
 import { Svetlusik } from "./Svetlusik";
@@ -41,6 +41,7 @@ export function PlatobneOkno({ kanal, suma: sumaStart, nazov, registrovany, bonu
   onHotovo: (v: VysledokPlatby) => void; onClose: () => void;
 }) {
   const { wide, desktop } = useLayout();
+  const sektor = useSektorDarcu();
   const eur = kanal === "eur";
   const [text, setText] = useState(sumaStart ? String(sumaStart).replace(".", ",") : "");
   const suma = Number(text.replace(",", ".")) || 0;
@@ -185,7 +186,7 @@ export function PlatobneOkno({ kanal, suma: sumaStart, nazov, registrovany, bonu
           ? <Identita volba={volba} setVolba={setVolba} eur={eurHodnota} />
           : <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 16, background: "var(--card)", border: "1px solid var(--cardBd)" }}>
               <span style={{ width: 36, height: 36, borderRadius: "50%", background: "var(--track)", color: "var(--ink4)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 15, flex: "none" }}>?</span>
-              <span><span style={{ display: "block", fontSize: 12.5, color: "var(--ink3)" }}>V zozname darcov sa zobrazíš ako</span><span style={{ display: "block", fontSize: 15.5, fontWeight: 800 }}>Anonymný darca</span></span>
+              <span><span style={{ display: "block", fontSize: 12.5, color: "var(--ink3)" }}>V zozname darcov sa zobrazíš ako</span><span style={{ display: "block", fontSize: 15.5, fontWeight: 800 }}>{menoBezMena(sektor)}</span></span>
             </div>}
         <RiadokPlatby kanal={kanal} sposob={sposob} registrovany={registrovany} />
         <div style={{ borderRadius: 16, background: "var(--card)", border: "1px solid var(--cardBd)", padding: "4px 16px" }}>
@@ -312,13 +313,15 @@ function RiadokPlatby({ kanal, sposob, registrovany }: { kanal: KanalPlatby; spo
 /** „V ZOZNAME DARCOV SA UKÁŽEŠ AKO" + „Zobraziť sumu" (do 2 € sa suma nezobrazí nikdy) */
 export function Identita({ volba, setVolba, eur }: { volba: VolbaDaru; setVolba: (v: VolbaDaru) => void; eur: number }) {
   const ja = usePouzivatel();
+  const sektor = useSektorDarcu();
+  const bezMena = volbaBezMena(sektor);
   const meno = ja.meno || "Darca", priezv = ja.priezvisko || "";
   const moznosti = useMemo((): [VerziaIdentity, string][] => [
     [2, `${meno}${priezv ? ` ${priezv[0]}.` : ""}`], [1, `${meno} ${priezv}`.trim()],
     ...(ja.mesto ? [[5, `${`${meno} ${priezv}`.trim()}, ${ja.mesto}`] as [VerziaIdentity, string]] : []),
-    ...(ja.nick ? [[3, ja.nick] as [VerziaIdentity, string]] : []), [4, "Anonym"],
-  ], [meno, priezv, ja.mesto, ja.nick]);
-  const vybrane = moznosti.find(([v]) => v === volba.verzia)?.[1] ?? "Anonym";
+    ...(ja.nick ? [[3, ja.nick] as [VerziaIdentity, string]] : []), [4, bezMena],
+  ], [meno, priezv, ja.mesto, ja.nick, bezMena]);
+  const vybrane = moznosti.find(([v]) => v === volba.verzia)?.[1] ?? bezMena;
   const nad2 = eur > 2;
   return (
     <>

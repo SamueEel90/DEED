@@ -111,7 +111,10 @@
     "timeout_ms": 60000,
     "retry": { "pocet": 2, "pauza_ms": 3000, "poznamka": "retry len pri sieťovej chybe / 529, NIE pri obsahovej odpovedi" },
     "denny_strop_volani": 200,
-    "denny_strop_poznamka": "Ochrana kreditu pri teste. Po prekročení: hláška 'denný limit testu vyčerpaný'."
+    "denny_strop_poznamka": "Ochrana kreditu pri teste. Po prekročení: hláška 'denný limit testu vyčerpaný'.",
+    "limit_na_ucet_den": 20,
+    "limit_bez_uctu_den": 5,
+    "limit_poznamka": "Zadanie 5 · 5.3: limit per účet (zo session), bez prihlásenia per IP (hash). Spoločný denný strop ostáva ako poistka kreditu."
   },
 
   "otazky": {

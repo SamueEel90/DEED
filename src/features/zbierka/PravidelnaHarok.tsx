@@ -7,7 +7,7 @@ import { DeedZnacka } from "@/components/DeedZnacka";
 import { useState, type ReactNode } from "react";
 import { usePouzivatel } from "@/lib/pouzivatel";
 import { useRecurringCreate } from "@/data";
-import { pridajDar, nacitajPredvolbu, type VolbaDaru } from "@/lib/darcovia";
+import { pridajDar, nacitajPredvolbu, useSektorDarcu, menoBezMena, type VolbaDaru } from "@/lib/darcovia";
 import { KARTA_OD_EUR } from "./nastavenie";
 import { Harok } from "./Zdielat";
 import PodrzTlacidlo from "./PodrzTlacidlo";
@@ -45,6 +45,7 @@ export function PravidelnaHarok({ refId, nazov, registrovany, onClose, zbierka =
   zbierka?: boolean;
 }) {
   const ja = usePouzivatel();
+  const sektor = useSektorDarcu();
   const rec = useRecurringCreate();
   const [dnes] = useState(() => new Date());
   const [krok, setKrok] = useState<Krok>("nastavenie");
@@ -207,7 +208,7 @@ export function PravidelnaHarok({ refId, nazov, registrovany, onClose, zbierka =
           {nadpis("V ZOZNAME DARCOV SA UKÁŽEŠ AKO", 0)}
           <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "11px 14px", borderRadius: 16, background: "var(--card)", border: "1px solid var(--cardBd)" }}>
             <span style={{ width: 32, height: 32, borderRadius: "50%", background: "var(--btn)", color: "var(--ink4)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 14 }}>?</span>
-            <span style={{ fontSize: 15, fontWeight: 700 }}>Anonymný darca</span>
+            <span style={{ fontSize: 15, fontWeight: 700 }}>{menoBezMena(sektor)}</span>
           </div>
         </>}
         <div style={{ borderRadius: 16, background: "var(--card)", border: "1px solid var(--cardBd)", padding: "2px 16px", marginTop: 4 }}>

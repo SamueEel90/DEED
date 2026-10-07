@@ -12,8 +12,8 @@ type Rezim = "vyrez" | "cela";
 /** KARTA 33: výrez ako čísla (mierka + posun) — ukladá sa namiesto orezaného obrázka, mobil = PC */
 export interface Vyrez { rezim: Rezim; zoom: number; x: number; y: number }
 
-export function OrezFotky({ subor, src, pomer = 16 / 9, vystupSirka = 1600, zony, onHotovo, onZrusit, vyrez, onVyrez, sprava, pozadie }: {
-  subor?: File; pomer?: number; vystupSirka?: number; zony?: boolean;
+export function OrezFotky({ subor, src, pomer = 16 / 9, vystupSirka = 1600, zony, bezStitu, onHotovo, onZrusit, vyrez, onVyrez, sprava, pozadie }: {
+  subor?: File; pomer?: number; vystupSirka?: number; zony?: boolean; /** KARTA 56D §4: farnosť — bez miesta pre štít */ bezStitu?: boolean;
   onHotovo?: (dataUrl: string) => void; onZrusit: () => void;
   /** KARTA 33: obrázok už spracovaný (data-URL) namiesto súboru */
   src?: string;
@@ -144,7 +144,7 @@ export function OrezFotky({ subor, src, pomer = 16 / 9, vystupSirka = 1600, zony
         {zony && sprava && (
           <>
             <span aria-hidden="true" style={{ position: "absolute", left: 14, bottom: 12, width: 56, height: 56, borderRadius: 14, border: "1.5px dashed rgba(255,255,255,.8)", pointerEvents: "none" }} />
-            <span aria-hidden="true" style={{ position: "absolute", right: 14, bottom: 12, width: 44, height: 52, borderRadius: 10, border: "1.5px dashed rgba(255,255,255,.8)", pointerEvents: "none" }} />
+            {!bezStitu && <span aria-hidden="true" style={{ position: "absolute", right: 14, bottom: 12, width: 44, height: 52, borderRadius: 10, border: "1.5px dashed rgba(255,255,255,.8)", pointerEvents: "none" }} />}
           </>
         )}
         {zony && !sprava && (

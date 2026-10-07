@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import { SukromneZbierky } from "./SukromneZbierky";
+import { IkonaSrdceLine } from "@/components/icons";
 import { MojeStranky, KonasAkoLista } from "./MojeStranky";
 import type { Stranka } from "@/lib/mojeStranky";
 import { ulozPoziciu, nacitajTypStranky, type TypStranky } from "@/features/rola/stav";
@@ -87,7 +89,7 @@ export default function ModulProfil({ wide, walletReq = 0 }: ProfilProps) {
       {screen === "wallet" && obal(<Penazenka18 onBack={() => setScreen("profil")} />)}
       {screen === "sprava" && sprava}
       {screen === "firemny" && obalSiroky(<MojDeedFiremny onBack={() => setScreen("profil")} toast={toast} />, { wide, desktop, max: SIRKA.stlpec })}
-      {screen === "sub" && (subNazov === "Moje záujmy" ? obal(<ZaujmyObrazovka onBack={() => setScreen("profil")} />) : subNazov === "Moje skutky" ? <MojeSkutky21 key={skOblast ?? "vsetky"} oblastStitu={skOblast} onBack={spatZoSkutkov} /> : subNazov === "Karma a štíty" ? obal(<KarmaStity naSkutky={skutkyOblasti} onBack={() => setScreen("profil")} />) : obal(<Statistiky onBack={() => setScreen("profil")} />))}
+      {screen === "sub" && (subNazov === "Moje záujmy" ? obal(<ZaujmyObrazovka onBack={() => setScreen("profil")} />) : subNazov === "Súkromné zbierky" ? obal(<SukromneZbierky onBack={() => setScreen("profil")} />) : subNazov === "Moje skutky" ? <MojeSkutky21 key={skOblast ?? "vsetky"} oblastStitu={skOblast} onBack={spatZoSkutkov} /> : subNazov === "Karma a štíty" ? obal(<KarmaStity naSkutky={skutkyOblasti} onBack={() => setScreen("profil")} />) : obal(<Statistiky onBack={() => setScreen("profil")} />))}
       {screen === "priatelia" && obal(<Priatelia tab={pTab} onBack={() => setScreen("profil")} />)}
       {screen === "firma" && obal(<Zamestnavatel onBack={() => setScreen("profil")} />)}
       {screen === "nastavenia" && obal(<Nastavenia20 onBack={() => setScreen("profil")} onNotif={() => setScreen("notif")} onUpravProfil={() => setUprava(true)} />)}
@@ -109,6 +111,7 @@ const PROFIL_NAV: { id: DlazdicaId; key: string; nazov?: string; /** kľúč pre
   { id: "stat", key: "sub", nazov: "Štatistiky", label: "dlazdice.stat", ikona: <IkonaDoska size={18} /> },
   { id: "priatelia", key: "priatelia", label: "dlazdice.priatelia", ikona: <IkonaUsmev size={18} /> },
   { id: "karma", key: "sub", nazov: "Karma a štíty", label: "dlazdice.karma", ikona: <IkonaHviezda size={18} /> },
+  { id: "sukromne", key: "sub", nazov: "Súkromné zbierky", label: "dlazdice.sukromne", ikona: <IkonaSrdceLine size={18} /> },
 ];
 
 /** Moje záujmy ako samostatná obrazovka (dlaždica / položka menu) */
@@ -144,7 +147,7 @@ function ProfilDesktop({ screen, subNazov, setScreen, onSub, onQr, onUpravit, pT
   let obsah: React.ReactNode;
   if (screen === "wallet") obsah = <Penazenka18 desktop onBack={() => setScreen("profil")} />;
   else if (screen === "firemny") obsah = <MojDeedFiremny onBack={() => setScreen("profil")} toast={toast} />;
-  else if (screen === "sub") obsah = subNazov === "Moje záujmy" ? <ZaujmyObrazovka desktop onBack={() => setScreen("profil")} /> : subNazov === "Moje skutky" ? <MojeSkutky21 key={skOblast ?? "vsetky"} oblastStitu={skOblast} onBack={spatZoSkutkov} /> : subNazov === "Karma a štíty" ? <KarmaStity desktop naSkutky={skutkyOblasti} onBack={() => setScreen("profil")} /> : <Statistiky desktop onBack={() => setScreen("profil")} />;
+  else if (screen === "sub") obsah = subNazov === "Moje záujmy" ? <ZaujmyObrazovka desktop onBack={() => setScreen("profil")} /> : subNazov === "Súkromné zbierky" ? <SukromneZbierky desktop onBack={() => setScreen("profil")} /> : subNazov === "Moje skutky" ? <MojeSkutky21 key={skOblast ?? "vsetky"} oblastStitu={skOblast} onBack={spatZoSkutkov} /> : subNazov === "Karma a štíty" ? <KarmaStity desktop naSkutky={skutkyOblasti} onBack={() => setScreen("profil")} /> : <Statistiky desktop onBack={() => setScreen("profil")} />;
   else if (screen === "priatelia") obsah = <Priatelia key={pTab} tab={pTab} desktop onBack={() => setScreen("profil")} />;
   else if (screen === "firma") obsah = <Zamestnavatel desktop onBack={() => setScreen("profil")} />;
   else if (screen === "nastavenia") obsah = <Nastavenia20 desktop onBack={() => setScreen("profil")} onNotif={() => setScreen("notif")} onUpravProfil={onUpravit} />;

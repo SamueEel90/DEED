@@ -103,6 +103,12 @@ zbytočne prepisované veci:
 Komponent nikdy nečíta mock pole priamo ani nevolá `supabase.from(...)`.
 Vždy cez hook z `@/data`. Detaily v [ARCHITECTURE §3](docs/ARCHITECTURE.md#3-dátová-vrstva--jediný-švík).
 
+### Placebo
+
+Keď modul dostáva hĺbkové spracovanie, všetko placebo v ňom sa v tej istej práci buď napojí na DB, alebo vyhodí. Po prerábke žiadna obrazovka nesmie mať tlačidlo, ktoré len vyzerá, že funguje. Čo zámerne ostáva ukážkové (príde na rad neskôr), má v kóde komentár `// PLACEBO — karta X` a v UI sa správa poctivo: ukáže „pripravujeme“, nie falošný úspech (Martin 7. 10. 2026).
+Placebo = tlačidlo, prepínač alebo obrazovka, ktorá tvrdí výsledok („Uložené“, „Odoslané“, „Zaplatené“), ale nič nezapíše
+na server, alebo zapíše len do localStorage či pamäte, hoci výsledok má vidieť niekto iný. Súpis: [ROADMAP · Inventúra placeba](ROADMAP.md#inventúra-placeba-7-10-2026).
+
 ### Migrácie
 
 Pred založením novej migrácie vždy `git pull` a číslo ber až po ňom (najvyššie číslo v `supabase/migrations/` + 1).

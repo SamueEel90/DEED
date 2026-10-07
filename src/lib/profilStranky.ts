@@ -1,6 +1,7 @@
 // KARTA 33 · OPRAVY 106 — profil stránky (Upraviť profil): KONCEPT a ULOŽENÝ profil v účte organizácie
 // (tabuľka profil_stranky, migrácia 0028). Nič z toho nejde do prehliadača (localStorage).
 // Bez DB spojenia (mock/offline) appka drží profil len v pamäti relácie.
+import { bezDataUrl } from "./uploadFoto";
 import { supabase } from "./supabase";
 import type { Kontakt } from "@/features/rola/kontakt";
 import type { TvarLoga } from "@/features/rola/stav";
@@ -22,6 +23,12 @@ export interface ProfilStranky {
   logoPozadie: LogoPozadie;
   cover: TitulnaFotka | null;
   ram: RamFotky;
+  /** KARTA 56D §4 (farnosť): názov stránky — predvyplnený z registrácie, dá sa zmeniť */
+  meno?: string;
+  /** KARTA 56D §4: „Nemám logo" → znak z iniciál (najviac 3 písmená) s rámikom */
+  bezLoga?: boolean;
+  inicialy?: string;
+  ramLoga?: RamFotky;
 }
 export interface ProfilZaznam { koncept: ProfilStranky | null; konceptCas: string | null; ulozeny: ProfilStranky | null }
 
@@ -44,7 +51,7 @@ export async function nacitajProfil(stranka: string): Promise<ProfilZaznam> {
 export async function ulozKoncept(stranka: string, p: ProfilStranky): Promise<string> {
   const cas = new Date().toISOString();
   pamat.set(stranka, { ...profilZPamate(stranka), koncept: p, konceptCas: cas });
-  if (supabase) await supabase.from("profil_stranky").upsert({ stranka, koncept: p, koncept_cas: cas }, { onConflict: "stranka" });
+  if (supabase) await supabase.from("profil_stranky").upsert({ stranka, koncept: await bezDataUrl(p, "stranky"), koncept_cas: cas }, { onConflict: "stranka" });
   return cas;
 }
 
@@ -52,8 +59,11 @@ export async function ulozKoncept(stranka: string, p: ProfilStranky): Promise<st
 export async function zverejniProfil(stranka: string, p: ProfilStranky): Promise<void> {
   const cas = new Date().toISOString();
   pamat.set(stranka, { koncept: null, konceptCas: null, ulozeny: p });
-  if (supabase) await supabase.from("profil_stranky").upsert({ stranka, ulozeny: p, ulozeny_cas: cas, koncept: null, koncept_cas: null }, { onConflict: "stranka" });
+  if (supabase) await supabase.from("profil_stranky").upsert({ stranka, ulozeny: await bezDataUrl(p, "stranky"), ulozeny_cas: cas, koncept: null, koncept_cas: null }, { onConflict: "stranka" });
 }
+
+/** KARTA 56D §1: názov stránky bez čiarky a bodky na konci (farnosť si ho môže zmeniť v Upraviť profil) */
+export const cistyNazov = (s?: string | null) => (s ?? "").trim().replace(/[\s,.;:–-]+$/, "");
 
 // ---- percento profilu (karta 33 bod 6) — zo 4 vecí po 25 %, z ULOŽENÉHO profilu ----
 const text = (h?: string | null) => String(h ?? "").replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ").trim();
@@ -63,7 +73,7 @@ export function maKontakt(k?: Kontakt | null): boolean {
 }
 export function uplnostProfilu(p: ProfilStranky | null, kontaktZRegistracie?: Kontakt): { pct: number; chyba: string } {
   const pol: [string, boolean][] = [
-    ["logo", !!p?.logo], ["titulná fotka", !!p?.cover], ["O nás", !!text(p?.onas)], ["kontakt", maKontakt(p?.kontakt ?? kontaktZRegistracie)],
+    ["logo", !!p?.logo || (!!p?.bezLoga && !!p.inicialy?.trim())], ["titulná fotka", !!p?.cover], ["O nás", !!text(p?.onas)], ["kontakt", maKontakt(p?.kontakt ?? kontaktZRegistracie)],
   ];
   const ch = pol.filter(([, ok]) => !ok).map(([n]) => n);
   const pct = (4 - ch.length) * 25;

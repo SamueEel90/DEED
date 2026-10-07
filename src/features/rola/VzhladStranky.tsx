@@ -1,20 +1,21 @@
 // KARTA 50 · §1 blok „Vzhľad stránky" — prvý v Správe → Upraviť profil (všetky sektory s viacerými vzhľadmi).
 // 3 dlaždice s náhľadom, vybraná má zelený rám, pod nimi „Pozrieť verejný profil ›". Zmena sa uloží hneď.
 // Zadarmo: vybraný je vzhľad z configu, ostatné dlaždice sú zamknuté „v platenom programe".
-import { VZHLADY, ulozVzhlad, useVzhlad } from "@/lib/vzhladStranky";
+import { vzhladyPre, ulozVzhlad, useVzhlad } from "@/lib/vzhladStranky";
 
 const ZAMOK = "M6 11h12v10H6zM8.5 11V8a3.5 3.5 0 0 1 7 0v3";
 
-export function VzhladStranky({ strankaId, zadarmo, kto = "darcovia", onPozriet }: {
-  strankaId: string; zadarmo: boolean; /** kto si profil pozerá (farníci, darcovia…) */ kto?: string; onPozriet: () => void;
+export function VzhladStranky({ strankaId, zadarmo, kto = "darcovia", onPozriet, sektor }: {
+  strankaId: string; zadarmo: boolean; /** kto si profil pozerá (farníci, darcovia…) */ kto?: string; onPozriet?: () => void;
+  /** KARTA 56D §4: farnosť — názvy Kronika · Nástenka · Moderné, profil sa pozrie tlačidlom Náhľad */ sektor?: string;
 }) {
   const vz = useVzhlad(strankaId, zadarmo);
   return (
     <section aria-label="Vzhľad stránky" style={{ flex: "none", borderRadius: 22, background: "var(--card)", border: "1px solid var(--cardBd)", padding: "18px 20px", display: "flex", flexDirection: "column", gap: 12 }}>
       <span style={{ fontSize: 15, fontWeight: 800 }}>Vzhľad stránky</span>
-      <span style={{ fontSize: 13, color: "var(--ink3)", marginTop: -6 }}>{zadarmo ? `Ako vidia ${kto} váš verejný profil. V programe Zadarmo je jeden vzhľad, ďalšie sú v platenom programe.` : `Ako vidia ${kto} váš verejný profil. Zmena sa uloží hneď.`}</span>
+      <span style={{ fontSize: 13, color: "var(--ink3)", marginTop: -6 }}>{zadarmo ? `Ako vidia ${kto} váš verejný profil. V programe Zadarmo je jeden vzhľad, ďalšie sú v platenom programe.` : onPozriet ? `Ako vidia ${kto} váš verejný profil. Zmena sa uloží hneď.` : `Ako vidia ${kto} váš verejný profil. Pozriete ho tlačidlom Náhľad.`}</span>
       <div role="radiogroup" aria-label="Vzhľad stránky" style={{ display: "grid", gridTemplateColumns: "repeat(3,minmax(0,1fr))", gap: 10 }}>
-        {VZHLADY.map((z) => {
+        {vzhladyPre(sektor).map((z) => {
           const on = z.k === vz, zamk = zadarmo && !on;
           return (
             <button key={z.k} type="button" role="radio" aria-checked={on} disabled={zamk} onClick={() => { if (!on) void ulozVzhlad(strankaId, z.k); }}
@@ -30,6 +31,6 @@ export function VzhladStranky({ strankaId, zadarmo, kto = "darcovia", onPozriet 
             </button>);
         })}
       </div>
-      <button type="button" onClick={onPozriet} style={{ alignSelf: "flex-start", minHeight: 44, padding: 0, border: "none", background: "transparent", boxShadow: "none", cursor: "pointer", fontFamily: "inherit", fontSize: 13.5, fontWeight: 800, color: "var(--green)" }}>Pozrieť verejný profil ›</button>
+      {onPozriet && <button type="button" onClick={onPozriet} style={{ alignSelf: "flex-start", minHeight: 44, padding: 0, border: "none", background: "transparent", boxShadow: "none", cursor: "pointer", fontFamily: "inherit", fontSize: 13.5, fontWeight: 800, color: "var(--green)" }}>Pozrieť verejný profil ›</button>}
     </section>);
 }

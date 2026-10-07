@@ -57,6 +57,8 @@ export interface SmutocnyData {
   rozluckaCas: string;           // HH:MM (povinné)
   foto?: string;                 // režim A — voliteľná fotka do šablóny
   text?: string;                 // voliteľný formátovateľný text (rich — §5, zachovať formát)
+  /** OPRAVY 163: šablóna z jedného modulu (Sablony.tsx) — údaje, rozloženie a vzhľad profilu pri vzniku */
+  sablona?: { u: import("./Sablony").UdajeOznamu; volba: import("./Sablony").VolbaSablony; vz: import("@/lib/vzhladStranky").Vzhlad };
 }
 
 // vek sa dopočíta z dátumov (spec §4.2)

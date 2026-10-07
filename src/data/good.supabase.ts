@@ -92,22 +92,21 @@ function naUdalost(r: any): Udalost {
   };
 }
 
+/** Zadanie 5 · 5.4: veľkosť stránky feedu (server viac nevráti) */
+export const FEED_STRANA = 50;
+export interface FeedDotaz { lat?: number; lng?: number; km?: number; pred?: { vytvorene: string; id: string } }
+
 export const goodSupabase = {
-  async feed(): Promise<GoodPolozka[]> {
+  /** Zadanie 5 · 5.4: jedna stránka feedu Domov (najviac FEED_STRANA riadkov), okruh v SQL,
+   *  kurzor podľa času (`pred` = posledná načítaná položka). Poradie a prah dorieši feed.ts. */
+  async feed(v?: FeedDotaz): Promise<GoodPolozka[]> {
     if (!supabase) return [];
-    // Domov agreguje skutky/žiadosti/charitu z POLOZKY. Charita má vlastný
-    // kurátorský feed (riadky s `data.comp`) — tie sem NEpatria, inak by sa
-    // bespoke karty z modulu Charita preliali do Domova. Poradie/filter rieši
-    // feed.ts (pripravFeed) na klientovi.
-    const { data, error } = await supabase
-      .from("prispevok_feed") // 0037: vyzbierané z ledgera
-      .select("*")
-      .is("data->>comp", null)
-      .is("data->>akt", null)   // vylúč Aktivity (Fáza F) — majú vlastný modul/feed
-      .is("data->>help", null)  // vylúč Help (Fáza G) — má vlastný modul/feed
-      .order("vytvorene", { ascending: false });
+    const { data, error } = await supabase.rpc("feed_stranka", {
+      p_feed: "domov", p_lat: v?.lat ?? null, p_lng: v?.lng ?? null, p_km: v?.km ?? null,
+      p_pred_cas: v?.pred?.vytvorene ?? null, p_pred_id: v?.pred?.id ?? null, p_limit: FEED_STRANA,
+    });
     if (error) throw error;
-    return (data || []).map(naGoodPolozka);
+    return ((data || []) as Array<Record<string, unknown>>).map((r) => ({ ...naGoodPolozka(r), vytvorene: r.vytvorene as string }));
   },
   async vytvor(it: GoodPolozka, autorUcetId?: string | null): Promise<string | null> {
     if (!supabase) return null;

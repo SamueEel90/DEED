@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { SpatTlacidlo } from "@/components/cesta";
 import { toast } from "@/components/toast";
 import { StitObr, type StitLevel } from "@/components/stit";
-import { BrowserQRCodeReader, type IScannerControls } from "@zxing/browser";
+import type { IScannerControls } from "@zxing/browser";
 import { DeedQr } from "@/components/deedqr";
 import { usePouzivatel } from "@/lib/pouzivatel";
 import { useNastaveniaAppky, zmenNastavenia } from "@/lib/nastaveniaAppky";
@@ -334,12 +334,13 @@ function SkenQr({ onClose }: { onClose: () => void }) {
   const [poslane, setPoslane] = useState(false);
   useEffect(() => {
     let zrus = false, ctrl: IScannerControls | null = null;
-    new BrowserQRCodeReader().decodeFromVideoDevice(undefined, video.current ?? undefined, (r, _e, c) => {
+    // @zxing sa načíta až s kamerou (Zadanie 5 · 5.6 — nie v hlavnom balíku)
+    import("@zxing/browser").then(({ BrowserQRCodeReader }) => new BrowserQRCodeReader().decodeFromVideoDevice(undefined, video.current ?? undefined, (r, _e, c) => {
       ctrl = c; if (zrus || !r) return;
       const m = /deed\.sk\/p\/([a-z0-9-]+)/i.exec(r.getText());
       if (!m) { toast(tTeraz()("priatelia.sken.nieQr")); return; }
       c.stop(); setOsoba(m[1].split("-").filter(Boolean).map((x) => x[0].toUpperCase() + x.slice(1)).join(" "));
-    }).then((c) => { ctrl = c; if (zrus) c.stop(); else setKamera("ide"); }).catch(() => { if (!zrus) setKamera("nie"); });
+    })).then((c) => { ctrl = c; if (zrus) c.stop(); else setKamera("ide"); }).catch(() => { if (!zrus) setKamera("nie"); });
     return () => { zrus = true; try { ctrl?.stop(); } catch { /* už zastavené */ } };
   }, []);
   const ini = osoba ? osoba.split(" ").map((x) => x[0]).join("").slice(0, 2) : "";

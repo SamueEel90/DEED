@@ -32,6 +32,7 @@ import { PREVODY, MOJE_SKUTKY, KARMA, STATISTIKY, type StatistikyData } from "@/
 import { REBRICKY_MOCK, topPrispevky, type RebricekKluc } from "@/features/top/mock";
 import { MAPA_UDALOSTI } from "@/features/mapa/mock";
 import { qrUrl, type QrCiel, type QrStatic, type QrResolved } from "@/lib/qr";
+import type { FeedDotaz } from "./good.supabase";
 import type { PlatbaVstup, PlatbaRiadok, VypisRiadok, RecurringVstup } from "./platby.supabase";
 import type { ScanVstup, ScanVysledok, ChainVstup, ChainVysledok, BadgeScanVysledok, QrSplitCreateVstup, QrSplitPayVstup, QrSplitPayVysledok } from "./qr.supabase";
 import type { QrSplitRow, QrSplitDetail, QrSplitListItem } from "@/types";
@@ -39,7 +40,8 @@ import type { QrSplitRow, QrSplitDetail, QrSplitListItem } from "@/types";
 /** Rozhranie dátovej vrstvy — mock aj budúci Supabase ho implementujú rovnako. */
 export interface Repo {
   good: {
-    feed(): Promise<GoodPolozka[]>;
+    /** jedna stránka feedu Domov (5.4: najviac 50, okruh a kurzor na serveri) */
+    feed(v?: FeedDotaz): Promise<GoodPolozka[]>;
     udalosti(): Promise<Udalost[]>;
     /** Vytvor nový skutok (zápis do DB). Vráti `id` nového príspevku (Supabase), null pri mocku. */
     vytvor(it: GoodPolozka, autorUcetId?: string | null): Promise<string | null>;

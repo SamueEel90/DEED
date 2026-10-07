@@ -4,6 +4,7 @@
 //   pás Hľadáme ľudí → Čo sme dokázali (filtre, mriežka 4) → Videá z Iskier.
 // Mobil a tablet: titulka 360 → Tento týždeň → Príbeh týždňa → Podporiť (modul zmenšený, B) → Ďalšie príbehy →
 //   Hľadáme ľudí → Čo sme dokázali (riadky s fotkou 92 px) → Videá z Iskier. Bez veľkých rokov (to je Kronika).
+import { useOtvorHlavnuZQr } from "./otvor";
 import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { eur, pct, tvar, jeFarnost, type Lokalita, type TestProfil, type TestSektor, type TestZbierka } from "@/lib/testProfily";
 import { cisloObjektu } from "@/lib/cisloObjektu";
@@ -39,6 +40,7 @@ export function VykladCharita({ profil, onDetail, onZaznam, onBack }: { profil: 
   const [lok, setLok] = useState<Lokalita>(domace);
   const [stitOtv, setStitOtv] = useState(false);
   const [sel, setSel] = useState(-1);
+  useOtvorHlavnuZQr(profil.k, profil.typ === "farnost", () => setSel(0)); // OPRAVY 162
   const [filter, setFilter] = useState<"vsetko" | "skutok" | "zbierka" | "akcia">("vsetko");
   const d = useCharitaData(profil, lok, domace);
   const stit = profil.stit.toLowerCase();
@@ -184,7 +186,7 @@ export function VykladCharita({ profil, onDetail, onZaznam, onBack }: { profil: 
     </div>);
   const modul = sel >= 0 && sektory[sel] && (
     <ModulProfilu key={sektory[sel].id} profil={profil} sektor={sektory[sel]} poradie={sel} mestoV="" onZbal={() => setSel(-1)} dorovnanie={!farnost}
-      typ={sektory[sel].typ ?? (farnost && !sel ? "VŠEOBECNÁ PODPORA" : undefined)} typ2={sektory[sel].typ2} info={sektory[sel].info} />);
+      typ={sektory[sel].typ} typ2={sektory[sel].typ2} info={sektory[sel].info} hlavna={farnost && !sel} />);
   const podporit = <>
     {kicker(pc ? `PODPORIŤ ${meno.toLocaleUpperCase("sk-SK")} · AJ PRAVIDELNE` : "PODPORIŤ · AJ PRAVIDELNE", { paddingTop: mob ? 16 : 6 })}
     {dlazdice}{modul}

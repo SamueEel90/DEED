@@ -4,7 +4,7 @@
 import { TESTOVACIA } from "@/lib/testovacia";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { BrowserQRCodeReader, type IScannerControls } from "@zxing/browser";
+import type { IScannerControls } from "@zxing/browser";
 import { toast } from "@/components/toast";
 import { usePouzivatel } from "@/lib/pouzivatel";
 import { useLokalita } from "@/lib/lokalita";
@@ -62,10 +62,12 @@ function AkciaObrazovka({ a, onZavrete }: { a: Akcia; onZavrete: () => void }) {
   useEffect(() => {
     if (!a.otvorena || !mozePridat || !videoRef.current) return;
     let zrusene = false;
-    new BrowserQRCodeReader().decodeFromVideoDevice(undefined, videoRef.current, (r) => {
+    const video = videoRef.current;
+    // @zxing sa načíta až s kamerou (Zadanie 5 · 5.6 — nie v hlavnom balíku)
+    import("@zxing/browser").then(({ BrowserQRCodeReader }) => new BrowserQRCodeReader().decodeFromVideoDevice(undefined, video, (r) => {
       const m = r?.getText().match(/\/q\/akcia\/([^.]+)\./);
       if (m) pridaj(`Účastník ${decodeURIComponent(m[1]).slice(-4)}`);
-    }).then((c) => { ovladanie.current = c; if (zrusene) c.stop(); }).catch(() => { /* bez kamery — ostáva tlačidlo */ });
+    })).then((c) => { ovladanie.current = c; if (zrusene) c.stop(); }).catch(() => { /* bez kamery — ostáva tlačidlo */ });
     return () => { zrusene = true; try { ovladanie.current?.stop(); } catch { /* už zastavená */ } ovladanie.current = null; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [a.otvorena, mozePridat]);

@@ -48,6 +48,7 @@ import { PrepinacPodania, TestVolba } from "@/features/verejny-profil/casti";
 import { nacitajPiny, ulozPiny, pinyZPamate, nacitajZbalenie, ulozZbalenie, zbalenieZPamate, type Zbalenie } from "@/lib/spravaPiny";
 import { nastavStitSpravy } from "@/lib/stitAppky";
 import { ObrOznamenia, ObrEur, ObrEurc, ObrUcty, ObrSpravcovia, ObrUdaje, ObrProgram, ObrFaktury, ObrZariadenia, ObrSuhlasy, ObrStiahnut, ObrFaq, ObrPodpora, ObrZrusit, PROG, pocetSpravcov, pocetZariadeni, eurcText, eurText, HLAVNY_UCET } from "./NastaveniaCharity";
+import { TlacidloNastavenia, LogoKarty } from "./spravaCasti";
 import {
   FLAGS, KONFIG, nacitajTiery, ulozTiery, slovo, maPovolenie, vidnoPolozku, smieSkutokZaCharitu, type RolaStranky, odProgramu, PROGRAM_NAZOV, PIN_MAX,
   nacitajStitCharity, ulozStitCharity, nacitajCharituNovu, ulozCharituNovu,
@@ -258,7 +259,7 @@ export function SpravaStranky(props: SpravaStrankyProps) {
   const { desktop } = useLayout();
   const ts = useTestStav();
   // KARTA 50 · §2: farnosť má vlastnú Správu (rovnaká kostra, položky farnosti) — bez štítu, programov, dokladov a dorovnania
-  if (typ === "farnost") return <SpravaFarnosti onBack={props.onBack} strankaId={props.strankaId ?? "farnost"}
+  if (typ === "farnost") return <SpravaFarnosti onBack={props.onBack} strankaId={props.strankaId ?? "farnost"} nazov={props.nazov}
     test={TESTOVACIA && FLAGS.dev_tier_switcher ? (onPozriet: () => void) => (
       <PrepinacPodania pas={!desktop} sektor="farnost" style={desktop ? { padding: "2px 2px 4px" } : { marginTop: 14 }}
         vzhlad={{ stranka: props.strankaId ?? "farnost", onPozriet }}
@@ -310,7 +311,9 @@ function SpravaStrankyTypu({ onBack, typ, onTyp: setTyp, strankaId = "svetlo", n
   const ts = useTestStav(); // OPRAVY 147: rola sa dá prepnúť v testovacom páse
   const rola: RolaStranky = TESTOVACIA ? ts.rola : "hlavny";
   // OPRAVY 122 (2): centrálna zbierka charity — zatiaľ z ukážkových bežiacich zbierok (nová charita ju nemá); doplní server
-  const centralnaZbierka = !nova ? PH_ZBIERKY.filter((z) => /^Centrálna zbierka/.test(z.t)).map((z) => ({ id: `${strankaId}-centralna`, nazov: z.t, org: nazov, cislo: "" }))[0] ?? null : null;
+  // Profil: Prázdny (testovacie) = Správa bez ukážok, ako nová stránka, ale bez úvodných krokov
+  const bezUkazok = nova || (TESTOVACIA && ts.prazdny);
+  const centralnaZbierka = !bezUkazok ? PH_ZBIERKY.filter((z) => /^Centrálna zbierka/.test(z.t)).map((z) => ({ id: `${strankaId}-centralna`, nazov: z.t, org: nazov, cislo: "" }))[0] ?? null : null;
   // OPRAVY 114: spustené a rozpísaná zbierka stránky (z účtu)
   useZmenyZbierok();
   const vlastne = zbierkyStrankyZPamate(strankaId);
@@ -318,11 +321,11 @@ function SpravaStrankyTypu({ onBack, typ, onTyp: setTyp, strankaId = "svetlo", n
   useEffect(() => { void nacitajZbierkyStranky(strankaId); void nacitajKonceptZbierky(strankaId); }, [strankaId]);
   // KARTA 40 · bod 10: ponuka „Pri akcii zbierame na" — centrálna + bežiace zbierky (spustené z účtu, ukážkové mimo novej charity)
   const zbierkyPreOznam: ZbierkaPriAkcii[] = !typPovoli("zbierky", typ) ? [] : [
-    ...(typPovoli("centralna", typ) && (centralnaZPamate(strankaId) || centralnaZbierka) ? [{ id: CENTRALNA_ID, nazov: `${nazov} — celá organizácia`, centralna: true, ciel: 0, vyzbierane: nova ? 0 : PH_ZBIERKY.find((z) => /^Centrálna zbierka/.test(z.t))?.v ?? 0, bg: PRUHY }] : []),
+    ...(typPovoli("centralna", typ) && (centralnaZPamate(strankaId) || centralnaZbierka) ? [{ id: CENTRALNA_ID, nazov: `${nazov} — celá organizácia`, centralna: true, ciel: 0, vyzbierane: bezUkazok ? 0 : PH_ZBIERKY.find((z) => /^Centrálna zbierka/.test(z.t))?.v ?? 0, bg: PRUHY }] : []),
     ...vlastne.map((z) => ({ id: z.id, nazov: z.nazov, ciel: z.cielTyp === "ciel" ? cielCislo(z) : 0, vyzbierane: 0, bg: fotoBg(z) })),
-    ...(nova ? [] : PH_ZBIERKY.filter((z) => !/^Centrálna zbierka/.test(z.t)).map((z) => { const r = naSpravu({ t: z.t, v: z.v, c: z.c, bg: z.bg, s: z.d, konc: false }); return { id: r.id, nazov: z.t, ciel: z.c, vyzbierane: z.v, bg: z.bg }; })),
+    ...(bezUkazok ? [] : PH_ZBIERKY.filter((z) => !/^Centrálna zbierka/.test(z.t)).map((z) => { const r = naSpravu({ t: z.t, v: z.v, c: z.c, bg: z.bg, s: z.d, konc: false }); return { id: r.id, nazov: z.t, ciel: z.c, vyzbierane: z.v, bg: z.bg }; })),
   ];
-  const beziacich = vlastne.length + (nova ? 0 : PH_ZBIERKY.filter((z) => !/^Centrálna zbierka/.test(z.t)).length); // limit je mimo centrálnej
+  const beziacich = vlastne.length + (bezUkazok ? 0 : PH_ZBIERKY.filter((z) => !/^Centrálna zbierka/.test(z.t)).length); // limit je mimo centrálnej
   const [limitOkno, setLimitOkno] = useState(false);
   const [spravZb, setSpravZb] = useState<ZbierkaNaSpravu | null>(null); // KARTA 38: ktorú zbierku spravujem
   const [verejny, setVerejny] = useState(false); // OPRAVY 107: tlačidlo Verejný profil = skutočný verejný profil
@@ -359,8 +362,8 @@ function SpravaStrankyTypu({ onBack, typ, onTyp: setTyp, strankaId = "svetlo", n
   const krok1 = !!profil;
   const glowUp = uvod && !krok1 && sub !== "profil";
   const glowZb = uvod && krok1 && sub !== "profil" && sub !== "g_zbierky" && sub !== "x:Nová zbierka" && sub !== "x:Správa zbierky";
-  const navZobr = menu.nav.map((n) => ({ ...n, n: nova ? undefined : n.n })); // nová charita: Ľudia bez čísla
-  const spolocne = { strankaId, entita: poz as string, tier, piny: pinyTypu, prepniPin, otvorPolozku, otvor, nova, stit, sada, menu, mobil: !desktop, tablet, zbal, prepniZbal, uvod, krok1, pozvana, vlastne, rozpisana, spravuj: (z: ZbierkaNaSpravu) => { setSpravZb(z); otvor("x:Správa zbierky"); } };
+  const navZobr = menu.nav.map((n) => ({ ...n, n: bezUkazok ? undefined : n.n })); // nová charita: Ľudia bez čísla
+  const spolocne = { strankaId, entita: poz as string, tier, piny: pinyTypu, prepniPin, otvorPolozku, otvor, nova: bezUkazok, stit, sada, menu, mobil: !desktop, tablet, zbal, prepniZbal, uvod, krok1, pozvana, vlastne, rozpisana, spravuj: (z: ZbierkaNaSpravu) => { setSpravZb(z); otvor("x:Správa zbierky"); } };
   // KARTA 42 · telefón: karta charity v jednom riadku + 6 dlaždíc správy hneď pod ňou (bez nadpisu, nezbaľuje sa)
   const hornaCast = telefon ? <>
     <KartaRiadok nazov={nazov} inicialy={inicialy} profil={profil} pct={uplnost.pct} stit={stit} sada={sada} glow={glowUp} onClick={() => otvor("profil")} />
@@ -449,6 +452,7 @@ function SpravaStrankyTypu({ onBack, typ, onTyp: setTyp, strankaId = "svetlo", n
           <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}><span style={{ fontSize: 15, fontWeight: 800, color: "var(--tInk)" }}>Verejný profil</span><span style={{ fontSize: 12, color: "var(--tInk2)" }}>ako ho vidia darcovia</span></span>
           <Ik d={IK.sipkaP} s={18} c="var(--tInk)" w={2.4} />
         </button>
+        <TlacidloNastavenia on={aktivnaSkupina === "nast"} onClick={() => otvor("nast")} />
         <button onClick={() => { hist.current = [...hist.current, sub]; setSub(null); }} style={{ flex: "none", height: 56, padding: "0 14px", borderRadius: 18, background: sub === null ? "var(--accSoft)" : "var(--card)", border: `1px solid ${sub === null ? "var(--cuBd)" : "var(--cardBd)"}`, cursor: "pointer", display: "flex", alignItems: "center", gap: 11, textAlign: "left" }}>
           <Ik d={IK.prehlad} />
           <span style={{ flex: 1, fontSize: 15, fontWeight: sub === null ? 800 : 700, color: sub === null ? "var(--acc)" : "var(--ink)" }}>Prehľad</span>
@@ -462,9 +466,6 @@ function SpravaStrankyTypu({ onBack, typ, onTyp: setTyp, strankaId = "svetlo", n
             </button>); })}
         </nav>
         {tier < 4 && sub !== "vsetko" && <KartaVsetko onClick={() => otvor("vsetko")} />}
-        <div style={{ flex: "none", marginTop: 8 }}>
-          <TlacidloNastavenia on={aktivnaSkupina === "nast"} onClick={() => otvor("nast")} />
-        </div>
       </aside>
       {/* OPRAVY 93: obsah max 1600 px, na širšom monitore vycentrovaný (panel ostáva vľavo) */}
       <div style={{ flex: 1, minWidth: 0 }}>
@@ -539,14 +540,6 @@ function Hlavicka({ titul, onSpat, otvor, mobil, glowNova, telefon, onPridat }: 
 // PANEL — karta charity, Nastavenia
 // ============================================================
 /** OPRAVY 113: logo v karte charity z uloženého profilu (tvar + pozadie), inak iniciály */
-function LogoKarty({ profil, inicialy, size }: { profil: ProfilStranky | null; inicialy: string; size: number }) {
-  const logo = profil?.logo;
-  const bg = !logo ? "var(--white)" : profil!.logoPozadie === "tmave" ? "#15171c" : profil!.logoPozadie === "priehladne" ? "transparent" : "#fff";
-  return (
-    <span style={{ width: size, height: size, borderRadius: profil?.tvar === "kruh" ? "50%" : Math.round(size / 4), overflow: "hidden", background: bg, border: "1px solid var(--cardBd)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: Math.round(size / 3.1), fontWeight: 800, color: "var(--gInk)", flex: "none" }}>
-      {logo ? <img src={logo} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} /> : inicialy}
-    </span>);
-}
 /** OPRAVY 109/113: Upraviť svieti len pred krokom 1 úvodu, inak sivé */
 const upravitTl = (glow: boolean): React.CSSProperties => glow
   ? { background: "var(--green)", color: "#fff", boxShadow: "0 0 0 3px var(--green), 0 0 18px rgba(78,125,55,.55)" }
@@ -629,14 +622,6 @@ function ObrVsetko({ typ, tier, otvor, stlpce }: { typ: TypStranky; tier: Tier; 
   </>);
 }
 
-function TlacidloNastavenia({ on, onClick }: { on: boolean; onClick: () => void }) {
-  return (
-    <button onClick={onClick} className={on ? undefined : "sc-hov"} style={{ width: "100%", minHeight: 56, padding: "6px 14px", border: `1px solid ${on ? "var(--cuBd)" : "var(--cardBd)"}`, borderRadius: 16, cursor: "pointer", display: "flex", alignItems: "center", gap: 12, textAlign: "left", background: on ? "var(--accSoft)" : "var(--card)", color: on ? "var(--acc)" : "var(--ink)" }}>
-      <Ik d={IK.nast} />
-      <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}><span style={{ fontSize: 15, fontWeight: on ? 800 : 600 }}>Nastavenia</span><span style={{ fontSize: 12, fontWeight: 500, color: "var(--ink3)" }}>aplikácie a účtu</span></span>
-    </button>);
-}
-
 /** mobil: menu ako 6 dlaždíc + Nastavenia */
 function MenuDlazdice({ vsetko, otvor, nav, tablet, zbal, prepniZbal, glowZb }: { vsetko: boolean; otvor: (s: Sub) => void; nav: Menu["nav"]; tablet: boolean; zbal: Zbalenie; prepniZbal: (id: string) => void; glowZb?: boolean }) {
   const dl: { k: Sub; t: string; d?: string; n?: number; teal?: boolean }[] = [
@@ -644,6 +629,7 @@ function MenuDlazdice({ vsetko, otvor, nav, tablet, zbal, prepniZbal, glowZb }: 
     ...nav.map((n) => ({ k: n.k as Sub, t: n.t, d: n.d, n: n.n })),
   ];
   return (<Sekcia id="menu" nazov="Správa stránky" suhrn={pocet(dl.length, ["položka", "položky", "položiek"])} zbal={zbal} prepni={prepniZbal}>
+    <TlacidloNastavenia on={false} onClick={() => otvor("nast")} />
     <div style={{ display: "grid", gridTemplateColumns: "repeat(3,minmax(0,1fr))", gap: 8 }}>
       {dl.map((x) => (
         <button key={String(x.k)} onClick={() => otvor(x.k)} style={{ position: "relative", boxShadow: glowZb && x.k === "g_zbierky" ? "0 0 0 3px var(--green), 0 0 18px rgba(78,125,55,.55)" : "none", minHeight: tablet ? 72 : 84, padding: "10px 6px", borderRadius: 16, background: x.teal ? "var(--tBg)" : "var(--card)", border: `1px solid ${x.teal ? "var(--tBd)" : "var(--cardBd)"}`, cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, fontSize: 13.5, fontWeight: 800, color: x.teal ? "var(--tInk)" : "var(--ink)", lineHeight: 1.25, textAlign: "center" }}>
@@ -652,7 +638,6 @@ function MenuDlazdice({ vsetko, otvor, nav, tablet, zbal, prepniZbal, glowZb }: 
         </button>))}
       {vsetko && <div style={{ gridColumn: "1 / -1", display: "flex" }}><KartaVsetko onClick={() => otvor("vsetko")} /></div>}{/* OPRAVY 119: posledná dlaždica, celá šírka */}
     </div>
-    <TlacidloNastavenia on={false} onClick={() => otvor("nast")} />
   </Sekcia>);
 }
 

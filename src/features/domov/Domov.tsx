@@ -181,7 +181,16 @@ type HomeProps = {
 
 // ===================== HOME / FEED =====================
 function Home({ wide, toast, otvorModul, pohlad, setPohlad, radius, setRadius, onDetail, onHladaj, onBoard, onAdd }: HomeProps) {
-  const { data: POLOZKY = [], isLoading, isError, refetch } = useGoodFeed();
+  const { data: POLOZKY = [], isLoading, isError, refetch, maDalsie, nacitajDalsie } = useGoodFeed();
+  // Zadanie 5 · 5.4: ďalšia stránka feedu (najviac 50) sa načíta, keď sa koniec zoznamu priblíži k obrazovke
+  const koniecFeedu = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    const el = koniecFeedu.current;
+    if (!el || !maDalsie || typeof IntersectionObserver === "undefined") return;
+    const o = new IntersectionObserver((e) => { if (e.some((x) => x.isIntersecting)) void nacitajDalsie(); }, { rootMargin: "600px" });
+    o.observe(el);
+    return () => o.disconnect();
+  }, [maDalsie, nacitajDalsie, POLOZKY.length]);
   // `radius` aj `pohlad` žijú v ModulDomov (prežijú návrat z detailu) — sem prichádzajú cez props
   const [vyberOkruh, setVyberOkruh] = useState(false);
   const nastavenia = useNastaveniaAppky(); // karta 24 · 2d: „podľa polohy" pri okruhu
@@ -236,6 +245,7 @@ function Home({ wide, toast, otvorModul, pohlad, setPohlad, radius, setRadius, o
       ziadosti={feed.filter((it) => it.typ !== "skutok").map(karta)}
     />
   );
+  const feedSDalsimi = <>{okolieFeed}{maDalsie && <div ref={koniecFeedu} aria-hidden="true" style={{ height: 1 }} />}</>;
 
   return (
     <div style={{ paddingBottom: SPACE.gutter }}>
@@ -255,7 +265,7 @@ function Home({ wide, toast, otvorModul, pohlad, setPohlad, radius, setRadius, o
           <div style={{ flex: 1, minWidth: 0 }}>
             {statRiadok}
             {topPruh}
-            {okolieFeed}
+            {feedSDalsimi}
           </div>
           <aside style={{ width: 408, flex: "0 0 408px", minWidth: 0 }}>
             <div style={{ fontSize: 11.5, letterSpacing: ".4px", color: C.textTer, fontWeight: 800, margin: `${SPACE.xxs}px 0 ${SPACE.sm}px`, paddingLeft: SPACE.xxs }}>MÔJ <DeedZnacka /></div>
@@ -272,7 +282,7 @@ function Home({ wide, toast, otvorModul, pohlad, setPohlad, radius, setRadius, o
             <>
               {statRiadok}
               {topPruh}
-              {okolieFeed}
+              {feedSDalsimi}
             </>
           )}
         </>

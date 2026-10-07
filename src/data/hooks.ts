@@ -3,10 +3,15 @@
 // Jednotný spôsob čítania dát: cache, isLoading, isError, refetch.
 // Moduly volajú tieto hooky namiesto priameho importu mock polí.
 // ============================================================
-import { useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { repo } from "./repo";
+import { FEED_STRANA } from "./good.supabase";
+import { USE_SUPABASE } from "@/lib/supabase";
+import { useLokalita } from "@/lib/lokalita";
+import { FEED_CFG } from "@/lib/feed";
+import type { GoodPolozka } from "@/types";
 import type { QrCiel } from "@/lib/qr";
 import type { PlatbaVstup, RecurringVstup } from "./platby.supabase";
 import type { ScanVstup, ChainVstup, QrSplitCreateVstup, QrSplitPayVstup } from "./qr.supabase";
@@ -42,7 +47,32 @@ export const qk = {
 };
 
 // ---- Good ----
-export const useGoodFeed = () => useQuery({ queryKey: qk.good.feed, queryFn: () => repo.good.feed() });
+/** Zadanie 5 · 5.4: feed Domov po stránkach (najviac 50), okruh a kurzor rieši server.
+ *  data = všetky doteraz načítané položky; nacitajDalsie() pripojí ďalšiu stránku. */
+export function useGoodFeed() {
+  const { lat, lng, okruh } = useLokalita();
+  const km = (FEED_CFG.radiusy[okruh] || FEED_CFG.radiusy.stvrt).km;
+  const key = [...qk.good.feed, lat, lng, km] as const;
+  const qc = useQueryClient();
+  const q = useQuery({ queryKey: key, queryFn: () => repo.good.feed({ lat, lng, km }) });
+  const kluc = JSON.stringify(key);
+  const [koniec, setKoniec] = useState<Record<string, boolean>>({});
+  const [nacitavam, setNacitavam] = useState(false);
+  const data = q.data;
+  const maDalsie = USE_SUPABASE && !!data && data.length > 0 && data.length % FEED_STRANA === 0 && !koniec[kluc];
+  const nacitajDalsie = useCallback(async () => {
+    const stare = (qc.getQueryData(key) as GoodPolozka[] | undefined) ?? [];
+    const posl = [...stare].reverse().find((x) => x.vytvorene);
+    if (!posl?.vytvorene || nacitavam) return;
+    setNacitavam(true);
+    try {
+      const dalsie = await repo.good.feed({ lat, lng, km, pred: { vytvorene: posl.vytvorene, id: String(posl.id) } });
+      qc.setQueryData(key, [...stare, ...dalsie.filter((d) => !stare.some((s) => s.id === d.id))]);
+      if (dalsie.length < FEED_STRANA) setKoniec((k) => ({ ...k, [kluc]: true }));
+    } finally { setNacitavam(false); }
+  }, [qc, kluc, lat, lng, km, nacitavam]); // eslint-disable-line react-hooks/exhaustive-deps
+  return { ...q, maDalsie, nacitajDalsie, nacitavamDalsie: nacitavam };
+}
 export const useGoodUdalosti = () => useQuery({ queryKey: qk.good.udalosti, queryFn: () => repo.good.udalosti() });
 
 // ---- Help ----

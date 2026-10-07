@@ -58,8 +58,9 @@ export const aktivitySupabase = {
     const { data, error } = await supabase
       .from("prispevok_feed") // 0037: vyzbierané z ledgera
       .select("*")
-      .not("data->>akt", "is", null)
-      .order("cislo", { ascending: false });
+      .eq("feed", "aktivity")   // 5.7: stĺpec, nie kľúč v jsonb
+      .order("cislo", { ascending: false })
+      .limit(50);                // 5.4: nikdy celá tabuľka
     if (error) throw error;
     return (data || []).map(naAktivitaItem);
   },

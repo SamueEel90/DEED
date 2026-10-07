@@ -3,6 +3,7 @@
 //   3 Kam poslať (4 stĺpce, vybraný flex 2,4, modul hneď vedľa v stĺpci 420 px s vlastným posunom) ·
 //   4 Naša cesta (prerušovaná zlatá krivka, zastávky = posledné skutky a ukončené zbierky + DNES) · 5 Ďalšie teraz (karty 2a) · 6 Videá z Iskier.
 // Mobil: rovnaké sekcie pod sebou; Kam poslať = 4 pásy (vybraný 220 px), modul pod nimi zmenšený (B, bod 151/3); cesta zvislá.
+import { useOtvorHlavnuZQr } from "./otvor";
 import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { eur, pct, tvar, jeFarnost, type Lokalita, type TestProfil, type TestSektor, type TestZbierka, type TestPraca } from "@/lib/testProfily";
 import { druhF, type Druh } from "@/lib/druhy";
@@ -31,6 +32,7 @@ export function PiratCharita({ profil, onDetail, onZaznam, onBack }: { profil: T
   const [lok] = useState<Lokalita>(domace);
   const [stitOtv, setStitOtv] = useState(false);
   const [sel, setSel] = useState(-1);
+  useOtvorHlavnuZQr(profil.k, profil.typ === "farnost", () => setSel(0)); // OPRAVY 162
   const d = useCharitaData(profil, lok, domace);
   const stit = profil.stit.toLowerCase();
   const farnost = jeFarnost(profil);
@@ -102,7 +104,7 @@ export function PiratCharita({ profil, onDetail, onZaznam, onBack }: { profil: T
   const sumaS = (s: TestSektor) => s.dlazdicaText ?? (s.mesiac != null ? `${eur(s.mesiac)} tento mesiac` : eur(s.vyzbierane));
   const modul = sel >= 0 && sektory[sel] && (
     <ModulProfilu key={sektory[sel].id} profil={profil} sektor={sektory[sel]} poradie={sel} mestoV="" onZbal={() => setSel(-1)} dorovnanie={!farnost}
-      typ={sektory[sel].typ ?? (farnost && !sel ? "VŠEOBECNÁ PODPORA" : undefined)} typ2={sektory[sel].typ2} info={sektory[sel].info} />);
+      typ={sektory[sel].typ} typ2={sektory[sel].typ2} info={sektory[sel].info} hlavna={farnost && !sel} />);
   const kamPoslat = pc ? (
     <section style={{ height: 820, display: "flex", flexDirection: "column", padding: "48px 48px 40px", gap: 20, borderTop: "1px solid var(--cardBd)", boxSizing: "border-box" }}>
       <div style={{ display: "flex", alignItems: "baseline", gap: 16 }}><b style={{ fontSize: 52, letterSpacing: "-.035em" }}>Kam poslať</b><span style={{ fontSize: 17, color: "var(--ink3)" }}>{farnost ? "farnosť alebo jedna zbierka · aj pravidelne" : "celá činnosť alebo jedna téma · aj pravidelne"}</span></div>

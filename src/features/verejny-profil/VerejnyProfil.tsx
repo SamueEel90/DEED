@@ -9,7 +9,9 @@ import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 
 import { createPortal } from "react-dom";
 import { useLayout } from "@/components/context";
 import { ZbierkaModul } from "@/features/zbierka/ZbierkaModul";
-import { najdiTestProfil, type TestZbierka } from "@/lib/testProfily";
+import { najdiTestProfil, type TestProfil, type TestZbierka } from "@/lib/testProfily";
+import { centralnaZPamate, nacitajCentralnuZbierku, nazovHlavnej, useZmenyCentralnej } from "@/lib/centralnaZbierka";
+import { cistyText } from "@/lib/richtext";
 import { otvorVerejnyProfil, useVerejnyProfilOtvoreny, verejnyProfilKluc, zavriVerejnyProfil, vrstvaProfiluPripoj } from "./otvor";
 import { VrstvaProfilu, naZbierkaData } from "./casti";
 import { useVzhlad, maVybranyVzhlad, type Vzhlad } from "@/lib/vzhladStranky";
@@ -27,9 +29,25 @@ import { otvorIskry } from "@/features/iskry/otvor";
 import { iskryVsetky } from "@/lib/iskry";
 import { pribehZbierky, orgPribehu, useZmenyPribehov } from "@/lib/pribehZbierky";
 import { PribehZbierky } from "./PribehZbierky";
+import { SektorDarcuKontext } from "@/lib/darcovia";
 
 /** vložiteľný verejný profil podľa kľúča stránky (svetlo · pekaren · tvorca) */
-export function VerejnyProfilView({ kluc, onBack }: { kluc: string; onBack: () => void }) {
+/** OPRAVY 159: profil farnosti = sektor Viera (darca bez mena = „Bohu známy darca") */
+export function VerejnyProfilView(p: { kluc: string; onBack: () => void }) {
+  const k = p.kluc.startsWith("stream:") ? "tvorca" : p.kluc.startsWith("pribeh:") ? orgPribehu(p.kluc.slice(7)) : p.kluc;
+  return <SektorDarcuKontext.Provider value={najdiTestProfil(k)?.typ === "farnost" ? "viera" : "ine"}><VerejnyProfilObsah {...p} /></SektorDarcuKontext.Provider>;
+}
+
+/** OPRAVY 160/2, 6: farnosť — keď hlavná zbierka beží, na profile je jej názov, text farára a galéria zo Správy */
+function sHlavnouZUctu(p: TestProfil): TestProfil {
+  const c = p.typ === "farnost" ? centralnaZPamate(p.k) : null;
+  if (!c?.spustena) return p;
+  const galeria = c.media.map((m) => ({ typ: m.typ, src: m.src, popis: m.popis }));
+  const foto = c.media.find((m) => m.typ === "foto")?.src;
+  return { ...p, centralna: { ...p.centralna, nazov: nazovHlavnej(c), popis: cistyText(c.popis) || undefined, ...(galeria.length ? { galeria, foto: foto ?? p.centralna.foto } : {}) } };
+}
+
+function VerejnyProfilObsah({ kluc, onBack }: { kluc: string; onBack: () => void }) {
   const zStreamu = kluc.startsWith("stream:") ? kluc.slice(7) : null;
   // KARTA 55 · E: „pribeh:{zbierka}" (odkaz z feedu) → stránka Príbeh; „{Organizácia} ›" otvorí jej profil
   const zPribehu = kluc.startsWith("pribeh:") ? kluc.slice(7) : null;
@@ -62,8 +80,11 @@ export function VerejnyProfilView({ kluc, onBack }: { kluc: string; onBack: () =
   const vzhlad = useVzhlad(profil0?.k ?? kluc, typP !== "farnost" && tierStranky === 0); // farnosť: jeden platený program, výber má vždy
   const [prepis, setPrepis] = useState<Vzhlad | null>(null);
   const podanie = prepis ?? vzhlad;
+  // OPRAVY 160: spustená hlavná zbierka farnosti z účtu (názov, text farára, fotky) prepíše testovaciu
+  useZmenyCentralnej();
+  useEffect(() => { if (typP === "farnost" && profil0) void nacitajCentralnuZbierku(profil0.k); }, [typP, profil0]);
   if (!profil0) return null;
-  const profil = ts.prazdny ? vyprazdni(profil0) : profil0;
+  const profil = sHlavnouZUctu(ts.prazdny ? vyprazdni(profil0) : profil0);
   if (zPribehu) {
     const zb = profil0.zbierky.find((x) => x.id === zPribehu), pr = pribehZbierky(zPribehu);
     if (zb && pr) return <PribehZbierky profil={profil0} z={zb} p={pr} onBack={onBack} onOrg={() => otvorVerejnyProfil(profil0.k)} />;
@@ -101,7 +122,7 @@ export function VerejnyProfilView({ kluc, onBack }: { kluc: string; onBack: () =
   ) : detail ? (
     <div className="sc-tokeny" data-stit={profil.stit.toLowerCase()} style={{ background: "var(--bg)", minHeight: "100%" }}>
       <div style={{ maxWidth: 1240, margin: "0 auto", padding: 14 }}>
-        <ZbierkaModul zbierka={naZbierkaData(detail, profil)} zoStrankyOrg onBack={() => setDetail(null)} spatNazov="Späť na profil" />
+        <ZbierkaModul zbierka={naZbierkaData(detail, profil)} zoStrankyOrg onBack={() => setDetail(null)} spatNazov="Späť na stránku" />
       </div>
     </div>
   ) : zaznam ? (

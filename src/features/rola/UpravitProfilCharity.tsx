@@ -12,7 +12,9 @@ import { Titulka, RAMY, pomerFotky } from "./titulka";
 import { OrezFotky } from "@/components/orezfotky";
 import { toast } from "@/components/toast";
 import { spracujLogo, spracujFotku, rozmeryFotky, LOGO_CFG, COVER_CFG, type LogoRezim, type LogoPozadie } from "@/lib/obrazok";
-import { nacitajProfil, profilZPamate, ulozKoncept, zverejniProfil, type ProfilStranky, type VyrezFotky } from "@/lib/profilStranky";
+import { cistyNazov, nacitajProfil, profilZPamate, ulozKoncept, zverejniProfil, type ProfilStranky, type VyrezFotky, type RamFotky } from "@/lib/profilStranky";
+import { useVzhlad } from "@/lib/vzhladStranky";
+import { NahladFarnosti, nahladPopis } from "./NahladFarnosti";
 import { SIDLO_REGISTRA, ICO_REGISTRA } from "./NastaveniaCharity";
 import { nacitajKontakt, SIETE, MAX_TEL, MAX_EMAIL, chybaSiete, chybaWebu, chybaEmailu, chybaTel, type Kontakt } from "./kontakt";
 import { type Pozicia, type Tier, type TvarLoga } from "./stav";
@@ -73,8 +75,10 @@ const Pridat = ({ onClick, children }: { onClick: () => void; children: ReactNod
 const cas = (iso: string) => new Date(iso).toLocaleTimeString("sk-SK", { hour: "2-digit", minute: "2-digit" });
 
 // ============================================================
-export function UpravitProfilCharity({ strankaId, pozicia, tier, nazov, inicialy, mobil, tablet, stit, onZrusit, onHotovo, onUlozene, onZmena, vzhlad }: {
+export function UpravitProfilCharity({ strankaId, pozicia, tier, nazov, inicialy, mobil, tablet, stit, onZrusit, onHotovo, onUlozene, onZmena, vzhlad, farnost }: {
   /** KARTA 50: blok Vzhľad stránky — prvý pod nadpisom */ vzhlad?: ReactNode;
+  /** KARTA 56D §4: farnosť — názov sa dá zmeniť, Mám / Nemám logo, titulka bez štítu, Náhľad = vybraný vzhľad len s vyplneným */
+  farnost?: boolean;
   strankaId: string; pozicia: Pozicia; tier: Tier; nazov: string; inicialy: string; mobil: boolean; tablet: boolean;
   stit: string;
   onZrusit: () => void; onHotovo: () => void; onUlozene: (p: ProfilStranky) => void;
@@ -101,6 +105,8 @@ export function UpravitProfilCharity({ strankaId, pozicia, tier, nazov, inicialy
   }, [p, strankaId, nacitane]);
 
   const [pohlad, setPohlad] = useState<"uprava" | "nahlad" | "ulozene">("uprava");
+  const vz = useVzhlad(strankaId, false);
+  const menoF = cistyNazov(p.meno ?? nazov) || "Vaša farnosť";
   const [riadky, setRiadky] = useState(0);
   const [zn1, setZn1] = useState(0);
   const [zn2, setZn2] = useState(0);
@@ -154,6 +160,19 @@ export function UpravitProfilCharity({ strankaId, pozicia, tier, nazov, inicialy
     return `Fotka má ${rozmer.w} × ${rozmer.h} px${rozmazana ? " — bude rozmazaná" : ""}${tvar ? `${rozmazana ? " a" : " —"} nemá tvar 16 : 9, časť sa oreže` : ""}. Najlepšia je fotka na šírku, aspoň 1600 × 900 px, bez textu.`;
   })();
 
+  // KARTA 56D §4: farnosť — náhľad vybraného vzhľadu len s tým, čo farár vyplnil
+  if (farnost && pohlad !== "uprava") return (
+    <NahladFarnosti profil={p} meno={menoF} vzhlad={vz} mobil={mobil && !tablet} hore={pohlad === "nahlad"
+      ? <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+          <button type="button" onClick={() => setPohlad("uprava")} style={{ ...tl("obrys", 44), border: "1px solid var(--cardBd)", background: "var(--card)", color: "var(--ink)" }}>‹ Späť na úpravu</button>
+          <span style={{ fontSize: 14, color: "var(--ink3)" }}>{nahladPopis(vz)}</span>
+        </div>
+      : <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", padding: "10px 14px", borderRadius: 14, background: "var(--gSoft)", border: "1.5px solid var(--gBd)" }}>
+          <b style={{ flex: 1, minWidth: 0, fontSize: 14.5, color: "var(--gInk)" }}>Profil je uložený. Takto ho vidia ľudia.</b>
+          <button type="button" onClick={() => setPohlad("uprava")} style={{ ...tl("obrys", 44), border: "none", color: "var(--gInk)", padding: "0 10px" }}>Upraviť</button>
+          <button type="button" onClick={onHotovo} style={tl("zelene", 44)}>Hotovo · späť do Správy</button>
+        </div>} />);
+
   // ---------- NÁHĽAD / PROFIL ULOŽENÝ = skutočný verejný profil s lištou (OPRAVY 107) ----------
   if (pohlad !== "uprava") return (
     <VerejnyProfilOkno pozicia={pozicia} tier={tier} strankaId={strankaId} stit={stit} mobil={mobil}
@@ -187,8 +206,14 @@ export function UpravitProfilCharity({ strankaId, pozicia, tier, nazov, inicialy
 
   const kartaOnas = (
     <section style={karta} aria-label="Názov a O nás">
-      {nadpis("Názov", "z registrácie, overený cez IČO", 14)}
-      <div style={zamknute}><Zamok />{nazov} · IČO {ICO_REGISTRA}</div>
+      {farnost ? <>
+        {nadpis("Názov stránky", "predvyplnený z registrácie, môžete ho zmeniť", 14)}
+        <input style={pole} value={p.meno ?? nazov} maxLength={80} placeholder="Napríklad: Farnosť sv. Martina" aria-label="Názov stránky" onChange={(e) => zmen({ meno: e.target.value })} />
+        <div style={zamknute}><Zamok />IČO {ICO_REGISTRA} · z registrácie, nemení sa</div>
+      </> : <>
+        {nadpis("Názov", "z registrácie, overený cez IČO", 14)}
+        <div style={zamknute}><Zamok />{nazov} · IČO {ICO_REGISTRA}</div>
+      </>}
       <span style={{ marginTop: 6 }}>{nadpis("O nás · hlavný text")}</span>
       <span style={{ fontSize: 13, color: "var(--ink2)", lineHeight: 1.45, marginTop: -4 }}>Toto ľudia uvidia hneď v hlavičke profilu. Kto ste a komu pomáhate, tak, aby to zaujalo. Najviac 12 riadkov.</span>
       <RichTextInput vzhlad="sprava" value={p.onas} onChange={(h) => zmen({ onas: h })} nastroje={NASTROJE} minH={130} chybaRam={dlhy}
@@ -253,9 +278,45 @@ export function UpravitProfilCharity({ strankaId, pozicia, tier, nazov, inicialy
       })}
     </section>);
 
-  const kartaLogo = (
+  // KARTA 56D §4: farnosť — najprv Mám logo / Nemám logo; Nemám = iniciály (najviac 3), Kruh / Štvorec, rámik
+  const inic = (p.inicialy ?? "").toUpperCase();
+  const ramInic = RAMY.find((r) => r.k === (p.ramLoga ?? "bez"));
+  const znakInic = (px: number) => (
+    <span style={{ width: px, height: px, borderRadius: radius, boxSizing: "border-box", border: "2px solid transparent", background: `linear-gradient(#fff,#fff) padding-box, ${p.ramLoga && p.ramLoga !== "bez" ? ramInic?.g : "var(--cardBd)"} border-box`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: Math.round(px * 0.34), fontWeight: 800, color: "#14110B" }}>{inic}</span>);
+  const logoVolba = farnost && (<>
+    <span style={{ ...poznamka, marginTop: -4 }}>Máte logo farnosti? Ak nie, vytvoríme znak z iniciál.</span>
+    <div role="radiogroup" aria-label="Logo" style={{ display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 10 }}>
+      {([[false, "Mám logo", "nahrám obrázok"], [true, "Nemám logo", "iniciály v kruhu alebo štvorci"]] as [boolean, string, string][]).map(([v, t, s]) => { const on = !!p.bezLoga === v; return (
+        <button key={t} type="button" role="radio" aria-checked={on} onClick={() => zmen({ bezLoga: v })} style={{ minHeight: 64, padding: "10px 14px", borderRadius: 14, cursor: "pointer", fontFamily: "inherit", textAlign: "left", display: "flex", alignItems: "center", gap: 10, background: on ? "var(--gSoft)" : "var(--field)", border: `1.5px solid ${on ? "var(--green)" : "var(--cardBd)"}`, color: on ? "var(--gInk)" : "var(--ink)" }}>
+          <span aria-hidden="true" style={{ flex: "none", width: 20, height: 20, borderRadius: "50%", border: `2px solid ${on ? "var(--green)" : "var(--ink4)"}`, background: on ? "var(--green)" : "transparent", boxShadow: on ? "inset 0 0 0 3px var(--gSoft)" : "none" }} />
+          <span style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}><b style={{ fontSize: 15 }}>{t}</b><span style={{ fontSize: 12.5, color: "var(--ink3)" }}>{s}</span></span>
+        </button>); })}
+    </div>
+  </>);
+  const kartaInic = (
     <section style={karta} aria-label="Logo">
       {nadpis("Logo")}
+      {logoVolba}
+      {nadpis("Iniciály", "najviac 3 písmená", 14)}
+      <input style={{ ...pole, width: 140, textTransform: "uppercase", fontWeight: 800, letterSpacing: ".08em" }} value={inic} maxLength={3} placeholder="FSM" aria-label="Iniciály"
+        onChange={(e) => zmen({ inicialy: e.target.value.replace(/[^A-Za-zÀ-ž]/g, "").slice(0, 3) })} />
+      <Volba moznosti={[["kruh", "Kruh"], ["stvorec", "Štvorec"]] as [TvarLoga, string][]} value={p.tvar} onChange={(t) => zmen({ tvar: t })} />
+      {nadpis("Rámik", undefined, 14)}
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        {RAMY.map((r) => { const on = r.k === (p.ramLoga ?? "bez"); return (
+          <button key={r.k} type="button" aria-pressed={on} onClick={() => zmen({ ramLoga: r.k as RamFotky })} style={{ height: 44, padding: "0 14px 0 8px", borderRadius: 13, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 8, fontSize: 13.5, fontWeight: 800, background: on ? "var(--gSoft)" : "var(--btn)", border: `1.5px solid ${on ? "var(--gBd)" : "transparent"}`, color: on ? "var(--gInk)" : "var(--ink)" }}>
+            <span aria-hidden="true" style={{ width: 28, height: 28, borderRadius: 8, background: r.g, boxShadow: "inset 0 0 0 1px rgba(0,0,0,.12)" }} />{r.t}
+          </button>); })}
+      </div>
+      <div style={{ display: "flex", alignItems: "flex-end", gap: 18, padding: 14, borderRadius: 14, background: "var(--field)", border: "1px solid var(--cardBd)", flexWrap: "wrap" }}>
+        {([[68, "Profil"], [40, "Feed"], [28, "Adresár"]] as [number, string][]).map(([px, t]) => (
+          <span key={t} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>{znakInic(px)}<span style={{ fontSize: 11.5, color: "var(--ink3)" }}>{t}</span></span>))}
+      </div>
+    </section>);
+  const kartaLogo = farnost && p.bezLoga ? kartaInic : (
+    <section style={karta} aria-label="Logo">
+      {nadpis("Logo")}
+      {logoVolba}
       <Volba moznosti={[["kruh", "Kruh"], ["stvorec", "Štvorec"]] as [TvarLoga, string][]} value={p.tvar} onChange={(t) => zmen({ tvar: t })} />
       <Volba moznosti={[["cele", "Celé logo"], ["vyplnit", "Vyplniť (orez)"]] as [LogoRezim, string][]} value={p.logoRezim} onChange={zmenRezim} />
       {p.logoRezim === "cele" && <Volba moznosti={[["biele", "Biele pozadie"], ["tmave", "Tmavé"], ["priehladne", "Priehľadné"]] as [LogoPozadie, string][]} value={p.logoPozadie} onChange={zmenPozadie} />}
@@ -285,12 +346,12 @@ export function UpravitProfilCharity({ strankaId, pozicia, tier, nazov, inicialy
     <section style={karta} aria-label="Titulná fotka">
       {nadpis("Titulná fotka", "na šírku, od 16 : 9 po 3 : 1")}
       {orez && p.cover
-        ? <OrezFotky sprava zony src={p.cover.src} pomer={pomerFotky(p.cover.w, p.cover.h)} pozadie={p.cover.priemer}
+        ? <OrezFotky sprava zony bezStitu={farnost} src={p.cover.src} pomer={pomerFotky(p.cover.w, p.cover.h)} pozadie={p.cover.priemer}
             vyrez={{ ...p.cover.vyrez, rezim: "vyrez" }} onZrusit={() => setOrez(false)} onVyrez={(v) => { nastavVyrez(v); setOrez(false); }} />
         : <div onClick={() => !p.cover && coverRef.current?.click()} onDragOver={(e) => e.preventDefault()}
             onDrop={(e) => { e.preventDefault(); const f = e.dataTransfer.files?.[0]; if (f) void vyberCover(f); }}
             role={p.cover ? undefined : "button"} aria-label={p.cover ? undefined : "Nahrať titulnú fotku"} style={{ cursor: p.cover ? "default" : "pointer" }}>
-            <Titulka cover={p.cover} ram={p.ram} zony prazdne={
+            <Titulka cover={p.cover} ram={p.ram} zony bezStitu={farnost} prazdne={
               <span style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8, fontSize: 13.5, fontWeight: 600, color: "var(--ink3)", textAlign: "center", padding: 16 }}>
                 <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2" /><circle cx="9" cy="10" r="2" /><path d="M21 16l-5-5-9 9" /></svg>
                 Pretiahni sem titulnú fotku (16 : 9)
@@ -316,7 +377,7 @@ export function UpravitProfilCharity({ strankaId, pozicia, tier, nazov, inicialy
             </button>); })}
         </div>
       </div>
-      <span style={poznamka}>Rám sa prispôsobí fotke na šírku (od 16 : 9 po 3 : 1), takže široká fotka nezaberie zbytočne miesto na mobile. Celá fotka = zmestí sa celá. Prispôsobiť rámu = vyplní celý rám. Upraviť výrez = posun myšou, zmenšenie a zväčšenie kolieskom. Takto nastavená sa ukáže rovnako na PC, tablete aj mobile. Aspoň 1600 × 900 px. Do označených miest (logo, štít) nedávajte nič dôležité. Fotka bez textu vyzerá na mobile najlepšie.</span>
+      <span style={poznamka}>Rám sa prispôsobí fotke na šírku (od 16 : 9 po 3 : 1), takže široká fotka nezaberie zbytočne miesto na mobile. Celá fotka = zmestí sa celá. Prispôsobiť rámu = vyplní celý rám. Upraviť výrez = posun myšou, zmenšenie a zväčšenie kolieskom. Takto nastavená sa ukáže rovnako na PC, tablete aj mobile. Aspoň 1600 × 900 px. Do označených miest ({farnost ? "logo" : "logo, štít"}) nedávajte nič dôležité. Fotka bez textu vyzerá na mobile najlepšie.</span>
     </section>);
 
   // ---------- rozloženie (bod 3) ----------

@@ -2,7 +2,7 @@ import { Emo } from "@/components/icons";
 import { useState, useEffect, memo } from "react";
 import { SIRKA, SPACE, RADIUS } from "@/theme";
 import { Foto, MiniFotky, ModulHlavicka, PlatobnyModul, PlatbaModal, SplitQrSheet, QrModal, HladanieModal, toast, useGaleria, useLayout, useScrollPamat, useStrankaAkcie, FeedGrid, StatRiadok, FiltreStat, OkruhVyber, MoniBar, ProgresBox, BackHeader, obalSiroky, SegTabs, tint, Lupa, Zdielanie, IkonaVlajka, IkonaFoto, IkonaInstitucia, Srdce, EmptyState, ScreenSwitch, SwipeBack, ZoznamDarcov, FormatovanyText, Input } from "@/shared";
-import { pridajDar, type VolbaDaru } from "@/lib/darcovia";
+import { pridajDar, SektorDarcuKontext, type VolbaDaru } from "@/lib/darcovia";
 import { usePouzivatel } from "@/lib/pouzivatel";
 import { cistyText } from "@/lib/richtext";
 import { MEDIA_AR } from "@/lib/cardSize";
@@ -50,7 +50,12 @@ import {
 type Screen = "domov" | "profil" | "kalendar" | "detail";
 type Sheet = "dir" | "add" | null;
 
-export default function ModulViera({ wide }: { wide?: boolean; otvorModul?: (m: string) => void }) {
+/** OPRAVY 159: celý modul Viera = sektor Viera (darca bez mena = „Bohu známy darca") */
+export default function ModulViera(p: { wide?: boolean; otvorModul?: (m: string) => void }) {
+  return <SektorDarcuKontext.Provider value="viera"><ModulVieraObsah {...p} /></SektorDarcuKontext.Provider>;
+}
+
+function ModulVieraObsah({ wide }: { wide?: boolean; otvorModul?: (m: string) => void }) {
   const { desktop } = useLayout();
   const [screen, setScreen] = useState<Screen>("domov");
   const [sheet, setSheet] = useState<Sheet>(null);

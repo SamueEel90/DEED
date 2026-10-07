@@ -2,6 +2,7 @@
 // Vzhľad a časovanie 1 : 1 z prototypu. Farby = premenné z farby.css. Potrebuje animacie.ts + animacie.css.
 import { useEffect, useRef, useState } from 'react';
 import { letSvetielko, roj, pocitadlo, vibruj } from './animacie';
+import { useSektorDarcu, menoBezMena } from '@/lib/darcovia';
 
 /* ───────── MIKRODAR (DEED / EURC dlaždica) — klik a hneď odíde ─────────
    Použitie:
@@ -53,6 +54,7 @@ type PodProps = { meno?: string; registrovany: boolean; eur: number; sumaTxt: st
   karmaPridane?: number; karmaSpolu?: number; karmaDoDalsej?: number; karmaPostup?: number;
   kodPripisania?: string; onRegistrovat?: () => void; onHotovo: () => void; };
 export function PodakovaniePoDare(p: PodProps) {
+  const sektor = useSektorDarcu();
   const root = useRef<HTMLDivElement>(null), maskot = useRef<HTMLDivElement>(null), koniec = useRef<HTMLDivElement>(null);
   const [krok, setKrok] = useState(0), [karma, setKarma] = useState(p.karmaSpolu ? p.karmaSpolu - (p.karmaPridane || 0) : 0);
   useEffect(() => {
@@ -100,7 +102,7 @@ export function PodakovaniePoDare(p: PodProps) {
       {!p.registrovany && (
         <div style={{ padding: 16, borderRadius: 16, background: 'var(--gCard)', border: '1px solid var(--gBd)', display: 'flex', flexDirection: 'column', gap: 6, ...fade(krok >= 2) }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}><span style={{ width: 26, height: 26, borderRadius: '50%', background: 'radial-gradient(circle,#FFE7A3 0%,#F6B73C 38%,rgba(246,183,60,0) 72%)' }} /><span style={{ fontSize: 15.5, fontWeight: 800 }}>Tvoj dar čaká na meno</span></div>
-          <div style={{ fontSize: 13.5, lineHeight: 1.45, color: 'var(--ink2)' }}>Za tento dar by si mal <b style={{ color: 'var(--gInk)' }}>+{Math.max(1, Math.round(p.eur))} karmy</b> a v zozname by stálo tvoje meno. Zatiaľ je tam Anonymný darca.</div>
+          <div style={{ fontSize: 13.5, lineHeight: 1.45, color: 'var(--ink2)' }}>Za tento dar by si mal <b style={{ color: 'var(--gInk)' }}>+{Math.max(1, Math.round(p.eur))} karmy</b> a v zozname by stálo tvoje meno. Zatiaľ je tam {menoBezMena(sektor)}.</div>
           <button onClick={p.onRegistrovat} style={{ alignSelf: 'flex-start', border: 'none', background: 'none', padding: 0, cursor: 'pointer', fontSize: 14, fontWeight: 800, color: 'var(--gInk)' }}>Zaregistrovať sa a pripísať dar ›</button>
           {p.kodPripisania && <div style={{ fontSize: 12.5, color: 'var(--ink2)' }}>Neskôr ho pripíšeš kódom z potvrdenia o dare: <b style={{ fontVariantNumeric: 'tabular-nums' }}>{p.kodPripisania}</b></div>}
         </div>

@@ -78,3 +78,46 @@ export async function nahrajSubory(files: File[], priecinok = "doklady"): Promis
   }
   return out;
 }
+
+// ============================================================
+// Zadanie 5 · 5.5 — fotky a plagáty nikdy ako data URL v jsonb (profil_stranky, oznam_charity,
+// zbierka.nastavenie). Pred zápisom sa každé „data:…;base64," v objekte nahrá do Storage
+// a nahradí verejnou URL. DB to stráži triggrom (0064) — data URL by zápis odmietla.
+// Rovnaký obrázok sa nahrá raz (koncepty sa ukladajú každých 600 ms).
+// ============================================================
+const nahrane = new Map<string, string>();
+
+async function nahrajJeden(dataUrl: string, uid: string, priecinok: string): Promise<string> {
+  const hotove = nahrane.get(dataUrl);
+  if (hotove) return hotove;
+  const blob = dataUrlNaBlob(dataUrl);
+  if (!blob) throw new Error("Fotku sa nepodarilo spracovať.");
+  let nazov: string;
+  try { nazov = `${uid}/${priecinok}/${crypto.randomUUID()}.${pripona(blob.type)}`; }
+  catch { nazov = `${uid}/${priecinok}/${Date.now()}-${nahrane.size}.${pripona(blob.type)}`; }
+  const { error } = await supabase!.storage.from(BUCKET).upload(nazov, blob, { contentType: blob.type, upsert: false });
+  if (error) throw new Error("Fotku sa nepodarilo nahrať. Skúste to znova.");
+  const url = supabase!.storage.from(BUCKET).getPublicUrl(nazov).data.publicUrl;
+  nahrane.set(dataUrl, url);
+  return url;
+}
+
+/** Vráti kópiu objektu, v ktorej sú všetky data URL nahradené URL zo Storage. Bez DB = nezmenené (ukážka). */
+export async function bezDataUrl<T>(obj: T, priecinok: string): Promise<T> {
+  if (!supabase || obj == null) return obj;
+  const text = JSON.stringify(obj);
+  if (!text.includes(";base64,")) return obj;
+  const uid = (await supabase.auth.getSession()).data.session?.user?.id;
+  if (!uid) throw new Error("Fotky sa dajú uložiť len po prihlásení.");
+  const prejdi = async (v: unknown): Promise<unknown> => {
+    if (typeof v === "string") return /^data:[^;]+;base64,/.test(v) ? nahrajJeden(v, uid, priecinok) : v;
+    if (Array.isArray(v)) return Promise.all(v.map(prejdi));
+    if (v && typeof v === "object") {
+      const out: Record<string, unknown> = {};
+      for (const [k, x] of Object.entries(v as Record<string, unknown>)) out[k] = await prejdi(x);
+      return out;
+    }
+    return v;
+  };
+  return (await prejdi(obj)) as T;
+}

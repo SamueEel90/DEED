@@ -14,11 +14,11 @@ import { DeedQr, stiahniDeedQr } from "@/components/deedqr";
 import { toast } from "@/components/toast";
 import { Svetlusik } from "@/features/zbierka/Svetlusik";
 import { vibruj } from "@/features/zbierka/animacie";
-import { ohodnot, ScoreChyba, type ScoreOdpoved } from "@/features/skore/api";
+import { ohodnot, ScoreChyba, jeVypadokAi, type ScoreOdpoved } from "@/features/skore/api";
+import { useDohodnotenie, karmaZoSkore, MAX_FOTIEK_AI, KAT, DET_CAKA } from "./dohodnotenie";
 import { spracujFotku } from "@/lib/obrazok";
 import { useLokalita } from "@/lib/lokalita";
 import { usePouzivatel } from "@/lib/pouzivatel";
-import { useSession } from "@/lib/session";
 import { cisloZbierky, najdiZbierku } from "@/lib/zbierky";
 import { verejneBeziace } from "@/lib/retaz";
 import { profilZPamate, nacitajProfil, uvodZPamate, nacitajUvod, potvrdUvod } from "@/lib/profilStranky";
@@ -37,9 +37,6 @@ import { usePridatSkutok, zavriPridatSkutok, type PridatParams } from "./otvor";
 import { zastavDiktovanie } from "@/lib/diktovanie";
 import "@/styles/platba.css";
 
-/** karma za bod skóre z AI (placeholder — presné pravidlo určí kalibrácia) */
-const KARMA_ZA_BOD = 10;
-const MAX_FOTIEK_AI = 3; // backend berie max 3 obrázky
 
 // ---------- drobné UI ----------
 const P = {
@@ -118,7 +115,6 @@ const OBL_SLOVA: [Oblast, RegExp][] = [
   ["Zdravie", /krv|plazm|lekár|zdrav|nemocn|dialýz/i], ["Viera", /kostol|fara|omš|modlit/i], ["Komunita", /brigád|komunit|ihrisk|lavič/i],
 ];
 const navrhniOblast = (t: string): Oblast => OBL_SLOVA.find(([, r]) => r.test(t))?.[0] ?? "Pomoc";
-const KAT: Partial<Record<Oblast, GoodPolozka["kat"]>> = { Príroda: "Priroda", Zdravie: "Zdravie", Učenie: "Ucenie", Pomoc: "Pomoc" };
 const teraz = () => Date.now();
 
 // ---------- zbierky na výber ----------
@@ -134,10 +130,12 @@ const ORG_NASTROJE = ["bold", "italic", "insertUnorderedList", "diktovat"];
 // Pravidlá obsahu, „Veríme vám“, súhlas a „Pred zverejnením“ — jeden zdroj so Zbierkou: @/lib/pravidlaObsahu
 const dlzkaVidea = (src: string) => new Promise<number>((ok) => { const v = document.createElement("video"); v.preload = "metadata"; v.onloadedmetadata = () => ok(v.duration || 0); v.onerror = () => ok(-1); v.src = src; });
 const fmtSek = (x: number) => `${Math.floor(x / 60)}:${String(Math.round(x % 60)).padStart(2, "0")}`;
-type Vysledok = { verdikt: "ok"; odp: ScoreOdpoved } | { verdikt: "zamietnut" } | null;
+/** caka = AI nedostupná — skutok sa uloží a ohodnotí dodatočne (dohodnotenie.ts) */
+type Vysledok = { verdikt: "ok"; odp: ScoreOdpoved } | { verdikt: "zamietnut" } | { verdikt: "caka" } | null;
 
 // =====================================================================
 export function PridatSkutokHost() {
+  useDohodnotenie(); // čakajúce skutky (uložené bez AI) sa ohodnotia na pozadí
   const p = usePridatSkutok();
   if (!p) return null;
   return <PridatSkutok key={JSON.stringify(p)} {...p} onClose={zavriPridatSkutok} />;
@@ -147,9 +145,10 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
   const { wide, desktop } = useLayout();
   const ja = usePouzivatel();
   const lok = useLokalita();
-  const session = useSession();
   const qc = useQueryClient();
-  const userId = session && "ucet_id" in session ? String(session.ucet_id) : "demo";
+  // Zadanie 5 · 5.3: kto hodnotí a ktoré je to kolo, zistí server (session + runId prvého kola)
+  const prvaRunId = useRef<string | undefined>(undefined);
+  const poslOpis = useRef(""); // opis poslaný AI — pri výpadku sa uloží k skutku na dodatočné hodnotenie
   // OPRAVY 121: skutok za charitu — tá istá kostra, mení sa len to, čo je v bode 121 (o = vykanie)
   const org = !!pr.organizacia;
   const stranka = pr.strankaId ?? pr.autor ?? "charita";
@@ -365,10 +364,12 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
   const fotkyPreAi = () => [pred, poF, ...media.filter((m) => !m.video).map((m) => m.src)].filter((x): x is string => !!x).slice(0, MAX_FOTIEK_AI);
   const hodnot = async (k: 1 | 2, opis: string) => {
     setAiChyba(null);
+    poslOpis.current = opis;
     setKr(3);
     const od = teraz();
     try {
-      const v = await ohodnot({ opis, miesto: kde, fotky: fotkyPreAi(), maVideo: media.some((m) => m.video), anonymne: false, userId, kolo: k });
+      const v = await ohodnot({ opis, miesto: kde, fotky: fotkyPreAi(), maVideo: media.some((m) => m.video), anonymne: false, predchRunId: k === 2 ? prvaRunId.current : undefined });
+      if (v.verdikt === "doplnit") prvaRunId.current = v.runId;
       await new Promise((r) => setTimeout(r, Math.max(0, 1400 - (teraz() - od)))); // Svetlúšik aspoň chvíľu
       const t = (v.ucesanyText ?? "").split(/\n?---/)[0].trim() || aiText();
       setPo2(t); setNz(aiNavrhNazov.length ? aiNavrhNazov : nazovZTextu(t));
@@ -378,7 +379,16 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
       else { setOtazky([]); setVysl({ verdikt: "ok", odp: v.verdikt === "ok" ? v : { ...v, pasmo: 0 } }); }
       setKolo(k); setKr(4);
     } catch (e) {
-      // OPRAVY 127: výpadok AI nesmie zablokovať — späť na opis s ponukou uložiť koncept, nič sa nestratí
+      if (jeVypadokAi(e)) {
+        // AI je prísada, nie zámka: výpadok / limit / bez kľúča → náhľad a uloženie bez hodnotenia, ohodnotí sa neskôr
+        await new Promise((r) => setTimeout(r, Math.max(0, 900 - (teraz() - od))));
+        const t = aiText();
+        if (k === 1) { setPo2(t); setNz(aiNavrhNazov.length ? aiNavrhNazov : nazovZTextu(t)); }
+        if (!oblast) setOblast(navrhniOblast(`${text} ${t}`));
+        setOtazky([]); setVysl({ verdikt: "caka" }); setPravda(false); setKolo(k); setKr(5);
+        return;
+      }
+      // chyba vstupu (napr. príliš veľké fotky) — späť na opis, používateľ ju opraví; nič sa nestratí
       setAiChyba(e instanceof ScoreChyba ? e.message : "Hodnotenie sa nepodarilo, skús znova.");
       setKr(2);
     }
@@ -406,7 +416,8 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
   const odpAi = vysl?.verdikt === "ok" ? vysl.odp : null;
   const pasmo = odpAi?.pasmo ?? 0;
   const doFeedu = !plan && pasmo >= 1 && dokaz;
-  const karma = odpAi?.skore != null ? Math.max(1, Math.round(odpAi.skore * KARMA_ZA_BOD)) : 3;
+  const karma = karmaZoSkore(odpAi?.skore);
+  const caka = vysl?.verdikt === "caka" && !plan;
   const kamOk = kam === "bez" || (kam === "centralna" && !!pr.centralna) || (kam === "ina" && !!inaZ);
   const zverejni = () => {
     if (!pravda) return;
@@ -426,7 +437,7 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
         id: feedId, typ: "skutok", velkost: "med", kat: KAT[oblast ?? "Pomoc"] ?? "Komunita", autor: pr.autor || "Charita", num: 0, emoji: "",
         fotky: fotky.length ? fotky : orgLogo ? [orgLogo] : [], titul: nz, popis: cistyText(popisHtml), lok: kde, overene: true, skore: 0, typSituacie: "normal", modul: "good", dni: 0, podpora: 0, lat: lok.lat, lng: lok.lng,
       } as GoodPolozka;
-      qc.setQueryData<GoodPolozka[]>(qk.good.feed, (old = []) => [it, ...old]);
+      qc.setQueriesData<GoodPolozka[]>({ queryKey: qk.good.feed }, (old = []) => [it, ...old]);
       repo.good.vytvor(it, ja.ucetId).then((nid) => { if (nid) qc.invalidateQueries({ queryKey: qk.good.feed }); }).catch(() => {});
       vibruj([10, 40, 10]);
       setKr(6); return;
@@ -436,6 +447,20 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
       setKr(6); return;
     }
     const fotky = [poF, pred, ...media.filter((m) => !m.video).map((m) => m.src)].filter((x): x is string => !!x);
+    if (caka) {
+      // uložené bez hodnotenia — v Mojich skutkoch „Kontroluje AI", do feedu pôjde až po dodatočnom hodnotení
+      pridajSkutok({
+        id, nazov: nz, popis: `<p>${po2.replace(/[<>&]/g, "")}</p>`, oblast: oblast ?? "Pomoc", miesto: kde, datum: teraz(),
+        stav: "ai", karma: null, det: DET_CAKA, fotky, osobny: true,
+        ucastnici: sk ? uc.filter((u) => u.overeny).map((u) => u.meno) : undefined, dar: dar ? darZ : undefined,
+        seria: prav ? pvF : undefined, retaz: ohl?.retaz, firma: mojeFirmy.length ? firmaV : undefined,
+        caka: { opis: poslOpis.current || opisPreAi(text), text: po2, miesto: kde, maVideo: media.some((m) => m.video), dokaz,
+          autor: pr.autor || ja.celeMeno || "Ty", ucetId: ja.ucetId ?? null, lat: lok.lat, lng: lok.lng },
+      });
+      if (ohl) nastavOhlasenie(null);
+      vibruj([10, 40, 10]);
+      setKr(6); return;
+    }
     const s: MojSkutok = {
       id, nazov: nz, popis: `<p>${po2.replace(/[<>&]/g, "")}</p>`, oblast: oblast ?? "Pomoc", miesto: kde, datum: teraz(),
       stav: doFeedu ? "ok" : "ja", karma: doFeedu ? karma : Math.min(karma, 5),
@@ -451,7 +476,7 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
         fotky, titul: nz, popis: po2, lok: kde, overene: true, skore: odpAi?.skore ?? 0, typSituacie: "normal", modul: "good", dni: 0, podpora: 0, lat: lok.lat, lng: lok.lng,
         scoreRunId: odpAi?.runId, // skóre/overené/karma do DB píše server z behu AI, nie klient
       } as GoodPolozka;
-      qc.setQueryData<GoodPolozka[]>(qk.good.feed, (old = []) => [it, ...old]);
+      qc.setQueriesData<GoodPolozka[]>({ queryKey: qk.good.feed }, (old = []) => [it, ...old]);
       repo.good.vytvor(it, ja.ucetId).then((nid) => { if (nid) qc.invalidateQueries({ queryKey: qk.good.feed }); }).catch(() => {});
     }
     vibruj([10, 40, 10]);
@@ -473,7 +498,7 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
     if (kr === 2) return rozpisane ? setZo(true) : setKr(1);
     if (kr === 3) return;
     if (org) return setKr(kr === 5 ? 4 : 2); // bez AI: Náhľad → Kam pôjdu peniaze → opis
-    setKr(kr === 4 ? 2 : 4);
+    setKr(kr === 4 || (kr === 5 && vysl?.verdikt === "caka") ? 2 : 4);
   };
   const spatT = kr === 1 && k1 === "typ" ? "Zavrieť" : kr === 6 ? "Zavrieť" : kr === 1 && ((k1 === "dar" && (pr.zbierka || pr.start === "solo")) || (k1 === "skupina" && pr.start === "skupina")) ? "Zavrieť" : "Späť";
 
@@ -905,12 +930,17 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
           <div style={{ fontSize: 15, lineHeight: 1.55, color: "var(--ink2)", marginTop: 6 }}>{po2}</div>
         </div>
       </div>
-      <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 16, background: doFeedu || plan ? "var(--gSoft)" : "var(--goldBg)", border: `1px solid ${doFeedu || plan ? "var(--gBd)" : "var(--goldBd)"}` }}>
+      {caka ? <div role="status" style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 16, background: "var(--bSoft)", border: "1px solid var(--bBd)" }}>
+        <span style={{ flex: 1, minWidth: 0 }}><span style={{ display: "block", fontSize: 12, fontWeight: 800, letterSpacing: ".05em", color: "var(--ink3)" }}>KAM PÔJDE</span>
+          <span style={{ display: "block", fontSize: 16, fontWeight: 800, marginTop: 2 }}>Čaká na ohodnotenie</span>
+          <span style={{ display: "block", fontSize: 13, color: "var(--ink2)", marginTop: 2 }}>Hodnotenie je teraz nedostupné. Skutok uložíme a AI ho ohodnotí, keď bude dostupná. Potom pôjde do feedu alebo ostane v denníku.</span></span>
+        <span style={{ fontSize: 14, fontWeight: 800, color: "var(--blue)", flex: "none", whiteSpace: "nowrap" }}>karma po ohodnotení</span>
+      </div> : <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 16, background: doFeedu || plan ? "var(--gSoft)" : "var(--goldBg)", border: `1px solid ${doFeedu || plan ? "var(--gBd)" : "var(--goldBd)"}` }}>
         <span style={{ flex: 1, minWidth: 0 }}><span style={{ display: "block", fontSize: 12, fontWeight: 800, letterSpacing: ".05em", color: "var(--ink3)" }}>KAM PÔJDE</span>
           <span style={{ display: "block", fontSize: 16, fontWeight: 800, marginTop: 2 }}>{plan ? "Feed tvojej štvrte · pripravuje sa" : doFeedu ? "Feed tvojej štvrte" : "Môj denník"}</span>
           <span style={{ display: "block", fontSize: 13, color: "var(--ink2)", marginTop: 2 }}>{plan ? "ohlásenie vo feede, dôkazy pridáš po dokončení" : doFeedu ? (dar ? "skutok ako dar má vo feede výraznejšie miesto" : "miesto vo feede závisí od toho, koľko skutkov práve pribúda") : "bez dôkazu ostáva len u teba"}</span></span>
         <span style={{ fontSize: 16, fontWeight: 800, color: "var(--gInk)", flex: "none", whiteSpace: "nowrap" }}>{plan ? "karma po dokončení" : `+${doFeedu ? karma : Math.min(karma, 5)} karmy`}</span>
-      </div>
+      </div>}
       {citlive && <div style={{ display: "flex", gap: 12, padding: "12px 14px", borderRadius: 16, background: "var(--bSoft)", border: "1px solid var(--bBd)" }}>
         <span style={{ width: 56, height: 56, borderRadius: 12, flex: "none", background: "linear-gradient(135deg,#F6F3EC,#DCE2E4)", border: "1px solid var(--bBd)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--blue)" }}><Ik d={IK.ceruzka} s={26} w={1.8} /></span>
         <span style={{ fontSize: 13.5, lineHeight: 1.5, color: "var(--ink2)" }}><b style={{ color: "var(--ink)" }}>Citlivá situácia, fotky posúdila AI.</b> Máš súhlas ľudí a fotky nikoho neponižujú, preto ich zverejníme. Keby ponižovali, ukázali by sme kreslenú verziu.</span>
@@ -945,8 +975,8 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
     const qrPripraveny = (!dar || darZ.length > 0) && (!rz.open || rz.hot);
     obsah = telo(<div className="pf-rise" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 14, padding: "10px 12px", textAlign: "center" }}>
       <Svetlusik size={84} />
-      <div style={{ fontSize: 24, fontWeight: 800 }}>{plan ? "Skutok je ohlásený" : `+${doFeedu ? karma : Math.min(karma, 5)} karmy`}</div>
-      <div style={{ fontSize: 15.5, lineHeight: 1.55, color: "var(--ink2)" }}>{plan ? "Skutok je ohlásený. Keď začneš, ťukni Začínam dole v Moje skutky. Po skončení pridáš dôkazy." : doFeedu ? "Skutok je vo feede tvojej štvrte. Overenia od susedov mu pridávajú dôveru." : "Skutok je v tvojom denníku. Aj malé skutky sa počítajú."}</div>
+      <div style={{ fontSize: 24, fontWeight: 800 }}>{plan ? "Skutok je ohlásený" : caka ? "Skutok je uložený" : `+${doFeedu ? karma : Math.min(karma, 5)} karmy`}</div>
+      <div style={{ fontSize: 15.5, lineHeight: 1.55, color: "var(--ink2)" }}>{plan ? "Skutok je ohlásený. Keď začneš, ťukni Začínam dole v Moje skutky. Po skončení pridáš dôkazy." : caka ? "Čaká na ohodnotenie. AI ho ohodnotí, keď bude dostupná, a karmu dostaneš potom. Nájdeš ho v Moje skutky." : doFeedu ? "Skutok je vo feede tvojej štvrte. Overenia od susedov mu pridávajú dôveru." : "Skutok je v tvojom denníku. Aj malé skutky sa počítajú."}</div>
       {dar && darZ.length > 0 ? (
         <div style={{ alignSelf: "stretch", textAlign: "left", borderRadius: 18, background: "var(--goldBg)", border: "1px solid var(--goldBd)", padding: 14, fontSize: 14.5, lineHeight: 1.5, color: "var(--ink2)" }}>
           <b style={{ color: "var(--ink)" }}>Skutok ako dar.</b> Všetky odmeny od ľudí idú na {darZ[0].nazov}{darZ.length > 1 ? `, po jej naplnení na ďalšie v poradí (${darZ.length - 1})` : ""}. Zapečatené, nedá sa zmeniť.</div>

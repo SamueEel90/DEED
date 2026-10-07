@@ -65,6 +65,7 @@ export const helpSupabase = {
       autor_nazov: it.nazov,
       autor_karma: it.karma ?? null,
       modul: it.modul ?? "help",
+      feed: "help",                 // 5.7: kam príspevok patrí = stĺpec s constraintom
       typ: it.typ,                  // 'ponuka' | 'ziadost' (CHECK ich pozná)
       kat: it.kat ?? null,
       popis: it.pribeh,
@@ -90,8 +91,9 @@ export const helpSupabase = {
     const { data, error } = await supabase
       .from("prispevok_feed") // 0037: vyzbierané z ledgera
       .select("*")
-      .not("data->>help", "is", null)
-      .order("skore", { ascending: false });
+      .eq("feed", "help")   // 5.7: stĺpec, nie kľúč v jsonb
+      .order("skore", { ascending: false })
+      .limit(50);           // 5.4: nikdy celá tabuľka
     if (error) throw error;
     return (data || []).map(naHelpItem);
   },

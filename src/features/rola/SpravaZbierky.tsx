@@ -23,7 +23,7 @@ import {
   nacitajStav, ulozStav, pasmoPre, sumaDokladov, splnene, navyse, percentoDolozenia, fazaDokladovania, dniDo, pridajDni, upozornenie90, UPOZORNENIE_90_TEXT, UPOZORNENIE_DNI, kdeJeDlhodoba,
   LEHOTA_TEXT, type StavZbierky, type Lehota, type DruhDokladu, type PolozkaDokladu, type ObsahZbierky,
 } from "@/lib/zbierkaSprava";
-import { identitaDarcu, relCas, zobrazenaSuma } from "@/lib/darcovia";
+import { identitaDarcu, relCas, zobrazenaSuma, useSektorDarcu } from "@/lib/darcovia";
 import { beziaceDorovnanieNaCiel, zostatok } from "@/lib/dorovnanie";
 import { TESTOVACIA } from "@/lib/testovacia";
 import { cisloObjektu } from "@/lib/cisloObjektu";
@@ -587,7 +587,8 @@ export function SpravaZbierky({ z, mobil, onZbierky, toast, onUdaje, onDorovnani
     : ukazka ? <DorovnaniePas ini="PD" firma="Pekáreň Dobrota" pomer="1 : 1" pod="ešte 4 380 € · do 27. 10. 2026" onClick={onDorovnanie} /> : null;
 
   // ---- karty záložky Nastavenie ----
-  const realneDary: [string, string, string][] = darcoviaPre(z.id).slice(0, 3).map((d) => [identitaDarcu(d), relCas(d.cas), zobrazenaSuma(d) ?? ""]);
+  const sektor = useSektorDarcu();
+  const realneDary: [string, string, string][] = darcoviaPre(z.id).slice(0, 3).map((d) => [identitaDarcu(d, undefined, sektor), relCas(d.cas), zobrazenaSuma(d) ?? ""]);
   const dary = realneDary.length ? realneDary : ukazka ? UKAZKA_STRECHA.dary : [];
   const pctC = z.ciel ? Math.round(vyzbierane / z.ciel * 100) : 0;
   const stavKarta = <CislaKarta nadpis="Stav zbierky" dary={dary} cisla={[
