@@ -7,11 +7,11 @@ import { pripojTestovaciuStranku } from "@/lib/stranka";
 import { createPortal } from "react-dom";
 import { useLayout } from "@/components/context";
 import { toast } from "@/components/toast";
-import { vlastnePrispevkyVsetky, zmazPrispevok, type Farnost, type KostolFarnosti } from "@/features/viera/mock";
+import { type KostolFarnosti } from "@/features/viera/mock";
 import { nacitajStav, ulozStav } from "@/features/viera/stav";
 import { nacitajSelfAdd, ulozSelfAdd } from "@/features/viera/UserOznamy";
-import { PridatSheet } from "@/features/viera/Pridat";
 import { OmseKalendar, TyzdenVPrehlade } from "./OmseKalendar";
+import { OznamyFarnosti } from "./OznamyFarnosti";
 import { nedelneOmse } from "@/lib/kalendarFarnosti";
 import { NahladFarnosti, nahladPopis } from "./NahladFarnosti";
 import { useVzhlad } from "@/lib/vzhladStranky";
@@ -90,7 +90,7 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
   const [sub, setSub] = useState<Sub>("prehlad");
   const [ob, setOb] = useState(2);
   const [pridat, setPridat] = useState(false);
-  const [start, setStart] = useState<{ kat: string; uzol?: string } | null>(null);
+  const [oznamyHore, setOznamyHore] = useState(0); // KARTA 56G §2: + Pridať → Oznam otvorí Oznamy hore
   const [kartaOtv, setKartaOtv] = useState(true);
   const [zmazana, setZmazana] = useState(false); // KARTA 56D §5: hláška po zmazaní hlavnej zbierky, na mieste v Zbierkach
   // KARTA 56D §6: výber druhu zbierky, „najprv hlavná", hláška po spustení a otvorená zbierka
@@ -102,7 +102,7 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
   // KARTA 56G: Omše a kalendár otvorené na dni (ťuk v Prehľade) alebo na tomto týždni (Zmena omše) — key = nové otvorenie
   const [omseStart, setOmseStart] = useState<{ den?: string; n: number }>({ n: 0 });
   const naDen = (den?: string) => { setOmseStart((o) => ({ den, n: o.n + 1 })); go("omse"); };
-  const go = (k: Sub) => { if (k === "oznamy") setOznamyV(vlastnePrispevkyVsetky(strankaId)); setSub(k); setPridat(false); setPinOtv(false); };
+  const go = (k: Sub) => { setSub(k); setPridat(false); setPinOtv(false); };
 
   // KARTA 56D §1: profil stránky (profil_stranky) — karta vľavo, percento, „Dokončiť profil"
   const [prof, setProf] = useState(() => profilZPamate(strankaId));
@@ -111,11 +111,8 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
   const profilAkt = koncept ?? prof.koncept ?? prof.ulozeny;
   const uplnost = uplnostProfilu(profilAkt);
   const meno = cistyNazov(profilAkt?.meno ?? nazov) || "Vaša farnosť";
-  // stránka farnosti pre modul Viera (oznamy, omše) — kľúč = stránka, nie ukážková farnosť
-  const f: Farnost = { id: strankaId, nazov: meno, cirkev: "", skratka: "", obec: "", lat: 0, lng: 0, vzdial: "", foto: "", popis: "", vyzbierane: 0, ciel: 0, podpora: 0 };
   const [self, setSelf] = useState(() => nacitajSelfAdd(strankaId));
   const [vid, setVid] = useState(() => nacitajStav<"zobrazit" | "skryt" | "len-farar">("viditelnost", strankaId, "zobrazit"));
-  const [oznamyV, setOznamyV] = useState(() => vlastnePrispevkyVsetky(strankaId));
   const kostoly = nacitajStav<{ kostoly?: KostolFarnosti[] }>("profil", strankaId, {}).kostoly ?? PRVY_KOSTOL;
 
   // KARTA 56D §3: pripnuté sekcie (sprava_piny, najviac 6) — prvý príchod bez pinov
@@ -397,12 +394,10 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
         {segment(POPLATKY.map((p) => [p, p ? `${p} €` : "Zadarmo"] as [number, string]), POPLATKY.includes(self.poplatok) ? self.poplatok : 0, (p) => zmenSelf({ poplatok: p }), 36)}
       </div>}
     </section>);
-  // KARTA 56D §0: oznamy = len tie, ktoré farnosť alebo farníci naozaj zverejnili (vlastné príspevky stránky)
+  // KARTA 56G §4–5: Oznamy farnosti — Krátky oznam · Udalosť · Oznámenie, náhľad, ohlášky, zoznam zverejnených
   const oznamy = <>
     {nadpis("Oznamy", "Ohlášky, oznamy farnosti a oznamy od farníkov")}
-    {oznamyV.length ? riadky(oznamyV.map((o) => ({ t: o.nazov || "Oznam", s: o.vytvorene ? new Date(o.vytvorene).toLocaleDateString("sk-SK") : "zverejnené", b: "Zmazať", bBd: "1.5px solid var(--red, #8E3B2F)", bC: "#C0573F",
-      tap: () => { zmazPrispevok(strankaId, o.id); setOznamyV(vlastnePrispevkyVsetky(strankaId)); toast("Oznam je zmazaný."); } })))
-      : <section style={{ ...karta, borderRadius: mobil ? 18 : 22, padding: mobil ? "14px" : "16px 20px", fontSize: 14, color: "var(--ink3)" }}>Zatiaľ žiadne oznamy. Prvý pridáte cez + Pridať oznam.</section>}
+    <OznamyFarnosti strankaId={strankaId} meno={meno} kostol={kostoly[0]?.nazov ?? "Váš kostol"} mobil={mobil} toast={toast} hore={oznamyHore} />
     <span style={mobil ? { ...kicker, letterSpacing: ".07em", padding: "4px 2px 0" } : kicker}>OD FARNÍKOV</span>
     {selfKarta}
   </>;
@@ -484,7 +479,7 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
   const akcia = (k: Akcia) => {
     setPridat(false);
     if (k === "zbierka") { go("zbierky"); setZbVyber(true); window.scrollTo({ top: 0, behavior: "smooth" }); return; }
-    if (k === "oznam") { setStart({ kat: "oznam" }); return; }
+    if (k === "oznam") { go("oznamy"); setOznamyHore((n) => n + 1); return; }
     naDen(); // KARTA 56G §2: Zmena omše = kalendár na tomto týždni, bez vybraného dňa
   };
   const pridatTl = () => { if (sub === "zbierky") akcia("zbierka"); else if (sub === "oznamy") akcia("oznam"); else setPridat(true); };
@@ -504,7 +499,6 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
         {zoznamPridat}
       </div>
     </div>, document.body)}
-    {start && createPortal(<div style={{ position: "fixed", inset: 0, zIndex: 150 }}><PridatSheet farar farnost={f} start={start} toast={toast} onClose={() => { setStart(null); setOznamyV(vlastnePrispevkyVsetky(strankaId)); }} /></div>, document.body)}
   </>;
 
   const titul = TIT[sub];
