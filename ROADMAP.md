@@ -102,6 +102,13 @@ Vymeniť mock repozitáre za Supabase — bez zásahu do UI.
   1. **Stránkovanie Help, Charita, Aktivity + Top hrdinovia z ledgera** — ostatné feedy cez `feed_stranka` (0063) ako Domov (dnes len strop 50); Top hrdinovia počítať z ledgera, nie načítaním všetkých skutkov Domova.
   2. **Editor príbehu zbierky → Storage** — fotky v `pribeh_zbierky` cez `bezDataUrl` ako ostatné (0064 ho zatiaľ nepokrýva).
   3. **Hlavný balík pod 2 MB** — ďalšie delenie (lazy moduly `features/rola`, `verejny-profil`, `zbierka`, `profil`); potom vrátiť `maximumFileSizeToCacheInBytes` vo `vite.config.ts` na predvolené 2 MiB.
+- **Galéria ilustračných fotiek** (Martin 8. 10. 2026, nie súrne; predloha `prototypy/Galeria editor.dc.html`):
+  - **Kde:** tlačidlo „Vybrať z galérie“ v `GaleriaEditor`, teda všade, kde je: zbierky (aj Help), oznamy, akcie, profily stránok, skutky. Nikdy pri parte a pohrebe.
+  - **Zdroj:** Pexels / Pixabay API. Vybraná fotka sa stiahne do nášho Storage, žiadny hotlink. Ku každej sa uloží `zdroj`, `licencia`, `idBanky`, `ilustracna: true` (prototyp ich posiela v `onZmena`). Presné podmienky API overiť na oficiálnych stránkach.
+  - **Výsledky:** po 20–30 fotiek, pri posúvaní dole ďalšie. Hľadá sa akýmkoľvek slovom, slovenské slovo sa pred hľadaním preloží do angličtiny (psy → dogs). 8 tém (Kostol, Deti, Príroda, Zvieratá, Pomoc, Rodina, Jedlo, Hudba) je len rýchla pomoc.
+  - **Prop `banka`:** `ano` = obyčajné miesta, tlačidlo hneď vedľa Nahrať · `nie` = parte a pohreb, galéria nie je · `po` = Help žiadosť, skutok a zbierka z Help: počas hodnotenia sa galéria vôbec neponúka, ponuka „Chcete pridať ilustračné foto z galérie?“ sa otvorí až pri `hodnotenie="uzavrete"`.
+  - **Štítok „ilustračné foto“** v rohu fotky: jeden komponent, všade rovnaký, nedá sa skryť. Vždy pri `banka="po"`, inde sa zapne propom `stitok` (napr. ponuky).
+  - **Server** pri AI hodnotení a overení skutku fotky s `ilustracna` ignoruje. Hodnotiaci tok galériu vôbec nepozná.
 - **Hotovo, keď:** appka beží na reálnych dátach prihláseného používateľa, mock už len ako fallback pre vývoj.
 
 ### Fáza 5 — Produkčná pripravenosť
