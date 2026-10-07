@@ -19,8 +19,8 @@ import { TlacidloNastavenia, LogoKarty, QrKarta } from "./spravaCasti";
 import { odkazQrStranky } from "@/features/verejny-profil/otvor";
 import { UpravitProfilCharity } from "./UpravitProfilCharity";
 import { NovaZbierka } from "./NovaZbierka";
-import { SpravaZbierkyFarnosti, stitokZbierkyF, fotoZbierky } from "./SpravaZbierkyFarnosti";
-import { ZbierkaPreVeriacich } from "./ZbierkaPreVeriacich";
+import { SpravaZbierkyFarnosti, stitokZbierkyF, fotoZbierky, rozdelenieZbierkyF } from "./SpravaZbierkyFarnosti";
+import { ZbierkaSOverovatelom } from "./ZbierkaPreVeriacich";
 import { cielCislo, nacitajZbierkyStranky, useZmenyZbierok, zbierkyStrankyZPamate, type SpustenaZbierka } from "@/lib/novaZbierka";
 import "@/styles/sprava.css";
 import { SektorDarcuKontext, darcoviaPre, nastavCiste, sucetDarov, useZmenyDarov } from "@/lib/darcovia";
@@ -329,7 +329,7 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
         <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 4 }}>
           <span style={{ alignSelf: "flex-start" }}>{chipF(chip, bg, 7)}</span>
           <b style={{ fontSize: mobil ? 16 : 18 }}>{z.nazov || "Nová zbierka"}</b>
-          <span style={{ fontSize: 13.5, color: "var(--ink3)" }}>{veriaci ? `${pod} · rodine ${100 - (z.farnost?.podiel ?? 0)} % · farnosti ${(z.farnost?.podiel ?? 0).toLocaleString("sk-SK")} %` : `${ciel ? `cieľ ${eur(ciel)} · ` : ""}${pod}`}</span>
+          <span style={{ fontSize: 13.5, color: "var(--ink3)" }}>{veriaci ? `${pod} · ${rozdelenieZbierkyF(z)}` : `${ciel ? `cieľ ${eur(ciel)} · ` : ""}${pod}`}</span>
         </span>
         <span style={{ flex: "none", display: "flex", flexDirection: "column", alignItems: "flex-end" }}><b style={{ fontSize: mobil ? 17 : 20, fontVariantNumeric: "tabular-nums" }}>{eur(s0.suma)}</b><span style={{ fontSize: 12, color: "var(--ink3)" }}>cez DEED</span></span>
         {!mobil && <span aria-hidden="true" style={{ flex: "none", fontSize: 20, color: "var(--ink3)" }}>›</span>}
@@ -352,10 +352,12 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}><b style={{ flex: 1, fontSize: 19 }}>Akú zbierku pridávate?</b>
         <button type="button" onClick={() => setZbVyber(false)} aria-label="Zavrieť" style={{ width: 44, height: 44, borderRadius: 12, border: "1px solid var(--cardBd)", background: "var(--field)", cursor: "pointer", fontSize: 18, color: "var(--ink2)", boxShadow: "none" }}>×</button></div>
       {volbaZb(IC.kostol, "Zbierka farnosti", "na opravu, misie, lavice · peniaze idú na účet hlavnej zbierky", () => { sprava(""); if (!bezi) { setZbBlok(true); return; } go("nova"); })}
-      {volbaZb(IC.ludia, "Zbierka pre veriacich", "pohreb, svadba, iné · peniaze idú rodine, podiel farnosti na účet farnosti · nezávisí od hlavnej zbierky", () => { sprava(""); setPz(true); })}
+      {volbaZb(IC.ludia, "Zbierka s overovateľom", "pohreb, svadba, iné · peniaze idú rodine, podiel farnosti na účet farnosti · nezávisí od hlavnej zbierky", () => { sprava(""); setPz(true); })}
     </section>}
-    {pz && <ZbierkaPreVeriacich stranka={strankaId} menoFarnosti={meno} ucetFarnosti={hlavnyUcet} mobil={mobil} toast={toast} onZavri={() => setPz(false)}
+    {pz && <ZbierkaSOverovatelom stranka={strankaId} menoFarnosti={meno} ucetFarnosti={hlavnyUcet} mobil={mobil} toast={toast} onZavri={() => setPz(false)}
       onHotovo={(_z, t) => { setPz(false); setNoveOk(t); window.scrollTo({ top: 0, behavior: "smooth" }); }} />}
+    {/* KARTA 56E §2: kým beží tvorba (výber druhu alebo postup), zoznam zbierok sa nezobrazuje */}
+    {!zbVyber && !pz && <>
     {noveOk && sprava2(noveOk, () => setNoveOk(null), true)}
     {zbBlok && !bezi && <div role="alert" style={{ flex: "none", borderRadius: 18, background: "var(--goldBg)", border: "2px solid #C9A24A", padding: "16px 18px", display: "flex", flexDirection: "column", gap: 10 }}>
       <b style={{ fontSize: 16.5 }}>Najprv treba spustiť hlavnú zbierku</b>
@@ -377,6 +379,7 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>{dalsie.map(dalsieRiadok)}</div>
     </>}
     {!bezi && pridatHlavnu}
+    </>}
   </>;
 
   const rozvrhKarta = (

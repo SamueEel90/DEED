@@ -52,8 +52,11 @@ export interface ZbierkaFarnosti {
   /** príjemca peňazí (pozostalý, snúbenec …) — účet z jeho overeného profilu */
   prijemca?: { meno: string; overeny: string };
   /** oznámenie na stránke farnosti (parte / svadobné oznámenie / oznámenie), ku ktorému je zbierka pripojená */
-  oznamenie?: { meno: string; rodena?: string; roky?: string; kedy?: string; kde?: string; kto?: string; vlastne?: string };
+  oznamenie?: { meno: string; rodena?: string; roky?: string; kedy?: string; kde?: string; kto?: string; vlastne?: string; prispevok?: string };
+  /** KARTA 56E §2b: zvyšok rozhoduje príjemca — s kým sa podelí (len registrovaní v DEED, najviac 2, každý aspoň 5 %) */
+  podelit?: { id: string; nazov: string; pct: number }[];
 }
+export const PODELIT_MAX = 2, PODELIT_MIN = 5, PODELIT_KROK = 5;
 /** podiel farnosti pri zbierke pre veriacich: najviac 3 % a najviac 100 € (OPRAVY 161) */
 export const PODIEL_MAX = 3, PODIEL_KROK = 0.5, PODIEL_STROP_EUR = 100;
 export const prazdnaZbierka = (): NovaZbierkaData => ({

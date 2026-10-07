@@ -17,8 +17,17 @@ const cis = (n: number) => n.toLocaleString("sk-SK");
 export function stitokZbierkyF(z: SpustenaZbierka): [string, string] {
   const st: [string, string] = z.stav === "ukoncena" || z.stav === "vyuctovana" ? ["ZRUŠENÁ", "#6B6C62"] : ["AKTÍVNA", "#4B7A35"];
   const druh = z.farnost?.druh;
-  const pre = druh === "pohreb" ? "POHREB · " : druh === "svadba" ? "SVADBA · " : druh === "ine" ? "PRE VERIACEHO · " : "";
+  const pre = druh === "pohreb" ? "POHREB · " : druh === "svadba" ? "SVADBA · " : druh === "ine" ? "INÉ · " : "";
   return [pre + st[0], st[1]];
+}
+/** KARTA 56E §2b: celé rozdelenie zbierky s overovateľom v jednom riadku (príjemca · s kým sa podelil · farnosť) */
+export function rozdelenieZbierkyF(z: SpustenaZbierka): string {
+  const f = z.farnost; if (!f || f.druh === "farnost") return "na účet hlavnej zbierky";
+  const kto = f.druh === "pohreb" ? "rodine" : f.druh === "svadba" ? "snúbencom" : "príjemcovi";
+  const p = (n: number) => `${(Math.round(n * 10) / 10).toLocaleString("sk-SK")} %`;
+  const podiel = f.podiel ?? 0, dal = (f.podelit ?? []).reduce((a, x) => a + x.pct, 0);
+  const zv = Math.round((100 - podiel - dal) * 10) / 10;
+  return [`${kto} ${f.podelit?.length && zv === 0 ? "0 % · všetko darované" : p(zv)}`, ...(f.podelit ?? []).map((x) => `${x.nazov} ${p(x.pct)}`), `farnosti ${p(podiel)}`].join(" · ");
 }
 export const fotoZbierky = (z: SpustenaZbierka) => z.media.find((m) => m.typ === "foto")?.src;
 
@@ -46,8 +55,7 @@ export function SpravaZbierkyFarnosti({ stranka, z, mobil, toast, onSpat }: {
   const darcov = new Set(dary.map((r) => (r.moj ? "ja" : r.id))).size;
   const ciel = z.cielTyp === "ciel" ? cielCislo(z) : 0;
   const [chip, chipBg] = stitokZbierkyF(z);
-  const veriaci = z.farnost && z.farnost.druh !== "farnost";
-  const podiel = veriaci ? `rodine ${100 - (z.farnost?.podiel ?? 0)} % · farnosti ${cis(z.farnost?.podiel ?? 0)} %` : "na účet hlavnej zbierky";
+  const podiel = rozdelenieZbierkyF(z);
   const foto = fotoZbierky(z);
   const aktivna = z.stav !== "ukoncena" && z.stav !== "vyuctovana";
 
