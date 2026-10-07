@@ -4,7 +4,7 @@
 // Kalendár začína prázdny. Dáta: lib/kalendarFarnosti (účet farnosti).
 // ============================================================
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
-import { pridajPrispevok } from "@/features/viera/mock";
+import { pridajPrispevok, vlastnePrispevky, type VieraFeedItem } from "@/features/viera/mock";
 import {
   useKalendar, zmenKalendar, zmenKostol, zmazVlastnu, novyKostol, omseDna, polozkyDna, maZmenu, druhPolozky, jeObrad, casKodu,
   dniTyzdna, rozsahTyzdna, iso, dvt, pekny, minuty, CAS_OK, normCas, dokonciCas, casNeexistuje, posunTyzdna, kostolKal, DRUHY, SKUPINY_OMSI, VEREJNE_VOLBY, VLASTNE_PREFIX,
@@ -360,6 +360,7 @@ export function OmseKalendar({ strankaId, meno, kostoly, mobil, toast, start }: 
       </div>
     </section>);
   const plagatDni = plagatTyzdna(k, VJ, tyzOff);
+  const plagatOzn = panel === "tl" ? oznamyNaPlagat(strankaId) : [];
   const plagatRef = useRef<HTMLDivElement>(null);
   const tlac = () => {
     const el = plagatRef.current; if (!el) return;
@@ -378,7 +379,7 @@ export function OmseKalendar({ strankaId, meno, kostoly, mobil, toast, start }: 
         <button type="button" onClick={tlac} style={{ ...tlZ, minHeight: 48, fontSize: 15, borderRadius: 12 }}>Vytlačiť</button>
       </div>
       {hlaska?.k === "tl" && <span role="status" style={{ fontSize: 14, fontWeight: 800, color: "var(--gInk)" }}>Otvorila sa tlač. Vyberte tlačiareň alebo „Uložiť ako PDF“.</span>}
-      <span style={{ fontSize: 13.5, color: "var(--ink3)" }}>Je to týždeň, ktorý máte otvorený. Iný týždeň vyberiete šípkami ‹ › nižšie. Na plagáte je len to, čo je zaškrtnuté v „Čo uvidia ľudia“.</span>
+      <span style={{ fontSize: 13.5, color: "var(--ink3)" }}>Je to týždeň, ktorý máte otvorený. Iný týždeň vyberiete šípkami ‹ › nižšie. Na plagáte sú vaše platné oznamy a omše podľa „Čo uvidia ľudia“.</span>
       <div style={{ display: "flex", justifyContent: "center", padding: 14, borderRadius: 14, background: "var(--field)" }}>
         <div ref={plagatRef} style={{ width: 560, maxWidth: "100%", boxSizing: "border-box", background: "#fff", color: "#1A1A1A", padding: mobil ? "22px 18px" : "34px 36px", display: "flex", flexDirection: "column", gap: 14, fontFamily: "'Plus Jakarta Sans',-apple-system,'Segoe UI',sans-serif" }}>
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, textAlign: "center", paddingBottom: 12, borderBottom: "2px solid #1A1A1A" }}>
@@ -386,6 +387,10 @@ export function OmseKalendar({ strankaId, meno, kostoly, mobil, toast, start }: 
             <b style={{ fontSize: 30, lineHeight: 1.1 }}>Bohoslužby</b>
             <span style={{ fontSize: 16, fontWeight: 700 }}>{tlTit}</span>
           </div>
+          {plagatOzn.length > 0 && <div style={{ display: "flex", flexDirection: "column", gap: 6, paddingBottom: 10, borderBottom: "2px solid #1A1A1A" }}>
+            <b style={{ fontSize: 13, letterSpacing: ".12em", color: "#555" }}>OZNAMY</b>
+            {plagatOzn.map((o) => <div key={o.id} style={{ display: "flex", flexDirection: "column", gap: 2 }}><b style={{ fontSize: 16 }}>{o.t}</b>{o.s && <span style={{ fontSize: 14, lineHeight: 1.45, color: "#333", whiteSpace: "pre-line" }}>{o.s}</span>}</div>)}
+          </div>}
           {plagatDni.map((d) => (
             <div key={d.key} style={{ display: "grid", gridTemplateColumns: "130px 1fr", gap: 12, padding: "8px 0", borderBottom: "1px solid #D8D4CA" }}>
               <div style={{ display: "flex", flexDirection: "column" }}><b style={{ fontSize: 17 }}>{d.w}</b><span style={{ fontSize: 13, color: "#555" }}>{d.dt}</span></div>
@@ -445,6 +450,20 @@ export function OmseKalendar({ strankaId, meno, kostoly, mobil, toast, start }: 
 
 /** plagát / verejný výpis týždňa — len zaškrtnuté v „Čo uvidia ľudia" */
 interface PlagatRiadok { t: string; s: string; z: boolean }
+/** štítok oznamu (zoznam v Oznamoch, plagát na nástenku) */
+export function stitokOznamu(it: VieraFeedItem): string {
+  if (it.tag === "Zmena omše") return "ZMENA OMŠE";
+  if (it.ntyp === "udalost") return "UDALOSŤ";
+  if (it.smutocny || it.ukat === "pohreb") return "PARTE";
+  if (it.ukat === "svadba") return "SVADBA";
+  if (it.tag === "Jubileum") return "JUBILEUM";
+  return "OZNAM";
+}
+/** KARTA 56H §1: platné oznamy na plagát — najviac 8, s textom */
+export function oznamyNaPlagat(strankaId: string) {
+  return vlastnePrispevky(strankaId).slice(0, 8).map((x) => { const st = stitokOznamu(x); return { id: x.id, t: (st === "OZNAM" || st === "ZMENA OMŠE" ? "" : `${st.charAt(0)}${st.slice(1).toLowerCase()} · `) + (x.nazov ?? ""), s: x.popis ?? "" }; });
+}
+
 export function plagatTyzdna(k: KalKostol, VJ: KalendarFarnosti["verejne"], off: number) {
   return dniTyzdna(off).map((d) => {
     const o: PlagatRiadok[] = [

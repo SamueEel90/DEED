@@ -2,7 +2,8 @@
 // KARTA 56G §4–5 · OPRAVY 167 — Správa farnosti → Oznamy (prototyp „Sprava farnosti - prvy prichod", PC).
 // Čo chcete oznámiť: Krátky oznam · Udalosť · Oznámenie (parte, svadba, jubileum). Bez „Kde sa ukáže",
 // bez „Pri akcii zbierame na", bez výzvy na súrnu pomoc — oznam je len na profile pre sledujúcich.
-// Zverejnenie podržaním, živý náhľad vpravo, zoznam zverejnených s červeným ×, Vytlačiť ohlášky (A4).
+// Zverejnenie podržaním, živý náhľad vpravo, zoznam zverejnených s červeným ×.
+// 56H §1: ohlášky sa tu netlačia — tlač len v Omše → Vytlačiť na nástenku (plagát má hore OZNAMY).
 // Oznamy = príspevky farnosti (viera/mock pridajPrispevok — tie isté, ktoré ukazuje profil farnosti).
 // ============================================================
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
@@ -14,8 +15,8 @@ import PodrzTlacidlo from "@/features/zbierka/PodrzTlacidlo";
 import { GaleriaEditor, cistyText, NASTROJE } from "./obsahZbierky";
 import { pridajPrispevok, vlastnePrispevky, zmazPrispevok, type VieraFeedItem } from "@/features/viera/mock";
 import { FormularOznamu, VyberSablony, Plagat, prazdneUdaje, prvaVolba, chybaOznamu, popisOznamu, type DruhOznamu, type UdajeOznamu, type VolbaSablony } from "@/features/viera/Sablony";
-import { useKalendar, kostolKal, zmenKostol, CAS_OK, normCas, dokonciCas, casNeexistuje, pekny, dniTyzdna, rozsahTyzdna, DNI_D, MES_G, dvt } from "@/lib/kalendarFarnosti";
-import { plagatTyzdna } from "./OmseKalendar";
+import { zmenKostol, CAS_OK, normCas, dokonciCas, casNeexistuje, pekny } from "@/lib/kalendarFarnosti";
+import { stitokOznamu } from "./OmseKalendar";
 
 type Druh = 0 | 1 | 2; // Krátky oznam · Udalosť · Oznámenie
 const DRUHY: [string, string][] = [
@@ -84,20 +85,10 @@ function PlagatPole({ src, onSrc, toast, popis }: { src?: string; onSrc: (s: str
     </div>);
 }
 
-/** štítok oznamu v zozname a na ohláškach */
-export function stitokOznamu(it: VieraFeedItem): string {
-  if (it.tag === "Zmena omše") return "ZMENA OMŠE";
-  if (it.ntyp === "udalost") return "UDALOSŤ";
-  if (it.smutocny || it.ukat === "pohreb") return "PARTE";
-  if (it.ukat === "svadba") return "SVADBA";
-  if (it.tag === "Jubileum") return "JUBILEUM";
-  return "OZNAM";
-}
 const fmtDatum = (iso: string) => { if (!iso) return ""; const [y, m, d] = iso.split("-").map(Number); const dt = new Date(y, m - 1, d); return `${["Ne", "Po", "Ut", "St", "Št", "Pi", "So"][dt.getDay()]} ${d}. ${m}.`; };
 
-export function OznamyFarnosti({ strankaId, meno, kostol, mobil, toast, hore }: { strankaId: string; meno: string; kostol: string; mobil: boolean; toast: (m: string) => void; /** obsah pod zoznamom (Od farníkov) */ hore?: number }) {
+export function OznamyFarnosti({ strankaId, meno, mobil, toast, hore }: { strankaId: string; meno: string; mobil: boolean; toast: (m: string) => void; /** obsah pod zoznamom (Od farníkov) */ hore?: number }) {
   const vz = useVzhlad(strankaId, false);
-  const kal = useKalendar(strankaId);
   const [dr, setDr] = useState<Druh>(0);
   const [n, setN] = useState("");
   const [txt, setTxt] = useState("");
@@ -115,9 +106,7 @@ export function OznamyFarnosti({ strankaId, meno, kostol, mobil, toast, hore }: 
   const [volba, setVolba] = useState<VolbaSablony>(() => prvaVolba("parte"));
   const [hotovo, setHotovo] = useState<string | null>(null);
   const [, obnov] = useState(0);
-  const [tlOk, setTlOk] = useState(false);
   const topRef = useRef<HTMLDivElement>(null);
-  const plagatRef = useRef<HTMLDivElement>(null);
   useEffect(() => { if (hore) topRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); }, [hore]);
 
   const zmenOdr = (i: number) => { setOdr(i); const d = ODRUHY[i][1]; setU(prazdneUdaje(d)); setVolba(prvaVolba(d)); };
@@ -239,48 +228,7 @@ export function OznamyFarnosti({ strankaId, meno, kostol, mobil, toast, hore }: 
       </>}
     </section>);
 
-  // ---- ohlášky (A4) ----
   const zoznam = vlastnePrispevky(strankaId);
-  const kk = kostolKal(strankaId);
-  void kal; // prekreslenie pri zmene kalendára
-  const tlac = () => {
-    const el = plagatRef.current; if (!el) return;
-    const f = document.createElement("iframe"); f.style.cssText = "position:fixed;width:0;height:0;border:0;right:0;bottom:0"; document.body.appendChild(f);
-    const d = f.contentDocument; if (!d) return;
-    d.open(); d.write(`<!doctype html><html><head><meta charset="utf-8"><title>Ohlášky</title><style>@page{size:A4;margin:12mm}body{margin:0;font-family:"Plus Jakarta Sans",-apple-system,"Segoe UI",sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}</style></head><body>${el.outerHTML}</body></html>`); d.close();
-    window.setTimeout(() => { f.contentWindow?.focus(); f.contentWindow?.print(); window.setTimeout(() => f.remove(), 1500); }, 500);
-    setTlOk(true); window.setTimeout(() => setTlOk(false), 4000);
-  };
-  const ohlOzn = zoznam.slice(0, 8).map((x) => { const st = stitokOznamu(x); return { id: x.id, t: (st === "OZNAM" || st === "ZMENA OMŠE" ? "" : `${st.charAt(0)}${st.slice(1).toLowerCase()} · `) + (x.nazov ?? ""), s: x.popis ?? "" }; });
-  const dni = plagatTyzdna(kk, kal.verejne, 0);
-  const ohlasky = (
-    <section style={{ ...karta, padding: mobil ? "14px 14px" : "16px 18px", display: "flex", flexDirection: "column", gap: 10 }}>
-      <b style={{ fontSize: 16.5 }}>Vytlačiť ohlášky</b>
-      <span style={{ fontSize: 13.5, color: "var(--ink3)" }}>Oznamy a omše tohto týždňa na jednu stranu A4. Takto presne sa vytlačí.</span>
-      <div style={{ display: "flex", justifyContent: "center", padding: 10, borderRadius: 14, background: "var(--field)" }}>
-        <div ref={plagatRef} style={{ width: 560, maxWidth: "100%", boxSizing: "border-box", background: "#fff", color: "#1A1A1A", padding: "22px 22px", display: "flex", flexDirection: "column", gap: 10, fontFamily: "'Plus Jakarta Sans',-apple-system,'Segoe UI',sans-serif" }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 2, paddingBottom: 8, borderBottom: "2px solid #1A1A1A" }}>
-            <span style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: ".14em", color: "#555" }}>{meno.toLocaleUpperCase("sk-SK")}</span>
-            <b style={{ fontSize: 20, lineHeight: 1.2 }}>Ohlášky · {rozsahTyzdna(0, true)}</b>
-          </div>
-          {ohlOzn.length ? ohlOzn.map((o) => (
-            <div key={o.id} style={{ display: "flex", flexDirection: "column", gap: 2 }}><b style={{ fontSize: 14.5 }}>{o.t}</b>{o.s && <span style={{ fontSize: 13, lineHeight: 1.45, color: "#333" }}>{o.s}</span>}</div>))
-            : <span style={{ fontSize: 13, color: "#888" }}>Zatiaľ žiadne oznamy.</span>}
-          <span style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: ".14em", color: "#1A1A1A", paddingTop: 6 }}>BOHOSLUŽBY</span>
-          {dni.map((d, i) => { const dd = dniTyzdna(0)[i]; return (
-            <div key={d.key} style={{ display: "grid", gridTemplateColumns: "110px 1fr", gap: 10, padding: "4px 0", borderBottom: "1px solid #E2DED5" }}>
-              <b style={{ fontSize: 12.5 }}>{DNI_D[dvt(dd)]} {dd.getDate()}. {MES_G[dd.getMonth()]}</b>
-              <span style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                {d.o.length ? d.o.map((x, j) => <span key={j} style={{ fontSize: 12.5, color: x.z ? "#A3341F" : "#1A1A1A", textDecoration: x.z ? "line-through" : "none" }}><b style={{ fontVariantNumeric: "tabular-nums" }}>{x.t}</b> {x.s}</span>) : <span style={{ fontSize: 12.5, color: "#888" }}>—</span>}
-              </span>
-            </div>); })}
-          <span style={{ fontSize: 10.5, color: "#777", textAlign: "center", paddingTop: 2 }}>{kostol} · zmeny sledujte na stránke farnosti v appke DEED</span>
-        </div>
-      </div>
-      <button type="button" onClick={tlac} style={{ minHeight: 52, border: "none", borderRadius: 14, background: "#4B7A35", cursor: "pointer", fontFamily: "inherit", fontSize: 16, fontWeight: 800, color: "#fff", boxShadow: "none" }}>Vytlačiť A4</button>
-      {tlOk && <span role="status" style={{ fontSize: 14, fontWeight: 800, color: "var(--gInk)" }}>Otvorila sa tlač. Vyberte tlačiareň alebo „Uložiť ako PDF“.</span>}
-      <span style={{ fontSize: 12.5, color: "var(--ink3)" }}>Omše sa berú z kalendára podľa „Čo uvidia ľudia“.</span>
-    </section>);
 
   // ---- zverejnené ----
   const meta = (x: VieraFeedItem) => x.tag === "Zmena omše" ? x.popis ?? ""
@@ -299,7 +247,7 @@ export function OznamyFarnosti({ strankaId, meno, kostol, mobil, toast, hore }: 
     </section>)
     : <section style={{ ...karta, padding: "12px 20px", fontSize: 14.5, color: "var(--ink3)" }}>Zatiaľ žiadne oznamy. Prvý napíšete vyššie a zverejníte podržaním.</section>;
 
-  const pravy: ReactNode = <><span style={{ fontSize: 12.5, fontWeight: 800, letterSpacing: ".08em", color: "var(--ink3)" }}>NÁHĽAD · TAKTO TO UVIDIA ĽUDIA</span>{nahlad}{ohlasky}</>;
+  const pravy: ReactNode = <><span style={{ fontSize: 12.5, fontWeight: 800, letterSpacing: ".08em", color: "var(--ink3)" }}>NÁHĽAD · TAKTO TO UVIDIA ĽUDIA</span>{nahlad}</>;
   return <>
     <div ref={topRef} style={{ scrollMarginTop: 16 }} />
     {mobil ? <>{lavy}{pravy}</> : (
