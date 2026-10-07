@@ -4,9 +4,10 @@
 // Kalendár začína prázdny. Dáta: lib/kalendarFarnosti (účet farnosti).
 // ============================================================
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { pridajPrispevok } from "@/features/viera/mock";
 import {
   useKalendar, zmenKalendar, zmenKostol, zmazVlastnu, novyKostol, omseDna, polozkyDna, maZmenu, druhPolozky, jeObrad, casKodu,
-  dniTyzdna, rozsahTyzdna, iso, dvt, pekny, minuty, CAS_OK, normCas, DRUHY, SKUPINY_OMSI, VEREJNE_VOLBY, VLASTNE_PREFIX,
+  dniTyzdna, rozsahTyzdna, iso, dvt, pekny, minuty, CAS_OK, normCas, posunTyzdna, kostolKal, DRUHY, SKUPINY_OMSI, VEREJNE_VOLBY, VLASTNE_PREFIX,
   DNI_K, DNI_D, MES_G, MES_N, nazovOmse, type KalKostol, type KalendarFarnosti, type PolozkaDna, type Skupina, type Verej,
 } from "@/lib/kalendarFarnosti";
 
@@ -47,47 +48,31 @@ function riadkyDna(k: KalKostol, d: Date): Riadok[] {
   ].sort((a, b) => minuty(a.t) - minuty(b.t));
 }
 
-export function OmseKalendar({ strankaId, meno, kostoly, mobil, toast }: { strankaId: string; meno: string; kostoly: KostolF[]; mobil: boolean; toast: (m: string) => void }) {
-  const kal = useKalendar(strankaId);
-  const [tab, setTab] = useState<Tab>(0);
-  const [kI, setKI] = useState(0);
-  const kKey = String(kI);
-  const k: KalKostol = kal.kostoly[kKey] ?? novyKostol();
-  const viac = kostoly.length > 1;
-  const kostolV = viac ? ` · ${kostoly[kI]?.nazov ?? ""}` : "";
-  const zmenK = (f: (x: KalKostol) => KalKostol) => zmenKostol(strankaId, kKey, f);
-  const [tyzOff, setTyzOff] = useState(0);
-  const [mesOff, setMesOff] = useState(0);
-  const [den, setDen] = useState<string | null>(null);
-  const [panel, setPanel] = useState<"ver" | "tl" | null>(null);
-  const [hlaska, setHlaska] = useState<{ k: string; t: string } | null>(null);
-  const tm = useRef<number | undefined>(undefined);
-  useEffect(() => () => window.clearTimeout(tm.current), []);
-  const ukaz = (kk: string, t: string, ms = 2400) => { setHlaska({ k: kk, t }); window.clearTimeout(tm.current); tm.current = window.setTimeout(() => setHlaska(null), ms); };
-  const dnes = iso(new Date());
 
-  // ---------- Týždeň ----------
-  const tyzT = `${tyzOff === 0 ? "Tento týždeň" : tyzOff === 1 ? "Budúci týždeň" : tyzOff === -1 ? "Minulý týždeň" : "Týždeň"} · ${rozsahTyzdna(tyzOff)}`;
+/** KARTA 56F/56G · Týždeň: 7 riadkov, šípky ‹ ›, ťuk na deň — v Omšiach aj pripnutý v Prehľade (jeden vzhľad) */
+export function TyzdenKarta({ k, off, setOff, den, onDen, mobil, kostolV = "", pozn = true }: { k: KalKostol; off: number; setOff: (o: number) => void; den: string | null; onDen: (key: string) => void; mobil: boolean; kostolV?: string; pozn?: boolean }) {
+  const dnes = iso(new Date());
+  const tyzT = `${off === 0 ? "Tento týždeň" : off === 1 ? "Budúci týždeň" : off === -1 ? "Minulý týždeň" : "Týždeň"} · ${rozsahTyzdna(off)}`;
   const chip = (r: Riadok, i: number) => (
     <span key={i} style={{ height: 36, padding: "0 12px", borderRadius: 10, background: r.obrad ? "rgba(201,162,74,.14)" : "var(--field)", border: `1px solid ${r.obrad ? ZLATA : r.extra ? "var(--green)" : r.zmena ? "var(--cRed)" : "var(--cardBd)"}`, display: "flex", alignItems: "center", gap: 6, fontSize: 14.5, fontWeight: 800, color: r.zrusena ? "var(--cRed)" : "var(--ink)", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>
       <span style={{ textDecoration: r.zrusena ? "line-through" : "none" }}>{r.t}</span>
       {(r.s || r.meno) && <span style={{ fontWeight: 600, fontSize: 13 }}>{[r.s, r.meno].filter(Boolean).join(" · ")}</span>}
     </span>);
-  const tyzden = (
+  return (
     <section style={{ ...karta, padding: mobil ? "12px 12px" : "16px 18px", display: "flex", flexDirection: "column", gap: 8 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        <button type="button" onClick={() => { setTyzOff((o) => o - 1); setDen(null); }} aria-label="Predchádzajúci týždeň" style={sipka}>‹</button>
+        <button type="button" onClick={() => setOff(off - 1)} aria-label="Predchádzajúci týždeň" style={sipka}>‹</button>
         <span style={{ flex: 1, minWidth: 0, textAlign: "center", display: "flex", flexDirection: "column" }}>
           <b style={{ fontSize: mobil ? 16 : 18 }}>{tyzT}</b>
-          {tyzOff !== 0 && <button type="button" onClick={() => { setTyzOff(0); setDen(null); }} style={spatTl}>Späť na tento týždeň</button>}
+          {off !== 0 && <button type="button" onClick={() => setOff(0)} style={spatTl}>Späť na tento týždeň</button>}
           <span style={{ fontSize: 13, color: "var(--ink3)" }}>Ťuknite na deň · vpravo pridáte omšu, pohreb, krst…{kostolV}</span>
         </span>
-        <button type="button" onClick={() => { setTyzOff((o) => o + 1); setDen(null); }} aria-label="Ďalší týždeň" style={sipka}>›</button>
+        <button type="button" onClick={() => setOff(off + 1)} aria-label="Ďalší týždeň" style={sipka}>›</button>
       </div>
-      {dniTyzdna(tyzOff).map((d) => {
+      {dniTyzdna(off).map((d) => {
         const key = iso(d), sel = den === key, jeDnes = key === dnes, r = riadkyDna(k, d);
         return (
-          <button key={key} type="button" onClick={() => setDen(key)} aria-pressed={sel} style={{ minHeight: 64, padding: "10px 14px", borderRadius: 16, border: sel ? "2px solid var(--green)" : jeDnes ? "2px solid var(--ink)" : "1px solid var(--cardBd)", background: sel ? "var(--gSoft)" : "var(--field)", cursor: "pointer", display: "flex", alignItems: "center", gap: 14, textAlign: "left", fontFamily: "inherit", boxShadow: "none" }}>
+          <button key={key} type="button" onClick={() => onDen(key)} aria-pressed={sel} style={{ minHeight: 64, padding: "10px 14px", borderRadius: 16, border: sel ? "2px solid var(--green)" : jeDnes ? "2px solid var(--ink)" : "1px solid var(--cardBd)", background: sel ? "var(--gSoft)" : "var(--field)", cursor: "pointer", display: "flex", alignItems: "center", gap: 14, textAlign: "left", fontFamily: "inherit", boxShadow: "none" }}>
             <span style={{ width: mobil ? 64 : 84, flex: "none", display: "flex", flexDirection: "column" }}>
               <b style={{ fontSize: 17, color: "var(--ink)" }}>{d.getDate()}. {d.getMonth() + 1}.</b>
               <span style={{ fontSize: 12.5, fontWeight: 700, color: jeDnes ? "var(--gInk)" : "var(--ink3)" }}>{DNI_K[dvt(d)]}{jeDnes ? " · dnes" : ""}</span>
@@ -96,8 +81,33 @@ export function OmseKalendar({ strankaId, meno, kostoly, mobil, toast }: { stran
             <span aria-hidden="true" style={{ flex: "none", fontSize: 20, color: "var(--ink3)" }}>›</span>
           </button>);
       })}
-      <span style={{ fontSize: 12.5, color: "var(--ink3)" }}>Farár, ktorý plánuje po týždňoch: prejde 7 riadkov a hotovo. Celý mesiac je v záložke Mesiac.</span>
+      {pozn && <span style={{ fontSize: 12.5, color: "var(--ink3)" }}>Farár, ktorý plánuje po týždňoch: prejde 7 riadkov a hotovo. Celý mesiac je v záložke Mesiac.</span>}
     </section>);
+}
+
+export function OmseKalendar({ strankaId, meno, kostoly, mobil, toast, start }: { strankaId: string; meno: string; kostoly: KostolF[]; mobil: boolean; toast: (m: string) => void;
+  /** KARTA 56G: otvoriť týždeň s úpravou dňa (ťuk na deň v Prehľade) alebo len tento týždeň (Zmena omše z + Pridať) */
+  start?: { den?: string } }) {
+  const kal = useKalendar(strankaId);
+  const [tab, setTab] = useState<Tab>(0);
+  const [kI, setKI] = useState(0);
+  const kKey = String(kI);
+  const k: KalKostol = kal.kostoly[kKey] ?? novyKostol();
+  const viac = kostoly.length > 1;
+  const kostolV = viac ? ` · ${kostoly[kI]?.nazov ?? ""}` : "";
+  const zmenK = (f: (x: KalKostol) => KalKostol) => zmenKostol(strankaId, kKey, f);
+  const [tyzOff, setTyzOff] = useState(() => (start?.den ? posunTyzdna(start.den) : 0));
+  const [mesOff, setMesOff] = useState(0);
+  const [den, setDen] = useState<string | null>(start?.den ?? null);
+  const [panel, setPanel] = useState<"ver" | "tl" | null>(null);
+  const [hlaska, setHlaska] = useState<{ k: string; t: string } | null>(null);
+  const tm = useRef<number | undefined>(undefined);
+  useEffect(() => () => window.clearTimeout(tm.current), []);
+  const ukaz = (kk: string, t: string, ms = 2400) => { setHlaska({ k: kk, t }); window.clearTimeout(tm.current); tm.current = window.setTimeout(() => setHlaska(null), ms); };
+  const dnes = iso(new Date());
+
+  // ---------- Týždeň (ten istý komponent aj v Prehľade, KARTA 56G §1) ----------
+  const tyzden = <TyzdenKarta k={k} off={tyzOff} setOff={(o) => { setTyzOff(o); setDen(null); }} den={den} onDen={setDen} mobil={mobil} kostolV={kostolV} />;
 
   // ---------- Mesiac ----------
   const m1 = (() => { const t = new Date(); return new Date(t.getFullYear(), t.getMonth() + mesOff, 1); })();
@@ -225,6 +235,14 @@ export function OmseKalendar({ strankaId, meno, kostoly, mobil, toast }: { stran
   const [zlyDen, setZlyDen] = useState<Record<string, boolean>>({});
   const dD = den ? new Date(Number(den.slice(0, 4)), Number(den.slice(5, 7)) - 1, Number(den.slice(8, 10))) : null;
   const pridajPolozku = (typ: string) => { if (!den) return; const x = druhPolozky(typ); zmenK((y) => ({ ...y, extra: { ...y.extra, [den]: [...(y.extra[den] ?? []), { id: novyId(), typ, t: x.cas, m: "" }] } })); };
+  // KARTA 56G §3: oznam ZMENA OMŠE — v Oznamoch do konca toho dňa. Notifikácia sledujúcim: PLACEBO — karta 56G (sledovanie stránky nemá tabuľku).
+  const poslatZmenu = (veta: string, d: Date) => {
+    const koniec = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1).getTime();
+    pridajPrispevok(strankaId, { id: `naboz-zmena-${Date.now()}`, comp: "data", typ: "skutok", modul: "charity", kat: "Komunita", ntyp: "oznam", skore: 6, typSituacie: "normal", dni: 0, podpora: 0,
+      farnostId: strankaId, cirkev: "", komunita: meno, overena: true, nazov: veta, tag: "Zmena omše", popis: "poslané sledujúcim · zmizne po tomto dni",
+      vytvorene: Date.now(), platnostDni: Math.max(0.01, (koniec - Date.now()) / 864e5) });
+    toast("Poslané · oznam je aj v Oznamoch");
+  };
   const zmenPolozku = (id: string, p: Partial<PolozkaDna>) => { if (!den) return; zmenK((y) => ({ ...y, extra: { ...y.extra, [den]: (y.extra[den] ?? []).map((q) => (q.id === id ? { ...q, ...p } : q)) } })); };
   const denPanel = den && dD && (
     <section aria-label="Úprava dňa" style={{ ...karta, border: "2px solid var(--green)", padding: mobil ? "14px 14px" : "16px 20px", display: "flex", flexDirection: "column", gap: 10 }}>
@@ -232,19 +250,35 @@ export function OmseKalendar({ strankaId, meno, kostoly, mobil, toast }: { stran
         <b style={{ flex: 1, fontSize: 16 }}>{DNI_K[dvt(dD)]} {dD.getDate()}. {MES_G[dD.getMonth()]} · {kostoly[kI]?.nazov ?? "Váš kostol"}</b>
         <button type="button" onClick={() => setDen(null)} aria-label="Zavrieť" style={{ width: 44, height: 44, borderRadius: 12, border: "1px solid var(--cardBd)", background: "var(--field)", cursor: "pointer", fontSize: 18, color: "var(--ink2)", boxShadow: "none" }}>×</button>
       </div>
-      {omseDna(k, dD).map((o) => (
-        <div key={o.kod} style={{ padding: "8px 10px", borderRadius: 14, border: "1px solid var(--cardBd)", background: "var(--field)", display: "flex", alignItems: "center", gap: 10, opacity: o.zrusena ? 0.55 : 1, flexWrap: "wrap" }}>
-          <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 1 }}>
-            <span style={{ fontSize: 14.5, fontWeight: 800 }}>Omša · {nazovOmse(o.kod)}</span>
-            <span style={{ fontSize: 12.5, color: "var(--ink3)" }}>{o.zrusena ? "zrušená len v tento deň" : o.posunuta ? `posunutá z ${o.vzor} len v tento deň` : "podľa vzoru"}</span>
-          </span>
-          <CasPole velky value={o.t} farba={o.zrusena || o.posunuta ? "var(--cRed)" : undefined} onChyba={(z) => setZlyDen((x) => (x[`o${o.kod}`] === z ? x : { ...x, [`o${o.kod}`]: z }))}
-            onCommit={(v) => zmenK((y) => ({ ...y, posun: { ...y.posun, [den]: { ...(y.posun[den] ?? {}), [o.kod]: v } } }))} />
-          {o.zrusena
-            ? <button type="button" onClick={() => zmenK((y) => ({ ...y, zrus: { ...y.zrus, [den]: (y.zrus[den] ?? []).filter((q) => q !== o.kod) } }))} style={{ height: 40, flex: "none", padding: "0 12px", borderRadius: 12, border: "1.5px solid var(--gBd)", background: "transparent", color: "var(--gInk)", cursor: "pointer", fontFamily: "inherit", fontSize: 13.5, fontWeight: 800, boxShadow: "none" }}>Obnoviť</button>
-            : <button type="button" onClick={() => zmenK((y) => ({ ...y, zrus: { ...y.zrus, [den]: [...(y.zrus[den] ?? []), o.kod] } }))} aria-label="Zrušiť túto omšu len v tento deň" title="Zrušiť túto omšu len v tento deň" style={xTl}>×</button>}
-          {zlyDen[`o${o.kod}`] && <span role="alert" style={{ flexBasis: "100%", fontSize: 12.5, fontWeight: 700, color: "var(--cRed)" }}>{CHYBA_CASU}</span>}
-        </div>))}
+      {omseDna(k, dD).map((o) => { const ak = `${den}|${o.kod}`, odp = k.odpovede?.[ak], zmena = o.zrusena || o.posunuta;
+        const bezOdp = (y: KalKostol) => { const n = { ...(y.odpovede ?? {}) }; delete n[ak]; return n; };
+        const vetaZmeny = `${DNI_K[dvt(dD)]} ${dD.getDate()}. ${dD.getMonth() + 1}. · ${o.zrusena ? `omša o ${o.vzor} nebude.` : `omša bude o ${o.t} namiesto ${o.vzor}.`}`;
+        return (
+        <div key={o.kod} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          <div style={{ padding: "8px 10px", borderRadius: 14, border: "1px solid var(--cardBd)", background: "var(--field)", display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+            {o.zrusena
+              ? <button type="button" onClick={() => zmenK((y) => ({ ...y, odpovede: bezOdp(y), zrus: { ...y.zrus, [den]: (y.zrus[den] ?? []).filter((q) => q !== o.kod) } }))} style={{ height: 40, flex: "none", padding: "0 12px", borderRadius: 12, border: "1.5px solid var(--gBd)", background: "transparent", color: "var(--gInk)", cursor: "pointer", fontFamily: "inherit", fontSize: 13.5, fontWeight: 800, boxShadow: "none" }}>Obnoviť</button>
+              : <button type="button" onClick={() => zmenK((y) => ({ ...y, odpovede: bezOdp(y), zrus: { ...y.zrus, [den]: [...(y.zrus[den] ?? []), o.kod] } }))} aria-label="Zrušiť túto omšu len v tento deň" title="Zrušiť túto omšu len v tento deň" style={xTl}>×</button>}
+            <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 1, opacity: o.zrusena ? 0.55 : 1 }}>
+              <span style={{ fontSize: 14.5, fontWeight: 800 }}>Omša · {nazovOmse(o.kod)}</span>
+              <span style={{ fontSize: 12.5, color: "var(--ink3)" }}>{o.zrusena ? "zrušená len v tento deň" : o.posunuta ? `posunutá z ${o.vzor} len v tento deň` : "podľa vzoru"}</span>
+            </span>
+            <CasPole velky value={o.t} farba={o.zrusena || o.posunuta ? "var(--cRed)" : undefined} onChyba={(z) => setZlyDen((x) => (x[`o${o.kod}`] === z ? x : { ...x, [`o${o.kod}`]: z }))}
+              onCommit={(v) => { if (v === o.t) return; zmenK((y) => ({ ...y, odpovede: bezOdp(y), posun: { ...y.posun, [den]: { ...(y.posun[den] ?? {}), [o.kod]: v } } })); }} />
+            {zlyDen[`o${o.kod}`] && <span role="alert" style={{ flexBasis: "100%", fontSize: 12.5, fontWeight: 700, color: "var(--cRed)" }}>{CHYBA_CASU}</span>}
+          </div>
+          {/* KARTA 56G §3: pri zmene omše otázka hneď pod ňou — nič sa nepošle samo */}
+          {zmena && !odp && <div role="group" aria-label="Poslať oznam veriacim?" style={{ padding: "12px 14px", borderRadius: 14, border: `1.5px solid ${ZLATA}`, background: "var(--goldBg)", display: "flex", flexDirection: "column", gap: 8 }}>
+            <b style={{ fontSize: 15 }}>Poslať oznam veriacim?</b>
+            <span style={{ fontSize: 14.5, fontWeight: 700 }}>{vetaZmeny}</span>
+            <span style={{ fontSize: 12.5, lineHeight: 1.45, color: "var(--ink2)" }}>Príde tým, čo farnosť sledujú, a ukáže sa v Oznamoch. Po tomto dni sám zmizne.</span>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <button type="button" onClick={() => { poslatZmenu(vetaZmeny, dD); zmenK((y) => ({ ...y, odpovede: { ...(y.odpovede ?? {}), [ak]: "ano" } })); }} style={{ ...tlZ, minHeight: 44, padding: "0 16px", fontSize: 14.5, borderRadius: 12 }}>Áno, poslať</button>
+              <button type="button" onClick={() => zmenK((y) => ({ ...y, odpovede: { ...(y.odpovede ?? {}), [ak]: "nie" } }))} style={{ minHeight: 44, padding: "0 16px", borderRadius: 12, border: "1px solid var(--cardBd)", background: "var(--card)", cursor: "pointer", fontFamily: "inherit", fontSize: 14.5, fontWeight: 800, color: "var(--ink2)", boxShadow: "none" }}>Nie, neposielať</button>
+            </div>
+          </div>}
+          {zmena && odp && <span role="status" style={{ fontSize: 13, fontWeight: 800, color: odp === "ano" ? "var(--gInk)" : "var(--ink3)", paddingLeft: 4 }}>{odp === "ano" ? "Poslané ✓ · veriaci dostali oznam, je aj v Oznamoch" : "Zmenené len v kalendári · oznam sa neposlal"}</span>}
+        </div>); })}
       {polozkyDna(k, dD).map((p) => { const x = druhPolozky(p.typ), ob = x.skupina === "Obrady"; return (
         <div key={p.id} style={{ padding: "8px 10px", borderRadius: 14, border: `1px solid ${ob ? ZLATA : "var(--cardBd)"}`, background: "var(--field)", display: "flex", flexDirection: "column", gap: 8 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -423,55 +457,10 @@ export function plagatTyzdna(k: KalKostol, VJ: KalendarFarnosti["verejne"], off:
   });
 }
 
-/** KARTA 56F §7: pripnutý týždeň v Prehľade — úzky panel vedľa Treba vybaviť, Zväčšiť = 7 stĺpcov */
-export function TyzdenVPrehlade({ strankaId, treba, onUpravit, mobil }: { strankaId: string; treba: ReactNode; onUpravit: () => void; mobil: boolean }) {
+/** KARTA 56G §1: pripnutý týždeň v Prehľade = ten istý Týždeň ako v Omšiach; ťuk na deň otvorí jeho úpravu */
+export function TyzdenVPrehlade({ strankaId, onDen, mobil }: { strankaId: string; onDen: (key: string) => void; mobil: boolean }) {
   const kal = useKalendar(strankaId);
-  const [vel, setVel] = useState(false);
-  if (!kal.pin) return <>{treba}</>;
-  const k = kal.kostoly["0"] ?? novyKostol();
-  const dnes = iso(new Date());
-  const dni = dniTyzdna(0).map((d) => {
-    const r = riadkyDna(k, d);
-    return { d, key: iso(d), r, casy: r.filter((x) => !x.zrusena).map((x) => x.t).join(" · ") || "—", obrad: r.some((x) => x.obrad) };
-  });
-  const upravit = <button type="button" onClick={onUpravit} style={{ minHeight: 40, padding: "0 12px", borderRadius: 10, border: "1px solid var(--cardBd)", background: "var(--field)", cursor: "pointer", fontFamily: "inherit", fontSize: 13.5, fontWeight: 800, color: "var(--ink)", boxShadow: "none" }}>Upraviť v kalendári ›</button>;
-  if (vel) return <>
-    <section aria-label="Tento týždeň · podrobne" style={{ flex: "none", borderRadius: 18, background: "var(--card)", border: "1.5px solid var(--blue)", padding: "14px 16px", display: "flex", flexDirection: "column", gap: 10 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-        <b style={{ flex: 1, fontSize: 16, color: "var(--blue)" }}>Tento týždeň · podrobne</b>
-        {upravit}
-        <button type="button" onClick={() => setVel(false)} style={{ minHeight: 40, padding: "0 12px", border: "none", borderRadius: 10, background: "#4B7A35", cursor: "pointer", fontFamily: "inherit", fontSize: 13.5, fontWeight: 800, color: "#fff", boxShadow: "none" }}>Zmenšiť</button>
-      </div>
-      <div style={{ display: "grid", gridTemplateColumns: mobil ? "1fr" : "repeat(7,minmax(0,1fr))", gap: 8 }}>
-        {dni.map(({ d, key, r }) => { const jd = key === dnes; return (
-          <div key={key} style={{ minWidth: 0, padding: 10, borderRadius: 14, border: jd ? "2px solid var(--ink)" : "1px solid var(--cardBd)", background: "var(--field)", display: "flex", flexDirection: "column", gap: 6 }}>
-            <span style={{ fontSize: 13, fontWeight: 800, color: jd ? "var(--gInk)" : "var(--ink3)" }}>{DNI_K[dvt(d)]} {d.getDate()}. {d.getMonth() + 1}.{jd ? " · dnes" : ""}</span>
-            {r.map((x, i) => (
-              <div key={i} style={{ padding: "6px 8px", borderRadius: 10, border: `1px solid ${x.obrad ? ZLATA : x.zmena ? "var(--cRed)" : x.extra ? "var(--green)" : "var(--cardBd)"}`, background: x.obrad ? "rgba(201,162,74,.14)" : "var(--card)", display: "flex", flexDirection: "column", gap: 1 }}>
-                <b style={{ fontSize: 15, color: x.zrusena ? "var(--cRed)" : "var(--ink)", fontVariantNumeric: "tabular-nums" }}>{x.t}</b>
-                <span style={{ fontSize: 12, lineHeight: 1.35, color: "var(--ink2)" }}>{x.extra ? [x.s, x.meno].filter(Boolean).join(" · ") : x.s || "svätá omša"}</span>
-              </div>))}
-            {!r.length && <span style={{ fontSize: 12.5, color: "var(--ink3)" }}>nič</span>}
-          </div>); })}
-      </div>
-    </section>
-    {treba}
-  </>;
-  return (
-    <div style={{ flex: "none", display: "flex", gap: 14, alignItems: "flex-start", flexWrap: "wrap" }}>
-      <div style={{ flex: 1, minWidth: 300, display: "flex", flexDirection: "column" }}>{treba}</div>
-      <aside aria-label="Tento týždeň" style={{ flex: "none", width: mobil ? "100%" : 300, maxWidth: "100%", boxSizing: "border-box", borderRadius: 18, background: "var(--card)", border: "1.5px solid var(--blue)", padding: 12, display: "flex", flexDirection: "column", gap: 4 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "0 2px 6px" }}>
-          <b style={{ flex: 1, fontSize: 15, color: "var(--blue)" }}>Tento týždeň</b>
-          <button type="button" onClick={() => setVel(true)} aria-label="Zväčšiť týždeň" style={{ minHeight: 36, padding: "0 10px", borderRadius: 10, border: "1px solid var(--cardBd)", background: "var(--field)", cursor: "pointer", fontFamily: "inherit", fontSize: 13, fontWeight: 800, color: "var(--ink)", boxShadow: "none" }}>Zväčšiť ⤢</button>
-        </div>
-        {dni.map(({ d, key, casy, obrad }) => { const jd = key === dnes; return (
-          <div key={key} style={{ minHeight: 34, padding: "4px 8px", borderRadius: 10, background: jd ? "var(--gSoft)" : "transparent", display: "flex", alignItems: "center", gap: 8 }}>
-            <span style={{ flex: "none", width: 58, fontSize: 13, fontWeight: 800, color: jd ? "var(--gInk)" : "var(--ink3)" }}>{DNI_K[dvt(d)]} {d.getDate()}.</span>
-            <span style={{ flex: 1, minWidth: 0, fontSize: 13.5, fontWeight: 700, color: "var(--ink)", fontVariantNumeric: "tabular-nums", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{casy}</span>
-            {obrad && <span aria-label="obrad" style={{ flex: "none", width: 8, height: 8, borderRadius: "50%", background: ZLATA }} />}
-          </div>); })}
-        <button type="button" onClick={onUpravit} style={{ marginTop: 6, minHeight: 40, border: "none", borderRadius: 10, background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 13.5, fontWeight: 800, color: "var(--green)", boxShadow: "none" }}>Upraviť v kalendári ›</button>
-      </aside>
-    </div>);
+  const [off, setOff] = useState(0);
+  if (!kal.pin) return null;
+  return <TyzdenKarta k={kostolKal(strankaId)} off={off} setOff={setOff} den={null} onDen={onDen} mobil={mobil} pozn={false} />;
 }

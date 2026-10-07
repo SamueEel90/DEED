@@ -62,11 +62,10 @@ const dnesText = () => { const s = new Intl.DateTimeFormat("sk-SK", { weekday: "
 const POPLATKY = [0, 1, 2, 5];
 const VID: ["zobrazit" | "skryt" | "len-farar", string, string][] = [["zobrazit", "Zobraziť", "Návštevníci vidia, koľko sa vyzbieralo."], ["skryt", "Skryť", "Návštevníci vidia len, že zbierka beží."], ["len-farar", "Len farár", "Sumy vidí iba správca farnosti."]];
 /** + Pridať mimo Zbierok, Oznamov a Omší (KARTA 56D §2) */
-type Akcia = "zbierka" | "oznam" | "udalost" | "zmena";
+type Akcia = "zbierka" | "oznam" | "zmena";
 const PRIDAT: [string, string, string, Akcia][] = [
   [IC.zbierky, "Zbierka", "zbierka farnosti alebo zbierka pre veriacich (pohreb, svadba)", "zbierka"],
-  [IC.oznamy, "Oznam", "krátka informácia pre farníkov · ukáže sa na profile v Oznamoch", "oznam"],
-  [IC.omse, "Udalosť", "pozvánka s fotkou a tlačidlom Prídem · púť, odpust, brigáda", "udalost"],
+  [IC.oznamy, "Oznam", "krátky oznam, udalosť, parte · ukáže sa na profile v Oznamoch", "oznam"],
   [IC.omse, "Zmena omše", "omša nebude alebo bude v inom čase · ťuknite na deň v kalendári", "zmena"],
 ];
 const PRIDAT_T: Partial<Record<Sub, string>> = { zbierky: "+ Pridať zbierku", oznamy: "+ Pridať oznam" };
@@ -100,6 +99,9 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
   const [noveOk, setNoveOk] = useState<string | null>(null);
   const [zbOtv, setZbOtv] = useState<string | null>(null);
   const [pz, setPz] = useState(false); // OPRAVY 161: postup zbierky pre veriacich
+  // KARTA 56G: Omše a kalendár otvorené na dni (ťuk v Prehľade) alebo na tomto týždni (Zmena omše) — key = nové otvorenie
+  const [omseStart, setOmseStart] = useState<{ den?: string; n: number }>({ n: 0 });
+  const naDen = (den?: string) => { setOmseStart((o) => ({ den, n: o.n + 1 })); go("omse"); };
   const go = (k: Sub) => { if (k === "oznamy") setOznamyV(vlastnePrispevkyVsetky(strankaId)); setSub(k); setPridat(false); setPinOtv(false); };
 
   // KARTA 56D §1: profil stránky (profil_stranky) — karta vľavo, percento, „Dokončiť profil"
@@ -307,8 +309,8 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
           <span style={{ fontSize: 12.5, lineHeight: 1.2, fontWeight: 800, textAlign: "center", color: vp ? "var(--tInk)" : "var(--ink)" }}>{t}</span>
         </button>); })}
     </div>
-    <TyzdenVPrehlade strankaId={strankaId} treba={trebaVybavit} onUpravit={() => go("omse")} mobil />{cisla}
-  </> : <>{cisla}{pripnute}<TyzdenVPrehlade strankaId={strankaId} treba={trebaVybavit} onUpravit={() => go("omse")} mobil={false} /></>;
+    <TyzdenVPrehlade strankaId={strankaId} onDen={naDen} mobil />{trebaVybavit}{cisla}
+  </> : <>{cisla}{pripnute}<TyzdenVPrehlade strankaId={strankaId} onDen={naDen} mobil={false} />{trebaVybavit}</>;
 
   // KARTA 56D §6 · OPRAVY 161: ďalšie zbierky stránky (zbierka farnosti / pre veriacich) — z účtu (tabuľka zbierka)
   const sprava = (m: string) => { setZbVyber(false); setZbBlok(false); setNoveOk(null); setZmazana(false); return m; };
@@ -378,7 +380,7 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
   </>;
 
   // KARTA 56F · OPRAVY 165: Omše a kalendár (Týždeň · Mesiac · Rozvrh omší, úprava dňa, plagát, pripnutie do Prehľadu)
-  const omse = <OmseKalendar strankaId={strankaId} meno={meno} kostoly={kostoly.map((k) => ({ nazov: k.nazov, adresa: k.adresa }))} mobil={mobil} toast={toast} />;
+  const omse = <OmseKalendar key={omseStart.n} start={omseStart} strankaId={strankaId} meno={meno} kostoly={kostoly.map((k) => ({ nazov: k.nazov, adresa: k.adresa }))} mobil={mobil} toast={toast} />;
 
   const zmenSelf = (p: Partial<typeof self>) => { const n = { ...self, ...p }; setSelf(n); ulozSelfAdd(strankaId, n); };
   const selfKarta = (
@@ -478,13 +480,12 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
   </> : nastavenia };
 
   // ---------------- Pridať ----------------
-  // KARTA 56D §2: tlačidlo v hlavičke podľa sekcie; inde ponuka 4 položiek
+  // KARTA 56D §2 · 56G §2: tlačidlo v hlavičke podľa sekcie; inde ponuka 3 položiek (Zbierka · Oznam · Zmena omše)
   const akcia = (k: Akcia) => {
     setPridat(false);
     if (k === "zbierka") { go("zbierky"); setZbVyber(true); window.scrollTo({ top: 0, behavior: "smooth" }); return; }
     if (k === "oznam") { setStart({ kat: "oznam" }); return; }
-    if (k === "udalost") { setStart({ kat: "udalost" }); return; }
-    go("omse"); // Zmena omše = ťuk na deň v kalendári (KARTA 56F)
+    naDen(); // KARTA 56G §2: Zmena omše = kalendár na tomto týždni, bez vybraného dňa
   };
   const pridatTl = () => { if (sub === "zbierky") akcia("zbierka"); else if (sub === "oznamy") akcia("oznam"); else setPridat(true); };
   const zoznamPridat = PRIDAT.map(([d, t, s, k]) => (

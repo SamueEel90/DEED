@@ -28,6 +28,8 @@ export interface KalKostol {
   posun: Record<string, Record<number, string>>;
   /** dátum → pridané položky dňa */
   extra: Record<string, PolozkaDna[]>;
+  /** KARTA 56G §3: „Poslať oznam veriacim?" — odpoveď ku zmene omše (kľúč „dátum|kód") */
+  odpovede?: Record<string, "ano" | "nie">;
 }
 export type Verej = "omse" | "zmeny" | "modl" | "pohreb" | "sobas" | "krst" | "udal" | "umysel";
 export interface KalendarFarnosti {
@@ -91,6 +93,9 @@ export const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).p
 export const zIso = (s: string) => { const [y, m, d] = s.split("-").map(Number); return new Date(y, m - 1, d); };
 /** 0 = pondelok … 6 = nedeľa */
 export const dvt = (d: Date) => (d.getDay() + 6) % 7;
+/** o koľko týždňov je deň od tohto týždňa */
+export const posunTyzdna = (key: string) => Math.round((pondelokDna(zIso(key)).getTime() - pondelok(0).getTime()) / (7 * 864e5));
+const pondelokDna = (d: Date) => { const t = new Date(d); t.setHours(0, 0, 0, 0); t.setDate(t.getDate() - dvt(t)); return t; };
 export function pondelok(posun = 0): Date { const t = new Date(); t.setHours(0, 0, 0, 0); t.setDate(t.getDate() - dvt(t) + 7 * posun); return t; }
 export const dniTyzdna = (posun = 0) => Array.from({ length: 7 }, (_, i) => { const d = pondelok(posun); d.setDate(d.getDate() + i); return d; });
 export const DNI_K = ["Po", "Ut", "St", "Št", "Pi", "So", "Ne"];
