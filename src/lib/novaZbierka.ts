@@ -43,14 +43,21 @@ export interface NovaZbierkaData {
   krok: number;
   /** KARTA 56D §6 · OPRAVY 161: zbierka farnosti (na účet hlavnej) alebo zbierka pre veriacich (pohreb, svadba, iné) */
   farnost?: ZbierkaFarnosti;
+  /** KARTA 56E · migrácia 0065: split zbierky s overovateľom — server ho pri zapečatení zapíše do zbierka_podiel
+   *  a každý dar (zbierka_dar) z neho vytvorí podiely v ledgeri. Podiely sú zlomky, súčet 1. */
+  rozdelenie?: PodielZbierky[];
 }
+export type PodielZbierky =
+  | { druh: "prijemca"; ucet: string; text: string; podiel: number }
+  | { druh: "overovatel"; podiel: number }
+  | { druh: "podelene"; stranka: string; text: string; podiel: number };
 /** KARTA 56D §6 · OPRAVY 161 — druh zbierky vo farnosti. Pre veriacich: príjemca (overený skenom), oznámenie a rozdelenie. */
 export interface ZbierkaFarnosti {
   druh: "farnost" | "pohreb" | "svadba" | "ine";
   /** zbierka pre veriacich: podiel farnosti v % (0 – 3, po 0,5) a najviac 100 € */
   podiel?: number;
   /** príjemca peňazí (pozostalý, snúbenec …) — účet z jeho overeného profilu */
-  prijemca?: { meno: string; overeny: string };
+  prijemca?: { meno: string; overeny: string; ucet?: string };
   /** oznámenie na stránke farnosti (parte / svadobné oznámenie / oznámenie), ku ktorému je zbierka pripojená */
   oznamenie?: { meno: string; rodena?: string; roky?: string; kedy?: string; kde?: string; kto?: string; vlastne?: string; prispevok?: string };
   /** KARTA 56E §2b: zvyšok rozhoduje príjemca — s kým sa podelí (len registrovaní v DEED, najviac 2, každý aspoň 5 %) */

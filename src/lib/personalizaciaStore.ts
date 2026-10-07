@@ -168,13 +168,22 @@ export async function pridajPodporuDB(p: {
   prijemca?: string; suma?: number; kanal?: string; vyzbierane?: number; ciel?: number;
 }): Promise<void> {
   if (!supabase) return;
-  // Zadanie 2 (ledger, 0037): dar musí mať príjemcu s účtom — v DB je ním autor prípadu.
-  // Prípad, ktorý v DB nie je (mock/demo id), sa do ledgera nezapisuje; ostáva len v UI.
-  if (!jeUuid(p.refId)) return;
   const kanal = KANAL_DO_DB[p.kanal || "DEED"] || "deed";        // DEED→deed, EUR→fiat
   const mena = kanal === "deed" ? "DEED" : "EUR";
   let idemKluc: string;
   try { idemKluc = crypto.randomUUID(); } catch { idemKluc = `dar-${Date.now()}-${Math.round(Math.random() * 1e9)}`; }
+  // Karta 56E · 0065: zbierka stránky s rozdelením (zbierka s overovateľom) — podiely vytvorí server zo splitu zbierky.
+  // Zbierka bez rozdelenia vráti 'bez_rozdelenia' — tie ešte do ledgera nejdú (hlásené Martinovi).
+  if (/^zb-/.test(String(p.refId))) {
+    const { error } = await supabase.rpc("zbierka_dar", {
+      p_zbierka: String(p.refId), p_idem: idemKluc, p_suma: p.suma ?? 0, p_mena: mena, p_kanal: kanal, p_meno_darcu: p.darca,
+    });
+    if (error && error.details !== "bez_rozdelenia") throw error;
+    return;
+  }
+  // Zadanie 2 (ledger, 0037): dar musí mať príjemcu s účtom — v DB je ním autor prípadu.
+  // Prípad, ktorý v DB nie je (mock/demo id), sa do ledgera nezapisuje; ostáva len v UI.
+  if (!jeUuid(p.refId)) return;
   const { error } = await supabase.rpc("platba_create", {
     p_idem_kluc: idemKluc,
     p_suma: p.suma ?? 0,
