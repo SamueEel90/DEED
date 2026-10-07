@@ -115,6 +115,7 @@ export function OznamyFarnosti({ strankaId, meno, mobil, toast, hore }: { strank
   const [u, setU] = useState<UdajeOznamu>(() => prazdneUdaje("parte"));
   const [volba, setVolba] = useState<VolbaSablony>(() => prvaVolba("parte"));
   const [hotovo, setHotovo] = useState<string | null>(null);
+  const [sel, setSel] = useState<string | null>(null); // zverejnený oznam v náhľade
   const [, obnov] = useState(0);
   const topRef = useRef<HTMLDivElement>(null);
   useEffect(() => { if (hore) topRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); }, [hore]);
@@ -139,25 +140,25 @@ export function OznamyFarnosti({ strankaId, meno, mobil, toast, hore }: { strank
   const kedyT = dr === 1 ? [fmtDatum(dat), CAS_OK(cas) ? pekny(cas) : "", miesto.trim()].filter(Boolean).join(" · ") : dr === 2 && osp === 0 ? popisOznamu(u).split(" · ").slice(1).join(" · ") : "";
   const jePlagat = (dr === 1 && usp === 1) || (dr === 2 && osp === 1);
   const obrazok = jePlagat ? plagat : dr === 1 ? media.find((m) => m.typ === "foto")?.src : undefined; // prvá fotka z galérie
-  const nahlad = (
+  const kartaNahladu = (o: { chip: string; nadpis: string; obraz: ReactNode; text: string; kedy: string; pozvT?: string }) => (
     <section aria-label="Náhľad oznamu" style={{ ...karta, overflow: "hidden", minWidth: 0 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px" }}>
         <span style={{ width: 38, height: 38, flex: "none", borderRadius: "50%", background: "var(--gSoft)", border: "1px solid var(--gBd)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 800, color: "var(--gInk)" }}>{iniciy(meno)}</span>
         <span style={{ flex: 1, minWidth: 0 }}><b style={{ display: "block", fontSize: 14.5 }}>{meno}</b><span style={{ display: "block", fontSize: 12.5, color: "var(--ink3)" }}>na profile · pre sledujúcich</span></span>
-        <span style={{ flex: "none", padding: "4px 10px", borderRadius: 9, background: "var(--gSoft)", border: "1px solid var(--gBd)", fontSize: 12, fontWeight: 800, color: "var(--gInk)" }}>{chip}</span>
+        <span style={{ flex: "none", padding: "4px 10px", borderRadius: 9, background: "var(--gSoft)", border: "1px solid var(--gBd)", fontSize: 12, fontWeight: 800, color: "var(--gInk)" }}>{o.chip}</span>
       </div>
-      {dr === 2 && osp === 0 && u.meno.trim() && (u.zena != null || u.druh !== "parte")
-        ? <div style={{ display: "flex", justifyContent: "center", padding: 12, background: "var(--field)" }}><Plagat u={u} volba={volba} vz={vz} sirka={280} /></div>
-        : dr !== 0 && (obrazok && jePlagat
-          ? <ObrazokPlagatu src={obrazok} />
-          : <ObrazokOznamu src={obrazok} inic={iniciy(meno)} />)}
+      {o.obraz}
       <div style={{ padding: "12px 14px 14px", display: "flex", flexDirection: "column", gap: 6 }}>
-        <b style={{ fontSize: 16.5, lineHeight: 1.3 }}>{nadpisN}</b>
-        {dr !== 2 && cistyText(txt) && <div style={{ fontSize: 14.5, lineHeight: 1.5, color: "var(--ink2)", whiteSpace: "pre-line", display: "-webkit-box", WebkitLineClamp: 6, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{cistyText(txt)}</div>}
-        {kedyT && <span style={{ fontSize: 14, fontWeight: 700, color: "var(--ink2)" }}>{kedyT}</span>}
-        {dr === 1 && pozv > 0 && <span style={{ alignSelf: "flex-start", marginTop: 6, minHeight: 44, padding: "0 18px", borderRadius: 13, background: "#4B7A35", color: "#fff", fontSize: 15, fontWeight: 800, display: "flex", alignItems: "center" }}>{pozv === 2 ? "Prihlásiť sa" : "Zúčastním sa"}</span>}
+        <b style={{ fontSize: 16.5, lineHeight: 1.3 }}>{o.nadpis}</b>
+        {o.text && <div style={{ fontSize: 14.5, lineHeight: 1.5, color: "var(--ink2)", whiteSpace: "pre-line", display: "-webkit-box", WebkitLineClamp: 6, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{o.text}</div>}
+        {o.kedy && <span style={{ fontSize: 14, fontWeight: 700, color: "var(--ink2)" }}>{o.kedy}</span>}
+        {o.pozvT && <span style={{ alignSelf: "flex-start", marginTop: 6, minHeight: 44, padding: "0 18px", borderRadius: 13, background: "#4B7A35", color: "#fff", fontSize: 15, fontWeight: 800, display: "flex", alignItems: "center" }}>{o.pozvT}</span>}
       </div>
     </section>);
+  const nahladPisania = kartaNahladu({ chip, nadpis: nadpisN, text: dr !== 2 ? cistyText(txt) : "", kedy: kedyT, pozvT: dr === 1 && pozv > 0 ? (pozv === 2 ? "Prihlásiť sa" : "Zúčastním sa") : undefined,
+    obraz: dr === 2 && osp === 0 && u.meno.trim() && (u.zena != null || u.druh !== "parte")
+      ? <div style={{ display: "flex", justifyContent: "center", padding: 12, background: "var(--field)" }}><Plagat u={u} volba={volba} vz={vz} sirka={280} /></div>
+      : dr !== 0 && (obrazok && jePlagat ? <ObrazokPlagatu src={obrazok} /> : <ObrazokOznamu src={obrazok} inic={iniciy(meno)} />) });
 
   // ---- zverejniť ----
   const zverejni = () => {
@@ -253,13 +254,28 @@ export function OznamyFarnosti({ strankaId, meno, mobil, toast, hore }: { strank
         <div key={x.id} style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 60, padding: "8px 0", borderTop: i ? "1px solid var(--cardBd)" : "none" }}>
           <span style={{ flex: "none", padding: "3px 9px", borderRadius: 8, background: stitokOznamu(x) === "ZMENA OMŠE" ? "var(--goldBg)" : "var(--gSoft)", border: `1px solid ${stitokOznamu(x) === "ZMENA OMŠE" ? ZLATA : "var(--gBd)"}`, fontSize: 11.5, fontWeight: 800, color: stitokOznamu(x) === "ZMENA OMŠE" ? "var(--ink)" : "var(--gInk)", whiteSpace: "nowrap" }}>{stitokOznamu(x)}</span>
           <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}><b style={{ fontSize: 14.5 }}>{x.nazov}</b><span style={{ fontSize: 12.5, color: "var(--ink3)" }}>{meta(x)}</span></span>
-          <button type="button" onClick={() => { zmazPrispevok(strankaId, x.id); obnov((y) => y + 1); toast("Oznam je zmazaný."); }} aria-label={`Zmazať: ${x.nazov}`} title="Zmazať"
+          <button type="button" onClick={() => { setSel(x.id); topRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); }} style={{ flex: "none", minHeight: 40, padding: "0 10px", border: "none", borderRadius: 10, background: sel === x.id ? "var(--gSoft)" : "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 13.5, fontWeight: 800, color: "var(--gInk)", boxShadow: "none", whiteSpace: "nowrap" }}>Ako to vidia ľudia ›</button>
+          <button type="button" onClick={() => { zmazPrispevok(strankaId, x.id); if (sel === x.id) setSel(null); obnov((y) => y + 1); toast("Oznam je zmazaný."); }} aria-label={`Zmazať: ${x.nazov}`} title="Zmazať"
             style={{ width: 40, height: 40, flex: "none", borderRadius: "50%", border: "none", background: "var(--cRedBg)", color: "#fff", cursor: "pointer", fontSize: 19, fontWeight: 800, lineHeight: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: 0, boxShadow: "none" }}>×</button>
         </div>))}
     </section>)
     : <section style={{ ...karta, padding: "12px 20px", fontSize: 14.5, color: "var(--ink3)" }}>Zatiaľ žiadne oznamy. Prvý napíšete vyššie a zverejníte podržaním.</section>;
 
-  const pravy: ReactNode = <><span style={{ fontSize: 12.5, fontWeight: 800, letterSpacing: ".08em", color: "var(--ink3)" }}>NÁHĽAD · TAKTO TO UVIDIA ĽUDIA</span>{nahlad}</>;
+  // ---- KARTA 56H §5: „Ako to vidia ľudia ›" — náhľad vpravo prepne na zverejnený oznam ----
+  const vyb = sel ? zoznam.find((x) => x.id === sel) : undefined;
+  const nahladZverejneneho = (x: VieraFeedItem) => {
+    const st = stitokOznamu(x), f = x.fotky?.[0], sab = x.smutocny?.sablona;
+    const kratky = x.ntyp === "oznam" && !x.ukat && x.tag === "Oznam";
+    return kartaNahladu({ chip: st, nadpis: x.nazov ?? "", text: kratky || x.ntyp === "udalost" ? x.popis ?? "" : "", kedy: x.ntyp === "udalost" ? fmtDatum(x.datum ?? "") : meta(x),
+      obraz: sab ? <div style={{ display: "flex", justifyContent: "center", padding: 12, background: "var(--field)" }}><Plagat u={sab.u} volba={sab.volba} vz={sab.vz} sirka={280} /></div>
+        : f && x.plagat ? <ObrazokPlagatu src={f} />
+        : f || (st !== "OZNAM" && st !== "ZMENA OMŠE") ? <ObrazokOznamu src={f} inic={iniciy(meno)} /> : null });
+  };
+  const pravy: ReactNode = <>
+    <span style={{ fontSize: 12.5, fontWeight: 800, letterSpacing: ".08em", color: "var(--ink3)" }}>{vyb ? "ZVEREJNENÉ · TAKTO TO VIDIA ĽUDIA NA STRÁNKE" : "NÁHĽAD · TAKTO TO UVIDIA ĽUDIA"}</span>
+    {vyb && <button type="button" onClick={() => setSel(null)} style={{ alignSelf: "flex-start", minHeight: 40, padding: "0 12px", borderRadius: 10, border: "1px solid var(--cardBd)", background: "var(--field)", cursor: "pointer", fontFamily: "inherit", fontSize: 13.5, fontWeight: 800, color: "var(--ink)", boxShadow: "none" }}>‹ Späť na písanie</button>}
+    {vyb ? nahladZverejneneho(vyb) : nahladPisania}
+  </>;
   return <>
     <div ref={topRef} style={{ scrollMarginTop: 16 }} />
     {mobil ? <>{lavy}{pravy}</> : (
