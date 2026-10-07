@@ -17,6 +17,8 @@ import { pridajPrispevok, vlastnePrispevky, zmazPrispevok, type VieraFeedItem } 
 import { FormularOznamu, VyberSablony, Plagat, prazdneUdaje, prvaVolba, chybaOznamu, popisOznamu, type DruhOznamu, type UdajeOznamu, type VolbaSablony } from "@/features/viera/Sablony";
 import { zmenKostol, CAS_OK, normCas, dokonciCas, casNeexistuje, pekny } from "@/lib/kalendarFarnosti";
 import { stitokOznamu } from "./OmseKalendar";
+import { NahladNastenky } from "./NahladNastenky";
+import type { ProfilStranky } from "@/lib/profilStranky";
 
 type Druh = 0 | 1 | 2; // Krátky oznam · Udalosť · Oznámenie
 const DRUHY: [string, string][] = [
@@ -97,7 +99,7 @@ export function ObrazokOznamu({ src, inic, bg = "#2F3A2A" }: { src?: string; ini
 }
 const fmtDatum = (iso: string) => { if (!iso) return ""; const [y, m, d] = iso.split("-").map(Number); const dt = new Date(y, m - 1, d); return `${["Ne", "Po", "Ut", "St", "Št", "Pi", "So"][dt.getDay()]} ${d}. ${m}.`; };
 
-export function OznamyFarnosti({ strankaId, meno, mobil, toast, hore }: { strankaId: string; meno: string; mobil: boolean; toast: (m: string) => void; /** obsah pod zoznamom (Od farníkov) */ hore?: number }) {
+export function OznamyFarnosti({ strankaId, meno, profil, mobil, toast, hore }: { strankaId: string; meno: string; /** uložený profil (Farský úrad, logo) — náhľad verejnej stránky */ profil: ProfilStranky | null; mobil: boolean; toast: (m: string) => void; /** obsah pod zoznamom (Od farníkov) */ hore?: number }) {
   const vz = useVzhlad(strankaId, false);
   const [dr, setDr] = useState<Druh>(0);
   const [n, setN] = useState("");
@@ -116,6 +118,7 @@ export function OznamyFarnosti({ strankaId, meno, mobil, toast, hore }: { strank
   const [volba, setVolba] = useState<VolbaSablony>(() => prvaVolba("parte"));
   const [hotovo, setHotovo] = useState<string | null>(null);
   const [sel, setSel] = useState<string | null>(null); // zverejnený oznam v náhľade
+  const [vpOn, setVpOn] = useState(false); // 56H §6: celá verejná stránka
   const [, obnov] = useState(0);
   const topRef = useRef<HTMLDivElement>(null);
   useEffect(() => { if (hore) topRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); }, [hore]);
@@ -171,6 +174,7 @@ export function OznamyFarnosti({ strankaId, meno, mobil, toast, hore }: { strank
     } else if (dr === 1) {
       const kedy = [pekny(cas), miesto.trim()].filter(Boolean).join(" · ");
       pridajPrispevok(strankaId, { ...zaklad, ntyp: "udalost", tag: "Udalosť", nazov: n.trim(), popis: [kedy, cistyText(txt)].filter(Boolean).join(" · "), datum: dat, rsvp: pozv > 0, plagat: usp === 1 || undefined,
+        udalost: { cas: pekny(cas), miesto: miesto.trim() || undefined, text: cistyText(txt) || undefined, zavazne: pozv === 2 || undefined },
         fotky: usp === 1 ? (plagat ? [plagat] : undefined) : media.filter((m) => m.typ === "foto").map((m) => m.src) });
       zmenKostol(strankaId, "0", (k) => ({ ...k, extra: { ...k.extra, [dat]: [...(k.extra[dat] ?? []), { id: `u${teraz}`, typ: "udalost", t: pekny(cas), m: n.trim() }] } }));
       kalendar = true;
@@ -273,6 +277,7 @@ export function OznamyFarnosti({ strankaId, meno, mobil, toast, hore }: { strank
   };
   const pravy: ReactNode = <>
     <span style={{ fontSize: 12.5, fontWeight: 800, letterSpacing: ".08em", color: "var(--ink3)" }}>{vyb ? "ZVEREJNENÉ · TAKTO TO VIDIA ĽUDIA NA STRÁNKE" : "NÁHĽAD · TAKTO TO UVIDIA ĽUDIA"}</span>
+    <button type="button" onClick={() => setVpOn(true)} style={{ alignSelf: "stretch", minHeight: 48, borderRadius: 12, border: "1.5px solid var(--gBd)", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 14.5, fontWeight: 800, color: "var(--gInk)", boxShadow: "none" }}>Pozrieť celú verejnú stránku ›</button>
     {vyb && <button type="button" onClick={() => setSel(null)} style={{ alignSelf: "flex-start", minHeight: 40, padding: "0 12px", borderRadius: 10, border: "1px solid var(--cardBd)", background: "var(--field)", cursor: "pointer", fontFamily: "inherit", fontSize: 13.5, fontWeight: 800, color: "var(--ink)", boxShadow: "none" }}>‹ Späť na písanie</button>}
     {vyb ? nahladZverejneneho(vyb) : nahladPisania}
   </>;
@@ -284,5 +289,6 @@ export function OznamyFarnosti({ strankaId, meno, mobil, toast, hore }: { strank
         <div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 10, position: "sticky", top: 12 }}>{pravy}</div>
       </div>)}
     {zverejnene}
+    {vpOn && <NahladNastenky strankaId={strankaId} meno={meno} profil={profil} mobil={mobil} onSpat={() => setVpOn(false)} />}
   </>;
 }

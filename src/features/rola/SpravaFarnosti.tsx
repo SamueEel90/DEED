@@ -397,7 +397,7 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
   // KARTA 56G §4–5: Oznamy farnosti — Krátky oznam · Udalosť · Oznámenie, náhľad, ohlášky, zoznam zverejnených
   const oznamy = <>
     {nadpis("Oznamy", "Ohlášky, oznamy farnosti a oznamy od farníkov")}
-    <OznamyFarnosti strankaId={strankaId} meno={meno} mobil={mobil} toast={toast} hore={oznamyHore} />
+    <OznamyFarnosti strankaId={strankaId} meno={meno} profil={prof.ulozeny} mobil={mobil} toast={toast} hore={oznamyHore} />
     <span style={mobil ? { ...kicker, letterSpacing: ".07em", padding: "4px 2px 0" } : kicker}>OD FARNÍKOV</span>
     {selfKarta}
   </>;
