@@ -12,7 +12,8 @@ import { nacitajStav, ulozStav } from "@/features/viera/stav";
 import { nacitajSelfAdd, ulozSelfAdd } from "@/features/viera/UserOznamy";
 import { PridatSheet } from "@/features/viera/Pridat";
 import { Kalendar } from "@/features/viera/Kalendar";
-import { VerejnyProfilVSprave } from "@/features/verejny-profil/VerejnyProfil";
+import { NahladFarnosti, nahladPopis } from "./NahladFarnosti";
+import { useVzhlad } from "@/lib/vzhladStranky";
 import { VzhladStranky } from "./VzhladStranky";
 import { TlacidloNastavenia, LogoKarty } from "./spravaCasti";
 import { UpravitProfilCharity } from "./UpravitProfilCharity";
@@ -24,12 +25,12 @@ import { suhrnHlavnej, useOmsoveOkno, menaOkna, doZatvorenia, zavriTyzdenTest } 
 import { TESTOVACIA } from "@/lib/testovacia";
 import { usePouzivatel } from "@/lib/pouzivatel";
 import { najdiTestProfil } from "@/lib/testProfily";
-import { nacitajProfil, profilZPamate, uplnostProfilu, type ProfilStranky } from "@/lib/profilStranky";
+import { cistyNazov, nacitajProfil, profilZPamate, uplnostProfilu, type ProfilStranky } from "@/lib/profilStranky";
 import { nacitajPiny, pinyZPamate, ulozPiny } from "@/lib/spravaPiny";
 
-type Sub = "prehlad" | "zbierky" | "omse" | "oznamy" | "ludia" | "penazenka" | "nastroje" | "profil" | "nast" | "hlavna";
+type Sub = "prehlad" | "zbierky" | "omse" | "oznamy" | "ludia" | "penazenka" | "nastroje" | "profil" | "nast" | "hlavna" | "nahlad";
 /** sekcie, ktoré sa dajú pripnúť v Prehľade (najviac 6) */
-type Pin = Exclude<Sub, "prehlad" | "hlavna">;
+type Pin = Exclude<Sub, "prehlad" | "hlavna" | "nahlad">;
 const PINY: Pin[] = ["zbierky", "omse", "oznamy", "ludia", "penazenka", "nastroje", "profil", "nast"];
 const PIN_MAX_F = 6;
 const IC: Record<string, string> = {
@@ -41,7 +42,7 @@ const IC: Record<string, string> = {
   verejny: "M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12zM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z",
   pin: "M9 4h6l-1 6 3 3H7l3-3zM12 13v7", dole: "M6 9l6 6 6-6",
 };
-const TIT: Record<Sub, string> = { prehlad: "Prehľad", zbierky: "Zbierky", omse: "Omše a kalendár", oznamy: "Oznamy", ludia: "Ľudia", penazenka: "Peňaženka", nastroje: "Nástroje", profil: "Upraviť profil", nast: "Nastavenia", hlavna: "Hlavná zbierka" };
+const TIT: Record<Sub, string> = { prehlad: "Prehľad", zbierky: "Zbierky", omse: "Omše a kalendár", oznamy: "Oznamy", ludia: "Ľudia", penazenka: "Peňaženka", nastroje: "Nástroje", profil: "Upraviť profil", nast: "Nastavenia", hlavna: "Hlavná zbierka", nahlad: "Náhľad profilu" };
 const Ik = ({ d, s = 20, c = "var(--acc)", w = 1.9, style }: { d: string; s?: number; c?: string; w?: number; style?: CSSProperties }) =>
   <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth={w} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flex: "none", ...style }}><path d={d} /></svg>;
 const eur = (n: number) => `${n.toLocaleString("sk-SK")} €`;
@@ -52,8 +53,6 @@ function zaciatokObdobia(ob: number): number {
 }
 const zaciatokMesiaca = () => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1).getTime(); };
 const dnesText = () => { const s = new Intl.DateTimeFormat("sk-SK", { weekday: "long", day: "numeric", month: "long" }).format(new Date()); return s.charAt(0).toUpperCase() + s.slice(1); };
-/** názov farnosti bez čiarky a bodky na konci (KARTA 56D §1) */
-const cistyNazov = (s?: string | null) => (s ?? "").trim().replace(/[\s,.;:–-]+$/, "");
 const POPLATKY = [0, 1, 2, 5];
 const VID: ["zobrazit" | "skryt" | "len-farar", string, string][] = [["zobrazit", "Zobraziť", "Návštevníci vidia, koľko sa vyzbieralo."], ["skryt", "Skryť", "Návštevníci vidia len, že zbierka beží."], ["len-farar", "Len farár", "Sumy vidí iba správca farnosti."]];
 /** + Pridať mimo Zbierok, Oznamov a Omší (KARTA 56D §2) */
@@ -93,6 +92,7 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
   const [start, setStart] = useState<{ kat: string; uzol?: string } | null>(null);
   const [kal, setKal] = useState(false);
   const [kartaOtv, setKartaOtv] = useState(true);
+  const go = (k: Sub) => { setSub(k); setPridat(false); setPinOtv(false); };
 
   // KARTA 56D §1: profil stránky (profil_stranky) — karta vľavo, percento, „Dokončiť profil"
   const [prof, setProf] = useState(() => profilZPamate(strankaId));
@@ -100,7 +100,7 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
   useEffect(() => { let ziva = true; void nacitajProfil(strankaId).then((z) => { if (ziva) setProf(z); }); return () => { ziva = false; }; }, [strankaId]);
   const profilAkt = koncept ?? prof.koncept ?? prof.ulozeny;
   const uplnost = uplnostProfilu(profilAkt);
-  const meno = cistyNazov(nazov) || "Vaša farnosť";
+  const meno = cistyNazov(profilAkt?.meno ?? nazov) || "Vaša farnosť";
   // stránka farnosti pre modul Viera (oznamy, omše) — kľúč = stránka, nie ukážková farnosť
   const f: Farnost = { id: strankaId, nazov: meno, cirkev: "", skratka: "", obec: "", lat: 0, lng: 0, vzdial: "", foto: "", popis: "", vyzbierane: 0, ciel: 0, podpora: 0 };
   const [self, setSelf] = useState(() => nacitajSelfAdd(strankaId));
@@ -127,13 +127,11 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
   const oknoSuma = om.dary.reduce((a, r) => a + r.suma, 0);
   const oknoLudi = new Set(om.dary.map((r) => (r.moj ? "ja" : r.id))).size;
 
-  const go = (k: Sub) => { setSub(k); setPridat(false); setPinOtv(false); };
-  // OPRAVY 154: verejný profil sa otvorí v okne NAD Správou (predtým sa otváral pod jej vrstvou a nebolo ho vidieť)
-  const [verejnyOtv, setVerejnyOtv] = useState(false);
+  // KARTA 56D §4: Verejný profil = náhľad vybraného vzhľadu s uloženým profilom (len to, čo farár vyplnil, nikdy ukážkový profil)
   useEffect(() => { void pripojTestovaciuStranku(strankaId); }, [strankaId]); // 0035: tester = správca testovacej stránky
-  const verejny = () => setVerejnyOtv(true);
+  const verejny = () => go("nahlad");
   const test = testPas?.(verejny);
-  const verejnyEl = verejnyOtv ? <VerejnyProfilVSprave kluc={strankaId} onZavri={() => setVerejnyOtv(false)} /> : null;
+  const vz = useVzhlad(strankaId, false);
   const mobil = !desktop;
 
   // ---------------- časti ----------------
@@ -412,15 +410,20 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
   const nastavenia = <>{nadpis("Nastavenia", "Ako pri charite, bez programov a faktúr za vyššie programy")}{nastaveniaL}</>;
 
   // KARTA 56D §4: Upraviť profil = modul z charity (profil_stranky: koncept sa ukladá sám, Uložiť zverejní)
-  const profil = <UpravitProfilCharity strankaId={strankaId} pozicia="charita" tier={4} nazov={meno} inicialy="" mobil={mobil} tablet={tablet} stit="silver"
+  const profil = <UpravitProfilCharity farnost strankaId={strankaId} pozicia="charita" tier={4} nazov={cistyNazov(nazov) || "Vaša farnosť"} inicialy="" mobil={mobil} tablet={tablet} stit="silver"
     onZmena={setKoncept} onUlozene={(pr) => { setProf({ koncept: null, konceptCas: null, ulozeny: pr }); setKoncept(null); }}
     onZrusit={() => { setKoncept(null); go("prehlad"); }} onHotovo={() => { setKoncept(null); go("prehlad"); }}
-    vzhlad={<VzhladStranky strankaId={strankaId} zadarmo={false} kto="farníci" onPozriet={verejny} />} />;
+    vzhlad={<VzhladStranky strankaId={strankaId} zadarmo={false} kto="ľudia" sektor="farnost" />} />;
+  const nahlad = <NahladFarnosti profil={prof.ulozeny} meno={cistyNazov(prof.ulozeny?.meno ?? nazov) || "Vaša farnosť"} vzhlad={vz} mobil={mobil && !tablet} hore={
+    <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+      <button type="button" onClick={() => go("profil")} style={{ height: 44, padding: "0 16px", borderRadius: 13, border: "1px solid var(--cardBd)", background: "var(--card)", cursor: "pointer", fontFamily: "inherit", fontSize: 15, fontWeight: 800, color: "var(--ink)", boxShadow: "none" }}>‹ Späť na úpravu</button>
+      <span style={{ fontSize: 14, color: "var(--ink3)" }}>{nahladPopis(vz)}</span>
+    </div>} />;
 
   const ostatneBezia = false; // účelové zbierky farnosti (KARTA 56D §6)
   const hlavnaSprava = <SpravaCentralnej strankaId={strankaId} nazov={meno} hlavnyUcet={najdiTestProfil(strankaId)?.ucet || "hlavný účet farnosti z registrácie"} tier={4} mobil={mobil} toast={toast}
     onZbierky={() => setSub("zbierky")} farnost={{ ostatneBezia, onZmazana: () => setSub("zbierky") }} />;
-  const obsah: Record<Sub, ReactNode> = { prehlad, zbierky, omse, oznamy, ludia, penazenka, nastroje, profil, hlavna: hlavnaSprava, nast: mobil ? <>
+  const obsah: Record<Sub, ReactNode> = { prehlad, zbierky, omse, oznamy, ludia, penazenka, nastroje, profil, nahlad, hlavna: hlavnaSprava, nast: mobil ? <>
     <span style={{ ...kicker, letterSpacing: ".07em", padding: "4px 2px 0" }}>NÁSTROJE</span>{viditKarta}{nastrojeL}
     <span style={{ ...kicker, letterSpacing: ".07em", padding: "4px 2px 0" }}>NASTAVENIA</span>{nastaveniaL}
   </> : nastavenia };
@@ -441,7 +444,6 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
       <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 1 }}><b style={{ fontSize: mobil ? 14.5 : 15, color: "var(--ink)" }}>{t}</b><span style={{ fontSize: mobil ? 12 : 12.5, color: "var(--ink3)" }}>{s}</span></span>
     </button>));
   const vrstvy = <>
-    {verejnyEl}
     {pridat && createPortal(<div className="sprava-charity" data-stit="silver" style={{ minHeight: 0, background: "transparent" }}>
       <div onClick={() => setPridat(false)} style={{ position: "fixed", inset: 0, zIndex: 140, background: "rgba(20,17,11,.45)" }} />
       <div role="dialog" aria-modal="true" aria-label="Pridať do farnosti" style={mobil
@@ -501,7 +503,7 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
                 <h1 style={{ margin: 0, fontSize: 22, fontWeight: 800, lineHeight: 1.15, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{titul}</h1>
                 <span style={{ fontSize: 13, color: "var(--ink3)" }}>{dnesText()}</span>
               </span>
-              {sub !== "profil" && sub !== "hlavna" && <button type="button" onClick={pridatTl} style={{ ...tlZ, height: 44, padding: "0 18px", borderRadius: 13, fontSize: 15 }}>{PRIDAT_T[sub] ?? "+ Pridať"}</button>}
+              {sub !== "profil" && sub !== "hlavna" && sub !== "nahlad" && <button type="button" onClick={pridatTl} style={{ ...tlZ, height: 44, padding: "0 18px", borderRadius: 13, fontSize: 15 }}>{PRIDAT_T[sub] ?? "+ Pridať"}</button>}
             </header>
             {test}
             <div key={sub} style={{ display: "flex", flexDirection: "column", gap: 14, animation: "spravaFade .2s ease both" }}>{obsah[sub]}</div>

@@ -23,6 +23,12 @@ export interface ProfilStranky {
   logoPozadie: LogoPozadie;
   cover: TitulnaFotka | null;
   ram: RamFotky;
+  /** KARTA 56D §4 (farnosť): názov stránky — predvyplnený z registrácie, dá sa zmeniť */
+  meno?: string;
+  /** KARTA 56D §4: „Nemám logo" → znak z iniciál (najviac 3 písmená) s rámikom */
+  bezLoga?: boolean;
+  inicialy?: string;
+  ramLoga?: RamFotky;
 }
 export interface ProfilZaznam { koncept: ProfilStranky | null; konceptCas: string | null; ulozeny: ProfilStranky | null }
 
@@ -56,6 +62,9 @@ export async function zverejniProfil(stranka: string, p: ProfilStranky): Promise
   if (supabase) await supabase.from("profil_stranky").upsert({ stranka, ulozeny: await bezDataUrl(p, "stranky"), ulozeny_cas: cas, koncept: null, koncept_cas: null }, { onConflict: "stranka" });
 }
 
+/** KARTA 56D §1: názov stránky bez čiarky a bodky na konci (farnosť si ho môže zmeniť v Upraviť profil) */
+export const cistyNazov = (s?: string | null) => (s ?? "").trim().replace(/[\s,.;:–-]+$/, "");
+
 // ---- percento profilu (karta 33 bod 6) — zo 4 vecí po 25 %, z ULOŽENÉHO profilu ----
 const text = (h?: string | null) => String(h ?? "").replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ").trim();
 export function maKontakt(k?: Kontakt | null): boolean {
@@ -64,7 +73,7 @@ export function maKontakt(k?: Kontakt | null): boolean {
 }
 export function uplnostProfilu(p: ProfilStranky | null, kontaktZRegistracie?: Kontakt): { pct: number; chyba: string } {
   const pol: [string, boolean][] = [
-    ["logo", !!p?.logo], ["titulná fotka", !!p?.cover], ["O nás", !!text(p?.onas)], ["kontakt", maKontakt(p?.kontakt ?? kontaktZRegistracie)],
+    ["logo", !!p?.logo || (!!p?.bezLoga && !!p.inicialy?.trim())], ["titulná fotka", !!p?.cover], ["O nás", !!text(p?.onas)], ["kontakt", maKontakt(p?.kontakt ?? kontaktZRegistracie)],
   ];
   const ch = pol.filter(([, ok]) => !ok).map(([n]) => n);
   const pct = (4 - ch.length) * 25;

@@ -7,6 +7,7 @@ import { SADY, SADY_EURC } from "@/lib/novaZbierka";
 import { stiahniPlagat } from "@/lib/plagatPdf";
 import { menoBezMena, useSektorDarcu } from "@/lib/darcovia";
 import type { ProfilStranky } from "@/lib/profilStranky";
+import { RAMY } from "./titulka";
 
 export const kartaK: CSSProperties = { borderRadius: 22, background: "var(--card)", border: "1px solid var(--cardBd)", padding: "20px 22px", display: "flex", flexDirection: "column", gap: 12, minWidth: 0 };
 export const nadpisK: CSSProperties = { fontSize: 16, fontWeight: 800, color: "var(--ink)" };
@@ -225,8 +226,11 @@ export function TlacidloNastavenia({ on, onClick }: { on: boolean; onClick: () =
 export function LogoKarty({ profil, inicialy, size }: { profil: ProfilStranky | null; inicialy: string; size: number }) {
   const logo = profil?.logo;
   const bg = !logo ? "var(--white)" : profil!.logoPozadie === "tmave" ? "#15171c" : profil!.logoPozadie === "priehladne" ? "transparent" : "#fff";
+  // KARTA 56D §4: „Nemám logo" = iniciály s rámikom (rámik ako pri titulnej fotke)
+  const znak = !logo && profil?.bezLoga ? (profil.inicialy ?? "").toUpperCase() : "";
+  const ram = znak && profil?.ramLoga && profil.ramLoga !== "bez" ? RAMY.find((r) => r.k === profil.ramLoga)?.g : undefined;
   return (
-    <span style={{ width: size, height: size, borderRadius: profil?.tvar === "kruh" ? "50%" : Math.round(size / 4), overflow: "hidden", background: bg, border: "1px solid var(--cardBd)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: Math.round(size / 3.1), fontWeight: 800, color: "var(--gInk)", flex: "none" }}>
-      {logo ? <img src={logo} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} /> : inicialy}
+    <span style={{ width: size, height: size, borderRadius: profil?.tvar === "kruh" ? "50%" : Math.round(size / 4), overflow: "hidden", background: ram ? `linear-gradient(#fff,#fff) padding-box, ${ram} border-box` : bg, border: ram ? "2px solid transparent" : "1px solid var(--cardBd)", boxSizing: "border-box", display: "flex", alignItems: "center", justifyContent: "center", fontSize: Math.round(size / 3.1), fontWeight: 800, color: znak ? "#14110B" : "var(--gInk)", flex: "none" }}>
+      {logo ? <img src={logo} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} /> : znak || inicialy}
     </span>);
 }

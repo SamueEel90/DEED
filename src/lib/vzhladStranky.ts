@@ -12,6 +12,11 @@ export const VZHLADY: { k: Vzhlad; t: string; s: string; bg: string }[] = [
   { k: "vyklad", t: "Výklad", s: "veľká titulka", bg: "linear-gradient(160deg,#876712,#14110B)" },
   { k: "pirat", t: "Pirát", s: "celé obrazovky", bg: "linear-gradient(160deg,#3D6B8E,#14110B)" },
 ];
+/** KARTA 56D §4: farnosť — Kronika · Nástenka · Moderné (Moderné nahrádza Pirát), tie isté tri podania */
+export const VZHLADY_FARNOST: typeof VZHLADY = [
+  { ...VZHLADY[0] }, { ...VZHLADY[1], t: "Nástenka" }, { ...VZHLADY[2], t: "Moderné" },
+];
+export const vzhladyPre = (sektor?: string) => (sektor === "farnost" ? VZHLADY_FARNOST : VZHLADY);
 /** CONFIG · vzhľad v programe Zadarmo (určuje DEED, správca ho nemení) */
 export const VZHLAD_ZADARMO: Vzhlad = "kronika";
 /** OPRAVY 148: blok Vzhľad stránky pri všetkých typoch; kým sektor nemá vlastné 3 podania, prepne vzhľad charity s jeho dátami */

@@ -21,7 +21,7 @@ function geometria(c: TitulnaFotka, ar: number) {
   const w = Math.max(1, r / ar) * v.zoom, h = (w / r) * ar;
   return { w, h, l: -(w - 1) * v.x, t: -(h - 1) * v.y };
 }
-export function Titulka({ cover, ram, radius = 14, prazdne, zony, style }: { cover: TitulnaFotka | null; ram: RamFotky; radius?: number; prazdne?: ReactNode; zony?: boolean; style?: CSSProperties }) {
+export function Titulka({ cover, ram, radius = 14, prazdne, zony, bezStitu, style }: { cover: TitulnaFotka | null; ram: RamFotky; radius?: number; prazdne?: ReactNode; zony?: boolean; /** KARTA 56D §4: farnosť nemá štít — len miesto pre logo */ bezStitu?: boolean; style?: CSSProperties }) {
   const ar = cover ? pomerFotky(cover.w, cover.h) : 16 / 9;
   const g = cover && geometria(cover, ar);
   const ramG = RAMY.find((x) => x.k === ram && x.k !== "bez")?.g;
@@ -35,7 +35,7 @@ export function Titulka({ cover, ram, radius = 14, prazdne, zony, style }: { cov
       </>}
       {zony && <>
         <span aria-hidden="true" style={{ position: "absolute", zIndex: 4, left: 14, bottom: 12, width: 56, height: 56, borderRadius: 14, border: "1.5px dashed rgba(255,255,255,.8)", pointerEvents: "none" }} />
-        <span aria-hidden="true" style={{ position: "absolute", zIndex: 4, right: 14, bottom: 12, width: 44, height: 52, borderRadius: 10, border: "1.5px dashed rgba(255,255,255,.8)", pointerEvents: "none" }} />
+        {!bezStitu && <span aria-hidden="true" style={{ position: "absolute", zIndex: 4, right: 14, bottom: 12, width: 44, height: 52, borderRadius: 10, border: "1.5px dashed rgba(255,255,255,.8)", pointerEvents: "none" }} />}
       </>}
     </div>);
 }

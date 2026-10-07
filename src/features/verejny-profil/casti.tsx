@@ -9,7 +9,7 @@ import { useLokalita } from "@/lib/lokalita";
 import { useLayout } from "@/components/context";
 import "@/styles/verejnyProfil.css";
 import { useTestStav, zmenTestStav } from "@/lib/testStav";
-import { ulozVzhlad, useVzhlad, type Vzhlad } from "@/lib/vzhladStranky";
+import { ulozVzhlad, useVzhlad, vzhladyPre, type Vzhlad } from "@/lib/vzhladStranky";
 import { vrstvaProfiluPripoj } from "./otvor";
 
 export const MOBIL = "(max-width: 759px)";
@@ -236,9 +236,9 @@ export function TestVolba<K extends string | number>({ nazov, volby, hodnota, on
         style={{ height: 44, padding: `0 ${pas ? 16 : 14}px`, borderRadius: 22, border: `1.5px solid ${on ? "var(--green)" : tmavy ? "rgba(255,255,255,.35)" : "var(--cardBd)"}`, background: on ? "var(--green)" : tmavy ? "rgba(0,0,0,.25)" : "var(--card)", color: on ? "#fff" : tmavy ? "#fff" : "var(--ink2)", fontSize: 14, fontWeight: 800, cursor: "pointer", fontFamily: "inherit", boxShadow: "none", whiteSpace: "nowrap" }}>{t}</button>; })}
     </div>);
 }
-function VzhladVolba({ stranka, pas, tmavy }: { stranka: string; pas?: boolean; tmavy?: boolean }) {
+function VzhladVolba({ stranka, pas, tmavy, sektor }: { stranka: string; pas?: boolean; tmavy?: boolean; sektor?: string }) {
   const v = useVzhlad(stranka, false);
-  return <TestVolba nazov="Vzhľad" pas={pas} tmavy={tmavy} volby={PODANIA} hodnota={v} onVolba={(k) => void ulozVzhlad(stranka, k)} />;
+  return <TestVolba nazov="Vzhľad" pas={pas} tmavy={tmavy} volby={vzhladyPre(sektor).map((z) => [z.k, z.t] as [Podanie, string])} hodnota={v} onVolba={(k) => void ulozVzhlad(stranka, k)} />;
 }
 export function PrepinacPodania({ tmavy, style, pas, sektor = "charita", children, bezProfilu, vzhlad, dalsie }: {
   tmavy?: boolean; style?: CSSProperties; /** mobil a tablet: sivý pás dole stránky */ pas?: boolean;
@@ -250,12 +250,11 @@ export function PrepinacPodania({ tmavy, style, pas, sektor = "charita", childre
   dalsie?: ReactNode;
 }) {
   const ts = useTestStav();
-  void sektor;
   const [otvorDalsie, setOtvorDalsie] = useState(false);
   const tlTest: CSSProperties = { height: 44, padding: "0 16px", borderRadius: 22, border: `1.5px solid ${tmavy ? "rgba(255,255,255,.35)" : "var(--cardBd)"}`, background: tmavy ? "rgba(0,0,0,.25)" : "var(--card)", color: tmavy ? "#fff" : "var(--ink)", fontSize: 14, fontWeight: 800, cursor: "pointer", fontFamily: "inherit", boxShadow: "none", whiteSpace: "nowrap" };
   const riadky = (<>
     {vzhlad && <div style={{ display: "flex", alignItems: "center", gap: "6px 12px", flexWrap: "wrap" }}>
-      <VzhladVolba stranka={vzhlad.stranka} pas={pas} tmavy={tmavy} />
+      <VzhladVolba stranka={vzhlad.stranka} pas={pas} tmavy={tmavy} sektor={sektor} />
       <button type="button" onClick={vzhlad.onPozriet} style={tlTest}>Pozrieť profil ›</button>
     </div>}
     {!bezProfilu && <TestVolba nazov="Profil" pas={pas} tmavy={tmavy} volby={[["v", "Vyplnený"], ["p", "Prázdny"]]} hodnota={ts.prazdny ? "p" : "v"} onVolba={(k) => zmenTestStav({ prazdny: k === "p" })} />}
