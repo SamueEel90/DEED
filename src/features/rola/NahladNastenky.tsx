@@ -4,8 +4,11 @@
 // dátum, text, Zúčastním sa / Prihlásiť sa) · Oznamy farnosti (dátum, štítok, zmena omše červeno ako ZMENA PROGRAMU)
 // · Sväté omše (tento týždeň, dnes zvýraznený) · Farský úrad (adresa, telefóny, e-maily z uloženého Upraviť profil).
 // Ukazuje sa len to, čo farár zverejnil. Iné vzhľady (Kronika, Moderné) neskôr.
+// Celá obrazovka (PC, tablet, mobil): prekryje aj lištu appky, pevný pruh hore „‹ Späť do Správy",
+// Späť aj Esc vráti presne tam, odkiaľ sa otvoril (aj posun). Len na pozretie — nič sa tu nedá zmeniť.
 // ============================================================
-import { useEffect, type CSSProperties } from "react";
+import { useEffect, useLayoutEffect, type CSSProperties } from "react";
+import { createPortal } from "react-dom";
 import type { ProfilStranky } from "@/lib/profilStranky";
 import { useKalendar, kostolKal, iso, DNI_K, dniTyzdna, omseDna, polozkyDna, druhPolozky, minuty } from "@/lib/kalendarFarnosti";
 import { vlastnePrispevky, type VieraFeedItem } from "@/features/viera/mock";
@@ -28,6 +31,15 @@ export function NahladNastenky({ strankaId, meno, profil, mobil, onSpat }: { str
     const esc = (e: KeyboardEvent) => { if (e.key === "Escape") onSpat(); };
     window.addEventListener("keydown", esc); return () => window.removeEventListener("keydown", esc);
   }, [onSpat]);
+  // pod náhľadom sa nič nehýbe; po zatvorení sa vráti posun stránky aj fokus na tlačidlo, ktoré náhľad otvorilo
+  useLayoutEffect(() => {
+    const spat = document.activeElement as HTMLElement | null;
+    const posuny: [Element, number][] = [];
+    for (let e: Element | null = spat; e; e = e.parentElement) if (e.scrollTop) posuny.push([e, e.scrollTop]);
+    if (document.scrollingElement) posuny.push([document.scrollingElement, document.scrollingElement.scrollTop]);
+    const ov = document.body.style.overflow; document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = ov; posuny.forEach(([e, t]) => { e.scrollTop = t; }); spat?.focus?.({ preventScroll: true }); };
+  }, []);
   const zoznam = vlastnePrispevky(strankaId);
   const udalosti = zoznam.filter((x) => x.ntyp === "udalost");
   const ine = zoznam.filter((x) => x.ntyp !== "udalost");
@@ -42,14 +54,15 @@ export function NahladNastenky({ strankaId, meno, profil, mobil, onSpat }: { str
   const kontakt = k ? [k.adresaVerejna.trim() || k.sidlo.trim(), ...k.telefony.map((t) => t.cislo.trim()), ...k.emaily.map((e) => e.adresa.trim())].filter(Boolean) : [];
   const pad = mobil ? "24px 18px" : "36px 56px";
 
-  return (
-    <div role="dialog" aria-modal="true" aria-label="Verejná stránka" style={{ position: "fixed", inset: 0, zIndex: 200, background: "rgba(10,9,6,.72)", overflowY: "auto", padding: mobil ? 12 : 24 }}>
-      <div style={{ maxWidth: 1200, margin: "0 auto", display: "flex", flexDirection: "column", gap: 12 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-          <button type="button" onClick={onSpat} autoFocus style={{ minHeight: 48, padding: "0 18px", border: "none", borderRadius: 12, background: ZELENA, cursor: "pointer", fontFamily: "inherit", fontSize: 15, fontWeight: 800, color: "#fff", boxShadow: "none" }}>‹ Späť do Správy</button>
-          <span style={{ fontSize: 14, fontWeight: 700, color: "#E8E1D3" }}>Takto ľudia vidia vašu stránku (vzhľad Nástenka). Ukazuje sa len to, čo ste zverejnili.</span>
-        </div>
-        <div style={{ background: "#F4F1EA", color: INK, borderRadius: 16, overflow: "hidden", fontFamily: "'Plus Jakarta Sans',-apple-system,'Segoe UI',sans-serif" }}>
+  return createPortal(
+    <div role="dialog" aria-modal="true" aria-label="Verejná stránka" style={{ position: "fixed", inset: 0, zIndex: 1000, background: "#14110B", display: "flex", flexDirection: "column" }}>
+      <div style={{ flex: "none", display: "flex", alignItems: "center", gap: 12, padding: mobil ? "10px 12px" : "12px 24px", background: "#14110B", borderBottom: "1px solid #2E2A22" }}>
+        <button type="button" onClick={onSpat} autoFocus style={{ flex: "none", minHeight: 48, padding: "0 18px", border: "none", borderRadius: 12, background: ZELENA, cursor: "pointer", fontFamily: "inherit", fontSize: 15, fontWeight: 800, color: "#fff", boxShadow: "none" }}>‹ Späť do Správy</button>
+        <span style={{ minWidth: 0, fontSize: 14, fontWeight: 700, color: "#E8E1D3" }}>Takto vašu stránku vidia farníci</span>
+      </div>
+      <div style={{ flex: 1, minHeight: 0, overflowY: "auto", WebkitOverflowScrolling: "touch", padding: mobil ? 0 : 24 }}>
+      <div style={{ maxWidth: 1200, margin: "0 auto" }}>
+        <div style={{ background: "#F4F1EA", color: INK, borderRadius: mobil ? 0 : 16, overflow: "hidden", fontFamily: "'Plus Jakarta Sans',-apple-system,'Segoe UI',sans-serif" }}>
           <div style={{ padding: mobil ? "28px 18px 20px" : "40px 56px 28px", display: "flex", alignItems: "center", gap: 18, borderBottom: `1px solid ${LINKA}` }}>
             {profil?.logo
               ? <img src={profil.logo} alt="" style={{ width: 72, height: 72, flex: "none", borderRadius: profil.tvar === "kruh" ? "50%" : 18, objectFit: "cover", background: "#fff" }} />
@@ -112,5 +125,7 @@ export function NahladNastenky({ strankaId, meno, profil, mobil, onSpat }: { str
           </div>
         </div>
       </div>
-    </div>);
+      </div>
+    </div>,
+    document.body);
 }
