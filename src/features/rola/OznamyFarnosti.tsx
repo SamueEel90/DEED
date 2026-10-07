@@ -227,7 +227,8 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, toast, hore }: 
         {dr === 1 && usp === 1 && <><PlagatPole src={plagat} onSrc={setPlagat} toast={toast} popis="ťuknite a vyberte obrázok, alebo ho sem pretiahnite · na výšku, JPG alebo PNG" />
           <TextOznamu value={txt} onChange={setTxt} label="Krátky popis" popis="Nepovinné. Napríklad čo si vziať so sebou." /></>}
         {dr === 2 && osp === 0 && <>
-          <FormularOznamu u={u} onU={setU} mobil={mobil} />
+          <FormularOznamu u={u} onU={setU} mobil={mobil} upozornenie={false} />
+          <span style={{ fontSize: 13, color: "var(--ink3)" }}>V hlavičke bude vaša farnosť. Text sa dá upraviť aj po zverejnení.</span>
           {u.druh === "parte" && u.zena == null ? <span style={{ fontSize: 13.5, color: "var(--ink3)" }}>Šablóny sa ukážu, keď vyššie vyberiete Muž alebo Žena.</span>
             : <><b style={{ fontSize: 15 }}>Vyberte vzhľad · 8 šablón</b><VyberSablony u={u} volba={volba} onVolba={setVolba} vz={vz} mobil={mobil} /></>}
         </>}

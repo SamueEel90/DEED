@@ -264,7 +264,7 @@ export function chybaOznamu(u: UdajeOznamu): string | null {
   return null;
 }
 
-export function FormularOznamu({ u, onU, mobil, bezFotky }: { u: UdajeOznamu; onU: (u: UdajeOznamu) => void; mobil?: boolean; /** vlastné parte ako obrázok — fotka do šablóny netreba */ bezFotky?: boolean }) {
+export function FormularOznamu({ u, onU, mobil, bezFotky, upozornenie = true }: { u: UdajeOznamu; onU: (u: UdajeOznamu) => void; mobil?: boolean; /** vlastné parte ako obrázok — fotka do šablóny netreba */ bezFotky?: boolean; /** OPRAVY 169: v Oznamoch (bez zbierky) bez vety o upozornení sledujúcich */ upozornenie?: boolean }) {
   const T = TEXTY[u.druh];
   const pa = u.druh === "parte";
   const zmen = (p: Partial<UdajeOznamu>) => onU({ ...u, ...p });
@@ -301,7 +301,7 @@ export function FormularOznamu({ u, onU, mobil, bezFotky }: { u: UdajeOznamu; on
         <label style={{ display: "flex", flexDirection: "column", gap: 6 }}><span style={lab}>{T.kedy}</span>
           <span style={{ display: "flex", gap: 8 }}><input type="date" value={u.kedyD} onChange={(e) => zmen({ kedyD: e.target.value })} style={{ ...pole, flex: 1.4 }} aria-label="Dátum" /><input type="time" value={u.kedyC} onChange={(e) => zmen({ kedyC: e.target.value })} style={{ ...pole, flex: 1 }} aria-label="Čas" /></span></label>,
         txt("kde", "KDE (NEPOVINNÉ)", T.phKde))}
-      <span style={pozn}>Ak termín ešte neviete, nechajte prázdne a doplňte neskôr. Sledujúci dostanú upozornenie.</span>
+      <span style={pozn}>Ak termín ešte neviete, nechajte prázdne a doplňte neskôr.{upozornenie ? " Sledujúci dostanú upozornenie." : ""}</span>
       {pa && <>
         <span style={lab}>KÝM BOL / BOLA · ŤUKNITE, ČO PLATÍ</span>
         {u.zena == null ? <span style={pozn}>Najprv vyberte vyššie: Muž alebo Žena.</span> : <>
