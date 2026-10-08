@@ -45,7 +45,12 @@ export interface PolozkaFarnika {
   editor?: import("@/components/EditorOznameni").PayloadEditora; obr?: string;
   /** autor to upravil */ upravene?: boolean;
 }
-export interface FormularVeriaceho { nad: string; txt: string; datum: string; cas: string; kde: string; umK: number; pozv: number; limit: string; anon: boolean }
+export interface FormularVeriaceho { nad: string; txt: string; datum: string; cas: string; kde: string; umK: number; pozv: number; limit: string; anon: boolean;
+  /** OPRAVY 179: krátky oznam · Platí do (index do PLATI_VERIACI) */ plat?: number }
+/** OPRAVY 179: rovnaké voľby ako u farára — Bez konca · 7 · 14 · 30 dní */
+export const PLATI_VERIACI: [string, number][] = [["Bez konca", 0], ["7 dní", 7], ["14 dní", 14], ["30 dní", 30]];
+/** krátky oznam po termíne zo stránky zmizne (u farára ostane) */
+export const vyprsal = (x: PolozkaFarnika, teraz: number) => { const d = x.k === "oznam" ? PLATI_VERIACI[x.f?.plat ?? 0]?.[1] ?? 0 : 0; return d > 0 && x.cas + d * 864e5 < teraz; };
 /** počty pre farára aj stránku (staršie položky mali len číslo) */
 export const pocetNahl = (x: PolozkaFarnika) => x.nahlasili?.length ?? x.nahl ?? 0;
 export const pocetSus = (x: PolozkaFarnika) => x.sustrast?.length ?? x.sus ?? 0;

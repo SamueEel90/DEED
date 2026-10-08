@@ -13,7 +13,7 @@ import { useEffect, useRef, useState, useSyncExternalStore, type CSSProperties, 
 import { createPortal } from "react-dom";
 import { usePouzivatel } from "@/lib/pouzivatel";
 import { nacitajSelfAdd } from "@/features/viera/UserOznamy";
-import { DRUHY_FARNIKA, CEZ_EDITOR, nacitajSmie, smie, odFarnikov, pridajOdFarnika, upravOdFarnika, prepniVPolozke, pocetSus, useOdFarnikov, useCerstveOdFarnikov, type DruhFarnika, type PolozkaFarnika, type FormularVeriaceho } from "@/lib/odFarnikov";
+import { DRUHY_FARNIKA, CEZ_EDITOR, nacitajSmie, smie, odFarnikov, pridajOdFarnika, upravOdFarnika, prepniVPolozke, pocetSus, useOdFarnikov, useCerstveOdFarnikov, PLATI_VERIACI, vyprsal, type DruhFarnika, type PolozkaFarnika, type FormularVeriaceho } from "@/lib/odFarnikov";
 import { normCas, dokonciCas, casNeexistuje, CAS_OK, pekny } from "@/lib/kalendarFarnosti";
 import { bezDataUrl } from "@/lib/uploadFoto";
 import type { MediumZbierky } from "@/lib/novaZbierka";
@@ -36,7 +36,7 @@ const NADPIS: Partial<Record<DruhFarnika, string>> = { oznam: "nadpis", udalost:
 const ludi = (n: number) => `${n} ${n === 1 ? "človek" : n >= 2 && n <= 4 ? "ľudia" : "ľudí"}`;
 const fotiekT = (n: number) => `${n} ${n === 1 ? "fotka" : n >= 2 && n <= 4 ? "fotky" : "fotiek"}`;
 const PAL = ["#C77D9A", "#5C8F9E", "#8C7AB8", "#B8875C", "#6E9E6A"];
-const prazdnyF = (): FormularVeriaceho => ({ nad: "", txt: "", datum: "", cas: "", kde: "", umK: 0, pozv: 0, limit: "", anon: false });
+const prazdnyF = (): FormularVeriaceho => ({ nad: "", txt: "", datum: "", cas: "", kde: "", umK: 0, pozv: 0, limit: "", anon: false, plat: 0 });
 const naHtml = (t: string) => t ? t.split("\n").map((r) => `<p>${r.replace(/&/g, "&amp;").replace(/</g, "&lt;")}</p>`).join("") : "";
 /** E.1: poradie v hárku */
 const SKUPINY: [string, DruhFarnika[]][] = [["LEN PRE FARÁRA · NIKTO INÝ NEVIDÍ", ["umysel"]], ["NA STRÁNKU FARNOSTI", ["modlitba", "oznam", "udalost", "fotky"]], ["", ["svadba", "ine", "parte"]]];
@@ -152,7 +152,7 @@ type Filter = "vse" | "udal" | "pros" | "ozn" | "oz";
 const FILTRE: [Filter, string][] = [["vse", "Všetko"], ["udal", "Udalosti"], ["pros", "Prosby"], ["ozn", "Oznámenia"], ["oz", "Krátke oznamy"]];
 const vFiltri = (f: Filter, x: PolozkaFarnika) => f === "vse" || (f === "udal" && x.k === "udalost") || (f === "pros" && x.k === "modlitba") || (f === "ozn" && CEZ_EDITOR.includes(x.k)) || (f === "oz" && x.k === "oznam");
 /** E.8: udalosť zmizne deň po termíne */
-const platne = (x: PolozkaFarnika) => !(x.k === "udalost" && x.f?.datum && x.f.datum < posunDen(dnesIso(), -1));
+const platne = (x: PolozkaFarnika) => !(x.k === "udalost" && x.f?.datum && x.f.datum < posunDen(dnesIso(), -1)) && !vyprsal(x, teraz());
 function posunDen(iso: string, o: number) { const [y, m, d] = iso.split("-").map(Number); const t = new Date(y, m - 1, d + o); return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, "0")}-${String(t.getDate()).padStart(2, "0")}`; }
 
 /** sekcia „Od veriacich" na verejnej stránke (cieľ „Pozrieť na stránke ›") + Galéria farnosti */
@@ -416,7 +416,14 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
 
   const formular = k && !jeEd && (
     <>
-      {k === "oznam" && <>{vstup("NADPIS", "nad", "napr. Našli sa kľúče pri kostole")}<TextOznamu key={`o${txtKey}`} value={f.txt} onChange={(h) => set({ txt: h })} popis="Najviac 6 riadkov." max={6} /></>}
+      {k === "oznam" && <>{vstup("NADPIS", "nad", "napr. Našli sa kľúče pri kostole")}<TextOznamu key={`o${txtKey}`} value={f.txt} onChange={(h) => set({ txt: h })} popis="Najviac 6 riadkov." max={6} />
+        {/* OPRAVY 179: Platí do, predvolené Bez konca */}
+        <span style={lab(false)}>PLATÍ DO</span>
+        <div role="radiogroup" aria-label="Platí do" style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+          {PLATI_VERIACI.map(([t], i) => { const on = (f.plat ?? 0) === i; return <button key={t} type="button" role="radio" aria-checked={on} onClick={() => set({ plat: i })} style={{ flex: "1 1 70px", minHeight: 48, borderRadius: 12, border: `${on ? 2 : 1}px solid ${on ? "var(--green)" : "var(--cardBd)"}`, background: on ? "var(--gSoft)" : "var(--field)", cursor: "pointer", fontFamily: "inherit", fontSize: 15, fontWeight: 800, color: on ? "var(--gInk)" : "var(--ink)" }}>{t}</button>; })}
+        </div>
+        <span style={{ fontSize: 13.5, color: "var(--ink3)", marginTop: -6 }}>Potom oznam zo stránky sám zmizne.</span>
+      </>}
       {k === "udalost" && <>
         {nahlad(<>
           <span style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: ".1em", color: "var(--ink3)" }}>UDALOSŤ</span>
