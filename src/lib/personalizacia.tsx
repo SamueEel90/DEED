@@ -4,7 +4,7 @@
 // ktoré napájajú prehľad „Môj DEED" aj feed afinitu (lib/feed).
 // Vzor 1:1 ako lib/pouzivatel.tsx (demo vs real, perzistencia v store).
 // ============================================================
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { usePouzivatel } from "./pouzivatel";
 import { nacitajPredvolbu, identitaDarcu } from "./darcovia";
 import { USE_SUPABASE } from "./supabase";
@@ -14,7 +14,7 @@ import {
   nacitajPodporyDB, pridajPodporuDB,
   nacitajOblubeneDB, pridajOblubeneDB, odoberOblubeneDB,
   nacitajZbierkyDB, vytvorZbierkuDB, upravZbierkuDB, normalizujZaujmy,
-  nacitajSledovaniDB, pridajSledovanieDB, odoberSledovanieDB } from "./personalizaciaStore";
+  nacitajSledovaniDB, pridajSledovanieDB, odoberSledovanieDB, nacitajZaujmyDB, ulozZaujmyDB } from "./personalizaciaStore";
 import { toast } from "@/components/toast";
 import type { Zaujem, Sledovanie, Podpora, Oblubeny, MojaZbierka } from "@/types";
 
@@ -144,6 +144,35 @@ export function PersonalizaciaProvider({ children }: { children: ReactNode }) {
       .catch(() => { /* DB nedostupná → ostáva lokálny stav */ });
     return () => { zrusene = true; };
   }, [ucetId, demo, hydratovane]);
+
+  // Záujmy zo Supabase (owner-only cez ucet_id). DB je autoritatívna; prázdna DB + lokálne záujmy
+  // (pred napojením) → lokálne sa raz zapíšu. Ukladá sa až po načítaní (inak by sa DB prepísala).
+  const zaujmyVDb = useRef<Zaujem[] | null>(null);
+  const [zaujmyVerzia, setZaujmyVerzia] = useState(0);
+  useEffect(() => {
+    zaujmyVDb.current = null;
+    if (!USE_SUPABASE || !ucetId || demo || !hydratovane) return;
+    let zrusene = false;
+    nacitajZaujmyDB()
+      .then((db) => {
+        if (zrusene) return;
+        zaujmyVDb.current = db;
+        if (db.length) setZaujmyStav(normalizujZaujmy(db));
+        setZaujmyVerzia((v) => v + 1); // prázdna DB → efekt nižšie zapíše lokálne záujmy
+      })
+      .catch(() => { /* DB nedostupná → ostáva lokálny stav */ });
+    return () => { zrusene = true; };
+  }, [ucetId, demo, hydratovane]);
+  useEffect(() => {
+    const predtym = zaujmyVDb.current;
+    if (!predtym || !ucetId) return;
+    const t = window.setTimeout(() => {
+      ulozZaujmyDB(ucetId, zaujmy, predtym)
+        .then(() => { zaujmyVDb.current = zaujmy; })
+        .catch(() => toast("Záujmy sa nepodarilo uložiť — platia len na tomto zariadení."));
+    }, 800);
+    return () => window.clearTimeout(t);
+  }, [zaujmy, ucetId, zaujmyVerzia]);
 
   // Moje zbierky zo Supabase (owner-only cez auth.uid() — anon session). Bez DB → no-op.
   useEffect(() => {
