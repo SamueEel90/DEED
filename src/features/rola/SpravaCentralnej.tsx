@@ -117,7 +117,9 @@ export function SpravaCentralnej({ strankaId, nazov, hlavnyUcet, tier, mobil, to
   const podnadpis = sek ? "jedna téma · peniaze idú len sem · bez cieľa a konca" : farnost ? "stála zbierka farnosti · hore na profile · nikdy vo verejnom feede" : "na celú činnosť · stále hore na profile · nikdy vo verejnom feede";
   const profil = profilZPamate(strankaId).ulozeny;
   const foto = d.media.find((m) => m.typ === "foto")?.src ?? (sek?.foto || profil?.cover || "");
-  const bgFoto = foto ? `url('${foto}') center/cover no-repeat #3a3530` : "#3a3530";
+  const bgFoto = "#3a3530";
+  const fotoSrc = typeof foto === "string" ? foto : foto?.src; // titulná fotka profilu je objekt { src, … }
+  const fotoImg = fotoSrc ? <img src={fotoSrc} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} /> : null; // KARTA 57 A.10: <img>, nie background:url(data:…)
 
   // ---- dorovnanie ----
   const dor = beziaceDorovnanieNaCiel(sek ? idZbierky : `${strankaId}-centralna`);
@@ -171,6 +173,7 @@ export function SpravaCentralnej({ strankaId, nazov, hlavnyUcet, tier, mobil, to
     <section style={kartaK}>
       <span style={nadpisK}>Takto to uvidia ľudia na profile</span>
       <div data-hier={h} style={{ position: "relative", height: 150, borderRadius: 18, overflow: "hidden", border: "2px solid var(--hc)", background: bgFoto }}>
+        {fotoImg}
         <span style={{ position: "absolute", left: 0, right: 0, top: 0, height: 6, background: "var(--hc)" }} />
         <span style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg,rgba(10,8,5,0) 30%,rgba(10,8,5,.85) 100%)" }} />
         <span style={{ position: "absolute", left: 14, bottom: 12, display: "flex", flexDirection: "column", gap: 2, color: "#fff" }}>
@@ -317,7 +320,7 @@ export function SpravaCentralnej({ strankaId, nazov, hlavnyUcet, tier, mobil, to
     </div>}
     {novyPanel}
     {!farnost && <div data-hier={h} style={{ borderRadius: 22, overflow: "hidden", background: "var(--card)", border: "2px solid var(--hc)", display: "flex", flexWrap: "wrap" }}>
-      <span style={{ flex: "none", width: mobil ? "100%" : 220, minHeight: mobil ? 120 : 140, background: bgFoto, position: "relative" }}><span style={{ position: "absolute", left: 0, right: 0, top: 0, height: 6, background: "var(--hc)" }} /></span>
+      <span style={{ flex: "none", width: mobil ? "100%" : 220, minHeight: mobil ? 120 : 140, background: bgFoto, position: "relative", overflow: "hidden" }}>{fotoImg}<span style={{ position: "absolute", left: 0, right: 0, top: 0, height: 6, background: "var(--hc)" }} /></span>
       <div style={{ flex: 1, minWidth: 240, padding: "16px 20px", display: "flex", flexDirection: "column", gap: 6 }}>
         <span style={{ alignSelf: "flex-start", height: 26, padding: "0 10px", borderRadius: 13, background: "var(--hcF)", color: "#fff", fontSize: 11, fontWeight: 800, letterSpacing: ".06em", display: "flex", alignItems: "center", whiteSpace: "nowrap" }}>{chip}</span>
         <b style={{ fontSize: 24, lineHeight: 1.15 }}>{nazovPol}</b>

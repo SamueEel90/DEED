@@ -568,7 +568,7 @@ export function SpravaZbierky({ z, mobil, onZbierky, toast, onUdaje, onDorovnani
   const foto = ob.media.find((m) => m.typ === "foto")?.src;
   const hlavicka = (
     <div style={{ borderRadius: 22, background: "var(--card)", border: "1px solid var(--cardBd)", padding: mobil ? "14px 16px" : "16px 20px", display: "flex", alignItems: "center", gap: mobil ? 12 : 16, flexWrap: "wrap" }}>
-      <span style={{ flex: "none", width: 64, height: 64, borderRadius: 16, background: foto ? `url('${foto}') center/cover no-repeat var(--track)` : z.bg }} />
+      <span style={{ position: "relative", overflow: "hidden", flex: "none", width: 64, height: 64, borderRadius: 16, background: foto ? "var(--track)" : z.bg }}>{foto && <img src={foto} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />}</span>
       <span style={{ flex: 1, minWidth: mobil ? 0 : 200, display: "flex", flexDirection: "column", gap: 4 }}>
         <span style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
           <span style={{ height: 24, padding: "0 10px", borderRadius: 12, background: aktivna ? "#4B7A35" : "#5B5D53", color: "#fff", fontSize: 11, fontWeight: 800, letterSpacing: ".06em", display: "flex", alignItems: "center" }}>{aktivna ? "BEŽÍ" : "UKONČENÁ"}</span>

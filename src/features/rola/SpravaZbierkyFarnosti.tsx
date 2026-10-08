@@ -81,7 +81,7 @@ export function SpravaZbierkyFarnosti({ stranka, z, mobil, toast, onSpat }: {
   return (<>
     <button type="button" onClick={onSpat} style={{ alignSelf: "flex-start", flex: "none", height: 44, padding: 0, border: "none", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 15, fontWeight: 800, color: "var(--green)", boxShadow: "none" }}>‹ Späť na zbierky</button>
     <section style={{ flex: "none", borderRadius: 20, border: "1px solid var(--cardBd)", background: "var(--card)", display: "flex", alignItems: "center", gap: 16, padding: "12px 18px 12px 12px" }}>
-      <span style={{ flex: "none", width: 96, height: 64, borderRadius: 12, background: foto ? `url('${foto}') center/cover no-repeat var(--field)` : "var(--field)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, color: "var(--ink3)" }}>{foto ? "" : "bez fotky"}</span>
+      <span style={{ position: "relative", overflow: "hidden", flex: "none", width: 96, height: 64, borderRadius: 12, background: "var(--field)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, color: "var(--ink3)" }}>{foto ? <img src={foto} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} /> : "bez fotky"}</span>
       <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 4 }}>
         <span style={{ alignSelf: "flex-start", height: 24, padding: "0 9px", borderRadius: 7, background: chipBg, color: "#fff", fontSize: 11.5, fontWeight: 800, letterSpacing: ".08em", display: "flex", alignItems: "center" }}>{chip}</span>
         <b style={{ fontSize: 20, lineHeight: 1.2 }}>{z.nazov || "Zbierka"}</b>

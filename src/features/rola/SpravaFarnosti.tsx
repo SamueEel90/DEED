@@ -257,7 +257,8 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
   const fotoH = hlavna?.media.find((m) => m.typ === "foto")?.src;
   const nDarov = (n: number) => `${n} ${n === 1 ? "dar" : n < 5 ? "dary" : "darov"}`;
   const chipF = (t: string, bg: string, r = 8) => <span style={{ height: 26, padding: "0 10px", borderRadius: r, background: bg, color: "#fff", fontSize: 12, fontWeight: 800, letterSpacing: ".08em", display: "flex", alignItems: "center", whiteSpace: "nowrap" }}>{t}</span>;
-  const nahladFoto = (src?: string) => <span style={{ flex: "none", width: mobil ? 72 : 96, height: mobil ? 52 : 64, borderRadius: 12, background: src ? `url('${src}') center/cover no-repeat var(--field)` : "var(--field)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, color: "var(--ink3)" }}>{src ? "" : "bez fotky"}</span>;
+  // KARTA 57 A.10: fotka zbierky ako <img>, nie background:url(data:…)
+  const nahladFoto = (src?: string) => <span style={{ position: "relative", overflow: "hidden", flex: "none", width: mobil ? 72 : 96, height: mobil ? 52 : 64, borderRadius: 12, background: "var(--field)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, color: "var(--ink3)" }}>{src ? <img src={src} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} /> : "bez fotky"}</span>;
   const hlavnaRiadok = (
     <button key="hlavna" type="button" onClick={() => go("hlavna")} style={{ flex: "none", borderRadius: 22, border: "2px solid var(--green)", background: "var(--card)", cursor: "pointer", display: "flex", alignItems: "center", gap: mobil ? 12 : 18, padding: mobil ? "12px 14px" : "18px 22px", textAlign: "left", fontFamily: "inherit", color: "var(--ink)", boxShadow: "none", width: "100%" }}>
       {nahladFoto(fotoH)}
