@@ -1,8 +1,12 @@
-// KARTA 21 · Moje skutky — lokálny zdroj (kým nie je Supabase).
-// Pridané skutky, koncept, ohlásený skutok a akcia žijú v localStorage (useSyncExternalStore).
+// KARTA 21 · Moje skutky — denník v účte (tabuľka moje_skutky, migrácia 0072) + localStorage ako rýchla cache.
+// Pridané skutky, koncept, ohlásený skutok a skutky za stránku: po prihlásení sa zlúčia s DB
+// (synchronizujSkutky), každá zmena sa o 1 s zapíše do účtu (fotky najprv do Storage).
 // Demo účet dostane ukážkovú históriu (SEED); nový účet začína prázdny → ukážky pre začiatok.
-import { useSyncExternalStore } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 import { getSession } from "@/lib/session";
+import { supabase } from "@/lib/supabase";
+import { bezDataUrl } from "@/lib/uploadFoto";
+import { toast } from "@/components/toast";
 
 /** ai = Kontroluje AI · ok = Overila AI, v štvrti · mesto = Komunita overila, v meste · nam = Spochybnený · ja = Môj denník */
 export type StavSkutku = "ai" | "ok" | "mesto" | "nam" | "ja";
@@ -60,7 +64,9 @@ export interface Ohlasenie { id: string; nazov: string; popis: string; kedy: str
 
 type Stav = { pridane: MojSkutok[]; koncept: Koncept | null; ohlasenie: Ohlasenie | null; upravy: Record<string, Partial<MojSkutok>>;
   /** OPRAVY 121: koncept a skutky za charitu — oddelene od osobných, podľa stránky */
-  konceptOrg?: Record<string, Koncept>; skutkyOrg?: Record<string, MojSkutok[]> };
+  konceptOrg?: Record<string, Koncept>; skutkyOrg?: Record<string, MojSkutok[]>;
+  /** účet, ktorému lokálna cache patrí — iný účet v tom istom prehliadači ju nezdedí */
+  vlastnik?: string };
 const KLUC = "deed.moje.skutky";
 const PRAZDNY: Stav = { pridane: [], koncept: null, ohlasenie: null, upravy: {} };
 let cache: Stav | null = null;
@@ -72,10 +78,65 @@ function nacitaj(): Stav {
   try { const s = localStorage.getItem(KLUC); cache = s ? { ...PRAZDNY, ...JSON.parse(s) } : { ...PRAZDNY }; } catch { cache = { ...PRAZDNY }; }
   return cache!;
 }
+function ulozLokalne() {
+  try { localStorage.setItem(KLUC, JSON.stringify(cache)); } catch { /* LS plné (fotky) — ostane v pamäti aj v účte */ }
+  verzia++; posluchaci.forEach((f) => f());
+}
 function uloz(z: Partial<Stav>) {
   cache = { ...nacitaj(), ...z };
-  try { localStorage.setItem(KLUC, JSON.stringify(cache)); } catch { /* LS plné (fotky) — ostane v pamäti */ }
-  verzia++; posluchaci.forEach((f) => f());
+  ulozLokalne();
+  naplanujZapis();
+}
+
+// ---------- účet (DB) ----------
+let vUcte: string | null = null; // ucet_id, s ktorým je denník zosynchronizovaný (null = len lokálne)
+let casovac: ReturnType<typeof setTimeout> | null = null;
+function naplanujZapis() {
+  if (!supabase || !vUcte) return;
+  if (casovac) clearTimeout(casovac);
+  casovac = setTimeout(() => { casovac = null; void zapisDoUctu(); }, 1000);
+}
+async function zapisDoUctu() {
+  if (!supabase || !vUcte) return;
+  const povodny = cache;
+  try {
+    const obsah = await bezDataUrl(povodny, "skutky"); // fotky → Storage, v DB len URL
+    if (cache === povodny && obsah !== povodny) { cache = obsah; ulozLokalne(); } // menšia cache (URL namiesto base64)
+    const { error } = await supabase.from("moje_skutky").upsert({ data: obsah }, { onConflict: "ucet_id" });
+    if (error) throw error;
+  } catch {
+    toast("Denník skutkov sa nepodarilo uložiť do účtu — je len na tomto zariadení.");
+  }
+}
+const spojPodlaId = (a: MojSkutok[] = [], b: MojSkutok[] = []) => { const ids = new Set(b.map((x) => x.id)); return [...a.filter((x) => !ids.has(x.id)), ...b]; };
+
+/** po prihlásení: zlúč lokálny denník s účtom (účet má prednosť, nové lokálne sa doplnia) a odvtedy ukladaj do účtu */
+export async function synchronizujSkutky(ucetId: string): Promise<void> {
+  if (!supabase || vUcte === ucetId) return;
+  const { data, error } = await supabase.from("moje_skutky").select("data").maybeSingle();
+  if (error) return; // tabuľka ešte nebeží (0072) / bez session → ostáva lokálne
+  const lok = nacitaj();
+  const st: Stav = lok.vlastnik && lok.vlastnik !== ucetId ? { ...PRAZDNY } : lok; // cudzí denník z tohto prehliadača nepreberaj
+  const db = (data?.data ?? null) as Partial<Stav> | null;
+  const org: Record<string, MojSkutok[]> = { ...(db?.skutkyOrg ?? {}) };
+  for (const [k, l] of Object.entries(st.skutkyOrg ?? {})) org[k] = spojPodlaId(l, org[k]);
+  cache = {
+    ...PRAZDNY, ...(db ?? {}),
+    pridane: spojPodlaId(st.pridane, db?.pridane),
+    upravy: { ...(db?.upravy ?? {}), ...st.upravy },
+    koncept: st.koncept ?? db?.koncept ?? null,
+    ohlasenie: st.ohlasenie ?? db?.ohlasenie ?? null,
+    konceptOrg: { ...(db?.konceptOrg ?? {}), ...(st.konceptOrg ?? {}) },
+    skutkyOrg: org,
+    vlastnik: ucetId,
+  };
+  vUcte = ucetId;
+  ulozLokalne();
+  naplanujZapis();
+}
+/** hook pre provider: reálny účet → synchronizuj; odhlásenie / demo → denník ostáva len lokálne */
+export function useSynchronizaciaSkutkov(ucetId: string | null) {
+  useEffect(() => { if (ucetId) void synchronizujSkutky(ucetId); else vUcte = null; }, [ucetId]);
 }
 export function useZmenySkutkov() {
   return useSyncExternalStore((f) => { posluchaci.add(f); return () => posluchaci.delete(f); }, () => verzia);
