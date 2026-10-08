@@ -5,7 +5,7 @@
 // (hlavička x-admin-token) — log obsahuje opisy userov.
 // ============================================================
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { nacitajBehy } from "./_lib/log";
+import { nacitajBehy } from "./_lib/log.js";
 
 type Riadok = {
   runId: string; ts: string; userId: string; configVersion: string; kolo: number;

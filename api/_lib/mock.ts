@@ -10,7 +10,7 @@
 // produkcie. V produkcii bez kľúča NIKDY nemockuje (vráti „nedostupné“),
 // aby falošné skóre neušlo do ostrého behu.
 // ============================================================
-import type { OpusVystup, ScoringConfig, Stupen } from "./typy";
+import type { OpusVystup, ScoringConfig, Stupen } from "./typy.js";
 
 /** lowercase + odstránená diakritika — kľúčové slová chytia aj „pozar“ aj „požiar“ */
 const bez = (s: string) => s.toLowerCase().normalize("NFD").replace(/\p{Diacritic}/gu, "");

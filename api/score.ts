@@ -11,13 +11,13 @@
 // ============================================================
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { randomUUID } from "node:crypto";
-import config from "./_lib/scoring-config.json";
-import type { DokazVstup, OpusVystup, ScoreRequest, ScoreResponse, ScoringConfig, Verdikt } from "./_lib/typy";
-import { zlozSystemPrompt } from "./_lib/prompt";
-import { dopocitaj, NevalidnyVystup } from "./_lib/vypocet";
-import { ApiNedostupne, ohodnotSkutok } from "./_lib/opus";
-import { mockOhodnot } from "./_lib/mock";
-import { koloPodlaServera, ktoVola, pocetBehovDnes, pocetBehovDnesPre, ulozDokazy, zapisBeh, zapisSkoreDoPrispevku } from "./_lib/log";
+import config from "./_lib/scoring-config.json" with { type: "json" };
+import type { DokazVstup, OpusVystup, ScoreRequest, ScoreResponse, ScoringConfig, Verdikt } from "./_lib/typy.js";
+import { zlozSystemPrompt } from "./_lib/prompt.js";
+import { dopocitaj, NevalidnyVystup } from "./_lib/vypocet.js";
+import { ApiNedostupne, ohodnotSkutok } from "./_lib/opus.js";
+import { mockOhodnot } from "./_lib/mock.js";
+import { koloPodlaServera, ktoVola, pocetBehovDnes, pocetBehovDnesPre, ulozDokazy, zapisBeh, zapisSkoreDoPrispevku } from "./_lib/log.js";
 
 const cfg = config as unknown as ScoringConfig;
 

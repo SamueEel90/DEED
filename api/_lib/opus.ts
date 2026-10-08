@@ -4,8 +4,8 @@
 // ANTHROPIC_API_KEY — nikdy v repe, nikdy vo frontende, nikdy v logu.
 // ============================================================
 import Anthropic from "@anthropic-ai/sdk";
-import type { DokazVstup, OpusVystup, ScoringConfig } from "./typy";
-import { NevalidnyVystup, overVystup, vytiahniJson } from "./vypocet";
+import type { DokazVstup, OpusVystup, ScoringConfig } from "./typy.js";
+import { NevalidnyVystup, overVystup, vytiahniJson } from "./vypocet.js";
 
 /** API po retry nedostupné → user dostane „skús o chvíľu“ (doplnok §5). */
 export class ApiNedostupne extends Error {}

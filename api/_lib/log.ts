@@ -9,7 +9,7 @@
 // policies, frontend sa k nej nedostane.
 // ============================================================
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import type { DokazVstup, LogZaznam } from "./typy";
+import type { DokazVstup, LogZaznam } from "./typy.js";
 
 const BUCKET = "scoring-dokazy";
 
