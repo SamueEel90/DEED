@@ -49,19 +49,20 @@ function Segment<T extends string | number>({ vol, cur, set, label }: { vol: [T,
 }
 
 /** text oznamu — jedno pole, najviac 12 riadkov (rovnaké textové pole ako všade) */
-function TextOznamu({ value, onChange, popis = "Najviac 12 riadkov.", label = "Text" }: { value: string; onChange: (h: string) => void; popis?: string; label?: string }) {
+export function TextOznamu({ value, onChange, popis = "Najviac 12 riadkov.", label = "Text", max = RIADKY, chybaRam }: { value: string; onChange: (h: string) => void; popis?: string; label?: string; /** KARTA 56I: najviac riadkov */ max?: number; /** KARTA 56I: zlatý rám, keď text chýba */ chybaRam?: boolean }) {
   const [riadky, setRiadky] = useState(0);
-  const dlhy = riadky > RIADKY, f = dlhy ? "#A34A2A" : riadky > 9 ? "#8A5A2B" : "var(--green)";
+  const RIADKY = max;
+  const dlhy = riadky > RIADKY, f = dlhy ? "#A34A2A" : riadky > RIADKY - 3 ? "#8A5A2B" : "var(--green)";
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
       <span style={lbl}>{label}</span>
       <span style={{ fontSize: 13.5, color: "var(--ink2)" }}>{popis}</span>
-      <RichTextInput vzhlad="sprava" value={value} onChange={onChange} nastroje={NASTROJE} minH={120} chybaRam={dlhy} ariaLabel={label} tvrdyLimit={1200} onRiadky={setRiadky} />
+      <div style={{ borderRadius: 14, boxShadow: chybaRam && !dlhy ? "0 0 0 2px #C9A24A" : "none" }}><RichTextInput vzhlad="sprava" value={value} onChange={onChange} nastroje={NASTROJE} minH={120} chybaRam={dlhy} ariaLabel={label} tvrdyLimit={1200} onRiadky={setRiadky} /></div>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
         <span style={{ flex: 1, height: 6, borderRadius: 3, background: "var(--track)", overflow: "hidden" }}><span style={{ display: "block", height: "100%", borderRadius: 3, background: f, transformOrigin: "0 50%", transform: `scaleX(${Math.min(1, riadky / RIADKY)})`, transition: "transform .3s ease" }} /></span>
         <span style={{ flex: "none", fontSize: 13, fontWeight: 800, color: f }}>{riadky} / {RIADKY} riadkov</span>
       </div>
-      {dlhy && <span style={{ fontSize: 13, fontWeight: 700, color: "#A34A2A" }}>Text je dlhší ako 12 riadkov. Skráťte ho.</span>}
+      {dlhy && <span style={{ fontSize: 13, fontWeight: 700, color: "#A34A2A" }}>Text je dlhší ako {RIADKY} riadkov. Skráťte ho.</span>}
     </div>);
 }
 

@@ -38,7 +38,7 @@ function useTablet() {
   return t;
 }
 
-export function Kronika({ profil, onDetail, onZaznam, onBack, prepinac }: { profil: TestProfil; onDetail: (z: TestZbierka) => void; /** doplnky 4. 10.: ťuk na záznam v rokoch (skutok, ukončená zbierka, Iskra, akcia) — bez platobného modulu */ onZaznam: (p: Pol) => void; onBack: () => void; /** KARTA 45: testovací prepínač podania */ prepinac?: ReactNode }) {
+export function Kronika({ profil, onDetail, onZaznam, onBack, prepinac, odFarnikov }: { /** KARTA 56I: sekcia Od farníkov (farnosť) */ odFarnikov?: ReactNode; profil: TestProfil; onDetail: (z: TestZbierka) => void; /** doplnky 4. 10.: ťuk na záznam v rokoch (skutok, ukončená zbierka, Iskra, akcia) — bez platobného modulu */ onZaznam: (p: Pol) => void; onBack: () => void; /** KARTA 45: testovací prepínač podania */ prepinac?: ReactNode }) {
   useZmenyIskier();
   const mobil = useMobil();
   const tablet = useTablet();
@@ -535,6 +535,7 @@ export function Kronika({ profil, onDetail, onZaznam, onBack, prepinac }: { prof
         {lista}
         <div style={{ padding: tab ? "24px 28px 0" : "20px 16px 0", display: "flex", flexDirection: "column", gap: tab ? 40 : 30 }}>
           {aktualne}
+          {odFarnikov}
           {kapitolyEl}
           {prepinac && <PrepinacPodania pas />}
         </div>
@@ -568,6 +569,7 @@ export function Kronika({ profil, onDetail, onZaznam, onBack, prepinac }: { prof
         {lista}
         <div style={{ padding: "28px 32px 120px", display: "flex", flexDirection: "column", gap: 44 }}>
           {aktualne}
+          {odFarnikov}
           {kapitolyEl}
         </div>
       </main>
