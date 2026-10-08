@@ -23,7 +23,8 @@ import { CENTRALNA_ID } from "@/features/rola/vlastneZbierky";
 import { verejneBeziace, zbierkaVRetazi, type ZbierkaVRetazi } from "@/lib/retaz";
 import { normalizuj } from "@/lib/mojeSkutky";
 import { najdiTestProfil, TEST_PROFILY, eur as eurT, type TestProfil, type TestZbierka } from "@/lib/testProfily";
-import { ISKRY_CFG, KVOTA_ISKIER, kvotaOstava, minKvotu, odkazIskry, pridajIskru, pridajHotovuIskru, type DruhIskry, type Iskra } from "@/lib/iskry";
+import { ISKRY_CFG, KVOTA_ISKIER, kvotaOstava, minKvotu, odkazIskry, pridajIskru, pridajHotovuIskru, type DruhIskry, type Iskra, type IskraZbierky } from "@/lib/iskry";
+import { pripojTestovaciuStranku } from "@/lib/stranka";
 import { ISKRA_MAX_MB, nacitajKvotuIskier, zverejniIskruNaServeri, type KvotaIskier } from "@/lib/iskryServer";
 import { Harok } from "@/features/zbierka/Zdielat";
 import { PercentaRetaze } from "@/features/zbierka/RetazDobra";
@@ -162,15 +163,29 @@ function PridatIskru() {
   };
   const zverejni = async () => {
     if (chyba || !video || druh == null || odosiela) return;
-    // druh Zbierky zatiaľ len v appke — server (0034) ho ešte nepozná (druh 1–5, bez poľa zb)
+    // druh Zbierky (6): na server od 0071 (stĺpec zb); bez DB/session len v relácii
     if (druh === DZ) {
       if (!vedie || !vlastnaZb) return;
-      if (org && ok2 && kvota > 0) minKvotu(stranka!.k);
       const typT = vedie.typ === "charita" ? "Charita" : vedie.typ === "firma" ? "Firma" : "Tvorca";
-      const n = pridajIskru({ druh, autor: vedie.n, kto: `${typT} · ${vlastnaZb.mesto}`, ini: vedie.i, org: vedie.typ !== "tvorca", popis: popisT, src: video.url, bg: "#1D211B",
-        zb: { typ: vidTyp ?? "vyzva", stitok: vidTyp === "dakujeme" ? "Ďakujeme" : vidTyp === "firme" ? "Ďakujeme firme" : priebeh ? "Priebeh" : "Výzva", stranka: vedie.k, zbierkaId: vlastnaZb.id, firma: vidTyp === "firme" ? firmaK ?? undefined : undefined },
-        lenStranka: org && !ok2 });
-      setHotovo(n); return;
+      const orgZb = vedie.typ !== "tvorca";
+      const zbD = { druh, autor: vedie.n, kto: `${typT} · ${vlastnaZb.mesto}`, ini: vedie.i, popis: popisT,
+        zb: { typ: vidTyp ?? "vyzva", stitok: vidTyp === "dakujeme" ? "Ďakujeme" : vidTyp === "firme" ? "Ďakujeme firme" : priebeh ? "Priebeh" : "Výzva", stranka: vedie.k, zbierkaId: vlastnaZb.id, firma: vidTyp === "firme" ? firmaK ?? undefined : undefined } as IskraZbierky,
+        lenStranka: org && !ok2 };
+      setOdosiela(true);
+      try {
+        if (orgZb) await pripojTestovaciuStranku(vedie.k); // testovacia stránka: tester = správca
+        const srv = await zverejniIskruNaServeri(video.f, { ...zbD, stranka: orgZb ? vedie.k : null, dlzkaS: video.s });
+        if (srv) {
+          if (srv.nadKvotu) toast(`Video nad rámec programu · ${KVOTA_ISKIER.cenaNad} €`);
+          URL.revokeObjectURL(video.url);
+          setHotovo(pridajHotovuIskru(srv.iskra)); return;
+        }
+        if (org && ok2 && kvota > 0) minKvotu(stranka!.k);
+        setHotovo(pridajIskru({ ...zbD, org: orgZb, src: video.url, bg: "#1D211B" }));
+      } catch (e) {
+        toast(CHYBY_SERVERA[(e as Error).message] ?? "Iskru sa nepodarilo zverejniť. Skúste to znova.");
+      } finally { setOdosiela(false); }
+      return;
     }
     if (!pen) return;
     const vsetkym = !org || ok2;
