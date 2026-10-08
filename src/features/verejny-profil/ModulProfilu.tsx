@@ -8,6 +8,7 @@ import { SpatNaZbierky, ZbalitASpat, ZmensenyModul } from "@/features/zbierka/Zm
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { jeNeregistrovany, sledujDarcu } from "@/lib/devDarca";
 import { pridajDar, darcoviaPre } from "@/lib/darcovia";
+import { naviazObjekt } from "@/lib/darZbierky";
 import { dorovnanieNaDar, dorovnanieKDaru, useZmenyDorovnani } from "@/lib/dorovnanie";
 import type { TestProfil, TestSektor } from "@/lib/testProfily";
 import { KartaStavu } from "@/features/zbierka/KartaStavu";
@@ -98,6 +99,7 @@ export function ModulPlatby(p: { profil: TestProfil; sektor: TestSektor; mestoV?
 
 function Modul({ profil, sektor, mestoV, sDorovnanim, uvidisOdkaz, nazovPlatby }: { profil: TestProfil; sektor: TestSektor; mestoV: string; sDorovnanim: boolean; uvidisOdkaz?: { text: string; onClick?: () => void }; nazovPlatby?: string }) {
   const refId = sektor.id;
+  naviazObjekt(refId, { stranka: profil.k, hlavna: sektor.druh === "centralna", nazov: sektor.nazov }); // 0067: dary z ledgera
   const rootRef = useRef<HTMLDivElement>(null), koniecPruhu = useRef<HTMLDivElement>(null);
   const mikro = { root: rootRef, ciel: koniecPruhu };
   const [registrovany, setRegistrovany] = useState(() => !jeNeregistrovany());
@@ -159,7 +161,7 @@ function Modul({ profil, sektor, mestoV, sDorovnanim, uvidisOdkaz, nazovPlatby }
       {platba && <PlatobneOkno kanal={platba.kanal} suma={platba.suma} nazov={nazov} registrovany={registrovany} pred={pred}
         bonus={dorovnanie ? (s) => dorovnanieKDaru(dorovnanie, s) : undefined} firma={dorovnanie?.firma}
         onClose={() => setPlatba(null)}
-        onHotovo={(v) => pridajDar({ refId, suma: v.eur, kanal: v.kanal === "eur" ? (v.sposob === "sepa" ? "sepa" : "psp") : "deed", registrovany, volba: v.volba })} />}
+        onHotovo={(v) => pridajDar({ refId, suma: v.eur, kanal: v.kanal === "eur" ? (v.sposob === "sepa" ? "sepa" : "psp") : "deed", registrovany, volba: v.volba, objekt: { stranka: profil.k, hlavna: sektor.druh === "centralna", nazov: sektor.nazov } })} />}
       {harok === "pravidelna" && <PravidelnaHarok refId={refId} nazov={nazov} registrovany={registrovany} zbierka={false} suma={tipSuma} onClose={() => setHarok(null)} />}
       {harok === "zdielat" && <ZdielatHarok id={refId} nazov={nazov} organizacia={profil.meno} obrazok={sektor.foto} onClose={() => setHarok(null)} />}
       {harok === "podporit" && <PodporitDeedHarok registrovany={registrovany} onClose={() => setHarok(null)} />}

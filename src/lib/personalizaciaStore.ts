@@ -168,13 +168,15 @@ export async function pridajPodporuDB(p: {
   prijemca?: string; suma?: number; kanal?: string; vyzbierane?: number; ciel?: number;
 }): Promise<void> {
   if (!supabase) return;
-  // Zadanie 2 (ledger, 0037): dar musí mať príjemcu s účtom — v DB je ním autor prípadu.
-  // Prípad, ktorý v DB nie je (mock/demo id), sa do ledgera nezapisuje; ostáva len v UI.
-  if (!jeUuid(p.refId)) return;
   const kanal = KANAL_DO_DB[p.kanal || "DEED"] || "deed";        // DEED→deed, EUR→fiat
   const mena = kanal === "deed" ? "DEED" : "EUR";
   let idemKluc: string;
   try { idemKluc = crypto.randomUUID(); } catch { idemKluc = `dar-${Date.now()}-${Math.round(Math.random() * 1e9)}`; }
+  // zbierky stránok (zb-…) zapisuje do ledgera zápis daru (lib/darZbierky, 0066)
+  if (/^zb-/.test(String(p.refId))) return;
+  // Zadanie 2 (ledger, 0037): dar musí mať príjemcu s účtom — v DB je ním autor prípadu.
+  // Prípad, ktorý v DB nie je (mock/demo id), sa do ledgera nezapisuje; ostáva len v UI.
+  if (!jeUuid(p.refId)) return;
   const { error } = await supabase.rpc("platba_create", {
     p_idem_kluc: idemKluc,
     p_suma: p.suma ?? 0,

@@ -6,6 +6,7 @@
 // VerejnyProfilHost je celoobrazovková vrstva otváraná zo store (tlačidlo v Správe, QR).
 import { useTestStav, vyprazdni } from "@/lib/testStav";
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { FarnikPridava, OdFarnikov, fabZapnuty } from "./FarnikPridava";
 import { createPortal } from "react-dom";
 import { useLayout } from "@/components/context";
 import { ZbierkaModul } from "@/features/zbierka/ZbierkaModul";
@@ -56,6 +57,7 @@ function VerejnyProfilObsah({ kluc, onBack }: { kluc: string; onBack: () => void
   const [stream, setStream] = useState<string | null>(null);
   // doplnky 4. 10.: záznam z kroniky / rokov — skutok, akcia, ukončená zbierka (bez platby), Iskra = Iskry na tom videu
   const [zaznam, setZaznam] = useState<PolCh | null>(null);
+  const [novyOdF, setNovyOdF] = useState<string | null>(null); // KARTA 56I: nová položka Od farníkov je zvýraznená
   const pc = usePc1200();
   const otvorZaznam = (p: PolCh) => {
     if (p.typ === "is") { const id = p.id.replace(/^k-/, ""); otvorIskry(iskryVsetky().some((v) => v.id === id) ? id : undefined); return; }
@@ -92,10 +94,15 @@ function VerejnyProfilObsah({ kluc, onBack }: { kluc: string; onBack: () => void
 
   // OPRAVY 148: žiadny testovací pás na verejnej stránke (testuje sa v Správe). Vzhľad pri všetkých typoch —
   // firma a tvorca majú zatiaľ jedno vlastné podanie; keď správca vyberie vzhľad, ukáže sa podanie charity s ich dátami.
+  // KARTA 56I: farnosť — sekcia Od farníkov a zelené + Pridať (farník pridáva sám)
+  const farnost = profil.typ === "farnost";
+  const fab = farnost && fabZapnuty(profil.k);
+  const odF = (pad?: string) => farnost ? <OdFarnikov strankaId={profil.k} novy={novyOdF} pad={pad} fab={fab} /> : undefined;
+  const padOdF = pc ? "44px 40px 0" : "28px 16px 0";
   const zakladStranka = (): ReactNode => {
-    const podania = podanie === "pirat" ? <PiratCharita profil={profil} onDetail={setDetail} onZaznam={otvorZaznam} onBack={onBack} onKronika={() => setPrepis("kronika")} />
-      : podanie === "vyklad" ? <VykladCharita profil={profil} onDetail={setDetail} onZaznam={otvorZaznam} onBack={onBack} />
-      : <Kronika profil={profil} onDetail={setDetail} onZaznam={otvorZaznam} onBack={onBack} />;
+    const podania = podanie === "pirat" ? <PiratCharita profil={profil} onDetail={setDetail} onZaznam={otvorZaznam} onBack={onBack} onKronika={() => setPrepis("kronika")} odFarnikov={odF(padOdF)} />
+      : podanie === "vyklad" ? <VykladCharita profil={profil} onDetail={setDetail} onZaznam={otvorZaznam} onBack={onBack} odFarnikov={odF(padOdF)} />
+      : <Kronika profil={profil} onDetail={setDetail} onZaznam={otvorZaznam} onBack={onBack} odFarnikov={odF()} />;
     const vlastneVzhlady = (profil.typ === "firma" || profil.typ === "tvorca") && maVybranyVzhlad(profil.k);
     if (vlastneVzhlady && !zStreamu) return podania;
     if (profil.typ === "firma") return <StrankaFirmy profil={profil} onDetail={setDetail} onBack={onBack} />; // KARTA 46
@@ -136,6 +143,7 @@ function VerejnyProfilObsah({ kluc, onBack }: { kluc: string; onBack: () => void
     <div style={{ position: "relative", height: "100%" }}>
       <div aria-hidden={vrstva ? true : undefined} style={vrstva ? { position: "absolute", inset: 0, visibility: "hidden", pointerEvents: "none" } : { height: "100%" }}>{zakladStranka()}</div>
       {vrstva && <div style={{ position: "absolute", inset: 0, overflowY: detail && !pribeh ? "auto" : undefined }}>{vrstva}</div>}
+      {farnost && !vrstva && <FarnikPridava strankaId={profil.k} mobil={!pc} onPozriet={(id) => { setNovyOdF(id); window.setTimeout(() => document.querySelector("[data-od-farnikov]")?.scrollIntoView({ behavior: "smooth", block: "start" }), 60); }} />}
     </div>);
 }
 

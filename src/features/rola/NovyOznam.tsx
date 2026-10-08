@@ -131,10 +131,9 @@ export const predvyplnOznam = (p: { nadpis: string; text: string; zbierka?: stri
 const prazdny = (zadarmo: boolean, start?: DruhOznamu): Form => { const p = predvyplnene; predvyplnene = null; return { ...prazdny0(zadarmo, start), ...(p ? { nadpis: p.nadpis, text: p.text, zbierka: p.zbierka ?? "" } : {}) }; };
 const prazdny0 = (zadarmo: boolean, start?: DruhOznamu): Form => ({ druh: start ?? (zadarmo ? null : "oznam"), forma: "text", nadpis: "", text: "", media: [], datum: "", cas: "", miesto: "", pozvanie: "bez", limit: "", suhlas: false, potvrd: false, zbierka: "" });
 
-export function OznamySprava({ strankaId, tier, nazov, inicialy, mesto, logo, mobil, tablet, toast, onProfil, zbierky = [], start }: {
+// OPRAVY 166: oznam nie je zbierka — „Pri akcii zbierame na" je preč, oznam aj udalosť sú bez zbierky
+export function OznamySprava({ strankaId, tier, nazov, inicialy, mesto, logo, mobil, tablet, toast, onProfil, start }: {
   strankaId: string; tier: number; nazov: string; inicialy: string; mesto: string; logo?: string | null; mobil: boolean; tablet: boolean; toast: (m: string) => void; onProfil?: () => void;
-  /** ponuka „Pri akcii zbierame na" — centrálna a bežiace zbierky charity (prázdne = výber sa neukáže) */
-  zbierky?: ZbierkaPriAkcii[];
   /** KARTA 42: druh predvolený pri otvorení (Zadarmo z hárku Pridať → rovno výzva na súrnu pomoc) */
   start?: DruhOznamu;
 }) {
@@ -200,16 +199,13 @@ export function OznamySprava({ strankaId, tier, nazov, inicialy, mesto, logo, mo
     return () => { window.removeEventListener("dragover", ov); window.removeEventListener("dragleave", lv); window.removeEventListener("drop", dr); };
   }, [pohlad, druh, f.forma]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // pri úprave ostane aj zbierka, ktorá už nie je v ponuke (napr. medzitým skončila)
-  const vybranaZbierka = f.zbierka ? zbierky.find((z) => z.id === f.zbierka) ?? (uprava?.zbierka?.id === f.zbierka ? uprava.zbierka : undefined) : undefined;
-  const ponukaZbierok = uprava?.zbierka && !zbierky.some((z) => z.id === uprava.zbierka!.id) ? [...zbierky, uprava.zbierka] : zbierky;
   const zData = () => ({
     stranka: strankaId, druh: druh!, forma: druh === "vyzva" ? "text" as const : f.forma, nadpis: f.nadpis.trim(), text: f.text,
     media: sPlagatom ? [] : f.media, plagat: sPlagatom ? f.plagat : undefined,
     kategoria: druh === "verejny" ? f.kategoria : undefined, datum: druh === "oznam" ? undefined : f.datum, cas: druh === "verejny" ? f.cas || undefined : undefined,
     miesto: druh === "verejny" ? f.miesto.trim() : undefined, pozvanie: druh === "vyzva" ? "bez" as const : f.pozvanie,
     limit: f.pozvanie === "zavazne" && parseInt(f.limit, 10) > 0 ? parseInt(f.limit, 10) : undefined,
-    zbierka: druh === "vyzva" ? undefined : vybranaZbierka,
+    zbierka: undefined,
   });
   const zverejni = async () => {
     if (chyba) return;
@@ -221,7 +217,7 @@ export function OznamySprava({ strankaId, tier, nazov, inicialy, mesto, logo, mo
   const upravit = (o: OznamCharity) => {
     setUprava(o); setHotovo(null); setPohlad("novy");
     setF({ druh: o.druh, forma: o.forma, nadpis: o.nadpis, text: o.text, media: o.media, plagat: o.plagat, kategoria: o.kategoria, datum: o.datum ?? "", cas: o.cas ?? "", miesto: o.miesto ?? "",
-      pozvanie: o.pozvanie, limit: o.limit ? String(o.limit) : "", suhlas: true, potvrd: true, zbierka: o.zbierka?.id ?? "" });
+      pozvanie: o.pozvanie, limit: o.limit ? String(o.limit) : "", suhlas: true, potvrd: true, zbierka: "" });
     window.setTimeout(() => hore.current?.scrollIntoView({ block: "start" }), 30);
   };
 
@@ -316,12 +312,6 @@ export function OznamySprava({ strankaId, tier, nazov, inicialy, mesto, logo, mo
         {f.pozvanie === "zavazne" && <label style={{ display: "flex", alignItems: "center", gap: 12 }}><span style={{ fontSize: 14, fontWeight: 800 }}>Koľko ľudí najviac</span>
           <input inputMode="numeric" value={f.limit} onChange={(e) => zmen({ limit: e.target.value.replace(/\D/g, "").slice(0, 5) })} placeholder="bez limitu" aria-label="Koľko ľudí najviac" style={{ ...pole, width: 140, height: 46 }} /></label>}
       </div>}
-      {(druh === "oznam" || druh === "verejny") && ponukaZbierok.length > 0 && <div role="radiogroup" aria-label="Pri akcii zbierame na" style={{ display: "flex", flexDirection: "column", gap: 8 }}><span style={lbl}>Pri akcii zbierame na <span style={{ fontWeight: 500, color: "var(--ink3)" }}>— nepovinné</span></span>
-        {([{ id: "", nazov: "Nič", centralna: false } as ZbierkaPriAkcii, ...ponukaZbierok]).map((z) => { const on = f.zbierka === z.id; return (
-          <button key={z.id || "nic"} type="button" role="radio" aria-checked={on} onClick={() => zmen({ zbierka: z.id })} style={{ ...vyber(on), display: "flex", alignItems: "center", gap: 12, minHeight: 56, padding: "8px 14px", borderRadius: 14, cursor: "pointer", textAlign: "left", fontFamily: "inherit", color: "var(--ink)" }}>
-            {radio(on)}<span style={{ flex: 1, minWidth: 0 }}><b style={{ display: "block", fontSize: 14.5 }}>{!z.id ? "Nič" : z.centralna ? "Centrálna zbierka" : z.nazov}</b>
-              <span style={{ display: "block", fontSize: 13, lineHeight: 1.4, color: "var(--ink3)" }}>{!z.id ? "oznam bez zbierky" : z.centralna ? "na celú činnosť organizácie" : z.ciel ? `bežiaca zbierka · ${eur(z.vyzbierane ?? 0)} z ${eur(z.ciel)}` : "bežiaca zbierka"}</span></span></button>); })}
-      </div>}
       {druh === "vyzva" && <>
         <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: "14px 16px", borderRadius: 14, background: C.rSoft, border: `1px solid ${C.rBd}` }}>
           <b style={{ fontSize: 15, color: "var(--ink)" }}>Výzva na súrnu pomoc</b>
@@ -337,7 +327,7 @@ export function OznamySprava({ strankaId, tier, nazov, inicialy, mesto, logo, mo
 
   const pravy = (<>
     <span style={{ fontSize: 13, fontWeight: 800, letterSpacing: ".06em", color: "var(--ink3)" }}>NÁHĽAD</span>
-    <OznamKartaNova o={{ ...f, druh, prihlaseni: uprava?.prihlaseni ?? [], zucastniSa: uprava?.zucastniSa ?? 0, limit: parseInt(f.limit, 10) || undefined, cas: f.cas || undefined, miesto: f.miesto || undefined, zbierka: druh === "vyzva" ? undefined : vybranaZbierka }} autor={nazov} mesto={mesto} inicialy={inicialy} logo={logo} onProfil={onProfil} onDarovat={() => toast("Toto je náhľad.")} />
+    <OznamKartaNova o={{ ...f, druh, prihlaseni: uprava?.prihlaseni ?? [], zucastniSa: uprava?.zucastniSa ?? 0, limit: parseInt(f.limit, 10) || undefined, cas: f.cas || undefined, miesto: f.miesto || undefined, zbierka: undefined }} autor={nazov} mesto={mesto} inicialy={inicialy} logo={logo} onProfil={onProfil} onDarovat={() => toast("Toto je náhľad.")} />
     <section style={{ borderRadius: 18, background: "var(--gSoft)", border: "1px solid var(--gBd)", padding: "14px 16px", display: "flex", flexDirection: "column", gap: 4 }}>
       <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".05em", color: "var(--ink3)" }}>KAM PÔJDE</span><b style={{ fontSize: 16 }}>{kam[0]}</b><span style={{ fontSize: 13.5, lineHeight: 1.45, color: "var(--ink2)" }}>{kam[1]}</span>
     </section>

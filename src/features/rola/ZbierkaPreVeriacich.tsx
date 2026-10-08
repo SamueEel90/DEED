@@ -1,7 +1,8 @@
 // ============================================================
 // KARTA 56E §2, 2b · OPRAVY 161 — Zbierka s overovateľom (pohreb, svadba, iné) — Správa farnosti → Zbierky → + Pridať zbierku.
 // Overovateľom je tu farnosť (neskôr aj matrika, úrad, reštaurácia… — princíp rovnaký, mení sa kto overuje a texty).
-// Nezávisí od hlavnej zbierky: peniaze idú príjemcovi, podiel overovateľa (0 – 3 %, po 0,5 %, najviac 100 €) na účet farnosti.
+// Nezávisí od hlavnej zbierky: peniaze idú príjemcovi, podiel overovateľa (0 – 3 %, po 0,5 %, najviac 100 €) farnosti.
+// Rozdelenie ide do nastavenie.rozdelenie → server ho pri zapečatení zapíše ako split (0065) a overí účet každého príjemcu.
 // Kroky: 1 sken príjemcu (živý QR, 15 s) · 2 oznámenie (už je na stránke / nahrať vlastné / zo šablóny) ·
 // 3 rozdelenie (podiel overovateľa + zvyšok rozhoduje príjemca: nechať si / podeliť sa) · 4 kód + zapečatiť · 5 hotovo.
 // Nová zbierka začína vždy úplne prázdna. Prototyp „Sprava farnosti - prvy prichod" (pre-kodera-7-10-b).
@@ -9,13 +10,14 @@
 import { useEffect, useRef, useState, type CSSProperties, type DragEvent, type ReactNode } from "react";
 import { DeedQr } from "@/components/deedqr";
 import { TESTOVACIA } from "@/lib/testovacia";
+import { usePouzivatel } from "@/lib/pouzivatel";
 import { useVzhlad } from "@/lib/vzhladStranky";
 import { pridajPrispevok, upravPrispevok, vlastnePrispevkyVsetky, type VieraFeedItem } from "@/features/viera/mock";
 import { FormularOznamu, VyberSablony, chybaOznamu, popisOznamu, prazdneUdaje, prvaVolba, type DruhOznamu, type UdajeOznamu, type VolbaSablony } from "@/features/viera/Sablony";
 import { hladajPrijemcov, type PrijemcaDeed } from "@/lib/prijemcoviDeed";
 import {
   spustiZbierku, prazdnaZbierka, PODIEL_MAX, PODIEL_KROK, PODIEL_STROP_EUR, PODELIT_MAX, PODELIT_MIN, PODELIT_KROK,
-  type SpustenaZbierka, type ZbierkaFarnosti,
+  type SpustenaZbierka, type ZbierkaFarnosti, type PodielZbierky,
 } from "@/lib/novaZbierka";
 
 type Druh = Exclude<ZbierkaFarnosti["druh"], "farnost">;
@@ -137,15 +139,21 @@ export function ZbierkaSOverovatelom({ stranka, menoFarnosti, ucetFarnosti, mobi
   const drzTm = useRef<number | undefined>(undefined);
   useEffect(() => () => window.clearTimeout(drzTm.current), []);
   const [z, setZ] = useState<SpustenaZbierka | null>(null);
+  const ja = usePouzivatel();
   const zapecat = async () => {
     const nazov = `${T.pred} · ${menoOzn || "—"}`;
+    // účet príjemcu prinesie sken v jeho appke (PLACEBO — karta 56E); v testovacom režime je príjemcom prihlásený tester
+    const ucetPrijemcu = TESTOVACIA ? ja.ucetId ?? undefined : undefined;
+    const rozdelenie: PodielZbierky[] = [
+      { druh: "prijemca", ucet: ucetPrijemcu ?? "", text: T.kto, podiel: prijemcovi / 100 },
+      { druh: "overovatel", podiel: podiel / 100 },
+      ...(podelit ? spolu.map((x): PodielZbierky => ({ druh: "podelene", stranka: x.id, text: x.nazov, podiel: x.pct / 100 })) : []),
+    ];
     try {
-      // PLACEBO — karta 56E / OPRAVY 161: výplatu príjemcovi (jeho overený účet), podiel overovateľa a podelenie
-      // rozdelí server; kým to nie je, zbierka nesie účet farnosti a rozdelenie v nastavení.
       const nova = await spustiZbierku(stranka, {
-        ...prazdnaZbierka(), nazov, popis: `<p>${popisOznamu(u) || nazov}</p>`, media: u.foto ? [{ id: 1, typ: "foto", src: u.foto }] : [], cielTyp: "otv",
+        ...prazdnaZbierka(), rozdelenie, nazov, popis: `<p>${popisOznamu(u) || nazov}</p>`, media: u.foto ? [{ id: 1, typ: "foto", src: u.foto }] : [], cielTyp: "otv",
         farnost: {
-          druh, podiel, prijemca: { meno: T.kto, overeny: new Date().toISOString() },
+          druh, podiel, prijemca: { meno: T.kto, overeny: new Date().toISOString(), ucet: ucetPrijemcu },
           oznamenie: { meno: menoOzn, rodena: u.rod || undefined, kedy: [u.kedyD, u.kedyC].filter(Boolean).join(" ") || undefined, kde: u.kde || undefined, kto: u.kto || undefined, vlastne: rezim === "vl" ? "ano" : undefined, prispevok: prispevok ?? undefined },
           podelit: podelit ? spolu.map((x) => ({ id: x.id, nazov: x.nazov, pct: x.pct })) : undefined,
         },

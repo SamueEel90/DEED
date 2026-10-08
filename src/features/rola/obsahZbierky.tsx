@@ -122,8 +122,9 @@ export function TextovePolia({ popis, popis2, onPopis, onPopis2, ph, pecat, onRi
 /** GALÉRIA — fotky (najviac 8) a jedno video do 45 s, poradie, výrez, pretiahnutie, popis fotky. Výrez rieši volajúci (onVyrez, bez neho sa tlačidlo neukáže).
  *  5. 10.: pod každou fotkou pole Popis (nepovinné, najviac 80 znakov) — darca ho vidí pod fotkou na celej obrazovke, čítačka ako alt.
  *  popisNapoveda = placeholder poľa (pri dokladoch „Napríklad: Pred opravou, Po oprave"). Jedna galéria všade, bez PRED / PO. */
-export function GaleriaEditor({ media, onMedia, ph, onVyrez, nadpis = "Galéria zbierky", dovetok = " Fotky a video môžete pridávať aj po spustení zbierky.", popisNapoveda = "Popis fotky (nepovinné)", children }: {
+export function GaleriaEditor({ media, onMedia, ph, onVyrez, nadpis = "Galéria zbierky", dovetok = " Fotky a video môžete pridávať aj po spustení zbierky.", popisNapoveda = "Popis fotky (nepovinné)", children, max = MAX_FOTIEK_ZB, bezVidea }: {
   media: MediumZbierky[]; onMedia: (m: MediumZbierky[]) => void; ph: boolean; onVyrez?: (id: number) => void; nadpis?: string; dovetok?: string; popisNapoveda?: string; children?: ReactNode;
+  /** KARTA 56I: najviac fotiek (predvolene 8) */ max?: number; /** KARTA 56I: len fotky, bez videa */ bezVidea?: boolean;
 }) {
   const [chybaMed, setChybaMed] = useState("");
   const [drag, setDrag] = useState<number | null>(null);
@@ -139,13 +140,13 @@ export function GaleriaEditor({ media, onMedia, ph, onVyrez, nadpis = "Galéria 
     const akt = mediaRef.current; let fot = akt.filter((m) => m.typ === "foto").length, vid = akt.some((m) => m.typ === "video");
     for (const f of subory) {
       if (f.type.startsWith("video/")) {
-        if (vid) continue;
+        if (vid || bezVidea) continue;
         const src = URL.createObjectURL(f); const s = await dlzkaVidea(src);
         if (s < 0) { setChybaMed("Toto video sa nedá otvoriť. Skúste iný súbor."); continue; }
         if (s > VIDEO_S_ZB + 0.5) { URL.revokeObjectURL(src); setChybaMed(`Video má ${fmtSek(s)}. Najviac je 45 sekúnd, skráťte ho v telefóne a skúste znova.`); continue; }
         nove.push({ id: MID++, typ: "video", src, sek: s }); vid = true;
       } else if (f.type.startsWith("image/")) {
-        if (fot >= MAX_FOTIEK_ZB) { setChybaMed(`Pridali sme ${MAX_FOTIEK_ZB - akt.filter((m) => m.typ === "foto").length}. Najviac je 8 fotiek.`); break; }
+        if (fot >= max) { setChybaMed(`Pridali sme ${max - akt.filter((m) => m.typ === "foto").length}. Najviac je ${max} fotiek.`); break; }
         try {
           const src = await spracujFotku(f, { pomer: null, maxSirka: 2000 }); const w = await sirkaFotky(src);
           nove.push({ id: MID++, typ: "foto", src, w }); fot++;
@@ -168,8 +169,8 @@ export function GaleriaEditor({ media, onMedia, ph, onVyrez, nadpis = "Galéria 
       <section style={{ ...panel, background: nadZonou ? "var(--gSoft)" : "var(--card)", outline: nadZonou ? "2px dashed var(--green)" : "none" }}
         onDragOver={(e) => { e.preventDefault(); if (drag == null && !nadZonou) setNadZonou(true); }} onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setNadZonou(false); }}
         onDrop={(e) => { e.preventDefault(); setNadZonou(false); if (e.dataTransfer.files?.length) void pridajSubory(Array.from(e.dataTransfer.files)); }}>
-        <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}><span style={{ fontSize: 15.5, fontWeight: 800 }}>{nadpis}</span><span style={{ ...pozn, fontWeight: 800 }}>{fotiek} / 8 fotiek · {video ? `1 video ${fmtSek(video.sek ?? 0)}` : "bez videa"}</span></div>
-        {ph && <div style={{ display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 10 }}>{fotiek < MAX_FOTIEK_ZB && pridat(true)}{!video && pridat(false)}</div>}
+        <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}><span style={{ fontSize: 15.5, fontWeight: 800 }}>{nadpis}</span><span style={{ ...pozn, fontWeight: 800 }}>{fotiek} / {max} fotiek{bezVidea ? "" : video ? ` · 1 video ${fmtSek(video.sek ?? 0)}` : " · bez videa"}</span></div>
+        {ph && <div style={{ display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 10 }}>{fotiek < max && pridat(true)}{!video && !bezVidea && pridat(false)}</div>}
         <div style={{ display: "grid", gridTemplateColumns: ph ? "minmax(0,1fr)" : "repeat(3,minmax(0,1fr))", gap: 14 }}>
           {media.map((m, i) => (
             <div key={m.id} draggable onDragStart={(e) => { e.dataTransfer.effectAllowed = "move"; setDrag(i); }} onDragOver={(e) => e.preventDefault()}
@@ -194,8 +195,8 @@ export function GaleriaEditor({ media, onMedia, ph, onVyrez, nadpis = "Galéria 
                 <button type="button" onClick={() => onMedia(media.filter((x) => x.id !== m.id))} aria-label={`Odstrániť ${m.typ === "video" ? "video" : "fotku"} ${i + 1}`} style={{ ...tl, background: "transparent", color: "var(--ink3)" }}><Ik d={I.kos} s={16} /></button>
               </div>
             </div>))}
-          {!ph && fotiek < MAX_FOTIEK_ZB && pridat(true)}
-          {!ph && !video && pridat(false)}
+          {!ph && fotiek < max && pridat(true)}
+          {!ph && !video && !bezVidea && pridat(false)}
         </div>
         <input ref={fotoRef} type="file" accept="image/*" multiple hidden onChange={(e) => { const f = Array.from(e.target.files ?? []); e.target.value = ""; void pridajSubory(f); }} />
         <input ref={vidRef} type="file" accept="video/*" hidden onChange={(e) => { const f = Array.from(e.target.files ?? []); e.target.value = ""; void pridajSubory(f); }} />

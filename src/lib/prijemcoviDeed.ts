@@ -1,14 +1,15 @@
 // ============================================================
 // KARTA 56E §2b · komu sa dá podeliť zo zbierky s overovateľom — len registrovaní v DEED (stránka, žiadosť z Help,
 // osoba), nikdy voľný IBAN. Zatiaľ sa hľadá v stránkach (tabuľka stranka, verejné čítanie 0035).
-// Žiadosti z Help a osoby pribudnú, keď budú mať verejný register (PLACEBO — karta 56E).
+// Žiadosti z Help a osoby: PLACEBO — karta 56E. Osoby sa nebudú hľadať v registri mien — vo Fáze 4 (profil podľa čísla,
+// U- vizitka) sa podelí cez QR alebo číslo vizitky. Server (0065) pustí len stránku registrovanú v DEED s overeným účtom.
 // ============================================================
 import { supabase } from "./supabase";
 import { TESTOVACIA } from "./testovacia";
 import { TEST_PROFILY } from "./testProfily";
 
 export interface PrijemcaDeed { id: string; nazov: string; popis: string }
-const TYP: Record<string, string> = { charita: "charita", farnost: "farnosť", spolok: "spolok", klub: "klub", firma: "firma", tvorca: "tvorca" };
+const TYP: Record<string, string> = { charita: "charita", farnost: "farnosť", spolok: "spolok", klub: "klub", firma: "firma", tvorca: "tvorca", institucia: "inštitúcia" };
 const popis = (typ: string) => `${TYP[typ] ?? "stránka"} v DEED`;
 
 export async function hladajPrijemcov(q: string, bez: string[]): Promise<PrijemcaDeed[]> {

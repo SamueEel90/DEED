@@ -10,6 +10,8 @@ import { createContext, useContext, useSyncExternalStore } from "react";
 import { dorovnanieNaDar, dorovnanieKDaru, zapisDar as zapisDorovnanie } from "./dorovnanie";
 import { supabase } from "./supabase";
 import { pridajPodporu, firmaAkoDarca } from "./podpory";
+import { zapisDarZbierky, idZbierkyDB, naviazObjekt, nacitajDaryZbierky, type ObjektZbierky } from "./darZbierky";
+import { toast } from "@/components/toast";
 import { ukazkyTeraz, naZmenuTestStavu } from "./testStav";
 
 // ---- CONFIG (spec §6) — všetky čísla ŠTARTOVACIE, žijú tu, nie v kóde ----
@@ -131,7 +133,28 @@ function realneDary(refId: string): DarRiadok[] {
   if (!r) { r = []; sklad.set(refId, r); }
   return r;
 }
+// ---- 0067: zbierka stránky v databáze — zoznam aj súčty LEN z ledgera (dar, ktorý server odmietol, sa neukáže) ----
+const zLedgera = new Set<string>();
+/** id zbierky v ledgeri, ak má appka databázu a dar patrí zbierke stránky */
+function ledgerId(refId: string): string | null { return supabase ? idZbierkyDB(refId) : null; }
+function obnovZLedgera(refId: string, id: string) {
+  void nacitajDaryZbierky(id).then((l) => {
+    // dorovnanie firmy zapísal server (dorovnanie_dar) — jeho riadok ostáva
+    const firmy = realneDary(refId).filter((x) => x.firma);
+    const dary: DarRiadok[] = l.map((d) => ({
+      id: d.id, refId, cas: d.cas, suma: d.eur, kanal: d.kanal, registrovany: d.registrovany,
+      verzia: d.meno ? 1 : 4, zobrazSumu: true, moj: d.moj, ...(d.meno ? { meno: d.meno } : {}),
+    }));
+    sklad.set(refId, [...firmy, ...dary].sort((a, b) => b.cas - a.cas));
+    emit();
+  }).catch(() => { /* sieť — ostáva posledný stav z ledgera */ });
+}
 function riadkyPre(refId: string): DarRiadok[] {
+  const id = ledgerId(refId);
+  if (id) {
+    if (!zLedgera.has(refId)) { zLedgera.add(refId); queueMicrotask(() => obnovZLedgera(refId, id)); }
+    return realneDary(refId);
+  }
   const r = realneDary(refId);
   // KARTA 56D: omšové okno farnosti (týždenný kľúč …-omsa-RRRR-MM-DD) nikdy nemá vymyslené dary
   if (ciste.has(refId) || !ukazkyTeraz() || OMSA_REF.test(refId) || ZBIERKA_Z_UCTU.test(refId)) return r;
@@ -171,9 +194,13 @@ export function pridajDar(vstup: {
   refId: string; suma: number; kanal: KanalDaru; registrovany: boolean; volba?: VolbaDaru; firma?: string;
   /** dar prišiel cez QR (split) tohto tvorcu — rozhoduje o tvorcovskom dorovnaní */
   cezTvorcu?: string;
+  /** hlavná / sektorová zbierka stránky (nemá id „zb-…") — kvôli zápisu do ledgera (0066) */
+  objekt?: ObjektZbierky;
 }): DarRiadok & { dorovnane?: number; dorovnalaFirma?: string } {
   const reg = vstup.registrovany;
   const volba = reg ? (vstup.volba ?? nacitajPredvolbu()) : { verzia: 4 as VerziaIdentity, zobrazSumu: false };
+  if (vstup.objekt) naviazObjekt(vstup.refId, vstup.objekt);
+  const lid = ledgerId(vstup.refId);
   const riadok: DarRiadok = {
     id: `dar-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
     refId: vstup.refId, cas: Date.now(), suma: vstup.suma, kanal: vstup.kanal,
@@ -181,8 +208,15 @@ export function pridajDar(vstup: {
     ...(vstup.firma ? { firma: vstup.firma } : {}),
     ...(vstup.cezTvorcu ? { cezTvorcu: vstup.cezTvorcu } : {}),
   };
-  sklad.set(vstup.refId, [riadok, ...realneDary(vstup.refId)]);
-  emit();
+  if (lid && !vstup.firma) {
+    // 0066/0067: dar sa ukáže až keď vznikne v ledgeri
+    void zapisDarZbierky(vstup.refId, vstup.suma, vstup.kanal, vstup.objekt)
+      .then(() => obnovZLedgera(vstup.refId, lid))
+      .catch((e: { message?: string }) => toast(`Dar sa nezapísal${e?.message ? ` · ${e.message}` : ""}`));
+  } else {
+    sklad.set(vstup.refId, [riadok, ...realneDary(vstup.refId)]);
+    emit();
+  }
   // dar od firmy (dorovnanie alebo firemný dar) sa ďalej nespracúva — inak by
   // dorovnanie dorovnávalo samo seba
   if (vstup.firma) return riadok;

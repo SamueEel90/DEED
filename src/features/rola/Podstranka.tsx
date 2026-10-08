@@ -19,6 +19,7 @@ import { PravidelnaHarok } from "@/features/zbierka/PravidelnaHarok";
 import { jeNeregistrovany } from "@/lib/devDarca";
 import { SADY_EUR, SADY_EURC } from "@/lib/sadyDarov";
 import { nastavCiste, sucetDarov, darcoviaPre, useZmenyDarov, pridajDar, type VolbaDaru } from "@/lib/darcovia";
+import { naviazObjekt } from "@/lib/darZbierky";
 import { PoDare, type PoDareData } from "@/components/podare";
 import { ZoznamDarcov } from "@/components/zoznamdarcov";
 import { NahladKarty, GaleriaZbierky } from "./KartaZbierky";
@@ -241,6 +242,11 @@ export function Podstranka({ pozicia, tier: tierStranky = 0, logo, toast, onBack
   const [qrZbierka, setQrZbierka] = useState<{ id: string; nazov: string } | null>(null);
   // pravidelná podpora = funkcia zbierky (charita od programu ZBIERKA/T1); môže aj neregistrovaný (s e-mailom)
   const [pravidelna, setPravidelna] = useState<{ id: string | null; nazov: string; sektor?: string } | null>(null);
+  // 0067: hlavná a sektorové zbierky stránky čítajú dary z ledgera — appka musí vedieť, ku ktorej stránke patria
+  if (strankaId) {
+    naviazObjekt(CENTRALNA_ID, { stranka: strankaId, hlavna: true, nazov: s.nazov });
+    sektoroveZbierky.forEach((z) => naviazObjekt(z.id, { stranka: strankaId, hlavna: false, nazov: z.nazov }));
+  }
   const maPravidelnu = pozicia === "charita" && tier >= 1;
   // KARTA 39 · bod 3: centrálna zbierka zo správy (profil_stranky.centralna); staré úložisko len záloha
   useZmenyCentralnej();
@@ -270,7 +276,8 @@ export function Podstranka({ pozicia, tier: tierStranky = 0, logo, toast, onBack
 
     // dorovnanie firmy aj pripnutie zbierky rieši zápis daru (lib/darcovia) —
     // platí to rovnako pre Charitu, Help, Vieru aj cudzí profil
-    const { dorovnane = 0, dorovnalaFirma } = pridajDar({ refId, suma, kanal, registrovany, volba });
+    const objekt = strankaId ? { stranka: strankaId, hlavna: refId === CENTRALNA_ID, nazov: komu ?? s.nazov } : undefined;
+    const { dorovnane = 0, dorovnalaFirma } = pridajDar({ refId, suma, kanal, registrovany, volba, objekt });
 
     setPoDare({
       suma, dorovnane, firma: dorovnalaFirma,
