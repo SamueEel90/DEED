@@ -118,7 +118,8 @@ export function UpravitProfilCharity({ strankaId, pozicia, tier, nazov, inicialy
   const uloz = async () => {
     if (!mozeUlozit) return;
     const cisty: ProfilStranky = { ...p, kontakt: { ...k, telefony: k.telefony.filter((t) => t.cislo.trim()), emaily: k.emaily.filter((e, i) => i === 0 || e.adresa.trim()) } };
-    await zverejniProfil(strankaId, cisty);
+    try { await zverejniProfil(strankaId, cisty); }
+    catch { toast("Profil sa nepodarilo uložiť — skúste to znova."); return; }
     zmenene.current = false; setKonceptCas(null); setP(cisty); onUlozene(cisty); setPohlad("ulozene");
   };
 
