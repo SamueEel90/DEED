@@ -318,3 +318,28 @@ export async function odoberSledovanieDB(meno: string): Promise<void> {
   const { error } = await supabase.from("sledovanie").delete().eq("autor", meno);
   if (error) throw error;
 }
+
+// ---- ZÁUJMY v DB (tabuľka `zaujmy`, owner-only cez ucet_id — RLS 0055). Registrácia ich zapíše prvýkrát
+// (db.ulozZaujmy); tu sa načítajú a ukladajú neskoršie úpravy. Bez DB → no-op.
+export async function nacitajZaujmyDB(): Promise<Zaujem[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase.from("zaujmy").select("oblast, pod_polozka, vlastny");
+  if (error) throw error;
+  return (data || []).map((r): Zaujem => ({ oblast: r.oblast, pod_polozka: r.pod_polozka, vlastny: !!r.vlastny }));
+}
+/** uloží celý zoznam: pridá nové, zmaže odobraté (unique ucet_id+oblast+pod_polozka) */
+export async function ulozZaujmyDB(ucetId: string, zaujmy: Zaujem[], predtym: Zaujem[]): Promise<void> {
+  if (!supabase) return;
+  const kluc = (z: Zaujem) => `${z.oblast}|${z.pod_polozka}`;
+  const teraz = new Set(zaujmy.map(kluc)), stare = new Set(predtym.map(kluc));
+  const nove = zaujmy.filter((z) => !stare.has(kluc(z)));
+  const prec = predtym.filter((z) => !teraz.has(kluc(z)));
+  if (nove.length) {
+    const { error } = await supabase.from("zaujmy").upsert(nove.map((z) => ({ ucet_id: ucetId, oblast: z.oblast, pod_polozka: z.pod_polozka, vlastny: !!z.vlastny })), { onConflict: "ucet_id,oblast,pod_polozka", ignoreDuplicates: true });
+    if (error) throw error;
+  }
+  for (const z of prec) {
+    const { error } = await supabase.from("zaujmy").delete().eq("oblast", z.oblast).eq("pod_polozka", z.pod_polozka);
+    if (error) throw error;
+  }
+}
