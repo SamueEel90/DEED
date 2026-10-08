@@ -10,6 +10,7 @@
 import { useEffect, useRef, useState, type CSSProperties, type DragEvent, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { DeedQr } from "@/components/deedqr";
+import { QrNaParte, type QrParte } from "./QrNaParte";
 import { EditorOznameni, type EditorApi, type PayloadEditora } from "@/components/EditorOznameni";
 import { nacitajStav, ulozStav } from "@/features/viera/stav";
 import { TESTOVACIA } from "@/lib/testovacia";
@@ -94,6 +95,7 @@ export function ZbierkaSOverovatelom({ stranka, menoFarnosti, ucetFarnosti, mobi
   const [volba, setVolba] = useState<VolbaSablony>(() => prvaVolba("parte"));
   const zmenDruh = (d: Druh) => { setDruh(d); setU(prazdneUdaje(DRUH_OZN[d])); setVolba(prvaVolba(DRUH_OZN[d])); setRezim(""); setSubor(null); setVybrany(null); };
   const [subor, setSubor] = useState<{ url: string; meno: string; pdf: boolean } | null>(null);
+  const [qrParte, setQrParte] = useState<QrParte>({ qr: true, kde: "pod", papier: "A5" }); // KARTA 57 A.4
   const [nad, setNad] = useState(false);
   const suborRef = useRef<HTMLInputElement>(null);
   const nacitaj = (f?: File) => {
@@ -214,7 +216,8 @@ export function ZbierkaSOverovatelom({ stranka, menoFarnosti, ucetFarnosti, mobi
         ...prazdnaZbierka(), rozdelenie, nazov, popis: `<p>${popisOznamu(u) || nazov}</p>`, media: u.foto ? [{ id: 1, typ: "foto", src: u.foto }] : [], cielTyp: "otv",
         farnost: {
           druh, podiel, prijemca: { meno: T.kto, overeny: new Date().toISOString(), ucet: ucetPrijemcu },
-          oznamenie: { meno: menoOzn, rodena: u.rod || undefined, kedy: [u.kedyD, u.kedyC].filter(Boolean).join(" ") || undefined, kde: u.kde || undefined, kto: u.kto || undefined, vlastne: rezim === "vl" ? "ano" : undefined, prispevok: prispevok ?? undefined },
+          oznamenie: { meno: menoOzn, rodena: u.rod || undefined, kedy: [u.kedyD, u.kedyC].filter(Boolean).join(" ") || undefined, kde: u.kde || undefined, kto: u.kto || undefined, vlastne: rezim === "vl" ? "ano" : undefined, prispevok: prispevok ?? undefined,
+            qr: rezim === "vl" && druh === "pohreb" ? { zap: qrParte.qr, kde: qrParte.kde, papier: qrParte.papier } : undefined },
           podelit: podelit ? spolu.map((x) => ({ id: x.id, nazov: x.nazov, pct: x.pct })) : undefined,
         },
       }, ucetFarnosti, "nabozenstvo");
@@ -352,6 +355,11 @@ export function ZbierkaSOverovatelom({ stranka, menoFarnosti, ucetFarnosti, mobi
             <span style={{ display: "flex", gap: 8 }}><input type="date" value={u.kedyD} onChange={(e) => setU((x) => ({ ...x, kedyD: e.target.value }))} style={{ ...pole, flex: 1.4 }} aria-label="Dátum" /><input type="time" value={u.kedyC} onChange={(e) => setU((x) => ({ ...x, kedyC: e.target.value }))} style={{ ...pole, flex: 1 }} aria-label="Čas" /></span></label>,
             txt("KDE (NEPOVINNÉ)", "kde", T.phKde))}
           <span style={{ fontSize: 13, color: "var(--ink3)" }}>Termín môžete doplniť neskôr, sledujúci dostanú upozornenie. V hlavičke bude farnosť.</span>
+          {druh === "pohreb" && subor && !subor.pdf && <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: 14, borderRadius: 16, background: "var(--panel)", border: "1px solid var(--cardBd)" }}>
+            <b style={{ fontSize: 16 }}>QR kód zbierky na parte</b>
+            <span style={{ fontSize: 13.5, color: "var(--ink2)" }}>Vyberte, kam QR na tlači príde. Vytlačiť s QR pôjde po zapečatení, v kroku Hotovo.</span>
+            <QrNaParte src={subor.url} onZmena={setQrParte} onSablona={() => setRezim("sab")} onIne={() => setSubor(null)} />
+          </div>}
           {spatZverejnit}
         </>}
         {rezim === "sab" && druh === "pohreb" && <>

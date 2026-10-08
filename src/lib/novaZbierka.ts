@@ -59,7 +59,8 @@ export interface ZbierkaFarnosti {
   /** príjemca peňazí (pozostalý, snúbenec …) — účet z jeho overeného profilu */
   prijemca?: { meno: string; overeny: string; ucet?: string };
   /** oznámenie na stránke farnosti (parte / svadobné oznámenie / oznámenie), ku ktorému je zbierka pripojená */
-  oznamenie?: { meno: string; rodena?: string; roky?: string; kedy?: string; kde?: string; kto?: string; vlastne?: string; prispevok?: string };
+  oznamenie?: { meno: string; rodena?: string; roky?: string; kedy?: string; kde?: string; kto?: string; vlastne?: string; prispevok?: string;
+    /** KARTA 57 A.4: QR na vlastnom parte — áno/nie, miesto (pod parte alebo roh), papier */ qr?: { zap: boolean; kde: string; papier: "A5" | "A4" } };
   /** KARTA 56E §2b: zvyšok rozhoduje príjemca — s kým sa podelí (len registrovaní v DEED, najviac 2, každý aspoň 5 %) */
   podelit?: { id: string; nazov: string; pct: number }[];
 }
