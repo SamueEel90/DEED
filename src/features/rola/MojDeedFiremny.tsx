@@ -24,8 +24,9 @@ import {
   nacitajPoziciu, ulozPoziciu, nacitajTiery, ulozTiery, nacitajDrzitel, ulozDrzitel,
   nacitajTerminal, ulozTerminal,
   nacitajOrgExtra, ulozOrgExtra, nacitajLogo, ulozLogo, nacitajOnas, ulozOnas, nacitajTvarLoga, ulozTvarLoga, nacitajZdrojAvatara, ulozZdrojAvatara, nacitajHlavuZbalenu, ulozHlavuZbalenu, nacitajCentralnu,
-  type Pozicia, type Tier,
+  type Pozicia, type Tier, STRANKA_POZICIE,
 } from "./stav";
+import { useVerejneNastavenia } from "@/lib/verejneNastavenia";
 import { PANELY, SPRAVY, SPRAVA_NADPIS, SEKCIE_SPRAVY, ZASLUZENA, SUBJEKTY, FIRMY_ADRESAR, type PanelBlok, type SpravaItem, type OrgZbierka } from "./mock";
 import { Podstranka } from "./Podstranka";
 import { UpravProfilSheet } from "./UpravProfil";
@@ -102,6 +103,7 @@ function MojDeedFiremnyObsah({ onBack, toast, orgId }: { onBack: () => void; toa
   const ja = usePouzivatel(); // tvorca vystupuje pod vlastnou profilovou fotkou (nie logom)
   // rola + tier per rola — DEV: lokálny stav; produkcia: overený účet + fakturácia
   const [pozicia, setPozicia] = useState<Pozicia>(nacitajPoziciu);
+  useVerejneNastavenia(STRANKA_POZICIE[pozicia]); // rýchle sumy, krypto, centrálna, viditeľnosť z DB (0070)
   const [tiery, setTiery] = useState<Record<Pozicia, Tier>>(nacitajTiery);
   const [drzitel, setDrzitel] = useState<boolean>(nacitajDrzitel);
   const [logo, setLogo] = useState<string | null>(() => nacitajLogo(nacitajPoziciu()));
@@ -412,6 +414,7 @@ function MojDeedFiremnyObsah({ onBack, toast, orgId }: { onBack: () => void; toa
 /** OPRAVY 75 · DEV simulácia pod Moje stránky v profile (len testovacia verzia) — stav v rola/stav.ts */
 export function DevSimulacia() {
   const [pozicia, setPozicia] = useState<Pozicia>(nacitajPoziciu);
+  useVerejneNastavenia(STRANKA_POZICIE[pozicia]); // rýchle sumy, krypto, centrálna, viditeľnosť z DB (0070)
   const [tiery, setTiery] = useState<Record<Pozicia, Tier>>(nacitajTiery);
   const [drzitel, setDrzitel] = useState<boolean>(nacitajDrzitel);
   if (!(FLAGS.dev_role_switcher || FLAGS.dev_tier_switcher)) return null;

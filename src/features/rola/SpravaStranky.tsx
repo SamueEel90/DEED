@@ -53,8 +53,9 @@ import {
   nacitajStitCharity, ulozStitCharity, nacitajCharituNovu, ulozCharituNovu,
   type PolozkaSpravy, type StitCharity, type Tier, type Pozicia,
   type TypStranky, TYP_NAZOV, TYPY_STRANOK, TYP_SKRYTY, NASTROJE_TYPU, typPovoli, STIT_SADA_TYPU, type StitSada,
-  nacitajIbanOrg,
+  nacitajIbanOrg, STRANKA_POZICIE,
 } from "./stav";
+import { useVerejneNastavenia } from "@/lib/verejneNastavenia";
 
 // ---------- ikony (cesty z prototypu) ----------
 const IK = {
@@ -283,6 +284,7 @@ function SpravaStrankyTypu({ onBack, typ, onTyp: setTyp, strankaId = "svetlo", n
   const prepniZbal = (id: string, otv?: boolean) => setZbal((z) => { const n = { ...z, [id]: otv ?? !jeOtv(z, id) }; void ulozZbalenie(strankaId, n); return n; });
   const hist = useRef<Sub[]>([]);
   const poz = POZICIA_TYPU(typ);
+  useVerejneNastavenia(STRANKA_POZICIE[poz]); // rýchle sumy, krypto, viditeľnosť súm z DB (0070)
   const sada = STIT_SADA_TYPU[typ];
   const [tiery, setTiery] = useState(nacitajTiery);
   const tier = tiery[poz];
