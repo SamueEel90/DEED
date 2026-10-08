@@ -115,7 +115,7 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
   // KARTA 56G: Omše a kalendár otvorené na dni (ťuk v Prehľade) alebo na tomto týždni (Zmena omše) — key = nové otvorenie
   const [omseStart, setOmseStart] = useState<{ den?: string; n: number }>({ n: 0 });
   const naDen = (den?: string) => { setOmseStart((o) => ({ den, n: o.n + 1 })); go("omse"); };
-  const go = (k: Sub) => { setSub(k); setPridat(false); setPinOtv(false); };
+  const go = (k: Sub) => { setSub(k); setPridat(false); setPinOtv(false); setOznamyHore(0); };
 
   // KARTA 56D §1: profil stránky (profil_stranky) — karta vľavo, percento, „Dokončiť profil"
   const [prof, setProf] = useState(() => profilZPamate(strankaId));
@@ -503,7 +503,7 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
   // KARTA 56G §4–5: Oznamy farnosti — Krátky oznam · Udalosť · Oznámenie, náhľad, ohlášky, zoznam zverejnených
   const oznamy = <>
     {nadpis("Oznamy", "Ohlášky a oznamy farnosti")}
-    <OznamyFarnosti strankaId={strankaId} meno={meno} profil={prof.ulozeny} mobil={mobil} toast={toast} hore={oznamyHore} />
+    <OznamyFarnosti strankaId={strankaId} meno={meno} profil={prof.ulozeny} mobil={mobil} tel={telefon} toast={toast} hore={oznamyHore} />
   </>;
   // KARTA 57 B.1/B.4: Od veriacich = vlastná sekcia (nastavenie + čo pridali veriaci)
   const veriaci = <>
