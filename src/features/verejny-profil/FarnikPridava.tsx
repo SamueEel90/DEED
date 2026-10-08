@@ -32,7 +32,7 @@ const NADPIS: Partial<Record<DruhFarnika, string>> = { oznam: "nadpis", udalost:
 /** sekcia „Od farníkov" na verejnej stránke (cieľ „Pozrieť na stránke ›") */
 export function OdFarnikov({ strankaId, novy, pad, fab }: { strankaId: string; novy?: string | null; pad?: string; /** tlačidlo + Pridať je zapnuté */ fab: boolean }) {
   useOdFarnikov();
-  const list = odFarnikov(strankaId);
+  const list = odFarnikov(strankaId).filter((x) => x.k !== "umysel"); // úmysel na omšu vidí len farár (v Správe)
   if (!list.length && !fab) return null;
   return (
     <section data-od-farnikov="1" style={{ padding: pad, display: "flex", flexDirection: "column", gap: 12, scrollMarginTop: 16 }}>
@@ -206,7 +206,7 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
         <div style={{ maxWidth: 640, margin: "0 auto", padding: "12px 16px 16px", display: "flex", flexDirection: "column", gap: 8 }}>
           {!hotovo && chyba && ch.length > 0 && <span role="alert" style={{ padding: "12px 14px", borderRadius: 12, background: "var(--goldBg)", border: `1.5px solid ${ZLATA}`, fontSize: 15, fontWeight: 800, color: "var(--ink)" }}>Ešte doplňte: {ch.map((c) => c[1]).join(", ")}. Označili sme to vyššie.</span>}
           {hotovo ? <>
-            <button type="button" onClick={() => { const id = hotovo; setK(null); setHotovo(null); onPozriet(id); }} style={{ minHeight: 56, border: "none", borderRadius: 14, background: ZELENA, cursor: "pointer", fontFamily: "inherit", fontSize: 17, fontWeight: 800, color: "#fff" }}>Pozrieť na stránke ›</button>
+            {!um && <button type="button" onClick={() => { const id = hotovo; setK(null); setHotovo(null); onPozriet(id); }} style={{ minHeight: 56, border: "none", borderRadius: 14, background: ZELENA, cursor: "pointer", fontFamily: "inherit", fontSize: 17, fontWeight: 800, color: "#fff" }}>Pozrieť na stránke ›</button>}
             <button type="button" onClick={() => { setK(null); setHotovo(null); setSheet(true); }} style={{ minHeight: 52, borderRadius: 14, border: "1.5px solid var(--gBd)", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 16, fontWeight: 800, color: "var(--gInk)" }}>Pridať ďalšie</button>
           </> : plati ? <>
             {/* PLACEBO — karta 56I: poplatok za oznam sa zatiaľ neplatí (žiadny pohyb v ledgeri), zverejní sa po podržaní */}
