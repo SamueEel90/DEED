@@ -4,7 +4,7 @@
 // Šablóna má {{...}} placeholdery — čísla a kotvy sa dopĺňajú zo
 // scoring-config.json pri každom requeste (Martin ladí LEN config).
 // ============================================================
-import type { ScoringConfig } from "./typy";
+import type { ScoringConfig } from "./typy.js";
 
 const SABLONA = `Si hodnotiteľ dobrých skutkov platformy DEED. Tvoja úloha: ohodnotiť JEDEN skutok podľa pravidiel nižšie a vrátiť VÝHRADNE platný JSON (žiadny text pred ani za ním).
 

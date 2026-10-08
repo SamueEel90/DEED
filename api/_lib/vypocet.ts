@@ -3,7 +3,7 @@
 // Opus skóre NIKDY nepočíta — jedna pravda = scoring-config.json
 // (SCORING_PROMPT poznámka 5, spec v1 §3.2).
 // ============================================================
-import type { OpusVystup, Pasmo, ScoringConfig, Stupen } from "./typy";
+import type { OpusVystup, Pasmo, ScoringConfig, Stupen } from "./typy.js";
 
 const STUPNE: Stupen[] = [1, 3, 6, 10];
 
