@@ -10,7 +10,7 @@
 import { useEffect, useRef, useState, type CSSProperties, type DragEvent, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { DeedQr } from "@/components/deedqr";
-import { QrNaParte, type QrParte } from "./QrNaParte";
+import { QrNaParte, tlacParte, type QrParte } from "./QrNaParte";
 import { EditorOznameni, type EditorApi, type PayloadEditora } from "@/components/EditorOznameni";
 import { nacitajStav, ulozStav } from "@/features/viera/stav";
 import { TESTOVACIA } from "@/lib/testovacia";
@@ -253,6 +253,9 @@ export function ZbierkaSOverovatelom({ stranka, menoFarnosti, ucetFarnosti, mobi
     <button type="button" onClick={() => setRezim("")} style={tlO}>‹ Späť</button>
     <button type="button" onClick={zverejni} aria-disabled={!!chybaOznamu(u)} style={{ ...tlZ, opacity: chybaOznamu(u) ? 0.5 : 1 }}>Zverejniť {T.ozn} a pripojiť zbierku ›</button>
   </div>;
+  // KARTA 57 A.5: čo sa tlačí na fare — vlastné parte (obrázok) alebo hotové parte z editora (obrázok z náhľadu)
+  const [tlOk, setTlOk] = useState(false);
+  const obrTlac = rezim === "vl" ? (subor && !subor.pdf ? subor.url : undefined) : prispevok ? naStranke.find((x) => x.id === prispevok)?.fotky?.[0] : undefined;
   // farebný pás = skutočné delenie (príjemca · pridaní · overovateľ)
   const pas = (
     <div style={{ display: "flex", borderRadius: 12, overflow: "hidden", height: 44, fontSize: 13, fontWeight: 800 }}>
@@ -462,7 +465,13 @@ export function ZbierkaSOverovatelom({ stranka, menoFarnosti, ucetFarnosti, mobi
           </span>
           <span style={{ height: 24, padding: "0 10px", borderRadius: 9, background: "#4B7A35", color: "#fff", fontSize: 11.5, fontWeight: 800, display: "flex", alignItems: "center" }}>AKTÍVNA</span>
         </div>
-        <span style={{ fontSize: 14, lineHeight: 1.5, color: "var(--ink2)" }}>Zbierka je pripojená k oznámeniu na stránke farnosti. {T.kto} ju môže zdieľať, peniaze idú priamo jemu, bez mena = Bohu známy darca.</span>
+        {/* KARTA 57 A.5: PDF A4/A5 a obrázok príjemcovi do appky — PLACEBO — karta 57 (schránka príjemcu ešte nie je); tlač tu na fare funguje */}
+        <div role="status" style={{ padding: "16px 18px", borderRadius: 18, background: "var(--gSoft)", border: "2px solid var(--green)", display: "flex", flexDirection: "column", gap: 10 }}>
+          <b style={{ fontSize: 17, color: "var(--gInk)" }}>Zapečatené ✓ {velke(T.ozn)} s QR kódom sme poslali do appky príjemcu</b>
+          <span style={{ fontSize: 14.5, lineHeight: 1.5, color: "var(--ink2)" }}>PDF na tlač aj obrázok na WhatsApp. Zbierku odteraz spravuje on: vidí štatistiku a darcov, doplní termín, ukončí ju. Vy sumy ani darcov neuvidíte, podiel farnosti príde do Peňaženky.</span>
+          {obrTlac && <button type="button" onClick={() => { tlacParte(obrTlac, rezim === "vl" ? qrParte : { qr: false, kde: "pod", papier: "A5" }); setTlOk(true); window.setTimeout(() => setTlOk(false), 2200); }} style={{ ...tlZ, height: 54 }}>{tlOk ? "Posielam do tlačiarne ✓" : `Vytlačiť ${T.ozn} tu na fare`}</button>}
+          {obrTlac && <span style={{ fontSize: 13, color: "var(--ink3)" }}>Ak rodina nemá tlačiareň, vytlačte jej {T.ozn} tu na fare.</span>}
+        </div>
         <button type="button" onClick={() => onHotovo(z, `${T.nazov} beží. Nájdete ju nižšie v Ďalších zbierkach.`)} style={{ ...tlZ, alignSelf: "flex-start" }}>Hotovo · späť do Zbierok</button>
       </>}
     </section>);
