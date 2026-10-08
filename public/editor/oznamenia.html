@@ -1,0 +1,904 @@
+<title>Editor parte</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Great+Vibes&family=Fredoka:wght@500;600&family=Caveat:wght@500;700&family=Alfa+Slab+One&display=swap">
+<style>
+/* Layout: formulár vľavo, živý náhľad parte vpravo; na telefóne pod sebou */
+:root{--bg:#f2f1ee;--panel:#ffffff;--fg:#22211f;--muted:#6b6862;--line:#dcd9d3;--accent:#3d4a5c;
+--ui:"Inter",system-ui,sans-serif;--serif:"Cormorant Garamond","Times New Roman",serif;--script:"Great Vibes",cursive}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1a1a19;--panel:#252523;--fg:#ecebe8;--muted:#a3a09a;--line:#3a3936;--accent:#9fb0c8;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#1a1a19;--panel:#252523;--fg:#ecebe8;--muted:#a3a09a;--line:#3a3936;--accent:#9fb0c8;color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:var(--ui);padding:16px}
+.app{display:grid;grid-template-columns:minmax(0,380px) minmax(0,1fr);gap:24px;max-width:1100px;margin:0 auto}
+@media (max-width:820px){.app{grid-template-columns:1fr}}
+.form{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:18px;display:flex;flex-direction:column;gap:16px;min-width:0}
+h1{font-size:18px;margin:0}
+fieldset{border:0;padding:0;margin:0;display:flex;flex-direction:column;gap:8px}
+legend{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;font-weight:600}
+label{font-size:13px;display:flex;flex-direction:column;gap:4px;color:var(--muted)}
+input,select,textarea{font:inherit;font-size:14px;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:8px}
+textarea{resize:vertical;min-height:54px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.check{flex-direction:row;align-items:center;gap:8px;color:var(--fg)}
+.tpls{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.tpl{border:2px solid var(--line);border-radius:6px;height:58px;cursor:pointer;font-size:10px;display:flex;align-items:flex-end;justify-content:center;padding:3px;font-family:var(--ui)}
+.tpl[aria-pressed="true"]{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--line);background:var(--bg);color:var(--fg);border-radius:20px;padding:5px 10px;font-size:13px;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--accent);color:var(--panel);border-color:var(--accent)}
+.sw{width:28px;height:28px;border-radius:50%;border:2px solid var(--line);cursor:pointer;padding:0}
+.sw[aria-pressed="true"]{outline:2px solid var(--accent);outline-offset:2px}
+.view{display:flex;justify-content:center;align-items:flex-start;min-width:0;position:sticky;top:calc(env(safe-area-inset-top,0px) + 16px);align-self:start}
+@media (max-width:820px){.view{position:static}}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+
+/* parte – farby sú dané šablónou, nemenia sa s témou */
+.parte{width:100%;max-width:420px;aspect-ratio:2/3;box-sizing:border-box;position:relative;text-align:center;font-family:var(--serif);
+ padding:40px 34px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;overflow:hidden;box-shadow:0 4px 18px rgba(0,0,0,.15)}
+.parte .ram{position:absolute;inset:12px;pointer-events:none}
+.parte .ram2{position:absolute;inset:18px;pointer-events:none}
+.p-sym{font-size:34px;line-height:1}
+.p-sym svg{display:block}
+.p-foto{width:118px;height:146px;border-radius:59px/73px;object-fit:cover;flex:none;display:flex;align-items:center;justify-content:center;font:12px var(--ui);overflow:hidden}
+.p-foto img{width:100%;height:100%;object-fit:cover}
+.p-head{font-family:var(--script);font-size:30px;line-height:1.1}
+.p-cit{font-style:italic;font-size:14px}
+.p-ozn{font-size:14.5px;line-height:1.5}
+.p-meno{font-size:30px;font-weight:600;letter-spacing:.5px;line-height:1.1}
+.p-rod{font-style:italic;font-size:15px;margin-top:-6px}
+.p-dat{font-size:15px}
+.p-orn{font-size:16px;letter-spacing:6px}
+.p-roz{font-size:14px;line-height:1.55}
+.p-pod{font-style:italic;font-size:15px}
+
+.parte .txt{display:flex;flex-direction:column;align-items:center;gap:8px;min-width:0}
+.big-foto{display:flex;align-items:center;justify-content:center;font:12px var(--ui);overflow:hidden}
+.big-foto img{width:100%;height:100%;object-fit:cover}
+.lay-top{padding:0;justify-content:flex-start}
+.lay-top .big-foto{width:100%;height:42%;flex:none}
+.lay-top .txt{padding:16px 28px 22px;flex:1;justify-content:center}
+.lay-top .p-meno{font-size:27px}
+.lay-side{padding:0;flex-direction:row;align-items:stretch;gap:0}
+.lay-side .big-foto{width:38%;flex:none}
+.lay-side .txt{flex:1;padding:22px 16px;justify-content:center}
+.lay-side .p-meno{font-size:24px}.lay-side .p-ozn,.lay-side .p-roz{font-size:13px}
+.lay-modern{padding:28px 30px;align-items:stretch;justify-content:flex-start;text-align:left;font-family:var(--ui)}
+.lay-modern .m-top .big-foto{width:100%;height:200px}
+.parte.bw img{filter:grayscale(1)}
+.lay-modern .txt{align-items:flex-start;gap:9px;margin-top:16px}
+.lay-modern .p-meno{font-family:var(--ui);font-weight:600;font-size:26px;letter-spacing:-.3px}
+.lay-modern .p-ozn,.lay-modern .p-roz,.lay-modern .p-cit,.lay-modern .p-dat,.lay-modern .p-pod{font-family:var(--ui);font-size:12.5px}
+.lay-modern .p-sym{font-size:22px}
+.m-line{width:48px;height:2px}
+.lay-arch .arch{width:150px;height:180px;border-radius:75px 75px 4px 4px}
+.lay-ornate{padding:52px 40px}
+.orn-foto{width:120px;height:150px;border-radius:60px/75px;outline-offset:4px}
+
+.s-mena{display:flex;flex-direction:column;align-items:center;line-height:1}
+.s-amp{font-family:var(--script);font-size:34px;line-height:1.1}
+.s-dat{font-size:17px;letter-spacing:1.5px;text-transform:uppercase;font-weight:500}
+.s-rsvp{font-size:12.5px}
+.lay-modern .s-mena{align-items:flex-start}
+.lay-modern .s-mena .p-meno{text-transform:uppercase}
+.lay-modern .s-amp{font-family:var(--ui);font-size:18px}
+.lay-modern .s-dat{font-family:var(--ui);font-size:13px}
+.lay-side .s-amp{font-size:26px}
+.lay-neon{font-family:var(--ui);padding:44px 30px}
+.lay-neon .p-meno{font-family:var(--ui);font-weight:600;text-transform:uppercase;font-size:34px;letter-spacing:2px;text-shadow:0 0 8px var(--n1),0 0 22px var(--n1)}
+.lay-neon .s-amp{font-family:var(--script);font-size:44px;text-shadow:0 0 10px var(--n2),0 0 24px var(--n2);color:var(--n2)!important}
+.lay-neon .neon-h{font-family:var(--ui);font-weight:600;font-size:38px;text-shadow:0 0 10px currentColor,0 0 26px currentColor}
+.lay-neon .s-dat{font-family:var(--ui);color:var(--n2)!important;text-shadow:0 0 8px var(--n2)}
+.lay-neon .p-ozn,.lay-neon .p-roz,.lay-neon .p-cit,.lay-neon .p-pod,.lay-neon .p-rod{font-family:var(--ui);font-size:13px}
+.lay-neon .p-sym{text-shadow:0 0 10px var(--n1)}
+[hidden]{display:none!important}
+.row>label{min-width:0} input,select,textarea{box-sizing:border-box;width:100%;min-width:0} .check input{width:auto}
+.lay-ornate{gap:6px;padding:56px 38px 50px}
+.lay-ornate .orn-foto{width:96px;height:120px}
+.lay-ornate .p-meno{font-size:26px}
+.lay-ornate .p-head{font-size:26px}
+.lay-ornate .s-amp{font-size:26px}
+.lay-ornate .p-roz,.lay-ornate .p-ozn{font-size:13px}
+
+.parte.gold .p-head,.parte.gold .p-meno,.parte.gold .s-amp,.parte.gold .s-dat,.parte.gold .p-orn,.parte.gold .p-sym span{
+ background:linear-gradient(100deg,#8a6416 0%,#e9c46a 25%,#fff3c4 45%,#d4a849 60%,#9a7020 80%,#f3d98a 100%);
+ -webkit-background-clip:text;background-clip:text;color:transparent!important;-webkit-text-fill-color:transparent}
+.parte.gold .p-meno{filter:drop-shadow(0 1px 0 rgba(0,0,0,.15))}
+.parte.gold .p-head{font-size:34px}
+.parte.gold.lay-ornate,.parte.gold.lay-stack,.parte.gold.lay-arch{padding:62px 52px 56px}
+.parte.gold .orn-foto{box-shadow:0 0 0 4px transparent,0 0 0 6px #d4a84999,0 0 18px #e9c46a88}
+.parte.glow .p-meno,.parte.glow .s-amp,.parte.glow .s-dat{text-shadow:0 0 10px rgba(255,255,255,.8),0 0 24px rgba(255,200,220,.6)}
+.parte.glow .big-foto{-webkit-mask-image:linear-gradient(#000 65%,transparent);mask-image:linear-gradient(#000 65%,transparent)}
+.parte.shimmer{background-size:300% 300%!important;animation:shim 8s ease-in-out infinite}
+@keyframes shim{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+@media (prefers-reduced-motion:reduce){.parte.shimmer{animation:none}}
+.parte.golddk .p-head,.parte.golddk .p-meno,.parte.golddk .s-amp,.parte.golddk .s-dat,.parte.golddk .p-orn,.parte.golddk .p-sym span{
+ background-image:linear-gradient(100deg,#5e420c 0%,#a87b22 25%,#d9ad4f 45%,#8a6416 65%,#b8892e 85%,#6e4e10 100%)}
+.parte.gold.lay-arch .arch{width:104px;height:124px}
+.parte.gold.lay-arch .p-ozn,.parte.gold.lay-arch .p-roz{font-size:12.5px}
+.parte.gold.lay-arch .p-meno{font-size:26px}
+.parte.gold.lay-arch{gap:6px}
+.parte.glow .big-foto{height:32%}
+.parte.glow .txt{gap:6px}
+.parte.glow .p-roz,.parte.glow .p-ozn,.parte.glow .p-cit{font-size:12.5px}
+.parte.glow .p-meno{font-size:25px}
+.parte.glow .txt{text-shadow:0 1px 3px rgba(90,40,70,.55)}
+
+.j-num{font-size:86px;line-height:.9;font-weight:600;display:flex;align-items:baseline;gap:6px}
+.j-lab{font-size:16px;font-weight:500;letter-spacing:1px;text-transform:uppercase}
+.parte.gold .j-num{background:linear-gradient(100deg,#8a6416 0%,#e9c46a 25%,#fff3c4 45%,#d4a849 60%,#9a7020 80%,#f3d98a 100%);-webkit-background-clip:text;background-clip:text;color:transparent!important;-webkit-text-fill-color:transparent}
+.parte.golddk .j-num{background-image:linear-gradient(100deg,#5e420c 0%,#a87b22 25%,#d9ad4f 45%,#8a6416 65%,#b8892e 85%,#6e4e10 100%)}
+.parte.gold .j-num{font-size:72px}
+.parte.kids{font-family:"Fredoka",var(--ui);gap:8px}
+.parte.kids .p-head{font-family:"Fredoka",var(--ui);font-weight:600;font-size:28px}
+.parte.kids .p-meno{font-family:"Fredoka",var(--ui);font-size:32px}
+.parte.kids .j-num{font-family:"Fredoka",var(--ui);font-size:96px;text-shadow:3px 3px 0 rgba(0,0,0,.12)}
+.parte.kids .p-ozn,.parte.kids .p-roz,.parte.kids .p-cit,.parte.kids .s-dat,.parte.kids .p-pod{font-family:"Fredoka",var(--ui);font-size:14px;font-style:normal}
+.kid-foto{border-radius:50%!important;width:110px!important;height:110px!important}
+.lay-modern .j-num{font-family:var(--ui);font-size:150px;letter-spacing:-6px;font-weight:600}
+.lay-modern .j-lab{letter-spacing:1px}
+.lay-neon .j-num{font-family:var(--ui);font-size:96px;color:var(--n2)!important;text-shadow:0 0 12px var(--n2),0 0 30px var(--n2)}
+.lay-ornate .j-num{font-size:60px}
+.b-text{max-width:300px;font-size:16px!important;line-height:1.55}
+.lay-modern .b-text{max-width:none}
+
+.parte.gold .p-head,.parte.gold .p-meno,.parte.gold .s-amp,.parte.gold .j-num,.parte.gold .s-dat{padding:.22em .2em .08em;margin:-.22em -.2em -.08em;line-height:1.3}
+.parte.retro{font-family:var(--ui)}
+.parte.retro .p-head,.parte.retro .j-num{font-family:"Alfa Slab One",Georgia,serif;font-weight:400;color:#8c3b1a!important;text-shadow:3px 3px 0 #fff3dc}
+.parte.retro .p-head{font-size:40px}
+.parte.retro .p-meno{font-family:"Alfa Slab One",Georgia,serif;font-weight:400;font-size:28px}
+.parte.retro .txt,.parte.retro.lay-stack{}
+.parte.retro .p-ozn,.parte.retro .p-roz,.parte.retro .s-dat{background:#fff3dccc;padding:2px 10px;border-radius:4px}
+.parte.hand .p-head,.parte.hand .p-meno,.parte.hand .b-text,.parte.hand .p-pod{font-family:"Caveat",cursive}
+.parte.hand .p-head{font-size:44px;font-weight:700}
+.parte.hand .p-meno{font-size:40px}
+.parte.hand .b-text{font-size:24px!important;line-height:1.3}
+.parte.hand .p-pod{font-size:24px}
+
+/* ===== UI appky — farby DEED doplniť sem ===== */
+:root{--ui:"Plus Jakarta Sans",system-ui,sans-serif;--bg:#EFEAE1;--panel:#F2EEE6;--fg:#1D211B;--muted:#5B5D53;--line:#D9D3C7;--accent:#4B7A35;--onaccent:#fff;--err:#b3261e}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#14110B;--panel:#211D16;--fg:#EFE9DD;--muted:#A89F8F;--line:#3A342A;--accent:#4B7A35;--onaccent:#fff;--err:#ff8a80}}
+:root[data-theme="dark"]{--bg:#14110B;--panel:#211D16;--fg:#EFE9DD;--muted:#A89F8F;--line:#3A342A;--accent:#4B7A35;--onaccent:#fff;--err:#ff8a80}
+body{font-size:16px;font-family:var(--ui)}
+.form{gap:20px;padding:20px}
+.form h2{font-size:22px;margin:0}
+.step{display:flex;flex-direction:column;gap:20px}
+legend{font-size:14px}
+label{font-size:16px;color:var(--fg)}
+input,select,textarea{font-size:16px;min-height:48px;padding:10px 12px}
+textarea{min-height:88px}
+.check{min-height:44px;font-size:16px}.check input{min-height:0;width:22px;height:22px}
+.chip{min-height:44px;padding:8px 16px;font-size:16px;border-radius:22px}
+.chips.big .chip,#typ .chip{min-height:64px;flex:1 1 140px;font-size:18px;font-weight:600;border-radius:12px}
+.tpls{grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:10px}
+.tpl{height:96px;font-size:14px;font-weight:600;padding:6px;border-radius:10px}
+.chip[aria-pressed="true"]{color:var(--onaccent)}
+.wz-steps{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:6px}
+.wz-steps button{min-height:44px;font:inherit;font-size:14px;padding:6px 12px;border-radius:22px;border:1px solid var(--line);background:var(--bg);color:var(--muted);cursor:pointer}
+.wz-steps .on button{background:var(--accent);border-color:var(--accent);color:var(--onaccent);font-weight:600}
+.wz-steps .done button{color:var(--fg)}
+.wz-nav,.actions{display:flex;gap:12px;justify-content:space-between;flex-wrap:wrap}
+.btn{min-height:52px;padding:12px 22px;font:inherit;font-size:17px;font-weight:600;border-radius:12px;cursor:pointer;flex:1 1 160px}
+.btn.primary{background:var(--accent);color:var(--onaccent);border:0}
+.btn.ghost{background:transparent;color:var(--fg);border:1.5px solid var(--line)}
+.hint{color:var(--muted);margin:0;line-height:1.5}
+.toast{margin:0;padding:12px 14px;border-radius:10px;background:var(--accent);color:var(--onaccent);font-weight:600}
+.ph{opacity:.45;font-style:italic}
+.p-orn{line-height:0}
+@media (max-width:820px){
+ .view{order:-1;position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);padding-block:8px;overflow:hidden}
+ .parte{transform-origin:top center}
+}
+
+.plab{font-size:16px}
+.pick{display:flex;flex-direction:column;gap:8px}
+.qlist{display:flex;flex-direction:column;gap:6px}
+.qopt{min-height:48px;text-align:left;font:inherit;font-size:16px;padding:10px 14px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--fg);cursor:pointer}
+.qopt[aria-pressed="true"]{border-color:var(--accent);box-shadow:inset 0 0 0 1.5px var(--accent);font-weight:600}
+.err{margin:0;padding:12px 14px;border-radius:10px;border:2px solid var(--err);color:var(--err);font-weight:600;font-size:16px}
+.miss{outline:2px solid var(--err)!important;outline-offset:2px;border-radius:10px}
+.btn.sent{background:var(--accent);opacity:1;cursor:default}
+.btn:disabled{cursor:default}
+
+#full{position:fixed;inset:0;z-index:100;background:#0d0b08;display:flex;align-items:center;justify-content:center;overflow:hidden}
+#full[hidden]{display:none!important}
+#fullBox{display:flex;align-items:center;justify-content:center}
+#fullBox .parte{flex:none;width:420px;max-width:none;transform-origin:center center;box-shadow:0 10px 40px rgba(0,0,0,.6)}
+#fullX{position:absolute;top:calc(env(safe-area-inset-top,0px) + 12px);right:12px;width:52px;height:52px;border-radius:50%;border:0;background:rgba(255,255,255,.14);color:#fff;font-size:32px;line-height:1;cursor:pointer;z-index:2}
+#fullX:focus-visible{outline:3px solid #fff}
+.mob-only{display:none}
+@media (max-width:820px){.mob-only{display:block;width:100%}.view{cursor:zoom-in}}
+
+
+body.rychly .nr{display:none!important}
+.only-termin{display:none}
+body.termin .only-termin{display:block}
+body.termin .wz-steps,body.termin .wz-nav,body.termin .step[data-s="udaje"]>h2,body.termin #fsP>fieldset:not(#fsRoz),body.termin #fsRoz>label,body.termin #fsSmut{display:none!important}
+body.termin #rozBox{display:flex!important}
+.btn.big{min-height:64px;font-size:19px;background:var(--fg);color:var(--bg);border:0}
+.btn.sm{min-height:44px;flex:none;padding:8px 14px;font-size:15px}
+.tlac{display:flex;flex-direction:column;gap:12px;padding:14px;border:1px solid var(--line);border-radius:12px}
+.kontrola{display:flex;flex-direction:column;gap:12px;padding:16px;border:2px solid var(--accent);border-radius:12px;background:var(--bg)}
+.k-meno{font-size:30px;font-weight:700;line-height:1.2}
+.k-dat{font-size:24px;font-weight:600}
+.k-q{margin:0;font-size:18px;font-weight:600}
+.smut-list{display:flex;flex-direction:column;gap:6px}
+.smut-row{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 10px;border:1px solid var(--line);border-radius:10px}
+.p-smut{font-size:13px;line-height:1.5;font-style:italic}
+.fimg{touch-action:none;cursor:grab;user-select:none;-webkit-user-drag:none}
+.p-foto,.big-foto{overflow:hidden}
+input[type=range]{min-height:44px;padding:0}
+#printArea{display:none}
+@media print{
+ body{background:#fff!important;padding:0!important}
+ body>*:not(#printArea){display:none!important}
+ #printArea{display:flex!important;flex-direction:column;align-items:center;justify-content:center;gap:14px;width:100vw;height:100vh;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+ #printArea.setrit{filter:grayscale(1)}
+ #printArea .pa-wrap{position:relative}
+ #printArea .pa-qr{display:flex;align-items:center;gap:14px;font:14px/1.4 "Plus Jakarta Sans",sans-serif;color:#000}
+ #printArea .pa-qr svg{width:110px;height:110px}
+}
+.step>.btn,.step .btn.only-termin,#fsRoz>.btn,#fsSmut>.btn,.tlac>.btn{flex:none}
+
+.parte.qr-in{padding-bottom:132px!important}
+.parte.qr-in .txt{padding-bottom:110px}
+.qr-zona{position:absolute;left:30px;bottom:26px;width:92px;height:92px;background:#fff;border:2px solid #2e7d4f;border-radius:6px 30px 30px 6px;box-sizing:border-box;padding:16px 8px 6px;z-index:3;display:flex;flex-direction:column}
+.qr-logo{position:absolute;top:3px;left:6px;background:#1D211B;color:#fff;font:700 9px/1 "Plus Jakarta Sans",sans-serif;padding:2px 6px;border-radius:8px}
+.qr-kod{flex:1;display:flex;align-items:center;justify-content:center;min-height:0}
+.qr-kod svg,.qr-kod img{width:100%;height:100%;object-fit:contain}
+.qr-ph{font:600 9px/1.2 "Plus Jakarta Sans",sans-serif;color:#2e7d4f;border:1.5px dashed #2e7d4f;width:100%;height:100%;display:flex;align-items:center;justify-content:center;text-align:center}
+.parte.qr-pas{padding:0!important;display:block;background:#fff!important}
+.qr-inner{position:absolute;left:50%;top:0;width:420px;height:630px;transform:translateX(-50%) scale(.80);transform-origin:top center;box-sizing:border-box;padding:40px 34px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;overflow:hidden;text-align:center}
+.qr-inner.lay-top,.qr-inner.lay-side{padding:0}
+.qr-inner.lay-side{flex-direction:row;align-items:stretch;gap:0}
+.qr-inner.lay-ornate{padding:52px 40px}
+.qr-inner.gold.lay-ornate,.qr-inner.gold.lay-stack,.qr-inner.gold.lay-arch{padding:62px 52px 56px}
+.qr-inner.lay-neon{padding:44px 30px}
+.qr-inner.lay-modern{padding:28px 30px;align-items:stretch;justify-content:flex-start;text-align:left}
+.parte.qr-pas .qr-zona{left:30px;bottom:14px;width:92px;height:92px}
+.qr-txt{position:absolute;left:134px;bottom:44px;font:12px/1.35 "Plus Jakarta Sans",sans-serif;text-align:left;z-index:3}
+.qr-txt b{font-size:13px}
+.parte.qr-pas .qr-txt{bottom:34px}
+</style>
+
+<div class="app">
+<form class="form" id="f" autocomplete="off">
+  <ol class="wz-steps" id="wzSteps" aria-label="Kroky"></ol>
+
+  <section class="step" data-s="druh">
+    <h2>Čo chcete vytvoriť?</h2>
+    <fieldset><div class="chips" id="typ"></div></fieldset>
+  </section>
+
+  <section class="step" data-s="koho" hidden>
+    <h2>Pre koho je parte?</h2>
+    <fieldset><div class="chips big" id="sex"></div></fieldset>
+  </section>
+
+  <section class="step" data-s="vzhlad" hidden>
+    <h2>Vzhľad</h2>
+    <fieldset><legend>Šablóna</legend><div class="tpls" id="tpls"></div></fieldset>
+    <fieldset class="nr"><legend>Symbol</legend><div class="chips" id="syms"></div></fieldset>
+    <fieldset class="nr"><legend>Farba ozdôb</legend><div class="chips" id="cols"></div>
+    <label class="check"><input type="checkbox" id="orn" checked> Ozdoby a ornamenty</label>
+  </fieldset>
+    <fieldset><legend>Foto</legend>
+    <label>Fotka<input type="file" id="foto" accept="image/*"></label>
+    <label class="check"><input type="checkbox" id="bw"> Čiernobiele foto</label>
+  </fieldset>
+  <fieldset><legend>QR kód</legend>
+    <label class="check"><input type="checkbox" id="qrOn"> Pridať QR kód na parte (napr. na nástenku kostola)</label>
+    <p class="hint" id="qrInfo" hidden></p>
+    <label>Zväčšenie fotky<input type="range" id="fz" min="1" max="3" step="0.05" value="1"></label>
+    <p class="hint">Fotku v rámiku posuniete prstom alebo myšou priamo v náhľade.</p>
+  </fieldset>
+  </section>
+
+  <section class="step" data-s="udaje" hidden>
+    <h2>Údaje</h2>
+    <div id="fsP" style="display:flex;flex-direction:column;gap:16px">
+  <fieldset><legend>Zosnulý / zosnulá</legend>
+    <label>Meno a priezvisko<input id="meno" placeholder="napr. Jozef Novák"></label>
+    <label id="rodL" hidden>Rodné priezvisko<input id="rod" placeholder="napr. Šimková"></label>
+    <div class="row">
+      <label>Dátum narodenia<input type="date" id="nar"></label>
+      <label>Dátum úmrtia<input type="date" id="umr"></label>
+    </div>
+    <label class="check"><input type="checkbox" id="vekOn" checked> Uviesť vek (<span id="vekTxt"></span>)</label>
+    <div class="pick nr"><span class="plab">Vzťah (ťuknite všetko, čo platí)</span><div class="chips" id="pk_vztah"></div><input id="vztah" class="pick-in" placeholder="Napíšte vlastný vzťah" hidden></div>
+    <div class="pick nr"><span class="plab">Citát</span><div class="qlist" id="pk_cit"></div><textarea id="cit" class="pick-in" placeholder="Napíšte vlastný text" hidden></textarea></div>
+  </fieldset>
+
+  <fieldset id="fsRoz"><legend>Posledná rozlúčka</legend>
+    <label class="check"><input type="checkbox" id="neskor"> Údaje doplníme neskôr</label>
+    <label class="check"><input type="checkbox" id="kruh"> Rozlúčka bude v úzkom rodinnom kruhu</label>
+    <div id="rozBox" style="display:flex;flex-direction:column;gap:8px">
+      <div class="row">
+        <label>Dátum<input type="date" id="rd"></label><span></span>
+      </div>
+      <div class="pick"><span class="plab">Čas</span><div class="chips" id="ch_rc"></div><input type="time" id="rc" class="pick-in" hidden></div>
+      <div class="pick"><span class="plab">Miesto</span><div class="chips" id="ch_rm"></div><input id="rm" class="pick-in" placeholder="napr. v Dome smútku v Trenčíne"></div>
+    </div>
+    <button type="button" class="btn primary only-termin" id="btnTermin">Uložiť termín</button>
+    <label class="nr">Podpis<input id="pod" placeholder="Smútiaca rodina"></label>
+  </fieldset>
+  <fieldset class="nr" id="fsSmut"><legend>Smútiaci (nepovinné)</legend>
+    <div id="smutList" class="smut-list"></div>
+    <span class="plab">Kto</span><div class="chips" id="smutVz"></div>
+    <label>Meno<input id="smutMeno" placeholder="napr. Anna"></label>
+    <label class="check"><input type="checkbox" id="smutRod"> s rodinou</label>
+    <button type="button" class="btn ghost" id="smutAdd">Pridať do zoznamu</button>
+  </fieldset>
+  </div>
+
+  <div id="fsJ" style="display:flex;flex-direction:column;gap:16px" hidden>
+  <fieldset><legend>Oslávenec</legend>
+    <label>Meno<input id="jMeno" placeholder="napr. Ján Kováč"></label>
+    <div class="row">
+      <label>Dátum narodenia<input type="date" id="jNar"></label>
+      <label>Dátum oslavy<input type="date" id="jD"></label>
+    </div>
+    <label>Vek na oznámení (<span id="jVekTxt"></span> vypočítané)<input type="number" id="jVek" min="1" max="120" placeholder="automaticky"></label>
+    <label class="nr">Úvodný text (prázdne = podľa veku)<textarea id="jUvod"></textarea></label>
+    <div class="pick nr"><span class="plab">Citát / prianie</span><div class="qlist" id="pk_jCit"></div><textarea id="jCit" class="pick-in" placeholder="Napíšte vlastný text" hidden></textarea></div>
+  </fieldset>
+  <fieldset><legend>Oslava</legend>
+    <label>Čas<input type="time" id="jC"></label>
+    <label>Miesto<input id="jM" placeholder="napr. v reštaurácii Pod Hradom"></label>
+    <label>Potvrdenie účasti (nepovinné)<input id="jR" placeholder="napr. Prosím o potvrdenie účasti do 1. 11."></label>
+    <label class="check"><input type="checkbox" id="rsvpJ" checked> Hostia môžu v appke ťuknúť Prídem</label>
+    <label>Podpis (nepovinné)<input id="jP" placeholder="napr. Ján s rodinou"></label>
+  </fieldset>
+  </div>
+
+  <div id="fsB" style="display:flex;flex-direction:column;gap:16px" hidden>
+  <fieldset><legend>Oslávenec</legend>
+    <label>Meno<input id="bMeno" placeholder="napr. Mária"></label>
+    <div class="row">
+      <label>Dátum narodenia<input type="date" id="bNar"></label>
+      <label>Dátum jubilea<input type="date" id="bD"></label>
+    </div>
+    <label>Vek na blahoželaní (<span id="bVekTxt"></span> vypočítané)<input type="number" id="bVek" min="1" max="120" placeholder="automaticky"></label>
+  </fieldset>
+  <fieldset><legend>Blahoželanie</legend>
+    <label class="nr">Text priania (prázdne = podľa veku)<textarea id="bText" rows="4"></textarea></label>
+    <label class="check"><input type="checkbox" id="bDat"> Uviesť dátum</label>
+    <label>Od koho<input id="bOd" placeholder="napr. S láskou praje celá rodina"></label>
+  </fieldset>
+  </div>
+
+  <div id="fsS" style="display:flex;flex-direction:column;gap:16px" hidden>
+  <fieldset><legend>Snúbenci</legend>
+    <div class="row">
+      <label>Nevesta<input id="sNev" placeholder="napr. Lucia"></label>
+      <label>Ženích<input id="sZen" placeholder="napr. Tomáš"></label>
+    </div>
+    <label>Priezviská (nepovinné)<input id="sPri" placeholder="napr. Lucia Kováčová a Tomáš Horák"></label>
+    <label class="nr">Úvodný text (prázdne = predvolený)<textarea id="sUvod" placeholder="S radosťou Vám oznamujeme, že si povieme svoje áno"></textarea></label>
+    <div class="pick nr"><span class="plab">Citát</span><div class="qlist" id="pk_sCit"></div><textarea id="sCit" class="pick-in" placeholder="Napíšte vlastný text" hidden></textarea></div>
+  </fieldset>
+  <fieldset><legend>Obrad</legend>
+    <div class="row">
+      <label>Dátum<input type="date" id="sD"></label><span></span>
+    </div>
+    <div class="pick"><span class="plab">Čas</span><div class="chips" id="ch_sC"></div><input type="time" id="sC" class="pick-in" hidden></div>
+    <div class="pick"><span class="plab">Miesto obradu</span><div class="chips" id="ch_sM"></div><input id="sM" class="pick-in" placeholder="napr. v Kostole sv. Františka v Trenčíne"></div>
+    <label>Hostina (nepovinné)<input id="sH" placeholder="napr. Hostina bude v reštaurácii Pod Hradom"></label>
+    <label>Potvrdenie účasti (nepovinné)<input id="sR" placeholder="napr. Prosíme o potvrdenie účasti do 1. 5."></label>
+    <label class="check"><input type="checkbox" id="rsvpS" checked> Hostia môžu v appke ťuknúť Prídem</label>
+    <label class="nr">Podpis (nepovinné)<input id="sP" placeholder="napr. Lucia a Tomáš s rodičmi"></label>
+  </fieldset>
+  </div>
+
+  </section>
+
+  <section class="step" data-s="hotovo" hidden>
+    <h2>Hotovo</h2>
+    <p class="hint" id="sumar"></p>
+    <button type="button" class="btn ghost mob-only" id="btnFull">Pozrieť na celú obrazovku</button>
+    <div class="kontrola" id="kontrola" hidden>
+      <div class="k-big" id="kBig"></div>
+      <p class="k-q">Je to správne?</p>
+      <div class="actions">
+        <button type="button" class="btn ghost" id="btnOpravit">Opraviť</button>
+        <button type="button" class="btn primary" id="btnAno">Áno, uložiť</button>
+      </div>
+    </div>
+    <div class="actions" id="hlavne">
+      <button type="button" class="btn primary" id="btnDone">Hotovo · uložiť</button>
+    </div>
+    <p class="hint" id="poZapecateni" hidden style="padding:12px 14px;border-radius:10px;border:1px solid var(--line);font-size:15px;line-height:1.45">Vytlačiť parte s QR kódom zbierky pôjde po zapečatení zbierky, v kroku Hotovo. Teraz parte len uložte.</p>
+    <button type="button" class="btn big" id="btnPrint">Vytlačiť</button>
+    <div class="tlac" id="tlac" hidden>
+      <span class="plab">Veľkosť papiera</span>
+      <div class="chips big" id="papier"></div>
+      <label class="check"><input type="checkbox" id="setrit"> Šetriť farbu (čiernobielo)</label>
+      <button type="button" class="btn primary" id="btnTlac">Tlačiť</button>
+      <p class="hint">V okne tlače môžete zvoliť aj Uložiť ako PDF.</p>
+    </div>
+    <button type="button" class="btn ghost" id="btnPng">Stiahnuť obrázok</button>
+    <button type="button" class="btn ghost" id="btnCitaj">Prečítať nahlas</button>
+    <p class="hint" id="infoHotovo" hidden></p>
+    <p class="toast" id="toast" role="status" hidden></p>
+  </section>
+
+  <p class="err" id="err" role="alert" hidden></p>
+  <nav class="wz-nav">
+    <button type="button" class="btn ghost" id="btnBack">Späť</button>
+    <button type="button" class="btn primary" id="btnNext">Ďalej</button>
+  </nav>
+</form>
+
+<div id="printArea" aria-hidden="true"></div>
+<div id="full" hidden role="dialog" aria-modal="true" aria-label="Náhľad na celú obrazovku"><button type="button" id="fullX" aria-label="Zavrieť">×</button><div id="fullBox"></div></div>
+<div class="view"><div class="parte" id="p"></div></div>
+</div>
+
+<script>
+const T=[
+ {id:"m1",n:"Decent",bg:"#ffffff",fg:"#1c1c1c",mu:"#5f5c57",ac:"#1c1c1c",foto:false,frame:"double",head:false},
+ {id:"m2",n:"Decent foto",bg:"#fbfbfa",fg:"#1c1c1c",mu:"#5f5c57",ac:"#9aa0ab",foto:true,frame:"line",head:false},
+ {id:"m3",n:"Tmavá foto",bg:"#23211e",fg:"#f0e9dc",mu:"#d8d0c2",ac:"#c9a44e",foto:true,frame:"gold",head:"Posledné zbohom"},
+ {id:"m4",n:"Krém rám",bg:"#f7f2e8",fg:"#2b2520",mu:"#4a4238",ac:"#a8842c",foto:false,frame:"gold",head:"Smútočné oznámenie"},
+ {id:"z1",n:"Krém",bg:"#f7f2e8",fg:"#2b2520",mu:"#6b6257",ac:"#b08a8a",foto:false,frame:"line",head:false},
+ {id:"z2",n:"Levanduľa",bg:"#ffffff",fg:"#1c1c1c",mu:"#5f5c57",ac:"#7d6f9e",foto:true,frame:"band",head:false},
+ {id:"z3",n:"Kvety foto",bg:"#fdfbf7",fg:"#2b2520",mu:"#4a4238",ac:"#a8849a",foto:true,frame:"flowers",head:"S láskou spomíname"},
+ {id:"z4",n:"Bordová",bg:"#4a2432",fg:"#f1e8ec",mu:"#e3d6dc",ac:"#c7ccd6",foto:false,frame:"gold",head:"Smútočné oznámenie"},
+ {id:"m5",n:"Foto hore",bg:"#ffffff",fg:"#1c1c1c",mu:"#55524d",ac:"#1c1c1c",foto:true,lay:"top",frame:"none",head:false},
+ {id:"m6",n:"Foto bok",bg:"#f4f1ea",fg:"#25221e",mu:"#57514a",ac:"#6d5a3a",foto:true,lay:"side",frame:"none",head:false},
+ {id:"m7",n:"Moderné",bg:"#eceeef",fg:"#1e2226",mu:"#4d545b",ac:"#1e2226",foto:true,lay:"modern",frame:"none",head:false},
+ {id:"m8",n:"Barok",bg:"#1f2b24",fg:"#efe8d6",mu:"#d6ccb4",ac:"#c9a44e",foto:true,lay:"ornate",frame:"baroque",head:"Odpočívaj v pokoji"},
+ {id:"z5",n:"Foto hore",bg:"#fbf6f4",fg:"#2b2220",mu:"#5d4f4b",ac:"#9b6b6b",foto:true,lay:"top",frame:"none",head:false},
+ {id:"z6",n:"Foto bok",bg:"#f5f3f8",fg:"#221f2a",mu:"#57516a",ac:"#7d6f9e",foto:true,lay:"side",frame:"none",head:false},
+ {id:"z7",n:"Oblúk",bg:"#f1f3ee",fg:"#22261f",mu:"#4f5849",ac:"#6f8466",foto:true,lay:"arch",frame:"none",head:false},
+ {id:"z8",n:"Barok",bg:"#1d2236",fg:"#ece9f2",mu:"#cfd2df",ac:"#c7ccd6",foto:true,lay:"ornate",frame:"baroque",head:"S láskou spomíname"}];
+const TS=[
+ {id:"s1",n:"Prečačkané",bg:"#fbf7ee",fg:"#2b2418",mu:"#5a4e3c",ac:"#b08d34",foto:true,lay:"ornate",frame:"baroque",head:"Budeme sa brať"},
+ {id:"s2",n:"Romantické",bg:"#fbf0ef",fg:"#3a2428",mu:"#6b4f54",ac:"#b0707a",foto:true,frame:"flowers",head:"Navždy spolu"},
+ {id:"s3",n:"Minimal",bg:"#ffffff",fg:"#222222",mu:"#5c5c5c",ac:"#222222",foto:false,frame:"none",head:false},
+ {id:"s4",n:"Moderné",bg:"#f1efec",fg:"#1f1f1f",mu:"#4f4c48",ac:"#1f1f1f",foto:true,lay:"modern",frame:"none",head:false},
+ {id:"s5",n:"Foto hore",bg:"#fdfaf4",fg:"#2a251d",mu:"#5a5246",ac:"#8a7a5c",foto:true,lay:"top",frame:"none",head:false},
+ {id:"s6",n:"Foto bok",bg:"#f1f3ee",fg:"#22261f",mu:"#4f5849",ac:"#6f8466",foto:true,lay:"side",frame:"none",head:false},
+ {id:"s7",n:"Oblúk",bg:"#f6efe4",fg:"#2e261b",mu:"#5d5240",ac:"#a88a5a",foto:true,lay:"arch",frame:"line",head:"Povieme si áno"},
+ {id:"s8",n:"Neon",bg:"#120d1f",fg:"#ffffff",mu:"#d9d0ee",ac:"#ff4fa3",n2:"#4fe3ff",foto:false,lay:"neon",frame:"neon",head:"Áno"},
+ {id:"s9",dk:true,n:"Zlatý barok",bg:"radial-gradient(circle at 50% 35%,#fffaf0 0%,#f6ead0 55%,#e8d3a6 100%)",fg:"#3a2a12",mu:"#5e4a2a",ac:"#b8892e",gold:true,foto:true,lay:"ornate",frame:"lux",head:"Budeme sa brať"},
+ {id:"s10",n:"Kráľovská",bg:"radial-gradient(circle at 50% 30%,#22305a 0%,#141c38 60%,#0b1024 100%)",fg:"#f6efe0",mu:"#d8d2c4",ac:"#d4a849",gold:true,foto:false,frame:"lux",head:"Pozvánka na svadbu"},
+ {id:"s11",dk:true,n:"Ruža a zlato",bg:"linear-gradient(170deg,#fff4f3 0%,#f9dcdc 60%,#f1c6c9 100%)",fg:"#3d2226",mu:"#6a4a4f",ac:"#b8892e",gold:true,foto:true,lay:"ornate",frame:"lux",roses:true,head:"Navždy spolu"},
+ {id:"s12",n:"Smaragd",bg:"radial-gradient(circle at 50% 30%,#1f5a49 0%,#123d32 60%,#0a2620 100%)",fg:"#f4efe2",mu:"#d5d9cf",ac:"#d4a849",gold:true,foto:true,lay:"arch",frame:"lux",head:"Povieme si áno"},
+ {id:"s13",n:"Neon fialový",bg:"#0b0716",fg:"#ffffff",mu:"#ddd4f2",ac:"#b45cff",n2:"#4fe3ff",foto:false,lay:"neon",frame:"neon",head:"Berieme sa"},
+ {id:"s14",n:"Neon zlatý",bg:"#0a0906",fg:"#fff8e6",mu:"#e9e0c8",ac:"#ffc94a",n2:"#fff1c2",foto:false,lay:"neon",frame:"neon",head:"Áno"},
+ {id:"s15",n:"Západ slnka",bg:"linear-gradient(180deg,#ffd9a8 0%,#f7a6a6 45%,#9a6fc4 100%)",fg:"#ffffff",mu:"#fff3ee",ac:"#ffffff",glow:true,foto:true,lay:"top",frame:"none",head:false},
+ {id:"s16",dk:true,n:"Trblietky",bg:"linear-gradient(120deg,#f7ecd6,#fff9ee,#ecd9b0,#fff9ee,#f2e2c0)",fg:"#3a2a12",mu:"#5e4a2a",ac:"#b8892e",gold:true,shimmer:true,foto:true,lay:"ornate",frame:"lux",head:"Budeme sa brať"}];
+const SS={prstene:["Prstene","prstene"],srdce:["Srdce","srdce"],kriz:["Kríž","kriz"],holub:["Holubice","holub"],kvet:["Kvet","kvet"],ziadny:["Bez symbolu",""]};
+const TJ=[
+ {id:"j1",n:"Balóniky",bg:"linear-gradient(180deg,#fff7e8,#ffe9f0)",fg:"#2b2b40",mu:"#4a4a63",ac:"#ff6b6b",kids:true,foto:true,frame:"balloons",head:"Pozývam ťa na oslavu"},
+ {id:"j2",n:"Vesmír",bg:"radial-gradient(circle at 50% 30%,#2a3f86 0%,#141d4a 60%,#0a0f2b 100%)",fg:"#ffffff",mu:"#d6dcf5",ac:"#ffd34d",kids:true,foto:true,frame:"space",head:"Oslava"},
+ {id:"j3",n:"Konfety",bg:"#ffffff",fg:"#1d1d2b",mu:"#4a4a5e",ac:"#7a4cff",kids:true,foto:false,frame:"confetti",head:"Párty"},
+ {id:"j4",n:"Neon párty",bg:"#0b0716",fg:"#ffffff",mu:"#ddd4f2",ac:"#39ff88",n2:"#ff4fd8",foto:false,lay:"neon",frame:"neon",head:"Oslavujem"},
+ {id:"j5",n:"Zlaté jubileum",dk:true,bg:"radial-gradient(circle at 50% 35%,#fffaf0 0%,#f6ead0 55%,#e8d3a6 100%)",fg:"#3a2a12",mu:"#5e4a2a",ac:"#b8892e",gold:true,foto:true,lay:"ornate",frame:"lux",head:"Životné jubileum"},
+ {id:"j6",n:"Elegancia",bg:"radial-gradient(circle at 50% 30%,#22305a 0%,#141c38 60%,#0b1024 100%)",fg:"#f6efe0",mu:"#d8d2c4",ac:"#d4a849",gold:true,foto:false,frame:"lux",head:"Pozvánka na oslavu"},
+ {id:"j7",n:"Kvetinové",bg:"linear-gradient(170deg,#fff7f5,#fbe3e6)",fg:"#3d2226",mu:"#6a4a4f",ac:"#b0707a",foto:true,frame:"flowers",head:"Všetko najlepšie"},
+ {id:"j8",n:"Veľké číslo",bg:"#f1efec",fg:"#1f1f1f",mu:"#4f4c48",ac:"#1f1f1f",foto:true,lay:"modern",frame:"none",head:false},
+ {id:"j9",n:"Šampanské",bg:"linear-gradient(180deg,#1a1408 0%,#3a2b10 55%,#7a5a1c 100%)",fg:"#fff6e0",mu:"#eadfc4",ac:"#e2b85a",gold:true,foto:false,frame:"bubbles",head:"Pripime si"},
+ {id:"j10",n:"Retro",bg:"repeating-conic-gradient(from 0deg at 50% 115%,#f4a259 0deg 8deg,#f7c873 8deg 16deg)",fg:"#3b2412",mu:"#4a2e18",ac:"#8c3b1a",retro:true,foto:false,frame:"none",head:"Oslava"},
+ {id:"j11",n:"Akvarel",bg:"#fffdf9",fg:"#2c2a35",mu:"#55526a",ac:"#7a6bb0",foto:true,frame:"watercolor",head:"Pozvánka na oslavu"},
+ {id:"j12",n:"Foto hore",bg:"linear-gradient(180deg,#ffffff,#f3efe8)",fg:"#22201c",mu:"#57524a",ac:"#9a7b3c",foto:true,lay:"top",frame:"none",head:false}];
+const BH={j1:"Všetko najlepšie",j2:"Hurá, narodeniny",j3:"Happy birthday",j4:"Všetko naj",j5:"Blahoželáme",j6:"Srdečne blahoželáme",j7:"Všetko najlepšie",j8:false};
+const TB=TJ.slice(0,8).map(t=>({...t,id:"b"+t.id.slice(1),head:BH[t.id]})).concat([
+ {id:"b9",n:"Kytica",bg:"linear-gradient(170deg,#fffaf3,#fdeef0)",fg:"#33222a",mu:"#5d4650",ac:"#c2557a",foto:false,frame:"bouquet",head:"Všetko najlepšie"},
+ {id:"b10",n:"Zlaté konfety",dk:true,bg:"#ffffff",fg:"#2e2414",mu:"#5a4a30",ac:"#b8892e",gold:true,foto:false,frame:"goldconfetti",head:"Blahoželáme"},
+ {id:"b11",n:"Foto bok",bg:"#f4f1ea",fg:"#25221e",mu:"#57514a",ac:"#a0522d",foto:true,lay:"side",frame:"none",head:"Všetko najlepšie"},
+ {id:"b12",n:"Kartička",bg:"repeating-linear-gradient(45deg,#d9c3a0 0 2px,#dcc7a5 2px 5px)",fg:"#2e2216",mu:"#4a3a28",ac:"#7a4a1e",foto:false,frame:"kraft",hand:true,head:"Všetko najlepšie"}]);
+const SJ={torta:["Torta","torta"],balon:["Balón","balon"],hviezda:["Hviezda","hviezda"],srdce:["Srdce","srdce"],sampus:["Šampanské","sampus"],ziadny:["Bez symbolu",""]};
+const TYP={parte:"Parte",svadba:"Svadba",jubileum:"Pozvánka na jubileum",blahozelanie:"Blahoželanie"};
+const DEN=["nedeľa","pondelok","utorok","streda","štvrtok","piatok","sobota"];
+const S={kriz:["Kríž","kriz"],prav:["Pravoslávny kríž","prav"],david:["Dávidova hviezda","david"],mesiac:["Polmesiac","mesiac"],svieca:["Sviečka","svieca"],ruza:["Ruža","ruza"],holub:["Holubica","holub"],ziadny:["Bez symbolu",""]};
+const C={sablona:["Podľa šablóny",null],zlata:["Zlatá","#b08d34"],strieborna:["Strieborná","#9aa0ab"],cierna:["Čierna","#1c1c1c"],bordova:["Bordová","#7a3048"],levandula:["Levanduľa","#7d6f9e"],zelena:["Šalviová","#6f8466"]};
+let typ0=(location.hash||"").slice(1);const st={typ:TYP[typ0]?typ0:"parte",t:"m1",sym:"kriz",col:"sablona",sex:null,foto:null,vz:[],pk:{}};const DEF={parte:["m1","kriz"],svadba:["s1","prstene"],jubileum:["j1","torta"],blahozelanie:["b1","torta"]};[st.t,st.sym]=DEF[st.typ];
+const $=id=>document.getElementById(id);
+const PH=t=>`<span class="ph">${t}</span>`;
+const V=(id,t)=>{const x=$(id).value.trim();return x?esc(x):PH(t)};
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+function chipGroup(el,obj,key,cls){el.innerHTML="";for(const k in obj){const b=document.createElement("button");b.type="button";b.className=cls||"chip";
+ b.textContent=Array.isArray(obj[k])?obj[k][0]:obj[k];b.setAttribute("aria-pressed",st[key]===k);b.onclick=()=>{if(key==="sex"&&st.sex!==k){st.vz=[];if(st.pk.vztah!=="vlastny")$("vztah").value=""}st[key]=k;if(key==="sex")ukazChybu("");init();render()};el.appendChild(b)}}
+function init(){
+ const sv=st.typ==="svadba",jb=st.typ==="jubileum",bl=st.typ==="blahozelanie",TL=bl?TB:jb?TJ:sv?TS:T;
+ const tp=$("tpls");tp.innerHTML="";TL.forEach(t=>{const b=document.createElement("button");b.type="button";b.className="tpl";b.style.background=t.bg;b.style.color=t.ac;b.style.borderColor=st.t===t.id?"":t.ac+"55";
+  b.textContent=t.n;b.setAttribute("aria-pressed",st.t===t.id);b.onclick=()=>{st.t=t.id;init();render()};tp.appendChild(b)});
+ chipGroup($("syms"),(jb||bl)?SJ:sv?SS:S,"sym");
+ $("typ").innerHTML="";for(const k in TYP){const b=document.createElement("button");b.type="button";b.className="chip";b.textContent=TYP[k];b.setAttribute("aria-pressed",st.typ===k);b.onclick=()=>{if(st.typ===k)return;st.typ=k;[st.t,st.sym]=DEF[k];init();render()};$("typ").appendChild(b)}
+ $("fsP").hidden=sv||jb||bl;$("fsB").hidden=!bl;$("fsS").hidden=!sv;$("fsJ").hidden=!jb;chipGroup($("cols"),C,"col");chipGroup($("sex"),{m:"Muž",z:"Žena"},"sex");picks();
+ $("rodL").hidden=st.sex!=="z";}
+function fmt(d){if(!d)return PH("dátum");const[y,m,x]=d.split("-");return `${+x}. ${+m}. ${y}`}
+const DNI=["v nedeľu","v pondelok","v utorok","v stredu","vo štvrtok","v piatok","v sobotu"];
+const MES=["januára","februára","marca","apríla","mája","júna","júla","augusta","septembra","októbra","novembra","decembra"];
+function vek(a,b){if(!a||!b)return null;const A=new Date(a),B=new Date(b);let v=B.getFullYear()-A.getFullYear();if(B.getMonth()<A.getMonth()||(B.getMonth()===A.getMonth()&&B.getDate()<A.getDate()))v--;return v>=0?v:null}
+function rokov(v){return v===1?"roka":"rokov"}
+function vekG(a,b){if(!a||!b)return null;const A=new Date(a),B=new Date(b);if(B<A)return null;const r=vek(a,b);
+ if(r>=1)return `${r} ${rokov(r)}`;
+ let m=(B.getFullYear()-A.getFullYear())*12+B.getMonth()-A.getMonth();if(B.getDate()<A.getDate())m--;
+ if(m>=1)return `${m} ${m===1?"mesiaca":"mesiacov"}`;
+ const d=Math.round((B-A)/864e5);if(d>=1)return `${d} ${d===1?"dňa":"dní"}`;return null}
+function symHTML(k,c){const s=(S[k]||SS[k]||SJ[k])[1];
+ if(s==="kriz")return `<svg width="30" height="42" viewBox="0 0 30 42"><path d="M12 2h6v10h10v6H18v22h-6V18H2v-6h10z" fill="${c}"/></svg>`;
+ if(s==="prav")return `<svg width="30" height="44" viewBox="0 0 30 44"><path d="M13 2h4v40h-4z" fill="${c}"/><path d="M8 7h14v3H8zM3 14h24v4H3z" fill="${c}"/><path d="M6 31l18-5 1 3-18 5z" fill="${c}"/></svg>`;
+ if(s==="david")return `<svg width="40" height="44" viewBox="0 0 40 44" fill="none" stroke="${c}" stroke-width="2.6" stroke-linejoin="round"><path d="M20 3l17 29H3z"/><path d="M20 41L3 12h34z"/></svg>`;
+ if(s==="mesiac")return `<svg width="42" height="42" viewBox="0 0 42 42"><path d="M24 4a17 17 0 1 0 0 34a14 14 0 1 1 0-34z" fill="${c}"/><path d="M32 13l2 5 5 .4-4 3.3 1.3 5-4.3-2.8-4.3 2.8 1.3-5-4-3.3 5-.4z" fill="${c}"/></svg>`;
+ if(s==="holub")return `<svg width="48" height="40" viewBox="0 0 48 40"><path d="M4 22c8-2 14 0 19 4 3-8 9-13 17-14l5-4-1 6c1 8-5 16-15 18-6 1-11 0-15-2 3-1 5-3 6-5-5 1-11 0-16-3z" fill="${c}"/><path d="M38 10l4-1" stroke="${c}" stroke-width="2"/></svg>`;
+ if(s==="srdce")return `<svg width="40" height="36" viewBox="0 0 40 36"><path d="M20 34S3 23 3 12a9 9 0 0 1 17-4 9 9 0 0 1 17 4c0 11-17 22-17 22z" fill="${c}"/></svg>`;
+ if(s==="hviezda")return `<svg width="40" height="40" viewBox="0 0 40 40"><path d="M20 3l5 11 12 1-9 8 3 12-11-6-11 6 3-12-9-8 12-1z" fill="${c}"/></svg>`;
+ if(s==="kvet")return `<svg width="40" height="40" viewBox="0 0 40 40">${[0,72,144,216,288].map(a=>`<ellipse cx="20" cy="10" rx="6" ry="9" fill="${c}" opacity=".85" transform="rotate(${a} 20 20)"/>`).join("")}<circle cx="20" cy="20" r="5" fill="#f6d365"/></svg>`;
+ if(s==="torta")return `<svg width="46" height="46" viewBox="0 0 46 46" fill="none" stroke="${c}" stroke-width="2"><path d="M8 40h30V24H8z"/><path d="M8 30c4 3 7 3 10 0s7-3 10 0 7 3 10 0"/><path d="M15 24v-7M23 24v-7M31 24v-7"/><path d="M15 11c2 2 2 4 0 5-2-1-2-3 0-5zM23 11c2 2 2 4 0 5-2-1-2-3 0-5zM31 11c2 2 2 4 0 5-2-1-2-3 0-5z" fill="${c}"/></svg>`;
+ if(s==="balon")return `<svg width="32" height="48" viewBox="0 0 32 48"><ellipse cx="16" cy="15" rx="12" ry="14" fill="${c}"/><path d="M14 29h4l-2 3z" fill="${c}"/><path d="M16 32c-4 5 4 8 0 14" stroke="${c}" fill="none" stroke-width="1.4"/></svg>`;
+ if(s==="sampus")return `<svg width="46" height="46" viewBox="0 0 46 46" fill="none" stroke="${c}" stroke-width="2"><path d="M12 6h10l-1 12a4 4 0 0 1-8 0zM17 22v14M12 38h10"/><path d="M26 10h10l-1 12a4 4 0 0 1-8 0zM31 26v12M26 40h10" opacity=".75"/><circle cx="20" cy="3" r="1.2" fill="${c}"/><circle cx="38" cy="5" r="1.2" fill="${c}"/></svg>`;if(!s)return"";
+ if(s==="prstene")return `<svg width="52" height="34" viewBox="0 0 52 34" fill="none" stroke="${c}" stroke-width="2"><circle cx="19" cy="18" r="12"/><circle cx="33" cy="18" r="12"/><path d="M19 4l3-3h-6z" fill="${c}"/></svg>`;
+ if(s==="svieca")return `<svg width="30" height="46" viewBox="0 0 30 46"><path d="M15 2c4 6 4 10 0 13-4-3-4-7 0-13z" fill="${c}"/><rect x="9" y="17" width="12" height="27" rx="2" fill="none" stroke="${c}" stroke-width="1.6"/></svg>`;
+ if(s==="ruza")return `<svg width="40" height="48" viewBox="0 0 46 52"><path d="M23 20c-6 0-9-4-7-9 4-2 9 0 10 4 1-5 6-7 10-5 1 6-3 10-9 10z" fill="${c}"/><circle cx="24" cy="14" r="6" fill="${c}" opacity=".75"/><path d="M24 20v26" stroke="${c}" stroke-width="1.6"/><path d="M24 32c-5-1-8-4-8-8 5 0 8 3 8 8zm0 8c5-1 8-4 8-8-5 0-8 3-8 8z" fill="${c}" opacity=".7"/></svg>`;
+ return""}
+function orn(c,srdce){const h=x=>`<path d="M${x} 13s-6-4-6-7.5a3 3 0 0 1 6-1a3 3 0 0 1 6 1C${x+6} 9 ${x} 13 ${x} 13z" fill="${c}"/>`;
+ return `<svg width="140" height="16" viewBox="0 0 140 16"><path d="M6 8h44M90 8h44" stroke="${c}" stroke-width="1.2"/><path d="M70 2l6 6-6 6-6-6z" fill="${c}"/>${srdce?h(56)+h(84):`<circle cx="56" cy="8" r="2" fill="${c}"/><circle cx="84" cy="8" r="2" fill="${c}"/>`}</svg>`}
+function frameHTML(t,ac,on){if(!on)return"";
+ if(t.frame==="double")return `<div class="ram" style="border:3px double ${t.fg}"></div>`;
+ if(t.frame==="line")return `<div class="ram" style="border:1px solid ${ac}"></div>`;
+ if(t.frame==="band")return `<div class="ram" style="inset:0;border-top:5px solid ${ac};border-bottom:5px solid ${ac}"></div>`;
+ if(t.frame==="gold")return `<div class="ram" style="border:2px solid ${ac}"></div><div class="ram2" style="border:1px solid ${ac};opacity:.6"></div>`;
+ if(t.frame==="flowers"){const f=`<svg width="110" height="110" viewBox="0 0 120 120"><path d="M10 10c30 5 50 25 55 55" stroke="#9aa884" stroke-width="2" fill="none"/><circle cx="38" cy="26" r="7" fill="${ac}"/><circle cx="58" cy="44" r="6" fill="${ac}" opacity=".7"/><circle cx="22" cy="46" r="5" fill="${ac}" opacity=".7"/><circle cx="70" cy="66" r="5" fill="${ac}"/></svg>`;
+  return [["top:-8px;left:-8px",""],["top:-8px;right:-8px","scaleX(-1)"],["bottom:-8px;left:-8px","scaleY(-1)"],["bottom:-8px;right:-8px","scale(-1)"]].map(([p,tr])=>`<div style="position:absolute;${p};transform:${tr}">${f}</div>`).join("")}
+ if(t.frame==="balloons"){const bl=(x,y,c,r)=>`<div style="position:absolute;left:${x}%;top:${y}px;transform:rotate(${r}deg)"><svg width="46" height="78" viewBox="0 0 46 78"><ellipse cx="23" cy="22" rx="18" ry="21" fill="${c}"/><ellipse cx="16" cy="14" rx="4" ry="6" fill="#fff" opacity=".5"/><path d="M20 43h6l-3 4z" fill="${c}"/><path d="M23 47c-6 8 6 14 0 30" stroke="#88889a" fill="none" stroke-width="1.2"/></svg></div>`;
+  return bl(3,10,"#ff6b6b",-12)+bl(13,-6,"#ffc23d",4)+bl(80,4,"#4cb4ff",10)+bl(70,-10,"#7ed36f",-6)+bl(86,560,"#c27bff",8)+bl(2,555,"#ff9f43",-8)+
+   [...Array(26)].map((_,i)=>`<div style="position:absolute;left:${(i*37)%96}%;top:${(i*53)%96}%;width:7px;height:7px;border-radius:${i%2?"50%":"1px"};background:${["#ff6b6b","#ffc23d","#4cb4ff","#7ed36f","#c27bff"][i%5]};opacity:.55;transform:rotate(${i*23}deg)"></div>`).join("")}
+ if(t.frame==="space"){return [...Array(40)].map((_,i)=>`<div style="position:absolute;left:${(i*41)%98}%;top:${(i*67)%98}%;width:${i%3+1}px;height:${i%3+1}px;border-radius:50%;background:#fff;opacity:${.4+(i%4)/6}"></div>`).join("")+
+  `<div style="position:absolute;right:-20px;top:30px"><svg width="120" height="80" viewBox="0 0 120 80"><circle cx="60" cy="40" r="24" fill="#ff8a5c"/><circle cx="52" cy="32" r="5" fill="#e06b40"/><ellipse cx="60" cy="42" rx="52" ry="12" fill="none" stroke="${ac}" stroke-width="3" transform="rotate(-15 60 42)"/></svg></div>`+
+  `<div style="position:absolute;left:14px;bottom:18px"><svg width="60" height="90" viewBox="0 0 60 90"><path d="M30 4c14 14 16 36 10 54H20C14 40 16 18 30 4z" fill="#eef1ff"/><circle cx="30" cy="30" r="7" fill="#4cb4ff"/><path d="M20 50l-10 14 12-4zM40 50l10 14-12-4z" fill="#ff6b6b"/><path d="M24 60c2 12 6 18 6 24 0-6 4-12 6-24z" fill="${ac}"/></svg></div>`+
+  `<div style="position:absolute;left:24px;top:22px;line-height:0"><svg width="24" height="24" viewBox="0 0 40 40"><path d="M20 3l5 11 12 1-9 8 3 12-11-6-11 6 3-12-9-8 12-1z" fill="${ac}"/></svg></div><div style="position:absolute;right:40px;bottom:40px;line-height:0"><svg width="18" height="18" viewBox="0 0 40 40"><path d="M20 3l5 11 12 1-9 8 3 12-11-6-11 6 3-12-9-8 12-1z" fill="${ac}"/></svg></div>`}
+ if(t.frame==="confetti"){const cs=["#7a4cff","#ff4f8b","#ffb020","#21c4a8","#3d8bff"];
+  return [...Array(60)].map((_,i)=>{const top=i<30?(i*7)%22:78+(i*5)%22;return `<div style="position:absolute;left:${(i*31)%97}%;top:${top}%;width:${i%3?10:6}px;height:${i%3?4:6}px;border-radius:${i%3?"2px":"50%"};background:${cs[i%5]};transform:rotate(${i*37}deg)"></div>`}).join("")}
+ if(t.frame==="bubbles")return [...Array(34)].map((_,i)=>{const sz=4+(i*7)%16;return `<div style="position:absolute;left:${(i*29)%96}%;top:${(i*47)%96}%;width:${sz}px;height:${sz}px;border-radius:50%;border:1.5px solid ${ac};opacity:${.25+(i%5)/8};box-shadow:inset 2px -2px 4px ${ac}55"></div>`}).join("")+`<div class="ram" style="border:1px solid ${ac}88"></div>`;
+ if(t.frame==="watercolor"){const b=(x,y,w,c)=>`<div style="position:absolute;left:${x}%;top:${y}%;width:${w}px;height:${w}px;border-radius:45% 55% 60% 40%/50% 40% 60% 50%;background:radial-gradient(circle at 40% 40%,${c}cc,${c}33 60%,transparent 72%);filter:blur(6px)"></div>`;
+  return b(-10,-6,220,"#b7a6e8")+b(60,-8,200,"#f5b3c8")+b(-14,78,230,"#a8d8d0")+b(62,80,210,"#f7d59a")}
+ if(t.frame==="bouquet"){const fl=(c)=>`<svg width="150" height="150" viewBox="0 0 150 150"><path d="M10 140c30-30 60-50 100-60M10 140c20-40 30-80 50-110" stroke="#6f8a5c" stroke-width="3" fill="none"/><path d="M60 60c10-14 28-12 30 2-14 6-24 6-30-2zM40 100c-14-8-14-24 0-28 6 12 6 20 0 28zM95 82c14-6 26 4 22 16-12-2-20-8-22-16z" fill="#7d9a68"/><g><circle cx="60" cy="30" r="16" fill="${c}"/><circle cx="60" cy="30" r="9" fill="#fff" opacity=".35"/></g><g><circle cx="110" cy="80" r="14" fill="#f2a65a"/><circle cx="110" cy="80" r="6" fill="#fff" opacity=".4"/></g><g><circle cx="30" cy="70" r="11" fill="#9b7fd1"/><circle cx="85" cy="50" r="7" fill="#f6d365"/><circle cx="45" cy="45" r="6" fill="#f6d365"/></g></svg>`;
+  return `<div style="position:absolute;left:-10px;bottom:-10px">${fl(ac)}</div><div style="position:absolute;right:-10px;top:-10px;transform:scale(-1)">${fl(ac)}</div>`}
+ if(t.frame==="goldconfetti")return [...Array(70)].map((_,i)=>{const top=i<35?(i*7)%24:76+(i*5)%24;const w=i%3?4:8;return `<div style="position:absolute;left:${(i*31)%97}%;top:${top}%;width:${w}px;height:${w}px;border-radius:${i%2?"50%":"1px"};background:linear-gradient(135deg,#fff3c4,#d4a849,#8a6416);transform:rotate(${i*37}deg)"></div>`}).join("");
+ if(t.frame==="kraft")return `<div class="ram" style="inset:16px;border:2px dashed ${ac}99;border-radius:6px"></div><div style="position:absolute;top:-6px;left:50%;transform:translateX(-50%) rotate(-3deg);width:90px;height:26px;background:#f1e6d0cc"></div>`;
+ if(t.frame==="lux"){const gd=`<defs><linearGradient id="GG" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff1b8"/><stop offset=".35" stop-color="${ac}"/><stop offset=".6" stop-color="#fff6d2"/><stop offset="1" stop-color="#8a6416"/></linearGradient></defs>`;
+  const st2=`fill="none" stroke="url(#GG)" stroke-width="2.2" stroke-linecap="round"`;
+  const curl="M12 12 C40 4 72 4 104 16 C88 9 74 18 80 28 C84 35 96 31 92 24 M12 12 C26 24 44 26 56 20 C62 17 60 10 54 12";
+  const corner=`<svg width="116" height="116" viewBox="0 0 116 116">${gd}<g ${st2}><path d="${curl}"/><g transform="matrix(0 1 1 0 0 0)"><path d="${curl}"/></g><circle cx="12" cy="12" r="5" fill="url(#GG)"/><path d="M30 30 C40 36 44 46 40 54 M30 30 C36 40 46 44 54 40" opacity=".8"/><circle cx="46" cy="46" r="2.5" fill="url(#GG)"/></g></svg>`;
+  const half="M90 30 C80 8 50 4 30 16 C18 24 22 38 34 34 C42 31 40 22 32 24 M90 30 C76 22 64 26 60 34";
+  const mid=`<svg width="180" height="44" viewBox="0 0 180 44">${gd}<g ${st2}><path d="${half}"/><g transform="translate(180 0) scale(-1 1)"><path d="${half}"/></g><path d="M90 18 l6 8 -6 8 -6 -8z" fill="url(#GG)"/></g></svg>`;
+  const side=`<svg width="44" height="140" viewBox="0 0 44 140">${gd}<g ${st2}><path d="M22 6 C6 26 6 50 22 70 C38 90 38 114 22 134"/><path d="M22 70 C12 62 10 50 18 46 C24 43 28 50 22 54 M22 70 C32 78 34 90 26 94 C20 97 16 90 22 86"/><circle cx="22" cy="70" r="3.5" fill="url(#GG)"/></g></svg>`;
+  const pos=(c,css)=>`<div style="position:absolute;${css};line-height:0">${c}</div>`;
+  let r=`<div class="ram lux-ram" style="inset:20px;border:1.5px solid ${ac};box-shadow:0 0 0 4px transparent,0 0 0 5px ${ac}66"></div>`+
+   pos(corner,"top:6px;left:6px")+pos(corner,"top:6px;right:6px;transform:scaleX(-1)")+pos(corner,"bottom:6px;left:6px;transform:scaleY(-1)")+pos(corner,"bottom:6px;right:6px;transform:scale(-1)")+
+   pos(mid,"top:4px;left:50%;transform:translateX(-50%)")+pos(mid,"bottom:4px;left:50%;transform:translateX(-50%) scaleY(-1)")+
+   pos(side,"left:4px;top:50%;transform:translateY(-50%)")+pos(side,"right:4px;top:50%;transform:translateY(-50%) scaleX(-1)");
+  if(t.roses){const rz=`<svg width="54" height="54" viewBox="0 0 54 54"><circle cx="27" cy="27" r="14" fill="#d98b96"/><path d="M27 15c7 0 11 6 8 11-3 4-9 3-9-2 0-3 3-4 5-3" stroke="#a9505f" stroke-width="2" fill="none"/><path d="M14 30c-6 6-4 14 4 14M40 30c6 6 4 14-4 14" stroke="#7a8f6a" stroke-width="3" fill="none"/></svg>`;
+   r+=pos(rz,"top:26px;left:26px")+pos(rz,"bottom:26px;right:26px")}
+  return r}
+ if(t.frame==="neon")return `<div class="ram" style="border:2px solid ${ac};border-radius:14px;box-shadow:0 0 12px ${ac},inset 0 0 12px ${ac}"></div>`;
+ if(t.frame==="baroque"){const f=`<svg width="96" height="96" viewBox="0 0 96 96" fill="none" stroke="${ac}" stroke-width="1.6"><path d="M6 90V30C6 16 16 6 30 6h60"/><path d="M14 90V36c0-12 10-22 22-22h54" opacity=".6"/><path d="M30 6c0 14-10 24-24 24"/><circle cx="30" cy="30" r="9"/><path d="M30 21c6 2 9 6 9 9M21 30c2 6 6 9 9 9"/><path d="M46 14c6-6 14-6 18 0M14 46c-6 6-6 14 0 18"/><circle cx="30" cy="30" r="3" fill="${ac}"/></svg>`;
+  return `<div class="ram" style="border:1px solid ${ac};inset:22px;opacity:.7"></div>`+[["top:8px;left:8px",""],["top:8px;right:8px","scaleX(-1)"],["bottom:8px;left:8px","scaleY(-1)"],["bottom:8px;right:8px","scale(-1)"]].map(([p,tr])=>`<div style="position:absolute;${p};transform:${tr}">${f}</div>`).join("")+
+  `<div style="position:absolute;top:10px;left:50%;transform:translateX(-50%);line-height:0">${orn(ac)}</div><div style="position:absolute;bottom:10px;left:50%;transform:translateX(-50%);line-height:0">${orn(ac)}</div>`}
+ return""}
+function render(){
+ const sv=st.typ==="svadba",jb=st.typ==="jubileum",bl=st.typ==="blahozelanie";
+ const t=(bl?TB:jb?TJ:sv?TS:T).find(x=>x.id===st.t),ac=C[st.col][1]||t.ac,on=$("orn").checked,z=st.sex==="z";
+ const v=vek($("nar").value,$("umr").value);const vg=vekG($("nar").value,$("umr").value);$("vekTxt").textContent=vg||"–";
+ const neskor=$("neskor").checked,kruh=$("kruh").checked;$("rozBox").style.display=neskor||kruh?"none":"flex";
+ let roz;
+ if(kruh)roz=`Posledná rozlúčka ${z?"so zosnulou":"so zosnulým"} bude<br>v úzkom rodinnom kruhu.`;
+ else if(neskor)roz=`Informácie o poslednej rozlúčke doplníme.`;
+ else{const d=$("rd").value?new Date($("rd").value):null;
+  const kedy=d?`${DNI[d.getDay()]} ${d.getDate()}. ${MES[d.getMonth()]} ${d.getFullYear()}`:PH("dátum");
+  const cas=$("rc").value?` o ${$("rc").value.replace(":",".")} hod.`:"";
+  roz=`Posledná rozlúčka ${z?"so zosnulou":"so zosnulým"} bude<br><b>${kedy}${cas}</b><br>${V("rm","miesto rozlúčky")}.`}
+ const lay=t.lay||"stack";
+ const fx=st.fx||{x:50,y:50,z:1};
+ const img=st.foto?`<img class="fimg" src="${st.foto}" alt="" draggable="false" style="object-position:${fx.x}% ${fx.y}%;transform:scale(${fx.z})">`:"FOTO";
+ const cit=$("cit").value.trim();
+ const p=$("p");p.style.background=t.bg;p.style.color=t.fg;p.className="parte lay-"+lay+($("bw").checked?" bw":"")+(t.gold&&st.col==="sablona"?" gold"+(t.dk?" golddk":""):"")+(t.glow?" glow":"")+(t.shimmer?" shimmer":"")+(t.kids?" kids":"")+(t.retro?" retro":"")+(t.hand?" hand":"");
+ p.style.setProperty("--n1",ac);p.style.setProperty("--n2",t.n2||ac);p.style.setProperty("--gac",ac);
+ let text;
+ if(bl){const nar=$("bNar").value,dd=$("bD").value,av=vek(nar,dd);$("bVekTxt").textContent=av==null?"–":av;
+  const n=+$("bVek").value||av||"";
+  const d=dd?new Date(dd):null;
+  const prianie=$("bText").value.trim()||(n&&n<13?`Prajeme ti veľa radosti, smiechu, kamarátov a splnených želaní. Nech je každý deň plný dobrodružstiev!`:n&&n<30?`Prajeme ti veľa zdravia, šťastia, lásky a odvahy ísť si za svojimi snami.`:`K Vášmu krásnemu životnému jubileu Vám prajeme pevné zdravie, veľa šťastia, lásky a pohody v kruhu najbližších.`);
+  text=`<div class="p-sym">${symHTML(st.sym,ac)}</div>`+
+  (lay==="ornate"?`<div class="p-foto orn-foto" style="border:3px double ${ac};color:${ac}">${img}</div>`:"")+
+  (lay==="stack"&&t.foto?`<div class="p-foto${t.kids?" kid-foto":""}" style="border:3px solid ${ac};background:${t.bg.startsWith("#")?t.bg:"#fff"};color:${ac}">${img}</div>`:"")+
+  (t.head&&on?`<div class="p-head${lay==="neon"?" neon-h":""}" style="color:${ac}">${t.head}</div>`:"")+
+  `<div class="p-meno">${V("bMeno","Meno")}</div>`+
+  (n?`<div class="j-num" style="color:${ac}">${n}<span class="j-lab">${n<5?"roky":"rokov"}</span></div>`:"")+
+  ($("bDat").checked&&d?`<div class="s-dat" style="color:${ac}">${d.getDate()}. ${MES[d.getMonth()]} ${d.getFullYear()}</div>`:"")+
+  `<div class="p-ozn b-text" style="color:${t.mu}">${esc(prianie)}</div>`+
+  (on&&!t.kids&&lay!=="neon"&&lay!=="modern"?`<div class="p-orn">${orn(ac)}</div>`:"")+
+  ($("bOd").value.trim()?`<div class="p-pod">${esc($("bOd").value)}</div>`:"");
+ } else if(jb){const nar=$("jNar").value,dd=$("jD").value,av=vek(nar,dd);$("jVekTxt").textContent=av==null?"–":av;
+  const n=+$("jVek").value||av||"";
+  const d=dd?new Date(dd):null;
+  const kedy=d?`${DNI[d.getDay()]} ${d.getDate()}. ${MES[d.getMonth()]} ${d.getFullYear()}`:PH("dátum");
+  const cas=$("jC").value?` o ${$("jC").value.replace(":",".")} hod.`:"";
+  const uvod=$("jUvod").value.trim()||(n&&n<13?`Pozývam ťa na moju narodeninovú oslavu`:n&&n<30?`Pozývam Ťa na oslavu mojich narodenín`:`Srdečne Vás pozývame na oslavu životného jubilea`);
+  const jc=$("jCit").value.trim(),r=$("jR").value.trim(),ps=$("jP").value.trim();
+  text=`<div class="p-sym">${symHTML(st.sym,ac)}</div>`+
+  (lay==="ornate"?`<div class="p-foto orn-foto" style="border:3px double ${ac};color:${ac}">${img}</div>`:"")+
+  (lay==="stack"&&t.foto?`<div class="p-foto${t.kids?" kid-foto":""}" style="border:3px solid ${ac};background:${t.bg.startsWith("#")?t.bg:"#fff"};color:${ac}">${img}</div>`:"")+
+  (t.head&&on?`<div class="p-head${lay==="neon"?" neon-h":""}" style="color:${ac}">${t.head}</div>`:"")+
+  `<div class="p-ozn" style="color:${t.mu}">${esc(uvod)}</div>`+
+  `<div class="p-meno">${V("jMeno","Meno")}</div>`+
+  (n?`<div class="j-num" style="color:${ac}">${n}<span class="j-lab">${n<5?"roky":"rokov"}</span></div>`:"")+
+  `<div class="s-dat" style="color:${ac}">${kedy}</div>`+
+  `<div class="p-roz" style="color:${t.mu}">${cas.trim()} ${V("jM","miesto oslavy")}</div>`+
+  (jc?`<div class="p-cit" style="color:${t.mu}">„${esc(jc)}“</div>`:"")+
+  (r?`<div class="p-roz s-rsvp" style="color:${t.mu}">${esc(r)}</div>`:"")+
+  (ps?`<div class="p-pod">${esc(ps)}</div>`:"");
+ } else if(sv){const d=$("sD").value?new Date($("sD").value):null;
+  const kedy=d?`${DEN[d.getDay()]} · ${d.getDate()}. ${MES[d.getMonth()]} ${d.getFullYear()}`:PH("dátum");
+  const cas=$("sC").value?`o ${$("sC").value.replace(":",".")} hod.`:"";
+  const scit=$("sCit").value.trim(),pri=$("sPri").value.trim(),h=$("sH").value.trim(),r=$("sR").value.trim(),ps=$("sP").value.trim();
+  const neon=lay==="neon";
+  text=`<div class="p-sym">${symHTML(st.sym,ac)}</div>`+
+  (lay==="ornate"?`<div class="p-foto orn-foto" style="border:3px double ${ac};color:${ac}">${img}</div>`:"")+
+  (lay==="stack"&&t.foto?`<div class="p-foto" style="border:2px solid ${ac};background:${t.bg};color:${ac}">${img}</div>`:"")+
+  (lay==="arch"?`<div class="p-foto arch" style="color:${ac};background:${ac}22">${img}</div>`:"")+
+  (t.head&&on?`<div class="p-head${neon?" neon-h":""}" style="color:${ac}">${t.head}</div>`:"")+
+  `<div class="p-ozn" style="color:${t.mu}">${esc($("sUvod").value.trim()||"S radosťou Vám oznamujeme, že si povieme svoje áno")}</div>`+
+  `<div class="s-mena"><span class="p-meno">${V("sNev","Nevesta")}</span><span class="s-amp" style="color:${ac}">&amp;</span><span class="p-meno">${V("sZen","Ženích")}</span></div>`+
+  (pri?`<div class="p-rod" style="color:${t.mu}">${esc(pri)}</div>`:"")+
+  `<div class="s-dat" style="color:${ac}">${kedy}</div>`+
+  `<div class="p-roz" style="color:${t.mu}">${cas} ${V("sM","miesto obradu")}</div>`+
+  (h?`<div class="p-roz" style="color:${t.mu}">${esc(h)}</div>`:"")+
+  (scit?`<div class="p-cit" style="color:${t.mu}">„${esc(scit)}“</div>`:"")+
+  (on&&lay!=="modern"&&!neon?`<div class="p-orn">${orn(ac,1)}</div>`:(lay==="modern"?`<div class="m-line" style="background:${ac}"></div>`:""))+
+  (r?`<div class="p-roz s-rsvp" style="color:${t.mu}">${esc(r)}</div>`:"")+
+  (ps?`<div class="p-pod">${esc(ps)}</div>`:"");
+ } else text=`<div class="p-sym">${symHTML(st.sym,ac)}</div>`+
+  (lay==="ornate"&&st.foto!==undefined?`<div class="p-foto orn-foto" style="border:3px double ${ac};color:${ac}">${img}</div>`:"")+
+  (lay==="stack"&&t.foto?`<div class="p-foto" style="border:2px solid ${ac};background:${t.bg};color:${ac}">${img}</div>`:"")+
+  (lay==="arch"?`<div class="p-foto arch" style="color:${ac};background:${ac}22">${img}</div>`:"")+
+  (t.head&&on?`<div class="p-head" style="color:${ac}">${t.head}</div>`:"")+
+  (cit?`<div class="p-cit" style="color:${t.mu}">„${esc(cit)}“</div>`:"")+
+  `<div class="p-ozn" style="color:${t.mu}">S hlbokým zármutkom oznamujeme,<br>že nás navždy ${z?"opustila naša drahá":"opustil náš drahý"}${$("vztah").value.trim()?"<br>":""}${$("vztah").value.trim()?esc($("vztah").value.trim()):""}</div>`+
+  `<div class="p-meno">${V("meno","Meno a priezvisko")}</div>`+
+  (z&&$("rod").value.trim()?`<div class="p-rod" style="color:${t.mu}">rod. ${esc($("rod").value)}</div>`:"")+
+  `<div class="p-dat" style="color:${ac}">${$("nar").value?`* ${fmt($("nar").value)} &nbsp; `:""}† ${fmt($("umr").value)}${$("vekOn").checked&&vg?`<br><span style="color:${t.mu}">vo veku ${vg}</span>`:""}</div>`+
+  (on&&lay!=="modern"?`<div class="p-orn">${orn(ac)}</div>`:(lay==="modern"?`<div class="m-line" style="background:${ac}"></div>`:""))+
+  `<div class="p-roz" style="color:${t.mu}">${roz}</div>`+
+  `<div class="p-pod">${esc($("pod").value.trim()||"Smútiaca rodina")}</div>`+
+  (st.smut&&st.smut.length&&CFG.rezim!=="rychly"?`<div class="p-smut" style="color:${t.mu}">${st.smut.map(x=>esc(x.vztah+" "+x.meno+(x.rodina?" s rodinou":""))).join("<br>")}</div>`:"");
+ const big=`<div class="big-foto" style="color:${ac};background:${ac}1f">${img}</div>`;
+ let html;
+ if(lay==="top")html=big+`<div class="txt">${text}</div>`;
+ else if(lay==="side")html=big+`<div class="txt">${text}</div>`;
+ else if(lay==="modern")html=`<div class="m-top">${big}</div><div class="txt">${text}</div>`;
+ else html=text;
+ p.innerHTML=frameHTML(t,ac,on)+html;
+}
+$("f").addEventListener("input",e=>{if(e.target.id==="rc"||e.target.id==="rm"||e.target.id==="sC"||e.target.id==="sM")terminy();render();obnovChybu();autosave()});
+$("f").addEventListener("click",e=>{if(e.target.closest(".chips,.qlist,.tpls")&&!e.target.closest("#papier,#smutVz"))setTimeout(()=>{obnovChybu();autosave()})});
+$("f").addEventListener("change",e=>{if(e.target.id==="neskor"&&e.target.checked)$("kruh").checked=false;if(e.target.id==="kruh"&&e.target.checked)$("neskor").checked=false;render();obnovChybu();autosave()});
+$("foto").addEventListener("change",e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{st.foto=r.result;render()};r.readAsDataURL(f)});
+// typ z appky: odkaz s #parte, #svadba, #jubileum alebo #blahozelanie
+/* ===== Napojenie na appku — rovnaký kontrakt ako editor vsádzky =====
+   VSTUP:  initEditor(cfg)
+     cfg.typ      "parte" | "svadba" | "jubileum" | "blahozelanie"  (zadaný typ = krok „Druh" sa preskočí)
+     cfg.navrh    payload z onSend — obnoví návrh 1:1
+     cfg.kontext  dáta appky (napr. id farnosti, id zbierky) — vrátia sa v payloade
+     cfg.rezim    "plny" (predvolený) | "rychly" — overovateľ: bez symbolu, farby, ozdôb a bez menenia textov
+     cfg.krok     "rozlucka" + cfg.navrh — otvorí len dátum, čas a miesto rozlúčky, tlačidlo Uložiť termín, stav "doplnene"
+     cfg.miesta   ["v Dome smútku v Trenčíne", ...] — miesta na ťuk (rozlúčka aj obrad)
+     cfg.zbierka  {url, kratky} — pri tlači sa pridá QR „Prispieť rodine"
+     cfg.qrObrazok obrázok QR kódu (URL alebo data:), dodá ho systém — editor ho len vloží na vyhradené miesto
+     cfg.onObrazok function(dataUrlPng) — ak chýba, obrázok sa stiahne
+     cfg.onSend   function(payload) — volá sa aj pri automatickom ukladaní (stav "koncept")
+   VÝSTUP: onSend(payload)
+     payload = {verzia, stav:"koncept"|"hotovo"|"doplnene", rezim, bezTerminu, rozlucka:"termin"|"neskor"|"sukromna", rsvp, smutiaci, fotoPozicia, typ, sablona, symbol, farba, ozdoby, pohlavie,
+                foto, fotoCB, polia:{id:hodnota}, html, kontext, cas}
+   Bez onSend ide payload cez window.parent.postMessage({deedEditor: payload}, "*"). */
+const VZ={m:["manžel","otec","starý otec","brat","syn","priateľ"],z:["manželka","mama","stará mama","sestra","dcéra","priateľka"]};
+const Q={cit:[["Odišiel si tíško, ako odchádza deň…","Odišla si tíško, ako odchádza deň…"],["Kto žije v srdciach tých, ktorých opustil, ten nezomrel.","Kto žije v srdciach tých, ktorých opustil, ten nezomrel."],["Utíchlo srdce, utíchol hlas, mal si rád život a všetkých nás.","Utíchlo srdce, utíchol hlas, mala si rada život a všetkých nás."],["Odpočinutie večné daj mu, Pane.","Odpočinutie večné daj jej, Pane."],["Prestalo biť srdce, ktoré nás tak veľmi milovalo.","Prestalo biť srdce, ktoré nás tak veľmi milovalo."],["Ďakujeme za lásku, ktorú si nám dával.","Ďakujeme za lásku, ktorú si nám dávala."]],
+ sCit:["Láska je trpezlivá, láska je dobrotivá.","Láska nikdy nezanikne.","Kde je láska, tam je aj život.","Dvaja sú lepší ako jeden.","Navždy spolu, v dobrom aj v zlom."],
+ jCit:["Každý rok je dar.","Vek je len číslo.","Život sa meria chvíľami, nie rokmi.","Ešte veľa krásnych rokov.","Najkrajšie roky sú tie, ktoré ešte len prídu."]};
+function spoj(a){return a.length<2?a.join(""):a.slice(0,-1).join(", ")+" a "+a[a.length-1]}
+function picks(){
+ const box=$("pk_vztah"),inp=$("vztah"),list=VZ[st.sex||"m"],custom=st.pk.vztah==="vlastny";
+ box.innerHTML="";[...list,"Napísať vlastný"].forEach(w=>{const b=document.createElement("button");b.type="button";b.className="chip";b.textContent=w;
+  const on=w==="Napísať vlastný"?custom:!custom&&st.vz.includes(w);b.setAttribute("aria-pressed",on);
+  b.onclick=()=>{if(w==="Napísať vlastný"){st.pk.vztah=custom?null:"vlastny";if(!custom){st.vz=[];inp.value=""}}else{st.pk.vztah=null;st.vz=st.vz.includes(w)?st.vz.filter(x=>x!==w):[...st.vz,w];st.vz.sort((a,b)=>list.indexOf(a)-list.indexOf(b));inp.value=spoj(st.vz)}
+   picks();render();if(st.pk.vztah==="vlastny")inp.focus()};box.appendChild(b)});
+ inp.hidden=!custom;if(!custom)inp.value=spoj(st.vz.filter(w=>list.includes(w)));
+ for(const id of ["cit","sCit","jCit"]){const bx=$("pk_"+id),ta=$(id),sel=st.pk[id];bx.innerHTML="";
+  const opts=Q[id].map(q=>Array.isArray(q)?q[st.sex==="z"?1:0]:q);
+  [...opts.map((q,i)=>[i,"„"+q+"“"]),["bez","Bez citátu"],["vlastny","Napísať vlastný"]].forEach(([k,txt])=>{const b=document.createElement("button");b.type="button";b.className="qopt";b.textContent=txt;
+   const on=sel===undefined||sel===null?k==="bez":String(sel)===String(k);b.setAttribute("aria-pressed",on);
+   b.onclick=()=>{st.pk[id]=k;if(k==="vlastny")ta.value="";picks();render();if(k==="vlastny")ta.focus()};bx.appendChild(b)});
+  ta.hidden=sel!=="vlastny";if(sel!=="vlastny")ta.value=typeof sel==="number"?opts[sel]:""}}
+const POVINNE={parte:[["meno","meno"],["umr","dátum úmrtia"]],svadba:[["sNev","meno nevesty"],["sZen","meno ženícha"],["sD","dátum obradu"],["sM","miesto obradu"]],
+ jubileum:[["jMeno","meno"],["jD","dátum oslavy"],["jM","miesto oslavy"]],blahozelanie:[["bMeno","meno"]]};
+function chyby(krok){document.querySelectorAll(".miss").forEach(e=>e.classList.remove("miss"));
+ if(krok==="koho"&&!st.sex){$("sex").classList.add("miss");return"Ťuknite Muž alebo Žena."}
+ if(krok==="udaje"){const ch=[];for(const[id,n]of POVINNE[st.typ]){const e=$(id);if(!e.value.trim()){ch.push(n);e.classList.add("miss")}}
+  if(ch.length)return"Ešte doplňte: "+ch.join(", ")+"."}
+ return""}
+function odomkni(){const b=$("btnDone");if(b.disabled){b.disabled=false;b.textContent="Hotovo · uložiť";b.classList.remove("sent")}}
+function obnovChybu(){odomkni();if($("err").hidden)return;ukazChybu(chyby(kroky()[STEP]))}
+function ukazChybu(t){const e=$("err");e.textContent=t;e.hidden=!t}
+function mozeDalej(){const k=kroky()[STEP],t=chyby(k);ukazChybu(t);return!t}
+const VERZIA="1.0";let CFG={},STEP=0;
+const KROKY={druh:"Druh",koho:"Muž / Žena",vzhlad:"Vzhľad",udaje:"Údaje",hotovo:"Hotovo"};
+const TLIST=()=>st.typ==="svadba"?TS:st.typ==="jubileum"?TJ:st.typ==="blahozelanie"?TB:T;
+function kroky(){const a=[];if(!CFG.typ)a.push("druh");if(st.typ==="parte")a.push("koho");a.push("vzhlad","udaje","hotovo");return a}
+function showStep(){const a=kroky();STEP=Math.max(0,Math.min(STEP,a.length-1));const cur=a[STEP];
+ document.querySelectorAll(".step").forEach(x=>x.hidden=x.dataset.s!==cur);ukazChybu("");
+ $("wzSteps").innerHTML=a.map((k,i)=>`<li class="${i<STEP?"done":i===STEP?"on":""}"><button type="button" data-i="${i}">${i+1}. ${KROKY[k]}</button></li>`).join("");
+ $("wzSteps").querySelectorAll("button").forEach(b=>b.onclick=()=>{const c=+b.dataset.i;while(STEP<c){if(!mozeDalej())return;STEP++}STEP=c;showStep()});
+ $("btnBack").style.visibility=STEP?"visible":"hidden";$("btnNext").hidden=cur==="hotovo";if(cur!=="hotovo")skryKontrolu();
+ if(cur==="hotovo")$("sumar").textContent=`${TYP[st.typ]} · šablóna ${TLIST().find(x=>x.id===st.t).n}. Rozpracované sa ukladá samo. Skontrolujte náhľad a ťuknite Hotovo · uložiť.`}
+function polia(){const o={};$("f").querySelectorAll("input[id],textarea[id]").forEach(e=>{if(e.type==="file")return;o[e.id]=e.type==="checkbox"?e.checked:e.value});return o}
+function payload(stav){return{verzia:VERZIA,stav,typ:st.typ,sablona:st.t,symbol:st.sym,farba:st.col,ozdoby:$("orn").checked,pohlavie:st.sex,
+ foto:st.foto,fotoCB:$("bw").checked,vztahVyber:st.vz,bezTerminu:st.typ==="parte"&&!$("kruh").checked&&($("neskor").checked||!$("rd").value),rozlucka:st.typ!=="parte"?null:$("kruh").checked?"sukromna":$("neskor").checked?"neskor":"termin",rezim:CFG.rezim==="rychly"?"rychly":"plny",rsvp:st.typ==="svadba"?$("rsvpS").checked:st.typ==="jubileum"?$("rsvpJ").checked:false,smutiaci:st.smut||[],fotoPozicia:st.fx,qr:$("qrOn").checked,qrUmiestnenie:$("qrOn").checked?qrMiesto(TLIST().find(x=>x.id===st.t)):null,terminIny:st.iny||{},vyber:st.pk,polia:polia(),html:$("p").outerHTML,kontext:CFG.kontext??null,cas:new Date().toISOString()}}
+function vycisti(){$("f").querySelectorAll("input[id],textarea[id]").forEach(e=>{if(e.type==="file")e.value="";else if(e.type==="checkbox")e.checked=e.id==="orn"||e.id==="vekOn";else e.value=""});st.foto=null;st.col="sablona";st.sex=null;st.vz=[];st.pk={};st.smut=[];st.smV=null;st.iny={};st.fx={x:50,y:50,z:1};$("rsvpS").checked=true;$("rsvpJ").checked=true}
+function obnov(n){vycisti();Object.assign(st,{typ:n.typ,t:n.sablona,sym:n.symbol,col:n.farba||"sablona",sex:n.pohlavie||null,foto:n.foto||null,vz:n.vztahVyber||[],pk:n.vyber||{},smut:n.smutiaci||[],fx:n.fotoPozicia||{x:50,y:50,z:1},iny:n.terminIny||{}});
+ for(const[k,v]of Object.entries(n.polia||{})){const e=$(k);if(!e||e.type==="file")continue;if(e.type==="checkbox")e.checked=!!v;else e.value=v}
+ $("orn").checked=n.ozdoby!==false;$("bw").checked=!!n.fotoCB;$("fz").value=st.fx.z}
+function odosli(stav){const pl=payload(stav);try{if(typeof CFG.onSend==="function")CFG.onSend(pl);else if(window.parent&&window.parent!==window)window.parent.postMessage({deedEditor:pl},"*")}catch(e){}
+ }
+window.initEditor=function(cfg){CFG=Object.assign({},cfg||{});window.__deedInit=1;
+ if(CFG.navrh){obnov(CFG.navrh);if(!CFG.typ)CFG.typ=CFG.navrh.typ}else{vycisti();st.typ=TYP[CFG.typ]?CFG.typ:"parte";[st.t,st.sym]=DEF[st.typ]}
+ STEP=0;const bd=$("btnDone");bd.textContent="Hotovo · uložiť";bd.disabled=false;bd.classList.remove("sent");init();render();
+ document.body.classList.toggle("rychly",CFG.rezim==="rychly");const T_=CFG.krok==="rozlucka"&&st.typ==="parte";document.body.classList.toggle("termin",T_);
+ const bt=$("btnTermin");bt.textContent="Uložiť termín";bt.disabled=false;bt.classList.remove("sent");skryKontrolu();$("tlac").hidden=true;
+ if(T_){STEP=kroky().indexOf("udaje");$("neskor").checked=false;$("kruh").checked=false;render()}
+ showStep();if(T_)setTimeout(()=>$("rd").focus(),50)};
+window.getNavrh=()=>payload("koncept");
+$("btnNext").onclick=()=>{if(!mozeDalej())return;STEP++;showStep();scrollTo({top:0})};$("btnBack").onclick=()=>{STEP--;showStep();scrollTo({top:0})};
+const _init=init;init=function(){_init();terminy();smutUI();if($("wzSteps").innerHTML)showStep()};
+function fit(){const v=document.querySelector(".view"),p=$("p");p.style.transform="";v.style.height="";
+ if(innerWidth>820)return;const h=p.offsetHeight,max=innerHeight*.42;if(h>max){const k=max/h;p.style.transform=`scale(${k})`;v.style.height=(h*k+16)+"px"}}
+addEventListener("resize",fit);
+
+/* ===== QR na parte: miesto 4 × 4 cm vľavo dole ===== */
+const QR_PAS=new Set(["flowers","baroque","lux","balloons","space","bouquet","goldconfetti","confetti","bubbles","watercolor","neon","kraft"]);
+function qrMiesto(t){return(QR_PAS.has(t.frame)||t.lay==="side"||t.lay==="ornate")?"pas":"vnutri"}
+let _qrSvg="";
+function qrObsah(){return CFG.qrObrazok?`<img src="${esc(CFG.qrObrazok)}" alt="QR kód zbierky">`:`<span class="qr-ph">Sem príde QR kód</span>`}
+function qrVloz(){const p=$("p"),on=$("qrOn").checked,t=TLIST().find(x=>x.id===st.t);
+ p.classList.remove("qr-in","qr-pas");p.querySelectorAll(":scope>.qr-zona,:scope>.qr-inner").forEach(e=>e.remove());
+ const inf=$("qrInfo");if(!on){inf.hidden=true;return}
+ const m=qrMiesto(t);inf.hidden=false;inf.textContent=m==="vnutri"?"QR bude vľavo dole priamo na parte.":"Na tomto vzhľade sa QR nezmestí do kresby. Parte sa zmenší a QR bude na bielom páse dole.";
+ const tc=m==="vnutri"?t.mu:"#3a3a3a";const zona=`<div class="qr-zona"><div class="qr-logo">D+</div><div class="qr-kod">${qrObsah()}</div></div><div class="qr-txt" style="color:${tc}"><b>Prispieť rodine</b><br>Naskenujte QR kód</div>`;
+ if(m==="vnutri"){p.classList.add("qr-in");p.insertAdjacentHTML("beforeend",zona)}
+ else{const bg=p.style.background;const inner=document.createElement("div");inner.className="qr-inner";inner.style.background=bg;inner.className="qr-inner "+[...p.classList].filter(c=>c!=="parte").join(" ");
+  [...p.childNodes].forEach(n=>inner.appendChild(n));p.style.background="#ffffff";p.classList.add("qr-pas");p.appendChild(inner);p.insertAdjacentHTML("beforeend",zona)}}
+/* text sa vždy zmestí do parte: postupne zmenší písmo obsahu */
+function vtesnaj(){const p=$("p"),tx=p.querySelector(":scope>.txt");
+ const kusy=tx?[tx]:[...p.children].filter(e=>getComputedStyle(e).position!=="absolute");
+ kusy.forEach(e=>e.style.zoom="");const tr=p.style.transform;p.style.transform="";
+ const jc=p.style.justifyContent;p.style.justifyContent="flex-start";if(tx)tx.style.justifyContent="flex-start";
+ const big=p.querySelector(".big-foto");if(big)big.style.height="";const bh=big?big.offsetHeight:0;
+ const pretece=()=>p.scrollHeight>p.clientHeight+1||(tx&&tx.scrollHeight>tx.clientHeight+1);
+ let k=1;while(pretece()&&k>.62){k-=.03;kusy.forEach(e=>e.style.zoom=k);if(big&&k<.86)big.style.height=Math.round(bh*Math.max(.6,k+.1))+"px"}
+ p.style.justifyContent=jc;if(tx)tx.style.justifyContent="";p.style.transform=tr}
+const _render=render;render=function(){pevneTexty();_render();const q=$("qrOn").checked&&qrMiesto(TLIST().find(x=>x.id===st.t))==="vnutri";$("p").classList.toggle("qr-in",q);vtesnaj();qrVloz();fit()};
+
+/* ===== 2. kolo ===== */
+document.body.appendChild($("printArea"));
+const CASY=["10:00","11:00","13:00","14:00","15:00"];
+const SMUT=["manželka","manžel","syn","dcéra","syn s rodinou","vnuk","vnučka","vnúčatá","brat","sestra","súrodenci","nevesta","zať","pravnúčatá"];
+function tchips(id,opts,iny){const bx=$("ch_"+id),inp=$(id);if(!bx)return;st.iny=st.iny||{};
+ const v=inp.value,jeIny=st.iny[id]||(v&&!opts.includes(v));bx.innerHTML="";
+ [...opts,iny].forEach(o=>{const b=document.createElement("button");b.type="button";b.className="chip";b.textContent=o;
+  b.setAttribute("aria-pressed",o===iny?!!jeIny:(!jeIny&&v===o));
+  b.onclick=()=>{if(o===iny){st.iny[id]=true;inp.value="";tchips(id,opts,iny);inp.focus()}else{st.iny[id]=false;inp.value=o;tchips(id,opts,iny)}render();obnovChybu();autosave()};bx.appendChild(b)});
+ inp.hidden=opts.length>0&&!jeIny}
+function terminy(){const m=Array.isArray(CFG.miesta)?CFG.miesta:[];
+ tchips("rc",CASY,"Iný čas");tchips("sC",CASY,"Iný čas");tchips("rm",m,"Iné miesto");tchips("sM",m,"Iné miesto")}
+function smutUI(){st.smut=st.smut||[];
+ $("smutList").innerHTML=st.smut.map((x,i)=>`<div class="smut-row"><span>${esc(x.vztah+" "+x.meno+(x.rodina?" s rodinou":""))}</span><button type="button" class="btn ghost sm" data-i="${i}">Odstrániť</button></div>`).join("");
+ $("smutList").querySelectorAll("button").forEach(b=>b.onclick=()=>{st.smut.splice(+b.dataset.i,1);smutUI();render();autosave()});
+ const bx=$("smutVz");bx.innerHTML="";SMUT.forEach(w=>{const b=document.createElement("button");b.type="button";b.className="chip";b.textContent=w;b.setAttribute("aria-pressed",st.smV===w);b.onclick=()=>{st.smV=w;smutUI()};bx.appendChild(b)})}
+$("smutAdd").onclick=()=>{const m=$("smutMeno").value.trim();if(!st.smV||!m){ukazChybu(!st.smV?"Ťuknite, kto to je (napr. syn).":"Napíšte meno.");return}
+ ukazChybu("");st.smut.push({vztah:st.smV,meno:m,rodina:$("smutRod").checked});st.smV=null;$("smutMeno").value="";$("smutRod").checked=false;smutUI();render();autosave()};
+/* rýchly režim: pevné texty podľa vzhľadu */
+function pevneTexty(){if(CFG.rezim!=="rychly")return;const i=Math.max(0,TLIST().findIndex(t=>t.id===st.t));
+ st.col="sablona";$("orn").checked=true;st.sym=DEF[st.typ][1];
+ if(st.typ==="parte"){st.vz=[];$("vztah").value="";$("pod").value="";$("cit").value=Q.cit[i%Q.cit.length][st.sex==="z"?1:0];st.pk.cit=i%Q.cit.length}
+ if(st.typ==="svadba"){$("sUvod").value="";$("sP").value="";$("sCit").value=Q.sCit[i%Q.sCit.length];st.pk.sCit=i%Q.sCit.length}
+ if(st.typ==="jubileum"){$("jUvod").value="";$("jCit").value=""}
+ if(st.typ==="blahozelanie")$("bText").value=""}
+/* autosave */
+let _as;function autosave(){if(document.body.classList.contains("termin"))return;clearTimeout(_as);_as=setTimeout(()=>odosli("koncept"),700)}
+/* kontrola pred uložením */
+function kontrolaHTML(){const f=x=>fmt(x).replace(/<[^>]+>/g,"");
+ if(st.typ==="parte")return `<div class="k-meno">${esc($("meno").value)}</div><div class="k-dat">${$("nar").value?"* "+f($("nar").value)+" &nbsp; ":""}† ${f($("umr").value)}</div>`;
+ if(st.typ==="svadba")return `<div class="k-meno">${esc($("sNev").value)} a ${esc($("sZen").value)}</div><div class="k-dat">${f($("sD").value)}${$("sC").value?" o "+$("sC").value:""}</div>`;
+ if(st.typ==="jubileum")return `<div class="k-meno">${esc($("jMeno").value)}</div><div class="k-dat">${f($("jD").value)}${$("jC").value?" o "+$("jC").value:""}</div>`;
+ return `<div class="k-meno">${esc($("bMeno").value)}</div>`}
+function skryKontrolu(){$("kontrola").hidden=true;$("hlavne").hidden=false}
+$("btnDone").onclick=()=>{const a=kroky();for(let i=0;i<a.length;i++){const t=chyby(a[i]);if(t){STEP=i;showStep();ukazChybu(t);return}}
+ $("kBig").innerHTML=kontrolaHTML();$("kontrola").hidden=false;$("hlavne").hidden=true;$("kontrola").scrollIntoView({block:"center"})};
+$("btnOpravit").onclick=()=>{skryKontrolu();STEP=kroky().indexOf("udaje");showStep();scrollTo({top:0})};
+$("btnAno").onclick=()=>{clearTimeout(_as);odosli("hotovo");skryKontrolu();const b=$("btnDone");b.textContent="Uložené ✓";b.disabled=true;b.classList.add("sent")};
+/* krok rozlúčka */
+$("btnTermin").onclick=()=>{const ch=[];document.querySelectorAll(".miss").forEach(e=>e.classList.remove("miss"));
+ for(const[id,n]of[["rd","dátum"],["rc","čas"],["rm","miesto"]])if(!$(id).value.trim()){ch.push(n);($(id).hidden?$("ch_"+id):$(id)).classList.add("miss")}
+ if(ch.length){ukazChybu("Ešte doplňte: "+ch.join(", ")+".");return}
+ ukazChybu("");$("neskor").checked=false;$("kruh").checked=false;render();odosli("doplnene");const b=$("btnTermin");b.textContent="Uložené ✓";b.disabled=true;b.classList.add("sent")};
+/* tlač */
+let PAPIER="A4";
+function papierUI(){const bx=$("papier");bx.innerHTML="";["A4","A5"].forEach(x=>{const b=document.createElement("button");b.type="button";b.className="chip";b.textContent=x;b.setAttribute("aria-pressed",PAPIER===x);b.onclick=()=>{PAPIER=x;papierUI()};bx.appendChild(b)})}
+$("btnPrint").onclick=()=>{$("tlac").hidden=!$("tlac").hidden;papierUI()};
+let _qrLoad;function nacitajQR(){if(window.qrcode)return Promise.resolve();if(_qrLoad)return _qrLoad;
+ _qrLoad=new Promise(r=>{const sc=document.createElement("script");sc.src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js";sc.onload=r;sc.onerror=r;setTimeout(r,2500);document.head.appendChild(sc)});return _qrLoad}
+async function pripravTlac(){const z=CFG.zbierka&&CFG.zbierka.url&&!$("qrOn").checked?CFG.zbierka:null;if(z)await nacitajQR();
+ const W=PAPIER==="A4"?794:559,H=PAPIER==="A4"?1123:794,qrH=z?150:0;
+ const pa=$("printArea");pa.innerHTML="";pa.className=$("setrit").checked?"setrit":"";
+ const c=$("p").cloneNode(true);c.id="";c.style.transform="";c.style.width="420px";c.style.maxWidth="none";c.style.boxShadow="none";
+ const k=Math.min(W*.92/420,(H*.94-qrH)/630);const w=document.createElement("div");w.className="pa-wrap";w.style.width=420*k+"px";w.style.height=630*k+"px";
+ c.style.transform=`scale(${k})`;c.style.transformOrigin="0 0";w.appendChild(c);pa.appendChild(w);
+ if(z){const q=document.createElement("div");q.className="pa-qr";let svg="";try{if(window.qrcode){const qr=qrcode(0,"M");qr.addData(z.url);qr.make();svg=qr.createSvgTag(3,0)}}catch(e){}
+  q.innerHTML=`${svg}<div><b>Prispieť rodine</b><br>${esc(z.kratky||z.url)}</div>`;pa.appendChild(q)}
+ let ps=$("pageSize");if(!ps){ps=document.createElement("style");ps.id="pageSize";document.head.appendChild(ps)}
+ ps.textContent=`@page{size:${PAPIER==="A4"?"210mm 297mm":"148mm 210mm"};margin:0}`}
+$("btnTlac").onclick=async()=>{await pripravTlac();window.print()};
+/* obrázok 1080 × 1620 */
+$("btnPng").onclick=async()=>{const b=$("btnPng"),info=$("infoHotovo");info.hidden=true;b.textContent="Pripravujem…";
+ try{const c=$("p").cloneNode(true);c.id="";c.style.transform="";c.style.width="420px";c.style.maxWidth="none";c.style.boxShadow="none";c.style.margin="0";
+  const css=[...document.querySelectorAll("style")].map(x=>x.textContent).join("\n");
+  const xh=new XMLSerializer().serializeToString(c);
+  const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1620"><foreignObject x="0" y="0" width="1080" height="1620"><div xmlns="http://www.w3.org/1999/xhtml" style="width:420px;height:630px;transform:scale(${1080/420});transform-origin:0 0"><style>${css.replace(/<\/style/g,"")}</style>${xh}</div></foreignObject></svg>`;
+  const im=new Image();await new Promise((ok,ko)=>{im.onload=ok;im.onerror=ko;im.src="data:image/svg+xml;charset=utf-8,"+encodeURIComponent(svg)});
+  const cv=document.createElement("canvas");cv.width=1080;cv.height=1620;const g=cv.getContext("2d");g.drawImage(im,0,0);
+  const url=cv.toDataURL("image/png");
+  if(typeof CFG.onObrazok==="function")CFG.onObrazok(url);else{const a=document.createElement("a");a.href=url;a.download=(TYP[st.typ]+".png").toLowerCase().replace(/\s+/g,"-");document.body.appendChild(a);a.click();a.remove()}
+  b.textContent="Stiahnuté ✓"}catch(e){b.textContent="Stiahnuť obrázok";info.textContent="Obrázok sa v tomto prehliadači nepodarilo vytvoriť. Skúste Vytlačiť a Uložiť ako PDF.";info.hidden=false}
+ setTimeout(()=>b.textContent="Stiahnuť obrázok",3000)};
+/* prečítať nahlas */
+let _hlas=false;
+function textNahlas(){const c=$("p").cloneNode(true);c.querySelectorAll(".ph,svg,.p-foto,.big-foto").forEach(x=>x.remove());c.querySelectorAll("br").forEach(x=>x.replaceWith(", "));
+ return [...c.querySelectorAll("div")].filter(d=>!d.querySelector("div")).map(d=>d.textContent.replace(/\s+/g," ").trim()).filter(Boolean).join(". ").replace(/\*/g,st.sex==="z"?"narodená":"narodený").replace(/†/g,st.sex==="z"?"zomrela":"zomrel")}
+if(!("speechSynthesis" in window))$("btnCitaj").hidden=true;
+$("btnCitaj").onclick=()=>{const b=$("btnCitaj");if(_hlas){speechSynthesis.cancel();_hlas=false;b.textContent="Prečítať nahlas";return}
+ const u=new SpeechSynthesisUtterance(textNahlas());u.lang="sk-SK";const v=speechSynthesis.getVoices().find(x=>/^sk/i.test(x.lang));if(v)u.voice=v;u.rate=.9;
+ u.onend=u.onerror=()=>{_hlas=false;b.textContent="Prečítať nahlas"};speechSynthesis.cancel();speechSynthesis.speak(u);_hlas=true;b.textContent="Zastaviť čítanie"};
+/* fotka: posun a zväčšenie */
+const ptr=new Map();let _drag=null,_moved=false;
+function fimg(){return $("p").querySelector(".fimg")}
+function fxApply(){const i=fimg();if(i){i.style.objectPosition=`${st.fx.x}% ${st.fx.y}%`;i.style.transform=`scale(${st.fx.z})`}$("fz").value=st.fx.z}
+$("p").addEventListener("pointerdown",e=>{if(!e.target.classList.contains("fimg"))return;e.preventDefault();e.target.setPointerCapture(e.pointerId);ptr.set(e.pointerId,{x:e.clientX,y:e.clientY});_moved=false;
+ if(ptr.size===2){const[a,b]=[...ptr.values()];_drag={pinch:Math.hypot(a.x-b.x,a.y-b.y),z:st.fx.z}}else _drag={x:e.clientX,y:e.clientY,fx:{...st.fx},w:e.target.clientWidth,h:e.target.clientHeight}});
+$("p").addEventListener("pointermove",e=>{if(!ptr.has(e.pointerId)||!_drag)return;ptr.set(e.pointerId,{x:e.clientX,y:e.clientY});
+ if(ptr.size===2&&_drag.pinch){const[a,b]=[...ptr.values()];st.fx.z=Math.min(3,Math.max(1,_drag.z*Math.hypot(a.x-b.x,a.y-b.y)/_drag.pinch))}
+ else if(_drag.w){const dx=e.clientX-_drag.x,dy=e.clientY-_drag.y;if(Math.abs(dx)+Math.abs(dy)>3)_moved=true;
+  st.fx.x=Math.min(100,Math.max(0,_drag.fx.x-dx/_drag.w*100/st.fx.z));st.fx.y=Math.min(100,Math.max(0,_drag.fx.y-dy/_drag.h*100/st.fx.z))}
+ fxApply()});
+["pointerup","pointercancel"].forEach(ev=>$("p").addEventListener(ev,e=>{if(!ptr.has(e.pointerId))return;ptr.delete(e.pointerId);if(!ptr.size){_drag=null;autosave()}}));
+$("p").addEventListener("wheel",e=>{if(!e.target.classList.contains("fimg"))return;e.preventDefault();st.fx.z=Math.min(3,Math.max(1,st.fx.z-e.deltaY*.002));fxApply();autosave()},{passive:false});
+$("fz").addEventListener("input",()=>{st.fx.z=+$("fz").value;fxApply()});
+function otvorFull(){const f=$("full"),box=$("fullBox"),c=$("p").cloneNode(true);c.id="";c.style.transform="";box.innerHTML="";box.appendChild(c);f.hidden=false;document.body.style.overflow="hidden";
+ const w=c.offsetWidth,h=c.offsetHeight,k=Math.min(innerWidth*.92/w,innerHeight*.90/h);c.style.transform=`scale(${k})`;$("fullX").focus()}
+function zavriFull(){$("full").hidden=true;$("fullBox").innerHTML="";document.body.style.overflow=""}
+$("btnFull").onclick=otvorFull;$("fullX").onclick=zavriFull;
+$("full").addEventListener("click",e=>{if(e.target.id==="full")zavriFull()});
+addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("full").hidden)zavriFull()});
+document.querySelector(".view").addEventListener("click",e=>{if(e.target.classList.contains("fimg")||_moved){_moved=false;return}if(innerWidth<=820)otvorFull()});
+setTimeout(()=>{if(!window.__deedInit){const h=(location.hash||"").slice(1);initEditor(TYP[h]?{typ:h}:{})}},0);
+</script>
+
+<script>(function(){const _i=window.initEditor;if(!_i)return;window.initEditor=function(cfg){const r=_i.apply(this,arguments);const bez=!!(cfg&&cfg.bezTlace);["btnPrint","tlac","btnPng"].forEach(id=>{const e=document.getElementById(id);if(!e)return;if(bez){e.hidden=true;e.style.display="none"}else{e.style.display="";if(id!=="tlac")e.hidden=false}});const p=document.getElementById("poZapecateni");if(p)p.hidden=!bez;const q=document.getElementById("qrOn");if(q&&cfg&&(cfg.zbierka||cfg.bezTlace)&&!q.checked){q.checked=true;q.dispatchEvent(new Event("change",{bubbles:true}));q.dispatchEvent(new Event("input",{bubbles:true}));if(typeof render==="function")render()}return r}})();</script>
+<script>(function(){
+function ui(){const q=document.getElementById("qrOn");if(!q)return;const lab=q.closest("label");if(lab){lab.style.display="none";const lg=lab.parentNode.querySelector("legend");if(lg)lg.style.display="none"}
+ let w=document.getElementById("qrPrep");const form=document.getElementById("f");
+ if(!w&&form){w=document.createElement("div");w.id="qrPrep";w.style.cssText="display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 12px;border:1.5px solid var(--line);border-radius:12px";form.insertBefore(w,form.firstChild)}
+ if(!w)return;const jeParte=(typeof st==="undefined"||!st.typ||st.typ==="parte");if(!jeParte){w.style.display="none";if(q.checked){q.checked=false;q.dispatchEvent(new Event("change",{bubbles:true}));if(typeof _r==="function")_r()}return}w.style.display="flex";const on=q.checked;
+ w.innerHTML='<span style="flex:1 1 150px;font-size:15px;font-weight:700">QR kód zbierky na parte</span><span style="display:flex;gap:6px"></span><span style="flex:1 1 100%;font-size:13.5px;color:var(--muted)"></span>';
+ [["Áno",true],["Nie",false]].forEach(([n,v])=>{const b=document.createElement("button");b.type="button";b.textContent=n;const s=on===v;b.setAttribute("aria-pressed",String(s));b.style.cssText="min-height:44px;min-width:64px;padding:0 14px;border-radius:10px;font:inherit;font-size:15px;font-weight:700;cursor:pointer;border:1px solid "+(s?"var(--accent)":"var(--line)")+";background:"+(s?"var(--accent)":"var(--bg)")+";color:"+(s?"var(--onaccent,#fff)":"var(--fg)");b.onclick=()=>{if(q.checked!==v){q.checked=v;q.dispatchEvent(new Event("change",{bubbles:true}));q.dispatchEvent(new Event("input",{bubbles:true}))}if(typeof render==="function")render();ui()};w.children[1].appendChild(b)});
+ w.children[2].textContent=on?"Pozrite v náhľade, ako bude vyzerať. Zmeniť môžete kedykoľvek, aj tesne pred uložením.":"Parte je bez QR. Ak si to rozmyslíte, ťuknite na Áno.";}
+if(typeof render==="function"){const _r=render;render=function(){_r.apply(this,arguments);ui()}}
+const _i=window.initEditor;if(_i){window.initEditor=function(){const r=_i.apply(this,arguments);setTimeout(ui,20);return r}}
+window.edKrokSpat=function(){const vis=[...document.querySelectorAll(".step")].find(x=>!x.hidden);const prvy=[...document.querySelectorAll(".step")].filter(x=>{const s=x.getAttribute("data-s");return s!=="druh"||!document.querySelector('.step[data-s="koho"]')})[0];const li=document.querySelectorAll("#wzSteps>*");if(li.length&&li[0].classList.contains("on"))return false;if(vis&&(vis.getAttribute("data-s")==="koho"||vis.getAttribute("data-s")==="druh"))return false;const b=document.getElementById("btnBack");if(b&&b.offsetParent!==null&&!b.disabled&&!b.hidden){b.click();return true}return false};
+setTimeout(ui,300);
+})();</script>
+<script>window.edNahlad=async function(){try{const p=document.getElementById("p");const c=p.cloneNode(true);c.id="";c.style.transform="";c.style.width="420px";c.style.maxWidth="none";c.style.boxShadow="none";c.style.margin="0";
+const css=[...document.querySelectorAll("style")].map(x=>x.textContent).join("\n");const xh=new XMLSerializer().serializeToString(c);
+const svg='<svg xmlns="http://www.w3.org/2000/svg" width="420" height="630"><foreignObject width="420" height="630"><div xmlns="http://www.w3.org/1999/xhtml" style="width:420px;height:630px"><style>'+css.replace(/<\/style/g,"")+'</style>'+xh+'</div></foreignObject></svg>';
+const im=new Image();await new Promise((ok,ko)=>{im.onload=ok;im.onerror=ko;im.src="data:image/svg+xml;charset=utf-8,"+encodeURIComponent(svg)});
+const cv=document.createElement("canvas");cv.width=420;cv.height=630;const g=cv.getContext("2d");g.fillStyle="#fff";g.fillRect(0,0,420,630);g.drawImage(im,0,0);return cv.toDataURL("image/jpeg",.82)}catch(e){return ""}};</script>
