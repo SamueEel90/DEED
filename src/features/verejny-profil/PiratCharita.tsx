@@ -25,7 +25,7 @@ const krivka = (pts: [number, number][]) => pts.reduce((a, [x, y], i) => { if (!
 const krivkaV = (pts: [number, number][]) => pts.reduce((a, [x, y], i) => { if (!i) return `M${x} ${y}`; const [px, py] = pts[i - 1]; const my = (py + y) / 2; return `${a} C${px} ${my} ${x} ${my} ${x} ${y}`; }, "");
 const Y_PC = [380, 170, 360, 150, 340, 110];
 
-export function PiratCharita({ profil, onDetail, onZaznam, onBack, odFarnikov }: { /** KARTA 56I: sekcia Od veriacich (farnosť) */ odFarnikov?: ReactNode; profil: TestProfil; onDetail: (z: TestZbierka) => void; onZaznam?: (p: PolCh) => void; onBack: () => void; onKronika?: () => void }) {
+export function PiratCharita({ profil, onDetail, onZaznam, onBack, odFarnikov, hore }: { /** KARTA 56I: sekcia Od veriacich (farnosť) */ odFarnikov?: ReactNode; /** KARTA 57 C.7–C.8 */ hore?: ReactNode; profil: TestProfil; onDetail: (z: TestZbierka) => void; onZaznam?: (p: PolCh) => void; onBack: () => void; onKronika?: () => void }) {
   const pc = usePc();
   const mob = !pc;
   const domace = useDomaceMesto(profil);
@@ -215,7 +215,7 @@ export function PiratCharita({ profil, onDetail, onZaznam, onBack, odFarnikov }:
     </section>);
 
   const okno = stitOtv && <StitOkno p={profil} v6 mobil={mob} onClose={() => setStitOtv(false)} />;
-  const obsah: ReactNode = <>{titulka}{teraz}{kamPoslat}{odFarnikov}{cesta}{dalsie}{iskry}{mob && <div style={{ height: DOK + 24, flex: "none" }} />}</>;
+  const obsah: ReactNode = <>{titulka}{hore}{teraz}{kamPoslat}{odFarnikov}{cesta}{dalsie}{iskry}{mob && <div style={{ height: DOK + 24, flex: "none" }} />}</>;
   return (
     <div className="vp sc-tokeny" data-stit={stit} style={{ position: "relative", height: "100%", overflowY: "auto", WebkitOverflowScrolling: "touch" } as CSSProperties}>
       {obsah}{okno}

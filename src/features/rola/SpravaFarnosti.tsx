@@ -13,6 +13,7 @@ import { nacitajSelfAdd, ulozSelfAdd } from "@/features/viera/UserOznamy";
 import { DRUHY_FARNIKA, nacitajSmie, ulozSmie, smie as smieDruh, odFarnikov, zmazOdFarnika, useOdFarnikov } from "@/lib/odFarnikov";
 import { otvorVerejnyProfil } from "@/features/verejny-profil/otvor";
 import { OmseKalendar, TyzdenVPrehlade } from "./OmseKalendar";
+import { PrihovorNaStranke } from "@/features/verejny-profil/PrihovorNaStranke";
 import { OznamyFarnosti } from "./OznamyFarnosti";
 import { nedelneOmse } from "@/lib/kalendarFarnosti";
 import { NahladFarnosti, nahladPopis } from "./NahladFarnosti";
@@ -588,7 +589,7 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
     onZmena={setKoncept} onUlozene={(pr) => { setProf({ koncept: null, konceptCas: null, ulozeny: pr }); setKoncept(null); }}
     onZrusit={() => { setKoncept(null); go("prehlad"); }} onHotovo={() => { setKoncept(null); go("prehlad"); }}
     vzhlad={<VzhladStranky strankaId={strankaId} zadarmo={false} kto="ľudia" sektor="farnost" />} />;
-  const nahlad = <NahladFarnosti profil={prof.ulozeny} meno={cistyNazov(prof.ulozeny?.meno ?? nazov) || "Vaša farnosť"} vzhlad={vz} mobil={mobil && !tablet} hore={
+  const nahlad = <NahladFarnosti prihovor={(sv) => <PrihovorNaStranke strankaId={strankaId} svetly={sv} />} profil={prof.ulozeny} meno={cistyNazov(prof.ulozeny?.meno ?? nazov) || "Vaša farnosť"} vzhlad={vz} mobil={mobil && !tablet} hore={
     <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
       <button type="button" onClick={() => go("profil")} style={{ height: 44, padding: "0 16px", borderRadius: 13, border: "1px solid var(--cardBd)", background: "var(--card)", cursor: "pointer", fontFamily: "inherit", fontSize: 15, fontWeight: 800, color: "var(--ink)", boxShadow: "none" }}>‹ Späť na úpravu</button>
       <span style={{ fontSize: 14, color: "var(--ink3)" }}>{nahladPopis(vz)}</span>

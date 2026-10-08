@@ -21,6 +21,7 @@ import { FormularOznamu, VyberSablony, Plagat, prazdneUdaje, prvaVolba, chybaOzn
 import { zmenKostol, CAS_OK, normCas, dokonciCas, casNeexistuje, pekny } from "@/lib/kalendarFarnosti";
 import { stitokOznamu } from "./OmseKalendar";
 import { NahladNastenky } from "./NahladNastenky";
+import { PrihovorKarta } from "./PrihovorKarta";
 import type { ProfilStranky } from "@/lib/profilStranky";
 
 type Druh = 0 | 1 | 2; // Krátky oznam · Udalosť · Oznámenie
@@ -431,6 +432,7 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
   const pridatTl = (
     <button type="button" onClick={() => { setFormOn(true); setHotovo(null); }} style={{ flex: "none", minHeight: 56, border: "none", borderRadius: 16, background: "#4B7A35", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 10, fontFamily: "inherit", fontSize: 16, fontWeight: 800, color: "#fff", boxShadow: "none" }}><span aria-hidden="true" style={{ fontSize: 22, lineHeight: 1 }}>+</span>Pridať oznam</button>);
   return <>
+    <PrihovorKarta strankaId={strankaId} mobil={mobil} />
     <div ref={topRef} style={{ scrollMarginTop: 72 }} />
     {formOn ? (tel ? lavy : (
       <div style={{ flex: "none", display: "grid", gridTemplateColumns: mobil ? "minmax(0,1fr)" : "minmax(0,1.4fr) minmax(0,1fr)", gap: 14, alignItems: "start" }}>

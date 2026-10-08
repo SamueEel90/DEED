@@ -38,7 +38,7 @@ function useTablet() {
   return t;
 }
 
-export function Kronika({ profil, onDetail, onZaznam, onBack, prepinac, odFarnikov }: { /** KARTA 56I: sekcia Od veriacich (farnosť) */ odFarnikov?: ReactNode; profil: TestProfil; onDetail: (z: TestZbierka) => void; /** doplnky 4. 10.: ťuk na záznam v rokoch (skutok, ukončená zbierka, Iskra, akcia) — bez platobného modulu */ onZaznam: (p: Pol) => void; onBack: () => void; /** KARTA 45: testovací prepínač podania */ prepinac?: ReactNode }) {
+export function Kronika({ profil, onDetail, onZaznam, onBack, prepinac, odFarnikov, hore }: { /** KARTA 56I: sekcia Od veriacich (farnosť) */ odFarnikov?: ReactNode; /** KARTA 57 C.7–C.8: NAŽIVO a Príhovor farára (farnosť) */ hore?: ReactNode; profil: TestProfil; onDetail: (z: TestZbierka) => void; /** doplnky 4. 10.: ťuk na záznam v rokoch (skutok, ukončená zbierka, Iskra, akcia) — bez platobného modulu */ onZaznam: (p: Pol) => void; onBack: () => void; /** KARTA 45: testovací prepínač podania */ prepinac?: ReactNode }) {
   useZmenyIskier();
   const mobil = useMobil();
   const tablet = useTablet();
@@ -529,6 +529,7 @@ export function Kronika({ profil, onDetail, onZaznam, onBack, prepinac, odFarnik
                   <span style={{ fontSize: 14.5, lineHeight: 1.5, color: "var(--ink2)", textWrap: "pretty" } as CSSProperties}>{profil.veta}</span>
                 </span>
               </>}
+          {hore}
           {tab ? nazivoTab : nazivoMob}
           {podpora}
         </div>
@@ -560,6 +561,7 @@ export function Kronika({ profil, onDetail, onZaznam, onBack, prepinac, odFarnik
             <b style={{ fontSize: 30, lineHeight: 1.1, letterSpacing: "-.01em" }}>{profil.meno}</b>
             <span style={{ fontSize: 15, lineHeight: 1.5, color: "var(--ink2)", textWrap: "pretty" } as CSSProperties}>{profil.veta}</span>
           </span>
+          {hore}
           {prepinac}
           {podpora}
         </div>
