@@ -438,17 +438,17 @@ export function MamZaujem({ entita, inzerat, toast }: { entita: string; inzerat:
   const [poznamka, setPoznamka] = useState("");
   const [soStitom, setSoStitom] = useState(false);   // štít a karma sú dobrovoľné, defaultne vypnuté
 
-  const posli = () => {
+  const posli = async () => {
     if (meno.trim().length < 3) { toast("Napíšte meno, nech organizácia vie, kto sa ozval."); return; }
     if (!telefon.trim() && !email.trim()) { toast("Nechajte telefón alebo e-mail — inak sa vám nemá ako ozvať."); return; }
-    const novy = pridajZaujemcu(entita, inzerat.id, {
+    const novy = await pridajZaujemcu(entita, inzerat.id, {
       meno: meno.trim(),
       telefon: telefon.trim() || undefined,
       email: email.trim() || undefined,
       poznamka: cistyText(poznamka) ? poznamka : undefined,
       stit: soStitom ? ja.tier : undefined,
     });
-    if (!novy) { toast("Ponuku sa nepodarilo nájsť"); return; }
+    if (!novy) { toast("Záujem sa nepodarilo odoslať — skúste to znova (treba byť prihlásený)."); return; }
     try { localStorage.setItem(KLUC_ZAUJEM(entita, inzerat.id), novy); } catch { /* LS nedostupné */ }
     setOdoslane(novy);
     setOtvorene(false);
@@ -456,7 +456,7 @@ export function MamZaujem({ entita, inzerat, toast }: { entita: string; inzerat:
   };
 
   const zrus = () => {
-    if (odoslane) zrusZaujem(entita, inzerat.id, odoslane);
+    if (odoslane) void zrusZaujem(entita, inzerat.id, odoslane);
     try { localStorage.removeItem(KLUC_ZAUJEM(entita, inzerat.id)); } catch { /* LS nedostupné */ }
     setOdoslane(null);
     toast("Záujem zrušený");

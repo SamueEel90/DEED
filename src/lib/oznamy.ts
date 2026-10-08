@@ -3,9 +3,16 @@
 // Vedomé rozhodnutie: subjekt je len kľúč („charita", „fara:123"), takže ten
 // istý kód obslúži každú entitu — kategórie a limity si určuje modul.
 // Platnosť: oznam po X dňoch zmizne z profilu, záznam ostáva (mäkká expirácia).
-// Perzistencia = localStorage (mock); v produkcii to isté cez server.
+// Perzistencia: DB (migrácia 0073) — oznam_subjektu (obsah, číta každý, píše správca stránky)
+// a zaujemca_inzeratu (kontakt „Mám záujem", vidí len záujemca a správca). Rozhranie ostáva
+// synchrónne: cache v pamäti + localStorage, DB sa načíta na pozadí (useZmenyOznamov prekreslí).
+// Entita bez stránky v DB (napr. fara:<id>) a mock/offline = len localStorage.
 // ============================================================
 import { useSyncExternalStore } from "react";
+import { supabase } from "./supabase";
+import { bezDataUrl } from "./uploadFoto";
+import { pripojTestovaciuStranku } from "./stranka";
+import { toast } from "@/components/toast";
 
 export type KategoriaOznamu = "oznam" | "akcia" | "inzerat";
 
@@ -92,12 +99,83 @@ const posluchaci = new Set<() => void>();
 const subscribe = (f: () => void) => { posluchaci.add(f); return () => posluchaci.delete(f); };
 export function useZmenyOznamov(): number { return useSyncExternalStore(subscribe, () => verzia); }
 
+// entita → testovacia stránka v DB (lib/mojeStranky UKAZKOVE_STRANKY); iná entita ostáva lokálne
+const STRANKA_ENTITY: Record<string, string> = { charita: "svetlo", b2b: "pekaren", tvorca: "tvorca", svetlo: "svetlo", pekaren: "pekaren", farnost: "farnost" };
+const strankaEntity = (entita: string): string | null => (supabase ? STRANKA_ENTITY[entita] ?? null : null);
+
+const pamat = new Map<string, Oznam[]>();
+const zDb = new Set<string>();       // entity, ktoré už prišli z DB
+const nacitava = new Set<string>();
+const zmena = () => { verzia++; posluchaci.forEach((f) => f()); };
+const lokalne = (entita: string): Oznam[] => { try { return JSON.parse(localStorage.getItem(KLUC(entita)) ?? "[]") as Oznam[]; } catch { return []; } };
+const ulozLokalne = (entita: string, v: Oznam[]) => { try { localStorage.setItem(KLUC(entita), JSON.stringify(v)); } catch { /* LS nedostupné */ } };
+
 export function nacitajOznamy(entita: string): Oznam[] {
-  try { return JSON.parse(localStorage.getItem(KLUC(entita)) ?? "[]") as Oznam[]; } catch { return []; }
+  void nacitajZDb(entita);
+  return pamat.get(entita) ?? lokalne(entita);
 }
+
+type Riadok = { id: string; data: Oznam };
+type RiadokZaujemcu = { id: string; oznam_id: string; meno: string; telefon: string | null; email: string | null; poznamka: string | null; stit: string | null; karma: number | null; kedy: string };
+/** DB → cache. Oznamy z DB sú autoritatívne; čo je len v tomto prehliadači (pred napojením), sa raz zapíše. */
+async function nacitajZDb(entita: string): Promise<void> {
+  const stranka = strankaEntity(entita);
+  if (!stranka || zDb.has(entita) || nacitava.has(entita)) return;
+  nacitava.add(entita);
+  try {
+    const { data, error } = await supabase!.from("oznam_subjektu").select("id, data").eq("stranka", stranka);
+    if (error) return; // tabuľka ešte nebeží (0073) → ostáva localStorage
+    const z = await supabase!.from("zaujemca_inzeratu").select("id, oznam_id, meno, telefon, email, poznamka, stit, karma, kedy").eq("stranka", stranka);
+    const zaujem = new Map<string, Zaujemca[]>();
+    for (const r of (z.data ?? []) as RiadokZaujemcu[]) {
+      const l = zaujem.get(r.oznam_id) ?? [];
+      l.push({ id: r.id, meno: r.meno, telefon: r.telefon ?? undefined, email: r.email ?? undefined, poznamka: r.poznamka ?? undefined, stit: r.stit ?? undefined, karma: r.karma ?? undefined, kedy: Date.parse(r.kedy) });
+      zaujem.set(r.oznam_id, l);
+    }
+    const db = ((data ?? []) as Riadok[]).map((r) => ({ ...r.data, id: r.id, entita, zaujemcovia: (zaujem.get(r.id) ?? []).sort((a, b) => a.kedy - b.kedy) }));
+    const ids = new Set(db.map((o) => o.id));
+    const lenLokal = lokalne(entita).filter((o) => !ids.has(o.id));
+    const v = [...lenLokal, ...db];
+    pamat.set(entita, v); zDb.add(entita);
+    ulozLokalne(entita, v); zmena();
+    if (lenLokal.length) void zapisDoDb(entita, [], lenLokal);
+  } finally { nacitava.delete(entita); }
+}
+
+const bezZaujemcov = ({ zaujemcovia: _z, ...o }: Oznam) => o;
+/** zapíše rozdiel (nové / zmenené / zmazané) — záujemcovia idú zvlášť (pridajZaujemcu) */
+async function zapisDoDb(entita: string, predtym: Oznam[], teraz: Oznam[]): Promise<void> {
+  const stranka = strankaEntity(entita);
+  if (!stranka) return;
+  const stare = new Map(predtym.map((o) => [o.id, JSON.stringify(bezZaujemcov(o))]));
+  const zmenene = teraz.filter((o) => stare.get(o.id) !== JSON.stringify(bezZaujemcov(o)));
+  const prec = predtym.filter((o) => !teraz.some((x) => x.id === o.id)).map((o) => o.id);
+  if (!zmenene.length && !prec.length) return;
+  try {
+    await pripojTestovaciuStranku(stranka); // testovacia stránka: tester = správca
+    if (zmenene.length) {
+      const riadky = await Promise.all(zmenene.map(async (o) => ({
+        id: o.id, stranka, kategoria: o.kategoria, data: await bezDataUrl(bezZaujemcov(o), "oznamy"),
+        vytvorene: new Date(o.vytvorene).toISOString(), upravene: new Date(o.upravene ?? o.vytvorene).toISOString(),
+      })));
+      const { error } = await supabase!.from("oznam_subjektu").upsert(riadky, { onConflict: "id" });
+      if (error) throw error;
+    }
+    if (prec.length) {
+      const { error } = await supabase!.from("oznam_subjektu").delete().in("id", prec);
+      if (error) throw error;
+    }
+  } catch {
+    toast("Oznam sa nepodarilo uložiť — vidíte ho len na tomto zariadení.");
+  }
+}
+
 function uloz(entita: string, v: Oznam[]) {
-  try { localStorage.setItem(KLUC(entita), JSON.stringify(v)); } catch { /* LS nedostupné */ }
-  verzia++; posluchaci.forEach((f) => f());
+  const predtym = nacitajOznamy(entita);
+  pamat.set(entita, v);
+  ulozLokalne(entita, v);
+  zmena();
+  void zapisDoDb(entita, predtym, v);
 }
 
 const DEN = 86400000;
@@ -138,17 +216,30 @@ export function obsadInzerat(entita: string, id: string) {
 export function otvorInzeratZnova(entita: string, id: string, dni: number) {
   upravOznam(entita, id, { obsadene: undefined, vytvorene: Date.now(), platnostDni: dni });
 }
-export function pridajZaujemcu(entita: string, id: string, z: Omit<Zaujemca, "id" | "kedy">): string | null {
+/** záujemca zapíše len svoj kontakt (zaujemca_inzeratu) — inzerát samotný mení len správca. Vráti id alebo null. */
+export async function pridajZaujemcu(entita: string, id: string, z: Omit<Zaujemca, "id" | "kedy">): Promise<string | null> {
   const inz = nacitajOznamy(entita).find((o) => o.id === id);
   if (!inz) return null;
-  const novy: Zaujemca = { ...z, id: `zj-${Date.now()}`, kedy: Date.now() };
-  upravOznam(entita, id, { zaujemcovia: [...(inz.zaujemcovia ?? []), novy] });
+  const novy: Zaujemca = { ...z, id: crypto.randomUUID(), kedy: Date.now() };
+  const stranka = strankaEntity(entita);
+  if (stranka) {
+    const { error } = await supabase!.from("zaujemca_inzeratu").insert({
+      id: novy.id, oznam_id: id, stranka, meno: novy.meno, telefon: novy.telefon ?? null, email: novy.email ?? null,
+      poznamka: novy.poznamka ?? null, stit: novy.stit ?? null, karma: novy.karma ?? null,
+    });
+    if (error) return null;
+  }
+  zmenZaujemcov(entita, id, (l) => [...l, novy]);
   return novy.id;
 }
-export function zrusZaujem(entita: string, id: string, zaujemcaId: string): void {
-  const inz = nacitajOznamy(entita).find((o) => o.id === id);
-  if (!inz) return;
-  upravOznam(entita, id, { zaujemcovia: (inz.zaujemcovia ?? []).filter((z) => z.id !== zaujemcaId) });
+export async function zrusZaujem(entita: string, id: string, zaujemcaId: string): Promise<void> {
+  if (strankaEntity(entita)) await supabase!.from("zaujemca_inzeratu").delete().eq("id", zaujemcaId);
+  zmenZaujemcov(entita, id, (l) => l.filter((z) => z.id !== zaujemcaId));
+}
+/** záujemcovia sú v cache pri inzeráte (správca ich vidí v Inzerátoch); do oznam_subjektu sa nezapisujú */
+function zmenZaujemcov(entita: string, id: string, f: (l: Zaujemca[]) => Zaujemca[]) {
+  const v = nacitajOznamy(entita).map((o) => (o.id === id ? { ...o, zaujemcovia: f(o.zaujemcovia ?? []) } : o));
+  pamat.set(entita, v); ulozLokalne(entita, v); zmena();
 }
 
 export function pridajOznam(o: Omit<Oznam, "id" | "vytvorene">): Oznam {
