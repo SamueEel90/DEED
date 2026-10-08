@@ -100,7 +100,7 @@ export function ObrazokOznamu({ src, inic, bg = "#2F3A2A" }: { src?: string; ini
 }
 const fmtDatum = (iso: string) => { if (!iso) return ""; const [y, m, d] = iso.split("-").map(Number); const dt = new Date(y, m - 1, d); return `${["Ne", "Po", "Ut", "St", "Št", "Pi", "So"][dt.getDay()]} ${d}. ${m}.`; };
 
-export function OznamyFarnosti({ strankaId, meno, profil, mobil, toast, hore }: { strankaId: string; meno: string; /** uložený profil (Farský úrad, logo) — náhľad verejnej stránky */ profil: ProfilStranky | null; mobil: boolean; toast: (m: string) => void; /** obsah pod zoznamom (Od farníkov) */ hore?: number }) {
+export function OznamyFarnosti({ strankaId, meno, profil, mobil, toast, hore }: { strankaId: string; meno: string; /** uložený profil (Farský úrad, logo) — náhľad verejnej stránky */ profil: ProfilStranky | null; mobil: boolean; toast: (m: string) => void; /** obsah pod zoznamom (Od veriacich) */ hore?: number }) {
   const vz = useVzhlad(strankaId, false);
   const [dr, setDr] = useState<Druh>(0);
   const [n, setN] = useState("");

@@ -66,10 +66,10 @@ export function FarskyProfil({ farnost, farar, jeDomovska, following, onToggleFo
   const [potvrdHome, setPotvrdHome] = useState(false); // A9 potvrdenie „nastaviť ako moju cirkev"
   const [nahlasit, setNahlasit] = useState(false); // nahlásenie profilu (z ⋯ menu)
   const [menu, setMenu] = useState(false); // ⋯ kontextové menu profilu
-  const [moderacia, setModeracia] = useState(false); // správca: moderácia oznamov farníkov
+  const [moderacia, setModeracia] = useState(false); // správca: moderácia oznamov veriacich
   const [viditOpen, setViditOpen] = useState(false); // správca: viditeľnosť súm (§72)
   const [viditSum, setViditSum] = useState<ViditSum>(() => nacitajStav<ViditSum>("viditelnost", farnost.id, "zobrazit"));
-  const [selfAddOpen, setSelfAddOpen] = useState(false); // správca: oznamy od farníkov ON/OFF + poplatok
+  const [selfAddOpen, setSelfAddOpen] = useState(false); // správca: oznamy od veriacich ON/OFF + poplatok
   // editovateľný pohľad profilu (mock — perzistovaný do localStorage per farnost.id);
   // staršie uložené profily nemajú farára/osoby/kostoly → domergujú sa defaulty
   const [view, setView] = useState<ProfilView>(() => {
@@ -268,8 +268,8 @@ export function FarskyProfil({ farnost, farar, jeDomovska, following, onToggleFo
               }>
                 <MenuPolozka ikona={<IkonaCeruzka size={16} />} farba={N.ind} label="Upraviť profil farnosti" popis="Foto, popis, video, farár a osoby, kostoly, kontakt" onClick={() => setSprava(true)} />
                 <MenuPolozka ikona={<IkonaKalendar size={16} />} farba={N.info} label="Kalendár a rozvrh" popis="Omše, sviatky, udalosti farnosti" onClick={onKalendar} />
-                <MenuPolozka ikona={<IkonaVlajka size={15} />} farba={N.clay} label="Moderácia príspevkov" popis="Oznamy farníkov — upraviť, zmazať alebo obnoviť" onClick={() => setModeracia(true)} />
-                <MenuPolozka ikona={<IkonaMegafon size={16} />} farba={N.green} label="Oznamy od farníkov" hodnota={selfAddLabel(farnost.id)} popis="Povoliť pridávanie oznamov a voliteľný poplatok" onClick={() => setSelfAddOpen(true)} />
+                <MenuPolozka ikona={<IkonaVlajka size={15} />} farba={N.clay} label="Moderácia príspevkov" popis="Oznamy veriacich — upraviť, zmazať alebo obnoviť" onClick={() => setModeracia(true)} />
+                <MenuPolozka ikona={<IkonaMegafon size={16} />} farba={N.green} label="Oznamy od veriacich" hodnota={selfAddLabel(farnost.id)} popis="Povoliť pridávanie oznamov a voliteľný poplatok" onClick={() => setSelfAddOpen(true)} />
                 <MenuPolozka ikona={<IkonaOko size={16} />} farba={N.ind} label="Viditeľnosť súm zbierok" hodnota={VIDIT_LABEL[viditSum]} popis="Čo vidia návštevníci profilu" onClick={() => setViditOpen(true)} />
                 <MenuPolozka ikona={<IkonaQr size={16} />} farba={N.gold} label="QR na tlač do kostola" popis="Pokladnička, nástenka, lavice — sken otvorí darovanie" onClick={() => setQr("donacny")} posledna />
               </MenuSkupina>
@@ -387,8 +387,8 @@ export function FarskyProfil({ farnost, farar, jeDomovska, following, onToggleFo
   );
 }
 
-// ---- SPRÁVCA: moderácia oznamov farníkov (REÁLNE zmazať/obnoviť — localStorage) ----
-// label pre správcovský riadok „Oznamy od farníkov" — číta LS pri každom renderi (aktualizuje sa po zavretí sheetu)
+// ---- SPRÁVCA: moderácia oznamov veriacich (REÁLNE zmazať/obnoviť — localStorage) ----
+// label pre správcovský riadok „Oznamy od veriacich" — číta LS pri každom renderi (aktualizuje sa po zavretí sheetu)
 function selfAddLabel(fid: string): string {
   const v = nacitajSelfAdd(fid);
   return !v.on ? "Vypnuté" : v.poplatok > 0 ? `Zapnuté · ${v.poplatok.toFixed(2)} €` : "Zapnuté";
@@ -415,9 +415,9 @@ function ModeraciaSheet({ fid, onClose, toast }: { fid: string; onClose: () => v
   };
   return (
     <SheetPanel title="Moderácia príspevkov" onClose={onClose}>
-      <div style={{ fontSize: 12, color: N.txt3, marginBottom: SPACE.md, lineHeight: 1.5 }}>Oznam farníka môžeš <b>upraviť</b> (preklep, zlý čas) alebo <b>zmazať</b> — odstráni sa z feedu aj z profilu.</div>
+      <div style={{ fontSize: 12, color: N.txt3, marginBottom: SPACE.md, lineHeight: 1.5 }}>Oznam veriaceho môžeš <b>upraviť</b> (preklep, zlý čas) alebo <b>zmazať</b> — odstráni sa z feedu aj z profilu.</div>
       {polozky.length === 0 ? (
-        <EmptyState emoji={<Emo e="🛡" />} title="Žiadne oznamy na moderáciu" text="Keď farníci pridajú oznamy, objavia sa tu." />
+        <EmptyState emoji={<Emo e="🛡" />} title="Žiadne oznamy na moderáciu" text="Keď veriaci pridajú oznamy, objavia sa tu." />
       ) : polozky.map((it) => {
         const del = zmazane.has(it.id);
         const pyta = potvrd === it.id;

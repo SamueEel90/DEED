@@ -73,21 +73,57 @@ function Vyber<K extends string | number | boolean>({ moznosti, value, onChange,
         </button>); })}
     </div>);
 }
+const hhmm = (d: Date) => `${d.getHours()}:${String(d.getMinutes()).padStart(2, "0")}`;
+const teraz = () => new Date();
+/** OPRAVY 171: pri bežiacej zbierke sa rýchle sumy menia len podržaním. Ťuk = koncept, žltá karta „Doteraz → nové",
+ *  Podržte a uložte zmenu (1,5 s), Vrátiť pôvodné; po uložení „Uložené ✓ Darcovia už vidia nové sumy · HH:MM". */
+export function useZmenaSum(sada: number, sadaE: number, eurc: boolean, uloz: (p: { sada: number; sadaE: number; sumyZmena: string }) => void) {
+  const [k, setK] = useState<{ sada: number; sadaE: number } | null>(null); // koncept
+  const [ok, setOk] = useState("");
+  const [drz, setDrz] = useState(false);
+  const [tm, setTm] = useState<number | undefined>(undefined);
+  const nova = k ?? { sada, sadaE };
+  const zmenene = !!k && (k.sada !== sada || (eurc && k.sadaE !== sadaE));
+  const vyber = (p: { sada?: number; sadaE?: number }) => { setOk(""); setK({ ...nova, ...p }); };
+  const pusti = () => { window.clearTimeout(tm); setDrz(false); };
+  const zacni = () => { setDrz(true); window.clearTimeout(tm); setTm(window.setTimeout(() => { const t = teraz(); setDrz(false); uloz({ ...nova, sumyZmena: t.toISOString() }); setK(null); setOk(`Uložené ✓ Darcovia už vidia nové sumy · ${hhmm(t)}`); }, 1500)); };
+  const karta = <>
+    {zmenene && <div style={{ padding: 14, borderRadius: 14, background: "var(--goldBg)", border: "1.5px solid var(--goldBd)", display: "flex", flexDirection: "column", gap: 10 }}>
+      <b style={{ fontSize: 15 }}>Zmena ešte nie je uložená</b>
+      <span style={{ fontSize: 13.5, lineHeight: 1.45, color: "var(--ink2)" }}>{`Doteraz: ${SADY[sada]?.[0] ?? ""}${eurc ? ` · ${SADY_EURC[sadaE]?.[0] ?? ""} EURC` : ""}  →  nové: ${SADY[nova.sada]?.[0] ?? ""}${eurc ? ` · ${SADY_EURC[nova.sadaE]?.[0] ?? ""} EURC` : ""}`}</span>
+      <button type="button" onPointerDown={(e) => { e.preventDefault(); zacni(); }} onPointerUp={pusti} onPointerLeave={pusti} onPointerCancel={pusti} onContextMenu={(e) => e.preventDefault()}
+        onKeyDown={(e) => { if ((e.key === "Enter" || e.key === " ") && !e.repeat) { e.preventDefault(); zacni(); } }} onKeyUp={(e) => { if (e.key === "Enter" || e.key === " ") pusti(); }}
+        style={{ position: "relative", overflow: "hidden", minHeight: 52, border: "none", borderRadius: 14, background: "#2F5E1F", cursor: "pointer", fontFamily: "inherit", fontSize: 15.5, fontWeight: 800, color: "#fff", touchAction: "none", userSelect: "none" } as CSSProperties}>
+        <span style={{ position: "absolute", inset: 0, background: "#4B7A35", transformOrigin: "left", transform: `scaleX(${drz ? 1 : 0})`, transition: drz ? "transform 1.5s linear" : "transform .2s" }} />
+        <span style={{ position: "relative" }}>{drz ? "Držte…" : "Podržte a uložte zmenu"}</span>
+      </button>
+      <button type="button" onClick={() => setK(null)} style={{ minHeight: 44, border: "1px solid var(--cardBd)", borderRadius: 12, background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 800, color: "var(--ink)", boxShadow: "none" }}>Vrátiť pôvodné</button>
+    </div>}
+    {ok && !zmenene && <span role="status" style={{ padding: "12px 14px", borderRadius: 14, background: "var(--gSoft)", border: "1.5px solid var(--gBd)", fontSize: 14.5, fontWeight: 800, color: "var(--gInk)" }}>{ok}</span>}
+  </>;
+  return { nova, vyber, karta };
+}
+
 /** Ako budú ľudia darovať: rýchle sumy € · dary v EURC áno/nie · rýchle sumy EURC (rovnaký blok v každej správe) */
-export function AkoDarovat({ sada, eurc, sadaE, onZmena, pravidelna }: { sada: number; eurc: boolean; sadaE: number; onZmena: (p: { sada?: number; eurc?: boolean; sadaE?: number }) => void; pravidelna?: boolean }) {
+export function AkoDarovat({ sada, eurc, sadaE, onZmena, pravidelna, bezi }: { sada: number; eurc: boolean; sadaE: number; onZmena: (p: { sada?: number; eurc?: boolean; sadaE?: number; sumyZmena?: string }) => void; pravidelna?: boolean;
+  /** OPRAVY 171: zbierka beží → sumy len podržaním */ bezi?: boolean }) {
+  const zm = useZmenaSum(sada, sadaE, eurc, (p) => onZmena(p));
+  const vSada = bezi ? zm.nova.sada : sada, vSadaE = bezi ? zm.nova.sadaE : sadaE;
+  const zmenSumy = (p: { sada?: number; sadaE?: number }) => (bezi ? zm.vyber(p) : onZmena(p));
   return (
     <section style={kartaK}>
       <span style={nadpisK}>Ako budú ľudia darovať</span>
       <span style={{ fontSize: 14.5, fontWeight: 800 }}>Rýchle sumy pre darcov</span>
-      <Vyber stlpce={3} vyska={62} value={sada} onChange={(k) => onZmena({ sada: k })} moznosti={SADY.map(([t, a], i) => ({ k: i, t, s: `${a.map(fmt).join(" · ")} €` }))} />
+      <Vyber stlpce={3} vyska={62} value={vSada} onChange={(k) => zmenSumy({ sada: k })} moznosti={SADY.map(([t, a], i) => ({ k: i, t, s: `${a.map(fmt).join(" · ")} €` }))} />
       <span style={drobneK}>Vlastnú sumu môže darca zadať vždy. Sumy pod 3 € idú len cez SEPA.{pravidelna ? " Tie isté sumy sa ponúknu aj pri pravidelnej podpore." : ""}</span>
       <span style={{ fontSize: 14.5, fontWeight: 800, paddingTop: 4 }}>Dary v kryptomene EURC</span>
       <Vyber stlpce={2} vyska={50} value={eurc} onChange={(k) => onZmena({ eurc: k })} moznosti={[{ k: true, t: "Áno" }, { k: false, t: "Nie" }]} />
       <span style={drobneK}>EURC je digitálne euro 1 : 1. V Nastaveniach stránky máte zvolené „podľa zbierky“.{pravidelna ? "" : " Sumy môžete meniť aj počas zbierky."}</span>
       {eurc && <>
         <span style={{ fontSize: 14.5, fontWeight: 800, paddingTop: 4 }}>Rýchle sumy v EURC</span>
-        <Vyber stlpce={3} vyska={62} value={sadaE} onChange={(k) => onZmena({ sadaE: k })} moznosti={SADY_EURC.map(([t, a], i) => ({ k: i, t, s: `${a.map(fmt).join(" · ")} EURC` }))} />
+        <Vyber stlpce={3} vyska={62} value={vSadaE} onChange={(k) => zmenSumy({ sadaE: k })} moznosti={SADY_EURC.map(([t, a], i) => ({ k: i, t, s: `${a.map(fmt).join(" · ")} EURC` }))} />
       </>}
+      {bezi && zm.karta}
     </section>);
 }
 

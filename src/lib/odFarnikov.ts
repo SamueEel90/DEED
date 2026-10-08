@@ -1,14 +1,14 @@
 // ============================================================
-// KARTA 56I — farník pridáva sám (zelené + Pridať na verejnej stránke farnosti).
-// Nastavenie farára: „Farníci môžu pridávať oznamy" + poplatok = selfadd (viera/UserOznamy),
-// „Čo smie farník pridať sám" = 8 prepínačov (predvolene všetky zapnuté) = oblasť farniksmie.
+// KARTA 56I — veriaci pridáva sám (zelené + Pridať na verejnej stránke farnosti).
+// Nastavenie farára: „Veriaci môžu pridávať oznamy" + poplatok = selfadd (viera/UserOznamy),
+// „Čo smú veriaci pridať sami" = 8 prepínačov (predvolene všetky zapnuté) = oblasť farniksmie.
 // Pridané položky = oblasť odfarnikov (KV stav farnosti, zrkadlo naboz_stav). Zverejní sa hneď, farár môže zmazať.
 // ============================================================
 import { useSyncExternalStore } from "react";
 import { nacitajStav, ulozStav } from "@/features/viera/stav";
 
 export type DruhFarnika = "parte" | "svadba" | "ine" | "oznam" | "udalost" | "umysel" | "fotky" | "modlitba";
-/** k · názov · popis v Správe · popis vo výbere farníka · vždy zadarmo */
+/** k · názov · popis v Správe · popis vo výbere veriaceho · vždy zadarmo */
 export const DRUHY_FARNIKA: { k: DruhFarnika; t: string; s: string; sv: string; zadarmo: boolean }[] = [
   { k: "parte", t: "Parte", s: "smútočné oznámenie · vždy zadarmo", sv: "smútočné oznámenie", zadarmo: true },
   { k: "svadba", t: "Svadobné oznámenie", s: "sobáš, pozvanie", sv: "sobáš, pozvanie", zadarmo: false },
@@ -28,7 +28,7 @@ export const smie = (s: SmieFarnika, k: DruhFarnika) => s[k] !== false;
 
 export interface PolozkaFarnika {
   id: string; k: DruhFarnika; t: string; s: string;
-  /** meno z registrácie alebo „Bohu známy farník" */
+  /** meno z registrácie alebo „Bohu známy veriaci" */
   kto: string; cas: number; fotky?: string[];
 }
 

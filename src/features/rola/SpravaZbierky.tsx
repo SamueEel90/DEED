@@ -568,7 +568,7 @@ export function SpravaZbierky({ z, mobil, onZbierky, toast, onUdaje, onDorovnani
   const foto = ob.media.find((m) => m.typ === "foto")?.src;
   const hlavicka = (
     <div style={{ borderRadius: 22, background: "var(--card)", border: "1px solid var(--cardBd)", padding: mobil ? "14px 16px" : "16px 20px", display: "flex", alignItems: "center", gap: mobil ? 12 : 16, flexWrap: "wrap" }}>
-      <span style={{ flex: "none", width: 64, height: 64, borderRadius: 16, background: foto ? `url('${foto}') center/cover no-repeat var(--track)` : z.bg }} />
+      <span style={{ position: "relative", overflow: "hidden", flex: "none", width: 64, height: 64, borderRadius: 16, background: foto ? "var(--track)" : z.bg }}>{foto && <img src={foto} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />}</span>
       <span style={{ flex: 1, minWidth: mobil ? 0 : 200, display: "flex", flexDirection: "column", gap: 4 }}>
         <span style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
           <span style={{ height: 24, padding: "0 10px", borderRadius: 12, background: aktivna ? "#4B7A35" : "#5B5D53", color: "#fff", fontSize: 11, fontWeight: 800, letterSpacing: ".06em", display: "flex", alignItems: "center" }}>{aktivna ? "BEŽÍ" : "UKONČENÁ"}</span>
@@ -643,7 +643,7 @@ export function SpravaZbierky({ z, mobil, onZbierky, toast, onUdaje, onDorovnani
     <span style={textK}>{voFeede ? "Zbierka skončila skôr, preto ostane vo feede do konca svojich 30 dní s nápisom Podarilo sa. Darcovia aj zbierka sú vidno. Stiahnuť ju môžete kedykoľvek." : "Zbierka je už len na vašom profile."}</span>
     {voFeede && <button type="button" onClick={() => zmen({ stiahnuta: new Date().toISOString() })} style={obrysK}>Stiahnuť z feedu</button>}
   </section>;
-  const ako = <AkoDarovat sada={ob.sada} eurc={ob.eurc} sadaE={ob.sadaE} onZmena={zmenOb} />;
+  const ako = <AkoDarovat sada={ob.sada} eurc={ob.eurc} sadaE={ob.sadaE} onZmena={zmenOb} bezi={aktivna} />;
   const zap = <Zapecatene riadky={[["Cieľ", z.ciel ? eur(z.ciel) : "bez cieľa"], ["Účel", z.ucel ?? (ukazka ? UKAZKA_STRECHA.ucel : "—")], ["Účet", maskUcet(z.ucet ?? (ukazka ? UKAZKA_STRECHA.ucet : HLAVNY_UCET))], ...(bezDokladov ? [] : [["Lehota na doklady", z.lehotaText ?? (s.lehota === "30" ? "30 dní po skončení" : lehT)] as [string, string]])]} />;
   const qr = <QrKarta nazov={z.nazov} slug={z.slug ?? slugZ(z.nazov)} cislo={cisloObjektu("Z", z.id, z.vs)} organizacia={z.organizacia} toast={toast} />;
   const vlavo = <>{stavKarta}{textKarta}{galeria}</>;
@@ -666,7 +666,7 @@ export function SpravaZbierky({ z, mobil, onZbierky, toast, onUdaje, onDorovnani
     </section>
     : bezDokladov ? <section style={{ ...kartaK, gap: 8 }}>
         <span style={nadpisK}>Zbierka je ukončená</span>
-        <span style={textK}>Výsledok napíšte farníkom v ohláškach.</span>
+        <span style={textK}>Výsledok napíšte veriacim v ohláškach.</span>
       </section>
     : <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       <section style={{ ...kartaK, gap: 8 }}>

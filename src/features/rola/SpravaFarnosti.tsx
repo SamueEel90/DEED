@@ -23,7 +23,7 @@ import { odkazQrStranky } from "@/features/verejny-profil/otvor";
 import { UpravitProfilCharity } from "./UpravitProfilCharity";
 import { NovaZbierka } from "./NovaZbierka";
 import { SpravaZbierkyFarnosti, stitokZbierkyF, fotoZbierky, rozdelenieZbierkyF } from "./SpravaZbierkyFarnosti";
-import { ZbierkaSOverovatelom } from "./ZbierkaPreVeriacich";
+import { ZbierkaSOverovatelom, type SpatZbierky } from "./ZbierkaPreVeriacich";
 import { cielCislo, nacitajZbierkyStranky, useZmenyZbierok, zbierkyStrankyZPamate, type SpustenaZbierka } from "@/lib/novaZbierka";
 import "@/styles/sprava.css";
 import { SektorDarcuKontext, darcoviaPre, nastavCiste, sucetDarov, useZmenyDarov } from "@/lib/darcovia";
@@ -85,6 +85,11 @@ export function SpravaFarnosti(p: Parameters<typeof SpravaFarnostiObsah>[0]) {
   return <SektorDarcuKontext.Provider value="viera"><SpravaFarnostiObsah {...p} /></SektorDarcuKontext.Provider>;
 }
 
+/** KARTA 57 A.8: ukončené a zrušené zbierky idú do archívu */
+const vArchive = (z: SpustenaZbierka) => !!z.stav && z.stav !== "aktivna";
+/** „8. 10. 2026 o 14:05" */
+const casKonca = (iso?: string) => { if (!iso) return ""; const d = new Date(iso); return isNaN(d.getTime()) ? "" : `${d.getDate()}. ${d.getMonth() + 1}. ${d.getFullYear()} o ${d.getHours()}:${String(d.getMinutes()).padStart(2, "0")}`; };
+
 function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBack: () => void; strankaId: string; /** názov z registrácie (Moje stránky) */ nazov?: string; /** testovací pás (OPRAVY 147, 153: dostane „Pozrieť profil ›") */ test?: (onPozriet: () => void) => ReactNode }) {
   const { desktop, wide } = useLayout();
   const tablet = wide && !desktop;
@@ -101,6 +106,9 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
   const [noveOk, setNoveOk] = useState<string | null>(null);
   const [zbOtv, setZbOtv] = useState<string | null>(null);
   const [pz, setPz] = useState(false); // OPRAVY 161: postup zbierky pre veriacich
+  const [archOtv, setArchOtv] = useState(false); // KARTA 57 A.8: archív zbalený
+  const [rodOtv, setRodOtv] = useState<string | null>(null); // KARTA 57 A.6: rozbalené vysvetlenie pri zbierke rodiny
+  const [pzSpat] = useState<{ current: SpatZbierky | null }>(() => ({ current: null })); // KARTA 57 A.1: horné ‹ Späť = krok späť v zbierke (zbierka sem zapíše svoj krok späť)
   // KARTA 56G: Omše a kalendár otvorené na dni (ťuk v Prehľade) alebo na tomto týždni (Zmena omše) — key = nové otvorenie
   const [omseStart, setOmseStart] = useState<{ den?: string; n: number }>({ n: 0 });
   const naDen = (den?: string) => { setOmseStart((o) => ({ den, n: o.n + 1 })); go("omse"); };
@@ -249,7 +257,8 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
   const fotoH = hlavna?.media.find((m) => m.typ === "foto")?.src;
   const nDarov = (n: number) => `${n} ${n === 1 ? "dar" : n < 5 ? "dary" : "darov"}`;
   const chipF = (t: string, bg: string, r = 8) => <span style={{ height: 26, padding: "0 10px", borderRadius: r, background: bg, color: "#fff", fontSize: 12, fontWeight: 800, letterSpacing: ".08em", display: "flex", alignItems: "center", whiteSpace: "nowrap" }}>{t}</span>;
-  const nahladFoto = (src?: string) => <span style={{ flex: "none", width: mobil ? 72 : 96, height: mobil ? 52 : 64, borderRadius: 12, background: src ? `url('${src}') center/cover no-repeat var(--field)` : "var(--field)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, color: "var(--ink3)" }}>{src ? "" : "bez fotky"}</span>;
+  // KARTA 57 A.10: fotka zbierky ako <img>, nie background:url(data:…)
+  const nahladFoto = (src?: string) => <span style={{ position: "relative", overflow: "hidden", flex: "none", width: mobil ? 72 : 96, height: mobil ? 52 : 64, borderRadius: 12, background: "var(--field)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, color: "var(--ink3)" }}>{src ? <img src={src} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} /> : "bez fotky"}</span>;
   const hlavnaRiadok = (
     <button key="hlavna" type="button" onClick={() => go("hlavna")} style={{ flex: "none", borderRadius: 22, border: "2px solid var(--green)", background: "var(--card)", cursor: "pointer", display: "flex", alignItems: "center", gap: mobil ? 12 : 18, padding: mobil ? "12px 14px" : "18px 22px", textAlign: "left", fontFamily: "inherit", color: "var(--ink)", boxShadow: "none", width: "100%" }}>
       {nahladFoto(fotoH)}
@@ -284,11 +293,11 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
       <span style={{ fontSize: 12.5, color: "var(--ink3)" }}>vzniklo samo z rozvrhu omší · len na čítanie</span>
       <span style={{ fontSize: 13.5, color: "var(--ink2)" }}>Okno pondelok {om.okno.pondelok} 0:00 – nedeľa {om.okno.nedela} 23:59 · zatvorí sa o {doZatvorenia(om.okno, strankaId)}</span>
       <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}><b style={{ fontSize: 22, fontVariantNumeric: "tabular-nums" }}>{eur(oknoSuma)}</b><span style={{ fontSize: 13, color: "var(--ink3)" }}>od {oknoLudi} {oknoLudi === 1 ? "človeka" : "ľudí"} · cez DEED</span></div>
-      <span style={{ fontSize: 13.5, lineHeight: 1.5, color: "var(--ink2)" }}>Na profile: {menaO || "zatiaľ nikto"}{menaO ? " (bez súm)" : ""}. Bez mena = <b>Bohu známy darca</b>. Po zatvorení okna mená zmiznú a do hlavnej zbierky pribudne jeden riadok „spoločný dar farníkov“.</span>
+      <span style={{ fontSize: 13.5, lineHeight: 1.5, color: "var(--ink2)" }}>Na profile: {menaO || "zatiaľ nikto"}{menaO ? " (bez súm)" : ""}. Bez mena = <b>Bohu známy darca</b>. Po zatvorení okna mená zmiznú a do hlavnej zbierky pribudne jeden riadok „spoločný dar veriacich“.</span>
       {om.uzavrete.length > 0 && <div style={{ display: "flex", flexDirection: "column", borderTop: "1px solid var(--cardBd)", paddingTop: 6 }}>
         <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".06em", color: "var(--ink3)", padding: "4px 0" }}>Uzavreté týždne v hlavnej zbierke</span>
         {om.uzavrete.slice(0, 6).map((o, i) => <div key={o.id} style={{ display: "flex", alignItems: "center", gap: 10, minHeight: 48, borderTop: i ? "1px solid var(--cardBd)" : "none" }}>
-          <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 1 }}><b style={{ fontSize: 14 }}>Omšová zbierka {o.nedela}</b><span style={{ fontSize: 12.5, color: "var(--ink3)" }}>spoločný dar farníkov{i === 0 ? " · 1 darca v štatistike" : ""}</span></span>
+          <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 1 }}><b style={{ fontSize: 14 }}>Omšová zbierka {o.nedela}</b><span style={{ fontSize: 12.5, color: "var(--ink3)" }}>spoločný dar veriacich{i === 0 ? " · 1 darca v štatistike" : ""}</span></span>
           <b style={{ flex: "none", fontSize: 14, fontVariantNumeric: "tabular-nums" }}>{eur(o.suma)}</b>
         </div>)}
       </div>}
@@ -317,6 +326,17 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
     const [chip, bg] = stitokZbierkyF(z);
     const s0 = sucetDarov(z.id);
     const veriaci = z.farnost && z.farnost.druh !== "farnost";
+    // KARTA 57 A.6: zbierka rodiny po zapečatení — farár nevidí sumy ani darcov, ťuk = len vysvetlenie
+    if (veriaci) { const otv = rodOtv === z.id, d = z.farnost?.druh; return (
+      <button key={z.id} type="button" onClick={() => setRodOtv(otv ? null : z.id)} aria-expanded={otv} style={{ flex: "none", borderRadius: 20, border: "1.5px solid #B9A3C2", background: "var(--card)", display: "flex", flexWrap: "wrap", alignItems: "center", gap: mobil ? 12 : 16, padding: mobil ? "10px 12px" : "12px 18px 12px 12px", cursor: "pointer", textAlign: "left", fontFamily: "inherit", color: "var(--ink)", boxShadow: "none", width: "100%" }}>
+        {nahladFoto(fotoZbierky(z))}
+        <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 4 }}>
+          <span style={{ alignSelf: "flex-start" }}>{chipF(`${d === "svadba" ? "SVADBA" : d === "ine" ? "PRE VERIACEHO" : "POHREB"} · ZBIERKA RODINY`, "#6E4E7A", 7)}</span>
+          <b style={{ fontSize: mobil ? 16 : 18 }}>{z.nazov || "Zbierka rodiny"}</b>
+          <span style={{ fontSize: 13.5, color: "var(--ink3)" }}>overili ste · beží · spravuje príjemca</span>
+        </span>
+        {otv && <span style={{ flex: "1 1 100%", fontSize: 14, lineHeight: 1.5, color: "var(--ink2)" }}>Sumy a darcov vidí len príjemca. Podiel farnosti vám príde do Peňaženky. Na stránke farnosti je táto zbierka fialovou, aby bolo jasné, že ju nevyberá farnosť.</span>}
+      </button>); }
     const ciel = z.cielTyp === "ciel" ? cielCislo(z) : 0;
     const pod = s0.pocet ? nDarov(s0.pocet) : "zatiaľ žiadne dary";
     return (
@@ -331,6 +351,28 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
         {!mobil && <span aria-hidden="true" style={{ flex: "none", fontSize: 20, color: "var(--ink3)" }}>›</span>}
       </button>);
   };
+  // KARTA 57 A.8: archív — ukončené a zrušené v jednom zbalenom riadku, pri každej dátum a čas ukončenia (čas servera)
+  const archiv = dalsie.filter(vArchive);
+  const archivKarta = archiv.length > 0 && (
+    <div style={{ flex: "none", display: "flex", flexDirection: "column", gap: 8 }}>
+      <button type="button" onClick={() => setArchOtv((o) => !o)} aria-expanded={archOtv} style={{ minHeight: 64, padding: "10px 16px", borderRadius: 18, border: "1px solid var(--cardBd)", background: "var(--card)", cursor: "pointer", display: "flex", alignItems: "center", gap: 12, textAlign: "left", fontFamily: "inherit", color: "var(--ink)", boxShadow: "none" }}>
+        <Ik d="M3 5h18v4H3zM5 9v10h14V9M10 13h4" s={20} c="var(--acc)" />
+        <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}><b style={{ fontSize: 15.5 }}>Archív · {archiv.length} {archiv.length === 1 ? "zbierka" : archiv.length < 5 ? "zbierky" : "zbierok"}</b><span style={{ fontSize: 13, color: "var(--ink3)" }}>ukončené a zrušené · všetko sa uchováva, kedykoľvek dohľadáte</span></span>
+        <span aria-hidden="true" style={{ fontSize: 18, color: "var(--ink3)", transform: `rotate(${archOtv ? 180 : 0}deg)`, transition: "transform .2s ease" }}>⌄</span>
+      </button>
+      {archOtv && <div style={{ display: "flex", flexDirection: "column", borderRadius: 18, border: "1px solid var(--cardBd)", background: "var(--card)", padding: "4px 16px" }}>
+        {archiv.map((z, i) => { const rod = !!z.farnost && z.farnost.druh !== "farnost", otv = rodOtv === z.id; const [chip] = stitokZbierkyF(z); return (
+          <button key={z.id} type="button" onClick={() => { if (rod) { setRodOtv(otv ? null : z.id); return; } sprava(""); setZbOtv(z.id); go("zbierka"); }} aria-expanded={rod ? otv : undefined}
+            style={{ minHeight: 60, padding: "10px 0", border: "none", borderTop: i ? "1px solid var(--cardBd)" : "none", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", gap: 12, textAlign: "left", fontFamily: "inherit", color: "var(--ink)", boxShadow: "none" }}>
+            <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}>
+              <b style={{ fontSize: 15 }}>{z.nazov || "Zbierka"}</b>
+              <span style={{ fontSize: 13, color: "var(--ink3)" }}>{[chip.toLocaleLowerCase("sk-SK"), casKonca(z.koniec)].filter(Boolean).join(" · ")}</span>
+              {rod && otv && <span style={{ fontSize: 13.5, lineHeight: 1.5, color: "var(--ink2)", paddingTop: 4 }}>Zbierka rodiny, ktorú ste overili. Sumy a darcov vidí len príjemca. Váš podiel farnosti nájdete v Peňaženke.</span>}
+            </span>
+            <span aria-hidden="true" style={{ flex: "none", fontSize: 18, color: "var(--ink3)" }}>{rod ? (otv ? "⌃" : "⌄") : "›"}</span>
+          </button>); })}
+      </div>}
+    </div>);
   const sprava2 = (t: string, zav: () => void, zelena: boolean) => (
     <div role="status" style={{ flex: "none", borderRadius: 18, background: zelena ? "var(--gSoft)" : "var(--card)", border: `2px solid ${zelena ? "var(--green)" : "var(--cardBd)"}`, padding: "14px 18px", display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
       <b style={{ flex: 1, minWidth: 220, fontSize: 16, color: zelena ? "var(--gInk)" : "var(--ink)" }}>{t}</b>
@@ -350,7 +392,7 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
       {volbaZb(IC.kostol, "Zbierka farnosti", "na opravu, misie, lavice · peniaze idú na účet hlavnej zbierky", () => { sprava(""); if (!bezi) { setZbBlok(true); return; } go("nova"); })}
       {volbaZb(IC.ludia, "Zbierka s overovateľom", "pohreb, svadba, iné · peniaze idú rodine, podiel farnosti na účet farnosti · nezávisí od hlavnej zbierky", () => { sprava(""); setPz(true); })}
     </section>}
-    {pz && <ZbierkaSOverovatelom stranka={strankaId} menoFarnosti={meno} ucetFarnosti={hlavnyUcet} mobil={mobil} toast={toast} onZavri={() => setPz(false)}
+    {pz && <ZbierkaSOverovatelom stranka={strankaId} menoFarnosti={meno} ucetFarnosti={hlavnyUcet} mobil={mobil} pc={desktop} toast={toast} onZavri={() => setPz(false)} spatRef={pzSpat}
       onHotovo={(_z, t) => { setPz(false); setNoveOk(t); window.scrollTo({ top: 0, behavior: "smooth" }); }} />}
     {/* KARTA 56E §2: kým beží tvorba (výber druhu alebo postup), zoznam zbierok sa nezobrazuje */}
     {!zbVyber && !pz && <>
@@ -372,7 +414,8 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
     </>}
     {dalsie.length > 0 && <>
       <span style={mobil ? { ...kicker, letterSpacing: ".07em", padding: "8px 2px 0" } : { ...kicker, paddingTop: 8 }}>ĎALŠIE ZBIERKY</span>
-      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>{dalsie.map(dalsieRiadok)}</div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>{dalsie.filter((z) => !vArchive(z)).map(dalsieRiadok)}</div>
+      {archivKarta}
     </>}
     {!bezi && pridatHlavnu}
     </>}
@@ -388,19 +431,19 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
     <section style={{ ...karta, borderRadius: mobil ? 18 : 22, padding: mobil ? "12px 14px" : "16px 20px", display: "flex", flexDirection: "column", gap: 12 }}>
       <div style={{ display: "flex", alignItems: "center", gap: mobil ? 10 : 12 }}>
         <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}>
-          <b style={{ fontSize: mobil ? 14 : 15 }}>Farníci môžu pridávať oznamy</b>
+          <b style={{ fontSize: mobil ? 14 : 15 }}>Veriaci môžu pridávať oznamy</b>
           <span style={{ fontSize: mobil ? 12 : 12.5, color: "var(--ink3)" }}>{mobil ? (self.on ? "Zverejnia sa hneď, vy ich môžete zmazať" : "Vypnuté, oznamy pridáva len farnosť") : "Zverejnia sa hneď, vy ich môžete zmazať. Prosba o modlitbu a smútočné oznámenie sú vždy zadarmo."}</span>
         </span>
-        {prepinac(self.on, () => zmenSelf({ on: !self.on }), "Farníci môžu pridávať oznamy")}
+        {prepinac(self.on, () => zmenSelf({ on: !self.on }), "Veriaci môžu pridávať oznamy")}
       </div>
       {self.on && <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
         <span style={{ fontSize: 14, color: "var(--ink2)" }}>Poplatok za oznam</span>
         {segment(POPLATKY.map((p) => [p, p ? `${p} €` : "Zadarmo"] as [number, string]), POPLATKY.includes(self.poplatok) ? self.poplatok : 0, (p) => zmenSelf({ poplatok: p }), 36)}
       </div>}
       {self.on && <>
-        {/* KARTA 56I §1: čo smie farník pridať sám — 8 prepínačov, predvolene všetky zapnuté, ukladá sa hneď */}
+        {/* KARTA 56I §1: čo smie veriaci pridať sám — 8 prepínačov, predvolene všetky zapnuté, ukladá sa hneď */}
         <div style={{ display: "flex", flexDirection: "column", gap: 2, paddingTop: 6 }}>
-          <b style={{ fontSize: 14.5 }}>Čo smie farník pridať sám</b>
+          <b style={{ fontSize: 14.5 }}>Čo smú veriaci pridať sami</b>
           <span style={{ fontSize: 12.5, color: "var(--ink3)" }}>Na verejnej stránke uvidí zelené tlačidlo + Pridať. Ponúkne sa mu len to, čo tu zapnete. Pridávať môžu len registrovaní v DEED.</span>
         </div>
         <div style={{ display: "flex", flexDirection: "column" }}>
@@ -410,13 +453,13 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
               {prepinac(on, () => ulozSmie(strankaId, { ...smieF, [d.k]: !on }), d.t)}
             </div>); })}
         </div>
-        <button type="button" onClick={() => otvorVerejnyProfil(strankaId)} style={{ alignSelf: "flex-start", minHeight: 44, padding: 0, border: "none", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 800, color: "var(--gInk)", boxShadow: "none" }}>Pozrieť, ako to vidí farník ›</button>
+        <button type="button" onClick={() => otvorVerejnyProfil(strankaId)} style={{ alignSelf: "flex-start", minHeight: 44, padding: 0, border: "none", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 800, color: "var(--gInk)", boxShadow: "none" }}>Pozrieť, ako to vidí veriaci ›</button>
       </>}
     </section>);
-  // KARTA 56I: čo pridali farníci — zverejnené hneď, farár môže zmazať
+  // KARTA 56I: čo pridali veriaci — zverejnené hneď, farár môže zmazať
   const odF = odFarnikov(strankaId);
   const odFarnikovKarta = odF.length > 0 && (
-    <section aria-label="Pridali farníci" style={{ ...karta, borderRadius: mobil ? 18 : 22, padding: mobil ? "4px 14px" : "6px 20px" }}>
+    <section aria-label="Pridali veriaci" style={{ ...karta, borderRadius: mobil ? 18 : 22, padding: mobil ? "4px 14px" : "6px 20px" }}>
       {odF.map((x, i) => (
         <div key={x.id} style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 60, padding: "8px 0", borderTop: i ? "1px solid var(--cardBd)" : "none" }}>
           <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}>
@@ -430,7 +473,7 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
     </section>);
   // KARTA 56G §4–5: Oznamy farnosti — Krátky oznam · Udalosť · Oznámenie, náhľad, ohlášky, zoznam zverejnených
   const oznamy = <>
-    {nadpis("Oznamy", "Ohlášky, oznamy farnosti a oznamy od farníkov")}
+    {nadpis("Oznamy", "Ohlášky, oznamy farnosti a oznamy od veriacich")}
     <OznamyFarnosti strankaId={strankaId} meno={meno} profil={prof.ulozeny} mobil={mobil} toast={toast} hore={oznamyHore} />
     <span style={mobil ? { ...kicker, letterSpacing: ".07em", padding: "4px 2px 0" } : kicker}>OD FARNÍKOV</span>
     {selfKarta}
@@ -477,7 +520,7 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
       <span style={{ fontSize: 13, color: "var(--ink2)" }}>{VID.find((x) => x[0] === vid)?.[2]}</span>
     </section>);
   const nastrojeL = riadky([["QR na tlač do kostola", "pokladnička, nástenka, lavice · sken otvorí dar", "Tlačiť"], ["Štatistiky", "dary podľa omší, zbierok a mesiacov", "Otvoriť"], ["Ročný výpis", "podklad pre farskú radu a ekonómov", "Stiahnuť"]].map(([t, s, b]) => ({ t, s, b, tap: pripravujeme })));
-  const nastaveniaL = riadky([["Vzhľad a prístupnosť", "téma, jazyk, veľkosť písma"], ["Oznámenia", "nový dar, oznam od farníka"], ["Príjem darov", "EURC, transparentný účet"], ["Správcovia", "kto má prístup k Správe farnosti"], ["Program a predplatné", "program Farnosť · jedna cena · faktúry"]].map(([t, s]) => ({ t, s })));
+  const nastaveniaL = riadky([["Vzhľad a prístupnosť", "téma, jazyk, veľkosť písma"], ["Oznámenia", "nový dar, oznam od veriaceho"], ["Príjem darov", "EURC, transparentný účet"], ["Správcovia", "kto má prístup k Správe farnosti"], ["Program a predplatné", "program Farnosť · jedna cena · faktúry"]].map(([t, s]) => ({ t, s })));
   // OPRAVY 162: hore karta QR farnosti — jeden QR z registrácie, stav podľa hlavnej zbierky
   const qrFarnosti = <QrKarta nazov={meno} slug={strankaId} odkaz={odkazQrStranky(strankaId)} organizacia={meno} toast={toast} nadpis="QR farnosti"
     stav={bezi ? { t: "Teraz vedie na hlavnú zbierku", zelena: true } : { t: "Teraz vedie na profil farnosti", zelena: false }}
@@ -538,7 +581,9 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
 
   const titul = TIT[sub];
   const spatTl = (onClick: () => void) => <button type="button" onClick={onClick} aria-label="Späť" style={{ flex: "none", height: 44, padding: mobil ? "0 12px 0 8px" : "0 14px 0 8px", borderRadius: 13, border: "1px solid var(--cardBd)", background: "var(--card)", cursor: "pointer", fontFamily: "inherit", fontSize: mobil ? 14 : 15, fontWeight: 800, color: "var(--ink)", boxShadow: "none" }}>‹ Späť</button>;
-  const nazpat = () => { if (sub === "hlavna" || sub === "zbierka" || sub === "nova") setSub("zbierky"); else if (sub === "prehlad") onBack(); else setSub("prehlad"); };
+  const nazpat = () => {
+    if (sub === "zbierky" && pz && pzSpat.current) { const r = pzSpat.current(); if (r === "spat") return; if (r === "zavriet") { setPz(false); return; } }
+    if (sub === "hlavna" || sub === "zbierka" || sub === "nova") setSub("zbierky"); else if (sub === "prehlad") onBack(); else setSub("prehlad"); };
 
   // ================= PC =================
   if (desktop) {
@@ -562,7 +607,7 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
           </div>
           <button type="button" onClick={verejny} style={{ flex: "none", height: 56, padding: "0 14px", borderRadius: 18, background: "var(--tBg)", border: "1px solid var(--tBd)", cursor: "pointer", display: "flex", alignItems: "center", gap: 11, textAlign: "left", fontFamily: "inherit", boxShadow: "none" }}>
             <Ik d={IC.verejny} c="var(--tInk)" />
-            <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}><span style={{ fontSize: 15, fontWeight: 800, color: "var(--tInk)" }}>Verejný profil</span><span style={{ fontSize: 12, color: "var(--tInk2)" }}>ako ho vidia farníci</span></span>
+            <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}><span style={{ fontSize: 15, fontWeight: 800, color: "var(--tInk)" }}>Verejný profil</span><span style={{ fontSize: 12, color: "var(--tInk2)" }}>ako ho vidia veriaci</span></span>
             <span aria-hidden="true" style={{ fontSize: 18, color: "var(--tInk)" }}>›</span>
           </button>
           <TlacidloNastavenia on={aktivna === "nast"} onClick={() => go("nast")} />

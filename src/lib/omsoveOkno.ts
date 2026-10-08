@@ -1,7 +1,7 @@
 // ============================================================
 // KARTA 56B · §3 — „Na najbližšiu omšu" = týždenné OBDOBIE hlavného účtu farnosti, nie samostatná zbierka.
 // Okno: pondelok 0:00 – nedeľa 23:59 (Europe/Bratislava). Počas okna mená darcov BEZ súm; po zatvorení mená
-// zmiznú a v hlavnej zbierke ostane jeden riadok „Omšová zbierka 12. 10. · spoločný dar farníkov" (v štatistike
+// zmiznú a v hlavnej zbierke ostane jeden riadok „Omšová zbierka 12. 10. · spoločný dar veriacich" (v štatistike
 // 1 darca). V ledgeri peniaze tečú raz — okno je len zobrazovacia agregácia nad hlavným účtom.
 // Dary okna: refId `${stranka}-omsa-YYYY-MM-DD` (dátum nedele). Suma hlavnej zbierky okná už obsahuje.
 // ============================================================
@@ -56,7 +56,7 @@ const teraz = (stranka: string) => Date.now() + posunTyzdne(stranka) * 7 * DEN;
 
 export const aktualneOkno = (stranka: string): OmsoveOkno => oknoPre(stranka, teraz(stranka));
 
-/** uzavreté okná s darmi, najnovšie hore — v hlavnej zbierke každé = jeden spoločný dar farníkov */
+/** uzavreté okná s darmi, najnovšie hore — v hlavnej zbierke každé = jeden spoločný dar veriacich */
 export function uzavreteOkna(stranka: string): (OmsoveOkno & { suma: number })[] {
   const akt = aktualneOkno(stranka).id;
   return refIdySDarmi(`${stranka}-omsa-`).filter((id) => id < akt).sort().reverse().map((id) => {

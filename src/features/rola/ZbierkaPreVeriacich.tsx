@@ -8,7 +8,11 @@
 // Nová zbierka začína vždy úplne prázdna. Prototyp „Sprava farnosti - prvy prichod" (pre-kodera-7-10-b).
 // ============================================================
 import { useEffect, useRef, useState, type CSSProperties, type DragEvent, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { DeedQr } from "@/components/deedqr";
+import { QrNaParte, tlacParte, type QrParte } from "./QrNaParte";
+import { EditorOznameni, type EditorApi, type PayloadEditora } from "@/components/EditorOznameni";
+import { nacitajStav, ulozStav } from "@/features/viera/stav";
 import { TESTOVACIA } from "@/lib/testovacia";
 import { usePouzivatel } from "@/lib/pouzivatel";
 import { useVzhlad } from "@/lib/vzhladStranky";
@@ -30,6 +34,7 @@ const PZT: Record<Druh, { t: string; nazov: string; chip: string; kto: string; k
 const QR_S = 15; // QR na sken platí 15 sekúnd a sám sa obnovuje
 const pct = (n: number) => `${(Math.round(n * 10) / 10).toLocaleString("sk-SK")} %`;
 const nahodny = () => Math.random().toString(36).slice(2, 10);
+const teraz = () => Date.now();
 const velke = (t: string) => t.charAt(0).toUpperCase() + t.slice(1);
 
 const pole: CSSProperties = { height: 48, padding: "0 14px", borderRadius: 12, border: "1.5px solid var(--cardBd)", background: "var(--field)", fontFamily: "inherit", fontSize: 15, fontWeight: 600, color: "var(--ink)", outline: "none", width: "100%", boxSizing: "border-box" };
@@ -39,9 +44,35 @@ const tlO: CSSProperties = { height: 50, padding: "0 18px", borderRadius: 14, bo
 const volbaSt = (on: boolean): CSSProperties => ({ minHeight: 64, padding: "10px 14px", borderRadius: 14, border: `${on ? 2 : 1.5}px solid ${on ? "var(--green)" : "var(--cardBd)"}`, background: on ? "var(--gSoft)" : "var(--field)", cursor: "pointer", fontFamily: "inherit", textAlign: "left", display: "flex", alignItems: "center", gap: 12, color: "var(--ink)", boxShadow: "none" });
 const Bodka = ({ on }: { on: boolean }) => <span aria-hidden="true" style={{ flex: "none", width: 20, height: 20, borderRadius: "50%", border: `2px solid ${on ? "var(--green)" : "var(--ink4, #A8A396)"}`, background: on ? "var(--green)" : "transparent", boxShadow: on ? "inset 0 0 0 3px var(--gSoft)" : "none" }} />;
 
-export function ZbierkaSOverovatelom({ stranka, menoFarnosti, ucetFarnosti, mobil, toast, onZavri, onHotovo }: {
-  stranka: string; menoFarnosti: string; ucetFarnosti: string; mobil: boolean; toast: (m: string) => void;
+/** KARTA 57 A.1: horné ‹ Späť v Správe — „spat" = krok späť vybavený, „zavriet" = zavrieť zbierku, „nic" = po zapečatení */
+export type SpatZbierky = () => "spat" | "zavriet" | "nic";
+
+/** KARTA 57 A.2: QR na celú obrazovku (biele pozadie, odpočet, × Zavrieť), obrazovka nezhasne (Wake Lock, ak ho prehliadač má) */
+const velkostQr = () => Math.round(Math.min(window.innerWidth * 0.92, window.innerHeight * 0.68, 640));
+function QrVelky({ data, zostava, onZavri }: { data: string; zostava: number; onZavri: () => void }) {
+  const [velkost, setVelkost] = useState(velkostQr);
+  useEffect(() => { const f = () => setVelkost(velkostQr()); window.addEventListener("resize", f); return () => window.removeEventListener("resize", f); }, []);
+  useEffect(() => {
+    let zamok: { release: () => Promise<void> } | null = null, ziva = true;
+    const wl = (navigator as Navigator & { wakeLock?: { request: (t: "screen") => Promise<{ release: () => Promise<void> }> } }).wakeLock;
+    wl?.request("screen").then((z) => { if (ziva) zamok = z; else void z.release(); }).catch(() => undefined);
+    const esc = (e: KeyboardEvent) => { if (e.key === "Escape") onZavri(); };
+    window.addEventListener("keydown", esc);
+    return () => { ziva = false; window.removeEventListener("keydown", esc); void zamok?.release().catch(() => undefined); };
+  }, [onZavri]);
+  return createPortal(
+    <div role="dialog" aria-modal="true" aria-label="QR na celú obrazovku" onClick={onZavri} style={{ position: "fixed", inset: 0, zIndex: 1000, background: "#fff", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 22, padding: 24, cursor: "zoom-out" }}>
+      <span style={{ display: "flex" }}><DeedQr key={data} data={data} size={velkost} variant="svetly" /></span>
+      <span style={{ width: "min(92vw, 640px)", height: 10, borderRadius: 5, background: "#E4DFD5", overflow: "hidden" }}><span style={{ display: "block", width: "100%", height: "100%", background: "#4B7A35", transformOrigin: "0 50%", transform: `scaleX(${zostava / QR_S})`, transition: zostava === QR_S ? "none" : "transform 1s linear" }} /></span>
+      <b style={{ fontSize: 18, color: "#1D211B", textAlign: "center", fontVariantNumeric: "tabular-nums" }}>Naskenujte v appke DEED · ešte {zostava} s, potom nový kód</b>
+      <button type="button" onClick={(e) => { e.stopPropagation(); onZavri(); }} autoFocus style={{ minHeight: 56, padding: "0 28px", border: "none", borderRadius: 16, background: "#1D211B", color: "#fff", fontFamily: "inherit", fontSize: 17, fontWeight: 800, cursor: "pointer" }}>× Zavrieť</button>
+    </div>, document.body);
+}
+
+export function ZbierkaSOverovatelom({ stranka, menoFarnosti, ucetFarnosti, mobil, pc = !mobil, toast, onZavri, onHotovo, spatRef }: {
+  stranka: string; menoFarnosti: string; ucetFarnosti: string; mobil: boolean; /** KARTA 57 A.3: PC = editor v stránke, mobil a tablet = na celú obrazovku */ pc?: boolean; toast: (m: string) => void;
   onZavri: () => void; onHotovo: (z: SpustenaZbierka, sprava: string) => void;
+  /** KARTA 57 A.1: horné ‹ Späť Správy sa pýta zbierky */ spatRef?: { current: SpatZbierky | null };
 }) {
   const [krok, setKrok] = useState(1);
   const [druh, setDruh] = useState<Druh>("pohreb");
@@ -64,6 +95,7 @@ export function ZbierkaSOverovatelom({ stranka, menoFarnosti, ucetFarnosti, mobi
   const [volba, setVolba] = useState<VolbaSablony>(() => prvaVolba("parte"));
   const zmenDruh = (d: Druh) => { setDruh(d); setU(prazdneUdaje(DRUH_OZN[d])); setVolba(prvaVolba(DRUH_OZN[d])); setRezim(""); setSubor(null); setVybrany(null); };
   const [subor, setSubor] = useState<{ url: string; meno: string; pdf: boolean } | null>(null);
+  const [qrParte, setQrParte] = useState<QrParte>({ qr: true, kde: "pod", papier: "A5" }); // KARTA 57 A.4
   const [nad, setNad] = useState(false);
   const suborRef = useRef<HTMLInputElement>(null);
   const nacitaj = (f?: File) => {
@@ -80,7 +112,7 @@ export function ZbierkaSOverovatelom({ stranka, menoFarnosti, ucetFarnosti, mobi
   const pridajSkusobne = () => { // len testovacia verzia
     [1, 2].forEach((n) => pridajPrispevok(stranka, {
       id: `naboz-test-${Date.now()}-${n}`, comp: "data", typ: "skutok", modul: "charity", kat: "Komunita", ntyp: "oznam", skore: 6, typSituacie: "normal", dni: 0, podpora: 0,
-      farnostId: stranka, cirkev: "", komunita: "farník (test)", nazov: `Skúšobné ${T.ozn} ${n}`, tag: "Oznam", popis: "pridal farník · skúšobné", ukat: druh === "ine" ? undefined : druh, vytvorene: Date.now() - n * 3600000, platnostDni: 7,
+      farnostId: stranka, cirkev: "", komunita: "veriaci (test)", nazov: `Skúšobné ${T.ozn} ${n}`, tag: "Oznam", popis: "pridal veriaci · skúšobné", ukat: druh === "ine" ? undefined : druh, vytvorene: Date.now() - n * 3600000, platnostDni: 7,
     }));
     setNaStranke(vlastnePrispevkyVsetky(stranka));
   };
@@ -108,6 +140,36 @@ export function ZbierkaSOverovatelom({ stranka, menoFarnosti, ucetFarnosti, mobi
     setPrispevok(id); setKrok(3);
   };
   const pripojit = () => { if (!vybrany) return; setPrispevok(vybrany); setKrok(3); };
+
+  // ---- KARTA 57 A.3: parte zo šablóny = Editor oznámení (rýchly režim, bez tlače pred zapečatením) ----
+  const edRef = useRef<EditorApi>(null);
+  const [edKon, setEdKon] = useState<PayloadEditora | null>(() => nacitajStav<PayloadEditora | null>("partekoncept", stranka, null)); // rozpísané sa nestratí
+  const [edMob, setEdMob] = useState(false);
+  const [ulozT, setUlozT] = useState("");
+  const naEditor = async (p: PayloadEditora) => {
+    if (p.stav === "koncept") { setEdKon(p); ulozStav("partekoncept", stranka, p); return; }
+    if (p.stav !== "hotovo") return;
+    const P = p.polia ?? {}, str = (k: string) => String(P[k] ?? "").trim();
+    const meno = str("meno") || "Parte";
+    const obr = (await edRef.current?.nahlad()) || "";
+    const id = `naboz-${teraz()}`;
+    const kk = [str("rd"), str("rc"), str("rm")].filter(Boolean).join(" · ");
+    pridajPrispevok(stranka, {
+      id, comp: "data", typ: "skutok", modul: "charity", kat: "Komunita", ntyp: "oznam", skore: 6, typSituacie: "normal", dni: 0, podpora: 0,
+      farnostId: stranka, cirkev: "", komunita: menoFarnosti, overena: true, nazov: `Parte · ${meno}`, tag: "Oznam",
+      popis: [meno, kk ? `rozlúčka ${kk}` : "termín rozlúčky oznámime"].join(" · "), datum: str("rd") || undefined,
+      fotky: obr ? [obr] : undefined, plagat: true, ukat: "pohreb", reakciaTyp: "kondolencia",
+      smutocny: { mode: "template", imageUrl: obr || undefined, meno, rodena: str("rod") || undefined, datumNar: str("nar"), datumUmr: str("umr"),
+        rozluckaMiesto: str("rm"), rozluckaDatum: str("rd"), rozluckaCas: str("rc"), foto: p.foto ?? undefined, editor: p },
+      vytvorene: teraz(), platnostDni: 7,
+    });
+    setEdKon(null); ulozStav("partekoncept", stranka, null); setEdMob(false);
+    setNaStranke(vlastnePrispevkyVsetky(stranka)); setRezim("je"); setVybrany(id); setUlozT(`Parte ${meno} je uložené ✓`);
+  };
+  const editor = (styl: CSSProperties) => (
+    <EditorOznameni ref={edRef} title="Editor parte" onSend={(p) => { void naEditor(p); }} style={styl}
+      cfg={{ typ: "parte", rezim: "rychly", bezTlace: true, qrObrazok: "/editor/qr-deed.png", miesta: ["v Dome smútku", "vo farskom kostole", "na miestnom cintoríne"], kontext: { zbierka: "pohreb", stranka }, navrh: edKon }} />);
+  const edSpat = () => { if (!edRef.current?.krokSpat()) setEdMob(false); };
 
   // ---- 3 · rozdelenie: krok 1 podiel overovateľa, krok 2 zvyšok rozhoduje príjemca ----
   const [podiel, setPodiel] = useState(PODIEL_MAX);
@@ -154,7 +216,8 @@ export function ZbierkaSOverovatelom({ stranka, menoFarnosti, ucetFarnosti, mobi
         ...prazdnaZbierka(), rozdelenie, nazov, popis: `<p>${popisOznamu(u) || nazov}</p>`, media: u.foto ? [{ id: 1, typ: "foto", src: u.foto }] : [], cielTyp: "otv",
         farnost: {
           druh, podiel, prijemca: { meno: T.kto, overeny: new Date().toISOString(), ucet: ucetPrijemcu },
-          oznamenie: { meno: menoOzn, rodena: u.rod || undefined, kedy: [u.kedyD, u.kedyC].filter(Boolean).join(" ") || undefined, kde: u.kde || undefined, kto: u.kto || undefined, vlastne: rezim === "vl" ? "ano" : undefined, prispevok: prispevok ?? undefined },
+          oznamenie: { meno: menoOzn, rodena: u.rod || undefined, kedy: [u.kedyD, u.kedyC].filter(Boolean).join(" ") || undefined, kde: u.kde || undefined, kto: u.kto || undefined, vlastne: rezim === "vl" ? "ano" : undefined, prispevok: prispevok ?? undefined,
+            qr: rezim === "vl" && druh === "pohreb" ? { zap: qrParte.qr, kde: qrParte.kde, papier: qrParte.papier } : undefined },
           podelit: podelit ? spolu.map((x) => ({ id: x.id, nazov: x.nazov, pct: x.pct })) : undefined,
         },
       }, ucetFarnosti, "nabozenstvo");
@@ -165,6 +228,20 @@ export function ZbierkaSOverovatelom({ stranka, menoFarnosti, ucetFarnosti, mobi
   const zacni = () => { setDrz(true); window.clearTimeout(drzTm.current); drzTm.current = window.setTimeout(() => { setDrz(false); void zapecat(); }, 1500); };
   const pusti = () => { window.clearTimeout(drzTm.current); setDrz(false); };
 
+  // ---- KARTA 57 A.1: späť = vždy o krok späť; po zapečatení späť nie je ----
+  const [qrVelky, setQrVelky] = useState(false);
+  const spatT = krok === 2 && rezim ? `Späť na výber ${druh === "pohreb" ? "parte" : "oznámenia"}` : krok > 1 && krok < 5 ? `Späť na krok ${krok - 1}` : "";
+  const krokSpat = () => {
+    if (edMob) { edSpat(); return; }
+    if (krok === 2 && rezim) { setRezim(""); setVybrany(null); setUlozT(""); return; }
+    if (krok === 4) setPotvrdil(false);
+    if (krok > 1 && krok < 5) setKrok(krok - 1);
+  };
+  useEffect(() => {
+    if (!spatRef) return;
+    spatRef.current = () => (krok >= 5 ? "nic" : spatT ? (krokSpat(), "spat") : "zavriet");
+    return () => { spatRef.current = null; };
+  });
   const kroky = [`1 · ${T.k1}`, `2 · ${T.k2}`, "3 · Rozdelenie", "4 · Kód", "5 · Hotovo"];
   const test = (t: string, onClick: () => void) => TESTOVACIA
     ? <button type="button" onClick={onClick} style={{ ...tlO, alignSelf: "flex-start", height: 44, borderStyle: "dashed" }}>{t}</button>
@@ -176,6 +253,9 @@ export function ZbierkaSOverovatelom({ stranka, menoFarnosti, ucetFarnosti, mobi
     <button type="button" onClick={() => setRezim("")} style={tlO}>‹ Späť</button>
     <button type="button" onClick={zverejni} aria-disabled={!!chybaOznamu(u)} style={{ ...tlZ, opacity: chybaOznamu(u) ? 0.5 : 1 }}>Zverejniť {T.ozn} a pripojiť zbierku ›</button>
   </div>;
+  // KARTA 57 A.5: čo sa tlačí na fare — vlastné parte (obrázok) alebo hotové parte z editora (obrázok z náhľadu)
+  const [tlOk, setTlOk] = useState(false);
+  const obrTlac = rezim === "vl" ? (subor && !subor.pdf ? subor.url : undefined) : prispevok ? naStranke.find((x) => x.id === prispevok)?.fotky?.[0] : undefined;
   // farebný pás = skutočné delenie (príjemca · pridaní · overovateľ)
   const pas = (
     <div style={{ display: "flex", borderRadius: 12, overflow: "hidden", height: 44, fontSize: 13, fontWeight: 800 }}>
@@ -190,6 +270,7 @@ export function ZbierkaSOverovatelom({ stranka, menoFarnosti, ucetFarnosti, mobi
         <b style={{ flex: 1, fontSize: 19 }}>{T.nazov} · farnosť overuje</b>
         <button type="button" onClick={onZavri} aria-label="Zavrieť" style={{ width: 44, height: 44, borderRadius: 12, border: "1px solid var(--cardBd)", background: "var(--field)", cursor: "pointer", fontSize: 18, color: "var(--ink2)", boxShadow: "none" }}>×</button>
       </div>
+      {spatT && <button type="button" onClick={krokSpat} style={{ alignSelf: "flex-start", minHeight: 44, padding: "0 16px", borderRadius: 12, border: "1.5px solid var(--gBd)", background: "var(--gSoft)", cursor: "pointer", fontFamily: "inherit", fontSize: 15, fontWeight: 800, color: "var(--gInk)", boxShadow: "none" }}>‹ {spatT}</button>}
       <div role="list" aria-label="Kroky" style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
         {kroky.map((t, i) => { const n = i + 1; return <span key={t} role="listitem" aria-current={n === krok ? "step" : undefined} style={{ height: 32, padding: "0 12px", borderRadius: 16, background: n === krok ? "#4B7A35" : n < krok ? "var(--gSoft)" : "var(--btn)", color: n === krok ? "#fff" : n < krok ? "var(--gInk)" : "var(--ink3)", fontSize: 13, fontWeight: 800, display: "flex", alignItems: "center", whiteSpace: "nowrap" }}>{t}</span>; })}
       </div>
@@ -199,7 +280,11 @@ export function ZbierkaSOverovatelom({ stranka, menoFarnosti, ucetFarnosti, mobi
       </div>}
 
       {krok === 1 && <div style={{ display: "flex", gap: 18, alignItems: "center", flexWrap: "wrap" }}>
-        <span style={{ flex: "none", width: 168, height: 168, borderRadius: 18, background: "#fff", padding: 8, boxSizing: "border-box", display: "flex" }}><DeedQr key={token} data={`https://deed.sk/overit/${stranka}/${token}`} size={152} variant="svetly" /></span>
+        <span style={{ flex: "none", display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
+          <button type="button" onClick={() => setQrVelky(true)} aria-label="Zväčšiť QR na celú obrazovku" style={{ width: 168, height: 168, borderRadius: 18, border: "none", background: "#fff", padding: 8, boxSizing: "border-box", display: "flex", cursor: "zoom-in", boxShadow: "none" }}><DeedQr key={token} data={`https://deed.sk/overit/${stranka}/${token}`} size={152} variant="svetly" /></button>
+          <span style={{ fontSize: 12.5, color: "var(--ink3)" }}>Ťuknite na QR a zväčší sa</span>
+        </span>
+        {qrVelky && <QrVelky data={`https://deed.sk/overit/${stranka}/${token}`} zostava={zostava} onZavri={() => setQrVelky(false)} />}
         <div style={{ flex: 1, minWidth: 220, display: "flex", flexDirection: "column", gap: 8 }}>
           <b style={{ fontSize: 17 }}>{T.kto} naskenuje QR v appke DEED</b>
           <span style={{ fontSize: 14.5, lineHeight: 1.5, color: "var(--ink2)" }}>Musí byť pri vás osobne. Skenuje v appke na mobile, tablete alebo počítači s kamerou. Rola <b>Overovateľ</b> je zapnutá pri QR farnosti. Kód platí 15 sekúnd a sám sa obnovuje.</span>
@@ -224,6 +309,10 @@ export function ZbierkaSOverovatelom({ stranka, menoFarnosti, ucetFarnosti, mobi
           </div>
         </>}
         {rezim === "je" && <>
+          {ulozT && <div role="status" style={{ padding: "12px 14px", borderRadius: 14, background: "var(--gSoft)", border: "2px solid var(--green)", display: "flex", flexDirection: "column", gap: 4 }}>
+            <b style={{ fontSize: 15.5, color: "var(--gInk)" }}>{ulozT}</b>
+            <span style={{ fontSize: 13.5, color: "var(--ink2)" }}>Je prvé v zozname a už vybraté. Ťuknite dole na Pripojiť zbierku k tomuto parte.</span>
+          </div>}
           <b style={{ fontSize: 16 }}>{velke(T.ozn)}, ktoré už je na stránke</b>
           <span style={{ fontSize: 14, lineHeight: 1.5, color: "var(--ink2)" }}>Na stránke môže byť naraz viac oznámení. Ťuknite na to, ku ktorému pripojíte zbierku. Nič sa nepripojí samo.</span>
           {existujuce.length ? <div role="radiogroup" aria-label="Oznámenia na stránke" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -269,15 +358,33 @@ export function ZbierkaSOverovatelom({ stranka, menoFarnosti, ucetFarnosti, mobi
             <span style={{ display: "flex", gap: 8 }}><input type="date" value={u.kedyD} onChange={(e) => setU((x) => ({ ...x, kedyD: e.target.value }))} style={{ ...pole, flex: 1.4 }} aria-label="Dátum" /><input type="time" value={u.kedyC} onChange={(e) => setU((x) => ({ ...x, kedyC: e.target.value }))} style={{ ...pole, flex: 1 }} aria-label="Čas" /></span></label>,
             txt("KDE (NEPOVINNÉ)", "kde", T.phKde))}
           <span style={{ fontSize: 13, color: "var(--ink3)" }}>Termín môžete doplniť neskôr, sledujúci dostanú upozornenie. V hlavičke bude farnosť.</span>
+          {druh === "pohreb" && subor && !subor.pdf && <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: 14, borderRadius: 16, background: "var(--panel)", border: "1px solid var(--cardBd)" }}>
+            <b style={{ fontSize: 16 }}>QR kód zbierky na parte</b>
+            <span style={{ fontSize: 13.5, color: "var(--ink2)" }}>Vyberte, kam QR na tlači príde. Vytlačiť s QR pôjde po zapečatení, v kroku Hotovo.</span>
+            <QrNaParte src={subor.url} onZmena={setQrParte} onSablona={() => setRezim("sab")} onIne={() => setSubor(null)} />
+          </div>}
           {spatZverejnit}
         </>}
-        {rezim === "sab" && <>
+        {rezim === "sab" && druh === "pohreb" && <>
+          <b style={{ fontSize: 16 }}>Nové parte zo šablóny farnosti</b>
+          <span style={{ fontSize: 13.5, lineHeight: 1.5, color: "var(--ink2)" }}>Rýchly režim: Muž alebo Žena, vzhľad, údaje. Texty sú už vo vzhľade. Keď termín rozlúčky ešte neviete, zaškrtnite „Údaje doplníme neskôr“, doplní ho rodina sama.</span>
+          {pc ? editor({ height: 960, border: "1px solid var(--cardBd)", borderRadius: 18 })
+            : <button type="button" onClick={() => setEdMob(true)} style={{ ...tlZ, height: 56, fontSize: 16 }}>{edKon ? "Pokračovať v tvorbe parte ›" : "Otvoriť tvorbu parte ›"}</button>}
+          {edMob && createPortal(
+            <div className="sc-tokeny" role="dialog" aria-modal="true" aria-label="Tvorba parte" style={{ position: "fixed", inset: 0, zIndex: 1000, background: "#EFEAE1", display: "flex", flexDirection: "column" }}>
+              <div style={{ flex: "none", display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", background: "var(--bg)", borderBottom: "1px solid var(--cardBd)" }}>
+                <button type="button" onClick={edSpat} style={{ flex: "none", height: 48, padding: "0 16px 0 12px", border: "none", borderRadius: 12, background: "#4B7A35", cursor: "pointer", fontFamily: "inherit", fontSize: 15, fontWeight: 800, color: "#fff" }}>‹ Späť</button>
+                <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}><span style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: ".08em", color: "var(--gInk)" }}>KROK 2 · PARTE · rozpísané sa nestratí</span><b style={{ fontSize: 15, color: "var(--ink)" }}>Tvorba parte</b></span>
+              </div>
+              {editor({ flex: 1, minHeight: 0 })}
+            </div>, document.body)}
+        </>}
+        {rezim === "sab" && druh !== "pohreb" && <>
           <b style={{ fontSize: 16 }}>Nové {T.ozn} zo šablóny farnosti</b>
           <FormularOznamu u={u} onU={setU} mobil={mobil} />
           <span style={{ fontSize: 13, color: "var(--ink3)" }}>V hlavičke bude farnosť, ktorá za zbierku zodpovedá. Text sa dá upraviť aj po zverejnení.</span>
           <b style={{ fontSize: 15 }}>Vyberte vzhľad · 8 šablón</b>
-          {druh === "pohreb" && u.zena == null ? <span style={{ fontSize: 13.5, color: "var(--ink3)" }}>Šablóny sa ukážu, keď vyššie vyberiete Muž alebo Žena.</span>
-            : <VyberSablony u={u} volba={volba} onVolba={setVolba} vz={vz} mobil={mobil} />}
+          <VyberSablony u={u} volba={volba} onVolba={setVolba} vz={vz} mobil={mobil} />
           {spatZverejnit}
         </>}
       </>}
@@ -358,7 +465,13 @@ export function ZbierkaSOverovatelom({ stranka, menoFarnosti, ucetFarnosti, mobi
           </span>
           <span style={{ height: 24, padding: "0 10px", borderRadius: 9, background: "#4B7A35", color: "#fff", fontSize: 11.5, fontWeight: 800, display: "flex", alignItems: "center" }}>AKTÍVNA</span>
         </div>
-        <span style={{ fontSize: 14, lineHeight: 1.5, color: "var(--ink2)" }}>Zbierka je pripojená k oznámeniu na stránke farnosti. {T.kto} ju môže zdieľať, peniaze idú priamo jemu, bez mena = Bohu známy darca.</span>
+        {/* KARTA 57 A.5: PDF A4/A5 a obrázok príjemcovi do appky — PLACEBO — karta 57 (schránka príjemcu ešte nie je); tlač tu na fare funguje */}
+        <div role="status" style={{ padding: "16px 18px", borderRadius: 18, background: "var(--gSoft)", border: "2px solid var(--green)", display: "flex", flexDirection: "column", gap: 10 }}>
+          <b style={{ fontSize: 17, color: "var(--gInk)" }}>Zapečatené ✓ {velke(T.ozn)} s QR kódom sme poslali do appky príjemcu</b>
+          <span style={{ fontSize: 14.5, lineHeight: 1.5, color: "var(--ink2)" }}>PDF na tlač aj obrázok na WhatsApp. Zbierku odteraz spravuje on: vidí štatistiku a darcov, doplní termín, ukončí ju. Vy sumy ani darcov neuvidíte, podiel farnosti príde do Peňaženky.</span>
+          {obrTlac && <button type="button" onClick={() => { tlacParte(obrTlac, rezim === "vl" ? qrParte : { qr: false, kde: "pod", papier: "A5" }); setTlOk(true); window.setTimeout(() => setTlOk(false), 2200); }} style={{ ...tlZ, height: 54 }}>{tlOk ? "Posielam do tlačiarne ✓" : `Vytlačiť ${T.ozn} tu na fare`}</button>}
+          {obrTlac && <span style={{ fontSize: 13, color: "var(--ink3)" }}>Ak rodina nemá tlačiareň, vytlačte jej {T.ozn} tu na fare.</span>}
+        </div>
         <button type="button" onClick={() => onHotovo(z, `${T.nazov} beží. Nájdete ju nižšie v Ďalších zbierkach.`)} style={{ ...tlZ, alignSelf: "flex-start" }}>Hotovo · späť do Zbierok</button>
       </>}
     </section>);

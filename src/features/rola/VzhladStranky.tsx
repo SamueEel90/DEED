@@ -6,7 +6,7 @@ import { vzhladyPre, ulozVzhlad, useVzhlad } from "@/lib/vzhladStranky";
 const ZAMOK = "M6 11h12v10H6zM8.5 11V8a3.5 3.5 0 0 1 7 0v3";
 
 export function VzhladStranky({ strankaId, zadarmo, kto = "darcovia", onPozriet, sektor }: {
-  strankaId: string; zadarmo: boolean; /** kto si profil pozerá (farníci, darcovia…) */ kto?: string; onPozriet?: () => void;
+  strankaId: string; zadarmo: boolean; /** kto si profil pozerá (veriaci, darcovia…) */ kto?: string; onPozriet?: () => void;
   /** KARTA 56D §4: farnosť — názvy Kronika · Nástenka · Moderné, profil sa pozrie tlačidlom Náhľad */ sektor?: string;
 }) {
   const vz = useVzhlad(strankaId, zadarmo);

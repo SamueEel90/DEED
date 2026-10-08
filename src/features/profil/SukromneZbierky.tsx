@@ -1,5 +1,5 @@
 // ============================================================
-// OPRAVY 164 · Súkromné zbierky — info pre používateľa (farníka), prototyp „Sukromne zbierky - info".
+// OPRAVY 164 · Súkromné zbierky — info pre používateľa (veriaceho), prototyp „Sukromne zbierky - info".
 // Dar namiesto kvetov, vencov a nechcených darčekov. Druhy Pohrebná · Svadobná · Oslava a iné, 6 krokov,
 // overovatelia podľa druhu (farnosť môže všetky tri). Postup je rovnaký ako Zbierka s overovateľom (karta 56E).
 // Zoznam overovateľov v okolí zatiaľ nie je — PLACEBO — karta 56E (tlačidlo ukáže „pripravujeme").

@@ -677,12 +677,12 @@ function VieraDetail({ z, farar, onBack, onProfil }: { z: VieraFeedItem; farar: 
         )}
 
         {/* mazanie cez farára — auto-publish poistka („farár môže zmazať"); len na
-            publikované príspevky farníkov/farára (demo obsah z mocku sa mazať nedá) */}
+            publikované príspevky veriacich/farára (demo obsah z mocku sa mazať nedá) */}
         {farar && jeVlastnyPrispevok(farnostIdOf(z), z.id) && (
           <div {...pressable(() => {
             if (!mazem) { setMazem(true); return; }
             zmazPrispevok(farnostIdOf(z), z.id);
-            toast("Oznam zmazaný — farník dostane upozornenie");
+            toast("Oznam zmazaný — veriaci dostane upozornenie");
             onBack();
           }, mazem ? "Naozaj zmazať" : "Zmazať príspevok (farár)")}
             style={{ marginTop: SPACE.gutter, border: "1px solid color-mix(in srgb, var(--a-danger) 45%, transparent)", background: mazem ? "color-mix(in srgb, var(--a-danger) 14%, transparent)" : "transparent", borderRadius: RADIUS.sm, padding: SPACE.gutter, textAlign: "center", fontSize: 14, fontWeight: 700, color: "var(--a-danger)", cursor: "pointer" }}>

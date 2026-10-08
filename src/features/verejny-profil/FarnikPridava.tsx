@@ -1,5 +1,5 @@
 // ============================================================
-// KARTA 56I — Farník pridáva sám (prototyp „Farnik pridava", mobil 390).
+// KARTA 56I — Veriaci pridáva sám (prototyp „Farnik pridava", mobil 390).
 // Verejná stránka farnosti: pevné zelené + Pridať vpravo dole (len ak farár zapol a aspoň 1 druh) →
 // hárok „Čo chcete pridať?" (len zapnuté druhy, cena / zadarmo) · neregistrovaný: Prihlásiť / Zaregistrovať.
 // Formuláre: Krátky oznam · Udalosť · Úmysel na omšu · Fotky z akcie · Prosba o modlitbu — všade TextOznamu
@@ -29,14 +29,14 @@ const kedy = (cas: number) => { const d = new Date(cas); return teraz() - cas < 
 const druhT = (k: DruhFarnika) => DRUHY_FARNIKA.find((d) => d.k === k)?.t ?? "";
 const NADPIS: Partial<Record<DruhFarnika, string>> = { oznam: "nadpis", udalost: "názov", umysel: "za koho", fotky: "z akej akcie" };
 
-/** sekcia „Od farníkov" na verejnej stránke (cieľ „Pozrieť na stránke ›") */
+/** sekcia „Od veriacich" na verejnej stránke (cieľ „Pozrieť na stránke ›") */
 export function OdFarnikov({ strankaId, novy, pad, fab }: { strankaId: string; novy?: string | null; pad?: string; /** tlačidlo + Pridať je zapnuté */ fab: boolean }) {
   useOdFarnikov();
   const list = odFarnikov(strankaId).filter((x) => x.k !== "umysel"); // úmysel na omšu vidí len farár (v Správe)
   if (!list.length && !fab) return null;
   return (
     <section data-od-farnikov="1" style={{ padding: pad, display: "flex", flexDirection: "column", gap: 12, scrollMarginTop: 16 }}>
-      <b style={{ fontSize: 28, letterSpacing: "-.02em" }}>Od farníkov</b>
+      <b style={{ fontSize: 28, letterSpacing: "-.02em" }}>Od veriacich</b>
       {!list.length && <span style={{ fontSize: 16.5, lineHeight: 1.5, color: "var(--ink3)" }}>Zatiaľ nič. Ťuknite na zelené tlačidlo + Pridať dole.</span>}
       {list.map((x) => { const on = x.id === novy; return (
         <div key={x.id} style={{ padding: 16, borderRadius: 18, background: on ? "var(--gSoft)" : "var(--card)", border: `1.5px solid ${on ? "var(--gBd)" : "var(--cardBd)"}`, display: "flex", flexDirection: "column", gap: 4 }}>
@@ -99,8 +99,8 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
       : k === "umysel" ? (umK === 1 && datum ? `želaný deň ${fmtD(datum)}` : "najbližšia voľná omša")
       : k === "fotky" ? `${fotiek} ${fotiek === 1 ? "fotka" : fotiek < 5 ? "fotky" : "fotiek"}`
       : cistyText(txt).slice(0, 600);
-    pridajOdFarnika(strankaId, { id, k, t: k === "modlitba" ? "Prosím o modlitbu" : nad.trim(), s, kto: k === "modlitba" && anon ? "Bohu známy farník" : ja.celeMeno || "Farník", cas: teraz(), fotky: fotky.length ? fotky : undefined });
-    // OPRAVY 170: udalosť farníka sa do kalendára farnosti nezapisuje
+    pridajOdFarnika(strankaId, { id, k, t: k === "modlitba" ? "Prosím o modlitbu" : nad.trim(), s, kto: k === "modlitba" && anon ? "Bohu známy veriaci" : ja.celeMeno || "Veriaci", cas: teraz(), fotky: fotky.length ? fotky : undefined });
+    // OPRAVY 170: udalosť veriaceho sa do kalendára farnosti nezapisuje
     setHotovo(id); setChyba(false);
   };
   const zverejni = () => { if (ch.length) { setChyba(true); return; } uloz(); };

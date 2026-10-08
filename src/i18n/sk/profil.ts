@@ -140,7 +140,7 @@ export const profil: Slovnik = {
   "stranky.typ.tvorca": "Tvorca",
   "stranky.typ.farnost": "Farnosť",
   "stranky.rola.farar": "farár",
-  "stranky.info.oznamyFarnikov": { one: "{n} oznam od farníka", few: "{n} oznamy od farníkov", many: "{n} oznamu od farníkov", other: "{n} oznamov od farníkov" },
+  "stranky.info.oznamyFarnikov": { one: "{n} oznam od veriaceho", few: "{n} oznamy od veriacich", many: "{n} oznamu od veriacich", other: "{n} oznamov od veriacich" },
   "stranky.rola.spravca": "správca",
   "stranky.rola.majitel": "majiteľ",
   "stranky.rola.vlastnik": "vlastník",

@@ -170,7 +170,7 @@ export function UserOznamForm({ typ, farnost, autor, poplatok = 0, onPublish }: 
       lat: farnost?.lat, lng: farnost?.lng, lok: farnost?.obec,
       farnostId: farnost?.id, cirkev: farnost?.cirkev ?? "",
       // hlavička = meno usera z registrácie (§2); „bez mena" = obsah anonymný, KYC v pozadí (§4.3)
-      komunita: typ === "modlitba" && bezMena ? "Farník — bez mena" : autor,
+      komunita: typ === "modlitba" && bezMena ? "Veriaci — bez mena" : autor,
       nazov: nazovEdit.trim() || nazov, overena: false, badgeL: `OZNAM`, tag: "Oznam", emoji: m.emoji,
       popis: cistyText(text) || popisKratky, pribeh: text || undefined,
       datum: datum || undefined, reakciaTyp: m.reakcia,
@@ -289,7 +289,7 @@ export function UserOznamForm({ typ, farnost, autor, poplatok = 0, onPublish }: 
           <div style={{ marginTop: SPACE.md, background: N.card, border: `1px solid ${N.line}`, borderRadius: RADIUS.md, overflow: "hidden" }}>
             <div style={{ padding: `${SPACE.sm}px ${SPACE.gutter}px` }}>
               <div style={{ fontSize: 10.5, color: N.txt3, fontWeight: 700 }}>UKÁŽKA · hlavička</div>
-              <div style={{ fontSize: 13.5, fontWeight: 700, marginTop: SPACE.xxs }}>{typ === "modlitba" && bezMena ? "Farník — bez mena 🔒" : autor}</div>
+              <div style={{ fontSize: 13.5, fontWeight: 700, marginTop: SPACE.xxs }}>{typ === "modlitba" && bezMena ? "Veriaci — bez mena 🔒" : autor}</div>
             </div>
             {/* bod 25: portrét aj landscape — obrázok sa zobrazí celý (contain), neoreže sa do pruhu */}
             {obrazok && <img src={obrazok} alt={nazov} style={{ display: "block", width: "100%", height: "auto", maxHeight: 260, objectFit: "contain", background: "#111" }} />}
@@ -322,11 +322,11 @@ function MetaChip({ children }: { children: React.ReactNode }) {
 // ============================================================
 export function SelfAddSheet({ farnost, onClose, toast }: { farnost: Farnost; onClose: () => void; toast: (m: string) => void }) {
   const [v, setV] = useState<SelfAddNastavenie>(() => nacitajSelfAdd(farnost.id));
-  const uloz = () => { ulozSelfAdd(farnost.id, { on: v.on, poplatok: Math.max(0, +v.poplatok || 0) }); toast(v.on ? "Oznamy farníkov: zapnuté" : "Oznamy farníkov: vypnuté"); onClose(); };
+  const uloz = () => { ulozSelfAdd(farnost.id, { on: v.on, poplatok: Math.max(0, +v.poplatok || 0) }); toast(v.on ? "Oznamy veriacich: zapnuté" : "Oznamy veriacich: vypnuté"); onClose(); };
   return (
-    <SheetPanel title="Oznamy od farníkov" onClose={onClose}>
+    <SheetPanel title="Oznamy od veriacich" onClose={onClose}>
       <div style={{ fontSize: 12, color: N.txt3, marginBottom: SPACE.md, lineHeight: 1.5 }}>
-        Self-add = odbremenenie farára (jubileá, poďakovania, prosby o modlitbu si farníci pridajú sami, auto-publish). Feed tvorí primárne farár — toto je voliteľné.
+        Self-add = odbremenenie farára (jubileá, poďakovania, prosby o modlitbu si veriaci pridajú sami, auto-publish). Feed tvorí primárne farár — toto je voliteľné.
       </div>
       <label style={{ display: "flex", alignItems: "center", gap: SPACE.sm, background: N.card, border: `1px solid ${N.line}`, borderRadius: RADIUS.sm, padding: SPACE.gutter, fontSize: 14, fontWeight: 700 }}>
         <Switch on={v.on} onChange={(on) => setV((s) => ({ ...s, on }))} ariaLabel="Useri pridávajú sami" />

@@ -61,6 +61,8 @@ export interface SmutocnyData {
   text?: string;                 // voliteľný formátovateľný text (rich — §5, zachovať formát)
   /** OPRAVY 163: šablóna z jedného modulu (Sablony.tsx) — údaje, rozloženie a vzhľad profilu pri vzniku */
   sablona?: { u: import("./Sablony").UdajeOznamu; volba: import("./Sablony").VolbaSablony; vz: import("@/lib/vzhladStranky").Vzhlad };
+  /** KARTA 57 A.3: návrh z Editora oznámení (obnoví sa 1:1) */
+  editor?: import("@/components/EditorOznameni").PayloadEditora;
 }
 
 // vek sa dopočíta z dátumov (spec §4.2)

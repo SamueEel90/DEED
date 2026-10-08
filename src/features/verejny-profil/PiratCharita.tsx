@@ -25,7 +25,7 @@ const krivka = (pts: [number, number][]) => pts.reduce((a, [x, y], i) => { if (!
 const krivkaV = (pts: [number, number][]) => pts.reduce((a, [x, y], i) => { if (!i) return `M${x} ${y}`; const [px, py] = pts[i - 1]; const my = (py + y) / 2; return `${a} C${px} ${my} ${x} ${my} ${x} ${y}`; }, "");
 const Y_PC = [380, 170, 360, 150, 340, 110];
 
-export function PiratCharita({ profil, onDetail, onZaznam, onBack, odFarnikov }: { /** KARTA 56I: sekcia Od farníkov (farnosť) */ odFarnikov?: ReactNode; profil: TestProfil; onDetail: (z: TestZbierka) => void; onZaznam?: (p: PolCh) => void; onBack: () => void; onKronika?: () => void }) {
+export function PiratCharita({ profil, onDetail, onZaznam, onBack, odFarnikov }: { /** KARTA 56I: sekcia Od veriacich (farnosť) */ odFarnikov?: ReactNode; profil: TestProfil; onDetail: (z: TestZbierka) => void; onZaznam?: (p: PolCh) => void; onBack: () => void; onKronika?: () => void }) {
   const pc = usePc();
   const mob = !pc;
   const domace = useDomaceMesto(profil);

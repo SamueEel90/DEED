@@ -58,7 +58,7 @@ export function NahladNastenky({ strankaId, meno, profil, mobil, onSpat }: { str
     <div role="dialog" aria-modal="true" aria-label="Verejná stránka" style={{ position: "fixed", inset: 0, zIndex: 1000, background: "#14110B", display: "flex", flexDirection: "column" }}>
       <div style={{ flex: "none", display: "flex", alignItems: "center", gap: 12, padding: mobil ? "10px 12px" : "12px 24px", background: "#14110B", borderBottom: "1px solid #2E2A22" }}>
         <button type="button" onClick={onSpat} autoFocus style={{ flex: "none", minHeight: 48, padding: "0 18px", border: "none", borderRadius: 12, background: ZELENA, cursor: "pointer", fontFamily: "inherit", fontSize: 15, fontWeight: 800, color: "#fff", boxShadow: "none" }}>‹ Späť do Správy</button>
-        <span style={{ minWidth: 0, fontSize: 14, fontWeight: 700, color: "#E8E1D3" }}>Takto vašu stránku vidia farníci</span>
+        <span style={{ minWidth: 0, fontSize: 14, fontWeight: 700, color: "#E8E1D3" }}>Takto vašu stránku vidia veriaci</span>
       </div>
       <div style={{ flex: 1, minHeight: 0, overflowY: "auto", WebkitOverflowScrolling: "touch", padding: mobil ? 0 : 24 }}>
       <div style={{ maxWidth: 1200, margin: "0 auto" }}>
