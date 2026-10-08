@@ -39,6 +39,11 @@ export const profilZPamate = (stranka: string): ProfilZaznam => pamat.get(strank
 export async function nacitajProfil(stranka: string): Promise<ProfilZaznam> {
   if (supabase) {
     const { data, error } = await supabase.from("profil_stranky").select("koncept, koncept_cas, ulozeny").eq("stranka", stranka).maybeSingle();
+    if (!error && !data) {
+      // nie som správca (RLS) → uložený profil z verejného pohľadu (0059, bez účtu)
+      const v = await supabase.from("profil_stranky_verejny").select("ulozeny").eq("stranka", stranka).maybeSingle();
+      if (!v.error) { const z: ProfilZaznam = { koncept: null, konceptCas: null, ulozeny: (v.data?.ulozeny as ProfilStranky | null) ?? null }; pamat.set(stranka, z); return z; }
+    }
     if (!error) {
       const z: ProfilZaznam = { koncept: (data?.koncept as ProfilStranky | null) ?? null, konceptCas: (data?.koncept_cas as string | null) ?? null, ulozeny: (data?.ulozeny as ProfilStranky | null) ?? null };
       pamat.set(stranka, z); return z;
@@ -55,11 +60,14 @@ export async function ulozKoncept(stranka: string, p: ProfilStranky): Promise<st
   return cas;
 }
 
-/** Uložiť profil — zverejní koncept, koncept sa zahodí */
+/** Uložiť profil — zverejní koncept, koncept sa zahodí. Pri chybe DB (napr. nie som správca) hodí chybu. */
 export async function zverejniProfil(stranka: string, p: ProfilStranky): Promise<void> {
   const cas = new Date().toISOString();
+  if (supabase) {
+    const { error } = await supabase.from("profil_stranky").upsert({ stranka, ulozeny: await bezDataUrl(p, "stranky"), ulozeny_cas: cas, koncept: null, koncept_cas: null }, { onConflict: "stranka" });
+    if (error) throw new Error(error.message);
+  }
   pamat.set(stranka, { koncept: null, konceptCas: null, ulozeny: p });
-  if (supabase) await supabase.from("profil_stranky").upsert({ stranka, ulozeny: await bezDataUrl(p, "stranky"), ulozeny_cas: cas, koncept: null, koncept_cas: null }, { onConflict: "stranka" });
 }
 
 /** KARTA 56D §1: názov stránky bez čiarky a bodky na konci (farnosť si ho môže zmeniť v Upraviť profil) */

@@ -145,6 +145,11 @@ export async function nacitajZbierkyStranky(stranka: string): Promise<SpustenaZb
     const dotaz = (stlpce: string) => supabase!.from("zbierka").select(stlpce).eq("stranka", stranka).order("vytvorene", { ascending: false });
     let { data, error } = await dotaz("id, vs, nastavenie, zapecatena, stav, koniec");
     if (error?.code === "42703") ({ data, error } = await dotaz("id, vs, nastavenie, zapecatena, stav")); // kým nebeží 0068
+    if (!error && !data?.length) {
+      // nie som správca (RLS na zbierka) → spustené zbierky z verejného pohľadu (0069, bez účtu a IBAN)
+      const v = await supabase.from("zbierka_verejna").select("id, vs, nastavenie, zapecatena, stav").eq("stranka", stranka).order("vytvorene", { ascending: false });
+      if (!v.error && v.data) data = v.data as unknown as typeof data;
+    }
     if (!error && data) {
       const riadky = data as unknown as { vs: string | null; nastavenie: unknown; stav: string | null; koniec?: string | null }[];
       const l = riadky.filter((r) => r.nastavenie).map((r) => ({ ...(r.nastavenie as SpustenaZbierka), vs: r.vs ?? undefined, stav: (r.stav as SpustenaZbierka["stav"]) ?? "aktivna", koniec: r.koniec ?? undefined }));
