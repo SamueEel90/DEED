@@ -112,6 +112,8 @@ export interface SpustenaZbierka extends NovaZbierkaData {
   vs?: string;
   /** životný cyklus zo stĺpca zbierka.stav (nie z nastavenia) — KARTA 56D: ukončená = ZRUŠENÁ */
   stav?: "aktivna" | "ukoncena" | "vyuctovana";
+  /** KARTA 57 A.8: čas ukončenia zo servera (zbierka.koniec, migrácia 0068) — archív */
+  koniec?: string;
 }
 
 // ---- pamäť relácie + odber zmien ----
@@ -140,9 +142,12 @@ export async function ulozKonceptZbierky(stranka: string, d: NovaZbierkaData | n
 
 export async function nacitajZbierkyStranky(stranka: string): Promise<SpustenaZbierka[]> {
   if (supabase) {
-    const { data, error } = await supabase.from("zbierka").select("id, vs, nastavenie, zapecatena, stav").eq("stranka", stranka).order("vytvorene", { ascending: false });
+    const dotaz = (stlpce: string) => supabase!.from("zbierka").select(stlpce).eq("stranka", stranka).order("vytvorene", { ascending: false });
+    let { data, error } = await dotaz("id, vs, nastavenie, zapecatena, stav, koniec");
+    if (error?.code === "42703") ({ data, error } = await dotaz("id, vs, nastavenie, zapecatena, stav")); // kým nebeží 0068
     if (!error && data) {
-      const l = data.filter((r) => r.nastavenie).map((r) => ({ ...(r.nastavenie as SpustenaZbierka), vs: (r.vs as string | null) ?? undefined, stav: (r.stav as SpustenaZbierka["stav"]) ?? "aktivna" }));
+      const riadky = data as unknown as { vs: string | null; nastavenie: unknown; stav: string | null; koniec?: string | null }[];
+      const l = riadky.filter((r) => r.nastavenie).map((r) => ({ ...(r.nastavenie as SpustenaZbierka), vs: r.vs ?? undefined, stav: (r.stav as SpustenaZbierka["stav"]) ?? "aktivna", koniec: r.koniec ?? undefined }));
       spustene.set(stranka, l); zmena(); return l;
     }
   }
@@ -185,6 +190,7 @@ export async function spustiZbierku(stranka: string, d: NovaZbierkaData, ucet: s
 
 /** KARTA 56D §6: ukončiť zbierku — dary sa zastavia, počítadlo ostáva na profile. Stav je životný cyklus (zámok 0041 ho dovoľuje). */
 export async function ukonciZbierku(stranka: string, id: string): Promise<void> {
-  spustene.set(stranka, zbierkyStrankyZPamate(stranka).map((x) => (x.id === id ? { ...x, stav: "ukoncena" as const } : x))); zmena();
-  if (supabase) { const { error } = await supabase.from("zbierka").update({ stav: "ukoncena" }).eq("id", id); if (error) throw new Error(error.message); }
+  // čas ukončenia dá server (0068); v pamäti len do najbližšieho načítania
+  spustene.set(stranka, zbierkyStrankyZPamate(stranka).map((x) => (x.id === id ? { ...x, stav: "ukoncena" as const, koniec: x.koniec ?? new Date().toISOString() } : x))); zmena();
+  if (supabase) { const { error } = await supabase.from("zbierka").update({ stav: "ukoncena" }).eq("id", id); if (error) throw new Error(error.message); void nacitajZbierkyStranky(stranka); }
 }

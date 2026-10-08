@@ -85,6 +85,11 @@ export function SpravaFarnosti(p: Parameters<typeof SpravaFarnostiObsah>[0]) {
   return <SektorDarcuKontext.Provider value="viera"><SpravaFarnostiObsah {...p} /></SektorDarcuKontext.Provider>;
 }
 
+/** KARTA 57 A.8: ukončené a zrušené zbierky idú do archívu */
+const vArchive = (z: SpustenaZbierka) => !!z.stav && z.stav !== "aktivna";
+/** „8. 10. 2026 o 14:05" */
+const casKonca = (iso?: string) => { if (!iso) return ""; const d = new Date(iso); return isNaN(d.getTime()) ? "" : `${d.getDate()}. ${d.getMonth() + 1}. ${d.getFullYear()} o ${d.getHours()}:${String(d.getMinutes()).padStart(2, "0")}`; };
+
 function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBack: () => void; strankaId: string; /** názov z registrácie (Moje stránky) */ nazov?: string; /** testovací pás (OPRAVY 147, 153: dostane „Pozrieť profil ›") */ test?: (onPozriet: () => void) => ReactNode }) {
   const { desktop, wide } = useLayout();
   const tablet = wide && !desktop;
@@ -101,6 +106,7 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
   const [noveOk, setNoveOk] = useState<string | null>(null);
   const [zbOtv, setZbOtv] = useState<string | null>(null);
   const [pz, setPz] = useState(false); // OPRAVY 161: postup zbierky pre veriacich
+  const [archOtv, setArchOtv] = useState(false); // KARTA 57 A.8: archív zbalený
   const [rodOtv, setRodOtv] = useState<string | null>(null); // KARTA 57 A.6: rozbalené vysvetlenie pri zbierke rodiny
   const [pzSpat] = useState<{ current: SpatZbierky | null }>(() => ({ current: null })); // KARTA 57 A.1: horné ‹ Späť = krok späť v zbierke (zbierka sem zapíše svoj krok späť)
   // KARTA 56G: Omše a kalendár otvorené na dni (ťuk v Prehľade) alebo na tomto týždni (Zmena omše) — key = nové otvorenie
@@ -344,6 +350,28 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
         {!mobil && <span aria-hidden="true" style={{ flex: "none", fontSize: 20, color: "var(--ink3)" }}>›</span>}
       </button>);
   };
+  // KARTA 57 A.8: archív — ukončené a zrušené v jednom zbalenom riadku, pri každej dátum a čas ukončenia (čas servera)
+  const archiv = dalsie.filter(vArchive);
+  const archivKarta = archiv.length > 0 && (
+    <div style={{ flex: "none", display: "flex", flexDirection: "column", gap: 8 }}>
+      <button type="button" onClick={() => setArchOtv((o) => !o)} aria-expanded={archOtv} style={{ minHeight: 64, padding: "10px 16px", borderRadius: 18, border: "1px solid var(--cardBd)", background: "var(--card)", cursor: "pointer", display: "flex", alignItems: "center", gap: 12, textAlign: "left", fontFamily: "inherit", color: "var(--ink)", boxShadow: "none" }}>
+        <Ik d="M3 5h18v4H3zM5 9v10h14V9M10 13h4" s={20} c="var(--acc)" />
+        <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}><b style={{ fontSize: 15.5 }}>Archív · {archiv.length} {archiv.length === 1 ? "zbierka" : archiv.length < 5 ? "zbierky" : "zbierok"}</b><span style={{ fontSize: 13, color: "var(--ink3)" }}>ukončené a zrušené · všetko sa uchováva, kedykoľvek dohľadáte</span></span>
+        <span aria-hidden="true" style={{ fontSize: 18, color: "var(--ink3)", transform: `rotate(${archOtv ? 180 : 0}deg)`, transition: "transform .2s ease" }}>⌄</span>
+      </button>
+      {archOtv && <div style={{ display: "flex", flexDirection: "column", borderRadius: 18, border: "1px solid var(--cardBd)", background: "var(--card)", padding: "4px 16px" }}>
+        {archiv.map((z, i) => { const rod = !!z.farnost && z.farnost.druh !== "farnost", otv = rodOtv === z.id; const [chip] = stitokZbierkyF(z); return (
+          <button key={z.id} type="button" onClick={() => { if (rod) { setRodOtv(otv ? null : z.id); return; } sprava(""); setZbOtv(z.id); go("zbierka"); }} aria-expanded={rod ? otv : undefined}
+            style={{ minHeight: 60, padding: "10px 0", border: "none", borderTop: i ? "1px solid var(--cardBd)" : "none", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", gap: 12, textAlign: "left", fontFamily: "inherit", color: "var(--ink)", boxShadow: "none" }}>
+            <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}>
+              <b style={{ fontSize: 15 }}>{z.nazov || "Zbierka"}</b>
+              <span style={{ fontSize: 13, color: "var(--ink3)" }}>{[chip.toLocaleLowerCase("sk-SK"), casKonca(z.koniec)].filter(Boolean).join(" · ")}</span>
+              {rod && otv && <span style={{ fontSize: 13.5, lineHeight: 1.5, color: "var(--ink2)", paddingTop: 4 }}>Zbierka rodiny, ktorú ste overili. Sumy a darcov vidí len príjemca. Váš podiel farnosti nájdete v Peňaženke.</span>}
+            </span>
+            <span aria-hidden="true" style={{ flex: "none", fontSize: 18, color: "var(--ink3)" }}>{rod ? (otv ? "⌃" : "⌄") : "›"}</span>
+          </button>); })}
+      </div>}
+    </div>);
   const sprava2 = (t: string, zav: () => void, zelena: boolean) => (
     <div role="status" style={{ flex: "none", borderRadius: 18, background: zelena ? "var(--gSoft)" : "var(--card)", border: `2px solid ${zelena ? "var(--green)" : "var(--cardBd)"}`, padding: "14px 18px", display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
       <b style={{ flex: 1, minWidth: 220, fontSize: 16, color: zelena ? "var(--gInk)" : "var(--ink)" }}>{t}</b>
@@ -385,7 +413,8 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
     </>}
     {dalsie.length > 0 && <>
       <span style={mobil ? { ...kicker, letterSpacing: ".07em", padding: "8px 2px 0" } : { ...kicker, paddingTop: 8 }}>ĎALŠIE ZBIERKY</span>
-      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>{dalsie.map(dalsieRiadok)}</div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>{dalsie.filter((z) => !vArchive(z)).map(dalsieRiadok)}</div>
+      {archivKarta}
     </>}
     {!bezi && pridatHlavnu}
     </>}
