@@ -16,6 +16,7 @@ export const ISKRA_TYPY = ["video/mp4", "video/quicktime", "video/webm"];
 interface IskraRiadok {
   id: string; stranka: string | null; druh: number; autor: string; kto: string; ini: string; popis: string;
   video: string; plagat: string | null; zbierka: Iskra["zbierka"] | null; bez_darov: boolean;
+  /** 0071: video druhu Zbierky — väzba na zbierku stránky */ zb?: Iskra["zb"] | null;
   retaz_pct: number | null; len_stranka: boolean; iskry: number; zverejnene: string; /** 0035: autor = účet, nie auth uid */ autor_ucet: string;
 }
 
@@ -27,7 +28,7 @@ export function naIskru(r: IskraRiadok): Iskra {
   return {
     id: r.id, druh: r.druh as DruhIskry, autor: r.autor, kto: r.kto, ini: r.ini, org: !!r.stranka, popis: r.popis,
     src: verejnaUrl(r.video), bg: r.plagat ? `url('${verejnaUrl(r.plagat)}') center/cover no-repeat #1D211B` : "#1D211B",
-    zbierka: r.zbierka ?? undefined, iskry: r.iskry, bezDarov: r.bez_darov || undefined,
+    zbierka: r.zbierka ?? undefined, zb: r.zb ?? undefined, iskry: r.iskry, bezDarov: r.bez_darov || undefined,
     retazPct: r.retaz_pct ?? undefined, lenStranka: r.len_stranka || undefined, zverejnene: r.zverejnene,
   };
 }
@@ -101,7 +102,7 @@ export async function zverejniIskruNaServeri(subor: File, d: ZverejnenieIskry): 
 
   const { data, error } = await supabase.rpc("iskra_zverejni", { p: {
     video, plagat, dlzka_s: d.dlzkaS, stranka: d.stranka, druh: d.druh, autor: d.autor, kto: d.kto, ini: d.ini,
-    popis: d.popis, zbierka: d.zbierka ?? null, bez_darov: !!d.bezDarov, retaz_pct: d.retazPct ?? null, len_stranka: !!d.lenStranka,
+    popis: d.popis, zbierka: d.zbierka ?? null, zb: d.zb ?? null, bez_darov: !!d.bezDarov, retaz_pct: d.retazPct ?? null, len_stranka: !!d.lenStranka,
   } });
   if (error || !data) {
     // zverejnenie neprešlo → nahraté súbory nenechávaj v Storage
