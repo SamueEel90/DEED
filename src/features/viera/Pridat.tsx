@@ -125,11 +125,11 @@ export function PridatSheet({ farar, farnost, onClose, toast, start }: {
           <BackRiadok onBack={() => setUzol(null)} label={farar ? (kat?.titul ?? "Späť") : "Pridať oznam"} />
           {uzol.id === "o-smutocny" || uzol.id === "o-umrtie" ? (
             /* dedikované parte (DEED_Oznamenie_o_Umrti_DEV.md) — šablóna/obrázok, povinné polia, TTL, BEZ zbierky (§0) */
-            <SmutocnyForm farnost={farnost} autor={celeMeno || "Farník"} farar={farar}
+            <SmutocnyForm farnost={farnost} autor={celeMeno || "Veriaci"} farar={farar}
               onPublish={(it) => { if (farnost) pridajPrispevok(farnost.id, it); toast(farar ? "Oznámenie o úmrtí zverejnené" : "Oznámenie o úmrtí zverejnené (auto-publish · farár môže zmazať)"); onClose(); }} />
           ) : userTyp ? (
             /* user oznamy (DEED_User_Oznamy_DEV.md) — jubilejný/poďakovanie/prosba, 2 režimy + obrázok */
-            <UserOznamForm typ={userTyp} farnost={farnost} autor={celeMeno || "Farník"} poplatok={selfAdd.poplatok}
+            <UserOznamForm typ={userTyp} farnost={farnost} autor={celeMeno || "Veriaci"} poplatok={selfAdd.poplatok}
               onPublish={(it) => { if (farnost) pridajPrispevok(farnost.id, it); toast(`Oznam zverejnený (auto-publish · farár môže zmazať)${it.spoplatnene ? ` · zaplatené ${selfAdd.poplatok.toFixed(2)} €` : ""}`); onClose(); }} />
           ) : (
           <UzolForm uzol={uzol} farar={farar} farnost={farnost}
@@ -181,7 +181,7 @@ export function PridatSheet({ farar, farnost, onClose, toast, start }: {
         /* farnosť má self-add vypnutý (§2) — feed tvorí farár, oznam vybaví osobne */
         <div style={{ fontSize: 12.5, color: N.txt2, background: N.card, border: `1px solid ${N.line}`, borderRadius: RADIUS.sm, padding: SPACE.md, lineHeight: 1.55, textAlign: "center" }}>
           <div style={{ fontSize: 26, marginBottom: SPACE.xs }}><Emo e="zvon" /></div>
-          <b>Farnosť má pridávanie oznamov farníkmi vypnuté.</b><br />
+          <b>Farnosť má pridávanie oznamov veriacimi vypnuté.</b><br />
           Feed tvorí farár — ozvi sa mu a oznam (jubileum, poďakovanie, prosbu o modlitbu) pridá za teba.
         </div>
       ) : (
@@ -390,7 +390,7 @@ function UzolForm({ uzol, farar, farnost, onSplit, onPublish, onHelp, toast }: {
       {uzol.id === "o-zmena" && (
         <label style={{ display: "flex", alignItems: "center", gap: SPACE.sm, marginTop: SPACE.md, fontSize: 13, color: N.txt2 }}>
           <Switch on={notif} onChange={setNotif} ariaLabel="Push notifikácia" />
-          Poslať push notifikáciu farníkom (zmena programu)
+          Poslať push notifikáciu veriacim (zmena programu)
         </label>
       )}
 
@@ -434,7 +434,7 @@ function UzolForm({ uzol, farar, farnost, onSplit, onPublish, onHelp, toast }: {
               <button onClick={() => {
                 // fallback: neprepísaný NÁZOV = predvyplnená hodnota z placeholderu
                 const eff = nazovPole && predvNazov && !(polia[nazovPole] ?? "").trim() ? { ...polia, [nazovPole]: predvNazov } : polia;
-                const it = postavPrispevok(uzol, { farar, farnost, autor: celeMeno || "Farník", text, polia: eff, fotky, autorTvar: tvar });
+                const it = postavPrispevok(uzol, { farar, farnost, autor: celeMeno || "Veriaci", text, polia: eff, fotky, autorTvar: tvar });
                 if (naviazat && udalostVazba.trim()) it.popis = `${it.popis} · naviazané na: ${udalostVazba.trim()}`;
                 onPublish(it);
               }} style={ctaStyle(N.green)}>Publikovať</button>

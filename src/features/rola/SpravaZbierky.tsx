@@ -666,7 +666,7 @@ export function SpravaZbierky({ z, mobil, onZbierky, toast, onUdaje, onDorovnani
     </section>
     : bezDokladov ? <section style={{ ...kartaK, gap: 8 }}>
         <span style={nadpisK}>Zbierka je ukončená</span>
-        <span style={textK}>Výsledok napíšte farníkom v ohláškach.</span>
+        <span style={textK}>Výsledok napíšte veriacim v ohláškach.</span>
       </section>
     : <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       <section style={{ ...kartaK, gap: 8 }}>

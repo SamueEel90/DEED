@@ -230,7 +230,7 @@ export type Slovo = "darcovia" | "akcie" | "sektory";
 export const SLOVA_TYPU: Record<TypStranky, Partial<Record<Slovo, string>>> = {
   charita: {}, ina: {}, firma: {},
   spolok: { darcovia: "členovia" }, sport: { darcovia: "členovia", akcie: "zápasy" }, umenie: { akcie: "vystúpenia" },
-  skola: { sektory: "triedy" }, farnost: { darcovia: "farníci" }, obec: { darcovia: "obyvatelia" },
+  skola: { sektory: "triedy" }, farnost: { darcovia: "veriaci" }, obec: { darcovia: "obyvatelia" },
   nemocnica: { sektory: "oddelenia" }, tvorca: { darcovia: "podporovatelia" },
 };
 export const slovo = (typ: TypStranky, s: Slovo, zaklad: string): string => SLOVA_TYPU[typ][s] ?? zaklad;

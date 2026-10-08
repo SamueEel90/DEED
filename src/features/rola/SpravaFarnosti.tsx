@@ -293,11 +293,11 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
       <span style={{ fontSize: 12.5, color: "var(--ink3)" }}>vzniklo samo z rozvrhu omší · len na čítanie</span>
       <span style={{ fontSize: 13.5, color: "var(--ink2)" }}>Okno pondelok {om.okno.pondelok} 0:00 – nedeľa {om.okno.nedela} 23:59 · zatvorí sa o {doZatvorenia(om.okno, strankaId)}</span>
       <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}><b style={{ fontSize: 22, fontVariantNumeric: "tabular-nums" }}>{eur(oknoSuma)}</b><span style={{ fontSize: 13, color: "var(--ink3)" }}>od {oknoLudi} {oknoLudi === 1 ? "človeka" : "ľudí"} · cez DEED</span></div>
-      <span style={{ fontSize: 13.5, lineHeight: 1.5, color: "var(--ink2)" }}>Na profile: {menaO || "zatiaľ nikto"}{menaO ? " (bez súm)" : ""}. Bez mena = <b>Bohu známy darca</b>. Po zatvorení okna mená zmiznú a do hlavnej zbierky pribudne jeden riadok „spoločný dar farníkov“.</span>
+      <span style={{ fontSize: 13.5, lineHeight: 1.5, color: "var(--ink2)" }}>Na profile: {menaO || "zatiaľ nikto"}{menaO ? " (bez súm)" : ""}. Bez mena = <b>Bohu známy darca</b>. Po zatvorení okna mená zmiznú a do hlavnej zbierky pribudne jeden riadok „spoločný dar veriacich“.</span>
       {om.uzavrete.length > 0 && <div style={{ display: "flex", flexDirection: "column", borderTop: "1px solid var(--cardBd)", paddingTop: 6 }}>
         <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".06em", color: "var(--ink3)", padding: "4px 0" }}>Uzavreté týždne v hlavnej zbierke</span>
         {om.uzavrete.slice(0, 6).map((o, i) => <div key={o.id} style={{ display: "flex", alignItems: "center", gap: 10, minHeight: 48, borderTop: i ? "1px solid var(--cardBd)" : "none" }}>
-          <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 1 }}><b style={{ fontSize: 14 }}>Omšová zbierka {o.nedela}</b><span style={{ fontSize: 12.5, color: "var(--ink3)" }}>spoločný dar farníkov{i === 0 ? " · 1 darca v štatistike" : ""}</span></span>
+          <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 1 }}><b style={{ fontSize: 14 }}>Omšová zbierka {o.nedela}</b><span style={{ fontSize: 12.5, color: "var(--ink3)" }}>spoločný dar veriacich{i === 0 ? " · 1 darca v štatistike" : ""}</span></span>
           <b style={{ flex: "none", fontSize: 14, fontVariantNumeric: "tabular-nums" }}>{eur(o.suma)}</b>
         </div>)}
       </div>}
@@ -431,19 +431,19 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
     <section style={{ ...karta, borderRadius: mobil ? 18 : 22, padding: mobil ? "12px 14px" : "16px 20px", display: "flex", flexDirection: "column", gap: 12 }}>
       <div style={{ display: "flex", alignItems: "center", gap: mobil ? 10 : 12 }}>
         <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}>
-          <b style={{ fontSize: mobil ? 14 : 15 }}>Farníci môžu pridávať oznamy</b>
+          <b style={{ fontSize: mobil ? 14 : 15 }}>Veriaci môžu pridávať oznamy</b>
           <span style={{ fontSize: mobil ? 12 : 12.5, color: "var(--ink3)" }}>{mobil ? (self.on ? "Zverejnia sa hneď, vy ich môžete zmazať" : "Vypnuté, oznamy pridáva len farnosť") : "Zverejnia sa hneď, vy ich môžete zmazať. Prosba o modlitbu a smútočné oznámenie sú vždy zadarmo."}</span>
         </span>
-        {prepinac(self.on, () => zmenSelf({ on: !self.on }), "Farníci môžu pridávať oznamy")}
+        {prepinac(self.on, () => zmenSelf({ on: !self.on }), "Veriaci môžu pridávať oznamy")}
       </div>
       {self.on && <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
         <span style={{ fontSize: 14, color: "var(--ink2)" }}>Poplatok za oznam</span>
         {segment(POPLATKY.map((p) => [p, p ? `${p} €` : "Zadarmo"] as [number, string]), POPLATKY.includes(self.poplatok) ? self.poplatok : 0, (p) => zmenSelf({ poplatok: p }), 36)}
       </div>}
       {self.on && <>
-        {/* KARTA 56I §1: čo smie farník pridať sám — 8 prepínačov, predvolene všetky zapnuté, ukladá sa hneď */}
+        {/* KARTA 56I §1: čo smie veriaci pridať sám — 8 prepínačov, predvolene všetky zapnuté, ukladá sa hneď */}
         <div style={{ display: "flex", flexDirection: "column", gap: 2, paddingTop: 6 }}>
-          <b style={{ fontSize: 14.5 }}>Čo smie farník pridať sám</b>
+          <b style={{ fontSize: 14.5 }}>Čo smú veriaci pridať sami</b>
           <span style={{ fontSize: 12.5, color: "var(--ink3)" }}>Na verejnej stránke uvidí zelené tlačidlo + Pridať. Ponúkne sa mu len to, čo tu zapnete. Pridávať môžu len registrovaní v DEED.</span>
         </div>
         <div style={{ display: "flex", flexDirection: "column" }}>
@@ -453,13 +453,13 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
               {prepinac(on, () => ulozSmie(strankaId, { ...smieF, [d.k]: !on }), d.t)}
             </div>); })}
         </div>
-        <button type="button" onClick={() => otvorVerejnyProfil(strankaId)} style={{ alignSelf: "flex-start", minHeight: 44, padding: 0, border: "none", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 800, color: "var(--gInk)", boxShadow: "none" }}>Pozrieť, ako to vidí farník ›</button>
+        <button type="button" onClick={() => otvorVerejnyProfil(strankaId)} style={{ alignSelf: "flex-start", minHeight: 44, padding: 0, border: "none", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 800, color: "var(--gInk)", boxShadow: "none" }}>Pozrieť, ako to vidí veriaci ›</button>
       </>}
     </section>);
-  // KARTA 56I: čo pridali farníci — zverejnené hneď, farár môže zmazať
+  // KARTA 56I: čo pridali veriaci — zverejnené hneď, farár môže zmazať
   const odF = odFarnikov(strankaId);
   const odFarnikovKarta = odF.length > 0 && (
-    <section aria-label="Pridali farníci" style={{ ...karta, borderRadius: mobil ? 18 : 22, padding: mobil ? "4px 14px" : "6px 20px" }}>
+    <section aria-label="Pridali veriaci" style={{ ...karta, borderRadius: mobil ? 18 : 22, padding: mobil ? "4px 14px" : "6px 20px" }}>
       {odF.map((x, i) => (
         <div key={x.id} style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 60, padding: "8px 0", borderTop: i ? "1px solid var(--cardBd)" : "none" }}>
           <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}>
@@ -473,7 +473,7 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
     </section>);
   // KARTA 56G §4–5: Oznamy farnosti — Krátky oznam · Udalosť · Oznámenie, náhľad, ohlášky, zoznam zverejnených
   const oznamy = <>
-    {nadpis("Oznamy", "Ohlášky, oznamy farnosti a oznamy od farníkov")}
+    {nadpis("Oznamy", "Ohlášky, oznamy farnosti a oznamy od veriacich")}
     <OznamyFarnosti strankaId={strankaId} meno={meno} profil={prof.ulozeny} mobil={mobil} toast={toast} hore={oznamyHore} />
     <span style={mobil ? { ...kicker, letterSpacing: ".07em", padding: "4px 2px 0" } : kicker}>OD FARNÍKOV</span>
     {selfKarta}
@@ -520,7 +520,7 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
       <span style={{ fontSize: 13, color: "var(--ink2)" }}>{VID.find((x) => x[0] === vid)?.[2]}</span>
     </section>);
   const nastrojeL = riadky([["QR na tlač do kostola", "pokladnička, nástenka, lavice · sken otvorí dar", "Tlačiť"], ["Štatistiky", "dary podľa omší, zbierok a mesiacov", "Otvoriť"], ["Ročný výpis", "podklad pre farskú radu a ekonómov", "Stiahnuť"]].map(([t, s, b]) => ({ t, s, b, tap: pripravujeme })));
-  const nastaveniaL = riadky([["Vzhľad a prístupnosť", "téma, jazyk, veľkosť písma"], ["Oznámenia", "nový dar, oznam od farníka"], ["Príjem darov", "EURC, transparentný účet"], ["Správcovia", "kto má prístup k Správe farnosti"], ["Program a predplatné", "program Farnosť · jedna cena · faktúry"]].map(([t, s]) => ({ t, s })));
+  const nastaveniaL = riadky([["Vzhľad a prístupnosť", "téma, jazyk, veľkosť písma"], ["Oznámenia", "nový dar, oznam od veriaceho"], ["Príjem darov", "EURC, transparentný účet"], ["Správcovia", "kto má prístup k Správe farnosti"], ["Program a predplatné", "program Farnosť · jedna cena · faktúry"]].map(([t, s]) => ({ t, s })));
   // OPRAVY 162: hore karta QR farnosti — jeden QR z registrácie, stav podľa hlavnej zbierky
   const qrFarnosti = <QrKarta nazov={meno} slug={strankaId} odkaz={odkazQrStranky(strankaId)} organizacia={meno} toast={toast} nadpis="QR farnosti"
     stav={bezi ? { t: "Teraz vedie na hlavnú zbierku", zelena: true } : { t: "Teraz vedie na profil farnosti", zelena: false }}
@@ -607,7 +607,7 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
           </div>
           <button type="button" onClick={verejny} style={{ flex: "none", height: 56, padding: "0 14px", borderRadius: 18, background: "var(--tBg)", border: "1px solid var(--tBd)", cursor: "pointer", display: "flex", alignItems: "center", gap: 11, textAlign: "left", fontFamily: "inherit", boxShadow: "none" }}>
             <Ik d={IC.verejny} c="var(--tInk)" />
-            <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}><span style={{ fontSize: 15, fontWeight: 800, color: "var(--tInk)" }}>Verejný profil</span><span style={{ fontSize: 12, color: "var(--tInk2)" }}>ako ho vidia farníci</span></span>
+            <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}><span style={{ fontSize: 15, fontWeight: 800, color: "var(--tInk)" }}>Verejný profil</span><span style={{ fontSize: 12, color: "var(--tInk2)" }}>ako ho vidia veriaci</span></span>
             <span aria-hidden="true" style={{ fontSize: 18, color: "var(--tInk)" }}>›</span>
           </button>
           <TlacidloNastavenia on={aktivna === "nast"} onClick={() => go("nast")} />

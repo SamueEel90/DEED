@@ -137,7 +137,7 @@ export function ParteMiniatura({ s, w = 52, h = 64 }: { s: SmutocnyData; w?: num
 }
 
 // ============================================================
-// FORMULÁR — OPRAVY 163: jeden modul šablón (Sablony.tsx) pre farára aj farníka.
+// FORMULÁR — OPRAVY 163: jeden modul šablón (Sablony.tsx) pre farára aj veriaceho.
 // Režim šablóna = formulár parte + 8 šablón; režim obrázok = vlastné parte + tie isté polia (kalendár, hľadanie).
 // ============================================================
 export function SmutocnyForm({ farnost, autor, farar, onPublish }: {

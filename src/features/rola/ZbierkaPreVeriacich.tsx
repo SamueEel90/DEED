@@ -112,7 +112,7 @@ export function ZbierkaSOverovatelom({ stranka, menoFarnosti, ucetFarnosti, mobi
   const pridajSkusobne = () => { // len testovacia verzia
     [1, 2].forEach((n) => pridajPrispevok(stranka, {
       id: `naboz-test-${Date.now()}-${n}`, comp: "data", typ: "skutok", modul: "charity", kat: "Komunita", ntyp: "oznam", skore: 6, typSituacie: "normal", dni: 0, podpora: 0,
-      farnostId: stranka, cirkev: "", komunita: "farník (test)", nazov: `Skúšobné ${T.ozn} ${n}`, tag: "Oznam", popis: "pridal farník · skúšobné", ukat: druh === "ine" ? undefined : druh, vytvorene: Date.now() - n * 3600000, platnostDni: 7,
+      farnostId: stranka, cirkev: "", komunita: "veriaci (test)", nazov: `Skúšobné ${T.ozn} ${n}`, tag: "Oznam", popis: "pridal veriaci · skúšobné", ukat: druh === "ine" ? undefined : druh, vytvorene: Date.now() - n * 3600000, platnostDni: 7,
     }));
     setNaStranke(vlastnePrispevkyVsetky(stranka));
   };

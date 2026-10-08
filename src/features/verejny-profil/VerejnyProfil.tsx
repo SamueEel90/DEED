@@ -57,7 +57,7 @@ function VerejnyProfilObsah({ kluc, onBack }: { kluc: string; onBack: () => void
   const [stream, setStream] = useState<string | null>(null);
   // doplnky 4. 10.: záznam z kroniky / rokov — skutok, akcia, ukončená zbierka (bez platby), Iskra = Iskry na tom videu
   const [zaznam, setZaznam] = useState<PolCh | null>(null);
-  const [novyOdF, setNovyOdF] = useState<string | null>(null); // KARTA 56I: nová položka Od farníkov je zvýraznená
+  const [novyOdF, setNovyOdF] = useState<string | null>(null); // KARTA 56I: nová položka Od veriacich je zvýraznená
   const pc = usePc1200();
   const otvorZaznam = (p: PolCh) => {
     if (p.typ === "is") { const id = p.id.replace(/^k-/, ""); otvorIskry(iskryVsetky().some((v) => v.id === id) ? id : undefined); return; }
@@ -94,7 +94,7 @@ function VerejnyProfilObsah({ kluc, onBack }: { kluc: string; onBack: () => void
 
   // OPRAVY 148: žiadny testovací pás na verejnej stránke (testuje sa v Správe). Vzhľad pri všetkých typoch —
   // firma a tvorca majú zatiaľ jedno vlastné podanie; keď správca vyberie vzhľad, ukáže sa podanie charity s ich dátami.
-  // KARTA 56I: farnosť — sekcia Od farníkov a zelené + Pridať (farník pridáva sám)
+  // KARTA 56I: farnosť — sekcia Od veriacich a zelené + Pridať (veriaci pridáva sám)
   const farnost = profil.typ === "farnost";
   const fab = farnost && fabZapnuty(profil.k);
   const odF = (pad?: string) => farnost ? <OdFarnikov strankaId={profil.k} novy={novyOdF} pad={pad} fab={fab} /> : undefined;

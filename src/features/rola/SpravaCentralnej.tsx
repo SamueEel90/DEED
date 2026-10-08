@@ -102,13 +102,13 @@ export function SpravaCentralnej({ strankaId, nazov, hlavnyUcet, tier, mobil, to
   const hlavnaSuma = farnost ? suhrnHlavnej(strankaId, idZbierky).suma : darov.suma; // farnosť: okná sú v hlavnej (jedno číslo)
   const mesiac = c.mesiac + hlavnaSuma, spolu = c.spolu + hlavnaSuma;
   const sektor = useSektorDarcu();
-  // farnosť: mená bez súm; uzavreté omšové týždne = jeden riadok „spoločný dar farníkov"; suma hlavnej už okná obsahuje
+  // farnosť: mená bez súm; uzavreté omšové týždne = jeden riadok „spoločný dar veriacich"; suma hlavnej už okná obsahuje
   const om = useOmsoveOkno(strankaId);
   const ja = usePouzivatel();
   const spustena = !farnost || !!d.spustena;
   const farnostDary: [string, string, string][] = !farnost ? [] : [
     ...[...om.dary, ...darcoviaPre(idZbierky)].sort((a, b) => b.cas - a.cas).map((r) => [identitaDarcu(r, ja, "viera"), `${relCas(r.cas)}${r.refId === om.okno.id ? " · na najbližšiu omšu" : ""}`, ""] as [string, string, string]),
-    ...om.uzavrete.map((o) => [`Omšová zbierka ${o.nedela}`, "spoločný dar farníkov", ""] as [string, string, string]),
+    ...om.uzavrete.map((o) => [`Omšová zbierka ${o.nedela}`, "spoločný dar veriacich", ""] as [string, string, string]),
   ].slice(0, 3);
   const realne: [string, string, string][] = farnost ? farnostDary : darcoviaPre(idZbierky).slice(0, 3).map((r) => [identitaDarcu(r, undefined, sektor), relCas(r.cas), zobrazenaSuma(r) ?? ""]);
   const dary = realne.length ? realne : ukazky ? (farnost ? DARY_TEST.map(([m, k]) => [m === "Anonymný darca" ? "Bohu známy darca" : m, k.replace(" · mesačne", ""), ""] as [string, string, string]) : DARY_TEST) : [];

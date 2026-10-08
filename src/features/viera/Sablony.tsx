@@ -1,6 +1,6 @@
 // ============================================================
 // OPRAVY 163 · Šablóny oznámení — JEDEN modul pre parte, svadobné oznámenie a oznámenie.
-// Používa ho farár (Zbierka s overovateľom, krok 2) aj farník (Pridať → parte, SmutocnyForm).
+// Používa ho farár (Zbierka s overovateľom, krok 2) aj veriaci (Pridať → parte, SmutocnyForm).
 // Prototyp „Sablony oznameni": 8 rozložení · motív (11 symbolov, pri svadbe 6) · s fotkou / bez ·
 // čiernobielo / farebne · farby podľa vzhľadu profilu (Kronika zelená · Nástenka zlatá · Moderné modrá).
 // Ornament: pätkové písmo a meno písaným — výnimka z Plus Jakarta len pre tento plagát.

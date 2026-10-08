@@ -596,12 +596,12 @@ const FARNOST: TestProfil = {
     { id: "zf-misie", nazov: "Misijná nedeľa", popis: "Zbierka na misie z Misijnej nedele.", mesto: "Trenčín", foto: FO.misie, vyzbierane: 820, ludia: 64, stav: "ukoncena", skoncila: "28. 9.", spravaDarcom: "Ďakujeme všetkým, peniaze sme poslali na misie.", d: "28.", m: "SEP", rok: 2026 },
   ],
   skutky: [
-    { id: "skf-brigada", nazov: "Brigáda na cintoríne", popis: "22 farníkov · 4 hodiny", mesto: "Trenčín", kedy: "13. 9.", foto: FO.pohreb, dobrovolnici: 22, d: "13.", m: "SEP", rok: 2026 },
+    { id: "skf-brigada", nazov: "Brigáda na cintoríne", popis: "22 veriacich · 4 hodiny", mesto: "Trenčín", kedy: "13. 9.", foto: FO.pohreb, dobrovolnici: 22, d: "13.", m: "SEP", rok: 2026 },
     { id: "skf-prijimanie", nazov: "Prvé sväté prijímanie 42 detí", popis: "farský kostol", mesto: "Trenčín", kedy: "10. 5. 2024", foto: FO.deti, d: "10.", m: "MÁJ", rok: 2024 },
     { id: "skf-deed", nazov: "Farnosť na DEED+", popis: "prvé ohlášky v appke", mesto: "Trenčín", kedy: "18. 11. 2023", foto: FO.kostol, d: "18.", m: "NOV", rok: 2023 },
   ],
   oznamy: [
-    { id: "of-ohlasky", druh: "oznam", nadpis: "Ohlášky na tento týždeň", stitok: "OHLÁŠKY · 27. NEDEĽA", text: "Ruženec denne 17:30 · v piatok prvopiatková spoveď od 16:00", mesto: "Trenčín", den: "5.", mesiac: "OKT", tlacidlo: "Čítať", pod: "412 farníkov si prečítalo" },
+    { id: "of-ohlasky", druh: "oznam", nadpis: "Ohlášky na tento týždeň", stitok: "OHLÁŠKY · 27. NEDEĽA", text: "Ruženec denne 17:30 · v piatok prvopiatková spoveď od 16:00", mesto: "Trenčín", den: "5.", mesiac: "OKT", tlacidlo: "Čítať", pod: "412 veriacich si prečítalo" },
     { id: "of-zmena", druh: "vyzva", nadpis: "V stredu ranná omša nebude", stitok: "ZMENA PROGRAMU", text: "Večerná omša o 18:00 v kaplnke sv. Anny", mesto: "Trenčín", den: "8.", mesiac: "OKT", tlacidlo: "Pripomenúť", pod: "poslané sledujúcim" },
     { id: "of-brigada", druh: "akcia", nadpis: "Upratovanie fary a záhrady", stitok: "BRIGÁDA · SOBOTA 9:00", text: "Marka Aurela 6 · rukavice a náradie máme", mesto: "Trenčín", den: "11.", mesiac: "OKT", tlacidlo: "Prídem", pod: "prídu 9 ľudia" },
   ],

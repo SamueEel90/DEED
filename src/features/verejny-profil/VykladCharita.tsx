@@ -33,7 +33,7 @@ const kdeZb = (z: TestZbierka) => [z.mesto, z.stav === "dlhodoba" ? "dlhodobá" 
 // oznam „Tento týždeň u nás": dátum vo farbe druhu, súrne #8E3B2F
 const OZ_FARBA = { vyzva: ["#8E3B2F", "var(--red)"], akcia: [druhF("akcia"), druhT("akcia")], oznam: ["#3A342A", "var(--ink2)"] } as const;
 
-export function VykladCharita({ profil, onDetail, onZaznam, onBack, odFarnikov }: { /** KARTA 56I: sekcia Od farníkov (farnosť) */ odFarnikov?: ReactNode; profil: TestProfil; onDetail: (z: TestZbierka) => void; onZaznam: (p: PolCh) => void; onBack: () => void }) {
+export function VykladCharita({ profil, onDetail, onZaznam, onBack, odFarnikov }: { /** KARTA 56I: sekcia Od veriacich (farnosť) */ odFarnikov?: ReactNode; profil: TestProfil; onDetail: (z: TestZbierka) => void; onZaznam: (p: PolCh) => void; onBack: () => void }) {
   const pc = usePc();
   const mob = !pc;
   const domace = useDomaceMesto(profil);
