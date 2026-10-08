@@ -13,7 +13,7 @@ import { useEffect, useRef, useState, useSyncExternalStore, type CSSProperties, 
 import { createPortal } from "react-dom";
 import { usePouzivatel } from "@/lib/pouzivatel";
 import { nacitajSelfAdd } from "@/features/viera/UserOznamy";
-import { DRUHY_FARNIKA, CEZ_EDITOR, nacitajSmie, smie, odFarnikov, pridajOdFarnika, upravOdFarnika, prepniVPolozke, pocetSus, useOdFarnikov, type DruhFarnika, type PolozkaFarnika, type FormularVeriaceho } from "@/lib/odFarnikov";
+import { DRUHY_FARNIKA, CEZ_EDITOR, nacitajSmie, smie, odFarnikov, pridajOdFarnika, upravOdFarnika, prepniVPolozke, pocetSus, useOdFarnikov, useCerstveOdFarnikov, type DruhFarnika, type PolozkaFarnika, type FormularVeriaceho } from "@/lib/odFarnikov";
 import { normCas, dokonciCas, casNeexistuje, CAS_OK, pekny } from "@/lib/kalendarFarnosti";
 import { bezDataUrl } from "@/lib/uploadFoto";
 import type { MediumZbierky } from "@/lib/novaZbierka";
@@ -68,7 +68,7 @@ function Pozvanie({ x, strankaId, kto, reg }: { x: PolozkaFarnika; strankaId: st
   const info = (zav ? `prihlásených ${n}${lim ? ` z ${lim}` : ""}` : n ? `zúčastní sa ${ludi(n)}` : "zatiaľ nikto") + (zav ? " · záväzne, menom" : " · nezáväzne");
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", paddingTop: 4 }}>
-      <button type="button" disabled={plne} aria-pressed={ja} onClick={() => { if (!reg) { toast("Prihláste sa v DEED."); return; } prepniVPolozke(strankaId, x.id, "ucast", kto); }}
+      <button type="button" disabled={plne} aria-pressed={ja} onClick={() => { if (zav && !reg) { toast("Prihlásiť sa menom môžu len registrovaní v DEED."); return; } prepniVPolozke(strankaId, x.id, "ucast", kto); }}
         style={{ minHeight: 48, padding: "0 18px", borderRadius: 13, border: ja ? "1.5px solid var(--gBd)" : "none", background: ja ? "var(--gSoft)" : plne ? "var(--btn)" : ZELENA, color: ja ? "var(--gInk)" : plne ? "var(--ink3)" : "#fff", cursor: plne ? "default" : "pointer", fontFamily: "inherit", fontSize: 15, fontWeight: 800 }}>{t}</button>
       <span style={{ fontSize: 13.5, color: "var(--ink3)" }}>{info}</span>
     </div>);
@@ -157,7 +157,7 @@ function posunDen(iso: string, o: number) { const [y, m, d] = iso.split("-").map
 
 /** sekcia „Od veriacich" na verejnej stránke (cieľ „Pozrieť na stránke ›") + Galéria farnosti */
 export function OdFarnikov({ strankaId, novy, pad, fab }: { strankaId: string; novy?: string | null; pad?: string; /** tlačidlo + Pridať je zapnuté */ fab: boolean }) {
-  useOdFarnikov();
+  useOdFarnikov(); useCerstveOdFarnikov(strankaId);
   const ja = usePouzivatel();
   const kto = klucJa(ja), reg = ja.typ !== "pasivny";
   const [flt, setFlt] = useState<Filter>("vse");
@@ -200,7 +200,7 @@ export function OdFarnikov({ strankaId, novy, pad, fab }: { strankaId: string; n
               <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}><Sviecka s={44} /><span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 4 }}><b style={{ fontSize: 18, lineHeight: 1.25 }}>{x.t}</b>{x.s && <span style={{ fontSize: 15.5, lineHeight: 1.5, color: "var(--ink2)", whiteSpace: "pre-line" }}>{x.s}</span>}</span></div>
               {/* E.6: Modlím sa s vami + počet */}
               <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-                <button type="button" aria-pressed={modJa} onClick={() => { if (!reg) { toast("Prihláste sa v DEED."); return; } prepniVPolozke(strankaId, x.id, "modl", kto); }} style={{ minHeight: 48, padding: "0 18px", borderRadius: 13, border: `1.5px solid ${modJa ? "var(--gBd)" : "var(--cardBd)"}`, background: modJa ? "var(--gSoft)" : "var(--card)", color: modJa ? "var(--gInk)" : "var(--ink)", cursor: "pointer", fontFamily: "inherit", fontSize: 15, fontWeight: 800 }}>{modJa ? "Modlíte sa s nami ✓" : "Modlím sa s vami"}</button>
+                <button type="button" aria-pressed={modJa} onClick={() => prepniVPolozke(strankaId, x.id, "modl", kto)} style={{ minHeight: 48, padding: "0 18px", borderRadius: 13, border: `1.5px solid ${modJa ? "var(--gBd)" : "var(--cardBd)"}`, background: modJa ? "var(--gSoft)" : "var(--card)", color: modJa ? "var(--gInk)" : "var(--ink)", cursor: "pointer", fontFamily: "inherit", fontSize: 15, fontWeight: 800 }}>{modJa ? "Modlíte sa s nami ✓" : "Modlím sa s vami"}</button>
                 <span style={{ fontSize: 13.5, color: "var(--ink3)" }}>{modl.length ? `modlí sa ${ludi(modl.length)}` : "Buďte prvý, kto sa pridá k modlitbe"}</span>
               </div>
             </> : <>
@@ -210,7 +210,7 @@ export function OdFarnikov({ strankaId, novy, pad, fab }: { strankaId: string; n
             {!!x.pozv && x.k === "udalost" && <Pozvanie x={x} strankaId={strankaId} kto={kto} reg={reg} />}
             {/* E.8: pod parte Úprimnú sústrasť */}
             {x.k === "parte" && <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-              <button type="button" aria-pressed={susJa} onClick={() => { if (!reg) { toast("Prihláste sa v DEED."); return; } prepniVPolozke(strankaId, x.id, "sustrast", kto); }} style={{ minHeight: 48, padding: "0 18px", borderRadius: 13, border: "1.5px solid var(--cardBd)", background: susJa ? "var(--btn)" : "var(--card)", color: "var(--ink)", cursor: "pointer", fontFamily: "inherit", fontSize: 15, fontWeight: 800 }}>{susJa ? "Prejavili ste sústrasť ✓" : "Úprimnú sústrasť"}</button>
+              <button type="button" aria-pressed={susJa} onClick={() => prepniVPolozke(strankaId, x.id, "sustrast", kto)} style={{ minHeight: 48, padding: "0 18px", borderRadius: 13, border: "1.5px solid var(--cardBd)", background: susJa ? "var(--btn)" : "var(--card)", color: "var(--ink)", cursor: "pointer", fontFamily: "inherit", fontSize: 15, fontWeight: 800 }}>{susJa ? "Prejavili ste sústrasť ✓" : "Úprimnú sústrasť"}</button>
               <span style={{ fontSize: 13.5, color: "var(--ink3)" }}>{pocetSus(x) ? `sústrasť prejavilo ${ludi(pocetSus(x))}` : "Rodina dostane raz denne súhrn, nebude jej to vyzváňať."}</span>
             </div>}
             <MenuPrispevku x={x} strankaId={strankaId} kto={kto} moje={moje} />

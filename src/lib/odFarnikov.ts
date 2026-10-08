@@ -4,8 +4,8 @@
 // „Čo smú veriaci pridať sami" = 8 prepínačov (predvolene všetky zapnuté) = oblasť farniksmie.
 // Pridané položky = oblasť odfarnikov (KV stav farnosti, zrkadlo naboz_stav). Zverejní sa hneď, farár môže zmazať.
 // ============================================================
-import { useSyncExternalStore } from "react";
-import { nacitajStav, ulozStav } from "@/features/viera/stav";
+import { useEffect, useSyncExternalStore } from "react";
+import { nacitajStav, ulozStav, obnovOblast } from "@/features/viera/stav";
 
 export type DruhFarnika = "parte" | "svadba" | "ine" | "oznam" | "udalost" | "umysel" | "fotky" | "modlitba";
 /** k · názov · popis v Správe · popis vo výbere veriaceho · vždy zadarmo */
@@ -51,14 +51,16 @@ export const pocetNahl = (x: PolozkaFarnika) => x.nahlasili?.length ?? x.nahl ??
 export const pocetSus = (x: PolozkaFarnika) => x.sustrast?.length ?? x.sus ?? 0;
 /** prepne kľúč účtu v zozname (Zúčastním sa, Modlím sa, Sústrasť, Nahlásiť) */
 export function prepniVPolozke(id: string, pid: string, pole: "ucast" | "modl" | "sustrast" | "nahlasili", kto: string, len?: "pridat") {
-  ulozStav("odfarnikov", id, odFarnikov(id).map((x) => {
-    if (x.id !== pid) return x;
-    const l = x[pole] ?? [];
-    const ma = l.includes(kto);
-    if (ma && len === "pridat") return x;
-    return { ...x, [pole]: ma ? l.filter((y) => y !== kto) : [...l, kto] };
+  const x = odFarnikov(id).find((y) => y.id === pid);
+  if (!x) return;
+  const ma = (x[pole] ?? []).includes(kto);
+  if (ma && len === "pridat") return;
+  const chce = !ma; // OPRAVY 178: želaný stav, nie prepínač — na čerstvom zozname sa nastaví rovnako
+  zmenZoznam(id, (l) => l.map((y) => {
+    if (y.id !== pid) return y;
+    const z = (y[pole] ?? []).filter((k) => k !== kto);
+    return { ...y, [pole]: chce ? [...z, kto] : z };
   }));
-  zmena();
 }
 
 let verzia = 0;
@@ -66,12 +68,17 @@ const posl = new Set<() => void>();
 const zmena = () => { verzia++; posl.forEach((f) => f()); };
 export function ulozSmie(id: string, s: SmieFarnika) { ulozStav("farniksmie", id, s); zmena(); }
 export const odFarnikov = (id: string): PolozkaFarnika[] => nacitajStav<PolozkaFarnika[]>("odfarnikov", id, []);
-export function pridajOdFarnika(id: string, p: PolozkaFarnika) { ulozStav("odfarnikov", id, [p, ...odFarnikov(id)]); zmena(); }
-export function zmazOdFarnika(id: string, pid: string) { ulozStav("odfarnikov", id, odFarnikov(id).filter((x) => x.id !== pid)); zmena(); }
+/** OPRAVY 178: každá zmena zoznamu hneď lokálne a potom znova na čerstvom stave z DB (iní ľudia medzitým mohli pridať alebo reagovať) */
+function zmenZoznam(id: string, f: (l: PolozkaFarnika[]) => PolozkaFarnika[]) {
+  ulozStav("odfarnikov", id, f(odFarnikov(id))); zmena();
+  void obnovOblast("odfarnikov", id).then((ok) => { if (ok) { ulozStav("odfarnikov", id, f(odFarnikov(id))); zmena(); } }, () => undefined);
+}
+export function pridajOdFarnika(id: string, p: PolozkaFarnika) { zmenZoznam(id, (l) => [p, ...l.filter((x) => x.id !== p.id)]); }
+export function zmazOdFarnika(id: string, pid: string) { zmenZoznam(id, (l) => l.filter((x) => x.id !== pid)); }
 /** KARTA 57 D.3: zmazať viac naraz */
-export function zmazOdFarnikov(id: string, pids: string[]) { const z = new Set(pids); ulozStav("odfarnikov", id, odFarnikov(id).filter((x) => !z.has(x.id))); zmena(); }
+export function zmazOdFarnikov(id: string, pids: string[]) { const z = new Set(pids); zmenZoznam(id, (l) => l.filter((x) => !z.has(x.id))); }
 /** KARTA 57 D.2: oprava farára (nadpis, text) */
-export function upravOdFarnika(id: string, pid: string, patch: Partial<PolozkaFarnika>) { ulozStav("odfarnikov", id, odFarnikov(id).map((x) => (x.id === pid ? { ...x, ...patch } : x))); zmena(); }
+export function upravOdFarnika(id: string, pid: string, patch: Partial<PolozkaFarnika>) { zmenZoznam(id, (l) => l.map((x) => (x.id === pid ? { ...x, ...patch } : x))); }
 
 /** KARTA 57 D.4–D.5: nastavenie farára (upozornenia) a čas, keď naposledy otvoril Od veriacich */
 export interface NastavenieOdVeriacich { upozornit: boolean; videne: number }
@@ -89,4 +96,8 @@ export function pocetyOdVeriacich(id: string) {
 /** prekreslenie pri zmene nastavenia alebo zoznamu */
 export function useOdFarnikov(): number {
   return useSyncExternalStore((f) => { posl.add(f); return () => { posl.delete(f); }; }, () => verzia);
+}
+/** OPRAVY 178: pri otvorení stránky / Správy stiahni čerstvé príspevky a reakcie (aj od iných ľudí) */
+export function useCerstveOdFarnikov(id: string) {
+  useEffect(() => { let ziva = true; void obnovOblast("odfarnikov", id).then((ok) => { if (ok && ziva) zmena(); }, () => undefined); return () => { ziva = false; }; }, [id]);
 }

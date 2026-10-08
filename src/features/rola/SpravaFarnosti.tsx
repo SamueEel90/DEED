@@ -9,7 +9,7 @@ import { useLayout } from "@/components/context";
 import { toast } from "@/components/toast";
 import { type KostolFarnosti } from "@/features/viera/mock";
 import { nacitajStav, ulozStav } from "@/features/viera/stav";
-import { odFarnikov, pocetyOdVeriacich, useOdFarnikov } from "@/lib/odFarnikov";
+import { odFarnikov, pocetyOdVeriacich, useOdFarnikov, useCerstveOdFarnikov } from "@/lib/odFarnikov";
 import { OdVeriacich } from "./OdVeriacich";
 import { OmseKalendar, TyzdenVPrehlade } from "./OmseKalendar";
 import { PrihovorNaStranke } from "@/features/verejny-profil/PrihovorNaStranke";
@@ -156,7 +156,7 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
   const mobil = !desktop;
   const telefon = mobil && !tablet;
   // KARTA 56I · 57 B.4: čo pridali veriaci — počet pri „Od veriacich" (úmysly idú len farárovi, nerátajú sa)
-  useOdFarnikov();
+  useOdFarnikov(); useCerstveOdFarnikov(strankaId); // OPRAVY 178: čerstvé príspevky a nahlásenia pre Treba vybaviť
   const odF = odFarnikov(strankaId);
   const odFPocet = odF.filter((x) => x.k !== "umysel").length;
   const odV = pocetyOdVeriacich(strankaId);

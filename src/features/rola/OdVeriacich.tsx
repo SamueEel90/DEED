@@ -6,7 +6,7 @@
 // ============================================================
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { nacitajSelfAdd, ulozSelfAdd } from "@/features/viera/UserOznamy";
-import { DRUHY_FARNIKA, CEZ_EDITOR, nacitajSmie, ulozSmie, smie, odFarnikov, upravOdFarnika, zmazOdFarnika, zmazOdFarnikov, nastavenieOdVeriacich, ulozNastavenieOdVeriacich, useOdFarnikov, pocetNahl, pocetSus, type DruhFarnika, type PolozkaFarnika } from "@/lib/odFarnikov";
+import { DRUHY_FARNIKA, CEZ_EDITOR, nacitajSmie, ulozSmie, smie, odFarnikov, upravOdFarnika, zmazOdFarnika, zmazOdFarnikov, nastavenieOdVeriacich, ulozNastavenieOdVeriacich, useOdFarnikov, useCerstveOdFarnikov, pocetNahl, pocetSus, type DruhFarnika, type PolozkaFarnika } from "@/lib/odFarnikov";
 import { otvorVerejnyProfil } from "@/features/verejny-profil/otvor";
 import { PodrzZmaz, TextOznamu } from "./OznamyFarnosti";
 import { cistyText } from "./obsahZbierky";
@@ -58,7 +58,7 @@ function Oprava({ x, strankaId }: { x: PolozkaFarnika; strankaId: string }) {
 }
 
 export function OdVeriacich({ strankaId, mobil, toast }: { strankaId: string; mobil: boolean; toast: (m: string) => void }) {
-  useOdFarnikov();
+  useOdFarnikov(); useCerstveOdFarnikov(strankaId);
   const vsetko = odFarnikov(strankaId);
   const umysly = vsetko.filter((x) => x.k === "umysel");
   const L = vsetko.filter((x) => x.k !== "umysel");
