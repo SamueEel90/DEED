@@ -58,6 +58,8 @@ export interface Repo {
   };
   aktivity: {
     feed(): Promise<AktivitaItem[]>;
+    /** Vytvor nový príspevok Aktivít (zápis do DB). Vráti `id` nového príspevku, null pri mocku. */
+    vytvor(it: AktivitaItem, autorUcetId?: string | null): Promise<string | null>;
   };
   mapa: {
     body(): Promise<MapaBod[]>;
@@ -146,6 +148,7 @@ export const mockRepo: Repo = {
   },
   aktivity: {
     feed: () => ok(SEED_ITEMS as unknown as AktivitaItem[]),
+    vytvor: () => ok(null),
   },
   mapa: {
     // body z mocku: skutky odvodené z Domov POLOZKY (majú lat/lng) + statické udalosti

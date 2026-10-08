@@ -6,6 +6,7 @@
 // numerické `id` (1–34) prichádzajú z `data` → komponent ostáva nezmenený.
 // ============================================================
 import { supabase } from "@/lib/supabase";
+import { nahrajFotky } from "@/lib/uploadFoto";
 import type { AktivitaItem } from "@/types";
 
 /** riadok `prispevok` (data.akt) → AktivitaItem (EN slovník karty). */
@@ -64,4 +65,39 @@ export const aktivitySupabase = {
     if (error) throw error;
     return (data || []).map(naAktivitaItem);
   },
+  async vytvor(it: AktivitaItem, autorUcetId?: string | null): Promise<string | null> {
+    if (!supabase) return null;
+    const fotky = await nahrajFotky(it.fotky ?? []); // data URL → Storage (passthrough ak zlyhá)
+    // zrkadlo naAktivitaItem (tvar ako seed 0009): EN polia karty idú do `data` (diskriminátor akt:true → feed aktivity)
+    const { data, error } = await supabase.from("prispevok").insert({
+      autor_ucet_id: autorUcetId ?? null,
+      autor_nazov: it.author ?? null,
+      autor_ini: it.ini ?? null,
+      autor_pfp: it.pfp ?? null,
+      autor_karma: it.karma ?? null,
+      modul: MODUL[it.type as string] ?? "good",
+      feed: "aktivity",
+      typ: it.type === "help" ? "ziadost" : it.type,
+      kat: it.dom ?? null,
+      titul: it.title ?? null,
+      popis: it.desc ?? null,
+      emoji: it.emoji ?? null,
+      media: { druh: it.media ?? null, fotky },
+      lok: it.loc ?? null,
+      narodne: /online/i.test(it.loc || ""),
+      typ_situacie: "normal",
+      // skóre a overené zapisuje len server (0039); príspevok začína neoverený
+      vyznam: it.importance ?? null,
+      pomocnici: it.helpers ?? null,
+      data: {
+        akt: true, id: it.id, type: it.type, size: it.size, time: it.time,
+        price: it.price, priceTxt: it.priceTxt, seats: it.seats, rating: it.rating, profi: it.profi,
+      },
+    }).select("id").single();
+    if (error) throw error;
+    return (data?.id as string) ?? null;
+  },
 };
+
+// EN type karty → modul príspevku (ako seed 0009); skutok/talent = good
+const MODUL: Record<string, string> = { help: "help", workshop: "workshop", case: "charity" };
