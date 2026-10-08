@@ -13,7 +13,9 @@ import {
   importLegacyFollows, legacyNaImport, demoSeed, zaujmyNaKluce, zaujemZOblasti,
   nacitajPodporyDB, pridajPodporuDB,
   nacitajOblubeneDB, pridajOblubeneDB, odoberOblubeneDB,
-  nacitajZbierkyDB, vytvorZbierkuDB, upravZbierkuDB, normalizujZaujmy } from "./personalizaciaStore";
+  nacitajZbierkyDB, vytvorZbierkuDB, upravZbierkuDB, normalizujZaujmy,
+  nacitajSledovaniDB, pridajSledovanieDB, odoberSledovanieDB } from "./personalizaciaStore";
+import { toast } from "@/components/toast";
 import type { Zaujem, Sledovanie, Podpora, Oblubeny, MojaZbierka } from "@/types";
 
 export interface PersonalizaciaApi {
@@ -123,6 +125,26 @@ export function PersonalizaciaProvider({ children }: { children: ReactNode }) {
     return () => { zrusene = true; };
   }, [demo, ucetId]);
 
+  // Sledovanie zo Supabase (owner-only cez ucet_id). DB je autoritatívna; čo je len v tomto prehliadači
+  // (staré sledovania z localStorage), sa raz dopíše do DB. Demo bez účtu ostáva lokálne.
+  useEffect(() => {
+    if (!USE_SUPABASE || !ucetId || demo || !hydratovane) return;
+    let zrusene = false;
+    nacitajSledovaniDB()
+      .then((db) => {
+        if (zrusene) return;
+        setSledovani((lokal) => {
+          const vDb = new Set(db.map((x) => x.meno));
+          const lenLokal = lokal.filter((x) => !vDb.has(x.meno));
+          lenLokal.forEach((x) => { pridajSledovanieDB(ucetId, x).catch(() => { /* skúsi sa pri ďalšom otvorení */ }); });
+          const vzhlad = new Map(lokal.map((x) => [x.meno, x]));
+          return [...lenLokal, ...db.map((x) => ({ ...vzhlad.get(x.meno), ...x }))];
+        });
+      })
+      .catch(() => { /* DB nedostupná → ostáva lokálny stav */ });
+    return () => { zrusene = true; };
+  }, [ucetId, demo, hydratovane]);
+
   // Moje zbierky zo Supabase (owner-only cez auth.uid() — anon session). Bez DB → no-op.
   useEffect(() => {
     if (!USE_SUPABASE) return;
@@ -157,9 +179,13 @@ export function PersonalizaciaProvider({ children }: { children: ReactNode }) {
     zaujmyKluce: zaujmyNaKluce(zaujmy),
     sledovani,
     sledujem: (meno) => sledovani.some((s) => s.meno === meno),
-    toggleSledovanie: (s) => setSledovani((xs) => xs.some((x) => x.meno === s.meno)
-      ? xs.filter((x) => x.meno !== s.meno)
-      : [s, ...xs]),
+    toggleSledovanie: (s) => {
+      const je = sledovani.some((x) => x.meno === s.meno);
+      // write-through do DB (len reálny účet); pri chybe hláška — inak by sledovanie zmizlo po prihlásení inde
+      if (USE_SUPABASE && ucetId && !demo) (je ? odoberSledovanieDB(s.meno) : pridajSledovanieDB(ucetId, { ...s, od: s.od ?? new Date().toISOString() }))
+        .catch(() => toast("Sledovanie sa nepodarilo uložiť — platí len na tomto zariadení."));
+      setSledovani((xs) => je ? xs.filter((x) => x.meno !== s.meno) : [s, ...xs]);
+    },
     sledovaniMena: new Set(sledovani.map((s) => s.meno)),
     podpory,
     pridajPodporu: (p) => {

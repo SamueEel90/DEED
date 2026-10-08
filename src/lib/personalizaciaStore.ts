@@ -299,3 +299,22 @@ export function demoSeed(): Omit<PersonalizaciaStav, "nacitavam"> {
     ],
   };
 }
+
+// ---- SLEDOVANIE v DB (tabuľka `sledovanie`, owner-only cez ucet_id — RLS 0055) ----
+// V DB je meno, typ a čas; emoji/tint ostávajú z lokálneho záznamu (len vzhľad). Bez DB → no-op.
+export async function nacitajSledovaniDB(): Promise<Sledovanie[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase.from("sledovanie").select("autor, typ, cas").order("cas", { ascending: false });
+  if (error) throw error;
+  return (data || []).map((r): Sledovanie => ({ meno: r.autor, typ: r.typ, od: r.cas }));
+}
+export async function pridajSledovanieDB(ucetId: string, s: Sledovanie): Promise<void> {
+  if (!supabase) return;
+  const { error } = await supabase.from("sledovanie").insert({ ucet_id: ucetId, autor: s.meno, typ: s.typ, ...(s.od ? { cas: s.od } : {}) });
+  if (error && error.code !== "23505") throw error; // už sledujem → nie je chyba
+}
+export async function odoberSledovanieDB(meno: string): Promise<void> {
+  if (!supabase) return;
+  const { error } = await supabase.from("sledovanie").delete().eq("autor", meno);
+  if (error) throw error;
+}
