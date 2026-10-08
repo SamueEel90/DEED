@@ -46,7 +46,8 @@ import { najdiKampan } from "@/features/cudzi-profil/orgy";
 import type { Dokaz } from "@/lib/zbierky";
 import { najdiZbierku, kryptoZbierky, odznakZbierky } from "@/lib/zbierky";
 import { DokazBlok, MediaNahlad } from "./DokazBlok";
-import { nacitajViditelnost, nacitajTerminal, nacitajKryptoOrg, nacitajCentralnu, nacitajSady, nacitajOnas, nacitajTvarLoga, nacitajZdrojAvatara, nacitajLogo, type Pozicia, type Tier } from "./stav";
+import { nacitajViditelnost, nacitajTerminal, nacitajKryptoOrg, nacitajCentralnu, nacitajSady, nacitajOnas, nacitajTvarLoga, nacitajZdrojAvatara, nacitajLogo, STRANKA_POZICIE, type Pozicia, type Tier } from "./stav";
+import { useVerejneNastavenia } from "@/lib/verejneNastavenia";
 import { OnasKratky } from "./OnasKratky";
 import { KontaktBlok, nacitajKontakt } from "./kontakt";
 import { nacitajProfil as nacitajProfilStranky, profilZPamate, type ProfilStranky } from "@/lib/profilStranky";
@@ -133,6 +134,7 @@ export function Podstranka({ pozicia, tier: tierStranky = 0, logo, toast, onBack
   const s = SUBJEKTY[pozicia];
   // OPRAVY 107: uložený profil zo správy (lib/profilStranky); staré úložisko len záloha, kým nie je nič uložené
   const [ulozeny, setUlozeny] = useState<ProfilStranky | null>(() => (strankaId ? profilZPamate(strankaId).ulozeny : null));
+  useVerejneNastavenia(strankaId ?? STRANKA_POZICIE[pozicia]); // rýchle sumy, krypto, viditeľnosť súm z DB (0070)
   useEffect(() => { if (!strankaId) return; let ziva = true; void nacitajProfilStranky(strankaId).then((z) => { if (ziva) setUlozeny(z.ulozeny); }); return () => { ziva = false; }; }, [strankaId]);
   const pr0 = profilNahlad ?? ulozeny;
   const pr = ts.prazdny && pr0 ? vyprazdni(pr0) : pr0;
@@ -252,7 +254,7 @@ export function Podstranka({ pozicia, tier: tierStranky = 0, logo, toast, onBack
   useZmenyCentralnej();
   useEffect(() => { if (strankaId) void nacitajCentralnuZbierku(strankaId); }, [strankaId]);
   const centr = strankaId ? centralnaZPamate(strankaId) : null;
-  const maCentralnu = pozicia === "charita" && tier >= 1 && (nacitajCentralnu("charita") || !!centr);
+  const maCentralnu = pozicia === "charita" && tier >= 1 && (nacitajCentralnu("charita", strankaId) || !!centr);
   const [zvoncek, setZvoncek] = useState(false);
   const [qr, setQr] = useState(false);
   const [menu, setMenu] = useState(false);
@@ -304,8 +306,8 @@ export function Podstranka({ pozicia, tier: tierStranky = 0, logo, toast, onBack
   // centrálna zbierka organizácie (pre seba) — charita ju má od prvého plateného programu T1.
   // ZADARMO = len jedna aktívna zbierka PRE NIEKOHO, nie pre seba.
   // na profile je len spustená centrálna zbierka (spúšťa sa v správe); krypto dary podľa rozhodnutia charity
-  const kryptoOrg = pozicia !== "charita" || nacitajKryptoOrg("charita");
-  const sady = nacitajSady(pozicia); // rýchle sumy, ktoré si subjekt vybral
+  const kryptoOrg = pozicia !== "charita" || nacitajKryptoOrg("charita", strankaId);
+  const sady = nacitajSady(pozicia, strankaId); // rýchle sumy, ktoré si subjekt vybral
   const sumy = { sumyEur: SADY_EUR[sady.eur].sumy, sumyEurc: SADY_EURC[sady.eurc].sumy };
   // ---- vlastné zbierky organizácie (centrálna + sektorové) ----
   // Charita zbiera na svoju overenú činnosť (D+): karta s fotkou a míľnikmi,
@@ -338,7 +340,7 @@ export function Podstranka({ pozicia, tier: tierStranky = 0, logo, toast, onBack
           bonus={dorovnanie ? { firma: dorovnanie.firma, kDaru: (sm: number) => dorovnanieKDaru(dorovnanie, sm) } : undefined}
           qr={{ label: "QR tejto zbierky", popis: "Sken → dar za 2 kliky · zdieľanie", onClick: () => (id === CENTRALNA_ID ? setQr(true) : setQrZbierka({ id, nazov: profil.nazov })) }} />
         <GaleriaZbierky profil={profil} />
-        <ZoznamDarcov refId={id} celkom={dary.pocet} style={{ marginTop: SPACE.sm }} skrytSumy={pozicia === "charita" && !nacitajViditelnost("charita").sumyDarov} />
+        <ZoznamDarcov refId={id} celkom={dary.pocet} style={{ marginTop: SPACE.sm }} skrytSumy={pozicia === "charita" && !nacitajViditelnost("charita", strankaId).sumyDarov} />
       </>
     );
   };
@@ -346,7 +348,7 @@ export function Podstranka({ pozicia, tier: tierStranky = 0, logo, toast, onBack
   const zVlastnej = (id: string, pz: ProfilZbierky): ZbierkaData => {
     const fotky = fotkyZbierky(pz), uv = Math.min(pz.uvodna ?? 0, Math.max(0, fotky.length - 1));
     return {
-      id, nazov: pz.nazov, popis: pz.popis, overena: s.overena, rychleSumy: SADY_EUR[nacitajSady(pozicia).eur].sumy,
+      id, nazov: pz.nazov, popis: pz.popis, overena: s.overena, rychleSumy: SADY_EUR[nacitajSady(pozicia, strankaId).eur].sumy,
       media: [
         ...(pz.video && jeVideo(pz.video) ? [{ typ: "video" as const, src: pz.video }] : []),
         ...[...fotky.slice(uv), ...fotky.slice(0, uv)].map((src) => ({ typ: "foto" as const, src })),
@@ -530,7 +532,7 @@ export function Podstranka({ pozicia, tier: tierStranky = 0, logo, toast, onBack
                     bonus={(() => { const dv = beziaceDorovnanieNaCiel(z.id); return dv ? { firma: dv.firma, kDaru: (sm: number) => dorovnanieKDaru(dv, sm) } : undefined; })()}
                     qr={{ label: "QR tejto zbierky", popis: "Skenovať · kopírovať · zdieľať", onClick: () => setQrZbierka({ id: z.id, nazov: z.nazov }) }} />
                 ) : null}
-                {z.stav === "aktivna" && <ZoznamDarcov refId={z.id} celkom={z.darcovia} style={{ marginTop: SPACE.sm }} skrytSumy={pozicia === "charita" && !nacitajViditelnost("charita").sumyDarov} />}
+                {z.stav === "aktivna" && <ZoznamDarcov refId={z.id} celkom={z.darcovia} style={{ marginTop: SPACE.sm }} skrytSumy={pozicia === "charita" && !nacitajViditelnost("charita", strankaId).sumyDarov} />}
                 {z.stav === "aktivna" ? null : (
                   <>
                     <div style={{ display: "flex", alignItems: "center", gap: SPACE.sm, background: "var(--a-green)", color: "#fff", borderRadius: RADIUS.sm, padding: `${SPACE.sm}px ${SPACE.gutter}px`, marginBottom: SPACE.sm }}>

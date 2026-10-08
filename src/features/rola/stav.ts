@@ -4,9 +4,11 @@
 // rolové panely sa PRIDÁVAJÚ navrch userovho základu. V DEV režime sa rola
 // aj tier simulujú prepínačmi (žiadne oddelené registrácie) — v produkcii
 // sa rola číta z overeného účtu a tier z fakturácie.
-// Perzistencia = localStorage (rovnaký vzor ako viera/stav.ts).
+// Perzistencia = localStorage (rovnaký vzor ako viera/stav.ts); verejné nastavenia stránky
+// (sady, krypto, centrálna, viditeľnosť) navyše v DB — lib/verejneNastavenia (0070).
 // ============================================================
 import type { SadaEur, SadaEurc } from "@/lib/sadyDarov";
+import { verejneZPamate, zapisVerejne } from "@/lib/verejneNastavenia";
 import type { OrgZbierka } from "./mock"; // type-only — bez runtime cyklu
 
 export type Pozicia = "charita" | "tvorca" | "b2b";
@@ -122,15 +124,24 @@ export const nacitajZdrojAvatara = (p: Pozicia): ZdrojAvatara =>
   p === "tvorca" ? nacitaj<ZdrojAvatara>(kluc(`avatar.${p}`), "foto") : "logo";
 export const ulozZdrojAvatara = (p: Pozicia, z: ZdrojAvatara) => uloz(kluc(`avatar.${p}`), z);
 
+// ---- VEREJNÉ nastavenia stránky (0070): v DB pri stránke, vidí ich aj návštevník; localStorage = záloha (mock/offline).
+// Rola → testovacia stránka v DB (lib/mojeStranky UKAZKOVE_STRANKY). `stranka` prebije rolu (napr. farnosť má rolu charita).
+export const STRANKA_POZICIE: Record<Pozicia, string> = { charita: "svetlo", b2b: "pekaren", tvorca: "tvorca" };
+const verejne = <T>(p: Pozicia, k: string, fallback: T, stranka?: string): T => {
+  const v = verejneZPamate(stranka ?? STRANKA_POZICIE[p]);
+  return v && k in v ? (v[k] as T) : nacitaj<T>(kluc(`${k}.${p}`), fallback);
+};
+const ulozVerejne = (p: Pozicia, k: string, v: unknown) => { uloz(kluc(`${k}.${p}`), v); void zapisVerejne(STRANKA_POZICIE[p], k, v); };
+
 // ---- charita: prijíma dary v krypte (EURC)? platí pre všetky jej zbierky ----
-export const nacitajKryptoOrg = (p: Pozicia): boolean => nacitaj(kluc(`krypto.${p}`), true);
-export const ulozKryptoOrg = (p: Pozicia, v: boolean) => uloz(kluc(`krypto.${p}`), v);
+export const nacitajKryptoOrg = (p: Pozicia, stranka?: string): boolean => verejne(p, "krypto", true, stranka);
+export const ulozKryptoOrg = (p: Pozicia, v: boolean) => ulozVerejne(p, "krypto", v);
 // ---- sady rýchlych súm (eurá + EURC), ktoré si vybral príjemca ----
-export const nacitajSady = (p: Pozicia): { eur: SadaEur; eurc: SadaEurc } => nacitaj(kluc(`sady.${p}`), { eur: "drobne", eurc: "mikro" } as { eur: SadaEur; eurc: SadaEurc });
-export const ulozSady = (p: Pozicia, v: { eur: SadaEur; eurc: SadaEurc }) => uloz(kluc(`sady.${p}`), v);
+export const nacitajSady = (p: Pozicia, stranka?: string): { eur: SadaEur; eurc: SadaEurc } => verejne(p, "sady", { eur: "drobne", eurc: "mikro" } as { eur: SadaEur; eurc: SadaEurc }, stranka);
+export const ulozSady = (p: Pozicia, v: { eur: SadaEur; eurc: SadaEurc }) => ulozVerejne(p, "sady", v);
 // ---- centrálna zbierka organizácie spustená (nastavenie zo správy) ----
-export const nacitajCentralnu = (p: Pozicia): boolean => nacitaj(kluc(`centralna.${p}`), false);
-export const ulozCentralnu = (p: Pozicia, v: boolean) => uloz(kluc(`centralna.${p}`), v);
+export const nacitajCentralnu = (p: Pozicia, stranka?: string): boolean => verejne(p, "centralna", false, stranka);
+export const ulozCentralnu = (p: Pozicia, v: boolean) => ulozVerejne(p, "centralna", v);
 
 // ---- tvar loga (kruh/štvorec) — vyberá si subjekt v Upraviť profil ----
 export type TvarLoga = "kruh" | "stvorec";
@@ -154,8 +165,8 @@ export const ulozOrgExtra = (z: OrgZbierka[]) => uloz(kluc("orgzbierky"), z);
 // ---- viditeľnosť súm na verejnom profile (charita, ZADARMO) ----
 // stav zbierok (progres) je vždy verejný — to je základ dôvery; voliteľné je len toto:
 export interface Viditelnost { hlavicka: boolean; sumyDarov: boolean }
-export const nacitajViditelnost = (p: Pozicia): Viditelnost => nacitaj(kluc(`viditelnost.${p}`), { hlavicka: true, sumyDarov: true });
-export const ulozViditelnost = (p: Pozicia, v: Viditelnost) => uloz(kluc(`viditelnost.${p}`), v);
+export const nacitajViditelnost = (p: Pozicia, stranka?: string): Viditelnost => verejne(p, "viditelnost", { hlavicka: true, sumyDarov: true }, stranka);
+export const ulozViditelnost = (p: Pozicia, v: Viditelnost) => ulozVerejne(p, "viditelnost", v);
 
 // ============================================================
 // KARTA 34 · Správa charity — povolenia z JEDNÉHO miesta.
