@@ -10,7 +10,7 @@ import { FOTO_TEST_REZIM, klucEntity, useFotkyEntity } from "@/lib/fotoentity";
 import { SIRKA, C, GRAD, GRAD_ZELENY, SPACE, RADIUS } from "@/theme";
 import { pripravFeed, FEED_CFG } from "@/lib/feed";
 import { MEDIA_AR } from "@/lib/cardSize";
-import type { OkruhKod } from "@/types";
+import type { AktivitaItem, OkruhKod } from "@/types";
 import { Zvoncek } from "@/features/notifikacie/Notifikacie";
 import { A, DOM, ORDER, tint } from "./domeny";
 import { pressable } from "@/components/pressable";
@@ -18,7 +18,9 @@ import { NahlasitSheet } from "@/components/nahlasit";
 import { useVrstva } from "@/lib/urlnav";
 import { zdielaj, aktualnaUrl } from "@/lib/zdielanie";
 import { rovnakeOkremFunkcii } from "@/lib/ui";
-import { useAktivityFeed } from "@/data";
+import { useAktivityFeed, qk, repo } from "@/data";
+import { useQueryClient } from "@tanstack/react-query";
+import { usePouzivatel } from "@/lib/pouzivatel";
 import { usePersonalizacia } from "@/lib/personalizacia";
 import { useLokalita } from "@/lib/lokalita";
 import { EVENTS, type AktItem } from "./mock";
@@ -90,6 +92,8 @@ export default function ModulAktivity({ wide }: { wide?: boolean }) {
   const [deltas, setDeltas] = useState<Record<number, any>>(() => load(LS.deltas, {})); // { id: { raised, helpers, support } }
   const [follows, setFollows] = useState<Record<string, boolean>>(() => load(LS.follows, {})); // { meno: true }
   const [tick, setTick] = useState<{ who: string; what: string; to: string } | null>(null); // posledná akcia → live ticker
+  const ja = usePouzivatel();
+  const qc = useQueryClient();
 
   useEffect(() => save(LS.posts, posts), [posts]);
   useEffect(() => save(LS.likes, liked), [liked]);
@@ -164,6 +168,14 @@ export default function ModulAktivity({ wide }: { wide?: boolean }) {
   function createPost(spec: NovyPostSpec) {
     const post = vytvorPost(spec);
     setPosts((p) => [post, ...p]);
+    // zápis do DB: po úspechu lokálnu kópiu nahradí riadok z feedu (vidia ho všetci); bez DB (mock) ostáva lokálne
+    repo.aktivity.vytvor({ ...post, author: ja.celeMeno, ini: ja.iniciala } as unknown as AktivitaItem, ja.ucetId)
+      .then((novyId) => {
+        if (!novyId) return;
+        setPosts((p) => p.filter((x) => x.id !== post.id));
+        void qc.invalidateQueries({ queryKey: qk.aktivity.feed });
+      })
+      .catch(() => toast("Príspevok sa nepodarilo uložiť — vidíš ho len na tomto zariadení."));
     setTick({ who: "Ty", what: post.type === "help" ? "práve zverejnil(a) žiadosť" : post.type === "workshop" ? "práve vytvoril(a) workshop" : "práve pridal(a) skutok", to: "" });
     setView("all"); // nový post sa zobrazí navrchu feedu (Mix aj jeho doména)
     return post;

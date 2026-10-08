@@ -370,6 +370,8 @@ export interface AktivitaItem {
   desc: string;
   emoji: string;
   media?: Media;
+  /** fotky príspevku (URL zo Storage; seed z media.fotky) */
+  fotky?: string[];
   verified?: boolean;
   importance?: string;
   author?: string;
