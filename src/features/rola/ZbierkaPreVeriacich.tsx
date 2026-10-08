@@ -8,6 +8,7 @@
 // Nová zbierka začína vždy úplne prázdna. Prototyp „Sprava farnosti - prvy prichod" (pre-kodera-7-10-b).
 // ============================================================
 import { useEffect, useRef, useState, type CSSProperties, type DragEvent, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { DeedQr } from "@/components/deedqr";
 import { TESTOVACIA } from "@/lib/testovacia";
 import { usePouzivatel } from "@/lib/pouzivatel";
@@ -39,9 +40,35 @@ const tlO: CSSProperties = { height: 50, padding: "0 18px", borderRadius: 14, bo
 const volbaSt = (on: boolean): CSSProperties => ({ minHeight: 64, padding: "10px 14px", borderRadius: 14, border: `${on ? 2 : 1.5}px solid ${on ? "var(--green)" : "var(--cardBd)"}`, background: on ? "var(--gSoft)" : "var(--field)", cursor: "pointer", fontFamily: "inherit", textAlign: "left", display: "flex", alignItems: "center", gap: 12, color: "var(--ink)", boxShadow: "none" });
 const Bodka = ({ on }: { on: boolean }) => <span aria-hidden="true" style={{ flex: "none", width: 20, height: 20, borderRadius: "50%", border: `2px solid ${on ? "var(--green)" : "var(--ink4, #A8A396)"}`, background: on ? "var(--green)" : "transparent", boxShadow: on ? "inset 0 0 0 3px var(--gSoft)" : "none" }} />;
 
-export function ZbierkaSOverovatelom({ stranka, menoFarnosti, ucetFarnosti, mobil, toast, onZavri, onHotovo }: {
+/** KARTA 57 A.1: horné ‹ Späť v Správe — „spat" = krok späť vybavený, „zavriet" = zavrieť zbierku, „nic" = po zapečatení */
+export type SpatZbierky = () => "spat" | "zavriet" | "nic";
+
+/** KARTA 57 A.2: QR na celú obrazovku (biele pozadie, odpočet, × Zavrieť), obrazovka nezhasne (Wake Lock, ak ho prehliadač má) */
+const velkostQr = () => Math.round(Math.min(window.innerWidth * 0.92, window.innerHeight * 0.68, 640));
+function QrVelky({ data, zostava, onZavri }: { data: string; zostava: number; onZavri: () => void }) {
+  const [velkost, setVelkost] = useState(velkostQr);
+  useEffect(() => { const f = () => setVelkost(velkostQr()); window.addEventListener("resize", f); return () => window.removeEventListener("resize", f); }, []);
+  useEffect(() => {
+    let zamok: { release: () => Promise<void> } | null = null, ziva = true;
+    const wl = (navigator as Navigator & { wakeLock?: { request: (t: "screen") => Promise<{ release: () => Promise<void> }> } }).wakeLock;
+    wl?.request("screen").then((z) => { if (ziva) zamok = z; else void z.release(); }).catch(() => undefined);
+    const esc = (e: KeyboardEvent) => { if (e.key === "Escape") onZavri(); };
+    window.addEventListener("keydown", esc);
+    return () => { ziva = false; window.removeEventListener("keydown", esc); void zamok?.release().catch(() => undefined); };
+  }, [onZavri]);
+  return createPortal(
+    <div role="dialog" aria-modal="true" aria-label="QR na celú obrazovku" onClick={onZavri} style={{ position: "fixed", inset: 0, zIndex: 1000, background: "#fff", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 22, padding: 24, cursor: "zoom-out" }}>
+      <span style={{ display: "flex" }}><DeedQr key={data} data={data} size={velkost} variant="svetly" /></span>
+      <span style={{ width: "min(92vw, 640px)", height: 10, borderRadius: 5, background: "#E4DFD5", overflow: "hidden" }}><span style={{ display: "block", width: "100%", height: "100%", background: "#4B7A35", transformOrigin: "0 50%", transform: `scaleX(${zostava / QR_S})`, transition: zostava === QR_S ? "none" : "transform 1s linear" }} /></span>
+      <b style={{ fontSize: 18, color: "#1D211B", textAlign: "center", fontVariantNumeric: "tabular-nums" }}>Naskenujte v appke DEED · ešte {zostava} s, potom nový kód</b>
+      <button type="button" onClick={(e) => { e.stopPropagation(); onZavri(); }} autoFocus style={{ minHeight: 56, padding: "0 28px", border: "none", borderRadius: 16, background: "#1D211B", color: "#fff", fontFamily: "inherit", fontSize: 17, fontWeight: 800, cursor: "pointer" }}>× Zavrieť</button>
+    </div>, document.body);
+}
+
+export function ZbierkaSOverovatelom({ stranka, menoFarnosti, ucetFarnosti, mobil, toast, onZavri, onHotovo, spatRef }: {
   stranka: string; menoFarnosti: string; ucetFarnosti: string; mobil: boolean; toast: (m: string) => void;
   onZavri: () => void; onHotovo: (z: SpustenaZbierka, sprava: string) => void;
+  /** KARTA 57 A.1: horné ‹ Späť Správy sa pýta zbierky */ spatRef?: { current: SpatZbierky | null };
 }) {
   const [krok, setKrok] = useState(1);
   const [druh, setDruh] = useState<Druh>("pohreb");
@@ -165,6 +192,19 @@ export function ZbierkaSOverovatelom({ stranka, menoFarnosti, ucetFarnosti, mobi
   const zacni = () => { setDrz(true); window.clearTimeout(drzTm.current); drzTm.current = window.setTimeout(() => { setDrz(false); void zapecat(); }, 1500); };
   const pusti = () => { window.clearTimeout(drzTm.current); setDrz(false); };
 
+  // ---- KARTA 57 A.1: späť = vždy o krok späť; po zapečatení späť nie je ----
+  const [qrVelky, setQrVelky] = useState(false);
+  const spatT = krok === 2 && rezim ? `Späť na výber ${druh === "pohreb" ? "parte" : "oznámenia"}` : krok > 1 && krok < 5 ? `Späť na krok ${krok - 1}` : "";
+  const krokSpat = () => {
+    if (krok === 2 && rezim) { setRezim(""); setVybrany(null); return; }
+    if (krok === 4) setPotvrdil(false);
+    if (krok > 1 && krok < 5) setKrok(krok - 1);
+  };
+  useEffect(() => {
+    if (!spatRef) return;
+    spatRef.current = () => (krok >= 5 ? "nic" : spatT ? (krokSpat(), "spat") : "zavriet");
+    return () => { spatRef.current = null; };
+  });
   const kroky = [`1 · ${T.k1}`, `2 · ${T.k2}`, "3 · Rozdelenie", "4 · Kód", "5 · Hotovo"];
   const test = (t: string, onClick: () => void) => TESTOVACIA
     ? <button type="button" onClick={onClick} style={{ ...tlO, alignSelf: "flex-start", height: 44, borderStyle: "dashed" }}>{t}</button>
@@ -190,6 +230,7 @@ export function ZbierkaSOverovatelom({ stranka, menoFarnosti, ucetFarnosti, mobi
         <b style={{ flex: 1, fontSize: 19 }}>{T.nazov} · farnosť overuje</b>
         <button type="button" onClick={onZavri} aria-label="Zavrieť" style={{ width: 44, height: 44, borderRadius: 12, border: "1px solid var(--cardBd)", background: "var(--field)", cursor: "pointer", fontSize: 18, color: "var(--ink2)", boxShadow: "none" }}>×</button>
       </div>
+      {spatT && <button type="button" onClick={krokSpat} style={{ alignSelf: "flex-start", minHeight: 44, padding: "0 16px", borderRadius: 12, border: "1.5px solid var(--gBd)", background: "var(--gSoft)", cursor: "pointer", fontFamily: "inherit", fontSize: 15, fontWeight: 800, color: "var(--gInk)", boxShadow: "none" }}>‹ {spatT}</button>}
       <div role="list" aria-label="Kroky" style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
         {kroky.map((t, i) => { const n = i + 1; return <span key={t} role="listitem" aria-current={n === krok ? "step" : undefined} style={{ height: 32, padding: "0 12px", borderRadius: 16, background: n === krok ? "#4B7A35" : n < krok ? "var(--gSoft)" : "var(--btn)", color: n === krok ? "#fff" : n < krok ? "var(--gInk)" : "var(--ink3)", fontSize: 13, fontWeight: 800, display: "flex", alignItems: "center", whiteSpace: "nowrap" }}>{t}</span>; })}
       </div>
@@ -199,7 +240,11 @@ export function ZbierkaSOverovatelom({ stranka, menoFarnosti, ucetFarnosti, mobi
       </div>}
 
       {krok === 1 && <div style={{ display: "flex", gap: 18, alignItems: "center", flexWrap: "wrap" }}>
-        <span style={{ flex: "none", width: 168, height: 168, borderRadius: 18, background: "#fff", padding: 8, boxSizing: "border-box", display: "flex" }}><DeedQr key={token} data={`https://deed.sk/overit/${stranka}/${token}`} size={152} variant="svetly" /></span>
+        <span style={{ flex: "none", display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
+          <button type="button" onClick={() => setQrVelky(true)} aria-label="Zväčšiť QR na celú obrazovku" style={{ width: 168, height: 168, borderRadius: 18, border: "none", background: "#fff", padding: 8, boxSizing: "border-box", display: "flex", cursor: "zoom-in", boxShadow: "none" }}><DeedQr key={token} data={`https://deed.sk/overit/${stranka}/${token}`} size={152} variant="svetly" /></button>
+          <span style={{ fontSize: 12.5, color: "var(--ink3)" }}>Ťuknite na QR a zväčší sa</span>
+        </span>
+        {qrVelky && <QrVelky data={`https://deed.sk/overit/${stranka}/${token}`} zostava={zostava} onZavri={() => setQrVelky(false)} />}
         <div style={{ flex: 1, minWidth: 220, display: "flex", flexDirection: "column", gap: 8 }}>
           <b style={{ fontSize: 17 }}>{T.kto} naskenuje QR v appke DEED</b>
           <span style={{ fontSize: 14.5, lineHeight: 1.5, color: "var(--ink2)" }}>Musí byť pri vás osobne. Skenuje v appke na mobile, tablete alebo počítači s kamerou. Rola <b>Overovateľ</b> je zapnutá pri QR farnosti. Kód platí 15 sekúnd a sám sa obnovuje.</span>
