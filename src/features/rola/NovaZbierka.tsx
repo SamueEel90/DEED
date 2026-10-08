@@ -73,11 +73,13 @@ export function NovaZbierka({ strankaId, pozicia, tier, nazov, inicialy, mobil, 
   const fotiek = d.media.filter((m) => m.typ === "foto").length;
   const video = d.media.find((m) => m.typ === "video");
   const iban = d.iban.replace(/\s/g, "");
+  // KARTA 57 B.5: súhlas ľudí na fotkách len pri vlastných fotkách (pri fotkách z galérie nie)
+  const suhTreba = !d.media.length || d.media.some((m) => !m.ilustracna);
   // KARTA 39 · bod 2: vlastný účet (od P1) sa overuje overovacou platbou; kým nie je overený, zbierka sa nespustí
   const overenie = useOverenieUctu(strankaId, zadarmo ? "" : d.iban);
   const chybaKroku = (n: number): string => {
     if (n === 1) { if (!d.nazov.trim()) return "Doplňte názov zbierky"; if (!cistyText(d.popis)) return "Napíšte hlavný text"; if (riadky > RIADKY_ZB) return "Hlavný text je dlhší ako 12 riadkov"; }
-    if (n === 2) { if (!fotiek) return "Pridajte aspoň jednu fotku"; if (!d.suhlas) return SUHLAS_CHYBA; }
+    if (n === 2) { if (!fotiek) return "Pridajte aspoň jednu fotku"; if (!d.suhlas && suhTreba) return SUHLAS_CHYBA; }
     if (n === 3) {
       if (d.cielTyp === "ciel" && !(cielCislo(d) > 0)) return "Zadajte cieľovú sumu";
       if (!zadarmo && (!/^SK\d{2}/i.test(iban) || iban.length !== 24)) return "Zadajte transparentný účet (IBAN má 24 znakov a začína SK)"; // Zadarmo: IBAN sa nekontroluje
@@ -225,9 +227,12 @@ export function NovaZbierka({ strankaId, pozicia, tier, nazov, inicialy, mobil, 
       </section></>;
   } else if (k === 2) {
     obsah = <>{hlavicka("Fotky a video", ph ? "Prvé je hlavné, to ľudia uvidia ako prvé. Poradie zmeníte šípkami." : "Skutočné fotky človeka alebo miesta, komu pomáhate. Tvár a hlas presvedčia viac než text.")}
-      <GaleriaEditor media={d.media} onMedia={(m) => zmen({ media: m })} ph={ph} onVyrez={setVyrezId}>
+      {/* PLACEBO — karta 57 B.5: galéria ilustračných fotiek (Pexels/Pixabay → Storage) je v ROADMAP Fáza 4 */}
+      <GaleriaEditor media={d.media} onMedia={(m) => zmen({ media: m })} ph={ph} onVyrez={setVyrezId} galeria={farnost ? () => toast("Pripravujeme") : undefined}>
+      {suhTreba && <>
       <Zaskrtnutie on={!!d.suhlas} onClick={() => zmen({ suhlas: !d.suhlas })}>{SUHLAS_FOTKY}</Zaskrtnutie>
         <span style={{ fontSize: 14, lineHeight: 1.5, color: "var(--ink2)", marginTop: -4 }}>{SUHLAS_POZNAMKA}{" "}<button type="button" onClick={() => setPravidla(true)} style={odkaz}>Pravidlá obsahu ›</button></span>
+      </>}
       </GaleriaEditor></>;
   } else if (k === 3) {
     obsah = <>{hlavicka("Suma a účet", farnost ? "Koľko potrebujete a kam peniaze prídu." : "Koľko potrebujete, ako dlho a kam peniaze prídu.")}
