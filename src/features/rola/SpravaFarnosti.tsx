@@ -101,6 +101,7 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
   const [noveOk, setNoveOk] = useState<string | null>(null);
   const [zbOtv, setZbOtv] = useState<string | null>(null);
   const [pz, setPz] = useState(false); // OPRAVY 161: postup zbierky pre veriacich
+  const [rodOtv, setRodOtv] = useState<string | null>(null); // KARTA 57 A.6: rozbalené vysvetlenie pri zbierke rodiny
   const [pzSpat] = useState<{ current: SpatZbierky | null }>(() => ({ current: null })); // KARTA 57 A.1: horné ‹ Späť = krok späť v zbierke (zbierka sem zapíše svoj krok späť)
   // KARTA 56G: Omše a kalendár otvorené na dni (ťuk v Prehľade) alebo na tomto týždni (Zmena omše) — key = nové otvorenie
   const [omseStart, setOmseStart] = useState<{ den?: string; n: number }>({ n: 0 });
@@ -318,6 +319,17 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
     const [chip, bg] = stitokZbierkyF(z);
     const s0 = sucetDarov(z.id);
     const veriaci = z.farnost && z.farnost.druh !== "farnost";
+    // KARTA 57 A.6: zbierka rodiny po zapečatení — farár nevidí sumy ani darcov, ťuk = len vysvetlenie
+    if (veriaci) { const otv = rodOtv === z.id, d = z.farnost?.druh; return (
+      <button key={z.id} type="button" onClick={() => setRodOtv(otv ? null : z.id)} aria-expanded={otv} style={{ flex: "none", borderRadius: 20, border: "1.5px solid #B9A3C2", background: "var(--card)", display: "flex", flexWrap: "wrap", alignItems: "center", gap: mobil ? 12 : 16, padding: mobil ? "10px 12px" : "12px 18px 12px 12px", cursor: "pointer", textAlign: "left", fontFamily: "inherit", color: "var(--ink)", boxShadow: "none", width: "100%" }}>
+        {nahladFoto(fotoZbierky(z))}
+        <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 4 }}>
+          <span style={{ alignSelf: "flex-start" }}>{chipF(`${d === "svadba" ? "SVADBA" : d === "ine" ? "PRE VERIACEHO" : "POHREB"} · ZBIERKA RODINY`, "#6E4E7A", 7)}</span>
+          <b style={{ fontSize: mobil ? 16 : 18 }}>{z.nazov || "Zbierka rodiny"}</b>
+          <span style={{ fontSize: 13.5, color: "var(--ink3)" }}>overili ste · beží · spravuje príjemca</span>
+        </span>
+        {otv && <span style={{ flex: "1 1 100%", fontSize: 14, lineHeight: 1.5, color: "var(--ink2)" }}>Sumy a darcov vidí len príjemca. Podiel farnosti vám príde do Peňaženky. Na stránke farnosti je táto zbierka fialovou, aby bolo jasné, že ju nevyberá farnosť.</span>}
+      </button>); }
     const ciel = z.cielTyp === "ciel" ? cielCislo(z) : 0;
     const pod = s0.pocet ? nDarov(s0.pocet) : "zatiaľ žiadne dary";
     return (
