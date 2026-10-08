@@ -14,7 +14,7 @@ export const DRUHY_FARNIKA: { k: DruhFarnika; t: string; s: string; sv: string; 
   { k: "svadba", t: "Svadobné oznámenie", s: "sobáš, pozvanie", sv: "sobáš, pozvanie", zadarmo: false },
   { k: "ine", t: "Jubileum a iné oznámenie", s: "výročie, poďakovanie, narodenie", sv: "výročie, poďakovanie, narodenie", zadarmo: false },
   { k: "oznam", t: "Krátky oznam", s: "len text", sv: "len text · napr. stratené kľúče", zadarmo: false },
-  { k: "udalost", t: "Udalosť", s: "púť, stretnutie · zapíše sa do kalendára", sv: "púť, stretnutie · dátum, čas, miesto", zadarmo: false },
+  { k: "udalost", t: "Udalosť", s: "púť, stretnutie · dátum, čas, miesto", sv: "púť, stretnutie · dátum, čas, miesto", zadarmo: false },
   { k: "umysel", t: "Úmysel na omšu", s: "vy potom potvrdíte čas omše", sv: "za koho sa má slúžiť omša", zadarmo: false },
   { k: "fotky", t: "Fotky z akcie", s: "do galérie farnosti", sv: "do galérie farnosti", zadarmo: false },
   { k: "modlitba", t: "Prosba o modlitbu", s: "aj bez mena · vždy zadarmo", sv: "aj bez mena", zadarmo: true },

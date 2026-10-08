@@ -12,7 +12,7 @@ import { createPortal } from "react-dom";
 import { usePouzivatel } from "@/lib/pouzivatel";
 import { nacitajSelfAdd } from "@/features/viera/UserOznamy";
 import { DRUHY_FARNIKA, CEZ_EDITOR, nacitajSmie, smie, odFarnikov, pridajOdFarnika, useOdFarnikov, type DruhFarnika } from "@/lib/odFarnikov";
-import { zmenKostol, normCas, dokonciCas, casNeexistuje, CAS_OK, pekny } from "@/lib/kalendarFarnosti";
+import { normCas, dokonciCas, casNeexistuje, CAS_OK, pekny } from "@/lib/kalendarFarnosti";
 import type { MediumZbierky } from "@/lib/novaZbierka";
 import { GaleriaEditor, cistyText } from "@/features/rola/obsahZbierky";
 import { TextOznamu } from "@/features/rola/OznamyFarnosti";
@@ -100,8 +100,7 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
       : k === "fotky" ? `${fotiek} ${fotiek === 1 ? "fotka" : fotiek < 5 ? "fotky" : "fotiek"}`
       : cistyText(txt).slice(0, 600);
     pridajOdFarnika(strankaId, { id, k, t: k === "modlitba" ? "Prosím o modlitbu" : nad.trim(), s, kto: k === "modlitba" && anon ? "Bohu známy farník" : ja.celeMeno || "Farník", cas: teraz(), fotky: fotky.length ? fotky : undefined });
-    // udalosť farníka sa zapíše do kalendára farnosti (keď má platný čas)
-    if (k === "udalost" && CAS_OK(c)) zmenKostol(strankaId, "0", (kk) => ({ ...kk, extra: { ...kk.extra, [datum]: [...(kk.extra[datum] ?? []), { id: `u${id}`, typ: "udalost", t: pekny(c), m: nad.trim() }] } }));
+    // OPRAVY 170: udalosť farníka sa do kalendára farnosti nezapisuje
     setHotovo(id); setChyba(false);
   };
   const zverejni = () => { if (ch.length) { setChyba(true); return; } uloz(); };
