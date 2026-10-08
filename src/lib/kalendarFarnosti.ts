@@ -90,8 +90,8 @@ export const normCas = (v: string) => {
   if (/^\d{3,4}$/.test(x)) x = `${x.slice(0, -2)}:${x.slice(-2)}`;
   return x.slice(0, 5);
 };
-/** po odídení z poľa: „15" → 15:00, „15:" → 15:00 */
-export const dokonciCas = (v: string) => (/^\d{1,2}$/.test(v) ? `${v}:00` : /^\d{1,2}:$/.test(v) ? `${v}00` : v);
+/** po odídení z poľa: „15" → 15:00, „15:" → 15:00, KARTA 57 E.3: „15:0" (z „15,0") → 15:00 */
+export const dokonciCas = (v: string) => (/^\d{1,2}$/.test(v) ? `${v}:00` : /^\d{1,2}:$/.test(v) ? `${v}00` : /^\d{1,2}:\d$/.test(v) ? `${v}0` : v);
 /** červená hláška len pri neexistujúcom čase (nie pri rozpísanom) */
 export const casNeexistuje = (v: string) => !!v && !CAS_OK(dokonciCas(v)) && !/^(\d{1,2}|([01]?\d|2[0-3]):[0-5]?)$/.test(v);
 export const minuty = (t: string) => { const [a, b] = t.split(":").map(Number); return a * 60 + b; };

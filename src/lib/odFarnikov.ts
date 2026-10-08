@@ -33,6 +33,32 @@ export interface PolozkaFarnika {
   /** KARTA 57 D.2: farár opravil nadpis alebo text (veriaci dostane správu) */ upravil?: boolean;
   /** KARTA 57 D.4: koľkokrát to ľudia nahlásili (··· Nahlásiť, karta E.8) */ nahl?: number;
   /** KARTA 57 D.4: pri parte počet „Úprimnú sústrasť" (karta E.8) */ sus?: number;
+  // ---- KARTA 57 E (verejná stránka) ----
+  /** autor (účet) — „Upraviť · moje" vidí len on */ autor?: string; mesto?: string;
+  /** prosba bez mena (sviečka namiesto krúžku) */ anon?: boolean;
+  /** formulár veriaceho (úprava ho naplní) */ f?: FormularVeriaceho;
+  /** Pozvať ľudí: 1 = Zúčastním sa, 2 = Prihlásiť sa (záväzne, limit) */ pozv?: 0 | 1 | 2; limit?: number;
+  /** kto sa zúčastní / prihlásil, kto sa modlí, kto prejavil sústrasť, kto nahlásil (kľúče účtov) */
+  ucast?: string[]; modl?: string[]; sustrast?: string[]; nahlasili?: string[];
+  /** fotky z akcie: popisy fotiek, pár slov o akcii, kedy je ďalšia */ popisy?: string[]; text?: string; dalsia?: string;
+  /** parte, svadba, jubileum z Editora oznámení: návrh a obrázok hotovej šablóny */
+  editor?: import("@/components/EditorOznameni").PayloadEditora; obr?: string;
+  /** autor to upravil */ upravene?: boolean;
+}
+export interface FormularVeriaceho { nad: string; txt: string; datum: string; cas: string; kde: string; umK: number; pozv: number; limit: string; anon: boolean }
+/** počty pre farára aj stránku (staršie položky mali len číslo) */
+export const pocetNahl = (x: PolozkaFarnika) => x.nahlasili?.length ?? x.nahl ?? 0;
+export const pocetSus = (x: PolozkaFarnika) => x.sustrast?.length ?? x.sus ?? 0;
+/** prepne kľúč účtu v zozname (Zúčastním sa, Modlím sa, Sústrasť, Nahlásiť) */
+export function prepniVPolozke(id: string, pid: string, pole: "ucast" | "modl" | "sustrast" | "nahlasili", kto: string, len?: "pridat") {
+  ulozStav("odfarnikov", id, odFarnikov(id).map((x) => {
+    if (x.id !== pid) return x;
+    const l = x[pole] ?? [];
+    const ma = l.includes(kto);
+    if (ma && len === "pridat") return x;
+    return { ...x, [pole]: ma ? l.filter((y) => y !== kto) : [...l, kto] };
+  }));
+  zmena();
 }
 
 let verzia = 0;
@@ -56,7 +82,7 @@ export function pocetyOdVeriacich(id: string) {
   const l = odFarnikov(id), v = nastavenieOdVeriacich(id).videne;
   return {
     nove: l.filter((x) => x.k !== "umysel" && x.cas > v).length,
-    nahlasene: l.filter((x) => (x.nahl ?? 0) > 0).length,
+    nahlasene: l.filter((x) => pocetNahl(x) > 0).length,
     umysly: l.filter((x) => x.k === "umysel" && x.cas > v).length,
   };
 }

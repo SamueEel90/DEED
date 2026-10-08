@@ -6,7 +6,7 @@
 // ============================================================
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { nacitajSelfAdd, ulozSelfAdd } from "@/features/viera/UserOznamy";
-import { DRUHY_FARNIKA, CEZ_EDITOR, nacitajSmie, ulozSmie, smie, odFarnikov, upravOdFarnika, zmazOdFarnika, zmazOdFarnikov, nastavenieOdVeriacich, ulozNastavenieOdVeriacich, useOdFarnikov, type DruhFarnika, type PolozkaFarnika } from "@/lib/odFarnikov";
+import { DRUHY_FARNIKA, CEZ_EDITOR, nacitajSmie, ulozSmie, smie, odFarnikov, upravOdFarnika, zmazOdFarnika, zmazOdFarnikov, nastavenieOdVeriacich, ulozNastavenieOdVeriacich, useOdFarnikov, pocetNahl, pocetSus, type DruhFarnika, type PolozkaFarnika } from "@/lib/odFarnikov";
 import { otvorVerejnyProfil } from "@/features/verejny-profil/otvor";
 import { PodrzZmaz, TextOznamu } from "./OznamyFarnosti";
 import { cistyText } from "./obsahZbierky";
@@ -88,8 +88,8 @@ export function OdVeriacich({ strankaId, mobil, toast }: { strankaId: string; mo
           <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}>
             <b style={{ fontSize: 14.5 }}>{x.t}</b>
             <span style={{ fontSize: 12.5, color: "var(--ink3)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{[x.s, x.kto, kedy(x.cas), x.upravil ? "upravil farár" : ""].filter(Boolean).join(" · ")}</span>
-            {(x.nahl ?? 0) > 0 && <span style={{ alignSelf: "flex-start", marginTop: 2, padding: "2px 8px", borderRadius: 7, background: "var(--cRedBg)", color: "#fff", fontSize: 11, fontWeight: 800, letterSpacing: ".06em" }}>NAHLÁSENÉ · {x.nahl}×</span>}
-            {x.k === "parte" && (x.sus ?? 0) > 0 && <span style={{ fontSize: 12.5, fontWeight: 700, color: "var(--ink2)" }}>sústrasť prejavilo {x.sus} · rodine ide súhrn raz denne</span>}
+            {pocetNahl(x) > 0 && <span style={{ alignSelf: "flex-start", marginTop: 2, padding: "2px 8px", borderRadius: 7, background: "var(--cRedBg)", color: "#fff", fontSize: 11, fontWeight: 800, letterSpacing: ".06em" }}>NAHLÁSENÉ · {pocetNahl(x)}×</span>}
+            {x.k === "parte" && pocetSus(x) > 0 && <span style={{ fontSize: 12.5, fontWeight: 700, color: "var(--ink2)" }}>sústrasť prejavilo {pocetSus(x)} · rodine ide súhrn raz denne</span>}
           </span>
           {!selM && <span aria-hidden="true" style={{ flex: "none", fontSize: 18, color: "var(--ink3)" }}>{o ? "⌃" : "⌄"}</span>}
         </button>
