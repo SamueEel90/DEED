@@ -8,6 +8,7 @@ import { createContext, useContext, useEffect, useMemo, useState, type ReactNode
 import { usePouzivatel } from "./pouzivatel";
 import { nacitajPredvolbu, identitaDarcu } from "./darcovia";
 import { USE_SUPABASE } from "./supabase";
+import { useSynchronizaciaSkutkov } from "./mojeSkutky";
 import {
   nacitajLokalne, ulozZaujmy, ulozSledovani, ulozPodpory, ulozOblubene, ulozZbierky,
   importLegacyFollows, legacyNaImport, demoSeed, zaujmyNaKluce, zaujemZOblasti,
@@ -63,6 +64,7 @@ export function PersonalizaciaProvider({ children }: { children: ReactNode }) {
   const [oblubene, setOblubene] = useState<Oblubeny[]>([]);
   const [mojeZbierky, setMojeZbierky] = useState<MojaZbierka[]>([]);
   const [hydratovane, setHydratovane] = useState(false); // perzistuj až po inicializácii
+  useSynchronizaciaSkutkov(USE_SUPABASE && !demo ? ucetId : null); // denník skutkov v účte (0072)
 
   // inicializácia: localStorage (+ jednorazový legacy import); demo bez dát → realistický seed
   useEffect(() => {
