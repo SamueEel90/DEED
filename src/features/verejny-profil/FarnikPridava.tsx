@@ -21,6 +21,7 @@ import { GaleriaEditor, cistyText } from "@/features/rola/obsahZbierky";
 import { TextOznamu } from "@/features/rola/OznamyFarnosti";
 import { EditorOznameni, type EditorApi, type PayloadEditora, type TypEditora } from "@/components/EditorOznameni";
 import PodrzTlacidlo from "@/features/zbierka/PodrzTlacidlo";
+import { zapisEditora, zapisZPayloadu } from "@/lib/editorStat";
 import { toast } from "@/shared";
 
 const ZELENA = "#4B7A35", ZLATA = "#C9A24A";
@@ -321,8 +322,11 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
   const zverejni = () => { if (ch.length) { setChyba(true); return; } void uloz(); };
 
   // ---- E.5: Editor oznámení (parte, svadba, jubileum) — po uložení ostáva otvorený ----
+  const kdeStat = { kto: "veriaci" as const, stranka_typ: "farnost", stranka: strankaId, pri_zbierke: false };
   const naEditor = async (p: PayloadEditora) => {
-    if (!k || p.stav !== "hotovo") return;
+    if (!k) return;
+    zapisZPayloadu(p, kdeStat); // KARTA 57 F: štatistika editora
+    if (p.stav !== "hotovo") return;
     const P = p.polia ?? {}, str = (x: string) => String(P[x] ?? "").trim();
     const t = k === "parte" ? str("meno") : k === "svadba" ? [str("sNev"), str("sZen")].filter(Boolean).join(" a ") : str("jMeno") || str("bMeno");
     const s = k === "parte" ? (P.neskor ? "Termín rozlúčky oznámime." : [fmtD(str("rd")), str("rc"), str("rm")].filter(Boolean).join(" · "))
@@ -479,7 +483,7 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
         <b style={{ fontSize: 19 }}>{hotovo && !jeEd ? "Hotovo" : edId ? `Upraviť · ${T?.t ?? ""}` : T?.t}</b>
       </div>
       {jeEd ? <div style={{ position: "relative", flex: 1, minHeight: 0 }}>
-        <EditorOznameni ref={edRef} title={T?.t} onSend={(p) => { void naEditor(p); }} style={{ position: "absolute", inset: 0, height: "100%" }}
+        <EditorOznameni ref={edRef} title={T?.t} onSend={(p) => { void naEditor(p); }} onUdalost={(e) => zapisEditora({ udalost: e.akcia, typ: TYP_EDITORA[k]!, papier: e.papier ?? null, ...kdeStat })} style={{ position: "absolute", inset: 0, height: "100%" }}
           cfg={{ typ: TYP_EDITORA[k]!, rezim: "plny", qrObrazok: k === "parte" ? "/editor/qr-deed.png" : undefined, miesta: k === "parte" ? ["v Dome smútku", "vo farskom kostole", "na miestnom cintoríne"] : undefined, kontext: { stranka: strankaId, veriaci: true } }} />
         {edToast && <div role="status" style={{ position: "absolute", left: 16, right: 16, top: 12, zIndex: 3, maxWidth: 560, margin: "0 auto", padding: "14px 16px", borderRadius: 16, background: "var(--gSoft)", border: "2px solid var(--green)", boxShadow: "0 10px 26px rgba(30,28,20,.2)", display: "flex", flexDirection: "column", gap: 4 }}>
           <b style={{ fontSize: 17, color: "var(--gInk)" }}>Zverejnené ✓</b>
