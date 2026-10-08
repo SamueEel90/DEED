@@ -185,7 +185,7 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
     // KARTA 57 D.5: od veriacich — ťuk otvorí Od veriacich
     ...(odV.nove ? [{ t: `${odV.nove} ${odV.nove === 1 ? "nový príspevok" : odV.nove < 5 ? "nové príspevky" : "nových príspevkov"} od veriacich`, s: "Pozrite, čo pridali na stránku farnosti.", tap: () => go("veriaci") }] : []),
     ...(odV.nahlasene ? [{ t: `${odV.nahlasene} ${odV.nahlasene === 1 ? "nahlásený príspevok" : odV.nahlasene < 5 ? "nahlásené príspevky" : "nahlásených príspevkov"}`, s: "Ľudia nahlásili príspevok na stránke. Pozrite a rozhodnite.", tap: () => go("veriaci") }] : []),
-    ...(odV.umysly ? [{ t: `${odV.umysly} ${odV.umysly === 1 ? "úmysel" : odV.umysly < 5 ? "úmysly" : "úmyslov"} na omšu`, s: "Veriaci zapísali úmysel. Potvrďte čas omše.", tap: () => go("veriaci") }] : []),
+    ...(odV.umysly ? [{ t: `${odV.umysly} ${odV.umysly === 1 ? "úmysel čaká" : odV.umysly < 5 ? "úmysly čakajú" : "úmyslov čaká"} na omšu`, s: "Zapíšte ich na konkrétnu omšu v Od veriacich.", tap: () => go("veriaci") }] : []),
   ];
   const trebaVybavit = (
     <section data-treba="1" style={{ ...karta, borderRadius: 18, padding: mobil ? "14px 14px" : "16px 18px", display: "flex", flexDirection: "column", gap: 10 }}>
@@ -460,7 +460,7 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
   // KARTA 57 B.1/B.4 · D: Od veriacich = úmysly, čo pridali veriaci, nastavenia pre veriacich
   const veriaci = <>
     {nadpis("Od veriacich", "Úmysly na omšu, príspevky veriacich a čo smú pridávať")}
-    <OdVeriacich strankaId={strankaId} mobil={mobil} toast={toast} />
+    <OdVeriacich strankaId={strankaId} meno={meno} mobil={mobil} toast={toast} />
   </>;
   // KARTA 57 B.3: Kostoly farnosti → dlaždica Filiálky (filiálky dorobíme)
   const filialky = <>

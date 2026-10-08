@@ -44,6 +44,11 @@ export interface PolozkaFarnika {
   /** parte, svadba, jubileum z Editora oznámení: návrh a obrázok hotovej šablóny */
   editor?: import("@/components/EditorOznameni").PayloadEditora; obr?: string;
   /** autor to upravil */ upravene?: boolean;
+  // ---- OPRAVY 176: úmysel na omšu (len farár) ----
+  /** zapísaný na omšu z rozpisu: dátum, kód omše, čas pri zápise */ zapis?: { d: string; kod: number; t: string };
+  /** odslúžené (čas) */ odsluzene?: number;
+  /** posledná správa veriacemu */ sprava?: { text: string; cas: number };
+  /** zapísal farár (osobne alebo telefonicky) — veriaci nemá účet v appke */ osobne?: boolean;
 }
 export interface FormularVeriaceho { nad: string; txt: string; datum: string; cas: string; kde: string; umK: number; pozv: number; limit: string; anon: boolean;
   /** OPRAVY 179: krátky oznam · Platí do (index do PLATI_VERIACI) */ plat?: number }
@@ -95,7 +100,8 @@ export function pocetyOdVeriacich(id: string) {
   return {
     nove: l.filter((x) => x.k !== "umysel" && x.cas > v).length,
     nahlasene: l.filter((x) => pocetNahl(x) > 0).length,
-    umysly: l.filter((x) => x.k === "umysel" && x.cas > v).length,
+    // OPRAVY 176: úmysly, ktoré ešte nie sú zapísané na omšu
+    umysly: l.filter((x) => x.k === "umysel" && !x.zapis && !x.odsluzene).length,
   };
 }
 /** prekreslenie pri zmene nastavenia alebo zoznamu */

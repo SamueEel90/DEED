@@ -10,9 +10,9 @@ import { DRUHY_FARNIKA, CEZ_EDITOR, nacitajSmie, ulozSmie, smie, odFarnikov, upr
 import { otvorVerejnyProfil } from "@/features/verejny-profil/otvor";
 import { PodrzZmaz, TextOznamu } from "./OznamyFarnosti";
 import { cistyText } from "./obsahZbierky";
+import { UmyslyFarara } from "./UmyslyFarara";
 
 const karta: CSSProperties = { borderRadius: 22, background: "var(--card)", border: "1px solid var(--cardBd)" };
-const kicker: CSSProperties = { fontSize: 12, fontWeight: 800, letterSpacing: ".08em", color: "var(--acc)", padding: "4px 2px 0" };
 const POPLATKY = [0, 1, 2, 5];
 const SKUPINY: [string, DruhFarnika[]][] = [
   ["PROSBY O MODLITBU", ["modlitba"]], ["UDALOSTI", ["udalost"]], ["KRÁTKE OZNAMY", ["oznam"]], ["FOTKY Z AKCIÍ", ["fotky"]], ["OZNÁMENIA · PARTE, SVADBY, JUBILEÁ", ["parte", "svadba", "ine"]],
@@ -57,10 +57,9 @@ function Oprava({ x, strankaId }: { x: PolozkaFarnika; strankaId: string }) {
   </>;
 }
 
-export function OdVeriacich({ strankaId, mobil, toast }: { strankaId: string; mobil: boolean; toast: (m: string) => void }) {
+export function OdVeriacich({ strankaId, meno, mobil, toast }: { strankaId: string; /** názov farnosti (podpis správy veriacemu) */ meno: string; mobil: boolean; toast: (m: string) => void }) {
   useOdFarnikov(); useCerstveOdFarnikov(strankaId);
   const vsetko = odFarnikov(strankaId);
-  const umysly = vsetko.filter((x) => x.k === "umysel");
   const L = vsetko.filter((x) => x.k !== "umysel");
   const nast = nastavenieOdVeriacich(strankaId);
   // D.5: farár otvoril Od veriacich → nové príspevky a úmysly sú videné
@@ -106,16 +105,8 @@ export function OdVeriacich({ strankaId, mobil, toast }: { strankaId: string; mo
   const n = L.filter((x) => vyb.has(x.id)).length;
 
   return <>
-    {/* D.1: úmysly hore — povinnosť farára, na stránku nejdú */}
-    <span style={kicker}>ÚMYSLY NA OMŠU · LEN PRE VÁS</span>
-    <section style={{ ...karta, borderRadius: mobil ? 18 : 22, padding: mobil ? "4px 14px" : "6px 20px" }}>
-      {!umysly.length && <span style={{ display: "block", padding: "12px 0", fontSize: 14, color: "var(--ink3)" }}>Zatiaľ žiadne úmysly. Keď veriaci zapíše úmysel na omšu, príde vám sem, nie na stránku.</span>}
-      {umysly.map((u, i) => (
-        <div key={u.id} style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 58, padding: "8px 0", borderTop: i ? "1px solid var(--cardBd)" : "none" }}>
-          <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}><b style={{ fontSize: 14.5 }}>{u.t || "Úmysel"}</b><span style={{ fontSize: 12.5, color: "var(--ink3)" }}>{[u.s, u.kto, kedy(u.cas)].filter(Boolean).join(" · ")}</span></span>
-          <PodrzZmaz onZmaz={() => { zmazOdFarnika(strankaId, u.id); toast("Zmazané."); }} />
-        </div>))}
-    </section>
+    {/* D.1 · OPRAVY 176: úmysly hore — povinnosť farára, na stránku nejdú */}
+    <UmyslyFarara strankaId={strankaId} meno={meno} mobil={mobil} toast={toast} />
 
     <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", paddingTop: 6 }}>
       <b style={{ flex: 1, fontSize: 17 }}>Pridali veriaci · {L.length}</b>
