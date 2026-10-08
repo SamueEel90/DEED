@@ -121,7 +121,7 @@ function Tab({ m, on, onClick }: { m?: Modul; on: boolean; onClick: () => void }
 }
 
 // ---- SHEET: VŠETKY MODULY + ÚPRAVA MENU ----
-export function ViacSheet({ taby, setTaby, aktivny, onModul, onPenazenka, onAko, onClose, moduly = VSETKY_MODULY, strankaAkcie, strankaFiltre }: {
+export function ViacSheet({ taby, setTaby, aktivny, onModul, onPenazenka, onAko, onDeedTim, onClose, moduly = VSETKY_MODULY, strankaAkcie, strankaFiltre }: {
   taby: string[];
   setTaby: (taby: string[]) => void;
   aktivny: string;
@@ -129,6 +129,8 @@ export function ViacSheet({ taby, setTaby, aktivny, onModul, onPenazenka, onAko,
   onPenazenka?: () => void;
   /** otvorí sprievodcu „Ako DEED funguje" */
   onAko?: () => void;
+  /** KARTA 57 F: tím DEED — štatistika editora oznámení (len keď som_deed_admin) */
+  onDeedTim?: () => void;
   onClose: () => void;
   moduly?: Modul[];
   strankaAkcie?: StrankaAkcia[];
@@ -262,7 +264,23 @@ export function ViacSheet({ taby, setTaby, aktivny, onModul, onPenazenka, onAko,
             </div>
           </>
         )}
-        {!uprava && onAko && (
+                {/* KARTA 57 F: len tím DEED (deed_admin) — štatistika editora oznámení */}
+        {!uprava && onDeedTim && (
+          <>
+            <div style={{ fontSize: 10.5, letterSpacing: ".5px", color: C.textTer, fontWeight: 700, margin: `${SPACE.gutter}px ${SPACE.xxs}px ${SPACE.xs}px` }}>TÍM DEED</div>
+            <div {...pressable(() => { onClose(); onDeedTim(); }, "Štatistika editora oznámení")} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, background: "rgba(var(--glass-rgb),.05)", border: `1px solid ${C.line}`, borderRadius: RADIUS.md, padding: `${SPACE.sm}px ${SPACE.md}px`, cursor: "pointer", marginBottom: SPACE.xs }}>
+              <span aria-hidden style={{ width: 38, height: 38, borderRadius: RADIUS.sm, background: "color-mix(in srgb, var(--a-green) 12%, transparent)", border: `1px solid ${C.line2}`, display: "flex", alignItems: "center", justifyContent: "center", flex: "0 0 auto" }}>
+                <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 13h4v7H3zM10 8h4v12h-4zM17 4h4v16h-4z" /></svg>
+              </span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 13.5, fontWeight: 700 }}>Štatistika editora oznámení</div>
+                <div style={{ fontSize: 11, color: C.textTer, marginTop: SPACE.xxs }}>šablóny, typy, sektory, tlač · len pre tím DEED</div>
+              </div>
+              <span style={{ color: C.textTer, fontSize: 15 }}>›</span>
+            </div>
+          </>
+        )}
+{!uprava && onAko && (
           <>
             <div {...pressable(onAko, "Ako DEED+ funguje — krátky sprievodca")} style={{ display: "flex", alignItems: "center", gap: SPACE.sm, background: "rgba(var(--glass-rgb),.05)", border: `1px solid ${C.line}`, borderRadius: RADIUS.md, padding: `${SPACE.sm}px ${SPACE.sm}px`, cursor: "pointer" }}>
               <span aria-hidden style={{ width: 38, height: 38, borderRadius: RADIUS.sm, background: "color-mix(in srgb, var(--a-green) 12%, transparent)", border: `1px solid ${C.line2}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 17, flex: "0 0 auto" }}>🌱</span>

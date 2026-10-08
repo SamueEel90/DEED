@@ -23,3 +23,19 @@ export function zapisZPayloadu(p: PayloadEditora, kde: Pick<ZapisEditora, "kto" 
   zapisEditora({ udalost: p.stav, typ: p.typ, sablona: p.sablona ?? null, rezim: p.rezim === "rychly" ? "rychly" : "plny",
     qr: p.qr === true, qr_umiestnenie: um === "vnutri" || um === "pas" ? um : null, ...kde });
 }
+
+// ---- KARTA 57 F · 0070: prehľad pre tím DEED ----
+/** patrí prihlásený účet tímu DEED? (deed_admin) — bez DB alebo pri chybe false */
+export async function somDeedAdmin(): Promise<boolean> {
+  if (!supabase) return false;
+  const { data, error } = await supabase.rpc("som_deed_admin");
+  return !error && data === true;
+}
+export interface RiadokPrehladu { mesiac: string; sektor: string; typ: TypEditora; sablona: string; vytvorene: number; doplnene: number; tlac: number; obrazky: number; s_qr: number; pri_zbierke: number }
+/** súhrn editor_vytvorenia od mesiaca `od` (RRRR-MM-DD, null = všetko); iný účet než DEED dostane chybu */
+export async function nacitajPrehladEditora(od: string | null): Promise<RiadokPrehladu[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase.rpc("editor_prehlad", { p_od: od, p_do: null });
+  if (error) throw new Error(/nie_admin/.test(error.message) ? "Prehľad je len pre tím DEED." : "Prehľad sa nepodarilo načítať.");
+  return (data as RiadokPrehladu[]) ?? [];
+}
