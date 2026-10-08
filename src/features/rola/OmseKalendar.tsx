@@ -4,7 +4,6 @@
 // Kalendár začína prázdny. Dáta: lib/kalendarFarnosti (účet farnosti).
 // ============================================================
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
-import { OnlineOmseKarta } from "./PrihovorKarta";
 import { pridajPrispevok, vlastnePrispevky, type VieraFeedItem } from "@/features/viera/mock";
 import {
   useKalendar, zmenKalendar, zmenKostol, zmazVlastnu, novyKostol, omseDna, polozkyDna, maZmenu, druhPolozky, jeObrad, casKodu,
@@ -438,7 +437,6 @@ export function OmseKalendar({ strankaId, meno, kostoly, mobil, tel = false, toa
     {tyzden}
     <div ref={denRef} style={{ flex: "none", display: "flex", flexDirection: "column", gap: 12, scrollMarginTop: 76 }}>{den && denPanel}</div>
     {celyTyzden}
-    <OnlineOmseKarta strankaId={strankaId} mobil />
   </>;
   return <>
     <div style={{ flex: "none", display: "flex", alignItems: "center", gap: 12, flexWrap: mobil ? "wrap" : "nowrap" }}>
@@ -455,7 +453,6 @@ export function OmseKalendar({ strankaId, meno, kostoly, mobil, tel = false, toa
       <span style={{ fontSize: 12.5, fontWeight: 800, letterSpacing: ".08em", color: "var(--ink3)", paddingRight: 4 }}>UPRAVUJETE</span>
       {kostoly.map((x, i) => { const on = i === kI; return <button key={x.nazov + i} type="button" onClick={() => { setKI(i); setDen(null); }} aria-pressed={on} style={{ minHeight: 44, padding: "0 16px", borderRadius: 12, border: on ? "2px solid var(--green)" : "1px solid var(--cardBd)", background: on ? "var(--gSoft)" : "var(--card)", cursor: "pointer", fontFamily: "inherit", fontSize: 14.5, fontWeight: on ? 800 : 600, color: "var(--ink)", boxShadow: "none" }}>{x.nazov}</button>; })}
     </div>}
-    <OnlineOmseKarta strankaId={strankaId} mobil={mobil} />
     {mobil ? <>{den && denPanel}{lavy}{celyTyzden}{kostolyKarta}</> : (
       <div style={{ flex: "none", display: "grid", gridTemplateColumns: "minmax(0,1.6fr) minmax(0,1fr)", gap: 16, alignItems: "start" }}>
         <div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 14 }}>{lavy}</div>
