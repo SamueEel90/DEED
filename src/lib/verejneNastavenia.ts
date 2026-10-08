@@ -4,6 +4,7 @@
 import { useEffect, useSyncExternalStore } from "react";
 import { supabase } from "./supabase";
 import { toast } from "@/components/toast";
+import { pripojTestovaciuStranku } from "./stranka";
 
 type Verejne = Record<string, unknown>;
 const pamat = new Map<string, Verejne>();
@@ -42,6 +43,7 @@ export async function zapisVerejne(stranka: string, kluc: string, hodnota: unkno
   pamat.set(stranka, n);
   zmena();
   if (!supabase) return;
+  await pripojTestovaciuStranku(stranka); // testovacia stránka: tester = správca (aj zo starého panela Môj DEED+ firemný)
   const { error } = await supabase.from("nastavenia_stranky").upsert({ stranka, verejne: n }, { onConflict: "stranka" });
   if (error) toast("Nastavenie sa nepodarilo uložiť — platí len na tomto zariadení.");
 }
