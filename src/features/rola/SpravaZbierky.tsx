@@ -643,7 +643,7 @@ export function SpravaZbierky({ z, mobil, onZbierky, toast, onUdaje, onDorovnani
     <span style={textK}>{voFeede ? "Zbierka skončila skôr, preto ostane vo feede do konca svojich 30 dní s nápisom Podarilo sa. Darcovia aj zbierka sú vidno. Stiahnuť ju môžete kedykoľvek." : "Zbierka je už len na vašom profile."}</span>
     {voFeede && <button type="button" onClick={() => zmen({ stiahnuta: new Date().toISOString() })} style={obrysK}>Stiahnuť z feedu</button>}
   </section>;
-  const ako = <AkoDarovat sada={ob.sada} eurc={ob.eurc} sadaE={ob.sadaE} onZmena={zmenOb} />;
+  const ako = <AkoDarovat sada={ob.sada} eurc={ob.eurc} sadaE={ob.sadaE} onZmena={zmenOb} bezi={aktivna} />;
   const zap = <Zapecatene riadky={[["Cieľ", z.ciel ? eur(z.ciel) : "bez cieľa"], ["Účel", z.ucel ?? (ukazka ? UKAZKA_STRECHA.ucel : "—")], ["Účet", maskUcet(z.ucet ?? (ukazka ? UKAZKA_STRECHA.ucet : HLAVNY_UCET))], ...(bezDokladov ? [] : [["Lehota na doklady", z.lehotaText ?? (s.lehota === "30" ? "30 dní po skončení" : lehT)] as [string, string]])]} />;
   const qr = <QrKarta nazov={z.nazov} slug={z.slug ?? slugZ(z.nazov)} cislo={cisloObjektu("Z", z.id, z.vs)} organizacia={z.organizacia} toast={toast} />;
   const vlavo = <>{stavKarta}{textKarta}{galeria}</>;

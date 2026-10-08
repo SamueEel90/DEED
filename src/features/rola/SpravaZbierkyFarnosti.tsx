@@ -8,7 +8,7 @@ import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { SADY, SADY_EURC, upravZbierku, ukonciZbierku, cielCislo, type SpustenaZbierka } from "@/lib/novaZbierka";
 import { darcoviaPre, identitaDarcu, relCas, useZmenyDarov } from "@/lib/darcovia";
 import { usePouzivatel } from "@/lib/pouzivatel";
-import { kartaK, nadpisK, textK } from "./spravaCasti";
+import { kartaK, nadpisK, textK, useZmenaSum } from "./spravaCasti";
 
 const eur = (n: number) => `${n.toLocaleString("sk-SK")} €`;
 const cis = (n: number) => n.toLocaleString("sk-SK");
@@ -39,16 +39,12 @@ export function SpravaZbierkyFarnosti({ stranka, z, mobil, toast, onSpat }: {
   const [tab, setTab] = useState(0);
   const [sada, setSada] = useState(z.sada);
   const [sadaE, setSadaE] = useState(z.sadaE);
-  const [ulozE, setUlozE] = useState(false);
-  const [ulozC, setUlozC] = useState(false);
-  // „Uložené ✓" pri nadpise na 2,2 s
-  useEffect(() => { if (!ulozE) return; const t = window.setTimeout(() => setUlozE(false), 2200); return () => window.clearTimeout(t); }, [ulozE]);
-  useEffect(() => { if (!ulozC) return; const t = window.setTimeout(() => setUlozC(false), 2200); return () => window.clearTimeout(t); }, [ulozC]);
-  const blik = (k: "e" | "c") => (k === "e" ? setUlozE : setUlozC)(true);
-  const ulozSumy = (p: { sada?: number; sadaE?: number }) => {
-    void upravZbierku(stranka, z.id, { popis: z.popis, popis2: z.popis2, media: z.media, eurc: z.eurc, sada: p.sada ?? sada, sadaE: p.sadaE ?? sadaE })
+  // OPRAVY 171: pri bežiacej zbierke sa rýchle sumy menia len podržaním (ťuk = koncept)
+  const zm = useZmenaSum(sada, sadaE, z.eurc, (p) => {
+    setSada(p.sada); setSadaE(p.sadaE);
+    void upravZbierku(stranka, z.id, { popis: z.popis, popis2: z.popis2, media: z.media, eurc: z.eurc, sada: p.sada, sadaE: p.sadaE })
       .catch((e: Error) => toast(e.message));
-  };
+  });
 
   const dary = darcoviaPre(z.id);
   const suma = dary.reduce((a, r) => a + r.suma, 0);
@@ -74,7 +70,6 @@ export function SpravaZbierkyFarnosti({ stranka, z, mobil, toast, onSpat }: {
           <b style={{ fontSize: 15 }}>{t}</b><span style={{ fontSize: 13, color: "var(--ink3)" }}>{a.map(cis).join(" · ")} {mena}</span>
         </button>); })}
     </div>);
-  const ulozeneT = (on: boolean) => on && <span role="status" style={{ fontSize: 13.5, fontWeight: 800, color: "var(--gInk)" }}>Uložené ✓</span>;
   const ramec = ([k, v, d]: [string, string, string]) => (
     <div key={k} style={{ minWidth: 0, padding: "10px 12px", borderRadius: 14, background: "var(--field)", border: "1px solid var(--cardBd)", display: "flex", flexDirection: "column", gap: 2 }}>
       <span style={{ fontSize: 12, fontWeight: 700, color: "var(--ink3)" }}>{k}</span>
@@ -120,12 +115,13 @@ export function SpravaZbierkyFarnosti({ stranka, z, mobil, toast, onSpat }: {
 
     {tab === 1 && <section style={kartaK}>
       <span style={textK}>Zbierka je zapečatená. Zmeniť sa dajú už len rýchle sumy, napríklad keď ste na začiatku dali príliš vysoké.</span>
-      <span style={{ display: "flex", alignItems: "center", gap: 12 }}><span style={nadpisK}>Rýchle sumy v eurách</span>{ulozeneT(ulozE)}</span>
-      {volby(SADY, sada, (i) => { setSada(i); ulozSumy({ sada: i }); blik("e"); }, "€")}
+      <span style={nadpisK}>Rýchle sumy v eurách</span>
+      {volby(SADY, zm.nova.sada, (i) => zm.vyber({ sada: i }), "€")}
       {z.eurc && <>
-        <span style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 6 }}><span style={nadpisK}>Rýchle sumy v EURC</span>{ulozeneT(ulozC)}</span>
-        {volby(SADY_EURC, sadaE, (i) => { setSadaE(i); ulozSumy({ sadaE: i }); blik("c"); }, "EURC")}
+        <span style={{ ...nadpisK, marginTop: 6 }}>Rýchle sumy v EURC</span>
+        {volby(SADY_EURC, zm.nova.sadaE, (i) => zm.vyber({ sadaE: i }), "EURC")}
       </>}
+      {zm.karta}
     </section>}
 
     {tab === 2 && (hotovo || !aktivna ? (

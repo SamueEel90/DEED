@@ -251,7 +251,7 @@ export function SpravaCentralnej({ strankaId, nazov, hlavnyUcet, tier, mobil, to
       <button type="button" onClick={farnost.onHotovo} style={{ height: 52, borderRadius: 15, border: "1.5px solid var(--gBd)", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 15.5, fontWeight: 800, color: "var(--gInk)", boxShadow: "none" }}>Hotovo · späť do Správy</button>
     </section>);
   const vlavo = <>{spustena && tentoMesiac}{textKarta}{galeria}</>;
-  const vpravo = <>{nahlad}{ucetKarta}<AkoDarovat sada={d.sada} eurc={d.eurc} sadaE={d.sadaE} onZmena={zmen} pravidelna />{sektorKarta}{spustena ? <>{bezi}{qr}</> : nebezi}</>;
+  const vpravo = <>{nahlad}{ucetKarta}<AkoDarovat sada={d.sada} eurc={d.eurc} sadaE={d.sadaE} onZmena={zmen} pravidelna bezi={spustena} />{sektorKarta}{spustena ? <>{bezi}{qr}</> : nebezi}</>;
   const stlpce = (l: ReactNode, p: ReactNode) => mobil
     ? <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>{l}{p}</div>
     : <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1.3fr) minmax(0,1fr)", gap: 16, alignItems: "start" }}><div style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0 }}>{l}</div><div style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0 }}>{p}</div></div>;
