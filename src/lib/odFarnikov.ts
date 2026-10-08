@@ -30,6 +30,9 @@ export interface PolozkaFarnika {
   id: string; k: DruhFarnika; t: string; s: string;
   /** meno z registrácie alebo „Bohu známy veriaci" */
   kto: string; cas: number; fotky?: string[];
+  /** KARTA 57 D.2: farár opravil nadpis alebo text (veriaci dostane správu) */ upravil?: boolean;
+  /** KARTA 57 D.4: koľkokrát to ľudia nahlásili (··· Nahlásiť, karta E.8) */ nahl?: number;
+  /** KARTA 57 D.4: pri parte počet „Úprimnú sústrasť" (karta E.8) */ sus?: number;
 }
 
 let verzia = 0;
@@ -39,6 +42,24 @@ export function ulozSmie(id: string, s: SmieFarnika) { ulozStav("farniksmie", id
 export const odFarnikov = (id: string): PolozkaFarnika[] => nacitajStav<PolozkaFarnika[]>("odfarnikov", id, []);
 export function pridajOdFarnika(id: string, p: PolozkaFarnika) { ulozStav("odfarnikov", id, [p, ...odFarnikov(id)]); zmena(); }
 export function zmazOdFarnika(id: string, pid: string) { ulozStav("odfarnikov", id, odFarnikov(id).filter((x) => x.id !== pid)); zmena(); }
+/** KARTA 57 D.3: zmazať viac naraz */
+export function zmazOdFarnikov(id: string, pids: string[]) { const z = new Set(pids); ulozStav("odfarnikov", id, odFarnikov(id).filter((x) => !z.has(x.id))); zmena(); }
+/** KARTA 57 D.2: oprava farára (nadpis, text) */
+export function upravOdFarnika(id: string, pid: string, patch: Partial<PolozkaFarnika>) { ulozStav("odfarnikov", id, odFarnikov(id).map((x) => (x.id === pid ? { ...x, ...patch } : x))); zmena(); }
+
+/** KARTA 57 D.4–D.5: nastavenie farára (upozornenia) a čas, keď naposledy otvoril Od veriacich */
+export interface NastavenieOdVeriacich { upozornit: boolean; videne: number }
+export const nastavenieOdVeriacich = (id: string): NastavenieOdVeriacich => ({ upozornit: true, videne: 0, ...nacitajStav<Partial<NastavenieOdVeriacich>>("odfnast", id, {}) });
+export function ulozNastavenieOdVeriacich(id: string, n: Partial<NastavenieOdVeriacich>) { ulozStav("odfnast", id, { ...nastavenieOdVeriacich(id), ...n }); zmena(); }
+/** Treba vybaviť: nové príspevky, nahlásené, nové úmysly */
+export function pocetyOdVeriacich(id: string) {
+  const l = odFarnikov(id), v = nastavenieOdVeriacich(id).videne;
+  return {
+    nove: l.filter((x) => x.k !== "umysel" && x.cas > v).length,
+    nahlasene: l.filter((x) => (x.nahl ?? 0) > 0).length,
+    umysly: l.filter((x) => x.k === "umysel" && x.cas > v).length,
+  };
+}
 /** prekreslenie pri zmene nastavenia alebo zoznamu */
 export function useOdFarnikov(): number {
   return useSyncExternalStore((f) => { posl.add(f); return () => { posl.delete(f); }; }, () => verzia);

@@ -121,7 +121,7 @@ const fmtDatum = (iso: string) => { if (!iso) return ""; const [y, m, d] = iso.s
 const pocetLudi = (n: number) => `${n} ${n === 1 ? "človek" : n >= 2 && n <= 4 ? "ľudia" : "ľudí"}`;
 
 /** KARTA 57 C.1: mazanie len podržaním (1,5 s) */
-function PodrzZmaz({ onZmaz }: { onZmaz: () => void }) {
+export function PodrzZmaz({ onZmaz, label = "Podržte a zmažte" }: { onZmaz: () => void; label?: string }) {
   const [drz, setDrz] = useState(false);
   const t = useRef<number | undefined>(undefined);
   useEffect(() => () => window.clearTimeout(t.current), []);
@@ -132,7 +132,7 @@ function PodrzZmaz({ onZmaz }: { onZmaz: () => void }) {
       onKeyDown={(e) => { if ((e.key === "Enter" || e.key === " ") && !drz) { e.preventDefault(); start(); } }} onKeyUp={stop}
       style={{ position: "relative", overflow: "hidden", minHeight: 44, padding: "0 16px", borderRadius: 12, border: "1.5px solid var(--cRed)", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 800, color: "var(--cRed)", boxShadow: "none", touchAction: "none", userSelect: "none" }}>
       <span aria-hidden="true" style={{ position: "absolute", inset: 0, background: "var(--cRedBg)", opacity: 0.35, transformOrigin: "0 50%", transform: `scaleX(${drz ? 1 : 0})`, transition: drz ? "transform 1.5s linear" : "transform .2s ease" }} />
-      <span style={{ position: "relative" }}>{drz ? "Držte…" : "Podržte a zmažte"}</span>
+      <span style={{ position: "relative" }}>{drz ? "Držte…" : label}</span>
     </button>);
 }
 
