@@ -616,13 +616,13 @@ function DetailZbierky({ d, onZavri }: { d: DetailF; onZavri: () => void }) {
               {rod && <div style={{ margin: "0 16px 16px", padding: "12px 16px", borderRadius: 14, background: "#F3EEF4", border: `2px solid ${FIALOVA}`, display: "flex", flexDirection: "column", gap: 2 }}>
                 <span style={{ fontSize: 13.5, fontWeight: 800, letterSpacing: ".1em", color: FIALOVA }}>ZBIERKA RODINY</span>
                 <b style={{ fontSize: 17 }}>Peniaze idú: rodine</b>
-                <span style={{ fontSize: 14.5, color: INK2 }}>Sumu uvidíte po vašom dare.</span>
+                {d.parte && <span style={{ fontSize: 14.5, color: INK2 }}>Sumu uvidíte po vašom dare.</span>}
               </div>}
             </div>
           </div>
           <div style={{ flex: "1 1 380px", minWidth: 0, maxWidth: 520, display: "flex", flexDirection: "column", gap: 14 }}>
             <div style={{ borderRadius: 24, overflow: "hidden", border: rod ? `3px solid ${FIALOVA}` : `1px solid ${LINKA}`, background: "#F3EFE7", padding: "14px 0", ["--hcPruh" as string]: hc, ["--hcF" as string]: hc } as CSSProperties}>
-              <ZbierkaModul zbierka={d.data} miesto="charita" pohreb={rod} bocny zoStrankyOrg onBack={onZavri} ktoVoli={rod ? "rodina" : "farnosť"} bez={d.typ === "hl" ? ["zapojitFirmu"] : ["zapojitFirmu", "pravidelna"]} />
+              <ZbierkaModul zbierka={d.data} miesto="charita" pohreb={!!d.parte} bocny zoStrankyOrg onBack={onZavri} ktoVoli={rod ? "rodina" : "farnosť"} bez={d.typ === "hl" ? ["zapojitFirmu"] : ["zapojitFirmu", "pravidelna", "dorovnanie"]} />
             </div>
             <button type="button" onClick={onZavri} style={{ alignSelf: "center", minHeight: 52, padding: "0 26px", borderRadius: 14, border: `1.5px solid ${LINKA}`, background: PAPIER, color: INK, fontFamily: "inherit", fontSize: 16.5, fontWeight: 800, cursor: "pointer" }}>Zbaliť ⌃</button>
           </div>
