@@ -37,6 +37,8 @@ import { useVrstvaProfiluOtvorena } from "@/features/verejny-profil/otvor";
 import { AkciaHost } from "@/features/skutok/Akcia";
 import { PomocHost } from "@/features/profil/Pomoc";
 import { PolohaOkruhu } from "@/features/profil/Bezpecnost24";
+import { PrehladEditora } from "@/features/deed/PrehladEditora";
+import { somDeedAdmin } from "@/lib/editorStat";
 
 // Code-splitting: každý modul = vlastný chunk, načíta sa až pri otvorení
 // (initial load = shell + prvý modul namiesto jedného veľkého bundle).
@@ -206,6 +208,10 @@ export function Screens({ wide, desktop }: { wide?: boolean; desktop?: boolean }
   const [aktivacia, setAktivacia] = useState(false); // overlay aktívnej registrácie (upgrade)
   const [intro, setIntro] = useState(false); // prvé spustenie — 3-kartový sprievodca
   const [akoFunguje, setAkoFunguje] = useState(false); // „Ako DEED funguje" z menu Viac
+  // KARTA 57 F: tím DEED (deed_admin, 0070) — Viac → TÍM DEED → Štatistika editora oznámení
+  const [deedTim, setDeedTim] = useState(false);
+  const [prehladEd, setPrehladEd] = useState(false);
+  useEffect(() => { let ziva = true; void somDeedAdmin().then((a) => { if (ziva) setDeedTim(a); }); return () => { ziva = false; }; }, [session]);
   const [obnovaHesla, setObnovaHesla] = useState(false); // PASSWORD_RECOVERY z emailového odkazu
   const scrollRef = useRef<HTMLDivElement>(null);
   // auth-boot: kým sa Supabase Auth ↔ app-session zladí, drž splash (žiadny flash zlej session)
@@ -240,6 +246,7 @@ export function Screens({ wide, desktop }: { wide?: boolean; desktop?: boolean }
   useVrstva(!!splitSheet, () => setSplitSheet(null));
   useVrstva(!!chainSheet, () => setChainSheet(null));
   useVrstva(intro || akoFunguje, () => { setIntro(false); setAkoFunguje(false); });
+  useVrstva(prehladEd, () => setPrehladEd(false));
 
   // KARTA 44: po prihlásení sa sprievodca už sám neotvára (Úvod beží pred registráciou, ďalej len cez „Ako funguje DEED+")
 
@@ -392,8 +399,10 @@ export function Screens({ wide, desktop }: { wide?: boolean; desktop?: boolean }
             onModul={(m: string) => { prepni(m); setViac(false); }}
             onPenazenka={() => { prepni("profil"); setWalletReq((n) => n + 1); setViac(false); }}
             onAko={() => { setViac(false); setAkoFunguje(true); }}
+            onDeedTim={deedTim ? () => { setViac(false); setPrehladEd(true); } : undefined}
             onClose={() => setViac(false)} />
         )}
+        {prehladEd && deedTim && <PrehladEditora onZavri={() => setPrehladEd(false)} />}
 
         {/* intro sprievodca — prvé spustenie (raz) alebo „Ako DEED funguje" z menu */}
         {(intro || akoFunguje) && <IntroPruvodca onClose={zavriIntro} />}

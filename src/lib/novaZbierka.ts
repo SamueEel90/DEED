@@ -10,7 +10,8 @@ import { supabase } from "./supabase";
 import type { Vyrez } from "@/components/orezfotky";
 
 /** 5. 10. · popis = nepovinný popis fotky (najviac 80 znakov), darca ho vidí pod fotkou na celej obrazovke, čítačka ako alt */
-export type MediumZbierky = { id: number; typ: "foto" | "video"; src: string; sek?: number; w?: number; vyrez?: Vyrez; popis?: string };
+export type MediumZbierky = { id: number; typ: "foto" | "video"; src: string; sek?: number; w?: number; vyrez?: Vyrez; popis?: string;
+  /** KARTA 57 B.5: fotka z galérie (ilustračná) — súhlas ľudí na fotkách sa pri nej nepýta */ ilustracna?: boolean };
 export const POPIS_FOTKY_MAX = 80;
 export type TypZbierky = "kratka" | "dlha";
 /** lehoty dokladovania (karta 37 · bod 5) — žiadny „mesačný update" */

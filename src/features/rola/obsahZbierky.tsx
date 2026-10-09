@@ -122,9 +122,10 @@ export function TextovePolia({ popis, popis2, onPopis, onPopis2, ph, pecat, onRi
 /** GALÉRIA — fotky (najviac 8) a jedno video do 45 s, poradie, výrez, pretiahnutie, popis fotky. Výrez rieši volajúci (onVyrez, bez neho sa tlačidlo neukáže).
  *  5. 10.: pod každou fotkou pole Popis (nepovinné, najviac 80 znakov) — darca ho vidí pod fotkou na celej obrazovke, čítačka ako alt.
  *  popisNapoveda = placeholder poľa (pri dokladoch „Napríklad: Pred opravou, Po oprave"). Jedna galéria všade, bez PRED / PO. */
-export function GaleriaEditor({ media, onMedia, ph, onVyrez, nadpis = "Galéria zbierky", dovetok = " Fotky a video môžete pridávať aj po spustení zbierky.", popisNapoveda = "Popis fotky (nepovinné)", children, max = MAX_FOTIEK_ZB, bezVidea }: {
+export function GaleriaEditor({ media, onMedia, ph, onVyrez, nadpis = "Galéria zbierky", dovetok = " Fotky a video môžete pridávať aj po spustení zbierky.", popisNapoveda = "Popis fotky (nepovinné)", children, max = MAX_FOTIEK_ZB, bezVidea, galeria }: {
   media: MediumZbierky[]; onMedia: (m: MediumZbierky[]) => void; ph: boolean; onVyrez?: (id: number) => void; nadpis?: string; dovetok?: string; popisNapoveda?: string; children?: ReactNode;
   /** KARTA 56I: najviac fotiek (predvolene 8) */ max?: number; /** KARTA 56I: len fotky, bez videa */ bezVidea?: boolean;
+  /** KARTA 57 B.5: „Vybrať z galérie" (ilustračné fotky, ROADMAP Fáza 4) */ galeria?: () => void;
 }) {
   const [chybaMed, setChybaMed] = useState("");
   const [drag, setDrag] = useState<number | null>(null);
@@ -171,6 +172,7 @@ export function GaleriaEditor({ media, onMedia, ph, onVyrez, nadpis = "Galéria 
         onDrop={(e) => { e.preventDefault(); setNadZonou(false); if (e.dataTransfer.files?.length) void pridajSubory(Array.from(e.dataTransfer.files)); }}>
         <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}><span style={{ fontSize: 15.5, fontWeight: 800 }}>{nadpis}</span><span style={{ ...pozn, fontWeight: 800 }}>{fotiek} / {max} fotiek{bezVidea ? "" : video ? ` · 1 video ${fmtSek(video.sek ?? 0)}` : " · bez videa"}</span></div>
         {ph && <div style={{ display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 10 }}>{fotiek < max && pridat(true)}{!video && !bezVidea && pridat(false)}</div>}
+        {galeria && fotiek < max && <button type="button" onClick={galeria} style={{ alignSelf: "flex-start", minHeight: 48, padding: "0 16px", borderRadius: 14, border: "1.5px solid var(--gBd)", background: "var(--gSoft)", color: "var(--gInk)", cursor: "pointer", fontFamily: "inherit", fontSize: 15, fontWeight: 800, display: "flex", alignItems: "center", gap: 8 }}><Ik d={I.foto} s={18} />Vybrať z galérie</button>}
         <div style={{ display: "grid", gridTemplateColumns: ph ? "minmax(0,1fr)" : "repeat(3,minmax(0,1fr))", gap: 14 }}>
           {media.map((m, i) => (
             <div key={m.id} draggable onDragStart={(e) => { e.dataTransfer.effectAllowed = "move"; setDrag(i); }} onDragOver={(e) => e.preventDefault()}

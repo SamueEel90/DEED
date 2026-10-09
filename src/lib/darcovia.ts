@@ -135,10 +135,13 @@ function realneDary(refId: string): DarRiadok[] {
 }
 // ---- 0067: zbierka stránky v databáze — zoznam aj súčty LEN z ledgera (dar, ktorý server odmietol, sa neukáže) ----
 const zLedgera = new Set<string>();
+/** zbierky rodiny, ktorých sumu server nepošle (0075b · KARTA 57 A.7): refId → počet darov */
+const skrytaSuma = new Map<string, number>();
 /** id zbierky v ledgeri, ak má appka databázu a dar patrí zbierke stránky */
 function ledgerId(refId: string): string | null { return supabase ? idZbierkyDB(refId) : null; }
 function obnovZLedgera(refId: string, id: string) {
-  void nacitajDaryZbierky(id).then((l) => {
+  void nacitajDaryZbierky(id).then(({ dary: l, skryte, pocet }) => {
+    if (skryte) skrytaSuma.set(refId, pocet); else skrytaSuma.delete(refId);
     // dorovnanie firmy zapísal server (dorovnanie_dar) — jeho riadok ostáva
     const firmy = realneDary(refId).filter((x) => x.firma);
     const dary: DarRiadok[] = l.map((d) => ({
@@ -169,9 +172,12 @@ function riadkyPre(refId: string): DarRiadok[] {
 /** kľúče zbierok so skutočnými darmi podľa začiatku (omšové okná farnosti) */
 export function refIdySDarmi(zaciatok: string): string[] { return [...sklad.keys()].filter((k) => k.startsWith(zaciatok) && (sklad.get(k)?.length ?? 0) > 0); }
 
-/** súčet a počet darov zbierky (eurá; EURC 1 : 1) — jeden zdroj pre ukazovateľ aj hlavičku */
-export function sucetDarov(refId: string): { suma: number; pocet: number } {
+/** súčet a počet darov zbierky (eurá; EURC 1 : 1) — jeden zdroj pre ukazovateľ aj hlavičku.
+ *  `skryta` = zbierka rodiny, sumu server neposlal (0075b · KARTA 57 A.7): suma je 0, počet zo servera. */
+export function sucetDarov(refId: string): { suma: number; pocet: number; skryta?: true } {
   const r = riadkyPre(refId);
+  const skryty = skrytaSuma.get(refId);
+  if (skryty !== undefined) return { suma: 0, pocet: skryty, skryta: true };
   return { suma: r.reduce((a, x) => a + x.suma, 0), pocet: r.length };
 }
 

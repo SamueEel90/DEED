@@ -18,10 +18,12 @@ function kontaktRiadky(p: ProfilStranky | null): string[] {
   return [k.adresaVerejna, ...k.telefony.map((t) => t.cislo), ...k.emaily.map((e) => e.adresa), k.web].map((x) => (x ?? "").trim()).filter(Boolean);
 }
 
-export function NahladFarnosti({ profil, meno, vzhlad, mobil, hore }: {
+export function NahladFarnosti({ profil, meno, vzhlad, mobil, hore, prihovor }: {
   profil: ProfilStranky | null; meno: string; vzhlad: Vzhlad; mobil: boolean;
   /** riadok nad náhľadom: „‹ Späť na úpravu" a popis */
   hore: ReactNode;
+  /** KARTA 57 C.7–C.8: NAŽIVO a Príhovor farára (svetly = na tmavej titulke) */
+  prihovor?: (svetly: boolean) => ReactNode;
 }) {
   const cover = profil?.cover ? `url("${profil.cover.src}") center/cover no-repeat ${profil.cover.priemer}` : "linear-gradient(160deg,var(--card),var(--panel))";
   const onas = cistyText(profil?.onas) ? sanitizujHtml(profil?.onas ?? "") : "";
@@ -53,6 +55,7 @@ export function NahladFarnosti({ profil, meno, vzhlad, mobil, hore }: {
           {logo(92, 28, { marginTop: -46 })}
           <b style={{ fontSize: 32, letterSpacing: "-.03em", lineHeight: 1.05 }}>{meno}</b>
           {text("var(--ink2)", 17)}
+          {prihovor?.(false)}
           {sledovat(true, 48)}
           {kontakt}
         </div>
@@ -68,6 +71,7 @@ export function NahladFarnosti({ profil, meno, vzhlad, mobil, hore }: {
           {sledovat(false, 52)}
         </div>
       </div>
+      {prihovor?.(false) && <div style={{ padding: mobil ? "20px 20px 0" : "28px 48px 0" }}>{prihovor(false)}</div>}
       {(onas || kontakt) && <div style={{ padding: mobil ? "24px 20px 28px" : "36px 48px 44px", display: "grid", gridTemplateColumns: mobil ? "1fr" : "minmax(0,1.3fr) minmax(0,1fr)", gap: mobil ? 24 : 40, alignItems: "start" }}>
         {text("var(--ink2)", 19) || <span />}
         {kontakt}
@@ -80,6 +84,7 @@ export function NahladFarnosti({ profil, meno, vzhlad, mobil, hore }: {
           {logo(100, 30)}
           <b style={{ fontSize: mobil ? 48 : 84, lineHeight: 0.92, letterSpacing: "-.05em" }}>{meno}</b>
           {text("#E8E1D3", 19)}
+          {prihovor?.(true)}
           {sledovat(false, 54)}
         </div>
       </section>

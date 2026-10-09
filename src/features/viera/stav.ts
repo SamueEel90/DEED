@@ -42,3 +42,12 @@ export async function synchronizujStav(id: string): Promise<boolean> {
   for (const r of data) if (!LOKALNE.has(r.oblast)) uloz(kluc(r.oblast, id), r.data);
   return true;
 }
+
+/** OPRAVY 178: stiahne jednu oblasť z DB do LS (čerstvý stav pred zápisom). Vráti true, ak prišla. */
+export async function obnovOblast(oblast: string, id: string): Promise<boolean> {
+  if (!supabase || LOKALNE.has(oblast)) return false;
+  const { data, error } = await supabase.from("naboz_stav").select("data").eq("oblast", oblast).eq("id", id).maybeSingle();
+  if (error || !data) return false;
+  uloz(kluc(oblast, id), data.data);
+  return true;
+}
