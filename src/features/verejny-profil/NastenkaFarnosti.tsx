@@ -31,6 +31,7 @@ import { klucJa, nastavUpravu, MenuPrispevku, CelaObrazovka, ProhliadacAlbumu } 
 import { ZbierkaModul, type ZbierkaData } from "@/features/zbierka/ZbierkaModul";
 import type { StitLevel } from "@/components/stit";
 import { toast } from "@/shared";
+import { SADY_EUR, SADY_EURC } from "@/lib/sadyDarov";
 import { useLayout } from "@/components/context";
 
 // ---- farby prototypu (svetlá nástenka) ----
@@ -130,7 +131,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, stit: s
   const zbPohreb = zb.filter((z) => druh(z) === "pohreb"), zbSvadba = zb.filter((z) => druh(z) === "svadba");
   const zvOn = hlOn && nedelneOmse(strankaId).length > 0;
   const detailZbierky = (z: SpustenaZbierka): ZbierkaData => ({
-    id: z.id, nazov: z.nazov, popis: cistyText(z.popis), overena: true, ciel: cielCislo(z) || undefined,
+    id: z.id, nazov: z.nazov, popis: cistyText(z.popis), overena: true, ciel: cielCislo(z) || undefined, ...sadyZbierky(z),
     media: z.media.filter((m) => ziveObr(m.src)).map((m) => (m.typ === "video" ? { typ: "video" as const, src: m.src } : { typ: "foto" as const, src: m.src })),
     organizacia: orgPole,
   });
@@ -270,7 +271,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, stit: s
       {maVrch && <div style={{ padding: `40px ${PAD_X}`, display: "flex", flexWrap: "wrap", gap: "32px 40px", alignItems: "flex-start" }}>
         {onas && <span style={{ flex: "1.15 1 380px", minWidth: 0, fontSize: "clamp(17px,1.5vw,20px)", lineHeight: 1.7, color: INK2, whiteSpace: "pre-line" }}>{onas}</span>}
         {hlOn && hl && <HlavnaKarta strankaId={strankaId} hlRef={hlRef} nazov={nazovHlavnej(hl)} txt={hlTxt}
-          onTap={() => onDetail({ id: hlRef, nazov: nazovHlavnej(hl), popis: hlTxt, overena: true, organizacia: orgPole,
+          onTap={() => onDetail({ id: hlRef, nazov: nazovHlavnej(hl), popis: hlTxt, overena: true, organizacia: orgPole, ...sadyZbierky(hl),
             media: hl.media.filter((m) => ziveObr(m.src)).map((m) => (m.typ === "video" ? { typ: "video" as const, src: m.src } : { typ: "foto" as const, src: m.src })) },
             { typ: "hl", chip: "HLAVNÁ ZBIERKA", t: nazovHlavnej(hl), txt: hlTxt, obr: hl.media.find((m) => m.typ === "foto" && ziveObr(m.src))?.src })} />}
       </div>}
@@ -480,6 +481,11 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, stit: s
       {album && <ProhliadacAlbumu a={album} onZavri={() => setAlbum(null)} />}
       {det && <DetailZbierky d={det} onZavri={() => setDet(null)} />}
     </div>);
+}
+
+/** KARTA 57C §5: vybraná sada zbierky (index v SADY_EUR / SADY_EURC) → rýchle sumy v module */
+function sadyZbierky(z: { sada: number; eurc: boolean; sadaE: number }): Pick<ZbierkaData, "rychleSumy" | "eurc" | "rychleSumyE"> {
+  return { rychleSumy: Object.values(SADY_EUR)[z.sada]?.sumy, eurc: z.eurc, rychleSumyE: Object.values(SADY_EURC)[z.sadaE]?.sumy };
 }
 
 /** sviečka (prosba o modlitbu) */
