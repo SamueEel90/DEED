@@ -43,16 +43,16 @@ const SKUPINY: [string, DruhFarnika[]][] = [["LEN PRE FARÁRA · NIKTO INÝ NEVI
 const TYP_EDITORA: Partial<Record<DruhFarnika, TypEditora>> = { parte: "parte", svadba: "svadba", ine: "jubileum" };
 const POZVANIA: [string, string][] = [["Bez prihlásenia", "len informácia"], ["Nezáväzne · Zúčastním sa", "ľudia ťuknú, viete, koľko ich asi príde"], ["Záväzne · Prihlásiť sa", "prihlásia sa menom, napr. na púť do autobusu. Môžete dať limit."]];
 /** kľúč účtu pre Zúčastním sa, Modlím sa, Sústrasť, Nahlásiť, autora */
-const klucJa = (ja: { ucetId: string | null; demo?: boolean; celeMeno: string }) => ja.ucetId ?? (ja.demo ? "demo" : `meno:${ja.celeMeno}`);
+export const klucJa = (ja: { ucetId: string | null; demo?: boolean; celeMeno: string }) => ja.ucetId ?? (ja.demo ? "demo" : `meno:${ja.celeMeno}`);
 
 // ---- „Upraviť · moje" na stránke → otvorí formulár veriaceho (dve časti stránky, jeden stav) ----
 let upravId: string | null = null;
 const upravPosl = new Set<() => void>();
-const nastavUpravu = (id: string | null) => { upravId = id; upravPosl.forEach((f) => f()); };
+export const nastavUpravu = (id: string | null) => { upravId = id; upravPosl.forEach((f) => f()); };
 const useUprava = () => useSyncExternalStore((f) => { upravPosl.add(f); return () => { upravPosl.delete(f); }; }, () => upravId);
 
 /** sviečka (prosba o modlitbu, anonym) */
-function Sviecka({ s = 40 }: { s?: number }) {
+export function Sviecka({ s = 40 }: { s?: number }) {
   return (
     <span aria-hidden="true" style={{ flex: "none", width: s, height: s, borderRadius: "50%", background: "#1D211B", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-end", paddingBottom: s * 0.18, boxSizing: "border-box", gap: s * 0.04 }}>
       <span style={{ width: s * 0.14, height: s * 0.22, borderRadius: "50% 50% 45% 45%", background: "#F2C14E", boxShadow: "0 0 8px rgba(242,193,78,.7)" }} />
@@ -75,7 +75,7 @@ function Pozvanie({ x, strankaId, kto, reg }: { x: PolozkaFarnika; strankaId: st
 }
 
 /** ··· Nahlásiť nevhodný príspevok · Upraviť · moje */
-function MenuPrispevku({ x, strankaId, kto, moje }: { x: PolozkaFarnika; strankaId: string; kto: string; moje: boolean }) {
+export function MenuPrispevku({ x, strankaId, kto, moje }: { x: PolozkaFarnika; strankaId: string; kto: string; moje: boolean }) {
   const [menu, setMenu] = useState(false), [potvrd, setPotvrd] = useState(false), [ok, setOk] = useState(false);
   const tm = useRef<number | undefined>(undefined);
   useEffect(() => () => window.clearTimeout(tm.current), []);
@@ -99,7 +99,7 @@ function MenuPrispevku({ x, strankaId, kto, moje }: { x: PolozkaFarnika; stranka
 }
 
 /** obrázok na celú obrazovku (oznámenie z editora pre slabozrakých, album) */
-function CelaObrazovka({ children, onZavri, label, hore }: { children: ReactNode; onZavri: () => void; label: string; hore?: ReactNode }) {
+export function CelaObrazovka({ children, onZavri, label, hore }: { children: ReactNode; onZavri: () => void; label: string; hore?: ReactNode }) {
   useEffect(() => { const k = (e: KeyboardEvent) => { if (e.key === "Escape") onZavri(); }; window.addEventListener("keydown", k); return () => window.removeEventListener("keydown", k); }, [onZavri]);
   return createPortal(
     <div role="dialog" aria-modal="true" aria-label={label} style={{ position: "fixed", inset: 0, zIndex: 1100, background: "#0E0C08", display: "flex", flexDirection: "column" }}>
@@ -111,27 +111,12 @@ function CelaObrazovka({ children, onZavri, label, hore }: { children: ReactNode
     </div>, document.body);
 }
 
-/** E.4: Galéria farnosti — albumy z „Fotky z akcie", prehliadač albumu */
-function GaleriaFarnosti({ alba, strankaId, kto, reg }: { alba: PolozkaFarnika[]; strankaId: string; kto: string; reg: boolean }) {
-  const [otv, setOtv] = useState<string | null>(null);
+/** prehliadač albumu (Galéria farnosti, Príď a zaži s nami · Fotky z akcií) */
+export function ProhliadacAlbumu({ a, onZavri }: { a: PolozkaFarnika; onZavri: () => void }) {
   const [i, setI] = useState(0);
-  const a = alba.find((x) => x.id === otv);
-  const F = a?.fotky ?? [];
+  const F = a.fotky ?? [];
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-      <b style={{ fontSize: 24, letterSpacing: "-.02em" }}>Galéria farnosti</b>
-      <span style={{ fontSize: 14.5, color: "var(--ink3)", marginTop: -4 }}>Fotky z akcií od veriacich · ťuknite na album</span>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(240px,1fr))", gap: 12 }}>
-        {alba.map((x) => (
-          <div key={x.id} style={{ display: "flex", flexDirection: "column", gap: 8, padding: 10, borderRadius: 18, background: "var(--card)", border: "1px solid var(--cardBd)" }}>
-            <button type="button" onClick={() => { setOtv(x.id); setI(0); }} style={{ padding: 0, border: "none", background: "transparent", cursor: "pointer", textAlign: "left", fontFamily: "inherit", color: "var(--ink)", display: "flex", flexDirection: "column", gap: 8 }}>
-              <img src={x.fotky![0]} alt="" style={{ width: "100%", aspectRatio: "16 / 10", objectFit: "cover", borderRadius: 12, display: "block", background: "var(--field)" }} />
-              <span style={{ display: "flex", flexDirection: "column", gap: 2 }}><b style={{ fontSize: 16.5 }}>{x.t || "Fotky z akcie"}</b><span style={{ fontSize: 13.5, color: "var(--ink3)" }}>{fotiekT(x.fotky!.length)}{x.pozv ? ` · Ďalšia: ${x.dalsia || "termín oznámime"}` : ""}</span></span>
-            </button>
-            {!!x.pozv && <Pozvanie x={x} strankaId={strankaId} kto={kto} reg={reg} />}
-          </div>))}
-      </div>
-      {a && F.length > 0 && <CelaObrazovka label="Album" onZavri={() => setOtv(null)} hore={<span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}><b style={{ fontSize: 17, color: "#fff" }}>{a.t}</b><span style={{ fontSize: 13, color: "#CFC7B8" }}>{(i % F.length) + 1} / {F.length}</span></span>}>
+    <CelaObrazovka label="Album" onZavri={onZavri} hore={<span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}><b style={{ fontSize: 17, color: "#fff" }}>{a.t}</b><span style={{ fontSize: 13, color: "#CFC7B8" }}>{(i % F.length) + 1} / {F.length}</span></span>}>
         {a.text && <span style={{ flex: "none", padding: "0 16px 10px", fontSize: 15, lineHeight: 1.5, color: "#E8E1D3" }}>{a.text}</span>}
         <div style={{ position: "relative", flex: 1, minHeight: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
           <img src={F[i % F.length]} alt={a.popisy?.[i % F.length] || ""} style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }} />
@@ -144,7 +129,29 @@ function GaleriaFarnosti({ alba, strankaId, kto, reg }: { alba: PolozkaFarnika[]
         <div style={{ flex: "none", display: "flex", gap: 6, overflowX: "auto", padding: "12px 16px calc(16px + env(safe-area-inset-bottom, 0px))" }}>
           {F.map((f, j) => <button key={j} type="button" onClick={() => setI(j)} aria-label={`Fotka ${j + 1}`} style={{ flex: "none", width: 64, height: 48, padding: 0, borderRadius: 8, border: `3px solid ${j === i % F.length ? "#fff" : "transparent"}`, background: `url('${f}') center/cover no-repeat #333`, cursor: "pointer" }} />)}
         </div>
-      </CelaObrazovka>}
+    </CelaObrazovka>);
+}
+
+/** E.4: Galéria farnosti — albumy z „Fotky z akcie", prehliadač albumu */
+function GaleriaFarnosti({ alba, strankaId, kto, reg }: { alba: PolozkaFarnika[]; strankaId: string; kto: string; reg: boolean }) {
+  const [otv, setOtv] = useState<string | null>(null);
+  const a = alba.find((x) => x.id === otv);
+  const F = a?.fotky ?? [];
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+      <b style={{ fontSize: 24, letterSpacing: "-.02em" }}>Galéria farnosti</b>
+      <span style={{ fontSize: 14.5, color: "var(--ink3)", marginTop: -4 }}>Fotky z akcií od veriacich · ťuknite na album</span>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(240px,1fr))", gap: 12 }}>
+        {alba.map((x) => (
+          <div key={x.id} style={{ display: "flex", flexDirection: "column", gap: 8, padding: 10, borderRadius: 18, background: "var(--card)", border: "1px solid var(--cardBd)" }}>
+            <button type="button" onClick={() => setOtv(x.id)} style={{ padding: 0, border: "none", background: "transparent", cursor: "pointer", textAlign: "left", fontFamily: "inherit", color: "var(--ink)", display: "flex", flexDirection: "column", gap: 8 }}>
+              <img src={x.fotky![0]} alt="" style={{ width: "100%", aspectRatio: "16 / 10", objectFit: "cover", borderRadius: 12, display: "block", background: "var(--field)" }} />
+              <span style={{ display: "flex", flexDirection: "column", gap: 2 }}><b style={{ fontSize: 16.5 }}>{x.t || "Fotky z akcie"}</b><span style={{ fontSize: 13.5, color: "var(--ink3)" }}>{fotiekT(x.fotky!.length)}{x.pozv ? ` · Ďalšia: ${x.dalsia || "termín oznámime"}` : ""}</span></span>
+            </button>
+            {!!x.pozv && <Pozvanie x={x} strankaId={strankaId} kto={kto} reg={reg} />}
+          </div>))}
+      </div>
+      {a && F.length > 0 && <ProhliadacAlbumu a={a} onZavri={() => setOtv(null)} />}
     </div>);
 }
 
