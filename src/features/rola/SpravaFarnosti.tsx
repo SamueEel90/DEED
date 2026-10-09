@@ -35,6 +35,7 @@ import { CirkevFarnosti } from "./CirkevFarnosti";
 import { PripnutieVyber, PripnuteZoznam } from "./PripnuteZbierky";
 import { LudiaFarnosti } from "./LudiaFarnosti";
 import { BrigadyFarnosti } from "./BrigadyFarnosti";
+import { PredplatnePas, PredplatneFarnosti } from "./PredplatneFarnosti";
 import { ObrNastavenia } from "./SpravaStranky";
 import { ObrOznamenia, ObrUdaje, ObrZariadenia, ObrSuhlasy, ObrFaq, ObrPodpora } from "./NastaveniaCharity";
 import { nacitajNastavenia } from "@/lib/nastaveniaStranky";
@@ -331,7 +332,10 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
       <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 1 }}><b style={{ fontSize: 15, color: tyrk ? "var(--tInk)" : "var(--ink)" }}>{t}</b><span style={{ fontSize: 12, color: tyrk ? "var(--tInk2)" : "var(--ink3)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{s}</span></span>
       <span aria-hidden="true" style={{ flex: "none", fontSize: 18, color: tyrk ? "var(--tInk)" : "var(--ink3)" }}>›</span>
     </button>);
+  // KARTA 61 §3: predplatné hore v Prehľade
+  const predPas = <PredplatnePas strankaId={strankaId} mobil={mobil} onOtvor={() => { setNId("predplatne"); go("n"); }} />;
   const prehlad = mobil ? <>
+    {predPas}
     <button type="button" onClick={() => go("profil")} style={{ flex: "none", borderRadius: 18, background: "var(--cuBg)", border: "1.5px solid var(--cuBd)", padding: "12px 14px", display: "flex", alignItems: "center", gap: 12, cursor: "pointer", textAlign: "left", fontFamily: "inherit", boxShadow: "none" }}>
       <LogoKarty profil={profilAkt} inicialy="" size={48} />
       <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 4 }}>
@@ -357,7 +361,7 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
     {pripnute}
     <TyzdenVPrehlade strankaId={strankaId} onDen={naDen} mobil />
     {trebaVybavit}
-  </> : <>{cisla}{pripnute}<TyzdenVPrehlade strankaId={strankaId} onDen={naDen} mobil={false} />{trebaVybavit}</>;
+  </> : <>{predPas}{cisla}{pripnute}<TyzdenVPrehlade strankaId={strankaId} onDen={naDen} mobil={false} />{trebaVybavit}</>;
 
   // KARTA 56D §6 · OPRAVY 161: ďalšie zbierky stránky (zbierka farnosti / pre veriacich) — z účtu (tabuľka zbierka)
   const sprava = (m: string) => { setZbVyber(false); setZbBlok(false); setNoveOk(null); setZmazana(false); return m; };
@@ -545,10 +549,11 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
     </button>
     <ObrNastavenia tier={0} mobil={!desktop} otvor={() => toast("Pripravujeme")}
       farnost={{ ludia: () => go("ludia"), hlavna: () => go("hlavna"), n: (id) => { setNId(id); go("n"); },
-        predplatne: () => toast("Pripravujeme") /* PLACEBO — karta 61 §3: modul Predplatné farnosti */ }} /></>;
-  const NAST_T: Record<string, string> = { notif: "Čo chcete dostávať", ucty: "Účet farnosti", udaje: "Údaje farnosti", zariadenia: "Prihlásené zariadenia", suhlasy: "Súhlasy", faq: "Časté otázky", podpora: "Napísať podpore" };
+        predplatne: () => { setNId("predplatne"); go("n"); } }} /></>;
+  const NAST_T: Record<string, string> = { predplatne: "Predplatné a platba", notif: "Čo chcete dostávať", ucty: "Účet farnosti", udaje: "Údaje farnosti", zariadenia: "Prihlásené zariadenia", suhlasy: "Súhlasy", faq: "Časté otázky", podpora: "Napísať podpore" };
   const nObr = <>{nadpis(NAST_T[nId] ?? "Nastavenia", "")}
-    {nId === "notif" ? <ObrOznamenia mobil={!desktop} farnost />
+    {nId === "predplatne" ? <PredplatneFarnosti strankaId={strankaId} meno={meno} mobil={mobil} onUdaje={() => setNId("udaje")} />
+      : nId === "notif" ? <ObrOznamenia mobil={!desktop} farnost />
       : nId === "udaje" ? <ObrUdaje mobil={!desktop} farnost={{ nazov: meno, cirkev: <CirkevFarnosti strankaId={strankaId} mobil={mobil} toast={toast} /> }} />
       : nId === "ucty" ? <section style={{ ...karta, borderRadius: mobil ? 18 : 22, padding: mobil ? "14px 14px" : "16px 20px", display: "flex", flexDirection: "column", gap: 10 }}>
           <span style={{ fontSize: 13, fontWeight: 700, color: "var(--ink3)" }}>overený pri registrácii</span>
