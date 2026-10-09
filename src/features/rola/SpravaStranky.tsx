@@ -1368,14 +1368,16 @@ function Prepinac({ on }: { on: boolean }) {
 const sekNadpis: React.CSSProperties = { fontSize: 12, fontWeight: 800, letterSpacing: ".06em", color: "var(--ink3)" };
 type Riadok = { t: string; s?: string; v?: string; prep?: [boolean, () => void]; red?: boolean; tap?: () => void };
 
-function ObrNastavenia({ tier, otvor, mobil }: { tier: Tier; otvor: (s: Sub) => void; mobil: boolean }) {
+/** OPRAVY 186: Nastavenia farnosti = tie isté Nastavenia ako charita; farnosť mení len riadky Príjem darov, Ľudia, Údaje a Predplatné */
+export interface NastFarnosti { ludia: () => void; predplatne: () => void; hlavna: () => void; n: (id: string) => void }
+export function ObrNastavenia({ tier, otvor, mobil, farnost }: { tier: Tier; otvor: (s: Sub) => void; mobil: boolean; farnost?: NastFarnosti }) {
   const n = useNastaveniaAppky();
   const { tema, nastavTemu } = useMotiv();
   const [tuk, setTuk] = useState(potvrditTuknutim);
   const [tichy, setTichy] = useState(true);
   const fz = Math.round((n.pismo - 90) / 10); // 0–6
   const pr = (t: string) => () => otvor(`x:${t}`);
-  const nn = (id: string) => () => otvor(`n:${id}`);
+  const nn = (id: string) => () => (farnost ? farnost.n(id) : otvor(`n:${id}`));
   const pristup: [string, string, boolean, () => void][] = [
     ["Obmedziť animácie", "bez letov, iskier a pulzovania", n.obmedzAnim, () => zmenNastavenia({ obmedzAnim: !n.obmedzAnim })],
     ["Vibrácie", "pri potvrdení a po dare", n.vibracie, () => zmenNastavenia({ vibracie: !n.vibracie })],
@@ -1391,6 +1393,12 @@ function ObrNastavenia({ tier, otvor, mobil }: { tier: Tier; otvor: (s: Sub) => 
     ["POMOC", [{ t: "Časté otázky", tap: nn("faq") }, { t: "Napísať podpore", tap: nn("podpora") }]],
     ["STRÁNKA", [{ t: "Zrušiť stránku charity", red: true, tap: nn("zrusit") }]],
   ];
+  if (farnost) sekcie.splice(1, sekcie.length - 1,
+    ["PRÍJEM DAROV", [{ t: "Sumy pri daroch", s: "eurá a EURC · nastavujú sa pri hlavnej zbierke", tap: farnost.hlavna }, { t: "Účet farnosti", s: "hlavný účet z registrácie", tap: nn("ucty") }]],
+    ["ĽUDIA", [{ t: "Ľudia farnosti", s: "kto spravuje stránku, pozvať ďalšieho", tap: farnost.ludia }]],
+    ["FARNOSŤ", [{ t: "Údaje farnosti", s: "cirkev, patrí pod, kontakt a fakturačné údaje", tap: nn("udaje") }, { t: "Predplatné farnosti", s: "program a platba", tap: farnost.predplatne }]],
+    ["BEZPEČNOSŤ A ÚDAJE", [{ t: "Prihlásené zariadenia", v: String(pocetZariadeni()), tap: nn("zariadenia") }, { t: "Súhlasy", s: "čo farnosť odsúhlasila", tap: nn("suhlasy") }]],
+    ["POMOC", [{ t: "Časté otázky", tap: nn("faq") }, { t: "Napísať podpore", tap: nn("podpora") }]]);
   const riadok = (r: Riadok, i: number) => (
     <button key={r.t} onClick={r.prep ? r.prep[1] : r.tap} role={r.prep ? "switch" : undefined} aria-checked={r.prep ? r.prep[0] : undefined}
       style={{ width: "100%", display: "flex", alignItems: "center", gap: 12, minHeight: 58, border: "none", borderTop: i ? "1px solid var(--cardBd)" : "none", background: "transparent", cursor: "pointer", textAlign: "left", padding: "6px 0" }}>

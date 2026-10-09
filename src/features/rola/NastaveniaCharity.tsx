@@ -83,7 +83,8 @@ const stlpec: React.CSSProperties = { minWidth: 0, display: "flex", flexDirectio
 // ============================================================
 type Nf = Record<string, boolean | number | string>;
 const eur = (n: number) => n.toLocaleString("sk-SK") + " €";
-export function ObrOznamenia({ mobil }: { mobil: boolean }) {
+/** farnost (OPRAVY 186): bez dokladov, navyše oznam od veriaceho, prihlásený na udalosť / brigádu, nový úmysel; bez ukážkového e-mailu */
+export function ObrOznamenia({ mobil, farnost }: { mobil: boolean; farnost?: boolean }) {
   const [nf, setNf] = usePamat<Nf>("nf", {});
   const on = (k: string, d: boolean) => (nf[k] as boolean | undefined) ?? d;
   const prepni = (k: string, d: boolean) => setNf((c) => ({ ...c, [k]: !((c[k] as boolean | undefined) ?? d) }));
@@ -91,19 +92,23 @@ export function ObrOznamenia({ mobil }: { mobil: boolean }) {
   type R = [string, string, string, boolean, ("lock" | "suhrn")?];
   const sekcie: [React.ReactNode, R[]][] = [
     ["PENIAZE", [["dar", "Nový dar", "kto a koľko daroval", true, "suhrn"], ["velky", "Väčší dar", `od ${eur(hr)}, vždy hneď`, true], ["vyplata", "Výplata na účet", "peniaze odišli na transparentný účet", true], ["prav", "Pravidelná podpora", "nová, zrušená alebo neprešla platba", true, "lock"]]],
-    ["ZBIERKY A DOKLADY", [["koniec", "Zbierka sa končí", "3 dni pred koncom", true], ["ciel", "Zbierka dosiahla cieľ", "", true], ["lehota", "Lehota na doklady", "7 dní a 1 deň pred termínom", true, "lock"], ["overenie", "Kontrola dokladov", "overovateľ schválil alebo vrátil doklady", true, "lock"]]],
-    ["ĽUDIA", [["sled", "Nový sledujúci", "", true, "suhrn"], ["dobro", "Dobrovoľník sa prihlásil", "na brigádu alebo akciu", true], ["retaz", "Pripojenie cez Reťaz dobra", "niekto spustil zbierku pre vás", true], ["firma", "Firma chce dorovnávať", "ponuka partnera na dorovnanie", true, "lock"]]],
+    farnost
+      ? ["ZBIERKY", [["koniec", "Zbierka sa končí", "3 dni pred koncom", true], ["ciel", "Zbierka dosiahla cieľ", "", true]]]
+      : ["ZBIERKY A DOKLADY", [["koniec", "Zbierka sa končí", "3 dni pred koncom", true], ["ciel", "Zbierka dosiahla cieľ", "", true], ["lehota", "Lehota na doklady", "7 dní a 1 deň pred termínom", true, "lock"], ["overenie", "Kontrola dokladov", "overovateľ schválil alebo vrátil doklady", true, "lock"]]],
+    farnost
+      ? ["ĽUDIA", [["oznamV", "Nový oznam od veriaceho", "čaká na vaše schválenie", true], ["umysel", "Nový úmysel", "veriaci pridal úmysel na omšu", true], ["prihl", "Prihlásený na udalosť alebo brigádu", "", true, "suhrn"], ["sled", "Nový sledujúci", "", true, "suhrn"], ["retaz", "Pripojenie cez Reťaz dobra", "niekto spustil zbierku pre vás", true]]]
+      : ["ĽUDIA", [["sled", "Nový sledujúci", "", true, "suhrn"], ["dobro", "Dobrovoľník sa prihlásil", "na brigádu alebo akciu", true], ["retaz", "Pripojenie cez Reťaz dobra", "niekto spustil zbierku pre vás", true], ["firma", "Firma chce dorovnávať", "ponuka partnera na dorovnanie", true, "lock"]]],
     [<DeedZnacka key="d" />, [["novinky", "Novinky DEED+", "nové funkcie, raz za mesiac", false]]],
   ];
   return (<>
-    <span style={{ fontSize: 14, color: "var(--ink2)", maxWidth: 760, lineHeight: 1.5 }}>Vyberte, o čom vám dáme vedieť. Dôležité veci pri peniazoch a dokladoch sa vypnúť nedajú, aby vám nič neušlo.</span>
+    <span style={{ fontSize: 14, color: "var(--ink2)", maxWidth: 760, lineHeight: 1.5 }}>{farnost ? "Vyberte, o čom vám dáme vedieť. Dôležité veci pri peniazoch sa vypnúť nedajú, aby vám nič neušlo." : "Vyberte, o čom vám dáme vedieť. Dôležité veci pri peniazoch a dokladoch sa vypnúť nedajú, aby vám nič neušlo."}</span>
     <div style={dvaStlpce(mobil)}>
       <div style={stlpec}>
         <div style={nad}>KAM VÁM TO POŠLEME</div>
         <div style={{ ...krt, padding: "0 14px" }}>
           <RiadokPrep i={0} t="V appke" s="zvonček hore, vždy zapnuté" on zamok />
           <RiadokPrep i={1} t="Na displej telefónu" s="aj keď appku nemáte otvorenú" on={on("displej", true)} onClick={() => prepni("displej", true)} />
-          <RiadokPrep i={2} t="E-mailom" s="info@svetlopomoci.sk" on={on("mail", false)} onClick={() => prepni("mail", false)} />
+          <RiadokPrep i={2} t="E-mailom" s={farnost ? "na e-mail z Údajov farnosti" : "info@svetlopomoci.sk"} on={on("mail", false)} onClick={() => prepni("mail", false)} />
         </div>
         <div style={{ ...nad, marginTop: 10 }}>SÚHRN</div>
         <div style={{ ...krt, padding: "12px 14px", display: "flex", flexDirection: "column", gap: 10 }}>
@@ -348,6 +353,7 @@ export function ObrSpravcovia({ mobil }: { mobil: boolean }) {
 // 5 · Údaje organizácie
 // ============================================================
 type Ud = { mail: string; tel: string; dic: string; fmail: string; ina: boolean; adr: string };
+const UD_PRAZDNE: Ud = { mail: "", tel: "", dic: "", fmail: "", ina: true, adr: "" };
 const UD0: Ud = { mail: "info@svetlopomoci.sk", tel: "+421 905 111 222", dic: "", fmail: "info@svetlopomoci.sk", ina: false, adr: "" };
 /** IČO a sídlo z registra — jeden zdroj pre Údaje organizácie aj Upraviť profil (OPRAVY 108). TODO: tabuľka organizacia.sidlo */
 export const SIDLO_REGISTRA = "Palackého 14, 911 01 Trenčín";
@@ -365,13 +371,16 @@ export function fakturacneUdaje(): { nazov: string; ico: string; adresa: string;
 }
 export const NAZOV_REGISTRA = "Svetlo pomoci o.z.";
 
-export function ObrUdaje({ mobil }: { mobil: boolean }) {
-  const [ud, setUd] = usePamat<Ud>("ud", UD0);
+/** farnost (OPRAVY 186): názov z registrácie, cirkev (číselník 18), Patrí pod; bez ukážkových údajov charity */
+export function ObrUdaje({ mobil, farnost }: { mobil: boolean; farnost?: { nazov: string; cirkev: React.ReactNode } }) {
+  const [ud, setUd] = usePamat<Ud>("ud", farnost ? UD_PRAZDNE : UD0);
+  const [pod, setPod] = usePamat<string>("pod", "");
+  const [podD, setPodD] = useState<string | null>(null);
   const [d, setD] = useState<Partial<Ud>>({});
   const v = <K extends keyof Ud>(k: K): Ud[K] => (d[k] ?? ud[k]) as Ud[K];
-  const zmena = (Object.keys(d) as (keyof Ud)[]).some((k) => d[k] !== ud[k]);
+  const zmena = (Object.keys(d) as (keyof Ud)[]).some((k) => d[k] !== ud[k]) || (podD !== null && podD !== pod);
   const set = (k: keyof Ud) => (e: React.ChangeEvent<HTMLInputElement>) => { const x = e.target.value; setD((c) => ({ ...c, [k]: x })); };
-  const REG: [string, string][] = [["Názov", NAZOV_REGISTRA], ["IČO", ICO_REGISTRA], ["Právna forma", "Občianske združenie"], ["Sídlo", SIDLO_REGISTRA], ["Dátum vzniku", "14. 3. 2012"], ["Štatutár", "Martin Štofik · overený"]];
+  const REG: [string, string][] = farnost ? [["Názov", farnost.nazov]] : [["Názov", NAZOV_REGISTRA], ["IČO", ICO_REGISTRA], ["Právna forma", "Občianske združenie"], ["Sídlo", SIDLO_REGISTRA], ["Dátum vzniku", "14. 3. 2012"], ["Štatutár", "Martin Štofik · overený"]];
   const Pole = ({ k, t, ph, typ = "text" }: { k: keyof Ud; t: React.ReactNode; ph?: string; typ?: string }) => (
     <label style={{ display: "flex", flexDirection: "column", gap: 6 }}><span style={{ fontSize: 13.5, fontWeight: 700, color: "var(--ink2)" }}>{t}</span><input type={typ} value={v(k) as string} onChange={set(k)} placeholder={ph} style={pole} /></label>);
   return (
@@ -381,25 +390,33 @@ export function ObrUdaje({ mobil }: { mobil: boolean }) {
         <div style={{ ...krt, padding: "0 16px" }}>
           {REG.map(([t, x], i) => <div key={t} style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 58, padding: "8px 0", borderTop: btn(i) }}><span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}><span style={{ fontSize: 12.5, color: "var(--ink3)" }}>{t}</span><span style={{ fontSize: 15, fontWeight: 700 }}>{x}</span></span>{ZAMOK}</div>)}
         </div>
-        <span style={pozn}>Tieto údaje sme overili pri registrácii vo verejnom registri. V appke sa nedajú prepísať. Keď ich zmeníte v registri, načítajte ich znova.</span>
-        <button onClick={() => toast("Údaje sme načítali z registra. Nič sa nezmenilo.")} style={{ ...obrys(), alignSelf: "flex-start" }}>Načítať znova z registra</button>
+        {farnost ? <>
+          <span style={pozn}>Názov je z registrácie farnosti.</span>
+          <div style={{ ...nad, marginTop: 10 }}>CIRKEV</div>
+          {farnost.cirkev}
+          <label style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 4 }}><span style={{ fontSize: 13.5, fontWeight: 700, color: "var(--ink2)" }}>Patrí pod</span>
+            <input value={podD ?? pod} onChange={(e) => setPodD(e.target.value)} placeholder="napr. diecéza, dekanát" style={pole} /></label>
+        </> : <>
+          <span style={pozn}>Tieto údaje sme overili pri registrácii vo verejnom registri. V appke sa nedajú prepísať. Keď ich zmeníte v registri, načítajte ich znova.</span>
+          <button onClick={() => toast("Údaje sme načítali z registra. Nič sa nezmenilo.")} style={{ ...obrys(), alignSelf: "flex-start" }}>Načítať znova z registra</button>
+        </>}
       </div>
       <div style={stlpec}>
         <div style={nad}>KONTAKT PRE <DeedZnacka /></div>
         <div style={{ ...krt, padding: 16, display: "flex", flexDirection: "column", gap: 12 }}>
-          {Pole({ k: "mail", t: "E-mail organizácie", typ: "email" })}
+          {Pole({ k: "mail", t: farnost ? "E-mail farnosti" : "E-mail organizácie", typ: "email" })}
           {Pole({ k: "tel", t: "Telefón", typ: "tel" })}
           <span style={pozn}>Sem vám píšeme my. Kontakt pre darcov je v Upraviť profil.</span>
         </div>
         <div style={{ ...nad, marginTop: 10 }}>FAKTURAČNÉ ÚDAJE</div>
         <div style={{ ...krt, padding: 16, display: "flex", flexDirection: "column", gap: 12 }}>
           {Pole({ k: "dic", t: <>DIČ <span style={{ fontWeight: 600, color: "var(--ink3)" }}>· ak ho máte</span></>, ph: "napr. 2021234567" })}
-          <RiadokPrep i={0} minH={48} t="Fakturačná adresa = sídlo" s={SIDLO_REGISTRA} on={!v("ina")} onClick={() => setD((c) => ({ ...c, ina: !v("ina") }))} />
-          {v("ina") && <input value={v("adr")} onChange={set("adr")} placeholder="ulica, PSČ, mesto" aria-label="Fakturačná adresa" style={pole} />}
+          {!farnost && <RiadokPrep i={0} minH={48} t="Fakturačná adresa = sídlo" s={SIDLO_REGISTRA} on={!v("ina")} onClick={() => setD((c) => ({ ...c, ina: !v("ina") }))} />}
+          {(farnost || v("ina")) && <input value={v("adr")} onChange={set("adr")} placeholder="ulica, PSČ, mesto" aria-label="Fakturačná adresa" style={pole} />}
           {Pole({ k: "fmail", t: "E-mail na faktúry", typ: "email" })}
-          <span style={pozn}>Na tieto údaje vystavíme faktúru za program. V programe Zadarmo neplatíte nič.</span>
+          <span style={pozn}>{farnost ? "Na tieto údaje vystavíme faktúru za predplatné farnosti." : "Na tieto údaje vystavíme faktúru za program. V programe Zadarmo neplatíte nič."}</span>
         </div>
-        <button onClick={() => { if (!zmena) return; setUd({ ...ud, ...d }); setD({}); toast("Údaje sú uložené."); }} aria-disabled={!zmena} style={plne(zmena)}>Uložiť</button>
+        <button onClick={() => { if (!zmena) return; setUd({ ...ud, ...d }); setD({}); if (podD !== null) { setPod(podD.trim()); setPodD(null); } toast("Údaje sú uložené."); }} aria-disabled={!zmena} style={plne(zmena)}>Uložiť</button>
       </div>
     </div>);
 }

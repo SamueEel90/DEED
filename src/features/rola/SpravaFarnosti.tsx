@@ -32,12 +32,15 @@ import { centralnaZPamate, hlavnaBezi, nacitajCentralnuZbierku, nazovHlavnej, us
 import { suhrnHlavnej, useOmsoveOkno, menaOkna, doZatvorenia, zavriTyzdenTest } from "@/lib/omsoveOkno";
 import { TESTOVACIA } from "@/lib/testovacia";
 import { CirkevFarnosti } from "./CirkevFarnosti";
+import { ObrNastavenia } from "./SpravaStranky";
+import { ObrOznamenia, ObrUdaje, ObrZariadenia, ObrSuhlasy, ObrFaq, ObrPodpora } from "./NastaveniaCharity";
+import { nacitajNastavenia } from "@/lib/nastaveniaStranky";
 import { usePouzivatel } from "@/lib/pouzivatel";
 import { najdiTestProfil } from "@/lib/testProfily";
 import { cistyNazov, nacitajProfil, profilZPamate, uplnostProfilu, type ProfilStranky } from "@/lib/profilStranky";
 import { nacitajPiny, pinyZPamate, ulozPiny } from "@/lib/spravaPiny";
 
-type Sub = "prehlad" | "zbierky" | "omse" | "oznamy" | "veriaci" | "ludia" | "filialky" | "penazenka" | "nastroje" | "profil" | "nast" | "hlavna" | "nahlad" | "zbierka" | "nova";
+type Sub = "prehlad" | "zbierky" | "omse" | "oznamy" | "veriaci" | "ludia" | "filialky" | "penazenka" | "nastroje" | "profil" | "nast" | "hlavna" | "nahlad" | "zbierka" | "nova" | "n";
 /** sekcie, ktoré sa dajú pripnúť v Prehľade (najviac 6) */
 type Pin = Exclude<Sub, "prehlad" | "hlavna" | "nahlad" | "zbierka" | "nova">;
 const PINY: Pin[] = ["zbierky", "omse", "oznamy", "veriaci", "ludia", "filialky", "penazenka", "nastroje", "profil", "nast"];
@@ -52,7 +55,7 @@ const IC: Record<string, string> = {
   veriaci: "M4 5h16v11H9l-5 4zM9 10h6", filialky: "M3 21h18M6 21V11l6-5 6 5v10M12 3v3M10 4.5h4M10 21v-5h4v5", stat: "M3 13h4v7H3zM10 8h4v12h-4zM17 4h4v16h-4z",
   pin: "M9 4h6l-1 6 3 3H7l3-3zM12 13v7", dole: "M6 9l6 6 6-6", kostol: "M4 21h16M5 21V10M19 21V10M9 21V10M15 21V10M3 10l9-6 9 6z",
 };
-const TIT: Record<Sub, string> = { prehlad: "Prehľad", zbierky: "Zbierky", omse: "Omše a kalendár", oznamy: "Oznamy", veriaci: "Od veriacich", ludia: "Ľudia", filialky: "Filiálky", penazenka: "Peňaženka", nastroje: "Nástroje a štatistiky", profil: "Upraviť profil", nast: "Nastavenia", hlavna: "Hlavná zbierka", nahlad: "Náhľad profilu", zbierka: "Správa zbierky", nova: "Nová zbierka" };
+const TIT: Record<Sub, string> = { prehlad: "Prehľad", zbierky: "Zbierky", omse: "Omše a kalendár", oznamy: "Oznamy", veriaci: "Od veriacich", ludia: "Ľudia", filialky: "Filiálky", penazenka: "Peňaženka", nastroje: "Nástroje a štatistiky", profil: "Upraviť profil", nast: "Nastavenia", hlavna: "Hlavná zbierka", nahlad: "Náhľad profilu", zbierka: "Správa zbierky", nova: "Nová zbierka", n: "Nastavenia" };
 const Ik = ({ d, s = 20, c = "var(--acc)", w = 1.9, style }: { d: string; s?: number; c?: string; w?: number; style?: CSSProperties }) =>
   <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth={w} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flex: "none", ...style }}><path d={d} /></svg>;
 const eur = (n: number) => `${n.toLocaleString("sk-SK")} €`;
@@ -73,7 +76,7 @@ const PRIDAT: [string, string, string, Akcia][] = [
 ];
 const PRIDAT_T: Partial<Record<Sub, string>> = { zbierky: "+ Pridať zbierku", oznamy: "+ Pridať oznam" };
 /** kde sa + Pridať neukazuje (úpravy, náhľad, Omše) */
-const BEZ_PRIDAT: Sub[] = ["profil", "hlavna", "nahlad", "zbierka", "nova", "omse"];
+const BEZ_PRIDAT: Sub[] = ["profil", "hlavna", "nahlad", "zbierka", "nova", "omse", "n"];
 /** prvý príchod: jeden kostol z registrácie (KARTA 56F: kým nie sú filiálky, upravuje sa len on) */
 const PRVY_KOSTOL: KostolFarnosti[] = [{ nazov: "Váš kostol", adresa: "", casyOmsi: "" }];
 
@@ -116,6 +119,9 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
   // KARTA 56G: Omše a kalendár otvorené na dni (ťuk v Prehľade) alebo na tomto týždni (Zmena omše) — key = nové otvorenie
   const [omseStart, setOmseStart] = useState<{ den?: string; n: number }>({ n: 0 });
   const naDen = (den?: string) => { setOmseStart((o) => ({ den, n: o.n + 1 })); go("omse"); };
+  // OPRAVY 186: obrazovka Nastavení (ako pri charite) — n:<id>
+  const [nId, setNId] = useState("");
+  useEffect(() => { void nacitajNastavenia(strankaId); }, [strankaId]);
   const go = (k: Sub) => { setSub(k); setPridat(false); setPinOtv(false); setOznamyHore(0); };
 
   // KARTA 56D §1: profil stránky (profil_stranky) — karta vľavo, percento, „Dokončiť profil"
@@ -528,7 +534,6 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
       <span style={{ fontSize: 13, color: "var(--ink2)" }}>{VID.find((x) => x[0] === vid)?.[2]}</span>
     </section>);
   const nastrojeL = riadky([["QR na tlač do kostola", "pokladnička, nástenka, lavice · sken otvorí dar", "Tlačiť"], ["Štatistiky", "dary podľa omší, zbierok a mesiacov", "Otvoriť"], ["Ročný výpis", "podklad pre farskú radu a ekonómov", "Stiahnuť"]].map(([t, s, b]) => ({ t, s, b, tap: pripravujeme })));
-  const nastaveniaL = riadky([["Vzhľad a prístupnosť", "téma, jazyk, veľkosť písma"], ["Oznámenia", "nový dar, oznam od veriaceho"], ["Príjem darov", "EURC, transparentný účet"], ["Správcovia", "kto má prístup k Správe farnosti"], ["Program a predplatné", "program Farnosť · jedna cena · faktúry"]].map(([t, s]) => ({ t, s })));
   // OPRAVY 162: hore karta QR farnosti — jeden QR z registrácie, stav podľa hlavnej zbierky
   const qrFarnosti = <QrKarta nazov={meno} slug={strankaId} odkaz={odkazQrStranky(strankaId)} organizacia={meno} toast={toast} nadpis="QR farnosti"
     stav={bezi ? { t: "Teraz vedie na hlavnú zbierku", zelena: true } : { t: "Teraz vedie na profil farnosti", zelena: false }}
@@ -542,8 +547,24 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
       <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}><b style={{ fontSize: 15 }}>Peňaženka</b><span style={{ fontSize: 12.5, color: "var(--ink3)" }}>zostatok, výplaty na účet farnosti · súkromné</span></span>
       <span aria-hidden="true" style={{ fontSize: 18, color: "var(--ink3)" }}>›</span>
     </button>
-    <CirkevFarnosti strankaId={strankaId} mobil={mobil} toast={toast} />
-    {nastaveniaL}</>;
+    <ObrNastavenia tier={0} mobil={!desktop} otvor={() => toast("Pripravujeme")}
+      farnost={{ ludia: () => go("ludia"), hlavna: () => go("hlavna"), n: (id) => { setNId(id); go("n"); },
+        predplatne: () => toast("Pripravujeme") /* PLACEBO — karta 61 §3: modul Predplatné farnosti */ }} /></>;
+  const NAST_T: Record<string, string> = { notif: "Čo chcete dostávať", ucty: "Účet farnosti", udaje: "Údaje farnosti", zariadenia: "Prihlásené zariadenia", suhlasy: "Súhlasy", faq: "Časté otázky", podpora: "Napísať podpore" };
+  const nObr = <>{nadpis(NAST_T[nId] ?? "Nastavenia", "")}
+    {nId === "notif" ? <ObrOznamenia mobil={!desktop} farnost />
+      : nId === "udaje" ? <ObrUdaje mobil={!desktop} farnost={{ nazov: meno, cirkev: <CirkevFarnosti strankaId={strankaId} mobil={mobil} toast={toast} /> }} />
+      : nId === "ucty" ? <section style={{ ...karta, borderRadius: mobil ? 18 : 22, padding: mobil ? "14px 14px" : "16px 20px", display: "flex", flexDirection: "column", gap: 10 }}>
+          <span style={{ fontSize: 13, fontWeight: 700, color: "var(--ink3)" }}>overený pri registrácii</span>
+          <b style={{ fontSize: 18, letterSpacing: ".02em", overflowWrap: "anywhere" }}>{hlavnyUcet}</b>
+          <span style={{ fontSize: 13.5, lineHeight: 1.5, color: "var(--ink2)" }}>Na tento účet idú dary hlavnej zbierky, omšových zbierok aj ďalších zbierok farnosti. Účet sa nedá zmeniť v appke, na zmenu ho musíme znova overiť.</span>
+          <button type="button" onClick={() => setNId("podpora")} style={{ alignSelf: "flex-start", minHeight: 44, padding: "0 16px", borderRadius: 12, border: "1.5px solid var(--cardBd)", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 800, color: "var(--ink)" }}>Zmeniť cez podporu</button>
+        </section>
+      : nId === "zariadenia" ? <ObrZariadenia mobil={!desktop} />
+      : nId === "suhlasy" ? <ObrSuhlasy mobil={!desktop} otvor={(x) => setNId(x.replace(/^n:/, ""))} />
+      : nId === "faq" ? <ObrFaq otvor={(x) => setNId(x.replace(/^n:/, ""))} />
+      : nId === "podpora" ? <ObrPodpora mobil={!desktop} otvor={(x) => setNId(x.replace(/^n:/, ""))} />
+      : null}</>;
 
   // KARTA 56D §4: Upraviť profil = modul z charity (profil_stranky: koncept sa ukladá sám, Uložiť zverejní)
   const profil = <UpravitProfilCharity farnost strankaId={strankaId} pozicia="charita" tier={4} nazov={cistyNazov(nazov) || "Vaša farnosť"} inicialy="" mobil={mobil} tablet={tablet} stit="silver"
@@ -564,7 +585,7 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
     onMojeZbierky={() => go("zbierky")} farnost={{ ucet: hlavnyUcet, onSpustena: (z) => { go("zbierky"); setNoveOk(`Zbierka „${z.nazov}“ beží. Nájdete ju nižšie v Ďalších zbierkach.`); } }} />;
   const hlavnaSprava = <SpravaCentralnej strankaId={strankaId} nazov={meno} hlavnyUcet={hlavnyUcet} tier={4} mobil={mobil} toast={toast}
     onZbierky={() => setSub("zbierky")} farnost={{ ostatneBezia, onZmazana: () => { setZmazana(true); go("zbierky"); }, onHotovo: () => go("prehlad") }} />;
-  const obsah: Record<Sub, ReactNode> = { prehlad, zbierky, omse, oznamy, veriaci, ludia, filialky, penazenka, nastroje, profil, nahlad, hlavna: hlavnaSprava, zbierka: zbierkaEl, nova: novaEl, nast: nastavenia };
+  const obsah: Record<Sub, ReactNode> = { prehlad, zbierky, omse, oznamy, veriaci, ludia, filialky, penazenka, nastroje, profil, nahlad, hlavna: hlavnaSprava, zbierka: zbierkaEl, nova: novaEl, nast: nastavenia, n: nObr };
 
   // ---------------- Pridať ----------------
   // KARTA 56D §2 · 56G §2: tlačidlo v hlavičke podľa sekcie; inde ponuka 3 položiek (Zbierka · Oznam · Zmena omše)
@@ -595,16 +616,16 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
 
   const titul = TIT[sub];
   // OPRAVY 185: Späť píše cieľ, keď nevedie o jeden krok späť
-  const spatT = sub === "zbierky" && pz ? (pzT ? `‹ ${pzT}` : "‹ Zbierky") : sub === "prehlad" ? "‹ Domov" : sub === "hlavna" || sub === "zbierka" || sub === "nova" ? "‹ Zbierky" : sub === "penazenka" ? "‹ Nastavenia" : "‹ Prehľad";
+  const spatT = sub === "zbierky" && pz ? (pzT ? `‹ ${pzT}` : "‹ Zbierky") : sub === "prehlad" ? "‹ Domov" : sub === "hlavna" || sub === "zbierka" || sub === "nova" ? "‹ Zbierky" : sub === "penazenka" || sub === "n" ? "‹ Nastavenia" : "‹ Prehľad";
   const spatTl = (onClick: () => void) => <button type="button" onClick={onClick} style={{ flex: "none", height: 44, padding: mobil ? "0 12px 0 8px" : "0 14px 0 8px", borderRadius: 13, border: "1px solid var(--cardBd)", background: "var(--card)", cursor: "pointer", fontFamily: "inherit", fontSize: mobil ? 14 : 15, fontWeight: 800, color: "var(--ink)", boxShadow: "none" }}>{spatT}</button>;
   const nazpat = () => {
     if (sub === "zbierky" && pz && pzSpat.current) { const r = pzSpat.current(); if (r === "spat") return; if (r === "zavriet") { setPz(false); return; } }
-    if (sub === "hlavna" || sub === "zbierka" || sub === "nova") setSub("zbierky"); else if (sub === "penazenka") setSub("nast"); else if (sub === "prehlad") onBack(); else setSub("prehlad"); };
+    if (sub === "hlavna" || sub === "zbierka" || sub === "nova") setSub("zbierky"); else if (sub === "penazenka" || sub === "n") setSub("nast"); else if (sub === "prehlad") onBack(); else setSub("prehlad"); };
 
   // ================= PC =================
   if (desktop) {
     const nav: Sub[] = ["prehlad", "zbierky", "omse", "oznamy", "veriaci", "ludia", "nastroje"]; // KARTA 57 B.4: + Od veriacich (s počtom), − Peňaženka (je v Nastaveniach) // Nastavenia ako tlačidlo pod Verejným profilom (OPRAVY 157); Upraviť profil je hore pri profile (KARTA 56F)
-    const aktivna = sub === "hlavna" || sub === "zbierka" || sub === "nova" ? "zbierky" : sub === "penazenka" ? "nast" : sub;
+    const aktivna = sub === "hlavna" || sub === "zbierka" || sub === "nova" ? "zbierky" : sub === "penazenka" || sub === "n" ? "nast" : sub;
     return (
       <div className="sprava-charity" data-stit="silver" style={{ minHeight: "100dvh", boxSizing: "border-box", padding: "20px 32px", display: "flex", gap: 24, alignItems: "flex-start" }}>
         <aside style={{ width: 244, flex: "none", display: "flex", flexDirection: "column", gap: 12, paddingRight: 16, borderRight: "2px solid", borderImage: "var(--metal) 1", position: "sticky", top: 20, alignSelf: "flex-start", minHeight: "calc(100dvh - 40px)", boxSizing: "border-box" }}>
