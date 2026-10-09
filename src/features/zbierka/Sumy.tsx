@@ -105,7 +105,7 @@ export function VlastnaSuma({ eur, deed, firma, otvor }: { eur: boolean; deed: b
 // ---------------- D · dary v krypte (EURC) ----------------
 const EURC_SUMY = [0.1, 0.5, 1];
 const KLUC_KRYPTO = "deed.zbierka.kryptoOtvorene";
-export function DaryVKrypte({ refId, otvor, mikro, cezTvorcu }: { refId: string; otvor: OtvorPlatbu; mikro: MikroCiel; cezTvorcu?: string }) {
+export function DaryVKrypte({ refId, otvor, mikro, cezTvorcu, sumy = EURC_SUMY }: { refId: string; otvor: OtvorPlatbu; mikro: MikroCiel; cezTvorcu?: string; /** KARTA 57C §5: sada EURC zbierky */ sumy?: number[] }) {
   const [otvorene, setOtvorene] = useState(() => { try { return localStorage.getItem(KLUC_KRYPTO) !== "0"; } catch { return true; } });
   const prepni = () => { const v = !otvorene; setOtvorene(v); try { localStorage.setItem(KLUC_KRYPTO, v ? "1" : "0"); } catch { /* LS */ } };
   void refId; void mikro; void cezTvorcu; // OPRAVY 90: EURC už nie je mikrodar (platí sa podržaním v okne)
@@ -121,7 +121,7 @@ export function DaryVKrypte({ refId, otvor, mikro, cezTvorcu }: { refId: string;
         <>
           {/* OPRAVY 90: rýchla suma len vyberie sumu; platí sa vždy cez Podrž a zaplať v platobnom okne */}
           <div style={mriezka}>
-            {EURC_SUMY.map((v, i) => {
+            {sumy.map((v, i) => {
               const [bg, bd] = EUR_FARBY[i];
               return (
                 <button key={v} type="button" className="zb-dlazdica" onClick={() => otvor({ kanal: "eurc", suma: v })} style={dlazdica(bg, bd)}>

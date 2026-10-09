@@ -82,7 +82,7 @@ const kicker: CSSProperties = { flex: "none", fontSize: 12, fontWeight: 800, let
 const tlZ: CSSProperties = { flex: "none", minHeight: 44, padding: "0 14px", border: "none", borderRadius: 12, background: "#4B7A35", cursor: "pointer", fontFamily: "inherit", fontSize: 13.5, fontWeight: 800, color: "#fff" };
 const odkaz: CSSProperties = { alignSelf: "flex-start", minHeight: 44, padding: 0, border: "none", background: "transparent", boxShadow: "none", cursor: "pointer", fontFamily: "inherit", fontSize: 13.5, fontWeight: 800, color: "var(--green)" };
 
-/** OPRAVY 159: Správa farnosti = sektor Viera (výpisy darov: „Bohu známy darca") */
+/** OPRAVY 159: Správa farnosti = sektor Viera (výpisy darov: „Bohu známy veriaci") */
 export function SpravaFarnosti(p: Parameters<typeof SpravaFarnostiObsah>[0]) {
   return <SektorDarcuKontext.Provider value="viera"><SpravaFarnostiObsah {...p} /></SektorDarcuKontext.Provider>;
 }
@@ -298,7 +298,7 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
       <span style={{ fontSize: 12.5, color: "var(--ink3)" }}>vzniklo samo z rozvrhu omší · len na čítanie</span>
       <span style={{ fontSize: 13.5, color: "var(--ink2)" }}>Okno pondelok {om.okno.pondelok} 0:00 – nedeľa {om.okno.nedela} 23:59 · zatvorí sa o {doZatvorenia(om.okno, strankaId)}</span>
       <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}><b style={{ fontSize: 22, fontVariantNumeric: "tabular-nums" }}>{eur(oknoSuma)}</b><span style={{ fontSize: 13, color: "var(--ink3)" }}>od {oknoLudi} {oknoLudi === 1 ? "človeka" : "ľudí"} · cez DEED</span></div>
-      <span style={{ fontSize: 13.5, lineHeight: 1.5, color: "var(--ink2)" }}>Na profile: {menaO || "zatiaľ nikto"}{menaO ? " (bez súm)" : ""}. Bez mena = <b>Bohu známy darca</b>. Po zatvorení okna mená zmiznú a do hlavnej zbierky pribudne jeden riadok „spoločný dar veriacich“.</span>
+      <span style={{ fontSize: 13.5, lineHeight: 1.5, color: "var(--ink2)" }}>Na profile: {menaO || "zatiaľ nikto"}{menaO ? " (bez súm)" : ""}. Bez mena = <b>Bohu známy veriaci</b>. Po zatvorení okna mená zmiznú a do hlavnej zbierky pribudne jeden riadok „spoločný dar veriacich“.</span>
       {om.uzavrete.length > 0 && <div style={{ display: "flex", flexDirection: "column", borderTop: "1px solid var(--cardBd)", paddingTop: 6 }}>
         <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".06em", color: "var(--ink3)", padding: "4px 0" }}>Uzavreté týždne v hlavnej zbierke</span>
         {om.uzavrete.slice(0, 6).map((o, i) => <div key={o.id} style={{ display: "flex", alignItems: "center", gap: 10, minHeight: 48, borderTop: i ? "1px solid var(--cardBd)" : "none" }}>
@@ -504,7 +504,7 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
   // KARTA 57 B.1: Nástroje a štatistiky — sledujúci, darcovia, QR do kostola
   const statistikyL = riadky([
     { t: "Sledujúci", s: "dostávajú ohlášky a oznamy · pripravujeme" }, // PLACEBO — karta 56D
-    { t: "Darcovia", s: "mená bez súm · bez mena = Bohu známy darca", v: String(darcovNum) },
+    { t: "Darcovia", s: "mená bez súm · bez mena = Bohu známy veriaci", v: String(darcovNum) },
     { t: "Pravidelná podpora", s: "mesačne, kartou alebo SEPA · pripravujeme" }, // PLACEBO — karta 56D
   ]);
   const mesOd = zaciatokMesiaca();

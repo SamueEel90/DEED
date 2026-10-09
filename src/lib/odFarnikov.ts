@@ -21,6 +21,8 @@ export const DRUHY_FARNIKA: { k: DruhFarnika; t: string; s: string; sv: string; 
 ];
 /** Parte, Svadba, Jubileum idú cez Editor oznámení — zatiaľ nenapojený (PLACEBO — karta 56I) */
 export const CEZ_EDITOR: DruhFarnika[] = ["parte", "svadba", "ine"];
+/** KARTA 57C: blok živej stránky, kde sa príspevok ukáže — [data-blok, názov bloku] (úmysel nikam) */
+export const BLOK_DRUHU: Partial<Record<DruhFarnika, [string, string]>> = { modlitba: ["mod", "Modli sa s nami"], oznam: ["ozn", "Oznamy farnosti"], udalost: ["prid", "Príď a zaži s nami"], fotky: ["prid", "Príď a zaži s nami"], parte: ["spom", "Spomíname"], svadba: ["tes", "Teš sa s nami"], ine: ["tes", "Teš sa s nami"] };
 
 export type SmieFarnika = Partial<Record<DruhFarnika, boolean>>;
 export const nacitajSmie = (id: string): SmieFarnika => nacitajStav<SmieFarnika>("farniksmie", id, {});
@@ -40,6 +42,8 @@ export interface PolozkaFarnika {
   /** Pozvať ľudí: 1 = Zúčastním sa, 2 = Prihlásiť sa (záväzne, limit) */ pozv?: 0 | 1 | 2; limit?: number;
   /** kto sa zúčastní / prihlásil, kto sa modlí, kto prejavil sústrasť, kto nahlásil (kľúče účtov) */
   ucast?: string[]; modl?: string[]; sustrast?: string[]; nahlasili?: string[];
+  /** KARTA 57C §1: Blahoželám (svadba, jubileum) · mená prihlásených pre „Kto sa prihlásil“ (kľúč účtu → meno) */
+  blaho?: string[]; mena?: Record<string, string>;
   /** fotky z akcie: popisy fotiek, pár slov o akcii, kedy je ďalšia */ popisy?: string[]; text?: string; dalsia?: string;
   /** parte, svadba, jubileum z Editora oznámení: návrh a obrázok hotovej šablóny */
   editor?: import("@/components/EditorOznameni").PayloadEditora; obr?: string;
@@ -60,7 +64,8 @@ export const vyprsal = (x: PolozkaFarnika, teraz: number) => { const d = x.k ===
 export const pocetNahl = (x: PolozkaFarnika) => x.nahlasili?.length ?? x.nahl ?? 0;
 export const pocetSus = (x: PolozkaFarnika) => x.sustrast?.length ?? x.sus ?? 0;
 /** prepne kľúč účtu v zozname (Zúčastním sa, Modlím sa, Sústrasť, Nahlásiť) */
-export function prepniVPolozke(id: string, pid: string, pole: "ucast" | "modl" | "sustrast" | "nahlasili", kto: string, len?: "pridat") {
+export type PoleReakcie = "ucast" | "modl" | "sustrast" | "nahlasili" | "blaho";
+export function prepniVPolozke(id: string, pid: string, pole: PoleReakcie, kto: string, len?: "pridat", meno?: string) {
   const x = odFarnikov(id).find((y) => y.id === pid);
   if (!x) return;
   const ma = (x[pole] ?? []).includes(kto);
@@ -69,7 +74,7 @@ export function prepniVPolozke(id: string, pid: string, pole: "ucast" | "modl" |
   zmenZoznam(id, (l) => l.map((y) => {
     if (y.id !== pid) return y;
     const z = (y[pole] ?? []).filter((k) => k !== kto);
-    return { ...y, [pole]: chce ? [...z, kto] : z };
+    return { ...y, [pole]: chce ? [...z, kto] : z, ...(meno && chce ? { mena: { ...y.mena, [kto]: meno } } : {}) };
   }));
 }
 

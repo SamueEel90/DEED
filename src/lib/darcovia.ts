@@ -44,6 +44,8 @@ export interface DarRiadok {
   firma?: string;
   /** dar prišiel cez QR / odkaz tohto tvorcu (karta 13 — suma a darcovia „cez tvorcu") */
   cezTvorcu?: string;
+  /** KARTA 57C: riadok z ledgera — voľba mena sa tam ešte nezapisuje (vo Viere je preto „Bohu známy veriaci") */
+  zLedgera?: boolean;
   // zapečené polia LEN pre mock cudzích darcov (v produkcii render cez userId):
   meno?: string; inicialovo?: string; nick?: string; mesto?: string; mestoVerejne?: boolean;
 }
@@ -146,7 +148,7 @@ function obnovZLedgera(refId: string, id: string) {
     const firmy = realneDary(refId).filter((x) => x.firma);
     const dary: DarRiadok[] = l.map((d) => ({
       id: d.id, refId, cas: d.cas, suma: d.eur, kanal: d.kanal, registrovany: d.registrovany,
-      verzia: d.meno ? 1 : 4, zobrazSumu: true, moj: d.moj, ...(d.meno ? { meno: d.meno } : {}),
+      verzia: d.meno ? 1 : 4, zobrazSumu: true, moj: d.moj, zLedgera: true, ...(d.meno ? { meno: d.meno } : {}),
     }));
     sklad.set(refId, [...firmy, ...dary].sort((a, b) => b.cas - a.cas));
     emit();
@@ -263,11 +265,11 @@ export function prepniNaAnonym(refId: string, id: string) {
   emit();
 }
 
-// ---- OPRAVY 159: darca bez mena podľa sektora — vo Viere „Bohu známy darca", inde „Anonymný darca" ----
+// ---- OPRAVY 159 · 57C: darca bez mena podľa sektora — vo Viere „Bohu známy veriaci" (v appke vždy „veriaci"), inde „Anonymný darca" ----
 export type SektorDarcu = "viera" | "ine";
 /** Jediné miesto textu darcu bez mena (neregistrovaný aj voľba Neukázať meno). */
 export function menoBezMena(sektor: SektorDarcu = "ine"): string {
-  return sektor === "viera" ? "Bohu známy darca" : "Anonymný darca";
+  return sektor === "viera" ? "Bohu známy veriaci" : "Anonymný darca";
 }
 /** Voľba „bez mena" pri výbere zobrazenia (mimo Viery krátko „Anonym", ako doteraz). */
 export function volbaBezMena(sektor: SektorDarcu = "ine"): string {
@@ -284,6 +286,8 @@ export interface JaIdentita { meno?: string; priezvisko?: string; celeMeno?: str
 export function identitaDarcu(r: DarRiadok, ja?: JaIdentita, sektor: SektorDarcu = "ine"): string {
   if (r.firma) return r.firma;                  // dorovnanie — firma sa podpisuje vždy
   if (!r.registrovany) return menoBezMena(sektor); // bez mesta, bez čohokoľvek
+  // KARTA 57C (Martin): kým sa voľba mena darcu do ledgera nezapisuje, vo Viere sú všetci „Bohu známy veriaci"
+  if (sektor === "viera" && r.zLedgera) return menoBezMena(sektor);
   const zdroj = r.moj && ja
     ? { meno: ja.celeMeno || ja.meno || "Člen", inicialovo: `${ja.meno || "Člen"} ${(ja.priezvisko || "")[0]?.toUpperCase() ?? ""}${(ja.priezvisko || "")[0] ? "." : ""}`.trim(), nick: ja.nick || undefined, mesto: ja.mesto, mestoVerejne: false }
     : r;

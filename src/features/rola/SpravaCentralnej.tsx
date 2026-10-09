@@ -111,7 +111,7 @@ export function SpravaCentralnej({ strankaId, nazov, hlavnyUcet, tier, mobil, to
     ...om.uzavrete.map((o) => [`Omšová zbierka ${o.nedela}`, "spoločný dar veriacich", ""] as [string, string, string]),
   ].slice(0, 3);
   const realne: [string, string, string][] = farnost ? farnostDary : darcoviaPre(idZbierky).slice(0, 3).map((r) => [identitaDarcu(r, undefined, sektor), relCas(r.cas), zobrazenaSuma(r) ?? ""]);
-  const dary = realne.length ? realne : ukazky ? (farnost ? DARY_TEST.map(([m, k]) => [m === "Anonymný darca" ? "Bohu známy darca" : m, k.replace(" · mesačne", ""), ""] as [string, string, string]) : DARY_TEST) : [];
+  const dary = realne.length ? realne : ukazky ? (farnost ? DARY_TEST.map(([m, k]) => [m === "Anonymný darca" ? "Bohu známy veriaci" : m, k.replace(" · mesačne", ""), ""] as [string, string, string]) : DARY_TEST) : [];
   const nazovPol = sek ? sek.nazov : farnost ? nazovHlavnej(d) : "Celá činnosť";
   const chip = sek ? `SEKTOR ${typ}` : farnost ? "HLAVNÁ ZBIERKA" : "CENTRÁLNA ZBIERKA";
   const podnadpis = sek ? "jedna téma · peniaze idú len sem · bez cieľa a konca" : farnost ? "stála zbierka farnosti · hore na profile · nikdy vo verejnom feede" : "na celú činnosť · stále hore na profile · nikdy vo verejnom feede";

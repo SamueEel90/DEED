@@ -71,7 +71,9 @@ function Ludia({ pocet, fanusikov }: { pocet: number; fanusikov?: boolean }) {
   );
 }
 
-export function KartaStavu({ refId, zaklad, ciel, ludiaZaklad, tempo = false, koniecPruhu, cezTvorcu }: {
+export function KartaStavu({ refId, zaklad, ciel, ludiaZaklad, tempo = false, koniecPruhu, cezTvorcu, skryta }: {
+  /** KARTA 57C §4: pohrebná zbierka — suma rozmazaná, kým človek nedaruje; bez míľnikov a súm */
+  skryta?: boolean;
   /** karta 13 — karta stavu „cez tvorcu": len dary cez neho, jeho suma je vždy vlastná */
   cezTvorcu?: { id: string; menoAkuzativ: string };
   refId: string;
@@ -135,6 +137,26 @@ export function KartaStavu({ refId, zaklad, ciel, ludiaZaklad, tempo = false, ko
     );
   }
 
+  if (skryta) {
+    const odhalena = dary.some((r) => r.moj);
+    const posl = dary[0];
+    return (
+      <div style={karta}>
+        <div style={{ fontSize: 12.5, fontWeight: 700, color: "var(--ink3)" }}>{nadpisVyzbierane}</div>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 2 }}>
+          <div style={{ ...velka, filter: odhalena ? "none" : "blur(9px)", userSelect: odhalena ? undefined : "none" }} aria-hidden={odhalena ? undefined : true} data-zb-suma={refId}>{eur(odhalena ? zobrazena : 0)}</div>
+          {!odhalena && <span style={{ fontSize: 13, lineHeight: 1.35, fontWeight: 700, color: "var(--ink3)" }}>suma sa ukáže<br />po vašom dare</span>}
+        </div>
+        {posl && (
+          <div key={posl.id} className="zb-novy" style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 12, background: "var(--bg)", border: "1px solid var(--cardBd)", borderRadius: 12, padding: "8px 12px" }}>
+            <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: ".06em", color: "var(--ink3)", flex: "none" }}>POSLEDNÝ DAR</span>
+            <span style={{ flex: 1, minWidth: 0, fontSize: 13, fontWeight: 700, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{identitaDarcu(posl, ja, sektor)}</span>
+          </div>
+        )}
+        <Ludia pocet={ludia} />
+      </div>
+    );
+  }
   const dnes = dary.filter((r) => r.cas >= dnesOd()).reduce((a, r) => a + r.suma, 0);
   const posledny = dary[0];
   const zakladMilnika = oslava ? 1 : suma / dalsi;
