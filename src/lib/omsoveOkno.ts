@@ -7,6 +7,7 @@
 // ============================================================
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { TESTOVACIA } from "./testovacia";
+import { odKedyHlavna } from "./centralnaZbierka";
 import { darcoviaPre, identitaDarcu, refIdySDarmi, sucetDarov, useZmenyDarov, type DarRiadok } from "./darcovia";
 
 const TZ = "Europe/Bratislava";
@@ -73,10 +74,13 @@ export function menaOkna(dary: DarRiadok[], ja?: Parameters<typeof identitaDarcu
   return m.length > 3 ? `${m.slice(0, 3).join(", ")} a ďalší` : m.join(", ");
 }
 
-/** súhrn hlavnej zbierky farnosti: suma už obsahuje okná (jedno číslo, nikdy súčet dvoch vedľa seba) */
+/** súhrn hlavnej zbierky farnosti: suma už obsahuje okná (jedno číslo, nikdy súčet dvoch vedľa seba).
+ *  Pri ročnom prepínači len dary a okná od 1. januára. */
 export function suhrnHlavnej(stranka: string, hlavnaRef: string): { suma: number; darcov: number } {
-  const h = sucetDarov(hlavnaRef), akt = aktualneOkno(stranka), a = sucetDarov(akt.id), uz = uzavreteOkna(stranka);
-  return { suma: h.suma + a.suma + uz.reduce((s, o) => s + o.suma, 0), darcov: h.pocet + a.pocet + uz.length };
+  const od = odKedyHlavna(stranka), akt = aktualneOkno(stranka), a = sucetDarov(akt.id);
+  const h = od ? darcoviaPre(hlavnaRef).filter((r) => r.cas >= od) : null, hs = h ? { suma: h.reduce((x, r) => x + r.suma, 0), pocet: h.length } : sucetDarov(hlavnaRef);
+  const uz = uzavreteOkna(stranka).filter((o) => o.do >= od);
+  return { suma: hs.suma + a.suma + uz.reduce((s, o) => s + o.suma, 0), darcov: hs.pocet + a.pocet + uz.length };
 }
 
 /** živé okno: prekreslí sa pri novom dare, pri „Zavrieť týždeň" a každú minútu (odpočet) */
