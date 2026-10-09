@@ -19,7 +19,7 @@ import { NahladFarnosti, nahladPopis } from "./NahladFarnosti";
 import { useVzhlad } from "@/lib/vzhladStranky";
 import { VzhladStranky } from "./VzhladStranky";
 import { TlacidloNastavenia, LogoKarty, QrKarta } from "./spravaCasti";
-import { odkazQrStranky } from "@/features/verejny-profil/otvor";
+import { odkazQrStranky, otvorVerejnyProfil } from "@/features/verejny-profil/otvor";
 import { UpravitProfilCharity } from "./UpravitProfilCharity";
 import { NovaZbierka } from "./NovaZbierka";
 import { SpravaZbierkyFarnosti, stitokZbierkyF, fotoZbierky, rozdelenieZbierkyF } from "./SpravaZbierkyFarnosti";
@@ -160,7 +160,8 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
 
   // KARTA 56D §4: Verejný profil = náhľad vybraného vzhľadu s uloženým profilom (len to, čo farár vyplnil, nikdy ukážkový profil)
   useEffect(() => { void pripojTestovaciuStranku(strankaId); }, [strankaId]); // 0035: tester = správca testovacej stránky
-  const verejny = () => go("nahlad");
+  // Verejný profil = živá stránka farnosti (NastenkaFarnosti so zeleným + a zbierkami), nie zjednodušený Náhľad
+  const verejny = () => otvorVerejnyProfil(strankaId);
   const test = testPas?.(verejny);
   const vz = useVzhlad(strankaId, false);
   const mobil = !desktop;
