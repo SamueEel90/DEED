@@ -838,9 +838,9 @@ async function pripravTlac(){const z=CFG.zbierka&&CFG.zbierka.url&&!$("qrOn").ch
   q.innerHTML=`${svg}<div><b>Prispieť rodine</b><br>${esc(z.kratky||z.url)}</div>`;pa.appendChild(q)}
  let ps=$("pageSize");if(!ps){ps=document.createElement("style");ps.id="pageSize";document.head.appendChild(ps)}
  ps.textContent=`@page{size:${PAPIER==="A4"?"210mm 297mm":"148mm 210mm"};margin:0}`}
-$("btnTlac").onclick=async()=>{await pripravTlac();window.print()};
+$("btnTlac").onclick=async()=>{await pripravTlac();try{if(typeof CFG.onUdalost==="function")CFG.onUdalost({akcia:"tlac",papier:PAPIER})}catch(e){}window.print()};
 /* obrázok 1080 × 1620 */
-$("btnPng").onclick=async()=>{const b=$("btnPng"),info=$("infoHotovo");info.hidden=true;b.textContent="Pripravujem…";
+$("btnPng").onclick=async()=>{try{if(typeof CFG.onUdalost==="function")CFG.onUdalost({akcia:"obrazok"})}catch(e){}const b=$("btnPng"),info=$("infoHotovo");info.hidden=true;b.textContent="Pripravujem…";
  try{const c=$("p").cloneNode(true);c.id="";c.style.transform="";c.style.width="420px";c.style.maxWidth="none";c.style.boxShadow="none";c.style.margin="0";
   const css=[...document.querySelectorAll("style")].map(x=>x.textContent).join("\n");
   const xh=new XMLSerializer().serializeToString(c);

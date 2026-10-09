@@ -44,14 +44,21 @@ export async function zapisDarZbierky(refId: string, eur: number, kanal: KanalDa
 
 /** dar zbierky tak, ako je v ledgeri (rpc zbierka_dary, 0067) */
 export interface DarZLedgera { id: string; cas: number; eur: number; kanal: KanalDaru; meno: string | null; registrovany: boolean; moj: boolean }
+/** dary zbierky z ledgera; `skryte` = zbierka rodiny a ja nie som príjemca ani darca (0075b, KARTA 57 A.7) —
+ *  server poslal len počet darov, žiadne sumy ani mená */
+export interface DaryZbierky { dary: DarZLedgera[]; skryte: boolean; pocet: number }
 
-export async function nacitajDaryZbierky(id: string): Promise<DarZLedgera[]> {
-  if (!supabase) return [];
+export async function nacitajDaryZbierky(id: string): Promise<DaryZbierky> {
+  if (!supabase) return { dary: [], skryte: false, pocet: 0 };
   const { data, error } = await supabase.rpc("zbierka_dary", { p_zbierka: id, p_limit: 200 });
   if (error) throw error;
-  const dary = ((data as { dary?: unknown[] } | null)?.dary ?? []) as { id: string; cas: string; mena: string; kanal: string; meno: string | null; registrovany: boolean; moj: boolean; suma: number }[];
-  return dary.map((d) => ({
-    id: d.id, cas: new Date(d.cas).getTime(), eur: d.mena === "DEED" ? Number(d.suma) / DEED_ZA_EUR : Number(d.suma),
-    kanal: d.kanal === "deed" ? "deed" : d.kanal === "sepa" ? "sepa" : "psp", meno: d.meno, registrovany: d.registrovany, moj: d.moj,
-  }));
+  const odp = (data ?? {}) as { dary?: unknown[]; skryte?: boolean; pocet?: number };
+  const dary = (odp.dary ?? []) as { id: string; cas: string; mena: string; kanal: string; meno: string | null; registrovany: boolean; moj: boolean; suma: number }[];
+  return {
+    skryte: !!odp.skryte, pocet: Number(odp.pocet ?? dary.length),
+    dary: dary.map((d) => ({
+      id: d.id, cas: new Date(d.cas).getTime(), eur: d.mena === "DEED" ? Number(d.suma) / DEED_ZA_EUR : Number(d.suma),
+      kanal: d.kanal === "deed" ? "deed" : d.kanal === "sepa" ? "sepa" : "psp", meno: d.meno, registrovany: d.registrovany, moj: d.moj,
+    })),
+  };
 }

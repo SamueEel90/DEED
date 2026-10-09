@@ -74,7 +74,7 @@ export function TyzdenKarta({ k, off, setOff, den, onDen, mobil, kostolV = "", p
         <span style={{ flex: 1, minWidth: 0, textAlign: "center", display: "flex", flexDirection: "column" }}>
           <b style={{ fontSize: mobil ? 16 : 18 }}>{tyzT}</b>
           {off !== 0 && <button type="button" onClick={() => setOff(0)} style={spatTl}>Späť na tento týždeň</button>}
-          <span style={{ fontSize: 13, color: "var(--ink3)" }}>Ťuknite na deň · vpravo pridáte omšu, pohreb, krst…{kostolV}</span>
+          <span style={{ fontSize: 13, color: "var(--ink3)" }}>{mobil ? "Ťuknite na deň · pridáte omšu, pohreb, krst…" : "Ťuknite na deň · vpravo pridáte omšu, pohreb, krst…"}{kostolV}</span>
         </span>
         <button type="button" onClick={() => setOff(off + 1)} aria-label="Ďalší týždeň" style={sipka}>›</button>
       </div>
@@ -94,7 +94,9 @@ export function TyzdenKarta({ k, off, setOff, den, onDen, mobil, kostolV = "", p
     </section>);
 }
 
-export function OmseKalendar({ strankaId, meno, kostoly, mobil, toast, start }: { strankaId: string; meno: string; kostoly: KostolF[]; mobil: boolean; toast: (m: string) => void;
+export function OmseKalendar({ strankaId, meno, kostoly, mobil, tel = false, toast, start }: { strankaId: string; meno: string; kostoly: KostolF[]; mobil: boolean;
+  /** KARTA 57 B.3: telefón = len Týždeň (bez Mesiac/Rozvrh, Pripnúť, plagátu a Kostolov — tie sú v dlaždici Filiálky); ťuk na deň posunie na jeho detail */
+  tel?: boolean; toast: (m: string) => void;
   /** KARTA 56G: otvoriť týždeň s úpravou dňa (ťuk na deň v Prehľade) alebo len tento týždeň (Zmena omše z + Pridať) */
   start?: { den?: string } }) {
   const kal = useKalendar(strankaId);
@@ -116,7 +118,10 @@ export function OmseKalendar({ strankaId, meno, kostoly, mobil, toast, start }: 
   const dnes = iso(new Date());
 
   // ---------- Týždeň (ten istý komponent aj v Prehľade, KARTA 56G §1) ----------
-  const tyzden = <TyzdenKarta k={k} off={tyzOff} setOff={(o) => { setTyzOff(o); setDen(null); }} den={den} onDen={setDen} mobil={mobil} kostolV={kostolV} />;
+  const denRef = useRef<HTMLDivElement>(null);
+  useEffect(() => { if (tel && start?.den) window.setTimeout(() => denRef.current?.scrollIntoView({ block: "start" }), 120); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const naDenTel = (key: string) => { setDen(key); window.setTimeout(() => denRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 60); };
+  const tyzden = <TyzdenKarta k={k} off={tyzOff} setOff={(o) => { setTyzOff(o); setDen(null); }} den={den} onDen={tel ? naDenTel : setDen} mobil={mobil} kostolV={kostolV} pozn={!tel} />;
 
   // ---------- Mesiac ----------
   const m1 = (() => { const t = new Date(); return new Date(t.getFullYear(), t.getMonth() + mesOff, 1); })();
@@ -128,7 +133,7 @@ export function OmseKalendar({ strankaId, meno, kostoly, mobil, toast, start }: 
         <span style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
           <b style={{ fontSize: 18 }}>{MES_N[m1.getMonth()]} {m1.getFullYear()}{kostolV}</b>
           {mesOff !== 0 && <button type="button" onClick={() => { setMesOff(0); setDen(null); }} style={spatTl}>Späť na tento mesiac</button>}
-          <span style={{ fontSize: 13, color: "var(--ink3)" }}>Ťuknite na deň · vpravo pridáte omšu, pohreb, krst…</span>
+          <span style={{ fontSize: 13, color: "var(--ink3)" }}>{mobil ? "Ťuknite na deň · pridáte omšu, pohreb, krst…" : "Ťuknite na deň · vpravo pridáte omšu, pohreb, krst…"}</span>
         </span>
         <button type="button" onClick={() => { setMesOff((o) => o + 1); setDen(null); }} aria-label="Ďalší mesiac" style={sipka}>›</button>
       </div>
@@ -423,8 +428,16 @@ export function OmseKalendar({ strankaId, meno, kostoly, mobil, toast, start }: 
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{d}</svg>{t}
     </button>);
 
-  const lavy = tab === 0 ? tyzden : tab === 1 ? mesiac : rozvrh;
+  const lavy = tab === 0 || tel ? tyzden : tab === 1 ? mesiac : rozvrh;
   const pravy = <>{denPanel}{celyTyzden}{kostolyKarta}</>;
+  if (tel) return <>
+    {viac && <div style={{ flex: "none", display: "flex", gap: 8, flexWrap: "wrap" }}>
+      {kostoly.map((x, i) => { const on = i === kI; return <button key={x.nazov + i} type="button" onClick={() => { setKI(i); setDen(null); }} aria-pressed={on} style={{ minHeight: 44, padding: "0 14px", borderRadius: 12, border: on ? "2px solid var(--green)" : "1px solid var(--cardBd)", background: on ? "var(--gSoft)" : "var(--card)", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: on ? 800 : 600, color: "var(--ink)", boxShadow: "none" }}>{x.nazov}</button>; })}
+    </div>}
+    {tyzden}
+    <div ref={denRef} style={{ flex: "none", display: "flex", flexDirection: "column", gap: 12, scrollMarginTop: 76 }}>{den && denPanel}</div>
+    {celyTyzden}
+  </>;
   return <>
     <div style={{ flex: "none", display: "flex", alignItems: "center", gap: 12, flexWrap: mobil ? "wrap" : "nowrap" }}>
       {!mobil && <span style={{ flex: 1, minWidth: 0 }}><span style={{ display: "block", fontSize: 22, fontWeight: 800 }}>Omše a kalendár</span><span style={{ display: "block", fontSize: 13.5, color: "var(--ink3)" }}>Vzor nastavíte raz, kalendár ho opakuje. Ťuk na deň zmení len ten deň.</span></span>}

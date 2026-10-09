@@ -11,6 +11,7 @@ import { useEffect, useRef, useState, type CSSProperties, type DragEvent, type R
 import { createPortal } from "react-dom";
 import { DeedQr } from "@/components/deedqr";
 import { QrNaParte, tlacParte, type QrParte } from "./QrNaParte";
+import { zapisEditora, zapisZPayloadu } from "@/lib/editorStat";
 import { EditorOznameni, type EditorApi, type PayloadEditora } from "@/components/EditorOznameni";
 import { nacitajStav, ulozStav } from "@/features/viera/stav";
 import { TESTOVACIA } from "@/lib/testovacia";
@@ -137,6 +138,7 @@ export function ZbierkaSOverovatelom({ stranka, menoFarnosti, ucetFarnosti, mobi
       } : undefined,
       vytvorene: Date.now(), platnostDni: 7, linkedZbierka: true,
     });
+    if (rezim === "vl" && druh === "pohreb") zapisEditora({ udalost: "vlastne", typ: "parte", vlastne: true, qr: qrParte.qr, qr_miesto: qrParte.qr ? (qrParte.kde === "pod" ? "pod" : "rohy") : null, kto: "overovatel", stranka_typ: "farnost", stranka, pri_zbierke: true });
     setPrispevok(id); setKrok(3);
   };
   const pripojit = () => { if (!vybrany) return; setPrispevok(vybrany); setKrok(3); };
@@ -146,8 +148,11 @@ export function ZbierkaSOverovatelom({ stranka, menoFarnosti, ucetFarnosti, mobi
   const [edKon, setEdKon] = useState<PayloadEditora | null>(() => nacitajStav<PayloadEditora | null>("partekoncept", stranka, null)); // rozpísané sa nestratí
   const [edMob, setEdMob] = useState(false);
   const [ulozT, setUlozT] = useState("");
+  // KARTA 57 F: štatistika editora — overovateľ farnosti pri zbierke rodiny
+  const kdeStat = { kto: "overovatel" as const, stranka_typ: "farnost", stranka, pri_zbierke: true };
   const naEditor = async (p: PayloadEditora) => {
     if (p.stav === "koncept") { setEdKon(p); ulozStav("partekoncept", stranka, p); return; }
+    zapisZPayloadu(p, kdeStat);
     if (p.stav !== "hotovo") return;
     const P = p.polia ?? {}, str = (k: string) => String(P[k] ?? "").trim();
     const meno = str("meno") || "Parte";
@@ -167,7 +172,7 @@ export function ZbierkaSOverovatelom({ stranka, menoFarnosti, ucetFarnosti, mobi
     setNaStranke(vlastnePrispevkyVsetky(stranka)); setRezim("je"); setVybrany(id); setUlozT(`Parte ${meno} je uložené ✓`);
   };
   const editor = (styl: CSSProperties) => (
-    <EditorOznameni ref={edRef} title="Editor parte" onSend={(p) => { void naEditor(p); }} style={styl}
+    <EditorOznameni ref={edRef} title="Editor parte" onSend={(p) => { void naEditor(p); }} onUdalost={(e) => zapisEditora({ udalost: e.akcia, typ: "parte", papier: e.papier ?? null, ...kdeStat })} style={styl}
       cfg={{ typ: "parte", rezim: "rychly", bezTlace: true, qrObrazok: "/editor/qr-deed.png", miesta: ["v Dome smútku", "vo farskom kostole", "na miestnom cintoríne"], kontext: { zbierka: "pohreb", stranka }, navrh: edKon }} />);
   const edSpat = () => { if (!edRef.current?.krokSpat()) setEdMob(false); };
 
@@ -469,7 +474,7 @@ export function ZbierkaSOverovatelom({ stranka, menoFarnosti, ucetFarnosti, mobi
         <div role="status" style={{ padding: "16px 18px", borderRadius: 18, background: "var(--gSoft)", border: "2px solid var(--green)", display: "flex", flexDirection: "column", gap: 10 }}>
           <b style={{ fontSize: 17, color: "var(--gInk)" }}>Zapečatené ✓ {velke(T.ozn)} s QR kódom sme poslali do appky príjemcu</b>
           <span style={{ fontSize: 14.5, lineHeight: 1.5, color: "var(--ink2)" }}>PDF na tlač aj obrázok na WhatsApp. Zbierku odteraz spravuje on: vidí štatistiku a darcov, doplní termín, ukončí ju. Vy sumy ani darcov neuvidíte, podiel farnosti príde do Peňaženky.</span>
-          {obrTlac && <button type="button" onClick={() => { tlacParte(obrTlac, rezim === "vl" ? qrParte : { qr: false, kde: "pod", papier: "A5" }); setTlOk(true); window.setTimeout(() => setTlOk(false), 2200); }} style={{ ...tlZ, height: 54 }}>{tlOk ? "Posielam do tlačiarne ✓" : `Vytlačiť ${T.ozn} tu na fare`}</button>}
+          {obrTlac && <button type="button" onClick={() => { const n = rezim === "vl" ? qrParte : { qr: false, kde: "pod" as const, papier: "A5" as const }; tlacParte(obrTlac, n); zapisEditora({ udalost: "tlac", typ: "parte", vlastne: rezim === "vl", papier: n.papier, qr: n.qr, qr_miesto: n.qr ? (n.kde === "pod" ? "pod" : "rohy") : null, kto: "overovatel", stranka_typ: "farnost", stranka, pri_zbierke: true }); setTlOk(true); window.setTimeout(() => setTlOk(false), 2200); }} style={{ ...tlZ, height: 54 }}>{tlOk ? "Posielam do tlačiarne ✓" : `Vytlačiť ${T.ozn} tu na fare`}</button>}
           {obrTlac && <span style={{ fontSize: 13, color: "var(--ink3)" }}>Ak rodina nemá tlačiareň, vytlačte jej {T.ozn} tu na fare.</span>}
         </div>
         <button type="button" onClick={() => onHotovo(z, `${T.nazov} beží. Nájdete ju nižšie v Ďalších zbierkach.`)} style={{ ...tlZ, alignSelf: "flex-start" }}>Hotovo · späť do Zbierok</button>

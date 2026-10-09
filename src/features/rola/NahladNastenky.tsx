@@ -13,6 +13,7 @@ import type { ProfilStranky } from "@/lib/profilStranky";
 import { useKalendar, kostolKal, iso, DNI_K, dniTyzdna, omseDna, polozkyDna, druhPolozky, minuty } from "@/lib/kalendarFarnosti";
 import { vlastnePrispevky, type VieraFeedItem } from "@/features/viera/mock";
 import { stitokOznamu } from "./OmseKalendar";
+import { onlineVDen, useZmenyPrihovoru } from "@/lib/prihovor";
 
 const INK = "#1D211B", INK2 = "#4A4C43", INK3 = "#5B5D53", LINKA = "#CFC8BA", ZELENA = "#4B7A35", CERVENA = "#8E3B2F";
 const nadpisSekcie: CSSProperties = { fontSize: 14, fontWeight: 800, letterSpacing: ".12em", color: INK3 };
@@ -27,6 +28,7 @@ const dnesIso = () => iso(new Date());
 
 export function NahladNastenky({ strankaId, meno, profil, mobil, onSpat }: { strankaId: string; meno: string; profil: ProfilStranky | null; mobil: boolean; onSpat: () => void }) {
   const kal = useKalendar(strankaId);
+  useZmenyPrihovoru();
   useEffect(() => {
     const esc = (e: KeyboardEvent) => { if (e.key === "Escape") onSpat(); };
     window.addEventListener("keydown", esc); return () => window.removeEventListener("keydown", esc);
@@ -48,7 +50,7 @@ export function NahladNastenky({ strankaId, meno, profil, mobil, onSpat }: { str
   const kk = kostolKal(strankaId), VJ = kal.verejne;
   const omse = dniTyzdna(0).map((d, i) => {
     const casy = VJ.omse ? [...omseDna(kk, d).filter((o) => !o.zrusena).map((o) => o.t), ...polozkyDna(kk, d).filter((p) => druhPolozky(p.typ).kat === "omse").map((p) => p.t)] : [];
-    return { key: iso(d), k: `${DNI_K[i]} ${d.getDate()}.`, dnes: iso(d) === dnes, casy: casy.sort((a, b) => minuty(a) - minuty(b)).join(", ") || "—" };
+    return { key: iso(d), k: `${DNI_K[i]} ${d.getDate()}.`, dnes: iso(d) === dnes, casy: casy.sort((a, b) => minuty(a) - minuty(b)).join(", ") || "—", online: VJ.omse ? onlineVDen(strankaId, d) : [] };
   });
   const k = profil?.kontakt;
   const kontakt = k ? [k.adresaVerejna.trim() || k.sidlo.trim(), ...k.telefony.map((t) => t.cislo.trim()), ...k.emaily.map((e) => e.adresa.trim())].filter(Boolean) : [];
@@ -114,7 +116,11 @@ export function NahladNastenky({ strankaId, meno, profil, mobil, onSpat }: { str
                 {omse.map((d) => (
                   <span key={d.key} style={{ display: "flex", justifyContent: "space-between", gap: 10, padding: "10px 12px", margin: "1px -12px", borderRadius: 10, background: d.dnes ? "#14110B" : "transparent", color: d.dnes ? "#fff" : INK }}>
                     <span>{d.k}{d.dnes ? " · dnes" : ""}</span>
-                    <b style={{ textAlign: "right" }}>{d.casy}</b>
+                    <span style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2 }}>
+                      <b style={{ textAlign: "right" }}>{d.casy}</b>
+                      {/* OPRAVY 177: pri dni, ktorý pravidlo spĺňa */}
+                      {d.online.length > 0 && <span style={{ fontSize: 14, fontWeight: 800, color: d.dnes ? "#FF8A80" : "#B3261E" }}>▶ aj online {d.online.join(", ")}</span>}
+                    </span>
                   </span>))}
               </div>
             </div>
