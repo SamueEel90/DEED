@@ -7,6 +7,7 @@
 // 3 rozdelenie (podiel overovateľa + zvyšok rozhoduje príjemca: nechať si / podeliť sa) · 4 kód + zapečatiť · 5 hotovo.
 // Nová zbierka začína vždy úplne prázdna. Prototyp „Sprava farnosti - prvy prichod" (pre-kodera-7-10-b).
 // ============================================================
+import { CasPole } from "@/components/CasPole";
 import { useEffect, useRef, useState, type CSSProperties, type DragEvent, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { DeedQr } from "@/components/deedqr";
@@ -23,16 +24,14 @@ import { hladajPrijemcov, type PrijemcaDeed } from "@/lib/prijemcoviDeed";
 import { SADY_EUR, SADY_EURC } from "@/lib/sadyDarov";
 import {
   spustiZbierku, prazdnaZbierka, PODIEL_MAX, PODIEL_KROK, PODIEL_STROP_EUR, PODELIT_MAX, PODELIT_MIN, PODELIT_KROK,
-  type SpustenaZbierka, type ZbierkaFarnosti, type PodielZbierky,
-} from "@/lib/novaZbierka";
+  type SpustenaZbierka, type ZbierkaFarnosti, type PodielZbierky } from "@/lib/novaZbierka";
 
 type Druh = Exclude<ZbierkaFarnosti["druh"], "farnost">;
 const DRUH_OZN: Record<Druh, DruhOznamu> = { pohreb: "parte", svadba: "svadba", ine: "ine" };
 const PZT: Record<Druh, { t: string; nazov: string; chip: string; kto: string; komu: string; ozn: string; sabS: string; kedy: string; meno: string; po: string; pred: string; k1: string; k2: string; prijM: string; prijK: string; prijD: string; phMeno: string; phKde: string }> = {
   pohreb: { t: "Pohreb", nazov: "Pohrebná zbierka", chip: "POHREBNÁ ZBIERKA", kto: "Pozostalý", komu: "pozostalému", ozn: "parte", sabS: "fotka, meno, dátumy, pohreb, kto oznamuje", kedy: "ROZLÚČKA · KEDY (NEPOVINNÉ)", meno: "MENO A PRIEZVISKO ZOSNULÉHO", po: "pohrebe", pred: "Rozlúčka", k1: "Sken pozostalého", k2: "Parte", prijM: "Rodina", prijK: "rodina", prijD: "rodine", phMeno: "Meno a priezvisko zosnulého", phKde: "napr. kostol, dom smútku" },
   svadba: { t: "Svadba", nazov: "Svadobná zbierka", chip: "SVADOBNÁ ZBIERKA", kto: "Snúbenec", komu: "snúbencovi", ozn: "svadobné oznámenie", sabS: "fotka, mená, dátum a miesto sobáša", kedy: "SOBÁŠ · KEDY (NEPOVINNÉ)", meno: "MENÁ SNÚBENCOV", po: "svadbe", pred: "Svadba", k1: "Sken snúbenca", k2: "Oznámenie", prijM: "Snúbenci", prijK: "snúbenci", prijD: "snúbencom", phMeno: "Mená snúbencov", phKde: "napr. farský kostol" },
-  ine: { t: "Iné", nazov: "Zbierka s overovateľom", chip: "ZBIERKA S OVEROVATEĽOM", kto: "Príjemca", komu: "príjemcovi", ozn: "oznámenie", sabS: "fotka, meno, o čo ide, dátum", kedy: "KEDY (NEPOVINNÉ)", meno: "MENO PRÍJEMCU", po: "udalosti", pred: "Zbierka", k1: "Sken príjemcu", k2: "Oznámenie", prijM: "Príjemca", prijK: "príjemca", prijD: "príjemcovi", phMeno: "Meno príjemcu", phKde: "miesto" },
-};
+  ine: { t: "Iné", nazov: "Zbierka s overovateľom", chip: "ZBIERKA S OVEROVATEĽOM", kto: "Príjemca", komu: "príjemcovi", ozn: "oznámenie", sabS: "fotka, meno, o čo ide, dátum", kedy: "KEDY (NEPOVINNÉ)", meno: "MENO PRÍJEMCU", po: "udalosti", pred: "Zbierka", k1: "Sken príjemcu", k2: "Oznámenie", prijM: "Príjemca", prijK: "príjemca", prijD: "príjemcovi", phMeno: "Meno príjemcu", phKde: "miesto" } };
 const QR_S = 15; // QR na sken platí 15 sekúnd a sám sa obnovuje
 const pct = (n: number) => `${(Math.round(n * 10) / 10).toLocaleString("sk-SK")} %`;
 const nahodny = () => Math.random().toString(36).slice(2, 10);
@@ -71,10 +70,11 @@ function QrVelky({ data, zostava, onZavri }: { data: string; zostava: number; on
     </div>, document.body);
 }
 
-export function ZbierkaSOverovatelom({ stranka, menoFarnosti, ucetFarnosti, mobil, pc = !mobil, toast, onZavri, onHotovo, spatRef }: {
+export function ZbierkaSOverovatelom({ stranka, menoFarnosti, ucetFarnosti, mobil, pc = !mobil, toast, onZavri, onHotovo, spatRef, onSpatText }: {
   stranka: string; menoFarnosti: string; ucetFarnosti: string; mobil: boolean; /** KARTA 57 A.3: PC = editor v stránke, mobil a tablet = na celú obrazovku */ pc?: boolean; toast: (m: string) => void;
   onZavri: () => void; onHotovo: (z: SpustenaZbierka, sprava: string) => void;
   /** KARTA 57 A.1: horné ‹ Späť Správy sa pýta zbierky */ spatRef?: { current: SpatZbierky | null };
+  /** OPRAVY 185: text horného Späť Správy („Späť na krok 2“, „Späť na výber parte“; prázdny = zavrie zbierku) */ onSpatText?: (t: string) => void;
 }) {
   const [krok, setKrok] = useState(1);
   const [druh, setDruh] = useState<Druh>("pohreb");
@@ -114,8 +114,7 @@ export function ZbierkaSOverovatelom({ stranka, menoFarnosti, ucetFarnosti, mobi
   const pridajSkusobne = () => { // len testovacia verzia
     [1, 2].forEach((n) => pridajPrispevok(stranka, {
       id: `naboz-test-${Date.now()}-${n}`, comp: "data", typ: "skutok", modul: "charity", kat: "Komunita", ntyp: "oznam", skore: 6, typSituacie: "normal", dni: 0, podpora: 0,
-      farnostId: stranka, cirkev: "", komunita: "veriaci (test)", nazov: `Skúšobné ${T.ozn} ${n}`, tag: "Oznam", popis: "pridal veriaci · skúšobné", ukat: druh === "ine" ? undefined : druh, vytvorene: Date.now() - n * 3600000, platnostDni: 7,
-    }));
+      farnostId: stranka, cirkev: "", komunita: "veriaci (test)", nazov: `Skúšobné ${T.ozn} ${n}`, tag: "Oznam", popis: "pridal veriaci · skúšobné", ukat: druh === "ine" ? undefined : druh, vytvorene: Date.now() - n * 3600000, platnostDni: 7 }));
     setNaStranke(vlastnePrispevkyVsetky(stranka));
   };
   const [prispevok, setPrispevok] = useState<string | null>(null); // ku ktorému oznámeniu sa zbierka pripojí
@@ -135,10 +134,8 @@ export function ZbierkaSOverovatelom({ stranka, menoFarnosti, ucetFarnosti, mobi
         mode: rezim === "vl" ? "image" : "template", imageUrl: rezim === "vl" && subor && !subor.pdf ? subor.url : undefined,
         meno: u.meno.trim(), rodena: u.zena && u.rod.trim() ? u.rod.trim() : undefined, datumNar: u.nar, datumUmr: u.umr,
         rozluckaMiesto: u.kde.trim(), rozluckaDatum: u.kedyD, rozluckaCas: u.kedyC, foto: u.foto, text: u.text.trim() || undefined,
-        sablona: rezim === "sab" ? { u, volba, vz } : undefined,
-      } : undefined,
-      vytvorene: Date.now(), platnostDni: 7, linkedZbierka: true,
-    });
+        sablona: rezim === "sab" ? { u, volba, vz } : undefined } : undefined,
+      vytvorene: Date.now(), platnostDni: 7, linkedZbierka: true });
     if (rezim === "vl" && druh === "pohreb") zapisEditora({ udalost: "vlastne", typ: "parte", vlastne: true, qr: qrParte.qr, qr_miesto: qrParte.qr ? (qrParte.kde === "pod" ? "pod" : "rohy") : null, kto: "overovatel", stranka_typ: "farnost", stranka, pri_zbierke: true });
     setPrispevok(id); setKrok(3);
   };
@@ -167,8 +164,7 @@ export function ZbierkaSOverovatelom({ stranka, menoFarnosti, ucetFarnosti, mobi
       fotky: obr ? [obr] : undefined, plagat: true, ukat: "pohreb", reakciaTyp: "kondolencia",
       smutocny: { mode: "template", imageUrl: obr || undefined, meno, rodena: str("rod") || undefined, datumNar: str("nar"), datumUmr: str("umr"),
         rozluckaMiesto: str("rm"), rozluckaDatum: str("rd"), rozluckaCas: str("rc"), foto: p.foto ?? undefined, editor: p },
-      vytvorene: teraz(), platnostDni: 7,
-    });
+      vytvorene: teraz(), platnostDni: 7 });
     setEdKon(null); ulozStav("partekoncept", stranka, null); setEdMob(false);
     setNaStranke(vlastnePrispevkyVsetky(stranka)); setRezim("je"); setVybrany(id); setUlozT(`Parte ${meno} je uložené ✓`);
   };
@@ -229,9 +225,7 @@ export function ZbierkaSOverovatelom({ stranka, menoFarnosti, ucetFarnosti, mobi
           druh, podiel, prijemca: { meno: T.kto, overeny: new Date().toISOString(), ucet: ucetPrijemcu },
           oznamenie: { meno: menoOzn, rodena: u.rod || undefined, kedy: [u.kedyD, u.kedyC].filter(Boolean).join(" ") || undefined, kde: u.kde || undefined, kto: u.kto || undefined, vlastne: rezim === "vl" ? "ano" : undefined, prispevok: prispevok ?? undefined,
             qr: rezim === "vl" && druh === "pohreb" ? { zap: qrParte.qr, kde: qrParte.kde, papier: qrParte.papier } : undefined },
-          podelit: podelit ? spolu.map((x) => ({ id: x.id, nazov: x.nazov, pct: x.pct })) : undefined,
-        },
-      }, ucetFarnosti, "nabozenstvo");
+          podelit: podelit ? spolu.map((x) => ({ id: x.id, nazov: x.nazov, pct: x.pct })) : undefined } }, ucetFarnosti, "nabozenstvo");
       if (prispevok) upravPrispevok(stranka, prispevok, { linkedZbierka: true });
       setZ(nova); setKrok(5);
     } catch (e) { toast(e instanceof Error ? e.message : "Zbierku sa nepodarilo spustiť."); }
@@ -253,6 +247,7 @@ export function ZbierkaSOverovatelom({ stranka, menoFarnosti, ucetFarnosti, mobi
     spatRef.current = () => (krok >= 5 ? "nic" : spatT ? (krokSpat(), "spat") : "zavriet");
     return () => { spatRef.current = null; };
   });
+  useEffect(() => { onSpatText?.(krok >= 5 ? "" : spatT); }, [spatT, krok, onSpatText]);
   const kroky = [`1 · ${T.k1}`, `2 · ${T.k2}`, "3 · Rozdelenie", "4 · Kód", "5 · Hotovo"];
   const test = (t: string, onClick: () => void) => TESTOVACIA
     ? <button type="button" onClick={onClick} style={{ ...tlO, alignSelf: "flex-start", height: 44, borderStyle: "dashed" }}>{t}</button>
@@ -261,7 +256,7 @@ export function ZbierkaSOverovatelom({ stranka, menoFarnosti, ucetFarnosti, mobi
     <label style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}><span style={lab}>{t}</span><input value={u[k]} onChange={(e) => setU((x) => ({ ...x, [k]: e.target.value }))} placeholder={ph} style={pole} /></label>);
   const dva = (a: ReactNode, b: ReactNode) => <div style={{ display: "grid", gridTemplateColumns: mobil ? "minmax(0,1fr)" : "repeat(2,minmax(0,1fr))", gap: 10 }}>{a}{b}</div>;
   const spatZverejnit = <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-    <button type="button" onClick={() => setRezim("")} style={tlO}>‹ Späť</button>
+    <button type="button" onClick={() => setRezim("")} style={tlO}>{`‹ Späť na výber ${druh === "pohreb" ? "parte" : "oznámenia"}`}</button>
     <button type="button" onClick={zverejni} aria-disabled={!!chybaOznamu(u)} style={{ ...tlZ, opacity: chybaOznamu(u) ? 0.5 : 1 }}>Zverejniť {T.ozn} a pripojiť zbierku ›</button>
   </div>;
   // KARTA 57 A.5: čo sa tlačí na fare — vlastné parte (obrázok) alebo hotové parte z editora (obrázok z náhľadu)
@@ -337,7 +332,7 @@ export function ZbierkaSOverovatelom({ stranka, menoFarnosti, ucetFarnosti, mobi
             {TESTOVACIA && <button type="button" onClick={pridajSkusobne} style={{ ...tlO, alignSelf: "flex-start", height: 44, borderStyle: "dashed" }}>Test: pridať 2 skúšobné {T.ozn}</button>}
           </div>}
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <button type="button" onClick={() => { setRezim(""); setVybrany(null); }} style={tlO}>‹ Späť</button>
+            <button type="button" onClick={() => { setRezim(""); setVybrany(null); }} style={tlO}>{`‹ Späť na výber ${druh === "pohreb" ? "parte" : "oznámenia"}`}</button>
             <button type="button" onClick={pripojit} aria-disabled={!vybrany} style={{ ...tlZ, opacity: vybrany ? 1 : 0.5 }}>Pripojiť zbierku k tomuto {druh === "pohreb" ? "parte" : "oznámeniu"} ›</button>
           </div>
         </>}
@@ -366,7 +361,7 @@ export function ZbierkaSOverovatelom({ stranka, menoFarnosti, ucetFarnosti, mobi
             {u.zena === true && txt("RODENÁ (NEPOVINNÉ)", "rod", "rodné priezvisko")}
           </>}
           {dva(<label style={{ display: "flex", flexDirection: "column", gap: 6 }}><span style={lab}>{T.kedy}</span>
-            <span style={{ display: "flex", gap: 8 }}><input type="date" value={u.kedyD} onChange={(e) => setU((x) => ({ ...x, kedyD: e.target.value }))} style={{ ...pole, flex: 1.4 }} aria-label="Dátum" /><input type="time" value={u.kedyC} onChange={(e) => setU((x) => ({ ...x, kedyC: e.target.value }))} style={{ ...pole, flex: 1 }} aria-label="Čas" /></span></label>,
+            <span style={{ display: "flex", gap: 8 }}><input type="date" value={u.kedyD} onChange={(e) => setU((x) => ({ ...x, kedyD: e.target.value }))} style={{ ...pole, flex: 1.4 }} aria-label="Dátum" /><CasPole value={u.kedyC} onCommit={(v) => setU((x) => ({ ...x, kedyC: v }))} placeholder="14:00" label="Čas" style={{ ...pole, flex: 1, minWidth: 0 }} /></span></label>,
             txt("KDE (NEPOVINNÉ)", "kde", T.phKde))}
           <span style={{ fontSize: 13, color: "var(--ink3)" }}>Termín môžete doplniť neskôr, sledujúci dostanú upozornenie. V hlavičke bude farnosť.</span>
           {druh === "pohreb" && subor && !subor.pdf && <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: 14, borderRadius: 16, background: "var(--panel)", border: "1px solid var(--cardBd)" }}>

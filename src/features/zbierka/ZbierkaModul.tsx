@@ -85,7 +85,7 @@ function nacitajDev(): DevStav {
 }
 function ulozDev(v: DevStav) { try { localStorage.setItem(KLUC_DEV, JSON.stringify(v)); } catch { /* LS */ } }
 
-export function ZbierkaModul({ zbierka, miesto: miestoProp, onBack, spatNazov, onZavriet, zoStrankyOrg, onOtvorOrg, stav, onStav, bocny, bez, ktoVoli, pohreb }: {
+export function ZbierkaModul({ zbierka, miesto: miestoProp, onBack, spatNazov, onZavriet, zoStrankyOrg, onOtvorOrg, stav, onStav, bocny, bez, ktoVoli, pohreb, pietne }: {
   zbierka: ZbierkaData; miesto?: Miesto; onBack: () => void;
   /** KARTA 57C §3: len modul v bočnom stĺpci (zbierku ukazuje stránka vľavo) — jeden stĺpec, bez galérie a Späť, bez ukážkového cieľa */
   bocny?: boolean;
@@ -95,6 +95,8 @@ export function ZbierkaModul({ zbierka, miesto: miestoProp, onBack, spatNazov, o
   ktoVoli?: string;
   /** KARTA 57C §4: pohrebná zbierka — miesto „pohreb" (bez Sledovať, Páči sa mi, Pravidelnej, dorovnania, mikrodarov; suma skrytá do daru) */
   pohreb?: boolean;
+  /** pietne akcie pod Zdieľať pri pohrebe (Kondolovať · Spomínam) — dodá stránka */
+  pietne?: React.ReactNode;
   spatNazov?: string; onZavriet?: () => void;
   /** predošlý krok cesty je stránka tej istej organizácie → pole sa skryje */
   zoStrankyOrg?: boolean;
@@ -196,7 +198,7 @@ export function ZbierkaModul({ zbierka, miesto: miestoProp, onBack, spatNazov, o
     }
     if (p.kluc === "vlastnaEur") return null; // vykreslená spolu s rýchlymi sumami
     const obal = (el: React.ReactNode) => <div key={p.kluc} className="zb-pol" style={{ padding: "0 16px" }}>{el}</div>;
-    if (p.kluc === "zdielat") return obal(<ZdielatRiadok onZdielat={() => setHarok("zdielat")} onPodporitDeed={p.hodnota === "podporitDeed" ? () => setHarok("podporit") : undefined} />);
+    if (p.kluc === "zdielat") return obal(<><ZdielatRiadok onZdielat={() => setHarok("zdielat")} onPodporitDeed={p.hodnota === "podporitDeed" ? () => setHarok("podporit") : undefined} />{miesto === "pohreb" && pietne}</>);
     if (p.kluc === "dorovnanie" && dorovnanie) return obal(<>
       <KartaDorovnava d={dorovnanie} />
       {dorovnanieKDaru(dorovnanie, 20) > 0 && <div style={{ margin: "-4px 0 12px", textAlign: "center", fontSize: 13.5, fontWeight: 700, color: "var(--gold)", fontVariantNumeric: "tabular-nums" }}>

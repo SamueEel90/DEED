@@ -334,9 +334,9 @@ function SpravaStrankyTypu({ onBack, typ, onTyp: setTyp, strankaId = "svetlo", n
     if (s === "pridatSkutok") { if (!smieSkutokZaCharitu(rola)) { toast("Skutok za charitu pridá len správca alebo Organizátor."); return; } otvorPridatSkutok({ autor: nazov, organizacia: true, strankaId, centralna: centralnaZbierka }); return; } if (s === sub) return; hist.current = [...hist.current, sub].slice(-30); setSub(s); };
   const spat = () => {
     zastavDiktovanie(); // OPRAVY 125: Späť funguje vždy, diktovanie hneď abort
+    if (sub === null) { hist.current = []; onBack(); return; } // OPRAVY 185: z Prehľadu „Domov"
     if (hist.current.length) { const h = [...hist.current]; const p = h.pop()!; hist.current = h; setSub(p); }
-    else if (sub !== null) setSub(null);
-    else onBack();
+    else setSub(null);
   };
   // pri prepnutí obrazovky hore
   useEffect(() => { korenRef.current?.scrollIntoView?.({ block: "start" }); }, [sub]);
@@ -436,7 +436,7 @@ function SpravaStrankyTypu({ onBack, typ, onTyp: setTyp, strankaId = "svetlo", n
         <button type="button" onClick={() => setVerejny(false)} style={{ height: 42, padding: "0 16px", border: "none", borderRadius: 13, background: "var(--btn)", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 800, color: "var(--ink)" }}>Zavrieť</button>
         <button type="button" onClick={() => { setVerejny(false); otvor("profil"); }} style={{ height: 42, padding: "0 16px", border: "none", borderRadius: 13, background: "var(--btn)", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 800, color: "var(--ink)" }}>Upraviť</button></>} />}</>;
 
-  const hlavicka = <Hlavicka titul={sub === "vsetko" ? <>Všetko, čo <DeedZnacka /> vie</> : titulok(sub, typ)} onSpat={spat} otvor={otvor} mobil={!desktop} glowNova={glowZb} telefon={telefon} onPridat={() => setPridat(true)} />;
+  const hlavicka = <Hlavicka titul={sub === "vsetko" ? <>Všetko, čo <DeedZnacka /> vie</> : titulok(sub, typ)} onSpat={spat} spatT={sub === null ? "Domov" : "Späť"} otvor={otvor} mobil={!desktop} glowNova={glowZb} telefon={telefon} onPridat={() => setPridat(true)} />;
 
   if (desktop) return (
     <div ref={korenRef} className="sprava-charity" data-stit={stit} style={{ minHeight: "100dvh", boxSizing: "border-box", padding: "20px 32px", display: "flex", gap: 24, alignItems: "flex-start" }}>
@@ -499,11 +499,11 @@ function SpravaStrankyTypu({ onBack, typ, onTyp: setTyp, strankaId = "svetlo", n
 // ============================================================
 // HLAVIČKA — na každej obrazovke
 // ============================================================
-function Hlavicka({ titul, onSpat, otvor, mobil, glowNova, telefon, onPridat }: { titul: React.ReactNode; onSpat: () => void; otvor: (s: Sub) => void; mobil: boolean; glowNova?: boolean; telefon?: boolean; onPridat?: () => void }) {
+function Hlavicka({ titul, onSpat, spatT = "Späť", otvor, mobil, glowNova, telefon, onPridat }: { titul: React.ReactNode; onSpat: () => void; /** OPRAVY 185: z Prehľadu vedie na Domov */ spatT?: string; otvor: (s: Sub) => void; mobil: boolean; glowNova?: boolean; telefon?: boolean; onPridat?: () => void }) {
   const nzSh = glowNova ? "0 0 0 3px var(--bg), 0 0 0 5px var(--green), 0 0 20px rgba(78,125,55,.6)" : "none"; // OPRAVY 109
   const spatEl = (
-    <button onClick={onSpat} aria-label="Späť" className="sc-bdh" style={{ flex: "none", height: 44, padding: "0 14px 0 8px", borderRadius: 13, border: "1px solid var(--cardBd)", background: "var(--card)", cursor: "pointer", display: "flex", alignItems: "center", gap: 4, fontSize: 14.5, fontWeight: 800, color: "var(--ink)" }}>
-      <Ik d={IK.sipkaL} w={2.4} />Späť
+    <button onClick={onSpat} className="sc-bdh" style={{ flex: "none", height: 44, padding: "0 14px 0 8px", borderRadius: 13, border: "1px solid var(--cardBd)", background: "var(--card)", cursor: "pointer", display: "flex", alignItems: "center", gap: 4, fontSize: 14.5, fontWeight: 800, color: "var(--ink)" }}>
+      <Ik d={IK.sipkaL} w={2.4} />{spatT}
     </button>);
   const kalEl = (
     <button onClick={() => otvor("x:Kalendár")} aria-label="Kalendár" title="Kalendár" className="sc-bdh" style={{ flex: "none", width: 44, height: 44, borderRadius: 13, border: "1px solid var(--cardBd)", background: "var(--card)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><KalIk /></button>);
@@ -1368,14 +1368,16 @@ function Prepinac({ on }: { on: boolean }) {
 const sekNadpis: React.CSSProperties = { fontSize: 12, fontWeight: 800, letterSpacing: ".06em", color: "var(--ink3)" };
 type Riadok = { t: string; s?: string; v?: string; prep?: [boolean, () => void]; red?: boolean; tap?: () => void };
 
-function ObrNastavenia({ tier, otvor, mobil }: { tier: Tier; otvor: (s: Sub) => void; mobil: boolean }) {
+/** OPRAVY 186: Nastavenia farnosti = tie isté Nastavenia ako charita; farnosť mení len riadky Príjem darov, Ľudia, Údaje a Predplatné */
+export interface NastFarnosti { ludia: () => void; predplatne: () => void; hlavna: () => void; n: (id: string) => void }
+export function ObrNastavenia({ tier, otvor, mobil, farnost }: { tier: Tier; otvor: (s: Sub) => void; mobil: boolean; farnost?: NastFarnosti }) {
   const n = useNastaveniaAppky();
   const { tema, nastavTemu } = useMotiv();
   const [tuk, setTuk] = useState(potvrditTuknutim);
   const [tichy, setTichy] = useState(true);
   const fz = Math.round((n.pismo - 90) / 10); // 0–6
   const pr = (t: string) => () => otvor(`x:${t}`);
-  const nn = (id: string) => () => otvor(`n:${id}`);
+  const nn = (id: string) => () => (farnost ? farnost.n(id) : otvor(`n:${id}`));
   const pristup: [string, string, boolean, () => void][] = [
     ["Obmedziť animácie", "bez letov, iskier a pulzovania", n.obmedzAnim, () => zmenNastavenia({ obmedzAnim: !n.obmedzAnim })],
     ["Vibrácie", "pri potvrdení a po dare", n.vibracie, () => zmenNastavenia({ vibracie: !n.vibracie })],
@@ -1391,6 +1393,12 @@ function ObrNastavenia({ tier, otvor, mobil }: { tier: Tier; otvor: (s: Sub) => 
     ["POMOC", [{ t: "Časté otázky", tap: nn("faq") }, { t: "Napísať podpore", tap: nn("podpora") }]],
     ["STRÁNKA", [{ t: "Zrušiť stránku charity", red: true, tap: nn("zrusit") }]],
   ];
+  if (farnost) sekcie.splice(1, sekcie.length - 1,
+    ["PRÍJEM DAROV", [{ t: "Sumy pri daroch", s: "eurá a EURC · nastavujú sa pri hlavnej zbierke", tap: farnost.hlavna }, { t: "Účet farnosti", s: "hlavný účet z registrácie", tap: nn("ucty") }]],
+    ["ĽUDIA", [{ t: "Ľudia farnosti", s: "kto spravuje stránku, pozvať ďalšieho", tap: farnost.ludia }]],
+    ["FARNOSŤ", [{ t: "Údaje farnosti", s: "cirkev, patrí pod, kontakt a fakturačné údaje", tap: nn("udaje") }, { t: "Program a platba", s: "predplatné farnosti, filiálky, faktúry", tap: farnost.predplatne }]],
+    ["BEZPEČNOSŤ A ÚDAJE", [{ t: "Prihlásené zariadenia", v: String(pocetZariadeni()), tap: nn("zariadenia") }, { t: "Súhlasy", s: "čo farnosť odsúhlasila", tap: nn("suhlasy") }]],
+    ["POMOC", [{ t: "Časté otázky", tap: nn("faq") }, { t: "Napísať podpore", tap: nn("podpora") }]]);
   const riadok = (r: Riadok, i: number) => (
     <button key={r.t} onClick={r.prep ? r.prep[1] : r.tap} role={r.prep ? "switch" : undefined} aria-checked={r.prep ? r.prep[0] : undefined}
       style={{ width: "100%", display: "flex", alignItems: "center", gap: 12, minHeight: 58, border: "none", borderTop: i ? "1px solid var(--cardBd)" : "none", background: "transparent", cursor: "pointer", textAlign: "left", padding: "6px 0" }}>

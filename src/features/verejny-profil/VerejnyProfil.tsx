@@ -11,6 +11,7 @@ import { PrihovorNaStranke } from "./PrihovorNaStranke";
 import { NastenkaFarnosti, posunNaBlok } from "./NastenkaFarnosti";
 import { nacitajProfil, profilZPamate, cistyNazov, type ProfilStranky } from "@/lib/profilStranky";
 import { odFarnikov, BLOK_DRUHU } from "@/lib/odFarnikov";
+import { useAdresarFarnosti, nazovFarnosti } from "@/lib/mojeFarnosti";
 import type { StitLevel } from "@/components/stit";
 import { createPortal } from "react-dom";
 import { useLayout } from "@/components/context";
@@ -41,7 +42,10 @@ import { SektorDarcuKontext } from "@/lib/darcovia";
 /** OPRAVY 159: profil farnosti = sektor Viera (darca bez mena = „Bohu známy veriaci") */
 export function VerejnyProfilView(p: { kluc: string; onBack: () => void }) {
   const k = p.kluc.startsWith("stream:") ? "tvorca" : p.kluc.startsWith("pribeh:") ? orgPribehu(p.kluc.slice(7)) : p.kluc;
-  return <SektorDarcuKontext.Provider value={najdiTestProfil(k)?.typ === "farnost" ? "viera" : "ine"}><VerejnyProfilObsah {...p} /></SektorDarcuKontext.Provider>;
+  const tp = najdiTestProfil(k);
+  // KARTA 57C · 60: farnosť (testovacia aj ktorákoľvek z Adresára) = živá stránka z uloženého
+  if (!tp || tp.typ === "farnost") return <SektorDarcuKontext.Provider value="viera"><FarnostStranka strankaId={k} onBack={p.onBack} stit={(tp?.stit as StitLevel | undefined) ?? "Silver"} /></SektorDarcuKontext.Provider>;
+  return <SektorDarcuKontext.Provider value="ine"><VerejnyProfilObsah {...p} /></SektorDarcuKontext.Provider>;
 }
 
 /** OPRAVY 160/2, 6: farnosť — keď hlavná zbierka beží, na profile je jej názov, text farára a galéria zo Správy */
@@ -60,9 +64,6 @@ function VerejnyProfilObsah({ kluc, onBack }: { kluc: string; onBack: () => void
   const profil0 = najdiTestProfil(zStreamu ? "tvorca" : zPribehu ? orgPribehu(zPribehu) : kluc);
   const [detail, setDetail] = useState<TestZbierka | null>(null);
   // KARTA 57C §1: farnosť = živá nástenka z uloženého (nie testovací profil)
-  const kFar = profil0?.typ === "farnost" ? profil0.k : null;
-  const [profF, setProfF] = useState<ProfilStranky | null>(() => (kFar ? profilZPamate(kFar).ulozeny : null));
-  useEffect(() => { if (!kFar) return; let ziva = true; void nacitajProfil(kFar).then((z) => { if (ziva) setProfF(z.ulozeny); }); return () => { ziva = false; }; }, [kFar]);
   const [stream, setStream] = useState<string | null>(null);
   // doplnky 4. 10.: záznam z kroniky / rokov — skutok, akcia, ukončená zbierka (bez platby), Iskra = Iskry na tom videu
   const [zaznam, setZaznam] = useState<PolCh | null>(null);
@@ -110,7 +111,6 @@ function VerejnyProfilObsah({ kluc, onBack }: { kluc: string; onBack: () => void
   const padOdF = pc ? "44px 40px 0" : "28px 16px 0";
   const hore = (pad?: string) => farnost ? <PrihovorNaStranke strankaId={profil.k} pad={pad} /> : undefined; // KARTA 57 C.7–C.8
   const zakladStranka = (): ReactNode => {
-    if (farnost) return <NastenkaFarnosti strankaId={profil.k} meno={cistyNazov(profF?.meno ?? profil0.meno) || "Vaša farnosť"} profil={profF} fab={fab} onBack={onBack} stit={profil.stit as StitLevel} />;
     const podania = podanie === "pirat" ? <PiratCharita profil={profil} onDetail={setDetail} onZaznam={otvorZaznam} onBack={onBack} onKronika={() => setPrepis("kronika")} odFarnikov={odF(padOdF)} hore={hore(pc ? "24px 40px 0" : "16px 16px 0")} />
       : podanie === "vyklad" ? <VykladCharita profil={profil} onDetail={setDetail} onZaznam={otvorZaznam} onBack={onBack} odFarnikov={odF(padOdF)} hore={hore()} />
       : <Kronika profil={profil} onDetail={setDetail} onZaznam={otvorZaznam} onBack={onBack} odFarnikov={odF()} hore={hore()} />;
@@ -154,7 +154,7 @@ function VerejnyProfilObsah({ kluc, onBack }: { kluc: string; onBack: () => void
     <div style={{ position: "relative", height: "100%" }}>
       <div aria-hidden={vrstva ? true : undefined} style={vrstva ? { position: "absolute", inset: 0, visibility: "hidden", pointerEvents: "none" } : { height: "100%" }}>{zakladStranka()}</div>
       {vrstva && <div style={{ position: "absolute", inset: 0, overflowY: detail && !pribeh ? "auto" : undefined }}>{vrstva}</div>}
-      {farnost && !vrstva && <FarnikPridava strankaId={profil.k} mobil={!pc} onPozriet={(id) => { setNovyOdF(id); const kd = odFarnikov(profil.k).find((x) => x.id === id)?.k, b = kd ? BLOK_DRUHU[kd] : undefined; window.setTimeout(() => posunNaBlok(b?.[0] ?? "ozn"), 60); }} />}
+
     </div>);
 }
 
@@ -189,4 +189,22 @@ function usePc1200() {
   const [p, setP] = useState(() => typeof window !== "undefined" && window.matchMedia("(min-width: 1200px)").matches);
   useEffect(() => { const q = window.matchMedia("(min-width: 1200px)"), f = () => setP(q.matches); q.addEventListener("change", f); return () => q.removeEventListener("change", f); }, []);
   return p;
+}
+
+/** KARTA 57C · 60 — stránka farnosti (živá nástenka + zelené +) pre ľubovoľnú farnosť v DEED.
+ *  Vo Viere ju ukazuje aj domovská farnosť (bez Späť). */
+export function FarnostStranka({ strankaId, onBack, stit = "Silver" }: { strankaId: string; onBack?: () => void; stit?: StitLevel }) {
+  useAdresarFarnosti();
+  const pc = usePc1200();
+  const [prof, setProf] = useState<ProfilStranky | null>(() => profilZPamate(strankaId).ulozeny);
+  const [pre, setPre] = useState(strankaId);
+  if (pre !== strankaId) { setPre(strankaId); setProf(profilZPamate(strankaId).ulozeny); }
+  useEffect(() => { let ziva = true; void nacitajProfil(strankaId).then((z) => { if (ziva) setProf(z.ulozeny); }); return () => { ziva = false; }; }, [strankaId]);
+  const fab = fabZapnuty(strankaId);
+  const meno = cistyNazov(prof?.meno ?? nazovFarnosti(strankaId)) || "Vaša farnosť";
+  return (
+    <div style={{ position: "relative", minHeight: "100%" }}>
+      <NastenkaFarnosti strankaId={strankaId} meno={meno} profil={prof} fab={fab} onBack={onBack} stit={stit} />
+      <FarnikPridava strankaId={strankaId} mobil={!pc} onPozriet={(id) => { const kd = odFarnikov(strankaId).find((x) => x.id === id)?.k, b = kd ? BLOK_DRUHU[kd] : undefined; window.setTimeout(() => posunNaBlok(b?.[0] ?? "ozn"), 60); }} />
+    </div>);
 }

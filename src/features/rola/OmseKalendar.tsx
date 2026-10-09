@@ -3,13 +3,13 @@
 // Týždeň · Mesiac · Rozvrh omší, úprava dňa vpravo, Čo uvidia ľudia, Vytlačiť na nástenku, Pripnúť týždeň do Prehľadu.
 // Kalendár začína prázdny. Dáta: lib/kalendarFarnosti (účet farnosti).
 // ============================================================
+import { CasPole as SpolocneCasPole } from "@/components/CasPole";
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { pridajPrispevok, vlastnePrispevky, type VieraFeedItem } from "@/features/viera/mock";
 import {
   useKalendar, zmenKalendar, zmenKostol, zmazVlastnu, novyKostol, omseDna, polozkyDna, maZmenu, druhPolozky, jeObrad, casKodu,
-  dniTyzdna, rozsahTyzdna, iso, dvt, pekny, minuty, CAS_OK, normCas, dokonciCas, casNeexistuje, posunTyzdna, kostolKal, DRUHY, SKUPINY_OMSI, VEREJNE_VOLBY, VLASTNE_PREFIX,
-  DNI_K, DNI_D, MES_G, MES_N, nazovOmse, type KalKostol, type KalendarFarnosti, type PolozkaDna, type Skupina, type Verej,
-} from "@/lib/kalendarFarnosti";
+  dniTyzdna, rozsahTyzdna, iso, dvt, minuty, posunTyzdna, kostolKal, DRUHY, SKUPINY_OMSI, VEREJNE_VOLBY, VLASTNE_PREFIX,
+  DNI_K, DNI_D, MES_G, MES_N, nazovOmse, type KalKostol, type KalendarFarnosti, type PolozkaDna, type Skupina, type Verej } from "@/lib/kalendarFarnosti";
 
 export interface KostolF { nazov: string; adresa?: string }
 type Tab = 0 | 1 | 2;
@@ -25,18 +25,10 @@ const GRUPY: Skupina[] = ["Bohoslužby", "Modlitby", "Obrady", "Vaše vlastné"]
 const novyId = () => `p${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
 const vSvetle = () => !document.documentElement.classList.contains("dark");
 
-/** čas: ťuk označí, prepíše sa; opravuje sa sám (56H §2); zlý alebo prázdny sa po odídení vráti na predošlý */
+/** čas: ťuk označí, prepíše sa; opravuje sa sám (56H §2, OPRAVY 180 · spoločné CasPole) */
 function CasPole({ value, onCommit, onChyba, velky, label = "Čas, ťuknite a prepíšte", farba }: { value: string; onCommit: (v: string) => void; onChyba?: (zly: boolean) => void; velky?: boolean; label?: string; farba?: string }) {
-  const [draft, setDraft] = useState<string | null>(null);
-  const zly = draft != null && casNeexistuje(draft);
-  useEffect(() => { onChyba?.(zly); }, [zly]); // eslint-disable-line react-hooks/exhaustive-deps
-  return (
-    <input value={draft ?? value} inputMode="numeric" maxLength={5} aria-label={label} aria-invalid={zly || undefined}
-      onFocus={(e) => { const el = e.target; setTimeout(() => { try { el.select(); } catch { /* */ } }, 0); }}
-      onChange={(e) => setDraft(normCas(e.target.value))}
-      onBlur={() => { const d = draft == null ? null : dokonciCas(draft); if (d != null && CAS_OK(d)) onCommit(pekny(d)); setDraft(null); }}
-      onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
-      style={{ width: 84, height: 44, flex: "none", padding: "0 6px", boxSizing: "border-box", textAlign: "center", borderRadius: 12, border: `${zly ? 2 : 1}px solid ${zly ? "var(--cRed)" : "var(--cardBd)"}`, background: velky ? "var(--card)" : "var(--field)", fontFamily: "inherit", fontSize: velky ? 17 : 15, fontWeight: velky ? 800 : 700, color: farba ?? "var(--ink)", fontVariantNumeric: "tabular-nums", outline: "none" }} />);
+  return <SpolocneCasPole value={value} onCommit={onCommit} onChyba={onChyba} label={label}
+    style={{ width: 84, height: 44, flex: "none", padding: "0 6px", boxSizing: "border-box", textAlign: "center", borderRadius: 12, border: "1px solid var(--cardBd)", background: velky ? "var(--card)" : "var(--field)", fontFamily: "inherit", fontSize: velky ? 17 : 15, fontWeight: velky ? 800 : 700, color: farba ?? "var(--ink)" }} />;
 }
 
 /** položky dňa zoradené podľa času (omše z rozvrhu + pridané) */

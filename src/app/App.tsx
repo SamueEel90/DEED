@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef, lazy, Suspense, type CSSProperties } from "react";
+import { AdresarHost } from "@/features/viera/AdresarCirkvi";
 import { cakaOtvorenieSpravy, vezmiOtvorenieProfilu, cakaRegistraciaOrg, cakajRegistraciuOrg } from "@/lib/mojeStranky";
 import { useStitAppky } from "@/lib/stitAppky";
 import "@/styles/sprava.css";
@@ -387,6 +388,7 @@ export function Screens({ wide, desktop }: { wide?: boolean; desktop?: boolean }
 
         {/* KARTA 43: verejný profil — vrstva v obsahu appky (ľavé menu a dok ostávajú nad ňou) */}
         <VerejnyProfilHost />
+        <AdresarHost />
 
         {/* plávajúci glass dock — moduly (len mobil/tablet; desktop má bočný panel) */}
         {!desktop && <TabBar taby={taby} aktivny={modul} wide={wide} onModul={prepni} />}

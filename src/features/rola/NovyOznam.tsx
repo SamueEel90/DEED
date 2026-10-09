@@ -5,6 +5,7 @@
 // sú prvé dva zamknuté so štítkom „od P1"). Texty = textové polia, fotky = galéria, ako všade.
 // Zverejnenie vždy podržaním (ten istý diel ako platba). Oznam ide sledujúcim po 5 min, verejný a výzva hneď.
 // ============================================================
+import { CasPole, sNulou } from "@/components/CasPole";
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { RichTextInput } from "@/components/richtext";
 import { sanitizujHtml } from "@/lib/richtext";
@@ -299,7 +300,7 @@ export function OznamySprava({ strankaId, tier, nazov, inicialy, mesto, logo, mo
         <div style={{ display: "grid", gridTemplateColumns: ph ? "minmax(0,1fr)" : "repeat(2,minmax(0,1fr))", gap: 12 }}>
           <label style={{ display: "flex", flexDirection: "column", gap: 6 }}><span style={lbl}>Kedy sa akcia koná</span>
             <span style={{ display: "flex", gap: 8 }}><input type="date" value={f.datum} min={dnesIso()} max={maxAkcia()} onChange={(e) => zmen({ datum: e.target.value })} aria-label="Dátum akcie" style={{ ...pole, flex: 1, minWidth: 0 }} />
-              <input type="time" value={f.cas} onChange={(e) => zmen({ cas: e.target.value })} aria-label="Čas akcie" style={{ ...pole, width: 120, flex: "none" }} /></span>
+              <CasPole value={f.cas} onCommit={(v) => zmen({ cas: v })} format={sNulou} placeholder="18:00" label="Čas akcie" style={{ ...pole, width: 120, flex: "none" }} /></span>
             <span style={{ fontSize: 12.5, color: "var(--ink3)" }}>najviac 2 mesiace dopredu</span></label>
           <label style={{ display: "flex", flexDirection: "column", gap: 6 }}><span style={lbl}>Kde</span>
             <input value={f.miesto} onChange={(e) => zmen({ miesto: e.target.value.slice(0, 80) })} placeholder={`Napríklad: Mierové námestie, ${mesto}`} aria-label="Miesto akcie" style={pole} /></label>

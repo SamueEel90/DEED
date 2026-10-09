@@ -23,6 +23,9 @@ export interface CentralnaZbierka {
   spustena?: string | null;
   /** OPRAVY 160/2 · názov hlavnej zbierky (najviac 40 znakov) — všade, aj na profile; prázdny = „Hlavná zbierka" */
   nazov?: string;
+  /** Martin 13:11 · hlavná zbierka farnosti sa počíta po kalendárnych rokoch: 1. januára začne ukazovateľ od nuly.
+   *  Dary sa nemažú (čo sa počíta, existuje ako pohyb) — mení sa len, odkedy sa sčítavajú. */
+  rocne?: boolean;
 }
 export const HLAVNA_NAZOV_MAX = 40;
 export const nazovHlavnej = (c?: Pick<CentralnaZbierka, "nazov"> | null) => c?.nazov?.trim() || "Hlavná zbierka";
@@ -57,4 +60,9 @@ export const hlavnaBezi = (stranka: string): boolean => !!centralnaZPamate(stran
 export async function zmazCentralnuZbierku(stranka: string): Promise<void> {
   pamat.delete(stranka); zmena();
   if (supabase) await supabase.from("profil_stranky").upsert({ stranka, centralna: null, centralna_cas: new Date().toISOString() }, { onConflict: "stranka" });
+}
+
+/** od kedy sa sčítava hlavná zbierka: pri ročnom prepínači 1. január tohto roka (ms), inak od začiatku (0) */
+export function odKedyHlavna(stranka: string, teraz = new Date()): number {
+  return centralnaZPamate(stranka)?.rocne ? new Date(teraz.getFullYear(), 0, 1).getTime() : 0;
 }

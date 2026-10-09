@@ -28,6 +28,12 @@ export function idZbierkyDB(refId: string, objekt?: ObjektZbierky): string | nul
   return `${objekt.stranka}:${objekt.hlavna ? "hlavna" : refId}`;
 }
 
+// OPRAVY 187: dar poslaný cez stránku farnosti, kde je zbierka iného subjektu pripnutá (0077 · platba.zdroj_stranka).
+// Detail pripnutej zbierky na stránke farnosti nastaví zdroj, kým je otvorený.
+const zdroje = new Map<string, string>();
+export function nastavZdrojDaru(refId: string, stranka: string | null) { if (stranka) zdroje.set(refId, stranka); else zdroje.delete(refId); }
+export const zdrojDaru = (refId: string): string | undefined => zdroje.get(refId);
+
 export async function zapisDarZbierky(refId: string, eur: number, kanal: KanalDaru, objekt?: ObjektZbierky): Promise<void> {
   const id = idZbierkyDB(refId, objekt);
   if (!supabase || !id || !(eur > 0)) return;
@@ -37,7 +43,7 @@ export async function zapisDarZbierky(refId: string, eur: number, kanal: KanalDa
   try { idem = crypto.randomUUID(); } catch { idem = `dar-${Date.now()}-${Math.round(Math.random() * 1e9)}`; }
   const { error } = await supabase.rpc("zbierka_dar", {
     p_zbierka: id, p_idem: idem, p_suma: suma, p_mena: mena, p_kanal: dbKanal,
-    p_meno_darcu: null, p_stranka: objekt?.stranka ?? null, p_nazov: objekt?.nazov ?? null,
+    p_meno_darcu: null, p_stranka: objekt?.stranka ?? null, p_nazov: objekt?.nazov ?? null, p_zdroj: zdroje.get(refId) ?? null,
   });
   if (error) throw error;
 }

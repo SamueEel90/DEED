@@ -8,8 +8,8 @@
 import { useEffect, useSyncExternalStore } from "react";
 import { nacitajStav, ulozStav, obnovOblast } from "@/features/viera/stav";
 
-export type PoleReakcieF = "ucast" | "sustrast" | "blaho";
-export interface ReakcieF { ucast?: string[]; sustrast?: string[]; blaho?: string[]; /** kľúč účtu → meno (Kto sa prihlásil) */ mena?: Record<string, string> }
+export type PoleReakcieF = "ucast" | "sustrast" | "blaho" | "spomin";
+export interface ReakcieF { ucast?: string[]; sustrast?: string[]; blaho?: string[]; /** Spomínam (pohrebná zbierka) */ spomin?: string[]; /** kľúč účtu → meno (Kto sa prihlásil) */ mena?: Record<string, string> }
 type Mapa = Record<string, ReakcieF>;
 
 let verzia = 0;

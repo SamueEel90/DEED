@@ -20,6 +20,7 @@ import { KartaModulu } from "@/features/verejny-profil/ModulProfilu";
 import { odkazQrStranky } from "@/features/verejny-profil/otvor";
 import { useOmsoveOkno, suhrnHlavnej } from "@/lib/omsoveOkno";
 import { usePouzivatel } from "@/lib/pouzivatel";
+import { Prepinac } from "@/features/profil/nastUi";
 import {
   useSektory, cislaSektora, obsahSektora, ulozObsahSektora, pridajSektor, zmazSektor, premenujSektor, ziadostUctu, poziadajOZmenuUctu,
   zavretaCentralna, zavriCentralnu, otvorCentralnu, vyberCentralnej, nastavVyberCentralnej, useZmenySektorov,
@@ -253,8 +254,18 @@ export function SpravaCentralnej({ strankaId, nazov, hlavnyUcet, tier, mobil, to
       <button type="button" aria-busy={plagat === "busy"} onClick={() => void stiahniHned()} style={{ height: 56, border: "none", borderRadius: 15, background: "var(--green)", cursor: "pointer", fontFamily: "inherit", fontSize: 16, fontWeight: 800, color: "#fff", boxShadow: "none" }}>{plagat === "ok" ? "Plagát sa stiahol ✓" : plagat === "busy" ? "Pripravujem plagát…" : "Stiahnuť QR plagát (PDF)"}</button>
       <button type="button" onClick={farnost.onHotovo} style={{ height: 52, borderRadius: 15, border: "1.5px solid var(--gBd)", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 15.5, fontWeight: 800, color: "var(--gInk)", boxShadow: "none" }}>Hotovo · späť do Správy</button>
     </section>);
+  // Martin 13:11 · ročné počítanie hlavnej zbierky (prepínač áno/nie, nič sa nemaže)
+  const rocneKarta = farnost && (
+    <section key="rocne" style={kartaK}>
+      <button type="button" role="switch" aria-checked={!!d.rocne} onClick={() => zmen({ rocne: !d.rocne })}
+        style={{ display: "flex", alignItems: "center", gap: 14, minHeight: 56, padding: 0, border: "none", background: "transparent", cursor: "pointer", fontFamily: "inherit", textAlign: "left", color: "var(--ink)" }}>
+        <span style={{ flex: 1, display: "flex", flexDirection: "column", gap: 3 }}><b style={{ fontSize: 16.5 }}>Každý rok začať od nuly</b>
+          <span style={{ fontSize: 14.5, lineHeight: 1.45, color: "var(--ink2)" }}>{d.rocne ? `Ukazovateľ počíta dary od 1. januára ${new Date().getFullYear()}. Staršie dary ostávajú vo výpise.` : "Ukazovateľ počíta všetky dary od spustenia zbierky."}</span></span>
+        <Prepinac on={!!d.rocne} />
+      </button>
+    </section>);
   const vlavo = <>{spustena && tentoMesiac}{textKarta}{galeria}</>;
-  const vpravo = <>{nahlad}{ucetKarta}<AkoDarovat sada={d.sada} eurc={d.eurc} sadaE={d.sadaE} onZmena={zmen} pravidelna bezi={spustena} />{sektorKarta}{spustena ? <>{bezi}{qr}</> : nebezi}</>;
+  const vpravo = <>{nahlad}{ucetKarta}<AkoDarovat sada={d.sada} eurc={d.eurc} sadaE={d.sadaE} onZmena={zmen} pravidelna bezi={spustena} />{sektorKarta}{rocneKarta}{spustena ? <>{bezi}{qr}</> : nebezi}</>;
   const stlpce = (l: ReactNode, p: ReactNode) => mobil
     ? <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>{l}{p}</div>
     : <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1.3fr) minmax(0,1fr)", gap: 16, alignItems: "start" }}><div style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0 }}>{l}</div><div style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0 }}>{p}</div></div>;

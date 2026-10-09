@@ -12,9 +12,16 @@ import { createPortal } from "react-dom";
 import type { ProfilStranky } from "@/lib/profilStranky";
 import { cistyText } from "@/lib/richtext";
 import { usePouzivatel } from "@/lib/pouzivatel";
-import { usePersonalizacia } from "@/lib/personalizacia";
+import { useMojeFarnosti, pridajSledovanu, odstranSledovanu, nazovFarnosti, otvorAdresar } from "@/lib/mojeFarnosti";
+import { DrzTlacidlo } from "@/features/viera/AdresarCirkvi";
+import { otvorVerejnyProfil } from "./otvor";
 import { centralnaZPamate, nacitajCentralnuZbierku, nazovHlavnej, useZmenyCentralnej } from "@/lib/centralnaZbierka";
 import { naviazObjekt } from "@/lib/darZbierky";
+import { usePripnute, useCezStranku, dalsiMilnik, type ZbierkaNaPripnutie } from "@/lib/pripnuteZbierky";
+import { nastavZdrojDaru } from "@/lib/darZbierky";
+import { chipPripnutej, farbaPripnutej } from "@/features/rola/PripnuteZbierky";
+import { useBrigady, skoncila } from "@/lib/brigady";
+import { kedyBrigady } from "@/features/rola/BrigadyFarnosti";
 import { useDarcovia, sucetDarov, relCas, nastavCiste, type DarRiadok } from "@/lib/darcovia";
 import { useOmsoveOkno, suhrnHlavnej, menaOkna } from "@/lib/omsoveOkno";
 import { nacitajZbierkyStranky, zbierkyStrankyZPamate, useZmenyZbierok, cielCislo, type SpustenaZbierka } from "@/lib/novaZbierka";
@@ -92,7 +99,10 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, stit: s
   const vz = useVzhlad(strankaId, false);
   const ja = usePouzivatel();
   const kto = klucJa(ja), reg = ja.typ !== "pasivny", mojeMeno = ja.celeMeno?.trim() || "veriaci";
-  const pers = usePersonalizacia();
+  const MF = useMojeFarnosti();
+  const [mfOn, setMfOn] = useState(false);
+  const [mfNove, setMfNove] = useState(false);
+  const [mfHl, setMfHl] = useState<string | null>(null);
   const [cas, setCas] = useState(terazD);
   useEffect(() => { const t = window.setInterval(() => setCas(terazD()), 60000); return () => window.clearInterval(t); }, []);
   const [prihOn, setPrihOn] = useState(false);
@@ -113,7 +123,14 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, stit: s
   const inic = (profil?.bezLoga && profil.inicialy?.trim().toUpperCase()) || iniciy(meno);
   const p = prihovor(strankaId);
   const zivoT = VJ.omse ? naZivo(strankaId, cas) : null, zivoUrl = onlineOmse(strankaId).url.trim();
-  const sled = pers.sledujem(meno);
+  // KARTA 60 §3: vzťah k tejto farnosti — domovská · sledovaná · cudzia
+  const jeHl = MF.domovska === strankaId, jeSl = !jeHl && MF.sled.includes(strankaId);
+  const sledT = jeHl ? "Moja farnosť" : jeSl ? (mfNove ? "Sledovaná farnosť ✓" : "Sledovaná farnosť") : "Sledovať farnosť";
+  const sledTap = () => {
+    if (jeHl || jeSl) { setMfOn(true); return; }
+    void pridajSledovanu(strankaId).catch((e: Error) => toast(e.message));
+    setMfNove(true); window.setTimeout(() => setMfNove(false), 2500);
+  };
 
   // ---------- O nás + hlavná ----------
   const onas = cistyText([profil?.onas, profil?.onas2].filter(Boolean).join("\n")).trim();
@@ -130,6 +147,8 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, stit: s
   const zbFar = zb.filter((z) => druh(z) === "farnost"), zbIne = zb.filter((z) => druh(z) === "ine");
   const zbPohreb = zb.filter((z) => druh(z) === "pohreb"), zbSvadba = zb.filter((z) => druh(z) === "svadba");
   const zvOn = hlOn && nedelneOmse(strankaId).length > 0;
+  const piny = usePripnute(strankaId); // OPRAVY 187: zbierky iných subjektov pripnuté farnosťou
+  const brigadyF = useBrigady(strankaId); // KARTA 61 §2
   const detailZbierky = (z: SpustenaZbierka): ZbierkaData => ({
     id: z.id, nazov: z.nazov, popis: cistyText(z.popis), overena: true, ciel: cielCislo(z) || undefined, ...sadyZbierky(z),
     media: z.media.filter((m) => ziveObr(m.src)).map((m) => (m.typ === "video" ? { typ: "video" as const, src: m.src } : { typ: "foto" as const, src: m.src })),
@@ -161,7 +180,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, stit: s
   const stit = (x: VieraFeedItem) => (x.tag === "Oznámenie" ? "OZNÁMENIE" : stitokOznamu(x));
 
   // ---------- Príď a zaži s nami ----------
-  type Ud = { id: string; ms: number; dat: string; t: string; txt: string; kedy: string; od: string; foto: string; plag: boolean; pz: 0 | 1 | 2; limit: number; zoznam: string[]; mena: Record<string, string>; prepni: () => void; mojeX?: PolozkaFarnika };
+  type Ud = { id: string; ms: number; dat: string; t: string; txt: string; kedy: string; od: string; foto: string; plag: boolean; pz: 0 | 1 | 2; limit: number; zoznam: string[]; mena: Record<string, string>; prepni: () => void; mojeX?: PolozkaFarnika; /** KARTA 61 §2: brigáda (Prídem pomôcť) */ pomoc?: boolean };
   const udFar: Ud[] = OZ.filter((x) => x.ntyp === "udalost" && (!x.datum || x.datum >= vc)).map((x) => {
     const r = reakcieF(strankaId, x.id), pz: 0 | 1 | 2 = x.pozvanie ? (x.pozvanie.zavazne ? 2 : 1) : x.rsvp ? (x.udalost?.zavazne ? 2 : 1) : 0;
     const d = x.datum ? zIso(x.datum) : null;
@@ -191,6 +210,14 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, stit: s
   const tesFar = OZ.filter((x) => ["SVADBA", "JUBILEUM"].includes(stit(x)));
   const tesVer = OD.filter((x) => x.k === "svadba" || x.k === "ine");
   const maTes = tesFar.length + tesVer.length + zbSvadba.length > 0;
+
+  // ---------- Pomôž (KARTA 61 §2: brigády farnosti; deň po termíne zo stránky zmiznú) ----------
+  const pomoz = brigadyF.filter((b) => !skoncila(b, cas.getTime())).sort((a, b) => a.dat.localeCompare(b.dat)).map((b) => {
+    const r = reakcieF(strankaId, b.id);
+    const u: Ud = { id: b.id, ms: 0, dat: b.dat, t: b.t, txt: cistyText(b.txt).trim(), kedy: `${b.druh}${b.dat ? ` · ${kedyBrigady(b.dat, b.cas)}` : ""}`.toLocaleUpperCase("sk-SK"), od: b.kde, foto: b.foto && ziveObr(b.foto) ? b.foto : "", plag: false,
+      pz: b.pz, limit: b.limit, zoznam: r.ucast ?? [], mena: r.mena ?? {}, prepni: () => prepniReakciuF(strankaId, b.id, "ucast", kto, mojeMeno), pomoc: true };
+    return u;
+  });
   // ---------- Oznamy farnosti ----------
   type Oz = { id: string; ms: number; chip: string; t: string; txt: string; zm: boolean; g: "far" | "ver"; x?: PolozkaFarnika };
   const ozAll: Oz[] = [
@@ -204,14 +231,14 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, stit: s
   const maInfo = ozAll.length > 0 || maOmse || urad.length > 0;
 
   const maVrch = !!onas || hlOn;
-  const maZbierky = zvOn || zbFar.length + zbIne.length > 0;
-  const prazdna = !(maVrch || maZbierky || maPrid || !!p || prosby.length || maSpom || maTes || maInfo);
+  const maZbierky = zvOn || zbFar.length + zbIne.length + piny.length > 0;
+  const prazdna = !(maVrch || maZbierky || maPrid || !!p || prosby.length || maSpom || maTes || pomoz.length || maInfo);
 
   // ---------- spoločné kúsky ----------
   const pozvat = (u: Ud) => {
     const jaV = u.zoznam.includes(kto), n = u.zoznam.length, zav = u.pz === 2;
     const plne = !jaV && zav && u.limit > 0 && n >= u.limit;
-    const t = plne ? "Plné · ďakujeme" : jaV ? (zav ? "Prihlásený ✓ · zrušiť" : "Prídem ✓ · zrušiť") : zav ? "Prihlásiť sa" : "Prídem";
+    const t = plne ? "Plné · ďakujeme" : jaV ? (zav ? "Prihlásený ✓ · zrušiť" : u.pomoc ? "Prídem pomôcť ✓ · zrušiť" : "Prídem ✓ · zrušiť") : zav ? "Prihlásiť sa" : u.pomoc ? "Prídem pomôcť" : "Prídem";
     const poc = n ? (zav ? `prihlásení ${n}${u.limit ? ` z ${u.limit}` : ""}` : `${ludi(n)} príde`) : u.limit ? `miesta: ${u.limit}` : "";
     const zozOn = zoz === u.id;
     const mena = u.zoznam.map((x) => `${u.mena[x] ?? "veriaci"}${x === kto ? " (vy)" : ""}`);
@@ -263,7 +290,9 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, stit: s
             : logo ? <img src={logo} alt="Logo" style={{ flex: "none", width: "clamp(76px,7vw,100px)", height: "clamp(76px,7vw,100px)", borderRadius: profil?.tvar === "kruh" ? "50%" : 26, objectFit: "cover", background: "#fff" }} />
             : <span style={{ flex: "none", width: "clamp(76px,7vw,100px)", height: "clamp(76px,7vw,100px)", borderRadius: 26, background: "#fff", color: "#14110B", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "clamp(26px,2.6vw,34px)", fontWeight: 800 }}>{inic}</span>}
           <span style={{ flex: "1 1 320px", minWidth: 0, display: "flex", flexDirection: "column", gap: 8 }}><b style={{ fontSize: "clamp(34px,4.4vw,60px)", lineHeight: 1, letterSpacing: "-.04em", color: "#fff", textWrap: "balance" } as CSSProperties}>{meno}</b><span style={{ fontSize: "clamp(15px,1.4vw,19px)", color: "#E8E1D3" }}>Farnosť</span></span>
-          <button type="button" aria-pressed={sled} onClick={() => pers.toggleSledovanie({ meno, typ: "org" } as Parameters<typeof pers.toggleSledovanie>[0])} style={{ flex: "none", minHeight: 54, padding: "0 24px", borderRadius: 15, border: "none", background: sled ? "#E3ECDB" : "#fff", color: sled ? "#2F5A22" : "#14110B", fontFamily: "inherit", fontSize: 17, fontWeight: 800, cursor: "pointer" }}>{sled ? "Sledujete ✓" : "Sledovať farnosť"}</button>
+          <button type="button" aria-pressed={jeHl || jeSl} aria-expanded={jeHl || jeSl ? mfOn : undefined} onClick={sledTap} style={{ flex: "none", minHeight: 54, padding: "0 24px", borderRadius: 15, border: "none", background: jeHl || jeSl ? "#E3ECDB" : "#fff", color: jeHl || jeSl ? "#2F5A22" : "#14110B", fontFamily: "inherit", fontSize: 17, fontWeight: 800, cursor: "pointer", display: "flex", alignItems: "center", gap: 10 }}>
+            <span>{sledT}</span>{(jeHl || jeSl) && <span aria-hidden="true" style={{ fontSize: 15 }}>⌄</span>}
+          </button>
         </div>
       </div>
 
@@ -282,6 +311,8 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, stit: s
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(250px,1fr))", gap: 14, alignItems: "stretch" }}>
           {zvOn && <ZvoncekKarta strankaId={strankaId} onTap={(id, t) => onDetail({ id, nazov: t, popis: "Ako do zvončeka pri omši. Dar ide farnosti.", overena: true, organizacia: orgPole }, { typ: "zv", chip: "ZVONČEKOVÁ ZBIERKA", t, txt: "Ako do zvončeka pri omši. Dar ide farnosti." })} />}
           {zbFar.map((z) => <ZbierkaKarta key={z.id} z={z} onTap={() => otvorZbierku(z)} />)}
+          {piny.map((z) => <PripnutaKarta key={z.id} z={z} onTap={() => onDetail({ id: z.id, nazov: z.nazov, popis: "", overena: true, ciel: z.ciel ?? undefined, media: [], organizacia: { ...orgPole, meno: z.kto, obrazok: undefined } },
+            { typ: "pin", chip: chipPripnutej(z), t: z.nazov, txt: "", pin: z })} />)}
           {zbIne.map((z) => <button key={z.id} type="button" onClick={() => otvorZbierku(z)} style={{ textAlign: "left", border: "none", borderRadius: 22, background: KARTA, borderLeft: `5px solid ${FIALOVA}`, padding: "16px 18px 18px", display: "flex", flexDirection: "column", gap: 8, color: INK, cursor: "pointer", fontFamily: "inherit" }}>
             <span style={kicker(FIALOVA)}>ZBIERKA RODINY</span><b style={{ fontSize: 20, lineHeight: 1.25 }}>{bezPredpony(z.nazov) || "Zbierka"}</b><span style={{ fontSize: 16, color: INK2 }}>Peniaze idú: rodine · Prispieť ›</span>
           </button>)}
@@ -421,6 +452,24 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, stit: s
         </div>
       </div>}
 
+      {/* ---------- Pomôž (KARTA 61 §2) ---------- */}
+      {pomoz.length > 0 && <div data-blok="pom" style={blokStyl()}>
+        {lavyStlpec("Pomôž", "Priložte ruku k dielu. Brigáda a služba pri omši.")}
+        <div style={{ flex: "999 1 520px", minWidth: 0, display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(290px,1fr))", gap: 16 }}>
+          {pomoz.map((u) => (
+            <div key={u.id} style={{ borderRadius: 22, overflow: "hidden", background: KARTA, display: "flex", flexDirection: "column" }}>
+              {u.foto && <img src={u.foto} alt="" style={{ width: "100%", aspectRatio: "16 / 9", objectFit: "cover", display: "block" }} />}
+              <div style={{ padding: "20px 22px", display: "flex", flexDirection: "column", gap: 8 }}>
+                <span style={{ fontSize: 14, fontWeight: 800, letterSpacing: ".12em", color: INK3 }}>{u.kedy}</span>
+                <b style={{ fontSize: 21, lineHeight: 1.25 }}>{u.t}</b>
+                {u.txt && <span style={{ fontSize: 16.5, lineHeight: 1.5, color: INK2, whiteSpace: "pre-line" }}>{u.txt}</span>}
+                {u.od && <span style={{ fontSize: 15.5, color: INK3 }}>{u.od}</span>}
+                {u.pz > 0 && pozvat(u)}
+              </div>
+            </div>))}
+        </div>
+      </div>}
+
       {/* ---------- Oznamy farnosti · Sväté omše · Farský úrad ---------- */}
       {maInfo && <div data-blok="ozn" style={{ padding: `40px ${PAD_X} 56px`, borderTop: "4px solid #1D211B", display: "flex", flexWrap: "wrap", gap: "36px 40px", alignItems: "flex-start", scrollMarginTop: 16 }}>
         {ozAll.length > 0 && <div style={{ flex: "1.4 1 340px", minWidth: 0, display: "flex", flexDirection: "column" }}>
@@ -479,7 +528,9 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, stit: s
         <VelkyObrazok v={velke} vz={vz} />
       </CelaObrazovka>}
       {album && <ProhliadacAlbumu a={album} onZavri={() => setAlbum(null)} />}
-      {det && <DetailZbierky d={det} onZavri={() => setDet(null)} />}
+      {det && <DetailZbierky d={det} strankaId={strankaId} onZavri={() => setDet(null)} />}
+      {mfOn && <MojeFarnostiOkno strankaId={strankaId} domovska={MF.domovska} sled={MF.sled} hlaska={mfHl}
+        onHlaska={(t) => { setMfHl(t); window.setTimeout(() => setMfHl(null), 3000); }} onZavri={() => setMfOn(false)} />}
     </div>);
 }
 
@@ -527,7 +578,7 @@ function HlavnaKarta({ strankaId, hlRef, nazov, txt, onTap }: { strankaId: strin
       <span style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}><span style={{ height: 30, padding: "0 12px", borderRadius: 9, background: TEAL, color: "#fff", fontSize: 13, fontWeight: 800, letterSpacing: ".08em", display: "flex", alignItems: "center" }}>HLAVNÁ ZBIERKA</span><span style={{ fontSize: 15.5, color: INK3 }}>stále · aj pravidelne mesačne</span></span>
       <b style={{ fontSize: "clamp(24px,2.2vw,30px)", letterSpacing: "-.02em" }}>{nazov} ›</b>
       {txt && <span style={{ fontSize: 17, lineHeight: 1.5, color: INK2 }}>{txt}</span>}
-      {s.suma > 0 ? <span style={{ fontSize: 18, color: INK2 }}><b style={{ fontSize: 42, letterSpacing: "-.03em", color: INK }}>{eur(s.suma)}</b> spolu · {ludi(s.darcov)}</span>
+      {s.suma > 0 ? <span style={{ fontSize: 18, color: INK2 }}><b style={{ fontSize: 42, letterSpacing: "-.03em", color: INK }}>{eur(s.suma)}</b> {centralnaZPamate(strankaId)?.rocne ? `v roku ${new Date().getFullYear()}` : "spolu"} · {ludi(s.darcov)}</span>
         : <span style={{ fontSize: 17, color: INK2 }}>Zatiaľ tu nie je žiadny dar</span>}
       {riadky.length > 0 && <span style={{ display: "flex", flexDirection: "column", borderTop: `1px solid ${LINKA}` }}>
         {riadky.map((r, i) => <span key={i} style={{ display: "flex", justifyContent: "space-between", gap: 12, padding: "9px 0", borderBottom: `1px solid ${LINKA}`, fontSize: 15.5 }}><span style={{ color: INK2 }}>{r.k}</span><b style={{ flex: "none" }}>{r.s}</b></span>)}
@@ -557,6 +608,45 @@ function ZvoncekKarta({ strankaId, onTap }: { strankaId: string; onTap: (id: str
 }
 
 /** zbierka farnosti (lavice, organ …) — suma a ľudia z ledgera */
+/** OPRAVY 187: zbierka iného subjektu pripnutá na stránke farnosti */
+function PripnutaKarta({ z, onTap }: { z: ZbierkaNaPripnutie; onTap: () => void }) {
+  const c = farbaPripnutej(z);
+  return (
+    <button type="button" onClick={onTap} style={{ textAlign: "left", border: "none", borderRadius: 22, background: KARTA, borderLeft: `5px solid ${c}`, padding: "16px 18px 18px", display: "flex", flexDirection: "column", gap: 8, color: INK, cursor: "pointer", fontFamily: "inherit" }}>
+      <span style={{ ...kicker(c), overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "100%" }}>{chipPripnutej(z)}</span>
+      <b style={{ fontSize: 20, lineHeight: 1.25 }}>{z.nazov}</b>
+      <span style={{ fontSize: 16, color: INK2 }}>{z.darov ? `${eur(z.vyzbierane)}${z.ciel ? ` z ${eur(z.ciel)}` : ""} · ` : ""}Peniaze idú: {z.kto}</span>
+    </button>);
+}
+
+/** OPRAVY 187: pásy pripnutej zbierky — celá zbierka (skutočný stav) a Cez našu farnosť (len míľniky) */
+function PasyPripnutej({ z: z0, strankaId }: { z: ZbierkaNaPripnutie; strankaId: string }) {
+  useDarcovia(z0.id); // rastie naživo zo skutočného stavu zbierky
+  const sd = sucetDarov(z0.id), z = { ...z0, vyzbierane: Math.max(sd.suma, z0.vyzbierane), darov: Math.max(sd.pocet, z0.darov) };
+  const c = useCezStranku(z.id, strankaId);
+  const pct = z.ciel ? Math.min(100, Math.round((z.vyzbierane / z.ciel) * 100)) : 0;
+  const m = dalsiMilnik(c.suma);
+  const pom = (n: number) => (n === 1 ? "pomohol" : n < 5 ? "pomohli" : "pomohlo");
+  const pas = (w: number, f: string) => <span style={{ display: "block", height: 10, borderRadius: 5, background: "rgba(20,17,11,.1)", overflow: "hidden" }}><span style={{ display: "block", height: "100%", width: `${w}%`, borderRadius: 5, background: f, transition: "width .5s ease" }} /></span>;
+  return (<>
+    <div style={{ margin: "0 16px", padding: "14px 16px", borderRadius: 14, background: "#fff", border: `1px solid ${LINKA}`, display: "flex", flexDirection: "column", gap: 8 }}>
+      <span style={{ fontSize: 17 }}><b style={{ fontSize: 26, letterSpacing: "-.02em" }}>{eur(z.vyzbierane)}</b>{z.ciel ? ` z ${eur(z.ciel)} · ${pct} %` : ""}</span>
+      {z.ciel ? pas(pct, ZELENA) : null}
+      <span style={{ fontSize: 15, color: INK2 }}>{z.darov ? `${ludi(z.darov)} ${pom(z.darov)}` : "Zatiaľ žiadne dary"}</span>
+    </div>
+    <div style={{ margin: "0 16px", padding: "14px 16px", borderRadius: 14, background: "#EEF3EA", border: `1.5px solid ${ZELENA}`, display: "flex", flexDirection: "column", gap: 8 }}>
+      <span style={{ fontSize: 13.5, fontWeight: 800, letterSpacing: ".1em", color: ZELENA }}>CEZ NAŠU FARNOSŤ</span>
+      <span style={{ fontSize: 17 }}><b style={{ fontSize: 24 }}>{eur(c.suma)}</b> · ďalší míľnik {eur(m)}</span>
+      {pas(Math.min(100, (c.suma / m) * 100), ZELENA)}
+      <span style={{ fontSize: 15, color: INK2 }}>{c.pocet ? `${ludi(c.pocet)} z farnosti ${pom(c.pocet)}` : "Buďte prvý z farnosti"}</span>
+    </div>
+    {c.dary.length > 0 && <div style={{ margin: "0 16px 16px", display: "flex", flexDirection: "column" }}>
+      <span style={{ fontSize: 13.5, fontWeight: 800, letterSpacing: ".1em", color: INK3, paddingBottom: 4 }}>DAROVALI CEZ NAŠU FARNOSŤ</span>
+      {c.dary.slice(0, 8).map((r) => <span key={r.id} style={{ display: "flex", justifyContent: "space-between", gap: 12, padding: "9px 0", borderTop: `1px solid ${LINKA}`, fontSize: 15.5 }}><span style={{ color: INK2 }}>{r.meno || "Bohu známy veriaci"} · {relCas(r.cas)}</span><b style={{ flex: "none" }}>{eur(r.suma)}</b></span>)}
+    </div>}
+  </>);
+}
+
 function ZbierkaKarta({ z, onTap }: { z: SpustenaZbierka; onTap: () => void }) {
   useDarcovia(z.id);
   const s = sucetDarov(z.id), ciel = cielCislo(z);
@@ -574,10 +664,12 @@ function ZbierkaKarta({ z, onTap }: { z: SpustenaZbierka; onTap: () => void }) {
 }
 
 /** KARTA 57C §3 — detail zbierky: vľavo zbierka alebo parte (ostáva na mieste), vpravo platobný modul; mobil pod sebou */
-export interface DetailF { data: ZbierkaData; typ: "hl" | "zv" | "far" | "rodina"; chip: string; t: string; txt: string; obr?: string; parte?: boolean }
-function DetailZbierky({ d, onZavri }: { d: DetailF; onZavri: () => void }) {
+export interface DetailF { data: ZbierkaData; typ: "hl" | "zv" | "far" | "rodina" | "pin"; chip: string; t: string; txt: string; obr?: string; parte?: boolean; /** OPRAVY 187 */ pin?: ZbierkaNaPripnutie }
+function DetailZbierky({ d, strankaId, onZavri }: { d: DetailF; strankaId: string; onZavri: () => void }) {
   useEffect(() => { const k = (e: KeyboardEvent) => { if (e.key === "Escape") onZavri(); }; window.addEventListener("keydown", k); return () => window.removeEventListener("keydown", k); }, [onZavri]);
-  const rod = d.typ === "rodina", ram = rod ? FIALOVA : TEAL, hc = rod ? FIALOVA : ZELENA;
+  const rod = d.typ === "rodina", ram = d.pin ? farbaPripnutej(d.pin) : rod ? FIALOVA : TEAL, hc = rod ? FIALOVA : ZELENA;
+  // OPRAVY 187: dar z detailu pripnutej zbierky nesie zdroj = táto farnosť
+  useEffect(() => { if (!d.pin) return; nastavZdrojDaru(d.data.id, strankaId); return () => nastavZdrojDaru(d.data.id, null); }, [d.pin, d.data.id, strankaId]);
   const { wide } = useLayout(); // PC: zbierka vľavo ostáva na mieste; mobil: pod sebou
   return createPortal(
     <div role="dialog" aria-modal="true" aria-label="Zbierka" style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(20,17,11,.82)", overflowY: "auto", padding: 16, boxSizing: "border-box", fontFamily: "'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,sans-serif", ...PREMENNE }}>
@@ -597,20 +689,72 @@ function DetailZbierky({ d, onZavri }: { d: DetailF; onZavri: () => void }) {
                 <b style={{ fontSize: 28, lineHeight: 1.15, letterSpacing: "-.02em" }}>{d.t}</b>
                 {d.txt && <span style={{ fontSize: 17.5, lineHeight: 1.55, color: INK2, whiteSpace: "pre-line" }}>{d.txt}</span>}
               </div>}
+              {d.pin && <>
+                <div style={{ margin: "0 16px 12px", fontSize: 16, color: INK2 }}>Peniaze idú: <b style={{ color: INK }}>{d.pin.kto}</b></div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 12, paddingBottom: 16 }}><PasyPripnutej z={d.pin} strankaId={strankaId} /></div>
+              </>}
               {rod && <div style={{ margin: "0 16px 16px", padding: "12px 16px", borderRadius: 14, background: "#F3EEF4", border: `2px solid ${FIALOVA}`, display: "flex", flexDirection: "column", gap: 2 }}>
                 <span style={{ fontSize: 13.5, fontWeight: 800, letterSpacing: ".1em", color: FIALOVA }}>ZBIERKA RODINY</span>
                 <b style={{ fontSize: 17 }}>Peniaze idú: rodine</b>
-                <span style={{ fontSize: 14.5, color: INK2 }}>Sumu uvidíte po vašom dare.</span>
+                {d.parte && <span style={{ fontSize: 14.5, color: INK2 }}>Sumu uvidíte po vašom dare.</span>}
               </div>}
             </div>
           </div>
           <div style={{ flex: "1 1 380px", minWidth: 0, maxWidth: 520, display: "flex", flexDirection: "column", gap: 14 }}>
             <div style={{ borderRadius: 24, overflow: "hidden", border: rod ? `3px solid ${FIALOVA}` : `1px solid ${LINKA}`, background: "#F3EFE7", padding: "14px 0", ["--hcPruh" as string]: hc, ["--hcF" as string]: hc } as CSSProperties}>
-              <ZbierkaModul zbierka={d.data} miesto="charita" pohreb={rod} bocny zoStrankyOrg onBack={onZavri} ktoVoli={rod ? "rodina" : "farnosť"} bez={d.typ === "hl" ? ["zapojitFirmu"] : ["zapojitFirmu", "pravidelna"]} />
+              <ZbierkaModul zbierka={d.data} miesto="charita" pohreb={!!d.parte} pietne={<PietneAkcie strankaId={strankaId} zbierka={d.data.id} />} bocny zoStrankyOrg onBack={onZavri} ktoVoli={d.pin ? (d.pin.zdroj === "help" ? "príjemca" : "charita") : rod ? "rodina" : "farnosť"} bez={d.typ === "hl" ? ["zapojitFirmu"] : ["zapojitFirmu", "pravidelna", "dorovnanie"]} />
             </div>
             <button type="button" onClick={onZavri} style={{ alignSelf: "center", minHeight: 52, padding: "0 26px", borderRadius: 14, border: `1.5px solid ${LINKA}`, background: PAPIER, color: INK, fontFamily: "inherit", fontSize: 16.5, fontWeight: 800, cursor: "pointer" }}>Zbaliť ⌃</button>
           </div>
         </div>
       </div>
     </div>, document.body);
+}
+
+/** KARTA 60 §3 — okno Moje farnosti (tlačidlo Moja farnosť ⌄ / Sledovaná farnosť ⌄ na stránke farnosti) */
+function MojeFarnostiOkno({ strankaId, domovska, sled, hlaska, onHlaska, onZavri }: { strankaId: string; domovska: string | null; sled: string[]; hlaska: string | null; onHlaska: (t: string) => void; onZavri: () => void }) {
+  useEffect(() => { const k = (e: KeyboardEvent) => { if (e.key === "Escape") onZavri(); }; window.addEventListener("keydown", k); return () => window.removeEventListener("keydown", k); }, [onZavri]);
+  const riadky: [string, boolean][] = [...(domovska ? [[domovska, true] as [string, boolean]] : []), ...sled.map((id) => [id, false] as [string, boolean])];
+  return createPortal(
+    <div onClick={onZavri} style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(20,17,11,.45)", display: "flex", alignItems: "flex-start", justifyContent: "flex-end", padding: 20, boxSizing: "border-box", fontFamily: "'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,sans-serif", ...PREMENNE }}>
+      <div onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-label="Moje farnosti" style={{ width: "100%", maxWidth: 420, maxHeight: "calc(100vh - 40px)", overflowY: "auto", borderRadius: 24, background: PAPIER, color: INK, padding: 20, display: "flex", flexDirection: "column", gap: 8, boxSizing: "border-box" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, paddingBottom: 4 }}>
+          <b style={{ flex: 1, fontSize: 22 }}>Moje farnosti</b>
+          <button type="button" onClick={onZavri} autoFocus style={{ minHeight: 48, padding: "0 16px", borderRadius: 12, border: `1px solid ${LINKA}`, background: "#fff", fontFamily: "inherit", fontSize: 15, fontWeight: 800, cursor: "pointer", color: INK }}>× Zavrieť</button>
+        </div>
+        {riadky.map(([id, hl]) => { const tu = id === strankaId; return (
+          <div key={id} style={{ padding: "10px 12px", borderRadius: 14, border: tu ? `2px solid ${ZELENA}` : `1px solid ${LINKA}`, background: tu ? "#EEF3E8" : "#fff", display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+            <button type="button" onClick={() => { onZavri(); if (!tu) otvorVerejnyProfil(id); }} style={{ flex: "1 1 180px", minWidth: 0, minHeight: 48, textAlign: "left", border: "none", background: "transparent", padding: 0, cursor: "pointer", display: "flex", flexDirection: "column", justifyContent: "center", gap: 2, color: INK, fontFamily: "inherit" }}>
+              <b style={{ fontSize: 17 }}>{nazovFarnosti(id)}</b>
+              <span style={{ fontSize: 14, color: hl ? "#2F5A22" : INK3 }}>{hl ? "hlavná farnosť" : "sledovaná"}{tu ? " · práve ste tu" : ""}</span>
+            </button>
+            {!hl && <DrzTlacidlo ms={1200} styl={{ flex: "none", minHeight: 48, padding: "0 14px", borderRadius: 12, border: "1.5px solid #A34A2A", background: "#fff", color: "#A34A2A", fontSize: 14.5, fontWeight: 800 }}
+              onHotovo={() => { const n = nazovFarnosti(id); void odstranSledovanu(id).catch((e: Error) => toast(e.message)); onHlaska(`Odstránené zo sledovaných ✓ ${n}`); }}>Podržte · odstrániť</DrzTlacidlo>}
+          </div>); })}
+        {hlaska && <span role="status" style={{ padding: "12px 14px", borderRadius: 14, background: "#E3ECDB", border: `2px solid ${ZELENA}`, fontSize: 15.5, fontWeight: 800, color: "#2F5A22" }}>{hlaska}</span>}
+        <span style={{ fontSize: 14, lineHeight: 1.5, color: INK3 }}>Domovskú zmeníte v Adresári cirkví.</span>
+        <button type="button" onClick={() => { onZavri(); otvorAdresar("‹ Späť na moju farnosť"); }} style={{ minHeight: 60, marginTop: 6, padding: "10px 16px", borderRadius: 14, border: "none", background: ZELENA, color: "#fff", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "flex-start", justifyContent: "center", gap: 2, textAlign: "left", fontFamily: "inherit" }}>
+          <b style={{ fontSize: 16.5 }}>Adresár cirkví SR ›</b>
+          <span style={{ fontSize: 14, color: "#E3ECDB" }}>pridať ďalšiu farnosť alebo zmeniť domovskú</span>
+        </button>
+        <span style={{ fontSize: 14, lineHeight: 1.5, color: INK3, paddingTop: 4 }}>Ťuknite na farnosť a otvorí sa jej stránka.</span>
+      </div>
+    </div>, document.body);
+}
+
+/** Martin 9. 10.: pri pohrebe namiesto Páči sa mi a Sledovať pietne akcie — Kondolovať (= Úprimnú sústrasť pri parte) · Spomínam */
+function PietneAkcie({ strankaId, zbierka }: { strankaId: string; zbierka: string }) {
+  useReakcieF();
+  const ja = usePouzivatel();
+  const kto = klucJa(ja), meno = ja.celeMeno?.trim() || "veriaci";
+  const r = reakcieF(strankaId, zbierka);
+  const tl = (pole: "sustrast" | "spomin", t: string, tJa: string) => {
+    const l = r[pole] ?? [], on = l.includes(kto);
+    return (
+      <button type="button" aria-pressed={on} onClick={() => prepniReakciuF(strankaId, zbierka, pole, kto, meno)} className="zb-karta"
+        style={{ minHeight: 52, padding: "6px 10px", borderRadius: 16, border: `1px solid ${on ? "var(--gBd)" : "var(--cardBd)"}`, background: on ? "var(--gSoft)" : "var(--card)", color: on ? "var(--gInk)" : "var(--ink)", fontFamily: "inherit", fontSize: 15, fontWeight: 800, cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 1 }}>
+        <span>{on ? tJa : t}</span>{l.length > 0 && <span style={{ fontSize: 12, fontWeight: 700, color: "var(--ink3)" }}>{l.length}</span>}
+      </button>);
+  };
+  return <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 10 }}>{tl("sustrast", "Kondolovať", "Kondolovali ste ✓")}{tl("spomin", "Spomínam", "Spomínate ✓")}</div>;
 }

@@ -10,7 +10,7 @@ import { createContext, useContext, useSyncExternalStore } from "react";
 import { dorovnanieNaDar, dorovnanieKDaru, zapisDar as zapisDorovnanie } from "./dorovnanie";
 import { supabase } from "./supabase";
 import { pridajPodporu, firmaAkoDarca } from "./podpory";
-import { zapisDarZbierky, idZbierkyDB, naviazObjekt, nacitajDaryZbierky, type ObjektZbierky } from "./darZbierky";
+import { zapisDarZbierky, idZbierkyDB, naviazObjekt, nacitajDaryZbierky, zdrojDaru, type ObjektZbierky } from "./darZbierky";
 import { toast } from "@/components/toast";
 import { ukazkyTeraz, naZmenuTestStavu } from "./testStav";
 
@@ -44,6 +44,8 @@ export interface DarRiadok {
   firma?: string;
   /** dar prišiel cez QR / odkaz tohto tvorcu (karta 13 — suma a darcovia „cez tvorcu") */
   cezTvorcu?: string;
+  /** OPRAVY 187: dar prišiel cez stránku (farnosť), kde je zbierka pripnutá */
+  zdroj?: string;
   /** KARTA 57C: riadok z ledgera — voľba mena sa tam ešte nezapisuje (vo Viere je preto „Bohu známy veriaci") */
   zLedgera?: boolean;
   // zapečené polia LEN pre mock cudzích darcov (v produkcii render cez userId):
@@ -215,6 +217,7 @@ export function pridajDar(vstup: {
     registrovany: reg, verzia: volba.verzia, zobrazSumu: volba.zobrazSumu, moj: reg && !vstup.firma,
     ...(vstup.firma ? { firma: vstup.firma } : {}),
     ...(vstup.cezTvorcu ? { cezTvorcu: vstup.cezTvorcu } : {}),
+    ...(zdrojDaru(vstup.refId) ? { zdroj: zdrojDaru(vstup.refId) } : {}),
   };
   if (lid && !vstup.firma) {
     // 0066/0067: dar sa ukáže až keď vznikne v ledgeri
