@@ -1,7 +1,7 @@
 // ============================================================
 // KARTA 56D §6 · Správa zbierky farnosti po zapečatení (aj zbierky pre veriacich, OPRAVY 161).
 // Smie len 2 veci: zmeniť rýchle sumy (EUR aj EURC, „Uložené ✓") a ukončiť (podržať → „Zbierka je ukončená").
-// Záložky Štatistiky · Rýchle sumy · Ukončenie. Darcovia len menami, bez súm (sektor Viera: Bohu známy darca).
+// Záložky Štatistiky · Rýchle sumy · Ukončenie. Darcovia len menami, bez súm (sektor Viera: Bohu známy veriaci).
 // Prototyp „Sprava farnosti - prvy prichod" → Zbierky → ťuk na zbierku.
 // ============================================================
 import { useEffect, useRef, useState, type CSSProperties } from "react";
@@ -63,9 +63,9 @@ export function SpravaZbierkyFarnosti({ stranka, z, mobil, toast, onSpat }: {
   const zacni = () => { setDrz(true); window.clearTimeout(ukTm.current); ukTm.current = window.setTimeout(() => { setDrz(false); void ukonciZbierku(stranka, z.id).then(() => setHotovo(true)).catch((e: Error) => toast(e.message)); }, 1500); };
   const pusti = () => { window.clearTimeout(ukTm.current); setDrz(false); };
 
-  const volby = (sady: [string, number[]][], cur: number, set: (i: number) => void, mena: string) => (
+  const volby = (sady: [string, number[]][], cur: number, set: (i: number) => void, mena: string, od = 0) => (
     <div role="radiogroup" style={{ display: "grid", gridTemplateColumns: mobil ? "minmax(0,1fr)" : "repeat(3,minmax(0,1fr))", gap: 8 }}>
-      {sady.map(([t, a], i) => { const on = cur === i; return (
+      {sady.map(([t, a], i0) => { const i = i0 + od, on = cur === i; return (
         <button key={t} type="button" role="radio" aria-checked={on} onClick={() => set(i)} style={{ minHeight: 62, padding: "8px 14px", borderRadius: 14, border: on ? "2px solid var(--green)" : "1px solid var(--cardBd)", background: on ? "var(--gSoft)" : "var(--field)", cursor: "pointer", fontFamily: "inherit", textAlign: "left", display: "flex", flexDirection: "column", gap: 2, color: "var(--ink)", boxShadow: "none" }}>
           <b style={{ fontSize: 15 }}>{t}</b><span style={{ fontSize: 13, color: "var(--ink3)" }}>{a.map(cis).join(" · ")} {mena}</span>
         </button>); })}
@@ -109,7 +109,7 @@ export function SpravaZbierkyFarnosti({ stranka, z, mobil, toast, onSpat }: {
             <b style={{ flex: 1, minWidth: 0, fontSize: 14.5 }}>{identitaDarcu(r, ja, "viera")}</b>
             <span style={{ flex: "none", fontSize: 13, color: "var(--ink3)" }}>{relCas(r.cas)}</span>
           </div>))
-          : <span style={textK}>Zatiaľ žiadne dary. Mená sa ukážu bez súm, bez mena ako Bohu známy darca.</span>}
+          : <span style={textK}>Zatiaľ žiadne dary. Mená sa ukážu bez súm, bez mena ako Bohu známy veriaci.</span>}
       </section>
     </>}
 
@@ -119,7 +119,8 @@ export function SpravaZbierkyFarnosti({ stranka, z, mobil, toast, onSpat }: {
       {volby(SADY, zm.nova.sada, (i) => zm.vyber({ sada: i }), "€")}
       {z.eurc && <>
         <span style={{ ...nadpisK, marginTop: 6 }}>Rýchle sumy v EURC</span>
-        {volby(SADY_EURC, zm.nova.sadaE, (i) => zm.vyber({ sadaE: i }), "EURC")}
+        {/* KARTA 57C §5: zbierka rodiny (pohreb, svadba, iné) — EURC len Drobné a Stredné, bez Mikro */}
+        {(z.farnost?.druh ?? "farnost") === "farnost" ? volby(SADY_EURC, zm.nova.sadaE, (i) => zm.vyber({ sadaE: i }), "EURC") : volby(SADY_EURC.slice(1), zm.nova.sadaE, (i) => zm.vyber({ sadaE: i }), "EURC", 1)}
       </>}
       {zm.karta}
     </section>}

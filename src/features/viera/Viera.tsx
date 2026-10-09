@@ -50,7 +50,7 @@ import {
 type Screen = "domov" | "profil" | "kalendar" | "detail";
 type Sheet = "dir" | "add" | null;
 
-/** OPRAVY 159: celý modul Viera = sektor Viera (darca bez mena = „Bohu známy darca") */
+/** OPRAVY 159: celý modul Viera = sektor Viera (darca bez mena = „Bohu známy veriaci") */
 export default function ModulViera(p: { wide?: boolean; otvorModul?: (m: string) => void }) {
   return <SektorDarcuKontext.Provider value="viera"><ModulVieraObsah {...p} /></SektorDarcuKontext.Provider>;
 }

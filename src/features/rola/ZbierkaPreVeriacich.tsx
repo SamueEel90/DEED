@@ -20,6 +20,7 @@ import { useVzhlad } from "@/lib/vzhladStranky";
 import { pridajPrispevok, upravPrispevok, vlastnePrispevkyVsetky, type VieraFeedItem } from "@/features/viera/mock";
 import { FormularOznamu, VyberSablony, chybaOznamu, popisOznamu, prazdneUdaje, prvaVolba, type DruhOznamu, type UdajeOznamu, type VolbaSablony } from "@/features/viera/Sablony";
 import { hladajPrijemcov, type PrijemcaDeed } from "@/lib/prijemcoviDeed";
+import { SADY_EUR, SADY_EURC } from "@/lib/sadyDarov";
 import {
   spustiZbierku, prazdnaZbierka, PODIEL_MAX, PODIEL_KROK, PODIEL_STROP_EUR, PODELIT_MAX, PODELIT_MIN, PODELIT_KROK,
   type SpustenaZbierka, type ZbierkaFarnosti, type PodielZbierky,
@@ -196,6 +197,11 @@ export function ZbierkaSOverovatelom({ stranka, menoFarnosti, ucetFarnosti, mobi
     setSpolu((l) => [...l, { ...p, pct: PODELIT_MIN }]); setHladaj("");
   };
   const zmenPct = (i: number, o: number) => setSpolu((l) => l.map((x, j) => (j !== i ? x : { ...x, pct: Math.max(PODELIT_MIN, Math.min(x.pct + o, x.pct + prijemcovi)) })));
+  // KARTA 57C §5: Ako budú ľudia darovať — pevné sady (pod tlačidlo nikdy viac ako 50 €), nič vlastné; EURC bez Mikro.
+  // Ukladá sa so zbierkou (sada / eurc / sadaE = index v SADY_EUR / SADY_EURC), po zapečatení sa sada dá zmeniť podržaním.
+  const [sada, setSada] = useState(0);
+  const [eurc, setEurc] = useState(false);
+  const [sadaE, setSadaE] = useState(1);
   const rozdelenieT = [`${T.prijD} ${prijemcovi === 0 && podelit ? "0 % · všetko darované" : pct(prijemcovi)}`, ...(podelit ? spolu.map((x) => `${x.nazov} ${pct(x.pct)}`) : []), `farnosti ${pct(podiel)}`].join(" · ");
 
   // ---- 4 · kód, potvrdenie a zapečatenie ----
@@ -218,7 +224,7 @@ export function ZbierkaSOverovatelom({ stranka, menoFarnosti, ucetFarnosti, mobi
     ];
     try {
       const nova = await spustiZbierku(stranka, {
-        ...prazdnaZbierka(), rozdelenie, nazov, popis: `<p>${popisOznamu(u) || nazov}</p>`, media: u.foto ? [{ id: 1, typ: "foto", src: u.foto }] : [], cielTyp: "otv",
+        ...prazdnaZbierka(), rozdelenie, sada, eurc, sadaE, nazov, popis: `<p>${popisOznamu(u) || nazov}</p>`, media: u.foto ? [{ id: 1, typ: "foto", src: u.foto }] : [], cielTyp: "otv",
         farnost: {
           druh, podiel, prijemca: { meno: T.kto, overeny: new Date().toISOString(), ucet: ucetPrijemcu },
           oznamenie: { meno: menoOzn, rodena: u.rod || undefined, kedy: [u.kedyD, u.kedyC].filter(Boolean).join(" ") || undefined, kde: u.kde || undefined, kto: u.kto || undefined, vlastne: rezim === "vl" ? "ano" : undefined, prispevok: prispevok ?? undefined,
@@ -435,6 +441,30 @@ export function ZbierkaSOverovatelom({ stranka, menoFarnosti, ucetFarnosti, mobi
             <span style={{ fontSize: 12.5, color: "var(--ink3)" }}>Len tí, ktorí sú registrovaní v DEED. Žiadny voľný účet.</span>
           </> : <span style={{ fontSize: 13, color: "var(--ink3)" }}>Najviac {PODELIT_MAX}. Ak chcete iného, najprv jedného odstráňte.</span>}
         </div>}
+        <section style={{ display: "flex", flexDirection: "column", gap: 10, padding: 14, borderRadius: 16, background: "var(--panel)", border: "1px solid var(--cardBd)" }}>
+          <b style={{ fontSize: 16 }}>Ako budú ľudia darovať</b>
+          <b style={{ fontSize: 14.5 }}>Rýchle sumy pre darcov</b>
+          <div role="radiogroup" aria-label="Rýchle sumy v eurách" style={{ display: "grid", gridTemplateColumns: mobil ? "minmax(0,1fr)" : "repeat(3,minmax(0,1fr))", gap: 8 }}>
+            {Object.values(SADY_EUR).map((x, i) => (
+              <button key={x.label} type="button" role="radio" aria-checked={sada === i} onClick={() => setSada(i)} style={{ ...volbaSt(sada === i), flexDirection: "column", alignItems: "flex-start", gap: 2 }}>
+                <b style={{ fontSize: 15 }}>{x.label}</b><span style={{ fontSize: 13, color: "var(--ink3)" }}>{x.sumy.join(" · ")} €</span>
+              </button>))}
+          </div>
+          <span style={{ fontSize: 13.5, lineHeight: 1.5, color: "var(--ink3)" }}>Vlastnú sumu môže darca zadať vždy. Sady sú pevné, dohodnite s rodinou, ktorá sa hodí. Po zapečatení sa sada dá zmeniť, rozdelenie nie.</span>
+          <b style={{ fontSize: 14.5 }}>Dary v kryptomene EURC</b>
+          <div role="radiogroup" aria-label="Dary v EURC" style={{ display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 8 }}>
+            {([[true, "Áno"], [false, "Nie"]] as [boolean, string][]).map(([v, t]) => <button key={t} type="button" role="radio" aria-checked={eurc === v} onClick={() => setEurc(v)} style={{ ...volbaSt(eurc === v), minHeight: 50, justifyContent: "center" }}><b style={{ fontSize: 15 }}>{t}</b></button>)}
+          </div>
+          {eurc && <>
+            <b style={{ fontSize: 14.5 }}>Rýchle sumy v EURC</b>
+            <div role="radiogroup" aria-label="Rýchle sumy v EURC" style={{ display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 8 }}>
+              {(["drobne", "stredne"] as const).map((k) => { const i = Object.keys(SADY_EURC).indexOf(k), x = SADY_EURC[k]; return (
+                <button key={k} type="button" role="radio" aria-checked={sadaE === i} onClick={() => setSadaE(i)} style={{ ...volbaSt(sadaE === i), flexDirection: "column", alignItems: "flex-start", gap: 2 }}>
+                  <b style={{ fontSize: 15 }}>{x.label}</b><span style={{ fontSize: 13, color: "var(--ink3)" }}>{x.sumy.join(" · ")} EURC</span>
+                </button>); })}
+            </div>
+          </>}
+        </section>
         <span style={{ fontSize: 13.5, lineHeight: 1.5, color: "var(--ink3)" }}>Zbierka beží do 7 dní po {T.po}, môžete ju ukončiť skôr. Rozdelenie uvidí darca pred darom. Po zapečatení sa nemení.</span>
         <button type="button" onClick={() => setKrok(4)} style={{ ...tlZ, alignSelf: "flex-start" }}>Pokračovať ›</button>
       </>}

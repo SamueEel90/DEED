@@ -1,7 +1,7 @@
 // ============================================================
 // OPRAVY 176 — Úmysly na omšu (Od veriacich, hore). Len pre farára, na stránku nejdú.
 // Ťuk na úmysel = rozbalí sa (žiadne ďalšie okná) → týždenný kalendár omší z rozpisu (vzor + zmeny),
-// ‹ Tento týždeň › dopredu až 12 týždňov, späť len po dnešok. Pri omši: voľná / obsadená / tento ✓.
+// ‹ Tento týždeň › dopredu až 12 týždňov, späť len po dnešok. Pri omši: voľná / N úmysly / tento ✓ (jedna omša môže mať viac úmyslov, nič neblokuje).
 // Ťuk na voľnú omšu = ZAPÍSANÝ ✓ a hneď Správa veriacemu (predvyplnená) · Poslať správu → „Správa poslaná ✓".
 // Zapísaný: Poslať správu · Odslúžené ✓ (zbalený riadok Odslúžené · N) · Presunúť na inú omšu.
 // Hore + Zapísať úmysel (osobne alebo telefonicky): text, kto, omša.
@@ -27,8 +27,9 @@ const predvolenaSprava = (u: PolozkaFarnika, z: { d: string; t: string }, meno: 
 };
 
 type Zapis = { d: string; kod: number; t: string };
+const umyslyText = (n: number) => `${n} ${n === 1 ? "úmysel" : n < 5 ? "úmysly" : "úmyslov"}`;
 
-/** týždenný kalendár omší z rozpisu: voľná / obsadená / tento ✓ */
+/** týždenný kalendár omší z rozpisu: voľná / N úmysly / tento ✓ — počet neblokuje */
 function KalendarOmsi({ strankaId, vybrany, ignoruj, onVyber }: { strankaId: string; vybrany?: Zapis; ignoruj?: string; onVyber: (z: Zapis) => void }) {
   useKalendar(strankaId);
   const [off, setOff] = useState(() => {
@@ -38,9 +39,10 @@ function KalendarOmsi({ strankaId, vybrany, ignoruj, onVyber }: { strankaId: str
   });
   const k = kostolKal(strankaId);
   const dnes = dnesIso();
-  const obsadene = new Set(odFarnikov(strankaId).filter((x) => x.k === "umysel" && x.zapis && !x.odsluzene && x.id !== ignoruj).map((x) => `${x.zapis!.d}|${x.zapis!.kod}`));
+  const pocty = new Map<string, number>();
+  for (const x of odFarnikov(strankaId)) if (x.k === "umysel" && x.zapis && !x.odsluzene && x.id !== ignoruj) { const kk = `${x.zapis.d}|${x.zapis.kod}`; pocty.set(kk, (pocty.get(kk) ?? 0) + 1); }
   const dni = dniTyzdna(off).filter((d) => iso(d) >= dnes);
-  const tl = (stav: "volna" | "obsadena" | "tento"): CSSProperties => ({ minHeight: 44, padding: "0 12px", borderRadius: 10, border: stav === "tento" ? "2px solid var(--green)" : "1px solid var(--cardBd)", background: stav === "tento" ? "var(--gSoft)" : stav === "obsadena" ? "var(--btn)" : "var(--field)", cursor: stav === "obsadena" ? "default" : "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 800, color: stav === "tento" ? "var(--gInk)" : stav === "obsadena" ? "var(--ink3)" : "var(--ink)", boxShadow: "none", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", lineHeight: 1.15 });
+  const tl = (stav: "volna" | "umysly" | "tento"): CSSProperties => ({ minHeight: 44, padding: "0 12px", borderRadius: 10, border: stav === "tento" ? "2px solid var(--green)" : "1px solid var(--cardBd)", background: stav === "tento" ? "var(--gSoft)" : stav === "umysly" ? "var(--btn)" : "var(--field)", cursor: stav === "tento" ? "default" : "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 800, color: stav === "tento" ? "var(--gInk)" : "var(--ink)", boxShadow: "none", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", lineHeight: 1.15 });
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 6, padding: 10, borderRadius: 14, background: "var(--field)", border: "1px solid var(--cardBd)" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -56,9 +58,11 @@ function KalendarOmsi({ strankaId, vybrany, ignoruj, onVyber }: { strankaId: str
             <span style={{ flex: 1, minWidth: 0, display: "flex", gap: 6, flexWrap: "wrap" }}>
               {omse.length ? omse.map((o) => {
                 const key = `${iso(d)}|${o.kod}`;
-                const stav = vybrany && vybrany.d === iso(d) && vybrany.kod === o.kod ? "tento" : obsadene.has(key) ? "obsadena" : "volna";
-                return <button key={o.kod} type="button" disabled={stav === "obsadena"} aria-pressed={stav === "tento"} onClick={() => stav === "volna" && onVyber({ d: iso(d), kod: o.kod, t: o.t })} style={tl(stav)}>
-                  <span>{o.t}</span><span style={{ fontSize: 11, fontWeight: 700 }}>{stav === "tento" ? "tento ✓" : stav === "obsadena" ? "obsadená" : "voľná"}</span>
+                const n = pocty.get(key) ?? 0;
+                const stav = vybrany && vybrany.d === iso(d) && vybrany.kod === o.kod ? "tento" : n ? "umysly" : "volna";
+                const pod = stav === "tento" ? (n ? `tento ✓ · ${umyslyText(n + 1)}` : "tento ✓") : n ? umyslyText(n) : "voľná";
+                return <button key={o.kod} type="button" aria-pressed={stav === "tento"} onClick={() => stav !== "tento" && onVyber({ d: iso(d), kod: o.kod, t: o.t })} style={tl(stav)}>
+                  <span>{o.t}</span><span style={{ fontSize: 11, fontWeight: 700, color: stav === "umysly" ? "var(--ink3)" : undefined }}>{pod}</span>
                 </button>; })
                 : <span style={{ fontSize: 13, color: "var(--ink3)" }}>bez omše</span>}
             </span>
