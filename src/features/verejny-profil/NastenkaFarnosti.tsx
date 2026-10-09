@@ -493,7 +493,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, stit: s
         <VelkyObrazok v={velke} vz={vz} />
       </CelaObrazovka>}
       {album && <ProhliadacAlbumu a={album} onZavri={() => setAlbum(null)} />}
-      {det && <DetailZbierky d={det} onZavri={() => setDet(null)} />}
+      {det && <DetailZbierky d={det} strankaId={strankaId} onZavri={() => setDet(null)} />}
       {mfOn && <MojeFarnostiOkno strankaId={strankaId} domovska={MF.domovska} sled={MF.sled} hlaska={mfHl}
         onHlaska={(t) => { setMfHl(t); window.setTimeout(() => setMfHl(null), 3000); }} onZavri={() => setMfOn(false)} />}
     </div>);
@@ -591,7 +591,7 @@ function ZbierkaKarta({ z, onTap }: { z: SpustenaZbierka; onTap: () => void }) {
 
 /** KARTA 57C §3 — detail zbierky: vľavo zbierka alebo parte (ostáva na mieste), vpravo platobný modul; mobil pod sebou */
 export interface DetailF { data: ZbierkaData; typ: "hl" | "zv" | "far" | "rodina"; chip: string; t: string; txt: string; obr?: string; parte?: boolean }
-function DetailZbierky({ d, onZavri }: { d: DetailF; onZavri: () => void }) {
+function DetailZbierky({ d, strankaId, onZavri }: { d: DetailF; strankaId: string; onZavri: () => void }) {
   useEffect(() => { const k = (e: KeyboardEvent) => { if (e.key === "Escape") onZavri(); }; window.addEventListener("keydown", k); return () => window.removeEventListener("keydown", k); }, [onZavri]);
   const rod = d.typ === "rodina", ram = rod ? FIALOVA : TEAL, hc = rod ? FIALOVA : ZELENA;
   const { wide } = useLayout(); // PC: zbierka vľavo ostáva na mieste; mobil: pod sebou
@@ -622,7 +622,7 @@ function DetailZbierky({ d, onZavri }: { d: DetailF; onZavri: () => void }) {
           </div>
           <div style={{ flex: "1 1 380px", minWidth: 0, maxWidth: 520, display: "flex", flexDirection: "column", gap: 14 }}>
             <div style={{ borderRadius: 24, overflow: "hidden", border: rod ? `3px solid ${FIALOVA}` : `1px solid ${LINKA}`, background: "#F3EFE7", padding: "14px 0", ["--hcPruh" as string]: hc, ["--hcF" as string]: hc } as CSSProperties}>
-              <ZbierkaModul zbierka={d.data} miesto="charita" pohreb={!!d.parte} bocny zoStrankyOrg onBack={onZavri} ktoVoli={rod ? "rodina" : "farnosť"} bez={d.typ === "hl" ? ["zapojitFirmu"] : ["zapojitFirmu", "pravidelna", "dorovnanie"]} />
+              <ZbierkaModul zbierka={d.data} miesto="charita" pohreb={!!d.parte} pietne={<PietneAkcie strankaId={strankaId} zbierka={d.data.id} />} bocny zoStrankyOrg onBack={onZavri} ktoVoli={rod ? "rodina" : "farnosť"} bez={d.typ === "hl" ? ["zapojitFirmu"] : ["zapojitFirmu", "pravidelna", "dorovnanie"]} />
             </div>
             <button type="button" onClick={onZavri} style={{ alignSelf: "center", minHeight: 52, padding: "0 26px", borderRadius: 14, border: `1.5px solid ${LINKA}`, background: PAPIER, color: INK, fontFamily: "inherit", fontSize: 16.5, fontWeight: 800, cursor: "pointer" }}>Zbaliť ⌃</button>
           </div>
@@ -660,4 +660,21 @@ function MojeFarnostiOkno({ strankaId, domovska, sled, hlaska, onHlaska, onZavri
         <span style={{ fontSize: 14, lineHeight: 1.5, color: INK3, paddingTop: 4 }}>Ťuknite na farnosť a otvorí sa jej stránka.</span>
       </div>
     </div>, document.body);
+}
+
+/** Martin 9. 10.: pri pohrebe namiesto Páči sa mi a Sledovať pietne akcie — Kondolovať (= Úprimnú sústrasť pri parte) · Spomínam */
+function PietneAkcie({ strankaId, zbierka }: { strankaId: string; zbierka: string }) {
+  useReakcieF();
+  const ja = usePouzivatel();
+  const kto = klucJa(ja), meno = ja.celeMeno?.trim() || "veriaci";
+  const r = reakcieF(strankaId, zbierka);
+  const tl = (pole: "sustrast" | "spomin", t: string, tJa: string) => {
+    const l = r[pole] ?? [], on = l.includes(kto);
+    return (
+      <button type="button" aria-pressed={on} onClick={() => prepniReakciuF(strankaId, zbierka, pole, kto, meno)} className="zb-karta"
+        style={{ minHeight: 52, padding: "6px 10px", borderRadius: 16, border: `1px solid ${on ? "var(--gBd)" : "var(--cardBd)"}`, background: on ? "var(--gSoft)" : "var(--card)", color: on ? "var(--gInk)" : "var(--ink)", fontFamily: "inherit", fontSize: 15, fontWeight: 800, cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 1 }}>
+        <span>{on ? tJa : t}</span>{l.length > 0 && <span style={{ fontSize: 12, fontWeight: 700, color: "var(--ink3)" }}>{l.length}</span>}
+      </button>);
+  };
+  return <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 10 }}>{tl("sustrast", "Kondolovať", "Kondolovali ste ✓")}{tl("spomin", "Spomínam", "Spomínate ✓")}</div>;
 }
