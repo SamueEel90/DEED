@@ -70,10 +70,11 @@ function QrVelky({ data, zostava, onZavri }: { data: string; zostava: number; on
     </div>, document.body);
 }
 
-export function ZbierkaSOverovatelom({ stranka, menoFarnosti, ucetFarnosti, mobil, pc = !mobil, toast, onZavri, onHotovo, spatRef }: {
+export function ZbierkaSOverovatelom({ stranka, menoFarnosti, ucetFarnosti, mobil, pc = !mobil, toast, onZavri, onHotovo, spatRef, onSpatText }: {
   stranka: string; menoFarnosti: string; ucetFarnosti: string; mobil: boolean; /** KARTA 57 A.3: PC = editor v stránke, mobil a tablet = na celú obrazovku */ pc?: boolean; toast: (m: string) => void;
   onZavri: () => void; onHotovo: (z: SpustenaZbierka, sprava: string) => void;
   /** KARTA 57 A.1: horné ‹ Späť Správy sa pýta zbierky */ spatRef?: { current: SpatZbierky | null };
+  /** OPRAVY 185: text horného Späť Správy („Späť na krok 2“, „Späť na výber parte“; prázdny = zavrie zbierku) */ onSpatText?: (t: string) => void;
 }) {
   const [krok, setKrok] = useState(1);
   const [druh, setDruh] = useState<Druh>("pohreb");
@@ -246,6 +247,7 @@ export function ZbierkaSOverovatelom({ stranka, menoFarnosti, ucetFarnosti, mobi
     spatRef.current = () => (krok >= 5 ? "nic" : spatT ? (krokSpat(), "spat") : "zavriet");
     return () => { spatRef.current = null; };
   });
+  useEffect(() => { onSpatText?.(krok >= 5 ? "" : spatT); }, [spatT, krok, onSpatText]);
   const kroky = [`1 · ${T.k1}`, `2 · ${T.k2}`, "3 · Rozdelenie", "4 · Kód", "5 · Hotovo"];
   const test = (t: string, onClick: () => void) => TESTOVACIA
     ? <button type="button" onClick={onClick} style={{ ...tlO, alignSelf: "flex-start", height: 44, borderStyle: "dashed" }}>{t}</button>
@@ -254,7 +256,7 @@ export function ZbierkaSOverovatelom({ stranka, menoFarnosti, ucetFarnosti, mobi
     <label style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}><span style={lab}>{t}</span><input value={u[k]} onChange={(e) => setU((x) => ({ ...x, [k]: e.target.value }))} placeholder={ph} style={pole} /></label>);
   const dva = (a: ReactNode, b: ReactNode) => <div style={{ display: "grid", gridTemplateColumns: mobil ? "minmax(0,1fr)" : "repeat(2,minmax(0,1fr))", gap: 10 }}>{a}{b}</div>;
   const spatZverejnit = <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-    <button type="button" onClick={() => setRezim("")} style={tlO}>‹ Späť</button>
+    <button type="button" onClick={() => setRezim("")} style={tlO}>{`‹ Späť na výber ${druh === "pohreb" ? "parte" : "oznámenia"}`}</button>
     <button type="button" onClick={zverejni} aria-disabled={!!chybaOznamu(u)} style={{ ...tlZ, opacity: chybaOznamu(u) ? 0.5 : 1 }}>Zverejniť {T.ozn} a pripojiť zbierku ›</button>
   </div>;
   // KARTA 57 A.5: čo sa tlačí na fare — vlastné parte (obrázok) alebo hotové parte z editora (obrázok z náhľadu)
@@ -330,7 +332,7 @@ export function ZbierkaSOverovatelom({ stranka, menoFarnosti, ucetFarnosti, mobi
             {TESTOVACIA && <button type="button" onClick={pridajSkusobne} style={{ ...tlO, alignSelf: "flex-start", height: 44, borderStyle: "dashed" }}>Test: pridať 2 skúšobné {T.ozn}</button>}
           </div>}
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <button type="button" onClick={() => { setRezim(""); setVybrany(null); }} style={tlO}>‹ Späť</button>
+            <button type="button" onClick={() => { setRezim(""); setVybrany(null); }} style={tlO}>{`‹ Späť na výber ${druh === "pohreb" ? "parte" : "oznámenia"}`}</button>
             <button type="button" onClick={pripojit} aria-disabled={!vybrany} style={{ ...tlZ, opacity: vybrany ? 1 : 0.5 }}>Pripojiť zbierku k tomuto {druh === "pohreb" ? "parte" : "oznámeniu"} ›</button>
           </div>
         </>}
