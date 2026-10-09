@@ -98,3 +98,22 @@ export function useAdresarOtvoreny(): string | null {
   useSyncExternalStore((f) => { posl.add(f); return () => { posl.delete(f); }; }, () => ver);
   return adresarOtv;
 }
+
+// ---- cirkev farnosti (Martin 13:11: farár nastavuje cirkev; zápis do farnost_adresar, RLS: len správca) ----
+const cirkevPamat = new Map<string, string>();
+/** cirkev farnosti (kód z CIRKVI); kým nie je načítaná, RKC ako v DB */
+export async function nacitajCirkevFarnosti(stranka: string): Promise<string> {
+  if (supabase) {
+    const { data } = await supabase.from("farnost_adresar").select("cirkev").eq("stranka", stranka).maybeSingle();
+    const c = (data as { cirkev?: string } | null)?.cirkev;
+    if (c) cirkevPamat.set(stranka, c);
+  }
+  return cirkevPamat.get(stranka) ?? "RKC";
+}
+export async function nastavCirkevFarnosti(stranka: string, kod: string): Promise<void> {
+  if (!CIRKVI.some((c) => c[0] === kod)) throw new Error("Neznáma cirkev.");
+  cirkevPamat.set(stranka, kod);
+  if (adresar) { adresar = adresar.map((f) => (f.id === stranka ? { ...f, cirkev: kod } : f)); }
+  zmena();
+  if (supabase) { const { error } = await supabase.from("farnost_adresar").upsert({ stranka, cirkev: kod, upravene: new Date().toISOString() }, { onConflict: "stranka" }); chyba(error); }
+}

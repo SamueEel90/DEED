@@ -31,6 +31,7 @@ import { SpravaCentralnej } from "./SpravaCentralnej";
 import { centralnaZPamate, hlavnaBezi, nacitajCentralnuZbierku, nazovHlavnej, useZmenyCentralnej } from "@/lib/centralnaZbierka";
 import { suhrnHlavnej, useOmsoveOkno, menaOkna, doZatvorenia, zavriTyzdenTest } from "@/lib/omsoveOkno";
 import { TESTOVACIA } from "@/lib/testovacia";
+import { CirkevFarnosti } from "./CirkevFarnosti";
 import { usePouzivatel } from "@/lib/pouzivatel";
 import { najdiTestProfil } from "@/lib/testProfily";
 import { cistyNazov, nacitajProfil, profilZPamate, uplnostProfilu, type ProfilStranky } from "@/lib/profilStranky";
@@ -540,6 +541,7 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
       <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}><b style={{ fontSize: 15 }}>Peňaženka</b><span style={{ fontSize: 12.5, color: "var(--ink3)" }}>zostatok, výplaty na účet farnosti · súkromné</span></span>
       <span aria-hidden="true" style={{ fontSize: 18, color: "var(--ink3)" }}>›</span>
     </button>
+    <CirkevFarnosti strankaId={strankaId} mobil={mobil} toast={toast} />
     {nastaveniaL}</>;
 
   // KARTA 56D §4: Upraviť profil = modul z charity (profil_stranky: koncept sa ukladá sám, Uložiť zverejní)
