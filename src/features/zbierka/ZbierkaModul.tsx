@@ -12,7 +12,7 @@ import { pressable } from "@/components/pressable";
 import { jeNeregistrovany, nastavNeregistrovany, darujemAkoFirma, nastavDarcuFirmu, sledujDarcu } from "@/lib/devDarca";
 import { pridajDar, darcoviaPre } from "@/lib/darcovia";
 import { dorovnanieNaDar, dorovnanieKDaru, useZmenyDorovnani } from "@/lib/dorovnanie";
-import { MIESTA, POLOZKY, pripojene, type Miesto, type Kontext } from "./nastavenie";
+import { MIESTA, POLOZKY, pripojene, type Miesto, type Kontext, type Kluc } from "./nastavenie";
 import { KamIdeDar, CelaZbierka, type TvorcaData } from "./Tvorca";
 import { PodporitDeedHarok, PodporitDeedObsah } from "./PodporitDeed";
 import { Hlavicka, Galeria, NadpisText, type Medium } from "./Vrch";
@@ -83,8 +83,14 @@ function nacitajDev(): DevStav {
 }
 function ulozDev(v: DevStav) { try { localStorage.setItem(KLUC_DEV, JSON.stringify(v)); } catch { /* LS */ } }
 
-export function ZbierkaModul({ zbierka, miesto: miestoProp, onBack, spatNazov, onZavriet, zoStrankyOrg, onOtvorOrg, stav, onStav }: {
+export function ZbierkaModul({ zbierka, miesto: miestoProp, onBack, spatNazov, onZavriet, zoStrankyOrg, onOtvorOrg, stav, onStav, bocny, bez, ktoVoli }: {
   zbierka: ZbierkaData; miesto?: Miesto; onBack: () => void;
+  /** KARTA 57C §3: len modul v bočnom stĺpci (zbierku ukazuje stránka vľavo) — jeden stĺpec, bez galérie a Späť, bez ukážkového cieľa */
+  bocny?: boolean;
+  /** položky, ktoré sa na tomto mieste nezobrazia (napr. farnosť: Zapojiť firmu) */
+  bez?: Kluc[];
+  /** „sumy si volí …" pod rýchlymi sumami */
+  ktoVoli?: string;
   spatNazov?: string; onZavriet?: () => void;
   /** predošlý krok cesty je stránka tej istej organizácie → pole sa skryje */
   zoStrankyOrg?: boolean;
@@ -107,7 +113,7 @@ export function ZbierkaModul({ zbierka, miesto: miestoProp, onBack, spatNazov, o
   const miesto = miestoProp ?? dev.miesto;
   // DEV: prepínač cieľa — zapnutý = skutočný cieľ, a keď ho zbierka nemá, ukážkový 2 200 €; vypnutý = bez cieľa
   const realnyCiel = zbierka.ciel != null && zbierka.ciel > 0 ? zbierka.ciel : null;
-  const ciel = dev.maCiel ? (realnyCiel ?? DEV_CIEL) : null;
+  const ciel = bocny ? realnyCiel : dev.maCiel ? (realnyCiel ?? DEV_CIEL) : null;
   const maCiel = ciel != null;
   // dorovnanie = skutočný stav (rovnaký zdroj, ktorý dorovná aj dar) — nie DEV prepínač
   useZmenyDorovnani();
@@ -125,7 +131,7 @@ export function ZbierkaModul({ zbierka, miesto: miestoProp, onBack, spatNazov, o
   const [predDarom, setPredDarom] = useState(stavPredDarom);
   // hárky z karty 12 (zatiaľ pôvodné hárky appky — nový vzhľad príde s ich kartami)
   const [harok, setHarok] = useState<"pravidelna" | "firma" | "retaz" | "zdielat" | "podporit" | null>(null);
-  const polozky = pripojene(miesto, k);
+  const polozky = pripojene(miesto, k).filter((p) => !bez?.includes(p.kluc));
   const pc = useSirokeOkno();
   // karta 13 — tvorca (na mieste tvorca vždy, na súkromnej len so splitom)
   const cezTvorcaMiesto = miesto === "tvorca" || (miesto === "sukromna" && dev.split);
@@ -177,7 +183,7 @@ export function ZbierkaModul({ zbierka, miesto: miestoProp, onBack, spatNazov, o
           {naDeed
             ? <DeedDlazdice refId={zbierka.id} registrovany={registrovany} mikro={mikro} cezTvorcu={cezTvorcu} />
             : <RychleSumyEur sumy={p.hodnota === "eurDrobne" ? [1, 3, 5] : zbierka.rychleSumy ?? [10, 25, 45]}
-                doplnok={p.hodnota === "eurDrobne" || miesto === "sukromna" ? undefined : "sumy si volí charita"}
+                doplnok={p.hodnota === "eurDrobne" || miesto === "sukromna" ? undefined : `sumy si volí ${ktoVoli ?? "charita"}`}
                 kDaru={dorovnanie ? (sm) => dorovnanieKDaru(dorovnanie, sm) : undefined} otvor={otvorPlatbu} />}
           <VlastnaSuma eur={vlastnaEur} deed={miesto === "deed" && registrovany} otvor={otvorPlatbu}
             firma={dorovnanie ? `${dorovnanie.firma} ${dorovnanie.pomer === 1 ? "zdvojnásobí" : "dorovná"}` : undefined} />
@@ -213,7 +219,7 @@ export function ZbierkaModul({ zbierka, miesto: miestoProp, onBack, spatNazov, o
   const prave = polozky.filter((p) => !VLAVO.has(p.kluc));
 
   return (
-    <div ref={rootRef} className="deed-platba" style={{ position: "relative", minHeight: "100%", background: "var(--bg)", color: "var(--ink)", paddingBottom: SPACE.lg }}>
+    <div ref={rootRef} className="deed-platba" style={{ position: "relative", minHeight: bocny ? undefined : "100%", background: bocny ? "transparent" : "var(--bg)", color: "var(--ink)", paddingBottom: bocny ? 0 : SPACE.lg }}>
       {TESTOVACIE_ZOSTAVENIE && <DevPanel dev={dev} setDev={setDev} miestoPevne={!!miestoProp} registrovany={registrovany} ico={ico}
         cielInfo={realnyCiel ? undefined : `ukážkový ${DEV_CIEL.toLocaleString("sk-SK")} €`} dorovnava={dorovnanie?.firma}
         onDar={(suma) => pridajDar({ refId: zbierka.id, suma, kanal: "psp", registrovany, cezTvorcu })} />}
@@ -243,12 +249,15 @@ export function ZbierkaModul({ zbierka, miesto: miestoProp, onBack, spatNazov, o
 
       {/* pripojené položky — vždy rovnaké poradie, odpojené chýbajú úplne */}
       {/* karta 15 — mobil: jeden stĺpec v pevnom poradí · PC (≥ 1024): vľavo obsah, vpravo modul 420 px (sticky) */}
-      <div className="zb-obsah">
+      {bocny ? <div style={{ display: "flex", flexDirection: "column" }}>
+        <b className="zb-pol" style={{ padding: "6px 16px 12px", fontSize: 21, lineHeight: 1.2, letterSpacing: "-.01em" }}>{zbierka.nazov}</b>
+        {polozky.map(vykresli)}
+      </div> : <div className="zb-obsah">
         <div className="zb-lavy">{vrch}{pc && lave.map(vykresli)}</div>
         <div className="zb-pravy">{pc ? prave.map(vykresli) : <ZmensenyModul>{polozky.map(vykresli)}</ZmensenyModul>}</div>
-      </div>
+      </div>}
       {/* bod 149 · dole vždy „Zbaliť a späť" (vráti na tú istú kartu a posun) */}
-      {miesto !== "podporitDeed" && <div style={{ padding: "8px 16px 0", maxWidth: pc ? 420 : undefined, marginLeft: pc ? "auto" : undefined }}><ZbalitASpat onClick={onBack} /></div>}
+      {miesto !== "podporitDeed" && !bocny && <div style={{ padding: "8px 16px 0", maxWidth: pc ? 420 : undefined, marginLeft: pc ? "auto" : undefined }}><ZbalitASpat onClick={onBack} /></div>}
     </div>
   );
 }
