@@ -15,7 +15,7 @@ const riadkove: CSSProperties = { height: 50, borderRadius: 16, background: "var
 const male: CSSProperties = { height: 44, borderRadius: 14, background: "transparent", border: "1px solid var(--cardBd)", display: "flex", alignItems: "center", justifyContent: "center", gap: 7, fontSize: 14, fontWeight: 700, color: "var(--ink2)", cursor: "pointer", fontFamily: "inherit" };
 
 // ---------------- Zdieľať · QR + Páči sa mi ----------------
-export function ZdielatRiadok({ onZdielat, paciSa = 0 }: { onZdielat: () => void; paciSa?: number }) {
+export function ZdielatRiadok({ onZdielat, paciSa = 0, onPodporitDeed }: { onZdielat: () => void; paciSa?: number; /** KARTA 57C §4: pohrebná zbierka — na mieste Páči sa mi je Podporiť DEED */ onPodporitDeed?: () => void }) {
   const [paci, setPaci] = useState(false);
   const pocet = paciSa + (paci ? 1 : 0);
   return (
@@ -23,11 +23,16 @@ export function ZdielatRiadok({ onZdielat, paciSa = 0 }: { onZdielat: () => void
       <button type="button" className="zb-karta" onClick={onZdielat} style={riadkove}>
         <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" /><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4" /></svg>Zdieľať · QR
       </button>
+      {onPodporitDeed ? <button type="button" className="zb-karta" onClick={onPodporitDeed} style={{ ...riadkove, color: "var(--green)" }}>
+        <span style={{ width: 18, height: 18, borderRadius: 5, background: "var(--green)", color: "#fff", fontSize: 11, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>D</span>
+        <span>Podporiť <DeedZnacka /></span>
+      </button> : <>
       <button type="button" className="zb-karta" onClick={() => setPaci(!paci)} aria-pressed={paci}
         style={{ ...riadkove, background: paci ? "var(--gSoft)" : "var(--card)", border: `1px solid ${paci ? "var(--gBd)" : "var(--cardBd)"}`, color: paci ? "var(--gInk)" : "var(--ink)", transition: "background .25s ease, color .25s ease, transform .15s ease" }}>
         <svg key={String(paci)} className={paci ? "zb-hviezda" : undefined} width="19" height="19" viewBox="0 0 24 24" fill={paci ? "currentColor" : "none"} stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"><path d="M7 10v11H4a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1h3zm0 0l4-7a2.5 2.5 0 0 1 2.5 2.5V9h5.2a2 2 0 0 1 2 2.3l-1.3 8A2 2 0 0 1 17.4 21H7" /></svg>
         <span>Páči sa mi · <span style={{ fontVariantNumeric: "tabular-nums" }}>{pocet.toLocaleString("sk-SK")}</span></span>
       </button>
+      </>}
     </div>
   );
 }

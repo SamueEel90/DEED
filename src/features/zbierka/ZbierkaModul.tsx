@@ -83,7 +83,7 @@ function nacitajDev(): DevStav {
 }
 function ulozDev(v: DevStav) { try { localStorage.setItem(KLUC_DEV, JSON.stringify(v)); } catch { /* LS */ } }
 
-export function ZbierkaModul({ zbierka, miesto: miestoProp, onBack, spatNazov, onZavriet, zoStrankyOrg, onOtvorOrg, stav, onStav, bocny, bez, ktoVoli }: {
+export function ZbierkaModul({ zbierka, miesto: miestoProp, onBack, spatNazov, onZavriet, zoStrankyOrg, onOtvorOrg, stav, onStav, bocny, bez, ktoVoli, pohreb }: {
   zbierka: ZbierkaData; miesto?: Miesto; onBack: () => void;
   /** KARTA 57C §3: len modul v bočnom stĺpci (zbierku ukazuje stránka vľavo) — jeden stĺpec, bez galérie a Späť, bez ukážkového cieľa */
   bocny?: boolean;
@@ -91,6 +91,8 @@ export function ZbierkaModul({ zbierka, miesto: miestoProp, onBack, spatNazov, o
   bez?: Kluc[];
   /** „sumy si volí …" pod rýchlymi sumami */
   ktoVoli?: string;
+  /** KARTA 57C §4: pohrebná zbierka — miesto „pohreb" (bez Sledovať, Páči sa mi, Pravidelnej, dorovnania, mikrodarov; suma skrytá do daru) */
+  pohreb?: boolean;
   spatNazov?: string; onZavriet?: () => void;
   /** predošlý krok cesty je stránka tej istej organizácie → pole sa skryje */
   zoStrankyOrg?: boolean;
@@ -110,7 +112,7 @@ export function ZbierkaModul({ zbierka, miesto: miestoProp, onBack, spatNazov, o
   const [ico, setIco] = useState(darujemAkoFirma);
   useEffect(() => sledujDarcu(() => { setRegistrovany(!jeNeregistrovany()); setIco(darujemAkoFirma()); }), []);
 
-  const miesto = miestoProp ?? dev.miesto;
+  const miesto: Miesto = pohreb ? "pohreb" : miestoProp ?? dev.miesto;
   // DEV: prepínač cieľa — zapnutý = skutočný cieľ, a keď ho zbierka nemá, ukážkový 2 200 €; vypnutý = bez cieľa
   const realnyCiel = zbierka.ciel != null && zbierka.ciel > 0 ? zbierka.ciel : null;
   const ciel = bocny ? realnyCiel : dev.maCiel ? (realnyCiel ?? DEV_CIEL) : null;
@@ -152,10 +154,10 @@ export function ZbierkaModul({ zbierka, miesto: miestoProp, onBack, spatNazov, o
       );
     }
     // karta 04 — karta stavu celej zbierky (míľniky sú jej súčasť; pri tvorcovi karta 13)
-    if (p.kluc === "kartaStavu" && p.hodnota === "cela") {
+    if (p.kluc === "kartaStavu" && (p.hodnota === "cela" || p.hodnota === "skryta")) {
       return (
         <div key={p.kluc} className="zb-pol" style={{ padding: "0 16px" }}>
-          <KartaStavu refId={zbierka.id} zaklad={zbierka.vyzbierane ?? 0} ciel={ciel} ludiaZaklad={zbierka.ludia ?? 0} tempo={tempoRezim} koniecPruhu={koniecPruhu} />
+          <KartaStavu refId={zbierka.id} zaklad={zbierka.vyzbierane ?? 0} ciel={p.hodnota === "skryta" ? null : ciel} ludiaZaklad={zbierka.ludia ?? 0} tempo={tempoRezim} koniecPruhu={koniecPruhu} skryta={p.hodnota === "skryta"} />
         </div>
       );
     }
@@ -192,7 +194,7 @@ export function ZbierkaModul({ zbierka, miesto: miestoProp, onBack, spatNazov, o
     }
     if (p.kluc === "vlastnaEur") return null; // vykreslená spolu s rýchlymi sumami
     const obal = (el: React.ReactNode) => <div key={p.kluc} className="zb-pol" style={{ padding: "0 16px" }}>{el}</div>;
-    if (p.kluc === "zdielat") return obal(<ZdielatRiadok onZdielat={() => setHarok("zdielat")} />);
+    if (p.kluc === "zdielat") return obal(<ZdielatRiadok onZdielat={() => setHarok("zdielat")} onPodporitDeed={p.hodnota === "podporitDeed" ? () => setHarok("podporit") : undefined} />);
     if (p.kluc === "dorovnanie" && dorovnanie) return obal(<>
       <KartaDorovnava d={dorovnanie} />
       {dorovnanieKDaru(dorovnanie, 20) > 0 && <div style={{ margin: "-4px 0 12px", textAlign: "center", fontSize: 13.5, fontWeight: 700, color: "var(--gold)", fontVariantNumeric: "tabular-nums" }}>

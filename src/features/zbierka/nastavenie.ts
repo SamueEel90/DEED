@@ -2,7 +2,7 @@
 // Zdroj: PLATBY-CELOK.md v2.2 (bod 1, 2) + karta 01 + rozhodnutia Martina 28. 9. 2026.
 // Nové miesto = nový riadok v POLOZKY, nie nový komponent ani nový vzhľad.
 
-export type Miesto = "charita" | "deed" | "tvorca" | "sukromna" | "podporitDeed";
+export type Miesto = "charita" | "deed" | "tvorca" | "sukromna" | "podporitDeed" | "pohreb";
 
 export const MIESTA: { kluc: Miesto; nazov: string }[] = [
   { kluc: "charita", nazov: "Charita · Viera" },
@@ -10,6 +10,7 @@ export const MIESTA: { kluc: Miesto; nazov: string }[] = [
   { kluc: "tvorca", nazov: "Cez tvorcu" },
   { kluc: "sukromna", nazov: "Súkromná" },
   { kluc: "podporitDeed", nazov: "Podporiť DEED+" },
+  { kluc: "pohreb", nazov: "Pohrebná zbierka" },
 ];
 
 export type Hodnota = boolean | string;
@@ -26,6 +27,9 @@ export const POLOZKY: Record<Miesto, Polozky> = {
   deed:         { poleZodpoveda: false, kamIdeDar: false, kartaStavu: "cela", milniky: true, tempo: "auto", dorovnanie: false, zdielat: true, rychleSumy: "deed", vlastnaEur: false, krypto: false, pravidelna: false, oblubene: true, zapojitFirmu: false, retazNastavit: true, darcovia: "vsetci" },
   tvorca:       { poleZodpoveda: "Za zbierku zodpovedá", kamIdeDar: true, kartaStavu: "tvorca", milniky: true, tempo: "vzdy", dorovnanie: true, zdielat: true, rychleSumy: "eur", vlastnaEur: true, krypto: true, pravidelna: false, oblubene: true, zapojitFirmu: false, retazNastavit: false, darcovia: "tvorca" },
   sukromna:     { poleZodpoveda: "Zbierku overil", kamIdeDar: "lenSplit", kartaStavu: "cela", milniky: true, tempo: false, dorovnanie: false, zdielat: true, rychleSumy: "eur", vlastnaEur: true, krypto: true, pravidelna: false, oblubene: true, zapojitFirmu: false, retazNastavit: false, darcovia: "vsetci" },
+  // KARTA 57C §4 (Martin 9. 10.): pohrebná zbierka — nesledujeme zosnulých a nedávame im Páči sa mi.
+  // Bez Sledovať, Páči sa mi (na jeho mieste Podporiť DEED), Pravidelnej, dorovnania, Zapojiť firmu a mikrodarov. Reťaz ostáva.
+  pohreb:       { poleZodpoveda: false, kamIdeDar: false, kartaStavu: "skryta", milniky: false, tempo: false, dorovnanie: false, zdielat: "podporitDeed", rychleSumy: "eur", vlastnaEur: true, krypto: true, pravidelna: false, oblubene: false, zapojitFirmu: false, retazNastavit: true, darcovia: "vsetci" },
   podporitDeed: { poleZodpoveda: false, kamIdeDar: false, kartaStavu: false, milniky: false, tempo: false, dorovnanie: false, zdielat: false, rychleSumy: "podporitDeed", vlastnaEur: true, krypto: false, pravidelna: false, oblubene: false, zapojitFirmu: false, retazNastavit: false, darcovia: false },
 };
 
