@@ -5,7 +5,7 @@
 // Úložisko ako Správcovia charity (karta 35): nastavenia_stranky (0050), kľúče „duch“ a „ludia“ — ukladá sa samo.
 // PLACEBO — karta 61 §1: pozvánky (e-mail, QR odkaz 48 h, Prijať / Potvrdiť) sú zatiaľ len v zozname, práva rolí server ešte nevynucuje.
 // ============================================================
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { citajNastavenie, maNastavenie, zapisNastavenie, useZmenyNastaveni } from "@/lib/nastaveniaStranky";
 import { useSlovaFarnosti } from "@/lib/mojeFarnosti";
 import { usePouzivatel } from "@/lib/pouzivatel";
@@ -32,7 +32,8 @@ const teraz = () => Date.now();
 const inic = (n: string) => n.split(/\s+/).filter((w) => w && !/\.$/.test(w)).map((w) => w[0]).join("").slice(0, 2).toUpperCase() || "?";
 const hlaskaSt: CSSProperties = { padding: "10px 14px", borderRadius: 12, background: "var(--gSoft)", border: `1.5px solid ${ZELENA}`, fontSize: 14, fontWeight: 700, color: "var(--gInk)" };
 
-export function LudiaFarnosti({ strankaId, meno: menoFarnosti, mobil }: { strankaId: string; meno: string; mobil: boolean }) {
+/** children = to, čo je pod zoznamom (brigády); pri pridávaní človeka zmizne aj to */
+export function LudiaFarnosti({ strankaId, meno: menoFarnosti, mobil, children }: { strankaId: string; meno: string; mobil: boolean; children?: ReactNode }) {
   useZmenyNastaveni();
   const ja = usePouzivatel();
   const SL = useSlovaFarnosti(strankaId);
@@ -225,5 +226,6 @@ export function LudiaFarnosti({ strankaId, meno: menoFarnosti, mobil }: { strank
       <span style={{ fontSize: 13, color: "var(--ink3)" }}>Nemusíte. Stránku zvládnete spravovať aj sám.</span>
     </button>
     <span style={{ fontSize: 12.5, lineHeight: 1.5, color: "var(--ink3)" }}>{SL.dozorca ? `${T} alebo dozorca musí ostať aspoň jeden.` : `${T} musí ostať aspoň jeden.`} Pri preložení dajte rolu nástupcovi, potom sa môžete odobrať. Odobrať treba podržať.</span>
+    {children}
   </>);
 }

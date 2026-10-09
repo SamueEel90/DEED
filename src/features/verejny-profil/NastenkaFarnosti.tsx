@@ -20,6 +20,8 @@ import { naviazObjekt } from "@/lib/darZbierky";
 import { usePripnute, useCezStranku, dalsiMilnik, type ZbierkaNaPripnutie } from "@/lib/pripnuteZbierky";
 import { nastavZdrojDaru } from "@/lib/darZbierky";
 import { chipPripnutej, farbaPripnutej } from "@/features/rola/PripnuteZbierky";
+import { useBrigady, skoncila } from "@/lib/brigady";
+import { kedyBrigady } from "@/features/rola/BrigadyFarnosti";
 import { useDarcovia, sucetDarov, relCas, nastavCiste, type DarRiadok } from "@/lib/darcovia";
 import { useOmsoveOkno, suhrnHlavnej, menaOkna } from "@/lib/omsoveOkno";
 import { nacitajZbierkyStranky, zbierkyStrankyZPamate, useZmenyZbierok, cielCislo, type SpustenaZbierka } from "@/lib/novaZbierka";
@@ -146,6 +148,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, stit: s
   const zbPohreb = zb.filter((z) => druh(z) === "pohreb"), zbSvadba = zb.filter((z) => druh(z) === "svadba");
   const zvOn = hlOn && nedelneOmse(strankaId).length > 0;
   const piny = usePripnute(strankaId); // OPRAVY 187: zbierky iných subjektov pripnuté farnosťou
+  const brigadyF = useBrigady(strankaId); // KARTA 61 §2
   const detailZbierky = (z: SpustenaZbierka): ZbierkaData => ({
     id: z.id, nazov: z.nazov, popis: cistyText(z.popis), overena: true, ciel: cielCislo(z) || undefined, ...sadyZbierky(z),
     media: z.media.filter((m) => ziveObr(m.src)).map((m) => (m.typ === "video" ? { typ: "video" as const, src: m.src } : { typ: "foto" as const, src: m.src })),
@@ -177,7 +180,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, stit: s
   const stit = (x: VieraFeedItem) => (x.tag === "Oznámenie" ? "OZNÁMENIE" : stitokOznamu(x));
 
   // ---------- Príď a zaži s nami ----------
-  type Ud = { id: string; ms: number; dat: string; t: string; txt: string; kedy: string; od: string; foto: string; plag: boolean; pz: 0 | 1 | 2; limit: number; zoznam: string[]; mena: Record<string, string>; prepni: () => void; mojeX?: PolozkaFarnika };
+  type Ud = { id: string; ms: number; dat: string; t: string; txt: string; kedy: string; od: string; foto: string; plag: boolean; pz: 0 | 1 | 2; limit: number; zoznam: string[]; mena: Record<string, string>; prepni: () => void; mojeX?: PolozkaFarnika; /** KARTA 61 §2: brigáda (Prídem pomôcť) */ pomoc?: boolean };
   const udFar: Ud[] = OZ.filter((x) => x.ntyp === "udalost" && (!x.datum || x.datum >= vc)).map((x) => {
     const r = reakcieF(strankaId, x.id), pz: 0 | 1 | 2 = x.pozvanie ? (x.pozvanie.zavazne ? 2 : 1) : x.rsvp ? (x.udalost?.zavazne ? 2 : 1) : 0;
     const d = x.datum ? zIso(x.datum) : null;
@@ -207,6 +210,14 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, stit: s
   const tesFar = OZ.filter((x) => ["SVADBA", "JUBILEUM"].includes(stit(x)));
   const tesVer = OD.filter((x) => x.k === "svadba" || x.k === "ine");
   const maTes = tesFar.length + tesVer.length + zbSvadba.length > 0;
+
+  // ---------- Pomôž (KARTA 61 §2: brigády farnosti; deň po termíne zo stránky zmiznú) ----------
+  const pomoz = brigadyF.filter((b) => !skoncila(b, cas.getTime())).sort((a, b) => a.dat.localeCompare(b.dat)).map((b) => {
+    const r = reakcieF(strankaId, b.id);
+    const u: Ud = { id: b.id, ms: 0, dat: b.dat, t: b.t, txt: cistyText(b.txt).trim(), kedy: `${b.druh}${b.dat ? ` · ${kedyBrigady(b.dat, b.cas)}` : ""}`.toLocaleUpperCase("sk-SK"), od: b.kde, foto: b.foto && ziveObr(b.foto) ? b.foto : "", plag: false,
+      pz: b.pz, limit: b.limit, zoznam: r.ucast ?? [], mena: r.mena ?? {}, prepni: () => prepniReakciuF(strankaId, b.id, "ucast", kto, mojeMeno), pomoc: true };
+    return u;
+  });
   // ---------- Oznamy farnosti ----------
   type Oz = { id: string; ms: number; chip: string; t: string; txt: string; zm: boolean; g: "far" | "ver"; x?: PolozkaFarnika };
   const ozAll: Oz[] = [
@@ -221,13 +232,13 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, stit: s
 
   const maVrch = !!onas || hlOn;
   const maZbierky = zvOn || zbFar.length + zbIne.length + piny.length > 0;
-  const prazdna = !(maVrch || maZbierky || maPrid || !!p || prosby.length || maSpom || maTes || maInfo);
+  const prazdna = !(maVrch || maZbierky || maPrid || !!p || prosby.length || maSpom || maTes || pomoz.length || maInfo);
 
   // ---------- spoločné kúsky ----------
   const pozvat = (u: Ud) => {
     const jaV = u.zoznam.includes(kto), n = u.zoznam.length, zav = u.pz === 2;
     const plne = !jaV && zav && u.limit > 0 && n >= u.limit;
-    const t = plne ? "Plné · ďakujeme" : jaV ? (zav ? "Prihlásený ✓ · zrušiť" : "Prídem ✓ · zrušiť") : zav ? "Prihlásiť sa" : "Prídem";
+    const t = plne ? "Plné · ďakujeme" : jaV ? (zav ? "Prihlásený ✓ · zrušiť" : u.pomoc ? "Prídem pomôcť ✓ · zrušiť" : "Prídem ✓ · zrušiť") : zav ? "Prihlásiť sa" : u.pomoc ? "Prídem pomôcť" : "Prídem";
     const poc = n ? (zav ? `prihlásení ${n}${u.limit ? ` z ${u.limit}` : ""}` : `${ludi(n)} príde`) : u.limit ? `miesta: ${u.limit}` : "";
     const zozOn = zoz === u.id;
     const mena = u.zoznam.map((x) => `${u.mena[x] ?? "veriaci"}${x === kto ? " (vy)" : ""}`);
@@ -436,6 +447,24 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, stit: s
                 <b style={{ fontSize: 21, lineHeight: 1.25 }}>{bezPredpony(z.nazov) || "Svadba"}</b>
                 {rodinaZbierka(z, "Darček pre snúbencov · Prispieť ›")}
                 {reakcia({ ...reakF(z.id, "blaho"), t: "Blahoželám", tJa: "Blahoželáte ✓", poc: (n) => String(n) })}
+              </div>
+            </div>))}
+        </div>
+      </div>}
+
+      {/* ---------- Pomôž (KARTA 61 §2) ---------- */}
+      {pomoz.length > 0 && <div data-blok="pom" style={blokStyl()}>
+        {lavyStlpec("Pomôž", "Priložte ruku k dielu. Brigáda a služba pri omši.")}
+        <div style={{ flex: "999 1 520px", minWidth: 0, display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(290px,1fr))", gap: 16 }}>
+          {pomoz.map((u) => (
+            <div key={u.id} style={{ borderRadius: 22, overflow: "hidden", background: KARTA, display: "flex", flexDirection: "column" }}>
+              {u.foto && <img src={u.foto} alt="" style={{ width: "100%", aspectRatio: "16 / 9", objectFit: "cover", display: "block" }} />}
+              <div style={{ padding: "20px 22px", display: "flex", flexDirection: "column", gap: 8 }}>
+                <span style={{ fontSize: 14, fontWeight: 800, letterSpacing: ".12em", color: INK3 }}>{u.kedy}</span>
+                <b style={{ fontSize: 21, lineHeight: 1.25 }}>{u.t}</b>
+                {u.txt && <span style={{ fontSize: 16.5, lineHeight: 1.5, color: INK2, whiteSpace: "pre-line" }}>{u.txt}</span>}
+                {u.od && <span style={{ fontSize: 15.5, color: INK3 }}>{u.od}</span>}
+                {u.pz > 0 && pozvat(u)}
               </div>
             </div>))}
         </div>

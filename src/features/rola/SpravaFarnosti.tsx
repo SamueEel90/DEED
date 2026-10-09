@@ -34,6 +34,7 @@ import { TESTOVACIA } from "@/lib/testovacia";
 import { CirkevFarnosti } from "./CirkevFarnosti";
 import { PripnutieVyber, PripnuteZoznam } from "./PripnuteZbierky";
 import { LudiaFarnosti } from "./LudiaFarnosti";
+import { BrigadyFarnosti } from "./BrigadyFarnosti";
 import { ObrNastavenia } from "./SpravaStranky";
 import { ObrOznamenia, ObrUdaje, ObrZariadenia, ObrSuhlasy, ObrFaq, ObrPodpora } from "./NastaveniaCharity";
 import { nacitajNastavenia } from "@/lib/nastaveniaStranky";
@@ -499,13 +500,10 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
   const ludia = <>
     {nadpis("Ľudia", "Správcovia farnosti a dobrovoľníci")}
     {/* KARTA 61 §1: Ľudia farnosti (duchovný, kto spravuje, pridávanie v 2 krokoch) — starý blok Správcovia zmazaný */}
-    <LudiaFarnosti strankaId={strankaId} meno={meno} mobil={mobil} />
-    <span style={mobil ? { ...kicker, letterSpacing: ".07em", padding: "8px 2px 0" } : { ...kicker, paddingTop: 8 }}>DOBROVOĽNÍCI</span>
-    {/* PLACEBO — karta 57 D.6: dobrovoľníci farnosti (brigády, upratovanie, spev) ešte nemajú tabuľku */}
-    <section style={{ ...karta, borderRadius: mobil ? 18 : 22, padding: mobil ? "14px 14px" : "16px 20px", display: "flex", flexDirection: "column", gap: 10 }}>
-      <span style={{ fontSize: 14, lineHeight: 1.5, color: "var(--ink3)" }}>Zatiaľ nikto. Kto sa pridá k dobrovoľníkom farnosti (brigády, upratovanie, spev), uvidíte ho tu. Pripravujeme.</span>
-      <button type="button" disabled style={{ alignSelf: "flex-start", minHeight: 44, padding: "0 14px", borderRadius: 12, border: "1px solid var(--cardBd)", background: "var(--field)", cursor: "default", fontFamily: "inherit", fontSize: 13.5, fontWeight: 800, color: "var(--ink3)", boxShadow: "none" }}>Napísať všetkým · keď niekto pribudne</button>
-    </section>
+    <LudiaFarnosti strankaId={strankaId} meno={meno} mobil={mobil}>
+      {/* KARTA 61 §2: Dobrovoľníctvo a organizovanie brigád (vlastný modul, blok Pomôž) */}
+      <BrigadyFarnosti strankaId={strankaId} mobil={mobil} />
+    </LudiaFarnosti>
   </>;
   // KARTA 57 B.1: Nástroje a štatistiky — sledujúci, darcovia, QR do kostola
   const statistikyL = riadky([
