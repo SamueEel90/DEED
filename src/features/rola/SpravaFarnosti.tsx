@@ -32,6 +32,7 @@ import { centralnaZPamate, hlavnaBezi, nacitajCentralnuZbierku, nazovHlavnej, us
 import { suhrnHlavnej, useOmsoveOkno, menaOkna, doZatvorenia, zavriTyzdenTest } from "@/lib/omsoveOkno";
 import { TESTOVACIA } from "@/lib/testovacia";
 import { CirkevFarnosti } from "./CirkevFarnosti";
+import { PripnutieVyber, PripnuteZoznam } from "./PripnuteZbierky";
 import { ObrNastavenia } from "./SpravaStranky";
 import { ObrOznamenia, ObrUdaje, ObrZariadenia, ObrSuhlasy, ObrFaq, ObrPodpora } from "./NastaveniaCharity";
 import { nacitajNastavenia } from "@/lib/nastaveniaStranky";
@@ -108,6 +109,7 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
   const [zmazana, setZmazana] = useState(false); // KARTA 56D §5: hláška po zmazaní hlavnej zbierky, na mieste v Zbierkach
   // KARTA 56D §6: výber druhu zbierky, „najprv hlavná", hláška po spustení a otvorená zbierka
   const [zbVyber, setZbVyber] = useState(false);
+  const [pinVyber, setPinVyber] = useState(false); // OPRAVY 187: výber zbierky iného subjektu
   const [zbBlok, setZbBlok] = useState(false);
   const [noveOk, setNoveOk] = useState<string | null>(null);
   const [zbOtv, setZbOtv] = useState<string | null>(null);
@@ -425,11 +427,14 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
         <button type="button" onClick={() => setZbVyber(false)} aria-label="Zavrieť" style={{ width: 44, height: 44, borderRadius: 12, border: "1px solid var(--cardBd)", background: "var(--field)", cursor: "pointer", fontSize: 18, color: "var(--ink2)", boxShadow: "none" }}>×</button></div>
       {volbaZb(IC.kostol, "Zbierka farnosti", "na opravu, misie, lavice · peniaze idú na účet hlavnej zbierky", () => { sprava(""); if (!bezi) { setZbBlok(true); return; } go("nova"); })}
       {volbaZb(IC.ludia, "Zbierka s overovateľom", "pohreb, svadba, iné · peniaze idú rodine, podiel farnosti na účet farnosti · nezávisí od hlavnej zbierky", () => { sprava(""); setPz(true); })}
+      {volbaZb(IC.verejny, "Zbierka iného subjektu", "pripnúť zbierku charity alebo človeka z Help · peniaze idú priamo im, vy ju len ukazujete", () => { setZbVyber(false); setPinVyber(true); })}
     </section>}
+    {pinVyber && <PripnutieVyber strankaId={strankaId} mobil={mobil} onSpat={() => { setPinVyber(false); setZbVyber(true); }}
+      onHotovo={(t) => { setPinVyber(false); setNoveOk(t); window.scrollTo({ top: 0, behavior: "smooth" }); }} />}
     {pz && <ZbierkaSOverovatelom stranka={strankaId} menoFarnosti={meno} ucetFarnosti={hlavnyUcet} mobil={mobil} pc={desktop} toast={toast} onZavri={() => setPz(false)} spatRef={pzSpat} onSpatText={setPzT}
       onHotovo={(_z, t) => { setPz(false); setNoveOk(t); window.scrollTo({ top: 0, behavior: "smooth" }); }} />}
     {/* KARTA 56E §2: kým beží tvorba (výber druhu alebo postup), zoznam zbierok sa nezobrazuje */}
-    {!zbVyber && !pz && <>
+    {!zbVyber && !pz && !pinVyber && <>
     {/* KARTA 57 B.2: v Zbierkach na mobile a tablete aj veľké + Pridať zbierku hore */}
     {mobil && <button type="button" onClick={() => { setPridat(false); setZbVyber(true); window.scrollTo({ top: 0, behavior: "smooth" }); }} style={{ flex: "none", minHeight: 56, border: "none", borderRadius: 16, background: "#4B7A35", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 10, fontFamily: "inherit", fontSize: 16, fontWeight: 800, color: "#fff", boxShadow: "none" }}><span aria-hidden="true" style={{ fontSize: 22, lineHeight: 1 }}>+</span>Pridať zbierku</button>}
     {noveOk && sprava2(noveOk, () => setNoveOk(null), true)}
@@ -454,6 +459,7 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
       {archivKarta}
     </>}
     {!bezi && pridatHlavnu}
+    <PripnuteZoznam strankaId={strankaId} mobil={mobil} hlas={(t) => setNoveOk(t)} />
     </>}
   </>;
 
@@ -616,9 +622,10 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
 
   const titul = TIT[sub];
   // OPRAVY 185: Späť píše cieľ, keď nevedie o jeden krok späť
-  const spatT = sub === "zbierky" && pz ? (pzT ? `‹ ${pzT}` : "‹ Zbierky") : sub === "prehlad" ? "‹ Domov" : sub === "hlavna" || sub === "zbierka" || sub === "nova" ? "‹ Zbierky" : sub === "penazenka" || sub === "n" ? "‹ Nastavenia" : "‹ Prehľad";
+  const spatT = sub === "zbierky" && pinVyber ? "‹ Späť na výber zbierky" : sub === "zbierky" && pz ? (pzT ? `‹ ${pzT}` : "‹ Zbierky") : sub === "prehlad" ? "‹ Domov" : sub === "hlavna" || sub === "zbierka" || sub === "nova" ? "‹ Zbierky" : sub === "penazenka" || sub === "n" ? "‹ Nastavenia" : "‹ Prehľad";
   const spatTl = (onClick: () => void) => <button type="button" onClick={onClick} style={{ flex: "none", height: 44, padding: mobil ? "0 12px 0 8px" : "0 14px 0 8px", borderRadius: 13, border: "1px solid var(--cardBd)", background: "var(--card)", cursor: "pointer", fontFamily: "inherit", fontSize: mobil ? 14 : 15, fontWeight: 800, color: "var(--ink)", boxShadow: "none" }}>{spatT}</button>;
   const nazpat = () => {
+    if (sub === "zbierky" && pinVyber) { setPinVyber(false); setZbVyber(true); return; }
     if (sub === "zbierky" && pz && pzSpat.current) { const r = pzSpat.current(); if (r === "spat") return; if (r === "zavriet") { setPz(false); return; } }
     if (sub === "hlavna" || sub === "zbierka" || sub === "nova") setSub("zbierky"); else if (sub === "penazenka" || sub === "n") setSub("nast"); else if (sub === "prehlad") onBack(); else setSub("prehlad"); };
 

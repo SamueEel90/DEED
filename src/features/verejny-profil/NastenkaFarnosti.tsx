@@ -17,6 +17,9 @@ import { DrzTlacidlo } from "@/features/viera/AdresarCirkvi";
 import { otvorVerejnyProfil } from "./otvor";
 import { centralnaZPamate, nacitajCentralnuZbierku, nazovHlavnej, useZmenyCentralnej } from "@/lib/centralnaZbierka";
 import { naviazObjekt } from "@/lib/darZbierky";
+import { usePripnute, useCezStranku, dalsiMilnik, type ZbierkaNaPripnutie } from "@/lib/pripnuteZbierky";
+import { nastavZdrojDaru } from "@/lib/darZbierky";
+import { chipPripnutej, farbaPripnutej } from "@/features/rola/PripnuteZbierky";
 import { useDarcovia, sucetDarov, relCas, nastavCiste, type DarRiadok } from "@/lib/darcovia";
 import { useOmsoveOkno, suhrnHlavnej, menaOkna } from "@/lib/omsoveOkno";
 import { nacitajZbierkyStranky, zbierkyStrankyZPamate, useZmenyZbierok, cielCislo, type SpustenaZbierka } from "@/lib/novaZbierka";
@@ -142,6 +145,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, stit: s
   const zbFar = zb.filter((z) => druh(z) === "farnost"), zbIne = zb.filter((z) => druh(z) === "ine");
   const zbPohreb = zb.filter((z) => druh(z) === "pohreb"), zbSvadba = zb.filter((z) => druh(z) === "svadba");
   const zvOn = hlOn && nedelneOmse(strankaId).length > 0;
+  const piny = usePripnute(strankaId); // OPRAVY 187: zbierky iných subjektov pripnuté farnosťou
   const detailZbierky = (z: SpustenaZbierka): ZbierkaData => ({
     id: z.id, nazov: z.nazov, popis: cistyText(z.popis), overena: true, ciel: cielCislo(z) || undefined, ...sadyZbierky(z),
     media: z.media.filter((m) => ziveObr(m.src)).map((m) => (m.typ === "video" ? { typ: "video" as const, src: m.src } : { typ: "foto" as const, src: m.src })),
@@ -216,7 +220,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, stit: s
   const maInfo = ozAll.length > 0 || maOmse || urad.length > 0;
 
   const maVrch = !!onas || hlOn;
-  const maZbierky = zvOn || zbFar.length + zbIne.length > 0;
+  const maZbierky = zvOn || zbFar.length + zbIne.length + piny.length > 0;
   const prazdna = !(maVrch || maZbierky || maPrid || !!p || prosby.length || maSpom || maTes || maInfo);
 
   // ---------- spoločné kúsky ----------
@@ -296,6 +300,8 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, stit: s
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(250px,1fr))", gap: 14, alignItems: "stretch" }}>
           {zvOn && <ZvoncekKarta strankaId={strankaId} onTap={(id, t) => onDetail({ id, nazov: t, popis: "Ako do zvončeka pri omši. Dar ide farnosti.", overena: true, organizacia: orgPole }, { typ: "zv", chip: "ZVONČEKOVÁ ZBIERKA", t, txt: "Ako do zvončeka pri omši. Dar ide farnosti." })} />}
           {zbFar.map((z) => <ZbierkaKarta key={z.id} z={z} onTap={() => otvorZbierku(z)} />)}
+          {piny.map((z) => <PripnutaKarta key={z.id} z={z} onTap={() => onDetail({ id: z.id, nazov: z.nazov, popis: "", overena: true, ciel: z.ciel ?? undefined, media: [], organizacia: { ...orgPole, meno: z.kto, obrazok: undefined } },
+            { typ: "pin", chip: chipPripnutej(z), t: z.nazov, txt: "", pin: z })} />)}
           {zbIne.map((z) => <button key={z.id} type="button" onClick={() => otvorZbierku(z)} style={{ textAlign: "left", border: "none", borderRadius: 22, background: KARTA, borderLeft: `5px solid ${FIALOVA}`, padding: "16px 18px 18px", display: "flex", flexDirection: "column", gap: 8, color: INK, cursor: "pointer", fontFamily: "inherit" }}>
             <span style={kicker(FIALOVA)}>ZBIERKA RODINY</span><b style={{ fontSize: 20, lineHeight: 1.25 }}>{bezPredpony(z.nazov) || "Zbierka"}</b><span style={{ fontSize: 16, color: INK2 }}>Peniaze idú: rodine · Prispieť ›</span>
           </button>)}
@@ -573,6 +579,45 @@ function ZvoncekKarta({ strankaId, onTap }: { strankaId: string; onTap: (id: str
 }
 
 /** zbierka farnosti (lavice, organ …) — suma a ľudia z ledgera */
+/** OPRAVY 187: zbierka iného subjektu pripnutá na stránke farnosti */
+function PripnutaKarta({ z, onTap }: { z: ZbierkaNaPripnutie; onTap: () => void }) {
+  const c = farbaPripnutej(z);
+  return (
+    <button type="button" onClick={onTap} style={{ textAlign: "left", border: "none", borderRadius: 22, background: KARTA, borderLeft: `5px solid ${c}`, padding: "16px 18px 18px", display: "flex", flexDirection: "column", gap: 8, color: INK, cursor: "pointer", fontFamily: "inherit" }}>
+      <span style={{ ...kicker(c), overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "100%" }}>{chipPripnutej(z)}</span>
+      <b style={{ fontSize: 20, lineHeight: 1.25 }}>{z.nazov}</b>
+      <span style={{ fontSize: 16, color: INK2 }}>{z.darov ? `${eur(z.vyzbierane)}${z.ciel ? ` z ${eur(z.ciel)}` : ""} · ` : ""}Peniaze idú: {z.kto}</span>
+    </button>);
+}
+
+/** OPRAVY 187: pásy pripnutej zbierky — celá zbierka (skutočný stav) a Cez našu farnosť (len míľniky) */
+function PasyPripnutej({ z: z0, strankaId }: { z: ZbierkaNaPripnutie; strankaId: string }) {
+  useDarcovia(z0.id); // rastie naživo zo skutočného stavu zbierky
+  const sd = sucetDarov(z0.id), z = { ...z0, vyzbierane: Math.max(sd.suma, z0.vyzbierane), darov: Math.max(sd.pocet, z0.darov) };
+  const c = useCezStranku(z.id, strankaId);
+  const pct = z.ciel ? Math.min(100, Math.round((z.vyzbierane / z.ciel) * 100)) : 0;
+  const m = dalsiMilnik(c.suma);
+  const pom = (n: number) => (n === 1 ? "pomohol" : n < 5 ? "pomohli" : "pomohlo");
+  const pas = (w: number, f: string) => <span style={{ display: "block", height: 10, borderRadius: 5, background: "rgba(20,17,11,.1)", overflow: "hidden" }}><span style={{ display: "block", height: "100%", width: `${w}%`, borderRadius: 5, background: f, transition: "width .5s ease" }} /></span>;
+  return (<>
+    <div style={{ margin: "0 16px", padding: "14px 16px", borderRadius: 14, background: "#fff", border: `1px solid ${LINKA}`, display: "flex", flexDirection: "column", gap: 8 }}>
+      <span style={{ fontSize: 17 }}><b style={{ fontSize: 26, letterSpacing: "-.02em" }}>{eur(z.vyzbierane)}</b>{z.ciel ? ` z ${eur(z.ciel)} · ${pct} %` : ""}</span>
+      {z.ciel ? pas(pct, ZELENA) : null}
+      <span style={{ fontSize: 15, color: INK2 }}>{z.darov ? `${ludi(z.darov)} ${pom(z.darov)}` : "Zatiaľ žiadne dary"}</span>
+    </div>
+    <div style={{ margin: "0 16px", padding: "14px 16px", borderRadius: 14, background: "#EEF3EA", border: `1.5px solid ${ZELENA}`, display: "flex", flexDirection: "column", gap: 8 }}>
+      <span style={{ fontSize: 13.5, fontWeight: 800, letterSpacing: ".1em", color: ZELENA }}>CEZ NAŠU FARNOSŤ</span>
+      <span style={{ fontSize: 17 }}><b style={{ fontSize: 24 }}>{eur(c.suma)}</b> · ďalší míľnik {eur(m)}</span>
+      {pas(Math.min(100, (c.suma / m) * 100), ZELENA)}
+      <span style={{ fontSize: 15, color: INK2 }}>{c.pocet ? `${ludi(c.pocet)} z farnosti ${pom(c.pocet)}` : "Buďte prvý z farnosti"}</span>
+    </div>
+    {c.dary.length > 0 && <div style={{ margin: "0 16px 16px", display: "flex", flexDirection: "column" }}>
+      <span style={{ fontSize: 13.5, fontWeight: 800, letterSpacing: ".1em", color: INK3, paddingBottom: 4 }}>DAROVALI CEZ NAŠU FARNOSŤ</span>
+      {c.dary.slice(0, 8).map((r) => <span key={r.id} style={{ display: "flex", justifyContent: "space-between", gap: 12, padding: "9px 0", borderTop: `1px solid ${LINKA}`, fontSize: 15.5 }}><span style={{ color: INK2 }}>{r.meno || "Bohu známy veriaci"} · {relCas(r.cas)}</span><b style={{ flex: "none" }}>{eur(r.suma)}</b></span>)}
+    </div>}
+  </>);
+}
+
 function ZbierkaKarta({ z, onTap }: { z: SpustenaZbierka; onTap: () => void }) {
   useDarcovia(z.id);
   const s = sucetDarov(z.id), ciel = cielCislo(z);
@@ -590,10 +635,12 @@ function ZbierkaKarta({ z, onTap }: { z: SpustenaZbierka; onTap: () => void }) {
 }
 
 /** KARTA 57C §3 — detail zbierky: vľavo zbierka alebo parte (ostáva na mieste), vpravo platobný modul; mobil pod sebou */
-export interface DetailF { data: ZbierkaData; typ: "hl" | "zv" | "far" | "rodina"; chip: string; t: string; txt: string; obr?: string; parte?: boolean }
+export interface DetailF { data: ZbierkaData; typ: "hl" | "zv" | "far" | "rodina" | "pin"; chip: string; t: string; txt: string; obr?: string; parte?: boolean; /** OPRAVY 187 */ pin?: ZbierkaNaPripnutie }
 function DetailZbierky({ d, strankaId, onZavri }: { d: DetailF; strankaId: string; onZavri: () => void }) {
   useEffect(() => { const k = (e: KeyboardEvent) => { if (e.key === "Escape") onZavri(); }; window.addEventListener("keydown", k); return () => window.removeEventListener("keydown", k); }, [onZavri]);
-  const rod = d.typ === "rodina", ram = rod ? FIALOVA : TEAL, hc = rod ? FIALOVA : ZELENA;
+  const rod = d.typ === "rodina", ram = d.pin ? farbaPripnutej(d.pin) : rod ? FIALOVA : TEAL, hc = rod ? FIALOVA : ZELENA;
+  // OPRAVY 187: dar z detailu pripnutej zbierky nesie zdroj = táto farnosť
+  useEffect(() => { if (!d.pin) return; nastavZdrojDaru(d.data.id, strankaId); return () => nastavZdrojDaru(d.data.id, null); }, [d.pin, d.data.id, strankaId]);
   const { wide } = useLayout(); // PC: zbierka vľavo ostáva na mieste; mobil: pod sebou
   return createPortal(
     <div role="dialog" aria-modal="true" aria-label="Zbierka" style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(20,17,11,.82)", overflowY: "auto", padding: 16, boxSizing: "border-box", fontFamily: "'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,sans-serif", ...PREMENNE }}>
@@ -613,6 +660,10 @@ function DetailZbierky({ d, strankaId, onZavri }: { d: DetailF; strankaId: strin
                 <b style={{ fontSize: 28, lineHeight: 1.15, letterSpacing: "-.02em" }}>{d.t}</b>
                 {d.txt && <span style={{ fontSize: 17.5, lineHeight: 1.55, color: INK2, whiteSpace: "pre-line" }}>{d.txt}</span>}
               </div>}
+              {d.pin && <>
+                <div style={{ margin: "0 16px 12px", fontSize: 16, color: INK2 }}>Peniaze idú: <b style={{ color: INK }}>{d.pin.kto}</b></div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 12, paddingBottom: 16 }}><PasyPripnutej z={d.pin} strankaId={strankaId} /></div>
+              </>}
               {rod && <div style={{ margin: "0 16px 16px", padding: "12px 16px", borderRadius: 14, background: "#F3EEF4", border: `2px solid ${FIALOVA}`, display: "flex", flexDirection: "column", gap: 2 }}>
                 <span style={{ fontSize: 13.5, fontWeight: 800, letterSpacing: ".1em", color: FIALOVA }}>ZBIERKA RODINY</span>
                 <b style={{ fontSize: 17 }}>Peniaze idú: rodine</b>
@@ -622,7 +673,7 @@ function DetailZbierky({ d, strankaId, onZavri }: { d: DetailF; strankaId: strin
           </div>
           <div style={{ flex: "1 1 380px", minWidth: 0, maxWidth: 520, display: "flex", flexDirection: "column", gap: 14 }}>
             <div style={{ borderRadius: 24, overflow: "hidden", border: rod ? `3px solid ${FIALOVA}` : `1px solid ${LINKA}`, background: "#F3EFE7", padding: "14px 0", ["--hcPruh" as string]: hc, ["--hcF" as string]: hc } as CSSProperties}>
-              <ZbierkaModul zbierka={d.data} miesto="charita" pohreb={!!d.parte} pietne={<PietneAkcie strankaId={strankaId} zbierka={d.data.id} />} bocny zoStrankyOrg onBack={onZavri} ktoVoli={rod ? "rodina" : "farnosť"} bez={d.typ === "hl" ? ["zapojitFirmu"] : ["zapojitFirmu", "pravidelna", "dorovnanie"]} />
+              <ZbierkaModul zbierka={d.data} miesto="charita" pohreb={!!d.parte} pietne={<PietneAkcie strankaId={strankaId} zbierka={d.data.id} />} bocny zoStrankyOrg onBack={onZavri} ktoVoli={d.pin ? (d.pin.zdroj === "help" ? "príjemca" : "charita") : rod ? "rodina" : "farnosť"} bez={d.typ === "hl" ? ["zapojitFirmu"] : ["zapojitFirmu", "pravidelna", "dorovnanie"]} />
             </div>
             <button type="button" onClick={onZavri} style={{ alignSelf: "center", minHeight: 52, padding: "0 26px", borderRadius: 14, border: `1.5px solid ${LINKA}`, background: PAPIER, color: INK, fontFamily: "inherit", fontSize: 16.5, fontWeight: 800, cursor: "pointer" }}>Zbaliť ⌃</button>
           </div>
