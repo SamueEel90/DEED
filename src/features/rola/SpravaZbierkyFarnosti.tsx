@@ -1,7 +1,7 @@
 // ============================================================
 // KARTA 56D §6 · Správa zbierky farnosti po zapečatení (aj zbierky pre veriacich, OPRAVY 161).
 // Smie len 2 veci: zmeniť rýchle sumy (EUR aj EURC, „Uložené ✓") a ukončiť (podržať → „Zbierka je ukončená").
-// Záložky Štatistiky · Rýchle sumy · Ukončenie. Darcovia len menami, bez súm (sektor Viera: Bohu známy darca).
+// Záložky Štatistiky · Rýchle sumy · Ukončenie. Darcovia len menami, bez súm (sektor Viera: Bohu známy veriaci).
 // Prototyp „Sprava farnosti - prvy prichod" → Zbierky → ťuk na zbierku.
 // ============================================================
 import { useEffect, useRef, useState, type CSSProperties } from "react";
@@ -109,7 +109,7 @@ export function SpravaZbierkyFarnosti({ stranka, z, mobil, toast, onSpat }: {
             <b style={{ flex: 1, minWidth: 0, fontSize: 14.5 }}>{identitaDarcu(r, ja, "viera")}</b>
             <span style={{ flex: "none", fontSize: 13, color: "var(--ink3)" }}>{relCas(r.cas)}</span>
           </div>))
-          : <span style={textK}>Zatiaľ žiadne dary. Mená sa ukážu bez súm, bez mena ako Bohu známy darca.</span>}
+          : <span style={textK}>Zatiaľ žiadne dary. Mená sa ukážu bez súm, bez mena ako Bohu známy veriaci.</span>}
       </section>
     </>}
 

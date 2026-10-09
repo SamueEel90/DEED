@@ -38,7 +38,7 @@ import { PribehZbierky } from "./PribehZbierky";
 import { SektorDarcuKontext } from "@/lib/darcovia";
 
 /** vložiteľný verejný profil podľa kľúča stránky (svetlo · pekaren · tvorca) */
-/** OPRAVY 159: profil farnosti = sektor Viera (darca bez mena = „Bohu známy darca") */
+/** OPRAVY 159: profil farnosti = sektor Viera (darca bez mena = „Bohu známy veriaci") */
 export function VerejnyProfilView(p: { kluc: string; onBack: () => void }) {
   const k = p.kluc.startsWith("stream:") ? "tvorca" : p.kluc.startsWith("pribeh:") ? orgPribehu(p.kluc.slice(7)) : p.kluc;
   return <SektorDarcuKontext.Provider value={najdiTestProfil(k)?.typ === "farnost" ? "viera" : "ine"}><VerejnyProfilObsah {...p} /></SektorDarcuKontext.Provider>;

@@ -66,7 +66,7 @@ export function uzavreteOkna(stranka: string): (OmsoveOkno & { suma: number })[]
   });
 }
 
-/** mená darcov okna bez súm: „Anna K., Jozef Mráz, Mária a ďalší" (bez mena = „Bohu známy darca") */
+/** mená darcov okna bez súm: „Anna K., Jozef Mráz, Mária a ďalší" (bez mena = „Bohu známy veriaci") */
 export function menaOkna(dary: DarRiadok[], ja?: Parameters<typeof identitaDarcu>[1]): string {
   const m = [...new Set(dary.map((r) => identitaDarcu(r, ja, "viera").split(" · ")[0]))];
   if (!m.length) return "";

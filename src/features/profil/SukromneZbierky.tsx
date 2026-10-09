@@ -21,7 +21,7 @@ const D: Record<Druh, [string, string, string, string]> = {
 };
 const DRUHY = Object.keys(D) as Druh[];
 const TREBA = ["Overený účet v appke DEED (dar príde hneď naň)", "Telefón s appkou DEED", "Prísť k overovateľovi osobne"];
-const POZOR = ["Po zapečatení sa rozdelenie už nedá zmeniť.", "Podeliť sa dá len s osobou alebo organizáciou registrovanou v DEED.", "Darca bez mena sa ukáže ako Bohu známy darca."];
+const POZOR = ["Po zapečatení sa rozdelenie už nedá zmeniť.", "Podeliť sa dá len s osobou alebo organizáciou registrovanou v DEED.", "Darca bez mena sa ukáže ako Bohu známy veriaci."];
 
 const karta = { borderRadius: 18, background: "var(--d-card, var(--card))", border: "1px solid var(--d-cardBd, var(--cardBd))", padding: 16 } as const;
 const lbl = { fontSize: 12, fontWeight: 800, letterSpacing: ".06em", color: "var(--ink3)", padding: "4px 2px 0" } as const;
