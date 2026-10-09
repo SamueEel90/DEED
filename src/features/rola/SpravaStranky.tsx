@@ -284,7 +284,7 @@ function SpravaStrankyTypu({ onBack, typ, onTyp: setTyp, strankaId = "svetlo", n
   const prepniZbal = (id: string, otv?: boolean) => setZbal((z) => { const n = { ...z, [id]: otv ?? !jeOtv(z, id) }; void ulozZbalenie(strankaId, n); return n; });
   const hist = useRef<Sub[]>([]);
   const poz = POZICIA_TYPU(typ);
-  useVerejneNastavenia(STRANKA_POZICIE[poz]); // rýchle sumy, krypto, viditeľnosť súm z DB (0070)
+  useVerejneNastavenia(STRANKA_POZICIE[poz]); // rýchle sumy, krypto, viditeľnosť súm z DB (0070b)
   const sada = STIT_SADA_TYPU[typ];
   const [tiery, setTiery] = useState(nacitajTiery);
   const tier = tiery[poz];

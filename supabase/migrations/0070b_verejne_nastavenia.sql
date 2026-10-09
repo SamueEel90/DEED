@@ -1,5 +1,5 @@
 -- ============================================================
--- 0070 · verejné nastavenia stránky (rýchle sumy, krypto, viditeľnosť súm, centrálna zbierka)
+-- 0070b · verejné nastavenia stránky (rýchle sumy, krypto, viditeľnosť súm, centrálna zbierka)
 -- ------------------------------------------------------------
 -- Správa stránky ich držala len v prehliadači (localStorage deed.rola.*) → po prihlásení na inom
 -- zariadení zmizli a návštevník verejného profilu ich nevidel. Patria k stránke a čítať ich musí

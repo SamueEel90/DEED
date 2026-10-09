@@ -1,4 +1,4 @@
-// Verejné nastavenia stránky (migrácia 0070): rýchle sumy, krypto, viditeľnosť súm, centrálna zbierka.
+// Verejné nastavenia stránky (migrácia 0070b): rýchle sumy, krypto, viditeľnosť súm, centrálna zbierka.
 // Ukladajú sa do nastavenia_stranky.verejne (píše správca), čítajú sa z pohľadu
 // nastavenia_stranky_verejne (aj návštevník). Bez DB (mock/offline) appka beží z rola/stav (localStorage).
 import { useEffect, useSyncExternalStore } from "react";
@@ -22,7 +22,7 @@ export function nacitajVerejne(stranka: string): Promise<void> {
   if (bezi) return bezi;
   const p = (async () => {
     const { data, error } = await supabase!.from("nastavenia_stranky_verejne").select("verejne").eq("stranka", stranka).maybeSingle();
-    if (error) { nacitava.delete(stranka); return; } // pohľad ešte nebeží (0070) → ostáva localStorage
+    if (error) { nacitava.delete(stranka); return; } // pohľad ešte nebeží (0070b) → ostáva localStorage
     pamat.set(stranka, { ...((data?.verejne as Verejne | null) ?? {}), ...(pamat.get(stranka) ?? {}) }); // lokálna zmena počas načítania má prednosť
     zmena();
   })();

@@ -16,7 +16,7 @@ export const ISKRA_TYPY = ["video/mp4", "video/quicktime", "video/webm"];
 interface IskraRiadok {
   id: string; stranka: string | null; druh: number; autor: string; kto: string; ini: string; popis: string;
   video: string; plagat: string | null; zbierka: Iskra["zbierka"] | null; bez_darov: boolean;
-  /** 0071: video druhu Zbierky — väzba na zbierku stránky */ zb?: Iskra["zb"] | null;
+  /** 0071b: video druhu Zbierky — väzba na zbierku stránky */ zb?: Iskra["zb"] | null;
   retaz_pct: number | null; len_stranka: boolean; iskry: number; zverejnene: string; /** 0035: autor = účet, nie auth uid */ autor_ucet: string;
 }
 

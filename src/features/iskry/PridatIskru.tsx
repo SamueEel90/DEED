@@ -163,7 +163,7 @@ function PridatIskru() {
   };
   const zverejni = async () => {
     if (chyba || !video || druh == null || odosiela) return;
-    // druh Zbierky (6): na server od 0071 (stĺpec zb); bez DB/session len v relácii
+    // druh Zbierky (6): na server od 0071b (stĺpec zb); bez DB/session len v relácii
     if (druh === DZ) {
       if (!vedie || !vlastnaZb) return;
       const typT = vedie.typ === "charita" ? "Charita" : vedie.typ === "firma" ? "Firma" : "Tvorca";

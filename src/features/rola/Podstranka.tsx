@@ -134,7 +134,7 @@ export function Podstranka({ pozicia, tier: tierStranky = 0, logo, toast, onBack
   const s = SUBJEKTY[pozicia];
   // OPRAVY 107: uložený profil zo správy (lib/profilStranky); staré úložisko len záloha, kým nie je nič uložené
   const [ulozeny, setUlozeny] = useState<ProfilStranky | null>(() => (strankaId ? profilZPamate(strankaId).ulozeny : null));
-  useVerejneNastavenia(strankaId ?? STRANKA_POZICIE[pozicia]); // rýchle sumy, krypto, viditeľnosť súm z DB (0070)
+  useVerejneNastavenia(strankaId ?? STRANKA_POZICIE[pozicia]); // rýchle sumy, krypto, viditeľnosť súm z DB (0070b)
   useEffect(() => { if (!strankaId) return; let ziva = true; void nacitajProfilStranky(strankaId).then((z) => { if (ziva) setUlozeny(z.ulozeny); }); return () => { ziva = false; }; }, [strankaId]);
   const pr0 = profilNahlad ?? ulozeny;
   const pr = ts.prazdny && pr0 ? vyprazdni(pr0) : pr0;

@@ -66,7 +66,7 @@ export function PersonalizaciaProvider({ children }: { children: ReactNode }) {
   const [oblubene, setOblubene] = useState<Oblubeny[]>([]);
   const [mojeZbierky, setMojeZbierky] = useState<MojaZbierka[]>([]);
   const [hydratovane, setHydratovane] = useState(false); // perzistuj až po inicializácii
-  useSynchronizaciaSkutkov(USE_SUPABASE && !demo ? ucetId : null); // denník skutkov v účte (0072)
+  useSynchronizaciaSkutkov(USE_SUPABASE && !demo ? ucetId : null); // denník skutkov v účte (0072b)
 
   // inicializácia: localStorage (+ jednorazový legacy import); demo bez dát → realistický seed
   useEffect(() => {
