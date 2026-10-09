@@ -1,5 +1,5 @@
 -- ============================================================
--- 0071 · Iskra druhu Zbierky (video k vlastnej zbierke: výzva / priebeh / ďakujeme / ďakujeme firme)
+-- 0071b · Iskra druhu Zbierky (video k vlastnej zbierke: výzva / priebeh / ďakujeme / ďakujeme firme)
 -- ------------------------------------------------------------
 -- Appka ho mala len v relácii (server poznal druh 1–5 bez väzby na zbierku) → video videl len autor
 -- do reloadu. Teraz: druh 6 + stĺpec zb { typ, stitok, stranka, zbierkaId, firma? }.

@@ -1,5 +1,5 @@
 -- ============================================================
--- 0072 · Môj denník skutkov do účtu (lib/mojeSkutky)
+-- 0072b · Môj denník skutkov do účtu (lib/mojeSkutky)
 -- ------------------------------------------------------------
 -- Pridané skutky (aj tie, čo nešli do feedu: „ostáva v denníku", „Kontroluje AI"), koncept,
 -- ohlásený skutok a skutky za stránku žili len v localStorage → na inom zariadení chýbali,

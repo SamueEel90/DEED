@@ -5,7 +5,7 @@
 // aj tier simulujú prepínačmi (žiadne oddelené registrácie) — v produkcii
 // sa rola číta z overeného účtu a tier z fakturácie.
 // Perzistencia = localStorage (rovnaký vzor ako viera/stav.ts); verejné nastavenia stránky
-// (sady, krypto, centrálna, viditeľnosť) navyše v DB — lib/verejneNastavenia (0070).
+// (sady, krypto, centrálna, viditeľnosť) navyše v DB — lib/verejneNastavenia (0070b).
 // ============================================================
 import type { SadaEur, SadaEurc } from "@/lib/sadyDarov";
 import { verejneZPamate, zapisVerejne } from "@/lib/verejneNastavenia";
@@ -124,7 +124,7 @@ export const nacitajZdrojAvatara = (p: Pozicia): ZdrojAvatara =>
   p === "tvorca" ? nacitaj<ZdrojAvatara>(kluc(`avatar.${p}`), "foto") : "logo";
 export const ulozZdrojAvatara = (p: Pozicia, z: ZdrojAvatara) => uloz(kluc(`avatar.${p}`), z);
 
-// ---- VEREJNÉ nastavenia stránky (0070): v DB pri stránke, vidí ich aj návštevník; localStorage = záloha (mock/offline).
+// ---- VEREJNÉ nastavenia stránky (0070b): v DB pri stránke, vidí ich aj návštevník; localStorage = záloha (mock/offline).
 // Rola → testovacia stránka v DB (lib/mojeStranky UKAZKOVE_STRANKY). `stranka` prebije rolu (napr. farnosť má rolu charita).
 export const STRANKA_POZICIE: Record<Pozicia, string> = { charita: "svetlo", b2b: "pekaren", tvorca: "tvorca" };
 const verejne = <T>(p: Pozicia, k: string, fallback: T, stranka?: string): T => {

@@ -1,5 +1,5 @@
 -- ============================================================
--- 0073 · oznamy / akcie / inzeráty subjektu (lib/oznamy) a záujemcovia „Mám záujem"
+-- 0073b · oznamy / akcie / inzeráty subjektu (lib/oznamy) a záujemcovia „Mám záujem"
 -- ------------------------------------------------------------
 -- Starší engine oznamov (Môj DEED+ firemný → Inzeráty, verejný profil → ponuky práce) žil len
 -- v localStorage: inzerát videl len ten, kto ho napísal, a kontakt záujemcu sa zapísal len do

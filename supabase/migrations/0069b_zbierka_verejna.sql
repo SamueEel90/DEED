@@ -1,5 +1,5 @@
 -- ============================================================
--- 0069 · spustené zbierky stránky vidí aj návštevník
+-- 0069b · spustené zbierky stránky vidí aj návštevník
 -- ------------------------------------------------------------
 -- zbierka má RLS len pre vlastníka a správcu stránky (0035) → návštevník verejného profilu
 -- charity / farnosti nedostal z DB žiadnu zbierku (appka ich videla len u správcu).

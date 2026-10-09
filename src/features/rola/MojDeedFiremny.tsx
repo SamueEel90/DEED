@@ -103,7 +103,7 @@ function MojDeedFiremnyObsah({ onBack, toast, orgId }: { onBack: () => void; toa
   const ja = usePouzivatel(); // tvorca vystupuje pod vlastnou profilovou fotkou (nie logom)
   // rola + tier per rola — DEV: lokálny stav; produkcia: overený účet + fakturácia
   const [pozicia, setPozicia] = useState<Pozicia>(nacitajPoziciu);
-  useVerejneNastavenia(STRANKA_POZICIE[pozicia]); // rýchle sumy, krypto, centrálna, viditeľnosť z DB (0070)
+  useVerejneNastavenia(STRANKA_POZICIE[pozicia]); // rýchle sumy, krypto, centrálna, viditeľnosť z DB (0070b)
   const [tiery, setTiery] = useState<Record<Pozicia, Tier>>(nacitajTiery);
   const [drzitel, setDrzitel] = useState<boolean>(nacitajDrzitel);
   const [logo, setLogo] = useState<string | null>(() => nacitajLogo(nacitajPoziciu()));
@@ -414,7 +414,7 @@ function MojDeedFiremnyObsah({ onBack, toast, orgId }: { onBack: () => void; toa
 /** OPRAVY 75 · DEV simulácia pod Moje stránky v profile (len testovacia verzia) — stav v rola/stav.ts */
 export function DevSimulacia() {
   const [pozicia, setPozicia] = useState<Pozicia>(nacitajPoziciu);
-  useVerejneNastavenia(STRANKA_POZICIE[pozicia]); // rýchle sumy, krypto, centrálna, viditeľnosť z DB (0070)
+  useVerejneNastavenia(STRANKA_POZICIE[pozicia]); // rýchle sumy, krypto, centrálna, viditeľnosť z DB (0070b)
   const [tiery, setTiery] = useState<Record<Pozicia, Tier>>(nacitajTiery);
   const [drzitel, setDrzitel] = useState<boolean>(nacitajDrzitel);
   if (!(FLAGS.dev_role_switcher || FLAGS.dev_tier_switcher)) return null;

@@ -3,7 +3,7 @@
 // Vedomé rozhodnutie: subjekt je len kľúč („charita", „fara:123"), takže ten
 // istý kód obslúži každú entitu — kategórie a limity si určuje modul.
 // Platnosť: oznam po X dňoch zmizne z profilu, záznam ostáva (mäkká expirácia).
-// Perzistencia: DB (migrácia 0073) — oznam_subjektu (obsah, číta každý, píše správca stránky)
+// Perzistencia: DB (migrácia 0073b) — oznam_subjektu (obsah, číta každý, píše správca stránky)
 // a zaujemca_inzeratu (kontakt „Mám záujem", vidí len záujemca a správca). Rozhranie ostáva
 // synchrónne: cache v pamäti + localStorage, DB sa načíta na pozadí (useZmenyOznamov prekreslí).
 // Entita bez stránky v DB (napr. fara:<id>) a mock/offline = len localStorage.
@@ -124,7 +124,7 @@ async function nacitajZDb(entita: string): Promise<void> {
   nacitava.add(entita);
   try {
     const { data, error } = await supabase!.from("oznam_subjektu").select("id, data").eq("stranka", stranka);
-    if (error) return; // tabuľka ešte nebeží (0073) → ostáva localStorage
+    if (error) return; // tabuľka ešte nebeží (0073b) → ostáva localStorage
     const z = await supabase!.from("zaujemca_inzeratu").select("id, oznam_id, meno, telefon, email, poznamka, stit, karma, kedy").eq("stranka", stranka);
     const zaujem = new Map<string, Zaujemca[]>();
     for (const r of (z.data ?? []) as RiadokZaujemcu[]) {

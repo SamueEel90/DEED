@@ -1,4 +1,4 @@
-// KARTA 21 · Moje skutky — denník v účte (tabuľka moje_skutky, migrácia 0072) + localStorage ako rýchla cache.
+// KARTA 21 · Moje skutky — denník v účte (tabuľka moje_skutky, migrácia 0072b) + localStorage ako rýchla cache.
 // Pridané skutky, koncept, ohlásený skutok a skutky za stránku: po prihlásení sa zlúčia s DB
 // (synchronizujSkutky), každá zmena sa o 1 s zapíše do účtu (fotky najprv do Storage).
 // Demo účet dostane ukážkovú históriu (SEED); nový účet začína prázdny → ukážky pre začiatok.
@@ -114,7 +114,7 @@ const spojPodlaId = (a: MojSkutok[] = [], b: MojSkutok[] = []) => { const ids = 
 export async function synchronizujSkutky(ucetId: string): Promise<void> {
   if (!supabase || vUcte === ucetId) return;
   const { data, error } = await supabase.from("moje_skutky").select("data").maybeSingle();
-  if (error) return; // tabuľka ešte nebeží (0072) / bez session → ostáva lokálne
+  if (error) return; // tabuľka ešte nebeží (0072b) / bez session → ostáva lokálne
   const lok = nacitaj();
   const st: Stav = lok.vlastnik && lok.vlastnik !== ucetId ? { ...PRAZDNY } : lok; // cudzí denník z tohto prehliadača nepreberaj
   const db = (data?.data ?? null) as Partial<Stav> | null;
