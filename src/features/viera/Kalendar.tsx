@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { CasPole, sNulou } from "@/components/CasPole";
 import { SPACE, RADIUS, SIRKA } from "@/theme";
 import { BackHeader, Switch, SegTabs, useLayout } from "@/shared";
 import { pressable } from "@/components/pressable";
@@ -303,8 +304,8 @@ function DenDetail({ iso, omse, udalosti, perMass, onZrus, zrusene, onCas, onPri
                 <div style={{ fontSize: 13.5, fontWeight: 700, textDecoration: off ? "line-through" : "none" }}>{OMSA_LABEL[m.type]}</div>
                 <div style={{ fontSize: 10.5, color: N.txt3 }}>{m.source === "feast" ? "sviatok · predškrtnuté" : m.source === "manual" ? "mimoriadna" : "z rozvrhu"}{perMass ? " · auto omšová zbierka" : ""}</div>
               </div>
-              <input type="time" value={m.time} disabled={off} onChange={(e) => onCas(m.id, e.target.value)}
-                style={{ background: "rgba(var(--glass-rgb),.06)", border: `1px solid ${N.line}`, borderRadius: RADIUS.xs, color: N.txt, fontSize: 13, padding: `${SPACE.xxs}px ${SPACE.xs}px`, fontFamily: "inherit" }} />
+              <CasPole value={m.time} disabled={off} onCommit={(v) => onCas(m.id, v)} format={sNulou} label="Čas omše" placeholder="7:00"
+                style={{ width: 64, textAlign: "center", background: "rgba(var(--glass-rgb),.06)", border: `1px solid ${N.line}`, borderRadius: RADIUS.xs, color: N.txt, fontSize: 13, padding: `${SPACE.xxs}px ${SPACE.xs}px`, fontFamily: "inherit" }} />
             </div>
           );
         })}

@@ -9,6 +9,7 @@
 // (ťuk na riadok: text, Upraviť, Ako to vidia ľudia, Podržte a zmažte). Upraviť naplní formulár z `oz`.
 // Pozvať ľudí aj pri krátkom ozname (+ limit pri záväznom), Oznámenie: Parte · Svadba · Jubileum · Iné.
 // ============================================================
+import { CasPole } from "@/components/CasPole";
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { RichTextInput } from "@/components/richtext";
 import { spracujFotku } from "@/lib/obrazok";
@@ -18,7 +19,7 @@ import PodrzTlacidlo from "@/features/zbierka/PodrzTlacidlo";
 import { GaleriaEditor, cistyText, NASTROJE } from "./obsahZbierky";
 import { pridajPrispevok, upravPrispevok, vlastnePrispevky, zmazPrispevok, type VieraFeedItem } from "@/features/viera/mock";
 import { FormularOznamu, VyberSablony, Plagat, prazdneUdaje, prvaVolba, chybaOznamu, popisOznamu, type DruhOznamu, type UdajeOznamu, type VolbaSablony } from "@/features/viera/Sablony";
-import { zmenKostol, CAS_OK, normCas, dokonciCas, casNeexistuje, pekny } from "@/lib/kalendarFarnosti";
+import { zmenKostol, CAS_OK, pekny } from "@/lib/kalendarFarnosti";
 import { stitokOznamu } from "./OmseKalendar";
 import { NahladNastenky } from "./NahladNastenky";
 import { PrihovorKarta, OnlineOmseKarta } from "./PrihovorKarta";
@@ -180,7 +181,7 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
   // ---- čo chýba ----
   const ine = dr === 2 && odr === INE;
   const sablona = dr === 2 && osp === 0 && !ine;
-  const casZly = casNeexistuje(cas);
+  const [casZly, setCasZly] = useState(false);
   const ch: string[] = [];
   if (sablona) {
     if (!u.meno.trim()) ch.push("meno");
@@ -275,8 +276,7 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
       dr: x.ntyp === "udalost" ? 1 : st === "OZNAM" || st === "ZMENA OMŠE" ? 0 : 2, n: x.nazov ?? "", txt: x.ntyp === "udalost" ? x.udalost?.text ?? "" : x.popis ?? "",
       plati: Math.max(0, PLATI.findIndex(([, d]) => d === (x.platnostDni ?? 36500))), usp: x.plagat ? 1 : 0, dat: x.datum ?? "", cas: x.udalost?.cas ?? "", miesto: x.udalost?.miesto ?? "",
       pozv: x.pozvanie ? (x.pozvanie.zavazne ? 2 : 1) : x.rsvp ? (x.udalost?.zavazne ? 2 : 1) : 0, limit: x.pozvanie?.limit ? String(x.pozvanie.limit) : "",
-      odr: st === "SVADBA" ? 1 : st === "JUBILEUM" ? 2 : st === "PARTE" ? 0 : INE, osp: x.plagat ? 1 : 0, u: x.smutocny?.sablona?.u, volba: x.smutocny?.sablona?.volba,
-    };
+      odr: st === "SVADBA" ? 1 : st === "JUBILEUM" ? 2 : st === "PARTE" ? 0 : INE, osp: x.plagat ? 1 : 0, u: x.smutocny?.sablona?.u, volba: x.smutocny?.sablona?.volba };
     setDr(o.dr); setN(o.n); setTxt(/<[a-z]/i.test(o.txt) ? o.txt : o.txt.split("\n").map((r) => `<p>${r.replace(/&/g, "&amp;").replace(/</g, "&lt;")}</p>`).join("")); setTxtKey((k) => k + 1);
     setPlati(o.plati); setUsp(o.usp); setDat(o.dat); setCas(o.cas); setMiesto(o.miesto); setPozv(o.pozv); setLimit(o.limit); setOdr(o.odr); setOsp(o.osp);
     const d = ODRUHY[o.odr]?.[1] ?? "parte";
@@ -326,7 +326,7 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
     {ine && <TextOznamu key={`ine${txtKey}`} value={txt} onChange={setTxt} label="Krátky popis" popis="Nepovinné." />}
     {dr === 1 && <div style={{ display: "grid", gridTemplateColumns: mobil ? "1fr" : "repeat(3,minmax(0,1fr))", gap: 10 }}>
       <label style={{ display: "flex", flexDirection: "column", gap: 6 }}><span style={{ ...lbl, fontSize: 14 }}>Dátum</span><input type="date" value={dat} onChange={(e) => setDat(e.target.value)} aria-label="Dátum" style={pole} /></label>
-      <label style={{ display: "flex", flexDirection: "column", gap: 6 }}><span style={{ ...lbl, fontSize: 14 }}>Čas</span><input value={cas} inputMode="numeric" maxLength={5} onChange={(e) => setCas(normCas(e.target.value))} onBlur={() => setCas((c) => dokonciCas(c))} placeholder="napr. 15:00" aria-label="Čas" aria-invalid={casZly || undefined} style={{ ...pole, border: `${casZly ? 2 : 1}px solid ${casZly ? "var(--cRed)" : "var(--cardBd)"}` }} /></label>
+      <label style={{ display: "flex", flexDirection: "column", gap: 6 }}><span style={{ ...lbl, fontSize: 14 }}>Čas</span><CasPole value={cas} onCommit={setCas} onChyba={setCasZly} placeholder="napr. 15:00" label="Čas" style={pole} /></label>
       <label style={{ display: "flex", flexDirection: "column", gap: 6 }}><span style={{ ...lbl, fontSize: 14 }}>Miesto</span><input value={miesto} onChange={(e) => setMiesto(e.target.value.slice(0, 60))} placeholder="napr. pred kostolom" aria-label="Miesto" style={pole} /></label>
       {casZly && <span role="alert" style={{ gridColumn: "1 / -1", fontSize: 12.5, fontWeight: 700, color: "var(--cRed)" }}>Takýto čas neexistuje. Píšte hodiny:minúty, napríklad 15:00.</span>}
     </div>}

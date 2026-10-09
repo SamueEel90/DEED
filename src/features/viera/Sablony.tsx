@@ -7,6 +7,7 @@
 // Formulár parte: meno · Muž / Žena (povinné) · dátumy (vek sa vypočíta, nezmysly nepustí) · rodená ·
 // kým bol/a · rozlúčka · posledná veta · citát · text · oznamuje.
 // ============================================================
+import { CasPole } from "@/components/CasPole";
 import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import type { Vzhlad } from "@/lib/vzhladStranky";
 
@@ -38,8 +39,7 @@ interface Paleta { n: string; paper: string; ink: string; acc: string; soft: str
 const PAL: Record<Vzhlad, Paleta> = {
   kronika: { n: "Kronika", paper: "#F3F1EA", ink: "#1D211B", acc: "#2F5E3A", soft: "#DCE3D0", dark: "#1B2A1F" },
   vyklad: { n: "Nástenka", paper: "#F7F0E1", ink: "#2A2216", acc: "#876712", soft: "#EADFC4", dark: "#2A2216" },
-  pirat: { n: "Moderné", paper: "#EEF2F5", ink: "#14202A", acc: "#3D6B8E", soft: "#D5E0E8", dark: "#14202A" },
-};
+  pirat: { n: "Moderné", paper: "#EEF2F5", ink: "#14202A", acc: "#3D6B8E", soft: "#D5E0E8", dark: "#14202A" } };
 
 // ---- motívy (symboly) ----
 const SYM: Record<string, [string, number, number, string]> = {
@@ -54,13 +54,11 @@ const SYM: Record<string, [string, number, number, string]> = {
   veniec: ["vavrínový veniec", 48, 44, '<path d="M14 40 C4 32 3 16 12 6 M34 40 C44 32 45 16 36 6" fill="none" stroke="C" stroke-width="2.5"/><ellipse cx="7" cy="30" rx="3" ry="6" transform="rotate(30 7 30)"/><ellipse cx="6" cy="19" rx="3" ry="6" transform="rotate(10 6 19)"/><ellipse cx="10" cy="10" rx="3" ry="6" transform="rotate(-20 10 10)"/><ellipse cx="41" cy="30" rx="3" ry="6" transform="rotate(-30 41 30)"/><ellipse cx="42" cy="19" rx="3" ry="6" transform="rotate(-10 42 19)"/><ellipse cx="38" cy="10" rx="3" ry="6" transform="rotate(20 38 10)"/>'],
   srdce: ["srdiečko", 40, 36, '<path d="M20 34 C6 24 2 16 2 10 C2 5 6 2 11 2 C15 2 18 5 20 8 C22 5 25 2 29 2 C34 2 38 5 38 10 C38 16 34 24 20 34 Z"/>'],
   kruzky: ["obrúčky", 52, 32, '<circle cx="18" cy="16" r="12" fill="none" stroke="C" stroke-width="3.5"/><circle cx="34" cy="16" r="12" fill="none" stroke="C" stroke-width="3.5"/>'],
-  bez: ["bez symbolu", 0, 0, ""],
-};
+  bez: ["bez symbolu", 0, 0, ""] };
 export const MOT: Record<DruhOznamu, string[]> = {
   parte: ["kat", "prav", "troj", "kelt", "david", "kniha", "holub", "svieca", "veniec", "srdce", "bez"],
   svadba: ["kruzky", "srdce", "holub", "kat", "david", "bez"],
-  ine: ["bez", "srdce", "holub", "kat", "david", "kniha", "svieca"],
-};
+  ine: ["bez", "srdce", "holub", "kat", "david", "kniha", "svieca"] };
 const url = (svg: string) => `url("data:image/svg+xml,${encodeURIComponent(svg)}") center/contain no-repeat`;
 const symbol = (k: string, c: string) => { const S = SYM[k]; if (!S?.[1]) return "none"; return url(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${S[1]} ${S[2]}" fill="${c}">${S[3].replace(/stroke="C"/g, `stroke="${c}"`)}</svg>`); };
 function medailon(k: string, gold: string, ink: string) {
@@ -253,8 +251,7 @@ const pozn: CSSProperties = { fontSize: 13, lineHeight: 1.45, color: "var(--ink3
 const TEXTY: Record<DruhOznamu, { meno: string; phMeno: string; kedy: string; phKde: string; phKto: string; foto: string; cb: boolean }> = {
   parte: { meno: "MENO A PRIEZVISKO ZOSNULÉHO", phMeno: "Meno a priezvisko zosnulého", kedy: "ROZLÚČKA · KEDY (NEPOVINNÉ)", phKde: "napr. kostol, dom smútku", phKto: "napr. syn s rodinou", foto: "Fotka zosnulého", cb: true },
   svadba: { meno: "MENÁ SNÚBENCOV", phMeno: "Mená snúbencov", kedy: "SOBÁŠ · KEDY (NEPOVINNÉ)", phKde: "napr. farský kostol", phKto: "napr. snúbenci a rodičia", foto: "Fotka snúbencov", cb: false },
-  ine: { meno: "MENO PRÍJEMCU", phMeno: "Meno príjemcu", kedy: "KEDY (NEPOVINNÉ)", phKde: "miesto", phKto: "kto oznamuje", foto: "Fotka", cb: false },
-};
+  ine: { meno: "MENO PRÍJEMCU", phMeno: "Meno príjemcu", kedy: "KEDY (NEPOVINNÉ)", phKde: "miesto", phKto: "kto oznamuje", foto: "Fotka", cb: false } };
 /** chyba formulára (null = dá sa zverejniť) */
 export function chybaOznamu(u: UdajeOznamu): string | null {
   if (!u.meno.trim()) return "Doplňte meno.";
@@ -299,7 +296,7 @@ export function FormularOznamu({ u, onU, mobil, bezFotky, upozornenie = true }: 
       </>}
       {dva(
         <label style={{ display: "flex", flexDirection: "column", gap: 6 }}><span style={lab}>{T.kedy}</span>
-          <span style={{ display: "flex", gap: 8 }}><input type="date" value={u.kedyD} onChange={(e) => zmen({ kedyD: e.target.value })} style={{ ...pole, flex: 1.4 }} aria-label="Dátum" /><input type="time" value={u.kedyC} onChange={(e) => zmen({ kedyC: e.target.value })} style={{ ...pole, flex: 1 }} aria-label="Čas" /></span></label>,
+          <span style={{ display: "flex", gap: 8 }}><input type="date" value={u.kedyD} onChange={(e) => zmen({ kedyD: e.target.value })} style={{ ...pole, flex: 1.4 }} aria-label="Dátum" /><CasPole value={u.kedyC} onCommit={(v) => zmen({ kedyC: v })} placeholder="14:00" label="Čas" style={{ ...pole, flex: 1, minWidth: 0 }} /></span></label>,
         txt("kde", "KDE (NEPOVINNÉ)", T.phKde))}
       <span style={pozn}>Ak termín ešte neviete, nechajte prázdne a doplňte neskôr.{upozornenie ? " Sledujúci dostanú upozornenie." : ""}</span>
       {pa && <>

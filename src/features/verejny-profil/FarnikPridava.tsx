@@ -9,12 +9,13 @@
 // Na stránke: Galéria farnosti (albumy), Od veriacich s filtrom, hlavička autora, Zúčastním sa / Prihlásiť sa,
 // Modlím sa s vami, Úprimnú sústrasť, ··· Nahlásiť, „Upraviť · moje" (len autor).
 // ============================================================
+import { CasPole } from "@/components/CasPole";
 import { useEffect, useRef, useState, useSyncExternalStore, type CSSProperties, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { usePouzivatel } from "@/lib/pouzivatel";
 import { nacitajSelfAdd } from "@/features/viera/UserOznamy";
 import { DRUHY_FARNIKA, CEZ_EDITOR, BLOK_DRUHU, nacitajSmie, smie, odFarnikov, pridajOdFarnika, upravOdFarnika, prepniVPolozke, pocetSus, useOdFarnikov, useCerstveOdFarnikov, PLATI_VERIACI, vyprsal, type DruhFarnika, type PolozkaFarnika, type FormularVeriaceho } from "@/lib/odFarnikov";
-import { normCas, dokonciCas, casNeexistuje, CAS_OK, pekny } from "@/lib/kalendarFarnosti";
+import { dokonciCas, CAS_OK, pekny } from "@/lib/kalendarFarnosti";
 import { bezDataUrl } from "@/lib/uploadFoto";
 import type { MediumZbierky } from "@/lib/novaZbierka";
 import { GaleriaEditor, cistyText } from "@/features/rola/obsahZbierky";
@@ -253,6 +254,7 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
   const [hotovo, setHotovo] = useState<string | null>(null);
   const [edToast, setEdToast] = useState(false);
   const [uklada, setUklada] = useState(false);
+  const [casChyba, setCasChyba] = useState(false); // OPRAVY 180: zlý čas počas písania
   // KARTA 57C §2: po zverejnení zelená hláška dole na stránke + posun k bloku
   const [ok, setOk] = useState<{ t: string; s: string } | null>(null);
   const okTm = useRef<number | undefined>(undefined);
@@ -332,8 +334,7 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
       popisy: k === "fotky" ? fotky.map((m) => m.popis ?? "") : undefined, text: k === "fotky" ? txt || undefined : undefined,
       pozv: k === "udalost" || k === "fotky" ? pz : undefined, limit: k === "udalost" || k === "fotky" ? limitN : undefined,
       dalsia: k === "fotky" && pz ? [fmtD(f.datum), CAS_OK(c) ? pekny(c) : ""].filter(Boolean).join(" · ") : undefined,
-      upravene: povodny ? true : undefined,
-    };
+      upravene: povodny ? true : undefined };
     // E.3: fotky natrvalo (Storage), nie data URL
     let it: PolozkaFarnika;
     try { it = await bezDataUrl(zaklad, "od-veriacich"); } catch (e) { toast(e instanceof Error ? e.message : "Fotky sa nepodarilo uložiť."); setUklada(false); return; }
@@ -409,11 +410,10 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
     <label style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}><span style={lab(zle(kluc))}>{label}</span>
       <input value={String(f[kluc] ?? "")} onChange={(e) => set({ [kluc]: e.target.value.slice(0, max) } as Partial<FormularVeriaceho>)} placeholder={ph} aria-invalid={zle(kluc) || undefined} style={pole(zle(kluc))} {...extra} /></label>);
   const casPole = (label = "ČAS") => {
-    const zly = casNeexistuje(f.cas);
-    return <label style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}><span style={lab(zle("cas") || zly)}>{label}</span>
-      <input value={f.cas} inputMode="numeric" maxLength={5} onChange={(e) => set({ cas: normCas(e.target.value) })} onBlur={() => setF((q) => ({ ...q, cas: dokonciCas(q.cas) }))} placeholder="15:00" aria-invalid={zly || undefined} style={pole(zle("cas") || zly)} /></label>;
+    return <label style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}><span style={lab(zle("cas") || casChyba)}>{label}</span>
+      <CasPole value={f.cas} onCommit={(v) => set({ cas: v })} onChyba={setCasChyba} placeholder="15:00" label={label} style={pole(zle("cas") || casChyba)} /></label>;
   };
-  const casZly = casNeexistuje(f.cas) && <span role="alert" style={{ fontSize: 13, fontWeight: 700, color: "var(--cRed, #A3341F)" }}>Takýto čas neexistuje. Píšte napríklad 15:00.</span>;
+  const casZly = casChyba && <span role="alert" style={{ fontSize: 13, fontWeight: 700, color: "var(--cRed, #A3341F)" }}>Takýto čas neexistuje. Píšte napríklad 15:00.</span>;
   const ramGal = (el: ReactNode) => <div style={{ borderRadius: 22, boxShadow: zle("gal") ? `0 0 0 2px ${ZLATA}` : "none" }}>{el}</div>;
   const radio = (on: boolean) => <span aria-hidden="true" style={{ width: 22, height: 22, flex: "none", borderRadius: "50%", border: `2px solid ${on ? "var(--green)" : "#A8A396"}`, display: "flex", alignItems: "center", justifyContent: "center" }}><span style={{ width: 10, height: 10, borderRadius: "50%", background: on ? "var(--green)" : "transparent" }} /></span>;
   const volba = (on: boolean, t: string, sub: string, tap: () => void) => (
