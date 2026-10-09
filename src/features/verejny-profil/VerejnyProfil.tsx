@@ -8,9 +8,9 @@ import { useTestStav, vyprazdni } from "@/lib/testStav";
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { FarnikPridava, OdFarnikov, fabZapnuty } from "./FarnikPridava";
 import { PrihovorNaStranke } from "./PrihovorNaStranke";
-import { NastenkaFarnosti, BLOK_DRUHU, posunNaBlok } from "./NastenkaFarnosti";
+import { NastenkaFarnosti, posunNaBlok } from "./NastenkaFarnosti";
 import { nacitajProfil, profilZPamate, cistyNazov, type ProfilStranky } from "@/lib/profilStranky";
-import { odFarnikov } from "@/lib/odFarnikov";
+import { odFarnikov, BLOK_DRUHU } from "@/lib/odFarnikov";
 import type { ZbierkaData } from "@/features/zbierka/ZbierkaModul";
 import type { StitLevel } from "@/components/stit";
 import { createPortal } from "react-dom";
@@ -162,7 +162,7 @@ function VerejnyProfilObsah({ kluc, onBack }: { kluc: string; onBack: () => void
     <div style={{ position: "relative", height: "100%" }}>
       <div aria-hidden={vrstva ? true : undefined} style={vrstva ? { position: "absolute", inset: 0, visibility: "hidden", pointerEvents: "none" } : { height: "100%" }}>{zakladStranka()}</div>
       {vrstva && <div style={{ position: "absolute", inset: 0, overflowY: (detail && !pribeh) || detailF ? "auto" : undefined }}>{vrstva}</div>}
-      {farnost && !vrstva && <FarnikPridava strankaId={profil.k} mobil={!pc} onPozriet={(id) => { setNovyOdF(id); const b = BLOK_DRUHU[odFarnikov(profil.k).find((x) => x.id === id)?.k ?? ""]; window.setTimeout(() => posunNaBlok(b?.[0] ?? "ozn"), 60); }} />}
+      {farnost && !vrstva && <FarnikPridava strankaId={profil.k} mobil={!pc} onPozriet={(id) => { setNovyOdF(id); const kd = odFarnikov(profil.k).find((x) => x.id === id)?.k, b = kd ? BLOK_DRUHU[kd] : undefined; window.setTimeout(() => posunNaBlok(b?.[0] ?? "ozn"), 60); }} />}
     </div>);
 }
 

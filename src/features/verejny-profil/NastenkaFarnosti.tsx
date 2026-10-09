@@ -65,8 +65,6 @@ const tlacR = (ja: boolean, tmave: boolean, plne = false): CSSProperties => ({
 });
 const tlacUpravit: CSSProperties = { alignSelf: "flex-start", minHeight: 44, padding: "0 16px", borderRadius: 12, border: `1.5px solid ${ZELENA}`, background: "transparent", color: "#2F5A22", fontFamily: "inherit", fontSize: 15, fontWeight: 800, cursor: "pointer" };
 
-/** blok, v ktorom je príspevok veriaceho (po zverejnení sa stránka k nemu posunie) */
-export const BLOK_DRUHU: Record<string, [string, string]> = { modlitba: ["mod", "Modli sa s nami"], oznam: ["ozn", "Oznamy farnosti"], udalost: ["prid", "Príď a zaži s nami"], fotky: ["prid", "Príď a zaži s nami"], parte: ["spom", "Spomíname"], svadba: ["tes", "Teš sa s nami"], ine: ["tes", "Teš sa s nami"] };
 export function posunNaBlok(blok: string) {
   document.querySelector(`[data-blok="${blok}"]`)?.scrollIntoView({ behavior: "smooth", block: "start" });
 }
