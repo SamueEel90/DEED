@@ -117,3 +117,38 @@ export async function nastavCirkevFarnosti(stranka: string, kod: string): Promis
   zmena();
   if (supabase) { const { error } = await supabase.from("farnost_adresar").upsert({ stranka, cirkev: kod, upravene: new Date().toISOString() }, { onConflict: "stranka" }); chyba(error); }
 }
+
+// ---- KARTA 61 §0 · slová podľa cirkvi (číselník public.cirkev, 0078). V kóde jedna rola „duchovný“, mení sa len slovo. ----
+export interface SlovaCirkvi { titul: string; titul2p: string; jednotka2p: string; oslovenie: string | null; dozorca: boolean }
+type RiadokCirkvi = { kod: string; titul: string; titul_2p: string; jednotka_2p: string; oslovenie: string | null; dozorca: boolean };
+const S = (titul: string, titul2p: string, jednotka2p: string, oslovenie: string | null, dozorca = false): SlovaCirkvi => ({ titul, titul2p, jednotka2p, oslovenie, dozorca });
+/** záloha, kým nepríde číselník z DB (rovnaké hodnoty ako 0078) */
+const SLOVA_ZALOHA: Record<string, SlovaCirkvi> = {
+  RKC: S("Farár", "farára", "farnosti", "pán farár"), GKC: S("Farár", "farára", "farnosti", "otec"), PC: S("Otec duchovný", "otca duchovného", "cirkevnej obce", "otec"),
+  ECAV: S("Farár", "farára", "cirkevného zboru", "brat farár", true), RKCr: S("Farár", "farára", "cirkevného zboru", "brat farár", true),
+  ECM: S("Kazateľ", "kazateľa", "zboru", "brat kazateľ", true), BJB: S("Kazateľ", "kazateľa", "zboru", "brat kazateľ", true), CB: S("Kazateľ", "kazateľa", "zboru", "brat kazateľ", true),
+  ACS: S("Kazateľ", "kazateľa", "zboru", "brat kazateľ", true), KZ: S("Kazateľ", "kazateľa", "zboru", "brat", true), CASD: S("Kazateľ", "kazateľa", "zboru", "brat kazateľ"),
+  ÚZŽNO: S("Rabín", "rabína", "náboženskej obce", "pán rabín"),
+};
+const SLOVA_INE = S("Duchovný správca", "duchovného správcu", "spoločenstva", null);
+let ciselnik: Record<string, SlovaCirkvi> | null = null;
+let ciselnikNacitany = false;
+async function nacitajCiselnik() {
+  if (!supabase) return;
+  const { data, error } = await supabase.from("cirkev").select("kod, titul, titul_2p, jednotka_2p, oslovenie, dozorca");
+  if (error || !data) return;
+  ciselnik = Object.fromEntries((data as RiadokCirkvi[]).map((r) => [r.kod, S(r.titul, r.titul_2p, r.jednotka_2p, r.oslovenie, r.dozorca)]));
+  zmena();
+}
+export const slovaCirkvi = (kod: string): SlovaCirkvi => ciselnik?.[kod] ?? SLOVA_ZALOHA[kod] ?? SLOVA_INE;
+
+/** slová pre stránku farnosti podľa jej cirkvi (Farár farnosti · Kazateľ zboru · Otec duchovný cirkevnej obce…) */
+export function useSlovaFarnosti(stranka: string): SlovaCirkvi & { cirkev: string } {
+  useSyncExternalStore((f) => { posl.add(f); return () => { posl.delete(f); }; }, () => ver);
+  useEffect(() => {
+    if (!ciselnikNacitany) { ciselnikNacitany = true; void nacitajCiselnik(); }
+    if (!cirkevPamat.has(stranka)) void nacitajCirkevFarnosti(stranka).then(() => zmena());
+  }, [stranka]);
+  const k = cirkevPamat.get(stranka) ?? "RKC";
+  return { ...slovaCirkvi(k), cirkev: k };
+}
