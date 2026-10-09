@@ -33,6 +33,7 @@ import { suhrnHlavnej, useOmsoveOkno, menaOkna, doZatvorenia, zavriTyzdenTest } 
 import { TESTOVACIA } from "@/lib/testovacia";
 import { CirkevFarnosti } from "./CirkevFarnosti";
 import { PripnutieVyber, PripnuteZoznam } from "./PripnuteZbierky";
+import { LudiaFarnosti } from "./LudiaFarnosti";
 import { ObrNastavenia } from "./SpravaStranky";
 import { ObrOznamenia, ObrUdaje, ObrZariadenia, ObrSuhlasy, ObrFaq, ObrPodpora } from "./NastaveniaCharity";
 import { nacitajNastavenia } from "@/lib/nastaveniaStranky";
@@ -493,22 +494,12 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
   </>;
 
   // KARTA 56D §0: Ľudia = len prihlásený správca. Ďalšie osoby a počty pribudnú s tabuľkou správcov (PLACEBO — karta 56D).
-  const iniJa = ja.celeMeno.split(/\s+/).map((x) => x[0] ?? "").join("").slice(0, 2).toUpperCase() || "VY";
   const darcovNum = new Set(vsetkyDary.map((r) => (r.moj ? "ja" : r.id))).size;
   // KARTA 57 D.6: Ľudia = Správcovia (osoby + prístup) a Dobrovoľníci; štatistiky sú v Nástrojoch a štatistikách
   const ludia = <>
     {nadpis("Ľudia", "Správcovia farnosti a dobrovoľníci")}
-    <span style={mobil ? { ...kicker, letterSpacing: ".07em", padding: "4px 2px 0" } : kicker}>SPRÁVCOVIA · KTO MÔŽE SPRAVOVAŤ FARNOSŤ</span>
-    <section style={{ ...karta, borderRadius: mobil ? 18 : 22, padding: mobil ? "4px 14px" : "6px 20px" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: mobil ? 10 : 12, minHeight: mobil ? 62 : 64, padding: "8px 0" }}>
-        <span style={{ flex: "none", width: mobil ? 40 : 44, height: mobil ? 40 : 44, borderRadius: "50%", background: "var(--btn)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: mobil ? 13 : 14, fontWeight: 800, color: "var(--ink2)" }}>{iniJa}</span>
-        <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}><b style={{ fontSize: mobil ? 14 : 14.5 }}>{ja.celeMeno}</b><span style={{ fontSize: mobil ? 12 : 12.5, color: "var(--ink3)" }}>hlavný správca · zaregistrovali ste farnosť</span></span>
-        <span style={{ flex: "none", fontSize: 12.5, color: "var(--ink3)" }}>vždy má prístup</span>
-      </div>
-      {/* PLACEBO — karta 56D: ďalšie osoby a prístup pribudnú s tabuľkou správcov */}
-      <button type="button" onClick={pripravujeme} style={{ ...odkaz, display: "block", width: "100%", textAlign: "left", padding: "10px 0 12px", borderTop: "1px solid var(--cardBd)" }}>+ Pridať osobu</button>
-    </section>
-    <span style={{ fontSize: 12.5, lineHeight: 1.5, color: "var(--ink3)" }}>Kaplán, kostolník, účtovníčka, katechétka… Prístup k Správe má len ten, komu ho zapnete. Na profile sa ukážu, prístup sa verejne neukazuje.</span>
+    {/* KARTA 61 §1: Ľudia farnosti (duchovný, kto spravuje, pridávanie v 2 krokoch) — starý blok Správcovia zmazaný */}
+    <LudiaFarnosti strankaId={strankaId} meno={meno} mobil={mobil} />
     <span style={mobil ? { ...kicker, letterSpacing: ".07em", padding: "8px 2px 0" } : { ...kicker, paddingTop: 8 }}>DOBROVOĽNÍCI</span>
     {/* PLACEBO — karta 57 D.6: dobrovoľníci farnosti (brigády, upratovanie, spev) ešte nemajú tabuľku */}
     <section style={{ ...karta, borderRadius: mobil ? 18 : 22, padding: mobil ? "14px 14px" : "16px 20px", display: "flex", flexDirection: "column", gap: 10 }}>
