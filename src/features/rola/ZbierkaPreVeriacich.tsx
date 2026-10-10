@@ -16,7 +16,7 @@ import { zapisEditora, zapisZPayloadu } from "@/lib/editorStat";
 import { EditorOznameni, type EditorApi, type PayloadEditora } from "@/components/EditorOznameni";
 import { nacitajStav, ulozStav } from "@/features/viera/stav";
 import { TESTOVACIA } from "@/lib/testovacia";
-import { nacitajOverenie, overenieZPamate, useZmenyOverenia } from "@/lib/overenieUctu";
+import { nacitajOverenie, overenieZPamate, useZmenyOverenia, poziadajOverenie, OVERENIE_CFG } from "@/lib/overenieUctu";
 import { usePouzivatel } from "@/lib/pouzivatel";
 import { useVzhlad } from "@/lib/vzhladStranky";
 import { pridajPrispevok, upravPrispevok, vlastnePrispevkyVsetky, type VieraFeedItem } from "@/features/viera/mock";
@@ -82,7 +82,9 @@ export function ZbierkaSOverovatelom({ stranka, menoFarnosti, ucetFarnosti, mobi
   // OPRAVY 198: naostro sa bez overeného účtu namiesto zapečatenia ukáže karta Overiť účet (testovacia verzia pustí)
   useZmenyOverenia();
   useEffect(() => { void nacitajOverenie(stranka, ucetFarnosti); }, [stranka, ucetFarnosti]);
-  const ucetOk = TESTOVACIA || overenieZPamate(stranka, ucetFarnosti)?.stav === "overeny";
+  const overenie = overenieZPamate(stranka, ucetFarnosti);
+  const ucetOk = TESTOVACIA || overenie?.stav === "overeny";
+  const [overOtv, setOverOtv] = useState(false);
   const [druh, setDruh] = useState<Druh>("pohreb");
   const T = PZT[druh];
   const farV = menoFarnosti.toLocaleUpperCase("sk-SK");
@@ -494,7 +496,14 @@ export function ZbierkaSOverovatelom({ stranka, menoFarnosti, ucetFarnosti, mobi
         </> : <div role="alert" style={{ borderRadius: 16, background: "var(--goldBg)", border: "2px solid #C9A24A", padding: "14px 16px", display: "flex", flexDirection: "column", gap: 8 }}>
           <b style={{ fontSize: 16 }}>Účet ešte nie je overený</b>
           <span style={{ fontSize: 14, lineHeight: 1.5, color: "var(--ink2)", whiteSpace: "normal" }}>Zbierku zapečatíte, keď overíme účet farnosti. Stačí poslať 0,01 € s kódom.</span>
-          <button type="button" onClick={onOverit} style={{ ...tlZ, alignSelf: "flex-start" }}>Overiť účet ›</button>
+          {/* overenie priamo tu — po overení sa na tomto mieste ukáže Podržte a zapečaťte (krok 4 ostáva) */}
+          {!overOtv ? <button type="button" onClick={() => { setOverOtv(true); void poziadajOverenie(stranka, ucetFarnosti); }} style={{ ...tlZ, alignSelf: "flex-start" }}>Overiť účet ›</button>
+            : <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: "12px 14px", borderRadius: 14, background: "var(--card)", border: "1px solid var(--cardBd)" }}>
+                <span style={{ fontSize: 14.5, lineHeight: 1.5, whiteSpace: "normal" }}>Z účtu <b style={{ overflowWrap: "anywhere" }}>{ucetFarnosti}</b> pošlite {OVERENIE_CFG.suma} na účet <b style={{ overflowWrap: "anywhere" }}>{OVERENIE_CFG.ucetDeed}</b> so správou <b>{overenie?.kod ?? "…"}</b>.</span>
+                <span style={{ fontSize: 13.5, color: "var(--ink3)", whiteSpace: "normal" }}>Keď platba príde, účet overíme a tu sa ukáže Podržte a zapečaťte. Zbierka zatiaľ čaká v kroku 4.</span>
+                <button type="button" onClick={() => void nacitajOverenie(stranka, ucetFarnosti)} style={{ ...tlO, alignSelf: "flex-start" }}>Skontrolovať znova</button>
+                {onOverit && <button type="button" onClick={onOverit} style={{ ...tlO, alignSelf: "flex-start" }}>Účty farnosti ›</button>}
+              </div>}
         </div>}
       </section>)}
 

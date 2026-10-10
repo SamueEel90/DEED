@@ -12,12 +12,9 @@ import { nacitajStav, ulozStav } from "@/features/viera/stav";
 import { odFarnikov, pocetyOdVeriacich, useOdFarnikov, useCerstveOdFarnikov } from "@/lib/odFarnikov";
 import { OdVeriacich } from "./OdVeriacich";
 import { OmseKalendar, TyzdenVPrehlade } from "./OmseKalendar";
-import { PrihovorNaStranke } from "@/features/verejny-profil/PrihovorNaStranke";
 import { OznamyFarnosti } from "./OznamyFarnosti";
 import { nedelneOmse } from "@/lib/kalendarFarnosti";
-import { NahladFarnosti, nahladPopis } from "./NahladFarnosti";
-import { useVzhlad } from "@/lib/vzhladStranky";
-import { VzhladStranky } from "./VzhladStranky";
+import { NastenkaFarnosti } from "@/features/verejny-profil/NastenkaFarnosti";
 import { TlacidloNastavenia, LogoKarty, QrKarta } from "./spravaCasti";
 import { odkazQrStranky, otvorVerejnyProfil } from "@/features/verejny-profil/otvor";
 import { UpravitProfilCharity } from "./UpravitProfilCharity";
@@ -166,7 +163,6 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
   // Verejný profil = živá stránka farnosti (NastenkaFarnosti so zeleným + a zbierkami), nie zjednodušený Náhľad
   const verejny = () => otvorVerejnyProfil(strankaId);
   const test = testPas?.(verejny);
-  const vz = useVzhlad(strankaId, false);
   const mobil = !desktop;
   const telefon = mobil && !tablet;
   // KARTA 56I · 57 B.4: čo pridali veriaci — počet pri „Od veriacich" (úmysly idú len farárovi, nerátajú sa)
@@ -438,7 +434,7 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
     </section>}
     {pinVyber && <PripnutieVyber strankaId={strankaId} mobil={mobil} onSpat={() => { setPinVyber(false); setZbVyber(true); }}
       onHotovo={(t) => { setPinVyber(false); setNoveOk(t); window.scrollTo({ top: 0, behavior: "smooth" }); }} />}
-    {pz && <ZbierkaSOverovatelom stranka={strankaId} menoFarnosti={meno} ucetFarnosti={hlavnyUcet} mobil={mobil} pc={desktop} toast={toast} onZavri={() => setPz(false)} spatRef={pzSpat} onSpatText={setPzT} onOverit={() => { setPz(false); go("hlavna"); }}
+    {pz && <ZbierkaSOverovatelom stranka={strankaId} menoFarnosti={meno} ucetFarnosti={hlavnyUcet} mobil={mobil} pc={desktop} toast={toast} onZavri={() => setPz(false)} spatRef={pzSpat} onSpatText={setPzT}
       onHotovo={(_z, t) => { setPz(false); setNoveOk(t); window.scrollTo({ top: 0, behavior: "smooth" }); }} />}
     {/* KARTA 56E §2: kým beží tvorba (výber druhu alebo postup), zoznam zbierok sa nezobrazuje */}
     {!zbVyber && !pz && !pinVyber && <>
@@ -570,13 +566,15 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
   // KARTA 56D §4: Upraviť profil = modul z charity (profil_stranky: koncept sa ukladá sám, Uložiť zverejní)
   const profil = <UpravitProfilCharity farnost strankaId={strankaId} pozicia="charita" tier={4} nazov={cistyNazov(nazov) || "Vaša farnosť"} inicialy="" mobil={mobil} tablet={tablet} stit="silver"
     onZmena={setKoncept} onUlozene={(pr) => { setProf({ koncept: null, konceptCas: null, ulozeny: pr }); setKoncept(null); }}
-    onZrusit={() => { setKoncept(null); go("prehlad"); }} onHotovo={() => { setKoncept(null); go("prehlad"); }}
-    vzhlad={<VzhladStranky strankaId={strankaId} zadarmo={false} kto="ľudia" sektor="farnost" />} />;
-  const nahlad = <NahladFarnosti prihovor={(sv) => <PrihovorNaStranke strankaId={strankaId} svetly={sv} />} profil={prof.ulozeny} meno={cistyNazov(prof.ulozeny?.meno ?? nazov) || "Vaša farnosť"} vzhlad={vz} mobil={mobil && !tablet} hore={
+    onZrusit={() => { setKoncept(null); go("prehlad"); }} onHotovo={() => { setKoncept(null); go("prehlad"); }} />; // OPRAVY 202: bez výberu vzhľadu, farnosť je vždy Nástenka
+  // OPRAVY 202: náhľad v Správe = Nástenka (živá stránka farnosti)
+  const nahlad = <>
     <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
       <button type="button" onClick={() => go("profil")} style={{ height: 44, padding: "0 16px", borderRadius: 13, border: "1px solid var(--cardBd)", background: "var(--card)", cursor: "pointer", fontFamily: "inherit", fontSize: 15, fontWeight: 800, color: "var(--ink)", boxShadow: "none" }}>‹ Späť na úpravu</button>
-      <span style={{ fontSize: 14, color: "var(--ink3)" }}>{nahladPopis(vz)}</span>
-    </div>} />;
+      <span style={{ fontSize: 14, color: "var(--ink3)" }}>Náhľad · zobrazené je len to, čo ste vyplnili</span>
+    </div>
+    <div style={{ borderRadius: 18, overflow: "hidden", border: "1px solid var(--cardBd)" }}><NastenkaFarnosti strankaId={strankaId} meno={cistyNazov(prof.ulozeny?.meno ?? nazov) || "Vaša farnosť"} profil={prof.ulozeny} stit="Silver" /></div>
+  </>;
 
   // KARTA 56B: hlavnú zbierku nejde zmazať, kým beží zbierka farnosti (na jej účet). Zbierky pre veriacich od nej nezávisia (OPRAVY 161).
   const ostatneBezia = dalsie.some((z) => (z.farnost?.druh ?? "farnost") === "farnost" && z.stav !== "ukoncena" && z.stav !== "vyuctovana");

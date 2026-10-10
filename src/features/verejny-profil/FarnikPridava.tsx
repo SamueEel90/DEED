@@ -441,7 +441,7 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
   const nahlad = (obsah: ReactNode) => (
     <div style={{ position: "sticky", top: 0, zIndex: 2, display: "flex", flexDirection: "column", gap: 6, padding: "8px 0 10px", background: "var(--bg)" }}>
       <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".08em", color: "var(--ink3)" }}>NÁHĽAD · TAKTO TO UVIDIA ĽUDIA</span>
-      <div style={{ maxHeight: 260, overflowY: "auto", padding: 12, borderRadius: 16, background: "var(--card)", border: "1px solid var(--cardBd)", display: "flex", flexDirection: "column", gap: 6 }}>{obsah}</div>
+      <div style={{ maxHeight: mobil ? 110 : 260, overflowY: "auto", padding: mobil ? 8 : 12, borderRadius: 16, background: "var(--card)", border: "1px solid var(--cardBd)", display: "flex", flexDirection: "column", gap: 6 }}>{obsah}</div>
     </div>);
   const prvaF = fotky[0]?.src;
 
@@ -456,6 +456,21 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
         <span style={{ fontSize: 13.5, color: "var(--ink3)", marginTop: -6 }}>Potom oznam zo stránky sám zmizne.</span>
       </>}
       {k === "udalost" && <>
+        {/* OPRAVY 201: na mobile malý pás v jednom riadku (najviac ~150 px), zvyšok obrazovky je na písanie */}
+        {mobil ? <div style={{ position: "sticky", top: -8, zIndex: 3, margin: "-8px -16px 0", padding: "8px 16px 10px", background: "var(--bg)", boxShadow: "0 10px 14px -12px rgba(0,0,0,.4)", display: "flex", flexDirection: "column", gap: 6 }}>
+          <span style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: ".1em", color: "var(--ink3)" }}>NÁHĽAD · PRÍĎ A ZAŽI S NAMI</span>
+          <div style={{ display: "flex", gap: 10, borderRadius: 14, overflow: "hidden", background: "var(--nf-karta)", color: "var(--nf-ink)" }}>
+            <div style={{ position: "relative", flex: "none", width: 104, height: 84, background: prvaF ? `url("${prvaF}") center/cover no-repeat var(--nf-pas)` : "var(--nf-pas)" }}>
+              {udD && <span style={{ position: "absolute", left: 6, top: 6, width: 40, height: 44, borderRadius: 9, background: "#fff", color: "#14110B", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}><b style={{ fontSize: 16, lineHeight: 1 }}>{udD.getDate()}.</b><span style={{ fontSize: 9.5, fontWeight: 800 }}>{["JAN", "FEB", "MAR", "APR", "MÁJ", "JÚN", "JÚL", "AUG", "SEP", "OKT", "NOV", "DEC"][udD.getMonth()]}</span></span>}
+            </div>
+            <div style={{ flex: 1, minWidth: 0, padding: "6px 10px 6px 0", display: "flex", flexDirection: "column", gap: 2, overflow: "hidden" }}>
+              <span style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: ".06em", color: "var(--nf-zlata)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{([udD ? `${DNI_W[udD.getDay()]} ${udD.getDate()}. ${udD.getMonth() + 1}.` : "", CAS_OK(dokonciCas(f.cas)) ? pekny(dokonciCas(f.cas)) : "", f.kde.trim()].filter(Boolean).join(" · ") || "Dátum · čas · miesto").toLocaleUpperCase("sk-SK")}</span>
+              <b style={{ fontSize: 14.5, lineHeight: 1.2, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{f.nad.trim() || "Názov udalosti"}</b>
+              {cistyText(f.txt) && <span style={{ fontSize: 12.5, color: "var(--nf-ink2)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{cistyText(f.txt)}</span>}
+              {pz > 0 && <span style={{ alignSelf: "flex-start", height: 30, padding: "0 10px", borderRadius: 9, background: "var(--nf-plne)", color: "var(--nf-plneInk)", fontSize: 12.5, fontWeight: 800, display: "flex", alignItems: "center" }}>{pozvBtnT}</span>}
+            </div>
+          </div>
+        </div> : <>
         {/* KARTA 57C §2: náhľad = karta ako na stránke (Príď a zaži s nami) */}
         <div style={{ position: "sticky", top: -8, zIndex: 3, margin: "-8px -16px 0", padding: "10px 16px 12px", background: "var(--bg)", boxShadow: "0 10px 14px -12px rgba(0,0,0,.4)", display: "flex", flexDirection: "column", gap: 6 }}>
           <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".1em", color: "var(--ink3)" }}>NÁHĽAD · TAKTO TO BUDE NA STRÁNKE · PRÍĎ A ZAŽI S NAMI</span>
@@ -472,6 +487,7 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
           </div>
           <span style={{ fontSize: 12.5, color: "var(--ink3)" }}>Zo stránky zmizne sama deň po udalosti.</span>
         </div>
+        </>}
         {vstup("NÁZOV UDALOSTI", "nad", "napr. Púť do Levoče")}
         <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1.3fr) minmax(0,1fr)", gap: 10 }}>
           {vstup("DÁTUM", "datum", "", { type: "date", min: dnesIso() })}
@@ -525,10 +541,10 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
   // KARTA 57C §2: formulár nad stránkou — hore „‹ Späť na stránku farnosti", stránka presvitá
   const spat = () => { if (jeEd && !hotovo && edRef.current?.krokSpat()) return; spatNaStranku(); };
   const okno = k && createPortal(
-    <div role="dialog" aria-modal="true" aria-label={T?.t} style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(20,17,11,.82)", display: "flex", flexDirection: "column", alignItems: "center", gap: 12, padding: mobil ? "calc(10px + env(safe-area-inset-top, 0px)) 10px 10px" : 16, boxSizing: "border-box" }}>
+    <div role="dialog" aria-modal="true" aria-label={T?.t} style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(20,17,11,.82)", display: "flex", flexDirection: "column", alignItems: "center", gap: mobil ? 10 : 12, padding: mobil ? "calc(10px + env(safe-area-inset-top, 0px)) 10px 10px" : 16, boxSizing: "border-box" }}>
       <div style={{ width: "100%", maxWidth: jeEd ? 1200 : 520, flex: "none", display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-        <button type="button" onClick={spat} style={{ minHeight: 52, padding: "0 20px", border: "none", borderRadius: 14, background: ZELENA, color: "#fff", cursor: "pointer", fontFamily: "inherit", fontSize: 17, fontWeight: 800 }}>‹ Späť na stránku farnosti</button>
-        {!um && <span style={{ flex: "1 1 160px", fontSize: 14.5, lineHeight: 1.4, color: "#E8E1D3" }}>Po zverejnení sa vrátite sem a ukážeme vám, kde to je.</span>}
+        {/* OPRAVY 201: nad oknom len Späť (mobil 44 px, 15 px), okno hneď pod ním */}
+        <button type="button" onClick={spat} style={{ minHeight: mobil ? 44 : 52, padding: mobil ? "0 16px" : "0 20px", border: "none", borderRadius: mobil ? 12 : 14, background: ZELENA, color: "#fff", cursor: "pointer", fontFamily: "inherit", fontSize: mobil ? 15 : 17, fontWeight: 800 }}>‹ Späť na stránku farnosti</button>
       </div>
       <div className="sc-tokeny" style={{ position: "relative", flex: 1, minHeight: 0, width: "100%", maxWidth: jeEd ? 1200 : 520, borderRadius: 20, overflow: "hidden", background: "var(--bg)", color: "var(--ink)", display: "flex", flexDirection: "column" }}>
         <div style={{ flex: "none", padding: "14px 16px 10px", borderBottom: "1px solid var(--cardBd)" }}><b style={{ fontSize: 19 }}>{edId ? `Upraviť · ${T?.t ?? ""}` : T?.t}</b></div>
