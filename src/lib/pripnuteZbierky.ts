@@ -13,10 +13,11 @@ import { darcoviaPre, sucetDarov, useZmenyDarov, type DarRiadok } from "./darcov
 import { TESTOVACIA } from "./testovacia";
 
 export interface ZbierkaNaPripnutie { id: string; nazov: string; stranka: string; kto: string; zdroj: "charita" | "help"; ciel: number | null; vyzbierane: number; darov: number;
-  /** OPRAVY 199: ukážková zbierka testovacej verzie — darovať sa na ňu nedá */ ukazkova?: true }
+  /** OPRAVY 199: ukážková zbierka testovacej verzie — darovať sa na ňu nedá */ ukazkova?: true;
+  /** titulná fotka */ foto?: string }
 
 /** OPRAVY 199: skúšobná zbierka inej charity — len v testovacej verzii, naostro nikde */
-export const UKAZKOVA_ZBIERKA: ZbierkaNaPripnutie = { id: "ukazka-teple-jedlo", nazov: "Teplé jedlo pre ľudí bez domova", stranka: "", kto: "Skúšobná charita", zdroj: "charita", ciel: 2000, vyzbierane: 640, darov: 12, ukazkova: true };
+export const UKAZKOVA_ZBIERKA: ZbierkaNaPripnutie = { id: "ukazka-teple-jedlo", nazov: "Teplé jedlo pre ľudí bez domova", stranka: "", kto: "Skúšobná charita", zdroj: "charita", ciel: 2000, vyzbierane: 640, darov: 12, ukazkova: true, foto: "/img/dom.jpg" };
 const KLUC_UK = "deed.pripnute.ukazka.v1";
 const ukCitaj = (): string[] => { try { return JSON.parse(localStorage.getItem(KLUC_UK) ?? "[]") as string[]; } catch { return []; } };
 const ukZapis = (v: string[]) => { try { localStorage.setItem(KLUC_UK, JSON.stringify(v)); } catch { /* LS */ } };

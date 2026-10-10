@@ -330,7 +330,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, stit: s
           {zvOn && <ZvoncekKarta strankaId={strankaId} onTap={(id, t) => onDetail({ id, nazov: t, popis: "Ako do zvončeka pri omši. Dar ide farnosti.", overena: true, organizacia: orgPole }, { typ: "zv", chip: "ZVONČEKOVÁ ZBIERKA", t, txt: "Ako do zvončeka pri omši. Dar ide farnosti." })} />}
           {zbFar.map((z) => <ZbierkaKarta key={z.id} z={z} onTap={() => otvorZbierku(z)} />)}
           {piny.map((z) => <PripnutaKarta key={z.id} z={z} onTap={() => onDetail({ id: z.id, nazov: z.nazov, popis: "", overena: true, ciel: z.ciel ?? undefined, media: [], organizacia: { ...orgPole, meno: z.kto, obrazok: undefined } },
-            { typ: "pin", chip: chipPripnutej(z), t: z.nazov, txt: "", pin: z })} />)}
+            { typ: "pin", chip: chipPripnutej(z), t: z.nazov, txt: "", pin: z, obr: z.foto })} />)}
           {zbIne.map((z) => <button key={z.id} type="button" onClick={() => otvorZbierku(z)} style={{ textAlign: "left", border: "none", borderRadius: 22, background: KARTA, borderLeft: `5px solid ${FIALOVA}`, padding: "16px 18px 18px", display: "flex", flexDirection: "column", gap: 8, color: INK, cursor: "pointer", fontFamily: "inherit" }}>
             <span style={kicker(FIALOVA)}>ZBIERKA RODINY</span><b style={{ fontSize: 20, lineHeight: 1.25 }}>{bezPredpony(z.nazov) || "Zbierka"}</b><span style={{ fontSize: 16, color: INK2 }}>Peniaze idú: rodine · Prispieť ›</span>
           </button>)}
@@ -650,10 +650,13 @@ function ZvoncekKarta({ strankaId, onTap }: { strankaId: string; onTap: (id: str
 function PripnutaKarta({ z, onTap }: { z: ZbierkaNaPripnutie; onTap: () => void }) {
   const c = farbaPripnutej(z);
   return (
-    <button type="button" onClick={onTap} style={{ textAlign: "left", border: "none", borderRadius: 22, background: KARTA, borderLeft: `5px solid ${c}`, padding: "16px 18px 18px", display: "flex", flexDirection: "column", gap: 8, color: INK, cursor: "pointer", fontFamily: "inherit" }}>
+    <button type="button" onClick={onTap} style={{ textAlign: "left", border: "none", borderRadius: 22, overflow: "hidden", background: KARTA, borderLeft: `5px solid ${c}`, padding: 0, display: "flex", flexDirection: "column", color: INK, cursor: "pointer", fontFamily: "inherit" }}>
+      {z.foto && <img src={z.foto} alt="" style={{ width: "100%", aspectRatio: "16 / 9", objectFit: "cover", display: "block" }} />}
+      <span style={{ padding: "16px 18px 18px", display: "flex", flexDirection: "column", gap: 8 }}>
       <span style={{ ...kicker(c), overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "100%" }}>{chipPripnutej(z)}</span>
       <b style={{ fontSize: 20, lineHeight: 1.25 }}>{z.nazov}</b>
       <span style={{ fontSize: 16, color: INK2 }}>{z.darov ? `${eur(z.vyzbierane)}${z.ciel ? ` z ${eur(z.ciel)}` : ""} · ` : ""}Peniaze idú: {z.kto}</span>
+      </span>
     </button>);
 }
 
