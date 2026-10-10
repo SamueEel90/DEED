@@ -332,7 +332,8 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, stit: s
       {maPrid && <div data-blok="prid" style={blokStyl()}>
         {lavyStlpec("Príď a zaži s nami", "Pozývame vás. Ťuknite Prídem, nech vieme, s koľkými rátať. Fotky z akcií sú tu tiež.")}
         <div style={{ flex: "999 1 520px", minWidth: 0, display: "flex", flexDirection: "column", gap: 16 }}>
-          {udalosti.length > 0 && <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(290px,1fr))", gap: 16 }}>
+          {/* OPRAVY 193: karta najviac 420 px, fotky z akcií v tej istej mriežke */}
+          {(udalosti.length > 0 || alba.length > 0) && <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(260px,420px))", gap: 16, alignItems: "start" }}>
             {udalosti.map((u) => { const d = u.dat ? zIso(u.dat) : null; return (
               <div key={u.id} style={{ borderRadius: 24, overflow: "hidden", background: KARTA, display: "flex", flexDirection: "column" }}>
                 {u.foto && u.plag ? <button type="button" onClick={() => setVelke({ src: u.foto })} aria-label="Plagát na celú obrazovku" style={{ width: "100%", aspectRatio: "3 / 4", border: "none", padding: 0, background: "#D9D3C7", cursor: "zoom-in", display: "block" }}><img src={u.foto} alt="Plagát" style={{ width: "100%", height: "100%", objectFit: "contain", display: "block" }} /></button>
@@ -350,16 +351,11 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, stit: s
                   {u.mojeX && <MenuPrispevku x={u.mojeX} strankaId={strankaId} kto={kto} moje={false} />}
                 </div>
               </div>); })}
-          </div>}
-          {alba.length > 0 && <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            <span style={kicker()}>FOTKY Z AKCIÍ</span>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(220px,1fr))", gap: 14 }}>
-              {alba.map((a) => { const f = a.fotky!.find(ziveObr)!; return (
+            {alba.map((a) => { const f = a.fotky!.find(ziveObr)!; return (
                 <button key={a.id} type="button" onClick={() => setAlbum(a)} style={{ textAlign: "left", border: "none", padding: 0, borderRadius: 18, overflow: "hidden", background: KARTA, display: "flex", flexDirection: "column", cursor: "pointer", color: INK, fontFamily: "inherit" }}>
                   <span style={{ position: "relative", display: "block", width: "100%", aspectRatio: "4 / 3", background: "#D9D3C7", overflow: "hidden" }}><img src={f} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} /><span style={{ position: "absolute", right: 10, bottom: 10, padding: "3px 9px", borderRadius: 7, background: "rgba(20,17,11,.78)", color: "#fff", fontSize: 14, fontWeight: 700 }}>{fotiek(a.fotky!.length)}</span></span>
                   <span style={{ padding: "12px 14px 14px", display: "flex", flexDirection: "column", gap: 3 }}><b style={{ fontSize: 17, lineHeight: 1.25 }}>{a.t || "Fotky z akcie"}</b><span style={{ fontSize: 14.5, color: INK3 }}>{autor(a)}</span></span>
                 </button>); })}
-            </div>
           </div>}
         </div>
       </div>}
