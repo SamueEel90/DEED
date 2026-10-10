@@ -440,7 +440,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, stit: s
                 <b style={{ fontSize: 21, lineHeight: 1.25 }}>{x.t}</b>
                 {!src && x.s && <span style={{ fontSize: 16.5, lineHeight: 1.5, color: INK2, whiteSpace: "pre-line" }}>{x.s}</span>}
                 {reakcia({ ...reakV(x, "blaho"), t: "Blahoželám", tJa: "Blahoželáte ✓", poc: (n) => String(n) })}
-                <MenuPrispevku x={x} strankaId={strankaId} kto={kto} moje={false} />
+                <MenuPrispevku x={x} strankaId={strankaId} kto={kto} moje={moje(x)} />
               </div>
             </div>); })}
           {zbSvadba.map((z) => (
