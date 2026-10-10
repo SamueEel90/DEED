@@ -2,9 +2,12 @@
 // SPRÁVA ZBIERKY — stav, predĺženie, topovanie, dokladovanie (pravidlá + mock úložisko)
 // Jeden zdroj pravdy pre správu aj verejný profil: najdiZbierku() v lib/zbierky
 // si odtiaľto berie stav (aktívna/ukončená) a zverejnené dokladovanie.
-// Všetky čísla = KONFIG (placeholder, ladí Martin). Perzistencia = localStorage.
+// Všetky čísla = KONFIG (placeholder, ladí Martin). Perzistencia = zbierka_sprava (0083b, jsonb na zbierku), localStorage = cache.
 // ============================================================
 import { useSyncExternalStore } from "react";
+import { supabase } from "./supabase";
+import { bezDataUrl } from "./uploadFoto";
+import { toast } from "@/components/toast";
 
 export const SPRAVA_ZBIERKY_CFG = {
   /** štandardná dĺžka zbierky (kalendárne dni) */
@@ -124,11 +127,49 @@ const subscribe = (f: () => void) => { posluchaci.add(f); return () => posluchac
 export function useZmenySpravy(): number { return useSyncExternalStore(subscribe, () => verzia); }
 
 export function nacitajStav(id: string): StavZbierky | null {
+  void stiahni(id);
   try { const s = localStorage.getItem(KLUC(id)); return s ? (JSON.parse(s) as StavZbierky) : null; } catch { return null; }
 }
-export function ulozStav(id: string, s: StavZbierky) {
+function ulozLokalne(id: string, s: StavZbierky) {
   try { localStorage.setItem(KLUC(id), JSON.stringify(s)); } catch { /* LS nedostupné */ }
   verzia++; posluchaci.forEach((f) => f());
+}
+export function ulozStav(id: string, s: StavZbierky) {
+  ulozLokalne(id, s);
+  naplanujZapis(id);
+}
+
+// ---- server (0083b): stiahne sa pri prvom čítaní, zápis s oneskorením (Správa ukladá často) ----
+const stiahnute = new Set<string>();
+const ceka = new Set<string>(); // lokálna zmena ešte neodišla → server ju neprepíše
+async function stiahni(id: string) {
+  if (!supabase || stiahnute.has(id)) return;
+  stiahnute.add(id);
+  const { data, error } = await supabase.from("zbierka_sprava").select("data").eq("zbierka", id).maybeSingle();
+  if (error) { stiahnute.delete(id); return; } // tabuľka ešte nebeží → len lokálne
+  if (data?.data && !ceka.has(id)) ulozLokalne(id, data.data as StavZbierky);
+}
+const casovace = new Map<string, ReturnType<typeof setTimeout>>();
+function naplanujZapis(id: string) {
+  if (!supabase) return;
+  ceka.add(id);
+  clearTimeout(casovace.get(id));
+  casovace.set(id, setTimeout(() => { casovace.delete(id); void zapis(id); }, 1000));
+}
+async function zapis(id: string) {
+  if (!supabase) return;
+  let povodny: StavZbierky | null = null;
+  try { povodny = JSON.parse(localStorage.getItem(KLUC(id)) || "null") as StavZbierky | null; } catch { /* LS */ }
+  if (!povodny) { ceka.delete(id); return; }
+  try {
+    const obsah = await bezDataUrl(povodny, "zbierky"); // fotky → Storage, v DB len URL
+    const { error } = await supabase.from("zbierka_sprava").upsert({ zbierka: id, data: obsah }, { onConflict: "zbierka" });
+    if (error) throw error;
+    if (!casovace.has(id)) { ceka.delete(id); if (obsah !== povodny) ulozLokalne(id, obsah); }
+  } catch {
+    ceka.delete(id);
+    toast("Správu zbierky sa nepodarilo uložiť na server — je len na tomto zariadení.");
+  }
 }
 
 // ---- výpočty ----
