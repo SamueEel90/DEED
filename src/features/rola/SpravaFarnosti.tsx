@@ -438,7 +438,7 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
     </section>}
     {pinVyber && <PripnutieVyber strankaId={strankaId} mobil={mobil} onSpat={() => { setPinVyber(false); setZbVyber(true); }}
       onHotovo={(t) => { setPinVyber(false); setNoveOk(t); window.scrollTo({ top: 0, behavior: "smooth" }); }} />}
-    {pz && <ZbierkaSOverovatelom stranka={strankaId} menoFarnosti={meno} ucetFarnosti={hlavnyUcet} mobil={mobil} pc={desktop} toast={toast} onZavri={() => setPz(false)} spatRef={pzSpat} onSpatText={setPzT}
+    {pz && <ZbierkaSOverovatelom stranka={strankaId} menoFarnosti={meno} ucetFarnosti={hlavnyUcet} mobil={mobil} pc={desktop} toast={toast} onZavri={() => setPz(false)} spatRef={pzSpat} onSpatText={setPzT} onOverit={() => { setPz(false); go("hlavna"); }}
       onHotovo={(_z, t) => { setPz(false); setNoveOk(t); window.scrollTo({ top: 0, behavior: "smooth" }); }} />}
     {/* KARTA 56E §2: kým beží tvorba (výber druhu alebo postup), zoznam zbierok sa nezobrazuje */}
     {!zbVyber && !pz && !pinVyber && <>

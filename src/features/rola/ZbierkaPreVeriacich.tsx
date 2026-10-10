@@ -16,6 +16,7 @@ import { zapisEditora, zapisZPayloadu } from "@/lib/editorStat";
 import { EditorOznameni, type EditorApi, type PayloadEditora } from "@/components/EditorOznameni";
 import { nacitajStav, ulozStav } from "@/features/viera/stav";
 import { TESTOVACIA } from "@/lib/testovacia";
+import { nacitajOverenie, overenieZPamate, useZmenyOverenia } from "@/lib/overenieUctu";
 import { usePouzivatel } from "@/lib/pouzivatel";
 import { useVzhlad } from "@/lib/vzhladStranky";
 import { pridajPrispevok, upravPrispevok, vlastnePrispevkyVsetky, type VieraFeedItem } from "@/features/viera/mock";
@@ -70,13 +71,18 @@ function QrVelky({ data, zostava, onZavri }: { data: string; zostava: number; on
     </div>, document.body);
 }
 
-export function ZbierkaSOverovatelom({ stranka, menoFarnosti, ucetFarnosti, mobil, pc = !mobil, toast, onZavri, onHotovo, spatRef, onSpatText }: {
+export function ZbierkaSOverovatelom({ stranka, menoFarnosti, ucetFarnosti, mobil, pc = !mobil, toast, onZavri, onHotovo, spatRef, onSpatText, onOverit }: {
   stranka: string; menoFarnosti: string; ucetFarnosti: string; mobil: boolean; /** KARTA 57 A.3: PC = editor v stránke, mobil a tablet = na celú obrazovku */ pc?: boolean; toast: (m: string) => void;
   onZavri: () => void; onHotovo: (z: SpustenaZbierka, sprava: string) => void;
   /** KARTA 57 A.1: horné ‹ Späť Správy sa pýta zbierky */ spatRef?: { current: SpatZbierky | null };
+  /** OPRAVY 198: otvorí overenie účtu farnosti */ onOverit?: () => void;
   /** OPRAVY 185: text horného Späť Správy („Späť na krok 2“, „Späť na výber parte“; prázdny = zavrie zbierku) */ onSpatText?: (t: string) => void;
 }) {
   const [krok, setKrok] = useState(1);
+  // OPRAVY 198: naostro sa bez overeného účtu namiesto zapečatenia ukáže karta Overiť účet (testovacia verzia pustí)
+  useZmenyOverenia();
+  useEffect(() => { void nacitajOverenie(stranka, ucetFarnosti); }, [stranka, ucetFarnosti]);
+  const ucetOk = TESTOVACIA || overenieZPamate(stranka, ucetFarnosti)?.stav === "overeny";
   const [druh, setDruh] = useState<Druh>("pohreb");
   const T = PZT[druh];
   const farV = menoFarnosti.toLocaleUpperCase("sk-SK");
@@ -477,13 +483,19 @@ export function ZbierkaSOverovatelom({ stranka, menoFarnosti, ucetFarnosti, mobi
       </div> : <section key="zapecatit" role="status" style={{ borderRadius: 18, background: "var(--gSoft)", border: "2px solid var(--green)", padding: "16px 18px", display: "flex", flexDirection: "column", gap: 10 }}>
         <b style={{ fontSize: 17, color: "var(--gInk)" }}>{T.kto} potvrdil rozdelenie ✓</b>
         <span style={{ fontSize: 14.5, lineHeight: 1.5, color: "var(--ink)" }}>{velke(rozdelenieT)}. Posledný krok: zapečaťte zbierku. Potom sa spustí a rozdelenie sa už nedá zmeniť.</span>
-        <button type="button" onPointerDown={(e) => { e.preventDefault(); zacni(); }} onPointerUp={pusti} onPointerLeave={pusti} onPointerCancel={pusti} onContextMenu={(e) => e.preventDefault()}
+{ucetOk ? <>
+                <button type="button" onPointerDown={(e) => { e.preventDefault(); zacni(); }} onPointerUp={pusti} onPointerLeave={pusti} onPointerCancel={pusti} onContextMenu={(e) => e.preventDefault()}
           onKeyDown={(e) => { if ((e.key === "Enter" || e.key === " ") && !e.repeat) { e.preventDefault(); zacni(); } }} onKeyUp={(e) => { if (e.key === "Enter" || e.key === " ") pusti(); }}
           style={{ position: "relative", height: 58, border: "none", borderRadius: 16, background: "#3F6E2A", overflow: "hidden", cursor: "pointer", touchAction: "none", userSelect: "none", fontFamily: "inherit" } as CSSProperties}>
           <span style={{ position: "absolute", inset: 0, background: "#6E9F4E", transformOrigin: "0 50%", transform: `scaleX(${drz ? 1 : 0})`, transition: `transform ${drz ? "1.5s" : ".2s"} linear` }} />
           <span style={{ position: "relative", fontSize: 16, fontWeight: 800, color: "#fff" }}>{drz ? "Držte…" : "Podržte a zapečaťte"}</span>
         </button>
-        <span style={{ fontSize: 13, color: "var(--ink3)", textAlign: "center" }}>Po zapečatení sa rozdelenie už nedá zmeniť. Držte prst na tlačidle, kým sa nenaplní.</span>
+        <span style={{ fontSize: 13, lineHeight: 1.45, color: "var(--ink3)", textAlign: "center", whiteSpace: "normal", overflowWrap: "anywhere" }}>Po zapečatení sa rozdelenie už nedá zmeniť. Držte prst na tlačidle, kým sa nenaplní.</span>
+        </> : <div role="alert" style={{ borderRadius: 16, background: "var(--goldBg)", border: "2px solid #C9A24A", padding: "14px 16px", display: "flex", flexDirection: "column", gap: 8 }}>
+          <b style={{ fontSize: 16 }}>Účet ešte nie je overený</b>
+          <span style={{ fontSize: 14, lineHeight: 1.5, color: "var(--ink2)", whiteSpace: "normal" }}>Zbierku zapečatíte, keď overíme účet farnosti. Stačí poslať 0,01 € s kódom.</span>
+          <button type="button" onClick={onOverit} style={{ ...tlZ, alignSelf: "flex-start" }}>Overiť účet ›</button>
+        </div>}
       </section>)}
 
       {krok === 5 && z && <>
