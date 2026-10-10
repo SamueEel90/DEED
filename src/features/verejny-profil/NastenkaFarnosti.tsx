@@ -393,7 +393,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, stit: s
       {/* ---------- Spomíname ---------- */}
       {maSpom && <div data-blok="spom" style={blokStyl("#E7E2D8")}>
         {lavyStlpec("Spomíname", "Parte a spomienky. Úprimnú sústrasť aj príspevok rodine.")}
-        <div style={{ flex: "999 1 520px", minWidth: 0, display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(300px,1fr))", gap: 16, alignItems: "start" }}>
+        <div style={{ flex: "999 1 520px", minWidth: 0, display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(220px,280px))", gap: 16, alignItems: "start" }}>{/* OPRAVY 195: parte najviac 280 px */}
           {parteFar.map((x) => { const src = obrFar(x), sab = sablonaFar(x); return (
             <div key={x.id} style={{ border: "3px solid #14110B", background: PAPIER, display: "flex", flexDirection: "column" }}>
               {src || sab ? obrazokOznamu({ src: src, it: x, pomer: "3 / 4", maxH: 460, label: "Parte", onTap: () => setVelke(src ? { src } : { it: x }) })
@@ -421,7 +421,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, stit: s
       {/* ---------- Teš sa s nami ---------- */}
       {maTes && <div data-blok="tes" style={blokStyl()}>
         {lavyStlpec("Teš sa s nami", "Svadby, jubileá a poďakovania. Ťuknite Blahoželám.")}
-        <div style={{ flex: "999 1 520px", minWidth: 0, display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(260px,1fr))", gap: 16, alignItems: "start" }}>
+        <div style={{ flex: "999 1 520px", minWidth: 0, display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(220px,280px))", gap: 16, alignItems: "start" }}>{/* OPRAVY 195: jubileá a svadby najviac 280 px */}
           {tesFar.map((x) => { const src = obrFar(x), sab = sablonaFar(x); return (
             <div key={x.id} style={{ borderRadius: 22, overflow: "hidden", background: KARTA, display: "flex", flexDirection: "column" }}>
               {(src || sab) && obrazokOznamu({ src: src, it: x, pomer: "3 / 4", label: "Oznámenie", onTap: () => setVelke(src ? { src } : { it: x }) })}
