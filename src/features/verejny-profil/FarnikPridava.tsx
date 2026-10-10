@@ -84,7 +84,7 @@ export function MenuPrispevku({ x, strankaId, kto, moje }: { x: PolozkaFarnika; 
   const tm = useRef<number | undefined>(undefined);
   useEffect(() => () => window.clearTimeout(tm.current), []);
   // OPRAVY 190: svadbu a jubileum (cez editor) si autor upraví sám a zmaže podržaním
-  const mozeUp = moje && ["oznam", "udalost", "modlitba", "svadba", "ine"].includes(x.k);
+  const mozeUp = moje && ["oznam", "udalost", "modlitba", "svadba", "ine", "fotky"].includes(x.k); // OPRAVY 194: aj fotky z akcie
   const mozeZmaz = moje && x.k !== "umysel";
   return <>
     {potvrd && <div style={{ padding: "12px 14px", borderRadius: 14, background: "var(--goldBg)", border: `1.5px solid ${ZLATA}`, display: "flex", flexDirection: "column", gap: 8 }}>
@@ -290,7 +290,7 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
     const x = naUpravu ? odFarnikov(strankaId).find((y) => y.id === naUpravu) : undefined;
     if (x) {
       const ff = x.f ?? { ...prazdnyF(), nad: x.t, txt: naHtml(x.s), anon: !!x.anon };
-      setF(ff); setTxtKey((n) => n + 1); setMedia((x.k === "udalost" ? x.fotky ?? [] : []).map((src, i) => ({ id: i + 1, typ: "foto" as const, src })));
+      setF(ff); setTxtKey((n) => n + 1); setMedia((x.k === "udalost" || x.k === "fotky" ? x.fotky ?? [] : []).map((src, i) => ({ id: i + 1, typ: "foto" as const, src, ...(x.popisy?.[i] ? { popis: x.popisy[i] } : {}) })));
       setEdId(x.id); setK(x.k); setHotovo(null); setChyba(false); setSheet(false);
     }
   }

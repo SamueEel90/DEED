@@ -352,10 +352,14 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, stit: s
                 </div>
               </div>); })}
             {alba.map((a) => { const f = a.fotky!.find(ziveObr)!; return (
-                <button key={a.id} type="button" onClick={() => setAlbum(a)} style={{ textAlign: "left", border: "none", padding: 0, borderRadius: 18, overflow: "hidden", background: KARTA, display: "flex", flexDirection: "column", cursor: "pointer", color: INK, fontFamily: "inherit" }}>
+                <div key={a.id} style={{ borderRadius: 18, overflow: "hidden", background: KARTA, display: "flex", flexDirection: "column" }}>
+                <button type="button" onClick={() => setAlbum(a)} style={{ textAlign: "left", border: "none", padding: 0, background: KARTA, display: "flex", flexDirection: "column", cursor: "pointer", color: INK, fontFamily: "inherit" }}>
                   <span style={{ position: "relative", display: "block", width: "100%", aspectRatio: "4 / 3", background: "#D9D3C7", overflow: "hidden" }}><img src={f} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} /><span style={{ position: "absolute", right: 10, bottom: 10, padding: "3px 9px", borderRadius: 7, background: "rgba(20,17,11,.78)", color: "#fff", fontSize: 14, fontWeight: 700 }}>{fotiek(a.fotky!.length)}</span></span>
                   <span style={{ padding: "12px 14px 14px", display: "flex", flexDirection: "column", gap: 3 }}><b style={{ fontSize: 17, lineHeight: 1.25 }}>{a.t || "Fotky z akcie"}</b><span style={{ fontSize: 14.5, color: INK3 }}>{autor(a)}</span></span>
-                </button>); })}
+                </button>
+                {/* OPRAVY 194: autor fotky upraví a zmaže */}
+                <div style={{ padding: "0 14px 14px" }}><MenuPrispevku x={a} strankaId={strankaId} kto={kto} moje={moje(a)} /></div>
+                </div>); })}
           </div>}
         </div>
       </div>}
