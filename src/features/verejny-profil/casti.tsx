@@ -245,7 +245,7 @@ export function PrepinacPodania({ tmavy, style, pas, sektor = "charita", childre
   /** typ stránky — voľby podania podľa sektora (charita: Kronika · Výklad · Pirát; ostatné zatiaľ jedno podanie) */
   sektor?: string; children?: ReactNode; /** bez riadku Profil (napr. Správa, kde je Stav stránky) */ bezProfilu?: boolean;
   /** OPRAVY 153: riadok „Vzhľad: Kronika · Výklad · Pirát" + „Pozrieť profil ›" (ťuk na čip = ulozVzhlad) */
-  vzhlad?: { stranka: string; onPozriet: () => void };
+  vzhlad?: { stranka: string; onPozriet: () => void; /** OPRAVY 202: bez výberu vzhľadu (farnosť) */ bezVolby?: boolean };
   /** OPRAVY 153: Typ a Rola pod zatvoreným „Ďalšie testovacie ›" */
   dalsie?: ReactNode;
 }) {
@@ -254,7 +254,7 @@ export function PrepinacPodania({ tmavy, style, pas, sektor = "charita", childre
   const tlTest: CSSProperties = { height: 44, padding: "0 16px", borderRadius: 22, border: `1.5px solid ${tmavy ? "rgba(255,255,255,.35)" : "var(--cardBd)"}`, background: tmavy ? "rgba(0,0,0,.25)" : "var(--card)", color: tmavy ? "#fff" : "var(--ink)", fontSize: 14, fontWeight: 800, cursor: "pointer", fontFamily: "inherit", boxShadow: "none", whiteSpace: "nowrap" };
   const riadky = (<>
     {vzhlad && <div style={{ display: "flex", alignItems: "center", gap: "6px 12px", flexWrap: "wrap" }}>
-      <VzhladVolba stranka={vzhlad.stranka} pas={pas} tmavy={tmavy} sektor={sektor} />
+      {!vzhlad.bezVolby && <VzhladVolba stranka={vzhlad.stranka} pas={pas} tmavy={tmavy} sektor={sektor} />}
       <button type="button" onClick={vzhlad.onPozriet} style={tlTest}>Pozrieť profil ›</button>
     </div>}
     {!bezProfilu && <TestVolba nazov="Profil" pas={pas} tmavy={tmavy} volby={[["v", "Vyplnený"], ["p", "Prázdny"]]} hodnota={ts.prazdny ? "p" : "v"} onVolba={(k) => zmenTestStav({ prazdny: k === "p" })} />}

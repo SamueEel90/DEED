@@ -262,7 +262,7 @@ export function SpravaStranky(props: SpravaStrankyProps) {
   if (typ === "farnost") return <SpravaFarnosti onBack={props.onBack} strankaId={props.strankaId ?? "farnost"} nazov={props.nazov}
     test={TESTOVACIA && FLAGS.dev_tier_switcher ? (onPozriet: () => void) => (
       <PrepinacPodania pas={!desktop} sektor="farnost" style={desktop ? { padding: "2px 2px 4px" } : { marginTop: 14 }}
-        vzhlad={{ stranka: props.strankaId ?? "farnost", onPozriet }}
+        vzhlad={{ stranka: props.strankaId ?? "farnost", onPozriet, bezVolby: true }} /* OPRAVY 202: farnosť len Nástenka */
         dalsie={<>
           <TestVolba pas={!desktop} nazov="Typ" volby={TYPY_STRANOK.filter((t) => !TYP_SKRYTY[t]).map((t) => [t, TYP_NAZOV[t]] as [TypStranky, string])} hodnota={typ} onVolba={setTyp} />
           <TestVolba pas={!desktop} nazov="Rola" volby={[["hlavny", "Hlavný správca"], ["spravca", "Správca"], ["pomocnik", "Pomocník"], ["organizator", "Organizátor"]] as [RolaStranky, string][]} hodnota={ts.rola} onVolba={(r) => zmenTestStav({ rola: r })} />
