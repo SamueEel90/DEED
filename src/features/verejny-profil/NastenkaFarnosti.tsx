@@ -22,6 +22,7 @@ import { nastavZdrojDaru } from "@/lib/darZbierky";
 import { chipPripnutej, farbaPripnutej } from "@/features/rola/PripnuteZbierky";
 import { useBrigady, skoncila } from "@/lib/brigady";
 import { ModulPlatby } from "./ModulProfilu";
+import { CudziProfil } from "@/features/cudzi-profil/CudziProfil";
 import { ZmensenyModul } from "@/features/zbierka/ZmensenyModul";
 import type { TestProfil, TestSektor } from "@/lib/testProfily";
 import { kedyBrigady } from "@/features/rola/BrigadyFarnosti";
@@ -111,6 +112,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, stit: s
   const [prihOn, setPrihOn] = useState(false);
   const [velke, setVelke] = useState<Velke | null>(null);
   const [album, setAlbum] = useState<PolozkaFarnika | null>(null);
+  const [osoba, setOsoba] = useState<string | null>(null); // OPRAVY 196: profil autora
   const [zoz, setZoz] = useState<string | null>(null);
   const [flt, setFlt] = useState<"vse" | "far" | "ver">("vse");
   const [det, setDet] = useState<DetailF | null>(null);
@@ -175,6 +177,14 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, stit: s
   // ---------- zdroje oznamov ----------
   const OZ = vlastnePrispevky(strankaId);
   const OD = odFarnikov(strankaId).filter((x) => x.k !== "umysel" && !vyprsal(x, terazMs()) && !(x.k === "udalost" && x.f?.datum && x.f.datum < vc));
+  // OPRAVY 196: hore pri všetkom od veriaceho kruh (fotka alebo začiatočné písmeno) a meno z profilu; ťuk otvorí jeho profil
+  const hlavickaAutora = (x: PolozkaFarnika) => {
+    const anon = !!x.anon || /Bohu známy/.test(x.kto), meno = anon ? "Bohu známy veriaci" : x.kto || "Veriaci";
+    const kruh = <span aria-hidden="true" style={{ flex: "none", width: 40, height: 40, borderRadius: "50%", background: x.autorFoto && !anon ? `url("${x.autorFoto}") center/cover no-repeat` : "#4E7D37", color: "#fff", fontSize: 17, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>{x.autorFoto && !anon ? "" : (meno.trim()[0] ?? "V").toLocaleUpperCase("sk-SK")}</span>;
+    const obsah = <>{kruh}<span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", textAlign: "left" }}><b style={{ fontSize: 15.5, color: INK }}>{meno}</b><span style={{ fontSize: 13, color: INK3 }}>{anon ? "meno pozná len farár" : "veriaci"}</span></span></>;
+    return anon ? <span style={{ display: "flex", alignItems: "center", gap: 10 }}>{obsah}</span>
+      : <button type="button" onClick={() => setOsoba(meno)} aria-label={`Profil · ${meno}`} style={{ display: "flex", alignItems: "center", gap: 10, minHeight: 48, padding: 0, border: "none", background: "transparent", cursor: "pointer", fontFamily: "inherit" }}>{obsah}</button>;
+  };
   const autor = (x: PolozkaFarnika) => (x.anon || /Bohu známy/.test(x.kto) ? "Pridal veriaci" : `Pridal veriaci · ${x.kto}`);
   const moje = (x: PolozkaFarnika) => !!x.autor && x.autor === kto;
   const obrVer = (x: PolozkaFarnika) => { const o = x.obr ?? (x.editor ? x.fotky?.[0] : undefined); return ziveObr(o) ? o! : ""; };
@@ -342,10 +352,11 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, stit: s
                     {d && <span style={{ position: "absolute", left: 16, top: 16, width: 72, height: 78, borderRadius: 16, background: "#fff", color: "#14110B", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}><b style={{ fontSize: 28, lineHeight: 1 }}>{d.getDate()}.</b><span style={{ fontSize: 13, fontWeight: 800, letterSpacing: ".08em" }}>{MES[d.getMonth()]}</span><span style={{ fontSize: 12.5, color: INK3 }}>{DNW[dvt(d)]}</span></span>}
                   </div>}
                 <div style={{ padding: "18px 20px 20px", display: "flex", flexDirection: "column", gap: 8 }}>
+                  {u.mojeX && hlavickaAutora(u.mojeX)}
                   {u.kedy && <span style={{ fontSize: 14, fontWeight: 800, letterSpacing: ".1em", color: ZLATA }}>{u.kedy}</span>}
                   <b style={{ fontSize: 22, lineHeight: 1.2, letterSpacing: "-.01em" }}>{u.t}</b>
                   {u.txt && <span style={{ fontSize: 16.5, lineHeight: 1.5, color: INK2, whiteSpace: "pre-line" }}>{u.txt}</span>}
-                  <span style={{ fontSize: 14.5, color: INK3 }}>{u.od}</span>
+                  {!u.mojeX && <span style={{ fontSize: 14.5, color: INK3 }}>{u.od}</span>}
                   {u.pz > 0 && pozvat(u)}
                   {u.mojeX && moje(u.mojeX) && <button type="button" onClick={() => nastavUpravu(u.id)} style={tlacUpravit}>Upraviť · moje</button>}
                   {u.mojeX && <MenuPrispevku x={u.mojeX} strankaId={strankaId} kto={kto} moje={false} />}
@@ -353,9 +364,10 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, stit: s
               </div>); })}
             {alba.map((a) => { const f = a.fotky!.find(ziveObr)!; return (
                 <div key={a.id} style={{ borderRadius: 18, overflow: "hidden", background: KARTA, display: "flex", flexDirection: "column" }}>
+                <div style={{ padding: "10px 14px 6px" }}>{hlavickaAutora(a)}</div>
                 <button type="button" onClick={() => setAlbum(a)} style={{ textAlign: "left", border: "none", padding: 0, background: KARTA, display: "flex", flexDirection: "column", cursor: "pointer", color: INK, fontFamily: "inherit" }}>
                   <span style={{ position: "relative", display: "block", width: "100%", aspectRatio: "4 / 3", background: "#D9D3C7", overflow: "hidden" }}><img src={f} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} /><span style={{ position: "absolute", right: 10, bottom: 10, padding: "3px 9px", borderRadius: 7, background: "rgba(20,17,11,.78)", color: "#fff", fontSize: 14, fontWeight: 700 }}>{fotiek(a.fotky!.length)}</span></span>
-                  <span style={{ padding: "12px 14px 14px", display: "flex", flexDirection: "column", gap: 3 }}><b style={{ fontSize: 17, lineHeight: 1.25 }}>{a.t || "Fotky z akcie"}</b><span style={{ fontSize: 14.5, color: INK3 }}>{autor(a)}</span></span>
+                  <span style={{ padding: "12px 14px 14px", display: "flex", flexDirection: "column", gap: 3 }}><b style={{ fontSize: 17, lineHeight: 1.25 }}>{a.t || "Fotky z akcie"}</b></span>
                 </button>
                 {/* OPRAVY 194: autor fotky upraví a zmaže */}
                 <div style={{ padding: "0 14px 14px" }}><MenuPrispevku x={a} strankaId={strankaId} kto={kto} moje={moje(a)} /></div>
@@ -381,7 +393,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, stit: s
         <div style={{ flex: "999 1 520px", minWidth: 0, display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(260px,1fr))", gap: 16 }}>
           {prosby.map((x) => (
             <div key={x.id} style={{ padding: 22, borderRadius: 22, background: KARTA, display: "flex", flexDirection: "column", gap: 14 }}>
-              <span style={{ display: "flex", alignItems: "center", gap: 12 }}><Sviecka /><span style={{ fontSize: 15, color: INK3 }}>{x.anon || /Bohu známy/.test(x.kto) ? "bez mena" : x.kto}</span></span>
+              {x.anon || /Bohu známy/.test(x.kto) ? <span style={{ display: "flex", alignItems: "center", gap: 12 }}><Sviecka /><span style={{ fontSize: 15, color: INK3 }}>bez mena</span></span> : hlavickaAutora(x)}
               <span style={{ display: "flex", flexDirection: "column", gap: 6 }}>{x.t && <b style={{ fontSize: 19, lineHeight: 1.4 }}>{x.t}</b>}{x.s && <span style={{ fontSize: 17, lineHeight: 1.5, fontWeight: 600, color: INK2, whiteSpace: "pre-line" }}>{x.s}</span>}</span>
               {reakcia({ ...reakV(x, "modl"), t: "Modlím sa s vami", tJa: "Modlíte sa s nami ✓", poc: (n) => `${n} sa modlí` })}
               {moje(x) && <button type="button" onClick={() => nastavUpravu(x.id)} style={tlacUpravit}>Upraviť · moje</button>}
@@ -404,7 +416,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, stit: s
           {parteVer.map((x) => { const src = obrVer(x); return (
             <div key={x.id} style={{ border: "3px solid #14110B", background: PAPIER, display: "flex", flexDirection: "column" }}>
               {src ? obrazokOznamu({ src: src, pomer: "3 / 4", maxH: 460, label: "Parte", onTap: () => setVelke({ src }) }) : <TextParte meno={x.t} kedy={x.s} />}
-              <span style={{ padding: "12px 24px", fontSize: 14.5, color: INK3 }}>{autor(x)}</span>
+              <div style={{ padding: "8px 16px 0" }}>{hlavickaAutora(x)}</div>
               {sustrast(reakV(x, "sustrast"))}
               <div style={{ padding: "0 24px 16px" }}><MenuPrispevku x={x} strankaId={strankaId} kto={kto} moje={false} /></div>
             </div>); })}
@@ -436,7 +448,8 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, stit: s
             <div key={x.id} style={{ borderRadius: 22, overflow: "hidden", background: KARTA, display: "flex", flexDirection: "column" }}>
               {src && obrazokOznamu({ src: src, pomer: "3 / 4", label: "Oznámenie", onTap: () => setVelke({ src }) })}
               <div style={{ padding: "18px 20px 22px", display: "flex", flexDirection: "column", gap: 8 }}>
-                <span style={kicker("#4E7D37")}>{x.k === "svadba" ? "SVADBA" : "JUBILEUM"} · {(x.anon ? "veriaci" : x.kto).toLocaleUpperCase("sk-SK")}</span>
+                {hlavickaAutora(x)}
+                <span style={kicker("#4E7D37")}>{x.k === "svadba" ? "SVADBA" : "JUBILEUM"}</span>
                 <b style={{ fontSize: 21, lineHeight: 1.25 }}>{x.t}</b>
                 {!src && x.s && <span style={{ fontSize: 16.5, lineHeight: 1.5, color: INK2, whiteSpace: "pre-line" }}>{x.s}</span>}
                 {reakcia({ ...reakV(x, "blaho"), t: "Blahoželám", tJa: "Blahoželáte ✓", poc: (n) => String(n) })}
@@ -530,6 +543,9 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, stit: s
       {velke && <CelaObrazovka label="Na celú obrazovku" onZavri={() => setVelke(null)}>
         <VelkyObrazok v={velke} vz={vz} />
       </CelaObrazovka>}
+      {osoba && createPortal(<div role="dialog" aria-modal="true" aria-label={`Profil · ${osoba}`} style={{ position: "fixed", inset: 0, zIndex: 1100, overflowY: "auto", background: "var(--c-bg)", color: "var(--c-text)" }}>
+        <CudziProfil subjekt={{ typ: "osoba", meno: osoba }} toast={toast} onBack={() => setOsoba(null)} />
+      </div>, document.body)}
       {album && <ProhliadacAlbumu a={album} onZavri={() => setAlbum(null)} />}
       {det && <DetailZbierky d={det} strankaId={strankaId} onZavri={() => setDet(null)} />}
       {mfOn && <MojeFarnostiOkno strankaId={strankaId} domovska={MF.domovska} sled={MF.sled} hlaska={mfHl}

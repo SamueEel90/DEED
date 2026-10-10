@@ -37,6 +37,7 @@ export interface PolozkaFarnika {
   /** KARTA 57 D.4: pri parte počet „Úprimnú sústrasť" (karta E.8) */ sus?: number;
   // ---- KARTA 57 E (verejná stránka) ----
   /** autor (účet) — „Upraviť · moje" vidí len on */ autor?: string; mesto?: string;
+  /** OPRAVY 196: fotka z profilu autora (pri pridaní) */ autorFoto?: string;
   /** prosba bez mena (sviečka namiesto krúžku) */ anon?: boolean;
   /** formulár veriaceho (úprava ho naplní) */ f?: FormularVeriaceho;
   /** Pozvať ľudí: 1 = Zúčastním sa, 2 = Prihlásiť sa (záväzne, limit) */ pozv?: 0 | 1 | 2; limit?: number;

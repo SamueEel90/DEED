@@ -334,7 +334,7 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
     const povodny = edId ? odFarnikov(strankaId).find((x) => x.id === edId) : undefined;
     const zaklad: PolozkaFarnika = {
       ...(povodny ?? {}), id: povodny?.id ?? `f${teraz().toString(36)}`, k, t, s, kto: anon ? "Bohu známy veriaci" : ja.celeMeno || "Veriaci", cas: povodny?.cas ?? teraz(),
-      autor: kto, mesto: ja.mesto, anon: k === "modlitba" ? anon : undefined, f: ff,
+      autor: kto, mesto: ja.mesto, anon: k === "modlitba" ? anon : undefined, f: ff, autorFoto: anon ? undefined : povodny?.autorFoto ?? ja.foto ?? undefined,
       fotky: k === "udalost" || k === "fotky" ? (fotky.length ? fotky.map((m) => m.src) : undefined) : undefined,
       popisy: k === "fotky" ? fotky.map((m) => m.popis ?? "") : undefined, text: k === "fotky" ? txt || undefined : undefined,
       pozv: k === "udalost" || k === "fotky" ? pz : undefined, limit: k === "udalost" || k === "fotky" ? limitN : undefined,
@@ -363,7 +363,7 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
     const obr = (await edRef.current?.nahlad()) || "";
     let it: PolozkaFarnika;
     const povodny = edId ? odFarnikov(strankaId).find((y) => y.id === edId) : undefined; // OPRAVY 190: úprava ponechá id aj reakcie
-    try { it = await bezDataUrl<PolozkaFarnika>({ ...(povodny ?? {}), id: povodny?.id ?? `f${teraz().toString(36)}`, k, t: t || druhT(k), s, kto: povodny?.kto ?? (ja.celeMeno || "Veriaci"), cas: povodny?.cas ?? teraz(), autor: povodny?.autor ?? kto, mesto: povodny?.mesto ?? ja.mesto, editor: p, obr: obr || undefined }, "od-veriacich"); }
+    try { it = await bezDataUrl<PolozkaFarnika>({ ...(povodny ?? {}), id: povodny?.id ?? `f${teraz().toString(36)}`, k, t: t || druhT(k), s, kto: povodny?.kto ?? (ja.celeMeno || "Veriaci"), cas: povodny?.cas ?? teraz(), autor: povodny?.autor ?? kto, mesto: povodny?.mesto ?? ja.mesto, autorFoto: povodny?.autorFoto ?? ja.foto ?? undefined, editor: p, obr: obr || undefined }, "od-veriacich"); }
     catch (e) { toast(e instanceof Error ? e.message : "Oznámenie sa nepodarilo uložiť."); return; }
     pridajOdFarnika(strankaId, it);
     setHotovo(it.id); setEdToast(true); window.clearTimeout(tm.current); tm.current = window.setTimeout(() => setEdToast(false), 2500);
