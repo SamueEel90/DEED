@@ -235,9 +235,10 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, stit: s
   type Oz = { id: string; ms: number; chip: string; t: string; txt: string; zm: boolean; g: "far" | "ver"; x?: PolozkaFarnika };
   const ozAll: Oz[] = [
     ...OZ.filter((x) => ["OZNAM", "ZMENA OMŠE", "OZNÁMENIE"].includes(stit(x)) && (stit(x) !== "ZMENA OMŠE" || VJ.zmeny)).map((x): Oz => ({ id: x.id, ms: x.vytvorene ?? 0, chip: stit(x) === "ZMENA OMŠE" ? "ZMENA PROGRAMU" : stit(x), t: x.nazov ?? "", txt: x.popis ?? "", zm: stit(x) === "ZMENA OMŠE", g: "far" })),
-    ...OD.filter((x) => x.k === "oznam").map((x): Oz => ({ id: x.id, ms: x.cas, chip: `OD VERIACICH · ${(x.anon ? "Bohu známy veriaci" : x.kto).toLocaleUpperCase("sk-SK")}`, t: x.t, txt: x.s, zm: false, g: "ver", x })),
   ].sort((a, b) => b.ms - a.ms);
-  const maFilter = ozAll.some((x) => x.g === "far") && ozAll.some((x) => x.g === "ver");
+  // OPRAVY 197: krátke oznamy veriacich nepatria medzi oznamy farnosti — majú vlastný blok Od veriacich
+  const oznVer = OD.filter((x) => x.k === "oznam").sort((a, b) => b.cas - a.cas);
+  const maFilter = false; // OPRAVY 197: veriaci sú v bloku Od veriacich, filter netreba
   const oznamy = ozAll.filter((x) => !maFilter || flt === "vse" || x.g === flt);
   const k = profil?.kontakt;
   const urad = k ? [k.adresaVerejna.trim() || k.sidlo.trim(), ...k.telefony.map((t) => t.cislo.trim()), ...k.emaily.map((e) => e.adresa.trim())].filter(Boolean) : [];
@@ -245,7 +246,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, stit: s
 
   const maVrch = !!onas || hlOn;
   const maZbierky = zvOn || zbFar.length + zbIne.length + piny.length > 0;
-  const prazdna = !(maVrch || maZbierky || maPrid || !!p || prosby.length || maSpom || maTes || pomoz.length || maInfo);
+  const prazdna = !(maVrch || maZbierky || maPrid || !!p || prosby.length || maSpom || maTes || pomoz.length || oznVer.length || maInfo);
 
   // ---------- spoločné kúsky ----------
   const pozvat = (u: Ud) => {
@@ -358,8 +359,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, stit: s
                   {u.txt && <span style={{ fontSize: 16.5, lineHeight: 1.5, color: INK2, whiteSpace: "pre-line" }}>{u.txt}</span>}
                   {!u.mojeX && <span style={{ fontSize: 14.5, color: INK3 }}>{u.od}</span>}
                   {u.pz > 0 && pozvat(u)}
-                  {u.mojeX && moje(u.mojeX) && <button type="button" onClick={() => nastavUpravu(u.id)} style={tlacUpravit}>Upraviť · moje</button>}
-                  {u.mojeX && <MenuPrispevku x={u.mojeX} strankaId={strankaId} kto={kto} moje={false} />}
+                  {u.mojeX && <MenuPrispevku x={u.mojeX} strankaId={strankaId} kto={kto} moje={moje(u.mojeX)} />}
                 </div>
               </div>); })}
             {alba.map((a) => { const f = a.fotky!.find(ziveObr)!; return (
@@ -396,8 +396,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, stit: s
               {x.anon || /Bohu známy/.test(x.kto) ? <span style={{ display: "flex", alignItems: "center", gap: 12 }}><Sviecka /><span style={{ fontSize: 15, color: INK3 }}>bez mena</span></span> : hlavickaAutora(x)}
               <span style={{ display: "flex", flexDirection: "column", gap: 6 }}>{x.t && <b style={{ fontSize: 19, lineHeight: 1.4 }}>{x.t}</b>}{x.s && <span style={{ fontSize: 17, lineHeight: 1.5, fontWeight: 600, color: INK2, whiteSpace: "pre-line" }}>{x.s}</span>}</span>
               {reakcia({ ...reakV(x, "modl"), t: "Modlím sa s vami", tJa: "Modlíte sa s nami ✓", poc: (n) => `${n} sa modlí` })}
-              {moje(x) && <button type="button" onClick={() => nastavUpravu(x.id)} style={tlacUpravit}>Upraviť · moje</button>}
-              <MenuPrispevku x={x} strankaId={strankaId} kto={kto} moje={false} />
+              <MenuPrispevku x={x} strankaId={strankaId} kto={kto} moje={moje(x)} />
             </div>))}
         </div>
       </div>}
@@ -418,7 +417,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, stit: s
               {src ? obrazokOznamu({ src: src, pomer: "3 / 4", maxH: 460, label: "Parte", onTap: () => setVelke({ src }) }) : <TextParte meno={x.t} kedy={x.s} />}
               <div style={{ padding: "8px 16px 0" }}>{hlavickaAutora(x)}</div>
               {sustrast(reakV(x, "sustrast"))}
-              <div style={{ padding: "0 24px 16px" }}><MenuPrispevku x={x} strankaId={strankaId} kto={kto} moje={false} /></div>
+              <div style={{ padding: "0 24px 16px" }}><MenuPrispevku x={x} strankaId={strankaId} kto={kto} moje={moje(x)} /></div>
             </div>); })}
           {zbPohreb.map((z) => (
             <div key={z.id} style={{ border: `3px solid ${FIALOVA}`, background: PAPIER, display: "flex", flexDirection: "column" }}>
@@ -482,6 +481,21 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, stit: s
                 {u.od && <span style={{ fontSize: 15.5, color: INK3 }}>{u.od}</span>}
                 {u.pz > 0 && pozvat(u)}
               </div>
+            </div>))}
+        </div>
+      </div>}
+
+      {/* ---------- Od veriacich (OPRAVY 197: krátke oznamy veriacich) ---------- */}
+      {oznVer.length > 0 && <div data-blok="ver" style={blokStyl()}>
+        {lavyStlpec("Od veriacich", "Krátke oznamy, ktoré pridali veriaci.")}
+        <div style={{ flex: "999 1 520px", minWidth: 0, display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(260px,420px))", gap: 16, alignItems: "start" }}>
+          {oznVer.map((x) => (
+            <div key={x.id} style={{ padding: "16px 20px 18px", borderRadius: 22, background: KARTA, display: "flex", flexDirection: "column", gap: 8 }}>
+              {hlavickaAutora(x)}
+              <span style={kicker(INK3)}>OZNAM · {dd(x.cas)}</span>
+              <b style={{ fontSize: 19, lineHeight: 1.3 }}>{x.t}</b>
+              {x.s && <span style={{ fontSize: 16.5, lineHeight: 1.5, color: INK2, whiteSpace: "pre-line" }}>{x.s}</span>}
+              <MenuPrispevku x={x} strankaId={strankaId} kto={kto} moje={moje(x)} />
             </div>))}
         </div>
       </div>}

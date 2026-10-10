@@ -22,7 +22,7 @@ export const DRUHY_FARNIKA: { k: DruhFarnika; t: string; s: string; sv: string; 
 /** Parte, Svadba, Jubileum idú cez Editor oznámení — zatiaľ nenapojený (PLACEBO — karta 56I) */
 export const CEZ_EDITOR: DruhFarnika[] = ["parte", "svadba", "ine"];
 /** KARTA 57C: blok živej stránky, kde sa príspevok ukáže — [data-blok, názov bloku] (úmysel nikam) */
-export const BLOK_DRUHU: Partial<Record<DruhFarnika, [string, string]>> = { modlitba: ["mod", "Modli sa s nami"], oznam: ["ozn", "Oznamy farnosti"], udalost: ["prid", "Príď a zaži s nami"], fotky: ["prid", "Príď a zaži s nami"], parte: ["spom", "Spomíname"], svadba: ["tes", "Teš sa s nami"], ine: ["tes", "Teš sa s nami"] };
+export const BLOK_DRUHU: Partial<Record<DruhFarnika, [string, string]>> = { modlitba: ["mod", "Modli sa s nami"], oznam: ["ver", "Od veriacich"], udalost: ["prid", "Príď a zaži s nami"], fotky: ["prid", "Príď a zaži s nami"], parte: ["spom", "Spomíname"], svadba: ["tes", "Teš sa s nami"], ine: ["tes", "Teš sa s nami"] };
 
 export type SmieFarnika = Partial<Record<DruhFarnika, boolean>>;
 export const nacitajSmie = (id: string): SmieFarnika => nacitajStav<SmieFarnika>("farniksmie", id, {});
