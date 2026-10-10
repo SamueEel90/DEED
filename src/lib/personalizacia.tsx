@@ -9,6 +9,7 @@ import { usePouzivatel } from "./pouzivatel";
 import { nacitajPredvolbu, identitaDarcu } from "./darcovia";
 import { USE_SUPABASE } from "./supabase";
 import { useSynchronizaciaSkutkov } from "./mojeSkutky";
+import { useSynchronizaciaRetaze } from "./retaz";
 import {
   nacitajLokalne, ulozZaujmy, ulozSledovani, ulozPodpory, ulozOblubene, ulozZbierky,
   importLegacyFollows, legacyNaImport, demoSeed, zaujmyNaKluce, zaujemZOblasti,
@@ -67,6 +68,7 @@ export function PersonalizaciaProvider({ children }: { children: ReactNode }) {
   const [mojeZbierky, setMojeZbierky] = useState<MojaZbierka[]>([]);
   const [hydratovane, setHydratovane] = useState(false); // perzistuj až po inicializácii
   useSynchronizaciaSkutkov(USE_SUPABASE && !demo ? ucetId : null); // denník skutkov v účte (0072b)
+  useSynchronizaciaRetaze(USE_SUPABASE && !demo ? ucetId : null); // reťaz dobra tvorcu (0080b)
 
   // inicializácia: localStorage (+ jednorazový legacy import); demo bez dát → realistický seed
   useEffect(() => {
