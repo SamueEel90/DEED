@@ -283,8 +283,9 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, stit: s
     {reakcia({ ...z, t: "Úprimnú sústrasť", tJa: "Prejavili ste sústrasť ✓", tmave: false, poc: (n) => String(n) })}
   </div>;
   const obrazokOznamu = ({ src, it, pomer, maxH, onTap, label }: { src: string; it?: VieraFeedItem; pomer: string; maxH?: number; onTap: () => void; label: string }) => (
-    <button type="button" onClick={onTap} aria-label={`${label} na celú obrazovku`} style={{ width: "100%", aspectRatio: src ? pomer : undefined, maxHeight: maxH, border: "none", padding: 0, background: PAPIER, cursor: "zoom-in", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
-      {src ? <img src={src} alt={label} style={{ width: "100%", height: "100%", objectFit: "contain", display: "block" }} />
+    // OPRAVY 191: obrázok vyplní celú šírku karty, výška podľa obrázka, bez bieleho okraja
+    <button type="button" onClick={onTap} aria-label={`${label} na celú obrazovku`} style={{ width: "100%", aspectRatio: src ? undefined : pomer, maxHeight: src ? undefined : maxH, border: "none", padding: 0, background: src ? "transparent" : PAPIER, cursor: "zoom-in", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
+      {src ? <img src={src} alt={label} style={{ width: "100%", height: "auto", display: "block" }} />
         : it?.oz?.u && it.oz.volba ? <span style={{ padding: 12, display: "flex" }}><Plagat u={it.oz.u} volba={it.oz.volba} vz={vz} sirka={300} /></span> : null}
     </button>);
   const rodinaZbierka = (z: SpustenaZbierka, text: string) => (
@@ -440,8 +441,9 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, stit: s
             <div key={x.id} style={{ borderRadius: 22, overflow: "hidden", background: KARTA, display: "flex", flexDirection: "column" }}>
               {(src || sab) && obrazokOznamu({ src: src, it: x, pomer: "3 / 4", label: "Oznámenie", onTap: () => setVelke(src ? { src } : { it: x }) })}
               <div style={{ padding: "18px 20px 22px", display: "flex", flexDirection: "column", gap: 8 }}>
-                <span style={kicker(ZELENA)}>{stit(x)} · FARNOSŤ</span>
-                <b style={{ fontSize: 21, lineHeight: 1.25 }}>{x.nazov}</b>
+                {/* OPRAVY 191: pod obrázkom len autor a tlačidlo */}
+                {!src && !sab && <><span style={kicker(ZELENA)}>{stit(x)} · FARNOSŤ</span>
+                <b style={{ fontSize: 21, lineHeight: 1.25 }}>{x.nazov}</b></>}
                 {!src && !sab && x.popis && <span style={{ fontSize: 16.5, lineHeight: 1.5, color: INK2, whiteSpace: "pre-line" }}>{x.popis}</span>}
                 {reakcia({ ...reakF(x.id, "blaho"), t: "Blahoželám", tJa: "Blahoželáte ✓", poc: (n) => String(n) })}
               </div>
@@ -451,8 +453,8 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, stit: s
               {src && obrazokOznamu({ src: src, pomer: "3 / 4", label: "Oznámenie", onTap: () => setVelke({ src }) })}
               <div style={{ padding: "18px 20px 22px", display: "flex", flexDirection: "column", gap: 8 }}>
                 {hlavickaAutora(x)}
-                <span style={kicker(ZELENA)}>{x.k === "svadba" ? "SVADBA" : "JUBILEUM"}</span>
-                <b style={{ fontSize: 21, lineHeight: 1.25 }}>{x.t}</b>
+                {!src && <><span style={kicker(ZELENA)}>{x.k === "svadba" ? "SVADBA" : "JUBILEUM"}</span>
+                <b style={{ fontSize: 21, lineHeight: 1.25 }}>{x.t}</b></>}
                 {!src && x.s && <span style={{ fontSize: 16.5, lineHeight: 1.5, color: INK2, whiteSpace: "pre-line" }}>{x.s}</span>}
                 {reakcia({ ...reakV(x, "blaho"), t: "Blahoželám", tJa: "Blahoželáte ✓", poc: (n) => String(n) })}
                 <MenuPrispevku x={x} strankaId={strankaId} kto={kto} moje={moje(x)} />
