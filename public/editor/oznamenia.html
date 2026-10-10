@@ -341,7 +341,7 @@ input[type=range]{min-height:44px;padding:0}
   </fieldset>
   <fieldset><legend>Oslava</legend>
     <label>Čas<input type="time" id="jC"></label>
-    <label>Miesto<input id="jM" placeholder="napr. v reštaurácii Pod Hradom"></label>
+    <label>Miesto · nepovinné<input id="jM" placeholder="napr. v reštaurácii Pod Hradom"></label>
     <label>Potvrdenie účasti (nepovinné)<input id="jR" placeholder="napr. Prosím o potvrdenie účasti do 1. 11."></label>
     <label class="check"><input type="checkbox" id="rsvpJ" checked> Hostia môžu v appke ťuknúť Prídem</label>
     <label>Podpis (nepovinné)<input id="jP" placeholder="napr. Ján s rodinou"></label>
@@ -626,7 +626,7 @@ function render(){
   `<div class="p-meno">${V("jMeno","Meno")}</div>`+
   (n?`<div class="j-num" style="color:${ac}">${n}<span class="j-lab">${n<5?"roky":"rokov"}</span></div>`:"")+
   `<div class="s-dat" style="color:${ac}">${kedy}</div>`+
-  `<div class="p-roz" style="color:${t.mu}">${cas.trim()} ${V("jM","miesto oslavy")}</div>`+
+  (cas.trim()||$("jM").value.trim()?`<div class="p-roz" style="color:${t.mu}">${cas.trim()} ${esc($("jM").value.trim())}</div>`:"")+
   (jc?`<div class="p-cit" style="color:${t.mu}">„${esc(jc)}“</div>`:"")+
   (r?`<div class="p-roz s-rsvp" style="color:${t.mu}">${esc(r)}</div>`:"")+
   (ps?`<div class="p-pod">${esc(ps)}</div>`:"");
@@ -712,7 +712,7 @@ function picks(){
    b.onclick=()=>{st.pk[id]=k;if(k==="vlastny")ta.value="";picks();render();if(k==="vlastny")ta.focus()};bx.appendChild(b)});
   ta.hidden=sel!=="vlastny";if(sel!=="vlastny")ta.value=typeof sel==="number"?opts[sel]:""}}
 const POVINNE={parte:[["meno","meno"],["umr","dátum úmrtia"]],svadba:[["sNev","meno nevesty"],["sZen","meno ženícha"],["sD","dátum obradu"],["sM","miesto obradu"]],
- jubileum:[["jMeno","meno"],["jD","dátum oslavy"],["jM","miesto oslavy"]],blahozelanie:[["bMeno","meno"]]};
+ jubileum:[["jMeno","meno"],["jD","dátum oslavy"]],blahozelanie:[["bMeno","meno"]]};
 function chyby(krok){document.querySelectorAll(".miss").forEach(e=>e.classList.remove("miss"));
  if(krok==="koho"&&!st.sex){$("sex").classList.add("miss");return"Ťuknite Muž alebo Žena."}
  if(krok==="udaje"){const ch=[];for(const[id,n]of POVINNE[st.typ]){const e=$(id);if(!e.value.trim()){ch.push(n);e.classList.add("miss")}}
