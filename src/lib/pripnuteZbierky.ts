@@ -10,8 +10,17 @@ import { supabase } from "./supabase";
 import { UKAZKOVE_STRANKY } from "./mojeStranky";
 import { zbierkyStrankyZPamate, cielCislo } from "./novaZbierka";
 import { darcoviaPre, sucetDarov, useZmenyDarov, type DarRiadok } from "./darcovia";
+import { TESTOVACIA } from "./testovacia";
 
-export interface ZbierkaNaPripnutie { id: string; nazov: string; stranka: string; kto: string; zdroj: "charita" | "help"; ciel: number | null; vyzbierane: number; darov: number }
+export interface ZbierkaNaPripnutie { id: string; nazov: string; stranka: string; kto: string; zdroj: "charita" | "help"; ciel: number | null; vyzbierane: number; darov: number;
+  /** OPRAVY 199: ukážková zbierka testovacej verzie — darovať sa na ňu nedá */ ukazkova?: true }
+
+/** OPRAVY 199: skúšobná zbierka inej charity — len v testovacej verzii, naostro nikde */
+export const UKAZKOVA_ZBIERKA: ZbierkaNaPripnutie = { id: "ukazka-teple-jedlo", nazov: "Teplé jedlo pre ľudí bez domova", stranka: "", kto: "Skúšobná charita", zdroj: "charita", ciel: 2000, vyzbierane: 640, darov: 12, ukazkova: true };
+const KLUC_UK = "deed.pripnute.ukazka.v1";
+const ukCitaj = (): string[] => { try { return JSON.parse(localStorage.getItem(KLUC_UK) ?? "[]") as string[]; } catch { return []; } };
+const ukZapis = (v: string[]) => { try { localStorage.setItem(KLUC_UK, JSON.stringify(v)); } catch { /* LS */ } };
+const sUkazkou = (stranka: string, l: ZbierkaNaPripnutie[]) => (TESTOVACIA && ukCitaj().includes(stranka) ? [...l.filter((z) => !z.ukazkova), UKAZKOVA_ZBIERKA] : l);
 export interface CezStranku { suma: number; pocet: number; dary: { id: string; cas: number; meno: string | null; moj: boolean; suma: number }[] }
 
 const KLUC = "deed.pripnute.v1";
@@ -36,10 +45,11 @@ const zRiadku = (r: Record<string, unknown>): ZbierkaNaPripnutie => ({ id: Strin
 
 /** všetky zverejnené bežiace zbierky, ktoré sa dajú pripnúť */
 export async function hladajZbierky(): Promise<ZbierkaNaPripnutie[]> {
-  if (!supabase) return lokalneZbierky();
+  const uk = TESTOVACIA ? [UKAZKOVA_ZBIERKA] : [];
+  if (!supabase) return [...uk, ...lokalneZbierky()];
   const { data, error } = await supabase.from("v_zbierky_na_pripnutie").select("id, nazov, stranka, kto, zdroj, ciel, vyzbierane, darov").order("vytvorene", { ascending: false }).limit(300);
-  if (error || !data) return [];
-  return (data as Record<string, unknown>[]).map(zRiadku);
+  if (error || !data) return uk;
+  return [...uk, ...(data as Record<string, unknown>[]).map(zRiadku)];
 }
 
 async function nacitaj(stranka: string) {
@@ -60,19 +70,21 @@ export function usePripnute(stranka: string): ZbierkaNaPripnutie[] {
   useSyncExternalStore(odber, () => ver);
   useZmenyDarov();
   useEffect(() => { if (!nacitane.has(stranka)) { nacitane.add(stranka); void nacitaj(stranka); } }, [stranka]);
-  const l = pamat.get(stranka) ?? [];
+  const l = sUkazkou(stranka, pamat.get(stranka) ?? []);
   // mock: suma sa počíta naživo z darov
-  return supabase ? l : l.map((z) => { const d = sucetDarov(z.id); return { ...z, vyzbierane: d.suma, darov: d.pocet }; });
+  return supabase ? l : l.map((z) => { if (z.ukazkova) return z; const d = sucetDarov(z.id); return { ...z, vyzbierane: d.suma, darov: d.pocet }; });
 }
-export const pripnuteZPamate = (stranka: string) => pamat.get(stranka) ?? [];
+export const pripnuteZPamate = (stranka: string) => sUkazkou(stranka, pamat.get(stranka) ?? []);
 
 export async function pripni(stranka: string, z: ZbierkaNaPripnutie): Promise<void> {
+  if (z.ukazkova) { ukZapis([...new Set([...ukCitaj(), stranka])]); zmena(); return; }
   pamat.set(stranka, [...pripnuteZPamate(stranka).filter((x) => x.id !== z.id), z]); zmena();
   if (!supabase) { const v = lsCitaj(); v[stranka] = [...new Set([...(v[stranka] ?? []), z.id])]; lsZapis(v); return; }
   const { error } = await supabase.from("stranka_pripnuta_zbierka").insert({ stranka, zbierka: z.id });
   if (error && error.code !== "23505") { void nacitaj(stranka); throw new Error(error.message); }
 }
 export async function odopni(stranka: string, id: string): Promise<void> {
+  if (id === UKAZKOVA_ZBIERKA.id) { ukZapis(ukCitaj().filter((x) => x !== stranka)); zmena(); return; }
   pamat.set(stranka, pripnuteZPamate(stranka).filter((x) => x.id !== id)); zmena();
   if (!supabase) { const v = lsCitaj(); v[stranka] = (v[stranka] ?? []).filter((x) => x !== id); lsZapis(v); return; }
   const { error } = await supabase.from("stranka_pripnuta_zbierka").delete().eq("stranka", stranka).eq("zbierka", id);
@@ -86,7 +98,7 @@ export function useCezStranku(zbierka: string, stranka: string): CezStranku {
   const vd = useZmenyDarov(); // nový dar → stiahnuť znova
   const k = `${zbierka}|${stranka}`;
   useEffect(() => {
-    if (!supabase) return;
+    if (!supabase || zbierka === UKAZKOVA_ZBIERKA.id) return;
     let ziva = true;
     void supabase.rpc("zbierka_cez_stranku", { p_zbierka: zbierka, p_stranka: stranka }).then(({ data }) => {
       if (!ziva || !data) return;

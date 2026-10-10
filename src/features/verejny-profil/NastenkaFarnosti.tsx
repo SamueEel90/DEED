@@ -702,7 +702,7 @@ function DetailZbierky({ d, strankaId, onZavri }: { d: DetailF; strankaId: strin
   useEffect(() => { const k = (e: KeyboardEvent) => { if (e.key === "Escape") onZavri(); }; window.addEventListener("keydown", k); return () => window.removeEventListener("keydown", k); }, [onZavri]);
   const rod = d.typ === "rodina", ram = d.pin ? farbaPripnutej(d.pin) : rod ? FIALOVA : TEAL, hc = rod ? FIALOVA : ZELENA;
   // OPRAVY 187: dar z detailu pripnutej zbierky nesie zdroj = táto farnosť
-  useEffect(() => { if (!d.pin) return; nastavZdrojDaru(d.data.id, strankaId); return () => nastavZdrojDaru(d.data.id, null); }, [d.pin, d.data.id, strankaId]);
+  useEffect(() => { if (!d.pin || d.pin.ukazkova) return; nastavZdrojDaru(d.data.id, strankaId); return () => nastavZdrojDaru(d.data.id, null); }, [d.pin, d.data.id, strankaId]);
   const { wide } = useLayout(); // PC: zbierka vľavo ostáva na mieste; mobil: pod sebou
   return createPortal(
     <div role="dialog" aria-modal="true" aria-label="Zbierka" style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(20,17,11,.82)", overflowY: "auto", padding: 16, boxSizing: "border-box", fontFamily: "'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,sans-serif" }}>
@@ -740,6 +740,10 @@ function DetailZbierky({ d, strankaId, onZavri }: { d: DetailF; strankaId: strin
                 ? <div className="vp sc-tokeny" data-stit="silver" style={{ background: "transparent", padding: "0 14px" }}><div data-hier={d.typ === "hl" ? "0" : "z"}><ZmensenyModul><ModulPlatby profil={{ k: strankaId, meno: d.data.organizacia?.meno ?? "Farnosť" } as TestProfil}
                     sektor={{ id: d.data.id, nazov: d.t, druh: d.typ === "hl" ? "centralna" : "sektor", foto: d.obr ?? "", vyzbierane: 0, darcovia: 0, mesta: {} } as unknown as TestSektor}
                     nazov={`${d.t} · ${d.data.organizacia?.meno ?? "Farnosť"}`} dorovnanie={false} ktoVoli="farnosť" bezObjektu={d.typ === "zv"} /></ZmensenyModul></div></div>
+                : d.pin?.ukazkova ? <div style={{ margin: "0 14px", padding: "16px 18px", borderRadius: 16, background: "var(--goldBg)", border: "2px solid #C9A24A", display: "flex", flexDirection: "column", gap: 6, color: "var(--ink)" }}>
+                    <b style={{ fontSize: 16.5 }}>Ukážková zbierka</b>
+                    <span style={{ fontSize: 14.5, lineHeight: 1.5 }}>Je len v testovacej verzii, aby ste videli, ako vyzerá pripnutá zbierka inej charity. Darovať sa na ňu nedá.</span>
+                  </div>
                 : <ZbierkaModul zbierka={d.data} miesto="charita" pohreb={!!d.parte} pietne={<PietneAkcie strankaId={strankaId} zbierka={d.data.id} />} bocny zoStrankyOrg onBack={onZavri} ktoVoli={d.pin ? (d.pin.zdroj === "help" ? "príjemca" : "charita") : rod ? "rodina" : "farnosť"} bez={["zapojitFirmu", "pravidelna", "dorovnanie"]} />}
             </div>
             <button type="button" onClick={onZavri} style={{ alignSelf: "center", minHeight: 52, padding: "0 26px", borderRadius: 14, border: `1.5px solid ${LINKA}`, background: PAPIER, color: INK, fontFamily: "inherit", fontSize: 16.5, fontWeight: 800, cursor: "pointer" }}>Zbaliť ⌃</button>
