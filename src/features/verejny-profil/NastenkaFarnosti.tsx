@@ -21,6 +21,9 @@ import { usePripnute, useCezStranku, dalsiMilnik, type ZbierkaNaPripnutie } from
 import { nastavZdrojDaru } from "@/lib/darZbierky";
 import { chipPripnutej, farbaPripnutej } from "@/features/rola/PripnuteZbierky";
 import { useBrigady, skoncila } from "@/lib/brigady";
+import { ModulPlatby } from "./ModulProfilu";
+import { ZmensenyModul } from "@/features/zbierka/ZmensenyModul";
+import type { TestProfil, TestSektor } from "@/lib/testProfily";
 import { kedyBrigady } from "@/features/rola/BrigadyFarnosti";
 import { useDarcovia, sucetDarov, relCas, nastavCiste, type DarRiadok } from "@/lib/darcovia";
 import { useOmsoveOkno, suhrnHlavnej, menaOkna } from "@/lib/omsoveOkno";
@@ -702,7 +705,12 @@ function DetailZbierky({ d, strankaId, onZavri }: { d: DetailF; strankaId: strin
           </div>
           <div style={{ flex: "1 1 380px", minWidth: 0, maxWidth: 520, display: "flex", flexDirection: "column", gap: 14 }}>
             <div style={{ borderRadius: 24, overflow: "hidden", border: rod ? `3px solid ${FIALOVA}` : "1px solid var(--cardBd)", background: "rgb(var(--panel-rgb))", padding: "14px 0", ["--hcPruh" as string]: hc, ["--hcF" as string]: hc } as CSSProperties}>
-              <ZbierkaModul zbierka={d.data} miesto="charita" pohreb={!!d.parte} pietne={<PietneAkcie strankaId={strankaId} zbierka={d.data.id} />} bocny zoStrankyOrg onBack={onZavri} ktoVoli={d.pin ? (d.pin.zdroj === "help" ? "príjemca" : "charita") : rod ? "rodina" : "farnosť"} bez={d.typ === "hl" ? ["zapojitFirmu"] : ["zapojitFirmu", "pravidelna", "dorovnanie"]} />
+              {d.typ === "hl" || d.typ === "zv" || d.typ === "far"
+                // OPRAVY 189: klasické zbierky farnosti = ten istý platobný modul ako na profile charity
+                ? <div className="vp sc-tokeny" data-stit="silver" style={{ background: "transparent", padding: "0 14px" }}><div data-hier={d.typ === "hl" ? "0" : "z"}><ZmensenyModul><ModulPlatby profil={{ k: strankaId, meno: d.data.organizacia?.meno ?? "Farnosť" } as TestProfil}
+                    sektor={{ id: d.data.id, nazov: d.t, druh: d.typ === "hl" ? "centralna" : "sektor", foto: d.obr ?? "", vyzbierane: 0, darcovia: 0, mesta: {} } as unknown as TestSektor}
+                    nazov={`${d.t} · ${d.data.organizacia?.meno ?? "Farnosť"}`} dorovnanie={false} ktoVoli="farnosť" bezObjektu={d.typ === "zv"} /></ZmensenyModul></div></div>
+                : <ZbierkaModul zbierka={d.data} miesto="charita" pohreb={!!d.parte} pietne={<PietneAkcie strankaId={strankaId} zbierka={d.data.id} />} bocny zoStrankyOrg onBack={onZavri} ktoVoli={d.pin ? (d.pin.zdroj === "help" ? "príjemca" : "charita") : rod ? "rodina" : "farnosť"} bez={["zapojitFirmu", "pravidelna", "dorovnanie"]} />}
             </div>
             <button type="button" onClick={onZavri} style={{ alignSelf: "center", minHeight: 52, padding: "0 26px", borderRadius: 14, border: `1.5px solid ${LINKA}`, background: PAPIER, color: INK, fontFamily: "inherit", fontSize: 16.5, fontWeight: 800, cursor: "pointer" }}>Zbaliť ⌃</button>
           </div>

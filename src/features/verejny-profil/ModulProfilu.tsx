@@ -93,13 +93,16 @@ export function ModulProfilu({ profil, sektor, poradie, mestoV, onZbal, dorovnan
 
 /** KARTA 47 · samotný platobný modul bez náhľadu dlaždice a bez Zbaliť (tvorca: podpora v stĺpci / hárku, stream: hneď otvorený).
  *  nazov = názov platby (inak „{sektor} · {profil}"). */
-export function ModulPlatby(p: { profil: TestProfil; sektor: TestSektor; mestoV?: string; dorovnanie?: boolean; uvidisOdkaz?: { text: string; onClick?: () => void }; nazov?: string }) {
-  return <Modul profil={p.profil} sektor={p.sektor} mestoV={p.mestoV ?? ""} sDorovnanim={p.dorovnanie ?? true} uvidisOdkaz={p.uvidisOdkaz} nazovPlatby={p.nazov} />;
+export function ModulPlatby(p: { profil: TestProfil; sektor: TestSektor; mestoV?: string; dorovnanie?: boolean; uvidisOdkaz?: { text: string; onClick?: () => void }; nazov?: string;
+  /** OPRAVY 189: kto volí sumy („farnosť"), predvolene charita */ ktoVoli?: string;
+  /** OPRAVY 189: zvončeková zbierka — dar nejde ako hlavná ani sektorová zbierka stránky (nemá riadok v ledgeri) */ bezObjektu?: boolean }) {
+  return <Modul profil={p.profil} sektor={p.sektor} mestoV={p.mestoV ?? ""} sDorovnanim={p.dorovnanie ?? true} uvidisOdkaz={p.uvidisOdkaz} nazovPlatby={p.nazov} ktoVoli={p.ktoVoli} bezObjektu={p.bezObjektu} />;
 }
 
-function Modul({ profil, sektor, mestoV, sDorovnanim, uvidisOdkaz, nazovPlatby }: { profil: TestProfil; sektor: TestSektor; mestoV: string; sDorovnanim: boolean; uvidisOdkaz?: { text: string; onClick?: () => void }; nazovPlatby?: string }) {
+function Modul({ profil, sektor, mestoV, sDorovnanim, uvidisOdkaz, nazovPlatby, ktoVoli = "charita", bezObjektu }: { profil: TestProfil; sektor: TestSektor; mestoV: string; sDorovnanim: boolean; uvidisOdkaz?: { text: string; onClick?: () => void }; nazovPlatby?: string; ktoVoli?: string; bezObjektu?: boolean }) {
   const refId = sektor.id;
-  naviazObjekt(refId, { stranka: profil.k, hlavna: sektor.druh === "centralna", nazov: sektor.nazov }); // 0067: dary z ledgera
+  const objekt = bezObjektu ? undefined : { stranka: profil.k, hlavna: sektor.druh === "centralna", nazov: sektor.nazov };
+  if (objekt) naviazObjekt(refId, objekt); // 0067: dary z ledgera
   const rootRef = useRef<HTMLDivElement>(null), koniecPruhu = useRef<HTMLDivElement>(null);
   const mikro = { root: rootRef, ciel: koniecPruhu };
   const [registrovany, setRegistrovany] = useState(() => !jeNeregistrovany());
@@ -132,7 +135,7 @@ function Modul({ profil, sektor, mestoV, sDorovnanim, uvidisOdkaz, nazovPlatby }
       </div>}
       <div style={{ marginTop: 12 }}><ZdielatRiadok onZdielat={() => setHarok("zdielat")} /></div>
       <DeedDlazdice refId={refId} registrovany={registrovany} mikro={mikro} />
-      <RychleSumyEur sumy={[10, 25, 45]} doplnok="sumy si volí charita" kDaru={dorovnanie ? (s) => dorovnanieKDaru(dorovnanie, s) : undefined} otvor={otvor} />
+      <RychleSumyEur sumy={[10, 25, 45]} doplnok={`sumy si volí ${ktoVoli}`} kDaru={dorovnanie ? (s) => dorovnanieKDaru(dorovnanie, s) : undefined} otvor={otvor} />
       <VlastnaSuma eur deed={registrovany} otvor={otvor} firma={dorovnanie ? `${dorovnanie.firma} ${dorovnanie.pomer === 1 ? "zdvojnásobí" : "dorovná"}` : undefined} />
       <DaryVKrypte refId={refId} otvor={otvor} mikro={mikro} />
       <PravidelnaRiadok registrovany={registrovany} onClick={() => { setTipSuma(undefined); setHarok("pravidelna"); }} />
@@ -161,7 +164,7 @@ function Modul({ profil, sektor, mestoV, sDorovnanim, uvidisOdkaz, nazovPlatby }
       {platba && <PlatobneOkno kanal={platba.kanal} suma={platba.suma} nazov={nazov} registrovany={registrovany} pred={pred}
         bonus={dorovnanie ? (s) => dorovnanieKDaru(dorovnanie, s) : undefined} firma={dorovnanie?.firma}
         onClose={() => setPlatba(null)}
-        onHotovo={(v) => pridajDar({ refId, suma: v.eur, kanal: v.kanal === "eur" ? (v.sposob === "sepa" ? "sepa" : "psp") : "deed", registrovany, volba: v.volba, objekt: { stranka: profil.k, hlavna: sektor.druh === "centralna", nazov: sektor.nazov } })} />}
+        onHotovo={(v) => pridajDar({ refId, suma: v.eur, kanal: v.kanal === "eur" ? (v.sposob === "sepa" ? "sepa" : "psp") : "deed", registrovany, volba: v.volba, objekt })} />}
       {harok === "pravidelna" && <PravidelnaHarok refId={refId} nazov={nazov} registrovany={registrovany} zbierka={false} suma={tipSuma} onClose={() => setHarok(null)} />}
       {harok === "zdielat" && <ZdielatHarok id={refId} nazov={nazov} organizacia={profil.meno} obrazok={sektor.foto} onClose={() => setHarok(null)} />}
       {harok === "podporit" && <PodporitDeedHarok registrovany={registrovany} onClose={() => setHarok(null)} />}
