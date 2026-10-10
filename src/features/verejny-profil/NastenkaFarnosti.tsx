@@ -348,7 +348,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, stit: s
         {lavyStlpec("Príď a zaži s nami", "Pozývame vás. Ťuknite Prídem, nech vieme, s koľkými rátať. Fotky z akcií sú tu tiež.")}
         <div style={{ flex: "999 1 520px", minWidth: 0, display: "flex", flexDirection: "column", gap: 16 }}>
           {/* OPRAVY 193: karta najviac 420 px, fotky z akcií v tej istej mriežke */}
-          {(udalosti.length > 0 || alba.length > 0) && <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(260px,420px))", gap: 16, alignItems: "start" }}>
+          {(udalosti.length > 0 || alba.length > 0) && <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(290px,420px))", gap: 16, alignItems: "start", overflowWrap: "anywhere" }}>
             {udalosti.map((u) => { const d = u.dat ? zIso(u.dat) : null; return (
               <div key={u.id} style={{ borderRadius: 24, overflow: "hidden", background: KARTA, display: "flex", flexDirection: "column" }}>
                 {u.foto && u.plag ? <button type="button" onClick={() => setVelke({ src: u.foto })} aria-label="Plagát na celú obrazovku" style={{ width: "100%", aspectRatio: "3 / 4", border: "none", padding: 0, background: "var(--nf-pas)", cursor: "zoom-in", display: "block" }}><img src={u.foto} alt="Plagát" style={{ width: "100%", height: "100%", objectFit: "contain", display: "block" }} /></button>
@@ -370,7 +370,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, stit: s
                 <div key={a.id} style={{ borderRadius: 18, overflow: "hidden", background: KARTA, display: "flex", flexDirection: "column" }}>
                 <div style={{ padding: "10px 14px 6px" }}>{hlavickaAutora(a)}</div>
                 <button type="button" onClick={() => setAlbum(a)} style={{ textAlign: "left", border: "none", padding: 0, background: KARTA, display: "flex", flexDirection: "column", cursor: "pointer", color: INK, fontFamily: "inherit" }}>
-                  <span style={{ position: "relative", display: "block", width: "100%", aspectRatio: "4 / 3", background: "var(--nf-pas)", overflow: "hidden" }}><img src={f} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} /><span style={{ position: "absolute", right: 10, bottom: 10, padding: "3px 9px", borderRadius: 7, background: "rgba(20,17,11,.78)", color: "#fff", fontSize: 14, fontWeight: 700 }}>{fotiek(a.fotky!.length)}</span></span>
+                  <span style={{ position: "relative", display: "block", width: "100%", aspectRatio: "16 / 9", background: "var(--nf-pas)", overflow: "hidden" }}><img src={f} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} /><span style={{ position: "absolute", right: 10, bottom: 10, padding: "3px 9px", borderRadius: 7, background: "rgba(20,17,11,.78)", color: "#fff", fontSize: 14, fontWeight: 700 }}>{fotiek(a.fotky!.length)}</span></span>
                   <span style={{ padding: "12px 14px 14px", display: "flex", flexDirection: "column", gap: 3 }}><b style={{ fontSize: 17, lineHeight: 1.25 }}>{a.t || "Fotky z akcie"}</b></span>
                 </button>
                 {/* OPRAVY 194: autor fotky upraví a zmaže */}
