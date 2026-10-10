@@ -1,0 +1,19 @@
+/* OPRAVY 203 · farby Nástenky farnosti podľa témy appky (Svetlá · Tmavá · Podľa telefónu).
+   Svetlé = prototyp Farnost nastenka - zivo, tmavé = karta 25 (2b), rovnaké odtiene ako html.dark v index.css.
+   Napevno ostávajú len fotky, obrázky parte / svadby / jubilea, QR a titulka na fotke. */
+:root {
+  --nf-bg: #EFEAE1; --nf-karta: #E4DFD5; --nf-papier: #FBF9F4; --nf-linka: #CFC8BA;
+  --nf-ink: #1D211B; --nf-ink2: #4A4C43; --nf-ink3: #5B5D53;
+  --nf-teal: #2F7A78; --nf-zelena: #4B7A35; --nf-fialova: #6E4E7A; --nf-cervena: #8E3B2F; --nf-zlata: #8A6A1F;
+  --nf-plne: #14110B; --nf-plneInk: #FFFFFF;          /* tmavé tlačidlo (Prídem, filter, dnešný deň) */
+  --nf-gSoft: #E3ECDB; --nf-gBd: #9DBB86; --nf-gInk: #2F5A22;
+  --nf-pas: #D9D3C7; --nf-spom: #E7E2D8; --nf-fSoft: #F3EEF4; --nf-zlBg: #E2D7BF; --nf-vyp: #CFC9BC; --nf-cervDnes: #FF9C8F;
+}
+html.dark {
+  --nf-bg: #161914; --nf-karta: #232820; --nf-papier: #1C2019; --nf-linka: #333A2D;
+  --nf-ink: #F1ECE1; --nf-ink2: #CDC8BA; --nf-ink3: #A6A395;
+  --nf-teal: #6FB5B2; --nf-zelena: #8DB866; --nf-fialova: #C3A2D0; --nf-cervena: #E08A7A; --nf-zlata: #D9B65A;
+  --nf-plne: #F1ECE1; --nf-plneInk: #14110B;
+  --nf-gSoft: #24321C; --nf-gBd: #4A6B36; --nf-gInk: #A9D18A;
+  --nf-pas: #333A2D; --nf-spom: #1C2019; --nf-fSoft: #2A2230; --nf-zlBg: #2E2715; --nf-vyp: #3B4236; --nf-cervDnes: #B3261E;
+}

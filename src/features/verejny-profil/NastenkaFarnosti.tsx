@@ -45,11 +45,14 @@ import { toast } from "@/shared";
 import { SADY_EUR, SADY_EURC } from "@/lib/sadyDarov";
 import { useLayout } from "@/components/context";
 
-// ---- farby prototypu (svetlá nástenka) ----
-const BG = "#EFEAE1", KARTA = "#E4DFD5", INK = "#1D211B", INK2 = "#4A4C43", INK3 = "#5B5D53", LINKA = "#CFC8BA", PAPIER = "#FBF9F4";
-const TEAL = "#2F7A78", ZELENA = "#4B7A35", FIALOVA = "#6E4E7A", CERVENA = "#8E3B2F", ZLATA = "#8A6A1F";
+import "@/styles/nastenka.css";
+// ---- farby Nástenky: premenné podľa témy appky (OPRAVY 203, styles/nastenka.css) ----
+const BG = "var(--nf-bg)", KARTA = "var(--nf-karta)", INK = "var(--nf-ink)", INK2 = "var(--nf-ink2)", INK3 = "var(--nf-ink3)", LINKA = "var(--nf-linka)", PAPIER = "var(--nf-papier)";
+const TEAL = "var(--nf-teal)", ZELENA = "var(--nf-zelena)", FIALOVA = "var(--nf-fialova)", CERVENA = "var(--nf-cervena)", ZLATA = "var(--nf-zlata)";
+/** pozadie tlačidiel s bielym textom — v oboch témach tmavé */
+const ZELENA_TL = "#4B7A35", TEAL_TL = "#2F7A78";
 /** svetlé premenné pre spoločné kúsky (··· Nahlásiť, celé obrazovky) — nástenka je zatiaľ len svetlá */
-const PREMENNE = { "--ink": INK, "--ink2": INK2, "--ink3": INK3, "--card": PAPIER, "--cardBd": LINKA, "--field": PAPIER, "--btn": "#E4DFD5", "--gSoft": "#E3ECDB", "--gBd": "#9DBB86", "--gInk": "#2F5A22", "--goldBg": "#E2D7BF", "--bg": BG } as CSSProperties;
+const PREMENNE = { "--ink": INK, "--ink2": INK2, "--ink3": INK3, "--card": PAPIER, "--cardBd": LINKA, "--field": PAPIER, "--btn": KARTA, "--gSoft": "var(--nf-gSoft)", "--gBd": "var(--nf-gBd)", "--gInk": "var(--nf-gInk)", "--goldBg": "var(--nf-zlBg)", "--bg": BG } as CSSProperties;
 const PAD_X = "clamp(20px,5vw,72px)";
 const MES = ["JAN", "FEB", "MAR", "APR", "MÁJ", "JÚN", "JÚL", "AUG", "SEP", "OKT", "NOV", "DEC"];
 const DNW = ["pondelok", "utorok", "streda", "štvrtok", "piatok", "sobota", "nedeľa"];
@@ -72,11 +75,11 @@ const kicker = (c = INK3): CSSProperties => ({ fontSize: 14, fontWeight: 800, le
 /** tlačidlo reakcie podľa prototypu (tmavé = hlavné, svetlé = sústrasť) */
 const tlacR = (ja: boolean, tmave: boolean, plne = false): CSSProperties => ({
   minHeight: 48, padding: "0 18px", borderRadius: 13, cursor: plne ? "default" : "pointer", fontFamily: "inherit", fontSize: 16, fontWeight: 800, whiteSpace: "nowrap",
-  border: ja ? `2px solid ${ZELENA}` : tmave ? "2px solid #14110B" : `1.5px solid ${LINKA}`,
-  background: plne ? "#CFC9BC" : ja ? "#E3ECDB" : tmave ? "#14110B" : PAPIER,
-  color: plne ? INK2 : ja ? "#2F5A22" : tmave ? "#fff" : INK,
+  border: ja ? `2px solid ${ZELENA}` : tmave ? "2px solid var(--nf-plne)" : `1.5px solid ${LINKA}`,
+  background: plne ? "var(--nf-vyp)" : ja ? "var(--nf-gSoft)" : tmave ? "var(--nf-plne)" : PAPIER,
+  color: plne ? INK2 : ja ? "var(--nf-gInk)" : tmave ? "var(--nf-plneInk)" : INK,
 });
-const tlacUpravit: CSSProperties = { alignSelf: "flex-start", minHeight: 44, padding: "0 16px", borderRadius: 12, border: `1.5px solid ${ZELENA}`, background: "transparent", color: "#2F5A22", fontFamily: "inherit", fontSize: 15, fontWeight: 800, cursor: "pointer" };
+const tlacUpravit: CSSProperties = { alignSelf: "flex-start", minHeight: 44, padding: "0 16px", borderRadius: 12, border: `1.5px solid ${ZELENA}`, background: "transparent", color: "var(--nf-gInk)", fontFamily: "inherit", fontSize: 15, fontWeight: 800, cursor: "pointer" };
 
 export function posunNaBlok(blok: string) {
   document.querySelector(`[data-blok="${blok}"]`)?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -285,7 +288,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, stit: s
         : it?.oz?.u && it.oz.volba ? <span style={{ padding: 12, display: "flex" }}><Plagat u={it.oz.u} volba={it.oz.volba} vz={vz} sirka={300} /></span> : null}
     </button>);
   const rodinaZbierka = (z: SpustenaZbierka, text: string) => (
-    <button type="button" onClick={() => otvorZbierku(z)} style={{ textAlign: "left", padding: "14px 16px", borderRadius: 14, border: `2px solid ${FIALOVA}`, background: "#F3EEF4", display: "flex", flexDirection: "column", gap: 3, cursor: "pointer", color: INK, fontFamily: "inherit" }}>
+    <button type="button" onClick={() => otvorZbierku(z)} style={{ textAlign: "left", padding: "14px 16px", borderRadius: 14, border: `2px solid ${FIALOVA}`, background: "var(--nf-fSoft)", display: "flex", flexDirection: "column", gap: 3, cursor: "pointer", color: INK, fontFamily: "inherit" }}>
       <span style={{ fontSize: 13.5, fontWeight: 800, letterSpacing: ".1em", color: FIALOVA }}>ZBIERKA RODINY</span>
       <b style={{ fontSize: 17 }}>{text}</b>
     </button>);
@@ -304,7 +307,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, stit: s
             : logo ? <img src={logo} alt="Logo" style={{ flex: "none", width: "clamp(76px,7vw,100px)", height: "clamp(76px,7vw,100px)", borderRadius: profil?.tvar === "kruh" ? "50%" : 26, objectFit: "cover", background: "#fff" }} />
             : <span style={{ flex: "none", width: "clamp(76px,7vw,100px)", height: "clamp(76px,7vw,100px)", borderRadius: 26, background: "#fff", color: "#14110B", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "clamp(26px,2.6vw,34px)", fontWeight: 800 }}>{inic}</span>}
           <span style={{ flex: "1 1 320px", minWidth: 0, display: "flex", flexDirection: "column", gap: 8 }}><b style={{ fontSize: "clamp(34px,4.4vw,60px)", lineHeight: 1, letterSpacing: "-.04em", color: "#fff", textWrap: "balance" } as CSSProperties}>{meno}</b><span style={{ fontSize: "clamp(15px,1.4vw,19px)", color: "#E8E1D3" }}>Farnosť</span></span>
-          <button type="button" aria-pressed={jeHl || jeSl} aria-expanded={jeHl || jeSl ? mfOn : undefined} onClick={sledTap} style={{ flex: "none", minHeight: 54, padding: "0 24px", borderRadius: 15, border: "none", background: jeHl || jeSl ? "#E3ECDB" : "#fff", color: jeHl || jeSl ? "#2F5A22" : "#14110B", fontFamily: "inherit", fontSize: 17, fontWeight: 800, cursor: "pointer", display: "flex", alignItems: "center", gap: 10 }}>
+          <button type="button" aria-pressed={jeHl || jeSl} aria-expanded={jeHl || jeSl ? mfOn : undefined} onClick={sledTap} style={{ flex: "none", minHeight: 54, padding: "0 24px", borderRadius: 15, border: "none", background: jeHl || jeSl ? "var(--nf-gSoft)" : "#fff", color: jeHl || jeSl ? "var(--nf-gInk)" : "#14110B", fontFamily: "inherit", fontSize: 17, fontWeight: 800, cursor: "pointer", display: "flex", alignItems: "center", gap: 10 }}>
             <span>{sledT}</span>{(jeHl || jeSl) && <span aria-hidden="true" style={{ fontSize: 15 }}>⌄</span>}
           </button>
         </div>
@@ -347,8 +350,8 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, stit: s
           {(udalosti.length > 0 || alba.length > 0) && <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(260px,420px))", gap: 16, alignItems: "start" }}>
             {udalosti.map((u) => { const d = u.dat ? zIso(u.dat) : null; return (
               <div key={u.id} style={{ borderRadius: 24, overflow: "hidden", background: KARTA, display: "flex", flexDirection: "column" }}>
-                {u.foto && u.plag ? <button type="button" onClick={() => setVelke({ src: u.foto })} aria-label="Plagát na celú obrazovku" style={{ width: "100%", aspectRatio: "3 / 4", border: "none", padding: 0, background: "#D9D3C7", cursor: "zoom-in", display: "block" }}><img src={u.foto} alt="Plagát" style={{ width: "100%", height: "100%", objectFit: "contain", display: "block" }} /></button>
-                  : <div style={{ position: "relative", aspectRatio: u.foto ? "16 / 9" : "4 / 1", minHeight: 110, background: "linear-gradient(160deg,#D9D3C7,#C9C1B2)", overflow: "hidden" }}>
+                {u.foto && u.plag ? <button type="button" onClick={() => setVelke({ src: u.foto })} aria-label="Plagát na celú obrazovku" style={{ width: "100%", aspectRatio: "3 / 4", border: "none", padding: 0, background: "var(--nf-pas)", cursor: "zoom-in", display: "block" }}><img src={u.foto} alt="Plagát" style={{ width: "100%", height: "100%", objectFit: "contain", display: "block" }} /></button>
+                  : <div style={{ position: "relative", aspectRatio: u.foto ? "16 / 9" : "4 / 1", minHeight: 110, background: "var(--nf-pas)", overflow: "hidden" }}>
                     {u.foto && <img src={u.foto} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />}
                     {d && <span style={{ position: "absolute", left: 16, top: 16, width: 72, height: 78, borderRadius: 16, background: "#fff", color: "#14110B", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}><b style={{ fontSize: 28, lineHeight: 1 }}>{d.getDate()}.</b><span style={{ fontSize: 13, fontWeight: 800, letterSpacing: ".08em" }}>{MES[d.getMonth()]}</span><span style={{ fontSize: 12.5, color: INK3 }}>{DNW[dvt(d)]}</span></span>}
                   </div>}
@@ -366,7 +369,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, stit: s
                 <div key={a.id} style={{ borderRadius: 18, overflow: "hidden", background: KARTA, display: "flex", flexDirection: "column" }}>
                 <div style={{ padding: "10px 14px 6px" }}>{hlavickaAutora(a)}</div>
                 <button type="button" onClick={() => setAlbum(a)} style={{ textAlign: "left", border: "none", padding: 0, background: KARTA, display: "flex", flexDirection: "column", cursor: "pointer", color: INK, fontFamily: "inherit" }}>
-                  <span style={{ position: "relative", display: "block", width: "100%", aspectRatio: "4 / 3", background: "#D9D3C7", overflow: "hidden" }}><img src={f} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} /><span style={{ position: "absolute", right: 10, bottom: 10, padding: "3px 9px", borderRadius: 7, background: "rgba(20,17,11,.78)", color: "#fff", fontSize: 14, fontWeight: 700 }}>{fotiek(a.fotky!.length)}</span></span>
+                  <span style={{ position: "relative", display: "block", width: "100%", aspectRatio: "4 / 3", background: "var(--nf-pas)", overflow: "hidden" }}><img src={f} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} /><span style={{ position: "absolute", right: 10, bottom: 10, padding: "3px 9px", borderRadius: 7, background: "rgba(20,17,11,.78)", color: "#fff", fontSize: 14, fontWeight: 700 }}>{fotiek(a.fotky!.length)}</span></span>
                   <span style={{ padding: "12px 14px 14px", display: "flex", flexDirection: "column", gap: 3 }}><b style={{ fontSize: 17, lineHeight: 1.25 }}>{a.t || "Fotky z akcie"}</b></span>
                 </button>
                 {/* OPRAVY 194: autor fotky upraví a zmaže */}
@@ -402,18 +405,18 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, stit: s
       </div>}
 
       {/* ---------- Spomíname ---------- */}
-      {maSpom && <div data-blok="spom" style={blokStyl("#E7E2D8")}>
+      {maSpom && <div data-blok="spom" style={blokStyl("var(--nf-spom)")}>
         {lavyStlpec("Spomíname", "Parte a spomienky. Úprimnú sústrasť aj príspevok rodine.")}
         <div style={{ flex: "999 1 520px", minWidth: 0, display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(220px,280px))", gap: 16, alignItems: "start" }}>{/* OPRAVY 195: parte najviac 280 px */}
           {parteFar.map((x) => { const src = obrFar(x), sab = sablonaFar(x); return (
-            <div key={x.id} style={{ border: "3px solid #14110B", background: PAPIER, display: "flex", flexDirection: "column" }}>
+            <div key={x.id} style={{ border: `1.5px solid ${INK}`, background: PAPIER, display: "flex", flexDirection: "column" }}>
               {src || sab ? obrazokOznamu({ src: src, it: x, pomer: "3 / 4", maxH: 460, label: "Parte", onTap: () => setVelke(src ? { src } : { it: x }) })
                 : <TextParte meno={x.smutocny?.meno ?? x.nazov ?? ""} kedy={x.popis ?? ""} />}
               <span style={{ padding: "12px 24px", fontSize: 14.5, color: INK3 }}>Farnosť</span>
               {sustrast(reakF(x.id, "sustrast"))}
             </div>); })}
           {parteVer.map((x) => { const src = obrVer(x); return (
-            <div key={x.id} style={{ border: "3px solid #14110B", background: PAPIER, display: "flex", flexDirection: "column" }}>
+            <div key={x.id} style={{ border: `1.5px solid ${INK}`, background: PAPIER, display: "flex", flexDirection: "column" }}>
               {src ? obrazokOznamu({ src: src, pomer: "3 / 4", maxH: 460, label: "Parte", onTap: () => setVelke({ src }) }) : <TextParte meno={x.t} kedy={x.s} />}
               <div style={{ padding: "8px 16px 0" }}>{hlavickaAutora(x)}</div>
               {sustrast(reakV(x, "sustrast"))}
@@ -437,7 +440,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, stit: s
             <div key={x.id} style={{ borderRadius: 22, overflow: "hidden", background: KARTA, display: "flex", flexDirection: "column" }}>
               {(src || sab) && obrazokOznamu({ src: src, it: x, pomer: "3 / 4", label: "Oznámenie", onTap: () => setVelke(src ? { src } : { it: x }) })}
               <div style={{ padding: "18px 20px 22px", display: "flex", flexDirection: "column", gap: 8 }}>
-                <span style={kicker("#4E7D37")}>{stit(x)} · FARNOSŤ</span>
+                <span style={kicker(ZELENA)}>{stit(x)} · FARNOSŤ</span>
                 <b style={{ fontSize: 21, lineHeight: 1.25 }}>{x.nazov}</b>
                 {!src && !sab && x.popis && <span style={{ fontSize: 16.5, lineHeight: 1.5, color: INK2, whiteSpace: "pre-line" }}>{x.popis}</span>}
                 {reakcia({ ...reakF(x.id, "blaho"), t: "Blahoželám", tJa: "Blahoželáte ✓", poc: (n) => String(n) })}
@@ -448,7 +451,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, stit: s
               {src && obrazokOznamu({ src: src, pomer: "3 / 4", label: "Oznámenie", onTap: () => setVelke({ src }) })}
               <div style={{ padding: "18px 20px 22px", display: "flex", flexDirection: "column", gap: 8 }}>
                 {hlavickaAutora(x)}
-                <span style={kicker("#4E7D37")}>{x.k === "svadba" ? "SVADBA" : "JUBILEUM"}</span>
+                <span style={kicker(ZELENA)}>{x.k === "svadba" ? "SVADBA" : "JUBILEUM"}</span>
                 <b style={{ fontSize: 21, lineHeight: 1.25 }}>{x.t}</b>
                 {!src && x.s && <span style={{ fontSize: 16.5, lineHeight: 1.5, color: INK2, whiteSpace: "pre-line" }}>{x.s}</span>}
                 {reakcia({ ...reakV(x, "blaho"), t: "Blahoželám", tJa: "Blahoželáte ✓", poc: (n) => String(n) })}
@@ -458,7 +461,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, stit: s
           {zbSvadba.map((z) => (
             <div key={z.id} style={{ borderRadius: 22, overflow: "hidden", background: KARTA, display: "flex", flexDirection: "column" }}>
               <div style={{ padding: "18px 20px 22px", display: "flex", flexDirection: "column", gap: 8 }}>
-                <span style={kicker("#4E7D37")}>SVADBA</span>
+                <span style={kicker(ZELENA)}>SVADBA</span>
                 <b style={{ fontSize: 21, lineHeight: 1.25 }}>{bezPredpony(z.nazov) || "Svadba"}</b>
                 {rodinaZbierka(z, "Darček pre snúbencov · Prispieť ›")}
                 {reakcia({ ...reakF(z.id, "blaho"), t: "Blahoželám", tJa: "Blahoželáte ✓", poc: (n) => String(n) })}
@@ -505,7 +508,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, stit: s
         {ozAll.length > 0 && <div style={{ flex: "1.4 1 340px", minWidth: 0, display: "flex", flexDirection: "column" }}>
           <span style={{ ...kicker(), paddingBottom: 10 }}>OZNAMY FARNOSTI</span>
           {maFilter && <div role="radiogroup" aria-label="Filter oznamov" style={{ display: "flex", gap: 8, flexWrap: "wrap", paddingBottom: 12 }}>
-            {([["vse", "Všetko"], ["far", "Od farnosti"], ["ver", "Od veriacich"]] as const).map(([kf, t]) => { const on = flt === kf; return <button key={kf} type="button" role="radio" aria-checked={on} onClick={() => setFlt(kf)} style={{ minHeight: 44, padding: "0 14px", borderRadius: 12, border: on ? "2px solid #14110B" : `1.5px solid ${LINKA}`, background: on ? "#14110B" : "transparent", color: on ? "#fff" : INK, fontFamily: "inherit", fontSize: 15, fontWeight: 800, cursor: "pointer" }}>{t}</button>; })}
+            {([["vse", "Všetko"], ["far", "Od farnosti"], ["ver", "Od veriacich"]] as const).map(([kf, t]) => { const on = flt === kf; return <button key={kf} type="button" role="radio" aria-checked={on} onClick={() => setFlt(kf)} style={{ minHeight: 44, padding: "0 14px", borderRadius: 12, border: on ? "2px solid var(--nf-plne)" : `1.5px solid ${LINKA}`, background: on ? "var(--nf-plne)" : "transparent", color: on ? "var(--nf-plneInk)" : INK, fontFamily: "inherit", fontSize: 15, fontWeight: 800, cursor: "pointer" }}>{t}</button>; })}
           </div>}
           {oznamy.map((x) => (
             <div key={x.id} style={{ display: "flex", gap: 16, padding: "14px 0", borderTop: `1px solid ${LINKA}` }}>
@@ -524,11 +527,11 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, stit: s
           <span style={kicker()}>SVÄTÉ OMŠE</span>
           <div style={{ display: "flex", flexDirection: "column", fontSize: 16.5 }}>
             {dni.map((d) => { const dn = d.i === 0; return (
-              <span key={iso(d.d)} style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10, padding: "10px 12px", margin: "1px -12px", borderRadius: 10, background: dn ? "#14110B" : "transparent", color: dn ? "#fff" : INK }}>
+              <span key={iso(d.d)} style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10, padding: "10px 12px", margin: "1px -12px", borderRadius: 10, background: dn ? "var(--nf-plne)" : "transparent", color: dn ? "var(--nf-plneInk)" : INK }}>
                 <span>{DNI_K[dvt(d.d)]} {d.d.getDate()}. {d.d.getMonth() + 1}.{dn ? " · dnes" : ""}</span>
                 <span style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 3 }}>
                   <b style={{ textAlign: "right" }}>{d.om.map((o) => o.t).join(" · ") || "—"}</b>
-                  {d.ol.length > 0 && <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 13.5, fontWeight: 800, color: dn ? "#FF9C8F" : "#B3261E" }}><span style={{ width: 0, height: 0, borderLeft: "8px solid currentColor", borderTop: "5px solid transparent", borderBottom: "5px solid transparent" }} />aj online {d.ol.join(" · ")}</span>}
+                  {d.ol.length > 0 && <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 13.5, fontWeight: 800, color: dn ? "var(--nf-cervDnes)" : CERVENA }}><span style={{ width: 0, height: 0, borderLeft: "8px solid currentColor", borderTop: "5px solid transparent", borderBottom: "5px solid transparent" }} />aj online {d.ol.join(" · ")}</span>}
                 </span>
               </span>); })}
           </div>
@@ -581,7 +584,7 @@ function Sviecka() {
 function TextParte({ meno, kedy }: { meno: string; kedy: string }) {
   return (
     <div style={{ padding: "24px 24px 12px", display: "flex", flexDirection: "column", gap: 8 }}>
-      <span aria-hidden="true" style={{ position: "relative", width: 18, height: 26, flex: "none" }}><span style={{ position: "absolute", left: 6.5, top: 0, width: 3.5, height: 26, background: "#14110B" }} /><span style={{ position: "absolute", left: 0, top: 6.5, width: 18, height: 3.5, background: "#14110B" }} /></span>
+      <span aria-hidden="true" style={{ position: "relative", width: 18, height: 26, flex: "none" }}><span style={{ position: "absolute", left: 6.5, top: 0, width: 3.5, height: 26, background: INK }} /><span style={{ position: "absolute", left: 0, top: 6.5, width: 18, height: 3.5, background: INK }} /></span>
       <span style={{ fontSize: 16, color: INK2 }}>S bolesťou v srdci oznamujeme</span>
       <b style={{ fontSize: 30, letterSpacing: "-.02em", lineHeight: 1.1 }}>{meno}</b>
       {kedy && <span style={{ fontSize: 16.5, lineHeight: 1.5, color: INK2, whiteSpace: "pre-line" }}>{kedy}</span>}
@@ -608,7 +611,7 @@ function HlavnaKarta({ strankaId, hlRef, nazov, txt, onTap }: { strankaId: strin
   ].sort((a, b) => b.cas - a.cas).slice(0, 4);
   return (
     <button type="button" onClick={onTap} style={{ flex: "1 1 360px", minWidth: 0, textAlign: "left", padding: "26px 28px", borderRadius: 24, background: KARTA, border: "none", borderLeft: `6px solid ${TEAL}`, display: "flex", flexDirection: "column", gap: 12, cursor: "pointer", color: INK, fontFamily: "inherit" }}>
-      <span style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}><span style={{ height: 30, padding: "0 12px", borderRadius: 9, background: TEAL, color: "#fff", fontSize: 13, fontWeight: 800, letterSpacing: ".08em", display: "flex", alignItems: "center" }}>HLAVNÁ ZBIERKA</span><span style={{ fontSize: 15.5, color: INK3 }}>stále · aj pravidelne mesačne</span></span>
+      <span style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}><span style={{ height: 30, padding: "0 12px", borderRadius: 9, background: TEAL_TL, color: "#fff", fontSize: 13, fontWeight: 800, letterSpacing: ".08em", display: "flex", alignItems: "center" }}>HLAVNÁ ZBIERKA</span><span style={{ fontSize: 15.5, color: INK3 }}>stále · aj pravidelne mesačne</span></span>
       <b style={{ fontSize: "clamp(24px,2.2vw,30px)", letterSpacing: "-.02em" }}>{nazov} ›</b>
       {txt && <span style={{ fontSize: 17, lineHeight: 1.5, color: INK2 }}>{txt}</span>}
       {s.suma > 0 ? <span style={{ fontSize: 18, color: INK2 }}><b style={{ fontSize: 42, letterSpacing: "-.03em", color: INK }}>{eur(s.suma)}</b> {centralnaZPamate(strankaId)?.rocne ? `v roku ${new Date().getFullYear()}` : "spolu"} · {ludi(s.darcov)}</span>
@@ -662,12 +665,12 @@ function PasyPripnutej({ z: z0, strankaId }: { z: ZbierkaNaPripnutie; strankaId:
   const pom = (n: number) => (n === 1 ? "pomohol" : n < 5 ? "pomohli" : "pomohlo");
   const pas = (w: number, f: string) => <span style={{ display: "block", height: 10, borderRadius: 5, background: "rgba(20,17,11,.1)", overflow: "hidden" }}><span style={{ display: "block", height: "100%", width: `${w}%`, borderRadius: 5, background: f, transition: "width .5s ease" }} /></span>;
   return (<>
-    <div style={{ margin: "0 16px", padding: "14px 16px", borderRadius: 14, background: "#fff", border: `1px solid ${LINKA}`, display: "flex", flexDirection: "column", gap: 8 }}>
+    <div style={{ margin: "0 16px", padding: "14px 16px", borderRadius: 14, background: PAPIER, border: `1px solid ${LINKA}`, display: "flex", flexDirection: "column", gap: 8 }}>
       <span style={{ fontSize: 17 }}><b style={{ fontSize: 26, letterSpacing: "-.02em" }}>{eur(z.vyzbierane)}</b>{z.ciel ? ` z ${eur(z.ciel)} · ${pct} %` : ""}</span>
       {z.ciel ? pas(pct, ZELENA) : null}
       <span style={{ fontSize: 15, color: INK2 }}>{z.darov ? `${ludi(z.darov)} ${pom(z.darov)}` : "Zatiaľ žiadne dary"}</span>
     </div>
-    <div style={{ margin: "0 16px", padding: "14px 16px", borderRadius: 14, background: "#EEF3EA", border: `1.5px solid ${ZELENA}`, display: "flex", flexDirection: "column", gap: 8 }}>
+    <div style={{ margin: "0 16px", padding: "14px 16px", borderRadius: 14, background: "var(--nf-gSoft)", border: `1.5px solid ${ZELENA}`, display: "flex", flexDirection: "column", gap: 8 }}>
       <span style={{ fontSize: 13.5, fontWeight: 800, letterSpacing: ".1em", color: ZELENA }}>CEZ NAŠU FARNOSŤ</span>
       <span style={{ fontSize: 17 }}><b style={{ fontSize: 24 }}>{eur(c.suma)}</b> · ďalší míľnik {eur(m)}</span>
       {pas(Math.min(100, (c.suma / m) * 100), ZELENA)}
@@ -687,7 +690,7 @@ function ZbierkaKarta({ z, onTap }: { z: SpustenaZbierka; onTap: () => void }) {
   const pod: ReactNode = s.pocet ? `${eur(s.suma)}${ciel ? ` z ${eur(ciel)}` : ""} · ${ludi(s.pocet)}` : "Zatiaľ žiadne dary";
   return (
     <button type="button" onClick={onTap} style={{ textAlign: "left", border: "none", borderRadius: 22, overflow: "hidden", background: KARTA, borderLeft: `5px solid ${TEAL}`, padding: 0, display: "flex", flexDirection: "column", color: INK, cursor: "pointer", fontFamily: "inherit" }}>
-      {foto && <img src={foto} alt="" style={{ width: "100%", aspectRatio: "16 / 9", objectFit: "cover", display: "block", background: "#D9D3C7" }} />}
+      {foto && <img src={foto} alt="" style={{ width: "100%", aspectRatio: "16 / 9", objectFit: "cover", display: "block", background: "var(--nf-pas)" }} />}
       <span style={{ padding: "16px 18px 18px", display: "flex", flexDirection: "column", gap: 8 }}>
         <span style={kicker(TEAL)}>ZBIERKA</span>
         <b style={{ fontSize: 20, lineHeight: 1.25 }}>{z.nazov || "Zbierka"}</b>
@@ -707,13 +710,13 @@ function DetailZbierky({ d, strankaId, onZavri }: { d: DetailF; strankaId: strin
   return createPortal(
     <div role="dialog" aria-modal="true" aria-label="Zbierka" style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(20,17,11,.82)", overflowY: "auto", padding: 16, boxSizing: "border-box", fontFamily: "'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,sans-serif" }}>
       <div style={{ maxWidth: 1180, margin: "0 auto", paddingBottom: 24, display: "flex", flexDirection: "column", gap: 14 }}>
-        <div><button type="button" onClick={onZavri} autoFocus style={{ minHeight: 52, padding: "0 20px", border: "none", borderRadius: 14, background: ZELENA, color: "#fff", fontFamily: "inherit", fontSize: 17, fontWeight: 800, cursor: "pointer" }}>‹ Späť na stránku farnosti</button></div>
+        <div><button type="button" onClick={onZavri} autoFocus style={{ minHeight: 52, padding: "0 20px", border: "none", borderRadius: 14, background: ZELENA_TL, color: "#fff", fontFamily: "inherit", fontSize: 17, fontWeight: 800, cursor: "pointer" }}>‹ Späť na stránku farnosti</button></div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 20, alignItems: "flex-start" }}>
           <div style={{ ...PREMENNE, flex: "1.1 1 380px", minWidth: 0, position: wide ? "sticky" : "static", top: 0, display: "flex", flexDirection: "column", gap: 14 } as CSSProperties}>
             <div style={{ border: `3px solid ${ram}`, background: PAPIER, color: INK, display: "flex", flexDirection: "column", borderRadius: d.parte || rod ? 0 : 22, overflow: "hidden" }}>
               {d.obr && <img src={d.obr} alt="" style={{ width: "100%", maxHeight: "72vh", objectFit: "contain", display: "block", background: BG }} />}
               {d.parte && !d.obr ? <div style={{ padding: "32px 28px 24px", display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", gap: 10 }}>
-                <span aria-hidden="true" style={{ position: "relative", width: 22, height: 34, flex: "none" }}><span style={{ position: "absolute", left: 8, top: 0, width: 5, height: 34, background: "#14110B" }} /><span style={{ position: "absolute", left: 0, top: 8, width: 22, height: 5, background: "#14110B" }} /></span>
+                <span aria-hidden="true" style={{ position: "relative", width: 22, height: 34, flex: "none" }}><span style={{ position: "absolute", left: 8, top: 0, width: 5, height: 34, background: INK }} /><span style={{ position: "absolute", left: 0, top: 8, width: 22, height: 5, background: INK }} /></span>
                 <span style={{ fontSize: 17, color: INK2 }}>S bolesťou v srdci oznamujeme</span>
                 <b style={{ fontSize: 38, letterSpacing: "-.02em", lineHeight: 1.1 }}>{d.t}</b>
                 {d.txt && <span style={{ fontSize: 18, lineHeight: 1.55, color: INK2, whiteSpace: "pre-line" }}>{d.txt}</span>}
@@ -726,7 +729,7 @@ function DetailZbierky({ d, strankaId, onZavri }: { d: DetailF; strankaId: strin
                 <div style={{ margin: "0 16px 12px", fontSize: 16, color: INK2 }}>Peniaze idú: <b style={{ color: INK }}>{d.pin.kto}</b></div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 12, paddingBottom: 16 }}><PasyPripnutej z={d.pin} strankaId={strankaId} /></div>
               </>}
-              {rod && <div style={{ margin: "0 16px 16px", padding: "12px 16px", borderRadius: 14, background: "#F3EEF4", border: `2px solid ${FIALOVA}`, display: "flex", flexDirection: "column", gap: 2 }}>
+              {rod && <div style={{ margin: "0 16px 16px", padding: "12px 16px", borderRadius: 14, background: "var(--nf-fSoft)", border: `2px solid ${FIALOVA}`, display: "flex", flexDirection: "column", gap: 2 }}>
                 <span style={{ fontSize: 13.5, fontWeight: 800, letterSpacing: ".1em", color: FIALOVA }}>ZBIERKA RODINY</span>
                 <b style={{ fontSize: 17 }}>Peniaze idú: rodine</b>
                 {d.parte && <span style={{ fontSize: 14.5, color: INK2 }}>Sumu uvidíte po vašom dare.</span>}
@@ -762,22 +765,22 @@ function MojeFarnostiOkno({ strankaId, domovska, sled, hlaska, onHlaska, onZavri
       <div onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-label="Moje farnosti" style={{ width: "100%", maxWidth: 420, maxHeight: "calc(100vh - 40px)", overflowY: "auto", borderRadius: 24, background: PAPIER, color: INK, padding: 20, display: "flex", flexDirection: "column", gap: 8, boxSizing: "border-box" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12, paddingBottom: 4 }}>
           <b style={{ flex: 1, fontSize: 22 }}>Moje farnosti</b>
-          <button type="button" onClick={onZavri} autoFocus style={{ minHeight: 48, padding: "0 16px", borderRadius: 12, border: `1px solid ${LINKA}`, background: "#fff", fontFamily: "inherit", fontSize: 15, fontWeight: 800, cursor: "pointer", color: INK }}>× Zavrieť</button>
+          <button type="button" onClick={onZavri} autoFocus style={{ minHeight: 48, padding: "0 16px", borderRadius: 12, border: `1px solid ${LINKA}`, background: PAPIER, fontFamily: "inherit", fontSize: 15, fontWeight: 800, cursor: "pointer", color: INK }}>× Zavrieť</button>
         </div>
         {riadky.map(([id, hl]) => { const tu = id === strankaId; return (
-          <div key={id} style={{ padding: "10px 12px", borderRadius: 14, border: tu ? `2px solid ${ZELENA}` : `1px solid ${LINKA}`, background: tu ? "#EEF3E8" : "#fff", display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+          <div key={id} style={{ padding: "10px 12px", borderRadius: 14, border: tu ? `2px solid ${ZELENA}` : `1px solid ${LINKA}`, background: tu ? "var(--nf-gSoft)" : PAPIER, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
             <button type="button" onClick={() => { onZavri(); if (!tu) otvorVerejnyProfil(id); }} style={{ flex: "1 1 180px", minWidth: 0, minHeight: 48, textAlign: "left", border: "none", background: "transparent", padding: 0, cursor: "pointer", display: "flex", flexDirection: "column", justifyContent: "center", gap: 2, color: INK, fontFamily: "inherit" }}>
               <b style={{ fontSize: 17 }}>{nazovFarnosti(id)}</b>
-              <span style={{ fontSize: 14, color: hl ? "#2F5A22" : INK3 }}>{hl ? "hlavná farnosť" : "sledovaná"}{tu ? " · práve ste tu" : ""}</span>
+              <span style={{ fontSize: 14, color: hl ? "var(--nf-gInk)" : INK3 }}>{hl ? "hlavná farnosť" : "sledovaná"}{tu ? " · práve ste tu" : ""}</span>
             </button>
-            {!hl && <DrzTlacidlo ms={1200} styl={{ flex: "none", minHeight: 48, padding: "0 14px", borderRadius: 12, border: "1.5px solid #A34A2A", background: "#fff", color: "#A34A2A", fontSize: 14.5, fontWeight: 800 }}
+            {!hl && <DrzTlacidlo ms={1200} styl={{ flex: "none", minHeight: 48, padding: "0 14px", borderRadius: 12, border: `1.5px solid ${CERVENA}`, background: PAPIER, color: CERVENA, fontSize: 14.5, fontWeight: 800 }}
               onHotovo={() => { const n = nazovFarnosti(id); void odstranSledovanu(id).catch((e: Error) => toast(e.message)); onHlaska(`Odstránené zo sledovaných ✓ ${n}`); }}>Podržte · odstrániť</DrzTlacidlo>}
           </div>); })}
-        {hlaska && <span role="status" style={{ padding: "12px 14px", borderRadius: 14, background: "#E3ECDB", border: `2px solid ${ZELENA}`, fontSize: 15.5, fontWeight: 800, color: "#2F5A22" }}>{hlaska}</span>}
+        {hlaska && <span role="status" style={{ padding: "12px 14px", borderRadius: 14, background: "var(--nf-gSoft)", border: `2px solid ${ZELENA}`, fontSize: 15.5, fontWeight: 800, color: "var(--nf-gInk)" }}>{hlaska}</span>}
         <span style={{ fontSize: 14, lineHeight: 1.5, color: INK3 }}>Domovskú zmeníte v Adresári cirkví.</span>
-        <button type="button" onClick={() => { onZavri(); otvorAdresar("‹ Späť na moju farnosť"); }} style={{ minHeight: 60, marginTop: 6, padding: "10px 16px", borderRadius: 14, border: "none", background: ZELENA, color: "#fff", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "flex-start", justifyContent: "center", gap: 2, textAlign: "left", fontFamily: "inherit" }}>
+        <button type="button" onClick={() => { onZavri(); otvorAdresar("‹ Späť na moju farnosť"); }} style={{ minHeight: 60, marginTop: 6, padding: "10px 16px", borderRadius: 14, border: "none", background: ZELENA_TL, color: "#fff", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "flex-start", justifyContent: "center", gap: 2, textAlign: "left", fontFamily: "inherit" }}>
           <b style={{ fontSize: 16.5 }}>Adresár cirkví SR ›</b>
-          <span style={{ fontSize: 14, color: "#E3ECDB" }}>pridať ďalšiu farnosť alebo zmeniť domovskú</span>
+          <span style={{ fontSize: 14, color: "var(--nf-gSoft)" }}>pridať ďalšiu farnosť alebo zmeniť domovskú</span>
         </button>
         <span style={{ fontSize: 14, lineHeight: 1.5, color: INK3, paddingTop: 4 }}>Ťuknite na farnosť a otvorí sa jej stránka.</span>
       </div>
