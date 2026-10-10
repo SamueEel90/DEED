@@ -4,6 +4,7 @@
 // V dátach sa drží len odkaz „idb:<kľúč>"; URL na prehratie sa získa hookom.
 // ============================================================
 import { useEffect, useState } from "react";
+import { jeVStorage, nahrajSuborUrl } from "@/lib/uploadFoto";
 
 export const VIDEO_CFG = { maxMB: 60, maxSekund: 90 };
 const DB = "deed-media", STORE = "video";
@@ -23,7 +24,9 @@ function otvor(): Promise<IDBDatabase> {
   });
 }
 
-export const jeVideo = (src?: string) => !!src && src.startsWith("idb:");
+const jeIdb = (src?: string) => !!src && src.startsWith("idb:");
+/** odkaz „idb:…" (len tento prehliadač) alebo URL zo Storage (prihlásený — vidia všetci) */
+export const jeVideo = (src?: string) => jeIdb(src) || jeVStorage(src, "video");
 
 /** skontroluje dĺžku/veľkosť, uloží a vráti odkaz „idb:…" */
 export async function ulozVideo(f: File, maxSekund = VIDEO_CFG.maxSekund): Promise<string> {
@@ -40,6 +43,8 @@ export async function ulozVideoInfo(f: File, maxSekund = VIDEO_CFG.maxSekund): P
     v.src = URL.createObjectURL(f);
   });
   if (dlzka > maxSekund) throw new Error(`Video má ${Math.round(dlzka)} s — limit je ${maxSekund} s.`);
+  const url = await nahrajSuborUrl(f, "video", (f.name.split(".").pop() || "mp4").toLowerCase()); // prihlásený → Storage, inak / pri chybe prehliadač
+  if (url) return { ref: url, sekundy: Math.round(dlzka) };
   const kluc = `v${Date.now()}`;
   const db = await otvor();
   await new Promise<void>((ok, zle) => {
@@ -55,7 +60,7 @@ export async function ulozVideoInfo(f: File, maxSekund = VIDEO_CFG.maxSekund): P
 export function useVideoUrl(src?: string): string | null {
   const [url, setUrl] = useState<string | null>(null);
   useEffect(() => {
-    if (!jeVideo(src)) return;
+    if (!jeIdb(src)) { setUrl(jeVideo(src) ? src! : null); return; }
     let u: string | null = null, zive = true;
     otvor().then((db) => {
       const r = db.transaction(STORE).objectStore(STORE).get(src!.slice(4));
@@ -68,7 +73,7 @@ export function useVideoUrl(src?: string): string | null {
 
 /** zmaže video z úložiska prehliadača (odkaz „idb:…") */
 export async function zmazVideo(src?: string) {
-  if (!jeVideo(src)) return;
+  if (!jeIdb(src)) return; // súbor v Storage ostáva (môže byť v histórii / u darcov)
   try {
     const db = await otvor();
     await new Promise<void>((ok) => {

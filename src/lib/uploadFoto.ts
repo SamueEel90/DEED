@@ -121,3 +121,20 @@ export async function bezDataUrl<T>(obj: T, priecinok: string): Promise<T> {
   };
   return (await prejdi(obj)) as T;
 }
+
+/** Jeden súbor (video / PDF) do Storage → verejná URL; bez DB / session / pri chybe null (volajúci si ho nechá lokálne). */
+export async function nahrajSuborUrl(f: Blob, priecinok: string, ext: string): Promise<string | null> {
+  if (!supabase) return null;
+  const uid = (await supabase.auth.getSession()).data.session?.user?.id;
+  if (!uid) return null;
+  let cesta: string;
+  try { cesta = `${uid}/${priecinok}/${crypto.randomUUID()}.${ext}`; }
+  catch { cesta = `${uid}/${priecinok}/${Date.now()}.${ext}`; }
+  const { error } = await supabase.storage.from(BUCKET).upload(cesta, f, { contentType: f.type || undefined, upsert: false });
+  if (error) return null;
+  return supabase.storage.from(BUCKET).getPublicUrl(cesta).data.publicUrl || null;
+}
+
+/** je to URL súboru zo Storage v danom priečinku (napr. „video", „prilohy")? */
+export const jeVStorage = (src: string | undefined, priecinok: string) =>
+  !!src && /\/storage\/v1\/object\/public\/prispevky\//.test(src) && src.includes(`/${priecinok}/`);
