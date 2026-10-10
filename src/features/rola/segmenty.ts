@@ -4,6 +4,7 @@
 // Základ je z registrácie, správca ich tu upravuje. Mock: localStorage.
 // ============================================================
 import { useSyncExternalStore } from "react";
+import { nacitajVerejne, verejneZPamate, zapisVerejne } from "@/lib/verejneNastavenia";
 import { segmentyZRegistracie } from "./registracia";
 
 export interface SegmentOrg {
@@ -33,12 +34,12 @@ export function nacitajSegmenty(): SegmentOrg[] {
   } catch { cache = segmentyZRegistracie().map(zo); }
   return cache;
 }
-export function ulozSegmenty(v: SegmentOrg[]) {
+function ulozSegmentyLokalne(v: SegmentOrg[]) {
   cache = v;
   try { localStorage.setItem(KLUC, JSON.stringify(v)); } catch { /* LS nedostupné */ }
   posluchaci.forEach((f) => f());
 }
-export function useSegmenty(): SegmentOrg[] { return useSyncExternalStore(subscribe, nacitajSegmenty); }
+export function useSegmenty(): SegmentOrg[] { nacitajSegmentyZDb(); return useSyncExternalStore(subscribe, nacitajSegmenty); }
 
 /** názvy segmentov, ktoré sa ponúkajú darcovi */
 export const aktivneSegmenty = (): string[] => nacitajSegmenty().filter((s) => s.aktivny).map((s) => s.nazov);
@@ -60,3 +61,20 @@ export function overIban(v: string): string | null {
 }
 /** IBAN po štvorčekoch — čitateľné pre človeka */
 export const formatujIban = (v: string) => v.replace(/(.{4})/g, "$1 ").trim();
+
+// ---- verejné nastavenia stránky charity (0070b): vidí ich aj návštevník, localStorage = záloha ----
+const STRANKA = "svetlo"; // = STRANKA_POZICIE.charita (rola/stav) — bez importu, nech nie je cyklus
+export function ulozSegmenty(v: SegmentOrg[]) {
+  ulozSegmentyLokalne(v);
+  void zapisVerejne(STRANKA, "segmenty", v);
+}
+let zDb = false;
+/** raz stiahne verejnú verziu; keď v DB je, prepíše lokálnu */
+export function nacitajSegmentyZDb() {
+  if (zDb) return;
+  zDb = true;
+  void nacitajVerejne(STRANKA).then(() => {
+    const v = verejneZPamate(STRANKA)?.["segmenty"];
+    if (Array.isArray(v)) ulozSegmentyLokalne(v as SegmentOrg[]);
+  });
+}

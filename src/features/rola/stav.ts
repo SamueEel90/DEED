@@ -5,10 +5,12 @@
 // aj tier simulujú prepínačmi (žiadne oddelené registrácie) — v produkcii
 // sa rola číta z overeného účtu a tier z fakturácie.
 // Perzistencia = localStorage (rovnaký vzor ako viera/stav.ts); verejné nastavenia stránky
-// (sady, krypto, centrálna, viditeľnosť) navyše v DB — lib/verejneNastavenia (0070b).
+// (sady, krypto, centrálna, viditeľnosť, logo, tvar loga, „o nás", zdroj avatara) navyše v DB — lib/verejneNastavenia (0070b).
 // ============================================================
 import type { SadaEur, SadaEurc } from "@/lib/sadyDarov";
 import { verejneZPamate, zapisVerejne } from "@/lib/verejneNastavenia";
+import { bezDataUrl } from "@/lib/uploadFoto";
+import { toast } from "@/components/toast";
 import type { OrgZbierka } from "./mock"; // type-only — bez runtime cyklu
 
 export type Pozicia = "charita" | "tvorca" | "b2b";
@@ -111,8 +113,13 @@ export const ulozTerminal = (on: boolean) => uloz(kluc("terminal"), on);
 
 // ---- logo subjektu (PATCH 2 §6) — štvorcový avatar entity (charita, B2B; tvorca
 // logo nepotrebuje — má profilovú fotku osoby). Fallback bez loga = iniciálky. ----
-export const nacitajLogo = (p: Pozicia): string | null => nacitaj<string | null>(kluc(`logo.${p}`), null);
-export const ulozLogo = (p: Pozicia, dataUrl: string | null) => uloz(kluc(`logo.${p}`), dataUrl);
+export const nacitajLogo = (p: Pozicia, stranka?: string): string | null => verejne<string | null>(p, "logo", null, stranka);
+export const ulozLogo = (p: Pozicia, dataUrl: string | null) => {
+  uloz(kluc(`logo.${p}`), dataUrl);
+  // v DB len URL zo Storage (0064) — nahrá sa najprv, potom ide do verejných nastavení stránky
+  void bezDataUrl(dataUrl, "logo").then((url) => { if (url !== dataUrl) uloz(kluc(`logo.${p}`), url); return zapisVerejne(STRANKA_POZICIE[p], "logo", url); })
+    .catch((e: unknown) => toast(e instanceof Error ? e.message : "Logo sa nepodarilo uložiť."));
+};
 
 // ---- hlavička správy zmenšená (na mobile šetrí miesto) ----
 export const nacitajHlavuZbalenu = (): boolean => nacitaj(kluc("hlavaZbalena"), false);
@@ -120,9 +127,9 @@ export const ulozHlavuZbalenu = (z: boolean) => uloz(kluc("hlavaZbalena"), z);
 
 // ---- čo je v krúžku profilu: fotka osoby alebo logo (tvorca si vyberá — môže mať značku) ----
 export type ZdrojAvatara = "foto" | "logo";
-export const nacitajZdrojAvatara = (p: Pozicia): ZdrojAvatara =>
-  p === "tvorca" ? nacitaj<ZdrojAvatara>(kluc(`avatar.${p}`), "foto") : "logo";
-export const ulozZdrojAvatara = (p: Pozicia, z: ZdrojAvatara) => uloz(kluc(`avatar.${p}`), z);
+export const nacitajZdrojAvatara = (p: Pozicia, stranka?: string): ZdrojAvatara =>
+  p === "tvorca" ? verejne<ZdrojAvatara>(p, "avatar", "foto", stranka) : "logo";
+export const ulozZdrojAvatara = (p: Pozicia, z: ZdrojAvatara) => ulozVerejne(p, "avatar", z);
 
 // ---- VEREJNÉ nastavenia stránky (0070b): v DB pri stránke, vidí ich aj návštevník; localStorage = záloha (mock/offline).
 // Rola → testovacia stránka v DB (lib/mojeStranky UKAZKOVE_STRANKY). `stranka` prebije rolu (napr. farnosť má rolu charita).
@@ -145,13 +152,13 @@ export const ulozCentralnu = (p: Pozicia, v: boolean) => ulozVerejne(p, "central
 
 // ---- tvar loga (kruh/štvorec) — vyberá si subjekt v Upraviť profil ----
 export type TvarLoga = "kruh" | "stvorec";
-export const nacitajTvarLoga = (p: Pozicia): TvarLoga => nacitaj<TvarLoga>(kluc(`logotvar.${p}`), "kruh");
-export const ulozTvarLoga = (p: Pozicia, t: TvarLoga) => uloz(kluc(`logotvar.${p}`), t);
+export const nacitajTvarLoga = (p: Pozicia, stranka?: string): TvarLoga => verejne<TvarLoga>(p, "logotvar", "kruh", stranka);
+export const ulozTvarLoga = (p: Pozicia, t: TvarLoga) => ulozVerejne(p, "logotvar", t);
 
 // ---- O nás (formátovaný text z editora, max 800 znakov) — null = pôvodný text z mocku ----
 export const ONAS_MAX = 800;
-export const nacitajOnas = (p: Pozicia): string | null => nacitaj<string | null>(kluc(`onas.${p}`), null);
-export const ulozOnas = (p: Pozicia, html: string | null) => uloz(kluc(`onas.${p}`), html);
+export const nacitajOnas = (p: Pozicia, stranka?: string): string | null => verejne<string | null>(p, "onas", null, stranka);
+export const ulozOnas = (p: Pozicia, html: string | null) => ulozVerejne(p, "onas", html);
 
 // ---- bankový účet organizácie z registrácie (organizacie.bankovy_ucet) ----
 // Centrálna zbierka ho len zobrazuje — mení sa v profile organizácie, nie v zbierke.
