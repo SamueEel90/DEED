@@ -95,11 +95,12 @@ export function ModulProfilu({ profil, sektor, poradie, mestoV, onZbal, dorovnan
  *  nazov = názov platby (inak „{sektor} · {profil}"). */
 export function ModulPlatby(p: { profil: TestProfil; sektor: TestSektor; mestoV?: string; dorovnanie?: boolean; uvidisOdkaz?: { text: string; onClick?: () => void }; nazov?: string;
   /** OPRAVY 189: kto volí sumy („farnosť"), predvolene charita */ ktoVoli?: string;
-  /** OPRAVY 189: zvončeková zbierka — dar nejde ako hlavná ani sektorová zbierka stránky (nemá riadok v ledgeri) */ bezObjektu?: boolean }) {
-  return <Modul profil={p.profil} sektor={p.sektor} mestoV={p.mestoV ?? ""} sDorovnanim={p.dorovnanie ?? true} uvidisOdkaz={p.uvidisOdkaz} nazovPlatby={p.nazov} ktoVoli={p.ktoVoli} bezObjektu={p.bezObjektu} />;
+  /** OPRAVY 189: zvončeková zbierka — dar nejde ako hlavná ani sektorová zbierka stránky (nemá riadok v ledgeri) */ bezObjektu?: boolean;
+  /** OPRAVY 189: rýchle sumy € a EURC podľa sady zbierky (lib/sadyDarov) */ sumy?: number[]; sumyE?: number[]; bezEurc?: boolean; /** OPRAVY 189: cieľ zbierky (suma z cieľa + %) */ ciel?: number }) {
+  return <Modul profil={p.profil} sektor={p.sektor} mestoV={p.mestoV ?? ""} sDorovnanim={p.dorovnanie ?? true} uvidisOdkaz={p.uvidisOdkaz} nazovPlatby={p.nazov} ktoVoli={p.ktoVoli} bezObjektu={p.bezObjektu} sumy={p.sumy} sumyE={p.sumyE} bezEurc={p.bezEurc} ciel={p.ciel} />;
 }
 
-function Modul({ profil, sektor, mestoV, sDorovnanim, uvidisOdkaz, nazovPlatby, ktoVoli = "charita", bezObjektu }: { profil: TestProfil; sektor: TestSektor; mestoV: string; sDorovnanim: boolean; uvidisOdkaz?: { text: string; onClick?: () => void }; nazovPlatby?: string; ktoVoli?: string; bezObjektu?: boolean }) {
+function Modul({ profil, sektor, mestoV, sDorovnanim, uvidisOdkaz, nazovPlatby, ktoVoli = "charita", bezObjektu, sumy = [10, 25, 45], sumyE, bezEurc, ciel = null }: { profil: TestProfil; sektor: TestSektor; mestoV: string; sDorovnanim: boolean; uvidisOdkaz?: { text: string; onClick?: () => void }; nazovPlatby?: string; ktoVoli?: string; bezObjektu?: boolean; sumy?: number[]; sumyE?: number[]; bezEurc?: boolean; ciel?: number | null }) {
   const refId = sektor.id;
   const objekt = bezObjektu ? undefined : { stranka: profil.k, hlavna: sektor.druh === "centralna", nazov: sektor.nazov };
   if (objekt) naviazObjekt(refId, objekt); // 0067: dary z ledgera
@@ -116,7 +117,7 @@ function Modul({ profil, sektor, mestoV, sDorovnanim, uvidisOdkaz, nazovPlatby, 
   const [platba, setPlatba] = useState<{ kanal: KanalPlatby; suma?: number } | null>(null);
   const stav = () => {
     const dary = darcoviaPre(refId), dnes = new Date(); dnes.setHours(0, 0, 0, 0);
-    return { vyzbierane: zaklad + dary.reduce((a, r) => a + r.suma, 0), ciel: null, pocetDarov: sektor.darcovia + dary.length, darovDnes: dary.filter((r) => r.cas >= dnes.getTime()).length };
+    return { vyzbierane: zaklad + dary.reduce((a, r) => a + r.suma, 0), ciel, pocetDarov: sektor.darcovia + dary.length, darovDnes: dary.filter((r) => r.cas >= dnes.getTime()).length };
   };
   const [pred, setPred] = useState(stav);
   const otvor: OtvorPlatbu = (p) => { setPred(stav()); setPlatba(p); };
@@ -128,16 +129,16 @@ function Modul({ profil, sektor, mestoV, sDorovnanim, uvidisOdkaz, nazovPlatby, 
 
   return (
     <div ref={rootRef} style={{ position: "relative", display: "flex", flexDirection: "column", color: "var(--ink)" }}>
-      <KartaStavu refId={refId} zaklad={zaklad} ciel={null} ludiaZaklad={sektor.darcovia} koniecPruhu={koniecPruhu} />
+      <KartaStavu refId={refId} zaklad={zaklad} ciel={ciel} ludiaZaklad={sektor.darcovia} koniecPruhu={koniecPruhu} />
       {dorovnanie && <div style={{ marginTop: 12 }}>
         <KartaDorovnava d={dorovnanie} />
         {k20 > 0 && <div style={{ margin: "-4px 0 0", textAlign: "center", fontSize: 13.5, fontWeight: 700, color: "var(--gold)", fontVariantNumeric: "tabular-nums" }}>daruješ 20 € → do {kam} ide {eurT(20 + k20)}</div>}
       </div>}
       <div style={{ marginTop: 12 }}><ZdielatRiadok onZdielat={() => setHarok("zdielat")} /></div>
       <DeedDlazdice refId={refId} registrovany={registrovany} mikro={mikro} />
-      <RychleSumyEur sumy={[10, 25, 45]} doplnok={`sumy si volí ${ktoVoli}`} kDaru={dorovnanie ? (s) => dorovnanieKDaru(dorovnanie, s) : undefined} otvor={otvor} />
+      <RychleSumyEur sumy={sumy} doplnok={`sumy si volí ${ktoVoli}`} kDaru={dorovnanie ? (s) => dorovnanieKDaru(dorovnanie, s) : undefined} otvor={otvor} />
       <VlastnaSuma eur deed={registrovany} otvor={otvor} firma={dorovnanie ? `${dorovnanie.firma} ${dorovnanie.pomer === 1 ? "zdvojnásobí" : "dorovná"}` : undefined} />
-      <DaryVKrypte refId={refId} otvor={otvor} mikro={mikro} />
+      {!bezEurc && <DaryVKrypte refId={refId} otvor={otvor} mikro={mikro} sumy={sumyE} />}
       <PravidelnaRiadok registrovany={registrovany} onClick={() => { setTipSuma(undefined); setHarok("pravidelna"); }} />
       {!!sektor.tipy?.length && <>
         <div style={{ margin: "12px 2px 8px", display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8, fontSize: 12.5, fontWeight: 700, letterSpacing: ".05em", color: "var(--ink3)" }}>
