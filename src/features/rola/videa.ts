@@ -4,6 +4,8 @@
 // vidieť 1 video (ostatné ostávajú v správe). Mock: localStorage + IndexedDB.
 // ============================================================
 import { useSyncExternalStore } from "react";
+import { bezDataUrl } from "@/lib/uploadFoto";
+import { nacitajVerejne, verejneZPamate, zapisVerejne } from "@/lib/verejneNastavenia";
 import { SUBJEKTY } from "./mock";
 import type { Tier } from "./stav";
 import type { SubjektMeta } from "./mock";
@@ -48,12 +50,12 @@ export function nacitajVidea(): VideoOrg[] {
   try { const s = localStorage.getItem(KLUC); cache = s ? (JSON.parse(s) as VideoOrg[]) : seed(); } catch { cache = seed(); }
   return cache;
 }
-export function ulozVidea(v: VideoOrg[]) {
+function ulozVideaLokalne(v: VideoOrg[]) {
   cache = v;
   try { localStorage.setItem(KLUC, JSON.stringify(v)); } catch { /* LS nedostupné */ }
   posluchaci.forEach((f) => f());
 }
-export function useVidea(): VideoOrg[] { return useSyncExternalStore(subscribe, nacitajVidea); }
+export function useVidea(): VideoOrg[] { nacitajVideaZDb(); return useSyncExternalStore(subscribe, nacitajVidea); }
 
 /** videá nahraté v aktuálnom kalendárnom mesiaci (na limit programu) */
 export function videiTentoMesiac(v: VideoOrg[], teraz: number): number {
@@ -67,4 +69,21 @@ export function videaNaProfil(tier: Tier): Polozka[] {
     emoji: "🎬", titul: v.titul, popis: v.popis,
     video: { nahlad: v.nahlad ?? "", dlzka: v.dlzka, zbierkaId: v.zbierkaId, src: v.src },
   }));
+}
+
+// ---- verejné nastavenia stránky charity (0070b): vidí ich aj návštevník, localStorage = záloha ----
+const STRANKA = "svetlo"; // = STRANKA_POZICIE.charita (rola/stav) — bez importu, nech nie je cyklus
+export function ulozVidea(v: VideoOrg[]) {
+  ulozVideaLokalne(v);
+  void bezDataUrl(v, "videa").then((cist) => zapisVerejne(STRANKA, "videa", cist)).catch(() => { /* bez prihlásenia ostáva lokálne */ });
+}
+let zDb = false;
+/** raz stiahne verejnú verziu; keď v DB je, prepíše lokálnu */
+export function nacitajVideaZDb() {
+  if (zDb) return;
+  zDb = true;
+  void nacitajVerejne(STRANKA).then(() => {
+    const v = verejneZPamate(STRANKA)?.["videa"];
+    if (Array.isArray(v)) ulozVideaLokalne(v as VideoOrg[]);
+  });
 }
