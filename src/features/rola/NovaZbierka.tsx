@@ -228,7 +228,7 @@ export function NovaZbierka({ strankaId, pozicia, tier, nazov, inicialy, mobil, 
   } else if (k === 2) {
     obsah = <>{hlavicka("Fotky a video", ph ? "Prvé je hlavné, to ľudia uvidia ako prvé. Poradie zmeníte šípkami." : "Skutočné fotky človeka alebo miesta, komu pomáhate. Tvár a hlas presvedčia viac než text.")}
       {/* PLACEBO — karta 57 B.5: galéria ilustračných fotiek (Pexels/Pixabay → Storage) je v ROADMAP Fáza 4 */}
-      <GaleriaEditor media={d.media} onMedia={(m) => zmen({ media: m })} ph={ph} onVyrez={setVyrezId} galeria={farnost ? () => toast("Pripravujeme") : undefined}>
+      <GaleriaEditor media={d.media} onMedia={(m) => zmen({ media: m })} ph={ph} onVyrez={setVyrezId}>
       {suhTreba && <>
       <Zaskrtnutie on={!!d.suhlas} onClick={() => zmen({ suhlas: !d.suhlas })}>{SUHLAS_FOTKY}</Zaskrtnutie>
         <span style={{ fontSize: 14, lineHeight: 1.5, color: "var(--ink2)", marginTop: -4 }}>{SUHLAS_POZNAMKA}{" "}<button type="button" onClick={() => setPravidla(true)} style={odkaz}>Pravidlá obsahu ›</button></span>

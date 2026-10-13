@@ -10,7 +10,7 @@
 // Modlím sa s vami, Úprimnú sústrasť, ··· Nahlásiť, „Upraviť · moje" (len autor).
 // ============================================================
 import { CasPole } from "@/components/CasPole";
-import { useEffect, useRef, useState, useSyncExternalStore, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type CSSProperties, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { usePouzivatel } from "@/lib/pouzivatel";
 import { nacitajSelfAdd } from "@/features/viera/UserOznamy";
@@ -28,6 +28,8 @@ import PodrzTlacidlo from "@/features/zbierka/PodrzTlacidlo";
 import { zapisEditora, zapisZPayloadu } from "@/lib/editorStat";
 import { toast } from "@/shared";
 import { useLayout } from "@/components/context";
+import { ZdrojFotiekKontext, zdrojMoje } from "@/components/VyberZGalerie";
+import { mojeFotky } from "@/lib/galeriaFotiek";
 
 const ZELENA = "#4B7A35", ZLATA = "#C9A24A";
 const lab = (zle: boolean): CSSProperties => ({ fontSize: 12.5, fontWeight: 800, letterSpacing: ".06em", color: zle ? "#A07A1C" : "var(--ink3)" });
@@ -304,6 +306,9 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
     }
   }
   useEffect(() => { if (naUpravu) nastavUpravu(null); }, [naUpravu]);
+  // BLOK B 232: veriaci vyberá zo svojich fotiek (čo pridal na stránku farnosti a k skutkom)
+  const mojKluc = klucJa(ja);
+  const zdrojFotiek = useMemo(() => zdrojMoje(() => mojeFotky(strankaId, mojKluc)), [strankaId, mojKluc]);
   if (!self.on || !povol.length) return null;
 
   const set = (z: Partial<FormularVeriaceho>) => { setF((q) => ({ ...q, ...z })); setChyba(false); };
@@ -602,5 +607,5 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
       <button type="button" onClick={() => setOk(null)} style={{ minHeight: 48, padding: "0 18px", border: "none", borderRadius: 13, background: ZELENA, color: "#fff", cursor: "pointer", fontFamily: "inherit", fontSize: 15.5, fontWeight: 800 }}>Rozumiem</button>
     </div>, document.body);
 
-  return <>{!ok && fab}{harok && createPortal(harok, document.body)}{okno}{hlaska}</>;
+  return <ZdrojFotiekKontext.Provider value={zdrojFotiek}>{!ok && fab}{harok && createPortal(harok, document.body)}{okno}{hlaska}</ZdrojFotiekKontext.Provider>;
 }

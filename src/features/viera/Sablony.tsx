@@ -7,6 +7,7 @@
 // Formulár parte: meno · Muž / Žena (povinné) · dátumy (vek sa vypočíta, nezmysly nepustí) · rodená ·
 // kým bol/a · rozlúčka · posledná veta · citát · text · oznamuje.
 // ============================================================
+import { TlacidloGalerie, useZdrojFotiek } from "@/components/VyberZGalerie";
 import { CasPole } from "@/components/CasPole";
 import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import type { Vzhlad } from "@/lib/vzhladStranky";
@@ -272,6 +273,11 @@ export function chybaOznamu(u: UdajeOznamu): string | null {
   return null;
 }
 
+/** BLOK B 232: fotka z galérie sa do šablóny vloží ako obrázok v dokumente (ako nahratá), aby sa hotové parte dalo uložiť ako obrázok */
+const naDataUrl = async (src: string): Promise<string> => {
+  if (src.startsWith("data:")) return src;
+  try { const b = await (await fetch(src)).blob(); return await new Promise<string>((ok) => { const r = new FileReader(); r.onload = () => ok(String(r.result ?? src)); r.onerror = () => ok(src); r.readAsDataURL(b); }); } catch { return src; }
+};
 export function FormularOznamu({ u, onU, mobil, bezFotky, upozornenie = true }: { u: UdajeOznamu; onU: (u: UdajeOznamu) => void; mobil?: boolean; /** vlastné parte ako obrázok — fotka do šablóny netreba */ bezFotky?: boolean; /** OPRAVY 169: v Oznamoch (bez zbierky) bez vety o upozornení sledujúcich */ upozornenie?: boolean }) {
   const T = TEXTY[u.druh];
   const pa = u.druh === "parte";
@@ -282,6 +288,8 @@ export function FormularOznamu({ u, onU, mobil, bezFotky, upozornenie = true }: 
   const dnes = new Date().toISOString().slice(0, 10);
   const v = vekOznamu(u.nar, u.umr);
   const [fotoKey, setFotoKey] = useState(0);
+  /** BLOK B 232: fotka do šablóny aj z galérie farnosti / z mojich fotiek */
+  const zdrojFotiek = useZdrojFotiek();
   const nacitaj = (f?: File) => { if (!f) return; const r = new FileReader(); r.onload = () => zmen({ foto: String(r.result ?? "") }); r.readAsDataURL(f); setFotoKey((x) => x + 1); };
   const rola = rolaText(u);
   return (
@@ -291,6 +299,7 @@ export function FormularOznamu({ u, onU, mobil, bezFotky, upozornenie = true }: 
         <span style={{ display: "flex", flexDirection: "column", gap: 2 }}><b style={{ fontSize: 14.5 }}>{T.foto}</b><span style={{ fontSize: 12.5, color: "var(--ink3,#5B5D53)" }}>nepovinná{T.cb ? ", ukáže sa čiernobielo" : ""}</span><span style={{ fontSize: 13.5, fontWeight: 800, color: "var(--green,#4E7D37)" }}>{u.foto ? "Zmeniť fotku" : "Pridať fotku"}</span></span>
         <input key={fotoKey} type="file" accept="image/*" style={{ display: "none" }} onChange={(e) => nacitaj(e.target.files?.[0])} />
       </label>}
+      {!bezFotky && zdrojFotiek && <TlacidloGalerie zdroj={zdrojFotiek} vybrane={u.foto ? [u.foto] : []} zostava={1} onVyber={(l) => void naDataUrl(l[0]).then((foto) => zmen({ foto }))} style={{ alignSelf: "flex-start", minHeight: 44, fontSize: 14 }} />}
       {txt("meno", T.meno, T.phMeno)}
       {pa && <>
         <span style={lab}>ZOSNULÝ JE</span>

@@ -2,8 +2,10 @@
 // KARTA 56D: Správa od prvého príchodu — všetky funkcie, žiadne ukážkové dáta (prototyp „Sprava farnosti - prvy prichod").
 // Profil, logo a percento = profil_stranky (ako charita), pripnuté = sprava_piny, hlavná zbierka = profil_stranky.centralna.
 // Omše, oznamy a nastavenia farnosti z modulu Viera (stav.ts — localStorage + zrkadlo naboz_stav) pod kľúčom stránky.
+import { ZdrojFotiekKontext, zdrojFarnosti } from "@/components/VyberZGalerie";
+import { fotkyFarnosti } from "@/lib/galeriaFotiek";
 import { DeedZnacka } from "@/components/DeedZnacka";
-import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react";
 import { pripojTestovaciuStranku } from "@/lib/stranka";
 import { createPortal } from "react-dom";
 import { useLayout } from "@/components/context";
@@ -92,7 +94,9 @@ const odkaz: CSSProperties = { alignSelf: "flex-start", minHeight: 44, padding: 
 
 /** OPRAVY 159: Správa farnosti = sektor Viera (výpisy darov: „Bohu známy veriaci") */
 export function SpravaFarnosti(p: Parameters<typeof SpravaFarnostiObsah>[0]) {
-  return <SektorDarcuKontext.Provider value="viera"><SpravaFarnostiObsah {...p} /></SektorDarcuKontext.Provider>;
+  // BLOK B 232: všade, kde Správa pridáva fotky, aj „Vybrať z galérie farnosti ›"
+  const zdroj = useMemo(() => zdrojFarnosti(() => fotkyFarnosti(p.strankaId)), [p.strankaId]);
+  return <SektorDarcuKontext.Provider value="viera"><ZdrojFotiekKontext.Provider value={zdroj}><SpravaFarnostiObsah {...p} /></ZdrojFotiekKontext.Provider></SektorDarcuKontext.Provider>;
 }
 
 /** KARTA 57 A.8: ukončené a zrušené zbierky idú do archívu */
