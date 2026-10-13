@@ -20,10 +20,9 @@ export type SposobEur = "karta" | "sepa";
 /** meno: čo darca vybral do zoznamu darcov (0084 ho zapíše k daru); bez mena = undefined */
 export type VysledokPlatby = { kanal: KanalPlatby; sposob?: SposobEur; suma: number; eur: number; darDeed: number; volba?: VolbaDaru; meno?: string };
 
-/** Martin 13. 10. (Blok A): voľby mena v platbe — vo Viere len Meno z profilu · Bez mena (predvolené Bez mena) */
-function volbyMena(ja: JaIdentita & { nick?: string | null }, viera: boolean, bezMena: string): [VerziaIdentity, string][] {
+/** voľby mena v platbe — všade rovnaké (ako v profile), líši sa len text bez mena (Viera „Bohu známy veriaci / darca“) */
+function volbyMena(ja: JaIdentita & { nick?: string | null }, bezMena: string): [VerziaIdentity, string][] {
   const meno = ja.meno || "Darca", priezv = ja.priezvisko || "", cele = `${meno} ${priezv}`.trim();
-  if (viera) return [[ja.mesto ? 5 : 1, ja.mesto ? `${cele}, ${ja.mesto}` : cele], [4, "Bez mena"]];
   return [[2, `${meno}${priezv ? ` ${priezv[0]}.` : ""}`], [1, cele], ...(ja.mesto ? [[5, `${cele}, ${ja.mesto}`] as [VerziaIdentity, string]] : []),
     ...(ja.nick ? [[3, ja.nick] as [VerziaIdentity, string]] : []), [4, bezMena]];
 }
@@ -97,8 +96,7 @@ export function PlatobneOkno({ kanal, suma: sumaStart, nazov, registrovany, bonu
   const [sposob, setSposob] = useState<SposobEur | undefined>(undefined);
   const [darDeed, setDarDeed] = useState(false);
   const [nap, setNap] = useState(false); // nápoveda „Podrž tlačidlo…"
-  const viera = jeViera(sektor);
-  const [volba, setVolba] = useState<VolbaDaru>(() => (viera ? { verzia: 4, zobrazSumu: true } : nacitajPredvolbu()));
+  const [volba, setVolba] = useState<VolbaDaru>(nacitajPredvolbu);
   const [otvorene, setOtvorene] = useState(false);
   // OPRAVY 234: platba naoko — neregistrovaný vypĺňa kartu alebo IBAN (nikam sa neposielajú, kým nie je platobná brána)
   const [ud, setUd] = useState<UdajePlatby>({ cislo: "", platnost: "", cvc: "", iban: "", majitel: "" });
@@ -134,9 +132,8 @@ export function PlatobneOkno({ kanal, suma: sumaStart, nazov, registrovany, bonu
   };
   const spat = () => { const i = kroky.indexOf(krok as Krok); if (i > 0) setKrok(kroky[i - 1]); else zatvor(); };
   const zaplat = () => {
-    if (registrovany && !viera) ulozPredvolbu(volba);
-    const vm = volbyMena(ja, viera, volbaBezMena(sektor));
-    const meno = registrovany && volba.verzia !== 4 ? (viera ? vm[0][1] : vm.find(([v]) => v === volba.verzia)?.[1]) : undefined;
+    if (registrovany) ulozPredvolbu(volba);
+    const meno = registrovany && volba.verzia !== 4 ? volbyMena(ja, volbaBezMena(sektor)).find(([v]) => v === volba.verzia)?.[1] : undefined;
     setKrok("spracovanie");
     setTimeout(() => { onHotovo({ kanal, sposob, suma, eur: eurHodnota, darDeed: dar, volba: registrovany ? volba : undefined, meno }); setKrok("hotovo"); }, 1800);
   };
@@ -425,8 +422,8 @@ export function Identita({ volba, setVolba, eur }: { volba: VolbaDaru; setVolba:
   const sektor = useSektorDarcu();
   const viera = jeViera(sektor), ukazSumy = useUkazSumy();
   const bezMena = volbaBezMena(sektor);
-  const moznosti = useMemo(() => volbyMena(ja, viera, bezMena), [ja, viera, bezMena]);
-  const zvolena = (v: VerziaIdentity) => (viera ? (v === 4) === (volba.verzia === 4) : v === volba.verzia);
+  const moznosti = useMemo(() => volbyMena(ja, bezMena), [ja, bezMena]);
+  const zvolena = (v: VerziaIdentity) => v === volba.verzia;
   const vybrane = volba.verzia === 4 ? menoBezMena(sektor) : moznosti.find(([v]) => zvolena(v))?.[1] ?? bezMena;
   const nad2 = eur > 2;
   return (
