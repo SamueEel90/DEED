@@ -23,12 +23,11 @@ async function nacitajFarara(stranka: string) {
   if (!error) { farar.set(stranka, data === true); zmena(); }
   nacitavaFarar.delete(stranka);
 }
-/** Ľudia: „Som farár“ (true) / „Vypĺňam za farára“ (false) — zapíše rolu na serveri */
-export async function nastavFarara(stranka: string, som: boolean): Promise<void> {
+/** Ľudia uložili Farára farnosti. Server (0082) farára zapíše sám z nastavení „duch“ — appka si len znova prečíta som_farar
+ *  (po uložení nastavení, ktoré ide 600 ms po zmene). Bez databázy: som = čo je v Ľudia. */
+export function obnovFarara(stranka: string, som: boolean): void {
   if (!supabase) { farar.set(stranka, som); zmena(); return; }
-  const { data, error } = await supabase.rpc("nastav_farara", { p_stranka: stranka, p_som: som });
-  if (error) throw new Error(error.message);
-  farar.set(stranka, data === true); zmena();
+  window.setTimeout(() => { void nacitajFarara(stranka); }, 1500);
 }
 /** farnosť, za ktorú môžem prispieť — len keď som jej farár (nie správca, kaplán ani nikto iný); overí server */
 export function useFarnostFarara(): MojaFarnost | null {

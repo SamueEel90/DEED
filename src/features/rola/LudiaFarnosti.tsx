@@ -15,9 +15,9 @@ import { DeedQr } from "@/components/deedqr";
 import { TESTOVACIA } from "@/lib/testovacia";
 import { DrzTlacidlo } from "@/features/viera/AdresarCirkvi";
 import { nacitajProfil, zapisDuchovneho } from "@/lib/profilStranky";
-import { nastavFarara } from "@/lib/farnostPrispela";
+import { obnovFarara } from "@/lib/farnostPrispela";
 
-type Duch = { tp: string; meno: string; tz: string; kde: string; osl: string; fil: string[]; foto: string; som: 0 | 1 };
+type Duch = { tp: string; meno: string; tz: string; kde: string; osl: string; fil: string[]; foto: string; som: 0 | 1; /** 0082: účet farára (server podľa neho zapíše farára) */ ucet?: string };
 type Caka = false | true | "odkaz" | "potvrdit";
 type Clovek = { id: number; n: string; k: string; r: string; caka: Caka; do?: string; jaT?: string; vlastny?: boolean; foto?: string };
 const D0: Duch = { tp: "", meno: "", tz: "", kde: "", osl: "", fil: [], foto: "", som: 0 };
@@ -66,12 +66,17 @@ export function LudiaFarnosti({ strankaId, meno: menoFarnosti, mobil, children }
   const D = d ?? D0u, setD = (o: Partial<Duch>) => setDraft({ ...D, ...o });
   const okD = D.meno.trim().length > 2;
   const celeMeno = [D0u.tp, D0u.meno, D0u.tz].map((x) => x.trim()).filter(Boolean).join(" ");
-  const uloz = () => { if (!okD) return; zapisNastavenie("duch", D);
-    // OPRAVY 206: meno s titulmi a fotka idú aj na verejnú stránku (riadok autora pri príspevkoch Správy)
-    const dm = [D.tp, D.meno, D.tz].map((x) => x.trim()).filter(Boolean).join(" "), df = D.foto || (D.som === 0 ? ja.foto ?? "" : "");
+  // 0082: farár = účet v duch.ucet. Iný farár s účtom → „Som farár“ sa neukazuje ako vy; nový farár len pri preložení.
+  const inyF = D0u.som === 0 && !!D0u.ucet && !!ja.ucetId && D0u.ucet !== ja.ucetId;
+  const uloz = () => { if (!okD) return;
+    const ucet = D.som === 0 ? D.ucet ?? (D0u.som === 0 && D0u.ucet ? D0u.ucet : ja.ucetId ?? undefined) : undefined;
+    const somJa = D.som === 0 && (!ucet || ucet === ja.ucetId);
+    zapisNastavenie("duch", { ...D, ucet });
+    // OPRAVY 206: meno s titulmi a fotka idú aj na verejnú stránku
+    const dm = [D.tp, D.meno, D.tz].map((x) => x.trim()).filter(Boolean).join(" "), df = D.foto || (somJa ? ja.foto ?? "" : "");
     void nacitajProfil(strankaId).then(() => zapisDuchovneho(strankaId, { meno: dm, foto: df })).catch(() => undefined);
-    // OPRAVY 222: rola farár na serveri (len farár smie prispieť za farnosť)
-    void nastavFarara(strankaId, D.som === 0).catch((e: Error) => hlas("zoz", e.message)); setDraft(null); setDOtv(false); hlas("zoz", `Uložené ✓ ${[D.tp, D.meno, D.tz].filter(Boolean).join(" ")}`); };
+    // OPRAVY 222 / 0082: farára zapíše server z Ľudí, appka si ho len znova prečíta
+    obnovFarara(strankaId, somJa); setDraft(null); setDOtv(false); hlas("zoz", `Uložené ✓ ${[D.tp, D.meno, D.tz].filter(Boolean).join(" ")}`); };
   const fotoZ = (f?: File) => {
     if (!f) return;
     const rd = new FileReader();
@@ -81,12 +86,12 @@ export function LudiaFarnosti({ strankaId, meno: menoFarnosti, mobil, children }
   };
 
   // zoznam: duchovný (vy alebo bez účtu) + pozvaní
-  const somF = D0u.som === 0;
+  const somF = D0u.som === 0 && !inyF;
   const fotoD = D0u.foto || (somF && D0u.meno ? ja.foto ?? "" : "");
   const jaMeno = ja.celeMeno?.trim() || "Vy";
   const base: Clovek[] = somF
     ? [{ id: -1, n: celeMeno || jaMeno, k: "", r: T, caka: false, vlastny: true, jaT: `${T} · vy`, foto: D0u.foto || ja.foto || "" }]
-    : [{ id: -2, n: celeMeno || T, k: "", r: T, caka: false, vlastny: true, jaT: "bez účtu v DEED+", foto: D0u.foto }, { id: -1, n: jaMeno, k: "", r: "Správca stránky", caka: false, vlastny: true, jaT: "Správca stránky · vy", foto: ja.foto || "" }];
+    : [{ id: -2, n: celeMeno || T, k: "", r: T, caka: false, vlastny: true, jaT: inyF ? "má účet v DEED+" : "bez účtu v DEED+", foto: D0u.foto }, { id: -1, n: jaMeno, k: "", r: "Správca stránky", caka: false, vlastny: true, jaT: "Správca stránky · vy", foto: ja.foto || "" }];
   const cakaT = (c: Caka) => (c === "potvrdit" ? "čaká na vaše potvrdenie" : c === "odkaz" ? "pozvánka odoslaná" : "čaká na prijatie");
   const duchovnych = [...base, ...L].filter((x) => (x.r === T || x.r === "Dozorca") && !x.caka).length;
 
@@ -193,9 +198,10 @@ export function LudiaFarnosti({ strankaId, meno: menoFarnosti, mobil, children }
         </div>
         <span style={{ fontSize: 13.5, fontWeight: 700, color: "var(--ink2)" }}>Kto toto vypĺňa?</span>
         <div role="radiogroup" aria-label="Kto toto vypĺňa" style={{ display: "flex", gap: 4, padding: 4, borderRadius: 12, background: "var(--btn)" }}>
-          {[`Som ${tl}`, `Vypĺňam za ${Tg}`].map((t, i) => <button key={t} type="button" role="radio" aria-checked={D.som === i} onClick={() => setD({ som: i as 0 | 1 })} style={seg(D.som === i)}>{t}</button>)}
+          {[inyF && D.ucet !== ja.ucetId ? `${T} má účet` : `Som ${tl}`, `Vypĺňam za ${Tg}`].map((t, i) => <button key={t} type="button" role="radio" aria-checked={D.som === i} onClick={() => setD({ som: i as 0 | 1 })} style={seg(D.som === i)}>{t}</button>)}
         </div>
-        <span style={{ fontSize: 13.5, color: "var(--ink3)" }}>{D.som === 0 ? "V zozname nižšie budete vy." : `${T} nemusí mať účet v DEED+. Vy budete Správca stránky a ${tl} ostane uvedený v zozname.`}</span>
+        {inyF && D.ucet !== ja.ucetId && <button type="button" onClick={() => setD({ som: 0, ucet: ja.ucetId ?? undefined })} style={{ ...obrys, alignSelf: "flex-start" }}>{`Nový ${tl} som ja`}</button>}
+        <span style={{ fontSize: 13.5, color: "var(--ink3)" }}>{inyF && D.som === 0 && D.ucet !== ja.ucetId ? `${T} má vlastný účet. „Nový ${tl} som ja“ ťuknite, len keď farnosť dostala nového ${Tg}, potvrdí to účet farnosti.` : D.som === 0 ? "V zozname nižšie budete vy." : `${T} nemusí mať účet v DEED+. Vy budete Správca stránky a ${tl} ostane uvedený v zozname.`}</span>
         <button type="button" aria-disabled={!okD} onClick={uloz} style={plne(okD)}>{okD ? "Uložiť" : "Najprv napíšte meno"}</button>
         <button type="button" onClick={() => { setDOtv(false); setDraft(null); }} style={zbal}>Zbaliť ⌃</button>
       </>}
