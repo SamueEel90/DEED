@@ -655,7 +655,7 @@ function DetailParte({ sp, strankaId, symbol, orgMeno, sablona, vz, onOsoba, onZ
     <button type="button" onClick={() => onOsoba(org)} style={{ flex: "none", minHeight: 44, padding: "0 4px", border: "none", background: "transparent", color: "var(--green)", fontFamily: "inherit", fontSize: 14.5, fontWeight: 800, cursor: "pointer" }}>Pozri profil ›</button>
   </div> : null;
   const modul = <div style={{ borderRadius: 24, overflow: "hidden", border: zb ? `3px solid ${FIALOVA}` : "1px solid var(--cardBd)", background: "rgb(var(--panel-rgb))", padding: "14px 0" }}>
-    {data ? <ZbierkaModul zbierka={data} miesto="charita" pohreb hore={organizuje} bezDarcov={vedla} pietne={<PietneAkcie strankaId={strankaId} zbierka={zb!.id} />} bocny zoStrankyOrg onBack={onZavri} ktoVoli="rodina" bez={["zapojitFirmu", "pravidelna", "dorovnanie"]} />
+    {data ? <ZbierkaModul zbierka={data} miesto="charita" pohreb hore={organizuje} bezDarcov={vedla} pietne={<PietneAkcie strankaId={strankaId} zbierka={zb!.id} />} bocny zoStrankyOrg onBack={onZavri} ktoVoli="farnosť" bez={["zapojitFirmu", "pravidelna", "dorovnanie"]} />
       : <div style={{ padding: "0 16px" }}><PietneAkcie strankaId={strankaId} zbierka={sp.id} /></div>}
   </div>;
   return createPortal(
@@ -922,21 +922,19 @@ function MojeFarnostiOkno({ strankaId, domovska, sled, hlaska, onHlaska, onZavri
     </div>, document.body);
 }
 
-/** Martin 9. 10.: pri pohrebe namiesto Páči sa mi a Sledovať pietne akcie — Kondolovať (= Úprimnú sústrasť pri parte) · Spomínam */
+/** OPRAVY 209 (prototyp Platobny modul pohrebna zbierka): pod kryptom jedno tlačidlo Kondolovať · počet (= Úprimnú sústrasť pri parte) */
 function PietneAkcie({ strankaId, zbierka }: { strankaId: string; zbierka: string }) {
   useReakcieF();
   const ja = usePouzivatel();
   const kto = klucJa(ja), meno = ja.celeMeno?.trim() || "veriaci";
-  const r = reakcieF(strankaId, zbierka);
-  const tl = (pole: "sustrast" | "spomin", t: string, tJa: string) => {
-    const l = r[pole] ?? [], on = l.includes(kto);
-    return (
-      <button type="button" aria-pressed={on} onClick={() => prepniReakciuF(strankaId, zbierka, pole, kto, meno)} className="zb-karta"
-        style={{ minHeight: 52, padding: "6px 10px", borderRadius: 16, border: `1px solid ${on ? "var(--gBd)" : "var(--cardBd)"}`, background: on ? "var(--gSoft)" : "var(--card)", color: on ? "var(--gInk)" : "var(--ink)", fontFamily: "inherit", fontSize: 15, fontWeight: 800, cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 1 }}>
-        <span>{on ? tJa : t}</span>{l.length > 0 && <span style={{ fontSize: 12, fontWeight: 700, color: "var(--ink3)" }}>{l.length}</span>}
-      </button>);
-  };
-  return <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 10 }}>{tl("sustrast", "Kondolovať", "Kondolovali ste ✓")}{tl("spomin", "Spomínam", "Spomínate ✓")}</div>;
+  const l = reakcieF(strankaId, zbierka).sustrast ?? [], on = l.includes(kto);
+  return <div style={{ display: "flex", marginTop: 10 }}>
+    <button type="button" aria-pressed={on} onClick={() => prepniReakciuF(strankaId, zbierka, "sustrast", kto, meno)} className="zb-karta"
+      style={{ flex: 1, minHeight: 48, borderRadius: 14, border: `1px solid ${on ? "var(--gBd)" : "var(--cardBd)"}`, background: on ? "var(--gSoft)" : "var(--card)", color: on ? "var(--gInk)" : "var(--ink)", fontFamily: "inherit", fontSize: 14.5, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+      <svg width="17" height="17" viewBox="0 0 24 24" fill={on ? "currentColor" : "none"} stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" aria-hidden="true"><path d="M12 21s-7-4.4-9.3-9A5 5 0 0 1 12 6a5 5 0 0 1 9.3 6c-2.3 4.6-9.3 9-9.3 9z" /></svg>
+      <span>{on ? "Kondolovali ste" : "Kondolovať"} · {l.length}</span>
+    </button>
+  </div>;
 }
 
 /** OPRAVY 210: dátumový štvorec — bežný deň biely, sobota modrý rám, nedeľa červený rám, prikázaný sviatok zlatý s názvom, viacdňová akcia modrá */

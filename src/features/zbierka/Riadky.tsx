@@ -15,22 +15,24 @@ const riadkove: CSSProperties = { height: 50, borderRadius: 16, background: "var
 const male: CSSProperties = { height: 44, borderRadius: 14, background: "transparent", border: "1px solid var(--cardBd)", display: "flex", alignItems: "center", justifyContent: "center", gap: 7, fontSize: 14, fontWeight: 700, color: "var(--ink2)", cursor: "pointer", fontFamily: "inherit" };
 
 // ---------------- Zdieľať · QR + Páči sa mi ----------------
-export function ZdielatRiadok({ onZdielat, paciSa = 0, onPodporitDeed }: { onZdielat: () => void; paciSa?: number; /** KARTA 57C §4: pohrebná zbierka — na mieste Páči sa mi je Podporiť DEED */ onPodporitDeed?: () => void }) {
+export function ZdielatRiadok({ onZdielat, paciSa = 0, onPodporitDeed, sam }: { onZdielat: () => void; paciSa?: number; /** KARTA 57C §4: na mieste Páči sa mi je Podporiť DEED */ onPodporitDeed?: () => void;
+  /** OPRAVY 209: pohrebná zbierka — len Zdieľať · QR na celú šírku */ sam?: boolean }) {
   const [paci, setPaci] = useState(false);
   const pocet = paciSa + (paci ? 1 : 0);
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 2 }}>
+    <div style={{ display: "grid", gridTemplateColumns: sam ? "1fr" : "1fr 1fr", gap: 10, marginTop: 2 }}>
       <button type="button" className="zb-karta" onClick={onZdielat} style={riadkove}>
         <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" /><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4" /></svg>Zdieľať · QR
       </button>
-      {onPodporitDeed ? <button type="button" className="zb-karta" onClick={onPodporitDeed} style={{ ...riadkove, color: "var(--green)" }}>
+      {sam ? null : onPodporitDeed ? <button type="button" className="zb-karta" onClick={onPodporitDeed} style={{ ...riadkove, color: "var(--green)" }}>
         <span style={{ width: 18, height: 18, borderRadius: 5, background: "var(--green)", color: "#fff", fontSize: 11, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>D</span>
         <span>Podporiť <DeedZnacka /></span>
       </button> : <>
       <button type="button" className="zb-karta" onClick={() => setPaci(!paci)} aria-pressed={paci}
         style={{ ...riadkove, background: paci ? "var(--gSoft)" : "var(--card)", border: `1px solid ${paci ? "var(--gBd)" : "var(--cardBd)"}`, color: paci ? "var(--gInk)" : "var(--ink)", transition: "background .25s ease, color .25s ease, transform .15s ease" }}>
         <svg key={String(paci)} className={paci ? "zb-hviezda" : undefined} width="19" height="19" viewBox="0 0 24 24" fill={paci ? "currentColor" : "none"} stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"><path d="M7 10v11H4a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1h3zm0 0l4-7a2.5 2.5 0 0 1 2.5 2.5V9h5.2a2 2 0 0 1 2 2.3l-1.3 8A2 2 0 0 1 17.4 21H7" /></svg>
-        <span>Páči sa mi · <span style={{ fontVariantNumeric: "tabular-nums" }}>{pocet.toLocaleString("sk-SK")}</span></span>
+        {/* OPRAVY 209: len ikona a počet */}
+        <span aria-label={`Páči sa mi · ${pocet}`} style={{ fontVariantNumeric: "tabular-nums" }}>{pocet.toLocaleString("sk-SK")}</span>
       </button>
       </>}
     </div>
@@ -55,6 +57,20 @@ export function PravidelnaRiadok({ registrovany, onClick }: { registrovany: bool
     popis={registrovany ? "Mesačne · kartou alebo prevodom · kedykoľvek zrušíš" : "Mesačne · vyplníš platobné údaje · kedykoľvek zrušíš"}
     ikona={<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3l3 3-3 3M4 11V9a3 3 0 0 1 3-3h13M7 21l-3-3 3-3M20 13v2a3 3 0 0 1-3 3H4" /></svg>}
     vpravo={<span style={{ flex: "none", padding: "9px 14px", borderRadius: 12, background: "var(--hcF, #4B7A35)", color: "#fff", fontSize: 13.5, fontWeight: 800 }}>Nastaviť</span>} />;
+}
+/** OPRAVY 209: jedno tlačidlo Obľúbené (Podporiť DEED+ je vedľa Vlastnej sumy) */
+export function Oblubene({ polozka }: { polozka: Oblubeny }) {
+  const { jeOblubene, toggleOblubene } = usePersonalizacia();
+  const on = jeOblubene(polozka.refId);
+  return (
+    <div style={{ display: "flex", marginTop: 10 }}>
+      <button type="button" className="zb-karta" onClick={() => toggleOblubene(polozka)} aria-pressed={on}
+        style={{ flex: 1, height: 44, borderRadius: 14, background: on ? "var(--goldBg)" : "transparent", border: `1px solid ${on ? "var(--goldBd)" : "var(--cardBd)"}`, display: "flex", alignItems: "center", justifyContent: "center", gap: 7, fontSize: 14, fontWeight: 700, color: on ? "var(--gold)" : "var(--ink2)", cursor: "pointer", fontFamily: "inherit" }}>
+        <svg key={String(on)} className={on ? "zb-hviezda" : undefined} width="16" height="16" viewBox="0 0 24 24" fill={on ? "currentColor" : "none"} stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"><path d="M12 3l2.8 5.7 6.2.9-4.5 4.4 1 6.2L12 17.3 6.5 20.2l1-6.2L3 9.6l6.2-.9z" /></svg>
+        {on ? "V obľúbených" : "Obľúbené"}
+      </button>
+    </div>
+  );
 }
 export function OblubenePodporit({ polozka, onPodporit }: { polozka: Oblubeny; onPodporit: () => void }) {
   const { jeOblubene, toggleOblubene } = usePersonalizacia();

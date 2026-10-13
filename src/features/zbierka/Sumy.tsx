@@ -73,7 +73,7 @@ export function DeedDlazdice({ refId, registrovany, mikro, cezTvorcu }: { refId:
 }
 
 // ---------------- C · vlastná suma ----------------
-function KartaVlastna({ nadpis, popis, extra, modra, onClick, flex }: { nadpis: string; popis: string; extra?: ReactNode; modra?: boolean; onClick: () => void; flex: number }) {
+export function KartaVlastna({ nadpis, popis, extra, modra, onClick, flex }: { nadpis: string; popis: string; extra?: ReactNode; modra?: boolean; onClick: () => void; flex: number }) {
   return (
     <button type="button" className="zb-karta" onClick={onClick}
       style={{ flex, minWidth: 0, padding: "14px 14px 12px", borderRadius: 18, background: modra ? "var(--card)" : "var(--field)", border: modra ? "1px solid var(--cardBd)" : "1.5px solid var(--gBd)",
@@ -87,23 +87,33 @@ function KartaVlastna({ nadpis, popis, extra, modra, onClick, flex }: { nadpis: 
     </button>
   );
 }
-export function VlastnaSuma({ eur, deed, firma, otvor }: { eur: boolean; deed: boolean; firma?: string; otvor: OtvorPlatbu }) {
+/** OPRAVY 209 (prototyp Platobny modul charita a viera): pod sumami dve karty vedľa seba — Vlastná suma v € · Podporiť DEED+ (dar na chod platformy) */
+export function VlastnaSuma({ eur, deed, firma, otvor, onPodporit }: { eur: boolean; deed: boolean; firma?: string; otvor: OtvorPlatbu; onPodporit?: () => void }) {
   // firma = hotový text riadku dorovnania („Pekáreň Dobrota zdvojnásobí")
   if (!eur && !deed) return null;
+  const karta = (nadpis: string, popis: string, onClick: () => void, o: { zelena?: boolean; modra?: boolean; pole?: boolean; extra?: ReactNode }) => (
+    <button type="button" className="zb-karta" onClick={onClick}
+      style={{ flex: 1, minWidth: 0, padding: "12px 12px 10px", borderRadius: 18, background: o.pole ? "var(--field)" : "var(--card)", border: o.pole ? "1.5px solid var(--gBd)" : "1px solid var(--cardBd)",
+        textAlign: "left", cursor: "pointer", display: "flex", flexDirection: "column", gap: 3, fontFamily: "inherit" }}>
+      <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 14.5, fontWeight: 800, color: o.zelena ? "var(--green)" : o.modra ? "var(--blue)" : "var(--ink)", whiteSpace: "nowrap" }}>
+        {nadpis}
+        <svg style={{ marginLeft: "auto", flex: "none" }} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={o.modra ? "var(--blue)" : "var(--green)"} strokeWidth="2.2" strokeLinecap="round"><path d="M9 6l6 6-6 6" /></svg>
+      </span>
+      <span style={{ fontSize: 12.5, fontWeight: 600, color: "var(--ink3)" }}>{popis}</span>
+      {o.extra}
+    </button>);
   return (
-    <>
-      <NadpisSekcie text="VLASTNÁ SUMA" />
-      <div style={{ display: "flex", gap: 10 }}>
-        {eur && <KartaVlastna flex={1.25} nadpis="Vlastná suma v €" popis="karta alebo prevod" onClick={() => otvor({ kanal: "eur" })}
-          extra={firma ? <span style={{ marginTop: 3, fontSize: 12, fontWeight: 700, color: "var(--gold)" }}>{firma}</span> : undefined} />}
-        {deed && <KartaVlastna flex={1} modra nadpis="DeeD" popis="z peňaženky" onClick={() => otvor({ kanal: "deed" })} />}
-      </div>
-    </>
+    <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+      {eur && karta("Vlastná suma v €", "karta alebo prevod", () => otvor({ kanal: "eur" }), { pole: true, extra: firma ? <span style={{ marginTop: 3, fontSize: 12, fontWeight: 700, color: "var(--gold)" }}>{firma}</span> : undefined })}
+      {onPodporit && karta("Podporiť DEED+", "dar na chod platformy", onPodporit, { zelena: true })}
+      {deed && karta("DeeD", "z peňaženky", () => otvor({ kanal: "deed" }), { modra: true })}
+    </div>
   );
 }
 
 // ---------------- D · dary v krypte (EURC) ----------------
 const EURC_SUMY = [0.1, 0.5, 1];
+const KRYPTO_FARBY: [string, string][] = [["var(--c1)", "var(--c1Bd)"], ["var(--c2)", "var(--c2Bd)"], ["var(--c3)", "var(--c3Bd)"]];
 const KLUC_KRYPTO = "deed.zbierka.kryptoOtvorene";
 export function DaryVKrypte({ refId, otvor, mikro, cezTvorcu, sumy = EURC_SUMY, zbalene }: { refId: string; otvor: OtvorPlatbu; mikro: MikroCiel; cezTvorcu?: string; /** KARTA 57C §5: sada EURC zbierky */ sumy?: number[];
   /** OPRAVY 204: pohrebná zbierka — pri otvorení vždy zbalené (nepamätá sa) */ zbalene?: boolean }) {
@@ -112,10 +122,11 @@ export function DaryVKrypte({ refId, otvor, mikro, cezTvorcu, sumy = EURC_SUMY, 
   void refId; void mikro; void cezTvorcu; // OPRAVY 90: EURC už nie je mikrodar (platí sa podržaním v okne)
   return (
     <>
+      {/* OPRAVY 209: modrý pruh „DARY V KRYPTE — EURC, klik a hneď odíde" */}
       <button type="button" onClick={prepni} aria-expanded={otvorene}
-        style={{ width: "100%", margin: "20px 0 10px", padding: "4px 2px", display: "flex", alignItems: "center", justifyContent: "space-between", border: "none", background: "transparent", boxShadow: "none",
-          cursor: "pointer", fontFamily: "inherit", fontSize: 12.5, fontWeight: 700, letterSpacing: ".05em", color: "var(--ink3)" }}>
-        <span>DARY V KRYPTE</span>
+        style={{ width: "100%", minHeight: 48, margin: "20px 0 10px", padding: "8px 14px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, border: "1.5px solid var(--bBd)", borderRadius: 14, background: "var(--bSoft)", boxShadow: "none",
+          cursor: "pointer", fontFamily: "inherit", fontSize: 12.5, fontWeight: 700, letterSpacing: ".05em", color: "var(--blue)", textAlign: "left" }}>
+        <span>DARY V KRYPTE <span style={{ fontWeight: 600, letterSpacing: 0 }}>— EURC, klik a hneď odíde</span></span>
         <svg style={{ transform: `rotate(${otvorene ? 180 : 0}deg)`, transition: "transform .3s ease" }} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="M6 9l6 6 6-6" /></svg>
       </button>
       {otvorene && (
@@ -123,7 +134,7 @@ export function DaryVKrypte({ refId, otvor, mikro, cezTvorcu, sumy = EURC_SUMY, 
           {/* OPRAVY 90: rýchla suma len vyberie sumu; platí sa vždy cez Podrž a zaplať v platobnom okne */}
           <div style={mriezka}>
             {sumy.map((v, i) => {
-              const [bg, bd] = EUR_FARBY[i];
+              const [bg, bd] = KRYPTO_FARBY[i] ?? KRYPTO_FARBY[0];
               return (
                 <button key={v} type="button" className="zb-dlazdica" onClick={() => otvor({ kanal: "eurc", suma: v })} style={dlazdica(bg, bd)}>
                   <span style={{ fontSize: 20, fontWeight: 800, fontVariantNumeric: "tabular-nums" }}>{cislo(v)} <span style={{ fontSize: 12, fontWeight: 700 }}>EURC</span></span>

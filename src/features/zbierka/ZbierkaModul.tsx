@@ -21,7 +21,7 @@ import { KartaStavu } from "./KartaStavu";
 import { RychleSumyEur, DeedDlazdice, VlastnaSuma, DaryVKrypte, type OtvorPlatbu } from "./Sumy";
 import { PlatobneOkno, potvrditTuknutim, nastavPotvrditTuknutim } from "./Platba";
 import type { KanalPlatby } from "./Sumy";
-import { ZdielatRiadok, PravidelnaRiadok, OblubenePodporit, ZapojitFirmuRiadok, RetazRiadok, KartaDorovnava, Darcovia } from "./Riadky";
+import { ZdielatRiadok, PravidelnaRiadok, Oblubene, ZapojitFirmuRiadok, RetazRiadok, KartaDorovnava, Darcovia } from "./Riadky";
 import { ZdielatHarok, Harok } from "./Zdielat";
 import { NahlasitSheet } from "@/components/nahlasit";
 import { firmaPreDorovnanie } from "@/lib/podpory";
@@ -201,26 +201,28 @@ export function ZbierkaModul({ zbierka, miesto: miestoProp, onBack, spatNazov, o
             : <RychleSumyEur sumy={p.hodnota === "eurDrobne" ? [1, 3, 5] : zbierka.rychleSumy ?? [10, 25, 45]}
                 doplnok={p.hodnota === "eurDrobne" || miesto === "sukromna" ? undefined : `sumy si volí ${ktoVoli ?? "charita"}`}
                 kDaru={dorovnanie ? (sm) => dorovnanieKDaru(dorovnanie, sm) : undefined} otvor={otvorPlatbu} />}
-          <VlastnaSuma eur={vlastnaEur} deed={miesto === "deed" && registrovany} otvor={otvorPlatbu}
+          <VlastnaSuma eur={vlastnaEur} deed={miesto === "deed" && registrovany} otvor={otvorPlatbu} onPodporit={() => setHarok("podporit")}
             firma={dorovnanie ? `${dorovnanie.firma} ${dorovnanie.pomer === 1 ? "zdvojnásobí" : "dorovná"}` : undefined} />
         </div>
       );
     }
     if (p.kluc === "vlastnaEur") return null; // vykreslená spolu s rýchlymi sumami
     const obal = (el: React.ReactNode) => <div key={p.kluc} className="zb-pol" style={{ padding: "0 16px" }}>{el}</div>;
-    if (p.kluc === "zdielat") return obal(<><ZdielatRiadok onZdielat={() => setHarok("zdielat")} onPodporitDeed={p.hodnota === "podporitDeed" ? () => setHarok("podporit") : undefined} />{miesto === "pohreb" && pietne}</>);
+    // OPRAVY 209: pri pohrebe len Zdieľať · QR na celú šírku (Podporiť DEED+ je vedľa Vlastnej sumy)
+    if (p.kluc === "zdielat") return obal(<ZdielatRiadok onZdielat={() => setHarok("zdielat")} sam={p.hodnota === "podporitDeed"} />);
     if (p.kluc === "dorovnanie" && dorovnanie) return obal(<>
       <KartaDorovnava d={dorovnanie} />
       {dorovnanieKDaru(dorovnanie, 20) > 0 && <div style={{ margin: "-4px 0 12px", textAlign: "center", fontSize: 13.5, fontWeight: 700, color: "var(--gold)", fontVariantNumeric: "tabular-nums" }}>
         daruješ 20 € → k príjemcovi ide {(20 + dorovnanieKDaru(dorovnanie, 20)).toLocaleString("sk-SK")} €</div>}
     </>);
     if (p.kluc === "pravidelna") return obal(<PravidelnaRiadok registrovany={registrovany} onClick={() => setHarok("pravidelna")} />);
-    if (p.kluc === "oblubene") return obal(<OblubenePodporit polozka={{ refId: zbierka.id, typ: "charita", modul: "charity", nazov: zbierka.nazov, ciel: zbierka.ciel }}
-      onPodporit={() => setHarok("podporit")} />);
+    if (p.kluc === "oblubene") return obal(<Oblubene polozka={{ refId: zbierka.id, typ: "charita", modul: "charity", nazov: zbierka.nazov, ciel: zbierka.ciel }} />);
     if (p.kluc === "zapojitFirmu") return !smieDorovnat("charita", firmaPreDorovnanie().ucet) ? null : obal(<ZapojitFirmuRiadok firma={firmaPreDorovnanie().nazov} onClick={() => setHarok("firma")} />);
     if (p.kluc === "retazNastavit") return obal(<RetazRiadok onClick={() => setHarok("retaz")} />);
     if (p.kluc === "darcovia") return obal(<Darcovia refId={zbierka.id} cezTvorcu={cezTvorcu} nadpis={tvorca ? `DARCOVIA CEZ ${tvorca.menoAkuzativ.toLocaleUpperCase("sk-SK")}` : undefined} />);
-    if (p.kluc === "krypto") return <div key={p.kluc} className="zb-pol" style={{ padding: "0 16px" }}><DaryVKrypte refId={zbierka.id} otvor={otvorPlatbu} mikro={mikro} cezTvorcu={cezTvorcu} sumy={zbierka.rychleSumyE} zbalene={miesto === "pohreb"} /></div>;
+    if (p.kluc === "krypto") return <div key={p.kluc} className="zb-pol" style={{ padding: "0 16px" }}><DaryVKrypte refId={zbierka.id} otvor={otvorPlatbu} mikro={mikro} cezTvorcu={cezTvorcu} sumy={zbierka.rychleSumyE} zbalene={miesto === "pohreb"} />
+      {/* OPRAVY 209: pri pohrebe pod kryptom Kondolovať (dodá stránka) */}
+      {miesto === "pohreb" && pietne}</div>;
     return null;
   };
   // karta 02 — hlavička, galéria, nadpis a text (všade okrem hárku Podporiť DEED)
@@ -269,14 +271,16 @@ export function ZbierkaModul({ zbierka, miesto: miestoProp, onBack, spatNazov, o
       {/* karta 15 — mobil: jeden stĺpec v pevnom poradí · PC (≥ 1024): vľavo obsah, vpravo modul 420 px (sticky) */}
       {bocny ? <div style={{ display: "flex", flexDirection: "column" }}>
         {hore ?? <b className="zb-pol" style={{ padding: "6px 16px 12px", fontSize: 21, lineHeight: 1.2, letterSpacing: "-.01em" }}>{zbierka.nazov}</b>}
-        {polozky.map(vykresli)}
+        {polozky.filter((p) => p.kluc !== "darcovia").map(vykresli)}
         {zaFarnost}
+        {polozky.filter((p) => p.kluc === "darcovia").map(vykresli)}
       </div> : <div className="zb-obsah">
         <div className="zb-lavy">{vrch}{pc && lave.map(vykresli)}</div>
-        <div className="zb-pravy">{pc ? <>{prave.map(vykresli)}{zaFarnost}</> : <ZmensenyModul>{polozky.map(vykresli)}{zaFarnost}</ZmensenyModul>}</div>
+        <div className="zb-pravy">{pc ? <>{prave.map(vykresli)}{zaFarnost}</> : <ZmensenyModul>{polozky.filter((p) => p.kluc !== "darcovia").map(vykresli)}{zaFarnost}</ZmensenyModul>}</div>
       </div>}
-      {/* bod 149 · dole vždy „Zbaliť a späť" (vráti na tú istú kartu a posun) */}
-      {miesto !== "podporitDeed" && !bocny && <div style={{ padding: "8px 16px 0", maxWidth: pc ? 420 : undefined, marginLeft: pc ? "auto" : undefined }}><ZbalitASpat onClick={onBack} /></div>}
+      {/* bod 149 · dole vždy „Zbaliť a späť" (vráti na tú istú kartu a posun); OPRAVY 209: na mobile pod ním Darcovia */}
+      {miesto !== "podporitDeed" && !bocny && <div style={{ padding: "14px 16px 0", maxWidth: pc ? 420 : undefined, marginLeft: pc ? "auto" : undefined }}><ZbalitASpat onClick={onBack} /></div>}
+      {!pc && !bocny && <div style={{ paddingTop: 14 }}>{polozky.filter((p) => p.kluc === "darcovia").map(vykresli)}</div>}
     </div>
   );
 }

@@ -33,6 +33,9 @@
   --t2: #EBDAD1; --t2Bd: #E0B9AE; --t3: #E6CCC4; --t3Bd: #D49A8E;
   --scrim: rgba(20, 22, 18, .42);
 }
+/* OPRAVY 209: dlaždice EURC (prototyp Platobny modul charita a viera) — globálne, modul býva aj mimo .deed-platba */
+:root { --c1: #E4E3DD; --c1Bd: #CBD0CF; --c2: #D8DAD7; --c2Bd: #B9C7CF; --c3: #C3CBCF; --c3Bd: #7F9BB0; }
+html.dark { --c1: #1E2124; --c1Bd: #33404A; --c2: #1F262B; --c2Bd: #3F586C; --c3: #223039; --c3Bd: #557590; }
 html.dark .deed-platba {
   --blue: #7FA6C6; --iconBg: color-mix(in srgb, #7FA6C6 16%, transparent);
   --bSoft: #1C252C; --bBd: #3F586C;

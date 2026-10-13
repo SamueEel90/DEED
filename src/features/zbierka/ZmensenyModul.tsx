@@ -49,7 +49,8 @@ export function SpatNaZbierky({ onClick, text = "‹ Späť na zbierky", style }
 
 export function ZbalitASpat({ onClick, style }: { onClick: () => void; style?: CSSProperties }) {
   return (
-    <button type="button" onClick={onClick} style={{ width: "100%", height: 52, borderRadius: 14, border: "1.5px solid var(--acc, var(--green))", background: "transparent", color: "var(--ink)", cursor: "pointer", fontFamily: "inherit", fontSize: 15, fontWeight: 800, boxShadow: "none", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, ...style }}>
+    // OPRAVY 209: zlatý rám 1,5 px, 56 px, 16 / 800 (prototyp)
+    <button type="button" onClick={onClick} style={{ width: "100%", height: 56, borderRadius: 18, border: "1.5px solid #C9A24A", background: "transparent", color: "var(--ink)", cursor: "pointer", fontFamily: "inherit", fontSize: 16, fontWeight: 800, boxShadow: "none", display: "flex", alignItems: "center", justifyContent: "center", gap: 10, ...style }}>
       Zbaliť a späť {sipka(true, 18)}
     </button>);
 }

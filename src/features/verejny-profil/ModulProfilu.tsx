@@ -13,9 +13,9 @@ import { dorovnanieNaDar, dorovnanieKDaru, useZmenyDorovnani } from "@/lib/dorov
 import type { TestProfil, TestSektor } from "@/lib/testProfily";
 import { KartaStavu } from "@/features/zbierka/KartaStavu";
 import { Galeria } from "@/features/zbierka/Vrch";
-import { RychleSumyEur, DeedDlazdice, VlastnaSuma, DaryVKrypte, type OtvorPlatbu, type KanalPlatby } from "@/features/zbierka/Sumy";
+import { RychleSumyEur, VlastnaSuma, DaryVKrypte, type OtvorPlatbu, type KanalPlatby } from "@/features/zbierka/Sumy";
 import { PlatobneOkno } from "@/features/zbierka/Platba";
-import { ZdielatRiadok, PravidelnaRiadok, OblubenePodporit, RetazRiadok, KartaDorovnava, Darcovia } from "@/features/zbierka/Riadky";
+import { ZdielatRiadok, PravidelnaRiadok, Oblubene, RetazRiadok, KartaDorovnava, Darcovia } from "@/features/zbierka/Riadky";
 import { ZdielatHarok } from "@/features/zbierka/Zdielat";
 import { PravidelnaHarok } from "@/features/zbierka/PravidelnaHarok";
 import { PodporitDeedHarok } from "@/features/zbierka/PodporitDeed";
@@ -85,8 +85,9 @@ export function ModulProfilu({ profil, sektor, poradie, mestoV, onZbal, dorovnan
       <KartaModulu galeria={sektor.galeria?.length ? sektor.galeria : [{ typ: "foto", src: sektor.foto }]} stitok={hlavna ? "HLAVNÁ ZBIERKA" : `POSIELAŠ DO · ${typ}`}
         nazov={sektor.nazov} riadok={hlavna ? meno ?? profil.meno : `${meno ?? profil.meno} · ${typ2}`} popis={sektor.popis}
         info={hlavna ? "Hlavná zbierka je na celú činnosť. Peniaze sa použijú tam, kde treba najviac." : infoText} />
-      <ZmensenyModul><Modul profil={profil} sektor={sektor} mestoV={mestoV} sDorovnanim={dorovnanie} uvidisOdkaz={uvidisOdkaz} /></ZmensenyModul>
+      <ZmensenyModul><Modul profil={profil} sektor={sektor} mestoV={mestoV} sDorovnanim={dorovnanie} uvidisOdkaz={uvidisOdkaz} bezDarcov /></ZmensenyModul>
       <ZbalitASpat onClick={onZbal} />
+      <Darcovia refId={sektor.id} bezDorovnania={!dorovnanie} />
     </div>
   );
 }
@@ -100,7 +101,8 @@ export function ModulPlatby(p: { profil: TestProfil; sektor: TestSektor; mestoV?
   return <Modul profil={p.profil} sektor={p.sektor} mestoV={p.mestoV ?? ""} sDorovnanim={p.dorovnanie ?? true} uvidisOdkaz={p.uvidisOdkaz} nazovPlatby={p.nazov} ktoVoli={p.ktoVoli} bezObjektu={p.bezObjektu} sumy={p.sumy} sumyE={p.sumyE} bezEurc={p.bezEurc} ciel={p.ciel} />;
 }
 
-function Modul({ profil, sektor, mestoV, sDorovnanim, uvidisOdkaz, nazovPlatby, ktoVoli = "charita", bezObjektu, sumy = [10, 25, 45], sumyE, bezEurc, ciel = null }: { profil: TestProfil; sektor: TestSektor; mestoV: string; sDorovnanim: boolean; uvidisOdkaz?: { text: string; onClick?: () => void }; nazovPlatby?: string; ktoVoli?: string; bezObjektu?: boolean; sumy?: number[]; sumyE?: number[]; bezEurc?: boolean; ciel?: number | null }) {
+function Modul({ profil, sektor, mestoV, sDorovnanim, uvidisOdkaz, nazovPlatby, ktoVoli = "charita", bezObjektu, sumy = [10, 25, 45], sumyE, bezEurc, ciel = null, bezDarcov }: { profil: TestProfil; sektor: TestSektor; mestoV: string; sDorovnanim: boolean; uvidisOdkaz?: { text: string; onClick?: () => void }; nazovPlatby?: string; ktoVoli?: string; bezObjektu?: boolean; sumy?: number[]; sumyE?: number[]; bezEurc?: boolean; ciel?: number | null;
+  /** OPRAVY 209: Darcov ukáže ModulProfilu až pod „Zbaliť a späť" (prototyp) */ bezDarcov?: boolean }) {
   const refId = sektor.id;
   const objekt = bezObjektu ? undefined : { stranka: profil.k, hlavna: sektor.druh === "centralna", nazov: sektor.nazov };
   if (objekt) naviazObjekt(refId, objekt); // 0067: dary z ledgera
@@ -139,11 +141,10 @@ function Modul({ profil, sektor, mestoV, sDorovnanim, uvidisOdkaz, nazovPlatby, 
         <KartaDorovnava d={dorovnanie} />
         {k20 > 0 && <div style={{ margin: "-4px 0 0", textAlign: "center", fontSize: 13.5, fontWeight: 700, color: "var(--gold)", fontVariantNumeric: "tabular-nums" }}>daruješ 20 € → do {kam} ide {eurT(20 + k20)}</div>}
       </div>}
-      {/* OPRAVY 209: zvončeková bez Drobnej podpory DeeD, Páči sa mi a Sledovať (Podporiť DEED+ ostáva vedľa Zdieľať) */}
-      <div style={{ marginTop: 12 }}><ZdielatRiadok onZdielat={() => setHarok("zdielat")} onPodporitDeed={bezObjektu ? () => setHarok("podporit") : undefined} /></div>
-      {!bezObjektu && <DeedDlazdice refId={refId} registrovany={registrovany} mikro={mikro} />}
+      {/* OPRAVY 209 (prototyp Platobny modul charita a viera): bez Drobnej podpory; zvončeková aj bez Páči sa mi a Obľúbené */}
+      <div style={{ marginTop: 12 }}><ZdielatRiadok onZdielat={() => setHarok("zdielat")} sam={bezObjektu} /></div>
       <RychleSumyEur sumy={sumy} doplnok={`sumy si volí ${ktoVoli}`} kDaru={dorovnanie ? (s) => dorovnanieKDaru(dorovnanie, s) : undefined} otvor={otvor} />
-      <VlastnaSuma eur deed={registrovany} otvor={otvor} firma={dorovnanie ? `${dorovnanie.firma} ${dorovnanie.pomer === 1 ? "zdvojnásobí" : "dorovná"}` : undefined} />
+      <VlastnaSuma eur deed={false} otvor={otvor} onPodporit={() => setHarok("podporit")} firma={dorovnanie ? `${dorovnanie.firma} ${dorovnanie.pomer === 1 ? "zdvojnásobí" : "dorovná"}` : undefined} />
       {!bezEurc && <DaryVKrypte refId={refId} otvor={otvor} mikro={mikro} sumy={sumyE} />}
       <PravidelnaRiadok registrovany={registrovany} onClick={() => { setTipSuma(undefined); setHarok("pravidelna"); }} />
       {!!sektor.tipy?.length && <>
@@ -161,12 +162,12 @@ function Modul({ profil, sektor, mestoV, sDorovnanim, uvidisOdkaz, nazovPlatby, 
             </button>))}
         </div>
       </>}
-      {!bezObjektu && <OblubenePodporit polozka={{ refId, typ: "charita", modul: "charity", nazov }} onPodporit={() => setHarok("podporit")} />}
+      {!bezObjektu && <Oblubene polozka={{ refId, typ: "charita", modul: "charity", nazov }} />}
       <RetazRiadok onClick={() => setHarok("retaz")} />
       {veta && uvidisOdkaz && <div style={{ marginTop: 12, padding: "12px 14px", borderRadius: 18, background: "var(--gSoft)", border: "1px solid var(--gBd)", fontSize: 14, lineHeight: 1.5, color: "var(--ink)", textWrap: "pretty" } as CSSProperties}>{veta}
         {uvidisOdkaz && <button type="button" onClick={uvidisOdkaz.onClick} style={{ display: "block", minHeight: 44, margin: "-6px 0 -12px", padding: 0, border: "none", background: "transparent", boxShadow: "none", cursor: "pointer", textAlign: "left", fontSize: 13.5, fontWeight: 800, color: "var(--green)", fontFamily: "inherit" }}>{uvidisOdkaz.text} ›</button>}
       </div>}
-      <div style={{ marginTop: 14 }}><Darcovia refId={refId} bezDorovnania={!sDorovnanim} /></div>
+      {!bezDarcov && <div style={{ marginTop: 14 }}><Darcovia refId={refId} bezDorovnania={!sDorovnanim} /></div>}
 
       {platba && <PlatobneOkno kanal={platba.kanal} suma={platba.suma} nazov={nazov} registrovany={registrovany} pred={pred}
         bonus={dorovnanie ? (s) => dorovnanieKDaru(dorovnanie, s) : undefined} firma={dorovnanie?.firma}
