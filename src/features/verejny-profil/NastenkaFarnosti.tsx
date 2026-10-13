@@ -49,6 +49,7 @@ import { SADY_EUR, SADY_EURC } from "@/lib/sadyDarov";
 import { useLayout } from "@/components/context";
 
 import "@/styles/nastenka.css";
+import type { PayloadEditora } from "@/components/EditorOznameni";
 import { ParteMedailon, TvarOznamu, PARTE, SVADBA, JUBILEUM, BLAHOZELANIE, ZAKLAD, BORDOVA, symbolCirkvi, kickerTvaru, SERIF_TVARU, type Paleta } from "./Medailony";
 import { Darcovia } from "@/features/zbierka/Riadky";
 import { useQrObrazok } from "@/lib/qrObrazok";
@@ -120,6 +121,17 @@ const rozluckaT = (rd: string, rc: string) => { const m = rd.match(/^(\d{4})-(\d
 const datumT = (s: string) => { const m = s.match(/^(\d{4})-(\d{2})-(\d{2})/); return m ? `${+m[3]}. ${+m[2]}. ${m[1]}` : s; };
 const vekJubilea = (nar?: string, kedy?: string) => { const a = rok(nar), b = rok(kedy) || String(new Date().getFullYear()); return a ? String(+b - +a) : ""; };
 const reakT = (dakuje: boolean, n: number) => n === 1 ? `${dakuje ? "Ďakuje" : "Blahoželá"} 1 človek` : n < 5 ? `${dakuje ? "Ďakujú" : "Blahoželajú"} ${n} ľudia` : `${dakuje ? "Ďakuje" : "Blahoželá"} ${n} ľudí`;
+
+/** BLOK C 235: Blahoželanie z Editora oznámení — miniatúra podľa šablóny b1–b16 (podklad = pozadie, rám = farba ozdôb);
+ *  s rokmi kosoštvorec (2c), inak štvorec s nadpisom šablóny a menom (2d) */
+function tesBlaho(ed: PayloadEditora, z: Pick<Tes, "id" | "nadpis" | "r" | "mena"> & Partial<Pick<Tes, "x" | "af">>): Tes {
+  const P0 = (ed.polia ?? {}) as Record<string, unknown>, pole = (k: string) => String(P0[k] ?? "").trim();
+  const m = ed.miniatura ?? {}, zak = (ed.sablona && BLAHOZELANIE[ed.sablona]) || ZAKLAD.blaho;
+  const pal: Paleta = { ...zak, bg: m.podklad || zak.bg, ac: m.ram || zak.ac };
+  const roky = m.roky ? String(m.roky) : (pole("bVek").match(/\d+/)?.[0] ?? ""), meno = pole("bMeno") || z.nadpis;
+  return roky ? { ...z, druh: "jubileum", pal, meno, datum: pole("bD"), vek: roky }
+    : { ...z, druh: "blaho", pal, meno, datum: pole("bD"), vek: "", nadpis: zak.head || z.nadpis, pod: pole("bMeno") || undefined };
+}
 
 /** OPRAVY 205: obsah tvaru — svadba mená a dátum, jubileum roky a meno, blahoželanie nadpis */
 function ObsahTvaru({ t, velky }: { t: Tes; velky?: boolean }) {
@@ -308,6 +320,8 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, nahlad,
   // ---------- Teš sa s nami ----------
   // OPRAVY 205: tvar podľa druhu (svadba kruh · jubileum kosoštvorec · blahoželanie štvorec), pozvánka (miesto, čas) sa neukazuje
   const tesFar: Tes[] = OZ.filter((x) => ["SVADBA", "JUBILEUM", "BLAHOŽELANIE"].includes(stit(x))).map((x) => {
+    // BLOK C 235: jubileum zo Správy = Blahoželanie z Editora
+    if (x.oz?.ed?.typ === "blahozelanie") return tesBlaho(x.oz.ed, { id: x.id, nadpis: x.nazov ?? "", r: reakF(x.id, "blaho"), mena: reakcieF(strankaId, x.id).mena ?? {}, af: x.af });
     const st = stit(x), u = x.oz?.u, druhT: Tes["druh"] = st === "SVADBA" ? "svadba" : st === "JUBILEUM" ? "jubileum" : "blaho";
     return { id: x.id, druh: druhT, pal: druhT === "svadba" ? ZAKLAD.svadba : druhT === "jubileum" ? ZAKLAD.jubileum : ZAKLAD.blaho,
       meno: u?.meno?.trim() || bezPredpony(x.nazov ?? "") || x.nazov || "", datum: u?.kedyD ?? "", vek: vekJubilea(u?.nar, u?.kedyD), nadpis: x.nazov ?? "",
@@ -315,17 +329,8 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, nahlad,
   });
   const tesVer: Tes[] = OD.filter((x) => x.k === "svadba" || x.k === "ine").map((x) => {
     const ed = x.editor, P0 = (ed?.polia ?? {}) as Record<string, unknown>, pole = (k: string) => String(P0[k] ?? "").trim(), sv = x.k === "svadba";
-    // BLOK C 235: vo Viere je „Jubileum a iné oznámenie“ Blahoželanie z Editora — miniatúra podľa šablóny b1–b16
-    // (podklad = pozadie šablóny, rám = farba ozdôb); s rokmi kosoštvorec (2c), inak štvorec (2d)
-    if (ed?.typ === "blahozelanie") {
-      const m = (ed.miniatura ?? {}) as { podklad?: string; ram?: string; tvar?: string; roky?: number | null },
-        zak = (ed.sablona && BLAHOZELANIE[ed.sablona]) || ZAKLAD.blaho,
-        pal: Paleta = { ...zak, bg: m.podklad || zak.bg, ac: m.ram || zak.ac },
-        roky = m.roky ? String(m.roky) : (pole("bVek").match(/\d+/)?.[0] ?? "");
-      return roky
-        ? { id: x.id, druh: "jubileum", pal, x, meno: pole("bMeno") || x.t, datum: pole("bD"), vek: roky, nadpis: x.t, r: reakV(x, "blaho"), mena: x.mena ?? {} }
-        : { id: x.id, druh: "blaho", pal, x, meno: pole("bMeno") || x.t, datum: pole("bD"), vek: "", nadpis: zak.head || x.t, pod: pole("bMeno") || undefined, r: reakV(x, "blaho"), mena: x.mena ?? {} };
-    }
+    // BLOK C 235: vo Viere je „Jubileum a iné oznámenie“ Blahoželanie z Editora
+    if (ed?.typ === "blahozelanie") return tesBlaho(ed, { id: x.id, x, nadpis: x.t, r: reakV(x, "blaho"), mena: x.mena ?? {} });
     const pal = (ed?.sablona && (sv ? SVADBA : JUBILEUM)[ed.sablona]) || (sv ? ZAKLAD.svadba : ZAKLAD.jubileum);
     return { id: x.id, druh: sv ? "svadba" : "jubileum", pal, x, meno: sv ? [pole("sNev"), pole("sZen")].filter(Boolean).join(" & ") || x.t : pole("jMeno") || x.t,
       datum: sv ? pole("sD") : pole("jD"), vek: sv ? "" : (pole("jVekTxt").match(/\d+/)?.[0] ?? vekJubilea(pole("jNar"), pole("jD"))), nadpis: x.t, r: reakV(x, "blaho"), mena: x.mena ?? {} };

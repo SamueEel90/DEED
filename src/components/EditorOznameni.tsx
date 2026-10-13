@@ -18,6 +18,7 @@ export interface PayloadEditora {
 export interface CfgEditora {
   typ: TypEditora; /** BLOK C: viera = Parte, Svadba, Blahoželanie · podnik = Pozvánka na oslavu, Svadba, Blahoželanie */ sektor?: "viera" | "podnik"; rezim?: "plny" | "rychly"; bezTlace?: boolean; qrObrazok?: string; miesta?: string[];
   navrh?: PayloadEditora | null; kontext?: Record<string, unknown>;
+  /** BLOK C 235: predvolený podpis blahoželania (Správa farnosti „Blahoželá farnosť“) */ podpis?: string;
 }
 export interface EditorApi {
   /** krok späť v editore; false = už je na prvom kroku */

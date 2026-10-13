@@ -27,6 +27,8 @@ import type { ProfilStranky } from "@/lib/profilStranky";
 import { useQrObrazok } from "@/lib/qrObrazok";
 import { useAutorZaMna } from "@/lib/autorFarnosti";
 import { odkazQrStranky } from "@/features/verejny-profil/otvor";
+import { EditorOznameni, type EditorApi, type PayloadEditora } from "@/components/EditorOznameni";
+import { zapisEditora, zapisZPayloadu } from "@/lib/editorStat";
 
 type Druh = 0 | 1 | 2; // Krátky oznam · Udalosť · Oznámenie
 const DRUHY: [string, string][] = [
@@ -44,6 +46,7 @@ const POZVANIA: [string, string][] = [
 // KARTA 57 C.5: Iné = bez šablóny, vlastný plagát + nadpis + krátky popis
 const ODRUHY: [string, DruhOznamu, string][] = [["Parte", "parte", "PARTE"], ["Svadba", "svadba", "SVADBA"], ["Jubileum", "ine", "JUBILEUM"], ["Iné", "ine", "OZNÁMENIE"]];
 const INE = 3;
+const JUB = 2;
 const NADPIS_PH = ["napr. Rozlúčka s pánom …", "napr. Ohlášky · Ján a Mária", "napr. 50 rokov spolu · manželia Novákovci", "napr. Primície Jána Nováka"];
 
 /** KARTA 57 C.3: nastavenie formulára uložené pri ozname — Upraviť ho naplní 1:1 (fotky a plagát sú v `fotky`) */
@@ -51,6 +54,7 @@ export interface NastavenieOznamu {
   dr: 0 | 1 | 2; n: string; txt: string; plati: number; usp: 0 | 1; dat: string; cas: string; miesto: string;
   pozv: number; limit: string; odr: number; osp: 0 | 1; u?: UdajeOznamu; volba?: VolbaSablony;
   /** id záznamu udalosti v kalendári (pri úprave sa presunie) */ kal?: string;
+  /** BLOK C 235: jubileum z Editora oznámení (Blahoželanie) — Upraviť ho otvorí v editore */ ed?: PayloadEditora;
 }
 const RIADKY = 12;
 const ZLATA = "#C9A24A";
@@ -186,7 +190,9 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
 
   // ---- čo chýba ----
   const ine = dr === 2 && odr === INE;
-  const sablona = dr === 2 && osp === 0 && !ine;
+  // BLOK C 235: Jubileum = Editor oznámení, typ Blahoželanie (16 šablón, podpis „Blahoželá farnosť“); šablóna farnosti pri jubileu nie je
+  const jub = dr === 2 && odr === JUB && osp === 0;
+  const sablona = dr === 2 && osp === 0 && !ine && !jub;
   const [casZly, setCasZly] = useState(false);
   const ch: string[] = [];
   if (sablona) {
@@ -279,6 +285,26 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
     obnov((x) => x + 1);
   };
 
+  // ---- BLOK C 235: jubileum z Editora (Blahoželanie) — zverejní sa po „Áno, uložiť“ v editore ----
+  const edRef = useRef<EditorApi>(null);
+  const naEditor = async (p: PayloadEditora) => {
+    zapisZPayloadu(p, { kto: "farar", stranka_typ: "farnost", stranka: strankaId, pri_zbierke: false });
+    if (p.stav !== "hotovo") return;
+    const P = p.polia ?? {}, str = (k: string) => String(P[k] ?? "").trim();
+    const obr = (await edRef.current?.nahlad()) || "";
+    const povodny = edit ? zoznam.find((x) => x.id === edit) : undefined;
+    const teraz = terazMs(), id = povodny?.id ?? `naboz-${teraz}`, menoB = str("bMeno") || str("jMeno");
+    const oz: NastavenieOznamu = { dr: 2, n: "", txt: "", plati: 0, usp: 0, dat: "", cas: "", miesto: "", pozv: 0, limit: "", odr: JUB, osp: 0, ed: p };
+    const it: VieraFeedItem = { id, comp: "data", typ: "skutok", modul: "charity", kat: "Komunita", skore: 6, typSituacie: "normal", dni: 0, podpora: 0, farnostId: strankaId, cirkev: "", komunita: meno, overena: true,
+      vytvorene: povodny?.vytvorene ?? teraz, af: povodny ? povodny.af : autorJa, ntyp: "oznam", tag: "Jubileum", nazov: `Blahoželanie · ${menoB || "jubilant"}`, popis: menoB,
+      fotky: obr ? [obr] : undefined, plagat: obr ? true : undefined, reakciaTyp: "blahozelanie", platnostDni: 7, oz };
+    if (povodny) {
+      upravPrispevok(strankaId, povodny.id, { udalost: undefined, datum: undefined, fotky: undefined, plagat: undefined, ukat: undefined, smutocny: undefined, reakciaTyp: undefined, pozvanie: undefined, rsvp: undefined, ...it });
+      setHotovo("Zmeny sú uložené ✓"); setEdit(null);
+    } else { pridajPrispevok(strankaId, it); setHotovo("Oznámenie je zverejnené ✓"); }
+    obnov((x) => x + 1);
+  };
+
   // ---- KARTA 57 C.3: Upraviť zverejnené — formulár sa naplní z `oz` (staršie oznamy bez `oz` sa odvodia) ----
   const upravit = (x: VieraFeedItem) => {
     const st = stitokOznamu(x);
@@ -298,6 +324,7 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
     window.setTimeout(() => topRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 30);
   };
   const upravovany = edit ? zoznam.find((x) => x.id === edit) : undefined;
+  const upravovanyEd = upravovany?.oz?.ed;
 
   // ---- formulár ----
   const druhyEl = (
@@ -321,7 +348,7 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
       </span>
       <button type="button" onClick={() => { vycisti(); setVyb(false); }} style={{ minHeight: 44, padding: "0 14px", borderRadius: 12, border: "1px solid var(--cardBd)", background: "var(--card)", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 800, color: "var(--ink)", boxShadow: "none" }}>Zrušiť úpravu</button>
     </div>);
-  const telNahlad = tel && (vyb || edit) && !hotovo && (
+  const telNahlad = tel && (vyb || edit) && !hotovo && !jub && (
     <div style={{ position: "sticky", top: 68, zIndex: 3, maxHeight: 330, overflowY: "auto", borderRadius: 22, boxShadow: "0 10px 24px rgba(30,28,20,.18)" }}>{nahladPisania}</div>);
   const polia = <>
     {dr === 1 && <div style={{ display: "flex", flexDirection: "column", gap: 8 }}><span style={lbl}>Ako ho chcete ukázať</span><Segment label="Ako ho chcete ukázať" vol={[[0, "Text a fotky"], [1, "Vlastný plagát"]]} cur={usp} set={(v) => setUsp(v as 0 | 1)} />
@@ -331,7 +358,7 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
       {!ine && <div style={{ display: "flex", flexDirection: "column", gap: 8 }}><span style={lbl}>Ako ho chcete ukázať</span><Segment label="Ako ho chcete ukázať" vol={[[0, "Zo šablóny"], [1, "Vlastný plagát"]]} cur={osp} set={(v) => setOsp(v as 0 | 1)} /></div>}
     </>}
     {dr === 2 && (osp === 1 || ine) && <GaleriaEditor media={media} onMedia={setMedia} ph={mobil} bezVidea nadpis={ine ? "Plagát alebo fotky" : "Plagát a fotky"} dovetok=" Prvá je titulná na karte, ostatné sa ukážu po ťuknutí. Pod fotku môžete napísať popis." />}
-    {!sablona && <label style={{ display: "flex", flexDirection: "column", gap: 6 }}><span style={lbl}>Nadpis</span>
+    {!sablona && !jub && <label style={{ display: "flex", flexDirection: "column", gap: 6 }}><span style={lbl}>Nadpis</span>
       <input value={n} onChange={(e) => setN(e.target.value.slice(0, 80))} placeholder={dr === 1 ? "napr. Púť do Šaštína" : dr === 2 ? NADPIS_PH[odr] : "napr. V piatok nebude spovedanie"} style={pole} /></label>}
     {ine && <TextOznamu key={`ine${txtKey}`} value={txt} onChange={setTxt} label="Krátky popis" popis="Nepovinné." />}
     {dr === 1 && <div style={{ display: "grid", gridTemplateColumns: mobil ? "1fr" : "repeat(3,minmax(0,1fr))", gap: 10 }}>
@@ -346,6 +373,11 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
       <GaleriaEditor media={media} onMedia={setMedia} ph={mobil} nadpis="Fotky a video · nepovinné" dovetok=" Prvá fotka je hlavná. Bez fotky sa ukážu iniciály farnosti." /></>}
     {dr === 1 && usp === 1 && <><PlagatPole src={plagat} onSrc={setPlagat} toast={toast} popis="ťuknite a vyberte obrázok, alebo ho sem pretiahnite · na výšku, JPG alebo PNG" />
       <TextOznamu key={`p${txtKey}`} value={txt} onChange={setTxt} label="Krátky popis" popis="Nepovinné. Napríklad čo si vziať so sebou." /></>}
+    {jub && <div style={{ position: "relative", height: mobil ? "82vh" : 860, borderRadius: 16, overflow: "hidden", border: "1px solid var(--cardBd)" }}>
+      <EditorOznameni key={edit ?? "novy"} ref={edRef} title="Blahoželanie" onSend={(p) => { void naEditor(p); }} onUdalost={(e) => zapisEditora({ udalost: e.akcia, typ: "blahozelanie", papier: e.papier ?? null, kto: "farar", stranka_typ: "farnost", stranka: strankaId, pri_zbierke: false })}
+        style={{ position: "absolute", inset: 0, height: "100%" }}
+        cfg={{ typ: "blahozelanie", sektor: "viera", rezim: "plny", podpis: "Blahoželá farnosť", kontext: { stranka: strankaId, farnost: true }, navrh: upravovanyEd ?? null }} />
+    </div>}
     {sablona && <>
       <FormularOznamu u={u} onU={setU} mobil={mobil} upozornenie={false} />
       <span style={{ fontSize: 13, color: "var(--ink3)" }}>V hlavičke bude vaša farnosť. Text sa dá upraviť aj po zverejnení.</span>
@@ -361,7 +393,7 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
       {pozv === 2 && <label style={{ display: "flex", alignItems: "center", gap: 12 }}><span style={{ fontSize: 14, fontWeight: 800 }}>Koľko ľudí najviac</span>
         <input inputMode="numeric" value={limit} onChange={(e) => setLimit(e.target.value.replace(/\D/g, "").slice(0, 4))} placeholder="bez limitu" aria-label="Koľko ľudí najviac" style={{ ...pole, width: 140, height: 46 }} /></label>}
     </div>}
-    {ch.length || chybaSab
+    {jub ? null : ch.length || chybaSab
       ? <div role="status" style={{ padding: "12px 14px", borderRadius: 12, background: "var(--goldBg)", border: `1.5px solid ${ZLATA}`, fontSize: 14.5, fontWeight: 800 }}>{ch.length ? `Ešte chýba: ${ch.join(", ")}` : chybaSab}</div>
       : <div style={{ ["--gGrad" as string]: "linear-gradient(90deg,#4B7A35,#8DB866)" }}><PodrzTlacidlo key={edit ?? "novy"} label={edit ? "Podržte a uložte zmeny" : "Podržte a zverejnite"} trvanie={1500} onConfirm={zverejni} /></div>}
   </>;
@@ -438,7 +470,7 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
   const pravy: ReactNode = <>
     <span style={{ fontSize: 12.5, fontWeight: 800, letterSpacing: ".08em", color: "var(--ink3)" }}>NÁHĽAD · TAKTO TO UVIDIA ĽUDIA</span>
     <button type="button" onClick={() => setVpOn(true)} style={{ alignSelf: "stretch", minHeight: 48, borderRadius: 12, border: "1.5px solid var(--gBd)", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 14.5, fontWeight: 800, color: "var(--gInk)", boxShadow: "none" }}>Pozrieť celú verejnú stránku ›</button>
-    {nahladPisania}
+    {jub && !hotovo ? <section style={{ ...karta, padding: "14px 18px", fontSize: 14.5, lineHeight: 1.5, color: "var(--ink2)" }}>Náhľad blahoželania je priamo v editore. Na stránke farnosti sa ukáže v bloku Teš sa s nami.</section> : nahladPisania}
   </>;
   const pridatTl = (
     <button type="button" onClick={() => { setFormOn(true); setHotovo(null); }} style={{ flex: "none", minHeight: 56, border: "none", borderRadius: 16, background: "#4B7A35", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 10, fontFamily: "inherit", fontSize: 16, fontWeight: 800, color: "#fff", boxShadow: "none" }}><span aria-hidden="true" style={{ fontSize: 22, lineHeight: 1 }}>+</span>Pridať oznam</button>);
