@@ -143,12 +143,14 @@ async function nacitajCiselnik() {
 export const slovaCirkvi = (kod: string): SlovaCirkvi => ciselnik?.[kod] ?? SLOVA_ZALOHA[kod] ?? SLOVA_INE;
 
 /** slová pre stránku farnosti podľa jej cirkvi (Farár farnosti · Kazateľ zboru · Otec duchovný cirkevnej obce…) */
-export function useSlovaFarnosti(stranka: string): SlovaCirkvi & { cirkev: string } {
+/** OPRAVY 220: slovo pri čase bohoslužby podľa cirkvi (17:30 sv. omša · 9:00 služby Božie …) */
+export const slovoOmse = (kod: string): string => (kod === "RKC" ? "sv. omša" : kod === "GKC" || kod === "PC" ? "sv. liturgia" : kod === "ECAV" || kod === "RKCr" ? "služby Božie" : "bohoslužba");
+export function useSlovaFarnosti(stranka: string): SlovaCirkvi & { cirkev: string; omsa: string } {
   useSyncExternalStore((f) => { posl.add(f); return () => { posl.delete(f); }; }, () => ver);
   useEffect(() => {
     if (!ciselnikNacitany) { ciselnikNacitany = true; void nacitajCiselnik(); }
     if (!cirkevPamat.has(stranka)) void nacitajCirkevFarnosti(stranka).then(() => zmena());
   }, [stranka]);
   const k = cirkevPamat.get(stranka) ?? "RKC";
-  return { ...slovaCirkvi(k), cirkev: k };
+  return { ...slovaCirkvi(k), cirkev: k, omsa: slovoOmse(k) };
 }
