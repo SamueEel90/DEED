@@ -19,6 +19,8 @@ import { dokonciCas, CAS_OK, pekny } from "@/lib/kalendarFarnosti";
 import { bezDataUrl } from "@/lib/uploadFoto";
 import type { MediumZbierky } from "@/lib/novaZbierka";
 import { GaleriaEditor, cistyText } from "@/features/rola/obsahZbierky";
+import { useQrObrazok } from "@/lib/qrObrazok";
+import { odkazQrStranky } from "./otvor";
 import { TextOznamu } from "@/features/rola/OznamyFarnosti";
 import { DrzTlacidlo } from "@/features/viera/AdresarCirkvi";
 import { EditorOznameni, type EditorApi, type PayloadEditora, type TypEditora } from "@/components/EditorOznameni";
@@ -246,6 +248,8 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
   useOdFarnikov();
   const ja = usePouzivatel();
   const reg = ja.typ !== "pasivny";
+  // OPRAVY 204: parte veriaceho nemá vlastnú zbierku — QR vedie na stránku farnosti (Spomíname), nikdy nie ukážkový obrázok
+  const qrStr = useQrObrazok(odkazQrStranky(strankaId));
   const self = nacitajSelfAdd(strankaId), sm = nacitajSmie(strankaId);
   const povol = DRUHY_FARNIKA.filter((d) => smie(sm, d.k));
   const pop = self.poplatok || 0;
@@ -552,7 +556,7 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
         <div style={{ flex: "none", padding: "14px 16px 10px", borderBottom: "1px solid var(--cardBd)" }}><b style={{ fontSize: 19 }}>{edId ? `Upraviť · ${T?.t ?? ""}` : T?.t}</b></div>
         {jeEd ? <div style={{ position: "relative", flex: 1, minHeight: 0 }}>
           <EditorOznameni ref={edRef} title={T?.t} onSend={(p) => { void naEditor(p); }} onUdalost={(e) => zapisEditora({ udalost: e.akcia, typ: TYP_EDITORA[k]!, papier: e.papier ?? null, ...kdeStat })} style={{ position: "absolute", inset: 0, height: "100%" }}
-            cfg={{ typ: TYP_EDITORA[k]!, rezim: "plny", qrObrazok: k === "parte" ? "/editor/qr-deed.png" : undefined, miesta: k === "parte" ? ["v Dome smútku", "vo farskom kostole", "na miestnom cintoríne"] : undefined, kontext: { stranka: strankaId, veriaci: true }, navrh: edId ? odFarnikov(strankaId).find((y) => y.id === edId)?.editor ?? null : null }} />
+            cfg={{ typ: TYP_EDITORA[k]!, rezim: "plny", qrObrazok: k === "parte" ? qrStr : undefined, miesta: k === "parte" ? ["v Dome smútku", "vo farskom kostole", "na miestnom cintoríne"] : undefined, kontext: { stranka: strankaId, veriaci: true }, navrh: edId ? odFarnikov(strankaId).find((y) => y.id === edId)?.editor ?? null : null }} />
           {edToast && <div role="status" style={{ position: "absolute", left: 16, right: 16, top: 12, zIndex: 3, maxWidth: 560, margin: "0 auto", padding: "14px 16px", borderRadius: 16, background: "var(--gSoft)", border: "2px solid var(--green)", boxShadow: "0 10px 26px rgba(30,28,20,.2)", display: "flex", flexDirection: "column", gap: 4 }}>
             <b style={{ fontSize: 17, color: "var(--gInk)" }}>Zverejnené ✓</b>
             <span style={{ fontSize: 14.5, lineHeight: 1.45, color: "var(--ink2)" }}>Už to vidia všetci na stránke farnosti. Vytlačiť alebo stiahnuť môžete dole v editore.</span>

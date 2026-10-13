@@ -2,13 +2,12 @@
 // KARTA 57 A.4 — QR na vlastnom parte (prototyp „QR na parte").
 // S QR / Bez QR · Pod parte alebo 4 rohy · náhľad celého hárku A5 / A4 · QR 3 × 3 cm (prepočet v mm),
 // pri páse pod parte sa parte zmenší · upozornenie pri rohu · „Nemáte miesto? Bez QR alebo Vytvoriť nové zo šablóny ›".
-// Pred zapečatením sa s QR netlačí (miesto sa uloží). Obrázok QR zatiaľ /editor/qr-deed.png (systém dodá skutočný).
+// Pred zapečatením sa s QR netlačí (miesto sa uloží). OPRAVY 204: QR = odkaz zbierky (data URL z lib/qrObrazok).
 // ============================================================
 import { useState, type CSSProperties } from "react";
 
 export type MiestoQr = "pod" | "lh" | "ph" | "ld" | "pd";
 export interface QrParte { qr: boolean; kde: MiestoQr; papier: "A5" | "A4" }
-const QR_OBR = "/editor/qr-deed.png";
 const ROHY: Record<Exclude<MiestoQr, "pod">, CSSProperties> = {
   lh: { top: "3%", left: "3%" }, ph: { top: "3%", right: "3%" }, ld: { bottom: "3%", left: "3%" }, pd: { bottom: "3%", right: "3%" },
 };
@@ -29,16 +28,17 @@ function harokHtml(src: string, n: QrParte, kratky: string, qrObr: string): stri
     ${n.qr && n.kde === "pod" ? `<div style="flex:none;display:flex;align-items:center;gap:4mm;border-top:0.3mm solid #ddd;padding-top:3mm;width:100%"><img src="${qrObr}" style="width:30mm;height:30mm"><span><b style="font-size:11pt">Prispieť rodine</b><br><span style="font-size:9pt;color:#444">${kratky}</span></span></div>` : ""}
   </div>`;
 }
-export function tlacParte(src: string, n: QrParte, kratky = "deed.sk/z/…") {
+export function tlacParte(src: string, n: QrParte, kratky = "deed.sk/z/…", qrSrc = "") {
   const f = document.createElement("iframe"); f.style.cssText = "position:fixed;width:0;height:0;border:0;right:0;bottom:0"; document.body.appendChild(f);
   const d = f.contentDocument; if (!d) return;
-  const qr = new URL(QR_OBR, window.location.href).href;
+  const qr = qrSrc;
+  if (n.qr && !qr) n = { ...n, qr: false };
   d.open(); d.write(`<!doctype html><html><head><meta charset="utf-8"><title>Parte</title><style>@page{size:${n.papier};margin:6mm}html,body{margin:0;height:100%;font-family:"Plus Jakarta Sans",-apple-system,"Segoe UI",sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}</style></head><body>${harokHtml(src, n, kratky, qr)}</body></html>`); d.close();
   window.setTimeout(() => { f.contentWindow?.focus(); f.contentWindow?.print(); window.setTimeout(() => f.remove(), 1500); }, 600);
 }
 
-export function QrNaParte({ src, zapecatene = false, onSablona, onZmena, onIne, kratky = "deed.sk/z/…" }: {
-  src: string; zapecatene?: boolean; onSablona?: () => void; onZmena?: (n: QrParte) => void; onIne?: () => void; kratky?: string;
+export function QrNaParte({ src, zapecatene = false, onSablona, onZmena, onIne, kratky = "deed.sk/z/…", qrSrc = "" }: {
+  src: string; zapecatene?: boolean; onSablona?: () => void; onZmena?: (n: QrParte) => void; onIne?: () => void; kratky?: string; qrSrc?: string;
 }) {
   const [n, setN] = useState<QrParte>({ qr: true, kde: "pod", papier: "A5" });
   const [pomer, setPomer] = useState(0.7);
@@ -67,12 +67,12 @@ export function QrNaParte({ src, zapecatene = false, onSablona, onZmena, onIne, 
           <div style={{ position: "relative", flex: "none", width: Math.round(iw), height: Math.round(ih) }}>
             <img src={src} alt="Vaše parte" onLoad={(e) => { const im = e.currentTarget; if (im.naturalWidth) setPomer(im.naturalWidth / im.naturalHeight); }} style={{ display: "block", width: "100%", height: "100%", objectFit: "contain" }} />
             {roh && <div style={{ position: "absolute", ...ROHY[n.kde as Exclude<MiestoQr, "pod">], width: q, padding: 3, borderRadius: 4, background: "#fff", boxShadow: "0 1px 4px rgba(0,0,0,.25)", display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
-              <img src={QR_OBR} alt="QR kód zbierky" style={{ display: "block", width: "100%", aspectRatio: "1", objectFit: "contain" }} />
+              <img src={qrSrc} alt="" style={{ display: "block", width: "100%", aspectRatio: "1", objectFit: "contain" }} />
               <span style={{ fontSize: 7, fontWeight: 800, color: "#111", textAlign: "center", lineHeight: 1.15 }}>Prispieť rodine</span>
             </div>}
           </div>
           {n.qr && n.kde === "pod" && <div style={{ flex: "none", width: Math.round(iw), display: "flex", alignItems: "center", gap: 10, paddingTop: 8, borderTop: "1px solid #DDD", color: "#111" }}>
-            <img src={QR_OBR} alt="QR kód zbierky" style={{ flex: "none", width: q, height: q, objectFit: "contain" }} />
+            <img src={qrSrc} alt="" style={{ flex: "none", width: q, height: q, objectFit: "contain" }} />
             <span style={{ display: "flex", flexDirection: "column", gap: 2 }}><b style={{ fontSize: 13 }}>Prispieť rodine</b><span style={{ fontSize: 11, color: "#444" }}>{kratky}</span></span>
           </div>}
         </div>
@@ -81,7 +81,7 @@ export function QrNaParte({ src, zapecatene = false, onSablona, onZmena, onIne, 
       {roh && <span style={{ fontSize: 13, lineHeight: 1.45, color: "var(--ink2)" }}>Pozrite, či QR neprekrýva fotku alebo text. Ak áno, vyberte iný roh alebo Pod parte.</span>}
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}><b style={lbl}>Veľkosť papiera</b><Segment vol={[["A5", "A5"], ["A4", "A4"]]} cur={n.papier} set={(v) => zmen({ papier: v })} /></div>
       {smieTlac
-        ? <button type="button" onClick={() => { tlacParte(src, n, kratky); setTl(true); window.setTimeout(() => setTl(false), 2200); }} style={{ minHeight: 56, border: "none", borderRadius: 14, background: "#4B7A35", cursor: "pointer", fontFamily: "inherit", fontSize: 16, fontWeight: 800, color: "#fff", boxShadow: "none" }}>{tl ? "Posielam do tlačiarne ✓" : `Vytlačiť ${n.papier}${n.qr ? " s QR" : " bez QR"}`}</button>
+        ? <button type="button" onClick={() => { tlacParte(src, n, kratky, qrSrc); setTl(true); window.setTimeout(() => setTl(false), 2200); }} style={{ minHeight: 56, border: "none", borderRadius: 14, background: "#4B7A35", cursor: "pointer", fontFamily: "inherit", fontSize: 16, fontWeight: 800, color: "#fff", boxShadow: "none" }}>{tl ? "Posielam do tlačiarne ✓" : `Vytlačiť ${n.papier}${n.qr ? " s QR" : " bez QR"}`}</button>
         : <span style={{ padding: "12px 14px", borderRadius: 12, border: "1px solid var(--cardBd)", fontSize: 14, lineHeight: 1.45, color: "var(--ink2)" }}>Vytlačiť s QR pôjde po zapečatení zbierky. Miesto pre QR sa uloží.</span>}
       <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: "12px 14px", borderRadius: 12, border: "1px solid var(--cardBd)" }}>
         <span style={{ fontSize: 14, lineHeight: 1.45, color: "var(--ink2)" }}>Na vašom parte nie je miesto pre QR? Vytlačte ho <b>Bez QR</b>, alebo vytvorte nové zo šablóny, tam má QR miesto pod parte.</span>

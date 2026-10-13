@@ -85,7 +85,11 @@ function nacitajDev(): DevStav {
 }
 function ulozDev(v: DevStav) { try { localStorage.setItem(KLUC_DEV, JSON.stringify(v)); } catch { /* LS */ } }
 
-export function ZbierkaModul({ zbierka, miesto: miestoProp, onBack, spatNazov, onZavriet, zoStrankyOrg, onOtvorOrg, stav, onStav, bocny, bez, ktoVoli, pohreb, pietne }: {
+export function ZbierkaModul({ zbierka, miesto: miestoProp, onBack, spatNazov, onZavriet, zoStrankyOrg, onOtvorOrg, stav, onStav, bocny, bez, ktoVoli, pohreb, pietne, hore, bezDarcov }: {
+  /** OPRAVY 204: riadok nad modulom v bočnom stĺpci namiesto nadpisu (ZBIERKU ORGANIZUJE · meno · Pozri profil ›) */
+  hore?: React.ReactNode;
+  /** OPRAVY 204: darcov ukazuje stránka inde (PC: pod parte) */
+  bezDarcov?: boolean;
   zbierka: ZbierkaData; miesto?: Miesto; onBack: () => void;
   /** KARTA 57C §3: len modul v bočnom stĺpci (zbierku ukazuje stránka vľavo) — jeden stĺpec, bez galérie a Späť, bez ukážkového cieľa */
   bocny?: boolean;
@@ -140,7 +144,7 @@ export function ZbierkaModul({ zbierka, miesto: miestoProp, onBack, spatNazov, o
   const [predDarom, setPredDarom] = useState(stavPredDarom);
   // hárky z karty 12 (zatiaľ pôvodné hárky appky — nový vzhľad príde s ich kartami)
   const [harok, setHarok] = useState<"pravidelna" | "firma" | "retaz" | "zdielat" | "podporit" | null>(null);
-  const polozky = pripojene(miesto, k).filter((p) => !bez?.includes(p.kluc) && !(p.kluc === "krypto" && zbierka.eurc === false));
+  const polozky = pripojene(miesto, k).filter((p) => !bez?.includes(p.kluc) && !(p.kluc === "krypto" && zbierka.eurc === false) && !(bezDarcov && p.kluc === "darcovia"));
   const pc = useSirokeOkno();
   // karta 13 — tvorca (na mieste tvorca vždy, na súkromnej len so splitom)
   const cezTvorcaMiesto = miesto === "tvorca" || (miesto === "sukromna" && dev.split);
@@ -213,7 +217,7 @@ export function ZbierkaModul({ zbierka, miesto: miestoProp, onBack, spatNazov, o
     if (p.kluc === "zapojitFirmu") return !smieDorovnat("charita", firmaPreDorovnanie().ucet) ? null : obal(<ZapojitFirmuRiadok firma={firmaPreDorovnanie().nazov} onClick={() => setHarok("firma")} />);
     if (p.kluc === "retazNastavit") return obal(<RetazRiadok onClick={() => setHarok("retaz")} />);
     if (p.kluc === "darcovia") return obal(<Darcovia refId={zbierka.id} cezTvorcu={cezTvorcu} nadpis={tvorca ? `DARCOVIA CEZ ${tvorca.menoAkuzativ.toLocaleUpperCase("sk-SK")}` : undefined} />);
-    if (p.kluc === "krypto") return <div key={p.kluc} className="zb-pol" style={{ padding: "0 16px" }}><DaryVKrypte refId={zbierka.id} otvor={otvorPlatbu} mikro={mikro} cezTvorcu={cezTvorcu} sumy={zbierka.rychleSumyE} /></div>;
+    if (p.kluc === "krypto") return <div key={p.kluc} className="zb-pol" style={{ padding: "0 16px" }}><DaryVKrypte refId={zbierka.id} otvor={otvorPlatbu} mikro={mikro} cezTvorcu={cezTvorcu} sumy={zbierka.rychleSumyE} zbalene={miesto === "pohreb"} /></div>;
     return null;
   };
   // karta 02 — hlavička, galéria, nadpis a text (všade okrem hárku Podporiť DEED)
@@ -259,7 +263,7 @@ export function ZbierkaModul({ zbierka, miesto: miestoProp, onBack, spatNazov, o
       {/* pripojené položky — vždy rovnaké poradie, odpojené chýbajú úplne */}
       {/* karta 15 — mobil: jeden stĺpec v pevnom poradí · PC (≥ 1024): vľavo obsah, vpravo modul 420 px (sticky) */}
       {bocny ? <div style={{ display: "flex", flexDirection: "column" }}>
-        <b className="zb-pol" style={{ padding: "6px 16px 12px", fontSize: 21, lineHeight: 1.2, letterSpacing: "-.01em" }}>{zbierka.nazov}</b>
+        {hore ?? <b className="zb-pol" style={{ padding: "6px 16px 12px", fontSize: 21, lineHeight: 1.2, letterSpacing: "-.01em" }}>{zbierka.nazov}</b>}
         {polozky.map(vykresli)}
       </div> : <div className="zb-obsah">
         <div className="zb-lavy">{vrch}{pc && lave.map(vykresli)}</div>
