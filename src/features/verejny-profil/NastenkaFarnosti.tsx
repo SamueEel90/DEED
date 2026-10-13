@@ -645,7 +645,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, nahlad,
       <div style={{ display: "flex", flexDirection: k3 ? "row" : "column", borderRadius: 22, overflow: "hidden", background: KARTA }}>
         {(u.foto || d) && <div style={{ position: "relative", flex: "none", width: k3 ? "44%" : "100%", minHeight: k3 ? 300 : undefined, aspectRatio: k3 ? undefined : u.foto ? (u.plag ? "3 / 4" : "16 / 9") : "4 / 1", background: u.foto ? `center/${u.plag ? "contain" : "cover"} no-repeat url('${u.foto}') var(--nf-pas)` : "var(--nf-pas)" }}>
           {u.foto && u.plag && <button type="button" onClick={() => setVelke({ src: u.foto })} aria-label="Plagát na celú obrazovku" style={{ position: "absolute", inset: 0, border: "none", background: "transparent", cursor: "zoom-in" }} />}
-          {d && <span style={{ position: "absolute", left: 16, top: 16 }}><KDatum d={d} plny="#2F5E8E" /></span>}
+          {d && <span style={{ position: "absolute", left: 16, top: 16 }}><KDatum d={d} /></span>}
         </div>}
         <div style={{ flex: 1, minWidth: 0, padding: k3 ? "24px 26px" : "18px 18px 20px", display: "flex", flexDirection: "column", gap: 10 }}>
           {u.mojeX ? hlavickaAutora(u.mojeX) : hlavickaFar(u.af)}
@@ -659,7 +659,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, nahlad,
     {(udalosti.length > 1 || alba.length > 0) && <div style={{ display: "grid", gridTemplateColumns: `repeat(${k3 ? 3 : siroka ? 2 : 1},minmax(0,1fr))`, gap: 14 }}>
       {udalosti.filter((u) => u.id !== velkaU?.id).map((u) => { const d = u.dat ? zIso(u.dat) : null, n = u.zoznam.length; return (
         <button key={u.id} type="button" onClick={() => setPridV(u.id)} style={{ display: "flex", gap: 14, alignItems: "center", padding: 14, borderRadius: 18, background: KARTA, border: "none", color: INK, fontFamily: "inherit", textAlign: "left", cursor: "pointer", minWidth: 0 }}>
-          {d ? <KDatum d={d} plny={d.getDay() === 0 ? "#B3261E" : "#2F5E8E"} /> : null}
+          {d ? <KDatum d={d} /> : null}
           <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 3 }}><b style={{ fontSize: 16.5, lineHeight: 1.25 }}>{u.t}</b><span style={{ fontSize: 14.5, color: INK3 }}>{[u.kedy.split(" · ").slice(1).join(" · ").toLocaleLowerCase("sk-SK"), u.mojeX ? autor(u.mojeX).replace("Pridal veriaci", "pridal veriaci") : "", n ? `${n} príde` : ""].filter(Boolean).join(" · ")}</span></span>
         </button>); })}
       {alba.map((a) => { const f = a.fotky!.find(ziveObr)!; return (

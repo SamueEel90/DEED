@@ -37,13 +37,14 @@ export function KNadpis({ t, maly, matna, velky }: { t: string; maly?: boolean; 
     </span>);
 }
 
-/** dátumový štvorec Kroniky: bežný deň karta, sobota modrá, nedeľa červená, tábor plná modrá */
-export function KDatum({ d, plny, velky }: { d: Date; /** tábor alebo akcia s plnou farbou */ plny?: string; velky?: boolean }) {
-  const w = d.getDay(), bg = plny ?? (w === 6 ? "#2F5E8E" : w === 0 ? "#B3261E" : KARTA), ink = plny || w === 6 || w === 0 ? "#fff" : INK;
+/** dátumový štvorec Kroniky (OPRAVY 246): bežný deň biely, sobota modrý rám, nedeľa červený rám, tábor plná modrá (`plny`) */
+export function KDatum({ d, plny, velky }: { d: Date; /** tábor — plná farba */ plny?: string; velky?: boolean }) {
+  const w = d.getDay(), ram = plny ? undefined : w === 6 ? "var(--kr-so)" : w === 0 ? "var(--kr-ne)" : undefined;
+  const bg = plny ?? (ram ? KARTA : "#F1ECE1"), ink = plny ? "#fff" : ram ?? "#14110B";
   const s = velky ? 64 : 58;
   return (
-    <span style={{ flex: "none", width: s, height: s, borderRadius: 12, background: bg, color: ink, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-      <b style={{ fontSize: 20, lineHeight: 1 }}>{d.getDate()}</b><span style={{ fontSize: 11.5, fontWeight: 800, opacity: plny || w === 6 || w === 0 ? 1 : 0.75 }}>{MES[d.getMonth()]}</span>
+    <span style={{ flex: "none", width: s, height: s, boxSizing: "border-box", borderRadius: 12, background: bg, color: ink, border: ram ? `3px solid ${ram}` : "none", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+      <b style={{ fontSize: 20, lineHeight: 1 }}>{d.getDate()}</b><span style={{ fontSize: 11.5, fontWeight: 800, opacity: plny || ram ? 1 : 0.75 }}>{MES[d.getMonth()]}</span>
     </span>);
 }
 

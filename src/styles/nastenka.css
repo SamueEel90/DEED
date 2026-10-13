@@ -22,8 +22,10 @@ html.dark {
 .nastenka-farnosti {
   --kr-a: color-mix(in srgb, var(--nf-linia) 85%, #000); --kr-b: color-mix(in srgb, var(--nf-linia) 72%, #fff);
   --kr-c: var(--nf-linia); --kr-d: color-mix(in srgb, var(--nf-linia) 86%, #fff); --kr-plna: var(--nf-linia);
+  --kr-so: #2F5E8E; --kr-ne: #A33A2E; /* OPRAVY 246: sobota modrý rám, nedeľa červený */
 }
 html.dark .nastenka-farnosti {
   --kr-a: color-mix(in srgb, var(--nf-linia) 62%, #fff); --kr-b: color-mix(in srgb, var(--nf-linia) 38%, #fff);
   --kr-c: color-mix(in srgb, var(--nf-linia) 60%, #fff); --kr-d: color-mix(in srgb, var(--nf-linia) 48%, #fff); --kr-plna: color-mix(in srgb, var(--nf-linia) 62%, #fff);
+  --kr-so: #7FA8C8; --kr-ne: #E0786A;
 }
