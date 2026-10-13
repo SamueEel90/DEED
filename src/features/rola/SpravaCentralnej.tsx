@@ -158,7 +158,7 @@ export function SpravaCentralnej({ strankaId, nazov, hlavnyUcet, tier, mobil, to
     </section>);
 
   // ---- karty Nastavenia ----
-  const tentoMesiac = <CislaKarta nadpis="Tento mesiac" dary={dary} cisla={farnost ? [[eur(mesiac), "tento mesiac · cez DEED"], [String(c.mesacne), "ľudí dáva mesačne"], [eur(spolu), "od začiatku · cez DEED"]] : [[eur(mesiac), "tento mesiac"], [String(c.mesacne), "ľudí dáva mesačne"], [eur(spolu), "od začiatku"]]}>
+  const tentoMesiac = <CislaKarta nadpis="Tento mesiac" dary={dary} cisla={farnost ? [[eur(mesiac), "tento mesiac · cez DEED+"], [String(c.mesacne), "ľudí dáva mesačne"], [eur(spolu), "od začiatku · cez DEED+"]] : [[eur(mesiac), "tento mesiac"], [String(c.mesacne), "ľudí dáva mesačne"], [eur(spolu), "od začiatku"]]}>
     <button type="button" onClick={onDarcovia} style={obrysK}>Všetci darcovia ›</button>
   </CislaKarta>;
   const textKarta = <section data-pole="text" style={kartaK}><span style={nadpisK}>Text pre darcov</span>

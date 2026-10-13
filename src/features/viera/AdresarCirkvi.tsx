@@ -205,7 +205,7 @@ function AdresarCirkvi({ onZavri, spatText = "‹ Späť" }: { onZavri: () => vo
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {vsetky == null ? <span style={{ fontSize: 15.5, color: INK3 }}>Načítavam farnosti…</span>
               : F.length ? F.map(riadokFarnosti)
-              : <span style={{ padding: 18, borderRadius: 18, border: `1.5px dashed ${LINKA}`, fontSize: 16, lineHeight: 1.5, color: INK2 }}>V tejto cirkvi zatiaľ nie je v DEED žiadna farnosť. Keď sa zaregistruje, nájdete ju tu.</span>}
+              : <span style={{ padding: 18, borderRadius: 18, border: `1.5px dashed ${LINKA}`, fontSize: 16, lineHeight: 1.5, color: INK2 }}>V tejto cirkvi zatiaľ nie je v DEED+ žiadna farnosť. Keď sa zaregistruje, nájdete ju tu.</span>}
           </div>
           <span style={{ fontSize: 14, lineHeight: 1.5, color: INK3 }}>Domovská farnosť je jedna. Sledovať môžete aj ďalšie, aj inej cirkvi.</span>
         </section>}

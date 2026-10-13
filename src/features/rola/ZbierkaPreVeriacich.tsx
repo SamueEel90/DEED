@@ -7,6 +7,7 @@
 // 3 rozdelenie (podiel overovateľa + zvyšok rozhoduje príjemca: nechať si / podeliť sa) · 4 kód + zapečatiť · 5 hotovo.
 // Nová zbierka začína vždy úplne prázdna. Prototyp „Sprava farnosti - prvy prichod" (pre-kodera-7-10-b).
 // ============================================================
+import { DeedZnacka } from "@/components/DeedZnacka";
 import { CasPole } from "@/components/CasPole";
 import { useEffect, useRef, useState, type CSSProperties, type DragEvent, type ReactNode } from "react";
 import { createPortal } from "react-dom";
@@ -66,7 +67,7 @@ function QrVelky({ data, zostava, onZavri }: { data: string; zostava: number; on
     <div role="dialog" aria-modal="true" aria-label="QR na celú obrazovku" onClick={onZavri} style={{ position: "fixed", inset: 0, zIndex: 1000, background: "#fff", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 22, padding: 24, cursor: "zoom-out" }}>
       <span style={{ display: "flex" }}><DeedQr key={data} data={data} size={velkost} variant="svetly" /></span>
       <span style={{ width: "min(92vw, 640px)", height: 10, borderRadius: 5, background: "#E4DFD5", overflow: "hidden" }}><span style={{ display: "block", width: "100%", height: "100%", background: "#4B7A35", transformOrigin: "0 50%", transform: `scaleX(${zostava / QR_S})`, transition: zostava === QR_S ? "none" : "transform 1s linear" }} /></span>
-      <b style={{ fontSize: 18, color: "#1D211B", textAlign: "center", fontVariantNumeric: "tabular-nums" }}>Naskenujte v appke DEED · ešte {zostava} s, potom nový kód</b>
+      <b style={{ fontSize: 18, color: "#1D211B", textAlign: "center", fontVariantNumeric: "tabular-nums" }}>Naskenujte v appke <DeedZnacka /> · ešte {zostava} s, potom nový kód</b>
       <button type="button" onClick={(e) => { e.stopPropagation(); onZavri(); }} autoFocus style={{ minHeight: 56, padding: "0 28px", border: "none", borderRadius: 16, background: "#1D211B", color: "#fff", fontFamily: "inherit", fontSize: 17, fontWeight: 800, cursor: "pointer" }}>× Zavrieť</button>
     </div>, document.body);
 }
@@ -300,7 +301,7 @@ export function ZbierkaSOverovatelom({ stranka, menoFarnosti, ucetFarnosti, mobi
         </span>
         {qrVelky && <QrVelky data={`https://deed.sk/overit/${stranka}/${token}`} zostava={zostava} onZavri={() => setQrVelky(false)} />}
         <div style={{ flex: 1, minWidth: 220, display: "flex", flexDirection: "column", gap: 8 }}>
-          <b style={{ fontSize: 17 }}>{T.kto} naskenuje QR v appke DEED</b>
+          <b style={{ fontSize: 17 }}>{T.kto} naskenuje QR v appke <DeedZnacka /></b>
           <span style={{ fontSize: 14.5, lineHeight: 1.5, color: "var(--ink2)" }}>Musí byť pri vás osobne. Skenuje v appke na mobile, tablete alebo počítači s kamerou. Rola <b>Overovateľ</b> je zapnutá pri QR farnosti. Kód platí 15 sekúnd a sám sa obnovuje.</span>
           <span style={{ display: "block", height: 6, borderRadius: 3, background: "var(--track)", overflow: "hidden" }}><span style={{ display: "block", height: "100%", width: "100%", background: "var(--green)", transformOrigin: "0 50%", transform: `scaleX(${zostava / QR_S})`, transition: zostava === QR_S ? "none" : "transform 1s linear" }} /></span>
           <span style={{ fontSize: 13, color: "var(--ink3)", fontVariantNumeric: "tabular-nums" }}>ešte {zostava} s · potom nový QR</span>
@@ -441,7 +442,7 @@ export function ZbierkaSOverovatelom({ stranka, menoFarnosti, ucetFarnosti, mobi
               <button key={p.id} type="button" onClick={() => pridajSpolu(p)} style={{ ...volbaSt(false), minHeight: 52 }}>
                 <span style={{ display: "flex", flexDirection: "column", gap: 2 }}><b style={{ fontSize: 14.5 }}>{p.nazov}</b><span style={{ fontSize: 12.5, color: "var(--ink3)" }}>{p.popis}</span></span>
               </button>))}
-            <span style={{ fontSize: 12.5, color: "var(--ink3)" }}>Len tí, ktorí sú registrovaní v DEED. Žiadny voľný účet.</span>
+            <span style={{ fontSize: 12.5, color: "var(--ink3)" }}>Len tí, ktorí sú registrovaní v DEED+. Žiadny voľný účet.</span>
           </> : <span style={{ fontSize: 13, color: "var(--ink3)" }}>Najviac {PODELIT_MAX}. Ak chcete iného, najprv jedného odstráňte.</span>}
         </div>}
         <section style={{ display: "flex", flexDirection: "column", gap: 10, padding: 14, borderRadius: 16, background: "var(--panel)", border: "1px solid var(--cardBd)" }}>

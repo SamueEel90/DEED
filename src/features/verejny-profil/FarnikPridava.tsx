@@ -72,7 +72,7 @@ function Pozvanie({ x, strankaId, kto, reg }: { x: PolozkaFarnika; strankaId: st
   const info = (zav ? `prihlásených ${n}${lim ? ` z ${lim}` : ""}` : n ? `zúčastní sa ${ludi(n)}` : "zatiaľ nikto") + (zav ? " · záväzne, menom" : " · nezáväzne");
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", paddingTop: 4 }}>
-      <button type="button" disabled={plne} aria-pressed={ja} onClick={() => { if (zav && !reg) { toast("Prihlásiť sa menom môžu len registrovaní v DEED."); return; } prepniVPolozke(strankaId, x.id, "ucast", kto); }}
+      <button type="button" disabled={plne} aria-pressed={ja} onClick={() => { if (zav && !reg) { toast("Prihlásiť sa menom môžu len registrovaní v DEED+."); return; } prepniVPolozke(strankaId, x.id, "ucast", kto); }}
         style={{ minHeight: 48, padding: "0 18px", borderRadius: 13, border: ja ? "1.5px solid var(--gBd)" : "none", background: ja ? "var(--gSoft)" : plne ? "var(--btn)" : ZELENA, color: ja ? "var(--gInk)" : plne ? "var(--ink3)" : "#fff", cursor: plne ? "default" : "pointer", fontFamily: "inherit", fontSize: 15, fontWeight: 800 }}>{t}</button>
       <span style={{ fontSize: 13.5, color: "var(--ink3)" }}>{info}</span>
     </div>);
@@ -398,9 +398,9 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
                 <span aria-hidden="true" style={{ fontSize: 20, color: "var(--ink3)" }}>›</span>
               </button>))}
           </div>; })}
-          <span style={{ fontSize: 14, lineHeight: 1.5, color: "var(--ink3)", paddingTop: 6 }}>Ponúka sa len to, čo farár povolil. Pridávať môžu registrovaní v DEED.</span>
+          <span style={{ fontSize: 14, lineHeight: 1.5, color: "var(--ink3)", paddingTop: 6 }}>Ponúka sa len to, čo farár povolil. Pridávať môžu registrovaní v DEED+.</span>
         </div> : <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          <span style={{ fontSize: 16, lineHeight: 1.5, color: "var(--ink2)" }}>Pridávať na stránku farnosti môžu len registrovaní v DEED. Tak vždy vieme, kto čo pridal.</span>
+          <span style={{ fontSize: 16, lineHeight: 1.5, color: "var(--ink2)" }}>Pridávať na stránku farnosti môžu len registrovaní v DEED+. Tak vždy vieme, kto čo pridal.</span>
           {/* PLACEBO — karta 56I: prihlásenie a registrácia z tejto stránky */}
           <button type="button" onClick={() => { setSheet(false); toast("Prihlásenie odtiaľto pripravujeme."); }} style={{ minHeight: 56, border: "none", borderRadius: 14, background: ZELENA, cursor: "pointer", fontFamily: "inherit", fontSize: 17, fontWeight: 800, color: "#fff" }}>Prihlásiť sa</button>
           <button type="button" onClick={() => { setSheet(false); toast("Registráciu odtiaľto pripravujeme."); }} style={{ minHeight: 56, borderRadius: 14, border: "1.5px solid var(--gBd)", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 17, fontWeight: 800, color: "var(--gInk)" }}>Zaregistrovať sa · 2 minúty</button>

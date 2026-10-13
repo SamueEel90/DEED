@@ -272,7 +272,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, stit: s
     const mena = u.zoznam.map((x) => `${u.mena[x] ?? "veriaci"}${x === kto ? " (vy)" : ""}`);
     return <>
       <span style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", paddingTop: 6 }}>
-        <button type="button" aria-pressed={jaV} disabled={plne} onClick={() => { if (zav && !jaV && !reg) { toast("Prihlásiť sa menom môžu len registrovaní v DEED."); return; } u.prepni(); }} style={tlacR(jaV, true, plne)}>{t}</button>
+        <button type="button" aria-pressed={jaV} disabled={plne} onClick={() => { if (zav && !jaV && !reg) { toast("Prihlásiť sa menom môžu len registrovaní v DEED+."); return; } u.prepni(); }} style={tlacR(jaV, true, plne)}>{t}</button>
         {poc && <span style={{ fontSize: 16, fontWeight: 700 }}>{poc}</span>}
       </span>
       {zav && mena.length > 0 && <>

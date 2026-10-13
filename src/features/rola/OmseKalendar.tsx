@@ -403,7 +403,7 @@ export function OmseKalendar({ strankaId, meno, kostoly, mobil, tel = false, toa
                 {!d.o.length && <span style={{ fontSize: 15, color: "#888" }}>—</span>}
               </div>
             </div>))}
-          <span style={{ fontSize: 12, color: "#777", textAlign: "center", paddingTop: 4 }}>{kostoly[kI]?.nazov ?? "Váš kostol"} · zmeny sledujte na stránke farnosti v appke DEED</span>
+          <span style={{ fontSize: 12, color: "#777", textAlign: "center", paddingTop: 4 }}>{kostoly[kI]?.nazov ?? "Váš kostol"} · zmeny sledujte na stránke farnosti v appke DEED+</span>
         </div>
       </div>
     </section>);

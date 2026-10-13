@@ -2,6 +2,7 @@
 // KARTA 56D: Správa od prvého príchodu — všetky funkcie, žiadne ukážkové dáta (prototyp „Sprava farnosti - prvy prichod").
 // Profil, logo a percento = profil_stranky (ako charita), pripnuté = sprava_piny, hlavná zbierka = profil_stranky.centralna.
 // Omše, oznamy a nastavenia farnosti z modulu Viera (stav.ts — localStorage + zrkadlo naboz_stav) pod kľúčom stránky.
+import { DeedZnacka } from "@/components/DeedZnacka";
 import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { pripojTestovaciuStranku } from "@/lib/stranka";
 import { createPortal } from "react-dom";
@@ -215,7 +216,7 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
   const OBD_T = ["dnes", "za 7 dní", "za 30 dní", "od januára"];
   const ludiT = (n: number) => `${n} ${n === 1 ? "človek" : n > 1 && n < 5 ? "ľudia" : "ľudí"}`;
   const ramce: [string, string, string][] = [
-    ["Vyzbierané · hlavná", eur(vyzbObd), `cez DEED · ${OBD_T[ob]}`],
+    ["Vyzbierané · hlavná", eur(vyzbObd), `cez DEED+ · ${OBD_T[ob]}`],
     ["Na najbližšiu omšu", eur(oknoSuma), oknoLudi ? `nedeľa ${om.okno.nedela} · ${ludiT(oknoLudi)}` : "zatiaľ nikto"],
     ["Posledná omšová", posledna ? eur(posledna.suma) : "—", posledna ? `nedeľa ${posledna.nedela} · ${poslPocet} ${poslPocet === 1 ? "dar" : poslPocet < 5 ? "dary" : "darov"}` : "zatiaľ žiadna"],
     ["Sledujúci", "—", "pripravujeme"], // PLACEBO — karta 56D: sledovanie stránky ešte nemá tabuľku
@@ -282,7 +283,7 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
       </span>
       <span style={{ flex: "none", display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2 }}>
         <b style={{ fontSize: mobil ? 18 : 24, fontVariantNumeric: "tabular-nums" }}>{eur(hlavnySuhrn.suma)}</b>
-        <span style={{ fontSize: 12, color: "var(--ink3)" }}>cez DEED</span>
+        <span style={{ fontSize: 12, color: "var(--ink3)" }}>cez <DeedZnacka /></span>
       </span>
       {!mobil && <span aria-hidden="true" style={{ flex: "none", fontSize: 20, color: "var(--ink3)" }}>›</span>}
     </button>);
@@ -380,7 +381,7 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
           <b style={{ fontSize: mobil ? 16 : 18 }}>{z.nazov || "Nová zbierka"}</b>
           <span style={{ fontSize: 13.5, color: "var(--ink3)" }}>{veriaci ? `${pod} · ${rozdelenieZbierkyF(z)}` : `${ciel ? `cieľ ${eur(ciel)} · ` : ""}${pod}`}</span>
         </span>
-        <span style={{ flex: "none", display: "flex", flexDirection: "column", alignItems: "flex-end" }}><b style={{ fontSize: mobil ? 17 : 20, fontVariantNumeric: "tabular-nums" }}>{eur(s0.suma)}</b><span style={{ fontSize: 12, color: "var(--ink3)" }}>cez DEED</span></span>
+        <span style={{ flex: "none", display: "flex", flexDirection: "column", alignItems: "flex-end" }}><b style={{ fontSize: mobil ? 17 : 20, fontVariantNumeric: "tabular-nums" }}>{eur(s0.suma)}</b><span style={{ fontSize: 12, color: "var(--ink3)" }}>cez DEED+</span></span>
         {!mobil && <span aria-hidden="true" style={{ flex: "none", fontSize: 20, color: "var(--ink3)" }}>›</span>}
       </button>);
   };
@@ -508,7 +509,7 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
   const mesOd = zaciatokMesiaca();
   const mesDary = vsetkyDary.filter((r) => r.cas >= mesOd);
   const penazenka = <>
-    {nadpis("Peňaženka", "Dary idú priamo na účet farnosti, DEED peniaze nedrží")}
+    {nadpis("Peňaženka", "Dary idú priamo na účet farnosti, DEED+ peniaze nedrží")}
     {riadky([
       { t: "Prišlo tento mesiac", s: mesDary.length ? `${mesDary.length} ${mesDary.length === 1 ? "dar" : mesDary.length < 5 ? "dary" : "darov"} · hlavná zbierka a omše` : "zatiaľ žiadne dary", v: eur(mesDary.reduce((a, r) => a + r.suma, 0)) },
       { t: "Čaká na výplatu", s: "do 2 pracovných dní · pripravujeme" }, // PLACEBO — karta 56D: výplaty rieši platobný modul
