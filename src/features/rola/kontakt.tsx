@@ -9,6 +9,11 @@ import { IkonaPin, IkonaObalka, IkonaOdkaz } from "@/components/icons";
 import { SUBJEKTY } from "./mock";
 import type { Pozicia } from "./stav";
 import { sieteZRegistracie } from "./registracia";
+import { verejneZPamate, zapisVerejne } from "@/lib/verejneNastavenia";
+
+// verejný kontakt patrí stránke (nastavenia_stranky.verejne → „kontakt", vidí aj návštevník); localStorage = záloha
+// (rovnaké mapovanie rola → testovacia stránka ako rola/stav STRANKA_POZICIE — tu bez importu hodnoty, nech nevznikne cyklus)
+const STRANKA_KONTAKTU: Record<Pozicia, string> = { charita: "svetlo", b2b: "pekaren", tvorca: "tvorca" };
 
 export type Siet = "facebook" | "instagram" | "youtube" | "tiktok" | "linkedin" | "x";
 export const SIETE: { k: Siet; label: string; domeny: string[] }[] = [
@@ -37,8 +42,8 @@ export interface Kontakt {
 
 const kluc = (p: Pozicia) => `deed.rola.kontakt.${p}`;
 
-/** z registrácie (mock = SUBJEKTY) + uložené úpravy */
-export function nacitajKontakt(p: Pozicia): Kontakt {
+/** z registrácie (mock = SUBJEKTY) + uložené úpravy (DB → localStorage) */
+export function nacitajKontakt(p: Pozicia, stranka?: string): Kontakt {
   const k = SUBJEKTY[p].kontakt;
   const zaklad: Kontakt = {
     sidlo: k.adresa, adresaVerejna: "",
@@ -46,6 +51,8 @@ export function nacitajKontakt(p: Pozicia): Kontakt {
     emaily: [{ adresa: k.email, popis: "" }],
     web: k.web ?? "", siete: p === "charita" ? sieteZRegistracie() : {},
   };
+  const db = verejneZPamate(stranka ?? STRANKA_KONTAKTU[p])?.["kontakt"] as Partial<Kontakt> | undefined;
+  if (db) return { ...zaklad, ...db, sidlo: zaklad.sidlo };
   try {
     const s = localStorage.getItem(kluc(p));
     return s ? { ...zaklad, ...(JSON.parse(s) as Partial<Kontakt>), sidlo: zaklad.sidlo } : zaklad;
@@ -53,6 +60,8 @@ export function nacitajKontakt(p: Pozicia): Kontakt {
 }
 export function ulozKontakt(p: Pozicia, k: Kontakt) {
   try { localStorage.setItem(kluc(p), JSON.stringify(k)); } catch { /* LS nedostupné */ }
+  const { sidlo: _sidlo, ...verejny } = k; // sídlo je z registrácie, neukladá sa
+  void zapisVerejne(STRANKA_KONTAKTU[p], "kontakt", verejny);
 }
 
 const bezProtokolu = (u: string) => u.trim().replace(/^https?:\/\//i, "").replace(/^www\./i, "").replace(/\/$/, "");
