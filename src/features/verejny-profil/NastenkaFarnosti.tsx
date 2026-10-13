@@ -203,7 +203,8 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, stit: s
   const obrVer = (x: PolozkaFarnika) => { const o = x.obr ?? (x.editor ? x.fotky?.[0] : undefined); return ziveObr(o) ? o! : ""; };
   const obrFar = (x: VieraFeedItem) => { const o = x.smutocny?.imageUrl ?? (x.plagat ? x.fotky?.[0] : undefined); return ziveObr(o) ? o! : ""; };
   const sablonaFar = (x: VieraFeedItem) => (!obrFar(x) && x.oz?.u && x.oz.volba ? x.oz : null);
-  const stit = (x: VieraFeedItem) => (x.tag === "Oznámenie" ? "OZNÁMENIE" : stitokOznamu(x));
+  // OPRAVY 216: oznam Správy ide do bloku podľa druhu z formulára (parte · svadba · jubileum · iné = blahoželanie), do Oznamov len krátky oznam
+  const stit = (x: VieraFeedItem) => (x.oz?.dr === 2 && x.ntyp !== "udalost" ? (["PARTE", "SVADBA", "JUBILEUM", "BLAHOŽELANIE"][x.oz.odr] ?? "BLAHOŽELANIE") : x.tag === "Oznámenie" ? "BLAHOŽELANIE" : stitokOznamu(x));
 
   // ---------- Príď a zaži s nami ----------
   type Ud = { id: string; ms: number; dat: string; t: string; txt: string; kedy: string; od: string; foto: string; plag: boolean; pz: 0 | 1 | 2; limit: number; zoznam: string[]; mena: Record<string, string>; prepni: () => void; mojeX?: PolozkaFarnika; /** KARTA 61 §2: brigáda (Prídem pomôcť) */ pomoc?: boolean };
@@ -233,7 +234,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, stit: s
   const parteVer = OD.filter((x) => x.k === "parte");
   const maSpom = parteFar.length + parteVer.length + zbPohreb.length > 0;
   // ---------- Teš sa s nami ----------
-  const tesFar = OZ.filter((x) => ["SVADBA", "JUBILEUM"].includes(stit(x)));
+  const tesFar = OZ.filter((x) => ["SVADBA", "JUBILEUM", "BLAHOŽELANIE"].includes(stit(x)));
   const tesVer = OD.filter((x) => x.k === "svadba" || x.k === "ine");
   const maTes = tesFar.length + tesVer.length + zbSvadba.length > 0;
 
@@ -247,7 +248,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, stit: s
   // ---------- Oznamy farnosti ----------
   type Oz = { id: string; ms: number; chip: string; t: string; txt: string; zm: boolean; g: "far" | "ver"; x?: PolozkaFarnika };
   const ozAll: Oz[] = [
-    ...OZ.filter((x) => ["OZNAM", "ZMENA OMŠE", "OZNÁMENIE"].includes(stit(x)) && (stit(x) !== "ZMENA OMŠE" || VJ.zmeny)).map((x): Oz => ({ id: x.id, ms: x.vytvorene ?? 0, chip: stit(x) === "ZMENA OMŠE" ? "ZMENA PROGRAMU" : stit(x), t: x.nazov ?? "", txt: x.popis ?? "", zm: stit(x) === "ZMENA OMŠE", g: "far" })),
+    ...OZ.filter((x) => ["OZNAM", "ZMENA OMŠE"].includes(stit(x)) && (stit(x) !== "ZMENA OMŠE" || VJ.zmeny)).map((x): Oz => ({ id: x.id, ms: x.vytvorene ?? 0, chip: stit(x) === "ZMENA OMŠE" ? "ZMENA PROGRAMU" : stit(x), t: x.nazov ?? "", txt: x.popis ?? "", zm: stit(x) === "ZMENA OMŠE", g: "far" })),
   ].sort((a, b) => b.ms - a.ms);
   // OPRAVY 197: krátke oznamy veriacich nepatria medzi oznamy farnosti — majú vlastný blok Od veriacich
   const oznVer = OD.filter((x) => x.k === "oznam").sort((a, b) => b.cas - a.cas);
