@@ -12,6 +12,7 @@ import { useFarbaLinie } from "@/lib/liniaStranky";
 import { useMiesta, type Miesto } from "@/lib/miestaFarnosti";
 import { NaseKostolyBlok, PodstrankaMiesta, otvorKostolPoPrichode, vezmiCakajuciKostol } from "./NaseKostoly";
 import { uradneUdaje } from "@/lib/uradneUdaje";
+import { OknoUpozorneni, type CielUpozorneni } from "./OknoUpozorneni";
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import type { ProfilStranky } from "@/lib/profilStranky";
@@ -188,6 +189,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, nahlad,
   const [mfOn, setMfOn] = useState(false);
   const [mfNove, setMfNove] = useState(false);
   const [mfHl, setMfHl] = useState<string | null>(null);
+  const [upoz, setUpoz] = useState<CielUpozorneni | null>(null); // KARTA 63 1a
   const [cas, setCas] = useState(terazD);
   useEffect(() => { const t = window.setInterval(() => setCas(terazD()), 60000); return () => window.clearInterval(t); }, []);
   const [prihOn, setPrihOn] = useState(false);
@@ -224,6 +226,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, nahlad,
   const sledTap = () => {
     if (jeHl || jeSl) { setMfOn(true); return; }
     void pridajSledovanu(strankaId).catch((e: Error) => toast(e.message));
+    setUpoz({ stranka: strankaId, nazovFarnosti: meno }); // KARTA 63 1a: po ťuknutí Sledovať „O čom vám dáme vedieť?“
     setMfNove(true); window.setTimeout(() => setMfNove(false), 2500);
   };
 
@@ -279,9 +282,9 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, nahlad,
   const [miestoId, setMiestoId] = useState<string | null>(() => vezmiCakajuciKostol(strankaId));
   const miesto = miestoId ? miestaF.find((m) => m.id === miestoId) ?? null : null;
   const setMiesto = (m: Miesto | null) => setMiestoId(m?.id ?? null);
-  // KARTA 62: Sledovať tento kostol — ťuk prepína Sledujem ✓, ďalší ťuk = prestať
+  // KARTA 62/63: Sledovať tento kostol → sleduje a otvorí „O čom vám dáme vedieť?“; Sledujem ✓ otvorí to isté okno (tam Prestať sledovať)
   const sledKostol = (m: Miesto) => { const on = sledujemKostol(strankaId, m.id); return (
-    <button type="button" aria-pressed={on} onClick={() => { void (on ? prestanKostol(strankaId, m.id) : sledujKostol(strankaId, m.id)).catch((e: Error) => toast(e.message)); }}
+    <button type="button" aria-pressed={on} onClick={() => { if (!on) void sledujKostol(strankaId, m.id).catch((e: Error) => toast(e.message)); setUpoz({ stranka: strankaId, nazovFarnosti: meno, miesto: { id: m.id, nazov: m.nazov } }); }}
       style={{ alignSelf: "flex-start", marginTop: 8, minHeight: 48, padding: "0 20px", borderRadius: 14, border: on ? "none" : `1.5px solid ${LINKA}`, background: on ? "var(--nf-gSoft)" : PAPIER, color: on ? "var(--nf-gInk)" : INK, fontFamily: "inherit", fontSize: 15.5, fontWeight: 800, cursor: "pointer" }}>
       {on ? "Sledujem ✓" : "Sledovať tento kostol"}</button>); };
   // Martin 13. 10.: riadok autora = kto príspevok naozaj pridal (meno, fotka, rola); bez profilu logo a názov farnosti. Duchovný nikdy namiesto iného autora.
@@ -737,6 +740,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, nahlad,
           </>; })()}
         </div>
       </div>, document.body)}
+      {upoz && <OknoUpozorneni ciel={upoz} onZavri={() => setUpoz(null)} />}
       {mfOn && <MojeFarnostiOkno strankaId={strankaId} domovska={MF.domovska} sled={MF.sled} kostoly={MF.kostoly} mojKostol={MF.mojKostol} onKostol={setMiestoId} hlaska={mfHl}
         onHlaska={(t) => { setMfHl(t); window.setTimeout(() => setMfHl(null), 3000); }} onZavri={() => setMfOn(false)} />}
     </div>);
