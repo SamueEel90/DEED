@@ -88,9 +88,10 @@ export const vezmiCakajuciKostol = (stranka: string): string | null => {
 export interface ZbierkaNaMiesto { id: string; nazov: string; onTap: () => void }
 
 /** podstránka miesta — plná vrstva, zatvára sa cez ‹ Späť */
-export function PodstrankaMiesta({ m, strankaId, menoFarnosti, siroka, zbierky, onKalendar, onZavri, sledovat, linia }: {
+export function PodstrankaMiesta({ m, strankaId, menoFarnosti, siroka, zbierky, onKalendar, onZavri, sledovat, linia, oznamy, onOznamy }: {
   m: Miesto; strankaId: string; menoFarnosti: string; siroka: boolean; zbierky: ZbierkaNaMiesto[]; /** OPRAVY 243: farba línií stránky */ linia: string;
   onKalendar: () => void; onZavri: () => void; /** KARTA 62: „Sledovať tento kostol“ */ sledovat?: ReactNode;
+  /** KARTA 62 doplnok: karty oznamov so zaškrtnutým týmto kostolom (null = sekcia sa neukáže) */ oznamy?: ReactNode[] | null; onOznamy?: () => void;
 }) {
   useZamokVrstvy();
   useKalendar(strankaId);
@@ -118,6 +119,10 @@ export function PodstrankaMiesta({ m, strankaId, menoFarnosti, siroka, zbierky, 
     <div key={i} style={{ display: "flex", alignItems: "center", gap: 14, padding: "10px 12px", borderRadius: 14, background: KARTA }}>
       <Datum d={a.d} /><span style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}><span style={{ ...kicker(), fontSize: 12.5 }}>{["NEDEĽA", "PONDELOK", "UTOROK", "STREDA", "ŠTVRTOK", "PIATOK", "SOBOTA"][a.d.getDay()]} {pekny(a.t)}</span><b style={{ fontSize: 16.5 }}>{a.n}</b></span>
     </div>)));
+  const ozEl = !!oznamy?.length && sekcia("OZNAMY", <>
+    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>{oznamy}</div>
+    {onOznamy && <button type="button" onClick={onOznamy} style={tl}>Všetky oznamy farnosti ›</button>}
+  </>);
   const zbEl = zbierky.length > 0 && sekcia("ZBIERKA FARNOSTI · NA TENTO KOSTOL", zbierky.map((z) => (
     <button key={z.id} type="button" onClick={z.onTap} style={{ textAlign: "left", padding: "14px 16px", borderRadius: 16, border: "none", borderLeft: "6px solid #2F7A78", background: KARTA, color: INK, fontFamily: "inherit", cursor: "pointer", display: "flex", flexDirection: "column", gap: 4 }}>
       <b style={{ fontSize: 17 }}>{z.nazov} ›</b><span style={{ fontSize: 14, color: INK3 }}>peniaze idú na účet farnosti</span>
@@ -147,9 +152,9 @@ export function PodstrankaMiesta({ m, strankaId, menoFarnosti, siroka, zbierky, 
           {siroka
             ? <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1.3fr) minmax(0,1fr)", gap: 40, alignItems: "start" }}>
                 <div style={{ display: "flex", flexDirection: "column", gap: 28 }}>{histEl}{akcieEl}{zbEl}{fotkyEl}</div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 28 }}>{omseEl}{adresaEl}</div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 28 }}>{omseEl}{ozEl}{adresaEl}</div>
               </div>
-            : <>{omseEl}{histEl}{akcieEl}{zbEl}{fotkyEl}{adresaEl}</>}
+            : <>{omseEl}{ozEl}{histEl}{akcieEl}{zbEl}{fotkyEl}{adresaEl}</>}
         </div>
       </div>
       {foto && <div role="dialog" aria-modal="true" aria-label="Fotka" onClick={() => setFoto(null)} style={{ position: "fixed", inset: 0, zIndex: 1100, background: "#0E0C08", display: "flex", alignItems: "center", justifyContent: "center", cursor: "zoom-out" }}>
