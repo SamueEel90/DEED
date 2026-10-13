@@ -24,6 +24,8 @@ import { stitokOznamu } from "./OmseKalendar";
 import { NahladNastenky } from "./NahladNastenky";
 import { PrihovorKarta, OnlineOmseKarta } from "./PrihovorKarta";
 import type { ProfilStranky } from "@/lib/profilStranky";
+import { useQrObrazok } from "@/lib/qrObrazok";
+import { odkazQrStranky } from "@/features/verejny-profil/otvor";
 
 type Druh = 0 | 1 | 2; // Krátky oznam · Udalosť · Oznámenie
 const DRUHY: [string, string][] = [
@@ -141,6 +143,8 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
   /** KARTA 57 C.6: telefón — po výbere druhu ponuka zmizne, náhľad prilepený hore */ tel?: boolean; toast: (m: string) => void;
   /** + Pridať oznam (hlavička PC, zelené + na mobile) — otvorí formulár */ hore?: number }) {
   const vz = useVzhlad(strankaId, false);
+  // OPRAVY 204: parte zo šablóny má QR; v náhľade QR stránky farnosti (zbierka rodiny ho na Nástenke prepne na seba)
+  const qrFar = useQrObrazok(odkazQrStranky(strankaId));
   const [formOn, setFormOn] = useState(() => !!hore);
   const [edit, setEdit] = useState<string | null>(null); // KARTA 57 C.3: upravujete zverejnené
   const [vyb, setVyb] = useState(false); // KARTA 57 C.6: telefón — druh vybraný
@@ -220,7 +224,7 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
     </section>);
   const nahladPisania = kartaNahladu({ chip, nadpis: nadpisN, text: dr !== 2 || ine ? cistyText(txt) : "", kedy: kedyT, pozvT: pozvT(pozvanieO),
     obraz: sablona && u.meno.trim() && (u.zena != null || u.druh !== "parte")
-      ? <div style={{ display: "flex", justifyContent: "center", padding: 12, background: "var(--field)" }}><Plagat u={u} volba={volba} vz={vz} sirka={280} /></div>
+      ? <div style={{ display: "flex", justifyContent: "center", padding: 12, background: "var(--field)" }}><Plagat u={u} volba={volba} vz={vz} sirka={280} qr={qrFar} qrText="Naša farnosť" /></div>
       : (dr !== 0 || !!obrazok) && (obrazok && jePlagat ? <ObrazokPlagatu src={obrazok} /> : <ObrazokOznamu src={obrazok} inic={iniciy(meno)} />) });
 
   // ---- zverejniť / uložiť zmeny ----
@@ -344,7 +348,7 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
       <FormularOznamu u={u} onU={setU} mobil={mobil} upozornenie={false} />
       <span style={{ fontSize: 13, color: "var(--ink3)" }}>V hlavičke bude vaša farnosť. Text sa dá upraviť aj po zverejnení.</span>
       {u.druh === "parte" && u.zena == null ? <span style={{ fontSize: 13.5, color: "var(--ink3)" }}>Šablóny sa ukážu, keď vyššie vyberiete Muž alebo Žena.</span>
-        : <><b style={{ fontSize: 15 }}>Vyberte vzhľad · 8 šablón</b><VyberSablony u={u} volba={volba} onVolba={setVolba} vz={vz} mobil={mobil} /></>}
+        : <><b style={{ fontSize: 15 }}>Vyberte vzhľad · 8 šablón</b><VyberSablony u={u} volba={volba} onVolba={setVolba} vz={vz} mobil={mobil} qr={qrFar} qrText="Naša farnosť" /></>}
     </>}
     {dr === 0 && <div style={{ display: "flex", flexDirection: "column", gap: 8 }}><span style={lbl}>Platí do</span>
       <Segment label="Platí do" vol={PLATI.map(([t], i) => [i, t] as [number, string])} cur={plati} set={setPlati} />
@@ -386,7 +390,7 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
     const st = stitokOznamu(x), f = x.fotky?.[0], sab = x.smutocny?.sablona;
     const kratky = x.ntyp === "oznam" && !x.ukat && x.tag === "Oznam";
     return kartaNahladu({ chip: st, nadpis: x.nazov ?? "", text: kratky || x.tag === "Oznámenie" ? x.popis ?? "" : x.ntyp === "udalost" ? x.udalost?.text ?? "" : "", kedy: x.ntyp === "udalost" ? meta(x) : kratky ? "" : meta(x), pozvT: pozvT(x.pozvanie),
-      obraz: sab ? <div style={{ display: "flex", justifyContent: "center", padding: 12, background: "var(--field)" }}><Plagat u={sab.u} volba={sab.volba} vz={sab.vz} sirka={280} /></div>
+      obraz: sab ? <div style={{ display: "flex", justifyContent: "center", padding: 12, background: "var(--field)" }}><Plagat u={sab.u} volba={sab.volba} vz={sab.vz} sirka={280} qr={qrFar} qrText="Naša farnosť" /></div>
         : f && x.plagat ? <ObrazokPlagatu src={f} />
         : f || (st !== "OZNAM" && st !== "ZMENA OMŠE") ? <ObrazokOznamu src={f} inic={iniciy(meno)} /> : null });
   };

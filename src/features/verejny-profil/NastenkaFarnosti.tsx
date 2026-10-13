@@ -14,7 +14,7 @@ import { cistyText } from "@/lib/richtext";
 import { usePouzivatel } from "@/lib/pouzivatel";
 import { useMojeFarnosti, useSlovaFarnosti, pridajSledovanu, odstranSledovanu, nazovFarnosti, otvorAdresar } from "@/lib/mojeFarnosti";
 import { DrzTlacidlo } from "@/features/viera/AdresarCirkvi";
-import { otvorVerejnyProfil } from "./otvor";
+import { otvorVerejnyProfil, odkazQrStranky } from "./otvor";
 import { centralnaZPamate, nacitajCentralnuZbierku, nazovHlavnej, useZmenyCentralnej } from "@/lib/centralnaZbierka";
 import { naviazObjekt } from "@/lib/darZbierky";
 import { usePripnute, useCezStranku, dalsiMilnik, type ZbierkaNaPripnutie } from "@/lib/pripnuteZbierky";
@@ -645,13 +645,14 @@ function DetailParte({ sp, strankaId, symbol, orgMeno, sablona, vz, onOsoba, onZ
   const vedla = sirka >= 900 && sirka > vyska; // PC a tablet na šírku
   const [cele, setCele] = useState(false);
   const zb = sp.zb;
-  const qr = useQrObrazok(zb ? odkazZbierky(zb.id) : null);
+  // OPRAVY 204: QR na parte farára — beží zbierka → zbierka, inak stránka farnosti
+  const qr = useQrObrazok(zb ? odkazZbierky(zb.id) : odkazQrStranky(strankaId));
   const org = zb?.farnost?.prijemca?.meno?.trim() || "";
   const data: ZbierkaData | null = zb ? { id: zb.id, nazov: `Zbierka rodiny · ${sp.d.meno}`, popis: "", overena: true, ciel: cielCislo(zb) || undefined, ...sadyZbierky(zb), media: [],
     organizacia: { meno: orgMeno, typ: "charita", mesto: "", cisla: [], stit: "Silver" } } : null;
   const parteEl = (vyrez: boolean) => sp.obr
     ? <img src={sp.obr} alt={`Parte · ${sp.d.meno}`} style={vyrez ? { width: "100%", height: "100%", objectFit: "cover", objectPosition: "top", display: "block" } : { width: "100%", height: "100%", objectFit: "contain", display: "block", background: "#fff" }} />
-    : sablona?.u && sablona.volba ? <div style={{ display: "flex", justifyContent: "center", background: "#fff", height: "100%", overflow: "hidden" }}><Plagat u={sablona.u} volba={sablona.volba} vz={vz} sirka={vyrez ? Math.min(560, sirka - 32) : 520} /></div>
+    : sablona?.u && sablona.volba ? <div style={{ display: "flex", justifyContent: "center", background: "#fff", height: "100%", overflow: "hidden" }}><Plagat u={sablona.u} volba={sablona.volba} vz={vz} sirka={vyrez ? Math.min(560, sirka - 32) : sablona.volba.qr !== false && qr ? 480 : 520} qr={qr} qrText={zb ? "Prispieť rodine" : "Naša farnosť"} /></div>
     : <ParteKarta sp={sp} symbol={symbol} qr={qr} />;
   const organizuje = org ? <div className="zb-pol" style={{ padding: "4px 16px 12px", display: "flex", alignItems: "center", gap: 10 }}>
     <span aria-hidden="true" style={{ flex: "none", width: 40, height: 40, borderRadius: "50%", background: "var(--gSoft)", color: "var(--gInk)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 800 }}>{iniciy(org)}</span>

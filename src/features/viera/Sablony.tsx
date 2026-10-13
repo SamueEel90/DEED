@@ -24,7 +24,8 @@ export interface UdajeOznamu {
   zaver: string; citat: string; text: string; kto: string;
   foto?: string;
 }
-export interface VolbaSablony { v: number; motiv: string; sFotkou: boolean; cb: boolean }
+/** qr: OPRAVY 204 — parte farára „QR na parte: Áno · Nie“ (chýba = áno) */
+export interface VolbaSablony { v: number; motiv: string; sFotkou: boolean; cb: boolean; qr?: boolean }
 export const prazdneUdaje = (druh: DruhOznamu): UdajeOznamu => ({ druh, meno: "", zena: null, nar: "", umr: "", rod: "", roly: [], kedyD: "", kedyC: "", kde: "", zaver: ZAVERY[0], citat: CITATY[0], text: "", kto: "" });
 export const prvaVolba = (druh: DruhOznamu): VolbaSablony => ({ v: 0, motiv: MOT[druh][0], sFotkou: true, cb: true });
 
@@ -129,7 +130,7 @@ export function rolaText(u: UdajeOznamu): string {
 // ============================================================
 // PLAGÁT — jedna šablóna (360 × 510, zmenší sa na šírku `sirka`)
 // ============================================================
-export function Plagat({ u, volba, vz, sirka = 360 }: { u: UdajeOznamu; volba: VolbaSablony; vz: Vzhlad; sirka?: number }) {
+export function Plagat({ u, volba, vz, sirka = 360, qr, qrText = "Prispieť rodine" }: { u: UdajeOznamu; volba: VolbaSablony; vz: Vzhlad; sirka?: number; /** OPRAVY 204: data URL QR (zbierka, inak stránka farnosti) */ qr?: string; qrText?: string }) {
   useFontyOrnamentu();
   const V = VARIANTY[volba.v] ?? VARIANTY[0];
   const P = PAL[vz] ?? PAL.kronika;
@@ -177,9 +178,11 @@ export function Plagat({ u, volba, vz, sirka = 360 }: { u: UdajeOznamu; volba: V
     {ktoT && <span style={{ fontSize: 11.5, opacity: 0.75 }}>{ktoT}</span>}
   </>;
   const k = sirka / 360;
+  // OPRAVY 204: QR v páse pod parte (ako „Pod parte“ pri vlastnom parte) — nič neprekryje
+  const sQr = pa && volba.qr !== false && !!qr, qp = sQr ? 76 : 0;
   return (
-    <span style={{ display: "block", width: sirka, height: Math.round(510 * k), overflow: "hidden", flex: "none" }}>
-      <span style={{ display: "block", width: 360, height: 510, transform: `scale(${k})`, transformOrigin: "0 0" }}>
+    <span style={{ display: "block", width: sirka, height: Math.round((510 + qp) * k), overflow: "hidden", flex: "none" }}>
+      <span style={{ display: "block", width: 360, height: 510 + qp, transform: `scale(${k})`, transformOrigin: "0 0" }}>
         <div role="img" aria-label={`${V.n} · ${meno}`} style={{ width: 360, height: 510, boxSizing: "border-box", position: "relative", overflow: "hidden", background: bg, color: ink, border: V.bd ? V.bd(P, d) : "none", fontFamily: ff, fontStyle: V.serif ? "italic" : "normal" }}>
           {V.ol && <span style={{ position: "absolute", inset: 10, border: V.ol(P), pointerEvents: "none" }} />}
           {V.wm && <span style={{ position: "absolute", left: "50%", top: "50%", width: 260, height: 260, margin: "-130px 0 0 -130px", background: symbol(mot, ink), opacity: 0.08, pointerEvents: "none" }} />}
@@ -199,6 +202,10 @@ export function Plagat({ u, volba, vz, sirka = 360 }: { u: UdajeOznamu; volba: V
             <div style={{ flex: 1, padding: "16px 26px 22px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, textAlign: "center" }}>{texty(true)}{telo}</div>
           </div>}
         </div>
+        {sQr && <div style={{ height: qp, boxSizing: "border-box", display: "flex", alignItems: "center", gap: 10, padding: "0 16px", background: "#fff", borderTop: "1px solid #E2DED5", color: "#14110B", fontFamily: "'Plus Jakarta Sans',sans-serif", textAlign: "left" }}>
+          <img src={qr} alt="" style={{ width: 60, height: 60, display: "block", flex: "none" }} />
+          <span style={{ display: "flex", flexDirection: "column", gap: 2 }}><b style={{ fontSize: 12.5, fontWeight: 800 }}>D+ {qrText}</b><span style={{ fontSize: 10.5, opacity: 0.75 }}>Naskenujte QR kód</span></span>
+        </div>}
       </span>
     </span>);
 }
@@ -206,7 +213,7 @@ export function Plagat({ u, volba, vz, sirka = 360 }: { u: UdajeOznamu; volba: V
 // ============================================================
 // VÝBER ŠABLÓNY — prepínače, motív, 8 náhľadov, veľký náhľad vybranej
 // ============================================================
-export function VyberSablony({ u, volba, onVolba, vz, mobil }: { u: UdajeOznamu; volba: VolbaSablony; onVolba: (v: VolbaSablony) => void; vz: Vzhlad; mobil?: boolean }) {
+export function VyberSablony({ u, volba, onVolba, vz, mobil, qr, qrText }: { u: UdajeOznamu; volba: VolbaSablony; onVolba: (v: VolbaSablony) => void; vz: Vzhlad; mobil?: boolean; /** OPRAVY 204: parte farára — prepínač „QR na parte“ a QR v náhľade */ qr?: string; qrText?: string }) {
   const pa = u.druh === "parte";
   const seg = (moz: [string, boolean][], cur: boolean, set: (v: boolean) => void) => (
     <div style={{ display: "flex", gap: 2, padding: 3, borderRadius: 13, background: "var(--btn,#DCD8CF)" }}>
@@ -218,6 +225,10 @@ export function VyberSablony({ u, volba, onVolba, vz, mobil }: { u: UdajeOznamu;
       <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
         {seg([["S fotkou", true], ["Bez fotky", false]], volba.sFotkou, (x) => onVolba({ ...volba, sFotkou: x }))}
         {pa && seg([["Čiernobielo", true], ["Farebne", false]], volba.cb, (x) => onVolba({ ...volba, cb: x }))}
+        {pa && qr && <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ fontSize: 12.5, fontWeight: 800, letterSpacing: ".06em", color: "var(--ink3,#5B5D53)" }}>QR NA PARTE</span>
+          {seg([["Áno", true], ["Nie", false]], volba.qr !== false, (x) => onVolba({ ...volba, qr: x }))}
+        </span>}
         <label style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <span style={{ fontSize: 12.5, fontWeight: 800, letterSpacing: ".06em", color: "var(--ink3,#5B5D53)" }}>MOTÍV</span>
           <select value={mot} onChange={(e) => onVolba({ ...volba, motiv: e.target.value })} style={{ height: 44, padding: "0 12px", borderRadius: 12, border: "1px solid var(--cardBd,#CFC9BC)", background: "var(--field,#fff)", fontFamily: "inherit", fontSize: 14.5, fontWeight: 700, color: "var(--ink,#1D211B)" }}>
@@ -229,13 +240,13 @@ export function VyberSablony({ u, volba, onVolba, vz, mobil }: { u: UdajeOznamu;
         <div role="radiogroup" aria-label="Šablóna" style={{ flex: "1 1 300px", display: "grid", gridTemplateColumns: "repeat(auto-fill,130px)", maxWidth: 590, gap: 10 }}>
           {VARIANTY.map((V, i) => { const on = i === volba.v; return (
             <button key={V.n} type="button" role="radio" aria-checked={on} onClick={() => onVolba({ ...volba, v: i })} style={{ padding: 0, border: `3px solid ${on ? "var(--green,#4E7D37)" : "transparent"}`, borderRadius: 10, background: "transparent", cursor: "pointer", display: "flex", flexDirection: "column", gap: 4, fontFamily: "inherit", boxShadow: "none" }}>
-              <span style={{ display: "block", borderRadius: 6, overflow: "hidden" }}><Plagat u={u} volba={{ ...volba, v: i }} vz={vz} sirka={124} /></span>
+              <span style={{ display: "block", borderRadius: 6, overflow: "hidden" }}><Plagat u={u} volba={{ ...volba, v: i }} vz={vz} sirka={124} qr={qr} qrText={qrText} /></span>
               <span style={{ fontSize: 12.5, fontWeight: 800, color: "var(--ink,#1D211B)", padding: "0 4px 4px" }}>{V.n}</span>
             </button>); })}
         </div>
         <div style={{ flex: "none", display: "flex", flexDirection: "column", gap: 8 }}>
           <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".08em", color: "var(--ink3,#5B5D53)" }}>NÁHĽAD · {VARIANTY[volba.v]?.n.toLocaleUpperCase("sk-SK")}</span>
-          <span style={{ borderRadius: 8, overflow: "hidden", boxShadow: "0 8px 24px rgba(30,28,20,.16)" }}><Plagat u={u} volba={volba} vz={vz} sirka={mobil ? 300 : 360} /></span>
+          <span style={{ borderRadius: 8, overflow: "hidden", boxShadow: "0 8px 24px rgba(30,28,20,.16)" }}><Plagat u={u} volba={volba} vz={vz} sirka={mobil ? 300 : 360} qr={qr} qrText={qrText} /></span>
         </div>
       </div>
       <span style={{ fontSize: 13, color: "var(--ink3,#5B5D53)" }}>Farby ladia so vzhľadom vášho profilu ({PAL[vz]?.n ?? "Kronika"}). Text sa berie z polí vyššie.</span>
