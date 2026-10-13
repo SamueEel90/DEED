@@ -714,7 +714,7 @@ function faqFarnosti(titul: string): OtazkyFaq {
     ["Peniaze", [
       ["Kam idú peniaze zo zbierok?", "Dary idú priamo na účet farnosti overený pri registrácii, DEED+ peniaze nedrží."],
       ["Ako funguje zvončeková zbierka?", "Beží od pondelka do nedele 23.59 a po uzavretí sa pripíše do Hlavnej zbierky jedným riadkom."],
-      ["Pohreb: vidím sumy rodiny?", "Nie, peniaze idú priamo rodine a vy vidíte len podiel, ktorý pripadne farnosti."],
+      ["Pohreb: vidím sumy rodiny?", "Nie. Po zapečatení vidí sumy aj darcov len rodina. Vy vidíte len podiel farnosti, ktorý príde na účet farnosti."],
     ]],
     ["Predplatné", [
       ["Koľko to stojí?", "Prvé 2 mesiace sú zadarmo, potom sa platí mesačne alebo ročne a presnú sumu vidíte v Nastavenia → Predplatné."],
