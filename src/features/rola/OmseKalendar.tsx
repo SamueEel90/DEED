@@ -261,7 +261,10 @@ export function OmseKalendar({ strankaId, meno, kostoly, mobil, tel = false, toa
   const denPanel = den && dD && (
     <section aria-label="Úprava dňa" style={{ ...karta, border: "2px solid var(--green)", padding: mobil ? "14px 14px" : "16px 20px", display: "flex", flexDirection: "column", gap: 10 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        <b style={{ flex: 1, fontSize: 16 }}>{DNI_K[dvt(dD)]} {dD.getDate()}. {MES_G[dD.getMonth()]} · {kostoly[kI]?.nazov ?? "Váš kostol"}</b>
+        {viac /* KARTA 62 1c: pri viacerých miestach výber kostola priamo pri čase; deň ostáva otvorený */
+          ? <span style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}><b style={{ fontSize: 16 }}>{DNI_K[dvt(dD)]} {dD.getDate()}. {MES_G[dD.getMonth()]}</b>
+            <select value={kI} onChange={(e) => setKI(Number(e.target.value))} aria-label="Kostol" style={{ minHeight: 44, minWidth: 0, maxWidth: "100%", padding: "0 12px", borderRadius: 12, border: "1.5px solid var(--cardBd)", background: "var(--field)", fontFamily: "inherit", fontSize: 15, fontWeight: 700, color: "var(--ink)" }}>{kostoly.map((x, i) => <option key={x.nazov + i} value={i}>{x.nazov}</option>)}</select></span>
+          : <b style={{ flex: 1, fontSize: 16 }}>{DNI_K[dvt(dD)]} {dD.getDate()}. {MES_G[dD.getMonth()]} · {kostoly[kI]?.nazov ?? "Váš kostol"}</b>}
         <button type="button" onClick={() => setDen(null)} aria-label="Zavrieť" style={{ width: 44, height: 44, borderRadius: 12, border: "1px solid var(--cardBd)", background: "var(--field)", cursor: "pointer", fontSize: 18, color: "var(--ink2)", boxShadow: "none" }}>×</button>
       </div>
       {omseDna(k, dD).map((o) => { const ak = `${den}|${o.kod}`, odp = k.odpovede?.[ak], zmena = o.zrusena || o.posunuta;
