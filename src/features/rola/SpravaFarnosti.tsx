@@ -317,43 +317,33 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
 
   // KARTA 56D §3: Prehľad = Čísla · Pripnuté · Treba vybaviť.
   // KARTA 57 B.1: mobil a tablet = karta farnosti (ťuk = Upraviť profil) → Čísla → 6 dlaždíc → Verejný profil · Nastavenia · Nástroje a štatistiky → Pripnuté → Treba vybaviť
-  const DLAZDICE: [Sub, string][] = [["zbierky", "Zbierky"], ["omse", "Omše"], ["oznamy", "Oznamy"], ["veriaci", "Od veriacich"], ["ludia", "Ľudia"], ["filialky", "Filiálky"]];
-  const riadokDomov = (d: string, t: string, s: string, tap: () => void, tyrk = false) => (
-    <button type="button" onClick={tap} style={{ flex: 1, minWidth: 0, minHeight: 56, padding: "8px 14px", borderRadius: 16, border: `1px solid ${tyrk ? "var(--tBd)" : "var(--cardBd)"}`, background: tyrk ? "var(--tBg)" : "var(--card)", cursor: "pointer", display: "flex", alignItems: "center", gap: 12, textAlign: "left", fontFamily: "inherit", boxShadow: "none" }}>
-      <Ik d={d} c={tyrk ? "var(--tInk)" : "var(--acc)"} />
-      <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 1 }}><b style={{ fontSize: 15, color: tyrk ? "var(--tInk)" : "var(--ink)" }}>{t}</b><span style={{ fontSize: 12, color: tyrk ? "var(--tInk2)" : "var(--ink3)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{s}</span></span>
-      <span aria-hidden="true" style={{ flex: "none", fontSize: 18, color: tyrk ? "var(--tInk)" : "var(--ink3)" }}>›</span>
-    </button>);
   // KARTA 61 §3: predplatné hore v Prehľade
   const predPas = <PredplatnePas strankaId={strankaId} mobil={mobil} onOtvor={() => { setNId("predplatne"); go("n"); }} />;
+  // OPRAVY 218: mobil a tablet ako Správa charity — karta farnosti, mriežka 3 × 3 (Verejný profil modrý), Pripnuté, Treba vybaviť, Čísla úplne dole
+  const DLAZDICE9: [Sub | "verejny", string][] = [["verejny", "Verejný profil"], ["zbierky", "Zbierky"], ["oznamy", "Oznamy"], ["omse", "Omše a kalendár"], ["veriaci", "Od veriacich"], ["ludia", "Ľudia"], ["filialky", "Filiálky"], ["penazenka", "Peňaženka"], ["nastroje", "Nástroje a výkazy"]];
   const prehlad = mobil ? <>
     {predPas}
-    <button type="button" onClick={() => go("profil")} style={{ flex: "none", borderRadius: 18, background: "var(--cuBg)", border: "1.5px solid var(--cuBd)", padding: "12px 14px", display: "flex", alignItems: "center", gap: 12, cursor: "pointer", textAlign: "left", fontFamily: "inherit", boxShadow: "none" }}>
-      <LogoKarty profil={profilAkt} inicialy="" size={48} />
-      <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 4 }}>
-        <b style={{ fontSize: 16, color: "var(--cuInk)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{meno}</b>
-        <span style={{ fontSize: 12.5, fontWeight: 700, color: "var(--cuInk2)" }}>Profil hotový na {uplnost.pct} % · Upraviť ›</span>
-        <span style={{ display: "block", height: 6, borderRadius: 3, background: "rgba(168,116,80,.25)", overflow: "hidden" }}><span style={{ display: "block", width: "100%", height: "100%", borderRadius: 3, background: "var(--green)", transformOrigin: "0 50%", transform: `scaleX(${uplnost.pct / 100})` }} /></span>
+    <button type="button" onClick={() => go("profil")} style={{ flex: "none", borderRadius: 20, background: "var(--card)", border: "1.5px solid var(--cardBd)", padding: "14px 16px", display: "flex", alignItems: "center", gap: 14, cursor: "pointer", textAlign: "left", fontFamily: "inherit", boxShadow: "none" }}>
+      <LogoKarty profil={profilAkt} inicialy="" size={56} />
+      <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 3 }}>
+        <b style={{ fontSize: 19, color: "var(--ink)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{meno}</b>
+        <span style={{ fontSize: 14.5, fontWeight: 700, color: "var(--ink2)" }}>Upraviť profil ›</span>
+        {uplnost.pct < 100 && <span style={{ display: "block", height: 6, marginTop: 4, borderRadius: 3, background: "rgba(168,116,80,.25)", overflow: "hidden" }}><span style={{ display: "block", width: "100%", height: "100%", borderRadius: 3, background: "var(--green)", transformOrigin: "0 50%", transform: `scaleX(${uplnost.pct / 100})` }} /></span>}
       </span>
     </button>
-    {cisla}
-    <div style={{ flex: "none", display: "grid", gridTemplateColumns: tablet ? "repeat(6,minmax(0,1fr))" : "repeat(3,minmax(0,1fr))", gap: 8 }}>
-      {DLAZDICE.map(([k, t]) => (
-        <button key={k} type="button" onClick={() => go(k)} style={{ position: "relative", minHeight: 86, padding: "8px 4px", borderRadius: 16, border: "1px solid var(--cardBd)", background: "var(--card)", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8, fontFamily: "inherit", boxShadow: "none" }}>
-          <Ik d={IC[k]} s={24} />
-          <span style={{ fontSize: 14, lineHeight: 1.2, fontWeight: 800, textAlign: "center", color: "var(--ink)" }}>{t}</span>
+    <div style={{ flex: "none", display: "grid", gridTemplateColumns: "repeat(3,minmax(0,1fr))", gap: 10 }}>
+      {DLAZDICE9.map(([k, t]) => { const v = k === "verejny"; return (
+        <button key={k} type="button" onClick={() => (v ? verejny() : go(k))} style={{ position: "relative", minHeight: 96, padding: "8px 4px", borderRadius: 18, border: `1px solid ${v ? "var(--tBd)" : "var(--cardBd)"}`, background: v ? "var(--tBg)" : "var(--card)", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, fontFamily: "inherit", boxShadow: "none" }}>
+          <Ik d={IC[k]} s={24} c={v ? "var(--tInk)" : undefined} />
+          <span style={{ fontSize: 14, lineHeight: 1.2, fontWeight: 800, textAlign: "center", color: v ? "var(--tInk)" : "var(--ink)" }}>{t}</span>
           {k === "veriaci" && odFPocet > 0 && <span aria-label={`${odFPocet} nových`} style={{ position: "absolute", top: 8, right: 8, minWidth: 22, height: 22, padding: "0 6px", borderRadius: 11, background: "#A34A2A", color: "#fff", fontSize: 12, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", boxSizing: "border-box" }}>{odFPocet}</span>}
-        </button>))}
+        </button>); })}
     </div>
-    <div style={{ flex: "none", display: "flex", flexDirection: tablet ? "row" : "column", gap: 8 }}>
-      {riadokDomov(IC.verejny, "Verejný profil", "ako ho vidia veriaci", verejny, true)}
-      {riadokDomov(IC.nast, "Nastavenia", "appka, účet, Peňaženka", () => go("nast"))}
-    </div>
-    <div style={{ flex: "none", display: "flex" }}>{riadokDomov(IC.stat, "Nástroje a štatistiky", "sledujúci, darcovia, QR do kostola", () => go("nastroje"))}</div>
     {pripnute}
     <TyzdenVPrehlade strankaId={strankaId} onDen={naDen} mobil />
     {trebaVybavit}
-  </> : <>{predPas}{cisla}{pripnute}<TyzdenVPrehlade strankaId={strankaId} onDen={naDen} mobil={false} />{trebaVybavit}</>;
+    {cisla}
+  </> : <>{predPas}{pripnute}<TyzdenVPrehlade strankaId={strankaId} onDen={naDen} mobil={false} />{trebaVybavit}{cisla}</>;
 
   // KARTA 56D §6 · OPRAVY 161: ďalšie zbierky stránky (zbierka farnosti / pre veriacich) — z účtu (tabuľka zbierka)
   const sprava = (m: string) => { setZbVyber(false); setZbBlok(false); setNoveOk(null); setZmazana(false); return m; };
@@ -682,16 +672,16 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
           <b style={{ maxWidth: "100%", fontSize: 17, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{mTitul}</b>
           <span style={{ fontSize: 12, color: "var(--ink3)" }}>{dnesText()}</span>
         </span>
-        <span aria-hidden="true" style={{ flex: "none", width: 44 }} />
+        {/* OPRAVY 218: koliesko Nastavenia (modré ako Verejný profil) a zelené + v hlavičke, plávajúce + zmizlo */}
+        {sub === "prehlad" && <button type="button" onClick={() => go("nast")} aria-label="Nastavenia" style={{ flex: "none", width: 46, height: 46, borderRadius: 14, border: "1px solid var(--tBd)", background: "var(--tBg)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "none" }}><Ik d={IC.nast} s={22} c="var(--tInk)" /></button>}
+        {!BEZ_PRIDAT.includes(sub) && !pridat ? <button type="button" onClick={pridatTl} aria-label={(PRIDAT_T[sub] ?? "+ Pridať").slice(2)} style={{ flex: "none", width: 46, height: 46, border: "none", borderRadius: 14, background: "#4B7A35", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "none" }}>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.6" strokeLinecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+        </button> : sub !== "prehlad" && <span aria-hidden="true" style={{ flex: "none", width: 46 }} />}
       </header>
       <div key={sub} style={{ padding: "12px 14px 180px", display: "flex", flexDirection: "column", gap: 12, animation: "spravaFade .2s ease both", width: "100%", maxWidth: tablet ? 880 : undefined, margin: tablet ? "0 auto" : undefined, boxSizing: "border-box" }}>
         {obsah[sub]}
         {test}
       </div>
-      {/* KARTA 57 B.2: zelené + vpravo dole nad lištou appky */}
-      {!BEZ_PRIDAT.includes(sub) && !pridat && <button type="button" onClick={pridatTl} aria-label={(PRIDAT_T[sub] ?? "+ Pridať").slice(2)} style={{ position: "fixed", right: 16, bottom: "calc(112px + env(safe-area-inset-bottom, 0px))", zIndex: 30, width: 58, height: 58, border: "none", borderRadius: "50%", background: "#4B7A35", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 10px 26px rgba(30,60,20,.4)" }}>
-        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.6" strokeLinecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
-      </button>}
       {vrstvy}
     </div>);
 }
