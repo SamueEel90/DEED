@@ -81,11 +81,11 @@ export function PomozKarta({ stitok, kedy, t, txt, kde, cas, akcia }: { stitok: 
 }
 
 /** Sväté omše — týždeň, dnešok zvýraznený, sobota modrá, nedeľa červená */
-export function SvateOmse({ dni, onCely, maly, matna }: { dni: { d: Date; dnes: boolean; casy: string; pozn?: string }[]; onCely: () => void; maly?: boolean; matna: boolean }) {
+export function SvateOmse({ dni, onCely, maly, matna, bezNadpisu }: { dni: { d: Date; dnes: boolean; casy: string; pozn?: string }[]; onCely: () => void; maly?: boolean; matna: boolean; /** OPRAVY 245: v zbalenom bloku nadpis nesie riadok */ bezNadpisu?: boolean }) {
   const DN = ["Ne", "Po", "Ut", "St", "Št", "Pi", "So"];
   return (
-    <div data-blok="omse" style={{ display: "flex", flexDirection: "column", gap: 8, scrollMarginTop: 16 }}>
-      <span style={{ padding: maly ? "0 0 4px" : "0 0 4px" }}><KNadpis t="Sväté omše" maly={maly} matna={matna} /></span>
+    <div data-blok={bezNadpisu ? undefined : "omse"} style={{ display: "flex", flexDirection: "column", gap: 8, scrollMarginTop: 16 }}>
+      {!bezNadpisu && <span style={{ padding: "0 0 4px" }}><KNadpis t="Sväté omše" maly={maly} matna={matna} /></span>}
       {dni.map(({ d, dnes, casy, pozn }) => { const w = d.getDay(); return (
         <div key={d.toDateString()} style={{ display: "flex", gap: 14, alignItems: "baseline", padding: "9px 12px", borderRadius: dnes ? 12 : 0, background: dnes ? "var(--nf-gSoft)" : "transparent", borderBottom: dnes ? "none" : `1px solid ${LINKA}`, color: dnes ? "var(--nf-gInk)" : INK, fontWeight: dnes ? 800 : 400 }}>
           <b style={{ width: 74, flex: "none", fontSize: 15.5, color: dnes ? "var(--nf-gInk)" : w === 6 ? "#5B8FBF" : w === 0 ? "var(--nf-cervena)" : INK }}>{DN[w]}{dnes ? " · dnes" : ""}</b>
