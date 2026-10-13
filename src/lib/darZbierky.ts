@@ -7,6 +7,7 @@
 // 0067: počítadlá a zoznam darcov takejto zbierky čítajú len z ledgera (nacitajDaryZbierky).
 // ============================================================
 import { supabase } from "./supabase";
+import { TESTOVACIA } from "./testovacia";
 import type { KanalDaru } from "./darcovia";
 
 /** zbierka stránky, ktorá nemá vlastný riadok „zb-…" */
@@ -34,18 +35,25 @@ const zdroje = new Map<string, string>();
 export function nastavZdrojDaru(refId: string, stranka: string | null) { if (stranka) zdroje.set(refId, stranka); else zdroje.delete(refId); }
 export const zdrojDaru = (refId: string): string | undefined => zdroje.get(refId);
 
-export async function zapisDarZbierky(refId: string, eur: number, kanal: KanalDaru, objekt?: ObjektZbierky): Promise<void> {
+/** 0084: meno darcu (voľba „Meno z profilu“, inak bez mena) a v testovacom režime platba naoko — dar sa zapíše ako testovací */
+export async function zapisDarZbierky(refId: string, eur: number, kanal: KanalDaru, objekt?: ObjektZbierky, menoDarcu?: string): Promise<void> {
   const id = idZbierkyDB(refId, objekt);
   if (!supabase || !id || !(eur > 0)) return;
   const [dbKanal, mena, suma] = kanal === "deed" ? ["deed", "DEED", Math.round(eur * DEED_ZA_EUR * 10000) / 10000]
     : kanal === "sepa" ? ["sepa", "EUR", eur] : ["fiat", "EUR", eur];
   let idem: string;
   try { idem = crypto.randomUUID(); } catch { idem = `dar-${Date.now()}-${Math.round(Math.random() * 1e9)}`; }
-  const { error } = await supabase.rpc("zbierka_dar", {
-    p_zbierka: id, p_idem: idem, p_suma: suma, p_mena: mena, p_kanal: dbKanal,
-    p_meno_darcu: null, p_stranka: objekt?.stranka ?? null, p_nazov: objekt?.nazov ?? null, p_zdroj: zdroje.get(refId) ?? null,
-  });
-  if (error) throw error;
+  const zaklad = { p_zbierka: id, p_idem: idem, p_suma: suma, p_mena: mena, p_kanal: dbKanal,
+    p_stranka: objekt?.stranka ?? null, p_nazov: objekt?.nazov ?? null, p_zdroj: zdroje.get(refId) ?? null };
+  const { error } = await supabase.rpc("zbierka_dar_volba", { ...zaklad, p_meno_darcu: menoDarcu ?? null, p_test: TESTOVACIA });
+  if (!error) return;
+  // databáza ešte bez 0084: starý zápis (bez mena, nie testovací)
+  if (error.code === "PGRST202" || /zbierka_dar_volba/.test(error.message ?? "")) {
+    const { error: e2 } = await supabase.rpc("zbierka_dar", { ...zaklad, p_meno_darcu: null });
+    if (e2) throw e2;
+    return;
+  }
+  throw error;
 }
 
 /** dar zbierky tak, ako je v ledgeri (rpc zbierka_dary, 0067) */
