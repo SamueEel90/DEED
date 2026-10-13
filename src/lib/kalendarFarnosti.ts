@@ -30,6 +30,8 @@ export interface KalKostol {
   extra: Record<string, PolozkaDna[]>;
   /** KARTA 56G §3: „Poslať oznam veriacim?" — odpoveď ku zmene omše (kľúč „dátum|kód") */
   odpovede?: Record<string, "ano" | "nie">;
+  /** OPRAVY 223: dátum → výnimka úradných hodín (len hlavný kostol „0“) */
+  uradne?: Record<string, import("./uradneHodiny").VynimkaUH>;
 }
 export type Verej = "omse" | "zmeny" | "modl" | "pohreb" | "sobas" | "krst" | "udal" | "umysel";
 export interface KalendarFarnosti {

@@ -53,6 +53,7 @@ import { ParteMedailon, TvarOznamu, PARTE, SVADBA, JUBILEUM, ZAKLAD, BORDOVA, sy
 import { Darcovia } from "@/features/zbierka/Riadky";
 import { useQrObrazok } from "@/lib/qrObrazok";
 import type { AutorF } from "@/lib/autorFarnosti";
+import { DNI_UH, casyUH, maUH, textCasu } from "@/lib/uradneHodiny";
 import { odkazZbierky } from "@/features/zbierka/Zdielat";
 // ---- farby Nástenky: premenné podľa témy appky (OPRAVY 203, styles/nastenka.css) ----
 const BG = "var(--nf-bg)", KARTA = "var(--nf-karta)", INK = "var(--nf-ink)", INK2 = "var(--nf-ink2)", INK3 = "var(--nf-ink3)", LINKA = "var(--nf-linka)", PAPIER = "var(--nf-papier)";
@@ -334,11 +335,13 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, stit: s
   const oznamy = ozAll;
   const k = profil?.kontakt;
   const urad = k ? [k.adresaVerejna.trim() || k.sidlo.trim(), ...k.telefony.map((t) => t.cislo.trim()), ...k.emaily.map((e) => e.adresa.trim())].filter(Boolean) : [];
+  // OPRAVY 223: úradné hodiny pod Farským úradom (dni bez hodín sa nevypisujú, prázdne = blok sa neukáže)
+  const uh = k?.uradne, maUrad = urad.length > 0 || maUH(uh);
   // OPRAVY 220/221: kalendár Tento týždeň — všetko zaškrtnuté v Čo uvidia ľudia
   const maKal = maOmse || [0, 1].some((o) => plagatTyzdna(kk, VJ, o, SLF.omsa).some((d) => d.o.length > 0));
   const prispela = usePrispela(strankaId);
   const maZbierky = hlOn || zvOn || zbFar.length + zbIne.length + piny.length + prispela.length > 0;
-  const prazdna = !(!!onas || maZbierky || maPrid || !!p || prosby.length || maSpom || maTes || pomoz.length || oznVer.length || ozAll.length || maKal || urad.length);
+  const prazdna = !(!!onas || maZbierky || maPrid || !!p || prosby.length || maSpom || maTes || pomoz.length || oznVer.length || ozAll.length || maKal || maUrad);
   // ---------- titulka: tlačidlo Moja farnosť / Sledovať ----------
   // Martin (odpovede 13. 10.): mobil a tablet — dlaždica „Omše a kalendár“ s dnešnými časmi vedľa Moja farnosť; PC nie
   const dniKal = maKal && !pc ? [...plagatTyzdna(kk, VJ, 0, SLF.omsa), ...plagatTyzdna(kk, VJ, 1, SLF.omsa)] : [];
@@ -581,11 +584,19 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, stit: s
       <DetiAMladezBlok strankaId={strankaId} blokStyl={blokStyl()} lavy={lavyStlpec("Deti a mládež", "Stretká, miništranti, spevokol a tábory.")} kto={kto} mojeMeno={mojeMeno} reg={reg} />
 
       {/* ---------- (12) päta: Tento týždeň vo farnosti + Farský úrad (OPRAVY 220, 221) ---------- */}
-      {(maKal || urad.length > 0) && <div data-blok="kal" style={{ padding: `40px ${PAD_X} 56px`, borderTop: "4px solid var(--nf-ink)", display: "flex", flexWrap: "wrap", gap: "36px 48px", alignItems: "flex-start", scrollMarginTop: 16 }}>
+      {(maKal || maUrad) && <div data-blok="kal" style={{ padding: `40px ${PAD_X} 56px`, borderTop: "4px solid var(--nf-ink)", display: "flex", flexWrap: "wrap", gap: "36px 48px", alignItems: "flex-start", scrollMarginTop: 16 }}>
         {maKal && <TyzdenFarnosti strankaId={strankaId} slovo={SLF.omsa} siroka={siroka} cas={cas} />}
-        {urad.length > 0 && <div style={{ flex: "0 1 280px", minWidth: 0, display: "flex", flexDirection: "column", gap: 12 }}>
-          <span style={kicker()}>FARSKÝ ÚRAD</span>
-          <span style={{ fontSize: 16.5, lineHeight: 1.6, color: INK2, whiteSpace: "pre-line" }}>{urad.join("\n")}</span>
+        {maUrad && <div style={{ flex: "0 1 280px", minWidth: 0, display: "flex", flexDirection: "column", gap: 12 }}>
+          {urad.length > 0 && <><span style={kicker()}>FARSKÝ ÚRAD</span>
+          <span style={{ fontSize: 16.5, lineHeight: 1.6, color: INK2, whiteSpace: "pre-line" }}>{urad.join("\n")}</span></>}
+          {maUH(uh) && <>
+            <span style={{ ...kicker(), paddingTop: urad.length ? 8 : 0 }}>ÚRADNÉ HODINY</span>
+            <span style={{ display: "flex", flexDirection: "column", gap: 2, fontSize: 16.5, lineHeight: 1.6, color: INK2 }}>
+              {DNI_UH.map((dn, i) => { const c = casyUH(uh, i); return c.length ? <span key={dn}>{dn} <b style={{ color: INK }}>{c.map(textCasu).join(", ")}</b></span> : null; })}
+            </span>
+            {uh?.poz.trim() && <span style={{ fontSize: 14, lineHeight: 1.5, color: INK3 }}>{(() => { const t = uh.poz.trim(), i = t.toLocaleLowerCase("sk-SK").indexOf("farské oznamy");
+              return i < 0 || !ozAll.length ? t : <>{t.slice(0, i)}<button type="button" onClick={() => posunNaBlok("ozn")} style={{ padding: 0, border: "none", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: "inherit", color: "var(--nf-gInk)", fontWeight: 700, textDecoration: "underline", textUnderlineOffset: 3 }}>{t.slice(i, i + 13)}</button>{t.slice(i + 13)}</>; })()}</span>}
+          </>}
         </div>}
       </div>}
 
@@ -1008,6 +1019,7 @@ function TyzdenFarnosti({ strankaId, slovo, siroka, cas }: { strankaId: string; 
           {!siroka && <span style={{ fontSize: 12, fontWeight: 800 }}>{pozn ?? d.w}</span>}
           {d.o.length === 0 ? <span style={{ fontSize: 15, opacity: .6 }}>bez {slovo.replace(/^sv\. /, "")}</span>
             : d.o.map((o, i) => <span key={i} style={{ display: "flex", alignItems: "baseline", gap: 8, fontSize: siroka ? 16 : 15.5, textDecoration: o.z ? "line-through" : "none", opacity: o.z ? 0.6 : 1 }}><b style={{ flex: "none", fontVariantNumeric: "tabular-nums", minWidth: siroka ? undefined : 44 }}>{o.t}</b><span style={{ minWidth: 0 }}>{o.s}</span></span>)}
+          {(() => { const v = k.uradne?.[d.key]; return v && (v.zrus || (v.od && v.do)) ? <span style={{ fontSize: 14, fontWeight: 700, color: dn ? "inherit" : "var(--nf-cervena, #A3341F)" }}>{v.zrus ? "úradné hodiny zrušené" : `úradné hodiny zmenené na ${textCasu(v)}`}</span> : null; })()}
         </span>
       </div>);
   };

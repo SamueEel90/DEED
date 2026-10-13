@@ -3,6 +3,8 @@
 // Týždeň · Mesiac · Rozvrh omší, úprava dňa vpravo, Čo uvidia ľudia, Vytlačiť na nástenku, Pripnúť týždeň do Prehľadu.
 // Kalendár začína prázdny. Dáta: lib/kalendarFarnosti (účet farnosti).
 // ============================================================
+import { casyUH, textCasu, type UradneHodiny, type VynimkaUH } from "@/lib/uradneHodiny";
+import { nacitajProfil, profilZPamate } from "@/lib/profilStranky";
 import { useAutorZaMna, type AutorF } from "@/lib/autorFarnosti";
 import { CasPole as SpolocneCasPole } from "@/components/CasPole";
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
@@ -247,6 +249,12 @@ export function OmseKalendar({ strankaId, meno, kostoly, mobil, tel = false, toa
   const pridajPolozku = (typ: string) => { if (!den) return; const x = druhPolozky(typ); zmenK((y) => ({ ...y, extra: { ...y.extra, [den]: [...(y.extra[den] ?? []), { id: novyId(), typ, t: x.cas, m: "" }] } })); };
   const autorJa = useAutorZaMna(strankaId);
   const poslatZmenu = (veta: string, d: Date) => { poslatZmenuOmse(strankaId, meno, veta, d, autorJa); toast("Poslané · oznam je aj v Oznamoch"); };
+  // OPRAVY 223: úradné hodiny z profilu (Kontakt) a výnimka dňa v kalendári hlavného kostola
+  const [uhProfil, setUhProfil] = useState<UradneHodiny | undefined>(() => (profilZPamate(strankaId).koncept ?? profilZPamate(strankaId).ulozeny)?.kontakt?.uradne);
+  useEffect(() => { void nacitajProfil(strankaId).then((z) => setUhProfil((z.koncept ?? z.ulozeny)?.kontakt?.uradne)).catch(() => undefined); }, [strankaId]);
+  const uhDen = dD ? casyUH(uhProfil, dvt(dD)) : [];
+  const vynUH = den ? kostolKal(strankaId).uradne?.[den] : undefined;
+  const nastavUH = (v: VynimkaUH | null) => { if (!den) return; zmenKostol(strankaId, "0", (y) => { const n = { ...(y.uradne ?? {}) }; if (v) n[den] = v; else delete n[den]; return { ...y, uradne: n }; }); };
   const zmenPolozku = (id: string, p: Partial<PolozkaDna>) => { if (!den) return; zmenK((y) => ({ ...y, extra: { ...y.extra, [den]: (y.extra[den] ?? []).map((q) => (q.id === id ? { ...q, ...p } : q)) } })); };
   const denPanel = den && dD && (
     <section aria-label="Úprava dňa" style={{ ...karta, border: "2px solid var(--green)", padding: mobil ? "14px 14px" : "16px 20px", display: "flex", flexDirection: "column", gap: 10 }}>
@@ -295,6 +303,21 @@ export function OmseKalendar({ strankaId, meno, kostoly, mobil, tel = false, toa
             style={{ width: "100%", boxSizing: "border-box", height: 46, padding: "0 12px", borderRadius: 12, border: "1px solid var(--cardBd)", background: "var(--card)", color: "var(--ink)", fontFamily: "inherit", fontSize: 15.5, fontWeight: 700, outline: "none" }} />
           <span style={{ fontSize: 12.5, lineHeight: 1.4, color: "var(--ink3)" }}>{ob ? "Meno uvidia ľudia v kalendári farnosti." : "len v tento deň"}</span>
         </div>); })}
+      {/* OPRAVY 223: výnimka úradných hodín na tento deň (na stránke pri dni v kalendári) */}
+      {(uhDen.length > 0 || !!vynUH) && <div role="group" aria-label="Úradné hodiny v tento deň" style={{ padding: "10px 12px", borderRadius: 14, border: "1px solid var(--cardBd)", background: "var(--field)", display: "flex", flexDirection: "column", gap: 8 }}>
+        <span style={{ fontSize: 14.5, fontWeight: 800 }}>{`Úradné hodiny · ${uhDen.length ? uhDen.map(textCasu).join(", ") : "v tento deň obvykle nie sú"}`}</span>
+        <div style={{ display: "flex", gap: 4, padding: 4, borderRadius: 12, background: "var(--btn)", flexWrap: "wrap" }}>
+          {([["Ako obvykle", 0], ["Dnes nie sú", 1], ["Zmenené na …", 2]] as const).map(([t, i]) => { const on = (vynUH ? (vynUH.zrus ? 1 : 2) : 0) === i; return (
+            <button key={t} type="button" aria-pressed={on} onClick={() => nastavUH(i === 0 ? null : i === 1 ? { zrus: true } : { od: uhDen[0]?.od ?? "", do: uhDen[0]?.do ?? "" })}
+              style={{ flex: "1 1 auto", minHeight: 40, padding: "0 12px", border: "none", borderRadius: 9, background: on ? "var(--card)" : "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 800, color: on ? "var(--ink)" : "var(--ink3)", boxShadow: "none" }}>{t}</button>); })}
+        </div>
+        {vynUH && !vynUH.zrus && <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <CasPole value={vynUH.od} label="Úradné hodiny od" onCommit={(v) => nastavUH({ od: v, do: vynUH.do })} />
+          <span aria-hidden="true" style={{ color: "var(--ink3)" }}>–</span>
+          <CasPole value={vynUH.do} label="Úradné hodiny do" onCommit={(v) => nastavUH({ od: vynUH.od, do: v })} />
+        </div>}
+        {vynUH && <span style={{ fontSize: 12.5, color: "var(--ink3)" }}>{vynUH.zrus ? "Na stránke pri tomto dni: úradné hodiny zrušené" : `Na stránke pri tomto dni: úradné hodiny zmenené na ${vynUH.od && vynUH.do ? textCasu(vynUH) : "…"}`}</span>}
+      </div>}
       <span style={{ fontSize: 12.5, fontWeight: 800, letterSpacing: ".08em", color: "var(--ink3)", paddingTop: 4 }}>PRIDAŤ DO TOHTO DŇA</span>
       <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
         <select value={pdV} onChange={(e) => setPdV(e.target.value)} aria-label="Čo pridať" style={{ flex: 1, minWidth: 0, height: 48, padding: "0 12px", borderRadius: 12, border: "1px solid var(--cardBd)", background: "var(--card)", fontFamily: "inherit", fontSize: 15, fontWeight: 700, color: "var(--ink)" }}>

@@ -18,6 +18,8 @@ import { SIDLO_REGISTRA, ICO_REGISTRA } from "./NastaveniaCharity";
 import { nacitajKontakt, SIETE, MAX_TEL, MAX_EMAIL, chybaSiete, chybaWebu, chybaEmailu, chybaTel, type Kontakt } from "./kontakt";
 import { type Pozicia, type Tier, type TvarLoga } from "./stav";
 import { Podstranka } from "./Podstranka";
+import { CasPole } from "@/components/CasPole";
+import { DNI_UH, prazdneUH, type CasUH } from "@/lib/uradneHodiny";
 
 // IČO a sídlo z Údajov organizácie (ten istý zdroj, OPRAVY 108)
 // ---------- konštanty z karty 33 ----------
@@ -94,6 +96,9 @@ export function UpravitProfilCharity({ strankaId, pozicia, tier, nazov, inicialy
   useEffect(() => { let ziva = true; void nacitajProfil(strankaId).then((z) => { if (!ziva) return; if (!zmenene.current) { setP(z.koncept ?? z.ulozeny ?? zakladnyProfil(pozicia)); setKonceptCas(z.konceptCas); } setNacitane(true); }); return () => { ziva = false; }; }, [strankaId, pozicia]);
   const zmen = (z: Partial<ProfilStranky>) => { zmenene.current = true; setP((x) => ({ ...x, ...z })); };
   const zmenK = (z: Partial<Kontakt>) => { zmenene.current = true; setP((x) => ({ ...x, kontakt: { ...x.kontakt, ...z } })); };
+  // OPRAVY 223: úradné hodiny (len farnosť)
+  const uh = p.kontakt.uradne ?? prazdneUH();
+  const zmenUH = (den: number, casy: CasUH[]) => zmenK({ uradne: { ...uh, d: uh.d.map((x, i) => (i === den ? casy : x)) } });
   useEffect(() => { if (zmenene.current) onZmena?.(p); // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [p]);
   // KONCEPT — automaticky 600 ms po poslednej zmene
@@ -278,6 +283,27 @@ export function UpravitProfilCharity({ strankaId, pozicia, tier, nazov, inicialy
           {ch && <span style={{ fontSize: 13, fontWeight: 700, color: "#A34A2A", marginTop: -6, paddingLeft: 94 }}>{ch}</span>}
         </div>);
       })}
+      {farnost && <>
+        {/* OPRAVY 223: úradné hodiny po dňoch, pri dni aj viac časov (čas bez dvojbodky, bod 179), nepovinná poznámka */}
+        {nadpis("Úradné hodiny", "kedy je farský úrad otvorený", 14)}
+        {DNI_UH.map((dn, i) => { const L = uh.d[i] ?? []; return (
+          <div key={dn} style={{ display: "flex", gap: 10, alignItems: "flex-start", flexWrap: "wrap" }}>
+            <span style={{ width: 84, flex: "none", minHeight: 50, display: "flex", alignItems: "center", fontSize: 13.5, fontWeight: 700, color: "var(--ink2)" }}>{dn}</span>
+            <div style={{ flex: "1 1 220px", minWidth: 0, display: "flex", flexDirection: "column", gap: 6 }}>
+              {L.map((c, j) => (
+                <div key={j} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <CasPole value={c.od} placeholder="od" label={`${dn} od`} style={{ ...pole, width: 96, textAlign: "center" }} onCommit={(v) => zmenUH(i, L.map((x, q) => (q === j ? { ...x, od: v } : x)))} />
+                  <span aria-hidden="true" style={{ color: "var(--ink3)" }}>–</span>
+                  <CasPole value={c.do} placeholder="do" label={`${dn} do`} style={{ ...pole, width: 96, textAlign: "center" }} onCommit={(v) => zmenUH(i, L.map((x, q) => (q === j ? { ...x, do: v } : x)))} />
+                  <Zmaz onClick={() => zmenUH(i, L.filter((_, q) => q !== j))} />
+                </div>))}
+              <Pridat onClick={() => zmenUH(i, [...L, { od: "", do: "" }])}>{L.length ? "+ Ďalší čas" : "+ Pridať čas"}</Pridat>
+            </div>
+          </div>); })}
+        {nadpis("Poznámka k úradným hodinám", "nepovinné", 14)}
+        <input style={pole} value={uh.poz} maxLength={200} placeholder="Napríklad: Počas sviatočných období môžu byť zmenené alebo zrušené, sledujte farské oznamy." aria-label="Poznámka k úradným hodinám"
+          onChange={(e) => zmenK({ uradne: { ...uh, poz: e.target.value } })} />
+      </>}
     </section>);
 
   // KARTA 56D §4: farnosť — najprv Mám logo / Nemám logo; Nemám = iniciály (najviac 3), Kruh / Štvorec, rámik
