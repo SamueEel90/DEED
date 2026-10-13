@@ -2,6 +2,7 @@
 // KARTA 56D: Správa od prvého príchodu — všetky funkcie, žiadne ukážkové dáta (prototyp „Sprava farnosti - prvy prichod").
 // Profil, logo a percento = profil_stranky (ako charita), pripnuté = sprava_piny, hlavná zbierka = profil_stranky.centralna.
 // Omše, oznamy a nastavenia farnosti z modulu Viera (stav.ts — localStorage + zrkadlo naboz_stav) pod kľúčom stránky.
+import { FarbaLinii } from "./FarbaLinii";
 import { ZdrojFotiekKontext, zdrojFarnosti } from "@/components/VyberZGalerie";
 import { fotkyFarnosti } from "@/lib/galeriaFotiek";
 import { DeedZnacka } from "@/components/DeedZnacka";
@@ -546,7 +547,7 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
     </button>
     <ObrNastavenia tier={0} mobil={!desktop} otvor={() => toast("Pripravujeme")}
       farnost={{ ludia: () => go("ludia"), hlavna: () => go("hlavna"), n: (id) => { setNId(id); go("n"); },
-        predplatne: () => { setNId("predplatne"); go("n"); } }} /></>;
+        predplatne: () => { setNId("predplatne"); go("n"); }, vzhlad: <FarbaLinii strankaId={strankaId} /> }} /></>;
   const SLF = useSlovaFarnosti(strankaId);
   const NAST_T: Record<string, string> = { predplatne: "Predplatné a platba", notif: "Čo chcete dostávať", ucty: "Účet farnosti", udaje: "Údaje farnosti", zariadenia: "Prihlásené zariadenia", suhlasy: "Súhlasy", faq: "Časté otázky", podpora: "Napísať podpore" };
   const nObr = <>{nadpis(NAST_T[nId] ?? "Nastavenia", "")}

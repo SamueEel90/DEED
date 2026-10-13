@@ -1369,7 +1369,7 @@ const sekNadpis: React.CSSProperties = { fontSize: 12, fontWeight: 800, letterSp
 type Riadok = { t: string; s?: string; v?: string; prep?: [boolean, () => void]; red?: boolean; tap?: () => void };
 
 /** OPRAVY 186: Nastavenia farnosti = tie isté Nastavenia ako charita; farnosť mení len riadky Príjem darov, Ľudia, Údaje a Predplatné */
-export interface NastFarnosti { ludia: () => void; predplatne: () => void; hlavna: () => void; n: (id: string) => void }
+export interface NastFarnosti { ludia: () => void; predplatne: () => void; hlavna: () => void; n: (id: string) => void; /** OPRAVY 243: Vzhľad stránky · Farba línií */ vzhlad?: React.ReactNode }
 export function ObrNastavenia({ tier, otvor, mobil, farnost }: { tier: Tier; otvor: (s: Sub) => void; mobil: boolean; farnost?: NastFarnosti }) {
   const n = useNastaveniaAppky();
   const { tema, nastavTemu } = useMotiv();
@@ -1424,6 +1424,7 @@ export function ObrNastavenia({ tier, otvor, mobil, farnost }: { tier: Tier; otv
           </button>
         </div>
       </div>
+      {farnost?.vzhlad}
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         <div style={sekNadpis}>PRÍSTUPNOSŤ</div>
         <div style={{ borderRadius: 18, background: "var(--card)", border: "1px solid var(--cardBd)", padding: "12px 14px 4px" }}>

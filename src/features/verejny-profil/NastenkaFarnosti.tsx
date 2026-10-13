@@ -8,6 +8,7 @@
 // darcu nikdy; zvončeková = jeden súhrnný riadok za nedeľu.
 // ============================================================
 import { useZamokVrstvy } from "@/lib/zamokVrstvy";
+import { useFarbaLinie } from "@/lib/liniaStranky";
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import type { ProfilStranky } from "@/lib/profilStranky";
@@ -81,7 +82,8 @@ const ziveObr = (u?: string | null) => !!u && !/^blob:/.test(u);
 const bezPredpony = (s: string) => s.replace(/^[^·]*·\s*/, "");
 const iniciy = (m: string) => m.split(/\s+/).filter((w) => w.length > 1 && w !== "Farnosť").slice(0, 2).map((w) => w[0]).join("").toUpperCase() || "F";
 
-const blokStyl = (pozadie?: string): CSSProperties => ({ display: "flex", flexWrap: "wrap", gap: "20px 40px", padding: `48px ${PAD_X}`, borderTop: `1px solid ${LINKA}`, background: pozadie, scrollMarginTop: 16 });
+// OPRAVY 243: nad každým blokom farebná čiara 3 px (farba línií stránky, --nf-linia)
+const blokStyl = (pozadie?: string): CSSProperties => ({ display: "flex", flexWrap: "wrap", gap: "20px 40px", padding: `48px ${PAD_X}`, borderTop: "3px solid var(--nf-linia)", background: pozadie, scrollMarginTop: 16 });
 const nadpisBloku: CSSProperties = { fontSize: "clamp(32px,3.2vw,44px)", lineHeight: 1.02, letterSpacing: "-.035em" };
 const kicker = (c = INK3): CSSProperties => ({ fontSize: 14, fontWeight: 800, letterSpacing: ".12em", color: c });
 /** tlačidlo reakcie podľa prototypu (tmavé = hlavné, svetlé = sústrasť) */
@@ -268,6 +270,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, nahlad,
   };
   // OPRAVY 206: čo pridá Správa, má ten istý riadok autora — duchovný z Ľudia (fotka, meno s titulmi, titul podľa cirkvi)
   const SLF = useSlovaFarnosti(strankaId);
+  const farbaLinie = useFarbaLinie(strankaId, SLF.cirkev); // OPRAVY 243
   // Martin 13. 10.: riadok autora = kto príspevok naozaj pridal (meno, fotka, rola); bez profilu logo a názov farnosti. Duchovný nikdy namiesto iného autora.
   const hlavickaFar = (af?: AutorF) => {
     const m = af?.meno.trim() || meno, f = af?.meno.trim() ? af.foto ?? "" : logo ?? "";
@@ -435,7 +438,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, nahlad,
   const lavyStlpec = (nadpis: string, popis: string) => <div style={{ flex: "1 1 220px", maxWidth: 280, display: "flex", flexDirection: "column", gap: 10 }}><b style={nadpisBloku}>{nadpis}</b><span style={{ fontSize: 17, lineHeight: 1.5, color: INK3 }}>{popis}</span></div>;
 
   return (
-    <div className="nastenka-farnosti" style={{ ...PREMENNE, position: "relative", width: "100%", maxWidth: 1440, margin: "0 auto", background: BG, color: INK, display: "flex", flexDirection: "column", fontFamily: "'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,sans-serif", paddingBottom: fab ? 110 : 0 }}>
+    <div className="nastenka-farnosti" style={{ ...PREMENNE, ["--nf-linia" as string]: farbaLinie, position: "relative", width: "100%", maxWidth: 1440, margin: "0 auto", background: BG, color: INK, display: "flex", flexDirection: "column", fontFamily: "'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,sans-serif", paddingBottom: fab ? 110 : 0 }}>
       {/* ---------- (1) titulka · OPRAVY 221: príhovor jedna veta + viac, dve tlačidlá vedľa seba ---------- */}
       <div style={{ position: "relative", minHeight: siroka ? "clamp(300px,34vw,480px)" : 260, boxSizing: "border-box", display: "flex", flexDirection: "column", justifyContent: "flex-end", padding: `${onBack ? 92 : 24}px ${PAD_X} clamp(20px,3vw,40px)`, background: cover ? `linear-gradient(180deg,rgba(10,8,5,.3) 0%,rgba(10,8,5,0) 35%,rgba(10,8,5,.88) 100%), url("${cover}") center/cover no-repeat #D9D3C7` : "linear-gradient(160deg,#3A372E 0%,#14110B 100%)" }}>
         {/* OPRAVY 240 (5): na mobile malé tlačidlo hore v rohu, nie veľká biela dlaždica */}
@@ -453,6 +456,8 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, nahlad,
           {pc && (nahlad ? stitokNahlad : sledBtn)}
         </div>
       </div>
+      {/* OPRAVY 243: hrubá farebná línia pod titulkou s jemným tieňom */}
+      <div aria-hidden="true" style={{ height: 12, background: "var(--nf-linia)", boxShadow: "0 4px 14px rgba(0,0,0,.18)", position: "relative", zIndex: 1 }} />
       <div style={{ padding: `${siroka ? 28 : 18}px ${PAD_X} ${siroka ? 12 : 4}px`, display: "flex", flexDirection: "column", gap: 14 }}>
         {onas && <span style={{ fontSize: "clamp(16px,1.4vw,19px)", lineHeight: 1.6, color: INK2, ...(onasOtv ? { whiteSpace: "pre-line" } : { whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }) } as CSSProperties}>
           {onasOtv ? onas : onas.split(/(?<=[.!?])\s|\n/)[0]}{" "}
@@ -634,7 +639,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, nahlad,
       <DetiAMladezBlok strankaId={strankaId} blokStyl={blokStyl()} lavy={lavyStlpec("Deti a mládež", "Stretká, miništranti, spevokol a tábory.")} kto={kto} mojeMeno={mojeMeno} reg={reg} />
 
       {/* ---------- (12) päta: Tento týždeň vo farnosti + Farský úrad (OPRAVY 220, 221) ---------- */}
-      {(maKal || maUrad) && <div data-blok="kal" style={{ padding: `40px ${PAD_X} 56px`, borderTop: "4px solid var(--nf-ink)", display: "flex", flexWrap: "wrap", gap: "36px 48px", alignItems: "flex-start", scrollMarginTop: 16 }}>
+      {(maKal || maUrad) && <div data-blok="kal" style={{ padding: `40px ${PAD_X} 56px`, borderTop: "4px solid var(--nf-linia)", display: "flex", flexWrap: "wrap", gap: "36px 48px", alignItems: "flex-start", scrollMarginTop: 16 }}>
         {maKal && <TyzdenFarnosti strankaId={strankaId} slovo={SLF.omsa} siroka={siroka} cas={cas} />}
         {maUrad && <div style={{ flex: "0 1 280px", minWidth: 0, display: "flex", flexDirection: "column", gap: 12 }}>
           {urad.length > 0 && <><span style={kicker()}>FARSKÝ ÚRAD</span>
