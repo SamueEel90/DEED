@@ -15,7 +15,8 @@ import {
   dniTyzdna, rozsahTyzdna, iso, dvt, minuty, posunTyzdna, kostolKal, DRUHY, SKUPINY_OMSI, VEREJNE_VOLBY, VLASTNE_PREFIX,
   DNI_K, DNI_D, MES_G, MES_N, nazovOmse, type KalKostol, type KalendarFarnosti, type PolozkaDna, type Skupina, type Verej } from "@/lib/kalendarFarnosti";
 
-export interface KostolF { nazov: string; adresa?: string }
+/** KARTA 62: miesto farnosti — id = kľúč kostola v kalendári (hlavný „0“) */
+export interface KostolF { id?: string; nazov: string; adresa?: string }
 type Tab = 0 | 1 | 2;
 
 const karta: CSSProperties = { borderRadius: 22, background: "var(--card)", border: "1px solid var(--cardBd)" };
@@ -91,7 +92,8 @@ export function TyzdenKarta({ k, off, setOff, den, onDen, mobil, kostolV = "", p
     </section>);
 }
 
-export function OmseKalendar({ strankaId, meno, kostoly, mobil, tel = false, toast, start }: { strankaId: string; meno: string; kostoly: KostolF[]; mobil: boolean;
+export function OmseKalendar({ strankaId, meno, kostoly, mobil, tel = false, toast, start, onPridatKostol }: { strankaId: string; meno: string; kostoly: KostolF[]; mobil: boolean;
+  /** KARTA 62: + Pridať kostol → Správa → Kostoly a miesta */ onPridatKostol?: () => void;
   /** KARTA 57 B.3: telefón = len Týždeň (bez Mesiac/Rozvrh, Pripnúť, plagátu a Kostolov — tie sú v dlaždici Filiálky); ťuk na deň posunie na jeho detail */
   tel?: boolean; toast: (m: string) => void;
   /** KARTA 56G: otvoriť týždeň s úpravou dňa (ťuk na deň v Prehľade) alebo len tento týždeň (Zmena omše z + Pridať) */
@@ -100,7 +102,7 @@ export function OmseKalendar({ strankaId, meno, kostoly, mobil, tel = false, toa
   const SLO = useSlovaFarnosti(strankaId);
   const [tab, setTab] = useState<Tab>(0);
   const [kI, setKI] = useState(0);
-  const kKey = String(kI);
+  const kKey = kostoly[kI]?.id ?? String(kI);
   const k: KalKostol = kal.kostoly[kKey] ?? novyKostol();
   const viac = kostoly.length > 1;
   const kostolV = viac ? ` · ${kostoly[kI]?.nazov ?? ""}` : "";
@@ -359,8 +361,8 @@ export function OmseKalendar({ strankaId, meno, kostoly, mobil, tel = false, toa
             {on && viac && <span style={{ height: 22, padding: "0 8px", borderRadius: 7, background: "#4B7A35", color: "#fff", fontSize: 11, fontWeight: 800, letterSpacing: ".06em", display: "flex", alignItems: "center" }}>UPRAVUJETE</span>}</span>
           <span style={{ fontSize: 12.5, color: "var(--ink3)" }}>{x.adresa || "adresa z registrácie"}</span>
         </button>); })}
-      {/* PLACEBO — karta 56F: pridanie filiálky ešte nemá formulár */}
-      <button type="button" onClick={() => toast("Pripravujeme")} style={{ alignSelf: "flex-start", minHeight: 44, padding: 0, border: "none", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 13.5, fontWeight: 800, color: "var(--green)", boxShadow: "none" }}>+ Pridať kostol</button>
+      {/* KARTA 62: pridanie kostola alebo filiálky je v Správe → Kostoly a miesta */}
+      <button type="button" onClick={() => (onPridatKostol ? onPridatKostol() : toast("Kostoly a filiálky pridáte v Správe → Kostoly a miesta"))} style={{ alignSelf: "flex-start", minHeight: 44, padding: 0, border: "none", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 13.5, fontWeight: 800, color: "var(--green)", boxShadow: "none" }}>+ Pridať kostol</button>
     </section>);
 
   // ---------- Čo uvidia ľudia · Plagát · Pripnúť ----------

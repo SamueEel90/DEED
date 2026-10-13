@@ -3,6 +3,8 @@
 // Profil, logo a percento = profil_stranky (ako charita), pripnuté = sprava_piny, hlavná zbierka = profil_stranky.centralna.
 // Omše, oznamy a nastavenia farnosti z modulu Viera (stav.ts — localStorage + zrkadlo naboz_stav) pod kľúčom stránky.
 import { FarbaLinii } from "./FarbaLinii";
+import { KostolyMiesta } from "./KostolyMiesta";
+import { useMiesta } from "@/lib/miestaFarnosti";
 import { ZdrojFotiekKontext, zdrojFarnosti } from "@/components/VyberZGalerie";
 import { fotkyFarnosti } from "@/lib/galeriaFotiek";
 import { DeedZnacka } from "@/components/DeedZnacka";
@@ -11,7 +13,6 @@ import { pripojTestovaciuStranku } from "@/lib/stranka";
 import { createPortal } from "react-dom";
 import { useLayout } from "@/components/context";
 import { toast } from "@/components/toast";
-import { type KostolFarnosti } from "@/features/viera/mock";
 import { nacitajStav, ulozStav } from "@/features/viera/stav";
 import { odFarnikov, pocetyOdVeriacich, useOdFarnikov, useCerstveOdFarnikov } from "@/lib/odFarnikov";
 import { OdVeriacich } from "./OdVeriacich";
@@ -62,7 +63,7 @@ const IC: Record<string, string> = {
   veriaci: "M4 5h16v11H9l-5 4zM9 10h6", filialky: "M3 21h18M6 21V11l6-5 6 5v10M12 3v3M10 4.5h4M10 21v-5h4v5", stat: "M3 13h4v7H3zM10 8h4v12h-4zM17 4h4v16h-4z",
   pin: "M9 4h6l-1 6 3 3H7l3-3zM12 13v7", dole: "M6 9l6 6 6-6", kostol: "M4 21h16M5 21V10M19 21V10M9 21V10M15 21V10M3 10l9-6 9 6z",
 };
-const TIT: Record<Sub, string> = { prehlad: "Prehľad", zbierky: "Zbierky", omse: "Omše a kalendár", oznamy: "Oznamy", veriaci: "Od veriacich", ludia: "Ľudia", filialky: "Filiálky", penazenka: "Peňaženka", nastroje: "Nástroje a štatistiky", profil: "Upraviť profil", nast: "Nastavenia", hlavna: "Hlavná zbierka", nahlad: "Náhľad profilu", zbierka: "Správa zbierky", nova: "Nová zbierka", n: "Nastavenia" };
+const TIT: Record<Sub, string> = { prehlad: "Prehľad", zbierky: "Zbierky", omse: "Omše a kalendár", oznamy: "Oznamy", veriaci: "Od veriacich", ludia: "Ľudia", filialky: "Kostoly a miesta", penazenka: "Peňaženka", nastroje: "Nástroje a štatistiky", profil: "Upraviť profil", nast: "Nastavenia", hlavna: "Hlavná zbierka", nahlad: "Náhľad profilu", zbierka: "Správa zbierky", nova: "Nová zbierka", n: "Nastavenia" };
 const Ik = ({ d, s = 20, c = "var(--acc)", w = 1.9, style }: { d: string; s?: number; c?: string; w?: number; style?: CSSProperties }) =>
   <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth={w} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flex: "none", ...style }}><path d={d} /></svg>;
 const eur = (n: number) => `${n.toLocaleString("sk-SK")} €`;
@@ -85,7 +86,6 @@ const PRIDAT_T: Partial<Record<Sub, string>> = { zbierky: "+ Pridať zbierku", o
 /** kde sa + Pridať neukazuje (úpravy, náhľad, Omše) */
 const BEZ_PRIDAT: Sub[] = ["profil", "hlavna", "nahlad", "zbierka", "nova", "omse", "n"];
 /** prvý príchod: jeden kostol z registrácie (KARTA 56F: kým nie sú filiálky, upravuje sa len on) */
-const PRVY_KOSTOL: KostolFarnosti[] = [{ nazov: "Váš kostol", adresa: "", casyOmsi: "" }];
 
 // ---- spoločné štýly (prototyp) ----
 const karta: CSSProperties = { flex: "none", borderRadius: 22, background: "var(--card)", border: "1px solid var(--cardBd)" };
@@ -141,7 +141,8 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
   const uplnost = uplnostProfilu(profilAkt);
   const meno = cistyNazov(profilAkt?.meno ?? nazov) || "Vaša farnosť";
   const [vid, setVid] = useState(() => nacitajStav<"zobrazit" | "skryt" | "len-farar">("viditelnost", strankaId, "zobrazit"));
-  const kostoly = nacitajStav<{ kostoly?: KostolFarnosti[] }>("profil", strankaId, {}).kostoly ?? PRVY_KOSTOL;
+  // KARTA 62: kostoly a filiálky = miesta farnosti (prvé z registrácie); kľúč miesta = kľúč kostola v kalendári
+  const kostoly = useMiesta(strankaId);
 
   // KARTA 56D §3: pripnuté sekcie (sprava_piny, najviac 6) — prvý príchod bez pinov
   const [piny, setPiny] = useState<Pin[]>(() => pinyZPamate<Pin>(strankaId, []));
@@ -328,7 +329,7 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
   // KARTA 61 §3: predplatné hore v Prehľade
   const predPas = <PredplatnePas strankaId={strankaId} mobil={mobil} onOtvor={() => { setNId("predplatne"); go("n"); }} />;
   // OPRAVY 218: mobil a tablet ako Správa charity — karta farnosti, mriežka 3 × 3 (Verejný profil modrý), Pripnuté, Treba vybaviť, Čísla úplne dole
-  const DLAZDICE9: [Sub | "verejny", string][] = [["verejny", "Verejný profil"], ["zbierky", "Zbierky"], ["oznamy", "Oznamy"], ["omse", "Omše a kalendár"], ["veriaci", "Od veriacich"], ["ludia", "Ľudia"], ["filialky", "Filiálky"], ["penazenka", "Peňaženka"], ["nastroje", "Nástroje a výkazy"]];
+  const DLAZDICE9: [Sub | "verejny", string][] = [["verejny", "Verejný profil"], ["zbierky", "Zbierky"], ["oznamy", "Oznamy"], ["omse", "Omše a kalendár"], ["veriaci", "Od veriacich"], ["ludia", "Ľudia"], ["filialky", "Kostoly a miesta"], ["penazenka", "Peňaženka"], ["nastroje", "Nástroje a výkazy"]];
   const prehlad = mobil ? <>
     {predPas}
     <button type="button" onClick={() => go("profil")} style={{ flex: "none", borderRadius: 20, background: "var(--card)", border: "1.5px solid var(--cardBd)", padding: "14px 16px", display: "flex", alignItems: "center", gap: 14, cursor: "pointer", textAlign: "left", fontFamily: "inherit", boxShadow: "none" }}>
@@ -461,7 +462,7 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
   </>;
 
   // KARTA 56F · OPRAVY 165: Omše a kalendár (Týždeň · Mesiac · Rozvrh omší, úprava dňa, plagát, pripnutie do Prehľadu)
-  const omse = <OmseKalendar key={omseStart.n} start={omseStart} strankaId={strankaId} meno={meno} kostoly={kostoly.map((k) => ({ nazov: k.nazov, adresa: k.adresa }))} mobil={mobil} tel={telefon} toast={toast} />;
+  const omse = <OmseKalendar key={omseStart.n} start={omseStart} strankaId={strankaId} meno={meno} kostoly={kostoly.map((k) => ({ id: k.id, nazov: k.nazov, adresa: k.adresa }))} onPridatKostol={() => go("filialky")} mobil={mobil} tel={telefon} toast={toast} />;
 
   // KARTA 56G §4–5: Oznamy farnosti — Krátky oznam · Udalosť · Oznámenie, náhľad, ohlášky, zoznam zverejnených
   const oznamy = <>
@@ -473,20 +474,12 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
     {nadpis("Od veriacich", "Úmysly na omšu, príspevky veriacich a čo smú pridávať")}
     <OdVeriacich strankaId={strankaId} meno={meno} mobil={mobil} toast={toast} />
   </>;
-  // KARTA 57 B.3: Kostoly farnosti → dlaždica Filiálky (filiálky dorobíme)
+  // KARTA 62: Kostoly a miesta (aj filiálky) — zoznam, + Pridať kostol alebo filiálku, cena podľa miest
   const filialky = <>
-    {nadpis("Filiálky", "Farský kostol a filiálky")}
-    <span style={{ fontSize: 14, color: "var(--ink3)" }}>Farský kostol a filiálky. Pri každom kostole budú vlastné omše.</span>
-    <section style={{ ...karta, borderRadius: mobil ? 18 : 22, padding: mobil ? "14px 14px" : "16px 20px", display: "flex", flexDirection: "column", gap: 6 }}>
-      <span style={{ fontSize: 15, fontWeight: 800, paddingBottom: 4 }}>Kostoly farnosti</span>
-      {kostoly.map((x, i) => (
-        <div key={x.nazov + i} style={{ padding: "10px 0", borderTop: i ? "1px solid var(--cardBd)" : "none", display: "flex", flexDirection: "column", gap: 2 }}>
-          <b style={{ fontSize: 14.5 }}>{x.nazov}</b><span style={{ fontSize: 12.5, color: "var(--ink3)" }}>{x.adresa || "adresa z registrácie"}</span>
-        </div>))}
-      {/* PLACEBO — karta 57 B.3: pridanie filiálky ešte nemá formulár */}
-      <button type="button" onClick={pripravujeme} style={odkaz}>+ Pridať kostol</button>
-    </section>
+    {nadpis("Kostoly a miesta", "Kostoly, kaplnky a filiálky farnosti")}
+    <KostolyMiesta strankaId={strankaId} mobil={mobil} onOmse={() => go("omse")} />
   </>;
+
 
   // KARTA 56D §0: Ľudia = len prihlásený správca. Ďalšie osoby a počty pribudnú s tabuľkou správcov (PLACEBO — karta 56D).
   const darcovNum = new Set(vsetkyDary.map((r) => (r.moj ? "ja" : r.id))).size;
@@ -551,7 +544,7 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
   const SLF = useSlovaFarnosti(strankaId);
   const NAST_T: Record<string, string> = { predplatne: "Predplatné a platba", notif: "Čo chcete dostávať", ucty: "Účet farnosti", udaje: "Údaje farnosti", zariadenia: "Prihlásené zariadenia", suhlasy: "Súhlasy", faq: "Časté otázky", podpora: "Napísať podpore" };
   const nObr = <>{nadpis(NAST_T[nId] ?? "Nastavenia", "")}
-    {nId === "predplatne" ? <PredplatneFarnosti strankaId={strankaId} meno={meno} mobil={mobil} onUdaje={() => setNId("udaje")} />
+    {nId === "predplatne" ? <PredplatneFarnosti strankaId={strankaId} meno={meno} mobil={mobil} onUdaje={() => setNId("udaje")} onMiesta={() => go("filialky")} />
       : nId === "notif" ? <ObrOznamenia mobil={!desktop} farnost />
       : nId === "udaje" ? <ObrUdaje mobil={!desktop} farnost={{ nazov: meno, cirkev: <CirkevFarnosti strankaId={strankaId} mobil={mobil} toast={toast} /> }} />
       : nId === "ucty" ? <section style={{ ...karta, borderRadius: mobil ? 18 : 22, padding: mobil ? "14px 14px" : "16px 20px", display: "flex", flexDirection: "column", gap: 10 }}>
@@ -627,7 +620,7 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
 
   // ================= PC =================
   if (desktop) {
-    const nav: Sub[] = ["prehlad", "zbierky", "omse", "oznamy", "veriaci", "ludia", "nastroje"]; // KARTA 57 B.4: + Od veriacich (s počtom), − Peňaženka (je v Nastaveniach) // Nastavenia ako tlačidlo pod Verejným profilom (OPRAVY 157); Upraviť profil je hore pri profile (KARTA 56F)
+    const nav: Sub[] = ["prehlad", "zbierky", "omse", "oznamy", "veriaci", "ludia", "filialky", "nastroje"]; // KARTA 62: + Kostoly a miesta // KARTA 57 B.4: + Od veriacich (s počtom), − Peňaženka (je v Nastaveniach) // Nastavenia ako tlačidlo pod Verejným profilom (OPRAVY 157); Upraviť profil je hore pri profile (KARTA 56F)
     const aktivna = sub === "hlavna" || sub === "zbierka" || sub === "nova" ? "zbierky" : sub === "penazenka" || sub === "n" ? "nast" : sub;
     return (
       <div className="sprava-charity" data-stit="silver" style={{ minHeight: "100dvh", boxSizing: "border-box", padding: "20px 32px", display: "flex", gap: 24, alignItems: "flex-start" }}>
