@@ -33,6 +33,7 @@ import { PripnutieVyber, PripnuteZoznam } from "./PripnuteZbierky";
 import { LudiaFarnosti } from "./LudiaFarnosti";
 import { BrigadyFarnosti } from "./BrigadyFarnosti";
 import { useSlovaFarnosti } from "@/lib/mojeFarnosti";
+import { usePrispela } from "@/lib/farnostPrispela";
 import type { OtazkyFaq } from "./NastaveniaCharity";
 import { DetiMladezFarnosti } from "./DetiMladezFarnosti";
 import { PredplatnePas, PredplatneFarnosti } from "./PredplatneFarnosti";
@@ -503,6 +504,7 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
   ]);
   const mesOd = zaciatokMesiaca();
   const mesDary = vsetkyDary.filter((r) => r.cas >= mesOd);
+  const prispelaF = usePrispela(strankaId);
   const penazenka = <>
     {nadpis("Peňaženka", "Dary idú priamo na účet farnosti, DEED+ peniaze nedrží")}
     {riadky([
@@ -511,6 +513,11 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
       { t: "Výplaty na účet", s: "pripravujeme" }, // PLACEBO — karta 56D
       { t: "Dary v EURC", s: "pripravujeme" }, // PLACEBO — karta 56D
     ])}
+    {/* OPRAVY 222 (5): doklad o dare farnosti na cudziu zbierku */}
+    {prispelaF.length > 0 && <>
+      <span style={{ fontSize: 12.5, fontWeight: 800, letterSpacing: ".08em", color: "var(--ink3)", padding: "4px 2px 0" }}>VÝPISY · DARY FARNOSTI</span>
+      {riadky(prispelaF.map((x) => ({ t: `${x.nazov} · ${x.kto}`, s: `${new Date(x.cas).toLocaleDateString("sk-SK")}${x.vs ? ` · doklad č. ${x.vs}` : ""}`, v: eur(x.suma) })))}
+    </>}
   </>;
   const viditKarta = (
     <section style={{ ...karta, borderRadius: mobil ? 18 : 22, padding: mobil ? "12px 14px" : "16px 20px", display: "flex", flexDirection: "column", gap: 10 }}>

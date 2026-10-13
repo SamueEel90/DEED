@@ -26,6 +26,7 @@ import { ZdielatHarok, Harok } from "./Zdielat";
 import { NahlasitSheet } from "@/components/nahlasit";
 import { firmaPreDorovnanie } from "@/lib/podpory";
 import { PravidelnaHarok } from "./PravidelnaHarok";
+import { PrispievateliaFarnosti, PrispietZaFarnost } from "./FarnostPrispela";
 import { RetazDobraHarok } from "./RetazDobra";
 import { DorovnanieFirmyHarok } from "./DorovnanieFirmy";
 import { STUPNE, nastavDevTempo, useDevTempo, type Stupen } from "./tempoStupen";
@@ -169,6 +170,8 @@ export function ZbierkaModul({ zbierka, miesto: miestoProp, onBack, spatNazov, o
       return (
         <div key={p.kluc} className="zb-pol" style={{ padding: "0 16px" }}>
           <KartaStavu refId={zbierka.id} zaklad={zbierka.vyzbierane ?? 0} ciel={p.hodnota === "skryta" ? null : ciel} ludiaZaklad={zbierka.ludia ?? 0} tempo={tempoRezim} koniecPruhu={koniecPruhu} skryta={p.hodnota === "skryta"} />
+          {/* OPRAVY 222: farnosť ako prispievateľ (pri pohrebe bez sumy) */}
+          <PrispievateliaFarnosti refId={zbierka.id} rodina={miesto === "pohreb"} />
         </div>
       );
     }
@@ -228,6 +231,8 @@ export function ZbierkaModul({ zbierka, miesto: miestoProp, onBack, spatNazov, o
       <NadpisText nazov={zbierka.nazov} text={zbierka.popis} otvoreny={st.text as boolean | undefined} onOtvoreny={(v) => zmenStav({ text: v })} />
     </div>
   ) : <PodporitDeedObsah registrovany={registrovany} />;
+  // OPRAVY 222: farár prispeje za farnosť (SEPA alebo karta), nie na vlastnú zbierku
+  const zaFarnost = miesto !== "podporitDeed" ? <div className="zb-pol" style={{ padding: "0 16px" }}><PrispietZaFarnost refId={zbierka.id} nazov={zbierka.nazov} vlastnik={miesto === "pohreb" || ktoVoli === "rodina" ? undefined : zbierka.organizacia?.meno} /></div> : null;
   const lave = polozky.filter((p) => VLAVO.has(p.kluc));
   const prave = polozky.filter((p) => !VLAVO.has(p.kluc));
 
@@ -265,9 +270,10 @@ export function ZbierkaModul({ zbierka, miesto: miestoProp, onBack, spatNazov, o
       {bocny ? <div style={{ display: "flex", flexDirection: "column" }}>
         {hore ?? <b className="zb-pol" style={{ padding: "6px 16px 12px", fontSize: 21, lineHeight: 1.2, letterSpacing: "-.01em" }}>{zbierka.nazov}</b>}
         {polozky.map(vykresli)}
+        {zaFarnost}
       </div> : <div className="zb-obsah">
         <div className="zb-lavy">{vrch}{pc && lave.map(vykresli)}</div>
-        <div className="zb-pravy">{pc ? prave.map(vykresli) : <ZmensenyModul>{polozky.map(vykresli)}</ZmensenyModul>}</div>
+        <div className="zb-pravy">{pc ? <>{prave.map(vykresli)}{zaFarnost}</> : <ZmensenyModul>{polozky.map(vykresli)}{zaFarnost}</ZmensenyModul>}</div>
       </div>}
       {/* bod 149 · dole vždy „Zbaliť a späť" (vráti na tú istú kartu a posun) */}
       {miesto !== "podporitDeed" && !bocny && <div style={{ padding: "8px 16px 0", maxWidth: pc ? 420 : undefined, marginLeft: pc ? "auto" : undefined }}><ZbalitASpat onClick={onBack} /></div>}

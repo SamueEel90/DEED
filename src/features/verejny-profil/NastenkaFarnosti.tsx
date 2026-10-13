@@ -40,6 +40,7 @@ import { useVzhlad } from "@/lib/vzhladStranky";
 import { stitokOznamu, plagatTyzdna } from "@/features/rola/OmseKalendar";
 import { druhDna, farbyDna, prikazanySviatok } from "@/lib/liturgia";
 import { DetiAMladezBlok } from "./DetiAMladez";
+import { usePrispela } from "@/lib/farnostPrispela";
 import { klucJa, MenuPrispevku, CelaObrazovka, ProhliadacAlbumu } from "./FarnikPridava";
 import { ZbierkaModul, type ZbierkaData } from "@/features/zbierka/ZbierkaModul";
 import type { StitLevel } from "@/components/stit";
@@ -333,7 +334,8 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, stit: s
   const urad = k ? [k.adresaVerejna.trim() || k.sidlo.trim(), ...k.telefony.map((t) => t.cislo.trim()), ...k.emaily.map((e) => e.adresa.trim())].filter(Boolean) : [];
   // OPRAVY 220/221: kalendár Tento týždeň — všetko zaškrtnuté v Čo uvidia ľudia
   const maKal = maOmse || [0, 1].some((o) => plagatTyzdna(kk, VJ, o, SLF.omsa).some((d) => d.o.length > 0));
-  const maZbierky = hlOn || zvOn || zbFar.length + zbIne.length + piny.length > 0;
+  const prispela = usePrispela(strankaId);
+  const maZbierky = hlOn || zvOn || zbFar.length + zbIne.length + piny.length + prispela.length > 0;
   const prazdna = !(!!onas || maZbierky || maPrid || !!p || prosby.length || maSpom || maTes || pomoz.length || oznVer.length || ozAll.length || maKal || urad.length);
   // ---------- titulka: tlačidlo Moja farnosť / Sledovať ----------
   const sledBtn = <button type="button" aria-pressed={jeHl || jeSl} aria-expanded={jeHl || jeSl ? mfOn : undefined} onClick={sledTap} style={{ flex: "none", minHeight: siroka ? 54 : 52, padding: "0 20px", borderRadius: siroka ? 15 : 14, border: siroka || jeHl || jeSl ? "none" : `1.5px solid ${LINKA}`, background: jeHl || jeSl ? (siroka ? "var(--nf-gSoft)" : ZELENA_TL) : siroka ? "#fff" : PAPIER, color: jeHl || jeSl ? (siroka ? "var(--nf-gInk)" : "#fff") : siroka ? "#14110B" : INK, fontFamily: "inherit", fontSize: siroka ? 17 : 15, fontWeight: 800, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 10 }}>
@@ -346,7 +348,10 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, stit: s
   const otvorZvoncek = (id: string, t: string) => onDetail({ id, nazov: t, popis: "Ako do zvončeka pri omši. Dar ide farnosti.", overena: true, organizacia: orgPole }, { typ: "zv", chip: "ZVONČEKOVÁ ZBIERKA", t, txt: "Ako do zvončeka pri omši. Dar ide farnosti." });
   const otvorPin = (z: ZbierkaNaPripnutie) => onDetail({ id: z.id, nazov: z.nazov, popis: "", overena: true, ciel: z.ciel ?? undefined, media: [], organizacia: { ...orgPole, meno: z.kto, obrazok: undefined } },
     { typ: "pin", chip: chipPripnutej(z), t: z.nazov, txt: "", pin: z, obr: z.foto });
-  const prispeliSme: ReactNode = null;
+  // OPRAVY 222 (4): čím farnosť prispela na cudzie zbierky
+  const prispeliSme: ReactNode = prispela.length > 0 ? <div style={{ gridColumn: "1 / -1", display: "flex", flexDirection: "column", gap: 4, padding: "10px 14px", borderRadius: 14, background: "var(--nf-zlBg)" }}>
+    {prispela.slice(0, 5).map((x, i) => <span key={i} style={{ fontSize: 15, color: INK }}><b>Prispeli sme:</b> {x.kto}{x.rodina ? "" : ` · ${eur(x.suma)}`}</span>)}
+  </div> : null;
 
   // ---------- spoločné kúsky ----------
   const pozvat = (u: Ud) => {
