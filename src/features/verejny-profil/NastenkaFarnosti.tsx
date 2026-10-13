@@ -711,9 +711,13 @@ function DetailParte({ sp, strankaId, symbol, orgMeno, sablona, vz, onOsoba, onZ
   const org = zb?.farnost?.prijemca?.meno?.trim() || "";
   const data: ZbierkaData | null = zb ? { id: zb.id, nazov: `Zbierka rodiny · ${sp.d.meno}`, popis: "", overena: true, ciel: cielCislo(zb) || undefined, ...sadyZbierky(zb), media: [],
     organizacia: { meno: orgMeno, typ: "charita", mesto: "", cisla: [], stit: "Silver" } } : null;
-  const parteEl = (vyrez: boolean) => sp.obr
+  // OPRAVY 230 (204): šablóna farára sa zmestí do rámu celá aj s pásom QR (šírka podľa rámu, nie pevných 480 px)
+  const qp = sablona?.volba && sablona.volba.qr !== false && qr ? 76 : 0;
+  const sirkaRamu = (cele: boolean) => cele ? Math.min(sirka - 16, (vyska - 90) / 1.4189) : vedla ? 560 : Math.min(560, sirka - 32);
+  const sirkaPlagatu = (cele: boolean) => { const w = sirkaRamu(cele); return Math.floor(Math.min(w, (w * 210 / 148) * 360 / (510 + qp))); };
+  const parteEl = (vyrez: boolean, cele = false) => sp.obr
     ? <img src={sp.obr} alt={`Parte · ${sp.d.meno}`} style={vyrez ? { width: "100%", height: "100%", objectFit: "cover", objectPosition: "top", display: "block" } : { width: "100%", height: "100%", objectFit: "contain", display: "block", background: "#fff" }} />
-    : sablona?.u && sablona.volba ? <div style={{ display: "flex", justifyContent: "center", background: "#fff", height: "100%", overflow: "hidden" }}><Plagat u={sablona.u} volba={sablona.volba} vz={vz} sirka={vyrez ? Math.min(560, sirka - 32) : sablona.volba.qr !== false && qr ? 480 : 520} qr={qr} qrText={zb ? "Prispieť rodine" : "Naša farnosť"} /></div>
+    : sablona?.u && sablona.volba ? <div style={{ display: "flex", justifyContent: "center", background: "#fff", height: "100%", overflow: "hidden" }}><Plagat u={sablona.u} volba={sablona.volba} vz={vz} sirka={vyrez ? Math.min(560, sirka - 32) : sirkaPlagatu(cele)} qr={qr} qrText={zb ? "Prispieť rodine" : "Naša farnosť"} hotove /></div>
     : <ParteKarta sp={sp} symbol={symbol} qr={qr} />;
   const organizuje = org ? <div className="zb-pol" style={{ padding: "4px 16px 12px", display: "flex", alignItems: "center", gap: 10 }}>
     <span aria-hidden="true" style={{ flex: "none", width: 40, height: 40, borderRadius: "50%", background: "var(--gSoft)", color: "var(--gInk)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 800 }}>{iniciy(org)}</span>
@@ -747,7 +751,7 @@ function DetailParte({ sp, strankaId, symbol, orgMeno, sablona, vz, onOsoba, onZ
       </div>
       {cele && <CelaObrazovka label="Parte na celú obrazovku" onZavri={() => setCele(false)}>
         <div style={{ flex: 1, minHeight: 0, overflow: "auto", display: "flex", justifyContent: "center", alignItems: "flex-start", padding: "0 8px 8px" }}>
-          <div style={{ width: "min(100%, calc((100vh - 90px) / 1.4189))", aspectRatio: "148 / 210", background: "#fff" }}>{parteEl(false)}</div>
+          <div style={{ width: "min(100%, calc((100vh - 90px) / 1.4189))", aspectRatio: "148 / 210", background: "#fff" }}>{parteEl(false, true)}</div>
         </div>
       </CelaObrazovka>}
     </div></SektorDarcuKontext.Provider>, document.body);

@@ -131,7 +131,7 @@ export function rolaText(u: UdajeOznamu): string {
 // ============================================================
 // PLAGÁT — jedna šablóna (360 × 510, zmenší sa na šírku `sirka`)
 // ============================================================
-export function Plagat({ u, volba, vz, sirka = 360, qr, qrText = "Prispieť rodine" }: { u: UdajeOznamu; volba: VolbaSablony; vz: Vzhlad; sirka?: number; /** OPRAVY 204: data URL QR (zbierka, inak stránka farnosti) */ qr?: string; qrText?: string }) {
+export function Plagat({ u, volba, vz, sirka = 360, qr, qrText = "Prispieť rodine", hotove }: { u: UdajeOznamu; volba: VolbaSablony; vz: Vzhlad; sirka?: number; /** OPRAVY 204: data URL QR (zbierka, inak stránka farnosti) */ qr?: string; qrText?: string; /** OPRAVY 230: hotové parte na stránke — bez prázdneho miesta na fotku */ hotove?: boolean }) {
   useFontyOrnamentu();
   const V = VARIANTY[volba.v] ?? VARIANTY[0];
   const P = PAL[vz] ?? PAL.kronika;
@@ -161,7 +161,7 @@ export function Plagat({ u, volba, vz, sirka = 360, qr, qrText = "Prispieť rodi
   const menoSt: CSSProperties = { fontSize: V.ns, lineHeight: 1.1, fontFamily: V.serif ? "'Great Vibes','Cormorant Garamond',serif" : "inherit", fontWeight: V.serif ? 400 : 800,
     fontStyle: V.it ? "italic" : "normal", textTransform: V.up ? "uppercase" : "none", letterSpacing: V.up ? ".06em" : "-.01em", opacity: u.meno.trim() ? 1 : 0.4, color: V.L === "s" && !V.it ? ink : acc };
   const symEl = maSym && <span style={{ position: "relative", flex: "none", width: sw, height: sh, background: V.medal ? medailon(mot, "#B08A3E", "#24201D") : symbol(mot, acc) }} />;
-  const fotoEl = (st: CSSProperties) => volba.sFotkou && <span style={{ flex: "none", background: foto, filter: flt, boxSizing: "border-box", ...st }} />;
+  const fotoEl = (st: CSSProperties) => volba.sFotkou && !(hotove && !u.foto) && <span style={{ flex: "none", background: foto, filter: flt, boxSizing: "border-box", ...st }} />;
   const texty = (sym: boolean): ReactNode => <>
     <span style={{ position: "relative", fontSize: 10, fontWeight: 800, letterSpacing: ".14em", color: acc }}>{sv ? "SVADOBNÉ OZNÁMENIE" : "OZNÁMENIE"}</span>
     {maCitat && <span style={{ position: "relative", fontSize: 12.5, fontStyle: "italic", lineHeight: 1.45, opacity: 0.8, maxWidth: 260 }}>{citat}</span>}
