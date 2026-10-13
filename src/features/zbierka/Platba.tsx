@@ -248,7 +248,8 @@ export function PlatobneOkno({ kanal, suma: sumaStart, nazov, registrovany, bonu
 
   return createPortal(
     <div className="deed-platba" role="dialog" aria-modal="true" aria-label="Platba"
-      style={{ position: "fixed", inset: 0, zIndex: 150, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+      // OPRAVY 209/234: platba nad oknami stránky farnosti (detail zbierky, parte = 1000–1100), inak by sa otvorila pod nimi
+      style={{ position: "fixed", inset: 0, zIndex: 1300, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
       <div onClick={zatvor} style={{ position: "absolute", inset: 0, background: "var(--scrim)", opacity: otvorene ? 1 : 0, transition: "opacity .32s ease" }} />
       <div style={{ ...okno, background: "var(--sheet)", color: "var(--ink)", display: "flex", flexDirection: "column", overflow: "hidden",
         transition: "transform .32s cubic-bezier(.2,.8,.2,1), opacity .32s ease" }}>

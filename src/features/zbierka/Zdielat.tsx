@@ -27,7 +27,8 @@ export function Harok({ onClose, children, hlavicka, podHlavickou, paticka, plna
   });
   return createPortal(
     <div className="deed-platba" role="dialog" aria-modal="true"
-      style={{ position: "fixed", inset: 0, zIndex: z, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+      // OPRAVY 209/234: hárky modulu (Zdieľať, Pravidelná, Reťaz, Podporiť DEED+) nad oknami stránky farnosti; poradie medzi hárkami ostáva
+      style={{ position: "fixed", inset: 0, zIndex: z + 1150, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
       <div onClick={zavri} style={{ position: "absolute", inset: 0, background: "var(--scrim)", opacity: otv ? 1 : 0, transition: "opacity .32s ease" }} />
       <div style={{ ...(wide
           ? { position: "relative", width: desktop ? 560 : 640, maxWidth: "calc(100vw - 32px)", maxHeight: "calc(100vh / var(--pismo, 1) - 48px)", borderRadius: 28, transform: otv ? "none" : "translateY(24px)", opacity: otv ? 1 : 0 }

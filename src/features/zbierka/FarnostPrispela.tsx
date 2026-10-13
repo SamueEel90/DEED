@@ -63,7 +63,7 @@ export function PrispietZaFarnost({ refId, nazov, vlastnik }: { refId: string; n
   const ok = Number.isFinite(n) && n > 0;
   return <>
     <button type="button" onClick={() => setOtv(true)} style={{ display: "flex", alignItems: "center", minHeight: 44, margin: "6px 0 2px", padding: "0 2px", border: "none", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 15, fontWeight: 800, color: "var(--gold)", boxShadow: "none" }}>{`Prispieť ako ${f.meno} ›`}</button>
-    {otv && !plat && createPortal(<div className="deed-platba" role="dialog" aria-modal="true" aria-label={`Prispieť ako ${f.meno}`} onClick={() => setOtv(false)} style={{ position: "fixed", inset: 0, zIndex: 150, background: "var(--scrim)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+    {otv && !plat && createPortal(<div className="deed-platba" role="dialog" aria-modal="true" aria-label={`Prispieť ako ${f.meno}`} onClick={() => setOtv(false)} style={{ position: "fixed", inset: 0, zIndex: 1300, background: "var(--scrim)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
       <section onClick={(e) => e.stopPropagation()} style={{ width: "100%", maxWidth: 520, borderRadius: 22, background: "var(--sheet)", border: "1px solid var(--cardBd)", padding: "20px 22px", display: "flex", flexDirection: "column", gap: 14, color: "var(--ink)", fontFamily: "'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,sans-serif" }}>
         <span style={{ display: "flex", flexDirection: "column", gap: 2 }}>
           <b style={{ fontSize: 19 }}>{`Prispieť ako ${f.meno}`}</b>
