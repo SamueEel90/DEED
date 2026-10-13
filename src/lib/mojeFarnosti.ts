@@ -8,7 +8,9 @@ import { useEffect, useSyncExternalStore } from "react";
 import { supabase } from "./supabase";
 import { UKAZKOVE_STRANKY } from "./mojeStranky";
 
-export interface MojeFarnosti { domovska: string | null; sled: string[] }
+/** KARTA 62: sledovaný kostol = miesto konkrétnej farnosti (moje_kostoly, 0086) */
+export interface SledovanyKostol { stranka: string; miesto: string }
+export interface MojeFarnosti { domovska: string | null; sled: string[]; /** KARTA 62 */ kostoly: SledovanyKostol[]; /** KARTA 62: Môj kostol pri domovskej (id miesta) */ mojKostol: string | null }
 export interface FarnostAdresar { id: string; nazov: string; cirkev: string; obec: string | null; lat: number | null; lng: number | null }
 
 /** 18 cirkví a náboženských spoločností registrovaných MK SR: [kód, názov, popis, rodina] */
@@ -23,6 +25,7 @@ export const RODINY_CIRKVI = ["KATOLÍCKE A VÝCHODNÉ", "EVANJELICKÉ A PROTEST
 export const skratkaCirkvi = (k: string) => (k === "RKCr" ? "RKC-r" : k);
 
 const KLUC = "deed.mojeFarnosti.v1";
+const PRAZDNE: MojeFarnosti = { domovska: null, sled: [], kostoly: [], mojKostol: null };
 let stav: MojeFarnosti = nacitajLS();
 let adresar: FarnostAdresar[] | null = null;
 let nacitane = false;
@@ -31,20 +34,27 @@ const posl = new Set<() => void>();
 const zmena = () => { ver++; posl.forEach((f) => f()); };
 
 function nacitajLS(): MojeFarnosti {
-  try { const v = JSON.parse(localStorage.getItem(KLUC) ?? "null") as MojeFarnosti | null; return v ? { domovska: v.domovska ?? null, sled: Array.isArray(v.sled) ? v.sled : [] } : { domovska: null, sled: [] }; } catch { return { domovska: null, sled: [] }; }
+  try {
+    const v = JSON.parse(localStorage.getItem(KLUC) ?? "null") as Partial<MojeFarnosti> | null;
+    return v ? { domovska: v.domovska ?? null, sled: Array.isArray(v.sled) ? v.sled : [], kostoly: Array.isArray(v.kostoly) ? v.kostoly : [], mojKostol: v.mojKostol ?? null } : PRAZDNE;
+  } catch { return PRAZDNE; }
 }
+const rovnaky = (a: SledovanyKostol, b: SledovanyKostol) => a.stranka === b.stranka && a.miesto === b.miesto;
 function nastav(s: MojeFarnosti) {
-  stav = { domovska: s.domovska, sled: [...new Set(s.sled.filter((x) => x && x !== s.domovska))] };
+  stav = { domovska: s.domovska, sled: [...new Set(s.sled.filter((x) => x && x !== s.domovska))],
+    kostoly: s.kostoly.filter((k, i, l) => k.stranka && k.miesto && l.findIndex((y) => rovnaky(y, k)) === i), mojKostol: s.domovska ? s.mojKostol : null };
   try { localStorage.setItem(KLUC, JSON.stringify(stav)); } catch { /* LS */ }
   zmena();
 }
 
 async function nacitajDB() {
   if (!supabase) return;
-  const { data, error } = await supabase.from("moje_farnosti").select("stranka, domovska");
-  if (error || !data) return;
-  const rows = data as { stranka: string; domovska: boolean }[];
-  nastav({ domovska: rows.find((r) => r.domovska)?.stranka ?? null, sled: rows.filter((r) => !r.domovska).map((r) => r.stranka) });
+  const [f, k] = await Promise.all([supabase.from("moje_farnosti").select("stranka, domovska, moj_kostol"), supabase.from("moje_kostoly").select("stranka, miesto")]);
+  if (f.error || !f.data) return;
+  const rows = f.data as { stranka: string; domovska: boolean; moj_kostol: string | null }[];
+  const hl = rows.find((r) => r.domovska);
+  nastav({ domovska: hl?.stranka ?? null, sled: rows.filter((r) => !r.domovska).map((r) => r.stranka), mojKostol: hl?.moj_kostol ?? null,
+    kostoly: k.error || !k.data ? stav.kostoly : (k.data as SledovanyKostol[]) });
 }
 async function nacitajAdresarDB(): Promise<FarnostAdresar[]> {
   if (!supabase) {
@@ -76,7 +86,7 @@ const chyba = (e: { message?: string } | null) => { if (e) throw new Error(e.mes
 /** nová domovská (stará ostane medzi sledovanými); null = odstrániť domovskú */
 export async function nastavDomovsku(id: string | null): Promise<void> {
   const stara = stav.domovska;
-  nastav({ domovska: id, sled: id ? [...stav.sled.filter((x) => x !== id), ...(stara && stara !== id ? [stara] : [])] : stav.sled });
+  nastav({ ...stav, domovska: id, sled: id ? [...stav.sled.filter((x) => x !== id), ...(stara && stara !== id ? [stara] : [])] : stav.sled, mojKostol: id === stara ? stav.mojKostol : null });
   if (supabase) { const { error } = await supabase.rpc("nastav_domovsku", { p_stranka: id }); chyba(error); }
 }
 export async function pridajSledovanu(id: string): Promise<void> {
@@ -87,6 +97,31 @@ export async function pridajSledovanu(id: string): Promise<void> {
 export async function odstranSledovanu(id: string): Promise<void> {
   nastav({ ...stav, sled: stav.sled.filter((x) => x !== id) });
   if (supabase) { const { error } = await supabase.from("moje_farnosti").delete().eq("stranka", id).eq("domovska", false); chyba(error); }
+}
+
+// ---- KARTA 62: Sledovať tento kostol · Môj kostol · počet sledujúcich per miesto (0086) ----
+export const sledujemKostol = (stranka: string, miesto: string) => stav.kostoly.some((k) => k.stranka === stranka && k.miesto === miesto);
+export async function sledujKostol(stranka: string, miesto: string): Promise<void> {
+  if (sledujemKostol(stranka, miesto)) return;
+  nastav({ ...stav, kostoly: [...stav.kostoly, { stranka, miesto }] });
+  if (supabase) { const { error } = await supabase.from("moje_kostoly").insert({ stranka, miesto }); chyba(error); }
+}
+export async function prestanKostol(stranka: string, miesto: string): Promise<void> {
+  nastav({ ...stav, kostoly: stav.kostoly.filter((k) => !rovnaky(k, { stranka, miesto })) });
+  if (supabase) { const { error } = await supabase.from("moje_kostoly").delete().eq("stranka", stranka).eq("miesto", miesto); chyba(error); }
+}
+/** Môj kostol pri domovskej farnosti (null = žiadny) */
+export async function nastavMojKostol(miesto: string | null): Promise<void> {
+  if (!stav.domovska) return;
+  nastav({ ...stav, mojKostol: miesto });
+  if (supabase) { const { error } = await supabase.rpc("nastav_moj_kostol", { p_miesto: miesto }); chyba(error); }
+}
+/** počet sledujúcich pri každom mieste (len správca); bez DB len vlastné sledovanie (test) */
+export async function sledujuciMiest(stranka: string): Promise<Record<string, number>> {
+  if (!supabase) return Object.fromEntries(stav.kostoly.filter((k) => k.stranka === stranka).map((k) => [k.miesto, 1]));
+  const { data, error } = await supabase.rpc("sledujuci_miest", { p_stranka: stranka });
+  if (error || !data) return {};
+  return Object.fromEntries((data as { miesto: string; pocet: number }[]).map((r) => [r.miesto, Number(r.pocet)]));
 }
 
 // ---- okno Adresára (otvára ho Viera aj okno Moje farnosti na stránke farnosti) ----

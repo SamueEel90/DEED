@@ -36,7 +36,7 @@ import { CirkevFarnosti } from "./CirkevFarnosti";
 import { PripnutieVyber, PripnuteZoznam } from "./PripnuteZbierky";
 import { LudiaFarnosti } from "./LudiaFarnosti";
 import { BrigadyFarnosti } from "./BrigadyFarnosti";
-import { useSlovaFarnosti } from "@/lib/mojeFarnosti";
+import { useSlovaFarnosti, sledujuciMiest } from "@/lib/mojeFarnosti";
 import { usePrispela } from "@/lib/farnostPrispela";
 import type { OtazkyFaq } from "./NastaveniaCharity";
 import { DetiMladezFarnosti } from "./DetiMladezFarnosti";
@@ -143,6 +143,9 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
   const [vid, setVid] = useState(() => nacitajStav<"zobrazit" | "skryt" | "len-farar">("viditelnost", strankaId, "zobrazit"));
   // KARTA 62: kostoly a filiálky = miesta farnosti (prvé z registrácie); kľúč miesta = kľúč kostola v kalendári
   const kostoly = useMiesta(strankaId);
+  // KARTA 62: Nástroje — počet sledujúcich pri každom mieste (sledujuci_miest, 0086)
+  const [sledM, setSledM] = useState<Record<string, number> | null>(null);
+  useEffect(() => { if (sub !== "nastroje" || kostoly.length < 2) return; let ziva = true; void sledujuciMiest(strankaId).then((x) => { if (ziva) setSledM(x); }, () => undefined); return () => { ziva = false; }; }, [sub, strankaId, kostoly.length]);
 
   // KARTA 56D §3: pripnuté sekcie (sprava_piny, najviac 6) — prvý príchod bez pinov
   const [piny, setPiny] = useState<Pin[]>(() => pinyZPamate<Pin>(strankaId, []));
@@ -499,6 +502,7 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
     { t: "Sledujúci", s: "dostávajú ohlášky a oznamy · pripravujeme" }, // PLACEBO — karta 56D
     { t: "Darcovia", s: "mená bez súm · bez mena = Bohu známy veriaci", v: String(darcovNum) },
     { t: "Pravidelná podpora", s: "mesačne, kartou alebo SEPA · pripravujeme" }, // PLACEBO — karta 56D
+    ...(kostoly.length > 1 ? kostoly.map((m) => ({ t: `Sledujú kostol · ${m.nazov}`, s: "dostávajú len to, čo platí pre tento kostol", v: sledM ? String(sledM[m.id] ?? 0) : "…" })) : []),
   ]);
   const mesOd = zaciatokMesiaca();
   const mesDary = vsetkyDary.filter((r) => r.cas >= mesOd);

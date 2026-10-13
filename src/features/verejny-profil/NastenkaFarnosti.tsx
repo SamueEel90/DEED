@@ -10,13 +10,13 @@
 import { useZamokVrstvy } from "@/lib/zamokVrstvy";
 import { useFarbaLinie } from "@/lib/liniaStranky";
 import { useMiesta, type Miesto } from "@/lib/miestaFarnosti";
-import { NaseKostolyBlok, PodstrankaMiesta } from "./NaseKostoly";
+import { NaseKostolyBlok, PodstrankaMiesta, otvorKostolPoPrichode, vezmiCakajuciKostol } from "./NaseKostoly";
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import type { ProfilStranky } from "@/lib/profilStranky";
 import { cistyText } from "@/lib/richtext";
 import { usePouzivatel } from "@/lib/pouzivatel";
-import { useMojeFarnosti, useSlovaFarnosti, pridajSledovanu, odstranSledovanu, nazovFarnosti, otvorAdresar } from "@/lib/mojeFarnosti";
+import { useMojeFarnosti, useSlovaFarnosti, pridajSledovanu, odstranSledovanu, nazovFarnosti, otvorAdresar, sledujemKostol, sledujKostol, prestanKostol, nastavMojKostol, type SledovanyKostol } from "@/lib/mojeFarnosti";
 import { DrzTlacidlo } from "@/features/viera/AdresarCirkvi";
 import { otvorVerejnyProfil, odkazQrStranky } from "./otvor";
 import { centralnaZPamate, nacitajCentralnuZbierku, nazovHlavnej, useZmenyCentralnej } from "@/lib/centralnaZbierka";
@@ -275,7 +275,14 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, nahlad,
   const farbaLinie = useFarbaLinie(strankaId, SLF.cirkev); // OPRAVY 243
   // KARTA 62: miesta farnosti (blok Naše kostoly len pri 2+ miestach, podstránka miesta)
   const miestaF = useMiesta(strankaId);
-  const [miesto, setMiesto] = useState<Miesto | null>(null);
+  const [miestoId, setMiestoId] = useState<string | null>(() => vezmiCakajuciKostol(strankaId));
+  const miesto = miestoId ? miestaF.find((m) => m.id === miestoId) ?? null : null;
+  const setMiesto = (m: Miesto | null) => setMiestoId(m?.id ?? null);
+  // KARTA 62: Sledovať tento kostol — ťuk prepína Sledujem ✓, ďalší ťuk = prestať
+  const sledKostol = (m: Miesto) => { const on = sledujemKostol(strankaId, m.id); return (
+    <button type="button" aria-pressed={on} onClick={() => { void (on ? prestanKostol(strankaId, m.id) : sledujKostol(strankaId, m.id)).catch((e: Error) => toast(e.message)); }}
+      style={{ alignSelf: "flex-start", marginTop: 8, minHeight: 48, padding: "0 20px", borderRadius: 14, border: on ? "none" : `1.5px solid ${LINKA}`, background: on ? "var(--nf-gSoft)" : PAPIER, color: on ? "var(--nf-gInk)" : INK, fontFamily: "inherit", fontSize: 15.5, fontWeight: 800, cursor: "pointer" }}>
+      {on ? "Sledujem ✓" : "Sledovať tento kostol"}</button>); };
   // Martin 13. 10.: riadok autora = kto príspevok naozaj pridal (meno, fotka, rola); bez profilu logo a názov farnosti. Duchovný nikdy namiesto iného autora.
   const hlavickaFar = (af?: AutorF) => {
     const m = af?.meno.trim() || meno, f = af?.meno.trim() ? af.foto ?? "" : logo ?? "";
@@ -648,7 +655,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, nahlad,
 
       {/* ---------- (12) päta: Tento týždeň vo farnosti + Farský úrad (OPRAVY 220, 221) ---------- */}
       {(maKal || maUrad) && <div data-blok="kal" style={{ padding: `40px ${PAD_X} 56px`, borderTop: "4px solid var(--nf-linia)", display: "flex", flexWrap: "wrap", gap: "36px 48px", alignItems: "flex-start", scrollMarginTop: 16 }}>
-        {maKal && <TyzdenFarnosti strankaId={strankaId} slovo={SLF.omsa} siroka={siroka} cas={cas} miestaF={miestaF} />}
+        {maKal && <TyzdenFarnosti key={`t${jeHl ? MF.mojKostol ?? "" : ""}`} strankaId={strankaId} slovo={SLF.omsa} siroka={siroka} cas={cas} miestaF={miestaF} mojKostol={jeHl ? MF.mojKostol : null} />}
         {maUrad && <div style={{ flex: "0 1 280px", minWidth: 0, display: "flex", flexDirection: "column", gap: 12 }}>
           {urad.length > 0 && <><span style={kicker()}>{miestaF.length > 1 ? "KANCELÁRIA FARSKÉHO ÚRADU" : "FARSKÝ ÚRAD"}</span>
           <span style={{ fontSize: 16.5, lineHeight: 1.6, color: INK2, whiteSpace: "pre-line" }}>{urad.join("\n")}</span></>}
@@ -687,7 +694,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, nahlad,
       {album && <ProhliadacAlbumu a={album} onZavri={() => setAlbum(null)} />}
       {det && <DetailZbierky d={det} strankaId={strankaId} onZavri={() => setDet(null)} />}
       {miesto && <PodstrankaMiesta m={miesto} strankaId={strankaId} menoFarnosti={meno} siroka={siroka} zbierky={zb.filter((z) => druh(z) === "farnost" && z.farnost?.miesto === miesto.id).map((z) => ({ id: z.id, nazov: z.nazov || "Zbierka", onTap: () => { setMiesto(null); otvorZbierku(z); } }))} linia={farbaLinie}
-        onKalendar={() => { setMiesto(null); window.setTimeout(() => posunNaBlok("kal"), 30); }} onZavri={() => setMiesto(null)} />}
+        onKalendar={() => { setMiesto(null); window.setTimeout(() => posunNaBlok("kal"), 30); }} onZavri={() => setMiesto(null)} sledovat={sledKostol(miesto)} />}
       {parte && <DetailParte sp={parte} strankaId={strankaId} symbol={symbol} orgMeno={meno} sablona={parte.it && !obrFar(parte.it) ? sablonaFar(parte.it) : null} vz={vz}
         onOsoba={(m) => setOsoba(m)} onZavri={() => { setParte(null); window.setTimeout(() => posunNaBlok("spom"), 30); }} />}
       {tes && createPortal(<div role="dialog" aria-modal="true" aria-label={tes.meno} onClick={() => setTes(null)} style={{ ...PREMENNE, position: "fixed", inset: 0, zIndex: 1000, background: "var(--c-bg)", overflowY: "auto", overscrollBehavior: "contain", padding: 16, boxSizing: "border-box", display: "flex", justifyContent: "center", alignItems: "flex-start", fontFamily: "'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,sans-serif" }}>
@@ -717,7 +724,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, nahlad,
           </>; })()}
         </div>
       </div>, document.body)}
-      {mfOn && <MojeFarnostiOkno strankaId={strankaId} domovska={MF.domovska} sled={MF.sled} hlaska={mfHl}
+      {mfOn && <MojeFarnostiOkno strankaId={strankaId} domovska={MF.domovska} sled={MF.sled} kostoly={MF.kostoly} mojKostol={MF.mojKostol} onKostol={setMiestoId} hlaska={mfHl}
         onHlaska={(t) => { setMfHl(t); window.setTimeout(() => setMfHl(null), 3000); }} onZavri={() => setMfOn(false)} />}
     </div>);
 }
@@ -1015,7 +1022,8 @@ function DetailZbierky({ d, strankaId, onZavri }: { d: DetailF; strankaId: strin
 }
 
 /** KARTA 60 §3 — okno Moje farnosti (tlačidlo Moja farnosť ⌄ / Sledovaná farnosť ⌄ na stránke farnosti) */
-function MojeFarnostiOkno({ strankaId, domovska, sled, hlaska, onHlaska, onZavri }: { strankaId: string; domovska: string | null; sled: string[]; hlaska: string | null; onHlaska: (t: string) => void; onZavri: () => void }) {
+function MojeFarnostiOkno({ strankaId, domovska, sled, kostoly, mojKostol, onKostol, hlaska, onHlaska, onZavri }: { strankaId: string; domovska: string | null; sled: string[];
+  /** KARTA 62 */ kostoly: SledovanyKostol[]; mojKostol: string | null; onKostol: (miesto: string) => void; hlaska: string | null; onHlaska: (t: string) => void; onZavri: () => void }) {
   useEffect(() => { const k = (e: KeyboardEvent) => { if (e.key === "Escape") onZavri(); }; window.addEventListener("keydown", k); return () => window.removeEventListener("keydown", k); }, [onZavri]);
   const riadky: [string, boolean][] = [...(domovska ? [[domovska, true] as [string, boolean]] : []), ...sled.map((id) => [id, false] as [string, boolean])];
   return createPortal(
@@ -1033,7 +1041,10 @@ function MojeFarnostiOkno({ strankaId, domovska, sled, hlaska, onHlaska, onZavri
             </button>
             {!hl && <DrzTlacidlo ms={1200} styl={{ flex: "none", minHeight: 48, padding: "0 14px", borderRadius: 12, border: `1.5px solid ${CERVENA}`, background: PAPIER, color: CERVENA, fontSize: 14.5, fontWeight: 800 }}
               onHotovo={() => { const n = nazovFarnosti(id); void odstranSledovanu(id).catch((e: Error) => toast(e.message)); onHlaska(`Odstránené zo sledovaných ✓ ${n}`); }}>Podržte · odstrániť</DrzTlacidlo>}
+            {hl && <MojKostolVolba stranka={id} mojKostol={mojKostol} />}
           </div>); })}
+        {kostoly.map((k) => <KostolRiadok key={`${k.stranka}|${k.miesto}`} k={k} tu={k.stranka === strankaId} onHlaska={onHlaska}
+          onOtvor={() => { onZavri(); if (k.stranka === strankaId) onKostol(k.miesto); else { otvorKostolPoPrichode(k.stranka, k.miesto); otvorVerejnyProfil(k.stranka); } }} />)}
         {hlaska && <span role="status" style={{ padding: "12px 14px", borderRadius: 14, background: "var(--nf-gSoft)", border: `2px solid ${ZELENA}`, fontSize: 15.5, fontWeight: 800, color: "var(--nf-gInk)" }}>{hlaska}</span>}
         <span style={{ fontSize: 14, lineHeight: 1.5, color: INK3 }}>Domovskú zmeníte v Adresári cirkví.</span>
         <button type="button" onClick={() => { onZavri(); otvorAdresar("‹ Späť na moju farnosť"); }} style={{ minHeight: 60, marginTop: 6, padding: "10px 16px", borderRadius: 14, border: "none", background: ZELENA_TL, color: "#fff", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "flex-start", justifyContent: "center", gap: 2, textAlign: "left", fontFamily: "inherit" }}>
@@ -1043,6 +1054,33 @@ function MojeFarnostiOkno({ strankaId, domovska, sled, hlaska, onHlaska, onZavri
         <span style={{ fontSize: 14, lineHeight: 1.5, color: INK3, paddingTop: 4 }}>Ťuknite na farnosť a otvorí sa jej stránka.</span>
       </div>
     </div>, document.body);
+}
+
+/** KARTA 62: riadok sledovaného kostola v okne Moje farnosti („Notre Dame · Farnosť Trenčín“) */
+function KostolRiadok({ k, tu, onOtvor, onHlaska }: { k: SledovanyKostol; tu: boolean; onOtvor: () => void; onHlaska: (t: string) => void }) {
+  const m = useMiesta(k.stranka, true).find((x) => x.id === k.miesto);
+  const n = `${m?.nazov ?? "Kostol"} · ${nazovFarnosti(k.stranka)}`;
+  return (
+    <div style={{ padding: "10px 12px", borderRadius: 14, border: `1px solid ${LINKA}`, background: PAPIER, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+      <button type="button" onClick={onOtvor} style={{ flex: "1 1 180px", minWidth: 0, minHeight: 48, textAlign: "left", border: "none", background: "transparent", padding: 0, cursor: "pointer", display: "flex", flexDirection: "column", gap: 2, fontFamily: "inherit", color: INK }}>
+        <b style={{ fontSize: 17 }}>{n}</b>
+        <span style={{ fontSize: 14, color: INK3 }}>sledovaný kostol{tu ? " · farnosť, kde práve ste" : ""}</span>
+      </button>
+      <DrzTlacidlo ms={1200} styl={{ flex: "none", minHeight: 48, padding: "0 14px", borderRadius: 12, border: `1.5px solid ${CERVENA}`, background: PAPIER, color: CERVENA, fontSize: 14.5, fontWeight: 800 }}
+        onHotovo={() => { void prestanKostol(k.stranka, k.miesto).catch((e: Error) => toast(e.message)); onHlaska(`Odstránené zo sledovaných ✓ ${n}`); }}>Podržte · odstrániť</DrzTlacidlo>
+    </div>);
+}
+/** KARTA 62: Môj kostol pri domovskej farnosti (nepovinné) — kalendár na stránke farnosti sa otvorí s jeho čipom */
+function MojKostolVolba({ stranka, mojKostol }: { stranka: string; mojKostol: string | null }) {
+  const l = useMiesta(stranka);
+  if (l.length < 2) return null;
+  return (
+    <label style={{ flex: "1 1 100%", display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+      <span style={{ fontSize: 14.5, fontWeight: 800 }}>Môj kostol</span>
+      <select value={l.some((m) => m.id === mojKostol) ? mojKostol ?? "" : ""} onChange={(e) => { void nastavMojKostol(e.target.value || null).catch((er: Error) => toast(er.message)); }} aria-label="Môj kostol"
+        style={{ flex: "1 1 160px", minWidth: 0, minHeight: 44, padding: "0 12px", borderRadius: 12, border: `1.5px solid ${LINKA}`, background: "#fff", fontFamily: "inherit", fontSize: 15, fontWeight: 700, color: INK }}>
+        <option value="">Nevybraný · všetky kostoly</option>{l.map((m) => <option key={m.id} value={m.id}>{m.nazov}</option>)}</select>
+    </label>);
 }
 
 /** OPRAVY 209 (prototyp Platobny modul pohrebna zbierka): pod kryptom jedno tlačidlo Kondolovať · počet (= Úprimnú sústrasť pri parte) */

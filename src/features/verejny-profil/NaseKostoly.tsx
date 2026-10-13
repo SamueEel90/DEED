@@ -77,6 +77,14 @@ function KartaMiesta({ m, k, siroka, onTap }: { m: Miesto; k: KalKostol; siroka:
     </button>);
 }
 
+// KARTA 62: Moje farnosti → „Notre Dame · Farnosť Trenčín“ otvorí stránku farnosti rovno s podstránkou kostola
+let cakaKostol: { stranka: string; miesto: string } | null = null;
+export const otvorKostolPoPrichode = (stranka: string, miesto: string) => { cakaKostol = { stranka, miesto }; };
+export const vezmiCakajuciKostol = (stranka: string): string | null => {
+  if (cakaKostol?.stranka !== stranka) return null;
+  const m = cakaKostol.miesto; cakaKostol = null; return m;
+};
+
 export interface ZbierkaNaMiesto { id: string; nazov: string; onTap: () => void }
 
 /** podstránka miesta — plná vrstva, zatvára sa cez ‹ Späť */
