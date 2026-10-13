@@ -32,6 +32,7 @@ import { CirkevFarnosti } from "./CirkevFarnosti";
 import { PripnutieVyber, PripnuteZoznam } from "./PripnuteZbierky";
 import { LudiaFarnosti } from "./LudiaFarnosti";
 import { BrigadyFarnosti } from "./BrigadyFarnosti";
+import { DetiMladezFarnosti } from "./DetiMladezFarnosti";
 import { PredplatnePas, PredplatneFarnosti } from "./PredplatneFarnosti";
 import { ObrNastavenia } from "./SpravaStranky";
 import { ObrOznamenia, ObrUdaje, ObrZariadenia, ObrSuhlasy, ObrFaq, ObrPodpora } from "./NastaveniaCharity";
@@ -498,6 +499,8 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
     <LudiaFarnosti strankaId={strankaId} meno={meno} mobil={mobil}>
       {/* KARTA 61 §2: Dobrovoľníctvo a organizovanie brigád (vlastný modul, blok Pomôž) */}
       <BrigadyFarnosti strankaId={strankaId} mobil={mobil} />
+      {/* OPRAVY 211: Deti a mládež pod Dobrovoľníctvom */}
+      <DetiMladezFarnosti strankaId={strankaId} mobil={mobil} />
     </LudiaFarnosti>
   </>;
   // KARTA 57 B.1: Nástroje a štatistiky — sledujúci, darcovia, QR do kostola

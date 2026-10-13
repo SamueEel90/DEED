@@ -42,7 +42,7 @@ export function LudiaFarnosti({ strankaId, meno: menoFarnosti, mobil, children }
   const T = SL.titul, Tg = SL.titul2p, Sg = SL.jednotka2p, tl = T.charAt(0).toLowerCase() + T.slice(1);
   const ROLY: [string, string][] = [[T, "všetko, aj peňaženka a ľudia"], ...(SL.dozorca ? [["Dozorca", `rovnaké práva ako ${tl}`] as [string, string]] : []),
     ["Správca stránky", `všetko za ${Tg} · platbu z peňaženky ${tl} potvrdí`], ["Kaplán / zástupca", "zbierky, omše, oznamy, profil · bez peňaženky a ľudí"],
-    ["Kostolník / pomocník", "len omše, kalendár a oznamy"], ["Účtovník", "len peňaženka a výpisy · nič neupravuje"]];
+    ["Kostolník / pomocník", "len omše, kalendár a oznamy"], ["Koordinátor detí a mládeže", "len sekcia Deti a mládež · stretnutia, prihlásení, fotky · bez peňaženky a ľudí"], ["Účtovník", "len peňaženka a výpisy · nič neupravuje"]];
   const rI = (n: string) => Math.max(0, ROLY.findIndex((x) => x[0] === n));
 
   const D0u = { ...D0, ...((maNastavenie("duch") ? citajNastavenie("duch") : {}) as Partial<Duch>) };
