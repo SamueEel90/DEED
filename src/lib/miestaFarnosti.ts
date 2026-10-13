@@ -23,6 +23,8 @@ export interface Miesto {
   /** jedna veta na kartu */ popis: string;
   /** história na podstránku (HTML z TextovePolia), nepovinné */ historia: string;
   /** odobraté miesto: stránka zamrzne, nezmaže sa, dá sa obnoviť */ zamrznute?: boolean;
+  /** platí iná farnosť: miesto beží až po potvrdení platiteľa; po 14 dňoch bez odpovede sa žiadosť zruší */
+  platca?: { od: string; stav: "caka" | "odmietol" };
   vytvorene: string;
 }
 
@@ -42,8 +44,17 @@ export const vsetkyMiesta = (stranka: string): Miesto[] => {
   const l = nacitajStav<Miesto[] | null>("miesta", stranka, null);
   return l && l.length ? l : zRegistracie(stranka);
 };
-/** aktívne miesta (stránka, kalendár, cena) */
-export const miesta = (stranka: string): Miesto[] => vsetkyMiesta(stranka).filter((m) => !m.zamrznute);
+/** aktívne miesta (stránka, kalendár, cena) — bez odobratých a bez tých, čo čakajú na platiteľa */
+export const miesta = (stranka: string): Miesto[] => vsetkyMiesta(stranka).filter((m) => !m.zamrznute && !m.platca);
+
+/** KARTA 62: žiadosť platiteľovi — čaká (zostáva N dní) · odmietol · zrušená po 14 dňoch */
+export const LEHOTA_PLATCU_DNI = 14;
+export function stavPlatcu(m: Miesto, teraz: number): { stav: "caka" | "odmietol" | "zrusene"; dni: number } | null {
+  if (!m.platca) return null;
+  const dni = Math.min(LEHOTA_PLATCU_DNI, Math.ceil((Date.parse(m.platca.od) + LEHOTA_PLATCU_DNI * 86400000 - teraz) / 86400000));
+  if (m.platca.stav === "odmietol") return { stav: "odmietol", dni: 0 };
+  return dni > 0 ? { stav: "caka", dni } : { stav: "zrusene", dni: 0 };
+}
 
 export function useMiesta(stranka: string, vsetky = false): Miesto[] {
   useSyncExternalStore((f) => { posl.add(f); return () => { posl.delete(f); }; }, () => ver);
@@ -64,7 +75,11 @@ export async function ulozMiesto(stranka: string, m: Miesto): Promise<void> {
   await zapis(stranka, (l) => (l.some((y) => y.id === x.id) ? l.map((y) => (y.id === x.id ? x : y)) : [...l, x]));
 }
 /** odobratie = zamrznutie (stránka miesta sa nezmaže, dá sa obnoviť); cena klesne od ďalšej platby */
-export const zamrazMiesto = (stranka: string, id: string, ano: boolean) => zapis(stranka, (l) => l.map((y) => (y.id === id ? { ...y, zamrznute: ano || undefined } : y)));
+export const zamrazMiesto = (stranka: string, id: string, ano: boolean) => zapis(stranka, (l) => l.map((y) => (y.id === id ? { ...y, zamrznute: ano || undefined, platca: undefined } : y)));
+/** odpoveď platiteľa: áno = miesto beží; nie = farár dostane hlášku a ponuku zaplatiť sám */
+export const odpovedPlatcu = (stranka: string, id: string, ano: boolean) => zapis(stranka, (l) => l.map((y) => (y.id === id && y.platca ? { ...y, platca: ano ? undefined : { ...y.platca, stav: "odmietol" as const } } : y)));
+/** farár zaplatí miesto sám (po odmietnutí alebo zrušení žiadosti) */
+export const platimSam = (stranka: string, id: string) => zapis(stranka, (l) => l.map((y) => (y.id === id ? { ...y, platca: undefined } : y)));
 
 /** cena pri počte aktívnych miest a riadok pred „Podržte a uložte“ */
 export const POR = ["Prvé", "Druhé", "Tretie", "Štvrté", "Piate", "Šieste", "Siedme", "Ôsme", "Deviate", "Desiate"];
