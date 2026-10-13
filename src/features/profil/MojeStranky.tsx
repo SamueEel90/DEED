@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "@/components/toast";
 import { useLayout } from "@/components/context";
 import { usePouzivatel } from "@/lib/pouzivatel";
-import { UKAZKOVE_STRANKY, useMojeStranky, nastavAko, prepniPrezentaciu, TESTOVACIA, type Stranka } from "@/lib/mojeStranky";
+import { UKAZKOVE_STRANKY, useMojeStranky, useStrankyUctu, nastavAko, prepniPrezentaciu, TESTOVACIA, type Stranka } from "@/lib/mojeStranky";
 import { DevSimulacia } from "@/features/rola/MojDeedFiremny";
 import { useT } from "@/i18n";
 import "@/styles/platba.css";
@@ -12,12 +12,13 @@ import "@/styles/platba.css";
 const IK_PREZ = "M3 4h18v12H3zM8 20h8M12 16v4";
 const Ik = ({ d, s = 16, w = 2 }: { d: string; s?: number; w?: number }) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={w} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={d} /></svg>;
 
-/** stránky prihláseného usera (ukážka: demo účet; tvorca = jeho vlastné meno) */
+/** stránky prihláseného usera (demo účet: ukážkové; reálny účet: tie, ku ktorým má rolu v DB; tvorca = jeho vlastné meno) */
 export function useStranky(): Stranka[] {
   const ja = usePouzivatel();
-  if (!ja.demo) return [];
+  const zUctu = useStrankyUctu(!ja.demo && !!ja.cisloUctu);
+  const zoznam = ja.demo ? UKAZKOVE_STRANKY : zUctu ?? [];
   const ini = `${(ja.meno || "?")[0]}${(ja.priezvisko || "")[0] ?? ""}`.toUpperCase();
-  return UKAZKOVE_STRANKY.map((s) => (s.typ === "tvorca" ? { ...s, n: ja.celeMeno || s.n, i: ini } : s));
+  return zoznam.map((s) => (s.typ === "tvorca" ? { ...s, n: ja.celeMeno || s.n, i: ini } : s));
 }
 
 /** modrý pás režimu prezentácie */

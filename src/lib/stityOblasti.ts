@@ -6,6 +6,7 @@
 // Vyvesené štíty: user vyberie najviac 5, poradie ťahaním (lokálne, v produkcii profil na serveri).
 // ============================================================
 import { useSyncExternalStore } from "react";
+import { zaregistrujKluc, zmenene } from "./mojeData";
 import type { StitLevel } from "@/components/stit";
 import type { T } from "@/i18n";
 
@@ -82,7 +83,7 @@ const posl = new Set<() => void>();
 let ver = 0;
 const ZAKLAD: Oblast[] = ["EKO", "ART", "LEARN"];
 export const vyvesene = (): Oblast[] => { try { const s = localStorage.getItem(KLUC); return s ? JSON.parse(s) : ZAKLAD; } catch { return ZAKLAD; } };
-const uloz = (v: Oblast[]) => { try { localStorage.setItem(KLUC, JSON.stringify(v)); } catch { /* LS */ } ver++; posl.forEach((f) => f()); };
+const uloz = (v: Oblast[]) => { try { localStorage.setItem(KLUC, JSON.stringify(v)); } catch { /* LS */ } zmenene(KLUC); ver++; posl.forEach((f) => f()); };
 /** zapnúť / vypnúť vyvesenie; vráti false, keď je plno */
 export function prepniVyvesenie(o: Oblast): boolean {
   const v = vyvesene();
@@ -113,3 +114,6 @@ export function stityOblastiSubjektu(meno: string, hlavny: StitLevel, firma = fa
   void firma;
   return odNajvyssieho(out).slice(0, MAX_VYVESENE);
 }
+
+// do účtu (moje_data, 0084b)
+zaregistrujKluc(KLUC, () => { ver++; posl.forEach((f) => f()); });

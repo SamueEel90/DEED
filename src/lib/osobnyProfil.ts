@@ -2,6 +2,7 @@
 // Miesto, kde sa zdržiava: NIE adresa z registrácie ani z občianskeho — nikde sa nezobrazuje,
 // slúži len na okruh štvrť / mesto. Zatiaľ lokálne (localStorage), neskôr Supabase.
 import { useSyncExternalStore } from "react";
+import { zaregistrujKluc, zmenene } from "./mojeData";
 
 export type OsobnyProfil = {
   ulica: string; cislo: string; mesto: string;
@@ -21,9 +22,13 @@ export function nacitajOsobny(): OsobnyProfil {
 }
 export function ulozOsobny(p: OsobnyProfil) {
   try { localStorage.setItem(KLUC, JSON.stringify(p)); } catch { /* LS */ }
+  zmenene(KLUC);
   verzia++; posluchaci.forEach((f) => f());
 }
 export function useOsobnyProfil(): OsobnyProfil {
   useSyncExternalStore((f) => { posluchaci.add(f); return () => posluchaci.delete(f); }, () => verzia);
   return nacitajOsobny();
 }
+
+// do účtu (moje_data, 0084b)
+zaregistrujKluc(KLUC, () => { verzia++; posluchaci.forEach((f) => f()); });

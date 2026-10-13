@@ -7,6 +7,7 @@
 // ============================================================
 import { DeedZnacka } from "@/components/DeedZnacka";
 import { useState, type CSSProperties } from "react";
+import { zaregistrujKluc, zmenene } from "@/lib/mojeData";
 import { C, SPACE, RADIUS } from "@/theme";
 import { Sheet, tint } from "@/shared";
 import { pressable } from "@/components/pressable";
@@ -423,14 +424,27 @@ export function InzeratySheet({ entita, autor, logo, tier, toast, onPaywall, onC
 
 
 // ---------- VEREJNÁ ČASŤ — „Mám záujem" ----------
-const KLUC_ZAUJEM = (entita: string, id: string) => `deed.zaujem.${entita}.${id}`;
+// „už som prejavil záujem" = osobné → jeden kľúč v účte (moje_data, 0084b): { "entita.id": id záujemcu }
+const KLUC_ZAUJMY = "deed.zaujmy.inzeraty";
+const STARY_KLUC = (entita: string, id: string) => `deed.zaujem.${entita}.${id}`;
+const nacitajZaujmy = (): Record<string, string> => { try { return JSON.parse(localStorage.getItem(KLUC_ZAUJMY) ?? "{}") ?? {}; } catch { return {}; } };
+function mojZaujem(entita: string, id: string): string | null {
+  const z = nacitajZaujmy()[`${entita}.${id}`];
+  if (z) return z;
+  try { return localStorage.getItem(STARY_KLUC(entita, id)); } catch { return null; } // pred zjednotením kľúčov
+}
+function ulozZaujem(entita: string, id: string, hodnota: string | null) {
+  const z = nacitajZaujmy();
+  if (hodnota) z[`${entita}.${id}`] = hodnota; else delete z[`${entita}.${id}`];
+  try { localStorage.setItem(KLUC_ZAUJMY, JSON.stringify(z)); localStorage.removeItem(STARY_KLUC(entita, id)); } catch { /* LS nedostupné */ }
+  zmenene(KLUC_ZAUJMY);
+}
+zaregistrujKluc(KLUC_ZAUJMY, () => {});
 
 /** blok pod ponukou na verejnom profile: jeden klik, vlastné údaje, žiadne dopisovanie */
 export function MamZaujem({ entita, inzerat, toast }: { entita: string; inzerat: Oznam; toast: (m: string) => void }) {
   const ja = usePouzivatel();
-  const [odoslane, setOdoslane] = useState<string | null>(() => {
-    try { return localStorage.getItem(KLUC_ZAUJEM(entita, inzerat.id)); } catch { return null; }
-  });
+  const [odoslane, setOdoslane] = useState<string | null>(() => mojZaujem(entita, inzerat.id));
   const [otvorene, setOtvorene] = useState(false);
   const [meno, setMeno] = useState(ja.celeMeno ?? "");
   const [telefon, setTelefon] = useState("");
@@ -449,7 +463,7 @@ export function MamZaujem({ entita, inzerat, toast }: { entita: string; inzerat:
       stit: soStitom ? ja.tier : undefined,
     });
     if (!novy) { toast("Záujem sa nepodarilo odoslať — skúste to znova (treba byť prihlásený)."); return; }
-    try { localStorage.setItem(KLUC_ZAUJEM(entita, inzerat.id), novy); } catch { /* LS nedostupné */ }
+    ulozZaujem(entita, inzerat.id, novy);
     setOdoslane(novy);
     setOtvorene(false);
     toast("Záujem odoslaný — organizácia sa vám ozve");
@@ -457,7 +471,7 @@ export function MamZaujem({ entita, inzerat, toast }: { entita: string; inzerat:
 
   const zrus = () => {
     if (odoslane) void zrusZaujem(entita, inzerat.id, odoslane);
-    try { localStorage.removeItem(KLUC_ZAUJEM(entita, inzerat.id)); } catch { /* LS nedostupné */ }
+    ulozZaujem(entita, inzerat.id, null);
     setOdoslane(null);
     toast("Záujem zrušený");
   };

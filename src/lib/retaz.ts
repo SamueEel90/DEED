@@ -3,9 +3,10 @@
 // Zbierky idú V RADE, nie naraz: beží vždy len jedna, ďalšia začne, až keď sa
 // predošlá naplní alebo skončí. Po zapečatení sa nedá meniť nič; dá sa len
 // vytvoriť nová reťaz. Koniec radu → 100 % tvorcovi.
-// Zatiaľ lokálne (localStorage) — rovnaký tvar pôjde do Supabase.
+// Prihlásený: rad je v účte (moja_retaz, 0080b), localStorage je cache; inak len lokálne.
 // ============================================================
-import { useSyncExternalStore } from "react";
+import { useEffect, useSyncExternalStore } from "react";
+import { supabase } from "./supabase";
 import { ZBIERKY, najdiZbierku } from "./zbierky";
 import { darcoviaPre } from "./darcovia";
 
@@ -15,7 +16,7 @@ export const zaokruhliPct = (v: number) => Math.min(100, Math.max(RETAZ_PCT_MIN,
 
 export type StavVRetazi = "caka" | "bezi" | "naplnena" | "skoncila" | "preskocena";
 export interface PolozkaRetaze { zbierkaId: string; pct: number; stav: StavVRetazi; poslane: number; snap?: Znama }
-export interface Retaz { id: string; zapecatene: number; polozky: PolozkaRetaze[]; dostal: number; poslane: number }
+export interface Retaz { id: string; zapecatene: number; polozky: PolozkaRetaze[]; dostal: number; poslane: number; vlastnik?: string }
 
 /** zbierka, ako ju vidí tvorca pri výbere a v rade */
 export interface ZbierkaVRetazi { id: string; nazov: string; org: string; ciel: number | null; vyzbierane: number; aktivna: boolean }
@@ -54,9 +55,41 @@ export function nacitajRetaz(): Retaz | null {
     return posun(r);
   } catch { return null; }
 }
-function uloz(r: Retaz | null) {
+function ulozLokalne(r: Retaz | null) {
   try { if (r) localStorage.setItem(KLUC, JSON.stringify(r)); else localStorage.removeItem(KLUC); } catch { /* LS */ }
   zmena();
+}
+function uloz(r: Retaz | null) {
+  const s = r && vUcte ? { ...r, vlastnik: vUcte } : r;
+  ulozLokalne(s);
+  void zapisDoUctu(s);
+}
+
+// ---- účet (0080b) ----
+let vUcte: string | null = null;
+async function zapisDoUctu(r: Retaz | null) {
+  if (!supabase || !vUcte) return;
+  const { error } = r
+    ? await supabase.from("moja_retaz").upsert({ data: r }, { onConflict: "ucet_id" })
+    : await supabase.from("moja_retaz").delete().eq("ucet_id", vUcte);
+  if (error) console.warn("Reťaz sa nepodarilo uložiť do účtu", error.message);
+}
+/** po prihlásení: rad z účtu má prednosť; keď v účte nie je, doplní sa lokálny (ak nie je cudzí) */
+async function synchronizujRetaz(ucetId: string) {
+  if (!supabase || vUcte === ucetId) return;
+  const { data, error } = await supabase.from("moja_retaz").select("data").maybeSingle();
+  if (error) return; // tabuľka ešte nebeží (0080b) → ostáva lokálne
+  vUcte = ucetId;
+  const db = (data?.data ?? null) as Retaz | null;
+  if (db) { ulozLokalne({ ...db, vlastnik: ucetId }); return; }
+  let lok: Retaz | null = null;
+  try { lok = JSON.parse(localStorage.getItem(KLUC) || "null") as Retaz | null; } catch { /* LS */ }
+  if (lok && lok.vlastnik && lok.vlastnik !== ucetId) { ulozLokalne(null); return; } // cudzí rad z tohto prehliadača nepreberaj
+  if (lok) uloz(lok);
+}
+/** hook pre provider: reálny účet → synchronizuj; odhlásenie / demo → len lokálne */
+export function useSynchronizaciaRetaze(ucetId: string | null) {
+  useEffect(() => { if (ucetId) void synchronizujRetaz(ucetId); else vUcte = null; }, [ucetId]);
 }
 
 /** posunie rad: bežiaca naplnená / skončená → ďalšia; uzavreté skôr sa preskočia */

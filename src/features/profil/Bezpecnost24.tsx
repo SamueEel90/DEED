@@ -4,6 +4,7 @@
 import { TESTOVACIA } from "@/lib/testovacia";
 import { Prepinac } from "./nastUi";
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { zaregistrujKluc, zmenene } from "@/lib/mojeData";
 import { createPortal } from "react-dom";
 import { SpatTlacidlo } from "@/components/cesta";
 import { toast } from "@/components/toast";
@@ -91,6 +92,7 @@ const vzdialenost = (a: { lat: number; lng: number }, b: { lat: number; lng: num
 };
 export const najblizsieMesto = (p: { lat: number; lng: number }) => [...MESTA].sort((a, b) => vzdialenost(p, a) - vzdialenost(p, b))[0];
 const KLUC_POLOHA = "deed.okruh.poloha";
+zaregistrujKluc(KLUC_POLOHA, () => {}); // posledná poloha pre prepočet okruhu → do účtu (moje_data); číta sa len pri prepočte
 /** Kde práve som: pri zmene polohy o viac ako ~5 km sa okruh prepočíta sám. Volá sa pri štarte a pri návrate do appky. */
 export function prepocitajPodlaPolohy(nastavMesto: (m: string) => void) {
   if (!nacitajNastavenia().odPolohy || !navigator.geolocation) return;
@@ -100,6 +102,7 @@ export function prepocitajPodlaPolohy(nastavMesto: (m: string) => void) {
     try { posl = JSON.parse(localStorage.getItem(KLUC_POLOHA) || "null"); } catch { /* LS */ }
     if (posl && vzdialenost(posl, p) < 5) return;
     try { localStorage.setItem(KLUC_POLOHA, JSON.stringify(p)); } catch { /* LS */ }
+    zmenene(KLUC_POLOHA);
     nastavMesto(najblizsieMesto(p).nazov);
   }, () => zmenNastavenia({ odPolohy: false }), { timeout: 10000, maximumAge: 600000 });
 }
@@ -123,7 +126,7 @@ export function OkruhHarok({ onClose, onZmenitMiesto }: { onClose: () => void; o
     zmenNastavenia({ okruh, odPolohy });
     lok.nastavOkruh(okruh === "slovensko" ? "krajina" : okruh);
     lok.nastavMesto(mesto);
-    if (odPolohy) try { localStorage.removeItem(KLUC_POLOHA); } catch { /* LS */ }
+    if (odPolohy) { try { localStorage.removeItem(KLUC_POLOHA); } catch { /* LS */ } zmenene(KLUC_POLOHA); }
     onClose();
   };
   const MOZ: [typeof okruh, string, string][] = [["stvrt", t("nastavenia.okruh.stvrt"), t("bezpecnost.okruh.stvrtS")], ["mesto", t("nastavenia.okruh.mesto"), t("bezpecnost.okruh.mestoS", { mesto })], ["slovensko", t("nastavenia.okruh.slovensko"), t("bezpecnost.okruh.slovenskoS")]];
@@ -242,6 +245,7 @@ export function Blokacia24h({ co: coP }: { co?: string }) {
 // ======================= 2b · E-MAIL, TELEFÓN A HESLO =======================
 type Kontakt = { email: string; tel: string; hesloZmenene: number | null };
 const KLUC_KONTAKT = "deed.kontakt";
+zaregistrujKluc(KLUC_KONTAKT, () => {}); // e-mail/telefón účtu → moje_data (0084b); hárok číta pri otvorení
 export const nacitajKontakt = (): Kontakt => {
   try { const s = localStorage.getItem(KLUC_KONTAKT); if (s) return JSON.parse(s); } catch { /* LS */ }
   return (getSession() as { demo?: boolean } | null)?.demo ? { email: "martin.konal@gmail.com", tel: "+421 905 123 482", hesloZmenene: Date.now() - 95 * 86400000 } : { email: "", tel: "", hesloZmenene: null };
@@ -271,7 +275,7 @@ export function EmailTelefonHeslo({ onBack }: { onBack: () => void }) {
         <button type="button" onClick={() => toast(t("bezpecnost.pribudne"))} style={{ width: "100%", display: "flex", alignItems: "center", gap: 12, minHeight: 58, border: "none", background: "transparent", cursor: "pointer", textAlign: "left", fontFamily: "inherit", color: "var(--ink)" }}>
           <span style={{ flex: 1 }}><span style={{ display: "block", fontSize: 15, fontWeight: 700 }}>{t("bezpecnost.kluc")}</span><span style={{ display: "block", fontSize: 13, color: "var(--ink3)" }}>{t("bezpecnost.klucS")}</span></span><span style={{ color: "var(--ink3)", display: "flex" }}><Ik d={IK.sipka} s={16} w={2.4} /></span></button>
       </div>
-      {zmena && <ZmenaHarok co={zmena} kontakt={k} onClose={() => setZmena(null)} onHotovo={(z) => { const n = { ...k, ...z }; setK(n); try { localStorage.setItem(KLUC_KONTAKT, JSON.stringify(n)); } catch { /* LS */ } }} />}
+      {zmena && <ZmenaHarok co={zmena} kontakt={k} onClose={() => setZmena(null)} onHotovo={(z) => { const n = { ...k, ...z }; setK(n); try { localStorage.setItem(KLUC_KONTAKT, JSON.stringify(n)); } catch { /* LS */ } zmenene(KLUC_KONTAKT); }} />}
     </ObrazovkaSprava>);
 }
 

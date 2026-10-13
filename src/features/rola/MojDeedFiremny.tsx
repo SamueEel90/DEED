@@ -381,7 +381,7 @@ function MojDeedFiremnyObsah({ onBack, toast, orgId }: { onBack: () => void; toa
       {sheet === "terminal" && <TerminalSheet toast={toast} onClose={() => setSheet(null)} />}
       {sheet === "retaz" && <MojaRetaz onClose={() => setSheet(null)} toast={toast} />}
       {sheet === "pocitadlo" && <PocitadloVyberSheet toast={toast} onClose={() => setSheet(null)} />}
-      {sheet === "vyzvy" && <VyzvySheet tvorca={subjekt.nazov} toast={toast} onClose={() => setSheet(null)} />}
+      {sheet === "vyzvy" && <VyzvySheet tvorca={subjekt.nazov} stranka={STRANKA_POZICIE.tvorca} toast={toast} onClose={() => setSheet(null)} />}
       {sheet === "profil" && (
         <UpravProfilSheet pozicia={pozicia} logo={logo} cover={fotky.cover} toast={toast}
           onUloz={(z) => {
