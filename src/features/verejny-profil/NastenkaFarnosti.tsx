@@ -114,6 +114,7 @@ interface Spom { id: string; it?: VieraFeedItem; x?: PolozkaFarnika; zb?: Spuste
 interface Tes { af?: AutorF; id: string; druh: "svadba" | "jubileum" | "blaho"; pal: Paleta; meno: string; datum: string; vek: string; nadpis: string; x?: PolozkaFarnika; zb?: SpustenaZbierka;
   /** BLOK C 235: Blahoželanie z Editora — meno pod nadpisom šablóny */ pod?: string;
   /** OPRAVY 228: oznam Správy (celé oznámenie po ťuknutí) */ it?: VieraFeedItem;
+  /** OPRAVY 229: štvorec poďakovania / iného oznámenia (Ďakujem) — inak blahoželanie (Blahoželám) */ dakuje?: boolean;
   r: { zoznam: string[]; prepni: () => void }; mena: Record<string, string> }
 const rok = (s?: string) => s?.match(/\d{4}/)?.[0] ?? "";
 const rokyParte = (nar: string, umr: string) => { const a = rok(nar), b = rok(umr); return a || b ? [a && `* ${a}`, b && `† ${b}`].filter(Boolean).join(" ") : nar; };
@@ -121,6 +122,9 @@ const DNI_V = ["v nedeľu", "v pondelok", "v utorok", "v stredu", "vo štvrtok",
 const rozluckaT = (rd: string, rc: string) => { const m = rd.match(/^(\d{4})-(\d{2})-(\d{2})/); if (!m) return ""; const d = new Date(+m[1], +m[2] - 1, +m[3]); return `rozlúčka ${DNI_V[d.getDay()]} ${d.getDate()}. ${d.getMonth() + 1}.${rc ? ` o ${rc.replace(":", ".")}` : ""}`; };
 const datumT = (s: string) => { const m = s.match(/^(\d{4})-(\d{2})-(\d{2})/); return m ? `${+m[3]}. ${+m[2]}. ${m[1]}` : s; };
 const vekJubilea = (nar?: string, kedy?: string) => { const a = rok(nar), b = rok(kedy) || String(new Date().getFullYear()); return a ? String(+b - +a) : ""; };
+/** OPRAVY 229: 1 rok · 2–4 roky · 5+ rokov */
+const rokyT = (n: number) => (n === 1 ? "ROK" : n >= 2 && n <= 4 ? "ROKY" : "ROKOV");
+const sestSlov = (t: string) => { const w = t.trim().split(/\s+/).filter(Boolean); return w.length > 6 ? `${w.slice(0, 6).join(" ")} …` : t.trim(); };
 const reakT = (dakuje: boolean, n: number) => n === 1 ? `${dakuje ? "Ďakuje" : "Blahoželá"} 1 človek` : n < 5 ? `${dakuje ? "Ďakujú" : "Blahoželajú"} ${n} ľudia` : `${dakuje ? "Ďakuje" : "Blahoželá"} ${n} ľudí`;
 
 /** BLOK C 235: Blahoželanie z Editora oznámení — miniatúra podľa šablóny b1–b16 (podklad = pozadie, rám = farba ozdôb);
@@ -143,14 +147,16 @@ function ObsahTvaru({ t, velky }: { t: Tes; velky?: boolean }) {
     {b && <><i style={{ fontSize: 18 * k, color: t.pal.ac }}>&amp;</i><i style={{ fontSize: 26 * k, lineHeight: 1.05 }}>{b}</i></>}
     {t.datum && <span style={{ fontSize: 14 * k, marginTop: 6 }}>{datumT(t.datum)}</span>}
   </>; }
-  if (t.druh === "jubileum") return <>
+  if (t.druh === "jubileum") { const n = +t.vek, dlzka = t.meno.length; return <>
     <span style={kickerTvaru(t.pal.fg)}>JUBILEUM</span>
-    {t.vek ? <><b style={{ fontSize: 52 * k, fontWeight: 800, lineHeight: 1, letterSpacing: "-.03em" }}>{t.vek}</b><span style={{ ...kickerTvaru(t.pal.fg), letterSpacing: ".16em" }}>ROKOV</span></> : null}
-    <i style={{ fontFamily: SERIF_TVARU, fontSize: 18 * k, marginTop: 2, lineHeight: 1.15 }}>{t.meno}</i>
-  </>;
+    {t.vek ? <><b style={{ fontSize: 52 * k, fontWeight: 800, lineHeight: 1, letterSpacing: "-.03em" }}>{t.vek}</b><span style={{ ...kickerTvaru(t.pal.fg), letterSpacing: ".16em" }}>{rokyT(n)}</span></> : null}
+    {/* OPRAVY 229: dlhé meno menším písmom, najviac 2 riadky, inak „…" */}
+    <i style={{ fontFamily: SERIF_TVARU, fontSize: (dlzka > 22 ? 13 : dlzka > 14 ? 15 : 18) * k, marginTop: 2, lineHeight: 1.15, maxWidth: "100%", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", overflowWrap: "anywhere" }}>{t.meno}</i>
+  </>; }
   return <>
-    <span style={kickerTvaru(t.pal.ac)}>BLAHOŽELANIE</span>
-    <i style={{ fontFamily: SERIF_TVARU, fontSize: 22 * k, lineHeight: 1.15, overflowWrap: "anywhere" }}>{t.nadpis}</i>
+    <span style={kickerTvaru(t.pal.ac)}>{t.dakuje ? "POĎAKOVANIE" : "BLAHOŽELANIE"}</span>
+    {/* OPRAVY 229: v štvorci nadpis najviac 6 slov, dlhý text až po ťuknutí */}
+    <i style={{ fontFamily: SERIF_TVARU, fontSize: 22 * k, lineHeight: 1.15, overflowWrap: "anywhere", display: "-webkit-box", WebkitLineClamp: 4, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{sestSlov(t.nadpis)}</i>
     {t.pod && <span style={{ fontFamily: SERIF_TVARU, fontSize: 16 * k, lineHeight: 1.2, marginTop: 4 }}>{t.pod}</span>}
   </>;
 }
@@ -270,7 +276,8 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, nahlad,
   const obrFar = (x: VieraFeedItem) => { const o = x.smutocny?.imageUrl ?? (x.plagat ? x.fotky?.[0] : undefined); return ziveObr(o) ? o! : ""; };
   const sablonaFar = (x: VieraFeedItem) => (!obrFar(x) && x.oz?.u && x.oz.volba ? x.oz : null);
   // OPRAVY 216: oznam Správy ide do bloku podľa druhu z formulára (parte · svadba · jubileum · iné = blahoželanie), do Oznamov len krátky oznam
-  const stit = (x: VieraFeedItem) => (x.oz?.dr === 2 && x.ntyp !== "udalost" ? (["PARTE", "SVADBA", "JUBILEUM", "BLAHOŽELANIE"][x.oz.odr] ?? "BLAHOŽELANIE") : x.tag === "Oznámenie" ? "BLAHOŽELANIE" : stitokOznamu(x));
+  // OPRAVY 229 (216): krátky oznam farára (dr 0) nikdy nie je Blahoželanie — ide do Oznamov farnosti
+  const stit = (x: VieraFeedItem) => (x.oz?.dr === 2 && x.ntyp !== "udalost" ? (["PARTE", "SVADBA", "JUBILEUM", "BLAHOŽELANIE"][x.oz.odr] ?? "BLAHOŽELANIE") : x.tag === "Oznámenie" && !x.oz ? "BLAHOŽELANIE" : stitokOznamu(x));
 
   // ---------- Príď a zaži s nami ----------
   type Ud = { id: string; ms: number; dat: string; t: string; txt: string; kedy: string; od: string; foto: string; plag: boolean; pz: 0 | 1 | 2; limit: number; zoznam: string[]; mena: Record<string, string>; prepni: () => void; mojeX?: PolozkaFarnika; /** KARTA 61 §2: brigáda (Prídem pomôcť) */ pomoc?: boolean; af?: AutorF };
@@ -324,14 +331,17 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, nahlad,
     // BLOK C 235: jubileum zo Správy = Blahoželanie z Editora
     if (x.oz?.ed?.typ === "blahozelanie") return { ...tesBlaho(x.oz.ed, { id: x.id, nadpis: x.nazov ?? "", r: reakF(x.id, "blaho"), mena: reakcieF(strankaId, x.id).mena ?? {}, af: x.af }), it: x };
     const st = stit(x), u = x.oz?.u, druhT: Tes["druh"] = st === "SVADBA" ? "svadba" : st === "JUBILEUM" ? "jubileum" : "blaho";
+    // OPRAVY 229: iné oznámenie a poďakovanie nikdy do kosoštvorca — štvorec s nadpisom, Ďakujem
     return { id: x.id, druh: druhT, pal: druhT === "svadba" ? ZAKLAD.svadba : druhT === "jubileum" ? ZAKLAD.jubileum : ZAKLAD.blaho,
       meno: u?.meno?.trim() || bezPredpony(x.nazov ?? "") || x.nazov || "", datum: u?.kedyD ?? "", vek: vekJubilea(u?.nar, u?.kedyD), nadpis: x.nazov ?? "",
-      r: reakF(x.id, "blaho"), mena: reakcieF(strankaId, x.id).mena ?? {}, af: x.af, it: x };
+      r: reakF(x.id, "blaho"), mena: reakcieF(strankaId, x.id).mena ?? {}, af: x.af, it: x, dakuje: druhT === "blaho" };
   });
   const tesVer: Tes[] = OD.filter((x) => x.k === "svadba" || x.k === "ine").map((x) => {
     const ed = x.editor, P0 = (ed?.polia ?? {}) as Record<string, unknown>, pole = (k: string) => String(P0[k] ?? "").trim(), sv = x.k === "svadba";
     // BLOK C 235: vo Viere je „Jubileum a iné oznámenie“ Blahoželanie z Editora
     if (ed?.typ === "blahozelanie") return tesBlaho(ed, { id: x.id, x, nadpis: x.t, r: reakV(x, "blaho"), mena: x.mena ?? {} });
+    // OPRAVY 229: kosoštvorec len jubileum (pozvánka z Editora); iné oznámenie veriaceho = štvorec s nadpisom
+    if (!sv && ed?.typ !== "jubileum") return { id: x.id, druh: "blaho", pal: ZAKLAD.blaho, x, meno: x.t, datum: "", vek: "", nadpis: x.t, r: reakV(x, "blaho"), mena: x.mena ?? {}, dakuje: true };
     const pal = (ed?.sablona && (sv ? SVADBA : JUBILEUM)[ed.sablona]) || (sv ? ZAKLAD.svadba : ZAKLAD.jubileum);
     return { id: x.id, druh: sv ? "svadba" : "jubileum", pal, x, meno: sv ? [pole("sNev"), pole("sZen")].filter(Boolean).join(" & ") || x.t : pole("jMeno") || x.t,
       datum: sv ? pole("sD") : pole("jD"), vek: sv ? "" : (pole("jVekTxt").match(/\d+/)?.[0] ?? vekJubilea(pole("jNar"), pole("jD"))), nadpis: x.t, r: reakV(x, "blaho"), mena: x.mena ?? {} };
@@ -574,7 +584,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, nahlad,
           {tesy.map((t) => <div key={t.id} style={zmensi}><TvarOznamu tvar={t.druh === "svadba" ? "kruh" : t.druh === "jubileum" ? "kosostvorec" : "stvorec"} pal={t.pal} label={`${t.meno} · otvoriť`}
             onTap={() => setTes(t)} pod={<>
               {t.x ? hlavickaAutora(t.x) : t.zb ? null : hlavickaFar(t.af)}
-              {t.r.zoznam.length > 0 && <span style={{ fontSize: 14, color: INK2 }}>{reakT(t.druh === "blaho", t.r.zoznam.length)}</span>}
+              {t.r.zoznam.length > 0 && <span style={{ fontSize: 14, color: INK2 }}>{reakT(!!t.dakuje, t.r.zoznam.length)}</span>}
             </>}><ObsahTvaru t={t} /></TvarOznamu></div>)}
         </div>
       </div>}
@@ -653,12 +663,17 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, nahlad,
         <div onClick={(e) => e.stopPropagation()} style={{ width: "100%", maxWidth: 460, marginTop: 24, borderRadius: 24, background: PAPIER, color: INK, padding: 20, display: "flex", flexDirection: "column", alignItems: "center", gap: 16, boxSizing: "border-box" }}>
           <button type="button" onClick={() => setTes(null)} autoFocus style={{ alignSelf: "flex-start", minHeight: 48, padding: "0 18px", border: "none", borderRadius: 14, background: ZELENA_TL, color: "#fff", fontFamily: "inherit", fontSize: 16, fontWeight: 800, cursor: "pointer" }}>‹ Späť na stránku farnosti</button>
           <CeleOznamenie t={tes} vz={vz} />
+          {/* OPRAVY 229: pri poďakovaní a inom oznámení celý nadpis a text až po ťuknutí */}
+          {tes.dakuje && <div style={{ alignSelf: "stretch", display: "flex", flexDirection: "column", gap: 6 }}>
+            <b style={{ fontSize: 19, lineHeight: 1.3 }}>{tes.it?.nazov ?? tes.x?.t ?? tes.nadpis}</b>
+            {(tes.it?.popis ?? tes.x?.s) && (tes.it?.popis ?? tes.x?.s) !== (tes.it?.nazov ?? tes.x?.t) && <span style={{ fontSize: 16, lineHeight: 1.5, whiteSpace: "pre-line" }}>{tes.it?.popis ?? tes.x?.s}</span>}
+          </div>}
           {tes.x ? hlavickaAutora(tes.x) : tes.zb ? null : hlavickaFar(tes.af)}
           {/* re-render po ťuknutí: čerstvý stav reakcií z tesy */}
           {(() => { const t = tesy.find((y) => y.id === tes.id) ?? tes; const jaV = t.r.zoznam.includes(kto); const mena = t.r.zoznam.map((k2) => `${t.mena[k2] ?? "veriaci"}${k2 === kto ? " (vy)" : ""}`); return <>
-            <button type="button" aria-pressed={jaV} onClick={t.r.prepni} style={{ ...tlacR(jaV, true), alignSelf: "stretch" }}>{jaV ? (t.druh === "blaho" ? "Ďakujete ✓" : "Blahoželáte ✓") : t.druh === "blaho" ? "Ďakujem" : "Blahoželám"}</button>
+            <button type="button" aria-pressed={jaV} onClick={t.r.prepni} style={{ ...tlacR(jaV, true), alignSelf: "stretch" }}>{jaV ? (t.dakuje ? "Ďakujete ✓" : "Blahoželáte ✓") : t.dakuje ? "Ďakujem" : "Blahoželám"}</button>
             {mena.length > 0 && <div style={{ alignSelf: "stretch", display: "flex", flexDirection: "column" }}>
-              <span style={{ ...kicker(), paddingBottom: 6 }}>{reakT(t.druh === "blaho", mena.length).toLocaleUpperCase("sk-SK")}</span>
+              <span style={{ ...kicker(), paddingBottom: 6 }}>{reakT(!!t.dakuje, mena.length).toLocaleUpperCase("sk-SK")}</span>
               {mena.map((m, i) => <span key={i} style={{ padding: "9px 0", borderTop: `1px solid ${LINKA}`, fontSize: 16 }}>{m}</span>)}
             </div>}
             {t.zb && <button type="button" onClick={() => { const z = t.zb!; setTes(null); otvorZbierku(z); }} style={{ alignSelf: "stretch", minHeight: 52, borderRadius: 14, border: `2px solid ${FIALOVA}`, background: "var(--nf-fSoft)", color: INK, fontFamily: "inherit", fontSize: 16, fontWeight: 800, cursor: "pointer" }}>Darček pre snúbencov · Prispieť ›</button>}
