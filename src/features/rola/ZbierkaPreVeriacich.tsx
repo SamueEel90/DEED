@@ -388,7 +388,7 @@ export function ZbierkaSOverovatelom({ stranka, menoFarnosti, ucetFarnosti, mobi
         {rezim === "sab" && druh === "pohreb" && <>
           <b style={{ fontSize: 16 }}>Nové parte zo šablóny farnosti</b>
           <span style={{ fontSize: 13.5, lineHeight: 1.5, color: "var(--ink2)" }}>Rýchly režim: Muž alebo Žena, vzhľad, údaje. Texty sú už vo vzhľade. Keď termín rozlúčky ešte neviete, zaškrtnite „Údaje doplníme neskôr“, doplní ho rodina sama.</span>
-          {pc ? editor({ height: 960, border: "1px solid var(--cardBd)", borderRadius: 18 })
+          {pc ? editor({ height: "min(960px, calc(100vh - 96px))", minHeight: 560, border: "1px solid var(--cardBd)", borderRadius: 18 })
             : <button type="button" onClick={() => setEdMob(true)} style={{ ...tlZ, height: 56, fontSize: 16 }}>{edKon ? "Pokračovať v tvorbe parte ›" : "Otvoriť tvorbu parte ›"}</button>}
           {edMob && createPortal(
             <div className="sc-tokeny" role="dialog" aria-modal="true" aria-label="Tvorba parte" style={{ position: "fixed", inset: 0, zIndex: 1000, background: "#EFEAE1", display: "flex", flexDirection: "column" }}>

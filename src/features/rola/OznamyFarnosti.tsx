@@ -373,7 +373,7 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
       <GaleriaEditor media={media} onMedia={setMedia} ph={mobil} nadpis="Fotky a video · nepovinné" dovetok=" Prvá fotka je hlavná. Bez fotky sa ukážu iniciály farnosti." /></>}
     {dr === 1 && usp === 1 && <><PlagatPole src={plagat} onSrc={setPlagat} toast={toast} popis="ťuknite a vyberte obrázok, alebo ho sem pretiahnite · na výšku, JPG alebo PNG" />
       <TextOznamu key={`p${txtKey}`} value={txt} onChange={setTxt} label="Krátky popis" popis="Nepovinné. Napríklad čo si vziať so sebou." /></>}
-    {jub && <div style={{ position: "relative", height: mobil ? "82vh" : 860, borderRadius: 16, overflow: "hidden", border: "1px solid var(--cardBd)" }}>
+    {jub && <div style={{ position: "relative", height: mobil ? "82vh" : "min(860px, calc(100vh - 96px))", minHeight: 520, borderRadius: 16, overflow: "hidden", border: "1px solid var(--cardBd)" }}>
       <EditorOznameni key={edit ?? "novy"} ref={edRef} title="Blahoželanie" onSend={(p) => { void naEditor(p); }} onUdalost={(e) => zapisEditora({ udalost: e.akcia, typ: "blahozelanie", papier: e.papier ?? null, kto: "farar", stranka_typ: "farnost", stranka: strankaId, pri_zbierke: false })}
         style={{ position: "absolute", inset: 0, height: "100%" }}
         cfg={{ typ: "blahozelanie", sektor: "viera", rezim: "plny", podpis: "Blahoželá farnosť", kontext: { stranka: strankaId, farnost: true }, navrh: upravovanyEd ?? null }} />
