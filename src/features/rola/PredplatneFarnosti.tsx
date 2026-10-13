@@ -34,6 +34,12 @@ function useStart(strankaId: string) {
 /** stav predplatného — Prehľad hore a Nastavenia */
 export function PredplatnePas({ strankaId, mobil, onOtvor }: { strankaId: string; mobil: boolean; onOtvor: () => void }) {
   useStart(strankaId);
+  if (!PLATENIE_NAOSTRO) return null; // OPRAVY 217: karta v Prehľade skrytá, kým nebeží platenie naostro (karta 61)
+  return <PasPredplatneho mobil={mobil} onOtvor={onOtvor} />;
+}
+/** OPRAVY 217: prepnúť na true, keď pobeží platenie predplatného naostro */
+const PLATENIE_NAOSTRO = false;
+function PasPredplatneho({ mobil, onOtvor }: { mobil: boolean; onOtvor: () => void }) {
   const p = predplatne(), now = teraz(), st = stavPredplatneho(p, now), k = koniecSkusobneho(p);
   const dni = dniDo(k, now), mes = cenaMiest(1 + filialky().length);
   const pct = p.start && k > p.start ? Math.min(100, Math.round(((now - p.start) / (k - p.start)) * 100)) : 0;
