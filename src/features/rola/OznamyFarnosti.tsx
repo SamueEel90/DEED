@@ -30,6 +30,8 @@ import { odkazQrStranky } from "@/features/verejny-profil/otvor";
 import { EditorOznameni, type EditorApi, type PayloadEditora } from "@/components/EditorOznameni";
 import { zapisEditora, zapisZPayloadu } from "@/lib/editorStat";
 import { useMiesta } from "@/lib/miestaFarnosti";
+import { UpozornitSledujucich, NastavenieUpozorneni } from "./UpozornitSledujucich";
+import { useNastavenieUpoz } from "@/lib/upozorneniaFarnosti";
 
 type Druh = 0 | 1 | 2; // Krátky oznam · Udalosť · Oznámenie
 const DRUHY: [string, string][] = [
@@ -58,6 +60,7 @@ export interface NastavenieOznamu {
   /** BLOK C 235: jubileum z Editora oznámení (Blahoželanie) — Upraviť ho otvorí v editore */ ed?: PayloadEditora;
   /** KARTA 62: Kde platí — id miest; bez poľa = všetky miesta */ mi?: string[];
   /** KARTA 62: kostol (miesto), v ktorého kalendári je udalosť; bez poľa = hlavný „0“ */ kk?: string;
+  /** KARTA 63: farár zvolil Upozorniť sledujúcich (server pošle do zvončeka a push) */ upoz?: boolean;
 }
 const RIADKY = 12;
 const ZLATA = "#C9A24A";
@@ -186,7 +189,7 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
   useEffect(() => { if (hore) topRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); }, [hore]);
 
   const zmenOdr = (i: number) => { setOdr(i); const d = ODRUHY[i][1]; setU(prazdneUdaje(d)); setVolba(prvaVolba(d)); if (i === INE) setOsp(1); };
-  const vycisti = () => { setN(""); setTxt(""); setTxtKey((k) => k + 1); setPlati(0); setUsp(0); setDat(""); setCas(""); setMiesto(""); setMedia([]); setPlagat(undefined); setPozv(0); setLimit(""); setOsp(0); zmenOdr(0); setKde(null); setKdeU(""); setEdit(null); };
+  const vycisti = () => { setN(""); setTxt(""); setTxtKey((k) => k + 1); setPlati(0); setUsp(0); setDat(""); setCas(""); setMiesto(""); setMedia([]); setPlagat(undefined); setPozv(0); setLimit(""); setOsp(0); zmenOdr(0); setKde(null); setKdeU(""); setUpozV(null); setEdit(null); };
   const novy = () => { vycisti(); setHotovo(null); setVyb(false); };
   const zavriForm = () => { vycisti(); setHotovo(null); setVyb(false); setFormOn(false); };
   const vyberDruh = (i: Druh) => { setDr(i); setHotovo(null); setVyb(true); };
@@ -203,6 +206,9 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
   const [kde, setKde] = useState<string[] | null>(null);
   const [kdeU, setKdeU] = useState("");
   const kdeId = miestaF.some((m) => m.id === kdeU) ? kdeU : miestaF[0]?.id ?? "0";
+  // KARTA 63 1c: Upozorniť sledujúcich — predvolené podľa Nastavenia upozornení (1d), pri úprave „Úpravy už zverejneného“
+  const predvUpoz = useNastavenieUpoz(strankaId);
+  const [upozV, setUpozV] = useState<boolean | null>(null);
   const ch: string[] = [];
   if (sablona) {
     if (!u.meno.trim()) ch.push("meno");
@@ -247,12 +253,15 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
 
   // ---- zverejniť / uložiť zmeny ----
   const zoznam = vlastnePrispevky(strankaId);
+  const odruh = ODRUHY[odr]?.[1];
+  const blokUpoz = dr === 0 ? "oz" as const : dr === 1 ? "pr" as const : odruh === "parte" ? "sp" as const : "te" as const;
+  const upoz = upozV ?? predvUpoz(edit ? "upravy" : dr === 1 ? "udalost" : dr === 2 && odruh === "parte" ? "parte" : "oznam");
   const zverejni = () => {
     if (ch.length || chybaSab) return;
     const povodny = edit ? zoznam.find((x) => x.id === edit) : undefined;
     const teraz = terazMs(), id = povodny?.id ?? `naboz-${teraz}`;
     const oz: NastavenieOznamu = { dr, n: n.trim(), txt, plati, usp, dat, cas, miesto, pozv: dr !== 2 ? pozv : 0, limit: pozv === 2 ? limit : "", odr, osp, u: sablona ? u : undefined, volba: sablona ? volba : undefined, kal: povodny?.oz?.kal,
-      mi: dr === 0 && viacMiest && kde && kde.length < miestaF.length ? kde : dr === 1 && viacMiest ? [kdeId] : undefined, kk: dr === 1 && kdeId !== "0" ? kdeId : undefined };
+      mi: dr === 0 && viacMiest && kde && kde.length < miestaF.length ? kde : dr === 1 && viacMiest ? [kdeId] : undefined, kk: dr === 1 && kdeId !== "0" ? kdeId : undefined, upoz };
     const zaklad = { id, comp: "data" as const, typ: "skutok" as const, modul: "charity" as const, kat: "Komunita" as const, skore: 6, typSituacie: "normal" as const, dni: 0, podpora: 0, farnostId: strankaId, cirkev: "", komunita: meno, overena: true, vytvorene: povodny?.vytvorene ?? teraz, af: povodny ? povodny.af : autorJa };
     let it: VieraFeedItem;
     let kalendar = false;
@@ -328,7 +337,7 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
       pozv: x.pozvanie ? (x.pozvanie.zavazne ? 2 : 1) : x.rsvp ? (x.udalost?.zavazne ? 2 : 1) : 0, limit: x.pozvanie?.limit ? String(x.pozvanie.limit) : "",
       odr: st === "SVADBA" ? 1 : st === "JUBILEUM" ? 2 : st === "PARTE" ? 0 : INE, osp: x.plagat ? 1 : 0, u: x.smutocny?.sablona?.u, volba: x.smutocny?.sablona?.volba };
     setDr(o.dr); setN(o.n); setTxt(/<[a-z]/i.test(o.txt) ? o.txt : o.txt.split("\n").map((r) => `<p>${r.replace(/&/g, "&amp;").replace(/</g, "&lt;")}</p>`).join("")); setTxtKey((k) => k + 1);
-    setPlati(o.plati); setUsp(o.usp); setDat(o.dat); setCas(o.cas); setMiesto(o.miesto); setPozv(o.pozv); setLimit(o.limit); setOdr(o.odr); setOsp(o.osp); setKde(o.dr === 0 ? o.mi ?? null : null); setKdeU(o.kk ?? "");
+    setPlati(o.plati); setUsp(o.usp); setDat(o.dat); setCas(o.cas); setMiesto(o.miesto); setPozv(o.pozv); setLimit(o.limit); setOdr(o.odr); setOsp(o.osp); setKde(o.dr === 0 ? o.mi ?? null : null); setKdeU(o.kk ?? ""); setUpozV(null);
     const d = ODRUHY[o.odr]?.[1] ?? "parte";
     setU(o.u ?? prazdneUdaje(d)); setVolba(o.volba ?? prvaVolba(d));
     const f = x.fotky ?? [];
@@ -415,6 +424,7 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
       {pozv === 2 && <label style={{ display: "flex", alignItems: "center", gap: 12 }}><span style={{ fontSize: 14, fontWeight: 800 }}>Koľko ľudí najviac</span>
         <input inputMode="numeric" value={limit} onChange={(e) => setLimit(e.target.value.replace(/\D/g, "").slice(0, 4))} placeholder="bez limitu" aria-label="Koľko ľudí najviac" style={{ ...pole, width: 140, height: 46 }} /></label>}
     </div>}
+    {!jub && <UpozornitSledujucich strankaId={strankaId} blok={blokUpoz} miesta={dr === 0 && viacMiest && kde && kde.length < miestaF.length ? kde : dr === 1 && viacMiest ? [kdeId] : undefined} value={upoz} onChange={setUpozV} />}
     {jub ? null : ch.length || chybaSab
       ? <div role="status" style={{ padding: "12px 14px", borderRadius: 12, background: "var(--goldBg)", border: `1.5px solid ${ZLATA}`, fontSize: 14.5, fontWeight: 800 }}>{ch.length ? `Ešte chýba: ${ch.join(", ")}` : chybaSab}</div>
       : <div style={{ ["--gGrad" as string]: "linear-gradient(90deg,#4B7A35,#8DB866)" }}><PodrzTlacidlo key={edit ?? "novy"} label={edit ? "Podržte a uložte zmeny" : "Podržte a zverejnite"} trvanie={1500} onConfirm={zverejni} /></div>}
@@ -506,6 +516,7 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
         <div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 10, position: "sticky", top: 12 }}>{pravy}</div>
       </div>)) : pridatTl}
     {sprava}
+    <NastavenieUpozorneni strankaId={strankaId} />
     {vpOn && <NahladNastenky strankaId={strankaId} meno={meno} profil={profil} mobil={mobil} onSpat={() => setVpOn(false)} />}
   </>;
 }
