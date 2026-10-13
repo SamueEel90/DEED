@@ -11,6 +11,8 @@ import type { MediumZbierky } from "@/lib/novaZbierka";
 import { CasPole } from "@/components/CasPole";
 import { TextovePolia, GaleriaEditor } from "./obsahZbierky";
 import { DrzTlacidlo } from "@/features/viera/AdresarCirkvi";
+import { UpozornitSledujucich } from "./UpozornitSledujucich";
+import { useNastavenieUpoz } from "@/lib/upozorneniaFarnosti";
 
 const ZELENA = "#4B7A35", CERV = "#A34A2A";
 const DNI = ["NEDEĽA", "PONDELOK", "UTOROK", "STREDA", "ŠTVRTOK", "PIATOK", "SOBOTA"];
@@ -50,6 +52,8 @@ function Riadok({ b, strankaId, prvy, onUpr, hlas }: { b: Stretnutie; strankaId:
 }
 
 export function DetiMladezFarnosti({ strankaId, mobil }: { strankaId: string; mobil: boolean }) {
+  const predvUpoz = useNastavenieUpoz(strankaId);
+  const [upozV, setUpozV] = useState<boolean | null>(null);
   useReakcieF(); useCerstveReakcieF(strankaId);
   const L = useStretnutia(strankaId);
   const [on, setOn] = useState(false);
@@ -71,13 +75,15 @@ export function DetiMladezFarnosti({ strankaId, mobil }: { strankaId: string; mo
   const ch = [!f.t.trim() && "názov", !f.dat && "dátum", tabor && !f.datDo && "posledný deň", !tabor && !f.cas && "čas"].filter(Boolean) as string[];
   const kedy = kedyStretnutia({ dat: f.dat, datDo: tabor ? f.datDo : "", cas: f.cas });
   const fotky = f.media.filter((m) => m.typ === "foto"), foto = fotky[0]?.src;
+  // KARTA 63 1c: Upozorniť sledujúcich (predvolené: Udalosť, brigáda, stretnutie · pri úprave Úpravy už zverejneného)
+  const upoz = upozV ?? predvUpoz(edit ? "upravy" : "udalost");
   const zverejni = () => {
     if (ch.length) return;
     const st = edit ? L.find((x) => x.id === edit) : undefined;
     const b: Stretnutie = { id: edit ?? `dm${teraz().toString(36)}`, druh: DRUHY_STRETNUTIA[f.druh], t: f.t.trim(), dat: f.dat, datDo: tabor && f.datDo ? f.datDo : undefined, cas: f.cas, kde: f.kde.trim(), txt: f.txt,
       fotky: fotky.length ? fotky.map((m) => m.src) : undefined, popisy: fotky.some((m) => m.popis) ? fotky.map((m) => m.popis ?? "") : undefined,
-      pz: f.pz, limit: f.pz === 2 ? parseInt(f.lim, 10) || 0 : 0, vytvorena: st?.vytvorena ?? new Date().toISOString() };
-    void ulozStretnutie(strankaId, b).then(() => { setOn(false); setEdit(null); hlas(`${edit ? "Zmeny sú uložené ✓" : "Zverejnené ✓"} ${b.t} je na stránke v bloku Deti a mládež.`); });
+      pz: f.pz, limit: f.pz === 2 ? parseInt(f.lim, 10) || 0 : 0, vytvorena: st?.vytvorena ?? new Date().toISOString(), upoz };
+    void ulozStretnutie(strankaId, b).then(() => { setOn(false); setEdit(null); setUpozV(null); hlas(`${edit ? "Zmeny sú uložené ✓" : "Zverejnené ✓"} ${b.t} je na stránke v bloku Deti a mládež.`); });
   };
 
   const nahlad = (
@@ -131,6 +137,7 @@ export function DetiMladezFarnosti({ strankaId, mobil }: { strankaId: string; mo
             <label style={lab}>Koľko ľudí najviac<input value={f.lim} inputMode="numeric" onChange={(e) => setF({ lim: e.target.value.replace(/\D/g, "").slice(0, 3) })} placeholder="bez limitu" style={{ ...pole, maxWidth: 160 }} /></label>
             <span style={{ fontSize: 13, color: "var(--ink3)" }}>Nepovinné. Po naplnení sa prihlasovanie zavrie. Mená uvidíte len vy, na stránke je len počet.</span>
           </>}
+          <UpozornitSledujucich strankaId={strankaId} blok="de" value={upoz} onChange={setUpozV} />
           {ch.length > 0 && <span style={{ fontSize: 14, fontWeight: 700, color: CERV }}>Ešte chýba: {ch.join(", ")}.</span>}
           {ch.length ? <span style={{ minHeight: 52, borderRadius: 14, background: "var(--btn)", color: "var(--ink2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15.5, fontWeight: 800 }}>{edit ? "Podržte a uložte zmeny" : "Podržte a zverejnite"}</span>
             : <DrzTlacidlo ms={1500} plnenie="rgba(255,255,255,.3)" styl={{ minHeight: 52, borderRadius: 14, border: "none", background: ZELENA, color: "#fff", fontSize: 15.5, fontWeight: 800 }} onHotovo={zverejni}>{edit ? "Podržte a uložte zmeny" : "Podržte a zverejnite"}</DrzTlacidlo>}

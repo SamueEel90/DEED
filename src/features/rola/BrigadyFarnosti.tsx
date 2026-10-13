@@ -12,6 +12,8 @@ import type { MediumZbierky } from "@/lib/novaZbierka";
 import { CasPole } from "@/components/CasPole";
 import { TextovePolia, GaleriaEditor } from "./obsahZbierky";
 import { DrzTlacidlo } from "@/features/viera/AdresarCirkvi";
+import { UpozornitSledujucich } from "./UpozornitSledujucich";
+import { useNastavenieUpoz } from "@/lib/upozorneniaFarnosti";
 
 const ZELENA = "#4B7A35", CERV = "#A34A2A";
 const DNI = ["NEDEĽA", "PONDELOK", "UTOROK", "STREDA", "ŠTVRTOK", "PIATOK", "SOBOTA"];
@@ -45,6 +47,8 @@ function Riadok({ b, strankaId, prvy, onUpr, hlas }: { b: Brigada; strankaId: st
 }
 
 export function BrigadyFarnosti({ strankaId, mobil }: { strankaId: string; mobil: boolean }) {
+  const predvUpoz = useNastavenieUpoz(strankaId);
+  const [upozV, setUpozV] = useState<boolean | null>(null);
   useReakcieF(); useCerstveReakcieF(strankaId);
   const L = useBrigady(strankaId);
   const autorJa = useAutorZaMna(strankaId);
@@ -66,12 +70,14 @@ export function BrigadyFarnosti({ strankaId, mobil }: { strankaId: string; mobil
   const ch = [!f.t.trim() && "názov", !f.dat && "dátum", !f.cas && "čas"].filter(Boolean) as string[];
   const kedy = kedyBrigady(f.dat, f.cas);
   const foto = f.media.find((m) => m.typ === "foto")?.src;
+  // KARTA 63 1c: Upozorniť sledujúcich (predvolené: Udalosť, brigáda, stretnutie · pri úprave Úpravy už zverejneného)
+  const upoz = upozV ?? predvUpoz(edit ? "upravy" : "udalost");
   const zverejni = () => {
     if (ch.length) return;
     const st = edit ? L.find((x) => x.id === edit) : undefined;
     const b: Brigada = { id: edit ?? `br${teraz().toString(36)}`, druh: DRUHY_BRIGADY[f.druh], t: f.t.trim(), dat: f.dat, cas: f.cas, kde: f.kde.trim(), txt: f.txt, txt2: f.txt2 || undefined,
-      foto, pz: f.pz, limit: f.pz === 2 ? parseInt(f.lim, 10) || 0 : 0, vytvorena: st?.vytvorena ?? new Date().toISOString(), af: st ? st.af : autorJa };
-    void ulozBrigadu(strankaId, b).then(() => { setOn(false); setEdit(null); hlas(`${edit ? "Zmeny sú uložené ✓" : "Zverejnené ✓"} ${b.t} je na stránke v bloku Pomôž.`); });
+      foto, pz: f.pz, limit: f.pz === 2 ? parseInt(f.lim, 10) || 0 : 0, vytvorena: st?.vytvorena ?? new Date().toISOString(), af: st ? st.af : autorJa, upoz };
+    void ulozBrigadu(strankaId, b).then(() => { setOn(false); setEdit(null); setUpozV(null); hlas(`${edit ? "Zmeny sú uložené ✓" : "Zverejnené ✓"} ${b.t} je na stránke v bloku Pomôž.`); });
   };
 
   const nahlad = (
@@ -123,6 +129,7 @@ export function BrigadyFarnosti({ strankaId, mobil }: { strankaId: string; mobil
             <label style={lab}>Koľko ľudí najviac<input value={f.lim} inputMode="numeric" onChange={(e) => setF({ lim: e.target.value.replace(/\D/g, "").slice(0, 3) })} placeholder="bez limitu" style={{ ...pole, maxWidth: 160 }} /></label>
             <span style={{ fontSize: 13, color: "var(--ink3)" }}>Nepovinné. Po naplnení sa prihlasovanie zavrie, mená prihlásených uvidíte pri brigáde.</span>
           </>}
+          <UpozornitSledujucich strankaId={strankaId} blok="po" value={upoz} onChange={setUpozV} />
           {ch.length > 0 && <span style={{ fontSize: 14, fontWeight: 700, color: CERV }}>Ešte chýba: {ch.join(", ")}.</span>}
           {ch.length ? <span style={{ minHeight: 52, borderRadius: 14, background: "var(--btn)", color: "var(--ink2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15.5, fontWeight: 800 }}>{edit ? "Podržte a uložte zmeny" : "Podržte a zverejnite"}</span>
             : <DrzTlacidlo ms={1500} plnenie="rgba(255,255,255,.3)" styl={{ minHeight: 52, borderRadius: 14, border: "none", background: ZELENA, color: "#fff", fontSize: 15.5, fontWeight: 800 }} onHotovo={zverejni}>{edit ? "Podržte a uložte zmeny" : "Podržte a zverejnite"}</DrzTlacidlo>}

@@ -25,6 +25,8 @@ import {
 } from "@/lib/novaZbierka";
 import { uvodZPamate, nacitajUvod, potvrdUvod } from "@/lib/profilStranky";
 import { useMiesta } from "@/lib/miestaFarnosti";
+import { UpozornitSledujucich } from "./UpozornitSledujucich";
+import { useNastavenieUpoz } from "@/lib/upozorneniaFarnosti";
 import { VERIME_VAM, SUHLAS_FOTKY, SUHLAS_POZNAMKA, SUHLAS_CHYBA, PRED_SPUSTENIM_NADPIS, PRED_SPUSTENIM, PRAVDIVA_ZBIERKA } from "@/lib/pravidlaObsahu";
 
 import { Ik, I, Zamok, vyber, panel, pole, pozn, fmtEur, fmtSek, cis, cistyText, Media, Volby, Nadpis, Zaskrtnutie, odkaz, PravidlaObsahu, TextovePolia, GaleriaEditor } from "./obsahZbierky";
@@ -49,6 +51,10 @@ export function NovaZbierka({ strankaId, pozicia, tier, nazov, inicialy, mobil, 
   // KARTA 62: „Na ktoré miesto“ — nepovinný účel zbierky farnosti, len pri 2+ miestach
   const miestaF = useMiesta(strankaId);
   const naMiesto = farnost && miestaF.length > 1 ? miestaF.find((m) => m.id === d.farnost?.miesto) : undefined;
+  // KARTA 63 1c: Upozorniť sledujúcich pri novej zbierke farnosti (predvolené z Nastavenia upozornení)
+  const predvUpoz = useNastavenieUpoz(strankaId);
+  const [upozV, setUpozV] = useState<boolean | null>(null);
+  const upoz = upozV ?? predvUpoz("zbierka");
   // ROZPÍSANÉ SA UKLADÁ SAMO — 600 ms po poslednej zmene, do účtu stránky
   useEffect(() => {
     if (!zmenene.current || !nacitane) return;
@@ -102,7 +108,7 @@ export function NovaZbierka({ strankaId, pozicia, tier, nazov, inicialy, mobil, 
   const zapecat = async () => {
     if (chyba) return;
     try {
-      const z = await spustiZbierku(strankaId, zadarmo ? { ...d, typ: "kratka", iban: "", prav: false, ...(farnost ? { ucel: null, farnost: { druh: "farnost" as const, ...(naMiesto ? { miesto: naMiesto.id } : {}) } } : {}) } : d, zadarmo ? hlavnyUcet : d.iban, farnost ? "nabozenstvo" : undefined);
+      const z = await spustiZbierku(strankaId, zadarmo ? { ...d, typ: "kratka", iban: "", prav: false, ...(farnost ? { ucel: null, farnost: { druh: "farnost" as const, ...(naMiesto ? { miesto: naMiesto.id } : {}), upoz } } : {}) } : d, zadarmo ? hlavnyUcet : d.iban, farnost ? "nabozenstvo" : undefined);
       if (farnost) { farnost.onSpustena(z); return; }
       setHotovo(z);
     } catch (e) { toast(e instanceof Error ? e.message : "Zbierku sa nepodarilo spustiť."); }
@@ -355,7 +361,8 @@ export function NovaZbierka({ strankaId, pozicia, tier, nazov, inicialy, mobil, 
         <b style={{ fontSize: 16, color: "var(--ink)" }}>{PRED_SPUSTENIM_NADPIS}</b>
         {PRED_SPUSTENIM.map((t) => <div key={t} style={{ display: "flex", gap: 10, alignItems: "flex-start", fontSize: 15, lineHeight: 1.5, color: "var(--ink2)" }}><span style={{ color: "var(--green)", display: "flex", flex: "none", marginTop: 2 }}><Ik d={I.fajka} s={18} w={2.6} /></span><span>{t}</span></div>)}
       </section>
-      <Zaskrtnutie on={ok} onClick={() => setOk(!ok)}>{PRAVDIVA_ZBIERKA}</Zaskrtnutie></>;
+      <Zaskrtnutie on={ok} onClick={() => setOk(!ok)}>{PRAVDIVA_ZBIERKA}</Zaskrtnutie>
+      {farnost && <UpozornitSledujucich strankaId={strankaId} blok="zb" miesta={naMiesto ? [naMiesto.id] : undefined} value={upoz} onChange={setUpozV} />}</>;
   }
 
   // ---------- spodná lišta ----------

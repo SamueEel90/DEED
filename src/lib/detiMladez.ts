@@ -15,6 +15,7 @@ export interface Stretnutie {
   /** OPRAVY 212: fotky z GaleriaEditor (prvá titulná) + popisy */ fotky?: string[]; popisy?: string[];
   /** 0 bez prihlásenia · 1 Prídem · 2 záväzne (tábor: Prihlásiť dieťa) */ pz: 0 | 1 | 2;
   limit: number; vytvorena: string;
+  /** KARTA 63: farár zvolil Upozorniť sledujúcich (blok Deti a mládež) */ upoz?: boolean;
 }
 
 let ver = 0;

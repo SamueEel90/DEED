@@ -66,6 +66,8 @@ export interface ZbierkaFarnosti {
   podelit?: { id: string; nazov: string; pct: number }[];
   /** KARTA 62: zbierka farnosti na konkrétne miesto (len účel; účet, VS a doklady sú vždy farnosti) — id miesta */
   miesto?: string;
+  /** KARTA 63: farár zvolil Upozorniť sledujúcich (blok Zbierky) */
+  upoz?: boolean;
 }
 export const PODELIT_MAX = 2, PODELIT_MIN = 5, PODELIT_KROK = 5;
 /** podiel farnosti pri zbierke pre veriacich: najviac 3 % a najviac 100 € (OPRAVY 161) */
