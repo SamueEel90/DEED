@@ -1,7 +1,7 @@
 // OPRAVY 139 · Kronika v6 — platobný modul pri centrálnej zbierke a sektoroch = časti nášho ZbierkaModul,
 // v poradí podľa prototypu „Platobny modul profil" (= Platba - dorovnanie firmy v2):
 // KartaStavu bez cieľa · KartaDorovnava + „daruješ 20 € → …" · Zdieľať · QR + Páči sa mi · DROBNÁ PODPORA ·
-// DARY V EURÁCH · VLASTNÁ SUMA · DARY V KRYPTE · Pravidelná podpora · MESAČNE TO ZNAMENÁ (tipy, KARTA 46 pod ňou) ·
+// DARY V EURÁCH · VLASTNÁ SUMA · DARY V KRYPTE · Pravidelná podpora (počet mesačných darcov; tipy „čo za to“ zrušené 13. 10.) ·
 // Sledovať + Podporiť DEED · Reťaz dobra · „Kam treba najviac…" · Darcovia. refId = centrálna / sektorová zbierka.
 // Nad modulom zväčšený náhľad dlaždice („POSIELAŠ DO · …", ikona i), modul sa prefarbí podľa poradia (data-hier).
 import { SpatNaZbierky, ZbalitASpat, ZmensenyModul } from "@/features/zbierka/ZmensenyModul";
@@ -129,7 +129,6 @@ function Modul({ profil, sektor, mestoV, sDorovnanim, uvidisOdkaz, nazovPlatby, 
   const ohlas = () => window.dispatchEvent(new CustomEvent("deed-okno-platby", { detail: ja.current }));
   const otvor: OtvorPlatbu = (p) => { ohlas(); setPred(stav()); setPlatba(p); };
   const setHarok = (h: typeof harok) => { if (h) ohlas(); setHarok0(h); };
-  const [tipSuma, setTipSuma] = useState<number | undefined>(undefined);
   const k20 = dorovnanie ? dorovnanieKDaru(dorovnanie, 20) : 0;
   // bod 151 · veta „Kam treba najviac. Minulý mesiac…" sa v module neukazuje (ostáva len pri odkaze firmy „Pozrieť v zbierke")
   const veta = sektor.kam?.replace("{m}", mestoV);
@@ -146,22 +145,9 @@ function Modul({ profil, sektor, mestoV, sDorovnanim, uvidisOdkaz, nazovPlatby, 
       <RychleSumyEur sumy={sumy} doplnok={`sumy si volí ${ktoVoli}`} kDaru={dorovnanie ? (s) => dorovnanieKDaru(dorovnanie, s) : undefined} otvor={otvor} />
       <VlastnaSuma eur deed={false} otvor={otvor} onPodporit={() => setHarok("podporit")} firma={dorovnanie ? `${dorovnanie.firma} ${dorovnanie.pomer === 1 ? "zdvojnásobí" : "dorovná"}` : undefined} />
       {!bezEurc && <DaryVKrypte refId={refId} otvor={otvor} mikro={mikro} sumy={sumyE} />}
-      <PravidelnaRiadok registrovany={registrovany} onClick={() => { setTipSuma(undefined); setHarok("pravidelna"); }} />
-      {!!sektor.tipy?.length && <>
-        <div style={{ margin: "12px 2px 8px", display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8, fontSize: 12.5, fontWeight: 700, letterSpacing: ".05em", color: "var(--ink3)" }}>
-          <span>MESAČNE TO ZNAMENÁ</span>
-          {sektor.mesacne != null && <span style={{ fontWeight: 600, letterSpacing: 0, color: "var(--green)" }}>{sektor.mesacne.toLocaleString("sk-SK")} {sektor.mesacne === 1 ? "človek podporuje" : sektor.mesacne >= 2 && sektor.mesacne <= 4 ? "ľudia podporujú" : "ľudí podporuje"} mesačne</span>}
-        </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {sektor.tipy.map(([v, t]) => (
-            <button key={v} type="button" className="zb-karta" onClick={() => { setTipSuma(v); setHarok("pravidelna"); }}
-              style={{ minHeight: 52, padding: "8px 14px", borderRadius: 16, background: "var(--card)", border: "1px solid var(--gBd)", cursor: "pointer", display: "flex", alignItems: "center", gap: 12, textAlign: "left", color: "var(--ink)", fontFamily: "inherit" }}>
-              <b style={{ flex: "none", minWidth: 76, fontSize: 17, fontVariantNumeric: "tabular-nums" }}>{v} € <span style={{ fontSize: 12, fontWeight: 700, color: "var(--ink3)" }}>/ mes.</span></b>
-              <span style={{ flex: 1, minWidth: 0, fontSize: 14, lineHeight: 1.35, color: "var(--ink2)" }}>{t}</span>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--green)" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg>
-            </button>))}
-        </div>
-      </>}
+      <PravidelnaRiadok registrovany={registrovany} onClick={() => setHarok("pravidelna")} />
+      {/* Martin 13. 10.: tipy „čo za to“ (5 € = obed …) zrušené (PRAVIDLA-APPKY); ostáva len skutočné číslo, koľko ľudí podporuje mesačne */}
+      {sektor.mesacne != null && sektor.mesacne > 0 && <div style={{ margin: "8px 2px 0", fontSize: 13.5, fontWeight: 600, color: "var(--green)" }}>{sektor.mesacne.toLocaleString("sk-SK")} {sektor.mesacne === 1 ? "človek podporuje" : sektor.mesacne >= 2 && sektor.mesacne <= 4 ? "ľudia podporujú" : "ľudí podporuje"} mesačne</div>}
       {!bezObjektu && <Oblubene polozka={{ refId, typ: "charita", modul: "charity", nazov }} />}
       <RetazRiadok onClick={() => setHarok("retaz")} />
       {veta && uvidisOdkaz && <div style={{ marginTop: 12, padding: "12px 14px", borderRadius: 18, background: "var(--gSoft)", border: "1px solid var(--gBd)", fontSize: 14, lineHeight: 1.5, color: "var(--ink)", textWrap: "pretty" } as CSSProperties}>{veta}
@@ -173,7 +159,7 @@ function Modul({ profil, sektor, mestoV, sDorovnanim, uvidisOdkaz, nazovPlatby, 
         bonus={dorovnanie ? (s) => dorovnanieKDaru(dorovnanie, s) : undefined} firma={dorovnanie?.firma}
         onClose={() => setPlatba(null)}
         onHotovo={(v) => pridajDar({ refId, suma: v.eur, kanal: v.kanal === "eur" ? (v.sposob === "sepa" ? "sepa" : "psp") : "deed", registrovany, volba: v.volba, objekt })} />}
-      {harok === "pravidelna" && <PravidelnaHarok refId={refId} nazov={nazov} registrovany={registrovany} zbierka={false} suma={tipSuma} onClose={() => setHarok(null)} />}
+      {harok === "pravidelna" && <PravidelnaHarok refId={refId} nazov={nazov} registrovany={registrovany} zbierka={false} onClose={() => setHarok(null)} />}
       {harok === "zdielat" && <ZdielatHarok id={refId} nazov={nazov} organizacia={profil.meno} obrazok={sektor.foto} onClose={() => setHarok(null)} />}
       {harok === "podporit" && <PodporitDeedHarok registrovany={registrovany} onClose={() => setHarok(null)} />}
       {harok === "retaz" && <RetazDobraHarok zbierka={{ id: refId, nazov, org: profil.meno, ciel: null, vyzbierane: zaklad }} onClose={() => setHarok(null)} />}
