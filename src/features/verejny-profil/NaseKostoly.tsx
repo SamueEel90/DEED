@@ -48,12 +48,12 @@ function akcieMiesta(k: KalKostol, teraz = new Date()) {
 }
 
 /** blok Naše kostoly — posledný blok pred pätou */
-export function NaseKostolyBlok({ strankaId, miesta, siroka, pc, onMiesto, styl, nadpis }: { strankaId: string; miesta: Miesto[]; siroka: boolean; pc: boolean; onMiesto: (m: Miesto) => void; styl: CSSProperties; nadpis: (n: string, p: string) => ReactNode }) {
+export function NaseKostolyBlok({ strankaId, miesta, siroka, pc, onMiesto, styl, nadpis, stlpec }: { strankaId: string; miesta: Miesto[]; siroka: boolean; pc: boolean; onMiesto: (m: Miesto) => void; styl: CSSProperties; nadpis: (n: string, p: string) => ReactNode; /** KARTA 64 Kronika: veľké karty pod sebou, všetky rovnako veľké */ stlpec?: boolean }) {
   useKalendar(strankaId);
   return (
     <div data-blok="kostoly" style={styl}>
       {nadpis("Naše kostoly", siroka ? `${miesta.length === 2 ? "Dve miesta" : miesta.length === 3 ? "Tri miesta" : `${miesta.length} miest`}, jedna farnosť. Ťuknite na kostol a uvidíte omše a akcie len v ňom.` : "Ťuknite na kostol, uvidíte omše len v ňom.")}
-      <div style={siroka
+      <div style={stlpec ? { display: "flex", flexDirection: "column", gap: 14 } : siroka
         ? { flex: "999 1 520px", minWidth: 0, display: "grid", gridTemplateColumns: "repeat(3,minmax(0,1fr))", gap: pc ? 20 : 14 }
         : { flex: "1 1 100%", minWidth: 0, display: "flex", gap: 12, overflowX: "auto", scrollSnapType: "x mandatory", margin: "0 calc(-1 * clamp(20px,5vw,72px))", padding: "0 clamp(20px,5vw,72px) 6px", overscrollBehaviorX: "contain" }}>
         {miesta.map((m) => <KartaMiesta key={m.id} m={m} k={kostolKal(strankaId, m.id)} siroka={siroka} onTap={() => onMiesto(m)} />)}

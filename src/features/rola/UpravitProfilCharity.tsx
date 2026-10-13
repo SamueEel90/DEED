@@ -21,6 +21,7 @@ import { Podstranka } from "./Podstranka";
 import { CasPole } from "@/components/CasPole";
 import { DNI_UH, prazdneUH, type CasUH } from "@/lib/uradneHodiny";
 import { uradneUdaje, type UradneUdaje } from "@/lib/uradneUdaje";
+import { GaleriaEditor } from "./obsahZbierky";
 
 // IČO a sídlo z Údajov organizácie (ten istý zdroj, OPRAVY 108)
 // ---------- konštanty z karty 33 ----------
@@ -312,6 +313,8 @@ export function UpravitProfilCharity({ strankaId, pozicia, tier, nazov, inicialy
             <span style={{ width: 84, flex: "none", fontSize: 13.5, fontWeight: 700, color: "var(--ink2)" }}>{t}</span>
             <input style={{ ...pole, flex: 1 }} value={ud[kk]} maxLength={max} placeholder={ph} aria-label={t} inputMode={kk === "spravca" ? undefined : kk === "iban" ? "text" : "numeric"} onChange={(e) => zmenUd({ [kk]: e.target.value })} />
           </div>))}
+        {/* KARTA 64: fotka fary pri Farskom úrade (vzhľad Kronika) */}
+        <GaleriaEditor media={p.fotoFary ? [{ id: 1, typ: "foto", src: p.fotoFary }] : []} onMedia={(m) => zmen({ fotoFary: m.find((x) => x.typ === "foto")?.src ?? null })} ph={mobil} max={1} bezVidea nadpis="Fotka fary · nepovinné" dovetok=" Ukáže sa pri Farskom úrade vo vzhľade Kronika." />
       </>}
     </section>);
 

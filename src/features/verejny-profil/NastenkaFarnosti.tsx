@@ -8,7 +8,10 @@
 // darcu nikdy; zvončeková = jeden súhrnný riadok za nedeľu.
 // ============================================================
 import { useZamokVrstvy } from "@/lib/zamokVrstvy";
-import { useFarbaLinie } from "@/lib/liniaStranky";
+import { useFarbaLinie, useVolbaLinie } from "@/lib/liniaStranky";
+import { useRozlozenie } from "@/lib/rozlozenieFarnosti";
+import { KNadpis, KDatum, ZbierkaStvorec, PomozKarta, SvateOmse, Zapis, SpomZapis, ArchivRokov, KronikaHladat, KronikaLista, useSerifKroniky, type RokArchivu, type ZapisArchivu, type NajdenePolozka } from "./KronikaFarnosti";
+import { useStretnutia, skoncilo } from "@/lib/detiMladez";
 import { useMiesta, type Miesto } from "@/lib/miestaFarnosti";
 import { NaseKostolyBlok, PodstrankaMiesta, otvorKostolPoPrichode, vezmiCakajuciKostol } from "./NaseKostoly";
 import { uradneUdaje } from "@/lib/uradneUdaje";
@@ -18,7 +21,7 @@ import { createPortal } from "react-dom";
 import type { ProfilStranky } from "@/lib/profilStranky";
 import { cistyText } from "@/lib/richtext";
 import { usePouzivatel } from "@/lib/pouzivatel";
-import { useMojeFarnosti, useSlovaFarnosti, pridajSledovanu, odstranSledovanu, nazovFarnosti, otvorAdresar, sledujemKostol, sledujKostol, prestanKostol, nastavMojKostol, type SledovanyKostol } from "@/lib/mojeFarnosti";
+import { CIRKVI, useMojeFarnosti, useSlovaFarnosti, pridajSledovanu, odstranSledovanu, nazovFarnosti, otvorAdresar, sledujemKostol, sledujKostol, prestanKostol, nastavMojKostol, type SledovanyKostol } from "@/lib/mojeFarnosti";
 import { DrzTlacidlo } from "@/features/viera/AdresarCirkvi";
 import { otvorVerejnyProfil, odkazQrStranky } from "./otvor";
 import { centralnaZPamate, nacitajCentralnuZbierku, nazovHlavnej, useZmenyCentralnej } from "@/lib/centralnaZbierka";
@@ -37,7 +40,7 @@ import { useOmsoveOkno, suhrnHlavnej, menaOkna } from "@/lib/omsoveOkno";
 import { nacitajZbierkyStranky, zbierkyStrankyZPamate, useZmenyZbierok, cielCislo, type SpustenaZbierka } from "@/lib/novaZbierka";
 import { useKalendar, kostolKal, omseDna, polozkyDna, druhPolozky, minuty, iso, dvt, nazovOmse, nedelneOmse, rozsahTyzdna } from "@/lib/kalendarFarnosti";
 import { prihovor, useZmenyPrihovoru, naZivo, onlineOmse, onlineVDen } from "@/lib/prihovor";
-import { odFarnikov, useOdFarnikov, useCerstveOdFarnikov, prepniVPolozke, vyprsal, type PolozkaFarnika, type PoleReakcie } from "@/lib/odFarnikov";
+import { odFarnikov, useOdFarnikov, useCerstveOdFarnikov, prepniVPolozke, vyprsal, pocetSus, type PolozkaFarnika, type PoleReakcie } from "@/lib/odFarnikov";
 import { reakcieF, prepniReakciuF, useReakcieF, useCerstveReakcieF, type PoleReakcieF } from "@/lib/reakcieFarnosti";
 import { vlastnePrispevky, type VieraFeedItem } from "@/features/viera/mock";
 import { usePrispevkySync } from "@/features/viera/prispevkyDB";
@@ -277,6 +280,12 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, nahlad,
   // OPRAVY 206: čo pridá Správa, má ten istý riadok autora — duchovný z Ľudia (fotka, meno s titulmi, titul podľa cirkvi)
   const SLF = useSlovaFarnosti(strankaId);
   const farbaLinie = useFarbaLinie(strankaId, SLF.cirkev); // OPRAVY 243
+  // KARTA 64 · OPRAVY 244: rozloženie stránky (Nástenka · Kronika) a voľba línií (Bordová je v Kronike matná)
+  const rozlozenie = useRozlozenie(strankaId);
+  const volbaLinie = useVolbaLinie(strankaId, SLF.cirkev);
+  const stretnutiaF = useStretnutia(strankaId);
+  useSerifKroniky(rozlozenie === "kronika");
+  const fotoFary = profil?.fotoFary && ziveObr(profil.fotoFary) ? profil.fotoFary : undefined;
   // KARTA 62: miesta farnosti (blok Naše kostoly len pri 2+ miestach, podstránka miesta)
   const miestaF = useMiesta(strankaId);
   const [miestoId, setMiestoId] = useState<string | null>(() => vezmiCakajuciKostol(strankaId));
@@ -471,8 +480,324 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, nahlad,
   };
   const lavyStlpec = (nadpis: string, popis: string) => <div style={{ flex: "1 1 220px", maxWidth: 280, display: "flex", flexDirection: "column", gap: 10 }}><b style={nadpisBloku}>{nadpis}</b><span style={{ fontSize: 17, lineHeight: 1.5, color: INK3 }}>{popis}</span></div>;
 
+  // ============================================================
+  // KARTA 64 · Kronika — tie isté dáta a ťuky ako Nástenka, iná podoba (PC 3 stĺpce, mobil a tablet na výšku pod sebou)
+  // ============================================================
+  // --- KARTA 64: archív rokov (aktuálny rok - 1 a staršie): ukončené zbierky, akcie, oznámenia; súhrn vyzbierané · akcie · svadby · krsty ---
+  const rokTeraz = cas.getFullYear();
+  const pad = (n: number, a: string, b: string, c: string) => `${n === 1 ? a : n < 5 ? b : c}`;
+  const zapisyArch: (ZapisArchivu & { r: number; suma?: number; akcia?: boolean })[] = [];
+  for (const z of zbierkyStrankyZPamate(strankaId)) {
+    if ((z.stav ?? "aktivna") === "aktivna" || !z.koniec) continue;
+    const d = new Date(z.koniec);
+    if (Number.isNaN(d.getTime()) || d.getFullYear() >= rokTeraz) continue;
+    const s = sucetDarov(z.id);
+    zapisyArch.push({ id: `z${z.id}`, r: d.getFullYear(), d, stitok: "UKONČENÁ ZBIERKA", farba: INK3, t: z.nazov || "Zbierka", suma: s.suma,
+      pod: s.suma ? `${eur(s.suma)} od ${ludi(s.pocet)}` : undefined, foto: z.media.find((m) => m.typ === "foto" && ziveObr(m.src))?.src });
+  }
+  for (const x of OZ) {
+    if (x.ntyp === "udalost" && x.datum && /^\d{4}-\d{2}-\d{2}/.test(x.datum)) {
+      const d = zIso(x.datum.slice(0, 10));
+      if (d.getFullYear() >= rokTeraz) continue;
+      const n = (reakcieF(strankaId, x.id).ucast ?? []).length;
+      zapisyArch.push({ id: `u${x.id}`, r: d.getFullYear(), d, stitok: "AKCIA", farba: "#7FA8C8", t: x.nazov ?? "Akcia", akcia: true, pod: n ? `${n} ${pad(n, "prihlásený", "prihlásení", "prihlásených")}` : undefined, foto: ziveObr(x.fotky?.[0]) ? x.fotky![0] : undefined });
+    } else if (x.tag === "Oznámenie" && x.vytvorene) {
+      const d = new Date(x.vytvorene);
+      if (d.getFullYear() >= rokTeraz) continue;
+      zapisyArch.push({ id: `i${x.id}`, r: d.getFullYear(), d, stitok: "OZNÁMENIE", farba: ZLATA, t: x.nazov ?? "Oznámenie", veta: cistyText(x.popis ?? "").trim().split(/(?<=[.!?])\s/)[0] || undefined, foto: ziveObr(x.fotky?.[0]) ? x.fotky![0] : undefined });
+    }
+  }
+  const svadbyR = new Map<number, number>();
+  for (const x of OZ) if (stit(x) === "SVADBA") { const v = x.oz?.u?.kedyD && /^\d{4}/.test(x.oz.u.kedyD) ? Number(x.oz.u.kedyD.slice(0, 4)) : x.vytvorene ? new Date(x.vytvorene).getFullYear() : 0; if (v && v < rokTeraz) svadbyR.set(v, (svadbyR.get(v) ?? 0) + 1); }
+  const krstyR = new Map<number, number>();
+  for (const m of miestaF.length ? miestaF : [{ id: "0" } as Miesto]) for (const [den, l] of Object.entries(kostolKal(strankaId, m.id).extra)) { const v = Number(den.slice(0, 4)); if (v && v < rokTeraz) { const n = l.filter((q) => q.typ === "krst").length; if (n) krstyR.set(v, (krstyR.get(v) ?? 0) + n); } }
+  const rokyA = [...new Set([...zapisyArch.map((z) => z.r), ...svadbyR.keys(), ...krstyR.keys()])].sort((a, b) => b - a);
+  const archiv: RokArchivu[] = rokyA.map((r) => {
+    const z = zapisyArch.filter((x) => x.r === r).sort((a, b) => b.d.getTime() - a.d.getTime());
+    const suma = z.reduce((a, x) => a + (x.suma ?? 0), 0), ak = z.filter((x) => x.akcia).length, sv = svadbyR.get(r) ?? 0, kr = krstyR.get(r) ?? 0;
+    const suhrn: [string, string][] = [...(suma ? [[eur(suma), "vyzbierané"] as [string, string]] : []), ...(ak ? [[String(ak), pad(ak, "akcia", "akcie", "akcií")] as [string, string]] : []),
+      ...(sv ? [[String(sv), pad(sv, "svadba", "svadby", "svadieb")] as [string, string]] : []), ...(kr ? [[String(kr), pad(kr, "krst", "krsty", "krstov")] as [string, string]] : [])];
+    return { rok: r, suhrn, zapisy: z };
+  });
+  const maDeti = stretnutiaF.some((x) => !skoncilo(x));
+  const kronika = rozlozenie === "kronika";
+  const k3 = pc; // PC a tablet na šírku (≥ 1180 px): profil vľavo · stred · lišta
+  const matna = volbaLinie === "Bordová";
+  const KN = (t: string, velky?: boolean) => <KNadpis t={t} maly={!k3} matna={matna} velky={velky} />;
+  const cirkevT = (CIRKVI.find((c) => c[0] === SLF.cirkev)?.[1] ?? "").split(" ")[0];
+  const obecT = (k?.adresaVerejna.trim() || k?.sidlo.trim() || "").split(",")[0];
+  const podMeno = [cirkevT, obecT].filter(Boolean).join(" · ");
+  const sekcia = (blok: string, deti: ReactNode, o?: { pozadie?: string; bez?: boolean }): ReactNode => (
+    <section data-blok={blok} style={{ padding: k3 ? "36px 40px" : "26px 18px", borderTop: o?.bez ? "none" : `1px solid ${LINKA}`, background: o?.pozadie, display: "flex", flexDirection: "column", gap: 14, scrollMarginTop: 16, minWidth: 0 }}>{deti}</section>);
+  const dnesD = new Date(cas.getFullYear(), cas.getMonth(), cas.getDate());
+  const casyDna = (d: Date) => omseD(d).map((o) => o.t).join(" · ");
+  const zmenaT = ozAll.find((o) => o.zm)?.t;
+  const pocty = [[ozAll.length, "oznam", "oznamy", "oznamov"], [udalosti.length, "akcia", "akcie", "akcií"], [prosby.length, "prosba", "prosby", "prosieb"]] as const;
+  const poctyT = pocty.filter(([n]) => n > 0).map(([n, a, b, c]) => `${n} ${n === 1 ? a : n < 5 ? b : c}`).join(" · ");
+  const [kalOtv, setKalOtv] = useState(false);
+  const [vypOtv, setVypOtv] = useState(false);
+  const [kosOtv, setKosOtv] = useState(false);
+  const [zbVsetky, setZbVsetky] = useState(false);
+  const [pridV, setPridV] = useState<string | null>(null);
+  const [ozOtv, setOzOtv] = useState<string | null>(null);
+  const oz = onlineOmse(strankaId);
+  const dalsiaOnline = (() => {
+    if (!zivoUrl) return null;
+    for (let i = 0; i < 7; i++) { const d = new Date(dnesD.getFullYear(), dnesD.getMonth(), dnesD.getDate() + i); const l = onlineVDen(strankaId, d); if (l.length) return `${["Ne", "Po", "Ut", "St", "Št", "Pi", "So"][d.getDay()]} ${l[0]}`; }
+    return null;
+  })();
+  // --- zbierky ako štvorce ---
+  const stvorce: ReactNode[] = [
+    ...(hlOn && hl ? [<ZbierkaStvorec key="hl" stitok="HLAVNÁ ZBIERKA" nazov={nazovHlavnej(hl)} foto={hl.media.find((m) => m.typ === "foto" && ziveObr(m.src))?.src} farba={ZELENA} onTap={otvorHlavnu} />] : []),
+    ...(zvOn ? [<ZbierkaStvorec key="zv" stitok="ZVONČEKOVÁ" nazov={`Nedeľa ${zvNedela}`} farba={ZLATA} onTap={() => otvorZvoncek(zvOkno.id, `Zvončeková zbierka · Nedeľa ${zvNedela}`)} />] : []),
+    ...zbFar.map((z) => <ZbierkaStvorec key={z.id} stitok="ZBIERKA" nazov={z.nazov || "Zbierka"} foto={z.media.find((m) => m.typ === "foto" && ziveObr(m.src))?.src} farba={TEAL} pod={cielCislo(z) ? `cieľ ${eur(cielCislo(z))}` : undefined} onTap={() => otvorZbierku(z)} />),
+    ...piny.map((z) => <ZbierkaStvorec key={z.id} stitok={chipPripnutej(z)} nazov={z.nazov} foto={z.foto} farba={farbaPripnutej(z)} onTap={() => otvorPin(z)} />),
+    ...zbIne.map((z) => <ZbierkaStvorec key={z.id} stitok="ZBIERKA RODINY" nazov={bezPredpony(z.nazov) || "Zbierka"} foto={z.media.find((m) => m.typ === "foto" && ziveObr(m.src))?.src} farba={FIALOVA} onTap={() => otvorZbierku(z)} />),
+  ];
+  const vMriezke = k3 || !siroka ? 4 : 8;
+  const ineNazvy = [...zbFar.map((z) => z.nazov), ...piny.map((z) => z.nazov), ...zbIne.map((z) => bezPredpony(z.nazov))].slice(Math.max(0, vMriezke - stvorce.length + (zbFar.length + piny.length + zbIne.length)));
+  const kZbierky = maZbierky && <div data-blok="zbierky" style={{ display: "flex", flexDirection: "column", gap: 12, scrollMarginTop: 16 }}>
+    {KN("Zbierky farnosti")}
+    {stvorce.length > 0 && <div style={{ display: "grid", gridTemplateColumns: `repeat(${k3 || !siroka ? 2 : 4},minmax(0,1fr))`, gap: 12 }}>{zbVsetky ? stvorce : stvorce.slice(0, vMriezke)}</div>}
+    {!zbVsetky && stvorce.length > vMriezke && <button type="button" onClick={() => setZbVsetky(true)} style={{ alignSelf: "flex-start", minHeight: 44, padding: 0, border: "none", background: "transparent", color: "var(--nf-gInk)", fontFamily: "inherit", fontSize: 14.5, fontWeight: 800, cursor: "pointer", textAlign: "left" }}>+ {ineNazvy.length ? ineNazvy.slice(-Math.max(1, stvorce.length - vMriezke)).slice(0, 1)[0] : `${stvorce.length - vMriezke} ďalšie`} · všetky zbierky ›</button>}
+    {prispeliSme}
+  </div>;
+  // --- Sväté omše ---
+  const kOmse = maOmse && <SvateOmse matna={matna} maly={!k3} onCely={() => setKalOtv(true)}
+    dni={Array.from({ length: 7 }, (_, i) => { const d = new Date(dnesD.getFullYear(), dnesD.getMonth(), dnesD.getDate() - ((dnesD.getDay() + 6) % 7) + i); const ol = VJ.omse ? onlineVDen(strankaId, d) : []; return { d, dnes: d.getTime() === dnesD.getTime(), casy: casyDna(d), pozn: ol.length ? `aj online ${ol.join(", ")}` : undefined }; })} />;
+  // --- Pomôž ---
+  const kPomoz = pomoz.length > 0 && <div data-blok="pom" style={{ display: "flex", flexDirection: "column", gap: 12, scrollMarginTop: 16 }}>
+    {KN("Pomôž")}
+    {pomoz.map((u) => { const b = brigadyF.find((x) => x.id === u.id); return <PomozKarta key={u.id} stitok={(b?.druh ?? "Brigáda").toLocaleUpperCase("sk-SK")} kedy={b?.dat ? kedyBrigady(b.dat, "") : undefined} t={u.t} txt={u.txt ? <Viac text={u.txt} velkost={15.5} /> : undefined} kde={u.od || undefined} cas={b?.cas || undefined} akcia={u.pz > 0 ? <div className="kronika-pomoz" style={{ display: "flex", flexDirection: "column", gap: 6 }}>{pozvat(u)}</div> : undefined} />; })}
+  </div>;
+  // --- Naše kostoly ---
+  const kKostoly = miestaF.length > 1 && (k3
+    ? <NaseKostolyBlok strankaId={strankaId} miesta={miestaF} siroka pc={false} stlpec onMiesto={setMiesto} styl={{ display: "flex", flexDirection: "column", gap: 14, scrollMarginTop: 16 }} nadpis={(n) => KN(n)} />
+    : <div data-blok="kostoly" style={{ display: "flex", flexDirection: "column", gap: 12, scrollMarginTop: 16 }}>
+      <button type="button" aria-expanded={kosOtv} onClick={() => setKosOtv(!kosOtv)} style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 52, padding: 0, border: "none", background: "transparent", color: INK, fontFamily: "inherit", cursor: "pointer", textAlign: "left" }}>
+        <span style={{ flex: 1 }}>{KN("Naše kostoly")}</span><span style={{ fontSize: 15, color: INK3 }}>{miestaF.length} {miestaF.length < 5 ? "miesta" : "miest"} {kosOtv ? "⌃" : "⌄"}</span></button>
+      {kosOtv && <NaseKostolyBlok strankaId={strankaId} miesta={miestaF} siroka={siroka} pc={false} onMiesto={setMiesto} styl={{ display: "flex", flexDirection: "column", gap: 12 }} nadpis={() => null} />}
+    </div>);
+  // --- Tento týždeň + DNES ---
+  const dnesBox = (casyDna(dnesD) || zmenaT) ? <div style={{ padding: "16px 20px", borderRadius: 18, background: PAPIER, border: `1px solid ${LINKA}`, display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
+    <span style={{ fontSize: 13, fontWeight: 800, letterSpacing: ".12em", color: "var(--nf-gInk)" }}>● DNES · {DNW_V[dvt(dnesD)]}</span>
+    {casyDna(dnesD) && <b style={{ fontSize: 20 }}>{casyDna(dnesD)}</b>}
+    {zmenaT && <span style={{ fontSize: 15, color: CERVENA }}>{zmenaT}</span>}
+  </div> : null;
+  const kTyzden = <section data-blok="tyzden" style={{ padding: k3 ? "40px 40px 0" : "22px 18px 18px", display: "flex", alignItems: k3 ? "flex-end" : "stretch", flexDirection: k3 ? "row" : "column", justifyContent: "space-between", gap: k3 ? 24 : 12, flexWrap: "wrap", scrollMarginTop: 16 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>{KN("Tento týždeň", true)}{poctyT && k3 && <span style={{ fontSize: 17, color: INK3 }}>{poctyT}</span>}</div>
+    {dnesBox}
+  </section>;
+  // --- Oznamy farnosti ---
+  const kOznamy = ozAll.length > 0 && sekcia("ozn", <>
+    {KN("Oznamy farnosti")}
+    <div style={{ display: "flex", flexDirection: "column", borderTop: `1px solid ${LINKA}` }}>
+      {ozAll.map((x) => { const d = new Date(x.ms || cas.getTime()), o = ozOtv === x.id, kde = miestaF.length > 1 && x.mi ? x.mi.map((id) => miestaF.find((m) => m.id === id)?.nazov).filter(Boolean).join(" · ") : ""; return (
+        <div key={x.id} style={{ display: "flex", gap: k3 ? 20 : 14, padding: "16px 0", borderBottom: `1px solid ${LINKA}` }}>
+          <span style={{ flex: "none", width: 58, height: 58, borderRadius: 12, background: KARTA, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}><b style={{ fontSize: 20, lineHeight: 1 }}>{d.getDate()}</b><span style={{ fontSize: 11.5, fontWeight: 800, color: INK3 }}>{["JAN", "FEB", "MAR", "APR", "MÁJ", "JÚN", "JÚL", "AUG", "SEP", "OKT", "NOV", "DEC"][d.getMonth()]}</span></span>
+          <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 4 }}>
+            <span style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}><span style={{ fontSize: 13, fontWeight: 800, letterSpacing: ".1em", color: x.zm ? CERVENA : INK3 }}>{x.chip}</span>{kde && <span style={{ padding: "2px 8px", borderRadius: 7, background: "var(--nf-gSoft)", color: "var(--nf-gInk)", fontSize: 12.5, fontWeight: 800 }}>{kde}</span>}</span>
+            <b style={{ fontSize: 19, lineHeight: 1.3, overflowWrap: "anywhere" }}>{x.t}</b>
+            {x.txt && (o ? <Viac text={x.txt} velkost={16} riadkov={40} /> : <button type="button" onClick={() => setOzOtv(x.id)} style={{ padding: 0, border: "none", background: "transparent", color: INK2, fontFamily: "inherit", fontSize: 16, textAlign: "left", cursor: "pointer", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{x.txt}</button>)}
+            {x.foto && <button type="button" onClick={() => setVelke({ src: x.foto! })} aria-label="Fotka na celú obrazovku" style={{ alignSelf: "flex-start", border: "none", padding: 0, borderRadius: 12, overflow: "hidden", cursor: "zoom-in", marginTop: 4 }}><img src={x.foto} alt="" style={{ width: 220, maxWidth: "100%", aspectRatio: "16 / 9", objectFit: "cover", display: "block" }} /></button>}
+            {o && hlavickaFar(x.af)}
+          </span>
+        </div>); })}
+    </div>
+  </>);
+  // --- Vypočuj si (príhovor + online omša); mobil zbalené na jeden riadok ---
+  const vypObsah = <>
+    {p && <button type="button" onClick={() => setPrihOn(true)} style={{ display: "flex", gap: k3 ? 24 : 14, alignItems: "center", flexWrap: k3 ? "nowrap" : "wrap", padding: 16, borderRadius: 22, background: KARTA, border: "none", cursor: "pointer", color: INK, fontFamily: "inherit", textAlign: "left" }}>
+      <span style={{ flex: "none", width: k3 ? 260 : "100%", aspectRatio: "16 / 9", borderRadius: 14, background: "#14110B", display: "flex", alignItems: "center", justifyContent: "center" }}><span style={{ width: 58, height: 58, borderRadius: "50%", background: "rgba(255,255,255,.92)", display: "flex", alignItems: "center", justifyContent: "center" }}><span style={{ width: 0, height: 0, borderLeft: "18px solid #14110B", borderTop: "11px solid transparent", borderBottom: "11px solid transparent", marginLeft: 5 }} /></span></span>
+      <span style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 6 }}><span style={{ fontSize: 13.5, fontWeight: 800, letterSpacing: ".12em", color: INK3 }}>PRÍHOVOR FARÁRA · PRIDANÝ {dd(p.cas)}</span><b style={{ fontSize: k3 ? 26 : 21, letterSpacing: "-.02em" }}>Príhovor farára</b><span style={{ fontSize: 16, color: INK3 }}>Ťuknite a prehrá sa na celú obrazovku.</span></span>
+    </button>}
+    {zivoUrl && (dalsiaOnline || zivoT) && <a href={zivoUrl} target="_blank" rel="noopener noreferrer" style={{ display: "flex", gap: k3 ? 20 : 12, alignItems: "center", flexWrap: "wrap", padding: "16px 18px", borderRadius: 20, background: "color-mix(in srgb,#B3261E 10%,var(--nf-karta))", border: "1px solid color-mix(in srgb,#B3261E 35%,transparent)", color: INK, textDecoration: "none" }}>
+      <span style={{ flex: "none", minHeight: 40, padding: "0 14px", borderRadius: 20, background: "#B3261E", color: "#fff", fontSize: 14.5, fontWeight: 800, display: "flex", alignItems: "center", gap: 8 }}><span aria-hidden="true" style={{ width: 8, height: 8, borderRadius: "50%", background: "#fff" }} />{zivoT ? "NAŽIVO" : "ONLINE"}</span>
+      <span style={{ flex: "1 1 200px", minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}><b style={{ fontSize: 18 }}>{zivoT ?? "Omša online"}{!zivoT && dalsiaOnline ? ` · ${dalsiaOnline}` : ""}</b><span style={{ fontSize: 14.5, color: INK3 }}>{oz.url ? "Keď beží, ukáže sa NAŽIVO aj hore na titulke." : ""}</span></span>
+      <span style={{ fontSize: 15, fontWeight: 800, color: "var(--nf-gInk)" }}>Pozrieť ›</span>
+    </a>}
+  </>;
+  const maVyp = !!p || !!(zivoUrl && (dalsiaOnline || zivoT));
+  const kVyp = maVyp && sekcia("vyp", k3 ? <>{KN("Vypočuj si")}{vypObsah}</> : <>
+    <button type="button" aria-expanded={vypOtv} onClick={() => setVypOtv(!vypOtv)} style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 52, padding: 0, border: "none", background: "transparent", color: INK, fontFamily: "inherit", cursor: "pointer", textAlign: "left" }}>
+      <span style={{ flex: 1 }}>{KN("Vypočuj si")}</span><span style={{ fontSize: 15, color: INK3 }}>{[p && "príhovor", zivoUrl && "online omša"].filter(Boolean).join(" · ")} {vypOtv ? "⌃" : "⌄"}</span></button>
+    {vypOtv && vypObsah}
+  </>);
+  // --- Modli sa s nami ---
+  const kModli = prosby.length > 0 && sekcia("mod", <>
+    {KN("Modli sa s nami")}
+    <div style={{ display: "grid", gridTemplateColumns: `repeat(${k3 ? 3 : siroka ? 2 : 1},minmax(0,1fr))`, gap: 14 }}>
+      {prosby.map((x) => (
+        <div key={x.id} style={{ padding: 20, borderRadius: 20, background: KARTA, display: "flex", flexDirection: "column", gap: 12, minWidth: 0 }}>
+          {x.anon || /Bohu známy/.test(x.kto) ? <span style={{ fontSize: 14.5, color: INK3 }}>bez mena</span> : hlavickaAutora(x)}
+          <span style={{ display: "flex", flexDirection: "column", gap: 6 }}>{x.t && <b style={{ fontSize: 18, lineHeight: 1.4 }}>{x.t}</b>}{x.s && <span style={{ fontSize: 16, lineHeight: 1.5, color: INK2, whiteSpace: "pre-line" }}>{x.s}</span>}</span>
+          {reakcia({ ...reakV(x, "modl"), t: "Modlím sa s vami", tJa: "Modlíte sa s nami ✓", poc: (n) => `${n} sa modlí` })}
+          <MenuPrispevku x={x} strankaId={strankaId} kto={kto} moje={moje(x)} />
+        </div>))}
+    </div>
+  </>);
+  // --- Príď a zaži s nami: najbližšia (alebo vybraná) akcia veľká, ďalšie malé, albumy ---
+  const velkaU = udalosti.find((u) => u.id === pridV) ?? udalosti[0];
+  const kPrid = maPrid && sekcia("prid", <>
+    {KN("Príď a zaži s nami")}
+    {velkaU && (() => { const u = velkaU, d = u.dat ? zIso(u.dat) : null; return (
+      <div style={{ display: "flex", flexDirection: k3 ? "row" : "column", borderRadius: 22, overflow: "hidden", background: KARTA }}>
+        {(u.foto || d) && <div style={{ position: "relative", flex: "none", width: k3 ? "44%" : "100%", minHeight: k3 ? 300 : undefined, aspectRatio: k3 ? undefined : u.foto ? (u.plag ? "3 / 4" : "16 / 9") : "4 / 1", background: u.foto ? `center/${u.plag ? "contain" : "cover"} no-repeat url('${u.foto}') var(--nf-pas)` : "var(--nf-pas)" }}>
+          {u.foto && u.plag && <button type="button" onClick={() => setVelke({ src: u.foto })} aria-label="Plagát na celú obrazovku" style={{ position: "absolute", inset: 0, border: "none", background: "transparent", cursor: "zoom-in" }} />}
+          {d && <span style={{ position: "absolute", left: 16, top: 16 }}><KDatum d={d} plny="#2F5E8E" /></span>}
+        </div>}
+        <div style={{ flex: 1, minWidth: 0, padding: k3 ? "24px 26px" : "18px 18px 20px", display: "flex", flexDirection: "column", gap: 10 }}>
+          {u.mojeX ? hlavickaAutora(u.mojeX) : hlavickaFar(u.af)}
+          {u.kedy && <span style={{ fontSize: 13.5, fontWeight: 800, letterSpacing: ".1em", color: ZLATA }}>{u.kedy}</span>}
+          <b style={{ fontSize: k3 ? 30 : 23, lineHeight: 1.15, letterSpacing: "-.02em" }}>{u.t}</b>
+          {u.txt && <Viac text={u.txt} />}
+          {u.pz > 0 && pozvat(u)}
+          {u.mojeX && <MenuPrispevku x={u.mojeX} strankaId={strankaId} kto={kto} moje={moje(u.mojeX)} />}
+        </div>
+      </div>); })()}
+    {(udalosti.length > 1 || alba.length > 0) && <div style={{ display: "grid", gridTemplateColumns: `repeat(${k3 ? 3 : siroka ? 2 : 1},minmax(0,1fr))`, gap: 14 }}>
+      {udalosti.filter((u) => u.id !== velkaU?.id).map((u) => { const d = u.dat ? zIso(u.dat) : null, n = u.zoznam.length; return (
+        <button key={u.id} type="button" onClick={() => setPridV(u.id)} style={{ display: "flex", gap: 14, alignItems: "center", padding: 14, borderRadius: 18, background: KARTA, border: "none", color: INK, fontFamily: "inherit", textAlign: "left", cursor: "pointer", minWidth: 0 }}>
+          {d ? <KDatum d={d} plny={d.getDay() === 0 ? "#B3261E" : "#2F5E8E"} /> : null}
+          <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 3 }}><b style={{ fontSize: 16.5, lineHeight: 1.25 }}>{u.t}</b><span style={{ fontSize: 14.5, color: INK3 }}>{[u.kedy.split(" · ").slice(1).join(" · ").toLocaleLowerCase("sk-SK"), u.mojeX ? autor(u.mojeX).replace("Pridal veriaci", "pridal veriaci") : "", n ? `${n} príde` : ""].filter(Boolean).join(" · ")}</span></span>
+        </button>); })}
+      {alba.map((a) => { const f = a.fotky!.find(ziveObr)!; return (
+        <button key={a.id} type="button" onClick={() => setAlbum(a)} style={{ display: "flex", gap: 14, alignItems: "center", padding: 10, borderRadius: 18, background: KARTA, border: "none", color: INK, fontFamily: "inherit", textAlign: "left", cursor: "pointer", minWidth: 0 }}>
+          <span style={{ flex: "none", width: 78, height: 58, borderRadius: 10, background: `center/cover no-repeat url('${f}')` }} />
+          <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 3 }}><b style={{ fontSize: 16.5 }}>{a.t || "Fotky z akcie"}</b><span style={{ fontSize: 14.5, color: INK3 }}>{[`${a.fotky!.filter(ziveObr).length} fotiek`, a.anon ? "" : `pridal ${a.kto}`].filter(Boolean).join(" · ")}</span></span>
+        </button>); })}
+    </div>}
+  </>);
+  // --- Teš sa s nami = zápis v kronike ---
+  const kTes = maTes && sekcia("tes", <>
+    {KN("Teš sa s nami")}
+    <div style={{ display: "flex", flexDirection: "column", borderTop: `1px solid ${LINKA}` }}>
+      {tesy.map((t) => { const d = t.datum && /^\d{4}-\d{2}-\d{2}/.test(t.datum) ? zIso(t.datum.slice(0, 10)) : t.it?.vytvorene ? new Date(t.it.vytvorene) : t.x?.cas ? new Date(t.x.cas) : undefined;
+        const st = t.ine ? "OZNÁMENIE" : t.druh === "svadba" ? "SVADBA" : t.druh === "jubileum" ? "JUBILEUM" : t.dakuje ? "POĎAKOVANIE" : "BLAHOŽELANIE";
+        const obr = t.foto ?? t.it?.fotky?.find(ziveObr) ?? (t.it ? obrFar(t.it) || undefined : undefined) ?? (t.x ? obrVer(t.x) || undefined : undefined);
+        const veta = t.ine ? "" : [t.druh === "jubileum" && t.vek ? `${t.vek} ${rokyT(Number(t.vek)).toLocaleLowerCase("sk-SK")}` : "", t.pod ?? ""].filter(Boolean).join(" · ") || (t.nadpis !== t.meno ? t.nadpis : "");
+        return <Zapis key={t.id} d={d} obr={obr ?? ""} stitok={st} farbaStitku={t.druh === "svadba" ? "var(--nf-teal)" : ZLATA} t={t.ine ? t.nadpis : t.meno} veta={veta || (t.r.zoznam.length ? reakT(!!t.dakuje, t.r.zoznam.length) : undefined)} serif onTap={() => setTes(t)} />; })}
+    </div>
+  </>);
+  // --- Spomíname = zápis na tmavšom pozadí ---
+  const kSpom = maSpom && sekcia("spom", <>
+    {KN("Spomíname")}
+    <div style={{ display: "flex", flexDirection: "column", borderTop: "1px solid color-mix(in srgb,var(--nf-linka) 70%,transparent)" }}>
+      {spomienky.map((sp) => { const n = sp.x ? pocetSus(sp.x) : (reakcieF(strankaId, sp.zb?.id ?? sp.id).sustrast ?? []).length; return (
+        <SpomZapis key={sp.id} foto={sp.foto} symbol={symbol} meno={sp.d.meno} roky={rokyParte(sp.d.nar, sp.d.umr)} rozlucka={[rozluckaT(sp.d.rd, sp.d.rc), sp.d.rm].filter(Boolean).join(" · ")} zbierka={!!sp.zb} sustrast={n} onTap={() => setParte(sp)} />); })}
+    </div>
+  </>, { pozadie: "var(--nf-spom)" });
+  // --- Od veriacich ---
+  const kVer = oznVer.length > 0 && sekcia("ver", <>
+    {KN("Od veriacich")}
+    <div style={{ display: "grid", gridTemplateColumns: `repeat(${k3 || siroka ? 2 : 1},minmax(0,1fr))`, gap: 14 }}>
+      {oznVer.map((x) => (
+        <div key={x.id} style={{ padding: "18px 20px", borderRadius: 20, background: KARTA, display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
+          {hlavickaAutora(x)}
+          <span style={{ fontSize: 12.5, fontWeight: 800, letterSpacing: ".1em", color: INK3 }}>OZNAM · {dd(x.cas)}</span>
+          <b style={{ fontSize: 19 }}>{x.t}</b>
+          {x.s && <Viac text={x.s} velkost={16} />}
+          {x.fotky?.some(ziveObr) && <button type="button" onClick={() => setAlbum(x)} aria-label="Fotky na celú obrazovku" style={{ border: "none", padding: 0, borderRadius: 14, overflow: "hidden", cursor: "zoom-in" }}><img src={x.fotky.find(ziveObr)} alt="" style={{ width: "100%", aspectRatio: "16 / 9", objectFit: "cover", display: "block" }} /></button>}
+          <MenuPrispevku x={x} strankaId={strankaId} kto={kto} moje={moje(x)} />
+        </div>))}
+    </div>
+  </>);
+  // --- Deti a mládež (ten istý blok ako na Nástenke) ---
+  const kDeti = <DetiAMladezBlok strankaId={strankaId} blokStyl={{ padding: k3 ? "36px 40px" : "26px 18px", borderTop: `1px solid ${LINKA}`, display: "flex", flexDirection: "column", gap: 14, scrollMarginTop: 16 }} lavy={KN("Deti a mládež")} kto={kto} mojeMeno={mojeMeno} reg={reg} />;
+  // --- Farský úrad ---
+  const pole = (n: string, v: ReactNode) => <span style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}><span style={{ fontSize: 13, fontWeight: 800, letterSpacing: ".1em", color: INK3 }}>{n}</span><span style={{ fontSize: 16.5, lineHeight: 1.5, color: INK, overflowWrap: "anywhere" }}>{v}</span></span>;
+  const adresa = k ? (k.adresaVerejna.trim() || k.sidlo.trim()) : "";
+  const tel = k?.telefony.map((t) => t.cislo.trim()).filter(Boolean) ?? [], mail = k?.emaily.map((e) => e.adresa.trim()).filter(Boolean) ?? [];
+  const hodiny = maUH(uh) ? DNI_UH.map((dn, i) => { const c = casyUH(uh, i); return c.length ? `${dn} ${c.map(textCasu).join(", ")}` : ""; }).filter(Boolean).join(" · ") : "";
+  const filialky = miestaF.slice(1).map((m) => m.nazov);
+  const kUrad = maUrad && <section data-blok="urad" style={{ marginTop: 12, padding: k3 ? "40px 40px 56px" : "28px 18px 36px", borderTop: "4px solid var(--nf-linia)", display: "grid", gridTemplateColumns: k3 && fotoFary ? "minmax(0,1fr) minmax(0,1fr)" : "minmax(0,1fr)", gap: k3 ? 36 : 18, alignItems: "start", scrollMarginTop: 16 }}>
+    {fotoFary && <img src={fotoFary} alt="Fara" style={{ width: "100%", aspectRatio: "3 / 2", objectFit: "cover", borderRadius: 20, display: "block" }} />}
+    <div style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0 }}>
+      {KN("Farský úrad")}
+      {adresa && pole("ADRESA", <>{meno}<br />{adresa}</>)}
+      {(tel.length > 0 || mail.length > 0) && pole("KONTAKT", <>{[...tel.map((t) => <a key={t} href={`tel:${t.replace(/\s/g, "")}`} style={{ color: "var(--nf-gInk)", fontWeight: 800, textDecoration: "none" }}>{t}</a>), ...mail.map((m) => <a key={m} href={`mailto:${m}`} style={{ color: "var(--nf-gInk)", fontWeight: 800, textDecoration: "none" }}>{m}</a>)].flatMap((e, i) => (i ? [<span key={`s${i}`}> · </span>, e] : [e]))}</>)}
+      {hodiny && pole("ÚRADNÉ HODINY", <>{hodiny}{uh?.poz.trim() && <span style={{ display: "block", fontSize: 14.5, color: INK3 }}>{uh.poz.trim()}</span>}</>)}
+      {ud.spravca.trim() && pole("SPRÁVCA FARNOSTI", ud.spravca.trim())}
+      {(ud.ico.trim() || ud.dic.trim()) && <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, paddingTop: 12, borderTop: `1px solid ${LINKA}` }}>
+        {ud.ico.trim() && pole("IČO", ud.ico.trim())}{ud.dic.trim() && pole("DIČ", ud.dic.trim())}
+      </div>}
+      {ud.iban.trim() && pole("BANKOVÉ SPOJENIE", <b>{ud.iban.trim()}</b>)}
+      {filialky.length > 0 && <span style={{ fontSize: 15, color: INK3 }}>Filiálky: {filialky.join(" · ")}</span>}
+    </div>
+  </section>;
+  // --- archív rokov ---
+  const kArchiv = archiv.length > 0 && <section aria-label="Archív rokov" style={{ padding: k3 ? "12px 40px 56px" : "8px 18px 36px", display: "flex", flexDirection: "column", gap: 16 }}><ArchivRokov roky={archiv} maly={!k3} matna={matna} /></section>;
+  // --- hľadanie (oznamy, akcie, prosby, staršie roky) ---
+  const hladat: NajdenePolozka[] = [
+    ...ozAll.map((x) => ({ id: `o${x.id}`, t: x.t, s: x.txt, druh: "OZNAM", blok: "ozn" })),
+    ...udalosti.map((u) => ({ id: `u${u.id}`, t: u.t, s: u.txt, druh: "AKCIA", blok: "prid", onTap: () => { setPridV(u.id); window.setTimeout(() => posunNaBlok("prid"), 30); } })),
+    ...prosby.map((x) => ({ id: `m${x.id}`, t: x.t || x.s || "Prosba", s: x.s, druh: "PROSBA", blok: "mod" })),
+    ...tesy.map((t) => ({ id: `t${t.id}`, t: t.ine ? t.nadpis : t.meno, druh: "TEŠ SA S NAMI", blok: "tes", onTap: () => setTes(t) })),
+    ...spomienky.map((sp) => ({ id: `s${sp.id}`, t: sp.d.meno, druh: "SPOMÍNAME", blok: "spom", onTap: () => setParte(sp) })),
+    ...pomoz.map((u) => ({ id: `p${u.id}`, t: u.t, s: u.txt, druh: "POMÔŽ", blok: "pom" })),
+    ...archiv.flatMap((r) => r.zapisy.map((z) => ({ id: `a${z.id}`, t: z.t, s: z.pod, druh: `${r.rok} · ${z.stitok}`, blok: `rok${r.rok}`, onTap: z.onTap }))),
+  ];
+  const lista = [["tyzden", "Týždeň"], ["ozn", "Oznamy"], ["vyp", "Vypočuj si"], ["mod", "Modli sa"], ["pom", "Pomôž"], ["prid", "Príď"], ["tes", "Teš sa"], ["spom", "Spomíname"], ["ver", "Od veriacich"], ["deti", "Deti"], ["kostoly", "Kostoly"], ["urad", "Úrad"]] as const;
+  const maBlok: Record<string, boolean> = { tyzden: true, ozn: ozAll.length > 0, vyp: maVyp, mod: prosby.length > 0, pom: pomoz.length > 0, prid: maPrid, tes: maTes, spom: maSpom, ver: oznVer.length > 0, deti: maDeti, kostoly: miestaF.length > 1, urad: maUrad };
+  const listaBloky = [...lista.filter(([id]) => maBlok[id]).map(([id, t]) => ({ id, t })), ...archiv.map((r) => ({ id: `rok${r.rok}`, t: String(r.rok) }))];
+  const profilKronika = (
+    <>
+      <div style={{ position: "relative", height: k3 ? 250 : 190, background: cover ? `linear-gradient(180deg,rgba(10,8,5,.35),rgba(10,8,5,.05) 40%,rgba(10,8,5,.75)),url('${cover}') center/cover` : "linear-gradient(180deg,#2A2E26,#14110B)" }}>
+        {onBack && <button type="button" onClick={onBack} style={{ position: "absolute", top: k3 ? 18 : "calc(10px + env(safe-area-inset-top, 0px))", left: k3 ? 20 : 12, minHeight: k3 ? 44 : 40, padding: k3 ? "0 16px" : "0 12px", border: "none", borderRadius: 13, background: "rgba(255,255,255,.92)", color: "#14110B", fontFamily: "inherit", fontSize: k3 ? 15 : 14, fontWeight: 800, cursor: "pointer" }}>{nahlad ? "‹ Späť do Správy" : "‹ Späť"}</button>}
+        {zivoT && zivoUrl && <a href={zivoUrl} target="_blank" rel="noopener noreferrer" style={{ position: "absolute", top: k3 ? 18 : 12, right: k3 ? 20 : 12, minHeight: 44, padding: "0 16px", borderRadius: 22, background: "#B3261E", color: "#fff", textDecoration: "none", display: "flex", alignItems: "center", gap: 8, fontSize: 14.5, fontWeight: 800 }}><span aria-hidden="true" style={{ width: 8, height: 8, borderRadius: "50%", background: "#fff" }} />NAŽIVO</a>}
+        {logo ? <img src={logo} alt="Logo" style={{ position: "absolute", left: k3 ? 24 : 18, bottom: k3 ? -44 : -36, width: k3 ? 96 : 72, height: k3 ? 96 : 72, borderRadius: profil?.tvar === "kruh" ? "50%" : k3 ? 26 : 20, objectFit: "cover", background: "#fff", border: "3px solid var(--nf-papier)", boxShadow: "0 6px 20px rgba(0,0,0,.35)" }} />
+          : <span role="img" aria-label="Logo farnosti" style={{ position: "absolute", left: k3 ? 24 : 18, bottom: k3 ? -44 : -36, width: k3 ? 96 : 72, height: k3 ? 96 : 72, borderRadius: k3 ? 26 : 20, background: "#fff", color: "#14110B", border: "3px solid var(--nf-papier)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: k3 ? 34 : 26, fontWeight: 800, boxShadow: "0 6px 20px rgba(0,0,0,.35)" }}>{inic}</span>}
+      </div>
+      <div style={{ padding: k3 ? "60px 28px 0" : "48px 18px 0", display: "flex", flexDirection: "column", gap: k3 ? 20 : 14 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}><b style={{ fontSize: k3 ? 38 : 30, lineHeight: 1.05, letterSpacing: "-.035em" }}>{meno}</b>{podMeno && <span style={{ fontSize: 16, color: INK3 }}>{podMeno}</span>}</div>
+        {onas && <span style={{ fontSize: 16.5, lineHeight: 1.6, color: INK2 }}>{onasOtv ? <span style={{ whiteSpace: "pre-line" }}>{onas}</span> : <>{onas.split(/(?<=[.!?])\s|\n/)[0]} <button type="button" onClick={() => setOnasOtv(true)} style={{ border: "none", background: "transparent", padding: 0, color: "var(--nf-gInk)", fontFamily: "inherit", fontSize: "inherit", fontWeight: 800, cursor: "pointer" }}>viac ›</button></>}</span>}
+        <div style={{ display: "grid", gridTemplateColumns: maOmse ? "1fr 1fr" : "1fr", gap: 8 }}>
+          {nahlad ? <span style={{ minHeight: 52, padding: "0 12px", borderRadius: 14, border: `1.5px dashed ${LINKA}`, color: INK2, fontSize: 14.5, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center" }}>Náhľad · takto to vidia veriaci</span> : sledBtn}
+          {maOmse && <button type="button" onClick={() => setKalOtv(true)} style={{ minHeight: 52, minWidth: 0, padding: "6px 10px", borderRadius: 14, border: `1.5px solid ${LINKA}`, background: KARTA, color: INK, fontFamily: "inherit", cursor: "pointer", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "flex-start", textAlign: "left" }}>
+            <b style={{ maxWidth: "100%", fontSize: 14.5, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>Omše a kalendár</b>
+            {casyDna(dnesD) && <span style={{ maxWidth: "100%", fontSize: 12.5, fontWeight: 700, color: INK3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>dnes {casyDna(dnesD)}</span>}
+          </button>}
+        </div>
+      </div>
+    </>);
+  const kalOkno = kalOtv && <CelaObrazovka label="Omše a kalendár" onZavri={() => setKalOtv(false)}>
+    <div className="nastenka-farnosti" style={{ ...PREMENNE, ["--nf-linia" as string]: farbaLinie, flex: 1, minHeight: 0, overflowY: "auto", background: BG, color: INK, padding: "16px clamp(16px,4vw,40px) 32px" } as CSSProperties}>
+      <div style={{ maxWidth: 900, margin: "0 auto" }}><TyzdenFarnosti strankaId={strankaId} slovo={SLF.omsa} siroka cas={cas} miestaF={miestaF} mojKostol={jeHl ? MF.mojKostol : null} /></div>
+    </div>
+  </CelaObrazovka>;
+  const kronikaTelo = kronika && (prazdna
+    ? <div style={{ display: "flex", flexDirection: "column", background: PAPIER }}>{profilKronika}<div style={{ padding: k3 ? "28px 28px 64px" : "20px 18px 48px" }}><span style={{ fontSize: 17, color: INK3 }}>Farnosť tu zatiaľ nič nezverejnila.</span></div></div>
+    : k3
+      ? <div className="kronika" style={{ display: "flex", alignItems: "stretch", minHeight: "100%" }}>
+        <aside style={{ flex: "none", width: "clamp(320px,30vw,440px)", borderRight: `1px solid ${LINKA}`, background: PAPIER, display: "flex", flexDirection: "column" }}>
+          {profilKronika}
+          <div style={{ padding: "20px 28px 48px", display: "flex", flexDirection: "column", gap: 0 }}>
+            {[kZbierky, kKostoly, kOmse, kPomoz].filter(Boolean).map((x, i) => <div key={i} style={{ paddingTop: 20, marginTop: i ? 20 : 0, borderTop: `1px solid ${LINKA}` }}>{x}</div>)}
+          </div>
+        </aside>
+        <main style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
+          <div style={{ padding: "22px 40px 18px", borderBottom: `1px solid ${LINKA}` }}><KronikaHladat polozky={hladat} onBlok={posunNaBlok} /></div>
+          {kTyzden}{kOznamy}{kVyp}{kModli}{kPrid}{kTes}{kSpom}{kVer}{kDeti}{kUrad}{kArchiv}
+        </main>
+        <KronikaLista bloky={listaBloky} />
+      </div>
+      : <div className="kronika" style={{ display: "flex", flexDirection: "column" }}>
+        {profilKronika}
+        {kTyzden}
+        {maZbierky && <section style={{ padding: "22px 18px", borderTop: `1px solid ${LINKA}` }}>{kZbierky}</section>}
+        {kOznamy}{kVyp}{kModli}
+        {kPomoz && <section style={{ padding: "26px 18px", borderTop: `1px solid ${LINKA}` }}>{kPomoz}</section>}
+        {kPrid}{kTes}{kSpom}{kVer}
+        {kKostoly && <section style={{ padding: "22px 18px", borderTop: `1px solid ${LINKA}` }}>{kKostoly}</section>}
+        {kDeti}
+        {kOmse && <section style={{ padding: "26px 18px", borderTop: `1px solid ${LINKA}` }}>{kOmse}</section>}
+        {kUrad}{kArchiv}
+      </div>);
   return (
     <div className="nastenka-farnosti" style={{ ...PREMENNE, ["--nf-linia" as string]: farbaLinie, position: "relative", width: "100%", maxWidth: 1440, margin: "0 auto", background: BG, color: INK, display: "flex", flexDirection: "column", fontFamily: "'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,sans-serif", paddingBottom: fab ? 110 : 0 }}>
+      {kronikaTelo}
+      {kalOkno}
+      {!kronika && <>
       {/* ---------- (1) titulka · OPRAVY 221: príhovor jedna veta + viac, dve tlačidlá vedľa seba ---------- */}
       <div style={{ position: "relative", minHeight: siroka ? "clamp(300px,34vw,480px)" : 260, boxSizing: "border-box", display: "flex", flexDirection: "column", justifyContent: "flex-end", padding: `${onBack ? 92 : 24}px ${PAD_X} clamp(20px,3vw,40px)`, background: cover ? `linear-gradient(180deg,rgba(10,8,5,.3) 0%,rgba(10,8,5,0) 35%,rgba(10,8,5,.88) 100%), url("${cover}") center/cover no-repeat #D9D3C7` : "linear-gradient(160deg,#3A372E 0%,#14110B 100%)" }}>
         {/* OPRAVY 240 (5): na mobile malé tlačidlo hore v rohu, nie veľká biela dlaždica */}
@@ -690,6 +1015,8 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, nahlad,
         <b style={{ fontSize: 24 }}>Farnosť tu zatiaľ nič nezverejnila.</b>
         <span style={{ fontSize: 17, color: INK3 }}>Sledujte ju a dáme vám vedieť, keď pribudne oznam, omša alebo zbierka.</span>
       </div>}
+
+      </>}
 
       {/* ---------- celé obrazovky ---------- */}
       {prihOn && p && createPortal(

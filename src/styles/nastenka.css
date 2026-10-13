@@ -17,3 +17,13 @@ html.dark {
   --nf-gSoft: #24321C; --nf-gBd: #4A6B36; --nf-gInk: #A9D18A;
   --nf-pas: #333A2D; --nf-spom: #1C2019; --nf-fSoft: #2A2230; --nf-zlBg: #2E2715; --nf-vyp: #3B4236; --nf-cervDnes: #B3261E;
 }
+
+/* KARTA 64 · Kronika: lesk nadpisov vo farbe línií (svetlý: tmavší → svetlejší odtieň; tmavý: svetlé odtiene, nech je čitateľné) */
+.nastenka-farnosti {
+  --kr-a: color-mix(in srgb, var(--nf-linia) 85%, #000); --kr-b: color-mix(in srgb, var(--nf-linia) 72%, #fff);
+  --kr-c: var(--nf-linia); --kr-d: color-mix(in srgb, var(--nf-linia) 86%, #fff); --kr-plna: var(--nf-linia);
+}
+html.dark .nastenka-farnosti {
+  --kr-a: color-mix(in srgb, var(--nf-linia) 62%, #fff); --kr-b: color-mix(in srgb, var(--nf-linia) 38%, #fff);
+  --kr-c: color-mix(in srgb, var(--nf-linia) 60%, #fff); --kr-d: color-mix(in srgb, var(--nf-linia) 48%, #fff); --kr-plna: color-mix(in srgb, var(--nf-linia) 62%, #fff);
+}

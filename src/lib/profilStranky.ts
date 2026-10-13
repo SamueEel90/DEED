@@ -16,6 +16,8 @@ export interface TitulnaFotka { src: string; w: number; h: number; priemer: stri
 export interface ProfilStranky {
   onas: string;          // hlavný text (HTML z editora), najviac 12 riadkov
   onas2: string;         // pokračovanie — ukáže sa po „viac"
+  /** KARTA 64 Kronika: fotka fary pri Farskom úrade (nepovinné, Upraviť profil farnosti) */
+  fotoFary?: string | null;
   kontakt: Kontakt;
   logo: string | null;
   tvar: TvarLoga;

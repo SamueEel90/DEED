@@ -6,8 +6,8 @@
 import { useVerejneNastavenia, verejneZPamate, zapisVerejne } from "./verejneNastavenia";
 
 export type Rozlozenie = "nastenka" | "kronika" | "moderne";
-/** Kronika sa dá vybrať až po Karte 64 */
-export const KRONIKA_HOTOVA = false;
+/** KARTA 64: Kronika je hotová */
+export const KRONIKA_HOTOVA = true;
 export const ROZLOZENIA: { k: Rozlozenie; t: string; s: string; bg: string; zamknute: boolean }[] = [
   { k: "nastenka", t: "Nástenka", s: "bloky pod sebou", bg: "linear-gradient(160deg,#876712,#14110B)", zamknute: false },
   { k: "kronika", t: "Kronika", s: "profil vľavo · roky a archív", bg: "linear-gradient(160deg,#2F5E3A,#14110B)", zamknute: !KRONIKA_HOTOVA },
