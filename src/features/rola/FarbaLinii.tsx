@@ -15,7 +15,7 @@ export function FarbaLinii({ strankaId }: { strankaId: string }) {
         <div id="sc-linie" style={{ fontSize: 15, fontWeight: 700 }}>Farba línií</div>
         <div role="radiogroup" aria-labelledby="sc-linie" style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
           {volbyLinie(cirkev).map((v) => {
-            const on = vyb === v, farba = v === ROK ? farbaCirkevnehoRoka() : FARBY_LINIE[v];
+            const on = vyb === v, farba = v === ROK ? farbaCirkevnehoRoka(new Date(), cirkev) : FARBY_LINIE[v];
             return (
               <button key={v} type="button" role="radio" aria-checked={on} onClick={() => void nastavLiniu(strankaId, v)}
                 style={{ minHeight: 44, padding: "0 14px 0 10px", borderRadius: 12, cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 800, display: "flex", alignItems: "center", gap: 8,
@@ -24,7 +24,7 @@ export function FarbaLinii({ strankaId }: { strankaId: string }) {
               </button>);
           })}
         </div>
-        <span style={{ fontSize: 12.5, lineHeight: 1.45, color: "var(--ink3)" }}>Línia pod titulkou a medzi blokmi na stránke farnosti. Tlačidlá, karty, text a pozadie sa nemenia.{volbyLinie(cirkev)[0] === ROK ? " Podľa cirkevného roka: advent a pôst fialová, Vianoce a Veľká noc zlatá, Turíce červená, inak zelená." : ""}</span>
+        <span style={{ fontSize: 12.5, lineHeight: 1.45, color: "var(--ink3)" }}>Línia pod titulkou a medzi blokmi na stránke farnosti. Tlačidlá, karty, text a pozadie sa nemenia.{volbyLinie(cirkev)[0] === ROK ? ` Podľa cirkevného roka: advent a pôst fialová, Vianoce a Veľká noc zlatá, Turíce červená, inak zelená.${cirkev === "PC" ? " Sviatky podľa juliánskeho kalendára." : ""}` : ""}</span>
       </div>
     </div>);
 }
