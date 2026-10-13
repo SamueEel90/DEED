@@ -7,12 +7,15 @@ import { useEffect, useSyncExternalStore } from "react";
 import { supabase } from "./supabase";
 import { idZbierkyDB } from "./darZbierky";
 import { UKAZKOVE_STRANKY } from "./mojeStranky";
+import { TESTOVACIA } from "./testovacia";
+import { spravujemVRelacii } from "./stranka";
 
 export interface MojaFarnost { id: string; meno: string }
 /** farnosť, za ktorú môžem prispieť — len keď som jej farár (nie správca, kaplán ani nikto iný) */
 export function farnostFarara(): MojaFarnost | null {
   const s = UKAZKOVE_STRANKY.find((x) => x.typ === "farnost" && x.rola.endsWith(".farar"));
-  return s ? { id: s.k, meno: s.n } : null;
+  // naostro len keď prihlásený naozaj spravuje tú farnosť (otvoril jej Správu); server aj tak overí správcu
+  return s && (TESTOVACIA || spravujemVRelacii(s.k)) ? { id: s.k, meno: s.n } : null;
 }
 
 export interface Prispevok { zbierka: string; nazov: string; kto: string; suma: number; cas: number; vs?: number; rodina: boolean }
