@@ -2,6 +2,7 @@
 // Aktivity, Charita, Môj QR, detail zbierky, oznam „AI sa pýta"). Otvára sa cez otvorPridatSkutok().
 // 6 krokov: Sám / So skupinou (→ bežný / skutok ako dar) · Opíš · AI kontroluje · Ešte pár otázok · Náhľad · Hotovo.
 // AI = existujúce ohodnot() (POST /api/score, verdikt ok / doplnit / zamietnut) — backend sa nemení.
+import { zapisCin } from "@/lib/vyzvy";
 import { TESTOVACIA } from "@/lib/testovacia";
 import { DeedZnacka } from "@/components/DeedZnacka";
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
@@ -469,6 +470,7 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
       seria: prav ? pvF : undefined, retaz: ohl?.retaz, firma: mojeFirmy.length ? firmaV : undefined,
     };
     pridajSkutok(s);
+    if (doFeedu) zapisCin(pr.autor || ja.celeMeno || "", { druhSkutku: s.oblast }); // overený skutok môže splniť výzvu tvorcu (0085b)
     if (ohl) nastavOhlasenie(null);
     if (doFeedu) {
       const it: GoodPolozka = {

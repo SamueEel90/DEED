@@ -4,6 +4,8 @@
 // ============================================================
 import { DOM, KARMA_ORDER, SKORE_VELKOST, TYP_ENGINE, MODUL_ENGINE } from "./domeny";
 import { BIOS, GEO_LOK, type AktItem } from "./mock";
+import { zaregistrujKluc, zmenene } from "@/lib/mojeData";
+import { supabase } from "@/lib/supabase";
 
 // ---- perzistencia (localStorage) ----
 export const LS = {
@@ -19,6 +21,30 @@ export function load<T>(key: string, fallback: T): T {
 }
 export function save(key: string, val: any) {
   try { localStorage.setItem(key, JSON.stringify(val)); } catch { /* ignore */ }
+  if (DO_UCTU.includes(key)) zmenene(key);
+}
+
+// lajky, hlasy a sledovanie = osobné → do účtu (moje_data, 0084b); po stiahnutí z účtu ohlási udalosť
+export const UDALOST_UCET = "deed:aktivity-ucet";
+const DO_UCTU = [LS.likes, LS.votes, LS.follows];
+DO_UCTU.forEach((k) => zaregistrujKluc(k, () => { try { window.dispatchEvent(new Event(UDALOST_UCET)); } catch { /* SSR */ } }));
+
+// ---- prírastky (vyzbierané, pomocníci, podpory) = spoločné pre všetkých → aktivita_pocty (0085b) ----
+export type Delta = { raised?: number; helpers?: number; support?: number };
+/** prírastky zo servera (null = bez DB / tabuľka ešte nebeží → ostáva lokálna záloha) */
+export async function nacitajPocty(): Promise<Record<string, Delta> | null> {
+  if (!supabase) return null;
+  const { data, error } = await supabase.from("aktivita_pocty").select("id, raised, helpers, support").limit(5000);
+  if (error) return null;
+  return Object.fromEntries((data ?? []).map((r) => [r.id as string, { raised: Number(r.raised), helpers: r.helpers as number, support: r.support as number }]));
+}
+/** podpora aktivity → server pripočíta (+1 podpora, pri prípade aj suma a pomocník); vráti nový stav alebo null */
+export async function podporAktivitu(id: number, suma: number, pripad: boolean): Promise<Delta | null> {
+  if (!supabase) return null;
+  const { data, error } = await supabase.rpc("aktivita_podpora", { p_id: String(id), p_suma: suma, p_pripad: pripad });
+  if (error) { console.warn("Podpora aktivity sa nezapísala", error.message); return null; }
+  const d = data as { raised: number; helpers: number; support: number };
+  return { raised: Number(d.raised), helpers: d.helpers, support: d.support };
 }
 
 // ---- geo / čas helpery (pre Feed engine) ----

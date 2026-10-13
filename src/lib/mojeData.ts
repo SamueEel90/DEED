@@ -13,7 +13,21 @@ const VLASTNIK = "deed.mojeData.vlastnik";
 let vUcte: string | null = null;
 
 /** modul: „tento kľúč patrí do účtu", obnov = znova načítaj z localStorage + ohlás zmenu */
-export function zaregistrujKluc(kluc: string, obnov: () => void) { obnovy.set(kluc, obnov); }
+export function zaregistrujKluc(kluc: string, obnov: () => void) {
+  obnovy.set(kluc, obnov);
+  if (vUcte && zUctu) zladKluc(kluc, obnov, cudziPrehliadac); // modul sa načítal až po synchronizácii (lazy obrazovka)
+}
+let zUctu: Map<string, unknown> | null = null;
+let cudziPrehliadac = false; // tento prehliadač predtým používal iný účet
+function zladKluc(kluc: string, obnov: () => void, cudzi: boolean) {
+  if (zUctu?.has(kluc)) {
+    try { localStorage.setItem(kluc, JSON.stringify(zUctu.get(kluc))); } catch { /* LS */ }
+    obnov();
+  } else if (cudzi) {
+    try { localStorage.removeItem(kluc); } catch { /* LS */ } // nastavenia iného účtu z tohto prehliadača nepreberaj
+    obnov();
+  } else if (citaj(kluc) != null) void posli(kluc);
+}
 
 const citaj = (kluc: string): unknown => { try { const s = localStorage.getItem(kluc); return s == null ? null : JSON.parse(s); } catch { return null; } };
 
@@ -40,19 +54,12 @@ async function synchronizuj(ucetId: string) {
   let cudzi = false;
   try { const v = localStorage.getItem(VLASTNIK); cudzi = !!v && v !== ucetId; localStorage.setItem(VLASTNIK, ucetId); } catch { /* LS */ }
   vUcte = ucetId;
-  const zUctu = new Map((data ?? []).map((r) => [r.kluc as string, r.data]));
-  for (const [kluc, obnov] of obnovy) {
-    if (zUctu.has(kluc)) {
-      try { localStorage.setItem(kluc, JSON.stringify(zUctu.get(kluc))); } catch { /* LS */ }
-      obnov();
-    } else if (cudzi) {
-      try { localStorage.removeItem(kluc); } catch { /* LS */ } // nastavenia iného účtu z tohto prehliadača nepreberaj
-      obnov();
-    } else if (citaj(kluc) != null) void posli(kluc);
-  }
+  cudziPrehliadac = cudzi;
+  zUctu = new Map((data ?? []).map((r) => [r.kluc as string, r.data]));
+  for (const [kluc, obnov] of obnovy) zladKluc(kluc, obnov, cudzi);
 }
 
 /** hook pre provider: reálny účet → synchronizuj; odhlásenie / demo → len lokálne */
 export function useSynchronizaciaMojichDat(ucetId: string | null) {
-  useEffect(() => { if (ucetId) void synchronizuj(ucetId); else vUcte = null; }, [ucetId]);
+  useEffect(() => { if (ucetId) void synchronizuj(ucetId); else { vUcte = null; zUctu = null; } }, [ucetId]);
 }

@@ -5,6 +5,7 @@
 // večerný súhrn · tichý čas. Tá istá obrazovka je aj v Nastavenia → Oznámenia (jeden komponent, dva vstupy).
 import { sZnackou } from "@/components/DeedZnacka";
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { zaregistrujKluc, zmenene } from "@/lib/mojeData";
 import { createPortal } from "react-dom";
 import type { Notifikacia, NotifAkciaKod, NotifIkona, NotifTon } from "@/types";
 import { useNotifikacie } from "@/data";
@@ -60,7 +61,10 @@ function oznamyNaRiadky(oz: OznamDarcovi[]): Notifikacia[] {
 // prečítané / vybavené oznamy (lokálne, kým nie je Supabase)
 const KLUC_PREC = "deed.oznamy.precitane";
 const nacitajPrec = (): number[] => { try { return JSON.parse(localStorage.getItem(KLUC_PREC) || "[]"); } catch { return []; } };
-const ulozPrec = (x: number[]) => { try { localStorage.setItem(KLUC_PREC, JSON.stringify(x)); } catch { /* LS */ } };
+const ulozPrec = (x: number[]) => { try { localStorage.setItem(KLUC_PREC, JSON.stringify(x)); } catch { /* LS */ } zmenene(KLUC_PREC); };
+// prečítané = osobné → do účtu (moje_data, 0084b); po stiahnutí z účtu sa zvonček prepočíta
+const UDALOST_PREC = "deed:oznamy-precitane";
+zaregistrujKluc(KLUC_PREC, () => { try { window.dispatchEvent(new Event(UDALOST_PREC)); } catch { /* SSR */ } });
 
 // ============================================================
 // ZVONČEK — tlačidlo so zeleným počtom + celá obrazovka Oznámenia
@@ -70,6 +74,7 @@ export function Zvoncek({ color = "var(--c-textSec)", toast }: { color?: string;
   const oznamy = useOznamyDarcom();
   const [otvor, setOtvor] = useState(false);
   const [prec, setPrec] = useState<number[]>(nacitajPrec);
+  useEffect(() => { const f = () => setPrec(nacitajPrec()); window.addEventListener(UDALOST_PREC, f); return () => window.removeEventListener(UDALOST_PREC, f); }, []);
   const [detail, setDetail] = useState<OznamDarcovi | null>(null);
   const tlacidlo = useRef<HTMLButtonElement>(null);
   // karta 24 · 2i: oznámenia od firmy chodia aj sem (filter Zamestnávateľ) — len keď je user prepojený

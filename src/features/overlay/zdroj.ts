@@ -8,10 +8,10 @@
 //   1. ?demo=1   — stránka si dary vymýšľa sama (na odskúšanie vzhľadu v OBS)
 //   2. snímka v localStorage (deed.overlay.<splitId>) — funguje v tom istom
 //      prehliadači, čiže náhľad priamo v appke
-//   3. server    — JEDINÉ miesto, kde to bude naozaj živé; zatiaľ nie je
+//   3. server    — overlay_stav (0085b): appka tvorcu sem pri každej zmene zapíše snímku,
+//                  OBS ju číta bez prihlásenia (polling stránky Overlay). Len verejné polia.
 //
-// Až bude backend, dopĺňa sa to na jednom mieste: `zoServera` nižšie.
-// Nič iné v tomto priečinku sa meniť nemusí.
+// Poradie: demo → server → snímka v tomto prehliadači.
 // ============================================================
 
 export interface StavOverlay {
@@ -30,6 +30,7 @@ export interface StavOverlay {
 }
 
 import { vymazMilniky } from "./Overlay";
+import { supabase } from "@/lib/supabase";
 
 export const KLUC_OVERLAY = (splitId: string) => `deed.overlay.${splitId}`;
 
@@ -39,6 +40,15 @@ export function zapisStavOverlay(splitId: string, stav: Omit<StavOverlay, "pecat
     const teraz = Date.now();
     localStorage.setItem(KLUC_OVERLAY(splitId), JSON.stringify({ ...stav, pecat: teraz, naposledy: teraz }));
   } catch { /* LS nedostupné */ }
+  void doServera(splitId, stav);
+}
+
+/** snímka na server (0085b) — len prihlásený tvorca; OBS ju potom vidí z akéhokoľvek prehliadača */
+async function doServera(splitId: string, stav: Omit<StavOverlay, "pecat" | "naposledy">) {
+  if (!supabase || !(await supabase.auth.getSession()).data.session) return;
+  const verejne = { nazov: stav.nazov, vyzbierane: stav.vyzbierane, ciel: stav.ciel, poslednyDarca: stav.poslednyDarca ?? null, poslednaSuma: stav.poslednaSuma ?? null, pecat: Date.now() };
+  const { error } = await supabase.from("overlay_stav").upsert({ split_id: splitId, stav: verejne }, { onConflict: "split_id" });
+  if (error) console.warn("Počítadlo do streamu ostalo len v tomto prehliadači", error.message);
 }
 
 function zoSnimky(splitId: string): StavOverlay | null {
@@ -51,12 +61,17 @@ function zoSnimky(splitId: string): StavOverlay | null {
   } catch { return null; }
 }
 
-/** TODO(backend): Supabase Realtime na tabuľke darov, filter na aktuálnu zbierku
- *  tohto splitu; čítať cez view/RPC, ktoré vracia LEN verejné polia
- *  (suma, cieľ, názov, zobrazované meno posledného darcu). Žiadny zápis.
- *  Záloha: polling každých 10 s. Pri výpadku ostáva posledný stav. */
-async function zoServera(_splitId: string): Promise<StavOverlay | null> {
-  return null;
+/** posledná snímka zo servera (overlay_stav, číta aj anon). Pri výpadku null → snímka z tohto prehliadača. */
+async function zoServera(splitId: string): Promise<StavOverlay | null> {
+  if (!supabase) return null;
+  const { data, error } = await supabase.from("overlay_stav").select("stav").eq("split_id", splitId).maybeSingle();
+  if (error || !data) return null;
+  const v = data.stav as { nazov: string; vyzbierane: number; ciel: number; poslednyDarca?: string | null; poslednaSuma?: number | null; pecat?: number };
+  return {
+    nazov: v.nazov, vyzbierane: Number(v.vyzbierane) || 0, ciel: Number(v.ciel) || 0,
+    ...(v.poslednyDarca ? { poslednyDarca: v.poslednyDarca } : {}), ...(v.poslednaSuma != null ? { poslednaSuma: Number(v.poslednaSuma) } : {}),
+    pecat: v.pecat ?? 0, naposledy: Date.now(),
+  };
 }
 
 // ---- demo: stránka sa kŕmi sama, aby sa dal vzhľad odskúšať priamo v OBS ----

@@ -5,6 +5,7 @@
 // vždy Anonymný darca, zruší ho vo svojom bankovníctve. Registrovaný ako doteraz, bez limitu.
 import { DeedZnacka } from "@/components/DeedZnacka";
 import { useState, type ReactNode } from "react";
+import { zaregistrujKluc, zmenene } from "@/lib/mojeData";
 import { usePouzivatel } from "@/lib/pouzivatel";
 import { useRecurringCreate } from "@/data";
 import { pridajDar, nacitajPredvolbu, useSektorDarcu, menoBezMena, type VolbaDaru } from "@/lib/darcovia";
@@ -24,7 +25,9 @@ const HOST_MAX_EUR = 100;
 const KLUC = "deed.pravidelne";
 type Zaznam = { refId: string; suma: number; mena: "EUR" | "EURC"; perioda: Perioda; od: number };
 const nacitaj = (): Zaznam[] => { try { return JSON.parse(localStorage.getItem(KLUC) ?? "[]") as Zaznam[]; } catch { return []; } };
-const uloz = (z: Zaznam) => { try { localStorage.setItem(KLUC, JSON.stringify([z, ...nacitaj()])); } catch { /* LS */ } };
+const uloz = (z: Zaznam) => { try { localStorage.setItem(KLUC, JSON.stringify([z, ...nacitaj()])); } catch { /* LS */ } zmenene(KLUC); };
+// zoznam nastavených pravidelných podpôr → do účtu (moje_data, 0084b); samotné strhávanie rieši platobný modul
+zaregistrujKluc(KLUC, () => {});
 
 const DNI = ["každú nedeľu", "každý pondelok", "každý utorok", "každú stredu", "každý štvrtok", "každý piatok", "každú sobotu"];
 const SLOVO: Record<Perioda, string> = { tyzdenne: "týždenne", mesacne: "mesačne", rocne: "ročne" };

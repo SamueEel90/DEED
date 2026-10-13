@@ -8,6 +8,7 @@ import { useEffect, useState } from "react";
 import * as db from "@/lib/db";
 import { getSession } from "@/lib/session";
 import { SUBJEKTY, SEGMENTY_CHARITY } from "./mock";
+import { verejneZPamate, zapisVerejne } from "@/lib/verejneNastavenia";
 import type { Siet } from "./kontakt";
 
 let registrovana: db.CharitaData | null = null;
@@ -21,6 +22,8 @@ export function segmentyCharity(): string[] {
     const v2 = localStorage.getItem("deed.rola.segmenty.charita.v2");
     if (v2) return (JSON.parse(v2) as { nazov: string; aktivny: boolean }[]).filter((x) => x.aktivny).map((x) => x.nazov);
   } catch { /* LS */ }
+  const db = verejneZPamate("svetlo")?.["segmentyCentralna"];
+  if (Array.isArray(db)) return db as string[];
   try { const s = localStorage.getItem(KLUC_SEG); if (s) return JSON.parse(s) as string[]; } catch { /* LS */ }
   return segmenty;
 }
@@ -28,6 +31,7 @@ export function segmentyCharity(): string[] {
 export const segmentyZRegistracie = () => segmenty;
 export function nastavSegmenty(v: string[]) {
   try { localStorage.setItem(KLUC_SEG, JSON.stringify(v)); } catch { /* LS */ }
+  void zapisVerejne("svetlo", "segmentyCentralna", v); // stránka charity v DB (rola/stav STRANKA_POZICIE.charita)
 }
 /** siete z registrácie (na predvyplnenie kontaktu) */
 export function sieteZRegistracie(): Partial<Record<Siet, string>> {

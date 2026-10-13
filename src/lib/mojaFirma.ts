@@ -6,8 +6,10 @@
 // Firma NIKDY nevidí voľby zamestnanca (predvoľbu Neukázať / Anonymne / S menom).
 // ============================================================
 import { useSyncExternalStore } from "react";
+import { zaregistrujKluc, zmenene } from "@/lib/mojeData";
 import { tTeraz } from "@/i18n";
 import { UCTY_FIRIEM, cisloFirmy, firma, rovnakaFirma } from "./firma";
+import { supabase } from "./supabase";
 
 export type FirmaVolba = "neukazat" | "anonym" | "meno";
 export const VOLBA_TXT: Record<FirmaVolba, string> = { neukazat: "Neukázať", anonym: "Anonymne", meno: "S menom" };
@@ -70,7 +72,22 @@ const DATA: Record<string, FirmaData> = {
   },
 };
 const PRAZDNE: FirmaData = { benefity: [], oznamy: [], akcie: [], odmeny: [] };
-export const dataFirmy = (ucet: string): FirmaData => Object.entries(DATA).find(([k]) => rovnakaFirma(k, ucet))?.[1] ?? PRAZDNE;
+
+// ---- obsah firmy z DB (firma_obsah, 0085b; kľúč = kluc firmy z registra). Bez DB / pred načítaním = DATA vyššie. ----
+const zDb = new Map<string, FirmaData>();
+let nacitane = false;
+async function nacitajZDb() {
+  if (nacitane || !supabase) return;
+  nacitane = true;
+  const { data, error } = await supabase.from("firma_obsah").select("firma, data");
+  if (error) { nacitane = false; return; } // neprihlásený alebo tabuľka ešte nebeží → mock
+  for (const r of data ?? []) zDb.set(firma(r.firma as string), { ...PRAZDNE, ...(r.data as Partial<FirmaData>) });
+  ver++; posl.forEach((f) => f());
+}
+export const dataFirmy = (ucet: string): FirmaData => {
+  void nacitajZDb();
+  return [...zDb].find(([k]) => rovnakaFirma(k, ucet))?.[1] ?? Object.entries(DATA).find(([k]) => rovnakaFirma(k, ucet))?.[1] ?? PRAZDNE;
+};
 
 // ---- odpovede usera (lokálne) ----
 const KLUC = "deed.mojaFirma";
@@ -78,7 +95,8 @@ type Stav = { vybavene: string[]; navrhy: Record<string, FirmaAkcia[]> };
 const posl = new Set<() => void>();
 let ver = 0;
 const nacitaj = (): Stav => { try { return { vybavene: [], navrhy: {}, ...JSON.parse(localStorage.getItem(KLUC) ?? "{}") }; } catch { return { vybavene: [], navrhy: {} }; } };
-const uloz = (s: Stav) => { try { localStorage.setItem(KLUC, JSON.stringify(s)); } catch { /* LS */ } ver++; posl.forEach((f) => f()); };
+const uloz = (s: Stav) => { try { localStorage.setItem(KLUC, JSON.stringify(s)); } catch { /* LS */ } zmenene(KLUC); ver++; posl.forEach((f) => f()); };
+zaregistrujKluc(KLUC, () => { ver++; posl.forEach((f) => f()); }); // odpovede zamestnanca → účet (moje_data, 0084b)
 export function useMojaFirma() {
   useSyncExternalStore((f) => { posl.add(f); return () => posl.delete(f); }, () => ver, () => 0);
   return nacitaj();
