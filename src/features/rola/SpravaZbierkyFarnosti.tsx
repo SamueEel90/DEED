@@ -1,6 +1,6 @@
 // ============================================================
 // KARTA 56D §6 · Správa zbierky farnosti po zapečatení (aj zbierky pre veriacich, OPRAVY 161).
-// Smie len 2 veci: zmeniť rýchle sumy (EUR aj EURC, „Uložené ✓") a ukončiť (podržať → „Zbierka je ukončená").
+// Smie zmeniť rýchle sumy, ukončiť a (farár, OPRAVY 222 B) vložiť vlastné peniaze. Pôvodne: zmeniť rýchle sumy (EUR aj EURC, „Uložené ✓") a ukončiť (podržať → „Zbierka je ukončená").
 // Záložky Štatistiky · Rýchle sumy · Ukončenie. Darcovia len menami, bez súm (sektor Viera: Bohu známy veriaci).
 // Prototyp „Sprava farnosti - prvy prichod" → Zbierky → ťuk na zbierku.
 // ============================================================
@@ -9,6 +9,7 @@ import { SADY, SADY_EURC, upravZbierku, ukonciZbierku, cielCislo, type SpustenaZ
 import { darcoviaPre, identitaDarcu, relCas, useZmenyDarov } from "@/lib/darcovia";
 import { usePouzivatel } from "@/lib/pouzivatel";
 import { kartaK, nadpisK, textK, useZmenaSum } from "./spravaCasti";
+import { VlastnePeniaze } from "./VlastnePeniaze";
 
 const eur = (n: number) => `${n.toLocaleString("sk-SK")} €`;
 const cis = (n: number) => n.toLocaleString("sk-SK");
@@ -31,8 +32,8 @@ export function rozdelenieZbierkyF(z: SpustenaZbierka): string {
 }
 export const fotoZbierky = (z: SpustenaZbierka) => z.media.find((m) => m.typ === "foto")?.src;
 
-export function SpravaZbierkyFarnosti({ stranka, z, mobil, toast, onSpat }: {
-  stranka: string; z: SpustenaZbierka; mobil: boolean; toast: (m: string) => void; onSpat: () => void;
+export function SpravaZbierkyFarnosti({ stranka, z, mobil, toast, onSpat, menoStranky }: {
+  stranka: string; z: SpustenaZbierka; mobil: boolean; toast: (m: string) => void; onSpat: () => void; /** názov farnosti (Potvrdené · … od Farnosti …) */ menoStranky?: string;
 }) {
   useZmenyDarov();
   const ja = usePouzivatel();
@@ -93,6 +94,8 @@ export function SpravaZbierkyFarnosti({ stranka, z, mobil, toast, onSpat }: {
     </div>
 
     {tab === 0 && <>
+      {/* OPRAVY 222 · B: vlastné peniaze do vlastnej zbierky (len farár, zbierka s vlastným účtom) */}
+      {aktivna && (z.farnost?.druh ?? "farnost") === "farnost" && !!z.ucet && <VlastnePeniaze stranka={stranka} menoStranky={menoStranky ?? "Farnosť"} refId={z.id} toast={toast} />}
       <section style={kartaK}>
         <div style={{ display: "grid", gridTemplateColumns: mobil ? "repeat(2,minmax(0,1fr))" : "repeat(4,minmax(0,1fr))", gap: 10 }}>
           {ramec(["Vyzbierané", ciel ? `${eur(suma)} z ${eur(ciel)}` : eur(suma), "cez DEED+"])}

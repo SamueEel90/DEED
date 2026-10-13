@@ -40,7 +40,8 @@ export function useFarnostFarara(): MojaFarnost | null {
 }
 
 export interface Prispevok { zbierka: string; nazov: string; kto: string; suma: number; cas: number; vs?: number; rodina: boolean }
-export interface Prispievatel { stranka: string; meno: string; suma: number | null }
+/** vlastne: vlastné peniaze organizácie, ktorá zbiera (0083); pocet: koľko darov poslala (neráta sa medzi ľudí) */
+export interface Prispievatel { stranka: string; meno: string; suma: number | null; vlastne: boolean; pocet: number }
 
 const prispela = new Map<string, Prispevok[]>(), prispievatelia = new Map<string, Prispievatel[]>();
 
@@ -57,7 +58,8 @@ async function nacitajPrispievatelov(zbierka: string) {
   if (!supabase) return;
   const { data, error } = await supabase.rpc("zbierka_prispievatelia", { p_zbierka: zbierka });
   if (error || !Array.isArray(data)) return;
-  prispievatelia.set(zbierka, (data as { stranka: string; meno: string; suma: number | null }[]).map((r) => ({ stranka: r.stranka, meno: r.meno, suma: r.suma == null ? null : Number(r.suma) })));
+  prispievatelia.set(zbierka, (data as { stranka: string; meno: string; suma: number | null; vlastne?: boolean; pocet?: number }[])
+    .map((r) => ({ stranka: r.stranka, meno: r.meno, suma: r.suma == null ? null : Number(r.suma), vlastne: !!r.vlastne, pocet: Number(r.pocet ?? 1) })));
   zmena();
 }
 /** čím farnosť prispela (Zbierky farnosti „Prispeli sme“, Peňaženka → Výpisy) */
@@ -91,4 +93,39 @@ export function useSomFarar(stranka: string): boolean {
   useZmena();
   useEffect(() => { void nacitajFarara(stranka); }, [stranka]);
   return farar.get(stranka) === true;
+}
+
+// ---------- B · Vložiť vlastné peniaze (0083): prevod z hlavného účtu na účet zbierky, VS → Čaká → Potvrdené ----------
+export interface Vklad { id: string; zbierka: string; suma: number; vs: string; z_uctu: string; na_ucet: string; stav: "caka" | "potvrdene" | "zrusene"; vytvorene: string }
+const vklady = new Map<string, Vklad[]>();
+async function nacitajVklady(zbierka: string) {
+  if (!supabase) return;
+  const { data, error } = await supabase.from("zbierka_vklad").select("id,zbierka,suma,vs,z_uctu,na_ucet,stav,vytvorene").eq("zbierka", zbierka).order("vytvorene", { ascending: false });
+  if (error || !Array.isArray(data)) return;
+  vklady.set(zbierka, (data as Vklad[]).map((v) => ({ ...v, suma: Number(v.suma) })));
+  zmena();
+}
+/** prevody vlastných peňazí do zbierky (vidí správa stránky) */
+export function useVklady(refId: string): Vklad[] {
+  useZmena();
+  const id = idZbierkyDB(refId);
+  useEffect(() => { if (id) void nacitajVklady(id); }, [id]);
+  return id ? vklady.get(id) ?? [] : [];
+}
+export async function vlozVlastne(refId: string, suma: number): Promise<Vklad> {
+  const id = idZbierkyDB(refId);
+  if (!supabase) throw new Error("Bez spojenia so serverom sa vlastné peniaze vložiť nedajú.");
+  if (!id) throw new Error("Do tejto zbierky sa vlastné peniaze vložiť nedajú.");
+  const { data, error } = await supabase.rpc("zbierka_vklad_vlastny", { p_zbierka: id, p_suma: suma });
+  if (error) throw new Error(error.message);
+  await nacitajVklady(id);
+  return { ...(data as Vklad), suma: Number((data as Vklad).suma) };
+}
+/** TESTOVACIA stránka: „Simulovať: platba prišla“ (ostro potvrdí server podľa VS) */
+export async function potvrdVklad(refId: string, vklad: string): Promise<void> {
+  const id = idZbierkyDB(refId);
+  if (!supabase || !id) return;
+  const { error } = await supabase.rpc("zbierka_vklad_potvrd", { p_vklad: vklad });
+  if (error) throw new Error(error.message);
+  await Promise.all([nacitajVklady(id), nacitajPrispievatelov(id)]);
 }

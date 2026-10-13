@@ -26,7 +26,7 @@ import { ZdielatHarok, Harok } from "./Zdielat";
 import { NahlasitSheet } from "@/components/nahlasit";
 import { firmaPreDorovnanie } from "@/lib/podpory";
 import { PravidelnaHarok } from "./PravidelnaHarok";
-import { PrispievateliaFarnosti, PrispietZaFarnost } from "./FarnostPrispela";
+import { PrispietZaFarnost } from "./FarnostPrispela";
 import { RetazDobraHarok } from "./RetazDobra";
 import { DorovnanieFirmyHarok } from "./DorovnanieFirmy";
 import { STUPNE, nastavDevTempo, useDevTempo, type Stupen } from "./tempoStupen";
@@ -170,8 +170,6 @@ export function ZbierkaModul({ zbierka, miesto: miestoProp, onBack, spatNazov, o
       return (
         <div key={p.kluc} className="zb-pol" style={{ padding: "0 16px" }}>
           <KartaStavu refId={zbierka.id} zaklad={zbierka.vyzbierane ?? 0} ciel={p.hodnota === "skryta" ? null : ciel} ludiaZaklad={zbierka.ludia ?? 0} tempo={tempoRezim} koniecPruhu={koniecPruhu} skryta={p.hodnota === "skryta"} />
-          {/* OPRAVY 222: farnosť ako prispievateľ (pri pohrebe bez sumy) */}
-          <PrispievateliaFarnosti refId={zbierka.id} rodina={miesto === "pohreb"} />
         </div>
       );
     }
@@ -201,6 +199,8 @@ export function ZbierkaModul({ zbierka, miesto: miestoProp, onBack, spatNazov, o
             : <RychleSumyEur sumy={p.hodnota === "eurDrobne" ? [1, 3, 5] : zbierka.rychleSumy ?? [10, 25, 45]}
                 doplnok={p.hodnota === "eurDrobne" || miesto === "sukromna" ? undefined : `sumy si volí ${ktoVoli ?? "charita"}`}
                 kDaru={dorovnanie ? (sm) => dorovnanieKDaru(dorovnanie, sm) : undefined} otvor={otvorPlatbu} />}
+          {/* OPRAVY 222 (prototyp Spolufinancovanie A): pod rýchlymi sumami „Prispieť ako Farnosť … ›“, len farár */}
+          {!naDeed && zaFarnost}
           <VlastnaSuma eur={vlastnaEur} deed={miesto === "deed" && registrovany} otvor={otvorPlatbu} onPodporit={() => setHarok("podporit")}
             firma={dorovnanie ? `${dorovnanie.firma} ${dorovnanie.pomer === 1 ? "zdvojnásobí" : "dorovná"}` : undefined} />
         </div>
@@ -234,7 +234,7 @@ export function ZbierkaModul({ zbierka, miesto: miestoProp, onBack, spatNazov, o
     </div>
   ) : <PodporitDeedObsah registrovany={registrovany} />;
   // OPRAVY 222: farár prispeje za farnosť (SEPA alebo karta), nie na vlastnú zbierku
-  const zaFarnost = miesto !== "podporitDeed" ? <div className="zb-pol" style={{ padding: "0 16px" }}><PrispietZaFarnost refId={zbierka.id} nazov={zbierka.nazov} vlastnik={miesto === "pohreb" || ktoVoli === "rodina" ? undefined : zbierka.organizacia?.meno} /></div> : null;
+  const zaFarnost = miesto !== "podporitDeed" ? <PrispietZaFarnost refId={zbierka.id} nazov={zbierka.nazov} vlastnik={miesto === "pohreb" || ktoVoli === "rodina" ? undefined : zbierka.organizacia?.meno} /> : null;
   const lave = polozky.filter((p) => VLAVO.has(p.kluc));
   const prave = polozky.filter((p) => !VLAVO.has(p.kluc));
 
@@ -272,11 +272,10 @@ export function ZbierkaModul({ zbierka, miesto: miestoProp, onBack, spatNazov, o
       {bocny ? <div style={{ display: "flex", flexDirection: "column" }}>
         {hore ?? <b className="zb-pol" style={{ padding: "6px 16px 12px", fontSize: 21, lineHeight: 1.2, letterSpacing: "-.01em" }}>{zbierka.nazov}</b>}
         {polozky.filter((p) => p.kluc !== "darcovia").map(vykresli)}
-        {zaFarnost}
         {polozky.filter((p) => p.kluc === "darcovia").map(vykresli)}
       </div> : <div className="zb-obsah">
         <div className="zb-lavy">{vrch}{pc && lave.map(vykresli)}</div>
-        <div className="zb-pravy">{pc ? <>{prave.map(vykresli)}{zaFarnost}</> : <ZmensenyModul>{polozky.filter((p) => p.kluc !== "darcovia").map(vykresli)}{zaFarnost}</ZmensenyModul>}</div>
+        <div className="zb-pravy">{pc ? <>{prave.map(vykresli)}</> : <ZmensenyModul>{polozky.filter((p) => p.kluc !== "darcovia").map(vykresli)}</ZmensenyModul>}</div>
       </div>}
       {/* bod 149 · dole vždy „Zbaliť a späť" (vráti na tú istú kartu a posun); OPRAVY 209: na mobile pod ním Darcovia */}
       {miesto !== "podporitDeed" && !bocny && <div style={{ padding: "14px 16px 0", maxWidth: pc ? 420 : undefined, marginLeft: pc ? "auto" : undefined }}><ZbalitASpat onClick={onBack} /></div>}

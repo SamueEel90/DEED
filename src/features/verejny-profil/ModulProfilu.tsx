@@ -4,6 +4,7 @@
 // DARY V EURÁCH · VLASTNÁ SUMA · DARY V KRYPTE · Pravidelná podpora (počet mesačných darcov; tipy „čo za to“ zrušené 13. 10.) ·
 // Sledovať + Podporiť DEED · Reťaz dobra · „Kam treba najviac…" · Darcovia. refId = centrálna / sektorová zbierka.
 // Nad modulom zväčšený náhľad dlaždice („POSIELAŠ DO · …", ikona i), modul sa prefarbí podľa poradia (data-hier).
+import { PrispietZaFarnost } from "@/features/zbierka/FarnostPrispela";
 import { SpatNaZbierky, ZbalitASpat, ZmensenyModul } from "@/features/zbierka/ZmensenyModul";
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { jeNeregistrovany, sledujDarcu } from "@/lib/devDarca";
@@ -143,6 +144,8 @@ function Modul({ profil, sektor, mestoV, sDorovnanim, uvidisOdkaz, nazovPlatby, 
       {/* OPRAVY 209 (prototyp Platobny modul charita a viera): bez Drobnej podpory; zvončeková aj bez Páči sa mi a Obľúbené */}
       <div style={{ marginTop: 12 }}><ZdielatRiadok onZdielat={() => setHarok("zdielat")} sam={bezObjektu} /></div>
       <RychleSumyEur sumy={sumy} doplnok={`sumy si volí ${ktoVoli}`} kDaru={dorovnanie ? (s) => dorovnanieKDaru(dorovnanie, s) : undefined} otvor={otvor} />
+      {/* OPRAVY 222 (prototyp Spolufinancovanie A): farár prispeje ako farnosť, nie na vlastnú zbierku */}
+      <PrispietZaFarnost refId={refId} nazov={sektor.nazov} vlastnik={profil.meno} />
       <VlastnaSuma eur deed={false} otvor={otvor} onPodporit={() => setHarok("podporit")} firma={dorovnanie ? `${dorovnanie.firma} ${dorovnanie.pomer === 1 ? "zdvojnásobí" : "dorovná"}` : undefined} />
       {!bezEurc && <DaryVKrypte refId={refId} otvor={otvor} mikro={mikro} sumy={sumyE} />}
       <PravidelnaRiadok registrovany={registrovany} onClick={() => setHarok("pravidelna")} />

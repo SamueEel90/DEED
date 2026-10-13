@@ -5,6 +5,7 @@ import { useDarcovia, identitaDarcu, DARCOVIA_CFG, useSektorDarcu, type DarRiado
 import { usePouzivatel } from "@/lib/pouzivatel";
 import { ludiaPomohli } from "./hlasky";
 import { TempoDarov, type TempoRezim } from "./Tempo";
+import { PrispievateliaFarnosti, useUsekyOrganizacii, ZLATA_USEK, VLASTNE_USEK } from "./FarnostPrispela";
 
 // míľniky: počíta systém sám, nikto ich nenastavuje
 const MILNIKY = [100, 250, 500, 1000, 2500, 5000, 10000, 25000, 50000, 100000];
@@ -42,12 +43,15 @@ function usePocitadlo(ciel: number): number {
 }
 
 /** pruh cez transform: scaleX — pri prvom vykreslení rastie od 0 */
-function Pruh({ podiel, vyska, blik, koniec }: { podiel: number; vyska: number; blik?: number; koniec?: RefObject<HTMLDivElement> }) {
+function Pruh({ podiel, vyska, blik, koniec, useky = [] }: { podiel: number; vyska: number; blik?: number; koniec?: RefObject<HTMLDivElement>; /** OPRAVY 222: úseky organizácií zľava (vlastné tmavozelené, partner zlatý) */ useky?: { w: number; farba: string }[] }) {
   const [p, setP] = useState(0);
   useEffect(() => { const r = requestAnimationFrame(() => setP(Math.max(0, Math.min(1, podiel)))); return () => cancelAnimationFrame(r); }, [podiel]);
   return (
     <>
-    <div style={{ height: vyska, borderRadius: 10, background: "var(--track)", overflow: "hidden" }}>
+    <div style={{ position: "relative", height: vyska, borderRadius: 10, background: "var(--track)", overflow: "hidden" }}>
+      {useky.length > 0 && <div aria-hidden="true" style={{ position: "absolute", inset: 0, zIndex: 1, display: "flex", pointerEvents: "none", transformOrigin: "0 50%", transform: `scaleX(${p > 0 ? 1 : 0})`, transition: "transform .6s" }}>
+        {useky.map((u, i) => <span key={i} style={{ flex: "none", width: `${Math.max(0, Math.min(1, u.w)) * 100}%`, height: "100%", background: u.farba }} />)}
+      </div>}
       <div key={blik} className={`zb-pruh${blik ? " zb-blik" : ""}`}
         style={{ height: "100%", borderRadius: 10, background: "var(--hcPruh, linear-gradient(90deg, #4B7A35, #8DB866))", transformOrigin: "0 50%", transform: `scaleX(${p})` }} />
     </div>
@@ -58,11 +62,15 @@ function Pruh({ podiel, vyska, blik, koniec }: { podiel: number; vyska: number; 
 }
 
 const fanusikovia = (n: number) => n === 1 ? "1 fanúšik pomohol" : n >= 2 && n <= 4 ? `${n} fanúšikovia pomohli` : `${n} fanúšikov pomohlo`;
-function Ludia({ pocet, fanusikov }: { pocet: number; fanusikov?: boolean }) {
+const organizacie = (n: number) => n === 1 ? "1 organizácia" : n >= 2 && n <= 4 ? `${n} organizácie` : `${n} organizácií`;
+const ludiaNom = (n: number) => n === 1 ? "1 človek" : n >= 2 && n <= 4 ? `${n} ľudia` : `${n} ľudí`;
+/** „38 ľudí a 1 organizácia pomohli“ (organizácia = partner, nie vlastné peniaze) */
+const ludiaAOrg = (n: number, o: number) => !o ? ludiaPomohli(n) : !n ? `${organizacie(o)} ${o === 1 ? "pomohla" : o <= 4 ? "pomohli" : "pomohlo"}` : `${ludiaNom(n)} a ${organizacie(o)} pomohli`;
+function Ludia({ pocet, fanusikov, org = 0 }: { pocet: number; fanusikov?: boolean; org?: number }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 12, fontSize: 13, color: "var(--ink3)" }}>
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" /></svg>
-      <span style={{ flex: 1 }}>{fanusikov ? fanusikovia(pocet) : ludiaPomohli(pocet)}</span>
+      <span style={{ flex: 1 }}>{fanusikov ? fanusikovia(pocet) : ludiaAOrg(pocet, org)}</span>
       <span style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--green)", fontWeight: 700 }}>
         <span className="zb-pulz" style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--green)" }} />
         rastie naživo
@@ -88,7 +96,9 @@ export function KartaStavu({ refId, zaklad, ciel, ludiaZaklad, tempo = false, ko
   const ja = usePouzivatel();
   const sektor = useSektorDarcu();
   const suma = (cezTvorcu ? 0 : zaklad) + dary.reduce((a, r) => a + r.suma, 0);
-  const ludia = (cezTvorcu ? 0 : ludiaZaklad) + dary.filter((r) => !r.firma).length;
+  const org = useUsekyOrganizacii(refId);
+  // OPRAVY 222: dary organizácií (farnosť, vlastné peniaze) nie sú ľudia
+  const ludia = Math.max(0, (cezTvorcu ? 0 : ludiaZaklad) + dary.filter((r) => !r.firma).length - (cezTvorcu ? 0 : org.darovOrg));
   const nadpisVyzbierane = cezTvorcu ? `Vyzbierané cez ${cezTvorcu.menoAkuzativ}` : "Vyzbierané";
   const zobrazena = usePocitadlo(suma);
   const maCiel = ciel != null && ciel > 0;
@@ -130,9 +140,10 @@ export function KartaStavu({ refId, zaklad, ciel, ludiaZaklad, tempo = false, ko
           <span style={{ fontSize: 14, color: "var(--ink3)" }}>z {eur(ciel!)}</span>
           <span style={{ marginLeft: "auto", fontSize: 18, fontWeight: 800, color: "var(--green)", fontVariantNumeric: "tabular-nums" }}>{pct} %</span>
         </div>
-        <Pruh podiel={suma / ciel!} vyska={10} koniec={koniecPruhu} />
+        <Pruh podiel={suma / ciel!} vyska={10} koniec={koniecPruhu} useky={[{ w: org.vlastne / ciel!, farba: VLASTNE_USEK }, { w: org.cudzie / ciel!, farba: ZLATA_USEK }].filter((u) => u.w > 0)} />
+        <PrispievateliaFarnosti refId={refId} />
         <TempoDarov refId={refId} rezim={tempo} />
-        <Ludia pocet={ludia} />
+        <Ludia pocet={ludia} org={org.organizacii} />
       </div>
     );
   }
@@ -146,7 +157,9 @@ export function KartaStavu({ refId, zaklad, ciel, ludiaZaklad, tempo = false, ko
           <div style={{ ...velka, filter: odhalena ? "none" : "blur(9px)", userSelect: odhalena ? undefined : "none" }} aria-hidden={odhalena ? undefined : true} data-zb-suma={refId}>{eur(odhalena ? zobrazena : 0)}</div>
           {!odhalena && <span style={{ fontSize: 13, lineHeight: 1.35, fontWeight: 700, color: "var(--ink3)" }}>suma sa ukáže<br />po vašom dare</span>}
         </div>
-        <Ludia pocet={ludia} />
+        {/* OPRAVY 222: pri zbierke rodiny bez sumy — „Prispela aj Farnosť …“ */}
+        <PrispievateliaFarnosti refId={refId} rodina />
+        <Ludia pocet={ludia} org={org.organizacii} />
       </div>
     );
   }
@@ -170,8 +183,9 @@ export function KartaStavu({ refId, zaklad, ciel, ludiaZaklad, tempo = false, ko
           {sumaDaru(posledny) && <span style={{ fontSize: 13, fontWeight: 800, color: "var(--green)", flex: "none", fontVariantNumeric: "tabular-nums" }}>{sumaDaru(posledny)}</span>}
         </div>
       )}
+      {!cezTvorcu && <PrispievateliaFarnosti refId={refId} />}
       <TempoDarov refId={refId} rezim={tempo} cezTvorcu={cezTvorcu?.id} />
-      <Ludia pocet={ludia} fanusikov={!!cezTvorcu} />
+      <Ludia pocet={ludia} fanusikov={!!cezTvorcu} org={cezTvorcu ? 0 : org.organizacii} />
     </div>
   );
 }

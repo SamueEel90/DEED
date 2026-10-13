@@ -577,7 +577,7 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
   // KARTA 56B: hlavnú zbierku nejde zmazať, kým beží zbierka farnosti (na jej účet). Zbierky pre veriacich od nej nezávisia (OPRAVY 161).
   const ostatneBezia = dalsie.some((z) => (z.farnost?.druh ?? "farnost") === "farnost" && z.stav !== "ukoncena" && z.stav !== "vyuctovana");
   const zbOtvorena = dalsie.find((z) => z.id === zbOtv);
-  const zbierkaEl = zbOtvorena ? <SpravaZbierkyFarnosti key={zbOtvorena.id} stranka={strankaId} z={zbOtvorena} mobil={mobil} toast={toast} onSpat={() => go("zbierky")} /> : null;
+  const zbierkaEl = zbOtvorena ? <SpravaZbierkyFarnosti key={zbOtvorena.id} stranka={strankaId} z={zbOtvorena} mobil={mobil} toast={toast} onSpat={() => go("zbierky")} menoStranky={meno} /> : null;
   const novaEl = <NovaZbierka strankaId={strankaId} pozicia="charita" tier={4} nazov={meno} inicialy={meno.split(/\s+/).map((w) => w[0] ?? "").join("").slice(0, 2).toUpperCase()} mobil={mobil} tablet={tablet} stit="silver"
     onMojeZbierky={() => go("zbierky")} farnost={{ ucet: hlavnyUcet, onSpustena: (z) => { go("zbierky"); setNoveOk(`Zbierka „${z.nazov}“ beží. Nájdete ju nižšie v Ďalších zbierkach.`); } }} />;
   const hlavnaSprava = <SpravaCentralnej strankaId={strankaId} nazov={meno} hlavnyUcet={hlavnyUcet} tier={4} mobil={mobil} toast={toast}
