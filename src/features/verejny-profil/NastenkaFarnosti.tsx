@@ -158,7 +158,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, stit: s
   const [velke, setVelke] = useState<Velke | null>(null);
   const [album, setAlbum] = useState<PolozkaFarnika | null>(null);
   const [osoba, setOsoba] = useState<string | null>(null); // OPRAVY 196: profil autora
-  const { wide: siroka } = useLayout();
+  const { wide: siroka, desktop: pc } = useLayout();
   /** OPRAVY 205: na mobile medailóny a tvary menšie, dva vedľa seba */
   const mriezkaTvarov: CSSProperties = siroka ? { display: "flex", flexWrap: "wrap", gap: "28px 36px", alignItems: "flex-start" } : { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px 8px", justifyItems: "center", alignItems: "start" };
   const zmensi: CSSProperties = siroka ? {} : { zoom: 0.72 } as CSSProperties;
@@ -338,7 +338,12 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, stit: s
   const maZbierky = hlOn || zvOn || zbFar.length + zbIne.length + piny.length + prispela.length > 0;
   const prazdna = !(!!onas || maZbierky || maPrid || !!p || prosby.length || maSpom || maTes || pomoz.length || oznVer.length || ozAll.length || maKal || urad.length);
   // ---------- titulka: tlačidlo Moja farnosť / Sledovať ----------
-  const sledBtn = <button type="button" aria-pressed={jeHl || jeSl} aria-expanded={jeHl || jeSl ? mfOn : undefined} onClick={sledTap} style={{ flex: "none", minHeight: siroka ? 54 : 52, padding: "0 20px", borderRadius: siroka ? 15 : 14, border: siroka || jeHl || jeSl ? "none" : `1.5px solid ${LINKA}`, background: jeHl || jeSl ? (siroka ? "var(--nf-gSoft)" : ZELENA_TL) : siroka ? "#fff" : PAPIER, color: jeHl || jeSl ? (siroka ? "var(--nf-gInk)" : "#fff") : siroka ? "#14110B" : INK, fontFamily: "inherit", fontSize: siroka ? 17 : 15, fontWeight: 800, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 10 }}>
+  // Martin (odpovede 13. 10.): mobil a tablet — dlaždica „Omše a kalendár“ s dnešnými časmi vedľa Moja farnosť; PC nie
+  const dniKal = maKal && !pc ? [...plagatTyzdna(kk, VJ, 0, SLF.omsa), ...plagatTyzdna(kk, VJ, 1, SLF.omsa)] : [];
+  const iDnesK = dniKal.findIndex((d) => d.key === iso(cas));
+  const najblizsi = iDnesK < 0 ? undefined : dniKal.slice(iDnesK).find((d) => d.o.some((o) => !o.z));
+  const dnesKal = najblizsi ? `${najblizsi.key === iso(cas) ? "dnes" : dniKal.indexOf(najblizsi) === iDnesK + 1 ? "zajtra" : najblizsi.w.toLocaleLowerCase("sk-SK")} ${najblizsi.o.filter((o) => !o.z).slice(0, 2).map((o) => `${o.t} ${o.s}`).join(" · ")}` : "";
+  const sledBtn = <button type="button" aria-pressed={jeHl || jeSl} aria-expanded={jeHl || jeSl ? mfOn : undefined} onClick={sledTap} style={{ flex: "none", minHeight: pc ? 54 : 52, padding: "0 20px", borderRadius: pc ? 15 : 14, border: pc || jeHl || jeSl ? "none" : `1.5px solid ${LINKA}`, background: jeHl || jeSl ? (pc ? "var(--nf-gSoft)" : ZELENA_TL) : pc ? "#fff" : PAPIER, color: jeHl || jeSl ? (pc ? "var(--nf-gInk)" : "#fff") : pc ? "#14110B" : INK, fontFamily: "inherit", fontSize: pc ? 17 : 15, fontWeight: 800, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 10 }}>
     <span>{sledT}</span>{(jeHl || jeSl) && <span aria-hidden="true" style={{ fontSize: 15 }}>⌄</span>}
   </button>;
   // ---------- otvorenie zbierok (karta aj malý riadok) ----------
@@ -394,7 +399,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, stit: s
             : logo ? <img src={logo} alt="Logo" style={{ flex: "none", width: "clamp(76px,7vw,100px)", height: "clamp(76px,7vw,100px)", borderRadius: profil?.tvar === "kruh" ? "50%" : 26, objectFit: "cover", background: "#fff" }} />
             : <span style={{ flex: "none", width: "clamp(76px,7vw,100px)", height: "clamp(76px,7vw,100px)", borderRadius: 26, background: "#fff", color: "#14110B", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "clamp(26px,2.6vw,34px)", fontWeight: 800 }}>{inic}</span>}
           <span style={{ flex: "1 1 320px", minWidth: 0, display: "flex", flexDirection: "column", gap: 8 }}><b style={{ fontSize: "clamp(30px,4.4vw,60px)", lineHeight: 1, letterSpacing: "-.04em", color: "#fff", textWrap: "balance" } as CSSProperties}>{meno}</b><span style={{ fontSize: "clamp(15px,1.4vw,19px)", color: "#E8E1D3" }}>Farnosť</span></span>
-          {siroka && sledBtn}
+          {pc && sledBtn}
         </div>
       </div>
       <div style={{ padding: `${siroka ? 28 : 18}px ${PAD_X} ${siroka ? 12 : 4}px`, display: "flex", flexDirection: "column", gap: 14 }}>
@@ -402,10 +407,14 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, stit: s
           {onasOtv ? onas : onas.split(/(?<=[.!?])\s|\n/)[0]}{" "}
           {!onasOtv && <button type="button" onClick={() => setOnasOtv(true)} style={{ border: "none", background: "transparent", padding: 0, color: "var(--nf-gInk)", fontFamily: "inherit", fontSize: "inherit", fontWeight: 800, cursor: "pointer" }}>viac ›</button>}
         </span>}
-        {!siroka && <div style={{ display: "grid", gridTemplateColumns: maKal ? "1fr 1fr" : "1fr", gap: 8 }}>
+        {!pc && <div style={{ display: "grid", gridTemplateColumns: maKal ? "1fr 1fr" : "1fr", gap: 8, maxWidth: siroka ? 720 : undefined }}>
           {sledBtn}
-          {maKal && <button type="button" onClick={() => posunNaBlok("kal")} style={{ minHeight: 52, borderRadius: 14, border: `1.5px solid ${LINKA}`, background: PAPIER, color: INK, fontFamily: "inherit", fontSize: 15, fontWeight: 800, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M4 6h16v14H4zM4 10h16M8 3v4M16 3v4" /></svg>Omše a kalendár</button>}
+          {maKal && <button type="button" onClick={() => posunNaBlok("kal")} style={{ minHeight: 52, minWidth: 0, padding: "6px 10px", borderRadius: 14, border: `1.5px solid ${LINKA}`, background: PAPIER, color: INK, fontFamily: "inherit", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true" style={{ flex: "none" }}><path d="M4 6h16v14H4zM4 10h16M8 3v4M16 3v4" /></svg>
+            <span style={{ minWidth: 0, display: "flex", flexDirection: "column", alignItems: "flex-start", textAlign: "left" }}>
+              <b style={{ maxWidth: "100%", fontSize: siroka ? 15 : 14.5, fontWeight: 800, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>Omše a kalendár</b>
+              {dnesKal && <span style={{ maxWidth: "100%", fontSize: 12.5, fontWeight: 700, color: INK3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{dnesKal}</span>}
+            </span></button>}
         </div>}
       </div>
 
