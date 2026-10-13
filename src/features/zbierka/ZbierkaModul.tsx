@@ -128,7 +128,10 @@ export function ZbierkaModul({ zbierka, miesto: miestoProp, onBack, spatNazov, o
   const tempoRezim = POLOZKY[miesto].tempo as TempoRezim;
   // karta 07 — platobné okno (so sumou rovno na Spôsob, bez sumy od kroku Suma)
   const [platba, setPlatba] = useState<{ kanal: KanalPlatby; suma?: number } | null>(null);
-  const otvorPlatbu: OtvorPlatbu = (p) => { setPredDarom(stavPredDarom()); setPlatba(p); };
+  // OPRAVY 209: naraz je otvorené len jedno okno platby — nové zavrie predchádzajúce
+  const jaOkno = useRef(Symbol("zbierka"));
+  useEffect(() => { const f = (e: Event) => { if ((e as CustomEvent).detail !== jaOkno.current) setPlatba(null); }; window.addEventListener("deed-okno-platby", f); return () => window.removeEventListener("deed-okno-platby", f); }, []);
+  const otvorPlatbu: OtvorPlatbu = (p) => { window.dispatchEvent(new CustomEvent("deed-okno-platby", { detail: jaOkno.current })); setPredDarom(stavPredDarom()); setPlatba(p); };
   // stav zbierky tesne pred darom (pre poďakovanie a hlášku) — zachytí sa pri otvorení okna
   const stavPredDarom = () => {
     const dary = darcoviaPre(zbierka.id), dnes = new Date(); dnes.setHours(0, 0, 0, 0);

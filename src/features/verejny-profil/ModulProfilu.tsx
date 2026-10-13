@@ -120,8 +120,13 @@ function Modul({ profil, sektor, mestoV, sDorovnanim, uvidisOdkaz, nazovPlatby, 
     return { vyzbierane: zaklad + dary.reduce((a, r) => a + r.suma, 0), ciel, pocetDarov: sektor.darcovia + dary.length, darovDnes: dary.filter((r) => r.cas >= dnes.getTime()).length };
   };
   const [pred, setPred] = useState(stav);
-  const otvor: OtvorPlatbu = (p) => { setPred(stav()); setPlatba(p); };
-  const [harok, setHarok] = useState<null | "pravidelna" | "zdielat" | "podporit" | "retaz">(null);
+  const [harok, setHarok0] = useState<null | "pravidelna" | "zdielat" | "podporit" | "retaz">(null);
+  // OPRAVY 209: naraz je otvorené len jedno okno platby — nové zavrie predchádzajúce (aj v inom module)
+  const ja = useRef(Symbol("modul"));
+  useEffect(() => { const f = (e: Event) => { if ((e as CustomEvent).detail !== ja.current) { setPlatba(null); setHarok0(null); } }; window.addEventListener("deed-okno-platby", f); return () => window.removeEventListener("deed-okno-platby", f); }, []);
+  const ohlas = () => window.dispatchEvent(new CustomEvent("deed-okno-platby", { detail: ja.current }));
+  const otvor: OtvorPlatbu = (p) => { ohlas(); setPred(stav()); setPlatba(p); };
+  const setHarok = (h: typeof harok) => { if (h) ohlas(); setHarok0(h); };
   const [tipSuma, setTipSuma] = useState<number | undefined>(undefined);
   const k20 = dorovnanie ? dorovnanieKDaru(dorovnanie, 20) : 0;
   // bod 151 · veta „Kam treba najviac. Minulý mesiac…" sa v module neukazuje (ostáva len pri odkaze firmy „Pozrieť v zbierke")
@@ -134,8 +139,9 @@ function Modul({ profil, sektor, mestoV, sDorovnanim, uvidisOdkaz, nazovPlatby, 
         <KartaDorovnava d={dorovnanie} />
         {k20 > 0 && <div style={{ margin: "-4px 0 0", textAlign: "center", fontSize: 13.5, fontWeight: 700, color: "var(--gold)", fontVariantNumeric: "tabular-nums" }}>daruješ 20 € → do {kam} ide {eurT(20 + k20)}</div>}
       </div>}
-      <div style={{ marginTop: 12 }}><ZdielatRiadok onZdielat={() => setHarok("zdielat")} /></div>
-      <DeedDlazdice refId={refId} registrovany={registrovany} mikro={mikro} />
+      {/* OPRAVY 209: zvončeková bez Drobnej podpory DeeD, Páči sa mi a Sledovať (Podporiť DEED+ ostáva vedľa Zdieľať) */}
+      <div style={{ marginTop: 12 }}><ZdielatRiadok onZdielat={() => setHarok("zdielat")} onPodporitDeed={bezObjektu ? () => setHarok("podporit") : undefined} /></div>
+      {!bezObjektu && <DeedDlazdice refId={refId} registrovany={registrovany} mikro={mikro} />}
       <RychleSumyEur sumy={sumy} doplnok={`sumy si volí ${ktoVoli}`} kDaru={dorovnanie ? (s) => dorovnanieKDaru(dorovnanie, s) : undefined} otvor={otvor} />
       <VlastnaSuma eur deed={registrovany} otvor={otvor} firma={dorovnanie ? `${dorovnanie.firma} ${dorovnanie.pomer === 1 ? "zdvojnásobí" : "dorovná"}` : undefined} />
       {!bezEurc && <DaryVKrypte refId={refId} otvor={otvor} mikro={mikro} sumy={sumyE} />}
@@ -155,7 +161,7 @@ function Modul({ profil, sektor, mestoV, sDorovnanim, uvidisOdkaz, nazovPlatby, 
             </button>))}
         </div>
       </>}
-      <OblubenePodporit polozka={{ refId, typ: "charita", modul: "charity", nazov }} onPodporit={() => setHarok("podporit")} />
+      {!bezObjektu && <OblubenePodporit polozka={{ refId, typ: "charita", modul: "charity", nazov }} onPodporit={() => setHarok("podporit")} />}
       <RetazRiadok onClick={() => setHarok("retaz")} />
       {veta && uvidisOdkaz && <div style={{ marginTop: 12, padding: "12px 14px", borderRadius: 18, background: "var(--gSoft)", border: "1px solid var(--gBd)", fontSize: 14, lineHeight: 1.5, color: "var(--ink)", textWrap: "pretty" } as CSSProperties}>{veta}
         {uvidisOdkaz && <button type="button" onClick={uvidisOdkaz.onClick} style={{ display: "block", minHeight: 44, margin: "-6px 0 -12px", padding: 0, border: "none", background: "transparent", boxShadow: "none", cursor: "pointer", textAlign: "left", fontSize: 13.5, fontWeight: 800, color: "var(--green)", fontFamily: "inherit" }}>{uvidisOdkaz.text} ›</button>}
