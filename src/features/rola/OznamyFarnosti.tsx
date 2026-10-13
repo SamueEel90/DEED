@@ -188,7 +188,10 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
     if (ODRUHY[odr][1] === "parte" && u.zena == null) ch.push("Muž alebo Žena");
   } else if (!n.trim()) ch.push("nadpis");
   if (dr === 1) { if (!dat) ch.push("dátum"); if (!CAS_OK(cas)) ch.push("čas"); }
-  if ((dr === 1 && usp === 1) || (dr === 2 && (osp === 1 || ine))) { if (!plagat) ch.push(ine ? "plagát alebo fotka" : "plagát"); }
+  // OPRAVY 212: pri vlastnom oznámení (parte, svadba, jubileum, iné) je prvá fotka z galérie titulná
+  const fotkyG = media.filter((m) => m.typ === "foto");
+  if (dr === 2 && (osp === 1 || ine) && !fotkyG.length) ch.push(ine ? "plagát alebo fotka" : "plagát");
+  if (dr === 1 && usp === 1 && !plagat) ch.push("plagát");
   const chybaSab = sablona && !ch.length ? chybaOznamu(u) : null;
   const limitN = pozv === 2 ? parseInt(limit, 10) || undefined : undefined;
   const pozvanieO = dr !== 2 && pozv > 0 ? { zavazne: pozv === 2, limit: limitN } : undefined;
@@ -198,7 +201,7 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
   const nadpisN = n.trim() || (sablona ? u.meno.trim() || "Meno" : dr === 1 ? "Nadpis udalosti" : dr === 2 ? "Nadpis oznámenia" : "Nadpis oznamu");
   const kedyT = dr === 1 ? [fmtDatum(dat), CAS_OK(cas) ? pekny(cas) : "", miesto.trim()].filter(Boolean).join(" · ") : sablona ? popisOznamu(u).split(" · ").slice(1).join(" · ") : "";
   const jePlagat = (dr === 1 && usp === 1) || (dr === 2 && (osp === 1 || ine));
-  const obrazok = jePlagat ? plagat : dr === 1 ? media.find((m) => m.typ === "foto")?.src : undefined; // prvá fotka z galérie
+  const obrazok = dr === 2 && jePlagat ? fotkyG[0]?.src : jePlagat ? plagat : dr === 1 || dr === 0 ? fotkyG[0]?.src : undefined; // prvá fotka z galérie
   const pozvT = (p?: { zavazne: boolean; limit?: number }) => (p ? (p.zavazne ? `Prihlásiť sa${p.limit ? ` · 0 z ${p.limit}` : ""}` : "Zúčastním sa") : undefined);
   const kartaNahladu = (o: { chip: string; nadpis: string; obraz: ReactNode; text: string; kedy: string; pozvT?: string }) => (
     <section aria-label="Náhľad oznamu" style={{ ...karta, overflow: "hidden", minWidth: 0 }}>
@@ -218,7 +221,7 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
   const nahladPisania = kartaNahladu({ chip, nadpis: nadpisN, text: dr !== 2 || ine ? cistyText(txt) : "", kedy: kedyT, pozvT: pozvT(pozvanieO),
     obraz: sablona && u.meno.trim() && (u.zena != null || u.druh !== "parte")
       ? <div style={{ display: "flex", justifyContent: "center", padding: 12, background: "var(--field)" }}><Plagat u={u} volba={volba} vz={vz} sirka={280} /></div>
-      : dr !== 0 && (obrazok && jePlagat ? <ObrazokPlagatu src={obrazok} /> : <ObrazokOznamu src={obrazok} inic={iniciy(meno)} />) });
+      : (dr !== 0 || !!obrazok) && (obrazok && jePlagat ? <ObrazokPlagatu src={obrazok} /> : <ObrazokOznamu src={obrazok} inic={iniciy(meno)} />) });
 
   // ---- zverejniť / uložiť zmeny ----
   const zoznam = vlastnePrispevky(strankaId);
@@ -231,13 +234,14 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
     let it: VieraFeedItem;
     let kalendar = false;
     if (dr === 0) {
-      it = { ...zaklad, ntyp: "oznam", tag: "Oznam", nazov: n.trim(), popis: cistyText(txt), platnostDni: PLATI[plati][1], pozvanie: pozvanieO, rsvp: !!pozvanieO || undefined, oz };
+      it = { ...zaklad, ntyp: "oznam", tag: "Oznam", nazov: n.trim(), popis: cistyText(txt), platnostDni: PLATI[plati][1], pozvanie: pozvanieO, rsvp: !!pozvanieO || undefined, oz,
+        fotky: fotkyG.length ? fotkyG.map((m) => m.src) : undefined, popisy: fotkyG.some((m) => m.popis) ? fotkyG.map((m) => m.popis ?? "") : undefined };
     } else if (dr === 1) {
       const kal = oz.kal ?? `u${teraz}`;
       oz.kal = kal;
       it = { ...zaklad, ntyp: "udalost", tag: "Udalosť", nazov: n.trim(), popis: cistyText(txt), datum: dat /* OPRAVY 207: dátum · čas · miesto nie do textu, je v riadku nad nadpisom */, rsvp: !!pozvanieO || undefined, pozvanie: pozvanieO, plagat: usp === 1 || undefined,
         udalost: { cas: pekny(cas), miesto: miesto.trim() || undefined, text: cistyText(txt) || undefined, zavazne: pozv === 2 || undefined },
-        fotky: usp === 1 ? (plagat ? [plagat] : undefined) : media.filter((m) => m.typ === "foto").map((m) => m.src), oz };
+        fotky: usp === 1 ? (plagat ? [plagat] : undefined) : fotkyG.map((m) => m.src), popisy: usp !== 1 && fotkyG.some((m) => m.popis) ? fotkyG.map((m) => m.popis ?? "") : undefined, oz };
       // kalendár: pri úprave sa starý záznam presunie (ten istý id)
       zmenKostol(strankaId, "0", (k) => {
         const extra = Object.fromEntries(Object.entries(k.extra).map(([d, l]) => [d, l.filter((x) => x.id !== kal)]).filter(([, l]) => l.length));
@@ -246,9 +250,10 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
       kalendar = true;
     } else {
       const d = ODRUHY[odr][1], vl = osp === 1 || ine;
+      const plagat = vl ? fotkyG[0]?.src : undefined;
       it = { ...zaklad, ntyp: "oznam", tag: ine ? "Oznámenie" : d === "ine" ? "Jubileum" : "Oznam", ukat: ine ? undefined : d === "parte" ? "pohreb" : d === "svadba" ? "svadba" : undefined,
         nazov: vl ? n.trim() : `${ODRUHY[odr][0]} · ${u.meno.trim()}`, popis: ine ? cistyText(txt) : vl ? n.trim() : popisOznamu(u), datum: vl ? undefined : u.kedyD || undefined,
-        fotky: vl ? (plagat ? [plagat] : undefined) : u.foto ? [u.foto] : undefined, plagat: vl || undefined,
+        fotky: vl ? (fotkyG.length ? fotkyG.map((m) => m.src) : undefined) : u.foto ? [u.foto] : undefined, plagat: vl || undefined, popisy: vl && fotkyG.some((m) => m.popis) ? fotkyG.map((m) => m.popis ?? "") : undefined,
         reakciaTyp: ine ? undefined : d === "parte" ? "kondolencia" : d === "svadba" ? "blahozelanie" : undefined,
         smutocny: !ine && d === "parte" ? { mode: vl ? "image" : "template", imageUrl: vl ? plagat : undefined, meno: vl ? n.trim() : u.meno.trim(), rodena: !vl && u.zena && u.rod.trim() ? u.rod.trim() : undefined,
           datumNar: vl ? "" : u.nar, datumUmr: vl ? "" : u.umr, rozluckaMiesto: vl ? "" : u.kde.trim(), rozluckaDatum: vl ? "" : u.kedyD, rozluckaCas: vl ? "" : u.kedyC, foto: vl ? undefined : u.foto,
@@ -281,8 +286,8 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
     const d = ODRUHY[o.odr]?.[1] ?? "parte";
     setU(o.u ?? prazdneUdaje(d)); setVolba(o.volba ?? prvaVolba(d));
     const f = x.fotky ?? [];
-    setPlagat(x.plagat ? f[0] : undefined);
-    setMedia(!x.plagat && o.dr === 1 ? f.map((src, i) => ({ id: terazMs() + i, typ: "foto" as const, src })) : []);
+    setPlagat(x.plagat && o.dr === 1 ? f[0] : undefined);
+    setMedia((!x.plagat && o.dr !== 2) || (x.plagat && o.dr === 2) ? f.map((src, i) => ({ id: terazMs() + i, typ: "foto" as const, src, ...(x.popisy?.[i] ? { popis: x.popisy[i] } : {}) })) : []);
     setEdit(x.id); setHotovo(null); setVyb(true); setFormOn(true); setOtv(null); setPozri(null);
     window.setTimeout(() => topRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 30);
   };
@@ -319,7 +324,7 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}><span style={lbl}>Druh oznámenia</span><Segment label="Druh oznámenia" vol={ODRUHY.map(([t], i) => [i, t] as [number, string])} cur={odr} set={zmenOdr} /></div>
       {!ine && <div style={{ display: "flex", flexDirection: "column", gap: 8 }}><span style={lbl}>Ako ho chcete ukázať</span><Segment label="Ako ho chcete ukázať" vol={[[0, "Zo šablóny"], [1, "Vlastný plagát"]]} cur={osp} set={(v) => setOsp(v as 0 | 1)} /></div>}
     </>}
-    {dr === 2 && (osp === 1 || ine) && <PlagatPole src={plagat} onSrc={setPlagat} toast={toast} popis={ine ? "Váš plagát alebo fotka. Pod ňou napíšte nadpis a krátky popis." : "ťuknite a vyberte obrázok, alebo ho sem pretiahnite · JPG alebo PNG"} />}
+    {dr === 2 && (osp === 1 || ine) && <GaleriaEditor media={media} onMedia={setMedia} ph={mobil} bezVidea nadpis={ine ? "Plagát alebo fotky" : "Plagát a fotky"} dovetok=" Prvá je titulná na karte, ostatné sa ukážu po ťuknutí. Pod fotku môžete napísať popis." />}
     {!sablona && <label style={{ display: "flex", flexDirection: "column", gap: 6 }}><span style={lbl}>Nadpis</span>
       <input value={n} onChange={(e) => setN(e.target.value.slice(0, 80))} placeholder={dr === 1 ? "napr. Púť do Šaštína" : dr === 2 ? NADPIS_PH[odr] : "napr. V piatok nebude spovedanie"} style={pole} /></label>}
     {ine && <TextOznamu key={`ine${txtKey}`} value={txt} onChange={setTxt} label="Krátky popis" popis="Nepovinné." />}
@@ -329,7 +334,8 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
       <label style={{ display: "flex", flexDirection: "column", gap: 6 }}><span style={{ ...lbl, fontSize: 14 }}>Miesto</span><input value={miesto} onChange={(e) => setMiesto(e.target.value.slice(0, 60))} placeholder="napr. pred kostolom" aria-label="Miesto" style={pole} /></label>
       {casZly && <span role="alert" style={{ gridColumn: "1 / -1", fontSize: 12.5, fontWeight: 700, color: "var(--cRed)" }}>Takýto čas neexistuje. Píšte hodiny:minúty, napríklad 15:00.</span>}
     </div>}
-    {dr === 0 && <TextOznamu key={`t${txtKey}`} value={txt} onChange={setTxt} />}
+    {dr === 0 && <><TextOznamu key={`t${txtKey}`} value={txt} onChange={setTxt} />
+      <GaleriaEditor media={media} onMedia={setMedia} ph={mobil} bezVidea nadpis="Fotky · nepovinné" dovetok=" Prvá fotka je titulná, ostatné sa ukážu po ťuknutí." /></>}
     {dr === 1 && usp === 0 && <><TextOznamu key={`u${txtKey}`} value={txt} onChange={setTxt} />
       <GaleriaEditor media={media} onMedia={setMedia} ph={mobil} nadpis="Fotky a video · nepovinné" dovetok=" Prvá fotka je hlavná. Bez fotky sa ukážu iniciály farnosti." /></>}
     {dr === 1 && usp === 1 && <><PlagatPole src={plagat} onSrc={setPlagat} toast={toast} popis="ťuknite a vyberte obrázok, alebo ho sem pretiahnite · na výšku, JPG alebo PNG" />

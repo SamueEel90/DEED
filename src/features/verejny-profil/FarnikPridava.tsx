@@ -290,7 +290,7 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
     const x = naUpravu ? odFarnikov(strankaId).find((y) => y.id === naUpravu) : undefined;
     if (x) {
       const ff = x.f ?? { ...prazdnyF(), nad: x.t, txt: naHtml(x.s), anon: !!x.anon };
-      setF(ff); setTxtKey((n) => n + 1); setMedia((x.k === "udalost" || x.k === "fotky" ? x.fotky ?? [] : []).map((src, i) => ({ id: i + 1, typ: "foto" as const, src, ...(x.popisy?.[i] ? { popis: x.popisy[i] } : {}) })));
+      setF(ff); setTxtKey((n) => n + 1); setMedia((x.k === "udalost" || x.k === "fotky" || x.k === "oznam" ? x.fotky ?? [] : []).map((src, i) => ({ id: i + 1, typ: "foto" as const, src, ...(x.popisy?.[i] ? { popis: x.popisy[i] } : {}) })));
       setEdId(x.id); setK(x.k); setHotovo(null); setChyba(false); setSheet(false);
     }
   }
@@ -335,8 +335,9 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
     const zaklad: PolozkaFarnika = {
       ...(povodny ?? {}), id: povodny?.id ?? `f${teraz().toString(36)}`, k, t, s, kto: anon ? "Bohu známy veriaci" : ja.celeMeno || "Veriaci", cas: povodny?.cas ?? teraz(),
       autor: kto, mesto: ja.mesto, anon: k === "modlitba" ? anon : undefined, f: ff, autorFoto: anon ? undefined : povodny?.autorFoto ?? ja.foto ?? undefined,
-      fotky: k === "udalost" || k === "fotky" ? (fotky.length ? fotky.map((m) => m.src) : undefined) : undefined,
-      popisy: k === "fotky" ? fotky.map((m) => m.popis ?? "") : undefined, text: k === "fotky" ? txt || undefined : undefined,
+      // OPRAVY 212: GaleriaEditor aj pri krátkom ozname (prvá fotka = titulná), popisy fotiek všade
+      fotky: k === "udalost" || k === "fotky" || k === "oznam" ? (fotky.length ? fotky.map((m) => m.src) : undefined) : undefined,
+      popisy: (k === "fotky" || k === "udalost" || k === "oznam") && fotky.some((m) => m.popis) ? fotky.map((m) => m.popis ?? "") : k === "fotky" ? fotky.map((m) => m.popis ?? "") : undefined, text: k === "fotky" ? txt || undefined : undefined,
       pozv: k === "udalost" || k === "fotky" ? pz : undefined, limit: k === "udalost" || k === "fotky" ? limitN : undefined,
       dalsia: k === "fotky" && pz ? [fmtD(f.datum), CAS_OK(c) ? pekny(c) : ""].filter(Boolean).join(" · ") : undefined,
       upravene: povodny ? true : undefined };
@@ -448,6 +449,7 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
   const formular = k && !jeEd && (
     <>
       {k === "oznam" && <>{vstup("NADPIS", "nad", "napr. Našli sa kľúče pri kostole")}<TextOznamu key={`o${txtKey}`} value={f.txt} onChange={(h) => set({ txt: h })} popis="Najviac 6 riadkov." max={6} />
+        <GaleriaEditor media={media} onMedia={setMedia} ph={mobil} max={4} bezVidea nadpis="Fotky · nepovinné" dovetok=" Prvá fotka je titulná, ostatné sa ukážu po ťuknutí. Pod fotku môžete napísať popis." />
         {/* OPRAVY 179: Platí do, predvolené Bez konca */}
         <span style={lab(false)}>PLATÍ DO</span>
         <div role="radiogroup" aria-label="Platí do" style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
@@ -496,7 +498,7 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
         {casZly}
         {vstup("MIESTO", "kde", "napr. pred farským kostolom")}
         <TextOznamu key={`u${txtKey}`} value={f.txt} onChange={(h) => set({ txt: h })} label="Popis" popis="Najviac 8 riadkov." max={8} />
-        <GaleriaEditor media={media} onMedia={setMedia} ph={mobil} max={4} bezVidea nadpis="Fotky · nepovinné" dovetok=" Prvá fotka je hlavná." />
+        <GaleriaEditor media={media} onMedia={setMedia} ph={mobil} max={4} bezVidea nadpis="Fotky · nepovinné" dovetok=" Prvá fotka je titulná, ostatné sa ukážu po ťuknutí. Pod fotku môžete napísať popis." />
         {pozvanie(<b style={{ fontSize: 16 }}>Pozvať ľudí</b>)}
         {limitPole("napr. 40", "Keď sa naplní, prihlasovanie sa samo zavrie. Mená prihlásených uvidíte pri udalosti.")}
       </>}

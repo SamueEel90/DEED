@@ -33,7 +33,8 @@ export type VieraFeedItem = CharitaFeedItem & {
   spoplatnene?: boolean;   // user oznam v platenom self-add režime (nikdy prosba/smútočné — simónia)
   autorTvar?: boolean;     // farárov oznam s tvárou v hlavičke (delta bod 20 — „akože hovorí on")
   udalost?: { cas: string; miesto?: string; text?: string; zavazne?: boolean }; // KARTA 56H §6: polia udalosti (náhľad Nástenky)
-  plagat?: boolean;        // KARTA 56H §4: vlastný plagát — ukázať celý, bez orezu (contain, aj na výšku)
+  plagat?: boolean;
+  /** OPRAVY 212: popisy fotiek z GaleriaEditor (v poradí `fotky`) */ popisy?: string[];        // KARTA 56H §4: vlastný plagát — ukázať celý, bez orezu (contain, aj na výšku)
   /** KARTA 57 C.4: Pozvať ľudí (krátky oznam aj udalosť) — záväzne = Prihlásiť sa, inak Zúčastním sa; limit len pri záväznom */
   pozvanie?: { zavazne: boolean; limit?: number };
   /** KARTA 57 C.3: nastavenie formulára farára — Upraviť zverejnené ho naplní 1:1 */
