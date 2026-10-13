@@ -38,7 +38,7 @@ const S_DETAILOM = ["good", "help", "charita"];
 const CASTI_PLATBY = [
   ["zdieľanie", /Zdieľať|zdieľa/i],
   ["sumy alebo podpora", /DEED|EUR|PODPOR|PRISPIE/i],
-  ["sledovať", /Sledova|Sleduješ|Uložiť/i], // OPRAVY 141: Obľúbené → Sledovať / Sleduješ
+  ["sledovať", /Sledova|Sleduješ|Uložiť|Obľúben/i], // OPRAVY 141 → 209: prototyp „Platobny modul charita a viera“ má v module jedno tlačidlo Obľúbené (V obľúbených)
   ["QR", /QR/],
 ];
 
