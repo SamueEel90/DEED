@@ -159,7 +159,7 @@ export function OdVeriacich({ strankaId, meno, mobil, toast }: { strankaId: stri
               <Prepinac on={on} onClick={() => ulozSmie(strankaId, { ...smieF, [d.k]: !on })} label={d.t} />
             </div>); })}
         </div>
-        <button type="button" onClick={() => otvorVerejnyProfil(strankaId)} style={{ alignSelf: "flex-start", minHeight: 44, padding: 0, border: "none", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 800, color: "var(--gInk)", boxShadow: "none" }}>Pozrieť, ako to vidia veriaci ›</button>
+        <button type="button" onClick={() => otvorVerejnyProfil(strankaId, { zoSpravy: true })} style={{ alignSelf: "flex-start", minHeight: 44, padding: 0, border: "none", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 800, color: "var(--gInk)", boxShadow: "none" }}>Pozrieť, ako to vidia veriaci ›</button>
       </>}
       {/* D.4: upozornenie farárovi — PLACEBO — karta 57 D.4: posielanie správ rieši server */}
       <div style={{ display: "flex", alignItems: "center", gap: 12, borderTop: "1px solid var(--cardBd)", paddingTop: 10 }}>

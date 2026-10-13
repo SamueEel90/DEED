@@ -19,7 +19,7 @@ import { ZbierkaModul } from "@/features/zbierka/ZbierkaModul";
 import { najdiTestProfil, type TestProfil, type TestZbierka } from "@/lib/testProfily";
 import { centralnaZPamate, nacitajCentralnuZbierku, nazovHlavnej, useZmenyCentralnej } from "@/lib/centralnaZbierka";
 import { cistyText } from "@/lib/richtext";
-import { otvorVerejnyProfil, useVerejnyProfilOtvoreny, verejnyProfilKluc, zavriVerejnyProfil, vrstvaProfiluPripoj } from "./otvor";
+import { otvorVerejnyProfil, useVerejnyProfilOtvoreny, verejnyProfilKluc, zavriVerejnyProfil, vrstvaProfiluPripoj, nahladZoSpravy } from "./otvor";
 import { VrstvaProfilu, naZbierkaData } from "./casti";
 import { useVzhlad, maVybranyVzhlad, type Vzhlad } from "@/lib/vzhladStranky";
 import { nacitajTiery } from "@/features/rola/stav";
@@ -203,8 +203,8 @@ export function FarnostStranka({ strankaId, onBack, stit = "Silver" }: { stranka
   const fab = fabZapnuty(strankaId);
   const meno = cistyNazov(prof?.meno ?? nazovFarnosti(strankaId)) || "Vaša farnosť";
   return (
-    <div style={{ position: "relative", minHeight: "100%" }}>
-      <NastenkaFarnosti strankaId={strankaId} meno={meno} profil={prof} fab={fab} onBack={onBack} stit={stit} />
+    <div style={{ position: "relative", minHeight: "100%", background: "var(--nf-bg)" }}>
+      <NastenkaFarnosti strankaId={strankaId} meno={meno} profil={prof} fab={fab} onBack={onBack} stit={stit} nahlad={!!onBack && nahladZoSpravy()} />
       <FarnikPridava strankaId={strankaId} mobil={!pc} onPozriet={(id) => { const kd = odFarnikov(strankaId).find((x) => x.id === id)?.k, b = kd ? BLOK_DRUHU[kd] : undefined; window.setTimeout(() => posunNaBlok(b?.[0] ?? "ozn"), 60); }} />
     </div>);
 }

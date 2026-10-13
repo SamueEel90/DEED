@@ -13,7 +13,11 @@ let verzia = 0;
 const posluchaci = new Set<() => void>();
 const zmena = () => { verzia++; posluchaci.forEach((f) => f()); };
 
-export function otvorVerejnyProfil(k: string) { otvorene = true; kluc = k; zmena(); }
+// OPRAVY 225: náhľad vlastnej stránky zo Správy („‹ Späť do Správy“, štítok Náhľad namiesto Sledovať)
+let zoSpravy = false;
+export function otvorVerejnyProfil(k: string, o?: { zoSpravy?: boolean }) { otvorene = true; kluc = k; zoSpravy = !!o?.zoSpravy; zmena(); }
+/** stránka je otvorená ako náhľad zo Správy */
+export const nahladZoSpravy = (): boolean => zoSpravy;
 /** KARTA 55 · E: odkaz z feedu „Celý príbeh na stránke … ›" — stránka Príbeh nad feedom, „Späť do feedu" vráti na to isté miesto */
 export function otvorPribeh(zbierkaId: string) { otvorVerejnyProfil(`pribeh:${zbierkaId}`); }
 export function zavriVerejnyProfil() { otvorene = false; zmena(); }

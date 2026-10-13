@@ -163,7 +163,7 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
   // KARTA 56D §4: Verejný profil = náhľad vybraného vzhľadu s uloženým profilom (len to, čo farár vyplnil, nikdy ukážkový profil)
   useEffect(() => { void pripojTestovaciuStranku(strankaId); }, [strankaId]); // 0035: tester = správca testovacej stránky
   // Verejný profil = živá stránka farnosti (NastenkaFarnosti so zeleným + a zbierkami), nie zjednodušený Náhľad
-  const verejny = () => otvorVerejnyProfil(strankaId);
+  const verejny = () => otvorVerejnyProfil(strankaId, { zoSpravy: true });
   const test = testPas?.(verejny);
   const mobil = !desktop;
   const telefon = mobil && !tablet;

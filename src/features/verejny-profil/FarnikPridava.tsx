@@ -27,6 +27,7 @@ import { EditorOznameni, type EditorApi, type PayloadEditora, type TypEditora } 
 import PodrzTlacidlo from "@/features/zbierka/PodrzTlacidlo";
 import { zapisEditora, zapisZPayloadu } from "@/lib/editorStat";
 import { toast } from "@/shared";
+import { useLayout } from "@/components/context";
 
 const ZELENA = "#4B7A35", ZLATA = "#C9A24A";
 const lab = (zle: boolean): CSSProperties => ({ fontSize: 12.5, fontWeight: 800, letterSpacing: ".06em", color: zle ? "#A07A1C" : "var(--ink3)" });
@@ -248,6 +249,9 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
   useOdFarnikov();
   const ja = usePouzivatel();
   const reg = ja.typ !== "pasivny";
+  // OPRAVY 225: na širokom PC je zelené + pri pravom okraji stránky farnosti (max. 1440 px vedľa menu appky 104 px), nie pri okraji obrazovky
+  const { desktop } = useLayout();
+  const vpravo = mobil ? "16px" : desktop ? "max(28px, calc((100vw - 104px - 1440px) / 2 + 28px))" : "28px";
   // OPRAVY 204: parte veriaceho nemá vlastnú zbierku — QR vedie na stránku farnosti (Spomíname), nikdy nie ukážkový obrázok
   const qrStr = useQrObrazok(odkazQrStranky(strankaId));
   const self = nacitajSelfAdd(strankaId), sm = nacitajSmie(strankaId);
@@ -379,7 +383,7 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
   };
 
   const fab = !k && (
-    <button type="button" onClick={() => setSheet(true)} aria-label="Pridať na stránku farnosti" style={{ position: "fixed", right: mobil ? 16 : 28, bottom: mobil ? 96 + 16 : 28, zIndex: 150, width: 68, height: 68, padding: 0, border: "none", borderRadius: "50%", background: ZELENA, color: "#fff", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 10px 24px rgba(30,40,20,.35)" }}>
+    <button type="button" onClick={() => setSheet(true)} aria-label="Pridať na stránku farnosti" style={{ position: "fixed", right: vpravo, bottom: mobil ? 96 + 16 : 28, zIndex: 150, width: 68, height: 68, padding: 0, border: "none", borderRadius: "50%", background: ZELENA, color: "#fff", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 10px 24px rgba(30,40,20,.35)" }}>
       <span aria-hidden="true" style={{ position: "relative", width: 26, height: 26, flex: "none" }}>
         <span style={{ position: "absolute", left: 11, top: 0, width: 4, height: 26, borderRadius: 2, background: "#fff" }} />
         <span style={{ position: "absolute", top: 11, left: 0, width: 26, height: 4, borderRadius: 2, background: "#fff" }} />
@@ -387,7 +391,7 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
     </button>);
 
   const harok = sheet && (
-    <div className="sc-tokeny" style={{ position: "fixed", inset: 0, zIndex: 1000, display: "flex", flexDirection: "column", justifyContent: "flex-end", alignItems: mobil ? "center" : "flex-end", padding: mobil ? 0 : 20, boxSizing: "border-box" }}>
+    <div className="sc-tokeny" style={{ position: "fixed", inset: 0, zIndex: 1000, display: "flex", flexDirection: "column", justifyContent: "flex-end", alignItems: mobil ? "center" : "flex-end", padding: mobil ? 0 : 20, paddingRight: mobil ? 0 : `calc(${vpravo} - 8px)`, boxSizing: "border-box" }}>
       <div onClick={() => setSheet(false)} style={{ position: "absolute", inset: 0, background: "rgba(10,9,6,.55)" }} />
       <div role="dialog" aria-modal="true" aria-label="Čo chcete pridať" style={{ position: "relative", width: mobil ? "100%" : 440, maxHeight: mobil ? "88vh" : "calc(100vh - 40px)", overflowY: "auto", background: "var(--bg)", color: "var(--ink)", borderRadius: mobil ? "24px 24px 0 0" : 24, padding: "14px 16px 24px", display: "flex", flexDirection: "column", gap: 12, boxSizing: "border-box" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>

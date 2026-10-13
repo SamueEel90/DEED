@@ -100,6 +100,8 @@ export interface NastenkaProps {
   fab?: boolean;
   /** „‹ Späť“ vľavo hore (stránka otvorená v appke) */
   onBack?: () => void;
+  /** OPRAVY 225: náhľad vlastnej stránky zo Správy — „‹ Späť do Správy“ a štítok namiesto Sledovať */
+  nahlad?: boolean;
   /** štít stránky (riadok „kto za zbierku zodpovedá“ v module) */
   stit: StitLevel;
 }
@@ -141,7 +143,7 @@ function ObsahTvaru({ t, velky }: { t: Tes; velky?: boolean }) {
 /** kľúč na zväčšenie: obrázok alebo šablóna farára */
 type Velke = { src: string } | { it: VieraFeedItem };
 
-export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, stit: stitStranky }: NastenkaProps) {
+export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, nahlad, stit: stitStranky }: NastenkaProps) {
   const kal = useKalendar(strankaId);
   useZmenyPrihovoru(); useZmenyCentralnej(); useZmenyZbierok(); useOdFarnikov(); useReakcieF();
   useCerstveOdFarnikov(strankaId); useCerstveReakcieF(strankaId); usePrispevkySync(strankaId);
@@ -349,6 +351,8 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, stit: s
   const iDnesK = dniKal.findIndex((d) => d.key === iso(cas));
   const najblizsi = iDnesK < 0 ? undefined : dniKal.slice(iDnesK).find((d) => d.o.some((o) => !o.z));
   const dnesKal = najblizsi ? `${najblizsi.key === iso(cas) ? "dnes" : dniKal.indexOf(najblizsi) === iDnesK + 1 ? "zajtra" : najblizsi.w.toLocaleLowerCase("sk-SK")} ${najblizsi.o.filter((o) => !o.z).slice(0, 2).map((o) => `${o.t} ${o.s}`).join(" · ")}` : "";
+  // OPRAVY 225: farár na vlastnej stránke (náhľad zo Správy) nevidí Sledovať, len štítok
+  const stitokNahlad = <span style={{ flex: "none", minHeight: pc ? 54 : 52, padding: "0 18px", borderRadius: pc ? 15 : 14, border: `1.5px dashed ${pc ? "rgba(255,255,255,.7)" : LINKA}`, color: pc ? "#fff" : INK2, fontSize: pc ? 16 : 14.5, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center", boxSizing: "border-box" }}>Náhľad · takto to vidia veriaci</span>;
   const sledBtn = <button type="button" aria-pressed={jeHl || jeSl} aria-expanded={jeHl || jeSl ? mfOn : undefined} onClick={sledTap} style={{ flex: "none", minHeight: pc ? 54 : 52, padding: "0 20px", borderRadius: pc ? 15 : 14, border: pc || jeHl || jeSl ? "none" : `1.5px solid ${LINKA}`, background: jeHl || jeSl ? (pc ? "var(--nf-gSoft)" : ZELENA_TL) : pc ? "#fff" : PAPIER, color: jeHl || jeSl ? (pc ? "var(--nf-gInk)" : "#fff") : pc ? "#14110B" : INK, fontFamily: "inherit", fontSize: pc ? 17 : 15, fontWeight: 800, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 10 }}>
     <span>{sledT}</span>{(jeHl || jeSl) && <span aria-hidden="true" style={{ fontSize: 15 }}>⌄</span>}
   </button>;
@@ -396,7 +400,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, stit: s
     <div className="nastenka-farnosti" style={{ ...PREMENNE, position: "relative", width: "100%", maxWidth: 1440, margin: "0 auto", background: BG, color: INK, display: "flex", flexDirection: "column", fontFamily: "'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,sans-serif", paddingBottom: fab ? 110 : 0 }}>
       {/* ---------- (1) titulka · OPRAVY 221: príhovor jedna veta + viac, dve tlačidlá vedľa seba ---------- */}
       <div style={{ position: "relative", minHeight: siroka ? "clamp(300px,34vw,480px)" : 260, boxSizing: "border-box", display: "flex", flexDirection: "column", justifyContent: "flex-end", padding: `${onBack ? 92 : 24}px ${PAD_X} clamp(20px,3vw,40px)`, background: cover ? `linear-gradient(180deg,rgba(10,8,5,.3) 0%,rgba(10,8,5,0) 35%,rgba(10,8,5,.88) 100%), url("${cover}") center/cover no-repeat #D9D3C7` : "linear-gradient(160deg,#3A372E 0%,#14110B 100%)" }}>
-        {onBack && <button type="button" onClick={onBack} style={{ position: "absolute", top: 24, left: PAD_X, minHeight: 48, padding: "0 18px", border: "none", borderRadius: 14, background: "rgba(255,255,255,.92)", color: "#14110B", fontFamily: "inherit", fontSize: 16, fontWeight: 800, cursor: "pointer" }}>‹ Späť</button>}
+        {onBack && <button type="button" onClick={onBack} style={{ position: "absolute", top: 24, left: PAD_X, minHeight: 48, padding: "0 18px", border: "none", borderRadius: 14, background: "rgba(255,255,255,.92)", color: "#14110B", fontFamily: "inherit", fontSize: 16, fontWeight: 800, cursor: "pointer" }}>{nahlad ? "‹ Späť do Správy" : "‹ Späť"}</button>}
         {zivoT && zivoUrl && <a href={zivoUrl} target="_blank" rel="noopener noreferrer" style={{ position: "absolute", top: 24, right: PAD_X, minHeight: 48, padding: "0 18px", borderRadius: 24, background: "#B3261E", color: "#fff", textDecoration: "none", display: "flex", alignItems: "center", gap: 10, fontSize: 15.5, fontWeight: 800, letterSpacing: ".04em" }}><span style={{ width: 9, height: 9, borderRadius: "50%", background: "#fff" }} />NAŽIVO · omša {zivoT} · Pozrieť ›</a>}
         <div style={{ display: "flex", alignItems: "flex-end", gap: "clamp(14px,2vw,24px)", flexWrap: "wrap" }}>
           {p ? <button type="button" onClick={() => setPrihOn(true)} aria-label="Príhovor farára · prehrať" style={{ flex: "none", width: "clamp(76px,7vw,100px)", height: "clamp(76px,7vw,100px)", borderRadius: "50%", padding: 4, border: "none", background: "conic-gradient(#C9A24A,#4B7A35,#C9A24A)", cursor: "pointer" }}>
@@ -405,7 +409,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, stit: s
             : logo ? <img src={logo} alt="Logo" style={{ flex: "none", width: "clamp(76px,7vw,100px)", height: "clamp(76px,7vw,100px)", borderRadius: profil?.tvar === "kruh" ? "50%" : 26, objectFit: "cover", background: "#fff" }} />
             : <span style={{ flex: "none", width: "clamp(76px,7vw,100px)", height: "clamp(76px,7vw,100px)", borderRadius: 26, background: "#fff", color: "#14110B", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "clamp(26px,2.6vw,34px)", fontWeight: 800 }}>{inic}</span>}
           <span style={{ flex: "1 1 320px", minWidth: 0, display: "flex", flexDirection: "column", gap: 8 }}><b style={{ fontSize: "clamp(30px,4.4vw,60px)", lineHeight: 1, letterSpacing: "-.04em", color: "#fff", textWrap: "balance" } as CSSProperties}>{meno}</b><span style={{ fontSize: "clamp(15px,1.4vw,19px)", color: "#E8E1D3" }}>Farnosť</span></span>
-          {pc && sledBtn}
+          {pc && (nahlad ? stitokNahlad : sledBtn)}
         </div>
       </div>
       <div style={{ padding: `${siroka ? 28 : 18}px ${PAD_X} ${siroka ? 12 : 4}px`, display: "flex", flexDirection: "column", gap: 14 }}>
@@ -414,7 +418,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, stit: s
           {!onasOtv && <button type="button" onClick={() => setOnasOtv(true)} style={{ border: "none", background: "transparent", padding: 0, color: "var(--nf-gInk)", fontFamily: "inherit", fontSize: "inherit", fontWeight: 800, cursor: "pointer" }}>viac ›</button>}
         </span>}
         {!pc && <div style={{ display: "grid", gridTemplateColumns: maKal ? "1fr 1fr" : "1fr", gap: 8, maxWidth: siroka ? 720 : undefined }}>
-          {sledBtn}
+          {nahlad ? stitokNahlad : sledBtn}
           {maKal && <button type="button" onClick={() => posunNaBlok("kal")} style={{ minHeight: 52, minWidth: 0, padding: "6px 10px", borderRadius: 14, border: `1.5px solid ${LINKA}`, background: PAPIER, color: INK, fontFamily: "inherit", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true" style={{ flex: "none" }}><path d="M4 6h16v14H4zM4 10h16M8 3v4M16 3v4" /></svg>
             <span style={{ minWidth: 0, display: "flex", flexDirection: "column", alignItems: "flex-start", textAlign: "left" }}>
