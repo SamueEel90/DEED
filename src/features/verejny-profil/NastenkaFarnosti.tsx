@@ -116,6 +116,7 @@ interface Tes { af?: AutorF; id: string; druh: "svadba" | "jubileum" | "blaho"; 
   /** OPRAVY 228: oznam Správy (celé oznámenie po ťuknutí) */ it?: VieraFeedItem;
   /** OPRAVY 229: štvorec poďakovania (Ďakujem) — inak Blahoželám */ dakuje?: boolean;
   /** Martin 13. 10.: „Iné“ (vysviacka, primície…) = OZNÁMENIE, nikdy nie vymyslené Poďakovanie */ ine?: boolean;
+  /** OPRAVY 241: prvá fotka alebo plagát Iné — v štvorci orezaná, štítok a nadpis pod ním */ foto?: string;
   r: { zoznam: string[]; prepni: () => void }; mena: Record<string, string> }
 const rok = (s?: string) => s?.match(/\d{4}/)?.[0] ?? "";
 const rokyParte = (nar: string, umr: string) => { const a = rok(nar), b = rok(umr); return a || b ? [a && `* ${a}`, b && `† ${b}`].filter(Boolean).join(" ") : nar; };
@@ -123,6 +124,8 @@ const DNI_V = ["v nedeľu", "v pondelok", "v utorok", "v stredu", "vo štvrtok",
 const rozluckaT = (rd: string, rc: string) => { const m = rd.match(/^(\d{4})-(\d{2})-(\d{2})/); if (!m) return ""; const d = new Date(+m[1], +m[2] - 1, +m[3]); return `rozlúčka ${DNI_V[d.getDay()]} ${d.getDate()}. ${d.getMonth() + 1}.${rc ? ` o ${rc.replace(":", ".")}` : ""}`; };
 const datumT = (s: string) => { const m = s.match(/^(\d{4})-(\d{2})-(\d{2})/); return m ? `${+m[3]}. ${+m[2]}. ${m[1]}` : s; };
 const vekJubilea = (nar?: string, kedy?: string) => { const a = rok(nar), b = rok(kedy) || String(new Date().getFullYear()); return a ? String(+b - +a) : ""; };
+/** OPRAVY 241: text nikdy nepretečie z tvaru — najviac n riadkov, potom „…“ */
+const riadkyMax = (n: number): CSSProperties => ({ maxWidth: "100%", display: "-webkit-box", WebkitLineClamp: n, WebkitBoxOrient: "vertical", overflow: "hidden", overflowWrap: "anywhere" });
 /** OPRAVY 229: 1 rok · 2–4 roky · 5+ rokov */
 const rokyT = (n: number) => (n === 1 ? "ROK" : n >= 2 && n <= 4 ? "ROKY" : "ROKOV");
 const sestSlov = (t: string) => { const w = t.trim().split(/\s+/).filter(Boolean); return w.length > 6 ? `${w.slice(0, 6).join(" ")} …` : t.trim(); };
@@ -144,8 +147,8 @@ function ObsahTvaru({ t, velky }: { t: Tes; velky?: boolean }) {
   const k = velky ? 1.35 : 1;
   if (t.druh === "svadba") { const [a, b] = t.meno.split(/\s*(?:&| a )\s*/); return <>
     <span style={kickerTvaru(t.pal.ac)}>SVADBA</span>
-    <i style={{ fontSize: 26 * k, lineHeight: 1.05, marginTop: 4 }}>{a}</i>
-    {b && <><i style={{ fontSize: 18 * k, color: t.pal.ac }}>&amp;</i><i style={{ fontSize: 26 * k, lineHeight: 1.05 }}>{b}</i></>}
+    <i style={{ fontSize: (a.length > 14 ? 19 : 26) * k, lineHeight: 1.05, marginTop: 4, ...riadkyMax(2) }}>{a}</i>
+    {b && <><i style={{ fontSize: 18 * k, color: t.pal.ac }}>&amp;</i><i style={{ fontSize: (b.length > 14 ? 19 : 26) * k, lineHeight: 1.05, ...riadkyMax(2) }}>{b}</i></>}
     {t.datum && <span style={{ fontSize: 14 * k, marginTop: 6 }}>{datumT(t.datum)}</span>}
   </>; }
   if (t.druh === "jubileum") { const n = +t.vek, dlzka = t.meno.length; return <>
@@ -154,11 +157,13 @@ function ObsahTvaru({ t, velky }: { t: Tes; velky?: boolean }) {
     {/* OPRAVY 229: dlhé meno menším písmom, najviac 2 riadky, inak „…" */}
     <i style={{ fontFamily: SERIF_TVARU, fontSize: (dlzka > 22 ? 13 : dlzka > 14 ? 15 : 18) * k, marginTop: 2, lineHeight: 1.15, maxWidth: "100%", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", overflowWrap: "anywhere" }}>{t.meno}</i>
   </>; }
+  // OPRAVY 241: Iné s fotkou alebo plagátom = obrázok orezaný na štvorec (štítok a nadpis sú pod tvarom)
+  if (t.ine && t.foto) return <span style={{ alignSelf: "stretch", margin: "0 -14px", height: "100%", borderRadius: 20, overflow: "hidden", display: "block" }}><img src={t.foto} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} /></span>;
   return <>
     <span style={kickerTvaru(t.pal.ac)}>{t.ine ? "OZNÁMENIE" : t.dakuje ? "POĎAKOVANIE" : "BLAHOŽELANIE"}</span>
-    {/* OPRAVY 229: v štvorci nadpis najviac 6 slov, dlhý text až po ťuknutí */}
-    <i style={{ fontFamily: SERIF_TVARU, fontSize: 22 * k, lineHeight: 1.15, overflowWrap: "anywhere", display: "-webkit-box", WebkitLineClamp: 4, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{sestSlov(t.nadpis)}</i>
-    {t.pod && <span style={{ fontFamily: SERIF_TVARU, fontSize: 16 * k, lineHeight: 1.2, marginTop: 4 }}>{t.pod}</span>}
+    {/* OPRAVY 229 · 241: v tvare len nadpis, najviac 3 riadky a „…“, text až po ťuknutí */}
+    <i style={{ fontFamily: SERIF_TVARU, fontSize: 22 * k, lineHeight: 1.15, maxWidth: "100%", overflowWrap: "anywhere", display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{sestSlov(t.nadpis)}</i>
+    {t.pod && <span style={{ fontFamily: SERIF_TVARU, fontSize: 16 * k, lineHeight: 1.2, marginTop: 4, maxWidth: "100%", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{t.pod}</span>}
   </>;
 }
 
@@ -335,14 +340,14 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, nahlad,
     // OPRAVY 229: iné oznámenie a poďakovanie nikdy do kosoštvorca — štvorec s nadpisom, Ďakujem
     return { id: x.id, druh: druhT, pal: druhT === "svadba" ? ZAKLAD.svadba : druhT === "jubileum" ? ZAKLAD.jubileum : ZAKLAD.blaho,
       meno: u?.meno?.trim() || bezPredpony(x.nazov ?? "") || x.nazov || "", datum: u?.kedyD ?? "", vek: vekJubilea(u?.nar, u?.kedyD), nadpis: x.nazov ?? "",
-      r: reakF(x.id, "blaho"), mena: reakcieF(strankaId, x.id).mena ?? {}, af: x.af, it: x, ine: druhT === "blaho" };
+      r: reakF(x.id, "blaho"), mena: reakcieF(strankaId, x.id).mena ?? {}, af: x.af, it: x, ine: druhT === "blaho", foto: druhT === "blaho" ? x.fotky?.find(ziveObr) : undefined };
   });
   const tesVer: Tes[] = OD.filter((x) => x.k === "svadba" || x.k === "ine").map((x) => {
     const ed = x.editor, P0 = (ed?.polia ?? {}) as Record<string, unknown>, pole = (k: string) => String(P0[k] ?? "").trim(), sv = x.k === "svadba";
     // BLOK C 235: vo Viere je „Jubileum a iné oznámenie“ Blahoželanie z Editora
     if (ed?.typ === "blahozelanie") return tesBlaho(ed, { id: x.id, x, nadpis: x.t, r: reakV(x, "blaho"), mena: x.mena ?? {} });
     // OPRAVY 229: kosoštvorec len jubileum (pozvánka z Editora); iné oznámenie veriaceho = štvorec s nadpisom
-    if (!sv && ed?.typ !== "jubileum") return { id: x.id, druh: "blaho", pal: ZAKLAD.blaho, x, meno: x.t, datum: "", vek: "", nadpis: x.t, r: reakV(x, "blaho"), mena: x.mena ?? {}, ine: true };
+    if (!sv && ed?.typ !== "jubileum") return { id: x.id, druh: "blaho", pal: ZAKLAD.blaho, x, meno: x.t, datum: "", vek: "", nadpis: x.t, r: reakV(x, "blaho"), mena: x.mena ?? {}, ine: true, foto: x.fotky?.find(ziveObr) ?? (ziveObr(x.obr) ? x.obr : undefined) };
     const pal = (ed?.sablona && (sv ? SVADBA : JUBILEUM)[ed.sablona]) || (sv ? ZAKLAD.svadba : ZAKLAD.jubileum);
     return { id: x.id, druh: sv ? "svadba" : "jubileum", pal, x, meno: sv ? [pole("sNev"), pole("sZen")].filter(Boolean).join(" & ") || x.t : pole("jMeno") || x.t,
       datum: sv ? pole("sD") : pole("jD"), vek: sv ? "" : (pole("jVekTxt").match(/\d+/)?.[0] ?? vekJubilea(pole("jNar"), pole("jD"))), nadpis: x.t, r: reakV(x, "blaho"), mena: x.mena ?? {} };
@@ -584,8 +589,12 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, nahlad,
         <div style={{ flex: "999 1 520px", minWidth: 0, ...mriezkaTvarov }}>
           {tesy.map((t) => <div key={t.id} style={zmensi}><TvarOznamu tvar={t.druh === "svadba" ? "kruh" : t.druh === "jubileum" ? "kosostvorec" : "stvorec"} pal={t.pal} label={`${t.meno} · otvoriť`}
             onTap={() => setTes(t)} pod={<>
+              {t.ine && t.foto && <span style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, textAlign: "center", maxWidth: 220 }}>
+                <span style={kickerTvaru(t.pal.ac)}>OZNÁMENIE</span>
+                <i style={{ fontFamily: SERIF_TVARU, fontSize: 19, lineHeight: 1.2, ...riadkyMax(3) }}>{sestSlov(t.nadpis)}</i>
+              </span>}
               {t.x ? hlavickaAutora(t.x) : t.zb ? null : hlavickaFar(t.af)}
-              {t.r.zoznam.length > 0 && <span style={{ fontSize: 14, color: INK2 }}>{reakT(!!t.dakuje, t.r.zoznam.length)}</span>}
+              {!t.ine && t.r.zoznam.length > 0 && <span style={{ fontSize: 14, color: INK2 }}>{reakT(!!t.dakuje, t.r.zoznam.length)}</span>}
             </>}><ObsahTvaru t={t} /></TvarOznamu></div>)}
         </div>
       </div>}
@@ -672,8 +681,9 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, nahlad,
           {tes.x ? hlavickaAutora(tes.x) : tes.zb ? null : hlavickaFar(tes.af)}
           {/* re-render po ťuknutí: čerstvý stav reakcií z tesy */}
           {(() => { const t = tesy.find((y) => y.id === tes.id) ?? tes; const jaV = t.r.zoznam.includes(kto); const mena = t.r.zoznam.map((k2) => `${t.mena[k2] ?? "veriaci"}${k2 === kto ? " (vy)" : ""}`); return <>
-            <button type="button" aria-pressed={jaV} onClick={t.r.prepni} style={{ ...tlacR(jaV, true), alignSelf: "stretch" }}>{jaV ? (t.dakuje ? "Ďakujete ✓" : "Blahoželáte ✓") : t.dakuje ? "Ďakujem" : "Blahoželám"}</button>
-            {mena.length > 0 && <div style={{ alignSelf: "stretch", display: "flex", flexDirection: "column" }}>
+            {/* OPRAVY 241: pri Iné žiadne tlačidlo — len plagát, nadpis, text a autor */}
+            {!t.ine && <button type="button" aria-pressed={jaV} onClick={t.r.prepni} style={{ ...tlacR(jaV, true), alignSelf: "stretch" }}>{jaV ? (t.dakuje ? "Ďakujete ✓" : "Blahoželáte ✓") : t.dakuje ? "Ďakujem" : "Blahoželám"}</button>}
+            {!t.ine && mena.length > 0 && <div style={{ alignSelf: "stretch", display: "flex", flexDirection: "column" }}>
               <span style={{ ...kicker(), paddingBottom: 6 }}>{reakT(!!t.dakuje, mena.length).toLocaleUpperCase("sk-SK")}</span>
               {mena.map((m, i) => <span key={i} style={{ padding: "9px 0", borderTop: `1px solid ${LINKA}`, fontSize: 16 }}>{m}</span>)}
             </div>}
@@ -808,7 +818,7 @@ function CeleOznamenie({ t, vz }: { t: Tes; vz: Parameters<typeof Plagat>[0]["vz
     : <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>{tvar}<span style={{ fontSize: 13.5, color: "var(--nf-ink2)" }}>Načítavam oznámenie…</span></div>;
   const oz = t.it?.oz;
   if (oz?.u && oz.volba && !t.it?.plagat) return <div style={{ display: "flex", justifyContent: "center", background: "#fff", borderRadius: 8, overflow: "hidden" }}><Plagat u={{ ...oz.u, kedyC: "", kde: "" }} volba={oz.volba} vz={vz} sirka={360} /></div>;
-  const f = t.it?.plagat ? t.it.fotky?.find(ziveObr) : undefined;
+  const f = t.it?.plagat ? t.it.fotky?.find(ziveObr) : t.ine ? t.foto : undefined;
   if (f) return <img src={f} alt={t.meno} style={{ display: "block", width: "100%", maxWidth: 420, height: "auto", borderRadius: 8 }} />;
   return tvar;
 }
