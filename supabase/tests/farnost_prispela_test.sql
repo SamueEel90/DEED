@@ -1,9 +1,9 @@
 -- ============================================================
--- Test 0080 — farnosť prispeje na cudziu zbierku (OPRAVY 222)
+-- Test 0080 + 0081 — farnosť prispeje na cudziu zbierku, len farár (OPRAVY 222)
 -- Všetko beží v transakcii a na konci sa vráti (ROLLBACK). Každý riadok musí mať ok = t.
 -- ============================================================
 begin;
--- C = charita, F = farár (správca farnosti), X = iný prihlásený
+-- C = charita, F = farár (správca farnosti, rola farár od 0081), X = iný prihlásený
 insert into auth.users (id) values ('7e57c000-0000-0000-0000-0000000008c1'), ('7e57c000-0000-0000-0000-0000000008f1'), ('7e57c000-0000-0000-0000-0000000008e1');
 insert into public.ucet (id, auth_id, typ, stav_registracie) values
  ('7e57c100-0000-0000-0000-0000000008c1','7e57c000-0000-0000-0000-0000000008c1','charita','hotovo'),
@@ -27,8 +27,24 @@ do $$ begin
   insert into t values ('X nesmie prispiet za farnost', false);
 exception when others then insert into t values ('X nesmie prispiet za farnost', true);
 end $$;
--- F prispeje SEPA prevodom
+-- F je správca farnosti, ale ešte nie farár (0081)
 select set_config('request.jwt.claim.sub', '7e57c000-0000-0000-0000-0000000008f1', false);
+do $$ begin
+  perform public.zbierka_dar_farnosti('zb8-char', 'f-0', 50, 'EUR', 'sepa', 't8-far');
+  insert into t values ('spravca bez roly farar neprispeje', false);
+exception when others then insert into t values ('spravca bez roly farar neprispeje', true);
+end $$;
+-- X nesmie nastaviť farára cudzej farnosti
+select set_config('request.jwt.claim.sub', '7e57c000-0000-0000-0000-0000000008e1', false);
+do $$ begin
+  perform public.nastav_farara('t8-far', true);
+  insert into t values ('X nesmie nastavit farara', false);
+exception when others then insert into t values ('X nesmie nastavit farara', true);
+end $$;
+-- F v Ľudia: „Som farár“ → prispeje SEPA prevodom
+select set_config('request.jwt.claim.sub', '7e57c000-0000-0000-0000-0000000008f1', false);
+select public.nastav_farara('t8-far', true);
+insert into t select 'som_farar po nastaveni', public.som_farar('t8-far');
 select (public.zbierka_dar_farnosti('zb8-char', 'f-1', 200, 'EUR', 'sepa', 't8-far'))->>'platba_id' is not null;
 -- nie z peňaženky (DEED)
 do $$ begin

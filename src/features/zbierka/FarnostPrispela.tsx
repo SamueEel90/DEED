@@ -2,7 +2,7 @@
 // OPRAVY 222 — v module zbierky: farnosť ako prispievateľ (ako firma v module charity) a „Prispieť za farnosť“ (len farár).
 // ============================================================
 import { useState } from "react";
-import { farnostFarara, usePrispievatelia, darFarnosti } from "@/lib/farnostPrispela";
+import { useFarnostFarara, usePrispievatelia, darFarnosti } from "@/lib/farnostPrispela";
 import { otvorVerejnyProfil } from "@/features/verejny-profil/otvor";
 import { toast } from "@/shared";
 import { PlatobneOkno } from "./Platba";
@@ -29,7 +29,7 @@ export function PrispievateliaFarnosti({ refId, rodina }: { refId: string; rodin
 
 /** „Prispieť za farnosť“ — len farár, len na cudziu zbierku; SEPA alebo karta farnosti */
 export function PrispietZaFarnost({ refId, nazov, vlastnik }: { refId: string; nazov: string; /** meno stránky, ktorej zbierka patrí */ vlastnik?: string }) {
-  const f = farnostFarara();
+  const f = useFarnostFarara();
   const [otv, setOtv] = useState(false);
   if (!f || (vlastnik && vlastnik === f.meno)) return null;
   return <>

@@ -15,6 +15,7 @@ import { DeedQr } from "@/components/deedqr";
 import { TESTOVACIA } from "@/lib/testovacia";
 import { DrzTlacidlo } from "@/features/viera/AdresarCirkvi";
 import { nacitajProfil, zapisDuchovneho } from "@/lib/profilStranky";
+import { nastavFarara } from "@/lib/farnostPrispela";
 
 type Duch = { tp: string; meno: string; tz: string; kde: string; osl: string; fil: string[]; foto: string; som: 0 | 1 };
 type Caka = false | true | "odkaz" | "potvrdit";
@@ -68,7 +69,9 @@ export function LudiaFarnosti({ strankaId, meno: menoFarnosti, mobil, children }
   const uloz = () => { if (!okD) return; zapisNastavenie("duch", D);
     // OPRAVY 206: meno s titulmi a fotka idú aj na verejnú stránku (riadok autora pri príspevkoch Správy)
     const dm = [D.tp, D.meno, D.tz].map((x) => x.trim()).filter(Boolean).join(" "), df = D.foto || (D.som === 0 ? ja.foto ?? "" : "");
-    void nacitajProfil(strankaId).then(() => zapisDuchovneho(strankaId, { meno: dm, foto: df })).catch(() => undefined); setDraft(null); setDOtv(false); hlas("zoz", `Uložené ✓ ${[D.tp, D.meno, D.tz].filter(Boolean).join(" ")}`); };
+    void nacitajProfil(strankaId).then(() => zapisDuchovneho(strankaId, { meno: dm, foto: df })).catch(() => undefined);
+    // OPRAVY 222: rola farár na serveri (len farár smie prispieť za farnosť)
+    void nastavFarara(strankaId, D.som === 0).catch((e: Error) => hlas("zoz", e.message)); setDraft(null); setDOtv(false); hlas("zoz", `Uložené ✓ ${[D.tp, D.meno, D.tz].filter(Boolean).join(" ")}`); };
   const fotoZ = (f?: File) => {
     if (!f) return;
     const rd = new FileReader();

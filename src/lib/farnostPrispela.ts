@@ -1,31 +1,50 @@
 // ============================================================
 // OPRAVY 222 — farnosť prispeje na cudziu zbierku (charita, pohrebná, zbierka človeka, pripnutá).
 // Platba normálne SEPA prevodom alebo kartou farnosti (žiadna peňaženka) → rpc zbierka_dar_farnosti (0080) = pohyb v ledgeri.
-// PLACEBO — OPRAVY 222 (1): „len farár“ zatiaľ určuje appka zo stránok účtu (rola farár); server pustí správu farnosti.
+// OPRAVY 222 (1): len farár — server (0081 stranka_farar, som_farar) aj appka. Farára zapíše Ľudia pri „Som farár“.
 // ============================================================
 import { useEffect, useSyncExternalStore } from "react";
 import { supabase } from "./supabase";
 import { idZbierkyDB } from "./darZbierky";
 import { UKAZKOVE_STRANKY } from "./mojeStranky";
 import { TESTOVACIA } from "./testovacia";
-import { spravujemVRelacii } from "./stranka";
 
 export interface MojaFarnost { id: string; meno: string }
-/** farnosť, za ktorú môžem prispieť — len keď som jej farár (nie správca, kaplán ani nikto iný) */
-export function farnostFarara(): MojaFarnost | null {
-  const s = UKAZKOVE_STRANKY.find((x) => x.typ === "farnost" && x.rola.endsWith(".farar"));
-  // naostro len keď prihlásený naozaj spravuje tú farnosť (otvoril jej Správu); server aj tak overí správcu
-  return s && (TESTOVACIA || spravujemVRelacii(s.k)) ? { id: s.k, meno: s.n } : null;
+let ver = 0;
+const posl = new Set<() => void>();
+const zmena = () => { ver++; posl.forEach((f) => f()); };
+const useZmena = () => useSyncExternalStore((f) => { posl.add(f); return () => { posl.delete(f); }; }, () => ver);
+const farar = new Map<string, boolean>();
+const nacitavaFarar = new Set<string>();
+async function nacitajFarara(stranka: string) {
+  if (!supabase || nacitavaFarar.has(stranka)) return;
+  nacitavaFarar.add(stranka);
+  const { data, error } = await supabase.rpc("som_farar", { p_stranka: stranka });
+  if (!error) { farar.set(stranka, data === true); zmena(); }
+  nacitavaFarar.delete(stranka);
+}
+/** Ľudia: „Som farár“ (true) / „Vypĺňam za farára“ (false) — zapíše rolu na serveri */
+export async function nastavFarara(stranka: string, som: boolean): Promise<void> {
+  if (!supabase) { farar.set(stranka, som); zmena(); return; }
+  const { data, error } = await supabase.rpc("nastav_farara", { p_stranka: stranka, p_som: som });
+  if (error) throw new Error(error.message);
+  farar.set(stranka, data === true); zmena();
+}
+/** farnosť, za ktorú môžem prispieť — len keď som jej farár (nie správca, kaplán ani nikto iný); overí server */
+export function useFarnostFarara(): MojaFarnost | null {
+  useZmena();
+  const s = UKAZKOVE_STRANKY.find((x) => x.typ === "farnost");
+  useEffect(() => { if (s) void nacitajFarara(s.k); }, [s]);
+  if (!s) return null;
+  const som = supabase ? farar.get(s.k) === true : TESTOVACIA || farar.get(s.k) === true; // bez databázy (mock) len testovacia
+  return som ? { id: s.k, meno: s.n } : null;
 }
 
 export interface Prispevok { zbierka: string; nazov: string; kto: string; suma: number; cas: number; vs?: number; rodina: boolean }
 export interface Prispievatel { stranka: string; meno: string; suma: number | null }
 
-let ver = 0;
-const posl = new Set<() => void>();
-const zmena = () => { ver++; posl.forEach((f) => f()); };
 const prispela = new Map<string, Prispevok[]>(), prispievatelia = new Map<string, Prispievatel[]>();
-const useZmena = () => useSyncExternalStore((f) => { posl.add(f); return () => { posl.delete(f); }; }, () => ver);
+
 
 async function nacitajPrispela(stranka: string) {
   if (!supabase) return;
