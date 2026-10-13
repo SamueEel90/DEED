@@ -5,12 +5,13 @@ import { FARBY_LINIE, ROK, farbaCirkevnehoRoka, nastavLiniu, useVolbaLinie, volb
 
 const sekNadpis = { fontSize: 12, fontWeight: 800, letterSpacing: ".06em", color: "var(--ink3)" } as const;
 
-export function FarbaLinii({ strankaId }: { strankaId: string }) {
+export function FarbaLinii({ strankaId, pred }: { strankaId: string; /** OPRAVY 244: Rozloženie stránky nad Farbou línií */ pred?: import("react").ReactNode }) {
   const { cirkev } = useSlovaFarnosti(strankaId);
   const vyb = useVolbaLinie(strankaId, cirkev);
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
       <div style={sekNadpis}>VZHĽAD STRÁNKY</div>
+      {pred}
       <div style={{ borderRadius: 18, background: "var(--card)", border: "1px solid var(--cardBd)", padding: "12px 14px 14px", display: "flex", flexDirection: "column", gap: 10 }}>
         <div id="sc-linie" style={{ fontSize: 15, fontWeight: 700 }}>Farba línií</div>
         <div role="radiogroup" aria-labelledby="sc-linie" style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
