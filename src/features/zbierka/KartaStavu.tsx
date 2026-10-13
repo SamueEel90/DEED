@@ -1,7 +1,7 @@
 // KARTA 04 · Karta stavu zbierky — s cieľom (suma, %, pruh) alebo bez cieľa (míľniky, posledný dar).
 // Všetko z reálnych dát (základ zbierky + živé dary). Animácie len transform/opacity.
 import { useEffect, useRef, useState, type CSSProperties, type RefObject } from "react";
-import { useDarcovia, identitaDarcu, DARCOVIA_CFG, useSektorDarcu, type DarRiadok } from "@/lib/darcovia";
+import { useDarcovia, identitaDarcu, DARCOVIA_CFG, useSektorDarcu, useUkazSumy, type DarRiadok } from "@/lib/darcovia";
 import { usePouzivatel } from "@/lib/pouzivatel";
 import { ludiaPomohli } from "./hlasky";
 import { TempoDarov, type TempoRezim } from "./Tempo";
@@ -95,6 +95,7 @@ export function KartaStavu({ refId, zaklad, ciel, ludiaZaklad, tempo = false, ko
   const dary = cezTvorcu ? vsetkyDary.filter((r) => r.cezTvorcu === cezTvorcu.id) : vsetkyDary;
   const ja = usePouzivatel();
   const sektor = useSektorDarcu();
+  const ukazSumy = useUkazSumy();
   const suma = (cezTvorcu ? 0 : zaklad) + dary.reduce((a, r) => a + r.suma, 0);
   const org = useUsekyOrganizacii(refId);
   // OPRAVY 222: dary organizácií (farnosť, vlastné peniaze) nie sú ľudia
@@ -180,7 +181,7 @@ export function KartaStavu({ refId, zaklad, ciel, ludiaZaklad, tempo = false, ko
         <div key={posledny.id} className="zb-novy" style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 12, background: "var(--bg)", border: "1px solid var(--cardBd)", borderRadius: 12, padding: "8px 12px" }}>
           <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: ".06em", color: "var(--ink3)", flex: "none" }}>POSLEDNÝ DAR</span>
           <span style={{ flex: 1, minWidth: 0, fontSize: 13, fontWeight: 700, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{identitaDarcu(posledny, ja, sektor)}</span>
-          {sumaDaru(posledny) && <span style={{ fontSize: 13, fontWeight: 800, color: "var(--green)", flex: "none", fontVariantNumeric: "tabular-nums" }}>{sumaDaru(posledny)}</span>}
+          {ukazSumy && sumaDaru(posledny) && <span style={{ fontSize: 13, fontWeight: 800, color: "var(--green)", flex: "none", fontVariantNumeric: "tabular-nums" }}>{sumaDaru(posledny)}</span>}
         </div>
       )}
       {!cezTvorcu && <PrispievateliaFarnosti refId={refId} />}

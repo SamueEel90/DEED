@@ -10,6 +10,7 @@ import { darcoviaPre, identitaDarcu, relCas, useZmenyDarov } from "@/lib/darcovi
 import { usePouzivatel } from "@/lib/pouzivatel";
 import { kartaK, nadpisK, textK, useZmenaSum } from "./spravaCasti";
 import { VlastnePeniaze } from "./VlastnePeniaze";
+import { SumyPriDarcoch } from "./SumyPriDarcoch";
 
 const eur = (n: number) => `${n.toLocaleString("sk-SK")} €`;
 const cis = (n: number) => n.toLocaleString("sk-SK");
@@ -105,6 +106,8 @@ export function SpravaZbierkyFarnosti({ stranka, z, mobil, toast, onSpat, menoSt
           {ramec(["Cez vlastnú sumu", "—", "pripravujeme"])}
         </div>
       </section>
+      {/* Martin 13. 10.: sumy pri darcoch zapína farár (len zbierka farnosti; súkromné nikdy) */}
+      {(z.farnost?.druh ?? "farnost") === "farnost" && <section style={kartaK}><SumyPriDarcoch stranka={stranka} kluc={z.id} /></section>}
       <section style={kartaK}>
         <span style={nadpisK}>Darcovia</span>
         {dary.length ? dary.slice(0, 20).map((r, i) => (

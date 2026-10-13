@@ -26,7 +26,7 @@ import { CudziProfil } from "@/features/cudzi-profil/CudziProfil";
 import { ZmensenyModul } from "@/features/zbierka/ZmensenyModul";
 import type { TestProfil, TestSektor } from "@/lib/testProfily";
 import { kedyBrigady } from "@/features/rola/BrigadyFarnosti";
-import { useDarcovia, sucetDarov, relCas, nastavCiste, type DarRiadok } from "@/lib/darcovia";
+import { useDarcovia, sucetDarov, relCas, nastavCiste, SumyDarcovKontext, SektorDarcuKontext, type DarRiadok } from "@/lib/darcovia";
 import { useOmsoveOkno, suhrnHlavnej, menaOkna } from "@/lib/omsoveOkno";
 import { nacitajZbierkyStranky, zbierkyStrankyZPamate, useZmenyZbierok, cielCislo, type SpustenaZbierka } from "@/lib/novaZbierka";
 import { useKalendar, kostolKal, omseDna, polozkyDna, druhPolozky, minuty, iso, dvt, nazovOmse, nedelneOmse, rozsahTyzdna } from "@/lib/kalendarFarnosti";
@@ -54,6 +54,7 @@ import { Darcovia } from "@/features/zbierka/Riadky";
 import { useQrObrazok } from "@/lib/qrObrazok";
 import type { AutorF } from "@/lib/autorFarnosti";
 import { DNI_UH, casyUH, maUH, textCasu } from "@/lib/uradneHodiny";
+import { useSumyDarcov } from "@/lib/sumyDarcov";
 import { odkazZbierky } from "@/features/zbierka/Zdielat";
 // ---- farby Nástenky: premenné podľa témy appky (OPRAVY 203, styles/nastenka.css) ----
 const BG = "var(--nf-bg)", KARTA = "var(--nf-karta)", INK = "var(--nf-ink)", INK2 = "var(--nf-ink2)", INK3 = "var(--nf-ink3)", LINKA = "var(--nf-linka)", PAPIER = "var(--nf-papier)";
@@ -685,7 +686,8 @@ function DetailParte({ sp, strankaId, symbol, orgMeno, sablona, vz, onOsoba, onZ
     {data ? <ZbierkaModul zbierka={data} miesto="charita" pohreb hore={organizuje} bezDarcov={vedla} pietne={<PietneAkcie strankaId={strankaId} zbierka={zb!.id} />} bocny zoStrankyOrg onBack={onZavri} ktoVoli="farnosť" bez={["zapojitFirmu", "pravidelna", "dorovnanie"]} />
       : <div style={{ padding: "0 16px" }}><PietneAkcie strankaId={strankaId} zbierka={sp.id} /></div>}
   </div>;
-  return createPortal(
+  // Martin 13. 10.: pohrebná zbierka cez faru — bez mena „Bohu známy darca“
+  return createPortal(<SektorDarcuKontext.Provider value="pohreb">
     <div role="dialog" aria-modal="true" aria-label={`Parte · ${sp.d.meno}`} style={{ ...PREMENNE, position: "fixed", inset: 0, zIndex: 1000, background: "rgba(20,17,11,.82)", overflowY: "auto", padding: 16, boxSizing: "border-box", fontFamily: "'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,sans-serif" } as CSSProperties}>
       <div style={{ maxWidth: 1140, margin: "0 auto", paddingBottom: 24, display: "flex", flexDirection: "column", gap: 14 }}>
         <div><button type="button" onClick={onZavri} autoFocus style={{ minHeight: 52, padding: "0 20px", border: "none", borderRadius: 14, background: ZELENA_TL, color: "#fff", fontFamily: "inherit", fontSize: 17, fontWeight: 800, cursor: "pointer" }}>‹ Späť na stránku farnosti</button></div>
@@ -710,7 +712,7 @@ function DetailParte({ sp, strankaId, symbol, orgMeno, sablona, vz, onOsoba, onZ
           <div style={{ width: "min(100%, calc((100vh - 90px) / 1.4189))", aspectRatio: "148 / 210", background: "#fff" }}>{parteEl(false)}</div>
         </div>
       </CelaObrazovka>}
-    </div>, document.body);
+    </div></SektorDarcuKontext.Provider>, document.body);
 }
 
 /** OPRAVY 204: parte bez obrázka — A5, kríž, meno, roky, rozlúčka (nevyplnené riadky vynechané), QR vľavo dole „Prispieť rodine" */
@@ -869,7 +871,10 @@ function DetailZbierky({ d, strankaId, onZavri }: { d: DetailF; strankaId: strin
   // OPRAVY 187: dar z detailu pripnutej zbierky nesie zdroj = táto farnosť
   useEffect(() => { if (!d.pin || d.pin.ukazkova) return; nastavZdrojDaru(d.data.id, strankaId); return () => nastavZdrojDaru(d.data.id, null); }, [d.pin, d.data.id, strankaId]);
   const { wide } = useLayout(); // PC: zbierka vľavo ostáva na mieste; mobil: pod sebou
-  return createPortal(
+  // Martin 13. 10.: sumy pri darcoch zbierok farnosti podľa farára; zbierka rodiny nikdy; pripnutá cudzia podľa Viery (bez súm)
+  const farska = d.typ === "hl" || d.typ === "zv" || d.typ === "far";
+  const sumyFar = useSumyDarcov(strankaId, d.typ === "hl" ? "hlavna" : d.typ === "zv" ? "zvoncek" : d.typ === "far" ? d.data.id : null);
+  return createPortal(<SumyDarcovKontext.Provider value={d.typ === "rodina" ? false : farska ? sumyFar : null}>
     <div role="dialog" aria-modal="true" aria-label="Zbierka" style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(20,17,11,.82)", overflowY: "auto", padding: 16, boxSizing: "border-box", fontFamily: "'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,sans-serif" }}>
       <div style={{ maxWidth: 1180, margin: "0 auto", paddingBottom: 24, display: "flex", flexDirection: "column", gap: 14 }}>
         <div><button type="button" onClick={onZavri} autoFocus style={{ minHeight: 52, padding: "0 20px", border: "none", borderRadius: 14, background: ZELENA_TL, color: "#fff", fontFamily: "inherit", fontSize: 17, fontWeight: 800, cursor: "pointer" }}>‹ Späť na stránku farnosti</button></div>
@@ -915,7 +920,7 @@ function DetailZbierky({ d, strankaId, onZavri }: { d: DetailF; strankaId: strin
           </div>
         </div>
       </div>
-    </div>, document.body);
+    </div></SumyDarcovKontext.Provider>, document.body);
 }
 
 /** KARTA 60 §3 — okno Moje farnosti (tlačidlo Moja farnosť ⌄ / Sledovaná farnosť ⌄ na stránke farnosti) */

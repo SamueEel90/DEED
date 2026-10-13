@@ -6,7 +6,7 @@ import { DeedZnacka } from "@/components/DeedZnacka";
 import { useState, type CSSProperties, type ReactNode } from "react";
 import { usePersonalizacia } from "@/lib/personalizacia";
 import { usePouzivatel } from "@/lib/pouzivatel";
-import { useDarcovia, identitaDarcu, relCas, DARCOVIA_CFG, useSektorDarcu, type DarRiadok } from "@/lib/darcovia";
+import { useDarcovia, identitaDarcu, relCas, DARCOVIA_CFG, useSektorDarcu, useUkazSumy, type DarRiadok } from "@/lib/darcovia";
 import { vycerpane, zostatok, type Dorovnanie } from "@/lib/dorovnanie";
 import type { Oblubeny } from "@/types";
 
@@ -165,6 +165,7 @@ export function Darcovia({ refId, nadpis = "DARCOVIA", cezTvorcu, bezDorovnania,
   const dary = cezTvorcu ? vsetky.filter((r) => r.cezTvorcu === cezTvorcu) : vsetky;
   const ja = usePouzivatel();
   const sektor = useSektorDarcu();
+  const ukazSumy = useUkazSumy(); // Martin 13. 10.: súkromné zbierky nikdy, zbierky farnosti podľa farára
   const [vsetci, setVsetci] = useState(false);
   const { wide } = useLayout();
   const [desat, setDesat] = useState(false); // bod 149 · mobil: 4, šípka ⌄ → 10, ⌃ späť na 4
@@ -183,13 +184,13 @@ export function Darcovia({ refId, nadpis = "DARCOVIA", cezTvorcu, bezDorovnania,
         <div key={darca.id} className={i === 0 ? "zb-novy-riadok" : undefined} style={{ borderTop: "1px solid var(--cardBd)", padding: "10px 0" }}>
           <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
             <span style={{ flex: 1, minWidth: 0, fontSize: 14.5, fontWeight: 700, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{identitaDarcu(darca, ja, sektor)}</span>
-            {sektor !== "viera" && sumaVZozname(darca) && <span style={{ fontSize: 14.5, fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>{sumaVZozname(darca)}</span>}
+            {ukazSumy && sumaVZozname(darca) && <span style={{ fontSize: 14.5, fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>{sumaVZozname(darca)}</span>}
             <span style={{ width: 70, textAlign: "right", fontSize: 12, color: "var(--ink4)", flex: "none" }}>{relCas(darca.cas)}</span>
           </div>
           {firma && (
             <div style={{ display: "flex", gap: 8, marginTop: 3, paddingLeft: 14, fontSize: 14, fontWeight: 700, color: "var(--gold)" }}>
               <span style={{ flex: 1 }}>+ {firma.firma}</span>
-              {sektor !== "viera" && darca.suma > DARCOVIA_CFG.prahSumy && <span style={{ fontVariantNumeric: "tabular-nums" }}>{eK(firma.suma)}</span>}
+              {ukazSumy && darca.suma > DARCOVIA_CFG.prahSumy && <span style={{ fontVariantNumeric: "tabular-nums" }}>{eK(firma.suma)}</span>}
               <span style={{ width: 70, flex: "none" }} />
             </div>
           )}

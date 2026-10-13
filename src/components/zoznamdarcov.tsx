@@ -15,7 +15,7 @@ import { pressable } from "@/components/pressable";
 import { Sheet } from "@/components/sheet";
 import { Switch } from "@/components/ui";
 import {
-  DARCOVIA_CFG, useDarcovia, identitaDarcu, zobrazenaSuma, relCas, useSektorDarcu, menoBezMena, volbaBezMena,
+  DARCOVIA_CFG, useDarcovia, identitaDarcu, zobrazenaSuma, relCas, useSektorDarcu, useUkazSumy, menoBezMena, volbaBezMena,
   
   type DarRiadok, type VolbaDaru, type VerziaIdentity,
 } from "@/lib/darcovia";
@@ -24,7 +24,8 @@ import {
 function Riadok({ r, prvy, skrytSumy }: { r: DarRiadok; prvy?: boolean; skrytSumy?: boolean }) {
   const ja = usePouzivatel();
   const sektor = useSektorDarcu();
-  const suma = skrytSumy || sektor === "viera" ? null : zobrazenaSuma(r); // KARTA 56B · §5: vo Viere mená bez súm
+  const ukazSumy = useUkazSumy();
+  const suma = skrytSumy || !ukazSumy ? null : zobrazenaSuma(r); // Martin 13. 10.: Viera podľa farára, súkromné nikdy
   return (
     <div style={{ display: "flex", alignItems: "baseline", gap: SPACE.xs, padding: `${SPACE.xs}px 0`, borderBottom: `1px solid ${C.line2}`, fontSize: 12.5, ...(prvy ? { animation: "fadeUp .3s ease" } : {}) }}>
       <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>

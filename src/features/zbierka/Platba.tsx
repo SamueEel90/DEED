@@ -6,7 +6,7 @@ import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from
 import { createPortal } from "react-dom";
 import { useLayout } from "@/components/context";
 import { usePouzivatel } from "@/lib/pouzivatel";
-import { nacitajPredvolbu, ulozPredvolbu, useSektorDarcu, menoBezMena, volbaBezMena, type VerziaIdentity, type VolbaDaru } from "@/lib/darcovia";
+import { nacitajPredvolbu, ulozPredvolbu, useSektorDarcu, menoBezMena, volbaBezMena, jeViera, useUkazSumy, type VerziaIdentity, type VolbaDaru, type JaIdentita } from "@/lib/darcovia";
 import { toast } from "@/components/toast";
 import PodrzTlacidlo from "./PodrzTlacidlo";
 import { TESTOVACIA } from "@/lib/testovacia";
@@ -17,7 +17,16 @@ import { hlaskaPoDare } from "./hlasky";
 import { milnikyPre } from "./KartaStavu";
 
 export type SposobEur = "karta" | "sepa";
-export type VysledokPlatby = { kanal: KanalPlatby; sposob?: SposobEur; suma: number; eur: number; darDeed: number; volba?: VolbaDaru };
+/** meno: čo darca vybral do zoznamu darcov (0084 ho zapíše k daru); bez mena = undefined */
+export type VysledokPlatby = { kanal: KanalPlatby; sposob?: SposobEur; suma: number; eur: number; darDeed: number; volba?: VolbaDaru; meno?: string };
+
+/** Martin 13. 10. (Blok A): voľby mena v platbe — vo Viere len Meno z profilu · Bez mena (predvolené Bez mena) */
+function volbyMena(ja: JaIdentita & { nick?: string | null }, viera: boolean, bezMena: string): [VerziaIdentity, string][] {
+  const meno = ja.meno || "Darca", priezv = ja.priezvisko || "", cele = `${meno} ${priezv}`.trim();
+  if (viera) return [[ja.mesto ? 5 : 1, ja.mesto ? `${cele}, ${ja.mesto}` : cele], [4, "Bez mena"]];
+  return [[2, `${meno}${priezv ? ` ${priezv[0]}.` : ""}`], [1, cele], ...(ja.mesto ? [[5, `${cele}, ${ja.mesto}`] as [VerziaIdentity, string]] : []),
+    ...(ja.nick ? [[3, ja.nick] as [VerziaIdentity, string]] : []), [4, bezMena]];
+}
 
 const DAR_PRE_NAS = 3; // € — dobrovoľný dar platforme (prototyp)
 const KLUC_TUK = "deed.platba.potvrditTuknutim";
@@ -88,7 +97,8 @@ export function PlatobneOkno({ kanal, suma: sumaStart, nazov, registrovany, bonu
   const [sposob, setSposob] = useState<SposobEur | undefined>(undefined);
   const [darDeed, setDarDeed] = useState(false);
   const [nap, setNap] = useState(false); // nápoveda „Podrž tlačidlo…"
-  const [volba, setVolba] = useState<VolbaDaru>(nacitajPredvolbu);
+  const viera = jeViera(sektor);
+  const [volba, setVolba] = useState<VolbaDaru>(() => (viera ? { verzia: 4, zobrazSumu: true } : nacitajPredvolbu()));
   const [otvorene, setOtvorene] = useState(false);
   // OPRAVY 234: platba naoko — neregistrovaný vypĺňa kartu alebo IBAN (nikam sa neposielajú, kým nie je platobná brána)
   const [ud, setUd] = useState<UdajePlatby>({ cislo: "", platnost: "", cvc: "", iban: "", majitel: "" });
@@ -124,9 +134,11 @@ export function PlatobneOkno({ kanal, suma: sumaStart, nazov, registrovany, bonu
   };
   const spat = () => { const i = kroky.indexOf(krok as Krok); if (i > 0) setKrok(kroky[i - 1]); else zatvor(); };
   const zaplat = () => {
-    if (registrovany) ulozPredvolbu(volba);
+    if (registrovany && !viera) ulozPredvolbu(volba);
+    const vm = volbyMena(ja, viera, volbaBezMena(sektor));
+    const meno = registrovany && volba.verzia !== 4 ? (viera ? vm[0][1] : vm.find(([v]) => v === volba.verzia)?.[1]) : undefined;
     setKrok("spracovanie");
-    setTimeout(() => { onHotovo({ kanal, sposob, suma, eur: eurHodnota, darDeed: dar, volba: registrovany ? volba : undefined }); setKrok("hotovo"); }, 1800);
+    setTimeout(() => { onHotovo({ kanal, sposob, suma, eur: eurHodnota, darDeed: dar, volba: registrovany ? volba : undefined, meno }); setKrok("hotovo"); }, 1800);
   };
 
   // klávesnica (PC): čísla, čiarka, Backspace, Enter = ďalej, Esc = zavrieť
@@ -411,33 +423,32 @@ function RiadokPlatby({ kanal, sposob, registrovany }: { kanal: KanalPlatby; spo
 export function Identita({ volba, setVolba, eur }: { volba: VolbaDaru; setVolba: (v: VolbaDaru) => void; eur: number }) {
   const ja = usePouzivatel();
   const sektor = useSektorDarcu();
+  const viera = jeViera(sektor), ukazSumy = useUkazSumy();
   const bezMena = volbaBezMena(sektor);
-  const meno = ja.meno || "Darca", priezv = ja.priezvisko || "";
-  const moznosti = useMemo((): [VerziaIdentity, string][] => [
-    [2, `${meno}${priezv ? ` ${priezv[0]}.` : ""}`], [1, `${meno} ${priezv}`.trim()],
-    ...(ja.mesto ? [[5, `${`${meno} ${priezv}`.trim()}, ${ja.mesto}`] as [VerziaIdentity, string]] : []),
-    ...(ja.nick ? [[3, ja.nick] as [VerziaIdentity, string]] : []), [4, bezMena],
-  ], [meno, priezv, ja.mesto, ja.nick, bezMena]);
-  const vybrane = moznosti.find(([v]) => v === volba.verzia)?.[1] ?? bezMena;
+  const moznosti = useMemo(() => volbyMena(ja, viera, bezMena), [ja, viera, bezMena]);
+  const zvolena = (v: VerziaIdentity) => (viera ? (v === 4) === (volba.verzia === 4) : v === volba.verzia);
+  const vybrane = volba.verzia === 4 ? menoBezMena(sektor) : moznosti.find(([v]) => zvolena(v))?.[1] ?? bezMena;
   const nad2 = eur > 2;
   return (
     <>
       <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: ".05em", color: "var(--ink3)", marginTop: 2 }}>V ZOZNAME DARCOV SA UKÁŽEŠ AKO</div>
       <div style={{ display: "flex", gap: 8, overflowX: "auto", margin: "0 -18px", padding: "0 18px 2px", scrollbarWidth: "none" }}>
         {moznosti.map(([v, l]) => {
-          const on = v === volba.verzia;
+          const on = zvolena(v);
           return <button key={v} type="button" onClick={() => setVolba({ ...volba, verzia: v })}
             style={{ flex: "none", padding: "9px 14px", borderRadius: 99, border: `1.5px solid ${on ? "var(--gBd)" : "var(--pillBd)"}`, background: on ? "var(--gSoft)" : "transparent", color: on ? "var(--gInk)" : "var(--ink2)", fontSize: 14, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap", fontFamily: "inherit" }}>{l}</button>;
         })}
       </div>
-      {nad2 ? (
+      {/* Viera: sumy pri darcoch rozhoduje farár (súkromné zbierky nikdy) — darca vidí len, ako sa ukáže */}
+      {!ukazSumy || viera ? <div style={{ fontSize: 13, color: "var(--ink3)" }}>V zozname: <b style={{ color: "var(--ink)" }}>{vybrane}</b></div>
+      : nad2 ? (
         <div onClick={() => setVolba({ ...volba, zobrazSumu: !volba.zobrazSumu })} role="switch" aria-checked={volba.zobrazSumu}
           style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 16, background: "var(--card)", border: "1px solid var(--cardBd)", cursor: "pointer" }}>
           <span style={{ position: "relative", width: 44, height: 26, borderRadius: 99, background: volba.zobrazSumu ? "var(--green)" : "var(--track)", flex: "none", transition: "background .25s ease" }}>
             <span style={{ position: "absolute", top: 3, left: 3, width: 20, height: 20, borderRadius: "50%", background: "#fff", boxShadow: "0 1px 3px rgba(0,0,0,.2)", transform: `translateX(${volba.zobrazSumu ? 18 : 0}px)`, transition: "transform .3s cubic-bezier(.3,1.4,.5,1)" }} />
           </span>
           <span><span style={{ display: "block", fontSize: 14.5, fontWeight: 700 }}>Zobraziť sumu daru</span>
-            <span style={{ display: "block", fontSize: 12.5, color: "var(--ink3)" }}>{vybrane}{volba.zobrazSumu && volba.verzia !== 4 ? ` · ${eK(eur)}` : ""}</span></span>
+            <span style={{ display: "block", fontSize: 12.5, color: "var(--ink3)" }}>v zozname: {vybrane}{volba.zobrazSumu ? ` · ${eK(eur)}` : ""}</span></span>
         </div>
       ) : <div style={{ fontSize: 12.5, color: "var(--ink3)" }}>Pri daroch do 2 € sa suma v zozname nezobrazuje.</div>}
     </>

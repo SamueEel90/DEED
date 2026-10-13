@@ -4,13 +4,13 @@ import { ZbalitASpat, ZmensenyModul } from "./ZmensenyModul";
 import { smieDorovnat } from "@/lib/dorovnanie";
 import { cisloObjektu } from "@/lib/cisloObjektu";
 import { TESTOVACIA, TESTOVACIE_ZOSTAVENIE } from "@/lib/testovacia";
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { useContext, useEffect, useRef, useState, type CSSProperties } from "react";
 import type React from "react";
 import { C, SPACE, RADIUS } from "@/theme";
 import { Switch } from "@/shared";
 import { pressable } from "@/components/pressable";
 import { jeNeregistrovany, nastavNeregistrovany, darujemAkoFirma, nastavDarcuFirmu, sledujDarcu } from "@/lib/devDarca";
-import { pridajDar, darcoviaPre } from "@/lib/darcovia";
+import { pridajDar, darcoviaPre, SumyDarcovKontext } from "@/lib/darcovia";
 import { dorovnanieNaDar, dorovnanieKDaru, useZmenyDorovnani } from "@/lib/dorovnanie";
 import { MIESTA, POLOZKY, pripojene, type Miesto, type Kontext, type Kluc } from "./nastavenie";
 import { KamIdeDar, CelaZbierka, type TvorcaData } from "./Tvorca";
@@ -109,6 +109,7 @@ export function ZbierkaModul({ zbierka, miesto: miestoProp, onBack, spatNazov, o
   /** rozbalené časti — uložené v kroku cesty, aby ich Späť obnovil */
   stav?: StavKroku; onStav?: (zmena: StavKroku) => void;
 }) {
+  const sumyVonku = useContext(SumyDarcovKontext);
   const rootRef = useRef<HTMLDivElement>(null), koniecPruhu = useRef<HTMLDivElement>(null); // mikrodar: odkiaľ a kam letí svetielko
   const mikro = { root: rootRef, ciel: koniecPruhu };
   const [stavLok, setStavLok] = useState<StavKroku>({});
@@ -238,7 +239,10 @@ export function ZbierkaModul({ zbierka, miesto: miestoProp, onBack, spatNazov, o
   const lave = polozky.filter((p) => VLAVO.has(p.kluc));
   const prave = polozky.filter((p) => !VLAVO.has(p.kluc));
 
+  // Martin 13. 10.: súkromné zbierky (pohrebná, svadba, rodina, človek) sumy darcov nikdy; inak podľa okolia (farár / darca)
+  const sukromna = !!pohreb || ktoVoli === "rodina" || miesto === "sukromna";
   return (
+    <SumyDarcovKontext.Provider value={sukromna ? false : sumyVonku}>
     <div ref={rootRef} className="deed-platba" style={{ position: "relative", minHeight: bocny ? undefined : "100%", background: bocny ? "transparent" : "var(--bg)", color: "var(--ink)", paddingBottom: bocny ? 0 : SPACE.lg }}>
       {TESTOVACIE_ZOSTAVENIE && <DevPanel dev={dev} setDev={setDev} miestoPevne={!!miestoProp} registrovany={registrovany} ico={ico}
         cielInfo={realnyCiel ? undefined : `ukážkový ${DEV_CIEL.toLocaleString("sk-SK")} €`} dorovnava={dorovnanie?.firma}
@@ -256,7 +260,7 @@ export function ZbierkaModul({ zbierka, miesto: miestoProp, onBack, spatNazov, o
           bonus={dorovnanie ? (sm) => dorovnanieKDaru(dorovnanie, sm) : undefined} firma={dorovnanie?.firma}
           onClose={() => setPlatba(null)}
           onHotovo={(v) => {
-            pridajDar({ refId: zbierka.id, suma: v.eur, kanal: v.kanal === "eur" ? (v.sposob === "sepa" ? "sepa" : "psp") : "deed", registrovany, volba: v.volba, cezTvorcu });
+            pridajDar({ refId: zbierka.id, suma: v.eur, kanal: v.kanal === "eur" ? (v.sposob === "sepa" ? "sepa" : "psp") : "deed", registrovany, volba: v.volba, menoDarcu: v.meno, cezTvorcu });
           }} />
       )}
 
@@ -281,6 +285,7 @@ export function ZbierkaModul({ zbierka, miesto: miestoProp, onBack, spatNazov, o
       {miesto !== "podporitDeed" && !bocny && <div style={{ padding: "14px 16px 0", maxWidth: pc ? 420 : undefined, marginLeft: pc ? "auto" : undefined }}><ZbalitASpat onClick={onBack} /></div>}
       {!pc && !bocny && <div style={{ paddingTop: 14 }}>{polozky.filter((p) => p.kluc === "darcovia").map(vykresli)}</div>}
     </div>
+    </SumyDarcovKontext.Provider>
   );
 }
 

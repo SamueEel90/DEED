@@ -207,6 +207,8 @@ export function pridajDar(vstup: {
   cezTvorcu?: string;
   /** hlavná / sektorová zbierka stránky (nemá id „zb-…") — kvôli zápisu do ledgera (0066) */
   objekt?: ObjektZbierky;
+  /** 0084: meno, ktoré darca vybral („Meno z profilu“); bez neho je dar bez mena */
+  menoDarcu?: string;
 }): DarRiadok & { dorovnane?: number; dorovnalaFirma?: string } {
   const reg = vstup.registrovany;
   const volba = reg ? (vstup.volba ?? nacitajPredvolbu()) : { verzia: 4 as VerziaIdentity, zobrazSumu: false };
@@ -222,7 +224,7 @@ export function pridajDar(vstup: {
   };
   if (lid && !vstup.firma) {
     // 0066/0067: dar sa ukáže až keď vznikne v ledgeri
-    void zapisDarZbierky(vstup.refId, vstup.suma, vstup.kanal, vstup.objekt)
+    void zapisDarZbierky(vstup.refId, vstup.suma, vstup.kanal, vstup.objekt, reg && volba.verzia !== 4 ? vstup.menoDarcu : undefined)
       .then(() => obnovZLedgera(vstup.refId, lid))
       .catch((e: { message?: string }) => toast(`Dar sa nezapísal${e?.message ? ` · ${e.message}` : ""}`));
   } else {
@@ -272,14 +274,24 @@ export function prepniNaAnonym(refId: string, id: string) {
 }
 
 // ---- OPRAVY 159 · 57C: darca bez mena podľa sektora — vo Viere „Bohu známy veriaci" (v appke vždy „veriaci"), inde „Anonymný darca" ----
-export type SektorDarcu = "viera" | "ine";
-/** Jediné miesto textu darcu bez mena (neregistrovaný aj voľba Neukázať meno). */
+// Martin 13. 10. (Blok A): pohrebná zbierka cez faru „Bohu známy darca“; slovo „Anonym“ sa nikde nepoužíva.
+export type SektorDarcu = "viera" | "pohreb" | "ine";
+/** Jediné miesto textu darcu bez mena (neregistrovaný aj voľba Bez mena). */
 export function menoBezMena(sektor: SektorDarcu = "ine"): string {
-  return sektor === "viera" ? "Bohu známy veriaci" : "Anonymný darca";
+  return sektor === "viera" ? "Bohu známy veriaci" : sektor === "pohreb" ? "Bohu známy darca" : "Anonymný darca";
 }
-/** Voľba „bez mena" pri výbere zobrazenia (mimo Viery krátko „Anonym", ako doteraz). */
+/** Voľba „bez mena“ pri výbere zobrazenia — ten istý text ako v zozname. */
 export function volbaBezMena(sektor: SektorDarcu = "ine"): string {
-  return sektor === "viera" ? menoBezMena(sektor) : "Anonym";
+  return menoBezMena(sektor);
+}
+/** Viera (stránka farnosti, pohrebná cez faru): darca volí len Meno z profilu · Bez mena */
+export const jeViera = (s: SektorDarcu) => s === "viera" || s === "pohreb";
+/** Sumy pri darcoch (Martin 13. 10.): false = nikdy (súkromné zbierky), true = podľa darcu, nad 2 €.
+ *  Bez nastavenia: vo Viere nie (farár ich zapína pri zbierke), inde podľa darcu. */
+export const SumyDarcovKontext = createContext<boolean | null>(null);
+export function useUkazSumy(): boolean {
+  const k = useContext(SumyDarcovKontext), s = useContext(SektorDarcuKontext);
+  return k ?? !jeViera(s);
 }
 /** Sektor pre zoznamy darcov a platobné okno — Viera (modul, farnosť, Správa farnosti) ho nastaví na „viera". */
 export const SektorDarcuKontext = createContext<SektorDarcu>("ine");
@@ -292,8 +304,8 @@ export interface JaIdentita { meno?: string; priezvisko?: string; celeMeno?: str
 export function identitaDarcu(r: DarRiadok, ja?: JaIdentita, sektor: SektorDarcu = "ine"): string {
   if (r.firma) return r.firma;                  // dorovnanie — firma sa podpisuje vždy
   if (!r.registrovany) return menoBezMena(sektor); // bez mesta, bez čohokoľvek
-  // KARTA 57C (Martin): kým sa voľba mena darcu do ledgera nezapisuje, vo Viere sú všetci „Bohu známy veriaci"
-  if (sektor === "viera" && r.zLedgera) return menoBezMena(sektor);
+  // 0084: riadok z ledgera nesie meno, ktoré darca vybral; bez neho je bez mena (podľa sektora)
+  if (r.zLedgera) return r.meno || menoBezMena(sektor);
   const zdroj = r.moj && ja
     ? { meno: ja.celeMeno || ja.meno || "Člen", inicialovo: `${ja.meno || "Člen"} ${(ja.priezvisko || "")[0]?.toUpperCase() ?? ""}${(ja.priezvisko || "")[0] ? "." : ""}`.trim(), nick: ja.nick || undefined, mesto: ja.mesto, mestoVerejne: false }
     : r;

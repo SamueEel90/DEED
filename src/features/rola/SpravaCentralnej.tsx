@@ -10,6 +10,7 @@
 // náhľad = skutočná karta modulu z profilu, Spustiť = kontrola Názov · Text · Titulná fotka + podržať 1,5 s,
 // po spustení na tom istom mieste „Hlavná zbierka beží" a ďalší krok (QR plagát).
 // ============================================================
+import { SumyPriDarcoch } from "./SumyPriDarcoch";
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { profilZPamate } from "@/lib/profilStranky";
@@ -265,7 +266,12 @@ export function SpravaCentralnej({ strankaId, nazov, hlavnyUcet, tier, mobil, to
       </button>
     </section>);
   const vlavo = <>{spustena && tentoMesiac}{textKarta}{galeria}</>;
-  const vpravo = <>{nahlad}{ucetKarta}<AkoDarovat sada={d.sada} eurc={d.eurc} sadaE={d.sadaE} onZmena={zmen} pravidelna bezi={spustena} />{sektorKarta}{rocneKarta}{spustena ? <>{bezi}{qr}</> : nebezi}</>;
+  // Martin 13. 10.: farnosť — sumy pri darcoch hlavnej a zvončekovej zbierky zapína farár
+  const sumyKarta = farnost ? <section style={{ borderRadius: 22, background: "var(--card)", border: "1px solid var(--cardBd)", padding: "20px 22px", display: "flex", flexDirection: "column", gap: 16 }}>
+    <SumyPriDarcoch stranka={strankaId} kluc="hlavna" nadpis="Hlavná zbierka · ukázať sumy pri darcoch" />
+    <SumyPriDarcoch stranka={strankaId} kluc="zvoncek" nadpis="Zvončeková zbierka · ukázať sumy pri darcoch" />
+  </section> : null;
+  const vpravo = <>{sumyKarta}{nahlad}{ucetKarta}<AkoDarovat sada={d.sada} eurc={d.eurc} sadaE={d.sadaE} onZmena={zmen} pravidelna bezi={spustena} />{sektorKarta}{rocneKarta}{spustena ? <>{bezi}{qr}</> : nebezi}</>;
   const stlpce = (l: ReactNode, p: ReactNode) => mobil
     ? <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>{l}{p}</div>
     : <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1.3fr) minmax(0,1fr)", gap: 16, alignItems: "start" }}><div style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0 }}>{l}</div><div style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0 }}>{p}</div></div>;
