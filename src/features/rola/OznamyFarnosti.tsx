@@ -19,7 +19,7 @@ import PodrzTlacidlo from "@/features/zbierka/PodrzTlacidlo";
 import { GaleriaEditor, cistyText, NASTROJE } from "./obsahZbierky";
 import { pridajPrispevok, upravPrispevok, vlastnePrispevky, zmazPrispevok, type VieraFeedItem } from "@/features/viera/mock";
 import { FormularOznamu, VyberSablony, Plagat, prazdneUdaje, prvaVolba, chybaOznamu, popisOznamu, type DruhOznamu, type UdajeOznamu, type VolbaSablony } from "@/features/viera/Sablony";
-import { zmenKostol, CAS_OK, pekny } from "@/lib/kalendarFarnosti";
+import { zmenKostol, CAS_OK, pekny, type KalKostol } from "@/lib/kalendarFarnosti";
 import { stitokOznamu } from "./OmseKalendar";
 import { NahladNastenky } from "./NahladNastenky";
 import { PrihovorKarta, OnlineOmseKarta } from "./PrihovorKarta";
@@ -29,6 +29,7 @@ import { useAutorZaMna } from "@/lib/autorFarnosti";
 import { odkazQrStranky } from "@/features/verejny-profil/otvor";
 import { EditorOznameni, type EditorApi, type PayloadEditora } from "@/components/EditorOznameni";
 import { zapisEditora, zapisZPayloadu } from "@/lib/editorStat";
+import { useMiesta } from "@/lib/miestaFarnosti";
 
 type Druh = 0 | 1 | 2; // Krátky oznam · Udalosť · Oznámenie
 const DRUHY: [string, string][] = [
@@ -55,6 +56,8 @@ export interface NastavenieOznamu {
   pozv: number; limit: string; odr: number; osp: 0 | 1; u?: UdajeOznamu; volba?: VolbaSablony;
   /** id záznamu udalosti v kalendári (pri úprave sa presunie) */ kal?: string;
   /** BLOK C 235: jubileum z Editora oznámení (Blahoželanie) — Upraviť ho otvorí v editore */ ed?: PayloadEditora;
+  /** KARTA 62: Kde platí — id miest; bez poľa = všetky miesta */ mi?: string[];
+  /** KARTA 62: kostol (miesto), v ktorého kalendári je udalosť; bez poľa = hlavný „0“ */ kk?: string;
 }
 const RIADKY = 12;
 const ZLATA = "#C9A24A";
@@ -183,7 +186,7 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
   useEffect(() => { if (hore) topRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); }, [hore]);
 
   const zmenOdr = (i: number) => { setOdr(i); const d = ODRUHY[i][1]; setU(prazdneUdaje(d)); setVolba(prvaVolba(d)); if (i === INE) setOsp(1); };
-  const vycisti = () => { setN(""); setTxt(""); setTxtKey((k) => k + 1); setPlati(0); setUsp(0); setDat(""); setCas(""); setMiesto(""); setMedia([]); setPlagat(undefined); setPozv(0); setLimit(""); setOsp(0); zmenOdr(0); setEdit(null); };
+  const vycisti = () => { setN(""); setTxt(""); setTxtKey((k) => k + 1); setPlati(0); setUsp(0); setDat(""); setCas(""); setMiesto(""); setMedia([]); setPlagat(undefined); setPozv(0); setLimit(""); setOsp(0); zmenOdr(0); setKde(null); setKdeU(""); setEdit(null); };
   const novy = () => { vycisti(); setHotovo(null); setVyb(false); };
   const zavriForm = () => { vycisti(); setHotovo(null); setVyb(false); setFormOn(false); };
   const vyberDruh = (i: Druh) => { setDr(i); setHotovo(null); setVyb(true); };
@@ -194,12 +197,19 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
   const jub = dr === 2 && odr === JUB && osp === 0;
   const sablona = dr === 2 && osp === 0 && !ine && !jub;
   const [casZly, setCasZly] = useState(false);
+  // KARTA 62 1c: oznam raz, zaškrtnuté miesta (null = všetky); udalosť v jednom kostole. Pri jednom mieste sa nepýta.
+  const miestaF = useMiesta(strankaId);
+  const viacMiest = miestaF.length > 1;
+  const [kde, setKde] = useState<string[] | null>(null);
+  const [kdeU, setKdeU] = useState("");
+  const kdeId = miestaF.some((m) => m.id === kdeU) ? kdeU : miestaF[0]?.id ?? "0";
   const ch: string[] = [];
   if (sablona) {
     if (!u.meno.trim()) ch.push("meno");
     if (ODRUHY[odr][1] === "parte" && u.zena == null) ch.push("Muž alebo Žena");
   } else if (!n.trim()) ch.push("nadpis");
   if (dr === 1) { if (!dat) ch.push("dátum"); if (!CAS_OK(cas)) ch.push("čas"); }
+  if (dr === 0 && viacMiest && kde && !kde.length) ch.push("kde platí");
   // OPRAVY 212: pri vlastnom oznámení (parte, svadba, jubileum, iné) je prvá fotka z galérie titulná
   const fotkyG = media.filter((m) => m.typ === "foto");
   if (dr === 2 && (osp === 1 || ine) && !fotkyG.length) ch.push(ine ? "plagát alebo fotka" : "plagát");
@@ -241,7 +251,8 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
     if (ch.length || chybaSab) return;
     const povodny = edit ? zoznam.find((x) => x.id === edit) : undefined;
     const teraz = terazMs(), id = povodny?.id ?? `naboz-${teraz}`;
-    const oz: NastavenieOznamu = { dr, n: n.trim(), txt, plati, usp, dat, cas, miesto, pozv: dr !== 2 ? pozv : 0, limit: pozv === 2 ? limit : "", odr, osp, u: sablona ? u : undefined, volba: sablona ? volba : undefined, kal: povodny?.oz?.kal };
+    const oz: NastavenieOznamu = { dr, n: n.trim(), txt, plati, usp, dat, cas, miesto, pozv: dr !== 2 ? pozv : 0, limit: pozv === 2 ? limit : "", odr, osp, u: sablona ? u : undefined, volba: sablona ? volba : undefined, kal: povodny?.oz?.kal,
+      mi: dr === 0 && viacMiest && kde && kde.length < miestaF.length ? kde : dr === 1 && viacMiest ? [kdeId] : undefined, kk: dr === 1 && kdeId !== "0" ? kdeId : undefined };
     const zaklad = { id, comp: "data" as const, typ: "skutok" as const, modul: "charity" as const, kat: "Komunita" as const, skore: 6, typSituacie: "normal" as const, dni: 0, podpora: 0, farnostId: strankaId, cirkev: "", komunita: meno, overena: true, vytvorene: povodny?.vytvorene ?? teraz, af: povodny ? povodny.af : autorJa };
     let it: VieraFeedItem;
     let kalendar = false;
@@ -255,9 +266,12 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
         udalost: { cas: pekny(cas), miesto: miesto.trim() || undefined, text: cistyText(txt) || undefined, zavazne: pozv === 2 || undefined },
         fotky: usp === 1 ? (plagat ? [plagat] : undefined) : fotkyG.map((m) => m.src), popisy: usp !== 1 && fotkyG.some((m) => m.popis) ? fotkyG.map((m) => m.popis ?? "") : undefined, oz };
       // kalendár: pri úprave sa starý záznam presunie (ten istý id)
-      zmenKostol(strankaId, "0", (k) => {
-        const extra = Object.fromEntries(Object.entries(k.extra).map(([d, l]) => [d, l.filter((x) => x.id !== kal)]).filter(([, l]) => l.length));
-        return { ...k, extra: { ...extra, [dat]: [...(extra[dat] ?? []), { id: kal, typ: "udalost", t: pekny(cas), m: n.trim() }] } };
+      const bez = (k: KalKostol): KalKostol => ({ ...k, extra: Object.fromEntries(Object.entries(k.extra).map(([d, l]) => [d, l.filter((x) => x.id !== kal)]).filter(([, l]) => l.length)) });
+      const stary = povodny?.oz?.kk ?? "0";
+      if (povodny && stary !== kdeId) zmenKostol(strankaId, stary, bez); // udalosť sa presunula do iného kostola
+      zmenKostol(strankaId, kdeId, (k0) => {
+        const k = bez(k0);
+        return { ...k, extra: { ...k.extra, [dat]: [...(k.extra[dat] ?? []), { id: kal, typ: "udalost", t: pekny(cas), m: n.trim() }] } };
       });
       kalendar = true;
     } else {
@@ -314,7 +328,7 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
       pozv: x.pozvanie ? (x.pozvanie.zavazne ? 2 : 1) : x.rsvp ? (x.udalost?.zavazne ? 2 : 1) : 0, limit: x.pozvanie?.limit ? String(x.pozvanie.limit) : "",
       odr: st === "SVADBA" ? 1 : st === "JUBILEUM" ? 2 : st === "PARTE" ? 0 : INE, osp: x.plagat ? 1 : 0, u: x.smutocny?.sablona?.u, volba: x.smutocny?.sablona?.volba };
     setDr(o.dr); setN(o.n); setTxt(/<[a-z]/i.test(o.txt) ? o.txt : o.txt.split("\n").map((r) => `<p>${r.replace(/&/g, "&amp;").replace(/</g, "&lt;")}</p>`).join("")); setTxtKey((k) => k + 1);
-    setPlati(o.plati); setUsp(o.usp); setDat(o.dat); setCas(o.cas); setMiesto(o.miesto); setPozv(o.pozv); setLimit(o.limit); setOdr(o.odr); setOsp(o.osp);
+    setPlati(o.plati); setUsp(o.usp); setDat(o.dat); setCas(o.cas); setMiesto(o.miesto); setPozv(o.pozv); setLimit(o.limit); setOdr(o.odr); setOsp(o.osp); setKde(o.dr === 0 ? o.mi ?? null : null); setKdeU(o.kk ?? "");
     const d = ODRUHY[o.odr]?.[1] ?? "parte";
     setU(o.u ?? prazdneUdaje(d)); setVolba(o.volba ?? prvaVolba(d));
     const f = x.fotky ?? [];
@@ -367,6 +381,8 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
       <label style={{ display: "flex", flexDirection: "column", gap: 6 }}><span style={{ ...lbl, fontSize: 14 }}>Miesto</span><input value={miesto} onChange={(e) => setMiesto(e.target.value.slice(0, 60))} placeholder="napr. pred kostolom" aria-label="Miesto" style={pole} /></label>
       {casZly && <span role="alert" style={{ gridColumn: "1 / -1", fontSize: 12.5, fontWeight: 700, color: "var(--cRed)" }}>Takýto čas neexistuje. Píšte hodiny:minúty, napríklad 15:00.</span>}
     </div>}
+    {dr === 1 && viacMiest && <label style={{ display: "flex", flexDirection: "column", gap: 6 }}><span style={{ ...lbl, fontSize: 14 }}>Kostol</span>
+      <select value={kdeId} onChange={(e) => setKdeU(e.target.value)} aria-label="Kostol" style={{ ...pole, fontWeight: 700 }}>{miestaF.map((m) => <option key={m.id} value={m.id}>{m.nazov}</option>)}</select></label>}
     {dr === 0 && <><TextOznamu key={`t${txtKey}`} value={txt} onChange={setTxt} />
       <GaleriaEditor media={media} onMedia={setMedia} ph={mobil} bezVidea nadpis="Fotky · nepovinné" dovetok=" Prvá fotka je titulná, ostatné sa ukážu po ťuknutí." /></>}
     {dr === 1 && usp === 0 && <><TextOznamu key={`u${txtKey}`} value={txt} onChange={setTxt} />
@@ -384,6 +400,12 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
       {u.druh === "parte" && u.zena == null ? <span style={{ fontSize: 13.5, color: "var(--ink3)" }}>Šablóny sa ukážu, keď vyššie vyberiete Muž alebo Žena.</span>
         : <><b style={{ fontSize: 15 }}>Vyberte vzhľad · 8 šablón</b><VyberSablony u={u} volba={volba} onVolba={setVolba} vz={vz} mobil={mobil} qr={qrFar} qrText="Naša farnosť" /></>}
     </>}
+    {dr === 0 && viacMiest && <div role="group" aria-label="Kde platí" style={{ display: "flex", flexDirection: "column", gap: 8 }}><span style={lbl}>Kde platí</span>
+      {miestaF.map((m) => { const on = !kde || kde.includes(m.id); return (
+        <button key={m.id} type="button" role="checkbox" aria-checked={on} onClick={() => setKde((k) => { const l = k ?? miestaF.map((y) => y.id); const n2 = on ? l.filter((y) => y !== m.id) : [...l, m.id]; return n2.length === miestaF.length ? null : n2; })}
+          style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 50, padding: "0 14px", borderRadius: 12, border: `1.5px solid ${on ? "var(--green)" : "var(--cardBd)"}`, background: "var(--card)", fontFamily: "inherit", fontSize: 15.5, fontWeight: 700, color: "var(--ink)", cursor: "pointer", textAlign: "left", boxShadow: "none" }}>
+          <span aria-hidden style={{ width: 24, height: 24, flex: "none", borderRadius: 7, background: on ? "#4B7A35" : "transparent", border: on ? "none" : "1.5px solid var(--cardBd)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15 }}>{on ? "✓" : ""}</span>{m.nazov}</button>); })}
+      <span style={{ fontSize: 13, color: "var(--ink3)" }}>Predvolené všetky. Napíšete raz, ukáže sa na stránke farnosti aj na podstránkach zaškrtnutých kostolov.</span></div>}
     {dr === 0 && <div style={{ display: "flex", flexDirection: "column", gap: 8 }}><span style={lbl}>Platí do</span>
       <Segment label="Platí do" vol={PLATI.map(([t], i) => [i, t] as [number, string])} cur={plati} set={setPlati} />
       <span style={{ fontSize: 13, color: "var(--ink3)" }}>Potom oznam sám zmizne. Zmazať ho môžete aj skôr.</span></div>}
@@ -449,7 +471,7 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             {!zm && !editor && <button type="button" onClick={() => upravit(x)} style={{ minHeight: 44, padding: "0 16px", borderRadius: 12, border: "1px solid var(--cardBd)", background: "var(--btn)", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 800, color: "var(--ink)", boxShadow: "none" }}>Upraviť</button>}
             <button type="button" onClick={() => setPozri(pozri === x.id ? null : x.id)} aria-expanded={pozri === x.id} style={{ minHeight: 44, padding: "0 14px", borderRadius: 12, border: "1.5px solid var(--gBd)", background: pozri === x.id ? "var(--gSoft)" : "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 800, color: "var(--gInk)", boxShadow: "none" }}>Ako to vidia ľudia ›</button>
-            <PodrzZmaz onZmaz={() => { zmazPrispevok(strankaId, x.id); if (x.oz?.kal) { const kal = x.oz.kal; zmenKostol(strankaId, "0", (k) => ({ ...k, extra: Object.fromEntries(Object.entries(k.extra).map(([d, l]) => [d, l.filter((y) => y.id !== kal)]).filter(([, l]) => l.length)) })); }
+            <PodrzZmaz onZmaz={() => { zmazPrispevok(strankaId, x.id); if (x.oz?.kal) { const kal = x.oz.kal; zmenKostol(strankaId, x.oz.kk ?? "0", (k) => ({ ...k, extra: Object.fromEntries(Object.entries(k.extra).map(([d, l]) => [d, l.filter((y) => y.id !== kal)]).filter(([, l]) => l.length)) })); }
               if (edit === x.id) vycisti(); setOtv(null); setPozri(null); obnov((y) => y + 1); toast(`„${x.nazov ?? ""}“ je zmazané.`); }} />
           </div>
           {pozri === x.id && <div style={{ maxWidth: 460 }}>{nahladZverejneneho(x)}</div>}
