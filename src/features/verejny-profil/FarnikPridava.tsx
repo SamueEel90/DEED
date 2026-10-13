@@ -85,7 +85,7 @@ function Pozvanie({ x, strankaId, kto, reg }: { x: PolozkaFarnika; strankaId: st
 }
 
 /** ··· Nahlásiť nevhodný príspevok · Upraviť · moje */
-export function MenuPrispevku({ x, strankaId, kto, moje }: { x: PolozkaFarnika; strankaId: string; kto: string; moje: boolean }) {
+export function MenuPrispevku({ x, strankaId, kto, moje, vMenu }: { x: PolozkaFarnika; strankaId: string; kto: string; moje: boolean; /** OPRAVY 228: Upraviť a Zmazať autora až v „…“ */ vMenu?: boolean }) {
   const [menu, setMenu] = useState(false), [potvrd, setPotvrd] = useState(false), [ok, setOk] = useState(false);
   const tm = useRef<number | undefined>(undefined);
   useEffect(() => () => window.clearTimeout(tm.current), []);
@@ -105,8 +105,8 @@ export function MenuPrispevku({ x, strankaId, kto, moje }: { x: PolozkaFarnika; 
     <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
       <button type="button" onClick={() => setMenu((m) => !m)} aria-label="Viac" aria-expanded={menu} style={{ minWidth: 44, minHeight: 40, padding: "0 10px", borderRadius: 10, border: "1px solid var(--cardBd)", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 18, fontWeight: 800, color: "var(--ink3)", lineHeight: 1 }}>···</button>
       {menu && <button type="button" onClick={() => { setMenu(false); setPotvrd(true); }} style={{ minHeight: 40, padding: "0 12px", borderRadius: 10, border: "1px solid var(--cardBd)", background: "var(--card)", cursor: "pointer", fontFamily: "inherit", fontSize: 13.5, fontWeight: 800, color: "var(--ink)" }}>Nahlásiť nevhodný príspevok</button>}
-      {mozeUp && <button type="button" onClick={() => nastavUpravu(x.id)} style={{ minHeight: 40, padding: "0 12px", borderRadius: 10, border: "1.5px solid var(--gBd)", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 13.5, fontWeight: 800, color: "var(--gInk)" }}>Upraviť · moje</button>}
-      {mozeZmaz && <DrzTlacidlo ms={1200} styl={{ minHeight: 40, padding: "0 12px", borderRadius: 10, border: "1.5px solid #A34A2A", background: "transparent", color: "#A34A2A", fontSize: 13.5, fontWeight: 800 }}
+      {mozeUp && (!vMenu || menu) && <button type="button" onClick={() => nastavUpravu(x.id)} style={{ minHeight: 40, padding: "0 12px", borderRadius: 10, border: "1.5px solid var(--gBd)", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 13.5, fontWeight: 800, color: "var(--gInk)" }}>Upraviť · moje</button>}
+      {mozeZmaz && (!vMenu || menu) && <DrzTlacidlo ms={1200} styl={{ minHeight: 40, padding: "0 12px", borderRadius: 10, border: "1.5px solid #A34A2A", background: "transparent", color: "#A34A2A", fontSize: 13.5, fontWeight: 800 }}
         onHotovo={() => { zmazOdFarnika(strankaId, x.id); toast("Zmazané ✓"); }}>Podržte · zmazať</DrzTlacidlo>}
     </div>
   </>;

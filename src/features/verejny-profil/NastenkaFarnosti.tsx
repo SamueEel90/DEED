@@ -49,7 +49,7 @@ import { SADY_EUR, SADY_EURC } from "@/lib/sadyDarov";
 import { useLayout } from "@/components/context";
 
 import "@/styles/nastenka.css";
-import type { PayloadEditora } from "@/components/EditorOznameni";
+import { useVerejnyObrazok, type PayloadEditora } from "@/components/EditorOznameni";
 import { ParteMedailon, TvarOznamu, PARTE, SVADBA, JUBILEUM, BLAHOZELANIE, ZAKLAD, BORDOVA, symbolCirkvi, kickerTvaru, SERIF_TVARU, type Paleta } from "./Medailony";
 import { Darcovia } from "@/features/zbierka/Riadky";
 import { useQrObrazok } from "@/lib/qrObrazok";
@@ -113,6 +113,7 @@ interface Spom { id: string; it?: VieraFeedItem; x?: PolozkaFarnika; zb?: Spuste
 /** OPRAVY 205: položka Teš sa s nami */
 interface Tes { af?: AutorF; id: string; druh: "svadba" | "jubileum" | "blaho"; pal: Paleta; meno: string; datum: string; vek: string; nadpis: string; x?: PolozkaFarnika; zb?: SpustenaZbierka;
   /** BLOK C 235: Blahoželanie z Editora — meno pod nadpisom šablóny */ pod?: string;
+  /** OPRAVY 228: oznam Správy (celé oznámenie po ťuknutí) */ it?: VieraFeedItem;
   r: { zoznam: string[]; prepni: () => void }; mena: Record<string, string> }
 const rok = (s?: string) => s?.match(/\d{4}/)?.[0] ?? "";
 const rokyParte = (nar: string, umr: string) => { const a = rok(nar), b = rok(umr); return a || b ? [a && `* ${a}`, b && `† ${b}`].filter(Boolean).join(" ") : nar; };
@@ -321,11 +322,11 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, nahlad,
   // OPRAVY 205: tvar podľa druhu (svadba kruh · jubileum kosoštvorec · blahoželanie štvorec), pozvánka (miesto, čas) sa neukazuje
   const tesFar: Tes[] = OZ.filter((x) => ["SVADBA", "JUBILEUM", "BLAHOŽELANIE"].includes(stit(x))).map((x) => {
     // BLOK C 235: jubileum zo Správy = Blahoželanie z Editora
-    if (x.oz?.ed?.typ === "blahozelanie") return tesBlaho(x.oz.ed, { id: x.id, nadpis: x.nazov ?? "", r: reakF(x.id, "blaho"), mena: reakcieF(strankaId, x.id).mena ?? {}, af: x.af });
+    if (x.oz?.ed?.typ === "blahozelanie") return { ...tesBlaho(x.oz.ed, { id: x.id, nadpis: x.nazov ?? "", r: reakF(x.id, "blaho"), mena: reakcieF(strankaId, x.id).mena ?? {}, af: x.af }), it: x };
     const st = stit(x), u = x.oz?.u, druhT: Tes["druh"] = st === "SVADBA" ? "svadba" : st === "JUBILEUM" ? "jubileum" : "blaho";
     return { id: x.id, druh: druhT, pal: druhT === "svadba" ? ZAKLAD.svadba : druhT === "jubileum" ? ZAKLAD.jubileum : ZAKLAD.blaho,
       meno: u?.meno?.trim() || bezPredpony(x.nazov ?? "") || x.nazov || "", datum: u?.kedyD ?? "", vek: vekJubilea(u?.nar, u?.kedyD), nadpis: x.nazov ?? "",
-      r: reakF(x.id, "blaho"), mena: reakcieF(strankaId, x.id).mena ?? {}, af: x.af };
+      r: reakF(x.id, "blaho"), mena: reakcieF(strankaId, x.id).mena ?? {}, af: x.af, it: x };
   });
   const tesVer: Tes[] = OD.filter((x) => x.k === "svadba" || x.k === "ine").map((x) => {
     const ed = x.editor, P0 = (ed?.polia ?? {}) as Record<string, unknown>, pole = (k: string) => String(P0[k] ?? "").trim(), sv = x.k === "svadba";
@@ -651,7 +652,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, nahlad,
       {tes && createPortal(<div role="dialog" aria-modal="true" aria-label={tes.meno} onClick={() => setTes(null)} style={{ ...PREMENNE, position: "fixed", inset: 0, zIndex: 1000, background: "rgba(20,17,11,.82)", overflowY: "auto", padding: 16, boxSizing: "border-box", display: "flex", justifyContent: "center", alignItems: "flex-start", fontFamily: "'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,sans-serif" }}>
         <div onClick={(e) => e.stopPropagation()} style={{ width: "100%", maxWidth: 460, marginTop: 24, borderRadius: 24, background: PAPIER, color: INK, padding: 20, display: "flex", flexDirection: "column", alignItems: "center", gap: 16, boxSizing: "border-box" }}>
           <button type="button" onClick={() => setTes(null)} autoFocus style={{ alignSelf: "flex-start", minHeight: 48, padding: "0 18px", border: "none", borderRadius: 14, background: ZELENA_TL, color: "#fff", fontFamily: "inherit", fontSize: 16, fontWeight: 800, cursor: "pointer" }}>‹ Späť na stránku farnosti</button>
-          <TvarOznamu tvar={tes.druh === "svadba" ? "kruh" : tes.druh === "jubileum" ? "kosostvorec" : "stvorec"} pal={tes.pal} label={tes.meno} onTap={() => undefined}><ObsahTvaru t={tes} /></TvarOznamu>
+          <CeleOznamenie t={tes} vz={vz} />
           {tes.x ? hlavickaAutora(tes.x) : tes.zb ? null : hlavickaFar(tes.af)}
           {/* re-render po ťuknutí: čerstvý stav reakcií z tesy */}
           {(() => { const t = tesy.find((y) => y.id === tes.id) ?? tes; const jaV = t.r.zoznam.includes(kto); const mena = t.r.zoznam.map((k2) => `${t.mena[k2] ?? "veriaci"}${k2 === kto ? " (vy)" : ""}`); return <>
@@ -665,7 +666,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, nahlad,
             {t.x?.fotky?.some(ziveObr) && <div style={{ alignSelf: "stretch", display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(96px,1fr))", gap: 6 }}>
               {t.x.fotky.filter(ziveObr).map((f, i) => <button key={i} type="button" onClick={() => setAlbum(t.x!)} aria-label="Fotky na celú obrazovku" style={{ border: "none", padding: 0, borderRadius: 10, overflow: "hidden", cursor: "zoom-in", aspectRatio: "1" }}><img src={f} alt={t.x!.popisy?.[i] ?? ""} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} /></button>)}
             </div>}
-            {t.x && <div style={{ alignSelf: "stretch" }}><MenuPrispevku x={t.x} strankaId={strankaId} kto={kto} moje={moje(t.x)} /></div>}
+            {t.x && <div style={{ alignSelf: "stretch" }}><MenuPrispevku x={t.x} strankaId={strankaId} kto={kto} moje={moje(t.x)} vMenu /></div>}
           </>; })()}
         </div>
       </div>, document.body)}
@@ -775,6 +776,23 @@ function Sviecka() {
 }
 
 /** obrázok na celú obrazovku: vyplní výšku, čierna len po bokoch */
+/** OPRAVY 228: ťuk na svadbu / jubileum / blahoželanie = celé oznámenie (ako pri parte), ale bez súkromných údajov:
+ *  bez času, miesta obradu, hostiny, reštaurácie a adresy oslavy — ostáva meno, roky alebo mená a dátum.
+ *  Z Editora: obrázok bez týchto riadkov · šablóna farnosti: bez času a miesta · inak tvar ako na stránke. */
+function CeleOznamenie({ t, vz }: { t: Tes; vz: Parameters<typeof Plagat>[0]["vz"] }) {
+  const navrh = t.x?.editor ?? t.it?.oz?.ed ?? null;
+  const src = useVerejnyObrazok(navrh, t.id);
+  const tvar = <TvarOznamu tvar={t.druh === "svadba" ? "kruh" : t.druh === "jubileum" ? "kosostvorec" : "stvorec"} pal={t.pal} label={t.meno} onTap={() => undefined}><ObsahTvaru t={t} /></TvarOznamu>;
+  if (navrh) return src
+    ? <img src={src} alt={`${t.meno} · oznámenie`} style={{ display: "block", width: "100%", maxWidth: 420, height: "auto", borderRadius: 8, boxShadow: "0 6px 20px rgba(0,0,0,.18)" }} />
+    : <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>{tvar}<span style={{ fontSize: 13.5, color: "var(--nf-ink2)" }}>Načítavam oznámenie…</span></div>;
+  const oz = t.it?.oz;
+  if (oz?.u && oz.volba && !t.it?.plagat) return <div style={{ display: "flex", justifyContent: "center", background: "#fff", borderRadius: 8, overflow: "hidden" }}><Plagat u={{ ...oz.u, kedyC: "", kde: "" }} volba={oz.volba} vz={vz} sirka={360} /></div>;
+  const f = t.it?.plagat ? t.it.fotky?.find(ziveObr) : undefined;
+  if (f) return <img src={f} alt={t.meno} style={{ display: "block", width: "100%", maxWidth: 420, height: "auto", borderRadius: 8 }} />;
+  return tvar;
+}
+
 function VelkyObrazok({ v, vz }: { v: Velke; vz: Parameters<typeof Plagat>[0]["vz"] }) {
   if ("src" in v) return <div style={{ flex: 1, minHeight: 0, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 8px 8px" }}><img src={v.src} alt="" style={{ width: "100%", height: "100%", objectFit: "contain" }} /></div>;
   const oz = v.it.oz;
