@@ -64,6 +64,8 @@ export interface ZbierkaFarnosti {
     /** KARTA 57 A.4: QR na vlastnom parte — áno/nie, miesto (pod parte alebo roh), papier */ qr?: { zap: boolean; kde: string; papier: "A5" | "A4" } };
   /** KARTA 56E §2b: zvyšok rozhoduje príjemca — s kým sa podelí (len registrovaní v DEED, najviac 2, každý aspoň 5 %) */
   podelit?: { id: string; nazov: string; pct: number }[];
+  /** KARTA 62: zbierka farnosti na konkrétne miesto (len účel; účet, VS a doklady sú vždy farnosti) — id miesta */
+  miesto?: string;
 }
 export const PODELIT_MAX = 2, PODELIT_MIN = 5, PODELIT_KROK = 5;
 /** podiel farnosti pri zbierke pre veriacich: najviac 3 % a najviac 100 € (OPRAVY 161) */
