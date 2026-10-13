@@ -29,7 +29,10 @@ export interface ProfilStranky {
   bezLoga?: boolean;
   inicialy?: string;
   ramLoga?: RamFotky;
+  /** OPRAVY 206: duchovný farnosti z Ľudia (meno s titulmi, fotka) — riadok autora pri všetkom, čo pridá Správa */
+  duchovny?: DuchovnyStranky | null;
 }
+export interface DuchovnyStranky { meno: string; foto: string }
 export interface ProfilZaznam { koncept: ProfilStranky | null; konceptCas: string | null; ulozeny: ProfilStranky | null }
 
 const pamat = new Map<string, ProfilZaznam>();
@@ -64,10 +67,24 @@ export async function ulozKoncept(stranka: string, p: ProfilStranky): Promise<st
 export async function zverejniProfil(stranka: string, p: ProfilStranky): Promise<void> {
   const cas = new Date().toISOString();
   if (supabase) {
+    if (p.duchovny === undefined) p = { ...p, duchovny: profilZPamate(stranka).ulozeny?.duchovny ?? null };
     const { error } = await supabase.from("profil_stranky").upsert({ stranka, ulozeny: await bezDataUrl(p, "stranky"), ulozeny_cas: cas, koncept: null, koncept_cas: null }, { onConflict: "stranka" });
     if (error) throw new Error(error.message);
   }
+  else if (p.duchovny === undefined) p = { ...p, duchovny: profilZPamate(stranka).ulozeny?.duchovny ?? null };
   pamat.set(stranka, { koncept: null, konceptCas: null, ulozeny: p });
+}
+
+/** OPRAVY 206: Ľudia → duchovný uložený aj do verejného profilu (uložený aj koncept), nech ho vidí verejná stránka */
+export async function zapisDuchovneho(stranka: string, d: DuchovnyStranky | null): Promise<void> {
+  const z = profilZPamate(stranka);
+  const ulozeny = z.ulozeny ? { ...z.ulozeny, duchovny: d } : null, koncept = z.koncept ? { ...z.koncept, duchovny: d } : null;
+  pamat.set(stranka, { ...z, ulozeny, koncept });
+  if (!supabase || (!ulozeny && !koncept)) return;
+  const zaz: Record<string, unknown> = { stranka };
+  if (ulozeny) zaz.ulozeny = await bezDataUrl(ulozeny, "stranky");
+  if (koncept) zaz.koncept = await bezDataUrl(koncept, "stranky");
+  await supabase.from("profil_stranky").upsert(zaz, { onConflict: "stranka" });
 }
 
 /** KARTA 56D §1: názov stránky bez čiarky a bodky na konci (farnosť si ho môže zmeniť v Upraviť profil) */

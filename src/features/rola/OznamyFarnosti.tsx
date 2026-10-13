@@ -233,10 +233,9 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
     if (dr === 0) {
       it = { ...zaklad, ntyp: "oznam", tag: "Oznam", nazov: n.trim(), popis: cistyText(txt), platnostDni: PLATI[plati][1], pozvanie: pozvanieO, rsvp: !!pozvanieO || undefined, oz };
     } else if (dr === 1) {
-      const kedy = [pekny(cas), miesto.trim()].filter(Boolean).join(" · ");
       const kal = oz.kal ?? `u${teraz}`;
       oz.kal = kal;
-      it = { ...zaklad, ntyp: "udalost", tag: "Udalosť", nazov: n.trim(), popis: [kedy, cistyText(txt)].filter(Boolean).join(" · "), datum: dat, rsvp: !!pozvanieO || undefined, pozvanie: pozvanieO, plagat: usp === 1 || undefined,
+      it = { ...zaklad, ntyp: "udalost", tag: "Udalosť", nazov: n.trim(), popis: cistyText(txt), datum: dat /* OPRAVY 207: dátum · čas · miesto nie do textu, je v riadku nad nadpisom */, rsvp: !!pozvanieO || undefined, pozvanie: pozvanieO, plagat: usp === 1 || undefined,
         udalost: { cas: pekny(cas), miesto: miesto.trim() || undefined, text: cistyText(txt) || undefined, zavazne: pozv === 2 || undefined },
         fotky: usp === 1 ? (plagat ? [plagat] : undefined) : media.filter((m) => m.typ === "foto").map((m) => m.src), oz };
       // kalendár: pri úprave sa starý záznam presunie (ten istý id)

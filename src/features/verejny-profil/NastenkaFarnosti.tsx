@@ -7,12 +7,12 @@
 // Darcovia hlavnej zbierky: z ledgera, vždy „Bohu známy veriaci“ (voľba mena sa ešte nezapisuje), suma jedného
 // darcu nikdy; zvončeková = jeden súhrnný riadok za nedeľu.
 // ============================================================
-import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import type { ProfilStranky } from "@/lib/profilStranky";
 import { cistyText } from "@/lib/richtext";
 import { usePouzivatel } from "@/lib/pouzivatel";
-import { useMojeFarnosti, pridajSledovanu, odstranSledovanu, nazovFarnosti, otvorAdresar } from "@/lib/mojeFarnosti";
+import { useMojeFarnosti, useSlovaFarnosti, pridajSledovanu, odstranSledovanu, nazovFarnosti, otvorAdresar } from "@/lib/mojeFarnosti";
 import { DrzTlacidlo } from "@/features/viera/AdresarCirkvi";
 import { otvorVerejnyProfil } from "./otvor";
 import { centralnaZPamate, nacitajCentralnuZbierku, nazovHlavnej, useZmenyCentralnej } from "@/lib/centralnaZbierka";
@@ -188,6 +188,16 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, stit: s
     return anon ? <span style={{ display: "flex", alignItems: "center", gap: 10 }}>{obsah}</span>
       : <button type="button" onClick={() => setOsoba(meno)} aria-label={`Profil · ${meno}`} style={{ display: "flex", alignItems: "center", gap: 10, minHeight: 48, padding: 0, border: "none", background: "transparent", cursor: "pointer", fontFamily: "inherit" }}>{obsah}</button>;
   };
+  // OPRAVY 206: čo pridá Správa, má ten istý riadok autora — duchovný z Ľudia (fotka, meno s titulmi, titul podľa cirkvi)
+  const SLF = useSlovaFarnosti(strankaId);
+  const hlavickaFar = () => {
+    const du = profil?.duchovny, m = du?.meno?.trim() || meno, f = du?.meno?.trim() ? du.foto : logo ?? "";
+    const pod = du?.meno?.trim() ? SLF.titul.charAt(0).toLocaleLowerCase("sk-SK") + SLF.titul.slice(1) : "farnosť";
+    const kruh = <span aria-hidden="true" style={{ flex: "none", width: 40, height: 40, borderRadius: "50%", background: f ? `url("${f}") center/cover no-repeat` : "#4E7D37", color: "#fff", fontSize: 15, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>{f ? "" : iniciy(m)}</span>;
+    const obsah = <>{kruh}<span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", textAlign: "left" }}><b style={{ fontSize: 15.5, color: INK }}>{m}</b><span style={{ fontSize: 13, color: INK3 }}>{pod}</span></span></>;
+    return du?.meno?.trim() ? <button type="button" onClick={() => setOsoba(m)} aria-label={`Profil · ${m}`} style={{ display: "flex", alignItems: "center", gap: 10, minHeight: 48, padding: 0, border: "none", background: "transparent", cursor: "pointer", fontFamily: "inherit" }}>{obsah}</button>
+      : <span style={{ display: "flex", alignItems: "center", gap: 10, minHeight: 48 }}>{obsah}</span>;
+  };
   const autor = (x: PolozkaFarnika) => (x.anon || /Bohu známy/.test(x.kto) ? "Pridal veriaci" : `Pridal veriaci · ${x.kto}`);
   const moje = (x: PolozkaFarnika) => !!x.autor && x.autor === kto;
   const obrVer = (x: PolozkaFarnika) => { const o = x.obr ?? (x.editor ? x.fotky?.[0] : undefined); return ziveObr(o) ? o! : ""; };
@@ -357,11 +367,10 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, stit: s
                     {d && <span style={{ position: "absolute", left: 16, top: 16, width: 72, height: 78, borderRadius: 16, background: "#fff", color: "#14110B", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}><b style={{ fontSize: 28, lineHeight: 1 }}>{d.getDate()}.</b><span style={{ fontSize: 13, fontWeight: 800, letterSpacing: ".08em" }}>{MES[d.getMonth()]}</span><span style={{ fontSize: 12.5, color: INK3 }}>{DNW[dvt(d)]}</span></span>}
                   </div>}
                 <div style={{ padding: "18px 20px 20px", display: "flex", flexDirection: "column", gap: 8 }}>
-                  {u.mojeX && hlavickaAutora(u.mojeX)}
+                  {u.mojeX ? hlavickaAutora(u.mojeX) : hlavickaFar()}
                   {u.kedy && <span style={{ fontSize: 14, fontWeight: 800, letterSpacing: ".1em", color: ZLATA }}>{u.kedy}</span>}
                   <b style={{ fontSize: 22, lineHeight: 1.2, letterSpacing: "-.01em" }}>{u.t}</b>
-                  {u.txt && <span style={{ fontSize: 16.5, lineHeight: 1.5, color: INK2, whiteSpace: "pre-line" }}>{u.txt}</span>}
-                  {!u.mojeX && <span style={{ fontSize: 14.5, color: INK3 }}>{u.od}</span>}
+                  {u.txt && <Viac text={u.txt} />}
                   {u.pz > 0 && pozvat(u)}
                   {u.mojeX && <MenuPrispevku x={u.mojeX} strankaId={strankaId} kto={kto} moje={moje(u.mojeX)} />}
                 </div>
@@ -413,7 +422,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, stit: s
             <div key={x.id} style={{ border: `1.5px solid ${INK}`, background: PAPIER, display: "flex", flexDirection: "column" }}>
               {src || sab ? obrazokOznamu({ src: src, it: x, pomer: "3 / 4", maxH: 460, label: "Parte", onTap: () => setVelke(src ? { src } : { it: x }) })
                 : <TextParte meno={x.smutocny?.meno ?? x.nazov ?? ""} kedy={x.popis ?? ""} />}
-              <span style={{ padding: "12px 24px", fontSize: 14.5, color: INK3 }}>Farnosť</span>
+              <div style={{ padding: "8px 16px 0" }}>{hlavickaFar()}</div>
               {sustrast(reakF(x.id, "sustrast"))}
             </div>); })}
           {parteVer.map((x) => { const src = obrVer(x); return (
@@ -442,7 +451,8 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, stit: s
               {(src || sab) && obrazokOznamu({ src: src, it: x, pomer: "3 / 4", label: "Oznámenie", onTap: () => setVelke(src ? { src } : { it: x }) })}
               <div style={{ padding: "18px 20px 22px", display: "flex", flexDirection: "column", gap: 8 }}>
                 {/* OPRAVY 191: pod obrázkom len autor a tlačidlo */}
-                {!src && !sab && <><span style={kicker(ZELENA)}>{stit(x)} · FARNOSŤ</span>
+                {hlavickaFar()}
+                {!src && !sab && <><span style={kicker(ZELENA)}>{stit(x)}</span>
                 <b style={{ fontSize: 21, lineHeight: 1.25 }}>{x.nazov}</b></>}
                 {!src && !sab && x.popis && <span style={{ fontSize: 16.5, lineHeight: 1.5, color: INK2, whiteSpace: "pre-line" }}>{x.popis}</span>}
                 {reakcia({ ...reakF(x.id, "blaho"), t: "Blahoželám", tJa: "Blahoželáte ✓", poc: (n) => String(n) })}
@@ -480,9 +490,10 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, stit: s
             <div key={u.id} style={{ borderRadius: 22, overflow: "hidden", background: KARTA, display: "flex", flexDirection: "column" }}>
               {u.foto && <img src={u.foto} alt="" style={{ width: "100%", aspectRatio: "16 / 9", objectFit: "cover", display: "block" }} />}
               <div style={{ padding: "20px 22px", display: "flex", flexDirection: "column", gap: 8 }}>
+                {hlavickaFar()}
                 <span style={{ fontSize: 14, fontWeight: 800, letterSpacing: ".12em", color: INK3 }}>{u.kedy}</span>
                 <b style={{ fontSize: 21, lineHeight: 1.25 }}>{u.t}</b>
-                {u.txt && <span style={{ fontSize: 16.5, lineHeight: 1.5, color: INK2, whiteSpace: "pre-line" }}>{u.txt}</span>}
+                {u.txt && <Viac text={u.txt} />}
                 {u.od && <span style={{ fontSize: 15.5, color: INK3 }}>{u.od}</span>}
                 {u.pz > 0 && pozvat(u)}
               </div>
@@ -575,6 +586,18 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, stit: s
 /** KARTA 57C §5: vybraná sada zbierky (index v SADY_EUR / SADY_EURC) → rýchle sumy v module */
 function sadyZbierky(z: { sada: number; eurc: boolean; sadaE: number }): Pick<ZbierkaData, "rychleSumy" | "eurc" | "rychleSumyE"> {
   return { rychleSumy: Object.values(SADY_EUR)[z.sada]?.sumy, eurc: z.eurc, rychleSumyE: Object.values(SADY_EURC)[z.sadaE]?.sumy };
+}
+
+/** OPRAVY 207: text najviac 4 riadky, potom „… viac“ (rozbalí na mieste); dlhé slová sa zalomia */
+export function Viac({ text, riadkov = 4, velkost = 16.5 }: { text: string; riadkov?: number; velkost?: number }) {
+  const [otv, setOtv] = useState(false);
+  const [dlhy, setDlhy] = useState(false);
+  const ref = useRef<HTMLSpanElement>(null);
+  useLayoutEffect(() => { const e = ref.current; if (e && !otv) setDlhy(e.scrollHeight > e.clientHeight + 2); }, [text, otv]);
+  return <>
+    <span ref={ref} style={{ fontSize: velkost, lineHeight: 1.5, color: INK2, whiteSpace: "pre-line", overflowWrap: "anywhere", ...(otv ? {} : { display: "-webkit-box", WebkitLineClamp: riadkov, WebkitBoxOrient: "vertical", overflow: "hidden" }) } as CSSProperties}>{text}</span>
+    {dlhy && !otv && <button type="button" onClick={() => setOtv(true)} style={{ alignSelf: "flex-start", minHeight: 40, padding: 0, border: "none", background: "transparent", color: INK, fontFamily: "inherit", fontSize: 15.5, fontWeight: 800, cursor: "pointer" }}>… viac</button>}
+  </>;
 }
 
 /** sviečka (prosba o modlitbu) */

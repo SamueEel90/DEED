@@ -13,10 +13,11 @@ import { zdielaj, kopiruj } from "@/lib/zdielanie";
 import { DeedQr } from "@/components/deedqr";
 import { TESTOVACIA } from "@/lib/testovacia";
 import { DrzTlacidlo } from "@/features/viera/AdresarCirkvi";
+import { nacitajProfil, zapisDuchovneho } from "@/lib/profilStranky";
 
 type Duch = { tp: string; meno: string; tz: string; kde: string; osl: string; fil: string[]; foto: string; som: 0 | 1 };
 type Caka = false | true | "odkaz" | "potvrdit";
-type Clovek = { id: number; n: string; k: string; r: string; caka: Caka; do?: string; jaT?: string; vlastny?: boolean };
+type Clovek = { id: number; n: string; k: string; r: string; caka: Caka; do?: string; jaT?: string; vlastny?: boolean; foto?: string };
 const D0: Duch = { tp: "", meno: "", tz: "", kde: "", osl: "", fil: [], foto: "", som: 0 };
 
 const ZELENA = "#4B7A35", CERV = "#A34A2A";
@@ -63,7 +64,10 @@ export function LudiaFarnosti({ strankaId, meno: menoFarnosti, mobil, children }
   const D = d ?? D0u, setD = (o: Partial<Duch>) => setDraft({ ...D, ...o });
   const okD = D.meno.trim().length > 2;
   const celeMeno = [D0u.tp, D0u.meno, D0u.tz].map((x) => x.trim()).filter(Boolean).join(" ");
-  const uloz = () => { if (!okD) return; zapisNastavenie("duch", D); setDraft(null); setDOtv(false); hlas("zoz", `Uložené ✓ ${[D.tp, D.meno, D.tz].filter(Boolean).join(" ")}`); };
+  const uloz = () => { if (!okD) return; zapisNastavenie("duch", D);
+    // OPRAVY 206: meno s titulmi a fotka idú aj na verejnú stránku (riadok autora pri príspevkoch Správy)
+    const dm = [D.tp, D.meno, D.tz].map((x) => x.trim()).filter(Boolean).join(" "), df = D.foto || (D.som === 0 ? ja.foto ?? "" : "");
+    void nacitajProfil(strankaId).then(() => zapisDuchovneho(strankaId, { meno: dm, foto: df })).catch(() => undefined); setDraft(null); setDOtv(false); hlas("zoz", `Uložené ✓ ${[D.tp, D.meno, D.tz].filter(Boolean).join(" ")}`); };
   const fotoZ = (f?: File) => {
     if (!f) return;
     const rd = new FileReader();
@@ -74,10 +78,11 @@ export function LudiaFarnosti({ strankaId, meno: menoFarnosti, mobil, children }
 
   // zoznam: duchovný (vy alebo bez účtu) + pozvaní
   const somF = D0u.som === 0;
+  const fotoD = D0u.foto || (somF && D0u.meno ? ja.foto ?? "" : "");
   const jaMeno = ja.celeMeno?.trim() || "Vy";
   const base: Clovek[] = somF
-    ? [{ id: -1, n: celeMeno || jaMeno, k: "", r: T, caka: false, vlastny: true, jaT: `${T} · vy` }]
-    : [{ id: -2, n: celeMeno || T, k: "", r: T, caka: false, vlastny: true, jaT: "bez účtu v DEED" }, { id: -1, n: jaMeno, k: "", r: "Správca stránky", caka: false, vlastny: true, jaT: "Správca stránky · vy" }];
+    ? [{ id: -1, n: celeMeno || jaMeno, k: "", r: T, caka: false, vlastny: true, jaT: `${T} · vy`, foto: D0u.foto || ja.foto || "" }]
+    : [{ id: -2, n: celeMeno || T, k: "", r: T, caka: false, vlastny: true, jaT: "bez účtu v DEED", foto: D0u.foto }, { id: -1, n: jaMeno, k: "", r: "Správca stránky", caka: false, vlastny: true, jaT: "Správca stránky · vy", foto: ja.foto || "" }];
   const cakaT = (c: Caka) => (c === "potvrdit" ? "čaká na vaše potvrdenie" : c === "odkaz" ? "pozvánka odoslaná" : "čaká na prijatie");
   const duchovnych = [...base, ...L].filter((x) => (x.r === T || x.r === "Dozorca") && !x.caka).length;
 
@@ -152,7 +157,7 @@ export function LudiaFarnosti({ strankaId, meno: menoFarnosti, mobil, children }
     <span style={kick}>{`${T} ${Sg}`.toUpperCase()}</span>
     <section style={{ ...karta, borderRadius: 22, padding: mobil ? "12px 14px" : "14px 20px", display: "flex", flexDirection: "column", gap: 12 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-        <span aria-hidden="true" style={{ width: 48, height: 48, flex: "none", borderRadius: "50%", background: D0u.foto ? `url("${D0u.foto}") center/cover no-repeat` : "var(--gSoft)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, fontWeight: 800, color: "var(--gInk)" }}>{D0u.foto ? "" : D0u.meno ? inic(D0u.meno) : "+"}</span>
+        <span aria-hidden="true" style={{ width: 48, height: 48, flex: "none", borderRadius: "50%", background: fotoD ? `url("${fotoD}") center/cover no-repeat` : "var(--gSoft)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, fontWeight: 800, color: "var(--gInk)" }}>{fotoD ? "" : D0u.meno ? inic(D0u.meno) : "+"}</span>
         <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}>
           <b style={{ fontSize: 15.5 }}>{celeMeno || `${T} ${Sg}`}</b>
           <span style={{ fontSize: 13, color: "var(--ink3)" }}>{celeMeno ? ([D0u.kde, D0u.fil.length ? `filiálky: ${D0u.fil.join(", ")}` : ""].filter(Boolean).join(" · ") || "fotka, tituly, kde pôsobí") : "nepovinné · meno, fotka, tituly, filiálky"}</span>
@@ -201,7 +206,8 @@ export function LudiaFarnosti({ strankaId, meno: menoFarnosti, mobil, children }
         return (
           <div key={x.id} style={{ padding: "12px 0", borderTop: i ? "1px solid var(--cardBd)" : "none", display: "flex", flexDirection: "column", gap: 8 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-              <span aria-hidden="true" style={{ width: 42, height: 42, flex: "none", borderRadius: "50%", background: x.caka ? "var(--btn)" : "var(--gSoft)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 800, color: "var(--ink2)" }}>{inic(x.n || "?")}</span>
+              {/* OPRAVY 208: tá istá osoba = tá istá fotka z profilu */}
+              <span aria-hidden="true" style={{ width: 42, height: 42, flex: "none", borderRadius: "50%", background: x.foto ? `url("${x.foto}") center/cover no-repeat` : x.caka ? "var(--btn)" : "var(--gSoft)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 800, color: "var(--ink2)" }}>{x.foto ? "" : inic(x.n || "?")}</span>
               <span style={{ flex: 1, minWidth: 140, display: "flex", flexDirection: "column", gap: 2 }}>
                 <b style={{ fontSize: 15 }}>{x.n || x.k || "Pozvaný"}</b>
                 {x.caka ? <span style={{ alignSelf: "flex-start", padding: "2px 8px", borderRadius: 8, background: "var(--goldBg)", fontSize: 12, fontWeight: 800 }}>{cakaT(x.caka)}</span> : null}
