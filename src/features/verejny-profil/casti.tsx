@@ -1,6 +1,7 @@
 // KARTA 43 · spoločné časti troch verejných profilov (Kronika · Výklad · Pirát).
 // Farby z tokenov správy charity (.sc-tokeny + data-stit) — tie isté ako v prototypoch.
 // Len transform/opacity, ťukacie plochy od 44 px, žiadne emoji, slovenský formát čísel.
+import { useZamokVrstvy } from "@/lib/zamokVrstvy";
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import type { StitLevel } from "@/components/stit";
@@ -150,8 +151,9 @@ export const DOK = 96;
 export function VrstvaProfilu({ children }: { children: ReactNode }) {
   const { desktop } = useLayout();
   useEffect(() => vrstvaProfiluPripoj(), []); // kým je profil na obrazovke, plávajúce „+" stránky sa skryje
+  useZamokVrstvy(); // OPRAVY 240: Správa / feed pod stránkou sa neposúva
   // OPRAVY 225: plné pozadie — nič z obrazovky pod profilom (Správa) nesmie presvitať pri žiadnej šírke
-  return <div style={{ position: "fixed", top: 0, right: 0, bottom: 0, left: desktop ? 104 : 0, zIndex: 30, overflowY: "auto", WebkitOverflowScrolling: "touch", background: "var(--c-bg)" } as CSSProperties}>{children}</div>;
+  return <div style={{ position: "fixed", top: 0, right: 0, bottom: 0, left: desktop ? 104 : 0, zIndex: 30, overflowY: "auto", overscrollBehavior: "contain", WebkitOverflowScrolling: "touch", background: "var(--c-bg)" } as CSSProperties}>{children}</div>;
 }
 
 /** text s kovovým prechodom podľa štítu (Teraz, roky) */

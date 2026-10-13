@@ -38,7 +38,8 @@ export function SwipeBack({ onBack, children }: { onBack?: () => void; children:
   return (
     <div
       onTouchStart={zaciatok} onTouchMove={pohyb} onTouchEnd={koniec} onTouchCancel={koniec}
-      style={{ transform: dx ? `translateX(${dx * 0.6}px)` : undefined, transition: dx ? "none" : "transform .25s cubic-bezier(.22,.9,.3,1)", willChange: dx ? "transform" : undefined }}
+      // OPRAVY 240: obsah sa pod prstom do strán nehýbe (na iPhone to s gestom Safari ukazovalo „dve kópie appky“) — gesto len zavolá Späť
+      style={{ minWidth: 0 }}
     >
       {children}
     </div>

@@ -9,6 +9,7 @@
 // Na stránke: Galéria farnosti (albumy), Od veriacich s filtrom, hlavička autora, Zúčastním sa / Prihlásiť sa,
 // Modlím sa s vami, Úprimnú sústrasť, ··· Nahlásiť, „Upraviť · moje" (len autor).
 // ============================================================
+import { useZamokVrstvy } from "@/lib/zamokVrstvy";
 import { CasPole } from "@/components/CasPole";
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type CSSProperties, type ReactNode } from "react";
 import { createPortal } from "react-dom";
@@ -114,6 +115,7 @@ export function MenuPrispevku({ x, strankaId, kto, moje, vMenu }: { x: PolozkaFa
 
 /** obrázok na celú obrazovku (oznámenie z editora pre slabozrakých, album) */
 export function CelaObrazovka({ children, onZavri, label, hore }: { children: ReactNode; onZavri: () => void; label: string; hore?: ReactNode }) {
+  useZamokVrstvy(); // OPRAVY 240
   useEffect(() => { const k = (e: KeyboardEvent) => { if (e.key === "Escape") onZavri(); }; window.addEventListener("keydown", k); return () => window.removeEventListener("keydown", k); }, [onZavri]);
   return createPortal(
     <div role="dialog" aria-modal="true" aria-label={label} style={{ position: "fixed", inset: 0, zIndex: 1100, background: "#0E0C08", display: "flex", flexDirection: "column" }}>
@@ -310,6 +312,7 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
   // BLOK B 232: veriaci vyberá zo svojich fotiek (čo pridal na stránku farnosti a k skutkom)
   const mojKluc = klucJa(ja);
   const zdrojFotiek = useMemo(() => zdrojMoje(() => mojeFotky(strankaId, mojKluc)), [strankaId, mojKluc]);
+  useZamokVrstvy(!!k); // OPRAVY 240: stránka pod formulárom sa neposúva
   if (!self.on || !povol.length) return null;
 
   const set = (z: Partial<FormularVeriaceho>) => { setF((q) => ({ ...q, ...z })); setChyba(false); };
@@ -561,7 +564,7 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
   // KARTA 57C §2: formulár nad stránkou — hore „‹ Späť na stránku farnosti", stránka presvitá
   const spat = () => { if (jeEd && !hotovo && edRef.current?.krokSpat()) return; spatNaStranku(); };
   const okno = k && createPortal(
-    <div role="dialog" aria-modal="true" aria-label={T?.t} style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(20,17,11,.82)", display: "flex", flexDirection: "column", alignItems: "center", gap: mobil ? 10 : 12, padding: mobil ? "calc(10px + env(safe-area-inset-top, 0px)) 10px 10px" : 16, boxSizing: "border-box" }}>
+    <div role="dialog" aria-modal="true" aria-label={T?.t} style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(20,17,11,.82)", overscrollBehavior: "contain", display: "flex", flexDirection: "column", alignItems: "center", gap: mobil ? 10 : 12, padding: mobil ? "calc(10px + env(safe-area-inset-top, 0px)) 10px 10px" : 16, boxSizing: "border-box" }}>
       <div style={{ width: "100%", maxWidth: jeEd ? 1200 : 520, flex: "none", display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
         {/* OPRAVY 201: nad oknom len Späť (mobil 44 px, 15 px), okno hneď pod ním */}
         <button type="button" onClick={spat} style={{ minHeight: mobil ? 44 : 52, padding: mobil ? "0 16px" : "0 20px", border: "none", borderRadius: mobil ? 12 : 14, background: ZELENA, color: "#fff", cursor: "pointer", fontFamily: "inherit", fontSize: mobil ? 15 : 17, fontWeight: 800 }}>‹ Späť na stránku farnosti</button>
