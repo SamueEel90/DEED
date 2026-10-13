@@ -85,7 +85,7 @@ export function SpravaZbierkyFarnosti({ stranka, z, mobil, toast, onSpat }: {
       <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 4 }}>
         <span style={{ alignSelf: "flex-start", height: 24, padding: "0 9px", borderRadius: 7, background: chipBg, color: "#fff", fontSize: 11.5, fontWeight: 800, letterSpacing: ".08em", display: "flex", alignItems: "center" }}>{chip}</span>
         <b style={{ fontSize: 20, lineHeight: 1.2 }}>{z.nazov || "Zbierka"}</b>
-        <span style={{ fontSize: 13.5, color: "var(--ink3)" }}>{ciel ? `${eur(suma)} z ${eur(ciel)}` : eur(suma)} · cez DEED · {podiel}</span>
+        <span style={{ fontSize: 13.5, color: "var(--ink3)" }}>{ciel ? `${eur(suma)} z ${eur(ciel)}` : eur(suma)} · cez DEED+ · {podiel}</span>
       </span>
     </section>
     <div role="tablist" aria-label="Správa zbierky" style={{ flex: "none", display: "flex", gap: 4, borderBottom: "1px solid var(--cardBd)", overflowX: "auto" }}>
@@ -95,7 +95,7 @@ export function SpravaZbierkyFarnosti({ stranka, z, mobil, toast, onSpat }: {
     {tab === 0 && <>
       <section style={kartaK}>
         <div style={{ display: "grid", gridTemplateColumns: mobil ? "repeat(2,minmax(0,1fr))" : "repeat(4,minmax(0,1fr))", gap: 10 }}>
-          {ramec(["Vyzbierané", ciel ? `${eur(suma)} z ${eur(ciel)}` : eur(suma), "cez DEED"])}
+          {ramec(["Vyzbierané", ciel ? `${eur(suma)} z ${eur(ciel)}` : eur(suma), "cez DEED+"])}
           {ramec(["Darcov", cis(darcov), darcov ? "ľudí darovalo" : "zatiaľ nikto"])}
           {/* PLACEBO — karta 56D: dar zatiaľ nenesie, či prišiel cez rýchle tlačidlo alebo vlastnú sumu */}
           {ramec(["Cez rýchle tlačidlá", "—", "pripravujeme"])}

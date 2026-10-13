@@ -6,6 +6,7 @@
 import { CasPole as SpolocneCasPole } from "@/components/CasPole";
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { pridajPrispevok, vlastnePrispevky, type VieraFeedItem } from "@/features/viera/mock";
+import { useSlovaFarnosti } from "@/lib/mojeFarnosti";
 import {
   useKalendar, zmenKalendar, zmenKostol, zmazVlastnu, novyKostol, omseDna, polozkyDna, maZmenu, druhPolozky, jeObrad, casKodu,
   dniTyzdna, rozsahTyzdna, iso, dvt, minuty, posunTyzdna, kostolKal, DRUHY, SKUPINY_OMSI, VEREJNE_VOLBY, VLASTNE_PREFIX,
@@ -33,9 +34,10 @@ function CasPole({ value, onCommit, onChyba, velky, label = "Čas, ťuknite a pr
 
 /** položky dňa zoradené podľa času (omše z rozvrhu + pridané) */
 interface Riadok { t: string; s: string; zrusena?: boolean; zmena?: boolean; obrad?: boolean; extra?: boolean; meno?: string; kat?: Verej; typ?: string }
-function riadkyDna(k: KalKostol, d: Date): Riadok[] {
+function riadkyDna(k: KalKostol, d: Date, slovo: string): Riadok[] {
   return [
-    ...omseDna(k, d).map((o): Riadok => ({ t: o.zrusena ? o.vzor : o.t, s: o.zrusena ? "zrušená" : o.posunuta ? "posunutá" : "", zrusena: o.zrusena, zmena: o.zrusena || o.posunuta })),
+    // OPRAVY 220: aj omša má slovo ako udalosti („17:30 sv. omša“)
+    ...omseDna(k, d).map((o): Riadok => ({ t: o.zrusena ? o.vzor : o.t, s: o.zrusena ? `${slovo} · zrušená` : o.posunuta ? `${slovo} · posunutá` : slovo, zrusena: o.zrusena, zmena: o.zrusena || o.posunuta })),
     ...polozkyDna(k, d).map((p): Riadok => { const x = druhPolozky(p.typ); return { t: p.t, s: x.kratko, meno: p.m.trim(), obrad: x.skupina === "Obrady", extra: true, kat: x.kat, typ: p.typ }; }),
   ].sort((a, b) => minuty(a.t) - minuty(b.t));
 }
@@ -51,7 +53,7 @@ function poslatZmenuOmse(strankaId: string, meno: string, veta: string, d: Date)
 }
 
 /** KARTA 56F/56G · Týždeň: 7 riadkov, šípky ‹ ›, ťuk na deň — v Omšiach aj pripnutý v Prehľade (jeden vzhľad) */
-export function TyzdenKarta({ k, off, setOff, den, onDen, mobil, kostolV = "", pozn = true }: { k: KalKostol; off: number; setOff: (o: number) => void; den: string | null; onDen: (key: string) => void; mobil: boolean; kostolV?: string; pozn?: boolean }) {
+export function TyzdenKarta({ k, off, setOff, den, onDen, mobil, kostolV = "", pozn = true, slovo = "sv. omša" }: { k: KalKostol; off: number; setOff: (o: number) => void; den: string | null; onDen: (key: string) => void; mobil: boolean; kostolV?: string; pozn?: boolean; slovo?: string }) {
   const dnes = iso(new Date());
   const tyzT = `${off === 0 ? "Tento týždeň" : off === 1 ? "Budúci týždeň" : off === -1 ? "Minulý týždeň" : "Týždeň"} · ${rozsahTyzdna(off)}`;
   const chip = (r: Riadok, i: number) => (
@@ -71,7 +73,7 @@ export function TyzdenKarta({ k, off, setOff, den, onDen, mobil, kostolV = "", p
         <button type="button" onClick={() => setOff(off + 1)} aria-label="Ďalší týždeň" style={sipka}>›</button>
       </div>
       {dniTyzdna(off).map((d) => {
-        const key = iso(d), sel = den === key, jeDnes = key === dnes, r = riadkyDna(k, d);
+        const key = iso(d), sel = den === key, jeDnes = key === dnes, r = riadkyDna(k, d, slovo);
         return (
           <button key={key} type="button" onClick={() => onDen(key)} aria-pressed={sel} style={{ minHeight: 64, padding: "10px 14px", borderRadius: 16, border: sel ? "2px solid var(--green)" : jeDnes ? "2px solid var(--ink)" : "1px solid var(--cardBd)", background: sel ? "var(--gSoft)" : "var(--field)", cursor: "pointer", display: "flex", alignItems: "center", gap: 14, textAlign: "left", fontFamily: "inherit", boxShadow: "none" }}>
             <span style={{ width: mobil ? 64 : 84, flex: "none", display: "flex", flexDirection: "column" }}>
@@ -92,6 +94,7 @@ export function OmseKalendar({ strankaId, meno, kostoly, mobil, tel = false, toa
   /** KARTA 56G: otvoriť týždeň s úpravou dňa (ťuk na deň v Prehľade) alebo len tento týždeň (Zmena omše z + Pridať) */
   start?: { den?: string } }) {
   const kal = useKalendar(strankaId);
+  const SLO = useSlovaFarnosti(strankaId);
   const [tab, setTab] = useState<Tab>(0);
   const [kI, setKI] = useState(0);
   const kKey = String(kI);
@@ -113,7 +116,7 @@ export function OmseKalendar({ strankaId, meno, kostoly, mobil, tel = false, toa
   const denRef = useRef<HTMLDivElement>(null);
   useEffect(() => { if (tel && start?.den) window.setTimeout(() => denRef.current?.scrollIntoView({ block: "start" }), 120); }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const naDenTel = (key: string) => { setDen(key); window.setTimeout(() => denRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 60); };
-  const tyzden = <TyzdenKarta k={k} off={tyzOff} setOff={(o) => { setTyzOff(o); setDen(null); }} den={den} onDen={tel ? naDenTel : setDen} mobil={mobil} kostolV={kostolV} pozn={!tel} />;
+  const tyzden = <TyzdenKarta k={k} off={tyzOff} setOff={(o) => { setTyzOff(o); setDen(null); }} den={den} onDen={tel ? naDenTel : setDen} mobil={mobil} kostolV={kostolV} pozn={!tel} slovo={SLO.omsa} />;
 
   // ---------- Mesiac ----------
   const m1 = (() => { const t = new Date(); return new Date(t.getFullYear(), t.getMonth() + mesOff, 1); })();
@@ -356,7 +359,7 @@ export function OmseKalendar({ strankaId, meno, kostoly, mobil, tel = false, toa
           </button>); })}
       </div>
     </section>);
-  const plagatDni = plagatTyzdna(k, VJ, tyzOff);
+  const plagatDni = plagatTyzdna(k, VJ, tyzOff, SLO.omsa);
   const plagatOzn = panel === "tl" ? oznamyNaPlagat(strankaId) : [];
   const plagatRef = useRef<HTMLDivElement>(null);
   const tlac = () => {
@@ -400,7 +403,7 @@ export function OmseKalendar({ strankaId, meno, kostoly, mobil, tel = false, toa
                 {!d.o.length && <span style={{ fontSize: 15, color: "#888" }}>—</span>}
               </div>
             </div>))}
-          <span style={{ fontSize: 12, color: "#777", textAlign: "center", paddingTop: 4 }}>{kostoly[kI]?.nazov ?? "Váš kostol"} · zmeny sledujte na stránke farnosti v appke DEED</span>
+          <span style={{ fontSize: 12, color: "#777", textAlign: "center", paddingTop: 4 }}>{kostoly[kI]?.nazov ?? "Váš kostol"} · zmeny sledujte na stránke farnosti v appke DEED+</span>
         </div>
       </div>
     </section>);
@@ -469,10 +472,10 @@ export function oznamyNaPlagat(strankaId: string) {
   return vlastnePrispevky(strankaId).slice(0, 8).map((x) => { const st = stitokOznamu(x); return { id: x.id, t: (st === "OZNAM" || st === "ZMENA OMŠE" ? "" : `${st.charAt(0)}${st.slice(1).toLowerCase()} · `) + (x.nazov ?? ""), s: x.popis ?? "" }; });
 }
 
-export function plagatTyzdna(k: KalKostol, VJ: KalendarFarnosti["verejne"], off: number) {
+export function plagatTyzdna(k: KalKostol, VJ: KalendarFarnosti["verejne"], off: number, slovo = "sv. omša") {
   return dniTyzdna(off).map((d) => {
     const o: PlagatRiadok[] = [
-      ...(VJ.omse ? omseDna(k, d).filter((x) => VJ.zmeny || !x.zrusena).map((x) => ({ t: x.zrusena ? x.vzor : x.t, s: x.zrusena ? "zrušená" : x.posunuta ? "svätá omša · posunutá" : "svätá omša", z: x.zrusena })) : []),
+      ...(VJ.omse ? omseDna(k, d).filter((x) => VJ.zmeny || !x.zrusena).map((x) => ({ t: x.zrusena ? x.vzor : x.t, s: x.zrusena ? `${slovo} · zrušená` : x.posunuta ? `${slovo} · posunutá` : slovo, z: x.zrusena })) : []),
       ...polozkyDna(k, d).filter((p) => VJ[druhPolozky(p.typ).kat]).map((p) => {
         const x = druhPolozky(p.typ);
         const sMenom = x.kat !== "omse" || VJ.umysel;
@@ -487,6 +490,7 @@ export function plagatTyzdna(k: KalKostol, VJ: KalendarFarnosti["verejne"], off:
 export function TyzdenVPrehlade({ strankaId, onDen, mobil }: { strankaId: string; onDen: (key: string) => void; mobil: boolean }) {
   const kal = useKalendar(strankaId);
   const [off, setOff] = useState(0);
+  const SLO = useSlovaFarnosti(strankaId);
   if (!kal.pin) return null;
-  return <TyzdenKarta k={kostolKal(strankaId)} off={off} setOff={setOff} den={null} onDen={onDen} mobil={mobil} pozn={false} />;
+  return <TyzdenKarta k={kostolKal(strankaId)} off={off} setOff={setOff} den={null} onDen={onDen} mobil={mobil} pozn={false} slovo={SLO.omsa} />;
 }

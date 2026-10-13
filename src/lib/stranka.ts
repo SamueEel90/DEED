@@ -8,6 +8,8 @@
 import { supabase } from "./supabase";
 
 const pripojene = new Set<string>();
+/** OPRAVY 222: prihlásený je v tejto relácii správcom stránky (otvoril jej Správu) */
+export const spravujemVRelacii = (stranka: string) => pripojene.has(stranka);
 
 /** Správa testovacej stránky: prihlásený tester = správca (raz za reláciu). Chyby ticho — bez DB appka beží z pamäte. */
 export async function pripojTestovaciuStranku(stranka: string): Promise<void> {

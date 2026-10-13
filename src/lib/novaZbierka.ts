@@ -173,10 +173,12 @@ export async function upravZbierku(stranka: string, id: string, p: Pick<NovaZbie
 }
 
 /** Zapečatiť a spustiť — po spustení sa názov, text, dĺžka, suma, účet, účel a lehota nedajú meniť (karta 37 · bod 4) */
-export async function spustiZbierku(stranka: string, d: NovaZbierkaData, ucet: string, modul = "charity"): Promise<SpustenaZbierka> {
+/** OPRAVY 204: id zbierky vopred (QR na parte vzniká pred zapečatením) */
+export const noveIdZbierky = () => `zb-${Date.now().toString(36)}`;
+export async function spustiZbierku(stranka: string, d: NovaZbierkaData, ucet: string, modul = "charity", idVopred?: string): Promise<SpustenaZbierka> {
   const teraz = new Date().toISOString();
   const leh = lehotaZbierky(d);
-  let z: SpustenaZbierka = { ...d, id: `zb-${Date.now().toString(36)}`, stranka, spustena: teraz, ucet, lehota: leh.text, lehotaKluc: leh.kluc };
+  let z: SpustenaZbierka = { ...d, id: idVopred ?? noveIdZbierky(), stranka, spustena: teraz, ucet, lehota: leh.text, lehotaKluc: leh.kluc };
   if (supabase) {
     z = await bezDataUrl(z, "zbierky");   // 5.5: fotky do Storage, v zbierka.nastavenie len URL
     // Zadanie 3 · 3.6: DB pustí zapečatenie len s účtom overeným pre túto stránku (0044) — inak chyba, nič sa nespustí

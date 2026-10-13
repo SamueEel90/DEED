@@ -150,7 +150,7 @@ export function OdVeriacich({ strankaId, meno, mobil, toast }: { strankaId: stri
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 2, paddingTop: 6 }}>
           <b style={{ fontSize: 14.5 }}>Čo smú veriaci pridať sami</b>
-          <span style={{ fontSize: 12.5, color: "var(--ink3)" }}>Na verejnej stránke uvidí zelené tlačidlo + Pridať. Ponúkne sa mu len to, čo tu zapnete. Pridávať môžu len registrovaní v DEED.</span>
+          <span style={{ fontSize: 12.5, color: "var(--ink3)" }}>Na verejnej stránke uvidí zelené tlačidlo + Pridať. Ponúkne sa mu len to, čo tu zapnete. Pridávať môžu len registrovaní v DEED+.</span>
         </div>
         <div style={{ display: "flex", flexDirection: "column" }}>
           {DRUHY_FARNIKA.map((d) => { const on = smie(smieF, d.k); return (

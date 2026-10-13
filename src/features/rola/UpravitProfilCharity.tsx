@@ -13,8 +13,7 @@ import { OrezFotky } from "@/components/orezfotky";
 import { toast } from "@/components/toast";
 import { spracujLogo, spracujFotku, rozmeryFotky, LOGO_CFG, COVER_CFG, type LogoRezim, type LogoPozadie } from "@/lib/obrazok";
 import { cistyNazov, nacitajProfil, profilZPamate, ulozKoncept, zverejniProfil, type ProfilStranky, type VyrezFotky, type RamFotky } from "@/lib/profilStranky";
-import { useVzhlad } from "@/lib/vzhladStranky";
-import { NahladFarnosti, nahladPopis } from "./NahladFarnosti";
+import { NastenkaFarnosti } from "@/features/verejny-profil/NastenkaFarnosti";
 import { SIDLO_REGISTRA, ICO_REGISTRA } from "./NastaveniaCharity";
 import { nacitajKontakt, SIETE, MAX_TEL, MAX_EMAIL, chybaSiete, chybaWebu, chybaEmailu, chybaTel, type Kontakt } from "./kontakt";
 import { type Pozicia, type Tier, type TvarLoga } from "./stav";
@@ -105,7 +104,6 @@ export function UpravitProfilCharity({ strankaId, pozicia, tier, nazov, inicialy
   }, [p, strankaId, nacitane]);
 
   const [pohlad, setPohlad] = useState<"uprava" | "nahlad" | "ulozene">("uprava");
-  const vz = useVzhlad(strankaId, false);
   const menoF = cistyNazov(p.meno ?? nazov) || "Vaša farnosť";
   const [riadky, setRiadky] = useState(0);
   const [zn1, setZn1] = useState(0);
@@ -163,16 +161,19 @@ export function UpravitProfilCharity({ strankaId, pozicia, tier, nazov, inicialy
 
   // KARTA 56D §4: farnosť — náhľad vybraného vzhľadu len s tým, čo farár vyplnil
   if (farnost && pohlad !== "uprava") return (
-    <NahladFarnosti profil={p} meno={menoF} vzhlad={vz} mobil={mobil && !tablet} hore={pohlad === "nahlad"
+    // OPRAVY 202: farnosť má zatiaľ len Nástenku — náhľad = živá stránka farnosti z vyplneného profilu
+    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>{pohlad === "nahlad"
       ? <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
           <button type="button" onClick={() => setPohlad("uprava")} style={{ ...tl("obrys", 44), border: "1px solid var(--cardBd)", background: "var(--card)", color: "var(--ink)" }}>‹ Späť na úpravu</button>
-          <span style={{ fontSize: 14, color: "var(--ink3)" }}>{nahladPopis(vz)}</span>
+          <span style={{ fontSize: 14, color: "var(--ink3)" }}>Náhľad · zobrazené je len to, čo ste vyplnili</span>
         </div>
       : <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", padding: "10px 14px", borderRadius: 14, background: "var(--gSoft)", border: "1.5px solid var(--gBd)" }}>
           <b style={{ flex: 1, minWidth: 0, fontSize: 14.5, color: "var(--gInk)" }}>Profil je uložený. Takto ho vidia ľudia.</b>
           <button type="button" onClick={() => setPohlad("uprava")} style={{ ...tl("obrys", 44), border: "none", color: "var(--gInk)", padding: "0 10px" }}>Upraviť</button>
           <button type="button" onClick={onHotovo} style={tl("zelene", 44)}>Hotovo · späť do Správy</button>
-        </div>} />);
+        </div>}
+      <div style={{ borderRadius: 18, overflow: "hidden", border: "1px solid var(--cardBd)" }}><NastenkaFarnosti strankaId={strankaId} meno={menoF} profil={p} stit="Silver" /></div>
+    </div>);
 
   // ---------- NÁHĽAD / PROFIL ULOŽENÝ = skutočný verejný profil s lištou (OPRAVY 107) ----------
   if (pohlad !== "uprava") return (

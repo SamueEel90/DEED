@@ -26,7 +26,7 @@ export function PripnutieVyber({ strankaId, mobil, onSpat, onHotovo }: { stranka
     <section style={{ flex: "none", borderRadius: 22, background: "var(--card)", border: "2px solid var(--green)", padding: mobil ? "14px 14px" : "18px 20px", display: "flex", flexDirection: "column", gap: 12 }}>
       <button type="button" onClick={onSpat} style={{ alignSelf: "flex-start", minHeight: 44, padding: 0, border: "none", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 15, fontWeight: 800, color: "var(--green)" }}>‹ Späť na výber zbierky</button>
       <b style={{ fontSize: 19 }}>Pripnúť zbierku na vašu stránku</b>
-      <span style={{ fontSize: 14.5, lineHeight: 1.5, color: "var(--ink2)" }}>Vyberte zverejnenú zbierku v DEED. Peniaze idú priamo tomu, kto zbierku vedie. Vy ju len ukazujete veriacim a môžete ju kedykoľvek odopnúť.</span>
+      <span style={{ fontSize: 14.5, lineHeight: 1.5, color: "var(--ink2)" }}>Vyberte zverejnenú zbierku v DEED+. Peniaze idú priamo tomu, kto zbierku vedie. Vy ju len ukazujete veriacim a môžete ju kedykoľvek odopnúť.</span>
       <input value={q} onChange={(e) => setQ(e.target.value.slice(0, 60))} placeholder="Hľadať zbierku alebo organizáciu" aria-label="Hľadať zbierku"
         style={{ height: 50, padding: "0 14px", borderRadius: 14, background: "var(--field)", border: "1.5px solid var(--cardBd)", fontFamily: "inherit", fontSize: 15.5, color: "var(--ink)", outline: "none" }} />
       <div role="radiogroup" aria-label="Zdroj" style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>

@@ -7,16 +7,19 @@
 // 3 rozdelenie (podiel overovateľa + zvyšok rozhoduje príjemca: nechať si / podeliť sa) · 4 kód + zapečatiť · 5 hotovo.
 // Nová zbierka začína vždy úplne prázdna. Prototyp „Sprava farnosti - prvy prichod" (pre-kodera-7-10-b).
 // ============================================================
+import { DeedZnacka } from "@/components/DeedZnacka";
 import { CasPole } from "@/components/CasPole";
 import { useEffect, useRef, useState, type CSSProperties, type DragEvent, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { DeedQr } from "@/components/deedqr";
+import { useQrObrazok } from "@/lib/qrObrazok";
+import { odkazZbierky } from "@/features/zbierka/Zdielat";
 import { QrNaParte, tlacParte, type QrParte } from "./QrNaParte";
 import { zapisEditora, zapisZPayloadu } from "@/lib/editorStat";
 import { EditorOznameni, type EditorApi, type PayloadEditora } from "@/components/EditorOznameni";
 import { nacitajStav, ulozStav } from "@/features/viera/stav";
 import { TESTOVACIA } from "@/lib/testovacia";
-import { nacitajOverenie, overenieZPamate, useZmenyOverenia } from "@/lib/overenieUctu";
+import { nacitajOverenie, overenieZPamate, useZmenyOverenia, poziadajOverenie, OVERENIE_CFG } from "@/lib/overenieUctu";
 import { usePouzivatel } from "@/lib/pouzivatel";
 import { useVzhlad } from "@/lib/vzhladStranky";
 import { pridajPrispevok, upravPrispevok, vlastnePrispevkyVsetky, type VieraFeedItem } from "@/features/viera/mock";
@@ -24,7 +27,7 @@ import { FormularOznamu, VyberSablony, chybaOznamu, popisOznamu, prazdneUdaje, p
 import { hladajPrijemcov, type PrijemcaDeed } from "@/lib/prijemcoviDeed";
 import { SADY_EUR, SADY_EURC } from "@/lib/sadyDarov";
 import {
-  spustiZbierku, prazdnaZbierka, PODIEL_MAX, PODIEL_KROK, PODIEL_STROP_EUR, PODELIT_MAX, PODELIT_MIN, PODELIT_KROK,
+  spustiZbierku, noveIdZbierky, prazdnaZbierka, PODIEL_MAX, PODIEL_KROK, PODIEL_STROP_EUR, PODELIT_MAX, PODELIT_MIN, PODELIT_KROK,
   type SpustenaZbierka, type ZbierkaFarnosti, type PodielZbierky } from "@/lib/novaZbierka";
 
 type Druh = Exclude<ZbierkaFarnosti["druh"], "farnost">;
@@ -66,7 +69,7 @@ function QrVelky({ data, zostava, onZavri }: { data: string; zostava: number; on
     <div role="dialog" aria-modal="true" aria-label="QR na celú obrazovku" onClick={onZavri} style={{ position: "fixed", inset: 0, zIndex: 1000, background: "#fff", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 22, padding: 24, cursor: "zoom-out" }}>
       <span style={{ display: "flex" }}><DeedQr key={data} data={data} size={velkost} variant="svetly" /></span>
       <span style={{ width: "min(92vw, 640px)", height: 10, borderRadius: 5, background: "#E4DFD5", overflow: "hidden" }}><span style={{ display: "block", width: "100%", height: "100%", background: "#4B7A35", transformOrigin: "0 50%", transform: `scaleX(${zostava / QR_S})`, transition: zostava === QR_S ? "none" : "transform 1s linear" }} /></span>
-      <b style={{ fontSize: 18, color: "#1D211B", textAlign: "center", fontVariantNumeric: "tabular-nums" }}>Naskenujte v appke DEED · ešte {zostava} s, potom nový kód</b>
+      <b style={{ fontSize: 18, color: "#1D211B", textAlign: "center", fontVariantNumeric: "tabular-nums" }}>Naskenujte v appke <DeedZnacka /> · ešte {zostava} s, potom nový kód</b>
       <button type="button" onClick={(e) => { e.stopPropagation(); onZavri(); }} autoFocus style={{ minHeight: 56, padding: "0 28px", border: "none", borderRadius: 16, background: "#1D211B", color: "#fff", fontFamily: "inherit", fontSize: 17, fontWeight: 800, cursor: "pointer" }}>× Zavrieť</button>
     </div>, document.body);
 }
@@ -82,7 +85,9 @@ export function ZbierkaSOverovatelom({ stranka, menoFarnosti, ucetFarnosti, mobi
   // OPRAVY 198: naostro sa bez overeného účtu namiesto zapečatenia ukáže karta Overiť účet (testovacia verzia pustí)
   useZmenyOverenia();
   useEffect(() => { void nacitajOverenie(stranka, ucetFarnosti); }, [stranka, ucetFarnosti]);
-  const ucetOk = TESTOVACIA || overenieZPamate(stranka, ucetFarnosti)?.stav === "overeny";
+  const overenie = overenieZPamate(stranka, ucetFarnosti);
+  const ucetOk = TESTOVACIA || overenie?.stav === "overeny";
+  const [overOtv, setOverOtv] = useState(false);
   const [druh, setDruh] = useState<Druh>("pohreb");
   const T = PZT[druh];
   const farV = menoFarnosti.toLocaleUpperCase("sk-SK");
@@ -154,6 +159,9 @@ export function ZbierkaSOverovatelom({ stranka, menoFarnosti, ucetFarnosti, mobi
   const [ulozT, setUlozT] = useState("");
   // KARTA 57 F: štatistika editora — overovateľ farnosti pri zbierke rodiny
   const kdeStat = { kto: "overovatel" as const, stranka_typ: "farnost", stranka, pri_zbierke: true };
+  // OPRAVY 204: id zbierky je známe od začiatku, QR na parte = odkaz tejto zbierky
+  const [idZb] = useState(noveIdZbierky);
+  const qrSrc = useQrObrazok(odkazZbierky(idZb));
   const naEditor = async (p: PayloadEditora) => {
     if (p.stav === "koncept") { setEdKon(p); ulozStav("partekoncept", stranka, p); return; }
     zapisZPayloadu(p, kdeStat);
@@ -176,7 +184,7 @@ export function ZbierkaSOverovatelom({ stranka, menoFarnosti, ucetFarnosti, mobi
   };
   const editor = (styl: CSSProperties) => (
     <EditorOznameni ref={edRef} title="Editor parte" onSend={(p) => { void naEditor(p); }} onUdalost={(e) => zapisEditora({ udalost: e.akcia, typ: "parte", papier: e.papier ?? null, ...kdeStat })} style={styl}
-      cfg={{ typ: "parte", rezim: "rychly", bezTlace: true, qrObrazok: "/editor/qr-deed.png", miesta: ["v Dome smútku", "vo farskom kostole", "na miestnom cintoríne"], kontext: { zbierka: "pohreb", stranka }, navrh: edKon }} />);
+      cfg={{ typ: "parte", rezim: "rychly", bezTlace: true, qrObrazok: qrSrc, miesta: ["v Dome smútku", "vo farskom kostole", "na miestnom cintoríne"], kontext: { zbierka: "pohreb", stranka }, navrh: edKon }} />);
   const edSpat = () => { if (!edRef.current?.krokSpat()) setEdMob(false); };
 
   // ---- 3 · rozdelenie: krok 1 podiel overovateľa, krok 2 zvyšok rozhoduje príjemca ----
@@ -231,7 +239,7 @@ export function ZbierkaSOverovatelom({ stranka, menoFarnosti, ucetFarnosti, mobi
           druh, podiel, prijemca: { meno: T.kto, overeny: new Date().toISOString(), ucet: ucetPrijemcu },
           oznamenie: { meno: menoOzn, rodena: u.rod || undefined, kedy: [u.kedyD, u.kedyC].filter(Boolean).join(" ") || undefined, kde: u.kde || undefined, kto: u.kto || undefined, vlastne: rezim === "vl" ? "ano" : undefined, prispevok: prispevok ?? undefined,
             qr: rezim === "vl" && druh === "pohreb" ? { zap: qrParte.qr, kde: qrParte.kde, papier: qrParte.papier } : undefined },
-          podelit: podelit ? spolu.map((x) => ({ id: x.id, nazov: x.nazov, pct: x.pct })) : undefined } }, ucetFarnosti, "nabozenstvo");
+          podelit: podelit ? spolu.map((x) => ({ id: x.id, nazov: x.nazov, pct: x.pct })) : undefined } }, ucetFarnosti, "nabozenstvo", idZb);
       if (prispevok) upravPrispevok(stranka, prispevok, { linkedZbierka: true });
       setZ(nova); setKrok(5);
     } catch (e) { toast(e instanceof Error ? e.message : "Zbierku sa nepodarilo spustiť."); }
@@ -298,7 +306,7 @@ export function ZbierkaSOverovatelom({ stranka, menoFarnosti, ucetFarnosti, mobi
         </span>
         {qrVelky && <QrVelky data={`https://deed.sk/overit/${stranka}/${token}`} zostava={zostava} onZavri={() => setQrVelky(false)} />}
         <div style={{ flex: 1, minWidth: 220, display: "flex", flexDirection: "column", gap: 8 }}>
-          <b style={{ fontSize: 17 }}>{T.kto} naskenuje QR v appke DEED</b>
+          <b style={{ fontSize: 17 }}>{T.kto} naskenuje QR v appke <DeedZnacka /></b>
           <span style={{ fontSize: 14.5, lineHeight: 1.5, color: "var(--ink2)" }}>Musí byť pri vás osobne. Skenuje v appke na mobile, tablete alebo počítači s kamerou. Rola <b>Overovateľ</b> je zapnutá pri QR farnosti. Kód platí 15 sekúnd a sám sa obnovuje.</span>
           <span style={{ display: "block", height: 6, borderRadius: 3, background: "var(--track)", overflow: "hidden" }}><span style={{ display: "block", height: "100%", width: "100%", background: "var(--green)", transformOrigin: "0 50%", transform: `scaleX(${zostava / QR_S})`, transition: zostava === QR_S ? "none" : "transform 1s linear" }} /></span>
           <span style={{ fontSize: 13, color: "var(--ink3)", fontVariantNumeric: "tabular-nums" }}>ešte {zostava} s · potom nový QR</span>
@@ -373,7 +381,7 @@ export function ZbierkaSOverovatelom({ stranka, menoFarnosti, ucetFarnosti, mobi
           {druh === "pohreb" && subor && !subor.pdf && <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: 14, borderRadius: 16, background: "var(--panel)", border: "1px solid var(--cardBd)" }}>
             <b style={{ fontSize: 16 }}>QR kód zbierky na parte</b>
             <span style={{ fontSize: 13.5, color: "var(--ink2)" }}>Vyberte, kam QR na tlači príde. Vytlačiť s QR pôjde po zapečatení, v kroku Hotovo.</span>
-            <QrNaParte src={subor.url} onZmena={setQrParte} onSablona={() => setRezim("sab")} onIne={() => setSubor(null)} />
+            <QrNaParte src={subor.url} qrSrc={qrSrc} kratky={odkazZbierky(idZb).replace("https://", "")} onZmena={setQrParte} onSablona={() => setRezim("sab")} onIne={() => setSubor(null)} />
           </div>}
           {spatZverejnit}
         </>}
@@ -439,7 +447,7 @@ export function ZbierkaSOverovatelom({ stranka, menoFarnosti, ucetFarnosti, mobi
               <button key={p.id} type="button" onClick={() => pridajSpolu(p)} style={{ ...volbaSt(false), minHeight: 52 }}>
                 <span style={{ display: "flex", flexDirection: "column", gap: 2 }}><b style={{ fontSize: 14.5 }}>{p.nazov}</b><span style={{ fontSize: 12.5, color: "var(--ink3)" }}>{p.popis}</span></span>
               </button>))}
-            <span style={{ fontSize: 12.5, color: "var(--ink3)" }}>Len tí, ktorí sú registrovaní v DEED. Žiadny voľný účet.</span>
+            <span style={{ fontSize: 12.5, color: "var(--ink3)" }}>Len tí, ktorí sú registrovaní v DEED+. Žiadny voľný účet.</span>
           </> : <span style={{ fontSize: 13, color: "var(--ink3)" }}>Najviac {PODELIT_MAX}. Ak chcete iného, najprv jedného odstráňte.</span>}
         </div>}
         <section style={{ display: "flex", flexDirection: "column", gap: 10, padding: 14, borderRadius: 16, background: "var(--panel)", border: "1px solid var(--cardBd)" }}>
@@ -494,7 +502,14 @@ export function ZbierkaSOverovatelom({ stranka, menoFarnosti, ucetFarnosti, mobi
         </> : <div role="alert" style={{ borderRadius: 16, background: "var(--goldBg)", border: "2px solid #C9A24A", padding: "14px 16px", display: "flex", flexDirection: "column", gap: 8 }}>
           <b style={{ fontSize: 16 }}>Účet ešte nie je overený</b>
           <span style={{ fontSize: 14, lineHeight: 1.5, color: "var(--ink2)", whiteSpace: "normal" }}>Zbierku zapečatíte, keď overíme účet farnosti. Stačí poslať 0,01 € s kódom.</span>
-          <button type="button" onClick={onOverit} style={{ ...tlZ, alignSelf: "flex-start" }}>Overiť účet ›</button>
+          {/* overenie priamo tu — po overení sa na tomto mieste ukáže Podržte a zapečaťte (krok 4 ostáva) */}
+          {!overOtv ? <button type="button" onClick={() => { setOverOtv(true); void poziadajOverenie(stranka, ucetFarnosti); }} style={{ ...tlZ, alignSelf: "flex-start" }}>Overiť účet ›</button>
+            : <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: "12px 14px", borderRadius: 14, background: "var(--card)", border: "1px solid var(--cardBd)" }}>
+                <span style={{ fontSize: 14.5, lineHeight: 1.5, whiteSpace: "normal" }}>Z účtu <b style={{ overflowWrap: "anywhere" }}>{ucetFarnosti}</b> pošlite {OVERENIE_CFG.suma} na účet <b style={{ overflowWrap: "anywhere" }}>{OVERENIE_CFG.ucetDeed}</b> so správou <b>{overenie?.kod ?? "…"}</b>.</span>
+                <span style={{ fontSize: 13.5, color: "var(--ink3)", whiteSpace: "normal" }}>Keď platba príde, účet overíme a tu sa ukáže Podržte a zapečaťte. Zbierka zatiaľ čaká v kroku 4.</span>
+                <button type="button" onClick={() => void nacitajOverenie(stranka, ucetFarnosti)} style={{ ...tlO, alignSelf: "flex-start" }}>Skontrolovať znova</button>
+                {onOverit && <button type="button" onClick={onOverit} style={{ ...tlO, alignSelf: "flex-start" }}>Účty farnosti ›</button>}
+              </div>}
         </div>}
       </section>)}
 
@@ -511,7 +526,7 @@ export function ZbierkaSOverovatelom({ stranka, menoFarnosti, ucetFarnosti, mobi
         <div role="status" style={{ padding: "16px 18px", borderRadius: 18, background: "var(--gSoft)", border: "2px solid var(--green)", display: "flex", flexDirection: "column", gap: 10 }}>
           <b style={{ fontSize: 17, color: "var(--gInk)" }}>Zapečatené ✓ {velke(T.ozn)} s QR kódom sme poslali do appky príjemcu</b>
           <span style={{ fontSize: 14.5, lineHeight: 1.5, color: "var(--ink2)" }}>PDF na tlač aj obrázok na WhatsApp. Zbierku odteraz spravuje on: vidí štatistiku a darcov, doplní termín, ukončí ju. Vy sumy ani darcov neuvidíte, podiel farnosti príde do Peňaženky.</span>
-          {obrTlac && <button type="button" onClick={() => { const n = rezim === "vl" ? qrParte : { qr: false, kde: "pod" as const, papier: "A5" as const }; tlacParte(obrTlac, n); zapisEditora({ udalost: "tlac", typ: "parte", vlastne: rezim === "vl", papier: n.papier, qr: n.qr, qr_miesto: n.qr ? (n.kde === "pod" ? "pod" : "rohy") : null, kto: "overovatel", stranka_typ: "farnost", stranka, pri_zbierke: true }); setTlOk(true); window.setTimeout(() => setTlOk(false), 2200); }} style={{ ...tlZ, height: 54 }}>{tlOk ? "Posielam do tlačiarne ✓" : `Vytlačiť ${T.ozn} tu na fare`}</button>}
+          {obrTlac && <button type="button" onClick={() => { const n = rezim === "vl" ? qrParte : { qr: false, kde: "pod" as const, papier: "A5" as const }; tlacParte(obrTlac, n, odkazZbierky(idZb).replace("https://", ""), qrSrc); zapisEditora({ udalost: "tlac", typ: "parte", vlastne: rezim === "vl", papier: n.papier, qr: n.qr, qr_miesto: n.qr ? (n.kde === "pod" ? "pod" : "rohy") : null, kto: "overovatel", stranka_typ: "farnost", stranka, pri_zbierke: true }); setTlOk(true); window.setTimeout(() => setTlOk(false), 2200); }} style={{ ...tlZ, height: 54 }}>{tlOk ? "Posielam do tlačiarne ✓" : `Vytlačiť ${T.ozn} tu na fare`}</button>}
           {obrTlac && <span style={{ fontSize: 13, color: "var(--ink3)" }}>Ak rodina nemá tlačiareň, vytlačte jej {T.ozn} tu na fare.</span>}
         </div>
         <button type="button" onClick={() => onHotovo(z, `${T.nazov} beží. Nájdete ju nižšie v Ďalších zbierkach.`)} style={{ ...tlZ, alignSelf: "flex-start" }}>Hotovo · späť do Zbierok</button>
