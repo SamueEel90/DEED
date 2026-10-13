@@ -616,6 +616,10 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, stit: s
               {mena.map((m, i) => <span key={i} style={{ padding: "9px 0", borderTop: `1px solid ${LINKA}`, fontSize: 16 }}>{m}</span>)}
             </div>}
             {t.zb && <button type="button" onClick={() => { const z = t.zb!; setTes(null); otvorZbierku(z); }} style={{ alignSelf: "stretch", minHeight: 52, borderRadius: 14, border: `2px solid ${FIALOVA}`, background: "var(--nf-fSoft)", color: INK, fontFamily: "inherit", fontSize: 16, fontWeight: 800, cursor: "pointer" }}>Darček pre snúbencov · Prispieť ›</button>}
+            {/* OPRAVY 212: fotky z galérie (svadba, jubileum od veriaceho) */}
+            {t.x?.fotky?.some(ziveObr) && <div style={{ alignSelf: "stretch", display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(96px,1fr))", gap: 6 }}>
+              {t.x.fotky.filter(ziveObr).map((f, i) => <button key={i} type="button" onClick={() => setAlbum(t.x!)} aria-label="Fotky na celú obrazovku" style={{ border: "none", padding: 0, borderRadius: 10, overflow: "hidden", cursor: "zoom-in", aspectRatio: "1" }}><img src={f} alt={t.x!.popisy?.[i] ?? ""} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} /></button>)}
+            </div>}
             {t.x && <div style={{ alignSelf: "stretch" }}><MenuPrispevku x={t.x} strankaId={strankaId} kto={kto} moje={moje(t.x)} /></div>}
           </>; })()}
         </div>

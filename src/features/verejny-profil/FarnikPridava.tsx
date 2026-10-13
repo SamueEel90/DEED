@@ -254,6 +254,7 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
   const povol = DRUHY_FARNIKA.filter((d) => smie(sm, d.k));
   const pop = self.poplatok || 0;
   const [sheet, setSheet] = useState(false);
+  const [galOtv, setGalOtv] = useState(false); // OPRAVY 212: galéria pri svadbe a jubileu
   const [k, setK] = useState<DruhFarnika | null>(null);
   const [edId, setEdId] = useState<string | null>(null);
   const [f, setF] = useState<FormularVeriaceho>(prazdnyF);
@@ -294,7 +295,7 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
     const x = naUpravu ? odFarnikov(strankaId).find((y) => y.id === naUpravu) : undefined;
     if (x) {
       const ff = x.f ?? { ...prazdnyF(), nad: x.t, txt: naHtml(x.s), anon: !!x.anon };
-      setF(ff); setTxtKey((n) => n + 1); setMedia((x.k === "udalost" || x.k === "fotky" || x.k === "oznam" ? x.fotky ?? [] : []).map((src, i) => ({ id: i + 1, typ: "foto" as const, src, ...(x.popisy?.[i] ? { popis: x.popisy[i] } : {}) })));
+      setF(ff); setTxtKey((n) => n + 1); setMedia((x.k === "udalost" || x.k === "fotky" || x.k === "oznam" || x.k === "svadba" || x.k === "ine" ? x.fotky ?? [] : []).map((src, i) => ({ id: i + 1, typ: "foto" as const, src, ...(x.popisy?.[i] ? { popis: x.popisy[i] } : {}) })));
       setEdId(x.id); setK(x.k); setHotovo(null); setChyba(false); setSheet(false);
     }
   }
@@ -308,6 +309,7 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
   const fotky = media.filter((m) => m.typ === "foto");
   const kto = klucJa(ja);
   const jeEd = !!k && CEZ_EDITOR.includes(k);
+  const galeriaEd = k === "svadba" || k === "ine";
   const pz = f.pozv as 0 | 1 | 2;
   const limitN = pz === 2 ? parseInt(f.limit, 10) || undefined : undefined;
 
@@ -368,7 +370,9 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
     const obr = (await edRef.current?.nahlad()) || "";
     let it: PolozkaFarnika;
     const povodny = edId ? odFarnikov(strankaId).find((y) => y.id === edId) : undefined; // OPRAVY 190: úprava ponechá id aj reakcie
-    try { it = await bezDataUrl<PolozkaFarnika>({ ...(povodny ?? {}), id: povodny?.id ?? `f${teraz().toString(36)}`, k, t: t || druhT(k), s, kto: povodny?.kto ?? (ja.celeMeno || "Veriaci"), cas: povodny?.cas ?? teraz(), autor: povodny?.autor ?? kto, mesto: povodny?.mesto ?? ja.mesto, autorFoto: povodny?.autorFoto ?? ja.foto ?? undefined, editor: p, obr: obr || undefined }, "od-veriacich"); }
+    try { it = await bezDataUrl<PolozkaFarnika>({ ...(povodny ?? {}), id: povodny?.id ?? `f${teraz().toString(36)}`, k, t: t || druhT(k), s, kto: povodny?.kto ?? (ja.celeMeno || "Veriaci"), cas: povodny?.cas ?? teraz(), autor: povodny?.autor ?? kto, mesto: povodny?.mesto ?? ja.mesto, autorFoto: povodny?.autorFoto ?? ja.foto ?? undefined, editor: p, obr: obr || undefined,
+      // OPRAVY 212: svadba a jubileum majú aj galériu (Editor oznámení len na obrázok pozvánky)
+      ...(k === "svadba" || k === "ine" ? { fotky: fotky.length ? fotky.map((m) => m.src) : undefined, popisy: fotky.some((m) => m.popis) ? fotky.map((m) => m.popis ?? "") : undefined } : {}) }, "od-veriacich"); }
     catch (e) { toast(e instanceof Error ? e.message : "Oznámenie sa nepodarilo uložiť."); return; }
     pridajOdFarnika(strankaId, it);
     setHotovo(it.id); setEdToast(true); window.clearTimeout(tm.current); tm.current = window.setTimeout(() => setEdToast(false), 2500);
@@ -554,6 +558,14 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
       </div>
       <div className="sc-tokeny" style={{ position: "relative", flex: 1, minHeight: 0, width: "100%", maxWidth: jeEd ? 1200 : 520, borderRadius: 20, overflow: "hidden", background: "var(--bg)", color: "var(--ink)", display: "flex", flexDirection: "column" }}>
         <div style={{ flex: "none", padding: "14px 16px 10px", borderBottom: "1px solid var(--cardBd)" }}><b style={{ fontSize: 19 }}>{edId ? `Upraviť · ${T?.t ?? ""}` : T?.t}</b></div>
+        {jeEd && galeriaEd && <div style={{ flex: "none", maxHeight: galOtv ? "55%" : undefined, overflowY: "auto", borderBottom: "1px solid var(--cardBd)", padding: "8px 16px" }}>
+          {/* OPRAVY 212: tá istá galéria ako všade, s popisom fotky */}
+          <button type="button" onClick={() => setGalOtv((o) => !o)} aria-expanded={galOtv} style={{ width: "100%", minHeight: 44, padding: 0, border: "none", background: "transparent", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 8, textAlign: "left", color: "var(--ink)" }}>
+            <b style={{ flex: 1, fontSize: 15 }}>Fotky · nepovinné{fotky.length ? ` · ${fotiekT(fotky.length)}` : ""}</b>
+            <span aria-hidden="true" style={{ fontSize: 16, color: "var(--ink3)" }}>{galOtv ? "⌃" : "⌄"}</span>
+          </button>
+          {galOtv && <GaleriaEditor media={media} onMedia={setMedia} ph={mobil} max={8} bezVidea nadpis="Fotky" dovetok=" Ukážu sa po ťuknutí na oznámenie. Pod fotku môžete napísať popis." />}
+        </div>}
         {jeEd ? <div style={{ position: "relative", flex: 1, minHeight: 0 }}>
           <EditorOznameni ref={edRef} title={T?.t} onSend={(p) => { void naEditor(p); }} onUdalost={(e) => zapisEditora({ udalost: e.akcia, typ: TYP_EDITORA[k]!, papier: e.papier ?? null, ...kdeStat })} style={{ position: "absolute", inset: 0, height: "100%" }}
             cfg={{ typ: TYP_EDITORA[k]!, rezim: "plny", qrObrazok: k === "parte" ? qrStr : undefined, miesta: k === "parte" ? ["v Dome smútku", "vo farskom kostole", "na miestnom cintoríne"] : undefined, kontext: { stranka: strankaId, veriaci: true }, navrh: edId ? odFarnikov(strankaId).find((y) => y.id === edId)?.editor ?? null : null }} />
