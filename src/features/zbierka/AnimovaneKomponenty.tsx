@@ -1,6 +1,6 @@
 // DEED · hotové komponenty s animáciami — MIKRODAR dlaždica a POĎAKOVANIE po dare (svetlý hárok).
 // Vzhľad a časovanie 1 : 1 z prototypu. Farby = premenné z farby.css. Potrebuje animacie.ts + animacie.css.
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { letSvetielko, roj, pocitadlo, vibruj } from './animacie';
 import { useSektorDarcu, menoBezMena } from '@/lib/darcovia';
 
@@ -52,7 +52,8 @@ export function MikrodarDlazdica({ suma, jednotka, eur, najcastejsie, root, ciel
 type PodProps = { meno?: string; registrovany: boolean; eur: number; sumaTxt: string; dorovnanieTxt?: string; firma?: string;
   predPct: number; poPct: number; poTxt: string; poPctTxt: string; hlaska: string;
   karmaPridane?: number; karmaSpolu?: number; karmaDoDalsej?: number; karmaPostup?: number;
-  kodPripisania?: string; onRegistrovat?: () => void; onHotovo: () => void; };
+  kodPripisania?: string; onRegistrovat?: () => void; onHotovo: () => void;
+  /** OPRAVY 234: „Tvoj dar odišiel priamo príjemcovi." a rozbaľovací Doklad (prototyp) */ podNadpisom?: string; doklad?: ReactNode; };
 export function PodakovaniePoDare(p: PodProps) {
   const sektor = useSektorDarcu();
   const root = useRef<HTMLDivElement>(null), maskot = useRef<HTMLDivElement>(null), koniec = useRef<HTMLDivElement>(null);
@@ -78,6 +79,7 @@ export function PodakovaniePoDare(p: PodProps) {
           </div>
         </div>
         <div style={{ fontSize: 22, fontWeight: 800, lineHeight: 1.25 }}>{p.registrovany && p.meno ? `Ďakujeme, ${p.meno}.` : 'Ďakujeme.'}</div>
+        {p.podNadpisom && <div style={{ marginTop: 4, fontSize: 14, color: 'var(--ink2)' }}>{p.podNadpisom}</div>}
         <div style={{ marginTop: 16, fontSize: 46, fontWeight: 800, letterSpacing: '-.02em', lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>{p.sumaTxt}</div>
         {p.dorovnanieTxt && <div style={{ marginTop: 6, fontSize: 13.5, color: 'var(--ink2)', ...fade(krok >= 2) }}>tvojich {p.sumaTxt} + <span style={{ color: 'var(--gold)', fontWeight: 700 }}>{p.dorovnanieTxt} od {p.firma}</span></div>}
       </div>
@@ -107,6 +109,7 @@ export function PodakovaniePoDare(p: PodProps) {
           {p.kodPripisania && <div style={{ fontSize: 12.5, color: 'var(--ink2)' }}>Neskôr ho pripíšeš kódom z potvrdenia o dare: <b style={{ fontVariantNumeric: 'tabular-nums' }}>{p.kodPripisania}</b></div>}
         </div>
       )}
+      {p.doklad}
       <button onClick={p.onHotovo} style={{ height: 54, borderRadius: 16, border: 'none', background: 'linear-gradient(90deg,#4B7A35,#8DB866)', color: '#fff', fontSize: 16, fontWeight: 800, cursor: 'pointer' }}>Hotovo</button>
     </div>
   );

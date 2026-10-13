@@ -9,7 +9,7 @@ import { usePouzivatel } from "@/lib/pouzivatel";
 import { nacitajPredvolbu, ulozPredvolbu, useSektorDarcu, menoBezMena, volbaBezMena, type VerziaIdentity, type VolbaDaru } from "@/lib/darcovia";
 import { toast } from "@/components/toast";
 import PodrzTlacidlo from "./PodrzTlacidlo";
-import { Svetlusik } from "./Svetlusik";
+import { TESTOVACIA } from "@/lib/testovacia";
 import { MIN_DAR_EUR, KARTA_OD_EUR } from "./nastavenie";
 import type { KanalPlatby } from "./Sumy";
 import { PodakovaniePoDare } from "./AnimovaneKomponenty";
@@ -28,6 +28,45 @@ const e2 = (n: number) => `${n.toLocaleString("sk-SK", { minimumFractionDigits: 
 const eK = (n: number) => `${n.toLocaleString("sk-SK", { minimumFractionDigits: n % 1 ? 2 : 0, maximumFractionDigits: 2 })} €`;
 const jednotka = (k: KanalPlatby) => (k === "eur" ? "€" : k === "deed" ? "DeeD" : "EURC");
 const vSume = (n: number, k: KanalPlatby) => (k === "eur" ? eK(n) : `${n.toLocaleString("sk-SK", { maximumFractionDigits: 2 })} ${jednotka(k)}`);
+
+// OPRAVY 234 (prototyp Platobny modul charita a viera): neregistrovaný vidí „Čo získaš registráciou" (20 výhod, mení sa každé 3,4 s)
+const VYHODY: [string, string, string][] = [
+  ["Tvoj status a stopa", "Svetlúšik — tvoj prvý dobrý skutok", "Dostaneš ho hneď pri registrácii, sprevádza ťa appkou."],
+  ["Tvoj status a stopa", "Karma a štít od prvého dňa", "Počítajú sa odo dňa registrácie. Štít rastie od Bronzového po Legendu a nedá sa kúpiť."],
+  ["Tvoj status a stopa", "Meno pri dare", "Vyberieš si, ako ťa svet uvidí: celé meno, iniciála, prezývka, s mestom či bez."],
+  ["Tvoj status a stopa", "Doklad o každom dare", "Celá história v Môj DEED+: čo podporuješ, poďakovania, vyúčtovania."],
+  ["Peniaze a výhody", "Platíš na jeden klik", "Kartu ani SEPA účet nevypĺňaš pri každom dare znova, údaje máš bezpečne uložené."],
+  ["Peniaze a výhody", "Kryptopeňaženka zadarmo", "Pre DEED+ a mikrodary, bez zriaďovania a poplatkov."],
+  ["Peniaze a výhody", "Môžeš peniaze aj prijímať", "Vlastná zbierka či žiadosť, osobná QR vizitka, prepitné na smene."],
+  ["Peniaze a výhody", "Prepojenie s účtom tvojej firmy", "Firemné benefity: odmeny za skutky v daňovom limite, firemné akcie a programy pre zamestnancov."],
+  ["Peniaze a výhody", "Zaujímavé ponuky zdarma", "Veci a služby, ktoré firmy rozdávajú ako dobrý skutok. Súťaží o ne len registrovaný."],
+  ["Peniaze a výhody", "Zľava za status v prevádzkach", "Naskenuješ QR na mieste a uplatníš, ak chceš."],
+  ["Peniaze a výhody", "Podpora tvorcov a reťaz dobra", "Mikrodary v DeeD, kde euro dorazí ako euro."],
+  ["Tvoje okolie", "Feed tvojho okolia", "Skutky, pomoc a zbierky z tvojej štvrte; sleduješ, koho chceš, vrátane farnosti či zboru."],
+  ["Tvoje okolie", "Nástenka a pozvánky podľa záujmov", "Koncerty, trhy, prednášky; vyberáš si, kam ťa smú pozvať."],
+  ["Tvoje okolie", "Dobrovoľníctvo s overenou dochádzkou", "Tvoja účasť na brigáde či akcii je dokázaná QR kódom, nie sľubom."],
+  ["Tvoje okolie", "Ponuky dobrovoľníckej činnosti z okolia", "Keď niekto blízko potrebuje ruky, dozvieš sa to."],
+  ["Tvoje okolie", "Pripomienky a kalendár", "Akcia, na ktorú ideš, ti nezmizne."],
+  ["Tvoj hlas a príležitosti", "Hodnotenie spokojnosti v podnikoch", "Názor môže dať len registrovaný, preto má tvoje hodnotenie váhu."],
+  ["Tvoj hlas a príležitosti", "„Mám záujem“ na brigády a prácu", "Jedným klikom, štít ako referencia: skutky namiesto životopisu."],
+  ["Tvoj hlas a príležitosti", "Potvrdenie účasti jedným klikom", "Na pozvánkach sa meno doplní samo."],
+  ["Tvoj hlas a príležitosti", "Pochvaly, ktoré si nesieš so sebou", "Zmeníš zamestnanie, povesť ide s tebou."],
+];
+const cisla = (v: string) => v.replace(/\D/g, "");
+/** čo chýba v údajoch platby neregistrovaného (karta: číslo, platnosť, CVC; SEPA: IBAN, majiteľ) */
+function chybaUdajov(sepa: boolean, u: UdajePlatby): string[] {
+  const m: string[] = [];
+  if (sepa) {
+    if (!/^[A-Z]{2}\d{2}[A-Z0-9]{11,30}$/.test(u.iban.replace(/\s/g, "").toUpperCase())) m.push("iban");
+    if (u.majitel.trim().length < 3) m.push("majitel");
+  } else {
+    if (cisla(u.cislo).length < 15) m.push("cislo");
+    const e = cisla(u.platnost); if (e.length !== 4 || +e.slice(0, 2) < 1 || +e.slice(0, 2) > 12) m.push("platnost");
+    if (cisla(u.cvc).length < 3) m.push("cvc");
+  }
+  return m;
+}
+type UdajePlatby = { cislo: string; platnost: string; cvc: string; iban: string; majitel: string };
 
 type Krok = "suma" | "sposob" | "zhrnutie" | "spracovanie" | "hotovo";
 /** stav zbierky tesne pred darom — pre poďakovanie a hlášku (karta 09) */
@@ -51,6 +90,12 @@ export function PlatobneOkno({ kanal, suma: sumaStart, nazov, registrovany, bonu
   const [nap, setNap] = useState(false); // nápoveda „Podrž tlačidlo…"
   const [volba, setVolba] = useState<VolbaDaru>(nacitajPredvolbu);
   const [otvorene, setOtvorene] = useState(false);
+  // OPRAVY 234: platba naoko — neregistrovaný vypĺňa kartu alebo IBAN (nikam sa neposielajú, kým nie je platobná brána)
+  const [ud, setUd] = useState<UdajePlatby>({ cislo: "", platnost: "", cvc: "", iban: "", majitel: "" });
+  const [chybaPl, setChybaPl] = useState(false);
+  const [vyh, setVyh] = useState(0), [vyhOtv, setVyhOtv] = useState(false);
+  const [doklad, setDoklad] = useState(false);
+  const [cas] = useState(() => new Date());
   useEffect(() => { const r = requestAnimationFrame(() => setOtvorene(true)); return () => cancelAnimationFrame(r); }, []);
 
   const kroky: Krok[] = eur ? ["suma", "sposob", "zhrnutie"] : ["suma", "zhrnutie"];
@@ -65,6 +110,13 @@ export function PlatobneOkno({ kanal, suma: sumaStart, nazov, registrovany, bonu
   const dorovna = eur && bonus ? bonus(suma) : 0;
 
   const ja = usePouzivatel();
+  const chyba = eur && !registrovany && krok === "zhrnutie" ? chybaUdajov(sposob === "sepa", ud) : [];
+  const udajeOk = chyba.length === 0;
+  useEffect(() => {
+    if (registrovany || krok !== "zhrnutie" || !eur) return;
+    const t = window.setInterval(() => setVyh((i) => (i + 1) % VYHODY.length), 3400);
+    return () => window.clearInterval(t);
+  }, [registrovany, krok, eur]);
   const zatvor = () => { if (krok !== "spracovanie") { setOtvorene(false); setTimeout(onClose, 250); } };
   const dalej = () => {
     if (!mozeDalej) return;
@@ -106,7 +158,7 @@ export function PlatobneOkno({ kanal, suma: sumaStart, nazov, registrovany, bonu
         <span style={{ width: 46, height: 46, borderRadius: 13, background: "var(--bSoft)", color: "var(--blue)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: eur ? 19 : 13, fontWeight: 800, flex: "none" }}>{eur ? "€" : jednotka(kanal)}</span>
         <span style={{ flex: 1, minWidth: 0 }}>
           <span style={{ display: "block", fontSize: 17, fontWeight: 800 }}>{eur ? "Platba v eurách" : kanal === "deed" ? "Platba v DeeD" : "Platba v EURC"}</span>
-          <span style={{ display: "block", fontSize: 12.5, color: "var(--ink3)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{nazov} · {eur ? "karta / prevod" : "z peňaženky"}</span>
+          <span style={{ display: "block", fontSize: 12.5, color: "var(--ink3)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{eur ? "EUR · karta / prevod" : `${nazov} · z peňaženky`}</span>
         </span>
         {krok !== "spracovanie" && (
           <button type="button" onClick={zatvor} aria-label="Zavrieť" style={{ width: 44, height: 44, borderRadius: "50%", border: "none", background: "var(--btn)", color: "var(--ink)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flex: "none" }}>
@@ -166,10 +218,10 @@ export function PlatobneOkno({ kanal, suma: sumaStart, nazov, registrovany, bonu
       <>
         <div style={{ fontSize: 14, color: "var(--ink2)" }}>Vyber spôsob platby pre <b style={{ fontVariantNumeric: "tabular-nums" }}>{eK(suma)}</b></div>
         <MoznostSposobu disabled={kartaNie} onClick={() => { setSposob("karta"); setKrok("zhrnutie"); }} ikona={IKONA_KARTA}
-          nadpis="Platobná karta" popis="1,4 % + 0,15 € · hneď" />
+          nadpis="Platobná karta" popis="Visa · Mastercard · okamžite · 3-D Secure · poplatok 1,4 % + 0,15 €" />
         {kartaNie && <div style={{ marginTop: -6, fontSize: 12.5, lineHeight: 1.4, color: "var(--ink3)", padding: "0 4px" }}>Kartou sa dá platiť od 3 €.</div>}
         <MoznostSposobu onClick={() => { setSposob("sepa"); setKrok("zhrnutie"); }} ikona={IKONA_BANKA}
-          nadpis="Bankový prevod (SEPA)" popis="bez poplatku · do 1 prac. dňa" />
+          nadpis="Bankový prevod (SEPA)" popis="pripísanie do 1 prac. dňa · bez poplatku" />
       </>
     );
     pata = <SekundarneTlacidlo onClick={spat}>Späť</SekundarneTlacidlo>;
@@ -188,9 +240,43 @@ export function PlatobneOkno({ kanal, suma: sumaStart, nazov, registrovany, bonu
               <span style={{ width: 36, height: 36, borderRadius: "50%", background: "var(--track)", color: "var(--ink4)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 15, flex: "none" }}>?</span>
               <span><span style={{ display: "block", fontSize: 12.5, color: "var(--ink3)" }}>V zozname darcov sa zobrazíš ako</span><span style={{ display: "block", fontSize: 15.5, fontWeight: 800 }}>{menoBezMena(sektor)}</span></span>
             </div>}
+        {eur && !registrovany && <div style={{ padding: 14, borderRadius: 16, background: "var(--gCard)", border: "1px solid var(--gBd)", display: "flex", flexDirection: "column", gap: 10 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: ".05em", color: "var(--gInk)" }}>ČO ZÍSKAŠ REGISTRÁCIOU</div>
+          <div key={vyh} className="zb-novy" style={{ display: "flex", alignItems: "flex-start", gap: 10, minHeight: 62 }}>
+            <span style={{ width: 32, height: 32, borderRadius: 10, background: "var(--gSoft)", color: "var(--green)", display: "flex", alignItems: "center", justifyContent: "center", flex: "none" }}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg></span>
+            <span style={{ flex: 1, minWidth: 0 }}><span style={{ display: "block", fontSize: 15.5, fontWeight: 800, lineHeight: 1.3 }}>{VYHODY[vyh][1]}</span><span style={{ display: "block", marginTop: 2, fontSize: 13, lineHeight: 1.45, color: "var(--ink2)" }}>{VYHODY[vyh][2]}</span></span>
+            <span style={{ fontSize: 12, fontWeight: 700, color: "var(--ink3)", fontVariantNumeric: "tabular-nums", flex: "none", marginTop: 3 }}>{vyh + 1} / {VYHODY.length}</span>
+          </div>
+          <div style={{ fontSize: 13.5, lineHeight: 1.5, fontWeight: 600 }}>Darovať môžeš aj bez registrácie. Všetky výhody appky však využiješ až s ňou, bez nej to technicky nejde.</div>
+          <button type="button" onClick={() => setVyhOtv(!vyhOtv)} style={{ alignSelf: "flex-start", padding: 0, border: "none", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 13.5, fontWeight: 700, color: "var(--green)" }}>{vyhOtv ? "Skryť zoznam" : `Pozrieť všetkých ${VYHODY.length} výhod`}</button>
+          {vyhOtv && <div style={{ display: "flex", flexDirection: "column", gap: 12, paddingTop: 4, borderTop: "1px solid var(--gBd)" }}>
+            {[...new Set(VYHODY.map((v) => v[0]))].map((g) => <div key={g} style={{ display: "flex", flexDirection: "column", gap: 6, paddingTop: 8 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: ".05em", color: "var(--gInk)" }}>{g.toLocaleUpperCase("sk-SK")}</div>
+              {VYHODY.filter((v) => v[0] === g).map((v) => <div key={v[1]} style={{ fontSize: 13, lineHeight: 1.45, color: "var(--ink2)" }}><b style={{ color: "var(--ink)" }}>{v[1]}</b> · {v[2]}</div>)}
+            </div>)}
+          </div>}
+        </div>}
         <RiadokPlatby kanal={kanal} sposob={sposob} registrovany={registrovany} />
+        {eur && !registrovany && (sposob === "sepa" ? <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <input value={ud.iban} placeholder="IBAN" autoComplete="off" aria-label="IBAN" onChange={(e) => setUd({ ...ud, iban: e.target.value.replace(/[^A-Za-z0-9]/g, "").toUpperCase().slice(0, 34).replace(/(.{4})(?=.)/g, "$1 ") })}
+              style={{ ...{ height: 50, padding: "0 14px", borderRadius: 13, background: "var(--field)", fontSize: 15.5, color: "var(--ink)", outline: "none", fontFamily: "inherit", fontVariantNumeric: "tabular-nums", minWidth: 0, width: "100%", boxSizing: "border-box" }, textTransform: "uppercase", border: `1.5px solid ${chybaPl && chyba.includes("iban") ? "#A34A2A" : "var(--fieldBd)"}` }} />
+            <input value={ud.majitel} placeholder="Meno majiteľa účtu" autoComplete="name" aria-label="Meno majiteľa účtu" onChange={(e) => setUd({ ...ud, majitel: e.target.value.slice(0, 60) })}
+              style={{ ...{ height: 50, padding: "0 14px", borderRadius: 13, background: "var(--field)", fontSize: 15.5, color: "var(--ink)", outline: "none", fontFamily: "inherit", fontVariantNumeric: "tabular-nums", minWidth: 0, width: "100%", boxSizing: "border-box" }, border: `1.5px solid ${chybaPl && chyba.includes("majitel") ? "#A34A2A" : "var(--fieldBd)"}` }} />
+            <div style={{ fontSize: 12.5, lineHeight: 1.45, color: "var(--ink3)" }}>Podržaním povolíš jednorazové inkaso tejto sumy z tvojho účtu.</div>
+          </div>
+          : <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <input value={ud.cislo} placeholder="Číslo karty" inputMode="numeric" autoComplete="cc-number" aria-label="Číslo karty" onChange={(e) => setUd({ ...ud, cislo: cisla(e.target.value).slice(0, 19).replace(/(\d{4})(?=\d)/g, "$1 ") })}
+              style={{ ...{ height: 50, padding: "0 14px", borderRadius: 13, background: "var(--field)", fontSize: 15.5, color: "var(--ink)", outline: "none", fontFamily: "inherit", fontVariantNumeric: "tabular-nums", minWidth: 0, width: "100%", boxSizing: "border-box" }, border: `1.5px solid ${chybaPl && chyba.includes("cislo") ? "#A34A2A" : "var(--fieldBd)"}` }} />
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+              <input value={ud.platnost} placeholder="MM / RR" inputMode="numeric" autoComplete="cc-exp" aria-label="Platnosť karty" onChange={(e) => { const v = cisla(e.target.value).slice(0, 4); setUd({ ...ud, platnost: v.length > 2 ? `${v.slice(0, 2)} / ${v.slice(2)}` : v }); }}
+                style={{ ...{ height: 50, padding: "0 14px", borderRadius: 13, background: "var(--field)", fontSize: 15.5, color: "var(--ink)", outline: "none", fontFamily: "inherit", fontVariantNumeric: "tabular-nums", minWidth: 0, width: "100%", boxSizing: "border-box" }, border: `1.5px solid ${chybaPl && chyba.includes("platnost") ? "#A34A2A" : "var(--fieldBd)"}` }} />
+              <input value={ud.cvc} placeholder="CVC" inputMode="numeric" autoComplete="cc-csc" aria-label="CVC" onChange={(e) => setUd({ ...ud, cvc: cisla(e.target.value).slice(0, 4) })}
+                style={{ ...{ height: 50, padding: "0 14px", borderRadius: 13, background: "var(--field)", fontSize: 15.5, color: "var(--ink)", outline: "none", fontFamily: "inherit", fontVariantNumeric: "tabular-nums", minWidth: 0, width: "100%", boxSizing: "border-box" }, border: `1.5px solid ${chybaPl && chyba.includes("cvc") ? "#A34A2A" : "var(--fieldBd)"}` }} />
+            </div>
+          </div>)}
+        {chybaPl && chyba.length > 0 && <div style={{ marginTop: -2, fontSize: 13, lineHeight: 1.45, color: "#A34A2A", fontWeight: 600 }}>{sposob === "sepa" ? "Doplň IBAN a meno majiteľa účtu. Bez nich platba neodíde." : "Doplň číslo karty, platnosť a CVC. Bez nich platba neodíde."}</div>}
         <div style={{ borderRadius: 16, background: "var(--card)", border: "1px solid var(--cardBd)", padding: "4px 16px" }}>
-          <Riadok l="Suma" v={vSume(suma, kanal)} />
+          <Riadok l="Suma" v={eur ? e2(suma) : vSume(suma, kanal)} />
           {poplatok > 0 && <Riadok l={`Poplatok (${pop.popis})`} v={e2(poplatok)} />}
           {eur && (
             <div onClick={() => setDarDeed(!darDeed)} role="checkbox" aria-checked={darDeed} style={{ display: "flex", alignItems: "center", gap: 12, padding: "11px 0", borderBottom: "1px solid var(--cardBd)", cursor: "pointer" }}>
@@ -209,14 +295,12 @@ export function PlatobneOkno({ kanal, suma: sumaStart, nazov, registrovany, bonu
       </>
     );
     const label = `${potvrditTuknutim() ? "Zaplatiť" : "Podrž a zaplať"} ${eur ? e2(spolu) : vSume(suma, kanal)}`;
-    pata = (
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: 10 }}>
-        <SekundarneTlacidlo onClick={spat}>Späť</SekundarneTlacidlo>
-        {potvrditTuknutim()
-          ? <HlavneTlacidlo onClick={zaplat}>{label}</HlavneTlacidlo>
-          : <PodrzTlacidlo label={label} onConfirm={zaplat} onHint={() => setNap(true)} />}
-      </div>
-    );
+    // prototyp: v zhrnutí len hlavné tlačidlo (späť cez kroky hore); kým chýbajú údaje, je vyblednuté a ukáže, čo doplniť
+    pata = !udajeOk
+      ? <button type="button" onClick={() => setChybaPl(true)} style={{ width: "100%", height: 54, borderRadius: 16, border: "none", background: "var(--gGrad)", color: "#fff", fontSize: 16, fontWeight: 800, cursor: "pointer", opacity: .45, fontFamily: "inherit", fontVariantNumeric: "tabular-nums" }}>{label}</button>
+      : potvrditTuknutim()
+        ? <HlavneTlacidlo onClick={zaplat}>{label}</HlavneTlacidlo>
+        : <PodrzTlacidlo label={label} onConfirm={zaplat} onHint={() => setNap(true)} />;
   } else if (krok === "hotovo") {
     // karta 09 — poďakovanie (hotový komponent dizajnéra): Svetlúšik, roj do pruhu, hláška
     const po = pred.vyzbierane + eurHodnota + dorovna;
@@ -228,12 +312,24 @@ export function PlatobneOkno({ kanal, suma: sumaStart, nazov, registrovany, bonu
         predPct={G ? Math.min(1, pred.vyzbierane / G) : pred.vyzbierane / m0.dalsi} poPct={G ? Math.min(1, po / G) : Math.min(1, po / m1.dalsi)}
         poTxt={G ? `${eK(po)} z ${eK(G)}` : `Vyzbierané ${eK(po)}`} poPctTxt={G ? `${Math.floor((po / G) * 100)} %` : `ďalší míľnik ${eK(m1.dalsi)}`}
         hlaska={hlaskaPoDare({ vyzbierane: pred.vyzbierane, ciel: G, pocetDarov: pred.pocetDarov, darovDnes: pred.darovDnes }, { eur: eurHodnota, dorovnanie: dorovna, registrovany })}
-        onRegistrovat={() => toast("Registrácia s pripísaním daru — karta 08")} onHotovo={zatvor} />
+        onRegistrovat={() => toast("Registrácia s pripísaním daru — karta 08")} onHotovo={zatvor}
+        podNadpisom="Tvoj dar odišiel priamo príjemcovi."
+        doklad={<div style={{ borderRadius: 16, background: "var(--card)", border: "1px solid var(--cardBd)" }}>
+          <div role="button" tabIndex={0} onClick={() => setDoklad(!doklad)} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 16px", fontSize: 14, fontWeight: 700, cursor: "pointer" }}><span>Doklad</span><span style={{ color: "var(--ink3)" }}>{doklad ? "Skryť" : "Zobraziť ›"}</span></div>
+          {doklad && <div style={{ padding: "0 16px 8px" }}>
+            {([["Kanál", !eur ? `Peňaženka ${jednotka(kanal)}` : sposob === "sepa" ? "Bankový prevod (SEPA)" : "Karta (EUR)"], ["Dar", eur ? e2(suma) : vSume(suma, kanal)],
+              ...(dorovna > 0 ? [[`${firma ?? "Firma"} dorovnala`, e2(dorovna)]] : []), ...(poplatok > 0 ? [["Poplatok", e2(poplatok)]] : []), ...(dar > 0 ? [["Dar pre chod DEED+", e2(dar)]] : []),
+              // PLACEBO — OPRAVY 234: ID transakcie / VS dodá platobná brána; v testovacom režime ukážka
+              ...(TESTOVACIA ? [[sposob === "sepa" ? "Referencia" : "ID transakcie", sposob === "sepa" ? "VS · test" : "TX · test"]] : []),
+              ["Dátum", `${cas.getDate()}. ${cas.getMonth() + 1}. ${cas.getFullYear()} ${cas.getHours()}:${String(cas.getMinutes()).padStart(2, "0")}`]] as [string, string][]).map(([k, v]) => (
+              <div key={k} style={{ display: "flex", justifyContent: "space-between", gap: 12, padding: "8px 0", borderTop: "1px solid var(--cardBd)", fontSize: 13.5 }}><span style={{ color: "var(--ink3)" }}>{k}</span><span style={{ fontWeight: 700, fontVariantNumeric: "tabular-nums", textAlign: "right" }}>{v}</span></div>))}
+          </div>}
+        </div>} />
     );
   } else {
     obsah = (
       <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 18, textAlign: "center", minHeight: 320 }}>
-        <Svetlusik size={112} />
+        <span aria-hidden="true" className="zb-kruh" style={{ width: 120, height: 120, borderRadius: "50%", border: "3px solid var(--track)", borderTopColor: "transparent", borderLeftColor: "#E0B048", boxSizing: "border-box" }} />
         <div style={{ fontSize: 17, fontWeight: 700 }}>{!eur ? `Posielam ${jednotka(kanal)} príjemcovi` : sposob === "sepa" ? "Posielam prevod príjemcovi" : "Overujem kartu cez platobnú bránu"}</div>
         <div style={{ fontSize: 13.5, color: "var(--ink3)" }}>Neprerušuj to, trvá to pár sekúnd.</div>
       </div>
@@ -244,7 +340,7 @@ export function PlatobneOkno({ kanal, suma: sumaStart, nazov, registrovany, bonu
   const okno: CSSProperties = wide
     ? { position: "relative", width: sirka, maxWidth: "calc(100vw - 32px)", maxHeight: "min(760px, calc(100vh / var(--pismo, 1) - 48px))", borderRadius: 28,
         transform: otvorene ? "none" : "translateY(24px)", opacity: otvorene ? 1 : 0 }
-    : { position: "absolute", left: 0, right: 0, bottom: 0, maxHeight: "92%", borderRadius: "28px 28px 0 0", transform: otvorene ? "none" : "translateY(105%)" }; // mobil zdola, tablet/PC v strede
+    : { position: "absolute", left: 0, right: 0, bottom: 0, height: krok === "hotovo" ? undefined : "88%", maxHeight: "92%", borderRadius: "28px 28px 0 0", transform: otvorene ? "none" : "translateY(105%)" }; // mobil zdola, tablet/PC v strede
 
   return createPortal(
     <div className="deed-platba" role="dialog" aria-modal="true" aria-label="Platba"
@@ -305,9 +401,9 @@ function RiadokPlatby({ kanal, sposob, registrovany }: { kanal: KanalPlatby; spo
       {karta ? IKONA_KARTA : IKONA_BANKA}
       <span style={{ flex: 1 }}>
         <span style={{ display: "block", fontSize: 15.5, fontWeight: 800 }}>{karta ? "Visa •••• 4242" : "SK31 •••• 4421"}</span>
-        <span style={{ display: "block", fontSize: 12.5, color: "var(--ink3)" }}>{karta ? "Uložená karta · platnosť 08/28" : "SEPA · bez poplatku · do 1 prac. dňa"}</span>
+        <span style={{ display: "block", fontSize: 12.5, color: "var(--ink3)" }}>{karta ? "Uložená karta · platnosť 08/28" : "Uložený účet · pripísanie do 1 prac. dňa"}</span>
       </span>
-      <span role="button" onClick={() => toast("Zmena spôsobu platby — napojí sa na platobnú bránu")} style={{ fontSize: 13.5, fontWeight: 700, color: "var(--green)", cursor: "pointer" }}>Zmeniť</span>
+      <span style={{ color: "var(--green)", fontWeight: 800 }}>✓</span>
     </div>
   );
 }
