@@ -10,11 +10,13 @@ export type TypEditora = "parte" | "svadba" | "jubileum" | "blahozelanie";
 export interface PayloadEditora {
   verzia?: number; stav: "koncept" | "hotovo" | "doplnene"; typ: TypEditora; sablona?: string; rezim?: string;
   pohlavie?: string | null; foto?: string | null; bezTerminu?: boolean; rozlucka?: string | null;
-  polia?: Record<string, string | boolean>; html?: string; kontext?: Record<string, unknown>; cas?: string;
+  polia?: Record<string, string | boolean>; html?: string;
+  /** BLOK C: miniatúra na stránku farnosti — podklad = pozadie šablóny, rám = farba ozdôb */
+  miniatura?: { podklad?: string; ram?: string; tvar?: "oval" | "kruh" | "kosostvorec" | "stvorec"; roky?: number | null; sablona?: string; nazov?: string }; kontext?: Record<string, unknown>; cas?: string;
   [k: string]: unknown;
 }
 export interface CfgEditora {
-  typ: TypEditora; rezim?: "plny" | "rychly"; bezTlace?: boolean; qrObrazok?: string; miesta?: string[];
+  typ: TypEditora; /** BLOK C: viera = Parte, Svadba, Blahoželanie · podnik = Pozvánka na oslavu, Svadba, Blahoželanie */ sektor?: "viera" | "podnik"; rezim?: "plny" | "rychly"; bezTlace?: boolean; qrObrazok?: string; miesta?: string[];
   navrh?: PayloadEditora | null; kontext?: Record<string, unknown>;
 }
 export interface EditorApi {

@@ -184,7 +184,7 @@ export function ZbierkaSOverovatelom({ stranka, menoFarnosti, ucetFarnosti, mobi
   };
   const editor = (styl: CSSProperties) => (
     <EditorOznameni ref={edRef} title="Editor parte" onSend={(p) => { void naEditor(p); }} onUdalost={(e) => zapisEditora({ udalost: e.akcia, typ: "parte", papier: e.papier ?? null, ...kdeStat })} style={styl}
-      cfg={{ typ: "parte", rezim: "rychly", bezTlace: true, qrObrazok: qrSrc, miesta: ["v Dome smútku", "vo farskom kostole", "na miestnom cintoríne"], kontext: { zbierka: "pohreb", stranka }, navrh: edKon }} />);
+      cfg={{ typ: "parte", sektor: "viera", rezim: "rychly", bezTlace: true, qrObrazok: qrSrc, miesta: ["v Dome smútku", "vo farskom kostole", "na miestnom cintoríne"], kontext: { zbierka: "pohreb", stranka }, navrh: edKon }} />);
   const edSpat = () => { if (!edRef.current?.krokSpat()) setEdMob(false); };
 
   // ---- 3 · rozdelenie: krok 1 podiel overovateľa, krok 2 zvyšok rozhoduje príjemca ----

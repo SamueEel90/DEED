@@ -25,16 +25,32 @@ export const SVADBA: Record<string, Paleta> = {
   s13: P("#0b0716", "#ffffff", "#b45cff", "Berieme sa"), s14: P("#0a0906", "#fff8e6", "#ffc94a", "Áno"), s15: P("linear-gradient(180deg,#ffd9a8 0%,#f7a6a6 45%,#9a6fc4 100%)", "#ffffff", "#ffffff"),
   s16: P("linear-gradient(120deg,#f7ecd6,#fff9ee,#ecd9b0,#fff9ee,#f2e2c0)", "#3a2a12", "#b8892e", "Budeme sa brať"),
 };
-/** 2c · jubileum j1–j12 (j5 v editore nie je) */
+/** 2c · jubileum j1–j12 */
 export const JUBILEUM: Record<string, Paleta> = {
   j1: P("linear-gradient(180deg,#fff7e8,#ffe9f0)", "#2b2b40", "#ff6b6b"), j2: P("radial-gradient(circle at 50% 30%,#2a3f86 0%,#141d4a 60%,#0a0f2b 100%)", "#ffffff", "#ffd34d"),
-  j3: P("#ffffff", "#1d1d2b", "#7a4cff"), j4: P("#0b0716", "#ffffff", "#39ff88"), j6: P("radial-gradient(circle at 50% 30%,#22305a 0%,#141c38 60%,#0b1024 100%)", "#f6efe0", "#d4a849"),
+  j3: P("#ffffff", "#1d1d2b", "#7a4cff"), j4: P("#0b0716", "#ffffff", "#39ff88"), j5: P("radial-gradient(circle at 50% 35%,#fffaf0 0%,#f6ead0 55%,#e8d3a6 100%)", "#3a2a12", "#b8892e"),
+  j6: P("radial-gradient(circle at 50% 30%,#22305a 0%,#141c38 60%,#0b1024 100%)", "#f6efe0", "#d4a849"),
   j7: P("linear-gradient(170deg,#fff7f5,#fbe3e6)", "#3d2226", "#b0707a"), j8: P("#f1efec", "#1f1f1f", "#1f1f1f"), j9: P("linear-gradient(180deg,#1a1408 0%,#3a2b10 55%,#7a5a1c 100%)", "#fff6e0", "#e2b85a"),
   j10: P("repeating-conic-gradient(from 0deg at 50% 115%,#f4a259 0deg 8deg,#f7c873 8deg 16deg)", "#3b2412", "#8c3b1a"), j11: P("#fffdf9", "#2c2a35", "#7a6bb0"), j12: P("linear-gradient(180deg,#ffffff,#f3efe8)", "#22201c", "#9a7b3c"),
 };
-/** 2d · blahoželanie (v editore b9, b11, b12; ostatné podľa toho istého pravidla) */
+/** 2d · blahoželanie b1–b16 (Editor oznámení, BLOK C: b1–b12 = farby j1–j12, b13–b16 kytica, zlaté konfety, foto bok, kartička); head = nadpis šablóny */
 export const BLAHOZELANIE: Record<string, Paleta> = {
-  b9: P("linear-gradient(170deg,#fffaf3,#fdeef0)", "#33222a", "#c2557a"), b11: P("#f4f1ea", "#25221e", "#a0522d"), b12: P("repeating-linear-gradient(45deg,#d9c3a0 0 2px,#dcc7a5 2px 5px)", "#2e2216", "#7a4a1e"),
+  b1: P("linear-gradient(180deg,#fff7e8,#ffe9f0)", "#2b2b40", "#ff6b6b", "Všetko najlepšie"),
+  b2: P("radial-gradient(circle at 50% 30%,#2a3f86 0%,#141d4a 60%,#0a0f2b 100%)", "#ffffff", "#ffd34d", "Hurá, narodeniny"),
+  b3: P("#ffffff", "#1d1d2b", "#7a4cff", "Všetko najlepšie"),
+  b4: P("#0b0716", "#ffffff", "#39ff88", "Všetko naj"),
+  b5: P("radial-gradient(circle at 50% 35%,#fffaf0 0%,#f6ead0 55%,#e8d3a6 100%)", "#3a2a12", "#b8892e", "K životnému jubileu"),
+  b6: P("radial-gradient(circle at 50% 30%,#22305a 0%,#141c38 60%,#0b1024 100%)", "#f6efe0", "#d4a849", "Srdečne blahoželáme"),
+  b7: P("linear-gradient(170deg,#fff7f5,#fbe3e6)", "#3d2226", "#b0707a", "Všetko najlepšie"),
+  b8: P("#f1efec", "#1f1f1f", "#1f1f1f"),
+  b9: P("linear-gradient(180deg,#1a1408 0%,#3a2b10 55%,#7a5a1c 100%)", "#fff6e0", "#e2b85a", "Blahoželáme"),
+  b10: P("repeating-conic-gradient(from 0deg at 50% 115%,#f4a259 0deg 8deg,#f7c873 8deg 16deg)", "#3b2412", "#8c3b1a", "Všetko najlepšie"),
+  b11: P("#fffdf9", "#2c2a35", "#7a6bb0", "K životnému jubileu"),
+  b12: P("linear-gradient(180deg,#ffffff,#f3efe8)", "#22201c", "#9a7b3c", "Blahoželáme"),
+  b13: P("linear-gradient(170deg,#fffaf3,#fdeef0)", "#33222a", "#c2557a", "Všetko najlepšie"),
+  b14: P("#ffffff", "#2e2414", "#b8892e", "Blahoželáme"),
+  b15: P("#f4f1ea", "#25221e", "#a0522d", "Všetko najlepšie"),
+  b16: P("repeating-linear-gradient(45deg,#d9c3a0 0 2px,#dcc7a5 2px 5px)", "#2e2216", "#7a4a1e", "Všetko najlepšie"),
 };
 /** predvolené farby tvarov z Nástenky (svadba zlatá, jubileum zelená, poďakovanie terakota) */
 export const ZAKLAD = { svadba: P("#FBF3E2", "#3A3226", "#C9A24A"), jubileum: P("#E3EEDA", "#2F5E3A", "#4B7A35"), blaho: P("#F8E9DF", "#5E2F17", "#B5643C") };

@@ -49,7 +49,7 @@ import { SADY_EUR, SADY_EURC } from "@/lib/sadyDarov";
 import { useLayout } from "@/components/context";
 
 import "@/styles/nastenka.css";
-import { ParteMedailon, TvarOznamu, PARTE, SVADBA, JUBILEUM, ZAKLAD, BORDOVA, symbolCirkvi, kickerTvaru, SERIF_TVARU, type Paleta } from "./Medailony";
+import { ParteMedailon, TvarOznamu, PARTE, SVADBA, JUBILEUM, BLAHOZELANIE, ZAKLAD, BORDOVA, symbolCirkvi, kickerTvaru, SERIF_TVARU, type Paleta } from "./Medailony";
 import { Darcovia } from "@/features/zbierka/Riadky";
 import { useQrObrazok } from "@/lib/qrObrazok";
 import type { AutorF } from "@/lib/autorFarnosti";
@@ -111,6 +111,7 @@ interface Spom { id: string; it?: VieraFeedItem; x?: PolozkaFarnika; zb?: Spuste
   d: { meno: string; nar: string; umr: string; rd: string; rc: string; rm: string; head: string } }
 /** OPRAVY 205: položka Teš sa s nami */
 interface Tes { af?: AutorF; id: string; druh: "svadba" | "jubileum" | "blaho"; pal: Paleta; meno: string; datum: string; vek: string; nadpis: string; x?: PolozkaFarnika; zb?: SpustenaZbierka;
+  /** BLOK C 235: Blahoželanie z Editora — meno pod nadpisom šablóny */ pod?: string;
   r: { zoznam: string[]; prepni: () => void }; mena: Record<string, string> }
 const rok = (s?: string) => s?.match(/\d{4}/)?.[0] ?? "";
 const rokyParte = (nar: string, umr: string) => { const a = rok(nar), b = rok(umr); return a || b ? [a && `* ${a}`, b && `† ${b}`].filter(Boolean).join(" ") : nar; };
@@ -137,6 +138,7 @@ function ObsahTvaru({ t, velky }: { t: Tes; velky?: boolean }) {
   return <>
     <span style={kickerTvaru(t.pal.ac)}>BLAHOŽELANIE</span>
     <i style={{ fontFamily: SERIF_TVARU, fontSize: 22 * k, lineHeight: 1.15, overflowWrap: "anywhere" }}>{t.nadpis}</i>
+    {t.pod && <span style={{ fontFamily: SERIF_TVARU, fontSize: 16 * k, lineHeight: 1.2, marginTop: 4 }}>{t.pod}</span>}
   </>;
 }
 
@@ -313,6 +315,17 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, nahlad,
   });
   const tesVer: Tes[] = OD.filter((x) => x.k === "svadba" || x.k === "ine").map((x) => {
     const ed = x.editor, P0 = (ed?.polia ?? {}) as Record<string, unknown>, pole = (k: string) => String(P0[k] ?? "").trim(), sv = x.k === "svadba";
+    // BLOK C 235: vo Viere je „Jubileum a iné oznámenie“ Blahoželanie z Editora — miniatúra podľa šablóny b1–b16
+    // (podklad = pozadie šablóny, rám = farba ozdôb); s rokmi kosoštvorec (2c), inak štvorec (2d)
+    if (ed?.typ === "blahozelanie") {
+      const m = (ed.miniatura ?? {}) as { podklad?: string; ram?: string; tvar?: string; roky?: number | null },
+        zak = (ed.sablona && BLAHOZELANIE[ed.sablona]) || ZAKLAD.blaho,
+        pal: Paleta = { ...zak, bg: m.podklad || zak.bg, ac: m.ram || zak.ac },
+        roky = m.roky ? String(m.roky) : (pole("bVek").match(/\d+/)?.[0] ?? "");
+      return roky
+        ? { id: x.id, druh: "jubileum", pal, x, meno: pole("bMeno") || x.t, datum: pole("bD"), vek: roky, nadpis: x.t, r: reakV(x, "blaho"), mena: x.mena ?? {} }
+        : { id: x.id, druh: "blaho", pal, x, meno: pole("bMeno") || x.t, datum: pole("bD"), vek: "", nadpis: zak.head || x.t, pod: pole("bMeno") || undefined, r: reakV(x, "blaho"), mena: x.mena ?? {} };
+    }
     const pal = (ed?.sablona && (sv ? SVADBA : JUBILEUM)[ed.sablona]) || (sv ? ZAKLAD.svadba : ZAKLAD.jubileum);
     return { id: x.id, druh: sv ? "svadba" : "jubileum", pal, x, meno: sv ? [pole("sNev"), pole("sZen")].filter(Boolean).join(" & ") || x.t : pole("jMeno") || x.t,
       datum: sv ? pole("sD") : pole("jD"), vek: sv ? "" : (pole("jVekTxt").match(/\d+/)?.[0] ?? vekJubilea(pole("jNar"), pole("jD"))), nadpis: x.t, r: reakV(x, "blaho"), mena: x.mena ?? {} };

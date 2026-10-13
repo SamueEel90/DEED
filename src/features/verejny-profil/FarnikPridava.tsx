@@ -49,7 +49,8 @@ const prazdnyF = (): FormularVeriaceho => ({ nad: "", txt: "", datum: "", cas: "
 const naHtml = (t: string) => t ? t.split("\n").map((r) => `<p>${r.replace(/&/g, "&amp;").replace(/</g, "&lt;")}</p>`).join("") : "";
 /** E.1: poradie v hárku */
 const SKUPINY: [string, DruhFarnika[]][] = [["LEN PRE FARÁRA · NIKTO INÝ NEVIDÍ", ["umysel"]], ["NA STRÁNKU FARNOSTI", ["modlitba", "oznam", "udalost", "fotky"]], ["", ["svadba", "ine", "parte"]]];
-const TYP_EDITORA: Partial<Record<DruhFarnika, TypEditora>> = { parte: "parte", svadba: "svadba", ine: "jubileum" };
+/** BLOK C 235: „Jubileum a iné oznámenie“ vo Viere = Blahoželanie (Pozvánka na oslavu sa vo Viere neponúka) */
+const TYP_EDITORA: Partial<Record<DruhFarnika, TypEditora>> = { parte: "parte", svadba: "svadba", ine: "blahozelanie" };
 const POZVANIA: [string, string][] = [["Bez prihlásenia", "len informácia"], ["Nezáväzne · Zúčastním sa", "ľudia ťuknú, viete, koľko ich asi príde"], ["Záväzne · Prihlásiť sa", "prihlásia sa menom, napr. na púť do autobusu. Môžete dať limit."]];
 /** kľúč účtu pre Zúčastním sa, Modlím sa, Sústrasť, Nahlásiť, autora */
 export const klucJa = (ja: { ucetId: string | null; demo?: boolean; celeMeno: string }) => ja.ucetId ?? (ja.demo ? "demo" : `meno:${ja.celeMeno}`);
@@ -577,7 +578,7 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
         </div>}
         {jeEd ? <div style={{ position: "relative", flex: 1, minHeight: 0 }}>
           <EditorOznameni ref={edRef} title={T?.t} onSend={(p) => { void naEditor(p); }} onUdalost={(e) => zapisEditora({ udalost: e.akcia, typ: TYP_EDITORA[k]!, papier: e.papier ?? null, ...kdeStat })} style={{ position: "absolute", inset: 0, height: "100%" }}
-            cfg={{ typ: TYP_EDITORA[k]!, rezim: "plny", qrObrazok: k === "parte" ? qrStr : undefined, miesta: k === "parte" ? ["v Dome smútku", "vo farskom kostole", "na miestnom cintoríne"] : undefined, kontext: { stranka: strankaId, veriaci: true }, navrh: edId ? odFarnikov(strankaId).find((y) => y.id === edId)?.editor ?? null : null }} />
+            cfg={{ typ: TYP_EDITORA[k]!, sektor: "viera", rezim: "plny", qrObrazok: k === "parte" ? qrStr : undefined, miesta: k === "parte" ? ["v Dome smútku", "vo farskom kostole", "na miestnom cintoríne"] : undefined, kontext: { stranka: strankaId, veriaci: true }, navrh: edId ? odFarnikov(strankaId).find((y) => y.id === edId)?.editor ?? null : null }} />
           {edToast && <div role="status" style={{ position: "absolute", left: 16, right: 16, top: 12, zIndex: 3, maxWidth: 560, margin: "0 auto", padding: "14px 16px", borderRadius: 16, background: "var(--gSoft)", border: "2px solid var(--green)", boxShadow: "0 10px 26px rgba(30,28,20,.2)", display: "flex", flexDirection: "column", gap: 4 }}>
             <b style={{ fontSize: 17, color: "var(--gInk)" }}>Zverejnené ✓</b>
             <span style={{ fontSize: 14.5, lineHeight: 1.45, color: "var(--ink2)" }}>Už to vidia všetci na stránke farnosti. Vytlačiť alebo stiahnuť môžete dole v editore.</span>
