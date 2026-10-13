@@ -11,6 +11,7 @@ import { useZamokVrstvy } from "@/lib/zamokVrstvy";
 import { useFarbaLinie } from "@/lib/liniaStranky";
 import { useMiesta, type Miesto } from "@/lib/miestaFarnosti";
 import { NaseKostolyBlok, PodstrankaMiesta, otvorKostolPoPrichode, vezmiCakajuciKostol } from "./NaseKostoly";
+import { uradneUdaje } from "@/lib/uradneUdaje";
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import type { ProfilStranky } from "@/lib/profilStranky";
@@ -392,7 +393,11 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, nahlad,
   const k = profil?.kontakt;
   const urad = k ? [k.adresaVerejna.trim() || k.sidlo.trim(), ...k.telefony.map((t) => t.cislo.trim()), ...k.emaily.map((e) => e.adresa.trim())].filter(Boolean) : [];
   // OPRAVY 223: úradné hodiny pod Farským úradom (dni bez hodín sa nevypisujú, prázdne = blok sa neukáže)
-  const uh = k?.uradne, maUrad = urad.length > 0 || maUH(uh);
+  // KARTA 62: správca farnosti, IČO · DIČ, IBAN (z registrácie, farár ich mení v Upraviť profil)
+  const ud = uradneUdaje(strankaId, k?.udaje);
+  const udajeR = [ud.ico.trim() && `IČO ${ud.ico.trim()}`, ud.dic.trim() && `DIČ ${ud.dic.trim()}`].filter(Boolean).join(" · ");
+  const maUdaje = !!(ud.spravca.trim() || udajeR || ud.iban.trim());
+  const uh = k?.uradne, maUrad = urad.length > 0 || maUH(uh) || maUdaje;
   // OPRAVY 220/221: kalendár Tento týždeň — všetko zaškrtnuté v Čo uvidia ľudia
   const maKal = maOmse || [0, 1].some((o) => miestaF.some((m) => plagatTyzdna(kostolKal(strankaId, m.id), VJ, o, SLF.omsa).some((d) => d.o.length > 0)));
   const prispela = usePrispela(strankaId);
@@ -659,6 +664,8 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, nahlad,
         {maUrad && <div style={{ flex: "0 1 280px", minWidth: 0, display: "flex", flexDirection: "column", gap: 12 }}>
           {urad.length > 0 && <><span style={kicker()}>{miestaF.length > 1 ? "KANCELÁRIA FARSKÉHO ÚRADU" : "FARSKÝ ÚRAD"}</span>
           <span style={{ fontSize: 16.5, lineHeight: 1.6, color: INK2, whiteSpace: "pre-line" }}>{urad.join("\n")}</span></>}
+          {ud.spravca.trim() && <span style={{ display: "flex", flexDirection: "column", gap: 2, paddingTop: urad.length ? 4 : 0 }}><span style={{ ...kicker(), fontSize: 12.5 }}>SPRÁVCA FARNOSTI</span><span style={{ fontSize: 16.5, lineHeight: 1.5, color: INK }}>{ud.spravca.trim()}</span></span>}
+          {(udajeR || ud.iban.trim()) && <span style={{ fontSize: 14.5, lineHeight: 1.6, color: INK3, whiteSpace: "pre-line" }}>{[udajeR, ud.iban.trim() && `IBAN ${ud.iban.trim()}`].filter(Boolean).join("\n")}</span>}
           {maUH(uh) && <>
             <span style={{ ...kicker(), paddingTop: urad.length ? 8 : 0 }}>ÚRADNÉ HODINY</span>
             <span style={{ display: "flex", flexDirection: "column", gap: 2, fontSize: 16.5, lineHeight: 1.6, color: INK2 }}>

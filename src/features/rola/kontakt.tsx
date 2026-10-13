@@ -38,6 +38,8 @@ export interface Kontakt {
   siete: Partial<Record<Siet, string>>;
   /** OPRAVY 223: úradné hodiny farského úradu (len farnosť) */
   uradne?: import("@/lib/uradneHodiny").UradneHodiny;
+  /** KARTA 62: IČO, DIČ, IBAN, správca farnosti do päty (len farnosť); bez poľa = z registrácie */
+  udaje?: import("@/lib/uradneUdaje").UradneUdaje;
 }
 
 const kluc = (p: Pozicia) => `deed.rola.kontakt.${p}`;
