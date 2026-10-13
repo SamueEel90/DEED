@@ -32,6 +32,8 @@ import { CirkevFarnosti } from "./CirkevFarnosti";
 import { PripnutieVyber, PripnuteZoznam } from "./PripnuteZbierky";
 import { LudiaFarnosti } from "./LudiaFarnosti";
 import { BrigadyFarnosti } from "./BrigadyFarnosti";
+import { useSlovaFarnosti } from "@/lib/mojeFarnosti";
+import type { OtazkyFaq } from "./NastaveniaCharity";
 import { DetiMladezFarnosti } from "./DetiMladezFarnosti";
 import { PredplatnePas, PredplatneFarnosti } from "./PredplatneFarnosti";
 import { ObrNastavenia } from "./SpravaStranky";
@@ -534,6 +536,7 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
     <ObrNastavenia tier={0} mobil={!desktop} otvor={() => toast("Pripravujeme")}
       farnost={{ ludia: () => go("ludia"), hlavna: () => go("hlavna"), n: (id) => { setNId(id); go("n"); },
         predplatne: () => { setNId("predplatne"); go("n"); } }} /></>;
+  const SLF = useSlovaFarnosti(strankaId);
   const NAST_T: Record<string, string> = { predplatne: "Predplatné a platba", notif: "Čo chcete dostávať", ucty: "Účet farnosti", udaje: "Údaje farnosti", zariadenia: "Prihlásené zariadenia", suhlasy: "Súhlasy", faq: "Časté otázky", podpora: "Napísať podpore" };
   const nObr = <>{nadpis(NAST_T[nId] ?? "Nastavenia", "")}
     {nId === "predplatne" ? <PredplatneFarnosti strankaId={strankaId} meno={meno} mobil={mobil} onUdaje={() => setNId("udaje")} />
@@ -547,7 +550,7 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
         </section>
       : nId === "zariadenia" ? <ObrZariadenia mobil={!desktop} />
       : nId === "suhlasy" ? <ObrSuhlasy mobil={!desktop} otvor={(x) => setNId(x.replace(/^n:/, ""))} />
-      : nId === "faq" ? <ObrFaq otvor={(x) => setNId(x.replace(/^n:/, ""))} />
+      : nId === "faq" ? <ObrFaq faq={faqFarnosti(SLF.titul)} otvor={(x) => setNId(x.replace(/^n:/, ""))} />
       : nId === "podpora" ? <ObrPodpora mobil={!desktop} otvor={(x) => setNId(x.replace(/^n:/, ""))} />
       : null}</>;
 
@@ -684,4 +687,31 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
       </div>
       {vrstvy}
     </div>);
+}
+
+/** OPRAVY 214 · Časté otázky farára (dočasné, obsah sa ešte prepracuje). Titul podľa cirkvi (farár · duchovný · kazateľ…). */
+function faqFarnosti(titul: string): OtazkyFaq {
+  const t = titul.charAt(0).toLocaleLowerCase("sk-SK") + titul.slice(1);
+  return [
+    ["Začiatok", [
+      ["Musím si robiť účet v DEED+?", `Nie, ${t} účet mať nemusí, stránku môže za neho viesť správca stránky, ktorý účet má.`],
+      ["Kde vidím, ako to vyzerá pre ľudí?", "V Prehľade ťuknite na Verejný profil a uvidíte stránku presne tak, ako ju vidia veriaci."],
+      ["Ako pridám kaplána alebo kostolníka?", "V Ľudia ťuknite Potrebujete pridať ďalších ľudí, vyberte, čo bude robiť, a pošlite mu pozvánku e-mailom alebo QR kódom."],
+    ]],
+    ["Omše a oznamy", [
+      ["Ako zadám omše na celý týždeň?", "V Omše a kalendár raz vyplníte časy omší a týždenný vzor a appka ich potom opakuje každý týždeň."],
+      ["Ako dám nedeľné oznamy?", "V Oznamy ťuknite + Pridať, napíšte krátky oznam a podržaním ho zverejnite."],
+      ["Zmizne oznam sám?", "Áno, pri ozname nastavíte Platí do a potom zo stránky sám zmizne, zmazať ho môžete aj skôr."],
+      ["Čo smú pridávať veriaci?", "Len to, čo zapnete v Od veriacich, a pridávať môžu iba registrovaní v DEED+."],
+    ]],
+    ["Peniaze", [
+      ["Kam idú peniaze zo zbierok?", "Dary idú priamo na účet farnosti overený pri registrácii, DEED+ peniaze nedrží."],
+      ["Ako funguje zvončeková zbierka?", "Beží od pondelka do nedele 23.59 a po uzavretí sa pripíše do Hlavnej zbierky jedným riadkom."],
+      ["Pohreb: vidím sumy rodiny?", "Nie, peniaze idú priamo rodine a vy vidíte len podiel, ktorý pripadne farnosti."],
+    ]],
+    ["Predplatné", [
+      ["Koľko to stojí?", "Prvé 2 mesiace sú zadarmo, potom sa platí mesačne alebo ročne a presnú sumu vidíte v Nastavenia → Predplatné."],
+      ["Čo keď nezaplatím?", "Na stránke ostane zadarmo kontakt a časy omší, oznamy, zbierky a Správa sa zastavia a nič sa nezmaže."],
+    ]],
+  ];
 }
