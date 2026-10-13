@@ -10,6 +10,7 @@ import { createContext, useContext, useSyncExternalStore } from "react";
 import { dorovnanieNaDar, dorovnanieKDaru, zapisDar as zapisDorovnanie } from "./dorovnanie";
 import { supabase } from "./supabase";
 import { pridajPodporu, firmaAkoDarca } from "./podpory";
+import { zapisCin } from "./vyzvy";
 import { zapisDarZbierky, idZbierkyDB, naviazObjekt, nacitajDaryZbierky, zdrojDaru, type ObjektZbierky } from "./darZbierky";
 import { toast } from "@/components/toast";
 import { ukazkyTeraz, naZmenuTestStavu } from "./testStav";
@@ -231,6 +232,8 @@ export function pridajDar(vstup: {
   // dar od firmy (dorovnanie alebo firemný dar) sa ďalej nespracúva — inak by
   // dorovnanie dorovnávalo samo seba
   if (vstup.firma) return riadok;
+  // výzvy tvorcov (0085b): dar registrovaného človeka môže splniť podmienku bežiacej výzvy
+  if (reg) { let meno = ""; try { meno = localStorage.getItem("deed.ja.meno") ?? ""; } catch { /* LS */ } zapisCin(meno, { suma: vstup.suma, ciel: vstup.refId, cezTvorcu: vstup.cezTvorcu }); }
   // Viera je samostatný svet: zbierky sa odtiaľ neberú, firmy ich nedorovnávajú
   // ani si ich nepripínajú. Cirkevná charita ide cez modul Charita ako každá iná.
   if (/^(farnost|naboz)-/.test(vstup.refId)) return riadok;

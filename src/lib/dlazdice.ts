@@ -1,6 +1,7 @@
 // OPRAVY 62 · dlaždice profilu — poradie, skryté a rozbalené sekcie. Ukladá sa k účtu (zatiaľ lokálne, server neskôr);
 // menu profilu na PC/tablete ide v rovnakom poradí. Nastavenia sa skryť nedajú. Rozbalené sekcie vidí len vlastník.
 import { useSyncExternalStore } from "react";
+import { zaregistrujKluc, zmenene } from "./mojeData";
 
 export type DlazdicaId = "wallet" | "nastavenia" | "skutky" | "priatelia" | "karma" | "stat" | "firma" | "zaujmy" | "sukromne";
 export const POVODNE: DlazdicaId[] = ["wallet", "nastavenia", "skutky", "priatelia", "karma", "stat", "firma", "zaujmy", "sukromne"];
@@ -25,10 +26,14 @@ export function nacitajDlazdice(): NastavenieDlazdic {
 }
 export function ulozDlazdice(n: NastavenieDlazdic) {
   try { localStorage.setItem(KLUC, JSON.stringify(n)); } catch { /* LS */ }
+  zmenene(KLUC);
   ver++; posl.forEach((f) => f());
 }
-export const obnovPovodne = () => { try { localStorage.removeItem(KLUC); } catch { /* LS */ } ver++; posl.forEach((f) => f()); };
+export const obnovPovodne = () => { try { localStorage.removeItem(KLUC); } catch { /* LS */ } zmenene(KLUC); ver++; posl.forEach((f) => f()); };
 export function useDlazdice(): NastavenieDlazdic {
   useSyncExternalStore((f) => { posl.add(f); return () => posl.delete(f); }, () => ver, () => 0);
   return nacitajDlazdice();
 }
+
+// do účtu (moje_data, 0084b)
+zaregistrujKluc(KLUC, () => { ver++; posl.forEach((f) => f()); });

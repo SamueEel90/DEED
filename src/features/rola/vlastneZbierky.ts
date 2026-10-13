@@ -5,9 +5,23 @@
 // overený už pri registrácii a charita zaň ručí.
 // Nemajú cieľovú sumu → dokladovanie sa nespúšťa časom, ale DOSIAHNUTÍM SUMY:
 // každých MILNIK € od posledného dokladovania = nová tranža na doloženie.
-// Perzistencia = localStorage (mock, rovnaký vzor ako stav.ts).
+// Perzistencia: verejné nastavenia stránky charity (nastavenia_stranky.verejne → „zbierkyProfily", vidí aj návštevník),
+// fotky idú do Storage (bezDataUrl). localStorage = záloha (mock/offline).
 // ============================================================
 import { useSyncExternalStore } from "react";
+import { useVerejneNastavenia, verejneZPamate, zapisVerejne } from "@/lib/verejneNastavenia";
+import { bezDataUrl } from "@/lib/uploadFoto";
+
+/** stránka charity v DB, ktorej patria centrálna a sektorové zbierky (rola/stav STRANKA_POZICIE.charita) */
+const STRANKA = "svetlo";
+const KLUC_V = "zbierkyProfily";
+const zDb = (): Record<string, ProfilZbierky> | undefined => verejneZPamate(STRANKA)?.[KLUC_V] as Record<string, ProfilZbierky> | undefined;
+async function zapisDoDb(id: string, p: ProfilZbierky | null) {
+  const bez = p ? await bezDataUrl(p, "zbierky") : null;
+  const vsetky = { ...(zDb() ?? {}) };
+  if (bez) vsetky[id] = bez; else delete vsetky[id];
+  await zapisVerejne(STRANKA, KLUC_V, vsetky);
+}
 
 export const VLASTNA_ZBIERKA_CFG = {
   /** tranža, po ktorej musí charita doložiť použitie (placeholder, ladí Martin) */
@@ -57,18 +71,25 @@ const KLUC = (id: string) => `deed.zbierka.profil.${id}`;
 let verzia = 0;
 const posluchaci = new Set<() => void>();
 const subscribe = (f: () => void) => { posluchaci.add(f); return () => posluchaci.delete(f); };
-export function useZmenyProfilov(): number { return useSyncExternalStore(subscribe, () => verzia); }
+export function useZmenyProfilov(): number {
+  useVerejneNastavenia(STRANKA); // prekreslí sa aj po načítaní z DB
+  return useSyncExternalStore(subscribe, () => verzia);
+}
 
 export function nacitajProfil(id: string): ProfilZbierky | null {
+  const db = zDb();
+  if (db) return db[id] ?? null;
   try { const s = localStorage.getItem(KLUC(id)); return s ? (JSON.parse(s) as ProfilZbierky) : null; } catch { return null; }
 }
 export function ulozProfil(id: string, p: ProfilZbierky) {
   try { localStorage.setItem(KLUC(id), JSON.stringify(p)); } catch { /* LS nedostupné */ }
   verzia++; posluchaci.forEach((f) => f());
+  void zapisDoDb(id, p).catch((e: Error) => console.warn("Profil zbierky ostal len lokálne", e.message));
 }
 export function zmazProfil(id: string) {
   try { localStorage.removeItem(KLUC(id)); } catch { /* LS nedostupné */ }
   verzia++; posluchaci.forEach((f) => f());
+  void zapisDoDb(id, null).catch((e: Error) => console.warn("Profil zbierky ostal len lokálne", e.message));
 }
 
 /** id centrálnej zbierky — používa ho aj mock zbierok a QR nástroje */

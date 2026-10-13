@@ -24,7 +24,7 @@ import { usePouzivatel } from "@/lib/pouzivatel";
 import { usePersonalizacia } from "@/lib/personalizacia";
 import { useLokalita } from "@/lib/lokalita";
 import { EVENTS, type AktItem } from "./mock";
-import { LS, load, save, obohatit, osoba, vytvorPost, type NovyPostSpec } from "./utils";
+import { LS, load, save, obohatit, osoba, vytvorPost, nacitajPocty, podporAktivitu, UDALOST_UCET, type NovyPostSpec } from "./utils";
 import { otvorPridatSkutok } from "@/features/skutok/otvor";
 import type { Oblast } from "@/lib/mojeSkutky";
 
@@ -100,6 +100,14 @@ export default function ModulAktivity({ wide }: { wide?: boolean }) {
   useEffect(() => save(LS.votes, votes), [votes]);
   useEffect(() => save(LS.deltas, deltas), [deltas]);
   useEffect(() => save(LS.follows, follows), [follows]);
+  // lajky/hlasy/sledovanie prišli z účtu (iné zariadenie) → načítaj znova
+  useEffect(() => {
+    const obnov = () => { setLiked(load(LS.likes, {})); setVotes(load(LS.votes, {})); setFollows(load(LS.follows, {})); };
+    window.addEventListener(UDALOST_UCET, obnov);
+    return () => window.removeEventListener(UDALOST_UCET, obnov);
+  }, []);
+  // prírastky sú spoločné pre všetkých (aktivita_pocty) — server má prednosť pred lokálnou zálohou
+  useEffect(() => { void nacitajPocty().then((p) => { if (p) setDeltas(p); }); }, []);
 
   const celebrate = (title: string, text: string) => { setCeleb({ title, text }); setTimeout(() => setCeleb((c) => (c && c.title === title ? null : c)), 2200); };
   const { desktop } = useLayout();
@@ -144,6 +152,11 @@ export default function ModulAktivity({ wide }: { wide?: boolean }) {
   }
 
   function support(amt: number, komu: string, it?: AktItem) {
+    if (it) {
+      const pripad = it.type === "case";
+      const add = pripad ? Math.max(0, Math.min(amt, Math.max(0, (it.goal || 0) - (it.raised || 0)))) : 0;
+      void podporAktivitu(it.id, add, pripad).then((d) => { if (d) setDeltas((dd) => ({ ...dd, [it.id]: d })); });
+    }
     if (it && it.type === "case") {
       setDeltas((dd) => {
         const cur = dd[it.id] || {};

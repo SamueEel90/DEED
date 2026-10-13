@@ -15,9 +15,12 @@
 //     v čase vyhlásenia ešte NEEXISTUJE — tvorca ho teda nemôže poznať vopred
 //     a ktokoľvek si po žrebovaní výsledok prepočíta z verejných dát.
 //
-// Mock: localStorage. V produkcii tabuľka + cron na uzávierku.
+// DB: tabuľky vyzva + vyzva_ucastnik (0085b). Vyhlási správca stránky, účastníkov zapisuje
+// server (vyzva_zapis_cin), žreb sa zapíše raz (vyzva_zreb). Bez DB (mock/offline) localStorage.
 // ============================================================
 import { useSyncExternalStore } from "react";
+import { supabase } from "./supabase";
+import { toast } from "@/components/toast";
 
 /** čo musí človek spraviť, aby bol v hre */
 export type PodmienkaTyp =
@@ -64,6 +67,8 @@ export interface Ucastnik {
 
 export interface Vyzva {
   id: string;
+  /** stránka tvorcu v DB (kto smie výzvu spravovať) */
+  stranka?: string;
   tvorca: string;
   tvorcaNazov?: string;
   nazov: string;
@@ -88,9 +93,35 @@ const KLUC = "deed.vyzvy";
 const posluchaci = new Set<() => void>();
 let verzia = 0;
 const subscribe = (f: () => void) => { posluchaci.add(f); return () => posluchaci.delete(f); };
-export function useZmenyVyziev(): number { return useSyncExternalStore(subscribe, () => verzia, () => 0); }
+export function useZmenyVyziev(): number {
+  void nacitajZDb();
+  return useSyncExternalStore(subscribe, () => verzia, () => 0);
+}
+
+// ---- DB (0085b): výzvy sú spoločné pre všetkých → pamäť z DB; null = DB nebeží, ostáva localStorage ----
+let zDb: Vyzva[] | null = null;
+let nacitava: Promise<void> | null = null;
+type RiadokVyzvy = { id: string; stranka: string; tvorca: string; tvorca_nazov: string | null; nazov: string; podmienka: Podmienka; odmena: Odmena;
+  od: string; do_: string; stav: StavVyzvy; zreb: Vyzva["zreb"] | null; vyzva_ucastnik: { osoba: string; dokaz: string; kedy: string }[] };
+function nacitajZDb(znova = false): Promise<void> {
+  if (!supabase) return Promise.resolve();
+  if (nacitava && !znova) return nacitava;
+  nacitava = (async () => {
+    const { data, error } = await supabase!.from("vyzva").select("*, vyzva_ucastnik(osoba, dokaz, kedy)").order("od", { ascending: false }).limit(500);
+    if (error) { nacitava = null; return; } // tabuľka ešte nebeží → localStorage
+    zDb = ((data ?? []) as RiadokVyzvy[]).map((r) => ({
+      id: r.id, stranka: r.stranka, tvorca: r.tvorca, tvorcaNazov: r.tvorca_nazov ?? undefined, nazov: r.nazov,
+      podmienka: r.podmienka, odmena: r.odmena, od: Date.parse(r.od), do: Date.parse(r.do_), stav: r.stav,
+      ucastnici: (r.vyzva_ucastnik ?? []).map((u) => ({ osoba: u.osoba, dokaz: u.dokaz, kedy: Date.parse(u.kedy) })),
+      ...(r.zreb ? { zreb: r.zreb } : {}),
+    }));
+    verzia++; posluchaci.forEach((f) => f());
+  })();
+  return nacitava;
+}
 
 export function nacitaj(): Vyzva[] {
+  if (zDb) return zDb;
   try { return JSON.parse(localStorage.getItem(KLUC) ?? "[]") as Vyzva[]; } catch { return []; }
 }
 function uloz(v: Vyzva[]) {
@@ -104,14 +135,32 @@ function zmen(id: string, patch: Partial<Vyzva>) {
 export const bezi = (v: Vyzva, teraz = Date.now()) =>
   v.stav === "beziaca" && teraz >= v.od && teraz <= v.do;
 
-export function vyhlas(n: Omit<Vyzva, "id" | "stav" | "ucastnici" | "zreb">): Vyzva {
+export async function vyhlas(n: Omit<Vyzva, "id" | "stav" | "ucastnici" | "zreb">): Promise<Vyzva | null> {
   const novy: Vyzva = { ...n, id: `vz-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, stav: "beziaca", ucastnici: [] };
+  if (supabase && zDb && n.stranka) {
+    const { error } = await supabase.from("vyzva").insert({
+      id: novy.id, stranka: n.stranka, tvorca: n.tvorca, tvorca_nazov: n.tvorcaNazov ?? null, nazov: n.nazov,
+      podmienka: n.podmienka, odmena: n.odmena, od: new Date(n.od).toISOString(), do_: new Date(n.do).toISOString(),
+    });
+    if (error) { toast("Výzvu sa nepodarilo vyhlásiť — vyhlasuje ju len správca stránky."); return null; }
+    await nacitajZDb(true);
+    return novy;
+  }
   uloz([novy, ...nacitaj()]);
   return novy;
 }
 
-export const zrus = (id: string) => zmen(id, { stav: "zrusena" });
-export const uzavri = (id: string) => zmen(id, { stav: "uzavreta" });
+async function zmenStav(id: string, stav: "zrusena" | "uzavreta") {
+  if (supabase && zDb) {
+    const { error } = await supabase.rpc("vyzva_stav", { p_id: id, p_stav: stav });
+    if (error) toast("Zmena výzvy sa nepodarila — smie ju meniť len správca stránky.");
+    await nacitajZDb(true);
+    return;
+  }
+  zmen(id, { stav });
+}
+export const zrus = (id: string) => zmenStav(id, "zrusena");
+export const uzavri = (id: string) => zmenStav(id, "uzavreta");
 
 /** Splnil tento čin podmienku výzvy? Jedno miesto — volá sa z darovacej rúry
  *  aj z overenia skutku, aby sa na to nová obrazovka nedala zabudnúť. */
@@ -132,6 +181,12 @@ export function splna(v: Vyzva, cin: { suma?: number; ciel?: string; druhSkutku?
 export function zapisCin(osoba: string, cin: { suma?: number; ciel?: string; druhSkutku?: string; cezTvorcu?: string }, teraz = Date.now()): string[] {
   const meno = osoba.trim();
   if (!meno) return [];
+  if (supabase) {
+    // server rozhodne sám (rovnaká logika ako splna) a zapíše človeka najviac raz
+    void supabase.rpc("vyzva_zapis_cin", { p_osoba: meno, p_suma: cin.suma ?? null, p_ciel: cin.ciel ?? null, p_druh: cin.druhSkutku ?? null, p_cez: cin.cezTvorcu ?? null })
+      .then(({ data, error }) => { if (!error && (data as string[] | null)?.length) void nacitajZDb(true); });
+    return nacitaj().filter((v) => bezi(v, teraz) && splna(v, cin) && !v.ucastnici.some((u) => u.osoba.trim().toLowerCase() === meno.toLowerCase())).map((v) => v.id);
+  }
   const zasiahnute: string[] = [];
   const vsetky = nacitaj().map((v) => {
     if (!bezi(v, teraz) || !splna(v, cin)) return v;
@@ -203,6 +258,12 @@ export async function vyzrebuj(id: string, teraz = Date.now()): Promise<Vyzva | 
   const mena = v.ucastnici.map((u) => u.osoba);
   const pocet = v.odmena.typ === "zreb" ? (v.odmena.pocet ?? 1) : mena.length;
   const vyherci = v.odmena.typ === "zreb" ? vyberZHashu(mena, hash, pocet) : mena;
+  if (supabase && zDb) {
+    const { error } = await supabase.rpc("vyzva_zreb", { p_id: id, p_blok: blok, p_hash: hash, p_vyherci: vyherci });
+    if (error) return null;
+    await nacitajZDb(true);
+    return nacitaj().find((x) => x.id === id) ?? null;
+  }
   zmen(id, { stav: "vyzrebovana", zreb: { blok, hash, vyherci, kedy: Date.now() } });
   return nacitaj().find((x) => x.id === id) ?? null;
 }

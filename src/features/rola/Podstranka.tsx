@@ -749,7 +749,7 @@ export function Podstranka({ pozicia, tier: tierStranky = 0, logo, toast, onBack
   // O nás priamo pod hlavičkou — 2–3 riadky, zvyšok na „viac“
   const oNasKratky = pr ? <OnasProfil onas={pr.onas} onas2={pr.onas2} /> : <OnasKratky text={onas} />;
 
-  const oNasBlok = <KontaktBlok k={pr?.kontakt ?? nacitajKontakt(pozicia)} vodorovne={siroke} />;
+  const oNasBlok = <KontaktBlok k={pr?.kontakt ?? nacitajKontakt(pozicia, strankaId)} vodorovne={siroke} />;
 
   const terminalBlok = pozicia === "tvorca" && terminalOn && (
     <div {...pressable(() => toast("Priamy príspevok tvorcovi"), "Podporiť tvorcu")}
