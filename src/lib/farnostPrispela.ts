@@ -86,3 +86,10 @@ export async function darFarnosti(refId: string, suma: number, sepa: boolean, f:
   if (error) throw new Error(error.message);
   await Promise.all([nacitajPrispela(f.id), nacitajPrispievatelov(id)]);
 }
+
+/** som farár tejto stránky (server som_farar; bez databázy podľa „Som farár“ v Ľudia) — riadok autora */
+export function useSomFarar(stranka: string): boolean {
+  useZmena();
+  useEffect(() => { void nacitajFarara(stranka); }, [stranka]);
+  return farar.get(stranka) === true;
+}

@@ -31,6 +31,8 @@ export type VieraFeedItem = CharitaFeedItem & {
   vytvorene?: number;      // timestamp publikovania (TTL oznamov §8b)
   platnostDni?: number;    // TTL — default 7 dní, nastaviteľné; pri úmrtí min. do rozlúčky + 3 dni
   spoplatnene?: boolean;   // user oznam v platenom self-add režime (nikdy prosba/smútočné — simónia)
+  /** riadok autora (Martin 13. 10.): kto príspevok Správy naozaj pridal */
+  af?: import("@/lib/autorFarnosti").AutorF;
   autorTvar?: boolean;     // farárov oznam s tvárou v hlavičke (delta bod 20 — „akože hovorí on")
   udalost?: { cas: string; miesto?: string; text?: string; zavazne?: boolean }; // KARTA 56H §6: polia udalosti (náhľad Nástenky)
   plagat?: boolean;

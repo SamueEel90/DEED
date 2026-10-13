@@ -17,6 +17,7 @@ export interface Brigada {
   /** Pozvať ľudí: 0 bez prihlásenia · 1 nezáväzne (Prídem pomôcť) · 2 záväzne (Prihlásiť sa) */ pz: 0 | 1 | 2;
   /** len pri záväznom: koľko ľudí najviac (0 = bez limitu) */ limit: number;
   vytvorena: string;
+  /** riadok autora: kto brigádu pridal */ af?: import("./autorFarnosti").AutorF;
 }
 
 let ver = 0;

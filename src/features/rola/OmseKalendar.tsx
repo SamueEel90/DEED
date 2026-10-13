@@ -3,6 +3,7 @@
 // Týždeň · Mesiac · Rozvrh omší, úprava dňa vpravo, Čo uvidia ľudia, Vytlačiť na nástenku, Pripnúť týždeň do Prehľadu.
 // Kalendár začína prázdny. Dáta: lib/kalendarFarnosti (účet farnosti).
 // ============================================================
+import { useAutorZaMna, type AutorF } from "@/lib/autorFarnosti";
 import { CasPole as SpolocneCasPole } from "@/components/CasPole";
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { pridajPrispevok, vlastnePrispevky, type VieraFeedItem } from "@/features/viera/mock";
@@ -45,11 +46,11 @@ function riadkyDna(k: KalKostol, d: Date, slovo: string): Riadok[] {
 
 /** KARTA 56G §3: oznam ZMENA OMŠE — v Oznamoch do konca toho dňa.
  *  Notifikácia sledujúcim: PLACEBO — karta 56G (sledovanie stránky ešte nemá tabuľku). */
-function poslatZmenuOmse(strankaId: string, meno: string, veta: string, d: Date) {
+function poslatZmenuOmse(strankaId: string, meno: string, veta: string, d: Date, af?: AutorF) {
   const teraz = Date.now(), koniec = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1).getTime();
   pridajPrispevok(strankaId, { id: `naboz-zmena-${teraz}`, comp: "data", typ: "skutok", modul: "charity", kat: "Komunita", ntyp: "oznam", skore: 6, typSituacie: "normal", dni: 0, podpora: 0,
     farnostId: strankaId, cirkev: "", komunita: meno, overena: true, nazov: veta, tag: "Zmena omše", popis: "poslané sledujúcim · zmizne po tomto dni",
-    vytvorene: teraz, platnostDni: Math.max(0.01, (koniec - teraz) / 864e5) });
+    vytvorene: teraz, platnostDni: Math.max(0.01, (koniec - teraz) / 864e5), af });
 }
 
 /** KARTA 56F/56G · Týždeň: 7 riadkov, šípky ‹ ›, ťuk na deň — v Omšiach aj pripnutý v Prehľade (jeden vzhľad) */
@@ -244,7 +245,8 @@ export function OmseKalendar({ strankaId, meno, kostoly, mobil, tel = false, toa
   const [zlyDen, setZlyDen] = useState<Record<string, boolean>>({});
   const dD = den ? new Date(Number(den.slice(0, 4)), Number(den.slice(5, 7)) - 1, Number(den.slice(8, 10))) : null;
   const pridajPolozku = (typ: string) => { if (!den) return; const x = druhPolozky(typ); zmenK((y) => ({ ...y, extra: { ...y.extra, [den]: [...(y.extra[den] ?? []), { id: novyId(), typ, t: x.cas, m: "" }] } })); };
-  const poslatZmenu = (veta: string, d: Date) => { poslatZmenuOmse(strankaId, meno, veta, d); toast("Poslané · oznam je aj v Oznamoch"); };
+  const autorJa = useAutorZaMna(strankaId);
+  const poslatZmenu = (veta: string, d: Date) => { poslatZmenuOmse(strankaId, meno, veta, d, autorJa); toast("Poslané · oznam je aj v Oznamoch"); };
   const zmenPolozku = (id: string, p: Partial<PolozkaDna>) => { if (!den) return; zmenK((y) => ({ ...y, extra: { ...y.extra, [den]: (y.extra[den] ?? []).map((q) => (q.id === id ? { ...q, ...p } : q)) } })); };
   const denPanel = den && dD && (
     <section aria-label="Úprava dňa" style={{ ...karta, border: "2px solid var(--green)", padding: mobil ? "14px 14px" : "16px 20px", display: "flex", flexDirection: "column", gap: 10 }}>

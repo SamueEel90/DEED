@@ -52,6 +52,7 @@ import "@/styles/nastenka.css";
 import { ParteMedailon, TvarOznamu, PARTE, SVADBA, JUBILEUM, ZAKLAD, BORDOVA, symbolCirkvi, kickerTvaru, SERIF_TVARU, type Paleta } from "./Medailony";
 import { Darcovia } from "@/features/zbierka/Riadky";
 import { useQrObrazok } from "@/lib/qrObrazok";
+import type { AutorF } from "@/lib/autorFarnosti";
 import { odkazZbierky } from "@/features/zbierka/Zdielat";
 // ---- farby Nástenky: premenné podľa témy appky (OPRAVY 203, styles/nastenka.css) ----
 const BG = "var(--nf-bg)", KARTA = "var(--nf-karta)", INK = "var(--nf-ink)", INK2 = "var(--nf-ink2)", INK3 = "var(--nf-ink3)", LINKA = "var(--nf-linka)", PAPIER = "var(--nf-papier)";
@@ -105,7 +106,7 @@ export interface NastenkaProps {
 interface Spom { id: string; it?: VieraFeedItem; x?: PolozkaFarnika; zb?: SpustenaZbierka; obr: string; pal: Paleta; foto?: string;
   d: { meno: string; nar: string; umr: string; rd: string; rc: string; rm: string; head: string } }
 /** OPRAVY 205: položka Teš sa s nami */
-interface Tes { id: string; druh: "svadba" | "jubileum" | "blaho"; pal: Paleta; meno: string; datum: string; vek: string; nadpis: string; x?: PolozkaFarnika; zb?: SpustenaZbierka;
+interface Tes { af?: AutorF; id: string; druh: "svadba" | "jubileum" | "blaho"; pal: Paleta; meno: string; datum: string; vek: string; nadpis: string; x?: PolozkaFarnika; zb?: SpustenaZbierka;
   r: { zoznam: string[]; prepni: () => void }; mena: Record<string, string> }
 const rok = (s?: string) => s?.match(/\d{4}/)?.[0] ?? "";
 const rokyParte = (nar: string, umr: string) => { const a = rok(nar), b = rok(umr); return a || b ? [a && `* ${a}`, b && `† ${b}`].filter(Boolean).join(" ") : nar; };
@@ -233,12 +234,13 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, stit: s
   };
   // OPRAVY 206: čo pridá Správa, má ten istý riadok autora — duchovný z Ľudia (fotka, meno s titulmi, titul podľa cirkvi)
   const SLF = useSlovaFarnosti(strankaId);
-  const hlavickaFar = () => {
-    const du = profil?.duchovny, m = du?.meno?.trim() || meno, f = du?.meno?.trim() ? du.foto : logo ?? "";
-    const pod = du?.meno?.trim() ? SLF.titul.charAt(0).toLocaleLowerCase("sk-SK") + SLF.titul.slice(1) : "farnosť";
+  // Martin 13. 10.: riadok autora = kto príspevok naozaj pridal (meno, fotka, rola); bez profilu logo a názov farnosti. Duchovný nikdy namiesto iného autora.
+  const hlavickaFar = (af?: AutorF) => {
+    const m = af?.meno.trim() || meno, f = af?.meno.trim() ? af.foto ?? "" : logo ?? "";
+    const pod = af?.meno.trim() ? af.rola : "farnosť";
     const kruh = <span aria-hidden="true" style={{ flex: "none", width: 40, height: 40, borderRadius: "50%", background: f ? `url("${f}") center/cover no-repeat` : "#4E7D37", color: "#fff", fontSize: 15, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>{f ? "" : iniciy(m)}</span>;
     const obsah = <>{kruh}<span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", textAlign: "left" }}><b style={{ fontSize: 15.5, color: INK }}>{m}</b><span style={{ fontSize: 13, color: INK3 }}>{pod}</span></span></>;
-    return du?.meno?.trim() ? <button type="button" onClick={() => setOsoba(m)} aria-label={`Profil · ${m}`} style={{ display: "flex", alignItems: "center", gap: 10, minHeight: 48, padding: 0, border: "none", background: "transparent", cursor: "pointer", fontFamily: "inherit" }}>{obsah}</button>
+    return af?.meno.trim() ? <button type="button" onClick={() => setOsoba(m)} aria-label={`Profil · ${m}`} style={{ display: "flex", alignItems: "center", gap: 10, minHeight: 48, padding: 0, border: "none", background: "transparent", cursor: "pointer", fontFamily: "inherit" }}>{obsah}</button>
       : <span style={{ display: "flex", alignItems: "center", gap: 10, minHeight: 48 }}>{obsah}</span>;
   };
   const autor = (x: PolozkaFarnika) => (x.anon || /Bohu známy/.test(x.kto) ? "Pridal veriaci" : `Pridal veriaci · ${x.kto}`);
@@ -252,14 +254,14 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, stit: s
   const stit = (x: VieraFeedItem) => (x.oz?.dr === 2 && x.ntyp !== "udalost" ? (["PARTE", "SVADBA", "JUBILEUM", "BLAHOŽELANIE"][x.oz.odr] ?? "BLAHOŽELANIE") : x.tag === "Oznámenie" ? "BLAHOŽELANIE" : stitokOznamu(x));
 
   // ---------- Príď a zaži s nami ----------
-  type Ud = { id: string; ms: number; dat: string; t: string; txt: string; kedy: string; od: string; foto: string; plag: boolean; pz: 0 | 1 | 2; limit: number; zoznam: string[]; mena: Record<string, string>; prepni: () => void; mojeX?: PolozkaFarnika; /** KARTA 61 §2: brigáda (Prídem pomôcť) */ pomoc?: boolean };
+  type Ud = { id: string; ms: number; dat: string; t: string; txt: string; kedy: string; od: string; foto: string; plag: boolean; pz: 0 | 1 | 2; limit: number; zoznam: string[]; mena: Record<string, string>; prepni: () => void; mojeX?: PolozkaFarnika; /** KARTA 61 §2: brigáda (Prídem pomôcť) */ pomoc?: boolean; af?: AutorF };
   const udFar: Ud[] = OZ.filter((x) => x.ntyp === "udalost" && (!x.datum || x.datum >= vc)).map((x) => {
     const r = reakcieF(strankaId, x.id), pz: 0 | 1 | 2 = x.pozvanie ? (x.pozvanie.zavazne ? 2 : 1) : x.rsvp ? (x.udalost?.zavazne ? 2 : 1) : 0;
     const d = x.datum ? zIso(x.datum) : null;
     return { id: x.id, ms: d?.getTime() ?? 9e15, dat: x.datum ?? "", t: x.nazov ?? "", txt: x.udalost?.text ?? "", od: "Farnosť",
       kedy: [d ? `${DNW_V[dvt(d)]} ${d.getDate()}. ${d.getMonth() + 1}.` : "", x.udalost?.cas, x.udalost?.miesto?.toLocaleUpperCase("sk-SK")].filter(Boolean).join(" · "),
       foto: ziveObr(x.fotky?.[0]) ? x.fotky![0] : "", plag: !!x.plagat, pz, limit: x.pozvanie?.limit ?? 0, zoznam: r.ucast ?? [], mena: r.mena ?? {},
-      prepni: () => prepniReakciuF(strankaId, x.id, "ucast", kto, mojeMeno) };
+      prepni: () => prepniReakciuF(strankaId, x.id, "ucast", kto, mojeMeno), af: x.af };
   });
   const udVer: Ud[] = OD.filter((x) => x.k === "udalost").map((x) => {
     const d = x.f?.datum ? zIso(x.f.datum) : null;
@@ -303,7 +305,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, stit: s
     const st = stit(x), u = x.oz?.u, druhT: Tes["druh"] = st === "SVADBA" ? "svadba" : st === "JUBILEUM" ? "jubileum" : "blaho";
     return { id: x.id, druh: druhT, pal: druhT === "svadba" ? ZAKLAD.svadba : druhT === "jubileum" ? ZAKLAD.jubileum : ZAKLAD.blaho,
       meno: u?.meno?.trim() || bezPredpony(x.nazov ?? "") || x.nazov || "", datum: u?.kedyD ?? "", vek: vekJubilea(u?.nar, u?.kedyD), nadpis: x.nazov ?? "",
-      r: reakF(x.id, "blaho"), mena: reakcieF(strankaId, x.id).mena ?? {} };
+      r: reakF(x.id, "blaho"), mena: reakcieF(strankaId, x.id).mena ?? {}, af: x.af };
   });
   const tesVer: Tes[] = OD.filter((x) => x.k === "svadba" || x.k === "ine").map((x) => {
     const ed = x.editor, P0 = (ed?.polia ?? {}) as Record<string, unknown>, pole = (k: string) => String(P0[k] ?? "").trim(), sv = x.k === "svadba";
@@ -319,13 +321,13 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, stit: s
   const pomoz = brigadyF.filter((b) => !skoncila(b, cas.getTime())).sort((a, b) => a.dat.localeCompare(b.dat)).map((b) => {
     const r = reakcieF(strankaId, b.id);
     const u: Ud = { id: b.id, ms: 0, dat: b.dat, t: b.t, txt: cistyText(b.txt).trim(), kedy: `${b.druh}${b.dat ? ` · ${kedyBrigady(b.dat, b.cas)}` : ""}`.toLocaleUpperCase("sk-SK"), od: b.kde, foto: b.foto && ziveObr(b.foto) ? b.foto : "", plag: false,
-      pz: b.pz, limit: b.limit, zoznam: r.ucast ?? [], mena: r.mena ?? {}, prepni: () => prepniReakciuF(strankaId, b.id, "ucast", kto, mojeMeno), pomoc: true };
+      pz: b.pz, limit: b.limit, zoznam: r.ucast ?? [], mena: r.mena ?? {}, prepni: () => prepniReakciuF(strankaId, b.id, "ucast", kto, mojeMeno), pomoc: true, af: b.af };
     return u;
   });
   // ---------- Oznamy farnosti ----------
-  type Oz = { id: string; ms: number; chip: string; t: string; txt: string; zm: boolean; g: "far" | "ver"; x?: PolozkaFarnika; foto?: string };
+  type Oz = { id: string; ms: number; chip: string; t: string; txt: string; zm: boolean; g: "far" | "ver"; x?: PolozkaFarnika; foto?: string; af?: AutorF };
   const ozAll: Oz[] = [
-    ...OZ.filter((x) => ["OZNAM", "ZMENA OMŠE"].includes(stit(x)) && (stit(x) !== "ZMENA OMŠE" || VJ.zmeny)).map((x): Oz => ({ id: x.id, ms: x.vytvorene ?? 0, chip: stit(x) === "ZMENA OMŠE" ? "ZMENA PROGRAMU" : stit(x), t: x.nazov ?? "", txt: x.popis ?? "", zm: stit(x) === "ZMENA OMŠE", g: "far", foto: ziveObr(x.fotky?.[0]) ? x.fotky![0] : undefined })),
+    ...OZ.filter((x) => ["OZNAM", "ZMENA OMŠE"].includes(stit(x)) && (stit(x) !== "ZMENA OMŠE" || VJ.zmeny)).map((x): Oz => ({ id: x.id, ms: x.vytvorene ?? 0, chip: stit(x) === "ZMENA OMŠE" ? "ZMENA PROGRAMU" : stit(x), t: x.nazov ?? "", txt: x.popis ?? "", zm: stit(x) === "ZMENA OMŠE", g: "far", foto: ziveObr(x.fotky?.[0]) ? x.fotky![0] : undefined , af: x.af })),
   ].sort((a, b) => b.ms - a.ms);
   // OPRAVY 197: krátke oznamy veriacich nepatria medzi oznamy farnosti — majú vlastný blok Od veriacich
   const oznVer = OD.filter((x) => x.k === "oznam").sort((a, b) => b.cas - a.cas);
@@ -451,7 +453,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, stit: s
                 <span style={{ display: "flex", alignItems: "center", gap: 12 }}><Datum d={new Date(x.ms || cas.getTime())} /><span style={kicker(x.zm ? CERVENA : INK3)}>{x.chip}</span></span>
                 <b style={{ fontSize: 19, lineHeight: 1.3 }}>{x.t}</b>
                 {x.txt && <Viac text={x.txt} />}
-                {hlavickaFar()}
+                {hlavickaFar(x.af)}
               </div>
             </div>))}
         </div>
@@ -491,7 +493,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, stit: s
               {u.foto ? <div style={{ position: "relative" }}><img src={u.foto} alt="" style={{ width: "100%", aspectRatio: "16 / 9", objectFit: "cover", display: "block" }} />{u.dat && <span style={{ position: "absolute", left: 16, top: 16 }}><Datum d={zIso(u.dat)} velky /></span>}</div>
                 : u.dat ? <div style={{ padding: "18px 22px 0" }}><Datum d={zIso(u.dat)} /></div> : null}
               <div style={{ padding: "20px 22px", display: "flex", flexDirection: "column", gap: 8 }}>
-                {hlavickaFar()}
+                {hlavickaFar(u.af)}
                 <span style={{ fontSize: 14, fontWeight: 800, letterSpacing: ".12em", color: INK3 }}>{u.kedy}</span>
                 <b style={{ fontSize: 21, lineHeight: 1.25 }}>{u.t}</b>
                 {u.txt && <Viac text={u.txt} />}
@@ -516,7 +518,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, stit: s
                     {d && <span style={{ position: "absolute", left: 16, top: 16 }}><Datum d={d} velky /></span>}
                   </div>}
                 <div style={{ padding: "18px 20px 20px", display: "flex", flexDirection: "column", gap: 8 }}>
-                  {u.mojeX ? hlavickaAutora(u.mojeX) : hlavickaFar()}
+                  {u.mojeX ? hlavickaAutora(u.mojeX) : hlavickaFar(u.af)}
                   {u.kedy && <span style={{ fontSize: 14, fontWeight: 800, letterSpacing: ".1em", color: ZLATA }}>{u.kedy}</span>}
                   <b style={{ fontSize: 22, lineHeight: 1.2, letterSpacing: "-.01em" }}>{u.t}</b>
                   {u.txt && <Viac text={u.txt} />}
@@ -544,7 +546,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, stit: s
         <div style={{ flex: "999 1 520px", minWidth: 0, ...mriezkaTvarov }}>
           {tesy.map((t) => <div key={t.id} style={zmensi}><TvarOznamu tvar={t.druh === "svadba" ? "kruh" : t.druh === "jubileum" ? "kosostvorec" : "stvorec"} pal={t.pal} label={`${t.meno} · otvoriť`}
             onTap={() => setTes(t)} pod={<>
-              {t.x ? hlavickaAutora(t.x) : t.zb ? null : hlavickaFar()}
+              {t.x ? hlavickaAutora(t.x) : t.zb ? null : hlavickaFar(t.af)}
               {t.r.zoznam.length > 0 && <span style={{ fontSize: 14, color: INK2 }}>{reakT(t.druh === "blaho", t.r.zoznam.length)}</span>}
             </>}><ObsahTvaru t={t} /></TvarOznamu></div>)}
         </div>
@@ -616,7 +618,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, stit: s
         <div onClick={(e) => e.stopPropagation()} style={{ width: "100%", maxWidth: 460, marginTop: 24, borderRadius: 24, background: PAPIER, color: INK, padding: 20, display: "flex", flexDirection: "column", alignItems: "center", gap: 16, boxSizing: "border-box" }}>
           <button type="button" onClick={() => setTes(null)} autoFocus style={{ alignSelf: "flex-start", minHeight: 48, padding: "0 18px", border: "none", borderRadius: 14, background: ZELENA_TL, color: "#fff", fontFamily: "inherit", fontSize: 16, fontWeight: 800, cursor: "pointer" }}>‹ Späť na stránku farnosti</button>
           <TvarOznamu tvar={tes.druh === "svadba" ? "kruh" : tes.druh === "jubileum" ? "kosostvorec" : "stvorec"} pal={tes.pal} label={tes.meno} onTap={() => undefined}><ObsahTvaru t={tes} /></TvarOznamu>
-          {tes.x ? hlavickaAutora(tes.x) : tes.zb ? null : hlavickaFar()}
+          {tes.x ? hlavickaAutora(tes.x) : tes.zb ? null : hlavickaFar(tes.af)}
           {/* re-render po ťuknutí: čerstvý stav reakcií z tesy */}
           {(() => { const t = tesy.find((y) => y.id === tes.id) ?? tes; const jaV = t.r.zoznam.includes(kto); const mena = t.r.zoznam.map((k2) => `${t.mena[k2] ?? "veriaci"}${k2 === kto ? " (vy)" : ""}`); return <>
             <button type="button" aria-pressed={jaV} onClick={t.r.prepni} style={{ ...tlacR(jaV, true), alignSelf: "stretch" }}>{jaV ? (t.druh === "blaho" ? "Ďakujete ✓" : "Blahoželáte ✓") : t.druh === "blaho" ? "Ďakujem" : "Blahoželám"}</button>

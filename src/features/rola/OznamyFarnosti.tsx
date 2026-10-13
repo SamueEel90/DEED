@@ -25,6 +25,7 @@ import { NahladNastenky } from "./NahladNastenky";
 import { PrihovorKarta, OnlineOmseKarta } from "./PrihovorKarta";
 import type { ProfilStranky } from "@/lib/profilStranky";
 import { useQrObrazok } from "@/lib/qrObrazok";
+import { useAutorZaMna } from "@/lib/autorFarnosti";
 import { odkazQrStranky } from "@/features/verejny-profil/otvor";
 
 type Druh = 0 | 1 | 2; // Krátky oznam · Udalosť · Oznámenie
@@ -145,6 +146,7 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
   const vz = useVzhlad(strankaId, false);
   // OPRAVY 204: parte zo šablóny má QR; v náhľade QR stránky farnosti (zbierka rodiny ho na Nástenke prepne na seba)
   const qrFar = useQrObrazok(odkazQrStranky(strankaId));
+  const autorJa = useAutorZaMna(strankaId);
   const [formOn, setFormOn] = useState(() => !!hore);
   const [edit, setEdit] = useState<string | null>(null); // KARTA 57 C.3: upravujete zverejnené
   const [vyb, setVyb] = useState(false); // KARTA 57 C.6: telefón — druh vybraný
@@ -234,7 +236,7 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
     const povodny = edit ? zoznam.find((x) => x.id === edit) : undefined;
     const teraz = terazMs(), id = povodny?.id ?? `naboz-${teraz}`;
     const oz: NastavenieOznamu = { dr, n: n.trim(), txt, plati, usp, dat, cas, miesto, pozv: dr !== 2 ? pozv : 0, limit: pozv === 2 ? limit : "", odr, osp, u: sablona ? u : undefined, volba: sablona ? volba : undefined, kal: povodny?.oz?.kal };
-    const zaklad = { id, comp: "data" as const, typ: "skutok" as const, modul: "charity" as const, kat: "Komunita" as const, skore: 6, typSituacie: "normal" as const, dni: 0, podpora: 0, farnostId: strankaId, cirkev: "", komunita: meno, overena: true, vytvorene: povodny?.vytvorene ?? teraz };
+    const zaklad = { id, comp: "data" as const, typ: "skutok" as const, modul: "charity" as const, kat: "Komunita" as const, skore: 6, typSituacie: "normal" as const, dni: 0, podpora: 0, farnostId: strankaId, cirkev: "", komunita: meno, overena: true, vytvorene: povodny?.vytvorene ?? teraz, af: povodny ? povodny.af : autorJa };
     let it: VieraFeedItem;
     let kalendar = false;
     if (dr === 0) {

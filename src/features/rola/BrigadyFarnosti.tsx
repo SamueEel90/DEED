@@ -3,6 +3,7 @@
 // + Vytvoriť brigádu → formulár na mieste (hore „‹ Späť na zoznam brigád“), vedľa živý náhľad karty bloku Pomôž.
 // Zoznam: koľko príde, mená, Upraviť, Podržte · zmazať. Po termíne „SKONČILA · na stránke už nie je“.
 // ============================================================
+import { useAutorZaMna } from "@/lib/autorFarnosti";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { useBrigady, ulozBrigadu, zmazBrigadu, skoncila, DRUHY_BRIGADY, type Brigada } from "@/lib/brigady";
 import { reakcieF, useReakcieF, useCerstveReakcieF } from "@/lib/reakcieFarnosti";
@@ -46,6 +47,7 @@ function Riadok({ b, strankaId, prvy, onUpr, hlas }: { b: Brigada; strankaId: st
 export function BrigadyFarnosti({ strankaId, mobil }: { strankaId: string; mobil: boolean }) {
   useReakcieF(); useCerstveReakcieF(strankaId);
   const L = useBrigady(strankaId);
+  const autorJa = useAutorZaMna(strankaId);
   const [on, setOn] = useState(false);
   const [edit, setEdit] = useState<string | null>(null);
   const [f, setFf] = useState<Form>(prazdny);
@@ -68,7 +70,7 @@ export function BrigadyFarnosti({ strankaId, mobil }: { strankaId: string; mobil
     if (ch.length) return;
     const st = edit ? L.find((x) => x.id === edit) : undefined;
     const b: Brigada = { id: edit ?? `br${teraz().toString(36)}`, druh: DRUHY_BRIGADY[f.druh], t: f.t.trim(), dat: f.dat, cas: f.cas, kde: f.kde.trim(), txt: f.txt, txt2: f.txt2 || undefined,
-      foto, pz: f.pz, limit: f.pz === 2 ? parseInt(f.lim, 10) || 0 : 0, vytvorena: st?.vytvorena ?? new Date().toISOString() };
+      foto, pz: f.pz, limit: f.pz === 2 ? parseInt(f.lim, 10) || 0 : 0, vytvorena: st?.vytvorena ?? new Date().toISOString(), af: st ? st.af : autorJa };
     void ulozBrigadu(strankaId, b).then(() => { setOn(false); setEdit(null); hlas(`${edit ? "Zmeny sú uložené ✓" : "Zverejnené ✓"} ${b.t} je na stránke v bloku Pomôž.`); });
   };
 
