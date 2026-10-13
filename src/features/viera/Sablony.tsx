@@ -116,6 +116,11 @@ export function vekOznamu(nar: string, umr: string): { roky: string; vek: string
   return { roky: !chyba && a && b ? `${a.y} – ${b.y}` : "", vek, umr: !chyba && b ? skDatum(b) : "", chyba,
     text: chyba || (vek ? `Vypočítané: vo veku ${vek} rokov` : a || b ? "Vek vypočítame, keď vyplníte oba dátumy." : "") };
 }
+/** OPRAVY 242: rozlúčka (pohreb) môže byť v budúcnosti, ale nie skôr ako úmrtie */
+export const chybaRozlucky = (u: Pick<UdajeOznamu, "druh" | "umr" | "kedyD">) => {
+  const r = rozober(u.kedyD), b = rozober(u.umr);
+  return u.druh === "parte" && r && b && porovnaj(r, b) < 0 ? "Rozlúčka nemôže byť skôr ako úmrtie." : "";
+};
 const kedyText = (u: UdajeOznamu) => {
   const d = rozober(u.kedyD);
   return [[d ? skDatum(d) : "", u.kedyC ? `o ${u.kedyC}` : ""].filter(Boolean).join(" "), u.kde.trim()].filter(Boolean);
@@ -270,6 +275,8 @@ export function chybaOznamu(u: UdajeOznamu): string | null {
   if (u.druh === "parte" && u.zena == null) return "Vyberte Muž alebo Žena.";
   const v = vekOznamu(u.nar, u.umr);
   if (v.chyba) return v.chyba;
+  const r = chybaRozlucky(u);
+  if (r) return r;
   return null;
 }
 
@@ -316,8 +323,9 @@ export function FormularOznamu({ u, onU, mobil, bezFotky, upozornenie = true }: 
       </>}
       {dva(
         <label style={{ display: "flex", flexDirection: "column", gap: 6 }}><span style={lab}>{T.kedy}</span>
-          <span style={{ display: "flex", gap: 8 }}><input type="date" value={u.kedyD} onChange={(e) => zmen({ kedyD: e.target.value })} style={{ ...pole, flex: 1.4 }} aria-label="Dátum" /><CasPole value={u.kedyC} onCommit={(v) => zmen({ kedyC: v })} placeholder="14:00" label="Čas" style={{ ...pole, flex: 1, minWidth: 0 }} /></span></label>,
+          <span style={{ display: "flex", gap: 8 }}><input type="date" min={pa && u.umr ? u.umr : undefined} value={u.kedyD} onChange={(e) => zmen({ kedyD: e.target.value })} style={{ ...pole, flex: 1.4 }} aria-label="Dátum" aria-invalid={!!chybaRozlucky(u) || undefined} /><CasPole value={u.kedyC} onCommit={(v) => zmen({ kedyC: v })} placeholder="14:00" label="Čas" style={{ ...pole, flex: 1, minWidth: 0 }} /></span></label>,
         txt("kde", "KDE (NEPOVINNÉ)", T.phKde))}
+      {chybaRozlucky(u) && <span role="alert" style={{ fontSize: 13.5, fontWeight: 700, color: "#A34A2A" }}>{chybaRozlucky(u)}</span>}
       <span style={pozn}>Ak termín ešte neviete, nechajte prázdne a doplňte neskôr.{upozornenie ? " Sledujúci dostanú upozornenie." : ""}</span>
       {pa && <>
         <span style={lab}>KÝM BOL / BOLA · ŤUKNITE, ČO PLATÍ</span>

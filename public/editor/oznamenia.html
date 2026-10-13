@@ -923,3 +923,26 @@ document.addEventListener("click",e=>{const b=e.target.closest&&e.target.closest
 document.addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target&&e.target.id==="smutMeno"){e.preventDefault();pridaj()}},true);
 if(typeof showStep==="function"){const _s=showStep;showStep=function(){const r=_s.apply(this,arguments);try{document.body.classList.toggle("krok-hotovo",kroky()[STEP]==="hotovo")}catch(e){}return r}}
 })();</script>
+<style>.dat-err{display:block;margin-top:4px;font-size:14px;font-weight:700;color:#A34A2A}</style>
+<script>/* OPRAVY 242: parte — dátum úmrtia najneskôr dnes, narodenie pred úmrtím, rozlúčka nie pred úmrtím; pri chybe veta pod poľom a ďalej sa nedá; vek len zo správnych dátumov */(function(){
+const $=id=>document.getElementById(id);
+const dnes=()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`};
+function datChyby(){if(typeof st==="undefined"||st.typ!=="parte")return {};const n=($("nar")||{}).value||"",u=($("umr")||{}).value||"",r=($("rd")||{}).value||"",o={};
+ if(u&&u>dnes())o.umr="Dátum úmrtia nemôže byť v budúcnosti.";
+ if(n&&n>dnes())o.nar="Dátum narodenia nemôže byť v budúcnosti.";
+ else if(n&&u&&n>=u)o.nar="Dátum narodenia musí byť pred dátumom úmrtia.";
+ if(r&&u&&r<u)o.rd="Rozlúčka nemôže byť skôr ako úmrtie.";
+ return o}
+function ukaz(){const o=datChyby();["nar","umr","rd"].forEach(id=>{const e=$(id);if(!e)return;const lab=e.closest("label")||e.parentNode;let s=lab.querySelector(":scope > .dat-err");
+  if(o[id]){if(!s){s=document.createElement("span");s.className="dat-err";s.setAttribute("role","alert");lab.appendChild(s)}s.textContent=o[id];e.classList.add("miss");e.setAttribute("aria-invalid","true")}
+  else{if(s)s.remove();e.removeAttribute("aria-invalid")}});
+ const u=$("umr"),n=$("nar"),r=$("rd");if(u)u.max=dnes();if(n)n.max=(u&&u.value)||dnes();if(r)r.min=(u&&u.value)||"";return o}
+const prva=o=>o.umr||o.nar||o.rd||"";
+if(typeof chyby==="function"){const _c=chyby;chyby=function(k){const t=_c.apply(this,arguments);if(t)return t;if(k==="udaje"){const o=ukaz();return prva(o)}return t}}
+if(typeof vek==="function"){const _v=vek;vek=function(a,b){if(typeof st!=="undefined"&&st.typ==="parte"&&(b>dnes()||(a&&b&&a>=b)))return null;return _v.apply(this,arguments)}}
+if(typeof vekG==="function"){const _g=vekG;vekG=function(a,b){if(typeof st!=="undefined"&&st.typ==="parte"&&(b>dnes()||(a&&b&&a>=b)))return null;return _g.apply(this,arguments)}}
+document.addEventListener("input",e=>{if(e.target&&["nar","umr","rd"].includes(e.target.id))ukaz()},true);
+document.addEventListener("change",e=>{if(e.target&&["nar","umr","rd"].includes(e.target.id))ukaz()},true);
+document.addEventListener("click",e=>{const b=e.target.closest&&e.target.closest("#btnTermin");if(!b)return;const t=prva(ukaz());if(t){e.stopImmediatePropagation();e.preventDefault();if(typeof ukazChybu==="function")ukazChybu(t)}},true);
+if(typeof render==="function"){const _r=render;render=function(){const x=_r.apply(this,arguments);try{ukaz()}catch(er){}return x}}
+})();</script>

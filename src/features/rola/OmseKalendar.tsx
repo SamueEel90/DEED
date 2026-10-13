@@ -490,6 +490,8 @@ export function stitokOznamu(it: VieraFeedItem): string {
   if (it.smutocny || it.ukat === "pohreb") return "PARTE";
   if (it.ukat === "svadba") return "SVADBA";
   if (it.tag === "Jubileum") return "JUBILEUM";
+  // OPRAVY 241 (5): Oznámenie → Iné patrí medzi OZNÁMENIA so štítkom OZNÁMENIE, nie medzi krátke oznamy
+  if (it.tag === "Oznámenie" || (it.oz?.dr === 2 && it.oz.odr === 3)) return "OZNÁMENIE";
   return "OZNAM";
 }
 /** KARTA 56H §1: platné oznamy na plagát — najviac 8, s textom */
