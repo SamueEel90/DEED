@@ -564,7 +564,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, nahlad,
   </div>;
   // --- Sväté omše ---
   const kOmse = maOmse && <SvateOmse matna={matna} maly={!k3} onCely={() => setKalOtv(true)}
-    dni={Array.from({ length: 7 }, (_, i) => { const d = new Date(dnesD.getFullYear(), dnesD.getMonth(), dnesD.getDate() - ((dnesD.getDay() + 6) % 7) + i); const ol = VJ.omse ? onlineVDen(strankaId, d) : []; return { d, dnes: d.getTime() === dnesD.getTime(), casy: casyDna(d), pozn: ol.length ? `aj online ${ol.join(", ")}` : undefined }; })} />;
+    dni={Array.from({ length: 7 }, (_, i) => { const d = new Date(dnesD.getFullYear(), dnesD.getMonth(), dnesD.getDate() - ((dnesD.getDay() + 6) % 7) + i); const ol = VJ.omse ? onlineVDen(strankaId, d) : []; return { d, dnes: d.getTime() === dnesD.getTime(), casy: casyDna(d), pozn: ol.length ? `aj online ${ol.join(", ")}` : undefined }; }).filter((x) => x.casy)} />;
   // --- Pomôž ---
   const kPomoz = pomoz.length > 0 && <div data-blok="pom" style={{ display: "flex", flexDirection: "column", gap: 12, scrollMarginTop: 16 }}>
     {KN("Pomôž")}
@@ -584,7 +584,8 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, nahlad,
     {casyDna(dnesD) && <b style={{ fontSize: 20 }}>{casyDna(dnesD)}</b>}
     {zmenaT && <span style={{ fontSize: 15, color: CERVENA }}>{zmenaT}</span>}
   </div> : null;
-  const kTyzden = <section data-blok="tyzden" style={{ padding: k3 ? "40px 40px 0" : "22px 18px 18px", display: "flex", alignItems: k3 ? "flex-end" : "stretch", flexDirection: k3 ? "row" : "column", justifyContent: "space-between", gap: k3 ? 24 : 12, flexWrap: "wrap", scrollMarginTop: 16 }}>
+  const maTyzden = !!dnesBox || (k3 && !!poctyT);
+  const kTyzden = maTyzden && <section data-blok="tyzden" style={{ padding: k3 ? "40px 40px 0" : "22px 18px 18px", display: "flex", alignItems: k3 ? "flex-end" : "stretch", flexDirection: k3 ? "row" : "column", justifyContent: "space-between", gap: k3 ? 24 : 12, flexWrap: "wrap", scrollMarginTop: 16 }}>
     <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>{KN("Tento týždeň", true)}{poctyT && k3 && <span style={{ fontSize: 17, color: INK3 }}>{poctyT}</span>}</div>
     {dnesBox}
   </section>;
@@ -738,7 +739,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, nahlad,
     ...archiv.flatMap((r) => r.zapisy.map((z) => ({ id: `a${z.id}`, t: z.t, s: z.pod, druh: `${r.rok} · ${z.stitok}`, blok: `rok${r.rok}`, onTap: z.onTap }))),
   ];
   const lista = [["tyzden", "Týždeň"], ["ozn", "Oznamy"], ["vyp", "Vypočuj si"], ["mod", "Modli sa"], ["pom", "Pomôž"], ["prid", "Príď"], ["tes", "Teš sa"], ["spom", "Spomíname"], ["ver", "Od veriacich"], ["deti", "Deti"], ["kostoly", "Kostoly"], ["urad", "Úrad"]] as const;
-  const maBlok: Record<string, boolean> = { tyzden: true, ozn: ozAll.length > 0, vyp: maVyp, mod: prosby.length > 0, pom: pomoz.length > 0, prid: maPrid, tes: maTes, spom: maSpom, ver: oznVer.length > 0, deti: maDeti, kostoly: miestaF.length > 1, urad: maUrad };
+  const maBlok: Record<string, boolean> = { tyzden: maTyzden, ozn: ozAll.length > 0, vyp: maVyp, mod: prosby.length > 0, pom: pomoz.length > 0, prid: maPrid, tes: maTes, spom: maSpom, ver: oznVer.length > 0, deti: maDeti, kostoly: miestaF.length > 1, urad: maUrad };
   const listaBloky = [...lista.filter(([id]) => maBlok[id]).map(([id, t]) => ({ id, t })), ...archiv.map((r) => ({ id: `rok${r.rok}`, t: String(r.rok) }))];
   const profilKronika = (
     <>
@@ -1218,7 +1219,7 @@ function HlavnaKarta({ strankaId, hlRef, nazov, txt, onTap }: { strankaId: strin
       <b style={{ fontSize: "clamp(24px,2.2vw,30px)", letterSpacing: "-.02em" }}>{nazov} ›</b>
       {txt && <span style={{ fontSize: 17, lineHeight: 1.5, color: INK2 }}>{txt}</span>}
       {s.suma > 0 ? <span style={{ fontSize: 18, color: INK2 }}><b style={{ fontSize: 42, letterSpacing: "-.03em", color: INK }}>{eur(s.suma)}</b> {centralnaZPamate(strankaId)?.rocne ? `v roku ${new Date().getFullYear()}` : "spolu"} · {ludi(s.darcov)}</span>
-        : <span style={{ fontSize: 17, color: INK2 }}>Zatiaľ tu nie je žiadny dar</span>}
+        : null /* OPRAVY 247: prázdne pole sa vynechá */}
       {riadky.length > 0 && <span style={{ display: "flex", flexDirection: "column", borderTop: `1px solid ${LINKA}` }}>
         {riadky.map((r, i) => <span key={i} style={{ display: "flex", justifyContent: "space-between", gap: 12, padding: "9px 0", borderBottom: `1px solid ${LINKA}`, fontSize: 15.5 }}><span style={{ color: INK2 }}>{r.k}</span><b style={{ flex: "none" }}>{r.s}</b></span>)}
       </span>}
@@ -1241,7 +1242,7 @@ function ZvoncekKarta({ strankaId, onTap }: { strankaId: string; onTap: (id: str
       {suma > 0 ? <>
         <span style={{ fontSize: 16.5 }}><b style={{ fontSize: 30, letterSpacing: "-.02em" }}>{eur(suma)}</b> <span style={{ color: INK3 }}>od {ludi(dary.length)}</span></span>
         {mena && <span style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>{mena.split(/, | a (?=ďalší)/).map((m, i) => <span key={i} style={{ height: 36, padding: "0 12px", borderRadius: 18, background: BG, display: "flex", alignItems: "center", fontSize: 15, fontWeight: 700, whiteSpace: "nowrap" }}>{m}</span>)}</span>}
-      </> : <span style={{ fontSize: 16, color: INK2 }}>Zatiaľ žiadne dary na túto omšu.</span>}
+      </> : null /* OPRAVY 247 */}
       <span style={{ fontSize: 14.5, lineHeight: 1.45, color: INK3 }}>ako do zvončeka pri omši</span>
     </button>);
 }
@@ -1274,7 +1275,7 @@ function PasyPripnutej({ z: z0, strankaId }: { z: ZbierkaNaPripnutie; strankaId:
     <div style={{ margin: "0 16px", padding: "14px 16px", borderRadius: 14, background: PAPIER, border: `1px solid ${LINKA}`, display: "flex", flexDirection: "column", gap: 8 }}>
       <span style={{ fontSize: 17 }}><b style={{ fontSize: 26, letterSpacing: "-.02em" }}>{eur(z.vyzbierane)}</b>{z.ciel ? ` z ${eur(z.ciel)} · ${pct} %` : ""}</span>
       {z.ciel ? pas(pct, ZELENA) : null}
-      <span style={{ fontSize: 15, color: INK2 }}>{z.darov ? `${ludi(z.darov)} ${pom(z.darov)}` : "Zatiaľ žiadne dary"}</span>
+      {z.darov > 0 && <span style={{ fontSize: 15, color: INK2 }}>{`${ludi(z.darov)} ${pom(z.darov)}`}</span>}
     </div>
     <div style={{ margin: "0 16px", padding: "14px 16px", borderRadius: 14, background: "var(--nf-gSoft)", border: `1.5px solid ${ZELENA}`, display: "flex", flexDirection: "column", gap: 8 }}>
       <span style={{ fontSize: 13.5, fontWeight: 800, letterSpacing: ".1em", color: ZELENA }}>CEZ NAŠU FARNOSŤ</span>
@@ -1293,14 +1294,14 @@ function ZbierkaKarta({ z, onTap }: { z: SpustenaZbierka; onTap: () => void }) {
   useDarcovia(z.id);
   const s = sucetDarov(z.id), ciel = cielCislo(z);
   const foto = z.media.find((m) => m.typ === "foto" && ziveObr(m.src))?.src;
-  const pod: ReactNode = s.pocet ? `${eur(s.suma)}${ciel ? ` z ${eur(ciel)}` : ""} · ${ludi(s.pocet)}` : "Zatiaľ žiadne dary";
+  const pod: ReactNode = s.pocet ? `${eur(s.suma)}${ciel ? ` z ${eur(ciel)}` : ""} · ${ludi(s.pocet)}` : ciel ? `cieľ ${eur(ciel)}` : null; // OPRAVY 247
   return (
     <button type="button" onClick={onTap} style={{ textAlign: "left", border: "none", borderRadius: 22, overflow: "hidden", background: KARTA, borderLeft: `5px solid ${TEAL}`, padding: 0, display: "flex", flexDirection: "column", color: INK, cursor: "pointer", fontFamily: "inherit" }}>
       {foto && <img src={foto} alt="" style={{ width: "100%", aspectRatio: "16 / 9", objectFit: "cover", display: "block", background: "var(--nf-pas)" }} />}
       <span style={{ padding: "16px 18px 18px", display: "flex", flexDirection: "column", gap: 8 }}>
         <span style={kicker(TEAL)}>ZBIERKA</span>
         <b style={{ fontSize: 20, lineHeight: 1.25 }}>{z.nazov || "Zbierka"}</b>
-        <span style={{ fontSize: 16, color: INK2 }}>{pod}</span>
+        {pod && <span style={{ fontSize: 16, color: INK2 }}>{pod}</span>}
       </span>
     </button>);
 }
@@ -1494,8 +1495,9 @@ function TyzdenFarnosti({ strankaId, slovo, siroka, cas, miestaF, mojKostol }: {
   };
   const t0 = tyzden(0), t1 = tyzden(1);
   const iDnes = t0.findIndex((d) => d.key === dnes);
-  const zbalene = [...t0, ...t1].slice(Math.max(0, iDnes), Math.max(0, iDnes) + 2);
-  const dni = siroka || cely ? t0 : zbalene;
+  // OPRAVY 247: deň bez omše, udalosti a zmeny úradných hodín sa neukáže
+  const plny = (d: (typeof t0)[number]) => { const v = k.uradne?.[d.key] as { zrus?: boolean; od?: string; do?: string } | undefined; return d.o.length > 0 || !!(v && (v.zrus || (v.od && v.do))); };
+  const dni = (siroka || cely ? t0 : [...t0, ...t1].slice(Math.max(0, iDnes)).filter(plny).slice(0, 2)).filter(plny);
   const riadok = (d: (typeof t0)[number], pozn?: string) => {
     const dt = zIso(d.key), dn = d.key === dnes;
     return (
@@ -1526,7 +1528,7 @@ function TyzdenFarnosti({ strankaId, slovo, siroka, cas, miestaF, mojKostol }: {
         {[null, ...miestaF.map((m) => m.id)].map((id) => { const on = vyb === id, n = id ? miestaF.find((m) => m.id === id)!.nazov : "Všetky"; return (
           <button key={id ?? "vsetky"} type="button" role="radio" aria-checked={on} onClick={() => setVyb(id)} style={{ minHeight: 40, padding: "0 14px", borderRadius: 20, border: `1.5px solid ${on ? "var(--nf-plne)" : LINKA}`, background: on ? "var(--nf-plne)" : PAPIER, color: on ? "var(--nf-plneInk)" : INK, fontFamily: "inherit", fontSize: 14.5, fontWeight: 800, cursor: "pointer" }}>{n}</button>); })}
       </div>}
-      {dni.map((d, i) => riadok(d, siroka || cely ? undefined : i === 0 ? "dnes" : "zajtra"))}
+      {dni.map((d) => riadok(d, siroka || cely ? undefined : d.key === dnes ? "dnes" : d.key === iso(new Date(zIso(dnes).getTime() + 864e5)) ? "zajtra" : undefined))}
       {!siroka && <button type="button" onClick={() => setCely(!cely)} aria-expanded={cely} style={{ minHeight: 48, borderRadius: 12, border: `1.5px solid ${ZELENA}`, background: "transparent", fontFamily: "inherit", fontSize: 15.5, fontWeight: 800, color: "var(--nf-gInk)", cursor: "pointer" }}>{cely ? "Zbaliť ⌃" : "Celý týždeň ⌄"}</button>}
       <div style={{ display: "flex", gap: 10, marginTop: 4 }}>
         <button type="button" onClick={() => setMesiac(true)} style={tl}>Celý mesiac ›</button>

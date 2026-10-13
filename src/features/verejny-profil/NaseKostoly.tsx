@@ -104,11 +104,11 @@ export function PodstrankaMiesta({ m, strankaId, menoFarnosti, siroka, zbierky, 
   const sekcia = (t: string, deti: ReactNode) => <section style={{ display: "flex", flexDirection: "column", gap: 10 }}><span style={kicker()}>{t}</span>{deti}</section>;
   const tl: CSSProperties = { alignSelf: "flex-start", minHeight: 46, padding: "0 18px", borderRadius: 12, border: `1.5px solid ${LINKA}`, background: PAPIER, color: INK, fontFamily: "inherit", fontSize: 15, fontWeight: 800, cursor: "pointer" };
   const mapa = m.adresa.trim() ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(m.adresa.trim())}` : "";
-  const omseEl = sekcia("OMŠE V TOMTO KOSTOLE", <>
+  const omseEl = omse.length > 0 && sekcia("OMŠE V TOMTO KOSTOLE", <>
     {omse.length ? omse.map(({ d, t }) => <div key={iso(d)} style={{ display: "flex", gap: 14, alignItems: "baseline", padding: "8px 0", borderTop: `1px solid ${LINKA}` }}>
       <span style={{ flex: "0 0 92px", fontSize: 15, color: INK2 }}>{DNI_K[dvt(d)]} {d.getDate()}. {d.getMonth() + 1}.</span>
       <b style={{ fontSize: 16.5, fontVariantNumeric: "tabular-nums" }}>{t.map(pekny).join(" · ")}</b></div>)
-      : <span style={{ fontSize: 15.5, color: INK3 }}>Tento týždeň tu nie je žiadna omša.</span>}
+      : null}
     <button type="button" onClick={onKalendar} style={tl}>Celý kalendár farnosti ›</button>
   </>);
   const histEl = hist && <section style={{ display: "flex", flexDirection: "column", gap: 6 }}>
