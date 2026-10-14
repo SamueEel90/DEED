@@ -13,20 +13,25 @@ import { Datum, Viac } from "./NastenkaFarnosti";
 
 const zIso = (s: string) => { const [y, m, d] = s.split("-").map(Number); return new Date(y, m - 1, d); };
 
-export function DetiAMladezBlok({ strankaId, blokStyl, lavy, kto, mojeMeno, reg }: { strankaId: string; blokStyl: CSSProperties; lavy: ReactNode; kto: string; mojeMeno: string; reg: boolean }) {
+/** KARTA 66 · Konzervatívny: položka ako riadok (bez fotky na stránke, fotky na ťuk) */
+export type RiadokDeti = { id: string; dat?: Date; kedy: string; t: string; txt: string; tlac: ReactNode; poc: string; fotky: string[] };
+export function DetiAMladezBlok({ strankaId, blokStyl, lavy, kto, mojeMeno, reg, riadok }: { strankaId: string; blokStyl: CSSProperties; lavy: ReactNode; kto: string; mojeMeno: string; reg: boolean; riadok?: (r: RiadokDeti) => ReactNode }) {
   useReakcieF();
   const L = useStretnutia(strankaId).filter((s) => !skoncilo(s)).sort((a, b) => a.dat.localeCompare(b.dat));
   if (!L.length) return null;
   return (
     <div data-blok="deti" style={blokStyl}>
       {lavy}
-      <div style={{ flex: "999 1 520px", minWidth: 0, display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(280px,420px))", gap: 16, alignItems: "start", overflowWrap: "anywhere" }}>
+      <div style={riadok ? { display: "flex", flexDirection: "column", minWidth: 0 } : { flex: "999 1 520px", minWidth: 0, display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(280px,420px))", gap: 16, alignItems: "start", overflowWrap: "anywhere" }}>
         {L.map((s) => {
           const r = reakcieF(strankaId, s.id), l = r.ucast ?? [], ja = l.includes(kto), tab = jeTabor(s), zav = s.pz === 2;
           const plne = !ja && zav && s.limit > 0 && l.length >= s.limit;
           const t = plne ? "Plné · ďakujeme" : ja ? (tab ? "Prihlásené ✓ · zrušiť" : zav ? "Prihlásený ✓ · zrušiť" : "Prídem ✓ · zrušiť") : tab && zav ? "Prihlásiť dieťa" : zav ? "Prihlásiť sa" : "Prídem";
           const poc = tab && s.limit ? `voľných ${Math.max(0, s.limit - l.length)}` : l.length ? (zav ? `prihlásených ${l.length}` : `príde ${l.length}`) : s.limit ? `miesta: ${s.limit}` : "";
           const foto = s.fotky?.[0], txt = cistyText(s.txt).trim();
+          if (riadok) return riadok({ id: s.id, dat: s.dat ? zIso(s.dat) : undefined, kedy: kedyStretnutia(s), t: s.t, txt: [s.kde, txt].filter(Boolean).join(" · "), poc, fotky: s.fotky ?? [],
+            tlac: s.pz > 0 ? <button type="button" aria-pressed={ja} disabled={plne} onClick={() => { if (zav && !ja && !reg) { toast("Prihlásiť sa menom môžu len registrovaní v DEED+."); return; } prepniReakciuF(strankaId, s.id, "ucast", kto, mojeMeno); }}
+              style={{ minHeight: 48, padding: "0 18px", borderRadius: 12, cursor: plne ? "default" : "pointer", fontFamily: "inherit", fontSize: 16, fontWeight: 800, whiteSpace: "nowrap", border: ja ? "2px solid var(--nf-zelena)" : "2px solid var(--nf-plne)", background: plne ? "var(--nf-vyp)" : ja ? "var(--nf-gSoft)" : "var(--nf-plne)", color: plne ? "var(--nf-ink2)" : ja ? "var(--nf-gInk)" : "var(--nf-plneInk)" }}>{t}</button> : null });
           return (
             <div key={s.id} style={{ borderRadius: 22, overflow: "hidden", background: "var(--nf-karta)", display: "flex", flexDirection: "column" }}>
               {foto && <img src={foto} alt="" style={{ width: "100%", aspectRatio: "16 / 9", objectFit: "cover", display: "block" }} />}
