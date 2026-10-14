@@ -13,7 +13,7 @@ function RozlozenieFarnosti({ strankaId, onPozriet }: { strankaId: string; onPoz
     <section aria-label="Rozloženie stránky" style={{ flex: "none", borderRadius: 18, background: "var(--card)", border: "1px solid var(--cardBd)", padding: "12px 14px 14px", display: "flex", flexDirection: "column", gap: 10 }}>
       <span style={{ fontSize: 15, fontWeight: 700 }}>Rozloženie stránky</span>
       <span style={{ fontSize: 12.5, color: "var(--ink3)", marginTop: -6 }}>Ako vidia veriaci váš verejný profil. Zmena sa uloží hneď.</span>
-      <div role="radiogroup" aria-label="Rozloženie stránky" style={{ display: "grid", gridTemplateColumns: "repeat(3,minmax(0,1fr))", gap: 10 }}>
+      <div role="radiogroup" aria-label="Rozloženie stránky" style={{ display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 10 }}>{/* KARTA 66: štyri vzhľady = 2 × 2 */}
         {ROZLOZENIA.map((z) => {
           const on = z.k === vyb, zamk = z.zamknute && !on;
           return (
