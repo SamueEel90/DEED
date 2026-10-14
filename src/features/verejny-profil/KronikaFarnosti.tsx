@@ -38,13 +38,13 @@ export function KNadpis({ t, maly, matna, velky }: { t: string; maly?: boolean; 
 }
 
 /** dátumový štvorec Kroniky (OPRAVY 246): bežný deň biely, sobota modrý rám, nedeľa červený rám, tábor plná modrá (`plny`) */
-export function KDatum({ d, plny, velky }: { d: Date; /** tábor — plná farba */ plny?: string; velky?: boolean }) {
+export function KDatum({ d, plny, velky, odznak }: { d: Date; /** tábor — plná farba */ plny?: string; velky?: boolean; /** OPRAVY 250: malý odznak na fotke */ odznak?: boolean }) {
   const w = d.getDay(), ram = plny ? undefined : w === 6 ? "var(--kr-so)" : w === 0 ? "var(--kr-ne)" : undefined;
   const bg = plny ?? (ram ? KARTA : "#F1ECE1"), ink = plny ? "#fff" : ram ?? "#14110B";
-  const s = velky ? 64 : 58;
+  const s = odznak ? 42 : velky ? 64 : 58;
   return (
-    <span style={{ flex: "none", width: s, height: s, boxSizing: "border-box", borderRadius: 12, background: bg, color: ink, border: ram ? `3px solid ${ram}` : "none", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-      <b style={{ fontSize: 20, lineHeight: 1 }}>{d.getDate()}</b><span style={{ fontSize: 11.5, fontWeight: 800, opacity: plny || ram ? 1 : 0.75 }}>{MES[d.getMonth()]}</span>
+    <span style={{ flex: "none", width: s, height: s, boxSizing: "border-box", borderRadius: odznak ? 9 : 12, boxShadow: odznak ? "0 2px 8px rgba(0,0,0,.35)" : undefined, background: bg, color: ink, border: ram ? `3px solid ${ram}` : "none", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+      <b style={{ fontSize: odznak ? 15 : 20, lineHeight: 1 }}>{d.getDate()}</b><span style={{ fontSize: odznak ? 9.5 : 11.5, fontWeight: 800, opacity: plny || ram ? 1 : 0.75 }}>{MES[d.getMonth()]}</span>
     </span>);
 }
 
@@ -217,7 +217,7 @@ export function KronikaLista({ bloky, fab }: { bloky: { id: string; t: string }[
     return () => io.disconnect();
   }, [kl]);
   return (
-    <nav aria-label="Skok na blok" style={{ flex: "none", width: 96, borderLeft: `1px solid ${LINKA}`, position: "relative" }}>
+    <nav aria-label="Skok na blok" style={{ flex: "none", width: 96, position: "relative" }}>{/* OPRAVY 252: vpravo zvislá čiara nie je */}
       <div style={{ position: "sticky", top: 0, height: "100vh", maxHeight: "100dvh", boxSizing: "border-box", padding: "120px 0 108px", display: "flex", flexDirection: "column", alignItems: "center", overflowY: "auto", scrollbarWidth: "none" } as CSSProperties}>
         {bloky.map((b, i) => { const on = akt === b.id; return (
           <span key={b.id} style={{ display: "contents" }}>

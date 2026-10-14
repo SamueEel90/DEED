@@ -44,7 +44,7 @@ export function Sipky({ text, zvisle, onPosun, maly }: { text?: string; zvisle?:
     <span style={{ flex: "none", display: "flex", alignItems: "center", gap: 10 }}>
       {text && <span style={{ fontSize: 15, fontWeight: 700, color: INK3 }}>{text}</span>}
       <button type="button" aria-label={zvisle ? "Vyššie" : "Späť"} onClick={() => onPosun(-1)} style={{ ...b, border: "1.5px solid var(--nf-linka)", background: KARTA, color: INK, fontWeight: 700 }}>{zvisle ? "˄" : "‹"}</button>
-      <button type="button" aria-label={zvisle ? "Nižšie" : "Ďalej"} onClick={() => onPosun(1)} style={{ ...b, border: "none", background: "var(--nf-linia)", color: "#14110B", fontWeight: 800 }}>{zvisle ? "˅" : "›"}</button>
+      <button type="button" aria-label={zvisle ? "Nižšie" : "Ďalej"} onClick={() => onPosun(1)} style={{ ...b, border: "none", background: "var(--nf-linia)", color: "var(--md-naLinii)", fontWeight: 800 }}>{zvisle ? "˅" : "›"}</button>
     </span>);
 }
 /** posun pásu o jednu kartu (scroll-snap) */
@@ -99,7 +99,7 @@ export function MLista({ bloky, onBlok, plus }: { bloky: { id: string; t: string
       <div style={{ flex: 1, minWidth: 0, display: "flex", gap: 8, flexWrap: "wrap" }}>
         {bloky.map((b) => { const on = akt === b.id; return (
           <button key={b.id} type="button" aria-current={on ? "true" : undefined} onClick={() => { setAkt(b.id); onBlok(b.id); }}
-            style={{ minHeight: 44, padding: "0 16px", borderRadius: 22, border: on ? "1px solid var(--nf-linia)" : `1px solid ${LINKA}`, background: on ? "var(--nf-linia)" : "transparent", color: on ? "#14110B" : "var(--nf-ink2)", fontFamily: "inherit", fontSize: 14.5, fontWeight: on ? 800 : 700, cursor: "pointer", boxShadow: "none" }}>{b.t}</button>); })}
+            style={{ minHeight: 44, padding: "0 16px", borderRadius: 22, border: on ? "1px solid var(--nf-linia)" : `1px solid ${LINKA}`, background: on ? "var(--nf-linia)" : "transparent", color: on ? "var(--md-naLinii)" : "var(--nf-ink2)", fontFamily: "inherit", fontSize: 14.5, fontWeight: on ? 800 : 700, cursor: "pointer", boxShadow: "none" }}>{b.t}</button>); })}
       </div>
       {plus}
     </nav>);

@@ -622,7 +622,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, nahlad,
   </section>;
   // --- Oznamy farnosti ---
   const kOznamy = ozAll.length > 0 && sekcia("ozn", "Oznamy farnosti", S.ozn, <>
-    <div style={{ display: "flex", flexDirection: "column", borderTop: `1px solid ${LINKA}` }}>
+    <div style={{ display: "flex", flexDirection: "column", borderTop: k3 ? "1.5px solid var(--nf-linia)" : `1px solid ${LINKA}` }}>
       {ozAll.map((x) => { const d = new Date(x.ms || cas.getTime()), o = ozOtv === x.id, kde = miestaF.length > 1 && x.mi ? x.mi.map((id) => miestaF.find((m) => m.id === id)?.nazov).filter(Boolean).join(" · ") : ""; return (
         <div key={x.id} style={{ display: "flex", gap: k3 ? 20 : 14, padding: "16px 0", borderBottom: `1px solid ${LINKA}` }}>
           <span style={{ flex: "none", width: 58, height: 58, borderRadius: 12, background: KARTA, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}><b style={{ fontSize: 20, lineHeight: 1 }}>{d.getDate()}</b><span style={{ fontSize: 11.5, fontWeight: 800, color: INK3 }}>{["JAN", "FEB", "MAR", "APR", "MÁJ", "JÚN", "JÚL", "AUG", "SEP", "OKT", "NOV", "DEC"][d.getMonth()]}</span></span>
@@ -680,22 +680,24 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, nahlad,
           {u.mojeX && <MenuPrispevku x={u.mojeX} strankaId={strankaId} kto={kto} moje={moje(u.mojeX)} />}
         </div>
       </div>); })()}
-    {(udalosti.length > 1 || alba.length > 0) && <div style={{ display: "grid", gridTemplateColumns: `repeat(${k3 ? 3 : siroka ? 2 : 1},minmax(0,1fr))`, gap: 14 }}>
+    {(udalosti.length > 1 || alba.length > 0) && <div style={{ display: "grid", gridTemplateColumns: `repeat(${k3 || siroka ? 2 : 1},minmax(0,1fr))`, gap: 14 }}>
       {udalosti.filter((u) => u.id !== velkaU?.id).map((u) => { const d = u.dat ? zIso(u.dat) : null, n = u.zoznam.length; return (
         <button key={u.id} type="button" onClick={() => setPridV(u.id)} style={{ display: "flex", gap: 14, alignItems: "center", padding: 14, borderRadius: 18, background: KARTA, border: "none", color: INK, fontFamily: "inherit", textAlign: "left", cursor: "pointer", minWidth: 0 }}>
-          {d ? <KDatum d={d} /> : null}
+          {/* OPRAVY 250: akcia s fotkou má náhľad ako albumy, dátum ako odznak na fotke; bez fotky dátumový štvorec */}
+          {u.foto ? <span style={{ position: "relative", flex: "none", width: 140, height: 104, borderRadius: 12, background: `center/cover no-repeat url('${u.foto}')` }}>{d && <span style={{ position: "absolute", left: 6, top: 6 }}><KDatum d={d} odznak /></span>}</span>
+            : d ? <KDatum d={d} /> : null}
           <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 3 }}><b style={{ fontSize: 16.5, lineHeight: 1.25 }}>{u.t}</b><span style={{ fontSize: 14.5, color: INK3 }}>{[u.kedy.split(" · ").slice(1).join(" · ").toLocaleLowerCase("sk-SK"), u.mojeX ? autor(u.mojeX).replace("Pridal veriaci", "pridal veriaci") : "", n ? `${n} príde` : ""].filter(Boolean).join(" · ")}</span></span>
         </button>); })}
       {alba.map((a) => { const f = a.fotky!.find(ziveObr)!; return (
-        <button key={a.id} type="button" onClick={() => setAlbum(a)} style={{ display: "flex", gap: 14, alignItems: "center", padding: 10, borderRadius: 18, background: KARTA, border: "none", color: INK, fontFamily: "inherit", textAlign: "left", cursor: "pointer", minWidth: 0 }}>
-          <span style={{ flex: "none", width: 78, height: 58, borderRadius: 10, background: `center/cover no-repeat url('${f}')` }} />
+        <button key={a.id} type="button" onClick={() => setAlbum(a)} style={{ display: "flex", gap: 14, alignItems: "center", padding: 14, borderRadius: 18, background: KARTA, border: "none", color: INK, fontFamily: "inherit", textAlign: "left", cursor: "pointer", minWidth: 0 }}>
+          <span style={{ flex: "none", width: 140, height: 104, borderRadius: 12, background: `center/cover no-repeat url('${f}')` }} />
           <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 3 }}><b style={{ fontSize: 16.5 }}>{a.t || "Fotky z akcie"}</b><span style={{ fontSize: 14.5, color: INK3 }}>{[`${a.fotky!.filter(ziveObr).length} fotiek`, a.anon ? "" : `pridal ${a.kto}`].filter(Boolean).join(" · ")}</span></span>
         </button>); })}
     </div>}
   </>);
   // --- Teš sa s nami = zápis v kronike ---
   const kTes = maTes && sekcia("tes", "Teš sa s nami", S.tes, <>
-    <div style={{ display: "flex", flexDirection: "column", borderTop: `1px solid ${LINKA}` }}>
+    <div style={{ display: "flex", flexDirection: "column", borderTop: k3 ? "1.5px solid var(--nf-linia)" : `1px solid ${LINKA}` }}>
       {tesy.map((t) => { const d = t.datum && /^\d{4}-\d{2}-\d{2}/.test(t.datum) ? zIso(t.datum.slice(0, 10)) : t.it?.vytvorene ? new Date(t.it.vytvorene) : t.x?.cas ? new Date(t.x.cas) : undefined;
         const st = t.ine ? "OZNÁMENIE" : t.druh === "svadba" ? "SVADBA" : t.druh === "jubileum" ? "JUBILEUM" : t.dakuje ? "POĎAKOVANIE" : "BLAHOŽELANIE";
         const obr = t.foto ?? t.it?.fotky?.find(ziveObr) ?? (t.it ? obrFar(t.it) || undefined : undefined) ?? (t.x ? obrVer(t.x) || undefined : undefined);
@@ -725,7 +727,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, nahlad,
     </div>
   </>);
   // --- Deti a mládež (ten istý blok ako na Nástenke) ---
-  const kDeti = k3 ? <DetiAMladezBlok strankaId={strankaId} blokStyl={{ padding: "36px 40px", borderTop: `1px solid ${LINKA}`, display: "flex", flexDirection: "column", gap: 14, scrollMarginTop: 16 }} lavy={KN("Deti a mládež")} kto={kto} mojeMeno={mojeMeno} reg={reg} />
+  const kDeti = k3 ? <DetiAMladezBlok strankaId={strankaId} blokStyl={{ padding: "36px 40px", borderTop: `1px solid ${LINKA}`, display: "flex", flexDirection: "column", gap: 14, scrollMarginTop: 16 }} lavy={<>{KN("Deti a mládež")}<span aria-hidden="true" style={{ height: 1.5, background: "var(--nf-linia)" }} /></>} kto={kto} mojeMeno={mojeMeno} reg={reg} />
     : maDeti && zbK("deti", "Deti a mládež", S.deti, <DetiAMladezBlok strankaId={strankaId} blokStyl={{}} lavy={null} kto={kto} mojeMeno={mojeMeno} reg={reg} />);
   // --- Farský úrad ---
   const pole = (n: string, v: ReactNode) => <span style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}><span style={{ fontSize: 13, fontWeight: 800, letterSpacing: ".1em", color: INK3 }}>{n}</span><span style={{ fontSize: 16.5, lineHeight: 1.5, color: INK, overflowWrap: "anywhere" }}>{v}</span></span>;
@@ -793,14 +795,14 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, nahlad,
     ? <div style={{ display: "flex", flexDirection: "column", background: PAPIER }}>{profilKronika}<div style={{ padding: k3 ? "28px 28px 64px" : "20px 18px 48px" }}><span style={{ fontSize: 17, color: INK3 }}>Farnosť tu zatiaľ nič nezverejnila.</span></div></div>
     : k3
       ? <div className="kronika" style={{ display: "flex", alignItems: "stretch", minHeight: "100%" }}>
-        <aside style={{ flex: "none", width: "clamp(320px,30vw,440px)", borderRight: `1px solid ${LINKA}`, background: PAPIER, display: "flex", flexDirection: "column" }}>
+        <aside style={{ flex: "none", width: "clamp(320px,30vw,440px)", borderRight: "2px solid var(--nf-linia)", background: PAPIER, display: "flex", flexDirection: "column" }}>
           {profilKronika}
           <div style={{ padding: "20px 28px 48px", display: "flex", flexDirection: "column", gap: 0 }}>
-            {[kZbierky, kKostoly, kOmse, kPomoz].filter(Boolean).map((x, i) => <div key={i} style={{ paddingTop: 20, marginTop: i ? 20 : 0, borderTop: `1px solid ${LINKA}` }}>{x}</div>)}
+            {[kZbierky, kKostoly, kOmse, kPomoz].filter(Boolean).map((x, i) => <div key={i} style={{ paddingTop: 20, marginTop: i ? 20 : 0, borderTop: "2px solid var(--nf-linia)" }}>{x}</div>)}
           </div>
         </aside>
         <main style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
-          <div style={{ padding: "22px 40px 18px", borderBottom: `1px solid ${LINKA}` }}><KronikaHladat polozky={hladat} onBlok={posunNaBlok} /></div>
+          <div style={{ padding: "22px 40px 18px", borderBottom: "2px solid var(--nf-linia)" }}><KronikaHladat polozky={hladat} onBlok={posunNaBlok} /></div>
           {kTyzden}{kOznamy}{kVyp}{kModli}{kPrid}{kTes}{kSpom}{kVer}{kDeti}{kUrad}{kArchiv}
         </main>
         <KronikaLista bloky={listaBloky} />
@@ -945,7 +947,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, nahlad,
   const mPomoz = <div style={{ display: "grid", gridTemplateColumns: `repeat(${mob && !mt ? 1 : 2},minmax(0,1fr))`, gap: 16 }}>{pomoz.map((u) => { const b = brigadyF.find((x) => x.id === u.id), d = u.dat ? zIso(u.dat) : null; return (
     <div key={u.id} style={{ padding: mob ? 18 : 24, borderRadius: 24, background: KARTA, display: "flex", flexDirection: "column", gap: 10, minWidth: 0 }}>
       {u.foto && <img src={u.foto} alt="" style={{ width: "100%", aspectRatio: "16 / 9", objectFit: "cover", borderRadius: 16, display: "block" }} />}
-      <span style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}><span style={{ padding: "5px 12px", borderRadius: 14, background: "var(--nf-linia)", color: "#14110B", fontSize: 12.5, fontWeight: 800, letterSpacing: ".08em" }}>{(b?.druh ?? "Brigáda").toLocaleUpperCase("sk-SK")}</span>{d && <span style={{ fontSize: 14.5, fontWeight: 700, color: INK3 }}>{den(d)} {dm(d)}</span>}</span>
+      <span style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}><span style={{ padding: "5px 12px", borderRadius: 14, background: "var(--nf-linia)", color: "var(--md-naLinii)", fontSize: 12.5, fontWeight: 800, letterSpacing: ".08em" }}>{(b?.druh ?? "Brigáda").toLocaleUpperCase("sk-SK")}</span>{d && <span style={{ fontSize: 14.5, fontWeight: 700, color: INK3 }}>{den(d)} {dm(d)}</span>}</span>
       <b style={{ fontSize: mob ? 20 : 23, lineHeight: 1.2 }}>{u.t}</b>
       {u.txt && <Viac text={u.txt} velkost={16} />}
       {(u.od || b?.cas) && <span style={{ display: "flex", gap: 28, flexWrap: "wrap", padding: "10px 0", borderTop: `1px solid ${LINKA}`, borderBottom: `1px solid ${LINKA}`, fontSize: 15 }}>{u.od && <span><span style={{ color: INK3 }}>Kde </span><b>{u.od}</b></span>}{b?.cas && <span><span style={{ color: INK3 }}>Kedy </span><b>{b.cas}</b></span>}</span>}
@@ -1645,7 +1647,8 @@ function DetailZbierky({ d, strankaId, onZavri }: { d: DetailF; strankaId: strin
             <div style={{ borderRadius: 24, overflow: "hidden", border: rod ? `3px solid ${FIALOVA}` : "1px solid var(--cardBd)", background: "rgb(var(--panel-rgb))", padding: "14px 0", ["--hcPruh" as string]: hc, ["--hcF" as string]: hc } as CSSProperties}>
               {d.typ === "hl" || d.typ === "zv" || d.typ === "far"
                 // OPRAVY 189: klasické zbierky farnosti = ten istý platobný modul ako na profile charity
-                ? <div className="vp sc-tokeny" data-stit="silver" style={{ background: "transparent", padding: "0 14px" }}><div data-hier={d.typ === "hl" ? "0" : "z"}><ZmensenyModul><ModulPlatby profil={{ k: strankaId, meno: d.data.organizacia?.meno ?? "Farnosť" } as TestProfil}
+                // OPRAVY 251: bez data-hier — hierarchia farbí len rám karty, vnútro modulu ostáva ako modul charita a viera
+                ? <div className="vp sc-tokeny" data-stit="silver" style={{ background: "transparent", padding: "0 14px" }}><div><ZmensenyModul><ModulPlatby profil={{ k: strankaId, meno: d.data.organizacia?.meno ?? "Farnosť" } as TestProfil}
                     sektor={{ id: d.data.id, nazov: d.t, druh: d.typ === "hl" ? "centralna" : "sektor", foto: d.obr ?? "", vyzbierane: 0, darcovia: 0, mesta: {} } as unknown as TestSektor}
                     nazov={`${d.t} · ${d.data.organizacia?.meno ?? "Farnosť"}`} dorovnanie={false} ktoVoli="farnosť" bezObjektu={d.typ === "zv"} sumy={d.data.rychleSumy} sumyE={d.data.rychleSumyE} bezEurc={d.data.eurc === false} ciel={d.data.ciel} /></ZmensenyModul></div></div>
                 : d.pin?.ukazkova ? <div style={{ margin: "0 14px", padding: "16px 18px", borderRadius: 16, background: "var(--goldBg)", border: "2px solid #C9A24A", display: "flex", flexDirection: "column", gap: 6, color: "var(--ink)" }}>
