@@ -11,7 +11,7 @@
 // ============================================================
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import { bezDataUrl } from "@/lib/uploadFoto";
+import { bezDataUrl, nahrajSuborUrl } from "@/lib/uploadFoto";
 import { nacitajStav, ulozStav, synchronizujStav } from "./stav";
 import type { VieraFeedItem } from "./mock";
 
@@ -34,10 +34,17 @@ export async function nacitajPrispevkyDB(fid: string): Promise<VieraFeedItem[] |
  *  Vyčistená verzia (URL namiesto data URL) sa vráti aj do LS — telefón (Safari ~5 MB) inak úložisko zaplní a zápis zlyhá potichu. */
 async function bezObrazkov(fid: string, it: VieraFeedItem): Promise<VieraFeedItem> {
   let cist = it;
-  try { cist = await bezDataUrl(it, "prispevky"); } catch { return it; } // bez prihlásenia ostáva lokálne
+  try { cist = await bezDataUrl(it, "prispevky"); } catch { return bezLokalnehoVidea(it); } // bez prihlásenia ostáva lokálne
+  // OPRAVY 270: video udalosti je z galérie blob: (žije len v tomto okne) → Storage, inak by ho nikto iný nevidel
+  if (cist.video && /^(blob|data):/.test(cist.video)) {
+    const b = await fetch(cist.video).then((r) => r.blob(), () => null);
+    const url = b ? await nahrajSuborUrl(b, "video", (b.type.split("/")[1] || "mp4").replace("quicktime", "mov")) : null;
+    if (url) cist = { ...cist, video: url };
+  }
   if (cist !== it) ulozStav("prispevky", fid, nacitajStav<VieraFeedItem[]>("prispevky", fid, []).map((x) => (x.id === it.id ? cist : x)));
-  return cist;
+  return bezLokalnehoVidea(cist); // nenahraté video ostáva len na tomto zariadení, do DB nejde
 }
+const bezLokalnehoVidea = (it: VieraFeedItem): VieraFeedItem => (it.video && /^(blob|data):/.test(it.video) ? { ...it, video: undefined } : it);
 
 /** OPRAVY 273: zverejnenie, na ktoré sa čaká — zelená hláška až keď je naozaj uložené.
  *  S DB: obrázky do Storage, zápis na server (chyba = text). Bez DB: zariadenie (plné úložisko = text). Vráti chybu alebo null. */
@@ -74,7 +81,7 @@ export async function zmazPrispevokDB(id: string): Promise<void> {
 
 export async function upravPrispevokDB(id: string, it: VieraFeedItem, fid?: string): Promise<void> {
   if (!supabase) return;
-  const cist = fid ? await bezObrazkov(fid, it) : it;
+  const cist = fid ? await bezObrazkov(fid, it) : bezLokalnehoVidea(it);
   await supabase.from("naboz_prispevok")
     .update({ data: cist, upravene: new Date().toISOString() })
     .eq("id", id);

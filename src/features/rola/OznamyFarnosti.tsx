@@ -359,8 +359,8 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
     const obr = (await edRef.current?.nahlad(p.typ === "parte" ? undefined : { verejny: true })) || ""; // OPRAVY 275: na stránku verejný hárok (bez času a miesta hostiny)
     const povodny = edit ? zoznam.find((x) => x.id === edit) : undefined;
     const teraz = terazMs(), id = povodny?.id ?? `naboz-${teraz}`;
-    // OPRAVY 273: návrh editora sa ukladá raz — pri parte v smutocny.editor (Spomíname), inak v oz.ed
-    const oz: NastavenieOznamu = { dr: 2, n: "", txt: "", plati: 0, usp: 0, dat: "", cas: "", miesto: "", pozv: 0, limit: "", odr, osp: 0, ed: p.typ === "parte" ? undefined : p };
+    // OPRAVY 273: návrh editora sa ukladá raz — pri parte v smutocny.editor (Spomíname), inak v oz.ed · KARTA 63: upoz aj z Editora (Samuel)
+    const oz: NastavenieOznamu = { dr: 2, n: "", txt: "", plati: 0, usp: 0, dat: "", cas: "", miesto: "", pozv: 0, limit: "", odr, osp: 0, ed: p.typ === "parte" ? undefined : p, upoz };
     const zaklad = { id, comp: "data" as const, typ: "skutok" as const, modul: "charity" as const, kat: "Komunita" as const, skore: 6, typSituacie: "normal" as const, dni: 0, podpora: 0, farnostId: strankaId, cirkev: "", komunita: meno, overena: true,
       vytvorene: povodny?.vytvorene ?? teraz, af: povodny ? povodny.af : autorJa, ntyp: "oznam" as const, fotky: obr ? [obr] : undefined, plagat: obr ? true : undefined, platnostDni: 7, oz };
     let it: VieraFeedItem;
@@ -489,7 +489,8 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
       {pozv === 2 && <label style={{ display: "flex", alignItems: "center", gap: 12 }}><span style={{ fontSize: 14, fontWeight: 800 }}>Koľko ľudí najviac</span>
         <input inputMode="numeric" value={limit} onChange={(e) => setLimit(e.target.value.replace(/\D/g, "").slice(0, 4))} placeholder="bez limitu" aria-label="Koľko ľudí najviac" style={{ ...pole, width: 140, height: 46 }} /></label>}
     </div>}
-    {!jub && <UpozornitSledujucich strankaId={strankaId} blok={blokUpoz} miesta={dr === 0 && viacMiest && kde && kde.length < miestaF.length ? kde : dr === 1 && viacMiest ? [kdeId] : undefined} value={upoz} onChange={setUpozV} />}
+    {/* KARTA 63: aj pri oznámení z Editora (parte, svadba, jubileum) */}
+    {<UpozornitSledujucich strankaId={strankaId} blok={blokUpoz} miesta={dr === 0 && viacMiest && kde && kde.length < miestaF.length ? kde : dr === 1 && viacMiest ? [kdeId] : undefined} value={upoz} onChange={setUpozV} />}
     {!edit && (jub ? !!jubKon : maObsah) && <ZahoditRozpisane onZahodit={zahod} />}
     {!ramSprava && potvrdenie}
   </>;
