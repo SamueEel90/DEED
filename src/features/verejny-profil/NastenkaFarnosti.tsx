@@ -69,7 +69,7 @@ import { useVerejnyObrazok, type PayloadEditora } from "@/components/EditorOznam
 import { ParteMedailon, TvarOznamu, PARTE, SVADBA, JUBILEUM, BLAHOZELANIE, ZAKLAD, BORDOVA, symbolCirkvi, kickerTvaru, SERIF_TVARU, type Paleta } from "./Medailony";
 import { Darcovia } from "@/features/zbierka/Riadky";
 import { useQrObrazok } from "@/lib/qrObrazok";
-import type { AutorF } from "@/lib/autorFarnosti";
+import { useAutorNaStranke, type AutorF } from "@/lib/autorFarnosti";
 import { DNI_UH, casyUH, maUH, textCasu } from "@/lib/uradneHodiny";
 import { useSumyDarcov } from "@/lib/sumyDarcov";
 import { odkazZbierky } from "@/features/zbierka/Zdielat";
@@ -211,6 +211,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, nahlad,
   const { okno: zvOkno } = useOmsoveOkno(strankaId), zvNedela = zvOkno.nedela;
   const zvN = useZvoncek(strankaId); // OPRAVY 260: názov, text, fotky, sumy a ukončenie zo Správy zvončekovej zbierky
   const [velke, setVelke] = useState<Velke | null>(null);
+  const autorNa = useAutorNaStranke(strankaId); // OPRAVY 276
   const [album, setAlbum] = useState<PolozkaFarnika | null>(null);
   const [gal, setGal] = useState<{ t: string; m: MediumGalerie[]; i: number } | null>(null); // OPRAVY 270
   const otvorGal = (t: string, m: MediumGalerie[], i = 0) => { if (m.length) setGal({ t, m, i }); };
@@ -314,7 +315,8 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, nahlad,
       style={{ alignSelf: "flex-start", marginTop: 8, minHeight: 48, padding: "0 20px", borderRadius: 14, border: on ? "none" : `1.5px solid ${LINKA}`, background: on ? "var(--nf-gSoft)" : PAPIER, color: on ? "var(--nf-gInk)" : INK, fontFamily: "inherit", fontSize: 15.5, fontWeight: 800, cursor: "pointer" }}>
       {on ? "Sledujem ✓" : "Sledovať tento kostol"}</button>); };
   // Martin 13. 10.: riadok autora = kto príspevok naozaj pridal (meno, fotka, rola); bez profilu logo a názov farnosti. Duchovný nikdy namiesto iného autora.
-  const hlavickaFar = (af?: AutorF) => {
+  const hlavickaFar = (af0?: AutorF) => {
+    const af = autorNa(af0); // OPRAVY 276: duchovný z Ľudí alebo farnosť, nikdy meno účtu ani „správca stránky“
     const m = af?.meno.trim() || meno, f = af?.meno.trim() ? af.foto ?? "" : logo ?? "";
     const pod = af?.meno.trim() ? af.rola : "farnosť";
     const kruh = <span aria-hidden="true" style={{ flex: "none", width: 40, height: 40, borderRadius: "50%", background: f ? `url("${f}") center/cover no-repeat` : "#4E7D37", color: "#fff", fontSize: 15, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>{f ? "" : iniciy(m)}</span>;
