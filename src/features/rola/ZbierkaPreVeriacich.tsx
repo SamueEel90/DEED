@@ -75,7 +75,7 @@ function QrVelky({ data, zostava, onZavri }: { data: string; zostava: number; on
     </div>, document.body);
 }
 
-export function ZbierkaSOverovatelom({ stranka, menoFarnosti, ucetFarnosti, mobil, pc = !mobil, toast, onZavri, onHotovo, spatRef, onSpatText, onOverit }: {
+export function ZbierkaSOverovatelom({ stranka, menoFarnosti, ucetFarnosti, mobil, toast, onZavri, onHotovo, spatRef, onSpatText, onOverit }: {
   stranka: string; menoFarnosti: string; ucetFarnosti: string; mobil: boolean; /** KARTA 57 A.3: PC = editor v stránke, mobil a tablet = na celú obrazovku */ pc?: boolean; toast: (m: string) => void;
   onZavri: () => void; onHotovo: (z: SpustenaZbierka, sprava: string) => void;
   /** KARTA 57 A.1: horné ‹ Späť Správy sa pýta zbierky */ spatRef?: { current: SpatZbierky | null };
@@ -184,9 +184,6 @@ export function ZbierkaSOverovatelom({ stranka, menoFarnosti, ucetFarnosti, mobi
     setNaStranke(vlastnePrispevkyVsetky(stranka)); setRezim("je"); setVybrany(id); setUlozT(`Parte ${meno} je uložené ✓`);
   };
   const edCfg = { typ: "parte" as const, sektor: "viera" as const, rezim: "rychly" as const, bezTlace: true, qrObrazok: qrSrc, miesta: ["v Dome smútku", "vo farskom kostole", "na miestnom cintoríne"], kontext: { zbierka: "pohreb", stranka }, navrh: edKon };
-  const editor = (styl: CSSProperties) => (
-    <EditorOznameni ref={edRef} title="Editor parte" onSend={(p) => { void naEditor(p); }} onUdalost={(e) => zapisEditora({ udalost: e.akcia, typ: "parte", papier: e.papier ?? null, ...kdeStat })} style={styl}
-      cfg={edCfg} />);
   const edSpat = () => { if (!edRef.current?.krokSpat()) setEdMob(false); };
 
   // ---- 3 · rozdelenie: krok 1 podiel overovateľa, krok 2 zvyšok rozhoduje príjemca ----
@@ -325,7 +322,7 @@ export function ZbierkaSOverovatelom({ stranka, menoFarnosti, ucetFarnosti, mobi
           <b style={{ fontSize: 16 }}>Ku ktorému oznámeniu pripojiť zbierku?</b>
           <div style={{ display: "grid", gridTemplateColumns: mobil ? "minmax(0,1fr)" : "repeat(3,minmax(0,1fr))", gap: 10 }}>
             {([["je", `${velke(T.ozn)} už je na stránke farnosti`, `${T.kto.toLowerCase()} ho pridal sám · len k nemu pripojíte zbierku`], ["vl", `+ Nahrať vlastné ${T.ozn}`, "plagát od rodiny (obrázok alebo PDF)"], ["sab", `+ Vytvoriť ${T.ozn} zo šablóny`, T.sabS]] as ["je" | "vl" | "sab", string, string][]).map(([k, t, s]) => (
-              <button key={k} type="button" onClick={() => { setRezim(k); setNaStranke(vlastnePrispevkyVsetky(stranka)); }} style={{ minHeight: 76, padding: "12px 16px", borderRadius: 16, border: `1.5px ${k === "je" ? "solid" : "dashed"} var(--gBd)`, background: "var(--field)", cursor: "pointer", fontFamily: "inherit", textAlign: "left", display: "flex", flexDirection: "column", gap: 4, color: "var(--ink)", boxShadow: "none" }}>
+              <button key={k} type="button" onClick={() => { setRezim(k); setNaStranke(vlastnePrispevkyVsetky(stranka)); if (k === "sab" && druh === "pohreb") setEdMob(true); }} style={{ minHeight: 76, padding: "12px 16px", borderRadius: 16, border: `1.5px ${k === "je" ? "solid" : "dashed"} var(--gBd)`, background: "var(--field)", cursor: "pointer", fontFamily: "inherit", textAlign: "left", display: "flex", flexDirection: "column", gap: 4, color: "var(--ink)", boxShadow: "none" }}>
                 <b style={{ fontSize: 15.5, color: "var(--green)" }}>{t}</b><span style={{ fontSize: 13, color: "var(--ink3)" }}>{s}</span>
               </button>))}
           </div>
@@ -383,18 +380,17 @@ export function ZbierkaSOverovatelom({ stranka, menoFarnosti, ucetFarnosti, mobi
           {druh === "pohreb" && subor && !subor.pdf && <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: 14, borderRadius: 16, background: "var(--panel)", border: "1px solid var(--cardBd)" }}>
             <b style={{ fontSize: 16 }}>QR kód zbierky na parte</b>
             <span style={{ fontSize: 13.5, color: "var(--ink2)" }}>Vyberte, kam QR na tlači príde. Vytlačiť s QR pôjde po zapečatení, v kroku Hotovo.</span>
-            <QrNaParte src={subor.url} qrSrc={qrSrc} kratky={odkazZbierky(idZb).replace("https://", "")} onZmena={setQrParte} onSablona={() => setRezim("sab")} onIne={() => setSubor(null)} />
+            <QrNaParte src={subor.url} qrSrc={qrSrc} kratky={odkazZbierky(idZb).replace("https://", "")} onZmena={setQrParte} onSablona={() => { setRezim("sab"); if (druh === "pohreb") setEdMob(true); }} onIne={() => setSubor(null)} />
           </div>}
           {spatZverejnit}
         </>}
         {rezim === "sab" && druh === "pohreb" && <>
           <b style={{ fontSize: 16 }}>Nové parte zo šablóny farnosti</b>
           <span style={{ fontSize: 13.5, lineHeight: 1.5, color: "var(--ink2)" }}>Rýchly režim: Muž alebo Žena, vzhľad, údaje. Texty sú už vo vzhľade. Keď termín rozlúčky ešte neviete, zaškrtnite „Údaje doplníme neskôr“, doplní ho rodina sama.</span>
-          {pc ? editor({ height: "min(960px, calc(100vh - 96px))", minHeight: 560, border: "1px solid var(--cardBd)", borderRadius: 18 })
-            : <button type="button" onClick={() => setEdMob(true)} style={{ ...tlZ, height: 56, fontSize: 16 }}>{edKon ? "Pokračovať v tvorbe parte ›" : "Otvoriť tvorbu parte ›"}</button>}
-          {/* OPRAVY 258: na mobile rám na celú obrazovku (lišta, kroky, Náhľad na ťuk, Pokračovať dole) */}
+          <button type="button" onClick={() => setEdMob(true)} style={{ ...tlZ, height: 56, fontSize: 16 }}>{edKon ? "Pokračovať v tvorbe parte ›" : "Otvoriť tvorbu parte ›"}</button>
+          {/* OPRAVY 258 · 272: rýchly postup (Muž / Žena → vzhľad → údaje → Hotovo) v ráme na celú obrazovku, PC aj mobil; po Hotovo späť na krok 2, nové parte vybraté */}
           {edMob && <EditorOznameni ref={edRef} title="Parte" onSend={(p) => { void naEditor(p); }} onUdalost={(e) => zapisEditora({ udalost: e.akcia, typ: "parte", papier: e.papier ?? null, ...kdeStat })}
-            ram={{}} onZavri={() => setEdMob(false)} cfg={edCfg} />}
+            ram={{}} onZavri={() => { setEdMob(false); if (!edKon) setRezim(""); }} cfg={edCfg} />}
         </>}
         {rezim === "sab" && druh !== "pohreb" && <>
           <b style={{ fontSize: 16 }}>Nové {T.ozn} zo šablóny farnosti</b>

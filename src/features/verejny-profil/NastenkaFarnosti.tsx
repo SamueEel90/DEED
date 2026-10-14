@@ -392,6 +392,14 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, nahlad,
   const tesFar: Tes[] = OZ.filter((x) => ["SVADBA", "JUBILEUM", "BLAHOŽELANIE"].includes(stit(x))).map((x) => {
     // BLOK C 235: jubileum zo Správy = Blahoželanie z Editora
     if (x.oz?.ed?.typ === "blahozelanie") return { ...tesBlaho(x.oz.ed, { id: x.id, nadpis: x.nazov ?? "", r: reakF(x.id, "blaho"), mena: reakcieF(strankaId, x.id).mena ?? {}, af: x.af }), it: x };
+    // OPRAVY 272: svadba (aj jubileum) zo Správy z Editora oznámení — ako od veriaceho
+    const ed0 = x.oz?.ed;
+    if (ed0 && (ed0.typ === "svadba" || ed0.typ === "jubileum")) {
+      const P0 = (ed0.polia ?? {}) as Record<string, unknown>, pole = (k: string) => String(P0[k] ?? "").trim(), sv = ed0.typ === "svadba";
+      const pal = (ed0.sablona && (sv ? SVADBA : JUBILEUM)[ed0.sablona]) || (sv ? ZAKLAD.svadba : ZAKLAD.jubileum);
+      return { id: x.id, druh: sv ? "svadba" : "jubileum", pal, it: x, meno: sv ? [pole("sNev"), pole("sZen")].filter(Boolean).join(" & ") || bezPredpony(x.nazov ?? "") : pole("jMeno") || bezPredpony(x.nazov ?? ""),
+        datum: sv ? pole("sD") : pole("jD"), vek: sv ? "" : (pole("jVekTxt").match(/\d+/)?.[0] ?? vekJubilea(pole("jNar"), pole("jD"))), nadpis: x.nazov ?? "", r: reakF(x.id, "blaho"), mena: reakcieF(strankaId, x.id).mena ?? {}, af: x.af };
+    }
     const st = stit(x), u = x.oz?.u, druhT: Tes["druh"] = st === "SVADBA" ? "svadba" : st === "JUBILEUM" ? "jubileum" : "blaho";
     // OPRAVY 229: iné oznámenie a poďakovanie nikdy do kosoštvorca — štvorec s nadpisom, Ďakujem
     return { id: x.id, druh: druhT, pal: druhT === "svadba" ? ZAKLAD.svadba : druhT === "jubileum" ? ZAKLAD.jubileum : ZAKLAD.blaho,
