@@ -8,7 +8,7 @@ import { Svetlusik } from "./Svetlusik";
 import { NadpisSekcie } from "./Sumy";
 import { vibruj } from "./animacie";
 
-const eur2 = (n: number) => `${n.toLocaleString("sk-SK", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`;
+const eur2 = (n: number) => `${n.toLocaleString("sk-SK", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}\u00A0€`;
 
 function Obsah({ registrovany, onHotovo }: { registrovany: boolean; onHotovo?: () => void }) {
   const ja = usePouzivatel();
@@ -42,7 +42,7 @@ function Obsah({ registrovany, onHotovo }: { registrovany: boolean; onHotovo?: (
       <NadpisSekcie text="V EURÁCH" doplnok="klik a hneď odíde" />
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
         {[1, 3, 5].map((e, i) => (
-          <button key={e} type="button" className="zb-dlazdica" onClick={() => posli(`${e} €`)}
+          <button key={e} type="button" className="zb-dlazdica" onClick={() => posli(`${e}\u00A0€`)}
             style={{ ...dlazdica, background: ["var(--card)", "var(--t2)", "var(--t3)"][i], border: `1px solid ${["var(--cardBd)", "var(--t2Bd)", "var(--t3Bd)"][i]}` }}>
             <span style={{ fontSize: 20, fontWeight: 800, fontVariantNumeric: "tabular-nums" }}>{e} <span style={{ fontSize: 13, fontWeight: 700 }}>€</span></span>
             <span style={{ fontSize: 12, fontWeight: 700, color: "var(--ink3)" }}>{e < 3 ? "SEPA" : "SEPA · karta"}</span>

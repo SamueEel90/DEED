@@ -22,6 +22,7 @@ import { CasPole } from "@/components/CasPole";
 import { DNI_UH, prazdneUH, type CasUH } from "@/lib/uradneHodiny";
 import { uradneUdaje, type UradneUdaje } from "@/lib/uradneUdaje";
 import { GaleriaEditor } from "./obsahZbierky";
+import { TlacidloGalerie, useZdrojFotiek, fotkaNaSubor } from "@/components/VyberZGalerie";
 
 // IČO a sídlo z Údajov organizácie (ten istý zdroj, OPRAVY 108)
 // ---------- konštanty z karty 33 ----------
@@ -88,6 +89,7 @@ export function UpravitProfilCharity({ strankaId, pozicia, tier, nazov, inicialy
   /** OPRAVY 112: každá zmena hore — percento v karte charity rastie naživo */
   onZmena?: (p: ProfilStranky) => void;
 }) {
+  const zdrojGal = useZdrojFotiek(); // OPRAVY 254: Moje fotky (ak sú) · Verejné fotky
   const vpOtvoreny = useVerejnyProfilOtvoreny(); // KARTA 50: „Pozrieť verejný profil" — spodná lišta úpravy sa skryje
   const z0 = profilZPamate(strankaId);
   const [p, setP] = useState<ProfilStranky>(() => z0.koncept ?? z0.ulozeny ?? zakladnyProfil(pozicia));
@@ -379,6 +381,7 @@ export function UpravitProfilCharity({ strankaId, pozicia, tier, nazov, inicialy
           </div>}
       <input ref={logoRef} type="file" accept="image/png,image/jpeg,image/webp" style={{ display: "none" }}
         onChange={(e) => { const f = e.target.files?.[0]; e.currentTarget.value = ""; if (f) { setLogoSubor(f); void spracuj(f, p.logoRezim, p.logoPozadie); } }} />
+      <TlacidloGalerie zdroj={zdrojGal} vybrane={[]} zostava={1} style={{ width: "100%" }} onVyber={(l) => { void fotkaNaSubor(l[0]).then((f) => { setLogoSubor(f); void spracuj(f, p.logoRezim, p.logoPozadie); }); }} />
       <span style={poznamka}>PNG (ideálne priehľadné), JPG alebo WebP, aspoň 400 × 400 px. Široké logo dajte „Celé logo“ — neoreže sa.</span>
     </section>);
 
@@ -407,6 +410,7 @@ export function UpravitProfilCharity({ strankaId, pozicia, tier, nazov, inicialy
       </div>}
       <input ref={coverRef} type="file" accept="image/*,.heic,.heif" style={{ display: "none" }}
         onChange={(e) => { const f = e.target.files?.[0]; e.currentTarget.value = ""; if (f) void vyberCover(f); }} />
+      <TlacidloGalerie zdroj={zdrojGal} vybrane={[]} zostava={1} style={{ width: "100%" }} onVyber={(l) => { void fotkaNaSubor(l[0]).then(vyberCover); }} />
       {kvalita && <span style={{ fontSize: 12.5, fontWeight: 700, color: "#A34A2A", lineHeight: 1.45 }}>{kvalita}</span>}
       <div style={{ display: "flex", flexDirection: "column", gap: 8, paddingTop: 4 }}>
         {nadpis("Rám", "lem okolo fotky, prekryje jej okraj", 14)}

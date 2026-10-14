@@ -306,7 +306,7 @@ export function FormularOznamu({ u, onU, mobil, bezFotky, upozornenie = true }: 
         <span style={{ display: "flex", flexDirection: "column", gap: 2 }}><b style={{ fontSize: 14.5 }}>{T.foto}</b><span style={{ fontSize: 12.5, color: "var(--ink3,#5B5D53)" }}>nepovinná{T.cb ? ", ukáže sa čiernobielo" : ""}</span><span style={{ fontSize: 13.5, fontWeight: 800, color: "var(--green,#4E7D37)" }}>{u.foto ? "Zmeniť fotku" : "Pridať fotku"}</span></span>
         <input key={fotoKey} type="file" accept="image/*" style={{ display: "none" }} onChange={(e) => nacitaj(e.target.files?.[0])} />
       </label>}
-      {!bezFotky && zdrojFotiek && <TlacidloGalerie zdroj={zdrojFotiek} vybrane={u.foto ? [u.foto] : []} zostava={1} onVyber={(l) => void naDataUrl(l[0]).then((foto) => zmen({ foto }))} style={{ alignSelf: "flex-start", minHeight: 44, fontSize: 14 }} />}
+      {!bezFotky && <TlacidloGalerie zdroj={zdrojFotiek} vybrane={u.foto ? [u.foto] : []} zostava={1} onVyber={(l) => void naDataUrl(l[0]).then((foto) => zmen({ foto }))} style={{ alignSelf: "flex-start", minHeight: 44, fontSize: 14 }} />}
       {txt("meno", T.meno, T.phMeno)}
       {pa && <>
         <span style={lab}>ZOSNULÝ JE</span>

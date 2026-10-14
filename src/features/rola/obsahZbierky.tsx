@@ -8,7 +8,7 @@ import { createPortal } from "react-dom";
 import { RichTextInput } from "@/components/richtext";
 import { spracujFotku } from "@/lib/obrazok";
 import { MAX_FOTIEK_ZB, VIDEO_S_ZB, RIADKY_ZB, ZNAKY_ZB, POPIS_FOTKY_MAX, type MediumZbierky } from "@/lib/novaZbierka";
-import { TlacidloGalerie, useZdrojFotiek } from "@/components/VyberZGalerie";
+import { TlacidloGalerie, useZdrojFotiek, jeVerejnaFotka } from "@/components/VyberZGalerie";
 import { PRAVIDLA_ORG, PRAVIDLA_NADPIS, PRAVIDLA_UVOD } from "@/lib/pravidlaObsahu";
 
 // ---------- drobné UI ----------
@@ -174,8 +174,9 @@ export function GaleriaEditor({ media, onMedia, ph, onVyrez, nadpis = "Galéria 
         onDrop={(e) => { e.preventDefault(); setNadZonou(false); if (e.dataTransfer.files?.length) void pridajSubory(Array.from(e.dataTransfer.files)); }}>
         <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}><span style={{ fontSize: 15.5, fontWeight: 800 }}>{nadpis}</span><span style={{ ...pozn, fontWeight: 800 }}>{fotiek} / {max} fotiek{bezVidea ? "" : video ? ` · 1 video ${fmtSek(video.sek ?? 0)}` : " · bez videa"}</span></div>
         {ph && <div style={{ display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 10 }}>{fotiek < max && pridat(true)}{!video && !bezVidea && pridat(false)}</div>}
-        {zdroj && fotiek < max && <TlacidloGalerie zdroj={zdroj} vybrane={media.map((m) => m.src)} zostava={max - fotiek} style={{ alignSelf: ph ? "stretch" : "flex-start" }}
-          onVyber={async (l) => { const nove: MediumZbierky[] = []; for (const src of l) nove.push({ id: MID++, typ: "foto", src, w: await sirkaFotky(src) }); onMedia([...mediaRef.current, ...nove]); }} />}
+        {/* OPRAVY 254: Moje fotky (ak je zdroj) · Verejné fotky (vždy); verejná = ilustračná, súhlas ľudí na fotkách sa pri nej nepýta */}
+        {fotiek < max && <TlacidloGalerie zdroj={zdroj} vybrane={media.map((m) => m.src)} zostava={max - fotiek} style={{ alignSelf: ph ? "stretch" : "flex-start" }}
+          onVyber={async (l) => { const nove: MediumZbierky[] = []; for (const src of l) nove.push({ id: MID++, typ: "foto", src, w: await sirkaFotky(src), ...(jeVerejnaFotka(src) ? { ilustracna: true } : {}) }); onMedia([...mediaRef.current, ...nove]); }} />}
         <div style={{ display: "grid", gridTemplateColumns: ph ? "minmax(0,1fr)" : "repeat(3,minmax(0,1fr))", gap: 14 }}>
           {media.map((m, i) => (
             <div key={m.id} draggable onDragStart={(e) => { e.dataTransfer.effectAllowed = "move"; setDrag(i); }} onDragOver={(e) => e.preventDefault()}

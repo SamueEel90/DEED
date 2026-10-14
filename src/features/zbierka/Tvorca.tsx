@@ -20,7 +20,7 @@ export type TvorcaData = {
   stit: StitUroven;
 };
 
-const eK = (n: number) => `${n.toLocaleString("sk-SK", { minimumFractionDigits: n % 1 ? 2 : 0, maximumFractionDigits: 2 })} €`;
+const eK = (n: number) => `${n.toLocaleString("sk-SK", { minimumFractionDigits: n % 1 ? 2 : 0, maximumFractionDigits: 2 })}\u00A0€`;
 
 export function KamIdeDar({ nazovZbierky, fotoZbierky, tvorca, onStrankaTvorcu }: { nazovZbierky: string; fotoZbierky?: string; tvorca: TvorcaData; onStrankaTvorcu?: () => void }) {
   const [otv, setOtv] = useState(false);

@@ -2,7 +2,7 @@
 // Hore kategórie a hľadanie, pod tým mriežka: najprv náš výber (verejne_fotky_vyber), potom fotobanky (/api/fotky).
 // Ťuk = vybrať (výber drží okno galérie), pri každej fotke autor a zdroj. Uloženie k nám robí okno pri „Pridať".
 import { useEffect, useRef, useState, type CSSProperties } from "react";
-import { hladajFotky, KATEGORIE_FOTIEK, vyberFotiek, ZDROJ_NAZOV, type KategoriaFotiek, type VerejnaFotka } from "@/lib/verejneFotky";
+import { ChybaFotiek, hladajFotky, KATEGORIE_FOTIEK, vyberFotiek, ZDROJ_NAZOV, type KategoriaFotiek, type VerejnaFotka } from "@/lib/verejneFotky";
 
 export const klucFotky = (f: VerejnaFotka) => `${f.zdroj}:${f.id}`;
 
@@ -32,7 +32,11 @@ export function PanelVerejnychFotiek({ uzke, vyb, onTukni }: { uzke: boolean; /*
       ]);
       if (ja !== poradie.current) return;
       setNase(v);
-      if ("e" in b) { setChyba(b.e.message); setStav(v.length ? "ok" : "chyba"); return; }
+      if ("e" in b) {
+        // nie správca (veriaci): fotobanky nevidí, len náš výber — bez hlášky
+        const lenNas = (b.e as ChybaFotiek).kod === "len_spravca";
+        setChyba(lenNas ? (v.length ? "" : "Verejné fotky tu zatiaľ nie sú.") : b.e.message); setStav(v.length ? "ok" : "chyba"); return;
+      }
       setBanky(b.l); setViac(b.l.length >= 20); setStav("ok");
     })();
   }, [kat, hladane]);

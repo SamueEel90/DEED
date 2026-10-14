@@ -245,7 +245,7 @@ export function ZbierkaModul({ zbierka, miesto: miestoProp, onBack, spatNazov, o
     <SumyDarcovKontext.Provider value={sukromna ? false : sumyVonku}>
     <div ref={rootRef} className="deed-platba" style={{ position: "relative", minHeight: bocny ? undefined : "100%", background: bocny ? "transparent" : "var(--bg)", color: "var(--ink)", paddingBottom: bocny ? 0 : SPACE.lg }}>
       {TESTOVACIE_ZOSTAVENIE && <DevPanel dev={dev} setDev={setDev} miestoPevne={!!miestoProp} registrovany={registrovany} ico={ico}
-        cielInfo={realnyCiel ? undefined : `ukážkový ${DEV_CIEL.toLocaleString("sk-SK")} €`} dorovnava={dorovnanie?.firma}
+        cielInfo={realnyCiel ? undefined : `ukážkový ${DEV_CIEL.toLocaleString("sk-SK")}\u00A0€`} dorovnava={dorovnanie?.firma}
         onDar={(suma) => pridajDar({ refId: zbierka.id, suma, kanal: "psp", registrovany, cezTvorcu })} />}
 
 
@@ -329,7 +329,7 @@ function DevPanel({ dev, setDev, miestoPevne, registrovany, ico, cielInfo, onDar
           {riadok(`Zbierka má cieľ${cielInfo ? ` (${cielInfo})` : ""}`, dev.maCiel, (v) => setDev({ maCiel: v }))}
           <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: SPACE.xxs, padding: `${SPACE.xxs}px 0` }}>
             <span style={{ flex: 1, fontSize: 12, fontWeight: 700 }}>Simulovať dar</span>
-            {[3, 25, 150, 1000].map((s) => <span key={s} {...pressable(() => onDar(s), `Simulovať dar ${s} €`)} style={chip(false)}>+{s.toLocaleString("sk-SK")} €</span>)}
+            {[3, 25, 150, 1000].map((s) => <span key={s} {...pressable(() => onDar(s), `Simulovať dar ${s}\u00A0€`)} style={chip(false)}>+{s.toLocaleString("sk-SK")} €</span>)}
           </div>
           <div style={{ padding: `${SPACE.xxs}px 0`, fontSize: 12, fontWeight: 700 }}>
             Dorovnanie firmy: {dorovnava ? <span style={{ color: "var(--a-gold)" }}>beží · {dorovnava}</span> : <span style={{ color: C.textTer }}>nebeží</span>}

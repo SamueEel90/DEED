@@ -12,8 +12,8 @@ import { potvrditTuknutim } from "./Platba";
 type Krok = "nastavenie" | "vyber" | "zhrnutie" | "bezi";
 type VRade = { zbierkaId: string; pct: number };
 
-const eW = (n: number) => `${Math.round(n).toLocaleString("sk-SK")} €`;
-const e2 = (n: number) => `${n.toLocaleString("sk-SK", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`;
+const eW = (n: number) => `${Math.round(n).toLocaleString("sk-SK")}\u00A0€`;
+const e2 = (n: number) => `${n.toLocaleString("sk-SK", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}\u00A0€`;
 const buzz = (p: number | number[]) => { try { navigator.vibrate?.(p); } catch { /* bez vibrácie */ } };
 const karta: CSSProperties = { borderRadius: 18, background: "var(--card)", border: "1px solid var(--cardBd)" };
 const nadpis: CSSProperties = { fontSize: 12, fontWeight: 700, letterSpacing: ".05em", color: "var(--ink3)" };

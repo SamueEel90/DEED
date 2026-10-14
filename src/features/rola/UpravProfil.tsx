@@ -16,6 +16,7 @@ import { spracujLogo, rozmeryFotky, LOGO_CFG, COVER_CFG, type LogoRezim, type Lo
 import { SUBJEKTY } from "./mock";
 import { nacitajKontakt, SIETE, MAX_TEL, MAX_EMAIL, chybaSiete, chybaWebu, chybaEmailu, chybaTel, type Kontakt } from "./kontakt";
 import { nacitajOnas, nacitajTvarLoga, nacitajZdrojAvatara, ONAS_MAX, type Pozicia, type TvarLoga, type ZdrojAvatara } from "./stav";
+import { TlacidloGalerie, useZdrojFotiek, fotkaNaSubor } from "@/components/VyberZGalerie";
 
 export interface ProfilZmeny { onas: string; logo: string | null; tvar: TvarLoga; cover: string | null; kontakt: Kontakt; zdroj: ZdrojAvatara }
 
@@ -76,6 +77,7 @@ export function UpravProfilSheet({ pozicia, logo, cover, toast, onUloz, onClose 
   pozicia: Pozicia; logo: string | null; cover?: string | null; toast: (m: string) => void;
   onUloz: (z: ProfilZmeny) => void; onClose: () => void;
 }) {
+  const zdrojGal = useZdrojFotiek(); // OPRAVY 254: Moje fotky (ak sú) · Verejné fotky
   const s = SUBJEKTY[pozicia];
   const ja = usePouzivatel();
   // tvorca si vyberá: vlastná fotka alebo logo značky; ostatní majú vždy logo
@@ -203,6 +205,7 @@ export function UpravProfilSheet({ pozicia, logo, cover, toast, onUloz, onClose 
           </div>
           <input ref={inputRef} type="file" accept="image/png,image/jpeg,image/webp" style={{ display: "none" }}
             onChange={(e) => { const f = e.target.files?.[0]; e.currentTarget.value = ""; if (f) { setLogoSubor(f); void spracuj(f, rezim, pozadie); } }} />
+          <TlacidloGalerie zdroj={zdrojGal} vybrane={[]} zostava={1} style={{ width: "100%" }} onVyber={(l) => { void fotkaNaSubor(l[0]).then((f) => { setLogoSubor(f); void spracuj(f, rezim, pozadie); }); }} />
           <div style={{ fontSize: 10.5, color: logoInfo?.startsWith("⚠") ? "var(--a-danger)" : C.textTer, lineHeight: 1.45 }}>
             {logoInfo ?? `PNG (ideálne priehľadné) · JPG · WebP — aspoň ${LOGO_CFG.minPx} × ${LOGO_CFG.minPx} px, max ${LOGO_CFG.maxMB} MB. Široké logo daj „Celé logo" — neoreže sa.`}
           </div>
@@ -236,6 +239,7 @@ export function UpravProfilSheet({ pozicia, logo, cover, toast, onUloz, onClose 
       )}
       <input ref={coverRef} type="file" accept="image/*,.heic,.heif" style={{ display: "none" }}
         onChange={(e) => { const f = e.target.files?.[0]; e.currentTarget.value = ""; if (f) void vyberCover(f); }} />
+      {!coverSubor && <TlacidloGalerie zdroj={zdrojGal} vybrane={[]} zostava={1} style={{ marginTop: SPACE.xs, width: "100%" }} onVyber={(l) => { void fotkaNaSubor(l[0]).then(vyberCover); }} />}
       {coverInfo && <div style={{ fontSize: 10.5, marginTop: SPACE.xxs, color: coverInfo.startsWith("⚠") ? "var(--a-danger)" : "var(--a-green)" }}>{coverInfo}</div>}
       <div style={{ fontSize: 10.5, color: C.textTer, marginTop: SPACE.xxs, lineHeight: 1.45 }}>
         Aspoň {COVER_CFG.minSirka} × {COVER_CFG.minVyska} px, max {COVER_CFG.maxMB} MB. Do označených miest (logo, štít) nedávaj nič dôležité. Fotka bez textu vyzerá na mobile najlepšie.
