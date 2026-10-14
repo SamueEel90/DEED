@@ -622,7 +622,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, nahlad,
   </section>;
   // --- Oznamy farnosti ---
   const kOznamy = ozAll.length > 0 && sekcia("ozn", "Oznamy farnosti", S.ozn, <>
-    <div style={{ display: "flex", flexDirection: "column", borderTop: `1px solid ${LINKA}` }}>
+    <div style={{ display: "flex", flexDirection: "column", borderTop: k3 ? "1.5px solid var(--nf-linia)" : `1px solid ${LINKA}` }}>
       {ozAll.map((x) => { const d = new Date(x.ms || cas.getTime()), o = ozOtv === x.id, kde = miestaF.length > 1 && x.mi ? x.mi.map((id) => miestaF.find((m) => m.id === id)?.nazov).filter(Boolean).join(" · ") : ""; return (
         <div key={x.id} style={{ display: "flex", gap: k3 ? 20 : 14, padding: "16px 0", borderBottom: `1px solid ${LINKA}` }}>
           <span style={{ flex: "none", width: 58, height: 58, borderRadius: 12, background: KARTA, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}><b style={{ fontSize: 20, lineHeight: 1 }}>{d.getDate()}</b><span style={{ fontSize: 11.5, fontWeight: 800, color: INK3 }}>{["JAN", "FEB", "MAR", "APR", "MÁJ", "JÚN", "JÚL", "AUG", "SEP", "OKT", "NOV", "DEC"][d.getMonth()]}</span></span>
@@ -697,7 +697,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, nahlad,
   </>);
   // --- Teš sa s nami = zápis v kronike ---
   const kTes = maTes && sekcia("tes", "Teš sa s nami", S.tes, <>
-    <div style={{ display: "flex", flexDirection: "column", borderTop: `1px solid ${LINKA}` }}>
+    <div style={{ display: "flex", flexDirection: "column", borderTop: k3 ? "1.5px solid var(--nf-linia)" : `1px solid ${LINKA}` }}>
       {tesy.map((t) => { const d = t.datum && /^\d{4}-\d{2}-\d{2}/.test(t.datum) ? zIso(t.datum.slice(0, 10)) : t.it?.vytvorene ? new Date(t.it.vytvorene) : t.x?.cas ? new Date(t.x.cas) : undefined;
         const st = t.ine ? "OZNÁMENIE" : t.druh === "svadba" ? "SVADBA" : t.druh === "jubileum" ? "JUBILEUM" : t.dakuje ? "POĎAKOVANIE" : "BLAHOŽELANIE";
         const obr = t.foto ?? t.it?.fotky?.find(ziveObr) ?? (t.it ? obrFar(t.it) || undefined : undefined) ?? (t.x ? obrVer(t.x) || undefined : undefined);
@@ -727,7 +727,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, nahlad,
     </div>
   </>);
   // --- Deti a mládež (ten istý blok ako na Nástenke) ---
-  const kDeti = k3 ? <DetiAMladezBlok strankaId={strankaId} blokStyl={{ padding: "36px 40px", borderTop: `1px solid ${LINKA}`, display: "flex", flexDirection: "column", gap: 14, scrollMarginTop: 16 }} lavy={KN("Deti a mládež")} kto={kto} mojeMeno={mojeMeno} reg={reg} />
+  const kDeti = k3 ? <DetiAMladezBlok strankaId={strankaId} blokStyl={{ padding: "36px 40px", borderTop: `1px solid ${LINKA}`, display: "flex", flexDirection: "column", gap: 14, scrollMarginTop: 16 }} lavy={<>{KN("Deti a mládež")}<span aria-hidden="true" style={{ height: 1.5, background: "var(--nf-linia)" }} /></>} kto={kto} mojeMeno={mojeMeno} reg={reg} />
     : maDeti && zbK("deti", "Deti a mládež", S.deti, <DetiAMladezBlok strankaId={strankaId} blokStyl={{}} lavy={null} kto={kto} mojeMeno={mojeMeno} reg={reg} />);
   // --- Farský úrad ---
   const pole = (n: string, v: ReactNode) => <span style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}><span style={{ fontSize: 13, fontWeight: 800, letterSpacing: ".1em", color: INK3 }}>{n}</span><span style={{ fontSize: 16.5, lineHeight: 1.5, color: INK, overflowWrap: "anywhere" }}>{v}</span></span>;
@@ -795,14 +795,14 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, nahlad,
     ? <div style={{ display: "flex", flexDirection: "column", background: PAPIER }}>{profilKronika}<div style={{ padding: k3 ? "28px 28px 64px" : "20px 18px 48px" }}><span style={{ fontSize: 17, color: INK3 }}>Farnosť tu zatiaľ nič nezverejnila.</span></div></div>
     : k3
       ? <div className="kronika" style={{ display: "flex", alignItems: "stretch", minHeight: "100%" }}>
-        <aside style={{ flex: "none", width: "clamp(320px,30vw,440px)", borderRight: `1px solid ${LINKA}`, background: PAPIER, display: "flex", flexDirection: "column" }}>
+        <aside style={{ flex: "none", width: "clamp(320px,30vw,440px)", borderRight: "2px solid var(--nf-linia)", background: PAPIER, display: "flex", flexDirection: "column" }}>
           {profilKronika}
           <div style={{ padding: "20px 28px 48px", display: "flex", flexDirection: "column", gap: 0 }}>
-            {[kZbierky, kKostoly, kOmse, kPomoz].filter(Boolean).map((x, i) => <div key={i} style={{ paddingTop: 20, marginTop: i ? 20 : 0, borderTop: `1px solid ${LINKA}` }}>{x}</div>)}
+            {[kZbierky, kKostoly, kOmse, kPomoz].filter(Boolean).map((x, i) => <div key={i} style={{ paddingTop: 20, marginTop: i ? 20 : 0, borderTop: "2px solid var(--nf-linia)" }}>{x}</div>)}
           </div>
         </aside>
         <main style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
-          <div style={{ padding: "22px 40px 18px", borderBottom: `1px solid ${LINKA}` }}><KronikaHladat polozky={hladat} onBlok={posunNaBlok} /></div>
+          <div style={{ padding: "22px 40px 18px", borderBottom: "2px solid var(--nf-linia)" }}><KronikaHladat polozky={hladat} onBlok={posunNaBlok} /></div>
           {kTyzden}{kOznamy}{kVyp}{kModli}{kPrid}{kTes}{kSpom}{kVer}{kDeti}{kUrad}{kArchiv}
         </main>
         <KronikaLista bloky={listaBloky} />

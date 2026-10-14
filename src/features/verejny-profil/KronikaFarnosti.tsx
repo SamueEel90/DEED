@@ -217,7 +217,7 @@ export function KronikaLista({ bloky, fab }: { bloky: { id: string; t: string }[
     return () => io.disconnect();
   }, [kl]);
   return (
-    <nav aria-label="Skok na blok" style={{ flex: "none", width: 96, borderLeft: `1px solid ${LINKA}`, position: "relative" }}>
+    <nav aria-label="Skok na blok" style={{ flex: "none", width: 96, position: "relative" }}>{/* OPRAVY 252: vpravo zvislá čiara nie je */}
       <div style={{ position: "sticky", top: 0, height: "100vh", maxHeight: "100dvh", boxSizing: "border-box", padding: "120px 0 108px", display: "flex", flexDirection: "column", alignItems: "center", overflowY: "auto", scrollbarWidth: "none" } as CSSProperties}>
         {bloky.map((b, i) => { const on = akt === b.id; return (
           <span key={b.id} style={{ display: "contents" }}>
