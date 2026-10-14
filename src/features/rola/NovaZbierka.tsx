@@ -10,7 +10,6 @@
 // ============================================================
 import { toast } from "@/components/toast";
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { createPortal } from "react-dom";
 import { OrezFotky } from "@/components/orezfotky";
 import { ZbierkaModul, type ZbierkaData } from "@/features/zbierka/ZbierkaModul";
 import PodrzTlacidlo from "@/features/zbierka/PodrzTlacidlo";
@@ -31,6 +30,7 @@ import { VERIME_VAM, SUHLAS_FOTKY, SUHLAS_POZNAMKA, SUHLAS_CHYBA, PRED_SPUSTENIM
 
 import { Ik, I, Zamok, vyber, panel, pole, pozn, fmtEur, fmtSek, cis, cistyText, Media, Volby, Nadpis, Zaskrtnutie, odkaz, PravidlaObsahu, TextovePolia, GaleriaEditor } from "./obsahZbierky";
 import { AnoNie } from "@/components/AnoNie";
+import { RamPisania } from "@/components/RamPisania";
 
 export function NovaZbierka({ strankaId, pozicia, tier, nazov, inicialy, mobil, tablet, stit, onMojeZbierky, farnost }: {
   strankaId: string; pozicia: Pozicia; tier: Tier; nazov: string; inicialy: string; mobil: boolean; tablet: boolean; stit: string;
@@ -78,7 +78,8 @@ export function NovaZbierka({ strankaId, pozicia, tier, nazov, inicialy, mobil, 
   const hore = useRef<HTMLDivElement>(null);
   // pri zmene kroku hore na začiatok správy (hlavička ostane vidno), nie pri prvom otvorení
   const prvy = useRef(true);
-  useEffect(() => { if (prvy.current) { prvy.current = false; return; } (hore.current?.closest(".sprava-charity") as HTMLElement | null)?.scrollIntoView?.({ block: "start" }); }, [k, nahlad, hotovo]);
+  useEffect(() => { if (prvy.current) { prvy.current = false; return; } (hore.current?.closest(".sprava-charity") as HTMLElement | null)?.scrollIntoView?.({ block: "start" }); ramTelo.current?.scrollTo({ top: 0 }); }, [k, nahlad, hotovo]);
+  const ramTelo = useRef<HTMLDivElement>(null); // OPRAVY 284: telefón — rám na celú obrazovku
 
   // ---------- chyby krokov (texty z prototypu) ----------
   const fotiek = d.media.filter((m) => m.typ === "foto").length;
@@ -377,14 +378,14 @@ export function NovaZbierka({ strankaId, pozicia, tier, nazov, inicialy, mobil, 
   const spatEl = ki > 0 ? <button type="button" onClick={spat} aria-label="Späť" style={{ flex: "none", height: 52, minWidth: 52, padding: ph ? 0 : "0 18px 0 12px", borderRadius: 14, border: "1.5px solid var(--cardBd)", background: ph ? "var(--field)" : "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 15, fontWeight: 800, color: "var(--ink)", display: "flex", alignItems: "center", justifyContent: "center", gap: 4 }}><Ik d={I.vlavo} s={18} w={2.4} />{!ph && "Späť"}</button> : null;
 
   const pravidlaEl = pravidla ? <PravidlaObsahu ph={ph} stit={stit} onZavri={() => setPravidla(false)} /> : null;
+  // OPRAVY 284: na telefóne rám na celú obrazovku (ako 258) — lišta KROK N Z M, Náhľad na ťuk, Späť a Pokračovať dole
   if (ph) return (<>
-    <div ref={hore} style={{ display: "flex", flexDirection: "column", gap: 16 }}>{stepper}{obsah}</div>{pravidlaEl}
-    <div aria-hidden="true" style={{ height: chyba ? 120 : 90 }} />
-    {createPortal(
-      <div className="sprava-charity" data-stit={stit} style={{ position: "fixed", left: 12, right: 12, bottom: "calc(96px + env(safe-area-inset-bottom, 0px))", zIndex: 45, display: "flex", flexDirection: "column", gap: 8, padding: 10, borderRadius: 18, background: "var(--panel)", border: "1px solid var(--cardBd)", boxShadow: "0 8px 24px rgba(30,28,20,.16)" }}>
-        {chybaEl}
-        <div style={{ display: "flex", gap: 10 }}>{spatEl}{dalejEl}</div>
-      </div>, document.body)}
+    <div ref={hore} />
+    <RamPisania nazov={KROKY_ZBIERKY[k - 1] ?? "Nová zbierka"} kroky={{ i: ki, n: KROKY.length }} teloRef={ramTelo}
+      onSpat={() => { if (ki > 0) spat(); else onMojeZbierky(); }} onNahlad={() => setNahlad("str")}
+      dole={<>{chybaEl}<div style={{ display: "flex", gap: 10 }}>{spatEl}{dalejEl}</div></>} vrstva={pravidlaEl}>
+      <div style={{ padding: "16px 16px 28px", display: "flex", flexDirection: "column", gap: 16 }}>{obsah}</div>
+    </RamPisania>
   </>);
   return (<>
     <div ref={hore} style={{ display: "flex", flexDirection: "column", gap: 18, width: "100%", maxWidth: 980, margin: "0 auto" }}>{stepper}<div style={{ display: "flex", flexDirection: "column", gap: 16, width: "100%", maxWidth: 820, margin: "0 auto" }}>{obsah}</div></div>{pravidlaEl}
