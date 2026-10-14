@@ -57,7 +57,7 @@ import { stitokOznamu, plagatTyzdna } from "@/features/rola/OmseKalendar";
 import { druhDna, farbyDna, prikazanySviatok } from "@/lib/liturgia";
 import { DetiAMladezBlok } from "./DetiAMladez";
 import { usePrispela } from "@/lib/farnostPrispela";
-import { klucJa, MenuPrispevku, CelaObrazovka, ProhliadacAlbumu, nastavFabRezim, otvorPridanie } from "./FarnikPridava";
+import { klucJa, MenuPrispevku, CelaObrazovka, ProhliadacAlbumu } from "./FarnikPridava";
 import { ZbierkaModul, type ZbierkaData } from "@/features/zbierka/ZbierkaModul";
 import type { StitLevel } from "@/components/stit";
 import { toast } from "@/shared";
@@ -892,7 +892,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, nahlad,
   // ============================================================
   const moderne = rozlozenie === "moderne";
   const pcVelke = useAspon(1366); // PC 1440 vs. tablet na šírku
-  useEffect(() => { if (!moderne) return; nastavFabRezim(pc && pcVelke ? "lista" : pc ? "" : "maly"); return () => nastavFabRezim(""); }, [moderne, pc, pcVelke]);
+  // OPRAVY 278: + je vo všetkých vzhľadoch plávajúce vpravo dole (Karta 65 tu neplatí)
   const [pasMod, posMod] = usePas(), [pasTes, posTes] = usePas(), [pasPrid, posPrid] = usePas(), [pasKos, posKos] = usePas();
   const [pasOzn, posOzn] = usePas(true), [pasSpom, posSpom] = usePas(true);
   // OPRAVY 259: Nástenka PC a tablet na šírku — Zbierky farnosti v jednom riadku, listuje sa do boku
@@ -1137,7 +1137,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, nahlad,
       {prazdna
         ? <div style={{ padding: pc ? "40px 48px 72px" : "28px 18px 48px" }}><span style={{ fontSize: 17, color: INK3 }}>Farnosť tu zatiaľ nič nezverejnila.</span></div>
         : pc ? <>
-          {listaM.length > 0 && <MLista bloky={listaM} onBlok={posunNaBlok} plus={fab && pcVelke ? <button type="button" onClick={otvorPridanie} aria-label="Pridať na stránku farnosti" style={{ flex: "none", width: 60, height: 60, borderRadius: "50%", border: "none", background: ZELENA_TL, color: "#fff", fontSize: 34, fontWeight: 500, lineHeight: 1, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", boxShadow: "0 6px 18px rgba(0,0,0,.4)" }}>+</button> : undefined} />}
+          {listaM.length > 0 && <MLista bloky={listaM} onBlok={posunNaBlok} />}
           <main style={{ padding: pcVelke ? "44px 48px 64px" : "32px 32px 56px", display: "grid", gridTemplateColumns: "repeat(12,minmax(0,1fr))", gap: 24 }}>
             {RYTMUS.flatMap((rad) => { const r = rad.filter(([id]) => MBL[id].ma); return r.map(([id, s]) => mPcBlok(MBL[id], r.length === 1 ? 12 : s, r.length === 2)); })}
             {pataPc.length > 0 && <>

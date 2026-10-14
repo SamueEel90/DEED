@@ -411,9 +411,11 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
     setHotovo(it.id); setEdToast(true); window.clearTimeout(tm.current); tm.current = window.setTimeout(() => setEdToast(false), 2500);
   };
 
-  const fabS = fabRez === "maly" ? 58 : 68;
-  const fab = !k && fabRez !== "lista" && (
-    <button type="button" onClick={() => setSheet(true)} aria-label="Pridať na stránku farnosti" style={{ position: "fixed", right: vpravo, bottom: mobil ? 96 + 16 : 28, zIndex: 150, width: fabS, height: fabS, padding: 0, border: "none", borderRadius: "50%", background: ZELENA, color: "#fff", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 10px 24px rgba(30,40,20,.35)" }}>
+  // OPRAVY 278: + vždy plávajúce vpravo dole, 58 px, zelený prechod — rovnaké vo všetkých vzhľadoch, PC aj mobil
+  void fabRez;
+  const fabS = 58;
+  const fab = !k && (
+    <button type="button" onClick={() => setSheet(true)} aria-label="Pridať na stránku farnosti" style={{ position: "fixed", right: vpravo, bottom: mobil ? 96 + 16 : 28, zIndex: 150, width: fabS, height: fabS, padding: 0, border: "none", borderRadius: "50%", background: "linear-gradient(160deg,#5E9145,#3F6E2A)", color: "#fff", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 10px 24px rgba(30,40,20,.35)" }}>
       <span aria-hidden="true" style={{ position: "relative", width: 26, height: 26, flex: "none" }}>
         <span style={{ position: "absolute", left: 11, top: 0, width: 4, height: 26, borderRadius: 2, background: "#fff" }} />
         <span style={{ position: "absolute", top: 11, left: 0, width: 26, height: 4, borderRadius: 2, background: "#fff" }} />
