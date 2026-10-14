@@ -54,9 +54,16 @@ export async function zapisPrispevokIsto(fid: string, it: VieraFeedItem, uprava 
   if (!supabase) return ulozStav("prispevky", fid, doZoznamu(it)) ? null : "Na zariadení nie je miesto. Zmenšite alebo vynechajte fotku a skúste znova.";
   let cist: VieraFeedItem;
   try { cist = await bezDataUrl(it, "prispevky"); } catch (e) { return e instanceof Error ? e.message : "Fotky sa nepodarilo nahrať. Skúste znova."; }
+  // ako bezObrazkov (Samuel, bod 270): video z galérie udalosti do Storage, nenahraté ostane len na tomto zariadení
+  if (cist.video && /^(blob|data):/.test(cist.video)) {
+    const b = await fetch(cist.video).then((r) => r.blob(), () => null);
+    const url = b ? await nahrajSuborUrl(b, "video", (b.type.split("/")[1] || "mp4").replace("quicktime", "mov")) : null;
+    if (url) cist = { ...cist, video: url };
+  }
+  const doDb = bezLokalnehoVidea(cist);
   const { error } = uprava
-    ? await supabase.from("naboz_prispevok").update({ data: cist, upravene: new Date().toISOString() }).eq("id", cist.id)
-    : await supabase.from("naboz_prispevok").upsert({ id: cist.id, farnost_id: fid, data: cist }, { onConflict: "id" });
+    ? await supabase.from("naboz_prispevok").update({ data: doDb, upravene: new Date().toISOString() }).eq("id", cist.id)
+    : await supabase.from("naboz_prispevok").upsert({ id: cist.id, farnost_id: fid, data: doDb }, { onConflict: "id" });
   if (error) return "Nepodarilo sa uložiť na server. Skontrolujte pripojenie a skúste znova.";
   if (!uprava) oznacVDb(fid, cist.id);
   ulozStav("prispevky", fid, doZoznamu(cist));
