@@ -172,6 +172,7 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
   // OPRAVY 273: chyba pri ukladaní (červená hláška + Skúsiť znova) a práve sa ukladá
   const [chybaUl, setChybaUl] = useState<string | null>(null);
   const [uklada, setUklada] = useState(false);
+  const [posledne, setPosledne] = useState<string | null>(null); // OPRAVY 275: náhľad práve zverejneného
   const opakuj = useRef<(() => void) | null>(null);
   const ulozIsto = async (it: VieraFeedItem, uprava: boolean, znova?: () => void): Promise<boolean> => {
     setUklada(true); setChybaUl(null);
@@ -324,6 +325,7 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
     const prazdne: Partial<VieraFeedItem> = { udalost: undefined, datum: undefined, fotky: undefined, video: undefined, plagat: undefined, ukat: undefined, smutocny: undefined, reakciaTyp: undefined, pozvanie: undefined, rsvp: undefined };
     // OPRAVY 273: zelená hláška až keď je naozaj uložené; pri chybe červená na tom istom mieste, rozpísané ostáva
     if (!(await ulozIsto(povodny ? { ...povodny, ...prazdne, ...it } : it, !!povodny))) return;
+    setPosledne(it.id);
     zmazKoncept(KON);
     if (povodny) { setHotovo(`Zmeny sú uložené ✓${kalendar ? " · kalendár je upravený" : ""}`); setEdit(null); }
     else setHotovo(`${dr === 2 ? "Oznámenie je zverejnené ✓" : dr === 1 ? "Udalosť je zverejnená ✓" : "Oznam je zverejnený ✓"}${kalendar ? " · zapísané aj do kalendára" : ""}`);
@@ -337,7 +339,7 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
     if (p.stav === "koncept" && !edit) setJubKon(p);
     if (p.stav !== "hotovo") return;
     const P = p.polia ?? {}, str = (k: string) => String(P[k] ?? "").trim();
-    const obr = (await edRef.current?.nahlad()) || "";
+    const obr = (await edRef.current?.nahlad(p.typ === "parte" ? undefined : { verejny: true })) || ""; // OPRAVY 275: na stránku verejný hárok (bez času a miesta hostiny)
     const povodny = edit ? zoznam.find((x) => x.id === edit) : undefined;
     const teraz = terazMs(), id = povodny?.id ?? `naboz-${teraz}`;
     // OPRAVY 273: návrh editora sa ukladá raz — pri parte v smutocny.editor (Spomíname), inak v oz.ed
@@ -359,6 +361,7 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
     }
     const prazdne: Partial<VieraFeedItem> = { udalost: undefined, datum: undefined, fotky: undefined, video: undefined, plagat: undefined, ukat: undefined, smutocny: undefined, reakciaTyp: undefined, pozvanie: undefined, rsvp: undefined };
     if (!(await ulozIsto(povodny ? { ...povodny, ...prazdne, ...it } : it, !!povodny))) { setJubOtv(false); return; }
+    setPosledne(it.id);
     setJubKon(null); setJubOtv(false); zmazKoncept(KON);
     if (povodny) { setHotovo("Zmeny sú uložené ✓"); setEdit(null); } else setHotovo("Oznámenie je zverejnené ✓");
     obnov((x) => x + 1);
@@ -556,7 +559,8 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
   const pravy: ReactNode = <>
     <span style={{ fontSize: 12.5, fontWeight: 800, letterSpacing: ".08em", color: "var(--ink3)" }}>NÁHĽAD · TAKTO TO UVIDIA ĽUDIA</span>
     <button type="button" onClick={() => setVpOn(true)} style={{ alignSelf: "stretch", minHeight: 48, borderRadius: 12, border: "1.5px solid var(--gBd)", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 14.5, fontWeight: 800, color: "var(--gInk)", boxShadow: "none" }}>Pozrieť celú verejnú stránku ›</button>
-    {jub && !hotovo ? <section style={{ ...karta, padding: "14px 18px", fontSize: 14.5, lineHeight: 1.5, color: "var(--ink2)" }}>Náhľad je priamo v Editore oznámení. Parte sa ukáže v bloku Spomíname, svadba a blahoželanie v bloku Teš sa s nami.</section> : nahladPisania}
+    {hotovo && posledne && zoznam.some((x) => x.id === posledne) ? nahladZverejneneho(zoznam.find((x) => x.id === posledne)!) /* OPRAVY 275: po zverejnení skutočný hárok */
+      : jub && !hotovo ? <section style={{ ...karta, padding: "14px 18px", fontSize: 14.5, lineHeight: 1.5, color: "var(--ink2)" }}>Náhľad je priamo v Editore oznámení. Parte sa ukáže v bloku Spomíname, svadba a blahoželanie v bloku Teš sa s nami.</section> : nahladPisania}
   </>;
   const pridatTl = (
     <button type="button" onClick={() => { setFormOn(true); setHotovo(null); }} style={{ flex: "none", minHeight: 56, border: "none", borderRadius: 16, background: "#4B7A35", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 10, fontFamily: "inherit", fontSize: 16, fontWeight: 800, color: "#fff", boxShadow: "none" }}><span aria-hidden="true" style={{ fontSize: 22, lineHeight: 1 }}>+</span>Pridať oznam</button>);

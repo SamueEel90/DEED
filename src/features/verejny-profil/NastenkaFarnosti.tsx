@@ -10,7 +10,7 @@
 import { useZamokVrstvy } from "@/lib/zamokVrstvy";
 import { useFarbaLinie, useVolbaLinie } from "@/lib/liniaStranky";
 import { useRozlozenie } from "@/lib/rozlozenieFarnosti";
-import { SERIF_KRONIKY, KNadpis, KDatum, ZbierkaStvorec, PomozKarta, SvateOmse, Zapis, SpomZapis, ArchivRokov, KronikaHladat, KronikaLista, useSerifKroniky, type RokArchivu, type ZapisArchivu, type NajdenePolozka } from "./KronikaFarnosti";
+import { SERIF_KRONIKY, KNadpis, KDatum, ZbierkaStvorec, PomozKarta, SvateOmse, SpomZapis, ArchivRokov, KronikaHladat, KronikaLista, useSerifKroniky, type RokArchivu, type ZapisArchivu, type NajdenePolozka } from "./KronikaFarnosti";
 import { useStretnutia, skoncilo } from "@/lib/detiMladez";
 import { useMiesta, nazovDruhu, type Miesto } from "@/lib/miestaFarnosti";
 import { ZbalenyBlok, useZbaleneBloky } from "./ZbalenyBlok";
@@ -727,14 +727,31 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, nahlad,
         </button>); })}
     </div>}
   </>);
-  // --- Teš sa s nami = zápis v kronike ---
+  // OPRAVY 275: karta Teš sa — celý hárok na výšku (uložený obrázok s fotkou, nič orezané), pod ním meno, roky, dátum a Blahoželám
+  const tesKarta = (t: Tes, styl: CSSProperties) => {
+    const d = t.datum && /^\d{4}-\d{2}-\d{2}/.test(t.datum) ? zIso(t.datum.slice(0, 10)) : t.it?.vytvorene ? new Date(t.it.vytvorene) : t.x?.cas ? new Date(t.x.cas) : undefined;
+    const st = t.ine ? "OZNÁMENIE" : t.druh === "svadba" ? "SVADBA" : t.druh === "jubileum" ? "JUBILEUM" : t.dakuje ? "POĎAKOVANIE" : "BLAHOŽELANIE";
+    const obr = (t.x ? obrVer(t.x) || undefined : undefined) ?? (t.it ? obrFar(t.it) || undefined : undefined) ?? t.foto ?? t.it?.fotky?.find(ziveObr);
+    const roky = t.druh === "jubileum" && t.vek ? `${t.vek} ${rokyT(Number(t.vek)).toLocaleLowerCase("sk-SK")}` : "";
+    const jaV = t.r.zoznam.includes(kto), n = t.r.zoznam.length;
+    return (
+      <div key={t.id} style={{ ...styl, minWidth: 0, padding: 12, borderRadius: 20, background: KARTA, color: INK, display: "flex", flexDirection: "column", gap: 10, boxSizing: "border-box" }}>
+        <button type="button" onClick={() => setTes(t)} aria-label={`${t.ine ? t.nadpis : t.meno} · otvoriť`} style={{ width: "100%", aspectRatio: "2 / 3", border: "none", padding: 0, borderRadius: 10, overflow: "hidden", background: obr ? "#fff" : PAPIER, cursor: "zoom-in", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          {obr ? <img src={obr} alt="" style={{ width: "100%", height: "100%", objectFit: "contain", display: "block" }} />
+            : <span style={{ pointerEvents: "none" }}><TvarOznamu tvar={t.druh === "svadba" ? "kruh" : t.druh === "jubileum" ? "kosostvorec" : "stvorec"} pal={t.pal} label={t.meno} onTap={() => undefined}><ObsahTvaru t={t} /></TvarOznamu></span>}
+        </button>
+        <span style={{ display: "flex", flexDirection: "column", gap: 3, padding: "0 4px" }}>
+          <span style={{ fontSize: 12.5, fontWeight: 800, letterSpacing: ".1em", color: t.druh === "svadba" ? "var(--nf-teal)" : ZLATA }}>{[st, d ? dm(d) : ""].filter(Boolean).join(" · ")}</span>
+          <b style={{ fontSize: 18, lineHeight: 1.25, overflowWrap: "anywhere" }}>{t.ine ? t.nadpis : t.meno}</b>
+          {roky && <span style={{ fontSize: 15, color: INK2 }}>{roky}</span>}
+        </span>
+        {!t.ine && <button type="button" aria-pressed={jaV} onClick={t.r.prepni} style={{ ...tlacR(jaV, true), whiteSpace: "normal" }}>{jaV ? (t.dakuje ? "Ďakujete ✓" : "Blahoželáte ✓") : t.dakuje ? "Ďakujem" : "Blahoželám"}{n ? ` · ${n}` : ""}</button>}
+      </div>);
+  };
+  // --- Teš sa s nami: karty vedľa seba (PC 2–3 v rade), mobil na celú šírku ---
   const kTes = maTes && sekcia("tes", "Teš sa s nami", S.tes, <>
-    <div style={{ display: "flex", flexDirection: "column", borderTop: k3 ? "1.5px solid var(--nf-linia)" : `1px solid ${LINKA}` }}>
-      {tesy.map((t) => { const d = t.datum && /^\d{4}-\d{2}-\d{2}/.test(t.datum) ? zIso(t.datum.slice(0, 10)) : t.it?.vytvorene ? new Date(t.it.vytvorene) : t.x?.cas ? new Date(t.x.cas) : undefined;
-        const st = t.ine ? "OZNÁMENIE" : t.druh === "svadba" ? "SVADBA" : t.druh === "jubileum" ? "JUBILEUM" : t.dakuje ? "POĎAKOVANIE" : "BLAHOŽELANIE";
-        const obr = t.foto ?? t.it?.fotky?.find(ziveObr) ?? (t.it ? obrFar(t.it) || undefined : undefined) ?? (t.x ? obrVer(t.x) || undefined : undefined);
-        const veta = t.ine ? "" : [t.druh === "jubileum" && t.vek ? `${t.vek} ${rokyT(Number(t.vek)).toLocaleLowerCase("sk-SK")}` : "", t.pod ?? ""].filter(Boolean).join(" · ") || (t.nadpis !== t.meno ? t.nadpis : "");
-        return <Zapis key={t.id} d={d} obr={obr ?? ""} stitok={st} farbaStitku={t.druh === "svadba" ? "var(--nf-teal)" : ZLATA} t={t.ine ? t.nadpis : t.meno} veta={veta || (t.r.zoznam.length ? reakT(!!t.dakuje, t.r.zoznam.length) : undefined)} serif onTap={() => setTes(t)} />; })}
+    <div style={{ display: "grid", gridTemplateColumns: siroka ? "repeat(auto-fill,minmax(184px,240px))" : "minmax(0,1fr)", gap: 14 }}>
+      {tesy.map((t) => tesKarta(t, {}))}
     </div>
   </>);
   // --- Spomíname = zápis na tmavšom pozadí ---
@@ -1013,21 +1030,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, nahlad,
         <span style={{ position: "relative", ...naBiele }}><MenuPrispevku x={a} strankaId={strankaId} kto={kto} moje={moje(a)} /></span>
       </div>); })}
   </PasX>;
-  const mTes = <PasX pasRef={pasTes} gap={14}>{tesy.map((t) => {
-    const d = t.datum && /^\d{4}-\d{2}-\d{2}/.test(t.datum) ? zIso(t.datum.slice(0, 10)) : t.it?.vytvorene ? new Date(t.it.vytvorene) : t.x?.cas ? new Date(t.x.cas) : undefined;
-    const st = t.ine ? "OZNÁMENIE" : t.druh === "svadba" ? "SVADBA" : t.druh === "jubileum" ? "JUBILEUM" : t.dakuje ? "POĎAKOVANIE" : "BLAHOŽELANIE";
-    const obr = t.foto ?? t.it?.fotky?.find(ziveObr) ?? (t.it ? obrFar(t.it) || undefined : undefined) ?? (t.x ? obrVer(t.x) || undefined : undefined);
-    const veta = t.ine ? "" : [t.druh === "jubileum" && t.vek ? `${t.vek} ${rokyT(Number(t.vek)).toLocaleLowerCase("sk-SK")}` : "", t.pod ?? ""].filter(Boolean).join(" · ") || (t.nadpis !== t.meno ? t.nadpis : "");
-    const pod = veta || (t.r.zoznam.length ? reakT(!!t.dakuje, t.r.zoznam.length) : "");
-    return (
-      <button key={t.id} type="button" onClick={() => setTes(t)} style={{ ...sirkaKarty(nPas(2.2), 14), border: "none", padding: 0, borderRadius: 22, overflow: "hidden", background: KARTA, color: INK, fontFamily: "inherit", textAlign: "left", cursor: "pointer", display: "flex", flexDirection: "column" }}>
-        <span style={{ display: "block", width: "100%", aspectRatio: "16 / 10", background: obr ? `center/cover no-repeat url('${obr}')` : "linear-gradient(150deg,#5A4A22,#2E2715)" }} />
-        <span style={{ padding: "16px 18px 20px", display: "flex", flexDirection: "column", gap: 6 }}>
-          <span style={{ fontSize: 13, fontWeight: 800, letterSpacing: ".1em", color: t.druh === "svadba" ? "var(--nf-teal)" : ZLATA }}>{st}{d ? ` · ${dm(d)}` : ""}</span>
-          <b style={{ fontFamily: SERIF_KRONIKY, fontSize: 22, lineHeight: 1.25, fontWeight: 600 }}>{t.ine ? t.nadpis : t.meno}</b>
-          {pod && <span style={{ fontSize: 15.5, color: INK3 }}>{pod}</span>}
-        </span>
-      </button>); })}</PasX>;
+  const mTes = <PasX pasRef={pasTes} gap={14}>{tesy.map((t) => tesKarta(t, { flex: "none", scrollSnapAlign: "start", width: mob && !mt ? "calc(100% - 2px)" : 210 }))}</PasX>; // OPRAVY 275: celý hárok na výšku
   const spomZoznam = (vo2: boolean) => zoznamY(pasSpom, spomienky.map((sp) => { const n = sp.x ? pocetSus(sp.x) : (reakcieF(strankaId, sp.zb?.id ?? sp.id).sustrast ?? []).length; return (
     <div key={sp.id} style={{ flex: "none", scrollSnapAlign: "start", padding: "0 16px", borderRadius: 20, background: KARTA }}>
       <SpomZapis foto={sp.foto} symbol={symbol} meno={sp.d.meno} roky={rokyParte(sp.d.nar, sp.d.umr)} rozlucka={[rozluckaT(sp.d.rd, sp.d.rc), sp.d.rm].filter(Boolean).join(" · ")} zbierka={!!sp.zb} sustrast={n} onTap={() => setParte(sp)} />
@@ -1733,7 +1736,10 @@ function Sviecka() {
  *  Z Editora: obrázok bez týchto riadkov · šablóna farnosti: bez času a miesta · inak tvar ako na stránke. */
 function CeleOznamenie({ t, vz }: { t: Tes; vz: Parameters<typeof Plagat>[0]["vz"] }) {
   const navrh = t.x?.editor ?? t.it?.oz?.ed ?? null;
-  const src = useVerejnyObrazok(navrh, t.id);
+  // OPRAVY 275: ako v Klasike — uložený obrázok hárku (s fotkou); nanovo kreslený hárok fotku stratí
+  const ulozeny = t.x ? (ziveObr(t.x.obr) ? t.x.obr : t.x.editor && ziveObr(t.x.fotky?.[0]) ? t.x.fotky![0] : undefined)
+    : t.it?.plagat && ziveObr(t.it.fotky?.[0]) ? t.it.fotky![0] : undefined;
+  const src0 = useVerejnyObrazok(ulozeny ? null : navrh, t.id), src = ulozeny ?? src0;
   const tvar = <TvarOznamu tvar={t.druh === "svadba" ? "kruh" : t.druh === "jubileum" ? "kosostvorec" : "stvorec"} pal={t.pal} label={t.meno} onTap={() => undefined}><ObsahTvaru t={t} /></TvarOznamu>;
   if (navrh) return src
     ? <img src={src} alt={`${t.meno} · oznámenie`} style={{ display: "block", width: "100%", maxWidth: 420, height: "auto", borderRadius: 8, boxShadow: "0 6px 20px rgba(0,0,0,.18)" }} />

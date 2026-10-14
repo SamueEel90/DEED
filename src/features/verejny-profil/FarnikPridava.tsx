@@ -398,7 +398,7 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
     const t = k === "parte" ? str("meno") : k === "svadba" ? [str("sNev"), str("sZen")].filter(Boolean).join(" a ") : str("jMeno") || str("bMeno");
     const s = k === "parte" ? (P.neskor ? "Termín rozlúčky oznámime." : [fmtD(str("rd")), str("rc"), str("rm")].filter(Boolean).join(" · "))
       : k === "svadba" ? [fmtD(str("sD")), str("sC"), str("sM")].filter(Boolean).join(" · ") : [fmtD(str("jD")), str("jC"), str("jM")].filter(Boolean).join(" · ");
-    const obr = (await edRef.current?.nahlad()) || "";
+    const obr = (await edRef.current?.nahlad(k === "parte" ? undefined : { verejny: true })) || ""; // OPRAVY 275: verejný hárok
     let it: PolozkaFarnika;
     const povodny = edId ? odFarnikov(strankaId).find((y) => y.id === edId) : undefined; // OPRAVY 190: úprava ponechá id aj reakcie
     try { it = await bezDataUrl<PolozkaFarnika>({ ...(povodny ?? {}), id: povodny?.id ?? `f${teraz().toString(36)}`, k, t: t || druhT(k), s, kto: povodny?.kto ?? (ja.celeMeno || "Veriaci"), cas: povodny?.cas ?? teraz(), autor: povodny?.autor ?? kto, mesto: povodny?.mesto ?? ja.mesto, autorFoto: povodny?.autorFoto ?? ja.foto ?? undefined, editor: p, obr: obr || undefined,
