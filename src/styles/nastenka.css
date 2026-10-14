@@ -31,6 +31,6 @@ html.dark .nastenka-farnosti {
 }
 
 /* KARTA 65 · Moderné: štvorec ikony bloku (tmavý #262C22, svetlý ako pás) a pásy so šípkami bez posuvníka */
-.nastenka-farnosti { --md-ikona: var(--nf-pas); }
-html.dark .nastenka-farnosti { --md-ikona: #262C22; }
+.nastenka-farnosti { --md-ikona: var(--nf-pas); --md-naLinii: #FFFFFF; } /* OPRAVY 248: text na farbe línií — svetlý režim biely */
+html.dark .nastenka-farnosti { --md-ikona: #262C22; --md-naLinii: #14110B; }
 .md-pas::-webkit-scrollbar { display: none; }
