@@ -8,7 +8,8 @@ import { useState, type CSSProperties } from "react";
 import { GaleriaEditor, TextovePolia } from "./obsahZbierky";
 import PodrzTlacidlo from "@/features/zbierka/PodrzTlacidlo";
 import { DrzTlacidlo } from "@/features/viera/AdresarCirkvi";
-import { useKalendar } from "@/lib/kalendarFarnosti";
+import { useKalendar, dniTyzdna } from "@/lib/kalendarFarnosti";
+import { omseZvoncek } from "@/lib/zvoncekOmse";
 import { cenaMiest, predplatne, stavPredplatneho } from "@/lib/predplatneFarnosti";
 import { DRUHY_MIESTA, nazovDruhu, prazdneMiesto, riadokCeny, doplatokMiesta, ulozMiesto, useMiesta, zamrazMiesto, stavPlatcu, odpovedPlatcu, platimSam, LEHOTA_PLATCU_DNI, type Miesto } from "@/lib/miestaFarnosti";
 import { RamFormulara, MateRozpisane, ZahoditRozpisane, useRamPisania } from "@/components/RamPisania";
@@ -40,7 +41,8 @@ export function KostolyMiesta({ strankaId, mobil, onOmse }: { strankaId: string;
   const skusobne = st === "nezverejnene" || st === "skusobne" || st === "konci";
   // platí iná farnosť: nové (aj obnovené) miesto beží až po potvrdení platiteľa
   const platca = st === "zaNasPlati" ? p.platca?.meno ?? null : null;
-  const omsiTyzdenne = (id: string) => { const k = kal.kostoly[id]; return k?.casyOk ? Object.values(k.vzor).reduce((a, l) => a + l.length, 0) : 0; };
+  // OPRAVY 291: omše tohto týždňa rovnako ako zvončeková (omseZvoncek), nie podľa casyOk
+  const omsiTyzdenne = (id: string) => { const k = kal.kostoly[id]; return k ? dniTyzdna(0).reduce((a, d) => a + omseZvoncek(k, d).length, 0) : 0; };
   const novy = !!f && !vsetky.some((m) => m.id === f.id);
   // OPRAVY 271: na mobile rám na celú obrazovku; rozpísané nové miesto ostane na zariadení, kým sa neuloží alebo nezahodí
   const ram = useRamPisania();
