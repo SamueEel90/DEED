@@ -8,6 +8,7 @@ import { stiahniPlagat } from "@/lib/plagatPdf";
 import { menoBezMena, useSektorDarcu } from "@/lib/darcovia";
 import type { ProfilStranky } from "@/lib/profilStranky";
 import { RAMY } from "./titulka";
+import { AnoNie } from "@/components/AnoNie";
 
 export const kartaK: CSSProperties = { borderRadius: 22, background: "var(--card)", border: "1px solid var(--cardBd)", padding: "20px 22px", display: "flex", flexDirection: "column", gap: 12, minWidth: 0 };
 export const nadpisK: CSSProperties = { fontSize: 16, fontWeight: 800, color: "var(--ink)" };
@@ -117,7 +118,7 @@ export function AkoDarovat({ sada, eurc, sadaE, onZmena, pravidelna, bezi }: { s
       <Vyber stlpce={3} vyska={62} value={vSada} onChange={(k) => zmenSumy({ sada: k })} moznosti={SADY.map(([t, a], i) => ({ k: i, t, s: `${a.map(fmt).join(" · ")} €` }))} />
       <span style={drobneK}>Vlastnú sumu môže darca zadať vždy. Sumy pod 3 € idú len cez SEPA.{pravidelna ? " Tie isté sumy sa ponúknu aj pri pravidelnej podpore." : ""}</span>
       <span style={{ fontSize: 14.5, fontWeight: 800, paddingTop: 4 }}>Dary v kryptomene EURC</span>
-      <Vyber stlpce={2} vyska={50} value={eurc} onChange={(k) => onZmena({ eurc: k })} moznosti={[{ k: true, t: "Áno" }, { k: false, t: "Nie" }]} />
+      <AnoNie value={eurc} onChange={(k) => onZmena({ eurc: k })} label="Dary v EURC" siroke />
       <span style={drobneK}>EURC je digitálne euro 1 : 1. V Nastaveniach stránky máte zvolené „podľa zbierky“.{pravidelna ? "" : " Sumy môžete meniť aj počas zbierky."}</span>
       {eurc && <>
         <span style={{ fontSize: 14.5, fontWeight: 800, paddingTop: 4 }}>Rýchle sumy v EURC</span>

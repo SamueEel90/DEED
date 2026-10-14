@@ -30,6 +30,7 @@ import { useNastavenieUpoz } from "@/lib/upozorneniaFarnosti";
 import { VERIME_VAM, SUHLAS_FOTKY, SUHLAS_POZNAMKA, SUHLAS_CHYBA, PRED_SPUSTENIM_NADPIS, PRED_SPUSTENIM, PRAVDIVA_ZBIERKA } from "@/lib/pravidlaObsahu";
 
 import { Ik, I, Zamok, vyber, panel, pole, pozn, fmtEur, fmtSek, cis, cistyText, Media, Volby, Nadpis, Zaskrtnutie, odkaz, PravidlaObsahu, TextovePolia, GaleriaEditor } from "./obsahZbierky";
+import { AnoNie } from "@/components/AnoNie";
 
 export function NovaZbierka({ strankaId, pozicia, tier, nazov, inicialy, mobil, tablet, stit, onMojeZbierky, farnost }: {
   strankaId: string; pozicia: Pozicia; tier: Tier; nazov: string; inicialy: string; mobil: boolean; tablet: boolean; stit: string;
@@ -293,7 +294,7 @@ export function NovaZbierka({ strankaId, pozicia, tier, nazov, inicialy, mobil, 
         {eurcRezim === "pre všetky zbierky" && <div style={{ padding: "12px 14px", borderRadius: 14, background: "var(--gSoft)", border: "1px solid var(--gBd)", display: "flex", flexDirection: "column", gap: 2 }}><b style={{ fontSize: 14.5 }}>{ph ? "Dary v EURC sú zapnuté pre všetky zbierky." : "Dary v kryptomene EURC sú zapnuté pre všetky zbierky"}</b><span style={pozn}>{ph ? "Zmeníte v Nastaveniach stránky." : "Zmeniť to môžete v Nastaveniach stránky."}</span></div>}
         {eurcRezim === "podľa zbierky" && <>
           <Nadpis t={ph ? "Dary v EURC pri tejto zbierke" : "Dary v kryptomene EURC pri tejto zbierke"} />
-          <Volby stlpce={2} vyska={50} value={d.eurc} onChange={(v) => zmen({ eurc: v })} moznosti={[{ k: true, t: "Áno" }, { k: false, t: "Nie" }]} />
+          <AnoNie value={d.eurc} onChange={(v) => zmen({ eurc: v })} label="Dary v EURC" siroke />
           {!ph && <span style={{ ...pozn, marginTop: -6 }}>EURC je digitálne euro 1 : 1. V Nastaveniach stránky máte zvolené „podľa zbierky“.</span>}
         </>}
         {eurcOn && <>

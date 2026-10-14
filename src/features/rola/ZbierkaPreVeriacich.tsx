@@ -26,6 +26,7 @@ import { pridajPrispevok, upravPrispevok, vlastnePrispevkyVsetky, type VieraFeed
 import { FormularOznamu, VyberSablony, chybaOznamu, popisOznamu, prazdneUdaje, prvaVolba, type DruhOznamu, type UdajeOznamu, type VolbaSablony } from "@/features/viera/Sablony";
 import { hladajPrijemcov, type PrijemcaDeed } from "@/lib/prijemcoviDeed";
 import { SADY_EUR, SADY_EURC } from "@/lib/sadyDarov";
+import { AnoNie } from "@/components/AnoNie";
 import {
   spustiZbierku, noveIdZbierky, prazdnaZbierka, PODIEL_MAX, PODIEL_KROK, PODIEL_STROP_EUR, PODELIT_MAX, PODELIT_MIN, PODELIT_KROK,
   type SpustenaZbierka, type ZbierkaFarnosti, type PodielZbierky } from "@/lib/novaZbierka";
@@ -457,9 +458,7 @@ export function ZbierkaSOverovatelom({ stranka, menoFarnosti, ucetFarnosti, mobi
           </div>
           <span style={{ fontSize: 13.5, lineHeight: 1.5, color: "var(--ink3)" }}>Vlastnú sumu môže darca zadať vždy. Sady sú pevné, dohodnite s rodinou, ktorá sa hodí. Po zapečatení sa sada dá zmeniť, rozdelenie nie.</span>
           <b style={{ fontSize: 14.5 }}>Dary v kryptomene EURC</b>
-          <div role="radiogroup" aria-label="Dary v EURC" style={{ display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 8 }}>
-            {([[true, "Áno"], [false, "Nie"]] as [boolean, string][]).map(([v, t]) => <button key={t} type="button" role="radio" aria-checked={eurc === v} onClick={() => setEurc(v)} style={{ ...volbaSt(eurc === v), minHeight: 50, justifyContent: "center" }}><b style={{ fontSize: 15 }}>{t}</b></button>)}
-          </div>
+          <AnoNie value={eurc} onChange={setEurc} label="Dary v EURC" siroke />
           {eurc && <>
             <b style={{ fontSize: 14.5 }}>Rýchle sumy v EURC</b>
             <div role="radiogroup" aria-label="Rýchle sumy v EURC" style={{ display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 8 }}>

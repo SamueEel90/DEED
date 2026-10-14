@@ -11,6 +11,7 @@ import { TlacidloGalerie, useZdrojFotiek } from "@/components/VyberZGalerie";
 import { CasPole } from "@/components/CasPole";
 import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import type { Vzhlad } from "@/lib/vzhladStranky";
+import { AnoNie } from "@/components/AnoNie";
 
 export type DruhOznamu = "parte" | "svadba" | "ine";
 export interface UdajeOznamu {
@@ -233,7 +234,7 @@ export function VyberSablony({ u, volba, onVolba, vz, mobil, qr, qrText }: { u: 
         {pa && seg([["Čiernobielo", true], ["Farebne", false]], volba.cb, (x) => onVolba({ ...volba, cb: x }))}
         {pa && qr && <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <span style={{ fontSize: 12.5, fontWeight: 800, letterSpacing: ".06em", color: "var(--ink3,#5B5D53)" }}>QR NA PARTE</span>
-          {seg([["Áno", true], ["Nie", false]], volba.qr !== false, (x) => onVolba({ ...volba, qr: x }))}
+          <AnoNie value={volba.qr !== false} onChange={(x) => onVolba({ ...volba, qr: x })} label="QR na parte" />
         </span>}
         <label style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <span style={{ fontSize: 12.5, fontWeight: 800, letterSpacing: ".06em", color: "var(--ink3,#5B5D53)" }}>MOTÍV</span>

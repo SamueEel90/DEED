@@ -16,6 +16,7 @@ import { Zamok, Media, Volby, panel, pole, cistyText, GaleriaEditor, TextovePoli
 import { OverenieUctu, useOverenieUctu, ibanPlatny } from "./OverenieUctu";
 import { DokladyCharity } from "./SpravaZbierky";
 import { Titulka } from "./titulka";
+import { AnoNie } from "@/components/AnoNie";
 
 const karta: CSSProperties = { ...panel, gap: 12 };
 const nadpisS: CSSProperties = { fontSize: 17, fontWeight: 800, color: "var(--ink)" };
@@ -116,7 +117,8 @@ export function CentralnaZbierkaSprava({ strankaId, nazov, inicialy, hlavnyUcet,
     </section>
     <section style={karta}>
       <span style={nadpisS}>Dary v EURC</span>
-      <Volby stlpce={2} vyska={56} value={d.eurc} onChange={(v) => zmen({ eurc: v })} moznosti={[{ k: true, t: "Áno", s: "prijímame EURC" }, { k: false, t: "Nie", s: "len eurá" }]} />
+      <AnoNie value={d.eurc} onChange={(v) => zmen({ eurc: v })} label="Dary v EURC" siroke />
+      <span style={textS}>{d.eurc ? "Prijímame aj EURC." : "Len eurá."}</span>
       {d.eurc && <>
         <b style={{ fontSize: 15, color: "var(--ink)" }}>Rýchle sumy v EURC</b>
         <Volby stlpce={3} vyska={60} value={d.sadaE} onChange={(i) => zmen({ sadaE: i })} moznosti={SADY.map(([t, a], i) => ({ k: i, t, s: `${a.join(" · ")} EURC` }))} />

@@ -18,6 +18,7 @@ import { formatujIban } from "./segmenty";
 import { SADY_EUR, SADY_EURC, type SadaEur, type SadaEurc } from "@/lib/sadyDarov";
 import { PravidelnaHarok } from "@/features/zbierka/PravidelnaHarok";
 import { jeNeregistrovany } from "@/lib/devDarca";
+import { AnoNie } from "@/components/AnoNie";
 
 export function CentralnaZbierkaSheet({ toast, onClose }: { toast: (m: string) => void; onClose: () => void }) {
   const s = SUBJEKTY.charita;
@@ -111,10 +112,7 @@ export function CentralnaZbierkaSheet({ toast, onClose }: { toast: (m: string) =
 
       {nadpis("DARY V KRYPTOMENE")}
       <div style={{ fontSize: 13.5, fontWeight: 700, marginBottom: SPACE.xs }}>Chcete prijímať dary v kryptomene EURC?</div>
-      <div style={{ display: "flex", gap: SPACE.xs }}>
-        <button type="button" style={volba(krypto)} onClick={() => setKrypto(true)}>Áno</button>
-        <button type="button" style={volba(!krypto)} onClick={() => setKrypto(false)}>Nie</button>
-      </div>
+      <AnoNie value={krypto} onChange={setKrypto} label="Dary v kryptomene EURC" siroke />
       <div style={{ fontSize: 11.5, color: C.textTer, marginTop: SPACE.xxs }}>
         {krypto ? "EURC je digitálne euro 1 : 1." : "Dary v krypte sa nebudú zobrazovať v žiadnej vašej zbierke."} Platí pre všetky vaše zbierky, zmeniť to môžete kedykoľvek.
       </div>

@@ -38,6 +38,7 @@
 /* ===== MOTÍV — TMAVÝ (sekundárny · warm earthy) ===== */
 html.dark {
   color-scheme: dark;
+  --nieBg: #5E574B; /* OPRAVY 265 — vybraté Nie (AnoNie) */
   --c-bg: #14110B;             /* teplá near-black */
   --linia-bordova: #A8445A;
   --c-bg2: #1B170F;

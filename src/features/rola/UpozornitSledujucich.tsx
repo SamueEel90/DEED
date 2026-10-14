@@ -6,6 +6,7 @@
 import { useEffect, useState } from "react";
 import { pocetSledujucich, type Blok } from "@/lib/mojeFarnosti";
 import { BLOK_VETA, DRUHY_UPOZ, hned, nastavPredvoleneUpoz, useNastavenieUpoz } from "@/lib/upozorneniaFarnosti";
+import { AnoNie } from "@/components/AnoNie";
 
 const ludom = (n: number) => (n === 1 ? "1 človeku" : `${n} ľuďom`);
 
@@ -24,11 +25,7 @@ export function UpozornitSledujucich({ strankaId, blok, miesta, value, onChange 
   return (
     <div style={{ padding: "14px 16px", borderRadius: 16, background: "var(--card)", border: "1px solid var(--cardBd)", display: "flex", flexDirection: "column", gap: 10 }}>
       <b style={{ fontSize: 15.5 }}>Upozorniť sledujúcich</b>
-      <div role="radiogroup" aria-label="Upozorniť sledujúcich" style={{ display: "flex", gap: 4, padding: 4, borderRadius: 12, background: "var(--btn)", alignSelf: "flex-start" }}>
-        {([[true, "Áno"], [false, "Nie"]] as const).map(([v, t]) => { const on = value === v; return (
-          <button key={t} type="button" role="radio" aria-checked={on} onClick={() => onChange(v)}
-            style={{ minHeight: 40, padding: "0 20px", border: "none", borderRadius: 9, background: on ? "var(--ink)" : "transparent", color: on ? "var(--bg)" : "var(--ink3)", fontFamily: "inherit", fontSize: 14.5, fontWeight: 800, cursor: "pointer", boxShadow: "none" }}>{t}</button>); })}
-      </div>
+      <AnoNie value={value} onChange={onChange} label="Upozorniť sledujúcich" />
       <span role="status" style={{ fontSize: 13.5, color: "var(--ink2)" }}>{veta}</span>
     </div>);
 }
