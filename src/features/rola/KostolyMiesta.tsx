@@ -13,6 +13,7 @@ import { cenaMiest, predplatne, stavPredplatneho } from "@/lib/predplatneFarnost
 import { DRUHY_MIESTA, nazovDruhu, prazdneMiesto, riadokCeny, ulozMiesto, useMiesta, zamrazMiesto, stavPlatcu, odpovedPlatcu, platimSam, LEHOTA_PLATCU_DNI, type Miesto } from "@/lib/miestaFarnosti";
 import { RamFormulara, MateRozpisane, ZahoditRozpisane, useRamPisania } from "@/components/RamPisania";
 import { nacitajKoncept, zmazKoncept, useUkladajKoncept } from "@/lib/koncept";
+import { useHromadnyVyber, TlacidloVyberu, ListaVyberu, PolickoVyberu, PasVyberu } from "@/components/HromadnyVyber";
 
 const karta: CSSProperties = { borderRadius: 16, background: "var(--card)", border: "1px solid var(--cardBd)" };
 const lbl: CSSProperties = { fontSize: 14, fontWeight: 800 };
@@ -31,6 +32,7 @@ export function KostolyMiesta({ strankaId, mobil, onOmse }: { strankaId: string;
   const [hlaska, setHlaska] = useState<string | null>(null);
   const [potvrd, setPotvrd] = useState(false);
   const [teraz] = useState(() => Date.now());
+  const hv = useHromadnyVyber(); // OPRAVY 284 (5): odobrať viac miest naraz (hlavný kostol nie)
   const p = predplatne(), st = stavPredplatneho(p, teraz);
   const skusobne = st === "nezverejnene" || st === "skusobne" || st === "konci";
   // platí iná farnosť: nové (aj obnovené) miesto beží až po potvrdení platiteľa
@@ -114,7 +116,8 @@ export function KostolyMiesta({ strankaId, mobil, onOmse }: { strankaId: string;
   const riadok = (m: Miesto) => {
     const t = m.media.find((x) => x.typ === "foto")?.src, om = omsiTyzdenne(m.id);
     return (
-      <div key={m.id} style={{ ...karta, display: "flex", alignItems: "center", gap: 14, padding: "12px 14px", opacity: m.zamrznute ? 0.7 : 1 }}>
+      <div key={m.id} onClick={hv.zap && m.id !== "0" && !m.zamrznute ? () => hv.prepni(m.id) : undefined} style={{ ...karta, display: "flex", alignItems: "center", gap: 14, padding: "12px 14px", opacity: m.zamrznute ? 0.7 : 1, cursor: hv.zap && m.id !== "0" && !m.zamrznute ? "pointer" : undefined }}>
+        {hv.zap && m.id !== "0" && !m.zamrznute && <PolickoVyberu on={hv.vyb.has(m.id)} />}
         <span style={{ width: 64, height: 64, borderRadius: 12, flex: "none", background: t ? `center/cover no-repeat url('${t}')` : "linear-gradient(160deg,#A9A290,#5F584A)" }} />
         <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}>
           <span style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: ".08em", color: "#8A6A1F" }}>{nazovDruhu(m.druh).toLocaleUpperCase("sk-SK")}{m.id === "0" ? " · HLAVNÝ" : ""}{m.zamrznute ? " · ODOBRATÉ" : ""}</span>
@@ -122,7 +125,7 @@ export function KostolyMiesta({ strankaId, mobil, onOmse }: { strankaId: string;
           <span style={{ fontSize: 13, color: "var(--ink3)" }}>{[m.adresa || (m.id === "0" ? "z registrácie" : ""), m.zamrznute ? "stránka zamrzla" : omsiT(om)].filter(Boolean).join(" · ")}
             {!m.zamrznute && !om && onOmse && <> · <button type="button" onClick={onOmse} style={{ border: "none", background: "transparent", padding: 0, color: "var(--gInk)", fontFamily: "inherit", fontSize: 13, fontWeight: 800, cursor: "pointer" }}>nastaviť omše ›</button></>}</span>
         </span>
-        <button type="button" onClick={() => { setHlaska(null); setF(m); }} style={tl(false)}>{m.zamrznute ? "Obnoviť" : "Upraviť"}</button>
+        {!hv.zap && <button type="button" onClick={() => { setHlaska(null); setF(m); }} style={tl(false)}>{m.zamrznute ? "Obnoviť" : "Upraviť"}</button>}
       </div>);
   };
   // platí iná farnosť: čaká · odmietol (hláška + zaplatiť sám) · zrušené po 14 dňoch (správa farárovi)
@@ -154,7 +157,11 @@ export function KostolyMiesta({ strankaId, mobil, onOmse }: { strankaId: string;
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
       <span style={{ fontSize: 14, color: "var(--ink3)" }}>Každý kostol alebo filiálka má na stránke svoju kartu a podstránku. Peniaze a zbierky sú vždy farnosti.</span>
       {hlaska && <div role="status" style={{ padding: "12px 14px", borderRadius: 14, background: "var(--gSoft)", border: "2px solid #4B7A35", fontSize: 15, fontWeight: 800, color: "var(--gInk)" }}>{hlaska}</div>}
+      {aktivne.length > 2 && <div style={{ display: "flex", justifyContent: "flex-end" }}><TlacidloVyberu v={hv} /></div>}
+      <ListaVyberu v={hv} polozky={aktivne.filter((m) => m.id !== "0").map((m) => ({ id: m.id, cas: Date.parse(m.vytvorene) || 0 }))} />
       {aktivne.map(riadok)}
+      <PasVyberu v={hv} dolu={mobil ? 104 : 12} sloveso="odoberte" pocet={(n) => miestT(n)}
+        onZmaz={(ids) => { void (async () => { for (const id of ids) await zamrazMiesto(strankaId, id, true); })(); /* po jednom — každý zápis číta celý zoznam */ return `Odobraté: ${miestT(ids.length)} ✓ · stránky miest zamrzli, dajú sa obnoviť · cena ${cenaMiest(aktivne.length - ids.length)} € mesačne od ďalšej platby`; }} />
       {cakaju.map(riadokPlatcu)}
       {kon && <MateRozpisane cas={kon.cas} co={kon.d.nazov.trim() || "nové miesto"} onPokracovat={() => { setHlaska(null); setF({ ...prazdneMiesto(), ...kon.d }); }} onZahodit={() => { zmazKoncept(KON); prekresli((x) => x + 1); }} />}
       <button type="button" onClick={() => { setHlaska(null); setF(prazdneMiesto()); }} style={{ ...tl(true), alignSelf: "flex-start", minHeight: 52, padding: "0 22px", fontSize: 16 }}>+ Pridať kostol alebo filiálku</button>

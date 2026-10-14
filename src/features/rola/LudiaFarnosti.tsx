@@ -16,6 +16,7 @@ import { TESTOVACIA } from "@/lib/testovacia";
 import { DrzTlacidlo } from "@/features/viera/AdresarCirkvi";
 import { nacitajProfil, zapisDuchovneho } from "@/lib/profilStranky";
 import { obnovFarara } from "@/lib/farnostPrispela";
+import { useHromadnyVyber, TlacidloVyberu, ListaVyberu, PolickoVyberu, PasVyberu } from "@/components/HromadnyVyber";
 
 type Duch = { tp: string; meno: string; tz: string; kde: string; osl: string; fil: string[]; foto: string; som: 0 | 1; /** 0082: účet farára (server podľa neho zapíše farára) */ ucet?: string };
 type Caka = false | true | "odkaz" | "potvrdit";
@@ -94,6 +95,10 @@ export function LudiaFarnosti({ strankaId, meno: menoFarnosti, mobil, children }
     : [{ id: -2, n: celeMeno || T, k: "", r: T, caka: false, vlastny: true, jaT: inyF ? "má účet v DEED+" : "bez účtu v DEED+", foto: D0u.foto }, { id: -1, n: jaMeno, k: "", r: "Správca stránky", caka: false, vlastny: true, jaT: "Správca stránky · vy", foto: ja.foto || "" }];
   const cakaT = (c: Caka) => (c === "potvrdit" ? "čaká na vaše potvrdenie" : c === "odkaz" ? "pozvánka odoslaná" : "čaká na prijatie");
   const duchovnych = [...base, ...L].filter((x) => (x.r === T || x.r === "Dozorca") && !x.caka).length;
+  // OPRAVY 284 (5): hromadný výber — duchovný alebo dozorca musí ostať aspoň jeden
+  const hv = useHromadnyVyber();
+  const jeDuchR = (x: Clovek) => (x.r === T || x.r === "Dozorca") && !x.caka;
+  const volitelni = L.filter((x) => !(jeDuchR(x) && duchovnych <= 1));
 
   const okMail = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(mail.trim());
   const rola = nr !== null ? ROLY[Math.min(nr, ROLY.length - 1)][0] : "";
@@ -208,14 +213,17 @@ export function LudiaFarnosti({ strankaId, meno: menoFarnosti, mobil, children }
     </section>
 
     {/* ---------- kto spravuje ---------- */}
-    <span style={kick}>{`Kto spravuje stránku ${Sg}`.toUpperCase()}</span>
+    <div style={{ display: "flex", alignItems: "center", gap: 10 }}><span style={{ ...kick, flex: 1 }}>{`Kto spravuje stránku ${Sg}`.toUpperCase()}</span>{volitelni.length > 1 && <TlacidloVyberu v={hv} />}</div>
+    <ListaVyberu v={hv} polozky={volitelni.map((x) => ({ id: String(x.id), cas: x.id }))} />
     <section style={{ ...karta, borderRadius: 22, padding: mobil ? "4px 14px" : "6px 20px" }}>
       {[...base, ...L].map((x, i) => {
         const vlastny = !!x.vlastny, rr = ROLY[rI(x.r)];
         const posledny = (x.r === T || x.r === "Dozorca") && !x.caka && duchovnych <= 1;
+        const vyb = hv.zap && !vlastny && !posledny, on = hv.vyb.has(String(x.id)); // OPRAVY 284 (5): hromadný výber
         return (
-          <div key={x.id} style={{ padding: "12px 0", borderTop: i ? "1px solid var(--cardBd)" : "none", display: "flex", flexDirection: "column", gap: 8 }}>
+          <div key={x.id} onClick={vyb ? () => hv.prepni(String(x.id)) : undefined} style={{ padding: "12px 0", borderTop: i ? "1px solid var(--cardBd)" : "none", display: "flex", flexDirection: "column", gap: 8, cursor: vyb ? "pointer" : undefined }}>
             <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+              {vyb && <PolickoVyberu on={on} />}
               {/* OPRAVY 208: tá istá osoba = tá istá fotka z profilu */}
               <span aria-hidden="true" style={{ width: 42, height: 42, flex: "none", borderRadius: "50%", background: x.foto ? `url("${x.foto}") center/cover no-repeat` : x.caka ? "var(--btn)" : "var(--gSoft)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 800, color: "var(--ink2)" }}>{x.foto ? "" : inic(x.n || "?")}</span>
               <span style={{ flex: 1, minWidth: 140, display: "flex", flexDirection: "column", gap: 2 }}>
@@ -223,10 +231,10 @@ export function LudiaFarnosti({ strankaId, meno: menoFarnosti, mobil, children }
                 {x.caka ? <span style={{ alignSelf: "flex-start", padding: "2px 8px", borderRadius: 8, background: "var(--goldBg)", fontSize: 12, fontWeight: 800 }}>{cakaT(x.caka)}</span> : null}
                 <span style={{ fontSize: 13, color: "var(--ink3)" }}>{vlastny ? x.jaT : `${rr[0]} · ${rr[1]}`}</span>
               </span>
-              {!vlastny && <select value={x.r} aria-label="Rola" onChange={(e) => { ulozL(L.map((y) => (y.id === x.id ? { ...y, r: e.target.value } : y))); hlas(String(x.id), `Rola zmenená ✓ ${e.target.value}`); }}
+              {!vlastny && !hv.zap && <select value={x.r} aria-label="Rola" onChange={(e) => { ulozL(L.map((y) => (y.id === x.id ? { ...y, r: e.target.value } : y))); hlas(String(x.id), `Rola zmenená ✓ ${e.target.value}`); }}
                 style={{ ...pole, width: "auto", height: 44 }}>{ROLY.map(([t]) => <option key={t} value={t}>{t}</option>)}</select>}
             </div>
-            {!vlastny && <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            {!vlastny && !hv.zap && <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               {x.caka === "potvrdit" && <button type="button" onClick={() => { ulozL(L.map((y) => (y.id === x.id ? { ...y, caka: false } : y))); hlas(String(x.id), `Potvrdené ✓ ${x.n} môže začať.`); }} style={{ ...plne(true), minHeight: 44 }}>Potvrdiť</button>}
               {x.caka === "odkaz" && TESTOVACIA && <button type="button" onClick={() => ulozL(L.map((y) => (y.id === x.id ? { ...y, caka: "potvrdit", n: "Testovací pozvaný", k: "test@deed.sk" } : y)))} style={{ ...obrys, borderStyle: "dashed" }}>Ukážka: vyplnil pozvánku ›</button>}
               {posledny ? <span style={{ fontSize: 13, color: "var(--ink3)" }}>{SL.dozorca ? `${T} alebo dozorca musí ostať aspoň jeden.` : `${T} musí ostať aspoň jeden.`}</span>
@@ -237,6 +245,13 @@ export function LudiaFarnosti({ strankaId, meno: menoFarnosti, mobil, children }
           </div>); })}
     </section>
     {hl?.id === "zoz" && <span role="status" style={hlaskaSt}>{hl.t}</span>}
+    <PasVyberu v={hv} dolu={mobil ? 104 : 12} sloveso="odoberte" pocet={(n) => (n === 1 ? "1 človek" : n < 5 ? `${n} ľudia` : `${n} ľudí`)}
+      onZmaz={(ids) => {
+        let z = L.filter((y) => ids.includes(String(y.id)));
+        const ost = duchovnych - z.filter(jeDuchR).length;
+        if (ost < 1) { const nech = z.find(jeDuchR); z = z.filter((y) => y !== nech); }
+        ulozL(L.filter((y) => !z.includes(y)));
+        return ost < 1 ? `Odobratí: ${z.length} ✓ · ${T} musí ostať aspoň jeden` : `Odobratí: ${z.length} ✓`; }} />
     <button type="button" onClick={() => { setPrid(true); setDOtv(false); }} style={{ minHeight: 56, padding: "8px 16px", borderRadius: 16, border: "1px solid var(--cardBd)", background: "var(--card)", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 2, textAlign: "left", fontFamily: "inherit", color: "var(--ink)" }}>
       <b style={{ fontSize: 15 }}>Potrebujete pridať ďalších ľudí do správy? ›</b>
       <span style={{ fontSize: 13, color: "var(--ink3)" }}>Nemusíte. Stránku zvládnete spravovať aj sám.</span>
