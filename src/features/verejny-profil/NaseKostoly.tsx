@@ -13,6 +13,7 @@ import { cistyText, jeHtmlText } from "@/lib/richtext";
 import { FormatovanyText } from "@/components/formattext";
 import { useZamokVrstvy } from "@/lib/zamokVrstvy";
 import { Datum } from "./NastenkaFarnosti";
+import { CelaGaleria, OdznakFotiek, type MediumGalerie } from "@/components/celaGaleria";
 
 const KARTA = "var(--nf-karta)", INK = "var(--nf-ink)", INK2 = "var(--nf-ink2)", INK3 = "var(--nf-ink3)", LINKA = "var(--nf-linka)", PAPIER = "var(--nf-papier)";
 const kicker = (c = INK3): CSSProperties => ({ fontSize: 14, fontWeight: 800, letterSpacing: ".12em", color: c });
@@ -100,8 +101,10 @@ export function PodstrankaMiesta({ m, strankaId, menoFarnosti, siroka, zbierky, 
   const omse = omseMiesta(k, 7), akcie = akcieMiesta(k);
   const hist = cistyText(m.historia || "").trim();
   const [histOtv, setHistOtv] = useState(false);
-  const [foto, setFoto] = useState<string | null>(null);
+  // OPRAVY 282: ťuk na fotku = prehliadač fotiek (bod 261) so všetkými fotkami kostola, listovanie, popis pri fotke
+  const [foto, setFoto] = useState<number | null>(null);
   const fotky = m.media.filter((x) => x.typ === "foto");
+  const galM: MediumGalerie[] = fotky.map((x) => ({ typ: "foto" as const, src: x.src, popis: x.popis || undefined }));
   const sekcia = (t: string, deti: ReactNode) => <section style={{ display: "flex", flexDirection: "column", gap: 10 }}><span style={kicker()}>{t}</span>{deti}</section>;
   const tl: CSSProperties = { alignSelf: "flex-start", minHeight: 46, padding: "0 18px", borderRadius: 12, border: `1.5px solid ${LINKA}`, background: PAPIER, color: INK, fontFamily: "inherit", fontSize: 15, fontWeight: 800, cursor: "pointer" };
   const mapa = m.adresa.trim() ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(m.adresa.trim())}` : "";
@@ -131,7 +134,7 @@ export function PodstrankaMiesta({ m, strankaId, menoFarnosti, siroka, zbierky, 
       <b style={{ fontSize: 17 }}>{z.nazov} ›</b><span style={{ fontSize: 14, color: INK3 }}>peniaze idú na účet farnosti</span>
     </button>)));
   const fotkyEl = fotky.length > 1 && sekcia("FOTKY", <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(110px,1fr))", gap: 8 }}>
-    {fotky.map((x) => <button key={x.id} type="button" onClick={() => setFoto(x.src)} aria-label={x.popis || "Fotka na celú obrazovku"} style={{ border: "none", padding: 0, borderRadius: 12, overflow: "hidden", aspectRatio: "1", cursor: "zoom-in" }}><img src={x.src} alt={x.popis ?? ""} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} /></button>)}
+    {fotky.map((x, i) => <button key={x.id} type="button" onClick={() => setFoto(i)} aria-label={x.popis || "Fotka na celú obrazovku"} style={{ border: "none", padding: 0, borderRadius: 12, overflow: "hidden", aspectRatio: "1", cursor: "zoom-in" }}><img src={x.src} alt={x.popis ?? ""} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} /></button>)}
   </div>);
   const adresaEl = m.adresa.trim() && sekcia("ADRESA", <>
     <span style={{ fontSize: 16.5, lineHeight: 1.5, color: INK2 }}>{m.adresa}</span>
@@ -141,6 +144,7 @@ export function PodstrankaMiesta({ m, strankaId, menoFarnosti, siroka, zbierky, 
     <div role="dialog" aria-modal="true" aria-label={m.nazov} className="nastenka-farnosti" style={{ position: "fixed", inset: 0, zIndex: 1000, overflowY: "auto", overscrollBehavior: "contain", background: "var(--c-bg)", color: INK, fontFamily: "'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,sans-serif" }}>
       <div style={{ maxWidth: 1140, margin: "0 auto", background: "var(--nf-bg)", minHeight: "100%" }}>
         <div style={{ position: "relative", aspectRatio: siroka ? "21 / 8" : "4 / 3", background: f ? `center/cover no-repeat url('${f}')` : POZADIE_BEZ_FOTKY }}>
+          {f && <button type="button" onClick={() => setFoto(0)} aria-label="Fotky kostola na celú obrazovku" style={{ position: "absolute", inset: 0, border: "none", padding: 0, background: "transparent", cursor: "zoom-in" }}><OdznakFotiek m={galM} /></button>}
           <button type="button" onClick={onZavri} autoFocus style={siroka
             ? { position: "absolute", top: 24, left: 24, minHeight: 48, padding: "0 18px", border: "none", borderRadius: 14, background: "rgba(255,255,255,.92)", color: "#14110B", fontFamily: "inherit", fontSize: 16, fontWeight: 800, cursor: "pointer" }
             : { position: "absolute", top: "calc(10px + env(safe-area-inset-top, 0px))", left: 12, minHeight: 40, padding: "0 12px", border: "none", borderRadius: 20, background: "rgba(20,17,11,.55)", color: "#fff", fontFamily: "inherit", fontSize: 14, fontWeight: 800, cursor: "pointer" }}>‹ Späť na {menoFarnosti}</button>
@@ -160,10 +164,7 @@ export function PodstrankaMiesta({ m, strankaId, menoFarnosti, siroka, zbierky, 
             : <>{omseEl}{ozEl}{histEl}{akcieEl}{zbEl}{fotkyEl}{adresaEl}</>}
         </div>
       </div>
-      {foto && <div role="dialog" aria-modal="true" aria-label="Fotka" onClick={() => setFoto(null)} style={{ position: "fixed", inset: 0, zIndex: 1100, background: "#0E0C08", display: "flex", alignItems: "center", justifyContent: "center", cursor: "zoom-out" }}>
-        <img src={foto} alt="" style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }} />
-        <button type="button" onClick={() => setFoto(null)} style={{ position: "absolute", top: 16, right: 16, minHeight: 44, padding: "0 16px", border: "none", borderRadius: 12, background: "#fff", color: "#111", fontFamily: "inherit", fontSize: 15, fontWeight: 800, cursor: "pointer" }}>× Zavrieť</button>
-      </div>}
+      {foto != null && galM.length > 0 && <CelaGaleria media={galM} start={foto} nadpis={m.nazov} onClose={() => setFoto(null)} />}
     </div>, document.body);
 }
 

@@ -14,6 +14,7 @@ import { DRUHY_MIESTA, nazovDruhu, prazdneMiesto, riadokCeny, ulozMiesto, useMie
 import { RamFormulara, MateRozpisane, ZahoditRozpisane, useRamPisania } from "@/components/RamPisania";
 import { nacitajKoncept, zmazKoncept, useUkladajKoncept } from "@/lib/koncept";
 import { useHromadnyVyber, TlacidloVyberu, ListaVyberu, PolickoVyberu, PasVyberu } from "@/components/HromadnyVyber";
+import { OrezFotky } from "@/components/orezfotky";
 
 const karta: CSSProperties = { borderRadius: 16, background: "var(--card)", border: "1px solid var(--cardBd)" };
 const lbl: CSSProperties = { fontSize: 14, fontWeight: 800 };
@@ -33,6 +34,8 @@ export function KostolyMiesta({ strankaId, mobil, onOmse }: { strankaId: string;
   const [potvrd, setPotvrd] = useState(false);
   const [teraz] = useState(() => Date.now());
   const hv = useHromadnyVyber(); // OPRAVY 284 (5): odobrať viac miest naraz (hlavný kostol nie)
+  const [vyrezId, setVyrezId] = useState<number | null>(null);
+  const vyrezM = vyrezId != null && f ? f.media.find((x) => x.id === vyrezId) : undefined;
   const p = predplatne(), st = stavPredplatneho(p, teraz);
   const skusobne = st === "nezverejnene" || st === "skusobne" || st === "konci";
   // platí iná farnosť: nové (aj obnovené) miesto beží až po potvrdení platiteľa
@@ -82,7 +85,10 @@ export function KostolyMiesta({ strankaId, mobil, onOmse }: { strankaId: string;
           <input value={f.nazov} onChange={(e) => setF({ ...f, nazov: e.target.value.slice(0, 80) })} placeholder="napr. Kaplnka svätej Anny" style={pole} /></label>
         <label style={{ display: "flex", flexDirection: "column", gap: 6 }}><span style={lbl}>Adresa</span>
           <input value={f.adresa} onChange={(e) => setF({ ...f, adresa: e.target.value.slice(0, 120) })} placeholder="ulica, číslo, obec" style={pole} /></label>
-        <GaleriaEditor media={f.media} onMedia={(m) => setF({ ...f, media: m })} ph={mobil} max={12} bezVidea nadpis="Fotky · galéria, prvá je titulná" dovetok=" Pod fotku môžete napísať popis." />
+        {/* OPRAVY 282: GaleriaEditor ako všade, aj Výrez */}
+        {vyrezM ? <OrezFotky sprava src={vyrezM.src} pomer={16 / 9} vyrez={vyrezM.vyrez} onZrusit={() => setVyrezId(null)}
+            onVyrez={(v) => { setF({ ...f, media: f.media.map((x) => (x.id === vyrezM.id ? { ...x, vyrez: v } : x)) }); setVyrezId(null); }} />
+          : <GaleriaEditor media={f.media} onMedia={(m) => setF({ ...f, media: m })} ph={mobil} max={12} bezVidea onVyrez={setVyrezId} nadpis="Fotky · galéria, prvá je titulná" dovetok=" Pod fotku môžete napísať popis." />}
         <label style={{ display: "flex", flexDirection: "column", gap: 6 }}><span style={lbl}>Krátky popis <span style={pozn}>· jedna veta na kartu</span></span>
           <input value={f.popis} onChange={(e) => setF({ ...f, popis: e.target.value.slice(0, 140) })} placeholder="napr. Spätá so stredovekým mestským špitálom." style={pole} /></label>
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}><span style={lbl}>História <span style={pozn}>· nepovinné, na podstránku</span></span>
