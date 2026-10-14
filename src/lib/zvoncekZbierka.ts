@@ -2,7 +2,7 @@
 // OPRAVY 260 — nastavenie zvončekovej zbierky farnosti (Správa zvončekovej zbierky podľa modulu Hlavná zbierka).
 // Názov, text (TextovePolia), titulná fotka a fotky (GaleriaEditor s popisom), rýchle sumy, EURC, ukončená.
 // Úložisko: naboz_stav, oblasť „zvoncek", id = stránka (cez stav.ts, fotky najprv do Storage — v DB nikdy base64).
-// Peniaze sa nemenia: dary okna idú na hlavný účet farnosti ako doteraz (omsoveOkno.ts).
+// Dary idú ku každej omši zvlášť (zvoncekOmse.ts, OPRAVY 289) na účet farnosti.
 // ============================================================
 import { useSyncExternalStore } from "react";
 import { nacitajStav, ulozStav } from "@/features/viera/stav";
@@ -13,6 +13,7 @@ export interface NastavenieZvoncek {
   nazov: string; popis: string; popis2: string; media: MediumZbierky[];
   /** index v SADY_EUR / SADY_EURC (ako hlavná zbierka) */ sada: number; eurc: boolean; sadaE: number;
   /** ukončená farárom — na stránke farnosti sa neukazuje */ ukoncena?: boolean;
+  /** OPRAVY 289: poďakovanie v riadku Hlavnej zbierky; prázdne = podľa cirkvi („Pán Boh zaplať“ / „Ďakujeme“) */ podakovanie?: string;
 }
 export const ZVONCEK_NAZOV = "Zvončeková zbierka";
 export const ZVONCEK_TEXT = "Ako do zvončeka pri omši. Dar ide farnosti.";
@@ -44,3 +45,5 @@ export function ulozZvoncek(stranka: string, n: NastavenieZvoncek) {
     void bezDataUrl(n, "stranky").then((c) => { ulozStav(OBLAST, stranka, c); if (pamat.get(stranka) === n) pamat.set(stranka, c); }, () => ulozStav(OBLAST, stranka, { ...n, media: n.media.filter((m) => !/^data:/.test(m.src)) }));
   }, 600);
 }
+/** OPRAVY 289: poďakovanie v riadku Hlavnej zbierky — farárovo, inak podľa cirkvi (číselník, 0091) */
+export const podakovanieZvoncek = (n: Pick<NastavenieZvoncek, "podakovanie">, slova: { podakovanie: string }) => n.podakovanie?.trim() || slova.podakovanie;

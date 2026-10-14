@@ -20,7 +20,7 @@ import { KartaMiesta, najblizsiaOmsa, NaseKostolyBlok, PodstrankaMiesta, otvorKo
 import { uradneUdaje } from "@/lib/uradneUdaje";
 import { OknoUpozorneni, type CielUpozorneni } from "./OknoUpozorneni";
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from "react";
-import { useZvoncek, nazovZvoncek, ZVONCEK_TEXT } from "@/lib/zvoncekZbierka";
+import { useZvoncek, nazovZvoncek, podakovanieZvoncek, ZVONCEK_TEXT } from "@/lib/zvoncekZbierka";
 import { createPortal } from "react-dom";
 import type { ProfilStranky } from "@/lib/profilStranky";
 import { cistyText, jeHtmlText } from "@/lib/richtext";
@@ -42,9 +42,9 @@ import { ZmensenyModul } from "@/features/zbierka/ZmensenyModul";
 import type { TestProfil, TestSektor } from "@/lib/testProfily";
 import { kedyBrigady } from "@/features/rola/BrigadyFarnosti";
 import { useDarcovia, sucetDarov, relCas, nastavCiste, SumyDarcovKontext, SektorDarcuKontext, type DarRiadok } from "@/lib/darcovia";
-import { useOmsoveOkno, suhrnHlavnej, menaOkna } from "@/lib/omsoveOkno";
+import { useZvoncekOkno, suhrnHlavnej, menaOkna, nadpisOkna, riadokOmse } from "@/lib/zvoncekOmse";
 import { nacitajZbierkyStranky, zbierkyStrankyZPamate, useZmenyZbierok, cielCislo, type SpustenaZbierka } from "@/lib/novaZbierka";
-import { useKalendar, kostolKal, omseDna, polozkyDna, druhPolozky, minuty, iso, dvt, nazovOmse, nedelneOmse, rozsahTyzdna } from "@/lib/kalendarFarnosti";
+import { useKalendar, kostolKal, omseDna, polozkyDna, druhPolozky, minuty, iso, dvt, nazovOmse, rozsahTyzdna } from "@/lib/kalendarFarnosti";
 import { prihovory, odkazyVidei, useZmenyPrihovoru, naZivo, onlineOmse, onlineVDen, type Prihovor } from "@/lib/prihovor";
 import { PrihovorVelky, StarsiePrihovory, OdkazyVidei, ZvukPas } from "./VypocujSi";
 import { odFarnikov, useOdFarnikov, useCerstveOdFarnikov, prepniVPolozke, vyprsal, pocetSus, type PolozkaFarnika, type PoleReakcie } from "@/lib/odFarnikov";
@@ -211,7 +211,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit
   useEffect(() => { const t = window.setInterval(() => setCas(terazD()), 60000); return () => window.clearInterval(t); }, []);
   const [prihOn, setPrihOn] = useState<Prihovor | null>(null); // OPRAVY 269: ktorý príhovor hrá
   const [onasOtv, setOnasOtv] = useState(false); // OPRAVY 221: príhovor jedna veta + viac
-  const { okno: zvOkno } = useOmsoveOkno(strankaId), zvNedela = zvOkno.nedela;
+  const { okno: zvOkno } = useZvoncekOkno(strankaId), zvT = zvOkno ? nadpisOkna(zvOkno) : ""; // OPRAVY 289: jedna omša z kalendára hlavného kostola
   const zvN = useZvoncek(strankaId); // OPRAVY 260: názov, text, fotky, sumy a ukončenie zo Správy zvončekovej zbierky
   const [velke, setVelke] = useState<Velke | null>(null);
   const autorNa = useAutorNaStranke(strankaId); // OPRAVY 276
@@ -269,7 +269,9 @@ export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit
   const druh = (z: SpustenaZbierka) => z.farnost?.druh ?? "farnost";
   const zbFar = zb.filter((z) => druh(z) === "farnost"), zbIne = zb.filter((z) => druh(z) === "ine");
   const zbPohreb = zb.filter((z) => druh(z) === "pohreb"), zbSvadba = zb.filter((z) => druh(z) === "svadba");
-  const zvOn = hlOn && nedelneOmse(strankaId).length > 0 && !zvN.ukoncena;
+  const zvOn = hlOn && !!zvOkno && !zvN.ukoncena;
+  const zvFoto = zvN.media.find((m) => m.typ === "foto" && ziveObr(m.src))?.src; // OPRAVY 289: tá istá titulná fotka aj na dlaždici
+  const zvDat = zvOkno ? `${Number(zvOkno.den.slice(8))}. ${Number(zvOkno.den.slice(5, 7))}.` : "";
   const piny = usePripnute(strankaId); // OPRAVY 187: zbierky iných subjektov pripnuté farnosťou
   const brigadyF = useBrigady(strankaId); // KARTA 61 §2
   const detailZbierky = (z: SpustenaZbierka): ZbierkaData => ({
@@ -482,7 +484,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit
     media: hl.media.filter((m) => ziveObr(m.src)).map((m) => (m.typ === "video" ? { typ: "video" as const, src: m.src } : { typ: "foto" as const, src: m.src })) },
   { typ: "hl", chip: "HLAVNÁ ZBIERKA", t: nazovHlavnej(hl), txt: celyText(hl.popis, hl.popis2), obr: hl.media.find((m) => m.typ === "foto" && ziveObr(m.src))?.src }); };
   const otvorZvoncek = (id: string) => {
-    const t = `${nazovZvoncek(zvN)} · Nedeľa ${zvNedela}`, txt = cistyText(zvN.popis) || ZVONCEK_TEXT, foto = zvN.media.find((m) => m.typ === "foto" && ziveObr(m.src))?.src;
+    const t = `${nazovZvoncek(zvN)} · ${zvT}`, txt = cistyText(zvN.popis) || ZVONCEK_TEXT, foto = zvN.media.find((m) => m.typ === "foto" && ziveObr(m.src))?.src;
     onDetail({ id, nazov: t, popis: txt, overena: true, organizacia: orgPole, ...sadyZbierky(zvN), media: zvN.media.filter((m) => ziveObr(m.src)).map((m) => (m.typ === "video" ? { typ: "video" as const, src: m.src } : { typ: "foto" as const, src: m.src })) },
       { typ: "zv", chip: "ZVONČEKOVÁ ZBIERKA", t, txt: celyText(zvN.popis, zvN.popis2) || ZVONCEK_TEXT, obr: foto });
   };
@@ -624,14 +626,14 @@ export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit
   // --- zbierky ako štvorce ---
   const stvorce: ReactNode[] = [
     ...(hlOn && hl ? [<ZbierkaStvorec key="hl" stitok="HLAVNÁ ZBIERKA" nazov={nazovHlavnej(hl)} foto={hl.media.find((m) => m.typ === "foto" && ziveObr(m.src))?.src} farba={ZELENA} onTap={otvorHlavnu} />] : []),
-    ...(zvOn ? [<ZbierkaStvorec key="zv" stitok="ZVONČEKOVÁ" nazov={`Nedeľa ${zvNedela}`} farba={ZLATA} onTap={() => otvorZvoncek(zvOkno.id)} />] : []),
+    ...(zvOn ? [<ZbierkaStvorec key="zv" stitok="ZVONČEKOVÁ" nazov={zvT} foto={zvFoto} farba={ZLATA} onTap={() => zvOkno && otvorZvoncek(zvOkno.id)} />] : []),
     ...zbFar.map((z) => <ZbierkaStvorec key={z.id} stitok="ZBIERKA" nazov={z.nazov || "Zbierka"} foto={z.media.find((m) => m.typ === "foto" && ziveObr(m.src))?.src} farba={TEAL} pod={cielCislo(z) ? `cieľ ${eur(cielCislo(z))}` : undefined} onTap={() => otvorZbierku(z)} />),
     ...piny.map((z) => <ZbierkaStvorec key={z.id} stitok={chipPripnutej(z)} nazov={z.nazov} foto={z.foto} farba={farbaPripnutej(z)} onTap={() => otvorPin(z)} />),
     ...zbIne.map((z) => <ZbierkaStvorec key={z.id} stitok="ZBIERKA RODINY" nazov={bezPredpony(z.nazov) || "Zbierka"} foto={z.media.find((m) => m.typ === "foto" && ziveObr(m.src))?.src} farba={FIALOVA} onTap={() => otvorZbierku(z)} />),
   ];
   const vMriezke = k3 || !siroka ? 4 : 8;
   const ineNazvy = [...zbFar.map((z) => z.nazov), ...piny.map((z) => z.nazov), ...zbIne.map((z) => bezPredpony(z.nazov))].slice(Math.max(0, vMriezke - stvorce.length + (zbFar.length + piny.length + zbIne.length)));
-  const zbNazvy = [hlOn && hl ? nazovHlavnej(hl) : "", zvOn ? `Zvončeková · Nedeľa ${zvNedela}` : "", ...zbFar.map((z) => z.nazov), ...piny.map((z) => z.nazov), ...zbIne.map((z) => bezPredpony(z.nazov))].filter(Boolean);
+  const zbNazvy = [hlOn && hl ? nazovHlavnej(hl) : "", zvOn ? `Zvončeková · ${zvT}` : "", ...zbFar.map((z) => z.nazov), ...piny.map((z) => z.nazov), ...zbIne.map((z) => bezPredpony(z.nazov))].filter(Boolean);
   const zbS = stvorce.length ? suhrn(poc(stvorce.length, "zbierka", "zbierky", "zbierok"), zbNazvy[0]) : prispela.length ? `Prispeli sme · ${prispela[0].kto}` : "";
   const zbObsah = <>
     {stvorce.length > 0 && <div style={{ display: "grid", gridTemplateColumns: `repeat(${k3 || !siroka ? 2 : 4},minmax(0,1fr))`, gap: 12 }}>{zbVsetky ? stvorce : stvorce.slice(0, vMriezke)}</div>}
@@ -1249,7 +1251,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit
     </button>);
   const kZbierkyRiadky = <>
     {hlOn && hl && zbRiadok("hl", "HLAVNÁ ZBIERKA", "var(--nf-gInk)", nazovHlavnej(hl), otvorHlavnu, true)}
-    {zvOn && zbRiadok("zv", "ZVONČEKOVÁ", ZLATA, `Nedeľa ${zvNedela}`, () => otvorZvoncek(zvOkno.id))}
+    {zvOn && zbRiadok("zv", "ZVONČEKOVÁ", ZLATA, zvT, () => zvOkno && otvorZvoncek(zvOkno.id))}
     {zbFar.map((z) => zbRiadok(z.id, "ZBIERKA", TEAL, z.nazov || "Zbierka", () => otvorZbierku(z)))}
     {piny.map((z) => zbRiadok(z.id, chipPripnutej(z), farbaPripnutej(z), z.nazov, () => otvorPin(z)))}
     {zbIne.map((z) => zbRiadok(z.id, "ZBIERKA RODINY", FIALOVA, bezPredpony(z.nazov) || "Zbierka", () => otvorZbierku(z)))}
@@ -1403,7 +1405,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit
           {prispeliSme}
         </div> : <>
           {hlOn && hl && <RiadokZbierky stitok="HLAVNÁ ZBIERKA" farba="var(--nf-gInk)" nazov={nazovHlavnej(hl)} obr={hl.media.find((m) => m.typ === "foto" && ziveObr(m.src))?.src} refId={hlRef} ram onTap={otvorHlavnu} />}
-          {zvOn && <RiadokZbierky stitok="ZVONČEKOVÁ ZBIERKA" farba={INK3} nazov={`Nedeľa ${zvNedela}`} datum={zvNedela} onTap={() => otvorZvoncek(zvOkno.id)} />}
+          {zvOn && <RiadokZbierky stitok="ZVONČEKOVÁ ZBIERKA" farba={INK3} nazov={zvT} obr={zvFoto} datum={zvDat} onTap={() => zvOkno && otvorZvoncek(zvOkno.id)} />}
           {zbFar.map((z) => <RiadokZbierky key={z.id} stitok="ZBIERKA" farba={TEAL} nazov={z.nazov || "Zbierka"} obr={z.media.find((m) => m.typ === "foto" && ziveObr(m.src))?.src} refId={z.id} ciel={cielCislo(z)} onTap={() => otvorZbierku(z)} />)}
           {piny.map((z) => <RiadokZbierky key={z.id} stitok={chipPripnutej(z)} farba={farbaPripnutej(z)} nazov={z.nazov} obr={z.foto} pct={z.ciel ? Math.min(100, Math.round((z.vyzbierane / z.ciel) * 100)) : undefined} onTap={() => otvorPin(z)} />)}
           {zbIne.map((z) => <RiadokZbierky key={z.id} stitok="ZBIERKA RODINY" farba={FIALOVA} nazov={bezPredpony(z.nazov) || "Zbierka"} onTap={() => otvorZbierku(z)} />)}
@@ -1776,14 +1778,15 @@ function VelkyObrazok({ v, vz }: { v: Velke; vz: Parameters<typeof Plagat>[0]["v
   return <div style={{ flex: 1, minHeight: 0, overflow: "auto", display: "flex", justifyContent: "center", padding: "0 8px 8px" }}><Plagat u={oz.u} volba={oz.volba} vz={vz} sirka={sirka} /></div>;
 }
 
-/** HLAVNÁ ZBIERKA — suma z ledgera (+ zvončekové nedele), darcovia „Bohu známy veriaci“ bez súm, zvonček jeden riadok za nedeľu */
+/** HLAVNÁ ZBIERKA — suma z ledgera (+ zvončekové omše), darcovia „Bohu známy veriaci“ bez súm, zvonček jeden riadok za omšu (OPRAVY 289) */
 function HlavnaKarta({ strankaId, hlRef, nazov, txt, onTap }: { strankaId: string; hlRef: string; nazov: string; txt: string; onTap: () => void }) {
   const dary = useDarcovia(hlRef);
-  const { uzavrete } = useOmsoveOkno(strankaId);
+  const { uzavrete } = useZvoncekOkno(strankaId);
+  const pod = podakovanieZvoncek(useZvoncek(strankaId), useSlovaFarnosti(strankaId));
   const s = suhrnHlavnej(strankaId, hlRef);
-  const riadky: { cas: number; k: string; s: string }[] = [
+  const riadky: { cas: number; k: string; pod?: string; s: string }[] = [
     ...dary.map((r: DarRiadok) => ({ cas: r.cas, k: "Bohu známy veriaci", s: relCas(r.cas) })),
-    ...uzavrete.filter((o) => o.suma > 0).map((o) => ({ cas: o.do, k: `Zvončeková zbierka · nedeľa ${o.nedela}`, s: eur(o.suma) })),
+    ...uzavrete.map((o) => ({ cas: zIso(o.den).getTime() + minuty(o.cas) * 60000, k: riadokOmse(o), pod, s: eur(o.suma) })),
   ].sort((a, b) => b.cas - a.cas).slice(0, 4);
   return (
     <button type="button" onClick={onTap} style={{ flex: "1 1 360px", minWidth: 0, textAlign: "left", padding: "26px 28px", borderRadius: 24, background: KARTA, border: "none", borderLeft: `6px solid ${TEAL}`, display: "flex", flexDirection: "column", gap: 12, cursor: "pointer", color: INK, fontFamily: "inherit" }}>
@@ -1793,29 +1796,27 @@ function HlavnaKarta({ strankaId, hlRef, nazov, txt, onTap }: { strankaId: strin
       {s.suma > 0 ? <span style={{ fontSize: 18, color: INK2 }}><b style={{ fontSize: 42, letterSpacing: "-.03em", color: INK }}>{eur(s.suma)}</b> {centralnaZPamate(strankaId)?.rocne ? `v roku ${new Date().getFullYear()}` : "spolu"} · {ludi(s.darcov)}</span>
         : null /* OPRAVY 247: prázdne pole sa vynechá */}
       {riadky.length > 0 && <span style={{ display: "flex", flexDirection: "column", borderTop: `1px solid ${LINKA}` }}>
-        {riadky.map((r, i) => <span key={i} style={{ display: "flex", justifyContent: "space-between", gap: 12, padding: "9px 0", borderBottom: `1px solid ${LINKA}`, fontSize: 15.5 }}><span style={{ color: INK2 }}>{r.k}</span><b style={{ flex: "none" }}>{r.s}</b></span>)}
+        {riadky.map((r, i) => <span key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, padding: "9px 0", borderBottom: `1px solid ${LINKA}`, fontSize: 15.5 }}><span style={{ minWidth: 0, display: "flex", flexDirection: "column", color: INK2 }}>{r.k}{r.pod && <span style={{ fontSize: 14, color: INK3 }}>{r.pod}</span>}</span><b style={{ flex: "none" }}>{r.s}</b></span>)}
       </span>}
     </button>);
 }
 
-/** ZVONČEKOVÁ ZBIERKA — omšové okno tohto týždňa (nedeľa) */
+/** ZVONČEKOVÁ ZBIERKA — jedna omša z kalendára (OPRAVY 289) */
 export function ZvoncekKarta({ strankaId, onTap, nahlad }: { strankaId: string; onTap?: (id: string, t: string) => void; /** OPRAVY 260: náhľad v Správe (bez ťuku) */ nahlad?: boolean }) {
-  const { okno, dary } = useOmsoveOkno(strankaId);
+  const { okno, dary } = useZvoncekOkno(strankaId);
   const n = useZvoncek(strankaId);
   const ja = usePouzivatel();
   const suma = dary.reduce((a, r) => a + r.suma, 0);
   const mena = suma > 0 ? menaOkna(dary, ja) : "";
-  const casy = nedelneOmse(strankaId);
-  const t = `Nedeľa ${okno.nedela}`;
+  const t = okno ? nadpisOkna(okno) : "Najprv nastavte omše";
   const foto = n.media.find((m) => m.typ === "foto" && ziveObr(m.src))?.src, txt = cistyText(n.popis);
   const obsah = <>
     {foto && <img src={foto} alt="" style={{ width: "100%", aspectRatio: "16 / 9", objectFit: "cover", display: "block" }} />}
     <span style={{ padding: 18, display: "flex", flexDirection: "column", gap: 10 }}>
       <span style={kicker(TEAL)}>{nazovZvoncek(n).toLocaleUpperCase("sk-SK")}{nahlad ? "" : " ›"}</span>
       <b style={{ fontSize: 24, lineHeight: 1.2 }}>{t}</b>
-      {casy.length > 0 && <span style={{ fontSize: 16, color: INK3 }}>{casy.length === 1 ? `omša ${casy[0]}` : `omše ${casy.join(" · ")}`}</span>}
       {suma > 0 ? <>
-        <span style={{ fontSize: 16.5 }}><b style={{ fontSize: 30, letterSpacing: "-.02em" }}>{eur(suma)}</b> <span style={{ color: INK3 }}>od {ludi(dary.length)}</span></span>
+        <span style={{ fontSize: 16.5 }}><b style={{ fontSize: 30, letterSpacing: "-.02em" }}>{eur(suma)}</b> <span style={{ color: INK3 }}>od {dary.length} {dary.length === 1 ? "človeka" : "ľudí"}</span></span>
         {mena && <span style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>{mena.split(/, | a (?=ďalší)/).map((m, i) => <span key={i} style={{ height: 36, padding: "0 12px", borderRadius: 18, background: BG, display: "flex", alignItems: "center", fontSize: 15, fontWeight: 700, whiteSpace: "nowrap" }}>{m}</span>)}</span>}
       </> : null /* OPRAVY 247 */}
       <span style={{ fontSize: 14.5, lineHeight: 1.45, color: INK3, display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" } as CSSProperties}>{txt || "ako do zvončeka pri omši"}</span>
@@ -1823,7 +1824,7 @@ export function ZvoncekKarta({ strankaId, onTap, nahlad }: { strankaId: string; 
   </>;
   const st: CSSProperties = { width: "100%", textAlign: "left", border: "none", borderRadius: 22, overflow: "hidden", background: KARTA, borderLeft: `5px solid ${TEAL}`, padding: 0, display: "flex", flexDirection: "column", color: INK, fontFamily: "inherit" };
   return nahlad || !onTap ? <div style={st}>{obsah}</div>
-    : <button type="button" onClick={() => onTap(okno.id, `${nazovZvoncek(n)} · ${t}`)} style={{ ...st, cursor: "pointer" }}>{obsah}</button>;
+    : <button type="button" onClick={() => okno && onTap(okno.id, `${nazovZvoncek(n)} · ${t}`)} style={{ ...st, cursor: "pointer" }}>{obsah}</button>;
 }
 
 /** zbierka farnosti (lavice, organ …) — suma a ľudia z ledgera */

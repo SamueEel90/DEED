@@ -22,8 +22,12 @@ const objekty = new Map<string, ObjektZbierky>();
 export function naviazObjekt(refId: string, o: ObjektZbierky) { if (!/^zb-/.test(refId)) objekty.set(refId, o); }
 
 /** id zbierky v databáze, alebo null, ak dar nepatrí zbierke stránky */
+// OPRAVY 289: zvončeková zbierka omše „<stránka>-zv-<kostol>-RRRR-MM-DD-HHMM“ — v ledgeri „<stránka>:<refId>“, okno určí server (0091)
+const ZV_REF = /^(.+)-zv-([^-]+)-\d{4}-\d{2}-\d{2}-\d{4}$/;
 export function idZbierkyDB(refId: string, objekt?: ObjektZbierky): string | null {
   if (/^zb-/.test(refId)) return refId;
+  const zv = refId.match(ZV_REF);
+  if (zv) return `${zv[1]}:${refId}`;
   objekt = objekt ?? objekty.get(refId);
   if (!objekt) return null;
   return `${objekt.stranka}:${objekt.hlavna ? "hlavna" : refId}`;
@@ -43,6 +47,12 @@ export async function zapisDarZbierky(refId: string, eur: number, kanal: KanalDa
     : kanal === "sepa" ? ["sepa", "EUR", eur] : ["fiat", "EUR", eur];
   let idem: string;
   try { idem = crypto.randomUUID(); } catch { idem = `dar-${Date.now()}-${Math.round(Math.random() * 1e9)}`; }
+  const zv = refId.match(ZV_REF);
+  if (zv) { // dar do zvončekovej: omšu (okno) určí server v okamihu daru
+    const { error } = await supabase.rpc("zvoncek_dar", { p_stranka: zv[1], p_kostol: zv[2], p_idem: idem, p_suma: suma, p_mena: mena, p_kanal: dbKanal, p_meno_darcu: menoDarcu ?? null, p_test: TESTOVACIA });
+    if (error) throw error;
+    return;
+  }
   const zaklad = { p_zbierka: id, p_idem: idem, p_suma: suma, p_mena: mena, p_kanal: dbKanal,
     p_stranka: objekt?.stranka ?? null, p_nazov: objekt?.nazov ?? null, p_zdroj: zdroje.get(refId) ?? null };
   const { error } = await supabase.rpc("zbierka_dar_volba", { ...zaklad, p_meno_darcu: menoDarcu ?? null, p_test: TESTOVACIA });

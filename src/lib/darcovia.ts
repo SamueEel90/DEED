@@ -123,7 +123,7 @@ function seed(refId: string): DarRiadok[] {
 
 // zbierky na ukážku klientovi: začínajú bez vymyslených darov — pribúdajú len skutočné (simulované) platby
 const ciste = new Set<string>();
-const OMSA_REF = /-omsa-\d{4}-\d{2}-\d{2}$/;
+const OMSA_REF = /-omsa-\d{4}-\d{2}-\d{2}$|-zv-[^-]+-\d{4}-\d{2}-\d{2}-\d{4}$/; // OPRAVY 289: aj zvončeková omše
 /** KARTA 56D: zbierka spustená z účtu (zb-…, novaZbierka.spustiZbierku) je skutočná — nikdy nemá vymyslené dary */
 const ZBIERKA_Z_UCTU = /^zb-/;
 export function nastavCiste(ids: string[]) { ids.forEach((i) => ciste.add(i)); }
@@ -164,7 +164,7 @@ function riadkyPre(refId: string): DarRiadok[] {
     return realneDary(refId);
   }
   const r = realneDary(refId);
-  // KARTA 56D: omšové okno farnosti (týždenný kľúč …-omsa-RRRR-MM-DD) nikdy nemá vymyslené dary
+  // KARTA 56D · OPRAVY 289: zvončeková omše (…-zv-…) nikdy nemá vymyslené dary
   if (ciste.has(refId) || !ukazkyTeraz() || OMSA_REF.test(refId) || ZBIERKA_Z_UCTU.test(refId)) return r;
   let s = skladSeed.get(refId);
   if (!s) { s = seed(refId); skladSeed.set(refId, s); }

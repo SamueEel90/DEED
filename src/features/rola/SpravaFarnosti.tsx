@@ -33,7 +33,7 @@ import { SpravaCentralnej } from "./SpravaCentralnej";
 import { SpravaZvoncek } from "./SpravaZvoncek";
 import { useZvoncek, nazovZvoncek } from "@/lib/zvoncekZbierka";
 import { centralnaZPamate, hlavnaBezi, nacitajCentralnuZbierku, nazovHlavnej, useZmenyCentralnej } from "@/lib/centralnaZbierka";
-import { suhrnHlavnej, useOmsoveOkno } from "@/lib/omsoveOkno";
+import { suhrnHlavnej, useZvoncekOkno, nadpisOkna, riadokOmse, kedyPrepne } from "@/lib/zvoncekOmse";
 import { CirkevFarnosti } from "./CirkevFarnosti";
 import { PripnutieVyber, PripnuteZoznam } from "./PripnuteZbierky";
 import { LudiaFarnosti } from "./LudiaFarnosti";
@@ -171,7 +171,7 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
   useState(() => nastavCiste([hlavnaRef])); // KARTA 56D §0: hlavná zbierka farnosti bez vymyslených darov (len skutočné)
   const hlavna = centralnaZPamate(strankaId);
   const bezi = hlavnaBezi(strankaId);
-  const om = useOmsoveOkno(strankaId);
+  const om = useZvoncekOkno(strankaId); // OPRAVY 289: zbierka pri každej omši z kalendára hlavného kostola
   const zvN = useZvoncek(strankaId);
   const hlavnySuhrn = suhrnHlavnej(strankaId, hlavnaRef);
   const hlavnyUcet = najdiTestProfil(strankaId)?.ucet || "hlavný účet farnosti z registrácie";
@@ -236,13 +236,13 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
   const vsetkyDary = [...darcoviaPre(hlavnaRef), ...om.dary, ...om.uzavrete.flatMap((o) => darcoviaPre(o.id))];
   const vyzbObd = vsetkyDary.filter((r) => r.cas >= obOd).reduce((a, r) => a + r.suma, 0);
   const posledna = om.uzavrete[0];
-  const poslPocet = posledna ? darcoviaPre(posledna.id).length : 0;
+  const poslPocet = posledna ? posledna.darov : 0;
   const OBD_T = ["dnes", "za 7 dní", "za 30 dní", "od januára"];
   const ludiT = (n: number) => `${n} ${n === 1 ? "človek" : n > 1 && n < 5 ? "ľudia" : "ľudí"}`;
   const ramce: [string, string, string][] = [
     ["Vyzbierané · hlavná", eur(vyzbObd), `cez DEED+ · ${OBD_T[ob]}`],
-    ["Na najbližšiu omšu", eur(oknoSuma), oknoLudi ? `nedeľa ${om.okno.nedela} · ${ludiT(oknoLudi)}` : "zatiaľ nikto"],
-    ["Posledná omšová", posledna ? eur(posledna.suma) : "—", posledna ? `nedeľa ${posledna.nedela} · ${poslPocet} ${poslPocet === 1 ? "dar" : poslPocet < 5 ? "dary" : "darov"}` : "zatiaľ žiadna"],
+    ["Zvončeková · teraz", eur(oknoSuma), om.okno ? `${nadpisOkna(om.okno)}${oknoLudi ? ` · ${ludiT(oknoLudi)}` : ""}` : "najprv nastavte omše"],
+    ["Posledná omšová", posledna ? eur(posledna.suma) : "—", posledna ? `${riadokOmse(posledna)} · ${poslPocet} ${poslPocet === 1 ? "dar" : poslPocet < 5 ? "dary" : "darov"}` : "zatiaľ žiadna"],
     ["Sledujúci", "—", "pripravujeme"], // PLACEBO — karta 56D: sledovanie stránky ešte nemá tabuľku
   ];
   const cisla = (
@@ -319,17 +319,17 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
         <span style={{ fontSize: 14, lineHeight: 1.5, color: "var(--ink2)" }}>{hlavna ? "Rozpracovaná, ešte nebeží. Dokončite ju a spustite." : "Stála zbierka bez cieľa a konca, aj mesačne. Všetky ďalšie zbierky posielajú peniaze na jej účet. Preto ju treba založiť ako prvú."}</span>
       </span>
     </button>);
-  // OPRAVY 260: ťuk na celú kartu = Správa zvončekovej zbierky; „Zavrieť týždeň (test)“ je len v DEV paneli tam
+  // OPRAVY 260: ťuk na celú kartu = Správa zvončekovej zbierky; „Ďalšia omša (test)“ je len v DEV paneli tam
   const oknoKarta = (
     <button type="button" onClick={() => go("zvoncek")} style={{ ...karta, borderRadius: mobil ? 18 : 22, padding: mobil ? "12px 14px" : "16px 20px", display: "flex", flexDirection: "column", gap: 8, cursor: "pointer", textAlign: "left", fontFamily: "inherit", color: "var(--ink)", boxShadow: "none", width: "100%" }}>
       <span style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", width: "100%" }}>
-        <b style={{ flex: 1, minWidth: 0, fontSize: mobil ? 15 : 16 }}>{nazovZvoncek(zvN)} · Nedeľa {om.okno.nedela}</b>
+        <b style={{ flex: 1, minWidth: 0, fontSize: mobil ? 15 : 16 }}>{nazovZvoncek(zvN)} · {om.okno ? nadpisOkna(om.okno) : "najprv nastavte omše"}</b>
         <span style={{ height: 24, padding: "0 9px", borderRadius: 12, background: zvN.ukoncena ? "#5B5D53" : "#4B7A35", color: "#fff", fontSize: 11, fontWeight: 800, letterSpacing: ".04em", display: "flex", alignItems: "center" }}>{zvN.ukoncena ? "UKONČENÁ" : "BEŽÍ"}</span>
         {!mobil && <span aria-hidden="true" style={{ flex: "none", fontSize: 20, color: "var(--ink3)" }}>›</span>}
       </span>
       {/* OPRAVY 219: bez technických viet */}
-      <span style={{ fontSize: 14.5, color: "var(--ink)" }}>Vyzbierané <b style={{ fontVariantNumeric: "tabular-nums" }}>{eur(oknoSuma)}</b> od {oknoLudi} {oknoLudi === 1 ? "človeka" : "ľudí"}{zvN.ukoncena ? "" : " · uzavrie sa v nedeľu o 23.59"}</span>
-      <span style={{ fontSize: 13.5, lineHeight: 1.5, color: "var(--ink2)" }}>Po uzavretí sa pripíše do Hlavnej zbierky jedným riadkom „{nazovZvoncek(zvN)} {om.okno.nedela}“.</span>
+      <span style={{ fontSize: 14.5, color: "var(--ink)" }}>Vyzbierané <b style={{ fontVariantNumeric: "tabular-nums" }}>{eur(oknoSuma)}</b> od {oknoLudi} {oknoLudi === 1 ? "človeka" : "ľudí"}{zvN.ukoncena || !kedyPrepne(om.okno, strankaId) ? "" : ` · ďalšia omša ${kedyPrepne(om.okno, strankaId)}`}</span>
+      <span style={{ fontSize: 13.5, lineHeight: 1.5, color: "var(--ink2)" }}>Po omši sa pripíše do Hlavnej zbierky jedným riadkom{om.okno ? ` „${riadokOmse(om.okno)}“` : ""}.</span>
     </button>);
 
   // KARTA 56D §3: Prehľad = Čísla · Pripnuté · Treba vybaviť.
@@ -751,7 +751,7 @@ function faqFarnosti(titul: string): OtazkyFaq {
     ]],
     ["Peniaze", [
       ["Kam idú peniaze zo zbierok?", "Dary idú priamo na účet farnosti overený pri registrácii, DEED+ peniaze nedrží."],
-      ["Ako funguje zvončeková zbierka?", "Beží od pondelka do nedele 23.59 a po uzavretí sa pripíše do Hlavnej zbierky jedným riadkom."],
+      ["Ako funguje zvončeková zbierka?", "Ku každej omši z kalendára vznikne sama. Na stránke je vždy jedna omša a po nej pribudne v Hlavnej zbierke jeden riadok so sumou."],
       ["Pohreb: vidím sumy rodiny?", "Nie. Po zapečatení vidí sumy aj darcov len rodina. Vy vidíte len podiel farnosti, ktorý príde na účet farnosti."],
     ]],
     ["Predplatné", [
