@@ -28,7 +28,8 @@ import { useQrObrazok } from "@/lib/qrObrazok";
 import { useAutorZaMna } from "@/lib/autorFarnosti";
 import { odkazQrStranky } from "@/features/verejny-profil/otvor";
 import { EditorOznameni, type EditorApi, type PayloadEditora } from "@/components/EditorOznameni";
-import { RamPisania } from "@/components/RamPisania";
+import { RamPisania, MateRozpisane, ZahoditRozpisane } from "@/components/RamPisania";
+import { nacitajKoncept, ulozKoncept, zmazKoncept, useUkladajKoncept } from "@/lib/koncept";
 import { PodrzZmaz, useHromadnyVyber, TlacidloVyberu, ListaVyberu, OznacitSkupinu, PolickoVyberu, PasVyberu } from "@/components/HromadnyVyber";
 export { PodrzZmaz };
 import { zapisEditora, zapisZPayloadu } from "@/lib/editorStat";
@@ -169,7 +170,9 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
   const [hotovo, setHotovo] = useState<string | null>(null);
   // OPRAVY 258: jubileum na mobile — Editor oznámení v ráme na celú obrazovku; rozpísané ostane (koncept) aj po Späť
   const [jubOtv, setJubOtv] = useState(false);
-  const [jubKon, setJubKon] = useState<PayloadEditora | null>(null);
+  // OPRAVY 271: rozpísané blahoželanie ostane na zariadení natrvalo
+  const [jubKon, setJubKon0] = useState<PayloadEditora | null>(() => nacitajKoncept<PayloadEditora>(`jub.${strankaId}`)?.d ?? null);
+  const setJubKon = (p: PayloadEditora | null) => { setJubKon0(p); if (p) ulozKoncept(`jub.${strankaId}`, p); else zmazKoncept(`jub.${strankaId}`); };
   const [nahlOtv, setNahlOtv] = useState(false);
   const ramTelo = useRef<HTMLDivElement>(null);
   const [otv, setOtv] = useState<string | null>(null); // rozbalený riadok v Správe oznamov
@@ -182,11 +185,12 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
   if (hore !== horePrev) { setHorePrev(hore); if (hore) { setFormOn(true); setHotovo(null); } }
   useEffect(() => { if (hore) topRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); }, [hore]);
 
-  const zmenOdr = (i: number) => { setOdr(i); const d = ODRUHY[i][1]; setU(prazdneUdaje(d)); setVolba(prvaVolba(d)); if (i === INE) setOsp(1); };
-  const vycisti = () => { setJubKon(null); setJubOtv(false); setN(""); setTxt(""); setTxtKey((k) => k + 1); setPlati(0); setUsp(0); setDat(""); setCas(""); setMiesto(""); setMedia([]); setPlagat(undefined); setPozv(0); setLimit(""); setOsp(0); zmenOdr(0); setKde(null); setKdeU(""); setUpozV(null); setEdit(null); };
+  // OPRAVY 271: jubileum sa na mobile otvára rovno v editore na celú obrazovku
+  const zmenOdr = (i: number) => { setOdr(i); const d = ODRUHY[i][1]; setU(prazdneUdaje(d)); setVolba(prvaVolba(d)); if (i === INE) setOsp(1); if (i === JUB && tel && osp === 0) setJubOtv(true); };
+  const vycisti = () => { setJubOtv(false); setN(""); setTxt(""); setTxtKey((k) => k + 1); setPlati(0); setUsp(0); setDat(""); setCas(""); setMiesto(""); setMedia([]); setPlagat(undefined); setPozv(0); setLimit(""); setOsp(0); zmenOdr(0); setKde(null); setKdeU(""); setUpozV(null); setEdit(null); };
   const novy = () => { vycisti(); setHotovo(null); setVyb(false); };
-  const zavriForm = () => { vycisti(); setHotovo(null); setVyb(false); setFormOn(false); };
-  const vyberDruh = (i: Druh) => { setDr(i); setHotovo(null); setVyb(true); };
+  const zavriForm = () => { vycisti(); setHotovo(null); setVyb(false); setFormOn(false); setKonRozh(false); };
+  const vyberDruh = (i: Druh) => { setDr(i); setHotovo(null); setVyb(true); if (i === 2 && odr === JUB && osp === 0 && tel) setJubOtv(true); };
 
   // ---- čo chýba ----
   const ine = dr === 2 && odr === INE;
@@ -250,8 +254,21 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
   const odruh = ODRUHY[odr]?.[1];
   const blokUpoz = dr === 0 ? "oz" as const : dr === 1 ? "pr" as const : odruh === "parte" ? "sp" as const : "te" as const;
   const upoz = upozV ?? predvUpoz(edit ? "upravy" : dr === 1 ? "udalost" : dr === 2 && odruh === "parte" ? "parte" : "oznam");
+  // ---- OPRAVY 271: rozpísaný oznam / udalosť / oznámenie ostane na zariadení, kým sa nezverejní alebo nezahodí ----
+  const KON = `oznam.${strankaId}`;
+  type KonOz = { dr: Druh; n: string; txt: string; plati: number; usp: 0 | 1; dat: string; cas: string; miesto: string; media: MediumZbierky[]; plagat?: string; pozv: number; limit: string; odr: number; osp: 0 | 1; u: UdajeOznamu; volba: VolbaSablony; kde: string[] | null; kdeU: string };
+  const [konRozh, setKonRozh] = useState(false); // „Máte rozpísané“ už rozhodnuté (Pokračovať / Zahodiť)
+  const kon = formOn && !edit && !hotovo && !konRozh ? nacitajKoncept<KonOz>(KON) : null;
+  const maObsah = !!(n.trim() || cistyText(txt).trim() || media.length || dat || cas || miesto.trim() || plagat || u.meno.trim());
+  useUkladajKoncept<KonOz>(KON, { dr, n, txt, plati, usp, dat, cas, miesto, media, plagat, pozv, limit, odr, osp, u, volba, kde, kdeU }, formOn && !edit && !hotovo && !kon && maObsah && !jub);
+  const pokracuj = (k: KonOz) => {
+    setDr(k.dr); setN(k.n); setTxt(k.txt); setTxtKey((x) => x + 1); setPlati(k.plati); setUsp(k.usp); setDat(k.dat); setCas(k.cas); setMiesto(k.miesto); setMedia(k.media ?? []); setPlagat(k.plagat);
+    setPozv(k.pozv); setLimit(k.limit); setOdr(k.odr); setOsp(k.osp); setU(k.u); setVolba(k.volba); setKde(k.kde); setKdeU(k.kdeU); setVyb(true); setKonRozh(true);
+  };
+  const zahod = () => { zmazKoncept(KON); if (jub) setJubKon(null); vycisti(); setVyb(false); setKonRozh(true); };
   const zverejni = () => {
     if (ch.length || chybaSab) return;
+    zmazKoncept(KON);
     const povodny = edit ? zoznam.find((x) => x.id === edit) : undefined;
     const teraz = terazMs(), id = povodny?.id ?? `naboz-${teraz}`;
     const oz: NastavenieOznamu = { dr, n: n.trim(), txt, plati, usp, dat, cas, miesto, pozv: dr !== 2 ? pozv : 0, limit: pozv === 2 ? limit : "", odr, osp, u: sablona ? u : undefined, volba: sablona ? volba : undefined, kal: povodny?.oz?.kal,
@@ -311,7 +328,7 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
     if (p.stav !== "hotovo") return;
     const P = p.polia ?? {}, str = (k: string) => String(P[k] ?? "").trim();
     const obr = (await edRef.current?.nahlad()) || "";
-    setJubKon(null); setJubOtv(false);
+    setJubKon(null); setJubOtv(false); zmazKoncept(KON);
     const povodny = edit ? zoznam.find((x) => x.id === edit) : undefined;
     const teraz = terazMs(), id = povodny?.id ?? `naboz-${teraz}`, menoB = str("bMeno") || str("jMeno");
     const oz: NastavenieOznamu = { dr: 2, n: "", txt: "", plati: 0, usp: 0, dat: "", cas: "", miesto: "", pozv: 0, limit: "", odr: JUB, osp: 0, ed: p };
@@ -341,13 +358,14 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
     setPlagat(x.plagat && o.dr === 1 ? f[0] : undefined);
     setMedia((!x.plagat && o.dr !== 2) || (x.plagat && o.dr === 2) ? [...(o.dr === 1 && x.video ? [{ id: terazMs() - 1, typ: "video" as const, src: x.video }] : []), ...f.map((src, i) => ({ id: terazMs() + i, typ: "foto" as const, src, ...(x.popisy?.[i] ? { popis: x.popisy[i] } : {}) }))] : []);
     setEdit(x.id); setHotovo(null); setVyb(true); setFormOn(true); setOtv(null); setPozri(null);
+    if (tel && o.dr === 2 && o.odr === JUB && o.osp === 0) setJubOtv(true); // OPRAVY 271
     window.setTimeout(() => topRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 30);
   };
   const upravovany = edit ? zoznam.find((x) => x.id === edit) : undefined;
   const upravovanyEd = upravovany?.oz?.ed;
   const jubCfg = { typ: "blahozelanie" as const, sektor: "viera" as const, rezim: "plny" as const, podpis: "Blahoželá farnosť", kontext: { stranka: strankaId, farnost: true }, navrh: (edit ? upravovanyEd : jubKon) ?? null };
-  // OPRAVY 258: oznámenie zo šablóny (parte, svadba, jubileum, iné) na telefóne = rám na celú obrazovku, náhľad na ťuk
-  const ramSprava = tel && formOn && (vyb || !!edit) && dr === 2 && !hotovo;
+  // OPRAVY 258 · 271: všetko, čo sa v Správe oznamov píše na telefóne (krátky oznam, udalosť, oznámenie) = rám na celú obrazovku, náhľad na ťuk
+  const ramSprava = tel && formOn && (vyb || !!edit) && !hotovo;
 
   // ---- formulár ----
   const druhyEl = (
@@ -428,6 +446,7 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
         <input inputMode="numeric" value={limit} onChange={(e) => setLimit(e.target.value.replace(/\D/g, "").slice(0, 4))} placeholder="bez limitu" aria-label="Koľko ľudí najviac" style={{ ...pole, width: 140, height: 46 }} /></label>}
     </div>}
     {!jub && <UpozornitSledujucich strankaId={strankaId} blok={blokUpoz} miesta={dr === 0 && viacMiest && kde && kde.length < miestaF.length ? kde : dr === 1 && viacMiest ? [kdeId] : undefined} value={upoz} onChange={setUpozV} />}
+    {!edit && (jub ? !!jubKon : maObsah) && <ZahoditRozpisane onZahodit={zahod} />}
     {!ramSprava && potvrdenie}
   </>;
   const lavy = (
@@ -441,6 +460,7 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
         <span style={{ flex: 1, minWidth: 200, display: "flex", flexDirection: "column", gap: 2 }}><b style={{ fontSize: 16, color: "var(--gInk)" }}>{hotovo}</b><span style={{ fontSize: 13.5, color: "var(--ink2)" }}>Nájdete ho nižšie v zozname. Zmazať ho môžete kedykoľvek.</span></span>
         <button type="button" onClick={novy} style={{ minHeight: 44, padding: "0 16px", borderRadius: 12, border: "1.5px solid var(--gBd)", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 14.5, fontWeight: 800, color: "var(--gInk)", boxShadow: "none" }}>Napísať ďalší</button>
       </div> : <>
+        {kon && <MateRozpisane cas={kon.cas} co={DRUHY[kon.d.dr]?.[0]} onPokracovat={() => pokracuj(kon.d)} onZahodit={() => { zmazKoncept(KON); setKonRozh(true); }} />}
         {tel && (vyb || edit) ? zmenitEl : <><b style={{ fontSize: 16 }}>Čo chcete oznámiť</b>{druhyEl}</>}
         {telNahlad}
         {(!tel || vyb || edit) && !ramSprava && polia}
@@ -528,7 +548,7 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
       </div>)) : pridatTl}
     {sprava}
     <NastavenieUpozorneni strankaId={strankaId} />
-    {ramSprava && <RamPisania nazov={`${edit ? "Úprava · " : ""}${ODRUHY[odr][0]}`} teloRef={ramTelo} onSpat={() => { if (edit) vycisti(); setVyb(false); }}
+    {ramSprava && <RamPisania nazov={`${edit ? "Úprava · " : ""}${dr === 2 ? ODRUHY[odr][0] : dr === 1 ? "Udalosť" : "Krátky oznam"}`} teloRef={ramTelo} onSpat={() => { if (edit) vycisti(); setVyb(false); }}
       onNahlad={jub ? undefined : () => setNahlOtv(true)} nahlad={nahlOtv && !jub} onZavriNahlad={() => setNahlOtv(false)} nahladObsah={nahladPisania}
       dole={jub ? <button type="button" onClick={() => setJubOtv(true)} style={{ minHeight: 54, border: "none", borderRadius: 14, background: "#4B7A35", cursor: "pointer", fontFamily: "inherit", fontSize: 16.5, fontWeight: 800, color: "#fff", boxShadow: "none" }}>{jubKon || edit ? "Pokračovať v tvorbe blahoželania ›" : "Otvoriť tvorbu blahoželania ›"}</button> : potvrdenie}>
       <div style={{ padding: "18px 16px 28px", display: "flex", flexDirection: "column", gap: 14 }}>{editEl}{polia}</div>

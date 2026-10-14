@@ -5,7 +5,7 @@
 // Pod lištou len polia, jedno rolovanie. Dole pevne ‹ Krok N a Pokračovať ›, nad klávesnicou (visualViewport).
 // Náhľad nie je stále na obrazovke: ťuk na Náhľad = celá plocha, × Zavrieť vráti na to isté miesto.
 // ============================================================
-import { useEffect, useState, type ReactNode, type RefObject } from "react";
+import { useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import { createPortal } from "react-dom";
 
 /** mobil, telefón na šírku a tablet na výšku — tam sa píše v ráme na celú obrazovku */
@@ -95,4 +95,35 @@ export function DoleKroky({ i, onSpat, onDalej, dalej = "Pokračovať ›", zaka
       {i > 0 && <button type="button" onClick={onSpat} style={{ ...b, padding: "0 18px", border: "1.5px solid var(--cardBd)", background: "transparent", color: "var(--ink)", fontSize: 16 }}>‹ Krok {i}</button>}
       <button type="button" onClick={onDalej} disabled={zakazane} style={{ ...b, border: "none", background: zakazane ? "var(--btn)" : "#4B7A35", color: zakazane ? "var(--ink2)" : "#fff", cursor: zakazane ? "default" : "pointer" }}>{dalej}</button>
     </div>);
+}
+
+/** OPRAVY 271: formulár Správy na mobile v tom istom ráme (Späť · Náhľad na ťuk · jedno rolovanie · tlačidlo dole) */
+export function RamFormulara({ nazov, onSpat, nahlad, dole, children }: { nazov: string; onSpat: () => void; /** obsah náhľadu (bez = bez tlačidla Náhľad) */ nahlad?: ReactNode; dole?: ReactNode; children: ReactNode }) {
+  const telo = useRef<HTMLDivElement>(null);
+  const [n, setN] = useState(false);
+  return (
+    <RamPisania nazov={nazov} teloRef={telo} onSpat={onSpat} onNahlad={nahlad ? () => setN(true) : undefined} nahlad={n} onZavriNahlad={() => setN(false)} nahladObsah={nahlad} dole={dole}>
+      <div style={{ padding: "18px 16px 28px", display: "flex", flexDirection: "column", gap: 14 }}>{children}</div>
+    </RamPisania>);
+}
+
+/** OPRAVY 271: „Máte rozpísané · Pokračovať · Zahodiť“ — koncept ostal na zariadení */
+export function MateRozpisane({ cas, co, onPokracovat, onZahodit }: { cas: number; /** čo (napr. „oznam“) */ co?: string; onPokracovat: () => void; onZahodit: () => void }) {
+  const d = new Date(cas);
+  const kedy = `${d.getDate()}. ${d.getMonth() + 1}. o ${d.getHours()}:${String(d.getMinutes()).padStart(2, "0")}`;
+  const tl = { minHeight: 48, padding: "0 18px", borderRadius: 12, fontFamily: "inherit", fontSize: 15, fontWeight: 800, cursor: "pointer", boxShadow: "none" } as const;
+  return (
+    <div role="status" style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", padding: "12px 14px", borderRadius: 14, background: "var(--goldBg)", border: "1.5px solid var(--goldBd)" }}>
+      <span style={{ flex: "1 1 180px", minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}>
+        <b style={{ fontSize: 15.5, color: "var(--ink)" }}>Máte rozpísané{co ? ` · ${co}` : ""}</b>
+        <span style={{ fontSize: 13, color: "var(--ink2)" }}>naposledy {kedy}</span>
+      </span>
+      <button type="button" onClick={onPokracovat} style={{ ...tl, border: "none", background: "#4B7A35", color: "#fff" }}>Pokračovať</button>
+      <button type="button" onClick={onZahodit} style={{ ...tl, border: "1.5px solid var(--cardBd)", background: "transparent", color: "var(--ink2)" }}>Zahodiť</button>
+    </div>);
+}
+
+/** OPRAVY 271: „Zahodiť rozpísané“ vo formulári */
+export function ZahoditRozpisane({ onZahodit }: { onZahodit: () => void }) {
+  return <button type="button" onClick={onZahodit} style={{ alignSelf: "flex-start", minHeight: 44, padding: "0 14px", borderRadius: 12, border: "1.5px solid var(--cardBd)", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 800, color: "var(--ink2)", boxShadow: "none" }}>Zahodiť rozpísané</button>;
 }
