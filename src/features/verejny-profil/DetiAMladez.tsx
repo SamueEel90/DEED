@@ -3,20 +3,23 @@
 // Karty ako Oznamy: dátumový štvorec (tábor = viacdňový, plná modrá), druh · kedy, názov, miesto · text, Prídem + počet.
 // Tábor: „Prihlásiť dieťa" (prihlasuje rodič) a „voľných N". Mená detí verejne nikdy, len počet. Prázdny blok sa neukáže.
 // ============================================================
-import type { CSSProperties, ReactNode } from "react";
+import { useState, type CSSProperties, type ReactNode } from "react";
 import { useStretnutia, skoncilo, jeTabor } from "@/lib/detiMladez";
 import { reakcieF, prepniReakciuF, useReakcieF } from "@/lib/reakcieFarnosti";
 import { cistyText } from "@/lib/richtext";
 import { toast } from "@/shared";
 import { kedyStretnutia } from "@/features/rola/DetiMladezFarnosti";
 import { Datum, Viac } from "./NastenkaFarnosti";
+import { CelaGaleria, OdznakFotiek, type MediumGalerie } from "@/components/celaGaleria";
+import { medGal } from "@/lib/medGal";
 
 const zIso = (s: string) => { const [y, m, d] = s.split("-").map(Number); return new Date(y, m - 1, d); };
 
 /** KARTA 66 · Konzervatívny: položka ako riadok (bez fotky na stránke, fotky na ťuk) */
-export type RiadokDeti = { id: string; dat?: Date; kedy: string; t: string; txt: string; tlac: ReactNode; poc: string; fotky: string[] };
+export type RiadokDeti = { id: string; dat?: Date; kedy: string; t: string; txt: string; tlac: ReactNode; poc: string; fotky: string[]; /** OPRAVY 270 */ popisy?: string[] };
 export function DetiAMladezBlok({ strankaId, blokStyl, lavy, kto, mojeMeno, reg, riadok }: { strankaId: string; blokStyl: CSSProperties; lavy: ReactNode; kto: string; mojeMeno: string; reg: boolean; riadok?: (r: RiadokDeti) => ReactNode }) {
   useReakcieF();
+  const [gal, setGal] = useState<{ t: string; m: MediumGalerie[] } | null>(null); // OPRAVY 270: ťuk na fotku = prehliadač
   const L = useStretnutia(strankaId).filter((s) => !skoncilo(s)).sort((a, b) => a.dat.localeCompare(b.dat));
   if (!L.length) return null;
   return (
@@ -29,12 +32,12 @@ export function DetiAMladezBlok({ strankaId, blokStyl, lavy, kto, mojeMeno, reg,
           const t = plne ? "Plné · ďakujeme" : ja ? (tab ? "Prihlásené ✓ · zrušiť" : zav ? "Prihlásený ✓ · zrušiť" : "Prídem ✓ · zrušiť") : tab && zav ? "Prihlásiť dieťa" : zav ? "Prihlásiť sa" : "Prídem";
           const poc = tab && s.limit ? `voľných ${Math.max(0, s.limit - l.length)}` : l.length ? (zav ? `prihlásených ${l.length}` : `príde ${l.length}`) : s.limit ? `miesta: ${s.limit}` : "";
           const foto = s.fotky?.[0], txt = cistyText(s.txt).trim();
-          if (riadok) return riadok({ id: s.id, dat: s.dat ? zIso(s.dat) : undefined, kedy: kedyStretnutia(s), t: s.t, txt: [s.kde, txt].filter(Boolean).join(" · "), poc, fotky: s.fotky ?? [],
+          if (riadok) return riadok({ id: s.id, dat: s.dat ? zIso(s.dat) : undefined, kedy: kedyStretnutia(s), t: s.t, txt: [s.kde, txt].filter(Boolean).join(" · "), poc, fotky: s.fotky ?? [], popisy: s.popisy,
             tlac: s.pz > 0 ? <button type="button" aria-pressed={ja} disabled={plne} onClick={() => { if (zav && !ja && !reg) { toast("Prihlásiť sa menom môžu len registrovaní v DEED+."); return; } prepniReakciuF(strankaId, s.id, "ucast", kto, mojeMeno); }}
               style={{ minHeight: 48, padding: "0 18px", borderRadius: 12, cursor: plne ? "default" : "pointer", fontFamily: "inherit", fontSize: 16, fontWeight: 800, whiteSpace: "nowrap", border: ja ? "2px solid var(--nf-zelena)" : "2px solid var(--nf-plne)", background: plne ? "var(--nf-vyp)" : ja ? "var(--nf-gSoft)" : "var(--nf-plne)", color: plne ? "var(--nf-ink2)" : ja ? "var(--nf-gInk)" : "var(--nf-plneInk)" }}>{t}</button> : null });
           return (
             <div key={s.id} style={{ borderRadius: 22, overflow: "hidden", background: "var(--nf-karta)", display: "flex", flexDirection: "column" }}>
-              {foto && <img src={foto} alt="" style={{ width: "100%", aspectRatio: "16 / 9", objectFit: "cover", display: "block" }} />}
+              {foto && (() => { const m = medGal(s.fotky, s.popisy); return <button type="button" onClick={() => { if (m.length) setGal({ t: s.t, m }); }} aria-label="Fotky na celú obrazovku" style={{ position: "relative", border: "none", padding: 0, cursor: "zoom-in", display: "block" }}><img src={foto} alt="" style={{ width: "100%", aspectRatio: "16 / 9", objectFit: "cover", display: "block" }} /><OdznakFotiek m={m} /></button>; })()}
               <div style={{ padding: "16px 18px 18px", display: "flex", gap: 14, alignItems: "flex-start" }}>
                 {s.dat && <Datum d={zIso(s.dat)} viacdnova={tab && !!s.datDo && s.datDo !== s.dat} />}
                 <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 6 }}>
@@ -52,5 +55,6 @@ export function DetiAMladezBlok({ strankaId, blokStyl, lavy, kto, mojeMeno, reg,
             </div>);
         })}
       </div>
+      {gal && <CelaGaleria media={gal.m} nadpis={gal.t} onClose={() => setGal(null)} />}
     </div>);
 }

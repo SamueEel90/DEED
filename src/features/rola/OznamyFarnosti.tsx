@@ -267,7 +267,8 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
       oz.kal = kal;
       it = { ...zaklad, ntyp: "udalost", tag: "Udalosť", nazov: n.trim(), popis: cistyText(txt), datum: dat /* OPRAVY 207: dátum · čas · miesto nie do textu, je v riadku nad nadpisom */, rsvp: !!pozvanieO || undefined, pozvanie: pozvanieO, plagat: usp === 1 || undefined,
         udalost: { cas: pekny(cas), miesto: miesto.trim() || undefined, text: cistyText(txt) || undefined, zavazne: pozv === 2 || undefined },
-        fotky: usp === 1 ? (plagat ? [plagat] : undefined) : fotkyG.map((m) => m.src), popisy: usp !== 1 && fotkyG.some((m) => m.popis) ? fotkyG.map((m) => m.popis ?? "") : undefined, oz };
+        fotky: usp === 1 ? (plagat ? [plagat] : undefined) : fotkyG.map((m) => m.src), popisy: usp !== 1 && fotkyG.some((m) => m.popis) ? fotkyG.map((m) => m.popis ?? "") : undefined,
+        /* OPRAVY 270: video z galérie udalosti sa uloží (na stránke prvé v prehliadači) */ video: usp !== 1 ? media.find((m) => m.typ === "video")?.src : undefined, oz };
       // kalendár: pri úprave sa starý záznam presunie (ten istý id)
       const bez = (k: KalKostol): KalKostol => ({ ...k, extra: Object.fromEntries(Object.entries(k.extra).map(([d, l]) => [d, l.filter((x) => x.id !== kal)]).filter(([, l]) => l.length)) });
       const stary = povodny?.oz?.kk ?? "0";
@@ -291,7 +292,7 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
     }
     if (povodny) {
       // KARTA 57 C.3: oznam ostane na mieste (to isté id aj čas vzniku); polia, ktoré nový tvar nemá, sa vymažú
-      const prazdne: Partial<VieraFeedItem> = { udalost: undefined, datum: undefined, fotky: undefined, plagat: undefined, ukat: undefined, smutocny: undefined, reakciaTyp: undefined, pozvanie: undefined, rsvp: undefined };
+      const prazdne: Partial<VieraFeedItem> = { udalost: undefined, datum: undefined, fotky: undefined, video: undefined, plagat: undefined, ukat: undefined, smutocny: undefined, reakciaTyp: undefined, pozvanie: undefined, rsvp: undefined };
       upravPrispevok(strankaId, povodny.id, { ...prazdne, ...it });
       setHotovo(`Zmeny sú uložené ✓${kalendar ? " · kalendár je upravený" : ""}`);
       setEdit(null);
@@ -318,7 +319,7 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
       vytvorene: povodny?.vytvorene ?? teraz, af: povodny ? povodny.af : autorJa, ntyp: "oznam", tag: "Jubileum", nazov: `Blahoželanie · ${menoB || "jubilant"}`, popis: menoB,
       fotky: obr ? [obr] : undefined, plagat: obr ? true : undefined, reakciaTyp: "blahozelanie", platnostDni: 7, oz };
     if (povodny) {
-      upravPrispevok(strankaId, povodny.id, { udalost: undefined, datum: undefined, fotky: undefined, plagat: undefined, ukat: undefined, smutocny: undefined, reakciaTyp: undefined, pozvanie: undefined, rsvp: undefined, ...it });
+      upravPrispevok(strankaId, povodny.id, { udalost: undefined, datum: undefined, fotky: undefined, video: undefined, plagat: undefined, ukat: undefined, smutocny: undefined, reakciaTyp: undefined, pozvanie: undefined, rsvp: undefined, ...it });
       setHotovo("Zmeny sú uložené ✓"); setEdit(null);
     } else { pridajPrispevok(strankaId, it); setHotovo("Oznámenie je zverejnené ✓"); }
     obnov((x) => x + 1);
@@ -338,7 +339,7 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
     setU(o.u ?? prazdneUdaje(d)); setVolba(o.volba ?? prvaVolba(d));
     const f = x.fotky ?? [];
     setPlagat(x.plagat && o.dr === 1 ? f[0] : undefined);
-    setMedia((!x.plagat && o.dr !== 2) || (x.plagat && o.dr === 2) ? f.map((src, i) => ({ id: terazMs() + i, typ: "foto" as const, src, ...(x.popisy?.[i] ? { popis: x.popisy[i] } : {}) })) : []);
+    setMedia((!x.plagat && o.dr !== 2) || (x.plagat && o.dr === 2) ? [...(o.dr === 1 && x.video ? [{ id: terazMs() - 1, typ: "video" as const, src: x.video }] : []), ...f.map((src, i) => ({ id: terazMs() + i, typ: "foto" as const, src, ...(x.popisy?.[i] ? { popis: x.popisy[i] } : {}) }))] : []);
     setEdit(x.id); setHotovo(null); setVyb(true); setFormOn(true); setOtv(null); setPozri(null);
     window.setTimeout(() => topRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 30);
   };
