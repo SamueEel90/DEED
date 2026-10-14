@@ -3,11 +3,13 @@
 // Hore „Spolu najviac 1 správa denne“ (súhrn zo všetkých farností, zrušená omša a parte hneď),
 // pod ním domovská farnosť · sledované kostoly · sledované farnosti s riadkom, čo chodí. Ťuk = okno 1a.
 // ============================================================
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { SpatTlacidlo } from "@/components/cesta";
 import { farnostiSuhrn, nastavFarnostiSuhrn, nazovFarnosti, useAdresarFarnosti, useMojeFarnosti, blokyFarnosti, blokyKostola, kratkeBloky } from "@/lib/mojeFarnosti";
 import { useMiesta } from "@/lib/miestaFarnosti";
 import { OknoUpozorneni, type CielUpozorneni } from "@/features/verejny-profil/OknoUpozorneni";
+import { pushPodporovany, pushZapnuty, vypniPush, zapniPush } from "@/lib/push";
 
 const prep = (on: boolean) => (
   <span aria-hidden="true" style={{ position: "relative", width: 50, height: 30, borderRadius: 15, background: on ? "#4B7A35" : "var(--track, #D3CDC1)", flex: "none", transition: "background .2s" }}>
@@ -38,6 +40,15 @@ export function MojeFarnostiUpozornenia({ onBack }: { onBack: () => void }) {
   const suhrn = farnostiSuhrn();
   const far = (id: string) => ({ stranka: id, nazovFarnosti: nazovFarnosti(id) });
   const prazdne = !MF.domovska && !MF.sled.length && !MF.kostoly.length;
+  // push na tomto zariadení (server posiela pri každom upozornení zo zvončeka)
+  const [push, setPush] = useState(false);
+  useEffect(() => { if (pushPodporovany()) void pushZapnuty().then(setPush, () => undefined); }, []);
+  const prepniPush = async () => {
+    if (push) { await vypniPush(); setPush(false); return; }
+    const r = await zapniPush();
+    if (r === "ok") { setPush(true); toast("Upozornenia prídu aj na toto zariadenie."); }
+    else toast(r === "zamietnute" ? "Upozornenia sú v prehliadači zakázané. Povoľte ich v nastaveniach prehliadača." : r === "nepodporovane" ? "Toto zariadenie upozornenia nepodporuje. Na iPhone pridajte DEED+ na plochu." : "Nepodarilo sa zapnúť. Skúste neskôr.");
+  };
   return (
     <div className="deed-platba" style={{ height: "100%", display: "flex", flexDirection: "column", background: "var(--bg)", color: "var(--d-ink, var(--ink))" }}>
       <div style={{ flex: "none", display: "flex", alignItems: "center", gap: 10, padding: "max(6px, env(safe-area-inset-top)) 16px 0", minHeight: 60 }}>
@@ -49,6 +60,10 @@ export function MojeFarnostiUpozornenia({ onBack }: { onBack: () => void }) {
           <span style={{ flex: 1, display: "flex", flexDirection: "column", gap: 2 }}><b style={{ fontSize: 15 }}>Spolu najviac 1 správa denne</b><span style={{ fontSize: 12.5, color: "var(--d-ink3, var(--ink3))" }}>súhrn zo všetkých farností · zrušená omša a parte hneď</span></span>
           {prep(suhrn)}
         </button>
+        {pushPodporovany() && <button type="button" role="switch" aria-checked={push} onClick={() => void prepniPush()} style={{ display: "flex", alignItems: "center", gap: 12, padding: 14, borderRadius: 16, border: "1px solid var(--d-cardBd, var(--cardBd))", background: "var(--d-card, var(--field))", fontFamily: "inherit", textAlign: "left", cursor: "pointer", color: "inherit", boxShadow: "none" }}>
+          <span style={{ flex: 1, display: "flex", flexDirection: "column", gap: 2 }}><b style={{ fontSize: 15 }}>Upozornenia na tomto zariadení</b><span style={{ fontSize: 12.5, color: "var(--d-ink3, var(--ink3))" }}>aj keď DEED+ nemáte otvorené · inak len zvonček v appke</span></span>
+          {prep(push)}
+        </button>}
         {MF.domovska && <Riadok k="DOMOVSKÁ FARNOSŤ" kc="#2F5E3A" n={nazovFarnosti(MF.domovska)} s={kratkeBloky(blokyFarnosti(MF.domovska))} onTap={() => setOkno(far(MF.domovska!))} />}
         {MF.kostoly.map((k) => <RiadokKostola key={`${k.stranka}|${k.miesto}`} stranka={k.stranka} miesto={k.miesto} onTap={setOkno} />)}
         {MF.sled.map((id) => <Riadok key={id} k="SLEDOVANÁ FARNOSŤ" kc="#8A6A1F" n={nazovFarnosti(id)} s={kratkeBloky(blokyFarnosti(id))} onTap={() => setOkno(far(id))} />)}

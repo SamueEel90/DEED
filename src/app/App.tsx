@@ -40,6 +40,7 @@ import { PomocHost } from "@/features/profil/Pomoc";
 import { PolohaOkruhu } from "@/features/profil/Bezpecnost24";
 import { PrehladEditora } from "@/features/deed/PrehladEditora";
 import { somDeedAdmin } from "@/lib/editorStat";
+import { obnovPushOdber } from "@/lib/push";
 
 // Code-splitting: každý modul = vlastný chunk, načíta sa až pri otvorení
 // (initial load = shell + prvý modul namiesto jedného veľkého bundle).
@@ -226,6 +227,7 @@ export function Screens({ wide, desktop }: { wide?: boolean; desktop?: boolean }
 
   useEffect(() => { ulozTaby(taby); }, [taby]);
   useNotifikacieRealtime(); // Fáza E — live oznámenia (INSERT do notifikacia → obnova zoznamu)
+  useEffect(() => { if (session) void obnovPushOdber(); }, [session]); // KARTA 63: push zariadenia patrí prihlásenému účtu
 
   // URL ↔ modul: boot normalizácia (/ → /m/good) + popstate (Back/Forward prepína moduly).
   // Ak čaká deep-link, normalizáciu odloží deep-link effect (inak by slug prepísala).
