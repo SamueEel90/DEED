@@ -852,6 +852,11 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, nahlad,
   useEffect(() => { if (!moderne) return; nastavFabRezim(pc && pcVelke ? "lista" : pc ? "" : "maly"); return () => nastavFabRezim(""); }, [moderne, pc, pcVelke]);
   const [pasMod, posMod] = usePas(), [pasTes, posTes] = usePas(), [pasPrid, posPrid] = usePas(), [pasKos, posKos] = usePas();
   const [pasOzn, posOzn] = usePas(true), [pasSpom, posSpom] = usePas(true);
+  // OPRAVY 259: Nástenka PC a tablet na šírku — Zbierky farnosti v jednom riadku, listuje sa do boku
+  const aspon1024 = useAspon(1024);
+  const zbPasOn = siroka && aspon1024;
+  const [pasZb, posZb] = usePas();
+  const [zbPrebytok, setZbPrebytok] = useState(false);
   const [mHladat, setMHladat] = useState(false);
   const mob = !pc, mt = siroka && !pc;
   /** koľko kariet je na šírku v pase (mobil 86 %, tablet 48 %) */
@@ -1332,8 +1337,19 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, nahlad,
 
       {/* ---------- (2) Zbierky farnosti · mobil malé riadky ---------- */}
       {maZbierky && <div data-blok="zbierky" style={{ padding: `${siroka ? 28 : 18}px ${PAD_X} ${siroka ? 40 : 26}px`, display: "flex", flexDirection: "column", gap: siroka ? 14 : 8 }}>
-        <div style={{ display: "flex", alignItems: "baseline", gap: 16, flexWrap: "wrap" }}><b style={{ fontSize: siroka ? 30 : 22, letterSpacing: "-.02em" }}>Zbierky farnosti</b>{siroka && <span style={{ fontSize: 17, color: INK3 }}>ťuknite na zbierku a prispejte</span>}</div>
-        {siroka ? <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(250px,1fr))", gap: 14, alignItems: "stretch" }}>
+        <div style={{ display: "flex", alignItems: zbPasOn ? "center" : "baseline", gap: 16, flexWrap: "wrap" }}><b style={{ fontSize: siroka ? 30 : 22, letterSpacing: "-.02em" }}>Zbierky farnosti</b>{siroka && <span style={{ flex: zbPasOn ? 1 : undefined, fontSize: 17, color: INK3 }}>ťuknite na zbierku a prispejte</span>}{zbPasOn && zbPrebytok && <Sipky onPosun={posZb} />}</div>
+        {zbPasOn ? <>
+          <PasZbierok pasRef={pasZb} onPrebytok={setZbPrebytok} polozky={[
+            ...(hlOn && hl ? [{ k: "hl", siroka: true, el: <HlavnaKarta strankaId={strankaId} hlRef={hlRef} nazov={nazovHlavnej(hl)} txt={hlTxt} onTap={otvorHlavnu} /> }] : []),
+            ...(zvOn ? [{ k: "zv", el: <ZvoncekKarta strankaId={strankaId} onTap={otvorZvoncek} /> }] : []),
+            ...zbFar.map((z) => ({ k: z.id, el: <ZbierkaKarta z={z} onTap={() => otvorZbierku(z)} /> })),
+            ...piny.map((z) => ({ k: `p${z.id}`, el: <PripnutaKarta z={z} onTap={() => otvorPin(z)} /> })),
+            ...zbIne.map((z) => ({ k: `r${z.id}`, el: <button type="button" onClick={() => otvorZbierku(z)} style={{ width: "100%", textAlign: "left", border: "none", borderRadius: 22, background: KARTA, borderLeft: `5px solid ${FIALOVA}`, padding: "16px 18px 18px", display: "flex", flexDirection: "column", gap: 8, color: INK, cursor: "pointer", fontFamily: "inherit" }}>
+              <span style={kicker(FIALOVA)}>ZBIERKA RODINY</span><b style={{ fontSize: 20, lineHeight: 1.25 }}>{bezPredpony(z.nazov) || "Zbierka"}</b><span style={{ fontSize: 16, color: INK2 }}>Peniaze idú: rodine · Prispieť ›</span>
+            </button> })),
+          ]} />
+          {prispeliSme}
+        </> : siroka ? <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(250px,1fr))", gap: 14, alignItems: "stretch" }}>
           {hlOn && hl && <div style={{ gridColumn: "span 2", display: "flex", minWidth: 0 }}><HlavnaKarta strankaId={strankaId} hlRef={hlRef} nazov={nazovHlavnej(hl)} txt={hlTxt} onTap={otvorHlavnu} /></div>}
           {zvOn && <ZvoncekKarta strankaId={strankaId} onTap={otvorZvoncek} />}
           {zbFar.map((z) => <ZbierkaKarta key={z.id} z={z} onTap={() => otvorZbierku(z)} />)}
@@ -1553,6 +1569,25 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, nahlad,
       {mfOn && <MojeFarnostiOkno strankaId={strankaId} domovska={MF.domovska} sled={MF.sled} kostoly={MF.kostoly} mojKostol={MF.mojKostol} onKostol={setMiestoId} hlaska={mfHl}
         onHlaska={(t) => { setMfHl(t); window.setTimeout(() => setMfHl(null), 3000); }} onZavri={() => setMfOn(false)} />}
     </div>);
+}
+
+/** OPRAVY 259: Zbierky farnosti v jednom riadku (PC, tablet na šírku) — hlavná ≈ 1,6 ×, ostatné rovnako vysoké, posledná vykúka napoly */
+function PasZbierok({ polozky, pasRef, onPrebytok }: { polozky: { k: string; el: ReactNode; siroka?: boolean }[]; pasRef: RefObject<HTMLDivElement>; onPrebytok: (b: boolean) => void }) {
+  const [w, setW] = useState(0);
+  useEffect(() => {
+    const el = pasRef.current; if (!el) return;
+    const f = () => { setW(el.clientWidth); onPrebytok(el.scrollWidth > el.clientWidth + 2); };
+    f(); const ro = new ResizeObserver(f); ro.observe(el); [...el.children].forEach((c) => ro.observe(c));
+    return () => ro.disconnect();
+  }, [pasRef, onPrebytok, polozky.length]);
+  const G = 14, U0 = 280, jednotky = polozky.reduce((a, p) => a + (p.siroka ? 1.6 : 1), 0);
+  // zmestí sa všetko → prirodzená šírka; inak jednotka tak, aby posledná viditeľná karta vykúkala napoly
+  const vidno = w ? Math.max(1.5, Math.floor((w + G) / (U0 + G)) - 0.5) : 0;
+  const u = !w ? U0 : jednotky * (U0 + G) - G <= w ? Math.max(U0, (w - (polozky.length - 1) * G) / jednotky) : (w - Math.ceil(vidno) * G) / vidno;
+  return (
+    <PasX pasRef={pasRef} gap={G}>
+      {polozky.map((p) => <div key={p.k} style={{ flex: "none", width: Math.round(u * (p.siroka ? 1.6 : 1)), display: "grid", minWidth: 0, scrollSnapAlign: "start" }}>{p.el}</div>)}
+    </PasX>);
 }
 
 /** KARTA 57C §5: vybraná sada zbierky (index v SADY_EUR / SADY_EURC) → rýchle sumy v module */
