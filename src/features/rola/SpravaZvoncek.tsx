@@ -55,7 +55,7 @@ export function SpravaZvoncek({ strankaId, mobil, toast, onSpat }: { strankaId: 
       <input value={n.podakovanie ?? ""} onChange={(e) => zmen({ podakovanie: e.target.value.slice(0, 40) })} placeholder={slova.podakovanie} aria-label="Poďakovanie" style={pole} />
       <span style={drobneK}>Po každej omši pribudne v Hlavnej zbierke riadok:</span>
       <span style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", borderRadius: 12, background: "var(--field)", border: "1px solid var(--cardBd)" }}>
-        <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}><b style={{ fontSize: 15 }}>{om.okno ? riadokOmse(om.okno) : "Ranná omša 7:00"}</b><span style={{ fontSize: 14, color: "var(--ink2)" }}>{pod}</span></span>
+        <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}><b style={{ fontSize: 15 }}>{om.okno ? riadokOmse(om.okno, strankaId) : "Ranná omša 7:00"}</b><span style={{ fontSize: 14, color: "var(--ink2)" }}>{pod}</span></span>
         <b style={{ flex: "none", fontSize: 15, fontVariantNumeric: "tabular-nums" }}>{eur(120)}</b>
       </span>
       <span style={drobneK}>Pri 0 € riadok nepribudne. Prázdne = {slova.podakovanie}.</span>
@@ -89,7 +89,7 @@ export function SpravaZvoncek({ strankaId, mobil, toast, onSpat }: { strankaId: 
       {om.uzavrete.length > 0 && <div style={{ display: "flex", flexDirection: "column", borderTop: "1px solid var(--cardBd)", paddingTop: 6 }}>
         <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: ".06em", color: "var(--ink3)", padding: "4px 0" }}>OMŠE V HLAVNEJ ZBIERKE</span>
         {om.uzavrete.map((o, i) => <div key={o.id} style={{ display: "flex", alignItems: "center", gap: 10, minHeight: 48, borderTop: i ? "1px solid var(--cardBd)" : "none" }}>
-          <b style={{ flex: 1, minWidth: 0, fontSize: 14.5 }}>{Number(o.den.slice(8))}. {Number(o.den.slice(5, 7))}. · {riadokOmse(o)}</b>
+          <b style={{ flex: 1, minWidth: 0, fontSize: 14.5 }}>{Number(o.den.slice(8))}. {Number(o.den.slice(5, 7))}. · {riadokOmse(o, strankaId)}</b>
           <span style={{ flex: "none", fontSize: 13.5, color: "var(--ink3)" }}>{o.darov} {o.darov === 1 ? "dar" : o.darov < 5 ? "dary" : "darov"}</span>
           <b style={{ flex: "none", fontSize: 14.5, fontVariantNumeric: "tabular-nums" }}>{eur(o.suma)}</b>
         </div>)}

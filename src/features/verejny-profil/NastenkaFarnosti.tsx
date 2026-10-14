@@ -1786,7 +1786,7 @@ function HlavnaKarta({ strankaId, hlRef, nazov, txt, onTap }: { strankaId: strin
   const s = suhrnHlavnej(strankaId, hlRef);
   const riadky: { cas: number; k: string; pod?: string; s: string }[] = [
     ...dary.map((r: DarRiadok) => ({ cas: r.cas, k: "Bohu známy veriaci", s: relCas(r.cas) })),
-    ...uzavrete.map((o) => ({ cas: zIso(o.den).getTime() + minuty(o.cas) * 60000, k: riadokOmse(o), pod, s: eur(o.suma) })),
+    ...uzavrete.map((o) => ({ cas: zIso(o.den).getTime() + minuty(o.cas) * 60000, k: riadokOmse(o, strankaId), pod, s: eur(o.suma) })),
   ].sort((a, b) => b.cas - a.cas).slice(0, 4);
   return (
     <button type="button" onClick={onTap} style={{ flex: "1 1 360px", minWidth: 0, textAlign: "left", padding: "26px 28px", borderRadius: 24, background: KARTA, border: "none", borderLeft: `6px solid ${TEAL}`, display: "flex", flexDirection: "column", gap: 12, cursor: "pointer", color: INK, fontFamily: "inherit" }}>

@@ -14,6 +14,7 @@ import { TESTOVACIA } from "./testovacia";
 import { odKedyHlavna } from "./centralnaZbierka";
 import { DEED_ZA_EUR } from "./darZbierky";
 import { darcoviaPre, identitaDarcu, refIdySDarmi, sucetDarov, useZmenyDarov, type DarRiadok } from "./darcovia";
+import { vsetkyMiesta } from "./miestaFarnosti";
 import { CAS_OK, DNI_K, dvt, iso, kostolKal, useKalendar, zIso, type KalKostol } from "./kalendarFarnosti";
 
 export interface ZvOkno {
@@ -21,7 +22,7 @@ export interface ZvOkno {
   /** deň omše RRRR-MM-DD */ den: string; /** „7:00“ */ cas: string; /** „Ranná omša“, názov z kalendára */ nazov: string;
   /** začiatok omše a okamih prepnutia na ďalšiu (null = ďalšia omša nie je v kalendári), ms */ zac: number; do: number | null;
 }
-export interface ZvOmsaSDarmi { id: string; den: string; cas: string; nazov: string; suma: number; darov: number }
+export interface ZvOmsaSDarmi { id: string; /** id miesta (kostola) — hlavný „0“ */ kostol: string; den: string; cas: string; nazov: string; suma: number; darov: number }
 
 const RE_REF = /-zv-([^-]+)-(\d{4}-\d{2}-\d{2})-(\d{2})(\d{2})$/;
 export const jeZvoncekRef = (refId: string) => RE_REF.test(refId);
@@ -106,7 +107,7 @@ function obnovServer(stranka: string, kostol: string) {
     if (!o.error) serverOkna.set(kl, { o: o.data ? zDB(o.data as OknoDB) : null, kedy: Date.now() });
     if (!l.error) serverOmse.set(stranka, ((l.data ?? []) as { ref: string; nazov: string; eur: number; deed: number; darov: number }[]).flatMap((r) => {
       const m = r.ref.match(RE_REF);
-      return m ? [{ id: r.ref, den: m[2], cas: `${Number(m[3])}:${m[4]}`, nazov: r.nazov.replace(/ \d{1,2}:\d{2}$/, ""), suma: Number(r.eur) + Number(r.deed) / DEED_ZA_EUR, darov: Number(r.darov) }] : [];
+      return m ? [{ id: r.ref, kostol: m[1], den: m[2], cas: `${Number(m[3])}:${m[4]}`, nazov: r.nazov.replace(/ \d{1,2}:\d{2}$/, ""), suma: Number(r.eur) + Number(r.deed) / DEED_ZA_EUR, darov: Number(r.darov) }] : [];
     }));
     zmena();
   }).finally(() => nacitava.delete(kl));
@@ -132,7 +133,7 @@ export function uzavreteOmse(stranka: string, kostol = "0"): ZvOmsaSDarmi[] {
     const m = id.match(RE_REF);
     if (!m) return [];
     const cas = `${Number(m[3])}:${m[4]}`, s = sucetDarov(id);
-    return s.suma > 0 ? [{ id, den: m[2], cas, nazov: nazovZKalendara(stranka, kostol, m[2], cas), suma: s.suma, darov: s.pocet }] : [];
+    return s.suma > 0 ? [{ id, kostol: m[1], den: m[2], cas, nazov: nazovZKalendara(stranka, kostol, m[2], cas), suma: s.suma, darov: s.pocet }] : [];
   });
 }
 
@@ -158,8 +159,11 @@ export function nadpisOkna(o: ZvOkno): string {
   const d = zIso(o.den);
   return `${DNI_K[dvt(d)]} ${d.getDate()}. ${d.getMonth() + 1}. · ${o.cas} · ${nazovMalym(o.nazov)}`;
 }
-/** „Ranná omša 7:00“ — meno riadku v Hlavnej zbierke */
-export const riadokOmse = (o: Pick<ZvOmsaSDarmi, "nazov" | "cas">) => `${o.nazov} ${o.cas}`;
+/** „Ranná omša 7:00“ — meno riadku v Hlavnej zbierke; zvončeková pri inom kostole nesie aj miesto („Ranná omša 7:00 · Opatová“) */
+export function riadokOmse(o: Pick<ZvOmsaSDarmi, "nazov" | "cas" | "kostol">, stranka?: string): string {
+  const miesto = stranka && o.kostol && o.kostol !== "0" ? vsetkyMiesta(stranka).find((m) => m.id === o.kostol)?.nazov.trim() : "";
+  return `${o.nazov} ${o.cas}${miesto ? ` · ${miesto}` : ""}`;
+}
 
 /** živé okno: prekreslí sa pri novom dare, zmene kalendára, teste a každú minútu */
 export function useZvoncekOkno(stranka: string, kostol = "0"): { okno: ZvOkno | null; dary: DarRiadok[]; uzavrete: ZvOmsaSDarmi[] } {

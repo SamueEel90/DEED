@@ -114,7 +114,7 @@ export function SpravaCentralnej({ strankaId, nazov, hlavnyUcet, tier, mobil, to
   const spustena = !farnost || !!d.spustena;
   const farnostDary: [string, string, string][] = !farnost ? [] : [
     ...[...darcoviaPre(idZbierky).map((r) => ({ cas: r.cas, r: [identitaDarcu(r, ja, "viera"), relCas(r.cas), ""] as [string, string, string] })),
-      ...om.uzavrete.map((o) => ({ cas: new Date(`${o.den}T${o.cas.padStart(5, "0")}`).getTime(), r: [riadokOmse(o), podZv, eur(o.suma)] as [string, string, string] }))]
+      ...om.uzavrete.map((o) => ({ cas: new Date(`${o.den}T${o.cas.padStart(5, "0")}`).getTime(), r: [riadokOmse(o, strankaId), podZv, eur(o.suma)] as [string, string, string] }))]
       .sort((a, b) => b.cas - a.cas).map((x) => x.r),
   ].slice(0, 3);
   const realne: [string, string, string][] = farnost ? farnostDary : darcoviaPre(idZbierky).slice(0, 3).map((r) => [identitaDarcu(r, undefined, sektor), relCas(r.cas), zobrazenaSuma(r) ?? ""]);

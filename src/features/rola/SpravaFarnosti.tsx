@@ -242,7 +242,7 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
   const ramce: [string, string, string][] = [
     ["Vyzbierané · hlavná", eur(vyzbObd), `cez DEED+ · ${OBD_T[ob]}`],
     ["Zvončeková · teraz", eur(oknoSuma), om.okno ? `${nadpisOkna(om.okno)}${oknoLudi ? ` · ${ludiT(oknoLudi)}` : ""}` : "najprv nastavte omše"],
-    ["Posledná omšová", posledna ? eur(posledna.suma) : "—", posledna ? `${riadokOmse(posledna)} · ${poslPocet} ${poslPocet === 1 ? "dar" : poslPocet < 5 ? "dary" : "darov"}` : "zatiaľ žiadna"],
+    ["Posledná omšová", posledna ? eur(posledna.suma) : "—", posledna ? `${riadokOmse(posledna, strankaId)} · ${poslPocet} ${poslPocet === 1 ? "dar" : poslPocet < 5 ? "dary" : "darov"}` : "zatiaľ žiadna"],
     ["Sledujúci", "—", "pripravujeme"], // PLACEBO — karta 56D: sledovanie stránky ešte nemá tabuľku
   ];
   const cisla = (
@@ -329,7 +329,7 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
       </span>
       {/* OPRAVY 219: bez technických viet */}
       <span style={{ fontSize: 14.5, color: "var(--ink)" }}>Vyzbierané <b style={{ fontVariantNumeric: "tabular-nums" }}>{eur(oknoSuma)}</b> od {oknoLudi} {oknoLudi === 1 ? "človeka" : "ľudí"}{zvN.ukoncena || !kedyPrepne(om.okno, strankaId) ? "" : ` · ďalšia omša ${kedyPrepne(om.okno, strankaId)}`}</span>
-      <span style={{ fontSize: 13.5, lineHeight: 1.5, color: "var(--ink2)" }}>Po omši sa pripíše do Hlavnej zbierky jedným riadkom{om.okno ? ` „${riadokOmse(om.okno)}“` : ""}.</span>
+      <span style={{ fontSize: 13.5, lineHeight: 1.5, color: "var(--ink2)" }}>Po omši sa pripíše do Hlavnej zbierky jedným riadkom{om.okno ? ` „${riadokOmse(om.okno, strankaId)}“` : ""}.</span>
     </button>);
 
   // KARTA 56D §3: Prehľad = Čísla · Pripnuté · Treba vybaviť.
