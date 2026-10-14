@@ -170,7 +170,10 @@ export function CelaGaleria({ media, start = 0, onClose, nadpis }: { media: Medi
 const fotiekG = (n: number) => `${n} ${n === 1 ? "fotka" : n >= 2 && n <= 4 ? "fotky" : "fotiek"}`;
 /** OPRAVY 270: odznak „N fotiek" v rohu fotky, keď je ich viac (rodič má position: relative) */
 export function OdznakFotiek({ m, hore }: { m: MediumGalerie[]; hore?: boolean }) {
-  if (m.length < 2) return null;
-  const v = m.some((x) => x.typ === "video");
-  return <span style={{ position: "absolute", right: hore ? 20 : 10, ...(hore ? { top: 20 } : { bottom: 10 }), padding: "3px 9px", borderRadius: 7, background: "rgba(20,17,11,.78)", color: "#fff", fontSize: 14, fontWeight: 700, pointerEvents: "none" }}>{v ? `Video · ${fotiekG(m.length - 1)}` : fotiekG(m.length)}</span>;
+  const v = m.some((x) => x.typ === "video"), f = m.length - (v ? 1 : 0);
+  if (!v && f < 2) return null;
+  // OPRAVY 284 (3): s videom malé ▶ v rohu, video ide v prehliadači prvé
+  return <span style={{ position: "absolute", right: hore ? 20 : 10, ...(hore ? { top: 20 } : { bottom: 10 }), padding: "3px 9px", borderRadius: 7, background: "rgba(20,17,11,.78)", color: "#fff", fontSize: 14, fontWeight: 700, pointerEvents: "none", display: "flex", alignItems: "center", gap: 6 }}>
+    {v && <span aria-hidden="true" style={{ width: 0, height: 0, borderLeft: "9px solid #fff", borderTop: "6px solid transparent", borderBottom: "6px solid transparent" }} />}
+    {v ? (f > 1 ? `s videom · ${fotiekG(f)}` : "s videom") : fotiekG(f)}</span>;
 }

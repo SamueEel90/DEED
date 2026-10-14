@@ -75,6 +75,7 @@ import { useSumyDarcov } from "@/lib/sumyDarcov";
 import { odkazZbierky } from "@/features/zbierka/Zdielat";
 import { CelaGaleria, OdznakFotiek, type MediumGalerie } from "@/components/celaGaleria";
 import { medGal } from "@/lib/medGal";
+import { posterVidea, useZmenyPosterov } from "@/lib/videoUloz";
 // ---- farby Nástenky: premenné podľa témy appky (OPRAVY 203, styles/nastenka.css) ----
 const BG = "var(--nf-bg)", KARTA = "var(--nf-karta)", INK = "var(--nf-ink)", INK2 = "var(--nf-ink2)", INK3 = "var(--nf-ink3)", LINKA = "var(--nf-linka)", PAPIER = "var(--nf-papier)";
 const TEAL = "var(--nf-teal)", ZELENA = "var(--nf-zelena)", FIALOVA = "var(--nf-fialova)", CERVENA = "var(--nf-cervena)", ZLATA = "var(--nf-zlata)";
@@ -212,6 +213,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, nahlad,
   const zvN = useZvoncek(strankaId); // OPRAVY 260: názov, text, fotky, sumy a ukončenie zo Správy zvončekovej zbierky
   const [velke, setVelke] = useState<Velke | null>(null);
   const autorNa = useAutorNaStranke(strankaId); // OPRAVY 276
+  useZmenyPosterov(); // OPRAVY 284 (3): záber videa ako náhľad, keď položka nemá fotku
   const [album, setAlbum] = useState<PolozkaFarnika | null>(null);
   const [gal, setGal] = useState<{ t: string; m: MediumGalerie[]; i: number } | null>(null); // OPRAVY 270
   const otvorGal = (t: string, m: MediumGalerie[], i = 0) => { if (m.length) setGal({ t, m, i }); };
@@ -342,7 +344,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, nahlad,
     const d = x.datum ? zIso(x.datum) : null;
     return { id: x.id, ms: d?.getTime() ?? 9e15, dat: x.datum ?? "", t: x.nazov ?? "", txt: (x.oz?.dr === 1 && x.oz.txt) || x.udalost?.text || "", od: "Farnosť",
       kedy: [d ? `${DNW_V[dvt(d)]} ${d.getDate()}. ${d.getMonth() + 1}.` : "", x.udalost?.cas, x.udalost?.miesto?.toLocaleUpperCase("sk-SK")].filter(Boolean).join(" · "),
-      foto: ziveObr(x.fotky?.[0]) ? x.fotky![0] : "", plag: !!x.plagat, pz, limit: x.pozvanie?.limit ?? 0, zoznam: r.ucast ?? [], mena: r.mena ?? {},
+      foto: ziveObr(x.fotky?.[0]) ? x.fotky![0] : posterVidea(x.video) ?? "", plag: !!x.plagat, pz, limit: x.pozvanie?.limit ?? 0, zoznam: r.ucast ?? [], mena: r.mena ?? {},
       prepni: () => prepniReakciuF(strankaId, x.id, "ucast", kto, mojeMeno), af: x.af, gal: medGal(x.fotky, x.popisy, x.video) };
   });
   const udVer: Ud[] = OD.filter((x) => x.k === "udalost").map((x) => {
@@ -432,7 +434,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, nahlad,
   // ---------- Oznamy farnosti ----------
   type Oz = { id: string; ms: number; chip: string; t: string; txt: string; zm: boolean; g: "far" | "ver"; x?: PolozkaFarnika; foto?: string; /** OPRAVY 270 */ gal: MediumGalerie[]; af?: AutorF; /** KARTA 62: zaškrtnuté kostoly (bez = celá farnosť) */ mi?: string[] };
   const ozAll: Oz[] = [
-    ...OZ.filter((x) => ["OZNAM", "ZMENA OMŠE"].includes(stit(x)) && (stit(x) !== "ZMENA OMŠE" || VJ.zmeny)).map((x): Oz => ({ id: x.id, ms: x.vytvorene ?? 0, chip: stit(x) === "ZMENA OMŠE" ? "ZMENA PROGRAMU" : stit(x), t: x.nazov ?? "", txt: (x.oz?.dr === 0 && x.oz.txt) || x.popis || "", zm: stit(x) === "ZMENA OMŠE", g: "far", foto: ziveObr(x.fotky?.[0]) ? x.fotky![0] : undefined, gal: medGal(x.fotky, x.popisy, x.video), af: x.af, mi: x.oz?.dr === 0 && x.oz.mi?.length ? x.oz.mi : undefined })),
+    ...OZ.filter((x) => ["OZNAM", "ZMENA OMŠE"].includes(stit(x)) && (stit(x) !== "ZMENA OMŠE" || VJ.zmeny)).map((x): Oz => ({ id: x.id, ms: x.vytvorene ?? 0, chip: stit(x) === "ZMENA OMŠE" ? "ZMENA PROGRAMU" : stit(x), t: x.nazov ?? "", txt: (x.oz?.dr === 0 && x.oz.txt) || x.popis || "", zm: stit(x) === "ZMENA OMŠE", g: "far", foto: ziveObr(x.fotky?.[0]) ? x.fotky![0] : posterVidea(x.video), gal: medGal(x.fotky, x.popisy, x.video), af: x.af, mi: x.oz?.dr === 0 && x.oz.mi?.length ? x.oz.mi : undefined })),
   ].sort((a, b) => b.ms - a.ms);
   // OPRAVY 197: krátke oznamy veriacich nepatria medzi oznamy farnosti — majú vlastný blok Od veriacich
   const oznVer = OD.filter((x) => x.k === "oznam").sort((a, b) => b.cas - a.cas);
