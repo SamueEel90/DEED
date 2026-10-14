@@ -12,6 +12,7 @@ import { HLAVNA_NAZOV_MAX } from "@/lib/centralnaZbierka";
 import PodrzTlacidlo from "@/features/zbierka/PodrzTlacidlo";
 import { ZvoncekKarta } from "@/features/verejny-profil/NastenkaFarnosti";
 import { TextovePolia, GaleriaEditor } from "./obsahZbierky";
+import { SumyPriDarcoch } from "./SumyPriDarcoch";
 import { kartaK, nadpisK, drobneK, textK, Taby, UkladaSa, AkoDarovat } from "./spravaCasti";
 
 const eur = (n: number) => `${n.toLocaleString("sk-SK", { maximumFractionDigits: 2 })}\u00A0€`;
@@ -42,6 +43,7 @@ export function SpravaZvoncek({ strankaId, mobil, toast, onSpat }: { strankaId: 
     <section style={kartaK}><span style={nadpisK}>Text pre darcov</span>
       <TextovePolia popis={n.popis} popis2={n.popis2} onPopis={(x) => zmen({ popis: x })} onPopis2={(x) => zmen({ popis2: x })} ph={mobil} popisHlavneho="Toto ľudia uvidia pri zbierke hneď. Najviac 12 riadkov."
         placeholder="Napríklad: na kvety a sviece do kostola." /></section>
+    <section style={kartaK}><SumyPriDarcoch stranka={strankaId} kluc="zvoncek" nadpis="Ukázať sumy pri darcoch" /></section>
     <GaleriaEditor media={n.media} onMedia={(m) => zmen({ media: m })} ph={mobil} bezVidea nadpis="Titulná fotka a fotky" popisNapoveda="Popis (nepovinné)" dovetok=" Prvá fotka je titulná na karte. Pod fotku môžete napísať popis." />
   </>;
   const vpravo = <>

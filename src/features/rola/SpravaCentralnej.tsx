@@ -266,10 +266,9 @@ export function SpravaCentralnej({ strankaId, nazov, hlavnyUcet, tier, mobil, to
       </button>
     </section>);
   const vlavo = <>{spustena && tentoMesiac}{textKarta}{galeria}</>;
-  // Martin 13. 10.: farnosť — sumy pri darcoch hlavnej a zvončekovej zbierky zapína farár
+  // Martin 13. 10.: farnosť — sumy pri darcoch hlavnej zbierky zapína farár (OPRAVY 266: zvončeková je v Správe zvončekovej)
   const sumyKarta = farnost ? <section style={{ borderRadius: 22, background: "var(--card)", border: "1px solid var(--cardBd)", padding: "20px 22px", display: "flex", flexDirection: "column", gap: 16 }}>
     <SumyPriDarcoch stranka={strankaId} kluc="hlavna" nadpis="Hlavná zbierka · ukázať sumy pri darcoch" />
-    <SumyPriDarcoch stranka={strankaId} kluc="zvoncek" nadpis="Zvončeková zbierka · ukázať sumy pri darcoch" />
   </section> : null;
   const vpravo = <>{sumyKarta}{nahlad}{ucetKarta}<AkoDarovat sada={d.sada} eurc={d.eurc} sadaE={d.sadaE} onZmena={zmen} pravidelna bezi={spustena} />{sektorKarta}{rocneKarta}{spustena ? <>{bezi}{qr}</> : nebezi}</>;
   const stlpce = (l: ReactNode, p: ReactNode) => mobil
