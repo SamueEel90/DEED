@@ -40,7 +40,8 @@ export function DetiAMladezBlok({ strankaId, blokStyl, lavy, kto, mojeMeno, reg,
                 <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 6 }}>
                   <span style={{ fontSize: 12.5, fontWeight: 800, letterSpacing: ".08em", color: "var(--nf-gInk)" }}>{`${s.druh} · ${kedyStretnutia(s)}`.toLocaleUpperCase("sk-SK")}</span>
                   <b style={{ fontSize: 18, lineHeight: 1.3, color: "var(--nf-ink)" }}>{s.t}</b>
-                  {(s.kde || txt) && <Viac text={[s.kde, txt].filter(Boolean).join(" · ")} velkost={15.5} />}
+                  {s.kde && <span style={{ fontSize: 15.5, lineHeight: 1.5, color: "var(--nf-ink2)" }}>{s.kde}</span>}
+                  {txt && <Viac text={s.txt} velkost={15.5} />}
                   {s.pz > 0 && <span style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", paddingTop: 4 }}>
                     <button type="button" aria-pressed={ja} disabled={plne} onClick={() => { if (zav && !ja && !reg) { toast("Prihlásiť sa menom môžu len registrovaní v DEED+."); return; } prepniReakciuF(strankaId, s.id, "ucast", kto, mojeMeno); }}
                       style={{ minHeight: 48, padding: "0 18px", borderRadius: 13, cursor: plne ? "default" : "pointer", fontFamily: "inherit", fontSize: 16, fontWeight: 800, whiteSpace: "nowrap", border: ja ? "2px solid var(--nf-zelena)" : "2px solid var(--nf-plne)", background: plne ? "var(--nf-vyp)" : ja ? "var(--nf-gSoft)" : "var(--nf-plne)", color: plne ? "var(--nf-ink2)" : ja ? "var(--nf-gInk)" : "var(--nf-plneInk)" }}>{t}</button>

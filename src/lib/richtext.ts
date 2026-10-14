@@ -112,8 +112,9 @@ export function jeHtmlText(t?: string | null): boolean {
 export function cistyText(t?: string | null): string {
   if (!t) return "";
   if (!jeHtmlText(t)) return t;
-  const doc = new DOMParser().parseFromString(t, "text/html");
-  return (doc.body.textContent || "").replace(/\s+/g, " ").trim();
+  // OPRAVY 262: odseky, nadpisy a riadky zoznamu oddelené novým riadkom — nikdy zlepené slová („históriaFarský“)
+  const doc = new DOMParser().parseFromString(t.replace(/<br\s*\/?>/gi, "\n").replace(/<\/(p|h[1-6]|li|div|ul|ol)>/gi, "$&\n"), "text/html");
+  return (doc.body.textContent || "").split("\n").map((r) => r.replace(/\s+/g, " ").trim()).filter(Boolean).join("\n");
 }
 
 /** Escape čistého textu + \n → <br> (vloženie plain textu do editora). */

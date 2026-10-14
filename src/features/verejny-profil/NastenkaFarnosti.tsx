@@ -23,7 +23,8 @@ import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type 
 import { useZvoncek, nazovZvoncek, ZVONCEK_TEXT } from "@/lib/zvoncekZbierka";
 import { createPortal } from "react-dom";
 import type { ProfilStranky } from "@/lib/profilStranky";
-import { cistyText } from "@/lib/richtext";
+import { cistyText, jeHtmlText } from "@/lib/richtext";
+import { FormatovanyText } from "@/components/formattext";
 import { usePouzivatel } from "@/lib/pouzivatel";
 import { useMojeStranky } from "@/lib/mojeStranky";
 import { CIRKVI, useMojeFarnosti, useSlovaFarnosti, pridajSledovanu, odstranSledovanu, nazovFarnosti, otvorAdresar, sledujemKostol, sledujKostol, prestanKostol, nastavMojKostol, type SledovanyKostol } from "@/lib/mojeFarnosti";
@@ -244,6 +245,8 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, nahlad,
 
   // ---------- O nás + hlavná ----------
   const onas = cistyText([profil?.onas, profil?.onas2].filter(Boolean).join("\n")).trim();
+  // OPRAVY 262: celé O nás formátované (odseky, nadpis, tučné), skrátená veta z čistého textu
+  const onasF = (st: CSSProperties) => <div style={{ display: "flex", flexDirection: "column", gap: "0.7em", ...st }}>{[profil?.onas, profil?.onas2].filter(Boolean).map((t, i) => <FormatovanyText key={i} text={t} />)}</div>;
   const hl = centralnaZPamate(strankaId);
   const hlOn = !!hl?.spustena;
   const hlRef = `${strankaId}-centralna`;
@@ -267,7 +270,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, nahlad,
 
   const otvorZbierku = (z: SpustenaZbierka) => {
     const d = druh(z), rod = d !== "farnost", t = rod ? bezPredpony(z.nazov) || "Zbierka" : z.nazov || "Zbierka";
-    onDetail({ ...detailZbierky(z), nazov: rod ? `Zbierka rodiny · ${t}` : t }, { typ: rod ? "rodina" : "far", chip: d === "pohreb" ? "ZBIERKA RODINY · ROZLÚČKA" : d === "svadba" ? "SVADBA · ZBIERKA RODINY" : rod ? "ZBIERKA RODINY" : "ZBIERKA", t, txt: cistyText(z.popis),
+    onDetail({ ...detailZbierky(z), nazov: rod ? `Zbierka rodiny · ${t}` : t }, { typ: rod ? "rodina" : "far", chip: d === "pohreb" ? "ZBIERKA RODINY · ROZLÚČKA" : d === "svadba" ? "SVADBA · ZBIERKA RODINY" : rod ? "ZBIERKA RODINY" : "ZBIERKA", t, txt: celyText(z.popis, z.popis2),
       obr: z.media.find((m) => m.typ === "foto" && ziveObr(m.src))?.src, parte: d === "pohreb" });
   };
   // ---------- omše ----------
@@ -330,7 +333,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, nahlad,
   const udFar: Ud[] = OZ.filter((x) => x.ntyp === "udalost" && (!x.datum || x.datum >= vc)).map((x) => {
     const r = reakcieF(strankaId, x.id), pz: 0 | 1 | 2 = x.pozvanie ? (x.pozvanie.zavazne ? 2 : 1) : x.rsvp ? (x.udalost?.zavazne ? 2 : 1) : 0;
     const d = x.datum ? zIso(x.datum) : null;
-    return { id: x.id, ms: d?.getTime() ?? 9e15, dat: x.datum ?? "", t: x.nazov ?? "", txt: x.udalost?.text ?? "", od: "Farnosť",
+    return { id: x.id, ms: d?.getTime() ?? 9e15, dat: x.datum ?? "", t: x.nazov ?? "", txt: (x.oz?.dr === 1 && x.oz.txt) || x.udalost?.text || "", od: "Farnosť",
       kedy: [d ? `${DNW_V[dvt(d)]} ${d.getDate()}. ${d.getMonth() + 1}.` : "", x.udalost?.cas, x.udalost?.miesto?.toLocaleUpperCase("sk-SK")].filter(Boolean).join(" · "),
       foto: ziveObr(x.fotky?.[0]) ? x.fotky![0] : "", plag: !!x.plagat, pz, limit: x.pozvanie?.limit ?? 0, zoznam: r.ucast ?? [], mena: r.mena ?? {},
       prepni: () => prepniReakciuF(strankaId, x.id, "ucast", kto, mojeMeno), af: x.af };
@@ -407,14 +410,14 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, nahlad,
   // ---------- Pomôž (KARTA 61 §2: brigády farnosti; deň po termíne zo stránky zmiznú) ----------
   const pomoz = brigadyF.filter((b) => !skoncila(b, cas.getTime())).sort((a, b) => a.dat.localeCompare(b.dat)).map((b) => {
     const r = reakcieF(strankaId, b.id);
-    const u: Ud = { id: b.id, ms: 0, dat: b.dat, t: b.t, txt: cistyText(b.txt).trim(), kedy: `${b.druh}${b.dat ? ` · ${kedyBrigady(b.dat, b.cas)}` : ""}`.toLocaleUpperCase("sk-SK"), od: b.kde, foto: b.foto && ziveObr(b.foto) ? b.foto : "", plag: false,
+    const u: Ud = { id: b.id, ms: 0, dat: b.dat, t: b.t, txt: b.txt.trim(), kedy: `${b.druh}${b.dat ? ` · ${kedyBrigady(b.dat, b.cas)}` : ""}`.toLocaleUpperCase("sk-SK"), od: b.kde, foto: b.foto && ziveObr(b.foto) ? b.foto : "", plag: false,
       pz: b.pz, limit: b.limit, zoznam: r.ucast ?? [], mena: r.mena ?? {}, prepni: () => prepniReakciuF(strankaId, b.id, "ucast", kto, mojeMeno), pomoc: true, af: b.af };
     return u;
   });
   // ---------- Oznamy farnosti ----------
   type Oz = { id: string; ms: number; chip: string; t: string; txt: string; zm: boolean; g: "far" | "ver"; x?: PolozkaFarnika; foto?: string; af?: AutorF; /** KARTA 62: zaškrtnuté kostoly (bez = celá farnosť) */ mi?: string[] };
   const ozAll: Oz[] = [
-    ...OZ.filter((x) => ["OZNAM", "ZMENA OMŠE"].includes(stit(x)) && (stit(x) !== "ZMENA OMŠE" || VJ.zmeny)).map((x): Oz => ({ id: x.id, ms: x.vytvorene ?? 0, chip: stit(x) === "ZMENA OMŠE" ? "ZMENA PROGRAMU" : stit(x), t: x.nazov ?? "", txt: x.popis ?? "", zm: stit(x) === "ZMENA OMŠE", g: "far", foto: ziveObr(x.fotky?.[0]) ? x.fotky![0] : undefined , af: x.af, mi: x.oz?.dr === 0 && x.oz.mi?.length ? x.oz.mi : undefined })),
+    ...OZ.filter((x) => ["OZNAM", "ZMENA OMŠE"].includes(stit(x)) && (stit(x) !== "ZMENA OMŠE" || VJ.zmeny)).map((x): Oz => ({ id: x.id, ms: x.vytvorene ?? 0, chip: stit(x) === "ZMENA OMŠE" ? "ZMENA PROGRAMU" : stit(x), t: x.nazov ?? "", txt: (x.oz?.dr === 0 && x.oz.txt) || x.popis || "", zm: stit(x) === "ZMENA OMŠE", g: "far", foto: ziveObr(x.fotky?.[0]) ? x.fotky![0] : undefined , af: x.af, mi: x.oz?.dr === 0 && x.oz.mi?.length ? x.oz.mi : undefined })),
   ].sort((a, b) => b.ms - a.ms);
   // OPRAVY 197: krátke oznamy veriacich nepatria medzi oznamy farnosti — majú vlastný blok Od veriacich
   const oznVer = OD.filter((x) => x.k === "oznam").sort((a, b) => b.cas - a.cas);
@@ -458,11 +461,11 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, nahlad,
   // ---------- otvorenie zbierok (karta aj malý riadok) ----------
   const otvorHlavnu = () => { if (!hl) return; onDetail({ id: hlRef, nazov: nazovHlavnej(hl), popis: hlTxt, overena: true, organizacia: orgPole, ...sadyZbierky(hl),
     media: hl.media.filter((m) => ziveObr(m.src)).map((m) => (m.typ === "video" ? { typ: "video" as const, src: m.src } : { typ: "foto" as const, src: m.src })) },
-  { typ: "hl", chip: "HLAVNÁ ZBIERKA", t: nazovHlavnej(hl), txt: hlTxt, obr: hl.media.find((m) => m.typ === "foto" && ziveObr(m.src))?.src }); };
+  { typ: "hl", chip: "HLAVNÁ ZBIERKA", t: nazovHlavnej(hl), txt: celyText(hl.popis, hl.popis2), obr: hl.media.find((m) => m.typ === "foto" && ziveObr(m.src))?.src }); };
   const otvorZvoncek = (id: string) => {
     const t = `${nazovZvoncek(zvN)} · Nedeľa ${zvNedela}`, txt = cistyText(zvN.popis) || ZVONCEK_TEXT, foto = zvN.media.find((m) => m.typ === "foto" && ziveObr(m.src))?.src;
     onDetail({ id, nazov: t, popis: txt, overena: true, organizacia: orgPole, ...sadyZbierky(zvN), media: zvN.media.filter((m) => ziveObr(m.src)).map((m) => (m.typ === "video" ? { typ: "video" as const, src: m.src } : { typ: "foto" as const, src: m.src })) },
-      { typ: "zv", chip: "ZVONČEKOVÁ ZBIERKA", t, txt, obr: foto });
+      { typ: "zv", chip: "ZVONČEKOVÁ ZBIERKA", t, txt: celyText(zvN.popis, zvN.popis2) || ZVONCEK_TEXT, obr: foto });
   };
   const otvorPin = (z: ZbierkaNaPripnutie) => onDetail({ id: z.id, nazov: z.nazov, popis: "", overena: true, ciel: z.ciel ?? undefined, media: [], organizacia: { ...orgPole, meno: z.kto, obrazok: undefined } },
     { typ: "pin", chip: chipPripnutej(z), t: z.nazov, txt: "", pin: z, obr: z.foto });
@@ -792,7 +795,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, nahlad,
       </div>
       <div style={{ padding: k3 ? "60px 28px 0" : "48px 18px 0", display: "flex", flexDirection: "column", gap: k3 ? 20 : 14 }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}><b style={{ fontSize: k3 ? 38 : 30, lineHeight: 1.05, letterSpacing: "-.035em" }}>{meno}</b>{podMeno && <span style={{ fontSize: 16, color: INK3 }}>{podMeno}</span>}</div>
-        {onas && <span style={{ fontSize: 16.5, lineHeight: 1.6, color: INK2 }}>{onasOtv ? <span style={{ whiteSpace: "pre-line" }}>{onas}</span> : <>{onas.split(/(?<=[.!?])\s|\n/)[0]} <button type="button" onClick={() => setOnasOtv(true)} style={{ border: "none", background: "transparent", padding: 0, color: "var(--nf-gInk)", fontFamily: "inherit", fontSize: "inherit", fontWeight: 800, cursor: "pointer" }}>viac ›</button></>}</span>}
+        {onas && <span style={{ fontSize: 16.5, lineHeight: 1.6, color: INK2 }}>{onasOtv ? onasF({}) : <>{onas.split(/(?<=[.!?])\s|\n/)[0]} <button type="button" onClick={() => setOnasOtv(true)} style={{ border: "none", background: "transparent", padding: 0, color: "var(--nf-gInk)", fontFamily: "inherit", fontSize: "inherit", fontWeight: 800, cursor: "pointer" }}>viac ›</button></>}</span>}
         <div style={{ display: "grid", gridTemplateColumns: maOmse ? "1fr 1fr" : "1fr", gap: 8 }}>
           {sledBtn}
           {maOmse && <button type="button" onClick={() => setKalOtv(true)} style={{ minHeight: 52, minWidth: 0, padding: "6px 10px", borderRadius: 14, border: `1.5px solid ${LINKA}`, background: KARTA, color: INK, fontFamily: "inherit", cursor: "pointer", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "flex-start", textAlign: "left" }}>
@@ -892,7 +895,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, nahlad,
   const viacOnas = !onasOtv && onasVeta !== onas && <> <button type="button" onClick={() => setOnasOtv(true)} style={{ border: "none", background: "transparent", padding: 0, color: pc ? "#A9D18A" : "var(--nf-gInk)", fontFamily: "inherit", fontSize: "inherit", fontWeight: 800, cursor: "pointer" }}>viac ›</button></>;
   /** celý text O nás vždy na podklade --nf-papier */
   const onasCely = onasOtv && onas && <div style={{ padding: pc ? "22px 26px" : "16px 18px", borderRadius: pc ? 24 : 18, background: PAPIER, border: `1px solid ${LINKA}`, display: "flex", flexDirection: "column", gap: 10 }}>
-    <span style={{ fontSize: pc ? 17 : 15.5, lineHeight: 1.6, color: INK2, whiteSpace: "pre-line" }}>{onas}</span>
+    {onasF({ fontSize: pc ? 17 : 15.5, lineHeight: 1.6, color: INK2 })}
     <button type="button" onClick={() => setOnasOtv(false)} style={{ alignSelf: "flex-start", minHeight: 44, padding: 0, border: "none", background: "transparent", color: "var(--nf-gInk)", fontFamily: "inherit", fontSize: 15, fontWeight: 800, cursor: "pointer" }}>Zbaliť ⌃</button>
   </div>;
   const logoEl = (s: number, r: number) => logo ? <img src={logo} alt="Logo" style={{ width: s, height: s, borderRadius: profil?.tvar === "kruh" ? "50%" : r, objectFit: "cover", background: "#fff", boxShadow: "0 8px 24px rgba(0,0,0,.4)", display: "block" }} />
@@ -1235,7 +1238,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, nahlad,
     {<button type="button" aria-pressed={jeHl || jeSl} aria-expanded={jeHl || jeSl ? mfOn : undefined} onClick={sledTap} style={{ minHeight: kTl, minWidth: 0, padding: "0 16px", borderRadius: 14, border: "none", background: ZELENA_TL, color: "#fff", fontFamily: "inherit", fontSize: 17, fontWeight: 800, cursor: "pointer" }}>{sledT}{(jeHl || jeSl) && !sledChyba ? " ⌄" : ""}</button>}
     {maOmse && <button type="button" onClick={() => setKalOtv(true)} style={{ minHeight: kTl, minWidth: 0, padding: "0 14px", borderRadius: 14, border: `1.5px solid ${LINKA}`, background: PAPIER, color: INK, fontFamily: "inherit", fontSize: 17, fontWeight: 800, cursor: "pointer" }}>Omše a kalendár</button>}
   </>;
-  const kOnas = onas && (onasOtv ? <span style={{ fontSize: pc ? 18 : 16.5, lineHeight: 1.55, color: INK2, whiteSpace: "pre-line" }}>{onas}</span>
+  const kOnas = onas && (onasOtv ? onasF({ fontSize: pc ? 18 : 16.5, lineHeight: 1.55, color: INK2 })
     : <span style={{ fontSize: pc ? 18 : 16.5, lineHeight: 1.55, color: INK2, maxWidth: 760 }}>{onasVeta}{onasVeta !== onas && <> <button type="button" onClick={() => setOnasOtv(true)} style={{ border: "none", background: "transparent", padding: 0, color: "var(--nf-gInk)", fontFamily: "inherit", fontSize: "inherit", fontWeight: 800, cursor: "pointer" }}>viac ›</button></>}</span>);
   const kDnes = (dnesCasy || zmenaT || (pc && poctyT)) ? <div style={{ display: "flex", alignItems: pc ? "center" : "flex-start", flexDirection: pc ? "row" : "column", flexWrap: "wrap", gap: pc ? 28 : 4, padding: pc ? "18px 24px" : "14px 16px", borderRadius: 16, background: PAPIER, border: `1px solid ${LINKA}` }}>
     {(dnesCasy || zmenaT) && <span style={{ fontSize: 14, fontWeight: 800, letterSpacing: ".12em", color: "var(--nf-gInk)" }}>● DNES · {DNW_V[dvt(dnesD)]} {dLbl(dnesD)}</span>}
@@ -1326,8 +1329,9 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, nahlad,
       {/* OPRAVY 243: hrubá farebná línia pod titulkou s jemným tieňom */}
       <div aria-hidden="true" style={{ height: 12, background: "var(--nf-linia)", boxShadow: "0 4px 14px rgba(0,0,0,.18)", position: "relative", zIndex: 1 }} />
       <div style={{ padding: `${siroka ? 28 : 18}px ${PAD_X} ${siroka ? 12 : 4}px`, display: "flex", flexDirection: "column", gap: 14 }}>
-        {onas && <span style={{ fontSize: "clamp(16px,1.4vw,19px)", lineHeight: 1.6, color: INK2, ...(onasOtv ? { whiteSpace: "pre-line" } : { whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }) } as CSSProperties}>
-          {onasOtv ? onas : onas.split(/(?<=[.!?])\s|\n/)[0]}{" "}
+        {onas && onasOtv && onasF({ fontSize: "clamp(16px,1.4vw,19px)", lineHeight: 1.6, color: INK2 })}
+        {onas && !onasOtv && <span style={{ fontSize: "clamp(16px,1.4vw,19px)", lineHeight: 1.6, color: INK2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" } as CSSProperties}>
+          {onas.split(/(?<=[.!?])\s|\n/)[0]}{" "}
           {!onasOtv && <button type="button" onClick={() => setOnasOtv(true)} style={{ border: "none", background: "transparent", padding: 0, color: "var(--nf-gInk)", fontFamily: "inherit", fontSize: "inherit", fontWeight: 800, cursor: "pointer" }}>viac ›</button>}
         </span>}
         {!pc && <div style={{ display: "grid", gridTemplateColumns: maKal ? "1fr 1fr" : "1fr", gap: 8, maxWidth: siroka ? 720 : undefined }}>
@@ -1551,7 +1555,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, nahlad,
           {/* OPRAVY 229: pri inom oznámení celý nadpis a text až po ťuknutí */}
           {tes.ine && <div style={{ alignSelf: "stretch", display: "flex", flexDirection: "column", gap: 6 }}>
             <b style={{ fontSize: 19, lineHeight: 1.3 }}>{tes.it?.nazov ?? tes.x?.t ?? tes.nadpis}</b>
-            {(tes.it?.popis ?? tes.x?.s) && (tes.it?.popis ?? tes.x?.s) !== (tes.it?.nazov ?? tes.x?.t) && <span style={{ fontSize: 16, lineHeight: 1.5, whiteSpace: "pre-line" }}>{tes.it?.popis ?? tes.x?.s}</span>}
+            {(tes.it?.popis ?? tes.x?.s) && (tes.it?.popis ?? tes.x?.s) !== (tes.it?.nazov ?? tes.x?.t) && <FormatovanyText text={(tes.it?.oz?.dr === 2 && tes.it.oz.txt) || (tes.it?.popis ?? tes.x?.s)} style={{ fontSize: 16, lineHeight: 1.5 }} />}
           </div>}
           {tes.x ? hlavickaAutora(tes.x) : tes.zb ? null : hlavickaFar(tes.af)}
           {/* re-render po ťuknutí: čerstvý stav reakcií z tesy */}
@@ -1595,6 +1599,9 @@ function PasZbierok({ polozky, pasRef, onPrebytok }: { polozky: { k: string; el:
       {polozky.map((p) => <div key={p.k} style={{ flex: "none", width: Math.round(u * (p.siroka ? 1.6 : 1)), display: "grid", minWidth: 0, scrollSnapAlign: "start" }}>{p.el}</div>)}
     </PasX>);
 }
+
+/** OPRAVY 262: celý text zbierky (text + pokračovanie) na formátované zobrazenie */
+const celyText = (a?: string, b?: string) => [a, b].filter((x) => !!x && !!cistyText(x)).join(jeHtmlText(a) || jeHtmlText(b) ? "" : "\n\n");
 
 /** KARTA 57C §5: vybraná sada zbierky (index v SADY_EUR / SADY_EURC) → rýchle sumy v module */
 function sadyZbierky(z: { sada: number; eurc: boolean; sadaE: number }): Pick<ZbierkaData, "rychleSumy" | "eurc" | "rychleSumyE"> {
@@ -1688,9 +1695,12 @@ export function Viac({ text, riadkov = 4, velkost = 16.5 }: { text: string; riad
   const [otv, setOtv] = useState(false);
   const [dlhy, setDlhy] = useState(false);
   const ref = useRef<HTMLSpanElement>(null);
-  useLayoutEffect(() => { const e = ref.current; if (e && !otv) setDlhy(e.scrollHeight > e.clientHeight + 2); }, [text, otv]);
+  // OPRAVY 262: HTML z TextovePolia — skrátené z čistého textu (odseky na nový riadok), po „viac ›“ celé formátované
+  const html = jeHtmlText(text), kratky = html ? cistyText(text) : text;
+  useLayoutEffect(() => { const e = ref.current; if (e && !otv) setDlhy(e.scrollHeight > e.clientHeight + 2 || (html && kratky.includes("\n"))); }, [text, otv, html, kratky]);
   return <>
-    <span ref={ref} style={{ fontSize: velkost, lineHeight: 1.5, color: INK2, whiteSpace: "pre-line", overflowWrap: "anywhere", ...(otv ? {} : { display: "-webkit-box", WebkitLineClamp: riadkov, WebkitBoxOrient: "vertical", overflow: "hidden" }) } as CSSProperties}>{text}</span>
+    {otv && html ? <FormatovanyText text={text} style={{ fontSize: velkost, lineHeight: 1.5, color: INK2, overflowWrap: "anywhere" }} />
+      : <span ref={ref} style={{ fontSize: velkost, lineHeight: 1.5, color: INK2, whiteSpace: "pre-line", overflowWrap: "anywhere", ...(otv ? {} : { display: "-webkit-box", WebkitLineClamp: riadkov, WebkitBoxOrient: "vertical", overflow: "hidden" }) } as CSSProperties}>{kratky}</span>}
     {dlhy && !otv && <button type="button" onClick={() => setOtv(true)} style={{ alignSelf: "flex-start", minHeight: 40, padding: 0, border: "none", background: "transparent", color: INK, fontFamily: "inherit", fontSize: 15.5, fontWeight: 800, cursor: "pointer" }}>… viac</button>}
   </>;
 }
@@ -1858,11 +1868,11 @@ function DetailZbierky({ d, strankaId, onZavri }: { d: DetailF; strankaId: strin
                 <span aria-hidden="true" style={{ position: "relative", width: 22, height: 34, flex: "none" }}><span style={{ position: "absolute", left: 8, top: 0, width: 5, height: 34, background: INK }} /><span style={{ position: "absolute", left: 0, top: 8, width: 22, height: 5, background: INK }} /></span>
                 <span style={{ fontSize: 17, color: INK2 }}>S bolesťou v srdci oznamujeme</span>
                 <b style={{ fontSize: 38, letterSpacing: "-.02em", lineHeight: 1.1 }}>{d.t}</b>
-                {d.txt && <span style={{ fontSize: 18, lineHeight: 1.55, color: INK2, whiteSpace: "pre-line" }}>{d.txt}</span>}
+                {d.txt && <FormatovanyText text={d.txt} style={{ fontSize: 18, lineHeight: 1.55, color: INK2 }} />}
               </div> : <div style={{ padding: "20px 22px 22px", display: "flex", flexDirection: "column", gap: 8 }}>
                 <span style={kicker(ram)}>{d.chip}</span>
                 <b style={{ fontSize: 28, lineHeight: 1.15, letterSpacing: "-.02em" }}>{d.t}</b>
-                {d.txt && <span style={{ fontSize: 17.5, lineHeight: 1.55, color: INK2, whiteSpace: "pre-line" }}>{d.txt}</span>}
+                {d.txt && <FormatovanyText text={d.txt} style={{ fontSize: 17.5, lineHeight: 1.55, color: INK2 }} />}
               </div>}
               {d.pin && <>
                 <div style={{ margin: "0 16px 12px", fontSize: 16, color: INK2 }}>Peniaze idú: <b style={{ color: INK }}>{d.pin.kto}</b></div>
