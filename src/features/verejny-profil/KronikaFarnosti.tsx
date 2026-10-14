@@ -111,9 +111,9 @@ export function Zapis({ d, obr, stitok, farbaStitku, t, veta, serif, onTap, deti
 }
 
 /** Spomíname: malý ovál 66 × 84 so zlatým rámom (fotka z parte, bez fotky krížik podľa cirkvi), meno s pätkami */
-export function SpomZapis({ foto, symbol, meno, rod, roky, rozlucka, zbierka, sustrast, onTap }: { foto?: string; symbol: string; meno: string; rod?: string; roky?: string; rozlucka?: string; zbierka: boolean; sustrast: number; onTap: () => void }) {
+export function SpomZapis({ foto, symbol, meno, rod, roky, rozlucka, zbierka, sustrast, onTap, oz }: { /** OPRAVY 274: id zápisu pre „Pozrieť na stránke“ */ oz?: string; foto?: string; symbol: string; meno: string; rod?: string; roky?: string; rozlucka?: string; zbierka: boolean; sustrast: number; onTap: () => void }) {
   return (
-    <button type="button" onClick={onTap} style={{ display: "flex", gap: 20, alignItems: "center", padding: "20px 0", border: "none", borderBottom: "1px solid color-mix(in srgb,var(--nf-linka) 70%,transparent)", background: "transparent", color: INK, fontFamily: "inherit", textAlign: "left", cursor: "pointer", width: "100%", flexWrap: "wrap" }}>
+    <button type="button" data-oz={oz} onClick={onTap} style={{ display: "flex", gap: 20, alignItems: "center", padding: "20px 0", border: "none", borderBottom: "1px solid color-mix(in srgb,var(--nf-linka) 70%,transparent)", background: "transparent", color: INK, fontFamily: "inherit", textAlign: "left", cursor: "pointer", width: "100%", flexWrap: "wrap" }}>
       <span style={{ flex: "none", width: 66, height: 84, borderRadius: "50%", border: "2px solid #C9A24A", background: foto ? `center/cover no-repeat url('${foto}')` : "linear-gradient(160deg,#3A2E3E,#1C1820)", display: "flex", alignItems: "center", justifyContent: "center", color: "#C9A24A", fontSize: 30, fontWeight: 400 }}>{foto ? "" : symbol}</span>
       <span style={{ flex: "1 1 220px", minWidth: 0, display: "flex", flexDirection: "column", gap: 4 }}>
         <b style={{ fontFamily: SERIF_KRONIKY, fontSize: 24, lineHeight: 1.2, fontWeight: 600 }}>{meno}</b>

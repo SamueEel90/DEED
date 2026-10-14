@@ -208,6 +208,7 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
   const [otv, setOtv] = useState<string | null>(null); // rozbalený riadok v Správe oznamov
   const [pozri, setPozri] = useState<string | null>(null); // Ako to vidia ľudia (náhľad pod riadkom)
   const [vpOn, setVpOn] = useState(false); // 56H §6: celá verejná stránka
+  const pozrietTl = <button type="button" onClick={() => setVpOn(true)} style={{ alignSelf: "stretch", minHeight: 48, padding: "0 16px", borderRadius: 12, border: "1.5px solid var(--gBd)", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 14.5, fontWeight: 800, color: "var(--gInk)", boxShadow: "none" }}>Pozrieť na stránke ›</button>;
   const [, obnov] = useState(0);
   const topRef = useRef<HTMLDivElement>(null);
   // + Pridať oznam (hlavička / zelené +) — otvorí formulár; zmena propu = odvodený stav počas renderu
@@ -504,6 +505,7 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
       {hotovo ? <div role="status" style={{ padding: "14px 16px", borderRadius: 14, background: "var(--gSoft)", border: "2px solid var(--green)", display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
         <span style={{ flex: 1, minWidth: 200, display: "flex", flexDirection: "column", gap: 2 }}><b style={{ fontSize: 16, color: "var(--gInk)" }}>{hotovo}</b><span style={{ fontSize: 13.5, color: "var(--ink2)" }}>Nájdete ho nižšie v zozname. Zmazať ho môžete kedykoľvek.</span></span>
         <button type="button" onClick={novy} style={{ minHeight: 44, padding: "0 16px", borderRadius: 12, border: "1.5px solid var(--gBd)", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 14.5, fontWeight: 800, color: "var(--gInk)", boxShadow: "none" }}>Napísať ďalší</button>
+        {tel && posledne && pozrietTl}
       </div> : <>
         {kon && <MateRozpisane cas={kon.cas} co={DRUHY[kon.d.dr]?.[0]} onPokracovat={() => pokracuj(kon.d)} onZahodit={() => { zmazKoncept(KON); setKonRozh(true); }} />}
         {tel && (vyb || edit) ? zmenitEl : <><b style={{ fontSize: 16 }}>Čo chcete oznámiť</b>{druhyEl}</>}
@@ -577,7 +579,8 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
 
   const pravy: ReactNode = <>
     <span style={{ fontSize: 12.5, fontWeight: 800, letterSpacing: ".08em", color: "var(--ink3)" }}>NÁHĽAD · TAKTO TO UVIDIA ĽUDIA</span>
-    <button type="button" onClick={() => setVpOn(true)} style={{ alignSelf: "stretch", minHeight: 48, borderRadius: 12, border: "1.5px solid var(--gBd)", background: "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 14.5, fontWeight: 800, color: "var(--gInk)", boxShadow: "none" }}>Pozrieť celú verejnú stránku ›</button>
+    {/* OPRAVY 274: kým nie je nič zverejnené, tlačidlo nie je; po zverejnení otvorí stránku pri tomto ozname */}
+    {hotovo && posledne && pozrietTl}
     {hotovo && posledne && zoznam.some((x) => x.id === posledne) ? nahladZverejneneho(zoznam.find((x) => x.id === posledne)!) /* OPRAVY 275: po zverejnení skutočný hárok */
       : jub && !hotovo ? <section style={{ ...karta, padding: "14px 18px", fontSize: 14.5, lineHeight: 1.5, color: "var(--ink2)" }}>Náhľad je priamo v Editore oznámení. Parte sa ukáže v bloku Spomíname, svadba a blahoželanie v bloku Teš sa s nami.</section> : nahladPisania}
   </>;
@@ -601,6 +604,6 @@ export function OznamyFarnosti({ strankaId, meno, profil, mobil, tel = mobil, to
     </RamPisania>}
     {jub && jubOtv && <EditorOznameni key={`${edit ?? "novy"}-${edTyp}`} ref={edRef} title={ODRUHY[odr][0]} onSend={(p) => { void naEditor(p); }} onUdalost={(e) => zapisEditora({ udalost: e.akcia, typ: edTyp, papier: e.papier ?? null, kto: "farar", stranka_typ: "farnost", stranka: strankaId, pri_zbierke: false })}
       ram={{}} onZavri={() => setJubOtv(false)} cfg={jubCfg} />}
-    {vpOn && <NahladNastenky strankaId={strankaId} meno={meno} profil={profil} mobil={mobil} onSpat={() => setVpOn(false)} />}
+    {vpOn && <NahladNastenky strankaId={strankaId} meno={meno} profil={profil} mobil={mobil} doOznamu={posledne ?? undefined} onSpat={() => setVpOn(false)} />}
   </>;
 }
