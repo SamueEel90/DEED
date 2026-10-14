@@ -566,7 +566,7 @@ export function upravPrispevok(fid: string, id: string, patch: Partial<VieraFeed
   const novy = vlastnePrispevkyVsetky(fid).map((it) => (it.id === id ? { ...it, ...patch } : it));
   ulozStav("prispevky", fid, novy);
   const it = novy.find((x) => x.id === id);
-  if (it) void upravPrispevokDB(id, it);
+  if (it) void upravPrispevokDB(id, it, fid);
 }
 /** Vlastný (publikovaný cez appku) príspevok = jediný, ktorý sa dá reálne zmazať — demo obsah z mocku nie. */
 export const jeVlastnyPrispevok = (fid: string, id: string): boolean =>
