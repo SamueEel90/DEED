@@ -946,3 +946,53 @@ document.addEventListener("change",e=>{if(e.target&&["nar","umr","rd"].includes(
 document.addEventListener("click",e=>{const b=e.target.closest&&e.target.closest("#btnTermin");if(!b)return;const t=prva(ukaz());if(t){e.stopImmediatePropagation();e.preventDefault();if(typeof ukazChybu==="function")ukazChybu(t)}},true);
 if(typeof render==="function"){const _r=render;render=function(){const x=_r.apply(this,arguments);try{ukaz()}catch(er){}return x}}
 })();</script>
+<style>/* OPRAVY 258: Editor na mobile v ráme appky (cfg.ram) — lištu hore, kroky, Pokračovať dole a Náhľad robí appka; tu ostávajú len polia, výška = obsah (jedno rolovanie) */
+body.ram{padding:0;background:var(--bg)}
+body.ram .app{display:block;max-width:none;margin:0}
+body.ram .form{border:0;border-radius:0;padding:18px 16px 28px;background:var(--bg)}
+body.ram #wzSteps,body.ram .wz-nav,body.ram #hlavne,body.ram #btnFull,body.ram #err,body.ram .view{display:none!important}
+body.ram.ram-nahlad{background:#14110B}
+body.ram.ram-nahlad .form{display:none!important}
+body.ram.ram-nahlad .view{display:flex!important;position:static;align-items:center;justify-content:center;overflow:hidden;padding:0;background:transparent;cursor:default}
+body.ram.ram-nahlad .parte{flex:none}
+#btnGal{flex:none}
+</style>
+<script>/* OPRAVY 258: rám appky na mobile (cfg.ram) · okno Vybrať fotku (cfg.onVyberFotku) · rýchly režim parte = 8 šablón podľa Muž / Žena */(function(){
+const $=id=>document.getElementById(id);
+const ram=()=>document.body.classList.contains("ram");
+let RN=null,_vys=0;
+function stav(){const a=kroky();return{i:STEP,n:a.length,nazvy:a.map(k=>KROKY[k]),typ:TYP[st.typ]||"",hotovo:a[STEP]==="hotovo",ulozene:!!$("btnDone").disabled,kontrola:!$("kontrola").hidden}}
+function hlas(){if(!ram()||typeof CFG.onKrok!=="function")return;try{CFG.onKrok(stav())}catch(e){}}
+function vyska(){if(!ram()||RN||typeof CFG.onVyska!=="function")return;const h=Math.ceil(document.querySelector(".app").getBoundingClientRect().height);if(h&&h!==_vys){_vys=h;try{CFG.onVyska(h)}catch(e){}}}
+try{new ResizeObserver(vyska).observe(document.querySelector(".app"))}catch(e){}
+if(typeof showStep==="function"){const _s=showStep;showStep=function(){const r=_s.apply(this,arguments);hlas();return r}}
+if(typeof ukazChybu==="function"){const _u=ukazChybu;ukazChybu=function(t){const r=_u.apply(this,arguments);if(ram()&&typeof CFG.onChyba==="function")try{CFG.onChyba(t||"")}catch(e){}return r}}
+if(typeof odomkni==="function"){const _o=odomkni;odomkni=function(){const b=$("btnDone"),d=b.disabled;const r=_o.apply(this,arguments);if(d&&!b.disabled)hlas();return r}}
+$("btnAno").addEventListener("click",()=>setTimeout(hlas));
+$("btnOpravit").addEventListener("click",()=>setTimeout(hlas));
+/* rýchly režim (overovateľ pri zbierke): len 8 šablón podľa Muž / Žena */
+if(typeof init==="function"){const _n=init;init=function(){const r=_n.apply(this,arguments);try{if(CFG.rezim==="rychly"&&st.typ==="parte"){const pr=st.sex==="z"?"z":"m";
+ if(st.t[0]!==pr){st.t=pr+"1";return init()}
+ [...$("tpls").children].forEach((b,i)=>{b.hidden=!!(T[i]&&T[i].id[0]!==pr)})}}catch(e){}return r}}
+/* náhľad v ráme: celý hárok zmenšený do plochy, ktorú dá appka */
+if(typeof fit==="function"){const _f=fit;fit=function(){if(!ram())return _f.apply(this,arguments);const p=$("p"),v=document.querySelector(".view");p.style.transform="";v.style.height="";if(!RN)return;
+ p.style.transformOrigin="center center";const k=Math.min((RN.w-24)/p.offsetWidth,(RN.h-24)/p.offsetHeight,1.8);p.style.transform=`scale(${k})`;v.style.height=RN.h+"px"}}
+addEventListener("resize",()=>{if(ram())fit()});
+document.querySelector(".view").addEventListener("click",e=>{if(ram())e.stopImmediatePropagation()},true);
+window.edNahladRam=function(on,w,h){RN=on?{w:w,h:h}:null;document.body.classList.toggle("ram-nahlad",!!on);fit();if(!on){_vys=0;vyska()}};
+window.edDalej=function(){const a=kroky();if(a[STEP]==="hotovo")return{ok:false};const pred=STEP;$("btnNext").click();return STEP!==pred?{ok:true}:{ok:false,y:prvaChybaY()}};
+window.edHotovo=function(){$("btnDone").click();const k=$("kontrola");return!k.hidden?{ok:true,y:k.getBoundingClientRect().top+scrollY-16}:{ok:false,y:prvaChybaY()}};
+function prvaChybaY(){const m=document.querySelector(".miss,[aria-invalid=true]");return m?Math.max(0,m.getBoundingClientRect().top+scrollY-24):null}
+const _ks=window.edKrokSpat;window.edKrokSpat=function(){if(!ram())return _ks?_ks():false;if(document.body.classList.contains("termin"))return false;if(STEP>0){STEP--;showStep();return true}return false};
+window.edDoKroku=function(i){if(i<STEP){STEP=i;showStep();return true}return false};
+window.edUlozKoncept=function(){if(document.body.classList.contains("termin")||$("btnDone").disabled)return;clearTimeout(_as);odosli("koncept")};
+window.edAktivne=function(){const e=document.activeElement;return e&&/^(INPUT|TEXTAREA|SELECT)$/.test(e.tagName)&&e.type!=="checkbox"?e:null};
+/* okno Vybrať fotku (Moje fotky · Verejné fotky) z appky */
+window.edNastavFotku=function(src){if(!src)return;st.foto=src;$("foto").value="";render();autosave()};
+function fotoTl(){let b=$("btnGal");if(typeof CFG.onVyberFotku!=="function"){if(b)b.remove();return}
+ if(!b){b=document.createElement("button");b.type="button";b.id="btnGal";b.className="btn ghost";b.onclick=()=>{try{CFG.onVyberFotku()}catch(e){}};const l=$("foto").closest("label");l.parentNode.insertBefore(b,l.nextSibling)}
+ b.textContent=CFG.fotkyTlacidlo||"Vybrať z verejných fotiek ›"}
+const _i=window.initEditor;window.initEditor=function(cfg){const R=!!(cfg&&cfg.ram);document.body.classList.toggle("ram",R);document.body.classList.remove("ram-nahlad");RN=null;_vys=0;
+ if(R&&cfg.tema)document.documentElement.setAttribute("data-theme",cfg.tema);
+ const r=_i.apply(this,arguments);fotoTl();if(R){fit();hlas();setTimeout(vyska,30)}return r};
+})();</script>

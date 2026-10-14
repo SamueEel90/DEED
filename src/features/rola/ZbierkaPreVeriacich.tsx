@@ -182,9 +182,10 @@ export function ZbierkaSOverovatelom({ stranka, menoFarnosti, ucetFarnosti, mobi
     setEdKon(null); ulozStav("partekoncept", stranka, null); setEdMob(false);
     setNaStranke(vlastnePrispevkyVsetky(stranka)); setRezim("je"); setVybrany(id); setUlozT(`Parte ${meno} je uložené ✓`);
   };
+  const edCfg = { typ: "parte" as const, sektor: "viera" as const, rezim: "rychly" as const, bezTlace: true, qrObrazok: qrSrc, miesta: ["v Dome smútku", "vo farskom kostole", "na miestnom cintoríne"], kontext: { zbierka: "pohreb", stranka }, navrh: edKon };
   const editor = (styl: CSSProperties) => (
     <EditorOznameni ref={edRef} title="Editor parte" onSend={(p) => { void naEditor(p); }} onUdalost={(e) => zapisEditora({ udalost: e.akcia, typ: "parte", papier: e.papier ?? null, ...kdeStat })} style={styl}
-      cfg={{ typ: "parte", sektor: "viera", rezim: "rychly", bezTlace: true, qrObrazok: qrSrc, miesta: ["v Dome smútku", "vo farskom kostole", "na miestnom cintoríne"], kontext: { zbierka: "pohreb", stranka }, navrh: edKon }} />);
+      cfg={edCfg} />);
   const edSpat = () => { if (!edRef.current?.krokSpat()) setEdMob(false); };
 
   // ---- 3 · rozdelenie: krok 1 podiel overovateľa, krok 2 zvyšok rozhoduje príjemca ----
@@ -390,14 +391,9 @@ export function ZbierkaSOverovatelom({ stranka, menoFarnosti, ucetFarnosti, mobi
           <span style={{ fontSize: 13.5, lineHeight: 1.5, color: "var(--ink2)" }}>Rýchly režim: Muž alebo Žena, vzhľad, údaje. Texty sú už vo vzhľade. Keď termín rozlúčky ešte neviete, zaškrtnite „Údaje doplníme neskôr“, doplní ho rodina sama.</span>
           {pc ? editor({ height: "min(960px, calc(100vh - 96px))", minHeight: 560, border: "1px solid var(--cardBd)", borderRadius: 18 })
             : <button type="button" onClick={() => setEdMob(true)} style={{ ...tlZ, height: 56, fontSize: 16 }}>{edKon ? "Pokračovať v tvorbe parte ›" : "Otvoriť tvorbu parte ›"}</button>}
-          {edMob && createPortal(
-            <div className="sc-tokeny" role="dialog" aria-modal="true" aria-label="Tvorba parte" style={{ position: "fixed", inset: 0, zIndex: 1000, background: "#EFEAE1", display: "flex", flexDirection: "column" }}>
-              <div style={{ flex: "none", display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", background: "var(--bg)", borderBottom: "1px solid var(--cardBd)" }}>
-                <button type="button" onClick={edSpat} style={{ flex: "none", height: 48, padding: "0 16px 0 12px", border: "none", borderRadius: 12, background: "#4B7A35", cursor: "pointer", fontFamily: "inherit", fontSize: 15, fontWeight: 800, color: "#fff" }}>‹ Späť</button>
-                <span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}><span style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: ".08em", color: "var(--gInk)" }}>KROK 2 · PARTE · rozpísané sa nestratí</span><b style={{ fontSize: 15, color: "var(--ink)" }}>Tvorba parte</b></span>
-              </div>
-              {editor({ flex: 1, minHeight: 0 })}
-            </div>, document.body)}
+          {/* OPRAVY 258: na mobile rám na celú obrazovku (lišta, kroky, Náhľad na ťuk, Pokračovať dole) */}
+          {edMob && <EditorOznameni ref={edRef} title="Parte" onSend={(p) => { void naEditor(p); }} onUdalost={(e) => zapisEditora({ udalost: e.akcia, typ: "parte", papier: e.papier ?? null, ...kdeStat })}
+            ram={{}} onZavri={() => setEdMob(false)} cfg={edCfg} />}
         </>}
         {rezim === "sab" && druh !== "pohreb" && <>
           <b style={{ fontSize: 16 }}>Nové {T.ozn} zo šablóny farnosti</b>

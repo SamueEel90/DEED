@@ -31,6 +31,7 @@ import { toast } from "@/shared";
 import { useLayout } from "@/components/context";
 import { ZdrojFotiekKontext, zdrojMoje } from "@/components/VyberZGalerie";
 import { mojeFotky } from "@/lib/galeriaFotiek";
+import { useRamPisania } from "@/components/RamPisania";
 
 const ZELENA = "#4B7A35", ZLATA = "#C9A24A";
 const lab = (zle: boolean): CSSProperties => ({ fontSize: 12.5, fontWeight: 800, letterSpacing: ".06em", color: zle ? "#A07A1C" : "var(--ink3)" });
@@ -48,6 +49,8 @@ const DNI_W = ["nedeľa", "pondelok", "utorok", "streda", "štvrtok", "piatok", 
 const PAL = ["#C77D9A", "#5C8F9E", "#8C7AB8", "#B8875C", "#6E9E6A"];
 const prazdnyF = (): FormularVeriaceho => ({ nad: "", txt: "", datum: "", cas: "", kde: "", umK: 0, pozv: 0, limit: "", anon: false, plat: 0 });
 const naHtml = (t: string) => t ? t.split("\n").map((r) => `<p>${r.replace(/&/g, "&amp;").replace(/</g, "&lt;")}</p>`).join("") : "";
+/** OPRAVY 258: rozpísané v Editore oznámení (Späť z 1. kroku nič nezahodí) — počas relácie, len na tomto zariadení */
+const konceptEd = new Map<string, PayloadEditora>();
 /** E.1: poradie v hárku */
 const SKUPINY: [string, DruhFarnika[]][] = [["LEN PRE FARÁRA · NIKTO INÝ NEVIDÍ", ["umysel"]], ["NA STRÁNKU FARNOSTI", ["modlitba", "oznam", "udalost", "fotky"]], ["", ["svadba", "ine", "parte"]]];
 /** BLOK C 235: „Jubileum a iné oznámenie“ vo Viere = Blahoželanie (Pozvánka na oslavu sa vo Viere neponúka) */
@@ -324,6 +327,7 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
   const mojKluc = klucJa(ja);
   const zdrojFotiek = useMemo(() => zdrojMoje(() => mojeFotky(strankaId, mojKluc)), [strankaId, mojKluc]);
   useZamokVrstvy(!!k); // OPRAVY 240: stránka pod formulárom sa neposúva
+  const ramOn = useRamPisania(); // OPRAVY 258: Editor oznámení na mobile v ráme na celú obrazovku
   if (!self.on || !povol.length) return null;
 
   const set = (z: Partial<FormularVeriaceho>) => { setF((q) => ({ ...q, ...z })); setChyba(false); };
@@ -386,7 +390,9 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
   const naEditor = async (p: PayloadEditora) => {
     if (!k) return;
     zapisZPayloadu(p, kdeStat); // KARTA 57 F: štatistika editora
+    if (p.stav === "koncept" && !edId && !hotovo) konceptEd.set(`${strankaId}|${k}`, p);
     if (p.stav !== "hotovo") return;
+    konceptEd.delete(`${strankaId}|${k}`);
     const P = p.polia ?? {}, str = (x: string) => String(P[x] ?? "").trim();
     const t = k === "parte" ? str("meno") : k === "svadba" ? [str("sNev"), str("sZen")].filter(Boolean).join(" a ") : str("jMeno") || str("bMeno");
     const s = k === "parte" ? (P.neskor ? "Termín rozlúčky oznámime." : [fmtD(str("rd")), str("rc"), str("rm")].filter(Boolean).join(" · "))
@@ -573,9 +579,28 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
     </>);
 
   const um = k === "umysel";
+  // ---- Editor oznámení (parte, svadba, jubileum): PC v okne, OPRAVY 258 mobil a tablet na výšku v ráme na celú obrazovku ----
+  const galRiadok = <>
+    {/* OPRAVY 212: tá istá galéria ako všade, s popisom fotky */}
+    <button type="button" onClick={() => setGalOtv((o) => !o)} aria-expanded={galOtv} style={{ width: "100%", minHeight: 44, padding: 0, border: "none", background: "transparent", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 8, textAlign: "left", color: "var(--ink)" }}>
+      <b style={{ flex: 1, fontSize: 15 }}>Fotky · nepovinné{fotky.length ? ` · ${fotiekT(fotky.length)}` : ""}</b>
+      <span aria-hidden="true" style={{ fontSize: 16, color: "var(--ink3)" }}>{galOtv ? "⌃" : "⌄"}</span>
+    </button>
+    {galOtv && <GaleriaEditor media={media} onMedia={setMedia} ph={mobil} max={8} bezVidea nadpis="Fotky" dovetok=" Ukážu sa po ťuknutí na oznámenie. Pod fotku môžete napísať popis." />}
+  </>;
+  const edToastEl = (hore: number) => edToast && <div role="status" style={{ position: "absolute", left: 16, right: 16, top: hore, zIndex: 3, maxWidth: 560, margin: "0 auto", padding: "14px 16px", borderRadius: 16, background: "var(--gSoft)", border: "2px solid var(--green)", boxShadow: "0 10px 26px rgba(30,28,20,.2)", display: "flex", flexDirection: "column", gap: 4 }}>
+    <b style={{ fontSize: 17, color: "var(--gInk)" }}>Zverejnené ✓</b>
+    <span style={{ fontSize: 14.5, lineHeight: 1.45, color: "var(--ink2)" }}>Už to vidia všetci na stránke farnosti. Vytlačiť alebo stiahnuť môžete dole v editore.</span>
+  </div>;
+  const editorEl = (ram: { extra?: ReactNode; vrstva?: ReactNode } | null) => k && (
+    <EditorOznameni ref={edRef} title={T?.t} onSend={(p) => { void naEditor(p); }} onUdalost={(e) => zapisEditora({ udalost: e.akcia, typ: TYP_EDITORA[k]!, papier: e.papier ?? null, ...kdeStat })} style={{ position: "absolute", inset: 0, height: "100%" }}
+      ram={ram} onZavri={spatNaStranku}
+      cfg={{ typ: TYP_EDITORA[k]!, sektor: "viera", rezim: "plny", qrObrazok: k === "parte" ? qrStr : undefined, miesta: k === "parte" ? ["v Dome smútku", "vo farskom kostole", "na miestnom cintoríne"] : undefined, kontext: { stranka: strankaId, veriaci: true },
+        navrh: edId ? odFarnikov(strankaId).find((y) => y.id === edId)?.editor ?? null : konceptEd.get(`${strankaId}|${k}`) ?? null }} />);
   // KARTA 57C §2: formulár nad stránkou — hore „‹ Späť na stránku farnosti", stránka presvitá
   const spat = () => { if (jeEd && !hotovo && edRef.current?.krokSpat()) return; spatNaStranku(); };
-  const okno = k && createPortal(
+  const okno = jeEd && ramOn ? editorEl({ extra: galeriaEd ? <div style={{ padding: "8px 16px", borderBottom: "1px solid var(--cardBd)" }}>{galRiadok}</div> : undefined, vrstva: edToastEl(84) })
+    : k && createPortal(
     <div role="dialog" aria-modal="true" aria-label={T?.t} style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(20,17,11,.82)", overscrollBehavior: "contain", display: "flex", flexDirection: "column", alignItems: "center", gap: mobil ? 10 : 12, padding: mobil ? "calc(10px + env(safe-area-inset-top, 0px)) 10px 10px" : 16, boxSizing: "border-box" }}>
       <div style={{ width: "100%", maxWidth: jeEd ? 1200 : 520, flex: "none", display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
         {/* OPRAVY 201: nad oknom len Späť (mobil 44 px, 15 px), okno hneď pod ním */}
@@ -583,21 +608,10 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
       </div>
       <div className="sc-tokeny" style={{ position: "relative", flex: 1, minHeight: 0, width: "100%", maxWidth: jeEd ? 1200 : 520, borderRadius: 20, overflow: "hidden", background: "var(--bg)", color: "var(--ink)", display: "flex", flexDirection: "column" }}>
         <div style={{ flex: "none", padding: "14px 16px 10px", borderBottom: "1px solid var(--cardBd)" }}><b style={{ fontSize: 19 }}>{edId ? `Upraviť · ${T?.t ?? ""}` : T?.t}</b></div>
-        {jeEd && galeriaEd && <div style={{ flex: "none", maxHeight: galOtv ? "55%" : undefined, overflowY: "auto", borderBottom: "1px solid var(--cardBd)", padding: "8px 16px" }}>
-          {/* OPRAVY 212: tá istá galéria ako všade, s popisom fotky */}
-          <button type="button" onClick={() => setGalOtv((o) => !o)} aria-expanded={galOtv} style={{ width: "100%", minHeight: 44, padding: 0, border: "none", background: "transparent", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 8, textAlign: "left", color: "var(--ink)" }}>
-            <b style={{ flex: 1, fontSize: 15 }}>Fotky · nepovinné{fotky.length ? ` · ${fotiekT(fotky.length)}` : ""}</b>
-            <span aria-hidden="true" style={{ fontSize: 16, color: "var(--ink3)" }}>{galOtv ? "⌃" : "⌄"}</span>
-          </button>
-          {galOtv && <GaleriaEditor media={media} onMedia={setMedia} ph={mobil} max={8} bezVidea nadpis="Fotky" dovetok=" Ukážu sa po ťuknutí na oznámenie. Pod fotku môžete napísať popis." />}
-        </div>}
+        {jeEd && galeriaEd && <div style={{ flex: "none", maxHeight: galOtv ? "55%" : undefined, overflowY: "auto", borderBottom: "1px solid var(--cardBd)", padding: "8px 16px" }}>{galRiadok}</div>}
         {jeEd ? <div style={{ position: "relative", flex: 1, minHeight: 0 }}>
-          <EditorOznameni ref={edRef} title={T?.t} onSend={(p) => { void naEditor(p); }} onUdalost={(e) => zapisEditora({ udalost: e.akcia, typ: TYP_EDITORA[k]!, papier: e.papier ?? null, ...kdeStat })} style={{ position: "absolute", inset: 0, height: "100%" }}
-            cfg={{ typ: TYP_EDITORA[k]!, sektor: "viera", rezim: "plny", qrObrazok: k === "parte" ? qrStr : undefined, miesta: k === "parte" ? ["v Dome smútku", "vo farskom kostole", "na miestnom cintoríne"] : undefined, kontext: { stranka: strankaId, veriaci: true }, navrh: edId ? odFarnikov(strankaId).find((y) => y.id === edId)?.editor ?? null : null }} />
-          {edToast && <div role="status" style={{ position: "absolute", left: 16, right: 16, top: 12, zIndex: 3, maxWidth: 560, margin: "0 auto", padding: "14px 16px", borderRadius: 16, background: "var(--gSoft)", border: "2px solid var(--green)", boxShadow: "0 10px 26px rgba(30,28,20,.2)", display: "flex", flexDirection: "column", gap: 4 }}>
-            <b style={{ fontSize: 17, color: "var(--gInk)" }}>Zverejnené ✓</b>
-            <span style={{ fontSize: 14.5, lineHeight: 1.45, color: "var(--ink2)" }}>Už to vidia všetci na stránke farnosti. Vytlačiť alebo stiahnuť môžete dole v editore.</span>
-          </div>}
+          {editorEl(null)}
+          {edToastEl(12)}
         </div> : <div style={{ flex: 1, minHeight: 0, overflowY: "auto" }}>
           <div style={{ padding: "8px 16px 24px", display: "flex", flexDirection: "column", gap: 14 }}>{formular}</div>
         </div>}

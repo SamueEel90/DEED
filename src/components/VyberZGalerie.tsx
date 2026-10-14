@@ -56,7 +56,8 @@ export function TlacidloGalerie({ zdroj, vybrane, zostava, onVyber, style }: {
   </>;
 }
 
-function OknoGalerie({ zdroj, vybrane, zostava, onZavri, onVyber }: { zdroj: ZdrojFotiek | null; vybrane: string[]; zostava: number; onZavri: () => void; onVyber: (l: string[]) => void }) {
+/** okno Vybrať fotku · OPRAVY 258: aj Editor oznámení (jedna fotka) */
+export function OknoGalerie({ zdroj, vybrane, zostava, onZavri, onVyber }: { zdroj: ZdrojFotiek | null; vybrane: string[]; zostava: number; onZavri: () => void; onVyber: (l: string[]) => void }) {
   const moje = useMemo(() => (zdroj ? zdroj.fotky() : []), [zdroj]);
   const [tab, setTab] = useState<"moje" | "verejne">(zdroj ? "moje" : "verejne");
   const [verejne, setVerejne] = useState<VerejnaFotka[] | null>(vyberCache);
