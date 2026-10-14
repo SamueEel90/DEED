@@ -192,7 +192,7 @@ function ObsahTvaru({ t, velky }: { t: Tes; velky?: boolean }) {
 /** kľúč na zväčšenie: obrázok alebo šablóna farára */
 type Velke = { src: string } | { it: VieraFeedItem };
 
-export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, nahlad, stit: stitStranky, doOznamu }: NastenkaProps) {
+export function NastenkaFarnosti({ strankaId, meno, profil, onBack, nahlad, stit: stitStranky, doOznamu }: NastenkaProps) {
   const kal = useKalendar(strankaId);
   useZmenyPrihovoru(); useZmenyCentralnej(); useZmenyZbierok(); useOdFarnikov(); useReakcieF();
   useCerstveOdFarnikov(strankaId); useCerstveReakcieF(strankaId); usePrispevkySync(strankaId);
@@ -1338,7 +1338,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, nahlad,
       {popis && <span style={{ fontSize: 17, lineHeight: 1.5, color: INK3 }}>{popis}</span>}<div style={{ minWidth: 0 }}>{obsah}</div></ZbalenyBlok>
     : <div data-blok={id} style={blokStyl(pozadie)}>{lavyStlpec(nadpis, popis)}{obsah}</div>;
   return (
-    <div className="nastenka-farnosti" style={{ ...PREMENNE, ["--nf-linia" as string]: farbaLinie, position: "relative", width: "100%", maxWidth: 1440, margin: "0 auto", background: BG, color: INK, display: "flex", flexDirection: "column", fontFamily: "'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,sans-serif", paddingBottom: fab ? 110 : 0 }}>
+    <div className="nastenka-farnosti" style={{ ...PREMENNE, ["--nf-linia" as string]: farbaLinie, position: "relative", width: "100%", maxWidth: 1440, margin: "0 auto", background: BG, color: INK, display: "flex", flexDirection: "column", fontFamily: "'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,sans-serif" }}>
       {kronikaTelo}
       {moderneTelo}
       {konzTelo}

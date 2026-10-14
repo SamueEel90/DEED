@@ -205,7 +205,7 @@ export function FarnostStranka({ strankaId, onBack, nahlad = false, stit = "Silv
   return (
     <div style={{ position: "relative", minHeight: "100%", background: "var(--nf-bg)" }}>
       <NastenkaFarnosti strankaId={strankaId} meno={meno} profil={prof} fab={fab} onBack={onBack} stit={stit} nahlad={!!onBack && nahlad} />
-      {fab && <div aria-hidden="true" style={{ height: 88 }} />/* OPRAVY 278: rezerva dole, + nikdy nezakryje text ani tlačidlá */}
+      {fab && <div aria-hidden="true" style={{ height: pc ? 110 : 180 }} />/* OPRAVY 278: rezerva dole, + nikdy nezakryje text ani tlačidlá (mobil: + je nad spodným menu, všetky vzhľady rovnako) */}
       <FarnikPridava strankaId={strankaId} mobil={!pc} onPozriet={(id) => { const kd = odFarnikov(strankaId).find((x) => x.id === id)?.k, b = kd ? BLOK_DRUHU[kd] : undefined; window.setTimeout(() => posunNaBlok(b?.[0] ?? "ozn"), 60); }} />
     </div>);
 }
