@@ -1118,9 +1118,9 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, nahlad,
   const kVelke = pcVelke;
   const dLbl = (d: Date) => `${d.getDate()}. ${d.getMonth() + 1}.`;
   const farbaDna = (d: Date) => (d.getDay() === 6 ? "var(--kr-so)" : d.getDay() === 0 ? "var(--kr-ne)" : INK);
-  /** galéria na celú obrazovku z fotiek položky (jedna fotka = veľký obrázok) */
-  const galeria = (t: string, f: (string | undefined)[]) => { const l = f.filter((x): x is string => !!x && ziveObr(x)); if (l.length === 1) setVelke({ src: l[0] }); else if (l.length) setAlbum({ id: `g-${t}`, k: "fotky", t, s: "", kto: "", cas: 0, fotky: l } as PolozkaFarnika); };
-  const fotkyOdkaz = (t: string, f: (string | undefined)[]) => { const n = f.filter((x) => !!x && ziveObr(x)).length; return n > 0 ? <button type="button" onClick={() => galeria(t, f)} style={{ alignSelf: "flex-start", minHeight: 44, padding: 0, border: "none", background: "transparent", color: "var(--nf-gInk)", fontFamily: "inherit", fontSize: 16, fontWeight: 800, cursor: "pointer" }}>{n === 1 ? "Fotka ›" : `${fotiek(n)} ›`}</button> : null; };
+  /** galéria na celú obrazovku z fotiek položky — OPRAVY 261: aj jedna fotka v tej istej galérii (fotka hlavná) */
+  const galeria = (t: string, f: (string | undefined)[], p?: (string | undefined)[]) => { const l = f.map((x, i) => ({ x, p: p?.[i] ?? "" })).filter((v): v is { x: string; p: string } => !!v.x && ziveObr(v.x)); if (l.length) setAlbum({ id: `g-${t}`, k: "fotky", t, s: "", kto: "", cas: 0, fotky: l.map((v) => v.x), popisy: l.map((v) => v.p) } as PolozkaFarnika); };
+  const fotkyOdkaz = (t: string, f: (string | undefined)[], p?: (string | undefined)[]) => { const n = f.filter((x) => !!x && ziveObr(x)).length; return n > 0 ? <button type="button" onClick={() => galeria(t, f, p)} style={{ alignSelf: "flex-start", minHeight: 44, padding: 0, border: "none", background: "transparent", color: "var(--nf-gInk)", fontFamily: "inherit", fontSize: 16, fontWeight: 800, cursor: "pointer" }}>{n === 1 ? "Fotka ›" : `${fotiek(n)} ›`}</button> : null; };
   const KRIZ = <span aria-hidden="true" style={{ flex: "none", display: "block", position: "relative", width: 16, height: 24 }}><span style={{ position: "absolute", left: 6, top: 0, width: 4, height: 24, background: "#C9A24A" }} /><span style={{ position: "absolute", left: 0, top: 6, width: 16, height: 4, background: "#C9A24A" }} /></span>;
   type KR = { key: string; d?: Date; dTxt?: string; pod?: string; podFarba?: string; kicker?: string; kickerFarba?: string; t: string; serif?: boolean; txt?: string; akcia?: ReactNode; extra?: ReactNode; onTap?: () => void; kriz?: boolean };
   const kRiadok = (r: KR) => {
@@ -1160,7 +1160,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, nahlad,
     { id: "prid", t: "Príď a zaži s nami", suhrn: S.prid, ma: maPrid, riadky: () => <>
       {udalosti.map((u) => { const d = u.dat ? zIso(u.dat) : undefined; return kRiadok({ key: u.id, d, pod: [d ? den(d) : "", kasCas(u.kedy)].filter(Boolean).join(" "), t: u.t, txt: [u.txt, u.mojeX ? autor(u.mojeX).replace("Pridal veriaci", "pridal veriaci") : ""].filter(Boolean).join(" · "),
         akcia: u.pz > 0 ? pozvat(u) : undefined, extra: <>{fotkyOdkaz(u.t, [u.foto])}{u.mojeX && <MenuPrispevku x={u.mojeX} strankaId={strankaId} kto={kto} moje={moje(u.mojeX)} />}</> }); })}
-      {alba.map((a) => kRiadok({ key: a.id, kicker: "FOTKY Z AKCIE", t: a.t || "Fotky z akcie", txt: a.anon ? "" : `pridal ${a.kto}`, extra: <>{fotkyOdkaz(a.t || "Fotky z akcie", a.fotky ?? [])}<MenuPrispevku x={a} strankaId={strankaId} kto={kto} moje={moje(a)} /></> }))}
+      {alba.map((a) => kRiadok({ key: a.id, kicker: "FOTKY Z AKCIE", t: a.t || "Fotky z akcie", txt: a.anon ? "" : `pridal ${a.kto}`, extra: <>{fotkyOdkaz(a.t || "Fotky z akcie", a.fotky ?? [], a.popisy)}<MenuPrispevku x={a} strankaId={strankaId} kto={kto} moje={moje(a)} /></> }))}
     </> },
     { id: "pom", t: "Pomôž", suhrn: S.pom, ma: pomoz.length > 0, riadky: () => pomoz.map((u) => { const b = brigadyF.find((x) => x.id === u.id), d = u.dat ? zIso(u.dat) : undefined; return kRiadok({ key: u.id, d, pod: [d ? den(d) : "", b?.cas ?? ""].filter(Boolean).join(" "),
       t: `${b?.druh ?? "Brigáda"} · ${u.t}`, txt: [u.txt, u.od && `Kde: ${u.od}`].filter(Boolean).join(" · "), akcia: u.pz > 0 ? pozvat(u) : undefined, extra: fotkyOdkaz(u.t, [u.foto]) }); }) },
@@ -1177,7 +1177,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, nahlad,
     { id: "deti", t: "Deti a mládež", suhrn: S.deti, ma: maDeti, riadky: () => <DetiAMladezBlok strankaId={strankaId} blokStyl={{}} lavy={null} kto={kto} mojeMeno={mojeMeno} reg={reg}
       riadok={(r) => kRiadok({ key: r.id, d: r.dat, pod: r.kedy.toLocaleLowerCase("sk-SK"), t: r.t, txt: [r.txt, r.poc].filter(Boolean).join(" · "), akcia: r.tlac ?? undefined, extra: fotkyOdkaz(r.t, r.fotky) })} /> },
     { id: "ver", t: "Od veriacich", suhrn: S.ver, ma: oznVer.length > 0, riadky: () => oznVer.map((x) => kRiadok({ key: x.id, kicker: `${autor(x).replace(/^Pridal veriaci · /, "")} · ${dd(x.cas)}`, t: x.t, txt: x.s,
-      extra: <>{fotkyOdkaz(x.t, x.fotky ?? [])}<MenuPrispevku x={x} strankaId={strankaId} kto={kto} moje={moje(x)} /></> })) },
+      extra: <>{fotkyOdkaz(x.t, x.fotky ?? [], x.popisy)}<MenuPrispevku x={x} strankaId={strankaId} kto={kto} moje={moje(x)} /></> })) },
     { id: "kostoly", t: "Naše kostoly", suhrn: S.kostoly, ma: miestaF.length > 1, riadky: () => miestaF.map((m) => { const om = najblizsiaOmsa(kostolKal(strankaId, m.id)); return kRiadok({ key: m.id, kicker: nazovDruhu(m.druh).toLocaleUpperCase("sk-SK"), t: m.nazov, txt: [m.popis, om && `Najbližšia omša: ${om}`].filter(Boolean).join(" · "),
       akcia: <button type="button" onClick={() => setMiesto(m)} style={tlacR(false, false)}>Viac o kostole ›</button> }); }) },
   ];

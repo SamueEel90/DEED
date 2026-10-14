@@ -32,6 +32,7 @@ import { useLayout } from "@/components/context";
 import { ZdrojFotiekKontext, zdrojMoje } from "@/components/VyberZGalerie";
 import { mojeFotky } from "@/lib/galeriaFotiek";
 import { useRamPisania } from "@/components/RamPisania";
+import { CelaGaleria } from "@/components/celaGaleria";
 
 const ZELENA = "#4B7A35", ZLATA = "#C9A24A";
 const lab = (zle: boolean): CSSProperties => ({ fontSize: 12.5, fontWeight: 800, letterSpacing: ".06em", color: zle ? "#A07A1C" : "var(--ink3)" });
@@ -130,25 +131,11 @@ export function CelaObrazovka({ children, onZavri, label, hore }: { children: Re
     </div>, document.body);
 }
 
-/** prehliadač albumu (Galéria farnosti, Príď a zaži s nami · Fotky z akcií) */
+/** prehliadač albumu (Galéria farnosti, Príď a zaži s nami · Fotky z akcií) — OPRAVY 261: tá istá galéria ako v celej appke (fotka hlavná, popis fotky dole) */
 export function ProhliadacAlbumu({ a, onZavri }: { a: PolozkaFarnika; onZavri: () => void }) {
-  const [i, setI] = useState(0);
-  const F = a.fotky ?? [];
-  return (
-    <CelaObrazovka label="Album" onZavri={onZavri} hore={<span style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}><b style={{ fontSize: 17, color: "#fff" }}>{a.t}</b><span style={{ fontSize: 13, color: "#CFC7B8" }}>{(i % F.length) + 1} / {F.length}</span></span>}>
-        {a.text && <span style={{ flex: "none", padding: "0 16px 10px", fontSize: 15, lineHeight: 1.5, color: "#E8E1D3" }}>{a.text}</span>}
-        <div style={{ position: "relative", flex: 1, minHeight: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <img src={F[i % F.length]} alt={a.popisy?.[i % F.length] || ""} style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }} />
-          {F.length > 1 && <>
-            <button type="button" onClick={() => setI((j) => (j - 1 + F.length) % F.length)} aria-label="Predošlá" style={{ position: "absolute", left: 8, top: "50%", marginTop: -28, width: 56, height: 56, borderRadius: "50%", border: "none", background: "rgba(255,255,255,.85)", cursor: "pointer", fontSize: 26, fontWeight: 800, color: "#111" }}>‹</button>
-            <button type="button" onClick={() => setI((j) => (j + 1) % F.length)} aria-label="Ďalšia" style={{ position: "absolute", right: 8, top: "50%", marginTop: -28, width: 56, height: 56, borderRadius: "50%", border: "none", background: "rgba(255,255,255,.85)", cursor: "pointer", fontSize: 26, fontWeight: 800, color: "#111" }}>›</button>
-          </>}
-        </div>
-        {a.popisy?.[i % F.length] && <span style={{ flex: "none", padding: "10px 16px 0", fontSize: 15, color: "#E8E1D3", textAlign: "center" }}>{a.popisy[i % F.length]}</span>}
-        <div style={{ flex: "none", display: "flex", gap: 6, overflowX: "auto", padding: "12px 16px calc(16px + env(safe-area-inset-bottom, 0px))" }}>
-          {F.map((f, j) => <button key={j} type="button" onClick={() => setI(j)} aria-label={`Fotka ${j + 1}`} style={{ flex: "none", width: 64, height: 48, padding: 0, borderRadius: 8, border: `3px solid ${j === i % F.length ? "#fff" : "transparent"}`, background: `url('${f}') center/cover no-repeat #333`, cursor: "pointer" }} />)}
-        </div>
-    </CelaObrazovka>);
+  const M = (a.fotky ?? []).map((src, j) => ({ typ: "foto" as const, src, popis: a.popisy?.[j] })).filter((m) => !!m.src && !/^blob:/.test(m.src));
+  if (!M.length) return null;
+  return <CelaGaleria media={M} nadpis={a.t} onClose={onZavri} />;
 }
 
 /** E.4: Galéria farnosti — albumy z „Fotky z akcie", prehliadač albumu */
