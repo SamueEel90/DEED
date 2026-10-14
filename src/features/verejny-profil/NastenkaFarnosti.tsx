@@ -45,7 +45,7 @@ import { useKalendar, kostolKal, omseDna, polozkyDna, druhPolozky, minuty, iso, 
 import { prihovor, useZmenyPrihovoru, naZivo, onlineOmse, onlineVDen } from "@/lib/prihovor";
 import { odFarnikov, useOdFarnikov, useCerstveOdFarnikov, prepniVPolozke, vyprsal, pocetSus, type PolozkaFarnika, type PoleReakcie } from "@/lib/odFarnikov";
 import { reakcieF, prepniReakciuF, useReakcieF, useCerstveReakcieF, type PoleReakcieF } from "@/lib/reakcieFarnosti";
-import { vlastnePrispevky, type VieraFeedItem } from "@/features/viera/mock";
+import { vlastnePrispevky, vlastnePrispevkyVsetky, type VieraFeedItem } from "@/features/viera/mock";
 import { usePrispevkySync } from "@/features/viera/prispevkyDB";
 import { Plagat } from "@/features/viera/Sablony";
 import { useVzhlad } from "@/lib/vzhladStranky";
@@ -345,14 +345,22 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, nahlad,
   // ---------- Spomíname (OPRAVY 205: medailóny; zbierka rodiny sa pripojí k svojmu parte) ----------
   const symbol = symbolCirkvi(SLF.cirkev);
   const zbPreParte = new Map(zbPohreb.filter((z) => z.farnost?.oznamenie?.prispevok).map((z) => [z.farnost!.oznamenie!.prispevok!, z]));
-  const spomFar: Spom[] = OZ.filter((x) => stit(x) === "PARTE").map((x) => {
+  // Martin 14. 10.: parte bez zbierky ide zo stránky preč 3 dni po pohrebe; parte so zbierkou rodiny ostane 7 dní po pohrebe
+  // (zbierka a parte sú jeden celok). Bez dátumu rozlúčky: 7 dní od zverejnenia, so zbierkou kým zbierka beží.
+  const zbParte = new Set(zbierkyStrankyZPamate(strankaId).map((z) => z.farnost?.oznamenie?.prispevok).filter((x): x is string => !!x));
+  const parteZije = (id: string, rd: string, vznik: number) => {
+    const t = /^\d{4}-\d{2}-\d{2}/.test(rd) ? zIso(rd.slice(0, 10)).getTime() : 0, so = zbParte.has(id), teraz = terazMs();
+    if (t) return teraz < t + (so ? 8 : 4) * 864e5; // do konca 7. (3.) dňa po pohrebe
+    return (so && zbPreParte.has(id)) || teraz < vznik + 7 * 864e5;
+  };
+  const spomFar: Spom[] = vlastnePrispevkyVsetky(strankaId).filter((x) => stit(x) === "PARTE" && parteZije(x.id, x.smutocny?.rozluckaDatum || String((x.smutocny?.editor?.polia as Record<string, unknown> | undefined)?.rd ?? ""), x.vytvorene ?? 0)).map((x) => {
     const sm = x.smutocny, ed = sm?.editor, P0 = (ed?.polia ?? {}) as Record<string, unknown>, pole = (k: string) => String(P0[k] ?? "").trim();
     const vlastne = !ed && !sm?.sablona && (sm?.mode === "image" || !!x.plagat);
     const pal = ed?.sablona && PARTE[ed.sablona] ? PARTE[ed.sablona] : vlastne ? BORDOVA : sm?.sablona ? PARTE[`${sm.sablona.u.zena ? "z" : "m"}${(sm.sablona.volba.v % 8) + 1}`] ?? PARTE.m4 : PARTE.m4;
     return { id: x.id, it: x, zb: zbPreParte.get(x.id), obr: obrFar(x), pal, foto: ziveObr(sm?.foto ?? ed?.foto) ? (sm?.foto ?? ed?.foto)! : undefined,
       d: { meno: sm?.meno || pole("meno") || bezPredpony(x.nazov ?? ""), nar: sm?.datumNar || pole("nar"), umr: sm?.datumUmr || pole("umr"), rd: sm?.rozluckaDatum || pole("rd"), rc: sm?.rozluckaCas || pole("rc"), rm: sm?.rozluckaMiesto || pole("rm"), head: pal.head } };
   });
-  const spomVer: Spom[] = OD.filter((x) => x.k === "parte").map((x) => {
+  const spomVer: Spom[] = OD.filter((x) => x.k === "parte" && parteZije(x.id, String((x.editor?.polia as Record<string, unknown> | undefined)?.rd ?? ""), x.cas)).map((x) => {
     const ed = x.editor, P0 = (ed?.polia ?? {}) as Record<string, unknown>, pole = (k: string) => String(P0[k] ?? "").trim();
     const pal = ed?.sablona && PARTE[ed.sablona] ? PARTE[ed.sablona] : ed ? PARTE.m4 : BORDOVA;
     return { id: x.id, x, obr: obrVer(x), pal, foto: ziveObr(ed?.foto) ? ed!.foto! : undefined,
