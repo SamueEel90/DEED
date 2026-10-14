@@ -926,7 +926,7 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, nahlad,
     {S.omse && <span style={{ maxWidth: "100%", fontSize: pc ? 13 : 12.5, fontWeight: 700, color: pc ? "#E8E1D3" : INK3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{S.omse}</span>}
   </button>;
   const onasVeta = onas.split(/(?<=[.!?])\s|\n/)[0];
-  const viacOnas = !onasOtv && onasVeta !== onas && <> <button type="button" onClick={() => setOnasOtv(true)} style={{ border: "none", background: "transparent", padding: 0, color: pc ? "#A9D18A" : "var(--nf-gInk)", fontFamily: "inherit", fontSize: "inherit", fontWeight: 800, cursor: "pointer" }}>viac ›</button></>;
+  const viacOnas = !onasOtv && onasVeta !== onas && <> <button type="button" onClick={() => setOnasOtv(true)} style={{ border: "none", background: "transparent", padding: 0, color: "var(--nf-gInk)", fontFamily: "inherit", fontSize: "inherit", fontWeight: 800, cursor: "pointer" }}>viac ›</button></>;
   /** celý text O nás vždy na podklade --nf-papier */
   const onasCely = onasOtv && onas && <div style={{ padding: pc ? "22px 26px" : "16px 18px", borderRadius: pc ? 24 : 18, background: PAPIER, border: `1px solid ${LINKA}`, display: "flex", flexDirection: "column", gap: 10 }}>
     {onasF({ fontSize: pc ? 17 : 15.5, lineHeight: 1.6, color: INK2 })}
@@ -947,12 +947,13 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, nahlad,
         <div style={{ display: "flex", flexDirection: "column", gap: 18, maxWidth: 780, minWidth: 0 }}>
           {logoEl(104, 28)}
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}><b style={{ fontSize: pcVelke ? 84 : 62, lineHeight: .98, letterSpacing: "-.045em", textWrap: "balance" } as CSSProperties}>{meno}</b>{podMeno && <span style={{ fontSize: 18, color: "#E8E1D3" }}>{podMeno}</span>}</div>
-          {onas && !onasOtv && <span style={{ fontSize: 18, lineHeight: 1.55, color: "#E8E1D3", maxWidth: 620, textWrap: "pretty" } as CSSProperties}>{onasVeta}{viacOnas}</span>}
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>{sledBtn}{omseTl}</div>
         </div>
         {dnesOkno}
       </div>
     </header>
+    {/* OPRAVY 277: veta O nás a „viac“ pod titulnou fotkou na podklade, nie na fotke */}
+    {onas && !onasOtv && <div style={{ padding: pcVelke ? "22px 48px 0" : "18px 32px 0" }}><span style={{ display: "block", fontSize: 18, lineHeight: 1.55, color: INK2, maxWidth: 780, textWrap: "pretty" } as CSSProperties}>{onasVeta}{viacOnas}</span></div>}
     {onasCely && <div style={{ padding: pcVelke ? "24px 48px 0" : "20px 32px 0" }}>{onasCely}</div>}
   </> : <>
     <div style={{ position: "relative", height: mt ? 280 : 200, background: fotoTitulky("linear-gradient(180deg,rgba(10,8,5,.4),rgba(10,8,5,0) 45%,rgba(10,8,5,.35))") }}>
@@ -1010,28 +1011,35 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, nahlad,
       {(u.od || b?.cas) && <span style={{ display: "flex", gap: 28, flexWrap: "wrap", padding: "10px 0", borderTop: `1px solid ${LINKA}`, borderBottom: `1px solid ${LINKA}`, fontSize: 15 }}>{u.od && <span><span style={{ color: INK3 }}>Kde </span><b>{u.od}</b></span>}{b?.cas && <span><span style={{ color: INK3 }}>Kedy </span><b>{b.cas}</b></span>}</span>}
       {u.pz > 0 && pozvat(u)}
     </div>); })}</div>;
+  // OPRAVY 277 (pravidlo Karty 65): na fotke len dátum a krátky nadpis na tmavom prechode (max 2 riadky);
+  // kedy, text, „viac“ a tlačidlá pod fotkou na podklade karty — po „viac“ sa text rozbalí na podklade, fotka ostane hore
   const pridKarta = (u: Ud, velka: boolean) => { const d = u.dat ? zIso(u.dat) : null; return (
-    <div key={u.id} style={{ ...sirkaKarty(velka ? nPas(1.55) : nPas(3.1)), position: "relative", minHeight: mob ? 380 : 420, borderRadius: mob ? 22 : 28, overflow: "hidden", background: u.foto ? `center/${u.plag ? "contain" : "cover"} no-repeat url('${u.foto}') #14110B` : "linear-gradient(160deg,#3A372E,#14110B)", display: "flex", flexDirection: "column", justifyContent: "flex-end", padding: velka && !mob ? 30 : 22, paddingTop: d ? 100 : undefined }}>
-      <span aria-hidden="true" style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg,rgba(10,8,5,.1) 20%,rgba(10,8,5,.92))" }} />
-      {u.foto && <button type="button" onClick={() => otvorGal(u.t, u.gal)} aria-label={u.plag ? "Plagát na celú obrazovku" : "Fotky na celú obrazovku"} style={{ position: "absolute", inset: 0, border: "none", background: "transparent", cursor: "zoom-in" }} />}
-      {d && <span style={{ position: "absolute", left: 20, top: 20, pointerEvents: "none" }}><KDatum d={d} /></span>}
-      <OdznakFotiek m={u.gal} hore />
-      <span style={{ position: "relative", display: "flex", flexDirection: "column", gap: 10, maxWidth: 640, ...naBiele }}>
+    <div key={u.id} style={{ ...sirkaKarty(velka ? nPas(1.55) : nPas(3.1)), borderRadius: mob ? 22 : 28, overflow: "hidden", background: PAPIER, display: "flex", flexDirection: "column" }}>
+      <div style={{ position: "relative", flex: "none", height: velka && !mob ? 300 : 220, background: u.foto ? `center/${u.plag ? "contain" : "cover"} no-repeat url('${u.foto}') #14110B` : "linear-gradient(160deg,#3A372E,#14110B)", display: "flex", flexDirection: "column", justifyContent: "flex-end", padding: velka && !mob ? "0 30px 22px" : "0 22px 18px" }}>
+        <span aria-hidden="true" style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg,rgba(10,8,5,0) 35%,rgba(10,8,5,.85))" }} />
+        {u.foto && <button type="button" onClick={() => otvorGal(u.t, u.gal)} aria-label={u.plag ? "Plagát na celú obrazovku" : "Fotky na celú obrazovku"} style={{ position: "absolute", inset: 0, border: "none", background: "transparent", cursor: "zoom-in" }} />}
+        {d && <span style={{ position: "absolute", left: 20, top: 20, pointerEvents: "none" }}><KDatum d={d} /></span>}
+        <OdznakFotiek m={u.gal} hore />
+        <b style={{ position: "relative", pointerEvents: "none", fontSize: velka && !mob ? 34 : 22, lineHeight: 1.12, letterSpacing: "-.02em", color: "#fff", ...riadkyMax(2) }}>{u.t}</b>
+      </div>
+      <div style={{ flex: 1, padding: velka && !mob ? "18px 30px 24px" : "16px 22px 20px", display: "flex", flexDirection: "column", gap: 10, color: INK }}>
         {u.mojeX ? hlavickaAutora(u.mojeX) : null}
-        {u.kedy && <span style={{ fontSize: 13.5, fontWeight: 800, letterSpacing: ".1em", color: "#D9B65A" }}>{u.kedy}</span>}
-        <b style={{ fontSize: velka && !mob ? 40 : 22, lineHeight: 1.1, letterSpacing: "-.02em" }}>{u.t}</b>
-        {u.txt && (velka ? <Viac text={u.txt} velkost={mob ? 15.5 : 17} /> : <span style={{ fontSize: 15, color: "#E8E1D3", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{u.txt}</span>)}
+        {u.kedy && <span style={{ fontSize: 13.5, fontWeight: 800, letterSpacing: ".1em", color: ZLATA }}>{u.kedy}</span>}
+        {u.txt && <Viac text={u.txt} velkost={mob ? 15.5 : 16.5} riadkov={velka ? 4 : 2} />}
         {u.pz > 0 && pozvat(u)}
         {u.mojeX && <MenuPrispevku x={u.mojeX} strankaId={strankaId} kto={kto} moje={moje(u.mojeX)} />}
-      </span>
+      </div>
     </div>); };
   const mPrid = <PasX pasRef={pasPrid}>
     {udalosti.map((u, i) => pridKarta(u, i === 0))}
     {alba.map((a) => { const f = a.fotky!.find(ziveObr)!; return (
-      <div key={a.id} style={{ ...sirkaKarty(nPas(3.1)), position: "relative", minHeight: mob ? 380 : 420, borderRadius: mob ? 22 : 28, overflow: "hidden", background: `center/cover no-repeat url('${f}') #14110B`, display: "flex", flexDirection: "column", justifyContent: "flex-end", padding: 22 }}>
-        <button type="button" onClick={() => setAlbum(a)} aria-label={`${a.t || "Fotky z akcie"} · otvoriť`} style={{ position: "absolute", inset: 0, border: "none", background: "linear-gradient(180deg,rgba(10,8,5,0) 30%,rgba(10,8,5,.9))", cursor: "pointer" }} />
-        <span style={{ position: "relative", display: "flex", flexDirection: "column", gap: 6, pointerEvents: "none", ...naBiele }}><span style={{ fontSize: 13.5, fontWeight: 800, letterSpacing: ".1em", color: "#D9B65A" }}>FOTKY · {fotiek(a.fotky!.filter(ziveObr).length)}</span><b style={{ fontSize: 22, lineHeight: 1.15 }}>{a.t || "Fotky z akcie"}</b>{!a.anon && <span style={{ fontSize: 15, color: "#E8E1D3" }}>pridal {a.kto}</span>}</span>
-        <span style={{ position: "relative", ...naBiele }}><MenuPrispevku x={a} strankaId={strankaId} kto={kto} moje={moje(a)} /></span>
+      <div key={a.id} style={{ ...sirkaKarty(nPas(3.1)), borderRadius: mob ? 22 : 28, overflow: "hidden", background: PAPIER, display: "flex", flexDirection: "column" }}>
+        <div style={{ position: "relative", height: 300, background: `center/cover no-repeat url('${f}') #14110B`, display: "flex", flexDirection: "column", justifyContent: "flex-end", padding: 22 }}>
+          <button type="button" onClick={() => setAlbum(a)} aria-label={`${a.t || "Fotky z akcie"} · otvoriť`} style={{ position: "absolute", inset: 0, border: "none", background: "linear-gradient(180deg,rgba(10,8,5,0) 40%,rgba(10,8,5,.85))", cursor: "pointer" }} />
+          <span style={{ position: "relative", display: "flex", flexDirection: "column", gap: 6, pointerEvents: "none", ...naBiele }}><span style={{ fontSize: 13.5, fontWeight: 800, letterSpacing: ".1em", color: "#D9B65A" }}>FOTKY · {fotiek(a.fotky!.filter(ziveObr).length)}</span><b style={{ fontSize: 22, lineHeight: 1.15 }}>{a.t || "Fotky z akcie"}</b>{!a.anon && <span style={{ fontSize: 15, color: "#E8E1D3" }}>pridal {a.kto}</span>}</span>
+        </div>
+        {/* OPRAVY 277: tlačidlá pod fotkou na podklade */}
+        <div style={{ padding: "12px 18px 16px" }}><MenuPrispevku x={a} strankaId={strankaId} kto={kto} moje={moje(a)} /></div>
       </div>); })}
   </PasX>;
   const mTes = <PasX pasRef={pasTes} gap={14}>{tesy.map((t) => tesKarta(t, { flex: "none", scrollSnapAlign: "start", width: mob && !mt ? "calc(100% - 2px)" : 210 }))}</PasX>; // OPRAVY 275: celý hárok na výšku
