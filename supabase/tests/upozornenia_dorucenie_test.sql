@@ -35,7 +35,8 @@ insert into public.naboz_prispevok (id, farnost_id, data) values
  ('t88-oz1', 't88-far', '{"ntyp":"oznam","nazov":"Ohlášky","oz":{"dr":0,"upoz":true}}'),
  ('t88-oz2', 't88-far', '{"ntyp":"oznam","nazov":"Len kostol 2","oz":{"dr":0,"upoz":true,"mi":["2"]}}'),
  ('t88-oz3', 't88-far', '{"ntyp":"oznam","nazov":"Bez upozornenia","oz":{"dr":0,"upoz":false}}'),
- ('t88-pa1', 't88-far', '{"ntyp":"oznam","nazov":"Parte · Ján","ukat":"pohreb","oz":{"dr":2,"upoz":true}}');
+ ('t88-pa1', 't88-far', '{"ntyp":"oznam","nazov":"Parte · Ján","ukat":"pohreb","oz":{"dr":2,"upoz":true}}'),
+ ('t88-pa2', 't88-far', '{"ntyp":"oznam","nazov":"Parte · Mária","ukat":"pohreb","plagat":true,"smutocny":{"mode":"template","meno":"Mária","editor":{}},"oz":{"dr":2,"odr":0,"osp":0,"ed":{"typ":"parte"},"upoz":true}}');
 -- opätovný zápis toho istého (sync z iného zariadenia) nič nepošle
 update public.naboz_prispevok set data = data || '{"podpora":1}' where id = 't88-oz1';
 insert into public.naboz_stav (oblast, id, data) values
@@ -52,6 +53,7 @@ insert into t select 'oznam pre kostol 2: X nie', not exists (select 1 from publ
 insert into t select 'bez upoz: nic', not exists (select 1 from public.upozornenie_farnosti where zdroj like 'p:t88-oz3%');
 insert into t select 'bez zmeny: ziadne Upravene', not exists (select 1 from public.upozornenie_farnosti where zdroj like 'p:t88-oz1:u:%');
 insert into t select 'parte: V hned', exists (select 1 from public.notifikacia where ucet_id = '7e57c100-0000-0000-0000-0000000088b1' and text = 'Parte: Parte · Ján');
+insert into t select 'parte z Editora (bod 272): V hned', exists (select 1 from public.notifikacia where ucet_id = '7e57c100-0000-0000-0000-0000000088b1' and text = 'Parte: Parte · Mária');
 insert into t select 'parte: X nesleduje Spominame', not exists (select 1 from public.notifikacia where ucet_id = '7e57c100-0000-0000-0000-0000000088c1' and text like 'Parte%');
 insert into t select 'omsa: X hned + push', exists (select 1 from public.notifikacia where ucet_id = '7e57c100-0000-0000-0000-0000000088c1' and text = 'Zrušená večerná omša 20. 10.' and push);
 insert into t select 'omsa: V hned bez push', exists (select 1 from public.notifikacia where ucet_id = '7e57c100-0000-0000-0000-0000000088b1' and text = 'Zrušená večerná omša 20. 10.' and not push);
