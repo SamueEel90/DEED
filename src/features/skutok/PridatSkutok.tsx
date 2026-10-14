@@ -601,7 +601,7 @@ export function PridatSkutok(pr: PridatParams & { onClose: () => void }) {
       {!org && <div role="radiogroup" aria-label="Stav skutku" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 4, padding: 4, borderRadius: 14, background: "var(--seg)" }}>
         {([["Už som to urobil", false], ["Chystám sa to urobiť", true]] as const).map(([t, v]) => (
           <button type="button" role="radio" aria-checked={plan === v} key={t} onClick={() => setPlan(v)} disabled={!!ohl && v}
-            style={{ height: 44, borderRadius: 11, border: "none", cursor: "pointer", fontSize: 14, fontWeight: 700, fontFamily: "inherit", background: plan === v ? "var(--card)" : "transparent", color: plan === v ? "var(--ink)" : "var(--ink3)", opacity: ohl && v ? 0.45 : 1 }}>{t}</button>))}
+            style={{ height: 44, borderRadius: 11, border: "none", cursor: "pointer", fontSize: 14, fontWeight: 700, fontFamily: "inherit", background: plan === v ? "var(--green)" : "transparent", color: plan === v ? "#fff" : "var(--ink3)", opacity: ohl && v ? 0.45 : 1 }}>{t}</button>))}
       </div>}
       <div style={{ display: "flex", gap: 10, alignItems: "center", padding: "10px 12px", borderRadius: 13, background: "var(--card)", border: "1px solid var(--cardBd)", fontSize: 13, lineHeight: 1.45, color: "var(--ink2)" }}>
         <span style={{ color: "var(--green)", display: "flex", flex: "none" }}><Ik d={IK.zamok} /></span><span>{o("Nič sa nezverejní, kým na konci neuvidíš náhľad a neťukneš ", "Nič sa nezverejní, kým na konci neuvidíte náhľad a neťuknete ")}<b style={{ color: "var(--ink)" }}>Pridať skutok</b>.</span>

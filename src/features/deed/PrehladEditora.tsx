@@ -65,7 +65,7 @@ export function PrehladEditora({ onZavri, nacitaj = nacitajPrehladEditora }: { o
       <div style={{ flex: 1, minHeight: 0, overflowY: "auto" }}>
         <div style={{ maxWidth: 1000, margin: "0 auto", padding: "14px 16px 40px", display: "flex", flexDirection: "column", gap: 12 }}>
           <div role="radiogroup" aria-label="Obdobie" style={{ display: "flex", gap: 4, padding: 4, borderRadius: 12, background: "var(--btn)", alignSelf: "flex-start", flexWrap: "wrap" }}>
-            {OBDOBIA.map(([t], i) => { const on = ob === i; return <button key={t} type="button" role="radio" aria-checked={on} onClick={() => setOb(i)} style={{ minHeight: 44, padding: "0 14px", border: "none", borderRadius: 9, background: on ? "var(--seg, var(--card))" : "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: on ? 800 : 700, color: on ? "var(--ink)" : "var(--ink3)" }}>{t}</button>; })}
+            {OBDOBIA.map(([t], i) => { const on = ob === i; return <button key={t} type="button" role="radio" aria-checked={on} onClick={() => setOb(i)} style={{ minHeight: 44, padding: "0 14px", border: "none", borderRadius: 9, background: on ? "var(--green)" : "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 800, color: on ? "#fff" : "var(--ink3)" }}>{t}</button>; })}
           </div>
           {stav.chyba && stav.ob === ob && <span role="alert" style={{ padding: "12px 14px", borderRadius: 12, background: "var(--goldBg)", border: "1.5px solid #C9A24A", fontSize: 14.5, fontWeight: 800 }}>{stav.chyba}</span>}
           {!l && !stav.chyba && <span style={{ fontSize: 14.5, color: "var(--ink3)" }}>Načítavam…</span>}

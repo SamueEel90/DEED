@@ -736,7 +736,7 @@ function CislaTelefon({ obd, setObd, nova, stit }: { obd: number; setObd: (i: nu
     <section aria-label="Čísla" style={{ flex: "none", borderRadius: 18, background: "var(--card)", border: "1px solid var(--cardBd)", padding: "12px 14px", display: "flex", flexDirection: "column", gap: 6 }}>
       <div role="tablist" aria-label="Obdobie" style={{ display: "grid", gridTemplateColumns: "repeat(4,minmax(0,1fr))", gap: 2, padding: 3, borderRadius: 12, background: "var(--btn)" }}>
         {OBD.map((t, i) => { const on = i === obd; return (
-          <button key={t} role="tab" aria-selected={on} onClick={() => setObd(i)} style={{ height: 44, border: "none", borderRadius: 9, cursor: "pointer", whiteSpace: "nowrap", fontSize: 13, fontWeight: on ? 800 : 700, background: on ? "var(--seg)" : "transparent", color: on ? "var(--ink)" : "var(--ink3)", boxShadow: on ? "0 1px 3px rgba(30,28,20,.14)" : "none" }}>{t}</button>); })}
+          <button key={t} role="tab" aria-selected={on} onClick={() => setObd(i)} style={{ height: 44, border: "none", borderRadius: 9, cursor: "pointer", whiteSpace: "nowrap", fontSize: 13, fontWeight: 800, background: on ? "var(--green)" : "transparent", color: on ? "#fff" : "var(--ink2)", boxShadow: on ? "0 1px 3px rgba(30,28,20,.14)" : "none" }}>{t}</button>); })}
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", columnGap: 14 }}>
         {idx.map((i, j) => { const [v, d] = nova ? [N8[i], ""] : D8[obd][i]; return (
@@ -857,7 +857,7 @@ function Prehlad({ tier: _tier, piny, prepniPin, otvorPolozku, otvor, nova, stit
   const obdPrepinac = (
     <div role="tablist" aria-label="Obdobie" style={{ flex: "none", display: "flex", gap: 2, padding: 3, borderRadius: 12, background: "var(--btn)" }}>
       {OBD.map((t, i) => { const on = i === obd; return (
-        <button key={t} role="tab" aria-selected={on} onClick={() => setObd(i)} style={{ height: mobil ? 44 : 28, minWidth: mobil ? 44 : undefined, padding: ph ? "0 6px" : "0 12px", border: "none", borderRadius: 9, cursor: "pointer", whiteSpace: "nowrap", fontSize: ph ? 12.5 : 13, fontWeight: on ? 800 : 700, background: on ? "var(--seg)" : "transparent", color: on ? "var(--ink)" : "var(--ink3)", boxShadow: on ? "0 1px 3px rgba(30,28,20,.14)" : "none" }}>{t}</button>); })}
+        <button key={t} role="tab" aria-selected={on} onClick={() => setObd(i)} style={{ height: mobil ? 44 : 28, minWidth: mobil ? 44 : undefined, padding: ph ? "0 6px" : "0 12px", border: "none", borderRadius: 9, cursor: "pointer", whiteSpace: "nowrap", fontSize: ph ? 12.5 : 13, fontWeight: 800, background: on ? "var(--green)" : "transparent", color: on ? "#fff" : "var(--ink2)", boxShadow: on ? "0 1px 3px rgba(30,28,20,.14)" : "none" }}>{t}</button>); })}
     </div>);
   const grafTl = (
     <button onClick={() => setGraf((g) => !g)} aria-label="Graf darov" aria-expanded={graf} title="Graf darov" style={{ flex: "none", width: mobil ? 44 : 34, height: mobil ? 44 : 34, borderRadius: 10, border: `1.5px solid ${graf ? "var(--cuBd)" : "var(--cardBd)"}`, background: graf ? "var(--accSoft)" : "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -1414,7 +1414,7 @@ export function ObrNastavenia({ tier, otvor, mobil, farnost }: { tier: Tier; otv
           <div id="sc-tema" style={{ fontSize: 15, fontWeight: 700 }}>Téma</div>
           <div role="radiogroup" aria-labelledby="sc-tema" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 4, padding: 4, borderRadius: 14, background: "var(--btn)" }}>
             {([["svetla", "Svetlá"], ["tmava", "Tmavá"], ["system", "Podľa telefónu"]] as const).map(([k, l]) => { const on = tema === k; return (
-              <button key={k} role="radio" aria-checked={on} onClick={() => nastavTemu(k)} style={{ height: 42, borderRadius: 10, border: "none", cursor: "pointer", fontSize: 14, fontWeight: 700, background: on ? "var(--white)" : "transparent", color: on ? "var(--ink)" : "var(--ink3)", padding: "0 4px", lineHeight: 1.15 }}>{l}</button>); })}
+              <button key={k} role="radio" aria-checked={on} onClick={() => nastavTemu(k)} style={{ minHeight: 44, borderRadius: 10, border: "none", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 800, background: on ? "var(--green)" : "transparent", color: on ? "#fff" : "var(--ink2)", padding: "0 4px", lineHeight: 1.15 }}>{l}</button>); })}
           </div>
           <button onClick={pr("Jazyk")} style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 48, border: "none", borderTop: "1px solid var(--cardBd)", paddingTop: 10, background: "transparent", cursor: "pointer", textAlign: "left" }}>
             <Ik d={"M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z" + IK.svet} s={18} c="#3D6B8E" w={2} />

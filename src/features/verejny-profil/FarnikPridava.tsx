@@ -35,6 +35,7 @@ import { useRamPisania } from "@/components/RamPisania";
 import { CelaGaleria } from "@/components/celaGaleria";
 import { nacitajKoncept, ulozKoncept, zmazKoncept, useUkladajKoncept } from "@/lib/koncept";
 import { MateRozpisane, ZahoditRozpisane } from "@/components/RamPisania";
+import { Volby } from "@/components/Volby";
 
 const ZELENA = "#4B7A35", ZLATA = "#C9A24A";
 const lab = (zle: boolean): CSSProperties => ({ fontSize: 12.5, fontWeight: 800, letterSpacing: ".06em", color: zle ? "#A07A1C" : "var(--ink3)" });
@@ -455,10 +456,8 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
       </div>
     </div>);
 
-  const seg = <V,>(vol: [V, string][], cur: V, setV: (v: V) => void) => (
-    <div role="radiogroup" style={{ display: "flex", gap: 8 }}>
-      {vol.map(([v, t]) => { const on = v === cur; return <button key={String(v)} type="button" role="radio" aria-checked={on} onClick={() => { setV(v); setChyba(false); }} style={{ flex: 1, minHeight: 52, borderRadius: 14, border: `${on ? 2 : 1}px solid ${on ? "var(--green)" : "var(--cardBd)"}`, background: on ? "var(--gSoft)" : "var(--field)", cursor: "pointer", fontFamily: "inherit", fontSize: 15.5, fontWeight: 800, color: on ? "var(--gInk)" : "var(--ink)" }}>{t}</button>; })}
-    </div>);
+  // OPRAVY 288: jeden prepínač s voľbami pre celú appku
+  const seg = <V extends string | number | boolean,>(vol: [V, string][], cur: V, setV: (v: V) => void) => <Volby value={cur} onChange={(v) => { setV(v); setChyba(false); }} moznosti={vol} label={vol.map(([, t]) => t).join(" · ")} siroke />;
   const vstup = (label: string, kluc: keyof FormularVeriaceho & string, ph: string, extra?: Partial<JSX.IntrinsicElements["input"]>, max = 80) => (
     <label style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}><span style={lab(zle(kluc))}>{label}</span>
       <input value={String(f[kluc] ?? "")} onChange={(e) => set({ [kluc]: e.target.value.slice(0, max) } as Partial<FormularVeriaceho>)} placeholder={ph} aria-invalid={zle(kluc) || undefined} style={pole(zle(kluc))} {...extra} /></label>);
@@ -499,7 +498,7 @@ export function FarnikPridava({ strankaId, mobil, onPozriet }: { strankaId: stri
         {/* OPRAVY 179: Platí do, predvolené Bez konca */}
         <span style={lab(false)}>PLATÍ DO</span>
         <div role="radiogroup" aria-label="Platí do" style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-          {PLATI_VERIACI.map(([t], i) => { const on = (f.plat ?? 0) === i; return <button key={t} type="button" role="radio" aria-checked={on} onClick={() => set({ plat: i })} style={{ flex: "1 1 70px", minHeight: 48, borderRadius: 12, border: `${on ? 2 : 1}px solid ${on ? "var(--green)" : "var(--cardBd)"}`, background: on ? "var(--gSoft)" : "var(--field)", cursor: "pointer", fontFamily: "inherit", fontSize: 15, fontWeight: 800, color: on ? "var(--gInk)" : "var(--ink)" }}>{t}</button>; })}
+          {PLATI_VERIACI.map(([t], i) => { const on = (f.plat ?? 0) === i; return <button key={t} type="button" role="radio" aria-checked={on} onClick={() => set({ plat: i })} style={{ flex: "1 1 70px", minHeight: 48, borderRadius: 12, border: `${on ? 2 : 1}px solid ${on ? "var(--green)" : "var(--cardBd)"}`, background: on ? "var(--green)" : "var(--field)", cursor: "pointer", fontFamily: "inherit", fontSize: 15, fontWeight: 800, color: on ? "#fff" : "var(--ink)" }}>{t}</button>; })}
         </div>
         <span style={{ fontSize: 13.5, color: "var(--ink3)", marginTop: -6 }}>Potom oznam zo stránky sám zmizne.</span>
       </>}

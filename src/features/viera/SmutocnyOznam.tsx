@@ -178,7 +178,7 @@ export function SmutocnyForm({ farnost, autor, farar, onPublish }: {
     });
   }
 
-  const seg = (on: boolean): React.CSSProperties => ({ flex: 1, textAlign: "center", padding: `${SPACE.sm}px 0`, borderRadius: RADIUS.sm, fontSize: 12.5, fontWeight: 700, cursor: "pointer", background: on ? N.indBg : N.card, border: `1px solid ${on ? N.indEdge : N.line}`, color: on ? N.ind : N.txt2 });
+  const seg = (on: boolean): React.CSSProperties => ({ flex: 1, minHeight: 44, display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center", padding: `${SPACE.sm}px 0`, borderRadius: RADIUS.sm, fontSize: 12.5, cursor: "pointer", background: on ? "var(--green,#4E7D37)" : N.card, border: `1px solid ${on ? "var(--green,#4E7D37)" : N.line}`, color: on ? "#fff" : N.txt2, fontWeight: 800 }); // OPRAVY 288
   const lab = (t: string, povinne?: boolean) => <div style={{ fontSize: 11, fontWeight: 700, color: N.txt3, letterSpacing: ".03em", margin: `${SPACE.md}px 0 ${SPACE.xxs}px` }}>{t}{povinne && <span style={{ color: N.clay }}> *</span>}</div>;
 
   return (

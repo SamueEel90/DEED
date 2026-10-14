@@ -168,7 +168,7 @@ export function OnlineOmseKarta({ strankaId, mobil }: { strankaId: string; mobil
   const casTeraz = (r: PravidloOnline) => { const den = dni.find((x) => (r.kazdy ? dvt(x.d) === r.wd : iso(x.d) === r.d)); return den?.omse.find((x) => (r.kod != null ? x.kod === r.kod : x.t === r.t))?.t; };
   const ikona = <span aria-hidden="true" style={{ flex: "none", height: 24, padding: "0 8px", borderRadius: 7, background: "#B3261E", color: "#fff", fontSize: 11, fontWeight: 800, letterSpacing: ".08em", display: "flex", alignItems: "center" }}>NAŽIVO</span>;
   const zhrnutie = !o.on ? "Vypnuté" : !odkazOk(o.url) ? "Chýba odkaz na vysielanie" : o.rules.length ? o.rules.map((r) => textPravidla(r, casTeraz(r))).join(" · ") : "Zatiaľ nevysielate žiadnu omšu";
-  const tl = (on: boolean): CSSProperties => ({ minHeight: 40, padding: "0 12px", borderRadius: 10, border: on ? "2px solid var(--green)" : "1px solid var(--cardBd)", background: on ? "var(--gSoft)" : "var(--field)", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: on ? 800 : 700, color: on ? "var(--gInk)" : "var(--ink)", boxShadow: "none" });
+  const tl = (on: boolean): CSSProperties => ({ minHeight: 44, padding: "0 12px", borderRadius: 10, border: on ? "2px solid var(--green)" : "1px solid var(--cardBd)", background: on ? "var(--green)" : "var(--field)", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: on ? 800 : 700, color: on ? "#fff" : "var(--ink)", boxShadow: "none" });
   return (
     <Zbalitelna label="Online omše" ikona={ikona} nadpis="Online omše" mobil={mobil} zhrnutie={zhrnutie}
       popis="Vysielate omšu? Vložte odkaz (YouTube, Facebook). Pri omši sa ukáže Pozrieť naživo.">

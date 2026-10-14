@@ -9,6 +9,7 @@
 // ============================================================
 import { TlacidloGalerie, useZdrojFotiek } from "@/components/VyberZGalerie";
 import { CasPole } from "@/components/CasPole";
+import { Volby } from "@/components/Volby";
 import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import type { Vzhlad } from "@/lib/vzhladStranky";
 import { AnoNie } from "@/components/AnoNie";
@@ -222,10 +223,8 @@ export function Plagat({ u, volba, vz, sirka = 360, qr, qrText = "Prispieť rodi
 // ============================================================
 export function VyberSablony({ u, volba, onVolba, vz, mobil, qr, qrText }: { u: UdajeOznamu; volba: VolbaSablony; onVolba: (v: VolbaSablony) => void; vz: Vzhlad; mobil?: boolean; /** OPRAVY 204: parte farára — prepínač „QR na parte“ a QR v náhľade */ qr?: string; qrText?: string }) {
   const pa = u.druh === "parte";
-  const seg = (moz: [string, boolean][], cur: boolean, set: (v: boolean) => void) => (
-    <div style={{ display: "flex", gap: 2, padding: 3, borderRadius: 13, background: "var(--btn,#DCD8CF)" }}>
-      {moz.map(([t, v]) => { const on = cur === v; return <button key={t} type="button" aria-pressed={on} onClick={() => set(v)} style={{ minHeight: 40, padding: "0 14px", border: "none", borderRadius: 10, cursor: "pointer", fontFamily: "inherit", fontSize: 13.5, fontWeight: 800, background: on ? "var(--card,#fff)" : "transparent", color: on ? "var(--ink,#1D211B)" : "var(--ink3,#5B5D53)", boxShadow: "none" }}>{t}</button>; })}
-    </div>);
+  // OPRAVY 288: prepínače s voľbami jedným komponentom (vybratá plná zelená)
+  const seg = (moz: [string, boolean][], cur: boolean, set: (v: boolean) => void) => <Volby value={cur} onChange={set} moznosti={moz.map(([t, v]) => [v, t] as const)} label={moz.map(([t]) => t).join(" · ")} />;
   const mot = MOT[u.druh].includes(volba.motiv) ? volba.motiv : MOT[u.druh][0];
   return (
     <section style={{ display: "flex", flexDirection: "column", gap: 14 }}>
@@ -311,10 +310,7 @@ export function FormularOznamu({ u, onU, mobil, bezFotky, upozornenie = true }: 
       {txt("meno", T.meno, T.phMeno)}
       {pa && <>
         <span style={lab}>ZOSNULÝ JE</span>
-        <div role="radiogroup" aria-label="Zosnulý je" style={{ display: "flex", gap: 8 }}>
-          {([["Muž", false], ["Žena", true]] as [string, boolean][]).map(([t, z]) => { const on = u.zena === z; return (
-            <button key={t} type="button" role="radio" aria-checked={on} onClick={() => zmen({ zena: z, rod: z ? u.rod : "" })} style={{ flex: 1, height: 48, borderRadius: 12, border: `${on ? 2 : 1}px solid ${on ? "var(--green,#4E7D37)" : "var(--cardBd,#CFC9BC)"}`, background: on ? "var(--gSoft,#E3EBD8)" : "var(--field,#fff)", cursor: "pointer", fontFamily: "inherit", fontSize: 15, fontWeight: 800, color: on ? "var(--gInk,#2F5E1F)" : "var(--ink,#1D211B)", boxShadow: "none" }}>{t}</button>); })}
-        </div>
+        <Volby value={u.zena} onChange={(z) => zmen({ zena: z, rod: z ? u.rod : "" })} moznosti={[[false, "Muž"], [true, "Žena"]]} label="Zosnulý je" siroke />
         <span style={pozn}>Podľa toho sa upravia texty na parte (opustil / opustila, manžel / manželka).</span>
         {dva(
           <label style={{ display: "flex", flexDirection: "column", gap: 6 }}><span style={lab}>DÁTUM NARODENIA</span><input type="date" min="1900-01-01" max={dnes} value={u.nar} onChange={(e) => zmen({ nar: e.target.value })} style={pole} /></label>,

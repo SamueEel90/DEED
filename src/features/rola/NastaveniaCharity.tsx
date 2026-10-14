@@ -63,11 +63,12 @@ function RiadokPrep({ t, s, on, onClick, zamok, znak, i, minH = 58 }: { t: React
       <Prep on={on} zamok={zamok} />
     </button>);
 }
-function Segment<T extends string | number>({ volby, hodnota, onZmena, stlpce, tien }: { volby: [T, string][]; hodnota: T; onZmena: (v: T) => void; stlpce?: number; tien?: boolean }) {
+/** OPRAVY 288: vybratá voľba plná zelená, ako všade v appke */
+function Segment<T extends string | number>({ volby, hodnota, onZmena, stlpce }: { volby: [T, string][]; hodnota: T; onZmena: (v: T) => void; stlpce?: number; tien?: boolean }) {
   return (
     <div role="radiogroup" style={{ display: "grid", gridTemplateColumns: `repeat(${stlpce ?? volby.length},minmax(0,1fr))`, gap: 4, padding: 4, borderRadius: 14, background: "var(--btn)" }}>
       {volby.map(([k, t]) => { const on = k === hodnota; return (
-        <button key={String(k)} role="radio" aria-checked={on} onClick={() => onZmena(k)} style={{ minHeight: 42, padding: "0 6px", borderRadius: 10, border: "none", cursor: "pointer", fontSize: 14, fontWeight: tien ? 800 : 700, lineHeight: 1.2, background: on ? (tien ? "var(--seg)" : "var(--white)") : "transparent", color: on ? "var(--ink)" : "var(--ink3)", boxShadow: on && tien ? "0 1px 3px rgba(30,28,20,.14)" : "none" }}>{t}</button>); })}
+        <button key={String(k)} role="radio" aria-checked={on} onClick={() => onZmena(k)} style={{ minHeight: 44, padding: "0 6px", borderRadius: 10, border: "none", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 800, lineHeight: 1.2, background: on ? "var(--green)" : "transparent", color: on ? "#fff" : "var(--ink2)", boxShadow: "none" }}>{t}</button>); })}
     </div>);
 }
 const Zoznam = ({ polozky, bodka }: { polozky: string[]; bodka?: boolean }) => (

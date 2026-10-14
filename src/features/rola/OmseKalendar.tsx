@@ -492,7 +492,7 @@ export function OmseKalendar({ strankaId, meno, kostoly, mobil, tel = false, toa
   const taby = (
     <div role="tablist" aria-label="Zobrazenie" style={{ display: "flex", gap: 4, padding: 4, borderRadius: 12, background: "var(--btn)" }}>
       {(["Týždeň", "Mesiac", "Rozvrh omší"] as const).map((t, i) => { const on = tab === i; return (
-        <button key={t} type="button" role="tab" aria-selected={on} onClick={() => { setTab(i as Tab); setDen(null); }} style={{ minHeight: 44, padding: mobil ? "0 10px" : "0 16px", border: "none", borderRadius: 9, background: on ? "var(--seg)" : "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: on ? 800 : 700, color: on ? "var(--ink)" : "var(--ink3)", boxShadow: "none", whiteSpace: "nowrap" }}>{t}</button>); })}
+        <button key={t} type="button" role="tab" aria-selected={on} onClick={() => { setTab(i as Tab); setDen(null); }} style={{ minHeight: 44, padding: mobil ? "0 10px" : "0 16px", border: "none", borderRadius: 9, background: on ? "var(--green)" : "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 800, color: on ? "#fff" : "var(--ink2)", boxShadow: "none", whiteSpace: "nowrap" }}>{t}</button>); })}
     </div>);
   const ikTl = (on: boolean, d: ReactNode, t: string, onClick: () => void) => (
     <button type="button" onClick={onClick} aria-expanded={on} style={{ minHeight: 48, padding: "0 16px", borderRadius: 12, border: `1.5px solid ${on ? "var(--green)" : "var(--cardBd)"}`, background: "var(--card)", cursor: "pointer", display: "flex", alignItems: "center", gap: 8, fontFamily: "inherit", fontSize: 14.5, fontWeight: 800, color: "var(--ink)", boxShadow: "none" }}>
@@ -503,7 +503,7 @@ export function OmseKalendar({ strankaId, meno, kostoly, mobil, tel = false, toa
   const pravy = <>{denPanel}{celyTyzden}{kostolyKarta}</>;
   if (tel) return <>
     {viac && <div style={{ flex: "none", display: "flex", gap: 8, flexWrap: "wrap" }}>
-      {kostoly.map((x, i) => { const on = i === kI; return <button key={x.nazov + i} type="button" onClick={() => { setKI(i); setDen(null); }} aria-pressed={on} style={{ minHeight: 44, padding: "0 14px", borderRadius: 12, border: on ? "2px solid var(--green)" : "1px solid var(--cardBd)", background: on ? "var(--gSoft)" : "var(--card)", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: on ? 800 : 600, color: "var(--ink)", boxShadow: "none" }}>{x.nazov}</button>; })}
+      {kostoly.map((x, i) => { const on = i === kI; return <button key={x.nazov + i} type="button" onClick={() => { setKI(i); setDen(null); }} aria-pressed={on} style={{ minHeight: 44, padding: "0 14px", borderRadius: 12, border: on ? "2px solid var(--green)" : "1px solid var(--cardBd)", background: on ? "var(--green)" : "var(--card)", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 800, color: on ? "#fff" : "var(--ink)", boxShadow: "none" }}>{x.nazov}</button>; })}
     </div>}
     {tyzden}
     <div ref={denRef} style={{ flex: "none", display: "flex", flexDirection: "column", gap: 12, scrollMarginTop: 76 }}>{den && denPanel}</div>
@@ -521,7 +521,7 @@ export function OmseKalendar({ strankaId, meno, kostoly, mobil, tel = false, toa
     {verPanel}{tlPanel}
     {viac && <div style={{ flex: "none", display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
       <span style={{ fontSize: 12.5, fontWeight: 800, letterSpacing: ".08em", color: "var(--ink3)", paddingRight: 4 }}>UPRAVUJETE</span>
-      {kostoly.map((x, i) => { const on = i === kI; return <button key={x.nazov + i} type="button" onClick={() => { setKI(i); setDen(null); }} aria-pressed={on} style={{ minHeight: 44, padding: "0 16px", borderRadius: 12, border: on ? "2px solid var(--green)" : "1px solid var(--cardBd)", background: on ? "var(--gSoft)" : "var(--card)", cursor: "pointer", fontFamily: "inherit", fontSize: 14.5, fontWeight: on ? 800 : 600, color: "var(--ink)", boxShadow: "none" }}>{x.nazov}</button>; })}
+      {kostoly.map((x, i) => { const on = i === kI; return <button key={x.nazov + i} type="button" onClick={() => { setKI(i); setDen(null); }} aria-pressed={on} style={{ minHeight: 44, padding: "0 16px", borderRadius: 12, border: on ? "2px solid var(--green)" : "1px solid var(--cardBd)", background: on ? "var(--green)" : "var(--card)", cursor: "pointer", fontFamily: "inherit", fontSize: 14.5, fontWeight: 800, color: on ? "#fff" : "var(--ink)", boxShadow: "none" }}>{x.nazov}</button>; })}
     </div>}
     {mobil ? <>{den && denPanel}{lavy}{celyTyzden}{kostolyKarta}</> : (
       <div style={{ flex: "none", display: "grid", gridTemplateColumns: "minmax(0,1.6fr) minmax(0,1fr)", gap: 16, alignItems: "start" }}>

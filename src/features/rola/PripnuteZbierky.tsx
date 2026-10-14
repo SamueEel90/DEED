@@ -31,7 +31,7 @@ export function PripnutieVyber({ strankaId, mobil, onSpat, onHotovo }: { stranka
         style={{ height: 50, padding: "0 14px", borderRadius: 14, background: "var(--field)", border: "1.5px solid var(--cardBd)", fontFamily: "inherit", fontSize: 15.5, color: "var(--ink)", outline: "none" }} />
       <div role="radiogroup" aria-label="Zdroj" style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
         {["Všetky", "Charita", "Help"].map((t, i) => { const on = zd === i; return (
-          <button key={t} type="button" role="radio" aria-checked={on} onClick={() => setZd(i)} style={{ minHeight: 44, padding: "0 16px", borderRadius: 22, border: on ? "2px solid var(--ink)" : "1.5px solid var(--cardBd)", background: on ? "var(--ink)" : "transparent", color: on ? "var(--bg)" : "var(--ink)", cursor: "pointer", fontFamily: "inherit", fontSize: 14.5, fontWeight: 800 }}>{t}</button>); })}
+          <button key={t} type="button" role="radio" aria-checked={on} onClick={() => setZd(i)} style={{ minHeight: 44, padding: "0 16px", borderRadius: 22, border: on ? "2px solid var(--green)" : "1.5px solid var(--cardBd)", background: on ? "var(--green)" : "transparent", color: on ? "#fff" : "var(--ink)", cursor: "pointer", fontFamily: "inherit", fontSize: 14.5, fontWeight: 800 }}>{t}</button>); })}
       </div>
       {vsetky === null ? <span style={{ fontSize: 14, color: "var(--ink3)" }}>Načítavam zbierky…</span>
         : !L.length ? <span style={{ fontSize: 14.5, color: "var(--ink3)" }}>Nič sme nenašli. Skúste iné slovo.</span>

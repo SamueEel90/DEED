@@ -41,7 +41,7 @@ function Drz({ ms, children, onHotovo, styl, plnenie = "rgba(163,74,42,.18)" }: 
 export { Drz as DrzTlacidlo };
 
 const hlaskaSt: CSSProperties = { padding: "12px 14px", borderRadius: 14, background: ZSOFT, border: `2px solid ${ZELENA}`, fontSize: 15.5, fontWeight: 800, color: ZINK };
-const segSt = (on: boolean): CSSProperties => ({ minHeight: 46, padding: "0 18px", borderRadius: 13, border: on ? "2px solid #14110B" : `1.5px solid ${LINKA}`, background: on ? "#14110B" : "transparent", color: on ? "#fff" : INK, fontFamily: "inherit", fontSize: 15.5, fontWeight: 800, cursor: "pointer" });
+const segSt = (on: boolean): CSSProperties => ({ minHeight: 46, padding: "0 18px", borderRadius: 13, border: on ? "2px solid var(--green,#4E7D37)" : `1.5px solid ${LINKA}`, background: on ? "var(--green,#4E7D37)" : "transparent", color: on ? "#fff" : INK, fontFamily: "inherit", fontSize: 15.5, fontWeight: 800, cursor: "pointer" });
 const akciaSt = (druh: "z" | "o" | "s"): CSSProperties => ({ minHeight: 54, padding: "6px 16px", borderRadius: 14, border: druh === "z" ? "none" : druh === "o" ? `1.5px solid ${ZELENA}` : `1px solid ${LINKA}`, background: druh === "z" ? ZELENA : druh === "o" ? "transparent" : "#fff", color: druh === "z" ? "#fff" : druh === "o" ? ZINK : INK, fontFamily: "inherit", fontSize: 16.5, fontWeight: 800, cursor: "pointer" });
 
 function AdresarCirkvi({ onZavri, spatText = "‹ Späť" }: { onZavri: () => void; /** text Späť na kroku 1 (napr. „‹ Späť na moju farnosť") */ spatText?: string }) {

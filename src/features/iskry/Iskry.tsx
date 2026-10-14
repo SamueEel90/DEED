@@ -436,7 +436,7 @@ function DarovatObsah({ v, registrovany, onRychly, onVlastna, onNamietam }: { v:
     <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
       <span style={{ display: "flex", alignItems: "center", gap: 8 }}><span style={{ ...lbl, flex: 1 }}>MIKRO DAR</span>
         <span role="radiogroup" aria-label="Mena mikro daru" style={{ display: "flex", gap: 2, padding: 3, borderRadius: 10, background: "#DCD8CF" }}>
-          {([["EURC", "c"], ["DeeD", "d"]] as const).map(([t, k]) => <button key={k} type="button" role="radio" aria-checked={mena === k} onClick={() => setMena(k)} style={{ minHeight: 32, padding: "0 12px", border: "none", borderRadius: 8, cursor: "pointer", fontFamily: "inherit", fontSize: 12.5, fontWeight: mena === k ? 800 : 600, background: mena === k ? "#F6F3EC" : "transparent", color: "#1D211B" }}>{t}</button>)}
+          {([["EURC", "c"], ["DeeD", "d"]] as const).map(([t, k]) => <button key={k} type="button" role="radio" aria-checked={mena === k} onClick={() => setMena(k)} style={{ minHeight: 44, padding: "0 14px", border: "none", borderRadius: 8, cursor: "pointer", fontFamily: "inherit", fontSize: 13.5, fontWeight: 800, background: mena === k ? "var(--green,#4E7D37)" : "transparent", color: mena === k ? "#fff" : "#3F3A30" }}>{t}</button>)}
         </span></span>
       {rad("", mena === "c" ? ISKRY_CFG.mikroEurc.map((s) => ({ t: `${cis(s)} EURC`, on: () => onRychly("eurc", s) })) : ISKRY_CFG.mikroDeed.map((s) => ({ t: `${s} DeeD`, on: () => onRychly("deed", s) })))}
     </div>

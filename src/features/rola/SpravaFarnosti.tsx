@@ -50,6 +50,7 @@ import { najdiTestProfil } from "@/lib/testProfily";
 import { cistyNazov, nacitajProfil, profilZPamate, uplnostProfilu, type ProfilStranky } from "@/lib/profilStranky";
 import { nacitajPiny, pinyZPamate, ulozPiny } from "@/lib/spravaPiny";
 import { useHromadnyVyber, TlacidloVyberu, ListaVyberu, PolickoVyberu, PasVyberu } from "@/components/HromadnyVyber";
+import { Volby } from "@/components/Volby";
 
 type Sub = "prehlad" | "zbierky" | "omse" | "oznamy" | "veriaci" | "ludia" | "filialky" | "penazenka" | "nastroje" | "profil" | "nast" | "hlavna" | "nahlad" | "zbierka" | "nova" | "n" | "zvoncek";
 /** sekcie, ktoré sa dajú pripnúť v Prehľade (najviac 6) */
@@ -205,10 +206,8 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
           {x.b && <button type="button" onClick={x.tap} style={{ flex: "none", minHeight: 44, padding: `0 ${mobil ? 12 : 14}px`, borderRadius: 12, border: x.bBd ?? "1px solid var(--cardBd)", background: x.bBd ? "transparent" : "var(--btn)", cursor: "pointer", fontFamily: "inherit", fontSize: mobil ? 13 : 13.5, fontWeight: 800, color: x.bC ?? "var(--ink)" }}>{x.b}</button>}
         </div>))}
     </section>);
-  const segment = <T,>(vol: [T, string][], cur: T, set: (v: T) => void, h = 38) => (
-    <div style={{ display: "flex", gap: 4, padding: 4, borderRadius: 12, background: "var(--btn)", alignSelf: "flex-start", flexWrap: "wrap" }}>
-      {vol.map(([k, t]) => { const on = k === cur; return <button key={String(k)} type="button" aria-pressed={on} onClick={() => set(k)} style={{ minHeight: Math.max(h, 44), padding: "0 14px", border: "none", borderRadius: 9, background: on ? "var(--seg)" : "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: on ? 800 : 700, color: on ? "var(--ink)" : "var(--ink3)", boxShadow: "none" }}>{t}</button>; })}
-    </div>);
+  // OPRAVY 288: jeden prepínač s voľbami pre celú appku
+  const segment = <T extends string | number | boolean,>(vol: [T, string][], cur: T, set: (v: T) => void) => <Volby value={cur} onChange={set} moznosti={vol} label={vol.map(([, t]) => t).join(" · ")} />;
   const nadpis = (t: string, s: string) => !mobil && <div style={{ flex: "none", display: "flex", alignItems: "center", gap: 12 }}><span style={{ flex: 1, minWidth: 0 }}><span style={{ display: "block", fontSize: 22, fontWeight: 800 }}>{t}</span><span style={{ display: "block", fontSize: 13.5, color: "var(--ink3)" }}>{s}</span></span></div>;
 
   // KARTA 56D §3: Treba vybaviť — len to, čo naozaj čaká (profil a hlavná zbierka)
@@ -560,7 +559,7 @@ function SpravaFarnostiObsah({ onBack, strankaId, nazov, test: testPas }: { onBa
     <section style={{ ...karta, borderRadius: mobil ? 18 : 22, padding: mobil ? "12px 14px" : "16px 20px", display: "flex", flexDirection: "column", gap: 10 }}>
       <b style={{ fontSize: 15 }}>Viditeľnosť súm zbierok</b>
       <span style={{ fontSize: 13, color: "var(--ink3)" }}>Čo vidia návštevníci profilu</span>
-      {segment(VID.map(([k, t]) => [k, t] as [typeof vid, string]), vid, (v) => { setVid(v); ulozStav("viditelnost", strankaId, v); }, 40)}
+      {segment(VID.map(([k, t]) => [k, t] as [typeof vid, string]), vid, (v) => { setVid(v); ulozStav("viditelnost", strankaId, v); })}
       <span style={{ fontSize: 13, color: "var(--ink2)" }}>{VID.find((x) => x[0] === vid)?.[2]}</span>
     </section>);
   const nastrojeL = riadky([["QR na tlač do kostola", "pokladnička, nástenka, lavice · sken otvorí dar", "Tlačiť"], ["Štatistiky", "dary podľa omší, zbierok a mesiacov", "Otvoriť"], ["Ročný výpis", "podklad pre farskú radu a ekonómov", "Stiahnuť"]].map(([t, s, b]) => ({ t, s, b, tap: pripravujeme })));

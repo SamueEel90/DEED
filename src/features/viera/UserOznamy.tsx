@@ -84,7 +84,7 @@ function ObrazokVyber({ typ, imageMode, setImageMode, presetId, setPresetId, fot
   presetId: string | null; setPresetId: (id: string | null) => void;
   fotky: string[]; setFotky: (f: string[]) => void;
 }) {
-  const seg = (on: boolean): React.CSSProperties => ({ flex: 1, textAlign: "center", padding: `${SPACE.xs}px 0`, borderRadius: RADIUS.sm, fontSize: 12, fontWeight: 700, cursor: "pointer", background: on ? N.indBg : N.card, border: `1px solid ${on ? N.indEdge : N.line}`, color: on ? N.ind : N.txt2 });
+  const seg = (on: boolean): React.CSSProperties => ({ flex: 1, minHeight: 44, display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center", padding: `${SPACE.xs}px 0`, borderRadius: RADIUS.sm, fontSize: 12, cursor: "pointer", background: on ? "var(--green,#4E7D37)" : N.card, border: `1px solid ${on ? "var(--green,#4E7D37)" : N.line}`, color: on ? "#fff" : N.txt2, fontWeight: 800 }); // OPRAVY 288
   return (
     <div>
       <div style={{ display: "flex", gap: SPACE.xs }}>
@@ -180,7 +180,7 @@ export function UserOznamForm({ typ, farnost, autor, poplatok = 0, onPublish }: 
     });
   }
 
-  const seg = (on: boolean): React.CSSProperties => ({ flex: 1, textAlign: "center", padding: `${SPACE.sm}px 0`, borderRadius: RADIUS.sm, fontSize: 12.5, fontWeight: 700, cursor: "pointer", background: on ? N.indBg : N.card, border: `1px solid ${on ? N.indEdge : N.line}`, color: on ? N.ind : N.txt2 });
+  const seg = (on: boolean): React.CSSProperties => ({ flex: 1, minHeight: 44, display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center", padding: `${SPACE.sm}px 0`, borderRadius: RADIUS.sm, fontSize: 12.5, cursor: "pointer", background: on ? "var(--green,#4E7D37)" : N.card, border: `1px solid ${on ? "var(--green,#4E7D37)" : N.line}`, color: on ? "#fff" : N.txt2, fontWeight: 800 }); // OPRAVY 288
 
   return (
     <div>

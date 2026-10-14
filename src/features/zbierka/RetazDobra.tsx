@@ -52,7 +52,7 @@ export function PercentaRetaze({ pct, onPct }: { pct: number; onPct: (v: number)
     </div>
     <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 6 }}>
       {[10, 25, 50, 100].map((p) => { const on = pct === p; return (
-        <button key={p} type="button" onClick={() => onPct(p)} style={{ height: 44, borderRadius: 12, border: `1.5px solid ${on ? "var(--green)" : "var(--fieldBd)"}`, background: on ? "var(--gSoft)" : "var(--field)", color: on ? "var(--gInk)" : "var(--ink)", fontSize: 14, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}>{p} %</button>); })}
+        <button key={p} type="button" onClick={() => onPct(p)} style={{ height: 44, borderRadius: 12, border: `1.5px solid ${on ? "var(--green)" : "var(--fieldBd)"}`, background: on ? "var(--green)" : "var(--field)", color: on ? "#fff" : "var(--ink)", fontSize: 14, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}>{p} %</button>); })}
     </div>
     <input type="range" min={5} max={100} step={5} value={pct} aria-label="Percento pre zbierku" onChange={(e) => onPct(+e.target.value)} style={{ width: "100%", height: 28, margin: 0, accentColor: "var(--green)" }} />
     <div style={{ padding: "10px 12px", borderRadius: 12, background: "var(--field)", border: "1px solid var(--fieldBd)", fontSize: 13, lineHeight: 1.5, color: "var(--ink2)" }}>

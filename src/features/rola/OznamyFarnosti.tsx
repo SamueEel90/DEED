@@ -37,6 +37,7 @@ import { zapisEditora, zapisZPayloadu } from "@/lib/editorStat";
 import { useMiesta } from "@/lib/miestaFarnosti";
 import { UpozornitSledujucich, NastavenieUpozorneni } from "./UpozornitSledujucich";
 import { useNastavenieUpoz } from "@/lib/upozorneniaFarnosti";
+import { Volby } from "@/components/Volby";
 
 type Druh = 0 | 1 | 2; // Krátky oznam · Udalosť · Oznámenie
 const DRUHY: [string, string][] = [
@@ -79,11 +80,9 @@ const iniciy = (m: string) => m.split(/\s+/).filter((w) => w.length > 1).slice(0
 const DEN_MS = 864e5;
 const terazMs = () => Date.now();
 
+/** OPRAVY 288: jeden prepínač s voľbami pre celú appku */
 function Segment<T extends string | number>({ vol, cur, set, label }: { vol: [T, string][]; cur: T; set: (v: T) => void; label: string }) {
-  return (
-    <div role="radiogroup" aria-label={label} style={{ display: "flex", gap: 4, padding: 4, borderRadius: 12, background: "var(--btn)", alignSelf: "flex-start", flexWrap: "wrap" }}>
-      {vol.map(([k, t]) => { const on = k === cur; return <button key={String(k)} type="button" role="radio" aria-checked={on} onClick={() => set(k)} style={{ minHeight: 44, padding: "0 16px", border: "none", borderRadius: 9, background: on ? "var(--seg)" : "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 14.5, fontWeight: on ? 800 : 700, color: on ? "var(--ink)" : "var(--ink3)", boxShadow: "none" }}>{t}</button>; })}
-    </div>);
+  return <Volby value={cur} onChange={set} moznosti={vol} label={label} />;
 }
 
 /** text oznamu — jedno pole, najviac 12 riadkov (rovnaké textové pole ako všade) */

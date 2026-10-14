@@ -90,7 +90,7 @@ export function Penazenka18({ onBack, desktop }: { onBack: () => void; desktop?:
 
       <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8, marginTop: 6 }}><span style={{ fontSize: 17, fontWeight: 800, color: "var(--blue)" }}>{t("penazenka.krypto")}</span><span style={{ fontSize: 12.5, color: "var(--ink3)" }}>{t("penazenka.deedAEurc")}</span></div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 4, padding: 4, borderRadius: 14, background: "var(--seg)" }}>
-        {(["DEED", "EURC"] as const).map((m) => <button key={m} type="button" onClick={() => { setMena(m); setViac(false); }} style={{ height: 44, borderRadius: 10, border: "none", cursor: "pointer", fontSize: 15, fontWeight: 800, fontFamily: "inherit", background: mena === m ? "#fff" : "transparent", color: mena === m ? "#1D211B" : "var(--ink3)" }}>{m === "DEED" ? "DeeD" : m}</button>)}
+        {(["DEED", "EURC"] as const).map((m) => <button key={m} type="button" onClick={() => { setMena(m); setViac(false); }} style={{ height: 44, borderRadius: 10, border: "none", cursor: "pointer", fontSize: 15, fontWeight: 800, fontFamily: "inherit", background: mena === m ? "var(--green)" : "transparent", color: mena === m ? "#fff" : "var(--ink3)" }}>{m === "DEED" ? "DeeD" : m}</button>)}
       </div>
       <div style={{ borderRadius: 24, background: "linear-gradient(150deg,var(--bSoft) 0%,var(--bCard) 60%,var(--gCard) 100%)", border: "1px solid var(--bBd)", padding: 18 }}>
         <div style={{ fontSize: 12.5, fontWeight: 700, color: "var(--ink3)" }}>{t("penazenka.zostatok", { mena: mena === "DEED" ? "DeeD" : mena })}</div>

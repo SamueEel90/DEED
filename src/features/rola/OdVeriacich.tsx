@@ -136,7 +136,7 @@ export function OdVeriacich({ strankaId, meno, mobil, toast }: { strankaId: stri
         <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
           <span style={{ fontSize: 14, color: "var(--ink2)" }}>Poplatok za oznam</span>
           <div role="radiogroup" aria-label="Poplatok za oznam" style={{ display: "flex", gap: 4, padding: 4, borderRadius: 12, background: "var(--btn)", flexWrap: "wrap" }}>
-            {POPLATKY.map((p) => { const on = (POPLATKY.includes(self.poplatok) ? self.poplatok : 0) === p; return <button key={p} type="button" role="radio" aria-checked={on} onClick={() => zmenSelf({ poplatok: p })} style={{ minHeight: 44, padding: "0 14px", border: "none", borderRadius: 9, background: on ? "var(--seg)" : "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: on ? 800 : 700, color: on ? "var(--ink)" : "var(--ink3)", boxShadow: "none" }}>{p ? `${p} €` : "Zadarmo"}</button>; })}
+            {POPLATKY.map((p) => { const on = (POPLATKY.includes(self.poplatok) ? self.poplatok : 0) === p; return <button key={p} type="button" role="radio" aria-checked={on} onClick={() => zmenSelf({ poplatok: p })} style={{ minHeight: 44, padding: "0 14px", border: "none", borderRadius: 9, background: on ? "var(--green)" : "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 800, color: on ? "#fff" : "var(--ink2)", boxShadow: "none" }}>{p ? `${p} €` : "Zadarmo"}</button>; })}
           </div>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 2, paddingTop: 6 }}>

@@ -5,6 +5,7 @@
 // Pred zapečatením sa s QR netlačí (miesto sa uloží). OPRAVY 204: QR = odkaz zbierky (data URL z lib/qrObrazok).
 // ============================================================
 import { useState, type CSSProperties } from "react";
+import { Volby } from "@/components/Volby";
 
 export type MiestoQr = "pod" | "lh" | "ph" | "ld" | "pd";
 export interface QrParte { qr: boolean; kde: MiestoQr; papier: "A5" | "A4" }
@@ -13,11 +14,9 @@ const ROHY: Record<Exclude<MiestoQr, "pod">, CSSProperties> = {
 };
 const MIESTA: [string, MiestoQr][] = [["Pod parte", "pod"], ["Vľavo hore", "lh"], ["Vpravo hore", "ph"], ["Vľavo dole", "ld"], ["Vpravo dole", "pd"]];
 
+/** OPRAVY 288: jeden prepínač s voľbami pre celú appku */
 function Segment<T extends string | boolean>({ vol, cur, set }: { vol: [string, T][]; cur: T; set: (v: T) => void }) {
-  return (
-    <div style={{ display: "flex", gap: 4, padding: 4, borderRadius: 12, background: "var(--btn)", alignSelf: "flex-start" }}>
-      {vol.map(([t, v]) => { const on = v === cur; return <button key={t} type="button" aria-pressed={on} onClick={() => set(v)} style={{ flex: "none", whiteSpace: "nowrap", minHeight: 44, padding: "0 16px", border: "none", borderRadius: 9, background: on ? "var(--card)" : "transparent", cursor: "pointer", fontFamily: "inherit", fontSize: 14.5, fontWeight: 800, color: on ? "var(--ink)" : "var(--ink3)", boxShadow: "none" }}>{t}</button>; })}
-    </div>);
+  return <Volby value={cur} onChange={set} moznosti={vol.map(([t, v]) => [v, t] as const)} label={vol.map(([t]) => t).join(" · ")} />;
 }
 
 /** hárok na tlač: parte + QR (pod parte alebo v rohu), A5 / A4 */
@@ -59,7 +58,7 @@ export function QrNaParte({ src, zapecatene = false, onSablona, onZmena, onIne, 
         <b style={lbl}>Kam dať QR</b>
         <span style={{ fontSize: 13.5, color: "var(--ink3)" }}>Ťuknite na miesto. Pod parte nikdy nič neprekryje.</span>
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-          {MIESTA.map(([t, v]) => { const on = n.kde === v; return <button key={v} type="button" aria-pressed={on} onClick={() => zmen({ kde: v })} style={{ flex: "none", whiteSpace: "nowrap", minHeight: 44, padding: "0 14px", borderRadius: 12, border: `1.5px solid ${on ? "#4B7A35" : "var(--cardBd)"}`, background: on ? "var(--gSoft)" : "var(--field)", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 800, color: "var(--ink)", boxShadow: "none" }}>{t}</button>; })}
+          {MIESTA.map(([t, v]) => { const on = n.kde === v; return <button key={v} type="button" aria-pressed={on} onClick={() => zmen({ kde: v })} style={{ flex: "none", whiteSpace: "nowrap", minHeight: 44, padding: "0 14px", borderRadius: 12, border: `1.5px solid ${on ? "#4B7A35" : "var(--cardBd)"}`, background: on ? "var(--green)" : "var(--field)", cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 800, color: on ? "#fff" : "var(--ink)", boxShadow: "none" }}>{t}</button>; })}
         </div>
       </div>}
       <div style={{ alignSelf: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: 6, maxWidth: "100%" }}>

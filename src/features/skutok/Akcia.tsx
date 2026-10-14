@@ -168,7 +168,7 @@ function AkciaObrazovka({ a, onZavrete }: { a: Akcia; onZavrete: () => void }) {
             <h2 style={{ margin: 0, fontSize: 12, fontWeight: 800, letterSpacing: ".06em", color: "var(--ink3)" }}>MEŠKAJÚCICH PRIDÁŠ EŠTE</h2>
             <div role="radiogroup" aria-label="Meškajúcich pridáš ešte" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 8 }}>
               {[30, 60, 120].map((m) => { const on = a.okno === m; return (
-                <button type="button" role="radio" aria-checked={on} key={m} onClick={() => zmenAkciu({ okno: m })} style={{ height: 44, borderRadius: 13, fontSize: 15, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", background: on ? "var(--gSoft)" : "var(--card)", border: `1.5px solid ${on ? "var(--gBd)" : "var(--cardBd)"}`, color: on ? "var(--gInk)" : "var(--ink)" }}>{m < 60 ? `${m} min` : `${m / 60} h`}</button>); })}
+                <button type="button" role="radio" aria-checked={on} key={m} onClick={() => zmenAkciu({ okno: m })} style={{ height: 44, borderRadius: 13, fontSize: 15, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", background: on ? "var(--green)" : "var(--card)", border: `1.5px solid ${on ? "var(--gBd)" : "var(--cardBd)"}`, color: on ? "#fff" : "var(--ink)" }}>{m < 60 ? `${m} min` : `${m / 60} h`}</button>); })}
             </div>
           </>}
           {a.stav === "bezi" && <div style={{ fontSize: 13, lineHeight: 1.5, color: "var(--ink3)" }}>{org ? "Dobrovoľníka môžete kedykoľvek odobrať krížikom, napríklad pri nevhodnom správaní. Stratí pripojenie k skutku aj karmu a zapíše sa to do záznamu zmien." : "Kto nič nerobil alebo robil problémy, toho odstráň krížikom. Nedostane karmu ani odmeny."}</div>}

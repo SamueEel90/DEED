@@ -27,6 +27,7 @@ import { FormularOznamu, VyberSablony, chybaOznamu, popisOznamu, prazdneUdaje, p
 import { hladajPrijemcov, type PrijemcaDeed } from "@/lib/prijemcoviDeed";
 import { SADY_EUR, SADY_EURC } from "@/lib/sadyDarov";
 import { AnoNie } from "@/components/AnoNie";
+import { Volby } from "@/components/Volby";
 import {
   spustiZbierku, noveIdZbierky, prazdnaZbierka, PODIEL_MAX, PODIEL_KROK, PODIEL_STROP_EUR, PODELIT_MAX, PODELIT_MIN, PODELIT_KROK,
   type SpustenaZbierka, type ZbierkaFarnosti, type PodielZbierky } from "@/lib/novaZbierka";
@@ -295,7 +296,7 @@ export function ZbierkaSOverovatelom({ stranka, menoFarnosti, ucetFarnosti, mobi
       </div>
       {krok <= 2 && <div role="radiogroup" aria-label="Druh zbierky" style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
         {(Object.keys(PZT) as Druh[]).map((k) => { const on = k === druh; return (
-          <button key={k} type="button" role="radio" aria-checked={on} onClick={() => zmenDruh(k)} style={{ height: 44, padding: "0 18px", borderRadius: 22, border: `${on ? 2 : 1}px solid ${on ? "var(--green)" : "var(--cardBd)"}`, background: on ? "var(--gSoft)" : "var(--field)", cursor: "pointer", fontFamily: "inherit", fontSize: 14.5, fontWeight: 800, color: on ? "var(--gInk)" : "var(--ink)", boxShadow: "none" }}>{PZT[k].t}</button>); })}
+          <button key={k} type="button" role="radio" aria-checked={on} onClick={() => zmenDruh(k)} style={{ height: 44, padding: "0 18px", borderRadius: 22, border: `${on ? 2 : 1}px solid ${on ? "var(--green)" : "var(--cardBd)"}`, background: on ? "var(--green)" : "var(--field)", cursor: "pointer", fontFamily: "inherit", fontSize: 14.5, fontWeight: 800, color: on ? "#fff" : "var(--ink)", boxShadow: "none" }}>{PZT[k].t}</button>); })}
       </div>}
 
       {krok === 1 && <div style={{ display: "flex", gap: 18, alignItems: "center", flexWrap: "wrap" }}>
@@ -367,10 +368,7 @@ export function ZbierkaSOverovatelom({ stranka, menoFarnosti, ucetFarnosti, mobi
           {txt(T.meno, "meno", T.phMeno)}
           {druh === "pohreb" && <>
             <span style={lab}>ZOSNULÝ JE</span>
-            <div role="radiogroup" aria-label="Zosnulý je" style={{ display: "flex", gap: 8 }}>
-              {([["Muž", false], ["Žena", true]] as [string, boolean][]).map(([t, zz]) => { const on = u.zena === zz; return (
-                <button key={t} type="button" role="radio" aria-checked={on} onClick={() => setU((x) => ({ ...x, zena: zz, rod: zz ? x.rod : "" }))} style={{ flex: 1, height: 48, borderRadius: 12, border: `${on ? 2 : 1}px solid ${on ? "var(--green)" : "var(--cardBd)"}`, background: on ? "var(--gSoft)" : "var(--field)", cursor: "pointer", fontFamily: "inherit", fontSize: 15, fontWeight: 800, color: on ? "var(--gInk)" : "var(--ink)", boxShadow: "none" }}>{t}</button>); })}
-            </div>
+            <Volby value={u.zena} onChange={(zz) => setU((x) => ({ ...x, zena: zz, rod: zz ? x.rod : "" }))} moznosti={[[false, "Muž"], [true, "Žena"]]} label="Zosnulý je" siroke />
             {u.zena === true && txt("RODENÁ (NEPOVINNÉ)", "rod", "rodné priezvisko")}
           </>}
           {dva(<label style={{ display: "flex", flexDirection: "column", gap: 6 }}><span style={lab}>{T.kedy}</span>
