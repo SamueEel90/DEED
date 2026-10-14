@@ -20,7 +20,7 @@ export function otvorVerejnyProfil(k: string, o?: { zoSpravy?: boolean }) { otvo
 export const nahladZoSpravy = (): boolean => zoSpravy;
 /** KARTA 55 · E: odkaz z feedu „Celý príbeh na stránke … ›" — stránka Príbeh nad feedom, „Späť do feedu" vráti na to isté miesto */
 export function otvorPribeh(zbierkaId: string) { otvorVerejnyProfil(`pribeh:${zbierkaId}`); }
-export function zavriVerejnyProfil() { otvorene = false; zmena(); }
+export function zavriVerejnyProfil() { otvorene = false; zoSpravy = false; zmena(); } // OPRAVY 249: náhľad sa neprenesie na ďalšie otvorenie
 /** kľúč profilu, ktorý je otvorený (číta sa bez mazania — StrictMode volá inicializáciu dvakrát) */
 export const verejnyProfilKluc = (): string | null => kluc;
 

@@ -40,11 +40,11 @@ import { SektorDarcuKontext } from "@/lib/darcovia";
 
 /** vložiteľný verejný profil podľa kľúča stránky (svetlo · pekaren · tvorca) */
 /** OPRAVY 159: profil farnosti = sektor Viera (darca bez mena = „Bohu známy veriaci") */
-export function VerejnyProfilView(p: { kluc: string; onBack: () => void }) {
+export function VerejnyProfilView(p: { kluc: string; onBack: () => void; /** OPRAVY 249: len vrstva otvorená tlačidlom Náhľad v Správe */ nahlad?: boolean }) {
   const k = p.kluc.startsWith("stream:") ? "tvorca" : p.kluc.startsWith("pribeh:") ? orgPribehu(p.kluc.slice(7)) : p.kluc;
   const tp = najdiTestProfil(k);
   // KARTA 57C · 60: farnosť (testovacia aj ktorákoľvek z Adresára) = živá stránka z uloženého
-  if (!tp || tp.typ === "farnost") return <SektorDarcuKontext.Provider value="viera"><FarnostStranka strankaId={k} onBack={p.onBack} stit={(tp?.stit as StitLevel | undefined) ?? "Silver"} /></SektorDarcuKontext.Provider>;
+  if (!tp || tp.typ === "farnost") return <SektorDarcuKontext.Provider value="viera"><FarnostStranka strankaId={k} onBack={p.onBack} nahlad={!!p.nahlad} stit={(tp?.stit as StitLevel | undefined) ?? "Silver"} /></SektorDarcuKontext.Provider>;
   return <SektorDarcuKontext.Provider value="ine"><VerejnyProfilObsah {...p} /></SektorDarcuKontext.Provider>;
 }
 
@@ -182,7 +182,7 @@ export function VerejnyProfilHost() {
 function VerejnyProfilVrstva() {
   const kluc = verejnyProfilKluc();
   if (!kluc) return null;
-  return <VrstvaProfilu><VerejnyProfilView kluc={kluc} onBack={zavriVerejnyProfil} /></VrstvaProfilu>;
+  return <VrstvaProfilu><VerejnyProfilView kluc={kluc} onBack={zavriVerejnyProfil} nahlad={nahladZoSpravy()} /></VrstvaProfilu>;
 }
 
 function usePc1200() {
@@ -193,7 +193,7 @@ function usePc1200() {
 
 /** KARTA 57C · 60 — stránka farnosti (živá nástenka + zelené +) pre ľubovoľnú farnosť v DEED.
  *  Vo Viere ju ukazuje aj domovská farnosť (bez Späť). */
-export function FarnostStranka({ strankaId, onBack, stit = "Silver" }: { strankaId: string; onBack?: () => void; stit?: StitLevel }) {
+export function FarnostStranka({ strankaId, onBack, nahlad = false, stit = "Silver" }: { strankaId: string; onBack?: () => void; nahlad?: boolean; stit?: StitLevel }) {
   useAdresarFarnosti();
   const pc = usePc1200();
   const [prof, setProf] = useState<ProfilStranky | null>(() => profilZPamate(strankaId).ulozeny);
@@ -204,7 +204,7 @@ export function FarnostStranka({ strankaId, onBack, stit = "Silver" }: { stranka
   const meno = cistyNazov(prof?.meno ?? nazovFarnosti(strankaId)) || "Vaša farnosť";
   return (
     <div style={{ position: "relative", minHeight: "100%", background: "var(--nf-bg)" }}>
-      <NastenkaFarnosti strankaId={strankaId} meno={meno} profil={prof} fab={fab} onBack={onBack} stit={stit} nahlad={!!onBack && nahladZoSpravy()} />
+      <NastenkaFarnosti strankaId={strankaId} meno={meno} profil={prof} fab={fab} onBack={onBack} stit={stit} nahlad={!!onBack && nahlad} />
       <FarnikPridava strankaId={strankaId} mobil={!pc} onPozriet={(id) => { const kd = odFarnikov(strankaId).find((x) => x.id === id)?.k, b = kd ? BLOK_DRUHU[kd] : undefined; window.setTimeout(() => posunNaBlok(b?.[0] ?? "ozn"), 60); }} />
     </div>);
 }
