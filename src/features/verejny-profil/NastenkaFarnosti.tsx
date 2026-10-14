@@ -1309,8 +1309,9 @@ export function NastenkaFarnosti({ strankaId, meno, profil, fab, onBack, nahlad,
             {kB("kostoly").ma && kSek("kostoly", "Naše kostoly", kB("kostoly").riadky())}
           </main>
           {kMaPravy && <aside style={{ position: "sticky", top: 24, display: "flex", flexDirection: "column", gap: 24, minWidth: 0 }}>
-            {maOmse && omseDni.length > 0 && kKarta("Sväté omše", kOmseZoznam, "omse")}
+            {/* OPRAVY 279: Zbierky farnosti hore, Sväté omše pod nimi, potom Farský úrad */}
             {maZbierky && kKarta("Zbierky farnosti", kZbierkyRiadky, "zbierky")}
+            {maOmse && omseDni.length > 0 && kKarta("Sväté omše", kOmseZoznam, "omse")}
             {maUrad && kKarta("Farský úrad", kUradObsah, "urad")}
           </aside>}
         </div>
